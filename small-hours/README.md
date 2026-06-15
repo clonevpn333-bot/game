@@ -32,15 +32,32 @@ brief asked for, in the order of importance the brief specified.
 | — | [`tech/`](tech/) | Real artifacts: the post-process **shader code**, skin-shader notes, UE5 project structure. |
 | — | [`poc/`](poc/) | **Playable browser proof-of-concept.** Open `poc/index.html`. |
 
-## Play the proof-of-concept right now
+## ▶ Play the game right now — ONE file, copy-paste ready
+
+```
+small-hours/SMALL_HOURS.html   →  open in any modern browser (or copy the whole file)
+```
+
+This is the **complete single-file game**: the full story (arrival → intake →
+consent → wiring-up → sleep → paralysis → the reveal → three endings → your Fear
+Profile), procedural **humanoid faces** (Renata, the uncanny Technician, the dead
+Visitor — with subsurface shading, wet eyes/catchlights, the smile-without-the-
+eyes, blink/gaze, and the pallor/dead-eye horror passes), the **VHS degradation
+filter**, procedural audio, and the **Fear Profiler**. No build, no dependencies,
+no network — everything is in that one `.html`.
+
+> Controls: hold **SPACE** to breathe yourself to sleep · move the **MOUSE** (in
+> paralysis it's your *eyes*) · **SHIFT** to steady · click to talk/choose ·
+> **M** to mute. ~10–15 min. Play twice and the clinic remembers you.
+
+### (Also here) the original multi-file proof-of-concept
 
 ```
 small-hours/poc/index.html   →  open in any modern browser
 ```
 
-No build step, no dependencies, no network — same philosophy as the rest of this
-repo. The POC is a **mood-and-mechanics vertical slice**, not the final game. It
-exists to prove three things are real and not just words on a page:
+The earlier POC is a **mood-and-mechanics vertical slice**. Both it and the
+single-file game prove three things are real and not just words on a page:
 
 1. The **degraded-media post-processing pipeline** (VHS chroma bleed, head-switch
    noise, grain, chromatic aberration, timecode) — the *Fears to Fathom* "look."
