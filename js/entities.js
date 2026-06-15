@@ -127,10 +127,10 @@ const Player = {
     // Active pots (across all owned properties)
     // Managed by GrowSystem
 
-    get tx() { return Math.floor(this.x / CFG.TS); }
-    get ty() { return Math.floor(this.y / CFG.TS); }
+    get tx() { return Math.floor(this.x / CFG.TS); },
+    get ty() { return Math.floor(this.y / CFG.TS); },
 
-    get rankData() { return CFG.RANKS[Math.min(this.rank, CFG.RANKS.length - 1)]; }
+    get rankData() { return CFG.RANKS[Math.min(this.rank, CFG.RANKS.length - 1)]; },
 
     addXP(n) {
         this.xp += n;
