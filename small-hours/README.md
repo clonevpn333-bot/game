@@ -38,17 +38,26 @@ brief asked for, in the order of importance the brief specified.
 small-hours/SMALL_HOURS.html   →  open in any modern browser (or copy the whole file)
 ```
 
-This is the **complete single-file game**: the full story (arrival → intake →
-consent → wiring-up → sleep → paralysis → the reveal → three endings → your Fear
-Profile), procedural **humanoid faces** (Renata, the uncanny Technician, the dead
-Visitor — with subsurface shading, wet eyes/catchlights, the smile-without-the-
-eyes, blink/gaze, and the pallor/dead-eye horror passes), the **VHS degradation
-filter**, procedural audio, and the **Fear Profiler**. No build, no dependencies,
-no network — everything is in that one `.html`.
+This is the **complete single-file game — now a true 3D first-person experience**
+built on a hand-written **raw-WebGL engine** (no Three.js, no libraries, fully
+offline). You physically **walk the Ashgrove Sleep Center**: a connected clinic
+(waiting room, hallway, your Room 3, bathroom, the locked Room 4, and the
+staff observation room) with **normal-mapped procedural textures**, real-time
+lighting, a **flashlight**, and fog. It plays out across five acts — check in
+with Renata, sign the consent (read page 4 or don't), get wired up by the
+Technician, lie down and lose the night, wake into a colder 3am, endure
+**sleep paralysis**, read the notes that explain what Ashgrove really sells,
+break into the staff room, and **run** — with the **Visitor** stalking you (it
+only moves when you're not looking). 3D **humanoid characters** carry procedural
+faces (subsurface shading, wet eyes/catchlights, the smile-that-doesn't-reach-
+the-eyes Technician, the dead-eyed Visitor), all under the **VHS post-shader**,
+with procedural audio and the **Fear Profiler** that reads your behavior back on
+the end-card. No build, no dependencies, no network — one `.html`.
 
-> Controls: hold **SPACE** to breathe yourself to sleep · move the **MOUSE** (in
-> paralysis it's your *eyes*) · **SHIFT** to steady · click to talk/choose ·
-> **M** to mute. ~10–15 min. Play twice and the clinic remembers you.
+> Controls: **WASD** move · **MOUSE** look · **E** interact · **F** flashlight ·
+> **SHIFT** run · **CTRL** crouch · **ESC** release mouse · **M** mute.
+> Click "Enter the Clinic" to lock the mouse. ~15–25 min. Play twice and the
+> clinic remembers you.
 
 ### (Also here) the original multi-file proof-of-concept
 
