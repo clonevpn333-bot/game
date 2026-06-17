@@ -926,6 +926,10 @@ function startSleep(){P.lying=true;P.canMove=false;CH.vane.root.visible=false;
     },2800);
   });
 }
+function jumpscare(x,z,faceYaw,dur,line){if(!VIS.rig)return;
+  VIS.pos=[x,0,z];VIS.rig.setPos(x,z,faceYaw||0);VIS.rig.root.visible=true;VIS.rig.p.pallor=0.95;SOUND.sting();STORY.deg=0.9;
+  if(line)say('',line,3);
+  setTimeout(()=>{if(VIS.rig)VIS.rig.root.visible=false;STORY.deg=(STORY.act>=4?0.6:0.5);},(dur||0.45)*1000);}
 function placeNight(){
   PROFILER.totalNotes=4;
   addItem(2.6,-4.2,1.8,'Read phone (nightstand)',()=>togglePhone());
@@ -947,6 +951,10 @@ Thank you for your contribution.`);});
   addItem(6.4,-9.5,1.8,'Drawer (exam room)',()=>{giveKey('staff','Staff keycard');const d=WORLD.doors.find(x=>x.id==='d_obs');if(d){d.keyNeed='staff';}PROFILER.readNotes++;},true);
   addItem(0,-18.2,1.8,'A staff mug, still warm',()=>{SOUND.pickup();say('','The coffee is still warm. Someone was here a minute ago. Where did they go?',5);},true);
   setObjective('Find the staff keycard. (Try the exam room.)');
+  // scripted FtF jumpscares — a sudden presence at the edge of vision, then gone (NOT a stalker)
+  trigger(0,-6,2.0,()=>{ if(STORY.act>=3) jumpscare(0,-13.5,0,0.55); },'js1');
+  trigger(-4.2,-3,1.6,()=>{ if(STORY.act>=3) jumpscare(-6.2,-3,0,0.5); },'js2');
+  trigger(-4.6,-12,1.6,()=>{ if(STORY.act>=3) jumpscare(-7.0,-13,0,0.5); },'js3');
 }
 function paralysis(){if(P.dead||P.hiding)return;P.lying=true;P.canMove=false;STORY.deg=0.62;
   say('','You wake — and you cannot move. Only your eyes. Something is at the foot of the bed.',7);
