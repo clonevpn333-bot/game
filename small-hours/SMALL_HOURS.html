@@ -26,7 +26,7 @@
     font-size:21px;color:#eef;text-shadow:0 2px 10px #000,0 0 20px rgba(0,0,0,.7);opacity:0;transition:opacity .3s;line-height:1.45}
   #sub .spk{display:block;font-size:13px;letter-spacing:3px;color:#9ec9b0;margin-bottom:7px}
   /* bottom bars */
-  #bars{position:absolute;right:26px;bottom:24px;width:190px;text-align:right;font-size:11px;letter-spacing:1px}
+  #bars{display:none}
   .bar{height:6px;background:rgba(255,255,255,.10);margin:5px 0;border:1px solid rgba(255,255,255,.12);position:relative}
   .bar i{position:absolute;left:0;top:0;bottom:0;display:block;transition:width .2s}
   #fillFlash i{background:linear-gradient(90deg,#5a4,#ad6)}
@@ -539,7 +539,7 @@ function buildClinic(){
   propPoster(signMat([{t:'MY',sz:18},{t:'DREAM',sz:18},{t:'HOUSE',sz:16}],'#e8e4d0','#446'),11.0,1.6,-3,-Math.PI/2,0.7,0.8);
   propVent(11.0,2.3,-1.5,-Math.PI/2);
   WORLD.hideSpots.push({x:9.0,z:-3,r:1.3,kind:'bed',id:'bed5'});
-  addItem(7.0,-4.4,1.6,'Spare battery',()=>{INV.batteries++;P.batt=clamp(P.batt+0.6,0,1);updateInv();SOUND.pickup();say('','Flashlight battery. +charge.',3);},true);
+  addItem(7.0,-4.4,1.6,"A patient's things",()=>{SOUND.pickup();say('','A worn paperback, a half-eaten granola bar, a phone charger. Someone left in a hurry — or did not get to leave.',6);},true);
 
   /* ===== F_BATHROOM (-4.2,-3) open E + W gap to courtyard ===== */
   roomShell(-4.2,-3,5,4,H,{e:true,wg:[[-3,1.7]]},MATS.tile,MATS.ceil,MATS.tile);ceilLight(-4.2,-3,0xbfd0c8,0.6,6,false,true);
@@ -700,28 +700,23 @@ Thank you for your contribution.`));
 /* =================================================================================================
    5) RENDERER / SCENE / CAMERA / LIGHTS / POST
    ================================================================================================= */
-let renderer,scene,camera,composer,vhsPass,flashlight,flashTarget,hemi,bloomPass;
+let renderer,scene,camera,composer,vhsPass,hemi,bloomPass,camFill,PLIGHTS=[];
 function initThree(){
-  renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-  renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
-  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
+  renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
+  renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(1);   // perf: DPR 1 (the VHS filter hides it)
+  renderer.shadowMap.enabled=false;                                     // perf: realtime shadows were the lag killer
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;
   renderer.outputEncoding=THREE.sRGBEncoding;
   $('app').appendChild(renderer.domElement);
   scene=new THREE.Scene();scene.background=new THREE.Color(0x05070a);
-  scene.fog=new THREE.FogExp2(0x05080b,0.055);
-  camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,0.05,80);
+  scene.fog=new THREE.FogExp2(0x05080b,0.05);
+  camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,0.05,55);
   camera.rotation.order='YXZ';
-  // global fill
-  hemi=new THREE.HemisphereLight(0x3a4452,0x0a0c0a,0.35);scene.add(hemi);
-  const amb=new THREE.AmbientLight(0x223040,0.25);scene.add(amb);
-  // flashlight (THIS is the working flashlight: a camera-mounted spotlight)
-  flashlight=new THREE.SpotLight(0xfff0d6,2.4,16,0.62,0.45,1.2);
-  flashlight.castShadow=true;flashlight.shadow.mapSize.set(1024,1024);flashlight.shadow.camera.near=0.2;flashlight.shadow.camera.far=16;flashlight.shadow.bias=-0.0015;
-  flashTarget=new THREE.Object3D();flashTarget.position.set(0,0,-1);
-  camera.add(flashlight);camera.add(flashTarget);flashlight.target=flashTarget;
-  // a soft personal fill so you are never in total black
-  const fill=new THREE.PointLight(0x6a7488,0.35,4,2);camera.add(fill);
+  // baseline interior lighting so rooms read WITHOUT a flashlight (FtF: lit interiors, not a survival torch)
+  hemi=new THREE.HemisphereLight(0x55617a,0x14110d,0.6);scene.add(hemi);
+  const amb=new THREE.AmbientLight(0x2c3644,0.45);scene.add(amb);
+  // a soft eye-fill so you're never in pure black (a gentle glow, NOT a flashlight cone)
+  camFill=new THREE.PointLight(0xc2ccd6,0.55,6.5,2);camera.add(camFill);
   scene.add(camera);
   // post
   try{
@@ -772,30 +767,18 @@ function updatePlayer(dt,t){
     if(keys['KeyW']){mx+=fwd[0];mz+=fwd[2];}if(keys['KeyS']){mx-=fwd[0];mz-=fwd[2];}
     if(keys['KeyD']){mx+=rgt[0];mz+=rgt[2];}if(keys['KeyA']){mx-=rgt[0];mz-=rgt[2];}
     const ml=Math.hypot(mx,mz);if(ml>0){mx/=ml;mz/=ml;moving=true;
-      const running=keys['ShiftLeft']&&P.stam>0.05&&!keys['KeyC'];
-      const sp=(running?P.run:P.speed)*(keys['KeyC']?0.5:1);
+      const sp=(keys['ShiftLeft']&&!keys['KeyC']?P.run:P.speed)*(keys['KeyC']?0.5:1);
       let nx=P.pos[0]+mx*sp*dt,nz=P.pos[2]+mz*sp*dt;[nx,nz]=collide(nx,nz);P.pos[0]=nx;P.pos[2]=nz;
-      P.bob+=sp*dt*2.0;if(running){P.stam=clamp(P.stam-dt*0.28,0,1);PROFILER.run+=dt;}else P.stam=clamp(P.stam+dt*0.18,0,1);
-      STORY.moved+=sp*dt;stepAudio(sp*dt);}
-    else P.stam=clamp(P.stam+dt*0.25,0,1);
-  } else P.stam=clamp(P.stam+dt*0.25,0,1);
+      P.bob+=sp*dt*2.0;STORY.moved+=sp*dt;stepAudio(sp*dt);}
+  }
   P.crouch=lerp(P.crouch,keys['KeyC']?1:0,Math.min(1,dt*10));
   // camera
   const eyeBase=P.hiding?0.7:(P.lying?0.45:(P.height-P.crouch*0.55));
-  const eye=eyeBase+(moving?Math.sin(P.bob)*0.035*(keys['ShiftLeft']?1.5:1):0);
+  const eye=eyeBase+(moving?Math.sin(P.bob)*0.03:0);
   camera.position.set(P.pos[0],eye,P.pos[2]);
   camera.rotation.set(P.pitch,P.yaw,0);
-  // flashlight battery
-  if(P.flashOn){P.batt=clamp(P.batt-dt*0.0035,0,1);flashlight.intensity=lerp(flashlight.intensity,(P.batt>0?2.4:0)*(0.9+0.1*Math.sin(t*30)*(P.batt<0.2?1:0)),0.3);}
-  else flashlight.intensity=lerp(flashlight.intensity,0,0.3);
-  // sanity from darkness + visitor
-  const lit=P.flashOn&&P.batt>0?0.4:0;const near=visitorDread();
-  const drain=(0.02+near*0.16)-(lit*0.02);
-  P.san=clamp(P.san - drain*dt + (near<0.05?dt*0.03:0),0,1);
-  // sanity visuals
-  $('vig').style.boxShadow='inset 0 0 '+(150+(1-P.san)*220)+'px '+(30+(1-P.san)*120)+'px rgba(0,0,0,'+(0.5+0.35*(1-P.san))+')';
-  $('blood').style.opacity=(near*0.7).toFixed(2);
-  if(vhsPass)vhsPass.uniforms.uDeg.value=clamp(STORY.deg+(1-P.san)*0.4+near*0.3,0,1);
+  // VHS degradation follows story tension only (no sanity/flashlight/stamina meters)
+  if(vhsPass)vhsPass.uniforms.uDeg.value=STORY.deg;
   // interaction
   hover=null;let best=1e9;
   if(!P.hiding){
@@ -820,18 +803,11 @@ function visitorDread(){if(!VIS.active)return 0;const d=dist2(P.pos[0],P.pos[2],
 function visitorVisibleToPlayer(){const dx=VIS.pos[0]-P.pos[0],dz=VIS.pos[2]-P.pos[2],d=Math.hypot(dx,dz)||1;
   const f=[-Math.sin(P.yaw),-Math.cos(P.yaw)];const dot=(dx/d)*f[0]+(dz/d)*f[1];
   return dot>0.5 && d<16 && (P.flashOn&&P.batt>0 || d<3.5);}
-function updateVisitor(dt,t){if(!VIS.active||!VIS.rig){return;}
-  VIS.rig.root.visible=true;
-  const seen=visitorVisibleToPlayer()&&!P.hiding;
-  const dx=P.pos[0]-VIS.pos[0],dz=P.pos[2]-VIS.pos[2],d=Math.hypot(dx,dz)||1;
-  VIS.rig.yaw=Math.atan2(dx,dz);
-  if(P.hiding){ // searches: wanders, may give up
-    VIS.rig.walk=lerp(VIS.rig.walk,0.4,dt*3);VIS.pos[0]+=Math.sin(t*0.7)*0.4*dt;VIS.seenT+=dt;
-  } else if(!seen){ // moves only when unobserved (the rule)
-    const sp=(VIS.state==='hunt'?VIS.speed*1.7:VIS.speed);VIS.pos[0]+=dx/d*sp*dt;VIS.pos[2]+=dz/d*sp*dt;VIS.rig.walk=lerp(VIS.rig.walk,1,dt*4);
-  } else { VIS.rig.walk=lerp(VIS.rig.walk,0,dt*6); VIS.rig.p.still=true; }
+function updateVisitor(dt,t){if(!VIS.rig||!VIS.rig.root.visible)return;
+  // scripted presence ONLY — the Visitor never roams or chases (FtF style, not a stalker)
+  const dx=P.pos[0]-VIS.pos[0],dz=P.pos[2]-VIS.pos[2];
+  VIS.rig.yaw=Math.atan2(dx,dz);VIS.rig.walk=0;VIS.rig.p.still=true;
   VIS.rig.setPos(VIS.pos[0],VIS.pos[2]);VIS.rig.update(dt,t,[P.pos[0],P.pos[1],P.pos[2]]);
-  if(d<1.0&&!P.hiding){onCaught();}
 }
 function onCaught(){if(P.dead)return;P.dead=true;P.canMove=false;SOUND.sting();$('dmg').style.opacity=1;
   fade(1,0.6,()=>endGame('retained'));}
@@ -969,7 +945,7 @@ NOTE: 'fear response' sessions priced 3x. Flag the runners — they always sell 
 
 Thank you for your contribution.`);});
   addItem(6.4,-9.5,1.8,'Drawer (exam room)',()=>{giveKey('staff','Staff keycard');const d=WORLD.doors.find(x=>x.id==='d_obs');if(d){d.keyNeed='staff';}PROFILER.readNotes++;},true);
-  addItem(0,-18.2,1.8,'Spare battery (break room)',()=>{INV.batteries++;P.batt=clamp(P.batt+0.6,0,1);updateInv();SOUND.pickup();say('','Flashlight battery. +charge.',3);},true);
+  addItem(0,-18.2,1.8,'A staff mug, still warm',()=>{SOUND.pickup();say('','The coffee is still warm. Someone was here a minute ago. Where did they go?',5);},true);
   setObjective('Find the staff keycard. (Try the exam room.)');
 }
 function paralysis(){if(P.dead||P.hiding)return;P.lying=true;P.canMove=false;STORY.deg=0.62;
@@ -1054,7 +1030,7 @@ window.addEventListener('keydown',e=>{
   if(['Space','Tab','ArrowUp','ArrowDown'].includes(e.code))e.preventDefault();
   keys[e.code]=true;
   if(!started)return;
-  if(e.code==='KeyF'){P.flashOn=!P.flashOn;PROFILER.flashToggles++;}
+  /* flashlight removed (FtF: lit interiors, no survival torch) */
   if(e.code==='KeyE')interact();
   if(e.code==='KeyM')SOUND.toggleMute();
   if(e.code==='Tab')togglePhone();
@@ -1075,24 +1051,16 @@ document.addEventListener('click',()=>{if(!started)return;if(noteOpen){closeNote
 let last=0;
 function tick(ms){requestAnimationFrame(tick);const t=ms/1000;let dt=Math.min(0.05,t-last);last=t;if(dt<0)dt=0;
   if(!started){renderer&&composer&&composer.render();return;}
-  // dialogue talk anim on visible character
-  ['vane','renata'].forEach(k=>{const c=CH[k];if(c&&c.root.visible){c.p.talk=(subT>0&&$('sub').innerHTML.indexOf(k==='vane'?'MARCUS':'RENATA')>=0)?(0.4+0.3*Math.abs(Math.sin(t*22))):lerp(c.p.talk,0,Math.min(1,dt*10));c.p._redraw=true;}});
+  // dialogue talk anim (face redraw is throttled inside rig.update)
+  ['vane','renata'].forEach(k=>{const c=CH[k];if(c&&c.root.visible){c.p.talk=(subT>0&&$('sub').innerHTML.indexOf(k==='vane'?'MARCUS':'RENATA')>=0)?(0.4+0.3*Math.abs(Math.sin(t*22))):lerp(c.p.talk,0,Math.min(1,dt*10));}});
   if(!noteOpen&&!phoneOpen&&!journalOpen){updatePlayer(dt,t);checkTriggers();updateVisitor(dt,t);}
-  // animate idle characters
   for(const k in CH){const c=CH[k];if(c&&c.root.visible&&k!=='subject')c.update(dt,t,[P.pos[0],P.pos[1],P.pos[2]]);}
-  // flicker lights
-  for(const fl of WORLD.flickers){if(Math.random()<0.05){fl.light.intensity=fl.base*rnd(0.2,0.7);}else fl.light.intensity=lerp(fl.light.intensity,fl.base*fl.on,0.4);}
-  // hud bars
-  $('fillFlash').firstElementChild.style.width=(P.batt*100)+'%';
-  $('fillStam').firstElementChild.style.width=(P.stam*100)+'%';
-  $('fillSan').firstElementChild.style.width=(P.san*100)+'%';
-  // prompt
-  if(hover){$('prompt').innerHTML='<b>E</b>'+(hover.label||(hover.door?hover.label:''));$('prompt').style.opacity=1;$('cross').classList.add('act');}
+  // PERF: cull point lights — only those near the player stay on (forward renderer shades every visible light)
+  if(PLIGHTS.length){const px=P.pos[0],pz=P.pos[2];for(let i=0;i<PLIGHTS.length;i++){const L=PLIGHTS[i],dx=L.position.x-px,dz=L.position.z-pz;L.visible=(dx*dx+dz*dz)<160;}}
+  for(const fl of WORLD.flickers){if(!fl.light.visible)continue;if(Math.random()<0.05)fl.light.intensity=fl.base*rnd(0.2,0.7);else fl.light.intensity=lerp(fl.light.intensity,fl.base*fl.on,0.4);}
+  if(hover){$('prompt').innerHTML='<b>E</b>'+(hover.label||'');$('prompt').style.opacity=1;$('cross').classList.add('act');}
   else{$('prompt').style.opacity=0;$('cross').classList.remove('act');}
   if(subT>0){subT-=dt;if(subT<=0)$('sub').style.opacity=0;}
-  // heartbeat tie to dread
-  const dr=visitorDread();if(dr>0.25&&!SOUND._hb){SOUND._hb=1;SOUND.heartbeat(60+dr*70);} else if(dr<=0.1&&SOUND._hb){SOUND._hb=0;SOUND.stopHeart();}
-  // post uniforms
   if(vhsPass){vhsPass.uniforms.uTime.value=t;vhsPass.uniforms.uRes.value.set(innerWidth,innerHeight);}
   if(composer)composer.render();else renderer.render(scene,camera);
 }
@@ -1109,7 +1077,7 @@ function boot(){
   initThree();$('loadbar').firstElementChild.style.width='35%';
   buildMaterials();$('loadbar').firstElementChild.style.width='55%';
   buildClinic();$('loadbar').firstElementChild.style.width='75%';
-  buildCharacters();$('loadbar').firstElementChild.style.width='88%';
+  buildCharacters();scene.traverse(o=>{if(o.isPointLight&&o!==camFill)PLIGHTS.push(o);});$('loadbar').firstElementChild.style.width='88%';
   buildStory();updateInv();$('loadbar').firstElementChild.style.width='100%';
   const v=PROFILER.visits();if(v>0){$('retmsg').style.display='block';$('retmsg').textContent='ASHGROVE WELLNESS — prior record located. Welcome back, subject.';}
   setTimeout(()=>{$('loading').style.display='none';$('start').style.display='flex';},400);
