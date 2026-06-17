@@ -481,80 +481,220 @@ function buildHuman(opt){
 const H=3.0;
 function buildClinic(){
   WORLD.group=new THREE.Group();scene.add(WORLD.group);
-  /* LOBBY / WAITING  centered (0,9) 14x12, open north (gap to hall) */
-  roomShell(0,9,14,12,H,{n:false,ng:[[0,2.4]]},MATS.carpet);
-  // re-add north wall with the doorway gap
-  wallRun('z',3,-7,7,H,[[0,2.4]]);
+  /* ===== OUTER SHELL (containment ring so you can't wander into the void) ===== */
+  box(MATS.wallGrime,-1,H/2,19,36,H,0.4,{uv:0.4});
+  box(MATS.wallGrime,-1,H/2,-39,36,H,0.4,{uv:0.4});
+  box(MATS.wallGrime,-19,H/2,-10,0.4,H,58,{uv:0.4});
+  box(MATS.wallGrime,17,H/2,-10,0.4,H,58,{uv:0.4});
+
+  /* ===== B_LOBBY (0,9) 14x12 — N gap->hall, S gap->vestibule, E gap->intake ===== */
+  roomShell(0,9,14,12,H,{n:false,ng:[[0,2.4]], s:false,sg:[[0,2.4]], e:false,eg:[[9,2.0]]},MATS.carpet);
   ceilLight(0,8,0xcfd2c0,1.0,12,true,false);ceilLight(-4,12,0xcfd2c0,0.8,10,false,true);ceilLight(4,12,0xcfd2c0,0.8,10,false,true);
   propDesk(-3.5,5,3.4,1.2);propFishtank(4.6,5,0);
   for(const cx of[-5,-3.6,3.6,5])propChair(cx,12.5,Math.PI);
   for(const cx of[-5,-3.6,3.6,5])propChair(cx,7.6,0);
   propPoster(signMat([{t:'SLEEP',sz:34},{t:'WELL',sz:34}]),-6.9,1.8,9,Math.PI/2,1.2,1.4);
-  propPoster(signMat([{t:'ASHGROVE',sz:22},{t:'SLEEP CTR',sz:20}],'#15302a','#bfe8ff'),0,2.3,14.9,Math.PI,2.4,1.0);
-  deco(MATS.exit,0,2.6,3.2,1.0,0.3,0.05);
 
-  /* MAIN HALL A  x[-1.5,1.5] z[-15,3] */
+  /* ===== A_VESTIBULE (0,16.5) 8x4 — front doors ===== */
+  roomShell(0,16.5,8,4,H,{n:false,ng:[[0,2.4]],s:false,sg:[[0,2.4]]},MATS.tile,MATS.ceil,MATS.tile);
+  ceilLight(0,16.5,0xbfc8d0,0.7,8,false,true);
+  deco(MATS.exit,0,2.6,18.4,1.0,0.3,0.05);deco(MATS.carpet,0,0.06,16.5,2.0,0.04,1.2);
+  cyl(MATS.metal,3.2,0.6,17.4,0.08,0.10,1.2,10);propChair(-3.2,16.5,0);
+  propPoster(signMat([{t:'ASHGROVE',sz:22},{t:'SLEEP CTR',sz:18}],'#15302a','#bfe8ff'),0,2.3,18.45,Math.PI,2.4,1.0);
+  propPoster(signMat([{t:'MISSING',sz:20},{t:'R. ORTIZ?',sz:18}],'#d8d2c0','#552'),3.7,1.7,16.5,-Math.PI/2,0.9,1.1);
+  addDoor(0,14.5,'x','d_front');
+
+  /* ===== C_INTAKE (8.5,9) 5x8 open west ===== */
+  roomShell(8.5,9,5,8,H,{w:true},MATS.carpet);
+  ceilLight(8.5,7,0xcfd2c0,0.8,8,false,false);ceilLight(8.5,11,0xffe6b0,0.4,4,false,true);
+  propDesk(8.5,11.5,2.6,1.1);propChair(8.5,12.6,Math.PI);propChair(7.4,11.5,Math.PI/2);
+  box(MATS.metal,10.3,0.8,7.5,0.6,1.6,1.0,{uv:1});cyl(MATS.glass,10.4,0.9,11.8,0.18,0.18,0.6,12);
+  propPoster(signMat([{t:'INTAKE',sz:28},{t:'check-in',sz:16}]),8.5,2.2,5.1,0,1.4,0.7);
+  WORLD.hideSpots.push({x:8.5,z:11.9,r:1.0,kind:'desk',id:'desk_intake'});
+
+  /* ===== D_HALL_NORTH x[-1.5,1.5] z[-15,3] — gaps z=1.5,-3,-8,-13 ; no end wall (break serves) ===== */
   deco(MATS.floor,0,0,-6,3,0.1,18,{uv:0.6});deco(MATS.ceil,0,H,-6,3,0.1,18,{});
-  wallRun('x',1.5,-15,3,H,[[-3,1.7],[-8,1.7],[-13,1.7]]);   // east gaps: r3, exam, observation hall
-  wallRun('x',-1.5,-15,3,H,[[-3,1.7],[-8,1.7],[-13,1.7]]);  // west gaps: bathroom, r4, records
-  wallRun('z',-15,-1.5,1.5,H);
-  for(let i=0;i<7;i++)ceilLight(0,1-i*2.6,0xc8ccb6,0.7,6,i===2||i===5,true);
-  propPoster(signMat([{t:'ROOMS',sz:24},{t:'1 — 5  →',sz:20}]),1.46,2.3,0.5,-Math.PI/2,0.8,0.6);
+  wallRun('x', 1.5,-15,3,H,[[1.5,1.7],[-3,1.7],[-8,1.7],[-13,1.7]]);
+  wallRun('x',-1.5,-15,3,H,[[1.5,1.7],[-3,1.7],[-8,1.7],[-13,1.7]]);
+  for(let i=0;i<7;i++)ceilLight(0,1-i*2.6,0xc8ccb6,0.7,6,(i===2||i===5),true);
+  propPoster(signMat([{t:'ROOMS',sz:24},{t:'1 — 6',sz:20}]),1.46,2.3,2.4,-Math.PI/2,0.8,0.6);
 
-  /* ROOM 3 (yours) east (4.2,-3) 5x5 open west */
-  roomShell(4.2,-3,5,5,H,{w:true},MATS.floor);ceilLight(4.2,-3,0x9fb6c8,0.7,7,true,false);
-  propBed(4.6,-3,0);propMonitor(6.3,-4.2);propDesk(2.6,-4.2,0.9,0.7);
-  deco(MATS.mirror,6.55,1.6,-1.6,0.08,1.7,2.4);      // one-way mirror -> observation
-  deco(MATS.metal,5.6,2.7,-1.1,0.4,0.3,0.3);const rl=new THREE.PointLight(0xff2222,0.5,2,2);rl.position.set(5.6,2.6,-1.1);WORLD.group.add(rl);
-  deco(MATS.redlight,5.42,2.7,-1.0,0.06,0.06,0.06);
-  propVent(6.6,2.3,-3,-Math.PI/2);
+  /* ===== E_ROOM1 (4.2,1.5) open W ; E_ROOM2 (-4.2,1.5) open E ===== */
+  roomShell(4.2,1.5,5,4,H,{w:true},MATS.floor);ceilLight(4.2,1.5,0x9fb6c8,0.6,7,false,true);
+  propBed(4.6,1.5,0);propMonitor(6.3,0.3);propDesk(2.6,0.4,0.9,0.7);deco(MATS.gown,4.6,0.72,1.5,0.5,0.1,0.4);propBox(6.0,2.6);
+  addDoor(1.5,1.5,'z','d_r1');WORLD.hideSpots.push({x:4.6,z:1.5,r:1.3,kind:'bed',id:'bed1'});
+  roomShell(-4.2,1.5,5,4,H,{e:true},MATS.floor);ceilLight(-4.2,1.5,0x9fb6c8,0.6,7,false,true);
+  propBed(-4.6,1.5,Math.PI);propMonitor(-6.3,0.3);propDesk(-2.6,0.4,0.9,0.7);propVent(-6.6,2.3,1.5,Math.PI/2);
+  addDoor(-1.5,1.5,'z','d_r2');WORLD.hideSpots.push({x:-4.6,z:1.5,r:1.3,kind:'bed',id:'bed2'});
 
-  /* EXAM ROOM east (4.2,-8) 5x5 open west */
-  roomShell(4.2,-8,5,5,H,{w:true},MATS.tile,MATS.ceil,MATS.tile);ceilLight(4.2,-8,0xbfe0e8,0.9,7,false,true);
+  /* ===== E_ROOM3 (yours) (4.2,-3) open W + E gap to room5 ===== */
+  roomShell(4.2,-3,5,5,H,{w:true,eg:[[-3,1.7]]},MATS.floor);ceilLight(4.2,-3,0x9fb6c8,0.7,7,true,false);
+  propBed(4.6,-3,0);propMonitor(6.3,-4.4);propDesk(2.6,-4.4,0.9,0.7);
+  deco(MATS.metal,5.6,2.7,-1.1,0.4,0.3,0.3);{const rl=new THREE.PointLight(0xff2222,0.5,2,2);rl.position.set(5.6,2.6,-1.1);WORLD.group.add(rl);}deco(MATS.redlight,5.42,2.7,-1.0,0.06,0.06,0.06);
+  WORLD.hideSpots.push({x:4.6,z:-3,r:1.3,kind:'bed',id:'bed3'});
+
+  /* ===== E_ROOM5 (8.6,-3) — open W, shares footprint with room3 (direct) ===== */
+  roomShell(8.6,-3,5,5,H,{w:true},MATS.floor);ceilLight(8.6,-3,0x9fb6c8,0.6,7,false,true);
+  propBed(9.0,-3,0);propMonitor(10.6,-4.4);propDesk(7.0,-4.4,0.9,0.7);
+  propPoster(signMat([{t:'MY',sz:18},{t:'DREAM',sz:18},{t:'HOUSE',sz:16}],'#e8e4d0','#446'),11.0,1.6,-3,-Math.PI/2,0.7,0.8);
+  propVent(11.0,2.3,-1.5,-Math.PI/2);
+  WORLD.hideSpots.push({x:9.0,z:-3,r:1.3,kind:'bed',id:'bed5'});
+  addItem(7.0,-4.4,1.6,'Spare battery',()=>{INV.batteries++;P.batt=clamp(P.batt+0.6,0,1);updateInv();SOUND.pickup();say('','Flashlight battery. +charge.',3);},true);
+
+  /* ===== F_BATHROOM (-4.2,-3) open E + W gap to courtyard ===== */
+  roomShell(-4.2,-3,5,4,H,{e:true,wg:[[-3,1.7]]},MATS.tile,MATS.ceil,MATS.tile);ceilLight(-4.2,-3,0xbfd0c8,0.6,6,false,true);
+  propSink(-6.1,-3.6);propToilet(-6.0,-2.0);propVent(-2.0,2.2,-3,Math.PI/2);
+
+  /* ===== S_COURTYARD (-12.5,-3) — open E, shares footprint with bathroom (direct) ===== */
+  roomShell(-12.5,-3,9,5,H,{e:true},MATS.floor);ceilLight(-12.5,-3,0x88a0b8,0.5,8,false,true);
+  deco(MATS.glass,-16.9,1.7,-3,0.08,2.2,3.2);deco(MATS.metal,-16.88,1.7,-3,0.02,2.2,3.2);
+  cyl(MATS.dark,-12.5,0.5,-1.4,0.06,0.06,1.0,8);sph(MATS.dark,-12.5,1.1,-1.4,0.4,8);
+  propChair(-13.6,-3,Math.PI/2);propChair(-11.4,-3,-Math.PI/2);
+  box(MATS.dark,-13.5,1.1,-5.0,1.0,2.2,0.8,{uv:1});
+  {const glow=new THREE.PointLight(0x6a86b0,0.5,8,2);glow.position.set(-18.5,1.8,-3);WORLD.group.add(glow);}
+  WORLD.hideSpots.push({x:-13.5,z:-5.0,r:0.8,kind:'vending',id:'vend_court'});
+
+  /* ===== G_EXAM (4.2,-8) open W + E gap to sleep lab (staff door) ===== */
+  roomShell(4.2,-8,5,5,H,{w:true,eg:[[-8,1.7]]},MATS.tile,MATS.ceil,MATS.tile);ceilLight(4.2,-8,0xbfe0e8,0.9,7,false,true);
   propGurney(4.4,-8,0);propMonitor(6.3,-9.5);propShelf(4.2,-10,0,3);
-  deco(MATS.metal,3.0,1.2,-9.6,0.6,1.4,0.4);          // equipment cabinet
-  propSink(6.4,-6.6);
+  deco(MATS.metal,3.0,1.2,-9.6,0.6,1.4,0.4);propSink(2.4,-6.6);
+  addDoor(6.7,-8,'z','d_lab',true,'CONTROL — badge only.');
 
-  /* OBSERVATION east (4.6,-13) 6x4 open west (locked door) */
+  /* ===== H_SLEEPLAB (8.8,-8) open W + E gap to MRI ===== */
+  roomShell(8.8,-8,5,5,H,{w:true,e:true},MATS.floor,MATS.ceil);ceilLight(8.8,-8,0x6fae86,0.6,7,true,false);
+  propDesk(8.8,-10.0,3.4,0.9);
+  for(let i=0;i<5;i++){deco(MATS.screen,7.4+i*0.7,1.7,-10.3,0.1,0.6,0.55);const L=new THREE.PointLight(0x2f8f5a,0.25,3,2);L.position.set(7.4+i*0.7,1.7,-10.0);WORLD.group.add(L);}
+  box(MATS.metal,11.1,1.4,-9.5,0.2,2.0,0.8,{uv:1});propChair(8.8,-8.6,0);box(MATS.dark,9.4,0.9,-6.4,0.6,1.8,0.6,{uv:1});
+  propPoster(signMat([{t:'CYCLE1 ok',sz:13},{t:'CYCLE2 +',sz:12},{t:'GEL rot',sz:12}]),8.8,2.0,-5.6,0,1.6,1.0);propVent(8.8,2.3,-5.6,0);
+  WORLD.hideSpots.push({x:8.8,z:-9.6,r:1.0,kind:'desk',id:'desk_lab'});
+  addItem(8.8,-10.0,1.8,'The scoring clipboard',()=>openNote('POLYSOMNOGRAPH — SESSION 3',
+`CH3  EEG ............ spindle / spike present
+CH3  HR ............. 96 climbing  (good)
+FEAR INDEX ......... rising — DO NOT intervene
+GEL ................ rotate compound (tolerance)
+NOTE: subject reads high. Keep the lights low.`));
+
+  /* ===== R_MRI (13,-8) — open W, shares footprint with sleep lab (direct, deep staff) ===== */
+  roomShell(13,-8,6,6,H,{w:true},MATS.tile,MATS.ceil,MATS.tile);ceilLight(13,-8,0x9fb0c0,0.6,8,false,true);
+  propGurney(13,-8,0);deco(MATS.metal,13,0.95,-7.4,0.6,0.05,0.1);deco(MATS.metal,13,0.95,-8.6,0.6,0.05,0.1);
+  cyl(MATS.metal,13,1.3,-10.2,1.2,1.2,1.4,16);cyl(MATS.dark,13,1.3,-10.2,0.6,0.6,1.5,16);
+  propDesk(15.2,-8,1.2,1.6);propMonitor(15.4,-6.6);propShelf(13,-5.4,0,3);
+  deco(MATS.dark,11.2,1.3,-8,0.5,0.9,0.1);propVent(15.6,2.3,-8,-Math.PI/2);
+  WORLD.hideSpots.push({x:13,z:-10.6,r:0.9,kind:'machine',id:'mri'});
+
+  /* ===== E_ROOM4 (the long subject) (-4.2,-8) open E (locked) + W gap to room6 ===== */
+  roomShell(-4.2,-8,5,5,H,{e:true,wg:[[-8,1.7]]},MATS.floor);ceilLight(-4.2,1.4,0x6a5e54,0.5,6,false,true);
+  propBed(-4.6,-8,Math.PI);
+
+  /* ===== E_ROOM6 (-8.6,-8) — open E, shares footprint with room4 (direct) ===== */
+  roomShell(-8.6,-8,5,5,H,{e:true},MATS.floor);ceilLight(-8.6,-8,0x6a6e64,0.5,7,false,true);
+  propBed(-9.0,-8,Math.PI);propChair(-7.2,-9.4,0);propBox(-9.0,-6.4);propShelf(-11.0,-8,Math.PI/2,3);
+  propVent(-11.0,2.3,-8,Math.PI/2);
+  WORLD.hideSpots.push({x:-9.0,z:-8,r:1.3,kind:'bed',id:'bed6'});
+
+  /* ===== Q_NURSES — open counter island in the hall (counters against the walls, center clear) ===== */
+  box(MATS.wood,-1.05,0.9,-10.5,0.5,1.0,0.5,{uv:1});box(MATS.wood,1.05,0.9,-10.5,0.5,1.0,0.5,{uv:1});
+  deco(MATS.screen,-0.7,1.4,-10.5,0.3,0.3,0.05);deco(MATS.screen,0.7,1.4,-10.5,0.3,0.3,0.05);
+  {const L=new THREE.PointLight(0x2f8f5a,0.3,3,2);L.position.set(0,1.4,-10.3);WORLD.group.add(L);}
+  ceilLight(0,-10.5,0xbfe0e8,0.7,7,true,false);
+
+  /* ===== I_OBSERVATION (4.6,-13) open W (staff door) ===== */
   roomShell(4.6,-13,6,4,H,{w:true},MATS.floor);ceilLight(4.6,-13,0x6fae86,0.7,8,true,false);
   propDesk(4.6,-14.4,3.4,0.9);
   for(let i=0;i<5;i++)deco(MATS.screen,3.0+i*0.9,1.7,-14.7,0.1,0.65,0.8);
   for(let i=0;i<5;i++){const L=new THREE.PointLight(0x2f8f5a,0.25,3,2);L.position.set(3.0+i*0.9,1.7,-14.4);WORLD.group.add(L);}
-  for(let i=0;i<4;i++)propShelf(7.2,-12+i*0.0,Math.PI/2,3);
-  deco(MATS.glass,1.65,1.6,-13,0.08,1.7,2.4);          // back of the one-way mirror
-  // door to basement at the far side
-  deco(MATS.door,4.6,1.2,-14.9,1.0,2.4,0.1);
+  propShelf(7.2,-12,Math.PI/2,3);
+  deco(MATS.glass,1.65,1.6,-13,0.08,1.7,2.4);
+  WORLD.hideSpots.push({x:4.6,z:-14.4,r:1.0,kind:'desk',id:'desk_obs'});
+  addItem(4.6,-12.2,1.8,'A key on a hook',()=>giveKey('basement','Basement key'),true);
 
-  /* BATHROOM west (-4.2,-3) 5x4 open east */
-  roomShell(-4.2,-3,5,4,H,{e:true},MATS.tile,MATS.ceil,MATS.tile);ceilLight(-4.2,-3,0xbfd0c8,0.6,6,false,true);
-  propSink(-6.1,-3.6);propToilet(-6.0,-2.0);propVent(-2.0,2.2,-3,Math.PI/2);
-
-  /* ROOM 4 (the long subject) west (-4.2,-8) 5x5 open east (locked) */
-  roomShell(-4.2,-8,5,5,H,{e:true},MATS.floor);ceilLight(-4.2,1.4,0x6a5e54,0.5,6,false,true);
-  propBed(-4.6,-8,Math.PI);  // occupant added as character later
-
-  /* RECORDS / ARCHIVE west (-4.6,-13) 6x4 open east */
+  /* ===== J_RECORDS (-4.6,-13) open E ===== */
   roomShell(-4.6,-13,6,4,H,{e:true},MATS.floor);ceilLight(-4.6,-13,0x9a8e7a,0.6,7,false,true);
-  for(let i=0;i<4;i++)propShelf(-7.2,-14.5+i*0.0,Math.PI/2,4);
-  for(let i=0;i<5;i++)propShelf(-2.4,-14.6+i*0.0,Math.PI/2,4);
-  propBox(-4.6,-12);propBox(-3.8,-12);propDesk(-4.6,-14.2,2.4,0.8);
+  propShelf(-7.0,-13,Math.PI/2,4);propShelf(-6.0,-14.4,0,3);
+  propBox(-6.5,-11.9);propBox(-5.7,-11.9);propDesk(-4.4,-14.3,2.2,0.7);
 
-  /* BREAK ROOM north end of hall, beyond z=-15 — small alcove (-0,-16) */
-  roomShell(0,-17,5,4,H,{s:true,sg:[[0,2.4]]},MATS.floor);ceilLight(0,-17,0xc8ccb6,0.7,6,false,true);
-  wallRun('z',-15,-1.5,1.5,H,[[0,2.4]]); // open the hall end into break room
-  propDesk(0,-18.2,2.0,0.9);propChair(-1.2,-17,0);propChair(1.2,-17,Math.PI);
-  propLocker(-2.2,-16,0,'lk1');propLocker(2.2,-16,0,'lk2');
+  /* ===== K_BREAK (0,-17) 5x4 — S gap->hall, N gap->service corridor ===== */
+  roomShell(0,-17,5,4,H,{s:false,sg:[[0,2.4]], n:true},MATS.floor);ceilLight(0,-17,0xc8ccb6,0.7,6,false,true);
+  propDesk(0,-16.2,2.0,0.9);propLocker(-2.2,-16,0,'lk1');propLocker(2.2,-16,0,'lk2');
+  box(MATS.metal,2.2,1.0,-15.4,0.5,0.4,0.4,{uv:1});box(MATS.metal,-2.2,1.0,-15.4,0.7,2.0,0.7,{uv:1});
+  propPoster(signMat([{t:'NIGHTS',sz:18},{t:'VANE',sz:22}]),0,2.0,-15.1,0,1.4,0.9);
 
-  /* DOORS */
+  /* ===== L_HALL_SOUTH (0,-20.5) 24x3 — S gap->break, W gap->stair, E gap->imaging svc ===== */
+  roomShell(0,-20.5,24,3,H,{sg:[[0,2.4]], ng:[[-4.6,1.7],[8,1.7]], wg:[[-20.5,2.4]], eg:[[-20.5,1.7]]},MATS.floor,MATS.ceil,MATS.wallGrime);
+  for(let i=0;i<6;i++)ceilLight(-10+i*4,-20.5,0xb0b4a0,0.5,6,(i===1||i===4),true);
+  box(MATS.metal,-8,1.4,-21.9,0.6,1.6,0.2,{uv:1});cyl(MATS.metal,-2,0.3,-20.0,0.25,0.25,0.5,10);
+  propBox(6,-19.6);propBox(6.6,-19.6);box(MATS.fabric,9,0.7,-20.5,1.0,1.2,0.8,{uv:1});
+  propPoster(signMat([{t:'← STAIRS',sz:18},{t:'B-LEVEL',sz:14}],'#dddd00','#000'),-11.8,2.2,-20.5,Math.PI/2,1.0,0.9);
+  addDoor(-12,-20.5,'z','d_stair',true,'STAIRS — DOWN. Basement key required.');
+  WORLD.hideSpots.push({x:9,z:-20.5,r:0.9,kind:'bin',id:'bin_svc'});
+
+  /* ===== M_STAIR (-14.5,-20.5) 5x3 — open E to corridor; dead end has the descent trigger ===== */
+  roomShell(-14.5,-20.5,5,3,H,{e:true},MATS.floor,MATS.ceil,MATS.wallGrime);
+  ceilLight(-14.5,-20.5,0xffd0a0,0.45,5,false,true);ceilLight(-16,-20.5,0xff9060,0.35,4,false,true);
+  propPoster(signMat([{t:'DOWN',sz:22},{t:'B-LEVEL',sz:16}],'#2a2a26','#a33'),-14.5,1.6,-21.9,0,1.0,0.9);
+  trigger(-16.2,-20.5,1.6,()=>{ fade(1,1.2,()=>{ P.pos[0]=-6;P.pos[2]=-27.5;scene.fog.density=0.09;fade(0,1.4);say('','The stairs end in cold air and a low hum. B-Level.',5); }); },'descend');
+
+  /* ===== BASEMENT SLAB (separate region; reached by the descend trigger) ===== */
+  /* T_PROCESSING (-6,-28) 6x4 — antechamber */
+  roomShell(-6,-28,6,4,H,{s:false,sg:[[-6,1.7]], w:false,wg:[[-28,1.7]], e:false,eg:[[-28,1.7]]},MATS.floor,MATS.ceil,MATS.wallGrime);
+  ceilLight(-6,-28,0xffcaa0,0.5,6,false,true);
+  box(MATS.metal,-8.4,1.3,-27,0.6,2.0,1.2,{uv:1});propDesk(-6,-26.8,2.0,0.9);propShelf(-3.6,-27,Math.PI/2,4);cyl(MATS.metal,-7,1.1,-28.8,0.3,0.3,0.15,16);
+  addItem(-6,-26.8,1.8,'The dubbing log',()=>openNote('DUPLICATION LOG',
+`OUTBOUND MASTERS — this week: 14
+'FEAR RESPONSE' grade ... priced 3x
+BUYER: [mark only — no name]
+DISPOSE incomplete subjects per policy.`));
+  addDoor(-6,-30,'x','d_cold');
+  addDoor(-3,-28,'z','d_ship');
+  WORLD.hideSpots.push({x:-8.4,z:-27,r:0.9,kind:'rack',id:'rack_proc'});
+
+  /* N_BOILER (-13.5,-32) 9x12 — E gap into T at z=-28 */
+  roomShell(-13.5,-32,9,12,H,{e:false,eg:[[-28,1.7]]},MATS.floor,MATS.ceil,MATS.wallGrime);
+  ceilLight(-13.5,-29,0xffb070,0.5,6,false,true);ceilLight(-13.5,-35,0xffb070,0.45,6,false,true);
+  {const p=new THREE.PointLight(0xff5520,0.4,3,2);p.position.set(-14,1.2,-35);WORLD.group.add(p);}
+  cyl(MATS.metal,-16,1.3,-34.5,0.9,0.9,2.4,16);cyl(MATS.metal,-16,1.3,-31.5,0.9,0.9,2.4,16);
+  propBed(-12.5,-36.5,0);box(MATS.metal,-17.3,1.4,-32,0.2,1.8,1.0,{uv:1});propDesk(-11.5,-30.0,1.8,0.8);
+  addItem(-17.3,-32,1.6,'Main breakers',()=>{say('','You throw the breakers. Somewhere, lights die — or wake.',4);});
+  propPoster(signMat([{t:'DANGER',sz:24},{t:'HIGH',sz:18},{t:'VOLTAGE',sz:16}],'#dddd00','#000'),-17.4,1.7,-30.0,Math.PI/2,0.9,1.0);propVent(-17.3,2.3,-36,Math.PI/2);
+  WORLD.hideSpots.push({x:-16,z:-33.0,r:0.9,kind:'boiler',id:'boiler_n'});
+
+  /* O_COLDSTORAGE (-6,-34) 6x8 — N gap shares z=-30 w/ T (d_cold); E gap into P */
+  roomShell(-6,-34,6,8,H,{n:false,ng:[[-6,1.7]], e:false,eg:[[-34,2.4]]},MATS.floor,MATS.ceil,MATS.wallGrime);
+  ceilLight(-6,-34,0x9fc0d0,0.6,7,true,false);
+  propGurney(-7,-36,0);propGurney(-6,-36.8,0);propGurney(-5,-36,0);
+  propShelf(-7.6,-32,Math.PI/2,4);box(MATS.metal,-4.0,0.9,-32.5,1.6,0.1,0.8,{uv:1});box(MATS.dark,-8.4,1.4,-34,0.3,0.4,0.15,{uv:1});
+  addItem(-6,-36.8,2.0,'The nearest sheet',()=>say('','You lift a corner. You put it back. You know the name from the archive. They were never discharged.',8));
+  propVent(-8.4,2.3,-37,Math.PI/2);
+  addDoor(-3,-34,'z','d_cold_ship');
+  WORLD.hideSpots.push({x:-6,z:-37,r:1.0,kind:'gurney',id:'gurney_cold'});
+
+  /* P_SHIPPING (1.5,-32) 9x12 — W gaps to T (z=-28) and O (z=-34); the dock */
+  roomShell(1.5,-32,9,12,H,{w:false,wg:[[-28,1.7],[-34,2.4]]},MATS.floor,MATS.ceil,MATS.wallGrime);
+  ceilLight(1.5,-29,0xffd0a0,0.6,8,false,true);ceilLight(1.5,-35,0xffd0a0,0.5,8,false,true);
+  {const p=new THREE.PointLight(0xff6030,0.4,5,2);p.position.set(2,1.4,-37);WORLD.group.add(p);}
+  deco(MATS.exit,2,2.6,-37.9,1.0,0.3,0.05);deco(MATS.metal,2,1.5,-37.9,3.0,3.0,0.1);
+  for(let ix=0;ix<3;ix++)for(let iz=0;iz<3;iz++)propBox(0.5+ix*0.6,-35+iz*0.6);
+  box(MATS.metal,4.5,0.5,-30.5,1.2,1.0,1.8,{uv:1});box(MATS.metal,4.5,1.6,-29.5,0.1,2.0,1.0,{uv:1});
+  propDesk(4.5,-35.0,1.8,0.9);
+  addItem(4.5,-35.0,1.8,'Outbound manifest',()=>openNote('ASHGROVE — OUTBOUND',
+`CONTENTS: 14 sessions (master tapes). Buyer reference withheld.
+'fear response' sessions priced 3x. Flag the runners — they sell best.
+Thank you for your contribution.`));
+  propShelf(-2.6,-32,Math.PI/2,4);
+  propPoster(signMat([{t:'SHIPPING',sz:18},{t:'RECEIVING',sz:14}],'#dddd00','#000'),5.8,2.2,-29.0,-Math.PI/2,1.0,0.7);
+  WORLD.hideSpots.push({x:0.5,z:-35,r:1.0,kind:'crates',id:'crates_ship'});
+  WORLD.hideSpots.push({x:4.5,z:-30.5,r:0.9,kind:'forklift',id:'fork_ship'});
+
+  /* ===== DOORS (patient wing) ===== */
   addDoor(1.5,-3,'z','d_r3');
-  addDoor(1.5,-8,'z','d_exam');
-  addDoor(1.5,-13,'z','d_obs',true,'A red card-reader. STAFF ONLY. It is locked.');
+  addDoor(1.5,-13,'z','d_obs',true,'A red card-reader. STAFF ONLY.');
   addDoor(-1.5,-3,'z','d_bath');
   addDoor(-1.5,-8,'z','d_r4',true,'Locked from the outside. Something shifts behind it.');
   addDoor(-1.5,-13,'z','d_rec');
 
-  // hide spots: under your bed
-  WORLD.hideSpots.push({x:4.6,z:-3,r:1.3,kind:'bed',id:'bed3'});
+  /* ===== key needs ===== */
+  ['d_obs','d_lab'].forEach(id=>{const d=WORLD.doors.find(x=>x.id===id);if(d)d.keyNeed='staff';});
+  {const d=WORLD.doors.find(x=>x.id==='d_stair');if(d)d.keyNeed='basement';}
 }
 
 /* =================================================================================================
