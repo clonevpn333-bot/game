@@ -700,7 +700,7 @@ Thank you for your contribution.`));
 /* =================================================================================================
    5) RENDERER / SCENE / CAMERA / LIGHTS / POST
    ================================================================================================= */
-let renderer,scene,camera,composer,vhsPass,hemi,bloomPass,camFill,PLIGHTS=[];
+let renderer,scene,camera,composer,vhsPass,hemi,bloomPass,camFill,PLIGHTS=[],objMarker,objTarget=null;
 function initThree(){
   renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
   renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(1);   // perf: DPR 1 (the VHS filter hides it)
@@ -718,6 +718,9 @@ function initThree(){
   // a soft eye-fill so you're never in pure black (a gentle glow, NOT a flashlight cone)
   camFill=new THREE.PointLight(0xc2ccd6,0.55,6.5,2);camera.add(camFill);
   scene.add(camera);
+  // objective beacon — a soft marker that shows THROUGH walls at your current goal (so you never get lost)
+  objMarker=new THREE.Mesh(new THREE.OctahedronGeometry(0.18),new THREE.MeshBasicMaterial({color:0x8fe0ff,transparent:true,opacity:0.85,depthTest:false,fog:false}));
+  objMarker.renderOrder=999;objMarker.visible=false;scene.add(objMarker);
   // post
   try{
     if(THREE.EffectComposer&&THREE.RenderPass&&THREE.ShaderPass){
@@ -843,7 +846,9 @@ const PROFILER={readNotes:0,totalNotes:0,run:0,hid:0,flashToggles:0,lookDist:0,r
 const STORY={act:0,moved:0,flags:{},deg:0.32,objectives:[]};
 let subT=0;
 function say(spk,txt,dur){$('sub').innerHTML=(spk?'<span class="spk">'+spk+'</span>':'')+txt;$('sub').style.opacity=1;subT=dur||Math.max(2.6,txt.length*0.05);}
-function setObjective(t){STORY.objectives.push(t);$('objt').innerHTML='<span class="tick">'+t+'</span>';renderJournal();}
+function setObjective(t,tx,tz){STORY.objectives.push(t);$('objt').innerHTML='<span class="tick">'+t+'</span>';renderJournal();
+  if(tx!=null){objTarget=[tx,tz];if(objMarker){objMarker.position.set(tx,1.7,tz);objMarker.visible=true;}}
+  else{objTarget=null;if(objMarker)objMarker.visible=false;}}
 function completeObjective(){ /* visual only */ }
 function renderJournal(){$('jbody').innerHTML=STORY.objectives.map((o,i)=>'<div class="o '+(i<STORY.objectives.length-1?'done':'')+'">'+o+'</div>').join('');}
 let noteOpen=false,phoneOpen=false,journalOpen=false;
@@ -877,11 +882,11 @@ function checkTriggers(){if(P.hiding)return;for(const tr of WORLD.triggers){if(t
 function buildStory(){
   phoneMsg('them','did you GET it?? we so need the rent 🙏','9:58 PM');
   phoneMsg('them','text me when youre done. love you','10:01 PM');
-  setObjective('Check in at the reception desk.');
+  setObjective('Check in — talk to the woman at the reception desk.', -3.5,6.4);
 
   addItem(-3.5,6.4,2.6,'Talk to Renata',(it)=>{
     say('RENATA','Eli, right? Easiest twelve hundred bucks you will ever make. Sign the clipboard — page four is the legal stuff, nobody reads it.',6);
-    setObjective('Sign the consent forms on the desk.');
+    setObjective('Sign the consent clipboard on the desk.', -3.5,5);
     addItem(-3.5,5,2.0,'Read and sign the consent',(c)=>{
       openNote('ASHGROVE — CONSENT',
 `PARTICIPANT CONSENT — overnight study
@@ -893,7 +898,7 @@ Subject grants Ashgrove Wellness LLC perpetual, irrevocable rights to all sessio
 
 You sign at the X.`);
       PROFILER.readDisclosure=true;
-      setObjective('Go to Room 3 — down the hall, first door on the right.');
+      setObjective('Go to your room — ROOM 3, down the hall (follow the marker).', 4.2,-3);
       say('RENATA','Marcus runs the nights. He is in Room 3. ...You are in good hands with Marcus.',6);
       CH.vane.root.visible=true;CH.vane.setPos(4.6,-2.4,-Math.PI/2);
     });
@@ -903,22 +908,22 @@ You sign at the X.`);
     say('MARCUS','Eli. Welcome. Sit. This gel is a little cold — everybody says that.',6);
     setTimeout(()=>{CH.vane.p.talk=0;say('MARCUS','Three rules. Stay in the bed. Do not remove the sensors. Press the call button if you need me — I am right behind that glass all night.',8);},6300);
     setTimeout(()=>say('MARCUS','Ever feel like someone is standing in the room when you wake? ...You might tonight. It is the study. Easy money, Eli.',8),14800);
-    setObjective('Get in bed and rest. (Look at the bed, press E)');
+    setObjective('Get in bed and rest — look at the bed and press E.', 4.6,-3);
     addItem(4.6,-3,2.2,'Lie down and sleep',()=>startSleep());
   },'enterR3');
 
   trigger(4.6,-13,2.6,()=>{if(STORY.act<3)return;onObservation();},'enterObs');
-  trigger(0,-16.5,2.0,()=>{if(STORY.act>=3&&!STORY.flags.brk){STORY.flags.brk=true;say('','A break room. A spare flashlight battery on the desk.',4);} },'brk');
+  trigger(0,-16.5,2.0,()=>{if(STORY.act>=3&&!STORY.flags.brk){STORY.flags.brk=true;say('','The staff break room. Someone left in the middle of a meal.',4);} },'brk');
 }
 
 function startSleep(){P.lying=true;P.canMove=false;CH.vane.root.visible=false;
   fade(1,1.4,()=>{SOUND.stopHeart();say('','...',2);
     setTimeout(()=>{
-      P.lying=false;P.canMove=true;STORY.act=3;STORY.deg=0.45;scene.fog.density=0.075;hemi.intensity=0.18;
+      P.lying=false;P.canMove=true;STORY.act=3;STORY.deg=0.45;scene.fog.density=0.07;hemi.intensity=0.32;
       $('phtime').textContent='3:33 AM';
       fade(0,1.6);say('','3:33 AM. You are awake. The room is colder. Your phone buzzed — but you never heard it.',7);
       phoneMsg('them','you up? 🙂','3:33 AM');phoneMsg('them','dont let him wire the IV','3:33 AM');
-      setObjective('Something is wrong. Find a way out.');
+      // (objective is set by placeNight below)
       const dr=WORLD.doors.find(d=>d.id==='d_r3');if(dr)dr.target=1;
       placeNight();
       VIS.active=true;VIS.pos=[0,0,-17];VIS.state='roam';
@@ -948,9 +953,10 @@ The new one (Room 3) reads high on the intake. Keep the lights low.
 NOTE: 'fear response' sessions priced 3x. Flag the runners — they always sell best.
 
 Thank you for your contribution.`);});
-  addItem(6.4,-9.5,1.8,'Drawer (exam room)',()=>{giveKey('staff','Staff keycard');const d=WORLD.doors.find(x=>x.id==='d_obs');if(d){d.keyNeed='staff';}PROFILER.readNotes++;},true);
+  addItem(6.4,-9.5,1.8,'Drawer (exam room)',()=>{giveKey('staff','Staff keycard');const d=WORLD.doors.find(x=>x.id==='d_obs');if(d){d.keyNeed='staff';}PROFILER.readNotes++;
+    setObjective('Use the keycard on the STAFF door — the OBSERVATION room (hall, far right).', 1.5,-13);},true);
   addItem(0,-18.2,1.8,'A staff mug, still warm',()=>{SOUND.pickup();say('','The coffee is still warm. Someone was here a minute ago. Where did they go?',5);},true);
-  setObjective('Find the staff keycard. (Try the exam room.)');
+  setObjective('Find the STAFF keycard — search the Exam Room (hall, right side).', 6.4,-9.5);
   // scripted FtF jumpscares — a sudden presence at the edge of vision, then gone (NOT a stalker)
   trigger(0,-6,2.0,()=>{ if(STORY.act>=3) jumpscare(0,-13.5,0,0.55); },'js1');
   trigger(-4.2,-3,1.6,()=>{ if(STORY.act>=3) jumpscare(-6.2,-3,0,0.5); },'js2');
@@ -968,7 +974,7 @@ function paralysis(){if(P.dead||P.hiding)return;P.lying=true;P.canMove=false;STO
 }
 function onObservation(){if(STORY.flags.obs)return;STORY.flags.obs=true;STORY.act=4;
   say('','The other side of the glass. Monitors. Your empty bed on CAM 3. A wall of tapes — names, dates — and tonight is already recording.',9);
-  setObjective('Find the truth — then get out before he finds you.');
+  setObjective('Read the tapes on the console — learn the truth.', 4.6,-14.4);
   addItem(4.6,-14.4,2.2,'The console and the tapes',()=>openNote('OBSERVATION',
 `CAM 3 — IR — ROOM 3 — BED EMPTY
 
@@ -981,7 +987,7 @@ It is already labeled. It is already recording.`));
   VIS.active=true;VIS.state='hunt';VIS.speed=1.25;
   setTimeout(()=>{CH.vane.root.visible=true;CH.vane.setPos(4.6,-11.5,0);CH.vane.p.pallor=0.5;CH.vane.p._redraw=true;
     say('MARCUS','You were not supposed to be up yet. But honestly? This is better. The ones who run always give us the best tape.',9);
-    setObjective('RUN. Back to the lobby and out the front doors.');
+    setObjective('RUN — back to the LOBBY and out the front doors.', 0,13.5);
     addItem(0,13.5,2.8,'The front doors',()=>endGame('discharged'),true);
   },9000);
 }
@@ -1065,6 +1071,7 @@ function tick(ms){requestAnimationFrame(tick);const t=ms/1000;let dt=Math.min(0.
   for(const k in CH){const c=CH[k];if(c&&c.root.visible&&k!=='subject')c.update(dt,t,[P.pos[0],P.pos[1],P.pos[2]]);}
   // PERF: cull point lights — only those near the player stay on (forward renderer shades every visible light)
   if(PLIGHTS.length){const px=P.pos[0],pz=P.pos[2];for(let i=0;i<PLIGHTS.length;i++){const L=PLIGHTS[i],dx=L.position.x-px,dz=L.position.z-pz;L.visible=(dx*dx+dz*dz)<160;}}
+  if(objMarker&&objMarker.visible){objMarker.rotation.y+=dt*1.8;objMarker.position.y=1.7+Math.sin(t*3)*0.12;}
   for(const fl of WORLD.flickers){if(!fl.light.visible)continue;if(Math.random()<0.05)fl.light.intensity=fl.base*rnd(0.2,0.7);else fl.light.intensity=lerp(fl.light.intensity,fl.base*fl.on,0.4);}
   if(hover){$('prompt').innerHTML='<b>E</b>'+(hover.label||'');$('prompt').style.opacity=1;$('cross').classList.add('act');}
   else{$('prompt').style.opacity=0;$('cross').classList.remove('act');}
