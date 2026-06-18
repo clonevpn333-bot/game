@@ -58,11 +58,19 @@ const sandbox = {
 };
 sandbox.window.requestAnimationFrame = sandbox.requestAnimationFrame;
 
-// ---- load all modules in dependency order ---------------------------
-const root = path.join(__dirname, '..', 'js');
-const files = ['config.js', 'utils.js', 'input.js', 'save.js', 'entities.js', 'rounds.js', 'ui.js', 'game.js'];
+// ---- extract the inlined game scripts from the single-file index.html
+const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+const start = html.indexOf('<!-- GAME:START');
+const end = html.indexOf('<!-- GAME:END');
+if (start < 0 || end < 0) throw new Error('GAME markers not found in index.html');
+const region = html.slice(start, end);
 let code = '';
-for (const f of files) code += fs.readFileSync(path.join(root, f), 'utf8') + '\n;\n';
+const re = /<script>([\s\S]*?)<\/script>/g;
+let m, blocks = 0;
+while ((m = re.exec(region))) { code += m[1] + '\n;\n'; blocks++; }
+if (blocks < 8) throw new Error('expected >=8 inlined game scripts, found ' + blocks);
+if (!code.includes('const CFG') || !code.includes('class Bean'))
+    throw new Error('inlined scripts missing core definitions');
 
 // ---- driver appended into the same scope ----------------------------
 code += `

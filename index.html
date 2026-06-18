@@ -4,7 +4,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bean Royale — a Fall Guys tribute</title>
-    <link rel="stylesheet" href="css/style.css">
+    <!-- ================================================================
+         BEAN ROYALE — single-file build.
+         The whole game (styles + all 8 modules) lives in this one file.
+         Just open it in a browser. No build step, no dependencies.
+         ================================================================ -->
+    <style>
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: #1a1030;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+    user-select: none;
+}
+
+#gc {
+    display: block;
+    cursor: pointer;
+    background: #5ad1ff;
+    /* Scale to fit viewport while keeping 16:9 */
+    max-width: 100vw;
+    max-height: 100vh;
+    aspect-ratio: 16 / 9;
+    box-shadow: 0 14px 60px rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+}
+
+/* Loading screen shown before the canvas is ready */
+#loading {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(160deg, #6a5cff 0%, #a24bd6 50%, #ff5fa2 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    z-index: 9999;
+}
+
+#loading h1 {
+    font-size: 4rem;
+    letter-spacing: 0.12em;
+    margin-bottom: 1rem;
+    color: #ffd23f;
+    text-shadow: 0 4px 0 #2a1c4a;
+}
+
+#loading p {
+    font-size: 1rem;
+    color: #ffe9c2;
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0; }
+}
+    </style>
 </head>
 <body>
 
@@ -15,18 +82,2467 @@
 
 <canvas id="gc"></canvas>
 
-<!-- Scripts loaded in dependency order -->
-<script src="js/config.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/input.js"></script>
-<script src="js/save.js"></script>
-<script src="js/entities.js"></script>
-<script src="js/rounds.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/game.js"></script>
+<!-- GAME:START  (modules inlined in dependency order; shared global scope) -->
+<script>
+/* =================== js/config.js =================== */
+'use strict';
+
+/* =====================================================================
+   BEAN ROYALE — a Fall Guys: Ultimate Knockout tribute
+   ---------------------------------------------------------------------
+   config.js — all tuning constants + game data (rounds, cosmetics,
+   gestures/emotes, achievements, bean names). Pure data, no DOM.
+   ===================================================================== */
+
+const CFG = {
+    // Canvas (scaled to viewport by CSS, 16:9)
+    W: 1280,
+    H: 720,
+
+    // ---- Bean physics -------------------------------------------------
+    BEAN_R:       17,      // body radius (px)
+    RUN_SPEED:    232,     // px/s ground running
+    ACCEL:        2000,    // px/s^2 toward desired velocity
+    FRICTION:     1700,    // px/s^2 decel when no input
+    AIR_CONTROL:  0.55,    // steering multiplier while airborne
+
+    JUMP_V:       430,     // initial vertical (z) velocity px/s
+    GRAVITY:      1350,    // z gravity px/s^2
+
+    DIVE_SPEED:   430,     // forward burst speed
+    DIVE_TIME:    0.42,    // seconds of dive lunge
+    DIVE_RECOVER: 0.40,    // prone time after landing a dive (no control)
+    DIVE_CD:      0.25,    // cooldown before diving again
+    DIVE_HOP:     150,     // small z hop given by a dive
+
+    BOUNCE_V:     760,     // bounce-pad launch velocity (z)
+
+    GRAB_RANGE:   42,      // reach to grab another bean
+    GRAB_TIME:    1.0,     // how long a grab holds
+
+    // ---- Ragdoll ------------------------------------------------------
+    RAGDOLL_FRICTION: 950, // slowdown while ragdolling
+
+    // ---- Show / field -------------------------------------------------
+    FIELD_SIZE:   20,      // total beans at the start of a show (you + 19)
+
+    // ---- UI -------------------------------------------------------------
+    INTRO_TIME:   3.6,     // round name card duration (s)
+    COUNTDOWN:    3,       // "3..2..1..GO"
+    BANNER_TIME:  2.4,     // QUALIFIED / ELIMINATED banner
+    ROUND_MAXTIME: 105,    // hard cap on a race/survival round (s)
+
+    // Persisted-save key
+    SAVE_KEY: 'beanRoyaleSave_v1',
+};
+
+/* =====================================================================
+   PALETTE — UI + slime colors (Fall Guys' bubblegum/neon look)
+   ===================================================================== */
+const PAL = {
+    skyTop:    '#5ad1ff',
+    skyBot:    '#b8f0ff',
+    slime:     '#d23bb0',
+    slimeDark: '#9c1f86',
+    track:     '#7fd0ff',
+    trackEdge: '#4aa3e0',
+    arena:     '#8be0ff',
+    gold:      '#ffd23f',
+    goldDark:  '#e8a200',
+    pink:      '#ff5fa2',
+    purple:    '#7b46d6',
+    ink:       '#2a1c4a',
+    white:     '#ffffff',
+    qualGreen: '#46d36a',
+    elimRed:   '#ff4d6d',
+};
+
+/* =====================================================================
+   COSMETICS — Colours, Patterns, Costumes, Faceplates
+   Real Fall Guys cosmetic names across the rarity tiers.
+   rarity: common | uncommon | rare | epic | legendary
+   ===================================================================== */
+
+const COLORS = [
+    { name: 'Bean White',     hex: '#f2f2f2', rarity: 'common'    },
+    { name: 'Coral Pink',     hex: '#ff7eb6', rarity: 'common'    },
+    { name: 'Sky Blue',       hex: '#6cc6ff', rarity: 'common'    },
+    { name: 'Mellow Yellow',  hex: '#ffd95a', rarity: 'common'    },
+    { name: 'Mint Leaf',      hex: '#74e0a8', rarity: 'uncommon'  },
+    { name: 'Lilac Haze',     hex: '#c79bff', rarity: 'uncommon'  },
+    { name: 'Tangerine',      hex: '#ff9447', rarity: 'uncommon'  },
+    { name: 'Slime Magenta',  hex: '#e0379f', rarity: 'rare'      },
+    { name: 'Electric Teal',  hex: '#23d6c8', rarity: 'rare'      },
+    { name: 'Crimson Crown',  hex: '#e6395a', rarity: 'epic'      },
+    { name: 'Midnight Bean',  hex: '#3b3f6b', rarity: 'epic'      },
+    { name: 'Golden Gleam',   hex: '#ffcf3f', rarity: 'legendary' },
+];
+
+const PATTERNS = [
+    { name: 'Plain',          type: 'solid',  rarity: 'common'    },
+    { name: 'Pinstripe',      type: 'stripes',rarity: 'common'    },
+    { name: 'Polka Pop',      type: 'spots',  rarity: 'common'    },
+    { name: 'Checkerboard',   type: 'check',  rarity: 'uncommon'  },
+    { name: 'Commando Camo',  type: 'camo',   rarity: 'uncommon'  },
+    { name: 'Tiger Stripe',   type: 'tiger',  rarity: 'rare'      },
+    { name: 'Star Spangle',   type: 'star',   rarity: 'rare'      },
+    { name: 'Tie-Dye Dream',  type: 'tiedye', rarity: 'epic'      },
+    { name: 'Galaxy Swirl',   type: 'galaxy', rarity: 'legendary' },
+];
+
+// Upper costumes — prop tells the renderer what headgear to draw
+const COSTUMES_UPPER = [
+    { name: 'None',           prop: 'none',   rarity: 'common'    },
+    { name: 'Party Hat',      prop: 'party',  rarity: 'common'    },
+    { name: 'Backwards Cap',  prop: 'cap',    rarity: 'common'    },
+    { name: 'Pigeon',         prop: 'pigeon', rarity: 'uncommon'  },
+    { name: 'Busy Bee',       prop: 'bee',    rarity: 'uncommon'  },
+    { name: 'Cool Cat',       prop: 'cat',    rarity: 'rare'      },
+    { name: 'Pirate Captain', prop: 'pirate', rarity: 'rare'      },
+    { name: 'Dinosaur',       prop: 'dino',   rarity: 'epic'      },
+    { name: 'Crown Royale',   prop: 'crown',  rarity: 'legendary' },
+];
+
+// Lower costumes — prop tells the renderer what to draw at the base
+const COSTUMES_LOWER = [
+    { name: 'None',           prop: 'none',   rarity: 'common'    },
+    { name: 'Sneakers',       prop: 'shoes',  rarity: 'common'    },
+    { name: 'Tutu',           prop: 'tutu',   rarity: 'uncommon'  },
+    { name: 'Dino Tail',      prop: 'tail',   rarity: 'rare'      },
+    { name: 'Rocket Boots',   prop: 'rocket', rarity: 'epic'      },
+    { name: 'Golden Greaves', prop: 'gold',   rarity: 'legendary' },
+];
+
+const FACEPLATES = [
+    { name: 'Classic Visor',  visor: '#3fd2ff', rarity: 'common'    },
+    { name: 'Rosy Cheeks',    visor: '#ff8fb0', rarity: 'common'    },
+    { name: 'Cyber Shades',   visor: '#23e0a0', rarity: 'uncommon'  },
+    { name: 'Sunset Glow',    visor: '#ff9a3f', rarity: 'rare'      },
+    { name: 'Royal Amethyst', visor: '#b06bff', rarity: 'epic'      },
+    { name: 'Gold Reflect',   visor: '#ffd23f', rarity: 'legendary' },
+];
+
+/* =====================================================================
+   GESTURES / EMOTES
+   Each maps to an animation + a "bean sound" audio cue + tactical note.
+   anim: wave | dance | crouch | think | flex | spin | point | heart
+   ===================================================================== */
+const EMOTES = [
+    { name: 'Wave',          anim: 'wave',   rarity: 'common',    sound: 'cheerful bean chirp',     note: 'Friendly greeting at the start gate.' },
+    { name: 'Chicken Dance', anim: 'dance',  rarity: 'common',    sound: 'clucky squawk loop',      note: 'Classic celebration / time-waster.' },
+    { name: 'The Crouch',    anim: 'crouch', rarity: 'common',    sound: 'squeaky bob',             note: 'The infamous taunt over a fallen rival.' },
+    { name: 'Thinking',      anim: 'think',  rarity: 'uncommon',  sound: 'pensive hum',             note: 'Bait a Perfect Match / fake hesitation.' },
+    { name: 'Flex',          anim: 'flex',   rarity: 'uncommon',  sound: 'grunty flex puff',        note: 'Intimidate before a grab duel.' },
+    { name: 'Spin to Win',   anim: 'spin',   rarity: 'rare',      sound: 'whirling whee!',          note: 'Showboat after qualifying.' },
+    { name: 'You! There!',   anim: 'point',  rarity: 'rare',      sound: 'accusing beep',           note: 'Call out a door / direct teammates.' },
+    { name: 'Bean Hearts',   anim: 'heart',  rarity: 'epic',      sound: 'twinkly aww',             note: 'Wholesome finish-line flex.' },
+];
+
+/* =====================================================================
+   ACHIEVEMENTS / TROPHIES (cross-platform)
+   ===================================================================== */
+const ACHIEVEMENTS = [
+    { id: 'first_qual',  name: 'Off the Mark',  desc: 'Qualify from your very first round.' },
+    { id: 'crowned',     name: 'Winner Winner', desc: 'Win a Show and claim the Crown.' },
+    { id: 'big_tease',   name: 'Big Tease',     desc: 'Perform a gesture moments before qualifying in 1st.' },
+    { id: 'infallible',  name: 'Infallible',    desc: 'Win 5 Shows in a row.' },
+    { id: 'head_turner', name: 'Head Turner',   desc: 'Equip a Legendary Colour, Pattern, Faceplate and Costume at once.' },
+    { id: 'flawless',    name: 'Flawless',      desc: 'Win a Show without ever being ragdolled.' },
+    { id: 'survivor',    name: 'Last Bean Standing', desc: 'Survive a Survival round without falling.' },
+];
+
+/* =====================================================================
+   ROUND DEFINITIONS — the Show is an ordered list of these.
+   category: Race | Survival | Final  (Team / Hunt / Logic exist in the
+   real game; this tribute ships the Race/Survival/Final pillars.)
+   build: name of the builder in Rounds.builders
+   ===================================================================== */
+const SHOW = [
+    {
+        id: 'door_dash',
+        name: 'Door Dash',
+        category: 'Race',
+        tagline: 'Smash the fakes, dodge the duds — first to the finish flies through!',
+        build: 'doorDash',
+        qualify: 12,
+    },
+    {
+        id: 'whirlygig',
+        name: 'The Whirlygig',
+        category: 'Race',
+        tagline: 'Spinning bars and swinging hammers between you and glory.',
+        build: 'whirlygig',
+        qualify: 7,
+    },
+    {
+        id: 'jump_club',
+        name: 'Jump Club',
+        category: 'Survival',
+        tagline: 'Hop the sweeper. Miss the beat, kiss the slime.',
+        build: 'jumpClub',
+        duration: 32,
+    },
+    {
+        id: 'hexagone',
+        name: 'Hex-A-Gone',
+        category: 'Final',
+        tagline: 'The floor is lava-pink. Last bean bouncing takes the Crown!',
+        build: 'hexAGone',
+    },
+];
+
+/* =====================================================================
+   AI BEAN NAMES — random roster flavor
+   ===================================================================== */
+const BEAN_NAMES = [
+    'WobbleGoblin', 'SirFallsALot', 'BeanieSanders', 'TumbleBuns', 'NoodleArms',
+    'JellyLegs', 'CrownChaser', 'GrabbyMcGee', 'YeetMaster', 'SlimeSurfer',
+    'HexHopper', 'DiveBomb', 'FlopHouse', 'BumbleBean', 'RagdollRick',
+    'ZoomZoom', 'GateKeeper', 'WhirlyWanda', 'BounceBoi', 'PerfectMissy',
+    'TailGrabber', 'JumpJunkie', 'StumbleBee', 'LeapFroggo', 'CloudNine',
+    'WigglyPete', 'TopplePop', 'GiddyGus', 'SnoozeBean', 'TurboTofu',
+];
+
+</script>
+<script>
+/* =================== js/utils.js =================== */
+'use strict';
+
+/* =====================================================================
+   utils.js — math, RNG, geometry and canvas helpers.
+   ===================================================================== */
+
+const U = {
+    clamp: (v, lo, hi) => Math.max(lo, Math.min(hi, v)),
+    lerp:  (a, b, t)   => a + (b - a) * t,
+    // Move `a` toward `b` by at most `step`
+    approach(a, b, step) {
+        if (a < b) return Math.min(a + step, b);
+        if (a > b) return Math.max(a - step, b);
+        return b;
+    },
+    dist:  (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1),
+    dist2: (x1, y1, x2, y2) => { const dx = x2 - x1, dy = y2 - y1; return dx * dx + dy * dy; },
+    angleTo: (x1, y1, x2, y2) => Math.atan2(y2 - y1, x2 - x1),
+
+    // Shortest signed difference between two angles
+    angleDiff(a, b) {
+        let d = (b - a) % (Math.PI * 2);
+        if (d > Math.PI) d -= Math.PI * 2;
+        if (d < -Math.PI) d += Math.PI * 2;
+        return d;
+    },
+    lerpAngle(a, b, t) { return a + U.angleDiff(a, b) * t; },
+
+    // Random
+    rng:   (lo, hi) => Math.floor(Math.random() * (hi - lo + 1)) + lo,  // int inclusive
+    rngf:  (lo, hi) => lo + Math.random() * (hi - lo),                  // float
+    chance: p => Math.random() < p,
+    pick:  arr => arr[Math.floor(Math.random() * arr.length)],
+    shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    },
+
+    // Geometry
+    rectHit(ax, ay, aw, ah, bx, by, bw, bh) {
+        return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+    },
+    circleHit(x1, y1, r1, x2, y2, r2) {
+        const rr = r1 + r2;
+        return U.dist2(x1, y1, x2, y2) < rr * rr;
+    },
+    // Closest point on segment AB to point P -> {x,y,t}
+    closestOnSeg(px, py, ax, ay, bx, by) {
+        const abx = bx - ax, aby = by - ay;
+        const len2 = abx * abx + aby * aby || 1e-6;
+        let t = ((px - ax) * abx + (py - ay) * aby) / len2;
+        t = U.clamp(t, 0, 1);
+        return { x: ax + abx * t, y: ay + aby * t, t };
+    },
+    rotate(x, y, ang) {
+        const c = Math.cos(ang), s = Math.sin(ang);
+        return { x: x * c - y * s, y: x * s + y * c };
+    },
+
+    // Format seconds -> M:SS
+    timeStr(sec) {
+        sec = Math.max(0, Math.ceil(sec));
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return m + ':' + String(s).padStart(2, '0');
+    },
+
+    // ---- Canvas helpers ----------------------------------------------
+    roundRect(ctx, x, y, w, h, r) {
+        r = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y,     x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x,     y + h, r);
+        ctx.arcTo(x,     y + h, x,     y,     r);
+        ctx.arcTo(x,     y,     x + w, y,     r);
+        ctx.closePath();
+    },
+    // Draw centered text with optional outline
+    text(ctx, str, x, y, font, fill, align = 'center', outline = null, ow = 4) {
+        ctx.font = font;
+        ctx.textAlign = align;
+        ctx.textBaseline = 'middle';
+        if (outline) {
+            ctx.lineWidth = ow;
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = outline;
+            ctx.strokeText(str, x, y);
+        }
+        ctx.fillStyle = fill;
+        ctx.fillText(str, x, y);
+    },
+
+    // Mix two hex colors (#rrggbb) by t
+    mixHex(a, b, t) {
+        const pa = U._hex(a), pb = U._hex(b);
+        const r = Math.round(U.lerp(pa[0], pb[0], t));
+        const g = Math.round(U.lerp(pa[1], pb[1], t));
+        const bl = Math.round(U.lerp(pa[2], pb[2], t));
+        return `rgb(${r},${g},${bl})`;
+    },
+    // Darken/lighten a hex by amount (-1..1)
+    shade(hex, amt) {
+        const p = U._hex(hex);
+        const f = amt < 0 ? 0 : 255;
+        const t = Math.abs(amt);
+        const r = Math.round(U.lerp(p[0], f, t));
+        const g = Math.round(U.lerp(p[1], f, t));
+        const b = Math.round(U.lerp(p[2], f, t));
+        return `rgb(${r},${g},${b})`;
+    },
+    _hex(hex) {
+        let h = hex.replace('#', '');
+        if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+        return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    },
+
+    clone(obj) { return JSON.parse(JSON.stringify(obj)); },
+};
+
+</script>
+<script>
+/* =================== js/input.js =================== */
+'use strict';
+
+/* =====================================================================
+   input.js — keyboard + mouse. Edge-triggered helpers via _justPressed.
+   ===================================================================== */
+
+const Input = {
+    keys: {},
+    _justPressed: {},
+    mouse: { x: 0, y: 0, down: false, clicked: false },
+
+    init(canvas) {
+        const block = ['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+                       'Digit1', 'Digit2', 'Digit3', 'Digit4'];
+        window.addEventListener('keydown', e => {
+            if (!this.keys[e.code]) this._justPressed[e.code] = true;
+            this.keys[e.code] = true;
+            if (block.includes(e.code)) e.preventDefault();
+        });
+        window.addEventListener('keyup', e => { this.keys[e.code] = false; });
+
+        const toLocal = e => {
+            const r = canvas.getBoundingClientRect();
+            this.mouse.x = (e.clientX - r.left) * (CFG.W / r.width);
+            this.mouse.y = (e.clientY - r.top)  * (CFG.H / r.height);
+        };
+        canvas.addEventListener('mousemove', toLocal);
+        canvas.addEventListener('mousedown', e => { toLocal(e); this.mouse.down = true; });
+        canvas.addEventListener('mouseup',   e => { toLocal(e); this.mouse.down = false; this.mouse.clicked = true; });
+    },
+
+    // Call at end of each frame
+    flush() {
+        this._justPressed = {};
+        this.mouse.clicked = false;
+    },
+
+    down(code)    { return !!this.keys[code]; },
+    pressed(code) { return !!this._justPressed[code]; },
+    axis(neg, neg2, pos, pos2) {
+        const n = this.down(neg) || this.down(neg2);
+        const p = this.down(pos) || this.down(pos2);
+        return (n ? -1 : 0) + (p ? 1 : 0);
+    },
+
+    // ---- Named game controls -----------------------------------------
+    get moveX() { return this.axis('ArrowLeft', 'KeyA', 'ArrowRight', 'KeyD'); },
+    get moveY() { return this.axis('ArrowUp',   'KeyW', 'ArrowDown',  'KeyS'); },
+    get jump()  { return this.pressed('Space'); },
+    get dive()  { return this.pressed('ShiftLeft') || this.pressed('ShiftRight'); },
+    get grab()       { return this.down('KeyJ') || this.down('KeyL'); },
+    get grabPressed(){ return this.pressed('KeyJ') || this.pressed('KeyL'); },
+    get confirm(){ return this.pressed('Enter') || this.pressed('Space'); },
+    get esc()   { return this.pressed('Escape'); },
+
+    // Returns emote slot 0..3 just pressed, or -1
+    emoteSlot() {
+        for (let i = 0; i < 4; i++) if (this.pressed('Digit' + (i + 1))) return i;
+        return -1;
+    },
+};
+
+</script>
+<script>
+/* =================== js/save.js =================== */
+'use strict';
+
+/* =====================================================================
+   save.js — persistent profile: equipped cosmetics, crowns, win streak,
+   and unlocked achievements. Wraps localStorage (guarded for headless).
+   ===================================================================== */
+
+const Save = {
+    data: null,
+    newlyUnlocked: [],   // queue of achievement objects for the UI to toast
+
+    _defaults() {
+        return {
+            color: 1, pattern: 0, upper: 1, lower: 1, faceplate: 0,
+            emotes: [0, 1, 2, 5],          // Wave, Chicken, Crouch, Spin to Win
+            crowns: 0,
+            streak: 0,
+            bestStreak: 0,
+            showsPlayed: 0,
+            achievements: {},              // id -> true
+        };
+    },
+
+    load() {
+        let loaded = null;
+        try {
+            const raw = window.localStorage.getItem(CFG.SAVE_KEY);
+            if (raw) loaded = JSON.parse(raw);
+        } catch (e) { /* storage unavailable — run with defaults */ }
+        this.data = Object.assign(this._defaults(), loaded || {});
+        // Guard against malformed emote array
+        if (!Array.isArray(this.data.emotes) || this.data.emotes.length !== 4) {
+            this.data.emotes = [0, 1, 2, 5];
+        }
+        return this.data;
+    },
+
+    save() {
+        try {
+            window.localStorage.setItem(CFG.SAVE_KEY, JSON.stringify(this.data));
+        } catch (e) { /* ignore */ }
+    },
+
+    // ---- Equipped cosmetic accessors ---------------------------------
+    color()     { return COLORS[this.data.color]; },
+    pattern()   { return PATTERNS[this.data.pattern]; },
+    upper()     { return COSTUMES_UPPER[this.data.upper]; },
+    lower()     { return COSTUMES_LOWER[this.data.lower]; },
+    faceplate() { return FACEPLATES[this.data.faceplate]; },
+    emoteList() { return this.data.emotes.map(i => EMOTES[i]); },
+
+    // Build an appearance object the renderer understands
+    appearance() {
+        return {
+            color:    this.color().hex,
+            pattern:  this.pattern().type,
+            upper:    this.upper().prop,
+            lower:    this.lower().prop,
+            visor:    this.faceplate().visor,
+        };
+    },
+
+    // ---- Achievements -------------------------------------------------
+    unlock(id) {
+        if (this.data.achievements[id]) return false;       // already had it
+        this.data.achievements[id] = true;
+        const def = ACHIEVEMENTS.find(a => a.id === id);
+        if (def) this.newlyUnlocked.push(def);
+        this.save();
+        return true;
+    },
+    has(id) { return !!this.data.achievements[id]; },
+
+    // Head Turner — all four equipped cosmetic slots are Legendary
+    checkHeadTurner() {
+        if (this.color().rarity === 'legendary' &&
+            this.pattern().rarity === 'legendary' &&
+            this.faceplate().rarity === 'legendary' &&
+            (this.upper().rarity === 'legendary' || this.lower().rarity === 'legendary')) {
+            this.unlock('head_turner');
+        }
+    },
+
+    // ---- Show outcome bookkeeping ------------------------------------
+    recordWin(flawless) {
+        this.data.crowns++;
+        this.data.streak++;
+        this.data.bestStreak = Math.max(this.data.bestStreak, this.data.streak);
+        this.unlock('crowned');
+        if (this.data.streak >= 5) this.unlock('infallible');
+        if (flawless) this.unlock('flawless');
+        this.save();
+    },
+    recordLoss() {
+        this.data.streak = 0;
+        this.save();
+    },
+};
+
+</script>
+<script>
+/* =================== js/entities.js =================== */
+'use strict';
+
+/* =====================================================================
+   entities.js — the Bean (player + AI) and every obstacle class.
+   Beans are pure physics + self-rendering; the Round drives them and
+   feeds AI beans their inputs via bean.ai each frame.
+   ===================================================================== */
+
+class Bean {
+    constructor(opts) {
+        this.x = opts.x; this.y = opts.y;
+        this.startX = opts.x; this.startY = opts.y;
+        this.vx = 0; this.vy = 0;
+        this.z = 0;  this.vz = 0;
+        this.r = CFG.BEAN_R;
+        this.facing = -Math.PI / 2;     // looking "up" the course
+        this.isPlayer = !!opts.isPlayer;
+        this.isAI = !opts.isPlayer;
+        this.name = opts.name || 'Bean';
+        this.appearance = opts.appearance;
+        this.emoteList = opts.emoteList || EMOTES.slice(0, 4);
+
+        // race / round state
+        this.alive = true;
+        this.finished = false;
+        this.qualified = false;
+        this.eliminated = false;
+        this.falling = false;
+        this.place = 0;
+
+        // motion-state timers
+        this.diveT = 0; this.proneT = 0; this.diveCd = 0;
+        this.ragdoll = 0; this.spin = 0;
+        this.grabbing = null; this.grabbedBy = null; this.grabT = 0;
+
+        // cosmetics / anim
+        this.bob = Math.random() * 6.283;
+        this.squash = 1;
+        this.emoteT = 0; this.emoteAnim = null; this.emoteName = null;
+        this.justEmoted = 99;
+        this.everRagdolled = false;
+        this.blink = U.rngf(2, 5);
+
+        // AI brain inputs (filled by the round each frame)
+        this.ai = { mx: 0, my: 0, jump: false, dive: false };
+        this.skill = opts.skill != null ? opts.skill : 0.7;
+        this.lane = opts.lane || 0;
+        this.aiTimer = 0;
+        this.aiTarget = { x: this.x, y: this.y };
+        this.aiJumpLock = 0;
+    }
+
+    get grounded() { return this.z <= 0.5; }
+    get controllable() {
+        return this.ragdoll <= 0 && this.proneT <= 0 && this.diveT <= 0 && !this.grabbedBy;
+    }
+    get gone() { return this.eliminated && !this.falling; }
+
+    // ---- Hits & states ------------------------------------------------
+    hit(dx, dy, power, ragTime) {
+        if (this.falling || this.gone) return;
+        const l = Math.hypot(dx, dy) || 1;
+        this.vx = dx / l * power;
+        this.vy = dy / l * power;
+        this.vz = Math.max(this.vz, power * 0.22);
+        this.ragdoll = Math.max(this.ragdoll, ragTime || 0.7);
+        this.diveT = 0; this.proneT = 0;
+        this.everRagdolled = true;
+        this._releaseGrab();
+    }
+    bounce(v) { if (this.grounded) { this.vz = v; } }
+
+    startFall() {
+        if (this.falling || this.gone) return;
+        this.falling = true;
+        this.vz = -40;
+        this.ragdoll = Math.max(this.ragdoll, 0.4);
+        this._releaseGrab();
+        if (this.grabbedBy) { this.grabbedBy.grabbing = null; this.grabbedBy = null; }
+    }
+
+    doEmote(em) {
+        if (!em || !this.grounded || this.ragdoll > 0 || this.diveT > 0 || this.falling) return;
+        this.emoteAnim = em.anim; this.emoteName = em.name; this.emoteT = 1.8; this.justEmoted = 0;
+    }
+
+    _releaseGrab(fling) {
+        if (this.grabbing) {
+            const t = this.grabbing;
+            t.grabbedBy = null;
+            if (fling) t.hit(Math.cos(this.facing), Math.sin(this.facing), 320, 0.5);
+            this.grabbing = null;
+        }
+    }
+
+    // ---- Update -------------------------------------------------------
+    update(dt, round) {
+        // animation / cooldown timers always tick
+        this.bob += dt * 7;
+        this.blink -= dt;
+        this.diveCd = Math.max(0, this.diveCd - dt);
+        this.grabT = Math.max(0, this.grabT - dt);
+        this.justEmoted += dt;
+        if (this.aiJumpLock > 0) this.aiJumpLock -= dt;
+        if (this.emoteT > 0) { this.emoteT -= dt; if (this.emoteT <= 0) { this.emoteAnim = null; this.emoteName = null; } }
+
+        if (this.gone) return;
+
+        // Falling into slime/pit — drop then eliminate
+        if (this.falling) {
+            this.vz -= CFG.GRAVITY * 0.8 * dt;
+            this.z += this.vz * dt;
+            this.x += this.vx * dt; this.y += this.vy * dt;
+            this.vx *= (1 - 0.9 * dt); this.vy *= (1 - 0.9 * dt);
+            this.spin += dt * 9;
+            if (this.z < -180) { this.eliminated = true; this.alive = false; }
+            return;
+        }
+
+        // If being grabbed, the grabber owns our position
+        if (this.grabbedBy && this.grabbedBy.grabbing === this) {
+            if (this.blink <= 0) this.blink = U.rngf(2.5, 6);
+            return;
+        }
+
+        if (!round.live) return;     // frozen during intro card
+
+        // gather inputs
+        let ix = 0, iy = 0, wantJump = false, wantDive = false;
+        if (this.isPlayer) {
+            if (round.controllable && this.alive) {
+                ix = Input.moveX; iy = Input.moveY;
+                wantJump = Input.jump; wantDive = Input.dive;
+            }
+        } else {
+            ix = this.ai.mx; iy = this.ai.my; wantJump = this.ai.jump; wantDive = this.ai.dive;
+        }
+        const il = Math.hypot(ix, iy);
+        if (il > 1) { ix /= il; iy /= il; }
+
+        const grounded = this.grounded;
+
+        if (this.controllable) {
+            if (il > 0.05) this.facing = U.lerpAngle(this.facing, Math.atan2(iy, ix), 0.35);
+
+            if (grounded && wantJump) this.vz = CFG.JUMP_V;
+
+            if (grounded && wantDive && this.diveCd <= 0) {
+                const a = il > 0.05 ? Math.atan2(iy, ix) : this.facing;
+                this.facing = a;
+                this.diveT = CFG.DIVE_TIME;
+                this.diveCd = CFG.DIVE_TIME + CFG.DIVE_RECOVER + CFG.DIVE_CD;
+                this.vz = CFG.DIVE_HOP;
+                this.vx = Math.cos(a) * CFG.DIVE_SPEED;
+                this.vy = Math.sin(a) * CFG.DIVE_SPEED;
+            }
+        }
+
+        // velocity update by state
+        if (this.ragdoll > 0) {
+            this.ragdoll -= dt;
+            const sp = Math.hypot(this.vx, this.vy);
+            const ns = Math.max(0, sp - CFG.RAGDOLL_FRICTION * dt);
+            if (sp > 1) { this.vx = this.vx / sp * ns; this.vy = this.vy / sp * ns; }
+            this.spin += dt * (6 + sp * 0.02);
+            if (this.ragdoll <= 0) this.spin = 0;
+        } else if (this.diveT > 0) {
+            this.diveT -= dt;
+            this.vx *= (1 - 0.4 * dt); this.vy *= (1 - 0.4 * dt);
+            if (this.diveT <= 0) this.proneT = CFG.DIVE_RECOVER;
+        } else if (this.proneT > 0) {
+            this.proneT -= dt;
+            this.vx = U.approach(this.vx, 0, CFG.FRICTION * dt);
+            this.vy = U.approach(this.vy, 0, CFG.FRICTION * dt);
+        } else {
+            const ctrl = grounded ? 1 : CFG.AIR_CONTROL;
+            if (il > 0.05) {
+                this.vx = U.approach(this.vx, ix * CFG.RUN_SPEED, CFG.ACCEL * ctrl * dt);
+                this.vy = U.approach(this.vy, iy * CFG.RUN_SPEED, CFG.ACCEL * ctrl * dt);
+            } else if (grounded) {
+                this.vx = U.approach(this.vx, 0, CFG.FRICTION * dt);
+                this.vy = U.approach(this.vy, 0, CFG.FRICTION * dt);
+            }
+        }
+
+        // integrate vertical (z)
+        if (!grounded || this.vz > 0) {
+            this.vz -= CFG.GRAVITY * dt;
+            this.z += this.vz * dt;
+            if (this.z <= 0) { this.z = 0; this.vz = 0; }
+        }
+
+        // integrate horizontal
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+
+        // drag a grabbed bean along
+        if (this.grabbing) {
+            if (this.grabT <= 0 || !this.grabbing.alive || this.grabbing.falling) {
+                this._releaseGrab(true);
+            } else {
+                const t = this.grabbing;
+                t.x = this.x + Math.cos(this.facing) * (this.r * 2.1);
+                t.y = this.y + Math.sin(this.facing) * (this.r * 2.1);
+                t.z = this.z; t.vx = this.vx; t.vy = this.vy;
+            }
+        }
+
+        // squash & stretch from vertical motion
+        const target = 1 + U.clamp(this.vz / 1600, -0.18, 0.28);
+        this.squash = U.lerp(this.squash, target, 0.4);
+        if (this.blink <= 0) this.blink = U.rngf(2.5, 6);
+    }
+
+    tryGrab(beans) {
+        if (!this.controllable || !this.grounded || this.grabbing) return;
+        let best = null, bestD = CFG.GRAB_RANGE;
+        for (const b of beans) {
+            if (b === this || !b.alive || b.falling || b.grabbedBy) continue;
+            const d = U.dist(this.x, this.y, b.x, b.y);
+            if (d > bestD) continue;
+            const ang = Math.abs(U.angleDiff(this.facing, U.angleTo(this.x, this.y, b.x, b.y)));
+            if (ang < 1.1) { best = b; bestD = d; }
+        }
+        if (best) {
+            this.grabbing = best; best.grabbedBy = this;
+            this.grabT = CFG.GRAB_TIME; best.ragdoll = Math.max(best.ragdoll, 0.05);
+        }
+    }
+    releaseGrab() { this._releaseGrab(true); }
+
+    // =================================================================
+    //  RENDER
+    // =================================================================
+    drawShadow(ctx, cam) {
+        if (this.gone) return;
+        const sx = this.x - cam.x, sy = this.y - cam.y;
+        const lift = Math.max(0, this.z);
+        const sc = U.clamp(1 - lift / 600, 0.45, 1);
+        ctx.save();
+        ctx.globalAlpha = 0.22 * sc;
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 4, this.r * 0.95 * sc, this.r * 0.5 * sc, 0, 0, 6.283);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    draw(ctx, cam) {
+        if (this.gone) return;
+        const sx = this.x - cam.x;
+        const sy = this.y - cam.y - this.z;          // z lifts the body up the screen
+        const r = this.r;
+        const bobY = Math.sin(this.bob) * (this.grounded ? 1.2 : 0);
+
+        let rot = 0;
+        if (this.ragdoll > 0 || this.falling) rot = this.spin;
+        else if (this.diveT > 0) rot = Math.cos(this.facing) * 0.5;
+
+        ctx.save();
+        ctx.translate(sx, sy + bobY);
+        ctx.rotate(rot);
+
+        let sxScale = 1 / this.squash, syScale = this.squash;
+        if (this.diveT > 0 || this.proneT > 0) { sxScale = 1.25; syScale = 0.8; }
+        ctx.scale(sxScale, syScale);
+
+        this._drawBody(ctx, r);
+        ctx.restore();
+
+        // upright overlays (name tag / emote / player arrow)
+        this._drawTags(ctx, sx, sy, r);
+    }
+
+    _drawBody(ctx, r) {
+        const ap = this.appearance;
+        const base = ap.color;
+
+        this._lowerCostume(ctx, r, ap.lower);
+
+        // body capsule
+        ctx.fillStyle = base;
+        U.roundRect(ctx, -r, -r * 1.25, r * 2, r * 2.5, r * 0.95);
+        ctx.fill();
+
+        // pattern clipped to body + top highlight
+        ctx.save();
+        U.roundRect(ctx, -r, -r * 1.25, r * 2, r * 2.5, r * 0.95);
+        ctx.clip();
+        this._pattern(ctx, r, ap.pattern, base);
+        const g = ctx.createLinearGradient(0, -r * 1.3, 0, r);
+        g.addColorStop(0, 'rgba(255,255,255,0.35)');
+        g.addColorStop(0.5, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(-r, -r * 1.3, r * 2, r * 2.4);
+        ctx.restore();
+
+        ctx.strokeStyle = U.shade(base, -0.35);
+        ctx.lineWidth = 2;
+        U.roundRect(ctx, -r, -r * 1.25, r * 2, r * 2.5, r * 0.95);
+        ctx.stroke();
+
+        // little legs
+        ctx.fillStyle = U.shade(base, -0.2);
+        ctx.beginPath(); ctx.ellipse(-r * 0.45, r * 1.18, r * 0.3, r * 0.22, 0, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(r * 0.45, r * 1.18, r * 0.3, r * 0.22, 0, 0, 6.283); ctx.fill();
+
+        this._face(ctx, r, ap.visor);
+        this._upperCostume(ctx, r, ap.upper);
+    }
+
+    _face(ctx, r, visor) {
+        const open = this.blink < 0.12 ? 0.15 : 1;
+        ctx.save();
+        ctx.translate(0, -r * 0.15);
+        ctx.fillStyle = visor;
+        ctx.strokeStyle = U.shade(visor, -0.4);
+        ctx.lineWidth = 1.5;
+        U.roundRect(ctx, -r * 0.78, -r * 0.4, r * 1.56, r * 0.78, r * 0.32);
+        ctx.fill(); ctx.stroke();
+        const lookX = Math.cos(this.facing) * 1.6;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.ellipse(-r * 0.32, 0, r * 0.2, r * 0.26 * open, 0, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(r * 0.32, 0, r * 0.2, r * 0.26 * open, 0, 0, 6.283); ctx.fill();
+        if (open > 0.5) {
+            ctx.fillStyle = '#22203a';
+            ctx.beginPath(); ctx.arc(-r * 0.32 + lookX, 1, r * 0.09, 0, 6.283); ctx.fill();
+            ctx.beginPath(); ctx.arc(r * 0.32 + lookX, 1, r * 0.09, 0, 6.283); ctx.fill();
+        }
+        ctx.restore();
+        ctx.fillStyle = 'rgba(255,120,150,0.5)';
+        ctx.beginPath(); ctx.arc(-r * 0.55, r * 0.35, r * 0.16, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(r * 0.55, r * 0.35, r * 0.16, 0, 6.283); ctx.fill();
+    }
+
+    _pattern(ctx, r, type, base) {
+        const dk = U.shade(base, -0.28);
+        const lt = U.shade(base, 0.4);
+        switch (type) {
+            case 'stripes':
+                ctx.fillStyle = dk;
+                for (let i = -2; i <= 2; i++) ctx.fillRect(i * r * 0.55 - r * 0.12, -r * 1.3, r * 0.22, r * 2.6);
+                break;
+            case 'spots':
+                ctx.fillStyle = dk;
+                for (const p of [[-.4, -.6], [.5, -.2], [-.2, .5], [.35, .7], [-.55, .15]])
+                    { ctx.beginPath(); ctx.arc(p[0] * r, p[1] * r, r * 0.22, 0, 6.283); ctx.fill(); }
+                break;
+            case 'check':
+                for (let yy = -2; yy <= 2; yy++) for (let xx = -2; xx <= 2; xx++)
+                    if ((xx + yy) & 1) { ctx.fillStyle = dk; ctx.fillRect(xx * r * 0.5, yy * r * 0.5, r * 0.5, r * 0.5); }
+                break;
+            case 'camo':
+                ctx.fillStyle = dk;
+                for (const p of [[-.3, -.5, .5], [.4, .1, .6], [-.1, .6, .45], [.5, -.6, .4]])
+                    { ctx.beginPath(); ctx.ellipse(p[0] * r, p[1] * r, p[2] * r, p[2] * r * 0.8, 0.5, 0, 6.283); ctx.fill(); }
+                break;
+            case 'tiger':
+                ctx.strokeStyle = dk; ctx.lineWidth = r * 0.18; ctx.lineCap = 'round';
+                for (let i = -2; i <= 2; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(-r, i * r * 0.5);
+                    ctx.quadraticCurveTo(0, i * r * 0.5 - r * 0.3, r, i * r * 0.5);
+                    ctx.stroke();
+                }
+                break;
+            case 'star':
+                ctx.fillStyle = lt;
+                this._star(ctx, 0, 0, r * 0.7, r * 0.3, 5);
+                break;
+            case 'tiedye': {
+                const g = ctx.createRadialGradient(0, 0, 2, 0, 0, r * 1.6);
+                g.addColorStop(0, 'rgba(255,255,255,0.6)'); g.addColorStop(0.4, U.shade(base, 0.3));
+                g.addColorStop(0.7, base); g.addColorStop(1, dk);
+                ctx.fillStyle = g; ctx.fillRect(-r, -r * 1.4, r * 2, r * 2.8);
+                break;
+            }
+            case 'galaxy': {
+                const g = ctx.createLinearGradient(-r, -r, r, r);
+                g.addColorStop(0, '#2b1d5e'); g.addColorStop(0.5, '#6a32c8'); g.addColorStop(1, '#1b1340');
+                ctx.fillStyle = g; ctx.fillRect(-r, -r * 1.4, r * 2, r * 2.8);
+                ctx.fillStyle = '#fff';
+                for (const p of [[-.4, -.7], [.3, -.3], [-.1, .2], [.45, .5], [-.5, .55], [.1, -.9]])
+                    { ctx.beginPath(); ctx.arc(p[0] * r, p[1] * r, r * 0.06, 0, 6.283); ctx.fill(); }
+                break;
+            }
+            default: break; // solid
+        }
+    }
+
+    _star(ctx, cx, cy, R, r2, pts) {
+        ctx.beginPath();
+        for (let i = 0; i < pts * 2; i++) {
+            const ang = (Math.PI / pts) * i - Math.PI / 2;
+            const rad = i & 1 ? r2 : R;
+            const x = cx + Math.cos(ang) * rad, y = cy + Math.sin(ang) * rad;
+            i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        }
+        ctx.closePath(); ctx.fill();
+    }
+
+    _upperCostume(ctx, r, prop) {
+        ctx.save();
+        ctx.translate(0, -r * 1.25);
+        switch (prop) {
+            case 'party':
+                ctx.fillStyle = '#ff5fa2'; ctx.beginPath();
+                ctx.moveTo(0, -r * 1.1); ctx.lineTo(-r * 0.5, 0); ctx.lineTo(r * 0.5, 0); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(0, -r * 1.1, r * 0.18, 0, 6.283); ctx.fill();
+                break;
+            case 'cap':
+                ctx.fillStyle = '#e6395a';
+                U.roundRect(ctx, -r * 0.6, -r * 0.5, r * 1.2, r * 0.5, r * 0.25); ctx.fill();
+                ctx.fillRect(-r * 0.85, -r * 0.12, r * 0.55, r * 0.18);
+                break;
+            case 'pigeon':
+                ctx.fillStyle = '#cfd6df'; ctx.beginPath(); ctx.arc(0, -r * 0.3, r * 0.6, 0, 6.283); ctx.fill();
+                ctx.fillStyle = '#ff9447'; ctx.beginPath();
+                ctx.moveTo(0, -r * 0.3); ctx.lineTo(r * 0.7, -r * 0.15); ctx.lineTo(0, -r * 0.02); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(-r * 0.15, -r * 0.4, r * 0.08, 0, 6.283); ctx.fill();
+                break;
+            case 'bee':
+                ctx.strokeStyle = '#222'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(-r * 0.2, 0); ctx.lineTo(-r * 0.4, -r * 0.7);
+                ctx.moveTo(r * 0.2, 0); ctx.lineTo(r * 0.4, -r * 0.7); ctx.stroke();
+                ctx.fillStyle = '#ffd23f';
+                ctx.beginPath(); ctx.arc(-r * 0.4, -r * 0.75, r * 0.12, 0, 6.283); ctx.fill();
+                ctx.beginPath(); ctx.arc(r * 0.4, -r * 0.75, r * 0.12, 0, 6.283); ctx.fill();
+                break;
+            case 'cat':
+                ctx.fillStyle = '#9a6cff';
+                for (const s of [-1, 1]) { ctx.beginPath();
+                    ctx.moveTo(s * r * 0.2, 0); ctx.lineTo(s * r * 0.55, -r * 0.7); ctx.lineTo(s * r * 0.6, 0); ctx.closePath(); ctx.fill(); }
+                break;
+            case 'pirate':
+                ctx.fillStyle = '#23203a';
+                U.roundRect(ctx, -r * 0.8, -r * 0.55, r * 1.6, r * 0.5, r * 0.2); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(-r * 0.8, -r * 0.3); ctx.quadraticCurveTo(0, -r * 1.05, r * 0.8, -r * 0.3); ctx.fill();
+                ctx.fillStyle = '#fff'; this._star(ctx, 0, -r * 0.55, r * 0.16, r * 0.07, 5);
+                break;
+            case 'dino':
+                ctx.fillStyle = '#46d36a';
+                for (let i = -1; i <= 1; i++) { ctx.beginPath();
+                    ctx.moveTo(i * r * 0.4 - r * 0.18, 0); ctx.lineTo(i * r * 0.4, -r * 0.5); ctx.lineTo(i * r * 0.4 + r * 0.18, 0); ctx.closePath(); ctx.fill(); }
+                break;
+            case 'crown':
+                ctx.fillStyle = '#ffd23f'; ctx.strokeStyle = '#e8a200'; ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(-r * 0.6, 0); ctx.lineTo(-r * 0.6, -r * 0.5); ctx.lineTo(-r * 0.3, -r * 0.2);
+                ctx.lineTo(0, -r * 0.6); ctx.lineTo(r * 0.3, -r * 0.2); ctx.lineTo(r * 0.6, -r * 0.5);
+                ctx.lineTo(r * 0.6, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+                break;
+            default: break;
+        }
+        ctx.restore();
+    }
+
+    _lowerCostume(ctx, r, prop) {
+        switch (prop) {
+            case 'shoes':
+                ctx.fillStyle = '#f25c54';
+                ctx.beginPath(); ctx.ellipse(-r * 0.45, r * 1.25, r * 0.34, r * 0.2, 0, 0, 6.283); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(r * 0.45, r * 1.25, r * 0.34, r * 0.2, 0, 0, 6.283); ctx.fill();
+                break;
+            case 'tutu':
+                ctx.fillStyle = '#ff8fd0';
+                ctx.beginPath(); ctx.ellipse(0, r * 0.9, r * 1.4, r * 0.5, 0, 0, 6.283); ctx.fill();
+                break;
+            case 'tail':
+                ctx.fillStyle = '#46d36a';
+                ctx.beginPath(); ctx.moveTo(0, r * 0.6); ctx.lineTo(-r * 1.5, r * 1.2); ctx.lineTo(0, r * 1.25); ctx.closePath(); ctx.fill();
+                break;
+            case 'rocket':
+                ctx.fillStyle = '#ffb03f';
+                ctx.beginPath(); ctx.moveTo(-r * 0.4, r * 1.2); ctx.lineTo(0, r * 1.9); ctx.lineTo(r * 0.4, r * 1.2); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#ff5a2c';
+                ctx.beginPath(); ctx.moveTo(-r * 0.2, r * 1.2); ctx.lineTo(0, r * 1.6); ctx.lineTo(r * 0.2, r * 1.2); ctx.closePath(); ctx.fill();
+                break;
+            case 'gold':
+                ctx.fillStyle = '#ffd23f';
+                ctx.beginPath(); ctx.ellipse(-r * 0.45, r * 1.25, r * 0.36, r * 0.22, 0, 0, 6.283); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(r * 0.45, r * 1.25, r * 0.36, r * 0.22, 0, 0, 6.283); ctx.fill();
+                break;
+            default: break;
+        }
+    }
+
+    _drawTags(ctx, sx, sy, r) {
+        if (this.emoteAnim && this.emoteT > 0) {
+            const by = sy - r * 2.4;
+            ctx.save();
+            ctx.globalAlpha = U.clamp(this.emoteT * 2, 0, 1);
+            U.text(ctx, this._emoteIcon(), sx, by, 'bold 26px system-ui', '#fff', 'center', PAL.ink, 5);
+            ctx.restore();
+        }
+        if (this.isPlayer) {
+            const ay = sy - r * 2.0 - Math.abs(Math.sin(this.bob)) * 3;
+            ctx.fillStyle = PAL.gold;
+            ctx.strokeStyle = PAL.ink; ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(sx, ay + 12); ctx.lineTo(sx - 9, ay); ctx.lineTo(sx + 9, ay); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+        } else {
+            ctx.save();
+            ctx.globalAlpha = 0.85;
+            U.text(ctx, this.name, sx, sy - r * 1.85, '600 11px system-ui', '#fff', 'center', 'rgba(20,15,40,0.7)', 3);
+            ctx.restore();
+        }
+    }
+
+    _emoteIcon() {
+        switch (this.emoteAnim) {
+            case 'wave': return '👋';
+            case 'dance': return '🐔';
+            case 'crouch': return '⬇️';
+            case 'think': return '🤔';
+            case 'flex': return '💪';
+            case 'spin': return '🌀';
+            case 'point': return '👉';
+            case 'heart': return '💖';
+            default: return '✨';
+        }
+    }
+}
+
+/* =====================================================================
+   OBSTACLES
+   Each: update(dt), collide(bean, round), draw(ctx, cam) [ground layer],
+   drawTop(ctx, cam) [overhead layer, optional].
+   ===================================================================== */
+
+class Spinner {
+    // Rotating bar through a pivot. pushOut knocks beans radially outward.
+    constructor(o) {
+        this.cx = o.cx; this.cy = o.cy;
+        this.len = o.len; this.thick = o.thick || 16;
+        this.angle = o.angle || 0;
+        this.speed = o.speed;
+        this.power = o.power || 360;
+        this.height = o.height != null ? o.height : 9999;
+        this.arms = o.arms || 2;
+        this.pushOut = !!o.pushOut;
+        this.color = o.color || '#ff5fa2';
+        this.layer = 'top';
+    }
+    update(dt) { this.angle += this.speed * dt; }
+    _ends() {
+        const out = [];
+        for (let i = 0; i < this.arms; i++) {
+            const a = this.angle + (i * Math.PI * 2 / this.arms);
+            out.push([this.cx + Math.cos(a) * this.len, this.cy + Math.sin(a) * this.len]);
+        }
+        return out;
+    }
+    collide(bean, round) {
+        if (bean.z > this.height || bean.falling || bean.gone) return;
+        for (const [ex, ey] of this._ends()) {
+            const c = U.closestOnSeg(bean.x, bean.y, this.cx, this.cy, ex, ey);
+            if (U.dist(bean.x, bean.y, c.x, c.y) < bean.r + this.thick * 0.5) {
+                let dx, dy;
+                if (this.pushOut) { dx = bean.x - this.cx; dy = bean.y - this.cy; }
+                else {
+                    const ta = this.angle + (this.speed > 0 ? Math.PI / 2 : -Math.PI / 2);
+                    dx = Math.cos(ta); dy = Math.sin(ta);
+                }
+                bean.hit(dx, dy, this.power, 0.7);
+                round.spawnBurst(bean.x, bean.y, bean.z, this.color, 5);
+                return;
+            }
+        }
+    }
+    draw(ctx, cam) {
+        ctx.save();
+        ctx.globalAlpha = 0.25; ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.ellipse(this.cx - cam.x, this.cy - cam.y + 6, this.len, this.len * 0.4, 0, 0, 6.283); ctx.fill();
+        ctx.restore();
+        ctx.fillStyle = U.shade(this.color, -0.3);
+        ctx.beginPath(); ctx.arc(this.cx - cam.x, this.cy - cam.y, this.thick * 0.7, 0, 6.283); ctx.fill();
+    }
+    drawTop(ctx, cam) {
+        const lift = this.height < 200 ? 6 : 30;
+        ctx.save();
+        ctx.translate(this.cx - cam.x, this.cy - cam.y - lift);
+        ctx.lineWidth = this.thick; ctx.lineCap = 'round';
+        ctx.strokeStyle = this.color;
+        for (const [ex, ey] of this._ends()) {
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(ex - this.cx, ey - this.cy); ctx.stroke();
+        }
+        ctx.strokeStyle = U.shade(this.color, 0.35); ctx.lineWidth = this.thick * 0.35;
+        for (const [ex, ey] of this._ends()) {
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo((ex - this.cx) * 0.96, (ey - this.cy) * 0.96); ctx.stroke();
+        }
+        ctx.fillStyle = U.shade(this.color, -0.25);
+        ctx.beginPath(); ctx.arc(0, 0, this.thick * 0.85, 0, 6.283); ctx.fill();
+        ctx.restore();
+    }
+}
+
+class Hammer {
+    // Wrecking-ball head sweeping left/right across the lane.
+    constructor(o) {
+        this.cx = o.cx; this.cy = o.cy;
+        this.amp = o.amp; this.headR = o.headR || 30;
+        this.phase = o.phase || 0; this.speed = o.speed || 1.6;
+        this.power = o.power || 540; this.height = o.height != null ? o.height : 120;
+        this.layer = 'top';
+    }
+    update(dt) { this.phase += this.speed * dt; }
+    _head() { return [this.cx + Math.sin(this.phase) * this.amp, this.cy]; }
+    collide(bean, round) {
+        if (bean.z > this.height || bean.falling || bean.gone) return;
+        const [hx, hy] = this._head();
+        if (U.dist(bean.x, bean.y, hx, hy) < bean.r + this.headR) {
+            const dir = Math.cos(this.phase) >= 0 ? 1 : -1;
+            bean.hit(dir, -0.15, this.power, 0.95);
+            round.spawnBurst(bean.x, bean.y, bean.z, '#ffd23f', 8);
+        }
+    }
+    draw(ctx, cam) {
+        const [hx] = this._head();
+        ctx.save();
+        ctx.globalAlpha = 0.2; ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.ellipse(hx - cam.x, this.cy - cam.y + 6, this.headR, this.headR * 0.45, 0, 0, 6.283); ctx.fill();
+        ctx.restore();
+    }
+    drawTop(ctx, cam) {
+        const [hx, hy] = this._head();
+        ctx.strokeStyle = '#6b7280'; ctx.lineWidth = 7;
+        ctx.beginPath(); ctx.moveTo(this.cx - cam.x, this.cy - cam.y - 40); ctx.lineTo(hx - cam.x, hy - cam.y - 28); ctx.stroke();
+        const g = ctx.createRadialGradient(hx - cam.x - 6, hy - cam.y - 34, 4, hx - cam.x, hy - cam.y - 28, this.headR);
+        g.addColorStop(0, '#c9ced6'); g.addColorStop(1, '#5b6270');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(hx - cam.x, hy - cam.y - 28, this.headR, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = '#3c4250'; ctx.lineWidth = 2; ctx.stroke();
+    }
+}
+
+class DoorWall {
+    // A wall across the lane split into door segments; some are fake.
+    constructor(o) {
+        this.y = o.y; this.x0 = o.x0; this.x1 = o.x1;
+        this.thick = o.thick || 26;
+        this.segs = o.segs;     // [{x0,x1,fake,broken}]
+    }
+    update() {}
+    segAt(x) { for (const s of this.segs) if (x >= s.x0 && x < s.x1) return s; return null; }
+    fakeNear(x) {
+        let best = null, bd = 1e9;
+        for (const s of this.segs) {
+            if (!s.fake && !s.broken) continue;
+            const c = (s.x0 + s.x1) / 2, d = Math.abs(c - x);
+            if (d < bd) { bd = d; best = c; }
+        }
+        return best;
+    }
+    collide(bean, round) {
+        if (bean.gone || bean.falling) return;
+        if (Math.abs(bean.y - this.y) > bean.r + this.thick * 0.5) return;
+        if (bean.z > 130) return;                       // jumped clean over the top
+        const s = this.segAt(bean.x);
+        if (!s || s.broken) return;
+        if (s.fake) {
+            s.broken = true;
+            round.spawnBurst(bean.x, this.y, 20, '#b98a5a', 14);
+            return;
+        }
+        const side = bean.y > this.y ? 1 : -1;
+        bean.y = this.y + side * (bean.r + this.thick * 0.5 + 1);
+        const speed = Math.hypot(bean.vx, bean.vy);
+        bean.vy = side * Math.min(speed, 240) * 0.5;
+        if (speed > 200) { bean.ragdoll = Math.max(bean.ragdoll, 0.35); bean.everRagdolled = true; }
+    }
+    draw(ctx, cam) {
+        const y = this.y - cam.y;
+        ctx.fillStyle = '#5a4632';
+        ctx.fillRect(this.x0 - cam.x - 6, y - this.thick / 2 - 8, 6, this.thick + 16);
+        ctx.fillRect(this.x1 - cam.x, y - this.thick / 2 - 8, 6, this.thick + 16);
+        for (const s of this.segs) {
+            const w = s.x1 - s.x0;
+            if (s.broken) {
+                ctx.fillStyle = 'rgba(120,90,60,0.25)';
+                ctx.fillRect(s.x0 - cam.x, y - this.thick / 2, w, this.thick);
+            } else {
+                ctx.fillStyle = '#caa46a';
+                U.roundRect(ctx, s.x0 - cam.x + 3, y - this.thick / 2, w - 6, this.thick, 5); ctx.fill();
+                ctx.strokeStyle = '#8a6a3e'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = '#ffd23f';
+                ctx.beginPath(); ctx.arc(s.x1 - cam.x - 9, y, 3, 0, 6.283); ctx.fill();
+            }
+        }
+    }
+}
+
+class BouncePad {
+    constructor(o) { this.x = o.x; this.y = o.y; this.r = o.r || 38; this.t = 0; }
+    update(dt) { this.t += dt; }
+    collide(bean) {
+        if (bean.grounded && !bean.falling && !bean.gone && U.dist(bean.x, bean.y, this.x, this.y) < this.r) {
+            bean.bounce(CFG.BOUNCE_V);
+            this.t = 0;
+        }
+    }
+    draw(ctx, cam) {
+        const sx = this.x - cam.x, sy = this.y - cam.y;
+        const pop = Math.max(0, 1 - this.t * 4);
+        ctx.fillStyle = '#ff5fa2';
+        ctx.beginPath(); ctx.ellipse(sx, sy, this.r, this.r * 0.5, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = U.shade('#ff5fa2', 0.3 + pop * 0.3);
+        ctx.beginPath(); ctx.ellipse(sx, sy - pop * 6, this.r * 0.7, this.r * 0.35, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(sx, sy, this.r, this.r * 0.5, 0, 0, 6.283); ctx.stroke();
+    }
+}
+
+class HexTile {
+    constructor(o) {
+        this.cx = o.cx; this.cy = o.cy; this.size = o.size;
+        this.color = o.color;
+        this.state = 'solid';        // solid | dissolving | gone
+        this.timer = 0;
+        this.shake = 0;
+    }
+    update(dt) {
+        if (this.state === 'dissolving') {
+            this.timer -= dt; this.shake = Math.min(1, this.shake + dt * 4);
+            if (this.timer <= 0) this.state = 'gone';
+        }
+    }
+    contains(x, y) {
+        return U.dist2(x, y, this.cx, this.cy) < (this.size * 0.92) * (this.size * 0.92);
+    }
+    step() { if (this.state === 'solid') { this.state = 'dissolving'; this.timer = 0.75; } }
+    draw(ctx, cam) {
+        if (this.state === 'gone') return;
+        const sh = this.state === 'dissolving' ? Math.sin(this.shake * 40) * 2 : 0;
+        const sx = this.cx - cam.x + sh, sy = this.cy - cam.y;
+        ctx.save();
+        if (this.state === 'dissolving') ctx.globalAlpha = U.clamp(this.timer / 0.75, 0.2, 1);
+        ctx.fillStyle = this.color;
+        ctx.strokeStyle = U.shade(this.color, -0.3); ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const a = Math.PI / 3 * i - Math.PI / 2;
+            const x = sx + Math.cos(a) * this.size, y = sy + Math.sin(a) * this.size * 0.86;
+            i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        }
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const a = Math.PI / 3 * i - Math.PI / 2;
+            const x = sx + Math.cos(a) * this.size * 0.7, y = sy + Math.sin(a) * this.size * 0.6 - this.size * 0.18;
+            i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        }
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+    }
+}
+
+</script>
+<script>
+/* =================== js/rounds.js =================== */
+'use strict';
+
+/* =====================================================================
+   rounds.js — the Round (one minigame instance) plus the course
+   builders for the Show:  Door Dash, The Whirlygig, Jump Club, Hex-A-Gone.
+   The Round owns the beans, obstacles, FX, camera, phase machine and the
+   per-category qualification logic.
+   ===================================================================== */
+
+class Round {
+    constructor(def, beans) {
+        this.def = def;
+        this.category = def.category;
+        this.beans = beans;
+        this.player = beans.find(b => b.isPlayer);
+        this.obstacles = [];
+        this.tiles = null;
+        this.fx = [];
+
+        // world / camera
+        this.minX = 0; this.maxX = CFG.W; this.minY = 0; this.maxY = CFG.H;
+        this.cx = CFG.W / 2;
+        this.camMode = 'fixed';
+        this.cam = { x: 0, y: 0 };
+
+        // phase machine
+        this.phase = 'intro';      // intro | go | ending
+        this.phaseT = CFG.INTRO_TIME;
+        this.elapsed = 0;
+        this.live = false;
+        this.controllable = false;
+
+        // qualification
+        this.kind = 'race';        // race | survival | final
+        this.qualifyCount = def.qualify || 0;
+        this.qualifiedCount = 0;
+        this.finishY = 0;
+        this.timer = def.duration || 0;
+
+        // outcome
+        this.result = null;        // {outcome:'qualify'|'eliminate'|'win', place}
+        this.done = false;
+        this.bigTease = false;
+
+        // hooks set by builders
+        this.thinkFn = (b) => { b.ai.mx = 0; b.ai.my = 0; b.ai.jump = false; b.ai.dive = false; };
+        this.drawGround = null;
+        this.onUpdate = null;
+        this.doorWalls = [];
+        this.platform = null;
+        this.sweeper = null;
+    }
+
+    start() { this.camera(0, true); }
+
+    // ---- FX -----------------------------------------------------------
+    spawnBurst(x, y, z, color, count) {
+        for (let i = 0; i < count; i++) {
+            const a = Math.random() * 6.283, sp = U.rngf(40, 170);
+            this.fx.push({ x, y, z: z || 0, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+                vz: U.rngf(80, 260), life: U.rngf(0.4, 0.9), max: 0.9, color,
+                size: U.rngf(3, 6), grav: 900, confetti: false });
+        }
+    }
+    spawnConfetti(bean) {
+        const cols = ['#ff5fa2', '#ffd23f', '#46d36a', '#5ad1ff', '#b06bff'];
+        for (let i = 0; i < 24; i++) {
+            const a = Math.random() * 6.283, sp = U.rngf(60, 240);
+            this.fx.push({ x: bean.x, y: bean.y, z: 30 + Math.random() * 30,
+                vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, vz: U.rngf(160, 360),
+                life: U.rngf(0.8, 1.6), max: 1.6, color: U.pick(cols),
+                size: U.rngf(3, 6), grav: 500, confetti: true });
+        }
+    }
+    updateFx(dt) {
+        for (let i = this.fx.length - 1; i >= 0; i--) {
+            const p = this.fx[i];
+            p.life -= dt; if (p.life <= 0) { this.fx.splice(i, 1); continue; }
+            p.vz -= p.grav * dt; p.z += p.vz * dt; if (p.z < 0) { p.z = 0; p.vz *= -0.4; }
+            p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= (1 - 1.5 * dt); p.vy *= (1 - 1.5 * dt);
+        }
+    }
+    drawFx(ctx, cam) {
+        for (const p of this.fx) {
+            const sx = p.x - cam.x, sy = p.y - cam.y - p.z;
+            ctx.globalAlpha = U.clamp(p.life / p.max, 0, 1);
+            ctx.fillStyle = p.color;
+            if (p.confetti) ctx.fillRect(sx - p.size / 2, sy - p.size / 2, p.size, p.size * 0.6);
+            else { ctx.beginPath(); ctx.arc(sx, sy, p.size, 0, 6.283); ctx.fill(); }
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    // ---- Update -------------------------------------------------------
+    update(dt) {
+        this.updateFx(dt);
+
+        if (this.phase === 'intro') {
+            this.phaseT -= dt;
+            this._playerEmote();
+            for (const b of this.beans) b.update(dt, this);
+            this.camera(dt, true);
+            if (this.phaseT <= 0) { this.phase = 'go'; this.live = true; this.controllable = true; }
+            return;
+        }
+
+        // go / ending
+        this.elapsed += dt;
+        this._simulate(dt);
+        this._checkQualify(dt);
+        this.camera(dt, false);
+        if (this.phase === 'ending') {
+            this.phaseT -= dt;
+            if (this.phaseT <= 0) this.done = true;
+        }
+    }
+
+    _simulate(dt) {
+        if (this.onUpdate) this.onUpdate(this, dt);
+        for (const o of this.obstacles) o.update(dt);
+        if (this.tiles) for (const t of this.tiles) t.update(dt);
+
+        for (const b of this.beans) {
+            if (b.isAI) {
+                if (b.alive && !b.gone) this.thinkFn(b, this, dt);
+                else { b.ai.mx = 0; b.ai.my = 0; b.ai.jump = false; b.ai.dive = false; }
+            }
+        }
+        this._playerInput();
+
+        for (const b of this.beans) b.update(dt, this);
+
+        for (const o of this.obstacles)
+            for (const b of this.beans) if (!b.gone && o.collide) o.collide(b, this, dt);
+
+        this._separate();
+        for (const b of this.beans) this._bounds(b);
+    }
+
+    _playerEmote() {
+        const p = this.player; if (!p || !p.alive) return;
+        const slot = Input.emoteSlot();
+        if (slot >= 0) p.doEmote(p.emoteList[slot]);
+    }
+    _playerInput() {
+        const p = this.player; if (!p || !p.alive) return;
+        const slot = Input.emoteSlot();
+        if (slot >= 0) p.doEmote(p.emoteList[slot]);
+        if (Input.grabPressed) p.tryGrab(this.beans);
+        if (!Input.grab && p.grabbing) p.releaseGrab();
+    }
+
+    _separate() {
+        const bs = this.beans;
+        for (let i = 0; i < bs.length; i++) {
+            const a = bs[i]; if (a.gone || a.falling) continue;
+            for (let j = i + 1; j < bs.length; j++) {
+                const b = bs[j]; if (b.gone || b.falling) continue;
+                if (a.grabbing === b || b.grabbing === a) continue;
+                if (Math.abs(a.z - b.z) > 42) continue;
+                const dx = b.x - a.x, dy = b.y - a.y;
+                const d = Math.hypot(dx, dy), min = a.r + b.r;
+                if (d > 0.001 && d < min) {
+                    const push = (min - d) / 2, nx = dx / d, ny = dy / d;
+                    a.x -= nx * push; a.y -= ny * push;
+                    b.x += nx * push; b.y += ny * push;
+                }
+            }
+        }
+    }
+
+    _bounds(bean) {
+        if (bean.falling || bean.gone) return;
+        if (this.kind === 'race') {
+            const lo = this.minX + bean.r, hi = this.maxX - bean.r;
+            if (bean.x < lo) { bean.x = lo; if (bean.vx < 0) bean.vx *= -0.2; }
+            if (bean.x > hi) { bean.x = hi; if (bean.vx > 0) bean.vx *= -0.2; }
+            if (bean.y > this.maxY - bean.r) bean.y = this.maxY - bean.r;
+        } else if (this.kind === 'survival') {
+            if (bean.grounded && U.dist(bean.x, bean.y, this.platform.cx, this.platform.cy) > this.platform.r)
+                bean.startFall();
+        } else if (this.kind === 'final') {
+            if (bean.x < this.minX - 50 || bean.x > this.maxX + 50 ||
+                bean.y < this.minY - 50 || bean.y > this.maxY + 50) {
+                if (bean.grounded) bean.startFall();
+                return;
+            }
+            const t = this._tileAt(bean.x, bean.y);
+            if (!t) { if (bean.grounded) bean.startFall(); }
+            else if (bean.grounded) t.step();
+        }
+    }
+
+    // ---- Qualification ------------------------------------------------
+    _checkQualify(dt) {
+        if (this.result) return;
+        if (this.kind === 'race') {
+            for (const b of this.beans)
+                if (b.alive && !b.finished && !b.gone && b.y <= this.finishY) this.markFinish(b);
+            if (this.elapsed > CFG.ROUND_MAXTIME) this._raceCutoff();
+        } else if (this.kind === 'survival') {
+            this.timer -= dt;
+            if (this.player.eliminated) { this._finish(); return; }
+            if (this.timer <= 0) {
+                for (const b of this.beans) if (b.alive && !b.eliminated) b.qualified = true;
+                this._finish();
+            }
+        } else if (this.kind === 'final') {
+            if (this.player.eliminated) { this._finishFinal(false); return; }
+            const standing = this.beans.filter(b => b.alive && !b.eliminated);
+            if (standing.length <= 1) this._finishFinal(standing[0] === this.player);
+            if (this.elapsed > 150) this._finishFinal(!this.player.eliminated);  // hard safeguard
+        }
+    }
+
+    markFinish(bean) {
+        if (bean.finished) return;
+        bean.finished = true;
+        if (this.qualifiedCount < this.qualifyCount) {
+            bean.qualified = true;
+            bean.place = ++this.qualifiedCount;
+            this.spawnConfetti(bean);
+            if (bean === this.player && bean.place === 1 && bean.justEmoted < 1.3) this.bigTease = true;
+            if (this.qualifiedCount >= this.qualifyCount) this._raceCutoff();
+        } else {
+            bean.eliminated = true; bean.alive = false;
+        }
+    }
+    _raceCutoff() {
+        for (const b of this.beans)
+            if (!b.qualified && !b.eliminated) { b.eliminated = true; b.alive = false; }
+        this._finish();
+    }
+    _finish() {
+        if (this.result) return;
+        const p = this.player;
+        this.result = { outcome: p.qualified ? 'qualify' : 'eliminate', place: p.place || (this.qualifyCount + 1) };
+        this.phase = 'ending'; this.phaseT = CFG.BANNER_TIME;
+    }
+    _finishFinal(won) {
+        if (this.result) return;
+        this.result = { outcome: won ? 'win' : 'eliminate', place: won ? 1 : this._aliveCount() + 1 };
+        this.phase = 'ending'; this.phaseT = won ? 3.4 : CFG.BANNER_TIME;
+        if (won) this.spawnConfetti(this.player);
+    }
+    _aliveCount() { return this.beans.filter(b => b.alive && !b.eliminated).length; }
+
+    qualifiedSoFar() { return this.beans.filter(b => b.qualified).length; }
+    aliveSoFar() { return this.beans.filter(b => b.alive && !b.eliminated).length; }
+
+    // ---- Hex helpers --------------------------------------------------
+    _tileAt(x, y) {
+        let best = null, bd = 1e9;
+        for (const t of this.tiles) {
+            if (t.state === 'gone') continue;
+            const d = U.dist2(x, y, t.cx, t.cy);
+            const rr = (t.size * 0.92) * (t.size * 0.92);
+            if (d < rr && d < bd) { bd = d; best = t; }
+        }
+        return best;
+    }
+    pickSafeTile(bean) {
+        const solids = [], any = [];
+        for (const t of this.tiles) {
+            if (t.state === 'gone') continue;
+            if (t.cx === bean.aiTarget.x && t.cy === bean.aiTarget.y) continue;
+            const d = U.dist2(bean.x, bean.y, t.cx, t.cy);
+            if (d > 200 * 200) continue;
+            any.push([d, t]); if (t.state === 'solid') solids.push([d, t]);
+        }
+        const pool = solids.length ? solids : any;
+        if (!pool.length) return null;
+        pool.sort((a, b) => a[0] - b[0]);
+        return pool[U.rng(0, Math.min(pool.length, 4) - 1)][1];
+    }
+
+    // ---- Jump Club helper ---------------------------------------------
+    sweeperEta(bean) {
+        const s = this.sweeper; if (!s) return null;
+        const d = U.dist(bean.x, bean.y, s.cx, s.cy);
+        if (d < 28 || d > s.len + 12) return null;
+        const beanAng = Math.atan2(bean.y - s.cy, bean.x - s.cx);
+        let best = null;
+        for (let i = 0; i < s.arms; i++) {
+            const armAng = s.angle + i * Math.PI * 2 / s.arms;
+            const diff = U.angleDiff(armAng, beanAng);
+            let need;
+            if (s.speed > 0) need = diff >= 0 ? diff : diff + Math.PI * 2;
+            else need = diff <= 0 ? -diff : Math.PI * 2 - diff;
+            const eta = need / Math.abs(s.speed);
+            if (best == null || eta < best) best = eta;
+        }
+        return best;
+    }
+
+    // ---- Camera -------------------------------------------------------
+    camera(dt, snap) {
+        if (this.camMode === 'followY') {
+            const ty = this.player.y - CFG.H * 0.62;
+            const cl = U.clamp(ty, this.minY - 40, this.maxY - CFG.H + 40);
+            this.cam.y = snap ? cl : U.lerp(this.cam.y, cl, 1 - Math.pow(0.001, dt));
+            this.cam.x = this.cx - CFG.W / 2;
+        } else {
+            this.cam.x = 0; this.cam.y = 0;
+        }
+    }
+
+    // ---- Draw ---------------------------------------------------------
+    draw(ctx) {
+        const cam = this.cam;
+        if (this.drawGround) this.drawGround(ctx, cam);
+        // ground parts of obstacles
+        for (const o of this.obstacles) if (o.draw) o.draw(ctx, cam);
+        if (this.tiles) for (const t of this.tiles) t.draw(ctx, cam);
+        // beans: shadows, then bodies sorted by depth (y)
+        const vis = this.beans.filter(b => !b.gone);
+        for (const b of vis) b.drawShadow(ctx, cam);
+        vis.sort((a, b) => a.y - b.y);
+        for (const b of vis) b.draw(ctx, cam);
+        // overhead obstacle parts
+        for (const o of this.obstacles) if (o.drawTop) o.drawTop(ctx, cam);
+        // confetti / impact fx on top
+        this.drawFx(ctx, cam);
+    }
+}
+
+/* =====================================================================
+   AI BRAINS  (shared by builders)
+   ===================================================================== */
+function raceThink(bean, round, dt) {
+    let tx, ty = round.finishY - 30;
+    if (round.doorWalls.length) {
+        let wall = null;
+        for (const w of round.doorWalls)
+            if (w.y < bean.y - 4 && (!wall || w.y > wall.y)) wall = w;
+        if (wall) { const fx = wall.fakeNear(bean.x); tx = fx != null ? fx : bean.x; }
+        else tx = round.cx + bean.lane * 0.25;
+    } else {
+        tx = round.cx + bean.lane;
+    }
+    let dx = tx - bean.x, dy = ty - bean.y;
+    const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
+
+    // obstacle avoidance
+    let ax = 0, ay = 0;
+    for (const o of round.obstacles) {
+        let px, py;
+        if (o instanceof Spinner) {
+            let best = 1e9, bx = 0, by = 0;
+            for (const [ex, ey] of o._ends()) {
+                const c = U.closestOnSeg(bean.x, bean.y, o.cx, o.cy, ex, ey);
+                const d = U.dist(bean.x, bean.y, c.x, c.y);
+                if (d < best) { best = d; bx = c.x; by = c.y; }
+            }
+            if (bean.z > o.height) continue;
+            px = bx; py = by;
+        } else if (o instanceof Hammer) {
+            if (bean.z > o.height) continue;
+            const h = o._head(); px = h[0]; py = h[1];
+        } else continue;
+        const d = U.dist(bean.x, bean.y, px, py);
+        const rad = 95;
+        if (d < rad) {
+            const w = 1 - d / rad;
+            ax += (bean.x - px) / (d || 1) * w * 1.7;
+            ay += (bean.y - py) / (d || 1) * w * 0.5;
+        }
+    }
+    let mx = dx + ax, my = dy + ay;
+    const ml = Math.hypot(mx, my) || 1;
+    bean.ai.mx = mx / ml; bean.ai.my = my / ml;
+
+    bean.aiTimer -= dt;
+    let dive = false;
+    if (bean.aiTimer <= 0) {
+        bean.aiTimer = U.rngf(0.8, 2.2);
+        if (Math.abs(ax) + Math.abs(ay) < 0.2 && U.chance(0.4 * bean.skill)) dive = true;
+    }
+    bean.ai.dive = dive; bean.ai.jump = false;
+}
+
+function jumpThink(bean, round, dt) {
+    const P = round.platform;
+    const rr = P.r * 0.5;
+    const tx = P.cx + Math.cos(bean.lane) * rr, ty = P.cy + Math.sin(bean.lane) * rr;
+    let dx = tx - bean.x, dy = ty - bean.y; const dl = Math.hypot(dx, dy);
+    if (dl > 8) { bean.ai.mx = dx / dl * 0.6; bean.ai.my = dy / dl * 0.6; }
+    else { bean.ai.mx = 0; bean.ai.my = 0; }
+
+    // Jump to clear the low sweeper. Decide once per pass; weaker beans
+    // sometimes muff the jump (and take the knock) instead of mistiming.
+    const eta = round.sweeperEta(bean);
+    bean.ai.jump = false;
+    if (bean.grounded && bean.aiJumpLock <= 0 && eta != null && eta > 0.12 && eta < 0.36) {
+        bean.aiJumpLock = 0.6;
+        const success = bean.isPlayer ? 1 : (0.72 + bean.skill * 0.26);
+        if (U.chance(success)) bean.ai.jump = true;
+    }
+    bean.ai.dive = false;
+}
+
+function hexThink(bean, round, dt) {
+    bean.aiTimer -= dt;
+    const cur = round._tileAt(bean.x, bean.y);
+    const need = !cur || cur.state !== 'solid';
+    if (bean.aiTimer <= 0 || need) {
+        const t = round.pickSafeTile(bean);
+        if (t) { bean.aiTarget.x = t.cx; bean.aiTarget.y = t.cy; }
+        bean.aiTimer = U.rngf(0.3, 0.7);
+    }
+    let dx = bean.aiTarget.x - bean.x, dy = bean.aiTarget.y - bean.y;
+    const dl = Math.hypot(dx, dy) || 1;
+    bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
+    if (U.chance((0.62 - bean.skill) * 0.012)) { bean.ai.mx = 0; bean.ai.my = 0; }   // hesitate
+    bean.ai.jump = false; bean.ai.dive = false;
+}
+
+/* =====================================================================
+   COURSE BUILDERS
+   ===================================================================== */
+const Rounds = {
+    create(def, beans) {
+        const r = new Round(def, beans);
+        Rounds.builders[def.build](r);
+        r.start();
+        return r;
+    },
+
+    // place beans in rows above a start line (races)
+    _spawnRows(r, startY, cx) {
+        const ais = r.beans.filter(b => b.isAI);
+        const ordered = [r.player, ...ais];          // player up front-centre
+        const perRow = 5, sx = 78, sy = 62;
+        ordered.forEach((b, i) => {
+            const row = Math.floor(i / perRow), col = i % perRow;
+            b.x = cx + (col - (perRow - 1) / 2) * sx + U.rngf(-8, 8);
+            b.y = startY + row * sy;
+            b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
+            b.lane = b.isPlayer ? 0 : U.rngf(-340, 340);
+            b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.95);
+        });
+    },
+
+    builders: {
+        // -------------------------------------------------- DOOR DASH
+        doorDash(r) {
+            r.kind = 'race'; r.camMode = 'followY';
+            r.minX = 200; r.maxX = 1080; r.cx = 640;
+            r.minY = 240; r.maxY = 2680;
+            r.finishY = 420;
+            r.thinkFn = raceThink;
+
+            const makeWall = (y, fakeCount) => {
+                const x0 = r.minX, x1 = r.maxX, n = 6, w = (x1 - x0) / n;
+                const fakes = new Set();
+                while (fakes.size < fakeCount) fakes.add(U.rng(0, n - 1));
+                const segs = [];
+                for (let i = 0; i < n; i++)
+                    segs.push({ x0: x0 + i * w, x1: x0 + (i + 1) * w, fake: fakes.has(i), broken: false });
+                const dw = new DoorWall({ y, x0, x1, segs });
+                r.obstacles.push(dw); r.doorWalls.push(dw);
+            };
+            [2150, 1700, 1200, 760].forEach((y, i) => makeWall(y, i % 2 ? 3 : 2));
+
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+
+            r.drawGround = (ctx, cam) => {
+                drawSky(ctx);
+                // track
+                ctx.fillStyle = PAL.track;
+                ctx.fillRect(r.minX - cam.x, r.minY - cam.y, r.maxX - r.minX, r.maxY - r.minY);
+                drawTrackEdges(ctx, cam, r);
+                drawFinishBanner(ctx, cam, r);
+                drawStartGate(ctx, cam, r);
+            };
+        },
+
+        // -------------------------------------------------- THE WHIRLYGIG
+        whirlygig(r) {
+            r.kind = 'race'; r.camMode = 'followY';
+            r.minX = 200; r.maxX = 1080; r.cx = 640;
+            r.minY = 240; r.maxY = 2680;
+            r.finishY = 430;
+            r.thinkFn = raceThink;
+
+            r.obstacles.push(new Spinner({ cx: 640, cy: 2150, len: 250, thick: 20, speed: 1.2, power: 360, color: '#7b46d6' }));
+            r.obstacles.push(new BouncePad({ x: 470, y: 1880, r: 40 }));
+            r.obstacles.push(new BouncePad({ x: 810, y: 1880, r: 40 }));
+            r.obstacles.push(new Spinner({ cx: 640, cy: 1620, len: 250, thick: 20, speed: -1.4, power: 360, color: '#ff5fa2' }));
+            r.obstacles.push(new Hammer({ cx: 640, cy: 1250, amp: 300, headR: 32, speed: 1.7, power: 520 }));
+            r.obstacles.push(new Spinner({ cx: 470, cy: 940, len: 200, thick: 18, speed: 1.6, power: 340, color: '#23d6c8' }));
+            r.obstacles.push(new Spinner({ cx: 820, cy: 940, len: 200, thick: 18, speed: -1.6, power: 340, color: '#23d6c8' }));
+            r.obstacles.push(new Hammer({ cx: 640, cy: 640, amp: 320, headR: 30, speed: 2.1, phase: 1.5, power: 520 }));
+
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+
+            r.drawGround = (ctx, cam) => {
+                drawSky(ctx);
+                ctx.fillStyle = PAL.track;
+                ctx.fillRect(r.minX - cam.x, r.minY - cam.y, r.maxX - r.minX, r.maxY - r.minY);
+                drawTrackEdges(ctx, cam, r);
+                drawFinishBanner(ctx, cam, r);
+                drawStartGate(ctx, cam, r);
+            };
+        },
+
+        // -------------------------------------------------- JUMP CLUB
+        jumpClub(r) {
+            r.kind = 'survival'; r.camMode = 'fixed';
+            const cx = 640, cy = 380, R = 300;
+            r.platform = { cx, cy, r: R };
+            r.minX = 0; r.maxX = CFG.W; r.minY = 0; r.maxY = CFG.H;
+            r.thinkFn = jumpThink;
+
+            const sweep = new Spinner({ cx, cy, len: R - 6, thick: 22, speed: 0.7,
+                angle: -Math.PI / 2, height: 42, arms: 2, pushOut: true, power: 500, color: '#ffd23f' });
+            r.sweeper = sweep; r.obstacles.push(sweep);
+
+            // spawn beans on a ring
+            const all = r.beans;
+            all.forEach((b, i) => {
+                const ang = (i / all.length) * Math.PI * 2;
+                const rr = R * (b.isPlayer ? 0.5 : U.rngf(0.42, 0.62));
+                b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
+                b.startX = b.x; b.startY = b.y;
+                b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.55, 0.95);
+                b.facing = ang + Math.PI;
+            });
+
+            r.onUpdate = (rr, dt) => { sweep.speed += dt * 0.06; };   // ramp difficulty
+
+            r.drawGround = (ctx, cam) => {
+                drawSlime(ctx);
+                drawDisk(ctx, cx, cy, R, PAL.arena);
+            };
+        },
+
+        // -------------------------------------------------- HEX-A-GONE
+        hexAGone(r) {
+            r.kind = 'final'; r.camMode = 'fixed';
+            r.minX = 300; r.maxX = 980; r.minY = 130; r.maxY = 630;
+            r.thinkFn = hexThink;
+            r.tiles = [];
+
+            const size = 33, stepX = 50, stepY = 44;
+            const cols = ['#ff8fd0', '#9a8cff', '#7fd0ff', '#7ce0b0', '#ffd07a'];
+            let row = 0;
+            for (let y = r.minY + 20; y <= r.maxY - 10; y += stepY, row++) {
+                const off = (row % 2) * (stepX / 2);
+                for (let x = r.minX + 30 + off; x <= r.maxX - 20; x += stepX) {
+                    r.tiles.push(new HexTile({ cx: x, cy: y, size, color: cols[row % cols.length] }));
+                }
+            }
+
+            // spread beans across the field on distinct tiles
+            const spots = U.shuffle(r.tiles.slice());
+            r.beans.forEach((b, i) => {
+                const t = spots[i % spots.length];
+                b.x = t.cx; b.y = t.cy; b.startX = b.x; b.startY = b.y;
+                b.skill = b.isPlayer ? 1 : U.rngf(0.45, 0.9);
+                b.facing = U.rngf(0, 6.28);
+            });
+
+            r.onUpdate = (rr, dt) => {
+                rr._decayT = (rr._decayT || 0) - dt;
+                if (rr.elapsed > 16 && rr._decayT <= 0) {
+                    rr._decayT = Math.max(0.18, 1.1 - (rr.elapsed - 16) * 0.02);
+                    const solids = rr.tiles.filter(t => t.state === 'solid');
+                    if (solids.length) U.pick(solids).step();
+                }
+            };
+
+            r.drawGround = (ctx) => { drawSlime(ctx); };
+        },
+    },
+};
+
+/* =====================================================================
+   Shared course decoration helpers
+   ===================================================================== */
+function drawSky(ctx) {
+    const g = ctx.createLinearGradient(0, 0, 0, CFG.H);
+    g.addColorStop(0, PAL.skyTop); g.addColorStop(1, PAL.skyBot);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, CFG.W, CFG.H);
+}
+function drawSlime(ctx) {
+    const g = ctx.createLinearGradient(0, 0, 0, CFG.H);
+    g.addColorStop(0, PAL.slime); g.addColorStop(1, PAL.slimeDark);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, CFG.W, CFG.H);
+    ctx.globalAlpha = 0.12; ctx.fillStyle = '#fff';
+    for (let i = 0; i < 8; i++) {
+        const t = (Date.now() / 1000 + i) % 8;
+        ctx.beginPath(); ctx.ellipse((i * 173 % CFG.W), (t * 90) % CFG.H, 18, 9, 0, 0, 6.283); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+}
+function drawTrackEdges(ctx, cam, r) {
+    ctx.fillStyle = PAL.trackEdge;
+    ctx.fillRect(r.minX - cam.x - 14, r.minY - cam.y, 14, r.maxY - r.minY);
+    ctx.fillRect(r.maxX - cam.x, r.minY - cam.y, 14, r.maxY - r.minY);
+    // dashed centre guide
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 4; ctx.setLineDash([18, 22]);
+    ctx.beginPath(); ctx.moveTo(r.cx - cam.x, r.minY - cam.y); ctx.lineTo(r.cx - cam.x, r.maxY - cam.y); ctx.stroke();
+    ctx.setLineDash([]);
+}
+function drawFinishBanner(ctx, cam, r) {
+    const y = r.finishY - cam.y;
+    // checker line
+    const sq = 22;
+    for (let i = 0; i * sq < (r.maxX - r.minX); i++) {
+        ctx.fillStyle = i & 1 ? '#222' : '#fff';
+        ctx.fillRect(r.minX - cam.x + i * sq, y, sq, sq);
+        ctx.fillStyle = i & 1 ? '#fff' : '#222';
+        ctx.fillRect(r.minX - cam.x + i * sq, y + sq, sq, sq);
+    }
+    U.text(ctx, 'FINISH', r.cx - cam.x, y - 26, '900 40px system-ui', PAL.gold, 'center', PAL.ink, 7);
+}
+function drawStartGate(ctx, cam, r) {
+    const y = (r.maxY - 150) - cam.y;
+    ctx.fillStyle = PAL.purple;
+    ctx.fillRect(r.minX - cam.x, y, r.maxX - r.minX, 12);
+    U.text(ctx, 'START', r.cx - cam.x, y + 34, '800 22px system-ui', '#fff', 'center', PAL.ink, 5);
+}
+function drawDisk(ctx, cx, cy, R, color) {
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath(); ctx.ellipse(cx, cy + 10, R, R, 0, 0, 6.283); ctx.fill();
+    const g = ctx.createRadialGradient(cx, cy - 40, 30, cx, cy, R);
+    g.addColorStop(0, U.shade(color, 0.25)); g.addColorStop(1, color);
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.fill();
+    ctx.strokeStyle = U.shade(color, -0.3); ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.stroke();
+}
+
+</script>
+<script>
+/* =================== js/ui.js =================== */
+'use strict';
+
+/* =====================================================================
+   ui.js — menus, customization, HUD and full-screen overlays.
+   Immediate-mode style: each screen redraws its buttons into UI.buttons,
+   and Game queries UI.pick(x,y) on click.
+   ===================================================================== */
+
+const UI = {
+    buttons: [],
+    previewBean: null,
+    toasts: [],
+
+    rarityColor(r) {
+        return { common: '#b9c2cc', uncommon: '#46d36a', rare: '#3fa9ff',
+                 epic: '#b06bff', legendary: '#ffd23f' }[r] || '#fff';
+    },
+
+    _begin() { this.buttons = []; },
+    pick(mx, my) {
+        for (const b of this.buttons) if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) return b.id;
+        return null;
+    },
+
+    _btn(ctx, id, label, x, y, w, h, opt = {}) {
+        const hover = Input.mouse.x >= x && Input.mouse.x <= x + w && Input.mouse.y >= y && Input.mouse.y <= y + h;
+        const base = opt.color || PAL.gold;
+        ctx.save();
+        ctx.fillStyle = 'rgba(20,15,40,0.35)';
+        U.roundRect(ctx, x + 3, y + 4, w, h, opt.r || 12); ctx.fill();
+        ctx.fillStyle = hover ? U.shade(base, 0.18) : base;
+        U.roundRect(ctx, x, y, w, h, opt.r || 12); ctx.fill();
+        ctx.strokeStyle = U.shade(base, -0.3); ctx.lineWidth = 3;
+        U.roundRect(ctx, x, y, w, h, opt.r || 12); ctx.stroke();
+        U.text(ctx, label, x + w / 2, y + h / 2 + 1, opt.font || '800 22px system-ui',
+            opt.text || PAL.ink, 'center');
+        ctx.restore();
+        this.buttons.push({ id, x, y, w, h });
+        return hover;
+    },
+
+    // ---- toasts (achievement unlocks) --------------------------------
+    update(dt) {
+        while (Save.newlyUnlocked.length) {
+            const a = Save.newlyUnlocked.shift();
+            this.toasts.push({ a, t: 4 });
+        }
+        for (let i = this.toasts.length - 1; i >= 0; i--) {
+            this.toasts[i].t -= dt;
+            if (this.toasts[i].t <= 0) this.toasts.splice(i, 1);
+        }
+        if (this.previewBean) this.previewBean.bob += dt * 5;
+    },
+    drawToasts(ctx) {
+        let y = 24;
+        for (const tt of this.toasts) {
+            const a = U.clamp(tt.t, 0, 1);
+            ctx.save(); ctx.globalAlpha = a;
+            const w = 360, x = CFG.W / 2 - w / 2;
+            ctx.fillStyle = PAL.ink; U.roundRect(ctx, x, y, w, 58, 12); ctx.fill();
+            ctx.strokeStyle = PAL.gold; ctx.lineWidth = 3; U.roundRect(ctx, x, y, w, 58, 12); ctx.stroke();
+            U.text(ctx, '🏆  Trophy Unlocked', x + 16, y + 20, '800 14px system-ui', PAL.gold, 'left');
+            U.text(ctx, tt.a.name, x + 16, y + 40, '700 18px system-ui', '#fff', 'left');
+            ctx.restore();
+            y += 68;
+        }
+    },
+
+    // ---- background swirl for menus ----------------------------------
+    _menuBg(ctx, t) {
+        const g = ctx.createLinearGradient(0, 0, 0, CFG.H);
+        g.addColorStop(0, '#6a5cff'); g.addColorStop(0.5, '#a24bd6'); g.addColorStop(1, '#ff5fa2');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, CFG.W, CFG.H);
+        ctx.globalAlpha = 0.12; ctx.fillStyle = '#fff';
+        for (let i = 0; i < 14; i++) {
+            const x = (i * 211 + t * 30) % (CFG.W + 100) - 50;
+            const y = (i * 137 + Math.sin(t + i) * 20) % CFG.H;
+            ctx.beginPath(); ctx.arc(x, y, 26 + (i % 3) * 10, 0, 6.283); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+    },
+
+    // ================================================== MENU
+    drawMenu(ctx, t) {
+        this._begin();
+        this._menuBg(ctx, t);
+
+        const by = 150 + Math.sin(t * 2) * 6;
+        U.text(ctx, 'BEAN', CFG.W / 2 - 4, by, '900 110px system-ui', PAL.gold, 'center', PAL.ink, 12);
+        U.text(ctx, 'ROYALE', CFG.W / 2, by + 96, '900 92px system-ui', '#fff', 'center', PAL.ink, 11);
+        U.text(ctx, 'A Fall Guys tribute — dive, bounce & grab your way to the Crown!',
+            CFG.W / 2, by + 168, '600 19px system-ui', '#ffe9c2', 'center', PAL.ink, 4);
+
+        const w = 320, x = CFG.W / 2 - w / 2;
+        let y = 410;
+        this._btn(ctx, 'play', '▶  PLAY SHOW', x, y, w, 64); y += 80;
+        this._btn(ctx, 'customize', '🎨  CUSTOMISE', x, y, w, 56, { color: '#5ad1ff' }); y += 70;
+        this._btn(ctx, 'trophies', '🏆  TROPHIES', x, y, w, 56, { color: '#b06bff', text: '#fff' }); y += 70;
+        this._btn(ctx, 'howto', '?  HOW TO PLAY', x, y, w, 50, { color: '#ff8fb0', text: PAL.ink, font: '800 18px system-ui' });
+
+        U.text(ctx, `Crowns: ${Save.data.crowns}   ·   Win Streak: ${Save.data.streak}   ·   Best: ${Save.data.bestStreak}`,
+            CFG.W / 2, CFG.H - 30, '700 16px system-ui', '#fff', 'center', PAL.ink, 4);
+        this.drawToasts(ctx);
+    },
+
+    // ================================================== CUSTOMISE
+    drawCustomize(ctx, t) {
+        this._begin();
+        this._menuBg(ctx, t * 0.4);
+        U.text(ctx, 'CUSTOMISE YOUR BEAN', CFG.W / 2, 56, '900 40px system-ui', PAL.gold, 'center', PAL.ink, 8);
+
+        // preview panel
+        ctx.fillStyle = 'rgba(20,15,40,0.30)';
+        U.roundRect(ctx, 80, 110, 360, 520, 20); ctx.fill();
+        if (!this.previewBean)
+            this.previewBean = new Bean({ x: 260, y: 430, isPlayer: true, name: 'You', appearance: Save.appearance() });
+        this.previewBean.appearance = Save.appearance();
+        this.previewBean.x = 260; this.previewBean.y = 400; this.previewBean.z = 30 + Math.sin(this.previewBean.bob) * 8;
+        this.previewBean.r = 52;
+        this.previewBean.drawShadow(ctx, { x: 0, y: 0 });
+        this.previewBean.draw(ctx, { x: 0, y: 0 });
+        this.previewBean.r = CFG.BEAN_R;
+
+        // cosmetic slots
+        const slots = [
+            ['color',     'Colour',    COLORS,          Save.color()],
+            ['pattern',   'Pattern',   PATTERNS,        Save.pattern()],
+            ['faceplate', 'Faceplate', FACEPLATES,      Save.faceplate()],
+            ['upper',     'Upper',     COSTUMES_UPPER,  Save.upper()],
+            ['lower',     'Lower',     COSTUMES_LOWER,  Save.lower()],
+        ];
+        let y = 130; const lx = 480, lw = 700;
+        for (const [key, label, , cur] of slots) {
+            ctx.fillStyle = 'rgba(20,15,40,0.30)';
+            U.roundRect(ctx, lx, y, lw, 64, 12); ctx.fill();
+            U.text(ctx, label, lx + 18, y + 32, '800 18px system-ui', '#fff', 'left');
+            this._btn(ctx, 'cyc:' + key + ':-1', '‹', lx + 300, y + 10, 46, 44, { color: '#ffffff', font: '900 26px system-ui' });
+            U.text(ctx, cur.name, lx + 470, y + 26, '800 18px system-ui', this.rarityColor(cur.rarity), 'center');
+            U.text(ctx, cur.rarity.toUpperCase(), lx + 470, y + 46, '700 12px system-ui', this.rarityColor(cur.rarity), 'center');
+            this._btn(ctx, 'cyc:' + key + ':1', '›', lx + 600, y + 10, 46, 44, { color: '#ffffff', font: '900 26px system-ui' });
+            y += 74;
+        }
+
+        // emote loadout
+        U.text(ctx, 'GESTURE LOADOUT  (keys 1–4 in game)', lx + 18, y + 18, '800 16px system-ui', '#ffe9c2', 'left');
+        y += 36;
+        const ew = 168;
+        for (let i = 0; i < 4; i++) {
+            const ex = lx + i * (ew + 8);
+            const em = EMOTES[Save.data.emotes[i]];
+            ctx.fillStyle = 'rgba(20,15,40,0.30)';
+            U.roundRect(ctx, ex, y, ew, 70, 10); ctx.fill();
+            U.text(ctx, (i + 1) + '  ' + em.name, ex + ew / 2, y + 22, '800 15px system-ui', this.rarityColor(em.rarity), 'center');
+            this._btn(ctx, 'emote:' + i + ':-1', '‹', ex + 8, y + 36, 34, 28, { color: '#fff', font: '900 18px system-ui' });
+            U.text(ctx, '♪ ' + em.sound, ex + ew / 2, y + 50, '600 10px system-ui', '#dfe6ff', 'center');
+            this._btn(ctx, 'emote:' + i + ':1', '›', ex + ew - 42, y + 36, 34, 28, { color: '#fff', font: '900 18px system-ui' });
+        }
+
+        this._btn(ctx, 'menu', '‹ BACK', 80, CFG.H - 70, 200, 52, { color: '#ff8fb0', text: PAL.ink });
+        this._btn(ctx, 'play', 'START SHOW ▶', CFG.W - 320, CFG.H - 70, 240, 52);
+        this.drawToasts(ctx);
+    },
+
+    // ================================================== HOW TO PLAY
+    drawHowTo(ctx, t) {
+        this._begin();
+        this._menuBg(ctx, t * 0.3);
+        ctx.fillStyle = 'rgba(20,15,40,0.55)';
+        U.roundRect(ctx, 140, 70, CFG.W - 280, CFG.H - 160, 20); ctx.fill();
+        U.text(ctx, 'HOW TO PLAY', CFG.W / 2, 120, '900 40px system-ui', PAL.gold, 'center', PAL.ink, 7);
+
+        const lines = [
+            ['Move', 'WASD / Arrow Keys'],
+            ['Jump', 'Space — hop the sweepers & low bars'],
+            ['Dive', 'Shift — a fast forward lunge (then a slow recovery)'],
+            ['Grab', 'J / L — grab a rival; release to fling them'],
+            ['Gesture', '1–4 — perform your equipped emotes'],
+            ['Goal', 'Qualify each round; the field shrinks until one bean takes the Crown.'],
+        ];
+        let y = 190;
+        for (const [k, v] of lines) {
+            U.text(ctx, k, 230, y, '800 22px system-ui', '#5ad1ff', 'left');
+            U.text(ctx, v, 420, y, '600 20px system-ui', '#fff', 'left');
+            y += 46;
+        }
+        y += 8;
+        U.text(ctx, 'ROUND TYPES', 230, y, '800 22px system-ui', PAL.gold, 'left'); y += 36;
+        for (const d of SHOW) {
+            U.text(ctx, `${d.name}`, 250, y, '800 18px system-ui', '#ffe9c2', 'left');
+            U.text(ctx, `[${d.category}]  ${d.tagline}`, 470, y, '600 16px system-ui', '#dfe6ff', 'left');
+            y += 32;
+        }
+        this._btn(ctx, 'menu', '‹ BACK', CFG.W / 2 - 110, CFG.H - 78, 220, 52, { color: '#ff8fb0', text: PAL.ink });
+    },
+
+    // ================================================== TROPHIES
+    drawTrophies(ctx, t) {
+        this._begin();
+        this._menuBg(ctx, t * 0.3);
+        ctx.fillStyle = 'rgba(20,15,40,0.55)';
+        U.roundRect(ctx, 180, 70, CFG.W - 360, CFG.H - 160, 20); ctx.fill();
+        U.text(ctx, '🏆 TROPHIES', CFG.W / 2, 120, '900 40px system-ui', PAL.gold, 'center', PAL.ink, 7);
+        U.text(ctx, `Crowns ${Save.data.crowns}   ·   Best Streak ${Save.data.bestStreak}`,
+            CFG.W / 2, 162, '700 18px system-ui', '#fff', 'center');
+
+        let y = 210;
+        for (const a of ACHIEVEMENTS) {
+            const got = Save.has(a.id);
+            ctx.fillStyle = got ? 'rgba(255,210,63,0.18)' : 'rgba(255,255,255,0.05)';
+            U.roundRect(ctx, 240, y, CFG.W - 480, 52, 10); ctx.fill();
+            U.text(ctx, got ? '✔' : '🔒', 268, y + 26, '700 22px system-ui', got ? PAL.qualGreen : '#888', 'center');
+            U.text(ctx, a.name, 300, y + 19, '800 18px system-ui', got ? PAL.gold : '#cfd6e6', 'left');
+            U.text(ctx, a.desc, 300, y + 39, '600 14px system-ui', '#cfd6e6', 'left');
+            y += 60;
+        }
+        this._btn(ctx, 'menu', '‹ BACK', CFG.W / 2 - 110, CFG.H - 78, 220, 52, { color: '#ff8fb0', text: PAL.ink });
+    },
+
+    // ================================================== HUD
+    drawHUD(ctx, round) {
+        // round chip
+        ctx.fillStyle = 'rgba(20,15,40,0.55)';
+        U.roundRect(ctx, 16, 16, 320, 56, 12); ctx.fill();
+        U.text(ctx, round.def.name, 28, 38, '800 22px system-ui', '#fff', 'left');
+        const catCol = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' }[round.category] || '#fff';
+        U.text(ctx, round.category.toUpperCase(), 28, 60, '800 14px system-ui', catCol, 'left');
+
+        // counter (right)
+        ctx.fillStyle = 'rgba(20,15,40,0.55)';
+        U.roundRect(ctx, CFG.W - 276, 16, 260, 56, 12); ctx.fill();
+        if (round.kind === 'race') {
+            U.text(ctx, 'QUALIFIED', CFG.W - 146, 36, '800 14px system-ui', PAL.qualGreen, 'center');
+            U.text(ctx, `${round.qualifiedCount} / ${round.qualifyCount}`, CFG.W - 146, 58, '900 22px system-ui', '#fff', 'center');
+        } else if (round.kind === 'survival') {
+            U.text(ctx, 'SURVIVE', CFG.W - 146, 36, '800 14px system-ui', PAL.gold, 'center');
+            U.text(ctx, U.timeStr(round.timer) + '   ·   ' + round.aliveSoFar() + ' left', CFG.W - 146, 58, '900 20px system-ui', '#fff', 'center');
+        } else {
+            U.text(ctx, 'BEANS LEFT', CFG.W - 146, 36, '800 14px system-ui', PAL.pink, 'center');
+            U.text(ctx, '' + round.aliveSoFar(), CFG.W - 146, 58, '900 22px system-ui', '#fff', 'center');
+        }
+
+        // controls hint + emote bar
+        ctx.fillStyle = 'rgba(20,15,40,0.45)';
+        U.roundRect(ctx, 16, CFG.H - 52, 470, 38, 10); ctx.fill();
+        U.text(ctx, 'WASD move · SPACE jump · SHIFT dive · J grab · 1-4 gesture',
+            24, CFG.H - 33, '700 14px system-ui', '#fff', 'left');
+    },
+
+    // ================================================== ROUND INTRO CARD
+    drawIntro(ctx, round) {
+        const tIn = CFG.INTRO_TIME - round.phaseT;
+        ctx.fillStyle = 'rgba(10,8,24,0.55)';
+        ctx.fillRect(0, 0, CFG.W, CFG.H);
+        const pop = U.clamp(tIn * 3, 0, 1);
+        ctx.save();
+        ctx.translate(CFG.W / 2, CFG.H / 2 - 40);
+        ctx.scale(pop, pop);
+        const catCol = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' }[round.category] || '#fff';
+        U.text(ctx, round.category.toUpperCase(), 0, -70, '800 26px system-ui', catCol, 'center', PAL.ink, 6);
+        U.text(ctx, round.def.name, 0, 0, '900 76px system-ui', PAL.gold, 'center', PAL.ink, 10);
+        ctx.restore();
+        U.text(ctx, round.def.tagline, CFG.W / 2, CFG.H / 2 + 60, '600 22px system-ui', '#fff', 'center', PAL.ink, 5);
+
+        if (round.phaseT < CFG.COUNTDOWN) {
+            const n = Math.ceil(round.phaseT);
+            U.text(ctx, n > 0 ? '' + n : 'GO!', CFG.W / 2, CFG.H / 2 + 150, '900 70px system-ui', '#fff', 'center', PAL.ink, 9);
+        }
+        if (round.def.qualify)
+            U.text(ctx, `Top ${round.def.qualify} qualify`, CFG.W / 2, CFG.H - 80, '700 20px system-ui', PAL.qualGreen, 'center', PAL.ink, 4);
+    },
+
+    // ================================================== ENDING OVERLAY (in-world)
+    drawEndingOverlay(ctx, round) {
+        if (!round.result) return;
+        const o = round.result.outcome;
+        if (o === 'qualify') {
+            const pulse = 1 + Math.sin(Date.now() / 120) * 0.04;
+            ctx.save(); ctx.translate(CFG.W / 2, 130); ctx.scale(pulse, pulse);
+            U.text(ctx, 'QUALIFIED!', 0, 0, '900 72px system-ui', PAL.qualGreen, 'center', PAL.ink, 10);
+            ctx.restore();
+            U.text(ctx, round.bigTease ? 'Style points! 😎' : `You placed #${round.result.place}`,
+                CFG.W / 2, 188, '700 22px system-ui', '#fff', 'center', PAL.ink, 4);
+        } else if (o === 'win') {
+            U.text(ctx, '👑 VICTORY 👑', CFG.W / 2, 120, '900 70px system-ui', PAL.gold, 'center', PAL.ink, 10);
+        } else {
+            U.text(ctx, 'ELIMINATED', CFG.W / 2, 130, '900 70px system-ui', PAL.elimRed, 'center', PAL.ink, 10);
+        }
+    },
+
+    // ================================================== ELIMINATED SCREEN
+    drawEliminated(ctx, info) {
+        this._begin();
+        const g = ctx.createLinearGradient(0, 0, 0, CFG.H);
+        g.addColorStop(0, '#3a2350'); g.addColorStop(1, '#1c1430');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, CFG.W, CFG.H);
+        U.text(ctx, 'ELIMINATED', CFG.W / 2, 180, '900 76px system-ui', PAL.elimRed, 'center', PAL.ink, 10);
+        U.text(ctx, `Knocked out in ${info.roundName} — placed #${info.place}`,
+            CFG.W / 2, 270, '700 26px system-ui', '#fff', 'center');
+        U.text(ctx, `You cleared ${info.roundsCleared} of ${info.totalRounds} rounds`,
+            CFG.W / 2, 312, '600 20px system-ui', '#cfd6e6', 'center');
+        this._btn(ctx, 'play', '↻  PLAY AGAIN', CFG.W / 2 - 330, 420, 300, 66);
+        this._btn(ctx, 'menu', '☰  MAIN MENU', CFG.W / 2 + 30, 420, 300, 66, { color: '#5ad1ff' });
+        this.drawToasts(ctx);
+    },
+
+    // ================================================== VICTORY SCREEN
+    drawVictory(ctx, info, t) {
+        this._begin();
+        const g = ctx.createLinearGradient(0, 0, 0, CFG.H);
+        g.addColorStop(0, '#7b46d6'); g.addColorStop(1, '#ff5fa2');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, CFG.W, CFG.H);
+        // confetti rain
+        for (let i = 0; i < 60; i++) {
+            const x = (i * 97 + (t * 120 + i * i) % CFG.W) % CFG.W;
+            const y = ((t * 180 + i * 53) % (CFG.H + 40));
+            ctx.fillStyle = ['#ffd23f', '#5ad1ff', '#46d36a', '#fff'][i % 4];
+            ctx.fillRect(x, y, 7, 11);
+        }
+        const bob = Math.sin(t * 3) * 8;
+        U.text(ctx, '👑', CFG.W / 2, 150 + bob, '120px system-ui', '#fff', 'center');
+        U.text(ctx, 'WINNER WINNER!', CFG.W / 2, 280, '900 70px system-ui', PAL.gold, 'center', PAL.ink, 11);
+        U.text(ctx, 'You grabbed the Crown!', CFG.W / 2, 340, '700 26px system-ui', '#fff', 'center', PAL.ink, 4);
+        U.text(ctx, `Crowns: ${Save.data.crowns}   ·   Win Streak: ${Save.data.streak}`,
+            CFG.W / 2, 386, '800 22px system-ui', '#ffe9c2', 'center', PAL.ink, 4);
+        this._btn(ctx, 'play', '↻  PLAY AGAIN', CFG.W / 2 - 330, 460, 300, 66);
+        this._btn(ctx, 'menu', '☰  MAIN MENU', CFG.W / 2 + 30, 460, 300, 66, { color: '#5ad1ff' });
+        this.drawToasts(ctx);
+    },
+};
+
+</script>
+<script>
+/* =================== js/game.js =================== */
+'use strict';
+
+/* =====================================================================
+   game.js — boot, main loop, screen state machine and Show progression.
+   Screens: menu | customize | howto | trophies | playing | eliminated | victory
+   ===================================================================== */
+
+const Game = {
+    canvas: null,
+    ctx: null,
+    last: 0,
+    t: 0,
+    screen: 'menu',
+    show: null,        // { index, beans, round }
+    player: null,
+    info: null,        // payload for eliminated / victory screens
+
+    init() {
+        this.canvas = document.getElementById('gc');
+        this.canvas.width = CFG.W;
+        this.canvas.height = CFG.H;
+        this.ctx = this.canvas.getContext('2d');
+
+        Input.init(this.canvas);
+        Save.load();
+
+        this.screen = 'menu';
+        requestAnimationFrame(ts => this._loop(ts));
+    },
+
+    _loop(ts) {
+        let dt = this.last ? (ts - this.last) / 1000 : 0;
+        this.last = ts;
+        dt = Math.min(dt, 0.05);
+        this.t += dt;
+
+        this._update(dt);
+        this._render();
+        Input.flush();
+        requestAnimationFrame(t2 => this._loop(t2));
+    },
+
+    // ------------------------------------------------------------------
+    _update(dt) {
+        UI.update(dt);
+
+        if (this.screen === 'playing') {
+            const r = this.show.round;
+            r.update(dt);
+            if (r.done) this.finishRound();
+            if (Input.esc) this.toMenu();
+            return;
+        }
+
+        // menu-style screens
+        if (Input.mouse.clicked) {
+            const id = UI.pick(Input.mouse.x, Input.mouse.y);
+            if (id) this._onButton(id);
+        }
+        if (this.screen === 'menu' && Input.confirm) this.startShow();
+        if (this.screen !== 'menu' && Input.esc) this.toMenu();
+    },
+
+    _render() {
+        const ctx = this.ctx;
+        ctx.clearRect(0, 0, CFG.W, CFG.H);
+        switch (this.screen) {
+            case 'menu':      UI.drawMenu(ctx, this.t); break;
+            case 'customize': UI.drawCustomize(ctx, this.t); break;
+            case 'howto':     UI.drawHowTo(ctx, this.t); break;
+            case 'trophies':  UI.drawTrophies(ctx, this.t); break;
+            case 'eliminated':UI.drawEliminated(ctx, this.info); break;
+            case 'victory':   UI.drawVictory(ctx, this.info, this.t); break;
+            case 'playing': {
+                const r = this.show.round;
+                r.draw(ctx);
+                if (r.phase === 'intro') UI.drawIntro(ctx, r);
+                else {
+                    UI.drawHUD(ctx, r);
+                    if (r.phase === 'ending') UI.drawEndingOverlay(ctx, r);
+                }
+                UI.drawToasts(ctx);
+                break;
+            }
+        }
+    },
+
+    // ------------------------------------------------------------------
+    _onButton(id) {
+        if (id === 'play')      { this.startShow(); return; }
+        if (id === 'customize') { this.screen = 'customize'; return; }
+        if (id === 'howto')     { this.screen = 'howto'; return; }
+        if (id === 'trophies')  { this.screen = 'trophies'; return; }
+        if (id === 'menu')      { this.toMenu(); return; }
+
+        if (id.startsWith('cyc:')) {
+            const [, key, dir] = id.split(':');
+            const arrays = { color: COLORS, pattern: PATTERNS, faceplate: FACEPLATES, upper: COSTUMES_UPPER, lower: COSTUMES_LOWER };
+            const arr = arrays[key];
+            const n = arr.length;
+            Save.data[key] = (Save.data[key] + (dir === '1' ? 1 : -1) + n) % n;
+            Save.save(); Save.checkHeadTurner();
+            return;
+        }
+        if (id.startsWith('emote:')) {
+            const [, slot, dir] = id.split(':');
+            const i = +slot, n = EMOTES.length;
+            Save.data.emotes[i] = (Save.data.emotes[i] + (dir === '1' ? 1 : -1) + n) % n;
+            Save.save();
+            return;
+        }
+    },
+
+    toMenu() { this.screen = 'menu'; this.show = null; },
+
+    // ---- Show lifecycle ----------------------------------------------
+    startShow() {
+        const beans = this._makeField();
+        this.show = { index: 0, beans, round: null };
+        this.loadRound(0);
+    },
+
+    loadRound(i) {
+        for (const b of this.show.beans) this._resetBean(b);
+        this.show.index = i;
+        this.show.round = Rounds.create(SHOW[i], this.show.beans);
+        this.screen = 'playing';
+    },
+
+    finishRound() {
+        const r = this.show.round;
+        const res = r.result;
+
+        if (res.outcome === 'qualify') {
+            Save.unlock('first_qual');
+            if (r.bigTease) Save.unlock('big_tease');
+            if (r.category === 'Survival') Save.unlock('survivor');
+            const survivors = r.beans.filter(b => b.alive && !b.eliminated);
+            this.show.beans = survivors;
+            this.loadRound(this.show.index + 1);
+            return;
+        }
+
+        if (res.outcome === 'win') {
+            const flawless = !this.player.everRagdolled;
+            Save.recordWin(flawless);
+            this.info = {};
+            this.screen = 'victory';
+            return;
+        }
+
+        // eliminate
+        Save.recordLoss();
+        this.info = {
+            roundName: r.def.name,
+            place: res.place,
+            roundsCleared: this.show.index,
+            totalRounds: SHOW.length,
+        };
+        this.screen = 'eliminated';
+    },
+
+    // ---- Field / beans -----------------------------------------------
+    _makeField() {
+        const beans = [];
+        this.player = new Bean({
+            x: 0, y: 0, isPlayer: true, name: 'You',
+            appearance: Save.appearance(), emoteList: Save.emoteList(),
+        });
+        beans.push(this.player);
+
+        const names = U.shuffle(BEAN_NAMES.slice());
+        for (let i = 0; i < CFG.FIELD_SIZE - 1; i++) {
+            beans.push(new Bean({
+                x: 0, y: 0, name: names[i % names.length],
+                appearance: this._randomAppearance(),
+                emoteList: [U.pick(EMOTES), U.pick(EMOTES), U.pick(EMOTES), U.pick(EMOTES)],
+            }));
+        }
+        return beans;
+    },
+
+    _randomAppearance() {
+        return {
+            color: U.pick(COLORS).hex,
+            pattern: U.pick(PATTERNS).type,
+            upper: U.pick(COSTUMES_UPPER).prop,
+            lower: U.pick(COSTUMES_LOWER).prop,
+            visor: U.pick(FACEPLATES).visor,
+        };
+    },
+
+    _resetBean(b) {
+        b.vx = 0; b.vy = 0; b.z = 0; b.vz = 0; b.facing = -Math.PI / 2;
+        b.alive = true; b.finished = false; b.qualified = false;
+        b.eliminated = false; b.falling = false; b.place = 0;
+        b.diveT = 0; b.proneT = 0; b.diveCd = 0; b.ragdoll = 0; b.spin = 0; b.squash = 1;
+        b.grabbing = null; b.grabbedBy = null; b.grabT = 0;
+        b.emoteT = 0; b.emoteAnim = null; b.emoteName = null; b.justEmoted = 99;
+        b.ai = { mx: 0, my: 0, jump: false, dive: false };
+        b.aiTimer = 0; b.aiJumpLock = 0; b.aiTarget = { x: 0, y: 0 };
+        // NOTE: everRagdolled persists across the whole show (Flawless trophy)
+    },
+};
+
+window.addEventListener('load', () => Game.init());
+
+</script>
+<!-- GAME:END -->
 
 <script>
-    // Hide the loading screen once everything is parsed.
+    // Hide the loading screen once everything is parsed; game.js boots on load.
     document.getElementById('loading').style.display = 'none';
 </script>
 

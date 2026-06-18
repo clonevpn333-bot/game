@@ -8,7 +8,8 @@ Dive, bounce, jump and grab your way through a four-round **Show**. The field of
 
 ## ▶ Play
 
-Just open `index.html` in any modern browser. That's it.
+The entire game is a **single self-contained file** — just open `index.html` in
+any modern browser. No build step, no external CSS/JS, nothing to install.
 
 ## 🎮 Controls
 
@@ -37,24 +38,29 @@ trophies (incl. *Infallible*, *Head Turner*, *Big Tease*, *Flawless*) are saved 
 
 ## 🧱 Project layout
 
+Everything ships in one file. Inside `index.html`, between the `GAME:START` /
+`GAME:END` markers, the code is organised into labelled `<script>` sections
+(shared global scope, loaded in dependency order):
+
 ```
-index.html          entry point, loads scripts in dependency order
-css/style.css        page + loading-screen styling
-js/config.js         tuning constants + all game data (rounds, cosmetics, emotes, trophies)
-js/utils.js          math / RNG / geometry / canvas helpers
-js/input.js          keyboard + mouse
-js/save.js           localStorage profile + achievement logic
-js/entities.js       Bean (player + AI physics, ragdoll, render) + obstacle classes
-js/rounds.js         Round state machine + AI brains + the four course builders
-js/ui.js             menus, customise, HUD and overlay screens
-js/game.js           boot, main loop, screen state machine, Show progression
+index.html  ── the whole game in one file:
+  <style>      page + loading-screen styling
+  config       tuning constants + all game data (rounds, cosmetics, emotes, trophies)
+  utils        math / RNG / geometry / canvas helpers
+  input        keyboard + mouse
+  save         localStorage profile + achievement logic
+  entities     Bean (player + AI physics, ragdoll, render) + obstacle classes
+  rounds       Round state machine + AI brains + the four course builders
+  ui           menus, customise, HUD and overlay screens
+  game         boot, main loop, screen state machine, Show progression
 ```
 
 ## 🧪 Tests
 
-A headless smoke test mocks the canvas/DOM, runs every round to completion and a
-full Show through the real pipeline, and renders every cosmetic — catching runtime
-errors, NaN physics and balance regressions without a browser:
+A headless smoke test extracts the inlined scripts straight from `index.html`,
+mocks the canvas/DOM, runs every round to completion and a full Show through the
+real pipeline, and renders every cosmetic — catching runtime errors, NaN physics
+and balance regressions without a browser:
 
 ```
 node test/smoke.js
