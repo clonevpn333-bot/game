@@ -1,15 +1,18 @@
-# 🫘 Bean Royale
+# 🫘 Bean Royale 3D
 
-A bite-sized, browser-based tribute to **Fall Guys: Ultimate Knockout** — built in
-plain vanilla JavaScript on an HTML5 canvas (no build step, no dependencies).
+A bite-sized, browser-based **3D** tribute to **Fall Guys: Ultimate Knockout**,
+built with [Three.js](https://threejs.org). Procedurally-modelled jelly-bean
+characters with full procedural animation, real-time lighting + shadows, 3D
+obstacle courses, a chase camera, AI rivals, deep cosmetics and trophies.
 
-Dive, bounce, jump and grab your way through a four-round **Show**. The field of
+Dive, bounce, jump and grab your way through a four-round **Show**. A field of
 20 beans shrinks each round until one bean grabs the **Crown**.
 
 ## ▶ Play
 
-The entire game is a **single self-contained file** — just open `index.html` in
-any modern browser. No build step, no external CSS/JS, nothing to install.
+The whole game is a **single self-contained file** — just open `index.html`
+in a modern browser. Three.js is loaded from a CDN via an import map, so the
+first load needs an internet connection (everything else is inlined).
 
 ## 🎮 Controls
 
@@ -19,49 +22,52 @@ any modern browser. No build step, no external CSS/JS, nothing to install.
 | Jump     | `Space` — hop the sweepers & low bars  |
 | Dive     | `Shift` — a fast lunge (slow recovery) |
 | Grab     | `J` / `L` — grab a rival, release to fling |
-| Gesture  | `1` `2` `3` `4` — your equipped emotes |
-| Pause/Menu | `Esc`                                |
+| Gesture  | `1` `2` `3` `4` — your equipped emotes  |
+| Menu     | `Esc`                                  |
 
-## 🏁 The Show (round types)
+## 🏁 The Show
 
-- **Door Dash** *(Race)* — smash the fake doors, bounce off the real ones, reach the finish.
+- **Door Dash** *(Race)* — smash the fake doors, bounce off the real ones.
 - **The Whirlygig** *(Race)* — weave through spinning bars and swinging hammers.
-- **Jump Club** *(Survival)* — time your jumps over the ramping sweeper or kiss the slime.
-- **Hex-A-Gone** *(Final)* — tiles vanish under your feet; the last bean bouncing is crowned.
+- **Jump Club** *(Survival)* — time your jumps over the ramping sweeper.
+- **Hex-A-Gone** *(Final)* — tiles vanish under your feet; last bean takes the Crown.
 
 ## 🎨 Customise & 🏆 Trophies
 
-Mix **Colours, Patterns, Faceplates** and **Upper/Lower costumes** across five rarity
-tiers, and set a four-slot **gesture loadout**. Progress, crowns, win streak and
-trophies (incl. *Infallible*, *Head Turner*, *Big Tease*, *Flawless*) are saved to
-`localStorage`.
+Mix **Colours, Patterns, Faceplates** and **Upper/Lower costumes** across five
+rarity tiers (each rendered live on a rotating 3D bean preview), and set a
+four-slot **gesture loadout**. Crowns, win streak and trophies (incl.
+*Infallible*, *Head Turner*, *Big Tease*, *Flawless*) persist to `localStorage`.
 
-## 🧱 Project layout
+## 🧱 How it's built
 
-Everything ships in one file. Inside `index.html`, between the `GAME:START` /
-`GAME:END` markers, the code is organised into labelled `<script>` sections
-(shared global scope, loaded in dependency order):
-
-```
-index.html  ── the whole game in one file:
-  <style>      page + loading-screen styling
-  config       tuning constants + all game data (rounds, cosmetics, emotes, trophies)
-  utils        math / RNG / geometry / canvas helpers
-  input        keyboard + mouse
-  save         localStorage profile + achievement logic
-  entities     Bean (player + AI physics, ragdoll, render) + obstacle classes
-  rounds       Round state machine + AI brains + the four course builders
-  ui           menus, customise, HUD and overlay screens
-  game         boot, main loop, screen state machine, Show progression
-```
-
-## 🧪 Tests
-
-A headless smoke test extracts the inlined scripts straight from `index.html`,
-mocks the canvas/DOM, runs every round to completion and a full Show through the
-real pipeline, and renders every cosmetic — catching runtime errors, NaN physics
-and balance regressions without a browser:
+`index.html` is one file. Between the `GAME:START` / `GAME:END` markers it's a
+single ES module (`import * as THREE from 'three'`) organised into labelled
+sections that share module scope:
 
 ```
-node test/smoke.js
+config / utils / input / save   data, helpers, controls, persistence
+entities                         Bean + obstacle simulation (physics, ragdoll, AI hooks)
+rounds                           Round state machine + AI brains + 4 course builders
+view_bean                        procedural 3D bean model + all animations
+view_world                       lights / sky / shadows + 3D obstacles + course geometry
+game                             headless Show/round controller
+ui                               DOM overlay: menus, customise, HUD, result screens
+engine                           Three.js renderer/scene/camera/loop + glue + preview
+```
+
+The simulation is rendering-agnostic; the engine maps logical top-down
+coordinates `(x, y, height)` into Three's Y-up world `(x, height, y)` and lets
+each view position/animate itself.
+
+## 🧪 Test
+
+A headless test extracts the inlined module from `index.html`, swaps the CDN
+import for a local Three.js, stubs WebGL + the DOM, and drives a full Show
+through the real engine loop (every round's 3D scene, every UI screen, the
+preview, FX and camera):
+
+```
+npm install three@0.160.0
+node test/artifact_test.js
 ```
