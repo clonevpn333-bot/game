@@ -1,531 +1,758 @@
 'use strict';
 
-// ── Base Entity ───────────────────────────────────────────────────────────
-class Entity {
-    constructor(x, y) {
-        this.x = x; this.y = y;
+/* =====================================================================
+   entities.js — the Bean (player + AI) and every obstacle class.
+   Beans are pure physics + self-rendering; the Round drives them and
+   feeds AI beans their inputs via bean.ai each frame.
+   ===================================================================== */
+
+class Bean {
+    constructor(opts) {
+        this.x = opts.x; this.y = opts.y;
+        this.startX = opts.x; this.startY = opts.y;
         this.vx = 0; this.vy = 0;
-        this.w = 22; this.h = 22;     // hitbox half-dims: actual is 2w × 2h
-        this.facing = 'down';          // 'up' 'down' 'left' 'right'
-        this.active = true;
+        this.z = 0;  this.vz = 0;
+        this.r = CFG.BEAN_R;
+        this.facing = -Math.PI / 2;     // looking "up" the course
+        this.isPlayer = !!opts.isPlayer;
+        this.isAI = !opts.isPlayer;
+        this.name = opts.name || 'Bean';
+        this.appearance = opts.appearance;
+        this.emoteList = opts.emoteList || EMOTES.slice(0, 4);
+
+        // race / round state
+        this.alive = true;
+        this.finished = false;
+        this.qualified = false;
+        this.eliminated = false;
+        this.falling = false;
+        this.place = 0;
+
+        // motion-state timers
+        this.diveT = 0; this.proneT = 0; this.diveCd = 0;
+        this.ragdoll = 0; this.spin = 0;
+        this.grabbing = null; this.grabbedBy = null; this.grabT = 0;
+
+        // cosmetics / anim
+        this.bob = Math.random() * 6.283;
+        this.squash = 1;
+        this.emoteT = 0; this.emoteAnim = null; this.emoteName = null;
+        this.justEmoted = 99;
+        this.everRagdolled = false;
+        this.blink = U.rngf(2, 5);
+
+        // AI brain inputs (filled by the round each frame)
+        this.ai = { mx: 0, my: 0, jump: false, dive: false };
+        this.skill = opts.skill != null ? opts.skill : 0.7;
+        this.lane = opts.lane || 0;
+        this.aiTimer = 0;
+        this.aiTarget = { x: this.x, y: this.y };
+        this.aiJumpLock = 0;
     }
 
-    move(dx, dy, dt) {
-        if (dx !== 0) {
-            const nx = this.x + dx * dt;
-            if (World.canMoveTo(nx, this.y, this.w, this.h)) this.x = nx;
-        }
-        if (dy !== 0) {
-            const ny = this.y + dy * dt;
-            if (World.canMoveTo(this.x, ny, this.w, this.h)) this.y = ny;
-        }
-        if (dx < 0) this.facing = 'left';
-        else if (dx > 0) this.facing = 'right';
-        else if (dy < 0) this.facing = 'up';
-        else if (dy > 0) this.facing = 'down';
+    get grounded() { return this.z <= 0.5; }
+    get controllable() {
+        return this.ragdoll <= 0 && this.proneT <= 0 && this.diveT <= 0 && !this.grabbedBy;
+    }
+    get gone() { return this.eliminated && !this.falling; }
+
+    // ---- Hits & states ------------------------------------------------
+    hit(dx, dy, power, ragTime) {
+        if (this.falling || this.gone) return;
+        const l = Math.hypot(dx, dy) || 1;
+        this.vx = dx / l * power;
+        this.vy = dy / l * power;
+        this.vz = Math.max(this.vz, power * 0.22);
+        this.ragdoll = Math.max(this.ragdoll, ragTime || 0.7);
+        this.diveT = 0; this.proneT = 0;
+        this.everRagdolled = true;
+        this._releaseGrab();
+    }
+    bounce(v) { if (this.grounded) { this.vz = v; } }
+
+    startFall() {
+        if (this.falling || this.gone) return;
+        this.falling = true;
+        this.vz = -40;
+        this.ragdoll = Math.max(this.ragdoll, 0.4);
+        this._releaseGrab();
+        if (this.grabbedBy) { this.grabbedBy.grabbing = null; this.grabbedBy = null; }
     }
 
-    get tx() { return Math.floor(this.x / CFG.TS); }
-    get ty() { return Math.floor(this.y / CFG.TS); }
+    doEmote(em) {
+        if (!em || !this.grounded || this.ragdoll > 0 || this.diveT > 0 || this.falling) return;
+        this.emoteAnim = em.anim; this.emoteName = em.name; this.emoteT = 1.8; this.justEmoted = 0;
+    }
 
-    distTo(other) { return U.dist(this.x, this.y, other.x, other.y); }
+    _releaseGrab(fling) {
+        if (this.grabbing) {
+            const t = this.grabbing;
+            t.grabbedBy = null;
+            if (fling) t.hit(Math.cos(this.facing), Math.sin(this.facing), 320, 0.5);
+            this.grabbing = null;
+        }
+    }
 
-    // Draw cartoon-style character
-    drawCharacter(ctx, sx, sy, bodyColor, headColor, hatColor, label) {
-        const W = 20, H = 24;
-        const hx = sx - W/2, hy = sy - H/2;
+    // ---- Update -------------------------------------------------------
+    update(dt, round) {
+        // animation / cooldown timers always tick
+        this.bob += dt * 7;
+        this.blink -= dt;
+        this.diveCd = Math.max(0, this.diveCd - dt);
+        this.grabT = Math.max(0, this.grabT - dt);
+        this.justEmoted += dt;
+        if (this.aiJumpLock > 0) this.aiJumpLock -= dt;
+        if (this.emoteT > 0) { this.emoteT -= dt; if (this.emoteT <= 0) { this.emoteAnim = null; this.emoteName = null; } }
 
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.18)';
-        ctx.beginPath();
-        ctx.ellipse(sx, sy + H/2 + 2, W/2, 4, 0, 0, Math.PI*2);
-        ctx.fill();
+        if (this.gone) return;
 
-        // Legs (animated)
-        const legAnim = Math.sin(Date.now() * 0.012) * (this.vx||this.vy ? 6 : 0);
-        ctx.fillStyle = '#2a2a2a';
-        ctx.fillRect(hx + 4,  hy + H - 5,  5, 8 - Math.abs(legAnim));
-        ctx.fillRect(hx + W - 9, hy + H - 5, 5, 8 + Math.abs(legAnim));
-
-        // Body
-        ctx.fillStyle = bodyColor;
-        ctx.beginPath();
-        ctx.roundRect(hx, hy + 8, W, H - 4, 4);
-        ctx.fill();
-
-        // Arms
-        const armSwing = Math.sin(Date.now() * 0.012) * (this.vx||this.vy ? 10 : 0);
-        ctx.fillStyle = bodyColor;
-        ctx.fillRect(hx - 5, hy + 10 + armSwing, 6, 10);
-        ctx.fillRect(hx + W - 1, hy + 10 - armSwing, 6, 10);
-
-        // Neck
-        ctx.fillStyle = headColor;
-        ctx.fillRect(sx - 4, hy + 6, 8, 6);
-
-        // Head
-        ctx.fillStyle = headColor;
-        ctx.beginPath();
-        ctx.roundRect(hx + 1, hy - 10, W - 2, 20, 6);
-        ctx.fill();
-
-        // Hat (if any)
-        if (hatColor) {
-            ctx.fillStyle = hatColor;
-            ctx.fillRect(hx - 1, hy - 14, W + 2, 6);
-            ctx.fillRect(hx + 3, hy - 22, W - 6, 10);
+        // Falling into slime/pit — drop then eliminate
+        if (this.falling) {
+            this.vz -= CFG.GRAVITY * 0.8 * dt;
+            this.z += this.vz * dt;
+            this.x += this.vx * dt; this.y += this.vy * dt;
+            this.vx *= (1 - 0.9 * dt); this.vy *= (1 - 0.9 * dt);
+            this.spin += dt * 9;
+            if (this.z < -180) { this.eliminated = true; this.alive = false; }
+            return;
         }
 
-        // Eyes
-        const eyeY = hy - 4;
-        const blink = (Math.sin(Date.now() * 0.0015) > 0.97) ? 1 : 3;
-        ctx.fillStyle = '#111';
-        ctx.fillRect(hx + 4, eyeY, 4, blink);
-        ctx.fillRect(hx + W - 8, eyeY, 4, blink);
-        // Pupils
-        if (blink > 1) {
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(hx + 5, eyeY + 1, 2, 2);
-            ctx.fillRect(hx + W - 7, eyeY + 1, 2, 2);
+        // If being grabbed, the grabber owns our position
+        if (this.grabbedBy && this.grabbedBy.grabbing === this) {
+            if (this.blink <= 0) this.blink = U.rngf(2.5, 6);
+            return;
         }
 
-        // Label
-        if (label) {
-            ctx.font = '10px "Courier New"';
-            ctx.textAlign = 'center';
-            ctx.fillStyle = 'rgba(0,0,0,0.7)';
-            const lw = ctx.measureText(label).width;
-            ctx.fillRect(sx - lw/2 - 3, hy - 28, lw + 6, 13);
-            ctx.fillStyle = '#fff';
-            ctx.fillText(label, sx, hy - 18);
-            ctx.textAlign = 'left';
+        if (!round.live) return;     // frozen during intro card
+
+        // gather inputs
+        let ix = 0, iy = 0, wantJump = false, wantDive = false;
+        if (this.isPlayer) {
+            if (round.controllable && this.alive) {
+                ix = Input.moveX; iy = Input.moveY;
+                wantJump = Input.jump; wantDive = Input.dive;
+            }
+        } else {
+            ix = this.ai.mx; iy = this.ai.my; wantJump = this.ai.jump; wantDive = this.ai.dive;
+        }
+        const il = Math.hypot(ix, iy);
+        if (il > 1) { ix /= il; iy /= il; }
+
+        const grounded = this.grounded;
+
+        if (this.controllable) {
+            if (il > 0.05) this.facing = U.lerpAngle(this.facing, Math.atan2(iy, ix), 0.35);
+
+            if (grounded && wantJump) this.vz = CFG.JUMP_V;
+
+            if (grounded && wantDive && this.diveCd <= 0) {
+                const a = il > 0.05 ? Math.atan2(iy, ix) : this.facing;
+                this.facing = a;
+                this.diveT = CFG.DIVE_TIME;
+                this.diveCd = CFG.DIVE_TIME + CFG.DIVE_RECOVER + CFG.DIVE_CD;
+                this.vz = CFG.DIVE_HOP;
+                this.vx = Math.cos(a) * CFG.DIVE_SPEED;
+                this.vy = Math.sin(a) * CFG.DIVE_SPEED;
+            }
+        }
+
+        // velocity update by state
+        if (this.ragdoll > 0) {
+            this.ragdoll -= dt;
+            const sp = Math.hypot(this.vx, this.vy);
+            const ns = Math.max(0, sp - CFG.RAGDOLL_FRICTION * dt);
+            if (sp > 1) { this.vx = this.vx / sp * ns; this.vy = this.vy / sp * ns; }
+            this.spin += dt * (6 + sp * 0.02);
+            if (this.ragdoll <= 0) this.spin = 0;
+        } else if (this.diveT > 0) {
+            this.diveT -= dt;
+            this.vx *= (1 - 0.4 * dt); this.vy *= (1 - 0.4 * dt);
+            if (this.diveT <= 0) this.proneT = CFG.DIVE_RECOVER;
+        } else if (this.proneT > 0) {
+            this.proneT -= dt;
+            this.vx = U.approach(this.vx, 0, CFG.FRICTION * dt);
+            this.vy = U.approach(this.vy, 0, CFG.FRICTION * dt);
+        } else {
+            const ctrl = grounded ? 1 : CFG.AIR_CONTROL;
+            if (il > 0.05) {
+                this.vx = U.approach(this.vx, ix * CFG.RUN_SPEED, CFG.ACCEL * ctrl * dt);
+                this.vy = U.approach(this.vy, iy * CFG.RUN_SPEED, CFG.ACCEL * ctrl * dt);
+            } else if (grounded) {
+                this.vx = U.approach(this.vx, 0, CFG.FRICTION * dt);
+                this.vy = U.approach(this.vy, 0, CFG.FRICTION * dt);
+            }
+        }
+
+        // integrate vertical (z)
+        if (!grounded || this.vz > 0) {
+            this.vz -= CFG.GRAVITY * dt;
+            this.z += this.vz * dt;
+            if (this.z <= 0) { this.z = 0; this.vz = 0; }
+        }
+
+        // integrate horizontal
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+
+        // drag a grabbed bean along
+        if (this.grabbing) {
+            if (this.grabT <= 0 || !this.grabbing.alive || this.grabbing.falling) {
+                this._releaseGrab(true);
+            } else {
+                const t = this.grabbing;
+                t.x = this.x + Math.cos(this.facing) * (this.r * 2.1);
+                t.y = this.y + Math.sin(this.facing) * (this.r * 2.1);
+                t.z = this.z; t.vx = this.vx; t.vy = this.vy;
+            }
+        }
+
+        // squash & stretch from vertical motion
+        const target = 1 + U.clamp(this.vz / 1600, -0.18, 0.28);
+        this.squash = U.lerp(this.squash, target, 0.4);
+        if (this.blink <= 0) this.blink = U.rngf(2.5, 6);
+    }
+
+    tryGrab(beans) {
+        if (!this.controllable || !this.grounded || this.grabbing) return;
+        let best = null, bestD = CFG.GRAB_RANGE;
+        for (const b of beans) {
+            if (b === this || !b.alive || b.falling || b.grabbedBy) continue;
+            const d = U.dist(this.x, this.y, b.x, b.y);
+            if (d > bestD) continue;
+            const ang = Math.abs(U.angleDiff(this.facing, U.angleTo(this.x, this.y, b.x, b.y)));
+            if (ang < 1.1) { best = b; bestD = d; }
+        }
+        if (best) {
+            this.grabbing = best; best.grabbedBy = this;
+            this.grabT = CFG.GRAB_TIME; best.ragdoll = Math.max(best.ragdoll, 0.05);
+        }
+    }
+    releaseGrab() { this._releaseGrab(true); }
+
+    // =================================================================
+    //  RENDER
+    // =================================================================
+    drawShadow(ctx, cam) {
+        if (this.gone) return;
+        const sx = this.x - cam.x, sy = this.y - cam.y;
+        const lift = Math.max(0, this.z);
+        const sc = U.clamp(1 - lift / 600, 0.45, 1);
+        ctx.save();
+        ctx.globalAlpha = 0.22 * sc;
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.ellipse(sx, sy + 4, this.r * 0.95 * sc, this.r * 0.5 * sc, 0, 0, 6.283);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    draw(ctx, cam) {
+        if (this.gone) return;
+        const sx = this.x - cam.x;
+        const sy = this.y - cam.y - this.z;          // z lifts the body up the screen
+        const r = this.r;
+        const bobY = Math.sin(this.bob) * (this.grounded ? 1.2 : 0);
+
+        let rot = 0;
+        if (this.ragdoll > 0 || this.falling) rot = this.spin;
+        else if (this.diveT > 0) rot = Math.cos(this.facing) * 0.5;
+
+        ctx.save();
+        ctx.translate(sx, sy + bobY);
+        ctx.rotate(rot);
+
+        let sxScale = 1 / this.squash, syScale = this.squash;
+        if (this.diveT > 0 || this.proneT > 0) { sxScale = 1.25; syScale = 0.8; }
+        ctx.scale(sxScale, syScale);
+
+        this._drawBody(ctx, r);
+        ctx.restore();
+
+        // upright overlays (name tag / emote / player arrow)
+        this._drawTags(ctx, sx, sy, r);
+    }
+
+    _drawBody(ctx, r) {
+        const ap = this.appearance;
+        const base = ap.color;
+
+        this._lowerCostume(ctx, r, ap.lower);
+
+        // body capsule
+        ctx.fillStyle = base;
+        U.roundRect(ctx, -r, -r * 1.25, r * 2, r * 2.5, r * 0.95);
+        ctx.fill();
+
+        // pattern clipped to body + top highlight
+        ctx.save();
+        U.roundRect(ctx, -r, -r * 1.25, r * 2, r * 2.5, r * 0.95);
+        ctx.clip();
+        this._pattern(ctx, r, ap.pattern, base);
+        const g = ctx.createLinearGradient(0, -r * 1.3, 0, r);
+        g.addColorStop(0, 'rgba(255,255,255,0.35)');
+        g.addColorStop(0.5, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(-r, -r * 1.3, r * 2, r * 2.4);
+        ctx.restore();
+
+        ctx.strokeStyle = U.shade(base, -0.35);
+        ctx.lineWidth = 2;
+        U.roundRect(ctx, -r, -r * 1.25, r * 2, r * 2.5, r * 0.95);
+        ctx.stroke();
+
+        // little legs
+        ctx.fillStyle = U.shade(base, -0.2);
+        ctx.beginPath(); ctx.ellipse(-r * 0.45, r * 1.18, r * 0.3, r * 0.22, 0, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(r * 0.45, r * 1.18, r * 0.3, r * 0.22, 0, 0, 6.283); ctx.fill();
+
+        this._face(ctx, r, ap.visor);
+        this._upperCostume(ctx, r, ap.upper);
+    }
+
+    _face(ctx, r, visor) {
+        const open = this.blink < 0.12 ? 0.15 : 1;
+        ctx.save();
+        ctx.translate(0, -r * 0.15);
+        ctx.fillStyle = visor;
+        ctx.strokeStyle = U.shade(visor, -0.4);
+        ctx.lineWidth = 1.5;
+        U.roundRect(ctx, -r * 0.78, -r * 0.4, r * 1.56, r * 0.78, r * 0.32);
+        ctx.fill(); ctx.stroke();
+        const lookX = Math.cos(this.facing) * 1.6;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.ellipse(-r * 0.32, 0, r * 0.2, r * 0.26 * open, 0, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(r * 0.32, 0, r * 0.2, r * 0.26 * open, 0, 0, 6.283); ctx.fill();
+        if (open > 0.5) {
+            ctx.fillStyle = '#22203a';
+            ctx.beginPath(); ctx.arc(-r * 0.32 + lookX, 1, r * 0.09, 0, 6.283); ctx.fill();
+            ctx.beginPath(); ctx.arc(r * 0.32 + lookX, 1, r * 0.09, 0, 6.283); ctx.fill();
+        }
+        ctx.restore();
+        ctx.fillStyle = 'rgba(255,120,150,0.5)';
+        ctx.beginPath(); ctx.arc(-r * 0.55, r * 0.35, r * 0.16, 0, 6.283); ctx.fill();
+        ctx.beginPath(); ctx.arc(r * 0.55, r * 0.35, r * 0.16, 0, 6.283); ctx.fill();
+    }
+
+    _pattern(ctx, r, type, base) {
+        const dk = U.shade(base, -0.28);
+        const lt = U.shade(base, 0.4);
+        switch (type) {
+            case 'stripes':
+                ctx.fillStyle = dk;
+                for (let i = -2; i <= 2; i++) ctx.fillRect(i * r * 0.55 - r * 0.12, -r * 1.3, r * 0.22, r * 2.6);
+                break;
+            case 'spots':
+                ctx.fillStyle = dk;
+                for (const p of [[-.4, -.6], [.5, -.2], [-.2, .5], [.35, .7], [-.55, .15]])
+                    { ctx.beginPath(); ctx.arc(p[0] * r, p[1] * r, r * 0.22, 0, 6.283); ctx.fill(); }
+                break;
+            case 'check':
+                for (let yy = -2; yy <= 2; yy++) for (let xx = -2; xx <= 2; xx++)
+                    if ((xx + yy) & 1) { ctx.fillStyle = dk; ctx.fillRect(xx * r * 0.5, yy * r * 0.5, r * 0.5, r * 0.5); }
+                break;
+            case 'camo':
+                ctx.fillStyle = dk;
+                for (const p of [[-.3, -.5, .5], [.4, .1, .6], [-.1, .6, .45], [.5, -.6, .4]])
+                    { ctx.beginPath(); ctx.ellipse(p[0] * r, p[1] * r, p[2] * r, p[2] * r * 0.8, 0.5, 0, 6.283); ctx.fill(); }
+                break;
+            case 'tiger':
+                ctx.strokeStyle = dk; ctx.lineWidth = r * 0.18; ctx.lineCap = 'round';
+                for (let i = -2; i <= 2; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(-r, i * r * 0.5);
+                    ctx.quadraticCurveTo(0, i * r * 0.5 - r * 0.3, r, i * r * 0.5);
+                    ctx.stroke();
+                }
+                break;
+            case 'star':
+                ctx.fillStyle = lt;
+                this._star(ctx, 0, 0, r * 0.7, r * 0.3, 5);
+                break;
+            case 'tiedye': {
+                const g = ctx.createRadialGradient(0, 0, 2, 0, 0, r * 1.6);
+                g.addColorStop(0, 'rgba(255,255,255,0.6)'); g.addColorStop(0.4, U.shade(base, 0.3));
+                g.addColorStop(0.7, base); g.addColorStop(1, dk);
+                ctx.fillStyle = g; ctx.fillRect(-r, -r * 1.4, r * 2, r * 2.8);
+                break;
+            }
+            case 'galaxy': {
+                const g = ctx.createLinearGradient(-r, -r, r, r);
+                g.addColorStop(0, '#2b1d5e'); g.addColorStop(0.5, '#6a32c8'); g.addColorStop(1, '#1b1340');
+                ctx.fillStyle = g; ctx.fillRect(-r, -r * 1.4, r * 2, r * 2.8);
+                ctx.fillStyle = '#fff';
+                for (const p of [[-.4, -.7], [.3, -.3], [-.1, .2], [.45, .5], [-.5, .55], [.1, -.9]])
+                    { ctx.beginPath(); ctx.arc(p[0] * r, p[1] * r, r * 0.06, 0, 6.283); ctx.fill(); }
+                break;
+            }
+            default: break; // solid
+        }
+    }
+
+    _star(ctx, cx, cy, R, r2, pts) {
+        ctx.beginPath();
+        for (let i = 0; i < pts * 2; i++) {
+            const ang = (Math.PI / pts) * i - Math.PI / 2;
+            const rad = i & 1 ? r2 : R;
+            const x = cx + Math.cos(ang) * rad, y = cy + Math.sin(ang) * rad;
+            i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        }
+        ctx.closePath(); ctx.fill();
+    }
+
+    _upperCostume(ctx, r, prop) {
+        ctx.save();
+        ctx.translate(0, -r * 1.25);
+        switch (prop) {
+            case 'party':
+                ctx.fillStyle = '#ff5fa2'; ctx.beginPath();
+                ctx.moveTo(0, -r * 1.1); ctx.lineTo(-r * 0.5, 0); ctx.lineTo(r * 0.5, 0); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(0, -r * 1.1, r * 0.18, 0, 6.283); ctx.fill();
+                break;
+            case 'cap':
+                ctx.fillStyle = '#e6395a';
+                U.roundRect(ctx, -r * 0.6, -r * 0.5, r * 1.2, r * 0.5, r * 0.25); ctx.fill();
+                ctx.fillRect(-r * 0.85, -r * 0.12, r * 0.55, r * 0.18);
+                break;
+            case 'pigeon':
+                ctx.fillStyle = '#cfd6df'; ctx.beginPath(); ctx.arc(0, -r * 0.3, r * 0.6, 0, 6.283); ctx.fill();
+                ctx.fillStyle = '#ff9447'; ctx.beginPath();
+                ctx.moveTo(0, -r * 0.3); ctx.lineTo(r * 0.7, -r * 0.15); ctx.lineTo(0, -r * 0.02); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(-r * 0.15, -r * 0.4, r * 0.08, 0, 6.283); ctx.fill();
+                break;
+            case 'bee':
+                ctx.strokeStyle = '#222'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(-r * 0.2, 0); ctx.lineTo(-r * 0.4, -r * 0.7);
+                ctx.moveTo(r * 0.2, 0); ctx.lineTo(r * 0.4, -r * 0.7); ctx.stroke();
+                ctx.fillStyle = '#ffd23f';
+                ctx.beginPath(); ctx.arc(-r * 0.4, -r * 0.75, r * 0.12, 0, 6.283); ctx.fill();
+                ctx.beginPath(); ctx.arc(r * 0.4, -r * 0.75, r * 0.12, 0, 6.283); ctx.fill();
+                break;
+            case 'cat':
+                ctx.fillStyle = '#9a6cff';
+                for (const s of [-1, 1]) { ctx.beginPath();
+                    ctx.moveTo(s * r * 0.2, 0); ctx.lineTo(s * r * 0.55, -r * 0.7); ctx.lineTo(s * r * 0.6, 0); ctx.closePath(); ctx.fill(); }
+                break;
+            case 'pirate':
+                ctx.fillStyle = '#23203a';
+                U.roundRect(ctx, -r * 0.8, -r * 0.55, r * 1.6, r * 0.5, r * 0.2); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(-r * 0.8, -r * 0.3); ctx.quadraticCurveTo(0, -r * 1.05, r * 0.8, -r * 0.3); ctx.fill();
+                ctx.fillStyle = '#fff'; this._star(ctx, 0, -r * 0.55, r * 0.16, r * 0.07, 5);
+                break;
+            case 'dino':
+                ctx.fillStyle = '#46d36a';
+                for (let i = -1; i <= 1; i++) { ctx.beginPath();
+                    ctx.moveTo(i * r * 0.4 - r * 0.18, 0); ctx.lineTo(i * r * 0.4, -r * 0.5); ctx.lineTo(i * r * 0.4 + r * 0.18, 0); ctx.closePath(); ctx.fill(); }
+                break;
+            case 'crown':
+                ctx.fillStyle = '#ffd23f'; ctx.strokeStyle = '#e8a200'; ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(-r * 0.6, 0); ctx.lineTo(-r * 0.6, -r * 0.5); ctx.lineTo(-r * 0.3, -r * 0.2);
+                ctx.lineTo(0, -r * 0.6); ctx.lineTo(r * 0.3, -r * 0.2); ctx.lineTo(r * 0.6, -r * 0.5);
+                ctx.lineTo(r * 0.6, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+                break;
+            default: break;
+        }
+        ctx.restore();
+    }
+
+    _lowerCostume(ctx, r, prop) {
+        switch (prop) {
+            case 'shoes':
+                ctx.fillStyle = '#f25c54';
+                ctx.beginPath(); ctx.ellipse(-r * 0.45, r * 1.25, r * 0.34, r * 0.2, 0, 0, 6.283); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(r * 0.45, r * 1.25, r * 0.34, r * 0.2, 0, 0, 6.283); ctx.fill();
+                break;
+            case 'tutu':
+                ctx.fillStyle = '#ff8fd0';
+                ctx.beginPath(); ctx.ellipse(0, r * 0.9, r * 1.4, r * 0.5, 0, 0, 6.283); ctx.fill();
+                break;
+            case 'tail':
+                ctx.fillStyle = '#46d36a';
+                ctx.beginPath(); ctx.moveTo(0, r * 0.6); ctx.lineTo(-r * 1.5, r * 1.2); ctx.lineTo(0, r * 1.25); ctx.closePath(); ctx.fill();
+                break;
+            case 'rocket':
+                ctx.fillStyle = '#ffb03f';
+                ctx.beginPath(); ctx.moveTo(-r * 0.4, r * 1.2); ctx.lineTo(0, r * 1.9); ctx.lineTo(r * 0.4, r * 1.2); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#ff5a2c';
+                ctx.beginPath(); ctx.moveTo(-r * 0.2, r * 1.2); ctx.lineTo(0, r * 1.6); ctx.lineTo(r * 0.2, r * 1.2); ctx.closePath(); ctx.fill();
+                break;
+            case 'gold':
+                ctx.fillStyle = '#ffd23f';
+                ctx.beginPath(); ctx.ellipse(-r * 0.45, r * 1.25, r * 0.36, r * 0.22, 0, 0, 6.283); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(r * 0.45, r * 1.25, r * 0.36, r * 0.22, 0, 0, 6.283); ctx.fill();
+                break;
+            default: break;
+        }
+    }
+
+    _drawTags(ctx, sx, sy, r) {
+        if (this.emoteAnim && this.emoteT > 0) {
+            const by = sy - r * 2.4;
+            ctx.save();
+            ctx.globalAlpha = U.clamp(this.emoteT * 2, 0, 1);
+            U.text(ctx, this._emoteIcon(), sx, by, 'bold 26px system-ui', '#fff', 'center', PAL.ink, 5);
+            ctx.restore();
+        }
+        if (this.isPlayer) {
+            const ay = sy - r * 2.0 - Math.abs(Math.sin(this.bob)) * 3;
+            ctx.fillStyle = PAL.gold;
+            ctx.strokeStyle = PAL.ink; ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(sx, ay + 12); ctx.lineTo(sx - 9, ay); ctx.lineTo(sx + 9, ay); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+        } else {
+            ctx.save();
+            ctx.globalAlpha = 0.85;
+            U.text(ctx, this.name, sx, sy - r * 1.85, '600 11px system-ui', '#fff', 'center', 'rgba(20,15,40,0.7)', 3);
+            ctx.restore();
+        }
+    }
+
+    _emoteIcon() {
+        switch (this.emoteAnim) {
+            case 'wave': return '👋';
+            case 'dance': return '🐔';
+            case 'crouch': return '⬇️';
+            case 'think': return '🤔';
+            case 'flex': return '💪';
+            case 'spin': return '🌀';
+            case 'point': return '👉';
+            case 'heart': return '💖';
+            default: return '✨';
         }
     }
 }
 
-// ── Player ────────────────────────────────────────────────────────────────
-const Player = {
-    x: (CFG.WW / 2) * CFG.TS,
-    y: (CFG.WH / 2) * CFG.TS,
-    w: 11, h: 11,
-    facing: 'down',
-    vx: 0, vy: 0,
-    active: true,
+/* =====================================================================
+   OBSTACLES
+   Each: update(dt), collide(bean, round), draw(ctx, cam) [ground layer],
+   drawTop(ctx, cam) [overhead layer, optional].
+   ===================================================================== */
 
-    // Core stats
-    cash: CFG.START_CASH,
-    xp: 0,
-    rank: 0,
-    heat: 0,
-    energy: 100,   // 0-100, depletes when sprinting
-    hidden: false, // hiding in dumpster
-
-    // Inventory: { [productKey]: { strainId, effects, grams, packaging } }
-    inventory: {},
-    // Supplies: { [itemId]: count }
-    supplies: { baggie: 20 },
-    // Active pots (across all owned properties)
-    // Managed by GrowSystem
-
-    get tx() { return Math.floor(this.x / CFG.TS); },
-    get ty() { return Math.floor(this.y / CFG.TS); },
-
-    get rankData() { return CFG.RANKS[Math.min(this.rank, CFG.RANKS.length - 1)]; },
-
-    addXP(n) {
-        this.xp += n;
-        while (this.rank < CFG.RANKS.length - 1 &&
-               this.xp >= CFG.RANKS[this.rank + 1].xp) {
-            this.rank++;
-            UI.notify(`🏆 RANK UP! You are now: ${CFG.RANKS[this.rank].name}`, '#ffd700');
+class Spinner {
+    // Rotating bar through a pivot. pushOut knocks beans radially outward.
+    constructor(o) {
+        this.cx = o.cx; this.cy = o.cy;
+        this.len = o.len; this.thick = o.thick || 16;
+        this.angle = o.angle || 0;
+        this.speed = o.speed;
+        this.power = o.power || 360;
+        this.height = o.height != null ? o.height : 9999;
+        this.arms = o.arms || 2;
+        this.pushOut = !!o.pushOut;
+        this.color = o.color || '#ff5fa2';
+        this.layer = 'top';
+    }
+    update(dt) { this.angle += this.speed * dt; }
+    _ends() {
+        const out = [];
+        for (let i = 0; i < this.arms; i++) {
+            const a = this.angle + (i * Math.PI * 2 / this.arms);
+            out.push([this.cx + Math.cos(a) * this.len, this.cy + Math.sin(a) * this.len]);
         }
-    },
-
-    earn(amount, source = '') {
-        this.cash += amount;
-        this.addXP(Math.floor(amount / 5));
-        if (source) UI.notify(`+${U.money(amount)} — ${source}`, '#4caf50');
-    },
-
-    spend(amount) {
-        if (this.cash < amount) return false;
-        this.cash -= amount;
-        return true;
-    },
-
-    addInventory(strainId, effects, grams) {
-        const key = strainId + ':' + effects.join(',');
-        if (!this.inventory[key]) {
-            this.inventory[key] = { strainId, effects: [...effects], grams: 0, key };
-        }
-        this.inventory[key].grams += grams;
-    },
-
-    removeInventory(key, grams) {
-        if (!this.inventory[key]) return false;
-        if (this.inventory[key].grams < grams) return false;
-        this.inventory[key].grams -= grams;
-        if (this.inventory[key].grams <= 0) delete this.inventory[key];
-        return true;
-    },
-
-    totalGrams() {
-        return Object.values(this.inventory).reduce((s, v) => s + v.grams, 0);
-    },
-
-    // Pixel-level movement
-    update(dt) {
-        if (GameState.uiMode !== 'playing') return;
-        if (this.hidden) return;
-
-        const speed = Input.sprint && this.energy > 0
-            ? CFG.SPRINT : CFG.SPEED;
-
-        const dx = Input.axis('ArrowLeft','KeyA') + Input.axis('ArrowLeft','ArrowLeft')
-                 || Input.left;
-        const dy = Input.axis('ArrowUp','KeyW') + Input.axis('ArrowUp','ArrowUp')
-                 || 0;
-
-        let mx = Input.left;
-        let my = Input.up;
-
-        // Re-read properly
-        mx = (Input.down('KeyA') || Input.down('ArrowLeft') ? -1 : 0)
-           + (Input.down('KeyD') || Input.down('ArrowRight') ? 1 : 0);
-        my = (Input.down('KeyW') || Input.down('ArrowUp')   ? -1 : 0)
-           + (Input.down('KeyS') || Input.down('ArrowDown') ? 1 : 0);
-
-        if (mx !== 0 && my !== 0) { mx *= 0.707; my *= 0.707; }
-
-        const spd = (Input.sprint && this.energy > 10) ? CFG.SPRINT : CFG.SPEED;
-
-        if (mx !== 0) {
-            const nx = this.x + mx * spd * dt;
-            if (World.canMoveTo(nx, this.y, this.w, this.h)) this.x = nx;
-        }
-        if (my !== 0) {
-            const ny = this.y + my * spd * dt;
-            if (World.canMoveTo(this.x, ny, this.w, this.h)) this.y = ny;
-        }
-
-        if (mx < 0) this.facing = 'left';
-        else if (mx > 0) this.facing = 'right';
-        else if (my < 0) this.facing = 'up';
-        else if (my > 0) this.facing = 'down';
-
-        this.vx = mx; this.vy = my;
-
-        // Energy drain/regen
-        if (Input.sprint && (mx||my)) this.energy = Math.max(0, this.energy - 15 * dt);
-        else this.energy = Math.min(100, this.energy + 8 * dt);
-
-        // Clamp to world bounds
-        this.x = U.clamp(this.x, this.w, World.mapW * CFG.TS - this.w);
-        this.y = U.clamp(this.y, this.h, World.mapH * CFG.TS - this.h);
-    },
-
-    draw(ctx, camX, camY) {
-        const sx = this.x - camX;
-        const sy = this.y - camY;
-        const e = new Entity(0, 0);
-        e.vx = this.vx; e.vy = this.vy;
-        e.drawCharacter(ctx, sx, sy, '#1e90ff', '#FDBCB4', null, null);
-
-        // Sprint particles
-        if (Input.sprint && (this.vx || this.vy) && this.energy > 0) {
-            ctx.fillStyle = 'rgba(255,255,255,0.4)';
-            for (let i = 0; i < 3; i++) {
-                ctx.fillRect(
-                    sx - this.vx * U.rng(10,25) + U.rng(-5,5),
-                    sy - this.vy * U.rng(10,25) + U.rng(-5,5),
-                    2, 2
-                );
-            }
-        }
-    },
-};
-
-// ── NPC types ─────────────────────────────────────────────────────────────
-const NPC_DEFS = [
-    {
-        id:'benji', name:'Benji', role:'customer',
-        bodyColor:'#ff8c00', headColor:'#FDBCB4', hatColor:null,
-        tx:20, ty:19,
-        prefs:['og_kush','sour_diesel'], maxSpendDay:120,
-        introMsg:"Yo! You the new supplier? I need something to take the edge off. Text me when you got product.",
-        greeting:"What you got for me today?",
-        unlockRank:0,
-    },
-    {
-        id:'tina', name:'Tina', role:'customer',
-        bodyColor:'#ff69b4', headColor:'#c8a882', hatColor:null,
-        tx:58, ty:22,
-        prefs:['granddaddy_purple','white_widow'], maxSpendDay:180,
-        introMsg:"My friend told me about you. I like the good stuff, don't bring me any trash.",
-        greeting:"You better have something worth my time.",
-        unlockRank:1,
-    },
-    {
-        id:'carlos', name:'Carlos', role:'customer',
-        bodyColor:'#228b22', headColor:'#8B6914', hatColor:null,
-        tx:64, ty:60,
-        prefs:['green_crack','sour_diesel'], maxSpendDay:250,
-        introMsg:"I heard you're building something here. I buy in bulk — don't waste my time with small amounts.",
-        greeting:"How much you moving today?",
-        unlockRank:1,
-    },
-    {
-        id:'raj', name:'Raj', role:'customer',
-        bodyColor:'#4169e1', headColor:'#9a7a50', hatColor:null,
-        tx:47, ty:21,
-        prefs:['white_widow','granddaddy_purple'], maxSpendDay:200,
-        introMsg:"New in town? Word travels fast. I'm looking for a reliable source. Quality only.",
-        greeting:"Anything good this week?",
-        unlockRank:2,
-    },
-    {
-        id:'molly', name:'Molly', role:'customer',
-        bodyColor:'#9932cc', headColor:'#FDBCB4', hatColor:null,
-        tx:72, ty:52,
-        prefs:['og_kush','green_crack'], maxSpendDay:300,
-        introMsg:"I've been waiting for someone like you. The last supplier was unreliable. Don't let me down.",
-        greeting:"Please tell me you have something.",
-        unlockRank:2,
-    },
-    {
-        id:'leo', name:'Leo', role:'customer',
-        bodyColor:'#8b0000', headColor:'#c8a882', hatColor:'#333',
-        tx:14, ty:58,
-        prefs:['white_widow','sour_diesel'], maxSpendDay:400,
-        introMsg:"You've got a rep now. I deal with serious people. Let's see if you can keep up with demand.",
-        greeting:"I need volume. You got volume?",
-        unlockRank:3,
-    },
-    // Dealers (work for you)
-    {
-        id:'dealer_mia', name:'Mia', role:'dealer',
-        bodyColor:'#ff4500', headColor:'#FDBCB4', hatColor:null,
-        tx:24, ty:36,
-        hireCost:500, cutPct:0.35,
-        introMsg:"I can move product for you. Give me supply and I'll handle the street sales.",
-        unlockRank:2,
-    },
-    {
-        id:'dealer_dom', name:'Dom', role:'dealer',
-        bodyColor:'#2f4f4f', headColor:'#8B6914', hatColor:'#1a1a1a',
-        tx:56, ty:36,
-        hireCost:800, cutPct:0.30,
-        introMsg:"Heard you're growing your operation. I've got contacts downtown. Pay me right, I'll make you money.",
-        unlockRank:3,
-    },
-    // Police officers (patrol)
-    {
-        id:'cop_1', name:'Officer Davis', role:'police',
-        bodyColor:'#1a3a6a', headColor:'#FDBCB4', hatColor:'#1a1a5a',
-        patrolPath:[[38,34],[38,38],[42,38],[42,34]], patrolIdx:0, patrolWait:0,
-        tx:38, ty:36,
-    },
-    {
-        id:'cop_2', name:'Officer Chen', role:'police',
-        bodyColor:'#1a3a6a', headColor:'#c8a882', hatColor:'#1a1a5a',
-        patrolPath:[[20,32],[28,32],[28,42],[20,42]], patrolIdx:0, patrolWait:0,
-        tx:20, ty:32,
-    },
-    {
-        id:'cop_3', name:'Officer Park', role:'police',
-        bodyColor:'#1a3a6a', headColor:'#9a7a50', hatColor:'#1a1a5a',
-        patrolPath:[[55,45],[65,45],[65,55],[55,55]], patrolIdx:0, patrolWait:0,
-        tx:55, ty:45,
-    },
-    // Ambient civilians
-    {id:'civ_1',name:'',role:'ambient',bodyColor:'#ff6347',headColor:'#FDBCB4',hatColor:null,tx:22,ty:15,wanderRadius:5},
-    {id:'civ_2',name:'',role:'ambient',bodyColor:'#3cb371',headColor:'#c8a882',hatColor:null,tx:48,ty:18,wanderRadius:6},
-    {id:'civ_3',name:'',role:'ambient',bodyColor:'#da70d6',headColor:'#FDBCB4',hatColor:null,tx:60,ty:52,wanderRadius:4},
-    {id:'civ_4',name:'',role:'ambient',bodyColor:'#daa520',headColor:'#8B6914',hatColor:null,tx:30,ty:55,wanderRadius:5},
-    {id:'civ_5',name:'',role:'ambient',bodyColor:'#20b2aa',headColor:'#FDBCB4',hatColor:null,tx:70,ty:25,wanderRadius:7},
-];
-
-// ── NPC Manager ────────────────────────────────────────────────────────────
-const NPCManager = {
-    npcs: [],
-
-    init() {
-        this.npcs = NPC_DEFS.map(def => {
-            const npc = Object.assign({}, def);
-            npc.x = (def.tx + 0.5) * CFG.TS;
-            npc.y = (def.ty + 0.5) * CFG.TS;
-            npc.vx = 0; npc.vy = 0;
-            // Customer state
-            npc.unlocked    = (def.unlockRank === 0);
-            npc.introduced  = false;
-            npc.hired       = false;
-            npc.spentToday  = 0;
-            // Patrol/wander state
-            npc.patrolIdx   = 0;
-            npc.moveTimer   = 0;
-            npc.wanderTarget = null;
-            npc.w = 10; npc.h = 10;
-            return npc;
-        });
-    },
-
-    update(dt) {
-        for (const npc of this.npcs) {
-            if (!npc.active) continue;
-            if (npc.role === 'ambient') this._updateWander(npc, dt);
-            if (npc.role === 'police')  this._updatePatrol(npc, dt);
-            if ((npc.role === 'customer' || npc.role === 'dealer') && npc.unlocked)
-                this._updateCustomer(npc, dt);
-        }
-    },
-
-    _updateWander(npc, dt) {
-        npc.moveTimer -= dt;
-        if (!npc.wanderTarget || npc.moveTimer <= 0) {
-            const ox = (npc.tx || Math.floor(npc.x/CFG.TS));
-            const oy = (npc.ty || Math.floor(npc.y/CFG.TS));
-            const r  = npc.wanderRadius || 4;
-            npc.wanderTarget = {
-                x: (ox + U.rng(-r, r) + 0.5) * CFG.TS,
-                y: (oy + U.rng(-r, r) + 0.5) * CFG.TS,
-            };
-            npc.moveTimer = U.rng(2, 6);
-        }
-        this._moveToward(npc, npc.wanderTarget.x, npc.wanderTarget.y, 50, dt);
-    },
-
-    _updatePatrol(npc, dt) {
-        if (!npc.patrolPath || npc.patrolPath.length === 0) return;
-        npc.patrolWait -= dt;
-        if (npc.patrolWait > 0) return;
-
-        const target = npc.patrolPath[npc.patrolIdx];
-        const tx = (target[0] + 0.5) * CFG.TS;
-        const ty = (target[1] + 0.5) * CFG.TS;
-        const d  = U.dist(npc.x, npc.y, tx, ty);
-
-        if (d < 8) {
-            npc.patrolIdx = (npc.patrolIdx + 1) % npc.patrolPath.length;
-            npc.patrolWait = U.rng(1, 3);
-        } else {
-            this._moveToward(npc, tx, ty, 70, dt);
-        }
-
-        // Police: check if close to player and heat is high
-        if (GameState.heat > CFG.BUST_THRESHOLD) {
-            const dp = U.dist(npc.x, npc.y, Player.x, Player.y);
-            if (dp < 120) {
-                // Chase!
-                this._moveToward(npc, Player.x, Player.y, 90, dt);
-                if (dp < 35) {
-                    PoliceSystem.bust();
+        return out;
+    }
+    collide(bean, round) {
+        if (bean.z > this.height || bean.falling || bean.gone) return;
+        for (const [ex, ey] of this._ends()) {
+            const c = U.closestOnSeg(bean.x, bean.y, this.cx, this.cy, ex, ey);
+            if (U.dist(bean.x, bean.y, c.x, c.y) < bean.r + this.thick * 0.5) {
+                let dx, dy;
+                if (this.pushOut) { dx = bean.x - this.cx; dy = bean.y - this.cy; }
+                else {
+                    const ta = this.angle + (this.speed > 0 ? Math.PI / 2 : -Math.PI / 2);
+                    dx = Math.cos(ta); dy = Math.sin(ta);
                 }
-            }
-        } else {
-            // Random search
-            const dp = U.dist(npc.x, npc.y, Player.x, Player.y);
-            if (dp < 80 && GameState.heat > 30) {
-                this._moveToward(npc, Player.x, Player.y, 75, dt);
-                if (dp < 35) PoliceSystem.bodySearch();
+                bean.hit(dx, dy, this.power, 0.7);
+                round.spawnBurst(bean.x, bean.y, bean.z, this.color, 5);
+                return;
             }
         }
-    },
-
-    _updateCustomer(npc, dt) {
-        // Idle near their spawn point
-        npc.moveTimer -= dt;
-        if (npc.moveTimer <= 0) {
-            npc.wanderTarget = {
-                x: (npc.tx + U.rng(-2,2) + 0.5) * CFG.TS,
-                y: (npc.ty + U.rng(-2,2) + 0.5) * CFG.TS,
-            };
-            npc.moveTimer = U.rng(3, 8);
+    }
+    draw(ctx, cam) {
+        ctx.save();
+        ctx.globalAlpha = 0.25; ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.ellipse(this.cx - cam.x, this.cy - cam.y + 6, this.len, this.len * 0.4, 0, 0, 6.283); ctx.fill();
+        ctx.restore();
+        ctx.fillStyle = U.shade(this.color, -0.3);
+        ctx.beginPath(); ctx.arc(this.cx - cam.x, this.cy - cam.y, this.thick * 0.7, 0, 6.283); ctx.fill();
+    }
+    drawTop(ctx, cam) {
+        const lift = this.height < 200 ? 6 : 30;
+        ctx.save();
+        ctx.translate(this.cx - cam.x, this.cy - cam.y - lift);
+        ctx.lineWidth = this.thick; ctx.lineCap = 'round';
+        ctx.strokeStyle = this.color;
+        for (const [ex, ey] of this._ends()) {
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(ex - this.cx, ey - this.cy); ctx.stroke();
         }
-        if (npc.wanderTarget) {
-            this._moveToward(npc, npc.wanderTarget.x, npc.wanderTarget.y, 45, dt);
+        ctx.strokeStyle = U.shade(this.color, 0.35); ctx.lineWidth = this.thick * 0.35;
+        for (const [ex, ey] of this._ends()) {
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo((ex - this.cx) * 0.96, (ey - this.cy) * 0.96); ctx.stroke();
         }
-    },
+        ctx.fillStyle = U.shade(this.color, -0.25);
+        ctx.beginPath(); ctx.arc(0, 0, this.thick * 0.85, 0, 6.283); ctx.fill();
+        ctx.restore();
+    }
+}
 
-    _moveToward(npc, tx, ty, speed, dt) {
-        const dx = tx - npc.x;
-        const dy = ty - npc.y;
-        const d  = Math.hypot(dx, dy);
-        if (d < 4) { npc.vx = 0; npc.vy = 0; return; }
-        const nx = dx / d * speed * dt;
-        const ny = dy / d * speed * dt;
-        if (World.canMoveTo(npc.x + nx, npc.y, npc.w, npc.h)) npc.x += nx;
-        if (World.canMoveTo(npc.x, npc.y + ny, npc.w, npc.h)) npc.y += ny;
-        npc.vx = nx / dt; npc.vy = ny / dt;
-        if (dx < 0) npc.facing = 'left';
-        else if (dx > 0) npc.facing = 'right';
-        else if (dy < 0) npc.facing = 'up';
-        else npc.facing = 'down';
-    },
-
-    draw(ctx, camX, camY) {
-        const ent = new Entity(0, 0);
-        for (const npc of this.npcs) {
-            if (!npc.active) continue;
-            // Skip customers that aren't unlocked
-            if (npc.role === 'customer' && !npc.unlocked) continue;
-            if (npc.role === 'dealer'   && !npc.hired)    continue;
-
-            const sx = npc.x - camX;
-            const sy = npc.y - camY;
-            if (sx < -40 || sx > CFG.W+40 || sy < -40 || sy > CFG.H+40) continue;
-
-            ent.vx = npc.vx; ent.vy = npc.vy;
-            const label = npc.role === 'police' ? npc.name : (npc.name || null);
-            ent.drawCharacter(ctx, sx, sy,
-                npc.bodyColor, npc.headColor, npc.hatColor,
-                label
-            );
-
-            // Police badge
-            if (npc.role === 'police') {
-                ctx.fillStyle = '#ffd700';
-                ctx.font = 'bold 9px "Courier New"';
-                ctx.textAlign = 'center';
-                ctx.fillText('POLICE', sx, sy + 14);
-                ctx.textAlign = 'left';
-            }
-
-            // Interact prompt
-            if (npc.role !== 'ambient') {
-                const dp = U.dist(npc.x, npc.y, Player.x, Player.y);
-                if (dp < CFG.INTERACT) {
-                    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-                    ctx.font = '11px "Courier New"';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('[E] Talk', sx, sy - 34);
-                    ctx.textAlign = 'left';
-                }
-            }
+class Hammer {
+    // Wrecking-ball head sweeping left/right across the lane.
+    constructor(o) {
+        this.cx = o.cx; this.cy = o.cy;
+        this.amp = o.amp; this.headR = o.headR || 30;
+        this.phase = o.phase || 0; this.speed = o.speed || 1.6;
+        this.power = o.power || 540; this.height = o.height != null ? o.height : 120;
+        this.layer = 'top';
+    }
+    update(dt) { this.phase += this.speed * dt; }
+    _head() { return [this.cx + Math.sin(this.phase) * this.amp, this.cy]; }
+    collide(bean, round) {
+        if (bean.z > this.height || bean.falling || bean.gone) return;
+        const [hx, hy] = this._head();
+        if (U.dist(bean.x, bean.y, hx, hy) < bean.r + this.headR) {
+            const dir = Math.cos(this.phase) >= 0 ? 1 : -1;
+            bean.hit(dir, -0.15, this.power, 0.95);
+            round.spawnBurst(bean.x, bean.y, bean.z, '#ffd23f', 8);
         }
-    },
+    }
+    draw(ctx, cam) {
+        const [hx] = this._head();
+        ctx.save();
+        ctx.globalAlpha = 0.2; ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.ellipse(hx - cam.x, this.cy - cam.y + 6, this.headR, this.headR * 0.45, 0, 0, 6.283); ctx.fill();
+        ctx.restore();
+    }
+    drawTop(ctx, cam) {
+        const [hx, hy] = this._head();
+        ctx.strokeStyle = '#6b7280'; ctx.lineWidth = 7;
+        ctx.beginPath(); ctx.moveTo(this.cx - cam.x, this.cy - cam.y - 40); ctx.lineTo(hx - cam.x, hy - cam.y - 28); ctx.stroke();
+        const g = ctx.createRadialGradient(hx - cam.x - 6, hy - cam.y - 34, 4, hx - cam.x, hy - cam.y - 28, this.headR);
+        g.addColorStop(0, '#c9ced6'); g.addColorStop(1, '#5b6270');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(hx - cam.x, hy - cam.y - 28, this.headR, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = '#3c4250'; ctx.lineWidth = 2; ctx.stroke();
+    }
+}
 
-    getNearest(x, y, range, role) {
-        let best = null, bestD = range;
-        for (const npc of this.npcs) {
-            if (!npc.active) continue;
-            if (role && npc.role !== role) continue;
-            if (npc.role === 'customer' && !npc.unlocked) continue;
-            if (npc.role === 'dealer'   && !npc.hired)    continue;
-            const d = U.dist(npc.x, npc.y, x, y);
-            if (d < bestD) { bestD = d; best = npc; }
+class DoorWall {
+    // A wall across the lane split into door segments; some are fake.
+    constructor(o) {
+        this.y = o.y; this.x0 = o.x0; this.x1 = o.x1;
+        this.thick = o.thick || 26;
+        this.segs = o.segs;     // [{x0,x1,fake,broken}]
+    }
+    update() {}
+    segAt(x) { for (const s of this.segs) if (x >= s.x0 && x < s.x1) return s; return null; }
+    fakeNear(x) {
+        let best = null, bd = 1e9;
+        for (const s of this.segs) {
+            if (!s.fake && !s.broken) continue;
+            const c = (s.x0 + s.x1) / 2, d = Math.abs(c - x);
+            if (d < bd) { bd = d; best = c; }
         }
         return best;
-    },
-
-    getById(id) { return this.npcs.find(n => n.id === id); },
-
-    unlockCustomer(id) {
-        const npc = this.getById(id);
-        if (npc && !npc.unlocked) {
-            npc.unlocked = true;
-            Phone.addContact(npc);
-            Phone.receiveMessage(npc.id, npc.introMsg);
-            UI.notify(`📱 New contact: ${npc.name}`, '#4caf50');
+    }
+    collide(bean, round) {
+        if (bean.gone || bean.falling) return;
+        if (Math.abs(bean.y - this.y) > bean.r + this.thick * 0.5) return;
+        if (bean.z > 130) return;                       // jumped clean over the top
+        const s = this.segAt(bean.x);
+        if (!s || s.broken) return;
+        if (s.fake) {
+            s.broken = true;
+            round.spawnBurst(bean.x, this.y, 20, '#b98a5a', 14);
+            return;
         }
-    },
-};
+        const side = bean.y > this.y ? 1 : -1;
+        bean.y = this.y + side * (bean.r + this.thick * 0.5 + 1);
+        const speed = Math.hypot(bean.vx, bean.vy);
+        bean.vy = side * Math.min(speed, 240) * 0.5;
+        if (speed > 200) { bean.ragdoll = Math.max(bean.ragdoll, 0.35); bean.everRagdolled = true; }
+    }
+    draw(ctx, cam) {
+        const y = this.y - cam.y;
+        ctx.fillStyle = '#5a4632';
+        ctx.fillRect(this.x0 - cam.x - 6, y - this.thick / 2 - 8, 6, this.thick + 16);
+        ctx.fillRect(this.x1 - cam.x, y - this.thick / 2 - 8, 6, this.thick + 16);
+        for (const s of this.segs) {
+            const w = s.x1 - s.x0;
+            if (s.broken) {
+                ctx.fillStyle = 'rgba(120,90,60,0.25)';
+                ctx.fillRect(s.x0 - cam.x, y - this.thick / 2, w, this.thick);
+            } else {
+                ctx.fillStyle = '#caa46a';
+                U.roundRect(ctx, s.x0 - cam.x + 3, y - this.thick / 2, w - 6, this.thick, 5); ctx.fill();
+                ctx.strokeStyle = '#8a6a3e'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = '#ffd23f';
+                ctx.beginPath(); ctx.arc(s.x1 - cam.x - 9, y, 3, 0, 6.283); ctx.fill();
+            }
+        }
+    }
+}
+
+class BouncePad {
+    constructor(o) { this.x = o.x; this.y = o.y; this.r = o.r || 38; this.t = 0; }
+    update(dt) { this.t += dt; }
+    collide(bean) {
+        if (bean.grounded && !bean.falling && !bean.gone && U.dist(bean.x, bean.y, this.x, this.y) < this.r) {
+            bean.bounce(CFG.BOUNCE_V);
+            this.t = 0;
+        }
+    }
+    draw(ctx, cam) {
+        const sx = this.x - cam.x, sy = this.y - cam.y;
+        const pop = Math.max(0, 1 - this.t * 4);
+        ctx.fillStyle = '#ff5fa2';
+        ctx.beginPath(); ctx.ellipse(sx, sy, this.r, this.r * 0.5, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = U.shade('#ff5fa2', 0.3 + pop * 0.3);
+        ctx.beginPath(); ctx.ellipse(sx, sy - pop * 6, this.r * 0.7, this.r * 0.35, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(sx, sy, this.r, this.r * 0.5, 0, 0, 6.283); ctx.stroke();
+    }
+}
+
+class HexTile {
+    constructor(o) {
+        this.cx = o.cx; this.cy = o.cy; this.size = o.size;
+        this.color = o.color;
+        this.state = 'solid';        // solid | dissolving | gone
+        this.timer = 0;
+        this.shake = 0;
+    }
+    update(dt) {
+        if (this.state === 'dissolving') {
+            this.timer -= dt; this.shake = Math.min(1, this.shake + dt * 4);
+            if (this.timer <= 0) this.state = 'gone';
+        }
+    }
+    contains(x, y) {
+        return U.dist2(x, y, this.cx, this.cy) < (this.size * 0.92) * (this.size * 0.92);
+    }
+    step() { if (this.state === 'solid') { this.state = 'dissolving'; this.timer = 0.75; } }
+    draw(ctx, cam) {
+        if (this.state === 'gone') return;
+        const sh = this.state === 'dissolving' ? Math.sin(this.shake * 40) * 2 : 0;
+        const sx = this.cx - cam.x + sh, sy = this.cy - cam.y;
+        ctx.save();
+        if (this.state === 'dissolving') ctx.globalAlpha = U.clamp(this.timer / 0.75, 0.2, 1);
+        ctx.fillStyle = this.color;
+        ctx.strokeStyle = U.shade(this.color, -0.3); ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const a = Math.PI / 3 * i - Math.PI / 2;
+            const x = sx + Math.cos(a) * this.size, y = sy + Math.sin(a) * this.size * 0.86;
+            i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        }
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const a = Math.PI / 3 * i - Math.PI / 2;
+            const x = sx + Math.cos(a) * this.size * 0.7, y = sy + Math.sin(a) * this.size * 0.6 - this.size * 0.18;
+            i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        }
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+    }
+}
