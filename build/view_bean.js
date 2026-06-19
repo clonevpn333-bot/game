@@ -34,19 +34,22 @@ class BeanView {
         // above the feet. These numbers define the whole silhouette and are
         // tuned so the crown lands near ~2.3*r (total height) with the body
         // roughly radius r, and nothing dips below y = 0 at rest.
-        this.footR    = r * 0.26;         // foot radius (rests on ground)
-        this.footFlat = 0.62;             // foot vertical squash (scale.y)
-        this.legLen   = r * 0.14;         // leg capsule straight section
-        this.legR     = r * 0.22;         // leg capsule radius
-        // The FOOT defines ground contact. Place its centre so its lowest
-        // point sits just above y=0; the hip is one leg-length above.
-        this.footCY   = this.footR * this.footFlat + r * 0.02;   // foot centre
-        this.hipY     = this.footCY + this.legLen + this.legR;   // hip pivot
-        this.bodyR    = r * 0.80;         // jellybean radius (widest)
-        this.bodyH    = r * 0.62;         // capsule straight section
-        // capsule total height = bodyH + 2*bodyR. Seat it so its lower cap
-        // overlaps the hips (no gap, no dip below 0) and the crown ~ 2.3r.
-        this.bodyCY   = this.hipY + this.bodyR * 0.42;
+        // Fall-Guys jellybean: the BODY is the dominant shape and nearly
+        // reaches the floor; tiny legs/feet poke out of the bottom-front.
+        // total body height = bodyH + 2*bodyR; tuned to ~2.0*r so head detail
+        // crowns it near ~2.3*r. The body's lower cap rests just above y=0.
+        this.bodyR    = r * 0.78;         // jellybean radius (widest)
+        this.bodyH    = r * 0.50;         // capsule straight section
+        this.groundGap = r * 0.04;        // clearance under the body
+        // seat so the lower cap (bodyCY - bodyH/2 - bodyR) == groundGap
+        this.bodyCY   = this.groundGap + this.bodyH * 0.5 + this.bodyR;
+        // legs hang from low hips; feet rest on the floor at the front.
+        this.footR    = r * 0.24;         // foot radius (rests on ground)
+        this.footFlat = 0.6;              // foot vertical squash (scale.y)
+        this.legR     = r * 0.2;          // leg capsule radius
+        this.legLen   = r * 0.1;          // leg capsule straight section
+        this.footCY   = this.footR * this.footFlat;   // foot centre (bottom ~0)
+        this.hipY     = this.bodyCY - this.bodyR * 0.25;   // hips inside lower body
         this.bodyTopY = this.bodyCY + this.bodyH * 0.5 + this.bodyR;     // crown
         this.faceY    = this.bodyCY + this.bodyH * 0.42;  // eyes height
         this.shoulderY= this.bodyCY + this.bodyH * 0.30;
@@ -347,27 +350,28 @@ class BeanView {
         const pivot = new THREE.Group();
         pivot.position.set(side * this.bodyR * 0.42, this.hipY, 0);
 
-        // hip-to-foot distances in pivot-local space (pivot at the hip)
-        const footDrop = this.hipY - this.footCY;        // hip down to foot centre
-        const len = this.legLen;
+        // hip-to-foot distance in pivot-local space (pivot at the hip).
+        const footDrop = this.hipY - this.footCY;
+        // leg capsule spans most of that gap (a little shorter so the rounded
+        // foot reads as a separate ball). It lives mostly under the body.
+        const len = Math.max(r * 0.1, footDrop - this.footR * 1.2);
         const geo = this._geo(new THREE.CapsuleGeometry(this.legR, len, 6, 12));
         const mesh = new THREE.Mesh(geo, this.footMat);
-        // capsule spans from just under the hip down toward the foot centre
-        mesh.position.y = -(len * 0.5 + this.legR * 0.4);
+        mesh.position.y = -(len * 0.5 + this.legR * 0.2);   // hang from the hip
         mesh.castShadow = true;
         pivot.add(mesh);
 
         // chunky rounded foot/shoe; its lowest point rests at y ~ 0 at rest.
         const foot = new THREE.Mesh(this._geo(new THREE.SphereGeometry(this.footR, 14, 12)), this.footMat);
         foot.scale.set(1.05, this.footFlat, 1.5);
-        foot.position.set(0, -footDrop, r * 0.12);
+        foot.position.set(0, -footDrop, r * 0.16);
         foot.castShadow = true;
         pivot.add(foot);
+        this.legLen = len;   // record actual length for costume placement
 
-        // hip -> lowest foot point (for planting math if needed)
+        // hip -> foot centre / lowest point (for costume + planting math)
         const footBottom = footDrop + this.footR * this.footFlat;
-        this.legFootDrop = footDrop;
-        return { pivot, mesh, foot, len, footBottom };
+        return { pivot, mesh, foot, len, footY: -footDrop, footBottom };
     }
 
     /* =================================================================
@@ -657,11 +661,10 @@ class BeanView {
             case 'shoes':
                 for (const s of [+1, -1]) {
                     const leg = (s > 0 ? this.legL : this.legR);
-                    // sit the shoe ON the foot; keep its lowest point near y~0
-                    const footY = -(leg.len + r * 0.20);
-                    const sh = add(leg.pivot, new THREE.SphereGeometry(r * 0.3, 12, 10), M('#f25c54', { roughness: 0.4 }),
-                        0, footY + r * 0.02, r * 0.16);
-                    sh.scale.set(1.18, 0.7, 1.55);
+                    // wrap the shoe around the foot; lowest point stays near y~0
+                    const sh = add(leg.pivot, new THREE.SphereGeometry(r * 0.28, 12, 10), M('#f25c54', { roughness: 0.4 }),
+                        0, leg.footY + r * 0.02, r * 0.18);
+                    sh.scale.set(1.2, 0.66, 1.6);
                 }
                 break;
             case 'tutu': {
@@ -693,8 +696,8 @@ class BeanView {
             case 'gold':
                 for (const s of [+1, -1]) {
                     const leg = (s > 0 ? this.legL : this.legR);
-                    const sh = add(leg.pivot, new THREE.SphereGeometry(r * 0.34, 12, 10), M('#ffd23f', shiny), 0, -(leg.len + r * 0.20), r * 0.14);
-                    sh.scale.set(1.18, 0.76, 1.6);
+                    const sh = add(leg.pivot, new THREE.SphereGeometry(r * 0.3, 12, 10), M('#ffd23f', shiny), 0, leg.footY + r * 0.02, r * 0.16);
+                    sh.scale.set(1.2, 0.66, 1.6);
                 }
                 break;
             default: break;

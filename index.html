@@ -4,12 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bean Royale 3D — a Fall Guys tribute</title>
-    <!-- ================================================================
-         BEAN ROYALE 3D — single-file build.
-         The whole game lives in this one file. It loads Three.js (r160)
-         from a CDN via the import map below; everything else (game logic,
-         3D models, animations, UI) is inlined. Just open in a browser.
-         ================================================================ -->
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { width: 100%; height: 100%; overflow: hidden; background: #5ad1ff;
@@ -65,11 +59,11 @@ const CFG = {
     JUMP_V:       430,     // initial vertical (z) velocity px/s
     GRAVITY:      1350,    // z gravity px/s^2
 
-    DIVE_SPEED:   430,     // forward burst speed
-    DIVE_TIME:    0.42,    // seconds of dive lunge
-    DIVE_RECOVER: 0.40,    // prone time after landing a dive (no control)
-    DIVE_CD:      0.25,    // cooldown before diving again
-    DIVE_HOP:     150,     // small z hop given by a dive
+    DIVE_SPEED:   540,     // forward burst speed (punchy lunge)
+    DIVE_TIME:    0.5,     // seconds of dive lunge
+    DIVE_RECOVER: 0.22,    // prone time after landing a dive (no control)
+    DIVE_CD:      0.12,    // cooldown before diving again
+    DIVE_HOP:     185,     // z hop given by a dive
 
     BOUNCE_V:     760,     // bounce-pad launch velocity (z)
 
@@ -220,7 +214,15 @@ const SHOW = [
         category: 'Race',
         tagline: 'Smash the fakes, dodge the duds — first to the finish flies through!',
         build: 'doorDash',
-        qualify: 12,
+        qualify: 14,
+    },
+    {
+        id: 'gate_crash',
+        name: 'Gate Crash',
+        category: 'Race',
+        tagline: 'A gauntlet of doors and whirling bars — pick the fakes and floor it!',
+        build: 'gateCrash',
+        qualify: 10,
     },
     {
         id: 'whirlygig',
@@ -236,7 +238,15 @@ const SHOW = [
         category: 'Survival',
         tagline: 'Hop the sweeper. Miss the beat, kiss the slime.',
         build: 'jumpClub',
-        duration: 32,
+        duration: 30,
+    },
+    {
+        id: 'bounce_bash',
+        name: 'Bounce Bash',
+        category: 'Survival',
+        tagline: 'Spring pads and a sweeper bar — bounce high, stay alive!',
+        build: 'bounceBash',
+        duration: 26,
     },
     {
         id: 'hexagone',
@@ -1885,6 +1895,63 @@ const Rounds = {
 
             r.drawGround = (ctx) => { drawSlime(ctx); };
         },
+
+        // -------------------------------------------------- GATE CRASH
+        gateCrash(r) {
+            r.kind = 'race'; r.camMode = 'followY';
+            r.minX = 200; r.maxX = 1080; r.cx = 640;
+            r.minY = 240; r.maxY = 2680;
+            r.finishY = 420;
+            r.thinkFn = raceThink;
+
+            const makeWall = (y, fakeCount) => {
+                const x0 = r.minX, x1 = r.maxX, n = 6, w = (x1 - x0) / n;
+                const fakes = new Set();
+                while (fakes.size < fakeCount) fakes.add(U.rng(0, n - 1));
+                const segs = [];
+                for (let i = 0; i < n; i++)
+                    segs.push({ x0: x0 + i * w, x1: x0 + (i + 1) * w, fake: fakes.has(i), broken: false });
+                const dw = new DoorWall({ y, x0, x1, segs });
+                r.obstacles.push(dw); r.doorWalls.push(dw);
+            };
+            // doors interleaved with spinning bars
+            makeWall(2150, 3);
+            r.obstacles.push(new Spinner({ cx: 640, cy: 1830, len: 240, thick: 20, speed: 1.3, power: 360, color: '#7b46d6' }));
+            makeWall(1500, 2);
+            r.obstacles.push(new Spinner({ cx: 470, cy: 1180, len: 190, thick: 18, speed: -1.6, power: 340, color: '#23d6c8' }));
+            r.obstacles.push(new Spinner({ cx: 820, cy: 1180, len: 190, thick: 18, speed: 1.6, power: 340, color: '#23d6c8' }));
+            makeWall(820, 3);
+
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
+
+        // -------------------------------------------------- BOUNCE BASH
+        bounceBash(r) {
+            r.kind = 'survival'; r.camMode = 'fixed';
+            const cx = 640, cy = 380, R = 300;
+            r.platform = { cx, cy, r: R };
+            r.minX = 0; r.maxX = CFG.W; r.minY = 0; r.maxY = CFG.H;
+            r.thinkFn = jumpThink;
+
+            const sweep = new Spinner({ cx, cy, len: R - 6, thick: 22, speed: 0.85,
+                angle: Math.PI / 2, height: 42, arms: 2, pushOut: true, power: 480, color: '#ff5fa2' });
+            r.sweeper = sweep; r.obstacles.push(sweep);
+            // bounce pads kept near the centre so a launch lands you back on the disc
+            for (const [px, py] of [[cx - 120, cy - 70], [cx + 120, cy - 70], [cx, cy + 130], [cx - 95, cy + 70], [cx + 95, cy + 70]])
+                r.obstacles.push(new BouncePad({ x: px, y: py, r: 42 }));
+
+            const all = r.beans;
+            all.forEach((b, i) => {
+                const ang = (i / all.length) * Math.PI * 2;
+                const rr = R * (b.isPlayer ? 0.5 : U.rngf(0.4, 0.6));
+                b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
+                b.startX = b.x; b.startY = b.y;
+                b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.55, 0.95);
+                b.facing = ang + Math.PI;
+            });
+
+            r.onUpdate = (rr, dt) => { sweep.speed += dt * 0.05; };
+        },
     },
 };
 
@@ -1948,66 +2015,102 @@ function drawDisk(ctx, cx, cy, R, color) {
 /* =================== view_bean =================== */
 'use strict';
 /* =====================================================================
-   view_bean.js — procedural 3D bean character for "Bean Royale".
-   Builds an entire Fall-Guys-style bean from Three.js primitives and
-   drives it with fully procedural, state-blended animation.
+   view_bean.js — high-quality procedural 3D bean for "Bean Royale"
+   (a Fall Guys tribute). Builds a soft, cute jellybean character from
+   Three.js primitives and drives it with smooth, state-blended,
+   procedural animation.
 
-   No imports/exports/require — a free `THREE` is assumed in scope
-   (in the game: `import * as THREE from 'three'`).
+   No imports / exports / require — a free `THREE` is assumed in scope
+   (in the game: `import * as THREE from 'three'`; in Node tests it is
+   `eval`'d with THREE already defined).
 
-   World mapping (logical sim is top-down X/Y, Z=height; world is Y-up):
-     group.position.set(bean.x, bean.z, bean.y)
-     group.rotation.y = Math.PI/2 - bean.facing
-   The group ORIGIN is the bean's FEET on the ground; body is built
-   above local y=0, head near y ~ 2*r.
+   World mapping (logical sim is top-down X/Y, Z = height; world is Y-up).
+   Performed inside update():
+       group.position.set(bean.x, bean.z, bean.y)   // z(height) -> world Y
+       group.rotation.y = Math.PI/2 - bean.facing
+   The group ORIGIN is the bean's FEET on the ground plane (world y = 0).
+   EVERYTHING is built at local y >= 0 so the bean never clips the floor:
+   feet rest at y ~ 0, the body sits above, the head crowns it. The
+   build is laid out from a fixed "foot line" and proven by the self
+   test (root bounding-box min.y >= -0.5 at rest).
+
+   Interface (unchanged):
+     class BeanView { constructor(appearance); get object3d();
+                      setAppearance(appearance); update(bean,dt,t); dispose(); }
    ===================================================================== */
 
 class BeanView {
     constructor(appearance) {
-        // ---- tunables ------------------------------------------------
-        this.r = 17;                       // matches CFG.BEAN_R / bean.r
-        const r = this.r;
-        this.bodyH = r * 1.5;              // capsule cylinder length (caps add 2*r)
-        this.bodyR = r * 0.92;             // capsule radius
+        // ---- proportions (all derived from r so scaling is trivial) --
+        const r = 17;                     // matches CFG.BEAN_R / bean.r
+        this.r = r;
 
-        // ---- persistent pose state (lerped toward targets) ----------
-        // Every animated DOF lives here so poses blend instead of snap.
+        // Foot line sits at y = 0. Legs are short; the body floats just
+        // above the feet. These numbers define the whole silhouette and are
+        // tuned so the crown lands near ~2.3*r (total height) with the body
+        // roughly radius r, and nothing dips below y = 0 at rest.
+        // Fall-Guys jellybean: the BODY is the dominant shape and nearly
+        // reaches the floor; tiny legs/feet poke out of the bottom-front.
+        // total body height = bodyH + 2*bodyR; tuned to ~2.0*r so head detail
+        // crowns it near ~2.3*r. The body's lower cap rests just above y=0.
+        this.bodyR    = r * 0.78;         // jellybean radius (widest)
+        this.bodyH    = r * 0.50;         // capsule straight section
+        this.groundGap = r * 0.04;        // clearance under the body
+        // seat so the lower cap (bodyCY - bodyH/2 - bodyR) == groundGap
+        this.bodyCY   = this.groundGap + this.bodyH * 0.5 + this.bodyR;
+        // legs hang from low hips; feet rest on the floor at the front.
+        this.footR    = r * 0.24;         // foot radius (rests on ground)
+        this.footFlat = 0.6;              // foot vertical squash (scale.y)
+        this.legR     = r * 0.2;          // leg capsule radius
+        this.legLen   = r * 0.1;          // leg capsule straight section
+        this.footCY   = this.footR * this.footFlat;   // foot centre (bottom ~0)
+        this.hipY     = this.bodyCY - this.bodyR * 0.25;   // hips inside lower body
+        this.bodyTopY = this.bodyCY + this.bodyH * 0.5 + this.bodyR;     // crown
+        this.faceY    = this.bodyCY + this.bodyH * 0.42;  // eyes height
+        this.shoulderY= this.bodyCY + this.bodyH * 0.30;
+
+        // ---- persistent pose state (every animated DOF eased -> target)
         this.pose = {
-            armLPitch: 0, armRPitch: 0,   // swing fwd(+)/back(-) around X
-            armLRoll: 0,  armRRoll: 0,    // raise out to the side around Z
+            armLPitch: 0, armRPitch: 0,   // swing fwd(+Z)/back around X
+            armLRoll: 0,  armRRoll: 0,    // raise out to the side
             armLYaw: 0,   armRYaw: 0,     // twist around Y
+            armLScale: 1, armRScale: 1,   // per-arm reach
             legLPitch: 0, legRPitch: 0,   // leg swing around X
+            legSplay: 0,                   // legs out to sides
             legTuck: 0,                    // both legs tuck up (airborne)
             bodyPitch: 0,                  // forward lean / dive pitch
-            bodyRoll: 0,                   // side roll (dance / ragdoll feel)
+            bodyRoll: 0,                   // side roll
             headPitch: 0, headYaw: 0, headRoll: 0,
-            sx: 1, sy: 1, sz: 1,          // body squash/stretch
-            crouch: 0,                     // lowers whole body (crouch emote / land)
-            puff: 0,                       // body scale puff (flex)
+            sx: 1, sy: 1, sz: 1,          // body squash / stretch
+            crouch: 0,                     // lower whole body
+            lift: 0,                       // raise whole body (leap)
             lookX: 0, lookY: 0,           // pupil offset
-            eyeOpen: 1,                    // 1 open, ~0.12 closed (blink)
-            armScale: 1,                   // arm length scale (heart/point reach)
+            eyeOpen: 1,                    // 1 open, ~0.1 closed (blink)
+            mouthOpen: 0,
         };
+        this._target = {};
 
-        // internal animation phase accumulators (decoupled from sim)
-        this._runPhase = 0;
+        // internal phase accumulators (decoupled from sim time)
+        this._runPhase  = 0;
         this._idlePhase = Math.random() * Math.PI * 2;
         this._emotePhase = 0;
         this._spinExtra = 0;               // accumulated yaw for spin emote
         this._t = 0;
+        // one-shot vertical bob accumulators (set by pose fns, read in commit)
+        this._breatheBob = 0; this._runBob = 0; this._danceBob = 0;
 
-        this._disposables = [];            // geometries+materials to free
+        this._disposables = [];            // geometries + materials to free
         this._materials = {};              // re-tintable materials by key
-        this._textures = {};               // canvas textures by key
+        this._patternTex = null;
 
-        this._buildRoot(appearance || {});
+        this._build(appearance || {});
     }
 
     /* ---------------------------------------------------------------- */
     get object3d() { return this.root; }
 
     /* =================================================================
-       BUILD
+       small helpers
        ================================================================= */
     _mat(key, opts) {
         const m = new THREE.MeshStandardMaterial(opts);
@@ -2017,137 +2120,329 @@ class BeanView {
     }
     _geo(g) { this._disposables.push(g); return g; }
 
-    // THREE.Color shade: amt<0 -> toward black, amt>0 -> toward white, by |amt|
+    // shade a hex toward black (amt<0) or white (amt>0) by |amt|
     _shade(hex, amt) {
         const c = new THREE.Color(hex);
-        const f = amt < 0 ? 0 : 1;
-        const t = Math.min(1, Math.abs(amt));
-        c.r += (f - c.r) * t; c.g += (f - c.g) * t; c.b += (f - c.b) * t;
+        const f = amt < 0 ? 0 : 1, k = Math.min(1, Math.abs(amt));
+        c.r += (f - c.r) * k; c.g += (f - c.g) * k; c.b += (f - c.b) * k;
+        return c;
+    }
+    _shadeStr(hex, amt) { return '#' + this._shade(hex, amt).getHexString(); }
+
+    // saturate/boost a colour a touch for candy vibrancy
+    _candy(hex) {
+        const c = new THREE.Color(hex);
+        const mx = Math.max(c.r, c.g, c.b);
+        if (mx > 0) { const k = Math.min(1.12, 1 / mx * 0.96 + 0.18); }
         return c;
     }
 
-    _buildRoot(appearance) {
+    /* =================================================================
+       BUILD
+       ================================================================= */
+    _build(appearance) {
         const r = this.r;
         this.appearance = Object.assign(
             { color: '#ffd23f', pattern: 'solid', upper: 'none', lower: 'none', visor: '#3fd2ff' },
             appearance
         );
 
-        // root: positioned at feet, yawed by engine each frame
+        // root: at feet, yawed by the engine each frame
         this.root = new THREE.Group();
         this.root.name = 'bean';
 
-        // tumble: ragdoll/fall multi-axis spin lives here (around mid-body)
+        // tumble: ragdoll / fall multi-axis spin, pivots near body centre
         this.tumble = new THREE.Group();
-        this.tumble.position.y = r * 1.2;          // pivot near body centre
+        this.tumble.position.y = this.bodyCY;
         this.root.add(this.tumble);
 
-        // lean: forward lean / dive pitch (pivot at hips so feet stay planted-ish)
+        // lean: forward lean / dive pitch. We pivot near the HIPS so a
+        // forward dive swings the body+head over the feet convincingly.
         this.lean = new THREE.Group();
+        this.lean.position.y = this.hipY - this.bodyCY;   // move pivot to hips
         this.tumble.add(this.lean);
 
-        // bob: vertical breathe / crouch / jump bob offset
+        // bob: vertical breathe / run / crouch / leap offset
         this.bob = new THREE.Group();
         this.lean.add(this.bob);
 
-        // bodyScale: squash & stretch / puff (un-does the tumble pivot offset)
+        // bodyScale: squash & stretch about the foot line
         this.bodyScale = new THREE.Group();
-        this.bodyScale.position.y = -r * 1.2;       // back down to feet space
+        this.bodyScale.position.y = -this.hipY;           // back to foot space
         this.bob.add(this.bodyScale);
 
-        // ----- BODY capsule ------------------------------------------
-        const bodyGeo = this._geo(new THREE.CapsuleGeometry(this.bodyR, this.bodyH, 6, 16));
-        // CapsuleGeometry is centred on origin; lift so feet ~ y=0.
-        // total height = bodyH + 2*bodyR; centre sits at half that.
-        this._bodyCenterY = this.bodyR + this.bodyH * 0.5;
+        // shared materials -------------------------------------------------
         this.bodyMat = this._mat('body', {
             color: new THREE.Color(this.appearance.color),
-            roughness: 0.62, metalness: 0.0,
+            roughness: 0.5, metalness: 0.0,
+            emissive: new THREE.Color(this.appearance.color).multiplyScalar(0.06),
         });
+        // slightly darker zone for fake ambient occlusion on the underside
+        this.bodyDarkMat = this._mat('bodyDark', {
+            color: this._shade(this.appearance.color, -0.22),
+            roughness: 0.58, metalness: 0.0,
+            emissive: new THREE.Color(this.appearance.color).multiplyScalar(0.03),
+        });
+        this.limbMat = this._mat('limb', {
+            color: new THREE.Color(this.appearance.color),
+            roughness: 0.5, metalness: 0.0,
+            emissive: new THREE.Color(this.appearance.color).multiplyScalar(0.05),
+        });
+        this.footMat = this._mat('foot', {
+            color: this._shade(this.appearance.color, -0.30),
+            roughness: 0.55, metalness: 0.0,
+        });
+
+        this._buildBody();
+        this._buildFace();
+        this._buildLimbs();
+
+        this._buildPattern();
+        this._buildUpper(this.appearance.upper);
+        this._buildLower(this.appearance.lower);
+    }
+
+    _buildBody() {
+        const r = this.r;
+        // High-segment capsule = smooth soft jellybean.
+        const bodyGeo = this._geo(new THREE.CapsuleGeometry(this.bodyR, this.bodyH, 18, 32));
         this.bodyMesh = new THREE.Mesh(bodyGeo, this.bodyMat);
-        this.bodyMesh.position.y = this._bodyCenterY;
+        this.bodyMesh.position.y = this.bodyCY;
+        // egg/jellybean: a touch narrower & taller at the top, fuller belly
+        this.bodyMesh.scale.set(1.0, 1.0, 0.96);
         this.bodyMesh.castShadow = true;
         this.bodyMesh.receiveShadow = true;
         this.bodyScale.add(this.bodyMesh);
 
-        // pattern overlay (canvas texture if available, else mesh accents)
-        this._buildPattern();
+        // Fake-AO underside: a darker squashed sphere hugging the lower body.
+        const aoGeo = this._geo(new THREE.SphereGeometry(this.bodyR * 0.99, 24, 16));
+        this.aoMesh = new THREE.Mesh(aoGeo, this.bodyDarkMat);
+        this.aoMesh.position.y = this.bodyCY - this.bodyH * 0.42;
+        this.aoMesh.scale.set(1.0, 0.62, 0.96);
+        this.aoMesh.castShadow = false;
+        this.bodyScale.add(this.aoMesh);
 
-        // ----- HEAD anchor (top of body) -----------------------------
+        // Soft top highlight zone (very subtly lighter) for a candy sheen.
+        const hiMat = this._mat('bodyHi', {
+            color: this._shade(this.appearance.color, 0.14),
+            roughness: 0.4, metalness: 0.0,
+            emissive: new THREE.Color(this.appearance.color).multiplyScalar(0.05),
+            transparent: true, opacity: 0.55,
+        });
+        const hiGeo = this._geo(new THREE.SphereGeometry(this.bodyR * 0.92, 20, 14));
+        this.hiMesh = new THREE.Mesh(hiGeo, hiMat);
+        this.hiMesh.position.set(0, this.bodyCY + this.bodyH * 0.30, -this.bodyR * 0.12);
+        this.hiMesh.scale.set(0.9, 0.7, 0.85);
+        this.hiMesh.castShadow = false;
+        this.bodyScale.add(this.hiMesh);
+
+        // pattern overlay lives in its own group on the body
+        this._patternGroup = new THREE.Group();
+        this.bodyScale.add(this._patternGroup);
+    }
+
+    /* ----- FACE --------------------------------------------------- */
+    _buildFace() {
+        const r = this.r;
         this.headPivot = new THREE.Group();
-        this.headPivot.position.y = this._bodyCenterY + this.bodyR * 0.55;
+        this.headPivot.position.set(0, this.faceY, 0);
         this.bodyScale.add(this.headPivot);
 
-        this._buildFace();
-        this._buildUpper(this.appearance.upper);
+        this.face = new THREE.Group();
+        // Face sits on the front (+Z) of the upper body.
+        this.face.position.set(0, 0, this.bodyR * 0.66);
+        this.headPivot.add(this.face);
 
-        // ----- ARMS (nubs on a shoulder pivot) -----------------------
+        // Glossy curved visor — a thin curved shell across the eyes.
+        this.visorMat = this._mat('visor', {
+            color: new THREE.Color(this.appearance.visor),
+            roughness: 0.12, metalness: 0.15,
+            emissive: new THREE.Color(this.appearance.visor).multiplyScalar(0.10),
+            transparent: true, opacity: 0.92,
+        });
+        // a partial sphere shell, scaled flat, gives a wrap-around visor
+        const visorGeo = this._geo(new THREE.SphereGeometry(r * 0.66, 24, 16,
+            0, Math.PI * 2, Math.PI * 0.18, Math.PI * 0.44));
+        this.visorMesh = new THREE.Mesh(visorGeo, this.visorMat);
+        this.visorMesh.position.set(0, r * 0.04, -r * 0.30);
+        this.visorMesh.scale.set(1.06, 0.92, 0.62);
+        this.visorMesh.rotation.x = -0.12;
+        this.visorMesh.castShadow = false;
+        this.face.add(this.visorMesh);
+
+        // Eyes: glossy white spheres + dark pupils with a tiny specular dot.
+        const whiteMat = this._mat('eyeWhite', { color: new THREE.Color('#ffffff'), roughness: 0.22, metalness: 0.0 });
+        const pupilMat = this._mat('pupil', { color: new THREE.Color('#23203a'), roughness: 0.18, metalness: 0.0 });
+        const glintMat = this._mat('glint', { color: new THREE.Color('#ffffff'), roughness: 0.1, emissive: new THREE.Color('#444') });
+        const eyeGeo = this._geo(new THREE.SphereGeometry(r * 0.215, 18, 16));
+        const pupilGeo = this._geo(new THREE.SphereGeometry(r * 0.115, 14, 12));
+        const glintGeo = this._geo(new THREE.SphereGeometry(r * 0.045, 8, 8));
+
+        this.eyes = [];
+        for (const side of [+1, -1]) {
+            const eye = new THREE.Group();
+            eye.position.set(side * r * 0.33, r * 0.02, r * 0.04);
+            const white = new THREE.Mesh(eyeGeo, whiteMat);
+            white.scale.z = 0.55;
+            white.castShadow = false;
+            eye.add(white);
+            const pupil = new THREE.Mesh(pupilGeo, pupilMat);
+            pupil.position.z = r * 0.14;
+            pupil.castShadow = false;
+            eye.add(pupil);
+            const glint = new THREE.Mesh(glintGeo, glintMat);
+            glint.position.set(side * r * 0.04, r * 0.05, r * 0.20);
+            glint.castShadow = false;
+            eye.add(glint);
+            this.face.add(eye);
+            this.eyes.push({ group: eye, pupil });
+        }
+
+        // Soft pink cheeks (flat translucent discs).
+        const cheekMat = this._mat('cheek', {
+            color: new THREE.Color('#ff86a6'), roughness: 0.85,
+            transparent: true, opacity: 0.55,
+        });
+        const cheekGeo = this._geo(new THREE.CircleGeometry(r * 0.17, 16));
+        for (const side of [+1, -1]) {
+            const ch = new THREE.Mesh(cheekGeo, cheekMat);
+            ch.position.set(side * r * 0.55, -r * 0.30, r * 0.20);
+            ch.castShadow = false;
+            this.face.add(ch);
+        }
+
+        // Tiny mouth — a small dark torus arc; opens (scaleY) for emotes.
+        const mouthMat = this._mat('mouth', { color: new THREE.Color('#5a3142'), roughness: 0.6 });
+        const mouthGeo = this._geo(new THREE.TorusGeometry(r * 0.12, r * 0.035, 8, 16, Math.PI));
+        this.mouth = new THREE.Mesh(mouthGeo, mouthMat);
+        this.mouth.position.set(0, -r * 0.16, r * 0.22);
+        this.mouth.rotation.z = Math.PI;          // smile arc opening downward = upturned
+        this.mouth.castShadow = false;
+        this.face.add(this.mouth);
+    }
+
+    /* ----- LIMBS (arms + legs) ------------------------------------ */
+    _buildLimbs() {
         this.armL = this._buildArm(+1);
         this.armR = this._buildArm(-1);
         this.bodyScale.add(this.armL.pivot);
         this.bodyScale.add(this.armR.pivot);
 
-        // ----- LEGS (stubby, on hip pivots) --------------------------
         this.legL = this._buildLeg(+1);
         this.legR = this._buildLeg(-1);
         this.bodyScale.add(this.legL.pivot);
         this.bodyScale.add(this.legR.pivot);
-
-        // ----- LOWER costume -----------------------------------------
-        this._buildLower(this.appearance.lower);
     }
 
-    _buildPattern() {
+    _buildArm(side) {
         const r = this.r;
-        // Remove any prior pattern artefacts (used by setAppearance)
-        if (this._patternGroup) {
-            this.bodyScale.remove(this._patternGroup);
-            this._disposeNode(this._patternGroup);
+        const pivot = new THREE.Group();
+        // shoulder on the side of the upper body
+        pivot.position.set(side * this.bodyR * 0.82, this.shoulderY, 0);
+
+        const len = r * 0.62;
+        const geo = this._geo(new THREE.CapsuleGeometry(r * 0.24, len, 6, 14));
+        const mesh = new THREE.Mesh(geo, this.limbMat);
+        mesh.position.y = -(len * 0.5 + r * 0.24);   // hang from the pivot
+        mesh.castShadow = true;
+        pivot.add(mesh);
+
+        // rounded mitten hand (slightly lighter for read)
+        const handMat = this._mat('hand', { color: this._shade(this.appearance.color, 0.16), roughness: 0.5 });
+        this._materials['hand' + (side > 0 ? 'L' : 'R')] = handMat;
+        const hand = new THREE.Mesh(this._geo(new THREE.SphereGeometry(r * 0.27, 12, 10)), handMat);
+        hand.position.y = -(len + r * 0.24);
+        hand.scale.set(1, 0.95, 1.05);
+        hand.castShadow = true;
+        pivot.add(hand);
+
+        pivot.userData.side = side;
+        return { pivot, mesh, hand, len };
+    }
+
+    _buildLeg(side) {
+        const r = this.r;
+        const pivot = new THREE.Group();
+        pivot.position.set(side * this.bodyR * 0.42, this.hipY, 0);
+
+        // hip-to-foot distance in pivot-local space (pivot at the hip).
+        const footDrop = this.hipY - this.footCY;
+        // leg capsule spans most of that gap (a little shorter so the rounded
+        // foot reads as a separate ball). It lives mostly under the body.
+        const len = Math.max(r * 0.1, footDrop - this.footR * 1.2);
+        const geo = this._geo(new THREE.CapsuleGeometry(this.legR, len, 6, 12));
+        const mesh = new THREE.Mesh(geo, this.footMat);
+        mesh.position.y = -(len * 0.5 + this.legR * 0.2);   // hang from the hip
+        mesh.castShadow = true;
+        pivot.add(mesh);
+
+        // chunky rounded foot/shoe; its lowest point rests at y ~ 0 at rest.
+        const foot = new THREE.Mesh(this._geo(new THREE.SphereGeometry(this.footR, 14, 12)), this.footMat);
+        foot.scale.set(1.05, this.footFlat, 1.5);
+        foot.position.set(0, -footDrop, r * 0.16);
+        foot.castShadow = true;
+        pivot.add(foot);
+        this.legLen = len;   // record actual length for costume placement
+
+        // hip -> foot centre / lowest point (for costume + planting math)
+        const footBottom = footDrop + this.footR * this.footFlat;
+        return { pivot, mesh, foot, len, footY: -footDrop, footBottom };
+    }
+
+    /* =================================================================
+       PATTERN (CanvasTexture in browser, mesh accents in Node)
+       ================================================================= */
+    _buildPattern() {
+        // clear any prior pattern artefacts
+        while (this._patternGroup.children.length) {
+            const c = this._patternGroup.children.pop();
+            this._disposeNode(c);
         }
         if (this._patternTex) { this._patternTex.dispose(); this._patternTex = null; }
 
         const type = this.appearance.pattern || 'solid';
         const base = this.appearance.color;
-        this._patternGroup = new THREE.Group();
-        this._patternGroup.position.y = this._bodyCenterY;
-        this.bodyScale.add(this._patternGroup);
 
-        if (type === 'solid') { this.bodyMat.map = null; this.bodyMat.needsUpdate = true; return; }
+        if (type === 'solid') {
+            this.bodyMat.map = null;
+            this.bodyMat.color.set(base);
+            this.bodyMat.needsUpdate = true;
+            return;
+        }
 
-        // Browser path: paint a CanvasTexture and wrap it onto the body.
+        // Browser: paint a CanvasTexture and wrap it onto the body.
         if (typeof document !== 'undefined' && document.createElement) {
             const tex = this._makePatternTexture(type, base);
             if (tex) {
                 this._patternTex = tex;
                 this.bodyMat.map = tex;
-                this.bodyMat.color = new THREE.Color('#ffffff'); // let texture show true colour
+                this.bodyMat.color.set('#ffffff');   // let the texture's colour show
                 this.bodyMat.needsUpdate = true;
                 return;
             }
         }
 
-        // Node / no-canvas fallback: approximate with small accent meshes so
-        // the pattern still "reads" and the self-test exercises geometry.
+        // Node / no-canvas: approximate with a few tasteful accent meshes so
+        // the pattern still reads and the self-test exercises real geometry.
         this.bodyMat.map = null;
-        this.bodyMat.color = new THREE.Color(base);
+        this.bodyMat.color.set(base);
         this.bodyMat.needsUpdate = true;
         this._buildPatternMeshes(type, base);
     }
 
     _makePatternTexture(type, base) {
+        const W = 512, H = 512;
         const cv = document.createElement('canvas');
-        cv.width = 256; cv.height = 256;
+        cv.width = W; cv.height = H;
         const ctx = cv.getContext('2d');
         if (!ctx) return null;
-        const W = 256, H = 256;
-        const hex = (c) => '#' + this._shade(base, c).getHexString();
-        const dk = hex(-0.28), lt = hex(0.4);
+        const dk = this._shadeStr(base, -0.30), dk2 = this._shadeStr(base, -0.16);
+        const lt = this._shadeStr(base, 0.42), lt2 = this._shadeStr(base, 0.22);
         ctx.fillStyle = base; ctx.fillRect(0, 0, W, H);
-        const star = (cx, cy, R, r2, pts, col) => {
+        const star = (cx, cy, R, ri, pts, col) => {
             ctx.fillStyle = col; ctx.beginPath();
             for (let i = 0; i < pts * 2; i++) {
-                const a = (Math.PI / pts) * i - Math.PI / 2;
-                const rad = i & 1 ? r2 : R;
+                const a = (Math.PI / pts) * i - Math.PI / 2, rad = (i & 1) ? ri : R;
                 const x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad;
                 i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
             }
@@ -2156,51 +2451,46 @@ class BeanView {
         switch (type) {
             case 'stripes':
                 ctx.fillStyle = dk;
-                for (let i = -1; i < 8; i++) ctx.fillRect(i * 36, 0, 16, H);
+                for (let i = -1; i < 9; i++) { ctx.save(); ctx.translate(i * 64, 0); ctx.rotate(0.12); ctx.fillRect(0, -20, 30, H + 40); ctx.restore(); }
                 break;
             case 'spots':
-                ctx.fillStyle = dk;
-                for (const p of [[.2, .2], [.6, .35], [.4, .65], [.78, .75], [.12, .8], [.85, .15], [.5, .92]]) {
-                    ctx.beginPath(); ctx.arc(p[0] * W, p[1] * H, 22, 0, 6.283); ctx.fill();
+                for (const p of [[.2,.22,.10],[.62,.34,.13],[.4,.66,.11],[.8,.76,.09],[.12,.82,.08],[.86,.16,.10],[.5,.5,.12],[.7,.92,.08]]) {
+                    ctx.fillStyle = dk; ctx.beginPath(); ctx.arc(p[0]*W, p[1]*H, p[2]*W, 0, 6.283); ctx.fill();
+                    ctx.fillStyle = lt2; ctx.beginPath(); ctx.arc(p[0]*W - p[2]*W*0.3, p[1]*H - p[2]*H*0.3, p[2]*W*0.35, 0, 6.283); ctx.fill();
                 }
                 break;
             case 'check': {
                 const n = 8, s = W / n;
-                for (let yy = 0; yy < n; yy++) for (let xx = 0; xx < n; xx++)
-                    if ((xx + yy) & 1) { ctx.fillStyle = dk; ctx.fillRect(xx * s, yy * s, s, s); }
+                for (let y = 0; y < n; y++) for (let x = 0; x < n; x++)
+                    if ((x + y) & 1) { ctx.fillStyle = dk; ctx.fillRect(x*s, y*s, s, s); }
                 break;
             }
             case 'camo': {
-                ctx.fillStyle = this._shadeStr(base, 0.12);
-                ctx.fillRect(0, 0, W, H);
-                ctx.fillStyle = dk;
-                for (const p of [[.3, .25, 55], [.7, .5, 64], [.45, .8, 48], [.85, .15, 42], [.12, .62, 50]]) {
-                    ctx.beginPath(); ctx.ellipse(p[0] * W, p[1] * H, p[2], p[2] * 0.8, 0.5, 0, 6.283); ctx.fill();
-                }
-                ctx.fillStyle = hex(0.18);
-                for (const p of [[.55, .2, 30], [.2, .85, 26], [.8, .7, 28]]) {
-                    ctx.beginPath(); ctx.ellipse(p[0] * W, p[1] * H, p[2], p[2] * 0.8, 1.1, 0, 6.283); ctx.fill();
-                }
+                ctx.fillStyle = lt2; ctx.fillRect(0, 0, W, H);
+                const blob = (cx, cy, rr, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(cx, cy, rr, rr*0.8, 0.5, 0, 6.283); ctx.fill(); };
+                for (const p of [[.3,.25,90],[.7,.5,110],[.45,.82,80],[.86,.16,72],[.12,.64,86],[.6,.05,70]]) blob(p[0]*W, p[1]*H, p[2], dk);
+                for (const p of [[.55,.2,52],[.2,.86,46],[.82,.72,50],[.4,.5,44]]) blob(p[0]*W, p[1]*H, p[2], dk2);
                 break;
             }
             case 'tiger':
-                ctx.strokeStyle = dk; ctx.lineWidth = 16; ctx.lineCap = 'round';
-                for (let i = -1; i < 8; i++) {
-                    ctx.beginPath();
-                    ctx.moveTo(0, i * 34);
-                    ctx.quadraticCurveTo(W / 2, i * 34 - 26, W, i * 34);
+                ctx.strokeStyle = dk; ctx.lineWidth = 26; ctx.lineCap = 'round';
+                for (let i = -1; i < 9; i++) {
+                    ctx.beginPath(); ctx.moveTo(0, i * 64);
+                    ctx.quadraticCurveTo(W * 0.5, i * 64 - 48, W, i * 64);
                     ctx.stroke();
                 }
                 break;
             case 'star':
-                for (let yy = 0; yy < 4; yy++) for (let xx = 0; xx < 4; xx++)
-                    star(xx * 64 + 32, yy * 64 + 32, 22, 9, 5, lt);
+                ctx.fillStyle = this._shadeStr(base, -0.12); ctx.fillRect(0, 0, W, H);
+                for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++)
+                    star(x*128 + 64, y*128 + 64, 42, 17, 5, (x+y)&1 ? lt : '#fff');
                 break;
             case 'tiedye': {
-                const g = ctx.createRadialGradient(W / 2, H / 2, 4, W / 2, H / 2, W * 0.7);
-                g.addColorStop(0, 'rgba(255,255,255,0.85)');
-                g.addColorStop(0.35, this._shadeStr(base, 0.35));
-                g.addColorStop(0.65, base);
+                const g = ctx.createRadialGradient(W*0.42, H*0.4, 6, W*0.5, H*0.5, W*0.72);
+                g.addColorStop(0, 'rgba(255,255,255,0.9)');
+                g.addColorStop(0.3, this._shadeStr(base, 0.4));
+                g.addColorStop(0.6, base);
+                g.addColorStop(0.85, dk2);
                 g.addColorStop(1, dk);
                 ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
                 break;
@@ -2209,12 +2499,13 @@ class BeanView {
                 const g = ctx.createLinearGradient(0, 0, W, H);
                 g.addColorStop(0, '#2b1d5e'); g.addColorStop(0.5, '#6a32c8'); g.addColorStop(1, '#1b1340');
                 ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+                const neb = ctx.createRadialGradient(W*0.6, H*0.4, 10, W*0.6, H*0.4, W*0.5);
+                neb.addColorStop(0, 'rgba(255,120,200,0.5)'); neb.addColorStop(1, 'rgba(255,120,200,0)');
+                ctx.fillStyle = neb; ctx.fillRect(0, 0, W, H);
                 ctx.fillStyle = '#fff';
-                for (let i = 0; i < 60; i++) {
-                    ctx.globalAlpha = 0.4 + Math.random() * 0.6;
-                    ctx.beginPath();
-                    ctx.arc(Math.random() * W, Math.random() * H, Math.random() * 1.8 + 0.4, 0, 6.283);
-                    ctx.fill();
+                for (let i = 0; i < 140; i++) {
+                    ctx.globalAlpha = 0.3 + Math.random() * 0.7;
+                    ctx.beginPath(); ctx.arc(Math.random()*W, Math.random()*H, Math.random()*2.2 + 0.4, 0, 6.283); ctx.fill();
                 }
                 ctx.globalAlpha = 1;
                 break;
@@ -2222,170 +2513,70 @@ class BeanView {
             default: return null;
         }
         const tex = new THREE.CanvasTexture(cv);
+        if ('colorSpace' in tex && THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = 4;
         return tex;
     }
 
-    _shadeStr(base, amt) { return '#' + this._shade(base, amt).getHexString(); }
-
-    // Mesh-based pattern fallback (no canvas). Thin accents on the body.
+    // Mesh-based fallback (no canvas). A few thin accents on the body.
     _buildPatternMeshes(type, base) {
         const r = this.r, R = this.bodyR;
-        const dkMat = this._mat(null, { color: this._shade(base, -0.28), roughness: 0.6 });
-        const ltMat = this._mat(null, { color: this._shade(base, 0.4), roughness: 0.6 });
-        const add = (geo, mat, x, y, z, rx, ry, rz) => {
+        const dkMat = this._mat(null, { color: this._shade(base, -0.28), roughness: 0.55 });
+        const ltMat = this._mat(null, { color: this._shade(base, 0.40), roughness: 0.45 });
+        const grp = this._patternGroup;
+        grp.position.y = 0;
+        const add = (geo, mat, x, y, z, rx, ry, rz, sx, sy, sz) => {
             const m = new THREE.Mesh(this._geo(geo), mat);
             m.position.set(x, y, z);
             if (rx || ry || rz) m.rotation.set(rx || 0, ry || 0, rz || 0);
-            m.castShadow = true;
-            this._patternGroup.add(m);
+            if (sx || sy || sz) m.scale.set(sx || 1, sy || 1, sz || 1);
+            m.castShadow = false;
+            grp.add(m);
         };
-        const surf = R * 1.005;
+        const cy = this.bodyCY, surf = R * 1.004;
         switch (type) {
             case 'stripes':
                 for (let i = -2; i <= 2; i++)
-                    add(new THREE.BoxGeometry(r * 0.18, this.bodyH + R, r * 0.05),
-                        dkMat, 0, 0, 0, 0, i * 0.5, 0);
+                    add(new THREE.BoxGeometry(r * 0.16, this.bodyH + R * 1.2, r * 0.04), dkMat, 0, cy, 0, 0, i * 0.5, 0);
                 break;
             case 'spots':
-                for (const p of [[0.5, 0.3], [-0.6, 0.8], [0.2, -0.5], [-0.3, -0.1], [0.7, -0.9]]) {
-                    const a = p[0] * Math.PI, h = p[1] * r * 0.9;
-                    add(new THREE.SphereGeometry(r * 0.2, 8, 8), dkMat,
-                        Math.cos(a) * surf, h, Math.sin(a) * surf);
+                for (const p of [[0.5,0.4],[-0.7,0.9],[0.2,-0.4],[-0.3,-0.1],[0.85,-0.7],[-1.0,0.2]]) {
+                    const a = p[0] * Math.PI, h = cy + p[1] * R * 0.7;
+                    add(new THREE.SphereGeometry(r * 0.18, 10, 8), dkMat, Math.cos(a) * surf, h, Math.sin(a) * surf, 0,0,0, 1,1,0.4);
                 }
                 break;
             case 'star':
-                add(new THREE.ConeGeometry(r * 0.45, r * 0.12, 5), ltMat,
-                    0, 0, surf, Math.PI / 2, 0, 0);
+                add(new THREE.ConeGeometry(r * 0.42, r * 0.1, 5), ltMat, 0, cy + R*0.1, surf, Math.PI / 2, 0, 0);
                 break;
-            case 'galaxy':
-            case 'tiedye':
-            case 'camo':
-            case 'tiger':
             case 'check':
+                add(new THREE.TorusGeometry(R * 0.96, r * 0.10, 8, 20), dkMat, 0, cy, 0, Math.PI / 2, 0, 0);
+                add(new THREE.TorusGeometry(R * 0.86, r * 0.08, 8, 20), ltMat, 0, cy + R*0.35, 0, Math.PI / 2, 0, 0);
+                break;
             default:
-                // belt-style accent ring so something is visibly different
-                add(new THREE.TorusGeometry(R * 0.98, r * 0.12, 6, 18), dkMat, 0, 0, 0, Math.PI / 2, 0, 0);
+                add(new THREE.TorusGeometry(R * 0.96, r * 0.11, 8, 20), dkMat, 0, cy - R*0.1, 0, Math.PI / 2, 0, 0);
                 break;
         }
     }
 
-    /* ----- FACE --------------------------------------------------- */
-    _buildFace() {
-        const r = this.r;
-        this.face = new THREE.Group();
-        // Face sits on the front (+Z) upper portion of the body.
-        this.face.position.set(0, this._bodyCenterY + r * 0.35, this.bodyR * 0.62);
-        this.bodyScale.add(this.face);
-
-        // visor band — a flattened rounded box across the eyes
-        this.visorMat = this._mat('visor', {
-            color: new THREE.Color(this.appearance.visor),
-            roughness: 0.25, metalness: 0.1,
-            emissive: new THREE.Color(this.appearance.visor).multiplyScalar(0.12),
-        });
-        const visorGeo = this._geo(new THREE.BoxGeometry(r * 1.5, r * 0.72, r * 0.5));
-        const visor = new THREE.Mesh(visorGeo, this.visorMat);
-        visor.position.z = -r * 0.12;
-        visor.castShadow = true;
-        this.face.add(visor);
-
-        // eyes: white spheres with dark pupils, on a small pivot so they
-        // can squash for blinking and the pupils can track movement.
-        const whiteMat = this._mat('eyeWhite', { color: new THREE.Color('#ffffff'), roughness: 0.4 });
-        const pupilMat = this._mat('pupil', { color: new THREE.Color('#22203a'), roughness: 0.5 });
-        const eyeGeo = this._geo(new THREE.SphereGeometry(r * 0.22, 12, 12));
-        const pupilGeo = this._geo(new THREE.SphereGeometry(r * 0.1, 10, 10));
-
-        this.eyes = [];
-        for (const side of [+1, -1]) {
-            const eye = new THREE.Group();
-            eye.position.set(side * r * 0.34, 0, r * 0.2);
-            const white = new THREE.Mesh(eyeGeo, whiteMat);
-            white.scale.z = 0.6;
-            eye.add(white);
-            const pupil = new THREE.Mesh(pupilGeo, pupilMat);
-            pupil.position.z = r * 0.16;
-            eye.add(pupil);
-            this.face.add(eye);
-            this.eyes.push({ group: eye, pupil });
-        }
-
-        // pink cheek dots
-        const cheekMat = this._mat('cheek', {
-            color: new THREE.Color('#ff7896'), roughness: 0.7,
-            transparent: true, opacity: 0.65,
-        });
-        const cheekGeo = this._geo(new THREE.CircleGeometry(r * 0.17, 12));
-        for (const side of [+1, -1]) {
-            const ch = new THREE.Mesh(cheekGeo, cheekMat);
-            ch.position.set(side * r * 0.6, -r * 0.32, r * 0.2);
-            this.face.add(ch);
-        }
-    }
-
-    /* ----- ARM ---------------------------------------------------- */
-    _buildArm(side) {
-        const r = this.r;
-        const pivot = new THREE.Group();
-        // shoulder location on the side of the upper body
-        pivot.position.set(side * this.bodyR * 0.95, this._bodyCenterY + r * 0.15, 0);
-        // default rest: arms hang slightly out & down. We rotate around Z
-        // for the "out" angle and X for fwd/back swing.
-        const armMat = this._mat('arm', { color: new THREE.Color(this.appearance.color), roughness: 0.62 });
-        this._materials['arm' + (side > 0 ? 'L' : 'R')] = armMat;
-        // a small capsule nub hanging from the pivot (pivot at top of nub)
-        const len = r * 0.85;
-        const geo = this._geo(new THREE.CapsuleGeometry(r * 0.26, len, 4, 10));
-        const mesh = new THREE.Mesh(geo, armMat);
-        mesh.position.y = -(len * 0.5 + r * 0.26);   // hang below pivot
-        mesh.castShadow = true;
-        pivot.add(mesh);
-        // little hand tip (lighter) for personality
-        const hand = new THREE.Mesh(
-            this._geo(new THREE.SphereGeometry(r * 0.28, 8, 8)),
-            this._mat(null, { color: this._shade(this.appearance.color, 0.18), roughness: 0.6 })
-        );
-        hand.position.y = -(len + r * 0.26);
-        hand.castShadow = true;
-        pivot.add(hand);
-        pivot.userData.side = side;
-        return { pivot, mesh, hand, len };
-    }
-
-    /* ----- LEG ---------------------------------------------------- */
-    _buildLeg(side) {
-        const r = this.r;
-        const pivot = new THREE.Group();
-        // hip near the bottom of the body, slightly inset
-        pivot.position.set(side * this.bodyR * 0.45, r * 0.62, 0);
-        const legMat = this._mat('leg', { color: this._shade(this.appearance.color, -0.18), roughness: 0.65 });
-        const len = r * 0.5;
-        const geo = this._geo(new THREE.CapsuleGeometry(r * 0.27, len, 4, 10));
-        const mesh = new THREE.Mesh(geo, legMat);
-        mesh.position.y = -(len * 0.5 + r * 0.27);
-        mesh.castShadow = true;
-        pivot.add(mesh);
-        // foot
-        const foot = new THREE.Mesh(
-            this._geo(new THREE.SphereGeometry(r * 0.3, 8, 8)),
-            legMat
-        );
-        foot.scale.set(1.1, 0.7, 1.3);
-        foot.position.set(0, -(len + r * 0.27), r * 0.08);
-        foot.castShadow = true;
-        pivot.add(foot);
-        return { pivot, mesh, foot, len };
-    }
-
-    /* ----- UPPER COSTUME ------------------------------------------ */
+    /* =================================================================
+       UPPER COSTUME (head accessories)
+       ================================================================= */
     _buildUpper(prop) {
         const r = this.r;
-        if (this.upperGroup) { this.headPivot.remove(this.upperGroup); this._disposeNode(this.upperGroup); }
+        if (this.upperGroup) {
+            (this.upperGroup.parent || this.headPivot).remove(this.upperGroup);
+            this._disposeNode(this.upperGroup);
+            this.upperGroup = null;
+        }
+        if (prop === 'none' || !prop) return;
+
         this.upperGroup = new THREE.Group();
-        // sit atop the head; head top is roughly here in headPivot-local space
-        this.upperGroup.position.y = this.bodyR * 0.55;
+        // crown of the head in headPivot-local space
+        const crownY = this.bodyTopY - this.faceY;
+        this.upperGroup.position.y = crownY;
         this.headPivot.add(this.upperGroup);
         const g = this.upperGroup;
+
         const M = (col, opts) => this._mat(null, Object.assign({ color: new THREE.Color(col), roughness: 0.5 }, opts || {}));
         const add = (geo, mat, x, y, z, rx, ry, rz) => {
             const m = new THREE.Mesh(this._geo(geo), mat);
@@ -2393,83 +2584,85 @@ class BeanView {
             if (rx || ry || rz) m.rotation.set(rx || 0, ry || 0, rz || 0);
             m.castShadow = true; g.add(m); return m;
         };
+        const shiny = { metalness: 0.65, roughness: 0.22, emissive: new THREE.Color('#3a2a00') };
+
         switch (prop) {
             case 'party':
-                add(new THREE.ConeGeometry(r * 0.5, r * 1.1, 16), M('#ff5fa2'), 0, r * 0.55, 0);
-                add(new THREE.SphereGeometry(r * 0.18, 10, 10), M('#ffd23f', { emissive: new THREE.Color('#5a3a00') }), 0, r * 1.15, 0);
+                add(new THREE.ConeGeometry(r * 0.5, r * 1.15, 20), M('#ff5fa2', { emissive: new THREE.Color('#3a1530') }), 0, r * 0.6, 0);
+                // swirl stripes
+                add(new THREE.ConeGeometry(r * 0.52, r * 1.05, 20, 1, true), M('#ffd23f', { transparent: true, opacity: 0.9 }), 0, r * 0.58, 0);
+                add(new THREE.SphereGeometry(r * 0.18, 12, 12), M('#fff7c0', { emissive: new THREE.Color('#5a4a10') }), 0, r * 1.22, 0);
                 break;
             case 'cap':
-                add(new THREE.SphereGeometry(r * 0.62, 12, 10, 0, Math.PI * 2, 0, Math.PI / 2),
-                    M('#e6395a'), 0, r * 0.05, 0);
-                // backwards brim points -Z (behind)
-                add(new THREE.BoxGeometry(r * 0.7, r * 0.12, r * 0.5), M('#e6395a'), 0, r * 0.04, -r * 0.7);
+                add(new THREE.SphereGeometry(r * 0.62, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), M('#e6395a'), 0, r * 0.02, 0);
+                add(new THREE.BoxGeometry(r * 0.72, r * 0.1, r * 0.55), M('#c92b48'), 0, r * 0.0, -r * 0.72);  // backwards brim
+                add(new THREE.SphereGeometry(r * 0.07, 8, 8), M('#fff'), 0, r * 0.5, 0);
                 break;
             case 'pigeon': {
-                add(new THREE.SphereGeometry(r * 0.6, 14, 12), M('#cfd6df'), 0, r * 0.45, 0);
-                add(new THREE.ConeGeometry(r * 0.16, r * 0.5, 8), M('#ff9447'), 0, r * 0.42, r * 0.55, Math.PI / 2, 0, 0);
-                for (const s of [+1, -1]) {
-                    const eye = add(new THREE.SphereGeometry(r * 0.09, 8, 8), M('#222'), s * r * 0.22, r * 0.6, r * 0.4);
-                    eye.castShadow = false;
-                }
+                add(new THREE.SphereGeometry(r * 0.55, 16, 14), M('#cfd6df'), 0, r * 0.42, r * 0.05);
+                add(new THREE.SphereGeometry(r * 0.34, 14, 12), M('#cfd6df'), 0, r * 0.7, r * 0.18);   // little head
+                add(new THREE.ConeGeometry(r * 0.12, r * 0.4, 8), M('#ff9447'), 0, r * 0.68, r * 0.5, Math.PI / 2, 0, 0); // beak
+                for (const s of [+1, -1]) add(new THREE.SphereGeometry(r * 0.07, 8, 8), M('#1a1a1a'), s * r * 0.14, r * 0.78, r * 0.34);
+                for (const s of [+1, -1]) add(new THREE.SphereGeometry(r * 0.3, 12, 10), M('#b9c1cc'), s * r * 0.5, r * 0.35, -r * 0.1).scale.set(0.5, 0.9, 1.1); // wings
                 break;
             }
             case 'bee':
                 for (const s of [+1, -1]) {
-                    add(new THREE.CylinderGeometry(r * 0.04, r * 0.04, r * 0.7, 6),
-                        M('#222'), s * r * 0.25, r * 0.35, 0, 0, 0, s * 0.3);
-                    add(new THREE.SphereGeometry(r * 0.13, 8, 8), M('#ffd23f', { emissive: new THREE.Color('#5a4a00') }),
-                        s * r * 0.42, r * 0.72, 0);
+                    add(new THREE.CylinderGeometry(r * 0.035, r * 0.035, r * 0.62, 6), M('#2a2a2a'), s * r * 0.22, r * 0.32, 0, 0, 0, s * 0.35);
+                    add(new THREE.SphereGeometry(r * 0.12, 10, 10), M('#ffd23f', { emissive: new THREE.Color('#5a4a00') }), s * r * 0.42, r * 0.62, 0);
                 }
                 break;
             case 'cat':
-                for (const s of [+1, -1])
-                    add(new THREE.ConeGeometry(r * 0.26, r * 0.6, 4), M('#9a6cff'),
-                        s * r * 0.4, r * 0.45, 0, 0, Math.PI / 4, 0);
+                for (const s of [+1, -1]) {
+                    add(new THREE.ConeGeometry(r * 0.26, r * 0.55, 16), M(this._shadeStr(this.appearance.color, -0.1)), s * r * 0.4, r * 0.34, 0, 0, 0, -s * 0.18);
+                    add(new THREE.ConeGeometry(r * 0.14, r * 0.32, 12), M('#ff9db4'), s * r * 0.4, r * 0.3, r * 0.08, 0, 0, -s * 0.18); // inner ear
+                }
                 break;
             case 'pirate':
-                add(new THREE.CylinderGeometry(r * 0.78, r * 0.92, r * 0.18, 18), M('#23203a'), 0, r * 0.1, 0);
-                add(new THREE.SphereGeometry(r * 0.55, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2.2), M('#23203a'), 0, r * 0.18, 0);
-                add(new THREE.SphereGeometry(r * 0.12, 8, 8), M('#ffffff', { emissive: new THREE.Color('#333') }), 0, r * 0.3, r * 0.45);
+                add(new THREE.CylinderGeometry(r * 0.8, r * 0.95, r * 0.14, 20), M('#23203a'), 0, r * 0.05, 0);   // brim
+                add(new THREE.SphereGeometry(r * 0.56, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2.1), M('#23203a'), 0, r * 0.1, 0); // dome
+                add(new THREE.CircleGeometry(r * 0.16, 8), M('#fff', { emissive: new THREE.Color('#333') }), 0, r * 0.28, r * 0.46); // skull
+                for (const s of [+1, -1]) add(new THREE.CircleGeometry(r * 0.04, 8), M('#23203a'), s * r * 0.06, r * 0.30, r * 0.49);
                 break;
             case 'dino':
-                // back spikes: place them down the spine, not just head.
+                // spikes down the spine; reattach to bodyScale so they line the back
                 this.headPivot.remove(this.upperGroup);
                 this.bodyScale.add(this.upperGroup);
-                this.upperGroup.position.set(0, 0, -this.bodyR * 0.7);
-                for (let i = 0; i < 4; i++) {
-                    const sz = 0.5 - i * 0.07;
-                    add(new THREE.ConeGeometry(r * 0.22, r * (0.7 * sz + 0.3), 4),
-                        M('#46d36a'),
-                        0, this._bodyCenterY + r * 0.7 - i * r * 0.55, -i * r * 0.05,
+                this.upperGroup.position.set(0, 0, 0);
+                for (let i = 0; i < 5; i++) {
+                    const sz = 0.55 - i * 0.06;
+                    add(new THREE.ConeGeometry(r * 0.2, r * (0.65 * sz + 0.32), 4),
+                        M('#46d36a', { emissive: new THREE.Color('#0e3a1c') }),
+                        0, this.bodyCY + this.bodyH * 0.42 - i * (this.bodyH * 0.22), -this.bodyR * (0.78 + i * 0.02),
                         0.35, Math.PI / 4, 0);
                 }
                 break;
             case 'crown':
-                add(new THREE.CylinderGeometry(r * 0.55, r * 0.55, r * 0.32, 16),
-                    M('#ffd23f', { metalness: 0.6, roughness: 0.25, emissive: new THREE.Color('#3a2a00') }),
-                    0, r * 0.2, 0);
-                for (let i = 0; i < 6; i++) {
-                    const a = (i / 6) * Math.PI * 2;
-                    add(new THREE.ConeGeometry(r * 0.12, r * 0.3, 4),
-                        M('#ffd23f', { metalness: 0.6, roughness: 0.25, emissive: new THREE.Color('#3a2a00') }),
-                        Math.cos(a) * r * 0.5, r * 0.45, Math.sin(a) * r * 0.5);
+                add(new THREE.CylinderGeometry(r * 0.55, r * 0.58, r * 0.3, 18), M('#ffd23f', shiny), 0, r * 0.18, 0);
+                for (let i = 0; i < 7; i++) {
+                    const a = (i / 7) * Math.PI * 2;
+                    add(new THREE.ConeGeometry(r * 0.11, r * 0.3, 4), M('#ffd23f', shiny), Math.cos(a) * r * 0.55, r * 0.42, Math.sin(a) * r * 0.55);
                 }
-                // a gem
-                add(new THREE.SphereGeometry(r * 0.12, 8, 8),
-                    M('#ff4d6d', { emissive: new THREE.Color('#5a0010') }), 0, r * 0.22, r * 0.55);
+                for (const p of [[0, '#ff4d6d'], [0.9, '#4dd2ff'], [-0.9, '#7bff7b']]) {
+                    add(new THREE.SphereGeometry(r * 0.1, 10, 10), M(p[1], { emissive: new THREE.Color(p[1]).multiplyScalar(0.4), roughness: 0.2 }), Math.sin(p[0]) * r * 0.5, r * 0.2, Math.cos(p[0]) * r * 0.55);
+                }
                 break;
             default: break;
         }
     }
 
-    /* ----- LOWER COSTUME ------------------------------------------ */
+    /* =================================================================
+       LOWER COSTUME (legs / back)
+       ================================================================= */
     _buildLower(prop) {
         const r = this.r;
-        if (this.lowerGroup) { this.bodyScale.remove(this.lowerGroup); this._disposeNode(this.lowerGroup); }
+        if (this.lowerGroup) { this.bodyScale.remove(this.lowerGroup); this._disposeNode(this.lowerGroup); this.lowerGroup = null; }
+        this._tail = null; this._rocketFlames = null;
+        if (prop === 'none' || !prop) return;
+
         this.lowerGroup = new THREE.Group();
         this.bodyScale.add(this.lowerGroup);
         const g = this.lowerGroup;
-        this._rocketFlames = null;
         const M = (col, opts) => this._mat(null, Object.assign({ color: new THREE.Color(col), roughness: 0.5 }, opts || {}));
         const add = (parent, geo, mat, x, y, z, rx, ry, rz) => {
             const m = new THREE.Mesh(this._geo(geo), mat);
@@ -2477,52 +2670,49 @@ class BeanView {
             if (rx || ry || rz) m.rotation.set(rx || 0, ry || 0, rz || 0);
             m.castShadow = true; parent.add(m); return m;
         };
+        const shiny = { metalness: 0.7, roughness: 0.2, emissive: new THREE.Color('#3a2a00') };
+
         switch (prop) {
             case 'shoes':
                 for (const s of [+1, -1]) {
-                    const sh = add(g, new THREE.SphereGeometry(r * 0.34, 10, 10), M('#f25c54'),
-                        s * this.bodyR * 0.45, r * 0.18, r * 0.12);
-                    sh.scale.set(1.15, 0.7, 1.5);
-                    // attach to the matching leg so shoes move with the run cycle
-                    g.remove(sh);
-                    (s > 0 ? this.legL : this.legR).pivot.add(sh);
-                    sh.position.set(0, -(this.legL.len + r * 0.27), r * 0.14);
+                    const leg = (s > 0 ? this.legL : this.legR);
+                    // wrap the shoe around the foot; lowest point stays near y~0
+                    const sh = add(leg.pivot, new THREE.SphereGeometry(r * 0.28, 12, 10), M('#f25c54', { roughness: 0.4 }),
+                        0, leg.footY + r * 0.02, r * 0.18);
+                    sh.scale.set(1.2, 0.66, 1.6);
                 }
                 break;
-            case 'tutu':
-                add(g, new THREE.TorusGeometry(r * 1.05, r * 0.32, 8, 18), M('#ff8fd0', { transparent: true, opacity: 0.9 }),
-                    0, r * 0.95, 0, Math.PI / 2, 0, 0).scale.set(1, 0.6, 1);
+            case 'tutu': {
+                const t = add(g, new THREE.TorusGeometry(this.bodyR * 1.02, r * 0.3, 10, 22), M('#ff8fd0', { transparent: true, opacity: 0.9, roughness: 0.6 }),
+                    0, this.hipY + r * 0.35, 0, Math.PI / 2, 0, 0);
+                t.scale.set(1, 0.55, 1);
                 break;
+            }
             case 'tail': {
-                const tail = add(g, new THREE.ConeGeometry(r * 0.45, r * 1.7, 8), M('#46d36a'),
-                    0, r * 0.7, -this.bodyR * 0.9, -Math.PI / 2.3, 0, 0);
-                this._tail = tail;            // gentle wag in update
+                const tail = add(g, new THREE.ConeGeometry(r * 0.42, r * 1.5, 10), M('#46d36a', { emissive: new THREE.Color('#0e3a1c') }),
+                    0, this.bodyCY - this.bodyH * 0.2, -this.bodyR * 0.85, -Math.PI / 2.4, 0, 0);
+                this._tail = tail;            // gentle wag in commit
                 break;
             }
             case 'rocket': {
+                // back-mounted jetpack: boots on the lower back, short flames
+                // that flicker but stay near the foot line so they don't clip.
                 this._rocketFlames = [];
+                const baseY = this.hipY + r * 0.45;
                 for (const s of [+1, -1]) {
-                    const boot = add(g, new THREE.CylinderGeometry(r * 0.34, r * 0.4, r * 0.55, 12), M('#c0c6d0', { metalness: 0.5, roughness: 0.3 }),
-                        s * this.bodyR * 0.45, r * 0.32, 0);
-                    const flame = add(g, new THREE.ConeGeometry(r * 0.3, r * 0.8, 10),
-                        M('#ff7a2c', { emissive: new THREE.Color('#ff5a1c'), transparent: true, opacity: 0.92 }),
-                        s * this.bodyR * 0.45, -r * 0.2, 0, Math.PI, 0, 0);
-                    const core = add(g, new THREE.ConeGeometry(r * 0.15, r * 0.5, 8),
-                        M('#ffd23f', { emissive: new THREE.Color('#ffcf3f'), transparent: true, opacity: 0.95 }),
-                        s * this.bodyR * 0.45, -r * 0.12, 0, Math.PI, 0, 0);
+                    add(g, new THREE.CylinderGeometry(r * 0.28, r * 0.34, r * 0.55, 14), M('#c0c6d0', { metalness: 0.5, roughness: 0.3 }), s * this.bodyR * 0.5, baseY, -this.bodyR * 0.55);
+                    add(g, new THREE.ConeGeometry(r * 0.28, r * 0.4, 14), M('#e2483a', { roughness: 0.4 }), s * this.bodyR * 0.5, baseY + r * 0.45, -this.bodyR * 0.55); // nose cone
+                    const flame = add(g, new THREE.ConeGeometry(r * 0.24, r * 0.6, 12), M('#ff7a2c', { emissive: new THREE.Color('#ff5a1c'), transparent: true, opacity: 0.9 }), s * this.bodyR * 0.5, baseY - r * 0.55, -this.bodyR * 0.55, Math.PI, 0, 0);
+                    const core = add(g, new THREE.ConeGeometry(r * 0.12, r * 0.38, 10), M('#ffe27a', { emissive: new THREE.Color('#ffd23f'), transparent: true, opacity: 0.95 }), s * this.bodyR * 0.5, baseY - r * 0.48, -this.bodyR * 0.55, Math.PI, 0, 0);
                     this._rocketFlames.push(flame, core);
                 }
                 break;
             }
             case 'gold':
                 for (const s of [+1, -1]) {
-                    const sh = add(g, new THREE.SphereGeometry(r * 0.36, 10, 10),
-                        M('#ffd23f', { metalness: 0.7, roughness: 0.22, emissive: new THREE.Color('#3a2a00') }),
-                        0, 0, 0);
-                    sh.scale.set(1.15, 0.75, 1.55);
-                    g.remove(sh);
-                    (s > 0 ? this.legL : this.legR).pivot.add(sh);
-                    sh.position.set(0, -(this.legL.len + r * 0.27), r * 0.14);
+                    const leg = (s > 0 ? this.legL : this.legR);
+                    const sh = add(leg.pivot, new THREE.SphereGeometry(r * 0.3, 12, 10), M('#ffd23f', shiny), 0, leg.footY + r * 0.02, r * 0.16);
+                    sh.scale.set(1.2, 0.66, 1.6);
                 }
                 break;
             default: break;
@@ -2536,20 +2726,25 @@ class BeanView {
         if (!appearance) return;
         const prev = this.appearance;
         this.appearance = Object.assign({}, prev, appearance);
+        const col = this.appearance.color;
 
         // colour-driven materials
-        if (this._materials.body) this._materials.body.color.set(this.appearance.color);
-        if (this._materials.armL) this._materials.armL.color.set(this.appearance.color);
-        if (this._materials.armR) this._materials.armR.color.set(this.appearance.color);
-        if (this._materials.leg) this._materials.leg.color.copy(this._shade(this.appearance.color, -0.18));
+        if (this._materials.body && !this.bodyMat.map) this._materials.body.color.set(col);
+        if (this._materials.body) this._materials.body.emissive.copy(new THREE.Color(col).multiplyScalar(0.06));
+        if (this._materials.bodyDark) { this._materials.bodyDark.color.copy(this._shade(col, -0.22)); this._materials.bodyDark.emissive.copy(new THREE.Color(col).multiplyScalar(0.03)); }
+        if (this._materials.bodyHi) this._materials.bodyHi.color.copy(this._shade(col, 0.14));
+        if (this._materials.limb) { this._materials.limb.color.set(col); this._materials.limb.emissive.copy(new THREE.Color(col).multiplyScalar(0.05)); }
+        if (this._materials.foot) this._materials.foot.color.copy(this._shade(col, -0.30));
+        if (this._materials.handL) this._materials.handL.color.copy(this._shade(col, 0.16));
+        if (this._materials.handR) this._materials.handR.color.copy(this._shade(col, 0.16));
         if (this._materials.visor) {
             this._materials.visor.color.set(this.appearance.visor);
-            this._materials.visor.emissive.copy(new THREE.Color(this.appearance.visor).multiplyScalar(0.12));
+            this._materials.visor.emissive.copy(new THREE.Color(this.appearance.visor).multiplyScalar(0.10));
         }
 
-        // pattern: rebuild only when it (or base colour) changed
-        if (appearance.pattern !== undefined && appearance.pattern !== prev.pattern ||
-            appearance.color !== undefined && appearance.color !== prev.color) {
+        // rebuild pattern only when it (or base colour) changed
+        if ((appearance.pattern !== undefined && appearance.pattern !== prev.pattern) ||
+            (appearance.color !== undefined && appearance.color !== prev.color)) {
             this._buildPattern();
         }
         // costumes: rebuild only on change
@@ -2572,87 +2767,69 @@ class BeanView {
         this.root.rotation.y = Math.PI / 2 - (bean.facing || 0);
 
         // ---- derived state ------------------------------------------
-        const speed = Math.hypot(bean.vx || 0, bean.vy || 0);
+        const speed    = Math.hypot(bean.vx || 0, bean.vy || 0);
         const grounded = !!bean.grounded;
-        const airborne = (bean.z || 0) > 1 && !bean.falling;
-        const diveT = bean.diveT || 0;
-        const proneT = bean.proneT || 0;
-        const ragdoll = bean.ragdoll || 0;
-        const falling = !!bean.falling;
-        const squash = (typeof bean.squash === 'number') ? bean.squash : 1;
-        const emote = bean.emoteAnim || null;
-        const emoteT = bean.emoteT || 0;
-        const canEmote = emote && emoteT > 0 && grounded && ragdoll <= 0 && diveT <= 0 && !falling;
+        const z        = bean.z || 0;
+        const airborne = z > 1 && !bean.falling;
+        const diveT    = bean.diveT || 0;
+        const proneT   = bean.proneT || 0;
+        const ragdoll  = bean.ragdoll || 0;
+        const falling  = !!bean.falling;
+        const squash   = (typeof bean.squash === 'number') ? bean.squash : 1;
+        const emote    = bean.emoteAnim || null;
+        const emoteT   = bean.emoteT || 0;
+        const canEmote = emote && emoteT > 0 && grounded && ragdoll <= 0 && diveT <= 0 && proneT <= 0 && !falling;
 
-        // smoothing helper
         const P = this.pose;
-        const lp = (key, target, rate) => { P[key] += (target - P[key]) * Math.min(1, rate * dt); };
-        // direct exponential blend toward 0 baseline for unused DOFs
-        const RATE = 14;       // general pose blend speed
 
-        // ---- build TARGET pose (start from neutral each frame) -------
-        const T = this._target || (this._target = {});
+        // ---- build TARGET pose (neutral baseline each frame) --------
+        const T = this._target;
         for (const k in P) T[k] = 0;
-        T.sx = 1; T.sy = 1; T.sz = 1; T.eyeOpen = 1; T.armScale = 1;
-        // default rest: arms out a touch
-        T.armLRoll = 0.18; T.armRRoll = 0.18;
+        T.sx = 1; T.sy = 1; T.sz = 1; T.eyeOpen = 1; T.armLScale = 1; T.armRScale = 1;
+        T.armLRoll = 0.16; T.armRRoll = 0.16;       // rest: arms a touch out
+        this._spinExtraTarget = 0;
 
-        // ===== priority chain: ragdoll/fall > dive/prone > airborne >
-        //       emote > run > idle. Each writes targets; blending = smooth.
+        // ===== priority chain: ragdoll/fall > dive > prone > airborne >
+        //       emote > run > idle. Each writes targets; blending smooths.
         let handledBody = false;
-
-        if (ragdoll > 0 || falling) {
-            this._poseRagdoll(bean, T, dt, t);
-            handledBody = true;
-        } else if (diveT > 0) {
-            this._poseDive(bean, T, diveT);
-            handledBody = true;
-        } else if (proneT > 0) {
-            this._posePone(bean, T, proneT);
-            handledBody = true;
-        }
+        if (ragdoll > 0 || falling) { this._poseRagdoll(bean, T, dt, t); handledBody = true; }
+        else if (diveT > 0)         { this._poseDive(bean, T, diveT);    handledBody = true; }
+        else if (proneT > 0)        { this._poseProne(bean, T, proneT);  handledBody = true; }
 
         if (!handledBody) {
             if (airborne) this._poseAir(bean, T, squash);
-
-            if (canEmote) {
-                this._poseEmote(emote, T, emoteT, dt, t);
-            } else if (!airborne) {
+            if (canEmote) this._poseEmote(emote, T, emoteT, dt, t);
+            else if (!airborne) {
                 if (speed > 6) this._poseRun(bean, T, speed, dt, t);
                 else this._poseIdle(bean, T, dt, t);
             }
-            // squash & stretch from sim (combine multiplicatively with pose)
             this._applySquash(T, squash, airborne);
         } else {
-            this._spinExtra = 0; // reset emote spin when interrupted
             this._emotePhase = 0;
         }
 
-        // eye blink overrides everything (cheap, always)
-        if (typeof bean.blink === 'number' && bean.blink < 0.12) T.eyeOpen = 0.12;
+        // blink overrides everything
+        if (typeof bean.blink === 'number' && bean.blink < 0.12) T.eyeOpen = 0.1;
 
-        // pupils track movement direction (in body-local +Z forward space)
-        // logical movement dir relative to facing -> mostly forward; add a
-        // little horizontal lead based on velocity heading vs facing.
-        let lookX = 0;
+        // pupils track movement / gaze
         if (speed > 4) {
             const moveAng = Math.atan2(bean.vy || 0, bean.vx || 0);
             const rel = this._angDiff(bean.facing || 0, moveAng);
-            lookX = Math.max(-1, Math.min(1, rel * 0.8 + Math.sin(t * 0.7) * 0.05));
+            T.lookX = Math.max(-1, Math.min(1, rel * 0.8 + Math.sin(t * 0.7) * 0.05));
         } else {
-            lookX = Math.sin(t * 0.6) * 0.25;     // idle gaze wander
+            T.lookX = Math.sin(t * 0.6) * 0.28;
         }
-        T.lookX = lookX;
-        T.lookY = -0.15 + (airborne ? 0.3 : 0);
+        T.lookY = -0.1 + (airborne ? 0.35 : 0) + (diveT > 0 ? 0.4 : 0);
 
-        // ---- blend pose toward targets ------------------------------
+        // ---- ease pose toward targets -------------------------------
+        const RATE = 14;
         for (const k in P) {
-            // scale & eye values blend a touch faster for snappy squash
-            const rate = (k === 'sx' || k === 'sy' || k === 'sz' || k === 'eyeOpen') ? RATE * 1.6 : RATE;
-            lp(k, T[k], rate);
+            const fast = (k === 'sx' || k === 'sy' || k === 'sz' || k === 'eyeOpen');
+            const a = Math.min(1, (fast ? RATE * 1.7 : RATE) * dt);
+            P[k] += (T[k] - P[k]) * a;
         }
 
-        // ---- commit pose to scene graph -----------------------------
+        // ---- commit to scene graph ----------------------------------
         this._commit(bean, dt, t, { ragdoll, falling, diveT, proneT });
     }
 
@@ -2660,297 +2837,278 @@ class BeanView {
     _poseIdle(bean, T, dt, t) {
         this._idlePhase += dt * 2.0;
         const ph = this._idlePhase;
-        // gentle breathe: body scales subtly + slight bob handled in commit
-        T.sy = 1 + Math.sin(ph) * 0.03;
+        // gentle breathe
+        T.sy = 1 + Math.sin(ph) * 0.035;
         T.sx = 1 - Math.sin(ph) * 0.02;
         T.sz = 1 - Math.sin(ph) * 0.02;
-        // tiny sway
+        // micro-sway
         T.bodyRoll = Math.sin(ph * 0.5) * 0.04;
         T.headRoll = Math.sin(ph * 0.5 + 0.4) * 0.05;
-        T.headYaw = Math.sin(ph * 0.33) * 0.08;
-        // arms dangle with faint motion
-        T.armLRoll = 0.2 + Math.sin(ph) * 0.03;
-        T.armRRoll = 0.2 - Math.sin(ph) * 0.03;
-        T.armLPitch = Math.sin(ph * 0.7) * 0.04;
-        T.armRPitch = -Math.sin(ph * 0.7) * 0.04;
-        this._breatheBob = Math.sin(ph) * (this.r * 0.05);
+        T.headYaw  = Math.sin(ph * 0.33) * 0.09;
+        T.armLRoll = 0.18 + Math.sin(ph) * 0.03;
+        T.armRRoll = 0.18 - Math.sin(ph) * 0.03;
+        T.armLPitch = Math.sin(ph * 0.7) * 0.05;
+        T.armRPitch = -Math.sin(ph * 0.7) * 0.05;
+        this._breatheBob = Math.sin(ph) * (this.r * 0.04);
     }
 
     _poseRun(bean, T, speed, dt, t) {
-        // cadence & amplitude scale with speed
         const sp = Math.min(speed, 320);
-        const cadence = 6 + sp * 0.035;       // rad/s
+        const cadence = 7 + sp * 0.04;          // rad/s, scales with speed
         this._runPhase += dt * cadence;
         const ph = this._runPhase;
-        const amp = Math.min(1, 0.35 + sp / 320);   // 0.35..1
+        const amp = Math.min(1, 0.4 + sp / 300);
 
-        const swing = Math.sin(ph) * amp;
-        const swing2 = Math.sin(ph + Math.PI) * amp;
-        // legs swing opposite each other
-        T.legLPitch = swing * 0.9;
-        T.legRPitch = swing2 * 0.9;
+        const a = Math.sin(ph) * amp, b = Math.sin(ph + Math.PI) * amp;
+        T.legLPitch = a * 1.0;
+        T.legRPitch = b * 1.0;
+        T.legSplay  = 0.06;
         // arms counter-swing
-        T.armLPitch = swing2 * 0.7;
-        T.armRPitch = swing * 0.7;
-        T.armLRoll = 0.12; T.armRRoll = 0.12;
-        // body bob (twice per cycle) + forward lean
-        this._runBob = Math.abs(Math.sin(ph)) * (this.r * 0.12) * amp;
-        T.bodyPitch = -(0.12 + amp * 0.18);    // lean forward (negative pitch = nose down +Z)
-        T.bodyRoll = Math.sin(ph) * 0.06 * amp;
-        T.headPitch = (0.06 + amp * 0.06);     // counter the lean so face stays up
-        T.headYaw = Math.sin(ph) * 0.04;
+        T.armLPitch = b * 0.7;
+        T.armRPitch = a * 0.7;
+        T.armLRoll = 0.14; T.armRRoll = 0.14;
+        // bob twice per stride + forward lean scaling with speed
+        this._runBob = Math.abs(Math.sin(ph)) * (this.r * 0.1) * amp;
+        T.bodyPitch = -(0.14 + amp * 0.2);       // lean nose-forward (+Z)
+        T.bodyRoll  = Math.sin(ph) * 0.06 * amp;
+        T.headPitch = 0.12 + amp * 0.08;          // keep face up against lean
+        T.headYaw   = Math.sin(ph) * 0.05;
+        T.mouthOpen = 0.3 + amp * 0.3;
     }
 
     _poseAir(bean, T, squash) {
-        // legs tuck up, slight stretch (combined with squash in _applySquash)
         T.legTuck = 1;
-        T.legLPitch = -1.0;
-        T.legRPitch = -1.0;
-        // arms out for balance
-        T.armLRoll = 0.6; T.armRRoll = 0.6;
-        T.armLPitch = -0.2; T.armRPitch = -0.2;
+        T.legLPitch = -0.9; T.legRPitch = -0.9;
+        T.legSplay = 0.12;
+        T.armLRoll = 0.7; T.armRRoll = 0.7;       // arms out for balance
+        T.armLPitch = -0.25; T.armRPitch = -0.25;
         const rising = (bean.vz || 0) > 0;
-        T.bodyPitch = rising ? -0.1 : 0.05;
+        T.bodyPitch = rising ? -0.12 : 0.06;
+        T.lift = rising ? this.r * 0.05 : 0;
+        T.mouthOpen = 0.5;
     }
 
     _poseDive(bean, T, diveT) {
-        // pitch whole body forward ~70 deg, arms thrown forward (superman)
-        const k = Math.min(1, diveT / 0.42);       // 1 at start of dive
-        T.bodyPitch = -1.22 * (0.4 + 0.6 * k);     // up to ~ -70deg (nose toward +Z)
-        T.armLRoll = 1.5; T.armRRoll = 1.5;        // arms up to horizontal
-        T.armLPitch = -1.3; T.armRPitch = -1.3;    // and thrown forward
-        T.legLPitch = 0.5; T.legRPitch = 0.5;      // legs trail back
-        T.legTuck = 0.3;
-        T.headPitch = 0.5;                         // look forward
-        T.sx = 1.12; T.sy = 0.92; T.sz = 1.12;     // slight flatten/stretch
+        // DRAMATIC superman: body pitched ~80-90deg forward (nearly flat),
+        // arms thrust forward, legs trailing back, stretched, lifted up.
+        const k = Math.min(1, diveT / 0.42);      // ~1 at the start of the dive
+        const e = 0.4 + 0.6 * k;                  // ease the pitch in
+        T.bodyPitch = -1.48 * e;                  // up to ~ -85deg (face toward +Z)
+        // arms thrust straight forward (raised to horizontal + swung fwd)
+        T.armLRoll = 1.55; T.armRRoll = 1.55;
+        T.armLPitch = -1.55; T.armRPitch = -1.55;
+        T.armLScale = 1.15; T.armRScale = 1.15;   // reach
+        // legs trail straight back behind the body
+        T.legLPitch = 0.85; T.legRPitch = 0.85;
+        T.legSplay = 0.1;
+        T.legTuck = 0.15;
+        T.headPitch = 0.6;                        // look ahead while flat
+        // stretched along travel: longer (z) + a bit narrower
+        T.sx = 0.92; T.sy = 0.9; T.sz = 1.22;
+        T.lift = this.r * (0.45 + 0.35 * e);      // leap up off the ground
+        T.mouthOpen = 1.0;                        // open-mouth "wheee"
     }
 
-    _posePone(bean, T, proneT) {  // prone = flattened, lying down, recovering
-        const k = Math.min(1, proneT / 0.4);       // 1 right after landing
-        // flattened: wider & shorter, face-down then popping back up as k->0
-        T.bodyPitch = -1.35 * k;                   // lying forward
-        T.sx = 1 + 0.25 * k;
-        T.sy = 1 - 0.25 * k;
-        T.sz = 1 + 0.15 * k;
+    _poseProne(bean, T, proneT) {
+        // belly-down recovery: lying flat, then springs back upright as k->0
+        const k = Math.min(1, proneT / 0.4);      // ~1 just after landing
+        const spring = k > 0.6 ? 0 : Math.sin((0.6 - k) * 4) * 0.12;  // little push-up
+        T.bodyPitch = -1.42 * k;                  // lying forward, face-down
+        T.sx = 1 + 0.22 * k; T.sy = 1 - 0.24 * k; T.sz = 1 + 0.18 * k;
         T.armLRoll = 1.2 * k; T.armRRoll = 1.2 * k;
-        T.armLPitch = -0.8 * k; T.armRPitch = -0.8 * k;
-        T.legLPitch = 0.3 * k; T.legRPitch = 0.3 * k;
-        T.headPitch = 0.4 * k;
+        T.armLPitch = (-0.7 - spring) * k; T.armRPitch = (-0.7 - spring) * k;
+        T.legLPitch = 0.5 * k; T.legRPitch = 0.5 * k;
+        T.legSplay = 0.15 * k;
+        T.headPitch = 0.5 * k;
+        T.lift = this.r * 0.08 * k + spring * this.r;
     }
 
     _poseRagdoll(bean, T, dt, t) {
-        // limbs flail loosely; the actual tumble rotation is applied in commit
-        // using bean.spin across multiple axes.
+        // limbs flail loosely; tumble rotation applied in commit via bean.spin
         const f = t * 9;
-        T.armLPitch = Math.sin(f * 1.3) * 1.4;
-        T.armRPitch = Math.sin(f * 1.1 + 2) * 1.4;
-        T.armLRoll = 0.5 + Math.sin(f * 0.9) * 0.7;
-        T.armRRoll = 0.5 + Math.sin(f * 0.8 + 1) * 0.7;
-        T.legLPitch = Math.sin(f * 1.2 + 1) * 1.1;
-        T.legRPitch = Math.sin(f * 1.05) * 1.1;
-        T.legTuck = 0.4;
+        T.armLPitch = Math.sin(f * 1.3) * 1.5;
+        T.armRPitch = Math.sin(f * 1.1 + 2) * 1.5;
+        T.armLRoll = 0.5 + Math.sin(f * 0.9) * 0.8;
+        T.armRRoll = 0.5 + Math.sin(f * 0.8 + 1) * 0.8;
+        T.legLPitch = Math.sin(f * 1.2 + 1) * 1.2;
+        T.legRPitch = Math.sin(f * 1.05) * 1.2;
+        T.legSplay = 0.2 + Math.sin(f) * 0.15;
+        T.legTuck = 0.35;
         T.headRoll = Math.sin(f * 0.7) * 0.4;
         T.headPitch = Math.sin(f * 0.6) * 0.3;
-        T.eyeOpen = 0.3;                            // dazed
-        T.sx = 1.05; T.sy = 0.96;
+        T.eyeOpen = 0.25;                          // dazed
+        T.mouthOpen = 0.7;
+        T.sx = 1.05; T.sy = 0.95;
     }
 
     _poseEmote(anim, T, emoteT, dt, t) {
-        // fade-in/out factor so emote starts/ends gently (1.8s total)
         const total = 1.8;
         const age = total - emoteT;
-        const fade = Math.min(1, Math.min(age, emoteT) * 3.5);
+        const fade = Math.min(1, Math.min(age, emoteT) * 3.5);   // ease in/out
         this._emotePhase += dt;
         const ph = this._emotePhase;
-        const blend = (base, val) => base + (val - base) * fade;
+        const bl = (base, val) => base + (val - base) * fade;
 
         switch (anim) {
-            case 'wave': {
-                // raise right arm and wave it
-                T.armRRoll = blend(0.18, 2.5);
-                T.armRPitch = blend(0, -0.2);
-                T.armRYaw = Math.sin(ph * 9) * 0.5 * fade;
-                T.headRoll = Math.sin(ph * 9) * 0.06 * fade;
-                T.armLRoll = 0.18;
+            case 'wave':
+                T.armRRoll = bl(0.16, 2.55);
+                T.armRPitch = bl(0, -0.15);
+                T.armRYaw = Math.sin(ph * 9) * 0.55 * fade;
+                T.headRoll = Math.sin(ph * 9) * 0.07 * fade;
+                T.armLRoll = 0.16;
+                T.mouthOpen = 0.6;
                 break;
-            }
             case 'dance': {
-                // chicken dance: bob side to side + flap arms like wings
                 const side = Math.sin(ph * 6);
                 T.bodyRoll = side * 0.22 * fade;
                 T.headRoll = side * 0.18 * fade;
                 const flap = Math.abs(Math.sin(ph * 6)) * fade;
-                T.armLRoll = blend(0.18, 1.3 + flap * 0.5);
-                T.armRRoll = blend(0.18, 1.3 + flap * 0.5);
+                T.armLRoll = bl(0.16, 1.35 + flap * 0.5);
+                T.armRRoll = bl(0.16, 1.35 + flap * 0.5);
                 T.armLPitch = -flap * 0.3; T.armRPitch = -flap * 0.3;
+                T.headPitch = 0.08 + flap * 0.12;
                 this._danceBob = Math.abs(side) * this.r * 0.12;
+                T.mouthOpen = 0.6;
                 break;
             }
             case 'crouch': {
-                // repeated squat (t-bag)
                 const c = (Math.sin(ph * 7) * 0.5 + 0.5) * fade;
                 T.crouch = c;
                 T.sy = 1 - c * 0.3; T.sx = 1 + c * 0.18; T.sz = 1 + c * 0.1;
-                T.legLPitch = c * 0.6; T.legRPitch = c * 0.6;
+                T.legLPitch = c * 0.7; T.legRPitch = c * 0.7;
+                T.legSplay = 0.15 + c * 0.2;
                 T.armLPitch = c * 0.4; T.armRPitch = c * 0.4;
                 break;
             }
-            case 'think': {
-                // tilt head, right hand (arm) to chin
-                T.headRoll = blend(0, 0.35);
-                T.headPitch = blend(0, 0.12);
-                T.armRRoll = blend(0.18, 1.55);
-                T.armRPitch = blend(0, -1.0);
-                T.armRYaw = blend(0, -0.6);
-                T.armRScale = 1;
+            case 'think':
+                T.headRoll = bl(0, 0.35);
+                T.headPitch = bl(0, 0.14);
+                T.armRRoll = bl(0.16, 1.5);
+                T.armRPitch = bl(0, -1.1);
+                T.armRYaw = bl(0, -0.6);
                 T.armLRoll = 0.1;
-                T.bodyRoll = blend(0, 0.05) + Math.sin(ph) * 0.01;
+                T.bodyRoll = bl(0, 0.05) + Math.sin(ph) * 0.012;
                 break;
-            }
             case 'flex': {
-                // both arms up flexing, body puffs
-                T.armLRoll = blend(0.18, 1.6);
-                T.armRRoll = blend(0.18, 1.6);
-                T.armLPitch = blend(0, -1.7);     // forearms up
-                T.armRPitch = blend(0, -1.7);
+                T.armLRoll = bl(0.16, 1.65);
+                T.armRRoll = bl(0.16, 1.65);
+                T.armLPitch = bl(0, -1.75);
+                T.armRPitch = bl(0, -1.75);
                 T.armLYaw = 0.6; T.armRYaw = -0.6;
                 const puff = (0.6 + Math.sin(ph * 4) * 0.4) * fade;
-                T.puff = puff;
-                T.sx = 1 + puff * 0.12; T.sz = 1 + puff * 0.12; T.sy = 1 + puff * 0.04;
+                T.sx = 1 + puff * 0.14; T.sz = 1 + puff * 0.14; T.sy = 1 + puff * 0.05;
                 T.bodyPitch = -0.05;
+                T.mouthOpen = 0.5;
                 break;
             }
             case 'spin': {
-                // spin the whole bean around Y once or twice over the emote
-                // accumulate extra yaw; eased so it does ~2 turns then settles.
                 const turns = 2;
-                const target = turns * Math.PI * 2 * Math.min(1, age / (total * 0.8));
-                this._spinExtra = target;
-                T.armLRoll = 0.9; T.armRRoll = 0.9;   // arms out while spinning
+                this._spinExtraTarget = turns * Math.PI * 2 * Math.min(1, age / (total * 0.8));
+                T.armLRoll = 0.95; T.armRRoll = 0.95;
                 T.armLPitch = 0.2; T.armRPitch = 0.2;
                 this._danceBob = Math.abs(Math.sin(age / total * Math.PI)) * this.r * 0.15;
                 break;
             }
-            case 'point': {
-                // thrust right arm forward pointing
-                T.armRRoll = blend(0.18, 1.4);
-                T.armRPitch = blend(0, -1.45);    // point forward (+Z)
-                T.armRScale = blend(1, 1.15);
-                T.bodyPitch = blend(0, -0.12);    // lean into the point
+            case 'point':
+                T.armRRoll = bl(0.16, 1.45);
+                T.armRPitch = bl(0, -1.55);       // straight forward (+Z)
+                T.armRScale = bl(1, 1.18);
+                T.bodyPitch = bl(0, -0.14);
                 T.headPitch = 0.1;
                 T.armLRoll = 0.12; T.armLPitch = 0.2;
+                T.mouthOpen = 0.4;
                 break;
-            }
-            case 'heart': {
-                // arms make a heart overhead, gentle bounce
-                T.armLRoll = blend(0.18, 2.7);
-                T.armRRoll = blend(0.18, 2.7);
-                T.armLPitch = blend(0, -0.5);
-                T.armRPitch = blend(0, -0.5);
-                T.armLYaw = blend(0, 0.7); T.armRYaw = blend(0, -0.7);
-                T.armScale = blend(1, 0.85);
+            case 'heart':
+                T.armLRoll = bl(0.16, 2.75);
+                T.armRRoll = bl(0.16, 2.75);
+                T.armLPitch = bl(0, -0.45);
+                T.armRPitch = bl(0, -0.45);
+                T.armLYaw = bl(0, 0.7); T.armRYaw = bl(0, -0.7);
+                T.armLScale = bl(1, 0.85); T.armRScale = bl(1, 0.85);
                 this._danceBob = (Math.sin(ph * 4) * 0.5 + 0.5) * this.r * 0.1 * fade;
                 T.headPitch = -0.08;
+                T.mouthOpen = 0.6;
                 break;
-            }
             default: break;
         }
-        // separate per-arm scale used by think/point
-        if (T.armRScale === undefined) T.armRScale = 1;
     }
 
     _applySquash(T, squash, airborne) {
-        // bean.squash ~1; <1 squashed wider/shorter, >1 taller/thinner.
-        // Combine with any pose-driven scale already in T (multiplicative).
+        // bean.squash ~1: <1 squashed wider/shorter, >1 taller/thinner.
         let sy = squash;
         let sxz = 1 / Math.sqrt(Math.max(0.0001, squash));   // preserve volume
-        if (airborne) { sy *= 1.04; sxz *= 0.98; }
-        T.sy *= sy;
-        T.sx *= sxz;
-        T.sz *= sxz;
+        if (airborne) { sy *= 1.03; sxz *= 0.985; }
+        T.sy *= sy; T.sx *= sxz; T.sz *= sxz;
     }
 
     /* ---- commit pose to the scene graph ------------------------- */
     _commit(bean, dt, t, st) {
         const r = this.r, P = this.pose;
 
-        // --- tumble (ragdoll / falling): rotate on multiple axes -----
+        // --- tumble (ragdoll / falling): multi-axis spin --------------
         if (st.ragdoll > 0 || st.falling) {
             const s = bean.spin || 0;
             this.tumble.rotation.set(s * 1.0, s * 0.6, s * 0.8);
         } else {
-            // ease tumble back to zero so recovery isn't a snap
-            const e = this.tumble.rotation;
-            e.x += (0 - e.x) * Math.min(1, 12 * dt);
-            e.y += (0 - e.y) * Math.min(1, 12 * dt);
-            e.z += (0 - e.z) * Math.min(1, 12 * dt);
+            const e = this.tumble.rotation, a = Math.min(1, 12 * dt);
+            e.x += (0 - e.x) * a; e.y += (0 - e.y) * a; e.z += (0 - e.z) * a;
         }
 
-        // --- body lean / dive pitch (around X = pitch in world) ------
-        // We pitch about X so the bean tips toward +Z (its forward).
+        // --- body lean / dive pitch + roll ---------------------------
         this.lean.rotation.x = P.bodyPitch;
         this.lean.rotation.z = P.bodyRoll;
 
-        // --- spin-emote: extra yaw on root (kept separate from facing) -
-        // Apply on top of the facing-derived yaw set in update().
-        if (this._spinExtra) this.root.rotation.y += this._spinExtra;
+        // --- spin-emote extra yaw (eased), on top of facing yaw -------
+        this._spinExtra += ((this._spinExtraTarget || 0) - this._spinExtra) * Math.min(1, 10 * dt);
+        if (Math.abs(this._spinExtra) > 1e-4) this.root.rotation.y += this._spinExtra;
 
-        // --- vertical bob (breathe / run / crouch / emote bounce) ----
-        let bobY = 0;
-        bobY += this._breatheBob || 0;
-        bobY += this._runBob || 0;
-        bobY += this._danceBob || 0;
-        bobY -= (P.crouch || 0) * r * 0.5;
+        // --- vertical bob (breathe / run / crouch / leap) ------------
+        let bobY = (this._breatheBob || 0) + (this._runBob || 0) + (this._danceBob || 0);
+        bobY -= (P.crouch || 0) * r * 0.45;
+        bobY += (P.lift || 0);
         this.bob.position.y = bobY;
-        // decay one-shot bob accumulators so stale frames don't linger
-        this._breatheBob = (this._breatheBob || 0) * 0.6;
-        this._runBob = (this._runBob || 0) * 0.5;
-        this._danceBob = (this._danceBob || 0) * 0.5;
+        this._breatheBob *= 0.6; this._runBob *= 0.5; this._danceBob *= 0.5;
 
-        // --- body squash/stretch + puff ------------------------------
-        const puff = 1 + (P.puff || 0) * 0;   // puff already folded into sx/sz
+        // --- body squash / stretch about the foot line ---------------
         this.bodyScale.scale.set(P.sx, P.sy, P.sz);
 
         // --- head ----------------------------------------------------
         this.headPivot.rotation.set(P.headPitch, P.headYaw, P.headRoll);
-        if (this.face) this.face.rotation.set(P.headPitch * 0.6, P.headYaw * 0.6, P.headRoll * 0.6);
 
         // --- arms ----------------------------------------------------
-        // pivot rotation: roll (Z) raises out to side, pitch (X) swings f/b,
-        // yaw (Y) twists. Left arm is +X side, mirror the roll sign.
+        // roll (Z) raises out to the side, pitch (X) swings fwd(+Z)/back,
+        // yaw (Y) twists. Left arm is on +X, mirror the roll sign.
         const aL = this.armL.pivot, aR = this.armR.pivot;
         aL.rotation.set(P.armLPitch, P.armLYaw, +P.armLRoll);
         aR.rotation.set(P.armRPitch, P.armRYaw, -P.armRRoll);
-        const armScale = P.armScale || 1;
-        const rArmScale = (this._target && this._target.armRScale) || 1;
-        this.armL.pivot.scale.y = armScale;
-        this.armR.pivot.scale.y = armScale * rArmScale;
+        aL.scale.y = P.armLScale;
+        aR.scale.y = P.armRScale;
 
         // --- legs ----------------------------------------------------
         const tuck = P.legTuck || 0;
         const lL = this.legL.pivot, lR = this.legR.pivot;
-        lL.rotation.set(P.legLPitch, 0, 0);
-        lR.rotation.set(P.legRPitch, 0, 0);
-        // tuck pulls feet up toward the body (raise hip pivot)
-        lL.position.y = r * 0.62 + tuck * r * 0.35;
-        lR.position.y = r * 0.62 + tuck * r * 0.35;
+        lL.rotation.set(P.legLPitch, 0, +P.legSplay);
+        lR.rotation.set(P.legRPitch, 0, -P.legSplay);
+        // tuck raises the hip pivots so feet lift toward the body
+        lL.position.y = this.hipY + tuck * r * 0.3;
+        lR.position.y = this.hipY + tuck * r * 0.3;
 
-        // --- eyes: blink (scale Y) + pupil tracking ------------------
+        // --- eyes: blink + pupil tracking; mouth open ----------------
         for (const e of this.eyes) {
             e.group.scale.y = Math.max(0.08, P.eyeOpen);
-            e.pupil.position.x = P.lookX * r * 0.1;
+            e.pupil.position.x = P.lookX * r * 0.09;
             e.pupil.position.y = P.lookY * r * 0.06;
         }
+        if (this.mouth) this.mouth.scale.y = 1 + (P.mouthOpen || 0) * 1.6;
 
         // --- prop flourishes -----------------------------------------
-        if (this._tail) {
-            this._tail.rotation.z = Math.sin(t * 4) * 0.18;   // wag
-        }
+        if (this._tail) this._tail.rotation.z = Math.sin(t * 4) * 0.2;
         if (this._rocketFlames) {
             const flick = 0.7 + Math.sin(t * 30) * 0.3;
-            for (const f of this._rocketFlames) {
-                f.scale.y = flick;
-                if (f.material) f.material.opacity = 0.7 + Math.sin(t * 24 + f.id) * 0.2;
+            for (let i = 0; i < this._rocketFlames.length; i++) {
+                const f = this._rocketFlames[i];
+                f.scale.y = flick + (i & 1 ? 0.1 : 0);
+                if (f.material) f.material.opacity = 0.7 + Math.sin(t * 24 + i) * 0.2;
             }
         }
     }
@@ -2978,17 +3136,16 @@ class BeanView {
 
     dispose() {
         for (const d of this._disposables) { if (d && d.dispose) d.dispose(); }
-        for (const k in this._textures) { const tx = this._textures[k]; if (tx && tx.dispose) tx.dispose(); }
         if (this._patternTex && this._patternTex.dispose) this._patternTex.dispose();
         this._disposables = [];
         this._materials = {};
-        this._textures = {};
+        this._patternTex = null;
     }
 }
 
-// Make available without modules (browser global / Node global) without
-// using `export`. In the game this file is concatenated/loaded so the bare
-// class declaration is enough; this guard just helps the self-test eval.
+// Available without modules (browser global / Node global) without `export`.
+// In the game this file is concatenated/loaded so the bare class declaration
+// suffices; this guard just helps the self-test eval.
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = BeanView;
 }
@@ -2996,8 +3153,12 @@ if (typeof module !== 'undefined' && module.exports) {
 /* =================== view_world =================== */
 /* =====================================================================
    view_world.js — the 3D world for Bean Royale (Fall Guys tribute).
-   Procedural Three.js (r160) scene graph: NO external assets, NO WebGL
-   renderer calls. We only build / update Object3D graphs.
+
+   Procedural Three.js (r160) scene graph. NO external assets, NO WebGL
+   renderer calls — we only build / update Object3D graphs. The host
+   renderer uses ACES tone-mapping + PCF soft shadows + sRGB output, so
+   materials lean on physical roughness/metalness and keep emissive
+   restrained (it blooms under tone-mapping otherwise).
 
    Coordinate mapping (sim is top-down logical X/Y, Z = height; world is
    Y-up):  logical (x, y) at height z  ->  world (x, z, y).
@@ -3012,9 +3173,33 @@ if (typeof module !== 'undefined' && module.exports) {
 /* logical (x, y) at height z -> world Vector3 (x, z, y) */
 const W = (x, y, z = 0) => new THREE.Vector3(x, z, y);
 
-/* ---------------------------------------------------------------------
+const HAS_DOC = (typeof document !== 'undefined' && !!document.createElement);
+
+/* =====================================================================
+   Palette — one tidy bubblegum theme everything pulls from.
+   ===================================================================== */
+const WPAL = {
+    skyTop:   0x6db8ff,   // soft blue zenith
+    skyMid:   0xa9d8ff,
+    skyHaze:  0xffd9ec,   // pinkish horizon haze
+    fog:      0xdfeeff,   // soft horizon fog
+    track:    0x8fd4ff,   // pastel track blue
+    trackAlt: 0xb6e6ff,
+    curb:     0xff7fb6,   // candy pink curb
+    gold:     0xffd34d,   // accent gold
+    mint:     0x73e3b8,
+    grape:    0x9a6cff,
+    grapeDk:  0x6f3ec8,
+    slime:    0xff3fb0,   // hot magenta-pink slime
+    slimeDk:  0x9c1f86,
+    cloud:    0xfff6ff,
+    wood:     0xc9a063,   // door panel
+    woodDk:   0x9a743f,
+};
+
+/* =====================================================================
    Small shared helpers
-   ------------------------------------------------------------------- */
+   ===================================================================== */
 
 // parse a CSS hex / named color into a THREE.Color (safe fallback).
 function col(c, fallback) {
@@ -3029,24 +3214,45 @@ function col(c, fallback) {
 
 // lighten (t>0) / darken (t<0) a color toward white / black.
 function shade(c, t) {
-    const out = c.clone();
+    const out = (c instanceof THREE.Color) ? c.clone() : col(c);
     if (t >= 0) out.lerp(new THREE.Color(0xffffff), t);
     else out.lerp(new THREE.Color(0x000000), -t);
     return out;
 }
 
-// standard playful material.
+// nudge saturation/value of a color for richer, less flat pastels.
+function pop(c, dS, dL) {
+    const base = (c instanceof THREE.Color) ? c.clone() : col(c);
+    const hsl = { h: 0, s: 0, l: 0 };
+    base.getHSL(hsl);
+    base.setHSL(hsl.h,
+        THREE.MathUtils.clamp(hsl.s + (dS || 0), 0, 1),
+        THREE.MathUtils.clamp(hsl.l + (dL || 0), 0, 1));
+    return base;
+}
+
+// standard playful pastel material.
 function mat(color, opts) {
     opts = opts || {};
-    return new THREE.MeshStandardMaterial(Object.assign({
+    const params = {
         color: col(color, 0xffffff),
         roughness: opts.roughness != null ? opts.roughness : 0.62,
         metalness: opts.metalness != null ? opts.metalness : 0.04,
-    }, opts.emissive != null ? { emissive: col(opts.emissive, 0x000000) } : {},
-       opts.emissiveIntensity != null ? { emissiveIntensity: opts.emissiveIntensity } : {},
-       opts.transparent ? { transparent: true } : {},
-       opts.opacity != null ? { opacity: opts.opacity } : {},
-       opts.side != null ? { side: opts.side } : {}));
+        flatShading: !!opts.flat,
+    };
+    if (opts.emissive != null) params.emissive = col(opts.emissive, 0x000000);
+    if (opts.emissiveIntensity != null) params.emissiveIntensity = opts.emissiveIntensity;
+    if (opts.transparent) params.transparent = true;
+    if (opts.opacity != null) params.opacity = opts.opacity;
+    if (opts.side != null) params.side = opts.side;
+    if (opts.fog === false) params.fog = false;
+    return new THREE.MeshStandardMaterial(params);
+}
+
+// glossy candy material (low roughness, slight metal) for accents/pads.
+function gloss(color, opts) {
+    opts = opts || {};
+    return mat(color, Object.assign({ roughness: 0.18, metalness: 0.12 }, opts));
 }
 
 // flag a mesh (and descendants) to cast / receive shadows.
@@ -3068,122 +3274,232 @@ function disposeTree(root) {
         if (o.material) {
             const ms = Array.isArray(o.material) ? o.material : [o.material];
             for (const m of ms) {
-                if (m.map && m.map.dispose) m.map.dispose();
-                if (m.dispose) m.dispose();
+                if (m && m.map && m.map.dispose) m.map.dispose();
+                if (m && m.dispose) m.dispose();
             }
         }
     });
     if (root.parent) root.parent.remove(root);
 }
 
-/* ---------------------------------------------------------------------
-   ENVIRONMENT — lights, sky dome, fog.
-   ------------------------------------------------------------------- */
+/* A rounded "pill" box: a Box with little cap cylinders/spheres would be
+   pricey; instead we cheat a chunky-soft look by scaling a Box and adding
+   nothing — but for the few hero pieces we build a true rounded slab via
+   an ExtrudeGeometry of a rounded rectangle. Returns a Mesh.            */
+function roundedSlab(w, h, d, r, material) {
+    r = Math.max(0.5, Math.min(r, w / 2 - 0.1, h / 2 - 0.1));
+    const s = new THREE.Shape();
+    const x = -w / 2, y = -h / 2;
+    s.moveTo(x + r, y);
+    s.lineTo(x + w - r, y);
+    s.quadraticCurveTo(x + w, y, x + w, y + r);
+    s.lineTo(x + w, y + h - r);
+    s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    s.lineTo(x + r, y + h);
+    s.quadraticCurveTo(x, y + h, x, y + h - r);
+    s.lineTo(x, y + r);
+    s.quadraticCurveTo(x, y, x + r, y);
+    const geo = new THREE.ExtrudeGeometry(s, {
+        depth: d, bevelEnabled: true,
+        bevelThickness: Math.min(r * 0.6, d * 0.25, 4),
+        bevelSize: Math.min(r * 0.5, 3),
+        bevelSegments: 2, steps: 1,
+    });
+    geo.center();
+    return new THREE.Mesh(geo, material);
+}
+
+/* =====================================================================
+   Canvas textures (browser only; all guarded). Each returns a
+   CanvasTexture or null in Node.
+   ===================================================================== */
+
+function vGradientTexture(stops, h) {
+    if (!HAS_DOC) return null;
+    h = h || 512;
+    const cv = document.createElement('canvas');
+    cv.width = 4; cv.height = h;
+    const g = cv.getContext('2d');
+    const grad = g.createLinearGradient(0, 0, 0, h);
+    for (const [p, c] of stops) grad.addColorStop(p, c);
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 4, h);
+    const tex = new THREE.CanvasTexture(cv);
+    tex.needsUpdate = true;
+    return tex;
+}
+
+// soft mottled slime texture — blobs of light/dark so the goo isn't flat.
+function slimeTexture() {
+    if (!HAS_DOC) return null;
+    const N = 256;
+    const cv = document.createElement('canvas');
+    cv.width = N; cv.height = N;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#ff3fb0';
+    g.fillRect(0, 0, N, N);
+    // bright bubbles
+    for (let i = 0; i < 90; i++) {
+        const x = Math.random() * N, y = Math.random() * N;
+        const r = 4 + Math.random() * 22;
+        const rad = g.createRadialGradient(x, y, 0, x, y, r);
+        const bright = Math.random() > 0.5;
+        rad.addColorStop(0, bright ? 'rgba(255,170,225,0.85)' : 'rgba(150,20,120,0.7)');
+        rad.addColorStop(1, 'rgba(255,63,176,0)');
+        g.fillStyle = rad;
+        g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.needsUpdate = true;
+    return tex;
+}
+
+// soft round white sprite-ish blob, used to fake puffy cloud lighting.
+function softDiscTexture() {
+    if (!HAS_DOC) return null;
+    const N = 128;
+    const cv = document.createElement('canvas');
+    cv.width = N; cv.height = N;
+    const g = cv.getContext('2d');
+    const rad = g.createRadialGradient(N / 2, N / 2, 0, N / 2, N / 2, N / 2);
+    rad.addColorStop(0, 'rgba(255,255,255,1)');
+    rad.addColorStop(0.7, 'rgba(255,246,255,0.9)');
+    rad.addColorStop(1, 'rgba(255,246,255,0)');
+    g.fillStyle = rad;
+    g.fillRect(0, 0, N, N);
+    const tex = new THREE.CanvasTexture(cv);
+    tex.needsUpdate = true;
+    return tex;
+}
+
+/* =====================================================================
+   ENVIRONMENT — lights, sky dome, fog, drifting clouds.
+   ===================================================================== */
 function setupEnvironment(scene) {
-    // --- soft hemisphere ambient (sky tint over ground tint) ---
-    const hemi = new THREE.HemisphereLight(0xbfeaff, 0xf3b9e0, 0.85);
-    hemi.position.set(0, 1600, 0);
-    scene.add(hemi);
-
-    // --- gentle fill so shadowed sides aren't muddy ---
-    const ambient = new THREE.AmbientLight(0xffffff, 0.18);
-    scene.add(ambient);
-
-    // --- the sun: directional key light with a big shadow frustum ---
-    const sun = new THREE.DirectionalLight(0xfff4e0, 2.0);
-    sun.position.set(-700, 1500, 900);     // up & to the side, behind start
-    sun.target.position.set(0, 0, -200);
+    // ---- key light: the warm sun, from above & behind the start line ----
+    const sun = new THREE.DirectionalLight(0xfff2e0, 2.2);
+    sun.position.set(-820, 1650, 1150);    // up, to the side, behind start (+Z = down-course)
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     const sc = sun.shadow.camera;
-    sc.left = -1400; sc.right = 1400;
-    sc.top = 1400; sc.bottom = -1400;
-    sc.near = 10; sc.far = 4200;
-    sun.shadow.bias = -0.0005;
-    sun.shadow.normalBias = 1.0;
+    sc.left = -1600; sc.right = 1600;
+    sc.top = 1600; sc.bottom = -1600;
+    sc.near = 100; sc.far = 4000;
+    sun.shadow.bias = -0.0004;
+    sun.shadow.normalBias = 1.5;
+    const sunTarget = new THREE.Object3D();
+    sunTarget.position.set(0, 0, 400);     // aim down the play areas
+    sun.target = sunTarget;
     scene.add(sun);
-    scene.add(sun.target);
+    scene.add(sunTarget);
 
-    // --- sky dome: big back-side sphere with vertical gradient ---
-    const skyColTop = new THREE.Color(0x5ad1ff);   // PAL.skyTop
-    const skyColBot = new THREE.Color(0xd8f4ff);   // brighter near horizon
-    const skyGeo = new THREE.SphereGeometry(6000, 32, 16);
+    // ---- soft sky/ground fill so shadowed sides stay lush, not muddy ----
+    const hemi = new THREE.HemisphereLight(0xbfe8ff, 0x6b5a7a, 0.9);
+    hemi.position.set(0, 1400, 0);
+    scene.add(hemi);
+
+    // ---- low ambient floor so nothing reads pure black ----
+    const ambient = new THREE.AmbientLight(0xfff3ec, 0.15);
+    scene.add(ambient);
+
+    // ---- cool fill from the opposite side (no shadow) to shape forms ----
+    const fill = new THREE.DirectionalLight(0xbcd6ff, 0.55);
+    fill.position.set(900, 700, -1100);
+    fill.castShadow = false;
+    scene.add(fill);
+
+    // ---- SKY: big back-side sphere with a vertical pastel gradient ----
+    const horizon = col(WPAL.skyHaze).clone().lerp(col(WPAL.skyMid), 0.45);
+    const skyGeo = new THREE.SphereGeometry(6000, 32, 20);
     let skyMat;
-    if (typeof document !== 'undefined' && document.createElement) {
-        // gradient via CanvasTexture (browser path)
-        const cv = document.createElement('canvas');
-        cv.width = 8; cv.height = 256;
-        const g2d = cv.getContext('2d');
-        const grad = g2d.createLinearGradient(0, 0, 0, 256);
-        grad.addColorStop(0.0, '#3aa9ff');   // zenith
-        grad.addColorStop(0.55, '#7fd8ff');
-        grad.addColorStop(1.0, '#dff6ff');    // horizon
-        g2d.fillStyle = grad;
-        g2d.fillRect(0, 0, 8, 256);
-        const tex = new THREE.CanvasTexture(cv);
-        tex.needsUpdate = true;
-        skyMat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, fog: false, depthWrite: false });
+    const gradTex = vGradientTexture([
+        [0.00, '#6db8ff'],   // zenith soft blue
+        [0.45, '#a9d8ff'],
+        [0.78, '#ffe3f0'],
+        [1.00, '#ffd2e6'],   // pinkish horizon
+    ], 512);
+    if (gradTex) {
+        skyMat = new THREE.MeshBasicMaterial({ map: gradTex, side: THREE.BackSide, fog: false, depthWrite: false });
     } else {
-        // Node / headless fallback: solid sky-blue
-        skyMat = new THREE.MeshBasicMaterial({ color: skyColTop.clone().lerp(skyColBot, 0.4), side: THREE.BackSide, fog: false, depthWrite: false });
+        // Node / headless fallback: a pleasant solid sky blend.
+        skyMat = new THREE.MeshBasicMaterial({
+            color: col(WPAL.skyMid), side: THREE.BackSide, fog: false, depthWrite: false,
+        });
     }
     const sky = new THREE.Mesh(skyGeo, skyMat);
     sky.name = 'sky';
     sky.renderOrder = -1000;
     scene.add(sky);
 
-    // also set a background color so the clear is pleasant even before sky draws
-    scene.background = skyColTop.clone().lerp(skyColBot, 0.35);
+    // background color (used before the dome draws / if dome culled).
+    scene.background = col(WPAL.skyMid).clone().lerp(horizon, 0.4);
 
-    // --- gentle fog for depth (light blue) ---
-    scene.fog = new THREE.Fog(0xbfe8ff, 1400, 5200);
+    // ---- gentle fog tuned to the horizon haze for soft depth ----
+    scene.fog = new THREE.Fog(horizon.getHex(), 1700, 5400);
 
-    // --- a few drifting puffy clouds (cheap, decorative) ---
+    // ---- a low warm sun-disc / glow on the dome for a focal point ----
+    const glowMat = new THREE.MeshBasicMaterial({
+        color: 0xfff0d8, transparent: true, opacity: 0.55,
+        side: THREE.FrontSide, fog: false, depthWrite: false,
+    });
+    const glow = new THREE.Mesh(new THREE.CircleGeometry(520, 32), glowMat);
+    glow.position.set(-1900, 2400, 3600);
+    glow.lookAt(0, 600, 0);
+    glow.renderOrder = -999;
+    scene.add(glow);
+
+    // ---- drifting puffy clouds: clusters of soft lobes ----
     const clouds = new THREE.Group();
     clouds.name = 'clouds';
+    const discTex = softDiscTexture();
     const cloudMat = new THREE.MeshStandardMaterial({
-        color: 0xffffff, roughness: 1.0, metalness: 0.0,
-        emissive: 0xffffff, emissiveIntensity: 0.25, fog: false,
+        color: WPAL.cloud, roughness: 1.0, metalness: 0.0,
+        emissive: 0xfff3ff, emissiveIntensity: 0.35, fog: true,
+        transparent: !!discTex, alphaMap: discTex || null,
+        depthWrite: false,
     });
     const cloudSeeds = [];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 8; i++) {
         const puff = new THREE.Group();
-        const lobes = 3 + (i % 3);
+        const lobes = 3 + (i % 4);
         for (let j = 0; j < lobes; j++) {
-            const r = 120 + ((i * 53 + j * 37) % 90);
-            const m = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), cloudMat);
-            m.position.set((j - lobes / 2) * 130, ((i + j) % 2) * 40, (j % 2) * 60);
-            m.scale.set(1, 0.6, 1);
+            const r = 130 + ((i * 53 + j * 37) % 110);
+            const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), cloudMat);
+            m.position.set((j - lobes / 2) * 150, ((i + j) % 2) * 46, (j % 2) * 70);
+            m.scale.set(1, 0.58, 1);
             puff.add(m);
         }
-        const ang = (i / 7) * Math.PI * 2;
-        const dist = 2600 + (i % 4) * 350;
-        puff.position.set(Math.cos(ang) * dist, 1500 + (i % 3) * 260, Math.sin(ang) * dist - 600);
+        const ang = (i / 8) * Math.PI * 2;
+        const dist = 2700 + (i % 4) * 380;
+        puff.position.set(Math.cos(ang) * dist, 1550 + (i % 3) * 300, Math.sin(ang) * dist - 500);
         clouds.add(puff);
-        cloudSeeds.push({ puff, baseX: puff.position.x, speed: 8 + (i % 5) * 3 });
+        cloudSeeds.push({ puff, baseX: puff.position.x, baseY: puff.position.y, speed: 7 + (i % 5) * 3.5, ph: i * 1.3 });
     }
     scene.add(clouds);
 
     return {
-        sun, hemi, sky, clouds, ambient,
+        sun, hemi, sky, clouds, ambient, fill, glow,
         update(dt, t) {
             t = t || 0;
-            // drift clouds slowly along world X, wrapping around.
             for (const cs of cloudSeeds) {
-                cs.puff.position.x = cs.baseX + Math.sin(t * 0.02 + cs.baseX) * 60 + (t * cs.speed) % 6000;
-                if (cs.puff.position.x > 4200) cs.puff.position.x -= 8400;
+                let x = cs.baseX + (t * cs.speed) % 9000;
+                if (x > 4500) x -= 9000;
+                cs.puff.position.x = x + Math.sin(t * 0.05 + cs.ph) * 40;
+                cs.puff.position.y = cs.baseY + Math.sin(t * 0.08 + cs.ph) * 18;
             }
         },
     };
 }
 
-/* ---------------------------------------------------------------------
-   OBSTACLE VIEWS
-   makeObstacleView(ob) dispatches on ob.kind.  Each returns
-   { object3d, update(ob,dt,t), dispose() }.
-   ------------------------------------------------------------------- */
+/* =====================================================================
+   OBSTACLE VIEWS — makeObstacleView(ob) dispatches on ob.kind.
+   Each returns { object3d, update(ob,dt,t), dispose() }.
+   ===================================================================== */
 
-// arms of a spinner sit higher when it's an overhead bar vs a low sweeper.
+// In the sim, a spinner arm tip is at radius `len` (cx+cos*len). So a bar
+// spans 0..len from the hub and we center it at len/2. Overhead bars (no
+// height cap / tall) ride higher than low sweepers.
 function spinnerLift(ob) {
     return (ob.height != null && ob.height < 200) ? 10 : 34;
 }
@@ -3192,39 +3508,55 @@ function makeSpinner(ob) {
     const group = new THREE.Object3D();
     group.position.copy(W(ob.cx, ob.cy, 0));
 
-    const color = col(ob.color, 0xff5fa2);
+    const color = col(ob.color, WPAL.curb);
     const thick = ob.thick || 18;
-    const len = ob.len || 200;
+    const len = ob.len || 200;             // arm tip radius (matches sim _ends)
     const arms = Math.max(1, ob.arms || 2);
     const lift = spinnerLift(ob);
+    const barH = thick * 1.25;
+    const barD = thick * 1.25;
 
-    // central post from ground up to the arms, + a hub.
-    const postMat = mat(shade(color, -0.25), { roughness: 0.5 });
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(thick * 0.6, thick * 0.8, lift + thick, 16), postMat);
-    post.position.set(0, (lift + thick) / 2, 0);
+    // central post from ground up to the rotor, + a chunky hub.
+    const postMat = mat(pop(shade(color, -0.28), 0.05, 0), { roughness: 0.45, metalness: 0.15 });
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(thick * 0.55, thick * 0.85, lift + barH, 18), postMat);
+    post.position.set(0, (lift + barH) / 2, 0);
     group.add(post);
+    // a little base plate so the post reads as bolted down.
+    const plate = new THREE.Mesh(new THREE.CylinderGeometry(thick * 1.2, thick * 1.35, 6, 20), postMat);
+    plate.position.set(0, 3, 0);
+    group.add(plate);
 
     // the rotor carries the arms; we spin THIS about world Y.
     const rotor = new THREE.Object3D();
-    rotor.position.set(0, lift + thick * 0.5, 0);
+    rotor.position.set(0, lift + barH * 0.5, 0);
     group.add(rotor);
 
-    const hubMat = mat(shade(color, -0.15), { roughness: 0.45, metalness: 0.1 });
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(thick * 1.1, thick * 1.1, thick * 1.3, 20), hubMat);
+    const hubMat = gloss(pop(shade(color, -0.12), 0.05, 0), { roughness: 0.3, metalness: 0.25 });
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(thick * 1.15, thick * 1.15, barH * 1.15, 22), hubMat);
     rotor.add(hub);
+    const hubCap = new THREE.Mesh(new THREE.SphereGeometry(thick * 0.55, 16, 12), gloss(WPAL.gold));
+    hubCap.position.set(0, barH * 0.6, 0);
+    rotor.add(hubCap);
 
-    // each arm is a long box laid along +X, then rotated about Y into place.
-    const armMat = mat(color, { roughness: 0.5, metalness: 0.06 });
-    const capMat = mat(shade(color, 0.35), { roughness: 0.4 });
+    // each arm: a soft rounded padded bar laid along +X, plus a paddle cap.
+    const armMat = mat(color, { roughness: 0.42, metalness: 0.06 });
+    const stripeMat = mat(pop(shade(color, 0.4), 0, 0.05), { roughness: 0.35 });
+    const capMat = gloss(pop(shade(color, 0.28), 0.05, 0));
     for (let i = 0; i < arms; i++) {
-        const a = (i * Math.PI * 2) / arms;           // matches sim _ends()
+        const a = (i * Math.PI * 2) / arms;
         const arm = new THREE.Object3D();
-        arm.rotation.y = -a;   // logical angle a -> world -Y rotation (X/Y -> X/Z handedness)
-        const bar = new THREE.Mesh(new THREE.BoxGeometry(len, thick, thick * 1.15), armMat);
+        arm.rotation.y = -a;   // logical angle a -> world -Y (X/Y -> X/Z handedness)
+
+        const bar = roundedSlab(len, barH, barD, Math.min(barH, barD) * 0.45, armMat);
         bar.position.set(len / 2, 0, 0);
         arm.add(bar);
-        // rounded paddle cap at the tip for a toy look.
-        const cap = new THREE.Mesh(new THREE.SphereGeometry(thick * 0.85, 14, 10), capMat);
+        // a bright hazard stripe band near the tip.
+        const band = new THREE.Mesh(new THREE.BoxGeometry(len * 0.18, barH * 1.02, barD * 1.04), stripeMat);
+        band.position.set(len * 0.78, 0, 0);
+        arm.add(band);
+        // rounded paddle cap at the tip for a beefy toy look.
+        const cap = new THREE.Mesh(new THREE.SphereGeometry(barH * 0.72, 16, 12), capMat);
+        cap.scale.set(1, 1, 1.15);
         cap.position.set(len, 0, 0);
         arm.add(cap);
         rotor.add(arm);
@@ -3235,9 +3567,7 @@ function makeSpinner(ob) {
     const view = {
         object3d: group,
         update(o, dt, t) {
-            // sim drives ob.angle; mirror it. logical +angle (CCW in X/Y)
-            // becomes -rotation.y in world (X right, Z = +logical-y).
-            rotor.rotation.y = -((o && o.angle != null) ? o.angle : ob.angle || 0);
+            rotor.rotation.y = -((o && o.angle != null) ? o.angle : (ob.angle || 0));
         },
         dispose() { disposeTree(group); },
     };
@@ -3250,62 +3580,73 @@ function makeHammer(ob) {
     const cx = ob.cx, cy = ob.cy;
     const amp = ob.amp || 280;
     const headR = ob.headR || 30;
-    // pivot height: hang the pendulum from a tower above the lane.
-    const pivotH = Math.max(180, headR * 4 + 120);
+    const height = (ob.height != null) ? ob.height : 120;
+    // hang the pendulum high enough that the head sweeps above `height`.
+    const pivotH = Math.max(height + headR * 2 + 80, headR * 4 + 160);
 
-    // support tower beside the lane so the pivot has something to hang from.
-    const towerMat = mat(0x6a5acd, { roughness: 0.6 });
-    const tower = new THREE.Mesh(new THREE.BoxGeometry(26, pivotH, 26), towerMat);
-    tower.position.copy(W(cx - amp - 60, cy, pivotH / 2));
-    group.add(tower);
-    const tower2 = tower.clone();
-    tower2.position.copy(W(cx + amp + 60, cy, pivotH / 2));
-    group.add(tower2);
-    // cross-beam between towers.
-    const beam = new THREE.Mesh(new THREE.BoxGeometry((amp + 60) * 2, 22, 22), towerMat);
+    // two support towers + a cross-beam straddling the lane.
+    const towerMat = mat(WPAL.grape, { roughness: 0.5, metalness: 0.12 });
+    const towerTrim = mat(WPAL.gold, { roughness: 0.3, metalness: 0.3 });
+    const legW = 30;
+    for (const sx of [cx - amp - 70, cx + amp + 70]) {
+        const tower = roundedSlab(legW, pivotH, legW, 8, towerMat);
+        tower.position.copy(W(sx, cy, pivotH / 2));
+        group.add(tower);
+        const foot = new THREE.Mesh(new THREE.BoxGeometry(legW * 1.5, 14, legW * 1.5), towerMat);
+        foot.position.copy(W(sx, cy, 7));
+        group.add(foot);
+        const knob = new THREE.Mesh(new THREE.SphereGeometry(legW * 0.6, 16, 12), towerTrim);
+        knob.position.copy(W(sx, cy, pivotH));
+        group.add(knob);
+    }
+    const beam = roundedSlab((amp + 70) * 2, 26, 26, 8, towerMat);
     beam.position.copy(W(cx, cy, pivotH));
     group.add(beam);
 
-    // pivot pivots in the world ZX? No: head sweeps along logical X at depth cy,
-    // so it swings in the world X/Y(height) plane -> rotate about world Z.
+    // pivot swings in the world X / height plane -> rotate about world Z.
     const pivot = new THREE.Object3D();
     pivot.position.copy(W(cx, cy, pivotH));
     group.add(pivot);
 
-    const armLen = pivotH - headR * 1.2;
-    const armMat = mat(0x9a8cff, { roughness: 0.5, metalness: 0.1 });
-    const arm = new THREE.Mesh(new THREE.CylinderGeometry(8, 8, armLen, 12), armMat);
-    // cylinder default is along +Y; we want it hanging down from pivot.
-    arm.position.set(0, -armLen / 2, 0);
+    const armLen = pivotH - height - headR * 0.4;  // length of the swinging rod
+    const armMat = gloss(WPAL.grapeDk, { roughness: 0.3, metalness: 0.25 });
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(9, 11, armLen, 14), armMat);
+    arm.position.set(0, -armLen / 2, 0);           // hang down from pivot
     pivot.add(arm);
+    // chain-ish collar where rod meets head.
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(13, 13, 16, 16), gloss(WPAL.gold));
+    collar.position.set(0, -armLen + headR * 0.4, 0);
+    pivot.add(collar);
 
-    const headMat = mat(0xffd23f, { roughness: 0.35, metalness: 0.2, emissive: 0x6b4a00, emissiveIntensity: 0.15 });
-    const head = new THREE.Mesh(new THREE.SphereGeometry(headR, 22, 16), headMat);
+    // chunky wrecking-ball head with studs (a mace).
+    const headMat = gloss(WPAL.gold, { roughness: 0.28, metalness: 0.35, emissive: 0x5a3d00, emissiveIntensity: 0.12 });
+    const head = new THREE.Mesh(new THREE.SphereGeometry(headR, 24, 18), headMat);
     head.position.set(0, -armLen, 0);
     pivot.add(head);
-    // a couple of "studs" so the swinging head reads as a mace.
-    const studMat = mat(shade(col(0xffd23f), -0.2), { metalness: 0.3 });
-    for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * Math.PI * 2;
-        const stud = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.28, headR * 0.5, 8), studMat);
+    const studMat = gloss(shade(WPAL.gold, -0.25), { metalness: 0.4 });
+    for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        const stud = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.26, headR * 0.5, 8), studMat);
         stud.position.set(Math.cos(a) * headR, -armLen + Math.sin(a) * headR, 0);
         stud.rotation.z = -a + Math.PI / 2;
+        pivot.add(stud);
+    }
+    // a couple studs poking toward/away (Z) so it reads round from the side.
+    for (const dz of [-1, 1]) {
+        const stud = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.26, headR * 0.5, 8), studMat);
+        stud.position.set(0, -armLen, dz * headR);
+        stud.rotation.x = dz < 0 ? Math.PI / 2 : -Math.PI / 2;
         pivot.add(stud);
     }
 
     shadowy(group, true, true);
 
-    // map a pendulum phase so head world-X = cx + sin(phase)*amp.
-    // pivot rotates about world Z by angle theta; head sits at depth = arm*sin(theta)?
-    // We instead drive a swing angle from asin(sin(phase)) clamped, so the head's
-    // X offset = armLen*sin(theta). To honor amp exactly we scale: theta from
-    // desired x-offset = sin(phase)*amp -> theta = asin(clamp(x/armLen)).
+    // head world-X must equal cx + sin(phase)*amp. The down-hanging rod's
+    // tip X = armLen*sin(theta), so theta = asin(clamp(sin(phase)*amp/armLen)).
     function applyPhase(phase) {
         const desiredX = Math.sin(phase) * amp;
-        const ratio = Math.max(-1, Math.min(1, desiredX / armLen));
-        const theta = Math.asin(ratio);
-        // rotate pivot about world Z so the down-hanging arm swings in X.
-        pivot.rotation.z = theta;
+        const ratio = THREE.MathUtils.clamp(desiredX / armLen, -1, 1);
+        pivot.rotation.z = Math.asin(ratio);
     }
 
     const view = {
@@ -3320,51 +3661,65 @@ function makeHammer(ob) {
 function makeDoorWall(ob) {
     const group = new THREE.Object3D();
     const thick = ob.thick || 26;
-    const doorH = 230;                     // tall enough that you can't peek over
+    const doorH = 240;                     // tall enough you can't peek over
+    const frameT = 14;                     // frame border thickness
     const y = ob.y;
 
-    // door-frame posts at each end.
-    const postMat = mat(0x5a4632, { roughness: 0.8 });
-    const postGeo = new THREE.BoxGeometry(thick * 0.7, doorH + 40, thick + 18);
-    for (const px of [ob.x0, ob.x1]) {
-        const post = new THREE.Mesh(postGeo, postMat);
-        post.position.copy(W(px, y, (doorH + 40) / 2));
+    // ground sill across the whole wall.
+    const trimMat = mat(WPAL.woodDk, { roughness: 0.7, metalness: 0.05 });
+    const sill = new THREE.Mesh(new THREE.BoxGeometry((ob.x1 - ob.x0) + thick, 14, thick + 16), trimMat);
+    sill.position.copy(W((ob.x0 + ob.x1) / 2, y, 7));
+    group.add(sill);
+    // lintel across the top.
+    const lintel = new THREE.Mesh(new THREE.BoxGeometry((ob.x1 - ob.x0) + thick, 22, thick + 16), trimMat);
+    lintel.position.copy(W((ob.x0 + ob.x1) / 2, y, doorH + 16));
+    group.add(lintel);
+
+    // frame posts at each end + between every segment.
+    const postGeo = new THREE.BoxGeometry(frameT * 1.4, doorH + 30, thick + 14);
+    const colXs = new Set([ob.x0, ob.x1]);
+    for (const s of ob.segs) { colXs.add(s.x0); colXs.add(s.x1); }
+    for (const px of colXs) {
+        const post = new THREE.Mesh(postGeo, trimMat);
+        post.position.copy(W(px, y, (doorH + 30) / 2));
         group.add(post);
     }
 
-    // one swinging panel per segment. We parent each panel to a hinge so a
-    // "broken" panel can swing open instead of just vanishing.
-    const panelMat = mat(0xcaa46a, { roughness: 0.7, metalness: 0.05 });
-    const panelInsetMat = mat(shade(col(0xcaa46a), 0.18), { roughness: 0.65 });
-    const knobMat = mat(0xffd23f, { roughness: 0.3, metalness: 0.4 });
+    // one door panel per segment, parented to a hinge so a broken one swings.
+    const panelMat = mat(WPAL.wood, { roughness: 0.55, metalness: 0.05 });
+    const panelInset = mat(shade(WPAL.wood, 0.2), { roughness: 0.5 });
+    const knobMat = gloss(WPAL.gold, { roughness: 0.2, metalness: 0.5 });
     const panels = [];
     for (const s of ob.segs) {
         const w = s.x1 - s.x0;
-        const hinge = new THREE.Object3D();
-        // hinge at the segment's left edge, on the ground.
-        hinge.position.copy(W(s.x0, y, 0));
+        const hinge = new THREE.Object3D();          // hinge on the left jamb
+        hinge.position.copy(W(s.x0 + frameT * 0.7, y, 0));
         group.add(hinge);
 
         const panel = new THREE.Object3D();
-        panel.position.set(0, 0, 0);
         hinge.add(panel);
+        const pw = w - frameT * 1.4;                 // leaf width inside frame
 
-        const board = new THREE.Mesh(new THREE.BoxGeometry(w - 6, doorH, thick), panelMat);
-        board.position.set(w / 2, doorH / 2, 0);
+        const board = new THREE.Mesh(new THREE.BoxGeometry(pw, doorH - 6, thick), panelMat);
+        board.position.set(pw / 2, doorH / 2, 0);
         panel.add(board);
-        // recessed inset rectangle for a paneled-door look.
-        const inset = new THREE.Mesh(new THREE.BoxGeometry((w - 6) * 0.62, doorH * 0.72, thick * 0.4), panelInsetMat);
-        inset.position.set(w / 2, doorH / 2, thick * 0.42);
-        panel.add(inset);
-        const inset2 = inset.clone();
-        inset2.position.set(w / 2, doorH / 2, -thick * 0.42);
-        panel.add(inset2);
-        // door knob near the free edge.
-        const knob = new THREE.Mesh(new THREE.SphereGeometry(7, 12, 10), knobMat);
-        knob.position.set(w - 12, doorH * 0.5, thick * 0.5 + 4);
-        panel.add(knob);
+        // two recessed inset panels (front & back) for a real door look.
+        for (const sgn of [1, -1]) {
+            for (const yy of [doorH * 0.30, doorH * 0.66]) {
+                const inset = new THREE.Mesh(
+                    new THREE.BoxGeometry(pw * 0.6, doorH * 0.26, thick * 0.35), panelInset);
+                inset.position.set(pw / 2, yy, sgn * thick * 0.4);
+                panel.add(inset);
+            }
+        }
+        // door knob near the free (right) edge, both faces.
+        for (const sgn of [1, -1]) {
+            const knob = new THREE.Mesh(new THREE.SphereGeometry(7, 14, 10), knobMat);
+            knob.position.set(pw - 14, doorH * 0.46, sgn * (thick * 0.5 + 4));
+            panel.add(knob);
+        }
 
-        panels.push({ seg: s, hinge, panel, board, openT: 0, dropped: false });
+        panels.push({ seg: s, hinge, panel, board, openT: 0, wobble: Math.random() * 6 });
     }
 
     shadowy(group, true, true);
@@ -3373,20 +3728,22 @@ function makeDoorWall(ob) {
         object3d: group,
         update(o, dt, t) {
             const segs = (o && o.segs) ? o.segs : ob.segs;
+            const d = dt || 0.016;
             for (let i = 0; i < panels.length; i++) {
                 const p = panels[i];
                 const seg = segs[i] || p.seg;
-                if (seg.broken) {
-                    // swing open + slowly tip away once broken.
-                    p.openT = Math.min(1, p.openT + (dt || 0.016) * 4.5);
-                    p.hinge.rotation.y = -p.openT * (Math.PI * 0.62);   // swing about hinge
-                    p.panel.rotation.z = -p.openT * 0.15;               // slight sag
-                    p.board.visible = true;
+                if (seg && seg.broken) {
+                    // swing open, sag, and let it settle (shatter-ish burst).
+                    p.openT = Math.min(1, p.openT + d * 5.0);
+                    const e = 1 - Math.pow(1 - p.openT, 3);      // ease-out
+                    p.hinge.rotation.y = -e * (Math.PI * 0.72);   // swing about hinge
+                    p.panel.rotation.z = -e * 0.18 + Math.sin((t || 0) * 10 + p.wobble) * (1 - e) * 0.25;
+                    p.panel.position.y = -e * 6;
                 } else {
                     p.openT = 0;
                     p.hinge.rotation.y = 0;
                     p.panel.rotation.z = 0;
-                    p.board.visible = true;
+                    p.panel.position.y = 0;
                 }
             }
         },
@@ -3401,48 +3758,61 @@ function makeBouncePad(ob) {
     group.position.copy(W(ob.x, ob.y, 0));
     const r = ob.r || 38;
 
-    // a low cushioned disc: base ring + springy top dome we squash over time.
-    const baseMat = mat(0xff3f86, { roughness: 0.5 });
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.05, r * 1.15, 8, 28), baseMat);
-    base.position.set(0, 4, 0);
+    // springy base ring + a glossy bouncy dome we squash over time.
+    const baseMat = gloss(WPAL.slimeDk, { roughness: 0.3 });
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.06, r * 1.18, 9, 30), baseMat);
+    base.position.set(0, 4.5, 0);
     group.add(base);
 
-    // the bouncy part — its scale.y pulses.
-    const padMat = mat(0xff5fa2, { roughness: 0.35, metalness: 0.05, emissive: 0x5a1030, emissiveIntensity: 0.2 });
-    const pad = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.92, 16, 28), padMat);
-    pad.position.set(0, 14, 0);
-    group.add(pad);
+    // springs (little torus coils) around the base for a trampoline feel.
+    const springMat = gloss(WPAL.gold, { roughness: 0.25, metalness: 0.4 });
+    const springs = [];
+    for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        const coil = new THREE.Mesh(new THREE.TorusGeometry(5.5, 1.8, 8, 14), springMat);
+        coil.position.set(Math.cos(a) * r * 0.95, 10, Math.sin(a) * r * 0.95);
+        coil.rotation.x = Math.PI / 2;
+        group.add(coil);
+        springs.push(coil);
+    }
 
-    // white rim accent.
-    const rimMat = mat(0xffffff, { roughness: 0.4 });
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(r * 0.98, 3.2, 8, 28), rimMat);
+    // the bouncy cushion — its scale.y pulses (squash & stretch).
+    const cushion = new THREE.Object3D();
+    cushion.position.set(0, 9, 0);
+    group.add(cushion);
+    const padMat = gloss(WPAL.slime, { roughness: 0.16, metalness: 0.05, emissive: WPAL.slimeDk, emissiveIntensity: 0.2 });
+    const pad = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.9, 18, 30), padMat);
+    pad.position.set(0, 9, 0);
+    cushion.add(pad);
+
+    // white rim accent + a chevron hinting "bounce up".
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(r * 0.99, 3.4, 10, 30), gloss(0xffffff, { roughness: 0.25 }));
     rim.rotation.x = Math.PI / 2;
-    rim.position.set(0, 22, 0);
-    group.add(rim);
-
-    // a chevron/arrow on top hinting "bounce up".
-    const arrowMat = mat(0xffffff, { roughness: 0.4, emissive: 0xffffff, emissiveIntensity: 0.15 });
-    const arrow = new THREE.Mesh(new THREE.ConeGeometry(r * 0.42, r * 0.5, 4), arrowMat);
-    arrow.position.set(0, 30, 0);
+    rim.position.set(0, 18, 0);
+    cushion.add(rim);
+    const arrowMat = gloss(0xffffff, { roughness: 0.3, emissive: 0xffffff, emissiveIntensity: 0.12 });
+    const arrow = new THREE.Mesh(new THREE.ConeGeometry(r * 0.4, r * 0.5, 4), arrowMat);
+    arrow.position.set(0, 27, 0);
     arrow.rotation.y = Math.PI / 4;
-    group.add(arrow);
+    cushion.add(arrow);
 
     shadowy(group, true, true);
 
-    const baseY = 14;
+    const baseSpringY = springs.map(s => s.position.y);
     const view = {
         object3d: group,
         update(o, dt, t) {
-            // sim resets BouncePad.t to 0 on bounce; we don't get t here,
-            // so animate a gentle idle breathing + a time-based pulse so the
-            // pad always looks springy/alive.
-            const tt = t || 0;
-            const breathe = 0.06 * Math.sin(tt * 3.0 + ob.x * 0.01);
-            const sQ = 1 + breathe;          // squash factor
-            pad.scale.y = sQ;
-            pad.position.y = baseY - (1 - sQ) * 8;
-            arrow.position.y = 30 + breathe * 14 + 2 * Math.sin(tt * 3.0 + ob.x * 0.01 + 1.2);
-            arrow.rotation.y = Math.PI / 4 + tt * 0.6;
+            // sim resets BouncePad.t on bounce; we don't receive it, so we
+            // run a lively idle squash-pulse keyed off time + position.
+            const tt = (t || 0);
+            const ph = tt * 3.4 + ob.x * 0.013 + ob.y * 0.011;
+            const breathe = 0.10 * (0.5 + 0.5 * Math.sin(ph));   // 0..0.10
+            const sQ = 1 - breathe;            // squash down on the beat
+            cushion.scale.set(1 + breathe * 0.5, sQ, 1 + breathe * 0.5);
+            arrow.position.y = 27 + (1 - sQ) * -10 + 5 * Math.max(0, Math.sin(ph));
+            arrow.rotation.y = Math.PI / 4 + tt * 0.8;
+            for (let i = 0; i < springs.length; i++) springs[i].scale.y = sQ;
+            for (let i = 0; i < springs.length; i++) springs[i].position.y = baseSpringY[i] * (0.6 + 0.4 * sQ);
         },
         dispose() { disposeTree(group); },
     };
@@ -3453,61 +3823,64 @@ function makeBouncePad(ob) {
 function makeHex(ob) {
     const group = new THREE.Object3D();
     const size = ob.size || 33;
-    const depth = 26;                       // prism thickness (height of tile)
+    const depth = 28;                       // prism thickness (tile height)
     group.position.copy(W(ob.cx, ob.cy, 0));
 
-    const color = col(ob.color, 0x9a8cff);
+    const color = col(ob.color, WPAL.grape);
     // CylinderGeometry with 6 radial segments == a hexagonal prism.
     // point-up to match sim's hexagon (a = π/3*i - π/2).
-    const topMat = mat(color, { roughness: 0.55, metalness: 0.04 });
-    const sideMat = mat(shade(color, -0.18), { roughness: 0.6 });
-    const geo = new THREE.CylinderGeometry(size, size, depth, 6);
-    // group materials: index 0 = side, 1 = top cap, 2 = bottom cap.
+    const topMat = mat(pop(color, 0.05, 0.02), { roughness: 0.42, metalness: 0.05 });
+    const sideMat = mat(shade(color, -0.2), { roughness: 0.55 });
+    const geo = new THREE.CylinderGeometry(size, size * 0.98, depth, 6);
+    // material groups: 0 = side, 1 = top cap, 2 = bottom cap.
     const tile = new THREE.Mesh(geo, [sideMat, topMat, sideMat]);
     tile.position.set(0, depth / 2, 0);
-    tile.rotation.y = Math.PI / 6;           // flat-top -> point-up orientation
+    tile.rotation.y = Math.PI / 6;          // flat-top -> point-up
     group.add(tile);
 
-    // a thin bright bevel cap on top for the glossy candy look.
-    const bevelMat = mat(shade(color, 0.3), { roughness: 0.35, emissive: shade(color, -0.4), emissiveIntensity: 0.1 });
-    const bevel = new THREE.Mesh(new THREE.CylinderGeometry(size * 0.82, size * 0.9, depth * 0.18, 6), bevelMat);
-    bevel.position.set(0, depth + depth * 0.06, 0);
+    // a bright beveled cap inset on top for a glossy candy gem look.
+    const bevelMat = gloss(pop(shade(color, 0.3), 0.05, 0.05),
+        { roughness: 0.25, emissive: shade(color, -0.35), emissiveIntensity: 0.08 });
+    const bevel = new THREE.Mesh(new THREE.CylinderGeometry(size * 0.78, size * 0.9, depth * 0.22, 6), bevelMat);
+    bevel.position.set(0, depth + depth * 0.07, 0);
     bevel.rotation.y = Math.PI / 6;
     group.add(bevel);
 
     shadowy(group, true, true);
 
     const baseY = group.position.y;
-    let fallV = 0;            // accumulated drop velocity once dissolving/gone
+    const baseX = group.position.x;
+    let fallV = 0;
     const view = {
         object3d: group,
         update(o, dt, t) {
-            const state = (o && o.state) ? o.state : ob.state || 'solid';
+            const state = (o && o.state) ? o.state : (ob.state || 'solid');
             const d = dt || 0.016;
+            const tt = t || 0;
             if (state === 'solid') {
-                group.position.y = baseY;
-                group.position.x = ob.cx;        // (world X == logical x)
-                group.rotation.y = 0;
+                group.position.set(baseX, baseY, group.position.z);
+                group.rotation.set(0, 0, 0);
                 group.visible = true;
-                tile.material[1].opacity = 1; tile.material[0].opacity = 1;
+                for (const m of tile.material) { m.opacity = 1; }
+                bevelMat.opacity = 1;
                 fallV = 0;
             } else if (state === 'dissolving') {
-                // shake horizontally + begin sinking & fading.
-                const tt = t || 0;
-                group.position.x = ob.cx + Math.sin(tt * 38) * 2.2;
-                fallV += d * 120;
-                group.position.y = baseY - fallV * 0.15;
+                // jitter/shake + begin sinking & fading.
+                group.position.x = baseX + Math.sin(tt * 40 + baseX) * 2.4;
+                group.rotation.z = Math.sin(tt * 33) * 0.03;
+                fallV += d * 140;
+                group.position.y = baseY - fallV * 0.18;
                 group.visible = true;
-                // fade the caps a touch.
                 for (const m of tile.material) {
                     m.transparent = true;
-                    m.opacity = Math.max(0.35, m.opacity - d * 0.6);
+                    m.opacity = Math.max(0.3, m.opacity - d * 0.7);
                 }
+                bevelMat.transparent = true;
+                bevelMat.opacity = Math.max(0.3, bevelMat.opacity - d * 0.7);
             } else { // 'gone'
-                // drop away fast, then hide.
-                fallV += d * 600;
-                group.position.y = baseY - 200 - fallV;
-                group.visible = group.position.y > baseY - 900;
+                fallV += d * 700;
+                group.position.y = baseY - 220 - fallV;
+                group.visible = group.position.y > baseY - 1100;
             }
         },
         dispose() { disposeTree(group); },
@@ -3524,40 +3897,57 @@ function makeObstacleView(ob) {
         case 'bouncepad': return makeBouncePad(ob);
         case 'hex':       return makeHex(ob);
         default: {
-            // unknown kind: harmless empty group so the engine never crashes.
             const g = new THREE.Object3D();
             return { object3d: g, update() {}, dispose() { disposeTree(g); } };
         }
     }
 }
 
-/* ---------------------------------------------------------------------
-   COURSE VIEW — static round geometry.
-   ------------------------------------------------------------------- */
-
-// A reusable animated "slime" plane (pink, faint emissive shimmer).
-function makeSlime(cx, cy, w, h, y) {
+/* =====================================================================
+   SLIME — a reusable animated pink goo surface (shared by all courses).
+   Hot magenta with a mottled texture, slight emissive, animated shimmer:
+   we scroll the texture and pulse emissive in update().
+   ===================================================================== */
+function makeSlime(cx, cy, w, h, y, opts) {
+    opts = opts || {};
+    const tex = slimeTexture();
+    if (tex) {
+        const rep = Math.max(2, Math.round(Math.max(w, h) / 600));
+        tex.repeat.set(rep, rep);
+    }
     const slimeMat = new THREE.MeshStandardMaterial({
-        color: 0xd23bb0,
-        roughness: 0.35,
+        color: WPAL.slime,
+        map: tex || null,
+        roughness: 0.22,
         metalness: 0.0,
-        emissive: 0x9c1f86,
-        emissiveIntensity: 0.35,
+        emissive: new THREE.Color(WPAL.slimeDk),
+        emissiveIntensity: 0.4,
     });
-    const geo = new THREE.PlaneGeometry(w, h, 1, 1);
+    // gentle waves: a subdivided plane we ripple in the vertex Z (height).
+    const segX = opts.flat ? 1 : Math.min(40, Math.max(6, Math.round(w / 120)));
+    const segY = opts.flat ? 1 : Math.min(40, Math.max(6, Math.round(h / 120)));
+    const geo = new THREE.PlaneGeometry(w, h, segX, segY);
     const mesh = new THREE.Mesh(geo, slimeMat);
     mesh.rotation.x = -Math.PI / 2;          // lay flat on world XZ
     mesh.position.set(cx, y != null ? y : -2, cy);
     mesh.receiveShadow = true;
-    return { mesh, slimeMat };
+    // stash base vertex positions for the wave animation.
+    let basePos = null;
+    if (!opts.flat) {
+        basePos = Float32Array.from(geo.attributes.position.array);
+    }
+    return { mesh, slimeMat, geo, tex, basePos };
 }
 
+/* =====================================================================
+   COURSE VIEW — static round geometry + a few animated bits.
+   ===================================================================== */
 class CourseView {
     constructor(round) {
         this._root = new THREE.Object3D();
         this._root.name = 'course';
         this._disposables = [];
-        this._anim = [];                  // [{fn}] called each update
+        this._anim = [];                  // [(dt,t) => ...] called each update
         this._round = round || {};
         const kind = (round && round.kind) || 'race';
         if (kind === 'race') this._buildRace(round);
@@ -3570,7 +3960,31 @@ class CourseView {
 
     _add(obj) { this._root.add(obj); return obj; }
 
-    // ---------------- RACE: long pastel track + curbs + finish + start ----
+    // register a slime surface for shimmer/wave animation + disposal.
+    _registerSlime(s, strong) {
+        const baseE = s.slimeMat.emissiveIntensity;
+        const amp = strong ? 0.2 : 0.13;
+        const pos = s.basePos ? s.geo.attributes.position : null;
+        const waveAmp = strong ? 7 : 4;
+        this._anim.push((dt, t) => {
+            const tt = t || 0;
+            s.slimeMat.emissiveIntensity = baseE + Math.sin(tt * 1.7) * amp;
+            if (s.tex) { s.tex.offset.x = (tt * 0.012) % 1; s.tex.offset.y = (tt * 0.018) % 1; }
+            if (pos && s.basePos) {
+                const a = pos.array, b = s.basePos;
+                for (let i = 0; i < a.length; i += 3) {
+                    const x = b[i], y = b[i + 1];
+                    // plane local coords (pre-rotation): ripple the Z component.
+                    a[i + 2] = b[i + 2]
+                        + Math.sin(x * 0.012 + tt * 1.6) * waveAmp
+                        + Math.cos(y * 0.013 - tt * 1.3) * waveAmp * 0.7;
+                }
+                pos.needsUpdate = true;
+            }
+        });
+    }
+
+    /* ---------------- RACE: long track + curbs + start/finish ---------- */
     _buildRace(r) {
         const minX = r.minX != null ? r.minX : 200;
         const maxX = r.maxX != null ? r.maxX : 1080;
@@ -3580,66 +3994,87 @@ class CourseView {
         const cx = r.cx != null ? r.cx : (minX + maxX) / 2;
         const w = maxX - minX;
         const len = maxY - minY;
+        const midY = (minY + maxY) / 2;
 
-        // --- the track slab (pastel blue), slightly raised over slime ---
-        const trackMat = mat(0x7fd0ff, { roughness: 0.85, metalness: 0.0 });
-        const track = new THREE.Mesh(new THREE.BoxGeometry(w, 18, len), trackMat);
-        track.position.copy(W(cx, (minY + maxY) / 2, 9));
+        // --- the track slab (pastel blue), slightly raised over the slime ---
+        const trackMat = mat(WPAL.track, { roughness: 0.7, metalness: 0.0 });
+        const track = new THREE.Mesh(new THREE.BoxGeometry(w, 20, len), trackMat);
+        track.position.copy(W(cx, midY, 10));
         track.receiveShadow = true;
+        track.castShadow = false;
         this._add(track);
 
-        // subtle centre lane stripe (dashed look via a thin lighter slab).
-        const stripeMat = mat(shade(col(0x7fd0ff), 0.22), { roughness: 0.8 });
-        const dashLen = 90, gap = 70;
-        for (let yy = minY + 60; yy < maxY - 60; yy += dashLen + gap) {
+        // soft tonal bands across the track so it isn't one flat sheet.
+        const bandMat = mat(WPAL.trackAlt, { roughness: 0.72 });
+        const bandStep = 360;
+        for (let yy = minY; yy < maxY; yy += bandStep * 2) {
+            const seg = Math.min(bandStep, maxY - yy);
+            if (seg <= 0) break;
+            const b = new THREE.Mesh(new THREE.BoxGeometry(w, 2, seg), bandMat);
+            b.position.copy(W(cx, yy + seg / 2, 20.2));
+            b.receiveShadow = true;
+            this._add(b);
+        }
+
+        // dashed centre lane line (bright dashes).
+        const dashMat = gloss(0xffffff, { roughness: 0.35, emissive: 0xffffff, emissiveIntensity: 0.06 });
+        const dashLen = 110, gap = 80;
+        for (let yy = finishY + 80; yy < maxY - 60; yy += dashLen + gap) {
             const seg = Math.min(dashLen, maxY - 60 - yy);
             if (seg <= 0) break;
-            const dash = new THREE.Mesh(new THREE.BoxGeometry(10, 2, seg), stripeMat);
-            dash.position.copy(W(cx, yy + seg / 2, 18.6));
+            const dash = new THREE.Mesh(new THREE.BoxGeometry(14, 3, seg), dashMat);
+            dash.position.copy(W(cx, yy + seg / 2, 20.6));
             dash.receiveShadow = true;
             this._add(dash);
         }
 
-        // --- raised side walls / curbs ---
-        const curbH = 70, curbT = 26;
-        const curbMatA = mat(0xff5fa2, { roughness: 0.6 });   // candy pink
-        const curbMatB = mat(0xffd23f, { roughness: 0.6 });   // gold accent stripe on top
+        // --- rounded raised curbs / side walls (candy pink + gold cap) ---
+        const curbH = 78, curbT = 30;
+        const curbMat = mat(WPAL.curb, { roughness: 0.5 });
+        const capMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.25 });
         for (const side of [-1, 1]) {
             const wx = side < 0 ? minX - curbT / 2 : maxX + curbT / 2;
-            const wall = new THREE.Mesh(new THREE.BoxGeometry(curbT, curbH, len), curbMatA);
-            wall.position.copy(W(wx, (minY + maxY) / 2, curbH / 2));
+            const wall = roundedSlab(curbT, curbH, len, 10, curbMat);
+            wall.position.copy(W(wx, midY, curbH / 2));
             shadowy(wall, true, true);
             this._add(wall);
-            const cap = new THREE.Mesh(new THREE.BoxGeometry(curbT + 6, 12, len), curbMatB);
-            cap.position.copy(W(wx, (minY + maxY) / 2, curbH + 6));
+            const cap = new THREE.Mesh(new THREE.BoxGeometry(curbT + 8, 12, len), capMat);
+            cap.position.copy(W(wx, midY, curbH + 4));
             shadowy(cap, true, true);
             this._add(cap);
+            // periodic candy bumpers along each curb for chunk + rhythm.
+            for (let yy = minY + 120; yy < maxY - 120; yy += 300) {
+                const bump = new THREE.Mesh(new THREE.SphereGeometry(20, 16, 12), gloss(WPAL.gold));
+                bump.scale.set(1, 0.7, 1);
+                bump.position.copy(W(wx, yy, curbH + 8));
+                shadowy(bump, true, true);
+                this._add(bump);
+            }
         }
 
-        // --- decorative pink SLIME planes flanking the track (deadly look) ---
-        const slimePad = 1400;
+        // --- pink SLIME planes flanking the track (falling off = deadly) ---
+        const slimePad = 1500;
         for (const side of [-1, 1]) {
             const sx = side < 0 ? minX - slimePad / 2 - curbT : maxX + slimePad / 2 + curbT;
-            const s = makeSlime(sx, (minY + maxY) / 2, slimePad, len + 800, -4);
+            const s = makeSlime(sx, midY, slimePad, len + 900, -6);
             this._add(s.mesh);
+            this._disposables.push(s.mesh);
             this._registerSlime(s);
         }
-        // slime caps beyond the finish + behind the start too.
-        const sFront = makeSlime(cx, minY - 500, w + slimePad * 2 + 400, 1000, -4);
-        this._add(sFront.mesh); this._registerSlime(sFront);
+        // slime cap beyond the finish so the goal hangs over the goo.
+        const sFront = makeSlime(cx, minY - 520, w + slimePad * 2 + 400, 1040, -6);
+        this._add(sFront.mesh); this._disposables.push(sFront.mesh); this._registerSlime(sFront);
 
-        // --- CHECKERED finish line at logical depth finishY ---
-        this._add(this._buildCheckerLine(minX, maxX, finishY, 19, 28));
-        // finish gantry arch + "FINISH" banner bar.
-        this._add(this._buildGantry(minX, maxX, finishY, 0xffd23f, 'finish'));
+        // --- CHECKERED finish line + celebratory ARCH at finishY ---
+        this._add(this._buildCheckerLine(minX, maxX, finishY, 21, 30));
+        this._add(this._buildArch(minX, maxX, finishY, WPAL.gold, 'finish'));
 
-        // --- START gate near maxY ---
+        // --- START gate near maxY (grape) + a glowing start band ---
         const startY = maxY - 150;
-        this._add(this._buildGantry(minX, maxX, startY, 0x7b46d6, 'start'));
-        // start floor band.
-        const bandMat = mat(0x7b46d6, { roughness: 0.6, emissive: 0x2a0f55, emissiveIntensity: 0.2 });
-        const band = new THREE.Mesh(new THREE.BoxGeometry(w, 3, 26), bandMat);
-        band.position.copy(W(cx, startY, 19.5));
+        this._add(this._buildArch(minX, maxX, startY, WPAL.grape, 'start'));
+        const startBand = mat(WPAL.grape, { roughness: 0.5, emissive: 0x2a0f55, emissiveIntensity: 0.25 });
+        const band = new THREE.Mesh(new THREE.BoxGeometry(w, 4, 30), startBand);
+        band.position.copy(W(cx, startY, 21));
         band.receiveShadow = true;
         this._add(band);
     }
@@ -3650,14 +4085,14 @@ class CourseView {
         const w = maxX - minX;
         const cols = Math.ceil(w / sq);
         const rows = 2;
-        const black = mat(0x1c1c22, { roughness: 0.7 });
-        const white = mat(0xf4f4f8, { roughness: 0.7 });
+        const black = mat(0x23232b, { roughness: 0.6 });
+        const white = mat(0xf4f4f8, { roughness: 0.6 });
         for (let i = 0; i < cols; i++) {
             for (let j = 0; j < rows; j++) {
                 const m = ((i + j) & 1) ? black : white;
                 const cw = Math.min(sq, w - i * sq);
                 if (cw <= 0) continue;
-                const cell = new THREE.Mesh(new THREE.BoxGeometry(cw, 2, sq), m);
+                const cell = new THREE.Mesh(new THREE.BoxGeometry(cw, 3, sq), m);
                 cell.position.copy(W(minX + i * sq + cw / 2, dy - sq + j * sq + sq / 2, yLevel));
                 cell.receiveShadow = true;
                 g.add(cell);
@@ -3666,78 +4101,90 @@ class CourseView {
         return g;
     }
 
-    // a simple arch (two posts + top beam) with a colored banner bar.
-    _buildGantry(minX, maxX, dy, color, label) {
+    // a celebratory arch: two posts + a rounded top beam, banner + bunting.
+    _buildArch(minX, maxX, dy, color, label) {
         const g = new THREE.Object3D();
-        const h = 300, postT = 26;
-        const postMat = mat(shade(col(color), -0.2), { roughness: 0.5, metalness: 0.1 });
-        for (const px of [minX - 6, maxX + 6]) {
-            const post = new THREE.Mesh(new THREE.CylinderGeometry(postT * 0.5, postT * 0.6, h, 12), postMat);
+        const h = 320, postT = 30;
+        const postMat = gloss(shade(color, -0.18), { roughness: 0.4, metalness: 0.18 });
+        for (const px of [minX - 8, maxX + 8]) {
+            const post = new THREE.Mesh(new THREE.CylinderGeometry(postT * 0.5, postT * 0.62, h, 16), postMat);
             post.position.copy(W(px, dy, h / 2));
             shadowy(post, true, true);
             g.add(post);
+            const ball = new THREE.Mesh(new THREE.SphereGeometry(postT * 0.7, 18, 14), gloss(WPAL.gold));
+            ball.position.copy(W(px, dy, h + 6));
+            shadowy(ball, true, true);
+            g.add(ball);
         }
-        const beamMat = mat(color, { roughness: 0.45, emissive: shade(col(color), -0.5), emissiveIntensity: 0.25 });
-        const span = (maxX + 6) - (minX - 6);
-        const beam = new THREE.Mesh(new THREE.BoxGeometry(span, 56, 30), beamMat);
-        beam.position.copy(W((minX + maxX) / 2, dy, h - 28));
+        const span = (maxX + 8) - (minX - 8);
+        const beamMat = gloss(color, { roughness: 0.32, emissive: shade(color, -0.5), emissiveIntensity: 0.2 });
+        const beam = roundedSlab(span, 60, 34, 16, beamMat);
+        beam.position.copy(W((minX + maxX) / 2, dy, h - 26));
         shadowy(beam, true, true);
         g.add(beam);
-        // little flags along the beam for festivity.
-        const flagCols = [0xff5fa2, 0xffd23f, 0x46d36a, 0x5ad1ff, 0xb06bff];
-        const n = 9;
+
+        // bunting triangles hanging under the beam for festivity.
+        const flagCols = [WPAL.curb, WPAL.gold, WPAL.mint, WPAL.skyTop, WPAL.grape];
+        const n = 11;
         for (let i = 0; i < n; i++) {
-            const fm = mat(flagCols[i % flagCols.length], { roughness: 0.6, side: THREE.DoubleSide });
-            const flag = new THREE.Mesh(new THREE.ConeGeometry(16, 26, 3), fm);
+            const fm = mat(flagCols[i % flagCols.length], { roughness: 0.55, side: THREE.DoubleSide });
+            const flag = new THREE.Mesh(new THREE.ConeGeometry(15, 30, 3), fm);
             const fx = minX + (i + 0.5) * (span / n);
-            flag.position.copy(W(fx, dy, h - 60));
-            flag.rotation.x = Math.PI / 2;
+            flag.position.copy(W(fx, dy, h - 66));
+            flag.rotation.x = Math.PI;            // point down
             g.add(flag);
         }
         return g;
     }
 
-    // ---------------- SURVIVAL: hovering disc over animated slime --------
+    /* ---------------- SURVIVAL: hovering disc over a slime sea ---------- */
     _buildSurvival(r) {
         const P = r.platform || { cx: (r.cx != null ? r.cx : 640), cy: 380, r: 300 };
         const R = P.r || 300;
 
-        // wide slime sea below.
-        const sea = makeSlime(P.cx, P.cy, 4200, 4200, -40);
-        this._add(sea.mesh);
+        // wide animated slime sea below.
+        const sea = makeSlime(P.cx, P.cy, 4400, 4400, -44);
+        this._add(sea.mesh); this._disposables.push(sea.mesh);
         this._registerSlime(sea, true);
 
-        // the platform disc hovering above the slime.
-        const platH = 36;
-        const platMat = mat(0x8be0ff, { roughness: 0.7, metalness: 0.0 });
-        const disc = new THREE.Mesh(new THREE.CylinderGeometry(R, R * 1.02, platH, 64), platMat);
-        disc.position.copy(W(P.cx, P.cy, 6));
+        // the thick rounded platform disc hovering above the goo.
+        const platH = 40;
+        const platMat = mat(WPAL.track, { roughness: 0.6, metalness: 0.0 });
+        const disc = new THREE.Mesh(new THREE.CylinderGeometry(R, R * 1.03, platH, 72), platMat);
+        disc.position.copy(W(P.cx, P.cy, 8));
         disc.receiveShadow = true;
         disc.castShadow = true;
         this._add(disc);
 
-        // glossy top inlay ring + rim accent.
-        const inlayMat = mat(shade(col(0x8be0ff), 0.18), { roughness: 0.5 });
-        const inlay = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.86, R * 0.86, 4, 64), inlayMat);
-        inlay.position.copy(W(P.cx, P.cy, 6 + platH / 2 + 1));
+        // glossy top inlay + a thick candy rim torus.
+        const inlay = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.84, R * 0.84, 5, 72),
+            gloss(WPAL.trackAlt, { roughness: 0.4 }));
+        inlay.position.copy(W(P.cx, P.cy, 8 + platH / 2 + 1));
         inlay.receiveShadow = true;
         this._add(inlay);
-        const rimMat = mat(0xff5fa2, { roughness: 0.5 });
-        const rim = new THREE.Mesh(new THREE.TorusGeometry(R, 10, 12, 64), rimMat);
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(R, 12, 16, 80), gloss(WPAL.curb, { roughness: 0.35 }));
         rim.rotation.x = Math.PI / 2;
-        rim.position.copy(W(P.cx, P.cy, 6 + platH / 2));
+        rim.position.copy(W(P.cx, P.cy, 8 + platH / 2));
         shadowy(rim, true, true);
         this._add(rim);
 
         // a soft underside cone so the disc reads as a floating island.
-        const underMat = mat(shade(col(0x8be0ff), -0.35), { roughness: 0.8 });
-        const under = new THREE.Mesh(new THREE.ConeGeometry(R * 0.95, 160, 48), underMat);
-        under.position.copy(W(P.cx, P.cy, 6 - platH / 2 - 80));
-        under.rotation.x = Math.PI;           // point downward
+        const under = new THREE.Mesh(new THREE.ConeGeometry(R * 0.92, 180, 56),
+            mat(shade(WPAL.track, -0.32), { roughness: 0.8 }));
+        under.position.copy(W(P.cx, P.cy, 8 - platH / 2 - 90));
+        under.rotation.x = Math.PI;
         this._add(under);
+
+        // a few decorative gold rivets around the rim.
+        for (let i = 0; i < 16; i++) {
+            const a = (i / 16) * Math.PI * 2;
+            const riv = new THREE.Mesh(new THREE.SphereGeometry(6, 12, 10), gloss(WPAL.gold));
+            riv.position.copy(W(P.cx + Math.cos(a) * R * 0.9, P.cy + Math.sin(a) * R * 0.9, 8 + platH / 2 + 2));
+            this._add(riv);
+        }
     }
 
-    // ---------------- FINAL: wide slime pit + border frame ---------------
+    /* ---------------- FINAL: wide slime pit + tidy raised border -------- */
     _buildFinal(r) {
         const minX = r.minX != null ? r.minX : 300;
         const maxX = r.maxX != null ? r.maxX : 980;
@@ -3747,17 +4194,16 @@ class CourseView {
         const w = maxX - minX, h = maxY - minY;
 
         // wide pink slime pit spanning (and overhanging) the arena.
-        const pit = makeSlime(cx, cy, w + 1400, h + 1400, -60);
-        this._add(pit.mesh);
+        const pit = makeSlime(cx, cy, w + 1500, h + 1500, -60);
+        this._add(pit.mesh); this._disposables.push(pit.mesh);
         this._registerSlime(pit, true);
 
-        // a subtle raised border frame around the play field (decorative).
-        const frameMat = mat(0x7b46d6, { roughness: 0.55, metalness: 0.1, emissive: 0x2a0f55, emissiveIntensity: 0.15 });
-        const ft = 40, fh = 70;
-        const pad = 60;
+        // a tidy raised border frame around the play field.
+        const frameMat = mat(WPAL.grape, { roughness: 0.45, metalness: 0.12, emissive: 0x2a0f55, emissiveIntensity: 0.15 });
+        const ft = 44, fh = 80;
+        const pad = 64;
         const fx0 = minX - pad, fx1 = maxX + pad, fy0 = minY - pad, fy1 = maxY + pad;
         const fw = fx1 - fx0, fhh = fy1 - fy0;
-        // four rails.
         const railNS = new THREE.BoxGeometry(fw + ft, fh, ft);
         const railEW = new THREE.BoxGeometry(ft, fh, fhh + ft);
         const top = new THREE.Mesh(railNS, frameMat); top.position.copy(W(cx, fy0, fh / 2));
@@ -3766,28 +4212,25 @@ class CourseView {
         const right = new THREE.Mesh(railEW, frameMat); right.position.copy(W(fx1, cy, fh / 2));
         for (const m of [top, bot, left, right]) { shadowy(m, true, true); this._add(m); }
 
+        // a glossy gold cap rail running along the top of the border.
+        const capMatTop = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.3 });
+        for (const [geom, pos] of [
+            [new THREE.BoxGeometry(fw + ft, 10, ft + 6), W(cx, fy0, fh)],
+            [new THREE.BoxGeometry(fw + ft, 10, ft + 6), W(cx, fy1, fh)],
+            [new THREE.BoxGeometry(ft + 6, 10, fhh + ft), W(fx0, cy, fh)],
+            [new THREE.BoxGeometry(ft + 6, 10, fhh + ft), W(fx1, cy, fh)],
+        ]) {
+            const m = new THREE.Mesh(geom, capMatTop); m.position.copy(pos);
+            shadowy(m, true, true); this._add(m);
+        }
+
         // gold corner caps for polish.
-        const capMat = mat(0xffd23f, { roughness: 0.4, metalness: 0.3 });
         for (const [gx, gy] of [[fx0, fy0], [fx1, fy0], [fx0, fy1], [fx1, fy1]]) {
-            const cap = new THREE.Mesh(new THREE.SphereGeometry(ft * 0.7, 16, 12), capMat);
-            cap.position.copy(W(gx, gy, fh));
+            const cap = new THREE.Mesh(new THREE.SphereGeometry(ft * 0.72, 18, 14), gloss(WPAL.gold));
+            cap.position.copy(W(gx, gy, fh + 4));
             shadowy(cap, true, true);
             this._add(cap);
         }
-    }
-
-    // register a slime surface for shimmer animation + disposal.
-    _registerSlime(s, strong) {
-        this._disposables.push(s.mesh);
-        const baseE = s.slimeMat.emissiveIntensity;
-        const amp = strong ? 0.22 : 0.14;
-        this._anim.push((dt, t) => {
-            const tt = t || 0;
-            s.slimeMat.emissiveIntensity = baseE + Math.sin(tt * 1.6) * amp;
-            // gentle hue wobble for a living-slime feel.
-            const hueShift = 0.02 * Math.sin(tt * 0.7);
-            s.slimeMat.emissive.setHSL(0.86 + hueShift, 0.7, 0.32);
-        });
     }
 
     update(round, dt, t) {
@@ -4460,9 +4903,17 @@ const Engine = {
             this.beanViews.set(b, bv);
             g.add(bv.object3d);
         }
+        // floating arrow so you can always find your bean
+        this._marker = new THREE.Mesh(
+            new THREE.ConeGeometry(13, 24, 6),
+            new THREE.MeshStandardMaterial({ color: 0xffd23f, emissive: 0xffb000, emissiveIntensity: 0.6, roughness: 0.4 }));
+        this._marker.rotation.x = Math.PI;        // point down
+        g.add(this._marker);
+        this._playerBean = round.player;
         this.scene.add(g);
         this.roundGroup = g;
         this._lastPhase = null;
+        this._camSnap = true;          // snap camera to the new round's framing
     },
 
     _teardownRound() {
@@ -4483,6 +4934,13 @@ const Engine = {
             if (b.gone) { bv.object3d.visible = false; continue; }
             bv.object3d.visible = true;
             bv.update(b, dt, t);
+        }
+        // player marker hovers above your bean
+        if (this._marker && this._playerBean) {
+            const p = this._playerBean;
+            this._marker.visible = !p.gone;
+            this._marker.position.set(p.x, p.z + 64 + Math.sin(t * 4) * 5, p.y);
+            this._marker.rotation.y = t * 2;
         }
         // obstacles + tiles
         for (const { ob, v } of this.obViews) v.update(ob, dt, t);
@@ -4512,20 +4970,22 @@ const Engine = {
         const p = round.player;
         let pos, look;
         if (round.kind === 'race') {
-            const px = p.x, py = p.z, pz = p.y;          // world coords
-            pos = new THREE.Vector3(px * 0.6, py + 300, pz + 430);
-            look = new THREE.Vector3(px * 0.6, py + 40, pz - 230);
+            // 3rd-person chase: centred on the player, behind (+Z) and above,
+            // looking ahead down the course (-Z).
+            pos  = new THREE.Vector3(p.x, p.z + 250, p.y + 380);
+            look = new THREE.Vector3(p.x, p.z + 60,  p.y - 190);
         } else {
-            const cx = round.platform && round.platform.r ? round.platform.cx : (round.minX + round.maxX) / 2;
-            const cy = round.platform && round.platform.r ? round.platform.cy : (round.minY + round.maxY) / 2;
-            const r = round.platform && round.platform.r ? round.platform.r : 360;
-            // bias a little toward the player so you can find your bean
-            const bx = U.lerp(cx, p.x, 0.18), bz = U.lerp(cy, p.y, 0.18);
-            pos = new THREE.Vector3(bx, 560 + r * 0.6, cy + r + 360);
-            look = new THREE.Vector3(bx, 30, bz);
+            const arena = !!(round.platform && round.platform.r);
+            const cx = arena ? round.platform.cx : (round.minX + round.maxX) / 2;
+            const cy = arena ? round.platform.cy : (round.minY + round.maxY) / 2;
+            const r  = arena ? round.platform.r : 360;
+            // keep the arena framed but drift toward the player so you can find your bean
+            const fx = U.lerp(cx, p.x, 0.35);
+            pos  = new THREE.Vector3(fx, r * 1.55 + 150, cy + r * 1.45);
+            look = new THREE.Vector3(fx, 25, U.lerp(cy, p.y, 0.4));
         }
-        const k = 1 - Math.pow(0.0015, dt);
-        this._camPos.lerp(pos, k); this._camLook.lerp(look, k);
+        if (this._camSnap) { this._camPos.copy(pos); this._camLook.copy(look); this._camSnap = false; }
+        else { const k = Math.min(1, dt * 9); this._camPos.lerp(pos, k); this._camLook.lerp(look, k); }
         this.camera.position.copy(this._camPos);
         this.camera.lookAt(this._camLook);
     },

@@ -25,7 +25,7 @@ const HAS_DOC = (typeof document !== 'undefined' && !!document.createElement);
 /* =====================================================================
    Palette — one tidy bubblegum theme everything pulls from.
    ===================================================================== */
-const PAL = {
+const WPAL = {
     skyTop:   0x6db8ff,   // soft blue zenith
     skyMid:   0xa9d8ff,
     skyHaze:  0xffd9ec,   // pinkish horizon haze
@@ -257,7 +257,7 @@ function setupEnvironment(scene) {
     scene.add(fill);
 
     // ---- SKY: big back-side sphere with a vertical pastel gradient ----
-    const horizon = col(PAL.skyHaze).clone().lerp(col(PAL.skyMid), 0.45);
+    const horizon = col(WPAL.skyHaze).clone().lerp(col(WPAL.skyMid), 0.45);
     const skyGeo = new THREE.SphereGeometry(6000, 32, 20);
     let skyMat;
     const gradTex = vGradientTexture([
@@ -271,7 +271,7 @@ function setupEnvironment(scene) {
     } else {
         // Node / headless fallback: a pleasant solid sky blend.
         skyMat = new THREE.MeshBasicMaterial({
-            color: col(PAL.skyMid), side: THREE.BackSide, fog: false, depthWrite: false,
+            color: col(WPAL.skyMid), side: THREE.BackSide, fog: false, depthWrite: false,
         });
     }
     const sky = new THREE.Mesh(skyGeo, skyMat);
@@ -280,7 +280,7 @@ function setupEnvironment(scene) {
     scene.add(sky);
 
     // background color (used before the dome draws / if dome culled).
-    scene.background = col(PAL.skyMid).clone().lerp(horizon, 0.4);
+    scene.background = col(WPAL.skyMid).clone().lerp(horizon, 0.4);
 
     // ---- gentle fog tuned to the horizon haze for soft depth ----
     scene.fog = new THREE.Fog(horizon.getHex(), 1700, 5400);
@@ -301,7 +301,7 @@ function setupEnvironment(scene) {
     clouds.name = 'clouds';
     const discTex = softDiscTexture();
     const cloudMat = new THREE.MeshStandardMaterial({
-        color: PAL.cloud, roughness: 1.0, metalness: 0.0,
+        color: WPAL.cloud, roughness: 1.0, metalness: 0.0,
         emissive: 0xfff3ff, emissiveIntensity: 0.35, fog: true,
         transparent: !!discTex, alphaMap: discTex || null,
         depthWrite: false,
@@ -355,7 +355,7 @@ function makeSpinner(ob) {
     const group = new THREE.Object3D();
     group.position.copy(W(ob.cx, ob.cy, 0));
 
-    const color = col(ob.color, PAL.curb);
+    const color = col(ob.color, WPAL.curb);
     const thick = ob.thick || 18;
     const len = ob.len || 200;             // arm tip radius (matches sim _ends)
     const arms = Math.max(1, ob.arms || 2);
@@ -381,7 +381,7 @@ function makeSpinner(ob) {
     const hubMat = gloss(pop(shade(color, -0.12), 0.05, 0), { roughness: 0.3, metalness: 0.25 });
     const hub = new THREE.Mesh(new THREE.CylinderGeometry(thick * 1.15, thick * 1.15, barH * 1.15, 22), hubMat);
     rotor.add(hub);
-    const hubCap = new THREE.Mesh(new THREE.SphereGeometry(thick * 0.55, 16, 12), gloss(PAL.gold));
+    const hubCap = new THREE.Mesh(new THREE.SphereGeometry(thick * 0.55, 16, 12), gloss(WPAL.gold));
     hubCap.position.set(0, barH * 0.6, 0);
     rotor.add(hubCap);
 
@@ -432,8 +432,8 @@ function makeHammer(ob) {
     const pivotH = Math.max(height + headR * 2 + 80, headR * 4 + 160);
 
     // two support towers + a cross-beam straddling the lane.
-    const towerMat = mat(PAL.grape, { roughness: 0.5, metalness: 0.12 });
-    const towerTrim = mat(PAL.gold, { roughness: 0.3, metalness: 0.3 });
+    const towerMat = mat(WPAL.grape, { roughness: 0.5, metalness: 0.12 });
+    const towerTrim = mat(WPAL.gold, { roughness: 0.3, metalness: 0.3 });
     const legW = 30;
     for (const sx of [cx - amp - 70, cx + amp + 70]) {
         const tower = roundedSlab(legW, pivotH, legW, 8, towerMat);
@@ -456,21 +456,21 @@ function makeHammer(ob) {
     group.add(pivot);
 
     const armLen = pivotH - height - headR * 0.4;  // length of the swinging rod
-    const armMat = gloss(PAL.grapeDk, { roughness: 0.3, metalness: 0.25 });
+    const armMat = gloss(WPAL.grapeDk, { roughness: 0.3, metalness: 0.25 });
     const arm = new THREE.Mesh(new THREE.CylinderGeometry(9, 11, armLen, 14), armMat);
     arm.position.set(0, -armLen / 2, 0);           // hang down from pivot
     pivot.add(arm);
     // chain-ish collar where rod meets head.
-    const collar = new THREE.Mesh(new THREE.CylinderGeometry(13, 13, 16, 16), gloss(PAL.gold));
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(13, 13, 16, 16), gloss(WPAL.gold));
     collar.position.set(0, -armLen + headR * 0.4, 0);
     pivot.add(collar);
 
     // chunky wrecking-ball head with studs (a mace).
-    const headMat = gloss(PAL.gold, { roughness: 0.28, metalness: 0.35, emissive: 0x5a3d00, emissiveIntensity: 0.12 });
+    const headMat = gloss(WPAL.gold, { roughness: 0.28, metalness: 0.35, emissive: 0x5a3d00, emissiveIntensity: 0.12 });
     const head = new THREE.Mesh(new THREE.SphereGeometry(headR, 24, 18), headMat);
     head.position.set(0, -armLen, 0);
     pivot.add(head);
-    const studMat = gloss(shade(PAL.gold, -0.25), { metalness: 0.4 });
+    const studMat = gloss(shade(WPAL.gold, -0.25), { metalness: 0.4 });
     for (let i = 0; i < 8; i++) {
         const a = (i / 8) * Math.PI * 2;
         const stud = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.26, headR * 0.5, 8), studMat);
@@ -513,7 +513,7 @@ function makeDoorWall(ob) {
     const y = ob.y;
 
     // ground sill across the whole wall.
-    const trimMat = mat(PAL.woodDk, { roughness: 0.7, metalness: 0.05 });
+    const trimMat = mat(WPAL.woodDk, { roughness: 0.7, metalness: 0.05 });
     const sill = new THREE.Mesh(new THREE.BoxGeometry((ob.x1 - ob.x0) + thick, 14, thick + 16), trimMat);
     sill.position.copy(W((ob.x0 + ob.x1) / 2, y, 7));
     group.add(sill);
@@ -533,9 +533,9 @@ function makeDoorWall(ob) {
     }
 
     // one door panel per segment, parented to a hinge so a broken one swings.
-    const panelMat = mat(PAL.wood, { roughness: 0.55, metalness: 0.05 });
-    const panelInset = mat(shade(PAL.wood, 0.2), { roughness: 0.5 });
-    const knobMat = gloss(PAL.gold, { roughness: 0.2, metalness: 0.5 });
+    const panelMat = mat(WPAL.wood, { roughness: 0.55, metalness: 0.05 });
+    const panelInset = mat(shade(WPAL.wood, 0.2), { roughness: 0.5 });
+    const knobMat = gloss(WPAL.gold, { roughness: 0.2, metalness: 0.5 });
     const panels = [];
     for (const s of ob.segs) {
         const w = s.x1 - s.x0;
@@ -606,13 +606,13 @@ function makeBouncePad(ob) {
     const r = ob.r || 38;
 
     // springy base ring + a glossy bouncy dome we squash over time.
-    const baseMat = gloss(PAL.slimeDk, { roughness: 0.3 });
+    const baseMat = gloss(WPAL.slimeDk, { roughness: 0.3 });
     const base = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.06, r * 1.18, 9, 30), baseMat);
     base.position.set(0, 4.5, 0);
     group.add(base);
 
     // springs (little torus coils) around the base for a trampoline feel.
-    const springMat = gloss(PAL.gold, { roughness: 0.25, metalness: 0.4 });
+    const springMat = gloss(WPAL.gold, { roughness: 0.25, metalness: 0.4 });
     const springs = [];
     for (let i = 0; i < 6; i++) {
         const a = (i / 6) * Math.PI * 2;
@@ -627,7 +627,7 @@ function makeBouncePad(ob) {
     const cushion = new THREE.Object3D();
     cushion.position.set(0, 9, 0);
     group.add(cushion);
-    const padMat = gloss(PAL.slime, { roughness: 0.16, metalness: 0.05, emissive: PAL.slimeDk, emissiveIntensity: 0.2 });
+    const padMat = gloss(WPAL.slime, { roughness: 0.16, metalness: 0.05, emissive: WPAL.slimeDk, emissiveIntensity: 0.2 });
     const pad = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.9, 18, 30), padMat);
     pad.position.set(0, 9, 0);
     cushion.add(pad);
@@ -673,7 +673,7 @@ function makeHex(ob) {
     const depth = 28;                       // prism thickness (tile height)
     group.position.copy(W(ob.cx, ob.cy, 0));
 
-    const color = col(ob.color, PAL.grape);
+    const color = col(ob.color, WPAL.grape);
     // CylinderGeometry with 6 radial segments == a hexagonal prism.
     // point-up to match sim's hexagon (a = π/3*i - π/2).
     const topMat = mat(pop(color, 0.05, 0.02), { roughness: 0.42, metalness: 0.05 });
@@ -763,11 +763,11 @@ function makeSlime(cx, cy, w, h, y, opts) {
         tex.repeat.set(rep, rep);
     }
     const slimeMat = new THREE.MeshStandardMaterial({
-        color: PAL.slime,
+        color: WPAL.slime,
         map: tex || null,
         roughness: 0.22,
         metalness: 0.0,
-        emissive: new THREE.Color(PAL.slimeDk),
+        emissive: new THREE.Color(WPAL.slimeDk),
         emissiveIntensity: 0.4,
     });
     // gentle waves: a subdivided plane we ripple in the vertex Z (height).
@@ -844,7 +844,7 @@ class CourseView {
         const midY = (minY + maxY) / 2;
 
         // --- the track slab (pastel blue), slightly raised over the slime ---
-        const trackMat = mat(PAL.track, { roughness: 0.7, metalness: 0.0 });
+        const trackMat = mat(WPAL.track, { roughness: 0.7, metalness: 0.0 });
         const track = new THREE.Mesh(new THREE.BoxGeometry(w, 20, len), trackMat);
         track.position.copy(W(cx, midY, 10));
         track.receiveShadow = true;
@@ -852,7 +852,7 @@ class CourseView {
         this._add(track);
 
         // soft tonal bands across the track so it isn't one flat sheet.
-        const bandMat = mat(PAL.trackAlt, { roughness: 0.72 });
+        const bandMat = mat(WPAL.trackAlt, { roughness: 0.72 });
         const bandStep = 360;
         for (let yy = minY; yy < maxY; yy += bandStep * 2) {
             const seg = Math.min(bandStep, maxY - yy);
@@ -877,8 +877,8 @@ class CourseView {
 
         // --- rounded raised curbs / side walls (candy pink + gold cap) ---
         const curbH = 78, curbT = 30;
-        const curbMat = mat(PAL.curb, { roughness: 0.5 });
-        const capMat = gloss(PAL.gold, { roughness: 0.3, metalness: 0.25 });
+        const curbMat = mat(WPAL.curb, { roughness: 0.5 });
+        const capMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.25 });
         for (const side of [-1, 1]) {
             const wx = side < 0 ? minX - curbT / 2 : maxX + curbT / 2;
             const wall = roundedSlab(curbT, curbH, len, 10, curbMat);
@@ -891,7 +891,7 @@ class CourseView {
             this._add(cap);
             // periodic candy bumpers along each curb for chunk + rhythm.
             for (let yy = minY + 120; yy < maxY - 120; yy += 300) {
-                const bump = new THREE.Mesh(new THREE.SphereGeometry(20, 16, 12), gloss(PAL.gold));
+                const bump = new THREE.Mesh(new THREE.SphereGeometry(20, 16, 12), gloss(WPAL.gold));
                 bump.scale.set(1, 0.7, 1);
                 bump.position.copy(W(wx, yy, curbH + 8));
                 shadowy(bump, true, true);
@@ -914,12 +914,12 @@ class CourseView {
 
         // --- CHECKERED finish line + celebratory ARCH at finishY ---
         this._add(this._buildCheckerLine(minX, maxX, finishY, 21, 30));
-        this._add(this._buildArch(minX, maxX, finishY, PAL.gold, 'finish'));
+        this._add(this._buildArch(minX, maxX, finishY, WPAL.gold, 'finish'));
 
         // --- START gate near maxY (grape) + a glowing start band ---
         const startY = maxY - 150;
-        this._add(this._buildArch(minX, maxX, startY, PAL.grape, 'start'));
-        const startBand = mat(PAL.grape, { roughness: 0.5, emissive: 0x2a0f55, emissiveIntensity: 0.25 });
+        this._add(this._buildArch(minX, maxX, startY, WPAL.grape, 'start'));
+        const startBand = mat(WPAL.grape, { roughness: 0.5, emissive: 0x2a0f55, emissiveIntensity: 0.25 });
         const band = new THREE.Mesh(new THREE.BoxGeometry(w, 4, 30), startBand);
         band.position.copy(W(cx, startY, 21));
         band.receiveShadow = true;
@@ -958,7 +958,7 @@ class CourseView {
             post.position.copy(W(px, dy, h / 2));
             shadowy(post, true, true);
             g.add(post);
-            const ball = new THREE.Mesh(new THREE.SphereGeometry(postT * 0.7, 18, 14), gloss(PAL.gold));
+            const ball = new THREE.Mesh(new THREE.SphereGeometry(postT * 0.7, 18, 14), gloss(WPAL.gold));
             ball.position.copy(W(px, dy, h + 6));
             shadowy(ball, true, true);
             g.add(ball);
@@ -971,7 +971,7 @@ class CourseView {
         g.add(beam);
 
         // bunting triangles hanging under the beam for festivity.
-        const flagCols = [PAL.curb, PAL.gold, PAL.mint, PAL.skyTop, PAL.grape];
+        const flagCols = [WPAL.curb, WPAL.gold, WPAL.mint, WPAL.skyTop, WPAL.grape];
         const n = 11;
         for (let i = 0; i < n; i++) {
             const fm = mat(flagCols[i % flagCols.length], { roughness: 0.55, side: THREE.DoubleSide });
@@ -996,7 +996,7 @@ class CourseView {
 
         // the thick rounded platform disc hovering above the goo.
         const platH = 40;
-        const platMat = mat(PAL.track, { roughness: 0.6, metalness: 0.0 });
+        const platMat = mat(WPAL.track, { roughness: 0.6, metalness: 0.0 });
         const disc = new THREE.Mesh(new THREE.CylinderGeometry(R, R * 1.03, platH, 72), platMat);
         disc.position.copy(W(P.cx, P.cy, 8));
         disc.receiveShadow = true;
@@ -1005,11 +1005,11 @@ class CourseView {
 
         // glossy top inlay + a thick candy rim torus.
         const inlay = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.84, R * 0.84, 5, 72),
-            gloss(PAL.trackAlt, { roughness: 0.4 }));
+            gloss(WPAL.trackAlt, { roughness: 0.4 }));
         inlay.position.copy(W(P.cx, P.cy, 8 + platH / 2 + 1));
         inlay.receiveShadow = true;
         this._add(inlay);
-        const rim = new THREE.Mesh(new THREE.TorusGeometry(R, 12, 16, 80), gloss(PAL.curb, { roughness: 0.35 }));
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(R, 12, 16, 80), gloss(WPAL.curb, { roughness: 0.35 }));
         rim.rotation.x = Math.PI / 2;
         rim.position.copy(W(P.cx, P.cy, 8 + platH / 2));
         shadowy(rim, true, true);
@@ -1017,7 +1017,7 @@ class CourseView {
 
         // a soft underside cone so the disc reads as a floating island.
         const under = new THREE.Mesh(new THREE.ConeGeometry(R * 0.92, 180, 56),
-            mat(shade(PAL.track, -0.32), { roughness: 0.8 }));
+            mat(shade(WPAL.track, -0.32), { roughness: 0.8 }));
         under.position.copy(W(P.cx, P.cy, 8 - platH / 2 - 90));
         under.rotation.x = Math.PI;
         this._add(under);
@@ -1025,7 +1025,7 @@ class CourseView {
         // a few decorative gold rivets around the rim.
         for (let i = 0; i < 16; i++) {
             const a = (i / 16) * Math.PI * 2;
-            const riv = new THREE.Mesh(new THREE.SphereGeometry(6, 12, 10), gloss(PAL.gold));
+            const riv = new THREE.Mesh(new THREE.SphereGeometry(6, 12, 10), gloss(WPAL.gold));
             riv.position.copy(W(P.cx + Math.cos(a) * R * 0.9, P.cy + Math.sin(a) * R * 0.9, 8 + platH / 2 + 2));
             this._add(riv);
         }
@@ -1046,7 +1046,7 @@ class CourseView {
         this._registerSlime(pit, true);
 
         // a tidy raised border frame around the play field.
-        const frameMat = mat(PAL.grape, { roughness: 0.45, metalness: 0.12, emissive: 0x2a0f55, emissiveIntensity: 0.15 });
+        const frameMat = mat(WPAL.grape, { roughness: 0.45, metalness: 0.12, emissive: 0x2a0f55, emissiveIntensity: 0.15 });
         const ft = 44, fh = 80;
         const pad = 64;
         const fx0 = minX - pad, fx1 = maxX + pad, fy0 = minY - pad, fy1 = maxY + pad;
@@ -1060,7 +1060,7 @@ class CourseView {
         for (const m of [top, bot, left, right]) { shadowy(m, true, true); this._add(m); }
 
         // a glossy gold cap rail running along the top of the border.
-        const capMatTop = gloss(PAL.gold, { roughness: 0.3, metalness: 0.3 });
+        const capMatTop = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.3 });
         for (const [geom, pos] of [
             [new THREE.BoxGeometry(fw + ft, 10, ft + 6), W(cx, fy0, fh)],
             [new THREE.BoxGeometry(fw + ft, 10, ft + 6), W(cx, fy1, fh)],
@@ -1073,7 +1073,7 @@ class CourseView {
 
         // gold corner caps for polish.
         for (const [gx, gy] of [[fx0, fy0], [fx1, fy0], [fx0, fy1], [fx1, fy1]]) {
-            const cap = new THREE.Mesh(new THREE.SphereGeometry(ft * 0.72, 18, 14), gloss(PAL.gold));
+            const cap = new THREE.Mesh(new THREE.SphereGeometry(ft * 0.72, 18, 14), gloss(WPAL.gold));
             cap.position.copy(W(gx, gy, fh + 4));
             shadowy(cap, true, true);
             this._add(cap);
