@@ -681,7 +681,7 @@ function makeHex(ob) {
     const geo = new THREE.CylinderGeometry(size, size * 0.98, depth, 6);
     // material groups: 0 = side, 1 = top cap, 2 = bottom cap.
     const tile = new THREE.Mesh(geo, [sideMat, topMat, sideMat]);
-    tile.position.set(0, depth / 2, 0);
+    tile.position.set(0, -depth / 2, 0);    // top face at world y=0 (beans stand here)
     tile.rotation.y = Math.PI / 6;          // flat-top -> point-up
     group.add(tile);
 
@@ -689,7 +689,7 @@ function makeHex(ob) {
     const bevelMat = gloss(pop(shade(color, 0.3), 0.05, 0.05),
         { roughness: 0.25, emissive: shade(color, -0.35), emissiveIntensity: 0.08 });
     const bevel = new THREE.Mesh(new THREE.CylinderGeometry(size * 0.78, size * 0.9, depth * 0.22, 6), bevelMat);
-    bevel.position.set(0, depth + depth * 0.07, 0);
+    bevel.position.set(0, -depth * 0.11, 0);   // inset flush with the y=0 top face
     bevel.rotation.y = Math.PI / 6;
     group.add(bevel);
 
@@ -801,6 +801,9 @@ class CourseView {
         else if (kind === 'survival') this._buildSurvival(round);
         else if (kind === 'final') this._buildFinal(round);
         else this._buildRace(round);
+        // Align the walkable surface to world y=0 (the beans' feet plane) so
+        // beans + obstacles stand ON the floor instead of sinking into the slab.
+        this._root.position.y = -(kind === 'race' ? 20 : kind === 'survival' ? 28 : 0);
     }
 
     get object3d() { return this._root; }
