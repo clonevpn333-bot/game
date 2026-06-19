@@ -38,9 +38,9 @@ class BeanView {
         // reaches the floor; tiny legs/feet poke out of the bottom-front.
         // total body height = bodyH + 2*bodyR; tuned to ~2.0*r so head detail
         // crowns it near ~2.3*r. The body's lower cap rests just above y=0.
-        this.bodyR    = r * 0.78;         // jellybean radius (widest)
-        this.bodyH    = r * 0.50;         // capsule straight section
-        this.groundGap = r * 0.04;        // clearance under the body
+        this.bodyR    = r * 0.80;         // jellybean radius (widest)
+        this.bodyH    = r * 0.54;         // capsule straight section
+        this.groundGap = r * 0.03;        // clearance under the body
         // seat so the lower cap (bodyCY - bodyH/2 - bodyR) == groundGap
         this.bodyCY   = this.groundGap + this.bodyH * 0.5 + this.bodyR;
         // legs hang from low hips; feet rest on the floor at the front.
@@ -103,6 +103,19 @@ class BeanView {
         if (key) this._materials[key] = m;
         return m;
     }
+    // Glossy clear-coated body material (Fall-Guys candy sheen). Falls back to
+    // MeshStandardMaterial automatically if MeshPhysicalMaterial is missing.
+    _physMat(key, opts) {
+        const o = Object.assign({
+            roughness: 0.4, metalness: 0.0,
+            clearcoat: 0.6, clearcoatRoughness: 0.25,
+        }, opts || {});
+        const Ctor = THREE.MeshPhysicalMaterial || THREE.MeshStandardMaterial;
+        const m = new Ctor(o);
+        this._disposables.push(m);
+        if (key) this._materials[key] = m;
+        return m;
+    }
     _geo(g) { this._disposables.push(g); return g; }
 
     // shade a hex toward black (amt<0) or white (amt>0) by |amt|
@@ -157,25 +170,34 @@ class BeanView {
         this.bob.add(this.bodyScale);
 
         // shared materials -------------------------------------------------
-        this.bodyMat = this._mat('body', {
+        // Glossy clear-coated body: clearcoat ~0.6 over a roughness ~0.4 base
+        // with a faint emissive tint (~0.05) of the body colour — reads like
+        // the shiny candy plastic of the reference renders.
+        this.bodyMat = this._physMat('body', {
             color: new THREE.Color(this.appearance.color),
-            roughness: 0.5, metalness: 0.0,
-            emissive: new THREE.Color(this.appearance.color).multiplyScalar(0.06),
-        });
-        // slightly darker zone for fake ambient occlusion on the underside
-        this.bodyDarkMat = this._mat('bodyDark', {
-            color: this._shade(this.appearance.color, -0.22),
-            roughness: 0.58, metalness: 0.0,
-            emissive: new THREE.Color(this.appearance.color).multiplyScalar(0.03),
-        });
-        this.limbMat = this._mat('limb', {
-            color: new THREE.Color(this.appearance.color),
-            roughness: 0.5, metalness: 0.0,
+            roughness: 0.4, metalness: 0.0,
+            clearcoat: 0.6, clearcoatRoughness: 0.25,
             emissive: new THREE.Color(this.appearance.color).multiplyScalar(0.05),
         });
-        this.footMat = this._mat('foot', {
+        // slightly darker zone for fake ambient occlusion on the underside
+        this.bodyDarkMat = this._physMat('bodyDark', {
+            color: this._shade(this.appearance.color, -0.22),
+            roughness: 0.5, metalness: 0.0,
+            clearcoat: 0.5, clearcoatRoughness: 0.3,
+            emissive: new THREE.Color(this.appearance.color).multiplyScalar(0.03),
+        });
+        // arms / legs share the glossy look
+        this.limbMat = this._physMat('limb', {
+            color: new THREE.Color(this.appearance.color),
+            roughness: 0.4, metalness: 0.0,
+            clearcoat: 0.6, clearcoatRoughness: 0.25,
+            emissive: new THREE.Color(this.appearance.color).multiplyScalar(0.05),
+        });
+        this.footMat = this._physMat('foot', {
             color: this._shade(this.appearance.color, -0.30),
-            roughness: 0.55, metalness: 0.0,
+            roughness: 0.42, metalness: 0.0,
+            clearcoat: 0.6, clearcoatRoughness: 0.25,
+            emissive: new THREE.Color(this.appearance.color).multiplyScalar(0.03),
         });
 
         this._buildBody();
@@ -199,11 +221,21 @@ class BeanView {
         this.bodyMesh.receiveShadow = true;
         this.bodyScale.add(this.bodyMesh);
 
+        // Lower "belly" — a fuller, slightly WIDER-at-the-bottom rounded mass
+        // so the silhouette reads as a Fall-Guys egg (heavier at the base).
+        const bellyGeo = this._geo(new THREE.SphereGeometry(this.bodyR * 1.04, 24, 18));
+        this.bellyMesh = new THREE.Mesh(bellyGeo, this.bodyMat);
+        this.bellyMesh.position.y = this.bodyCY - this.bodyH * 0.30;
+        this.bellyMesh.scale.set(1.04, 0.96, 1.0);   // a hair wider than the body
+        this.bellyMesh.castShadow = true;
+        this.bellyMesh.receiveShadow = true;
+        this.bodyScale.add(this.bellyMesh);
+
         // Fake-AO underside: a darker squashed sphere hugging the lower body.
-        const aoGeo = this._geo(new THREE.SphereGeometry(this.bodyR * 0.99, 24, 16));
+        const aoGeo = this._geo(new THREE.SphereGeometry(this.bodyR * 1.0, 24, 16));
         this.aoMesh = new THREE.Mesh(aoGeo, this.bodyDarkMat);
-        this.aoMesh.position.y = this.bodyCY - this.bodyH * 0.42;
-        this.aoMesh.scale.set(1.0, 0.62, 0.96);
+        this.aoMesh.position.y = this.bodyCY - this.bodyH * 0.46;
+        this.aoMesh.scale.set(1.03, 0.6, 1.0);
         this.aoMesh.castShadow = false;
         this.bodyScale.add(this.aoMesh);
 
@@ -227,6 +259,10 @@ class BeanView {
     }
 
     /* ----- FACE --------------------------------------------------- */
+    // Iconic Fall-Guys face: a big LIGHT (cream) rounded faceplate on the
+    // front-upper body holding two simple glossy black oval eyes (each with a
+    // tiny white specular dot). appearance.visor is used only as a SUBTLE
+    // accent (faceplate rim + eye-shine tint) so the face reads light/white.
     _buildFace() {
         const r = this.r;
         this.headPivot = new THREE.Group();
@@ -235,72 +271,102 @@ class BeanView {
 
         this.face = new THREE.Group();
         // Face sits on the front (+Z) of the upper body.
-        this.face.position.set(0, 0, this.bodyR * 0.66);
+        this.face.position.set(0, 0, this.bodyR * 0.60);
         this.headPivot.add(this.face);
 
-        // Glossy curved visor — a thin curved shell across the eyes.
+        const faceCream = '#f7f4ee';   // default light faceplate colour
+
+        // --- subtle accent rim (uses appearance.visor) ------------------
+        // A thin ring just behind/around the faceplate edge so the visor
+        // colour appears only as a delicate trim — never a band over the eyes.
         this.visorMat = this._mat('visor', {
             color: new THREE.Color(this.appearance.visor),
-            roughness: 0.12, metalness: 0.15,
-            emissive: new THREE.Color(this.appearance.visor).multiplyScalar(0.10),
-            transparent: true, opacity: 0.92,
+            roughness: 0.3, metalness: 0.1,
+            emissive: new THREE.Color(this.appearance.visor).multiplyScalar(0.12),
         });
-        // a partial sphere shell, scaled flat, gives a wrap-around visor
-        const visorGeo = this._geo(new THREE.SphereGeometry(r * 0.66, 24, 16,
-            0, Math.PI * 2, Math.PI * 0.18, Math.PI * 0.44));
-        this.visorMesh = new THREE.Mesh(visorGeo, this.visorMat);
-        this.visorMesh.position.set(0, r * 0.04, -r * 0.30);
-        this.visorMesh.scale.set(1.06, 0.92, 0.62);
-        this.visorMesh.rotation.x = -0.12;
+        const rimGeo = this._geo(new THREE.TorusGeometry(r * 0.62, r * 0.05, 10, 28));
+        this.visorMesh = new THREE.Mesh(rimGeo, this.visorMat);   // keep name for animation/back-compat
+        this.visorMesh.position.set(0, r * 0.02, -r * 0.06);
+        this.visorMesh.scale.set(1.0, 0.92, 0.5);
         this.visorMesh.castShadow = false;
         this.face.add(this.visorMesh);
 
-        // Eyes: glossy white spheres + dark pupils with a tiny specular dot.
-        const whiteMat = this._mat('eyeWhite', { color: new THREE.Color('#ffffff'), roughness: 0.22, metalness: 0.0 });
-        const pupilMat = this._mat('pupil', { color: new THREE.Color('#23203a'), roughness: 0.18, metalness: 0.0 });
-        const glintMat = this._mat('glint', { color: new THREE.Color('#ffffff'), roughness: 0.1, emissive: new THREE.Color('#444') });
-        const eyeGeo = this._geo(new THREE.SphereGeometry(r * 0.215, 18, 16));
-        const pupilGeo = this._geo(new THREE.SphereGeometry(r * 0.115, 14, 12));
-        const glintGeo = this._geo(new THREE.SphereGeometry(r * 0.045, 8, 8));
+        // --- large cream FACEPLATE -------------------------------------
+        // A slightly flattened glossy sphere sitting proud of the body front.
+        this.faceMat = this._physMat('faceplate', {
+            color: new THREE.Color(faceCream),
+            roughness: 0.4, metalness: 0.0,
+            clearcoat: 0.6, clearcoatRoughness: 0.25,
+            emissive: new THREE.Color(faceCream).multiplyScalar(0.04),
+        });
+        const plateGeo = this._geo(new THREE.SphereGeometry(r * 0.60, 28, 22));
+        this.faceplate = new THREE.Mesh(plateGeo, this.faceMat);
+        // flattened front-facing dome, bulging out along +Z
+        this.faceplate.scale.set(1.18, 1.04, 0.5);
+        this.faceplate.position.set(0, 0, 0);
+        this.faceplate.castShadow = false;
+        this.faceplate.receiveShadow = true;
+        this.face.add(this.faceplate);
+
+        // --- TWO simple glossy black oval eyes -------------------------
+        // Dark rounded ovals inset into the faceplate, each with a small
+        // white specular highlight dot. Pupils + blink animate as before.
+        const eyeMat = this._physMat('eyeWhite', {   // keep key for back-compat
+            color: new THREE.Color('#121016'),
+            roughness: 0.18, metalness: 0.0,
+            clearcoat: 0.8, clearcoatRoughness: 0.12,
+            emissive: new THREE.Color('#050507'),
+        });
+        const pupilMat = this._mat('pupil', { color: new THREE.Color('#0a0810'), roughness: 0.2, metalness: 0.0 });
+        const glintMat = this._mat('glint', {
+            color: new THREE.Color('#ffffff'), roughness: 0.05,
+            emissive: new THREE.Color(this.appearance.visor).multiplyScalar(0.25),
+        });
+        const eyeGeo = this._geo(new THREE.SphereGeometry(r * 0.165, 20, 18));
+        const pupilGeo = this._geo(new THREE.SphereGeometry(r * 0.07, 12, 10));
+        const glintGeo = this._geo(new THREE.SphereGeometry(r * 0.05, 8, 8));
 
         this.eyes = [];
         for (const side of [+1, -1]) {
             const eye = new THREE.Group();
-            eye.position.set(side * r * 0.33, r * 0.02, r * 0.04);
-            const white = new THREE.Mesh(eyeGeo, whiteMat);
-            white.scale.z = 0.55;
+            eye.position.set(side * r * 0.235, r * 0.05, r * 0.215);
+            // rounded OVAL: taller than wide, flattened in depth
+            const white = new THREE.Mesh(eyeGeo, eyeMat);
+            white.scale.set(0.82, 1.18, 0.5);
             white.castShadow = false;
             eye.add(white);
+            // pupil shares the dark tone; it's what tracks the gaze
             const pupil = new THREE.Mesh(pupilGeo, pupilMat);
-            pupil.position.z = r * 0.14;
+            pupil.position.z = r * 0.05;
             pupil.castShadow = false;
             eye.add(pupil);
+            // tiny white specular dot near the top-outer of each eye
             const glint = new THREE.Mesh(glintGeo, glintMat);
-            glint.position.set(side * r * 0.04, r * 0.05, r * 0.20);
+            glint.position.set(side * r * 0.05, r * 0.07, r * 0.085);
             glint.castShadow = false;
             eye.add(glint);
             this.face.add(eye);
             this.eyes.push({ group: eye, pupil });
         }
 
-        // Soft pink cheeks (flat translucent discs).
+        // --- soft subtle pink cheeks (kept, lower & gentle) ------------
         const cheekMat = this._mat('cheek', {
-            color: new THREE.Color('#ff86a6'), roughness: 0.85,
-            transparent: true, opacity: 0.55,
+            color: new THREE.Color('#ff9bb4'), roughness: 0.9,
+            transparent: true, opacity: 0.4,
         });
-        const cheekGeo = this._geo(new THREE.CircleGeometry(r * 0.17, 16));
+        const cheekGeo = this._geo(new THREE.CircleGeometry(r * 0.12, 16));
         for (const side of [+1, -1]) {
             const ch = new THREE.Mesh(cheekGeo, cheekMat);
-            ch.position.set(side * r * 0.55, -r * 0.30, r * 0.20);
+            ch.position.set(side * r * 0.34, -r * 0.18, r * 0.40);
             ch.castShadow = false;
             this.face.add(ch);
         }
 
-        // Tiny mouth — a small dark torus arc; opens (scaleY) for emotes.
-        const mouthMat = this._mat('mouth', { color: new THREE.Color('#5a3142'), roughness: 0.6 });
-        const mouthGeo = this._geo(new THREE.TorusGeometry(r * 0.12, r * 0.035, 8, 16, Math.PI));
+        // --- tiny mouth — small dark arc; opens (scaleY) for emotes -----
+        const mouthMat = this._mat('mouth', { color: new THREE.Color('#3a2730'), roughness: 0.6 });
+        const mouthGeo = this._geo(new THREE.TorusGeometry(r * 0.10, r * 0.028, 8, 16, Math.PI));
         this.mouth = new THREE.Mesh(mouthGeo, mouthMat);
-        this.mouth.position.set(0, -r * 0.16, r * 0.22);
+        this.mouth.position.set(0, -r * 0.13, r * 0.40);
         this.mouth.rotation.z = Math.PI;          // smile arc opening downward = upturned
         this.mouth.castShadow = false;
         this.face.add(this.mouth);

@@ -441,6 +441,68 @@ const Rounds = {
         });
     },
 
+    // ---- shared builder helpers --------------------------------------
+    _raceCommon(r) {
+        r.kind = 'race'; r.camMode = 'followY';
+        r.minX = 200; r.maxX = 1080; r.cx = 640;
+        r.minY = 240; r.maxY = 2680; r.finishY = 420;
+        r.thinkFn = raceThink;
+    },
+    _doorWall(r, y, fakeCount) {
+        const x0 = r.minX, x1 = r.maxX, n = 6, w = (x1 - x0) / n;
+        const fakes = new Set();
+        while (fakes.size < fakeCount) fakes.add(U.rng(0, n - 1));
+        const segs = [];
+        for (let i = 0; i < n; i++)
+            segs.push({ x0: x0 + i * w, x1: x0 + (i + 1) * w, fake: fakes.has(i), broken: false });
+        const dw = new DoorWall({ y, x0, x1, segs });
+        r.obstacles.push(dw); r.doorWalls.push(dw);
+    },
+    _arena(r, R) {
+        R = R || 300;
+        const cx = 640, cy = 380;
+        r.kind = 'survival'; r.camMode = 'fixed';
+        r.platform = { cx, cy, r: R };
+        r.minX = 0; r.maxX = CFG.W; r.minY = 0; r.maxY = CFG.H;
+        r.thinkFn = jumpThink;
+        return { cx, cy, R };
+    },
+    _sweeper(r, o) {
+        const cx = r.platform.cx, cy = r.platform.cy, R = r.platform.r;
+        const s = new Spinner(Object.assign({ cx, cy, len: R - 6, thick: 22, angle: -Math.PI / 2,
+            height: 42, arms: 2, pushOut: true, power: 490, color: '#ffd23f' }, o || {}));
+        r.obstacles.push(s);
+        return s;
+    },
+    _spawnRing(r) {
+        const cx = r.platform.cx, cy = r.platform.cy, R = r.platform.r;
+        r.beans.forEach((b, i) => {
+            const ang = (i / r.beans.length) * Math.PI * 2;
+            const rr = R * (b.isPlayer ? 0.5 : U.rngf(0.4, 0.62));
+            b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
+            b.startX = b.x; b.startY = b.y;
+            b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.55, 0.95);
+            b.facing = ang + Math.PI;
+        });
+    },
+    _hexField(r, size, stepX, stepY) {
+        r.tiles = [];
+        const cols = ['#ff8fd0', '#9a8cff', '#7fd0ff', '#7ce0b0', '#ffd07a', '#ff9ec4'];
+        let row = 0;
+        for (let y = r.minY + 20; y <= r.maxY - 10; y += stepY, row++) {
+            const off = (row % 2) * (stepX / 2);
+            for (let x = r.minX + 30 + off; x <= r.maxX - 20; x += stepX)
+                r.tiles.push(new HexTile({ cx: x, cy: y, size, color: cols[row % cols.length] }));
+        }
+        const spots = U.shuffle(r.tiles.slice());
+        r.beans.forEach((b, i) => {
+            const t = spots[i % spots.length];
+            b.x = t.cx; b.y = t.cy; b.startX = b.x; b.startY = b.y;
+            b.skill = b.isPlayer ? 1 : U.rngf(0.45, 0.9);
+            b.facing = U.rngf(0, 6.28);
+        });
+    },
+
     builders: {
         // -------------------------------------------------- DOOR DASH
         doorDash(r) {

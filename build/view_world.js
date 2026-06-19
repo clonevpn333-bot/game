@@ -26,22 +26,30 @@ const HAS_DOC = (typeof document !== 'undefined' && !!document.createElement);
    Palette — one tidy bubblegum theme everything pulls from.
    ===================================================================== */
 const WPAL = {
-    skyTop:   0x6db8ff,   // soft blue zenith
-    skyMid:   0xa9d8ff,
-    skyHaze:  0xffd9ec,   // pinkish horizon haze
-    fog:      0xdfeeff,   // soft horizon fog
+    skyTop:   0x4fb0ff,   // bright clean blue zenith
+    skyMid:   0x9fd6ff,
+    skyHaze:  0xffe6f3,   // soft white-pink horizon haze
+    fog:      0xe9f4ff,   // very soft horizon fog
     track:    0x8fd4ff,   // pastel track blue
     trackAlt: 0xb6e6ff,
-    curb:     0xff7fb6,   // candy pink curb
+    curb:     0xff5fa2,   // candy pink curb (inflatable pink)
+    curbLt:   0xff8cc0,   // lighter inflatable highlight
     gold:     0xffd34d,   // accent gold
-    mint:     0x73e3b8,
+    crown:    0xffce3a,   // crown gold
+    mint:     0x8af0cf,
     grape:    0x9a6cff,
     grapeDk:  0x6f3ec8,
     slime:    0xff3fb0,   // hot magenta-pink slime
     slimeDk:  0x9c1f86,
-    cloud:    0xfff6ff,
+    cloud:    0xfffafd,
     wood:     0xc9a063,   // door panel
     woodDk:   0x9a743f,
+    chkPink:  0xff5fa2,   // checker pink
+    chkWhite: 0xfff3fb,   // checker white
+    mtnA:     0xbfe0ff,   // pastel mountain blue
+    mtnB:     0xd8c6ff,   // pastel mountain lavender
+    mtnC:     0xffd6ec,   // pastel mountain pink
+    mtnSnow:  0xfff8ff,   // mountain snow cap
 };
 
 /* =====================================================================
@@ -100,6 +108,46 @@ function mat(color, opts) {
 function gloss(color, opts) {
     opts = opts || {};
     return mat(color, Object.assign({ roughness: 0.18, metalness: 0.12 }, opts));
+}
+
+// soft glossy INFLATABLE material — balloon-like vinyl: low roughness,
+// a clearcoat sheen, a touch of emissive so the pink stays vivid even in
+// shadow. Uses MeshPhysicalMaterial (clearcoat); plain Standard otherwise.
+function inflate(color, opts) {
+    opts = opts || {};
+    const base = col(color, WPAL.curb);
+    const params = {
+        color: base,
+        roughness: opts.roughness != null ? opts.roughness : 0.22,
+        metalness: opts.metalness != null ? opts.metalness : 0.0,
+        emissive: col(opts.emissive != null ? opts.emissive : shade(base, -0.4)),
+        emissiveIntensity: opts.emissiveIntensity != null ? opts.emissiveIntensity : 0.06,
+    };
+    if (opts.transparent) params.transparent = true;
+    if (opts.opacity != null) params.opacity = opts.opacity;
+    if (opts.side != null) params.side = opts.side;
+    if (opts.fog === false) params.fog = false;
+    let m;
+    if (typeof THREE.MeshPhysicalMaterial === 'function') {
+        params.clearcoat = opts.clearcoat != null ? opts.clearcoat : 0.85;
+        params.clearcoatRoughness = opts.clearcoatRoughness != null ? opts.clearcoatRoughness : 0.28;
+        m = new THREE.MeshPhysicalMaterial(params);
+    } else {
+        m = new THREE.MeshStandardMaterial(params);
+    }
+    return m;
+}
+
+// a rounded soft "pillow" via a Capsule laid along an axis ('x'|'y'|'z').
+// length is the full tip-to-tip span; r the rounded radius. Returns a Mesh.
+function pillow(length, r, axis, material) {
+    r = Math.max(0.5, r);
+    const cyl = Math.max(0.01, length - r * 2);   // cylindrical middle length
+    const geo = new THREE.CapsuleGeometry(r, cyl, 8, 16);
+    const mesh = new THREE.Mesh(geo, material);    // capsule is along local Y
+    if (axis === 'x') mesh.rotation.z = Math.PI / 2;
+    else if (axis === 'z') mesh.rotation.x = Math.PI / 2;
+    return mesh;
 }
 
 // flag a mesh (and descendants) to cast / receive shadows.
@@ -242,12 +290,13 @@ function setupEnvironment(scene) {
     scene.add(sunTarget);
 
     // ---- soft sky/ground fill so shadowed sides stay lush, not muddy ----
-    const hemi = new THREE.HemisphereLight(0xbfe8ff, 0x6b5a7a, 0.9);
+    // brighter, cleaner hemisphere keeps the world cheerful & pastel.
+    const hemi = new THREE.HemisphereLight(0xd6f0ff, 0x8c7aa0, 1.05);
     hemi.position.set(0, 1400, 0);
     scene.add(hemi);
 
     // ---- low ambient floor so nothing reads pure black ----
-    const ambient = new THREE.AmbientLight(0xfff3ec, 0.15);
+    const ambient = new THREE.AmbientLight(0xfff6f0, 0.22);
     scene.add(ambient);
 
     // ---- cool fill from the opposite side (no shadow) to shape forms ----
@@ -257,14 +306,16 @@ function setupEnvironment(scene) {
     scene.add(fill);
 
     // ---- SKY: big back-side sphere with a vertical pastel gradient ----
-    const horizon = col(WPAL.skyHaze).clone().lerp(col(WPAL.skyMid), 0.45);
+    const horizon = col(WPAL.skyHaze).clone().lerp(col(WPAL.skyMid), 0.4);
     const skyGeo = new THREE.SphereGeometry(6000, 32, 20);
     let skyMat;
+    // brighter, cleaner cheerful gradient: vivid blue zenith -> airy white-pink.
     const gradTex = vGradientTexture([
-        [0.00, '#6db8ff'],   // zenith soft blue
-        [0.45, '#a9d8ff'],
-        [0.78, '#ffe3f0'],
-        [1.00, '#ffd2e6'],   // pinkish horizon
+        [0.00, '#3aa6ff'],   // zenith vivid clean blue
+        [0.38, '#7ec8ff'],
+        [0.62, '#bfe6ff'],
+        [0.84, '#fff0f8'],
+        [1.00, '#ffe6f3'],   // soft white-pink horizon
     ], 512);
     if (gradTex) {
         skyMat = new THREE.MeshBasicMaterial({ map: gradTex, side: THREE.BackSide, fog: false, depthWrite: false });
@@ -282,8 +333,8 @@ function setupEnvironment(scene) {
     // background color (used before the dome draws / if dome culled).
     scene.background = col(WPAL.skyMid).clone().lerp(horizon, 0.4);
 
-    // ---- gentle fog tuned to the horizon haze for soft depth ----
-    scene.fog = new THREE.Fog(horizon.getHex(), 1700, 5400);
+    // ---- subtle fog tuned to the horizon haze: soft depth, stays clear ----
+    scene.fog = new THREE.Fog(horizon.getHex(), 2400, 6200);
 
     // ---- a low warm sun-disc / glow on the dome for a focal point ----
     const glowMat = new THREE.MeshBasicMaterial({
@@ -295,6 +346,50 @@ function setupEnvironment(scene) {
     glow.lookAt(0, 600, 0);
     glow.renderOrder = -999;
     scene.add(glow);
+
+    // ---- a ring of big low-poly pastel MOUNTAINS on the horizon ----
+    // chunky cones with jittered low-seg silhouettes + soft snow caps; they
+    // surround every course so the play area always sits in a cheerful basin.
+    const mountains = new THREE.Group();
+    mountains.name = 'mountains';
+    const mtnPals = [WPAL.mtnA, WPAL.mtnB, WPAL.mtnC];
+    const ringN = 26;
+    for (let i = 0; i < ringN; i++) {
+        const ang = (i / ringN) * Math.PI * 2 + (i % 2) * 0.11;
+        const dist = 3600 + ((i * 71) % 5) * 240;
+        // big chunky peaks, low radial segments for a faceted low-poly read.
+        const baseR = 620 + ((i * 53) % 7) * 90;
+        const peakH = 1100 + ((i * 37) % 9) * 200;
+        const segs = 5 + (i % 3);                 // 5..7 -> low-poly facets
+        const mCol = mtnPals[i % mtnPals.length];
+        const peakMat = mat(shade(mCol, (i % 2) ? 0.06 : -0.04), { flat: true, roughness: 0.95, metalness: 0.0 });
+        const peak = new THREE.Mesh(new THREE.ConeGeometry(baseR, peakH, segs), peakMat);
+        // jitter the silhouette so peaks aren't perfect cones.
+        const pa = peak.geometry.attributes.position;
+        for (let v = 0; v < pa.count; v++) {
+            const py = pa.getY(v);
+            if (py < peakH * 0.45) {              // leave the apex sharp
+                const k = 1 + (((v * 911) % 100) / 100 - 0.5) * 0.16;
+                pa.setX(v, pa.getX(v) * k);
+                pa.setZ(v, pa.getZ(v) * k);
+            }
+        }
+        pa.needsUpdate = true;
+        peak.geometry.computeVertexNormals();
+        peak.position.set(Math.cos(ang) * dist, peakH / 2 - 40, Math.sin(ang) * dist);
+        peak.rotation.y = (i * 1.7) % Math.PI;
+        mountains.add(peak);
+        // a soft snow cap: a smaller flat-shaded cone perched on the apex.
+        const capH = peakH * 0.34;
+        const cap = new THREE.Mesh(
+            new THREE.ConeGeometry(baseR * 0.42, capH, segs),
+            mat(WPAL.mtnSnow, { flat: true, roughness: 1.0, emissive: 0xfff0ff, emissiveIntensity: 0.06 }));
+        cap.position.set(peak.position.x, peakH - capH / 2 - 40, peak.position.z);
+        cap.rotation.y = peak.rotation.y;
+        mountains.add(cap);
+    }
+    mountains.renderOrder = -900;
+    scene.add(mountains);
 
     // ---- drifting puffy clouds: clusters of soft lobes ----
     const clouds = new THREE.Group();
@@ -326,7 +421,7 @@ function setupEnvironment(scene) {
     scene.add(clouds);
 
     return {
-        sun, hemi, sky, clouds, ambient, fill, glow,
+        sun, hemi, sky, clouds, ambient, fill, glow, mountains,
         update(dt, t) {
             t = t || 0;
             for (const cs of cloudSeeds) {
@@ -606,7 +701,7 @@ function makeBouncePad(ob) {
     const r = ob.r || 38;
 
     // springy base ring + a glossy bouncy dome we squash over time.
-    const baseMat = gloss(WPAL.slimeDk, { roughness: 0.3 });
+    const baseMat = inflate(shade(WPAL.curb, -0.18), { roughness: 0.26 });
     const base = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.06, r * 1.18, 9, 30), baseMat);
     base.position.set(0, 4.5, 0);
     group.add(base);
@@ -623,25 +718,35 @@ function makeBouncePad(ob) {
         springs.push(coil);
     }
 
-    // the bouncy cushion — its scale.y pulses (squash & stretch).
+    // the bouncy cushion — soft glossy inflatable pink dome, scale.y pulses.
     const cushion = new THREE.Object3D();
     cushion.position.set(0, 9, 0);
     group.add(cushion);
-    const padMat = gloss(WPAL.slime, { roughness: 0.16, metalness: 0.05, emissive: WPAL.slimeDk, emissiveIntensity: 0.2 });
-    const pad = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.9, 18, 30), padMat);
+    const padMat = inflate(WPAL.curb, { roughness: 0.16, clearcoat: 0.9, emissiveIntensity: 0.08 });
+    const pad = new THREE.Mesh(new THREE.SphereGeometry(r, 28, 18, 0, Math.PI * 2, 0, Math.PI * 0.55), padMat);
+    pad.scale.set(1, 0.62, 1);
     pad.position.set(0, 9, 0);
     cushion.add(pad);
+    // gentle seams (thin rings) so the dome reads as stitched inflatable vinyl.
+    const seamMat = inflate(shade(WPAL.curb, -0.22), { roughness: 0.3, clearcoat: 0.4 });
+    for (const ry of [13.5, 19]) {
+        const seam = new THREE.Mesh(new THREE.TorusGeometry(r * (ry < 16 ? 0.82 : 0.5), 1.6, 8, 30), seamMat);
+        seam.rotation.x = Math.PI / 2;
+        seam.position.set(0, ry, 0);
+        cushion.add(seam);
+    }
 
     // white rim accent + a chevron hinting "bounce up".
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(r * 0.99, 3.4, 10, 30), gloss(0xffffff, { roughness: 0.25 }));
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(r * 0.99, 3.4, 10, 30), inflate(WPAL.curbLt, { roughness: 0.2, clearcoat: 0.9 }));
     rim.rotation.x = Math.PI / 2;
-    rim.position.set(0, 18, 0);
+    rim.position.set(0, 13, 0);
     cushion.add(rim);
     const arrowMat = gloss(0xffffff, { roughness: 0.3, emissive: 0xffffff, emissiveIntensity: 0.12 });
     const arrow = new THREE.Mesh(new THREE.ConeGeometry(r * 0.4, r * 0.5, 4), arrowMat);
-    arrow.position.set(0, 27, 0);
+    arrow.position.set(0, 9 + r * 0.62 + 8, 0);   // rest just above the inflatable dome
     arrow.rotation.y = Math.PI / 4;
     cushion.add(arrow);
+    const arrowRestY = arrow.position.y;
 
     shadowy(group, true, true);
 
