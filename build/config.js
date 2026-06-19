@@ -40,7 +40,7 @@ const CFG = {
     FIELD_SIZE:   20,      // total beans at the start of a show (you + 19)
 
     // ---- UI -------------------------------------------------------------
-    INTRO_TIME:   3.6,     // round name card duration (s)
+    INTRO_TIME:   2.4,     // round name card duration (s)
     COUNTDOWN:    3,       // "3..2..1..GO"
     BANNER_TIME:  2.4,     // QUALIFIED / ELIMINATED banner
     ROUND_MAXTIME: 105,    // hard cap on a race/survival round (s)
@@ -218,6 +218,16 @@ const SHOW = [
         tagline: 'The floor is lava-pink. Last bean bouncing takes the Crown!',
         build: 'hexAGone',
     },
+    { id: 'hammer_alley',   name: 'Hammer Alley',    category: 'Race',     tagline: 'Wrecking balls everywhere — time your run!',       build: 'hammerAlley',   qualify: 10 },
+    { id: 'spinner_sprint', name: 'Spinner Sprint',  category: 'Race',     tagline: 'A blur of spinning bars. Keep your footing!',      build: 'spinnerSprint', qualify: 10 },
+    { id: 'pinball_run',    name: 'Pinball Panic',   category: 'Race',     tagline: 'Bounce pads and bars fling you everywhere.',       build: 'pinballRun',    qualify: 9  },
+    { id: 'dizzy_doors',    name: 'Dizzy Doors',     category: 'Race',     tagline: 'Door after door after door — pick the fakes!',     build: 'dizzyDoors',    qualify: 10 },
+    { id: 'the_gauntlet',   name: 'The Gauntlet',    category: 'Race',     tagline: 'Doors, bars, hammers and springs. Good luck!',     build: 'theGauntlet',   qualify: 8  },
+    { id: 'jump_showdown',  name: 'Jump Showdown',   category: 'Survival', tagline: 'A faster sweeper on a smaller floor. Survive!',    build: 'jumpShowdown',  duration: 28 },
+    { id: 'double_sweep',   name: 'Double Trouble',  category: 'Survival', tagline: 'Two bars, opposite ways. Mind the gap!',           build: 'doubleSweep',   duration: 28 },
+    { id: 'spring_storm',   name: 'Spring Storm',    category: 'Survival', tagline: 'Springs launch you into the sweeper. Stay alive!', build: 'springStorm',   duration: 26 },
+    { id: 'hex_blitz',      name: 'Hex Blitz',       category: 'Final',    tagline: 'Hex-A-Gone, but the floor melts fast!',            build: 'hexBlitz' },
+    { id: 'hex_giant',      name: 'Hexagon Heights', category: 'Final',    tagline: 'A giant honeycomb. Outlast them all!',             build: 'hexGiant' },
 ];
 
 /* =====================================================================

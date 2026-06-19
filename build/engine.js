@@ -107,11 +107,12 @@ const Engine = {
 
     // ---- screen / round transitions ----------------------------------
     _syncScreen() {
-        if (Game.screen === 'playing') {
-            if (Game.show.round !== this._lastRound) { this._buildRound(Game.show.round); this._lastRound = Game.show.round; }
-        } else if (this._lastRound) {
-            this._teardownRound(); this._lastRound = null;
-        }
+        // Build the 3D scene as soon as a round exists (during 'loading' too,
+        // so it's ready the instant the loading screen clears).
+        const round = Game.show && Game.show.round;
+        if (round && round !== this._lastRound) { this._buildRound(round); this._lastRound = round; }
+        else if (!round && this._lastRound) { this._teardownRound(); this._lastRound = null; }
+
         if (Game.screen !== this._lastScreen) {
             this._lastScreen = Game.screen;
             switch (Game.screen) {
@@ -119,6 +120,7 @@ const Engine = {
                 case 'customize': UI.showCustomize(); this._mountPreview(); break;
                 case 'howto': UI.showHowTo(); break;
                 case 'trophies': UI.showTrophies(); break;
+                case 'loading': UI.showLoading(Game.loadingInfo); break;
                 case 'eliminated': UI.showEliminated(Game.info); break;
                 case 'victory': UI.showVictory(Game.info); break;
                 case 'playing': this._lastPhase = null; break;

@@ -71,7 +71,7 @@ const CFG = {
     FIELD_SIZE:   20,      // total beans at the start of a show (you + 19)
 
     // ---- UI -------------------------------------------------------------
-    INTRO_TIME:   3.6,     // round name card duration (s)
+    INTRO_TIME:   2.4,     // round name card duration (s)
     COUNTDOWN:    3,       // "3..2..1..GO"
     BANNER_TIME:  2.4,     // QUALIFIED / ELIMINATED banner
     ROUND_MAXTIME: 105,    // hard cap on a race/survival round (s)
@@ -249,6 +249,16 @@ const SHOW = [
         tagline: 'The floor is lava-pink. Last bean bouncing takes the Crown!',
         build: 'hexAGone',
     },
+    { id: 'hammer_alley',   name: 'Hammer Alley',    category: 'Race',     tagline: 'Wrecking balls everywhere — time your run!',       build: 'hammerAlley',   qualify: 10 },
+    { id: 'spinner_sprint', name: 'Spinner Sprint',  category: 'Race',     tagline: 'A blur of spinning bars. Keep your footing!',      build: 'spinnerSprint', qualify: 10 },
+    { id: 'pinball_run',    name: 'Pinball Panic',   category: 'Race',     tagline: 'Bounce pads and bars fling you everywhere.',       build: 'pinballRun',    qualify: 9  },
+    { id: 'dizzy_doors',    name: 'Dizzy Doors',     category: 'Race',     tagline: 'Door after door after door — pick the fakes!',     build: 'dizzyDoors',    qualify: 10 },
+    { id: 'the_gauntlet',   name: 'The Gauntlet',    category: 'Race',     tagline: 'Doors, bars, hammers and springs. Good luck!',     build: 'theGauntlet',   qualify: 8  },
+    { id: 'jump_showdown',  name: 'Jump Showdown',   category: 'Survival', tagline: 'A faster sweeper on a smaller floor. Survive!',    build: 'jumpShowdown',  duration: 28 },
+    { id: 'double_sweep',   name: 'Double Trouble',  category: 'Survival', tagline: 'Two bars, opposite ways. Mind the gap!',           build: 'doubleSweep',   duration: 28 },
+    { id: 'spring_storm',   name: 'Spring Storm',    category: 'Survival', tagline: 'Springs launch you into the sweeper. Stay alive!', build: 'springStorm',   duration: 26 },
+    { id: 'hex_blitz',      name: 'Hex Blitz',       category: 'Final',    tagline: 'Hex-A-Gone, but the floor melts fast!',            build: 'hexBlitz' },
+    { id: 'hex_giant',      name: 'Hexagon Heights', category: 'Final',    tagline: 'A giant honeycomb. Outlast them all!',             build: 'hexGiant' },
 ];
 
 /* =====================================================================
@@ -1447,8 +1457,11 @@ class Round {
 
         for (const b of this.beans) b.update(dt, this);
 
-        for (const o of this.obstacles)
-            for (const b of this.beans) if (!b.gone && o.collide) o.collide(b, this, dt);
+        // brief spawn immunity so obstacles (e.g. a sweeper starting on top
+        // of the spawn ring) don't instantly knock beans out at the gun.
+        if (this.elapsed > 0.6)
+            for (const o of this.obstacles)
+                for (const b of this.beans) if (!b.gone && o.collide) o.collide(b, this, dt);
 
         this._separate();
         for (const b of this.beans) this._bounds(b);
@@ -2007,6 +2020,98 @@ const Rounds = {
             });
 
             r.onUpdate = (rr, dt) => { sweep.speed += dt * 0.05; };
+        },
+
+        // ---- additional levels (built from the shared helpers) -------
+        hammerAlley(r) {            // RACE — a gauntlet of wrecking balls
+            Rounds._raceCommon(r);
+            r.obstacles.push(new Hammer({ cx: 640, cy: 2120, amp: 330, headR: 34, speed: 1.6, power: 540 }));
+            r.obstacles.push(new Hammer({ cx: 640, cy: 1760, amp: 300, headR: 32, speed: -1.9, phase: 1, power: 540 }));
+            r.obstacles.push(new Spinner({ cx: 640, cy: 1420, len: 250, thick: 20, speed: 1.5, power: 360, color: '#7b46d6' }));
+            r.obstacles.push(new Hammer({ cx: 640, cy: 1060, amp: 330, headR: 34, speed: 2.0, phase: 0.6, power: 540 }));
+            r.obstacles.push(new Hammer({ cx: 480, cy: 700, amp: 240, headR: 30, speed: -2.2, power: 520 }));
+            r.obstacles.push(new Hammer({ cx: 820, cy: 560, amp: 240, headR: 30, speed: 2.3, phase: 1.5, power: 520 }));
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
+        spinnerSprint(r) {          // RACE — dense spinning bars
+            Rounds._raceCommon(r);
+            [2100, 1820, 1540, 1260, 980, 700].forEach((y, i) =>
+                r.obstacles.push(new Spinner({ cx: i % 2 ? 470 : 820, cy: y, len: 230, thick: 18,
+                    speed: i % 2 ? 1.7 : -1.7, power: 350, color: i % 2 ? '#23d6c8' : '#ff5fa2' })));
+            r.obstacles.push(new Spinner({ cx: 640, cy: 1680, len: 250, thick: 20, speed: 1.3, power: 360, color: '#7b46d6' }));
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
+        pinballRun(r) {             // RACE — bounce pads + spinners chaos
+            Rounds._raceCommon(r);
+            for (const [x, y] of [[470, 2000], [810, 2000], [640, 1700], [470, 1400], [810, 1400], [640, 1100]])
+                r.obstacles.push(new BouncePad({ x, y, r: 42 }));
+            r.obstacles.push(new Spinner({ cx: 640, cy: 1850, len: 240, thick: 20, speed: 1.5, power: 340, color: '#ffd23f' }));
+            r.obstacles.push(new Spinner({ cx: 640, cy: 1250, len: 240, thick: 20, speed: -1.6, power: 340, color: '#ff5fa2' }));
+            r.obstacles.push(new Hammer({ cx: 640, cy: 780, amp: 320, headR: 32, speed: 2.0, power: 520 }));
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
+        dizzyDoors(r) {             // RACE — a maze of doors
+            Rounds._raceCommon(r);
+            [2150, 1820, 1490, 1160, 830].forEach((y, i) => Rounds._doorWall(r, y, i % 2 ? 2 : 3));
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
+        theGauntlet(r) {            // RACE — a bit of everything
+            Rounds._raceCommon(r);
+            Rounds._doorWall(r, 2150, 3);
+            r.obstacles.push(new Spinner({ cx: 640, cy: 1850, len: 250, thick: 20, speed: 1.4, power: 360, color: '#7b46d6' }));
+            r.obstacles.push(new Hammer({ cx: 640, cy: 1520, amp: 320, headR: 32, speed: 1.9, power: 540 }));
+            r.obstacles.push(new BouncePad({ x: 470, y: 1250, r: 42 }));
+            r.obstacles.push(new BouncePad({ x: 810, y: 1250, r: 42 }));
+            Rounds._doorWall(r, 980, 2);
+            r.obstacles.push(new Spinner({ cx: 470, cy: 660, len: 190, thick: 18, speed: 1.7, power: 340, color: '#23d6c8' }));
+            r.obstacles.push(new Spinner({ cx: 820, cy: 660, len: 190, thick: 18, speed: -1.7, power: 340, color: '#23d6c8' }));
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
+        jumpShowdown(r) {           // SURVIVAL — fast sweeper, smaller ring
+            Rounds._arena(r, 280);
+            const s = Rounds._sweeper(r, { speed: 1.0, power: 520 }); r.sweeper = s;
+            Rounds._spawnRing(r);
+            r.onUpdate = (rr, dt) => { s.speed += dt * 0.09; };
+        },
+        doubleSweep(r) {            // SURVIVAL — two counter-rotating bars
+            Rounds._arena(r, 300);
+            const s1 = Rounds._sweeper(r, { speed: 0.8, angle: -Math.PI / 2, color: '#ffd23f' }); r.sweeper = s1;
+            const s2 = Rounds._sweeper(r, { speed: -1.0, angle: 0, color: '#ff5fa2', len: r.platform.r - 70 });
+            Rounds._spawnRing(r);
+            r.onUpdate = (rr, dt) => { s1.speed += dt * 0.05; s2.speed -= dt * 0.05; };
+        },
+        springStorm(r) {            // SURVIVAL — sweeper + a field of springs
+            const A = Rounds._arena(r, 300);
+            const s = Rounds._sweeper(r, { speed: 0.85, color: '#ff5fa2' }); r.sweeper = s;
+            for (const [px, py] of [[A.cx - 130, A.cy - 70], [A.cx + 130, A.cy - 70], [A.cx, A.cy + 140],
+                                    [A.cx - 110, A.cy + 80], [A.cx + 110, A.cy + 80], [A.cx, A.cy - 150]])
+                r.obstacles.push(new BouncePad({ x: px, y: py, r: 40 }));
+            Rounds._spawnRing(r);
+            r.onUpdate = (rr, dt) => { s.speed += dt * 0.05; };
+        },
+        hexBlitz(r) {               // FINAL — tighter arena, faster decay
+            r.kind = 'final'; r.camMode = 'fixed';
+            r.minX = 320; r.maxX = 960; r.minY = 150; r.maxY = 610; r.thinkFn = hexThink;
+            Rounds._hexField(r, 30, 46, 40);
+            r.onUpdate = (rr, dt) => {
+                rr._decayT = (rr._decayT || 0) - dt;
+                if (rr.elapsed > 10 && rr._decayT <= 0) {
+                    rr._decayT = Math.max(0.12, 0.8 - (rr.elapsed - 10) * 0.02);
+                    const s = rr.tiles.filter(t => t.state === 'solid'); if (s.length) U.pick(s).step();
+                }
+            };
+        },
+        hexGiant(r) {               // FINAL — sprawling arena
+            r.kind = 'final'; r.camMode = 'fixed';
+            r.minX = 240; r.maxX = 1040; r.minY = 110; r.maxY = 650; r.thinkFn = hexThink;
+            Rounds._hexField(r, 34, 50, 44);
+            r.onUpdate = (rr, dt) => {
+                rr._decayT = (rr._decayT || 0) - dt;
+                if (rr.elapsed > 18 && rr._decayT <= 0) {
+                    rr._decayT = Math.max(0.18, 1.1 - (rr.elapsed - 18) * 0.02);
+                    const s = rr.tiles.filter(t => t.state === 'solid'); if (s.length) U.pick(s).step();
+                }
+            };
         },
     },
 };
@@ -4497,6 +4602,11 @@ const Game = {
 
     // Driven by the engine every frame.
     update(dt) {
+        if (this.screen === 'loading') {
+            this.loadingT -= dt;
+            if (this.loadingT <= 0) this.screen = 'playing';
+            return;
+        }
         if (this.screen === 'playing') {
             const r = this.show.round;
             r.update(dt);
@@ -4523,15 +4633,33 @@ const Game = {
     // ---- Show lifecycle ----------------------------------------------
     startShow() {
         const beans = this._makeField();
-        this.show = { index: 0, beans, round: null };
+        this.show = { index: 0, beans, round: null, seq: this._buildSequence() };
         this.loadRound(0);
+    },
+
+    // A fresh, randomised line-up each Show: 2–3 races, 1–2 survival, 1 final.
+    _buildSequence() {
+        const byCat = c => U.shuffle(SHOW.filter(d => d.category === c).slice());
+        const races = byCat('Race'), survs = byCat('Survival'), fins = byCat('Final');
+        const RQ = [14, 10, 7, 6];
+        const seq = [];
+        const nRace = U.rng(2, 3), nSurv = U.rng(1, 2);
+        for (let i = 0; i < nRace && i < races.length; i++)
+            seq.push(Object.assign({}, races[i], { qualify: RQ[i] }));
+        for (let i = 0; i < nSurv && i < survs.length; i++)
+            seq.push(Object.assign({}, survs[i], { duration: U.rng(26, 32) }));
+        seq.push(fins.length ? U.pick(fins) : SHOW.find(d => d.category === 'Final'));
+        return seq;
     },
 
     loadRound(i) {
         for (const b of this.show.beans) this._resetBean(b);
         this.show.index = i;
-        this.show.round = Rounds.create(SHOW[i], this.show.beans);
-        this.screen = 'playing';
+        const def = this.show.seq[i];
+        this.show.round = Rounds.create(def, this.show.beans);
+        this.loadingInfo = { name: def.name, category: def.category, index: i + 1, total: this.show.seq.length };
+        this.loadingT = 1.3;
+        this.screen = 'loading';
     },
 
     finishRound() {
@@ -4643,7 +4771,7 @@ const UI = {
         root.appendChild(this.layer);
 
         // big panels
-        for (const id of ['menu', 'customize', 'howto', 'trophies', 'eliminated', 'victory']) {
+        for (const id of ['menu', 'customize', 'howto', 'trophies', 'loading', 'eliminated', 'victory']) {
             const p = this._el('div', 'br-panel br-' + id);
             this.els[id] = p; this.layer.appendChild(p);
         }
@@ -4802,7 +4930,7 @@ const UI = {
         h.appendChild(this.els.hudName); h.appendChild(this.els.hudCount); h.appendChild(this.els.hudHint);
     },
     showHUD() {
-        for (const id of ['menu', 'customize', 'howto', 'trophies', 'eliminated', 'victory']) this.els[id].style.display = 'none';
+        for (const id of ['menu', 'customize', 'howto', 'trophies', 'loading', 'eliminated', 'victory']) this.els[id].style.display = 'none';
         this.els.intro.style.display = 'none';
         this.els.banner.style.display = 'none';
         this.els.hud.style.display = 'block';
@@ -4818,9 +4946,23 @@ const UI = {
     },
     _t(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); },
 
+    // ================================================== LOADING
+    showLoading(info) {
+        info = info || {};
+        const cat = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' }[info.category] || '#fff';
+        this.els.loading.innerHTML =
+            `<div class="br-load-tag">ROUND ${info.index || 1} OF ${info.total || 1}</div>` +
+            `<div class="br-load-name">${info.name || 'Loading…'}</div>` +
+            `<div class="br-load-cat" style="color:${cat}">${(info.category || '').toUpperCase()}</div>` +
+            `<div class="br-load-bar"><i></i></div>` +
+            `<div class="br-load-spin"></div>` +
+            `<div class="br-load-hint">Get ready, bean!</div>`;
+        this._showBig('loading');
+    },
+
     // ================================================== INTRO CARD
     showIntro(intro) {
-        for (const id of ['menu', 'customize', 'howto', 'trophies', 'eliminated', 'victory']) this.els[id].style.display = 'none';
+        for (const id of ['menu', 'customize', 'howto', 'trophies', 'loading', 'eliminated', 'victory']) this.els[id].style.display = 'none';
         this.els.hud.style.display = 'none';
         const cat = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' }[intro.category] || '#fff';
         const cd = intro.countdown == null ? '' : `<div class="br-count">${intro.countdown > 0 ? intro.countdown : 'GO!'}</div>`;
@@ -4894,6 +5036,16 @@ const UI = {
 .br-menu,.br-customize,.br-howto,.br-trophies{background:linear-gradient(160deg,#6a5cff,#a24bd6 55%,#ff5fa2)}
 .br-eliminated{background:linear-gradient(160deg,#3a2350,#1c1430)}
 .br-victory{background:linear-gradient(160deg,#7b46d6,#ff5fa2)}
+.br-loading{background:linear-gradient(160deg,#6a5cff,#a24bd6 55%,#ff5fa2)}
+.br-load-tag{font-weight:800;letter-spacing:.16em;color:#ffe9c2;text-shadow:0 2px 0 #2a1c4a}
+.br-load-name{font-size:clamp(40px,7vw,76px);font-weight:900;color:#ffd23f;text-shadow:0 6px 0 #2a1c4a;margin:8px 0}
+.br-load-cat{font-weight:800;letter-spacing:.12em;text-shadow:0 2px 0 #2a1c4a}
+.br-load-bar{width:min(360px,70vw);height:14px;background:rgba(20,15,40,.4);border-radius:8px;overflow:hidden;margin:26px 0 16px}
+.br-load-bar i{display:block;height:100%;width:42%;background:#ffd23f;border-radius:8px;animation:brload 1.1s ease-in-out infinite}
+@keyframes brload{0%{margin-left:-42%}100%{margin-left:100%}}
+.br-load-spin{width:42px;height:42px;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:brspin .8s linear infinite}
+@keyframes brspin{to{transform:rotate(360deg)}}
+.br-load-hint{margin-top:14px;font-weight:700;color:#ffe9c2;text-shadow:0 2px 0 #2a1c4a;animation:blink 1.2s step-end infinite}
 .br-title{font-size:clamp(48px,9vw,118px);font-weight:900;letter-spacing:.04em;line-height:.92;color:#ffd23f;text-shadow:0 6px 0 #2a1c4a;animation:brbob 2.6s ease-in-out infinite}
 .br-title span{display:block;color:#fff;text-shadow:0 6px 0 #2a1c4a}
 @keyframes brbob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-10px) rotate(1deg)}}
@@ -5093,11 +5245,12 @@ const Engine = {
 
     // ---- screen / round transitions ----------------------------------
     _syncScreen() {
-        if (Game.screen === 'playing') {
-            if (Game.show.round !== this._lastRound) { this._buildRound(Game.show.round); this._lastRound = Game.show.round; }
-        } else if (this._lastRound) {
-            this._teardownRound(); this._lastRound = null;
-        }
+        // Build the 3D scene as soon as a round exists (during 'loading' too,
+        // so it's ready the instant the loading screen clears).
+        const round = Game.show && Game.show.round;
+        if (round && round !== this._lastRound) { this._buildRound(round); this._lastRound = round; }
+        else if (!round && this._lastRound) { this._teardownRound(); this._lastRound = null; }
+
         if (Game.screen !== this._lastScreen) {
             this._lastScreen = Game.screen;
             switch (Game.screen) {
@@ -5105,6 +5258,7 @@ const Engine = {
                 case 'customize': UI.showCustomize(); this._mountPreview(); break;
                 case 'howto': UI.showHowTo(); break;
                 case 'trophies': UI.showTrophies(); break;
+                case 'loading': UI.showLoading(Game.loadingInfo); break;
                 case 'eliminated': UI.showEliminated(Game.info); break;
                 case 'victory': UI.showVictory(Game.info); break;
                 case 'playing': this._lastPhase = null; break;

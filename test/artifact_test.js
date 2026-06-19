@@ -58,7 +58,7 @@ const driver = `
   Game.screen='howto'; step(); Game.screen='trophies'; step(); Game.toMenu(); step();
 
   Game.startShow(); let g=0, seen=-1; const trace=[];
-  while (Game.screen==='playing' && g++<60*200){
+  while ((Game.screen==='playing' || Game.screen==='loading') && g++<60*260){
     const r=Game.show.round;
     if (Game.show.index!==seen){ seen=Game.show.index; trace.push(r.def.name+'/'+r.kind); }
     if (r.live){
@@ -74,7 +74,8 @@ const driver = `
 
   // a few hundred AI-driven real frames (views + camera under motion, all states)
   Game.startShow();
-  for (let i=0;i<260;i++){ const r=Game.show.round; if (Game.screen!=='playing') break; const p=r.player;
+  for (let i=0;i<420;i++){ const r=Game.show && Game.show.round;
+    if (!r || (Game.screen!=='playing' && Game.screen!=='loading')) break; const p=r.player;
     if (r.live){ r.thinkFn(p,r,1/60); const ai=p.ai; Input.keys={};
       if (ai.my<-0.3) Input.keys.ArrowUp=true; else if (ai.my>0.3) Input.keys.ArrowDown=true;
       if (ai.mx<-0.3) Input.keys.ArrowLeft=true; else if (ai.mx>0.3) Input.keys.ArrowRight=true;

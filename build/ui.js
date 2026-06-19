@@ -33,7 +33,7 @@ const UI = {
         root.appendChild(this.layer);
 
         // big panels
-        for (const id of ['menu', 'customize', 'howto', 'trophies', 'eliminated', 'victory']) {
+        for (const id of ['menu', 'customize', 'howto', 'trophies', 'loading', 'eliminated', 'victory']) {
             const p = this._el('div', 'br-panel br-' + id);
             this.els[id] = p; this.layer.appendChild(p);
         }
@@ -192,7 +192,7 @@ const UI = {
         h.appendChild(this.els.hudName); h.appendChild(this.els.hudCount); h.appendChild(this.els.hudHint);
     },
     showHUD() {
-        for (const id of ['menu', 'customize', 'howto', 'trophies', 'eliminated', 'victory']) this.els[id].style.display = 'none';
+        for (const id of ['menu', 'customize', 'howto', 'trophies', 'loading', 'eliminated', 'victory']) this.els[id].style.display = 'none';
         this.els.intro.style.display = 'none';
         this.els.banner.style.display = 'none';
         this.els.hud.style.display = 'block';
@@ -208,9 +208,23 @@ const UI = {
     },
     _t(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); },
 
+    // ================================================== LOADING
+    showLoading(info) {
+        info = info || {};
+        const cat = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' }[info.category] || '#fff';
+        this.els.loading.innerHTML =
+            `<div class="br-load-tag">ROUND ${info.index || 1} OF ${info.total || 1}</div>` +
+            `<div class="br-load-name">${info.name || 'Loading…'}</div>` +
+            `<div class="br-load-cat" style="color:${cat}">${(info.category || '').toUpperCase()}</div>` +
+            `<div class="br-load-bar"><i></i></div>` +
+            `<div class="br-load-spin"></div>` +
+            `<div class="br-load-hint">Get ready, bean!</div>`;
+        this._showBig('loading');
+    },
+
     // ================================================== INTRO CARD
     showIntro(intro) {
-        for (const id of ['menu', 'customize', 'howto', 'trophies', 'eliminated', 'victory']) this.els[id].style.display = 'none';
+        for (const id of ['menu', 'customize', 'howto', 'trophies', 'loading', 'eliminated', 'victory']) this.els[id].style.display = 'none';
         this.els.hud.style.display = 'none';
         const cat = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' }[intro.category] || '#fff';
         const cd = intro.countdown == null ? '' : `<div class="br-count">${intro.countdown > 0 ? intro.countdown : 'GO!'}</div>`;
@@ -284,6 +298,16 @@ const UI = {
 .br-menu,.br-customize,.br-howto,.br-trophies{background:linear-gradient(160deg,#6a5cff,#a24bd6 55%,#ff5fa2)}
 .br-eliminated{background:linear-gradient(160deg,#3a2350,#1c1430)}
 .br-victory{background:linear-gradient(160deg,#7b46d6,#ff5fa2)}
+.br-loading{background:linear-gradient(160deg,#6a5cff,#a24bd6 55%,#ff5fa2)}
+.br-load-tag{font-weight:800;letter-spacing:.16em;color:#ffe9c2;text-shadow:0 2px 0 #2a1c4a}
+.br-load-name{font-size:clamp(40px,7vw,76px);font-weight:900;color:#ffd23f;text-shadow:0 6px 0 #2a1c4a;margin:8px 0}
+.br-load-cat{font-weight:800;letter-spacing:.12em;text-shadow:0 2px 0 #2a1c4a}
+.br-load-bar{width:min(360px,70vw);height:14px;background:rgba(20,15,40,.4);border-radius:8px;overflow:hidden;margin:26px 0 16px}
+.br-load-bar i{display:block;height:100%;width:42%;background:#ffd23f;border-radius:8px;animation:brload 1.1s ease-in-out infinite}
+@keyframes brload{0%{margin-left:-42%}100%{margin-left:100%}}
+.br-load-spin{width:42px;height:42px;border:5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:brspin .8s linear infinite}
+@keyframes brspin{to{transform:rotate(360deg)}}
+.br-load-hint{margin-top:14px;font-weight:700;color:#ffe9c2;text-shadow:0 2px 0 #2a1c4a;animation:blink 1.2s step-end infinite}
 .br-title{font-size:clamp(48px,9vw,118px);font-weight:900;letter-spacing:.04em;line-height:.92;color:#ffd23f;text-shadow:0 6px 0 #2a1c4a;animation:brbob 2.6s ease-in-out infinite}
 .br-title span{display:block;color:#fff;text-shadow:0 6px 0 #2a1c4a}
 @keyframes brbob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-10px) rotate(1deg)}}

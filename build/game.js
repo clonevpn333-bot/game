@@ -19,6 +19,11 @@ const Game = {
 
     // Driven by the engine every frame.
     update(dt) {
+        if (this.screen === 'loading') {
+            this.loadingT -= dt;
+            if (this.loadingT <= 0) this.screen = 'playing';
+            return;
+        }
         if (this.screen === 'playing') {
             const r = this.show.round;
             r.update(dt);
@@ -45,15 +50,33 @@ const Game = {
     // ---- Show lifecycle ----------------------------------------------
     startShow() {
         const beans = this._makeField();
-        this.show = { index: 0, beans, round: null };
+        this.show = { index: 0, beans, round: null, seq: this._buildSequence() };
         this.loadRound(0);
+    },
+
+    // A fresh, randomised line-up each Show: 2–3 races, 1–2 survival, 1 final.
+    _buildSequence() {
+        const byCat = c => U.shuffle(SHOW.filter(d => d.category === c).slice());
+        const races = byCat('Race'), survs = byCat('Survival'), fins = byCat('Final');
+        const RQ = [14, 10, 7, 6];
+        const seq = [];
+        const nRace = U.rng(2, 3), nSurv = U.rng(1, 2);
+        for (let i = 0; i < nRace && i < races.length; i++)
+            seq.push(Object.assign({}, races[i], { qualify: RQ[i] }));
+        for (let i = 0; i < nSurv && i < survs.length; i++)
+            seq.push(Object.assign({}, survs[i], { duration: U.rng(26, 32) }));
+        seq.push(fins.length ? U.pick(fins) : SHOW.find(d => d.category === 'Final'));
+        return seq;
     },
 
     loadRound(i) {
         for (const b of this.show.beans) this._resetBean(b);
         this.show.index = i;
-        this.show.round = Rounds.create(SHOW[i], this.show.beans);
-        this.screen = 'playing';
+        const def = this.show.seq[i];
+        this.show.round = Rounds.create(def, this.show.beans);
+        this.loadingInfo = { name: def.name, category: def.category, index: i + 1, total: this.show.seq.length };
+        this.loadingT = 1.3;
+        this.screen = 'loading';
     },
 
     finishRound() {
