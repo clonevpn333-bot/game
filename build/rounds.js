@@ -1038,18 +1038,19 @@ const Rounds = {
         // -------- PERFECT MATCH (LOGIC — dash to the called fruit) -----
         perfectMatch(r) {
             r.kind = 'match'; r.viewKind = 'final'; r.camMode = 'fixed'; r.thinkFn = matchThink;
-            r.minX = 300; r.maxX = 980; r.minY = 150; r.maxY = 630;
+            r.minX = 320; r.maxX = 960; r.minY = 160; r.maxY = 620;
             r.tiles = [];
-            const size = 40, stepX = 58, stepY = 52;
+            // a clean grid of SQUARE fruit tiles (rendered as 'matchtile')
+            const size = 40, stepX = 60, stepY = 56;
             // only 3 fruits on the board so ~1/3 of tiles always survive a call —
             // a safe tile is always close (forgiving, like the real 2-4 fruit rounds)
             const pal = U.shuffle(FRUITS.map((_, i) => i)).slice(0, 3);
-            let row = 0;
-            for (let y = r.minY + 30; y <= r.maxY - 20; y += stepY, row++) {
-                const off = (row % 2) * (stepX / 2);
-                for (let x = r.minX + 40 + off; x <= r.maxX - 30; x += stepX) {
+            for (let y = r.minY + 28; y <= r.maxY - 20; y += stepY) {
+                for (let x = r.minX + 32; x <= r.maxX - 24; x += stepX) {
                     const fruit = U.pick(pal);
-                    r.tiles.push(new HexTile({ cx: x, cy: y, size, color: FRUITS[fruit].color, fruit }));
+                    const t = new HexTile({ cx: x, cy: y, size, color: FRUITS[fruit].color, fruit });
+                    t.kind = 'matchtile';
+                    r.tiles.push(t);
                 }
             }
             const spots = U.shuffle(r.tiles.slice());

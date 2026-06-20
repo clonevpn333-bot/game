@@ -1264,6 +1264,56 @@ function makeCannon(ob) {
     return view;
 }
 
+// Perfect Match: a square candy tile with a fruit emblem painted on top.
+const _fruitTexCache = {};
+function fruitTexture(idx) {
+    if (_fruitTexCache[idx] !== undefined) return _fruitTexCache[idx];
+    let tex = null;
+    try {
+        const f = (typeof FRUITS !== 'undefined' && FRUITS[idx]) ? FRUITS[idx] : { color: '#ffffff', icon: '?' };
+        const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+        const g = c.getContext('2d');
+        g.fillStyle = '#fbf7ff'; g.fillRect(0, 0, 128, 128);
+        g.fillStyle = f.color; g.globalAlpha = 0.32; g.fillRect(0, 0, 128, 128); g.globalAlpha = 1;
+        g.font = '92px serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(f.icon, 64, 72);
+        tex = new THREE.CanvasTexture(c);
+        tex.anisotropy = 4;
+    } catch (e) { tex = null; }
+    _fruitTexCache[idx] = tex;
+    return tex;
+}
+function makeMatchTile(ob) {
+    const group = new THREE.Object3D();
+    group.position.copy(W(ob.cx, ob.cy, 0));
+    const s = (ob.size || 40) * 1.34, depth = 26;
+    const fc = (typeof FRUITS !== 'undefined' && FRUITS[ob.fruit]) ? FRUITS[ob.fruit].color : (ob.color || '#fff');
+    const box = new THREE.Mesh(new THREE.BoxGeometry(s, depth, s), mat(shade(fc, -0.12), { roughness: 0.55 }));
+    box.position.y = -depth / 2; group.add(box);
+    const tex = fruitTexture(ob.fruit);
+    const topMat = tex ? new THREE.MeshStandardMaterial({ map: tex, roughness: 0.45 })
+                       : mat(pop(fc, 0.1, 0.05), { roughness: 0.4 });
+    const top = new THREE.Mesh(new THREE.PlaneGeometry(s * 0.97, s * 0.97), topMat);
+    top.rotation.x = -Math.PI / 2; top.position.y = 0.4; group.add(top);
+    shadowy(group, true, true);
+    const baseY = group.position.y, baseX = group.position.x;
+    let fallV = 0;
+    const view = {
+        object3d: group,
+        update(o, dt, t) {
+            const state = (o && o.state) || 'solid'; const d = dt || 0.016, tt = t || 0;
+            if (state === 'solid') { group.position.set(baseX, baseY, group.position.z); group.visible = true; fallV = 0; }
+            else if (state === 'dissolving') {
+                group.position.x = baseX + Math.sin(tt * 40 + baseX) * 2.2;
+                fallV += d * 150; group.position.y = baseY - fallV * 0.2; group.visible = true;
+            } else { fallV += d * 720; group.position.y = baseY - 210 - fallV; group.visible = group.position.y > baseY - 1100; }
+        },
+        dispose() { disposeTree(group); },
+    };
+    view.update(ob, 0, 0);
+    return view;
+}
+
 function makeObstacleView(ob) {
     switch (ob && ob.kind) {
         case 'spinner':     return makeSpinner(ob);
@@ -1271,6 +1321,7 @@ function makeObstacleView(ob) {
         case 'doorwall':    return makeDoorWall(ob);
         case 'bouncepad':   return makeBouncePad(ob);
         case 'hex':         return makeHex(ob);
+        case 'matchtile':   return makeMatchTile(ob);
         case 'conveyor':    return makeConveyor(ob);
         case 'bumper':      return makeBumper(ob);
         case 'movingblock': return makeMovingBlock(ob);
