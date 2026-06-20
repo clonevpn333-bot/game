@@ -142,7 +142,7 @@ const Game = {
     _resetBean(b) {
         b.vx = 0; b.vy = 0; b.z = 0; b.vz = 0; b.facing = -Math.PI / 2;
         b.alive = true; b.finished = false; b.qualified = false;
-        b.eliminated = false; b.falling = false; b.place = 0;
+        b.eliminated = false; b.falling = false; b.exited = false; b.place = 0;
         b.diveT = 0; b.proneT = 0; b.diveCd = 0; b.ragdoll = 0; b.spin = 0; b.squash = 1;
         b.grabbing = null; b.grabbedBy = null; b.grabT = 0;
         b.emoteT = 0; b.emoteAnim = null; b.emoteName = null; b.justEmoted = 99;

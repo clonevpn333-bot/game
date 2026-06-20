@@ -160,6 +160,7 @@ const Engine = {
         this.roundGroup = g;
         this._lastPhase = null;
         this._camSnap = true;          // snap camera to the new round's framing
+        this._specBean = null;         // reset spectate target
     },
 
     _teardownRound() {
@@ -173,28 +174,42 @@ const Engine = {
     // ---- per-frame play update ---------------------------------------
     _updatePlaying(dt, t) {
         const round = Game.show.round;
-        // beans
+        // beans (qualified=exited and eliminated=gone beans vanish)
         for (const b of round.beans) {
             const bv = this.beanViews.get(b);
             if (!bv) continue;
-            if (b.gone) { bv.object3d.visible = false; continue; }
+            if (b.gone || b.exited) { bv.object3d.visible = false; continue; }
             bv.object3d.visible = true;
             bv.update(b, dt, t);
         }
-        // player marker hovers above your bean
-        if (this._marker && this._playerBean) {
-            const p = this._playerBean;
-            this._marker.visible = !p.gone;
-            this._marker.position.set(p.x, p.z + 64 + Math.sin(t * 4) * 5, p.y);
-            this._marker.rotation.y = t * 2;
+        // spectate: once you're out, the camera follows a surviving bean
+        const p = this._playerBean;
+        const playerActive = p && p.alive && !p.gone && !p.exited && !p.falling;
+        const subject = playerActive ? p : (this._spectateTarget(round) || p);
+        this._spectating = !playerActive;
+        // gold marker hovers over YOUR bean only while you're still in it
+        if (this._marker) {
+            this._marker.visible = playerActive;
+            if (playerActive) {
+                this._marker.position.set(p.x, p.z + 64 + Math.sin(t * 4) * 5, p.y);
+                this._marker.rotation.y = t * 2;
+            }
         }
         // obstacles + tiles
         for (const { ob, v } of this.obViews) v.update(ob, dt, t);
         this.courseView && this.courseView.update(round, dt, t);
 
         this._updateFx(round);
-        this._camera(round, dt);
+        this._camera(round, dt, subject);
         this._hud(round);
+    },
+
+    _spectateTarget(round) {
+        const ok = b => b && b.alive && !b.gone && !b.exited && !b.falling;
+        if (ok(this._specBean)) return this._specBean;
+        const cands = round.beans.filter(ok);
+        this._specBean = cands.length ? U.pick(cands) : null;
+        return this._specBean;
     },
 
     _updateFx(round) {
@@ -212,8 +227,8 @@ const Engine = {
     },
 
     // ---- camera -------------------------------------------------------
-    _camera(round, dt) {
-        const p = round.player;
+    _camera(round, dt, subject) {
+        const p = subject || round.player;
         let pos, look;
         if (round.kind === 'race') {
             // 3rd-person chase: centred on the player, behind (+Z) and above,
@@ -255,6 +270,7 @@ const Engine = {
                 name: round.def.name, category: round.category, kind: round.kind,
                 qualifiedCount: round.qualifiedCount, qualifyCount: round.qualifyCount,
                 timer: round.timer, aliveCount: round.aliveSoFar(), place: round.player.place,
+                spectating: this._spectating,
             });
         }
     },

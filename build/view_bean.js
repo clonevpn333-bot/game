@@ -698,6 +698,75 @@ class BeanView {
                     add(new THREE.SphereGeometry(r * 0.1, 10, 10), M(p[1], { emissive: new THREE.Color(p[1]).multiplyScalar(0.4), roughness: 0.2 }), Math.sin(p[0]) * r * 0.5, r * 0.2, Math.cos(p[0]) * r * 0.55);
                 }
                 break;
+            case 'wizard': {
+                // tall pointy purple hat: little brim + cone + gold star tip
+                const purple = '#6b3fd6';
+                add(new THREE.CylinderGeometry(r * 0.78, r * 0.84, r * 0.1, 22), M(this._shadeStr(purple, -0.15), { roughness: 0.6 }), 0, r * 0.06, 0); // brim
+                add(new THREE.ConeGeometry(r * 0.6, r * 1.5, 22), M(purple, { emissive: new THREE.Color('#2a1454'), roughness: 0.55 }), 0, r * 0.82, 0, 0.06, 0, 0.06); // tall pointy cone, slight lean
+                add(new THREE.TorusGeometry(r * 0.45, r * 0.06, 8, 20), M('#ffd23f', shiny), 0, r * 0.4, 0, Math.PI / 2, 0, 0); // hat band
+                // gold star near the tip (two overlapped tetra-ish cones read as a star burst)
+                add(new THREE.ConeGeometry(r * 0.2, r * 0.16, 5), M('#ffe27a', shiny), r * 0.04, r * 1.48, r * 0.5, Math.PI / 2, 0, 0);
+                add(new THREE.ConeGeometry(r * 0.2, r * 0.16, 5), M('#ffe27a', shiny), r * 0.04, r * 1.48, r * 0.5, Math.PI / 2, 0, Math.PI / 5);
+                break;
+            }
+            case 'astronaut': {
+                // white space helmet: clear/blue glassy dome over head + white collar ring
+                add(new THREE.TorusGeometry(r * 0.66, r * 0.16, 12, 24), M('#f4f6fa', { roughness: 0.35, metalness: 0.1 }), 0, -r * 0.18, 0, Math.PI / 2, 0, 0); // collar ring
+                const dome = add(new THREE.SphereGeometry(r * 0.72, 22, 18), this._mat(null, { color: new THREE.Color('#bfe6ff'), roughness: 0.08, metalness: 0.0, transparent: true, opacity: 0.42, emissive: new THREE.Color('#2a4a66') }), 0, r * 0.0, r * 0.02); // glassy dome
+                dome.scale.set(1.02, 1.05, 1.02);
+                add(new THREE.SphereGeometry(r * 0.62, 18, 14), M('#eef3f8', { roughness: 0.4 }), 0, r * 0.16, -r * 0.1); // back of helmet shell (opaque)
+                add(new THREE.BoxGeometry(r * 0.5, r * 0.14, r * 0.08), M('#cfd6df', { metalness: 0.4, roughness: 0.3 }), 0, r * 0.34, r * 0.62); // visor trim
+                break;
+            }
+            case 'shark': {
+                // grey shark hood: dorsal fin on top, open jaw with white teeth around front
+                const grey = '#8a9aa8';
+                add(new THREE.SphereGeometry(r * 0.66, 18, 14, 0, Math.PI * 2, 0, Math.PI / 1.8), M(grey, { roughness: 0.55 }), 0, r * 0.04, -r * 0.02); // hood shell over head
+                add(new THREE.ConeGeometry(r * 0.34, r * 0.7, 4), M(this._shadeStr(grey, -0.12), { roughness: 0.5 }), 0, r * 0.5, -r * 0.05, 0, Math.PI / 4, -0.25); // dorsal fin
+                // upper jaw rim around the front
+                add(new THREE.TorusGeometry(r * 0.5, r * 0.1, 10, 20, Math.PI), M(this._shadeStr(grey, -0.2), { roughness: 0.5 }), 0, -r * 0.18, r * 0.34, 0, 0, 0);
+                // ring of white triangular teeth around the front of the mouth
+                for (let i = 0; i < 7; i++) {
+                    const a = -Math.PI * 0.5 + (i / 6) * Math.PI;
+                    add(new THREE.ConeGeometry(r * 0.07, r * 0.2, 4), M('#ffffff', { roughness: 0.3 }), Math.cos(a) * r * 0.5, -r * 0.14, r * 0.34 + Math.sin(a) * r * 0.06, Math.PI, 0, 0);
+                }
+                break;
+            }
+            case 'robot': {
+                // metal bolt/plate on head + antenna with glowing ball tip
+                add(new THREE.CylinderGeometry(r * 0.5, r * 0.55, r * 0.14, 6), M('#aab2bd', { metalness: 0.7, roughness: 0.3 }), 0, r * 0.06, 0); // hex bolt/plate
+                add(new THREE.CylinderGeometry(r * 0.12, r * 0.16, r * 0.1, 8), M('#7f8893', { metalness: 0.7, roughness: 0.3 }), 0, r * 0.16, 0); // base nub
+                add(new THREE.CylinderGeometry(r * 0.05, r * 0.05, r * 0.7, 8), M('#c0c6d0', { metalness: 0.6, roughness: 0.3 }), 0, r * 0.5, 0); // antenna rod
+                add(new THREE.SphereGeometry(r * 0.18, 14, 12), M('#ff4d6d', { emissive: new THREE.Color('#ff2a4a'), roughness: 0.25, metalness: 0.1 }), 0, r * 0.92, 0); // glowing tip
+                for (const s of [+1, -1]) add(new THREE.CylinderGeometry(r * 0.06, r * 0.06, r * 0.12, 6), M('#7f8893', { metalness: 0.8, roughness: 0.25 }), s * r * 0.5, r * 0.04, 0, 0, 0, Math.PI / 2); // side bolts
+                break;
+            }
+            case 'unicorn': {
+                // gold spiral horn + rainbow mane tufts behind the head
+                for (let i = 0; i < 4; i++) {
+                    const t = i / 4;
+                    add(new THREE.TorusGeometry(r * (0.16 - t * 0.12), r * 0.05, 8, 14), M('#ffd23f', shiny), 0, r * (0.18 + t * 0.5), 0, Math.PI / 2, 0, 0); // stacked rings = spiral horn
+                }
+                add(new THREE.ConeGeometry(r * 0.05, r * 0.2, 8), M('#ffe27a', shiny), 0, r * 0.82, 0); // horn tip
+                const mane = ['#ff4d6d', '#ff9f43', '#ffd23f', '#46d36a', '#4dd2ff'];
+                for (let i = 0; i < mane.length; i++) {
+                    const s = (i - 2) * 0.5;
+                    add(new THREE.SphereGeometry(r * 0.2, 12, 10), M(mane[i], { emissive: new THREE.Color(mane[i]).multiplyScalar(0.25), roughness: 0.5 }), s * r * 0.28, r * (0.28 - Math.abs(s) * 0.05), -r * 0.5).scale.set(0.8, 1.1, 0.7); // colored tufts
+                }
+                break;
+            }
+            case 'viking': {
+                // silver/grey horned helmet: rounded helm + brow band + two cream horns
+                const steel = '#b7bfc9';
+                add(new THREE.SphereGeometry(r * 0.64, 18, 14, 0, Math.PI * 2, 0, Math.PI / 1.9), M(steel, { metalness: 0.55, roughness: 0.3 }), 0, r * 0.04, 0); // helm dome
+                add(new THREE.TorusGeometry(r * 0.62, r * 0.08, 10, 22), M(this._shadeStr(steel, -0.2), { metalness: 0.6, roughness: 0.3 }), 0, -r * 0.04, 0, Math.PI / 2, 0, 0); // brow band
+                add(new THREE.BoxGeometry(r * 0.1, r * 0.1, r * 0.6), M(this._shadeStr(steel, -0.2), { metalness: 0.6, roughness: 0.3 }), 0, r * 0.5, 0); // ridge
+                for (const s of [+1, -1]) {
+                    add(new THREE.ConeGeometry(r * 0.14, r * 0.6, 12), M('#efe6cf', { roughness: 0.5 }), s * r * 0.5, r * 0.28, 0, 0, 0, s * 0.6); // horn base
+                    add(new THREE.ConeGeometry(r * 0.08, r * 0.32, 10), M('#efe6cf', { roughness: 0.5 }), s * r * 0.74, r * 0.56, 0, 0, 0, s * 1.05); // horn tip curving up
+                }
+                break;
+            }
             default: break;
         }
     }
@@ -722,6 +791,13 @@ class BeanView {
             m.castShadow = true; parent.add(m); return m;
         };
         const shiny = { metalness: 0.7, roughness: 0.2, emissive: new THREE.Color('#3a2a00') };
+        // True leg-capsule radius. (this.legR is shadowed by the right-leg
+        // object via _buildLimbs, so recompute the radius from r here.)
+        const legR = r * 0.2;
+        // In leg-pivot space: foot CENTRE is at leg.footY (~ -12.85); the
+        // lowest point (world y = 0) is at -leg.footBottom (~ -15.3). Keep
+        // costume geometry at local y >= -leg.footBottom so nothing dips below
+        // the floor.
 
         switch (prop) {
             case 'shoes':
@@ -766,6 +842,100 @@ class BeanView {
                     sh.scale.set(1.2, 0.66, 1.6);
                 }
                 break;
+            case 'jeans': {
+                // blue denim trouser legs over both legs, lighter stitch tone
+                const denim = '#3b6ea5', stitch = '#8fb4d8';
+                for (const s of [+1, -1]) {
+                    const leg = (s > 0 ? this.legL : this.legR);
+                    // trouser runs from just under the hip down toward the foot,
+                    // flaring slightly to a wider cuff (cuff stays above the foot)
+                    const top = -legR * 0.2, bot = leg.footY + this.footR * 0.6;
+                    const len = top - bot;
+                    add(leg.pivot, new THREE.CylinderGeometry(legR * 1.5, legR * 1.9, len, 14), M(denim, { roughness: 0.7 }), 0, (top + bot) * 0.5, 0); // trouser leg
+                    add(leg.pivot, new THREE.TorusGeometry(legR * 1.9, legR * 0.2, 8, 16), M(stitch, { roughness: 0.75 }), 0, bot, 0, Math.PI / 2, 0, 0); // lighter cuff stitch
+                }
+                break;
+            }
+            case 'mermaid': {
+                // teal/green scaly tail replacing lower body + horizontal fluke fin
+                const teal = '#19b3a6';
+                // tapered tail: wide at the hips, narrowing down to a slim base
+                // that stops well above the floor (fluke fans out below it).
+                const tailTopY = this.bodyCY + this.bodyR * 0.2;
+                const baseY = this.footCY + r * 0.6;          // slim tail base height
+                const tailH = tailTopY - baseY;
+                const tail = add(g, new THREE.CylinderGeometry(r * 0.22, this.bodyR * 0.98, tailH, 18), M(teal, { emissive: new THREE.Color('#0a3a36'), roughness: 0.4, metalness: 0.15 }),
+                    0, (tailTopY + baseY) * 0.5, 0);
+                tail.scale.set(1, 1, 0.9);
+                // a few scale rings down the tail for texture
+                for (let i = 0; i < 3; i++) {
+                    add(g, new THREE.TorusGeometry(this.bodyR * (0.66 - i * 0.18), r * 0.1, 8, 18), M(this._shadeStr(teal, 0.18), { roughness: 0.45, metalness: 0.15 }),
+                        0, this.bodyCY - this.bodyR * (0.05 + i * 0.42), 0, Math.PI / 2, 0, 0);
+                }
+                // horizontal fluke: two flat fins fanning out to the sides near
+                // the base. Nearly flat (small roll) + thin in Y, so the lowest
+                // point stays comfortably above the floor.
+                const finMat = M(this._shadeStr(teal, -0.1), { roughness: 0.4, metalness: 0.15 });
+                for (const s of [+1, -1]) {
+                    const fl = add(g, new THREE.ConeGeometry(r * 0.5, r * 0.85, 4), finMat,
+                        s * r * 0.34, baseY + r * 0.18, 0, 0, 0, s * (Math.PI / 2 - 0.25)); // splayed almost flat
+                    fl.scale.set(1, 1, 0.28);                  // thin paddle
+                }
+                break;
+            }
+            case 'mech': {
+                // chunky grey mech legs over both legs: boxy thigh + piston shin + flat foot
+                const metal = '#9aa3ad', dark = '#5a626c';
+                const footH = this.footR * this.footFlat * 1.4;   // flat-foot thickness
+                for (const s of [+1, -1]) {
+                    const leg = (s > 0 ? this.legL : this.legR);
+                    const footLowY = -leg.footBottom;             // world y ~ 0
+                    add(leg.pivot, new THREE.BoxGeometry(legR * 2.4, leg.len * 0.9, legR * 2.4), M(metal, { metalness: 0.6, roughness: 0.35 }), 0, -leg.len * 0.4, 0); // boxy thigh
+                    add(leg.pivot, new THREE.CylinderGeometry(legR * 0.7, legR * 0.7, leg.len * 0.9, 10), M(dark, { metalness: 0.7, roughness: 0.3 }), 0, leg.footY + this.footR * 1.4, 0); // piston shin
+                    add(leg.pivot, new THREE.CylinderGeometry(legR * 1.1, legR * 1.1, legR * 0.7, 12), M(metal, { metalness: 0.6, roughness: 0.35 }), 0, -leg.len * 0.85, 0); // knee joint
+                    // flat foot: a box whose BOTTOM sits at the foot line (y ~ 0)
+                    add(leg.pivot, new THREE.BoxGeometry(legR * 2.2, footH, this.footR * 3.0), M(dark, { metalness: 0.6, roughness: 0.4 }), 0, footLowY + footH * 0.5, r * 0.18);
+                }
+                break;
+            }
+            case 'flippers': {
+                // big blue scuba flippers on each foot, long flat fins pointing forward
+                const blue = '#2f7fd6';
+                const finH = this.footR * 0.35;
+                for (const s of [+1, -1]) {
+                    const leg = (s > 0 ? this.legL : this.legR);
+                    const footLowY = -leg.footBottom;             // world y ~ 0
+                    const finY = footLowY + finH * 0.5 + this.footR * 0.05;   // sits just on the floor
+                    // foot pocket around the foot
+                    add(leg.pivot, new THREE.SphereGeometry(this.footR * 1.1, 12, 10), M(this._shadeStr(blue, -0.15), { roughness: 0.45 }), 0, leg.footY + r * 0.02, r * 0.12).scale.set(1.1, this.footFlat, 1.5);
+                    // long flat fin extending forward (+Z), kept just above the ground
+                    add(leg.pivot, new THREE.BoxGeometry(this.footR * 2.2, finH, r * 1.5), M(blue, { roughness: 0.4 }), 0, finY, r * 0.78);
+                    // rounded fin tip
+                    add(leg.pivot, new THREE.CylinderGeometry(this.footR * 1.1, this.footR * 1.1, finH, 14), M(blue, { roughness: 0.4 }), 0, finY, r * 1.45);
+                }
+                break;
+            }
+            case 'spring': {
+                // a coiled spring (stack of small torus rings) for each leg
+                const steel = '#c7cdd6';
+                const padH = this.footR * this.footFlat * 1.2;
+                for (const s of [+1, -1]) {
+                    const leg = (s > 0 ? this.legL : this.legR);
+                    const footLowY = -leg.footBottom;             // world y ~ 0
+                    const ringTube = legR * 0.32;
+                    const coils = 6;
+                    const top = -legR * 0.2;                      // just under the hip
+                    // bottom-most ring centre sits above the foot pad
+                    const bot = footLowY + padH + ringTube;
+                    for (let i = 0; i < coils; i++) {
+                        const y = top + ((bot - top) * (i + 0.5)) / coils;
+                        add(leg.pivot, new THREE.TorusGeometry(legR * 1.1, ringTube, 8, 16), M(steel, { metalness: 0.7, roughness: 0.3 }), 0, y, 0, Math.PI / 2, 0, 0);
+                    }
+                    // little foot pad whose BOTTOM rests at the foot line (y ~ 0)
+                    add(leg.pivot, new THREE.CylinderGeometry(legR * 1.2, legR * 1.3, padH, 14), M(this._shadeStr(steel, -0.25), { metalness: 0.5, roughness: 0.4 }), 0, footLowY + padH * 0.5, 0);
+                }
+                break;
+            }
             default: break;
         }
     }

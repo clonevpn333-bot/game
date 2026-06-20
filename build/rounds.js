@@ -122,7 +122,7 @@ class Round {
 
         for (const b of this.beans) {
             if (b.isAI) {
-                if (b.alive && !b.gone) this.thinkFn(b, this, dt);
+                if (b.alive && !b.gone && !b.exited) this.thinkFn(b, this, dt);
                 else { b.ai.mx = 0; b.ai.my = 0; b.ai.jump = false; b.ai.dive = false; }
             }
         }
@@ -134,7 +134,7 @@ class Round {
         // of the spawn ring) don't instantly knock beans out at the gun.
         if (this.elapsed > 0.6)
             for (const o of this.obstacles)
-                for (const b of this.beans) if (!b.gone && o.collide) o.collide(b, this, dt);
+                for (const b of this.beans) if (!b.gone && !b.exited && o.collide) o.collide(b, this, dt);
 
         this._separate();
         for (const b of this.beans) this._bounds(b);
@@ -156,9 +156,9 @@ class Round {
     _separate() {
         const bs = this.beans;
         for (let i = 0; i < bs.length; i++) {
-            const a = bs[i]; if (a.gone || a.falling) continue;
+            const a = bs[i]; if (a.gone || a.exited || a.falling) continue;
             for (let j = i + 1; j < bs.length; j++) {
-                const b = bs[j]; if (b.gone || b.falling) continue;
+                const b = bs[j]; if (b.gone || b.exited || b.falling) continue;
                 if (a.grabbing === b || b.grabbing === a) continue;
                 if (Math.abs(a.z - b.z) > 42) continue;
                 const dx = b.x - a.x, dy = b.y - a.y;
@@ -173,7 +173,7 @@ class Round {
     }
 
     _bounds(bean) {
-        if (bean.falling || bean.gone) return;
+        if (bean.falling || bean.gone || bean.exited) return;
         if (this.kind === 'race') {
             const lo = this.minX + bean.r, hi = this.maxX - bean.r;
             if (bean.x < lo) { bean.x = lo; if (bean.vx < 0) bean.vx *= -0.2; }
@@ -203,13 +203,13 @@ class Round {
             if (this.elapsed > CFG.ROUND_MAXTIME) this._raceCutoff();
         } else if (this.kind === 'survival') {
             this.timer -= dt;
-            if (this.player.eliminated) { this._finish(); return; }
-            if (this.timer <= 0) {
+            const aliveN = this.beans.filter(b => b.alive && !b.eliminated).length;
+            // Run the full timer so you can spectate after falling.
+            if (this.timer <= 0 || aliveN === 0) {
                 for (const b of this.beans) if (b.alive && !b.eliminated) b.qualified = true;
                 this._finish();
             }
         } else if (this.kind === 'final') {
-            if (this.player.eliminated) { this._finishFinal(false); return; }
             const standing = this.beans.filter(b => b.alive && !b.eliminated);
             if (standing.length <= 1) this._finishFinal(standing[0] === this.player);
             if (this.elapsed > 150) this._finishFinal(!this.player.eliminated);  // hard safeguard
@@ -221,6 +221,7 @@ class Round {
         bean.finished = true;
         if (this.qualifiedCount < this.qualifyCount) {
             bean.qualified = true;
+            bean.exited = true;              // vanish off the course (spectate the rest)
             bean.place = ++this.qualifiedCount;
             this.spawnConfetti(bean);
             if (bean === this.player && bean.place === 1 && bean.justEmoted < 1.3) this.bigTease = true;
@@ -414,7 +415,7 @@ function hexThink(bean, round, dt) {
     let dx = bean.aiTarget.x - bean.x, dy = bean.aiTarget.y - bean.y;
     const dl = Math.hypot(dx, dy) || 1;
     bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
-    if (U.chance((0.62 - bean.skill) * 0.012)) { bean.ai.mx = 0; bean.ai.my = 0; }   // hesitate
+    if (U.chance((0.78 - bean.skill) * 0.022)) { bean.ai.mx = 0; bean.ai.my = 0; }   // hesitate (fall more)
     bean.ai.jump = false; bean.ai.dive = false;
 }
 
@@ -440,7 +441,7 @@ const Rounds = {
             b.y = startY + row * sy;
             b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
             b.lane = b.isPlayer ? 0 : U.rngf(-340, 340);
-            b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.95);
+            b.skill = b.isPlayer ? 1 : U.rngf(0.32, 0.72);
         });
     },
 
@@ -484,7 +485,7 @@ const Rounds = {
             const rr = R * (b.isPlayer ? 0.5 : U.rngf(0.4, 0.62));
             b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
             b.startX = b.x; b.startY = b.y;
-            b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.55, 0.95);
+            b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.38, 0.75);
             b.facing = ang + Math.PI;
         });
     },
@@ -501,7 +502,7 @@ const Rounds = {
         r.beans.forEach((b, i) => {
             const t = spots[i % spots.length];
             b.x = t.cx; b.y = t.cy; b.startX = b.x; b.startY = b.y;
-            b.skill = b.isPlayer ? 1 : U.rngf(0.45, 0.9);
+            b.skill = b.isPlayer ? 1 : U.rngf(0.28, 0.62);
             b.facing = U.rngf(0, 6.28);
         });
     },
@@ -588,7 +589,7 @@ const Rounds = {
                 const rr = R * (b.isPlayer ? 0.5 : U.rngf(0.42, 0.62));
                 b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
                 b.startX = b.x; b.startY = b.y;
-                b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.55, 0.95);
+                b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.38, 0.75);
                 b.facing = ang + Math.PI;
             });
 
@@ -622,7 +623,7 @@ const Rounds = {
             r.beans.forEach((b, i) => {
                 const t = spots[i % spots.length];
                 b.x = t.cx; b.y = t.cy; b.startX = b.x; b.startY = b.y;
-                b.skill = b.isPlayer ? 1 : U.rngf(0.45, 0.9);
+                b.skill = b.isPlayer ? 1 : U.rngf(0.28, 0.62);
                 b.facing = U.rngf(0, 6.28);
             });
 
@@ -688,7 +689,7 @@ const Rounds = {
                 const rr = R * (b.isPlayer ? 0.5 : U.rngf(0.4, 0.6));
                 b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
                 b.startX = b.x; b.startY = b.y;
-                b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.55, 0.95);
+                b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.38, 0.75);
                 b.facing = ang + Math.PI;
             });
 

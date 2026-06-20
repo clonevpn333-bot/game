@@ -589,6 +589,7 @@ class Bean {
         this.qualified = false;
         this.eliminated = false;
         this.falling = false;
+        this.exited = false;        // qualified & whisked off the course (spectating)
         this.place = 0;
 
         // motion-state timers
@@ -667,7 +668,7 @@ class Bean {
         if (this.aiJumpLock > 0) this.aiJumpLock -= dt;
         if (this.emoteT > 0) { this.emoteT -= dt; if (this.emoteT <= 0) { this.emoteAnim = null; this.emoteName = null; } }
 
-        if (this.gone) return;
+        if (this.gone || this.exited) return;
 
         // Falling into slime/pit — drop then eliminate
         if (this.falling) {
@@ -1449,7 +1450,7 @@ class Round {
 
         for (const b of this.beans) {
             if (b.isAI) {
-                if (b.alive && !b.gone) this.thinkFn(b, this, dt);
+                if (b.alive && !b.gone && !b.exited) this.thinkFn(b, this, dt);
                 else { b.ai.mx = 0; b.ai.my = 0; b.ai.jump = false; b.ai.dive = false; }
             }
         }
@@ -1461,7 +1462,7 @@ class Round {
         // of the spawn ring) don't instantly knock beans out at the gun.
         if (this.elapsed > 0.6)
             for (const o of this.obstacles)
-                for (const b of this.beans) if (!b.gone && o.collide) o.collide(b, this, dt);
+                for (const b of this.beans) if (!b.gone && !b.exited && o.collide) o.collide(b, this, dt);
 
         this._separate();
         for (const b of this.beans) this._bounds(b);
@@ -1483,9 +1484,9 @@ class Round {
     _separate() {
         const bs = this.beans;
         for (let i = 0; i < bs.length; i++) {
-            const a = bs[i]; if (a.gone || a.falling) continue;
+            const a = bs[i]; if (a.gone || a.exited || a.falling) continue;
             for (let j = i + 1; j < bs.length; j++) {
-                const b = bs[j]; if (b.gone || b.falling) continue;
+                const b = bs[j]; if (b.gone || b.exited || b.falling) continue;
                 if (a.grabbing === b || b.grabbing === a) continue;
                 if (Math.abs(a.z - b.z) > 42) continue;
                 const dx = b.x - a.x, dy = b.y - a.y;
@@ -1500,7 +1501,7 @@ class Round {
     }
 
     _bounds(bean) {
-        if (bean.falling || bean.gone) return;
+        if (bean.falling || bean.gone || bean.exited) return;
         if (this.kind === 'race') {
             const lo = this.minX + bean.r, hi = this.maxX - bean.r;
             if (bean.x < lo) { bean.x = lo; if (bean.vx < 0) bean.vx *= -0.2; }
@@ -1530,13 +1531,13 @@ class Round {
             if (this.elapsed > CFG.ROUND_MAXTIME) this._raceCutoff();
         } else if (this.kind === 'survival') {
             this.timer -= dt;
-            if (this.player.eliminated) { this._finish(); return; }
-            if (this.timer <= 0) {
+            const aliveN = this.beans.filter(b => b.alive && !b.eliminated).length;
+            // Run the full timer so you can spectate after falling.
+            if (this.timer <= 0 || aliveN === 0) {
                 for (const b of this.beans) if (b.alive && !b.eliminated) b.qualified = true;
                 this._finish();
             }
         } else if (this.kind === 'final') {
-            if (this.player.eliminated) { this._finishFinal(false); return; }
             const standing = this.beans.filter(b => b.alive && !b.eliminated);
             if (standing.length <= 1) this._finishFinal(standing[0] === this.player);
             if (this.elapsed > 150) this._finishFinal(!this.player.eliminated);  // hard safeguard
@@ -1548,6 +1549,7 @@ class Round {
         bean.finished = true;
         if (this.qualifiedCount < this.qualifyCount) {
             bean.qualified = true;
+            bean.exited = true;              // vanish off the course (spectate the rest)
             bean.place = ++this.qualifiedCount;
             this.spawnConfetti(bean);
             if (bean === this.player && bean.place === 1 && bean.justEmoted < 1.3) this.bigTease = true;
@@ -1741,7 +1743,7 @@ function hexThink(bean, round, dt) {
     let dx = bean.aiTarget.x - bean.x, dy = bean.aiTarget.y - bean.y;
     const dl = Math.hypot(dx, dy) || 1;
     bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
-    if (U.chance((0.62 - bean.skill) * 0.012)) { bean.ai.mx = 0; bean.ai.my = 0; }   // hesitate
+    if (U.chance((0.78 - bean.skill) * 0.022)) { bean.ai.mx = 0; bean.ai.my = 0; }   // hesitate (fall more)
     bean.ai.jump = false; bean.ai.dive = false;
 }
 
@@ -1767,7 +1769,7 @@ const Rounds = {
             b.y = startY + row * sy;
             b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
             b.lane = b.isPlayer ? 0 : U.rngf(-340, 340);
-            b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.95);
+            b.skill = b.isPlayer ? 1 : U.rngf(0.32, 0.72);
         });
     },
 
@@ -1811,7 +1813,7 @@ const Rounds = {
             const rr = R * (b.isPlayer ? 0.5 : U.rngf(0.4, 0.62));
             b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
             b.startX = b.x; b.startY = b.y;
-            b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.55, 0.95);
+            b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.38, 0.75);
             b.facing = ang + Math.PI;
         });
     },
@@ -1828,7 +1830,7 @@ const Rounds = {
         r.beans.forEach((b, i) => {
             const t = spots[i % spots.length];
             b.x = t.cx; b.y = t.cy; b.startX = b.x; b.startY = b.y;
-            b.skill = b.isPlayer ? 1 : U.rngf(0.45, 0.9);
+            b.skill = b.isPlayer ? 1 : U.rngf(0.28, 0.62);
             b.facing = U.rngf(0, 6.28);
         });
     },
@@ -1915,7 +1917,7 @@ const Rounds = {
                 const rr = R * (b.isPlayer ? 0.5 : U.rngf(0.42, 0.62));
                 b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
                 b.startX = b.x; b.startY = b.y;
-                b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.55, 0.95);
+                b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.38, 0.75);
                 b.facing = ang + Math.PI;
             });
 
@@ -1949,7 +1951,7 @@ const Rounds = {
             r.beans.forEach((b, i) => {
                 const t = spots[i % spots.length];
                 b.x = t.cx; b.y = t.cy; b.startX = b.x; b.startY = b.y;
-                b.skill = b.isPlayer ? 1 : U.rngf(0.45, 0.9);
+                b.skill = b.isPlayer ? 1 : U.rngf(0.28, 0.62);
                 b.facing = U.rngf(0, 6.28);
             });
 
@@ -2015,7 +2017,7 @@ const Rounds = {
                 const rr = R * (b.isPlayer ? 0.5 : U.rngf(0.4, 0.6));
                 b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
                 b.startX = b.x; b.startY = b.y;
-                b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.55, 0.95);
+                b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.38, 0.75);
                 b.facing = ang + Math.PI;
             });
 
@@ -2874,6 +2876,75 @@ class BeanView {
                     add(new THREE.SphereGeometry(r * 0.1, 10, 10), M(p[1], { emissive: new THREE.Color(p[1]).multiplyScalar(0.4), roughness: 0.2 }), Math.sin(p[0]) * r * 0.5, r * 0.2, Math.cos(p[0]) * r * 0.55);
                 }
                 break;
+            case 'wizard': {
+                // tall pointy purple hat: little brim + cone + gold star tip
+                const purple = '#6b3fd6';
+                add(new THREE.CylinderGeometry(r * 0.78, r * 0.84, r * 0.1, 22), M(this._shadeStr(purple, -0.15), { roughness: 0.6 }), 0, r * 0.06, 0); // brim
+                add(new THREE.ConeGeometry(r * 0.6, r * 1.5, 22), M(purple, { emissive: new THREE.Color('#2a1454'), roughness: 0.55 }), 0, r * 0.82, 0, 0.06, 0, 0.06); // tall pointy cone, slight lean
+                add(new THREE.TorusGeometry(r * 0.45, r * 0.06, 8, 20), M('#ffd23f', shiny), 0, r * 0.4, 0, Math.PI / 2, 0, 0); // hat band
+                // gold star near the tip (two overlapped tetra-ish cones read as a star burst)
+                add(new THREE.ConeGeometry(r * 0.2, r * 0.16, 5), M('#ffe27a', shiny), r * 0.04, r * 1.48, r * 0.5, Math.PI / 2, 0, 0);
+                add(new THREE.ConeGeometry(r * 0.2, r * 0.16, 5), M('#ffe27a', shiny), r * 0.04, r * 1.48, r * 0.5, Math.PI / 2, 0, Math.PI / 5);
+                break;
+            }
+            case 'astronaut': {
+                // white space helmet: clear/blue glassy dome over head + white collar ring
+                add(new THREE.TorusGeometry(r * 0.66, r * 0.16, 12, 24), M('#f4f6fa', { roughness: 0.35, metalness: 0.1 }), 0, -r * 0.18, 0, Math.PI / 2, 0, 0); // collar ring
+                const dome = add(new THREE.SphereGeometry(r * 0.72, 22, 18), this._mat(null, { color: new THREE.Color('#bfe6ff'), roughness: 0.08, metalness: 0.0, transparent: true, opacity: 0.42, emissive: new THREE.Color('#2a4a66') }), 0, r * 0.0, r * 0.02); // glassy dome
+                dome.scale.set(1.02, 1.05, 1.02);
+                add(new THREE.SphereGeometry(r * 0.62, 18, 14), M('#eef3f8', { roughness: 0.4 }), 0, r * 0.16, -r * 0.1); // back of helmet shell (opaque)
+                add(new THREE.BoxGeometry(r * 0.5, r * 0.14, r * 0.08), M('#cfd6df', { metalness: 0.4, roughness: 0.3 }), 0, r * 0.34, r * 0.62); // visor trim
+                break;
+            }
+            case 'shark': {
+                // grey shark hood: dorsal fin on top, open jaw with white teeth around front
+                const grey = '#8a9aa8';
+                add(new THREE.SphereGeometry(r * 0.66, 18, 14, 0, Math.PI * 2, 0, Math.PI / 1.8), M(grey, { roughness: 0.55 }), 0, r * 0.04, -r * 0.02); // hood shell over head
+                add(new THREE.ConeGeometry(r * 0.34, r * 0.7, 4), M(this._shadeStr(grey, -0.12), { roughness: 0.5 }), 0, r * 0.5, -r * 0.05, 0, Math.PI / 4, -0.25); // dorsal fin
+                // upper jaw rim around the front
+                add(new THREE.TorusGeometry(r * 0.5, r * 0.1, 10, 20, Math.PI), M(this._shadeStr(grey, -0.2), { roughness: 0.5 }), 0, -r * 0.18, r * 0.34, 0, 0, 0);
+                // ring of white triangular teeth around the front of the mouth
+                for (let i = 0; i < 7; i++) {
+                    const a = -Math.PI * 0.5 + (i / 6) * Math.PI;
+                    add(new THREE.ConeGeometry(r * 0.07, r * 0.2, 4), M('#ffffff', { roughness: 0.3 }), Math.cos(a) * r * 0.5, -r * 0.14, r * 0.34 + Math.sin(a) * r * 0.06, Math.PI, 0, 0);
+                }
+                break;
+            }
+            case 'robot': {
+                // metal bolt/plate on head + antenna with glowing ball tip
+                add(new THREE.CylinderGeometry(r * 0.5, r * 0.55, r * 0.14, 6), M('#aab2bd', { metalness: 0.7, roughness: 0.3 }), 0, r * 0.06, 0); // hex bolt/plate
+                add(new THREE.CylinderGeometry(r * 0.12, r * 0.16, r * 0.1, 8), M('#7f8893', { metalness: 0.7, roughness: 0.3 }), 0, r * 0.16, 0); // base nub
+                add(new THREE.CylinderGeometry(r * 0.05, r * 0.05, r * 0.7, 8), M('#c0c6d0', { metalness: 0.6, roughness: 0.3 }), 0, r * 0.5, 0); // antenna rod
+                add(new THREE.SphereGeometry(r * 0.18, 14, 12), M('#ff4d6d', { emissive: new THREE.Color('#ff2a4a'), roughness: 0.25, metalness: 0.1 }), 0, r * 0.92, 0); // glowing tip
+                for (const s of [+1, -1]) add(new THREE.CylinderGeometry(r * 0.06, r * 0.06, r * 0.12, 6), M('#7f8893', { metalness: 0.8, roughness: 0.25 }), s * r * 0.5, r * 0.04, 0, 0, 0, Math.PI / 2); // side bolts
+                break;
+            }
+            case 'unicorn': {
+                // gold spiral horn + rainbow mane tufts behind the head
+                for (let i = 0; i < 4; i++) {
+                    const t = i / 4;
+                    add(new THREE.TorusGeometry(r * (0.16 - t * 0.12), r * 0.05, 8, 14), M('#ffd23f', shiny), 0, r * (0.18 + t * 0.5), 0, Math.PI / 2, 0, 0); // stacked rings = spiral horn
+                }
+                add(new THREE.ConeGeometry(r * 0.05, r * 0.2, 8), M('#ffe27a', shiny), 0, r * 0.82, 0); // horn tip
+                const mane = ['#ff4d6d', '#ff9f43', '#ffd23f', '#46d36a', '#4dd2ff'];
+                for (let i = 0; i < mane.length; i++) {
+                    const s = (i - 2) * 0.5;
+                    add(new THREE.SphereGeometry(r * 0.2, 12, 10), M(mane[i], { emissive: new THREE.Color(mane[i]).multiplyScalar(0.25), roughness: 0.5 }), s * r * 0.28, r * (0.28 - Math.abs(s) * 0.05), -r * 0.5).scale.set(0.8, 1.1, 0.7); // colored tufts
+                }
+                break;
+            }
+            case 'viking': {
+                // silver/grey horned helmet: rounded helm + brow band + two cream horns
+                const steel = '#b7bfc9';
+                add(new THREE.SphereGeometry(r * 0.64, 18, 14, 0, Math.PI * 2, 0, Math.PI / 1.9), M(steel, { metalness: 0.55, roughness: 0.3 }), 0, r * 0.04, 0); // helm dome
+                add(new THREE.TorusGeometry(r * 0.62, r * 0.08, 10, 22), M(this._shadeStr(steel, -0.2), { metalness: 0.6, roughness: 0.3 }), 0, -r * 0.04, 0, Math.PI / 2, 0, 0); // brow band
+                add(new THREE.BoxGeometry(r * 0.1, r * 0.1, r * 0.6), M(this._shadeStr(steel, -0.2), { metalness: 0.6, roughness: 0.3 }), 0, r * 0.5, 0); // ridge
+                for (const s of [+1, -1]) {
+                    add(new THREE.ConeGeometry(r * 0.14, r * 0.6, 12), M('#efe6cf', { roughness: 0.5 }), s * r * 0.5, r * 0.28, 0, 0, 0, s * 0.6); // horn base
+                    add(new THREE.ConeGeometry(r * 0.08, r * 0.32, 10), M('#efe6cf', { roughness: 0.5 }), s * r * 0.74, r * 0.56, 0, 0, 0, s * 1.05); // horn tip curving up
+                }
+                break;
+            }
             default: break;
         }
     }
@@ -2898,6 +2969,13 @@ class BeanView {
             m.castShadow = true; parent.add(m); return m;
         };
         const shiny = { metalness: 0.7, roughness: 0.2, emissive: new THREE.Color('#3a2a00') };
+        // True leg-capsule radius. (this.legR is shadowed by the right-leg
+        // object via _buildLimbs, so recompute the radius from r here.)
+        const legR = r * 0.2;
+        // In leg-pivot space: foot CENTRE is at leg.footY (~ -12.85); the
+        // lowest point (world y = 0) is at -leg.footBottom (~ -15.3). Keep
+        // costume geometry at local y >= -leg.footBottom so nothing dips below
+        // the floor.
 
         switch (prop) {
             case 'shoes':
@@ -2942,6 +3020,100 @@ class BeanView {
                     sh.scale.set(1.2, 0.66, 1.6);
                 }
                 break;
+            case 'jeans': {
+                // blue denim trouser legs over both legs, lighter stitch tone
+                const denim = '#3b6ea5', stitch = '#8fb4d8';
+                for (const s of [+1, -1]) {
+                    const leg = (s > 0 ? this.legL : this.legR);
+                    // trouser runs from just under the hip down toward the foot,
+                    // flaring slightly to a wider cuff (cuff stays above the foot)
+                    const top = -legR * 0.2, bot = leg.footY + this.footR * 0.6;
+                    const len = top - bot;
+                    add(leg.pivot, new THREE.CylinderGeometry(legR * 1.5, legR * 1.9, len, 14), M(denim, { roughness: 0.7 }), 0, (top + bot) * 0.5, 0); // trouser leg
+                    add(leg.pivot, new THREE.TorusGeometry(legR * 1.9, legR * 0.2, 8, 16), M(stitch, { roughness: 0.75 }), 0, bot, 0, Math.PI / 2, 0, 0); // lighter cuff stitch
+                }
+                break;
+            }
+            case 'mermaid': {
+                // teal/green scaly tail replacing lower body + horizontal fluke fin
+                const teal = '#19b3a6';
+                // tapered tail: wide at the hips, narrowing down to a slim base
+                // that stops well above the floor (fluke fans out below it).
+                const tailTopY = this.bodyCY + this.bodyR * 0.2;
+                const baseY = this.footCY + r * 0.6;          // slim tail base height
+                const tailH = tailTopY - baseY;
+                const tail = add(g, new THREE.CylinderGeometry(r * 0.22, this.bodyR * 0.98, tailH, 18), M(teal, { emissive: new THREE.Color('#0a3a36'), roughness: 0.4, metalness: 0.15 }),
+                    0, (tailTopY + baseY) * 0.5, 0);
+                tail.scale.set(1, 1, 0.9);
+                // a few scale rings down the tail for texture
+                for (let i = 0; i < 3; i++) {
+                    add(g, new THREE.TorusGeometry(this.bodyR * (0.66 - i * 0.18), r * 0.1, 8, 18), M(this._shadeStr(teal, 0.18), { roughness: 0.45, metalness: 0.15 }),
+                        0, this.bodyCY - this.bodyR * (0.05 + i * 0.42), 0, Math.PI / 2, 0, 0);
+                }
+                // horizontal fluke: two flat fins fanning out to the sides near
+                // the base. Nearly flat (small roll) + thin in Y, so the lowest
+                // point stays comfortably above the floor.
+                const finMat = M(this._shadeStr(teal, -0.1), { roughness: 0.4, metalness: 0.15 });
+                for (const s of [+1, -1]) {
+                    const fl = add(g, new THREE.ConeGeometry(r * 0.5, r * 0.85, 4), finMat,
+                        s * r * 0.34, baseY + r * 0.18, 0, 0, 0, s * (Math.PI / 2 - 0.25)); // splayed almost flat
+                    fl.scale.set(1, 1, 0.28);                  // thin paddle
+                }
+                break;
+            }
+            case 'mech': {
+                // chunky grey mech legs over both legs: boxy thigh + piston shin + flat foot
+                const metal = '#9aa3ad', dark = '#5a626c';
+                const footH = this.footR * this.footFlat * 1.4;   // flat-foot thickness
+                for (const s of [+1, -1]) {
+                    const leg = (s > 0 ? this.legL : this.legR);
+                    const footLowY = -leg.footBottom;             // world y ~ 0
+                    add(leg.pivot, new THREE.BoxGeometry(legR * 2.4, leg.len * 0.9, legR * 2.4), M(metal, { metalness: 0.6, roughness: 0.35 }), 0, -leg.len * 0.4, 0); // boxy thigh
+                    add(leg.pivot, new THREE.CylinderGeometry(legR * 0.7, legR * 0.7, leg.len * 0.9, 10), M(dark, { metalness: 0.7, roughness: 0.3 }), 0, leg.footY + this.footR * 1.4, 0); // piston shin
+                    add(leg.pivot, new THREE.CylinderGeometry(legR * 1.1, legR * 1.1, legR * 0.7, 12), M(metal, { metalness: 0.6, roughness: 0.35 }), 0, -leg.len * 0.85, 0); // knee joint
+                    // flat foot: a box whose BOTTOM sits at the foot line (y ~ 0)
+                    add(leg.pivot, new THREE.BoxGeometry(legR * 2.2, footH, this.footR * 3.0), M(dark, { metalness: 0.6, roughness: 0.4 }), 0, footLowY + footH * 0.5, r * 0.18);
+                }
+                break;
+            }
+            case 'flippers': {
+                // big blue scuba flippers on each foot, long flat fins pointing forward
+                const blue = '#2f7fd6';
+                const finH = this.footR * 0.35;
+                for (const s of [+1, -1]) {
+                    const leg = (s > 0 ? this.legL : this.legR);
+                    const footLowY = -leg.footBottom;             // world y ~ 0
+                    const finY = footLowY + finH * 0.5 + this.footR * 0.05;   // sits just on the floor
+                    // foot pocket around the foot
+                    add(leg.pivot, new THREE.SphereGeometry(this.footR * 1.1, 12, 10), M(this._shadeStr(blue, -0.15), { roughness: 0.45 }), 0, leg.footY + r * 0.02, r * 0.12).scale.set(1.1, this.footFlat, 1.5);
+                    // long flat fin extending forward (+Z), kept just above the ground
+                    add(leg.pivot, new THREE.BoxGeometry(this.footR * 2.2, finH, r * 1.5), M(blue, { roughness: 0.4 }), 0, finY, r * 0.78);
+                    // rounded fin tip
+                    add(leg.pivot, new THREE.CylinderGeometry(this.footR * 1.1, this.footR * 1.1, finH, 14), M(blue, { roughness: 0.4 }), 0, finY, r * 1.45);
+                }
+                break;
+            }
+            case 'spring': {
+                // a coiled spring (stack of small torus rings) for each leg
+                const steel = '#c7cdd6';
+                const padH = this.footR * this.footFlat * 1.2;
+                for (const s of [+1, -1]) {
+                    const leg = (s > 0 ? this.legL : this.legR);
+                    const footLowY = -leg.footBottom;             // world y ~ 0
+                    const ringTube = legR * 0.32;
+                    const coils = 6;
+                    const top = -legR * 0.2;                      // just under the hip
+                    // bottom-most ring centre sits above the foot pad
+                    const bot = footLowY + padH + ringTube;
+                    for (let i = 0; i < coils; i++) {
+                        const y = top + ((bot - top) * (i + 0.5)) / coils;
+                        add(leg.pivot, new THREE.TorusGeometry(legR * 1.1, ringTube, 8, 16), M(steel, { metalness: 0.7, roughness: 0.3 }), 0, y, 0, Math.PI / 2, 0, 0);
+                    }
+                    // little foot pad whose BOTTOM rests at the foot line (y ~ 0)
+                    add(leg.pivot, new THREE.CylinderGeometry(legR * 1.2, legR * 1.3, padH, 14), M(this._shadeStr(steel, -0.25), { metalness: 0.5, roughness: 0.4 }), 0, footLowY + padH * 0.5, 0);
+                }
+                break;
+            }
             default: break;
         }
     }
@@ -4725,7 +4897,7 @@ const Game = {
     _resetBean(b) {
         b.vx = 0; b.vy = 0; b.z = 0; b.vz = 0; b.facing = -Math.PI / 2;
         b.alive = true; b.finished = false; b.qualified = false;
-        b.eliminated = false; b.falling = false; b.place = 0;
+        b.eliminated = false; b.falling = false; b.exited = false; b.place = 0;
         b.diveT = 0; b.proneT = 0; b.diveCd = 0; b.ragdoll = 0; b.spin = 0; b.squash = 1;
         b.grabbing = null; b.grabbedBy = null; b.grabT = 0;
         b.emoteT = 0; b.emoteAnim = null; b.emoteName = null; b.justEmoted = 99;
@@ -4925,9 +5097,11 @@ const UI = {
         const h = this.els.hud;
         this.els.hudName = this._el('div', 'br-chip br-left');
         this.els.hudCount = this._el('div', 'br-chip br-right');
+        this.els.hudSpec = this._el('div', 'br-spec');
         this.els.hudHint = this._el('div', 'br-hint',
             'WASD move · SPACE jump · SHIFT dive · J grab · 1-4 gesture');
-        h.appendChild(this.els.hudName); h.appendChild(this.els.hudCount); h.appendChild(this.els.hudHint);
+        h.appendChild(this.els.hudName); h.appendChild(this.els.hudCount);
+        h.appendChild(this.els.hudSpec); h.appendChild(this.els.hudHint);
     },
     showHUD() {
         for (const id of ['menu', 'customize', 'howto', 'trophies', 'loading', 'eliminated', 'victory']) this.els[id].style.display = 'none';
@@ -4940,9 +5114,13 @@ const UI = {
         this.els.hudName.innerHTML = `<b>${hud.name}</b><span style="color:${cat}">${hud.category.toUpperCase()}</span>`;
         let r;
         if (hud.kind === 'race') r = `<span style="color:#46d36a">QUALIFIED</span><b>${hud.qualifiedCount} / ${hud.qualifyCount}</b>`;
-        else if (hud.kind === 'survival') r = `<span style="color:#ffd23f">SURVIVE</span><b>${this._t(hud.timer)} · ${hud.aliveCount} left</b>`;
-        else r = `<span style="color:#ff5fa2">BEANS LEFT</span><b>${hud.aliveCount}</b>`;
+        else if (hud.kind === 'survival') r = `<span style="color:#ffd23f">SURVIVE&nbsp;·&nbsp;${hud.aliveCount} LEFT</span><b>${this._t(hud.timer)}</b>`;
+        else r = `<span style="color:#ff5fa2">${hud.aliveCount <= 2 ? 'FINAL TWO!' : 'BEANS LEFT'}</span><b>${hud.aliveCount}</b>`;
         this.els.hudCount.innerHTML = r;
+        if (this.els.hudSpec) {
+            this.els.hudSpec.style.display = hud.spectating ? 'block' : 'none';
+            if (hud.spectating) this.els.hudSpec.innerHTML = '👀 SPECTATING — watching the round play out';
+        }
     },
     _t(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); },
 
@@ -5100,6 +5278,8 @@ const UI = {
 .br-chip span{font-size:13px;font-weight:800;letter-spacing:.06em}
 .br-left{left:16px}.br-right{right:16px;text-align:right}
 .br-hint{position:absolute;left:16px;bottom:14px;background:rgba(20,15,40,.45);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700}
+.br-spec{position:absolute;top:84px;left:50%;transform:translateX(-50%);background:rgba(20,15,40,.6);color:#ffd23f;font-weight:800;border-radius:12px;padding:8px 18px;font-size:15px;letter-spacing:.04em;border:2px solid #ffd23f;animation:brpulse 1.4s ease-in-out infinite}
+@keyframes brpulse{0%,100%{opacity:.85}50%{opacity:1}}
 /* intro */
 .br-intro{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,8,24,.5)}
 .br-intro-card{text-align:center;animation:brpop .4s cubic-bezier(.2,1.4,.4,1)}
@@ -5298,6 +5478,7 @@ const Engine = {
         this.roundGroup = g;
         this._lastPhase = null;
         this._camSnap = true;          // snap camera to the new round's framing
+        this._specBean = null;         // reset spectate target
     },
 
     _teardownRound() {
@@ -5311,28 +5492,42 @@ const Engine = {
     // ---- per-frame play update ---------------------------------------
     _updatePlaying(dt, t) {
         const round = Game.show.round;
-        // beans
+        // beans (qualified=exited and eliminated=gone beans vanish)
         for (const b of round.beans) {
             const bv = this.beanViews.get(b);
             if (!bv) continue;
-            if (b.gone) { bv.object3d.visible = false; continue; }
+            if (b.gone || b.exited) { bv.object3d.visible = false; continue; }
             bv.object3d.visible = true;
             bv.update(b, dt, t);
         }
-        // player marker hovers above your bean
-        if (this._marker && this._playerBean) {
-            const p = this._playerBean;
-            this._marker.visible = !p.gone;
-            this._marker.position.set(p.x, p.z + 64 + Math.sin(t * 4) * 5, p.y);
-            this._marker.rotation.y = t * 2;
+        // spectate: once you're out, the camera follows a surviving bean
+        const p = this._playerBean;
+        const playerActive = p && p.alive && !p.gone && !p.exited && !p.falling;
+        const subject = playerActive ? p : (this._spectateTarget(round) || p);
+        this._spectating = !playerActive;
+        // gold marker hovers over YOUR bean only while you're still in it
+        if (this._marker) {
+            this._marker.visible = playerActive;
+            if (playerActive) {
+                this._marker.position.set(p.x, p.z + 64 + Math.sin(t * 4) * 5, p.y);
+                this._marker.rotation.y = t * 2;
+            }
         }
         // obstacles + tiles
         for (const { ob, v } of this.obViews) v.update(ob, dt, t);
         this.courseView && this.courseView.update(round, dt, t);
 
         this._updateFx(round);
-        this._camera(round, dt);
+        this._camera(round, dt, subject);
         this._hud(round);
+    },
+
+    _spectateTarget(round) {
+        const ok = b => b && b.alive && !b.gone && !b.exited && !b.falling;
+        if (ok(this._specBean)) return this._specBean;
+        const cands = round.beans.filter(ok);
+        this._specBean = cands.length ? U.pick(cands) : null;
+        return this._specBean;
     },
 
     _updateFx(round) {
@@ -5350,8 +5545,8 @@ const Engine = {
     },
 
     // ---- camera -------------------------------------------------------
-    _camera(round, dt) {
-        const p = round.player;
+    _camera(round, dt, subject) {
+        const p = subject || round.player;
         let pos, look;
         if (round.kind === 'race') {
             // 3rd-person chase: centred on the player, behind (+Z) and above,
@@ -5393,6 +5588,7 @@ const Engine = {
                 name: round.def.name, category: round.category, kind: round.kind,
                 qualifiedCount: round.qualifiedCount, qualifyCount: round.qualifyCount,
                 timer: round.timer, aliveCount: round.aliveSoFar(), place: round.player.place,
+                spectating: this._spectating,
             });
         }
     },

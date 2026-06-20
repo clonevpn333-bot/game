@@ -187,9 +187,11 @@ const UI = {
         const h = this.els.hud;
         this.els.hudName = this._el('div', 'br-chip br-left');
         this.els.hudCount = this._el('div', 'br-chip br-right');
+        this.els.hudSpec = this._el('div', 'br-spec');
         this.els.hudHint = this._el('div', 'br-hint',
             'WASD move · SPACE jump · SHIFT dive · J grab · 1-4 gesture');
-        h.appendChild(this.els.hudName); h.appendChild(this.els.hudCount); h.appendChild(this.els.hudHint);
+        h.appendChild(this.els.hudName); h.appendChild(this.els.hudCount);
+        h.appendChild(this.els.hudSpec); h.appendChild(this.els.hudHint);
     },
     showHUD() {
         for (const id of ['menu', 'customize', 'howto', 'trophies', 'loading', 'eliminated', 'victory']) this.els[id].style.display = 'none';
@@ -202,9 +204,13 @@ const UI = {
         this.els.hudName.innerHTML = `<b>${hud.name}</b><span style="color:${cat}">${hud.category.toUpperCase()}</span>`;
         let r;
         if (hud.kind === 'race') r = `<span style="color:#46d36a">QUALIFIED</span><b>${hud.qualifiedCount} / ${hud.qualifyCount}</b>`;
-        else if (hud.kind === 'survival') r = `<span style="color:#ffd23f">SURVIVE</span><b>${this._t(hud.timer)} · ${hud.aliveCount} left</b>`;
-        else r = `<span style="color:#ff5fa2">BEANS LEFT</span><b>${hud.aliveCount}</b>`;
+        else if (hud.kind === 'survival') r = `<span style="color:#ffd23f">SURVIVE&nbsp;·&nbsp;${hud.aliveCount} LEFT</span><b>${this._t(hud.timer)}</b>`;
+        else r = `<span style="color:#ff5fa2">${hud.aliveCount <= 2 ? 'FINAL TWO!' : 'BEANS LEFT'}</span><b>${hud.aliveCount}</b>`;
         this.els.hudCount.innerHTML = r;
+        if (this.els.hudSpec) {
+            this.els.hudSpec.style.display = hud.spectating ? 'block' : 'none';
+            if (hud.spectating) this.els.hudSpec.innerHTML = '👀 SPECTATING — watching the round play out';
+        }
     },
     _t(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); },
 
@@ -362,6 +368,8 @@ const UI = {
 .br-chip span{font-size:13px;font-weight:800;letter-spacing:.06em}
 .br-left{left:16px}.br-right{right:16px;text-align:right}
 .br-hint{position:absolute;left:16px;bottom:14px;background:rgba(20,15,40,.45);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:700}
+.br-spec{position:absolute;top:84px;left:50%;transform:translateX(-50%);background:rgba(20,15,40,.6);color:#ffd23f;font-weight:800;border-radius:12px;padding:8px 18px;font-size:15px;letter-spacing:.04em;border:2px solid #ffd23f;animation:brpulse 1.4s ease-in-out infinite}
+@keyframes brpulse{0%,100%{opacity:.85}50%{opacity:1}}
 /* intro */
 .br-intro{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,8,24,.5)}
 .br-intro-card{text-align:center;animation:brpop .4s cubic-bezier(.2,1.4,.4,1)}

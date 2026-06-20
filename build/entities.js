@@ -26,6 +26,7 @@ class Bean {
         this.qualified = false;
         this.eliminated = false;
         this.falling = false;
+        this.exited = false;        // qualified & whisked off the course (spectating)
         this.place = 0;
 
         // motion-state timers
@@ -104,7 +105,7 @@ class Bean {
         if (this.aiJumpLock > 0) this.aiJumpLock -= dt;
         if (this.emoteT > 0) { this.emoteT -= dt; if (this.emoteT <= 0) { this.emoteAnim = null; this.emoteName = null; } }
 
-        if (this.gone) return;
+        if (this.gone || this.exited) return;
 
         // Falling into slime/pit — drop then eliminate
         if (this.falling) {
