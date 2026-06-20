@@ -82,14 +82,21 @@ const Save = {
     },
 
     // ---- Rotating shop ------------------------------------------------
-    // A featured set of non-common items, deterministic per day so it's
-    // stable within a session but refreshes daily (Fall Guys' store model).
-    _dayIndex() { return Math.floor(Date.now() / 86400000); },
+    // A featured set of non-common items, stable across each daily window and
+    // refreshing every day at 8 PM LOCAL time (Fall Guys' store model).
+    _shopWindow() {                          // {start,end} ms of the current 8pm→8pm window
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 20, 0, 0, 0);
+        if (now.getTime() < start.getTime()) start.setDate(start.getDate() - 1);
+        const end = new Date(start); end.setDate(end.getDate() + 1);
+        return { start: start.getTime(), end: end.getTime() };
+    },
+    _dayIndex() { return Math.round(this._shopWindow().start / 3600000); },   // unique id per window
     shopRotation() {
         const day = this._dayIndex();
         if (this.data.shopDay !== day || !Array.isArray(this.data.shopRot) || !this.data.shopRot.length) {
             this.data.shopDay = day;
-            this.data.shopRot = this._rollShop(day * 2654435761 >>> 0);
+            this.data.shopRot = this._rollShop((day * 2654435761) >>> 0);
             this.save();
         }
         return this.data.shopRot;
@@ -109,7 +116,7 @@ const Save = {
         // keep a pleasing spread of rarities up top
         return pool.slice(0, SHOP_ROTATION_SIZE);
     },
-    nextRotationMs() { return (this._dayIndex() + 1) * 86400000 - Date.now(); },
+    nextRotationMs() { return Math.max(0, this._shopWindow().end - Date.now()); },
 
     // ---- Fall Pass ----------------------------------------------------
     addFame(n) { this.data.fame = (this.data.fame || 0) + n; this.save(); },

@@ -608,14 +608,21 @@ const Save = {
     },
 
     // ---- Rotating shop ------------------------------------------------
-    // A featured set of non-common items, deterministic per day so it's
-    // stable within a session but refreshes daily (Fall Guys' store model).
-    _dayIndex() { return Math.floor(Date.now() / 86400000); },
+    // A featured set of non-common items, stable across each daily window and
+    // refreshing every day at 8 PM LOCAL time (Fall Guys' store model).
+    _shopWindow() {                          // {start,end} ms of the current 8pm→8pm window
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 20, 0, 0, 0);
+        if (now.getTime() < start.getTime()) start.setDate(start.getDate() - 1);
+        const end = new Date(start); end.setDate(end.getDate() + 1);
+        return { start: start.getTime(), end: end.getTime() };
+    },
+    _dayIndex() { return Math.round(this._shopWindow().start / 3600000); },   // unique id per window
     shopRotation() {
         const day = this._dayIndex();
         if (this.data.shopDay !== day || !Array.isArray(this.data.shopRot) || !this.data.shopRot.length) {
             this.data.shopDay = day;
-            this.data.shopRot = this._rollShop(day * 2654435761 >>> 0);
+            this.data.shopRot = this._rollShop((day * 2654435761) >>> 0);
             this.save();
         }
         return this.data.shopRot;
@@ -635,7 +642,7 @@ const Save = {
         // keep a pleasing spread of rarities up top
         return pool.slice(0, SHOP_ROTATION_SIZE);
     },
-    nextRotationMs() { return (this._dayIndex() + 1) * 86400000 - Date.now(); },
+    nextRotationMs() { return Math.max(0, this._shopWindow().end - Date.now()); },
 
     // ---- Fall Pass ----------------------------------------------------
     addFame(n) { this.data.fame = (this.data.fame || 0) + n; this.save(); },
@@ -5600,6 +5607,9 @@ const UI = {
         for (const [key, label, arr, idx, namer] of slots) {
             const cur = arr[idx];
             const row = this._el('div', 'br-slot');
+            const thumb = this._el('span', 'br-slot-thumbwrap');
+            thumb.innerHTML = this._thumbHTML(key, idx, 'br-slot-thumb');
+            row.appendChild(thumb);
             row.appendChild(this._el('span', 'br-slot-label', label));
             row.appendChild(this._btn('‹', 'br-arrow', () => { this.hooks.onCycle(key, -1); this._renderCustomize(); }));
             const v = this._el('span', 'br-slot-val', namer(cur) + `<em style="color:${this.rarity(cur.rarity)}">${cur.rarity}</em>`);
@@ -5640,9 +5650,32 @@ const UI = {
             color: this.data.COLORS, pattern: this.data.PATTERNS, faceplate: this.data.FACEPLATES }[slot];
     },
     _slotLabel(slot) { return { upper: 'Top', lower: 'Bottom', color: 'Colour', pattern: 'Pattern', faceplate: 'Faceplate' }[slot]; },
+    // a 3D item-preview <img> (rendered by the engine), with graceful fallbacks
+    _thumbHTML(slot, idx, cls) {
+        const url = this.hooks.getThumb ? this.hooks.getThumb(slot, idx) : null;
+        if (url) return `<div class="${cls}"><img src="${url}" alt=""></div>`;
+        const arr = this._slotArr(slot), it = arr && arr[idx];
+        if ((slot === 'color' || slot === 'faceplate') && it)
+            return `<div class="${cls}"><span class="br-thumb-swatch" style="background:${it.hex || it.visor}"></span></div>`;
+        const ph = { upper: '🎩', lower: '👟', color: '🎨', pattern: '🌀', faceplate: '🙂' }[slot] || '🎁';
+        return `<div class="${cls}"><span class="br-thumb-ph">${ph}</span></div>`;
+    },
     _countdown(ms) {
         const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
         return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    },
+    _countdownHMS(ms) {
+        ms = Math.max(0, ms); const s = Math.floor(ms / 1000);
+        const p = n => String(n).padStart(2, '0');
+        return `${p(Math.floor(s / 3600))}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`;
+    },
+    // called every frame by the engine while the shop is open so the countdown
+    // actually ticks, and the featured set refreshes the moment 8 PM passes.
+    tickShop() {
+        if (!this.els.shopTimer || !this.hooks) return;
+        const ms = this.hooks.getNextRotationMs();
+        if (ms <= 0) { this.showShop(); return; }
+        this.els.shopTimer.textContent = this._countdownHMS(ms);
     },
     showShop() {
         const s = this.hooks.getSave(), p = this.els.shop; p.innerHTML = '';
@@ -5651,8 +5684,10 @@ const UI = {
         p.appendChild(this._el('div', 'br-h', '🛒 ITEM SHOP'));
         p.appendChild(this._el('div', 'br-kudos', `ⓚ ${s.kudos} Kudos — earn more by playing Shows & climbing the Fall Pass!`));
         const bar = this._el('div', 'br-shop-rotbar');
-        bar.appendChild(this._el('div', 'br-shop-rotlabel',
-            `🔥 FEATURED TODAY &nbsp;·&nbsp; refreshes in <b>${this._countdown(this.hooks.getNextRotationMs())}</b>`));
+        const rotlabel = this._el('div', 'br-shop-rotlabel', '🔥 FEATURED TODAY &nbsp;·&nbsp; refreshes in ');
+        this.els.shopTimer = this._el('b', 'br-shop-timer', this._countdownHMS(this.hooks.getNextRotationMs()));
+        rotlabel.appendChild(this.els.shopTimer);
+        bar.appendChild(rotlabel);
         bar.appendChild(this._btn('🔄 Reroll · ⓚ150', 'br-blue sm', () => { this.hooks.onShopReroll(); this.showShop(); }));
         p.appendChild(bar);
 
@@ -5667,6 +5702,7 @@ const UI = {
             card.style.borderColor = this.rarity(item.rarity);
             const act = equipped ? 'EQUIPPED' : owned ? 'EQUIP' : ('ⓚ ' + price);
             card.innerHTML = `<div class="br-shop-slot">${this._slotLabel(slot)}</div>` +
+                this._thumbHTML(slot, idx, 'br-shop-thumb') +
                 `<div class="br-shop-name">${item.name}</div>` +
                 `<div class="br-shop-rar" style="color:${this.rarity(item.rarity)}">${item.rarity}</div>` +
                 `<div class="br-shop-act">${act}</div>`;
@@ -5701,14 +5737,15 @@ const UI = {
             const milestone = t.tier % 5 === 0;
             const card = this._el('div', 'br-pass-tier' + (claimed ? ' done' : '') + (claimable ? ' ready' : '') + (milestone ? ' mile' : ''));
             const r = t.reward;
-            let rt, ri;
-            if (r.kudos) { rt = `ⓚ ${r.kudos}`; ri = '💰'; }
-            else if (r.crown) { rt = `${r.crown} Crown`; ri = '👑'; }
-            else { const it = this._slotArr(r.slot)[r.idx]; rt = it.name; ri = '🎁';
+            let rt, riHTML;
+            if (r.kudos) { rt = `ⓚ ${r.kudos}`; riHTML = '<div class="br-pass-ricon">💰</div>'; }
+            else if (r.crown) { rt = `${r.crown} Crown`; riHTML = '<div class="br-pass-ricon">👑</div>'; }
+            else { const it = this._slotArr(r.slot)[r.idx]; rt = it.name;
+                riHTML = this._thumbHTML(r.slot, r.idx, 'br-pass-thumb');
                 card.style.setProperty('--rar', this.rarity(it.rarity)); }
             card.innerHTML =
                 `<div class="br-pass-tnum">T${t.tier}</div>` +
-                `<div class="br-pass-ricon">${ri}</div>` +
+                riHTML +
                 `<div class="br-pass-rname">${rt}</div>` +
                 `<div class="br-pass-state">${claimed ? '✓ Claimed' : claimable ? 'CLAIM' : t.fame + ' Fame'}</div>`;
             if (claimable) card.onclick = () => { this.hooks.onPassClaim(t.tier); this.showFallPass(); };
@@ -6023,6 +6060,16 @@ const UI = {
 .br-shop-rotlabel{font-weight:800;color:#ffe9c2;text-shadow:0 2px 0 #2a1c4a}
 .br-shop-rotlabel b{color:#ffd23f}
 .br-shop-note{font-size:12px;color:#dfe6ff;opacity:.85;margin:12px 0 16px;max-width:min(720px,92vw)}
+/* item-preview thumbnails (shop / pass / customise) */
+.br-shop-thumb{height:74px;display:flex;align-items:center;justify-content:center;margin:3px 0}
+.br-shop-thumb img{height:74px;width:74px;object-fit:contain;filter:drop-shadow(0 3px 4px rgba(0,0,0,.35))}
+.br-pass-thumb{height:54px;display:flex;align-items:center;justify-content:center;margin:4px 0}
+.br-pass-thumb img{height:54px;width:54px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+.br-slot-thumbwrap{flex:none;width:48px;height:48px;display:flex;align-items:center;justify-content:center;background:rgba(20,15,40,.35);border-radius:12px}
+.br-slot-thumb{width:48px;height:48px;display:flex;align-items:center;justify-content:center}
+.br-slot-thumb img{width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
+.br-thumb-swatch{display:inline-block;width:62%;height:62%;min-width:26px;min-height:26px;border-radius:50%;box-shadow:inset 0 -4px 8px rgba(0,0,0,.28),0 2px 4px rgba(0,0,0,.3)}
+.br-thumb-ph{font-size:32px;opacity:.85}
 .br-gold{background:linear-gradient(180deg,#ffe06a,#ffc23f);box-shadow:0 5px 0 #b07d00,0 8px 18px rgba(0,0,0,.3);position:relative}
 .br-badge{position:absolute;top:-8px;right:-8px;background:#ff3b6b;color:#fff;font-size:13px;min-width:22px;height:22px;line-height:22px;border-radius:11px;padding:0 6px;box-shadow:0 2px 0 #9c1f3f}
 .br-btn.sm{padding:10px 16px;font-size:14px}
@@ -6192,6 +6239,7 @@ const Engine = {
             onCycle: (slot, dir) => Game.cycleCosmetic(slot, dir),
             onEmoteCycle: (i, dir) => Game.cycleEmote(i, dir),
             getSave: () => Save.data,
+            getThumb: (slot, idx) => this.thumb(slot, idx),
             getShopRotation: () => Save.shopRotation(),
             getNextRotationMs: () => Save.nextRotationMs(),
             getPassProgress: () => Save.passProgress(),
@@ -6224,6 +6272,7 @@ const Engine = {
         this._syncScreen();
         if (Game.screen === 'playing') this._updatePlaying(dt, this._t);
         if (Game.screen === 'customize' || Game.screen === 'menu') this._updatePreview(dt, this._t);
+        if (Game.screen === 'shop') UI.tickShop();
 
         // achievement toasts
         while (Save.newlyUnlocked.length) UI.toast(Save.newlyUnlocked.shift());
@@ -6506,6 +6555,86 @@ const Engine = {
         const w = box.clientWidth || 300, h = box.clientHeight || 430;
         this.preview.renderer.setSize(w, h, false);
         this.preview.camera.aspect = w / h; this.preview.camera.updateProjectionMatrix();
+    },
+
+    // ---- cosmetic THUMBNAILS (shop / pass / customise item previews) --
+    // A tiny offscreen renderer makes a transparent PNG of each item: the bare
+    // prop for costumes (no body, as requested), a candy swatch-bean for
+    // colours/patterns/faceplates. Cached by slot:idx so each renders once.
+    _ensureThumbRig() {
+        if (this._thumbR) return true;
+        try {
+            const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+            r.setPixelRatio(1); r.setSize(168, 168);
+            r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping;
+            const sc = new THREE.Scene();
+            sc.add(new THREE.HemisphereLight(0xffffff, 0x55607a, 1.15));
+            const d = new THREE.DirectionalLight(0xffffff, 1.7); d.position.set(40, 90, 70); sc.add(d);
+            const d2 = new THREE.DirectionalLight(0xfff0ff, 0.5); d2.position.set(-50, 20, -40); sc.add(d2);
+            this._thumbR = r; this._thumbScene = sc;
+            this._thumbCam = new THREE.PerspectiveCamera(38, 1, 0.5, 4000);
+            this._thumbFake = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, facing: 0.5, r: 17, grounded: true,
+                diveT: 0, proneT: 0, ragdoll: 0, spin: 0, falling: false, squash: 1, emoteAnim: null,
+                emoteT: 0, blink: 3, isPlayer: false, name: '' };
+            return true;
+        } catch (e) { this._thumbR = null; return false; }
+    },
+    thumb(slot, idx) {
+        const key = slot + ':' + idx;
+        if (!this._thumbCache) this._thumbCache = {};
+        if (key in this._thumbCache) return this._thumbCache[key];
+        let url = null;
+        try { if (this._ensureThumbRig()) url = this._renderThumb(slot, idx); } catch (e) { url = null; }
+        this._thumbCache[key] = url;
+        return url;
+    },
+    _renderThumb(slot, idx) {
+        const sc = this._thumbScene;
+        let bv = null, obj = null;
+        try {
+            if (slot === 'upper' || slot === 'lower') {
+                const arr = slot === 'upper' ? COSTUMES_UPPER : COSTUMES_LOWER;
+                const prop = arr[idx] && arr[idx].prop;
+                if (!prop || prop === 'none') return null;
+                bv = new BeanView({ color: '#e9e9f2', pattern: 'solid',
+                    upper: slot === 'upper' ? prop : 'none', lower: slot === 'lower' ? prop : 'none', visor: '#3fd2ff' });
+                bv.update(this._thumbFake, 0, 0);
+                const grp = slot === 'upper' ? bv.upperGroup : bv.lowerGroup;
+                if (!grp) return null;
+                obj = new THREE.Group();
+                bv.object3d.updateWorldMatrix(true, true);
+                grp.updateWorldMatrix(true, false);
+                grp.parent && grp.parent.remove(grp);
+                grp.matrix.copy(grp.matrixWorld); grp.matrix.decompose(grp.position, grp.quaternion, grp.scale);
+                obj.add(grp);
+            } else {
+                const ap = { color: '#e9e9f2', pattern: 'solid', upper: 'none', lower: 'none', visor: '#3fd2ff' };
+                if (slot === 'color') ap.color = COLORS[idx].hex;
+                else if (slot === 'pattern') { ap.pattern = PATTERNS[idx].type; ap.color = '#b9c2ff'; }
+                else if (slot === 'faceplate') ap.visor = FACEPLATES[idx].visor;
+                bv = new BeanView(ap);
+                bv.update(this._thumbFake, 0, 0);
+                obj = bv.object3d;
+            }
+            sc.add(obj);
+            const url = this._frameThumb(obj, slot);
+            sc.remove(obj);
+            return url;
+        } finally { if (bv) try { bv.dispose(); } catch (e) {} }
+    },
+    _frameThumb(obj, slot) {
+        obj.updateWorldMatrix(true, true);
+        const box = new THREE.Box3().setFromObject(obj);
+        if (box.isEmpty()) return null;
+        const sph = box.getBoundingSphere(new THREE.Sphere());
+        const c = sph.center, rad = Math.max(8, sph.radius);
+        const cam = this._thumbCam;
+        const pull = (slot === 'upper' || slot === 'lower') ? 2.5 : 2.7;
+        cam.position.set(c.x + rad * 0.45, c.y + rad * 0.42, c.z + rad * pull);
+        cam.near = Math.max(0.1, rad * 0.05); cam.far = rad * 40;
+        cam.lookAt(c); cam.updateProjectionMatrix();
+        this._thumbR.render(this._thumbScene, cam);
+        return this._thumbR.domElement.toDataURL('image/png');
     },
 
     _updatePreview(dt, t) {

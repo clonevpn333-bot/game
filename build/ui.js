@@ -116,6 +116,9 @@ const UI = {
         for (const [key, label, arr, idx, namer] of slots) {
             const cur = arr[idx];
             const row = this._el('div', 'br-slot');
+            const thumb = this._el('span', 'br-slot-thumbwrap');
+            thumb.innerHTML = this._thumbHTML(key, idx, 'br-slot-thumb');
+            row.appendChild(thumb);
             row.appendChild(this._el('span', 'br-slot-label', label));
             row.appendChild(this._btn('‹', 'br-arrow', () => { this.hooks.onCycle(key, -1); this._renderCustomize(); }));
             const v = this._el('span', 'br-slot-val', namer(cur) + `<em style="color:${this.rarity(cur.rarity)}">${cur.rarity}</em>`);
@@ -156,9 +159,32 @@ const UI = {
             color: this.data.COLORS, pattern: this.data.PATTERNS, faceplate: this.data.FACEPLATES }[slot];
     },
     _slotLabel(slot) { return { upper: 'Top', lower: 'Bottom', color: 'Colour', pattern: 'Pattern', faceplate: 'Faceplate' }[slot]; },
+    // a 3D item-preview <img> (rendered by the engine), with graceful fallbacks
+    _thumbHTML(slot, idx, cls) {
+        const url = this.hooks.getThumb ? this.hooks.getThumb(slot, idx) : null;
+        if (url) return `<div class="${cls}"><img src="${url}" alt=""></div>`;
+        const arr = this._slotArr(slot), it = arr && arr[idx];
+        if ((slot === 'color' || slot === 'faceplate') && it)
+            return `<div class="${cls}"><span class="br-thumb-swatch" style="background:${it.hex || it.visor}"></span></div>`;
+        const ph = { upper: '🎩', lower: '👟', color: '🎨', pattern: '🌀', faceplate: '🙂' }[slot] || '🎁';
+        return `<div class="${cls}"><span class="br-thumb-ph">${ph}</span></div>`;
+    },
     _countdown(ms) {
         const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
         return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    },
+    _countdownHMS(ms) {
+        ms = Math.max(0, ms); const s = Math.floor(ms / 1000);
+        const p = n => String(n).padStart(2, '0');
+        return `${p(Math.floor(s / 3600))}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`;
+    },
+    // called every frame by the engine while the shop is open so the countdown
+    // actually ticks, and the featured set refreshes the moment 8 PM passes.
+    tickShop() {
+        if (!this.els.shopTimer || !this.hooks) return;
+        const ms = this.hooks.getNextRotationMs();
+        if (ms <= 0) { this.showShop(); return; }
+        this.els.shopTimer.textContent = this._countdownHMS(ms);
     },
     showShop() {
         const s = this.hooks.getSave(), p = this.els.shop; p.innerHTML = '';
@@ -167,8 +193,10 @@ const UI = {
         p.appendChild(this._el('div', 'br-h', '🛒 ITEM SHOP'));
         p.appendChild(this._el('div', 'br-kudos', `ⓚ ${s.kudos} Kudos — earn more by playing Shows & climbing the Fall Pass!`));
         const bar = this._el('div', 'br-shop-rotbar');
-        bar.appendChild(this._el('div', 'br-shop-rotlabel',
-            `🔥 FEATURED TODAY &nbsp;·&nbsp; refreshes in <b>${this._countdown(this.hooks.getNextRotationMs())}</b>`));
+        const rotlabel = this._el('div', 'br-shop-rotlabel', '🔥 FEATURED TODAY &nbsp;·&nbsp; refreshes in ');
+        this.els.shopTimer = this._el('b', 'br-shop-timer', this._countdownHMS(this.hooks.getNextRotationMs()));
+        rotlabel.appendChild(this.els.shopTimer);
+        bar.appendChild(rotlabel);
         bar.appendChild(this._btn('🔄 Reroll · ⓚ150', 'br-blue sm', () => { this.hooks.onShopReroll(); this.showShop(); }));
         p.appendChild(bar);
 
@@ -183,6 +211,7 @@ const UI = {
             card.style.borderColor = this.rarity(item.rarity);
             const act = equipped ? 'EQUIPPED' : owned ? 'EQUIP' : ('ⓚ ' + price);
             card.innerHTML = `<div class="br-shop-slot">${this._slotLabel(slot)}</div>` +
+                this._thumbHTML(slot, idx, 'br-shop-thumb') +
                 `<div class="br-shop-name">${item.name}</div>` +
                 `<div class="br-shop-rar" style="color:${this.rarity(item.rarity)}">${item.rarity}</div>` +
                 `<div class="br-shop-act">${act}</div>`;
@@ -217,14 +246,15 @@ const UI = {
             const milestone = t.tier % 5 === 0;
             const card = this._el('div', 'br-pass-tier' + (claimed ? ' done' : '') + (claimable ? ' ready' : '') + (milestone ? ' mile' : ''));
             const r = t.reward;
-            let rt, ri;
-            if (r.kudos) { rt = `ⓚ ${r.kudos}`; ri = '💰'; }
-            else if (r.crown) { rt = `${r.crown} Crown`; ri = '👑'; }
-            else { const it = this._slotArr(r.slot)[r.idx]; rt = it.name; ri = '🎁';
+            let rt, riHTML;
+            if (r.kudos) { rt = `ⓚ ${r.kudos}`; riHTML = '<div class="br-pass-ricon">💰</div>'; }
+            else if (r.crown) { rt = `${r.crown} Crown`; riHTML = '<div class="br-pass-ricon">👑</div>'; }
+            else { const it = this._slotArr(r.slot)[r.idx]; rt = it.name;
+                riHTML = this._thumbHTML(r.slot, r.idx, 'br-pass-thumb');
                 card.style.setProperty('--rar', this.rarity(it.rarity)); }
             card.innerHTML =
                 `<div class="br-pass-tnum">T${t.tier}</div>` +
-                `<div class="br-pass-ricon">${ri}</div>` +
+                riHTML +
                 `<div class="br-pass-rname">${rt}</div>` +
                 `<div class="br-pass-state">${claimed ? '✓ Claimed' : claimable ? 'CLAIM' : t.fame + ' Fame'}</div>`;
             if (claimable) card.onclick = () => { this.hooks.onPassClaim(t.tier); this.showFallPass(); };
@@ -539,6 +569,16 @@ const UI = {
 .br-shop-rotlabel{font-weight:800;color:#ffe9c2;text-shadow:0 2px 0 #2a1c4a}
 .br-shop-rotlabel b{color:#ffd23f}
 .br-shop-note{font-size:12px;color:#dfe6ff;opacity:.85;margin:12px 0 16px;max-width:min(720px,92vw)}
+/* item-preview thumbnails (shop / pass / customise) */
+.br-shop-thumb{height:74px;display:flex;align-items:center;justify-content:center;margin:3px 0}
+.br-shop-thumb img{height:74px;width:74px;object-fit:contain;filter:drop-shadow(0 3px 4px rgba(0,0,0,.35))}
+.br-pass-thumb{height:54px;display:flex;align-items:center;justify-content:center;margin:4px 0}
+.br-pass-thumb img{height:54px;width:54px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+.br-slot-thumbwrap{flex:none;width:48px;height:48px;display:flex;align-items:center;justify-content:center;background:rgba(20,15,40,.35);border-radius:12px}
+.br-slot-thumb{width:48px;height:48px;display:flex;align-items:center;justify-content:center}
+.br-slot-thumb img{width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3))}
+.br-thumb-swatch{display:inline-block;width:62%;height:62%;min-width:26px;min-height:26px;border-radius:50%;box-shadow:inset 0 -4px 8px rgba(0,0,0,.28),0 2px 4px rgba(0,0,0,.3)}
+.br-thumb-ph{font-size:32px;opacity:.85}
 .br-gold{background:linear-gradient(180deg,#ffe06a,#ffc23f);box-shadow:0 5px 0 #b07d00,0 8px 18px rgba(0,0,0,.3);position:relative}
 .br-badge{position:absolute;top:-8px;right:-8px;background:#ff3b6b;color:#fff;font-size:13px;min-width:22px;height:22px;line-height:22px;border-radius:11px;padding:0 6px;box-shadow:0 2px 0 #9c1f3f}
 .br-btn.sm{padding:10px 16px;font-size:14px}

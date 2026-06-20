@@ -72,6 +72,7 @@ const Engine = {
             onCycle: (slot, dir) => Game.cycleCosmetic(slot, dir),
             onEmoteCycle: (i, dir) => Game.cycleEmote(i, dir),
             getSave: () => Save.data,
+            getThumb: (slot, idx) => this.thumb(slot, idx),
             getShopRotation: () => Save.shopRotation(),
             getNextRotationMs: () => Save.nextRotationMs(),
             getPassProgress: () => Save.passProgress(),
@@ -104,6 +105,7 @@ const Engine = {
         this._syncScreen();
         if (Game.screen === 'playing') this._updatePlaying(dt, this._t);
         if (Game.screen === 'customize' || Game.screen === 'menu') this._updatePreview(dt, this._t);
+        if (Game.screen === 'shop') UI.tickShop();
 
         // achievement toasts
         while (Save.newlyUnlocked.length) UI.toast(Save.newlyUnlocked.shift());
@@ -386,6 +388,86 @@ const Engine = {
         const w = box.clientWidth || 300, h = box.clientHeight || 430;
         this.preview.renderer.setSize(w, h, false);
         this.preview.camera.aspect = w / h; this.preview.camera.updateProjectionMatrix();
+    },
+
+    // ---- cosmetic THUMBNAILS (shop / pass / customise item previews) --
+    // A tiny offscreen renderer makes a transparent PNG of each item: the bare
+    // prop for costumes (no body, as requested), a candy swatch-bean for
+    // colours/patterns/faceplates. Cached by slot:idx so each renders once.
+    _ensureThumbRig() {
+        if (this._thumbR) return true;
+        try {
+            const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+            r.setPixelRatio(1); r.setSize(168, 168);
+            r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping;
+            const sc = new THREE.Scene();
+            sc.add(new THREE.HemisphereLight(0xffffff, 0x55607a, 1.15));
+            const d = new THREE.DirectionalLight(0xffffff, 1.7); d.position.set(40, 90, 70); sc.add(d);
+            const d2 = new THREE.DirectionalLight(0xfff0ff, 0.5); d2.position.set(-50, 20, -40); sc.add(d2);
+            this._thumbR = r; this._thumbScene = sc;
+            this._thumbCam = new THREE.PerspectiveCamera(38, 1, 0.5, 4000);
+            this._thumbFake = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, facing: 0.5, r: 17, grounded: true,
+                diveT: 0, proneT: 0, ragdoll: 0, spin: 0, falling: false, squash: 1, emoteAnim: null,
+                emoteT: 0, blink: 3, isPlayer: false, name: '' };
+            return true;
+        } catch (e) { this._thumbR = null; return false; }
+    },
+    thumb(slot, idx) {
+        const key = slot + ':' + idx;
+        if (!this._thumbCache) this._thumbCache = {};
+        if (key in this._thumbCache) return this._thumbCache[key];
+        let url = null;
+        try { if (this._ensureThumbRig()) url = this._renderThumb(slot, idx); } catch (e) { url = null; }
+        this._thumbCache[key] = url;
+        return url;
+    },
+    _renderThumb(slot, idx) {
+        const sc = this._thumbScene;
+        let bv = null, obj = null;
+        try {
+            if (slot === 'upper' || slot === 'lower') {
+                const arr = slot === 'upper' ? COSTUMES_UPPER : COSTUMES_LOWER;
+                const prop = arr[idx] && arr[idx].prop;
+                if (!prop || prop === 'none') return null;
+                bv = new BeanView({ color: '#e9e9f2', pattern: 'solid',
+                    upper: slot === 'upper' ? prop : 'none', lower: slot === 'lower' ? prop : 'none', visor: '#3fd2ff' });
+                bv.update(this._thumbFake, 0, 0);
+                const grp = slot === 'upper' ? bv.upperGroup : bv.lowerGroup;
+                if (!grp) return null;
+                obj = new THREE.Group();
+                bv.object3d.updateWorldMatrix(true, true);
+                grp.updateWorldMatrix(true, false);
+                grp.parent && grp.parent.remove(grp);
+                grp.matrix.copy(grp.matrixWorld); grp.matrix.decompose(grp.position, grp.quaternion, grp.scale);
+                obj.add(grp);
+            } else {
+                const ap = { color: '#e9e9f2', pattern: 'solid', upper: 'none', lower: 'none', visor: '#3fd2ff' };
+                if (slot === 'color') ap.color = COLORS[idx].hex;
+                else if (slot === 'pattern') { ap.pattern = PATTERNS[idx].type; ap.color = '#b9c2ff'; }
+                else if (slot === 'faceplate') ap.visor = FACEPLATES[idx].visor;
+                bv = new BeanView(ap);
+                bv.update(this._thumbFake, 0, 0);
+                obj = bv.object3d;
+            }
+            sc.add(obj);
+            const url = this._frameThumb(obj, slot);
+            sc.remove(obj);
+            return url;
+        } finally { if (bv) try { bv.dispose(); } catch (e) {} }
+    },
+    _frameThumb(obj, slot) {
+        obj.updateWorldMatrix(true, true);
+        const box = new THREE.Box3().setFromObject(obj);
+        if (box.isEmpty()) return null;
+        const sph = box.getBoundingSphere(new THREE.Sphere());
+        const c = sph.center, rad = Math.max(8, sph.radius);
+        const cam = this._thumbCam;
+        const pull = (slot === 'upper' || slot === 'lower') ? 2.5 : 2.7;
+        cam.position.set(c.x + rad * 0.45, c.y + rad * 0.42, c.z + rad * pull);
+        cam.near = Math.max(0.1, rad * 0.05); cam.far = rad * 40;
+        cam.lookAt(c); cam.updateProjectionMatrix();
+        this._thumbR.render(this._thumbScene, cam);
+        return this._thumbR.domElement.toDataURL('image/png');
     },
 
     _updatePreview(dt, t) {
