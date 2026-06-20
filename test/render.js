@@ -91,6 +91,26 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     await wait(900);
     await page.screenshot({ path: path.join(SHOTS, '5-shop.png') });
 
+    // ---- new gamemodes: force-load each and shoot it live ----
+    const shootMode = async (id, file, settle) => {
+        await page.evaluate((rid) => {
+            const { Game, SHOW } = window.__BR;
+            Game.toMenu(); Game.startShow();
+            const def = SHOW.find(d => d.id === rid);
+            Game.show.seq = [Object.assign({}, def, def.duration ? { duration: def.duration } : {})];
+            Game.loadRound(0);
+        }, id);
+        await page.waitForFunction(() => {
+            const g = window.__BR.Game;
+            return g.screen === 'playing' && g.show && g.show.round && g.show.round.phase === 'go';
+        }, { timeout: 90000, polling: 200 }).catch(() => {});
+        await wait(settle);
+        await page.screenshot({ path: path.join(SHOTS, file) });
+    };
+    await shootMode('tail_tag', '8-tailtag.png', 2200);
+    await shootMode('tip_toe', '9-tiptoe.png', 3500);
+    await shootMode('fall_mountain', '10-mountain.png', 1500);
+
     const info = await page.evaluate(() => ({
         screen: window.__BR.Game.screen,
         seq: window.__BR.Game.show && window.__BR.Game.show.seq.map(d => d.name),

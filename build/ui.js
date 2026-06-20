@@ -307,13 +307,21 @@ const UI = {
         this.els.hudCount.style.display = 'block';
         this.els.hudHint.style.display = 'block';
     },
+    _catColor(c) { return { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2', Hunt: '#ff9447', Logic: '#9a6cff' }[c] || '#fff'; },
     updateHUD(hud) {
-        const cat = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' }[hud.category] || '#fff';
+        const cat = this._catColor(hud.category);
         this.els.hudName.innerHTML = `<b>${hud.name}</b><span style="color:${cat}">${hud.category.toUpperCase()}</span>`;
         let r;
-        if (hud.kind === 'race') r = `<span style="color:#46d36a">QUALIFIED</span><b>${hud.qualifiedCount} / ${hud.qualifyCount}</b>`;
-        else if (hud.kind === 'survival') r = `<span style="color:#ffd23f">SURVIVE&nbsp;·&nbsp;${hud.aliveCount} LEFT</span><b>${this._t(hud.timer)}</b>`;
-        else r = `<span style="color:#ff5fa2">${hud.aliveCount <= 2 ? 'FINAL TWO!' : 'BEANS LEFT'}</span><b>${hud.aliveCount}</b>`;
+        if (hud.kind === 'race' || hud.kind === 'tiptoe')
+            r = `<span style="color:#46d36a">QUALIFIED</span><b>${hud.qualifiedCount} / ${hud.qualifyCount}</b>`;
+        else if (hud.kind === 'survival')
+            r = `<span style="color:#ffd23f">SURVIVE&nbsp;·&nbsp;${hud.aliveCount} LEFT</span><b>${this._t(hud.timer)}</b>`;
+        else if (hud.kind === 'tag')
+            r = `<span style="color:${hud.youHaveTail ? '#46d36a' : '#ff5fa2'}">${hud.youHaveTail ? '🏷️ TAIL SAFE' : '❌ GRAB A TAIL!'}&nbsp;·&nbsp;${hud.tailCount} tails</span><b>${this._t(hud.timer)}</b>`;
+        else if (hud.kind === 'mountain')
+            r = `<span style="color:#ffd23f">🏔️ TO THE CROWN</span><b>${hud.aliveCount} racing</b>`;
+        else
+            r = `<span style="color:#ff5fa2">${hud.aliveCount <= 2 ? 'FINAL TWO!' : 'BEANS LEFT'}</span><b>${hud.aliveCount}</b>`;
         this.els.hudCount.innerHTML = r;
         if (this.els.hudSpec) {
             this.els.hudSpec.style.display = hud.spectating ? 'block' : 'none';
@@ -325,7 +333,6 @@ const UI = {
     // ============================== ROUND-SELECT REEL (loading screen)
     showLoading(info) {
         info = info || {};
-        const CAT = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' };
         const p = this.els.loading; p.innerHTML = '';
         p.appendChild(this._el('div', 'br-load-tag', `ROUND ${info.index || 1} OF ${info.total || 1}`));
         p.appendChild(this._el('div', 'br-reel-title', 'SELECTING ROUND…'));
@@ -333,9 +340,9 @@ const UI = {
         const win = this._el('div', 'br-reel-window');
         const strip = this._el('div', 'br-reel-strip');
         const reel = info.reel && info.reel.length ? info.reel : [{ name: info.name, category: info.category }];
-        const ICON = { Race: '🏁', Survival: '⏱️', Final: '👑' };
+        const ICON = { Race: '🏁', Survival: '⏱️', Final: '👑', Hunt: '🏷️', Logic: '🧠' };
         for (const d of reel) {
-            const c = CAT[d.category] || '#fff';
+            const c = this._catColor(d.category);
             const card = this._el('div', 'br-reel-card');
             card.style.setProperty('--c', c);
             card.innerHTML =
@@ -366,7 +373,7 @@ const UI = {
     // ================================================== INTRO CARD
     showIntro(intro) {
         this.hideAll();
-        const cat = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' }[intro.category] || '#fff';
+        const cat = this._catColor(intro.category);
         const cd = intro.countdown == null ? '' : `<div class="br-count">${intro.countdown > 0 ? intro.countdown : 'GO!'}</div>`;
         const q = intro.qualify ? `<div class="br-qual">Top ${intro.qualify} qualify</div>` : '';
         this.els.intro.innerHTML =

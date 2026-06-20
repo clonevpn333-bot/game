@@ -31,7 +31,8 @@ class Round {
         this.controllable = false;
 
         // qualification
-        this.kind = 'race';        // race | survival | final
+        this.kind = 'race';        // race | survival | final | tag | tiptoe | mountain
+        this.viewKind = null;      // which CourseView to build (defaults to kind)
         this.qualifyCount = def.qualify || 0;
         this.qualifiedCount = 0;
         this.finishY = 0;
@@ -138,8 +139,30 @@ class Round {
                 for (const b of this.beans) if (!b.gone && !b.exited && o.collide) o.collide(b, this, dt);
 
         this._separate();
+        if (this.kind === 'tag' && this.phase === 'go') this._tagSteals();
         if (this.phase === 'go')
             for (const b of this.beans) this._bounds(b);
+    }
+
+    // Tail Tag: a tail-less bean pressing grab near a tail-holder steals it.
+    _tagSteals() {
+        for (const b of this.beans) {
+            if (b.gone || b.exited || b.falling || b.hasTail || b.tagCd > 0) continue;
+            const want = b.isPlayer ? (Input.grabPressed || Input.grab) : b.ai.grab;
+            if (!want) continue;
+            let best = null, bd = CFG.GRAB_RANGE * 1.25;
+            for (const o of this.beans) {
+                if (o === b || !o.hasTail || o.falling || o.gone || o.exited) continue;
+                const d = U.dist(b.x, b.y, o.x, o.y);
+                if (d < bd) { bd = d; best = o; }
+            }
+            if (best) {
+                best.hasTail = false; b.hasTail = true; b.tailColor = best.tailColor;
+                best.ragdoll = Math.max(best.ragdoll, 0.45); best.everRagdolled = true;
+                best.tagCd = 1.1; b.tagCd = 0.7;
+                this.spawnBurst(b.x, b.y, 22, b.tailColor, 12);
+            }
+        }
     }
 
     _playerEmote() {
@@ -176,7 +199,7 @@ class Round {
 
     _bounds(bean) {
         if (bean.falling || bean.gone || bean.exited) return;
-        if (this.kind === 'race') {
+        if (this.kind === 'race' || this.kind === 'mountain') {
             const lo = this.minX + bean.r, hi = this.maxX - bean.r;
             if (bean.x < lo) { bean.x = lo; if (bean.vx < 0) bean.vx *= -0.2; }
             if (bean.x > hi) { bean.x = hi; if (bean.vx > 0) bean.vx *= -0.2; }
@@ -184,6 +207,19 @@ class Round {
         } else if (this.kind === 'survival') {
             if (bean.grounded && U.dist(bean.x, bean.y, this.platform.cx, this.platform.cy) > this.platform.r)
                 bean.startFall();
+        } else if (this.kind === 'tag') {
+            // Tail Tag is a walled arena — nobody falls off; clamp to the rim.
+            const P = this.platform, dx = bean.x - P.cx, dy = bean.y - P.cy, d = Math.hypot(dx, dy) || 1;
+            const lim = P.r - bean.r;
+            if (d > lim) { bean.x = P.cx + dx / d * lim; bean.y = P.cy + dy / d * lim; bean.vx *= 0.3; bean.vy *= 0.3; }
+        } else if (this.kind === 'tiptoe') {
+            // fall when off all tiles, or when you step on a fake (it drops away)
+            if (bean.x < this.minX - 30 || bean.x > this.maxX + 30 || bean.y < this.minY - 60) {
+                if (bean.grounded) bean.startFall(); return;
+            }
+            const t = this._tileAt(bean.x, bean.y);
+            if (!t) { if (bean.grounded) bean.startFall(); }
+            else if (bean.grounded && t.fake && t.state === 'solid') { t.step(); bean.startFall(); }
         } else if (this.kind === 'final') {
             if (bean.x < this.minX - 50 || bean.x > this.maxX + 50 ||
                 bean.y < this.minY - 50 || bean.y > this.maxY + 50) {
@@ -199,10 +235,29 @@ class Round {
     // ---- Qualification ------------------------------------------------
     _checkQualify(dt) {
         if (this.result) return;
-        if (this.kind === 'race') {
+        if (this.kind === 'race' || this.kind === 'tiptoe') {
             for (const b of this.beans)
                 if (b.alive && !b.finished && !b.gone && b.y <= this.finishY) this.markFinish(b);
             if (this.elapsed > CFG.ROUND_MAXTIME) this._raceCutoff();
+        } else if (this.kind === 'mountain') {
+            // a racing FINAL — first bean to the crown wins it all
+            for (const b of this.beans)
+                if (b.alive && !b.finished && !b.gone && b.y <= this.finishY) {
+                    b.finished = true;
+                    if (!this._mtnDone) { this._mtnDone = true; this.spawnConfetti(b); this._finishFinal(b === this.player); }
+                }
+            if (this.elapsed > CFG.ROUND_MAXTIME && !this._mtnDone) { this._mtnDone = true; this._finishFinal(false); }
+        } else if (this.kind === 'tag') {
+            this.timer -= dt;
+            const tailed = this.beans.filter(b => b.alive && !b.eliminated && b.hasTail).length;
+            if (this.timer <= 0) {
+                for (const b of this.beans) if (b.alive && !b.eliminated) {
+                    if (b.hasTail) { b.qualified = true; b.exited = true; }
+                    else { b.eliminated = true; b.alive = false; }
+                }
+                this.qualifyCount = tailed;
+                this._finish();
+            }
         } else if (this.kind === 'survival') {
             this.timer -= dt;
             const aliveN = this.beans.filter(b => b.alive && !b.eliminated).length;
@@ -422,6 +477,62 @@ function hexThink(bean, round, dt) {
     bean.ai.jump = false; bean.ai.dive = false;
 }
 
+// ---- Tail Tag (Hunt) --------------------------------------------------
+function tagThink(bean, round, dt) {
+    const P = round.platform;
+    bean.ai.jump = false; bean.ai.grab = false; bean.ai.dive = false;
+    if (bean.hasTail) {
+        // flee the nearest tail-less chaser, hugging the platform centre
+        let cx = 0, cy = 0;
+        for (const o of round.beans) {
+            if (o === bean || o.hasTail || o.gone || o.exited || o.falling) continue;
+            const d = U.dist(bean.x, bean.y, o.x, o.y);
+            if (d < 260) { cx += (bean.x - o.x) / (d || 1); cy += (bean.y - o.y) / (d || 1); }
+        }
+        const tox = P.cx - bean.x, toy = P.cy - bean.y, dl = Math.hypot(tox, toy) || 1;
+        const edge = dl / P.r;                              // pull harder toward centre near the rim
+        let mx = cx + tox / dl * (0.4 + edge * 0.9), my = cy + toy / dl * (0.4 + edge * 0.9);
+        const ml = Math.hypot(mx, my) || 1; bean.ai.mx = mx / ml; bean.ai.my = my / ml;
+        if (U.chance(0.01)) bean.ai.dive = true;            // occasional juke
+    } else {
+        // hunt the nearest tail-holder and grab it
+        let best = null, bd = 1e9;
+        for (const o of round.beans) {
+            if (!o.hasTail || o.gone || o.exited || o.falling) continue;
+            const d = U.dist(bean.x, bean.y, o.x, o.y);
+            if (d < bd) { bd = d; best = o; }
+        }
+        if (best) {
+            let dx = best.x - bean.x, dy = best.y - bean.y; const dl = Math.hypot(dx, dy) || 1;
+            bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
+            bean.ai.grab = bd < CFG.GRAB_RANGE * (1.0 + bean.skill * 0.6);
+            if (bd < 130 && bd > 50 && U.chance(0.02)) bean.ai.dive = true;   // lunge for the steal
+        } else { bean.ai.mx = 0; bean.ai.my = 0; }
+    }
+}
+
+// ---- Tip Toe (Logic) --------------------------------------------------
+function tiptoeThink(bean, round, dt) {
+    // hop tile-to-tile: among ADJACENT tiles (so we never cut a diagonal over a
+    // gap), pick the one that's most "forward" (lower y) and real. Clumsy beans
+    // occasionally misjudge a fake.
+    let best = null, bestScore = -1e9;
+    const dodge = 900 * (0.55 + bean.skill * 0.6);
+    for (const t of round.tiles) {
+        if (t.state !== 'solid') continue;
+        const dx = t.cx - bean.x, dy = t.cy - bean.y, d = Math.hypot(dx, dy);
+        if (d < 6 || d > 84) continue;                 // adjacent neighbours only
+        let score = (bean.y - t.cy) + U.rngf(-4, 4);   // forward = lower y
+        if (t.fake) score -= dodge;
+        if (score > bestScore) { bestScore = score; best = t; }
+    }
+    if (best) { const dx = best.cx - bean.x, dy = best.cy - bean.y, dl = Math.hypot(dx, dy) || 1;
+        bean.ai.mx = dx / dl; bean.ai.my = dy / dl; }
+    else { bean.ai.mx = 0; bean.ai.my = -0.5; }
+    if (U.chance((0.6 - bean.skill) * 0.015)) { bean.ai.mx *= 0.15; bean.ai.my *= 0.15; }  // hesitation
+    bean.ai.jump = false; bean.ai.dive = false; bean.ai.grab = false;
+}
+
 /* =====================================================================
    COURSE BUILDERS
    ===================================================================== */
@@ -491,6 +602,50 @@ const Rounds = {
             b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.38, 0.75);
             b.facing = ang + Math.PI;
         });
+    },
+    // hand out tails to a fraction of the field (the rest must steal one)
+    _dealTails(r, frac) {
+        const cols = ['#ff5fa2', '#ffd23f', '#5ad1ff', '#46d36a', '#b06bff', '#ff9447'];
+        const order = U.shuffle(r.beans.slice());
+        const nTails = U.clamp(Math.round(r.beans.length * frac), 2, r.beans.length - 1);
+        order.forEach((b, i) => { b.hasTail = i < nTails; b.tailColor = cols[i % cols.length]; b.tagCd = 0; });
+        r.qualifyCount = nTails;
+    },
+    // a grid of stepping-stone tiles over slime; hidden fakes drop away when
+    // stepped on. Spacing is derived from tile size so neighbours OVERLAP (the
+    // safe path is continuous), and the path's lateral steps are kept solid so
+    // it's always traversable.
+    _tipToeField(r, cols, rows, fakeChance) {
+        r.kind = 'tiptoe'; r.viewKind = 'final'; r.camMode = 'fixed'; r.thinkFn = tiptoeThink;
+        r.tiles = [];
+        const size = 42, stepX = 52, stepY = 50;       // tight overlap → continuous path
+        const gridW = (cols - 1) * stepX, gridH = (rows - 1) * stepY;
+        const cx = 640, x0 = cx - gridW / 2, yBot = 250 + gridH, yTop = 250;
+        let safe = Math.floor(cols / 2), prevSafe = safe;
+        for (let ry = 0; ry < rows; ry++) {
+            const y = yBot - ry * stepY;
+            const edgeRow = (ry === 0 || ry === rows - 1);
+            prevSafe = safe;
+            if (!edgeRow) safe = U.clamp(safe + U.rng(-1, 1), 0, cols - 1);
+            const keep = new Set([safe, prevSafe]);          // L-shaped step stays solid
+            for (let cxi = 0; cxi < cols; cxi++) {
+                const x = x0 + cxi * stepX;
+                const fake = !edgeRow && !keep.has(cxi) && U.chance(fakeChance);
+                const t = new HexTile({ cx: x, cy: y, size, color: edgeRow ? '#ffd23f' : '#8fd0ff' });
+                t.fake = fake;                                // hidden — looks identical to a real tile
+                r.tiles.push(t);
+            }
+        }
+        r.minX = x0 - size; r.maxX = x0 + gridW + size;
+        r.minY = yTop - size; r.maxY = yBot + size;
+        r.finishY = yTop + size * 0.5;                       // crossing the top (gold) row qualifies
+        const startTiles = r.tiles.filter(t => t.cy > yBot - 2);
+        r.beans.forEach((b, i) => {
+            const t = startTiles[i % startTiles.length];
+            b.x = t.cx + U.rngf(-5, 5); b.y = t.cy; b.startX = b.x; b.startY = b.y;
+            b.facing = -Math.PI / 2; b.skill = b.isPlayer ? 1 : U.rngf(0.3, 0.72);
+        });
+        r.qualifyCount = Math.max(3, Math.round(r.beans.length * 0.6));
     },
     _hexField(r, size, stepX, stepY) {
         r.tiles = [];
@@ -871,6 +1026,54 @@ const Rounds = {
                 }
             };
         },
+
+        // ============================================ NEW GAMEMODES ===
+        // -------- FALL MOUNTAIN (racing FINAL — first to the crown wins)
+        fallMountain(r) {
+            Rounds._raceCommon(r);
+            r.kind = 'mountain'; r.viewKind = 'race'; r.crownFinish = true; r.finishY = 360;
+            r.obstacles.push(new Hammer({ cx: 640, cy: 2150, amp: 340, headR: 34, speed: 1.6, power: 540 }));
+            r.obstacles.push(new Spinner({ cx: 470, cy: 1820, len: 210, thick: 20, speed: -1.6, power: 360, color: '#7b46d6' }));
+            r.obstacles.push(new Spinner({ cx: 820, cy: 1820, len: 210, thick: 20, speed: 1.6, power: 360, color: '#7b46d6' }));
+            r.obstacles.push(new Hammer({ cx: 640, cy: 1480, amp: 330, headR: 34, speed: -2.0, phase: 1, power: 560 }));
+            r.obstacles.push(new BouncePad({ x: 470, y: 1180, r: 42 }));
+            r.obstacles.push(new BouncePad({ x: 810, y: 1180, r: 42 }));
+            r.obstacles.push(new Spinner({ cx: 640, cy: 900, len: 250, thick: 22, speed: 1.4, power: 380, color: '#e6395a' }));
+            r.obstacles.push(new Hammer({ cx: 640, cy: 600, amp: 300, headR: 32, speed: 2.2, power: 560 }));
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
+        lostTemple(r) {             // FINAL — a steeper climb of doors & bars
+            Rounds._raceCommon(r);
+            r.kind = 'mountain'; r.viewKind = 'race'; r.crownFinish = true; r.finishY = 360;
+            Rounds._doorWall(r, 2150, 3);
+            r.obstacles.push(new Hammer({ cx: 640, cy: 1820, amp: 330, headR: 34, speed: 1.9, power: 560 }));
+            r.obstacles.push(new Spinner({ cx: 640, cy: 1480, len: 250, thick: 22, speed: -1.6, power: 380, color: '#e6395a' }));
+            Rounds._doorWall(r, 1120, 2);
+            r.obstacles.push(new BouncePad({ x: 640, y: 880, r: 44 }));
+            r.obstacles.push(new Hammer({ cx: 470, cy: 600, amp: 240, headR: 30, speed: 2.1, power: 540 }));
+            r.obstacles.push(new Hammer({ cx: 820, cy: 600, amp: 240, headR: 30, speed: -2.1, phase: 1, power: 540 }));
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
+
+        // -------- TAIL TAG (HUNT — hold a tail when the clock runs out)
+        tailTag(r) {
+            Rounds._arena(r, 335);
+            r.kind = 'tag'; r.viewKind = 'survival'; r.thinkFn = tagThink;
+            r.timer = r.def.duration || 30;
+            Rounds._spawnRing(r);
+            Rounds._dealTails(r, 0.58);
+        },
+        tailChase(r) {              // HUNT — tighter arena, fewer tails, frantic
+            Rounds._arena(r, 290);
+            r.kind = 'tag'; r.viewKind = 'survival'; r.thinkFn = tagThink;
+            r.timer = r.def.duration || 28;
+            Rounds._spawnRing(r);
+            Rounds._dealTails(r, 0.5);
+        },
+
+        // -------- TIP TOE (LOGIC — find the hidden path of real tiles)
+        tipToe(r) { Rounds._tipToeField(r, 7, 8, 0.46); },
+        tipToeTwins(r) { Rounds._tipToeField(r, 9, 9, 0.52); },   // wider grid, more fakes
     },
 };
 

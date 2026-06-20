@@ -67,17 +67,24 @@ const Game = {
         this.loadRound(0);
     },
 
-    // A fresh, randomised line-up each Show: 2–3 races, 1–2 survival, 1 final.
+    // A fresh, randomised line-up each Show: 2–3 races, 1–2 "middle" rounds
+    // (Survival / Hunt / Logic), then 1 Final.
     _buildSequence() {
-        const byCat = c => U.shuffle(SHOW.filter(d => d.category === c).slice());
-        const races = byCat('Race'), survs = byCat('Survival'), fins = byCat('Final');
+        const byCat = cats => U.shuffle(SHOW.filter(d => cats.includes(d.category)).slice());
+        const races = byCat(['Race']), mids = byCat(['Survival', 'Hunt', 'Logic']), fins = byCat(['Final']);
         const RQ = [14, 10, 7, 6];
         const seq = [];
-        const nRace = U.rng(2, 3), nSurv = U.rng(1, 2);
+        const nRace = U.rng(2, 3), nMid = U.rng(1, 2);
+        let qi = 0;
         for (let i = 0; i < nRace && i < races.length; i++)
-            seq.push(Object.assign({}, races[i], { qualify: RQ[i] }));
-        for (let i = 0; i < nSurv && i < survs.length; i++)
-            seq.push(Object.assign({}, survs[i], { duration: U.rng(26, 32) }));
+            seq.push(Object.assign({}, races[i], { qualify: RQ[Math.min(qi++, RQ.length - 1)] }));
+        for (let i = 0; i < nMid && i < mids.length; i++) {
+            const d = mids[i], o = Object.assign({}, d);
+            if (d.category === 'Survival') o.duration = U.rng(26, 32);
+            else if (d.category === 'Hunt') o.duration = U.rng(26, 30);
+            // Logic (Tip Toe) self-sizes its qualify count from the field
+            seq.push(o); qi++;
+        }
         seq.push(fins.length ? U.pick(fins) : SHOW.find(d => d.category === 'Final'));
         return seq;
     },
@@ -176,8 +183,9 @@ const Game = {
         b.eliminated = false; b.falling = false; b.exited = false; b.place = 0;
         b.diveT = 0; b.proneT = 0; b.diveCd = 0; b.ragdoll = 0; b.spin = 0; b.squash = 1;
         b.grabbing = null; b.grabbedBy = null; b.grabT = 0;
+        b.hasTail = false; b.tagCd = 0;
         b.emoteT = 0; b.emoteAnim = null; b.emoteName = null; b.justEmoted = 99;
-        b.ai = { mx: 0, my: 0, jump: false, dive: false };
+        b.ai = { mx: 0, my: 0, jump: false, dive: false, grab: false };
         b.aiTimer = 0; b.aiJumpLock = 0; b.aiTarget = { x: 0, y: 0 };
         // everRagdolled persists across the whole show (Flawless trophy)
     },

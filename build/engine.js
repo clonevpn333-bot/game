@@ -210,9 +210,46 @@ const Engine = {
         for (const { ob, v } of this.obViews) v.update(ob, dt, t);
         this.courseView && this.courseView.update(round, dt, t);
 
+        this._updateTails(round, t);
         this._updateFx(round);
         this._camera(round, dt, subject);
         this._hud(round);
+    },
+
+    // floating colour-coded halo + streamer over beans that hold a tail (Tail Tag)
+    _updateTails(round, t) {
+        if (!this._tailPool) this._tailPool = [];
+        let idx = 0;
+        if (round.kind === 'tag') {
+            for (const b of round.beans) {
+                if (b.gone || b.exited || b.falling || !b.hasTail) continue;
+                let g = this._tailPool[idx];
+                if (!g) {
+                    g = new THREE.Group();
+                    const ringMat = new THREE.MeshStandardMaterial({ emissive: 0xffffff, emissiveIntensity: 0.7, roughness: 0.4 });
+                    const ring = new THREE.Mesh(new THREE.TorusGeometry(15, 4, 8, 22), ringMat);
+                    ring.rotation.x = Math.PI / 2; ring.name = 'ring';
+                    const tailMat = new THREE.MeshStandardMaterial({ emissive: 0xffffff, emissiveIntensity: 0.45, roughness: 0.5 });
+                    const tail = new THREE.Mesh(new THREE.ConeGeometry(7, 34, 10), tailMat);
+                    tail.name = 'tail';
+                    g.add(ring); g.add(tail);
+                    this.scene.add(g); this._tailPool[idx] = g;
+                }
+                g.visible = true;
+                const c = new THREE.Color(b.tailColor || '#ff5fa2');
+                const ring = g.getObjectByName('ring'), tail = g.getObjectByName('tail');
+                ring.material.color.copy(c); ring.material.emissive.copy(c);
+                tail.material.color.copy(c); tail.material.emissive.copy(c);
+                ring.position.set(b.x, b.z + 74 + Math.sin(t * 4 + b.x) * 3, b.y);
+                ring.rotation.z = t * 2;
+                // a wagging streamer trailing behind the bean's facing
+                const back = b.facing + Math.PI, wag = Math.sin(t * 13 + b.y) * 0.35;
+                tail.position.set(b.x + Math.cos(back) * 20, b.z + 20, b.y + Math.sin(back) * 20);
+                tail.rotation.set(0, -back, Math.PI / 2 + wag);
+                idx++;
+            }
+        }
+        for (let i = idx; i < this._tailPool.length; i++) this._tailPool[i].visible = false;
     },
 
     _spectateTarget(round) {
@@ -241,7 +278,7 @@ const Engine = {
     _camera(round, dt, subject) {
         const p = subject || round.player;
         let pos, look;
-        if (round.kind === 'race') {
+        if (round.kind === 'race' || round.kind === 'mountain') {
             // 3rd-person chase: centred on the player, behind (+Z) and above,
             // looking ahead down the course (-Z).
             pos  = new THREE.Vector3(p.x, p.z + 250, p.y + 380);
@@ -282,6 +319,8 @@ const Engine = {
                 qualifiedCount: round.qualifiedCount, qualifyCount: round.qualifyCount,
                 timer: round.timer, aliveCount: round.aliveSoFar(), place: round.player.place,
                 spectating: this._spectating,
+                youHaveTail: round.player.hasTail,
+                tailCount: round.beans.filter(b => b.alive && !b.eliminated && b.hasTail).length,
             });
         }
     },

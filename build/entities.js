@@ -34,6 +34,9 @@ class Bean {
         this.ragdoll = 0; this.spin = 0;
         this.grabbing = null; this.grabbedBy = null; this.grabT = 0;
 
+        // Tail Tag (Hunt mode): hold a tail to qualify
+        this.hasTail = false; this.tailColor = '#ff5fa2'; this.tagCd = 0;
+
         // cosmetics / anim
         this.bob = Math.random() * 6.283;
         this.squash = 1;
@@ -43,7 +46,7 @@ class Bean {
         this.blink = U.rngf(2, 5);
 
         // AI brain inputs (filled by the round each frame)
-        this.ai = { mx: 0, my: 0, jump: false, dive: false };
+        this.ai = { mx: 0, my: 0, jump: false, dive: false, grab: false };
         this.skill = opts.skill != null ? opts.skill : 0.7;
         this.lane = opts.lane || 0;
         this.aiTimer = 0;
@@ -101,6 +104,7 @@ class Bean {
         this.blink -= dt;
         this.diveCd = Math.max(0, this.diveCd - dt);
         this.grabT = Math.max(0, this.grabT - dt);
+        this.tagCd = Math.max(0, this.tagCd - dt);
         this.justEmoted += dt;
         if (this.aiJumpLock > 0) this.aiJumpLock -= dt;
         if (this.emoteT > 0) { this.emoteT -= dt; if (this.emoteT <= 0) { this.emoteAnim = null; this.emoteName = null; } }

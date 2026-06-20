@@ -292,6 +292,14 @@ const SHOW = [
     { id: 'spring_trap',    name: 'Spring Trap',     category: 'Survival', tagline: 'Springs fling you onto the sweeper. Time it!',     build: 'springTrap',    duration: 28 },
     { id: 'hex_royale',     name: 'Hex Royale',      category: 'Final',    tagline: 'A medium honeycomb melt-down. Last bean wins!',    build: 'hexRoyale' },
     { id: 'honeycomb',      name: 'Honeycomb',       category: 'Final',    tagline: 'Tiny tiles, fast melt. Keep moving!',              build: 'honeycomb' },
+
+    // ---- new gamemodes ----
+    { id: 'fall_mountain',  name: 'Fall Mountain',   category: 'Final',    tagline: 'Scramble up the mountain — first bean to the Crown wins it all!', build: 'fallMountain' },
+    { id: 'lost_temple',    name: 'Lost Temple',     category: 'Final',    tagline: 'A steeper climb of doors and wrecking balls to the Crown.',        build: 'lostTemple' },
+    { id: 'tail_tag',       name: 'Tail Tag',        category: 'Hunt',     tagline: 'Snatch a tail and keep it — no tail when the timer ends, no qualify!', build: 'tailTag',  duration: 30 },
+    { id: 'tail_chase',     name: 'Tail Chase',      category: 'Hunt',     tagline: 'Tighter floor, fewer tails. Steal one and run for your life!',     build: 'tailChase', duration: 28 },
+    { id: 'tip_toe',        name: 'Tip Toe',         category: 'Logic',    tagline: 'Hidden fake tiles drop into the slime. Find the safe path!',       build: 'tipToe' },
+    { id: 'tip_toe_twins',  name: 'Tip Toe Twins',   category: 'Logic',    tagline: 'A wider maze of stepping stones — more fakes, more nerves.',       build: 'tipToeTwins' },
 ];
 
 /* =====================================================================

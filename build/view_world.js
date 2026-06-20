@@ -901,7 +901,9 @@ class CourseView {
         this._disposables = [];
         this._anim = [];                  // [(dt,t) => ...] called each update
         this._round = round || {};
-        const kind = (round && round.kind) || 'race';
+        // viewKind lets new sim modes (mountain/tag/tiptoe) reuse an existing
+        // course look (race/survival/final) without bespoke geometry.
+        const kind = (round && (round.viewKind || round.kind)) || 'race';
         if (kind === 'race') this._buildRace(round);
         else if (kind === 'survival') this._buildSurvival(round);
         else if (kind === 'final') this._buildFinal(round);
@@ -1024,6 +1026,9 @@ class CourseView {
         this._add(this._buildCheckerLine(minX, maxX, finishY, 21, 30));
         this._add(this._buildArch(minX, maxX, finishY, WPAL.gold, 'finish'));
 
+        // --- giant grabbable CROWN floating at the finish (Fall Mountain) ---
+        if (r.crownFinish) this._add(this._buildCrown((minX + maxX) / 2, finishY - 40));
+
         // --- START gate near maxY (grape) + a glowing start band ---
         const startY = maxY - 150;
         this._add(this._buildArch(minX, maxX, startY, WPAL.grape, 'start'));
@@ -1053,6 +1058,30 @@ class CourseView {
                 g.add(cell);
             }
         }
+        return g;
+    }
+
+    // a big golden crown bobbing on a pedestal — the Fall Mountain prize.
+    _buildCrown(cx, cy) {
+        const g = new THREE.Object3D();
+        const goldM = gloss(WPAL.gold, { roughness: 0.22, metalness: 0.55, emissive: 0x5a3d00, emissiveIntensity: 0.18 });
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(26, 30, 22, 24, 1, true), goldM);
+        band.position.y = 0; g.add(band);
+        for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2;
+            const spike = new THREE.Mesh(new THREE.ConeGeometry(7, 26, 8), goldM);
+            spike.position.set(Math.cos(a) * 27, 20, Math.sin(a) * 27);
+            g.add(spike);
+            const gem = new THREE.Mesh(new THREE.SphereGeometry(5, 10, 8),
+                gloss(0xff3b6b, { roughness: 0.2, metalness: 0.3, emissive: 0x6a0020, emissiveIntensity: 0.3 }));
+            gem.position.set(Math.cos(a) * 27, 33, Math.sin(a) * 27); g.add(gem);
+        }
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(7, 9, 120, 16), mat(WPAL.grape, { roughness: 0.5 }));
+        post.position.y = -78; g.add(post);
+        g.position.copy(W(cx, cy, 150));
+        const baseY = g.position.y;
+        this._anim.push((dt, t) => { g.rotation.y = t * 1.1; g.position.y = baseY + Math.sin(t * 2) * 8; });
+        shadowy(g, true, false);
         return g;
     }
 
