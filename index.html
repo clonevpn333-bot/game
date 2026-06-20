@@ -1,27 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bean Royale 3D — a Fall Guys tribute</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; overflow: hidden; background: #5ad1ff;
-            font-family: system-ui, 'Segoe UI', Roboto, sans-serif; user-select: none; }
-        #app { position: fixed; inset: 0; }
-        #app canvas { display: block; }
-        #loading { position: fixed; inset: 0; z-index: 9999; color: #fff;
-            background: linear-gradient(160deg, #6a5cff 0%, #a24bd6 50%, #ff5fa2 100%);
-            display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        #loading h1 { font-size: 4rem; letter-spacing: .1em; color: #ffd23f; text-shadow: 0 5px 0 #2a1c4a; }
-        #loading p { margin-top: 1rem; color: #ffe9c2; animation: blink 1s step-end infinite; }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-    </style>
-    <script type="importmap">
-    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
-    </script>
-</head>
-<body>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bean Royale 3D — a Fall Guys tribute</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { width:100%; height:100%; overflow:hidden; background:#5ad1ff; font-family:system-ui,'Segoe UI',Roboto,sans-serif; user-select:none; }
+#app { position:fixed; inset:0; } #app canvas { display:block; }
+#loading { position:fixed; inset:0; z-index:9999; color:#fff; background:linear-gradient(160deg,#6a5cff 0%,#a24bd6 50%,#ff5fa2 100%); display:flex; flex-direction:column; justify-content:center; align-items:center; }
+#loading h1 { font-size:4rem; letter-spacing:.1em; color:#ffd23f; text-shadow:0 5px 0 #2a1c4a; }
+#loading p { margin-top:1rem; color:#ffe9c2; animation:blink 1s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+</style>
+<script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }</script>
+</head><body>
 <div id="loading"><h1>BEAN&nbsp;ROYALE</h1><p>Loading the slime…</p></div>
 <div id="app"></div>
 <!-- GAME:START -->
@@ -5026,6 +5016,7 @@ const UI = {
     },
     _showBig(id) {
         this.hideAll();
+        this._activeBig = id;
         this.els[id].style.display = 'flex';
     },
 
@@ -5033,15 +5024,21 @@ const UI = {
     showMenu() {
         const s = this.hooks.getSave();
         const p = this.els.menu; p.innerHTML = '';
-        p.appendChild(this._el('div', 'br-title', 'BEAN<span>ROYALE</span>'));
-        p.appendChild(this._el('div', 'br-sub', 'A Fall Guys tribute — dive, bounce &amp; grab your way to the Crown!'));
+        const row = this._el('div', 'br-lobby');
+        this.els.lobbyBean = this._el('div', 'br-lobby-bean');   // engine mounts your 3D bean here
+        row.appendChild(this.els.lobbyBean);
+        const right = this._el('div', 'br-lobby-right');
+        right.appendChild(this._el('div', 'br-title', 'BEAN<span>ROYALE</span>'));
+        right.appendChild(this._el('div', 'br-sub', 'Dive, bounce &amp; grab your way to the Crown!'));
         const col = this._el('div', 'br-col');
         col.appendChild(this._btn('▶  PLAY SHOW', 'br-big', this.hooks.onPlay));
         col.appendChild(this._btn('🎨  CUSTOMISE', 'br-blue', this.hooks.onCustomize));
         col.appendChild(this._btn('🛒  SHOP', 'br-pink', this.hooks.onShop));
         col.appendChild(this._btn('🏆  TROPHIES', 'br-purple', this.hooks.onTrophies));
-        col.appendChild(this._btn('?  HOW TO PLAY', 'br-pink', this.hooks.onHowTo));
-        p.appendChild(col);
+        col.appendChild(this._btn('?  HOW TO', 'br-pink', this.hooks.onHowTo));
+        right.appendChild(col);
+        row.appendChild(right);
+        p.appendChild(row);
         p.appendChild(this._el('div', 'br-foot',
             `👑 ${s.crowns} &nbsp;·&nbsp; ⓚ ${s.kudos} Kudos &nbsp;·&nbsp; Streak ${s.streak} (best ${s.bestStreak})`));
         this._showBig('menu');
@@ -5106,7 +5103,7 @@ const UI = {
         bar.appendChild(this._btn('START SHOW ▶', 'br-big', this.hooks.onPlay));
         p.appendChild(bar);
     },
-    previewContainer() { return this.els.preview; },
+    previewContainer() { return this._activeBig === 'menu' ? this.els.lobbyBean : this.els.preview; },
 
     // ================================================== SHOP
     showShop() {
@@ -5345,6 +5342,13 @@ const UI = {
 .br-purple{background:#b06bff;color:#fff;box-shadow:0 5px 0 #6a32c8,0 8px 18px rgba(0,0,0,.3)}
 .br-pink{background:#ff8fb0;box-shadow:0 5px 0 #c24a73,0 8px 18px rgba(0,0,0,.3)}
 .br-foot{position:absolute;bottom:22px;font-weight:700;text-shadow:0 2px 0 #2a1c4a}
+.br-lobby{display:flex;align-items:center;gap:36px;flex-wrap:wrap;justify-content:center}
+.br-lobby-bean{width:300px;height:380px;position:relative;flex:none}
+.br-lobby-bean canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
+.br-lobby-right{display:flex;flex-direction:column;align-items:flex-start;text-align:left}
+.br-lobby-right .br-title{font-size:clamp(40px,6.5vw,92px)}
+.br-lobby-right .br-sub{margin:10px 0 20px}
+.br-lobby-right .br-col{width:300px}
 .br-h{font-size:clamp(28px,4vw,42px);font-weight:900;color:#ffd23f;text-shadow:0 4px 0 #2a1c4a;margin-bottom:14px}
 .br-h2{font-size:18px;font-weight:800;color:#ffe9c2;margin:18px 0 8px;align-self:flex-start}
 /* customise */
@@ -5531,7 +5535,7 @@ const Engine = {
         Game.update(dt);
         this._syncScreen();
         if (Game.screen === 'playing') this._updatePlaying(dt, this._t);
-        if (Game.screen === 'customize') this._updatePreview(dt, this._t);
+        if (Game.screen === 'customize' || Game.screen === 'menu') this._updatePreview(dt, this._t);
 
         // achievement toasts
         while (Save.newlyUnlocked.length) UI.toast(Save.newlyUnlocked.shift());
@@ -5553,7 +5557,7 @@ const Engine = {
         if (Game.screen !== this._lastScreen) {
             this._lastScreen = Game.screen;
             switch (Game.screen) {
-                case 'menu': UI.showMenu(); break;
+                case 'menu': UI.showMenu(); this._mountPreview(); break;
                 case 'customize': UI.showCustomize(); this._mountPreview(); break;
                 case 'howto': UI.showHowTo(); break;
                 case 'trophies': UI.showTrophies(); break;
@@ -5725,9 +5729,19 @@ const Engine = {
             const sc = new THREE.Scene();
             const hemi = new THREE.HemisphereLight(0xffffff, 0x556680, 1.0);
             const dir = new THREE.DirectionalLight(0xffffff, 1.6); dir.position.set(60, 120, 90);
+            dir.castShadow = true; dir.shadow.mapSize.set(1024, 1024);
+            dir.shadow.camera.left = -90; dir.shadow.camera.right = 90;
+            dir.shadow.camera.top = 90; dir.shadow.camera.bottom = -90;
             sc.add(hemi); sc.add(dir);
+            // a little pedestal so it reads like the Fall Guys lobby
+            const ped = new THREE.Mesh(new THREE.CylinderGeometry(34, 42, 16, 40),
+                new THREE.MeshStandardMaterial({ color: 0x9a6cff, roughness: 0.5 }));
+            ped.position.y = -8; ped.receiveShadow = true; sc.add(ped);
+            const pedT = new THREE.Mesh(new THREE.CylinderGeometry(35, 35, 3, 40),
+                new THREE.MeshStandardMaterial({ color: 0xff5fa2, roughness: 0.4, metalness: 0.1 }));
+            pedT.position.y = 0.5; pedT.receiveShadow = true; sc.add(pedT);
             const cam = new THREE.PerspectiveCamera(45, 1, 1, 1000);
-            cam.position.set(0, 34, 110); cam.lookAt(0, 22, 0);
+            cam.position.set(0, 30, 118); cam.lookAt(0, 16, 0);
             this.preview = { renderer: pr, scene: sc, camera: cam, bean: null, sig: '', fake: {
                 x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, facing: 0, r: 17, grounded: true,
                 diveT: 0, proneT: 0, ragdoll: 0, spin: 0, falling: false, squash: 1,

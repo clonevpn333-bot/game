@@ -52,6 +52,7 @@ const UI = {
     },
     _showBig(id) {
         this.hideAll();
+        this._activeBig = id;
         this.els[id].style.display = 'flex';
     },
 
@@ -59,15 +60,21 @@ const UI = {
     showMenu() {
         const s = this.hooks.getSave();
         const p = this.els.menu; p.innerHTML = '';
-        p.appendChild(this._el('div', 'br-title', 'BEAN<span>ROYALE</span>'));
-        p.appendChild(this._el('div', 'br-sub', 'A Fall Guys tribute — dive, bounce &amp; grab your way to the Crown!'));
+        const row = this._el('div', 'br-lobby');
+        this.els.lobbyBean = this._el('div', 'br-lobby-bean');   // engine mounts your 3D bean here
+        row.appendChild(this.els.lobbyBean);
+        const right = this._el('div', 'br-lobby-right');
+        right.appendChild(this._el('div', 'br-title', 'BEAN<span>ROYALE</span>'));
+        right.appendChild(this._el('div', 'br-sub', 'Dive, bounce &amp; grab your way to the Crown!'));
         const col = this._el('div', 'br-col');
         col.appendChild(this._btn('▶  PLAY SHOW', 'br-big', this.hooks.onPlay));
         col.appendChild(this._btn('🎨  CUSTOMISE', 'br-blue', this.hooks.onCustomize));
         col.appendChild(this._btn('🛒  SHOP', 'br-pink', this.hooks.onShop));
         col.appendChild(this._btn('🏆  TROPHIES', 'br-purple', this.hooks.onTrophies));
-        col.appendChild(this._btn('?  HOW TO PLAY', 'br-pink', this.hooks.onHowTo));
-        p.appendChild(col);
+        col.appendChild(this._btn('?  HOW TO', 'br-pink', this.hooks.onHowTo));
+        right.appendChild(col);
+        row.appendChild(right);
+        p.appendChild(row);
         p.appendChild(this._el('div', 'br-foot',
             `👑 ${s.crowns} &nbsp;·&nbsp; ⓚ ${s.kudos} Kudos &nbsp;·&nbsp; Streak ${s.streak} (best ${s.bestStreak})`));
         this._showBig('menu');
@@ -132,7 +139,7 @@ const UI = {
         bar.appendChild(this._btn('START SHOW ▶', 'br-big', this.hooks.onPlay));
         p.appendChild(bar);
     },
-    previewContainer() { return this.els.preview; },
+    previewContainer() { return this._activeBig === 'menu' ? this.els.lobbyBean : this.els.preview; },
 
     // ================================================== SHOP
     showShop() {
@@ -371,6 +378,13 @@ const UI = {
 .br-purple{background:#b06bff;color:#fff;box-shadow:0 5px 0 #6a32c8,0 8px 18px rgba(0,0,0,.3)}
 .br-pink{background:#ff8fb0;box-shadow:0 5px 0 #c24a73,0 8px 18px rgba(0,0,0,.3)}
 .br-foot{position:absolute;bottom:22px;font-weight:700;text-shadow:0 2px 0 #2a1c4a}
+.br-lobby{display:flex;align-items:center;gap:36px;flex-wrap:wrap;justify-content:center}
+.br-lobby-bean{width:300px;height:380px;position:relative;flex:none}
+.br-lobby-bean canvas{position:absolute;inset:0;width:100%!important;height:100%!important}
+.br-lobby-right{display:flex;flex-direction:column;align-items:flex-start;text-align:left}
+.br-lobby-right .br-title{font-size:clamp(40px,6.5vw,92px)}
+.br-lobby-right .br-sub{margin:10px 0 20px}
+.br-lobby-right .br-col{width:300px}
 .br-h{font-size:clamp(28px,4vw,42px);font-weight:900;color:#ffd23f;text-shadow:0 4px 0 #2a1c4a;margin-bottom:14px}
 .br-h2{font-size:18px;font-weight:800;color:#ffe9c2;margin:18px 0 8px;align-self:flex-start}
 /* customise */

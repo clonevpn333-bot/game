@@ -96,7 +96,7 @@ const Engine = {
         Game.update(dt);
         this._syncScreen();
         if (Game.screen === 'playing') this._updatePlaying(dt, this._t);
-        if (Game.screen === 'customize') this._updatePreview(dt, this._t);
+        if (Game.screen === 'customize' || Game.screen === 'menu') this._updatePreview(dt, this._t);
 
         // achievement toasts
         while (Save.newlyUnlocked.length) UI.toast(Save.newlyUnlocked.shift());
@@ -118,7 +118,7 @@ const Engine = {
         if (Game.screen !== this._lastScreen) {
             this._lastScreen = Game.screen;
             switch (Game.screen) {
-                case 'menu': UI.showMenu(); break;
+                case 'menu': UI.showMenu(); this._mountPreview(); break;
                 case 'customize': UI.showCustomize(); this._mountPreview(); break;
                 case 'howto': UI.showHowTo(); break;
                 case 'trophies': UI.showTrophies(); break;
@@ -290,9 +290,19 @@ const Engine = {
             const sc = new THREE.Scene();
             const hemi = new THREE.HemisphereLight(0xffffff, 0x556680, 1.0);
             const dir = new THREE.DirectionalLight(0xffffff, 1.6); dir.position.set(60, 120, 90);
+            dir.castShadow = true; dir.shadow.mapSize.set(1024, 1024);
+            dir.shadow.camera.left = -90; dir.shadow.camera.right = 90;
+            dir.shadow.camera.top = 90; dir.shadow.camera.bottom = -90;
             sc.add(hemi); sc.add(dir);
+            // a little pedestal so it reads like the Fall Guys lobby
+            const ped = new THREE.Mesh(new THREE.CylinderGeometry(34, 42, 16, 40),
+                new THREE.MeshStandardMaterial({ color: 0x9a6cff, roughness: 0.5 }));
+            ped.position.y = -8; ped.receiveShadow = true; sc.add(ped);
+            const pedT = new THREE.Mesh(new THREE.CylinderGeometry(35, 35, 3, 40),
+                new THREE.MeshStandardMaterial({ color: 0xff5fa2, roughness: 0.4, metalness: 0.1 }));
+            pedT.position.y = 0.5; pedT.receiveShadow = true; sc.add(pedT);
             const cam = new THREE.PerspectiveCamera(45, 1, 1, 1000);
-            cam.position.set(0, 34, 110); cam.lookAt(0, 22, 0);
+            cam.position.set(0, 30, 118); cam.lookAt(0, 16, 0);
             this.preview = { renderer: pr, scene: sc, camera: cam, bean: null, sig: '', fake: {
                 x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, facing: 0, r: 17, grounded: true,
                 diveT: 0, proneT: 0, ragdoll: 0, spin: 0, falling: false, squash: 1,
