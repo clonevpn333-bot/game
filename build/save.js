@@ -12,7 +12,9 @@ const Save = {
     _defaults() {
         return {
             color: 1, pattern: 0, upper: 1, lower: 1, faceplate: 0,
-            emotes: [0, 1, 2, 5],          // Wave, Chicken, Crouch, Spin to Win
+            emotes: [0, 1, 2, 5],          // gestures stay free
+            kudos: 600,                    // shop currency
+            owned: null,                   // {slot:{idx:true}} — seeded on load (commons free)
             crowns: 0,
             streak: 0,
             bestStreak: 0,
@@ -28,12 +30,45 @@ const Save = {
             if (raw) loaded = JSON.parse(raw);
         } catch (e) { /* storage unavailable — run with defaults */ }
         this.data = Object.assign(this._defaults(), loaded || {});
-        // Guard against malformed emote array
         if (!Array.isArray(this.data.emotes) || this.data.emotes.length !== 4) {
             this.data.emotes = [0, 1, 2, 5];
         }
+        if (this.data.kudos == null) this.data.kudos = 600;
+        this._seedOwned();
+        this._validateEquipped();
         return this.data;
     },
+
+    // ---- Shop / ownership --------------------------------------------
+    _slots() { return { color: COLORS, pattern: PATTERNS, faceplate: FACEPLATES, upper: COSTUMES_UPPER, lower: COSTUMES_LOWER }; },
+    _seedOwned() {
+        const slots = this._slots();
+        if (!this.data.owned || typeof this.data.owned !== 'object') this.data.owned = {};
+        for (const k in slots) {
+            if (!this.data.owned[k]) this.data.owned[k] = {};
+            slots[k].forEach((item, i) => { if (item.rarity === 'common') this.data.owned[k][i] = true; });
+        }
+        this.data.owned.upper[0] = true; this.data.owned.lower[0] = true;   // 'None' always owned
+    },
+    _validateEquipped() {
+        const def = { color: 1, pattern: 0, faceplate: 0, upper: 1, lower: 1 };
+        for (const k in def) if (!this.owns(k, this.data[k])) this.data[k] = def[k];
+    },
+    owns(slot, idx) { return !!(this.data.owned[slot] && this.data.owned[slot][idx]); },
+    priceOf(slot, idx) {
+        const item = this._slots()[slot][idx];
+        return ({ common: 0, uncommon: 500, rare: 1200, epic: 3000, legendary: 8000 })[item ? item.rarity : 'common'] || 0;
+    },
+    buy(slot, idx) {
+        if (this.owns(slot, idx)) return false;
+        const p = this.priceOf(slot, idx);
+        if ((this.data.kudos || 0) < p) return false;
+        this.data.kudos -= p;
+        this.data.owned[slot][idx] = true;
+        this.save();
+        return true;
+    },
+    addKudos(n) { this.data.kudos = (this.data.kudos || 0) + n; this.save(); },
 
     save() {
         try {

@@ -36,8 +36,18 @@ const Game = {
         const arrays = { color: COLORS, pattern: PATTERNS, faceplate: FACEPLATES, upper: COSTUMES_UPPER, lower: COSTUMES_LOWER };
         const arr = arrays[slot]; if (!arr) return;
         const n = arr.length;
-        Save.data[slot] = (Save.data[slot] + (dir > 0 ? 1 : -1) + n) % n;
-        Save.save(); Save.checkHeadTurner();
+        let idx = Save.data[slot];
+        for (let k = 0; k < n; k++) { idx = (idx + (dir > 0 ? 1 : -1) + n) % n; if (Save.owns(slot, idx)) break; }
+        Save.data[slot] = idx; Save.save(); Save.checkHeadTurner();
+    },
+    buyCosmetic(slot, idx) {
+        if (Save.buy(slot, idx)) { Save.data[slot] = idx; Save.save(); Save.checkHeadTurner(); return true; }
+        return false;
+    },
+    toShop() { this.screen = 'shop'; },
+    shopSelect(slot, idx) {     // owned -> equip; locked -> buy (+ equip) if affordable
+        if (Save.owns(slot, idx)) { Save.data[slot] = idx; Save.save(); Save.checkHeadTurner(); return; }
+        if (Save.buy(slot, idx)) { Save.data[slot] = idx; Save.save(); Save.checkHeadTurner(); }
     },
     cycleEmote(i, dir) {
         const n = EMOTES.length;
@@ -50,7 +60,7 @@ const Game = {
     // ---- Show lifecycle ----------------------------------------------
     startShow() {
         const beans = this._makeField();
-        this.show = { index: 0, beans, round: null, seq: this._buildSequence() };
+        this.show = { index: 0, beans, round: null, seq: this._buildSequence(), earned: 0 };
         this.loadRound(0);
     },
 
@@ -87,7 +97,8 @@ const Game = {
             Save.unlock('first_qual');
             if (r.bigTease) Save.unlock('big_tease');
             if (r.category === 'Survival') Save.unlock('survivor');
-            const survivors = r.beans.filter(b => b.alive && !b.eliminated);
+            const e = 100; Save.addKudos(e); this.show.earned += e;
+            const survivors = r.survivors || r.beans.filter(b => b.alive && !b.eliminated);
             this.show.beans = survivors;
             this.loadRound(this.show.index + 1);
             return;
@@ -96,15 +107,19 @@ const Game = {
         if (res.outcome === 'win') {
             const flawless = !this.player.everRagdolled;
             Save.recordWin(flawless);
-            this.info = { crowns: Save.data.crowns, streak: Save.data.streak };
+            const e = 800; Save.addKudos(e); this.show.earned += e;
+            this.info = { crowns: Save.data.crowns, streak: Save.data.streak,
+                earned: this.show.earned, kudos: Save.data.kudos };
             this.screen = 'victory';
             return;
         }
 
+        const e = 50; Save.addKudos(e); this.show.earned += e;
         Save.recordLoss();
         this.info = {
             roundName: r.def.name, place: res.place,
-            roundsCleared: this.show.index, totalRounds: SHOW.length,
+            roundsCleared: this.show.index, totalRounds: this.show.seq.length,
+            earned: this.show.earned, kudos: Save.data.kudos,
         };
         this.screen = 'eliminated';
     },

@@ -64,6 +64,8 @@ const Engine = {
             onHowTo: () => { Game.screen = 'howto'; },
             onTrophies: () => { Game.screen = 'trophies'; },
             onMenu: () => Game.toMenu(),
+            onShop: () => Game.toShop(),
+            onShopBuy: (slot, idx) => Game.shopSelect(slot, idx),
             onCycle: (slot, dir) => Game.cycleCosmetic(slot, dir),
             onEmoteCycle: (i, dir) => Game.cycleEmote(i, dir),
             getSave: () => Save.data,
@@ -120,6 +122,7 @@ const Engine = {
                 case 'customize': UI.showCustomize(); this._mountPreview(); break;
                 case 'howto': UI.showHowTo(); break;
                 case 'trophies': UI.showTrophies(); break;
+                case 'shop': UI.showShop(); break;
                 case 'loading': UI.showLoading(Game.loadingInfo); break;
                 case 'eliminated': UI.showEliminated(Game.info); break;
                 case 'victory': UI.showVictory(Game.info); break;

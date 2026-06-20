@@ -114,6 +114,12 @@ const COSTUMES_UPPER = [
     { name: 'Pirate Captain', prop: 'pirate', rarity: 'rare'      },
     { name: 'Dinosaur',       prop: 'dino',   rarity: 'epic'      },
     { name: 'Crown Royale',   prop: 'crown',  rarity: 'legendary' },
+    { name: 'Wild Viking',    prop: 'viking',    rarity: 'uncommon'  },
+    { name: 'Shark Hood',     prop: 'shark',     rarity: 'rare'      },
+    { name: 'Robo-Bean',      prop: 'robot',     rarity: 'rare'      },
+    { name: 'Astro Helmet',   prop: 'astronaut', rarity: 'epic'      },
+    { name: 'Wizard Hat',     prop: 'wizard',    rarity: 'epic'      },
+    { name: 'Unicorn',        prop: 'unicorn',   rarity: 'legendary' },
 ];
 
 // Lower costumes — prop tells the renderer what to draw at the base
@@ -124,6 +130,11 @@ const COSTUMES_LOWER = [
     { name: 'Dino Tail',      prop: 'tail',   rarity: 'rare'      },
     { name: 'Rocket Boots',   prop: 'rocket', rarity: 'epic'      },
     { name: 'Golden Greaves', prop: 'gold',   rarity: 'legendary' },
+    { name: 'Denim Jeans',    prop: 'jeans',    rarity: 'common'    },
+    { name: 'Scuba Flippers', prop: 'flippers', rarity: 'uncommon'  },
+    { name: 'Mech Legs',      prop: 'mech',     rarity: 'rare'      },
+    { name: 'Spring Legs',    prop: 'spring',   rarity: 'rare'      },
+    { name: 'Mermaid Tail',   prop: 'mermaid',  rarity: 'epic'      },
 ];
 
 const FACEPLATES = [

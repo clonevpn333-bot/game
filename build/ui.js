@@ -33,7 +33,7 @@ const UI = {
         root.appendChild(this.layer);
 
         // big panels
-        for (const id of ['menu', 'customize', 'howto', 'trophies', 'loading', 'eliminated', 'victory']) {
+        for (const id of ['menu', 'customize', 'howto', 'trophies', 'shop', 'loading', 'eliminated', 'victory']) {
             const p = this._el('div', 'br-panel br-' + id);
             this.els[id] = p; this.layer.appendChild(p);
         }
@@ -64,11 +64,12 @@ const UI = {
         const col = this._el('div', 'br-col');
         col.appendChild(this._btn('▶  PLAY SHOW', 'br-big', this.hooks.onPlay));
         col.appendChild(this._btn('🎨  CUSTOMISE', 'br-blue', this.hooks.onCustomize));
+        col.appendChild(this._btn('🛒  SHOP', 'br-pink', this.hooks.onShop));
         col.appendChild(this._btn('🏆  TROPHIES', 'br-purple', this.hooks.onTrophies));
         col.appendChild(this._btn('?  HOW TO PLAY', 'br-pink', this.hooks.onHowTo));
         p.appendChild(col);
         p.appendChild(this._el('div', 'br-foot',
-            `Crowns: ${s.crowns} &nbsp;·&nbsp; Win Streak: ${s.streak} &nbsp;·&nbsp; Best: ${s.bestStreak}`));
+            `👑 ${s.crowns} &nbsp;·&nbsp; ⓚ ${s.kudos} Kudos &nbsp;·&nbsp; Streak ${s.streak} (best ${s.bestStreak})`));
         this._showBig('menu');
     },
 
@@ -81,6 +82,7 @@ const UI = {
         const s = this.hooks.getSave(), d = this.data, p = this.els.customize;
         p.innerHTML = '';
         p.appendChild(this._el('div', 'br-h', 'CUSTOMISE YOUR BEAN'));
+        p.appendChild(this._el('div', 'br-kudos', `ⓚ ${s.kudos} Kudos &nbsp;·&nbsp; only your unlocked items show here — grab more in the 🛒 Shop`));
         const wrap = this._el('div', 'br-cust-wrap');
 
         // preview box (engine mounts a 3D canvas here)
@@ -126,10 +128,46 @@ const UI = {
 
         const bar = this._el('div', 'br-cust-bar');
         bar.appendChild(this._btn('‹ BACK', 'br-pink', this.hooks.onMenu));
+        bar.appendChild(this._btn('🛒 SHOP', 'br-blue', this.hooks.onShop));
         bar.appendChild(this._btn('START SHOW ▶', 'br-big', this.hooks.onPlay));
         p.appendChild(bar);
     },
     previewContainer() { return this.els.preview; },
+
+    // ================================================== SHOP
+    showShop() {
+        const s = this.hooks.getSave(), d = this.data, p = this.els.shop; p.innerHTML = '';
+        const PRICE = { common: 0, uncommon: 500, rare: 1200, epic: 3000, legendary: 8000 };
+        p.appendChild(this._el('div', 'br-h', '🛒 SHOP'));
+        p.appendChild(this._el('div', 'br-kudos', `ⓚ ${s.kudos} Kudos — earn more by playing Shows!`));
+        const scroll = this._el('div', 'br-shop-scroll');
+        const sections = [
+            ['Tops', 'upper', d.COSTUMES_UPPER], ['Bottoms', 'lower', d.COSTUMES_LOWER],
+            ['Colours', 'color', d.COLORS], ['Patterns', 'pattern', d.PATTERNS], ['Faceplates', 'faceplate', d.FACEPLATES],
+        ];
+        for (const [title, slot, arr] of sections) {
+            scroll.appendChild(this._el('div', 'br-shop-sec', title));
+            const grid = this._el('div', 'br-shop-grid');
+            arr.forEach((item, i) => {
+                const owned = !!(s.owned[slot] && s.owned[slot][i]);
+                const equipped = s[slot] === i;
+                const price = PRICE[item.rarity] || 0;
+                const card = this._el('div', 'br-shop-card' + (equipped ? ' eq' : '') + (owned ? ' own' : ''));
+                card.style.borderColor = this.rarity(item.rarity);
+                const act = equipped ? 'EQUIPPED' : owned ? 'EQUIP' : ('ⓚ ' + price);
+                card.innerHTML = `<div class="br-shop-name">${item.name}</div>` +
+                    `<div class="br-shop-rar" style="color:${this.rarity(item.rarity)}">${item.rarity}</div>` +
+                    `<div class="br-shop-act">${act}</div>`;
+                if (!owned && price > s.kudos) card.classList.add('br-cant');
+                card.onclick = () => { this.hooks.onShopBuy(slot, i); this.showShop(); };
+                grid.appendChild(card);
+            });
+            scroll.appendChild(grid);
+        }
+        p.appendChild(scroll);
+        p.appendChild(this._btn('‹ BACK', 'br-pink', this.hooks.onMenu));
+        this._showBig('shop');
+    },
 
     // ================================================== HOW TO
     showHowTo() {
@@ -194,7 +232,7 @@ const UI = {
         h.appendChild(this.els.hudSpec); h.appendChild(this.els.hudHint);
     },
     showHUD() {
-        for (const id of ['menu', 'customize', 'howto', 'trophies', 'loading', 'eliminated', 'victory']) this.els[id].style.display = 'none';
+        for (const id of ['menu', 'customize', 'howto', 'trophies', 'shop', 'loading', 'eliminated', 'victory']) this.els[id].style.display = 'none';
         this.els.intro.style.display = 'none';
         this.els.banner.style.display = 'none';
         this.els.hud.style.display = 'block';
@@ -230,7 +268,7 @@ const UI = {
 
     // ================================================== INTRO CARD
     showIntro(intro) {
-        for (const id of ['menu', 'customize', 'howto', 'trophies', 'loading', 'eliminated', 'victory']) this.els[id].style.display = 'none';
+        for (const id of ['menu', 'customize', 'howto', 'trophies', 'shop', 'loading', 'eliminated', 'victory']) this.els[id].style.display = 'none';
         this.els.hud.style.display = 'none';
         const cat = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' }[intro.category] || '#fff';
         const cd = intro.countdown == null ? '' : `<div class="br-count">${intro.countdown > 0 ? intro.countdown : 'GO!'}</div>`;
@@ -258,6 +296,7 @@ const UI = {
         p.appendChild(this._el('div', 'br-result-big', 'ELIMINATED'));
         p.appendChild(this._el('div', 'br-result-sub', `Knocked out in ${info.roundName} — placed #${info.place}`));
         p.appendChild(this._el('div', 'br-result-sub2', `You cleared ${info.roundsCleared} of ${info.totalRounds} rounds`));
+        if (info.earned != null) p.appendChild(this._el('div', 'br-earned', `+${info.earned} Kudos  ·  ⓚ ${info.kudos} total`));
         const bar = this._el('div', 'br-col br-row');
         bar.appendChild(this._btn('↻ PLAY AGAIN', 'br-big', this.hooks.onPlay));
         bar.appendChild(this._btn('☰ MAIN MENU', 'br-blue', this.hooks.onMenu));
@@ -270,6 +309,7 @@ const UI = {
         p.appendChild(this._el('div', 'br-result-big', 'WINNER WINNER!'));
         p.appendChild(this._el('div', 'br-result-sub', 'You grabbed the Crown!'));
         p.appendChild(this._el('div', 'br-result-sub2', `Crowns: ${s.crowns} · Win Streak: ${s.streak}`));
+        if (info.earned != null) p.appendChild(this._el('div', 'br-earned', `+${info.earned} Kudos  ·  ⓚ ${info.kudos} total`));
         const bar = this._el('div', 'br-col br-row');
         bar.appendChild(this._btn('↻ PLAY AGAIN', 'br-big', this.hooks.onPlay));
         bar.appendChild(this._btn('☰ MAIN MENU', 'br-blue', this.hooks.onMenu));
@@ -349,7 +389,20 @@ const UI = {
 .br-emote-name{font-weight:800;font-size:13px;margin-bottom:6px}
 .br-emote-ctr{display:flex;align-items:center;justify-content:space-between;gap:4px}
 .br-emote-snd{font-size:10px;color:#dfe6ff}
-.br-cust-bar{display:flex;justify-content:space-between;width:min(1080px,94vw);margin-top:22px}
+.br-cust-bar{display:flex;justify-content:space-between;gap:10px;width:min(1080px,94vw);margin-top:22px}
+.br-kudos{font-weight:800;color:#ffd23f;text-shadow:0 2px 0 #2a1c4a;margin-bottom:12px}
+.br-earned{margin-top:10px;font-weight:800;color:#ffd23f;font-size:20px;text-shadow:0 2px 0 #2a1c4a}
+.br-shop-scroll{width:min(1000px,94vw);max-height:60vh;overflow-y:auto;padding:4px 8px}
+.br-shop-sec{font-weight:900;color:#ffe9c2;text-align:left;margin:14px 0 8px;font-size:18px;text-shadow:0 2px 0 #2a1c4a}
+.br-shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.br-shop-card{pointer-events:auto;cursor:pointer;background:rgba(20,15,40,.34);border:2px solid #888;border-radius:12px;padding:10px;text-align:center;transition:transform .08s}
+.br-shop-card:hover{transform:translateY(-2px)}
+.br-shop-card.eq{box-shadow:0 0 0 3px #46d36a inset}
+.br-shop-card.br-cant{opacity:.45}
+.br-shop-name{font-weight:800;font-size:14px}
+.br-shop-rar{font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin:2px 0 6px}
+.br-shop-act{font-weight:800;background:rgba(255,210,63,.18);border-radius:8px;padding:4px;font-size:13px}
+.br-shop-card.own .br-shop-act{background:rgba(70,211,106,.2)}
 /* how-to / trophies */
 .br-howlist{display:flex;flex-direction:column;gap:8px;width:min(820px,92vw)}
 .br-howrow{display:flex;gap:18px;background:rgba(20,15,40,.25);border-radius:10px;padding:8px 14px}

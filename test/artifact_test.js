@@ -55,7 +55,11 @@ const driver = `
   Engine._loop(ts);
   Game.screen = 'customize'; for (let i=0;i<4;i++) step();
   Game.cycleCosmetic('color',1); Game.cycleCosmetic('pattern',1); Game.cycleEmote(0,1); step();
-  Game.screen='howto'; step(); Game.screen='trophies'; step(); Game.toMenu(); step();
+  Game.screen='howto'; step(); Game.screen='trophies'; step();
+  Game.toShop(); step(); Save.data.kudos = 99999;
+  Game.shopSelect('upper', COSTUMES_UPPER.length-1); step();   // buy + equip a locked top
+  Game.shopSelect('lower', 1); step();                          // equip an owned bottom
+  Game.toMenu(); step();
 
   Game.startShow(); let g=0, seen=-1; const trace=[];
   while ((Game.screen==='playing' || Game.screen==='loading') && g++<60*260){

@@ -130,14 +130,16 @@ class Round {
 
         for (const b of this.beans) b.update(dt, this);
 
-        // brief spawn immunity so obstacles (e.g. a sweeper starting on top
-        // of the spawn ring) don't instantly knock beans out at the gun.
-        if (this.elapsed > 0.6)
+        // Collisions + falling only during LIVE play ('go'): never during the
+        // ending beat (so a qualified bean can't get knocked out after it has
+        // already qualified), and after a brief spawn immunity.
+        if (this.phase === 'go' && this.elapsed > 0.6)
             for (const o of this.obstacles)
                 for (const b of this.beans) if (!b.gone && !b.exited && o.collide) o.collide(b, this, dt);
 
         this._separate();
-        for (const b of this.beans) this._bounds(b);
+        if (this.phase === 'go')
+            for (const b of this.beans) this._bounds(b);
     }
 
     _playerEmote() {
@@ -239,6 +241,7 @@ class Round {
         if (this.result) return;
         const p = this.player;
         this.result = { outcome: p.qualified ? 'qualify' : 'eliminate', place: p.place || (this.qualifyCount + 1) };
+        this.survivors = this.beans.filter(b => b.alive && !b.eliminated);   // snapshot at resolution
         this.phase = 'ending'; this.phaseT = CFG.BANNER_TIME;
     }
     _finishFinal(won) {

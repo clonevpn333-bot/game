@@ -27,8 +27,8 @@ code += `
     out.push('  '+def.name.padEnd(14)+' '+r.result.outcome+' q='+r.qualifiedSoFar()+' alive='+r.aliveSoFar()); }
   Game.init(); Game.startShow(); let g=0,seen=-1,tr=[];
   while((Game.screen==='playing' || Game.screen==='loading') && g++<60*360){ const r=Game.show.round;
-    if(Game.show.index!==seen){seen=Game.show.index;tr.push(r.def.name);}
-    if(r && !r.player) throw new Error('round has no player: '+r.def.name+'/'+r.kind+' beans='+r.beans.length+' idx='+Game.show.index+' seq='+Game.show.seq.map(d=>d.id).join(','));
+    if(Game.show.index!==seen){seen=Game.show.index;tr.push(r.def.name+'/'+r.kind+'#'+r.beans.length+(r.player?'[a'+ +r.player.alive+'e'+ +r.player.eliminated+'x'+ +r.player.exited+'f'+ +r.player.falling+']':'[NOPLAYER]'));}
+    if(r && !r.player) throw new Error('no player @ '+r.def.name+' | trace: '+tr.join('  '));
     if(r.live){ if(r.kind==='race'){r.qualifyCount=1;r.player.y=r.finishY-5;}
       else if(r.kind==='survival'){if(r.timer>0.06)r.timer=0.05;}
       else if(r.kind==='final'){for(const b of r.beans)if(!b.isPlayer){b.alive=false;b.eliminated=true;}} }
