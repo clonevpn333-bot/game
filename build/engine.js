@@ -211,6 +211,7 @@ const Engine = {
         this.courseView && this.courseView.update(round, dt, t);
 
         this._updateTails(round, t);
+        this._updateClimbSlime(round, t);
         this._updateFx(round);
         this._camera(round, dt, subject);
         this._hud(round);
@@ -252,6 +253,30 @@ const Engine = {
         for (let i = idx; i < this._tailPool.length; i++) this._tailPool[i].visible = false;
     },
 
+    // Slime Climb: a glossy pink slab of slime that creeps up the course
+    _updateClimbSlime(round, t) {
+        if (round.kind !== 'climb' || round.slimeY == null) {
+            if (this._climbSlime) this._climbSlime.visible = false;
+            return;
+        }
+        if (!this._climbSlime) {
+            const geo = new THREE.PlaneGeometry(1, 1, 1, 1);
+            const mat = new THREE.MeshStandardMaterial({ color: 0xd23bb0, emissive: 0x9c1f86,
+                emissiveIntensity: 0.4, transparent: true, opacity: 0.86, roughness: 0.3, metalness: 0.1 });
+            const m = new THREE.Mesh(geo, mat);
+            m.rotation.x = -Math.PI / 2;                 // lie flat (top surface)
+            this._climbSlime = m; this.scene.add(m);
+        }
+        const m = this._climbSlime; m.visible = true;
+        const yTop = round.slimeY, yBot = round.maxY + 400;
+        const cx = (round.minX + round.maxX) / 2, w = (round.maxX - round.minX) + 240;
+        const len = Math.max(10, yBot - yTop), cy = (yTop + yBot) / 2;
+        m.position.set(cx, 6 + Math.sin(t * 2) * 1.5, cy);
+        m.scale.set(w, len, 1);
+        // gentle surface shimmer
+        m.material.emissiveIntensity = 0.34 + Math.sin(t * 3) * 0.08;
+    },
+
     _spectateTarget(round) {
         const ok = b => b && b.alive && !b.gone && !b.exited && !b.falling;
         if (ok(this._specBean)) return this._specBean;
@@ -278,7 +303,7 @@ const Engine = {
     _camera(round, dt, subject) {
         const p = subject || round.player;
         let pos, look;
-        if (round.kind === 'race' || round.kind === 'mountain') {
+        if (round.kind === 'race' || round.kind === 'mountain' || round.kind === 'climb') {
             // 3rd-person chase: centred on the player, behind (+Z) and above,
             // looking ahead down the course (-Z).
             pos  = new THREE.Vector3(p.x, p.z + 250, p.y + 380);

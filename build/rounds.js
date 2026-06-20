@@ -50,6 +50,8 @@ class Round {
         this.doorWalls = [];
         this.platform = null;
         this.sweeper = null;
+        this.slimeY = null;        // Slime Climb: world-y of the rising slime line
+        this.slimeRate = 0;
     }
 
     start() { this.camera(0, true); }
@@ -199,7 +201,7 @@ class Round {
 
     _bounds(bean) {
         if (bean.falling || bean.gone || bean.exited) return;
-        if (this.kind === 'race' || this.kind === 'mountain') {
+        if (this.kind === 'race' || this.kind === 'mountain' || this.kind === 'climb') {
             const lo = this.minX + bean.r, hi = this.maxX - bean.r;
             if (bean.x < lo) { bean.x = lo; if (bean.vx < 0) bean.vx *= -0.2; }
             if (bean.x > hi) { bean.x = hi; if (bean.vx > 0) bean.vx *= -0.2; }
@@ -239,6 +241,17 @@ class Round {
             for (const b of this.beans)
                 if (b.alive && !b.finished && !b.gone && b.y <= this.finishY) this.markFinish(b);
             if (this.elapsed > CFG.ROUND_MAXTIME) this._raceCutoff();
+        } else if (this.kind === 'climb') {
+            // a race against a rising tide of slime: finish to qualify, but get
+            // caught below the slime line and you sink.
+            if (this.elapsed > 2.5) this.slimeY -= this.slimeRate * dt;
+            for (const b of this.beans) {
+                if (b.alive && !b.finished && !b.gone && b.y <= this.finishY) this.markFinish(b);
+                else if (b.alive && !b.finished && !b.eliminated && !b.falling && b.y > this.slimeY) {
+                    b.startFall(); this.spawnBurst(b.x, b.y, 0, '#d23bb0', 8);
+                }
+            }
+            if (this.elapsed > CFG.ROUND_MAXTIME || this.aliveSoFar() === 0) this._raceCutoff();
         } else if (this.kind === 'mountain') {
             // a racing FINAL — first bean to the crown wins it all
             for (const b of this.beans)
@@ -1074,6 +1087,33 @@ const Rounds = {
         // -------- TIP TOE (LOGIC — find the hidden path of real tiles)
         tipToe(r) { Rounds._tipToeField(r, 7, 8, 0.46); },
         tipToeTwins(r) { Rounds._tipToeField(r, 9, 9, 0.52); },   // wider grid, more fakes
+
+        // -------- SLIME CLIMB (RACE vs a rising tide of slime)
+        slimeClimb(r) {
+            Rounds._raceCommon(r);
+            r.kind = 'climb'; r.viewKind = 'race';
+            r.slimeY = r.maxY - 40; r.slimeRate = 40;
+            r.obstacles.push(new Spinner({ cx: 640, cy: 2120, len: 250, thick: 22, speed: 1.3, power: 360, color: '#7b46d6' }));
+            r.obstacles.push(new Hammer({ cx: 640, cy: 1780, amp: 320, headR: 32, speed: -1.8, power: 520 }));
+            r.obstacles.push(new Spinner({ cx: 470, cy: 1460, len: 200, thick: 20, speed: 1.6, power: 350, color: '#23d6c8' }));
+            r.obstacles.push(new Spinner({ cx: 820, cy: 1460, len: 200, thick: 20, speed: -1.6, power: 350, color: '#23d6c8' }));
+            r.obstacles.push(new BouncePad({ x: 640, y: 1150, r: 44 }));
+            r.obstacles.push(new Hammer({ cx: 640, cy: 860, amp: 320, headR: 32, speed: 2.0, power: 520 }));
+            r.obstacles.push(new Spinner({ cx: 640, cy: 600, len: 240, thick: 22, speed: 1.5, power: 360, color: '#ff5fa2' }));
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
+        slimeScramble(r) {
+            Rounds._raceCommon(r);
+            r.kind = 'climb'; r.viewKind = 'race';
+            r.slimeY = r.maxY - 30; r.slimeRate = 52;
+            Rounds._doorWall(r, 2120, 3);
+            r.obstacles.push(new Hammer({ cx: 640, cy: 1820, amp: 330, headR: 34, speed: 1.9, power: 560 }));
+            r.obstacles.push(new Spinner({ cx: 640, cy: 1500, len: 250, thick: 22, speed: -1.7, power: 380, color: '#e6395a' }));
+            r.obstacles.push(new Spinner({ cx: 470, cy: 1180, len: 190, thick: 18, speed: 1.8, power: 350, color: '#7b46d6' }));
+            r.obstacles.push(new Spinner({ cx: 820, cy: 1180, len: 190, thick: 18, speed: -1.8, power: 350, color: '#7b46d6' }));
+            r.obstacles.push(new Hammer({ cx: 640, cy: 820, amp: 340, headR: 34, speed: 2.2, power: 560 }));
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
     },
 };
 

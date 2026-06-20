@@ -110,6 +110,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     await shootMode('tail_tag', '8-tailtag.png', 2200);
     await shootMode('tip_toe', '9-tiptoe.png', 3500);
     await shootMode('fall_mountain', '10-mountain.png', 1500);
+    await shootMode('slime_climb', '11-slimeclimb.png', 6000);
 
     const info = await page.evaluate(() => ({
         screen: window.__BR.Game.screen,

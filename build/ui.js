@@ -314,6 +314,8 @@ const UI = {
         let r;
         if (hud.kind === 'race' || hud.kind === 'tiptoe')
             r = `<span style="color:#46d36a">QUALIFIED</span><b>${hud.qualifiedCount} / ${hud.qualifyCount}</b>`;
+        else if (hud.kind === 'climb')
+            r = `<span style="color:#ff5fa2">🌊 OUTRUN THE SLIME</span><b>${hud.qualifiedCount} / ${hud.qualifyCount}</b>`;
         else if (hud.kind === 'survival')
             r = `<span style="color:#ffd23f">SURVIVE&nbsp;·&nbsp;${hud.aliveCount} LEFT</span><b>${this._t(hud.timer)}</b>`;
         else if (hud.kind === 'tag')

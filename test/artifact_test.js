@@ -66,8 +66,10 @@ const driver = `
     const r=Game.show.round;
     if (Game.show.index!==seen){ seen=Game.show.index; trace.push(r.def.name+'/'+r.kind); }
     if (r.live){
-      if (r.kind==='race'){ r.qualifyCount=1; r.player.y=r.finishY-5; }
+      if (r.kind==='race'||r.kind==='tiptoe'||r.kind==='climb'){ r.qualifyCount=1; r.player.falling=false; r.player.z=0; r.player.y=r.finishY-5; }
+      else if (r.kind==='mountain'){ r.player.falling=false; r.player.z=0; r.player.y=r.finishY-5; }
       else if (r.kind==='survival'){ if (r.timer>0.06) r.timer=0.05; }
+      else if (r.kind==='tag'){ r.player.hasTail=true; if (r.timer>0.06) r.timer=0.05; }
       else if (r.kind==='final'){ for (const b of r.beans) if (!b.isPlayer){ b.alive=false; b.eliminated=true; } }
     }
     step();

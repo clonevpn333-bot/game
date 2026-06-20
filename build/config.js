@@ -287,6 +287,8 @@ const SHOW = [
     { id: 'door_jam',       name: 'Door Jam',        category: 'Race',     tagline: 'Six walls of doors. Read the fakes fast!',         build: 'doorJam',       qualify: 9  },
     { id: 'bouncy_castle',  name: 'Bouncy Castle',   category: 'Race',     tagline: 'Spring pads everywhere — bounce to the finish!',   build: 'bouncyCastle',  qualify: 10 },
     { id: 'slalom',         name: 'Slalom',          category: 'Race',     tagline: 'Carve between the bars like a downhill skier.',    build: 'slalom',        qualify: 10 },
+    { id: 'slime_climb',    name: 'Slime Climb',     category: 'Race',     tagline: 'Scramble up and outrun the rising slime — don\'t get caught!', build: 'slimeClimb', qualify: 10 },
+    { id: 'slime_scramble', name: 'Slime Scramble',  category: 'Race',     tagline: 'A brutal climb with faster slime and meaner obstacles.',       build: 'slimeScramble', qualify: 8 },
     { id: 'tiny_island',    name: 'Tiny Island',     category: 'Survival', tagline: 'A tiny floor and a fast bar. Eep!',                build: 'tinyIsland',    duration: 28 },
     { id: 'big_top',        name: 'Big Top',         category: 'Survival', tagline: 'Loads of room — just keep hopping the bar.',       build: 'bigTop',        duration: 30 },
     { id: 'spring_trap',    name: 'Spring Trap',     category: 'Survival', tagline: 'Springs fling you onto the sweeper. Time it!',     build: 'springTrap',    duration: 28 },

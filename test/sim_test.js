@@ -29,7 +29,7 @@ code += `
   while((Game.screen==='playing' || Game.screen==='loading') && g++<60*360){ const r=Game.show.round;
     if(Game.show.index!==seen){seen=Game.show.index;tr.push(r.def.name+'/'+r.kind+'#'+r.beans.length+(r.player?'[a'+ +r.player.alive+'e'+ +r.player.eliminated+'x'+ +r.player.exited+'f'+ +r.player.falling+']':'[NOPLAYER]'));}
     if(r && !r.player) throw new Error('no player @ '+r.def.name+' | trace: '+tr.join('  '));
-    if(r.live){ if(r.kind==='race'||r.kind==='tiptoe'){r.qualifyCount=1;r.player.falling=false;r.player.z=0;r.player.y=r.finishY-5;}
+    if(r.live){ if(r.kind==='race'||r.kind==='tiptoe'||r.kind==='climb'){r.qualifyCount=1;r.player.falling=false;r.player.z=0;r.player.y=r.finishY-5;}
       else if(r.kind==='mountain'){r.player.falling=false;r.player.z=0;r.player.y=r.finishY-5;}
       else if(r.kind==='survival'){if(r.timer>0.06)r.timer=0.05;}
       else if(r.kind==='tag'){r.player.hasTail=true; if(r.timer>0.06)r.timer=0.05;}
