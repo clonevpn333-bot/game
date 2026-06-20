@@ -289,6 +289,7 @@ const UI = {
             ['⏱️ Survival', 'Stay on the floor &amp; out of the slime till the timer ends.'],
             ['🏷️ Hunt — Tail Tag', 'Hold a tail when time runs out. No tail? Grab one!'],
             ['🧠 Logic — Tip Toe', 'Find the hidden real tiles; fakes drop into the slime.'],
+            ['🍉 Perfect Match', 'A fruit is called — stand on a matching tile or drop!'],
             ['🌊 Slime Climb', 'Race up and outrun the rising tide of slime.'],
             ['👑 Final', 'Hex-A-Gone, or a mad dash up Fall Mountain to the Crown.'],
         ];
