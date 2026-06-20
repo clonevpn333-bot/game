@@ -245,83 +245,61 @@ const SHOP_ROTATION_SIZE = 8;   // featured items available to buy at once
    build: name of the builder in Rounds.builders
    ===================================================================== */
 const SHOW = [
-    {
-        id: 'door_dash',
-        name: 'Door Dash',
-        category: 'Race',
-        tagline: 'Smash the fakes, dodge the duds — first to the finish flies through!',
-        build: 'doorDash',
-        qualify: 14,
-    },
-    {
-        id: 'gate_crash',
-        name: 'Gate Crash',
-        category: 'Race',
-        tagline: 'A gauntlet of doors and whirling bars — pick the fakes and floor it!',
-        build: 'gateCrash',
-        qualify: 10,
-    },
-    {
-        id: 'whirlygig',
-        name: 'The Whirlygig',
-        category: 'Race',
-        tagline: 'Spinning bars and swinging hammers between you and glory.',
-        build: 'whirlygig',
-        qualify: 7,
-    },
-    {
-        id: 'jump_club',
-        name: 'Jump Club',
-        category: 'Survival',
-        tagline: 'Hop the sweeper. Miss the beat, kiss the slime.',
-        build: 'jumpClub',
-        duration: 30,
-    },
-    {
-        id: 'bounce_bash',
-        name: 'Bounce Bash',
-        category: 'Survival',
-        tagline: 'Spring pads and a sweeper bar — bounce high, stay alive!',
-        build: 'bounceBash',
-        duration: 26,
-    },
-    {
-        id: 'hexagone',
-        name: 'Hex-A-Gone',
-        category: 'Final',
-        tagline: 'The floor is lava-pink. Last bean bouncing takes the Crown!',
-        build: 'hexAGone',
-    },
-    { id: 'hammer_alley',   name: 'Hammer Alley',    category: 'Race',     tagline: 'Wrecking balls everywhere — time your run!',       build: 'hammerAlley',   qualify: 10 },
-    { id: 'spinner_sprint', name: 'Spinner Sprint',  category: 'Race',     tagline: 'A blur of spinning bars. Keep your footing!',      build: 'spinnerSprint', qualify: 10 },
-    { id: 'pinball_run',    name: 'Pinball Panic',   category: 'Race',     tagline: 'Bounce pads and bars fling you everywhere.',       build: 'pinballRun',    qualify: 9  },
-    { id: 'dizzy_doors',    name: 'Dizzy Doors',     category: 'Race',     tagline: 'Door after door after door — pick the fakes!',     build: 'dizzyDoors',    qualify: 10 },
-    { id: 'the_gauntlet',   name: 'The Gauntlet',    category: 'Race',     tagline: 'Doors, bars, hammers and springs. Good luck!',     build: 'theGauntlet',   qualify: 8  },
-    { id: 'jump_showdown',  name: 'Jump Showdown',   category: 'Survival', tagline: 'A faster sweeper on a smaller floor. Survive!',    build: 'jumpShowdown',  duration: 28 },
-    { id: 'double_sweep',   name: 'Double Trouble',  category: 'Survival', tagline: 'Two bars, opposite ways. Mind the gap!',           build: 'doubleSweep',   duration: 28 },
-    { id: 'spring_storm',   name: 'Spring Storm',    category: 'Survival', tagline: 'Springs launch you into the sweeper. Stay alive!', build: 'springStorm',   duration: 26 },
-    { id: 'hex_blitz',      name: 'Hex Blitz',       category: 'Final',    tagline: 'Hex-A-Gone, but the floor melts fast!',            build: 'hexBlitz' },
-    { id: 'hex_giant',      name: 'Hexagon Heights', category: 'Final',    tagline: 'A giant honeycomb. Outlast them all!',             build: 'hexGiant' },
-    { id: 'knockout_alley', name: 'Knockout Alley',  category: 'Race',     tagline: 'Hammers AND bars. Absolutely brutal!',             build: 'knockoutAlley', qualify: 9  },
-    { id: 'zigzag',         name: 'Zig-Zag',         category: 'Race',     tagline: 'Weave the offset spinners — left, right, GO!',     build: 'zigzag',        qualify: 10 },
-    { id: 'door_jam',       name: 'Door Jam',        category: 'Race',     tagline: 'Six walls of doors. Read the fakes fast!',         build: 'doorJam',       qualify: 9  },
-    { id: 'bouncy_castle',  name: 'Bouncy Castle',   category: 'Race',     tagline: 'Spring pads everywhere — bounce to the finish!',   build: 'bouncyCastle',  qualify: 10 },
-    { id: 'slalom',         name: 'Slalom',          category: 'Race',     tagline: 'Carve between the bars like a downhill skier.',    build: 'slalom',        qualify: 10 },
-    { id: 'slime_climb',    name: 'Slime Climb',     category: 'Race',     tagline: 'Scramble up and outrun the rising slime — don\'t get caught!', build: 'slimeClimb', qualify: 10 },
-    { id: 'slime_scramble', name: 'Slime Scramble',  category: 'Race',     tagline: 'A brutal climb with faster slime and meaner obstacles.',       build: 'slimeScramble', qualify: 8 },
-    { id: 'tiny_island',    name: 'Tiny Island',     category: 'Survival', tagline: 'A tiny floor and a fast bar. Eep!',                build: 'tinyIsland',    duration: 28 },
-    { id: 'big_top',        name: 'Big Top',         category: 'Survival', tagline: 'Loads of room — just keep hopping the bar.',       build: 'bigTop',        duration: 30 },
-    { id: 'spring_trap',    name: 'Spring Trap',     category: 'Survival', tagline: 'Springs fling you onto the sweeper. Time it!',     build: 'springTrap',    duration: 28 },
-    { id: 'hex_royale',     name: 'Hex Royale',      category: 'Final',    tagline: 'A medium honeycomb melt-down. Last bean wins!',    build: 'hexRoyale' },
-    { id: 'honeycomb',      name: 'Honeycomb',       category: 'Final',    tagline: 'Tiny tiles, fast melt. Keep moving!',              build: 'honeycomb' },
+    // ---------- RACES (long, multi-section courses) ----------
+    { id: 'door_dash',     name: 'Door Dash',     category: 'Race', build: 'doorDash',
+      tagline: 'Charge the walls of doors — smash the fakes, bounce off the real ones!', qualify: 14 },
+    { id: 'gate_crash',    name: 'Gate Crash',    category: 'Race', build: 'gateCrash',
+      tagline: 'Doors, spinning beams and wrecking balls — pick a lane and floor it!', qualify: 10 },
+    { id: 'whirlygig',     name: 'The Whirlygig', category: 'Race', build: 'whirlygig',
+      tagline: 'Rotating beams, treadmills and giant windmills. Twirl your way up!', qualify: 7 },
+    { id: 'dizzy_heights', name: 'Dizzy Heights', category: 'Race', build: 'dizzyHeights',
+      tagline: 'Spinning platforms and a cannonade of fruit raining down the slope.', qualify: 10 },
+    { id: 'fruit_chute',   name: 'Fruit Chute',   category: 'Race', build: 'fruitChute',
+      tagline: 'Climb the conveyor belts while the fruit cannons blast you back down!', qualify: 9 },
+    { id: 'hit_parade',    name: 'Hit Parade',    category: 'Race', build: 'hitParade',
+      tagline: 'The everything course — doors, beams, hammers, belts, blocks and balls.', qualify: 8 },
+    { id: 'knight_fever',  name: 'Knight Fever',  category: 'Race', build: 'knightFever',
+      tagline: 'A medieval gauntlet of swinging axes, sliding blocks and bumpers.', qualify: 8 },
+    { id: 'slime_climb',   name: 'Slime Climb',   category: 'Race', build: 'slimeClimb',
+      tagline: 'Scramble up the obstacle climb and outrun the rising tide of slime!', qualify: 10 },
+    { id: 'slime_scramble',name: 'Slime Scramble',category: 'Race', build: 'slimeScramble',
+      tagline: 'A brutal climb — faster slime, meaner obstacles. Don\'t look back.', qualify: 8 },
 
-    // ---- new gamemodes ----
-    { id: 'fall_mountain',  name: 'Fall Mountain',   category: 'Final',    tagline: 'Scramble up the mountain — first bean to the Crown wins it all!', build: 'fallMountain' },
-    { id: 'lost_temple',    name: 'Lost Temple',     category: 'Final',    tagline: 'A steeper climb of doors and wrecking balls to the Crown.',        build: 'lostTemple' },
-    { id: 'tail_tag',       name: 'Tail Tag',        category: 'Hunt',     tagline: 'Snatch a tail and keep it — no tail when the timer ends, no qualify!', build: 'tailTag',  duration: 30 },
-    { id: 'tail_chase',     name: 'Tail Chase',      category: 'Hunt',     tagline: 'Tighter floor, fewer tails. Steal one and run for your life!',     build: 'tailChase', duration: 28 },
-    { id: 'tip_toe',        name: 'Tip Toe',         category: 'Logic',    tagline: 'Hidden fake tiles drop into the slime. Find the safe path!',       build: 'tipToe' },
-    { id: 'tip_toe_twins',  name: 'Tip Toe Twins',   category: 'Logic',    tagline: 'A wider maze of stepping stones — more fakes, more nerves.',       build: 'tipToeTwins' },
+    // ---------- SURVIVAL ----------
+    { id: 'jump_club',     name: 'Jump Club',     category: 'Survival', build: 'jumpClub',     duration: 30,
+      tagline: 'Hop the spinning beam. Miss the beat, kiss the slime.' },
+    { id: 'jump_showdown', name: 'Jump Showdown', category: 'Survival', build: 'jumpShowdown', duration: 28,
+      tagline: 'Two stacked beams on a shrinking floor — jump the low one, duck the high.' },
+    { id: 'bounce_bash',   name: 'Bounce Bash',   category: 'Survival', build: 'bounceBash',   duration: 26,
+      tagline: 'Spring pads and a sweeper bar — bounce high, stay alive!' },
+
+    // ---------- HUNT ----------
+    { id: 'tail_tag',      name: 'Tail Tag',      category: 'Hunt', build: 'tailTag',  duration: 30,
+      tagline: 'Snatch a tail and keep it — no tail when the timer ends, no qualify!' },
+    { id: 'tail_chase',    name: 'Tail Chase',    category: 'Hunt', build: 'tailChase', duration: 28,
+      tagline: 'Tighter floor, fewer tails. Steal one and run for your life!' },
+
+    // ---------- LOGIC ----------
+    { id: 'tip_toe',       name: 'Tip Toe',       category: 'Logic', build: 'tipToe',
+      tagline: 'Hidden fake tiles drop into the slime. Memorise the safe path!' },
+    { id: 'tip_toe_twins', name: 'Tip Toe Twins', category: 'Logic', build: 'tipToeTwins',
+      tagline: 'A wider maze of stepping stones — more fakes, more nerves.' },
+
+    // ---------- FINALS ----------
+    { id: 'hexagone',      name: 'Hex-A-Gone',     category: 'Final', build: 'hexAGone',
+      tagline: 'The floor dissolves beneath you. Last bean bouncing takes the Crown!' },
+    { id: 'hex_blitz',     name: 'Hex Blitz',      category: 'Final', build: 'hexBlitz',
+      tagline: 'Hex-A-Gone, but the tiles melt twice as fast!' },
+    { id: 'hex_giant',     name: 'Hexagon Heights',category: 'Final', build: 'hexGiant',
+      tagline: 'A giant honeycomb tower. Outlast them all!' },
+    { id: 'hex_royale',    name: 'Hex Royale',     category: 'Final', build: 'hexRoyale',
+      tagline: 'A medium honeycomb melt-down. Last bean wins!' },
+    { id: 'honeycomb',     name: 'Honeycomb',      category: 'Final', build: 'honeycomb',
+      tagline: 'Tiny tiles, fast melt. Keep moving!' },
+    { id: 'fall_mountain', name: 'Fall Mountain',  category: 'Final', build: 'fallMountain',
+      tagline: 'Scramble up the mountain dodging cannonballs — grab the Crown to win!' },
+    { id: 'lost_temple',   name: 'Lost Temple',    category: 'Final', build: 'lostTemple',
+      tagline: 'A steeper climb of doors and wrecking balls to the Crown.' },
 ];
 
 /* =====================================================================
@@ -1292,6 +1270,7 @@ class Spinner {
         this.arms = o.arms || 2;
         this.pushOut = !!o.pushOut;
         this.color = o.color || '#ff5fa2';
+        this.style = o.style || 'bar';      // bar | windmill | blade | sweeper (view only)
         this.layer = 'top';
     }
     update(dt) { this.angle += this.speed * dt; }
@@ -1355,6 +1334,7 @@ class Hammer {
         this.amp = o.amp; this.headR = o.headR || 30;
         this.phase = o.phase || 0; this.speed = o.speed || 1.6;
         this.power = o.power || 540; this.height = o.height != null ? o.height : 120;
+        this.style = o.style || 'hammer';   // hammer | axe | pendulum (view only)
         this.layer = 'top';
     }
     update(dt) { this.phase += this.speed * dt; }
@@ -1462,6 +1442,99 @@ class BouncePad {
         ctx.beginPath(); ctx.ellipse(sx, sy - pop * 6, this.r * 0.7, this.r * 0.35, 0, 0, 6.283); ctx.fill();
         ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.ellipse(sx, sy, this.r, this.r * 0.5, 0, 0, 6.283); ctx.stroke();
+    }
+}
+
+class Conveyor {
+    // A belt region that continuously carries grounded beans along (dx,dy).
+    constructor(o) {
+        this.kind = 'conveyor';
+        this.x0 = o.x0; this.x1 = o.x1; this.y0 = o.y0; this.y1 = o.y1;
+        this.dx = o.dx || 0; this.dy = o.dy != null ? o.dy : 1;   // +y pushes back down the course
+        this.push = o.push || 130; this.color = o.color || '#5ad1ff'; this.t = 0;
+    }
+    update(dt) { this.t += dt; }
+    collide(bean, round, dt) {
+        if (bean.falling || bean.gone || bean.exited || !bean.grounded) return;
+        if (bean.x < this.x0 || bean.x > this.x1 || bean.y < this.y0 || bean.y > this.y1) return;
+        bean.x += this.dx * this.push * (dt || 0.016);
+        bean.y += this.dy * this.push * (dt || 0.016);
+    }
+}
+
+class Bumper {
+    // Pinball mushroom that flings beans radially outward on contact.
+    constructor(o) {
+        this.kind = 'bumper'; this.x = o.x; this.y = o.y; this.r = o.r || 34;
+        this.power = o.power || 320; this.color = o.color || '#ffd23f'; this.t = 99;
+    }
+    update(dt) { this.t += dt; }
+    collide(bean, round) {
+        if (bean.falling || bean.gone || bean.exited) return;
+        const d = U.dist(bean.x, bean.y, this.x, this.y);
+        if (d < this.r + bean.r) {
+            const nx = (bean.x - this.x) / (d || 1), ny = (bean.y - this.y) / (d || 1);
+            bean.hit(nx, ny, this.power, 0.3);
+            this.t = 0; round.spawnBurst(bean.x, bean.y, bean.z, this.color, 6);
+        }
+    }
+}
+
+class MovingBlock {
+    // A solid wall block sliding side-to-side across the lane; shoves beans.
+    constructor(o) {
+        this.kind = 'movingblock'; this.cy = o.cy; this.w = o.w || 130; this.thick = o.thick || 40;
+        this.height = o.height != null ? o.height : 130;
+        this.x0 = o.x0; this.x1 = o.x1; this.speed = o.speed || 150; this.dir = o.dir || 1;
+        this.cx = o.cx != null ? o.cx : o.x0; this.color = o.color || '#b06bff';
+    }
+    update(dt) {
+        this.cx += this.dir * this.speed * dt;
+        if (this.cx > this.x1) { this.cx = this.x1; this.dir = -1; }
+        if (this.cx < this.x0) { this.cx = this.x0; this.dir = 1; }
+    }
+    collide(bean, round) {
+        if (bean.falling || bean.gone || bean.exited || bean.z > this.height) return;
+        if (Math.abs(bean.y - this.cy) < bean.r + this.thick * 0.5 &&
+            Math.abs(bean.x - this.cx) < this.w * 0.5 + bean.r) {
+            bean.hit(this.dir, 0, 280, 0.25);
+            bean.x = this.cx + this.dir * (this.w * 0.5 + bean.r + 1);
+        }
+    }
+}
+
+class Cannon {
+    // Lobs boulders that roll down the course (+y) knocking beans back.
+    constructor(o) {
+        this.kind = 'cannon'; this.x = o.x; this.y = o.y;
+        this.interval = o.interval || 2.3; this.t = o.phase || 0.5;
+        this.speed = o.speed || 320; this.ballR = o.ballR || 26;
+        this.spread = o.spread || 130; this.reach = o.reach || 1600;
+        this.color = o.color || '#e6395a'; this.balls = [];
+    }
+    update(dt) {
+        this.t -= dt;
+        if (this.t <= 0) {
+            this.t = this.interval;
+            this.balls.push({ x: this.x + U.rngf(-this.spread, this.spread), y: this.y,
+                vx: U.rngf(-26, 26), vy: this.speed, spin: 0 });
+        }
+        for (let i = this.balls.length - 1; i >= 0; i--) {
+            const b = this.balls[i];
+            b.y += b.vy * dt; b.x += b.vx * dt; b.spin += dt * 6;
+            if (b.y > this.y + this.reach) this.balls.splice(i, 1);
+        }
+    }
+    collide(bean, round) {
+        if (bean.falling || bean.gone || bean.exited || bean.z > 46) return;
+        for (const b of this.balls) {
+            if (U.dist(bean.x, bean.y, b.x, b.y) < this.ballR + bean.r) {
+                const nx = (bean.x - b.x) / (this.ballR + bean.r);
+                bean.hit(nx * 0.4, 1, 360, 0.7);
+                round.spawnBurst(bean.x, bean.y, bean.z, this.color, 6);
+                return;
+            }
+        }
     }
 }
 
@@ -2090,8 +2163,58 @@ const Rounds = {
     _raceCommon(r) {
         r.kind = 'race'; r.camMode = 'followY';
         r.minX = 200; r.maxX = 1080; r.cx = 640;
-        r.minY = 240; r.maxY = 2680; r.finishY = 420;
+        r.minY = 240; r.maxY = 3820; r.finishY = 420;     // long, multi-section course
         r.thinkFn = raceThink;
+    },
+    // ----- course SECTION helpers (real Fall Guys courses string several of
+    // these together so every stretch plays differently) ---------------------
+    _xs(r, n, i, pad) { pad = pad || 160; return n <= 1 ? r.cx : U.lerp(r.minX + pad, r.maxX - pad, i / (n - 1)); },
+    _beams(r, y, o) {                                  // a row of spinning beams / blades / windmills
+        o = o || {}; const n = o.n || 2, sp = o.speed != null ? o.speed : 1.4;
+        for (let i = 0; i < n; i++)
+            r.obstacles.push(new Spinner({ cx: this._xs(r, n, i, o.pad), cy: y, len: o.len || 210,
+                thick: o.thick || 20, speed: (i % 2 ? -sp : sp), power: o.power || 360,
+                color: o.color || '#7b46d6', style: o.style || 'bar' }));
+    },
+    _bumpers(r, y, o) {                                // a staggered field of pinball bumpers
+        o = o || {}; const rows = o.rows || 2, cols = o.cols || 3, gap = o.gap || 130;
+        for (let j = 0; j < rows; j++)
+            for (let i = 0; i < cols; i++) {
+                const off = (j % 2) * (((r.maxX - r.minX) / cols) / 2);
+                r.obstacles.push(new Bumper({ x: U.clamp(this._xs(r, cols, i, 130) + off, r.minX + 50, r.maxX - 50),
+                    y: y - j * gap, r: o.r || 36, power: o.power || 320, color: o.color || '#ffd23f' }));
+            }
+    },
+    _conveyor(r, y0, y1, o) {                          // a treadmill across the lane
+        o = o || {};
+        r.obstacles.push(new Conveyor({ x0: r.minX + 12, x1: r.maxX - 12, y0, y1,
+            dx: o.dx || 0, dy: o.dy != null ? o.dy : 1, push: o.push || 120, color: o.color || '#46d36a' }));
+    },
+    _blocks(r, y, o) {                                 // sliding wall blocks across the lane
+        o = o || {}; const n = o.n || 2, gap = o.gap || 150;
+        for (let i = 0; i < n; i++)
+            r.obstacles.push(new MovingBlock({ cy: y - i * gap, x0: r.minX + 70, x1: r.maxX - 70,
+                w: o.w || 150, thick: 42, speed: o.speed || 150, dir: i % 2 ? -1 : 1,
+                cx: i % 2 ? r.maxX - 70 : r.minX + 70, color: o.color || '#b06bff' }));
+    },
+    _cannons(r, y, o) {                                // cannons lobbing boulders down-course
+        o = o || {}; const n = o.n || 2;
+        for (let i = 0; i < n; i++)
+            r.obstacles.push(new Cannon({ x: this._xs(r, n, i, 170), y, interval: o.interval || 2.2,
+                phase: i * 0.8, speed: o.speed || 320, ballR: o.ballR || 26, spread: o.spread || 120,
+                reach: o.reach || 1500, color: o.color || '#e6395a' }));
+    },
+    _axes(r, y, o) {                                   // swinging axes (Knight Fever)
+        o = o || {}; const n = o.n || 1, gap = o.gap || 230;
+        for (let i = 0; i < n; i++)
+            r.obstacles.push(new Hammer({ cx: r.cx, cy: y - i * gap, amp: o.amp || 320, headR: 30,
+                speed: (i % 2 ? -1 : 1) * (o.speed || 1.9), phase: i * 1.1, power: 540, style: o.style || 'axe' }));
+    },
+    _hammers(r, y, o) {                                // wrecking-ball hammers
+        o = o || {}; const n = o.n || 1, gap = o.gap || 240;
+        for (let i = 0; i < n; i++)
+            r.obstacles.push(new Hammer({ cx: r.cx, cy: y - i * gap, amp: o.amp || 320, headR: 33,
+                speed: (i % 2 ? -1 : 1) * (o.speed || 1.8), phase: i * 0.9, power: o.power || 540 }));
     },
     _doorWall(r, y, fakeCount) {
         const x0 = r.minX, x1 = r.maxX, n = 6, w = (x1 - x0) / n;
@@ -2194,65 +2317,31 @@ const Rounds = {
 
     builders: {
         // -------------------------------------------------- DOOR DASH
-        doorDash(r) {
-            r.kind = 'race'; r.camMode = 'followY';
-            r.minX = 200; r.maxX = 1080; r.cx = 640;
-            r.minY = 240; r.maxY = 2680;
-            r.finishY = 420;
-            r.thinkFn = raceThink;
-
-            const makeWall = (y, fakeCount) => {
-                const x0 = r.minX, x1 = r.maxX, n = 6, w = (x1 - x0) / n;
-                const fakes = new Set();
-                while (fakes.size < fakeCount) fakes.add(U.rng(0, n - 1));
-                const segs = [];
-                for (let i = 0; i < n; i++)
-                    segs.push({ x0: x0 + i * w, x1: x0 + (i + 1) * w, fake: fakes.has(i), broken: false });
-                const dw = new DoorWall({ y, x0, x1, segs });
-                r.obstacles.push(dw); r.doorWalls.push(dw);
-            };
-            [2150, 1700, 1200, 760].forEach((y, i) => makeWall(y, i % 2 ? 3 : 2));
-
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-
-            r.drawGround = (ctx, cam) => {
-                drawSky(ctx);
-                // track
-                ctx.fillStyle = PAL.track;
-                ctx.fillRect(r.minX - cam.x, r.minY - cam.y, r.maxX - r.minX, r.maxY - r.minY);
-                drawTrackEdges(ctx, cam, r);
-                drawFinishBanner(ctx, cam, r);
-                drawStartGate(ctx, cam, r);
-            };
+        doorDash(r) {                       // RACE — walls of doors, smash the fakes
+            Rounds._raceCommon(r);
+            Rounds._doorWall(r, 3340, 2);
+            Rounds._doorWall(r, 2980, 3);
+            Rounds._bumpers(r, 2560, { rows: 2, cols: 4, color: '#ff5fa2' });
+            Rounds._doorWall(r, 2150, 2);
+            Rounds._beams(r, 1760, { n: 2, speed: 1.3, color: '#7b46d6' });
+            Rounds._doorWall(r, 1360, 3);
+            Rounds._doorWall(r, 980, 2);
+            Rounds._bumpers(r, 640, { rows: 1, cols: 3, color: '#ffd23f' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
 
         // -------------------------------------------------- THE WHIRLYGIG
-        whirlygig(r) {
-            r.kind = 'race'; r.camMode = 'followY';
-            r.minX = 200; r.maxX = 1080; r.cx = 640;
-            r.minY = 240; r.maxY = 2680;
-            r.finishY = 430;
-            r.thinkFn = raceThink;
-
-            r.obstacles.push(new Spinner({ cx: 640, cy: 2150, len: 250, thick: 20, speed: 1.2, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new BouncePad({ x: 470, y: 1880, r: 40 }));
-            r.obstacles.push(new BouncePad({ x: 810, y: 1880, r: 40 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1620, len: 250, thick: 20, speed: -1.4, power: 360, color: '#ff5fa2' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1250, amp: 300, headR: 32, speed: 1.7, power: 520 }));
-            r.obstacles.push(new Spinner({ cx: 470, cy: 940, len: 200, thick: 18, speed: 1.6, power: 340, color: '#23d6c8' }));
-            r.obstacles.push(new Spinner({ cx: 820, cy: 940, len: 200, thick: 18, speed: -1.6, power: 340, color: '#23d6c8' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 640, amp: 320, headR: 30, speed: 2.1, phase: 1.5, power: 520 }));
-
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-
-            r.drawGround = (ctx, cam) => {
-                drawSky(ctx);
-                ctx.fillStyle = PAL.track;
-                ctx.fillRect(r.minX - cam.x, r.minY - cam.y, r.maxX - r.minX, r.maxY - r.minY);
-                drawTrackEdges(ctx, cam, r);
-                drawFinishBanner(ctx, cam, r);
-                drawStartGate(ctx, cam, r);
-            };
+        whirlygig(r) {                      // RACE — beams, treadmills, giant windmill
+            Rounds._raceCommon(r);
+            Rounds._beams(r, 3360, { n: 3, style: 'bar', speed: 1.4, color: '#7b46d6' });
+            Rounds._beams(r, 3000, { n: 2, style: 'bar', speed: -1.5, color: '#23d6c8' });
+            Rounds._bumpers(r, 2620, { rows: 2, cols: 5, color: '#ffd23f' });
+            Rounds._beams(r, 2250, { n: 1, style: 'blade', speed: 1.0, len: 260, color: '#ff5fa2' });
+            Rounds._conveyor(r, 1900, 2090, { dy: 1, push: 120 });
+            Rounds._beams(r, 1620, { n: 3, style: 'blade', speed: 2.0, color: '#ff5fa2' });
+            Rounds._beams(r, 1230, { n: 2, style: 'bar', speed: -1.7, color: '#23d6c8' });
+            Rounds._beams(r, 760, { n: 1, style: 'windmill', speed: 0.8, len: 330, thick: 32, color: '#7b46d6' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
 
         // -------------------------------------------------- JUMP CLUB
@@ -2325,32 +2414,17 @@ const Rounds = {
         },
 
         // -------------------------------------------------- GATE CRASH
-        gateCrash(r) {
-            r.kind = 'race'; r.camMode = 'followY';
-            r.minX = 200; r.maxX = 1080; r.cx = 640;
-            r.minY = 240; r.maxY = 2680;
-            r.finishY = 420;
-            r.thinkFn = raceThink;
-
-            const makeWall = (y, fakeCount) => {
-                const x0 = r.minX, x1 = r.maxX, n = 6, w = (x1 - x0) / n;
-                const fakes = new Set();
-                while (fakes.size < fakeCount) fakes.add(U.rng(0, n - 1));
-                const segs = [];
-                for (let i = 0; i < n; i++)
-                    segs.push({ x0: x0 + i * w, x1: x0 + (i + 1) * w, fake: fakes.has(i), broken: false });
-                const dw = new DoorWall({ y, x0, x1, segs });
-                r.obstacles.push(dw); r.doorWalls.push(dw);
-            };
-            // doors interleaved with spinning bars
-            makeWall(2150, 3);
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1830, len: 240, thick: 20, speed: 1.3, power: 360, color: '#7b46d6' }));
-            makeWall(1500, 2);
-            r.obstacles.push(new Spinner({ cx: 470, cy: 1180, len: 190, thick: 18, speed: -1.6, power: 340, color: '#23d6c8' }));
-            r.obstacles.push(new Spinner({ cx: 820, cy: 1180, len: 190, thick: 18, speed: 1.6, power: 340, color: '#23d6c8' }));
-            makeWall(820, 3);
-
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        gateCrash(r) {                      // RACE — doors interleaved with beams & hammers
+            Rounds._raceCommon(r);
+            Rounds._doorWall(r, 3340, 3);
+            Rounds._beams(r, 2980, { n: 2, speed: 1.4, color: '#7b46d6' });
+            Rounds._doorWall(r, 2560, 2);
+            Rounds._hammers(r, 2150, { n: 1, speed: 1.8 });
+            Rounds._beams(r, 1820, { n: 2, speed: -1.6, color: '#23d6c8' });
+            Rounds._doorWall(r, 1420, 3);
+            Rounds._bumpers(r, 1050, { rows: 2, cols: 4, color: '#ff5fa2' });
+            Rounds._doorWall(r, 660, 2);
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
 
         // -------------------------------------------------- BOUNCE BASH
@@ -2381,72 +2455,61 @@ const Rounds = {
             r.onUpdate = (rr, dt) => { sweep.speed += dt * 0.05; };
         },
 
-        // ---- additional levels (built from the shared helpers) -------
-        hammerAlley(r) {            // RACE — a gauntlet of wrecking balls
+        // -------------------------------------------------- DIZZY HEIGHTS
+        dizzyHeights(r) {                   // RACE — spinning platforms + fruit cannons
             Rounds._raceCommon(r);
-            r.obstacles.push(new Hammer({ cx: 640, cy: 2120, amp: 330, headR: 34, speed: 1.6, power: 540 }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1760, amp: 300, headR: 32, speed: -1.9, phase: 1, power: 540 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1420, len: 250, thick: 20, speed: 1.5, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1060, amp: 330, headR: 34, speed: 2.0, phase: 0.6, power: 540 }));
-            r.obstacles.push(new Hammer({ cx: 480, cy: 700, amp: 240, headR: 30, speed: -2.2, power: 520 }));
-            r.obstacles.push(new Hammer({ cx: 820, cy: 560, amp: 240, headR: 30, speed: 2.3, phase: 1.5, power: 520 }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            Rounds._beams(r, 3360, { n: 2, style: 'blade', speed: 1.5, len: 240, color: '#23d6c8' });
+            Rounds._cannons(r, 3050, { n: 2, interval: 2.0, speed: 340, reach: 1600, color: '#ff9447' });
+            Rounds._bumpers(r, 2650, { rows: 2, cols: 5, color: '#ffd23f' });
+            Rounds._beams(r, 2250, { n: 3, style: 'bar', speed: -1.7, color: '#7b46d6' });
+            Rounds._cannons(r, 1950, { n: 2, interval: 2.2, speed: 320, reach: 1400, color: '#ff5fa2' });
+            Rounds._beams(r, 1500, { n: 2, style: 'blade', speed: 2.0, color: '#23d6c8' });
+            Rounds._bumpers(r, 1050, { rows: 2, cols: 4, color: '#ffd23f' });
+            Rounds._beams(r, 680, { n: 1, style: 'windmill', speed: 0.9, len: 320, thick: 30, color: '#7b46d6' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
-        spinnerSprint(r) {          // RACE — dense spinning bars
+        // -------------------------------------------------- FRUIT CHUTE
+        fruitChute(r) {                     // RACE — climb the belts under a fruit barrage
             Rounds._raceCommon(r);
-            [2100, 1820, 1540, 1260, 980, 700].forEach((y, i) =>
-                r.obstacles.push(new Spinner({ cx: i % 2 ? 470 : 820, cy: y, len: 230, thick: 18,
-                    speed: i % 2 ? 1.7 : -1.7, power: 350, color: i % 2 ? '#23d6c8' : '#ff5fa2' })));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1680, len: 250, thick: 20, speed: 1.3, power: 360, color: '#7b46d6' }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            Rounds._cannons(r, 3300, { n: 3, interval: 1.8, speed: 360, reach: 2400, spread: 150, color: '#ff9447' });
+            Rounds._conveyor(r, 2900, 3150, { dy: 1, push: 135, color: '#46d36a' });
+            Rounds._bumpers(r, 2550, { rows: 2, cols: 4, color: '#ffd23f' });
+            Rounds._conveyor(r, 2050, 2350, { dy: 1, push: 140, color: '#5ad1ff' });
+            Rounds._cannons(r, 1750, { n: 2, interval: 1.9, speed: 340, reach: 1500, color: '#ff5fa2' });
+            Rounds._conveyor(r, 1150, 1420, { dy: 1, push: 135, color: '#46d36a' });
+            Rounds._bumpers(r, 760, { rows: 1, cols: 3, color: '#ffd23f' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
-        pinballRun(r) {             // RACE — bounce pads + spinners chaos
+        // -------------------------------------------------- HIT PARADE
+        hitParade(r) {                      // RACE — the everything gauntlet
             Rounds._raceCommon(r);
-            for (const [x, y] of [[470, 2000], [810, 2000], [640, 1700], [470, 1400], [810, 1400], [640, 1100]])
-                r.obstacles.push(new BouncePad({ x, y, r: 42 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1850, len: 240, thick: 20, speed: 1.5, power: 340, color: '#ffd23f' }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1250, len: 240, thick: 20, speed: -1.6, power: 340, color: '#ff5fa2' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 780, amp: 320, headR: 32, speed: 2.0, power: 520 }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            Rounds._doorWall(r, 3360, 3);
+            Rounds._beams(r, 3000, { n: 2, speed: 1.5, color: '#7b46d6' });
+            Rounds._hammers(r, 2680, { n: 1, speed: 1.9 });
+            Rounds._conveyor(r, 2300, 2520, { dy: 1, push: 125 });
+            Rounds._blocks(r, 1980, { n: 2, speed: 160, color: '#b06bff' });
+            Rounds._bumpers(r, 1600, { rows: 2, cols: 5, color: '#ffd23f' });
+            Rounds._cannons(r, 1250, { n: 2, interval: 2.1, speed: 330, reach: 1200, color: '#e6395a' });
+            Rounds._beams(r, 820, { n: 1, style: 'windmill', speed: 0.9, len: 320, thick: 30, color: '#23d6c8' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
-        dizzyDoors(r) {             // RACE — a maze of doors
+        // -------------------------------------------------- KNIGHT FEVER
+        knightFever(r) {                    // RACE — swinging axes, sliding blocks, bumpers
             Rounds._raceCommon(r);
-            [2150, 1820, 1490, 1160, 830].forEach((y, i) => Rounds._doorWall(r, y, i % 2 ? 2 : 3));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-        },
-        theGauntlet(r) {            // RACE — a bit of everything
-            Rounds._raceCommon(r);
-            Rounds._doorWall(r, 2150, 3);
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1850, len: 250, thick: 20, speed: 1.4, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1520, amp: 320, headR: 32, speed: 1.9, power: 540 }));
-            r.obstacles.push(new BouncePad({ x: 470, y: 1250, r: 42 }));
-            r.obstacles.push(new BouncePad({ x: 810, y: 1250, r: 42 }));
-            Rounds._doorWall(r, 980, 2);
-            r.obstacles.push(new Spinner({ cx: 470, cy: 660, len: 190, thick: 18, speed: 1.7, power: 340, color: '#23d6c8' }));
-            r.obstacles.push(new Spinner({ cx: 820, cy: 660, len: 190, thick: 18, speed: -1.7, power: 340, color: '#23d6c8' }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            Rounds._axes(r, 3320, { n: 2, speed: 1.9, gap: 300 });
+            Rounds._bumpers(r, 2850, { rows: 2, cols: 4, color: '#e6395a' });
+            Rounds._blocks(r, 2450, { n: 2, speed: 170, color: '#9a6cff' });
+            Rounds._axes(r, 2050, { n: 2, speed: -2.1, gap: 300 });
+            Rounds._conveyor(r, 1650, 1850, { dy: 1, push: 130, color: '#7b46d6' });
+            Rounds._blocks(r, 1300, { n: 3, speed: 180, gap: 130, color: '#9a6cff' });
+            Rounds._axes(r, 820, { n: 2, speed: 2.2, gap: 280 });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
         jumpShowdown(r) {           // SURVIVAL — fast sweeper, smaller ring
             Rounds._arena(r, 280);
             const s = Rounds._sweeper(r, { speed: 1.0, power: 520 }); r.sweeper = s;
             Rounds._spawnRing(r);
             r.onUpdate = (rr, dt) => { s.speed += dt * 0.09; };
-        },
-        doubleSweep(r) {            // SURVIVAL — two counter-rotating bars
-            Rounds._arena(r, 300);
-            const s1 = Rounds._sweeper(r, { speed: 0.8, angle: -Math.PI / 2, color: '#ffd23f' }); r.sweeper = s1;
-            const s2 = Rounds._sweeper(r, { speed: -1.0, angle: 0, color: '#ff5fa2', len: r.platform.r - 70 });
-            Rounds._spawnRing(r);
-            r.onUpdate = (rr, dt) => { s1.speed += dt * 0.05; s2.speed -= dt * 0.05; };
-        },
-        springStorm(r) {            // SURVIVAL — sweeper + a field of springs
-            const A = Rounds._arena(r, 300);
-            const s = Rounds._sweeper(r, { speed: 0.85, color: '#ff5fa2' }); r.sweeper = s;
-            for (const [px, py] of [[A.cx - 130, A.cy - 70], [A.cx + 130, A.cy - 70], [A.cx, A.cy + 140],
-                                    [A.cx - 110, A.cy + 80], [A.cx + 110, A.cy + 80], [A.cx, A.cy - 150]])
-                r.obstacles.push(new BouncePad({ x: px, y: py, r: 40 }));
-            Rounds._spawnRing(r);
-            r.onUpdate = (rr, dt) => { s.speed += dt * 0.05; };
         },
         hexBlitz(r) {               // FINAL — tighter arena, faster decay
             r.kind = 'final'; r.camMode = 'fixed';
@@ -2473,62 +2536,6 @@ const Rounds = {
             };
         },
 
-        // ---- batch 3 -------------------------------------------------
-        knockoutAlley(r) {          // RACE — brutal hammers + spinners
-            Rounds._raceCommon(r);
-            r.obstacles.push(new Spinner({ cx: 640, cy: 2150, len: 250, thick: 22, speed: 1.5, power: 380, color: '#e6395a' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1820, amp: 330, headR: 36, speed: 1.8, power: 560 }));
-            r.obstacles.push(new Spinner({ cx: 470, cy: 1480, len: 200, thick: 18, speed: -1.8, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new Spinner({ cx: 820, cy: 1480, len: 200, thick: 18, speed: 1.8, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1120, amp: 340, headR: 36, speed: 2.1, phase: 1, power: 560 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 760, len: 250, thick: 22, speed: -1.6, power: 380, color: '#e6395a' }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-        },
-        zigzag(r) {                 // RACE — alternating offset spinners
-            Rounds._raceCommon(r);
-            const xs = [470, 820, 470, 820, 640], ys = [2050, 1740, 1430, 1120, 810];
-            ys.forEach((y, i) => r.obstacles.push(new Spinner({ cx: xs[i], cy: y, len: 210, thick: 18, speed: i % 2 ? 1.7 : -1.7, power: 350, color: i % 2 ? '#23d6c8' : '#ffd23f' })));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-        },
-        doorJam(r) {                // RACE — six door walls
-            Rounds._raceCommon(r);
-            [2200, 1900, 1600, 1300, 1000, 700].forEach((y, i) => Rounds._doorWall(r, y, i % 3 === 0 ? 3 : 2));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-        },
-        bouncyCastle(r) {           // RACE — springs galore
-            Rounds._raceCommon(r);
-            for (const [x, y] of [[470, 2050], [810, 2050], [640, 1820], [470, 1500], [810, 1500], [640, 1200], [470, 900], [810, 900]])
-                r.obstacles.push(new BouncePad({ x, y, r: 44 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1650, len: 230, thick: 20, speed: 1.5, power: 340, color: '#ff5fa2' }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1050, len: 230, thick: 20, speed: -1.5, power: 340, color: '#ff5fa2' }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-        },
-        slalom(r) {                 // RACE — weave the centre bars
-            Rounds._raceCommon(r);
-            [2000, 1700, 1400, 1100, 800].forEach((y, i) => r.obstacles.push(new Spinner({ cx: 640, cy: y, len: 230, thick: 20, speed: i % 2 ? 1.6 : -1.6, power: 340, color: '#9a6cff' })));
-            r.obstacles.push(new BouncePad({ x: 640, y: 1850, r: 42 }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-        },
-        tinyIsland(r) {             // SURVIVAL — small floor, quick bar
-            Rounds._arena(r, 230);
-            const s = Rounds._sweeper(r, { speed: 0.9, power: 520 }); r.sweeper = s;
-            Rounds._spawnRing(r);
-            r.onUpdate = (rr, dt) => { s.speed += dt * 0.07; };
-        },
-        bigTop(r) {                 // SURVIVAL — roomy floor, gentle bar
-            Rounds._arena(r, 330);
-            const s = Rounds._sweeper(r, { speed: 0.6, power: 470 }); r.sweeper = s;
-            Rounds._spawnRing(r);
-            r.onUpdate = (rr, dt) => { s.speed += dt * 0.05; };
-        },
-        springTrap(r) {             // SURVIVAL — sweeper + corner springs
-            const A = Rounds._arena(r, 300);
-            const s = Rounds._sweeper(r, { speed: 0.8, color: '#23d6c8' }); r.sweeper = s;
-            for (const [px, py] of [[A.cx - 140, A.cy], [A.cx + 140, A.cy], [A.cx, A.cy - 140], [A.cx, A.cy + 140]])
-                r.obstacles.push(new BouncePad({ x: px, y: py, r: 42 }));
-            Rounds._spawnRing(r);
-            r.onUpdate = (rr, dt) => { s.speed += dt * 0.05; };
-        },
         hexRoyale(r) {              // FINAL — medium honeycomb
             r.kind = 'final'; r.camMode = 'fixed';
             r.minX = 280; r.maxX = 1000; r.minY = 130; r.maxY = 630; r.thinkFn = hexThink;
@@ -2556,30 +2563,29 @@ const Rounds = {
 
         // ============================================ NEW GAMEMODES ===
         // -------- FALL MOUNTAIN (racing FINAL — first to the crown wins)
-        fallMountain(r) {
+        fallMountain(r) {           // FINAL race — climb past cannons to grab the Crown
             Rounds._raceCommon(r);
             r.kind = 'mountain'; r.viewKind = 'race'; r.crownFinish = true; r.finishY = 360;
-            r.obstacles.push(new Hammer({ cx: 640, cy: 2150, amp: 340, headR: 34, speed: 1.6, power: 540 }));
-            r.obstacles.push(new Spinner({ cx: 470, cy: 1820, len: 210, thick: 20, speed: -1.6, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new Spinner({ cx: 820, cy: 1820, len: 210, thick: 20, speed: 1.6, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1480, amp: 330, headR: 34, speed: -2.0, phase: 1, power: 560 }));
-            r.obstacles.push(new BouncePad({ x: 470, y: 1180, r: 42 }));
-            r.obstacles.push(new BouncePad({ x: 810, y: 1180, r: 42 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 900, len: 250, thick: 22, speed: 1.4, power: 380, color: '#e6395a' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 600, amp: 300, headR: 32, speed: 2.2, power: 560 }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            Rounds._beams(r, 3320, { n: 2, speed: 1.5, color: '#7b46d6' });
+            Rounds._cannons(r, 2950, { n: 2, interval: 1.9, speed: 360, reach: 2400, spread: 150, color: '#e6395a' });
+            Rounds._bumpers(r, 2500, { rows: 2, cols: 4, color: '#ffd23f' });
+            Rounds._beams(r, 2050, { n: 3, speed: -1.7, color: '#7b46d6' });
+            Rounds._cannons(r, 1650, { n: 2, interval: 2.0, speed: 340, reach: 1300, color: '#e6395a' });
+            Rounds._hammers(r, 1150, { n: 2, speed: 2.0, gap: 260 });
+            Rounds._beams(r, 700, { n: 1, style: 'windmill', speed: 0.9, len: 320, thick: 30, color: '#e6395a' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
-        lostTemple(r) {             // FINAL — a steeper climb of doors & bars
+        lostTemple(r) {             // FINAL race — doors, hammers & blocks to the Crown
             Rounds._raceCommon(r);
             r.kind = 'mountain'; r.viewKind = 'race'; r.crownFinish = true; r.finishY = 360;
-            Rounds._doorWall(r, 2150, 3);
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1820, amp: 330, headR: 34, speed: 1.9, power: 560 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1480, len: 250, thick: 22, speed: -1.6, power: 380, color: '#e6395a' }));
-            Rounds._doorWall(r, 1120, 2);
-            r.obstacles.push(new BouncePad({ x: 640, y: 880, r: 44 }));
-            r.obstacles.push(new Hammer({ cx: 470, cy: 600, amp: 240, headR: 30, speed: 2.1, power: 540 }));
-            r.obstacles.push(new Hammer({ cx: 820, cy: 600, amp: 240, headR: 30, speed: -2.1, phase: 1, power: 540 }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            Rounds._doorWall(r, 3340, 3);
+            Rounds._hammers(r, 2950, { n: 2, speed: 1.9, gap: 280 });
+            Rounds._blocks(r, 2500, { n: 2, speed: 170, color: '#9a6cff' });
+            Rounds._doorWall(r, 2050, 2);
+            Rounds._beams(r, 1650, { n: 2, speed: -1.7, color: '#e6395a' });
+            Rounds._bumpers(r, 1200, { rows: 2, cols: 4, color: '#ffd23f' });
+            Rounds._hammers(r, 700, { n: 2, speed: 2.2, gap: 240 });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
 
         // -------- TAIL TAG (HUNT — hold a tail when the clock runs out)
@@ -2606,27 +2612,29 @@ const Rounds = {
         slimeClimb(r) {
             Rounds._raceCommon(r);
             r.kind = 'climb'; r.viewKind = 'race';
-            r.slimeY = r.maxY - 40; r.slimeRate = 40;
-            r.obstacles.push(new Spinner({ cx: 640, cy: 2120, len: 250, thick: 22, speed: 1.3, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1780, amp: 320, headR: 32, speed: -1.8, power: 520 }));
-            r.obstacles.push(new Spinner({ cx: 470, cy: 1460, len: 200, thick: 20, speed: 1.6, power: 350, color: '#23d6c8' }));
-            r.obstacles.push(new Spinner({ cx: 820, cy: 1460, len: 200, thick: 20, speed: -1.6, power: 350, color: '#23d6c8' }));
-            r.obstacles.push(new BouncePad({ x: 640, y: 1150, r: 44 }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 860, amp: 320, headR: 32, speed: 2.0, power: 520 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 600, len: 240, thick: 22, speed: 1.5, power: 360, color: '#ff5fa2' }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            r.slimeY = r.maxY - 40; r.slimeRate = 42;
+            Rounds._blocks(r, 3320, { n: 2, speed: 150, color: '#b06bff' });
+            Rounds._cannons(r, 2950, { n: 2, interval: 2.0, speed: 340, reach: 1400, color: '#e6395a' });
+            Rounds._hammers(r, 2550, { n: 2, speed: 1.8, gap: 260 });
+            Rounds._beams(r, 2150, { n: 2, speed: -1.6, color: '#23d6c8' });
+            Rounds._bumpers(r, 1750, { rows: 2, cols: 4, color: '#ffd23f' });
+            Rounds._blocks(r, 1350, { n: 2, speed: 165, color: '#9a6cff' });
+            Rounds._hammers(r, 900, { n: 2, speed: 2.0, gap: 240 });
+            Rounds._beams(r, 560, { n: 2, speed: 1.7, color: '#ff5fa2' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
         slimeScramble(r) {
             Rounds._raceCommon(r);
             r.kind = 'climb'; r.viewKind = 'race';
-            r.slimeY = r.maxY - 30; r.slimeRate = 52;
-            Rounds._doorWall(r, 2120, 3);
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1820, amp: 330, headR: 34, speed: 1.9, power: 560 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1500, len: 250, thick: 22, speed: -1.7, power: 380, color: '#e6395a' }));
-            r.obstacles.push(new Spinner({ cx: 470, cy: 1180, len: 190, thick: 18, speed: 1.8, power: 350, color: '#7b46d6' }));
-            r.obstacles.push(new Spinner({ cx: 820, cy: 1180, len: 190, thick: 18, speed: -1.8, power: 350, color: '#7b46d6' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 820, amp: 340, headR: 34, speed: 2.2, power: 560 }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            r.slimeY = r.maxY - 30; r.slimeRate = 48;
+            Rounds._doorWall(r, 3340, 3);
+            Rounds._hammers(r, 2950, { n: 2, speed: 1.9, gap: 280 });
+            Rounds._cannons(r, 2550, { n: 2, interval: 1.8, speed: 360, reach: 1600, color: '#e6395a' });
+            Rounds._beams(r, 2100, { n: 3, speed: -1.8, color: '#7b46d6' });
+            Rounds._blocks(r, 1650, { n: 3, speed: 185, gap: 130, color: '#9a6cff' });
+            Rounds._bumpers(r, 1150, { rows: 2, cols: 5, color: '#e6395a' });
+            Rounds._hammers(r, 650, { n: 2, speed: 2.2, gap: 240 });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
     },
 };
@@ -4546,26 +4554,70 @@ function makeSpinner(ob) {
     rotor.add(hubCap);
 
     // each arm: a soft rounded padded bar laid along +X, plus a paddle cap.
+    // VIEW STYLE (visual only): 'windmill' = big flat sails, 'blade' = flat
+    // fan/propeller, default 'bar' = chunky padded arm. Motion is identical:
+    // every variant still reaches to radius `len` along the arm's local +X.
+    const style = (ob.style || 'bar');
     const armMat = mat(color, { roughness: 0.42, metalness: 0.06 });
     const stripeMat = mat(pop(shade(color, 0.4), 0, 0.05), { roughness: 0.35 });
     const capMat = gloss(pop(shade(color, 0.28), 0.05, 0));
+    const sailMat = inflate(color, { roughness: 0.24, clearcoat: 0.7 });
+    const sailAlt = inflate(pop(shade(color, 0.34), 0.04, 0.04), { roughness: 0.24, clearcoat: 0.7 });
     for (let i = 0; i < arms; i++) {
         const a = (i * Math.PI * 2) / arms;
         const arm = new THREE.Object3D();
         arm.rotation.y = -a;   // logical angle a -> world -Y (X/Y -> X/Z handedness)
 
-        const bar = roundedSlab(len, barH, barD, Math.min(barH, barD) * 0.45, armMat);
-        bar.position.set(len / 2, 0, 0);
-        arm.add(bar);
-        // a bright hazard stripe band near the tip.
-        const band = new THREE.Mesh(new THREE.BoxGeometry(len * 0.18, barH * 1.02, barD * 1.04), stripeMat);
-        band.position.set(len * 0.78, 0, 0);
-        arm.add(band);
-        // rounded paddle cap at the tip for a beefy toy look.
-        const cap = new THREE.Mesh(new THREE.SphereGeometry(barH * 0.72, 16, 12), capMat);
-        cap.scale.set(1, 1, 1.15);
-        cap.position.set(len, 0, 0);
-        arm.add(cap);
+        if (style === 'windmill') {
+            // a big wide flat sail: thin in height, broad in the sweep (Z) plane,
+            // mounted out along the arm so the tip still rides at radius `len`.
+            const sailW = len * 0.92;            // along the arm
+            const sailSpan = Math.max(barD * 4, len * 0.5);   // broad across (Z)
+            const sail = roundedSlab(sailW, barH * 0.8, sailSpan, barH * 0.35,
+                (i % 2) ? sailAlt : sailMat);
+            sail.position.set(len * 0.54, 0, 0);
+            arm.add(sail);
+            // a slim spar down the spine of the sail for a built look.
+            const spar = new THREE.Mesh(new THREE.CylinderGeometry(barH * 0.28, barH * 0.28, len, 12), armMat);
+            spar.rotation.z = Math.PI / 2;
+            spar.position.set(len / 2, 0, 0);
+            arm.add(spar);
+            // bright tip trim so the blade tip reads clearly.
+            const tip = new THREE.Mesh(new THREE.BoxGeometry(barH * 0.6, barH * 0.85, sailSpan * 1.02), stripeMat);
+            tip.position.set(len * 0.96, 0, 0);
+            arm.add(tip);
+        } else if (style === 'blade') {
+            // a flat propeller/fan blade: a tapered flat paddle, slightly pitched.
+            const bladeLen = len * 0.96;
+            const bladeSpan = Math.max(barD * 2.6, len * 0.3);
+            const blade = roundedSlab(bladeLen, barH * 0.5, bladeSpan, barH * 0.22,
+                (i % 2) ? sailAlt : sailMat);
+            blade.scale.set(1, 1, 0.6);          // taper toward the hub visually
+            blade.rotation.x = 0.32;             // a touch of pitch like a fan
+            blade.position.set(len * 0.52, 0, 0);
+            arm.add(blade);
+            const root = new THREE.Mesh(new THREE.CylinderGeometry(barH * 0.5, barH * 0.7, barH * 1.4, 14), armMat);
+            root.position.set(barH * 0.8, 0, 0);
+            arm.add(root);
+            const tip = new THREE.Mesh(new THREE.BoxGeometry(barH * 0.5, barH * 0.55, bladeSpan * 0.9), stripeMat);
+            tip.rotation.x = 0.32;
+            tip.position.set(len * 0.95, 0, 0);
+            arm.add(tip);
+        } else {
+            // default 'bar' (and 'sweeper'): the original chunky padded arm.
+            const bar = roundedSlab(len, barH, barD, Math.min(barH, barD) * 0.45, armMat);
+            bar.position.set(len / 2, 0, 0);
+            arm.add(bar);
+            // a bright hazard stripe band near the tip.
+            const band = new THREE.Mesh(new THREE.BoxGeometry(len * 0.18, barH * 1.02, barD * 1.04), stripeMat);
+            band.position.set(len * 0.78, 0, 0);
+            arm.add(band);
+            // rounded paddle cap at the tip for a beefy toy look.
+            const cap = new THREE.Mesh(new THREE.SphereGeometry(barH * 0.72, 16, 12), capMat);
+            cap.scale.set(1, 1, 1.15);
+            cap.position.set(len, 0, 0);
+            arm.add(cap);
+        }
         rotor.add(arm);
     }
 
@@ -4625,25 +4677,90 @@ function makeHammer(ob) {
     collar.position.set(0, -armLen + headR * 0.4, 0);
     pivot.add(collar);
 
-    // chunky wrecking-ball head with studs (a mace).
-    const headMat = gloss(WPAL.gold, { roughness: 0.28, metalness: 0.35, emissive: 0x5a3d00, emissiveIntensity: 0.12 });
-    const head = new THREE.Mesh(new THREE.SphereGeometry(headR, 24, 18), headMat);
-    head.position.set(0, -armLen, 0);
-    pivot.add(head);
-    const studMat = gloss(shade(WPAL.gold, -0.25), { metalness: 0.4 });
-    for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2;
-        const stud = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.26, headR * 0.5, 8), studMat);
-        stud.position.set(Math.cos(a) * headR, -armLen + Math.sin(a) * headR, 0);
-        stud.rotation.z = -a + Math.PI / 2;
-        pivot.add(stud);
-    }
-    // a couple studs poking toward/away (Z) so it reads round from the side.
-    for (const dz of [-1, 1]) {
-        const stud = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.26, headR * 0.5, 8), studMat);
-        stud.position.set(0, -armLen, dz * headR);
-        stud.rotation.x = dz < 0 ? Math.PI / 2 : -Math.PI / 2;
-        pivot.add(stud);
+    // VIEW STYLE (visual only): 'axe' = medieval axe head, 'pendulum' = a
+    // spiked log/ball, default 'hammer' = the chunky studded mace. Every
+    // variant centres its mass at (0,-armLen,0) so the swing reads the same.
+    const style = (ob.style || 'hammer');
+    if (style === 'axe') {
+        // a heavy wedge axe head on a stubby haft, blade facing the swing (X).
+        const haftMat = gloss(shade(WPAL.wood, -0.1), { roughness: 0.4, metalness: 0.1 });
+        const haft = new THREE.Mesh(new THREE.CylinderGeometry(7, 8, headR * 1.7, 12), haftMat);
+        haft.position.set(0, -armLen, 0);
+        pivot.add(haft);
+        const steelMat = gloss(0xd7dde6, { roughness: 0.22, metalness: 0.55, emissive: 0x223040, emissiveIntensity: 0.08 });
+        const edgeMat = gloss(0xfbfdff, { roughness: 0.14, metalness: 0.4, emissive: 0xbcd6ff, emissiveIntensity: 0.12 });
+        // wedge blade built from a flat trapezoid shape, extruded across Z.
+        const bw = headR * 2.2, bh = headR * 2.4;
+        const bladeShape = new THREE.Shape();
+        bladeShape.moveTo(0, -bh * 0.42);
+        bladeShape.lineTo(0, bh * 0.42);
+        bladeShape.quadraticCurveTo(bw * 0.5, bh * 0.34, bw, bh * 0.16);
+        bladeShape.quadraticCurveTo(bw * 1.12, 0, bw, -bh * 0.16);
+        bladeShape.quadraticCurveTo(bw * 0.5, -bh * 0.34, 0, -bh * 0.42);
+        const bladeGeo = new THREE.ExtrudeGeometry(bladeShape, {
+            depth: headR * 0.5, bevelEnabled: true, bevelThickness: 2, bevelSize: 2, bevelSegments: 1, steps: 1,
+        });
+        bladeGeo.center();
+        for (const sgn of [1, -1]) {                     // a double-bit axe
+            const blade = new THREE.Mesh(bladeGeo.clone(), steelMat);
+            blade.scale.x = sgn;
+            blade.position.set(sgn * (headR * 0.9), -armLen, 0);
+            pivot.add(blade);
+            // a bright cutting edge strip at the lip.
+            const edge = new THREE.Mesh(new THREE.BoxGeometry(headR * 0.16, bh * 0.7, headR * 0.62), edgeMat);
+            edge.position.set(sgn * (headR * 1.85), -armLen, 0);
+            pivot.add(edge);
+        }
+        const collarMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.4 });
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, headR * 0.5, 14), collarMat);
+        band.position.set(0, -armLen, 0);
+        pivot.add(band);
+    } else if (style === 'pendulum') {
+        // a chunky spiked log/ball hanging across the lane (axis along Z).
+        const logMat = gloss(col(ob.color, WPAL.grape), { roughness: 0.3, metalness: 0.15, emissive: shade(col(ob.color, WPAL.grape), -0.5), emissiveIntensity: 0.1 });
+        const logLen = headR * 2.6;
+        const log = new THREE.Mesh(new THREE.CylinderGeometry(headR * 0.95, headR * 0.95, logLen, 22), logMat);
+        log.rotation.x = Math.PI / 2;                    // lay across Z
+        log.position.set(0, -armLen, 0);
+        pivot.add(log);
+        const capMat = gloss(shade(col(ob.color, WPAL.grape), -0.18), { roughness: 0.3, metalness: 0.2 });
+        for (const dz of [-1, 1]) {
+            const cap = new THREE.Mesh(new THREE.SphereGeometry(headR * 0.95, 18, 14), capMat);
+            cap.position.set(0, -armLen, dz * logLen / 2);
+            pivot.add(cap);
+        }
+        // rings of spikes bristling around the log.
+        const spikeMat = gloss(0xf0f3f8, { roughness: 0.2, metalness: 0.5 });
+        for (const rz of [-logLen * 0.3, 0, logLen * 0.3]) {
+            for (let i = 0; i < 8; i++) {
+                const a = (i / 8) * Math.PI * 2;
+                const spike = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.2, headR * 0.7, 7), spikeMat);
+                spike.position.set(Math.cos(a) * headR, -armLen + Math.sin(a) * headR, rz);
+                spike.rotation.z = -a + Math.PI / 2;
+                pivot.add(spike);
+            }
+        }
+    } else {
+        // default 'hammer': chunky wrecking-ball head with studs (a mace).
+        const headMat = gloss(WPAL.gold, { roughness: 0.28, metalness: 0.35, emissive: 0x5a3d00, emissiveIntensity: 0.12 });
+        const head = new THREE.Mesh(new THREE.SphereGeometry(headR, 24, 18), headMat);
+        head.position.set(0, -armLen, 0);
+        pivot.add(head);
+        const studMat = gloss(shade(WPAL.gold, -0.25), { metalness: 0.4 });
+        for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2;
+            const stud = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.26, headR * 0.5, 8), studMat);
+            stud.position.set(Math.cos(a) * headR, -armLen + Math.sin(a) * headR, 0);
+            stud.rotation.z = -a + Math.PI / 2;
+            pivot.add(stud);
+        }
+        // a couple studs poking toward/away (Z) so it reads round from the side.
+        for (const dz of [-1, 1]) {
+            const stud = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.26, headR * 0.5, 8), studMat);
+            stud.position.set(0, -armLen, dz * headR);
+            stud.rotation.x = dz < 0 ? Math.PI / 2 : -Math.PI / 2;
+            pivot.add(stud);
+        }
     }
 
     shadowy(group, true, true);
@@ -4906,13 +5023,331 @@ function makeHex(ob) {
     return view;
 }
 
+/* CONVEYOR — a candy treadmill belt over [x0..x1] x [y0..y1] that scrolls
+   chevrons along (dx, dy). The belt slab sits just above the floor (~y=4);
+   chevrons live on a strip oriented along the travel direction and we slide
+   them (wrapping) in update() so it reads as a moving belt. */
+function makeConveyor(ob) {
+    const group = new THREE.Object3D();
+    const x0 = Math.min(ob.x0, ob.x1), x1 = Math.max(ob.x0, ob.x1);
+    const y0 = Math.min(ob.y0, ob.y1), y1 = Math.max(ob.y0, ob.y1);
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    const w = Math.max(1, x1 - x0), h = Math.max(1, y1 - y0);
+    group.position.copy(W(cx, cy, 0));
+
+    const color = col(ob.color, WPAL.track);
+    const beltTop = 8;                       // belt surface height (sits on floor)
+    // travel direction in world XZ (sim dx -> world X, sim dy -> world Z).
+    const dx = ob.dx || 0, dy = (ob.dy != null ? ob.dy : 1);
+    const dlen = Math.hypot(dx, dy) || 1;
+    const ux = dx / dlen, uz = dy / dlen;    // unit travel dir in world XZ
+    const ang = Math.atan2(uz, ux);          // heading about world Y
+
+    // --- belt slab: a flat rounded candy plate raised just off the floor ---
+    const beltMat = gloss(color, { roughness: 0.34, metalness: 0.08, emissive: shade(color, -0.5), emissiveIntensity: 0.06 });
+    const belt = roundedSlab(w, h, beltTop, Math.min(18, w / 2 - 1, h / 2 - 1), beltMat);
+    belt.rotation.x = -Math.PI / 2;          // slab's extrude depth -> world Y
+    belt.position.set(0, beltTop / 2, 0);
+    group.add(belt);
+    // a darker inset lane so the chevrons pop against the belt.
+    const laneMat = mat(shade(color, -0.18), { roughness: 0.5 });
+    const lane = new THREE.Mesh(new THREE.BoxGeometry(w - 14, 1.2, h - 14), laneMat);
+    lane.position.set(0, beltTop + 0.4, 0);
+    group.add(lane);
+
+    // --- chevron strip oriented along travel: we build N arrows and scroll
+    //     them within a span, wrapping for an endless-belt illusion. ---
+    const strip = new THREE.Object3D();      // local +X = travel direction
+    strip.rotation.y = -ang;                 // world heading -> local +X (X/Z handedness)
+    strip.position.set(0, beltTop + 1.2, 0);
+    group.add(strip);
+
+    // span along travel, and usable cross-width (perpendicular).
+    const cosA = Math.abs(Math.cos(ang)), sinA = Math.abs(Math.sin(ang));
+    const span = w * cosA + h * sinA;        // belt extent projected on travel axis
+    const cross = w * sinA + h * cosA;       // belt extent across travel axis
+    const chevW = Math.min(Math.max(cross * 0.6, 24), cross - 10);  // arrow width
+    const chevD = Math.max(14, Math.min(34, span * 0.12));          // arrow depth
+    const spacing = chevD * 2.0;
+    const count = Math.max(2, Math.ceil(span / spacing) + 2);
+    const half = (count - 1) * spacing / 2;
+
+    // a single chevron: two angled bars meeting at a point along +X (travel).
+    const chevMat = gloss(0xffffff, { roughness: 0.3, emissive: 0xffffff, emissiveIntensity: 0.14 });
+    function makeChevron() {
+        const c = new THREE.Object3D();
+        const barLen = Math.hypot(chevW / 2, chevD) + 4;
+        const barT = Math.max(5, chevD * 0.34);
+        for (const sgn of [1, -1]) {
+            const bar = new THREE.Mesh(new THREE.BoxGeometry(barLen, 3.2, barT), chevMat);
+            // angle the bar so the two meet at a forward point.
+            bar.rotation.y = sgn * Math.atan2(chevW / 2, chevD);
+            bar.position.set(-chevD * 0.32, 0, sgn * chevW * 0.25);
+            c.add(bar);
+        }
+        return c;
+    }
+    const chevrons = [];
+    for (let i = 0; i < count; i++) {
+        const c = makeChevron();
+        c.position.set(0, 0, 0);
+        strip.add(c);
+        chevrons.push(c);
+    }
+
+    // --- side rollers (cylinders) at each end of the belt across travel ---
+    const rollerMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.4 });
+    const rollers = [];
+    for (const sgn of [1, -1]) {
+        const roller = new THREE.Mesh(new THREE.CylinderGeometry(beltTop * 0.7, beltTop * 0.7, cross + 6, 18), rollerMat);
+        roller.rotation.x = Math.PI / 2;     // axis along local Z (across travel)
+        // place at the leading/trailing end along travel.
+        const ex = Math.cos(ang) * (span / 2) * sgn;
+        const ez = Math.sin(ang) * (span / 2) * sgn;
+        roller.position.set(ex, beltTop * 0.5, ez);
+        roller.rotation.y = -ang;
+        roller.userData.spinSign = sgn;
+        group.add(roller);
+        rollers.push(roller);
+    }
+
+    shadowy(group, true, true);
+
+    const view = {
+        object3d: group,
+        update(o, dt, t) {
+            const tt = t || 0;
+            // scroll chevrons along +X (travel), wrapping across the span.
+            const flow = (tt * 90) % spacing;     // belt speed feel
+            for (let i = 0; i < chevrons.length; i++) {
+                let x = -half + i * spacing + flow;
+                // wrap into [-half-spacing, +half]
+                const range = count * spacing;
+                x = ((x + half + spacing) % range + range) % range - half - spacing;
+                chevrons[i].position.x = x;
+            }
+            for (const r of rollers) r.rotation.z += (dt || 0.016) * 4 * r.userData.spinSign;
+        },
+        dispose() { disposeTree(group); },
+    };
+    view.update(ob, 0, 0);
+    return view;
+}
+
+/* BUMPER — a pinball mushroom: glossy dome cap on a small base with a white
+   ring accent. Pops (scales up + brightens) when ob.t is small (just hit). */
+function makeBumper(ob) {
+    const group = new THREE.Object3D();
+    group.position.copy(W(ob.x, ob.y, 0));
+    const r = ob.r || 34;
+    const color = col(ob.color, WPAL.gold);
+
+    // a squat base ring the dome perches on.
+    const baseMat = gloss(shade(color, -0.28), { roughness: 0.32, metalness: 0.12 });
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.02, r * 1.16, 12, 28), baseMat);
+    base.position.set(0, 6, 0);
+    group.add(base);
+
+    // the glossy rounded cap (mushroom dome) we pop on hit.
+    const cap = new THREE.Object3D();
+    cap.position.set(0, 10, 0);
+    group.add(cap);
+    const domeMat = gloss(color, { roughness: 0.16, metalness: 0.1, emissive: shade(color, -0.4), emissiveIntensity: 0.12 });
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(r, 28, 18, 0, Math.PI * 2, 0, Math.PI * 0.6), domeMat);
+    dome.scale.set(1, 0.82, 1);
+    cap.add(dome);
+    // a glossy knob on top to finish the bumper.
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(r * 0.26, 16, 12), gloss(shade(color, 0.3), { roughness: 0.2 }));
+    knob.position.set(0, r * 0.66, 0);
+    cap.add(knob);
+
+    // white ring accent around the dome base.
+    const ringMat = gloss(0xfff6fb, { roughness: 0.2, metalness: 0.05, emissive: 0xffffff, emissiveIntensity: 0.1 });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(r * 0.98, r * 0.12, 12, 30), ringMat);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.set(0, r * 0.18, 0);
+    cap.add(ring);
+
+    shadowy(group, true, true);
+    const baseEmissive = 0.12;
+
+    const view = {
+        object3d: group,
+        update(o, dt, t) {
+            const ot = (o && o.t != null) ? o.t : (ob.t != null ? ob.t : 99);
+            // pop window right after a hit (ob.t resets to 0, climbs over time).
+            const pop = Math.max(0, 1 - ot * 4.5);     // 1 -> 0 over ~0.22s
+            const ease = pop * pop;
+            cap.scale.set(1 + ease * 0.28, 1 + ease * 0.42, 1 + ease * 0.28);
+            domeMat.emissiveIntensity = baseEmissive + ease * 0.6;
+            ringMat.emissiveIntensity = 0.1 + ease * 0.7;
+        },
+        dispose() { disposeTree(group); },
+    };
+    view.update(ob, 0, 0);
+    return view;
+}
+
+/* MOVING BLOCK — a chunky candy block (rounded box) sliding side to side.
+   Follows ob.cx/ob.cy each frame, sitting on the floor (height/2 up). */
+function makeMovingBlock(ob) {
+    const group = new THREE.Object3D();
+    const w = ob.w || 130;
+    const thick = ob.thick || 40;
+    const height = (ob.height != null) ? ob.height : 130;
+    const color = col(ob.color, WPAL.grape);
+    group.position.copy(W(ob.cx != null ? ob.cx : (ob.x0 || 0), ob.cy, 0));
+
+    // the solid rounded block body.
+    const bodyMat = mat(pop(color, 0.04, 0.02), { roughness: 0.4, metalness: 0.08 });
+    const body = roundedSlab(w, height, thick, Math.min(16, w / 2 - 1, height / 2 - 1, thick / 2 - 1), bodyMat);
+    body.position.set(0, height / 2, 0);
+    group.add(body);
+
+    // a subtle inset face panel on the down-course (front) & back faces so it
+    // reads as a Fall Guys block, plus a bright bolt in the middle.
+    const faceMat = gloss(pop(shade(color, 0.22), 0.04, 0), { roughness: 0.3 });
+    const boltMat = gloss(WPAL.gold, { roughness: 0.24, metalness: 0.45 });
+    for (const sgn of [1, -1]) {
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.66, height * 0.6, thick * 0.18), faceMat);
+        panel.position.set(0, height / 2, sgn * (thick / 2 - thick * 0.05));
+        group.add(panel);
+        const bolt = new THREE.Mesh(new THREE.SphereGeometry(Math.min(w, height) * 0.09, 14, 10), boltMat);
+        bolt.position.set(0, height / 2, sgn * (thick / 2 + 1));
+        group.add(bolt);
+    }
+
+    // gold trim cap rails along the top and bottom edges.
+    const trimMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.35 });
+    for (const yy of [height - 6, 8]) {
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(w + 6, 10, thick + 6), trimMat);
+        rail.position.set(0, yy, 0);
+        group.add(rail);
+    }
+    // gold corner studs down the vertical edges.
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+        const stud = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, height - 18, 10), trimMat);
+        stud.position.set(sx * (w / 2 - 2), height / 2, sz * (thick / 2 - 2));
+        group.add(stud);
+    }
+
+    shadowy(group, true, true);
+
+    const view = {
+        object3d: group,
+        update(o, dt, t) {
+            const cxv = (o && o.cx != null) ? o.cx : (ob.cx != null ? ob.cx : 0);
+            const cyv = (o && o.cy != null) ? o.cy : ob.cy;
+            group.position.copy(W(cxv, cyv, 0));   // height handled by body offset
+        },
+        dispose() { disposeTree(group); },
+    };
+    view.update(ob, 0, 0);
+    return view;
+}
+
+/* CANNON — a tilted barrel pointing down-course (+y / world +Z) that lobs
+   rolling boulders. We pool spheres: one per live entry in ob.balls, rolled
+   by ball.spin; unused pooled spheres are hidden. */
+function makeCannon(ob) {
+    const group = new THREE.Object3D();
+    group.position.copy(W(ob.x, ob.y, 0));
+    const color = col(ob.color, WPAL.slime);
+    const ballR = ob.ballR || 26;
+
+    // a stout mount the barrel pivots on.
+    const mountMat = gloss(WPAL.grapeDk, { roughness: 0.4, metalness: 0.2 });
+    const mount = new THREE.Mesh(new THREE.CylinderGeometry(ballR * 0.9, ballR * 1.2, ballR * 0.9, 20), mountMat);
+    mount.position.set(0, ballR * 0.45, 0);
+    group.add(mount);
+    const yoke = new THREE.Mesh(new THREE.TorusGeometry(ballR * 0.7, ballR * 0.16, 10, 20), gloss(WPAL.gold, { metalness: 0.4 }));
+    yoke.rotation.y = Math.PI / 2;
+    yoke.position.set(0, ballR * 0.9, 0);
+    group.add(yoke);
+
+    // the barrel: a tube tilted to aim down-course (toward world +Z). We tilt
+    // a barrel pivot about world X so the muzzle points up-and-forward.
+    const barrel = new THREE.Object3D();
+    barrel.position.set(0, ballR * 1.0, 0);
+    barrel.rotation.x = -0.62;               // tilt muzzle toward +Z (down-course)
+    group.add(barrel);
+    const barrelLen = ballR * 3.0;
+    const barrelMat = gloss(shade(color, -0.18), { roughness: 0.32, metalness: 0.4, emissive: shade(color, -0.55), emissiveIntensity: 0.08 });
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(ballR * 0.85, ballR * 1.05, barrelLen, 22, 1, true), barrelMat);
+    tube.position.set(0, 0, barrelLen / 2);  // extend forward along local +Z
+    tube.rotation.x = Math.PI / 2;           // cylinder axis (local Y) -> local Z
+    barrel.add(tube);
+    // a bright muzzle ring at the mouth.
+    const muzzle = new THREE.Mesh(new THREE.TorusGeometry(ballR * 0.92, ballR * 0.14, 12, 24), gloss(WPAL.gold, { metalness: 0.45 }));
+    muzzle.position.set(0, 0, barrelLen);
+    barrel.add(muzzle);
+    // a back cap so the barrel reads solid from behind.
+    const backCap = new THREE.Mesh(new THREE.SphereGeometry(ballR * 0.85, 16, 12), barrelMat);
+    backCap.position.set(0, 0, 0);
+    barrel.add(backCap);
+
+    // --- boulder pool: shared geometry, hidden until needed ---
+    const ballGeo = new THREE.SphereGeometry(ballR, 18, 14);
+    const ballMat = mat(pop(color, 0.03, 0), {
+        roughness: 0.5, metalness: 0.06, flat: true,
+        emissive: shade(color, -0.5), emissiveIntensity: 0.06,
+    });
+    const speckMat = gloss(shade(color, -0.3), { roughness: 0.6 });
+    const pool = [];
+    function makeBoulder() {
+        const b = new THREE.Object3D();
+        const core = new THREE.Mesh(ballGeo, ballMat);
+        b.add(core);
+        // a couple of darker speck lumps so the boulder reads as heavy stone.
+        for (const p of [[0.5, 0.3, 0.4], [-0.4, -0.3, 0.5], [0.2, 0.6, -0.4]]) {
+            const lump = new THREE.Mesh(new THREE.SphereGeometry(ballR * 0.28, 8, 6), speckMat);
+            lump.position.set(p[0] * ballR, p[1] * ballR, p[2] * ballR);
+            b.add(lump);
+        }
+        b.visible = false;
+        shadowy(b, true, false);
+        group.add(b);
+        pool.push(b);
+        return b;
+    }
+
+    shadowy(mount, true, true);
+    shadowy(barrel, true, true);
+
+    const cx = ob.x, cy = ob.y;
+    const view = {
+        object3d: group,
+        update(o, dt, t) {
+            const balls = (o && o.balls) ? o.balls : (ob.balls || []);
+            for (let i = 0; i < balls.length; i++) {
+                const ball = balls[i];
+                const m = pool[i] || makeBoulder();
+                m.visible = true;
+                // ball lives in sim space; place relative to the cannon group.
+                const wp = W(ball.x, ball.y, ballR);
+                m.position.set(wp.x - group.position.x, wp.y - group.position.y, wp.z - group.position.z);
+                // rolling-rotate about world X (it travels toward +Z).
+                m.rotation.x = (ball.spin || 0);
+            }
+            for (let i = balls.length; i < pool.length; i++) pool[i].visible = false;
+        },
+        dispose() { disposeTree(group); },
+    };
+    view.update(ob, 0, 0);
+    return view;
+}
+
 function makeObstacleView(ob) {
     switch (ob && ob.kind) {
-        case 'spinner':   return makeSpinner(ob);
-        case 'hammer':    return makeHammer(ob);
-        case 'doorwall':  return makeDoorWall(ob);
-        case 'bouncepad': return makeBouncePad(ob);
-        case 'hex':       return makeHex(ob);
+        case 'spinner':     return makeSpinner(ob);
+        case 'hammer':      return makeHammer(ob);
+        case 'doorwall':    return makeDoorWall(ob);
+        case 'bouncepad':   return makeBouncePad(ob);
+        case 'hex':         return makeHex(ob);
+        case 'conveyor':    return makeConveyor(ob);
+        case 'bumper':      return makeBumper(ob);
+        case 'movingblock': return makeMovingBlock(ob);
+        case 'cannon':      return makeCannon(ob);
         default: {
             const g = new THREE.Object3D();
             return { object3d: g, update() {}, dispose() { disposeTree(g); } };
@@ -5364,23 +5799,26 @@ const Game = {
         this.loadRound(0);
     },
 
-    // A fresh, randomised line-up each Show: 2–3 races, 1–2 "middle" rounds
-    // (Survival / Hunt / Logic), then 1 Final.
+    // A fresh, varied line-up each Show: 2–3 distinct races, 1–2 "middle"
+    // rounds pulled from DIFFERENT categories (Survival / Hunt / Logic), 1 Final.
     _buildSequence() {
-        const byCat = cats => U.shuffle(SHOW.filter(d => cats.includes(d.category)).slice());
-        const races = byCat(['Race']), mids = byCat(['Survival', 'Hunt', 'Logic']), fins = byCat(['Final']);
+        const pool = c => U.shuffle(SHOW.filter(d => d.category === c).slice());
+        const races = pool('Race');
+        const mids = { Survival: pool('Survival'), Hunt: pool('Hunt'), Logic: pool('Logic') };
+        const fins = pool('Final');
         const RQ = [14, 10, 7, 6];
         const seq = [];
         const nRace = U.rng(2, 3), nMid = U.rng(1, 2);
         let qi = 0;
         for (let i = 0; i < nRace && i < races.length; i++)
             seq.push(Object.assign({}, races[i], { qualify: RQ[Math.min(qi++, RQ.length - 1)] }));
-        for (let i = 0; i < nMid && i < mids.length; i++) {
-            const d = mids[i], o = Object.assign({}, d);
-            if (d.category === 'Survival') o.duration = U.rng(26, 32);
-            else if (d.category === 'Hunt') o.duration = U.rng(26, 30);
-            // Logic (Tip Toe) self-sizes its qualify count from the field
-            seq.push(o); qi++;
+        // middle rounds, each from a DIFFERENT category so they never feel samey
+        const midCats = U.shuffle(['Survival', 'Hunt', 'Logic']).filter(c => mids[c].length);
+        for (let i = 0; i < nMid && i < midCats.length; i++) {
+            const c = midCats[i], o = Object.assign({}, mids[c][0]);
+            if (c === 'Survival') o.duration = U.rng(26, 32);
+            else if (c === 'Hunt') o.duration = U.rng(26, 30);
+            seq.push(o);
         }
         seq.push(fins.length ? U.pick(fins) : SHOW.find(d => d.category === 'Final'));
         return seq;

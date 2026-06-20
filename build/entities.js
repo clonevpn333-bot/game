@@ -555,6 +555,7 @@ class Spinner {
         this.arms = o.arms || 2;
         this.pushOut = !!o.pushOut;
         this.color = o.color || '#ff5fa2';
+        this.style = o.style || 'bar';      // bar | windmill | blade | sweeper (view only)
         this.layer = 'top';
     }
     update(dt) { this.angle += this.speed * dt; }
@@ -618,6 +619,7 @@ class Hammer {
         this.amp = o.amp; this.headR = o.headR || 30;
         this.phase = o.phase || 0; this.speed = o.speed || 1.6;
         this.power = o.power || 540; this.height = o.height != null ? o.height : 120;
+        this.style = o.style || 'hammer';   // hammer | axe | pendulum (view only)
         this.layer = 'top';
     }
     update(dt) { this.phase += this.speed * dt; }
@@ -725,6 +727,99 @@ class BouncePad {
         ctx.beginPath(); ctx.ellipse(sx, sy - pop * 6, this.r * 0.7, this.r * 0.35, 0, 0, 6.283); ctx.fill();
         ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.ellipse(sx, sy, this.r, this.r * 0.5, 0, 0, 6.283); ctx.stroke();
+    }
+}
+
+class Conveyor {
+    // A belt region that continuously carries grounded beans along (dx,dy).
+    constructor(o) {
+        this.kind = 'conveyor';
+        this.x0 = o.x0; this.x1 = o.x1; this.y0 = o.y0; this.y1 = o.y1;
+        this.dx = o.dx || 0; this.dy = o.dy != null ? o.dy : 1;   // +y pushes back down the course
+        this.push = o.push || 130; this.color = o.color || '#5ad1ff'; this.t = 0;
+    }
+    update(dt) { this.t += dt; }
+    collide(bean, round, dt) {
+        if (bean.falling || bean.gone || bean.exited || !bean.grounded) return;
+        if (bean.x < this.x0 || bean.x > this.x1 || bean.y < this.y0 || bean.y > this.y1) return;
+        bean.x += this.dx * this.push * (dt || 0.016);
+        bean.y += this.dy * this.push * (dt || 0.016);
+    }
+}
+
+class Bumper {
+    // Pinball mushroom that flings beans radially outward on contact.
+    constructor(o) {
+        this.kind = 'bumper'; this.x = o.x; this.y = o.y; this.r = o.r || 34;
+        this.power = o.power || 320; this.color = o.color || '#ffd23f'; this.t = 99;
+    }
+    update(dt) { this.t += dt; }
+    collide(bean, round) {
+        if (bean.falling || bean.gone || bean.exited) return;
+        const d = U.dist(bean.x, bean.y, this.x, this.y);
+        if (d < this.r + bean.r) {
+            const nx = (bean.x - this.x) / (d || 1), ny = (bean.y - this.y) / (d || 1);
+            bean.hit(nx, ny, this.power, 0.3);
+            this.t = 0; round.spawnBurst(bean.x, bean.y, bean.z, this.color, 6);
+        }
+    }
+}
+
+class MovingBlock {
+    // A solid wall block sliding side-to-side across the lane; shoves beans.
+    constructor(o) {
+        this.kind = 'movingblock'; this.cy = o.cy; this.w = o.w || 130; this.thick = o.thick || 40;
+        this.height = o.height != null ? o.height : 130;
+        this.x0 = o.x0; this.x1 = o.x1; this.speed = o.speed || 150; this.dir = o.dir || 1;
+        this.cx = o.cx != null ? o.cx : o.x0; this.color = o.color || '#b06bff';
+    }
+    update(dt) {
+        this.cx += this.dir * this.speed * dt;
+        if (this.cx > this.x1) { this.cx = this.x1; this.dir = -1; }
+        if (this.cx < this.x0) { this.cx = this.x0; this.dir = 1; }
+    }
+    collide(bean, round) {
+        if (bean.falling || bean.gone || bean.exited || bean.z > this.height) return;
+        if (Math.abs(bean.y - this.cy) < bean.r + this.thick * 0.5 &&
+            Math.abs(bean.x - this.cx) < this.w * 0.5 + bean.r) {
+            bean.hit(this.dir, 0, 280, 0.25);
+            bean.x = this.cx + this.dir * (this.w * 0.5 + bean.r + 1);
+        }
+    }
+}
+
+class Cannon {
+    // Lobs boulders that roll down the course (+y) knocking beans back.
+    constructor(o) {
+        this.kind = 'cannon'; this.x = o.x; this.y = o.y;
+        this.interval = o.interval || 2.3; this.t = o.phase || 0.5;
+        this.speed = o.speed || 320; this.ballR = o.ballR || 26;
+        this.spread = o.spread || 130; this.reach = o.reach || 1600;
+        this.color = o.color || '#e6395a'; this.balls = [];
+    }
+    update(dt) {
+        this.t -= dt;
+        if (this.t <= 0) {
+            this.t = this.interval;
+            this.balls.push({ x: this.x + U.rngf(-this.spread, this.spread), y: this.y,
+                vx: U.rngf(-26, 26), vy: this.speed, spin: 0 });
+        }
+        for (let i = this.balls.length - 1; i >= 0; i--) {
+            const b = this.balls[i];
+            b.y += b.vy * dt; b.x += b.vx * dt; b.spin += dt * 6;
+            if (b.y > this.y + this.reach) this.balls.splice(i, 1);
+        }
+    }
+    collide(bean, round) {
+        if (bean.falling || bean.gone || bean.exited || bean.z > 46) return;
+        for (const b of this.balls) {
+            if (U.dist(bean.x, bean.y, b.x, b.y) < this.ballR + bean.r) {
+                const nx = (bean.x - b.x) / (this.ballR + bean.r);
+                bean.hit(nx * 0.4, 1, 360, 0.7);
+                round.spawnBurst(bean.x, bean.y, bean.z, this.color, 6);
+                return;
+            }
+        }
     }
 }
 

@@ -576,8 +576,58 @@ const Rounds = {
     _raceCommon(r) {
         r.kind = 'race'; r.camMode = 'followY';
         r.minX = 200; r.maxX = 1080; r.cx = 640;
-        r.minY = 240; r.maxY = 2680; r.finishY = 420;
+        r.minY = 240; r.maxY = 3820; r.finishY = 420;     // long, multi-section course
         r.thinkFn = raceThink;
+    },
+    // ----- course SECTION helpers (real Fall Guys courses string several of
+    // these together so every stretch plays differently) ---------------------
+    _xs(r, n, i, pad) { pad = pad || 160; return n <= 1 ? r.cx : U.lerp(r.minX + pad, r.maxX - pad, i / (n - 1)); },
+    _beams(r, y, o) {                                  // a row of spinning beams / blades / windmills
+        o = o || {}; const n = o.n || 2, sp = o.speed != null ? o.speed : 1.4;
+        for (let i = 0; i < n; i++)
+            r.obstacles.push(new Spinner({ cx: this._xs(r, n, i, o.pad), cy: y, len: o.len || 210,
+                thick: o.thick || 20, speed: (i % 2 ? -sp : sp), power: o.power || 360,
+                color: o.color || '#7b46d6', style: o.style || 'bar' }));
+    },
+    _bumpers(r, y, o) {                                // a staggered field of pinball bumpers
+        o = o || {}; const rows = o.rows || 2, cols = o.cols || 3, gap = o.gap || 130;
+        for (let j = 0; j < rows; j++)
+            for (let i = 0; i < cols; i++) {
+                const off = (j % 2) * (((r.maxX - r.minX) / cols) / 2);
+                r.obstacles.push(new Bumper({ x: U.clamp(this._xs(r, cols, i, 130) + off, r.minX + 50, r.maxX - 50),
+                    y: y - j * gap, r: o.r || 36, power: o.power || 320, color: o.color || '#ffd23f' }));
+            }
+    },
+    _conveyor(r, y0, y1, o) {                          // a treadmill across the lane
+        o = o || {};
+        r.obstacles.push(new Conveyor({ x0: r.minX + 12, x1: r.maxX - 12, y0, y1,
+            dx: o.dx || 0, dy: o.dy != null ? o.dy : 1, push: o.push || 120, color: o.color || '#46d36a' }));
+    },
+    _blocks(r, y, o) {                                 // sliding wall blocks across the lane
+        o = o || {}; const n = o.n || 2, gap = o.gap || 150;
+        for (let i = 0; i < n; i++)
+            r.obstacles.push(new MovingBlock({ cy: y - i * gap, x0: r.minX + 70, x1: r.maxX - 70,
+                w: o.w || 150, thick: 42, speed: o.speed || 150, dir: i % 2 ? -1 : 1,
+                cx: i % 2 ? r.maxX - 70 : r.minX + 70, color: o.color || '#b06bff' }));
+    },
+    _cannons(r, y, o) {                                // cannons lobbing boulders down-course
+        o = o || {}; const n = o.n || 2;
+        for (let i = 0; i < n; i++)
+            r.obstacles.push(new Cannon({ x: this._xs(r, n, i, 170), y, interval: o.interval || 2.2,
+                phase: i * 0.8, speed: o.speed || 320, ballR: o.ballR || 26, spread: o.spread || 120,
+                reach: o.reach || 1500, color: o.color || '#e6395a' }));
+    },
+    _axes(r, y, o) {                                   // swinging axes (Knight Fever)
+        o = o || {}; const n = o.n || 1, gap = o.gap || 230;
+        for (let i = 0; i < n; i++)
+            r.obstacles.push(new Hammer({ cx: r.cx, cy: y - i * gap, amp: o.amp || 320, headR: 30,
+                speed: (i % 2 ? -1 : 1) * (o.speed || 1.9), phase: i * 1.1, power: 540, style: o.style || 'axe' }));
+    },
+    _hammers(r, y, o) {                                // wrecking-ball hammers
+        o = o || {}; const n = o.n || 1, gap = o.gap || 240;
+        for (let i = 0; i < n; i++)
+            r.obstacles.push(new Hammer({ cx: r.cx, cy: y - i * gap, amp: o.amp || 320, headR: 33,
+                speed: (i % 2 ? -1 : 1) * (o.speed || 1.8), phase: i * 0.9, power: o.power || 540 }));
     },
     _doorWall(r, y, fakeCount) {
         const x0 = r.minX, x1 = r.maxX, n = 6, w = (x1 - x0) / n;
@@ -680,65 +730,31 @@ const Rounds = {
 
     builders: {
         // -------------------------------------------------- DOOR DASH
-        doorDash(r) {
-            r.kind = 'race'; r.camMode = 'followY';
-            r.minX = 200; r.maxX = 1080; r.cx = 640;
-            r.minY = 240; r.maxY = 2680;
-            r.finishY = 420;
-            r.thinkFn = raceThink;
-
-            const makeWall = (y, fakeCount) => {
-                const x0 = r.minX, x1 = r.maxX, n = 6, w = (x1 - x0) / n;
-                const fakes = new Set();
-                while (fakes.size < fakeCount) fakes.add(U.rng(0, n - 1));
-                const segs = [];
-                for (let i = 0; i < n; i++)
-                    segs.push({ x0: x0 + i * w, x1: x0 + (i + 1) * w, fake: fakes.has(i), broken: false });
-                const dw = new DoorWall({ y, x0, x1, segs });
-                r.obstacles.push(dw); r.doorWalls.push(dw);
-            };
-            [2150, 1700, 1200, 760].forEach((y, i) => makeWall(y, i % 2 ? 3 : 2));
-
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-
-            r.drawGround = (ctx, cam) => {
-                drawSky(ctx);
-                // track
-                ctx.fillStyle = PAL.track;
-                ctx.fillRect(r.minX - cam.x, r.minY - cam.y, r.maxX - r.minX, r.maxY - r.minY);
-                drawTrackEdges(ctx, cam, r);
-                drawFinishBanner(ctx, cam, r);
-                drawStartGate(ctx, cam, r);
-            };
+        doorDash(r) {                       // RACE — walls of doors, smash the fakes
+            Rounds._raceCommon(r);
+            Rounds._doorWall(r, 3340, 2);
+            Rounds._doorWall(r, 2980, 3);
+            Rounds._bumpers(r, 2560, { rows: 2, cols: 4, color: '#ff5fa2' });
+            Rounds._doorWall(r, 2150, 2);
+            Rounds._beams(r, 1760, { n: 2, speed: 1.3, color: '#7b46d6' });
+            Rounds._doorWall(r, 1360, 3);
+            Rounds._doorWall(r, 980, 2);
+            Rounds._bumpers(r, 640, { rows: 1, cols: 3, color: '#ffd23f' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
 
         // -------------------------------------------------- THE WHIRLYGIG
-        whirlygig(r) {
-            r.kind = 'race'; r.camMode = 'followY';
-            r.minX = 200; r.maxX = 1080; r.cx = 640;
-            r.minY = 240; r.maxY = 2680;
-            r.finishY = 430;
-            r.thinkFn = raceThink;
-
-            r.obstacles.push(new Spinner({ cx: 640, cy: 2150, len: 250, thick: 20, speed: 1.2, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new BouncePad({ x: 470, y: 1880, r: 40 }));
-            r.obstacles.push(new BouncePad({ x: 810, y: 1880, r: 40 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1620, len: 250, thick: 20, speed: -1.4, power: 360, color: '#ff5fa2' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1250, amp: 300, headR: 32, speed: 1.7, power: 520 }));
-            r.obstacles.push(new Spinner({ cx: 470, cy: 940, len: 200, thick: 18, speed: 1.6, power: 340, color: '#23d6c8' }));
-            r.obstacles.push(new Spinner({ cx: 820, cy: 940, len: 200, thick: 18, speed: -1.6, power: 340, color: '#23d6c8' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 640, amp: 320, headR: 30, speed: 2.1, phase: 1.5, power: 520 }));
-
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-
-            r.drawGround = (ctx, cam) => {
-                drawSky(ctx);
-                ctx.fillStyle = PAL.track;
-                ctx.fillRect(r.minX - cam.x, r.minY - cam.y, r.maxX - r.minX, r.maxY - r.minY);
-                drawTrackEdges(ctx, cam, r);
-                drawFinishBanner(ctx, cam, r);
-                drawStartGate(ctx, cam, r);
-            };
+        whirlygig(r) {                      // RACE — beams, treadmills, giant windmill
+            Rounds._raceCommon(r);
+            Rounds._beams(r, 3360, { n: 3, style: 'bar', speed: 1.4, color: '#7b46d6' });
+            Rounds._beams(r, 3000, { n: 2, style: 'bar', speed: -1.5, color: '#23d6c8' });
+            Rounds._bumpers(r, 2620, { rows: 2, cols: 5, color: '#ffd23f' });
+            Rounds._beams(r, 2250, { n: 1, style: 'blade', speed: 1.0, len: 260, color: '#ff5fa2' });
+            Rounds._conveyor(r, 1900, 2090, { dy: 1, push: 120 });
+            Rounds._beams(r, 1620, { n: 3, style: 'blade', speed: 2.0, color: '#ff5fa2' });
+            Rounds._beams(r, 1230, { n: 2, style: 'bar', speed: -1.7, color: '#23d6c8' });
+            Rounds._beams(r, 760, { n: 1, style: 'windmill', speed: 0.8, len: 330, thick: 32, color: '#7b46d6' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
 
         // -------------------------------------------------- JUMP CLUB
@@ -811,32 +827,17 @@ const Rounds = {
         },
 
         // -------------------------------------------------- GATE CRASH
-        gateCrash(r) {
-            r.kind = 'race'; r.camMode = 'followY';
-            r.minX = 200; r.maxX = 1080; r.cx = 640;
-            r.minY = 240; r.maxY = 2680;
-            r.finishY = 420;
-            r.thinkFn = raceThink;
-
-            const makeWall = (y, fakeCount) => {
-                const x0 = r.minX, x1 = r.maxX, n = 6, w = (x1 - x0) / n;
-                const fakes = new Set();
-                while (fakes.size < fakeCount) fakes.add(U.rng(0, n - 1));
-                const segs = [];
-                for (let i = 0; i < n; i++)
-                    segs.push({ x0: x0 + i * w, x1: x0 + (i + 1) * w, fake: fakes.has(i), broken: false });
-                const dw = new DoorWall({ y, x0, x1, segs });
-                r.obstacles.push(dw); r.doorWalls.push(dw);
-            };
-            // doors interleaved with spinning bars
-            makeWall(2150, 3);
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1830, len: 240, thick: 20, speed: 1.3, power: 360, color: '#7b46d6' }));
-            makeWall(1500, 2);
-            r.obstacles.push(new Spinner({ cx: 470, cy: 1180, len: 190, thick: 18, speed: -1.6, power: 340, color: '#23d6c8' }));
-            r.obstacles.push(new Spinner({ cx: 820, cy: 1180, len: 190, thick: 18, speed: 1.6, power: 340, color: '#23d6c8' }));
-            makeWall(820, 3);
-
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        gateCrash(r) {                      // RACE — doors interleaved with beams & hammers
+            Rounds._raceCommon(r);
+            Rounds._doorWall(r, 3340, 3);
+            Rounds._beams(r, 2980, { n: 2, speed: 1.4, color: '#7b46d6' });
+            Rounds._doorWall(r, 2560, 2);
+            Rounds._hammers(r, 2150, { n: 1, speed: 1.8 });
+            Rounds._beams(r, 1820, { n: 2, speed: -1.6, color: '#23d6c8' });
+            Rounds._doorWall(r, 1420, 3);
+            Rounds._bumpers(r, 1050, { rows: 2, cols: 4, color: '#ff5fa2' });
+            Rounds._doorWall(r, 660, 2);
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
 
         // -------------------------------------------------- BOUNCE BASH
@@ -867,72 +868,61 @@ const Rounds = {
             r.onUpdate = (rr, dt) => { sweep.speed += dt * 0.05; };
         },
 
-        // ---- additional levels (built from the shared helpers) -------
-        hammerAlley(r) {            // RACE — a gauntlet of wrecking balls
+        // -------------------------------------------------- DIZZY HEIGHTS
+        dizzyHeights(r) {                   // RACE — spinning platforms + fruit cannons
             Rounds._raceCommon(r);
-            r.obstacles.push(new Hammer({ cx: 640, cy: 2120, amp: 330, headR: 34, speed: 1.6, power: 540 }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1760, amp: 300, headR: 32, speed: -1.9, phase: 1, power: 540 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1420, len: 250, thick: 20, speed: 1.5, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1060, amp: 330, headR: 34, speed: 2.0, phase: 0.6, power: 540 }));
-            r.obstacles.push(new Hammer({ cx: 480, cy: 700, amp: 240, headR: 30, speed: -2.2, power: 520 }));
-            r.obstacles.push(new Hammer({ cx: 820, cy: 560, amp: 240, headR: 30, speed: 2.3, phase: 1.5, power: 520 }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            Rounds._beams(r, 3360, { n: 2, style: 'blade', speed: 1.5, len: 240, color: '#23d6c8' });
+            Rounds._cannons(r, 3050, { n: 2, interval: 2.0, speed: 340, reach: 1600, color: '#ff9447' });
+            Rounds._bumpers(r, 2650, { rows: 2, cols: 5, color: '#ffd23f' });
+            Rounds._beams(r, 2250, { n: 3, style: 'bar', speed: -1.7, color: '#7b46d6' });
+            Rounds._cannons(r, 1950, { n: 2, interval: 2.2, speed: 320, reach: 1400, color: '#ff5fa2' });
+            Rounds._beams(r, 1500, { n: 2, style: 'blade', speed: 2.0, color: '#23d6c8' });
+            Rounds._bumpers(r, 1050, { rows: 2, cols: 4, color: '#ffd23f' });
+            Rounds._beams(r, 680, { n: 1, style: 'windmill', speed: 0.9, len: 320, thick: 30, color: '#7b46d6' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
-        spinnerSprint(r) {          // RACE — dense spinning bars
+        // -------------------------------------------------- FRUIT CHUTE
+        fruitChute(r) {                     // RACE — climb the belts under a fruit barrage
             Rounds._raceCommon(r);
-            [2100, 1820, 1540, 1260, 980, 700].forEach((y, i) =>
-                r.obstacles.push(new Spinner({ cx: i % 2 ? 470 : 820, cy: y, len: 230, thick: 18,
-                    speed: i % 2 ? 1.7 : -1.7, power: 350, color: i % 2 ? '#23d6c8' : '#ff5fa2' })));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1680, len: 250, thick: 20, speed: 1.3, power: 360, color: '#7b46d6' }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            Rounds._cannons(r, 3300, { n: 3, interval: 1.8, speed: 360, reach: 2400, spread: 150, color: '#ff9447' });
+            Rounds._conveyor(r, 2900, 3150, { dy: 1, push: 135, color: '#46d36a' });
+            Rounds._bumpers(r, 2550, { rows: 2, cols: 4, color: '#ffd23f' });
+            Rounds._conveyor(r, 2050, 2350, { dy: 1, push: 140, color: '#5ad1ff' });
+            Rounds._cannons(r, 1750, { n: 2, interval: 1.9, speed: 340, reach: 1500, color: '#ff5fa2' });
+            Rounds._conveyor(r, 1150, 1420, { dy: 1, push: 135, color: '#46d36a' });
+            Rounds._bumpers(r, 760, { rows: 1, cols: 3, color: '#ffd23f' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
-        pinballRun(r) {             // RACE — bounce pads + spinners chaos
+        // -------------------------------------------------- HIT PARADE
+        hitParade(r) {                      // RACE — the everything gauntlet
             Rounds._raceCommon(r);
-            for (const [x, y] of [[470, 2000], [810, 2000], [640, 1700], [470, 1400], [810, 1400], [640, 1100]])
-                r.obstacles.push(new BouncePad({ x, y, r: 42 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1850, len: 240, thick: 20, speed: 1.5, power: 340, color: '#ffd23f' }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1250, len: 240, thick: 20, speed: -1.6, power: 340, color: '#ff5fa2' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 780, amp: 320, headR: 32, speed: 2.0, power: 520 }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            Rounds._doorWall(r, 3360, 3);
+            Rounds._beams(r, 3000, { n: 2, speed: 1.5, color: '#7b46d6' });
+            Rounds._hammers(r, 2680, { n: 1, speed: 1.9 });
+            Rounds._conveyor(r, 2300, 2520, { dy: 1, push: 125 });
+            Rounds._blocks(r, 1980, { n: 2, speed: 160, color: '#b06bff' });
+            Rounds._bumpers(r, 1600, { rows: 2, cols: 5, color: '#ffd23f' });
+            Rounds._cannons(r, 1250, { n: 2, interval: 2.1, speed: 330, reach: 1200, color: '#e6395a' });
+            Rounds._beams(r, 820, { n: 1, style: 'windmill', speed: 0.9, len: 320, thick: 30, color: '#23d6c8' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
-        dizzyDoors(r) {             // RACE — a maze of doors
+        // -------------------------------------------------- KNIGHT FEVER
+        knightFever(r) {                    // RACE — swinging axes, sliding blocks, bumpers
             Rounds._raceCommon(r);
-            [2150, 1820, 1490, 1160, 830].forEach((y, i) => Rounds._doorWall(r, y, i % 2 ? 2 : 3));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-        },
-        theGauntlet(r) {            // RACE — a bit of everything
-            Rounds._raceCommon(r);
-            Rounds._doorWall(r, 2150, 3);
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1850, len: 250, thick: 20, speed: 1.4, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1520, amp: 320, headR: 32, speed: 1.9, power: 540 }));
-            r.obstacles.push(new BouncePad({ x: 470, y: 1250, r: 42 }));
-            r.obstacles.push(new BouncePad({ x: 810, y: 1250, r: 42 }));
-            Rounds._doorWall(r, 980, 2);
-            r.obstacles.push(new Spinner({ cx: 470, cy: 660, len: 190, thick: 18, speed: 1.7, power: 340, color: '#23d6c8' }));
-            r.obstacles.push(new Spinner({ cx: 820, cy: 660, len: 190, thick: 18, speed: -1.7, power: 340, color: '#23d6c8' }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            Rounds._axes(r, 3320, { n: 2, speed: 1.9, gap: 300 });
+            Rounds._bumpers(r, 2850, { rows: 2, cols: 4, color: '#e6395a' });
+            Rounds._blocks(r, 2450, { n: 2, speed: 170, color: '#9a6cff' });
+            Rounds._axes(r, 2050, { n: 2, speed: -2.1, gap: 300 });
+            Rounds._conveyor(r, 1650, 1850, { dy: 1, push: 130, color: '#7b46d6' });
+            Rounds._blocks(r, 1300, { n: 3, speed: 180, gap: 130, color: '#9a6cff' });
+            Rounds._axes(r, 820, { n: 2, speed: 2.2, gap: 280 });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
         jumpShowdown(r) {           // SURVIVAL — fast sweeper, smaller ring
             Rounds._arena(r, 280);
             const s = Rounds._sweeper(r, { speed: 1.0, power: 520 }); r.sweeper = s;
             Rounds._spawnRing(r);
             r.onUpdate = (rr, dt) => { s.speed += dt * 0.09; };
-        },
-        doubleSweep(r) {            // SURVIVAL — two counter-rotating bars
-            Rounds._arena(r, 300);
-            const s1 = Rounds._sweeper(r, { speed: 0.8, angle: -Math.PI / 2, color: '#ffd23f' }); r.sweeper = s1;
-            const s2 = Rounds._sweeper(r, { speed: -1.0, angle: 0, color: '#ff5fa2', len: r.platform.r - 70 });
-            Rounds._spawnRing(r);
-            r.onUpdate = (rr, dt) => { s1.speed += dt * 0.05; s2.speed -= dt * 0.05; };
-        },
-        springStorm(r) {            // SURVIVAL — sweeper + a field of springs
-            const A = Rounds._arena(r, 300);
-            const s = Rounds._sweeper(r, { speed: 0.85, color: '#ff5fa2' }); r.sweeper = s;
-            for (const [px, py] of [[A.cx - 130, A.cy - 70], [A.cx + 130, A.cy - 70], [A.cx, A.cy + 140],
-                                    [A.cx - 110, A.cy + 80], [A.cx + 110, A.cy + 80], [A.cx, A.cy - 150]])
-                r.obstacles.push(new BouncePad({ x: px, y: py, r: 40 }));
-            Rounds._spawnRing(r);
-            r.onUpdate = (rr, dt) => { s.speed += dt * 0.05; };
         },
         hexBlitz(r) {               // FINAL — tighter arena, faster decay
             r.kind = 'final'; r.camMode = 'fixed';
@@ -959,62 +949,6 @@ const Rounds = {
             };
         },
 
-        // ---- batch 3 -------------------------------------------------
-        knockoutAlley(r) {          // RACE — brutal hammers + spinners
-            Rounds._raceCommon(r);
-            r.obstacles.push(new Spinner({ cx: 640, cy: 2150, len: 250, thick: 22, speed: 1.5, power: 380, color: '#e6395a' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1820, amp: 330, headR: 36, speed: 1.8, power: 560 }));
-            r.obstacles.push(new Spinner({ cx: 470, cy: 1480, len: 200, thick: 18, speed: -1.8, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new Spinner({ cx: 820, cy: 1480, len: 200, thick: 18, speed: 1.8, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1120, amp: 340, headR: 36, speed: 2.1, phase: 1, power: 560 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 760, len: 250, thick: 22, speed: -1.6, power: 380, color: '#e6395a' }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-        },
-        zigzag(r) {                 // RACE — alternating offset spinners
-            Rounds._raceCommon(r);
-            const xs = [470, 820, 470, 820, 640], ys = [2050, 1740, 1430, 1120, 810];
-            ys.forEach((y, i) => r.obstacles.push(new Spinner({ cx: xs[i], cy: y, len: 210, thick: 18, speed: i % 2 ? 1.7 : -1.7, power: 350, color: i % 2 ? '#23d6c8' : '#ffd23f' })));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-        },
-        doorJam(r) {                // RACE — six door walls
-            Rounds._raceCommon(r);
-            [2200, 1900, 1600, 1300, 1000, 700].forEach((y, i) => Rounds._doorWall(r, y, i % 3 === 0 ? 3 : 2));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-        },
-        bouncyCastle(r) {           // RACE — springs galore
-            Rounds._raceCommon(r);
-            for (const [x, y] of [[470, 2050], [810, 2050], [640, 1820], [470, 1500], [810, 1500], [640, 1200], [470, 900], [810, 900]])
-                r.obstacles.push(new BouncePad({ x, y, r: 44 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1650, len: 230, thick: 20, speed: 1.5, power: 340, color: '#ff5fa2' }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1050, len: 230, thick: 20, speed: -1.5, power: 340, color: '#ff5fa2' }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-        },
-        slalom(r) {                 // RACE — weave the centre bars
-            Rounds._raceCommon(r);
-            [2000, 1700, 1400, 1100, 800].forEach((y, i) => r.obstacles.push(new Spinner({ cx: 640, cy: y, len: 230, thick: 20, speed: i % 2 ? 1.6 : -1.6, power: 340, color: '#9a6cff' })));
-            r.obstacles.push(new BouncePad({ x: 640, y: 1850, r: 42 }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
-        },
-        tinyIsland(r) {             // SURVIVAL — small floor, quick bar
-            Rounds._arena(r, 230);
-            const s = Rounds._sweeper(r, { speed: 0.9, power: 520 }); r.sweeper = s;
-            Rounds._spawnRing(r);
-            r.onUpdate = (rr, dt) => { s.speed += dt * 0.07; };
-        },
-        bigTop(r) {                 // SURVIVAL — roomy floor, gentle bar
-            Rounds._arena(r, 330);
-            const s = Rounds._sweeper(r, { speed: 0.6, power: 470 }); r.sweeper = s;
-            Rounds._spawnRing(r);
-            r.onUpdate = (rr, dt) => { s.speed += dt * 0.05; };
-        },
-        springTrap(r) {             // SURVIVAL — sweeper + corner springs
-            const A = Rounds._arena(r, 300);
-            const s = Rounds._sweeper(r, { speed: 0.8, color: '#23d6c8' }); r.sweeper = s;
-            for (const [px, py] of [[A.cx - 140, A.cy], [A.cx + 140, A.cy], [A.cx, A.cy - 140], [A.cx, A.cy + 140]])
-                r.obstacles.push(new BouncePad({ x: px, y: py, r: 42 }));
-            Rounds._spawnRing(r);
-            r.onUpdate = (rr, dt) => { s.speed += dt * 0.05; };
-        },
         hexRoyale(r) {              // FINAL — medium honeycomb
             r.kind = 'final'; r.camMode = 'fixed';
             r.minX = 280; r.maxX = 1000; r.minY = 130; r.maxY = 630; r.thinkFn = hexThink;
@@ -1042,30 +976,29 @@ const Rounds = {
 
         // ============================================ NEW GAMEMODES ===
         // -------- FALL MOUNTAIN (racing FINAL — first to the crown wins)
-        fallMountain(r) {
+        fallMountain(r) {           // FINAL race — climb past cannons to grab the Crown
             Rounds._raceCommon(r);
             r.kind = 'mountain'; r.viewKind = 'race'; r.crownFinish = true; r.finishY = 360;
-            r.obstacles.push(new Hammer({ cx: 640, cy: 2150, amp: 340, headR: 34, speed: 1.6, power: 540 }));
-            r.obstacles.push(new Spinner({ cx: 470, cy: 1820, len: 210, thick: 20, speed: -1.6, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new Spinner({ cx: 820, cy: 1820, len: 210, thick: 20, speed: 1.6, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1480, amp: 330, headR: 34, speed: -2.0, phase: 1, power: 560 }));
-            r.obstacles.push(new BouncePad({ x: 470, y: 1180, r: 42 }));
-            r.obstacles.push(new BouncePad({ x: 810, y: 1180, r: 42 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 900, len: 250, thick: 22, speed: 1.4, power: 380, color: '#e6395a' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 600, amp: 300, headR: 32, speed: 2.2, power: 560 }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            Rounds._beams(r, 3320, { n: 2, speed: 1.5, color: '#7b46d6' });
+            Rounds._cannons(r, 2950, { n: 2, interval: 1.9, speed: 360, reach: 2400, spread: 150, color: '#e6395a' });
+            Rounds._bumpers(r, 2500, { rows: 2, cols: 4, color: '#ffd23f' });
+            Rounds._beams(r, 2050, { n: 3, speed: -1.7, color: '#7b46d6' });
+            Rounds._cannons(r, 1650, { n: 2, interval: 2.0, speed: 340, reach: 1300, color: '#e6395a' });
+            Rounds._hammers(r, 1150, { n: 2, speed: 2.0, gap: 260 });
+            Rounds._beams(r, 700, { n: 1, style: 'windmill', speed: 0.9, len: 320, thick: 30, color: '#e6395a' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
-        lostTemple(r) {             // FINAL — a steeper climb of doors & bars
+        lostTemple(r) {             // FINAL race — doors, hammers & blocks to the Crown
             Rounds._raceCommon(r);
             r.kind = 'mountain'; r.viewKind = 'race'; r.crownFinish = true; r.finishY = 360;
-            Rounds._doorWall(r, 2150, 3);
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1820, amp: 330, headR: 34, speed: 1.9, power: 560 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1480, len: 250, thick: 22, speed: -1.6, power: 380, color: '#e6395a' }));
-            Rounds._doorWall(r, 1120, 2);
-            r.obstacles.push(new BouncePad({ x: 640, y: 880, r: 44 }));
-            r.obstacles.push(new Hammer({ cx: 470, cy: 600, amp: 240, headR: 30, speed: 2.1, power: 540 }));
-            r.obstacles.push(new Hammer({ cx: 820, cy: 600, amp: 240, headR: 30, speed: -2.1, phase: 1, power: 540 }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            Rounds._doorWall(r, 3340, 3);
+            Rounds._hammers(r, 2950, { n: 2, speed: 1.9, gap: 280 });
+            Rounds._blocks(r, 2500, { n: 2, speed: 170, color: '#9a6cff' });
+            Rounds._doorWall(r, 2050, 2);
+            Rounds._beams(r, 1650, { n: 2, speed: -1.7, color: '#e6395a' });
+            Rounds._bumpers(r, 1200, { rows: 2, cols: 4, color: '#ffd23f' });
+            Rounds._hammers(r, 700, { n: 2, speed: 2.2, gap: 240 });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
 
         // -------- TAIL TAG (HUNT — hold a tail when the clock runs out)
@@ -1092,27 +1025,29 @@ const Rounds = {
         slimeClimb(r) {
             Rounds._raceCommon(r);
             r.kind = 'climb'; r.viewKind = 'race';
-            r.slimeY = r.maxY - 40; r.slimeRate = 40;
-            r.obstacles.push(new Spinner({ cx: 640, cy: 2120, len: 250, thick: 22, speed: 1.3, power: 360, color: '#7b46d6' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1780, amp: 320, headR: 32, speed: -1.8, power: 520 }));
-            r.obstacles.push(new Spinner({ cx: 470, cy: 1460, len: 200, thick: 20, speed: 1.6, power: 350, color: '#23d6c8' }));
-            r.obstacles.push(new Spinner({ cx: 820, cy: 1460, len: 200, thick: 20, speed: -1.6, power: 350, color: '#23d6c8' }));
-            r.obstacles.push(new BouncePad({ x: 640, y: 1150, r: 44 }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 860, amp: 320, headR: 32, speed: 2.0, power: 520 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 600, len: 240, thick: 22, speed: 1.5, power: 360, color: '#ff5fa2' }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            r.slimeY = r.maxY - 40; r.slimeRate = 42;
+            Rounds._blocks(r, 3320, { n: 2, speed: 150, color: '#b06bff' });
+            Rounds._cannons(r, 2950, { n: 2, interval: 2.0, speed: 340, reach: 1400, color: '#e6395a' });
+            Rounds._hammers(r, 2550, { n: 2, speed: 1.8, gap: 260 });
+            Rounds._beams(r, 2150, { n: 2, speed: -1.6, color: '#23d6c8' });
+            Rounds._bumpers(r, 1750, { rows: 2, cols: 4, color: '#ffd23f' });
+            Rounds._blocks(r, 1350, { n: 2, speed: 165, color: '#9a6cff' });
+            Rounds._hammers(r, 900, { n: 2, speed: 2.0, gap: 240 });
+            Rounds._beams(r, 560, { n: 2, speed: 1.7, color: '#ff5fa2' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
         slimeScramble(r) {
             Rounds._raceCommon(r);
             r.kind = 'climb'; r.viewKind = 'race';
-            r.slimeY = r.maxY - 30; r.slimeRate = 52;
-            Rounds._doorWall(r, 2120, 3);
-            r.obstacles.push(new Hammer({ cx: 640, cy: 1820, amp: 330, headR: 34, speed: 1.9, power: 560 }));
-            r.obstacles.push(new Spinner({ cx: 640, cy: 1500, len: 250, thick: 22, speed: -1.7, power: 380, color: '#e6395a' }));
-            r.obstacles.push(new Spinner({ cx: 470, cy: 1180, len: 190, thick: 18, speed: 1.8, power: 350, color: '#7b46d6' }));
-            r.obstacles.push(new Spinner({ cx: 820, cy: 1180, len: 190, thick: 18, speed: -1.8, power: 350, color: '#7b46d6' }));
-            r.obstacles.push(new Hammer({ cx: 640, cy: 820, amp: 340, headR: 34, speed: 2.2, power: 560 }));
-            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+            r.slimeY = r.maxY - 30; r.slimeRate = 48;
+            Rounds._doorWall(r, 3340, 3);
+            Rounds._hammers(r, 2950, { n: 2, speed: 1.9, gap: 280 });
+            Rounds._cannons(r, 2550, { n: 2, interval: 1.8, speed: 360, reach: 1600, color: '#e6395a' });
+            Rounds._beams(r, 2100, { n: 3, speed: -1.8, color: '#7b46d6' });
+            Rounds._blocks(r, 1650, { n: 3, speed: 185, gap: 130, color: '#9a6cff' });
+            Rounds._bumpers(r, 1150, { rows: 2, cols: 5, color: '#e6395a' });
+            Rounds._hammers(r, 650, { n: 2, speed: 2.2, gap: 240 });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
     },
 };

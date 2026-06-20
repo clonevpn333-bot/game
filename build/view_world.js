@@ -481,26 +481,70 @@ function makeSpinner(ob) {
     rotor.add(hubCap);
 
     // each arm: a soft rounded padded bar laid along +X, plus a paddle cap.
+    // VIEW STYLE (visual only): 'windmill' = big flat sails, 'blade' = flat
+    // fan/propeller, default 'bar' = chunky padded arm. Motion is identical:
+    // every variant still reaches to radius `len` along the arm's local +X.
+    const style = (ob.style || 'bar');
     const armMat = mat(color, { roughness: 0.42, metalness: 0.06 });
     const stripeMat = mat(pop(shade(color, 0.4), 0, 0.05), { roughness: 0.35 });
     const capMat = gloss(pop(shade(color, 0.28), 0.05, 0));
+    const sailMat = inflate(color, { roughness: 0.24, clearcoat: 0.7 });
+    const sailAlt = inflate(pop(shade(color, 0.34), 0.04, 0.04), { roughness: 0.24, clearcoat: 0.7 });
     for (let i = 0; i < arms; i++) {
         const a = (i * Math.PI * 2) / arms;
         const arm = new THREE.Object3D();
         arm.rotation.y = -a;   // logical angle a -> world -Y (X/Y -> X/Z handedness)
 
-        const bar = roundedSlab(len, barH, barD, Math.min(barH, barD) * 0.45, armMat);
-        bar.position.set(len / 2, 0, 0);
-        arm.add(bar);
-        // a bright hazard stripe band near the tip.
-        const band = new THREE.Mesh(new THREE.BoxGeometry(len * 0.18, barH * 1.02, barD * 1.04), stripeMat);
-        band.position.set(len * 0.78, 0, 0);
-        arm.add(band);
-        // rounded paddle cap at the tip for a beefy toy look.
-        const cap = new THREE.Mesh(new THREE.SphereGeometry(barH * 0.72, 16, 12), capMat);
-        cap.scale.set(1, 1, 1.15);
-        cap.position.set(len, 0, 0);
-        arm.add(cap);
+        if (style === 'windmill') {
+            // a big wide flat sail: thin in height, broad in the sweep (Z) plane,
+            // mounted out along the arm so the tip still rides at radius `len`.
+            const sailW = len * 0.92;            // along the arm
+            const sailSpan = Math.max(barD * 4, len * 0.5);   // broad across (Z)
+            const sail = roundedSlab(sailW, barH * 0.8, sailSpan, barH * 0.35,
+                (i % 2) ? sailAlt : sailMat);
+            sail.position.set(len * 0.54, 0, 0);
+            arm.add(sail);
+            // a slim spar down the spine of the sail for a built look.
+            const spar = new THREE.Mesh(new THREE.CylinderGeometry(barH * 0.28, barH * 0.28, len, 12), armMat);
+            spar.rotation.z = Math.PI / 2;
+            spar.position.set(len / 2, 0, 0);
+            arm.add(spar);
+            // bright tip trim so the blade tip reads clearly.
+            const tip = new THREE.Mesh(new THREE.BoxGeometry(barH * 0.6, barH * 0.85, sailSpan * 1.02), stripeMat);
+            tip.position.set(len * 0.96, 0, 0);
+            arm.add(tip);
+        } else if (style === 'blade') {
+            // a flat propeller/fan blade: a tapered flat paddle, slightly pitched.
+            const bladeLen = len * 0.96;
+            const bladeSpan = Math.max(barD * 2.6, len * 0.3);
+            const blade = roundedSlab(bladeLen, barH * 0.5, bladeSpan, barH * 0.22,
+                (i % 2) ? sailAlt : sailMat);
+            blade.scale.set(1, 1, 0.6);          // taper toward the hub visually
+            blade.rotation.x = 0.32;             // a touch of pitch like a fan
+            blade.position.set(len * 0.52, 0, 0);
+            arm.add(blade);
+            const root = new THREE.Mesh(new THREE.CylinderGeometry(barH * 0.5, barH * 0.7, barH * 1.4, 14), armMat);
+            root.position.set(barH * 0.8, 0, 0);
+            arm.add(root);
+            const tip = new THREE.Mesh(new THREE.BoxGeometry(barH * 0.5, barH * 0.55, bladeSpan * 0.9), stripeMat);
+            tip.rotation.x = 0.32;
+            tip.position.set(len * 0.95, 0, 0);
+            arm.add(tip);
+        } else {
+            // default 'bar' (and 'sweeper'): the original chunky padded arm.
+            const bar = roundedSlab(len, barH, barD, Math.min(barH, barD) * 0.45, armMat);
+            bar.position.set(len / 2, 0, 0);
+            arm.add(bar);
+            // a bright hazard stripe band near the tip.
+            const band = new THREE.Mesh(new THREE.BoxGeometry(len * 0.18, barH * 1.02, barD * 1.04), stripeMat);
+            band.position.set(len * 0.78, 0, 0);
+            arm.add(band);
+            // rounded paddle cap at the tip for a beefy toy look.
+            const cap = new THREE.Mesh(new THREE.SphereGeometry(barH * 0.72, 16, 12), capMat);
+            cap.scale.set(1, 1, 1.15);
+            cap.position.set(len, 0, 0);
+            arm.add(cap);
+        }
         rotor.add(arm);
     }
 
@@ -560,25 +604,90 @@ function makeHammer(ob) {
     collar.position.set(0, -armLen + headR * 0.4, 0);
     pivot.add(collar);
 
-    // chunky wrecking-ball head with studs (a mace).
-    const headMat = gloss(WPAL.gold, { roughness: 0.28, metalness: 0.35, emissive: 0x5a3d00, emissiveIntensity: 0.12 });
-    const head = new THREE.Mesh(new THREE.SphereGeometry(headR, 24, 18), headMat);
-    head.position.set(0, -armLen, 0);
-    pivot.add(head);
-    const studMat = gloss(shade(WPAL.gold, -0.25), { metalness: 0.4 });
-    for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2;
-        const stud = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.26, headR * 0.5, 8), studMat);
-        stud.position.set(Math.cos(a) * headR, -armLen + Math.sin(a) * headR, 0);
-        stud.rotation.z = -a + Math.PI / 2;
-        pivot.add(stud);
-    }
-    // a couple studs poking toward/away (Z) so it reads round from the side.
-    for (const dz of [-1, 1]) {
-        const stud = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.26, headR * 0.5, 8), studMat);
-        stud.position.set(0, -armLen, dz * headR);
-        stud.rotation.x = dz < 0 ? Math.PI / 2 : -Math.PI / 2;
-        pivot.add(stud);
+    // VIEW STYLE (visual only): 'axe' = medieval axe head, 'pendulum' = a
+    // spiked log/ball, default 'hammer' = the chunky studded mace. Every
+    // variant centres its mass at (0,-armLen,0) so the swing reads the same.
+    const style = (ob.style || 'hammer');
+    if (style === 'axe') {
+        // a heavy wedge axe head on a stubby haft, blade facing the swing (X).
+        const haftMat = gloss(shade(WPAL.wood, -0.1), { roughness: 0.4, metalness: 0.1 });
+        const haft = new THREE.Mesh(new THREE.CylinderGeometry(7, 8, headR * 1.7, 12), haftMat);
+        haft.position.set(0, -armLen, 0);
+        pivot.add(haft);
+        const steelMat = gloss(0xd7dde6, { roughness: 0.22, metalness: 0.55, emissive: 0x223040, emissiveIntensity: 0.08 });
+        const edgeMat = gloss(0xfbfdff, { roughness: 0.14, metalness: 0.4, emissive: 0xbcd6ff, emissiveIntensity: 0.12 });
+        // wedge blade built from a flat trapezoid shape, extruded across Z.
+        const bw = headR * 2.2, bh = headR * 2.4;
+        const bladeShape = new THREE.Shape();
+        bladeShape.moveTo(0, -bh * 0.42);
+        bladeShape.lineTo(0, bh * 0.42);
+        bladeShape.quadraticCurveTo(bw * 0.5, bh * 0.34, bw, bh * 0.16);
+        bladeShape.quadraticCurveTo(bw * 1.12, 0, bw, -bh * 0.16);
+        bladeShape.quadraticCurveTo(bw * 0.5, -bh * 0.34, 0, -bh * 0.42);
+        const bladeGeo = new THREE.ExtrudeGeometry(bladeShape, {
+            depth: headR * 0.5, bevelEnabled: true, bevelThickness: 2, bevelSize: 2, bevelSegments: 1, steps: 1,
+        });
+        bladeGeo.center();
+        for (const sgn of [1, -1]) {                     // a double-bit axe
+            const blade = new THREE.Mesh(bladeGeo.clone(), steelMat);
+            blade.scale.x = sgn;
+            blade.position.set(sgn * (headR * 0.9), -armLen, 0);
+            pivot.add(blade);
+            // a bright cutting edge strip at the lip.
+            const edge = new THREE.Mesh(new THREE.BoxGeometry(headR * 0.16, bh * 0.7, headR * 0.62), edgeMat);
+            edge.position.set(sgn * (headR * 1.85), -armLen, 0);
+            pivot.add(edge);
+        }
+        const collarMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.4 });
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, headR * 0.5, 14), collarMat);
+        band.position.set(0, -armLen, 0);
+        pivot.add(band);
+    } else if (style === 'pendulum') {
+        // a chunky spiked log/ball hanging across the lane (axis along Z).
+        const logMat = gloss(col(ob.color, WPAL.grape), { roughness: 0.3, metalness: 0.15, emissive: shade(col(ob.color, WPAL.grape), -0.5), emissiveIntensity: 0.1 });
+        const logLen = headR * 2.6;
+        const log = new THREE.Mesh(new THREE.CylinderGeometry(headR * 0.95, headR * 0.95, logLen, 22), logMat);
+        log.rotation.x = Math.PI / 2;                    // lay across Z
+        log.position.set(0, -armLen, 0);
+        pivot.add(log);
+        const capMat = gloss(shade(col(ob.color, WPAL.grape), -0.18), { roughness: 0.3, metalness: 0.2 });
+        for (const dz of [-1, 1]) {
+            const cap = new THREE.Mesh(new THREE.SphereGeometry(headR * 0.95, 18, 14), capMat);
+            cap.position.set(0, -armLen, dz * logLen / 2);
+            pivot.add(cap);
+        }
+        // rings of spikes bristling around the log.
+        const spikeMat = gloss(0xf0f3f8, { roughness: 0.2, metalness: 0.5 });
+        for (const rz of [-logLen * 0.3, 0, logLen * 0.3]) {
+            for (let i = 0; i < 8; i++) {
+                const a = (i / 8) * Math.PI * 2;
+                const spike = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.2, headR * 0.7, 7), spikeMat);
+                spike.position.set(Math.cos(a) * headR, -armLen + Math.sin(a) * headR, rz);
+                spike.rotation.z = -a + Math.PI / 2;
+                pivot.add(spike);
+            }
+        }
+    } else {
+        // default 'hammer': chunky wrecking-ball head with studs (a mace).
+        const headMat = gloss(WPAL.gold, { roughness: 0.28, metalness: 0.35, emissive: 0x5a3d00, emissiveIntensity: 0.12 });
+        const head = new THREE.Mesh(new THREE.SphereGeometry(headR, 24, 18), headMat);
+        head.position.set(0, -armLen, 0);
+        pivot.add(head);
+        const studMat = gloss(shade(WPAL.gold, -0.25), { metalness: 0.4 });
+        for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2;
+            const stud = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.26, headR * 0.5, 8), studMat);
+            stud.position.set(Math.cos(a) * headR, -armLen + Math.sin(a) * headR, 0);
+            stud.rotation.z = -a + Math.PI / 2;
+            pivot.add(stud);
+        }
+        // a couple studs poking toward/away (Z) so it reads round from the side.
+        for (const dz of [-1, 1]) {
+            const stud = new THREE.Mesh(new THREE.ConeGeometry(headR * 0.26, headR * 0.5, 8), studMat);
+            stud.position.set(0, -armLen, dz * headR);
+            stud.rotation.x = dz < 0 ? Math.PI / 2 : -Math.PI / 2;
+            pivot.add(stud);
+        }
     }
 
     shadowy(group, true, true);
@@ -841,13 +950,331 @@ function makeHex(ob) {
     return view;
 }
 
+/* CONVEYOR — a candy treadmill belt over [x0..x1] x [y0..y1] that scrolls
+   chevrons along (dx, dy). The belt slab sits just above the floor (~y=4);
+   chevrons live on a strip oriented along the travel direction and we slide
+   them (wrapping) in update() so it reads as a moving belt. */
+function makeConveyor(ob) {
+    const group = new THREE.Object3D();
+    const x0 = Math.min(ob.x0, ob.x1), x1 = Math.max(ob.x0, ob.x1);
+    const y0 = Math.min(ob.y0, ob.y1), y1 = Math.max(ob.y0, ob.y1);
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    const w = Math.max(1, x1 - x0), h = Math.max(1, y1 - y0);
+    group.position.copy(W(cx, cy, 0));
+
+    const color = col(ob.color, WPAL.track);
+    const beltTop = 8;                       // belt surface height (sits on floor)
+    // travel direction in world XZ (sim dx -> world X, sim dy -> world Z).
+    const dx = ob.dx || 0, dy = (ob.dy != null ? ob.dy : 1);
+    const dlen = Math.hypot(dx, dy) || 1;
+    const ux = dx / dlen, uz = dy / dlen;    // unit travel dir in world XZ
+    const ang = Math.atan2(uz, ux);          // heading about world Y
+
+    // --- belt slab: a flat rounded candy plate raised just off the floor ---
+    const beltMat = gloss(color, { roughness: 0.34, metalness: 0.08, emissive: shade(color, -0.5), emissiveIntensity: 0.06 });
+    const belt = roundedSlab(w, h, beltTop, Math.min(18, w / 2 - 1, h / 2 - 1), beltMat);
+    belt.rotation.x = -Math.PI / 2;          // slab's extrude depth -> world Y
+    belt.position.set(0, beltTop / 2, 0);
+    group.add(belt);
+    // a darker inset lane so the chevrons pop against the belt.
+    const laneMat = mat(shade(color, -0.18), { roughness: 0.5 });
+    const lane = new THREE.Mesh(new THREE.BoxGeometry(w - 14, 1.2, h - 14), laneMat);
+    lane.position.set(0, beltTop + 0.4, 0);
+    group.add(lane);
+
+    // --- chevron strip oriented along travel: we build N arrows and scroll
+    //     them within a span, wrapping for an endless-belt illusion. ---
+    const strip = new THREE.Object3D();      // local +X = travel direction
+    strip.rotation.y = -ang;                 // world heading -> local +X (X/Z handedness)
+    strip.position.set(0, beltTop + 1.2, 0);
+    group.add(strip);
+
+    // span along travel, and usable cross-width (perpendicular).
+    const cosA = Math.abs(Math.cos(ang)), sinA = Math.abs(Math.sin(ang));
+    const span = w * cosA + h * sinA;        // belt extent projected on travel axis
+    const cross = w * sinA + h * cosA;       // belt extent across travel axis
+    const chevW = Math.min(Math.max(cross * 0.6, 24), cross - 10);  // arrow width
+    const chevD = Math.max(14, Math.min(34, span * 0.12));          // arrow depth
+    const spacing = chevD * 2.0;
+    const count = Math.max(2, Math.ceil(span / spacing) + 2);
+    const half = (count - 1) * spacing / 2;
+
+    // a single chevron: two angled bars meeting at a point along +X (travel).
+    const chevMat = gloss(0xffffff, { roughness: 0.3, emissive: 0xffffff, emissiveIntensity: 0.14 });
+    function makeChevron() {
+        const c = new THREE.Object3D();
+        const barLen = Math.hypot(chevW / 2, chevD) + 4;
+        const barT = Math.max(5, chevD * 0.34);
+        for (const sgn of [1, -1]) {
+            const bar = new THREE.Mesh(new THREE.BoxGeometry(barLen, 3.2, barT), chevMat);
+            // angle the bar so the two meet at a forward point.
+            bar.rotation.y = sgn * Math.atan2(chevW / 2, chevD);
+            bar.position.set(-chevD * 0.32, 0, sgn * chevW * 0.25);
+            c.add(bar);
+        }
+        return c;
+    }
+    const chevrons = [];
+    for (let i = 0; i < count; i++) {
+        const c = makeChevron();
+        c.position.set(0, 0, 0);
+        strip.add(c);
+        chevrons.push(c);
+    }
+
+    // --- side rollers (cylinders) at each end of the belt across travel ---
+    const rollerMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.4 });
+    const rollers = [];
+    for (const sgn of [1, -1]) {
+        const roller = new THREE.Mesh(new THREE.CylinderGeometry(beltTop * 0.7, beltTop * 0.7, cross + 6, 18), rollerMat);
+        roller.rotation.x = Math.PI / 2;     // axis along local Z (across travel)
+        // place at the leading/trailing end along travel.
+        const ex = Math.cos(ang) * (span / 2) * sgn;
+        const ez = Math.sin(ang) * (span / 2) * sgn;
+        roller.position.set(ex, beltTop * 0.5, ez);
+        roller.rotation.y = -ang;
+        roller.userData.spinSign = sgn;
+        group.add(roller);
+        rollers.push(roller);
+    }
+
+    shadowy(group, true, true);
+
+    const view = {
+        object3d: group,
+        update(o, dt, t) {
+            const tt = t || 0;
+            // scroll chevrons along +X (travel), wrapping across the span.
+            const flow = (tt * 90) % spacing;     // belt speed feel
+            for (let i = 0; i < chevrons.length; i++) {
+                let x = -half + i * spacing + flow;
+                // wrap into [-half-spacing, +half]
+                const range = count * spacing;
+                x = ((x + half + spacing) % range + range) % range - half - spacing;
+                chevrons[i].position.x = x;
+            }
+            for (const r of rollers) r.rotation.z += (dt || 0.016) * 4 * r.userData.spinSign;
+        },
+        dispose() { disposeTree(group); },
+    };
+    view.update(ob, 0, 0);
+    return view;
+}
+
+/* BUMPER — a pinball mushroom: glossy dome cap on a small base with a white
+   ring accent. Pops (scales up + brightens) when ob.t is small (just hit). */
+function makeBumper(ob) {
+    const group = new THREE.Object3D();
+    group.position.copy(W(ob.x, ob.y, 0));
+    const r = ob.r || 34;
+    const color = col(ob.color, WPAL.gold);
+
+    // a squat base ring the dome perches on.
+    const baseMat = gloss(shade(color, -0.28), { roughness: 0.32, metalness: 0.12 });
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.02, r * 1.16, 12, 28), baseMat);
+    base.position.set(0, 6, 0);
+    group.add(base);
+
+    // the glossy rounded cap (mushroom dome) we pop on hit.
+    const cap = new THREE.Object3D();
+    cap.position.set(0, 10, 0);
+    group.add(cap);
+    const domeMat = gloss(color, { roughness: 0.16, metalness: 0.1, emissive: shade(color, -0.4), emissiveIntensity: 0.12 });
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(r, 28, 18, 0, Math.PI * 2, 0, Math.PI * 0.6), domeMat);
+    dome.scale.set(1, 0.82, 1);
+    cap.add(dome);
+    // a glossy knob on top to finish the bumper.
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(r * 0.26, 16, 12), gloss(shade(color, 0.3), { roughness: 0.2 }));
+    knob.position.set(0, r * 0.66, 0);
+    cap.add(knob);
+
+    // white ring accent around the dome base.
+    const ringMat = gloss(0xfff6fb, { roughness: 0.2, metalness: 0.05, emissive: 0xffffff, emissiveIntensity: 0.1 });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(r * 0.98, r * 0.12, 12, 30), ringMat);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.set(0, r * 0.18, 0);
+    cap.add(ring);
+
+    shadowy(group, true, true);
+    const baseEmissive = 0.12;
+
+    const view = {
+        object3d: group,
+        update(o, dt, t) {
+            const ot = (o && o.t != null) ? o.t : (ob.t != null ? ob.t : 99);
+            // pop window right after a hit (ob.t resets to 0, climbs over time).
+            const pop = Math.max(0, 1 - ot * 4.5);     // 1 -> 0 over ~0.22s
+            const ease = pop * pop;
+            cap.scale.set(1 + ease * 0.28, 1 + ease * 0.42, 1 + ease * 0.28);
+            domeMat.emissiveIntensity = baseEmissive + ease * 0.6;
+            ringMat.emissiveIntensity = 0.1 + ease * 0.7;
+        },
+        dispose() { disposeTree(group); },
+    };
+    view.update(ob, 0, 0);
+    return view;
+}
+
+/* MOVING BLOCK — a chunky candy block (rounded box) sliding side to side.
+   Follows ob.cx/ob.cy each frame, sitting on the floor (height/2 up). */
+function makeMovingBlock(ob) {
+    const group = new THREE.Object3D();
+    const w = ob.w || 130;
+    const thick = ob.thick || 40;
+    const height = (ob.height != null) ? ob.height : 130;
+    const color = col(ob.color, WPAL.grape);
+    group.position.copy(W(ob.cx != null ? ob.cx : (ob.x0 || 0), ob.cy, 0));
+
+    // the solid rounded block body.
+    const bodyMat = mat(pop(color, 0.04, 0.02), { roughness: 0.4, metalness: 0.08 });
+    const body = roundedSlab(w, height, thick, Math.min(16, w / 2 - 1, height / 2 - 1, thick / 2 - 1), bodyMat);
+    body.position.set(0, height / 2, 0);
+    group.add(body);
+
+    // a subtle inset face panel on the down-course (front) & back faces so it
+    // reads as a Fall Guys block, plus a bright bolt in the middle.
+    const faceMat = gloss(pop(shade(color, 0.22), 0.04, 0), { roughness: 0.3 });
+    const boltMat = gloss(WPAL.gold, { roughness: 0.24, metalness: 0.45 });
+    for (const sgn of [1, -1]) {
+        const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.66, height * 0.6, thick * 0.18), faceMat);
+        panel.position.set(0, height / 2, sgn * (thick / 2 - thick * 0.05));
+        group.add(panel);
+        const bolt = new THREE.Mesh(new THREE.SphereGeometry(Math.min(w, height) * 0.09, 14, 10), boltMat);
+        bolt.position.set(0, height / 2, sgn * (thick / 2 + 1));
+        group.add(bolt);
+    }
+
+    // gold trim cap rails along the top and bottom edges.
+    const trimMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.35 });
+    for (const yy of [height - 6, 8]) {
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(w + 6, 10, thick + 6), trimMat);
+        rail.position.set(0, yy, 0);
+        group.add(rail);
+    }
+    // gold corner studs down the vertical edges.
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+        const stud = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, height - 18, 10), trimMat);
+        stud.position.set(sx * (w / 2 - 2), height / 2, sz * (thick / 2 - 2));
+        group.add(stud);
+    }
+
+    shadowy(group, true, true);
+
+    const view = {
+        object3d: group,
+        update(o, dt, t) {
+            const cxv = (o && o.cx != null) ? o.cx : (ob.cx != null ? ob.cx : 0);
+            const cyv = (o && o.cy != null) ? o.cy : ob.cy;
+            group.position.copy(W(cxv, cyv, 0));   // height handled by body offset
+        },
+        dispose() { disposeTree(group); },
+    };
+    view.update(ob, 0, 0);
+    return view;
+}
+
+/* CANNON — a tilted barrel pointing down-course (+y / world +Z) that lobs
+   rolling boulders. We pool spheres: one per live entry in ob.balls, rolled
+   by ball.spin; unused pooled spheres are hidden. */
+function makeCannon(ob) {
+    const group = new THREE.Object3D();
+    group.position.copy(W(ob.x, ob.y, 0));
+    const color = col(ob.color, WPAL.slime);
+    const ballR = ob.ballR || 26;
+
+    // a stout mount the barrel pivots on.
+    const mountMat = gloss(WPAL.grapeDk, { roughness: 0.4, metalness: 0.2 });
+    const mount = new THREE.Mesh(new THREE.CylinderGeometry(ballR * 0.9, ballR * 1.2, ballR * 0.9, 20), mountMat);
+    mount.position.set(0, ballR * 0.45, 0);
+    group.add(mount);
+    const yoke = new THREE.Mesh(new THREE.TorusGeometry(ballR * 0.7, ballR * 0.16, 10, 20), gloss(WPAL.gold, { metalness: 0.4 }));
+    yoke.rotation.y = Math.PI / 2;
+    yoke.position.set(0, ballR * 0.9, 0);
+    group.add(yoke);
+
+    // the barrel: a tube tilted to aim down-course (toward world +Z). We tilt
+    // a barrel pivot about world X so the muzzle points up-and-forward.
+    const barrel = new THREE.Object3D();
+    barrel.position.set(0, ballR * 1.0, 0);
+    barrel.rotation.x = -0.62;               // tilt muzzle toward +Z (down-course)
+    group.add(barrel);
+    const barrelLen = ballR * 3.0;
+    const barrelMat = gloss(shade(color, -0.18), { roughness: 0.32, metalness: 0.4, emissive: shade(color, -0.55), emissiveIntensity: 0.08 });
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(ballR * 0.85, ballR * 1.05, barrelLen, 22, 1, true), barrelMat);
+    tube.position.set(0, 0, barrelLen / 2);  // extend forward along local +Z
+    tube.rotation.x = Math.PI / 2;           // cylinder axis (local Y) -> local Z
+    barrel.add(tube);
+    // a bright muzzle ring at the mouth.
+    const muzzle = new THREE.Mesh(new THREE.TorusGeometry(ballR * 0.92, ballR * 0.14, 12, 24), gloss(WPAL.gold, { metalness: 0.45 }));
+    muzzle.position.set(0, 0, barrelLen);
+    barrel.add(muzzle);
+    // a back cap so the barrel reads solid from behind.
+    const backCap = new THREE.Mesh(new THREE.SphereGeometry(ballR * 0.85, 16, 12), barrelMat);
+    backCap.position.set(0, 0, 0);
+    barrel.add(backCap);
+
+    // --- boulder pool: shared geometry, hidden until needed ---
+    const ballGeo = new THREE.SphereGeometry(ballR, 18, 14);
+    const ballMat = mat(pop(color, 0.03, 0), {
+        roughness: 0.5, metalness: 0.06, flat: true,
+        emissive: shade(color, -0.5), emissiveIntensity: 0.06,
+    });
+    const speckMat = gloss(shade(color, -0.3), { roughness: 0.6 });
+    const pool = [];
+    function makeBoulder() {
+        const b = new THREE.Object3D();
+        const core = new THREE.Mesh(ballGeo, ballMat);
+        b.add(core);
+        // a couple of darker speck lumps so the boulder reads as heavy stone.
+        for (const p of [[0.5, 0.3, 0.4], [-0.4, -0.3, 0.5], [0.2, 0.6, -0.4]]) {
+            const lump = new THREE.Mesh(new THREE.SphereGeometry(ballR * 0.28, 8, 6), speckMat);
+            lump.position.set(p[0] * ballR, p[1] * ballR, p[2] * ballR);
+            b.add(lump);
+        }
+        b.visible = false;
+        shadowy(b, true, false);
+        group.add(b);
+        pool.push(b);
+        return b;
+    }
+
+    shadowy(mount, true, true);
+    shadowy(barrel, true, true);
+
+    const cx = ob.x, cy = ob.y;
+    const view = {
+        object3d: group,
+        update(o, dt, t) {
+            const balls = (o && o.balls) ? o.balls : (ob.balls || []);
+            for (let i = 0; i < balls.length; i++) {
+                const ball = balls[i];
+                const m = pool[i] || makeBoulder();
+                m.visible = true;
+                // ball lives in sim space; place relative to the cannon group.
+                const wp = W(ball.x, ball.y, ballR);
+                m.position.set(wp.x - group.position.x, wp.y - group.position.y, wp.z - group.position.z);
+                // rolling-rotate about world X (it travels toward +Z).
+                m.rotation.x = (ball.spin || 0);
+            }
+            for (let i = balls.length; i < pool.length; i++) pool[i].visible = false;
+        },
+        dispose() { disposeTree(group); },
+    };
+    view.update(ob, 0, 0);
+    return view;
+}
+
 function makeObstacleView(ob) {
     switch (ob && ob.kind) {
-        case 'spinner':   return makeSpinner(ob);
-        case 'hammer':    return makeHammer(ob);
-        case 'doorwall':  return makeDoorWall(ob);
-        case 'bouncepad': return makeBouncePad(ob);
-        case 'hex':       return makeHex(ob);
+        case 'spinner':     return makeSpinner(ob);
+        case 'hammer':      return makeHammer(ob);
+        case 'doorwall':    return makeDoorWall(ob);
+        case 'bouncepad':   return makeBouncePad(ob);
+        case 'hex':         return makeHex(ob);
+        case 'conveyor':    return makeConveyor(ob);
+        case 'bumper':      return makeBumper(ob);
+        case 'movingblock': return makeMovingBlock(ob);
+        case 'cannon':      return makeCannon(ob);
         default: {
             const g = new THREE.Object3D();
             return { object3d: g, update() {}, dispose() { disposeTree(g); } };

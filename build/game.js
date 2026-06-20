@@ -67,23 +67,26 @@ const Game = {
         this.loadRound(0);
     },
 
-    // A fresh, randomised line-up each Show: 2–3 races, 1–2 "middle" rounds
-    // (Survival / Hunt / Logic), then 1 Final.
+    // A fresh, varied line-up each Show: 2–3 distinct races, 1–2 "middle"
+    // rounds pulled from DIFFERENT categories (Survival / Hunt / Logic), 1 Final.
     _buildSequence() {
-        const byCat = cats => U.shuffle(SHOW.filter(d => cats.includes(d.category)).slice());
-        const races = byCat(['Race']), mids = byCat(['Survival', 'Hunt', 'Logic']), fins = byCat(['Final']);
+        const pool = c => U.shuffle(SHOW.filter(d => d.category === c).slice());
+        const races = pool('Race');
+        const mids = { Survival: pool('Survival'), Hunt: pool('Hunt'), Logic: pool('Logic') };
+        const fins = pool('Final');
         const RQ = [14, 10, 7, 6];
         const seq = [];
         const nRace = U.rng(2, 3), nMid = U.rng(1, 2);
         let qi = 0;
         for (let i = 0; i < nRace && i < races.length; i++)
             seq.push(Object.assign({}, races[i], { qualify: RQ[Math.min(qi++, RQ.length - 1)] }));
-        for (let i = 0; i < nMid && i < mids.length; i++) {
-            const d = mids[i], o = Object.assign({}, d);
-            if (d.category === 'Survival') o.duration = U.rng(26, 32);
-            else if (d.category === 'Hunt') o.duration = U.rng(26, 30);
-            // Logic (Tip Toe) self-sizes its qualify count from the field
-            seq.push(o); qi++;
+        // middle rounds, each from a DIFFERENT category so they never feel samey
+        const midCats = U.shuffle(['Survival', 'Hunt', 'Logic']).filter(c => mids[c].length);
+        for (let i = 0; i < nMid && i < midCats.length; i++) {
+            const c = midCats[i], o = Object.assign({}, mids[c][0]);
+            if (c === 'Survival') o.duration = U.rng(26, 32);
+            else if (c === 'Hunt') o.duration = U.rng(26, 30);
+            seq.push(o);
         }
         seq.push(fins.length ? U.pick(fins) : SHOW.find(d => d.category === 'Final'));
         return seq;
