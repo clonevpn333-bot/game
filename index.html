@@ -5726,7 +5726,7 @@ const UI = {
         p.appendChild(this._el('div', 'br-h', 'HOW TO PLAY'));
         const rows = [
             ['Move', 'WASD / Arrow Keys'], ['Jump', 'Space — hop sweepers &amp; low bars'],
-            ['Dive', 'Shift — fast lunge (then a slow recovery)'], ['Grab', 'J / L — grab a rival; release to fling'],
+            ['Dive', 'Shift — fast steerable lunge (then a short recovery)'], ['Grab', 'J / L — grab a rival, or snatch their tail in Tail Tag'],
             ['Gesture', '1–4 — perform your equipped emotes'], ['Goal', 'Qualify each round until one bean takes the Crown.'],
         ];
         const list = this._el('div', 'br-howlist');
@@ -5737,8 +5737,25 @@ const UI = {
             list.appendChild(r);
         }
         p.appendChild(list);
+        p.appendChild(this._el('div', 'br-h2', 'GAMEMODES'));
+        const modes = [
+            ['🏁 Race', 'Reach the finish line in the qualifying places.'],
+            ['⏱️ Survival', 'Stay on the floor &amp; out of the slime till the timer ends.'],
+            ['🏷️ Hunt — Tail Tag', 'Hold a tail when time runs out. No tail? Grab one!'],
+            ['🧠 Logic — Tip Toe', 'Find the hidden real tiles; fakes drop into the slime.'],
+            ['🌊 Slime Climb', 'Race up and outrun the rising tide of slime.'],
+            ['👑 Final', 'Hex-A-Gone, or a mad dash up Fall Mountain to the Crown.'],
+        ];
+        const ml = this._el('div', 'br-howlist');
+        for (const [k, v] of modes) {
+            const r = this._el('div', 'br-howrow');
+            r.appendChild(this._el('span', 'br-howk', k));
+            r.appendChild(this._el('span', 'br-howv', v));
+            ml.appendChild(r);
+        }
+        p.appendChild(ml);
         p.appendChild(this._el('div', 'br-h2', 'ROUNDS'));
-        const rl = this._el('div', 'br-howlist');
+        const rl = this._el('div', 'br-howlist br-howscroll');
         for (const def of this.data.SHOW) {
             const r = this._el('div', 'br-howrow');
             r.appendChild(this._el('span', 'br-howk', def.name));
@@ -6047,7 +6064,8 @@ const UI = {
 /* how-to / trophies */
 .br-howlist{display:flex;flex-direction:column;gap:8px;width:min(820px,92vw)}
 .br-howrow{display:flex;gap:18px;background:rgba(20,15,40,.25);border-radius:10px;padding:8px 14px}
-.br-howk{width:130px;text-align:left;font-weight:800;color:#5ad1ff}
+.br-howk{width:150px;text-align:left;font-weight:800;color:#5ad1ff}
+.br-howscroll{max-height:32vh;overflow-y:auto}
 .br-howv{flex:1;text-align:left;font-weight:600}
 .br-trlist{display:flex;flex-direction:column;gap:8px;width:min(740px,92vw);margin-bottom:18px;max-height:60vh;overflow:auto}
 .br-trophy{display:flex;gap:14px;align-items:center;background:rgba(255,255,255,.06);border-radius:12px;padding:10px 16px;text-align:left}

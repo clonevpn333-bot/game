@@ -64,6 +64,10 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     await wait(900);
     await page.screenshot({ path: path.join(SHOTS, '6-fallpass.png') });
 
+    await page.evaluate(() => { window.__BR.Game.screen = 'howto'; });
+    await wait(700);
+    await page.screenshot({ path: path.join(SHOTS, '12-howto.png') });
+
     // start a show — capture the round-select REEL during the loading phase
     await page.evaluate(() => { window.__BR.Game.toMenu(); window.__BR.Game.startShow(); });
     await page.waitForFunction(() => window.__BR.Game.screen === 'loading', { timeout: 30000, polling: 50 }).catch(() => {});
