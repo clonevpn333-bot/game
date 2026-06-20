@@ -1,24 +1,23 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bean Royale 3D — a Fall Guys tribute</title>
+<title>Bean Royale 3D</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-html,body { width:100%; height:100%; overflow:hidden; background:#5ad1ff; font-family:system-ui,'Segoe UI',Roboto,sans-serif; user-select:none; }
+html,body { width:100%; height:100%; overflow:hidden; background:#5ad1ff; font-family:system-ui,sans-serif; user-select:none; }
 #app { position:fixed; inset:0; } #app canvas { display:block; }
-#loading { position:fixed; inset:0; z-index:9999; color:#fff; background:linear-gradient(160deg,#6a5cff 0%,#a24bd6 50%,#ff5fa2 100%); display:flex; flex-direction:column; justify-content:center; align-items:center; }
+#loading { position:fixed; inset:0; z-index:9999; color:#fff; background:linear-gradient(160deg,#6a5cff,#a24bd6 50%,#ff5fa2); display:flex; flex-direction:column; justify-content:center; align-items:center; }
 #loading h1 { font-size:4rem; letter-spacing:.1em; color:#ffd23f; text-shadow:0 5px 0 #2a1c4a; }
-#loading p { margin-top:1rem; color:#ffe9c2; animation:blink 1s step-end infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+#loading p { margin-top:1rem; color:#ffe9c2; }
 </style>
 <script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }</script>
 </head><body>
-<div id="loading"><h1>BEAN&nbsp;ROYALE</h1><p>Loading the slime…</p></div>
+<div id="loading"><h1>BEAN ROYALE</h1><p>Loading…</p></div>
 <div id="app"></div>
 <!-- GAME:START -->
 <script type="module">
 import * as THREE from 'three';
 
-/* =================== config =================== */
+/* === config === */
 'use strict';
 
 /* =====================================================================
@@ -284,7 +283,7 @@ const BEAN_NAMES = [
     'WigglyPete', 'TopplePop', 'GiddyGus', 'SnoozeBean', 'TurboTofu',
 ];
 
-/* =================== utils =================== */
+/* === utils === */
 'use strict';
 
 /* =====================================================================
@@ -408,7 +407,7 @@ const U = {
     clone(obj) { return JSON.parse(JSON.stringify(obj)); },
 };
 
-/* =================== input =================== */
+/* === input === */
 'use strict';
 
 /* =====================================================================
@@ -471,7 +470,7 @@ const Input = {
     },
 };
 
-/* =================== save =================== */
+/* === save === */
 'use strict';
 
 /* =====================================================================
@@ -606,7 +605,7 @@ const Save = {
     },
 };
 
-/* =================== entities =================== */
+/* === entities === */
 'use strict';
 
 /* =====================================================================
@@ -1371,7 +1370,7 @@ class HexTile {
     }
 }
 
-/* =================== rounds =================== */
+/* === rounds === */
 'use strict';
 
 /* =====================================================================
@@ -2305,7 +2304,7 @@ function drawDisk(ctx, cx, cy, R, color) {
     ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.stroke();
 }
 
-/* =================== view_bean =================== */
+/* === view_bean === */
 'use strict';
 /* =====================================================================
    view_bean.js — high-quality procedural 3D bean for "Bean Royale"
@@ -3679,7 +3678,7 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = BeanView;
 }
 
-/* =================== view_world =================== */
+/* === view_world === */
 /* =====================================================================
    view_world.js — the 3D world for Bean Royale (Fall Guys tribute).
 
@@ -4882,7 +4881,7 @@ class CourseView {
     }
 }
 
-/* =================== game =================== */
+/* === game === */
 'use strict';
 
 /* =====================================================================
@@ -5052,7 +5051,7 @@ const Game = {
     },
 };
 
-/* =================== ui =================== */
+/* === ui === */
 'use strict';
 
 /* =====================================================================
@@ -5102,8 +5101,14 @@ const UI = {
         this.hideAll();
     },
 
+    // Only the top-level panels & play overlays get hidden here — NOT nested
+    // helpers like the lobby/preview bean canvases or the HUD chips, which live
+    // *inside* a panel/overlay. Blanket-hiding those (the old bug) collapsed the
+    // 3D bean boxes to 0×0 and left the HUD counters stuck at display:none.
+    _tops: ['menu', 'customize', 'howto', 'trophies', 'shop', 'loading',
+        'eliminated', 'victory', 'hud', 'intro', 'banner'],
     hideAll() {
-        for (const k in this.els) if (k !== 'toasts') this.els[k].style.display = 'none';
+        for (const k of this._tops) if (this.els[k]) this.els[k].style.display = 'none';
     },
     _showBig(id) {
         this.hideAll();
@@ -5294,10 +5299,13 @@ const UI = {
         h.appendChild(this.els.hudSpec); h.appendChild(this.els.hudHint);
     },
     showHUD() {
-        for (const id of ['menu', 'customize', 'howto', 'trophies', 'shop', 'loading', 'eliminated', 'victory']) this.els[id].style.display = 'none';
-        this.els.intro.style.display = 'none';
-        this.els.banner.style.display = 'none';
+        this.hideAll();
         this.els.hud.style.display = 'block';
+        // make sure the chips themselves are visible (they may have been left
+        // hidden by an earlier state); hudSpec is toggled per-frame in updateHUD
+        this.els.hudName.style.display = 'block';
+        this.els.hudCount.style.display = 'block';
+        this.els.hudHint.style.display = 'block';
     },
     updateHUD(hud) {
         const cat = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' }[hud.category] || '#fff';
@@ -5330,8 +5338,7 @@ const UI = {
 
     // ================================================== INTRO CARD
     showIntro(intro) {
-        for (const id of ['menu', 'customize', 'howto', 'trophies', 'shop', 'loading', 'eliminated', 'victory']) this.els[id].style.display = 'none';
-        this.els.hud.style.display = 'none';
+        this.hideAll();
         const cat = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' }[intro.category] || '#fff';
         const cd = intro.countdown == null ? '' : `<div class="br-count">${intro.countdown > 0 ? intro.countdown : 'GO!'}</div>`;
         const q = intro.qualify ? `<div class="br-qual">Top ${intro.qualify} qualify</div>` : '';
@@ -5527,7 +5534,7 @@ const UI = {
     },
 };
 
-/* =================== engine =================== */
+/* === engine === */
 'use strict';
 
 /* =====================================================================
@@ -5861,8 +5868,11 @@ const Engine = {
     },
 };
 
+// debug handle so headless render tests can drive the game from page scope
+try { window.__BR = { Game, Engine, UI, Save, Input, THREE, SHOW, COSTUMES_UPPER, COSTUMES_LOWER, COLORS }; } catch (e) {}
+
 window.addEventListener('load', () => Engine.start());
+
 </script>
 <!-- GAME:END -->
-</body>
-</html>
+</body></html>

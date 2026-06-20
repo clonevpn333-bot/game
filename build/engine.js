@@ -331,4 +331,7 @@ const Engine = {
     },
 };
 
+// debug handle so headless render tests can drive the game from page scope
+try { window.__BR = { Game, Engine, UI, Save, Input, THREE, SHOW, COSTUMES_UPPER, COSTUMES_LOWER, COLORS }; } catch (e) {}
+
 window.addEventListener('load', () => Engine.start());

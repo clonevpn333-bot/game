@@ -1,3 +1,4 @@
 node_modules/
 src_2d/
 build/_*.js
+shots/

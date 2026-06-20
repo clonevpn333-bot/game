@@ -47,8 +47,14 @@ const UI = {
         this.hideAll();
     },
 
+    // Only the top-level panels & play overlays get hidden here — NOT nested
+    // helpers like the lobby/preview bean canvases or the HUD chips, which live
+    // *inside* a panel/overlay. Blanket-hiding those (the old bug) collapsed the
+    // 3D bean boxes to 0×0 and left the HUD counters stuck at display:none.
+    _tops: ['menu', 'customize', 'howto', 'trophies', 'shop', 'loading',
+        'eliminated', 'victory', 'hud', 'intro', 'banner'],
     hideAll() {
-        for (const k in this.els) if (k !== 'toasts') this.els[k].style.display = 'none';
+        for (const k of this._tops) if (this.els[k]) this.els[k].style.display = 'none';
     },
     _showBig(id) {
         this.hideAll();
@@ -239,10 +245,13 @@ const UI = {
         h.appendChild(this.els.hudSpec); h.appendChild(this.els.hudHint);
     },
     showHUD() {
-        for (const id of ['menu', 'customize', 'howto', 'trophies', 'shop', 'loading', 'eliminated', 'victory']) this.els[id].style.display = 'none';
-        this.els.intro.style.display = 'none';
-        this.els.banner.style.display = 'none';
+        this.hideAll();
         this.els.hud.style.display = 'block';
+        // make sure the chips themselves are visible (they may have been left
+        // hidden by an earlier state); hudSpec is toggled per-frame in updateHUD
+        this.els.hudName.style.display = 'block';
+        this.els.hudCount.style.display = 'block';
+        this.els.hudHint.style.display = 'block';
     },
     updateHUD(hud) {
         const cat = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' }[hud.category] || '#fff';
@@ -275,8 +284,7 @@ const UI = {
 
     // ================================================== INTRO CARD
     showIntro(intro) {
-        for (const id of ['menu', 'customize', 'howto', 'trophies', 'shop', 'loading', 'eliminated', 'victory']) this.els[id].style.display = 'none';
-        this.els.hud.style.display = 'none';
+        this.hideAll();
         const cat = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' }[intro.category] || '#fff';
         const cd = intro.countdown == null ? '' : `<div class="br-count">${intro.countdown > 0 ? intro.countdown : 'GO!'}</div>`;
         const q = intro.qualify ? `<div class="br-qual">Top ${intro.qualify} qualify</div>` : '';
