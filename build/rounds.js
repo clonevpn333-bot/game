@@ -209,7 +209,7 @@ class Round {
             if (bean.x > hi) { bean.x = hi; if (bean.vx > 0) bean.vx *= -0.2; }
             if (bean.y > this.maxY - bean.r) bean.y = this.maxY - bean.r;
         } else if (this.kind === 'survival') {
-            if (bean.grounded && U.dist(bean.x, bean.y, this.platform.cx, this.platform.cy) > this.platform.r)
+            if (bean.grounded && U.dist(bean.x, bean.y, this.platform.cx, this.platform.cy) > this.platform.r + (this.fallGrace || 0))
                 bean.startFall();
         } else if (this.kind === 'tag') {
             // Tail Tag is a walled arena — nobody falls off; clamp to the rim.
@@ -275,14 +275,19 @@ class Round {
             }
         } else if (this.kind === 'tag') {
             this.timer -= dt;
-            const tailed = this.beans.filter(b => b.alive && !b.eliminated && b.hasTail).length;
             if (this.timer <= 0) {
-                for (const b of this.beans) if (b.alive && !b.eliminated) {
-                    if (b.hasTail) { b.qualified = true; b.exited = true; }
-                    else { b.eliminated = true; b.alive = false; }
+                if (this._royal) {                       // Royal Fumble FINAL: tail-holder wins the Crown
+                    const holder = this.beans.find(b => b.hasTail && b.alive && !b.eliminated);
+                    this._finishFinal(holder === this.player);
+                } else {
+                    const tailed = this.beans.filter(b => b.alive && !b.eliminated && b.hasTail).length;
+                    for (const b of this.beans) if (b.alive && !b.eliminated) {
+                        if (b.hasTail) { b.qualified = true; b.exited = true; }
+                        else { b.eliminated = true; b.alive = false; }
+                    }
+                    this.qualifyCount = tailed;
+                    this._finish();
                 }
-                this.qualifyCount = tailed;
-                this._finish();
             }
         } else if (this.kind === 'survival') {
             this.timer -= dt;
@@ -485,6 +490,27 @@ function jumpThink(bean, round, dt) {
         if (U.chance(success)) bean.ai.jump = true;
     }
     bean.ai.dive = false;
+}
+
+// Block Party: hug the middle (avoid the rim) and flee the path of slide-walls.
+function blockThink(bean, round, dt) {
+    const P = round.platform;
+    const tox = P.cx - bean.x, toy = P.cy - bean.y, dl = Math.hypot(tox, toy) || 1;
+    const edge = dl / P.r;                          // pull harder toward centre near the rim
+    let mx = tox / dl * (0.3 + edge * 0.9), my = toy / dl * (0.3 + edge * 0.9);
+    for (const o of round.obstacles) {
+        if (o.kind !== 'movingblock') continue;
+        const ahead = o.cx + o.dir * 70;            // where the wall is heading
+        if (Math.abs(o.cy - bean.y) < o.thick + 48 && Math.abs(ahead - bean.x) < o.w * 0.5 + 95
+            && U.chance(0.55 + bean.skill * 0.45)) {     // weaker beans sometimes fail to dodge
+            // flee the wall — but if that runs you at the rim, cut the other way
+            let s = bean.x >= o.cx ? 1 : -1;
+            if (s * tox < 0 && Math.abs(tox) > 50) s = -s;   // tox = toward centre
+            mx += s * 1.8;
+        }
+    }
+    const ml = Math.hypot(mx, my) || 1; bean.ai.mx = mx / ml; bean.ai.my = my / ml;
+    bean.ai.jump = false; bean.ai.dive = false; bean.ai.grab = false;
 }
 
 function hexThink(bean, round, dt) {
@@ -880,32 +906,16 @@ const Rounds = {
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
 
-        // -------------------------------------------------- BOUNCE BASH
-        bounceBash(r) {
-            r.kind = 'survival'; r.camMode = 'fixed';
-            const cx = 640, cy = 380, R = 300;
-            r.platform = { cx, cy, r: R };
-            r.minX = 0; r.maxX = CFG.W; r.minY = 0; r.maxY = CFG.H;
-            r.thinkFn = jumpThink;
-
-            const sweep = new Spinner({ cx, cy, len: R - 6, thick: 22, speed: 0.85,
-                angle: Math.PI / 2, height: 42, arms: 2, pushOut: true, power: 480, color: '#ff5fa2' });
-            r.sweeper = sweep; r.obstacles.push(sweep);
-            // bounce pads kept near the centre so a launch lands you back on the disc
-            for (const [px, py] of [[cx - 120, cy - 70], [cx + 120, cy - 70], [cx, cy + 130], [cx - 95, cy + 70], [cx + 95, cy + 70]])
-                r.obstacles.push(new BouncePad({ x: px, y: py, r: 42 }));
-
-            const all = r.beans;
-            all.forEach((b, i) => {
-                const ang = (i / all.length) * Math.PI * 2;
-                const rr = R * (b.isPlayer ? 0.5 : U.rngf(0.4, 0.6));
-                b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
-                b.startX = b.x; b.startY = b.y;
-                b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.38, 0.75);
-                b.facing = ang + Math.PI;
-            });
-
-            r.onUpdate = (rr, dt) => { sweep.speed += dt * 0.05; };
+        // -------------------------------------------------- BLOCK PARTY
+        blockParty(r) {                     // SURVIVAL — slide-walls shove you off
+            const A = Rounds._arena(r, 365);
+            r.thinkFn = blockThink; r.fallGrace = 18;   // a touch of rim grace so a nudge isn't instant death
+            r.timer = r.def.duration || 30;
+            const mk = (cy, dir, off) => r.obstacles.push(new MovingBlock({ cy, x0: A.cx - 305, x1: A.cx + 305,
+                w: 150, thick: 50, height: 220, speed: 100, dir, cx: A.cx + off, color: '#9a6cff' }));
+            mk(A.cy - 130, 1, -305); mk(A.cy + 30, -1, 305); mk(A.cy + 185, 1, -120);
+            Rounds._spawnRing(r);
+            r.onUpdate = (rr, dt) => { for (const o of rr.obstacles) if (o.kind === 'movingblock') o.speed += dt * 3; };
         },
 
         // -------------------------------------------------- DIZZY HEIGHTS
@@ -940,7 +950,7 @@ const Rounds = {
             Rounds._beams(r, 3000, { n: 2, speed: 1.5, color: '#7b46d6' });
             Rounds._hammers(r, 2680, { n: 1, speed: 1.9 });
             Rounds._conveyor(r, 2300, 2520, { dy: 1, push: 125 });
-            Rounds._blocks(r, 1980, { n: 2, speed: 160, color: '#b06bff' });
+            Rounds._beams(r, 1980, { n: 2, speed: -1.6, color: '#b06bff' });
             Rounds._bumpers(r, 1600, { rows: 2, cols: 5, color: '#ffd23f' });
             Rounds._cannons(r, 1250, { n: 2, interval: 2.1, speed: 330, reach: 1200, color: '#e6395a' });
             Rounds._beams(r, 820, { n: 1, style: 'windmill', speed: 0.9, len: 320, thick: 30, color: '#23d6c8' });
@@ -951,10 +961,10 @@ const Rounds = {
             Rounds._raceCommon(r);
             Rounds._axes(r, 3320, { n: 2, speed: 1.9, gap: 300 });
             Rounds._bumpers(r, 2850, { rows: 2, cols: 4, color: '#e6395a' });
-            Rounds._blocks(r, 2450, { n: 2, speed: 170, color: '#9a6cff' });
+            Rounds._hammers(r, 2450, { n: 1, speed: 2.0 });
             Rounds._axes(r, 2050, { n: 2, speed: -2.1, gap: 300 });
             Rounds._conveyor(r, 1650, 1850, { dy: 1, push: 130, color: '#7b46d6' });
-            Rounds._blocks(r, 1300, { n: 3, speed: 180, gap: 130, color: '#9a6cff' });
+            Rounds._bumpers(r, 1300, { rows: 2, cols: 4, color: '#e6395a' });
             Rounds._axes(r, 820, { n: 2, speed: 2.2, gap: 280 });
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
@@ -964,54 +974,27 @@ const Rounds = {
             Rounds._spawnRing(r);
             r.onUpdate = (rr, dt) => { s.speed += dt * 0.09; };
         },
-        hexBlitz(r) {               // FINAL — tighter arena, faster decay
-            r.kind = 'final'; r.camMode = 'fixed';
-            r.minX = 320; r.maxX = 960; r.minY = 150; r.maxY = 610; r.thinkFn = hexThink;
-            Rounds._hexField(r, 30, 46, 40);
-            r.onUpdate = (rr, dt) => {
-                rr._decayT = (rr._decayT || 0) - dt;
-                if (rr.elapsed > 10 && rr._decayT <= 0) {
-                    rr._decayT = Math.max(0.12, 0.8 - (rr.elapsed - 10) * 0.02);
-                    const s = rr.tiles.filter(t => t.state === 'solid'); if (s.length) U.pick(s).step();
-                }
-            };
+        // -------------------------------------------------- BIG FANS
+        bigFans(r) {                // RACE — giant fan blades sweep the course
+            Rounds._raceCommon(r);
+            Rounds._beams(r, 3320, { n: 1, style: 'windmill', speed: 1.0, len: 340, thick: 34, color: '#5ad1ff' });
+            Rounds._bumpers(r, 2950, { rows: 2, cols: 4, color: '#ffd23f' });
+            Rounds._beams(r, 2560, { n: 2, style: 'windmill', speed: -1.1, len: 290, thick: 32, color: '#7b46d6' });
+            Rounds._beams(r, 2150, { n: 1, style: 'windmill', speed: 1.2, len: 340, thick: 34, color: '#23d6c8' });
+            Rounds._bumpers(r, 1750, { rows: 2, cols: 5, color: '#ffd23f' });
+            Rounds._beams(r, 1350, { n: 2, style: 'windmill', speed: -1.0, len: 290, thick: 32, color: '#5ad1ff' });
+            Rounds._beams(r, 820, { n: 1, style: 'windmill', speed: 1.1, len: 340, thick: 34, color: '#7b46d6' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
-        hexGiant(r) {               // FINAL — sprawling arena
-            r.kind = 'final'; r.camMode = 'fixed';
-            r.minX = 240; r.maxX = 1040; r.minY = 110; r.maxY = 650; r.thinkFn = hexThink;
-            Rounds._hexField(r, 34, 50, 44);
-            r.onUpdate = (rr, dt) => {
-                rr._decayT = (rr._decayT || 0) - dt;
-                if (rr.elapsed > 18 && rr._decayT <= 0) {
-                    rr._decayT = Math.max(0.18, 1.1 - (rr.elapsed - 18) * 0.02);
-                    const s = rr.tiles.filter(t => t.state === 'solid'); if (s.length) U.pick(s).step();
-                }
-            };
-        },
-
-        hexRoyale(r) {              // FINAL — medium honeycomb
-            r.kind = 'final'; r.camMode = 'fixed';
-            r.minX = 280; r.maxX = 1000; r.minY = 130; r.maxY = 630; r.thinkFn = hexThink;
-            Rounds._hexField(r, 32, 48, 42);
-            r.onUpdate = (rr, dt) => {
-                rr._decayT = (rr._decayT || 0) - dt;
-                if (rr.elapsed > 14 && rr._decayT <= 0) {
-                    rr._decayT = Math.max(0.16, 1.0 - (rr.elapsed - 14) * 0.02);
-                    const s = rr.tiles.filter(t => t.state === 'solid'); if (s.length) U.pick(s).step();
-                }
-            };
-        },
-        honeycomb(r) {              // FINAL — dense little tiles
-            r.kind = 'final'; r.camMode = 'fixed';
-            r.minX = 300; r.maxX = 980; r.minY = 140; r.maxY = 620; r.thinkFn = hexThink;
-            Rounds._hexField(r, 28, 42, 38);
-            r.onUpdate = (rr, dt) => {
-                rr._decayT = (rr._decayT || 0) - dt;
-                if (rr.elapsed > 12 && rr._decayT <= 0) {
-                    rr._decayT = Math.max(0.14, 0.9 - (rr.elapsed - 12) * 0.02);
-                    const s = rr.tiles.filter(t => t.state === 'solid'); if (s.length) U.pick(s).step();
-                }
-            };
+        // -------------------------------------------------- ROYAL FUMBLE
+        royalFumble(r) {            // FINAL — one tail, hold it when time runs out
+            Rounds._arena(r, 320);
+            r.kind = 'tag'; r.viewKind = 'survival'; r.thinkFn = tagThink; r._royal = true;
+            r.timer = 40;
+            Rounds._spawnRing(r);
+            const order = U.shuffle(r.beans.slice());
+            order.forEach((b, i) => { b.hasTail = i === 0; b.tailColor = '#ffd23f'; b.tagCd = 0; });
+            r.qualifyCount = 1;
         },
 
         // ============================================ NEW GAMEMODES ===
@@ -1033,7 +1016,7 @@ const Rounds = {
             r.kind = 'mountain'; r.viewKind = 'race'; r.crownFinish = true; r.finishY = 360;
             Rounds._doorWall(r, 3340, 3);
             Rounds._hammers(r, 2950, { n: 2, speed: 1.9, gap: 280 });
-            Rounds._blocks(r, 2500, { n: 2, speed: 170, color: '#9a6cff' });
+            Rounds._hammers(r, 2500, { n: 2, speed: 1.9, gap: 240 });
             Rounds._doorWall(r, 2050, 2);
             Rounds._beams(r, 1650, { n: 2, speed: -1.7, color: '#e6395a' });
             Rounds._bumpers(r, 1200, { rows: 2, cols: 4, color: '#ffd23f' });
@@ -1049,17 +1032,8 @@ const Rounds = {
             Rounds._spawnRing(r);
             Rounds._dealTails(r, 0.58);
         },
-        tailChase(r) {              // HUNT — tighter arena, fewer tails, frantic
-            Rounds._arena(r, 290);
-            r.kind = 'tag'; r.viewKind = 'survival'; r.thinkFn = tagThink;
-            r.timer = r.def.duration || 28;
-            Rounds._spawnRing(r);
-            Rounds._dealTails(r, 0.5);
-        },
-
         // -------- TIP TOE (LOGIC — find the hidden path of real tiles)
         tipToe(r) { Rounds._tipToeField(r, 7, 8, 0.46); },
-        tipToeTwins(r) { Rounds._tipToeField(r, 9, 9, 0.52); },   // wider grid, more fakes
 
         // -------- PERFECT MATCH (LOGIC — dash to the called fruit) -----
         perfectMatch(r) {
@@ -1116,27 +1090,14 @@ const Rounds = {
             Rounds._raceCommon(r);
             r.kind = 'climb'; r.viewKind = 'race';
             r.slimeY = r.maxY - 40; r.slimeRate = 42;
-            Rounds._blocks(r, 3320, { n: 2, speed: 150, color: '#b06bff' });
+            Rounds._beams(r, 3320, { n: 2, speed: 1.5, color: '#7b46d6' });
             Rounds._cannons(r, 2950, { n: 2, interval: 2.0, speed: 340, reach: 1400, color: '#e6395a' });
             Rounds._hammers(r, 2550, { n: 2, speed: 1.8, gap: 260 });
             Rounds._beams(r, 2150, { n: 2, speed: -1.6, color: '#23d6c8' });
             Rounds._bumpers(r, 1750, { rows: 2, cols: 4, color: '#ffd23f' });
-            Rounds._blocks(r, 1350, { n: 2, speed: 165, color: '#9a6cff' });
+            Rounds._beams(r, 1350, { n: 2, speed: -1.6, color: '#9a6cff' });
             Rounds._hammers(r, 900, { n: 2, speed: 2.0, gap: 240 });
             Rounds._beams(r, 560, { n: 2, speed: 1.7, color: '#ff5fa2' });
-            Rounds._spawnRows(r, r.maxY - 260, r.cx);
-        },
-        slimeScramble(r) {
-            Rounds._raceCommon(r);
-            r.kind = 'climb'; r.viewKind = 'race';
-            r.slimeY = r.maxY - 30; r.slimeRate = 48;
-            Rounds._doorWall(r, 3340, 3);
-            Rounds._hammers(r, 2950, { n: 2, speed: 1.9, gap: 280 });
-            Rounds._cannons(r, 2550, { n: 2, interval: 1.8, speed: 360, reach: 1600, color: '#e6395a' });
-            Rounds._beams(r, 2100, { n: 3, speed: -1.8, color: '#7b46d6' });
-            Rounds._blocks(r, 1650, { n: 3, speed: 185, gap: 130, color: '#9a6cff' });
-            Rounds._bumpers(r, 1150, { rows: 2, cols: 5, color: '#e6395a' });
-            Rounds._hammers(r, 650, { n: 2, speed: 2.2, gap: 240 });
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
     },

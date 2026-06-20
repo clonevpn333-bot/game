@@ -195,11 +195,18 @@ const Engine = {
             bv.object3d.visible = true;
             bv.update(b, dt, t);
         }
-        // spectate: once you're out, the camera follows a surviving bean
+        // spectate: once you're out, follow a surviving bean — and let the
+        // player switch between beans with ← / → (A/D, J/L, Space).
         const p = this._playerBean;
         const playerActive = p && p.alive && !p.gone && !p.exited && !p.falling;
-        const subject = playerActive ? p : (this._spectateTarget(round) || p);
         this._spectating = !playerActive;
+        let subject;
+        if (playerActive) { subject = p; this._specBean = null; }
+        else {
+            if (Input.specNext) this._cycleSpectate(round, 1);
+            else if (Input.specPrev) this._cycleSpectate(round, -1);
+            subject = this._spectateTarget(round) || p;
+        }
         // gold marker hovers over YOUR bean only while you're still in it
         if (this._marker) {
             this._marker.visible = playerActive;
@@ -283,8 +290,16 @@ const Engine = {
         const ok = b => b && b.alive && !b.gone && !b.exited && !b.falling;
         if (ok(this._specBean)) return this._specBean;
         const cands = round.beans.filter(ok);
-        this._specBean = cands.length ? U.pick(cands) : null;
+        this._specBean = cands.length ? cands[0] : null;
         return this._specBean;
+    },
+    _cycleSpectate(round, dir) {
+        const ok = b => b && b.alive && !b.gone && !b.exited && !b.falling;
+        const cands = round.beans.filter(ok);
+        if (!cands.length) { this._specBean = null; return; }
+        let i = cands.indexOf(this._specBean);
+        if (i < 0) i = 0; else i = (i + dir + cands.length) % cands.length;
+        this._specBean = cands[i];
     },
 
     _updateFx(round) {
@@ -306,19 +321,19 @@ const Engine = {
         const p = subject || round.player;
         let pos, look;
         if (round.kind === 'race' || round.kind === 'mountain' || round.kind === 'climb') {
-            // 3rd-person chase: centred on the player, behind (+Z) and above,
-            // looking ahead down the course (-Z).
-            pos  = new THREE.Vector3(p.x, p.z + 250, p.y + 380);
-            look = new THREE.Vector3(p.x, p.z + 60,  p.y - 190);
+            // 3rd-person chase: close behind and a little above the bean, looking
+            // just ahead down the course (close, low — like the real game).
+            pos  = new THREE.Vector3(p.x, p.z + 168, p.y + 270);
+            look = new THREE.Vector3(p.x, p.z + 46,  p.y - 110);
         } else {
             const arena = !!(round.platform && round.platform.r);
             const cx = arena ? round.platform.cx : (round.minX + round.maxX) / 2;
             const cy = arena ? round.platform.cy : (round.minY + round.maxY) / 2;
             const r  = arena ? round.platform.r : 360;
             // keep the arena framed but drift toward the player so you can find your bean
-            const fx = U.lerp(cx, p.x, 0.35);
-            pos  = new THREE.Vector3(fx, r * 1.55 + 150, cy + r * 1.45);
-            look = new THREE.Vector3(fx, 25, U.lerp(cy, p.y, 0.4));
+            const fx = U.lerp(cx, p.x, 0.42);
+            pos  = new THREE.Vector3(fx, r * 1.35 + 120, cy + r * 1.28);
+            look = new THREE.Vector3(fx, 25, U.lerp(cy, p.y, 0.45));
         }
         if (this._camSnap) { this._camPos.copy(pos); this._camLook.copy(look); this._camSnap = false; }
         else { const k = Math.min(1, dt * 9); this._camPos.lerp(pos, k); this._camLook.lerp(look, k); }
@@ -346,6 +361,7 @@ const Engine = {
                 qualifiedCount: round.qualifiedCount, qualifyCount: round.qualifyCount,
                 timer: round.timer, aliveCount: round.aliveSoFar(), place: round.player.place,
                 spectating: this._spectating,
+                specName: this._spectating && this._specBean ? this._specBean.name : null,
                 youHaveTail: round.player.hasTail,
                 tailCount: round.beans.filter(b => b.alive && !b.eliminated && b.hasTail).length,
                 matchSafe: round.matchSafe, matchPhase: round.matchPhase,

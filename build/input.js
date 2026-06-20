@@ -52,6 +52,9 @@ const Input = {
     get grabPressed(){ return this.pressed('KeyJ') || this.pressed('KeyL'); },
     get confirm(){ return this.pressed('Enter') || this.pressed('Space'); },
     get esc()   { return this.pressed('Escape'); },
+    // spectator camera: cycle which bean you're watching
+    get specPrev(){ return this.pressed('ArrowLeft') || this.pressed('KeyA') || this.pressed('KeyJ'); },
+    get specNext(){ return this.pressed('ArrowRight') || this.pressed('KeyD') || this.pressed('KeyL') || this.pressed('Space'); },
 
     // Returns emote slot 0..3 just pressed, or -1
     emoteSlot() {

@@ -569,9 +569,12 @@ class Spinner {
     }
     collide(bean, round) {
         if (bean.z > this.height || bean.falling || bean.gone) return;
+        // tight capsule test against the visible bar: bean footprint (~0.82r)
+        // plus the bar's half-thickness — so a clean-looking pass doesn't clip.
+        const hit = bean.r * 0.82 + this.thick * 0.42;
         for (const [ex, ey] of this._ends()) {
             const c = U.closestOnSeg(bean.x, bean.y, this.cx, this.cy, ex, ey);
-            if (U.dist(bean.x, bean.y, c.x, c.y) < bean.r + this.thick * 0.5) {
+            if (U.dist(bean.x, bean.y, c.x, c.y) < hit) {
                 let dx, dy;
                 if (this.pushOut) { dx = bean.x - this.cx; dy = bean.y - this.cy; }
                 else {
@@ -780,10 +783,20 @@ class MovingBlock {
     }
     collide(bean, round) {
         if (bean.falling || bean.gone || bean.exited || bean.z > this.height) return;
-        if (Math.abs(bean.y - this.cy) < bean.r + this.thick * 0.5 &&
-            Math.abs(bean.x - this.cx) < this.w * 0.5 + bean.r) {
-            bean.hit(this.dir, 0, 280, 0.25);
-            bean.x = this.cx + this.dir * (this.w * 0.5 + bean.r + 1);
+        const dy = bean.y - this.cy, dx = bean.x - this.cx;
+        const oy = (bean.r + this.thick * 0.5) - Math.abs(dy);
+        const ox = (bean.r + this.w * 0.5) - Math.abs(dx);
+        if (oy <= 0 || ox <= 0) return;                 // not overlapping
+        // resolve along the SHALLOWER axis so beans slide off instead of being
+        // trapped/teleported (the old behaviour pinned you against the wall).
+        if (oy <= ox) {
+            const s = dy >= 0 ? 1 : -1;
+            bean.y = this.cy + s * (bean.r + this.thick * 0.5 + 0.5);
+            if (s < 0 && bean.vy < 0) bean.vy = 40;     // bumped back if you ran into its face
+        } else {
+            const s = dx >= 0 ? 1 : -1;
+            bean.x = this.cx + s * (bean.r + this.w * 0.5 + 0.5);
+            bean.vx += this.dir * 26;                   // shoved along by the moving wall
         }
     }
 }

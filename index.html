@@ -263,55 +263,45 @@ const SHOW = [
     { id: 'whirlygig',     name: 'The Whirlygig', category: 'Race', build: 'whirlygig',
       tagline: 'Rotating beams, treadmills and giant windmills. Twirl your way up!', qualify: 7 },
     { id: 'dizzy_heights', name: 'Dizzy Heights', category: 'Race', build: 'dizzyHeights',
-      tagline: 'Spinning platforms and a cannonade of fruit raining down the slope.', qualify: 10 },
+      tagline: 'Spinning platforms, hurdles and a cannonade of fruit down the slope.', qualify: 10 },
     { id: 'fruit_chute',   name: 'Fruit Chute',   category: 'Race', build: 'fruitChute',
-      tagline: 'Climb the conveyor belts while the fruit cannons blast you back down!', qualify: 9 },
+      tagline: 'Climb the conveyor belts while the cannons blast giant fruit at you!', qualify: 9 },
     { id: 'hit_parade',    name: 'Hit Parade',    category: 'Race', build: 'hitParade',
-      tagline: 'The everything course — doors, beams, hammers, belts, blocks and balls.', qualify: 8 },
+      tagline: 'A candy gauntlet of hurdles, beams, hammers, belts and bumpers.', qualify: 8 },
     { id: 'knight_fever',  name: 'Knight Fever',  category: 'Race', build: 'knightFever',
-      tagline: 'A medieval gauntlet of swinging axes, sliding blocks and bumpers.', qualify: 8 },
+      tagline: 'A medieval gauntlet of swinging axes, rolling logs and sliding blocks.', qualify: 8 },
     { id: 'slime_climb',   name: 'Slime Climb',   category: 'Race', build: 'slimeClimb',
       tagline: 'Scramble up the obstacle climb and outrun the rising tide of slime!', qualify: 10 },
-    { id: 'slime_scramble',name: 'Slime Scramble',category: 'Race', build: 'slimeScramble',
-      tagline: 'A brutal climb — faster slime, meaner obstacles. Don\'t look back.', qualify: 8 },
+    { id: 'big_fans',      name: 'Big Fans',      category: 'Race', build: 'bigFans',
+      tagline: 'Giant fan blades sweep the course — time your run between the gusts!', qualify: 9 },
 
     // ---------- SURVIVAL ----------
     { id: 'jump_club',     name: 'Jump Club',     category: 'Survival', build: 'jumpClub',     duration: 30,
       tagline: 'Hop the spinning beam. Miss the beat, kiss the slime.' },
     { id: 'jump_showdown', name: 'Jump Showdown', category: 'Survival', build: 'jumpShowdown', duration: 28,
       tagline: 'Two stacked beams on a shrinking floor — jump the low one, duck the high.' },
-    { id: 'bounce_bash',   name: 'Bounce Bash',   category: 'Survival', build: 'bounceBash',   duration: 26,
-      tagline: 'Spring pads and a sweeper bar — bounce high, stay alive!' },
+    { id: 'block_party',   name: 'Block Party',   category: 'Survival', build: 'blockParty',   duration: 30,
+      tagline: 'Walls slide across the floor — slip through the gaps or get shoved off!' },
 
     // ---------- HUNT ----------
     { id: 'tail_tag',      name: 'Tail Tag',      category: 'Hunt', build: 'tailTag',  duration: 30,
       tagline: 'Snatch a tail and keep it — no tail when the timer ends, no qualify!' },
-    { id: 'tail_chase',    name: 'Tail Chase',    category: 'Hunt', build: 'tailChase', duration: 28,
-      tagline: 'Tighter floor, fewer tails. Steal one and run for your life!' },
 
     // ---------- LOGIC ----------
     { id: 'tip_toe',       name: 'Tip Toe',       category: 'Logic', build: 'tipToe',
       tagline: 'Hidden fake tiles drop into the slime. Memorise the safe path!' },
-    { id: 'tip_toe_twins', name: 'Tip Toe Twins', category: 'Logic', build: 'tipToeTwins',
-      tagline: 'A wider maze of stepping stones — more fakes, more nerves.' },
     { id: 'perfect_match', name: 'Perfect Match', category: 'Logic', build: 'perfectMatch',
       tagline: 'A fruit is called — dash to a matching tile before the rest drop away!' },
 
     // ---------- FINALS ----------
     { id: 'hexagone',      name: 'Hex-A-Gone',     category: 'Final', build: 'hexAGone',
       tagline: 'The floor dissolves beneath you. Last bean bouncing takes the Crown!' },
-    { id: 'hex_blitz',     name: 'Hex Blitz',      category: 'Final', build: 'hexBlitz',
-      tagline: 'Hex-A-Gone, but the tiles melt twice as fast!' },
-    { id: 'hex_giant',     name: 'Hexagon Heights',category: 'Final', build: 'hexGiant',
-      tagline: 'A giant honeycomb tower. Outlast them all!' },
-    { id: 'hex_royale',    name: 'Hex Royale',     category: 'Final', build: 'hexRoyale',
-      tagline: 'A medium honeycomb melt-down. Last bean wins!' },
-    { id: 'honeycomb',     name: 'Honeycomb',      category: 'Final', build: 'honeycomb',
-      tagline: 'Tiny tiles, fast melt. Keep moving!' },
     { id: 'fall_mountain', name: 'Fall Mountain',  category: 'Final', build: 'fallMountain',
       tagline: 'Scramble up the mountain dodging cannonballs — grab the Crown to win!' },
     { id: 'lost_temple',   name: 'Lost Temple',    category: 'Final', build: 'lostTemple',
       tagline: 'A steeper climb of doors and wrecking balls to the Crown.' },
+    { id: 'royal_fumble',  name: 'Royal Fumble',   category: 'Final', build: 'royalFumble',
+      tagline: 'One tail, one Crown. Be the bean holding the tail when time runs out!' },
 ];
 
 /* =====================================================================
@@ -505,6 +495,9 @@ const Input = {
     get grabPressed(){ return this.pressed('KeyJ') || this.pressed('KeyL'); },
     get confirm(){ return this.pressed('Enter') || this.pressed('Space'); },
     get esc()   { return this.pressed('Escape'); },
+    // spectator camera: cycle which bean you're watching
+    get specPrev(){ return this.pressed('ArrowLeft') || this.pressed('KeyA') || this.pressed('KeyJ'); },
+    get specNext(){ return this.pressed('ArrowRight') || this.pressed('KeyD') || this.pressed('KeyL') || this.pressed('Space'); },
 
     // Returns emote slot 0..3 just pressed, or -1
     emoteSlot() {
@@ -1296,9 +1289,12 @@ class Spinner {
     }
     collide(bean, round) {
         if (bean.z > this.height || bean.falling || bean.gone) return;
+        // tight capsule test against the visible bar: bean footprint (~0.82r)
+        // plus the bar's half-thickness — so a clean-looking pass doesn't clip.
+        const hit = bean.r * 0.82 + this.thick * 0.42;
         for (const [ex, ey] of this._ends()) {
             const c = U.closestOnSeg(bean.x, bean.y, this.cx, this.cy, ex, ey);
-            if (U.dist(bean.x, bean.y, c.x, c.y) < bean.r + this.thick * 0.5) {
+            if (U.dist(bean.x, bean.y, c.x, c.y) < hit) {
                 let dx, dy;
                 if (this.pushOut) { dx = bean.x - this.cx; dy = bean.y - this.cy; }
                 else {
@@ -1507,10 +1503,20 @@ class MovingBlock {
     }
     collide(bean, round) {
         if (bean.falling || bean.gone || bean.exited || bean.z > this.height) return;
-        if (Math.abs(bean.y - this.cy) < bean.r + this.thick * 0.5 &&
-            Math.abs(bean.x - this.cx) < this.w * 0.5 + bean.r) {
-            bean.hit(this.dir, 0, 280, 0.25);
-            bean.x = this.cx + this.dir * (this.w * 0.5 + bean.r + 1);
+        const dy = bean.y - this.cy, dx = bean.x - this.cx;
+        const oy = (bean.r + this.thick * 0.5) - Math.abs(dy);
+        const ox = (bean.r + this.w * 0.5) - Math.abs(dx);
+        if (oy <= 0 || ox <= 0) return;                 // not overlapping
+        // resolve along the SHALLOWER axis so beans slide off instead of being
+        // trapped/teleported (the old behaviour pinned you against the wall).
+        if (oy <= ox) {
+            const s = dy >= 0 ? 1 : -1;
+            bean.y = this.cy + s * (bean.r + this.thick * 0.5 + 0.5);
+            if (s < 0 && bean.vy < 0) bean.vy = 40;     // bumped back if you ran into its face
+        } else {
+            const s = dx >= 0 ? 1 : -1;
+            bean.x = this.cx + s * (bean.r + this.w * 0.5 + 0.5);
+            bean.vx += this.dir * 26;                   // shoved along by the moving wall
         }
     }
 }
@@ -1810,7 +1816,7 @@ class Round {
             if (bean.x > hi) { bean.x = hi; if (bean.vx > 0) bean.vx *= -0.2; }
             if (bean.y > this.maxY - bean.r) bean.y = this.maxY - bean.r;
         } else if (this.kind === 'survival') {
-            if (bean.grounded && U.dist(bean.x, bean.y, this.platform.cx, this.platform.cy) > this.platform.r)
+            if (bean.grounded && U.dist(bean.x, bean.y, this.platform.cx, this.platform.cy) > this.platform.r + (this.fallGrace || 0))
                 bean.startFall();
         } else if (this.kind === 'tag') {
             // Tail Tag is a walled arena — nobody falls off; clamp to the rim.
@@ -1876,14 +1882,19 @@ class Round {
             }
         } else if (this.kind === 'tag') {
             this.timer -= dt;
-            const tailed = this.beans.filter(b => b.alive && !b.eliminated && b.hasTail).length;
             if (this.timer <= 0) {
-                for (const b of this.beans) if (b.alive && !b.eliminated) {
-                    if (b.hasTail) { b.qualified = true; b.exited = true; }
-                    else { b.eliminated = true; b.alive = false; }
+                if (this._royal) {                       // Royal Fumble FINAL: tail-holder wins the Crown
+                    const holder = this.beans.find(b => b.hasTail && b.alive && !b.eliminated);
+                    this._finishFinal(holder === this.player);
+                } else {
+                    const tailed = this.beans.filter(b => b.alive && !b.eliminated && b.hasTail).length;
+                    for (const b of this.beans) if (b.alive && !b.eliminated) {
+                        if (b.hasTail) { b.qualified = true; b.exited = true; }
+                        else { b.eliminated = true; b.alive = false; }
+                    }
+                    this.qualifyCount = tailed;
+                    this._finish();
                 }
-                this.qualifyCount = tailed;
-                this._finish();
             }
         } else if (this.kind === 'survival') {
             this.timer -= dt;
@@ -2086,6 +2097,27 @@ function jumpThink(bean, round, dt) {
         if (U.chance(success)) bean.ai.jump = true;
     }
     bean.ai.dive = false;
+}
+
+// Block Party: hug the middle (avoid the rim) and flee the path of slide-walls.
+function blockThink(bean, round, dt) {
+    const P = round.platform;
+    const tox = P.cx - bean.x, toy = P.cy - bean.y, dl = Math.hypot(tox, toy) || 1;
+    const edge = dl / P.r;                          // pull harder toward centre near the rim
+    let mx = tox / dl * (0.3 + edge * 0.9), my = toy / dl * (0.3 + edge * 0.9);
+    for (const o of round.obstacles) {
+        if (o.kind !== 'movingblock') continue;
+        const ahead = o.cx + o.dir * 70;            // where the wall is heading
+        if (Math.abs(o.cy - bean.y) < o.thick + 48 && Math.abs(ahead - bean.x) < o.w * 0.5 + 95
+            && U.chance(0.55 + bean.skill * 0.45)) {     // weaker beans sometimes fail to dodge
+            // flee the wall — but if that runs you at the rim, cut the other way
+            let s = bean.x >= o.cx ? 1 : -1;
+            if (s * tox < 0 && Math.abs(tox) > 50) s = -s;   // tox = toward centre
+            mx += s * 1.8;
+        }
+    }
+    const ml = Math.hypot(mx, my) || 1; bean.ai.mx = mx / ml; bean.ai.my = my / ml;
+    bean.ai.jump = false; bean.ai.dive = false; bean.ai.grab = false;
 }
 
 function hexThink(bean, round, dt) {
@@ -2481,32 +2513,16 @@ const Rounds = {
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
 
-        // -------------------------------------------------- BOUNCE BASH
-        bounceBash(r) {
-            r.kind = 'survival'; r.camMode = 'fixed';
-            const cx = 640, cy = 380, R = 300;
-            r.platform = { cx, cy, r: R };
-            r.minX = 0; r.maxX = CFG.W; r.minY = 0; r.maxY = CFG.H;
-            r.thinkFn = jumpThink;
-
-            const sweep = new Spinner({ cx, cy, len: R - 6, thick: 22, speed: 0.85,
-                angle: Math.PI / 2, height: 42, arms: 2, pushOut: true, power: 480, color: '#ff5fa2' });
-            r.sweeper = sweep; r.obstacles.push(sweep);
-            // bounce pads kept near the centre so a launch lands you back on the disc
-            for (const [px, py] of [[cx - 120, cy - 70], [cx + 120, cy - 70], [cx, cy + 130], [cx - 95, cy + 70], [cx + 95, cy + 70]])
-                r.obstacles.push(new BouncePad({ x: px, y: py, r: 42 }));
-
-            const all = r.beans;
-            all.forEach((b, i) => {
-                const ang = (i / all.length) * Math.PI * 2;
-                const rr = R * (b.isPlayer ? 0.5 : U.rngf(0.4, 0.6));
-                b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
-                b.startX = b.x; b.startY = b.y;
-                b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.38, 0.75);
-                b.facing = ang + Math.PI;
-            });
-
-            r.onUpdate = (rr, dt) => { sweep.speed += dt * 0.05; };
+        // -------------------------------------------------- BLOCK PARTY
+        blockParty(r) {                     // SURVIVAL — slide-walls shove you off
+            const A = Rounds._arena(r, 365);
+            r.thinkFn = blockThink; r.fallGrace = 18;   // a touch of rim grace so a nudge isn't instant death
+            r.timer = r.def.duration || 30;
+            const mk = (cy, dir, off) => r.obstacles.push(new MovingBlock({ cy, x0: A.cx - 305, x1: A.cx + 305,
+                w: 150, thick: 50, height: 220, speed: 100, dir, cx: A.cx + off, color: '#9a6cff' }));
+            mk(A.cy - 130, 1, -305); mk(A.cy + 30, -1, 305); mk(A.cy + 185, 1, -120);
+            Rounds._spawnRing(r);
+            r.onUpdate = (rr, dt) => { for (const o of rr.obstacles) if (o.kind === 'movingblock') o.speed += dt * 3; };
         },
 
         // -------------------------------------------------- DIZZY HEIGHTS
@@ -2541,7 +2557,7 @@ const Rounds = {
             Rounds._beams(r, 3000, { n: 2, speed: 1.5, color: '#7b46d6' });
             Rounds._hammers(r, 2680, { n: 1, speed: 1.9 });
             Rounds._conveyor(r, 2300, 2520, { dy: 1, push: 125 });
-            Rounds._blocks(r, 1980, { n: 2, speed: 160, color: '#b06bff' });
+            Rounds._beams(r, 1980, { n: 2, speed: -1.6, color: '#b06bff' });
             Rounds._bumpers(r, 1600, { rows: 2, cols: 5, color: '#ffd23f' });
             Rounds._cannons(r, 1250, { n: 2, interval: 2.1, speed: 330, reach: 1200, color: '#e6395a' });
             Rounds._beams(r, 820, { n: 1, style: 'windmill', speed: 0.9, len: 320, thick: 30, color: '#23d6c8' });
@@ -2552,10 +2568,10 @@ const Rounds = {
             Rounds._raceCommon(r);
             Rounds._axes(r, 3320, { n: 2, speed: 1.9, gap: 300 });
             Rounds._bumpers(r, 2850, { rows: 2, cols: 4, color: '#e6395a' });
-            Rounds._blocks(r, 2450, { n: 2, speed: 170, color: '#9a6cff' });
+            Rounds._hammers(r, 2450, { n: 1, speed: 2.0 });
             Rounds._axes(r, 2050, { n: 2, speed: -2.1, gap: 300 });
             Rounds._conveyor(r, 1650, 1850, { dy: 1, push: 130, color: '#7b46d6' });
-            Rounds._blocks(r, 1300, { n: 3, speed: 180, gap: 130, color: '#9a6cff' });
+            Rounds._bumpers(r, 1300, { rows: 2, cols: 4, color: '#e6395a' });
             Rounds._axes(r, 820, { n: 2, speed: 2.2, gap: 280 });
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
@@ -2565,54 +2581,27 @@ const Rounds = {
             Rounds._spawnRing(r);
             r.onUpdate = (rr, dt) => { s.speed += dt * 0.09; };
         },
-        hexBlitz(r) {               // FINAL — tighter arena, faster decay
-            r.kind = 'final'; r.camMode = 'fixed';
-            r.minX = 320; r.maxX = 960; r.minY = 150; r.maxY = 610; r.thinkFn = hexThink;
-            Rounds._hexField(r, 30, 46, 40);
-            r.onUpdate = (rr, dt) => {
-                rr._decayT = (rr._decayT || 0) - dt;
-                if (rr.elapsed > 10 && rr._decayT <= 0) {
-                    rr._decayT = Math.max(0.12, 0.8 - (rr.elapsed - 10) * 0.02);
-                    const s = rr.tiles.filter(t => t.state === 'solid'); if (s.length) U.pick(s).step();
-                }
-            };
+        // -------------------------------------------------- BIG FANS
+        bigFans(r) {                // RACE — giant fan blades sweep the course
+            Rounds._raceCommon(r);
+            Rounds._beams(r, 3320, { n: 1, style: 'windmill', speed: 1.0, len: 340, thick: 34, color: '#5ad1ff' });
+            Rounds._bumpers(r, 2950, { rows: 2, cols: 4, color: '#ffd23f' });
+            Rounds._beams(r, 2560, { n: 2, style: 'windmill', speed: -1.1, len: 290, thick: 32, color: '#7b46d6' });
+            Rounds._beams(r, 2150, { n: 1, style: 'windmill', speed: 1.2, len: 340, thick: 34, color: '#23d6c8' });
+            Rounds._bumpers(r, 1750, { rows: 2, cols: 5, color: '#ffd23f' });
+            Rounds._beams(r, 1350, { n: 2, style: 'windmill', speed: -1.0, len: 290, thick: 32, color: '#5ad1ff' });
+            Rounds._beams(r, 820, { n: 1, style: 'windmill', speed: 1.1, len: 340, thick: 34, color: '#7b46d6' });
+            Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
-        hexGiant(r) {               // FINAL — sprawling arena
-            r.kind = 'final'; r.camMode = 'fixed';
-            r.minX = 240; r.maxX = 1040; r.minY = 110; r.maxY = 650; r.thinkFn = hexThink;
-            Rounds._hexField(r, 34, 50, 44);
-            r.onUpdate = (rr, dt) => {
-                rr._decayT = (rr._decayT || 0) - dt;
-                if (rr.elapsed > 18 && rr._decayT <= 0) {
-                    rr._decayT = Math.max(0.18, 1.1 - (rr.elapsed - 18) * 0.02);
-                    const s = rr.tiles.filter(t => t.state === 'solid'); if (s.length) U.pick(s).step();
-                }
-            };
-        },
-
-        hexRoyale(r) {              // FINAL — medium honeycomb
-            r.kind = 'final'; r.camMode = 'fixed';
-            r.minX = 280; r.maxX = 1000; r.minY = 130; r.maxY = 630; r.thinkFn = hexThink;
-            Rounds._hexField(r, 32, 48, 42);
-            r.onUpdate = (rr, dt) => {
-                rr._decayT = (rr._decayT || 0) - dt;
-                if (rr.elapsed > 14 && rr._decayT <= 0) {
-                    rr._decayT = Math.max(0.16, 1.0 - (rr.elapsed - 14) * 0.02);
-                    const s = rr.tiles.filter(t => t.state === 'solid'); if (s.length) U.pick(s).step();
-                }
-            };
-        },
-        honeycomb(r) {              // FINAL — dense little tiles
-            r.kind = 'final'; r.camMode = 'fixed';
-            r.minX = 300; r.maxX = 980; r.minY = 140; r.maxY = 620; r.thinkFn = hexThink;
-            Rounds._hexField(r, 28, 42, 38);
-            r.onUpdate = (rr, dt) => {
-                rr._decayT = (rr._decayT || 0) - dt;
-                if (rr.elapsed > 12 && rr._decayT <= 0) {
-                    rr._decayT = Math.max(0.14, 0.9 - (rr.elapsed - 12) * 0.02);
-                    const s = rr.tiles.filter(t => t.state === 'solid'); if (s.length) U.pick(s).step();
-                }
-            };
+        // -------------------------------------------------- ROYAL FUMBLE
+        royalFumble(r) {            // FINAL — one tail, hold it when time runs out
+            Rounds._arena(r, 320);
+            r.kind = 'tag'; r.viewKind = 'survival'; r.thinkFn = tagThink; r._royal = true;
+            r.timer = 40;
+            Rounds._spawnRing(r);
+            const order = U.shuffle(r.beans.slice());
+            order.forEach((b, i) => { b.hasTail = i === 0; b.tailColor = '#ffd23f'; b.tagCd = 0; });
+            r.qualifyCount = 1;
         },
 
         // ============================================ NEW GAMEMODES ===
@@ -2634,7 +2623,7 @@ const Rounds = {
             r.kind = 'mountain'; r.viewKind = 'race'; r.crownFinish = true; r.finishY = 360;
             Rounds._doorWall(r, 3340, 3);
             Rounds._hammers(r, 2950, { n: 2, speed: 1.9, gap: 280 });
-            Rounds._blocks(r, 2500, { n: 2, speed: 170, color: '#9a6cff' });
+            Rounds._hammers(r, 2500, { n: 2, speed: 1.9, gap: 240 });
             Rounds._doorWall(r, 2050, 2);
             Rounds._beams(r, 1650, { n: 2, speed: -1.7, color: '#e6395a' });
             Rounds._bumpers(r, 1200, { rows: 2, cols: 4, color: '#ffd23f' });
@@ -2650,17 +2639,8 @@ const Rounds = {
             Rounds._spawnRing(r);
             Rounds._dealTails(r, 0.58);
         },
-        tailChase(r) {              // HUNT — tighter arena, fewer tails, frantic
-            Rounds._arena(r, 290);
-            r.kind = 'tag'; r.viewKind = 'survival'; r.thinkFn = tagThink;
-            r.timer = r.def.duration || 28;
-            Rounds._spawnRing(r);
-            Rounds._dealTails(r, 0.5);
-        },
-
         // -------- TIP TOE (LOGIC — find the hidden path of real tiles)
         tipToe(r) { Rounds._tipToeField(r, 7, 8, 0.46); },
-        tipToeTwins(r) { Rounds._tipToeField(r, 9, 9, 0.52); },   // wider grid, more fakes
 
         // -------- PERFECT MATCH (LOGIC — dash to the called fruit) -----
         perfectMatch(r) {
@@ -2717,27 +2697,14 @@ const Rounds = {
             Rounds._raceCommon(r);
             r.kind = 'climb'; r.viewKind = 'race';
             r.slimeY = r.maxY - 40; r.slimeRate = 42;
-            Rounds._blocks(r, 3320, { n: 2, speed: 150, color: '#b06bff' });
+            Rounds._beams(r, 3320, { n: 2, speed: 1.5, color: '#7b46d6' });
             Rounds._cannons(r, 2950, { n: 2, interval: 2.0, speed: 340, reach: 1400, color: '#e6395a' });
             Rounds._hammers(r, 2550, { n: 2, speed: 1.8, gap: 260 });
             Rounds._beams(r, 2150, { n: 2, speed: -1.6, color: '#23d6c8' });
             Rounds._bumpers(r, 1750, { rows: 2, cols: 4, color: '#ffd23f' });
-            Rounds._blocks(r, 1350, { n: 2, speed: 165, color: '#9a6cff' });
+            Rounds._beams(r, 1350, { n: 2, speed: -1.6, color: '#9a6cff' });
             Rounds._hammers(r, 900, { n: 2, speed: 2.0, gap: 240 });
             Rounds._beams(r, 560, { n: 2, speed: 1.7, color: '#ff5fa2' });
-            Rounds._spawnRows(r, r.maxY - 260, r.cx);
-        },
-        slimeScramble(r) {
-            Rounds._raceCommon(r);
-            r.kind = 'climb'; r.viewKind = 'race';
-            r.slimeY = r.maxY - 30; r.slimeRate = 48;
-            Rounds._doorWall(r, 3340, 3);
-            Rounds._hammers(r, 2950, { n: 2, speed: 1.9, gap: 280 });
-            Rounds._cannons(r, 2550, { n: 2, interval: 1.8, speed: 360, reach: 1600, color: '#e6395a' });
-            Rounds._beams(r, 2100, { n: 3, speed: -1.8, color: '#7b46d6' });
-            Rounds._blocks(r, 1650, { n: 3, speed: 185, gap: 130, color: '#9a6cff' });
-            Rounds._bumpers(r, 1150, { rows: 2, cols: 5, color: '#e6395a' });
-            Rounds._hammers(r, 650, { n: 2, speed: 2.2, gap: 240 });
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
     },
@@ -6413,7 +6380,8 @@ const UI = {
         this.els.hudCount.innerHTML = r;
         if (this.els.hudSpec) {
             this.els.hudSpec.style.display = hud.spectating ? 'block' : 'none';
-            if (hud.spectating) this.els.hudSpec.innerHTML = '👀 SPECTATING — watching the round play out';
+            if (hud.spectating) this.els.hudSpec.innerHTML =
+                `👀 SPECTATING${hud.specName ? ' <b>' + hud.specName + '</b>' : ''} &nbsp;·&nbsp; ← / → switch bean`;
         }
     },
     _t(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); },
@@ -6910,11 +6878,18 @@ const Engine = {
             bv.object3d.visible = true;
             bv.update(b, dt, t);
         }
-        // spectate: once you're out, the camera follows a surviving bean
+        // spectate: once you're out, follow a surviving bean — and let the
+        // player switch between beans with ← / → (A/D, J/L, Space).
         const p = this._playerBean;
         const playerActive = p && p.alive && !p.gone && !p.exited && !p.falling;
-        const subject = playerActive ? p : (this._spectateTarget(round) || p);
         this._spectating = !playerActive;
+        let subject;
+        if (playerActive) { subject = p; this._specBean = null; }
+        else {
+            if (Input.specNext) this._cycleSpectate(round, 1);
+            else if (Input.specPrev) this._cycleSpectate(round, -1);
+            subject = this._spectateTarget(round) || p;
+        }
         // gold marker hovers over YOUR bean only while you're still in it
         if (this._marker) {
             this._marker.visible = playerActive;
@@ -6998,8 +6973,16 @@ const Engine = {
         const ok = b => b && b.alive && !b.gone && !b.exited && !b.falling;
         if (ok(this._specBean)) return this._specBean;
         const cands = round.beans.filter(ok);
-        this._specBean = cands.length ? U.pick(cands) : null;
+        this._specBean = cands.length ? cands[0] : null;
         return this._specBean;
+    },
+    _cycleSpectate(round, dir) {
+        const ok = b => b && b.alive && !b.gone && !b.exited && !b.falling;
+        const cands = round.beans.filter(ok);
+        if (!cands.length) { this._specBean = null; return; }
+        let i = cands.indexOf(this._specBean);
+        if (i < 0) i = 0; else i = (i + dir + cands.length) % cands.length;
+        this._specBean = cands[i];
     },
 
     _updateFx(round) {
@@ -7021,19 +7004,19 @@ const Engine = {
         const p = subject || round.player;
         let pos, look;
         if (round.kind === 'race' || round.kind === 'mountain' || round.kind === 'climb') {
-            // 3rd-person chase: centred on the player, behind (+Z) and above,
-            // looking ahead down the course (-Z).
-            pos  = new THREE.Vector3(p.x, p.z + 250, p.y + 380);
-            look = new THREE.Vector3(p.x, p.z + 60,  p.y - 190);
+            // 3rd-person chase: close behind and a little above the bean, looking
+            // just ahead down the course (close, low — like the real game).
+            pos  = new THREE.Vector3(p.x, p.z + 168, p.y + 270);
+            look = new THREE.Vector3(p.x, p.z + 46,  p.y - 110);
         } else {
             const arena = !!(round.platform && round.platform.r);
             const cx = arena ? round.platform.cx : (round.minX + round.maxX) / 2;
             const cy = arena ? round.platform.cy : (round.minY + round.maxY) / 2;
             const r  = arena ? round.platform.r : 360;
             // keep the arena framed but drift toward the player so you can find your bean
-            const fx = U.lerp(cx, p.x, 0.35);
-            pos  = new THREE.Vector3(fx, r * 1.55 + 150, cy + r * 1.45);
-            look = new THREE.Vector3(fx, 25, U.lerp(cy, p.y, 0.4));
+            const fx = U.lerp(cx, p.x, 0.42);
+            pos  = new THREE.Vector3(fx, r * 1.35 + 120, cy + r * 1.28);
+            look = new THREE.Vector3(fx, 25, U.lerp(cy, p.y, 0.45));
         }
         if (this._camSnap) { this._camPos.copy(pos); this._camLook.copy(look); this._camSnap = false; }
         else { const k = Math.min(1, dt * 9); this._camPos.lerp(pos, k); this._camLook.lerp(look, k); }
@@ -7061,6 +7044,7 @@ const Engine = {
                 qualifiedCount: round.qualifiedCount, qualifyCount: round.qualifyCount,
                 timer: round.timer, aliveCount: round.aliveSoFar(), place: round.player.place,
                 spectating: this._spectating,
+                specName: this._spectating && this._specBean ? this._specBean.name : null,
                 youHaveTail: round.player.hasTail,
                 tailCount: round.beans.filter(b => b.alive && !b.eliminated && b.hasTail).length,
                 matchSafe: round.matchSafe, matchPhase: round.matchPhase,

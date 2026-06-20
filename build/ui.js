@@ -380,7 +380,8 @@ const UI = {
         this.els.hudCount.innerHTML = r;
         if (this.els.hudSpec) {
             this.els.hudSpec.style.display = hud.spectating ? 'block' : 'none';
-            if (hud.spectating) this.els.hudSpec.innerHTML = '👀 SPECTATING — watching the round play out';
+            if (hud.spectating) this.els.hudSpec.innerHTML =
+                `👀 SPECTATING${hud.specName ? ' <b>' + hud.specName + '</b>' : ''} &nbsp;·&nbsp; ← / → switch bean`;
         }
     },
     _t(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); },
