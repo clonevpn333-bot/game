@@ -19,7 +19,7 @@ function ctx2d() {
     }});
 }
 class El {
-    constructor(tag) { this.tagName = tag; this.children = []; this.style = {}; this.parentElement = null;
+    constructor(tag) { this.tagName = tag; this.children = []; this.style = { setProperty() {}, removeProperty() {} }; this.parentElement = null;
         this._html = ''; this.className = ''; this.width = 128; this.height = 128;
         this.clientWidth = 300; this.clientHeight = 430; this.onclick = null; this.textContent = '';
         this.classList = { add() {}, remove() {} }; }
@@ -87,6 +87,32 @@ const driver = `
     step();
   }
   console.log('Show: '+trace.join(' -> '));
+
+  // ---- rotating shop -------------------------------------------------
+  const rot1 = Save.shopRotation();
+  if (!Array.isArray(rot1) || rot1.length !== SHOP_ROTATION_SIZE) throw new Error('shop rotation size '+ (rot1&&rot1.length));
+  if (JSON.stringify(Save.shopRotation()) !== JSON.stringify(rot1)) throw new Error('shop rotation not stable within day');
+  Save.data.kudos = 5000; const before = JSON.stringify(rot1);
+  if (!Save.rerollShop(150)) throw new Error('reroll should succeed with funds');
+  if (Save.data.kudos !== 4850) throw new Error('reroll cost wrong: '+Save.data.kudos);
+  Save.data.kudos = 0; if (Save.rerollShop(150)) throw new Error('reroll should fail when broke');
+
+  // ---- fall pass -----------------------------------------------------
+  Save.data.fame = 0; Save.data.passClaimed = {};
+  if (Save.passTierReached() !== 0) throw new Error('tier should be 0 at 0 fame');
+  Save.data.fame = FALL_PASS[2].fame;                 // reach tier 3
+  if (Save.passTierReached() !== 3) throw new Error('tier should be 3, got '+Save.passTierReached());
+  if (!Save.canClaim(1)) throw new Error('tier 1 should be claimable');
+  const k0 = Save.data.kudos, r1 = Save.claimPass(1);   // tier 1 = kudos reward
+  if (!r1 || Save.data.kudos !== k0 + r1.kudos) throw new Error('kudos claim failed');
+  if (Save.canClaim(1)) throw new Error('tier 1 should not re-claim');
+  const r2 = Save.claimPass(2);                          // tier 2 = a cosmetic
+  if (!r2 || !Save.owns(r2.slot, r2.idx)) throw new Error('cosmetic claim did not grant ownership');
+  if (Save.claimPass(9)) throw new Error('unreached tier should not claim');
+  const prog = Save.passProgress();
+  if (prog.tier !== 3 || prog.max) throw new Error('progress wrong: '+JSON.stringify(prog));
+  console.log('Fall Pass: tier='+prog.tier+' claimed T1(kudos)+T2('+r2.slot+'#'+r2.idx+')  shop rot='+rot1.length+' items');
+
   console.log('ARTIFACT OK');
 })();
 `;

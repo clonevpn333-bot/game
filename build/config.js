@@ -22,11 +22,13 @@ const CFG = {
     JUMP_V:       430,     // initial vertical (z) velocity px/s
     GRAVITY:      1350,    // z gravity px/s^2
 
-    DIVE_SPEED:   540,     // forward burst speed (punchy lunge)
-    DIVE_TIME:    0.5,     // seconds of dive lunge
-    DIVE_RECOVER: 0.22,    // prone time after landing a dive (no control)
-    DIVE_CD:      0.12,    // cooldown before diving again
-    DIVE_HOP:     185,     // z hop given by a dive
+    DIVE_SPEED:   610,     // forward burst speed (punchy lunge)
+    DIVE_TIME:    0.42,    // seconds of dive lunge
+    DIVE_RECOVER: 0.15,    // prone time after landing a dive (no control)
+    DIVE_CD:      0.08,    // cooldown before diving again
+    DIVE_HOP:     205,     // z hop given by a dive (clears low bars)
+    DIVE_STEER:   0.10,    // how much you can curve a dive mid-air (0..1)
+    DIVE_DRAG:    0.25,    // velocity bleed during the lunge (lower = longer slide)
 
     BOUNCE_V:     760,     // bounce-pad launch velocity (z)
 
@@ -174,6 +176,47 @@ const ACHIEVEMENTS = [
     { id: 'flawless',    name: 'Flawless',      desc: 'Win a Show without ever being ragdolled.' },
     { id: 'survivor',    name: 'Last Bean Standing', desc: 'Survive a Survival round without falling.' },
 ];
+
+/* =====================================================================
+   FALL PASS — a free seasonal reward track. Earn Fame by playing Shows
+   (qualify / win / just taking part) and climb the tiers to claim Kudos
+   and exclusive cosmetics. `fame` is the CUMULATIVE Fame to unlock a tier.
+   reward: {kudos:n} | {slot, idx} (grants a cosmetic) | {crown:1}
+   ===================================================================== */
+const PASS_FAME = { qualify: 30, win: 150, played: 12, perRound: 8 };
+const FALL_PASS = [
+    { tier: 1,  fame: 120,  reward: { kudos: 150 } },
+    { tier: 2,  fame: 240,  reward: { slot: 'color', idx: 4 } },        // Mint Leaf
+    { tier: 3,  fame: 360,  reward: { kudos: 200 } },
+    { tier: 4,  fame: 480,  reward: { slot: 'pattern', idx: 3 } },      // Checkerboard
+    { tier: 5,  fame: 620,  reward: { slot: 'upper', idx: 3 } },        // Pigeon  ★
+    { tier: 6,  fame: 780,  reward: { kudos: 250 } },
+    { tier: 7,  fame: 940,  reward: { slot: 'lower', idx: 2 } },        // Tutu
+    { tier: 8,  fame: 1100, reward: { slot: 'faceplate', idx: 2 } },    // Cyber Shades
+    { tier: 9,  fame: 1280, reward: { kudos: 300 } },
+    { tier: 10, fame: 1480, reward: { slot: 'upper', idx: 9 } },        // Wild Viking ★
+    { tier: 11, fame: 1680, reward: { slot: 'color', idx: 6 } },        // Tangerine
+    { tier: 12, fame: 1900, reward: { kudos: 350 } },
+    { tier: 13, fame: 2120, reward: { slot: 'lower', idx: 7 } },        // Scuba Flippers
+    { tier: 14, fame: 2360, reward: { slot: 'pattern', idx: 5 } },      // Tiger Stripe
+    { tier: 15, fame: 2620, reward: { slot: 'upper', idx: 5 } },        // Cool Cat ★
+    { tier: 16, fame: 2880, reward: { kudos: 400 } },
+    { tier: 17, fame: 3160, reward: { slot: 'color', idx: 8 } },        // Electric Teal
+    { tier: 18, fame: 3460, reward: { slot: 'lower', idx: 8 } },        // Mech Legs
+    { tier: 19, fame: 3760, reward: { slot: 'faceplate', idx: 3 } },    // Sunset Glow
+    { tier: 20, fame: 4080, reward: { slot: 'upper', idx: 10 } },       // Shark Hood ★
+    { tier: 21, fame: 4420, reward: { kudos: 500 } },
+    { tier: 22, fame: 4780, reward: { slot: 'pattern', idx: 7 } },      // Tie-Dye Dream
+    { tier: 23, fame: 5160, reward: { slot: 'upper', idx: 7 } },        // Dinosaur
+    { tier: 24, fame: 5560, reward: { slot: 'lower', idx: 4 } },        // Rocket Boots
+    { tier: 25, fame: 6000, reward: { slot: 'color', idx: 9 } },        // Crimson Crown ★
+    { tier: 26, fame: 6480, reward: { kudos: 700 } },
+    { tier: 27, fame: 6980, reward: { slot: 'faceplate', idx: 4 } },    // Royal Amethyst
+    { tier: 28, fame: 7520, reward: { slot: 'upper', idx: 13 } },       // Wizard Hat
+    { tier: 29, fame: 8100, reward: { slot: 'pattern', idx: 8 } },      // Galaxy Swirl
+    { tier: 30, fame: 8720, reward: { slot: 'upper', idx: 14 } },       // Unicorn ★ GRAND
+];
+const SHOP_ROTATION_SIZE = 8;   // featured items available to buy at once
 
 /* =====================================================================
    ROUND DEFINITIONS — the Show is an ordered list of these.

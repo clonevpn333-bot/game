@@ -57,18 +57,25 @@ const Engine = {
         Input.init(renderer.domElement);
         Game.init();
         UI.mount(host, {
-            COLORS, PATTERNS, FACEPLATES, COSTUMES_UPPER, COSTUMES_LOWER, EMOTES, ACHIEVEMENTS, SHOW,
+            COLORS, PATTERNS, FACEPLATES, COSTUMES_UPPER, COSTUMES_LOWER, EMOTES, ACHIEVEMENTS, SHOW, FALL_PASS,
         }, {
             onPlay: () => Game.startShow(),
             onCustomize: () => { Game.screen = 'customize'; },
             onHowTo: () => { Game.screen = 'howto'; },
             onTrophies: () => { Game.screen = 'trophies'; },
+            onFallPass: () => Game.toFallPass(),
             onMenu: () => Game.toMenu(),
             onShop: () => Game.toShop(),
             onShopBuy: (slot, idx) => Game.shopSelect(slot, idx),
+            onShopReroll: () => Game.rerollShop(),
+            onPassClaim: (tier) => Game.claimPassTier(tier),
             onCycle: (slot, dir) => Game.cycleCosmetic(slot, dir),
             onEmoteCycle: (i, dir) => Game.cycleEmote(i, dir),
             getSave: () => Save.data,
+            getShopRotation: () => Save.shopRotation(),
+            getNextRotationMs: () => Save.nextRotationMs(),
+            getPassProgress: () => Save.passProgress(),
+            getPass: () => { let c = 0; for (const t of FALL_PASS) if (Save.canClaim(t.tier)) c++; return { claimable: c, tier: Save.passTierReached() }; },
         });
 
         window.addEventListener('resize', () => this._resize());
@@ -123,6 +130,7 @@ const Engine = {
                 case 'howto': UI.showHowTo(); break;
                 case 'trophies': UI.showTrophies(); break;
                 case 'shop': UI.showShop(); break;
+                case 'fallpass': UI.showFallPass(); break;
                 case 'loading': UI.showLoading(Game.loadingInfo); break;
                 case 'eliminated': UI.showEliminated(Game.info); break;
                 case 'victory': UI.showVictory(Game.info); break;

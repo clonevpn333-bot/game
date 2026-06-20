@@ -33,7 +33,7 @@ const UI = {
         root.appendChild(this.layer);
 
         // big panels
-        for (const id of ['menu', 'customize', 'howto', 'trophies', 'shop', 'loading', 'eliminated', 'victory']) {
+        for (const id of ['menu', 'customize', 'howto', 'trophies', 'shop', 'fallpass', 'loading', 'eliminated', 'victory']) {
             const p = this._el('div', 'br-panel br-' + id);
             this.els[id] = p; this.layer.appendChild(p);
         }
@@ -51,7 +51,7 @@ const UI = {
     // helpers like the lobby/preview bean canvases or the HUD chips, which live
     // *inside* a panel/overlay. Blanket-hiding those (the old bug) collapsed the
     // 3D bean boxes to 0×0 and left the HUD counters stuck at display:none.
-    _tops: ['menu', 'customize', 'howto', 'trophies', 'shop', 'loading',
+    _tops: ['menu', 'customize', 'howto', 'trophies', 'shop', 'fallpass', 'loading',
         'eliminated', 'victory', 'hud', 'intro', 'banner'],
     hideAll() {
         for (const k of this._tops) if (this.els[k]) this.els[k].style.display = 'none';
@@ -74,6 +74,9 @@ const UI = {
         right.appendChild(this._el('div', 'br-sub', 'Dive, bounce &amp; grab your way to the Crown!'));
         const col = this._el('div', 'br-col');
         col.appendChild(this._btn('▶  PLAY SHOW', 'br-big', this.hooks.onPlay));
+        const pp = this.hooks.getPass ? this.hooks.getPass() : null;
+        const claimable = pp && pp.claimable ? `<span class="br-badge">${pp.claimable}</span>` : '';
+        col.appendChild(this._btn(`🎖️  FALL PASS${claimable}`, 'br-gold', this.hooks.onFallPass));
         col.appendChild(this._btn('🎨  CUSTOMISE', 'br-blue', this.hooks.onCustomize));
         col.appendChild(this._btn('🛒  SHOP', 'br-pink', this.hooks.onShop));
         col.appendChild(this._btn('🏆  TROPHIES', 'br-purple', this.hooks.onTrophies));
@@ -147,39 +150,90 @@ const UI = {
     },
     previewContainer() { return this._activeBig === 'menu' ? this.els.lobbyBean : this.els.preview; },
 
-    // ================================================== SHOP
+    // ================================================== SHOP (rotating)
+    _slotArr(slot) {
+        return { upper: this.data.COSTUMES_UPPER, lower: this.data.COSTUMES_LOWER,
+            color: this.data.COLORS, pattern: this.data.PATTERNS, faceplate: this.data.FACEPLATES }[slot];
+    },
+    _slotLabel(slot) { return { upper: 'Top', lower: 'Bottom', color: 'Colour', pattern: 'Pattern', faceplate: 'Faceplate' }[slot]; },
+    _countdown(ms) {
+        const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
+        return h > 0 ? `${h}h ${m}m` : `${m}m`;
+    },
     showShop() {
-        const s = this.hooks.getSave(), d = this.data, p = this.els.shop; p.innerHTML = '';
+        const s = this.hooks.getSave(), p = this.els.shop; p.innerHTML = '';
         const PRICE = { common: 0, uncommon: 500, rare: 1200, epic: 3000, legendary: 8000 };
-        p.appendChild(this._el('div', 'br-h', '🛒 SHOP'));
-        p.appendChild(this._el('div', 'br-kudos', `ⓚ ${s.kudos} Kudos — earn more by playing Shows!`));
-        const scroll = this._el('div', 'br-shop-scroll');
-        const sections = [
-            ['Tops', 'upper', d.COSTUMES_UPPER], ['Bottoms', 'lower', d.COSTUMES_LOWER],
-            ['Colours', 'color', d.COLORS], ['Patterns', 'pattern', d.PATTERNS], ['Faceplates', 'faceplate', d.FACEPLATES],
-        ];
-        for (const [title, slot, arr] of sections) {
-            scroll.appendChild(this._el('div', 'br-shop-sec', title));
-            const grid = this._el('div', 'br-shop-grid');
-            arr.forEach((item, i) => {
-                const owned = !!(s.owned[slot] && s.owned[slot][i]);
-                const equipped = s[slot] === i;
-                const price = PRICE[item.rarity] || 0;
-                const card = this._el('div', 'br-shop-card' + (equipped ? ' eq' : '') + (owned ? ' own' : ''));
-                card.style.borderColor = this.rarity(item.rarity);
-                const act = equipped ? 'EQUIPPED' : owned ? 'EQUIP' : ('ⓚ ' + price);
-                card.innerHTML = `<div class="br-shop-name">${item.name}</div>` +
-                    `<div class="br-shop-rar" style="color:${this.rarity(item.rarity)}">${item.rarity}</div>` +
-                    `<div class="br-shop-act">${act}</div>`;
-                if (!owned && price > s.kudos) card.classList.add('br-cant');
-                card.onclick = () => { this.hooks.onShopBuy(slot, i); this.showShop(); };
-                grid.appendChild(card);
-            });
-            scroll.appendChild(grid);
+        const rot = this.hooks.getShopRotation();
+        p.appendChild(this._el('div', 'br-h', '🛒 ITEM SHOP'));
+        p.appendChild(this._el('div', 'br-kudos', `ⓚ ${s.kudos} Kudos — earn more by playing Shows & climbing the Fall Pass!`));
+        const bar = this._el('div', 'br-shop-rotbar');
+        bar.appendChild(this._el('div', 'br-shop-rotlabel',
+            `🔥 FEATURED TODAY &nbsp;·&nbsp; refreshes in <b>${this._countdown(this.hooks.getNextRotationMs())}</b>`));
+        bar.appendChild(this._btn('🔄 Reroll · ⓚ150', 'br-blue sm', () => { this.hooks.onShopReroll(); this.showShop(); }));
+        p.appendChild(bar);
+
+        const grid = this._el('div', 'br-shop-grid');
+        for (const { slot, idx } of rot) {
+            const arr = this._slotArr(slot); if (!arr) continue;
+            const item = arr[idx]; if (!item) continue;
+            const owned = !!(s.owned[slot] && s.owned[slot][idx]);
+            const equipped = s[slot] === idx;
+            const price = PRICE[item.rarity] || 0;
+            const card = this._el('div', 'br-shop-card' + (equipped ? ' eq' : '') + (owned ? ' own' : ''));
+            card.style.borderColor = this.rarity(item.rarity);
+            const act = equipped ? 'EQUIPPED' : owned ? 'EQUIP' : ('ⓚ ' + price);
+            card.innerHTML = `<div class="br-shop-slot">${this._slotLabel(slot)}</div>` +
+                `<div class="br-shop-name">${item.name}</div>` +
+                `<div class="br-shop-rar" style="color:${this.rarity(item.rarity)}">${item.rarity}</div>` +
+                `<div class="br-shop-act">${act}</div>`;
+            if (!owned && price > s.kudos) card.classList.add('br-cant');
+            card.onclick = () => { this.hooks.onShopBuy(slot, idx); this.showShop(); };
+            grid.appendChild(card);
         }
-        p.appendChild(scroll);
+        p.appendChild(grid);
+        p.appendChild(this._el('div', 'br-shop-note', 'Only featured items can be bought right now — the store rotates daily. Everything you own is equippable in 🎨 Customise.'));
         p.appendChild(this._btn('‹ BACK', 'br-pink', this.hooks.onMenu));
         this._showBig('shop');
+    },
+
+    // ================================================== FALL PASS
+    showFallPass() {
+        const s = this.hooks.getSave(), p = this.els.fallpass; p.innerHTML = '';
+        const prog = this.hooks.getPassProgress();
+        p.appendChild(this._el('div', 'br-h', '🎖️ FALL PASS'));
+        const sub = prog.max
+            ? `Tier ${prog.tier} · MAX — every reward unlocked, legend!`
+            : `Tier ${prog.tier} · ${s.fame} Fame &nbsp;·&nbsp; ${prog.span - prog.into} Fame to Tier ${prog.tier + 1}`;
+        p.appendChild(this._el('div', 'br-kudos', sub));
+        const pbar = this._el('div', 'br-pass-bar');
+        pbar.appendChild(this._el('i')).style.width = Math.round(prog.frac * 100) + '%';
+        p.appendChild(pbar);
+
+        const scroll = this._el('div', 'br-pass-scroll');
+        for (const t of this.data.FALL_PASS) {
+            const reached = s.fame >= t.fame;
+            const claimed = !!s.passClaimed[t.tier];
+            const claimable = reached && !claimed;
+            const milestone = t.tier % 5 === 0;
+            const card = this._el('div', 'br-pass-tier' + (claimed ? ' done' : '') + (claimable ? ' ready' : '') + (milestone ? ' mile' : ''));
+            const r = t.reward;
+            let rt, ri;
+            if (r.kudos) { rt = `ⓚ ${r.kudos}`; ri = '💰'; }
+            else if (r.crown) { rt = `${r.crown} Crown`; ri = '👑'; }
+            else { const it = this._slotArr(r.slot)[r.idx]; rt = it.name; ri = '🎁';
+                card.style.setProperty('--rar', this.rarity(it.rarity)); }
+            card.innerHTML =
+                `<div class="br-pass-tnum">T${t.tier}</div>` +
+                `<div class="br-pass-ricon">${ri}</div>` +
+                `<div class="br-pass-rname">${rt}</div>` +
+                `<div class="br-pass-state">${claimed ? '✓ Claimed' : claimable ? 'CLAIM' : t.fame + ' Fame'}</div>`;
+            if (claimable) card.onclick = () => { this.hooks.onPassClaim(t.tier); this.showFallPass(); };
+            scroll.appendChild(card);
+        }
+        p.appendChild(scroll);
+        p.appendChild(this._el('div', 'br-shop-note', 'Earn Fame by playing Shows — qualifying, surviving and winning. Claim each tier to bank Kudos and unlock exclusive cosmetics.'));
+        p.appendChild(this._btn('‹ BACK', 'br-pink', this.hooks.onMenu));
+        this._showBig('fallpass');
     },
 
     // ================================================== HOW TO
@@ -268,18 +322,45 @@ const UI = {
     },
     _t(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); },
 
-    // ================================================== LOADING
+    // ============================== ROUND-SELECT REEL (loading screen)
     showLoading(info) {
         info = info || {};
-        const cat = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' }[info.category] || '#fff';
-        this.els.loading.innerHTML =
-            `<div class="br-load-tag">ROUND ${info.index || 1} OF ${info.total || 1}</div>` +
-            `<div class="br-load-name">${info.name || 'Loading…'}</div>` +
-            `<div class="br-load-cat" style="color:${cat}">${(info.category || '').toUpperCase()}</div>` +
-            `<div class="br-load-bar"><i></i></div>` +
-            `<div class="br-load-spin"></div>` +
-            `<div class="br-load-hint">Get ready, bean!</div>`;
+        const CAT = { Race: '#5ad1ff', Survival: '#ffd23f', Final: '#ff5fa2' };
+        const p = this.els.loading; p.innerHTML = '';
+        p.appendChild(this._el('div', 'br-load-tag', `ROUND ${info.index || 1} OF ${info.total || 1}`));
+        p.appendChild(this._el('div', 'br-reel-title', 'SELECTING ROUND…'));
+
+        const win = this._el('div', 'br-reel-window');
+        const strip = this._el('div', 'br-reel-strip');
+        const reel = info.reel && info.reel.length ? info.reel : [{ name: info.name, category: info.category }];
+        const ICON = { Race: '🏁', Survival: '⏱️', Final: '👑' };
+        for (const d of reel) {
+            const c = CAT[d.category] || '#fff';
+            const card = this._el('div', 'br-reel-card');
+            card.style.setProperty('--c', c);
+            card.innerHTML =
+                `<span class="br-reel-ico">${ICON[d.category] || '🎮'}</span>` +
+                `<span class="br-reel-txt"><b class="br-reel-name">${d.name}</b>` +
+                `<span class="br-reel-cat" style="color:${c}">${(d.category || '').toUpperCase()}</span></span>`;
+            strip.appendChild(card);
+        }
+        win.appendChild(strip);
+        win.appendChild(this._el('div', 'br-reel-marker'));
+        p.appendChild(win);
+        p.appendChild(this._el('div', 'br-reel-tag', info.tagline || 'Get ready, bean!'));
         this._showBig('loading');
+
+        // slot-machine landing: scroll fast from the top and ease onto the real round
+        const CH = 84, CENTER = 2, land = info.land || 0;
+        strip.style.transition = 'none';
+        strip.style.transform = 'translateY(0px)';
+        void strip.offsetHeight;                      // force reflow so the transition fires
+        const cards = strip.children;
+        requestAnimationFrame(() => {
+            strip.style.transition = 'transform 2.0s cubic-bezier(.10,.60,.15,1)';
+            strip.style.transform = `translateY(${-(land - CENTER) * CH}px)`;
+            if (cards[land]) setTimeout(() => cards[land].classList.add('br-reel-hit'), 1950);
+        });
     },
 
     // ================================================== INTRO CARD
@@ -312,6 +393,7 @@ const UI = {
         p.appendChild(this._el('div', 'br-result-sub', `Knocked out in ${info.roundName} — placed #${info.place}`));
         p.appendChild(this._el('div', 'br-result-sub2', `You cleared ${info.roundsCleared} of ${info.totalRounds} rounds`));
         if (info.earned != null) p.appendChild(this._el('div', 'br-earned', `+${info.earned} Kudos  ·  ⓚ ${info.kudos} total`));
+        if (info.fame) p.appendChild(this._el('div', 'br-result-sub2', `🎖️ +${info.fame} Fame toward your Fall Pass`));
         const bar = this._el('div', 'br-col br-row');
         bar.appendChild(this._btn('↻ PLAY AGAIN', 'br-big', this.hooks.onPlay));
         bar.appendChild(this._btn('☰ MAIN MENU', 'br-blue', this.hooks.onMenu));
@@ -325,6 +407,7 @@ const UI = {
         p.appendChild(this._el('div', 'br-result-sub', 'You grabbed the Crown!'));
         p.appendChild(this._el('div', 'br-result-sub2', `Crowns: ${s.crowns} · Win Streak: ${s.streak}`));
         if (info.earned != null) p.appendChild(this._el('div', 'br-earned', `+${info.earned} Kudos  ·  ⓚ ${info.kudos} total`));
+        if (info.fame) p.appendChild(this._el('div', 'br-result-sub2', `🎖️ +${info.fame} Fame toward your Fall Pass`));
         const bar = this._el('div', 'br-col br-row');
         bar.appendChild(this._btn('↻ PLAY AGAIN', 'br-big', this.hooks.onPlay));
         bar.appendChild(this._btn('☰ MAIN MENU', 'br-blue', this.hooks.onMenu));
@@ -356,7 +439,7 @@ const UI = {
         const css = `
 .br-layer{position:absolute;inset:0;pointer-events:none;font-family:system-ui,'Segoe UI',Roboto,sans-serif;overflow:hidden;color:#fff;z-index:10}
 .br-panel{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;pointer-events:auto;text-align:center;padding:24px}
-.br-menu,.br-customize,.br-howto,.br-trophies{background:linear-gradient(160deg,#6a5cff,#a24bd6 55%,#ff5fa2)}
+.br-menu,.br-customize,.br-howto,.br-trophies,.br-shop,.br-fallpass{background:linear-gradient(160deg,#6a5cff,#a24bd6 55%,#ff5fa2)}
 .br-eliminated{background:linear-gradient(160deg,#3a2350,#1c1430)}
 .br-victory{background:linear-gradient(160deg,#7b46d6,#ff5fa2)}
 .br-loading{background:linear-gradient(160deg,#6a5cff,#a24bd6 55%,#ff5fa2)}
@@ -416,7 +499,7 @@ const UI = {
 .br-earned{margin-top:10px;font-weight:800;color:#ffd23f;font-size:20px;text-shadow:0 2px 0 #2a1c4a}
 .br-shop-scroll{width:min(1000px,94vw);max-height:60vh;overflow-y:auto;padding:4px 8px}
 .br-shop-sec{font-weight:900;color:#ffe9c2;text-align:left;margin:14px 0 8px;font-size:18px;text-shadow:0 2px 0 #2a1c4a}
-.br-shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.br-shop-grid{width:min(940px,94vw);display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;max-height:54vh;overflow-y:auto;padding:4px}
 .br-shop-card{pointer-events:auto;cursor:pointer;background:rgba(20,15,40,.34);border:2px solid #888;border-radius:12px;padding:10px;text-align:center;transition:transform .08s}
 .br-shop-card:hover{transform:translateY(-2px)}
 .br-shop-card.eq{box-shadow:0 0 0 3px #46d36a inset}
@@ -425,6 +508,49 @@ const UI = {
 .br-shop-rar{font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin:2px 0 6px}
 .br-shop-act{font-weight:800;background:rgba(255,210,63,.18);border-radius:8px;padding:4px;font-size:13px}
 .br-shop-card.own .br-shop-act{background:rgba(70,211,106,.2)}
+.br-shop-slot{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#cfd6e6;opacity:.8}
+.br-shop-rotbar{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+.br-shop-rotlabel{font-weight:800;color:#ffe9c2;text-shadow:0 2px 0 #2a1c4a}
+.br-shop-rotlabel b{color:#ffd23f}
+.br-shop-note{font-size:12px;color:#dfe6ff;opacity:.85;margin:12px 0 16px;max-width:min(720px,92vw)}
+.br-gold{background:linear-gradient(180deg,#ffe06a,#ffc23f);box-shadow:0 5px 0 #b07d00,0 8px 18px rgba(0,0,0,.3);position:relative}
+.br-badge{position:absolute;top:-8px;right:-8px;background:#ff3b6b;color:#fff;font-size:13px;min-width:22px;height:22px;line-height:22px;border-radius:11px;padding:0 6px;box-shadow:0 2px 0 #9c1f3f}
+.br-btn.sm{padding:10px 16px;font-size:14px}
+/* fall pass */
+.br-pass-bar{width:min(820px,92vw);height:16px;background:rgba(20,15,40,.45);border-radius:9px;overflow:hidden;margin:6px 0 16px}
+.br-pass-bar i{display:block;height:100%;background:linear-gradient(90deg,#ffd23f,#ff9447);border-radius:9px;transition:width .4s}
+.br-pass-scroll{display:flex;gap:12px;overflow-x:auto;width:min(960px,94vw);padding:8px 6px 16px;scroll-snap-type:x proximity}
+.br-pass-tier{flex:0 0 132px;scroll-snap-align:center;background:rgba(20,15,40,.34);border:2px solid rgba(255,255,255,.12);border-radius:16px;padding:12px 8px;text-align:center;position:relative;opacity:.92}
+.br-pass-tier.mile{border-color:#ffd23f;background:rgba(255,210,63,.12)}
+.br-pass-tier.done{opacity:.5}
+.br-pass-tier.ready{cursor:pointer;border-color:#46d36a;box-shadow:0 0 0 3px rgba(70,211,106,.35),0 6px 16px rgba(0,0,0,.3);animation:brpulse 1.3s ease-in-out infinite}
+.br-pass-tier.ready:hover{transform:translateY(-3px)}
+.br-pass-tnum{font-weight:900;font-size:13px;color:#ffe9c2;letter-spacing:.06em}
+.br-pass-ricon{font-size:34px;margin:6px 0}
+.br-pass-rname{font-weight:800;font-size:13px;min-height:32px;color:var(--rar,#fff)}
+.br-pass-state{margin-top:8px;font-weight:800;font-size:12px;background:rgba(255,255,255,.1);border-radius:8px;padding:5px}
+.br-pass-tier.ready .br-pass-state{background:#46d36a;color:#0c2a16}
+.br-pass-tier.done .br-pass-state{color:#46d36a}
+/* round-select reel */
+.br-reel-title{font-weight:900;letter-spacing:.16em;color:#ffe9c2;text-shadow:0 2px 0 #2a1c4a;margin:8px 0 14px;font-size:clamp(16px,2.4vw,24px)}
+.br-reel-window{position:relative;width:min(560px,92vw);height:420px;overflow:hidden;
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 22%,#000 78%,transparent);
+  mask-image:linear-gradient(180deg,transparent,#000 22%,#000 78%,transparent)}
+.br-reel-strip{position:absolute;left:0;right:0;top:0;will-change:transform}
+.br-reel-card{height:84px;box-sizing:border-box;margin:0;display:flex;align-items:center;gap:14px;padding:0 26px;
+  border-radius:16px;background:rgba(20,15,40,.42);border:2px solid var(--c,#fff);
+  box-shadow:inset 0 0 22px rgba(0,0,0,.25)}
+.br-reel-ico{font-size:30px;filter:drop-shadow(0 2px 0 rgba(0,0,0,.4))}
+.br-reel-txt{display:flex;flex-direction:column;align-items:flex-start;text-align:left}
+.br-reel-name{font-size:24px;font-weight:900;color:#fff;text-shadow:0 3px 0 #2a1c4a;line-height:1.05}
+.br-reel-cat{font-size:12px;font-weight:800;letter-spacing:.12em}
+.br-reel-marker{position:absolute;left:0;right:0;top:50%;height:84px;transform:translateY(-50%);
+  border:3px solid #ffd23f;border-radius:18px;box-shadow:0 0 26px rgba(255,210,63,.55);pointer-events:none}
+.br-reel-marker::before,.br-reel-marker::after{content:'▶';position:absolute;top:50%;transform:translateY(-50%);color:#ffd23f;font-size:20px;text-shadow:0 2px 0 #2a1c4a}
+.br-reel-marker::before{left:-26px}.br-reel-marker::after{content:'◀';right:-26px}
+.br-reel-card.br-reel-hit{animation:brhit .4s ease}
+@keyframes brhit{0%{transform:scale(1)}40%{transform:scale(1.07)}100%{transform:scale(1)}}
+.br-reel-tag{margin-top:16px;font-weight:700;color:#ffe9c2;text-shadow:0 2px 0 #2a1c4a;font-size:clamp(14px,1.8vw,18px);max-width:min(620px,92vw)}
 /* how-to / trophies */
 .br-howlist{display:flex;flex-direction:column;gap:8px;width:min(820px,92vw)}
 .br-howrow{display:flex;gap:18px;background:rgba(20,15,40,.25);border-radius:10px;padding:8px 14px}

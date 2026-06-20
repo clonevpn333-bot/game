@@ -167,7 +167,15 @@ class Bean {
             if (this.ragdoll <= 0) this.spin = 0;
         } else if (this.diveT > 0) {
             this.diveT -= dt;
-            this.vx *= (1 - 0.4 * dt); this.vy *= (1 - 0.4 * dt);
+            // gentle steering keeps the lunge feeling responsive instead of a
+            // dead commit, and a low drag gives a satisfyingly long belly-slide.
+            if (il > 0.05) {
+                this.facing = U.lerpAngle(this.facing, Math.atan2(iy, ix), CFG.DIVE_STEER);
+                const sp = Math.hypot(this.vx, this.vy);
+                this.vx = U.lerp(this.vx, Math.cos(this.facing) * sp, CFG.DIVE_STEER);
+                this.vy = U.lerp(this.vy, Math.sin(this.facing) * sp, CFG.DIVE_STEER);
+            }
+            this.vx *= (1 - CFG.DIVE_DRAG * dt); this.vy *= (1 - CFG.DIVE_DRAG * dt);
             if (this.diveT <= 0) this.proneT = CFG.DIVE_RECOVER;
         } else if (this.proneT > 0) {
             this.proneT -= dt;

@@ -45,6 +45,9 @@ const Game = {
         return false;
     },
     toShop() { this.screen = 'shop'; },
+    toFallPass() { this.screen = 'fallpass'; },
+    claimPassTier(tier) { return Save.claimPass(tier); },
+    rerollShop() { return Save.rerollShop(150); },
     shopSelect(slot, idx) {     // owned -> equip; locked -> buy (+ equip) if affordable
         if (Save.owns(slot, idx)) { Save.data[slot] = idx; Save.save(); Save.checkHeadTurner(); return; }
         if (Save.buy(slot, idx)) { Save.data[slot] = idx; Save.save(); Save.checkHeadTurner(); }
@@ -60,7 +63,7 @@ const Game = {
     // ---- Show lifecycle ----------------------------------------------
     startShow() {
         const beans = this._makeField();
-        this.show = { index: 0, beans, round: null, seq: this._buildSequence(), earned: 0 };
+        this.show = { index: 0, beans, round: null, seq: this._buildSequence(), earned: 0, fame: 0 };
         this.loadRound(0);
     },
 
@@ -84,8 +87,18 @@ const Game = {
         this.show.index = i;
         const def = this.show.seq[i];
         this.show.round = Rounds.create(def, this.show.beans);
-        this.loadingInfo = { name: def.name, category: def.category, index: i + 1, total: this.show.seq.length };
-        this.loadingT = 1.3;
+        // Build the round-select REEL: a long strip of map cards that scrolls
+        // fast and lands on the actual next round (Fall Guys' round picker).
+        const land = 17, reel = [];
+        for (let k = 0; k < land; k++) reel.push(U.pick(SHOW));
+        reel.push(def);
+        for (let k = 0; k < 5; k++) reel.push(U.pick(SHOW));
+        this.loadingInfo = {
+            name: def.name, category: def.category, tagline: def.tagline,
+            index: i + 1, total: this.show.seq.length, land,
+            reel: reel.map(d => ({ name: d.name, category: d.category, tagline: d.tagline })),
+        };
+        this.loadingT = 2.4;
         this.screen = 'loading';
     },
 
@@ -98,6 +111,7 @@ const Game = {
             if (r.bigTease) Save.unlock('big_tease');
             if (r.category === 'Survival') Save.unlock('survivor');
             const e = 100; Save.addKudos(e); this.show.earned += e;
+            const f = PASS_FAME.qualify + PASS_FAME.perRound; Save.addFame(f); this.show.fame += f;
             const survivors = r.survivors || r.beans.filter(b => b.alive && !b.eliminated);
             this.show.beans = survivors;
             this.loadRound(this.show.index + 1);
@@ -108,18 +122,20 @@ const Game = {
             const flawless = !this.player.everRagdolled;
             Save.recordWin(flawless);
             const e = 800; Save.addKudos(e); this.show.earned += e;
+            const f = PASS_FAME.win; Save.addFame(f); this.show.fame += f;
             this.info = { crowns: Save.data.crowns, streak: Save.data.streak,
-                earned: this.show.earned, kudos: Save.data.kudos };
+                earned: this.show.earned, kudos: Save.data.kudos, fame: this.show.fame };
             this.screen = 'victory';
             return;
         }
 
         const e = 50; Save.addKudos(e); this.show.earned += e;
+        const f = PASS_FAME.played; Save.addFame(f); this.show.fame += f;
         Save.recordLoss();
         this.info = {
             roundName: r.def.name, place: res.place,
             roundsCleared: this.show.index, totalRounds: this.show.seq.length,
-            earned: this.show.earned, kudos: Save.data.kudos,
+            earned: this.show.earned, kudos: Save.data.kudos, fame: this.show.fame,
         };
         this.screen = 'eliminated';
     },

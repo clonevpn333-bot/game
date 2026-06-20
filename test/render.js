@@ -59,8 +59,18 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
     await wait(1500);
     await page.screenshot({ path: path.join(SHOTS, '2-customize.png') });
 
-    // start a show and WAIT (wall-clock) until the round is actually live ('go')
+    // FALL PASS screen (give some fame first so tiers are claimable)
+    await page.evaluate(() => { window.__BR.Save.data.fame = 1500; window.__BR.Game.toFallPass(); });
+    await wait(900);
+    await page.screenshot({ path: path.join(SHOTS, '6-fallpass.png') });
+
+    // start a show — capture the round-select REEL during the loading phase
     await page.evaluate(() => { window.__BR.Game.toMenu(); window.__BR.Game.startShow(); });
+    await page.waitForFunction(() => window.__BR.Game.screen === 'loading', { timeout: 30000, polling: 50 }).catch(() => {});
+    await wait(700);
+    await page.screenshot({ path: path.join(SHOTS, '7-reel.png') });
+
+    // then WAIT (wall-clock) until the round is actually live ('go')
     await page.waitForFunction(() => {
         const g = window.__BR.Game;
         return g.screen === 'playing' && g.show && g.show.round && g.show.round.phase === 'go';

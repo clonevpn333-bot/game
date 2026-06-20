@@ -20,6 +20,10 @@ const Save = {
             bestStreak: 0,
             showsPlayed: 0,
             achievements: {},              // id -> true
+            fame: 0,                       // Fall Pass progression
+            passClaimed: {},               // tier -> true
+            shopDay: -1,                   // day index the shop rotation was rolled for
+            shopRot: null,                 // [{slot, idx}] featured items
         };
     },
 
@@ -34,6 +38,8 @@ const Save = {
             this.data.emotes = [0, 1, 2, 5];
         }
         if (this.data.kudos == null) this.data.kudos = 600;
+        if (this.data.fame == null) this.data.fame = 0;
+        if (!this.data.passClaimed || typeof this.data.passClaimed !== 'object') this.data.passClaimed = {};
         this._seedOwned();
         this._validateEquipped();
         return this.data;
@@ -69,6 +75,69 @@ const Save = {
         return true;
     },
     addKudos(n) { this.data.kudos = (this.data.kudos || 0) + n; this.save(); },
+    // grant ownership of a cosmetic outright (Fall Pass rewards)
+    grant(slot, idx) {
+        if (!this.data.owned[slot]) this.data.owned[slot] = {};
+        this.data.owned[slot][idx] = true; this.save();
+    },
+
+    // ---- Rotating shop ------------------------------------------------
+    // A featured set of non-common items, deterministic per day so it's
+    // stable within a session but refreshes daily (Fall Guys' store model).
+    _dayIndex() { return Math.floor(Date.now() / 86400000); },
+    shopRotation() {
+        const day = this._dayIndex();
+        if (this.data.shopDay !== day || !Array.isArray(this.data.shopRot) || !this.data.shopRot.length) {
+            this.data.shopDay = day;
+            this.data.shopRot = this._rollShop(day * 2654435761 >>> 0);
+            this.save();
+        }
+        return this.data.shopRot;
+    },
+    rerollShop(cost) {                       // pay Kudos to refresh the featured set now
+        if ((this.data.kudos || 0) < cost) return false;
+        this.data.kudos -= cost;
+        this.data.shopRot = this._rollShop((Date.now() ^ (this.data.fame * 40503)) >>> 0);
+        this.save();
+        return true;
+    },
+    _rollShop(seed) {
+        let s = (seed % 2147483647) || 1; const rnd = () => (s = s * 48271 % 2147483647) / 2147483647;
+        const slots = this._slots(), pool = [];
+        for (const k in slots) slots[k].forEach((it, i) => { if (it.rarity !== 'common') pool.push({ slot: k, idx: i }); });
+        for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+        // keep a pleasing spread of rarities up top
+        return pool.slice(0, SHOP_ROTATION_SIZE);
+    },
+    nextRotationMs() { return (this._dayIndex() + 1) * 86400000 - Date.now(); },
+
+    // ---- Fall Pass ----------------------------------------------------
+    addFame(n) { this.data.fame = (this.data.fame || 0) + n; this.save(); },
+    passTierReached() {                      // highest tier whose Fame threshold is met
+        let t = 0;
+        for (const tier of FALL_PASS) if (this.data.fame >= tier.fame) t = tier.tier; else break;
+        return t;
+    },
+    passProgress() {                         // {tier, next, into, span, frac} toward the next tier
+        const reached = this.passTierReached();
+        const next = FALL_PASS.find(t => t.tier === reached + 1);
+        const prevFame = reached > 0 ? FALL_PASS[reached - 1].fame : 0;
+        if (!next) return { tier: reached, max: true, frac: 1, into: 0, span: 0 };
+        const span = next.fame - prevFame, into = this.data.fame - prevFame;
+        return { tier: reached, next, max: false, frac: U.clamp(into / span, 0, 1), into, span };
+    },
+    canClaim(tier) { return this.passTierReached() >= tier && !this.data.passClaimed[tier]; },
+    claimPass(tier) {
+        if (!this.canClaim(tier)) return null;
+        const def = FALL_PASS.find(t => t.tier === tier); if (!def) return null;
+        this.data.passClaimed[tier] = true;
+        const r = def.reward;
+        if (r.kudos) this.data.kudos = (this.data.kudos || 0) + r.kudos;
+        else if (r.crown) this.data.crowns = (this.data.crowns || 0) + r.crown;
+        else if (r.slot != null) this.grant(r.slot, r.idx);
+        this.save();
+        return r;
+    },
 
     save() {
         try {
