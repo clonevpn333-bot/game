@@ -218,6 +218,16 @@ const FALL_PASS = [
 ];
 const SHOP_ROTATION_SIZE = 8;   // featured items available to buy at once
 
+// Perfect Match fruits (tile colours + the called-fruit banner)
+const FRUITS = [
+    { name: 'Apple',      color: '#e6395a', icon: '🍎' },
+    { name: 'Banana',     color: '#ffd23f', icon: '🍌' },
+    { name: 'Grape',      color: '#9a6cff', icon: '🍇' },
+    { name: 'Orange',     color: '#ff9447', icon: '🍊' },
+    { name: 'Watermelon', color: '#46d36a', icon: '🍉' },
+    { name: 'Pear',       color: '#7ce0b0', icon: '🍐' },
+];
+
 /* =====================================================================
    ROUND DEFINITIONS — the Show is an ordered list of these.
    category: Race | Survival | Final  (Team / Hunt / Logic exist in the
@@ -264,6 +274,8 @@ const SHOW = [
       tagline: 'Hidden fake tiles drop into the slime. Memorise the safe path!' },
     { id: 'tip_toe_twins', name: 'Tip Toe Twins', category: 'Logic', build: 'tipToeTwins',
       tagline: 'A wider maze of stepping stones — more fakes, more nerves.' },
+    { id: 'perfect_match', name: 'Perfect Match', category: 'Logic', build: 'perfectMatch',
+      tagline: 'A fruit is called — dash to a matching tile before the rest drop away!' },
 
     // ---------- FINALS ----------
     { id: 'hexagone',      name: 'Hex-A-Gone',     category: 'Final', build: 'hexAGone',

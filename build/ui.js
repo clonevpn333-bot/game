@@ -369,6 +369,11 @@ const UI = {
             r = `<span style="color:${hud.youHaveTail ? '#46d36a' : '#ff5fa2'}">${hud.youHaveTail ? '🏷️ TAIL SAFE' : '❌ GRAB A TAIL!'}&nbsp;·&nbsp;${hud.tailCount} tails</span><b>${this._t(hud.timer)}</b>`;
         else if (hud.kind === 'mountain')
             r = `<span style="color:#ffd23f">🏔️ TO THE CROWN</span><b>${hud.aliveCount} racing</b>`;
+        else if (hud.kind === 'match') {
+            const f = hud.matchSafe >= 0 && this.data.FRUITS ? this.data.FRUITS[hud.matchSafe] : null;
+            r = f ? `<span style="color:${f.color}">RUN TO ${f.icon} ${f.name.toUpperCase()}</span><b>MATCH!</b>`
+                  : `<span style="color:#5ad1ff">MEMORISE THE FRUIT…</span><b>👀 ${hud.aliveCount}</b>`;
+        }
         else
             r = `<span style="color:#ff5fa2">${hud.aliveCount <= 2 ? 'FINAL TWO!' : 'BEANS LEFT'}</span><b>${hud.aliveCount}</b>`;
         this.els.hudCount.innerHTML = r;

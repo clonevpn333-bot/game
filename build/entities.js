@@ -828,10 +828,12 @@ class HexTile {
         this.kind = "hex";
         this.cx = o.cx; this.cy = o.cy; this.size = o.size;
         this.color = o.color;
+        this.fruit = o.fruit != null ? o.fruit : -1;   // Perfect Match: which fruit this tile shows
         this.state = 'solid';        // solid | dissolving | gone
         this.timer = 0;
         this.shake = 0;
     }
+    restore() { this.state = 'solid'; this.timer = 0; this.shake = 0; }
     update(dt) {
         if (this.state === 'dissolving') {
             this.timer -= dt; this.shake = Math.min(1, this.shake + dt * 4);

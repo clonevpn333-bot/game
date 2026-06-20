@@ -70,6 +70,7 @@ const driver = `
       else if (r.kind==='mountain'){ r.player.falling=false; r.player.z=0; r.player.y=r.finishY-5; }
       else if (r.kind==='survival'){ if (r.timer>0.06) r.timer=0.05; }
       else if (r.kind==='tag'){ r.player.hasTail=true; if (r.timer>0.06) r.timer=0.05; }
+      else if (r.kind==='match'){ if (r.matchSafe>=0){ const t=r.tiles.find(t=>t.state==='solid'&&t.fruit===r.matchSafe); if(t){ r.player.x=t.cx; r.player.y=t.cy; r.player.falling=false; r.player.z=0; } } }
       else if (r.kind==='final'){ for (const b of r.beans) if (!b.isPlayer){ b.alive=false; b.eliminated=true; } }
     }
     step();

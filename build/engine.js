@@ -57,7 +57,7 @@ const Engine = {
         Input.init(renderer.domElement);
         Game.init();
         UI.mount(host, {
-            COLORS, PATTERNS, FACEPLATES, COSTUMES_UPPER, COSTUMES_LOWER, EMOTES, ACHIEVEMENTS, SHOW, FALL_PASS,
+            COLORS, PATTERNS, FACEPLATES, COSTUMES_UPPER, COSTUMES_LOWER, EMOTES, ACHIEVEMENTS, SHOW, FALL_PASS, FRUITS,
         }, {
             onPlay: () => Game.startShow(),
             onCustomize: () => { Game.screen = 'customize'; },
@@ -348,6 +348,7 @@ const Engine = {
                 spectating: this._spectating,
                 youHaveTail: round.player.hasTail,
                 tailCount: round.beans.filter(b => b.alive && !b.eliminated && b.hasTail).length,
+                matchSafe: round.matchSafe, matchPhase: round.matchPhase,
             });
         }
     },

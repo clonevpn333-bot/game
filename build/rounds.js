@@ -52,6 +52,8 @@ class Round {
         this.sweeper = null;
         this.slimeY = null;        // Slime Climb: world-y of the rising slime line
         this.slimeRate = 0;
+        this.matchSafe = -1;       // Perfect Match: the currently-called fruit (-1 = memorise)
+        this.matchPhase = null;
     }
 
     start() { this.camera(0, true); }
@@ -222,6 +224,9 @@ class Round {
             const t = this._tileAt(bean.x, bean.y);
             if (!t) { if (bean.grounded) bean.startFall(); }
             else if (bean.grounded && t.fake && t.state === 'solid') { t.step(); bean.startFall(); }
+        } else if (this.kind === 'match') {
+            // fall when standing off any solid tile (e.g. a tile that just dropped)
+            if (bean.grounded && !this._tileAt(bean.x, bean.y)) bean.startFall();
         } else if (this.kind === 'final') {
             if (bean.x < this.minX - 50 || bean.x > this.maxX + 50 ||
                 bean.y < this.minY - 50 || bean.y > this.maxY + 50) {
@@ -260,6 +265,14 @@ class Round {
                     if (!this._mtnDone) { this._mtnDone = true; this.spawnConfetti(b); this._finishFinal(b === this.player); }
                 }
             if (this.elapsed > CFG.ROUND_MAXTIME && !this._mtnDone) { this._mtnDone = true; this._finishFinal(false); }
+        } else if (this.kind === 'match') {
+            // the cycle machine (in onUpdate) flips _mPhase to 'done' after the
+            // last round; everyone still standing qualifies.
+            if (this._mPhase === 'done' || this.elapsed > 70) {
+                for (const b of this.beans) if (b.alive && !b.eliminated) { b.qualified = true; b.exited = true; }
+                this.qualifyCount = this.beans.filter(b => b.qualified).length;
+                this._finish();
+            }
         } else if (this.kind === 'tag') {
             this.timer -= dt;
             const tailed = this.beans.filter(b => b.alive && !b.eliminated && b.hasTail).length;
@@ -544,6 +557,33 @@ function tiptoeThink(bean, round, dt) {
     else { bean.ai.mx = 0; bean.ai.my = -0.5; }
     if (U.chance((0.6 - bean.skill) * 0.015)) { bean.ai.mx *= 0.15; bean.ai.my *= 0.15; }  // hesitation
     bean.ai.jump = false; bean.ai.dive = false; bean.ai.grab = false;
+}
+
+// ---- Perfect Match (Logic) --------------------------------------------
+function matchThink(bean, round, dt) {
+    bean.ai.jump = false; bean.ai.dive = false; bean.ai.grab = false;
+    if (round._mPhase === 'drop') { bean.ai.mx = 0; bean.ai.my = 0; return; }   // freeze — hold your tile as the floor drops
+    if (round.matchSafe >= 0 && round._mPhase === 'answer') {
+        const cur = round._tileAt(bean.x, bean.y);
+        if (cur && cur.state === 'solid' && cur.fruit === round.matchSafe) { bean.ai.mx = 0; bean.ai.my = 0; return; }  // already safe
+        if (U.chance(0.7 + bean.skill * 0.3)) {        // react to the called fruit
+            let best = null, bd = 1e9;
+            for (const t of round.tiles) {
+                if (t.state !== 'solid' || t.fruit !== round.matchSafe) continue;
+                const d = U.dist(bean.x, bean.y, t.cx, t.cy);
+                if (d < bd) { bd = d; best = t; }
+            }
+            if (best) { const dx = best.cx - bean.x, dy = best.cy - bean.y, dl = Math.hypot(dx, dy) || 1;
+                bean.ai.mx = dx / dl; bean.ai.my = dy / dl; return; }
+        }
+    }
+    // otherwise mill around the board
+    const cx = (round.minX + round.maxX) / 2, cy = (round.minY + round.maxY) / 2;
+    if (U.chance(0.02) || (bean.aiTarget.x === 0 && bean.aiTarget.y === 0)) {
+        bean.aiTarget.x = cx + U.rngf(-160, 160); bean.aiTarget.y = cy + U.rngf(-120, 120);
+    }
+    const dx = bean.aiTarget.x - bean.x, dy = bean.aiTarget.y - bean.y, dl = Math.hypot(dx, dy) || 1;
+    bean.ai.mx = dx / dl * 0.45; bean.ai.my = dy / dl * 0.45;
 }
 
 /* =====================================================================
@@ -1020,6 +1060,56 @@ const Rounds = {
         // -------- TIP TOE (LOGIC — find the hidden path of real tiles)
         tipToe(r) { Rounds._tipToeField(r, 7, 8, 0.46); },
         tipToeTwins(r) { Rounds._tipToeField(r, 9, 9, 0.52); },   // wider grid, more fakes
+
+        // -------- PERFECT MATCH (LOGIC — dash to the called fruit) -----
+        perfectMatch(r) {
+            r.kind = 'match'; r.viewKind = 'final'; r.camMode = 'fixed'; r.thinkFn = matchThink;
+            r.minX = 300; r.maxX = 980; r.minY = 150; r.maxY = 630;
+            r.tiles = [];
+            const size = 40, stepX = 58, stepY = 52;
+            // only 3 fruits on the board so ~1/3 of tiles always survive a call —
+            // a safe tile is always close (forgiving, like the real 2-4 fruit rounds)
+            const pal = U.shuffle(FRUITS.map((_, i) => i)).slice(0, 3);
+            let row = 0;
+            for (let y = r.minY + 30; y <= r.maxY - 20; y += stepY, row++) {
+                const off = (row % 2) * (stepX / 2);
+                for (let x = r.minX + 40 + off; x <= r.maxX - 30; x += stepX) {
+                    const fruit = U.pick(pal);
+                    r.tiles.push(new HexTile({ cx: x, cy: y, size, color: FRUITS[fruit].color, fruit }));
+                }
+            }
+            const spots = U.shuffle(r.tiles.slice());
+            r.beans.forEach((b, i) => {
+                const t = spots[i % spots.length];
+                b.x = t.cx; b.y = t.cy; b.startX = b.x; b.startY = b.y;
+                b.skill = b.isPlayer ? 1 : U.rngf(0.3, 0.72); b.facing = U.rngf(0, 6.28);
+                b.aiTarget = { x: 0, y: 0 };
+            });
+            // cycle machine: memorise → call a fruit → drop the rest → restore
+            r._mPhase = 'show'; r._mT = 4.5; r._mCycle = 0; r.matchSafe = -1; r.matchPhase = 'memorise';
+            r.onUpdate = (rr, dt) => {
+                rr._mT -= dt;
+                if (rr._mPhase === 'show') {
+                    rr.matchSafe = -1; rr.matchPhase = 'memorise';
+                    if (rr._mT <= 0) {
+                        const present = [...new Set(rr.tiles.filter(t => t.state === 'solid').map(t => t.fruit))];
+                        rr.matchSafe = present.length ? U.pick(present) : 0;
+                        rr._mPhase = 'answer'; rr._mT = 5.0; rr.matchPhase = 'answer';
+                    }
+                } else if (rr._mPhase === 'answer') {
+                    if (rr._mT <= 0) {
+                        for (const t of rr.tiles) if (t.state === 'solid' && t.fruit !== rr.matchSafe) t.step();
+                        rr._mPhase = 'drop'; rr._mT = 1.2; rr.matchPhase = 'drop';
+                    }
+                } else if (rr._mPhase === 'drop') {
+                    if (rr._mT <= 0) {
+                        rr._mCycle++;
+                        if (rr._mCycle >= 3) { rr._mPhase = 'done'; }
+                        else { for (const t of rr.tiles) t.restore(); rr._mPhase = 'show'; rr._mT = 4.0; rr.matchSafe = -1; }
+                    }
+                }
+            };
+        },
 
         // -------- SLIME CLIMB (RACE vs a rising tide of slime)
         slimeClimb(r) {
