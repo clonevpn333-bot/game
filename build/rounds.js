@@ -790,6 +790,87 @@ const Rounds = {
                 }
             };
         },
+
+        // ---- batch 3 -------------------------------------------------
+        knockoutAlley(r) {          // RACE — brutal hammers + spinners
+            Rounds._raceCommon(r);
+            r.obstacles.push(new Spinner({ cx: 640, cy: 2150, len: 250, thick: 22, speed: 1.5, power: 380, color: '#e6395a' }));
+            r.obstacles.push(new Hammer({ cx: 640, cy: 1820, amp: 330, headR: 36, speed: 1.8, power: 560 }));
+            r.obstacles.push(new Spinner({ cx: 470, cy: 1480, len: 200, thick: 18, speed: -1.8, power: 360, color: '#7b46d6' }));
+            r.obstacles.push(new Spinner({ cx: 820, cy: 1480, len: 200, thick: 18, speed: 1.8, power: 360, color: '#7b46d6' }));
+            r.obstacles.push(new Hammer({ cx: 640, cy: 1120, amp: 340, headR: 36, speed: 2.1, phase: 1, power: 560 }));
+            r.obstacles.push(new Spinner({ cx: 640, cy: 760, len: 250, thick: 22, speed: -1.6, power: 380, color: '#e6395a' }));
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
+        zigzag(r) {                 // RACE — alternating offset spinners
+            Rounds._raceCommon(r);
+            const xs = [470, 820, 470, 820, 640], ys = [2050, 1740, 1430, 1120, 810];
+            ys.forEach((y, i) => r.obstacles.push(new Spinner({ cx: xs[i], cy: y, len: 210, thick: 18, speed: i % 2 ? 1.7 : -1.7, power: 350, color: i % 2 ? '#23d6c8' : '#ffd23f' })));
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
+        doorJam(r) {                // RACE — six door walls
+            Rounds._raceCommon(r);
+            [2200, 1900, 1600, 1300, 1000, 700].forEach((y, i) => Rounds._doorWall(r, y, i % 3 === 0 ? 3 : 2));
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
+        bouncyCastle(r) {           // RACE — springs galore
+            Rounds._raceCommon(r);
+            for (const [x, y] of [[470, 2050], [810, 2050], [640, 1820], [470, 1500], [810, 1500], [640, 1200], [470, 900], [810, 900]])
+                r.obstacles.push(new BouncePad({ x, y, r: 44 }));
+            r.obstacles.push(new Spinner({ cx: 640, cy: 1650, len: 230, thick: 20, speed: 1.5, power: 340, color: '#ff5fa2' }));
+            r.obstacles.push(new Spinner({ cx: 640, cy: 1050, len: 230, thick: 20, speed: -1.5, power: 340, color: '#ff5fa2' }));
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
+        slalom(r) {                 // RACE — weave the centre bars
+            Rounds._raceCommon(r);
+            [2000, 1700, 1400, 1100, 800].forEach((y, i) => r.obstacles.push(new Spinner({ cx: 640, cy: y, len: 230, thick: 20, speed: i % 2 ? 1.6 : -1.6, power: 340, color: '#9a6cff' })));
+            r.obstacles.push(new BouncePad({ x: 640, y: 1850, r: 42 }));
+            Rounds._spawnRows(r, r.maxY - 230, r.cx);
+        },
+        tinyIsland(r) {             // SURVIVAL — small floor, quick bar
+            Rounds._arena(r, 230);
+            const s = Rounds._sweeper(r, { speed: 0.9, power: 520 }); r.sweeper = s;
+            Rounds._spawnRing(r);
+            r.onUpdate = (rr, dt) => { s.speed += dt * 0.07; };
+        },
+        bigTop(r) {                 // SURVIVAL — roomy floor, gentle bar
+            Rounds._arena(r, 330);
+            const s = Rounds._sweeper(r, { speed: 0.6, power: 470 }); r.sweeper = s;
+            Rounds._spawnRing(r);
+            r.onUpdate = (rr, dt) => { s.speed += dt * 0.05; };
+        },
+        springTrap(r) {             // SURVIVAL — sweeper + corner springs
+            const A = Rounds._arena(r, 300);
+            const s = Rounds._sweeper(r, { speed: 0.8, color: '#23d6c8' }); r.sweeper = s;
+            for (const [px, py] of [[A.cx - 140, A.cy], [A.cx + 140, A.cy], [A.cx, A.cy - 140], [A.cx, A.cy + 140]])
+                r.obstacles.push(new BouncePad({ x: px, y: py, r: 42 }));
+            Rounds._spawnRing(r);
+            r.onUpdate = (rr, dt) => { s.speed += dt * 0.05; };
+        },
+        hexRoyale(r) {              // FINAL — medium honeycomb
+            r.kind = 'final'; r.camMode = 'fixed';
+            r.minX = 280; r.maxX = 1000; r.minY = 130; r.maxY = 630; r.thinkFn = hexThink;
+            Rounds._hexField(r, 32, 48, 42);
+            r.onUpdate = (rr, dt) => {
+                rr._decayT = (rr._decayT || 0) - dt;
+                if (rr.elapsed > 14 && rr._decayT <= 0) {
+                    rr._decayT = Math.max(0.16, 1.0 - (rr.elapsed - 14) * 0.02);
+                    const s = rr.tiles.filter(t => t.state === 'solid'); if (s.length) U.pick(s).step();
+                }
+            };
+        },
+        honeycomb(r) {              // FINAL — dense little tiles
+            r.kind = 'final'; r.camMode = 'fixed';
+            r.minX = 300; r.maxX = 980; r.minY = 140; r.maxY = 620; r.thinkFn = hexThink;
+            Rounds._hexField(r, 28, 42, 38);
+            r.onUpdate = (rr, dt) => {
+                rr._decayT = (rr._decayT || 0) - dt;
+                if (rr.elapsed > 12 && rr._decayT <= 0) {
+                    rr._decayT = Math.max(0.14, 0.9 - (rr.elapsed - 12) * 0.02);
+                    const s = rr.tiles.filter(t => t.state === 'solid'); if (s.length) U.pick(s).step();
+                }
+            };
+        },
     },
 };
 

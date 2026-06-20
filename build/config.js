@@ -239,6 +239,16 @@ const SHOW = [
     { id: 'spring_storm',   name: 'Spring Storm',    category: 'Survival', tagline: 'Springs launch you into the sweeper. Stay alive!', build: 'springStorm',   duration: 26 },
     { id: 'hex_blitz',      name: 'Hex Blitz',       category: 'Final',    tagline: 'Hex-A-Gone, but the floor melts fast!',            build: 'hexBlitz' },
     { id: 'hex_giant',      name: 'Hexagon Heights', category: 'Final',    tagline: 'A giant honeycomb. Outlast them all!',             build: 'hexGiant' },
+    { id: 'knockout_alley', name: 'Knockout Alley',  category: 'Race',     tagline: 'Hammers AND bars. Absolutely brutal!',             build: 'knockoutAlley', qualify: 9  },
+    { id: 'zigzag',         name: 'Zig-Zag',         category: 'Race',     tagline: 'Weave the offset spinners — left, right, GO!',     build: 'zigzag',        qualify: 10 },
+    { id: 'door_jam',       name: 'Door Jam',        category: 'Race',     tagline: 'Six walls of doors. Read the fakes fast!',         build: 'doorJam',       qualify: 9  },
+    { id: 'bouncy_castle',  name: 'Bouncy Castle',   category: 'Race',     tagline: 'Spring pads everywhere — bounce to the finish!',   build: 'bouncyCastle',  qualify: 10 },
+    { id: 'slalom',         name: 'Slalom',          category: 'Race',     tagline: 'Carve between the bars like a downhill skier.',    build: 'slalom',        qualify: 10 },
+    { id: 'tiny_island',    name: 'Tiny Island',     category: 'Survival', tagline: 'A tiny floor and a fast bar. Eep!',                build: 'tinyIsland',    duration: 28 },
+    { id: 'big_top',        name: 'Big Top',         category: 'Survival', tagline: 'Loads of room — just keep hopping the bar.',       build: 'bigTop',        duration: 30 },
+    { id: 'spring_trap',    name: 'Spring Trap',     category: 'Survival', tagline: 'Springs fling you onto the sweeper. Time it!',     build: 'springTrap',    duration: 28 },
+    { id: 'hex_royale',     name: 'Hex Royale',      category: 'Final',    tagline: 'A medium honeycomb melt-down. Last bean wins!',    build: 'hexRoyale' },
+    { id: 'honeycomb',      name: 'Honeycomb',       category: 'Final',    tagline: 'Tiny tiles, fast melt. Keep moving!',              build: 'honeycomb' },
 ];
 
 /* =====================================================================
