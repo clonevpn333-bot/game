@@ -676,12 +676,14 @@ const Rounds = {
                 w: o.w || 150, thick: 42, speed: o.speed || 150, dir: i % 2 ? -1 : 1,
                 cx: i % 2 ? r.maxX - 70 : r.minX + 70, color: o.color || '#b06bff' }));
     },
-    _cannons(r, y, o) {                                // cannons lobbing boulders down-course
+    _cannons(r, y, o) {                                // cannons lobbing boulders / giant fruit down-course
         o = o || {}; const n = o.n || 2;
+        const fruitCols = ['#e6395a', '#ffd23f', '#ff9447', '#9a6cff', '#46d36a'];
         for (let i = 0; i < n; i++)
             r.obstacles.push(new Cannon({ x: this._xs(r, n, i, 170), y, interval: o.interval || 2.2,
                 phase: i * 0.8, speed: o.speed || 320, ballR: o.ballR || 26, spread: o.spread || 120,
-                reach: o.reach || 1500, color: o.color || '#e6395a' }));
+                reach: o.reach || 1500, fruit: !!o.fruit,
+                color: o.fruit ? fruitCols[i % fruitCols.length] : (o.color || '#e6395a') }));
     },
     _axes(r, y, o) {                                   // swinging axes (Knight Fever)
         o = o || {}; const n = o.n || 1, gap = o.gap || 230;
@@ -922,10 +924,10 @@ const Rounds = {
         dizzyHeights(r) {                   // RACE — spinning platforms + fruit cannons
             Rounds._raceCommon(r);
             Rounds._beams(r, 3360, { n: 2, style: 'blade', speed: 1.5, len: 240, color: '#23d6c8' });
-            Rounds._cannons(r, 3050, { n: 2, interval: 2.0, speed: 340, reach: 1600, color: '#ff9447' });
+            Rounds._cannons(r, 3050, { n: 2, interval: 2.0, speed: 340, reach: 1600, fruit: true, ballR: 36 });
             Rounds._bumpers(r, 2650, { rows: 2, cols: 5, color: '#ffd23f' });
             Rounds._beams(r, 2250, { n: 3, style: 'bar', speed: -1.7, color: '#7b46d6' });
-            Rounds._cannons(r, 1950, { n: 2, interval: 2.2, speed: 320, reach: 1400, color: '#ff5fa2' });
+            Rounds._cannons(r, 1950, { n: 2, interval: 2.2, speed: 320, reach: 1400, fruit: true, ballR: 36 });
             Rounds._beams(r, 1500, { n: 2, style: 'blade', speed: 2.0, color: '#23d6c8' });
             Rounds._bumpers(r, 1050, { rows: 2, cols: 4, color: '#ffd23f' });
             Rounds._beams(r, 680, { n: 1, style: 'windmill', speed: 0.9, len: 320, thick: 30, color: '#7b46d6' });
@@ -934,11 +936,11 @@ const Rounds = {
         // -------------------------------------------------- FRUIT CHUTE
         fruitChute(r) {                     // RACE — climb the belts under a fruit barrage
             Rounds._raceCommon(r);
-            Rounds._cannons(r, 3300, { n: 3, interval: 1.8, speed: 360, reach: 2400, spread: 150, color: '#ff9447' });
+            Rounds._cannons(r, 3300, { n: 3, interval: 1.8, speed: 360, reach: 2400, spread: 150, fruit: true, ballR: 38 });
             Rounds._conveyor(r, 2900, 3150, { dy: 1, push: 135, color: '#46d36a' });
             Rounds._bumpers(r, 2550, { rows: 2, cols: 4, color: '#ffd23f' });
             Rounds._conveyor(r, 2050, 2350, { dy: 1, push: 140, color: '#5ad1ff' });
-            Rounds._cannons(r, 1750, { n: 2, interval: 1.9, speed: 340, reach: 1500, color: '#ff5fa2' });
+            Rounds._cannons(r, 1750, { n: 2, interval: 1.9, speed: 340, reach: 1500, fruit: true, ballR: 38 });
             Rounds._conveyor(r, 1150, 1420, { dy: 1, push: 135, color: '#46d36a' });
             Rounds._bumpers(r, 760, { rows: 1, cols: 3, color: '#ffd23f' });
             Rounds._spawnRows(r, r.maxY - 260, r.cx);

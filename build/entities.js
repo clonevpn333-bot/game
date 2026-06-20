@@ -808,7 +808,7 @@ class Cannon {
         this.interval = o.interval || 2.3; this.t = o.phase || 0.5;
         this.speed = o.speed || 320; this.ballR = o.ballR || 26;
         this.spread = o.spread || 130; this.reach = o.reach || 1600;
-        this.color = o.color || '#e6395a'; this.balls = [];
+        this.color = o.color || '#e6395a'; this.fruit = !!o.fruit; this.balls = [];
     }
     update(dt) {
         this.t -= dt;

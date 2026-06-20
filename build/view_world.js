@@ -1214,22 +1214,31 @@ function makeCannon(ob) {
     barrel.add(backCap);
 
     // --- boulder pool: shared geometry, hidden until needed ---
-    const ballGeo = new THREE.SphereGeometry(ballR, 18, 14);
-    const ballMat = mat(pop(color, 0.03, 0), {
-        roughness: 0.5, metalness: 0.06, flat: true,
-        emissive: shade(color, -0.5), emissiveIntensity: 0.06,
-    });
+    const isFruit = !!ob.fruit;
+    const ballGeo = new THREE.SphereGeometry(ballR, 20, 16);
+    const ballMat = isFruit
+        ? gloss(pop(color, 0.06, 0.04), { roughness: 0.28, clearcoat: 0.8, emissive: shade(color, -0.45), emissiveIntensity: 0.08 })
+        : mat(pop(color, 0.03, 0), { roughness: 0.5, metalness: 0.06, flat: true, emissive: shade(color, -0.5), emissiveIntensity: 0.06 });
     const speckMat = gloss(shade(color, -0.3), { roughness: 0.6 });
+    const leafMat = gloss(0x46b95a, { roughness: 0.45 });
+    const stemMat = gloss(0x6a4a2a, { roughness: 0.6 });
     const pool = [];
     function makeBoulder() {
         const b = new THREE.Object3D();
         const core = new THREE.Mesh(ballGeo, ballMat);
+        if (isFruit) core.scale.set(1, 1.08, 1);          // slightly plump fruit
         b.add(core);
-        // a couple of darker speck lumps so the boulder reads as heavy stone.
-        for (const p of [[0.5, 0.3, 0.4], [-0.4, -0.3, 0.5], [0.2, 0.6, -0.4]]) {
-            const lump = new THREE.Mesh(new THREE.SphereGeometry(ballR * 0.28, 8, 6), speckMat);
-            lump.position.set(p[0] * ballR, p[1] * ballR, p[2] * ballR);
-            b.add(lump);
+        if (isFruit) {
+            const stem = new THREE.Mesh(new THREE.CylinderGeometry(ballR * 0.09, ballR * 0.12, ballR * 0.5, 8), stemMat);
+            stem.position.set(0, ballR * 1.05, 0); b.add(stem);
+            const leaf = new THREE.Mesh(new THREE.SphereGeometry(ballR * 0.34, 10, 8), leafMat);
+            leaf.scale.set(1, 0.35, 0.6); leaf.position.set(ballR * 0.28, ballR * 1.12, 0); b.add(leaf);
+        } else {
+            for (const p of [[0.5, 0.3, 0.4], [-0.4, -0.3, 0.5], [0.2, 0.6, -0.4]]) {
+                const lump = new THREE.Mesh(new THREE.SphereGeometry(ballR * 0.28, 8, 6), speckMat);
+                lump.position.set(p[0] * ballR, p[1] * ballR, p[2] * ballR);
+                b.add(lump);
+            }
         }
         b.visible = false;
         shadowy(b, true, false);

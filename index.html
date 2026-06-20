@@ -1528,7 +1528,7 @@ class Cannon {
         this.interval = o.interval || 2.3; this.t = o.phase || 0.5;
         this.speed = o.speed || 320; this.ballR = o.ballR || 26;
         this.spread = o.spread || 130; this.reach = o.reach || 1600;
-        this.color = o.color || '#e6395a'; this.balls = [];
+        this.color = o.color || '#e6395a'; this.fruit = !!o.fruit; this.balls = [];
     }
     update(dt) {
         this.t -= dt;
@@ -2283,12 +2283,14 @@ const Rounds = {
                 w: o.w || 150, thick: 42, speed: o.speed || 150, dir: i % 2 ? -1 : 1,
                 cx: i % 2 ? r.maxX - 70 : r.minX + 70, color: o.color || '#b06bff' }));
     },
-    _cannons(r, y, o) {                                // cannons lobbing boulders down-course
+    _cannons(r, y, o) {                                // cannons lobbing boulders / giant fruit down-course
         o = o || {}; const n = o.n || 2;
+        const fruitCols = ['#e6395a', '#ffd23f', '#ff9447', '#9a6cff', '#46d36a'];
         for (let i = 0; i < n; i++)
             r.obstacles.push(new Cannon({ x: this._xs(r, n, i, 170), y, interval: o.interval || 2.2,
                 phase: i * 0.8, speed: o.speed || 320, ballR: o.ballR || 26, spread: o.spread || 120,
-                reach: o.reach || 1500, color: o.color || '#e6395a' }));
+                reach: o.reach || 1500, fruit: !!o.fruit,
+                color: o.fruit ? fruitCols[i % fruitCols.length] : (o.color || '#e6395a') }));
     },
     _axes(r, y, o) {                                   // swinging axes (Knight Fever)
         o = o || {}; const n = o.n || 1, gap = o.gap || 230;
@@ -2529,10 +2531,10 @@ const Rounds = {
         dizzyHeights(r) {                   // RACE — spinning platforms + fruit cannons
             Rounds._raceCommon(r);
             Rounds._beams(r, 3360, { n: 2, style: 'blade', speed: 1.5, len: 240, color: '#23d6c8' });
-            Rounds._cannons(r, 3050, { n: 2, interval: 2.0, speed: 340, reach: 1600, color: '#ff9447' });
+            Rounds._cannons(r, 3050, { n: 2, interval: 2.0, speed: 340, reach: 1600, fruit: true, ballR: 36 });
             Rounds._bumpers(r, 2650, { rows: 2, cols: 5, color: '#ffd23f' });
             Rounds._beams(r, 2250, { n: 3, style: 'bar', speed: -1.7, color: '#7b46d6' });
-            Rounds._cannons(r, 1950, { n: 2, interval: 2.2, speed: 320, reach: 1400, color: '#ff5fa2' });
+            Rounds._cannons(r, 1950, { n: 2, interval: 2.2, speed: 320, reach: 1400, fruit: true, ballR: 36 });
             Rounds._beams(r, 1500, { n: 2, style: 'blade', speed: 2.0, color: '#23d6c8' });
             Rounds._bumpers(r, 1050, { rows: 2, cols: 4, color: '#ffd23f' });
             Rounds._beams(r, 680, { n: 1, style: 'windmill', speed: 0.9, len: 320, thick: 30, color: '#7b46d6' });
@@ -2541,11 +2543,11 @@ const Rounds = {
         // -------------------------------------------------- FRUIT CHUTE
         fruitChute(r) {                     // RACE — climb the belts under a fruit barrage
             Rounds._raceCommon(r);
-            Rounds._cannons(r, 3300, { n: 3, interval: 1.8, speed: 360, reach: 2400, spread: 150, color: '#ff9447' });
+            Rounds._cannons(r, 3300, { n: 3, interval: 1.8, speed: 360, reach: 2400, spread: 150, fruit: true, ballR: 38 });
             Rounds._conveyor(r, 2900, 3150, { dy: 1, push: 135, color: '#46d36a' });
             Rounds._bumpers(r, 2550, { rows: 2, cols: 4, color: '#ffd23f' });
             Rounds._conveyor(r, 2050, 2350, { dy: 1, push: 140, color: '#5ad1ff' });
-            Rounds._cannons(r, 1750, { n: 2, interval: 1.9, speed: 340, reach: 1500, color: '#ff5fa2' });
+            Rounds._cannons(r, 1750, { n: 2, interval: 1.9, speed: 340, reach: 1500, fruit: true, ballR: 38 });
             Rounds._conveyor(r, 1150, 1420, { dy: 1, push: 135, color: '#46d36a' });
             Rounds._bumpers(r, 760, { rows: 1, cols: 3, color: '#ffd23f' });
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
@@ -5359,22 +5361,31 @@ function makeCannon(ob) {
     barrel.add(backCap);
 
     // --- boulder pool: shared geometry, hidden until needed ---
-    const ballGeo = new THREE.SphereGeometry(ballR, 18, 14);
-    const ballMat = mat(pop(color, 0.03, 0), {
-        roughness: 0.5, metalness: 0.06, flat: true,
-        emissive: shade(color, -0.5), emissiveIntensity: 0.06,
-    });
+    const isFruit = !!ob.fruit;
+    const ballGeo = new THREE.SphereGeometry(ballR, 20, 16);
+    const ballMat = isFruit
+        ? gloss(pop(color, 0.06, 0.04), { roughness: 0.28, clearcoat: 0.8, emissive: shade(color, -0.45), emissiveIntensity: 0.08 })
+        : mat(pop(color, 0.03, 0), { roughness: 0.5, metalness: 0.06, flat: true, emissive: shade(color, -0.5), emissiveIntensity: 0.06 });
     const speckMat = gloss(shade(color, -0.3), { roughness: 0.6 });
+    const leafMat = gloss(0x46b95a, { roughness: 0.45 });
+    const stemMat = gloss(0x6a4a2a, { roughness: 0.6 });
     const pool = [];
     function makeBoulder() {
         const b = new THREE.Object3D();
         const core = new THREE.Mesh(ballGeo, ballMat);
+        if (isFruit) core.scale.set(1, 1.08, 1);          // slightly plump fruit
         b.add(core);
-        // a couple of darker speck lumps so the boulder reads as heavy stone.
-        for (const p of [[0.5, 0.3, 0.4], [-0.4, -0.3, 0.5], [0.2, 0.6, -0.4]]) {
-            const lump = new THREE.Mesh(new THREE.SphereGeometry(ballR * 0.28, 8, 6), speckMat);
-            lump.position.set(p[0] * ballR, p[1] * ballR, p[2] * ballR);
-            b.add(lump);
+        if (isFruit) {
+            const stem = new THREE.Mesh(new THREE.CylinderGeometry(ballR * 0.09, ballR * 0.12, ballR * 0.5, 8), stemMat);
+            stem.position.set(0, ballR * 1.05, 0); b.add(stem);
+            const leaf = new THREE.Mesh(new THREE.SphereGeometry(ballR * 0.34, 10, 8), leafMat);
+            leaf.scale.set(1, 0.35, 0.6); leaf.position.set(ballR * 0.28, ballR * 1.12, 0); b.add(leaf);
+        } else {
+            for (const p of [[0.5, 0.3, 0.4], [-0.4, -0.3, 0.5], [0.2, 0.6, -0.4]]) {
+                const lump = new THREE.Mesh(new THREE.SphereGeometry(ballR * 0.28, 8, 6), speckMat);
+                lump.position.set(p[0] * ballR, p[1] * ballR, p[2] * ballR);
+                b.add(lump);
+            }
         }
         b.visible = false;
         shadowy(b, true, false);
