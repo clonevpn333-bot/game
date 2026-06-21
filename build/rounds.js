@@ -475,6 +475,42 @@ function raceThink(bean, round, dt) {
     bean.ai.dive = dive; bean.ai.jump = false;
 }
 
+// ---- Door Dash --------------------------------------------------------
+// The iconic crowd behaviour: each bean commits to a door it can't see through.
+// If someone smashes a door open, the crowd surges to it; if a bean bonks a
+// solid door it peels off and re-guesses. Skilled beans read the wall-5-7 tell.
+function doorThink(bean, round, dt) {
+    const ty = round.finishY - 30;
+    let wall = null;                                   // nearest wall still ahead
+    for (const w of round.doorWalls)
+        if (w.y < bean.y - 2 && (!wall || w.y > wall.y)) wall = w;
+
+    let tx;
+    if (wall) {
+        if (bean._dwWall !== wall) { bean._dwWall = wall; bean._dwX = null; }
+        const openX = wall.openNear(bean.x, 230);      // a door someone already smashed
+        if (openX != null) tx = openX;
+        else {
+            if (bean._dwX == null) bean._dwX = wall.guessDoor(bean.skill);
+            tx = bean._dwX;
+        }
+    } else {
+        tx = round.cx + bean.lane * 0.12;              // open run to the finish
+    }
+
+    let dx = tx - bean.x, dy = ty - bean.y;
+    const dl = Math.hypot(dx, dy) || 1;
+    bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
+    bean.ai.jump = false; bean.ai.grab = false;
+
+    // dive to burst through the door you're committed to (skill-gated)
+    bean.aiTimer -= dt;
+    if (bean.aiTimer <= 0) {
+        bean.aiTimer = U.rngf(0.6, 1.5);
+        bean.ai.dive = !!wall && Math.abs(bean.y - wall.y) < 150 && U.chance(0.45 * bean.skill);
+    } else bean.ai.dive = false;
+}
+
 function jumpThink(bean, round, dt) {
     const P = round.platform;
     const rr = P.r * 0.5;
@@ -697,15 +733,20 @@ const Rounds = {
             r.obstacles.push(new Hammer({ cx: r.cx, cy: y - i * gap, amp: o.amp || 320, headR: 33,
                 speed: (i % 2 ? -1 : 1) * (o.speed || 1.8), phase: i * 0.9, power: o.power || 540 }));
     },
-    _doorWall(r, y, fakeCount) {
-        const x0 = r.minX, x1 = r.maxX, n = 6, w = (x1 - x0) / n;
+    // A wall of `n` doors with `fakeCount` breakable (smashable) ones. Back-compat:
+    // called as _doorWall(r, y, fakeCount) it defaults to 6 doors.
+    _doorWall(r, y, n, fakeCount, opts) {
+        if (fakeCount === undefined) { fakeCount = n; n = 6; }
+        opts = opts || {};
+        const x0 = r.minX, x1 = r.maxX, w = (x1 - x0) / n;
         const fakes = new Set();
-        while (fakes.size < fakeCount) fakes.add(U.rng(0, n - 1));
+        while (fakes.size < Math.min(fakeCount, n)) fakes.add(U.rng(0, n - 1));
         const segs = [];
         for (let i = 0; i < n; i++)
             segs.push({ x0: x0 + i * w, x1: x0 + (i + 1) * w, fake: fakes.has(i), broken: false });
-        const dw = new DoorWall({ y, x0, x1, segs });
+        const dw = new DoorWall({ y, x0, x1, segs, tell: !!opts.tell, thick: opts.thick || 30 });
         r.obstacles.push(dw); r.doorWalls.push(dw);
+        return dw;
     },
     _arena(r, R) {
         R = R || 300;
@@ -805,19 +846,25 @@ const Rounds = {
 
     builders: {
         // -------------------------------------------------- DOOR DASH
-        doorDash(r) {                       // RACE — wall after wall of doors, smash the fakes
+        doorDash(r) {                       // RACE — seven walls of doors, smash the breakable ones
             Rounds._raceCommon(r);
-            // two banks of door walls (the round's whole identity), a short
-            // bumper breather between them — like the real two-stage Door Dash.
-            Rounds._doorWall(r, 3560, 2);
-            Rounds._doorWall(r, 3180, 3);
-            Rounds._doorWall(r, 2800, 2);
-            Rounds._bumpers(r, 2380, { rows: 2, cols: 5, color: '#ff5fa2' });
-            Rounds._doorWall(r, 1980, 3);
-            Rounds._doorWall(r, 1600, 2);
-            Rounds._doorWall(r, 1220, 3);
-            Rounds._doorWall(r, 840, 2);
-            Rounds._spawnRows(r, r.maxY - 260, r.cx);
+            r.thinkFn = doorThink;
+            // The whole identity of the course: SEVEN door walls in a row. The
+            // door count steps down 7→3 while the breakable count thins out, just
+            // like the real level. Walls 5-7 wear a visible "tell" (the real door
+            // sits forward of its teeth), which skilled beans can read.
+            //   wall:        1   2   3   4   5   6   7
+            //   doors:       7   7   7   6   5   4   3
+            //   breakable:   5   3   2   2   2   2   1
+            const counts    = [7, 7, 7, 6, 5, 4, 3];
+            const breakable = [5, 3, 2, 2, 2, 2, 1];
+            const yTop = 3380, yStep = 432;
+            for (let i = 0; i < counts.length; i++)
+                Rounds._doorWall(r, yTop - i * yStep, counts[i], breakable[i], { tell: i >= 4 });
+            // after the last wall (y≈788) there's an open run to the finish line
+            // (the real course tips you off a ledge onto a finish platform here).
+            r.lastWallY = yTop - (counts.length - 1) * yStep;
+            Rounds._spawnRows(r, r.maxY - 240, r.cx);
         },
 
         // -------------------------------------------------- THE WHIRLYGIG

@@ -951,64 +951,87 @@ function makeHammer(ob) {
     return view;
 }
 
+// Door Dash's signature wall: a chunky cream frame with pink "teeth" along the
+// lintel (the monster-mouth look), filled with pastel rounded doors. The
+// breakable doors are the way through; on a "tell" wall they sit a touch
+// forward and shorter, leaving a pink gap below the teeth (the real game's cue).
 function makeDoorWall(ob) {
     const group = new THREE.Object3D();
-    const thick = ob.thick || 26;
+    const thick = ob.thick || 28;
     const doorH = 240;                     // tall enough you can't peek over
-    const frameT = 14;                     // frame border thickness
+    const frameT = 16;                     // frame border thickness
     const y = ob.y;
+    const tell = !!ob.tell;
+    const span = ob.x1 - ob.x0;
 
-    // ground sill across the whole wall.
-    const trimMat = mat(WPAL.woodDk, { roughness: 0.7, metalness: 0.05 });
-    const sill = new THREE.Mesh(new THREE.BoxGeometry((ob.x1 - ob.x0) + thick, 14, thick + 16), trimMat);
-    sill.position.copy(W((ob.x0 + ob.x1) / 2, y, 7));
+    // chunky cream frame: sill + lintel + posts.
+    const frameMat = inflate(0xfff6fb, { roughness: 0.36, clearcoat: 0.45 });
+    const teethMat = gloss(WPAL.curb, { roughness: 0.34 });
+    const sill = roundedSlab(span + thick + 12, 18, thick + 20, 8, frameMat);
+    sill.position.copy(W((ob.x0 + ob.x1) / 2, y, 9));
     group.add(sill);
-    // lintel across the top.
-    const lintel = new THREE.Mesh(new THREE.BoxGeometry((ob.x1 - ob.x0) + thick, 22, thick + 16), trimMat);
-    lintel.position.copy(W((ob.x0 + ob.x1) / 2, y, doorH + 16));
+    const lintel = roundedSlab(span + thick + 12, 32, thick + 20, 10, frameMat);
+    lintel.position.copy(W((ob.x0 + ob.x1) / 2, y, doorH + 20));
     group.add(lintel);
 
     // frame posts at each end + between every segment.
-    const postGeo = new THREE.BoxGeometry(frameT * 1.4, doorH + 30, thick + 14);
+    const postGeo = roundedSlab(frameT * 1.5, doorH + 44, thick + 18, 6, frameMat).geometry;
     const colXs = new Set([ob.x0, ob.x1]);
     for (const s of ob.segs) { colXs.add(s.x0); colXs.add(s.x1); }
     for (const px of colXs) {
-        const post = new THREE.Mesh(postGeo, trimMat);
-        post.position.copy(W(px, y, (doorH + 30) / 2));
+        const post = new THREE.Mesh(postGeo, frameMat);
+        post.position.copy(W(px, y, (doorH + 44) / 2));
         group.add(post);
     }
 
+    // pink teeth hanging from the lintel — the toothy monster-mouth trim.
+    const nTeeth = Math.max(7, Math.round(span / 58));
+    const toothGeo = new THREE.ConeGeometry(11, 28, 4);
+    for (let i = 0; i < nTeeth; i++) {
+        const tx = ob.x0 + (i + 0.5) / nTeeth * span;
+        const tooth = new THREE.Mesh(toothGeo, teethMat);
+        tooth.position.copy(W(tx, y, doorH + 2));
+        tooth.rotation.x = Math.PI;                 // point straight down
+        tooth.rotation.z = Math.PI / 4;
+        group.add(tooth);
+    }
+
     // one door panel per segment, parented to a hinge so a broken one swings.
-    const panelMat = mat(WPAL.wood, { roughness: 0.55, metalness: 0.05 });
-    const panelInset = mat(shade(WPAL.wood, 0.2), { roughness: 0.5 });
+    const doorCols = [0x8af0cf, 0xff9ec4, 0x9fd6ff, 0xffe08a, 0xc9b6ff, 0xfff3fb];
     const knobMat = gloss(WPAL.gold, { roughness: 0.2, metalness: 0.5 });
     const panels = [];
+    let di = 0;
     for (const s of ob.segs) {
         const w = s.x1 - s.x0;
+        const isBreak = !!s.fake;                    // breakable = the real way through
+        const fwd = (tell && isBreak) ? 16 : 0;      // tell: nudge the real door forward
+        const panelH = (tell && isBreak) ? doorH - 26 : doorH - 6;
         const hinge = new THREE.Object3D();          // hinge on the left jamb
-        hinge.position.copy(W(s.x0 + frameT * 0.7, y, 0));
+        hinge.position.copy(W(s.x0 + frameT * 0.8, y + fwd, 0));
         group.add(hinge);
 
         const panel = new THREE.Object3D();
         hinge.add(panel);
-        const pw = w - frameT * 1.4;                 // leaf width inside frame
+        const pw = w - frameT * 1.7;                 // leaf width inside frame
+        const colr = doorCols[di % doorCols.length]; di++;
+        const panelMat = inflate(colr, { roughness: 0.3, clearcoat: 0.5 });
 
-        const board = new THREE.Mesh(new THREE.BoxGeometry(pw, doorH - 6, thick), panelMat);
-        board.position.set(pw / 2, doorH / 2, 0);
+        const board = roundedSlab(pw, panelH, thick, Math.min(pw, panelH) * 0.16, panelMat);
+        board.position.set(pw / 2, panelH / 2, 0);
         panel.add(board);
-        // two recessed inset panels (front & back) for a real door look.
+        // a soft inset oval on each face so the door reads as cushioned, not flat.
         for (const sgn of [1, -1]) {
-            for (const yy of [doorH * 0.30, doorH * 0.66]) {
-                const inset = new THREE.Mesh(
-                    new THREE.BoxGeometry(pw * 0.6, doorH * 0.26, thick * 0.35), panelInset);
-                inset.position.set(pw / 2, yy, sgn * thick * 0.4);
-                panel.add(inset);
-            }
+            const inset = new THREE.Mesh(new THREE.CylinderGeometry(pw * 0.3, pw * 0.3, thick * 0.3, 20),
+                inflate(shade(colr, 0.16), { roughness: 0.3 }));
+            inset.rotation.x = Math.PI / 2;
+            inset.scale.set(1, 1, panelH / pw * 1.4);
+            inset.position.set(pw / 2, panelH * 0.5, sgn * thick * 0.42);
+            panel.add(inset);
         }
         // door knob near the free (right) edge, both faces.
         for (const sgn of [1, -1]) {
             const knob = new THREE.Mesh(new THREE.SphereGeometry(7, 14, 10), knobMat);
-            knob.position.set(pw - 14, doorH * 0.46, sgn * (thick * 0.5 + 4));
+            knob.position.set(pw - 14, panelH * 0.46, sgn * (thick * 0.5 + 4));
             panel.add(knob);
         }
 
@@ -1840,101 +1863,18 @@ class CourseView {
         this._decorateRace(minX, maxX, minY, maxY, finishY, startY, cx, curbT, curbH);
     }
 
-    /* Dress a race course with Fall-Guys festival decor along its full length:
-       a run of striped poles down each side carrying drooping pennant bunting,
-       numbered distance markers, and big bobbing inflatables (balloons,
-       beach-balls, candy-stripe pillars) planted out over the slime so the
-       course is framed by colour from start to finish. All static geometry;
-       only the balloon/beach-ball bobs register a tiny per-frame transform. */
-    _decorateRace(minX, maxX, minY, maxY, finishY, startY, cx, curbT, curbH) {
-        const decoTop = startY - 40, decoBot = finishY + 120;
-        const span = decoTop - decoBot;
-        if (span <= 0) return;
+    /* Generic race dressing is intentionally EMPTY.
 
-        // ---------- striped marker poles + bunting down each side ----------
-        // poles sit just outside the curb; bunting is strung pole-to-pole and
-        // also looped across the lane every so often for an arcade canopy feel.
-        const poleStep = 560;
-        const nPoles = Math.max(2, Math.round(span / poleStep) + 1);
-        const poleH = 250, poleR = 11;
-        const poleTopY = poleH;                         // bunting hangs from here
-        const poleMatA = inflate(WPAL.curb, { roughness: 0.2, clearcoat: 0.8, emissiveIntensity: 0.05 });
-        const poleMatB = inflate(0xfff3fb, { roughness: 0.2, clearcoat: 0.8 });
-        const ballMat = gloss(WPAL.gold, { roughness: 0.24, metalness: 0.45 });
-        const sidePoleX = [minX - curbT - 46, maxX + curbT + 46];
-        const poleRows = [];                            // [{x, ys:[...]}]
-        for (const px of sidePoleX) {
-            const ys = [];
-            for (let k = 0; k < nPoles; k++) {
-                const yy = decoBot + (k / (nPoles - 1)) * span;
-                ys.push(yy);
-                // candy-striped pole (two stacked half-cylinders of colour).
-                const pole = new THREE.Object3D();
-                for (let b = 0; b < 5; b++) {
-                    const seg = new THREE.Mesh(
-                        new THREE.CylinderGeometry(poleR, poleR, poleH / 5 + 0.5, 14),
-                        (b & 1) ? poleMatB : poleMatA);
-                    seg.position.set(0, (b + 0.5) * (poleH / 5), 0);
-                    pole.add(seg);
-                }
-                const knob = new THREE.Mesh(new THREE.SphereGeometry(poleR * 1.5, 16, 12), ballMat);
-                knob.position.set(0, poleH + poleR, 0);
-                pole.add(knob);
-                pole.position.copy(W(px, yy, 0));
-                shadowy(pole, true, false);
-                this._add(pole);
-            }
-            poleRows.push({ x: px, ys });
-        }
-        // bunting along each side between consecutive poles.
-        for (const row of poleRows) {
-            for (let k = 0; k < row.ys.length - 1; k++) {
-                const wy0 = W(row.x, row.ys[k], 0), wy1 = W(row.x, row.ys[k + 1], 0);
-                const line = buntingLine(wy0.x, wy0.z, wy1.x, wy1.z, poleTopY,
-                    { count: 8, sag: 46, flagScale: 1.05 });
-                this._add(line);
-            }
-        }
-        // (no canopy bunting across the lane and no oversized inflatables in the
-        // play area — those obscured the path. Per-map authentic dressing is
-        // added when each course is overhauled.)
+       The old festival kit (striped poles, pennant bunting, distance-marker
+       signs, and the big bobbing balloons / beach-balls / candy pillars) was
+       inauthentic — none of it exists in the real levels — and, worst of all,
+       the tall poles/signs/inflatables crowded the camera and OBSCURED the
+       view of the course. It is all removed.
 
-        // ---------- numbered distance markers down the right curb ----------
-        // chunky candy posts with a gold disc "sign", spaced evenly; gives the
-        // long course a sense of progress (like Fall Guys' section gates).
-        const markStep = 700;
-        const nMarks = Math.max(1, Math.floor(span / markStep));
-        const signMat = gloss(0xfff3fb, { roughness: 0.3, metalness: 0.05 });
-        const signRim = gloss(WPAL.gold, { roughness: 0.26, metalness: 0.45 });
-        const postMat = inflate(WPAL.grape, { roughness: 0.22, clearcoat: 0.8, emissiveIntensity: 0.05 });
-        for (let k = 1; k <= nMarks; k++) {
-            const yy = decoBot + (k / (nMarks + 1)) * span;
-            const mk = new THREE.Object3D();
-            const post = new THREE.Mesh(new THREE.CylinderGeometry(9, 11, 120, 14), postMat);
-            post.position.set(0, 60, 0);
-            mk.add(post);
-            const sign = new THREE.Mesh(new THREE.CylinderGeometry(34, 34, 10, 22), signMat);
-            sign.rotation.x = Math.PI / 2;              // face up-course
-            sign.position.set(0, 132, 0);
-            mk.add(sign);
-            const rim = new THREE.Mesh(new THREE.TorusGeometry(34, 4.5, 10, 24), signRim);
-            rim.position.set(0, 132, 0);
-            mk.add(rim);
-            // a small gold chevron on the sign hinting "this way / forward".
-            const chev = new THREE.Mesh(new THREE.ConeGeometry(15, 22, 3), signRim);
-            chev.position.set(0, 132, 6);
-            chev.rotation.x = Math.PI / 2;
-            mk.add(chev);
-            mk.position.copy(W(maxX + curbT + 30, yy, curbH));
-            shadowy(mk, true, false);
-            this._add(mk);
-        }
-
-        // (Removed: the big bobbing balloons / beach-balls / candy pillars that
-        // used to be planted beyond the curbs. They loomed over and obscured the
-        // race lanes, and they are NOT authentic to any real level. Each course
-        // now supplies its own true-to-reference dressing in its bespoke builder.)
-    }
+       Each course now gets its own true-to-reference decoration inside its
+       bespoke builder as it is overhauled one-to-one, kept low and to the
+       sides so it never blocks the play view. */
+    _decorateRace() { /* no generic decoration — see comment above */ }
 
     // black/white checker strip laid flat across the track at depth `dy`.
     _buildCheckerLine(minX, maxX, dy, yLevel, sq) {

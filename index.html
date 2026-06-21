@@ -1376,12 +1376,14 @@ class Hammer {
 }
 
 class DoorWall {
-    // A wall across the lane split into door segments; some are fake.
+    // A wall across the lane split into door segments. `fake` segments are the
+    // breakable (smashable) doors — the real way through; the rest are solid.
     constructor(o) {
         this.kind = "doorwall";
         this.y = o.y; this.x0 = o.x0; this.x1 = o.x1;
         this.thick = o.thick || 26;
         this.segs = o.segs;     // [{x0,x1,fake,broken}]
+        this.tell = !!o.tell;   // breakable doors wear a visible "forward" tell
     }
     update() {}
     segAt(x) { for (const s of this.segs) if (x >= s.x0 && x < s.x1) return s; return null; }
@@ -1394,6 +1396,27 @@ class DoorWall {
         }
         return best;
     }
+    // nearest already-OPEN (broken) door within maxd — used so the AI crowd
+    // surges toward a door someone has already smashed.
+    openNear(x, maxd) {
+        let best = null, bd = maxd != null ? maxd : 1e9;
+        for (const s of this.segs) {
+            if (!s.broken) continue;
+            const c = (s.x0 + s.x1) / 2, d = Math.abs(c - x);
+            if (d < bd) { bd = d; best = c; }
+        }
+        return best;
+    }
+    // an AI's blind guess at a door to commit to: skilled beans "read" the tell
+    // and bias toward a real breakable door; the rest pick one at random.
+    guessDoor(skill) {
+        const read = (this.tell ? 0.32 : 0.0) + (skill || 0) * 0.42;
+        if (U.chance(read)) {
+            const reals = this.segs.filter(s => s.fake || s.broken);
+            if (reals.length) { const s = U.pick(reals); return (s.x0 + s.x1) / 2; }
+        }
+        const s = U.pick(this.segs); return (s.x0 + s.x1) / 2;
+    }
     collide(bean, round) {
         if (bean.gone || bean.falling) return;
         if (Math.abs(bean.y - this.y) > bean.r + this.thick * 0.5) return;
@@ -1402,13 +1425,16 @@ class DoorWall {
         if (!s || s.broken) return;
         if (s.fake) {
             s.broken = true;
-            round.spawnBurst(bean.x, this.y, 20, '#b98a5a', 14);
+            round.spawnBurst(bean.x, this.y, 20, '#ffd6ec', 14);
             return;
         }
+        // bonked a SOLID door: stop, and forget the door we were committed to so
+        // the brain re-guesses next frame (the crowd peels off to other doors).
         const side = bean.y > this.y ? 1 : -1;
         bean.y = this.y + side * (bean.r + this.thick * 0.5 + 1);
         const speed = Math.hypot(bean.vx, bean.vy);
         bean.vy = side * Math.min(speed, 240) * 0.5;
+        if (bean.isAI && bean._dwWall === this) bean._dwX = null;
         if (speed > 200) { bean.ragdoll = Math.max(bean.ragdoll, 0.35); bean.everRagdolled = true; }
     }
     draw(ctx, cam) {
@@ -2111,6 +2137,42 @@ function raceThink(bean, round, dt) {
     bean.ai.dive = dive; bean.ai.jump = false;
 }
 
+// ---- Door Dash --------------------------------------------------------
+// The iconic crowd behaviour: each bean commits to a door it can't see through.
+// If someone smashes a door open, the crowd surges to it; if a bean bonks a
+// solid door it peels off and re-guesses. Skilled beans read the wall-5-7 tell.
+function doorThink(bean, round, dt) {
+    const ty = round.finishY - 30;
+    let wall = null;                                   // nearest wall still ahead
+    for (const w of round.doorWalls)
+        if (w.y < bean.y - 2 && (!wall || w.y > wall.y)) wall = w;
+
+    let tx;
+    if (wall) {
+        if (bean._dwWall !== wall) { bean._dwWall = wall; bean._dwX = null; }
+        const openX = wall.openNear(bean.x, 230);      // a door someone already smashed
+        if (openX != null) tx = openX;
+        else {
+            if (bean._dwX == null) bean._dwX = wall.guessDoor(bean.skill);
+            tx = bean._dwX;
+        }
+    } else {
+        tx = round.cx + bean.lane * 0.12;              // open run to the finish
+    }
+
+    let dx = tx - bean.x, dy = ty - bean.y;
+    const dl = Math.hypot(dx, dy) || 1;
+    bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
+    bean.ai.jump = false; bean.ai.grab = false;
+
+    // dive to burst through the door you're committed to (skill-gated)
+    bean.aiTimer -= dt;
+    if (bean.aiTimer <= 0) {
+        bean.aiTimer = U.rngf(0.6, 1.5);
+        bean.ai.dive = !!wall && Math.abs(bean.y - wall.y) < 150 && U.chance(0.45 * bean.skill);
+    } else bean.ai.dive = false;
+}
+
 function jumpThink(bean, round, dt) {
     const P = round.platform;
     const rr = P.r * 0.5;
@@ -2333,15 +2395,20 @@ const Rounds = {
             r.obstacles.push(new Hammer({ cx: r.cx, cy: y - i * gap, amp: o.amp || 320, headR: 33,
                 speed: (i % 2 ? -1 : 1) * (o.speed || 1.8), phase: i * 0.9, power: o.power || 540 }));
     },
-    _doorWall(r, y, fakeCount) {
-        const x0 = r.minX, x1 = r.maxX, n = 6, w = (x1 - x0) / n;
+    // A wall of `n` doors with `fakeCount` breakable (smashable) ones. Back-compat:
+    // called as _doorWall(r, y, fakeCount) it defaults to 6 doors.
+    _doorWall(r, y, n, fakeCount, opts) {
+        if (fakeCount === undefined) { fakeCount = n; n = 6; }
+        opts = opts || {};
+        const x0 = r.minX, x1 = r.maxX, w = (x1 - x0) / n;
         const fakes = new Set();
-        while (fakes.size < fakeCount) fakes.add(U.rng(0, n - 1));
+        while (fakes.size < Math.min(fakeCount, n)) fakes.add(U.rng(0, n - 1));
         const segs = [];
         for (let i = 0; i < n; i++)
             segs.push({ x0: x0 + i * w, x1: x0 + (i + 1) * w, fake: fakes.has(i), broken: false });
-        const dw = new DoorWall({ y, x0, x1, segs });
+        const dw = new DoorWall({ y, x0, x1, segs, tell: !!opts.tell, thick: opts.thick || 30 });
         r.obstacles.push(dw); r.doorWalls.push(dw);
+        return dw;
     },
     _arena(r, R) {
         R = R || 300;
@@ -2441,19 +2508,25 @@ const Rounds = {
 
     builders: {
         // -------------------------------------------------- DOOR DASH
-        doorDash(r) {                       // RACE — wall after wall of doors, smash the fakes
+        doorDash(r) {                       // RACE — seven walls of doors, smash the breakable ones
             Rounds._raceCommon(r);
-            // two banks of door walls (the round's whole identity), a short
-            // bumper breather between them — like the real two-stage Door Dash.
-            Rounds._doorWall(r, 3560, 2);
-            Rounds._doorWall(r, 3180, 3);
-            Rounds._doorWall(r, 2800, 2);
-            Rounds._bumpers(r, 2380, { rows: 2, cols: 5, color: '#ff5fa2' });
-            Rounds._doorWall(r, 1980, 3);
-            Rounds._doorWall(r, 1600, 2);
-            Rounds._doorWall(r, 1220, 3);
-            Rounds._doorWall(r, 840, 2);
-            Rounds._spawnRows(r, r.maxY - 260, r.cx);
+            r.thinkFn = doorThink;
+            // The whole identity of the course: SEVEN door walls in a row. The
+            // door count steps down 7→3 while the breakable count thins out, just
+            // like the real level. Walls 5-7 wear a visible "tell" (the real door
+            // sits forward of its teeth), which skilled beans can read.
+            //   wall:        1   2   3   4   5   6   7
+            //   doors:       7   7   7   6   5   4   3
+            //   breakable:   5   3   2   2   2   2   1
+            const counts    = [7, 7, 7, 6, 5, 4, 3];
+            const breakable = [5, 3, 2, 2, 2, 2, 1];
+            const yTop = 3380, yStep = 432;
+            for (let i = 0; i < counts.length; i++)
+                Rounds._doorWall(r, yTop - i * yStep, counts[i], breakable[i], { tell: i >= 4 });
+            // after the last wall (y≈788) there's an open run to the finish line
+            // (the real course tips you off a ledge onto a finish platform here).
+            r.lastWallY = yTop - (counts.length - 1) * yStep;
+            Rounds._spawnRows(r, r.maxY - 240, r.cx);
         },
 
         // -------------------------------------------------- THE WHIRLYGIG
@@ -5146,64 +5219,87 @@ function makeHammer(ob) {
     return view;
 }
 
+// Door Dash's signature wall: a chunky cream frame with pink "teeth" along the
+// lintel (the monster-mouth look), filled with pastel rounded doors. The
+// breakable doors are the way through; on a "tell" wall they sit a touch
+// forward and shorter, leaving a pink gap below the teeth (the real game's cue).
 function makeDoorWall(ob) {
     const group = new THREE.Object3D();
-    const thick = ob.thick || 26;
+    const thick = ob.thick || 28;
     const doorH = 240;                     // tall enough you can't peek over
-    const frameT = 14;                     // frame border thickness
+    const frameT = 16;                     // frame border thickness
     const y = ob.y;
+    const tell = !!ob.tell;
+    const span = ob.x1 - ob.x0;
 
-    // ground sill across the whole wall.
-    const trimMat = mat(WPAL.woodDk, { roughness: 0.7, metalness: 0.05 });
-    const sill = new THREE.Mesh(new THREE.BoxGeometry((ob.x1 - ob.x0) + thick, 14, thick + 16), trimMat);
-    sill.position.copy(W((ob.x0 + ob.x1) / 2, y, 7));
+    // chunky cream frame: sill + lintel + posts.
+    const frameMat = inflate(0xfff6fb, { roughness: 0.36, clearcoat: 0.45 });
+    const teethMat = gloss(WPAL.curb, { roughness: 0.34 });
+    const sill = roundedSlab(span + thick + 12, 18, thick + 20, 8, frameMat);
+    sill.position.copy(W((ob.x0 + ob.x1) / 2, y, 9));
     group.add(sill);
-    // lintel across the top.
-    const lintel = new THREE.Mesh(new THREE.BoxGeometry((ob.x1 - ob.x0) + thick, 22, thick + 16), trimMat);
-    lintel.position.copy(W((ob.x0 + ob.x1) / 2, y, doorH + 16));
+    const lintel = roundedSlab(span + thick + 12, 32, thick + 20, 10, frameMat);
+    lintel.position.copy(W((ob.x0 + ob.x1) / 2, y, doorH + 20));
     group.add(lintel);
 
     // frame posts at each end + between every segment.
-    const postGeo = new THREE.BoxGeometry(frameT * 1.4, doorH + 30, thick + 14);
+    const postGeo = roundedSlab(frameT * 1.5, doorH + 44, thick + 18, 6, frameMat).geometry;
     const colXs = new Set([ob.x0, ob.x1]);
     for (const s of ob.segs) { colXs.add(s.x0); colXs.add(s.x1); }
     for (const px of colXs) {
-        const post = new THREE.Mesh(postGeo, trimMat);
-        post.position.copy(W(px, y, (doorH + 30) / 2));
+        const post = new THREE.Mesh(postGeo, frameMat);
+        post.position.copy(W(px, y, (doorH + 44) / 2));
         group.add(post);
     }
 
+    // pink teeth hanging from the lintel — the toothy monster-mouth trim.
+    const nTeeth = Math.max(7, Math.round(span / 58));
+    const toothGeo = new THREE.ConeGeometry(11, 28, 4);
+    for (let i = 0; i < nTeeth; i++) {
+        const tx = ob.x0 + (i + 0.5) / nTeeth * span;
+        const tooth = new THREE.Mesh(toothGeo, teethMat);
+        tooth.position.copy(W(tx, y, doorH + 2));
+        tooth.rotation.x = Math.PI;                 // point straight down
+        tooth.rotation.z = Math.PI / 4;
+        group.add(tooth);
+    }
+
     // one door panel per segment, parented to a hinge so a broken one swings.
-    const panelMat = mat(WPAL.wood, { roughness: 0.55, metalness: 0.05 });
-    const panelInset = mat(shade(WPAL.wood, 0.2), { roughness: 0.5 });
+    const doorCols = [0x8af0cf, 0xff9ec4, 0x9fd6ff, 0xffe08a, 0xc9b6ff, 0xfff3fb];
     const knobMat = gloss(WPAL.gold, { roughness: 0.2, metalness: 0.5 });
     const panels = [];
+    let di = 0;
     for (const s of ob.segs) {
         const w = s.x1 - s.x0;
+        const isBreak = !!s.fake;                    // breakable = the real way through
+        const fwd = (tell && isBreak) ? 16 : 0;      // tell: nudge the real door forward
+        const panelH = (tell && isBreak) ? doorH - 26 : doorH - 6;
         const hinge = new THREE.Object3D();          // hinge on the left jamb
-        hinge.position.copy(W(s.x0 + frameT * 0.7, y, 0));
+        hinge.position.copy(W(s.x0 + frameT * 0.8, y + fwd, 0));
         group.add(hinge);
 
         const panel = new THREE.Object3D();
         hinge.add(panel);
-        const pw = w - frameT * 1.4;                 // leaf width inside frame
+        const pw = w - frameT * 1.7;                 // leaf width inside frame
+        const colr = doorCols[di % doorCols.length]; di++;
+        const panelMat = inflate(colr, { roughness: 0.3, clearcoat: 0.5 });
 
-        const board = new THREE.Mesh(new THREE.BoxGeometry(pw, doorH - 6, thick), panelMat);
-        board.position.set(pw / 2, doorH / 2, 0);
+        const board = roundedSlab(pw, panelH, thick, Math.min(pw, panelH) * 0.16, panelMat);
+        board.position.set(pw / 2, panelH / 2, 0);
         panel.add(board);
-        // two recessed inset panels (front & back) for a real door look.
+        // a soft inset oval on each face so the door reads as cushioned, not flat.
         for (const sgn of [1, -1]) {
-            for (const yy of [doorH * 0.30, doorH * 0.66]) {
-                const inset = new THREE.Mesh(
-                    new THREE.BoxGeometry(pw * 0.6, doorH * 0.26, thick * 0.35), panelInset);
-                inset.position.set(pw / 2, yy, sgn * thick * 0.4);
-                panel.add(inset);
-            }
+            const inset = new THREE.Mesh(new THREE.CylinderGeometry(pw * 0.3, pw * 0.3, thick * 0.3, 20),
+                inflate(shade(colr, 0.16), { roughness: 0.3 }));
+            inset.rotation.x = Math.PI / 2;
+            inset.scale.set(1, 1, panelH / pw * 1.4);
+            inset.position.set(pw / 2, panelH * 0.5, sgn * thick * 0.42);
+            panel.add(inset);
         }
         // door knob near the free (right) edge, both faces.
         for (const sgn of [1, -1]) {
             const knob = new THREE.Mesh(new THREE.SphereGeometry(7, 14, 10), knobMat);
-            knob.position.set(pw - 14, doorH * 0.46, sgn * (thick * 0.5 + 4));
+            knob.position.set(pw - 14, panelH * 0.46, sgn * (thick * 0.5 + 4));
             panel.add(knob);
         }
 
@@ -6035,101 +6131,18 @@ class CourseView {
         this._decorateRace(minX, maxX, minY, maxY, finishY, startY, cx, curbT, curbH);
     }
 
-    /* Dress a race course with Fall-Guys festival decor along its full length:
-       a run of striped poles down each side carrying drooping pennant bunting,
-       numbered distance markers, and big bobbing inflatables (balloons,
-       beach-balls, candy-stripe pillars) planted out over the slime so the
-       course is framed by colour from start to finish. All static geometry;
-       only the balloon/beach-ball bobs register a tiny per-frame transform. */
-    _decorateRace(minX, maxX, minY, maxY, finishY, startY, cx, curbT, curbH) {
-        const decoTop = startY - 40, decoBot = finishY + 120;
-        const span = decoTop - decoBot;
-        if (span <= 0) return;
+    /* Generic race dressing is intentionally EMPTY.
 
-        // ---------- striped marker poles + bunting down each side ----------
-        // poles sit just outside the curb; bunting is strung pole-to-pole and
-        // also looped across the lane every so often for an arcade canopy feel.
-        const poleStep = 560;
-        const nPoles = Math.max(2, Math.round(span / poleStep) + 1);
-        const poleH = 250, poleR = 11;
-        const poleTopY = poleH;                         // bunting hangs from here
-        const poleMatA = inflate(WPAL.curb, { roughness: 0.2, clearcoat: 0.8, emissiveIntensity: 0.05 });
-        const poleMatB = inflate(0xfff3fb, { roughness: 0.2, clearcoat: 0.8 });
-        const ballMat = gloss(WPAL.gold, { roughness: 0.24, metalness: 0.45 });
-        const sidePoleX = [minX - curbT - 46, maxX + curbT + 46];
-        const poleRows = [];                            // [{x, ys:[...]}]
-        for (const px of sidePoleX) {
-            const ys = [];
-            for (let k = 0; k < nPoles; k++) {
-                const yy = decoBot + (k / (nPoles - 1)) * span;
-                ys.push(yy);
-                // candy-striped pole (two stacked half-cylinders of colour).
-                const pole = new THREE.Object3D();
-                for (let b = 0; b < 5; b++) {
-                    const seg = new THREE.Mesh(
-                        new THREE.CylinderGeometry(poleR, poleR, poleH / 5 + 0.5, 14),
-                        (b & 1) ? poleMatB : poleMatA);
-                    seg.position.set(0, (b + 0.5) * (poleH / 5), 0);
-                    pole.add(seg);
-                }
-                const knob = new THREE.Mesh(new THREE.SphereGeometry(poleR * 1.5, 16, 12), ballMat);
-                knob.position.set(0, poleH + poleR, 0);
-                pole.add(knob);
-                pole.position.copy(W(px, yy, 0));
-                shadowy(pole, true, false);
-                this._add(pole);
-            }
-            poleRows.push({ x: px, ys });
-        }
-        // bunting along each side between consecutive poles.
-        for (const row of poleRows) {
-            for (let k = 0; k < row.ys.length - 1; k++) {
-                const wy0 = W(row.x, row.ys[k], 0), wy1 = W(row.x, row.ys[k + 1], 0);
-                const line = buntingLine(wy0.x, wy0.z, wy1.x, wy1.z, poleTopY,
-                    { count: 8, sag: 46, flagScale: 1.05 });
-                this._add(line);
-            }
-        }
-        // (no canopy bunting across the lane and no oversized inflatables in the
-        // play area — those obscured the path. Per-map authentic dressing is
-        // added when each course is overhauled.)
+       The old festival kit (striped poles, pennant bunting, distance-marker
+       signs, and the big bobbing balloons / beach-balls / candy pillars) was
+       inauthentic — none of it exists in the real levels — and, worst of all,
+       the tall poles/signs/inflatables crowded the camera and OBSCURED the
+       view of the course. It is all removed.
 
-        // ---------- numbered distance markers down the right curb ----------
-        // chunky candy posts with a gold disc "sign", spaced evenly; gives the
-        // long course a sense of progress (like Fall Guys' section gates).
-        const markStep = 700;
-        const nMarks = Math.max(1, Math.floor(span / markStep));
-        const signMat = gloss(0xfff3fb, { roughness: 0.3, metalness: 0.05 });
-        const signRim = gloss(WPAL.gold, { roughness: 0.26, metalness: 0.45 });
-        const postMat = inflate(WPAL.grape, { roughness: 0.22, clearcoat: 0.8, emissiveIntensity: 0.05 });
-        for (let k = 1; k <= nMarks; k++) {
-            const yy = decoBot + (k / (nMarks + 1)) * span;
-            const mk = new THREE.Object3D();
-            const post = new THREE.Mesh(new THREE.CylinderGeometry(9, 11, 120, 14), postMat);
-            post.position.set(0, 60, 0);
-            mk.add(post);
-            const sign = new THREE.Mesh(new THREE.CylinderGeometry(34, 34, 10, 22), signMat);
-            sign.rotation.x = Math.PI / 2;              // face up-course
-            sign.position.set(0, 132, 0);
-            mk.add(sign);
-            const rim = new THREE.Mesh(new THREE.TorusGeometry(34, 4.5, 10, 24), signRim);
-            rim.position.set(0, 132, 0);
-            mk.add(rim);
-            // a small gold chevron on the sign hinting "this way / forward".
-            const chev = new THREE.Mesh(new THREE.ConeGeometry(15, 22, 3), signRim);
-            chev.position.set(0, 132, 6);
-            chev.rotation.x = Math.PI / 2;
-            mk.add(chev);
-            mk.position.copy(W(maxX + curbT + 30, yy, curbH));
-            shadowy(mk, true, false);
-            this._add(mk);
-        }
-
-        // (Removed: the big bobbing balloons / beach-balls / candy pillars that
-        // used to be planted beyond the curbs. They loomed over and obscured the
-        // race lanes, and they are NOT authentic to any real level. Each course
-        // now supplies its own true-to-reference dressing in its bespoke builder.)
-    }
+       Each course now gets its own true-to-reference decoration inside its
+       bespoke builder as it is overhauled one-to-one, kept low and to the
+       sides so it never blocks the play view. */
+    _decorateRace() { /* no generic decoration — see comment above */ }
 
     // black/white checker strip laid flat across the track at depth `dy`.
     _buildCheckerLine(minX, maxX, dy, yLevel, sq) {

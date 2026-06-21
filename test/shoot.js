@@ -79,8 +79,21 @@ const COURSES = ids.length ? ids : ['door_dash', 'gate_crash', 'whirlygig', 'diz
     for (const id of COURSES) {
         console.log('shooting', id);
         if (!(await loadCourse(id))) continue;
-        // clear any debug cam, let the chase cam settle, shoot the play view
-        await page.evaluate(() => { window.__BR.Engine._dbgCam = null; });
+        // clear any debug cam, restore backdrop, optionally teleport the player
+        // to a sim-y so the chase cam frames that spot, let it settle, shoot.
+        await page.evaluate((o) => {
+            window.__BR.Engine._dbgCam = null;
+            const sc = window.__BR.Engine.scene;
+            for (const n of ['clouds', 'mountains', 'hills', 'blimps']) {
+                const ob = sc.getObjectByName(n); if (ob) ob.visible = true;
+            }
+            if (o.player != null) {
+                const r = window.__BR.Game.show.round;
+                r.player.x = (r.minX + r.maxX) / 2; r.player.y = +o.player;
+                r.player.vx = r.player.vy = 0;
+                window.__BR.Engine._camSnap = true;
+            }
+        }, opts);
         await wait(1600);
         await page.screenshot({ path: path.join(SHOTS, `shoot-${id}-chase.png`) });
 
@@ -88,12 +101,18 @@ const COURSES = ids.length ? ids : ['door_dash', 'gate_crash', 'whirlygig', 'diz
         const meta = await page.evaluate((o) => {
             const { Engine, Game, THREE } = window.__BR;
             const r = Game.show.round;
+            // hide the sky backdrop so it can't intrude on the top-down view
+            const sc = Engine.scene;
+            for (const n of ['clouds', 'mountains', 'hills', 'blimps']) {
+                const ob = sc.getObjectByName(n); if (ob) ob.visible = false;
+            }
             const cx = (r.minX + r.maxX) / 2;
             const atY = o.at != null ? +o.at : (r.finishY + r.maxY) / 2;
             const span = o.span != null ? +o.span : (r.maxY - r.finishY);
-            // a steep, near-top-down look so the whole section's layout reads
-            const back = atY + span * 0.30;
-            const high = Math.max(900, span * 0.95);
+            // a near-TOP-DOWN look (high above, barely tilted) so the layout
+            // reads clearly and the horizon/backdrop never intrudes.
+            const back = atY + span * 0.12;
+            const high = Math.max(900, span * 0.85);
             Engine._dbgCam = {
                 pos: new THREE.Vector3(cx, high, back),
                 look: new THREE.Vector3(cx, 0, atY),

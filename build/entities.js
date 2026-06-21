@@ -656,12 +656,14 @@ class Hammer {
 }
 
 class DoorWall {
-    // A wall across the lane split into door segments; some are fake.
+    // A wall across the lane split into door segments. `fake` segments are the
+    // breakable (smashable) doors — the real way through; the rest are solid.
     constructor(o) {
         this.kind = "doorwall";
         this.y = o.y; this.x0 = o.x0; this.x1 = o.x1;
         this.thick = o.thick || 26;
         this.segs = o.segs;     // [{x0,x1,fake,broken}]
+        this.tell = !!o.tell;   // breakable doors wear a visible "forward" tell
     }
     update() {}
     segAt(x) { for (const s of this.segs) if (x >= s.x0 && x < s.x1) return s; return null; }
@@ -674,6 +676,27 @@ class DoorWall {
         }
         return best;
     }
+    // nearest already-OPEN (broken) door within maxd — used so the AI crowd
+    // surges toward a door someone has already smashed.
+    openNear(x, maxd) {
+        let best = null, bd = maxd != null ? maxd : 1e9;
+        for (const s of this.segs) {
+            if (!s.broken) continue;
+            const c = (s.x0 + s.x1) / 2, d = Math.abs(c - x);
+            if (d < bd) { bd = d; best = c; }
+        }
+        return best;
+    }
+    // an AI's blind guess at a door to commit to: skilled beans "read" the tell
+    // and bias toward a real breakable door; the rest pick one at random.
+    guessDoor(skill) {
+        const read = (this.tell ? 0.32 : 0.0) + (skill || 0) * 0.42;
+        if (U.chance(read)) {
+            const reals = this.segs.filter(s => s.fake || s.broken);
+            if (reals.length) { const s = U.pick(reals); return (s.x0 + s.x1) / 2; }
+        }
+        const s = U.pick(this.segs); return (s.x0 + s.x1) / 2;
+    }
     collide(bean, round) {
         if (bean.gone || bean.falling) return;
         if (Math.abs(bean.y - this.y) > bean.r + this.thick * 0.5) return;
@@ -682,13 +705,16 @@ class DoorWall {
         if (!s || s.broken) return;
         if (s.fake) {
             s.broken = true;
-            round.spawnBurst(bean.x, this.y, 20, '#b98a5a', 14);
+            round.spawnBurst(bean.x, this.y, 20, '#ffd6ec', 14);
             return;
         }
+        // bonked a SOLID door: stop, and forget the door we were committed to so
+        // the brain re-guesses next frame (the crowd peels off to other doors).
         const side = bean.y > this.y ? 1 : -1;
         bean.y = this.y + side * (bean.r + this.thick * 0.5 + 1);
         const speed = Math.hypot(bean.vx, bean.vy);
         bean.vy = side * Math.min(speed, 240) * 0.5;
+        if (bean.isAI && bean._dwWall === this) bean._dwX = null;
         if (speed > 200) { bean.ragdoll = Math.max(bean.ragdoll, 0.35); bean.everRagdolled = true; }
     }
     draw(ctx, cam) {
