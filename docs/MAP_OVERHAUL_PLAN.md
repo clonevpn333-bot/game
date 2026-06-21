@@ -8,10 +8,11 @@ landing **in / over the race lanes**, blocking the view and wrecking the look.
 Confirmed on **The Whirlygig**; user reports it on **all / most races**.
 - These are decoration only (no collision), but they obscure the path and ruin
   the game's appearance — unacceptable.
-- FIX: relocate every decorative prop CLEARLY outside the playable lane
-  (beyond the side curbs `minX`/`maxX`, well out over the slime, and high/low
-  enough not to overlap the chase camera), or cut the ones that can't be kept
-  clear. The bobbing/animated props must not drift back over the track.
+- These props are **NOT authentic** — the balloons/beach-balls/pillars do not
+  exist in the real levels. So the real fix is not "relocate"; it's **remove
+  the inauthentic dressing** and, during each map's overhaul, replace it with
+  that map's ACTUAL decoration (matched from reference). Short term (before the
+  per-map overhaul) they can simply be stripped so lanes are clean.
 - VERIFY EACH RACE ONE-BY-ONE with a play-camera screenshot: Door Dash, Gate
   Crash, The Whirlygig, Dizzy Heights, Fruit Chute, Hit Parade, Knight Fever,
   Slime Climb, Big Fans (+ Fall Mountain / Lost Temple). The lane must be
@@ -39,11 +40,17 @@ Confirmed on **The Whirlygig**; user reports it on **all / most races**.
    "stuff on a strip."
 
 ## New methodology (per map, every time)
-1. **Deep reference analysis -> SECTION SPEC.** For each section 1..N, write
-   down: shape (length/width), terrain (flat/slope/gap/half-pipe/tier),
-   obstacles (type, count, exact positions, motion + timing), transitions,
-   and qualify rule. Source: wiki + guides + the user's reference images,
-   cross-checked. Get the spec signed off before building.
+1. **Deep reference analysis of the WHOLE map -> SECTION SPEC.** Interpret the
+   ENTIRE course start-to-finish — never a summary or a single segment — from
+   multiple media: gameplay **videos** (full run-throughs), **wiki** pages,
+   **images/screenshots**, maps/diagrams, and any other reference. Then write,
+   for each section 1..N: shape (length/width), terrain
+   (flat/slope/gap/half-pipe/tier), obstacles (type, count, **exact
+   positions** + spacing, motion + timing), the real **decoration/theme**,
+   transitions, and qualify rule. We must know EXACTLY where each thing goes.
+   Cross-check sources; get the spec signed off before building.
+   (We build ORIGINAL geometry that matches the layout — we do not copy the
+   game's art, textures, models or audio.)
 2. **Primitive check.** If a section needs something we lack (slope, gap,
    see-saw…), build that engine primitive first.
 3. **Handcraft the builder.** Author the level section-by-section in bespoke
