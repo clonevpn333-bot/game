@@ -1095,15 +1095,28 @@ const Rounds = {
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
         // -------------------------------------------------- KNIGHT FEVER
-        knightFever(r) {                    // RACE — swinging axes, sliding blocks, bumpers
+        knightFever(r) {                    // RACE — medieval gauntlet: climb, slide, drawbridges
             Rounds._raceCommon(r);
-            Rounds._axes(r, 3320, { n: 2, speed: 1.9, gap: 300 });
-            Rounds._bumpers(r, 2850, { rows: 2, cols: 4, color: '#e6395a' });
-            Rounds._hammers(r, 2450, { n: 1, speed: 2.0 });
-            Rounds._axes(r, 2050, { n: 2, speed: -2.1, gap: 300 });
-            Rounds._conveyor(r, 1650, 1850, { dy: 1, push: 130, color: '#7b46d6' });
-            Rounds._bumpers(r, 1300, { rows: 2, cols: 4, color: '#e6395a' });
-            Rounds._axes(r, 820, { n: 2, speed: 2.2, gap: 280 });
+            // Vertical profile from the real level: UP the two axe ramps, across
+            // the spike-log top, DOWN the slime slide, then flat to the finish.
+            r.terrain = new Terrain()
+                .flat(3650, 3980, 0)
+                .ramp(3300, 3650, 130, 0)        // climb 1 (axes)
+                .ramp(2950, 3300, 250, 130)      // climb 2 (axes)
+                .flat(2650, 2950, 250)           // spike-log top
+                .ramp(2050, 2650, 60, 250)       // slime SLIDE down (axes + bumpers)
+                .flat(1700, 2050, 60)            // Thicc Bonkus hall
+                .ramp(1450, 1700, 120, 60)
+                .flat(950, 1450, 120)            // drawbridge timing gates
+                .ramp(650, 950, 30, 120)         // short slide to the line
+                .flat(240, 650, 30);
+            Rounds._axes(r, 3460, { n: 2, speed: 1.9, gap: 300 });          // climb 1
+            Rounds._axes(r, 3120, { n: 2, speed: -2.0, gap: 300 });         // climb 2
+            Rounds._beams(r, 2800, { n: 3, style: 'bar', speed: 1.6, thick: 26, color: '#8a6a3e' }); // spike logs
+            Rounds._axes(r, 2380, { n: 2, speed: 2.1, gap: 280 });          // slide axes
+            Rounds._bumpers(r, 2180, { rows: 1, cols: 4, color: '#e6395a' });
+            Rounds._hammers(r, 1870, { n: 2, speed: 1.4, gap: 300, amp: 360, power: 560 }); // Thicc Bonkus
+            Rounds._blocks(r, 1180, { n: 3, w: 150, speed: 150 });          // drawbridge gates
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
         jumpShowdown(r) {           // SURVIVAL — fast sweeper, smaller ring
