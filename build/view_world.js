@@ -205,6 +205,164 @@ function roundedSlab(w, h, d, r, material) {
 }
 
 /* =====================================================================
+   Festive decoration builders — bunting strings, inflatable balloons,
+   beach-balls and candy-stripe pillars. All are static (built once), so
+   they're free of per-frame work; a couple expose a `bob` node the caller
+   can wire into its anim list for a gentle idle sway.
+   ===================================================================== */
+
+// shared little geometry reused across many pennant flags (cheap + tidy).
+const _flagPalette = [0xff5fa2, 0xffd34d, 0x8af0cf, 0x6cc6ff, 0x9a6cff, 0xff8cc0];
+let _buntGeoCache = null;
+function _buntFlagGeo() {
+    // a small pennant triangle, ~11 radius x 26 tall (apex rotated to point down).
+    if (_buntGeoCache) return _buntGeoCache;
+    _buntGeoCache = new THREE.ConeGeometry(11, 26, 3);
+    return _buntGeoCache;
+}
+
+// A drooping string of pennant flags between two world points (a..b) with a
+// catenary-ish sag. Returns an Object3D. Flags alternate through the palette.
+// opts: { count, sag, flagScale, cordColor }
+function buntingLine(ax, az, bx, bz, topY, opts) {
+    opts = opts || {};
+    const g = new THREE.Object3D();
+    const count = opts.count || 9;
+    const sag = opts.sag != null ? opts.sag : 40;
+    const flagScale = opts.flagScale != null ? opts.flagScale : 1;
+    const dx = bx - ax, dz = bz - az;
+    // a thin cord drawn as short segments following the sag curve.
+    const cordMat = mat(opts.cordColor != null ? opts.cordColor : 0x6a4a2a, { roughness: 0.85, metalness: 0.0 });
+    const segs = Math.max(count, 8);
+    let prev = null;
+    const flagMats = _flagPalette.map((c) => mat(c, { roughness: 0.55, side: THREE.DoubleSide }));
+    for (let i = 0; i <= segs; i++) {
+        const u = i / segs;
+        const px = ax + dx * u, pz = az + dz * u;
+        const droop = Math.sin(u * Math.PI) * sag;          // 0 at ends, max in the middle
+        const py = topY - droop;
+        if (prev) {
+            const mx = (prev.x + px) / 2, my = (prev.y + py) / 2, mz = (prev.z + pz) / 2;
+            const segLen = Math.hypot(px - prev.x, py - prev.y, pz - prev.z) + 0.5;
+            const cord = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, segLen, 5), cordMat);
+            cord.position.set(mx, my, mz);
+            cord.quaternion.setFromUnitVectors(
+                new THREE.Vector3(0, 1, 0),
+                new THREE.Vector3(px - prev.x, py - prev.y, pz - prev.z).normalize());
+            g.add(cord);
+        }
+        prev = { x: px, y: py, z: pz };
+    }
+    // hang flags evenly along the cord, alternating colour.
+    for (let i = 0; i < count; i++) {
+        const u = (i + 0.5) / count;
+        const px = ax + dx * u, pz = az + dz * u;
+        const droop = Math.sin(u * Math.PI) * sag;
+        const py = topY - droop - 13 * flagScale;
+        const flag = new THREE.Mesh(_buntFlagGeo(), flagMats[i % flagMats.length]);
+        flag.scale.setScalar(flagScale);
+        flag.position.set(px, py, pz);
+        flag.rotation.x = Math.PI;                          // apex points down
+        flag.rotation.y = Math.atan2(dz, dx);               // face across the line
+        g.add(flag);
+    }
+    return g;
+}
+
+// A glossy inflatable balloon on a string, tethered to a base point. Bobs
+// gently if the caller wires the returned `bob` group into an anim loop.
+// opts: { color, r, height (balloon centre above base) }
+function balloonProp(color, opts) {
+    opts = opts || {};
+    const r = opts.r || 46;
+    const height = opts.height != null ? opts.height : 300;
+    const c = col(color, WPAL.curb);
+    const root = new THREE.Object3D();
+    const bob = new THREE.Object3D();                       // animate THIS
+    root.add(bob);
+    const balloonMat = inflate(c, { roughness: 0.16, clearcoat: 0.95, clearcoatRoughness: 0.2, emissiveIntensity: 0.07 });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 18), balloonMat);
+    body.scale.set(1, 1.18, 1);                             // a touch egg-shaped
+    body.position.set(0, height, 0);
+    bob.add(body);
+    // a little knot + a bright highlight cap for that latex sheen.
+    const knot = new THREE.Mesh(new THREE.ConeGeometry(r * 0.22, r * 0.34, 8), balloonMat);
+    knot.position.set(0, height - r * 1.18, 0);
+    bob.add(knot);
+    const hi = new THREE.Mesh(new THREE.SphereGeometry(r * 0.32, 12, 10),
+        mat(shade(c, 0.6), { roughness: 0.2, emissive: 0xffffff, emissiveIntensity: 0.12 }));
+    hi.position.set(-r * 0.38, height + r * 0.5, r * 0.42);
+    bob.add(hi);
+    // a slim string down to the base.
+    const str = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, height - r * 1.3, 5), mat(0xfff0f6, { roughness: 0.6 }));
+    str.position.set(0, (height - r * 1.3) / 2, 0);
+    bob.add(str);
+    // a small gold anchor weight so it reads tethered to the ground.
+    const anchor = new THREE.Mesh(new THREE.SphereGeometry(r * 0.28, 14, 10), gloss(WPAL.gold, { roughness: 0.3, metalness: 0.4 }));
+    anchor.scale.set(1, 0.6, 1);
+    anchor.position.set(0, r * 0.16, 0);
+    root.add(anchor);
+    shadowy(body, true, false);
+    return { root, bob };
+}
+
+// A big glossy beach-ball with classic coloured segment panels.
+function beachBall(r, opts) {
+    opts = opts || {};
+    const g = new THREE.Object3D();
+    const cols = opts.cols || [0xff5fa2, 0xfff3fb, 0xffd34d, 0xfff3fb, 0x6cc6ff, 0xfff3fb];
+    const panels = cols.length;
+    for (let i = 0; i < panels; i++) {
+        const seg = new THREE.Mesh(
+            new THREE.SphereGeometry(r, 18, 16, (i / panels) * Math.PI * 2, (Math.PI * 2) / panels),
+            inflate(cols[i % cols.length], { roughness: 0.14, clearcoat: 0.9, emissiveIntensity: 0.06 }));
+        g.add(seg);
+    }
+    // little white caps at the poles.
+    for (const sy of [1, -1]) {
+        const cap = new THREE.Mesh(new THREE.SphereGeometry(r * 0.2, 12, 8),
+            inflate(0xfff3fb, { roughness: 0.16, clearcoat: 0.8 }));
+        cap.position.set(0, sy * r * 0.96, 0);
+        g.add(cap);
+    }
+    shadowy(g, true, false);
+    return g;
+}
+
+// A tall candy-stripe pillar (a barber-pole-ish column) topped with a glossy
+// gold finial — a chunky inflatable landmark to plant beyond the curbs.
+function candyPillar(h, r, opts) {
+    opts = opts || {};
+    const g = new THREE.Object3D();
+    const cA = col(opts.a != null ? opts.a : WPAL.curb);
+    const cB = col(opts.b != null ? opts.b : 0xfff3fb);
+    const bands = Math.max(4, Math.round(h / (r * 1.6)));
+    const bandH = h / bands;
+    for (let i = 0; i < bands; i++) {
+        const ring = new THREE.Mesh(
+            new THREE.CylinderGeometry(r, r, bandH + 0.5, 20),
+            inflate((i & 1) ? cB : cA, { roughness: 0.18, clearcoat: 0.85, emissiveIntensity: 0.05 }));
+        ring.position.set(0, bandH * (i + 0.5), 0);
+        g.add(ring);
+    }
+    // domed cap + a glossy gold finial.
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(r * 1.04, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.55),
+        inflate(cA, { roughness: 0.16, clearcoat: 0.9 }));
+    cap.position.set(0, h, 0);
+    g.add(cap);
+    const finial = new THREE.Mesh(new THREE.SphereGeometry(r * 0.4, 16, 12), gloss(WPAL.gold, { roughness: 0.22, metalness: 0.5 }));
+    finial.position.set(0, h + r * 0.7, 0);
+    g.add(finial);
+    // a wider gold base collar so it reads planted.
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.25, r * 1.4, r * 0.5, 22),
+        gloss(WPAL.gold, { roughness: 0.3, metalness: 0.35 }));
+    base.position.set(0, r * 0.25, 0);
+    g.add(base);
+    shadowy(g, true, false);
+    return g;
+}
+
+/* =====================================================================
    Canvas textures (browser only; all guarded). Each returns a
    CanvasTexture or null in Node.
    ===================================================================== */
@@ -391,6 +549,62 @@ function setupEnvironment(scene) {
     mountains.renderOrder = -900;
     scene.add(mountains);
 
+    // ---- a NEARER ring of soft rounded pastel HILLS (rolling domes) ----
+    // squashed spheres sitting just inside the mountains so the horizon reads
+    // as gentle candy hills rather than one hard wall of peaks.
+    const hills = new THREE.Group();
+    hills.name = 'hills';
+    const hillPals = [WPAL.mint, WPAL.mtnA, WPAL.mtnC, WPAL.mtnB];
+    const hillN = 22;
+    for (let i = 0; i < hillN; i++) {
+        const ang = (i / hillN) * Math.PI * 2 + (i % 2) * 0.14;
+        const dist = 2550 + ((i * 47) % 5) * 170;
+        const rad = 420 + ((i * 61) % 6) * 80;
+        const dome = new THREE.Mesh(
+            new THREE.SphereGeometry(rad, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.5),
+            mat(shade(hillPals[i % hillPals.length], (i % 2) ? 0.05 : -0.03), { roughness: 0.98, metalness: 0.0 }));
+        dome.scale.set(1.35, 0.62, 1.35);                 // wide, low rolling hill
+        dome.position.set(Math.cos(ang) * dist, -30, Math.sin(ang) * dist);
+        hills.add(dome);
+    }
+    hills.renderOrder = -880;
+    scene.add(hills);
+
+    // ---- a couple of giant pastel BLIMPS drifting high in the sky ----
+    const blimps = new THREE.Group();
+    blimps.name = 'blimps';
+    const blimpSeeds = [];
+    const blimpCols = [WPAL.curb, WPAL.gold, WPAL.grape];
+    for (let i = 0; i < 3; i++) {
+        const b = new THREE.Object3D();
+        const bodyMat = inflate(blimpCols[i % blimpCols.length], { roughness: 0.2, clearcoat: 0.8, emissiveIntensity: 0.05, fog: false });
+        const body = new THREE.Mesh(new THREE.SphereGeometry(150, 18, 14), bodyMat);
+        body.scale.set(2.1, 1, 1);                        // a long airship body
+        b.add(body);
+        // pastel fins at the tail.
+        const finMat = mat(shade(blimpCols[i % blimpCols.length], 0.35), { roughness: 0.5, side: THREE.DoubleSide, fog: false });
+        for (let f = 0; f < 3; f++) {
+            const fin = new THREE.Mesh(new THREE.ConeGeometry(70, 120, 3), finMat);
+            fin.rotation.z = Math.PI / 2;
+            fin.rotation.x = (f / 3) * Math.PI * 2;
+            fin.position.set(-300, 0, 0);
+            b.add(fin);
+        }
+        // a slim gondola slung underneath.
+        const gond = new THREE.Mesh(new THREE.CapsuleGeometry(22, 90, 6, 10), gloss(WPAL.gold, { roughness: 0.35, metalness: 0.3, fog: false }));
+        gond.rotation.z = Math.PI / 2;
+        gond.position.set(40, -140, 0);
+        b.add(gond);
+        const ang = (i / 3) * Math.PI * 2 + 1.1;
+        const dist = 3200 + i * 320;
+        b.position.set(Math.cos(ang) * dist, 2200 + i * 260, Math.sin(ang) * dist);
+        b.rotation.y = ang + Math.PI / 2;
+        blimps.add(b);
+        blimpSeeds.push({ b, baseX: b.position.x, baseY: b.position.y, speed: 10 + i * 4, ph: i * 2.1 });
+    }
+    blimps.renderOrder = -870;
+    scene.add(blimps);
+
     // ---- drifting puffy clouds: clusters of soft lobes ----
     const clouds = new THREE.Group();
     clouds.name = 'clouds';
@@ -421,7 +635,7 @@ function setupEnvironment(scene) {
     scene.add(clouds);
 
     return {
-        sun, hemi, sky, clouds, ambient, fill, glow, mountains,
+        sun, hemi, sky, clouds, ambient, fill, glow, mountains, hills, blimps,
         update(dt, t) {
             t = t || 0;
             for (const cs of cloudSeeds) {
@@ -429,6 +643,12 @@ function setupEnvironment(scene) {
                 if (x > 4500) x -= 9000;
                 cs.puff.position.x = x + Math.sin(t * 0.05 + cs.ph) * 40;
                 cs.puff.position.y = cs.baseY + Math.sin(t * 0.08 + cs.ph) * 18;
+            }
+            for (const bs of blimpSeeds) {
+                let x = bs.baseX + (t * bs.speed) % 11000;
+                if (x > 5500) x -= 11000;
+                bs.b.position.x = x;
+                bs.b.position.y = bs.baseY + Math.sin(t * 0.06 + bs.ph) * 26;
             }
         },
     };
@@ -474,10 +694,16 @@ function makeSpinner(ob) {
     group.add(rotor);
 
     const hubMat = gloss(pop(shade(color, -0.12), 0.05, 0), { roughness: 0.3, metalness: 0.25 });
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(thick * 1.15, thick * 1.15, barH * 1.15, 22), hubMat);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(thick * 1.25, thick * 1.25, barH * 1.2, 24), hubMat);
     rotor.add(hub);
-    const hubCap = new THREE.Mesh(new THREE.SphereGeometry(thick * 0.55, 16, 12), gloss(WPAL.gold));
-    hubCap.position.set(0, barH * 0.6, 0);
+    // a bold glossy gold hub cap (the signature Fall Guys spinner centre).
+    const goldHub = gloss(WPAL.gold, { roughness: 0.24, metalness: 0.5, emissive: 0x5a3d00, emissiveIntensity: 0.12 });
+    const hubBand = new THREE.Mesh(new THREE.CylinderGeometry(thick * 1.32, thick * 1.32, barH * 0.4, 24), goldHub);
+    hubBand.position.set(0, 0, 0);
+    rotor.add(hubBand);
+    const hubCap = new THREE.Mesh(new THREE.SphereGeometry(thick * 0.78, 18, 14), goldHub);
+    hubCap.scale.set(1, 0.8, 1);
+    hubCap.position.set(0, barH * 0.66, 0);
     rotor.add(hubCap);
 
     // each arm: a soft rounded padded bar laid along +X, plus a paddle cap.
@@ -490,6 +716,10 @@ function makeSpinner(ob) {
     const capMat = gloss(pop(shade(color, 0.28), 0.05, 0));
     const sailMat = inflate(color, { roughness: 0.24, clearcoat: 0.7 });
     const sailAlt = inflate(pop(shade(color, 0.34), 0.04, 0.04), { roughness: 0.24, clearcoat: 0.7 });
+    // big colourful windmill sails cycle through a vivid candy palette so each
+    // blade is a different bright colour (like the real Fall Guys windmills).
+    const sailPalette = [WPAL.curb, WPAL.gold, WPAL.mint, 0x6cc6ff, WPAL.grape, WPAL.curbLt];
+    const sailMats = sailPalette.map((c) => inflate(c, { roughness: 0.22, clearcoat: 0.8, emissiveIntensity: 0.06 }));
     for (let i = 0; i < arms; i++) {
         const a = (i * Math.PI * 2) / arms;
         const arm = new THREE.Object3D();
@@ -501,7 +731,7 @@ function makeSpinner(ob) {
             const sailW = len * 0.92;            // along the arm
             const sailSpan = Math.max(barD * 4, len * 0.5);   // broad across (Z)
             const sail = roundedSlab(sailW, barH * 0.8, sailSpan, barH * 0.35,
-                (i % 2) ? sailAlt : sailMat);
+                sailMats[i % sailMats.length]);
             sail.position.set(len * 0.54, 0, 0);
             arm.add(sail);
             // a slim spar down the spine of the sail for a built look.
@@ -531,17 +761,29 @@ function makeSpinner(ob) {
             tip.position.set(len * 0.95, 0, 0);
             arm.add(tip);
         } else {
-            // default 'bar' (and 'sweeper'): the original chunky padded arm.
-            const bar = roundedSlab(len, barH, barD, Math.min(barH, barD) * 0.45, armMat);
+            // default 'bar' (and 'sweeper'): a FAT glossy candy bar with bright
+            // wrap stripes (candy-cane look) and a beefy rounded paddle tip.
+            const fatH = barH * 1.35, fatD = barD * 1.35;
+            const barMat = gloss(color, { roughness: 0.22, metalness: 0.05, emissive: shade(color, -0.5), emissiveIntensity: 0.06 });
+            const bar = roundedSlab(len, fatH, fatD, Math.min(fatH, fatD) * 0.46, barMat);
             bar.position.set(len / 2, 0, 0);
             arm.add(bar);
-            // a bright hazard stripe band near the tip.
-            const band = new THREE.Mesh(new THREE.BoxGeometry(len * 0.18, barH * 1.02, barD * 1.04), stripeMat);
-            band.position.set(len * 0.78, 0, 0);
-            arm.add(band);
+            // evenly spaced bright candy wrap stripes around the bar.
+            const nStripes = 4;
+            for (let s = 0; s < nStripes; s++) {
+                const fx = len * (0.16 + s * (0.72 / (nStripes - 1)));
+                const band = new THREE.Mesh(new THREE.BoxGeometry(len * 0.085, fatH * 1.05, fatD * 1.05), stripeMat);
+                band.position.set(fx, 0, 0);
+                arm.add(band);
+            }
+            // a glossy gold collar where the bar meets the hub.
+            const collar = new THREE.Mesh(new THREE.CylinderGeometry(fatH * 0.62, fatH * 0.62, len * 0.05, 16), gloss(WPAL.gold, { metalness: 0.45 }));
+            collar.rotation.z = Math.PI / 2;
+            collar.position.set(len * 0.06, 0, 0);
+            arm.add(collar);
             // rounded paddle cap at the tip for a beefy toy look.
-            const cap = new THREE.Mesh(new THREE.SphereGeometry(barH * 0.72, 16, 12), capMat);
-            cap.scale.set(1, 1, 1.15);
+            const cap = new THREE.Mesh(new THREE.SphereGeometry(fatH * 0.72, 16, 12), capMat);
+            cap.scale.set(1, 1, 1.12);
             cap.position.set(len, 0, 0);
             arm.add(cap);
         }
@@ -976,8 +1218,8 @@ function makeConveyor(ob) {
     belt.rotation.x = -Math.PI / 2;          // slab's extrude depth -> world Y
     belt.position.set(0, beltTop / 2, 0);
     group.add(belt);
-    // a darker inset lane so the chevrons pop against the belt.
-    const laneMat = mat(shade(color, -0.18), { roughness: 0.5 });
+    // a darker inset lane so the bright chevrons pop against the belt.
+    const laneMat = mat(shade(color, -0.32), { roughness: 0.55 });
     const lane = new THREE.Mesh(new THREE.BoxGeometry(w - 14, 1.2, h - 14), laneMat);
     lane.position.set(0, beltTop + 0.4, 0);
     group.add(lane);
@@ -999,17 +1241,19 @@ function makeConveyor(ob) {
     const count = Math.max(2, Math.ceil(span / spacing) + 2);
     const half = (count - 1) * spacing / 2;
 
-    // a single chevron: two angled bars meeting at a point along +X (travel).
-    const chevMat = gloss(0xffffff, { roughness: 0.3, emissive: 0xffffff, emissiveIntensity: 0.14 });
+    // a single chevron: two thick angled bars meeting at a forward point along
+    // +X (travel). Bright glossy gold-white so the belt's direction reads clear.
+    const chevMat = gloss(0xfff2a8, { roughness: 0.26, metalness: 0.1, emissive: 0xffe680, emissiveIntensity: 0.3 });
     function makeChevron() {
         const c = new THREE.Object3D();
         const barLen = Math.hypot(chevW / 2, chevD) + 4;
-        const barT = Math.max(5, chevD * 0.34);
+        const barT = Math.max(7, chevD * 0.46);          // chunkier arrow bars
+        const barH = 5.5;                                // stand proud of the belt
         for (const sgn of [1, -1]) {
-            const bar = new THREE.Mesh(new THREE.BoxGeometry(barLen, 3.2, barT), chevMat);
+            const bar = new THREE.Mesh(new THREE.BoxGeometry(barLen, barH, barT), chevMat);
             // angle the bar so the two meet at a forward point.
             bar.rotation.y = sgn * Math.atan2(chevW / 2, chevD);
-            bar.position.set(-chevD * 0.32, 0, sgn * chevW * 0.25);
+            bar.position.set(-chevD * 0.32, barH * 0.3, sgn * chevW * 0.25);
             c.add(bar);
         }
         return c;
@@ -1324,29 +1568,63 @@ function makeMatchTile(ob) {
 }
 
 // Block Party: a wall in two halves with a gap between, sliding along y.
+// Each half is a chunky candy block: a coloured body, a glossy recessed face
+// panel (both faces), a gold top-cap rail and gold corner pillars at the ends.
+// Bodies/panels/caps scale in X to fill their span; the end pillars track the
+// moving edges. All driven via transforms in update() — no per-frame allocs.
 function makeSlideWall(ob) {
     const group = new THREE.Object3D();
     const h = ob.height || 210, thick = ob.thick || 42;
-    const wallMat = mat(ob.color || WPAL.grape, { roughness: 0.5, metalness: 0.08 });
-    const capMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.3 });
-    const left = new THREE.Mesh(new THREE.BoxGeometry(1, h, thick), wallMat);
-    const right = new THREE.Mesh(new THREE.BoxGeometry(1, h, thick), wallMat);
-    const capL = new THREE.Mesh(new THREE.BoxGeometry(1, 13, thick + 8), capMat);
-    const capR = new THREE.Mesh(new THREE.BoxGeometry(1, 13, thick + 8), capMat);
-    group.add(left, right, capL, capR);
+    const baseCol = col(ob.color || WPAL.grape);
+    const wallMat = mat(pop(baseCol, 0.04, 0.02), { roughness: 0.46, metalness: 0.08 });
+    const faceMat = gloss(pop(shade(baseCol, 0.24), 0.04, 0), { roughness: 0.3 });
+    const capMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.32 });
+
+    // build one chunky half (a group of unit-X meshes we scale to width).
+    function makeHalf() {
+        const half = new THREE.Object3D();
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1, h - 6, thick), wallMat);
+        body.position.y = h / 2;
+        half.add(body);
+        // recessed face panels on the up- and down-course faces.
+        const faceF = new THREE.Mesh(new THREE.BoxGeometry(1, h * 0.62, thick * 0.16), faceMat);
+        faceF.position.set(0, h / 2, thick / 2 - thick * 0.04);
+        half.add(faceF);
+        const faceB = new THREE.Mesh(new THREE.BoxGeometry(1, h * 0.62, thick * 0.16), faceMat);
+        faceB.position.set(0, h / 2, -(thick / 2 - thick * 0.04));
+        half.add(faceB);
+        // gold top-cap rail.
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(1, 14, thick + 10), capMat);
+        cap.position.y = h + 2;
+        half.add(cap);
+        // gold corner pillars down both ends.
+        const pL = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, h - 10, 12), capMat);
+        const pR = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, h - 10, 12), capMat);
+        pL.position.y = h / 2; pR.position.y = h / 2;
+        half.add(pL, pR);
+        return { half, body, faceF, faceB, cap, pL, pR };
+    }
+    const L = makeHalf(), R = makeHalf();
+    group.add(L.half, R.half);
     shadowy(group, true, true);
-    function seg(mesh, cap, x0, x1) {
+
+    // place a half spanning [x0..x1] at the wall's current y.
+    function seg(H, x0, x1) {
         const w = Math.max(1, x1 - x0), cx = (x0 + x1) / 2;
-        mesh.scale.x = w; mesh.position.copy(W(cx, ob.y, h / 2));
-        cap.scale.x = w; cap.position.copy(W(cx, ob.y, h + 2));
+        H.half.position.copy(W(cx, ob.y, 0));
+        const sx = w - 12;                          // inset so pillars cap the ends
+        H.body.scale.x = sx; H.faceF.scale.x = sx * 0.9; H.faceB.scale.x = sx * 0.9;
+        H.cap.scale.x = w;
+        H.pL.position.x = -w / 2 + 6;
+        H.pR.position.x = w / 2 - 6;
     }
     const view = {
         object3d: group,
         update(o) {
             const y = o ? o.y : ob.y, gapX = o ? o.gapX : ob.gapX, gapW = o ? o.gapW : ob.gapW;
             ob.y = y;
-            seg(left, capL, ob.x0, gapX - gapW / 2);
-            seg(right, capR, gapX + gapW / 2, ob.x1);
+            seg(L, ob.x0, gapX - gapW / 2);
+            seg(R, gapX + gapW / 2, ob.x1);
         },
         dispose() { disposeTree(group); },
     };
@@ -1556,6 +1834,163 @@ class CourseView {
         band.position.copy(W(cx, startY, 21));
         band.receiveShadow = true;
         this._add(band);
+
+        // --- festive dressing the WHOLE length: side bunting on poles,
+        //     distance markers, and big inflatables out over the slime. ---
+        this._decorateRace(minX, maxX, minY, maxY, finishY, startY, cx, curbT, curbH);
+    }
+
+    /* Dress a race course with Fall-Guys festival decor along its full length:
+       a run of striped poles down each side carrying drooping pennant bunting,
+       numbered distance markers, and big bobbing inflatables (balloons,
+       beach-balls, candy-stripe pillars) planted out over the slime so the
+       course is framed by colour from start to finish. All static geometry;
+       only the balloon/beach-ball bobs register a tiny per-frame transform. */
+    _decorateRace(minX, maxX, minY, maxY, finishY, startY, cx, curbT, curbH) {
+        const decoTop = startY - 40, decoBot = finishY + 120;
+        const span = decoTop - decoBot;
+        if (span <= 0) return;
+
+        // ---------- striped marker poles + bunting down each side ----------
+        // poles sit just outside the curb; bunting is strung pole-to-pole and
+        // also looped across the lane every so often for an arcade canopy feel.
+        const poleStep = 560;
+        const nPoles = Math.max(2, Math.round(span / poleStep) + 1);
+        const poleH = 250, poleR = 11;
+        const poleTopY = poleH;                         // bunting hangs from here
+        const poleMatA = inflate(WPAL.curb, { roughness: 0.2, clearcoat: 0.8, emissiveIntensity: 0.05 });
+        const poleMatB = inflate(0xfff3fb, { roughness: 0.2, clearcoat: 0.8 });
+        const ballMat = gloss(WPAL.gold, { roughness: 0.24, metalness: 0.45 });
+        const sidePoleX = [minX - curbT - 46, maxX + curbT + 46];
+        const poleRows = [];                            // [{x, ys:[...]}]
+        for (const px of sidePoleX) {
+            const ys = [];
+            for (let k = 0; k < nPoles; k++) {
+                const yy = decoBot + (k / (nPoles - 1)) * span;
+                ys.push(yy);
+                // candy-striped pole (two stacked half-cylinders of colour).
+                const pole = new THREE.Object3D();
+                for (let b = 0; b < 5; b++) {
+                    const seg = new THREE.Mesh(
+                        new THREE.CylinderGeometry(poleR, poleR, poleH / 5 + 0.5, 14),
+                        (b & 1) ? poleMatB : poleMatA);
+                    seg.position.set(0, (b + 0.5) * (poleH / 5), 0);
+                    pole.add(seg);
+                }
+                const knob = new THREE.Mesh(new THREE.SphereGeometry(poleR * 1.5, 16, 12), ballMat);
+                knob.position.set(0, poleH + poleR, 0);
+                pole.add(knob);
+                pole.position.copy(W(px, yy, 0));
+                shadowy(pole, true, false);
+                this._add(pole);
+            }
+            poleRows.push({ x: px, ys });
+        }
+        // bunting along each side between consecutive poles.
+        for (const row of poleRows) {
+            for (let k = 0; k < row.ys.length - 1; k++) {
+                const wy0 = W(row.x, row.ys[k], 0), wy1 = W(row.x, row.ys[k + 1], 0);
+                const line = buntingLine(wy0.x, wy0.z, wy1.x, wy1.z, poleTopY,
+                    { count: 8, sag: 46, flagScale: 1.05 });
+                this._add(line);
+            }
+        }
+        // a few canopy bunting lines looping ACROSS the lane (left<->right).
+        const crossN = Math.max(2, Math.round(span / 900));
+        for (let k = 0; k < crossN; k++) {
+            const yy = decoBot + ((k + 0.5) / crossN) * span;
+            const a = W(sidePoleX[0], yy, 0), b = W(sidePoleX[1], yy, 0);
+            const line = buntingLine(a.x, a.z, b.x, b.z, poleH + 24,
+                { count: 12, sag: 70, flagScale: 1.15 });
+            this._add(line);
+        }
+
+        // ---------- numbered distance markers down the right curb ----------
+        // chunky candy posts with a gold disc "sign", spaced evenly; gives the
+        // long course a sense of progress (like Fall Guys' section gates).
+        const markStep = 700;
+        const nMarks = Math.max(1, Math.floor(span / markStep));
+        const signMat = gloss(0xfff3fb, { roughness: 0.3, metalness: 0.05 });
+        const signRim = gloss(WPAL.gold, { roughness: 0.26, metalness: 0.45 });
+        const postMat = inflate(WPAL.grape, { roughness: 0.22, clearcoat: 0.8, emissiveIntensity: 0.05 });
+        for (let k = 1; k <= nMarks; k++) {
+            const yy = decoBot + (k / (nMarks + 1)) * span;
+            const mk = new THREE.Object3D();
+            const post = new THREE.Mesh(new THREE.CylinderGeometry(9, 11, 120, 14), postMat);
+            post.position.set(0, 60, 0);
+            mk.add(post);
+            const sign = new THREE.Mesh(new THREE.CylinderGeometry(34, 34, 10, 22), signMat);
+            sign.rotation.x = Math.PI / 2;              // face up-course
+            sign.position.set(0, 132, 0);
+            mk.add(sign);
+            const rim = new THREE.Mesh(new THREE.TorusGeometry(34, 4.5, 10, 24), signRim);
+            rim.position.set(0, 132, 0);
+            mk.add(rim);
+            // a small gold chevron on the sign hinting "this way / forward".
+            const chev = new THREE.Mesh(new THREE.ConeGeometry(15, 22, 3), signRim);
+            chev.position.set(0, 132, 6);
+            chev.rotation.x = Math.PI / 2;
+            mk.add(chev);
+            mk.position.copy(W(maxX + curbT + 30, yy, curbH));
+            shadowy(mk, true, false);
+            this._add(mk);
+        }
+
+        // ---------- BIG inflatables out over the slime, both sides ----------
+        // balloons + beach-balls + candy pillars planted beyond the curbs so
+        // the course is hemmed in by oversized candy props the whole way up.
+        const balloonCols = [WPAL.curb, WPAL.gold, WPAL.mint, WPAL.grape, 0x6cc6ff, WPAL.curbLt];
+        const propStep = 460;
+        const nProps = Math.max(3, Math.round(span / propStep));
+        let bi = 0;
+        for (const side of [-1, 1]) {
+            // stagger the two sides so props interleave rather than mirror.
+            const phase = side < 0 ? 0 : 0.5;
+            for (let k = 0; k < nProps; k++) {
+                const u = (k + phase) / nProps;
+                if (u <= 0.02 || u >= 0.98) continue;
+                const yy = decoBot + u * span;
+                // push well past the curb, out over the goo, with a little jitter.
+                const off = 230 + ((k * 53) % 4) * 70;
+                const px = side < 0 ? minX - curbT - off : maxX + curbT + off;
+                const kind = (k + (side < 0 ? 0 : 1)) % 3;
+                if (kind === 0) {
+                    // a tall bobbing balloon.
+                    const colr = balloonCols[bi % balloonCols.length];
+                    const bp = balloonProp(colr, { r: 44 + ((k * 31) % 3) * 8, height: 250 + ((k * 17) % 4) * 60 });
+                    bp.root.position.copy(W(px, yy, -4));
+                    this._add(bp.root);
+                    const seedX = px * 0.013 + yy * 0.011, amp = 16 + (bi % 3) * 4;
+                    const bobNode = bp.bob;
+                    this._anim.push((dt, t) => {
+                        const tt = t || 0;
+                        bobNode.position.y = Math.sin(tt * 0.9 + seedX) * amp;
+                        bobNode.rotation.z = Math.sin(tt * 0.7 + seedX) * 0.06;
+                    });
+                } else if (kind === 1) {
+                    // a fat beach-ball resting in the slime.
+                    const br = 58 + ((k * 23) % 3) * 12;
+                    const ball = beachBall(br);
+                    ball.position.copy(W(px, yy, br * 0.55 - 6));
+                    const seed = px * 0.01 + yy * 0.012;
+                    const baseBY = ball.position.y;
+                    this._anim.push((dt, t) => {
+                        const tt = t || 0;
+                        ball.position.y = baseBY + Math.sin(tt * 1.1 + seed) * 5;
+                        ball.rotation.y = tt * 0.25 + seed;
+                    });
+                    this._add(ball);
+                } else {
+                    // a tall candy-stripe pillar landmark.
+                    const ph = 220 + ((k * 41) % 4) * 70, pr = 26 + ((k * 13) % 3) * 6;
+                    const pil = candyPillar(ph, pr, {
+                        a: balloonCols[(bi + 2) % balloonCols.length], b: 0xfff3fb });
+                    pil.position.copy(W(px, yy, -6));
+                    this._add(pil);
+                }
+                bi++;
+            }
+        }
     }
 
     // black/white checker strip laid flat across the track at depth `dy`.
@@ -1604,39 +2039,85 @@ class CourseView {
         return g;
     }
 
-    // a celebratory arch: two posts + a rounded top beam, banner + bunting.
+    // A bold celebratory gateway: two fat candy-striped inflatable pillars,
+    // a chunky rounded top beam, a glossy banner board (START / FINISH) and a
+    // drooping pennant garland — the unmistakable Fall Guys start/finish gate.
     _buildArch(minX, maxX, dy, color, label) {
         const g = new THREE.Object3D();
-        const h = 320, postT = 30;
-        const postMat = gloss(shade(color, -0.18), { roughness: 0.4, metalness: 0.18 });
-        for (const px of [minX - 8, maxX + 8]) {
-            const post = new THREE.Mesh(new THREE.CylinderGeometry(postT * 0.5, postT * 0.62, h, 16), postMat);
-            post.position.copy(W(px, dy, h / 2));
-            shadowy(post, true, true);
-            g.add(post);
-            const ball = new THREE.Mesh(new THREE.SphereGeometry(postT * 0.7, 18, 14), gloss(WPAL.gold));
-            ball.position.copy(W(px, dy, h + 6));
-            shadowy(ball, true, true);
-            g.add(ball);
+        const h = 340, postR = 26;
+        const cx = (minX + maxX) / 2;
+        const px0 = minX - 18, px1 = maxX + 18;
+
+        // fat candy-striped inflatable pillars (alternating colour bands).
+        const stripeLt = inflate(shade(color, 0.45), { roughness: 0.2, clearcoat: 0.85, emissiveIntensity: 0.05 });
+        const stripeDk = inflate(color, { roughness: 0.2, clearcoat: 0.85, emissiveIntensity: 0.06 });
+        const finialMat = gloss(WPAL.gold, { roughness: 0.22, metalness: 0.5 });
+        const bands = 7, bandH = h / bands;
+        for (const px of [px0, px1]) {
+            const pillar = new THREE.Object3D();
+            for (let b = 0; b < bands; b++) {
+                const seg = new THREE.Mesh(
+                    new THREE.CylinderGeometry(postR, postR * 1.04, bandH + 0.6, 18),
+                    (b & 1) ? stripeLt : stripeDk);
+                seg.position.set(0, (b + 0.5) * bandH, 0);
+                pillar.add(seg);
+            }
+            // a wide gold base collar so it reads planted & chunky.
+            const collar = new THREE.Mesh(new THREE.CylinderGeometry(postR * 1.3, postR * 1.5, 26, 22), finialMat);
+            collar.position.set(0, 13, 0);
+            pillar.add(collar);
+            // a big rounded finial knob on top.
+            const knob = new THREE.Mesh(new THREE.SphereGeometry(postR * 1.05, 20, 16), finialMat);
+            knob.position.set(0, h + postR * 0.4, 0);
+            pillar.add(knob);
+            pillar.position.copy(W(px, dy, 0));
+            shadowy(pillar, true, true);
+            g.add(pillar);
         }
-        const span = (maxX + 8) - (minX - 8);
-        const beamMat = gloss(color, { roughness: 0.32, emissive: shade(color, -0.5), emissiveIntensity: 0.2 });
-        const beam = roundedSlab(span, 60, 34, 16, beamMat);
-        beam.position.copy(W((minX + maxX) / 2, dy, h - 26));
+
+        // a chunky rounded top beam straddling the lane.
+        const span = px1 - px0 + postR * 2;
+        const beamMat = inflate(color, { roughness: 0.2, clearcoat: 0.85, emissiveIntensity: 0.08 });
+        const beam = roundedSlab(span, 70, 44, 22, beamMat);
+        beam.position.copy(W(cx, dy, h - 8));
         shadowy(beam, true, true);
         g.add(beam);
-
-        // bunting triangles hanging under the beam for festivity.
-        const flagCols = [WPAL.curb, WPAL.gold, WPAL.mint, WPAL.skyTop, WPAL.grape];
-        const n = 11;
-        for (let i = 0; i < n; i++) {
-            const fm = mat(flagCols[i % flagCols.length], { roughness: 0.55, side: THREE.DoubleSide });
-            const flag = new THREE.Mesh(new THREE.ConeGeometry(15, 30, 3), fm);
-            const fx = minX + (i + 0.5) * (span / n);
-            flag.position.copy(W(fx, dy, h - 66));
-            flag.rotation.x = Math.PI;            // point down
-            g.add(flag);
+        // gold trim rails along the top & bottom lips of the beam.
+        for (const zz of [h - 8 + 30, h - 8 - 30]) {
+            const rail = new THREE.Mesh(new THREE.BoxGeometry(span + 6, 9, 9), finialMat);
+            rail.position.copy(W(cx, dy, zz));
+            shadowy(rail, true, true);
+            g.add(rail);
         }
+
+        // a glossy banner board hung on the beam (the START / FINISH sign).
+        const isFinish = (label === 'finish');
+        const boardMat = gloss(isFinish ? 0xfff3fb : shade(color, 0.5), { roughness: 0.28, metalness: 0.05, emissive: shade(color, -0.4), emissiveIntensity: 0.1 });
+        const boardW = Math.min(span * 0.62, 560);
+        const board = roundedSlab(boardW, 96, 16, 22, boardMat);
+        board.position.copy(W(cx, dy + 6, h - 84));
+        shadowy(board, true, true);
+        g.add(board);
+        // a slim gold frame strip around the banner (top & bottom edge bars).
+        for (const zz of [h - 84 + 46, h - 84 - 46]) {
+            const bar = new THREE.Mesh(new THREE.BoxGeometry(boardW, 7, 22), finialMat);
+            bar.position.copy(W(cx, dy + 6, zz));
+            shadowy(bar, true, true);
+            g.add(bar);
+        }
+        // three studs across the banner so it reads as a printed sign.
+        for (const ux of [-0.32, 0, 0.32]) {
+            const stud = new THREE.Mesh(new THREE.SphereGeometry(8, 12, 10),
+                gloss(isFinish ? color : WPAL.gold, { roughness: 0.25, metalness: 0.4 }));
+            stud.position.copy(W(cx + ux * boardW, dy + 14, h - 84));
+            g.add(stud);
+        }
+
+        // a drooping pennant garland slung under the beam, pole to pole.
+        const a = W(px0, dy, 0), b = W(px1, dy, 0);
+        const garland = buntingLine(a.x, a.z, b.x, b.z, h - 40, { count: 13, sag: 56, flagScale: 1.2 });
+        g.add(garland);
+
         return g;
     }
 
@@ -1662,6 +2143,27 @@ class CourseView {
             for (const [gw, gh, dx, dy] of [[w + 22, 16, 0, -P.hh], [w + 22, 16, 0, P.hh], [16, h + 22, -P.hw, 0], [16, h + 22, P.hw, 0]]) {
                 const rail = new THREE.Mesh(new THREE.BoxGeometry(gw, 14, gh), railMat);
                 rail.position.copy(W(P.cx + dx, P.cy + dy, 8 + platH / 2 + 4)); shadowy(rail, true, true); this._add(rail);
+            }
+            // chunky candy corner posts with glossy gold finials — frames the
+            // arena and reads unmistakably as a Fall Guys Block Party platform.
+            const postMat = inflate(WPAL.curb, { roughness: 0.2, clearcoat: 0.8, emissiveIntensity: 0.05 });
+            const finMat = gloss(WPAL.gold, { roughness: 0.24, metalness: 0.5 });
+            for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+                const post = new THREE.Mesh(new THREE.CylinderGeometry(20, 24, 96, 18), postMat);
+                post.position.copy(W(P.cx + sx * P.hw, P.cy + sy * P.hh, 8 + platH / 2 + 48));
+                shadowy(post, true, true); this._add(post);
+                const fin = new THREE.Mesh(new THREE.SphereGeometry(22, 18, 14), finMat);
+                fin.position.copy(W(P.cx + sx * P.hw, P.cy + sy * P.hh, 8 + platH / 2 + 96 + 14));
+                shadowy(fin, true, false); this._add(fin);
+            }
+            // festive bunting strung between the four corner posts.
+            const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+            for (let ci = 0; ci < 4; ci++) {
+                const c0 = corners[ci], c1 = corners[(ci + 1) % 4];
+                const a = W(P.cx + c0[0] * P.hw, P.cy + c0[1] * P.hh, 0);
+                const b = W(P.cx + c1[0] * P.hw, P.cy + c1[1] * P.hh, 0);
+                const line = buntingLine(a.x, a.z, b.x, b.z, 8 + platH / 2 + 92, { count: 9, sag: 40, flagScale: 1.05 });
+                this._add(line);
             }
             const under = new THREE.Mesh(new THREE.BoxGeometry(w * 0.86, 150, h * 0.86), mat(shade(WPAL.track, -0.32), { roughness: 0.8 }));
             under.position.copy(W(P.cx, P.cy, 8 - platH / 2 - 75)); this._add(under);
