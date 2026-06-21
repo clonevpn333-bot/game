@@ -7629,7 +7629,39 @@ const Engine = {
         }
         const p = subject || round.player;
         let pos, look;
-        if (round.kind === 'race' || round.kind === 'mountain' || round.kind === 'climb') {
+        const raceLike = round.kind === 'race' || round.kind === 'mountain' || round.kind === 'climb';
+
+        // ---- cinematic MAP-PREVIEW shot during the intro card ----
+        // A high establishing view looking straight down the whole course (the
+        // map laid out ahead), descending smoothly into the exact chase framing
+        // by the time the gates open. Always faces forward (no flip, no clipping).
+        if (raceLike && round.phase === 'intro' && round.finishY != null) {
+            const introT = (typeof CFG !== 'undefined' && CFG.INTRO_TIME) || 2.4;
+            const raw = U.clamp(1 - (round.phaseT / introT), 0, 1);
+            const e  = raw * raw * (3 - 2 * raw);                // smoothstep (position)
+            const cx = round.cx != null ? round.cx : p.x;
+            // The camera flies UP the course from beyond the finish line —
+            // every wall/obstacle approaches and passes — then, in the last
+            // beat, turns to face down-course and settles into the chase.
+            const posZ = U.lerp(round.finishY - 250, p.y + 270, e);
+            const dropF = Math.pow(U.clamp((raw - 0.6) / 0.4, 0, 1), 2);
+            const posH = U.lerp(340, p.z + 168, dropF);          // stays above the walls, drops in at the end
+            const px   = U.lerp(cx, p.x, e);
+            // look turns from up-course (revealing the course) to the chase look
+            const turn = U.clamp((raw - 0.72) / 0.28, 0, 1);
+            const tt = turn * turn * (3 - 2 * turn);
+            const lookX = U.lerp(cx,            p.x,        tt);
+            const lookH = U.lerp(110,           p.z + 46,   tt);
+            const lookZ = U.lerp(posZ + 1000,   p.y - 110,  tt);
+            this._camPos.set(px, posH, posZ);
+            this._camLook.set(lookX, lookH, lookZ);
+            this.camera.position.copy(this._camPos);
+            this.camera.lookAt(this._camLook);
+            this._camSnap = true;                                // chase snaps in cleanly at 'go'
+            return;
+        }
+
+        if (raceLike) {
             // 3rd-person chase: close behind and a little above the bean, looking
             // just ahead down the course (close, low — like the real game).
             pos  = new THREE.Vector3(p.x, p.z + 168, p.y + 270);

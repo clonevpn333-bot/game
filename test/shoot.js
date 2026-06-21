@@ -78,6 +78,33 @@ const COURSES = ids.length ? ids : ['door_dash', 'gate_crash', 'whirlygig', 'diz
 
     for (const id of COURSES) {
         console.log('shooting', id);
+
+        // --intro: capture the cinematic map-preview flyover (3 frames)
+        if (opts.intro) {
+            const ok = await page.evaluate((rid) => {
+                const { Game, SHOW } = window.__BR;
+                const def = SHOW.find(d => d.id === rid); if (!def) return false;
+                Game.toMenu(); Game.startShow();
+                Game.show.seq = [Object.assign({}, def)]; Game.loadRound(0);
+                window.__BR.Engine._dbgCam = null;
+                const sc = window.__BR.Engine.scene;
+                for (const n of ['clouds', 'mountains', 'hills', 'blimps']) { const o = sc.getObjectByName(n); if (o) o.visible = true; }
+                return true;
+            }, id);
+            if (!ok) { console.log('  ! unknown', id); continue; }
+            // wait until the course is loaded and the intro flyover is running
+            await page.waitForFunction(() => {
+                const g = window.__BR.Game;
+                return g.screen === 'playing' && g.show && g.show.round &&
+                    (g.show.round.phase === 'intro' || g.show.round.phase === 'go');
+            }, { timeout: 30000, polling: 25 }).catch(() => {});
+            for (const [off, tag] of [[150, 'a'], [800, 'b'], [800, 'c']]) {
+                await wait(off);
+                await page.screenshot({ path: path.join(SHOTS, `intro-${id}-${tag}.png`) });
+            }
+            continue;
+        }
+
         if (!(await loadCourse(id))) continue;
         // clear any debug cam, restore backdrop, optionally teleport the player
         // to a sim-y so the chase cam frames that spot, let it settle, shoot.
