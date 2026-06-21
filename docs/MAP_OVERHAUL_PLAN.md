@@ -1,5 +1,27 @@
 # Map Overhaul Plan — "make the levels feel real"
 
+## ⛔ CRITICAL CORRECTION — DO THIS FIRST TOMORROW (before any overhaul)
+**Bug introduced by the visual-fidelity pass (commit ef4446a, `view_world.js`):**
+the new decorative inflatables — **balloons, beach-balls, candy-stripe
+pillars** added by `_decorateRace(...)` (and the bobbing-prop closures) — are
+landing **in / over the race lanes**, blocking the view and wrecking the look.
+Confirmed on **The Whirlygig**; user reports it on **all / most races**.
+- These are decoration only (no collision), but they obscure the path and ruin
+  the game's appearance — unacceptable.
+- FIX: relocate every decorative prop CLEARLY outside the playable lane
+  (beyond the side curbs `minX`/`maxX`, well out over the slime, and high/low
+  enough not to overlap the chase camera), or cut the ones that can't be kept
+  clear. The bobbing/animated props must not drift back over the track.
+- VERIFY EACH RACE ONE-BY-ONE with a play-camera screenshot: Door Dash, Gate
+  Crash, The Whirlygig, Dizzy Heights, Fruit Chute, Hit Parade, Knight Fever,
+  Slime Climb, Big Fans (+ Fall Mountain / Lost Temple). The lane must be
+  visually clear end-to-end before moving on.
+- Consider keeping a "decoration safe-zone" rule in `view_world.js` so props
+  can never be placed within the lane bounds.
+
+---
+
+
 > A refresh, not a rewrite. Keep the engine, cosmetics, shop/Fall Pass, UI,
 > and the working modes (Hex-A-Gone, Tail Tag, Perfect Match, Block Party,
 > Royal Fumble, Jump Club/Showdown, Tip Toe). Replace the RACE/CLIMB/MOUNTAIN
