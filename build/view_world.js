@@ -1527,7 +1527,7 @@ function makeCannon(ob) {
                 const m = pool[i] || makeBoulder();
                 m.visible = true;
                 // ball lives in sim space; place relative to the cannon group.
-                const wp = W(ball.x, ball.y, ballR);
+                const wp = W(ball.x, ball.y, (ball.gz || 0) + ballR);
                 m.position.set(wp.x - group.position.x, wp.y - group.position.y, wp.z - group.position.z);
                 // rolling-rotate about world X (it travels toward +Z).
                 m.rotation.x = (ball.spin || 0);
@@ -1773,59 +1773,67 @@ class CourseView {
         const len = maxY - minY;
         const midY = (minY + maxY) / 2;
 
-        // --- the track slab (pastel blue), slightly raised over the slime ---
-        const trackMat = mat(WPAL.track, { roughness: 0.7, metalness: 0.0 });
-        const track = new THREE.Mesh(new THREE.BoxGeometry(w, 20, len), trackMat);
-        track.position.copy(W(cx, midY, 10));
-        track.receiveShadow = true;
-        track.castShadow = false;
-        this._add(track);
-
-        // soft tonal bands across the track so it isn't one flat sheet.
-        const bandMat = mat(WPAL.trackAlt, { roughness: 0.72 });
-        const bandStep = 360;
-        for (let yy = minY; yy < maxY; yy += bandStep * 2) {
-            const seg = Math.min(bandStep, maxY - yy);
-            if (seg <= 0) break;
-            const b = new THREE.Mesh(new THREE.BoxGeometry(w, 2, seg), bandMat);
-            b.position.copy(W(cx, yy + seg / 2, 20.2));
-            b.receiveShadow = true;
-            this._add(b);
-        }
-
-        // dashed centre lane line (bright dashes).
-        const dashMat = gloss(0xffffff, { roughness: 0.35, emissive: 0xffffff, emissiveIntensity: 0.06 });
-        const dashLen = 110, gap = 80;
-        for (let yy = finishY + 80; yy < maxY - 60; yy += dashLen + gap) {
-            const seg = Math.min(dashLen, maxY - 60 - yy);
-            if (seg <= 0) break;
-            const dash = new THREE.Mesh(new THREE.BoxGeometry(14, 3, seg), dashMat);
-            dash.position.copy(W(cx, yy + seg / 2, 20.6));
-            dash.receiveShadow = true;
-            this._add(dash);
-        }
-
-        // --- rounded raised curbs / side walls (candy pink + gold cap) ---
         const curbH = 78, curbT = 30;
-        const curbMat = mat(WPAL.curb, { roughness: 0.5 });
-        const capMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.25 });
-        for (const side of [-1, 1]) {
-            const wx = side < 0 ? minX - curbT / 2 : maxX + curbT / 2;
-            const wall = roundedSlab(curbT, curbH, len, 10, curbMat);
-            wall.position.copy(W(wx, midY, curbH / 2));
-            shadowy(wall, true, true);
-            this._add(wall);
-            const cap = new THREE.Mesh(new THREE.BoxGeometry(curbT + 8, 12, len), capMat);
-            cap.position.copy(W(wx, midY, curbH + 4));
-            shadowy(cap, true, true);
-            this._add(cap);
-            // periodic candy bumpers along each curb for chunk + rhythm.
-            for (let yy = minY + 120; yy < maxY - 120; yy += 300) {
-                const bump = new THREE.Mesh(new THREE.SphereGeometry(20, 16, 12), gloss(WPAL.gold));
-                bump.scale.set(1, 0.7, 1);
-                bump.position.copy(W(wx, yy, curbH + 8));
-                shadowy(bump, true, true);
-                this._add(bump);
+        const T = r.terrain;                                   // optional height profile
+        const gz = (yy) => T ? T.heightAt(cx, yy) : 0;         // floor height at a course-y
+
+        if (T) {
+            // sloped / stepped / pitted track that follows the height profile
+            this._buildTerrainTrack(r, { minX, maxX, cx, w, curbT, curbH });
+        } else {
+            // --- flat track slab (pastel blue), slightly raised over the slime ---
+            const trackMat = mat(WPAL.track, { roughness: 0.7, metalness: 0.0 });
+            const track = new THREE.Mesh(new THREE.BoxGeometry(w, 20, len), trackMat);
+            track.position.copy(W(cx, midY, 10));
+            track.receiveShadow = true;
+            track.castShadow = false;
+            this._add(track);
+
+            // soft tonal bands across the track so it isn't one flat sheet.
+            const bandMat = mat(WPAL.trackAlt, { roughness: 0.72 });
+            const bandStep = 360;
+            for (let yy = minY; yy < maxY; yy += bandStep * 2) {
+                const seg = Math.min(bandStep, maxY - yy);
+                if (seg <= 0) break;
+                const b = new THREE.Mesh(new THREE.BoxGeometry(w, 2, seg), bandMat);
+                b.position.copy(W(cx, yy + seg / 2, 20.2));
+                b.receiveShadow = true;
+                this._add(b);
+            }
+
+            // dashed centre lane line (bright dashes).
+            const dashMat = gloss(0xffffff, { roughness: 0.35, emissive: 0xffffff, emissiveIntensity: 0.06 });
+            const dashLen = 110, gap = 80;
+            for (let yy = finishY + 80; yy < maxY - 60; yy += dashLen + gap) {
+                const seg = Math.min(dashLen, maxY - 60 - yy);
+                if (seg <= 0) break;
+                const dash = new THREE.Mesh(new THREE.BoxGeometry(14, 3, seg), dashMat);
+                dash.position.copy(W(cx, yy + seg / 2, 20.6));
+                dash.receiveShadow = true;
+                this._add(dash);
+            }
+
+            // --- rounded raised curbs / side walls (candy pink + gold cap) ---
+            const curbMat = mat(WPAL.curb, { roughness: 0.5 });
+            const capMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.25 });
+            for (const side of [-1, 1]) {
+                const wx = side < 0 ? minX - curbT / 2 : maxX + curbT / 2;
+                const wall = roundedSlab(curbT, curbH, len, 10, curbMat);
+                wall.position.copy(W(wx, midY, curbH / 2));
+                shadowy(wall, true, true);
+                this._add(wall);
+                const cap = new THREE.Mesh(new THREE.BoxGeometry(curbT + 8, 12, len), capMat);
+                cap.position.copy(W(wx, midY, curbH + 4));
+                shadowy(cap, true, true);
+                this._add(cap);
+                // periodic candy bumpers along each curb for chunk + rhythm.
+                for (let yy = minY + 120; yy < maxY - 120; yy += 300) {
+                    const bump = new THREE.Mesh(new THREE.SphereGeometry(20, 16, 12), gloss(WPAL.gold));
+                    bump.scale.set(1, 0.7, 1);
+                    bump.position.copy(W(wx, yy, curbH + 8));
+                    shadowy(bump, true, true);
+                    this._add(bump);
+                }
             }
         }
 
@@ -1843,24 +1851,66 @@ class CourseView {
         this._add(sFront.mesh); this._disposables.push(sFront.mesh); this._registerSlime(sFront);
 
         // --- CHECKERED finish line + celebratory ARCH at finishY ---
-        this._add(this._buildCheckerLine(minX, maxX, finishY, 21, 30));
-        this._add(this._buildArch(minX, maxX, finishY, WPAL.gold, 'finish'));
+        const fz = gz(finishY);
+        const chk = this._buildCheckerLine(minX, maxX, finishY, 21, 30); chk.position.y += fz; this._add(chk);
+        const fArch = this._buildArch(minX, maxX, finishY, WPAL.gold, 'finish'); fArch.position.y += fz; this._add(fArch);
 
         // --- giant grabbable CROWN floating at the finish (Fall Mountain) ---
-        if (r.crownFinish) this._add(this._buildCrown((minX + maxX) / 2, finishY - 40));
+        if (r.crownFinish) { const cr = this._buildCrown((minX + maxX) / 2, finishY - 40); cr.position.y += fz; this._add(cr); }
 
         // --- START gate near maxY (grape) + a glowing start band ---
         const startY = maxY - 150;
-        this._add(this._buildArch(minX, maxX, startY, WPAL.grape, 'start'));
+        const sz = gz(startY);
+        const sArch = this._buildArch(minX, maxX, startY, WPAL.grape, 'start'); sArch.position.y += sz; this._add(sArch);
         const startBand = mat(WPAL.grape, { roughness: 0.5, emissive: 0x2a0f55, emissiveIntensity: 0.25 });
         const band = new THREE.Mesh(new THREE.BoxGeometry(w, 4, 30), startBand);
-        band.position.copy(W(cx, startY, 21));
+        band.position.copy(W(cx, startY, 21 + sz));
         band.receiveShadow = true;
         this._add(band);
 
-        // --- festive dressing the WHOLE length: side bunting on poles,
-        //     distance markers, and big inflatables out over the slime. ---
-        this._decorateRace(minX, maxX, minY, maxY, finishY, startY, cx, curbT, curbH);
+        // generic decoration is intentionally empty (see _decorateRace).
+        this._decorateRace();
+    }
+
+    /* Build a race track that follows a Terrain height profile: one slab + curb
+       run per segment, tilted for ramps, omitted for pits. World heights match
+       the bean physics floor (top of each slab sits at the segment's z). */
+    _buildTerrainTrack(r, P) {
+        const { minX, maxX, cx, w, curbT, curbH } = P;
+        const O = 20;                                   // courseView race y-offset compensation
+        const thick = 22;
+        const trackMat = mat(WPAL.track, { roughness: 0.7 });
+        const trackAlt = mat(WPAL.trackAlt, { roughness: 0.72 });
+        const curbMat = mat(WPAL.curb, { roughness: 0.5 });
+        const capMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.25 });
+        let si = 0;
+        for (const s of r.terrain.segs) {
+            if (s.void) continue;                       // a pit — leave it open (slime shows below)
+            const yLen = s.yHi - s.yLo, ymid = (s.yLo + s.yHi) / 2;
+            const zmid = (s.z0 + s.z1) / 2, dz = s.z1 - s.z0;
+            const len3d = Math.hypot(yLen, dz) + 1;
+            const tilt = Math.atan2(dz, yLen);          // rotate about world X (along the course)
+            // track slab — top surface sits at the segment's floor height.
+            const slab = new THREE.Mesh(new THREE.BoxGeometry(w, thick, len3d), (si++ & 1) ? trackAlt : trackMat);
+            slab.position.set(cx, zmid - thick / 2 + O, ymid);
+            slab.rotation.x = -tilt;
+            slab.receiveShadow = true;
+            this._add(slab);
+            // curbs + gold caps, both sides, tilted to match.
+            for (const side of [-1, 1]) {
+                const wx = side < 0 ? minX - curbT / 2 : maxX + curbT / 2;
+                const wall = new THREE.Mesh(new THREE.BoxGeometry(curbT, curbH, len3d), curbMat);
+                wall.position.set(wx, zmid + curbH / 2 - 20 + O, ymid);
+                wall.rotation.x = -tilt;
+                shadowy(wall, true, true);
+                this._add(wall);
+                const cap = new THREE.Mesh(new THREE.BoxGeometry(curbT + 8, 12, len3d), capMat);
+                cap.position.set(wx, zmid + curbH - 16 + O, ymid);
+                cap.rotation.x = -tilt;
+                shadowy(cap, true, true);
+                this._add(cap);
+            }
+        }
     }
 
     /* Generic race dressing is intentionally EMPTY.

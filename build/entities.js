@@ -883,16 +883,19 @@ class Cannon {
         this.spread = o.spread || 130; this.reach = o.reach || 1600;
         this.color = o.color || '#e6395a'; this.fruit = !!o.fruit; this.balls = [];
     }
-    update(dt) {
+    update(dt, round) {
+        const gzf = round && round.groundZ ? round.groundZ : null;
         this.t -= dt;
         if (this.t <= 0) {
             this.t = this.interval;
-            this.balls.push({ x: this.x + U.rngf(-this.spread, this.spread), y: this.y,
-                vx: U.rngf(-26, 26), vy: this.speed, spin: 0 });
+            const x0 = this.x + U.rngf(-this.spread, this.spread);
+            this.balls.push({ x: x0, y: this.y, vx: U.rngf(-26, 26), vy: this.speed, spin: 0,
+                gz: gzf ? gzf(x0, this.y) : 0 });
         }
         for (let i = this.balls.length - 1; i >= 0; i--) {
             const b = this.balls[i];
             b.y += b.vy * dt; b.x += b.vx * dt; b.spin += dt * 6;
+            b.gz = gzf ? gzf(b.x, b.y) : 0;             // roll along the terrain floor
             if (b.y > this.y + this.reach) this.balls.splice(i, 1);
         }
     }

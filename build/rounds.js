@@ -124,7 +124,7 @@ class Round {
 
     _simulate(dt) {
         if (this.onUpdate) this.onUpdate(this, dt);
-        for (const o of this.obstacles) o.update(dt);
+        for (const o of this.obstacles) o.update(dt, this);
         if (this.tiles) for (const t of this.tiles) t.update(dt);
 
         for (const b of this.beans) {
@@ -1032,16 +1032,27 @@ const Rounds = {
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
         // -------------------------------------------------- FRUIT CHUTE
-        fruitChute(r) {                     // RACE — climb the belts while fruit rains from the top
+        fruitChute(r) {                     // RACE — climb the slanted ramps while fruit pours from the top
             Rounds._raceCommon(r);
-            // fruit cannons at the TOP of the slope, firing fruit down in a few
-            // streams (with safe lanes between) so the climb stays winnable.
-            Rounds._cannons(r, 640, { n: 3, interval: 2.2, speed: 380, reach: 3400, spread: 110, fruit: true, ballR: 40 });
-            // the climb: uphill conveyor belts pushing you back down, with breather gaps
-            Rounds._conveyor(r, 2960, 3300, { dy: 1, push: 135, color: '#46d36a' });
-            Rounds._conveyor(r, 2360, 2700, { dy: 1, push: 142, color: '#5ad1ff' });
-            Rounds._conveyor(r, 1760, 2100, { dy: 1, push: 138, color: '#46d36a' });
-            Rounds._conveyor(r, 1160, 1500, { dy: 1, push: 145, color: '#5ad1ff' });
+            // A real UPHILL climb: ramps rising toward the finish, broken by flat
+            // landings. (Higher z at a lower y = uphill toward the finish.)
+            r.terrain = new Terrain()
+                .flat(3600, 3980, 0)
+                .ramp(3000, 3600, 150, 0)        // climb 0 → 150
+                .flat(2800, 3000, 150)
+                .ramp(2200, 2800, 300, 150)      // climb 150 → 300
+                .flat(2000, 2200, 300)
+                .ramp(1400, 2000, 450, 300)      // climb 300 → 450
+                .flat(1200, 1400, 450)
+                .ramp(700, 1200, 560, 450)       // climb 450 → 560
+                .flat(240, 700, 560);            // the summit (cannons + finish)
+            // fruit cannons at the TOP firing fruit down the whole chute.
+            Rounds._cannons(r, 600, { n: 3, interval: 2.0, speed: 400, reach: 3600, spread: 110, fruit: true, ballR: 40 });
+            // reverse conveyors on the ramps shoving climbers back down the slope.
+            Rounds._conveyor(r, 3050, 3520, { dy: 1, push: 130, color: '#46d36a' });
+            Rounds._conveyor(r, 2280, 2720, { dy: 1, push: 138, color: '#5ad1ff' });
+            Rounds._conveyor(r, 1480, 1920, { dy: 1, push: 134, color: '#46d36a' });
+            Rounds._conveyor(r, 780, 1120, { dy: 1, push: 142, color: '#5ad1ff' });
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
         // -------------------------------------------------- HIT PARADE
