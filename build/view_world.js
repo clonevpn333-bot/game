@@ -1323,6 +1323,37 @@ function makeMatchTile(ob) {
     return view;
 }
 
+// Block Party: a wall in two halves with a gap between, sliding along y.
+function makeSlideWall(ob) {
+    const group = new THREE.Object3D();
+    const h = ob.height || 210, thick = ob.thick || 42;
+    const wallMat = mat(ob.color || WPAL.grape, { roughness: 0.5, metalness: 0.08 });
+    const capMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.3 });
+    const left = new THREE.Mesh(new THREE.BoxGeometry(1, h, thick), wallMat);
+    const right = new THREE.Mesh(new THREE.BoxGeometry(1, h, thick), wallMat);
+    const capL = new THREE.Mesh(new THREE.BoxGeometry(1, 13, thick + 8), capMat);
+    const capR = new THREE.Mesh(new THREE.BoxGeometry(1, 13, thick + 8), capMat);
+    group.add(left, right, capL, capR);
+    shadowy(group, true, true);
+    function seg(mesh, cap, x0, x1) {
+        const w = Math.max(1, x1 - x0), cx = (x0 + x1) / 2;
+        mesh.scale.x = w; mesh.position.copy(W(cx, ob.y, h / 2));
+        cap.scale.x = w; cap.position.copy(W(cx, ob.y, h + 2));
+    }
+    const view = {
+        object3d: group,
+        update(o) {
+            const y = o ? o.y : ob.y, gapX = o ? o.gapX : ob.gapX, gapW = o ? o.gapW : ob.gapW;
+            ob.y = y;
+            seg(left, capL, ob.x0, gapX - gapW / 2);
+            seg(right, capR, gapX + gapW / 2, ob.x1);
+        },
+        dispose() { disposeTree(group); },
+    };
+    view.update(ob);
+    return view;
+}
+
 function makeObstacleView(ob) {
     switch (ob && ob.kind) {
         case 'spinner':     return makeSpinner(ob);
@@ -1334,6 +1365,7 @@ function makeObstacleView(ob) {
         case 'conveyor':    return makeConveyor(ob);
         case 'bumper':      return makeBumper(ob);
         case 'movingblock': return makeMovingBlock(ob);
+        case 'slidewall':   return makeSlideWall(ob);
         case 'cannon':      return makeCannon(ob);
         default: {
             const g = new THREE.Object3D();
@@ -1617,6 +1649,24 @@ class CourseView {
         const sea = makeSlime(P.cx, P.cy, 4400, 4400, -44);
         this._add(sea.mesh); this._disposables.push(sea.mesh);
         this._registerSlime(sea, true);
+
+        // RECTANGULAR floor (Block Party) — a square candy slab + gold rim.
+        if (P.rect) {
+            const platH = 40, w = P.hw * 2, h = P.hh * 2;
+            const slab = new THREE.Mesh(new THREE.BoxGeometry(w, platH, h), mat(WPAL.track, { roughness: 0.6 }));
+            slab.position.copy(W(P.cx, P.cy, 8)); shadowy(slab, true, true); this._add(slab);
+            const inlay = new THREE.Mesh(new THREE.BoxGeometry(w * 0.9, 5, h * 0.9), gloss(WPAL.trackAlt, { roughness: 0.4 }));
+            inlay.position.copy(W(P.cx, P.cy, 8 + platH / 2 + 1)); inlay.receiveShadow = true; this._add(inlay);
+            // gold cap rails around the four edges
+            const railMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.25 });
+            for (const [gw, gh, dx, dy] of [[w + 22, 16, 0, -P.hh], [w + 22, 16, 0, P.hh], [16, h + 22, -P.hw, 0], [16, h + 22, P.hw, 0]]) {
+                const rail = new THREE.Mesh(new THREE.BoxGeometry(gw, 14, gh), railMat);
+                rail.position.copy(W(P.cx + dx, P.cy + dy, 8 + platH / 2 + 4)); shadowy(rail, true, true); this._add(rail);
+            }
+            const under = new THREE.Mesh(new THREE.BoxGeometry(w * 0.86, 150, h * 0.86), mat(shade(WPAL.track, -0.32), { roughness: 0.8 }));
+            under.position.copy(W(P.cx, P.cy, 8 - platH / 2 - 75)); this._add(under);
+            return;
+        }
 
         // the thick rounded platform disc hovering above the goo.
         const platH = 40;

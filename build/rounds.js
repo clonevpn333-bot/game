@@ -209,8 +209,11 @@ class Round {
             if (bean.x > hi) { bean.x = hi; if (bean.vx > 0) bean.vx *= -0.2; }
             if (bean.y > this.maxY - bean.r) bean.y = this.maxY - bean.r;
         } else if (this.kind === 'survival') {
-            if (bean.grounded && U.dist(bean.x, bean.y, this.platform.cx, this.platform.cy) > this.platform.r + (this.fallGrace || 0))
-                bean.startFall();
+            const P = this.platform, g = this.fallGrace || 0;
+            if (bean.grounded) {
+                if (P.rect) { if (Math.abs(bean.x - P.cx) > P.hw + g || Math.abs(bean.y - P.cy) > P.hh + g) bean.startFall(); }
+                else if (U.dist(bean.x, bean.y, P.cx, P.cy) > P.r + g) bean.startFall();
+            }
         } else if (this.kind === 'tag') {
             // Tail Tag is a walled arena — nobody falls off; clamp to the rim.
             const P = this.platform, dx = bean.x - P.cx, dy = bean.y - P.cy, d = Math.hypot(dx, dy) || 1;
@@ -493,23 +496,20 @@ function jumpThink(bean, round, dt) {
 }
 
 // Block Party: hug the middle (avoid the rim) and flee the path of slide-walls.
+// Block Party: line up your X with the gap of the nearest approaching wall,
+// and ease back toward the middle so you're not shoved off the back edge.
 function blockThink(bean, round, dt) {
     const P = round.platform;
-    const tox = P.cx - bean.x, toy = P.cy - bean.y, dl = Math.hypot(tox, toy) || 1;
-    const edge = dl / P.r;                          // pull harder toward centre near the rim
-    let mx = tox / dl * (0.3 + edge * 0.9), my = toy / dl * (0.3 + edge * 0.9);
+    let wall = null, best = 1e9;
     for (const o of round.obstacles) {
-        if (o.kind !== 'movingblock') continue;
-        const ahead = o.cx + o.dir * 70;            // where the wall is heading
-        if (Math.abs(o.cy - bean.y) < o.thick + 48 && Math.abs(ahead - bean.x) < o.w * 0.5 + 95
-            && U.chance(0.55 + bean.skill * 0.45)) {     // weaker beans sometimes fail to dodge
-            // flee the wall — but if that runs you at the rim, cut the other way
-            let s = bean.x >= o.cx ? 1 : -1;
-            if (s * tox < 0 && Math.abs(tox) > 50) s = -s;   // tox = toward centre
-            mx += s * 1.8;
-        }
+        if (o.kind !== 'slidewall') continue;
+        const d = (bean.y - o.y) * o.dir;           // >0 = wall is behind us, sweeping toward us
+        if (d > -bean.r - 6 && d < best) { best = d; wall = o; }
     }
-    const ml = Math.hypot(mx, my) || 1; bean.ai.mx = mx / ml; bean.ai.my = my / ml;
+    let mx = 0, my = U.clamp((P.cy - bean.y) / 170, -0.55, 0.55);
+    if (wall && U.chance(0.5 + bean.skill * 0.5))    // weaker beans react late & get caught
+        mx = U.clamp((wall.gapX - bean.x) / 60, -1, 1);
+    bean.ai.mx = mx; bean.ai.my = my;
     bean.ai.jump = false; bean.ai.dive = false; bean.ai.grab = false;
 }
 
@@ -716,6 +716,13 @@ const Rounds = {
         r.thinkFn = jumpThink;
         return { cx, cy, R };
     },
+    _arenaRect(r, hw, hh) {                            // a square/rectangular survival floor
+        const cx = 640, cy = 380;
+        r.kind = 'survival'; r.camMode = 'fixed';
+        r.platform = { cx, cy, rect: true, hw, hh, r: Math.max(hw, hh) };
+        r.minX = 0; r.maxX = CFG.W; r.minY = 0; r.maxY = CFG.H;
+        return { cx, cy, hw, hh };
+    },
     _sweeper(r, o) {
         const cx = r.platform.cx, cy = r.platform.cy, R = r.platform.r;
         const s = new Spinner(Object.assign({ cx, cy, len: R - 6, thick: 22, angle: -Math.PI / 2,
@@ -909,15 +916,24 @@ const Rounds = {
         },
 
         // -------------------------------------------------- BLOCK PARTY
-        blockParty(r) {                     // SURVIVAL — slide-walls shove you off
-            const A = Rounds._arena(r, 365);
-            r.thinkFn = blockThink; r.fallGrace = 18;   // a touch of rim grace so a nudge isn't instant death
+        blockParty(r) {                     // SURVIVAL — square floor, slip the gapped walls
+            const A = Rounds._arenaRect(r, 300, 250);
+            r.thinkFn = blockThink; r.fallGrace = 24;
             r.timer = r.def.duration || 30;
-            const mk = (cy, dir, off) => r.obstacles.push(new MovingBlock({ cy, x0: A.cx - 305, x1: A.cx + 305,
-                w: 150, thick: 50, height: 220, speed: 100, dir, cx: A.cx + off, color: '#9a6cff' }));
-            mk(A.cy - 130, 1, -305); mk(A.cy + 30, -1, 305); mk(A.cy + 185, 1, -120);
-            Rounds._spawnRing(r);
-            r.onUpdate = (rr, dt) => { for (const o of rr.obstacles) if (o.kind === 'movingblock') o.speed += dt * 3; };
+            const x0 = A.cx - A.hw, x1 = A.cx + A.hw;
+            const yMin = A.cy - A.hh - 20, yMax = A.cy + A.hh + 20;
+            const cols = ['#9a6cff', '#5ad1ff', '#ff8fd0'];
+            for (let i = 0; i < 3; i++)
+                r.obstacles.push(new SlideWall({ x0, x1, y: yMin + i * 175, dir: 1, speed: 88,
+                    thick: 44, gapW: 155, yMin, yMax, color: cols[i % cols.length] }));
+            // spawn beans across the square
+            r.beans.forEach((b, i) => {
+                b.x = A.cx + U.rngf(-A.hw * 0.72, A.hw * 0.72);
+                b.y = A.cy + U.rngf(-A.hh * 0.35, A.hh * 0.55);
+                b.startX = b.x; b.startY = b.y;
+                b.skill = b.isPlayer ? 1 : U.rngf(0.34, 0.75); b.facing = -Math.PI / 2;
+            });
+            r.onUpdate = (rr, dt) => { for (const o of rr.obstacles) if (o.kind === 'slidewall') o.speed += dt * 2.5; };
         },
 
         // -------------------------------------------------- DIZZY HEIGHTS
@@ -934,15 +950,16 @@ const Rounds = {
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
         // -------------------------------------------------- FRUIT CHUTE
-        fruitChute(r) {                     // RACE — climb the belts under a fruit barrage
+        fruitChute(r) {                     // RACE — climb the belts while fruit rains from the top
             Rounds._raceCommon(r);
-            Rounds._cannons(r, 3300, { n: 3, interval: 1.8, speed: 360, reach: 2400, spread: 150, fruit: true, ballR: 38 });
-            Rounds._conveyor(r, 2900, 3150, { dy: 1, push: 135, color: '#46d36a' });
-            Rounds._bumpers(r, 2550, { rows: 2, cols: 4, color: '#ffd23f' });
-            Rounds._conveyor(r, 2050, 2350, { dy: 1, push: 140, color: '#5ad1ff' });
-            Rounds._cannons(r, 1750, { n: 2, interval: 1.9, speed: 340, reach: 1500, fruit: true, ballR: 38 });
-            Rounds._conveyor(r, 1150, 1420, { dy: 1, push: 135, color: '#46d36a' });
-            Rounds._bumpers(r, 760, { rows: 1, cols: 3, color: '#ffd23f' });
+            // fruit cannons at the TOP of the slope, firing fruit down in a few
+            // streams (with safe lanes between) so the climb stays winnable.
+            Rounds._cannons(r, 640, { n: 3, interval: 2.2, speed: 380, reach: 3400, spread: 110, fruit: true, ballR: 40 });
+            // the climb: uphill conveyor belts pushing you back down, with breather gaps
+            Rounds._conveyor(r, 2960, 3300, { dy: 1, push: 135, color: '#46d36a' });
+            Rounds._conveyor(r, 2360, 2700, { dy: 1, push: 142, color: '#5ad1ff' });
+            Rounds._conveyor(r, 1760, 2100, { dy: 1, push: 138, color: '#46d36a' });
+            Rounds._conveyor(r, 1160, 1500, { dy: 1, push: 145, color: '#5ad1ff' });
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
         // -------------------------------------------------- HIT PARADE

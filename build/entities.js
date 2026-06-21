@@ -801,6 +801,35 @@ class MovingBlock {
     }
 }
 
+class SlideWall {
+    // A wall spanning the arena width with a GAP you slip through, sliding along
+    // y toward the back edge. Miss the gap and it shoves you off. (Block Party.)
+    constructor(o) {
+        this.kind = 'slidewall';
+        this.x0 = o.x0; this.x1 = o.x1;
+        this.y = o.y; this.dir = o.dir || 1; this.speed = o.speed || 110;
+        this.thick = o.thick || 42; this.height = o.height != null ? o.height : 210;
+        this.gapW = o.gapW || 150; this.yMin = o.yMin; this.yMax = o.yMax;
+        this.color = o.color || '#9a6cff';
+        this.gapX = o.gapX != null ? o.gapX : (this.x0 + this.x1) / 2;
+        this._reroll();
+    }
+    _reroll() { const m = this.gapW / 2 + 12; this.gapX = U.rngf(this.x0 + m, this.x1 - m); }
+    update(dt) {
+        this.y += this.dir * this.speed * dt;
+        if (this.dir > 0 && this.y > this.yMax) { this.y = this.yMin; this._reroll(); }
+        else if (this.dir < 0 && this.y < this.yMin) { this.y = this.yMax; this._reroll(); }
+    }
+    collide(bean, round) {
+        if (bean.falling || bean.gone || bean.exited || bean.z > this.height) return;
+        if (Math.abs(bean.y - this.y) > bean.r + this.thick * 0.5) return;
+        if (bean.x > this.gapX - this.gapW / 2 + bean.r && bean.x < this.gapX + this.gapW / 2 - bean.r) return; // through the gap
+        const s = this.dir;
+        bean.y = this.y + s * (bean.r + this.thick * 0.5 + 0.5);
+        bean.vy += s * 45;                              // shoved toward the back edge
+    }
+}
+
 class Cannon {
     // Lobs boulders that roll down the course (+y) knocking beans back.
     constructor(o) {
