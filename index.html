@@ -6090,15 +6090,9 @@ class CourseView {
                 this._add(line);
             }
         }
-        // a few canopy bunting lines looping ACROSS the lane (left<->right).
-        const crossN = Math.max(2, Math.round(span / 900));
-        for (let k = 0; k < crossN; k++) {
-            const yy = decoBot + ((k + 0.5) / crossN) * span;
-            const a = W(sidePoleX[0], yy, 0), b = W(sidePoleX[1], yy, 0);
-            const line = buntingLine(a.x, a.z, b.x, b.z, poleH + 24,
-                { count: 12, sag: 70, flagScale: 1.15 });
-            this._add(line);
-        }
+        // (no canopy bunting across the lane and no oversized inflatables in the
+        // play area — those obscured the path. Per-map authentic dressing is
+        // added when each course is overhauled.)
 
         // ---------- numbered distance markers down the right curb ----------
         // chunky candy posts with a gold disc "sign", spaced evenly; gives the
@@ -6131,61 +6125,10 @@ class CourseView {
             this._add(mk);
         }
 
-        // ---------- BIG inflatables out over the slime, both sides ----------
-        // balloons + beach-balls + candy pillars planted beyond the curbs so
-        // the course is hemmed in by oversized candy props the whole way up.
-        const balloonCols = [WPAL.curb, WPAL.gold, WPAL.mint, WPAL.grape, 0x6cc6ff, WPAL.curbLt];
-        const propStep = 460;
-        const nProps = Math.max(3, Math.round(span / propStep));
-        let bi = 0;
-        for (const side of [-1, 1]) {
-            // stagger the two sides so props interleave rather than mirror.
-            const phase = side < 0 ? 0 : 0.5;
-            for (let k = 0; k < nProps; k++) {
-                const u = (k + phase) / nProps;
-                if (u <= 0.02 || u >= 0.98) continue;
-                const yy = decoBot + u * span;
-                // push well past the curb, out over the goo, with a little jitter.
-                const off = 230 + ((k * 53) % 4) * 70;
-                const px = side < 0 ? minX - curbT - off : maxX + curbT + off;
-                const kind = (k + (side < 0 ? 0 : 1)) % 3;
-                if (kind === 0) {
-                    // a tall bobbing balloon.
-                    const colr = balloonCols[bi % balloonCols.length];
-                    const bp = balloonProp(colr, { r: 44 + ((k * 31) % 3) * 8, height: 250 + ((k * 17) % 4) * 60 });
-                    bp.root.position.copy(W(px, yy, -4));
-                    this._add(bp.root);
-                    const seedX = px * 0.013 + yy * 0.011, amp = 16 + (bi % 3) * 4;
-                    const bobNode = bp.bob;
-                    this._anim.push((dt, t) => {
-                        const tt = t || 0;
-                        bobNode.position.y = Math.sin(tt * 0.9 + seedX) * amp;
-                        bobNode.rotation.z = Math.sin(tt * 0.7 + seedX) * 0.06;
-                    });
-                } else if (kind === 1) {
-                    // a fat beach-ball resting in the slime.
-                    const br = 58 + ((k * 23) % 3) * 12;
-                    const ball = beachBall(br);
-                    ball.position.copy(W(px, yy, br * 0.55 - 6));
-                    const seed = px * 0.01 + yy * 0.012;
-                    const baseBY = ball.position.y;
-                    this._anim.push((dt, t) => {
-                        const tt = t || 0;
-                        ball.position.y = baseBY + Math.sin(tt * 1.1 + seed) * 5;
-                        ball.rotation.y = tt * 0.25 + seed;
-                    });
-                    this._add(ball);
-                } else {
-                    // a tall candy-stripe pillar landmark.
-                    const ph = 220 + ((k * 41) % 4) * 70, pr = 26 + ((k * 13) % 3) * 6;
-                    const pil = candyPillar(ph, pr, {
-                        a: balloonCols[(bi + 2) % balloonCols.length], b: 0xfff3fb });
-                    pil.position.copy(W(px, yy, -6));
-                    this._add(pil);
-                }
-                bi++;
-            }
-        }
+        // (Removed: the big bobbing balloons / beach-balls / candy pillars that
+        // used to be planted beyond the curbs. They loomed over and obscured the
+        // race lanes, and they are NOT authentic to any real level. Each course
+        // now supplies its own true-to-reference dressing in its bespoke builder.)
     }
 
     // black/white checker strip laid flat across the track at depth `dy`.
@@ -7664,6 +7607,13 @@ const Engine = {
 
     // ---- camera -------------------------------------------------------
     _camera(round, dt, subject) {
+        // debug/verification override: tests can pin the camera to inspect a
+        // whole course or a single section from any angle. Harmless in play.
+        if (this._dbgCam) {
+            this.camera.position.copy(this._dbgCam.pos);
+            this.camera.lookAt(this._dbgCam.look);
+            return;
+        }
         const p = subject || round.player;
         let pos, look;
         if (round.kind === 'race' || round.kind === 'mountain' || round.kind === 'climb') {

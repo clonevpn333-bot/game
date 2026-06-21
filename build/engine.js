@@ -318,6 +318,13 @@ const Engine = {
 
     // ---- camera -------------------------------------------------------
     _camera(round, dt, subject) {
+        // debug/verification override: tests can pin the camera to inspect a
+        // whole course or a single section from any angle. Harmless in play.
+        if (this._dbgCam) {
+            this.camera.position.copy(this._dbgCam.pos);
+            this.camera.lookAt(this._dbgCam.look);
+            return;
+        }
         const p = subject || round.player;
         let pos, look;
         if (round.kind === 'race' || round.kind === 'mountain' || round.kind === 'climb') {
