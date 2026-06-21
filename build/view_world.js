@@ -1540,6 +1540,44 @@ function makeCannon(ob) {
     return view;
 }
 
+// Dizzy Heights: a rotating disc platform with 6 directional arrows + a centre
+// nub. The top surface sits at world y=0 so beans stand on it; the arrow layer
+// spins to match the sim's carry.
+function makeSpinPlate(ob) {
+    const group = new THREE.Object3D();
+    group.position.copy(W(ob.cx, ob.cy, 0));
+    const R = ob.r || 150;
+    const baseMat = inflate(ob.color, { roughness: 0.35, clearcoat: 0.4 });
+    const rimMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.4 });
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(R, R * 0.97, 22, 40), baseMat);
+    disc.position.y = -11; disc.receiveShadow = true; group.add(disc);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(R - 3, 5, 10, 44), rimMat);
+    rim.rotation.x = Math.PI / 2; rim.position.y = 0.5; group.add(rim);
+
+    const top = new THREE.Object3D(); top.position.y = 1; group.add(top);
+    const nub = new THREE.Mesh(new THREE.SphereGeometry(R * 0.1, 16, 12), rimMat);
+    nub.scale.y = 0.6; top.add(nub);
+    const arrowMat = gloss(0xffffff, { roughness: 0.32, emissive: 0xffffff, emissiveIntensity: 0.05 });
+    const dirSign = (ob.speed >= 0) ? 1 : -1;
+    for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2, rr = R * 0.6;
+        const arrow = new THREE.Mesh(new THREE.ConeGeometry(R * 0.085, R * 0.26, 4), arrowMat);
+        arrow.position.set(Math.cos(a) * rr, 1.5, Math.sin(a) * rr);
+        arrow.rotation.x = Math.PI / 2;
+        arrow.rotation.z = -a + dirSign * Math.PI / 2;       // point tangentially (spin direction)
+        top.add(arrow);
+    }
+    shadowy(disc, false, true);
+    shadowy(top, true, false);
+    const view = {
+        object3d: group,
+        update(o) { top.rotation.y = -((o && o.angle != null) ? o.angle : (ob.angle || 0)); },
+        dispose() { disposeTree(group); },
+    };
+    view.update(ob, 0, 0);
+    return view;
+}
+
 // Perfect Match: a square candy tile with a fruit emblem painted on top.
 const _fruitTexCache = {};
 function fruitTexture(idx) {
@@ -1668,6 +1706,7 @@ function makeObstacleView(ob) {
         case 'movingblock': return makeMovingBlock(ob);
         case 'slidewall':   return makeSlideWall(ob);
         case 'cannon':      return makeCannon(ob);
+        case 'spinplate':   return makeSpinPlate(ob);
         default: {
             const g = new THREE.Object3D();
             return { object3d: g, update() {}, dispose() { disposeTree(g); } };

@@ -778,6 +778,15 @@ const Rounds = {
             r.obstacles.push(new Hammer({ cx: r.cx, cy: y - i * gap, amp: o.amp || 320, headR: 33,
                 speed: (i % 2 ? -1 : 1) * (o.speed || 1.8), phase: i * 0.9, power: o.power || 540 }));
     },
+    _plates(r, y, o) {                                 // a row of spinning plates (Dizzy Heights)
+        o = o || {}; const cols = o.cols || 3, R = o.R || 150;
+        for (let i = 0; i < cols; i++) {
+            const x = this._xs(r, cols, i, R * 0.9);
+            const dir = (o.dir || 1) * (i % 2 ? -1 : 1);     // adjacent plates spin opposite ways
+            r.obstacles.push(new SpinPlate({ cx: x, cy: y, r: R, speed: dir * (o.speed || 0.85),
+                color: i % 2 ? '#8fd0ff' : '#b6e6ff' }));
+        }
+    },
     // A wall of `n` doors with `fakeCount` breakable (smashable) ones. Back-compat:
     // called as _doorWall(r, y, fakeCount) it defaults to 6 doors.
     _doorWall(r, y, n, fakeCount, opts) {
@@ -1031,16 +1040,21 @@ const Rounds = {
         },
 
         // -------------------------------------------------- DIZZY HEIGHTS
-        dizzyHeights(r) {                   // RACE — spinning platforms + fruit cannons
+        dizzyHeights(r) {                   // RACE — spinning plates carry you off-line
             Rounds._raceCommon(r);
-            Rounds._beams(r, 3360, { n: 2, style: 'blade', speed: 1.5, len: 240, color: '#23d6c8' });
-            Rounds._cannons(r, 3050, { n: 2, interval: 2.0, speed: 340, reach: 1600, fruit: true, ballR: 36 });
-            Rounds._bumpers(r, 2650, { rows: 2, cols: 5, color: '#ffd23f' });
-            Rounds._beams(r, 2250, { n: 3, style: 'bar', speed: -1.7, color: '#7b46d6' });
-            Rounds._cannons(r, 1950, { n: 2, interval: 2.2, speed: 320, reach: 1400, fruit: true, ballR: 36 });
-            Rounds._beams(r, 1500, { n: 2, style: 'blade', speed: 2.0, color: '#23d6c8' });
-            Rounds._bumpers(r, 1050, { rows: 2, cols: 4, color: '#ffd23f' });
-            Rounds._beams(r, 680, { n: 1, style: 'windmill', speed: 0.9, len: 320, thick: 30, color: '#7b46d6' });
+            // S1: a wide field of spinning plates (adjacent plates spin opposite
+            // ways) + yellow bumpers — the opening "dizzy" funnel.
+            Rounds._plates(r, 3500, { cols: 3, dir: 1, R: 155, speed: 0.85 });
+            Rounds._plates(r, 3180, { cols: 3, dir: -1, R: 155, speed: 0.9 });
+            Rounds._bumpers(r, 2880, { rows: 1, cols: 4, color: '#ffd23f' });
+            // S2: a flat ball gauntlet — cannons fire big rolling balls head-on.
+            Rounds._cannons(r, 2350, { n: 3, interval: 1.8, speed: 360, reach: 1800, spread: 90, ballR: 32, color: '#ffd23f' });
+            // S3: a narrower, faster spinning-plate stretch.
+            Rounds._plates(r, 1780, { cols: 2, dir: -1, R: 160, speed: 1.05 });
+            Rounds._plates(r, 1460, { cols: 2, dir: 1, R: 160, speed: 1.1 });
+            // S4: stacked-plate finale + bumpers before the ramp to the line.
+            Rounds._plates(r, 950, { cols: 3, dir: 1, R: 175, speed: 0.8 });
+            Rounds._bumpers(r, 620, { rows: 1, cols: 3, color: '#ffd23f' });
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
         // -------------------------------------------------- FRUIT CHUTE

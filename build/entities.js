@@ -912,6 +912,27 @@ class Cannon {
     }
 }
 
+class SpinPlate {
+    // A rotating disc platform (Dizzy Heights): beans standing on it are carried
+    // around its centre, so you have to walk AGAINST the spin to hold a line.
+    constructor(o) {
+        this.kind = 'spinplate';
+        this.cx = o.cx; this.cy = o.cy; this.r = o.r || 150;
+        this.speed = o.speed || 0.8;     // rad/s, signed (CW/CCW)
+        this.angle = 0; this.color = o.color || '#8fd0ff';
+    }
+    update(dt) { this.angle += this.speed * dt; }
+    collide(bean, round, dt) {
+        if (bean.falling || bean.gone || bean.exited || bean.air > 12) return;   // must be on the deck
+        const dx = bean.x - this.cx, dy = bean.y - this.cy;
+        if (dx * dx + dy * dy > this.r * this.r) return;
+        const a = this.speed * (dt || 0.016);            // carry around the centre
+        const ca = Math.cos(a), sa = Math.sin(a);
+        bean.x = this.cx + dx * ca - dy * sa;
+        bean.y = this.cy + dx * sa + dy * ca;
+    }
+}
+
 class HexTile {
     constructor(o) {
         this.kind = "hex";
