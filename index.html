@@ -2278,7 +2278,7 @@ const Rounds = {
     _raceCommon(r) {
         r.kind = 'race'; r.camMode = 'followY';
         r.minX = 200; r.maxX = 1080; r.cx = 640;
-        r.minY = 240; r.maxY = 3820; r.finishY = 420;     // long, multi-section course
+        r.minY = 240; r.maxY = 3980; r.finishY = 420;     // long, multi-section course
         r.thinkFn = raceThink;
     },
     // ----- course SECTION helpers (real Fall Guys courses string several of
@@ -2441,16 +2441,18 @@ const Rounds = {
 
     builders: {
         // -------------------------------------------------- DOOR DASH
-        doorDash(r) {                       // RACE — walls of doors, smash the fakes
+        doorDash(r) {                       // RACE — wall after wall of doors, smash the fakes
             Rounds._raceCommon(r);
-            Rounds._doorWall(r, 3340, 2);
-            Rounds._doorWall(r, 2980, 3);
-            Rounds._bumpers(r, 2560, { rows: 2, cols: 4, color: '#ff5fa2' });
-            Rounds._doorWall(r, 2150, 2);
-            Rounds._beams(r, 1760, { n: 2, speed: 1.3, color: '#7b46d6' });
-            Rounds._doorWall(r, 1360, 3);
-            Rounds._doorWall(r, 980, 2);
-            Rounds._bumpers(r, 640, { rows: 1, cols: 3, color: '#ffd23f' });
+            // two banks of door walls (the round's whole identity), a short
+            // bumper breather between them — like the real two-stage Door Dash.
+            Rounds._doorWall(r, 3560, 2);
+            Rounds._doorWall(r, 3180, 3);
+            Rounds._doorWall(r, 2800, 2);
+            Rounds._bumpers(r, 2380, { rows: 2, cols: 5, color: '#ff5fa2' });
+            Rounds._doorWall(r, 1980, 3);
+            Rounds._doorWall(r, 1600, 2);
+            Rounds._doorWall(r, 1220, 3);
+            Rounds._doorWall(r, 840, 2);
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
 
