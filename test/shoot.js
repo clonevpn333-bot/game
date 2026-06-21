@@ -121,7 +121,7 @@ const COURSES = ids.length ? ids : ['door_dash', 'gate_crash', 'whirlygig', 'diz
                 window.__BR.Engine._camSnap = true;
             }
         }, opts);
-        await wait(1600);
+        await wait(1600 + (opts.wait != null ? +opts.wait : 0));
         await page.screenshot({ path: path.join(SHOTS, `shoot-${id}-chase.png`) });
 
         // elevated overview looking down the whole course (or a section)

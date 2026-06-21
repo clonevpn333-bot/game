@@ -284,10 +284,12 @@ const Engine = {
             this._climbSlime = m; this.scene.add(m);
         }
         const m = this._climbSlime; m.visible = true;
-        const yTop = round.slimeY, yBot = round.maxY + 400;
-        const cx = (round.minX + round.maxX) / 2, w = (round.maxX - round.minX) + 240;
-        const len = Math.max(10, yBot - yTop), cy = (yTop + yBot) / 2;
-        m.position.set(cx, 6 + Math.sin(t * 2) * 1.5, cy);
+        // a big horizontal flood that rises in world-HEIGHT (slimeZ); the elevated
+        // climb pokes above it, and beans below the surface get caught.
+        const cx = (round.minX + round.maxX) / 2, cz = (round.minY + round.maxY) / 2;
+        const w = (round.maxX - round.minX) + 2400, len = (round.maxY - round.minY) + 2400;
+        const sz = round.slimeZ != null ? round.slimeZ : 6;
+        m.position.set(cx, sz + Math.sin(t * 2) * 1.5, cz);
         m.scale.set(w, len, 1);
         // gentle surface shimmer
         m.material.emissiveIntensity = 0.34 + Math.sin(t * 3) * 0.08;

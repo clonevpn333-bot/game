@@ -1735,7 +1735,8 @@ class Round {
         this.groundZ = null;       // (x,y) -> floor height; wired from terrain in Rounds.create
         this.platform = null;
         this.sweeper = null;
-        this.slimeY = null;        // Slime Climb: world-y of the rising slime line
+        this.slimeY = null;        // (legacy) Slime Climb course-y line
+        this.slimeZ = null;        // Slime Climb: world-HEIGHT of the rising slime flood
         this.slimeRate = 0;
         this.matchSafe = -1;       // Perfect Match: the currently-called fruit (-1 = memorise)
         this.matchPhase = null;
@@ -1935,16 +1936,27 @@ class Round {
                 if (b.alive && !b.finished && !b.gone && b.y <= this.finishY) this.markFinish(b);
             if (this.elapsed > CFG.ROUND_MAXTIME) this._raceCutoff();
         } else if (this.kind === 'climb') {
-            // a race against a rising tide of slime: finish to qualify, but get
-            // caught below the slime line and you sink.
-            if (this.elapsed > 2.5) this.slimeY -= this.slimeRate * dt;
-            for (const b of this.beans) {
-                if (b.alive && !b.finished && !b.gone && b.y <= this.finishY) this.markFinish(b);
-                else if (b.alive && !b.finished && !b.eliminated && !b.falling && b.y > this.slimeY) {
-                    b.startFall(); this.spawnBurst(b.x, b.y, 0, '#d23bb0', 8);
+            // a climb against a rising FLOOD of slime: out-climb it (height) to the
+            // finish, or get caught below the rising surface and sink.
+            const climbers = this.beans.filter(b => b.alive && !b.eliminated && !b.exited && !b.finished && !b.falling);
+            if (this.elapsed > 2.5) {
+                this.slimeZ += this.slimeRate * dt;                 // always creeping up
+                if (climbers.length > 1) {                         // …but it chases the pack, swallowing stragglers
+                    const zs = climbers.map(b => b.z).sort((a, b) => a - b);
+                    const med = zs[Math.floor(zs.length * 0.5)];
+                    this.slimeZ = Math.max(this.slimeZ, med - 130);
                 }
             }
-            if (this.elapsed > CFG.ROUND_MAXTIME || this.aliveSoFar() === 0) this._raceCutoff();
+            for (const b of this.beans) {
+                if (b.alive && !b.finished && !b.gone && b.y <= this.finishY) this.markFinish(b);
+                else if (b.alive && !b.finished && !b.eliminated && !b.falling && b.z < this.slimeZ - 6) {
+                    b.startFall(); this.spawnBurst(b.x, b.y, b.z, '#d23bb0', 8);
+                }
+            }
+            // no finish-quota cutoff: anyone who out-climbs the flood qualifies; the
+            // slime culls the rest. End when nobody is still climbing (or time runs out).
+            const climbing = this.beans.some(b => b.alive && !b.eliminated && !b.exited && !b.finished && !b.falling);
+            if (this.elapsed > CFG.ROUND_MAXTIME || !climbing) this._raceCutoff();
         } else if (this.kind === 'mountain') {
             // a racing FINAL — first bean to the crown wins it all
             for (const b of this.beans)
@@ -2881,19 +2893,41 @@ const Rounds = {
             };
         },
 
-        // -------- SLIME CLIMB (RACE vs a rising tide of slime)
+        // -------- SLIME CLIMB (RACE up a tower vs a rising flood of slime)
         slimeClimb(r) {
             Rounds._raceCommon(r);
             r.kind = 'climb'; r.viewKind = 'race';
-            r.slimeY = r.maxY - 40; r.slimeRate = 42;
-            Rounds._beams(r, 3320, { n: 2, speed: 1.5, color: '#7b46d6' });
-            Rounds._cannons(r, 2950, { n: 2, interval: 2.0, speed: 340, reach: 1400, color: '#e6395a' });
-            Rounds._hammers(r, 2550, { n: 2, speed: 1.8, gap: 260 });
-            Rounds._beams(r, 2150, { n: 2, speed: -1.6, color: '#23d6c8' });
-            Rounds._bumpers(r, 1750, { rows: 2, cols: 4, color: '#ffd23f' });
-            Rounds._beams(r, 1350, { n: 2, speed: -1.6, color: '#9a6cff' });
-            Rounds._hammers(r, 900, { n: 2, speed: 2.0, gap: 240 });
-            Rounds._beams(r, 560, { n: 2, speed: 1.7, color: '#ff5fa2' });
+            // A tall tower: ramps up to flat landings, each landing a new hazard.
+            // The slime floods upward in HEIGHT, so you must keep climbing.
+            r.terrain = new Terrain()
+                .flat(3700, 3980, 0)
+                .ramp(3450, 3700, 90, 0)
+                .flat(3250, 3450, 90)            // S2 sliding blocks
+                .ramp(3000, 3250, 200, 90)       // S3 cannon ramp
+                .flat(2800, 3000, 200)           // S4 sliding blocks
+                .ramp(2550, 2800, 310, 200)
+                .flat(2350, 2550, 310)           // S5 conveyor + bumpers
+                .ramp(2100, 2350, 420, 310)
+                .flat(1900, 2100, 420)           // S6 spinning beams
+                .ramp(1650, 1900, 530, 420)
+                .flat(1450, 1650, 530)           // S7 rotating hammers
+                .ramp(1200, 1450, 630, 530)
+                .flat(1000, 1200, 630)           // S8 four sliding blocks
+                .ramp(750, 1000, 720, 630)
+                .flat(240, 750, 720);            // summit: pendulums + finish
+            r.slimeZ = -120; r.slimeRate = 21;   // flood rises in HEIGHT, faster than a slow climber
+            r.qualifyCount = r.beans.length;     // finishing qualifies; the flood does the culling
+
+            Rounds._bumpers(r, 3560, { rows: 1, cols: 4, color: '#ff5fa2' });          // S1
+            Rounds._blocks(r, 3350, { n: 3, w: 150, speed: 150 });                     // S2
+            Rounds._cannons(r, 3010, { n: 2, interval: 2.0, speed: 360, reach: 1700, color: '#e6395a', ballR: 30 }); // S3
+            Rounds._blocks(r, 2900, { n: 2, w: 175, speed: 165 });                     // S4
+            Rounds._conveyor(r, 2380, 2520, { dy: 1, push: 130, color: '#46d36a' });   // S5
+            Rounds._bumpers(r, 2440, { rows: 1, cols: 3, color: '#ffd23f' });
+            Rounds._beams(r, 2000, { n: 2, speed: 1.6, color: '#9a6cff' });            // S6
+            Rounds._hammers(r, 1550, { n: 2, speed: 1.9, gap: 250 });                  // S7
+            Rounds._blocks(r, 1100, { n: 4, w: 130, speed: 150 });                     // S8
+            Rounds._hammers(r, 700, { n: 2, speed: 2.1, gap: 230 });                   // S9 pendulums
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
     },
@@ -7701,10 +7735,12 @@ const Engine = {
             this._climbSlime = m; this.scene.add(m);
         }
         const m = this._climbSlime; m.visible = true;
-        const yTop = round.slimeY, yBot = round.maxY + 400;
-        const cx = (round.minX + round.maxX) / 2, w = (round.maxX - round.minX) + 240;
-        const len = Math.max(10, yBot - yTop), cy = (yTop + yBot) / 2;
-        m.position.set(cx, 6 + Math.sin(t * 2) * 1.5, cy);
+        // a big horizontal flood that rises in world-HEIGHT (slimeZ); the elevated
+        // climb pokes above it, and beans below the surface get caught.
+        const cx = (round.minX + round.maxX) / 2, cz = (round.minY + round.maxY) / 2;
+        const w = (round.maxX - round.minX) + 2400, len = (round.maxY - round.minY) + 2400;
+        const sz = round.slimeZ != null ? round.slimeZ : 6;
+        m.position.set(cx, sz + Math.sin(t * 2) * 1.5, cz);
         m.scale.set(w, len, 1);
         // gentle surface shimmer
         m.material.emissiveIntensity = 0.34 + Math.sin(t * 3) * 0.08;
