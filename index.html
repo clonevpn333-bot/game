@@ -2806,9 +2806,19 @@ const Rounds = {
 
         // ============================================ NEW GAMEMODES ===
         // -------- FALL MOUNTAIN (racing FINAL — first to the crown wins)
-        fallMountain(r) {           // FINAL race — climb past cannons to grab the Crown
+        fallMountain(r) {           // FINAL race — climb the mountain past cannons to the Crown
             Rounds._raceCommon(r);
             r.kind = 'mountain'; r.viewKind = 'race'; r.crownFinish = true; r.finishY = 360;
+            r.terrain = new Terrain()
+                .flat(3650, 3980, 0)
+                .ramp(2900, 3650, 140, 0)
+                .flat(2700, 2900, 140)
+                .ramp(2000, 2700, 290, 140)
+                .flat(1800, 2000, 290)
+                .ramp(1100, 1800, 430, 290)
+                .flat(900, 1100, 430)
+                .ramp(500, 900, 520, 430)
+                .flat(240, 500, 520);            // summit + Crown
             Rounds._beams(r, 3320, { n: 2, speed: 1.5, color: '#7b46d6' });
             Rounds._cannons(r, 2950, { n: 2, interval: 1.9, speed: 360, reach: 2400, spread: 150, color: '#e6395a' });
             Rounds._bumpers(r, 2500, { rows: 2, cols: 4, color: '#ffd23f' });
@@ -2818,9 +2828,19 @@ const Rounds = {
             Rounds._beams(r, 700, { n: 1, style: 'windmill', speed: 0.9, len: 320, thick: 30, color: '#e6395a' });
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
-        lostTemple(r) {             // FINAL race — doors, hammers & blocks to the Crown
+        lostTemple(r) {             // FINAL race — climb the temple steps past doors & hammers to the Crown
             Rounds._raceCommon(r);
             r.kind = 'mountain'; r.viewKind = 'race'; r.crownFinish = true; r.finishY = 360;
+            r.terrain = new Terrain()
+                .flat(3550, 3980, 0)
+                .ramp(3100, 3550, 110, 0)
+                .flat(2850, 3100, 110)           // first doors
+                .ramp(2350, 2850, 250, 110)
+                .flat(2150, 2350, 250)           // second doors
+                .ramp(1500, 2150, 400, 250)
+                .flat(1300, 1500, 400)
+                .ramp(800, 1300, 510, 400)
+                .flat(240, 800, 510);            // summit + Crown
             Rounds._doorWall(r, 3340, 3);
             Rounds._hammers(r, 2950, { n: 2, speed: 1.9, gap: 280 });
             Rounds._hammers(r, 2500, { n: 2, speed: 1.9, gap: 240 });
