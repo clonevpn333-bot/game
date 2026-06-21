@@ -125,6 +125,25 @@ const COURSES = ids.length ? ids : ['door_dash', 'gate_crash', 'whirlygig', 'diz
         await page.screenshot({ path: path.join(SHOTS, `shoot-${id}-chase.png`) });
 
         // elevated overview looking down the whole course (or a section)
+        // --sky: point the camera up around the course to reveal sky decoration
+        if (opts.sky) {
+            for (let a = 0; a < 4; a++) {
+                await page.evaluate((ai) => {
+                    const { Engine, Game, THREE } = window.__BR;
+                    const r = Game.show.round;
+                    const cx = (r.minX + r.maxX) / 2, cy = (r.minY + r.maxY) / 2;
+                    const ang = ai * Math.PI / 2;
+                    Engine._dbgCam = {
+                        pos: new THREE.Vector3(cx, 300, cy),
+                        look: new THREE.Vector3(cx + Math.cos(ang) * 1000, 2200, cy + Math.sin(ang) * 1000),
+                    };
+                }, a);
+                await wait(300);
+                await page.screenshot({ path: path.join(SHOTS, `sky-${id}-${a}.png`) });
+            }
+            continue;
+        }
+
         const meta = await page.evaluate((o) => {
             const { Engine, Game, THREE } = window.__BR;
             const r = Game.show.round;

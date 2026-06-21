@@ -5005,67 +5005,33 @@ function setupEnvironment(scene) {
     hills.renderOrder = -880;
     scene.add(hills);
 
-    // ---- a couple of giant pastel BLIMPS drifting high in the sky ----
-    const blimps = new THREE.Group();
-    blimps.name = 'blimps';
+    // (No blimps. The giant pastel airship-balls drifting in the sky read as
+    // "big balls" looming over the course and are NOT authentic — removed.)
+    const blimps = new THREE.Group(); blimps.name = 'blimps';   // empty placeholder
     const blimpSeeds = [];
-    const blimpCols = [WPAL.curb, WPAL.gold, WPAL.grape];
-    for (let i = 0; i < 3; i++) {
-        const b = new THREE.Object3D();
-        const bodyMat = inflate(blimpCols[i % blimpCols.length], { roughness: 0.2, clearcoat: 0.8, emissiveIntensity: 0.05, fog: false });
-        const body = new THREE.Mesh(new THREE.SphereGeometry(150, 18, 14), bodyMat);
-        body.scale.set(2.1, 1, 1);                        // a long airship body
-        b.add(body);
-        // pastel fins at the tail.
-        const finMat = mat(shade(blimpCols[i % blimpCols.length], 0.35), { roughness: 0.5, side: THREE.DoubleSide, fog: false });
-        for (let f = 0; f < 3; f++) {
-            const fin = new THREE.Mesh(new THREE.ConeGeometry(70, 120, 3), finMat);
-            fin.rotation.z = Math.PI / 2;
-            fin.rotation.x = (f / 3) * Math.PI * 2;
-            fin.position.set(-300, 0, 0);
-            b.add(fin);
-        }
-        // a slim gondola slung underneath.
-        const gond = new THREE.Mesh(new THREE.CapsuleGeometry(22, 90, 6, 10), gloss(WPAL.gold, { roughness: 0.35, metalness: 0.3, fog: false }));
-        gond.rotation.z = Math.PI / 2;
-        gond.position.set(40, -140, 0);
-        b.add(gond);
-        const ang = (i / 3) * Math.PI * 2 + 1.1;
-        const dist = 3200 + i * 320;
-        b.position.set(Math.cos(ang) * dist, 2200 + i * 260, Math.sin(ang) * dist);
-        b.rotation.y = ang + Math.PI / 2;
-        blimps.add(b);
-        blimpSeeds.push({ b, baseX: b.position.x, baseY: b.position.y, speed: 10 + i * 4, ph: i * 2.1 });
-    }
-    blimps.renderOrder = -870;
-    scene.add(blimps);
 
-    // ---- drifting puffy clouds: clusters of soft lobes ----
+    // ---- soft, FLAT cloud wisps low on the horizon (billboards, never balls) ----
+    // Thin flat planes far away near the skyline give a gentle cloudy sky without
+    // the old big sphere-clusters that looked like balls hanging over the course.
     const clouds = new THREE.Group();
     clouds.name = 'clouds';
     const discTex = softDiscTexture();
     const cloudMat = new THREE.MeshStandardMaterial({
         color: WPAL.cloud, roughness: 1.0, metalness: 0.0,
-        emissive: 0xfff3ff, emissiveIntensity: 0.35, fog: true,
-        transparent: !!discTex, alphaMap: discTex || null,
-        depthWrite: false,
+        emissive: 0xfff3ff, emissiveIntensity: 0.25, fog: true,
+        transparent: true, opacity: 0.7, alphaMap: discTex || null,
+        depthWrite: false, side: THREE.DoubleSide,
     });
     const cloudSeeds = [];
-    for (let i = 0; i < 8; i++) {
-        const puff = new THREE.Group();
-        const lobes = 3 + (i % 4);
-        for (let j = 0; j < lobes; j++) {
-            const r = 130 + ((i * 53 + j * 37) % 110);
-            const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), cloudMat);
-            m.position.set((j - lobes / 2) * 150, ((i + j) % 2) * 46, (j % 2) * 70);
-            m.scale.set(1, 0.58, 1);
-            puff.add(m);
-        }
-        const ang = (i / 8) * Math.PI * 2;
-        const dist = 2700 + (i % 4) * 380;
-        puff.position.set(Math.cos(ang) * dist, 1550 + (i % 3) * 300, Math.sin(ang) * dist - 500);
+    for (let i = 0; i < 7; i++) {
+        const puff = new THREE.Mesh(new THREE.PlaneGeometry(900, 320), cloudMat);
+        puff.rotation.x = -Math.PI / 2.1;                 // lie nearly flat, faintly tilted to camera
+        const ang = (i / 7) * Math.PI * 2 + 0.4;
+        const dist = 3400 + (i % 3) * 420;
+        puff.position.set(Math.cos(ang) * dist, 520 + (i % 3) * 180, Math.sin(ang) * dist - 400);
+        puff.renderOrder = -880;
         clouds.add(puff);
-        cloudSeeds.push({ puff, baseX: puff.position.x, baseY: puff.position.y, speed: 7 + (i % 5) * 3.5, ph: i * 1.3 });
+        cloudSeeds.push({ puff, baseX: puff.position.x, baseY: puff.position.y, speed: 6 + (i % 4) * 3, ph: i * 1.3 });
     }
     scene.add(clouds);
 
