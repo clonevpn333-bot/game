@@ -12,6 +12,7 @@ class Bean {
         this.startX = opts.x; this.startY = opts.y;
         this.vx = 0; this.vy = 0;
         this.z = 0;  this.vz = 0;
+        this.groundZ = 0;          // terrain floor height under the bean (0 = flat course)
         this.r = CFG.BEAN_R;
         this.facing = -Math.PI / 2;     // looking "up" the course
         this.isPlayer = !!opts.isPlayer;
@@ -54,7 +55,8 @@ class Bean {
         this.aiJumpLock = 0;
     }
 
-    get grounded() { return this.z <= 0.5; }
+    get grounded() { return this.z <= this.groundZ + 0.5; }
+    get air() { return this.z - this.groundZ; }   // height ABOVE the local floor (terrain-aware)
     get controllable() {
         return this.ragdoll <= 0 && this.proneT <= 0 && this.diveT <= 0 && !this.grabbedBy;
     }
@@ -130,6 +132,13 @@ class Bean {
 
         if (!round.live) return;     // frozen during intro card
 
+        // terrain floor under the bean (0 on flat courses). VOID (a gap) reads
+        // as a very negative number → the bean drops into it.
+        let gz = round.groundZ ? round.groundZ(this.x, this.y) : 0;
+        const overVoid = gz <= -9000;
+        if (overVoid) gz = 0;
+        this.groundZ = gz;
+
         // gather inputs
         let ix = 0, iy = 0, wantJump = false, wantDive = false;
         if (this.isPlayer) {
@@ -196,11 +205,20 @@ class Bean {
             }
         }
 
-        // integrate vertical (z)
-        if (!grounded || this.vz > 0) {
+        // integrate vertical (z) against the terrain floor gz
+        if (overVoid) {
+            // airborne over a gap: keep arcing; sink to floor level → fall in
             this.vz -= CFG.GRAVITY * dt;
             this.z += this.vz * dt;
-            if (this.z <= 0) { this.z = 0; this.vz = 0; }
+            if (this.z <= gz + 2) this.startFall();
+        } else if (this.z > gz + 0.5 || this.vz > 0) {
+            // in the air or rising: gravity, then land on the surface
+            this.vz -= CFG.GRAVITY * dt;
+            this.z += this.vz * dt;
+            if (this.z <= gz) { this.z = gz; this.vz = 0; }
+        } else {
+            // on the surface (incl. walking up onto higher ground): stick to it
+            this.z = gz; this.vz = 0;
         }
 
         // integrate horizontal
@@ -568,7 +586,7 @@ class Spinner {
         return out;
     }
     collide(bean, round) {
-        if (bean.z > this.height || bean.falling || bean.gone) return;
+        if (bean.air > this.height || bean.falling || bean.gone) return;
         // tight capsule test against the visible bar: bean footprint (~0.82r)
         // plus the bar's half-thickness — so a clean-looking pass doesn't clip.
         const hit = bean.r * 0.82 + this.thick * 0.42;
@@ -628,7 +646,7 @@ class Hammer {
     update(dt) { this.phase += this.speed * dt; }
     _head() { return [this.cx + Math.sin(this.phase) * this.amp, this.cy]; }
     collide(bean, round) {
-        if (bean.z > this.height || bean.falling || bean.gone) return;
+        if (bean.air > this.height || bean.falling || bean.gone) return;
         const [hx, hy] = this._head();
         if (U.dist(bean.x, bean.y, hx, hy) < bean.r + this.headR) {
             const dir = Math.cos(this.phase) >= 0 ? 1 : -1;
@@ -700,7 +718,7 @@ class DoorWall {
     collide(bean, round) {
         if (bean.gone || bean.falling) return;
         if (Math.abs(bean.y - this.y) > bean.r + this.thick * 0.5) return;
-        if (bean.z > 130) return;                       // jumped clean over the top
+        if (bean.air > 130) return;                     // jumped clean over the top
         const s = this.segAt(bean.x);
         if (!s || s.broken) return;
         if (s.fake) {
@@ -808,7 +826,7 @@ class MovingBlock {
         if (this.cx < this.x0) { this.cx = this.x0; this.dir = 1; }
     }
     collide(bean, round) {
-        if (bean.falling || bean.gone || bean.exited || bean.z > this.height) return;
+        if (bean.falling || bean.gone || bean.exited || bean.air > this.height) return;
         const dy = bean.y - this.cy, dx = bean.x - this.cx;
         const oy = (bean.r + this.thick * 0.5) - Math.abs(dy);
         const ox = (bean.r + this.w * 0.5) - Math.abs(dx);
@@ -847,7 +865,7 @@ class SlideWall {
         else if (this.dir < 0 && this.y < this.yMin) { this.y = this.yMax; this._reroll(); }
     }
     collide(bean, round) {
-        if (bean.falling || bean.gone || bean.exited || bean.z > this.height) return;
+        if (bean.falling || bean.gone || bean.exited || bean.air > this.height) return;
         if (Math.abs(bean.y - this.y) > bean.r + this.thick * 0.5) return;
         if (bean.x > this.gapX - this.gapW / 2 + bean.r && bean.x < this.gapX + this.gapW / 2 - bean.r) return; // through the gap
         const s = this.dir;
@@ -879,7 +897,7 @@ class Cannon {
         }
     }
     collide(bean, round) {
-        if (bean.falling || bean.gone || bean.exited || bean.z > 46) return;
+        if (bean.falling || bean.gone || bean.exited || bean.air > 46) return;
         for (const b of this.balls) {
             if (U.dist(bean.x, bean.y, b.x, b.y) < this.ballR + bean.r) {
                 const nx = (bean.x - b.x) / (this.ballR + bean.r);

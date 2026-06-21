@@ -48,6 +48,8 @@ class Round {
         this.drawGround = null;
         this.onUpdate = null;
         this.doorWalls = [];
+        this.terrain = null;       // optional height profile (slopes/pits) along the course
+        this.groundZ = null;       // (x,y) -> floor height; wired from terrain in Rounds.create
         this.platform = null;
         this.sweeper = null;
         this.slimeY = null;        // Slime Climb: world-y of the rising slime line
@@ -421,6 +423,35 @@ class Round {
 }
 
 /* =====================================================================
+   TERRAIN — a per-course height profile along the race axis (y), so courses
+   can climb, drop and have pits instead of being one flat strip. Segments are
+   absolute y-spans; the bean's floor height is interpolated across each.
+   The race axis runs from maxY (start) down to finishY (finish), so "uphill
+   toward the finish" means a HIGHER z at a LOWER y.
+   ===================================================================== */
+const VOID_Z = -1e5;
+class Terrain {
+    constructor() { this.segs = []; }                 // [{yLo,yHi,z0,z1,void}] sorted by yLo
+    // a level span at height z, for y in [yLo,yHi)
+    flat(yLo, yHi, z) { this.segs.push({ yLo, yHi, z0: z, z1: z }); return this; }
+    // a ramp: floor = zLo at yLo, zHi at yHi (linear)
+    ramp(yLo, yHi, zLo, zHi) { this.segs.push({ yLo, yHi, z0: zLo, z1: zHi }); return this; }
+    // a pit / hole — fall straight through
+    gap(yLo, yHi) { this.segs.push({ yLo, yHi, void: true }); return this; }
+    heightAt(x, y) {
+        for (const s of this.segs) {
+            if (y < s.yLo || y >= s.yHi) continue;
+            if (s.void) return VOID_Z;
+            const t = (y - s.yLo) / (s.yHi - s.yLo);
+            return s.z0 + (s.z1 - s.z0) * t;
+        }
+        return 0;                                      // flat ground outside defined segments
+    }
+    // top of the climb (max height) — handy for camera / cannons.
+    topZ() { let m = 0; for (const s of this.segs) if (!s.void) m = Math.max(m, s.z0, s.z1); return m; }
+}
+
+/* =====================================================================
    AI BRAINS  (shared by builders)
    ===================================================================== */
 function raceThink(bean, round, dt) {
@@ -655,6 +686,8 @@ const Rounds = {
     create(def, beans) {
         const r = new Round(def, beans);
         Rounds.builders[def.build](r);
+        // courses with a height profile expose it to the bean physics
+        if (r.terrain && !r.groundZ) r.groundZ = (x, y) => r.terrain.heightAt(x, y);
         r.start();
         return r;
     },

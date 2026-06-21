@@ -153,6 +153,13 @@ const Engine = {
         const allOb = round.obstacles.concat(round.tiles || []);
         for (const ob of allOb) {
             const v = makeObstacleView(ob);
+            // lift obstacles onto the terrain floor (no-op on flat courses)
+            if (round.groundZ) {
+                const oy = ob.cy != null ? ob.cy : (ob.y != null ? ob.y
+                    : (ob.y0 != null && ob.y1 != null ? (ob.y0 + ob.y1) / 2 : null));
+                const ox = ob.cx != null ? ob.cx : (ob.x != null ? ob.x : (round.cx || 640));
+                if (oy != null) { const gz = round.groundZ(ox, oy); if (gz > -9000) v.object3d.position.y += gz; }
+            }
             this.obViews.push({ ob, v });
             g.add(v.object3d);
         }
