@@ -4,8 +4,10 @@ Goal: cut repetitive / non-existent levels, and make every remaining level
 **bigger, longer, and far more accurate** to the real Fall Guys. A plan only —
 nothing here is executed until signed off.
 
-> Roster authenticity is being re-verified by a research pass; the "fake /
-> duplicate" calls below are my assessment and will be reconciled with it.
+> Authenticity verified by research pass (2026-06-22). **All 19 levels are
+> REAL** — there are NO fakes. The felt "repetition" comes from two levels
+> being IMPLEMENTED wrong (notably Lost Temple built as a Fall Mountain clone),
+> plus one miscategorization (Tip Toe). Fix = rebuild to the real mechanic.
 
 ---
 
@@ -26,17 +28,27 @@ nothing here is executed until signed off.
 | 11 | **Jump Showdown** | ✅ real | Final version of Jump Club — keep (faster/smaller). Slightly too similar to #10; differentiate (two bars + shrinking floor). |
 | 12 | **Block Party** | ✅ real | Rebuilt + rebalanced. Good. |
 | 13 | **Tail Tag** | ✅ real | Good. |
-| 14 | **Tip Toe** | ✅ real | AI improved. Enlarge the grid (longer path). |
+| 14 | **Tip Toe** | ✅ real | **MISCATEGORIZED** — it's a **Race/Course**, not Logic. Recategorize. AI improved; enlarge the grid (longer path). |
 | 15 | **Perfect Match** | ✅ real | Fixed grid + AI. Good. (bigger board, more fruits/rounds) |
 | 16 | **Hex-A-Gone** | ✅ real | Good. Add more vertical layers (it's a long endurance final). |
 | 17 | **Fall Mountain** | ✅ real | Rebuilt as a climb to the Crown. Good. |
-| 18 | **Lost Temple** | ❌ **FAKE / DUPLICATE** | Not a canonical Fall Guys level, and it's a near-clone of Fall Mountain (mountain-kind crown race). **Remove / replace.** |
+| 18 | **Lost Temple** | ✅ real (S5 Final) | **MIS-IMPLEMENTED** — I built it as a Fall Mountain crown-climb, which is why it feels like a duplicate. The REAL level is a **maze of randomized obstacle rooms** ending at a crown that slides over **lily pads**. **Rebuild to the real mechanic** (don't remove). |
 | 19 | **Royal Fumble** | ✅ real | Good (one-tail final). |
 
-### Verdicts
-- **Remove (fake + duplicate):** **Lost Temple** → replace with a real, distinct final.
-- **Near-duplicate to differentiate (keep both):** Jump Club vs Jump Showdown (make Showdown clearly the harder two-bar final).
-- **Door-family overlap (all real, keep, but make distinct):** Door Dash = pure doors (done); Gate Crash = raising gates (fix mechanic); Hit Parade = mixed gauntlet (distinct sequence).
+### Verdicts (post-audit)
+- **No fakes to remove.** All 19 are real.
+- **Fix the FELT duplication by rebuilding mis-implemented levels:**
+  - **Lost Temple** → rebuild as the **maze-of-rooms** final (currently a Fall
+    Mountain clone — that's the whole reason it feels repetitive).
+  - **Recategorize Tip Toe** as a Race (it's a Course round, not Logic).
+- **Intentional near-duplicates — KEEP BOTH (authentic):** Jump Club (Survival)
+  vs Jump Showdown (Final, +falling floor); Tail Tag (Hunt) vs Royal Fumble
+  (Final, single tail). The real game ships both pairs on purpose.
+- **Door-family overlap (all real, keep, make distinct):** Door Dash = pure
+  doors (done); Gate Crash = raising/lowering **gates** (fix mechanic); Hit
+  Parade = turntables + wrecking balls (distinct sequence).
+- **Biggest gap = ZERO team rounds.** Adding Egg Scramble / Hoarders / Fall
+  Ball / Rock 'n' Roll is the highest-variety win (needs a team-score system).
 
 ---
 
@@ -83,12 +95,17 @@ conveyors, bumpers, hammers, axes, moving blocks, slide walls, doors, hex tiles.
 
 ## 5. New authentic levels to ADD (replace the fake, add variety)
 
-Priority real levels to build (grouped):
-- **Races:** **See Saw** (tilting boards — research done), **Tundra Run** (slippery + fans + snowballs), **Lily Leapers** (bouncy lily pads over water), **Hoopla** (run through hoops + fans).
-- **Survival:** **Roll Out / Roll Off** (walk a rotating drum), **Tunnel** (treadmill survival).
-- **Logic / Hunt:** **Jinxed** (tag — being "it" spreads), **Sweet Thieves**-lite.
-- **Team:** **Egg Scramble**, **Hoarders**, **Rock 'n' Roll** (3-team scoring — needs a team-score system; bigger lift, later).
-- **Finals:** **Thin Ice** (tile-break), **Roll Off**, **Fall Ball** (soccer — needs a ball + goals), **Lost Temple → replaced** by one of these.
+Priority real levels to build (grouped). **Team rounds are the biggest gap (we
+have none) — highest variety-per-effort:**
+- **TEAM (build first for variety):** **Egg Scramble** (3 teams hoard eggs),
+  **Hoarders** (push balls into your zone), **Fall Ball** (2-team soccer),
+  **Rock 'n' Roll** (push a giant ball to the finish). Needs a **team-score
+  system** (new) — one lift, then four levels reuse it.
+- **Races:** **See Saw** (tilting boards — research done), **Tundra Run**
+  (icy + fans + snowballs), **Lily Leapers** (springy lily pads over slime).
+- **Survival:** **Roll Out** (walk a giant rotating segmented drum, avoid holes).
+- **Hunt/Logic:** **Jinxed** (tag that spreads to a whole team), **Roll Call**
+  (stand on the correct tile each round).
 
 Original ("fake-but-faithful") levels are allowed too, but only if held to the
 same bar: full multi-section, themed, hand-laid, as big as a real course.
@@ -97,16 +114,15 @@ same bar: full multi-section, themed, hand-laid, as big as a real course.
 
 ## 6. Proposed execution order
 
-1. **Remove Lost Temple**, slot in a real final (start with **Thin Ice** or **See Saw**-as-needed) so the roster has no fakes.
-2. **Primitive: Gate** → fix **Gate Crash** (biggest accuracy win, no terrain).
-3. **Primitive: Wind/Fan** → fix **Big Fans**.
-4. **The Whirlygig** accuracy pass (giant windmill).
-5. **Lengthen all races** to 5-7 sections (~5,200 long) + winnability pass.
-6. **Primitives: half-pipe, drawbridge, spike-log** → full **Knight Fever**.
-7. **Dizzy Heights** finale (stacked discs + ball gauntlet).
-8. **See Saw** (new, primitive #6) + **Roll Off** (#8).
-9. Bigger finals (Hex layers) + **Thin Ice**.
-10. (Later, large) **team modes** (Egg Scramble / Hoarders / Rock 'n' Roll).
+1. **Recategorize Tip Toe** as a Race (quick metadata fix).
+2. **Primitive: Gate** → fix **Gate Crash** (biggest single accuracy win, no terrain).
+3. **Primitive: Wind/Fan** → accuracy pass on **Big Fans** + **The Whirlygig** (giant windmill).
+4. **Lengthen all races** to 5-7 sections (~5,200 long) + winnability pass.
+5. **Primitives: half-pipe, drawbridge, spike-log** → full **Knight Fever**.
+6. **Rebuild Lost Temple** as the real **maze-of-rooms** final (kills the felt Fall-Mountain duplication).
+7. **Dizzy Heights** finale (stacked discs + ball gauntlet); bigger **Hex-A-Gone** (more layers).
+8. **Team-score system** → **Egg Scramble**, **Hoarders**, **Fall Ball**, **Rock 'n' Roll** (fills the biggest gap).
+9. New races: **See Saw**, **Roll Out**, **Lily Leapers**, **Tundra Run**.
 
 Each step: build → headless sim (winnable) → screenshot-verify vs reference →
 commit. Multi-agent research per new level before building, as we've been doing.
