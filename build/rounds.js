@@ -48,6 +48,7 @@ class Round {
         this.drawGround = null;
         this.onUpdate = null;
         this.doorWalls = [];
+        this.gateRows = [];        // Gate Crash: rows of raise/lower gates [[gate,...],...]
         this.terrain = null;       // optional height profile (slopes/pits) along the course
         this.groundZ = null;       // (x,y) -> floor height; wired from terrain in Rounds.create
         this.platform = null;
@@ -557,6 +558,42 @@ function doorThink(bean, round, dt) {
     } else bean.ai.dive = false;
 }
 
+// ---- Gate Crash ------------------------------------------------------
+// Read the next gate row and head for the gate that's most OPEN (and nearby);
+// raised gates bounce you, so the crowd naturally flows through whichever is down.
+function gateThink(bean, round, dt) {
+    const ty = round.finishY - 30;
+    let row = null;
+    for (const gr of round.gateRows) {
+        const gy = gr[0].y;
+        if (gy < bean.y - 4 && (!row || gy > row[0].y)) row = gr;
+    }
+    if (!row) {                                           // past the last gate — run for the line
+        const dx = (round.cx + bean.lane * 0.18) - bean.x, dy = ty - bean.y, dl = Math.hypot(dx, dy) || 1;
+        bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
+        bean.ai.jump = false; bean.ai.dive = false; bean.ai.grab = false;
+        return;
+    }
+    // COMMIT to one gate per row (the nearest by x) and ride its cycle — no
+    // thrashing between gates. Re-pick only when we reach a new row.
+    if (bean._gateRow !== row) { bean._gateRow = row; bean._gate = null; }
+    if (!bean._gate) {
+        let g0 = null, bd0 = 1e9;
+        for (const gg of row) {
+            const gx0 = (gg.x0 + gg.x1) / 2, d0 = Math.abs(gx0 - bean.x);
+            if (d0 < bd0) { bd0 = d0; g0 = gg; }
+        }
+        bean._gate = g0;
+    }
+    const g = bean._gate;
+    const gx = (g.x0 + g.x1) / 2;
+    // line up with the gate's x and PRESS forward; the gate press-stops you while
+    // raised, then you pour straight through the instant it drops.
+    const mx = U.clamp((gx - bean.x) / 45, -1, 1);
+    bean.ai.mx = mx; bean.ai.my = -1;
+    bean.ai.jump = false; bean.ai.dive = false; bean.ai.grab = false;
+}
+
 function jumpThink(bean, round, dt) {
     const P = round.platform;
     const rr = P.r * 0.5;
@@ -827,6 +864,31 @@ const Rounds = {
         r.obstacles.push(dw); r.doorWalls.push(dw);
         return dw;
     },
+    // A row of `n` raise/lower gates across the lane. `mode` sets the timing logic:
+    //   'seq'  — gates open one-at-a-time in a rotating order (forgiving Row 1)
+    //   'alt'  — two anti-synced groups (outer pair vs middle); one group open at a time
+    //   'inner'— banks where the inner gates open ~3x as often as the outer ones
+    _gateRow(r, y, n, opts) {
+        opts = opts || {};
+        const x0 = r.minX, x1 = r.maxX, w = (x1 - x0) / n;
+        const period = opts.period || 3.6, mode = opts.mode || 'seq';
+        const row = [];
+        for (let i = 0; i < n; i++) {
+            let phase = 0, per = period, down = opts.down || 0.34;
+            if (mode === 'seq') phase = i / n;                       // rotate the open window
+            else if (mode === 'alt') phase = (i === Math.floor((n - 1) / 2) || (n > 3 && i === Math.ceil((n - 1) / 2))) ? 0.5 : 0;  // middle vs outer
+            else if (mode === 'inner') {                             // inner gates cycle faster
+                const inner = (i >= n * 0.25 && i <= n * 0.75 - 0.01);
+                per = inner ? period / 3 : period;
+                phase = (i % 2) * 0.5;
+            }
+            const g = new Gate({ y, x0: x0 + i * w, x1: x0 + (i + 1) * w, thick: opts.thick || 40,
+                maxH: opts.maxH || 230, period: per, phase, down });
+            r.obstacles.push(g); row.push(g);
+        }
+        r.gateRows.push(row);
+        return row;
+    },
     _arena(r, R) {
         R = R || 300;
         const cx = 640, cy = 380;
@@ -1030,17 +1092,24 @@ const Rounds = {
         },
 
         // -------------------------------------------------- GATE CRASH
-        gateCrash(r) {                      // RACE — doors interleaved with beams & hammers
+        gateCrash(r) {                      // RACE — read the raise/lower gates, cross when they drop
             Rounds._raceCommon(r);
-            Rounds._doorWall(r, 3340, 3);
-            Rounds._beams(r, 2980, { n: 2, speed: 1.4, color: '#7b46d6' });
-            Rounds._doorWall(r, 2560, 2);
-            Rounds._hammers(r, 2150, { n: 1, speed: 1.8 });
-            Rounds._beams(r, 1820, { n: 2, speed: -1.6, color: '#23d6c8' });
-            Rounds._doorWall(r, 1420, 3);
-            Rounds._bumpers(r, 1050, { rows: 2, cols: 4, color: '#ff5fa2' });
-            Rounds._doorWall(r, 660, 2);
-            Rounds._spawnRows(r, r.maxY - 260, r.cx);
+            r.thinkFn = gateThink;
+            // Five gate rows of escalating speed/logic (3 / 3 / 3 / 8 / 3) with a
+            // bumper-and-slider interlude after Row 1 — exactly the real course.
+            Rounds._gateRow(r, 3420, 3, { mode: 'seq', period: 4.0 });                 // Row 1 — slow rotate
+            Rounds._bumpers(r, 3000, { rows: 2, cols: 4, color: '#ff5fa2' });          // interlude
+            Rounds._blocks(r, 2700, { n: 2, w: 150, speed: 170 });                     // sliders
+            Rounds._gateRow(r, 2350, 3, { mode: 'alt', period: 3.4 });                 // Row 2 — alternation
+            Rounds._gateRow(r, 1950, 3, { mode: 'alt', period: 2.6 });                 // Row 3 — faster
+            Rounds._gateRow(r, 1450, 8, { mode: 'inner', period: 3.0 });               // Row 4 — wide 8-gate wall
+            // finale: a short slime downhill ramp into the last, tightest gate row.
+            r.terrain = new Terrain()
+                .flat(900, 3980, 0)
+                .ramp(560, 900, 0, -150)        // downhill drop
+                .flat(240, 560, -150);
+            Rounds._gateRow(r, 700, 3, { mode: 'alt', period: 2.2, down: 0.28 });      // Row 5 — final timed jump
+            Rounds._spawnRows(r, r.maxY - 240, r.cx);
         },
 
         // -------------------------------------------------- BLOCK PARTY

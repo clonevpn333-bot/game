@@ -1659,6 +1659,47 @@ function makeSlideWall(ob) {
     return view;
 }
 
+// Gate Crash: a wide striped panel that slides up to block and down to pass.
+function makeGate(ob) {
+    const group = new THREE.Object3D();
+    const w = ob.x1 - ob.x0, cx = (ob.x0 + ob.x1) / 2, thick = ob.thick || 40, maxH = ob.maxH || 220;
+    const frameMat = inflate(0xffd86b, { roughness: 0.5 });     // mustard frame walls
+    for (const px of [ob.x0, ob.x1]) {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(22, maxH + 60, thick + 18), frameMat);
+        post.position.copy(W(px, ob.y, (maxH + 60) / 2));
+        group.add(post);
+    }
+    // the sliding gate panel — vertical pink/white stripes + a gold top cap.
+    const pivot = new THREE.Object3D();
+    pivot.position.copy(W(cx, ob.y, 0));
+    group.add(pivot);
+    const panel = new THREE.Object3D();
+    pivot.add(panel);
+    const pinkMat = inflate(WPAL.curb, { roughness: 0.3, clearcoat: 0.5 });
+    const whiteMat = inflate(0xfff3fb, { roughness: 0.3 });
+    const nStripes = Math.max(3, Math.round(w / 56));
+    const sw = w / nStripes;
+    for (let i = 0; i < nStripes; i++) {
+        const seg = new THREE.Mesh(new THREE.BoxGeometry(sw - 2, maxH, thick), (i & 1) ? whiteMat : pinkMat);
+        seg.position.set(-w / 2 + (i + 0.5) * sw, maxH / 2, 0);
+        panel.add(seg);
+    }
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(w, 16, thick + 8), gloss(WPAL.gold, { metalness: 0.3 }));
+    cap.position.set(0, maxH, 0);
+    panel.add(cap);
+    shadowy(group, true, true);
+    const view = {
+        object3d: group,
+        update(o) {
+            const h = (o && o.h != null) ? o.h : (ob.h || 0);
+            pivot.position.y = (h - maxH);     // panel top reaches h; when h=0 it's hidden in the sill
+        },
+        dispose() { disposeTree(group); },
+    };
+    view.update(ob);
+    return view;
+}
+
 function makeObstacleView(ob) {
     switch (ob && ob.kind) {
         case 'spinner':     return makeSpinner(ob);
@@ -1673,6 +1714,7 @@ function makeObstacleView(ob) {
         case 'slidewall':   return makeSlideWall(ob);
         case 'cannon':      return makeCannon(ob);
         case 'spinplate':   return makeSpinPlate(ob);
+        case 'gate':        return makeGate(ob);
         default: {
             const g = new THREE.Object3D();
             return { object3d: g, update() {}, dispose() { disposeTree(g); } };

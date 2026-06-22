@@ -761,6 +761,65 @@ class DoorWall {
     }
 }
 
+class Gate {
+    // A wall that RISES to block the lane then LOWERS flush so you can cross —
+    // time your run for when it's down (or jump a partly-raised one). Gate Crash.
+    constructor(o) {
+        this.kind = 'gate';
+        this.y = o.y; this.x0 = o.x0; this.x1 = o.x1; this.thick = o.thick || 40;
+        this.maxH = o.maxH || 220;
+        this.period = o.period || 3.6;
+        this.down = o.down != null ? o.down : 0.34;     // fraction of the cycle spent fully DOWN
+        this.t = (o.phase || 0) * this.period;
+        this.h = 0;
+    }
+    update(dt) {
+        this.t += dt;
+        const p = (this.t % this.period) / this.period; // 0..1, DOWN window centred on 0
+        const d = this.down;
+        if (p < d * 0.5 || p > 1 - d * 0.5) this.h = 0;
+        else {
+            const u = (p - d * 0.5) / (1 - d);          // 0..1 across the raised arc
+            this.h = this.maxH * (0.5 - 0.5 * Math.cos(u * Math.PI * 2));
+        }
+    }
+    collide(bean, round) {
+        if (bean.falling || bean.gone || bean.exited) return;
+        if (bean.x < this.x0 - bean.r || bean.x > this.x1 + bean.r) return;   // only this gate's slice
+        if (Math.abs(bean.y - this.y) > bean.r + this.thick * 0.5) return;
+        if (this.h < bean.r * 0.6) return;              // gate is down → walk over
+        if (bean.air > this.h + 8) return;              // jumped clear over the top
+        // press-STOP at the gate face (no backward fling) so a queued bean pours
+        // straight through the instant the gate drops.
+        const side = bean.y > this.y ? 1 : -1;
+        bean.y = this.y + side * (bean.r + this.thick * 0.5 + 1);
+        if ((side > 0 && bean.vy < 0) || (side < 0 && bean.vy > 0)) bean.vy = 0;
+        const speed = Math.hypot(bean.vx, bean.vy);
+        if (speed > 300 && bean.diveT > 0) { bean.ragdoll = Math.max(bean.ragdoll, 0.25); bean.everRagdolled = true; }
+    }
+}
+
+class WindZone {
+    // A fan's air current: a rectangular zone that shoves beans in a direction
+    // (Big Fans). The fan disc itself is decorative; this is the push field.
+    constructor(o) {
+        this.kind = 'wind';
+        this.x0 = o.x0; this.x1 = o.x1; this.y0 = o.y0; this.y1 = o.y1;
+        this.dx = o.dx || 0; this.dy = o.dy || 0;       // push direction
+        this.force = o.force || 320; this.color = o.color || '#bfefff';
+        this.fanX = o.fanX != null ? o.fanX : (this.x0 + this.x1) / 2;
+        this.fanY = o.fanY != null ? o.fanY : (this.y0 + this.y1) / 2;
+        this.spin = 0;
+    }
+    update(dt) { this.spin += dt * 7; }
+    collide(bean, round, dt) {
+        if (bean.falling || bean.gone || bean.exited) return;
+        if (bean.x < this.x0 || bean.x > this.x1 || bean.y < this.y0 || bean.y > this.y1) return;
+        const f = this.force * (dt || 0.016);
+        bean.vx += this.dx * f; bean.vy += this.dy * f;
+    }
+}
+
 class BouncePad {
     constructor(o) { this.kind = "bouncepad"; this.x = o.x; this.y = o.y; this.r = o.r || 38; this.t = 0; }
     update(dt) { this.t += dt; }

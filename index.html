@@ -1481,6 +1481,65 @@ class DoorWall {
     }
 }
 
+class Gate {
+    // A wall that RISES to block the lane then LOWERS flush so you can cross —
+    // time your run for when it's down (or jump a partly-raised one). Gate Crash.
+    constructor(o) {
+        this.kind = 'gate';
+        this.y = o.y; this.x0 = o.x0; this.x1 = o.x1; this.thick = o.thick || 40;
+        this.maxH = o.maxH || 220;
+        this.period = o.period || 3.6;
+        this.down = o.down != null ? o.down : 0.34;     // fraction of the cycle spent fully DOWN
+        this.t = (o.phase || 0) * this.period;
+        this.h = 0;
+    }
+    update(dt) {
+        this.t += dt;
+        const p = (this.t % this.period) / this.period; // 0..1, DOWN window centred on 0
+        const d = this.down;
+        if (p < d * 0.5 || p > 1 - d * 0.5) this.h = 0;
+        else {
+            const u = (p - d * 0.5) / (1 - d);          // 0..1 across the raised arc
+            this.h = this.maxH * (0.5 - 0.5 * Math.cos(u * Math.PI * 2));
+        }
+    }
+    collide(bean, round) {
+        if (bean.falling || bean.gone || bean.exited) return;
+        if (bean.x < this.x0 - bean.r || bean.x > this.x1 + bean.r) return;   // only this gate's slice
+        if (Math.abs(bean.y - this.y) > bean.r + this.thick * 0.5) return;
+        if (this.h < bean.r * 0.6) return;              // gate is down → walk over
+        if (bean.air > this.h + 8) return;              // jumped clear over the top
+        // press-STOP at the gate face (no backward fling) so a queued bean pours
+        // straight through the instant the gate drops.
+        const side = bean.y > this.y ? 1 : -1;
+        bean.y = this.y + side * (bean.r + this.thick * 0.5 + 1);
+        if ((side > 0 && bean.vy < 0) || (side < 0 && bean.vy > 0)) bean.vy = 0;
+        const speed = Math.hypot(bean.vx, bean.vy);
+        if (speed > 300 && bean.diveT > 0) { bean.ragdoll = Math.max(bean.ragdoll, 0.25); bean.everRagdolled = true; }
+    }
+}
+
+class WindZone {
+    // A fan's air current: a rectangular zone that shoves beans in a direction
+    // (Big Fans). The fan disc itself is decorative; this is the push field.
+    constructor(o) {
+        this.kind = 'wind';
+        this.x0 = o.x0; this.x1 = o.x1; this.y0 = o.y0; this.y1 = o.y1;
+        this.dx = o.dx || 0; this.dy = o.dy || 0;       // push direction
+        this.force = o.force || 320; this.color = o.color || '#bfefff';
+        this.fanX = o.fanX != null ? o.fanX : (this.x0 + this.x1) / 2;
+        this.fanY = o.fanY != null ? o.fanY : (this.y0 + this.y1) / 2;
+        this.spin = 0;
+    }
+    update(dt) { this.spin += dt * 7; }
+    collide(bean, round, dt) {
+        if (bean.falling || bean.gone || bean.exited) return;
+        if (bean.x < this.x0 || bean.x > this.x1 || bean.y < this.y0 || bean.y > this.y1) return;
+        const f = this.force * (dt || 0.016);
+        bean.vx += this.dx * f; bean.vy += this.dy * f;
+    }
+}
+
 class BouncePad {
     constructor(o) { this.kind = "bouncepad"; this.x = o.x; this.y = o.y; this.r = o.r || 38; this.t = 0; }
     update(dt) { this.t += dt; }
@@ -1757,6 +1816,7 @@ class Round {
         this.drawGround = null;
         this.onUpdate = null;
         this.doorWalls = [];
+        this.gateRows = [];        // Gate Crash: rows of raise/lower gates [[gate,...],...]
         this.terrain = null;       // optional height profile (slopes/pits) along the course
         this.groundZ = null;       // (x,y) -> floor height; wired from terrain in Rounds.create
         this.platform = null;
@@ -2266,6 +2326,42 @@ function doorThink(bean, round, dt) {
     } else bean.ai.dive = false;
 }
 
+// ---- Gate Crash ------------------------------------------------------
+// Read the next gate row and head for the gate that's most OPEN (and nearby);
+// raised gates bounce you, so the crowd naturally flows through whichever is down.
+function gateThink(bean, round, dt) {
+    const ty = round.finishY - 30;
+    let row = null;
+    for (const gr of round.gateRows) {
+        const gy = gr[0].y;
+        if (gy < bean.y - 4 && (!row || gy > row[0].y)) row = gr;
+    }
+    if (!row) {                                           // past the last gate — run for the line
+        const dx = (round.cx + bean.lane * 0.18) - bean.x, dy = ty - bean.y, dl = Math.hypot(dx, dy) || 1;
+        bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
+        bean.ai.jump = false; bean.ai.dive = false; bean.ai.grab = false;
+        return;
+    }
+    // COMMIT to one gate per row (the nearest by x) and ride its cycle — no
+    // thrashing between gates. Re-pick only when we reach a new row.
+    if (bean._gateRow !== row) { bean._gateRow = row; bean._gate = null; }
+    if (!bean._gate) {
+        let g0 = null, bd0 = 1e9;
+        for (const gg of row) {
+            const gx0 = (gg.x0 + gg.x1) / 2, d0 = Math.abs(gx0 - bean.x);
+            if (d0 < bd0) { bd0 = d0; g0 = gg; }
+        }
+        bean._gate = g0;
+    }
+    const g = bean._gate;
+    const gx = (g.x0 + g.x1) / 2;
+    // line up with the gate's x and PRESS forward; the gate press-stops you while
+    // raised, then you pour straight through the instant it drops.
+    const mx = U.clamp((gx - bean.x) / 45, -1, 1);
+    bean.ai.mx = mx; bean.ai.my = -1;
+    bean.ai.jump = false; bean.ai.dive = false; bean.ai.grab = false;
+}
+
 function jumpThink(bean, round, dt) {
     const P = round.platform;
     const rr = P.r * 0.5;
@@ -2536,6 +2632,31 @@ const Rounds = {
         r.obstacles.push(dw); r.doorWalls.push(dw);
         return dw;
     },
+    // A row of `n` raise/lower gates across the lane. `mode` sets the timing logic:
+    //   'seq'  — gates open one-at-a-time in a rotating order (forgiving Row 1)
+    //   'alt'  — two anti-synced groups (outer pair vs middle); one group open at a time
+    //   'inner'— banks where the inner gates open ~3x as often as the outer ones
+    _gateRow(r, y, n, opts) {
+        opts = opts || {};
+        const x0 = r.minX, x1 = r.maxX, w = (x1 - x0) / n;
+        const period = opts.period || 3.6, mode = opts.mode || 'seq';
+        const row = [];
+        for (let i = 0; i < n; i++) {
+            let phase = 0, per = period, down = opts.down || 0.34;
+            if (mode === 'seq') phase = i / n;                       // rotate the open window
+            else if (mode === 'alt') phase = (i === Math.floor((n - 1) / 2) || (n > 3 && i === Math.ceil((n - 1) / 2))) ? 0.5 : 0;  // middle vs outer
+            else if (mode === 'inner') {                             // inner gates cycle faster
+                const inner = (i >= n * 0.25 && i <= n * 0.75 - 0.01);
+                per = inner ? period / 3 : period;
+                phase = (i % 2) * 0.5;
+            }
+            const g = new Gate({ y, x0: x0 + i * w, x1: x0 + (i + 1) * w, thick: opts.thick || 40,
+                maxH: opts.maxH || 230, period: per, phase, down });
+            r.obstacles.push(g); row.push(g);
+        }
+        r.gateRows.push(row);
+        return row;
+    },
     _arena(r, R) {
         R = R || 300;
         const cx = 640, cy = 380;
@@ -2739,17 +2860,24 @@ const Rounds = {
         },
 
         // -------------------------------------------------- GATE CRASH
-        gateCrash(r) {                      // RACE — doors interleaved with beams & hammers
+        gateCrash(r) {                      // RACE — read the raise/lower gates, cross when they drop
             Rounds._raceCommon(r);
-            Rounds._doorWall(r, 3340, 3);
-            Rounds._beams(r, 2980, { n: 2, speed: 1.4, color: '#7b46d6' });
-            Rounds._doorWall(r, 2560, 2);
-            Rounds._hammers(r, 2150, { n: 1, speed: 1.8 });
-            Rounds._beams(r, 1820, { n: 2, speed: -1.6, color: '#23d6c8' });
-            Rounds._doorWall(r, 1420, 3);
-            Rounds._bumpers(r, 1050, { rows: 2, cols: 4, color: '#ff5fa2' });
-            Rounds._doorWall(r, 660, 2);
-            Rounds._spawnRows(r, r.maxY - 260, r.cx);
+            r.thinkFn = gateThink;
+            // Five gate rows of escalating speed/logic (3 / 3 / 3 / 8 / 3) with a
+            // bumper-and-slider interlude after Row 1 — exactly the real course.
+            Rounds._gateRow(r, 3420, 3, { mode: 'seq', period: 4.0 });                 // Row 1 — slow rotate
+            Rounds._bumpers(r, 3000, { rows: 2, cols: 4, color: '#ff5fa2' });          // interlude
+            Rounds._blocks(r, 2700, { n: 2, w: 150, speed: 170 });                     // sliders
+            Rounds._gateRow(r, 2350, 3, { mode: 'alt', period: 3.4 });                 // Row 2 — alternation
+            Rounds._gateRow(r, 1950, 3, { mode: 'alt', period: 2.6 });                 // Row 3 — faster
+            Rounds._gateRow(r, 1450, 8, { mode: 'inner', period: 3.0 });               // Row 4 — wide 8-gate wall
+            // finale: a short slime downhill ramp into the last, tightest gate row.
+            r.terrain = new Terrain()
+                .flat(900, 3980, 0)
+                .ramp(560, 900, 0, -150)        // downhill drop
+                .flat(240, 560, -150);
+            Rounds._gateRow(r, 700, 3, { mode: 'alt', period: 2.2, down: 0.28 });      // Row 5 — final timed jump
+            Rounds._spawnRows(r, r.maxY - 240, r.cx);
         },
 
         // -------------------------------------------------- BLOCK PARTY
@@ -6129,6 +6257,47 @@ function makeSlideWall(ob) {
     return view;
 }
 
+// Gate Crash: a wide striped panel that slides up to block and down to pass.
+function makeGate(ob) {
+    const group = new THREE.Object3D();
+    const w = ob.x1 - ob.x0, cx = (ob.x0 + ob.x1) / 2, thick = ob.thick || 40, maxH = ob.maxH || 220;
+    const frameMat = inflate(0xffd86b, { roughness: 0.5 });     // mustard frame walls
+    for (const px of [ob.x0, ob.x1]) {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(22, maxH + 60, thick + 18), frameMat);
+        post.position.copy(W(px, ob.y, (maxH + 60) / 2));
+        group.add(post);
+    }
+    // the sliding gate panel — vertical pink/white stripes + a gold top cap.
+    const pivot = new THREE.Object3D();
+    pivot.position.copy(W(cx, ob.y, 0));
+    group.add(pivot);
+    const panel = new THREE.Object3D();
+    pivot.add(panel);
+    const pinkMat = inflate(WPAL.curb, { roughness: 0.3, clearcoat: 0.5 });
+    const whiteMat = inflate(0xfff3fb, { roughness: 0.3 });
+    const nStripes = Math.max(3, Math.round(w / 56));
+    const sw = w / nStripes;
+    for (let i = 0; i < nStripes; i++) {
+        const seg = new THREE.Mesh(new THREE.BoxGeometry(sw - 2, maxH, thick), (i & 1) ? whiteMat : pinkMat);
+        seg.position.set(-w / 2 + (i + 0.5) * sw, maxH / 2, 0);
+        panel.add(seg);
+    }
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(w, 16, thick + 8), gloss(WPAL.gold, { metalness: 0.3 }));
+    cap.position.set(0, maxH, 0);
+    panel.add(cap);
+    shadowy(group, true, true);
+    const view = {
+        object3d: group,
+        update(o) {
+            const h = (o && o.h != null) ? o.h : (ob.h || 0);
+            pivot.position.y = (h - maxH);     // panel top reaches h; when h=0 it's hidden in the sill
+        },
+        dispose() { disposeTree(group); },
+    };
+    view.update(ob);
+    return view;
+}
+
 function makeObstacleView(ob) {
     switch (ob && ob.kind) {
         case 'spinner':     return makeSpinner(ob);
@@ -6143,6 +6312,7 @@ function makeObstacleView(ob) {
         case 'slidewall':   return makeSlideWall(ob);
         case 'cannon':      return makeCannon(ob);
         case 'spinplate':   return makeSpinPlate(ob);
+        case 'gate':        return makeGate(ob);
         default: {
             const g = new THREE.Object3D();
             return { object3d: g, update() {}, dispose() { disposeTree(g); } };
