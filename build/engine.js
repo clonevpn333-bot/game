@@ -145,6 +145,17 @@ const Engine = {
 
     _buildRound(round) {
         this._teardownRound();
+        // Re-centre the sky backdrop (mountains / hills / clouds) on THIS course.
+        // The rings are built around the origin, but courses are long and offset,
+        // so without this the backdrop cuts through the middle of the play area
+        // and big hills loom right next to the lane. Keep it well clear.
+        if (this.env) {
+            const bcx = (round.minX + round.maxX) / 2;
+            const bcz = (round.minY + round.maxY) / 2;
+            for (const n of ['mountains', 'hills', 'clouds']) {
+                if (this.env[n]) this.env[n].position.set(bcx, 0, bcz);
+            }
+        }
         const g = new THREE.Group();
         this.courseView = new CourseView(round);
         g.add(this.courseView.object3d);

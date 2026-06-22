@@ -558,8 +558,8 @@ function setupEnvironment(scene) {
     const hillN = 22;
     for (let i = 0; i < hillN; i++) {
         const ang = (i / hillN) * Math.PI * 2 + (i % 2) * 0.14;
-        const dist = 2550 + ((i * 47) % 5) * 170;
-        const rad = 420 + ((i * 61) % 6) * 80;
+        const dist = 3300 + ((i * 47) % 5) * 220;
+        const rad = 360 + ((i * 61) % 6) * 70;
         const dome = new THREE.Mesh(
             new THREE.SphereGeometry(rad, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.5),
             mat(shade(hillPals[i % hillPals.length], (i % 2) ? 0.05 : -0.03), { roughness: 0.98, metalness: 0.0 }));
