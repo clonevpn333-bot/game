@@ -1916,7 +1916,7 @@ class CourseView {
         const fArch = this._buildArch(minX, maxX, finishY, WPAL.gold, 'finish'); fArch.position.y += fz; this._add(fArch);
 
         // --- giant grabbable CROWN floating at the finish (Fall Mountain) ---
-        if (r.crownFinish) { const cr = this._buildCrown((minX + maxX) / 2, finishY - 40); cr.position.y += fz; this._add(cr); }
+        if (r.crownFinish) { const cr = this._buildCrown((minX + maxX) / 2, finishY - 40, r.crownSlide); cr.position.y += fz; this._add(cr); }
 
         // --- START gate near maxY (grape) + a glowing start band ---
         const startY = maxY - 150;
@@ -2009,7 +2009,7 @@ class CourseView {
     }
 
     // a big golden crown bobbing on a pedestal — the Fall Mountain prize.
-    _buildCrown(cx, cy) {
+    _buildCrown(cx, cy, slide) {
         const g = new THREE.Object3D();
         const goldM = gloss(WPAL.gold, { roughness: 0.22, metalness: 0.55, emissive: 0x5a3d00, emissiveIntensity: 0.18 });
         const band = new THREE.Mesh(new THREE.CylinderGeometry(26, 30, 22, 24, 1, true), goldM);
@@ -2026,8 +2026,13 @@ class CourseView {
         const post = new THREE.Mesh(new THREE.CylinderGeometry(7, 9, 120, 16), mat(WPAL.grape, { roughness: 0.5 }));
         post.position.y = -78; g.add(post);
         g.position.copy(W(cx, cy, 150));
-        const baseY = g.position.y;
-        this._anim.push((dt, t) => { g.rotation.y = t * 1.1; g.position.y = baseY + Math.sin(t * 2) * 8; });
+        const baseY = g.position.y, baseX = g.position.x;
+        if (slide) {
+            // Lost Temple: the Crown slides side-to-side (vs Fall Mountain's bob).
+            this._anim.push((dt, t) => { g.rotation.y = t * 1.1; g.position.x = baseX + Math.sin(t * 0.9) * 220; g.position.y = baseY + Math.sin(t * 2) * 4; });
+        } else {
+            this._anim.push((dt, t) => { g.rotation.y = t * 1.1; g.position.y = baseY + Math.sin(t * 2) * 8; });
+        }
         shadowy(g, true, false);
         return g;
     }

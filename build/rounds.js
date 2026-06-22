@@ -1280,26 +1280,24 @@ const Rounds = {
             Rounds._beams(r, 700, { n: 1, style: 'windmill', speed: 0.9, len: 320, thick: 30, color: '#e6395a' });
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
-        lostTemple(r) {             // FINAL race — climb the temple steps past doors & hammers to the Crown
+        lostTemple(r) {             // FINAL — a flat temple MAZE of obstacle rooms to a sliding Crown
             Rounds._raceCommon(r);
-            r.kind = 'mountain'; r.viewKind = 'race'; r.crownFinish = true; r.finishY = 360;
-            r.terrain = new Terrain()
-                .flat(3550, 3980, 0)
-                .ramp(3100, 3550, 110, 0)
-                .flat(2850, 3100, 110)           // first doors
-                .ramp(2350, 2850, 250, 110)
-                .flat(2150, 2350, 250)           // second doors
-                .ramp(1500, 2150, 400, 250)
-                .flat(1300, 1500, 400)
-                .ramp(800, 1300, 510, 400)
-                .flat(240, 800, 510);            // summit + Crown
-            Rounds._doorWall(r, 3340, 3);
-            Rounds._hammers(r, 2950, { n: 2, speed: 1.9, gap: 280 });
-            Rounds._hammers(r, 2500, { n: 2, speed: 1.9, gap: 240 });
-            Rounds._doorWall(r, 2050, 2);
-            Rounds._beams(r, 1650, { n: 2, speed: -1.7, color: '#e6395a' });
-            Rounds._bumpers(r, 1200, { rows: 2, cols: 4, color: '#ffd23f' });
-            Rounds._hammers(r, 700, { n: 2, speed: 2.2, gap: 240 });
+            r.kind = 'mountain'; r.viewKind = 'race'; r.crownFinish = true; r.crownSlide = true; r.finishY = 320;
+            r.thinkFn = doorThink;   // guess doors blind, surge to any opened one — the maze
+            // A sequence of obstacle ROOMS, each gated by a wall of doors (only some
+            // break). Different hazard per room; a conveyor room before the Crown.
+            Rounds._doorWall(r, 3520, 4, 2);                              // room 1 doors
+            Rounds._hammers(r, 3180, { n: 2, speed: 1.8, gap: 280 });     // hammer room
+            Rounds._doorWall(r, 2860, 4, 2);
+            Rounds._beams(r, 2520, { n: 3, style: 'bar', speed: 1.6, color: '#8a6a3e' }); // spinning-log room
+            Rounds._doorWall(r, 2200, 4, 2);
+            Rounds._plates(r, 1860, { cols: 2, dir: 1, R: 150, speed: 0.95 });            // spinning-plate room
+            Rounds._doorWall(r, 1540, 4, 2);
+            Rounds._hammers(r, 1200, { n: 3, speed: 2.0, gap: 220 });     // pendulum room
+            Rounds._doorWall(r, 900, 3, 2);
+            Rounds._conveyor(r, 560, 760, { dy: 1, push: 150, color: '#8a6a3e' });        // pre-crown conveyor room
+            // crown room: bounce pads (lily pads) up to the horizontally-sliding Crown
+            for (const bx of [r.cx - 150, r.cx + 150, r.cx]) r.obstacles.push(new BouncePad({ x: bx, y: 470, r: 46 }));
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
 
