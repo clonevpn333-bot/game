@@ -731,9 +731,14 @@ class DoorWall {
         const side = bean.y > this.y ? 1 : -1;
         bean.y = this.y + side * (bean.r + this.thick * 0.5 + 1);
         const speed = Math.hypot(bean.vx, bean.vy);
-        bean.vy = side * Math.min(speed, 240) * 0.5;
-        if (bean.isAI && bean._dwWall === this) bean._dwX = null;
-        if (speed > 200) { bean.ragdoll = Math.max(bean.ragdoll, 0.35); bean.everRagdolled = true; }
+        bean.vy = side * Math.min(speed, 200) * 0.3;    // gentle bump so beans recover & keep trying
+        // re-pick a DIFFERENT door next frame: nudge the commit toward an open
+        // door if one exists, else just drop it (so the crowd keeps shuffling).
+        if (bean.isAI && bean._dwWall === this) {
+            const openX = this.openNear(bean.x, 400);
+            bean._dwX = (openX != null) ? openX : null;
+        }
+        if (speed > 340) { bean.ragdoll = Math.max(bean.ragdoll, 0.28); bean.everRagdolled = true; }  // only hard dives ragdoll
     }
     draw(ctx, cam) {
         const y = this.y - cam.y;

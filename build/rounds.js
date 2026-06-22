@@ -230,6 +230,7 @@ class Round {
             const t = this._tileAt(bean.x, bean.y);
             if (!t) { if (bean.grounded) bean.startFall(); }
             else if (bean.grounded && t.fake && t.state === 'solid') { t.step(); bean.startFall(); }
+            else if (bean.grounded && !t.fake) t.proven = true;   // a real tile someone stood on = known safe
         } else if (this.kind === 'match') {
             // fall when standing off any solid tile (e.g. a tile that just dropped)
             if (bean.grounded && !this._tileAt(bean.x, bean.y)) bean.startFall();
@@ -546,11 +547,13 @@ function doorThink(bean, round, dt) {
     bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
     bean.ai.jump = false; bean.ai.grab = false;
 
-    // dive to burst through the door you're committed to (skill-gated)
+    // dive only to burst through a door that's already OPEN right ahead — never
+    // dive blindly into a wall (that just ragdolls you and clogs the crowd).
     bean.aiTimer -= dt;
     if (bean.aiTimer <= 0) {
-        bean.aiTimer = U.rngf(0.6, 1.5);
-        bean.ai.dive = !!wall && Math.abs(bean.y - wall.y) < 150 && U.chance(0.45 * bean.skill);
+        bean.aiTimer = U.rngf(0.6, 1.4);
+        const openX = wall ? wall.openNear(bean.x, 90) : null;
+        bean.ai.dive = openX != null && Math.abs(bean.y - wall.y) < 120 && U.chance(0.4 * bean.skill);
     } else bean.ai.dive = false;
 }
 
@@ -644,23 +647,32 @@ function tagThink(bean, round, dt) {
 
 // ---- Tip Toe (Logic) --------------------------------------------------
 function tiptoeThink(bean, round, dt) {
-    // hop tile-to-tile: among ADJACENT tiles (so we never cut a diagonal over a
-    // gap), pick the one that's most "forward" (lower y) and real. Clumsy beans
-    // occasionally misjudge a fake.
+    // Among ADJACENT solid tiles, pick the most forward REAL one. Smarter beans
+    // read the hidden fakes better and dislike dead-ends (no real tile ahead).
+    // Keep a forward jitter so the pack fans out instead of dog-piling one
+    // column and shoving each other into the gaps.
+    const sense = 0.4 + bean.skill * 0.6;              // fake-reading skill
     let best = null, bestScore = -1e9;
-    const dodge = 900 * (0.55 + bean.skill * 0.6);
     for (const t of round.tiles) {
         if (t.state !== 'solid') continue;
         const dx = t.cx - bean.x, dy = t.cy - bean.y, d = Math.hypot(dx, dy);
         if (d < 6 || d > 84) continue;                 // adjacent neighbours only
-        let score = (bean.y - t.cy) + U.rngf(-4, 4);   // forward = lower y
-        if (t.fake) score -= dodge;
+        let score = (bean.y - t.cy) + U.rngf(-6, 6);   // forward + spread jitter
+        if (t.fake) score -= 1150 * sense;             // sense & avoid the fakes
+        if (t.proven) score += 30;                     // mild nudge toward known-safe
+        // dead-end avoidance: smarter beans avoid a tile with no REAL tile ahead
+        let hasAhead = false;
+        for (const t2 of round.tiles) {
+            if (t2.state === 'solid' && !t2.fake && t2.cy < t.cy - 8 &&
+                Math.hypot(t2.cx - t.cx, t2.cy - t.cy) < 84) { hasAhead = true; break; }
+        }
+        if (!hasAhead && t.cy > round.finishY + 30) score -= 80 * sense;
         if (score > bestScore) { bestScore = score; best = t; }
     }
     if (best) { const dx = best.cx - bean.x, dy = best.cy - bean.y, dl = Math.hypot(dx, dy) || 1;
         bean.ai.mx = dx / dl; bean.ai.my = dy / dl; }
     else { bean.ai.mx = 0; bean.ai.my = -0.5; }
-    if (U.chance((0.6 - bean.skill) * 0.015)) { bean.ai.mx *= 0.15; bean.ai.my *= 0.15; }  // hesitation
+    if (U.chance((0.6 - bean.skill * 0.55) * 0.014)) { bean.ai.mx *= 0.15; bean.ai.my *= 0.15; }  // occasional hesitation
     bean.ai.jump = false; bean.ai.dive = false; bean.ai.grab = false;
 }
 
@@ -670,25 +682,38 @@ function matchThink(bean, round, dt) {
     if (round._mPhase === 'drop') { bean.ai.mx = 0; bean.ai.my = 0; return; }   // freeze — hold your tile as the floor drops
     if (round.matchSafe >= 0 && round._mPhase === 'answer') {
         const cur = round._tileAt(bean.x, bean.y);
-        if (cur && cur.state === 'solid' && cur.fruit === round.matchSafe) { bean.ai.mx = 0; bean.ai.my = 0; return; }  // already safe
-        if (U.chance(0.7 + bean.skill * 0.3)) {        // react to the called fruit
-            let best = null, bd = 1e9;
-            for (const t of round.tiles) {
-                if (t.state !== 'solid' || t.fruit !== round.matchSafe) continue;
-                const d = U.dist(bean.x, bean.y, t.cx, t.cy);
-                if (d < bd) { bd = d; best = t; }
-            }
-            if (best) { const dx = best.cx - bean.x, dy = best.cy - bean.y, dl = Math.hypot(dx, dy) || 1;
-                bean.ai.mx = dx / dl; bean.ai.my = dy / dl; return; }
+        if (cur && cur.state === 'solid' && cur.fruit === round.matchSafe && bean._mLock === cur) {
+            bean.ai.mx = (cur.cx - bean.x) / 40; bean.ai.my = (cur.cy - bean.y) / 40; return;  // settle on the safe tile
         }
-    }
-    // otherwise mill around the board
+        // Lock onto ONE target tile for this round. Smart beans pick a correct
+        // (safe) tile from the nearest few so the pack spreads out; clumsy beans
+        // sometimes MISREMEMBER and lock onto a wrong-fruit tile (and get dropped).
+        if (!bean._mLock || bean._mLock.state !== 'solid') {
+            if (U.chance(0.6 + bean.skill * 0.4)) {
+                const remember = !U.chance(0.45 - bean.skill * 0.4);   // skill → memory
+                const pool = [];
+                for (const t of round.tiles) {
+                    if (t.state !== 'solid') continue;
+                    if (remember ? (t.fruit === round.matchSafe) : (t.fruit !== round.matchSafe))
+                        pool.push([U.dist2(bean.x, bean.y, t.cx, t.cy), t]);
+                }
+                if (pool.length) { pool.sort((a, b) => a[0] - b[0]); bean._mLock = pool[U.rng(0, Math.min(pool.length, 5) - 1)][1]; }
+            }
+        }
+        if (bean._mLock) {
+            const t = bean._mLock, dx = t.cx - bean.x, dy = t.cy - bean.y, dl = Math.hypot(dx, dy) || 1;
+            const ease = U.clamp(dl / 55, 0.18, 1);    // slow as you arrive → settle, don't overshoot
+            const sp = ease * (0.7 + bean.skill * 0.3);
+            bean.ai.mx = dx / dl * sp; bean.ai.my = dy / dl * sp; return;
+        }
+    } else { bean._mLock = null; }
+    // memorise/show phase: drift toward the board centre so you're ready to dash
     const cx = (round.minX + round.maxX) / 2, cy = (round.minY + round.maxY) / 2;
     if (U.chance(0.02) || (bean.aiTarget.x === 0 && bean.aiTarget.y === 0)) {
-        bean.aiTarget.x = cx + U.rngf(-160, 160); bean.aiTarget.y = cy + U.rngf(-120, 120);
+        bean.aiTarget.x = cx + U.rngf(-150, 150); bean.aiTarget.y = cy + U.rngf(-110, 110);
     }
     const dx = bean.aiTarget.x - bean.x, dy = bean.aiTarget.y - bean.y, dl = Math.hypot(dx, dy) || 1;
-    bean.ai.mx = dx / dl * 0.45; bean.ai.my = dy / dl * 0.45;
+    bean.ai.mx = dx / dl * 0.4; bean.ai.my = dy / dl * 0.4;
 }
 
 /* =====================================================================
@@ -715,7 +740,7 @@ const Rounds = {
             b.y = startY + row * sy;
             b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
             b.lane = b.isPlayer ? 0 : U.rngf(-340, 340);
-            b.skill = b.isPlayer ? 1 : U.rngf(0.32, 0.72);
+            b.skill = b.isPlayer ? 1 : U.rngf(0.46, 0.86);
         });
     },
 
@@ -832,7 +857,7 @@ const Rounds = {
             const rr = R * (b.isPlayer ? 0.5 : U.rngf(0.4, 0.62));
             b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
             b.startX = b.x; b.startY = b.y;
-            b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.38, 0.75);
+            b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.50, 0.88);
             b.facing = ang + Math.PI;
         });
     },
@@ -876,7 +901,7 @@ const Rounds = {
         r.beans.forEach((b, i) => {
             const t = startTiles[i % startTiles.length];
             b.x = t.cx + U.rngf(-5, 5); b.y = t.cy; b.startX = b.x; b.startY = b.y;
-            b.facing = -Math.PI / 2; b.skill = b.isPlayer ? 1 : U.rngf(0.3, 0.72);
+            b.facing = -Math.PI / 2; b.skill = b.isPlayer ? 1 : U.rngf(0.45, 0.85);
         });
         r.qualifyCount = Math.max(3, Math.round(r.beans.length * 0.6));
     },
@@ -893,7 +918,7 @@ const Rounds = {
         r.beans.forEach((b, i) => {
             const t = spots[i % spots.length];
             b.x = t.cx; b.y = t.cy; b.startX = b.x; b.startY = b.y;
-            b.skill = b.isPlayer ? 1 : U.rngf(0.28, 0.62);
+            b.skill = b.isPlayer ? 1 : U.rngf(0.40, 0.78);
             b.facing = U.rngf(0, 6.28);
         });
     },
@@ -954,7 +979,7 @@ const Rounds = {
                 const rr = R * (b.isPlayer ? 0.5 : U.rngf(0.42, 0.62));
                 b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
                 b.startX = b.x; b.startY = b.y;
-                b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.38, 0.75);
+                b.lane = ang; b.skill = b.isPlayer ? 1 : U.rngf(0.50, 0.88);
                 b.facing = ang + Math.PI;
             });
 
@@ -988,7 +1013,7 @@ const Rounds = {
             r.beans.forEach((b, i) => {
                 const t = spots[i % spots.length];
                 b.x = t.cx; b.y = t.cy; b.startX = b.x; b.startY = b.y;
-                b.skill = b.isPlayer ? 1 : U.rngf(0.28, 0.62);
+                b.skill = b.isPlayer ? 1 : U.rngf(0.40, 0.78);
                 b.facing = U.rngf(0, 6.28);
             });
 
@@ -1026,17 +1051,17 @@ const Rounds = {
             const x0 = A.cx - A.hw, x1 = A.cx + A.hw;
             const yMin = A.cy - A.hh - 20, yMax = A.cy + A.hh + 20;
             const cols = ['#9a6cff', '#5ad1ff', '#ff8fd0'];
-            for (let i = 0; i < 3; i++)
-                r.obstacles.push(new SlideWall({ x0, x1, y: yMin + i * 175, dir: 1, speed: 88,
-                    thick: 44, gapW: 155, yMin, yMax, color: cols[i % cols.length] }));
+            for (let i = 0; i < 3; i++)                  // faster & a touch tighter so smart beans still get squeezed
+                r.obstacles.push(new SlideWall({ x0, x1, y: yMin + i * 175, dir: 1, speed: 96,
+                    thick: 44, gapW: 144, yMin, yMax, color: cols[i % cols.length] }));
             // spawn beans across the square
             r.beans.forEach((b, i) => {
                 b.x = A.cx + U.rngf(-A.hw * 0.72, A.hw * 0.72);
                 b.y = A.cy + U.rngf(-A.hh * 0.35, A.hh * 0.55);
                 b.startX = b.x; b.startY = b.y;
-                b.skill = b.isPlayer ? 1 : U.rngf(0.34, 0.75); b.facing = -Math.PI / 2;
+                b.skill = b.isPlayer ? 1 : U.rngf(0.48, 0.86); b.facing = -Math.PI / 2;
             });
-            r.onUpdate = (rr, dt) => { for (const o of rr.obstacles) if (o.kind === 'slidewall') o.speed += dt * 2.5; };
+            r.onUpdate = (rr, dt) => { for (const o of rr.obstacles) if (o.kind === 'slidewall') o.speed += dt * 2.8; };
         },
 
         // -------------------------------------------------- DIZZY HEIGHTS
@@ -1211,8 +1236,10 @@ const Rounds = {
             r.kind = 'match'; r.viewKind = 'final'; r.camMode = 'fixed'; r.thinkFn = matchThink;
             r.minX = 320; r.maxX = 960; r.minY = 160; r.maxY = 620;
             r.tiles = [];
-            // a clean grid of SQUARE fruit tiles (rendered as 'matchtile')
-            const size = 40, stepX = 60, stepY = 56;
+            // a clean grid of SQUARE fruit tiles (rendered as 'matchtile').
+            // Step < ~52 so tile coverage overlaps and there are NO gaps for a
+            // moving bean to fall through (the board reads as one flush grid).
+            const size = 42, stepX = 50, stepY = 48;
             // only 3 fruits on the board so ~1/3 of tiles always survive a call —
             // a safe tile is always close (forgiving, like the real 2-4 fruit rounds)
             const pal = U.shuffle(FRUITS.map((_, i) => i)).slice(0, 3);
@@ -1228,7 +1255,7 @@ const Rounds = {
             r.beans.forEach((b, i) => {
                 const t = spots[i % spots.length];
                 b.x = t.cx; b.y = t.cy; b.startX = b.x; b.startY = b.y;
-                b.skill = b.isPlayer ? 1 : U.rngf(0.3, 0.72); b.facing = U.rngf(0, 6.28);
+                b.skill = b.isPlayer ? 1 : U.rngf(0.45, 0.85); b.facing = U.rngf(0, 6.28);
                 b.aiTarget = { x: 0, y: 0 };
             });
             // cycle machine: memorise → call a fruit → drop the rest → restore
