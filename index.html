@@ -2781,8 +2781,9 @@ const Rounds = {
             Rounds._plates(r, 3500, { cols: 3, dir: 1, R: 155, speed: 0.85 });
             Rounds._plates(r, 3180, { cols: 3, dir: -1, R: 155, speed: 0.9 });
             Rounds._bumpers(r, 2880, { rows: 1, cols: 4, color: '#ffd23f' });
-            // S2: a flat ball gauntlet — cannons fire big rolling balls head-on.
-            Rounds._cannons(r, 2350, { n: 3, interval: 1.8, speed: 360, reach: 1800, spread: 90, ballR: 32, color: '#ffd23f' });
+            // S2: a flat ball gauntlet — cannons fire big rolling balls head-on
+            // (even count → centre gap, no barrel down the player's sightline).
+            Rounds._cannons(r, 2350, { n: 4, interval: 2.1, speed: 360, reach: 1800, spread: 100, ballR: 32, color: '#ffd23f' });
             // S3: a narrower, faster spinning-plate stretch.
             Rounds._plates(r, 1780, { cols: 2, dir: -1, R: 160, speed: 1.05 });
             Rounds._plates(r, 1460, { cols: 2, dir: 1, R: 160, speed: 1.1 });
@@ -2806,8 +2807,10 @@ const Rounds = {
                 .flat(1200, 1400, 450)
                 .ramp(700, 1200, 560, 450)       // climb 450 → 560
                 .flat(240, 700, 560);            // the summit (cannons + finish)
-            // fruit cannons at the TOP firing fruit down the whole chute.
-            Rounds._cannons(r, 600, { n: 3, interval: 2.0, speed: 400, reach: 3600, spread: 110, fruit: true, ballR: 40 });
+            // fruit cannons at the TOP firing fruit down the whole chute. Use an
+            // EVEN count so there's a gap at the centre (no cannon barrel pointing
+            // straight down the middle into the player's camera).
+            Rounds._cannons(r, 600, { n: 4, interval: 2.5, speed: 400, reach: 3600, spread: 120, fruit: true, ballR: 40 });
             // reverse conveyors on the ramps shoving climbers back down the slope.
             Rounds._conveyor(r, 3050, 3520, { dy: 1, push: 130, color: '#46d36a' });
             Rounds._conveyor(r, 2280, 2720, { dy: 1, push: 138, color: '#5ad1ff' });
