@@ -208,9 +208,13 @@ class Round {
     _bounds(bean) {
         if (bean.falling || bean.gone || bean.exited) return;
         if (this.kind === 'race' || this.kind === 'mountain' || this.kind === 'climb') {
-            const lo = this.minX + bean.r, hi = this.maxX - bean.r;
-            if (bean.x < lo) { bean.x = lo; if (bean.vx < 0) bean.vx *= -0.2; }
-            if (bean.x > hi) { bean.x = hi; if (bean.vx > 0) bean.vx *= -0.2; }
+            if (this.openSides) {                          // Big Fans: drift off the side = fall
+                if (bean.grounded && (bean.x < this.minX - 6 || bean.x > this.maxX + 6)) bean.startFall();
+            } else {
+                const lo = this.minX + bean.r, hi = this.maxX - bean.r;
+                if (bean.x < lo) { bean.x = lo; if (bean.vx < 0) bean.vx *= -0.2; }
+                if (bean.x > hi) { bean.x = hi; if (bean.vx > 0) bean.vx *= -0.2; }
+            }
             if (bean.y > this.maxY - bean.r) bean.y = this.maxY - bean.r;
         } else if (this.kind === 'survival') {
             const P = this.platform, g = this.fallGrace || 0;
@@ -846,7 +850,7 @@ const Rounds = {
             const x = this._xs(r, cols, i, R * 0.9);
             const dir = (o.dir || 1) * (i % 2 ? -1 : 1);     // adjacent plates spin opposite ways
             r.obstacles.push(new SpinPlate({ cx: x, cy: y, r: R, speed: dir * (o.speed || 0.85),
-                color: i % 2 ? '#8fd0ff' : '#b6e6ff' }));
+                fan: !!o.fan, color: o.color || (i % 2 ? '#8fd0ff' : '#b6e6ff') }));
         }
     },
     // A wall of `n` doors with `fakeCount` breakable (smashable) ones. Back-compat:
@@ -1223,15 +1227,22 @@ const Rounds = {
             r.onUpdate = (rr, dt) => { s.speed += dt * 0.09; };
         },
         // -------------------------------------------------- BIG FANS
-        bigFans(r) {                // RACE — giant fan blades sweep the course
+        bigFans(r) {                // RACE — ride slow-rotating fan PLATFORMS, beams in later sections
             Rounds._raceCommon(r);
-            Rounds._beams(r, 3320, { n: 1, style: 'windmill', speed: 1.0, len: 340, thick: 34, color: '#5ad1ff' });
-            Rounds._bumpers(r, 2950, { rows: 2, cols: 4, color: '#ffd23f' });
-            Rounds._beams(r, 2560, { n: 2, style: 'windmill', speed: -1.1, len: 290, thick: 32, color: '#7b46d6' });
-            Rounds._beams(r, 2150, { n: 1, style: 'windmill', speed: 1.2, len: 340, thick: 34, color: '#23d6c8' });
-            Rounds._bumpers(r, 1750, { rows: 2, cols: 5, color: '#ffd23f' });
-            Rounds._beams(r, 1350, { n: 2, style: 'windmill', speed: -1.0, len: 290, thick: 32, color: '#5ad1ff' });
-            Rounds._beams(r, 820, { n: 1, style: 'windmill', speed: 1.1, len: 340, thick: 34, color: '#7b46d6' });
+            r.openSides = true;     // drift/get knocked off the side of a fan = fall into the slime
+            // S1: two fans → one big fan. S2: big centre fan + flank fans. S3-4: fans
+            // carrying Rotating Beams. Slow rotation carries you; walk against it.
+            Rounds._plates(r, 3450, { cols: 2, dir: 1, R: 200, speed: 0.5, fan: true, color: '#c9a063' });
+            Rounds._plates(r, 3080, { cols: 1, dir: -1, R: 250, speed: 0.45, fan: true, color: '#c9a063' });
+            Rounds._plates(r, 2650, { cols: 3, dir: 1, R: 175, speed: 0.55, fan: true, color: '#c9a063' });
+            Rounds._plates(r, 2150, { cols: 1, dir: -1, R: 250, speed: 0.5, fan: true, color: '#c9a063' });
+            Rounds._beams(r, 2150, { n: 1, style: 'bar', speed: 1.3, len: 220, color: '#ff5fa2', power: 420 });
+            Rounds._plates(r, 1650, { cols: 2, dir: 1, R: 200, speed: 0.6, fan: true, color: '#c9a063' });
+            Rounds._beams(r, 1650, { n: 2, style: 'bar', speed: -1.5, len: 200, color: '#ff5fa2', power: 420 });
+            Rounds._plates(r, 1100, { cols: 2, dir: -1, R: 200, speed: 0.65, fan: true, color: '#c9a063' });
+            Rounds._beams(r, 1100, { n: 2, style: 'bar', speed: 1.6, len: 200, color: '#ff5fa2', power: 440 });
+            Rounds._plates(r, 620, { cols: 1, dir: 1, R: 240, speed: 0.6, fan: true, color: '#c9a063' });
+            Rounds._beams(r, 620, { n: 1, style: 'bar', speed: -1.7, len: 240, color: '#ff5fa2', power: 460 });
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
         // -------------------------------------------------- ROYAL FUMBLE

@@ -1521,17 +1521,30 @@ function makeSpinPlate(ob) {
     rim.rotation.x = Math.PI / 2; rim.position.y = 0.5; group.add(rim);
 
     const top = new THREE.Object3D(); top.position.y = 1; group.add(top);
-    const nub = new THREE.Mesh(new THREE.SphereGeometry(R * 0.1, 16, 12), rimMat);
+    const nub = new THREE.Mesh(new THREE.SphereGeometry(R * 0.14, 16, 12), rimMat);
     nub.scale.y = 0.6; top.add(nub);
-    const arrowMat = gloss(0xffffff, { roughness: 0.32, emissive: 0xffffff, emissiveIntensity: 0.05 });
-    const dirSign = (ob.speed >= 0) ? 1 : -1;
-    for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * Math.PI * 2, rr = R * 0.6;
-        const arrow = new THREE.Mesh(new THREE.ConeGeometry(R * 0.085, R * 0.26, 4), arrowMat);
-        arrow.position.set(Math.cos(a) * rr, 1.5, Math.sin(a) * rr);
-        arrow.rotation.x = Math.PI / 2;
-        arrow.rotation.z = -a + dirSign * Math.PI / 2;       // point tangentially (spin direction)
-        top.add(arrow);
+    if (ob.fan) {
+        // Big Fans: raised fan BLADES radiating from the hub (you ride the disc).
+        const bladeMat = inflate(shade(ob.color, -0.12), { roughness: 0.4 });
+        const nB = 6;
+        for (let i = 0; i < nB; i++) {
+            const a = (i / nB) * Math.PI * 2;
+            const blade = new THREE.Mesh(new THREE.BoxGeometry(R * 0.9, 10, R * 0.34), bladeMat);
+            blade.position.set(Math.cos(a) * R * 0.5, 6, Math.sin(a) * R * 0.5);
+            blade.rotation.y = -a;
+            top.add(blade);
+        }
+    } else {
+        const arrowMat = gloss(0xffffff, { roughness: 0.32, emissive: 0xffffff, emissiveIntensity: 0.05 });
+        const dirSign = (ob.speed >= 0) ? 1 : -1;
+        for (let i = 0; i < 6; i++) {
+            const a = (i / 6) * Math.PI * 2, rr = R * 0.6;
+            const arrow = new THREE.Mesh(new THREE.ConeGeometry(R * 0.085, R * 0.26, 4), arrowMat);
+            arrow.position.set(Math.cos(a) * rr, 1.5, Math.sin(a) * rr);
+            arrow.rotation.x = Math.PI / 2;
+            arrow.rotation.z = -a + dirSign * Math.PI / 2;   // point tangentially (spin direction)
+            top.add(arrow);
+        }
     }
     shadowy(disc, false, true);
     shadowy(top, true, false);

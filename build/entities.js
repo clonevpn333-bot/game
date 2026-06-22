@@ -984,6 +984,7 @@ class SpinPlate {
         this.cx = o.cx; this.cy = o.cy; this.r = o.r || 150;
         this.speed = o.speed || 0.8;     // rad/s, signed (CW/CCW)
         this.angle = 0; this.color = o.color || '#8fd0ff';
+        this.fan = !!o.fan;              // Big Fans: render as fan blades instead of an arrow disc
     }
     update(dt) { this.angle += this.speed * dt; }
     collide(bean, round, dt) {
