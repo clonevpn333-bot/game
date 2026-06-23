@@ -370,6 +370,11 @@ const UI = {
             r = `<span style="color:${hud.youHaveTail ? '#46d36a' : '#ff5fa2'}">${hud.youHaveTail ? '🏷️ TAIL SAFE' : '❌ GRAB A TAIL!'}&nbsp;·&nbsp;${hud.tailCount} tails</span><b>${this._t(hud.timer)}</b>`;
         else if (hud.kind === 'mountain')
             r = `<span style="color:#ffd23f">🏔️ TO THE CROWN</span><b>${hud.aliveCount} racing</b>`;
+        else if (hud.kind === 'team' && hud.teams) {
+            const parts = hud.teams.map(t => `<span style="color:${t.color}">${t.score}</span>`).join('&nbsp;·&nbsp;');
+            const myCol = hud.teams[hud.playerTeam] ? hud.teams[hud.playerTeam].color : '#fff';
+            r = `<span style="color:${myCol}">YOUR TEAM</span><b>${parts}&nbsp;&nbsp;${this._t(hud.timer)}</b>`;
+        }
         else if (hud.kind === 'match') {
             const f = hud.matchSafe >= 0 && this.data.FRUITS ? this.data.FRUITS[hud.matchSafe] : null;
             r = f ? `<span style="color:${f.color}">RUN TO ${f.icon} ${f.name.toUpperCase()}</span><b>MATCH!</b>`

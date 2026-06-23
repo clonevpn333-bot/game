@@ -444,6 +444,7 @@ const Engine = {
                 specName: this._spectating && this._specBean ? this._specBean.name : null,
                 youHaveTail: round.player.hasTail,
                 tailCount: round.beans.filter(b => b.alive && !b.eliminated && b.hasTail).length,
+                teams: round.teams, playerTeam: round.player.team,
                 matchSafe: round.matchSafe, matchPhase: round.matchPhase,
             });
         }

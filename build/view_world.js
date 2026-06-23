@@ -1713,6 +1713,37 @@ function makeGate(ob) {
     return view;
 }
 
+// Hoarders / Fall Ball: a big glossy pushable ball that rolls and tints to the
+// sector it's in. Sits at world height = its radius (resting on the floor).
+function makeBall(ob) {
+    const group = new THREE.Object3D();
+    const ballMat = gloss(ob.color || 0xfff3fb, { roughness: 0.34, clearcoat: 0.45 });
+    const sphere = new THREE.Mesh(new THREE.SphereGeometry(ob.r, 26, 20), ballMat);
+    group.add(sphere);
+    // two crossed seam bands so the roll reads.
+    const seamMat = gloss(0xffffff, { roughness: 0.3 });
+    for (let i = 0; i < 2; i++) {
+        const seam = new THREE.Mesh(new THREE.TorusGeometry(ob.r * 1.001, ob.r * 0.07, 8, 28), seamMat);
+        seam.rotation.x = i === 0 ? Math.PI / 2 : 0;
+        sphere.add(seam);
+    }
+    shadowy(group, true, false);
+    let last = ob.color;
+    const view = {
+        object3d: group,
+        update(o) {
+            const b = o || ob;
+            group.position.set(b.x, b.r, b.y);            // x, height=r, z=sim-y
+            sphere.rotation.x = b.spin || 0;
+            sphere.rotation.z = (b.spin || 0) * 0.6;
+            if (b.color !== last) { last = b.color; ballMat.color.copy(col(b.color)); }
+        },
+        dispose() { disposeTree(group); },
+    };
+    view.update(ob);
+    return view;
+}
+
 function makeObstacleView(ob) {
     switch (ob && ob.kind) {
         case 'spinner':     return makeSpinner(ob);
@@ -1728,6 +1759,7 @@ function makeObstacleView(ob) {
         case 'cannon':      return makeCannon(ob);
         case 'spinplate':   return makeSpinPlate(ob);
         case 'gate':        return makeGate(ob);
+        case 'ball':        return makeBall(ob);
         default: {
             const g = new THREE.Object3D();
             return { object3d: g, update() {}, dispose() { disposeTree(g); } };
@@ -1787,6 +1819,7 @@ class CourseView {
         if (kind === 'race') this._buildRace(round);
         else if (kind === 'survival') this._buildSurvival(round);
         else if (kind === 'final') this._buildFinal(round);
+        else if (kind === 'team') this._buildTeam(round);
         else this._buildRace(round);
         // Align the walkable surface to world y=0 (the beans' feet plane) so
         // beans + obstacles stand ON the floor instead of sinking into the slab.
@@ -2117,6 +2150,41 @@ class CourseView {
         g.add(garland);
 
         return g;
+    }
+
+    /* ---------------- TEAM: a sector-tinted arena (Hoarders / Fall Ball) ---- */
+    _buildTeam(r) {
+        const P = r.platform, cx = P.cx, cy = P.cy;
+        if (P.rect) {
+            const hw = P.hw, hh = P.hh;
+            const floor = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, 30, hh * 2), mat(0x69c46e, { roughness: 0.75 }));
+            floor.position.set(cx, -15, cy); floor.receiveShadow = true; this._add(floor);
+            // painted centre line + circle
+            const lineMat = gloss(0xffffff, { roughness: 0.4 });
+            const mid = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, 2, 8), lineMat); mid.position.set(cx, 1, cy); this._add(mid);
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(90, 4, 8, 40), lineMat); ring.rotation.x = Math.PI / 2; ring.position.set(cx, 1, cy); this._add(ring);
+            // perimeter walls + two goals (team-coloured frames) at the short ends
+            const wallMat = inflate(WPAL.curb, { roughness: 0.4 });
+            for (const sx of [-1, 1]) { const w = new THREE.Mesh(new THREE.BoxGeometry(20, 70, hh * 2), wallMat); w.position.set(cx + sx * hw, 35, cy); shadowy(w, true, true); this._add(w); }
+            for (const sy of [-1, 1]) { const w = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, 70, 20), wallMat); w.position.set(cx, 35, cy + sy * hh); shadowy(w, true, true); this._add(w); }
+            if (r.goals) for (const g of r.goals) {
+                const gm = gloss(r.teams[g.team].color, { roughness: 0.4, metalness: 0.2 });
+                const post = new THREE.Mesh(new THREE.BoxGeometry(g.w, 95, 16), gm);
+                post.position.set(g.x, 48, g.y); shadowy(post, true, true); this._add(post);
+            }
+        } else {
+            const R = P.r, nT = P.sectors || 3, ss = Math.PI * 2 / nT;
+            const disc = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 30, 60), mat(shade(WPAL.track, -0.05), { roughness: 0.72 }));
+            disc.position.set(cx, -15, cy); disc.receiveShadow = true; this._add(disc);
+            for (let i = 0; i < nT; i++) {
+                const wedge = new THREE.Mesh(new THREE.CircleGeometry(R - 6, 44, i * ss, ss),
+                    mat(r.teams[i].color, { roughness: 0.62, side: THREE.DoubleSide }));
+                wedge.rotation.x = Math.PI / 2; wedge.position.set(cx, 1.5, cy); this._add(wedge);
+            }
+            const rim = new THREE.Mesh(new THREE.TorusGeometry(R, 16, 12, 64), gloss(WPAL.gold, { metalness: 0.3 }));
+            rim.rotation.x = Math.PI / 2; rim.position.set(cx, 12, cy); shadowy(rim, true, true); this._add(rim);
+        }
+        const s = makeSlime(cx, cy, 3600, 3600, -52); this._add(s.mesh); this._disposables.push(s.mesh); this._registerSlime(s);
     }
 
     /* ---------------- SURVIVAL: hovering disc over a slime sea ---------- */

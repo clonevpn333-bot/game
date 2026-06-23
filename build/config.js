@@ -267,6 +267,10 @@ const SHOW = [
     { id: 'tail_tag',      name: 'Tail Tag',      category: 'Hunt', build: 'tailTag',  duration: 30,
       tagline: 'Snatch a tail and keep it — no tail when the timer ends, no qualify!' },
 
+    // ---------- TEAM ----------
+    { id: 'hoarders',      name: 'Hoarders',      category: 'Team', build: 'hoarders', duration: 70,
+      tagline: 'Three teams, seven balls — shove the most into your colour to survive!' },
+
     // ---------- LOGIC ----------
     { id: 'tip_toe',       name: 'Tip Toe',       category: 'Logic', build: 'tipToe',
       tagline: 'Hidden fake tiles drop into the slime. Memorise the safe path!' },
@@ -279,7 +283,7 @@ const SHOW = [
     { id: 'fall_mountain', name: 'Fall Mountain',  category: 'Final', build: 'fallMountain',
       tagline: 'Scramble up the mountain dodging cannonballs — grab the Crown to win!' },
     { id: 'lost_temple',   name: 'Lost Temple',    category: 'Final', build: 'lostTemple',
-      tagline: 'A steeper climb of doors and wrecking balls to the Crown.' },
+      tagline: 'A maze of obstacle rooms and trick doors — reach the sliding Crown!' },
     { id: 'royal_fumble',  name: 'Royal Fumble',   category: 'Final', build: 'royalFumble',
       tagline: 'One tail, one Crown. Be the bean holding the tail when time runs out!' },
 ];

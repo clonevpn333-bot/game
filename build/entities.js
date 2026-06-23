@@ -37,6 +37,8 @@ class Bean {
 
         // Tail Tag (Hunt mode): hold a tail to qualify
         this.hasTail = false; this.tailColor = '#ff5fa2'; this.tagCd = 0;
+        // Team rounds: which team this bean belongs to (-1 = none)
+        this.team = -1;
 
         // cosmetics / anim
         this.bob = Math.random() * 6.283;
@@ -995,6 +997,41 @@ class SpinPlate {
         const ca = Math.cos(a), sa = Math.sin(a);
         bean.x = this.cx + dx * ca - dy * sa;
         bean.y = this.cy + dx * sa + dy * ca;
+    }
+}
+
+class Ball {
+    // A giant pushable ball (Hoarders / Fall Ball). Beans shove it by running
+    // into it; it's heavy, so several beans move it faster. `zone` = the team
+    // sector it's currently resting in (set by the round each frame).
+    constructor(o) {
+        this.kind = 'ball'; this.x = o.x; this.y = o.y; this.vx = 0; this.vy = 0;
+        this.r = o.r || 64; this.color = o.color || '#fff3fb'; this.baseColor = this.color;
+        this.zone = -1; this.mass = o.mass || 5; this.spin = 0;
+    }
+    update(dt, round) {
+        this.x += this.vx * dt; this.y += this.vy * dt;
+        this.spin += Math.hypot(this.vx, this.vy) * dt * 0.01;
+        const fr = round.ballFriction != null ? round.ballFriction : 1.3;
+        this.vx *= (1 - fr * dt); this.vy *= (1 - fr * dt);
+        if (round._ballForce) round._ballForce(this, dt);
+        if (round._ballBounds) round._ballBounds(this);
+    }
+    collide(bean, round) {
+        if (bean.falling || bean.gone || bean.exited) return;
+        const dx = this.x - bean.x, dy = this.y - bean.y;
+        const d = Math.hypot(dx, dy), min = this.r + bean.r;
+        if (d > 0.001 && d < min) {
+            const nx = dx / d, ny = dy / d;
+            const toward = bean.vx * nx + bean.vy * ny;          // bean's speed into the ball
+            if (toward > 0) {
+                const k = (bean.diveT > 0 ? 0.55 : 0.30) / this.mass;
+                this.vx += nx * toward * k * 60 * (1 / 60); this.vy += ny * toward * k * 60 * (1 / 60);
+            }
+            bean.x = this.x - nx * min; bean.y = this.y - ny * min;   // bean can't enter the ball
+            const bn = bean.vx * nx + bean.vy * ny;
+            if (bn > 0) { bean.vx -= nx * bn * 0.6; bean.vy -= ny * bn * 0.6; }
+        }
     }
 }
 

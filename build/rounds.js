@@ -58,6 +58,9 @@ class Round {
         this.slimeRate = 0;
         this.matchSafe = -1;       // Perfect Match: the currently-called fruit (-1 = memorise)
         this.matchPhase = null;
+        this.teams = null;         // Team rounds: [{id,color,score,name}]
+        this.teamMode = null;      // 'hoard' | 'soccer'
+        this.balls = null;         // pushable Ball entities
     }
 
     start() { this.camera(0, true); }
@@ -222,6 +225,16 @@ class Round {
                 if (P.rect) { if (Math.abs(bean.x - P.cx) > P.hw + g || Math.abs(bean.y - P.cy) > P.hh + g) bean.startFall(); }
                 else if (U.dist(bean.x, bean.y, P.cx, P.cy) > P.r + g) bean.startFall();
             }
+        } else if (this.kind === 'team') {
+            // Walled team arena — clamp beans to the rim (disc) or box (rect).
+            const P = this.platform;
+            if (P.rect) {
+                bean.x = U.clamp(bean.x, P.cx - P.hw + bean.r, P.cx + P.hw - bean.r);
+                bean.y = U.clamp(bean.y, P.cy - P.hh + bean.r, P.cy + P.hh - bean.r);
+            } else {
+                const dx = bean.x - P.cx, dy = bean.y - P.cy, d = Math.hypot(dx, dy) || 1, lim = P.r - bean.r;
+                if (d > lim) { bean.x = P.cx + dx / d * lim; bean.y = P.cy + dy / d * lim; bean.vx *= 0.4; bean.vy *= 0.4; }
+            }
         } else if (this.kind === 'tag') {
             // Tail Tag is a walled arena — nobody falls off; clamp to the rim.
             const P = this.platform, dx = bean.x - P.cx, dy = bean.y - P.cy, d = Math.hypot(dx, dy) || 1;
@@ -324,6 +337,26 @@ class Round {
             const standing = this.beans.filter(b => b.alive && !b.eliminated);
             if (standing.length <= 1) this._finishFinal(standing[0] === this.player);
             if (this.elapsed > 150) this._finishFinal(!this.player.eliminated);  // hard safeguard
+        } else if (this.kind === 'team') {
+            this.timer -= dt;
+            if (this._teamScore) this._teamScore();           // live recount each frame
+            let lead = this.teams[0];                          // tiebreak: time spent in the lead
+            for (const t of this.teams) if (t.score > lead.score) lead = t;
+            lead._lead = (lead._lead || 0) + dt;
+            if (this.timer <= 0) {
+                // decisive: the bottom team(s) by score are eliminated (ties broken
+                // by who held the lead longer — tracked in team._lead).
+                const ts = this.teams.slice().sort((a, b) => (b.score - a.score) || ((b._lead || 0) - (a._lead || 0)));
+                const nQual = this.teamsQualify != null ? this.teamsQualify : (this.teams.length - 1);
+                const elim = new Set(ts.slice(nQual).map(t => t.id));
+                for (const b of this.beans) {
+                    if (b.gone || b.exited) continue;
+                    if (elim.has(b.team)) { b.eliminated = true; b.alive = false; }
+                    else { b.qualified = true; b.exited = true; }
+                }
+                this.qualifyCount = this.beans.filter(b => b.qualified).length;
+                this._finish();
+            }
         }
     }
 
@@ -757,6 +790,34 @@ function matchThink(bean, round, dt) {
     bean.ai.mx = dx / dl * 0.4; bean.ai.my = dy / dl * 0.4;
 }
 
+// ---- Hoarders (TEAM) -- get behind a ball that isn't yours and shove it home
+function hoardThink(bean, round, dt) {
+    const P = round.platform, nT = round.teams.length, sectorSize = Math.PI * 2 / nT;
+    const ta = (bean.team + 0.5) * sectorSize;                     // my sector's centre angle
+    const goalX = P.cx + Math.cos(ta) * P.r * 0.72, goalY = P.cy + Math.sin(ta) * P.r * 0.72;
+    let target = null, bd = 1e9;
+    for (const ball of round.balls) {
+        if (ball.zone === bean.team) continue;                    // already mine
+        const d = U.dist(bean.x, bean.y, ball.x, ball.y);
+        if (d < bd) { bd = d; target = ball; }
+    }
+    if (!target) for (const ball of round.balls) {                // all mine → keep pushing one outward
+        const d = U.dist(bean.x, bean.y, ball.x, ball.y); if (d < bd) { bd = d; target = ball; }
+    }
+    if (!target) { bean.ai.mx = 0; bean.ai.my = 0; bean.ai.jump = false; bean.ai.dive = false; bean.ai.grab = false; return; }
+    const gdx = goalX - target.x, gdy = goalY - target.y, gl = Math.hypot(gdx, gdy) || 1;
+    const behindX = target.x - gdx / gl * (target.r + bean.r + 4);
+    const behindY = target.y - gdy / gl * (target.r + bean.r + 4);
+    const distBehind = U.dist(bean.x, bean.y, behindX, behindY);
+    let tx, ty;
+    if (distBehind < 38) { tx = target.x + gdx / gl * 120; ty = target.y + gdy / gl * 120; } // push through
+    else { tx = behindX; ty = behindY; }                          // get into position
+    const dx = tx - bean.x, dy = ty - bean.y, dl = Math.hypot(dx, dy) || 1;
+    bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
+    bean.ai.jump = false; bean.ai.grab = false;
+    bean.ai.dive = (distBehind < 30 && U.chance(0.015 * bean.skill));
+}
+
 /* =====================================================================
    COURSE BUILDERS
    ===================================================================== */
@@ -908,6 +969,30 @@ const Rounds = {
         r.platform = { cx, cy, rect: true, hw, hh, r: Math.max(hw, hh) };
         r.minX = 0; r.maxX = CFG.W; r.minY = 0; r.maxY = CFG.H;
         return { cx, cy, hw, hh };
+    },
+    // a circular TEAM arena split into nTeams coloured sectors; assigns beans to
+    // teams round-robin and spawns them in their own sector.
+    _teamArena(r, nTeams, R) {
+        R = R || 340;
+        const cx = 640, cy = 380;
+        r.kind = 'team'; r.camMode = 'fixed';
+        r.platform = { cx, cy, r: R, sectors: nTeams };
+        r.minX = 0; r.maxX = CFG.W; r.minY = 0; r.maxY = CFG.H;
+        const cols = ['#4aa8ff', '#ff5a5a', '#ffd23f'];
+        const names = ['BLUE', 'RED', 'YELLOW'];
+        r.teams = [];
+        for (let i = 0; i < nTeams; i++) r.teams.push({ id: i, color: cols[i % 3], name: names[i % 3], score: 0 });
+        const sectorSize = Math.PI * 2 / nTeams;
+        r.beans.forEach((b, i) => {
+            b.team = i % nTeams;
+            const ta = (b.team + 0.5) * sectorSize;
+            const rr = R * U.rngf(0.42, 0.82);
+            b.x = cx + Math.cos(ta) * rr + U.rngf(-26, 26);
+            b.y = cy + Math.sin(ta) * rr + U.rngf(-26, 26);
+            b.startX = b.x; b.startY = b.y; b.facing = ta + Math.PI;
+            b.skill = b.isPlayer ? 1 : U.rngf(0.4, 0.8);
+        });
+        return { cx, cy, R, sectorSize };
     },
     _sweeper(r, o) {
         const cx = r.platform.cx, cy = r.platform.cy, R = r.platform.r;
@@ -1309,6 +1394,39 @@ const Rounds = {
             Rounds._spawnRing(r);
             Rounds._dealTails(r, 0.58);
         },
+        // -------- HOARDERS (TEAM — shove the balls into your colour's sector)
+        hoarders(r) {
+            const A = Rounds._teamArena(r, 3, 348);
+            r.thinkFn = hoardThink; r.teamMode = 'hoard';
+            r.timer = r.def.duration || 75;
+            r.ballFriction = 1.15; r.teamsQualify = 2;       // top 2 of 3 qualify; lowest out
+            r.balls = [];
+            for (let i = 0; i < 7; i++) {
+                const a = (i / 7) * Math.PI * 2, rr = 34 + (i % 2) * 24;
+                const ball = new Ball({ x: A.cx + Math.cos(a) * rr, y: A.cy + Math.sin(a) * rr, r: 55, mass: 5 });
+                r.balls.push(ball); r.obstacles.push(ball);
+            }
+            r._ballForce = (ball, dt) => {                   // gentle slope to centre keeps the middle contested
+                const dx = A.cx - ball.x, dy = A.cy - ball.y, d = Math.hypot(dx, dy) || 1;
+                if (d > 50) { ball.vx += dx / d * 30 * dt; ball.vy += dy / d * 30 * dt; }
+            };
+            r._ballBounds = (ball) => {
+                const dx = ball.x - A.cx, dy = ball.y - A.cy, d = Math.hypot(dx, dy) || 1, lim = A.R - ball.r;
+                if (d > lim) { ball.x = A.cx + dx / d * lim; ball.y = A.cy + dy / d * lim; ball.vx *= -0.25; ball.vy *= -0.25; }
+            };
+            const nT = r.teams.length, ss = A.sectorSize;
+            r._teamScore = () => {
+                for (const t of r.teams) t.score = 0;
+                for (const ball of r.balls) {
+                    const ang = (Math.atan2(ball.y - A.cy, ball.x - A.cx) + Math.PI * 2) % (Math.PI * 2);
+                    const sec = Math.floor(ang / ss) % nT;
+                    ball.zone = sec; ball.color = r.teams[sec].color;   // ball tints to its sector
+                    r.teams[sec].score++;
+                }
+            };
+            r._teamScore();
+        },
+
         // -------- TIP TOE (LOGIC — find the hidden path of real tiles)
         tipToe(r) { Rounds._tipToeField(r, 7, 8, 0.46); },
 
