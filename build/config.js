@@ -39,13 +39,13 @@ const CFG = {
     RAGDOLL_FRICTION: 950, // slowdown while ragdolling
 
     // ---- Show / field -------------------------------------------------
-    FIELD_SIZE:   20,      // total beans at the start of a show (you + 19)
+    FIELD_SIZE:   40,      // total beans at the start of a show (you + 39)
 
     // ---- UI -------------------------------------------------------------
     INTRO_TIME:   2.4,     // round name card duration (s)
     COUNTDOWN:    3,       // "3..2..1..GO"
     BANNER_TIME:  2.4,     // QUALIFIED / ELIMINATED banner
-    ROUND_MAXTIME: 105,    // hard cap on a race/survival round (s)
+    ROUND_MAXTIME: 150,    // hard cap on a race/survival round (s)
 
     // Persisted-save key
     SAVE_KEY: 'beanRoyaleSave_v1',
@@ -237,23 +237,23 @@ const FRUITS = [
 const SHOW = [
     // ---------- RACES (long, multi-section courses) ----------
     { id: 'door_dash',     name: 'Door Dash',     category: 'Race', build: 'doorDash',
-      tagline: 'Charge the walls of doors — smash the fakes, bounce off the real ones!', qualify: 14 },
+      tagline: 'Charge the walls of doors — smash the fakes, bounce off the real ones!', qualify: 28 },
     { id: 'gate_crash',    name: 'Gate Crash',    category: 'Race', build: 'gateCrash',
-      tagline: 'Doors, spinning beams and wrecking balls — pick a lane and floor it!', qualify: 10 },
+      tagline: 'Doors, spinning beams and wrecking balls — pick a lane and floor it!', qualify: 20 },
     { id: 'whirlygig',     name: 'The Whirlygig', category: 'Race', build: 'whirlygig',
-      tagline: 'Cross the cloverleaf, dodge the spinning X-crosses, climb to the top!', qualify: 7 },
+      tagline: 'Cross the cloverleaf, dodge the spinning X-crosses, climb to the top!', qualify: 16 },
     { id: 'dizzy_heights', name: 'Dizzy Heights', category: 'Race', build: 'dizzyHeights',
-      tagline: 'Spinning platforms, hurdles and a cannonade of fruit down the slope.', qualify: 10 },
+      tagline: 'Spinning platforms, hurdles and a cannonade of fruit down the slope.', qualify: 20 },
     { id: 'fruit_chute',   name: 'Fruit Chute',   category: 'Race', build: 'fruitChute',
-      tagline: 'Climb the conveyor belts while the cannons blast giant fruit at you!', qualify: 9 },
+      tagline: 'Climb the conveyor belts while the cannons blast giant fruit at you!', qualify: 18 },
     { id: 'hit_parade',    name: 'Hit Parade',    category: 'Race', build: 'hitParade',
-      tagline: 'A candy gauntlet of hurdles, beams, hammers, belts and bumpers.', qualify: 8 },
+      tagline: 'A candy gauntlet of hurdles, beams, hammers, belts and bumpers.', qualify: 16 },
     { id: 'knight_fever',  name: 'Knight Fever',  category: 'Race', build: 'knightFever',
-      tagline: 'A medieval gauntlet of swinging axes, rolling logs and sliding blocks.', qualify: 8 },
+      tagline: 'A medieval gauntlet of swinging axes, rolling logs and sliding blocks.', qualify: 16 },
     { id: 'slime_climb',   name: 'Slime Climb',   category: 'Race', build: 'slimeClimb',
-      tagline: 'Scramble up the obstacle climb and outrun the rising tide of slime!', qualify: 10 },
+      tagline: 'Scramble up the obstacle climb and outrun the rising tide of slime!', qualify: 20 },
     { id: 'big_fans',      name: 'Big Fans',      category: 'Race', build: 'bigFans',
-      tagline: 'Giant fan blades sweep the course — time your run between the gusts!', qualify: 9 },
+      tagline: 'Giant fan blades sweep the course — time your run between the gusts!', qualify: 18 },
 
     // ---------- SURVIVAL ----------
     { id: 'jump_club',     name: 'Jump Club',     category: 'Survival', build: 'jumpClub',     duration: 30,

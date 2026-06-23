@@ -74,7 +74,7 @@ const Game = {
         const races = pool('Race');
         const mids = { Survival: pool('Survival'), Hunt: pool('Hunt'), Logic: pool('Logic') };
         const fins = pool('Final');
-        const RQ = [14, 10, 7, 6];
+        const RQ = [24, 14, 9, 6];   // race narrowing for a 40-bean field
         const seq = [];
         const nRace = U.rng(2, 3), nMid = U.rng(1, 2);
         let qi = 0;
