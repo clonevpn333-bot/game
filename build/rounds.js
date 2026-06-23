@@ -253,6 +253,16 @@ class Round {
             // fall when standing off any solid tile (e.g. a tile that just dropped)
             if (bean.grounded && !this._tileAt(bean.x, bean.y)) bean.startFall();
         } else if (this.kind === 'final') {
+            if (this.hexTower) {
+                // Multi-layer Hex-A-Gone: stepping the tile you stand on makes it
+                // vanish; falling through the holes (and off the bottom into the
+                // slime) is handled by the bean's z physics against groundZ.
+                if (bean.grounded && !bean.falling) {
+                    const t = this._hexUnder(bean);
+                    if (t && t.state === 'solid') t.step();
+                }
+                return;
+            }
             if (bean.x < this.minX - 50 || bean.x > this.maxX + 50 ||
                 bean.y < this.minY - 50 || bean.y > this.maxY + 50) {
                 if (bean.grounded) bean.startFall();
@@ -421,6 +431,33 @@ class Round {
         if (!pool.length) return null;
         pool.sort((a, b) => a[0] - b[0]);
         return pool[U.rng(0, Math.min(pool.length, 4) - 1)][1];
+    }
+
+    // ---- Hex-A-Gone tower helpers -------------------------------------
+    // the solid tile a bean is standing on (same LAYER, i.e. matching height).
+    _hexUnder(bean) {
+        for (const t of this.tiles) {
+            if (t.state === 'gone') continue;
+            if (Math.abs(t.z - bean.z) > 34) continue;            // bean's own layer
+            if (U.dist2(bean.x, bean.y, t.cx, t.cy) < (t.size * 0.95) * (t.size * 0.95)) return t;
+        }
+        return null;
+    }
+    // pick a fresh (untouched) tile on the bean's layer to hop to: prefer a
+    // close one, but if our patch is all consumed, ROAM to the nearest fresh
+    // tile anywhere on the layer (don't just stand there and drop).
+    _pickTowerTile(bean) {
+        const near = []; let far = null, farD = 1e18;
+        for (const t of this.tiles) {
+            if (t.state !== 'solid') continue;
+            if (Math.abs(t.z - bean.z) > 34) continue;            // same layer only
+            const d = U.dist2(bean.x, bean.y, t.cx, t.cy);
+            if (d < 22 * 22) continue;                            // not the one under us
+            if (d < 175 * 175) near.push([d, t]);
+            else if (d < farD) { farD = d; far = t; }
+        }
+        if (near.length) { near.sort((a, b) => a[0] - b[0]); return near[U.rng(0, Math.min(near.length, 6) - 1)][1]; }
+        return far;                                               // roam to the nearest fresh tile
     }
 
     // ---- Jump Club helper ---------------------------------------------
@@ -769,6 +806,38 @@ function hexThink(bean, round, dt) {
     bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
     if (U.chance((0.78 - bean.skill) * 0.022)) { bean.ai.mx = 0; bean.ai.my = 0; }   // hesitate (fall more)
     bean.ai.jump = false; bean.ai.dive = false;
+}
+
+// ---- Hex-A-Gone (multi-layer tower) -----------------------------------
+// The real meta: DON'T waste tiles. Stand on your tile and let it dissolve;
+// only hop to a fresh one at the last moment (a constant-mover burns ~3x the
+// floor and starves the field). Weak beans dither, crowd, and fall through to
+// the slime; skilled beans conserve tiles and outlast everyone for the Crown.
+function hexTowerThink(bean, round, dt) {
+    bean.ai.jump = false; bean.ai.dive = false; bean.ai.grab = false;
+    const cur = round._hexUnder(bean);
+    // about to lose the floor: no tile, it's gone, or our dissolving tile is nearly up
+    const danger = !cur || cur.state === 'gone' || (cur.state === 'dissolving' && cur.timer < 0.34);
+
+    bean._reT = (bean._reT || 0) - dt;
+    if (danger || bean._reT <= 0 || bean.aiTarget.x == null) {
+        const t = round._pickTowerTile(bean);
+        if (t) { bean.aiTarget.x = t.cx; bean.aiTarget.y = t.cy; }
+        bean._reT = U.rngf(0.35, 0.7);
+    }
+
+    if (!danger && cur) {
+        // HOLD: ride the current tile, only nudging to stay centred on it.
+        const dx = cur.cx - bean.x, dy = cur.cy - bean.y, dl = Math.hypot(dx, dy) || 1;
+        const s = Math.min(0.5, dl / 26);
+        bean.ai.mx = dx / dl * s; bean.ai.my = dy / dl * s;
+    } else if (bean.aiTarget.x != null) {
+        // hop to the chosen fresh tile
+        const dx = bean.aiTarget.x - bean.x, dy = bean.aiTarget.y - bean.y, dl = Math.hypot(dx, dy) || 1;
+        bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
+    }
+    // weak beans dither at the worst moment (and drop); strong beans are crisp
+    if (U.chance((0.92 - bean.skill) * 0.02)) { bean.ai.mx *= 0.1; bean.ai.my *= 0.1; }
 }
 
 // ---- Tail Tag (Hunt) --------------------------------------------------
@@ -1328,41 +1397,72 @@ const Rounds = {
         },
 
         // -------------------------------------------------- HEX-A-GONE
+        // -------------------------------------------------- HEX-A-GONE
+        // The real FINAL: a tall TOWER of stacked honeycomb layers (lower
+        // layers wider). Step a tile and it flashes white, then vanishes ~1s
+        // later; you drop through the hole to the layer below, and you're out
+        // only when you fall off the BOTTOM into the slime. Last bean standing
+        // takes the Crown. Multi-layer falling is real 3D (z-aware groundZ).
         hexAGone(r) {
-            r.kind = 'final'; r.camMode = 'fixed';
-            r.minX = 300; r.maxX = 980; r.minY = 130; r.maxY = 630;
-            r.thinkFn = hexThink;
+            r.kind = 'final'; r.camMode = 'fixed'; r.viewKind = 'hextower';
+            r.hexTower = true; r.thinkFn = hexTowerThink;
             r.tiles = [];
+            const cx = 640, cy = 400; r.cx = cx; r.cy = cy;
 
-            const size = 33, stepX = 50, stepY = 44;
-            const cols = ['#ff8fd0', '#9a8cff', '#7fd0ff', '#7ce0b0', '#ffd07a'];
-            let row = 0;
-            for (let y = r.minY + 20; y <= r.maxY - 10; y += stepY, row++) {
-                const off = (row % 2) * (stepX / 2);
-                for (let x = r.minX + 30 + off; x <= r.maxX - 20; x += stepX) {
-                    r.tiles.push(new HexTile({ cx: x, cy: y, size, color: cols[row % cols.length] }));
+            const L = 7, GAP = 150, size = 40, stepX = 60, stepY = 53;
+            const bottomR = 470, shrink = 30;                   // lower layers are WIDER
+            const cols = ['#6cc6ff', '#23d6c8', '#ff8fd0', '#9a8cff', '#ffd07a'];
+            for (let j = 0; j < L; j++) {
+                const z = j * GAP, R = bottomR - j * shrink, color = cols[j % cols.length];
+                let row = 0;
+                for (let y = cy - R; y <= cy + R; y += stepY, row++) {
+                    const off = (row % 2) * (stepX / 2);
+                    for (let x = cx - R + off; x <= cx + R; x += stepX) {
+                        if ((x - cx) * (x - cx) + (y - cy) * (y - cy) > R * R) continue;
+                        const t = new HexTile({ cx: x, cy: y, size, color, z, layer: j });
+                        t.dissolveTime = 0.95;                  // ~1s warning, then gone
+                        r.tiles.push(t);
+                    }
                 }
             }
+            const topZ = (L - 1) * GAP;
+            r._towerTopZ = topZ; r._towerR = bottomR;
+            r.platform = { cx, cy, r: bottomR };
+            r.minX = cx - bottomR - 80; r.maxX = cx + bottomR + 80;
+            r.minY = cy - bottomR - 80; r.maxY = cy + bottomR + 80;
+            r.slimeZ = -70;                                     // visual goo just under the bottom layer
 
-            // spread beans across the field on distinct tiles
-            const spots = U.shuffle(r.tiles.slice());
+            // z-aware floor: the highest SOLID tile at (x,y) at or below the bean.
+            r.groundZ = (x, y, z) => {
+                let best = VOID_Z; const cap = (z != null ? z : 1e9) + 12;
+                for (const t of r.tiles) {
+                    if (t.state === 'gone' || t.z > cap || t.z <= best) continue;
+                    if (U.dist2(x, y, t.cx, t.cy) < (t.size * 0.92) * (t.size * 0.92)) best = t.z;
+                }
+                return best;
+            };
+
+            // start everyone spread across the (smallest) TOP layer.
+            const topTiles = U.shuffle(r.tiles.filter(t => t.layer === L - 1));
             r.beans.forEach((b, i) => {
-                const t = spots[i % spots.length];
-                b.x = t.cx; b.y = t.cy; b.startX = b.x; b.startY = b.y;
-                b.skill = b.isPlayer ? 1 : U.rngf(0.40, 0.78);
+                const t = topTiles[i % topTiles.length];
+                b.x = t.cx + U.rngf(-8, 8); b.y = t.cy + U.rngf(-8, 8); b.z = topZ;
+                b.startX = b.x; b.startY = b.y;
+                b.skill = b.isPlayer ? 1 : U.rngf(0.42, 0.82);
                 b.facing = U.rngf(0, 6.28);
             });
 
+            // endgame failsafe ONLY: if a few cagey beans are stalling late,
+            // nibble the field so it still resolves (off until 70s, then gentle).
             r.onUpdate = (rr, dt) => {
                 rr._decayT = (rr._decayT || 0) - dt;
-                if (rr.elapsed > 16 && rr._decayT <= 0) {
-                    rr._decayT = Math.max(0.18, 1.1 - (rr.elapsed - 16) * 0.02);
+                const fewLeft = rr.beans.filter(b => b.alive && !b.eliminated).length <= 4;
+                if (rr.elapsed > 70 && fewLeft && rr._decayT <= 0) {
+                    rr._decayT = 0.8;
                     const solids = rr.tiles.filter(t => t.state === 'solid');
                     if (solids.length) U.pick(solids).step();
                 }
             };
-
-            r.drawGround = (ctx) => { drawSlime(ctx); };
         },
 
         // -------------------------------------------------- GATE CRASH

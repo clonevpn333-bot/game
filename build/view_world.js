@@ -1120,7 +1120,9 @@ function makeHex(ob) {
     const group = new THREE.Object3D();
     const size = ob.size || 33;
     const depth = 28;                       // prism thickness (tile height)
-    group.position.copy(W(ob.cx, ob.cy, 0));
+    // Hex-A-Gone tower tiles carry their own layer height (ob.z); flat fields
+    // (Perfect Match / single-layer) sit at z=0.
+    group.position.copy(W(ob.cx, ob.cy, ob.z || 0));
 
     const color = col(ob.color, WPAL.grape);
     // CylinderGeometry with 6 radial segments == a hexagonal prism.
@@ -1157,22 +1159,25 @@ function makeHex(ob) {
                 group.position.set(baseX, baseY, group.position.z);
                 group.rotation.set(0, 0, 0);
                 group.visible = true;
-                for (const m of tile.material) { m.opacity = 1; }
-                bevelMat.opacity = 1;
+                for (const m of tile.material) { m.opacity = 1; if (m.emissive) { m.emissive.setRGB(0, 0, 0); m.emissiveIntensity = 0; } }
+                bevelMat.opacity = 1; if (bevelMat.emissive) { bevelMat.emissive.copy(col(shade(color, -0.35))); bevelMat.emissiveIntensity = 0.08; }
                 fallV = 0;
             } else if (state === 'dissolving') {
-                // jitter/shake + begin sinking & fading.
-                group.position.x = baseX + Math.sin(tt * 40 + baseX) * 2.4;
-                group.rotation.z = Math.sin(tt * 33) * 0.03;
+                // FLASH WHITE (the ~1s warning), jitter, then begin sinking & fading.
+                group.position.x = baseX + Math.sin(tt * 45 + baseX) * 2.6;
+                group.rotation.z = Math.sin(tt * 36) * 0.035;
                 fallV += d * 140;
-                group.position.y = baseY - fallV * 0.18;
+                group.position.y = baseY - fallV * 0.16;
                 group.visible = true;
+                const flash = 0.6 + Math.abs(Math.sin(tt * 18)) * 0.4;   // pulsing white glow
                 for (const m of tile.material) {
                     m.transparent = true;
-                    m.opacity = Math.max(0.3, m.opacity - d * 0.7);
+                    m.opacity = Math.max(0.45, m.opacity - d * 0.5);
+                    if (m.emissive) { m.emissive.setRGB(1, 1, 1); m.emissiveIntensity = flash; }
                 }
                 bevelMat.transparent = true;
-                bevelMat.opacity = Math.max(0.3, bevelMat.opacity - d * 0.7);
+                bevelMat.opacity = Math.max(0.45, bevelMat.opacity - d * 0.5);
+                if (bevelMat.emissive) { bevelMat.emissive.setRGB(1, 1, 1); bevelMat.emissiveIntensity = flash; }
             } else { // 'gone'
                 fallV += d * 700;
                 group.position.y = baseY - 220 - fallV;
@@ -1825,6 +1830,7 @@ class CourseView {
         else if (kind === 'final') this._buildFinal(round);
         else if (kind === 'team') this._buildTeam(round);
         else if (kind === 'whirlygig') this._buildWhirlygig(round);
+        else if (kind === 'hextower') this._buildHexTower(round);
         else this._buildRace(round);
         // Align the walkable surface to world y=0 (the beans' feet plane) so
         // beans + obstacles stand ON the floor instead of sinking into the slab.
@@ -2458,6 +2464,73 @@ class CourseView {
     }
 
     /* ---------------- FINAL: wide slime pit + tidy raised border -------- */
+    /* -------- HEX-A-GONE: a tall tower of honeycomb layers over slime -------
+       Hundreds of hex tiles → one InstancedMesh per layer (a handful of draw
+       calls) so the whole tower stays fast. Per frame we reflect each tile's
+       sim state into its instance: solid sits at its layer height; dissolving
+       flashes white and sinks; gone shrinks away. */
+    _buildHexTower(r) {
+        const cx = r.cx != null ? r.cx : 640, cy = r.cy != null ? r.cy : 400;
+        const R = r._towerR || 470;
+        const sea = makeSlime(cx, cy, R * 4.6, R * 4.6, -70);
+        this._add(sea.mesh); this._disposables.push(sea.mesh); this._registerSlime(sea, true);
+
+        const tiles = r.tiles || [];
+        const byLayer = new Map();
+        for (const t of tiles) { if (!byLayer.has(t.layer)) byLayer.set(t.layer, []); byLayer.get(t.layer).push(t); }
+
+        const depth = 22;
+        // a unit point-up hex prism (radius 1, height 1); scaled per instance.
+        const geo = new THREE.CylinderGeometry(1, 0.98, 1, 6); geo.rotateY(Math.PI / 6);
+        const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), P = new THREE.Vector3(), S = new THREE.Vector3();
+        const WHITE = new THREE.Color(1, 1, 1);
+        const layers = [];
+        for (const [, arr] of byLayer) {
+            const n = arr.length;
+            // base material white so the per-instance colour shows through.
+            const m = mat(0xffffff, { roughness: 0.46, metalness: 0.05 });
+            const im = new THREE.InstancedMesh(geo, m, n);
+            // shadows off: a thousand shadow-casting instances murders software
+            // GL, and the tower reads fine flat-lit (beans still cast/receive).
+            im.castShadow = false; im.receiveShadow = false;
+            for (let i = 0; i < n; i++) {
+                const t = arr[i];
+                P.set(t.cx, t.z - depth / 2, t.cy); S.set(t.size, depth, t.size);
+                im.setMatrixAt(i, M.compose(P, Q.identity(), S));
+                im.setColorAt(i, col(t.color));
+                t._li = i;
+            }
+            im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
+            this._add(im);
+            layers.push({ im, arr });
+        }
+
+        this._anim.push((dt, t) => {
+            const tt = t || 0;
+            for (const { im, arr } of layers) {
+                let mD = false, cD = false;
+                for (let i = 0; i < arr.length; i++) {
+                    const tile = arr[i];
+                    if (tile._lastState === tile.state && tile.state !== 'dissolving') continue;
+                    if (tile.state === 'solid') {
+                        P.set(tile.cx, tile.z - depth / 2, tile.cy); S.set(tile.size, depth, tile.size);
+                        im.setMatrixAt(i, M.compose(P, Q.identity(), S)); im.setColorAt(i, col(tile.color)); mD = cD = true;
+                    } else if (tile.state === 'dissolving') {
+                        const k = 1 - (tile.timer / (tile.dissolveTime || 0.95));
+                        P.set(tile.cx, tile.z - depth / 2 - k * 9, tile.cy); S.set(tile.size * (1 - k * 0.12), depth, tile.size * (1 - k * 0.12));
+                        im.setMatrixAt(i, M.compose(P, Q.identity(), S)); im.setColorAt(i, WHITE); mD = cD = true;   // flash white
+                    } else {  // gone — shrink away
+                        S.set(0.001, 0.001, 0.001); P.set(tile.cx, tile.z, tile.cy);
+                        im.setMatrixAt(i, M.compose(P, Q.identity(), S)); mD = true;
+                    }
+                    tile._lastState = tile.state;
+                }
+                if (mD) im.instanceMatrix.needsUpdate = true;
+                if (cD && im.instanceColor) im.instanceColor.needsUpdate = true;
+            }
+        });
+    }
+
     _buildFinal(r) {
         const minX = r.minX != null ? r.minX : 300;
         const maxX = r.maxX != null ? r.maxX : 980;

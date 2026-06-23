@@ -136,7 +136,7 @@ class Bean {
 
         // terrain floor under the bean (0 on flat courses). VOID (a gap) reads
         // as a very negative number → the bean drops into it.
-        let gz = round.groundZ ? round.groundZ(this.x, this.y) : 0;
+        let gz = round.groundZ ? round.groundZ(this.x, this.y, this.z) : 0;
         const overVoid = gz <= -9000;
         if (overVoid) gz = 0;
         this.groundZ = gz;
@@ -1064,6 +1064,8 @@ class HexTile {
         this.kind = "hex";
         this.cx = o.cx; this.cy = o.cy; this.size = o.size;
         this.color = o.color;
+        this.z = o.z || 0;            // Hex-A-Gone tower: which layer height this tile sits at
+        this.layer = o.layer != null ? o.layer : 0;
         this.fruit = o.fruit != null ? o.fruit : -1;   // Perfect Match: which fruit this tile shows
         this.state = 'solid';        // solid | dissolving | gone
         this.timer = 0;
@@ -1079,7 +1081,7 @@ class HexTile {
     contains(x, y) {
         return U.dist2(x, y, this.cx, this.cy) < (this.size * 0.92) * (this.size * 0.92);
     }
-    step() { if (this.state === 'solid') { this.state = 'dissolving'; this.timer = 0.75; } }
+    step() { if (this.state === 'solid') { this.state = 'dissolving'; this.timer = this.dissolveTime || 0.75; } }
     draw(ctx, cam) {
         if (this.state === 'gone') return;
         const sh = this.state === 'dissolving' ? Math.sin(this.shake * 40) * 2 : 0;

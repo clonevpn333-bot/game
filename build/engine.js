@@ -161,11 +161,18 @@ const Engine = {
         g.add(this.courseView.object3d);
 
         this.obViews = [];
-        const allOb = round.obstacles.concat(round.tiles || []);
+        // Hex-A-Gone's tower tiles are drawn as a few InstancedMeshes by the
+        // CourseView (thousands of individual meshes would crush the renderer),
+        // so don't spin up a per-tile view for them.
+        const allOb = round.obstacles.concat(round.hexTower ? [] : (round.tiles || []));
         for (const ob of allOb) {
             const v = makeObstacleView(ob);
-            // lift obstacles onto the terrain floor (no-op on flat courses)
-            if (round.groundZ) {
+            // lift obstacles onto the terrain floor (no-op on flat courses).
+            // Tiles that carry their OWN height (ob.z — e.g. Hex-A-Gone tower
+            // layers) are positioned by the view; don't double-lift those.
+            if (ob.z != null) {
+                /* view bakes ob.z in */
+            } else if (round.groundZ) {
                 const oy = ob.cy != null ? ob.cy : (ob.y != null ? ob.y
                     : (ob.y0 != null && ob.y1 != null ? (ob.y0 + ob.y1) / 2 : null));
                 const ox = ob.cx != null ? ob.cx : (ob.x != null ? ob.x : (round.cx || 640));
@@ -347,6 +354,22 @@ const Engine = {
         }
         const p = subject || round.player;
         let pos, look;
+
+        // ---- HEX-A-GONE tower: a 3/4 elevated shot framing the whole stack,
+        // easing the look down toward the surviving action as it's eaten away.
+        if (round.viewKind === 'hextower') {
+            const cx = round.cx != null ? round.cx : 640, cy = round.cy != null ? round.cy : 400;
+            const R = round._towerR || 470, topZ = round._towerTopZ || 900;
+            const subjZ = (p && !p.eliminated && !p.gone) ? p.z : topZ * 0.4;
+            pos = new THREE.Vector3(cx - R * 0.35, topZ * 0.72 + 430, cy + R * 2.6);
+            look = new THREE.Vector3(cx, U.clamp(subjZ + 60, 60, topZ * 0.9), cy);
+            if (this._camSnap) { this._camPos.copy(pos); this._camLook.copy(look); this._camSnap = false; }
+            else { const k = Math.min(1, dt * 3.5); this._camPos.lerp(pos, k); this._camLook.lerp(look, k); }
+            this.camera.position.copy(this._camPos);
+            this.camera.lookAt(this._camLook);
+            return;
+        }
+
         const raceLike = round.kind === 'race' || round.kind === 'mountain' || round.kind === 'climb';
 
         // ---- cinematic MAP-PREVIEW shot during the intro card ----

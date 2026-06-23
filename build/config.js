@@ -45,7 +45,7 @@ const CFG = {
     INTRO_TIME:   2.4,     // round name card duration (s)
     COUNTDOWN:    3,       // "3..2..1..GO"
     BANNER_TIME:  2.4,     // QUALIFIED / ELIMINATED banner
-    ROUND_MAXTIME: 150,    // hard cap on a race/survival round (s)
+    ROUND_MAXTIME: 120,    // hard cap on a race/survival round (s)
 
     // Persisted-save key
     SAVE_KEY: 'beanRoyaleSave_v1',

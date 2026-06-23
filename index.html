@@ -65,7 +65,7 @@ const CFG = {
     INTRO_TIME:   2.4,     // round name card duration (s)
     COUNTDOWN:    3,       // "3..2..1..GO"
     BANNER_TIME:  2.4,     // QUALIFIED / ELIMINATED banner
-    ROUND_MAXTIME: 150,    // hard cap on a race/survival round (s)
+    ROUND_MAXTIME: 120,    // hard cap on a race/survival round (s)
 
     // Persisted-save key
     SAVE_KEY: 'beanRoyaleSave_v1',
@@ -860,7 +860,7 @@ class Bean {
 
         // terrain floor under the bean (0 on flat courses). VOID (a gap) reads
         // as a very negative number → the bean drops into it.
-        let gz = round.groundZ ? round.groundZ(this.x, this.y) : 0;
+        let gz = round.groundZ ? round.groundZ(this.x, this.y, this.z) : 0;
         const overVoid = gz <= -9000;
         if (overVoid) gz = 0;
         this.groundZ = gz;
@@ -1788,6 +1788,8 @@ class HexTile {
         this.kind = "hex";
         this.cx = o.cx; this.cy = o.cy; this.size = o.size;
         this.color = o.color;
+        this.z = o.z || 0;            // Hex-A-Gone tower: which layer height this tile sits at
+        this.layer = o.layer != null ? o.layer : 0;
         this.fruit = o.fruit != null ? o.fruit : -1;   // Perfect Match: which fruit this tile shows
         this.state = 'solid';        // solid | dissolving | gone
         this.timer = 0;
@@ -1803,7 +1805,7 @@ class HexTile {
     contains(x, y) {
         return U.dist2(x, y, this.cx, this.cy) < (this.size * 0.92) * (this.size * 0.92);
     }
-    step() { if (this.state === 'solid') { this.state = 'dissolving'; this.timer = 0.75; } }
+    step() { if (this.state === 'solid') { this.state = 'dissolving'; this.timer = this.dissolveTime || 0.75; } }
     draw(ctx, cam) {
         if (this.state === 'gone') return;
         const sh = this.state === 'dissolving' ? Math.sin(this.shake * 40) * 2 : 0;
@@ -2087,6 +2089,16 @@ class Round {
             // fall when standing off any solid tile (e.g. a tile that just dropped)
             if (bean.grounded && !this._tileAt(bean.x, bean.y)) bean.startFall();
         } else if (this.kind === 'final') {
+            if (this.hexTower) {
+                // Multi-layer Hex-A-Gone: stepping the tile you stand on makes it
+                // vanish; falling through the holes (and off the bottom into the
+                // slime) is handled by the bean's z physics against groundZ.
+                if (bean.grounded && !bean.falling) {
+                    const t = this._hexUnder(bean);
+                    if (t && t.state === 'solid') t.step();
+                }
+                return;
+            }
             if (bean.x < this.minX - 50 || bean.x > this.maxX + 50 ||
                 bean.y < this.minY - 50 || bean.y > this.maxY + 50) {
                 if (bean.grounded) bean.startFall();
@@ -2255,6 +2267,33 @@ class Round {
         if (!pool.length) return null;
         pool.sort((a, b) => a[0] - b[0]);
         return pool[U.rng(0, Math.min(pool.length, 4) - 1)][1];
+    }
+
+    // ---- Hex-A-Gone tower helpers -------------------------------------
+    // the solid tile a bean is standing on (same LAYER, i.e. matching height).
+    _hexUnder(bean) {
+        for (const t of this.tiles) {
+            if (t.state === 'gone') continue;
+            if (Math.abs(t.z - bean.z) > 34) continue;            // bean's own layer
+            if (U.dist2(bean.x, bean.y, t.cx, t.cy) < (t.size * 0.95) * (t.size * 0.95)) return t;
+        }
+        return null;
+    }
+    // pick a fresh (untouched) tile on the bean's layer to hop to: prefer a
+    // close one, but if our patch is all consumed, ROAM to the nearest fresh
+    // tile anywhere on the layer (don't just stand there and drop).
+    _pickTowerTile(bean) {
+        const near = []; let far = null, farD = 1e18;
+        for (const t of this.tiles) {
+            if (t.state !== 'solid') continue;
+            if (Math.abs(t.z - bean.z) > 34) continue;            // same layer only
+            const d = U.dist2(bean.x, bean.y, t.cx, t.cy);
+            if (d < 22 * 22) continue;                            // not the one under us
+            if (d < 175 * 175) near.push([d, t]);
+            else if (d < farD) { farD = d; far = t; }
+        }
+        if (near.length) { near.sort((a, b) => a[0] - b[0]); return near[U.rng(0, Math.min(near.length, 6) - 1)][1]; }
+        return far;                                               // roam to the nearest fresh tile
     }
 
     // ---- Jump Club helper ---------------------------------------------
@@ -2603,6 +2642,38 @@ function hexThink(bean, round, dt) {
     bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
     if (U.chance((0.78 - bean.skill) * 0.022)) { bean.ai.mx = 0; bean.ai.my = 0; }   // hesitate (fall more)
     bean.ai.jump = false; bean.ai.dive = false;
+}
+
+// ---- Hex-A-Gone (multi-layer tower) -----------------------------------
+// The real meta: DON'T waste tiles. Stand on your tile and let it dissolve;
+// only hop to a fresh one at the last moment (a constant-mover burns ~3x the
+// floor and starves the field). Weak beans dither, crowd, and fall through to
+// the slime; skilled beans conserve tiles and outlast everyone for the Crown.
+function hexTowerThink(bean, round, dt) {
+    bean.ai.jump = false; bean.ai.dive = false; bean.ai.grab = false;
+    const cur = round._hexUnder(bean);
+    // about to lose the floor: no tile, it's gone, or our dissolving tile is nearly up
+    const danger = !cur || cur.state === 'gone' || (cur.state === 'dissolving' && cur.timer < 0.34);
+
+    bean._reT = (bean._reT || 0) - dt;
+    if (danger || bean._reT <= 0 || bean.aiTarget.x == null) {
+        const t = round._pickTowerTile(bean);
+        if (t) { bean.aiTarget.x = t.cx; bean.aiTarget.y = t.cy; }
+        bean._reT = U.rngf(0.35, 0.7);
+    }
+
+    if (!danger && cur) {
+        // HOLD: ride the current tile, only nudging to stay centred on it.
+        const dx = cur.cx - bean.x, dy = cur.cy - bean.y, dl = Math.hypot(dx, dy) || 1;
+        const s = Math.min(0.5, dl / 26);
+        bean.ai.mx = dx / dl * s; bean.ai.my = dy / dl * s;
+    } else if (bean.aiTarget.x != null) {
+        // hop to the chosen fresh tile
+        const dx = bean.aiTarget.x - bean.x, dy = bean.aiTarget.y - bean.y, dl = Math.hypot(dx, dy) || 1;
+        bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
+    }
+    // weak beans dither at the worst moment (and drop); strong beans are crisp
+    if (U.chance((0.92 - bean.skill) * 0.02)) { bean.ai.mx *= 0.1; bean.ai.my *= 0.1; }
 }
 
 // ---- Tail Tag (Hunt) --------------------------------------------------
@@ -3162,41 +3233,72 @@ const Rounds = {
         },
 
         // -------------------------------------------------- HEX-A-GONE
+        // -------------------------------------------------- HEX-A-GONE
+        // The real FINAL: a tall TOWER of stacked honeycomb layers (lower
+        // layers wider). Step a tile and it flashes white, then vanishes ~1s
+        // later; you drop through the hole to the layer below, and you're out
+        // only when you fall off the BOTTOM into the slime. Last bean standing
+        // takes the Crown. Multi-layer falling is real 3D (z-aware groundZ).
         hexAGone(r) {
-            r.kind = 'final'; r.camMode = 'fixed';
-            r.minX = 300; r.maxX = 980; r.minY = 130; r.maxY = 630;
-            r.thinkFn = hexThink;
+            r.kind = 'final'; r.camMode = 'fixed'; r.viewKind = 'hextower';
+            r.hexTower = true; r.thinkFn = hexTowerThink;
             r.tiles = [];
+            const cx = 640, cy = 400; r.cx = cx; r.cy = cy;
 
-            const size = 33, stepX = 50, stepY = 44;
-            const cols = ['#ff8fd0', '#9a8cff', '#7fd0ff', '#7ce0b0', '#ffd07a'];
-            let row = 0;
-            for (let y = r.minY + 20; y <= r.maxY - 10; y += stepY, row++) {
-                const off = (row % 2) * (stepX / 2);
-                for (let x = r.minX + 30 + off; x <= r.maxX - 20; x += stepX) {
-                    r.tiles.push(new HexTile({ cx: x, cy: y, size, color: cols[row % cols.length] }));
+            const L = 7, GAP = 150, size = 40, stepX = 60, stepY = 53;
+            const bottomR = 470, shrink = 30;                   // lower layers are WIDER
+            const cols = ['#6cc6ff', '#23d6c8', '#ff8fd0', '#9a8cff', '#ffd07a'];
+            for (let j = 0; j < L; j++) {
+                const z = j * GAP, R = bottomR - j * shrink, color = cols[j % cols.length];
+                let row = 0;
+                for (let y = cy - R; y <= cy + R; y += stepY, row++) {
+                    const off = (row % 2) * (stepX / 2);
+                    for (let x = cx - R + off; x <= cx + R; x += stepX) {
+                        if ((x - cx) * (x - cx) + (y - cy) * (y - cy) > R * R) continue;
+                        const t = new HexTile({ cx: x, cy: y, size, color, z, layer: j });
+                        t.dissolveTime = 0.95;                  // ~1s warning, then gone
+                        r.tiles.push(t);
+                    }
                 }
             }
+            const topZ = (L - 1) * GAP;
+            r._towerTopZ = topZ; r._towerR = bottomR;
+            r.platform = { cx, cy, r: bottomR };
+            r.minX = cx - bottomR - 80; r.maxX = cx + bottomR + 80;
+            r.minY = cy - bottomR - 80; r.maxY = cy + bottomR + 80;
+            r.slimeZ = -70;                                     // visual goo just under the bottom layer
 
-            // spread beans across the field on distinct tiles
-            const spots = U.shuffle(r.tiles.slice());
+            // z-aware floor: the highest SOLID tile at (x,y) at or below the bean.
+            r.groundZ = (x, y, z) => {
+                let best = VOID_Z; const cap = (z != null ? z : 1e9) + 12;
+                for (const t of r.tiles) {
+                    if (t.state === 'gone' || t.z > cap || t.z <= best) continue;
+                    if (U.dist2(x, y, t.cx, t.cy) < (t.size * 0.92) * (t.size * 0.92)) best = t.z;
+                }
+                return best;
+            };
+
+            // start everyone spread across the (smallest) TOP layer.
+            const topTiles = U.shuffle(r.tiles.filter(t => t.layer === L - 1));
             r.beans.forEach((b, i) => {
-                const t = spots[i % spots.length];
-                b.x = t.cx; b.y = t.cy; b.startX = b.x; b.startY = b.y;
-                b.skill = b.isPlayer ? 1 : U.rngf(0.40, 0.78);
+                const t = topTiles[i % topTiles.length];
+                b.x = t.cx + U.rngf(-8, 8); b.y = t.cy + U.rngf(-8, 8); b.z = topZ;
+                b.startX = b.x; b.startY = b.y;
+                b.skill = b.isPlayer ? 1 : U.rngf(0.42, 0.82);
                 b.facing = U.rngf(0, 6.28);
             });
 
+            // endgame failsafe ONLY: if a few cagey beans are stalling late,
+            // nibble the field so it still resolves (off until 70s, then gentle).
             r.onUpdate = (rr, dt) => {
                 rr._decayT = (rr._decayT || 0) - dt;
-                if (rr.elapsed > 16 && rr._decayT <= 0) {
-                    rr._decayT = Math.max(0.18, 1.1 - (rr.elapsed - 16) * 0.02);
+                const fewLeft = rr.beans.filter(b => b.alive && !b.eliminated).length <= 4;
+                if (rr.elapsed > 70 && fewLeft && rr._decayT <= 0) {
+                    rr._decayT = 0.8;
                     const solids = rr.tiles.filter(t => t.state === 'solid');
                     if (solids.length) U.pick(solids).step();
                 }
             };
-
-            r.drawGround = (ctx) => { drawSlime(ctx); };
         },
 
         // -------------------------------------------------- GATE CRASH
@@ -6096,7 +6198,9 @@ function makeHex(ob) {
     const group = new THREE.Object3D();
     const size = ob.size || 33;
     const depth = 28;                       // prism thickness (tile height)
-    group.position.copy(W(ob.cx, ob.cy, 0));
+    // Hex-A-Gone tower tiles carry their own layer height (ob.z); flat fields
+    // (Perfect Match / single-layer) sit at z=0.
+    group.position.copy(W(ob.cx, ob.cy, ob.z || 0));
 
     const color = col(ob.color, WPAL.grape);
     // CylinderGeometry with 6 radial segments == a hexagonal prism.
@@ -6133,22 +6237,25 @@ function makeHex(ob) {
                 group.position.set(baseX, baseY, group.position.z);
                 group.rotation.set(0, 0, 0);
                 group.visible = true;
-                for (const m of tile.material) { m.opacity = 1; }
-                bevelMat.opacity = 1;
+                for (const m of tile.material) { m.opacity = 1; if (m.emissive) { m.emissive.setRGB(0, 0, 0); m.emissiveIntensity = 0; } }
+                bevelMat.opacity = 1; if (bevelMat.emissive) { bevelMat.emissive.copy(col(shade(color, -0.35))); bevelMat.emissiveIntensity = 0.08; }
                 fallV = 0;
             } else if (state === 'dissolving') {
-                // jitter/shake + begin sinking & fading.
-                group.position.x = baseX + Math.sin(tt * 40 + baseX) * 2.4;
-                group.rotation.z = Math.sin(tt * 33) * 0.03;
+                // FLASH WHITE (the ~1s warning), jitter, then begin sinking & fading.
+                group.position.x = baseX + Math.sin(tt * 45 + baseX) * 2.6;
+                group.rotation.z = Math.sin(tt * 36) * 0.035;
                 fallV += d * 140;
-                group.position.y = baseY - fallV * 0.18;
+                group.position.y = baseY - fallV * 0.16;
                 group.visible = true;
+                const flash = 0.6 + Math.abs(Math.sin(tt * 18)) * 0.4;   // pulsing white glow
                 for (const m of tile.material) {
                     m.transparent = true;
-                    m.opacity = Math.max(0.3, m.opacity - d * 0.7);
+                    m.opacity = Math.max(0.45, m.opacity - d * 0.5);
+                    if (m.emissive) { m.emissive.setRGB(1, 1, 1); m.emissiveIntensity = flash; }
                 }
                 bevelMat.transparent = true;
-                bevelMat.opacity = Math.max(0.3, bevelMat.opacity - d * 0.7);
+                bevelMat.opacity = Math.max(0.45, bevelMat.opacity - d * 0.5);
+                if (bevelMat.emissive) { bevelMat.emissive.setRGB(1, 1, 1); bevelMat.emissiveIntensity = flash; }
             } else { // 'gone'
                 fallV += d * 700;
                 group.position.y = baseY - 220 - fallV;
@@ -6801,6 +6908,7 @@ class CourseView {
         else if (kind === 'final') this._buildFinal(round);
         else if (kind === 'team') this._buildTeam(round);
         else if (kind === 'whirlygig') this._buildWhirlygig(round);
+        else if (kind === 'hextower') this._buildHexTower(round);
         else this._buildRace(round);
         // Align the walkable surface to world y=0 (the beans' feet plane) so
         // beans + obstacles stand ON the floor instead of sinking into the slab.
@@ -7434,6 +7542,73 @@ class CourseView {
     }
 
     /* ---------------- FINAL: wide slime pit + tidy raised border -------- */
+    /* -------- HEX-A-GONE: a tall tower of honeycomb layers over slime -------
+       Hundreds of hex tiles → one InstancedMesh per layer (a handful of draw
+       calls) so the whole tower stays fast. Per frame we reflect each tile's
+       sim state into its instance: solid sits at its layer height; dissolving
+       flashes white and sinks; gone shrinks away. */
+    _buildHexTower(r) {
+        const cx = r.cx != null ? r.cx : 640, cy = r.cy != null ? r.cy : 400;
+        const R = r._towerR || 470;
+        const sea = makeSlime(cx, cy, R * 4.6, R * 4.6, -70);
+        this._add(sea.mesh); this._disposables.push(sea.mesh); this._registerSlime(sea, true);
+
+        const tiles = r.tiles || [];
+        const byLayer = new Map();
+        for (const t of tiles) { if (!byLayer.has(t.layer)) byLayer.set(t.layer, []); byLayer.get(t.layer).push(t); }
+
+        const depth = 22;
+        // a unit point-up hex prism (radius 1, height 1); scaled per instance.
+        const geo = new THREE.CylinderGeometry(1, 0.98, 1, 6); geo.rotateY(Math.PI / 6);
+        const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), P = new THREE.Vector3(), S = new THREE.Vector3();
+        const WHITE = new THREE.Color(1, 1, 1);
+        const layers = [];
+        for (const [, arr] of byLayer) {
+            const n = arr.length;
+            // base material white so the per-instance colour shows through.
+            const m = mat(0xffffff, { roughness: 0.46, metalness: 0.05 });
+            const im = new THREE.InstancedMesh(geo, m, n);
+            // shadows off: a thousand shadow-casting instances murders software
+            // GL, and the tower reads fine flat-lit (beans still cast/receive).
+            im.castShadow = false; im.receiveShadow = false;
+            for (let i = 0; i < n; i++) {
+                const t = arr[i];
+                P.set(t.cx, t.z - depth / 2, t.cy); S.set(t.size, depth, t.size);
+                im.setMatrixAt(i, M.compose(P, Q.identity(), S));
+                im.setColorAt(i, col(t.color));
+                t._li = i;
+            }
+            im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
+            this._add(im);
+            layers.push({ im, arr });
+        }
+
+        this._anim.push((dt, t) => {
+            const tt = t || 0;
+            for (const { im, arr } of layers) {
+                let mD = false, cD = false;
+                for (let i = 0; i < arr.length; i++) {
+                    const tile = arr[i];
+                    if (tile._lastState === tile.state && tile.state !== 'dissolving') continue;
+                    if (tile.state === 'solid') {
+                        P.set(tile.cx, tile.z - depth / 2, tile.cy); S.set(tile.size, depth, tile.size);
+                        im.setMatrixAt(i, M.compose(P, Q.identity(), S)); im.setColorAt(i, col(tile.color)); mD = cD = true;
+                    } else if (tile.state === 'dissolving') {
+                        const k = 1 - (tile.timer / (tile.dissolveTime || 0.95));
+                        P.set(tile.cx, tile.z - depth / 2 - k * 9, tile.cy); S.set(tile.size * (1 - k * 0.12), depth, tile.size * (1 - k * 0.12));
+                        im.setMatrixAt(i, M.compose(P, Q.identity(), S)); im.setColorAt(i, WHITE); mD = cD = true;   // flash white
+                    } else {  // gone — shrink away
+                        S.set(0.001, 0.001, 0.001); P.set(tile.cx, tile.z, tile.cy);
+                        im.setMatrixAt(i, M.compose(P, Q.identity(), S)); mD = true;
+                    }
+                    tile._lastState = tile.state;
+                }
+                if (mD) im.instanceMatrix.needsUpdate = true;
+                if (cD && im.instanceColor) im.instanceColor.needsUpdate = true;
+            }
+        });
+    }
+
     _buildFinal(r) {
         const minX = r.minX != null ? r.minX : 300;
         const maxX = r.maxX != null ? r.maxX : 980;
@@ -8543,11 +8718,18 @@ const Engine = {
         g.add(this.courseView.object3d);
 
         this.obViews = [];
-        const allOb = round.obstacles.concat(round.tiles || []);
+        // Hex-A-Gone's tower tiles are drawn as a few InstancedMeshes by the
+        // CourseView (thousands of individual meshes would crush the renderer),
+        // so don't spin up a per-tile view for them.
+        const allOb = round.obstacles.concat(round.hexTower ? [] : (round.tiles || []));
         for (const ob of allOb) {
             const v = makeObstacleView(ob);
-            // lift obstacles onto the terrain floor (no-op on flat courses)
-            if (round.groundZ) {
+            // lift obstacles onto the terrain floor (no-op on flat courses).
+            // Tiles that carry their OWN height (ob.z — e.g. Hex-A-Gone tower
+            // layers) are positioned by the view; don't double-lift those.
+            if (ob.z != null) {
+                /* view bakes ob.z in */
+            } else if (round.groundZ) {
                 const oy = ob.cy != null ? ob.cy : (ob.y != null ? ob.y
                     : (ob.y0 != null && ob.y1 != null ? (ob.y0 + ob.y1) / 2 : null));
                 const ox = ob.cx != null ? ob.cx : (ob.x != null ? ob.x : (round.cx || 640));
@@ -8729,6 +8911,22 @@ const Engine = {
         }
         const p = subject || round.player;
         let pos, look;
+
+        // ---- HEX-A-GONE tower: a 3/4 elevated shot framing the whole stack,
+        // easing the look down toward the surviving action as it's eaten away.
+        if (round.viewKind === 'hextower') {
+            const cx = round.cx != null ? round.cx : 640, cy = round.cy != null ? round.cy : 400;
+            const R = round._towerR || 470, topZ = round._towerTopZ || 900;
+            const subjZ = (p && !p.eliminated && !p.gone) ? p.z : topZ * 0.4;
+            pos = new THREE.Vector3(cx - R * 0.35, topZ * 0.72 + 430, cy + R * 2.6);
+            look = new THREE.Vector3(cx, U.clamp(subjZ + 60, 60, topZ * 0.9), cy);
+            if (this._camSnap) { this._camPos.copy(pos); this._camLook.copy(look); this._camSnap = false; }
+            else { const k = Math.min(1, dt * 3.5); this._camPos.lerp(pos, k); this._camLook.lerp(look, k); }
+            this.camera.position.copy(this._camPos);
+            this.camera.lookAt(this._camLook);
+            return;
+        }
+
         const raceLike = round.kind === 'race' || round.kind === 'mountain' || round.kind === 'climb';
 
         // ---- cinematic MAP-PREVIEW shot during the intro card ----
