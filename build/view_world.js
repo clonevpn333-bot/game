@@ -1820,6 +1820,7 @@ class CourseView {
         else if (kind === 'survival') this._buildSurvival(round);
         else if (kind === 'final') this._buildFinal(round);
         else if (kind === 'team') this._buildTeam(round);
+        else if (kind === 'whirlygig') this._buildWhirlygig(round);
         else this._buildRace(round);
         // Align the walkable surface to world y=0 (the beans' feet plane) so
         // beans + obstacles stand ON the floor instead of sinking into the slab.
@@ -2150,6 +2151,37 @@ class CourseView {
         g.add(garland);
 
         return g;
+    }
+
+    /* -------- THE WHIRLYGIG: a chain of round mini-golf platforms over water -- */
+    _buildWhirlygig(r) {
+        const plats = r.platforms || [];
+        const midY = (r.minY + r.maxY) / 2;
+        // the water the whole course floats over
+        const s = makeSlime(r.cx, midY, 2800, (r.maxY - r.minY) + 1400, -70);
+        this._add(s.mesh); this._disposables.push(s.mesh); this._registerSlime(s, true);
+        const baseMat = mat(WPAL.track, { roughness: 0.7 });
+        const altMat = mat(WPAL.trackAlt, { roughness: 0.7 });
+        const rimMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.3 });
+        const hubMat = inflate(WPAL.curb, { roughness: 0.3, clearcoat: 0.5 });
+        plats.forEach((p, i) => {
+            const z = p.z || 0;
+            // a thick round platform; top surface at world y = z
+            const disc = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r * 0.93, 40, 60), (i & 1) ? altMat : baseMat);
+            disc.position.set(p.cx, z - 20, p.cy); disc.receiveShadow = true; this._add(disc);
+            const rim = new THREE.Mesh(new THREE.TorusGeometry(p.r - 2, 8, 12, 72), rimMat);
+            rim.rotation.x = Math.PI / 2; rim.position.set(p.cx, z + 1, p.cy); shadowy(rim, true, true); this._add(rim);
+            // a centre hub (the mini-golf windmill post look) on the obstacle discs
+            const hub = new THREE.Mesh(new THREE.CylinderGeometry(p.r * 0.12, p.r * 0.15, 30, 18), hubMat);
+            hub.position.set(p.cx, z + 14, p.cy); this._add(hub);
+        });
+        // start gate on the first disc, finish checker + arch on the last
+        const p0 = plats[0], pN = plats[plats.length - 1];
+        if (p0) { const a = this._buildArch(p0.cx - 210, p0.cx + 210, p0.cy, WPAL.grape, 'start'); a.position.y += (p0.z || 0); this._add(a); }
+        if (pN) {
+            const chk = this._buildCheckerLine(pN.cx - 190, pN.cx + 190, pN.cy, 21, 28); chk.position.y += (pN.z || 0); this._add(chk);
+            const a = this._buildArch(pN.cx - 210, pN.cx + 210, pN.cy, WPAL.gold, 'finish'); a.position.y += (pN.z || 0); this._add(a);
+        }
     }
 
     /* ---------------- TEAM: a sector-tinted arena (Hoarders / Fall Ball) ---- */
