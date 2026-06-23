@@ -684,7 +684,11 @@ function makeSpinner(ob) {
     const sailAlt = inflate(pop(shade(color, 0.34), 0.04, 0.04), { roughness: 0.24, clearcoat: 0.7 });
     // big colourful windmill sails cycle through a vivid candy palette so each
     // blade is a different bright colour (like the real Fall Guys windmills).
-    const sailPalette = [WPAL.curb, WPAL.gold, WPAL.mint, 0x6cc6ff, WPAL.grape, WPAL.curbLt];
+    // solidColor: keep every sail the obstacle's own colour (alternating light/
+    // dark bands) — used for the Whirlygig's signature pink X-crosses.
+    const sailPalette = ob.solidColor
+        ? [color, pop(shade(color, 0.34), 0.04, 0.04), color, shade(color, 0.18)]
+        : [WPAL.curb, WPAL.gold, WPAL.mint, 0x6cc6ff, WPAL.grape, WPAL.curbLt];
     const sailMats = sailPalette.map((c) => inflate(c, { roughness: 0.22, clearcoat: 0.8, emissiveIntensity: 0.06 }));
     for (let i = 0; i < arms; i++) {
         const a = (i * Math.PI * 2) / arms;
@@ -2156,32 +2160,180 @@ class CourseView {
     /* -------- THE WHIRLYGIG: a chain of round mini-golf platforms over water -- */
     _buildWhirlygig(r) {
         const plats = r.platforms || [];
+        const deco = r.deco || [];
         const midY = (r.minY + r.maxY) / 2;
-        // the water the whole course floats over
-        const s = makeSlime(r.cx, midY, 2800, (r.maxY - r.minY) + 1400, -70);
+        // the water the whole course floats high over (start z=0 → top z≈580)
+        const s = makeSlime(r.cx, midY, 2200, (r.maxY - r.minY) + 1500, -70);
         this._add(s.mesh); this._disposables.push(s.mesh); this._registerSlime(s, true);
-        const baseMat = mat(WPAL.track, { roughness: 0.7 });
-        const altMat = mat(WPAL.trackAlt, { roughness: 0.7 });
-        const rimMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.3 });
-        const hubMat = inflate(WPAL.curb, { roughness: 0.3, clearcoat: 0.5 });
+
+        const baseMat = mat(WPAL.track, { roughness: 0.72 });
+        const altMat = mat(WPAL.trackAlt, { roughness: 0.72 });
+        const chkA = mat(WPAL.track, { roughness: 0.66 });
+        const chkB = mat(shade(WPAL.track, -0.22), { roughness: 0.66 });
+        const rimMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.35 });
+        const sideMat = mat(shade(WPAL.track, -0.34), { roughness: 0.85 });
+
+        // ---- platforms: round discs (with optional checker top) + ramps/slabs ----
         plats.forEach((p, i) => {
-            const z = p.z || 0;
-            // a thick round platform; top surface at world y = z
-            const disc = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r * 0.93, 40, 60), (i & 1) ? altMat : baseMat);
-            disc.position.set(p.cx, z - 20, p.cy); disc.receiveShadow = true; this._add(disc);
-            const rim = new THREE.Mesh(new THREE.TorusGeometry(p.r - 2, 8, 12, 72), rimMat);
-            rim.rotation.x = Math.PI / 2; rim.position.set(p.cx, z + 1, p.cy); shadowy(rim, true, true); this._add(rim);
-            // a centre hub (the mini-golf windmill post look) on the obstacle discs
-            const hub = new THREE.Mesh(new THREE.CylinderGeometry(p.r * 0.12, p.r * 0.15, 30, 18), hubMat);
-            hub.position.set(p.cx, z + 14, p.cy); this._add(hub);
+            if (p.disc) {
+                const z = p.z || 0;
+                const disc = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r * 0.95, 46, 64), (i & 1) ? altMat : baseMat);
+                disc.position.set(p.cx, z - 23, p.cy); disc.receiveShadow = true; disc.castShadow = false; this._add(disc);
+                // a "checkered" triangular blue top — alternating pie wedges.
+                if (p.checker) {
+                    const n = 14, ss = Math.PI * 2 / n;
+                    for (let w = 0; w < n; w++) {
+                        const wedge = new THREE.Mesh(new THREE.CircleGeometry(p.r - 5, 30, w * ss, ss), (w & 1) ? chkA : chkB);
+                        wedge.rotation.x = -Math.PI / 2; wedge.position.set(p.cx, z + 1.6, p.cy); wedge.receiveShadow = true; this._add(wedge);
+                    }
+                }
+                const rim = new THREE.Mesh(new THREE.TorusGeometry(p.r - 1, 9, 12, 80), rimMat);
+                rim.rotation.x = Math.PI / 2; rim.position.set(p.cx, z + 2, p.cy); shadowy(rim, true, true); this._add(rim);
+            } else {
+                // a ramp / slab: a sloped box from (yLo,z0) to (yHi,z1).
+                const x0 = p.x0, x1 = p.x1, y0 = p.y0, y1 = p.y1, z0 = p.z0 || 0, z1 = (p.z1 != null ? p.z1 : p.z0) || 0;
+                const w = x1 - x0, dy = y1 - y0, dz = z1 - z0, hyp = Math.hypot(dy, dz) || 1;
+                const slab = new THREE.Mesh(new THREE.BoxGeometry(w, 26, hyp), baseMat);
+                slab.position.set((x0 + x1) / 2, (z0 + z1) / 2 - 6, (y0 + y1) / 2);
+                slab.rotation.x = -Math.atan2(dz, dy);
+                slab.receiveShadow = true; this._add(slab);
+                // dark skirt under the ramp so it reads thick/solid from the side.
+                const skirt = new THREE.Mesh(new THREE.BoxGeometry(w * 0.96, 80, hyp * 0.99), sideMat);
+                skirt.position.set((x0 + x1) / 2, (z0 + z1) / 2 - 50, (y0 + y1) / 2);
+                skirt.rotation.x = -Math.atan2(dz, dy); this._add(skirt);
+                // visual stair treads (purple stairs) on flagged ramps.
+                if (p.stairs) {
+                    const steps = 9, sm = gloss(shade(WPAL.grape, 0.12), { roughness: 0.5 });
+                    for (let k = 1; k < steps; k++) {
+                        const t = k / steps, yy = y0 + dy * t, zz = z0 + dz * t;
+                        const tread = new THREE.Mesh(new THREE.BoxGeometry(w * 0.92, 7, 16), sm);
+                        tread.position.set((x0 + x1) / 2, zz + 4, yy); shadowy(tread, true, true); this._add(tread);
+                    }
+                }
+                // side rails following the ramp slope.
+                if (p.rail) {
+                    this._wRail(x0 + 6, y0, z0, x0 + 6, y1, z1, p.rail);
+                    this._wRail(x1 - 6, y0, z0, x1 - 6, y1, z1, p.rail);
+                }
+            }
         });
-        // start gate on the first disc, finish checker + arch on the last
-        const p0 = plats[0], pN = plats[plats.length - 1];
-        if (p0) { const a = this._buildArch(p0.cx - 210, p0.cx + 210, p0.cy, WPAL.grape, 'start'); a.position.y += (p0.z || 0); this._add(a); }
-        if (pN) {
-            const chk = this._buildCheckerLine(pN.cx - 190, pN.cx + 190, pN.cy, 21, 28); chk.position.y += (pN.z || 0); this._add(chk);
-            const a = this._buildArch(pN.cx - 210, pN.cx + 210, pN.cy, WPAL.gold, 'finish'); a.position.y += (pN.z || 0); this._add(a);
+
+        // ---- decorations (crown / chevrons / windmills / rails / column) ----
+        for (const d of deco) {
+            if (d.type === 'crown') this._wCrownEmblem(d.cx, d.cy, d.z || 0);
+            else if (d.type === 'chevrons') this._wChevrons(d.cx, d.cy, d.z || 0, d.r, d.ang || -Math.PI / 2);
+            else if (d.type === 'windmillDeco') this._wWindmill(d.cx, d.cy, d.z || 0, d.r, d.color, d.speed);
+            else if (d.type === 'rail') this._wRail(d.x0, d.y0, d.z, d.x1, d.y1, d.z, d.color);
+            else if (d.type === 'column') this._wColumn(d.cx, d.cy, d.z || 0, d.h, d.r);
         }
+
+        // ---- start arch on the start slab, finish checker + arch on the last ----
+        const p0 = plats.find(p => p.start), pN = plats.find(p => p.finish);
+        if (p0) { const a = this._buildArch(p0.cx - 260, p0.cx + 260, p0.cy - p0.r * 0.62, WPAL.grape, 'start'); a.position.y += (p0.z || 0); this._add(a); }
+        if (pN) {
+            const chk = this._buildCheckerLine(pN.cx - 200, pN.cx + 200, pN.cy, 21, 30); chk.position.y += (pN.z || 0); this._add(chk);
+            const a = this._buildArch(pN.cx - 240, pN.cx + 240, pN.cy, WPAL.gold, 'finish'); a.position.y += (pN.z || 0); this._add(a);
+        }
+    }
+
+    // a railing of posts + a top bar running between two 3D points (z lerps).
+    _wRail(ax, ay, az, bx, by, bz, color) {
+        const g = new THREE.Object3D();
+        const postMat = inflate(color || WPAL.grape, { roughness: 0.3, clearcoat: 0.6 });
+        const barMat = gloss(shade(color || WPAL.grape, 0.25), { roughness: 0.35 });
+        const len = Math.hypot(bx - ax, by - ay, bz - az) || 1;
+        const n = Math.max(2, Math.round(len / 150));
+        const top = 60;                                   // rail height above the deck
+        for (let i = 0; i <= n; i++) {
+            const t = i / n, x = ax + (bx - ax) * t, y = ay + (by - ay) * t, z = az + (bz - az) * t;
+            const post = new THREE.Mesh(new THREE.CylinderGeometry(7, 8, top, 12), postMat);
+            post.position.set(x, z + top / 2, y); shadowy(post, true, false); g.add(post);
+        }
+        // a continuous top bar (a thin box spanning the run, tilted to match).
+        const dy = by - ay, dz = bz - az, hyp = Math.hypot(dy, dz) || 1;
+        const span = Math.hypot(bx - ax, by - ay, bz - az);
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(10, 10, span), barMat);
+        bar.position.set((ax + bx) / 2, (az + bz) / 2 + top, (ay + by) / 2);
+        bar.rotation.x = -Math.atan2(dz, dy);
+        if (Math.abs(bx - ax) > 1) bar.rotation.y = Math.atan2(bx - ax, by - ay);
+        shadowy(bar, true, false); g.add(bar);
+        this._add(g); return g;
+    }
+
+    // a small decorative pinwheel windmill on a post (non-colliding; spins).
+    _wWindmill(cx, cy, z, r, color, speed) {
+        const g = new THREE.Object3D(); g.position.set(cx, z, cy);
+        const postMat = mat(shade(color || WPAL.curb, -0.3), { roughness: 0.5 });
+        const hubH = r * 1.7;
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.12, r * 0.16, hubH, 12), postMat);
+        post.position.y = hubH / 2; shadowy(post, true, false); g.add(post);
+        const rotor = new THREE.Object3D(); rotor.position.set(0, hubH, r * 0.18);
+        const sailMats = [color, shade(color || WPAL.curb, 0.4), WPAL.gold, WPAL.cloud].map(c => inflate(c, { roughness: 0.24, clearcoat: 0.7 }));
+        for (let i = 0; i < 4; i++) {
+            const a = i / 4 * Math.PI * 2;
+            const sail = new THREE.Mesh(new THREE.BoxGeometry(r * 0.34, r * 0.95, 4), sailMats[i % sailMats.length]);
+            sail.position.set(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5, 0); sail.rotation.z = a;
+            shadowy(sail, true, false); rotor.add(sail);
+        }
+        const cap = new THREE.Mesh(new THREE.SphereGeometry(r * 0.16, 12, 10), gloss(WPAL.gold, { metalness: 0.4 }));
+        rotor.add(cap);
+        g.add(rotor); this._add(g);
+        const sp = speed || 1.3;
+        this._anim.push((dt) => { rotor.rotation.z += sp * dt; });
+        return g;
+    }
+
+    // the tall central pink-striped column (matches the Post collider).
+    _wColumn(cx, cy, z, h, r) {
+        const g = new THREE.Object3D(); g.position.set(cx, z, cy);
+        const bands = Math.max(4, Math.round(h / 60));
+        const pink = inflate(WPAL.curb, { roughness: 0.24, clearcoat: 0.8 });
+        const white = inflate(WPAL.cloud, { roughness: 0.3, clearcoat: 0.6 });
+        const bh = h / bands;
+        for (let b = 0; b < bands; b++) {
+            const seg = new THREE.Mesh(new THREE.CylinderGeometry(r, r, bh + 0.5, 24), (b & 1) ? pink : white);
+            seg.position.y = b * bh + bh / 2; shadowy(seg, true, false); g.add(seg);
+        }
+        const collar = new THREE.Mesh(new THREE.CylinderGeometry(r * 1.18, r * 1.3, 14, 24), gloss(WPAL.gold, { metalness: 0.4 }));
+        collar.position.y = 8; g.add(collar);
+        const cap = new THREE.Mesh(new THREE.SphereGeometry(r * 1.05, 18, 14), gloss(WPAL.gold, { roughness: 0.24, metalness: 0.5 }));
+        cap.position.y = h + r * 0.5; g.add(cap);
+        this._add(g); return g;
+    }
+
+    // yellow chevron arrows painted on a disc, pointing along `ang`.
+    _wChevrons(cx, cy, z, r, ang) {
+        const g = new THREE.Object3D(); g.position.set(cx, z + 1.8, cy); g.rotation.y = -ang;
+        const m = gloss(WPAL.gold, { roughness: 0.4, emissive: 0x5a3d00, emissiveIntensity: 0.12 });
+        for (let k = 0; k < 3; k++) {
+            const off = (k - 1) * r * 0.34;
+            for (const sgn of [-1, 1]) {
+                const arm = new THREE.Mesh(new THREE.BoxGeometry(r * 0.5, 3, 16), m);
+                // a "V": two arms meeting at the front, opening backward.
+                arm.position.set(sgn * r * 0.18, 0, off);
+                arm.rotation.y = sgn * 0.7;
+                g.add(arm);
+            }
+        }
+        this._add(g); return g;
+    }
+
+    // a flat crown emblem painted on the start slab (concentric rings + star).
+    _wCrownEmblem(cx, cy, z) {
+        const g = new THREE.Object3D(); g.position.set(cx, z + 2, cy);
+        const ringG = gloss(WPAL.gold, { roughness: 0.34, metalness: 0.3 });
+        const ringP = gloss(WPAL.curb, { roughness: 0.4 });
+        const r1 = new THREE.Mesh(new THREE.TorusGeometry(190, 10, 10, 64), ringG); r1.rotation.x = Math.PI / 2; g.add(r1);
+        const r2 = new THREE.Mesh(new THREE.TorusGeometry(140, 7, 10, 56), ringP); r2.rotation.x = Math.PI / 2; g.add(r2);
+        // a low golden crown prop in the middle (short — steppable, not blocking).
+        const goldM = gloss(WPAL.gold, { roughness: 0.26, metalness: 0.5, emissive: 0x5a3d00, emissiveIntensity: 0.16 });
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(46, 52, 26, 24, 1, true), goldM); band.position.y = 14; g.add(band);
+        for (let i = 0; i < 8; i++) {
+            const a = i / 8 * Math.PI * 2;
+            const spike = new THREE.Mesh(new THREE.ConeGeometry(10, 30, 8), goldM);
+            spike.position.set(Math.cos(a) * 48, 36, Math.sin(a) * 48); g.add(spike);
+        }
+        shadowy(g, true, false); this._add(g); return g;
     }
 
     /* ---------------- TEAM: a sector-tinted arena (Hoarders / Fall Ball) ---- */

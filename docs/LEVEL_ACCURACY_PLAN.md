@@ -17,7 +17,7 @@ nothing here is executed until signed off.
 |---|-------|-------|------------------|
 | 1 | **Door Dash** | ✅ real | Rebuilt 1-to-1. Good. (lengthen slightly) |
 | 2 | **Gate Crash** | ✅ real | **INACCURATE** — uses smash-doors; the real level is raising/lowering **gates** in timed waves. Needs a Gate primitive. |
-| 3 | **The Whirlygig** | ✅ real | **INACCURATE** — generic beams/bumpers; real one is a long course of big spinning **windmill blades** + treadmills over slime. |
+| 3 | **The Whirlygig** | ✅ real | **REBUILT BESPOKE (1-to-1)** — full multi-tier climb authored via the new `Level` layer: crowned START slab → 4-disc CLOVERLEAF of sweeping arrow-beams → purple STAIR ramp → X-SPINNER tier (two giant pink X-crosses, purple rails) → windmilled TOP around a tall pink-striped central column → FINISH. Climbs z 0→~580 over ~5000 units; ~30s race; 7/20 qualify. Floats high over water (fall off any edge = splash). |
 | 4 | **Dizzy Heights** | ✅ real | Rebuilt with spinning plates. Add the 4-lane **ball gauntlet** + **stacked-disc** finale for full accuracy. |
 | 5 | **Fruit Chute** | ✅ real | Rebuilt as an uphill climb. Good. (lengthen) |
 | 6 | **Hit Parade** | ✅ real | Generic "everything" mix; needs the real section order + more length. |
@@ -36,6 +36,12 @@ nothing here is executed until signed off.
 | 19 | **Royal Fumble** | ✅ real | Good (one-tail final). |
 
 ### Verdicts (post-audit)
+- **NEW: data-driven `Level` authoring layer ("level editor engine").** Author a
+  course as discs / slabs / ramps + decorations (`crown`, `chevrons`,
+  `windmillDeco`, `rail`, `column`); `apply()` wires the sim floor
+  (`platformGroundZ`), AI waypoints (`path`), and the view's decoration list in
+  one shot. This is what makes BIG multi-tier bespoke courses tractable. The
+  Whirlygig is the first level rebuilt on it; the rest of the keepers follow.
 - **No fakes to remove.** All 19 are real.
 - **Fix the FELT duplication by rebuilding mis-implemented levels:**
   - **Lost Temple** → rebuild as the **maze-of-rooms** final (currently a Fall

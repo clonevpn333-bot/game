@@ -576,6 +576,7 @@ class Spinner {
         this.pushOut = !!o.pushOut;
         this.color = o.color || '#ff5fa2';
         this.style = o.style || 'bar';      // bar | windmill | blade | sweeper (view only)
+        this.solidColor = !!o.solidColor;   // windmill sails all one colour (view only)
         this.layer = 'top';
     }
     update(dt) { this.angle += this.speed * dt; }
@@ -631,6 +632,29 @@ class Spinner {
         ctx.fillStyle = U.shade(this.color, -0.25);
         ctx.beginPath(); ctx.arc(0, 0, this.thick * 0.85, 0, 6.283); ctx.fill();
         ctx.restore();
+    }
+}
+
+class Post {
+    // A static collidable pillar/column — beans bump into it and slide around;
+    // it never moves. The view is drawn separately (level deco), so makeObstacleView
+    // can leave this invisible. Used for the Whirlygig's central striped column.
+    constructor(o) {
+        this.kind = 'post'; this.cx = o.cx; this.cy = o.cy;
+        this.r = o.r || 44; this.height = o.height != null ? o.height : 400;
+        this.color = o.color || '#ff5fa2'; this.layer = 'top';
+    }
+    update() {}
+    collide(bean) {
+        if (bean.falling || bean.gone || bean.exited) return;
+        const dx = bean.x - this.cx, dy = bean.y - this.cy;
+        const d = Math.hypot(dx, dy), min = this.r + bean.r * 0.9;
+        if (d > 0.001 && d < min) {
+            const nx = dx / d, ny = dy / d;
+            bean.x = this.cx + nx * min; bean.y = this.cy + ny * min;   // push out
+            const bn = bean.vx * nx + bean.vy * ny;                     // kill inward velocity
+            if (bn < 0) { bean.vx -= nx * bn; bean.vy -= ny * bn; }
+        }
     }
 }
 

@@ -524,6 +524,29 @@ function platformGroundZ(plats, x, y) {
 }
 
 /* =====================================================================
+   LEVEL AUTHORING ("level editor") — a tiny data-driven layer for big,
+   multi-tier bespoke courses. You author with discs / slabs / ramps and a
+   handful of decorations; apply() hands the sim its physics floor (the
+   platforms array, read by platformGroundZ), the AI its waypoints (path),
+   and the view its decoration list (deco). This is what lets a whole
+   climbing course be laid out as data instead of hand-wiring the physics
+   floor and the geometry separately for every piece.
+   ===================================================================== */
+class Level {
+    constructor() { this.plats = []; this.deco = []; this.path = []; }
+    // a round platform; its top surface sits at height z.
+    disc(cx, cy, r, z, opts) { const p = Object.assign({ disc: true, cx, cy, r, z: z || 0 }, opts || {}); this.plats.push(p); return p; }
+    // a flat rectangular slab: x in [cx-hw, cx+hw], y in [yLo, yHi], at height z.
+    slab(cx, yLo, yHi, hw, z, opts) { const p = Object.assign({ x0: cx - hw, x1: cx + hw, y0: yLo, y1: yHi, z0: z || 0, z1: z || 0 }, opts || {}); this.plats.push(p); return p; }
+    // a sloped ramp: height zLo at its low-y edge (yLo) → zHi at its high-y edge (yHi).
+    ramp(cx, yLo, yHi, hw, zLo, zHi, opts) { const p = Object.assign({ x0: cx - hw, x1: cx + hw, y0: yLo, y1: yHi, z0: zLo, z1: zHi, ramp: true }, opts || {}); this.plats.push(p); return p; }
+    wp(x, y) { this.path.push({ x, y }); return this; }
+    add(d) { this.deco.push(d); return this; }
+    // wire a round up from this spec.
+    apply(r) { r.platforms = this.plats; r.deco = this.deco; r.path = this.path; r.groundZ = (x, y) => platformGroundZ(this.plats, x, y); return this; }
+}
+
+/* =====================================================================
    AI BRAINS  (shared by builders)
    ===================================================================== */
 function raceThink(bean, round, dt) {
@@ -1166,56 +1189,98 @@ const Rounds = {
         },
 
         // -------------------------------------------------- THE WHIRLYGIG
-        whirlygig(r) {                      // RACE — a mini-golf chain of ROUND platforms over water
+        // A big, MULTI-TIER climbing course, laid out 1-to-1 from the real map
+        // via the Level authoring layer: a crowned START slab, a 4-disc
+        // CLOVERLEAF of sweeping arrow-beams, a purple STAIR ramp up to the
+        // X-SPINNER tier (two giant pink X-crosses), then the windmilled TOP
+        // around a tall striped central column, and the FINISH — all floating
+        // high over the water, climbing z 0 → ~580. Fall off any edge = splash.
+        whirlygig(r) {
             r.kind = 'race'; r.camMode = 'followY'; r.viewKind = 'whirlygig';
-            r.minX = 60; r.maxX = 1220; r.cx = 640;
-            r.minY = 200; r.maxY = 4000; r.finishY = 470;
+            r.minX = 120; r.maxX = 1160; r.cx = 640;
+            r.minY = 700; r.maxY = 6500; r.finishY = 1160;
             r.thinkFn = whirlyThink;
-            // --- the bespoke layout: a zig-zag chain of round platforms (discs),
-            // each a distinct size, with a giant windmill centrepiece. Falling off
-            // the curved edge drops you into the water. ---
-            const D = (cx, cy, rad, z) => ({ disc: true, cx, cy, r: rad, z: z || 0 });
-            const plats = [
-                D(640, 3700, 300),     // P0 start platform
-                D(640, 3220, 260),     // P1 — beam
-                D(840, 2760, 250),     // P2 — beam (juts right)
-                D(620, 2300, 270),     // P3 — beam
-                D(640, 1800, 320),     // P4 — GIANT WINDMILL (big)
-                D(450, 1320, 260),     // P5 — beam (juts left) + treadmill
-                D(660, 840, 290),      // P6 — fast beam + windmill
-                D(640, 470, 240),      // P7 finish
+
+            const L = new Level();
+            const PINK = '#ff5fa2', TEAL = '#23d6c8', GRAPE = '#7b46d6', GOLD = '#ffd34d';
+
+            // ---- TIER 0: the big crowned START slab (z=0) ----
+            const start = L.disc(640, 6000, 400, 0, { start: true });
+            L.add({ type: 'crown', cx: 640, cy: 6000, z: 0 });
+            // ramp up onto the cloverleaf
+            L.ramp(640, 5240, 5620, 130, 60, 0, { rail: PINK });
+
+            // ---- TIER 1: the 4-disc CLOVERLEAF of sweeping arrow-beams (z=60) ----
+            const clover = [
+                L.disc(640, 5040, 240, 60, { checker: true }),
+                L.disc(775, 4740, 240, 60, { checker: true }),
+                L.disc(505, 4440, 240, 60, { checker: true }),
+                L.disc(640, 4140, 240, 60, { checker: true }),
             ];
-            // gentle final rise onto the finish platform
-            plats[7].z = 70; plats[6].z = 25;
-            r.platforms = plats;
-            r.groundZ = (x, y) => platformGroundZ(plats, x, y);
-            r.path = plats.map(p => ({ x: p.cx, y: p.cy }));
+            const beam = (p, speed, col) => r.obstacles.push(new Spinner({
+                cx: p.cx, cy: p.cy, len: p.r * 0.6, thick: 24, speed, height: 52,
+                power: 290, color: col, style: 'bar' }));
+            beam(clover[0], 1.15, PINK);
+            beam(clover[1], -1.4, TEAL);
+            beam(clover[2], 1.45, GRAPE);
+            beam(clover[3], -1.25, PINK);
+            // yellow chevron arrows painted on each lobe pointing the way on
+            clover.forEach((p, i) => L.add({ type: 'chevrons', cx: p.cx, cy: p.cy, z: 60, r: p.r,
+                ang: Math.atan2((clover[Math.min(i + 1, 3)].cy - p.cy), (clover[Math.min(i + 1, 3)].cx - p.cx)) }));
+            // little edge windmills decorating the cloverleaf rims (non-colliding)
+            L.add({ type: 'windmillDeco', cx: 420, cy: 4560, z: 60, r: 72, color: TEAL, speed: 1.4 });
+            L.add({ type: 'windmillDeco', cx: 880, cy: 4940, z: 60, r: 72, color: PINK, speed: -1.2 });
 
-            const beam = (p, speed, len, col, style) => r.obstacles.push(new Spinner({
-                cx: p.cx, cy: p.cy, len: len || p.r * 0.58, thick: 22, speed, height: 50,
-                power: 300, color: col || '#ff5fa2', style: style || 'bar' }));
-            beam(plats[1], 1.3, null, '#7b46d6');
-            beam(plats[2], -1.5, null, '#23d6c8');
-            beam(plats[3], 1.6, null, '#7b46d6');
-            // giant slow pink windmill on P4 (the "whirlygig") — leaves an outer ring
-            r.obstacles.push(new Spinner({ cx: plats[4].cx, cy: plats[4].cy, len: plats[4].r * 0.72, thick: 38,
-                speed: 0.8, height: 60, arms: 4, power: 360, color: '#ff5fa2', style: 'windmill' }));
-            // P5 treadmill pushing back + a beam
-            r.obstacles.push(new Conveyor({ x0: plats[5].cx - 150, x1: plats[5].cx + 150, y0: plats[5].cy - 30, y1: plats[5].cy + 150, dx: 0, dy: 1, push: 110, color: '#46d36a' }));
-            beam(plats[5], -1.7, 190, '#23d6c8');
-            // P6 fast beam + a second windmill near the climb
-            beam(plats[6], 1.9, 200, '#ff5fa2');
-            r.obstacles.push(new Spinner({ cx: plats[6].cx, cy: plats[6].cy - 40, len: plats[6].r * 0.66, thick: 32,
-                speed: 1.0, height: 60, arms: 4, power: 360, color: '#7b46d6', style: 'windmill' }));
+            // ---- purple STAIR ramp up to the X-spinner tier ----
+            L.ramp(640, 3460, 4080, 130, 280, 60, { rail: GRAPE, stairs: true });
 
-            // spawn on the start platform
-            const sp = plats[0];
+            // ---- TIER 2: the X-SPINNER tier — two giant pink X-crosses (z=280) ----
+            const x1 = L.disc(640, 3200, 310, 280);
+            const x2 = L.disc(640, 2640, 310, 280);
+            const xcross = (p, speed) => r.obstacles.push(new Spinner({
+                cx: p.cx, cy: p.cy, len: p.r * 0.6, thick: 34, speed, height: 64,
+                arms: 4, power: 330, color: PINK, style: 'windmill', solidColor: true }));
+            xcross(x1, 0.78);
+            xcross(x2, -0.74);
+            // purple safety railings down the long sides of the tier
+            L.add({ type: 'rail', x0: 330, y0: 2360, x1: 330, y1: 3480, z: 280, color: GRAPE });
+            L.add({ type: 'rail', x0: 950, y0: 2360, x1: 950, y1: 3480, z: 280, color: GRAPE });
+
+            // ---- ramp up to the top ----
+            L.ramp(640, 2000, 2560, 130, 500, 280, { rail: GRAPE });
+
+            // ---- TIER 3: the windmilled TOP, around a tall striped column (z=500) ----
+            const top = L.disc(640, 1740, 300, 500);
+            // the tall central pink-striped COLUMN — collidable post + striped view
+            r.obstacles.push(new Post({ cx: 640, cy: 1740, r: 50, height: 360 }));
+            L.add({ type: 'column', cx: 640, cy: 1740, z: 500, h: 360, r: 50 });
+            // two small colliding windmills flanking the path past the column
+            r.obstacles.push(new Spinner({ cx: 470, cy: 1640, len: 92, thick: 20, speed: 1.6, height: 56, arms: 4, power: 230, color: TEAL, style: 'windmill' }));
+            r.obstacles.push(new Spinner({ cx: 812, cy: 1842, len: 92, thick: 20, speed: -1.5, height: 56, arms: 4, power: 230, color: PINK, style: 'windmill' }));
+            // decorative edge windmills around the rim
+            const decoCols = [PINK, GOLD, TEAL, GRAPE];
+            for (let i = 0; i < 4; i++) { const a = i / 4 * Math.PI * 2 + 0.5;
+                L.add({ type: 'windmillDeco', cx: 640 + Math.cos(a) * 255, cy: 1740 + Math.sin(a) * 255, z: 500, r: 58, color: decoCols[i], speed: (i & 1 ? 1 : -1) * 1.5 }); }
+
+            // ---- final ramp up to the FINISH disc ----
+            L.ramp(640, 1180, 1560, 115, 580, 500, { rail: GOLD });
+            const fin = L.disc(640, 1020, 260, 580, { finish: true });
+
+            // ---- AI waypoints (start → finish), routed around the central column ----
+            L.wp(640, 6000); L.wp(640, 5320);
+            clover.forEach(p => L.wp(p.cx, p.cy));
+            L.wp(640, 3780); L.wp(640, 3200); L.wp(640, 2640); L.wp(640, 2280);
+            L.wp(770, 1820); L.wp(740, 1520);          // swing right of the column
+            L.wp(640, 1280); L.wp(640, 1020);
+            L.apply(r);
+
+            // ---- spawn 20 beans on the start slab ----
             const ais = r.beans.filter(b => b.isAI); const ord = [r.player, ...ais];
-            const per = U.clamp(Math.round(Math.sqrt(ord.length) * 1.3), 4, 7);
+            const per = U.clamp(Math.round(Math.sqrt(ord.length) * 1.4), 5, 8);
             ord.forEach((b, i) => {
                 const row = Math.floor(i / per), col = i % per, cols = Math.min(per, ord.length - row * per);
-                b.x = sp.cx + (col - (cols - 1) / 2) * 70 + U.rngf(-6, 6);
-                b.y = sp.cy + 60 + row * 56;
+                b.x = start.cx + (col - (cols - 1) / 2) * 80 + U.rngf(-6, 6);
+                b.y = start.cy + 130 + row * 66;
                 b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
                 b.lane = 0; b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.9); b._wp = 1;
             });

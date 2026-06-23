@@ -241,7 +241,7 @@ const SHOW = [
     { id: 'gate_crash',    name: 'Gate Crash',    category: 'Race', build: 'gateCrash',
       tagline: 'Doors, spinning beams and wrecking balls — pick a lane and floor it!', qualify: 10 },
     { id: 'whirlygig',     name: 'The Whirlygig', category: 'Race', build: 'whirlygig',
-      tagline: 'Rotating beams, treadmills and giant windmills. Twirl your way up!', qualify: 7 },
+      tagline: 'Cross the cloverleaf, dodge the spinning X-crosses, climb to the top!', qualify: 7 },
     { id: 'dizzy_heights', name: 'Dizzy Heights', category: 'Race', build: 'dizzyHeights',
       tagline: 'Spinning platforms, hurdles and a cannonade of fruit down the slope.', qualify: 10 },
     { id: 'fruit_chute',   name: 'Fruit Chute',   category: 'Race', build: 'fruitChute',
