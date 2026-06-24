@@ -544,18 +544,29 @@ class Terrain {
    bridges over water (The Whirlygig), not a single slab. The floor is solid
    only on a platform; everywhere else is VOID (you fall off the edge).
    ===================================================================== */
-function platformGroundZ(plats, x, y) {
+function platformGroundZ(plats, x, y, zc) {
+    // z-aware: return the highest platform at (x,y) that's AT OR JUST ABOVE the
+    // bean's height (zc). This lets switchback legs stack directly over one
+    // another — a bean on a lower leg reads the lower floor, not the leg above
+    // it. When zc is omitted (flat/linear courses) every platform qualifies, so
+    // it reduces to "the highest platform here" exactly as before.
     let z = VOID_Z;
+    // platforms up to `lip` above the bean count as walkable (stepping up small
+    // ledges/ramps); legs of a switchback stack are 300+ apart, so this still
+    // keeps a lower leg distinct from the one stacked above it.
+    const cap = (zc != null ? zc : 1e9) + 120;
     for (const p of plats) {
+        let pz = null;
         if (p.disc) {
             const dx = x - p.cx, dy = y - p.cy;
-            if (dx * dx + dy * dy <= p.r * p.r) z = Math.max(z, p.z || 0);
-        } else {                                          // bridge (axis-aligned rect, optional slope along y)
+            if (dx * dx + dy * dy <= p.r * p.r) pz = p.z || 0;
+        } else {                                          // axis-aligned rect, optional slope along y
             if (x >= p.x0 && x <= p.x1 && y >= p.y0 && y <= p.y1) {
                 const t = (p.y1 - p.y0) > 0 ? (y - p.y0) / (p.y1 - p.y0) : 0;
-                z = Math.max(z, (p.z0 || 0) + ((p.z1 != null ? p.z1 : (p.z0 || 0)) - (p.z0 || 0)) * t);
+                pz = (p.z0 || 0) + ((p.z1 != null ? p.z1 : (p.z0 || 0)) - (p.z0 || 0)) * t;
             }
         }
+        if (pz != null && pz <= cap && pz > z) z = pz;
     }
     return z;
 }
@@ -580,7 +591,7 @@ class Level {
     wp(x, y) { this.path.push({ x, y }); return this; }
     add(d) { this.deco.push(d); return this; }
     // wire a round up from this spec.
-    apply(r) { r.platforms = this.plats; r.deco = this.deco; r.path = this.path; r.groundZ = (x, y) => platformGroundZ(this.plats, x, y); return this; }
+    apply(r) { r.platforms = this.plats; r.deco = this.deco; r.path = this.path; r.groundZ = (x, y, zc) => platformGroundZ(this.plats, x, y, zc); return this; }
 }
 
 /* =====================================================================
@@ -1864,84 +1875,67 @@ const Rounds = {
             };
         },
 
-        // -------- SLIME CLIMB (RACE up a tower vs a rising flood of slime)
         // -------------------------------------------------- SLIME CLIMB
-        // BESPOKE via the Level layer: a tall climb that WINDS DIAGONALLY (the
-        // sections snake left↔right as they rise, never a straight shot) racing
-        // a RISING flood of slime — push-block gauntlets, a backward conveyor,
-        // the signature YELLOW CYLINDER balance-beams over the goo, hammer rooms
-        // and a pendulum finale. Fall off a ledge OR let the flood catch you = out.
+        // The real thing: a tall SWITCHBACK TOWER that climbs steeply UPWARD —
+        // ramp legs zig-zag back and forth, each leg stacked above the one two
+        // below it (z-aware floor), racing a RISING flood of slime up from the
+        // pink pit of a round, ring-walled arena. Push-blocks, pendulums and
+        // bumpers ride the legs. Fall off OR let the flood catch you = out.
         slimeClimb(r) {
-            r.kind = 'climb'; r.camMode = 'followY'; r.viewKind = 'whirlygig';
-            r.minX = 80; r.maxX = 1200; r.cx = 640;
-            r.minY = 300; r.maxY = 6500; r.finishY = 1080;
+            r.kind = 'climb'; r.switchback = true; r.viewKind = 'whirlygig'; r.cx = 640;
+            r.minX = 180; r.maxX = 1100; r.minY = 600; r.maxY = 2150; r.finishY = 900;
             r.thinkFn = whirlyThink;
-            r.slimeZ = -100; r.slimeRate = 12.5;         // the flood rises in HEIGHT
-            r.qualifyCount = r.beans.length;             // finishing qualifies; the flood culls
+            r.slimeZ = -60; r.slimeRate = 11;            // the flood rises in HEIGHT
+            r.qualifyCount = r.beans.length;
+            r.arena = { cx: 640, cy: 1360, r: 920 };     // the round ring-walled bowl
 
             const L = new Level();
-            const PINK = '#ff5fa2', GREEN = '#46d36a', GRAPE = '#7b46d6', YEL = '#ffd23f', TEAL = '#23d6c8';
-            const block = (cx, cy, hw, w, speed, dir) => r.obstacles.push(new MovingBlock({ cy, x0: cx - hw, x1: cx + hw, w, thick: 44, height: 120, speed, dir, cx: dir > 0 ? cx - hw : cx + hw, color: GRAPE }));
-            const bump = (x, y, col) => r.obstacles.push(new Bumper({ x, y, r: 38, power: 330, color: col || PINK }));
-            const pend = (cx, cy, speed, amp) => r.obstacles.push(new Hammer({ cx, cy, amp: amp || 300, headR: 32, speed, power: 360 }));
+            const PINK = '#ff5fa2', GRAPE = '#7b46d6', YEL = '#ffd23f';
+            const xL = 480, xR = 800, hw = 138, yT = 1000, yB = 1680;
+            const legZ = (zTop, zBot, y) => zTop + (zBot - zTop) * ((y - yT) / (yB - yT));
+            const block = (cx, cy, w, speed, dir, z) => r.obstacles.push(new MovingBlock({ cy, x0: cx - 130, x1: cx + 130, w, thick: 42, height: 120, speed, dir, cx: dir > 0 ? cx - 130 : cx + 130, color: GRAPE, z }));
+            const bump = (x, y, z, col) => r.obstacles.push(new Bumper({ x, y, r: 36, power: 300, color: col || PINK, z }));
+            const pend = (cx, cy, speed, z) => r.obstacles.push(new Hammer({ cx, cy, amp: 175, headR: 30, speed, power: 320, z }));
 
-            // The diagonal SNAKE: a wide START, then sections that step left↔right
-            // as they climb. Neighbours overlap generously so the walkable band is
-            // continuous and beans cross each junction diagonally.
-            const start = L.slab(640, 5950, 6360, 360, 0, { start: true }); L.wp(640, 6150);
-            L.ramp(600, 5540, 6030, 300, 60, 0, { rail: PINK }); L.wp(600, 5780);
-            // S1 — opening slope + bumpers (lean LEFT)
-            L.ramp(460, 5140, 5620, 250, 130, 60); L.wp(460, 5360);
-            for (const x of [340, 470, 600]) bump(x, 5370, PINK);
-            // S2 — three push-blocks (swing RIGHT)
-            L.slab(800, 4740, 5220, 250, 130); L.wp(800, 4960);
-            block(800, 5070, 215, 150, 150, 1); block(800, 4950, 215, 150, 165, -1); block(800, 4830, 215, 150, 150, 1);
-            // S3 — cannon slope, boulders rolling across (back LEFT)
-            L.ramp(470, 4340, 4820, 240, 210, 130); L.wp(470, 4560);
-            r.obstacles.push(new Cannon({ x: 250, y: 4520, interval: 1.9, phase: 0, speed: 330, ballR: 30, spread: 80, reach: 1500, color: '#e6395a' }));
-            // S4 — two push-blocks (RIGHT)
-            L.slab(810, 3940, 4420, 235, 210); L.wp(810, 4180);
-            block(810, 4300, 195, 165, 165, 1); block(810, 4120, 195, 165, 150, -1);
-            // S5 — backward conveyor + side bumpers (LEFT)
-            L.slab(520, 3540, 4020, 240, 210); L.wp(520, 3780);
-            r.obstacles.push(new Conveyor({ x0: 320, x1: 720, y0: 3600, y1: 3900, dx: 0, dy: 1, push: 120, color: GREEN }));
-            bump(360, 3700, YEL); bump(690, 3700, YEL);
-            // S6 — the signature YELLOW CYLINDER balance-beams (gently snaking)
-            L.ramp(560, 3440, 3640, 175, 220, 210); L.wp(560, 3540);
-            L.ramp(600, 3120, 3540, 110, 235, 222); L.wp(600, 3320);
-            L.slab(665, 2780, 3220, 110, 235); L.wp(665, 3000);
-            L.slab(600, 2420, 2880, 110, 235); L.wp(600, 2640);
-            L.add({ type: 'cylbeam', cx: 600, y0: 3120, y1: 3540, z0: 222, z1: 235, r: 82 });
-            L.add({ type: 'cylbeam', cx: 665, y0: 2780, y1: 3220, z0: 235, z1: 235, r: 82 });
-            L.add({ type: 'cylbeam', cx: 600, y0: 2420, y1: 2880, z0: 235, z1: 235, r: 82 });
-            // S7 — slick rise + swinging pendulums (RIGHT)
-            L.ramp(820, 2040, 2500, 230, 275, 235); L.wp(820, 2280);
-            pend(820, 2360, 1.7, 300); pend(820, 2180, -1.8, 280);
-            // S8 — three push-blocks (back LEFT)
-            L.ramp(470, 1640, 2120, 245, 305, 275); L.wp(470, 1880);
-            block(470, 2010, 215, 140, 150, 1); block(470, 1880, 215, 140, 160, -1); block(470, 1750, 215, 140, 150, 1);
-            // S9 — the triple-pendulum finale on a slick rise (RIGHT)
-            L.ramp(720, 1180, 1720, 225, 380, 305); L.wp(720, 1450);
-            bump(620, 1600, YEL); bump(820, 1600, YEL);
-            pend(720, 1560, 2.0, 320); pend(720, 1450, -2.0, 320); pend(720, 1340, 2.1, 300);
-            // FINISH (centre)
-            const fin = L.slab(640, 820, 1260, 290, 400, { finish: true }); L.wp(640, 1060);
+            // wide START pad at the bottom of the bowl, feeding leg 1
+            const start = L.slab(600, 1640, 2000, 280, 0, { start: true });
+            // five switchback legs, each climbing ~150 and stacked over leg-2-below
+            L.ramp(xL, yT, yB, hw, 170, 20, { rail: PINK });   // leg1  LEFT, up
+            L.slab(640, 930, 1060, 250, 170);                   // turn T1 (top)
+            L.ramp(xR, yT, yB, hw, 170, 320);                   // leg2  RIGHT, back+up
+            L.slab(640, 1620, 1750, 250, 320);                  // turn T2 (bottom)
+            L.ramp(xL, yT, yB, hw, 470, 320, { rail: PINK });   // leg3  LEFT, up   (over leg1)
+            L.slab(640, 930, 1060, 250, 470);                   // turn T3 (top)
+            L.ramp(xR, yT, yB, hw, 470, 620);                   // leg4  RIGHT, back+up (over leg2)
+            L.slab(640, 1620, 1750, 250, 620);                  // turn T4 (bottom)
+            L.ramp(xL, yT, yB, hw, 770, 620, { rail: PINK });   // leg5  LEFT, up   (over leg3)
+            const fin = L.slab(xL, 820, 1030, 175, 770, { finish: true });  // FINISH at the top
+
+            // waypoints threading the switchback (down-up-down as it climbs)
+            L.wp(600, 1840); L.wp(xL, 1640); L.wp(xL, 1040); L.wp(640, 995); L.wp(xR, 1040); L.wp(xR, 1640);
+            L.wp(640, 1690); L.wp(xL, 1640); L.wp(xL, 1040); L.wp(640, 995); L.wp(xR, 1040); L.wp(xR, 1640);
+            L.wp(640, 1690); L.wp(xL, 1640); L.wp(xL, 1040); L.wp(xL, 860);
+
+            // obstacles riding the legs (each tagged with its leg's height)
+            bump(xL, 1460, legZ(170, 20, 1460)); bump(xL - 55, 1230, legZ(170, 20, 1230));   // leg1
+            block(xR, 1320, 135, 140, 1, legZ(170, 320, 1320));                              // leg2
+            pend(xL, 1320, 1.5, legZ(470, 320, 1320)); bump(xL + 50, 1530, legZ(470, 320, 1530));  // leg3
+            block(xR, 1320, 135, 150, -1, legZ(470, 620, 1320)); bump(xR + 55, 1520, legZ(470, 620, 1520));  // leg4
+            pend(xL, 1300, -1.6, legZ(770, 620, 1300)); bump(xL, 1490, legZ(770, 620, 1490));  // leg5
             L.apply(r);
 
-            // a couple of tall candy-striped pillars flanking the climb as landmarks,
-            // plus the signature inflatable RING floats bobbing in the slime.
-            r.deco.push({ type: 'column', cx: 980, cy: 4700, z: 60, h: 280, r: 44 });
-            r.deco.push({ type: 'column', cx: 300, cy: 3000, z: 150, h: 300, r: 44 });
-            r.deco.push({ type: 'donut', cx: 1040, cy: 5200, z: -60, r: 120 });
-            r.deco.push({ type: 'donut', cx: 240, cy: 2200, z: -60, r: 120 });
+            // tall candy-striped pillars at the four arena corners + the slime float
+            for (const [px, py] of [[300, 980], [980, 980], [300, 1740], [980, 1740]])
+                r.deco.push({ type: 'column', cx: px, cy: py, z: 0, h: 620, r: 46 });
+            r.deco.push({ type: 'donut', cx: 640, cy: 2080, z: -40, r: 130 });
 
-            // spawn 40 beans across the wide start slab
+            // spawn 40 beans on the start pad
             const ais = r.beans.filter(b => b.isAI); const ord = [r.player, ...ais];
             const per = 10;
             ord.forEach((b, i) => {
                 const row = Math.floor(i / per), col = i % per, cols = Math.min(per, ord.length - row * per);
-                b.x = 640 + (col - (cols - 1) / 2) * 64 + U.rngf(-5, 5);
-                b.y = 6090 + row * 60;
+                b.x = 600 + (col - (cols - 1) / 2) * 58 + U.rngf(-4, 4);
+                b.y = 1800 + row * 46;
                 b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
                 b.lane = 0; b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.9); b._wp = 1;
             });

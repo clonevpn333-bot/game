@@ -175,11 +175,11 @@ const Engine = {
         const allOb = round.obstacles.concat(round.hexTower ? [] : (round.tiles || []));
         for (const ob of allOb) {
             const v = makeObstacleView(ob);
-            // lift obstacles onto the terrain floor (no-op on flat courses).
-            // Tiles that carry their OWN height (ob.z — e.g. Hex-A-Gone tower
-            // layers) are positioned by the view; don't double-lift those.
+            // lift obstacles onto the floor. An obstacle that declares its OWN
+            // height (ob.z — e.g. an obstacle on a stacked switchback leg) is
+            // lifted by exactly that; otherwise sample the floor under it.
             if (ob.z != null) {
-                /* view bakes ob.z in */
+                v.object3d.position.y += ob.z;
             } else if (round.groundZ) {
                 const oy = ob.cy != null ? ob.cy : (ob.y != null ? ob.y
                     : (ob.y0 != null && ob.y1 != null ? (ob.y0 + ob.y1) / 2 : null));
@@ -373,6 +373,29 @@ const Engine = {
             look = new THREE.Vector3(cx, U.clamp(subjZ + 60, 60, topZ * 0.9), cy);
             if (this._camSnap) { this._camPos.copy(pos); this._camLook.copy(look); this._camSnap = false; }
             else { const k = Math.min(1, dt * 3.5); this._camPos.lerp(pos, k); this._camLook.lerp(look, k); }
+            this.camera.position.copy(this._camPos);
+            this.camera.lookAt(this._camLook);
+            return;
+        }
+
+        // ---- SWITCHBACK chase (Slime Climb tower): a 3rd-person camera that
+        // follows the player AROUND the switchbacks — it sits behind their
+        // direction of travel and rises with them, instead of a fixed forward.
+        if (round.switchback) {
+            const sp = Math.hypot(p.vx, p.vy);
+            let hx, hy;
+            if (sp > 28) { hx = p.vx / sp; hy = p.vy / sp; }     // travel direction
+            else { hx = Math.cos(p.facing); hy = Math.sin(p.facing); }
+            // smooth the heading so U-turns swing rather than snap
+            if (this._chx == null) { this._chx = hx; this._chy = hy; }
+            const hk = Math.min(1, dt * 2.4);
+            this._chx += (hx - this._chx) * hk; this._chy += (hy - this._chy) * hk;
+            const hl = Math.hypot(this._chx, this._chy) || 1;
+            const ux = this._chx / hl, uy = this._chy / hl;
+            pos = new THREE.Vector3(p.x - ux * 290, p.z + 215, p.y - uy * 290);
+            look = new THREE.Vector3(p.x + ux * 140, p.z + 40, p.y + uy * 140);
+            if (this._camSnap) { this._camPos.copy(pos); this._camLook.copy(look); this._camSnap = false; }
+            else { const k = Math.min(1, dt * 6); this._camPos.lerp(pos, k); this._camLook.lerp(look, k); }
             this.camera.position.copy(this._camPos);
             this.camera.lookAt(this._camLook);
             return;

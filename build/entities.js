@@ -577,6 +577,7 @@ class Spinner {
         this.color = o.color || '#ff5fa2';
         this.style = o.style || 'bar';      // bar | windmill | blade | sweeper (view only)
         this.solidColor = !!o.solidColor;   // windmill sails all one colour (view only)
+        this.z = o.z != null ? o.z : null;   // on a stacked leg: only hit beans at this height
         this.layer = 'top';
     }
     update(dt) { this.angle += this.speed * dt; }
@@ -590,6 +591,7 @@ class Spinner {
     }
     collide(bean, round) {
         if (bean.air > this.height || bean.falling || bean.gone) return;
+        if (this.z != null && Math.abs(bean.z - this.z) > 70) return;
         // tight capsule test against the visible bar: bean footprint (~0.82r)
         // plus the bar's half-thickness — so a clean-looking pass doesn't clip.
         const hit = bean.r * 0.82 + this.thick * 0.42;
@@ -667,12 +669,14 @@ class Hammer {
         this.phase = o.phase || 0; this.speed = o.speed || 1.6;
         this.power = o.power || 540; this.height = o.height != null ? o.height : 120;
         this.style = o.style || 'hammer';   // hammer | axe | pendulum (view only)
+        this.z = o.z != null ? o.z : null;   // on a stacked leg: only hit beans at this height
         this.layer = 'top';
     }
     update(dt) { this.phase += this.speed * dt; }
     _head() { return [this.cx + Math.sin(this.phase) * this.amp, this.cy]; }
     collide(bean, round) {
         if (bean.air > this.height || bean.falling || bean.gone) return;
+        if (this.z != null && Math.abs(bean.z - this.z) > 70) return;
         const [hx, hy] = this._head();
         if (U.dist(bean.x, bean.y, hx, hy) < bean.r + this.headR) {
             const dir = Math.cos(this.phase) >= 0 ? 1 : -1;
@@ -889,10 +893,12 @@ class Bumper {
     constructor(o) {
         this.kind = 'bumper'; this.x = o.x; this.y = o.y; this.r = o.r || 34;
         this.power = o.power || 320; this.color = o.color || '#ffd23f'; this.t = 99;
+        this.z = o.z != null ? o.z : null;       // on a stacked leg: only hit beans at this height
     }
     update(dt) { this.t += dt; }
     collide(bean, round) {
         if (bean.falling || bean.gone || bean.exited) return;
+        if (this.z != null && Math.abs(bean.z - this.z) > 70) return;
         const d = U.dist(bean.x, bean.y, this.x, this.y);
         if (d < this.r + bean.r) {
             const nx = (bean.x - this.x) / (d || 1), ny = (bean.y - this.y) / (d || 1);
@@ -909,6 +915,7 @@ class MovingBlock {
         this.height = o.height != null ? o.height : 130;
         this.x0 = o.x0; this.x1 = o.x1; this.speed = o.speed || 150; this.dir = o.dir || 1;
         this.cx = o.cx != null ? o.cx : o.x0; this.color = o.color || '#b06bff';
+        this.z = o.z != null ? o.z : null;       // on a stacked leg: only hit beans at this height
     }
     update(dt) {
         this.cx += this.dir * this.speed * dt;
@@ -917,6 +924,7 @@ class MovingBlock {
     }
     collide(bean, round) {
         if (bean.falling || bean.gone || bean.exited || bean.air > this.height) return;
+        if (this.z != null && Math.abs(bean.z - this.z) > 70) return;
         const dy = bean.y - this.cy, dx = bean.x - this.cx;
         const oy = (bean.r + this.thick * 0.5) - Math.abs(dy);
         const ox = (bean.r + this.w * 0.5) - Math.abs(dx);

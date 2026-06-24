@@ -2183,6 +2183,19 @@ class CourseView {
             this._add(s.mesh); this._disposables.push(s.mesh); this._registerSlime(s, true);
             if (r.slimeZ != null) this._anim.push(() => { s.mesh.position.y = r.slimeZ; });
         }
+        // round, concentric ring-walled bowl (Slime Climb's arena) — stacked
+        // colour bands rising from the slime, with a soft rounded top rim.
+        if (r.arena) {
+            const A = r.arena;
+            const bands = [['#e6395a', -120, 200], ['#ff9447', 80, 200], ['#46d36a', 280, 200], ['#5ad1ff', 480, 200]];
+            for (const [c, y0, h] of bands) {
+                const ring = new THREE.Mesh(new THREE.CylinderGeometry(A.r, A.r, h, 60, 1, true),
+                    mat(c, { roughness: 0.85, side: THREE.DoubleSide }));
+                ring.position.set(A.cx, y0 + h / 2, A.cy); ring.receiveShadow = true; this._add(ring);
+            }
+            const rim = new THREE.Mesh(new THREE.TorusGeometry(A.r, 34, 14, 60), inflate(WPAL.curb, { roughness: 0.4 }));
+            rim.rotation.x = Math.PI / 2; rim.position.set(A.cx, 680, A.cy); this._add(rim);
+        }
 
         const baseMat = mat(WPAL.track, { roughness: 0.72 });
         const altMat = mat(WPAL.trackAlt, { roughness: 0.72 });
