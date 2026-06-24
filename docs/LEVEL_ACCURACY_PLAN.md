@@ -22,7 +22,7 @@ nothing here is executed until signed off.
 | 5 | **Fruit Chute** | ✅ real | Rebuilt as an uphill climb. Good. (lengthen) |
 | 6 | **Hit Parade** | ✅ real | Generic "everything" mix; needs the real section order + more length. |
 | 7 | **Knight Fever** | ✅ real | Up/down profile done; obstacles are stand-ins. Needs **half-pipe, spike-logs, Thicc Bonkus, drawbridges**. |
-| 8 | **Slime Climb** | ✅ real | Rebuilt as a climb vs a rising flood. Good. |
+| 8 | **Slime Climb** | ✅ real | **REBUILT BESPOKE** on the Level layer: a tall climb of distinct platforms (wide start funnelling narrow) racing a RISING slime flood — push-block gauntlets (3/2/4), a backward conveyor, a cannon slope, the signature **yellow cylinder balance-beams** over the goo, a hammer room and a **triple-pendulum** finale, plus the inflatable ring float. ~33s; ~19/40 finish. |
 | 9 | **Big Fans** | ✅ real | **INACCURATE** — windmills; the real level has giant **fans that blow you** (wind push) toward the slime. Needs a Wind primitive. |
 | 10 | **Jump Club** | ✅ real | Good. Add the second, higher sweeper bar. |
 | 11 | **Jump Showdown** | ✅ real | Final version of Jump Club — keep (faster/smaller). Slightly too similar to #10; differentiate (two bars + shrinking floor). |
@@ -30,7 +30,7 @@ nothing here is executed until signed off.
 | 13 | **Tail Tag** | ✅ real | Good. |
 | 14 | **Tip Toe** | ✅ real | **MISCATEGORIZED** — it's a **Race/Course**, not Logic. Recategorize. AI improved; enlarge the grid (longer path). |
 | 15 | **Perfect Match** | ✅ real | Fixed grid + AI. Good. (bigger board, more fruits/rounds) |
-| 16 | **Hex-A-Gone** | ✅ real | Good. Add more vertical layers (it's a long endurance final). |
+| 16 | **Hex-A-Gone** | ✅ real | **REBUILT as a real multi-layer TOWER** — 7 stacked honeycomb layers (lower wider), z-aware floor so you fall through holes layer-to-layer and are out only off the BOTTOM into slime. Tiles flash white & vanish ~1s after a step; last bean standing wins. Drawn instanced (one mesh/layer) for speed. |
 | 17 | **Fall Mountain** | ✅ real | Rebuilt as a climb to the Crown. Good. |
 | 18 | **Lost Temple** | ✅ real (S5 Final) | **MIS-IMPLEMENTED** — I built it as a Fall Mountain crown-climb, which is why it feels like a duplicate. The REAL level is a **maze of randomized obstacle rooms** ending at a crown that slides over **lily pads**. **Rebuild to the real mechanic** (don't remove). |
 | 19 | **Royal Fumble** | ✅ real | Good (one-tail final). |

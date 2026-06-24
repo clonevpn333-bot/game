@@ -2168,9 +2168,12 @@ class CourseView {
         const plats = r.platforms || [];
         const deco = r.deco || [];
         const midY = (r.minY + r.maxY) / 2;
-        // the water the whole course floats high over (start z=0 → top z≈580)
-        const s = makeSlime(r.cx, midY, 2200, (r.maxY - r.minY) + 1500, -70);
+        // the goo the whole course floats over. On a CLIMB (r.slimeZ set) it's a
+        // RISING flood: start it at slimeZ and track it upward every frame.
+        const slimeBaseY = r.slimeZ != null ? r.slimeZ : -70;
+        const s = makeSlime(r.cx, midY, 2400, (r.maxY - r.minY) + 1600, slimeBaseY);
         this._add(s.mesh); this._disposables.push(s.mesh); this._registerSlime(s, true);
+        if (r.slimeZ != null) this._anim.push(() => { s.mesh.position.y = r.slimeZ; });
 
         const baseMat = mat(WPAL.track, { roughness: 0.72 });
         const altMat = mat(WPAL.trackAlt, { roughness: 0.72 });
@@ -2224,21 +2227,28 @@ class CourseView {
             }
         });
 
-        // ---- decorations (crown / chevrons / windmills / rails / column) ----
+        // ---- decorations (crown / chevrons / windmills / rails / column / beams) ----
         for (const d of deco) {
             if (d.type === 'crown') this._wCrownEmblem(d.cx, d.cy, d.z || 0);
             else if (d.type === 'chevrons') this._wChevrons(d.cx, d.cy, d.z || 0, d.r, d.ang || -Math.PI / 2);
             else if (d.type === 'windmillDeco') this._wWindmill(d.cx, d.cy, d.z || 0, d.r, d.color, d.speed);
             else if (d.type === 'rail') this._wRail(d.x0, d.y0, d.z, d.x1, d.y1, d.z, d.color);
             else if (d.type === 'column') this._wColumn(d.cx, d.cy, d.z || 0, d.h, d.r);
+            else if (d.type === 'cylbeam') this._wCylBeam(d);
+            else if (d.type === 'donut') this._wDonut(d.cx, d.cy, d.z || 0, d.r);
         }
 
-        // ---- start arch on the start slab, finish checker + arch on the last ----
+        // ---- start arch on the start platform, finish checker + arch on the last.
+        // Works for either a disc (cx/cy/r) or a slab (x0..x1/y0..y1).
+        const ctr = (p) => p.disc
+            ? { cx: p.cx, cy: p.cy, hw: p.r, z: p.z || 0 }
+            : { cx: (p.x0 + p.x1) / 2, cy: (p.y0 + p.y1) / 2, hw: (p.x1 - p.x0) / 2, z: p.z0 || 0 };
         const p0 = plats.find(p => p.start), pN = plats.find(p => p.finish);
-        if (p0) { const a = this._buildArch(p0.cx - 260, p0.cx + 260, p0.cy - p0.r * 0.62, WPAL.grape, 'start'); a.position.y += (p0.z || 0); this._add(a); }
+        if (p0) { const c = ctr(p0); const a = this._buildArch(c.cx - 260, c.cx + 260, c.cy - c.hw * 0.55, WPAL.grape, 'start'); a.position.y += c.z; this._add(a); }
         if (pN) {
-            const chk = this._buildCheckerLine(pN.cx - 200, pN.cx + 200, pN.cy, 21, 30); chk.position.y += (pN.z || 0); this._add(chk);
-            const a = this._buildArch(pN.cx - 240, pN.cx + 240, pN.cy, WPAL.gold, 'finish'); a.position.y += (pN.z || 0); this._add(a);
+            const c = ctr(pN);
+            const chk = this._buildCheckerLine(c.cx - 200, c.cx + 200, c.cy, 21, 30); chk.position.y += c.z; this._add(chk);
+            const a = this._buildArch(c.cx - 240, c.cx + 240, c.cy, WPAL.gold, 'finish'); a.position.y += c.z; this._add(a);
         }
     }
 
@@ -2305,6 +2315,45 @@ class CourseView {
         const cap = new THREE.Mesh(new THREE.SphereGeometry(r * 1.05, 18, 14), gloss(WPAL.gold, { roughness: 0.24, metalness: 0.5 }));
         cap.position.y = h + r * 0.5; g.add(cap);
         this._add(g); return g;
+    }
+
+    // a bright YELLOW cylindrical balance beam (Slime Climb's signature bridge):
+    // a round-topped log laid along the course over the slime, so you slip off
+    // if you're not dead-centre. d = {cx, y0, y1, z0, z1, r}.
+    _wCylBeam(d) {
+        const y0 = d.y0, y1 = d.y1, z0 = d.z0 || 0, z1 = d.z1 != null ? d.z1 : (d.z0 || 0), r = d.r || 40;
+        const dy = y1 - y0, dz = z1 - z0, len = Math.hypot(dy, dz) || 1;
+        const m = gloss(0xffd23f, { roughness: 0.32, metalness: 0.1, emissive: 0x5a4300, emissiveIntensity: 0.08 });
+        const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 20), m);
+        cyl.rotation.x = Math.PI / 2 - Math.atan2(dz, dy);   // lay along world Z, tilt to the slope
+        cyl.position.set(d.cx, (z0 + z1) / 2 + r * 0.2, (y0 + y1) / 2);
+        shadowy(cyl, true, true); this._add(cyl);
+        // end caps so the log reads solid.
+        for (const [yy, zz] of [[y0, z0], [y1, z1]]) {
+            const cap = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), m);
+            cap.position.set(d.cx, zz + r * 0.2, yy); shadowy(cap, true, false); this._add(cap);
+        }
+        return cyl;
+    }
+
+    // the giant inflatable RING float bobbing in the slime — Slime Climb's
+    // signature set-dressing.
+    _wDonut(cx, cy, z, r) {
+        const g = new THREE.Object3D(); g.position.set(cx, z, cy);
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(r, r * 0.42, 14, 36),
+            inflate(WPAL.curbLt, { roughness: 0.3, clearcoat: 0.7 }));
+        ring.rotation.x = Math.PI / 2; g.add(ring);
+        // a couple of white stripe bands around the tube.
+        for (let i = 0; i < 6; i++) {
+            const a = i / 6 * Math.PI * 2;
+            const band = new THREE.Mesh(new THREE.TorusGeometry(r * 0.42, r * 0.43, 8, 12, 0.5),
+                inflate(WPAL.cloud, { roughness: 0.35 }));
+            band.position.set(Math.cos(a) * r, 0, Math.sin(a) * r); band.rotation.y = -a; g.add(band);
+        }
+        this._add(g);
+        const baseY = z;
+        this._anim.push((dt, t) => { g.position.y = baseY + Math.sin((t || 0) * 0.8) * 8; g.rotation.y = (t || 0) * 0.15; });
+        return g;
     }
 
     // yellow chevron arrows painted on a disc, pointing along `ang`.

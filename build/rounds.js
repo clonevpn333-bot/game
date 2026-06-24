@@ -1769,41 +1769,83 @@ const Rounds = {
         },
 
         // -------- SLIME CLIMB (RACE up a tower vs a rising flood of slime)
+        // -------------------------------------------------- SLIME CLIMB
+        // The real thing, BESPOKE via the Level layer: a tall climb of distinct
+        // platforms (wide start funnelling narrow) racing a RISING flood of
+        // slime — push-block gauntlets, a backward conveyor, the signature
+        // YELLOW CYLINDER balance-beams over the goo, hammer rooms and a
+        // pendulum finale. Fall off a narrow ledge OR let the flood catch you = out.
         slimeClimb(r) {
-            Rounds._raceCommon(r);
-            r.kind = 'climb'; r.viewKind = 'race';
-            // A tall tower: ramps up to flat landings, each landing a new hazard.
-            // The slime floods upward in HEIGHT, so you must keep climbing.
-            r.terrain = new Terrain()
-                .flat(3700, 3980, 0)
-                .ramp(3450, 3700, 90, 0)
-                .flat(3250, 3450, 90)            // S2 sliding blocks
-                .ramp(3000, 3250, 200, 90)       // S3 cannon ramp
-                .flat(2800, 3000, 200)           // S4 sliding blocks
-                .ramp(2550, 2800, 310, 200)
-                .flat(2350, 2550, 310)           // S5 conveyor + bumpers
-                .ramp(2100, 2350, 420, 310)
-                .flat(1900, 2100, 420)           // S6 spinning beams
-                .ramp(1650, 1900, 530, 420)
-                .flat(1450, 1650, 530)           // S7 rotating hammers
-                .ramp(1200, 1450, 630, 530)
-                .flat(1000, 1200, 630)           // S8 four sliding blocks
-                .ramp(750, 1000, 720, 630)
-                .flat(240, 750, 720);            // summit: pendulums + finish
-            r.slimeZ = -120; r.slimeRate = 21;   // flood rises in HEIGHT, faster than a slow climber
-            r.qualifyCount = r.beans.length;     // finishing qualifies; the flood does the culling
+            r.kind = 'climb'; r.camMode = 'followY'; r.viewKind = 'whirlygig';
+            r.minX = 120; r.maxX = 1160; r.cx = 640;
+            r.minY = 300; r.maxY = 6500; r.finishY = 1080;
+            r.thinkFn = whirlyThink;
+            r.slimeZ = -100; r.slimeRate = 15;           // the flood rises in HEIGHT
+            r.qualifyCount = r.beans.length;             // finishing qualifies; the flood culls
 
-            Rounds._bumpers(r, 3560, { rows: 1, cols: 4, color: '#ff5fa2' });          // S1
-            Rounds._blocks(r, 3350, { n: 3, w: 150, speed: 150 });                     // S2
-            Rounds._cannons(r, 3010, { n: 2, interval: 2.0, speed: 360, reach: 1700, color: '#e6395a', ballR: 30 }); // S3
-            Rounds._blocks(r, 2900, { n: 2, w: 175, speed: 165 });                     // S4
-            Rounds._conveyor(r, 2380, 2520, { dy: 1, push: 130, color: '#46d36a' });   // S5
-            Rounds._bumpers(r, 2440, { rows: 1, cols: 3, color: '#ffd23f' });
-            Rounds._beams(r, 2000, { n: 2, speed: 1.6, color: '#9a6cff' });            // S6
-            Rounds._hammers(r, 1550, { n: 2, speed: 1.9, gap: 250 });                  // S7
-            Rounds._blocks(r, 1100, { n: 4, w: 130, speed: 150 });                     // S8
-            Rounds._hammers(r, 700, { n: 2, speed: 2.1, gap: 230 });                   // S9 pendulums
-            Rounds._spawnRows(r, r.maxY - 260, r.cx);
+            const L = new Level();
+            const PINK = '#ff5fa2', GREEN = '#46d36a', GRAPE = '#7b46d6', YEL = '#ffd23f';
+            const block = (cx, cy, hw, w, speed, dir) => r.obstacles.push(new MovingBlock({ cy, x0: cx - hw, x1: cx + hw, w, thick: 44, height: 120, speed, dir, cx: dir > 0 ? cx - hw : cx + hw, color: GRAPE }));
+            const bump = (x, y, col) => r.obstacles.push(new Bumper({ x, y, r: 38, power: 330, color: col || PINK }));
+            const pend = (cy, speed, amp) => r.obstacles.push(new Hammer({ cx: 640, cy, amp: amp || 300, headR: 34, speed, power: 410 }));
+
+            // START slab → funnel ramp (wide → narrower)
+            const start = L.slab(640, 5950, 6350, 360, 0, { start: true }); L.wp(640, 6150);
+            L.ramp(640, 5560, 5960, 280, 60, 0, { rail: PINK }); L.wp(640, 5760);
+            // S1 — opening slope + bumpers
+            L.ramp(640, 5160, 5570, 250, 130, 60); L.wp(640, 5360);
+            for (const x of [520, 660, 800]) bump(x, 5360, PINK);
+            // S2 — three push-blocks
+            L.slab(640, 4780, 5170, 250, 130); L.wp(640, 4975);
+            block(640, 5080, 210, 150, 150, 1); block(640, 4960, 210, 150, 165, -1); block(640, 4840, 210, 150, 150, 1);
+            // S3 — cannon slope (boulders roll down at you)
+            L.ramp(640, 4380, 4790, 230, 210, 130); L.wp(640, 4585);
+            r.obstacles.push(new Cannon({ x: 470, y: 4470, interval: 2.0, phase: 0, speed: 320, ballR: 30, spread: 90, reach: 1500, color: '#e6395a' }));
+            // S4 — two push-blocks
+            L.slab(640, 4000, 4390, 215, 210); L.wp(640, 4195);
+            block(640, 4280, 180, 170, 165, 1); block(640, 4120, 180, 170, 150, -1);
+            // S5 — backward conveyor + side bumpers
+            L.slab(640, 3620, 4010, 235, 210); L.wp(640, 3810);
+            r.obstacles.push(new Conveyor({ x0: 430, x1: 850, y0: 3680, y1: 3960, dx: 0, dy: 1, push: 120, color: GREEN }));
+            bump(470, 3760, YEL); bump(810, 3760, YEL);
+            // S6 — the signature YELLOW CYLINDER balance-beams over the slime.
+            // A short funnel narrows the wide deck onto the beams (so the pack
+            // doesn't get shoved straight off the sides).
+            L.ramp(640, 3630, 3720, 160, 215, 210); L.wp(640, 3660);
+            const b1 = L.ramp(640, 3270, 3640, 92, 235, 215); L.wp(640, 3450);
+            const b2 = L.slab(620, 2920, 3290, 92, 235); L.wp(620, 3100);
+            const b3 = L.slab(665, 2560, 2930, 92, 235); L.wp(665, 2750);
+            L.add({ type: 'cylbeam', cx: 640, y0: 3270, y1: 3640, z0: 235, z1: 215, r: 66 });
+            L.add({ type: 'cylbeam', cx: 620, y0: 2920, y1: 3290, z0: 235, z1: 235, r: 66 });
+            L.add({ type: 'cylbeam', cx: 665, y0: 2560, y1: 2930, z0: 235, z1: 235, r: 66 });
+            // S7 — slick platform + swinging pendulums + a hammer
+            L.ramp(640, 2190, 2580, 220, 260, 235); L.wp(640, 2385);
+            pend(2440, 1.8, 320); pend(2280, -1.9, 300);
+            // S8 — four push-blocks
+            L.ramp(640, 1810, 2210, 230, 290, 260); L.wp(640, 2010);
+            block(640, 2120, 200, 130, 150, 1); block(640, 2010, 200, 130, 165, -1); block(640, 1900, 200, 130, 150, 1); block(640, 1810, 200, 130, 165, -1);
+            // S9 — the triple-pendulum finale on a slick rise
+            L.ramp(640, 1320, 1820, 225, 370, 290); L.wp(640, 1570);
+            bump(540, 1700, YEL); bump(740, 1700, YEL);
+            pend(1560, 2.0, 320); pend(1450, -2.0, 320); pend(1360, 2.1, 300);
+            // FINISH
+            const fin = L.slab(640, 900, 1330, 270, 400, { finish: true }); L.wp(640, 1080);
+            L.apply(r);
+
+            // the signature inflatable RING floats bobbing in the slime, off to the sides
+            r.deco.push({ type: 'donut', cx: 980, cy: 4600, z: -60, r: 120 });
+            r.deco.push({ type: 'donut', cx: 300, cy: 2600, z: -60, r: 120 });
+
+            // spawn 40 beans across the wide start slab
+            const ais = r.beans.filter(b => b.isAI); const ord = [r.player, ...ais];
+            const per = 10;
+            ord.forEach((b, i) => {
+                const row = Math.floor(i / per), col = i % per, cols = Math.min(per, ord.length - row * per);
+                b.x = 640 + (col - (cols - 1) / 2) * 64 + U.rngf(-5, 5);
+                b.y = 6080 + row * 60;
+                b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
+                b.lane = 0; b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.9); b._wp = 1;
+            });
         },
     },
 };
