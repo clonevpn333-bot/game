@@ -2168,12 +2168,21 @@ class CourseView {
         const plats = r.platforms || [];
         const deco = r.deco || [];
         const midY = (r.minY + r.maxY) / 2;
-        // the goo the whole course floats over. On a CLIMB (r.slimeZ set) it's a
-        // RISING flood: start it at slimeZ and track it upward every frame.
-        const slimeBaseY = r.slimeZ != null ? r.slimeZ : -70;
-        const s = makeSlime(r.cx, midY, 2400, (r.maxY - r.minY) + 1600, slimeBaseY);
-        this._add(s.mesh); this._disposables.push(s.mesh); this._registerSlime(s, true);
-        if (r.slimeZ != null) this._anim.push(() => { s.mesh.position.y = r.slimeZ; });
+        const W2 = (r.maxX - r.minX) + 1800, H2 = (r.maxY - r.minY) + 1600;
+        if (r.groundKind === 'grass') {
+            // a wide GRASS field below (Hit Parade sits on stilts over grass).
+            const grass = new THREE.Mesh(new THREE.PlaneGeometry(W2 * 1.6, H2 * 1.3, 1, 1),
+                mat(0x86d36a, { roughness: 0.95 }));
+            grass.rotation.x = -Math.PI / 2; grass.position.set(r.cx, r.grassZ != null ? r.grassZ : -120, midY);
+            grass.receiveShadow = true; this._add(grass);
+        } else {
+            // the goo the whole course floats over. On a CLIMB (r.slimeZ set) it's
+            // a RISING flood: start it at slimeZ and track it upward every frame.
+            const slimeBaseY = r.slimeZ != null ? r.slimeZ : -70;
+            const s = makeSlime(r.cx, midY, 2400, H2, slimeBaseY);
+            this._add(s.mesh); this._disposables.push(s.mesh); this._registerSlime(s, true);
+            if (r.slimeZ != null) this._anim.push(() => { s.mesh.position.y = r.slimeZ; });
+        }
 
         const baseMat = mat(WPAL.track, { roughness: 0.72 });
         const altMat = mat(WPAL.trackAlt, { roughness: 0.72 });
@@ -2182,9 +2191,20 @@ class CourseView {
         const rimMat = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.35 });
         const sideMat = mat(shade(WPAL.track, -0.34), { roughness: 0.85 });
 
+        const triMat = gloss(0xffd23f, { roughness: 0.32, metalness: 0.05, emissive: 0x5a4300, emissiveIntensity: 0.08 });
         // ---- platforms: round discs (with optional checker top) + ramps/slabs ----
         plats.forEach((p, i) => {
-            if (p.disc) {
+            if (p.spin) {
+                // a Dizzy-Heights spinning plate: the SpinPlate obstacle view IS
+                // the visible disc, so the floor platform stays invisible here.
+                return;
+            } else if (p.tri) {
+                // a yellow inflatable TRIANGLE bumper wedged in the gap (walkable).
+                const z = p.z || 0, tr = p.triR || (p.r * 1.5);
+                const tri = new THREE.Mesh(new THREE.CylinderGeometry(tr, tr * 0.94, 26, 3), triMat);
+                tri.rotation.y = p.triA || 0; tri.position.set(p.cx, z - 11, p.cy); tri.receiveShadow = true; shadowy(tri, true, true); this._add(tri);
+                return;
+            } else if (p.disc) {
                 const z = p.z || 0;
                 const disc = new THREE.Mesh(new THREE.CylinderGeometry(p.r, p.r * 0.95, 46, 64), (i & 1) ? altMat : baseMat);
                 disc.position.set(p.cx, z - 23, p.cy); disc.receiveShadow = true; disc.castShadow = false; this._add(disc);

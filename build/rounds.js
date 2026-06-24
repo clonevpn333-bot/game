@@ -1508,23 +1508,71 @@ const Rounds = {
         },
 
         // -------------------------------------------------- DIZZY HEIGHTS
-        dizzyHeights(r) {                   // RACE — spinning plates carry you off-line
-            Rounds._raceCommon(r);
-            // S1: a wide field of spinning plates (adjacent plates spin opposite
-            // ways) + yellow bumpers — the opening "dizzy" funnel.
-            Rounds._plates(r, 3500, { cols: 3, dir: 1, R: 155, speed: 0.85 });
-            Rounds._plates(r, 3180, { cols: 3, dir: -1, R: 155, speed: 0.9 });
-            Rounds._bumpers(r, 2880, { rows: 1, cols: 4, color: '#ffd23f' });
-            // S2: a flat ball gauntlet — cannons fire big rolling balls head-on
-            // (even count → centre gap, no barrel down the player's sightline).
-            Rounds._cannons(r, 2350, { n: 4, interval: 2.1, speed: 360, reach: 1800, spread: 100, ballR: 32, color: '#ffd23f' });
-            // S3: a narrower, faster spinning-plate stretch.
-            Rounds._plates(r, 1780, { cols: 2, dir: -1, R: 160, speed: 1.05 });
-            Rounds._plates(r, 1460, { cols: 2, dir: 1, R: 160, speed: 1.1 });
-            // S4: stacked-plate finale + bumpers before the ramp to the line.
-            Rounds._plates(r, 950, { cols: 3, dir: 1, R: 175, speed: 0.8 });
-            Rounds._bumpers(r, 620, { rows: 1, cols: 3, color: '#ffd23f' });
-            Rounds._spawnRows(r, r.maxY - 260, r.cx);
+        // RACE — BESPOKE: the iconic SPINNING-PLATE MAZE. A packed honeycomb of
+        // counter-rotating teal discs (the whole disc spins and drags you toward
+        // the rim) with yellow inflatable TRIANGLE bumpers wedged in the gaps,
+        // all floating over slime — weave diagonally (hug left) before the spin
+        // or a bumper flings you off the edge. Then a ball-blaster run and a
+        // giant slow-disc finish.
+        dizzyHeights(r) {
+            r.kind = 'race'; r.camMode = 'followY'; r.viewKind = 'whirlygig'; r.cx = 640;
+            r.minX = 120; r.maxX = 1160; r.minY = 1100; r.maxY = 4500; r.finishY = 1760;
+            r.thinkFn = whirlyThink;
+
+            const L = new Level();
+            const TEAL = '#23d6c8', TEAL2 = '#5ad1ff';
+            // START slab (overlaps the first plate row)
+            const start = L.slab(640, 3640, 4360, 340, 0, { start: true }); L.wp(640, 4060);
+
+            // SECTION 1 — the packed Spinning Plate Maze (honeycomb of discs that
+            // overlap into one connected field; fall off the PERIMETER into slime)
+            const rD = 138, rP = 118;
+            // a couple of missing RIGHT-edge plates leave slime holes (drift right
+            // and the spin can drop you in) — without severing the hug-left line.
+            const holes = new Set(['2,2', '4,2', '6,2']);
+            for (let row = 0; row < 8; row++) {
+                const y = 3700 - row * 196;
+                const xs = (row % 2 === 0) ? [440, 640, 840] : [540, 740];
+                xs.forEach((x, ci) => {
+                    if (holes.has(row + ',' + ci)) return;               // slime hole
+                    L.disc(x, y, rD, 0, { spin: true });                 // invisible floor
+                    const dir = ((row + ci) % 2) ? 1 : -1;               // checkerboard counter-spin
+                    r.obstacles.push(new SpinPlate({ cx: x, cy: y, r: rP, speed: dir * U.rngf(0.85, 1.1), color: (row % 2) ? TEAL2 : TEAL }));
+                });
+            }
+            // yellow triangle bumpers wedged in the interstitial gaps
+            for (let row = 0; row < 7; row++) {
+                const y = 3700 - row * 196 - 98;
+                const xs = (row % 2 === 0) ? [540, 740] : [440, 640, 840];
+                for (const x of xs) {
+                    L.disc(x, y, 58, 0, { tri: true, triR: 112, triA: U.rngf(0, 6.28) });
+                    r.obstacles.push(new Bumper({ x, y, r: 42, power: 300, color: '#ffd23f' }));
+                }
+            }
+            // weave the AI line up the LEFT lanes (community-optimal: hug left)
+            for (let row = 0; row < 8; row++) L.wp((row % 2 === 0) ? 470 : 545, 3700 - row * 196);
+
+            // SECTION 2 — the ball-blaster run: cannons spit big rolling balls back
+            L.slab(640, 1960, 2440, 300, 0); L.wp(640, 2200);
+            r.obstacles.push(new Cannon({ x: 410, y: 2080, interval: 1.9, phase: 0, speed: 340, ballR: 34, spread: 80, reach: 1300, color: '#ffd23f' }));
+            r.obstacles.push(new Cannon({ x: 870, y: 2080, interval: 1.9, phase: 0.95, speed: 340, ballR: 34, spread: 80, reach: 1300, color: '#ff9447' }));
+
+            // FINISH — two giant slow counter-spinning plates, then the line
+            const fin = L.slab(640, 1480, 2000, 300, 0, { finish: true }); L.wp(640, 1740);
+            r.obstacles.push(new SpinPlate({ cx: 500, cy: 1800, r: 150, speed: -0.55, color: TEAL }));
+            r.obstacles.push(new SpinPlate({ cx: 800, cy: 1800, r: 150, speed: 0.55, color: TEAL2 }));
+            L.apply(r);
+
+            // spawn 40 beans on the start slab
+            const ais = r.beans.filter(b => b.isAI); const ord = [r.player, ...ais];
+            const per = 10;
+            ord.forEach((b, i) => {
+                const row = Math.floor(i / per), col = i % per, cols = Math.min(per, ord.length - row * per);
+                b.x = 640 + (col - (cols - 1) / 2) * 64 + U.rngf(-5, 5);
+                b.y = 4090 + row * 60;
+                b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
+                b.lane = 0; b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.9); b._wp = 1;
+            });
         },
         // -------------------------------------------------- FRUIT CHUTE
         fruitChute(r) {                     // RACE — climb the slanted ramps while fruit pours from the top
