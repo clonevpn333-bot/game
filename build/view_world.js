@@ -2255,6 +2255,7 @@ class CourseView {
             else if (d.type === 'rail') this._wRail(d.x0, d.y0, d.z, d.x1, d.y1, d.z, d.color);
             else if (d.type === 'column') this._wColumn(d.cx, d.cy, d.z || 0, d.h, d.r);
             else if (d.type === 'cylbeam') this._wCylBeam(d);
+            else if (d.type === 'roller') this._wRoller(d);
             else if (d.type === 'donut') this._wDonut(d.cx, d.cy, d.z || 0, d.r);
         }
 
@@ -2354,6 +2355,32 @@ class CourseView {
             cap.position.set(d.cx, zz + r * 0.2, yy); shadowy(cap, true, false); this._add(cap);
         }
         return cyl;
+    }
+
+    // a horizontal ROLLING LOG laid across the path (Hit Parade): a blue
+    // cylinder along X with stripe bands, continuously rolling about its length.
+    // d = {cx, cy, z, len, r, speed, color}.
+    _wRoller(d) {
+        const r = d.r || 30, len = d.len || 300;
+        const g = new THREE.Object3D();
+        g.position.set(d.cx, (d.z || 0) + r, d.cy);
+        g.rotation.z = Math.PI / 2;                          // lay the cylinder along world X
+        const m = inflate(d.color || 0x5ad1ff, { roughness: 0.34, clearcoat: 0.4 });
+        const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 20), m);
+        g.add(cyl);
+        const bandMat = gloss(0xff5fa2, { roughness: 0.35 });
+        for (const fy of [-len * 0.3, 0, len * 0.3]) {
+            const band = new THREE.Mesh(new THREE.TorusGeometry(r * 1.02, r * 0.16, 8, 18), bandMat);
+            band.rotation.x = Math.PI / 2; band.position.y = fy; cyl.add(band);
+        }
+        for (const fy of [-len / 2, len / 2]) {
+            const cap = new THREE.Mesh(new THREE.SphereGeometry(r * 1.02, 14, 10), gloss(WPAL.gold, { metalness: 0.3 }));
+            cap.position.y = fy; cyl.add(cap);
+        }
+        shadowy(g, true, true); this._add(g);
+        const sp = d.speed || 2.4;
+        this._anim.push((dt) => { cyl.rotation.y += sp * dt; });   // roll about its length
+        return g;
     }
 
     // the giant inflatable RING float bobbing in the slime — Slime Climb's

@@ -1601,17 +1601,65 @@ const Rounds = {
             Rounds._spawnRows(r, r.maxY - 260, r.cx);
         },
         // -------------------------------------------------- HIT PARADE
-        hitParade(r) {                      // RACE — the everything gauntlet
-            Rounds._raceCommon(r);
-            Rounds._doorWall(r, 3360, 3);
-            Rounds._beams(r, 3000, { n: 2, speed: 1.5, color: '#7b46d6' });
-            Rounds._hammers(r, 2680, { n: 1, speed: 1.9 });
-            Rounds._conveyor(r, 2300, 2520, { dy: 1, push: 125 });
-            Rounds._beams(r, 1980, { n: 2, speed: -1.6, color: '#b06bff' });
-            Rounds._bumpers(r, 1600, { rows: 2, cols: 5, color: '#ffd23f' });
-            Rounds._cannons(r, 1250, { n: 2, interval: 2.1, speed: 330, reach: 1200, color: '#e6395a' });
-            Rounds._beams(r, 820, { n: 1, style: 'windmill', speed: 0.9, len: 320, thick: 30, color: '#23d6c8' });
-            Rounds._spawnRows(r, r.maxY - 260, r.cx);
+        // RACE — BESPOKE: the "everything" gauntlet as a diagonally WINDING
+        // ribbon raised over a grassy field. Donut bumpers → rolling logs →
+        // propeller-fan + sliding-wall field → pendulum lane → spinning beams →
+        // sliding moving-walls → a final uphill to the line. Snakes left↔right
+        // the whole way; fall off the edge to the grass and you're out.
+        hitParade(r) {
+            r.kind = 'race'; r.camMode = 'followY'; r.viewKind = 'whirlygig';
+            r.groundKind = 'grass'; r.grassZ = -140; r.cx = 640;
+            r.minX = 80; r.maxX = 1200; r.minY = 600; r.maxY = 5320; r.finishY = 1240;
+            r.thinkFn = whirlyThink;
+
+            const L = new Level();
+            const PINK = '#ff5fa2', GRAPE = '#7b46d6', YEL = '#ffd23f', BLUE = '#5ad1ff', TEAL = '#23d6c8';
+            const bump = (x, y, col) => r.obstacles.push(new Bumper({ x, y, r: 40, power: 330, color: col || PINK }));
+            const pend = (cx, cy, speed) => r.obstacles.push(new Hammer({ cx, cy, amp: 190, headR: 32, speed, power: 280 }));
+            const fan = (cx, cy, speed, col) => r.obstacles.push(new Spinner({ cx, cy, len: 108, thick: 26, speed, height: 60, arms: 4, power: 220, color: col || PINK, style: 'windmill', solidColor: true }));
+            const block = (cx, cy, hw, w, speed, dir) => r.obstacles.push(new MovingBlock({ cy, x0: cx - hw, x1: cx + hw, w, thick: 42, height: 120, speed, dir, cx: dir > 0 ? cx - hw : cx + hw, color: GRAPE }));
+            const roller = (cx, cy, len, dir) => {                 // rolling log: visual + a gentle sideways nudge
+                L.add({ type: 'roller', cx, cy, z: 20, len, r: 32, speed: dir * 3, color: BLUE });
+                r.obstacles.push(new Conveyor({ x0: cx - len / 2, x1: cx + len / 2, y0: cy - 38, y1: cy + 38, dx: dir, dy: 0, push: 50, color: BLUE }));
+            };
+
+            // START + donut-bumper warm-up
+            const start = L.slab(640, 4760, 5260, 330, 20, { start: true }); L.wp(640, 5000);
+            for (const x of [500, 640, 780]) bump(x, 4690, YEL);
+            // S1 — rolling logs (lean LEFT)
+            L.slab(470, 4300, 4860, 265, 20); L.wp(470, 4560);
+            roller(470, 4600, 440, 1); roller(470, 4400, 440, -1);
+            // S2 — propeller fans flanking a clear centre lane (RIGHT)
+            L.slab(810, 3800, 4400, 280, 20); L.wp(810, 4080);
+            fan(650, 4180, 0.8, PINK); fan(980, 3960, -0.85, GRAPE);
+            // S3 — pendulum lane: swing the centre, run the edges (LEFT)
+            L.slab(480, 3260, 3900, 290, 20); L.wp(480, 3560);
+            pend(480, 3700, 1.4); pend(480, 3460, -1.5);
+            // S4 — spinning beams + bumpers (RIGHT)
+            L.slab(800, 2720, 3360, 250, 20); L.wp(800, 3020);
+            r.obstacles.push(new Spinner({ cx: 800, cy: 3160, len: 175, thick: 22, speed: 1.4, height: 52, color: GRAPE }));
+            r.obstacles.push(new Spinner({ cx: 800, cy: 2880, len: 175, thick: 22, speed: -1.5, height: 52, color: PINK }));
+            bump(690, 3020, YEL); bump(915, 3020, YEL);
+            // S5 — sliding moving-walls (LEFT)
+            L.slab(540, 2180, 2820, 260, 20); L.wp(540, 2480);
+            block(540, 2620, 230, 150, 140, 1); block(540, 2380, 230, 150, 155, -1);
+            // S6 — final uphill with sliding bumpers (RIGHT) → FINISH
+            L.ramp(720, 1560, 2280, 245, 140, 20); L.wp(720, 1880);
+            block(720, 2000, 220, 130, 130, 1);
+            bump(620, 1720, PINK); bump(820, 1720, PINK);
+            const fin = L.slab(640, 1080, 1620, 290, 140, { finish: true }); L.wp(640, 1320);
+            L.apply(r);
+
+            // spawn 40 beans on the start slab
+            const ais = r.beans.filter(b => b.isAI); const ord = [r.player, ...ais];
+            const per = 10;
+            ord.forEach((b, i) => {
+                const row = Math.floor(i / per), col = i % per, cols = Math.min(per, ord.length - row * per);
+                b.x = 640 + (col - (cols - 1) / 2) * 64 + U.rngf(-5, 5);
+                b.y = 4900 + row * 58;
+                b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
+                b.lane = 0; b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.9); b._wp = 1;
+            });
         },
         // -------------------------------------------------- KNIGHT FEVER
         knightFever(r) {                    // RACE — medieval gauntlet: climb, slide, drawbridges
