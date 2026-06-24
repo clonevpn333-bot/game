@@ -145,16 +145,24 @@ const Engine = {
 
     _buildRound(round) {
         this._teardownRound();
-        // Re-centre the sky backdrop (mountains / hills / clouds) on THIS course.
-        // The rings are built around the origin, but courses are long and offset,
-        // so without this the backdrop cuts through the middle of the play area
-        // and big hills loom right next to the lane. Keep it well clear.
+        // Re-centre AND grow the whole sky backdrop (ring + dome + fog) around
+        // THIS course. The bubble is tuned at radius ~3600 about the origin; big
+        // courses (the Whirlygig spans ~9900 units) reach past it and the ring
+        // cuts through the play area. Scale everything by the same factor so the
+        // backdrop stays the same — same haze, same framing — just bigger, with
+        // ~1800u of sky beyond the course edge. Small maps are unchanged (s=1).
         if (this.env) {
             const bcx = (round.minX + round.maxX) / 2;
             const bcz = (round.minY + round.maxY) / 2;
-            for (const n of ['mountains', 'hills', 'clouds']) {
-                if (this.env[n]) this.env[n].position.set(bcx, 0, bcz);
+            const reach = Math.max(round.maxX - round.minX, round.maxY - round.minY) / 2;
+            const s = Math.max(1, (reach + 1800) / 3600);
+            for (const n of ['mountains', 'hills', 'clouds', 'blimps']) {
+                if (this.env[n]) { this.env[n].position.set(bcx, 0, bcz); this.env[n].scale.set(s, 1, s); }
             }
+            if (this.env.sky) { this.env.sky.position.set(bcx, 0, bcz); this.env.sky.scale.setScalar(s); }
+            if (this.scene.fog) { this.scene.fog.near = 2400 * s; this.scene.fog.far = 6200 * s; }
+            const wantFar = Math.max(8000, 6000 * s * 1.35);
+            if (this.camera.far !== wantFar) { this.camera.far = wantFar; this.camera.updateProjectionMatrix(); }
         }
         const g = new THREE.Group();
         this.courseView = new CourseView(round);
