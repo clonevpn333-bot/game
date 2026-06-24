@@ -456,9 +456,16 @@ const Engine = {
 
         if (raceLike) {
             // 3rd-person chase: close behind and a little above the bean, looking
-            // just ahead down the course (close, low — like the real game).
-            pos  = new THREE.Vector3(p.x, p.z + 168, p.y + 270);
-            look = new THREE.Vector3(p.x, p.z + 46,  p.y - 110);
+            // just ahead down the course (close, low — like the real game). On a
+            // CLIMB the course rises steeply ahead, so sit back/low and look UP
+            // the slope instead of level (otherwise you frame mostly sky).
+            if (round.kind === 'climb') {
+                pos  = new THREE.Vector3(p.x, p.z + 150, p.y + 330);
+                look = new THREE.Vector3(p.x, p.z + 175, p.y - 150);
+            } else {
+                pos  = new THREE.Vector3(p.x, p.z + 168, p.y + 270);
+                look = new THREE.Vector3(p.x, p.z + 46,  p.y - 110);
+            }
         } else {
             const arena = !!(round.platform && round.platform.r);
             const cx = arena ? round.platform.cx : (round.minX + round.maxX) / 2;

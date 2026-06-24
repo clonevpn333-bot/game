@@ -1876,66 +1876,67 @@ const Rounds = {
         },
 
         // -------------------------------------------------- SLIME CLIMB
-        // The real thing: a tall SWITCHBACK TOWER that climbs steeply UPWARD —
-        // ramp legs zig-zag back and forth, each leg stacked above the one two
-        // below it (z-aware floor), racing a RISING flood of slime up from the
-        // pink pit of a round, ring-walled arena. Push-blocks, pendulums and
-        // bumpers ride the legs. Fall off OR let the flood catch you = out.
+        // A steep DIAGONAL switchback that climbs UP while moving forward (north):
+        // wide ramp tiers stacked up the course, the route cutting diagonally
+        // across each one corner-to-corner, reversing at every tier — so you both
+        // gain height AND advance, never a straight shot and never a pure tower.
+        // Real obstacles ride the tiers; the slime floods up the round bowl.
         slimeClimb(r) {
-            r.kind = 'climb'; r.switchback = true; r.viewKind = 'whirlygig'; r.cx = 640;
-            r.minX = 180; r.maxX = 1100; r.minY = 600; r.maxY = 2150; r.finishY = 900;
+            r.kind = 'climb'; r.camMode = 'followY'; r.viewKind = 'whirlygig'; r.cx = 640;
+            r.minX = 220; r.maxX = 1060; r.minY = 200; r.maxY = 2860; r.finishY = 520;
             r.thinkFn = whirlyThink;
-            r.slimeZ = -60; r.slimeRate = 11;            // the flood rises in HEIGHT
+            r.slimeZ = -80; r.slimeRate = 11;            // the flood rises in HEIGHT
             r.qualifyCount = r.beans.length;
-            r.arena = { cx: 640, cy: 1360, r: 920 };     // the round ring-walled bowl
+            r.arena = { cx: 640, cy: 1500, r: 1180 };    // the round ring-walled bowl
 
             const L = new Level();
-            const PINK = '#ff5fa2', GRAPE = '#7b46d6', YEL = '#ffd23f';
-            const xL = 480, xR = 800, hw = 138, yT = 1000, yB = 1680;
-            const legZ = (zTop, zBot, y) => zTop + (zBot - zTop) * ((y - yT) / (yB - yT));
-            const block = (cx, cy, w, speed, dir, z) => r.obstacles.push(new MovingBlock({ cy, x0: cx - 130, x1: cx + 130, w, thick: 42, height: 120, speed, dir, cx: dir > 0 ? cx - 130 : cx + 130, color: GRAPE, z }));
-            const bump = (x, y, z, col) => r.obstacles.push(new Bumper({ x, y, r: 36, power: 300, color: col || PINK, z }));
-            const pend = (cx, cy, speed, z) => r.obstacles.push(new Hammer({ cx, cy, amp: 175, headR: 30, speed, power: 320, z }));
+            const PINK = '#ff5fa2', GRAPE = '#7b46d6', YEL = '#ffd23f', BLUE = '#5ad1ff';
+            const hwLeg = 300;
+            // height of a leg's sloped surface at a given y
+            const legZ = (zTop, yTop, zBot, yBot, y) => zTop + (zBot - zTop) * ((y - yTop) / (yBot - yTop));
+            const block = (cx, cy, w, speed, dir) => r.obstacles.push(new MovingBlock({ cy, x0: cx - 280, x1: cx + 280, w, thick: 44, height: 120, speed, dir, cx: dir > 0 ? cx - 280 : cx + 280, color: GRAPE }));
+            const bump = (x, y, col) => r.obstacles.push(new Bumper({ x, y, r: 38, power: 310, color: col || PINK }));
+            const pend = (cx, cy, speed) => r.obstacles.push(new Hammer({ cx, cy, amp: 250, headR: 32, speed, power: 350 }));
+            const beam = (cx, cy, speed, col) => r.obstacles.push(new Spinner({ cx, cy, len: 230, thick: 24, speed, height: 54, power: 320, color: col || GRAPE }));
+            const roller = (cx, cy, z, len, dir) => {
+                L.add({ type: 'roller', cx, cy, z, len, r: 34, speed: dir * 3, color: BLUE });
+                r.obstacles.push(new Conveyor({ x0: cx - len / 2, x1: cx + len / 2, y0: cy - 40, y1: cy + 40, dx: dir, dy: 0, push: 78, color: BLUE }));
+            };
 
-            // wide START pad at the bottom of the bowl, feeding leg 1
-            const start = L.slab(600, 1640, 2000, 280, 0, { start: true });
-            // five switchback legs, each climbing ~150 and stacked over leg-2-below
-            L.ramp(xL, yT, yB, hw, 170, 20, { rail: PINK });   // leg1  LEFT, up
-            L.slab(640, 930, 1060, 250, 170);                   // turn T1 (top)
-            L.ramp(xR, yT, yB, hw, 170, 320);                   // leg2  RIGHT, back+up
-            L.slab(640, 1620, 1750, 250, 320);                  // turn T2 (bottom)
-            L.ramp(xL, yT, yB, hw, 470, 320, { rail: PINK });   // leg3  LEFT, up   (over leg1)
-            L.slab(640, 930, 1060, 250, 470);                   // turn T3 (top)
-            L.ramp(xR, yT, yB, hw, 470, 620);                   // leg4  RIGHT, back+up (over leg2)
-            L.slab(640, 1620, 1750, 250, 620);                  // turn T4 (bottom)
-            L.ramp(xL, yT, yB, hw, 770, 620, { rail: PINK });   // leg5  LEFT, up   (over leg3)
-            const fin = L.slab(xL, 820, 1030, 175, 770, { finish: true });  // FINISH at the top
+            // wide START pad at the bottom, then four WIDE ramp tiers climbing up
+            const start = L.slab(640, 2480, 2860, 330, 0, { start: true });
+            L.ramp(640, 2040, 2540, hwLeg, 160, 0, { rail: PINK });   // tier1  z 0→160
+            L.ramp(640, 1560, 2080, hwLeg, 320, 160);                 // tier2  z 160→320
+            L.ramp(640, 1080, 1600, hwLeg, 480, 320, { rail: PINK }); // tier3  z 320→480
+            L.ramp(640, 600, 1120, hwLeg, 620, 480);                  // tier4  z 480→620
+            const fin = L.slab(640, 300, 660, 300, 620, { finish: true });
 
-            // waypoints threading the switchback (down-up-down as it climbs)
-            L.wp(600, 1840); L.wp(xL, 1640); L.wp(xL, 1040); L.wp(640, 995); L.wp(xR, 1040); L.wp(xR, 1640);
-            L.wp(640, 1690); L.wp(xL, 1640); L.wp(xL, 1040); L.wp(640, 995); L.wp(xR, 1040); L.wp(xR, 1640);
-            L.wp(640, 1690); L.wp(xL, 1640); L.wp(xL, 1040); L.wp(xL, 860);
+            // the DIAGONAL route: cut each tier corner-to-corner, reversing each time
+            L.wp(640, 2660); L.wp(440, 2440); L.wp(840, 2080); L.wp(440, 1620);
+            L.wp(840, 1140); L.wp(440, 700); L.wp(640, 460);
 
-            // obstacles riding the legs (each tagged with its leg's height)
-            bump(xL, 1460, legZ(170, 20, 1460)); bump(xL - 55, 1230, legZ(170, 20, 1230));   // leg1
-            block(xR, 1320, 135, 140, 1, legZ(170, 320, 1320));                              // leg2
-            pend(xL, 1320, 1.5, legZ(470, 320, 1320)); bump(xL + 50, 1530, legZ(470, 320, 1530));  // leg3
-            block(xR, 1320, 135, 150, -1, legZ(470, 620, 1320)); bump(xR + 55, 1520, legZ(470, 620, 1520));  // leg4
-            pend(xL, 1300, -1.6, legZ(770, 620, 1300)); bump(xL, 1490, legZ(770, 620, 1490));  // leg5
+            // real obstacles riding the tiers (lifted onto each slope automatically)
+            bump(520, 2360, PINK); bump(760, 2200, PINK);
+            roller(640, 2300, legZ(160, 2040, 0, 2540, 2300), 460, 1);          // tier1 log
+            block(640, 1900, 150, 150, 1); block(640, 1720, 150, 165, -1);       // tier2 push-blocks
+            beam(560, 1420, 1.5, GRAPE); beam(780, 1220, -1.6, PINK);            // tier3 spinning beams
+            roller(640, 1340, legZ(480, 1080, 320, 1600, 1340), 460, -1);        // tier3 log
+            pend(560, 900, 1.6); pend(740, 760, -1.7); bump(640, 1000, YEL);     // tier4 pendulums
             L.apply(r);
 
-            // tall candy-striped pillars at the four arena corners + the slime float
-            for (const [px, py] of [[300, 980], [980, 980], [300, 1740], [980, 1740]])
-                r.deco.push({ type: 'column', cx: px, cy: py, z: 0, h: 620, r: 46 });
-            r.deco.push({ type: 'donut', cx: 640, cy: 2080, z: -40, r: 130 });
+            // tall candy-striped pillars around the bowl + the slime float
+            for (const [px, py] of [[280, 800], [1000, 800], [280, 1900], [1000, 1900], [640, 250]])
+                r.deco.push({ type: 'column', cx: px, cy: py, z: 0, h: 660, r: 46 });
+            r.deco.push({ type: 'donut', cx: 980, cy: 2400, z: -60, r: 130 });
+            r.deco.push({ type: 'donut', cx: 300, cy: 2400, z: -60, r: 130 });
 
             // spawn 40 beans on the start pad
             const ais = r.beans.filter(b => b.isAI); const ord = [r.player, ...ais];
             const per = 10;
             ord.forEach((b, i) => {
                 const row = Math.floor(i / per), col = i % per, cols = Math.min(per, ord.length - row * per);
-                b.x = 600 + (col - (cols - 1) / 2) * 58 + U.rngf(-4, 4);
-                b.y = 1800 + row * 46;
+                b.x = 640 + (col - (cols - 1) / 2) * 64 + U.rngf(-4, 4);
+                b.y = 2620 + row * 48;
                 b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
                 b.lane = 0; b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.9); b._wp = 1;
             });

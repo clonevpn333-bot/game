@@ -991,7 +991,11 @@ class BeanView {
         const speed    = Math.hypot(bean.vx || 0, bean.vy || 0);
         const grounded = !!bean.grounded;
         const z        = bean.z || 0;
-        const airborne = z > 1 && !bean.falling;
+        // "airborne" must be height above the LOCAL floor (bean.air), not the
+        // absolute z — otherwise a bean standing on any raised platform or ramp
+        // (z>0) reads as mid-air and never plays its walk cycle.
+        const air      = (bean.air != null) ? bean.air : z;
+        const airborne = air > 8 && !bean.falling;
         const diveT    = bean.diveT || 0;
         const proneT   = bean.proneT || 0;
         const ragdoll  = bean.ragdoll || 0;

@@ -2187,14 +2187,14 @@ class CourseView {
         // colour bands rising from the slime, with a soft rounded top rim.
         if (r.arena) {
             const A = r.arena;
-            const bands = [['#e6395a', -120, 200], ['#ff9447', 80, 200], ['#46d36a', 280, 200], ['#5ad1ff', 480, 200]];
+            const bands = [['#e6395a', -160, 200], ['#ff9447', 40, 180], ['#46d36a', 220, 180], ['#5ad1ff', 400, 180]];
             for (const [c, y0, h] of bands) {
                 const ring = new THREE.Mesh(new THREE.CylinderGeometry(A.r, A.r, h, 60, 1, true),
                     mat(c, { roughness: 0.85, side: THREE.DoubleSide }));
                 ring.position.set(A.cx, y0 + h / 2, A.cy); ring.receiveShadow = true; this._add(ring);
             }
-            const rim = new THREE.Mesh(new THREE.TorusGeometry(A.r, 34, 14, 60), inflate(WPAL.curb, { roughness: 0.4 }));
-            rim.rotation.x = Math.PI / 2; rim.position.set(A.cx, 680, A.cy); this._add(rim);
+            const rim = new THREE.Mesh(new THREE.TorusGeometry(A.r, 32, 14, 60), inflate(WPAL.curb, { roughness: 0.4 }));
+            rim.rotation.x = Math.PI / 2; rim.position.set(A.cx, 580, A.cy); this._add(rim);
         }
 
         const baseMat = mat(WPAL.track, { roughness: 0.72 });
