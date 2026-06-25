@@ -973,6 +973,84 @@ class Wall {
     }
 }
 
+class SeeSaw {
+    // A see-saw plank that pivots about its centre (the long axis runs along y =
+    // the travel direction). A bean's weight tips the loaded end DOWN; the tilt
+    // eases, so crossing it is a balance act. It's a moving FLOOR (the round's
+    // groundZ samples surfaceZ), not a knock-back obstacle, so collide() is a
+    // no-op — the dipping deck does all the work.
+    constructor(o) {
+        this.kind = 'seesaw';
+        this.cx = o.cx; this.cy = o.cy; this.z = o.z || 0;     // pivot point
+        this.hl = o.hl || 150;          // half-length along y (the see-saw axis)
+        this.hw = o.hw || 95;           // half-width along x
+        this.tilt = o.tilt0 || 0;       // current tilt (rad); + dips the +y (south) end
+        this.maxTilt = o.maxTilt != null ? o.maxTilt : 0.30;
+        this.k = o.k || 3.4;            // how fast it eases toward the loaded tilt
+        this.rest = o.rest || 0;        // a gentle self-levelling pull toward this tilt
+        this.layer = 'top';
+    }
+    surfaceZ(x, y) { return this.z - (y - this.cy) * Math.tan(this.tilt); }
+    onPlank(x, y, r) { r = r || 0; return Math.abs(x - this.cx) <= this.hw + r && Math.abs(y - this.cy) <= this.hl + r; }
+    update(dt, round) {
+        // net torque from the beans standing on the deck → which end is loaded.
+        let torque = 0, n = 0;
+        if (round) for (const b of round.beans) {
+            if (b.falling || b.gone || b.eliminated || b.exited) continue;
+            if (!this.onPlank(b.x, b.y, b.r)) continue;
+            if (Math.abs(b.z - this.surfaceZ(b.x, b.y)) > 40) continue;   // actually on the deck
+            torque += (b.y - this.cy); n++;
+        }
+        let target = this.rest;
+        if (n > 0) target = U.clamp((torque / this.hl) * this.maxTilt * 1.7, -this.maxTilt, this.maxTilt);
+        this.tilt += (target - this.tilt) * Math.min(1, this.k * dt);
+    }
+    collide(bean, round, dt) {
+        // a tilted deck slides you toward its low (downhill +y) end — walk against
+        // it to hold your footing. This is what makes the see-saw a balance act
+        // rather than a flat plank you stroll across.
+        if (bean.falling || bean.gone || bean.exited || !dt) return;
+        if (!this.onPlank(bean.x, bean.y, bean.r)) return;
+        if (Math.abs(bean.z - this.surfaceZ(bean.x, bean.y)) > 30) return;
+        bean.vy += Math.tan(this.tilt) * 170 * dt;
+    }
+}
+
+class RollDrum {
+    // Roll Out: a long horizontal drum (axis along x) you stand ON TOP of. It is
+    // split into bands across its length, each rotating at its own speed and
+    // direction (centre fastest, neighbours reversed). The spinning surface CARRIES
+    // a bean along y — walk against it or the curved flank slides you into the
+    // slime. A moving floor (groundZ samples surfaceZ) + a carry in collide().
+    constructor(o) {
+        this.kind = 'drum';
+        this.cy = o.cy; this.z = o.z || 0;      // axis line: y = cy, height = z
+        this.R = o.R || 170;                     // radius (top sits at z + R)
+        this.x0 = o.x0; this.x1 = o.x1;          // drum length along x
+        this.bands = o.bands || [];              // [{x0,x1,speed}]  speed in rad/s (sign = dir)
+        this.fins = o.fins || 0;                 // radial sweeper count per band (0 = none)
+        this.finPow = o.finPow || 360;
+        this.angle = 0;                          // master angle (fins ride this)
+        this.layer = 'top';
+    }
+    bandAt(x) { for (const b of this.bands) if (x >= b.x0 && x <= b.x1) return b; return null; }
+    surfaceZ(x, y) {
+        if (x < this.x0 || x > this.x1) return -1e4;
+        const dy = y - this.cy; if (Math.abs(dy) >= this.R) return -1e4;
+        return this.z + Math.sqrt(this.R * this.R - dy * dy);
+    }
+    update(dt) { this.angle += dt; }
+    collide(bean, round, dt) {
+        if (bean.falling || bean.gone || bean.exited) return;
+        if (bean.x < this.x0 || bean.x > this.x1) return;
+        const surf = this.surfaceZ(bean.x, bean.y);
+        if (surf < -9000 || Math.abs(bean.z - surf) > 44) return;     // not riding the top
+        const band = this.bandAt(bean.x); if (!band) return;
+        // the spinning top surface moves in y at speed*R; carry the bean along it.
+        bean.y += band.speed * this.R * dt;
+    }
+}
+
 class SlideWall {
     // A wall spanning the arena width with a GAP you slip through, sliding along
     // y toward the back edge. Miss the gap and it shoves you off. (Block Party.)

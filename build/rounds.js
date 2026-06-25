@@ -701,6 +701,27 @@ function whirlyThink(bean, round, dt) {
     else bean.ai.dive = false;
 }
 
+// ---- Roll Out --------------------------------------------------------
+// Stay on the crest of the spinning drum: hold your x lane and walk against the
+// band's spin (it's carrying you toward the flank), sitting just upstream of the
+// ridge so the carry balances. Edge-probe so you don't over-walk into the void.
+function drumThink(bean, round, dt) {
+    const d = round.drum;
+    if (bean._lane == null) bean._lane = bean.x;
+    const band = d ? d.bandAt(bean.x) : null;
+    const crest = d ? d.cy : bean.y;
+    // sit a touch on the upstream side so the spin pushes you toward the ridge
+    const ty = crest - (band ? Math.sign(band.speed) * 34 : 0);
+    let dx = bean._lane - bean.x, dy = ty - bean.y;
+    // if a neighbour band spins the other way, drifting in x is risky — bias to lane
+    const dl = Math.hypot(dx, dy) || 1;
+    bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
+    bean.ai.jump = false; bean.ai.dive = false;
+    // small skill-based wobble so the field isn't a perfect line
+    bean.aiTimer -= dt;
+    if (bean.aiTimer <= 0) { bean.aiTimer = U.rngf(0.5, 1.3); bean._lane += U.rngf(-30, 30) * (1.1 - bean.skill); }
+}
+
 // ---- Door Dash --------------------------------------------------------
 // The iconic crowd behaviour: each bean commits to a door it can't see through.
 // If someone smashes a door open, the crowd surges to it; if a bean bonks a
@@ -2072,6 +2093,128 @@ const Rounds = {
                 b.y = 2430 + row * 50;
                 b.z = 0; b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
                 b.lane = 0; b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.9); b._wp = 1;
+            });
+        },
+
+        // -------------------------------------------------- SEE SAW
+        // A race across rows of TILTING planks floating over the slime. Each plank
+        // pivots on its centre — your weight dips the loaded end — so it's a
+        // balance run, not a sprint: in-line see-saws first, then staggered ones
+        // you cross diagonally, then a last gauntlet under sweeping beams.
+        seeSaw(r) {
+            r.kind = 'race'; r.viewKind = 'whirlygig'; r.cx = 640;
+            r.minX = 240; r.maxX = 1040; r.minY = 300; r.maxY = 2860; r.finishY = 540;
+            r.thinkFn = whirlyThink;
+            r.slimeZ = -70; r.slimeRate = 0;             // a still slime sea below — fall = splash
+            r.arena = { cx: 640, cy: 1560, r: 1460 };
+
+            const L = new Level();
+            const seesaws = [];
+            const ss = (cx, cy, hl, hw, opts) => { const s = new SeeSaw(Object.assign({ cx, cy, hl, hw, z: 0 }, opts || {})); seesaws.push(s); r.obstacles.push(s); return s; };
+            const beam = (x, y, speed, col) => r.obstacles.push(new Spinner({ cx: x, cy: y, len: 215, thick: 24, speed, height: 70, power: 300, color: col || '#9a6cff' }));
+
+            // ---- static pads: launch + two checkpoints + finish. Checkpoints are
+            //      SLABS (flat full-width edges) so a plank overlaps them in a wide
+            //      strip — not a narrow disc-tip that funnels beans off the side. ----
+            L.slab(640, 2560, 2860, 320, 0, { start: true });
+            L.slab(640, 1760, 1980, 210, 0);              // checkpoint 1
+            L.slab(640, 990, 1210, 210, 0);               // checkpoint 2
+            L.slab(640, 360, 600, 300, 0, { finish: true });
+
+            // ---- Section 1: three see-saws IN A LINE down the centre. Each plank
+            //      overlaps its neighbours (~35) so the run is continuous — no void
+            //      gaps; the tilting deck under your weight is the whole challenge. ----
+            ss(640, 2475, 120, 115); ss(640, 2270, 120, 115); ss(640, 2065, 120, 115);
+            // ---- Section 2: STAGGERED see-saws — weave diagonally across them ----
+            ss(580, 1680, 115, 130); ss(700, 1485, 115, 130); ss(580, 1290, 115, 130);
+            // ---- Section 3: two WIDE planks under SWEEPING beams (as broad as the
+            //      checkpoints so the pack doesn't shear off the sides), then finish ----
+            ss(640, 905, 120, 200); ss(640, 700, 120, 200);
+            beam(640, 905, 1.7, '#9a6cff'); beam(640, 700, -1.9, '#ff5fa2');
+
+            // ---- snake the AI plank-to-plank (path[0] = launch, beans start at 1) ----
+            L.wp(640, 2680);
+            L.wp(640, 2475); L.wp(640, 2270); L.wp(640, 2065); L.wp(640, 1870);
+            L.wp(580, 1680); L.wp(700, 1485); L.wp(580, 1290); L.wp(640, 1100);
+            L.wp(640, 905); L.wp(640, 700); L.wp(640, 470);
+            L.apply(r);
+
+            // fold the live see-saw decks into the floor the beans walk on
+            const baseGZ = r.groundZ;
+            r.groundZ = (x, y, zc) => {
+                let z = baseGZ(x, y, zc);
+                for (const s of seesaws) if (s.onPlank(x, y)) {
+                    const sz = s.surfaceZ(x, y);
+                    if (sz > z && (zc == null || sz <= zc + 120)) z = sz;
+                }
+                return z;
+            };
+
+            // candy pillars + slime floats framing the run
+            for (const [px, py] of [[180, 760], [1100, 760], [180, 1560], [1100, 1560], [180, 2360], [1100, 2360]])
+                r.deco.push({ type: 'column', cx: px, cy: py, z: -80, h: 520, r: 46 });
+            r.deco.push({ type: 'donut', cx: 980, cy: 2000, z: -54, r: 120 });
+            r.deco.push({ type: 'donut', cx: 300, cy: 1000, z: -54, r: 120 });
+
+            const ais = r.beans.filter(b => b.isAI); const ord = [r.player, ...ais];
+            const per = 10;
+            ord.forEach((b, i) => {
+                const row = Math.floor(i / per), col = i % per, cols = Math.min(per, ord.length - row * per);
+                b.x = 640 + (col - (cols - 1) / 2) * 56 + U.rngf(-4, 4);
+                b.y = 2640 + row * 48;
+                b.z = 0; b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
+                b.lane = 0; b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.92); b._wp = 1;
+            });
+        },
+
+        // -------------------------------------------------- ROLL OUT
+        // A SURVIVAL on top of one long drum split into bands that spin at their
+        // own speed and direction (centre fastest, neighbours reversed). The
+        // turning surface carries you toward the flank — walk against it and hold
+        // the crest, or slide off into the slime. Last beans rolling qualify.
+        rollOut(r) {
+            r.kind = 'survival'; r.viewKind = 'whirlygig'; r.cx = 640;
+            r.minX = 100; r.maxX = 1180; r.minY = 300; r.maxY = 1000; r.cy = 650;
+            r.thinkFn = drumThink;
+            r.slimeZ = -120; r.slimeRate = 5;            // the goo creeps up under the drum
+            r.arena = { cx: 640, cy: 650, r: 760 };
+            // a generous sim boundary; the REAL fall is sliding off the drum (the
+            // groundZ is void beyond the crest), this just backstops survival bounds.
+            r.platform = { rect: true, cx: 640, cy: 650, hw: 560, hh: 235 };
+
+            const R = 185, CY = 650;
+            const drum = new RollDrum({
+                cy: CY, z: 0, R, x0: 150, x1: 1130,
+                bands: [
+                    { x0: 150, x1: 346, speed: -1.0 },
+                    { x0: 346, x1: 542, speed: 1.45 },
+                    { x0: 542, x1: 738, speed: -2.0 },   // centre band, fastest
+                    { x0: 738, x1: 934, speed: 1.45 },
+                    { x0: 934, x1: 1130, speed: -1.0 },
+                ],
+            });
+            r.drum = drum; r.obstacles.push(drum);
+
+            // the ONLY floor is the drum crest — everything else is void over slime
+            r.platforms = []; r.deco = []; r.path = [];
+            r.groundZ = (x, y) => drum.surfaceZ(x, y);
+
+            // pillars + floats around the pit for scale
+            for (const [px, py] of [[120, 360], [1160, 360], [120, 940], [1160, 940]])
+                r.deco.push({ type: 'column', cx: px, cy: py, z: -120, h: 640, r: 48 });
+            r.deco.push({ type: 'donut', cx: 640, cy: 980, z: -96, r: 150 });
+            r.deco.push({ type: 'donut', cx: 300, cy: 700, z: -96, r: 120 });
+            r.deco.push({ type: 'donut', cx: 980, cy: 700, z: -96, r: 120 });
+
+            // spawn 40 beans spread along the crest (top of the drum, y ≈ CY)
+            const ais = r.beans.filter(b => b.isAI); const ord = [r.player, ...ais];
+            const per = 10;
+            ord.forEach((b, i) => {
+                const row = Math.floor(i / per), col = i % per, cols = Math.min(per, ord.length - row * per);
+                b.x = 640 + (col - (cols - 1) / 2) * 96 + U.rngf(-6, 6);
+                b.y = CY + (row - 1.5) * 46;
+                b.z = R; b.startX = b.x; b.startY = b.y; b._lane = b.x;
+                b.facing = 0; b.skill = b.isPlayer ? 1 : U.rngf(0.55, 0.95);
             });
         },
     },

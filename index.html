@@ -274,8 +274,12 @@ const SHOW = [
       tagline: 'Scramble up the obstacle climb and outrun the rising tide of slime!', qualify: 20 },
     { id: 'big_fans',      name: 'Big Fans',      category: 'Race', build: 'bigFans',
       tagline: 'Giant fan blades sweep the course — time your run between the gusts!', qualify: 18 },
+    { id: 'see_saw',       name: 'See Saw',       category: 'Race', build: 'seeSaw',
+      tagline: 'Balance across rows of tilting planks over the slime — weight tips them!', qualify: 16 },
 
     // ---------- SURVIVAL ----------
+    { id: 'roll_out',      name: 'Roll Out',      category: 'Survival', build: 'rollOut',     duration: 32,
+      tagline: 'Stay on the spinning drum — walk against the roll or slide into the goo!' },
     { id: 'jump_club',     name: 'Jump Club',     category: 'Survival', build: 'jumpClub',     duration: 30,
       tagline: 'Hop the spinning beam. Miss the beat, kiss the slime.' },
     { id: 'jump_showdown', name: 'Jump Showdown', category: 'Survival', build: 'jumpShowdown', duration: 28,
@@ -1697,6 +1701,84 @@ class Wall {
     }
 }
 
+class SeeSaw {
+    // A see-saw plank that pivots about its centre (the long axis runs along y =
+    // the travel direction). A bean's weight tips the loaded end DOWN; the tilt
+    // eases, so crossing it is a balance act. It's a moving FLOOR (the round's
+    // groundZ samples surfaceZ), not a knock-back obstacle, so collide() is a
+    // no-op — the dipping deck does all the work.
+    constructor(o) {
+        this.kind = 'seesaw';
+        this.cx = o.cx; this.cy = o.cy; this.z = o.z || 0;     // pivot point
+        this.hl = o.hl || 150;          // half-length along y (the see-saw axis)
+        this.hw = o.hw || 95;           // half-width along x
+        this.tilt = o.tilt0 || 0;       // current tilt (rad); + dips the +y (south) end
+        this.maxTilt = o.maxTilt != null ? o.maxTilt : 0.30;
+        this.k = o.k || 3.4;            // how fast it eases toward the loaded tilt
+        this.rest = o.rest || 0;        // a gentle self-levelling pull toward this tilt
+        this.layer = 'top';
+    }
+    surfaceZ(x, y) { return this.z - (y - this.cy) * Math.tan(this.tilt); }
+    onPlank(x, y, r) { r = r || 0; return Math.abs(x - this.cx) <= this.hw + r && Math.abs(y - this.cy) <= this.hl + r; }
+    update(dt, round) {
+        // net torque from the beans standing on the deck → which end is loaded.
+        let torque = 0, n = 0;
+        if (round) for (const b of round.beans) {
+            if (b.falling || b.gone || b.eliminated || b.exited) continue;
+            if (!this.onPlank(b.x, b.y, b.r)) continue;
+            if (Math.abs(b.z - this.surfaceZ(b.x, b.y)) > 40) continue;   // actually on the deck
+            torque += (b.y - this.cy); n++;
+        }
+        let target = this.rest;
+        if (n > 0) target = U.clamp((torque / this.hl) * this.maxTilt * 1.7, -this.maxTilt, this.maxTilt);
+        this.tilt += (target - this.tilt) * Math.min(1, this.k * dt);
+    }
+    collide(bean, round, dt) {
+        // a tilted deck slides you toward its low (downhill +y) end — walk against
+        // it to hold your footing. This is what makes the see-saw a balance act
+        // rather than a flat plank you stroll across.
+        if (bean.falling || bean.gone || bean.exited || !dt) return;
+        if (!this.onPlank(bean.x, bean.y, bean.r)) return;
+        if (Math.abs(bean.z - this.surfaceZ(bean.x, bean.y)) > 30) return;
+        bean.vy += Math.tan(this.tilt) * 170 * dt;
+    }
+}
+
+class RollDrum {
+    // Roll Out: a long horizontal drum (axis along x) you stand ON TOP of. It is
+    // split into bands across its length, each rotating at its own speed and
+    // direction (centre fastest, neighbours reversed). The spinning surface CARRIES
+    // a bean along y — walk against it or the curved flank slides you into the
+    // slime. A moving floor (groundZ samples surfaceZ) + a carry in collide().
+    constructor(o) {
+        this.kind = 'drum';
+        this.cy = o.cy; this.z = o.z || 0;      // axis line: y = cy, height = z
+        this.R = o.R || 170;                     // radius (top sits at z + R)
+        this.x0 = o.x0; this.x1 = o.x1;          // drum length along x
+        this.bands = o.bands || [];              // [{x0,x1,speed}]  speed in rad/s (sign = dir)
+        this.fins = o.fins || 0;                 // radial sweeper count per band (0 = none)
+        this.finPow = o.finPow || 360;
+        this.angle = 0;                          // master angle (fins ride this)
+        this.layer = 'top';
+    }
+    bandAt(x) { for (const b of this.bands) if (x >= b.x0 && x <= b.x1) return b; return null; }
+    surfaceZ(x, y) {
+        if (x < this.x0 || x > this.x1) return -1e4;
+        const dy = y - this.cy; if (Math.abs(dy) >= this.R) return -1e4;
+        return this.z + Math.sqrt(this.R * this.R - dy * dy);
+    }
+    update(dt) { this.angle += dt; }
+    collide(bean, round, dt) {
+        if (bean.falling || bean.gone || bean.exited) return;
+        if (bean.x < this.x0 || bean.x > this.x1) return;
+        const surf = this.surfaceZ(bean.x, bean.y);
+        if (surf < -9000 || Math.abs(bean.z - surf) > 44) return;     // not riding the top
+        const band = this.bandAt(bean.x); if (!band) return;
+        // the spinning top surface moves in y at speed*R; carry the bean along it.
+        bean.y += band.speed * this.R * dt;
+    }
+}
+
 class SlideWall {
     // A wall spanning the arena width with a GAP you slip through, sliding along
     // y toward the back edge. Miss the gap and it shoves you off. (Block Party.)
@@ -2640,6 +2722,27 @@ function whirlyThink(bean, round, dt) {
     bean.aiTimer -= dt;
     if (bean.aiTimer <= 0) { bean.aiTimer = U.rngf(0.9, 2.0); bean.ai.dive = (Math.abs(ax) + Math.abs(sx) < 0.18 && U.chance(0.25 * bean.skill)); }
     else bean.ai.dive = false;
+}
+
+// ---- Roll Out --------------------------------------------------------
+// Stay on the crest of the spinning drum: hold your x lane and walk against the
+// band's spin (it's carrying you toward the flank), sitting just upstream of the
+// ridge so the carry balances. Edge-probe so you don't over-walk into the void.
+function drumThink(bean, round, dt) {
+    const d = round.drum;
+    if (bean._lane == null) bean._lane = bean.x;
+    const band = d ? d.bandAt(bean.x) : null;
+    const crest = d ? d.cy : bean.y;
+    // sit a touch on the upstream side so the spin pushes you toward the ridge
+    const ty = crest - (band ? Math.sign(band.speed) * 34 : 0);
+    let dx = bean._lane - bean.x, dy = ty - bean.y;
+    // if a neighbour band spins the other way, drifting in x is risky — bias to lane
+    const dl = Math.hypot(dx, dy) || 1;
+    bean.ai.mx = dx / dl; bean.ai.my = dy / dl;
+    bean.ai.jump = false; bean.ai.dive = false;
+    // small skill-based wobble so the field isn't a perfect line
+    bean.aiTimer -= dt;
+    if (bean.aiTimer <= 0) { bean.aiTimer = U.rngf(0.5, 1.3); bean._lane += U.rngf(-30, 30) * (1.1 - bean.skill); }
 }
 
 // ---- Door Dash --------------------------------------------------------
@@ -4013,6 +4116,128 @@ const Rounds = {
                 b.y = 2430 + row * 50;
                 b.z = 0; b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
                 b.lane = 0; b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.9); b._wp = 1;
+            });
+        },
+
+        // -------------------------------------------------- SEE SAW
+        // A race across rows of TILTING planks floating over the slime. Each plank
+        // pivots on its centre — your weight dips the loaded end — so it's a
+        // balance run, not a sprint: in-line see-saws first, then staggered ones
+        // you cross diagonally, then a last gauntlet under sweeping beams.
+        seeSaw(r) {
+            r.kind = 'race'; r.viewKind = 'whirlygig'; r.cx = 640;
+            r.minX = 240; r.maxX = 1040; r.minY = 300; r.maxY = 2860; r.finishY = 540;
+            r.thinkFn = whirlyThink;
+            r.slimeZ = -70; r.slimeRate = 0;             // a still slime sea below — fall = splash
+            r.arena = { cx: 640, cy: 1560, r: 1460 };
+
+            const L = new Level();
+            const seesaws = [];
+            const ss = (cx, cy, hl, hw, opts) => { const s = new SeeSaw(Object.assign({ cx, cy, hl, hw, z: 0 }, opts || {})); seesaws.push(s); r.obstacles.push(s); return s; };
+            const beam = (x, y, speed, col) => r.obstacles.push(new Spinner({ cx: x, cy: y, len: 215, thick: 24, speed, height: 70, power: 300, color: col || '#9a6cff' }));
+
+            // ---- static pads: launch + two checkpoints + finish. Checkpoints are
+            //      SLABS (flat full-width edges) so a plank overlaps them in a wide
+            //      strip — not a narrow disc-tip that funnels beans off the side. ----
+            L.slab(640, 2560, 2860, 320, 0, { start: true });
+            L.slab(640, 1760, 1980, 210, 0);              // checkpoint 1
+            L.slab(640, 990, 1210, 210, 0);               // checkpoint 2
+            L.slab(640, 360, 600, 300, 0, { finish: true });
+
+            // ---- Section 1: three see-saws IN A LINE down the centre. Each plank
+            //      overlaps its neighbours (~35) so the run is continuous — no void
+            //      gaps; the tilting deck under your weight is the whole challenge. ----
+            ss(640, 2475, 120, 115); ss(640, 2270, 120, 115); ss(640, 2065, 120, 115);
+            // ---- Section 2: STAGGERED see-saws — weave diagonally across them ----
+            ss(580, 1680, 115, 130); ss(700, 1485, 115, 130); ss(580, 1290, 115, 130);
+            // ---- Section 3: two WIDE planks under SWEEPING beams (as broad as the
+            //      checkpoints so the pack doesn't shear off the sides), then finish ----
+            ss(640, 905, 120, 200); ss(640, 700, 120, 200);
+            beam(640, 905, 1.7, '#9a6cff'); beam(640, 700, -1.9, '#ff5fa2');
+
+            // ---- snake the AI plank-to-plank (path[0] = launch, beans start at 1) ----
+            L.wp(640, 2680);
+            L.wp(640, 2475); L.wp(640, 2270); L.wp(640, 2065); L.wp(640, 1870);
+            L.wp(580, 1680); L.wp(700, 1485); L.wp(580, 1290); L.wp(640, 1100);
+            L.wp(640, 905); L.wp(640, 700); L.wp(640, 470);
+            L.apply(r);
+
+            // fold the live see-saw decks into the floor the beans walk on
+            const baseGZ = r.groundZ;
+            r.groundZ = (x, y, zc) => {
+                let z = baseGZ(x, y, zc);
+                for (const s of seesaws) if (s.onPlank(x, y)) {
+                    const sz = s.surfaceZ(x, y);
+                    if (sz > z && (zc == null || sz <= zc + 120)) z = sz;
+                }
+                return z;
+            };
+
+            // candy pillars + slime floats framing the run
+            for (const [px, py] of [[180, 760], [1100, 760], [180, 1560], [1100, 1560], [180, 2360], [1100, 2360]])
+                r.deco.push({ type: 'column', cx: px, cy: py, z: -80, h: 520, r: 46 });
+            r.deco.push({ type: 'donut', cx: 980, cy: 2000, z: -54, r: 120 });
+            r.deco.push({ type: 'donut', cx: 300, cy: 1000, z: -54, r: 120 });
+
+            const ais = r.beans.filter(b => b.isAI); const ord = [r.player, ...ais];
+            const per = 10;
+            ord.forEach((b, i) => {
+                const row = Math.floor(i / per), col = i % per, cols = Math.min(per, ord.length - row * per);
+                b.x = 640 + (col - (cols - 1) / 2) * 56 + U.rngf(-4, 4);
+                b.y = 2640 + row * 48;
+                b.z = 0; b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
+                b.lane = 0; b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.92); b._wp = 1;
+            });
+        },
+
+        // -------------------------------------------------- ROLL OUT
+        // A SURVIVAL on top of one long drum split into bands that spin at their
+        // own speed and direction (centre fastest, neighbours reversed). The
+        // turning surface carries you toward the flank — walk against it and hold
+        // the crest, or slide off into the slime. Last beans rolling qualify.
+        rollOut(r) {
+            r.kind = 'survival'; r.viewKind = 'whirlygig'; r.cx = 640;
+            r.minX = 100; r.maxX = 1180; r.minY = 300; r.maxY = 1000; r.cy = 650;
+            r.thinkFn = drumThink;
+            r.slimeZ = -120; r.slimeRate = 5;            // the goo creeps up under the drum
+            r.arena = { cx: 640, cy: 650, r: 760 };
+            // a generous sim boundary; the REAL fall is sliding off the drum (the
+            // groundZ is void beyond the crest), this just backstops survival bounds.
+            r.platform = { rect: true, cx: 640, cy: 650, hw: 560, hh: 235 };
+
+            const R = 185, CY = 650;
+            const drum = new RollDrum({
+                cy: CY, z: 0, R, x0: 150, x1: 1130,
+                bands: [
+                    { x0: 150, x1: 346, speed: -1.0 },
+                    { x0: 346, x1: 542, speed: 1.45 },
+                    { x0: 542, x1: 738, speed: -2.0 },   // centre band, fastest
+                    { x0: 738, x1: 934, speed: 1.45 },
+                    { x0: 934, x1: 1130, speed: -1.0 },
+                ],
+            });
+            r.drum = drum; r.obstacles.push(drum);
+
+            // the ONLY floor is the drum crest — everything else is void over slime
+            r.platforms = []; r.deco = []; r.path = [];
+            r.groundZ = (x, y) => drum.surfaceZ(x, y);
+
+            // pillars + floats around the pit for scale
+            for (const [px, py] of [[120, 360], [1160, 360], [120, 940], [1160, 940]])
+                r.deco.push({ type: 'column', cx: px, cy: py, z: -120, h: 640, r: 48 });
+            r.deco.push({ type: 'donut', cx: 640, cy: 980, z: -96, r: 150 });
+            r.deco.push({ type: 'donut', cx: 300, cy: 700, z: -96, r: 120 });
+            r.deco.push({ type: 'donut', cx: 980, cy: 700, z: -96, r: 120 });
+
+            // spawn 40 beans spread along the crest (top of the drum, y ≈ CY)
+            const ais = r.beans.filter(b => b.isAI); const ord = [r.player, ...ais];
+            const per = 10;
+            ord.forEach((b, i) => {
+                const row = Math.floor(i / per), col = i % per, cols = Math.min(per, ord.length - row * per);
+                b.x = 640 + (col - (cols - 1) / 2) * 96 + U.rngf(-6, 6);
+                b.y = CY + (row - 1.5) * 46;
+                b.z = R; b.startX = b.x; b.startY = b.y; b._lane = b.x;
+                b.facing = 0; b.skill = b.isPlayer ? 1 : U.rngf(0.55, 0.95);
             });
         },
     },
@@ -7264,16 +7489,80 @@ function makeWall(ob) {
     const g = new THREE.Object3D();
     const w = ob.hw * 2, d = ob.hh * 2, h = ob.height || 150;
     const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d),
-        inflate(ob.color || WPAL.pink, { roughness: 0.34, clearcoat: 0.5 }));
+        inflate(ob.color || WPAL.curb, { roughness: 0.34, clearcoat: 0.5 }));
     body.position.y = h / 2; shadowy(body, true, true); g.add(body);
     // bright rounded cap along the longer axis
     const long = Math.max(w, d), capR = Math.min(w, d) * 0.55;
     const cap = new THREE.Mesh(new THREE.CapsuleGeometry(capR, long - capR * 2, 4, 10),
-        gloss(shade(ob.color || WPAL.pink, 0.3), { roughness: 0.3 }));
+        gloss(shade(ob.color || WPAL.curb, 0.3), { roughness: 0.3 }));
     cap.rotation.z = Math.PI / 2;
     if (d > w) cap.rotation.y = Math.PI / 2;
     cap.position.y = h; g.add(cap);
     return { object3d: g, update() {}, dispose() { disposeTree(g); } };
+}
+
+// a see-saw plank: a long candy deck on a chunky pivot wedge. update() tips the
+// deck to the obstacle's eased tilt so a loaded end visibly dips.
+function makeSeeSaw(ob) {
+    const g = new THREE.Object3D();
+    g.position.copy(W(ob.cx, ob.cy, 0));
+    // pivot wedge (a fat triangular prism under the centre)
+    const wedge = new THREE.Mesh(new THREE.CylinderGeometry(ob.hw * 0.34, ob.hw * 0.5, ob.hw * 0.6, 3),
+        inflate(WPAL.grape, { roughness: 0.4 }));
+    wedge.rotation.y = Math.PI / 2; wedge.position.y = -ob.hw * 0.3; shadowy(wedge, true, true); g.add(wedge);
+    // the tilting deck
+    const deck = new THREE.Object3D(); g.add(deck);
+    const board = new THREE.Mesh(new THREE.BoxGeometry(ob.hw * 2, 22, ob.hl * 2),
+        gloss(WPAL.curbLt, { roughness: 0.3 }));
+    board.position.y = 11; shadowy(board, true, true); deck.add(board);
+    // bright candy caps on the two ends so you can read which way it tips
+    for (const [zc, c] of [[ob.hl - 16, WPAL.curb], [-(ob.hl - 16), WPAL.mint]]) {
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(ob.hw * 2, 26, 30), inflate(c, { roughness: 0.34 }));
+        cap.position.set(0, 13, zc); shadowy(cap, true, true); deck.add(cap);
+    }
+    // a low centre rail line on top for grip read
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(ob.hw * 0.3, 4, ob.hl * 1.8), gloss(shade(WPAL.curbLt, -0.3)));
+    stripe.position.y = 23; deck.add(stripe);
+    return {
+        object3d: g,
+        update(o) { deck.rotation.x = (o && o.tilt != null) ? o.tilt : ob.tilt || 0; },
+        dispose() { disposeTree(g); },
+    };
+}
+
+// a Roll-Out drum: coaxial candy-striped cylinder bands along x, each rolling at
+// its own speed/direction. Beans stand on the crest; update() spins each band.
+function makeDrum(ob) {
+    const g = new THREE.Object3D();
+    g.position.copy(W((ob.x0 + ob.x1) / 2, ob.cy, 0));
+    const R = ob.R || 170, bands = ob.bands || [];
+    const spinners = [];
+    bands.forEach((b, i) => {
+        const len = b.x1 - b.x0, mid = (b.x0 + b.x1) / 2 - (ob.x0 + ob.x1) / 2;
+        const grp = new THREE.Object3D(); grp.position.set(mid, 0, 0); grp.rotation.z = Math.PI / 2; g.add(grp);
+        const baseC = i % 2 ? WPAL.mint : WPAL.curb;
+        const cyl = new THREE.Mesh(new THREE.CylinderGeometry(R, R, len * 0.96, 30, 1, false),
+            inflate(baseC, { roughness: 0.34, clearcoat: 0.4 }));
+        grp.add(cyl);
+        // contrasting spokes so the spin (and its direction) reads clearly
+        for (let s = 0; s < 6; s++) {
+            const stripe = new THREE.Mesh(new THREE.BoxGeometry(R * 2.02, R * 0.16, len * 0.5),
+                gloss(s % 2 ? WPAL.curbLt : shade(baseC, -0.3), { roughness: 0.3 }));
+            stripe.rotation.x = s * Math.PI / 6; cyl.add(stripe);
+        }
+        // gold end caps between bands
+        for (const ey of [-len / 2, len / 2]) {
+            const cap = new THREE.Mesh(new THREE.CylinderGeometry(R * 1.04, R * 1.04, 10, 30), gloss(WPAL.gold, { metalness: 0.3 }));
+            cap.position.y = ey; cyl.add(cap);
+        }
+        shadowy(grp, true, true);
+        spinners.push({ cyl, speed: b.speed });
+    });
+    return {
+        object3d: g,
+        update(o, dt) { for (const s of spinners) s.cyl.rotation.y += s.speed * dt; },
+        dispose() { disposeTree(g); },
+    };
 }
 
 function makeObstacleView(ob) {
@@ -7288,6 +7577,8 @@ function makeObstacleView(ob) {
         case 'bumper':      return makeBumper(ob);
         case 'movingblock': return makeMovingBlock(ob);
         case 'wall':        return makeWall(ob);
+        case 'seesaw':      return makeSeeSaw(ob);
+        case 'drum':        return makeDrum(ob);
         case 'slidewall':   return makeSlideWall(ob);
         case 'cannon':      return makeCannon(ob);
         case 'spinplate':   return makeSpinPlate(ob);

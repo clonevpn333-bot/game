@@ -254,8 +254,12 @@ const SHOW = [
       tagline: 'Scramble up the obstacle climb and outrun the rising tide of slime!', qualify: 20 },
     { id: 'big_fans',      name: 'Big Fans',      category: 'Race', build: 'bigFans',
       tagline: 'Giant fan blades sweep the course — time your run between the gusts!', qualify: 18 },
+    { id: 'see_saw',       name: 'See Saw',       category: 'Race', build: 'seeSaw',
+      tagline: 'Balance across rows of tilting planks over the slime — weight tips them!', qualify: 16 },
 
     // ---------- SURVIVAL ----------
+    { id: 'roll_out',      name: 'Roll Out',      category: 'Survival', build: 'rollOut',     duration: 32,
+      tagline: 'Stay on the spinning drum — walk against the roll or slide into the goo!' },
     { id: 'jump_club',     name: 'Jump Club',     category: 'Survival', build: 'jumpClub',     duration: 30,
       tagline: 'Hop the spinning beam. Miss the beat, kiss the slime.' },
     { id: 'jump_showdown', name: 'Jump Showdown', category: 'Survival', build: 'jumpShowdown', duration: 28,

@@ -1808,16 +1808,80 @@ function makeWall(ob) {
     const g = new THREE.Object3D();
     const w = ob.hw * 2, d = ob.hh * 2, h = ob.height || 150;
     const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d),
-        inflate(ob.color || WPAL.pink, { roughness: 0.34, clearcoat: 0.5 }));
+        inflate(ob.color || WPAL.curb, { roughness: 0.34, clearcoat: 0.5 }));
     body.position.y = h / 2; shadowy(body, true, true); g.add(body);
     // bright rounded cap along the longer axis
     const long = Math.max(w, d), capR = Math.min(w, d) * 0.55;
     const cap = new THREE.Mesh(new THREE.CapsuleGeometry(capR, long - capR * 2, 4, 10),
-        gloss(shade(ob.color || WPAL.pink, 0.3), { roughness: 0.3 }));
+        gloss(shade(ob.color || WPAL.curb, 0.3), { roughness: 0.3 }));
     cap.rotation.z = Math.PI / 2;
     if (d > w) cap.rotation.y = Math.PI / 2;
     cap.position.y = h; g.add(cap);
     return { object3d: g, update() {}, dispose() { disposeTree(g); } };
+}
+
+// a see-saw plank: a long candy deck on a chunky pivot wedge. update() tips the
+// deck to the obstacle's eased tilt so a loaded end visibly dips.
+function makeSeeSaw(ob) {
+    const g = new THREE.Object3D();
+    g.position.copy(W(ob.cx, ob.cy, 0));
+    // pivot wedge (a fat triangular prism under the centre)
+    const wedge = new THREE.Mesh(new THREE.CylinderGeometry(ob.hw * 0.34, ob.hw * 0.5, ob.hw * 0.6, 3),
+        inflate(WPAL.grape, { roughness: 0.4 }));
+    wedge.rotation.y = Math.PI / 2; wedge.position.y = -ob.hw * 0.3; shadowy(wedge, true, true); g.add(wedge);
+    // the tilting deck
+    const deck = new THREE.Object3D(); g.add(deck);
+    const board = new THREE.Mesh(new THREE.BoxGeometry(ob.hw * 2, 22, ob.hl * 2),
+        gloss(WPAL.curbLt, { roughness: 0.3 }));
+    board.position.y = 11; shadowy(board, true, true); deck.add(board);
+    // bright candy caps on the two ends so you can read which way it tips
+    for (const [zc, c] of [[ob.hl - 16, WPAL.curb], [-(ob.hl - 16), WPAL.mint]]) {
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(ob.hw * 2, 26, 30), inflate(c, { roughness: 0.34 }));
+        cap.position.set(0, 13, zc); shadowy(cap, true, true); deck.add(cap);
+    }
+    // a low centre rail line on top for grip read
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(ob.hw * 0.3, 4, ob.hl * 1.8), gloss(shade(WPAL.curbLt, -0.3)));
+    stripe.position.y = 23; deck.add(stripe);
+    return {
+        object3d: g,
+        update(o) { deck.rotation.x = (o && o.tilt != null) ? o.tilt : ob.tilt || 0; },
+        dispose() { disposeTree(g); },
+    };
+}
+
+// a Roll-Out drum: coaxial candy-striped cylinder bands along x, each rolling at
+// its own speed/direction. Beans stand on the crest; update() spins each band.
+function makeDrum(ob) {
+    const g = new THREE.Object3D();
+    g.position.copy(W((ob.x0 + ob.x1) / 2, ob.cy, 0));
+    const R = ob.R || 170, bands = ob.bands || [];
+    const spinners = [];
+    bands.forEach((b, i) => {
+        const len = b.x1 - b.x0, mid = (b.x0 + b.x1) / 2 - (ob.x0 + ob.x1) / 2;
+        const grp = new THREE.Object3D(); grp.position.set(mid, 0, 0); grp.rotation.z = Math.PI / 2; g.add(grp);
+        const baseC = i % 2 ? WPAL.mint : WPAL.curb;
+        const cyl = new THREE.Mesh(new THREE.CylinderGeometry(R, R, len * 0.96, 30, 1, false),
+            inflate(baseC, { roughness: 0.34, clearcoat: 0.4 }));
+        grp.add(cyl);
+        // contrasting spokes so the spin (and its direction) reads clearly
+        for (let s = 0; s < 6; s++) {
+            const stripe = new THREE.Mesh(new THREE.BoxGeometry(R * 2.02, R * 0.16, len * 0.5),
+                gloss(s % 2 ? WPAL.curbLt : shade(baseC, -0.3), { roughness: 0.3 }));
+            stripe.rotation.x = s * Math.PI / 6; cyl.add(stripe);
+        }
+        // gold end caps between bands
+        for (const ey of [-len / 2, len / 2]) {
+            const cap = new THREE.Mesh(new THREE.CylinderGeometry(R * 1.04, R * 1.04, 10, 30), gloss(WPAL.gold, { metalness: 0.3 }));
+            cap.position.y = ey; cyl.add(cap);
+        }
+        shadowy(grp, true, true);
+        spinners.push({ cyl, speed: b.speed });
+    });
+    return {
+        object3d: g,
+        update(o, dt) { for (const s of spinners) s.cyl.rotation.y += s.speed * dt; },
+        dispose() { disposeTree(g); },
+    };
 }
 
 function makeObstacleView(ob) {
@@ -1832,6 +1896,8 @@ function makeObstacleView(ob) {
         case 'bumper':      return makeBumper(ob);
         case 'movingblock': return makeMovingBlock(ob);
         case 'wall':        return makeWall(ob);
+        case 'seesaw':      return makeSeeSaw(ob);
+        case 'drum':        return makeDrum(ob);
         case 'slidewall':   return makeSlideWall(ob);
         case 'cannon':      return makeCannon(ob);
         case 'spinplate':   return makeSpinPlate(ob);
