@@ -1473,31 +1473,67 @@ const Rounds = {
         // charging rhinos, released one at a time. Each ambles, locks on, paws
         // the ground (dust telegraph), then dashes — launching you off the edge.
         // Survive the timer to qualify.
+        // -------------------------------------------------- STOMPIN' GROUND
+        // SURVIVAL: one OPEN round platform over slime with chunky INFLATABLE
+        // rhinos, released one at a time and escalating Easy→Medium→Hard. Each
+        // ambles, locks on, paws the ground (dust telegraph), then dashes dead-
+        // straight — scooping you up the horn and off the edge. Duck behind a
+        // ruin-pillar and it overshoots & wobbles. Rim bounce-pads are clutch
+        // lily-pad saves. Outlast the timer.
         stompinGround(r) {
             r.kind = 'survival'; r.camMode = 'fixed';
             const cx = 640, cy = 400, R = 400;
             r.platform = { cx, cy, r: R };
             r.minX = 0; r.maxX = CFG.W; r.minY = 0; r.maxY = CFG.H;
             r.thinkFn = rhinoThink;
-            r.timer = r.def.duration || 70;
-            r.fallGrace = 8;
+            r.timer = r.def.duration || 30;
+            r.fallGrace = 10;                              // generous rim so a clip is recoverable
 
-            const rcol = ['#9fb0c0', '#c8a98c', '#a7c2a4'];
-            for (let i = 0; i < 3; i++) {
-                const a = -Math.PI / 2 + i * Math.PI * 2 / 3;
-                r.obstacles.push(new Rhino({ x: cx + Math.cos(a) * (R - 80), y: cy + Math.sin(a) * (R - 80),
-                    cx, cy, platR: R, activateAt: 1 + i * 22, facing: a + Math.PI, color: rcol[i] }));
+            // FOUR rhinos, staggered + escalating: spawned 90° apart on the rim,
+            // released at 1 / 7 / 14 / 21s so pressure ramps across the clock; tiers
+            // 0/1/2/2 ramp lock/telegraph/charge speed. Wide bodies (r 55) = a charge
+            // lane you can't casually sidestep.
+            const horn = ['#ffd34d', '#ff7a59', '#ffe46a', '#ff5fa2'];
+            const rcol = [WPAL_RHINO[0], WPAL_RHINO[1], WPAL_RHINO[2], '#c89bff'];
+            const act = [1, 7, 14, 21], tiers = [0, 1, 2, 2];
+            for (let i = 0; i < 4; i++) {
+                const a = -Math.PI / 2 + i * Math.PI / 2;
+                r.obstacles.push(new Rhino({
+                    x: cx + Math.cos(a) * (R - 70), y: cy + Math.sin(a) * (R - 70), r: 55,
+                    cx, cy, platR: R, tier: tiers[i], activateAt: act[i],
+                    facing: a + Math.PI, color: rcol[i], hornColor: horn[i],
+                }));
             }
-            // perimeter bounce pads — the lily-pad "saving graces"
-            for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + 0.4; r.obstacles.push(new BouncePad({ x: cx + Math.cos(a) * (R - 26), y: cy + Math.sin(a) * (R - 26), r: 40 })); }
+            // mid-arena soft-safe "ruin pillars" — duck behind one and a charge
+            // overshoots. Off-centre so they never form a single camp spot.
+            for (let i = 0; i < 3; i++) {
+                const a = i * Math.PI * 2 / 3 + 0.5;
+                r.obstacles.push(new RhinoRock({ x: cx + Math.cos(a) * R * 0.42, y: cy + Math.sin(a) * R * 0.42, r: 46 }));
+            }
+            // perimeter bounce-pads — the lily-pad saves.
+            for (let i = 0; i < 8; i++) {
+                const a = i * Math.PI / 4 + 0.3;
+                r.obstacles.push(new BouncePad({ x: cx + Math.cos(a) * (R - 30), y: cy + Math.sin(a) * (R - 30), r: 42 }));
+            }
 
+            // spawn beans clustered toward the middle (away from the pens).
             const all = r.beans;
             all.forEach((b, i) => {
-                const ang = (i / all.length) * Math.PI * 2, rr = R * U.rngf(0.12, 0.5);
+                const ang = (i / all.length) * Math.PI * 2, rr = R * U.rngf(0.1, 0.42);
                 b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
                 b.startX = b.x; b.startY = b.y; b.aiTimer = U.rngf(0, 0.6);
                 b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.9); b.facing = ang + Math.PI;
             });
+
+            // final-stretch crescendo: last 8s, nudge every rhino faster & shorten
+            // its telegraph — pressure, not a difficulty cliff.
+            r.onUpdate = (rr, dt) => {
+                if (rr._crescendo || rr.timer > 8) return;
+                rr._crescendo = true;
+                for (const o of rr.obstacles) if (o.kind === 'rhino') {
+                    o.ambleSpeed += 14; o.chargeTop += 60; o.teleTime = Math.max(0.4, o.teleTime - 0.1);
+                }
+            };
 
             r.drawGround = (ctx, cam) => { drawSlime(ctx); drawDisk(ctx, cx, cy, R, PAL.arena); };
         },
@@ -1981,7 +2017,7 @@ const Rounds = {
             r.kind = 'climb'; r.viewKind = 'whirlygig'; r.switchback = true; r.cx = 640;
             r.minX = 60; r.maxX = 1220; r.minY = 80; r.maxY = 2780; r.finishY = 480;
             r.thinkFn = whirlyThink;
-            r.slimeZ = -150; r.slimeRate = 4.5;          // the flood rises in HEIGHT, chasing the pack
+            r.slimeZ = -150; r.slimeRate = 5.2;          // the flood rises in HEIGHT, chasing the pack
             r.qualifyCount = r.beans.length;
             r.arena = { cx: 640, cy: 1425, r: 1480 };    // the round ring-walled bowl
 
@@ -1991,12 +2027,21 @@ const Rounds = {
             // height of an x-ramp leg (zWest at X0 → zEast at X1) at a given x.
             const zx = (zW, zE, x) => zW + (zE - zW) * (x - X0) / (X1 - X0);
 
-            // ---- obstacle helpers (each carries the leg HEIGHT z so it only
-            //      strikes beans on that flight, never the ones stacked nearby) ----
-            const beam = (x, y, z, speed, col) => r.obstacles.push(new Spinner({ cx: x, cy: y, len: 210, thick: 24, speed, height: 64, power: 330, z, color: col || GRAPE }));
-            const bump = (x, y, z, col) => r.obstacles.push(new Bumper({ x, y, r: 40, power: 330, z, color: col || PINK }));
-            const pend = (x, y, z, speed) => r.obstacles.push(new Hammer({ cx: x, cy: y, amp: 235, headR: 34, speed, power: 360, height: 90, z }));
-            const wall = (cy, z, x0, x1, speed, dir) => r.obstacles.push(new MovingBlock({ cy, x0, x1, w: 48, thick: 215, height: 124, speed, dir, cx: dir > 0 ? x0 : x1, color: GRAPE, z }));
+            // ---- BESPOKE Slime-Climb obstacle helpers (each carries the leg
+            //      HEIGHT z so it only strikes beans on that flight). The rolling
+            //      LOG is the hero piece; the doughnut PILLAR sweeps the landings;
+            //      the slimed GOO floor + swinging pendulums own the final leg. ----
+            // a fat ROLLING LOG lying across a leg; dir = which way it rolls beans
+            // in X (set OPPOSITE the leg's travel so it shoves you back down-climb).
+            const log = (x, y, z, dir, speed) => r.obstacles.push(new RollLog({ cx: x, cy: y, z, len: 2 * HH, radius: 42, speed: speed || 2.6, dir, push: 165, power: 220, color: YEL }));
+            // a doughnut PILLAR (ring on a post) sweeping across a leg, x0..x1.
+            const pillar = (cy, z, x0, x1, speed, dir) => r.obstacles.push(new RingSweep({ cy, z, x0, x1, speed: speed || 140, dir, R: 66, tube: 20, power: 320, color: PINK }));
+            // a SLIME-COATED stretch of a leg that slows beans, x0..x1.
+            const goo = (cy, z, x0, x1) => r.obstacles.push(new SlimeFloor({ cy, z, x0, x1, hh: HH, drag: 2.6 }));
+            // a swinging PENDULUM over the slimed final leg.
+            const pend = (x, y, z, speed) => r.obstacles.push(new Hammer({ cx: x, cy: y, amp: 230, headR: 34, speed, power: 350, height: 90, z, style: 'pendulum' }));
+            // a pinball BUMPER (canonical to the intro ramp & the slimed finale).
+            const bump = (x, y, z, col) => r.obstacles.push(new Bumper({ x, y, r: 40, power: 320, z, color: col || PINK }));
 
             // ---- the course: a START pad, five climbing LEGS that reverse
             //      direction (W→E, E→W, …), wide U-turn LANDINGS between them at
@@ -2023,21 +2068,37 @@ const Rounds = {
             L.wp(900, 1040); L.wp(380, 1040); L.wp(325, 850);         // leg4 → west landing
             L.wp(380, 660); L.wp(900, 660); L.wp(860, 360);           // leg5 → finish deck
 
-            // ---- real obstacles riding the flights (lifted to each leg's height) ----
-            beam(620, 2180, zx(0, CLIMB, 620), 1.5);                                  // leg1 sweep
-            bump(800, 2120, zx(0, CLIMB, 800), PINK);                                  // leg1 bumper
-            beam(960, 1990, CLIMB, -1.7, PINK);                                        // east landing 1
-            wall(1800, zx(2 * CLIMB, CLIMB, 640), 430, 850, 150, -1);                  // leg2 sliding wall
-            bump(470, 1800, zx(2 * CLIMB, CLIMB, 470), YEL);                           // leg2 bumper
-            pend(320, 1610, 2 * CLIMB, 1.7);                                           // west landing 2
-            beam(540, 1420, zx(2 * CLIMB, 3 * CLIMB, 540), 1.7, PINK);                 // leg3 sweep
-            beam(800, 1420, zx(2 * CLIMB, 3 * CLIMB, 800), -1.8, GRAPE);               // leg3 sweep
-            bump(900, 1230, 3 * CLIMB, PINK); bump(1020, 1230, 3 * CLIMB, YEL);        // east landing 3
-            wall(1040, zx(4 * CLIMB, 3 * CLIMB, 640), 430, 850, 168, 1);               // leg4 sliding wall
-            beam(560, 1040, zx(4 * CLIMB, 3 * CLIMB, 560), 1.9, PINK);                 // leg4 sweep
-            beam(320, 850, 4 * CLIMB, -2.0, GRAPE);                                     // west landing 4
-            bump(560, 660, zx(4 * CLIMB, 5 * CLIMB, 560), YEL);                        // leg5 bumper
-            pend(780, 660, zx(4 * CLIMB, 5 * CLIMB, 780), 2.0);                        // leg5 final hammer
+            // ---- bespoke obstacles riding the flights (ref tier order, bottom→top).
+            //      Rolling LOGS are the through-line; doughnut PILLARS sweep the
+            //      U-turn landings; the top leg is a SLIMED walkway with pendulums.
+            //      log `dir` points back DOWN each leg's climb (opposite travel). ----
+            // LEG 1 (W→E, intro): bumpers + a gentle rolling log.  (Tiers 1–2)
+            bump(540, 2120, zx(0, CLIMB, 540), PINK);
+            bump(760, 2250, zx(0, CLIMB, 760), YEL);
+            log(660, 2180, zx(0, CLIMB, 660), -1, 2.2);
+            // EAST LANDING 1: a doughnut pillar sweeping the U-turn.
+            pillar(1990, CLIMB, 770, 1150, 150, 1);
+            // LEG 2 (E→W): two rolling logs to fight up against.  (Tiers 3–4)
+            log(560, 1800, zx(2 * CLIMB, CLIMB, 560), 1, 2.8);
+            log(820, 1800, zx(2 * CLIMB, CLIMB, 820), 1, 2.6);
+            // WEST LANDING 2: doughnut pillar.
+            pillar(1610, 2 * CLIMB, 130, 510, 145, 1);
+            // LEG 3 (W→E): the tight conveyor/log cluster — two rolling logs.  (Tiers 5–6)
+            log(520, 1420, zx(2 * CLIMB, 3 * CLIMB, 520), -1, 2.7);
+            log(820, 1420, zx(2 * CLIMB, 3 * CLIMB, 820), -1, 3.0);
+            // EAST LANDING 3: doughnut pillar.
+            pillar(1230, 3 * CLIMB, 770, 1150, 160, -1);
+            // LEG 4 (E→W): the signature BALANCE-LOG gauntlet — three fat logs.  (Tier 6)
+            log(540, 1040, zx(4 * CLIMB, 3 * CLIMB, 540), 1, 2.0);
+            log(740, 1040, zx(4 * CLIMB, 3 * CLIMB, 740), 1, 2.4);
+            log(900, 1040, zx(4 * CLIMB, 3 * CLIMB, 900), 1, 2.0);
+            // WEST LANDING 4: doughnut pillar.
+            pillar(850, 4 * CLIMB, 130, 510, 150, -1);
+            // LEG 5 (W→E): SLIME-COATED walkway + swinging pendulums + a bumper.  (Tiers 7–8)
+            goo(660, zx(4 * CLIMB, 5 * CLIMB, 640), X0 + 10, X1 - 10);
+            pend(520, 660, zx(4 * CLIMB, 5 * CLIMB, 520), 2.0);
+            bump(700, 660, zx(4 * CLIMB, 5 * CLIMB, 700), PINK);
+            pend(860, 660, zx(4 * CLIMB, 5 * CLIMB, 860), -2.2);
 
             // ---- AUTO GUARD-RAILS: walk each climbing leg's rim; wherever the
             //      neighbouring ground drops away (void or an un-steppable fall),

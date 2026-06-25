@@ -1051,6 +1051,110 @@ class RollDrum {
     }
 }
 
+class RollLog {
+    // Slime Climb HERO piece: a fat horizontal log lying ACROSS a climbing leg
+    // (cylinder axis along the leg's short/Y axis) that SPINS about that axis, so
+    // its top surface drives beans along X — i.e. it rolls them back DOWN the leg.
+    // Continuous carry (like a drum) + a knockback kick on first contact, and a
+    // little side-scatter so a clipped bean slides off toward the slime. z-banded
+    // to the leg it rides so it never touches beans stacked on another flight.
+    constructor(o) {
+        this.kind = 'rolllog';
+        this.cx = o.cx; this.cy = o.cy;                 // log centre (on its leg)
+        this.z = o.z != null ? o.z : null;              // leg height band
+        this.len = o.len || 300;                        // span along Y (the short axis)
+        this.radius = o.radius || 42;                   // log fatness
+        this.speed = o.speed || 2.6;                    // spin rate (rad/s, view matches)
+        this.push = o.push != null ? o.push : 150;      // carry strength along X (units/s)
+        this.dir = o.dir != null ? o.dir : 1;           // +1 rolls beans toward +X
+        this.power = o.power || 250;                    // knockback impulse on fresh contact
+        this.zband = o.zband != null ? o.zband : 70;
+        this.color = o.color || '#ffd23f';
+        this.angle = 0; this.layer = 'top';
+    }
+    update(dt) { this.angle += this.speed * dt; }
+    collide(bean, round, dt) {
+        if (bean.falling || bean.gone || bean.exited) return;
+        if (this.z != null && Math.abs(bean.z - this.z) > this.zband) return;
+        if (bean.air > this.radius * 1.3) return;       // jumped clean over the log
+        const dy = bean.y - this.cy;
+        const along = Math.max(-this.len / 2, Math.min(this.len / 2, dy));
+        const px = this.cx, py = this.cy + along;       // nearest point on the log axis
+        const d = U.dist(bean.x, bean.y, px, py);
+        if (d > this.radius + bean.r * 0.9) return;
+        // the rolling top surface NUDGES the bean back down-leg (surmountable — a
+        // climber out-walks it but loses ground; a clipped bean gets shoved off the
+        // shoulder toward an edge). A real spin-roll feel, never a stun-lock.
+        const dt2 = dt || 0.016;
+        bean.x += this.dir * this.push * dt2;
+        bean.vx += this.dir * 60 * dt2;                 // a touch of extra shove (no ragdoll)
+        // closer to the crest = slipperier: scatter the bean a little sideways so a
+        // dead-centre hit can slide off toward the slime instead of grinding.
+        const near = 1 - d / (this.radius + bean.r);
+        bean.vy += (dy >= 0 ? 1 : -1) * near * 70 * dt2;
+        if (U.chance(0.5)) round.spawnBurst(bean.x, bean.y, bean.z, this.color, 1);
+    }
+}
+
+class RingSweep {
+    // Slime Climb "Moving Doughnut Pillar": a torus ring on a post that slides
+    // side-to-side ACROSS a narrow leg (translating along X), sweeping beans off
+    // the edge. The ring's HOLE is a timed gap — pass through the centre and you
+    // clear; touch the rim's path and you're launched. z-banded.
+    constructor(o) {
+        this.kind = 'ringsweep';
+        this.cy = o.cy; this.z = o.z != null ? o.z : null;
+        this.x0 = o.x0; this.x1 = o.x1;
+        this.cx = o.cx != null ? o.cx : o.x0;
+        this.speed = o.speed || 130; this.dir = o.dir || 1;
+        this.R = o.R || 64; this.tube = o.tube || 20;
+        this.power = o.power || 320;
+        this.height = o.height != null ? o.height : 150;
+        this.zband = o.zband != null ? o.zband : 70;
+        this.color = o.color || '#ff5fa2';
+        this.layer = 'top';
+    }
+    update(dt) {
+        this.cx += this.dir * this.speed * dt;
+        if (this.cx > this.x1) { this.cx = this.x1; this.dir = -1; }
+        if (this.cx < this.x0) { this.cx = this.x0; this.dir = 1; }
+    }
+    collide(bean, round) {
+        if (bean.falling || bean.gone || bean.exited || bean.air > this.height) return;
+        if (this.z != null && Math.abs(bean.z - this.z) > this.zband) return;
+        const dx = bean.x - this.cx, dy = bean.y - this.cy, d = Math.hypot(dx, dy);
+        if (d < this.R - this.tube - bean.r) return;          // through the hole — safe
+        if (d > this.R + this.tube + bean.r) return;          // clear of the rim — miss
+        const nx = (dx || this.dir) / (d || 1), ny = dy / (d || 1);
+        bean.hit(this.dir * 0.8 + nx * 0.4, ny * 0.6, this.power, 0.6);
+        round.spawnBurst(bean.x, bean.y, bean.z, this.color, 6);
+    }
+}
+
+class SlimeFloor {
+    // A slime-coated stretch of walkway (Slime Climb's upper tiers): a region that
+    // DRAGS a grounded bean's velocity so it slogs through, amplifying the hammers
+    // sharing the band. Pure floor effect (no knockback); footprint is an X-span on
+    // a leg at height z.
+    constructor(o) {
+        this.kind = 'slimefloor';
+        this.x0 = o.x0; this.x1 = o.x1; this.cy = o.cy; this.hh = o.hh || 150;
+        this.z = o.z != null ? o.z : null; this.zband = o.zband != null ? o.zband : 70;
+        this.drag = o.drag != null ? o.drag : 2.6;
+        this.t = 0; this.layer = 'top';
+    }
+    update(dt) { this.t += dt; }
+    collide(bean, round, dt) {
+        if (bean.falling || bean.gone || bean.exited || !bean.grounded || !dt) return;
+        if (this.z != null && Math.abs(bean.z - this.z) > this.zband) return;
+        if (bean.x < this.x0 || bean.x > this.x1) return;
+        if (Math.abs(bean.y - this.cy) > this.hh) return;
+        const f = Math.max(0, 1 - this.drag * dt);
+        bean.vx *= f; bean.vy *= f;
+        if (U.chance(0.04)) round.spawnBurst(bean.x, bean.y, bean.z, '#ff3fb0', 1);
+    }
+}
+
 class SlideWall {
     // A wall spanning the arena width with a GAP you slip through, sliding along
     // y toward the back edge. Miss the gap and it shoves you off. (Block Party.)
@@ -1140,69 +1244,154 @@ class SpinPlate {
     }
 }
 
+// Candy-pastel rhino skins (periwinkle / bubblegum / mint) — NOT mechanical grey.
+const WPAL_RHINO = ['#9fa8ff', '#ff8fc8', '#7fe0c0'];
+
 class Rhino {
-    // Stompin' Ground: a charging rhino. It ambles, locks onto the nearest bean,
-    // STOPS and puffs dust (telegraph), then DASHES in a straight line, launching
-    // anyone it hits off the platform. Released one at a time (activateAt).
+    // Stompin' Ground: a chunky INFLATABLE charging rhino. It ambles, snaps a
+    // LOCK onto the nearest bean, plants and PAWS the ground (dust telegraph),
+    // then EXPLODES forward in a committed straight line — scooping anyone it hits
+    // up the horn and off the platform. Overshoots, bonks the rim, wobbles,
+    // recovers. Released one at a time (activateAt) and tuned per difficulty tier
+    // so pressure escalates: Easy (#1) -> Medium (#2) -> Hard (#3).
     constructor(o) {
         this.kind = 'rhino';
-        this.x = o.x; this.y = o.y; this.r = o.r || 46;
-        this.cx = o.cx; this.cy = o.cy; this.platR = o.platR || 360;
+        this.x = o.x; this.y = o.y; this.z = 0;          // ground band (air-borne beans are safe)
+        this.r = o.r || 48;
+        this.cx = o.cx; this.cy = o.cy; this.platR = o.platR || 400;
         this.facing = o.facing != null ? o.facing : 0;
-        this.color = o.color || '#aab7c4';
+        this.color = o.color || WPAL_RHINO[0];
+        this.hornColor = o.hornColor || '#ffd34d';
         this.activateAt = o.activateAt || 0;
         this.active = false;
-        this.state = 'pen';                  // pen | wander | telegraph | charge | recover
-        this.t = 0; this.dx = 1; this.dy = 0; this.dust = 0; this.gait = 0; this.speed = 0;
+
+        const t = o.tier || 0;                           // 0 easy .. 2 hard
+        this.ambleSpeed = 70 + t * 10;
+        this.lockTime = 0.55 - t * 0.10;
+        this.teleTime = 0.85 - t * 0.16;
+        this.chargeTop = 470 + t * 70;
+        this.restMin = 1.1 - t * 0.3;                    // shorter pauses = charges more often
+        this.restMax = 1.9 - t * 0.45;
+
+        this.state = 'pen';      // pen | wander | lock | telegraph | charge | recover
+        this.t = 0;
+        this.dx = 1; this.dy = 0;
+        this.speed = 0; this.gait = 0;
+        this.dust = 0; this.trail = 0;
+        this.squash = 0; this.lean = 0; this.wobble = 0;
+        this.target = null; this.layer = 'top';
+    }
+    _liveBeans(round) {
+        return round.beans.filter(b => b.alive && !b.eliminated && !b.exited && !b.falling && !b.gone);
     }
     update(dt, round) {
+        this.wobble = Math.max(0, this.wobble - dt * 2.2);
         if (!this.active) {
-            if (round.phase === 'go' && round.elapsed >= this.activateAt) { this.active = true; this.state = 'wander'; this.t = U.rngf(0.5, 1.3); }
+            if (round.phase === 'go' && round.elapsed >= this.activateAt) {
+                this.active = true; this.state = 'wander'; this.t = U.rngf(0.6, 1.4);
+            }
             return;
         }
         this.t -= dt;
-        const live = round.beans.filter(b => b.alive && !b.eliminated && !b.exited && !b.falling && !b.gone);
+
         if (this.state === 'wander') {
-            this.speed = 78;
-            this.facing += U.rngf(-1, 1) * dt * 1.4;                  // amble, wandering
+            this.speed = this.ambleSpeed;
+            this.squash = U.lerp(this.squash, 0, dt * 6); this.lean = U.lerp(this.lean, 0, dt * 6);
+            this.facing += U.rngf(-1, 1) * dt * 1.3;
             const toC = Math.atan2(this.cy - this.y, this.cx - this.x);
-            this.facing = U.lerpAngle(this.facing, toC, 0.012);       // bias back toward centre
+            this.facing = U.lerpAngle(this.facing, toC, 0.012);
             this.x += Math.cos(this.facing) * this.speed * dt; this.y += Math.sin(this.facing) * this.speed * dt;
+            this.gait += dt * 7;
             if (this.t <= 0) {
+                const live = this._liveBeans(round);
                 let best = null, bd = 1e9;
                 for (const b of live) { const d = U.dist(this.x, this.y, b.x, b.y); if (d < bd) { bd = d; best = b; } }
-                if (best) { this.facing = Math.atan2(best.y - this.y, best.x - this.x); this.state = 'telegraph'; this.t = 0.8; this.dust = 1; }
+                if (best) { this.target = best; this.state = 'lock'; this.t = this.lockTime; this.dust = 0.25; }
                 else this.t = 1;
             }
+        } else if (this.state === 'lock') {
+            this.speed = U.lerp(this.speed, 0, dt * 9); this.gait += dt * 4;
+            if (this.target && this.target.alive && !this.target.falling && !this.target.gone) {
+                const want = Math.atan2(this.target.y - this.y, this.target.x - this.x);
+                this.facing = U.lerpAngle(this.facing, want, 1 - Math.pow(0.0008, dt));
+            }
+            this.dust = 0.25 + (1 - this.t / this.lockTime) * 0.25;
+            if (this.t <= 0) { this.state = 'telegraph'; this.t = this.teleTime; }
         } else if (this.state === 'telegraph') {
-            this.speed = 0; this.dust = Math.max(0, this.t / 0.8);
-            if (this.t <= 0) { this.dx = Math.cos(this.facing); this.dy = Math.sin(this.facing); this.state = 'charge'; this.t = 1.5; this.dust = 0; }
-        } else if (this.state === 'charge') {
-            this.speed = 480;
-            this.x += this.dx * this.speed * dt; this.y += this.dy * this.speed * dt;
-            this.gait += dt * 22;
-            if (U.dist(this.x, this.y, this.cx, this.cy) > this.platR - this.r - 4 || this.t <= 0) { this.state = 'recover'; this.t = 0.9; this.speed = 0; }
-        } else if (this.state === 'recover') {
             this.speed = 0;
-            if (this.t <= 0) { this.state = 'wander'; this.t = U.rngf(1.3, 2.4); }
+            this.squash = U.lerp(this.squash, 1, dt * 8); this.lean = U.lerp(this.lean, -0.25, dt * 8);
+            this.dust = Math.min(1, this.dust + dt * 4);
+            if (this.t <= 0) {
+                this.dx = Math.cos(this.facing); this.dy = Math.sin(this.facing);
+                this.state = 'charge'; this.t = 1.6; this.speed = 110; this.dust = 0;
+            }
+        } else if (this.state === 'charge') {
+            this.speed = U.lerp(this.speed, this.chargeTop, dt * 6);
+            this.squash = U.lerp(this.squash, -1, dt * 10); this.lean = U.lerp(this.lean, 1, dt * 10);
+            this.trail = Math.min(1, this.trail + dt * 5);
+            this.x += this.dx * this.speed * dt; this.y += this.dy * this.speed * dt;
+            this.gait += dt * 24;
+            if (U.dist(this.x, this.y, this.cx, this.cy) > this.platR - this.r - 6 || this.t <= 0) {
+                this.state = 'recover'; this.t = U.rngf(0.7, 1.0); this.wobble = 1; this.trail = 0.6;
+            }
+        } else if (this.state === 'recover') {
+            this.speed = U.lerp(this.speed, 0, dt * 5);
+            this.squash = U.lerp(this.squash, 0, dt * 4); this.lean = U.lerp(this.lean, 0, dt * 4);
+            this.trail = Math.max(0, this.trail - dt * 2);
+            this.x += this.dx * this.speed * dt; this.y += this.dy * this.speed * dt;
+            this.gait += dt * 6;
+            if (this.t <= 0) { this.state = 'wander'; this.t = U.rngf(this.restMin, this.restMax); this.target = null; }
         }
-        if (this.speed > 0 && this.state !== 'charge') this.gait += dt * 9;
-        // never leave the platform
-        const d = U.dist(this.x, this.y, this.cx, this.cy);
-        if (d > this.platR - this.r) {
+        if (this.state !== 'charge') this.trail = Math.max(0, this.trail - dt * 2);
+
+        const d = U.dist(this.x, this.y, this.cx, this.cy), lim = this.platR - this.r;
+        if (d > lim) {
             const nx = (this.x - this.cx) / (d || 1), ny = (this.y - this.cy) / (d || 1);
-            this.x = this.cx + nx * (this.platR - this.r); this.y = this.cy + ny * (this.platR - this.r);
-            this.facing = Math.atan2(this.cy - this.y, this.cx - this.x);
-            if (this.state === 'charge') { this.state = 'recover'; this.t = 0.9; }
+            this.x = this.cx + nx * lim; this.y = this.cy + ny * lim;
+            if (this.state === 'charge') { this.state = 'recover'; this.t = U.rngf(0.7, 1.0); this.wobble = 1; }
+            else this.facing = Math.atan2(this.cy - this.y, this.cx - this.x);
         }
     }
-    collide(bean) {
+    collide(bean, round) {
         if (bean.falling || bean.gone || bean.exited || !this.active) return;
+        if (Math.abs(bean.z - this.z) > 70) return;                  // air-borne (bounce-pad) beans safe
         const dx = bean.x - this.x, dy = bean.y - this.y, d = Math.hypot(dx, dy);
-        if (d < this.r + bean.r) {
+        if (d >= this.r + bean.r) return;
+        const nx = dx / (d || 1), ny = dy / (d || 1);
+        if (this.state === 'charge') {
+            const dot = nx * this.dx + ny * this.dy;
+            const rim = U.dist(this.x, this.y, this.cx, this.cy) / this.platR;
+            if (dot > 0.35) {
+                bean.hit(this.dx, this.dy, 760 + rim * 360, 1.4);    // scooped up the horn
+                if (round && round.spawnBurst) round.spawnBurst(bean.x, bean.y, bean.z, '#fffafd', 9);
+            } else {
+                bean.hit(nx, ny, 460, 0.8);                          // glancing side-swipe
+            }
+        } else {
+            bean.hit(nx, ny, 320, 0.45);                             // springy amble shove
+        }
+    }
+}
+
+class RhinoRock {
+    // Stompin' Ground: a chunky immovable inflatable "ruin pillar". Beans bump it
+    // and stop — a soft-safe spot to break a rhino's line of charge. Static,
+    // ground-band, springy push-out.
+    constructor(o) {
+        this.kind = 'rhinorock';
+        this.x = o.x; this.y = o.y; this.z = 0; this.r = o.r || 46;
+        this.color = o.color || '#b6a4ff'; this.layer = 'top';
+    }
+    update() {}
+    collide(bean) {
+        if (bean.falling || bean.gone || bean.exited) return;
+        if (Math.abs(bean.z - this.z) > 70) return;
+        const dx = bean.x - this.x, dy = bean.y - this.y, d = Math.hypot(dx, dy), min = this.r + bean.r;
+        if (d < min) {
             const nx = dx / (d || 1), ny = dy / (d || 1);
-            if (this.state === 'charge') bean.hit(nx, ny, 900, 1.4);   // launched clear off
-            else bean.hit(nx, ny, 350, 0.5);                            // shoved
+            bean.x = this.x + nx * min; bean.y = this.y + ny * min;
+            const vd = bean.vx * nx + bean.vy * ny;
+            if (vd < 0) { bean.vx -= vd * nx; bean.vy -= vd * ny; }
         }
     }
 }

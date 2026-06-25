@@ -1566,50 +1566,119 @@ function makeSpinPlate(ob) {
     return view;
 }
 
-// Stompin' Ground rhino: a chunky inflatable rhino with a horn, stubby legs
-// (a little gait bob) and a dust puff while it paws the ground (telegraph).
+// Stompin' Ground rhino — a BESPOKE chunky inflatable: barrel body with a valve
+// + seam, oversized dopey head, one stubby foam horn (saturated contrast), little
+// ears, big googly eyes, short stumpy waddle legs. Reads springy: rear-squashes
+// on telegraph, leans + stretches on the charge, jiggles on the overshoot. Paw-
+// dust + charge dust-trail driven from entity state.
 function makeRhino(ob) {
     const group = new THREE.Object3D();
-    const R = ob.r || 46;
-    const skin = inflate(ob.color || 0xaab7c4, { roughness: 0.42, clearcoat: 0.25 });
-    const dark = mat(shade(ob.color || 0xaab7c4, -0.26), { roughness: 0.55 });
-    const torso = new THREE.Mesh(new THREE.SphereGeometry(R, 18, 14), skin);
-    torso.scale.set(1.5, 0.95, 1.05); torso.position.set(-R * 0.1, R * 0.95, 0); group.add(torso);
-    const rump = new THREE.Mesh(new THREE.SphereGeometry(R * 0.7, 14, 12), skin);
-    rump.position.set(-R * 1.05, R * 0.95, 0); group.add(rump);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(R * 0.64, 16, 12), skin);
-    head.scale.set(1.15, 0.92, 0.95); head.position.set(R * 1.15, R * 0.82, 0); group.add(head);
-    const horn = new THREE.Mesh(new THREE.ConeGeometry(R * 0.2, R * 0.75, 12), gloss(WPAL.cloud, { roughness: 0.45 }));
-    horn.position.set(R * 1.82, R * 1.02, 0); horn.rotation.z = -0.6; group.add(horn);
-    const horn2 = new THREE.Mesh(new THREE.ConeGeometry(R * 0.11, R * 0.36, 10), gloss(WPAL.cloud, { roughness: 0.45 }));
-    horn2.position.set(R * 1.55, R * 1.18, 0); horn2.rotation.z = -0.45; group.add(horn2);
+    const R = ob.r || 48;
+    const body = col(ob.color || 0x9fa8ff);
+    const skin = inflate(body, { roughness: 0.26, clearcoat: 0.9, clearcoatRoughness: 0.22 });
+    const belly = inflate(shade(body, 0.34), { roughness: 0.3 });
+    const seamM = mat(shade(body, -0.28), { roughness: 0.5 });
+    const hornM = gloss(ob.hornColor || WPAL.gold, { roughness: 0.32 });
+    const valveM = gloss(shade(body, -0.18), { roughness: 0.35, metalness: 0.2 });
+
+    const rig = new THREE.Object3D(); rig.position.y = R * 0.1; group.add(rig);
+
+    const torso = new THREE.Mesh(new THREE.SphereGeometry(R, 22, 16), skin);
+    torso.scale.set(1.5, 0.98, 1.08); torso.position.set(-R * 0.1, R * 0.95, 0); rig.add(torso);
+    const bellyM = new THREE.Mesh(new THREE.SphereGeometry(R * 0.92, 18, 12), belly);
+    bellyM.scale.set(1.42, 0.7, 1.0); bellyM.position.set(-R * 0.1, R * 0.7, 0); rig.add(bellyM);
+    const rump = new THREE.Mesh(new THREE.SphereGeometry(R * 0.72, 16, 12), skin);
+    rump.position.set(-R * 1.08, R * 0.96, 0); rig.add(rump);
+    const seam = new THREE.Mesh(new THREE.TorusGeometry(R * 0.78, R * 0.05, 6, 20, Math.PI), seamM);
+    seam.rotation.set(0, 0, Math.PI / 2); seam.position.set(-R * 0.2, R * 0.95, 0); rig.add(seam);
+    const valve = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.1, R * 0.13, R * 0.16, 8), valveM);
+    valve.rotation.z = Math.PI / 2; valve.position.set(-R * 1.7, R * 1.0, 0); rig.add(valve);
+
+    const head = new THREE.Mesh(new THREE.SphereGeometry(R * 0.66, 18, 14), skin);
+    head.scale.set(1.18, 0.94, 0.96); head.position.set(R * 1.18, R * 0.8, 0); rig.add(head);
+    const snout = new THREE.Mesh(new THREE.SphereGeometry(R * 0.4, 14, 10), skin);
+    snout.scale.set(1.2, 0.85, 0.9); snout.position.set(R * 1.62, R * 0.66, 0); rig.add(snout);
+
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(R * 0.24, R * 0.8, 14), hornM);
+    horn.position.set(R * 1.86, R * 1.0, 0); horn.rotation.z = -0.62; rig.add(horn);
+    const hornTip = new THREE.Mesh(new THREE.SphereGeometry(R * 0.11, 10, 8), hornM);
+    hornTip.position.set(R * 2.06, R * 1.28, 0); rig.add(hornTip);
+    const nub = new THREE.Mesh(new THREE.ConeGeometry(R * 0.12, R * 0.34, 12), hornM);
+    nub.position.set(R * 1.5, R * 1.2, 0); nub.rotation.z = -0.42; rig.add(nub);
+
+    const eyes = [];
     for (const s of [-1, 1]) {
-        const ear = new THREE.Mesh(new THREE.SphereGeometry(R * 0.17, 8, 8), dark); ear.scale.set(0.7, 1, 0.5);
-        ear.position.set(R * 0.85, R * 1.32, s * R * 0.4); group.add(ear);
-        const eye = new THREE.Mesh(new THREE.SphereGeometry(R * 0.1, 8, 8), mat(0x241a30)); eye.position.set(R * 1.42, R * 0.95, s * R * 0.34); group.add(eye);
+        const ear = new THREE.Mesh(new THREE.SphereGeometry(R * 0.18, 8, 8), seamM);
+        ear.scale.set(0.55, 1.05, 0.7); ear.position.set(R * 0.88, R * 1.34, s * R * 0.42); rig.add(ear);
+        const white = new THREE.Mesh(new THREE.SphereGeometry(R * 0.16, 12, 10), mat(0xffffff, { roughness: 0.3 }));
+        white.position.set(R * 1.5, R * 1.0, s * R * 0.34); rig.add(white);
+        const pupil = new THREE.Mesh(new THREE.SphereGeometry(R * 0.075, 8, 8), mat(0x241a30));
+        pupil.position.set(R * 1.62, R * 1.0, s * R * 0.36); rig.add(pupil);
+        eyes.push(pupil);
     }
+
+    const legM = inflate(shade(body, -0.1), { roughness: 0.3 });
     const legs = [];
-    for (const [lx, ls] of [[R * 0.75, -1], [R * 0.75, 1], [-R * 0.75, -1], [-R * 0.75, 1]]) {
-        const leg = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.24, R * 0.2, R * 0.7, 10), dark);
-        leg.position.set(lx, R * 0.35, ls * R * 0.6); group.add(leg); legs.push(leg);
+    for (const [lx, ls] of [[R * 0.78, -1], [R * 0.78, 1], [-R * 0.8, -1], [-R * 0.8, 1]]) {
+        const leg = new THREE.Mesh(new THREE.CapsuleGeometry(R * 0.22, R * 0.34, 4, 10), legM);
+        leg.position.set(lx, R * 0.34, ls * R * 0.58); rig.add(leg);
+        const foot = new THREE.Mesh(new THREE.SphereGeometry(R * 0.24, 10, 8), seamM);
+        foot.scale.set(1, 0.6, 1); foot.position.set(lx, R * 0.1, ls * R * 0.58); rig.add(foot);
+        legs.push({ leg, foot, baseY: R * 0.34 });
     }
+
     shadowy(group, true, false);
-    const dustMat = mat(0xffffff, { transparent: true, opacity: 0.0, roughness: 1, fog: false });
-    const dust = new THREE.Mesh(new THREE.SphereGeometry(R * 0.55, 8, 6), dustMat);
-    dust.position.set(R * 1.5, R * 0.28, 0); group.add(dust);
+
+    const dustMat = mat(0xffffff, { transparent: true, opacity: 0, roughness: 1, fog: false });
+    const puff = new THREE.Mesh(new THREE.SphereGeometry(R * 0.6, 8, 6), dustMat);
+    puff.position.set(R * 1.4, R * 0.18, 0); group.add(puff);
+    const trailMat = mat(0xf2ecff, { transparent: true, opacity: 0, roughness: 1, fog: false });
+    const trail = new THREE.Mesh(new THREE.SphereGeometry(R * 0.7, 8, 6), trailMat);
+    trail.scale.set(1.4, 0.8, 1.2); group.add(trail);
+
     group.position.copy(W(ob.x, ob.y, 0));
+    let blink = U.rngf(1, 4);
+
     return {
         object3d: group,
-        update(o) {
+        update(o, dt, t) {
             const O = o || ob;
             group.visible = !!O.active;
             if (!O.active) return;
+            const d = dt || 0.016;
             group.position.set(O.x, 0, O.y);
-            group.rotation.y = -(O.facing || 0);                 // local +X (head) points along facing
-            const g = O.gait || 0, moving = (O.speed || 0) > 1;
-            legs.forEach((leg, i) => { leg.position.y = R * 0.35 + (moving ? Math.max(0, Math.sin(g + i * 1.7)) * R * 0.14 : 0); });
-            torso.position.y = R * 0.95 + (O.state === 'charge' ? Math.abs(Math.sin(g * 0.5)) * R * 0.08 : 0);
-            const dz = O.dust || 0; dustMat.opacity = 0.55 * dz; dust.scale.setScalar(0.6 + (1 - dz) * 1.8);
+            group.rotation.y = -(O.facing || 0);
+
+            const sq = O.squash || 0, lean = O.lean || 0, wob = O.wobble || 0;
+            const jig = wob ? Math.sin(t * 38) * 0.12 * wob : 0;
+            rig.scale.set(
+                1 - sq * 0.12 + Math.max(0, -sq) * 0.16,
+                1 + (sq > 0 ? sq * 0.14 : 0) - Math.abs(jig),
+                1 + (sq > 0 ? sq * 0.1 : 0) + jig);
+            rig.rotation.z = -lean * 0.28 + jig * 0.5;
+            rig.position.y = R * 0.1 + Math.max(0, sq) * R * 0.08;
+
+            const g = O.gait || 0, moving = (O.speed || 0) > 2;
+            const amp = O.state === 'charge' ? R * 0.2 : R * 0.13;
+            legs.forEach((L, i) => {
+                const lift = moving ? Math.max(0, Math.sin(g + i * 1.7)) * amp : 0;
+                L.leg.position.y = L.baseY + lift;
+                L.foot.position.y = R * 0.1 + lift * 0.4;
+            });
+
+            blink -= d;
+            const bs = blink < 0.12 ? Math.max(0.1, blink / 0.12) : 1;
+            if (blink < 0) blink = U.rngf(1.5, 4.5);
+            eyes.forEach(e => { e.scale.y = bs; });
+
+            const dz = O.dust || 0;
+            dustMat.opacity = 0.6 * dz;
+            puff.scale.set(0.6 + (1 - dz) * 1.9, 0.4 + (1 - dz) * 0.8, 0.6 + (1 - dz) * 1.9);
+
+            const tr = O.trail || 0;
+            trailMat.opacity = 0.4 * tr;
+            trail.position.set(O.x - Math.cos(O.facing) * R * 1.6, R * 0.6, O.y - Math.sin(O.facing) * R * 1.6);
+            trail.scale.set(1.4 + tr * 1.2, 0.8, 1.2);
         },
         dispose() { disposeTree(group); },
     };
@@ -1884,6 +1953,110 @@ function makeDrum(ob) {
     };
 }
 
+// SLIME CLIMB rolling log: a fat candy-striped cylinder lying ACROSS a leg
+// (axis along world Z = sim Y), spinning about that axis so its surface rolls
+// beans down-leg in X. Yellow with bright wrap bands + rounded end caps.
+function makeRollLog(ob) {
+    const g = new THREE.Object3D();
+    const r = ob.radius || 40, len = ob.len || 300;
+    const color = col(ob.color, WPAL.gold);
+    const spin = new THREE.Object3D();
+    spin.rotation.x = Math.PI / 2;                  // local Y -> world Z (log axis)
+    g.add(spin);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 24),
+        inflate(color, { roughness: 0.3, clearcoat: 0.6 }));
+    spin.add(body);
+    const bandMat = gloss(shade(color, -0.32), { roughness: 0.32 });
+    for (const fy of [-len * 0.32, -len * 0.1, len * 0.12, len * 0.34]) {
+        const band = new THREE.Mesh(new THREE.TorusGeometry(r * 1.03, r * 0.16, 8, 20), bandMat);
+        band.rotation.x = Math.PI / 2; band.position.y = fy; body.add(band);
+    }
+    for (const fy of [-len / 2, len / 2]) {
+        const cap = new THREE.Mesh(new THREE.SphereGeometry(r * 1.02, 16, 12),
+            inflate(shade(color, 0.18), { roughness: 0.28, clearcoat: 0.7 }));
+        cap.position.y = fy; body.add(cap);
+    }
+    shadowy(g, true, true);
+    const baseSpin = (ob.dir != null ? ob.dir : 1);
+    return {
+        object3d: g,
+        update(o, dt) {
+            const z = (o && o.z != null) ? o.z : (ob.z || 0);
+            g.position.copy(W(o ? o.cx : ob.cx, o ? o.cy : ob.cy, 0));
+            g.position.y += z;                                  // re-assert leg height
+            spin.rotation.y += baseSpin * (o ? o.speed : ob.speed) * (dt || 0);
+        },
+        dispose() { disposeTree(g); },
+    };
+}
+
+// SLIME CLIMB doughnut pillar: a fat inflatable RING on a short post that slides
+// side to side across a leg. The hole is the timed gap; the rim is the shove.
+function makeRingSweep(ob) {
+    const g = new THREE.Object3D();
+    const R = ob.R || 64, tube = ob.tube || 20;
+    const color = col(ob.color, WPAL.curb);
+    const postMat = inflate(shade(color, -0.3), { roughness: 0.4, clearcoat: 0.5 });
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(tube * 0.7, tube * 0.9, R * 1.4, 14), postMat);
+    post.position.y = R * 0.7; g.add(post);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(R, tube, 14, 30),
+        inflate(color, { roughness: 0.28, clearcoat: 0.8 }));
+    ring.position.y = R * 1.45; ring.rotation.y = Math.PI / 2; g.add(ring);   // hole opens along X
+    for (let i = 0; i < 4; i++) {
+        const a = i / 4 * Math.PI * 2;
+        const seg = new THREE.Mesh(new THREE.TorusGeometry(R, tube * 1.02, 8, 8, 0.7),
+            inflate(WPAL.cloud, { roughness: 0.32 }));
+        seg.position.y = R * 1.45; seg.rotation.y = Math.PI / 2; seg.rotation.x = a; g.add(seg);
+    }
+    shadowy(g, true, true);
+    return {
+        object3d: g,
+        update(o) {
+            const z = (o && o.z != null) ? o.z : (ob.z || 0);
+            g.position.copy(W(o ? o.cx : ob.cx, o ? o.cy : ob.cy, 0));
+            g.position.y += z;                                  // ride the leg height while sliding
+        },
+        dispose() { disposeTree(g); },
+    };
+}
+
+// SLIME CLIMB slimed walkway: a thin glossy pink goo slab laid over a leg's deck
+// (cosmetic; the slowing lives in the obstacle). Sits at leg height.
+function makeSlimeFloor(ob) {
+    const g = new THREE.Object3D();
+    const w = (ob.x1 - ob.x0), d = ob.hh * 2;
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(w, 8, d),
+        gloss(WPAL.slime, { roughness: 0.18, metalness: 0.0, transparent: true, opacity: 0.82,
+            emissive: WPAL.slimeDk, emissiveIntensity: 0.35 }));
+    slab.position.y = 5; slab.receiveShadow = true; g.add(slab);
+    const blobMat = gloss(shade(WPAL.slime, 0.12), { roughness: 0.16, transparent: true, opacity: 0.8 });
+    for (let i = 0; i < 5; i++) {
+        const blob = new THREE.Mesh(new THREE.SphereGeometry(14 + i * 2, 12, 8), blobMat);
+        blob.scale.y = 0.4;
+        blob.position.set((i + 0.5) / 5 * w - w / 2, 8, U.rngf(-d * 0.3, d * 0.3));
+        g.add(blob);
+    }
+    g.position.copy(W((ob.x0 + ob.x1) / 2, ob.cy, 0));
+    return { object3d: g, update() {}, dispose() { disposeTree(g); } };
+}
+
+// Stompin' Ground ruin-pillar / rock — a stout inflatable charge-blocker.
+function makeRhinoRock(ob) {
+    const group = new THREE.Object3D();
+    const R = ob.r || 46;
+    const skin = inflate(ob.color || 0xb6a4ff, { roughness: 0.34, clearcoat: 0.6 });
+    const capM = gloss(WPAL.gold, { roughness: 0.3, metalness: 0.3 });
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.95, R * 1.05, R * 1.7, 14), skin);
+    base.position.y = R * 0.85; group.add(base);
+    const top = new THREE.Mesh(new THREE.SphereGeometry(R * 0.95, 14, 10), skin);
+    top.scale.set(1, 0.7, 1); top.position.y = R * 1.7; group.add(top);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(R * 0.9, R * 0.1, 8, 18), capM);
+    ring.rotation.x = Math.PI / 2; ring.position.y = R * 1.2; group.add(ring);
+    shadowy(group, true, true);
+    group.position.copy(W(ob.x, ob.y, 0));
+    return { object3d: group, update() {}, dispose() { disposeTree(group); } };
+}
+
 function makeObstacleView(ob) {
     switch (ob && ob.kind) {
         case 'spinner':     return makeSpinner(ob);
@@ -1898,6 +2071,11 @@ function makeObstacleView(ob) {
         case 'wall':        return makeWall(ob);
         case 'seesaw':      return makeSeeSaw(ob);
         case 'drum':        return makeDrum(ob);
+        case 'rolllog':     return makeRollLog(ob);
+        case 'ringsweep':   return makeRingSweep(ob);
+        case 'slimefloor':  return makeSlimeFloor(ob);
+        case 'rhino':       return makeRhino(ob);
+        case 'rhinorock':   return makeRhinoRock(ob);
         case 'slidewall':   return makeSlideWall(ob);
         case 'cannon':      return makeCannon(ob);
         case 'spinplate':   return makeSpinPlate(ob);

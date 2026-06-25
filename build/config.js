@@ -260,6 +260,8 @@ const SHOW = [
     // ---------- SURVIVAL ----------
     { id: 'roll_out',      name: 'Roll Out',      category: 'Survival', build: 'rollOut',     duration: 32,
       tagline: 'Stay on the spinning drum — walk against the roll or slide into the goo!' },
+    { id: 'stompin_ground', name: "Stompin' Ground", category: 'Survival', build: 'stompinGround', duration: 30,
+      tagline: 'Inflatable rhinos lock on, paw the dirt, then CHARGE — juke the lane or get yeeted!' },
     { id: 'jump_club',     name: 'Jump Club',     category: 'Survival', build: 'jumpClub',     duration: 30,
       tagline: 'Hop the spinning beam. Miss the beat, kiss the slime.' },
     { id: 'jump_showdown', name: 'Jump Showdown', category: 'Survival', build: 'jumpShowdown', duration: 28,
