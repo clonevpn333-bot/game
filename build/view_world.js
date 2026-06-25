@@ -1566,6 +1566,55 @@ function makeSpinPlate(ob) {
     return view;
 }
 
+// Stompin' Ground rhino: a chunky inflatable rhino with a horn, stubby legs
+// (a little gait bob) and a dust puff while it paws the ground (telegraph).
+function makeRhino(ob) {
+    const group = new THREE.Object3D();
+    const R = ob.r || 46;
+    const skin = inflate(ob.color || 0xaab7c4, { roughness: 0.42, clearcoat: 0.25 });
+    const dark = mat(shade(ob.color || 0xaab7c4, -0.26), { roughness: 0.55 });
+    const torso = new THREE.Mesh(new THREE.SphereGeometry(R, 18, 14), skin);
+    torso.scale.set(1.5, 0.95, 1.05); torso.position.set(-R * 0.1, R * 0.95, 0); group.add(torso);
+    const rump = new THREE.Mesh(new THREE.SphereGeometry(R * 0.7, 14, 12), skin);
+    rump.position.set(-R * 1.05, R * 0.95, 0); group.add(rump);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(R * 0.64, 16, 12), skin);
+    head.scale.set(1.15, 0.92, 0.95); head.position.set(R * 1.15, R * 0.82, 0); group.add(head);
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(R * 0.2, R * 0.75, 12), gloss(WPAL.cloud, { roughness: 0.45 }));
+    horn.position.set(R * 1.82, R * 1.02, 0); horn.rotation.z = -0.6; group.add(horn);
+    const horn2 = new THREE.Mesh(new THREE.ConeGeometry(R * 0.11, R * 0.36, 10), gloss(WPAL.cloud, { roughness: 0.45 }));
+    horn2.position.set(R * 1.55, R * 1.18, 0); horn2.rotation.z = -0.45; group.add(horn2);
+    for (const s of [-1, 1]) {
+        const ear = new THREE.Mesh(new THREE.SphereGeometry(R * 0.17, 8, 8), dark); ear.scale.set(0.7, 1, 0.5);
+        ear.position.set(R * 0.85, R * 1.32, s * R * 0.4); group.add(ear);
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(R * 0.1, 8, 8), mat(0x241a30)); eye.position.set(R * 1.42, R * 0.95, s * R * 0.34); group.add(eye);
+    }
+    const legs = [];
+    for (const [lx, ls] of [[R * 0.75, -1], [R * 0.75, 1], [-R * 0.75, -1], [-R * 0.75, 1]]) {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.24, R * 0.2, R * 0.7, 10), dark);
+        leg.position.set(lx, R * 0.35, ls * R * 0.6); group.add(leg); legs.push(leg);
+    }
+    shadowy(group, true, false);
+    const dustMat = mat(0xffffff, { transparent: true, opacity: 0.0, roughness: 1, fog: false });
+    const dust = new THREE.Mesh(new THREE.SphereGeometry(R * 0.55, 8, 6), dustMat);
+    dust.position.set(R * 1.5, R * 0.28, 0); group.add(dust);
+    group.position.copy(W(ob.x, ob.y, 0));
+    return {
+        object3d: group,
+        update(o) {
+            const O = o || ob;
+            group.visible = !!O.active;
+            if (!O.active) return;
+            group.position.set(O.x, 0, O.y);
+            group.rotation.y = -(O.facing || 0);                 // local +X (head) points along facing
+            const g = O.gait || 0, moving = (O.speed || 0) > 1;
+            legs.forEach((leg, i) => { leg.position.y = R * 0.35 + (moving ? Math.max(0, Math.sin(g + i * 1.7)) * R * 0.14 : 0); });
+            torso.position.y = R * 0.95 + (O.state === 'charge' ? Math.abs(Math.sin(g * 0.5)) * R * 0.08 : 0);
+            const dz = O.dust || 0; dustMat.opacity = 0.55 * dz; dust.scale.setScalar(0.6 + (1 - dz) * 1.8);
+        },
+        dispose() { disposeTree(group); },
+    };
+}
+
 // Perfect Match: a square candy tile with a fruit emblem painted on top.
 const _fruitTexCache = {};
 function fruitTexture(idx) {
@@ -1753,6 +1802,24 @@ function makeBall(ob) {
     return view;
 }
 
+// a guard rail: a low candy-striped barrier wall (lifted onto its leg by the
+// engine). A rounded top bar reads as the inflatable lip lining the course.
+function makeWall(ob) {
+    const g = new THREE.Object3D();
+    const w = ob.hw * 2, d = ob.hh * 2, h = ob.height || 150;
+    const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d),
+        inflate(ob.color || WPAL.pink, { roughness: 0.34, clearcoat: 0.5 }));
+    body.position.y = h / 2; shadowy(body, true, true); g.add(body);
+    // bright rounded cap along the longer axis
+    const long = Math.max(w, d), capR = Math.min(w, d) * 0.55;
+    const cap = new THREE.Mesh(new THREE.CapsuleGeometry(capR, long - capR * 2, 4, 10),
+        gloss(shade(ob.color || WPAL.pink, 0.3), { roughness: 0.3 }));
+    cap.rotation.z = Math.PI / 2;
+    if (d > w) cap.rotation.y = Math.PI / 2;
+    cap.position.y = h; g.add(cap);
+    return { object3d: g, update() {}, dispose() { disposeTree(g); } };
+}
+
 function makeObstacleView(ob) {
     switch (ob && ob.kind) {
         case 'spinner':     return makeSpinner(ob);
@@ -1764,6 +1831,7 @@ function makeObstacleView(ob) {
         case 'conveyor':    return makeConveyor(ob);
         case 'bumper':      return makeBumper(ob);
         case 'movingblock': return makeMovingBlock(ob);
+        case 'wall':        return makeWall(ob);
         case 'slidewall':   return makeSlideWall(ob);
         case 'cannon':      return makeCannon(ob);
         case 'spinplate':   return makeSpinPlate(ob);
@@ -2231,6 +2299,25 @@ class CourseView {
                 }
                 const rim = new THREE.Mesh(new THREE.TorusGeometry(p.r - 1, 9, 12, 80), rimMat);
                 rim.rotation.x = Math.PI / 2; rim.position.set(p.cx, z + 2, p.cy); shadowy(rim, true, true); this._add(rim);
+            } else if (p.xramp) {
+                // a SWITCHBACK leg: a sloped box climbing along X (sim x → world x),
+                // from (xLo,z0) to (xHi,z1). Tilt about world Z so the +x end rises.
+                const x0 = p.x0, x1 = p.x1, y0 = p.y0, y1 = p.y1, z0 = p.z0 || 0, z1 = (p.z1 != null ? p.z1 : p.z0) || 0;
+                const w = x1 - x0, depth = y1 - y0, dz = z1 - z0, hyp = Math.hypot(w, dz) || 1;
+                const ang = Math.atan2(dz, w);
+                const slab = new THREE.Mesh(new THREE.BoxGeometry(hyp, 26, depth), baseMat);
+                slab.position.set((x0 + x1) / 2, (z0 + z1) / 2 - 6, (y0 + y1) / 2);
+                slab.rotation.z = ang;
+                slab.receiveShadow = true; this._add(slab);
+                // dark skirt under the leg so it reads thick/solid from the side.
+                const skirt = new THREE.Mesh(new THREE.BoxGeometry(hyp * 0.99, 80, depth * 0.96), sideMat);
+                skirt.position.set((x0 + x1) / 2, (z0 + z1) / 2 - 50, (y0 + y1) / 2);
+                skirt.rotation.z = ang; this._add(skirt);
+                // side rails following the climb, along the two long (north/south) edges.
+                if (p.rail) {
+                    this._wRail(x0, y0 + 6, z0, x1, y0 + 6, z1, p.rail);
+                    this._wRail(x0, y1 - 6, z0, x1, y1 - 6, z1, p.rail);
+                }
             } else {
                 // a ramp / slab: a sloped box from (yLo,z0) to (yHi,z1).
                 const x0 = p.x0, x1 = p.x1, y0 = p.y0, y1 = p.y1, z0 = p.z0 || 0, z1 = (p.z1 != null ? p.z1 : p.z0) || 0;

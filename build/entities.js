@@ -943,6 +943,36 @@ class MovingBlock {
     }
 }
 
+class Wall {
+    // A static, solid barrier box — a guard rail. Beans bonk it and slide along
+    // instead of tumbling off the edge. Carries a height BAND (z..z+height) so a
+    // rail on one switchback leg never blocks a bean climbing on another.
+    constructor(o) {
+        this.kind = 'wall';
+        this.cx = o.cx; this.cy = o.cy; this.hw = o.hw || 30; this.hh = o.hh || 30;
+        this.z = o.z != null ? o.z : null; this.height = o.height != null ? o.height : 150;
+        this.color = o.color || '#ff5fa2'; this.layer = 'top';
+    }
+    update() {}
+    collide(bean) {
+        if (bean.gone || bean.exited || bean.falling) return;
+        if (this.z != null && (bean.z < this.z - 60 || bean.z > this.z + this.height)) return;
+        const dx = bean.x - this.cx, dy = bean.y - this.cy;
+        const ox = (bean.r + this.hw) - Math.abs(dx), oy = (bean.r + this.hh) - Math.abs(dy);
+        if (ox <= 0 || oy <= 0) return;                  // not overlapping
+        // resolve along the SHALLOWER axis so beans slide along the rail
+        if (ox <= oy) {
+            const s = dx >= 0 ? 1 : -1;
+            bean.x = this.cx + s * (bean.r + this.hw + 0.5);
+            const bn = bean.vx * s; if (bn < 0) bean.vx -= s * bn;
+        } else {
+            const s = dy >= 0 ? 1 : -1;
+            bean.y = this.cy + s * (bean.r + this.hh + 0.5);
+            const bn = bean.vy * s; if (bn < 0) bean.vy -= s * bn;
+        }
+    }
+}
+
 class SlideWall {
     // A wall spanning the arena width with a GAP you slip through, sliding along
     // y toward the back edge. Miss the gap and it shoves you off. (Block Party.)
@@ -1029,6 +1059,73 @@ class SpinPlate {
         const ca = Math.cos(a), sa = Math.sin(a);
         bean.x = this.cx + dx * ca - dy * sa;
         bean.y = this.cy + dx * sa + dy * ca;
+    }
+}
+
+class Rhino {
+    // Stompin' Ground: a charging rhino. It ambles, locks onto the nearest bean,
+    // STOPS and puffs dust (telegraph), then DASHES in a straight line, launching
+    // anyone it hits off the platform. Released one at a time (activateAt).
+    constructor(o) {
+        this.kind = 'rhino';
+        this.x = o.x; this.y = o.y; this.r = o.r || 46;
+        this.cx = o.cx; this.cy = o.cy; this.platR = o.platR || 360;
+        this.facing = o.facing != null ? o.facing : 0;
+        this.color = o.color || '#aab7c4';
+        this.activateAt = o.activateAt || 0;
+        this.active = false;
+        this.state = 'pen';                  // pen | wander | telegraph | charge | recover
+        this.t = 0; this.dx = 1; this.dy = 0; this.dust = 0; this.gait = 0; this.speed = 0;
+    }
+    update(dt, round) {
+        if (!this.active) {
+            if (round.phase === 'go' && round.elapsed >= this.activateAt) { this.active = true; this.state = 'wander'; this.t = U.rngf(0.5, 1.3); }
+            return;
+        }
+        this.t -= dt;
+        const live = round.beans.filter(b => b.alive && !b.eliminated && !b.exited && !b.falling && !b.gone);
+        if (this.state === 'wander') {
+            this.speed = 78;
+            this.facing += U.rngf(-1, 1) * dt * 1.4;                  // amble, wandering
+            const toC = Math.atan2(this.cy - this.y, this.cx - this.x);
+            this.facing = U.lerpAngle(this.facing, toC, 0.012);       // bias back toward centre
+            this.x += Math.cos(this.facing) * this.speed * dt; this.y += Math.sin(this.facing) * this.speed * dt;
+            if (this.t <= 0) {
+                let best = null, bd = 1e9;
+                for (const b of live) { const d = U.dist(this.x, this.y, b.x, b.y); if (d < bd) { bd = d; best = b; } }
+                if (best) { this.facing = Math.atan2(best.y - this.y, best.x - this.x); this.state = 'telegraph'; this.t = 0.8; this.dust = 1; }
+                else this.t = 1;
+            }
+        } else if (this.state === 'telegraph') {
+            this.speed = 0; this.dust = Math.max(0, this.t / 0.8);
+            if (this.t <= 0) { this.dx = Math.cos(this.facing); this.dy = Math.sin(this.facing); this.state = 'charge'; this.t = 1.5; this.dust = 0; }
+        } else if (this.state === 'charge') {
+            this.speed = 480;
+            this.x += this.dx * this.speed * dt; this.y += this.dy * this.speed * dt;
+            this.gait += dt * 22;
+            if (U.dist(this.x, this.y, this.cx, this.cy) > this.platR - this.r - 4 || this.t <= 0) { this.state = 'recover'; this.t = 0.9; this.speed = 0; }
+        } else if (this.state === 'recover') {
+            this.speed = 0;
+            if (this.t <= 0) { this.state = 'wander'; this.t = U.rngf(1.3, 2.4); }
+        }
+        if (this.speed > 0 && this.state !== 'charge') this.gait += dt * 9;
+        // never leave the platform
+        const d = U.dist(this.x, this.y, this.cx, this.cy);
+        if (d > this.platR - this.r) {
+            const nx = (this.x - this.cx) / (d || 1), ny = (this.y - this.cy) / (d || 1);
+            this.x = this.cx + nx * (this.platR - this.r); this.y = this.cy + ny * (this.platR - this.r);
+            this.facing = Math.atan2(this.cy - this.y, this.cx - this.x);
+            if (this.state === 'charge') { this.state = 'recover'; this.t = 0.9; }
+        }
+    }
+    collide(bean) {
+        if (bean.falling || bean.gone || bean.exited || !this.active) return;
+        const dx = bean.x - this.x, dy = bean.y - this.y, d = Math.hypot(dx, dy);
+        if (d < this.r + bean.r) {
+            const nx = dx / (d || 1), ny = dy / (d || 1);
+            if (this.state === 'charge') bean.hit(nx, ny, 900, 1.4);   // launched clear off
+            else bean.hit(nx, ny, 350, 0.5);                            // shoved
+        }
     }
 }
 

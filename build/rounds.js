@@ -560,9 +560,11 @@ function platformGroundZ(plats, x, y, zc) {
         if (p.disc) {
             const dx = x - p.cx, dy = y - p.cy;
             if (dx * dx + dy * dy <= p.r * p.r) pz = p.z || 0;
-        } else {                                          // axis-aligned rect, optional slope along y
+        } else {                                          // axis-aligned rect, sloping along y OR x
             if (x >= p.x0 && x <= p.x1 && y >= p.y0 && y <= p.y1) {
-                const t = (p.y1 - p.y0) > 0 ? (y - p.y0) / (p.y1 - p.y0) : 0;
+                const t = p.xramp
+                    ? ((p.x1 - p.x0) > 0 ? (x - p.x0) / (p.x1 - p.x0) : 0)
+                    : ((p.y1 - p.y0) > 0 ? (y - p.y0) / (p.y1 - p.y0) : 0);
                 pz = (p.z0 || 0) + ((p.z1 != null ? p.z1 : (p.z0 || 0)) - (p.z0 || 0)) * t;
             }
         }
@@ -588,6 +590,10 @@ class Level {
     slab(cx, yLo, yHi, hw, z, opts) { const p = Object.assign({ x0: cx - hw, x1: cx + hw, y0: yLo, y1: yHi, z0: z || 0, z1: z || 0 }, opts || {}); this.plats.push(p); return p; }
     // a sloped ramp: height zLo at its low-y edge (yLo) → zHi at its high-y edge (yHi).
     ramp(cx, yLo, yHi, hw, zLo, zHi, opts) { const p = Object.assign({ x0: cx - hw, x1: cx + hw, y0: yLo, y1: yHi, z0: zLo, z1: zHi, ramp: true }, opts || {}); this.plats.push(p); return p; }
+    // a sloped ramp climbing along X: height zLo at its low-x edge (xLo) → zHi at
+    // its high-x edge (xHi); the leg's north-south depth is [cy-hh, cy+hh]. This
+    // is the SWITCHBACK leg — a flight that runs sideways while gaining height.
+    xramp(cy, xLo, xHi, hh, zLo, zHi, opts) { const p = Object.assign({ x0: xLo, x1: xHi, y0: cy - hh, y1: cy + hh, z0: zLo, z1: zHi, ramp: true, xramp: true }, opts || {}); this.plats.push(p); return p; }
     wp(x, y) { this.path.push({ x, y }); return this; }
     add(d) { this.deco.push(d); return this; }
     // wire a round up from this spec.
@@ -676,11 +682,15 @@ function whirlyThink(bean, round, dt) {
         if (d < 88) { const w = 1 - d / 88; ax += (bean.x - px) / (d || 1) * w * 1.6; ay += (bean.y - py) / (d || 1) * w * 0.6; }
     }
     // edge safety — sample the floor in 8 directions; gently steer away from any
-    // void side so beans don't wander off the curve (but don't overpower forward).
-    let sx = 0, sy = 0; const look = 60, d2 = look * 0.7;
+    // side that's void OR a step too high to climb onto (passing the bean's own
+    // height makes the probe z-aware, so on a stacked switchback a bean reads the
+    // leg it's ON, not the one looming above it — it won't walk off into the gap).
+    let sx = 0, sy = 0; const look = 64, d2 = look * 0.7;
     const probes = [[look, 0], [-look, 0], [0, look], [0, -look], [d2, d2], [d2, -d2], [-d2, d2], [-d2, -d2]];
-    for (const [ox, oy] of probes)
-        if (round.groundZ(bean.x + ox, bean.y + oy) <= -9000) { sx -= ox / look; sy -= oy / look; }
+    for (const [ox, oy] of probes) {
+        const gz = round.groundZ(bean.x + ox, bean.y + oy, bean.z);
+        if (gz <= -9000) { sx -= ox / look; sy -= oy / look; }
+    }
 
     let mx = dx + ax + sx * 1.25, my = dy + ay + sy * 1.25;
     const ml = Math.hypot(mx, my) || 1;
@@ -783,6 +793,36 @@ function jumpThink(bean, round, dt) {
         if (U.chance(success)) bean.ai.jump = true;
     }
     bean.ai.dive = false;
+}
+
+// ---- Stompin' Ground (Survival) — dodge the charging rhinos, hug the centre.
+function rhinoThink(bean, round, dt) {
+    const P = round.platform;
+    let fx = 0, fy = 0, danger = 0;
+    for (const o of round.obstacles) {
+        if (o.kind !== 'rhino' || !o.active) continue;
+        const d = U.dist(bean.x, bean.y, o.x, o.y);
+        const reach = o.state === 'charge' ? 360 : o.state === 'telegraph' ? 320 : 150;
+        if (d < reach) {
+            const w = 1 - d / reach; danger = Math.max(danger, w);
+            // flee away from the rhino; for a charging one, also slip sideways off its line
+            let ax = (bean.x - o.x) / (d || 1), ay = (bean.y - o.y) / (d || 1);
+            if (o.state === 'charge' || o.state === 'telegraph') {
+                const side = (ax * -o.dy + ay * o.dx) >= 0 ? 1 : -1;     // pick the clear side of its heading
+                ax += -o.dy * side * 0.9; ay += o.dx * side * 0.9;
+            }
+            fx += ax * w * 2.4; fy += ay * w * 2.4;
+        }
+    }
+    const tox = P.cx - bean.x, toy = P.cy - bean.y, dl = Math.hypot(tox, toy) || 1;
+    const edge = dl / P.r;                                  // pull to centre harder near the rim
+    let mx = fx + tox / dl * (0.25 + edge * edge * 1.4);
+    let my = fy + toy / dl * (0.25 + edge * edge * 1.4);
+    const ml = Math.hypot(mx, my) || 1; bean.ai.mx = mx / ml; bean.ai.my = my / ml;
+    bean.ai.jump = false; bean.ai.grab = false;
+    bean.aiTimer -= dt;
+    if (bean.aiTimer <= 0) { bean.aiTimer = U.rngf(0.4, 0.9); bean.ai.dive = danger > 0.55 && U.chance(0.45 * bean.skill); }
+    else bean.ai.dive = false;
 }
 
 // Block Party: hug the middle (avoid the rim) and flee the path of slide-walls.
@@ -1407,6 +1447,40 @@ const Rounds = {
             };
         },
 
+        // -------------------------------------------------- STOMPIN' GROUND
+        // SURVIVAL (Season 5 jungle): a round platform over slime with THREE
+        // charging rhinos, released one at a time. Each ambles, locks on, paws
+        // the ground (dust telegraph), then dashes — launching you off the edge.
+        // Survive the timer to qualify.
+        stompinGround(r) {
+            r.kind = 'survival'; r.camMode = 'fixed';
+            const cx = 640, cy = 400, R = 400;
+            r.platform = { cx, cy, r: R };
+            r.minX = 0; r.maxX = CFG.W; r.minY = 0; r.maxY = CFG.H;
+            r.thinkFn = rhinoThink;
+            r.timer = r.def.duration || 70;
+            r.fallGrace = 8;
+
+            const rcol = ['#9fb0c0', '#c8a98c', '#a7c2a4'];
+            for (let i = 0; i < 3; i++) {
+                const a = -Math.PI / 2 + i * Math.PI * 2 / 3;
+                r.obstacles.push(new Rhino({ x: cx + Math.cos(a) * (R - 80), y: cy + Math.sin(a) * (R - 80),
+                    cx, cy, platR: R, activateAt: 1 + i * 22, facing: a + Math.PI, color: rcol[i] }));
+            }
+            // perimeter bounce pads — the lily-pad "saving graces"
+            for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + 0.4; r.obstacles.push(new BouncePad({ x: cx + Math.cos(a) * (R - 26), y: cy + Math.sin(a) * (R - 26), r: 40 })); }
+
+            const all = r.beans;
+            all.forEach((b, i) => {
+                const ang = (i / all.length) * Math.PI * 2, rr = R * U.rngf(0.12, 0.5);
+                b.x = cx + Math.cos(ang) * rr; b.y = cy + Math.sin(ang) * rr;
+                b.startX = b.x; b.startY = b.y; b.aiTimer = U.rngf(0, 0.6);
+                b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.9); b.facing = ang + Math.PI;
+            });
+
+            r.drawGround = (ctx, cam) => { drawSlime(ctx); drawDisk(ctx, cx, cy, R, PAL.arena); };
+        },
+
         // -------------------------------------------------- HEX-A-GONE
         // -------------------------------------------------- HEX-A-GONE
         // The real FINAL: a tall TOWER of stacked honeycomb layers (lower
@@ -1876,68 +1950,127 @@ const Rounds = {
         },
 
         // -------------------------------------------------- SLIME CLIMB
-        // A steep DIAGONAL switchback that climbs UP while moving forward (north):
-        // wide ramp tiers stacked up the course, the route cutting diagonally
-        // across each one corner-to-corner, reversing at every tier — so you both
-        // gain height AND advance, never a straight shot and never a pure tower.
-        // Real obstacles ride the tiers; the slime floods up the round bowl.
+        // A vertical SWITCHBACK: sideways flights (legs) that run east↔west while
+        // gaining height, doubling back at a wide U-turn landing each time — and
+        // the whole stack MARCHES NORTH as it climbs, so you both rise AND advance.
+        // It's never a pure tower (each leg is further north than the last) and
+        // never a single ramp (you reverse direction at every landing). Void
+        // between the rows forces the snake; the slime floods up the bowl behind.
         slimeClimb(r) {
-            r.kind = 'climb'; r.camMode = 'followY'; r.viewKind = 'whirlygig'; r.cx = 640;
-            r.minX = 220; r.maxX = 1060; r.minY = 200; r.maxY = 2860; r.finishY = 520;
+            r.kind = 'climb'; r.viewKind = 'whirlygig'; r.switchback = true; r.cx = 640;
+            r.minX = 60; r.maxX = 1220; r.minY = 80; r.maxY = 2780; r.finishY = 480;
             r.thinkFn = whirlyThink;
-            r.slimeZ = -80; r.slimeRate = 11;            // the flood rises in HEIGHT
+            r.slimeZ = -150; r.slimeRate = 4.5;          // the flood rises in HEIGHT, chasing the pack
             r.qualifyCount = r.beans.length;
-            r.arena = { cx: 640, cy: 1500, r: 1180 };    // the round ring-walled bowl
+            r.arena = { cx: 640, cy: 1425, r: 1480 };    // the round ring-walled bowl
 
             const L = new Level();
             const PINK = '#ff5fa2', GRAPE = '#7b46d6', YEL = '#ffd23f', BLUE = '#5ad1ff';
-            const hwLeg = 300;
-            // height of a leg's sloped surface at a given y
-            const legZ = (zTop, yTop, zBot, yBot, y) => zTop + (zBot - zTop) * ((y - yTop) / (yBot - yTop));
-            const block = (cx, cy, w, speed, dir) => r.obstacles.push(new MovingBlock({ cy, x0: cx - 280, x1: cx + 280, w, thick: 44, height: 120, speed, dir, cx: dir > 0 ? cx - 280 : cx + 280, color: GRAPE }));
-            const bump = (x, y, col) => r.obstacles.push(new Bumper({ x, y, r: 38, power: 310, color: col || PINK }));
-            const pend = (cx, cy, speed) => r.obstacles.push(new Hammer({ cx, cy, amp: 250, headR: 32, speed, power: 350 }));
-            const beam = (cx, cy, speed, col) => r.obstacles.push(new Spinner({ cx, cy, len: 230, thick: 24, speed, height: 54, power: 320, color: col || GRAPE }));
-            const roller = (cx, cy, z, len, dir) => {
-                L.add({ type: 'roller', cx, cy, z, len, r: 34, speed: dir * 3, color: BLUE });
-                r.obstacles.push(new Conveyor({ x0: cx - len / 2, x1: cx + len / 2, y0: cy - 40, y1: cy + 40, dx: dir, dy: 0, push: 78, color: BLUE }));
-            };
+            const X0 = 320, X1 = 960, HH = 150, CLIMB = 132, TR = 250;
+            // height of an x-ramp leg (zWest at X0 → zEast at X1) at a given x.
+            const zx = (zW, zE, x) => zW + (zE - zW) * (x - X0) / (X1 - X0);
 
-            // wide START pad at the bottom, then four WIDE ramp tiers climbing up
-            const start = L.slab(640, 2480, 2860, 330, 0, { start: true });
-            L.ramp(640, 2040, 2540, hwLeg, 160, 0, { rail: PINK });   // tier1  z 0→160
-            L.ramp(640, 1560, 2080, hwLeg, 320, 160);                 // tier2  z 160→320
-            L.ramp(640, 1080, 1600, hwLeg, 480, 320, { rail: PINK }); // tier3  z 320→480
-            L.ramp(640, 600, 1120, hwLeg, 620, 480);                  // tier4  z 480→620
-            const fin = L.slab(640, 300, 660, 300, 620, { finish: true });
+            // ---- obstacle helpers (each carries the leg HEIGHT z so it only
+            //      strikes beans on that flight, never the ones stacked nearby) ----
+            const beam = (x, y, z, speed, col) => r.obstacles.push(new Spinner({ cx: x, cy: y, len: 210, thick: 24, speed, height: 64, power: 330, z, color: col || GRAPE }));
+            const bump = (x, y, z, col) => r.obstacles.push(new Bumper({ x, y, r: 40, power: 330, z, color: col || PINK }));
+            const pend = (x, y, z, speed) => r.obstacles.push(new Hammer({ cx: x, cy: y, amp: 235, headR: 34, speed, power: 360, height: 90, z }));
+            const wall = (cy, z, x0, x1, speed, dir) => r.obstacles.push(new MovingBlock({ cy, x0, x1, w: 48, thick: 215, height: 124, speed, dir, cx: dir > 0 ? x0 : x1, color: GRAPE, z }));
 
-            // the DIAGONAL route: cut each tier corner-to-corner, reversing each time
-            L.wp(640, 2660); L.wp(440, 2440); L.wp(840, 2080); L.wp(440, 1620);
-            L.wp(840, 1140); L.wp(440, 700); L.wp(640, 460);
+            // ---- the course: a START pad, five climbing LEGS that reverse
+            //      direction (W→E, E→W, …), wide U-turn LANDINGS between them at
+            //      alternating ends, and a finish deck beyond the topmost leg. ----
+            L.slab(640, 2330, 2760, 360, 0, { start: true });        // wide launch pad
+            L.xramp(2180, X0, X1, HH, 0, CLIMB, { rail: PINK });       // leg1  W→E   z 0  →132
+            L.disc(960, 1990, TR, CLIMB);                             //   ↳ east landing (U-turn)
+            L.xramp(1800, X0, X1, HH, 2 * CLIMB, CLIMB);              // leg2  E→W   z 264→132
+            L.disc(320, 1610, TR, 2 * CLIMB);                        //   ↳ west landing (U-turn)
+            L.xramp(1420, X0, X1, HH, 2 * CLIMB, 3 * CLIMB, { rail: PINK }); // leg3 W→E z 264→396
+            L.disc(960, 1230, TR, 3 * CLIMB);                        //   ↳ east landing (U-turn)
+            L.xramp(1040, X0, X1, HH, 4 * CLIMB, 3 * CLIMB);          // leg4  E→W   z 528→396
+            L.disc(320, 850, TR, 4 * CLIMB);                         //   ↳ west landing (U-turn)
+            L.xramp(660, X0, X1, HH, 4 * CLIMB, 5 * CLIMB, { rail: PINK }); // leg5 W→E z 528→660
+            L.disc(860, 400, 290, 5 * CLIMB, { finish: true });      // finish deck (north + top)
 
-            // real obstacles riding the tiers (lifted onto each slope automatically)
-            bump(520, 2360, PINK); bump(760, 2200, PINK);
-            roller(640, 2300, legZ(160, 2040, 0, 2540, 2300), 460, 1);          // tier1 log
-            block(640, 1900, 150, 150, 1); block(640, 1720, 150, 165, -1);       // tier2 push-blocks
-            beam(560, 1420, 1.5, GRAPE); beam(780, 1220, -1.6, PINK);            // tier3 spinning beams
-            roller(640, 1340, legZ(480, 1080, 320, 1600, 1340), 460, -1);        // tier3 log
-            pend(560, 900, 1.6); pend(740, 760, -1.7); bump(640, 1000, YEL);     // tier4 pendulums
+            // ---- the SNAKE route the AI follows: up each leg, around the
+            //      landing, back along the next, ever northward to the top.
+            //      (path[0] is the launch pad — beans start targeting path[1].) ----
+            L.wp(560, 2400);                                          // launch pad (start)
+            L.wp(440, 2180); L.wp(900, 2180); L.wp(965, 1990);        // leg1 → east landing
+            L.wp(900, 1800); L.wp(380, 1800); L.wp(325, 1610);        // leg2 → west landing
+            L.wp(380, 1420); L.wp(900, 1420); L.wp(965, 1230);        // leg3 → east landing
+            L.wp(900, 1040); L.wp(380, 1040); L.wp(325, 850);         // leg4 → west landing
+            L.wp(380, 660); L.wp(900, 660); L.wp(860, 360);           // leg5 → finish deck
+
+            // ---- real obstacles riding the flights (lifted to each leg's height) ----
+            beam(620, 2180, zx(0, CLIMB, 620), 1.5);                                  // leg1 sweep
+            bump(800, 2120, zx(0, CLIMB, 800), PINK);                                  // leg1 bumper
+            beam(960, 1990, CLIMB, -1.7, PINK);                                        // east landing 1
+            wall(1800, zx(2 * CLIMB, CLIMB, 640), 430, 850, 150, -1);                  // leg2 sliding wall
+            bump(470, 1800, zx(2 * CLIMB, CLIMB, 470), YEL);                           // leg2 bumper
+            pend(320, 1610, 2 * CLIMB, 1.7);                                           // west landing 2
+            beam(540, 1420, zx(2 * CLIMB, 3 * CLIMB, 540), 1.7, PINK);                 // leg3 sweep
+            beam(800, 1420, zx(2 * CLIMB, 3 * CLIMB, 800), -1.8, GRAPE);               // leg3 sweep
+            bump(900, 1230, 3 * CLIMB, PINK); bump(1020, 1230, 3 * CLIMB, YEL);        // east landing 3
+            wall(1040, zx(4 * CLIMB, 3 * CLIMB, 640), 430, 850, 168, 1);               // leg4 sliding wall
+            beam(560, 1040, zx(4 * CLIMB, 3 * CLIMB, 560), 1.9, PINK);                 // leg4 sweep
+            beam(320, 850, 4 * CLIMB, -2.0, GRAPE);                                     // west landing 4
+            bump(560, 660, zx(4 * CLIMB, 5 * CLIMB, 560), YEL);                        // leg5 bumper
+            pend(780, 660, zx(4 * CLIMB, 5 * CLIMB, 780), 2.0);                        // leg5 final hammer
+
+            // ---- AUTO GUARD-RAILS: walk each climbing leg's rim; wherever the
+            //      neighbouring ground drops away (void or an un-steppable fall),
+            //      line it with a solid rail so beans bonk & slide instead of
+            //      tumbling off. The gaps land naturally where a landing connects;
+            //      contiguous drops merge into one wall to keep the count low. ----
+            const STEP = 50, PROBE = 46;
+            const drop = (x, y, z) => platformGroundZ(L.plats, x, y, z) <= z - 60;
+            const railX = (a, b, y, zLo, zHi) => r.obstacles.push(new Wall({ cx: (a + b) / 2, cy: y, hw: (b - a) / 2 + STEP * 0.6, hh: 22, z: Math.min(zLo, zHi) - 10, height: 150 + Math.abs(zHi - zLo) }));
+            const railY = (a, b, x, z) => r.obstacles.push(new Wall({ cx: x, cy: (a + b) / 2, hw: 22, hh: (b - a) / 2 + STEP * 0.6, z: z - 10, height: 150 }));
+            for (const p of L.plats) {
+                if (!p.xramp) continue;
+                const zAt = (x) => p.z0 + (p.z1 - p.z0) * (x - p.x0) / (p.x1 - p.x0);
+                for (const [edgeY, out] of [[p.y0, -1], [p.y1, 1]]) {   // north / south edges, scan x
+                    let a = null, zA = 0, zB = 0;
+                    for (let x = p.x0; x <= p.x1 + STEP; x += STEP) {
+                        const xx = Math.min(x, p.x1), z = zAt(xx);
+                        if (x <= p.x1 && drop(xx, edgeY + out * PROBE, z)) { if (a == null) { a = xx; zA = z; } zB = z; }
+                        else if (a != null) { railX(a, Math.min(x - STEP, p.x1), edgeY, zA, zB); a = null; }
+                    }
+                }
+                for (const [edgeX, z, out] of [[p.x0, p.z0, -1], [p.x1, p.z1, 1]]) { // west / east ends, scan y
+                    let a = null;
+                    for (let y = p.y0; y <= p.y1 + STEP; y += STEP) {
+                        const yy = Math.min(y, p.y1);
+                        if (y <= p.y1 && drop(edgeX + out * PROBE, yy, z)) { if (a == null) a = yy; }
+                        else if (a != null) { railY(a, Math.min(y - STEP, p.y1), edgeX, z); a = null; }
+                    }
+                }
+            }
+            // outer guard walls on the round landings + finish deck rim
+            const ring = (cx, cy, hw, hh, z) => r.obstacles.push(new Wall({ cx, cy, hw, hh, z, height: 150 }));
+            ring(1196, 1990, 22, 156, CLIMB);            // east landing 1 outer
+            ring(84, 1610, 22, 156, 2 * CLIMB);          // west landing 2 outer
+            ring(1196, 1230, 22, 156, 3 * CLIMB);        // east landing 3 outer
+            ring(84, 850, 22, 156, 4 * CLIMB);           // west landing 4 outer
+            ring(860, 138, 286, 22, 5 * CLIMB);          // finish deck north rim
             L.apply(r);
 
-            // tall candy-striped pillars around the bowl + the slime float
-            for (const [px, py] of [[280, 800], [1000, 800], [280, 1900], [1000, 1900], [640, 250]])
-                r.deco.push({ type: 'column', cx: px, cy: py, z: 0, h: 660, r: 46 });
-            r.deco.push({ type: 'donut', cx: 980, cy: 2400, z: -60, r: 130 });
-            r.deco.push({ type: 'donut', cx: 300, cy: 2400, z: -60, r: 130 });
+            // ---- candy-striped pillars ringing the bowl + signature slime floats ----
+            for (const [px, py] of [[120, 700], [1160, 700], [120, 2050], [1160, 2050], [120, 1380], [1160, 1380]])
+                r.deco.push({ type: 'column', cx: px, cy: py, z: -140, h: 900, r: 50 });
+            r.deco.push({ type: 'donut', cx: 1080, cy: 2500, z: -120, r: 140 });
+            r.deco.push({ type: 'donut', cx: 220, cy: 2480, z: -120, r: 140 });
+            r.deco.push({ type: 'donut', cx: 640, cy: 150, z: -120, r: 120 });
 
-            // spawn 40 beans on the start pad
+            // ---- spawn 40 beans on the launch pad, facing up the first flight ----
             const ais = r.beans.filter(b => b.isAI); const ord = [r.player, ...ais];
             const per = 10;
             ord.forEach((b, i) => {
                 const row = Math.floor(i / per), col = i % per, cols = Math.min(per, ord.length - row * per);
-                b.x = 640 + (col - (cols - 1) / 2) * 64 + U.rngf(-4, 4);
-                b.y = 2620 + row * 48;
-                b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
+                b.x = 600 + (col - (cols - 1) / 2) * 52 + U.rngf(-4, 4);
+                b.y = 2430 + row * 50;
+                b.z = 0; b.startX = b.x; b.startY = b.y; b.facing = -Math.PI / 2;
                 b.lane = 0; b.skill = b.isPlayer ? 1 : U.rngf(0.5, 0.9); b._wp = 1;
             });
         },
