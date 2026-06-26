@@ -54,8 +54,8 @@ export function computeLight(chunk) {
     }
   }
 
-  // Skylight horizontal spread (a few BFS passes so cave mouths / overhangs glow)
-  spread(chunk, sky);
+  // Skylight flood-fill so light wraps under overhangs / canopies (no black voids)
+  skyBFS(chunk, sky);
 
   // Block light: seed sources, then BFS
   const queue = [];
@@ -69,20 +69,31 @@ export function computeLight(chunk) {
   bfsLight(chunk, block, queue);
 }
 
-function spread(chunk, arr) {
+// Flood-fill skylight horizontally/downward so shaded pockets under overhangs
+// and tree canopies get light instead of going pure black.
+function skyBFS(chunk, sky) {
   const { blocks } = chunk;
-  const get = (x, y, z) => (x < 0 || z < 0 || x >= CHUNK_SX || z >= CHUNK_SZ || y < 0 || y >= WORLD_HEIGHT) ? -1 : arr[idx(x, y, z)];
-  for (let pass = 0; pass < 2; pass++) {
-    for (let y = WORLD_HEIGHT - 1; y >= 0; y--)
-      for (let z = 0; z < CHUNK_SZ; z++)
-        for (let x = 0; x < CHUNK_SX; x++) {
-          const i = idx(x, y, z);
-          if (isOpaque(blocks[i])) continue;
-          let m = arr[i];
-          const n = [get(x+1,y,z),get(x-1,y,z),get(x,y+1,z),get(x,y-1,z),get(x,y,z+1),get(x,y,z-1)];
-          for (const v of n) if (v - 1 > m) m = v - 1;
-          if (m > arr[i]) arr[i] = m;
-        }
+  const q = [];
+  for (let i = 0; i < CHUNK_VOL; i++) if (sky[i] > 1) q.push(i);
+  let head = 0;
+  while (head < q.length) {
+    const i = q[head++];
+    const level = sky[i];
+    if (level <= 1) continue;
+    const y = (i / 256) | 0;
+    const rem = i - y * 256;
+    const z = (rem / CHUNK_SX) | 0;
+    const x = rem - z * CHUNK_SX;
+    const nb = [[x + 1, y, z], [x - 1, y, z], [x, y + 1, z], [x, y - 1, z], [x, y, z + 1], [x, y, z - 1]];
+    for (const [nx, ny, nz] of nb) {
+      if (nx < 0 || nz < 0 || nx >= CHUNK_SX || nz >= CHUNK_SZ || ny < 0 || ny >= WORLD_HEIGHT) continue;
+      const ni = idx(nx, ny, nz);
+      const id = blocks[ni];
+      if (id !== BLOCK.AIR && isOpaque(id)) continue;
+      const f = id === BLOCK.AIR ? 1 : Math.max(1, filterOf(id));
+      const nl = level - f;
+      if (nl > sky[ni]) { sky[ni] = nl; q.push(ni); }
+    }
   }
 }
 

@@ -288,13 +288,19 @@ export class WorldGen {
     } else {
       for (let i = 0; i < h; i++) setL(wx, wy + i, wz, log, 'log');
       const top = wy + h;
-      for (let dy = -2; dy <= 1; dy++) {
-        const r = (dy >= 0) ? 1 : 2;
-        for (let dx = -r; dx <= r; dx++) for (let dz = -r; dz <= r; dz++) {
-          if (Math.abs(dx) === r && Math.abs(dz) === r && hash3(wx + dx, dy, wz + dz, this.seed) < 0.5) continue;
+      // two dense 5x5 lower layers (only the very corners occasionally trimmed)
+      for (let dy = -2; dy <= -1; dy++)
+        for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) {
+          if (Math.abs(dx) === 2 && Math.abs(dz) === 2 && hash3(wx + dx, dy, wz + dz, this.seed) < 0.4) continue;
           setL(wx + dx, top + dy, wz + dz, leaf, 'leaf');
         }
-      }
+      // two 3x3 upper layers + single cap
+      for (let dy = 0; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) {
+          if (Math.abs(dx) === 1 && Math.abs(dz) === 1 && dy === 1 && hash3(wx + dx, dy + 9, wz + dz, this.seed) < 0.5) continue;
+          setL(wx + dx, top + dy, wz + dz, leaf, 'leaf');
+        }
+      setL(wx, top + 2, wz, leaf, 'leaf');
     }
   }
 

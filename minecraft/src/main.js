@@ -383,7 +383,7 @@ class Game {
     this.uniforms.uDayLight.value = Math.max(dayLight, this.dim === DIM.OVERWORLD ? 0.05 : 0.5);
     this.uniforms.uSunDir.value.copy(sunDir);
     this.uniforms.uTime.value = this.time;
-    this.uniforms.uAmbient.value = this.dim === DIM.NETHER ? 0.18 : (this.dim === DIM.END ? 0.16 : 0.05 + dayLight * 0.05);
+    this.uniforms.uAmbient.value = this.dim === DIM.NETHER ? 0.22 : (this.dim === DIM.END ? 0.2 : 0.09 + dayLight * 0.09);
     this.uniforms.uCamPos.value.copy(this.camera.position);
 
     // fog
