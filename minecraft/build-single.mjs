@@ -32,9 +32,12 @@ for (const name of ORDER) {
 fs.writeFileSync('/tmp/_combined_game.js', combined); // for syntax checking
 
 const three = fs.readFileSync('vendor/three.module.js', 'utf8');
-const threeB64 = Buffer.from(three, 'utf8').toString('base64');
-const gameB64 = Buffer.from(combined, 'utf8').toString('base64');
+const threeB64 = Buffer.from(three, 'utf8').toString('base64');   // library: kept as base64 blob
 const css = fs.readFileSync('styles.css', 'utf8');
+
+// Game code is embedded READABLE inside the HTML. Only sanitize the one
+// sequence that could prematurely close the holder tag.
+const gameReadable = combined.replace(/<\/script>/gi, '<\\/script>');
 
 const html = `<!DOCTYPE html>
 <html lang="en">
@@ -50,8 +53,15 @@ ${css}
 <canvas id="gl"></canvas>
 <div id="boot">Loading VOXELCRAFT…</div>
 
+<!-- Three.js r160 (library) kept as a base64 blob to avoid escaping issues -->
 <script id="three-src" type="text/plain">${threeB64}</script>
-<script id="game-src" type="text/plain">${gameB64}</script>
+
+<!-- ===================== FULL GAME SOURCE (readable) ===================== -->
+<script id="game-src" type="text/plain">
+${gameReadable}
+</script>
+<!-- =================== END GAME SOURCE =================== -->
+
 <script>
 (async function () {
   function decode(b64) {
@@ -69,7 +79,7 @@ ${css}
   try {
     const threeSrc = decode(document.getElementById('three-src').textContent);
     const threeURL = URL.createObjectURL(new Blob([threeSrc], { type: 'text/javascript' }));
-    let gameSrc = decode(document.getElementById('game-src').textContent).replace('__THREE_URL__', threeURL);
+    let gameSrc = document.getElementById('game-src').textContent.replace(/<\\\\\\/script>/gi, '</scr' + 'ipt>').replace('__THREE_URL__', threeURL);
     const gameURL = URL.createObjectURL(new Blob([gameSrc], { type: 'text/javascript' }));
     await import(gameURL);
     const b = document.getElementById('boot'); if (b) b.style.display = 'none';
@@ -80,6 +90,6 @@ ${css}
 </html>
 `;
 
-fs.writeFileSync('voxelcraft.html', html);
-const kb = (fs.statSync('voxelcraft.html').size / 1024).toFixed(0);
-console.log(`wrote voxelcraft.html (${kb} KB), combined game ${(combined.length/1024).toFixed(0)} KB`);
+fs.writeFileSync('index.html', html);
+const kb = (fs.statSync('index.html').size / 1024).toFixed(0);
+console.log(`wrote index.html (${kb} KB), readable game ${(combined.length / 1024).toFixed(0)} KB`);

@@ -13,23 +13,23 @@ thing is self‑contained.
 
 ## ▶ How to run
 
-**Easiest — single file:** just open **`voxelcraft.html`** in a browser
-(double‑click it). Everything — Three.js, all game code, textures, CSS — is
-bundled into that one file, so it runs straight from `file://`, no server
-needed.
+**Easiest — just open `index.html`.** It's a single self‑contained file:
+Three.js, the entire game source (readable, inlined), textures, and CSS are all
+in that one file, so you can double‑click it and it runs straight from
+`file://` — no server, no build, no internet.
 
-**Modular dev version:** the `index.html` + `src/` version uses ES modules, so
-it must be served over HTTP:
+**Modular dev version:** `index-dev.html` + `src/` loads the code as separate
+ES modules (nicer for editing), but ES modules require HTTP:
 
 ```bash
 cd minecraft
-python3 -m http.server 8099   # then open http://localhost:8099
+python3 -m http.server 8099   # then open http://localhost:8099/index-dev.html
 ```
 
-Rebuild the single file after editing `src/`:
+After editing anything in `src/`, regenerate the single file:
 
 ```bash
-node build-single.mjs         # regenerates voxelcraft.html
+node build-single.mjs         # rebuilds index.html from src/
 ```
 
 A modern browser with WebGL2 is required.
@@ -111,9 +111,11 @@ A modern browser with WebGL2 is required.
 
 ```
 minecraft/
-├── index.html          # entry + import map
+├── index.html          # ★ the complete single-file game (built artifact)
+├── index-dev.html      # modular dev entry (loads src/ over HTTP)
+├── build-single.mjs    # bundles src/ + Three.js -> index.html
 ├── styles.css          # all UI styling
-├── vendor/             # vendored three.module.js + jsm post‑processing addons
+├── vendor/             # vendored three.module.js
 └── src/
     ├── main.js         # Game orchestrator, loop, day/night, dimensions
     ├── constants.js    ids.js  noise.js

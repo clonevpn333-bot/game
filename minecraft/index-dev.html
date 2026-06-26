@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>VOXELCRAFT (dev / modular) — Minecraft-inspired survival sandbox</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Modular dev entry: loads ES modules from src/ (must be served over HTTP).
+       The shippable single file is index.html (built by `node build-single.mjs`). -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.js",
+      "three/addons/": "./vendor/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="gl"></canvas>
+  <div id="boot">Loading VOXELCRAFT…</div>
+  <script type="module">
+    import './src/main.js';
+    const b = document.getElementById('boot');
+    if (b) b.style.display = 'none';
+    window.addEventListener('error', (e) => {
+      const el = document.getElementById('boot');
+      if (el) { el.style.display = 'block'; el.style.color = '#f88'; el.textContent = 'Error: ' + (e.message || e); }
+    });
+  </script>
+</body>
+</html>
