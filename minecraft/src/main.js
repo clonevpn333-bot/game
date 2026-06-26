@@ -11,6 +11,7 @@ import { createUniforms, createAtlasTexture, createChunkMaterials, createSky, cr
 import { WorldGen } from './worldgen.js';
 import { World } from './world.js';
 import { Player } from './player.js';
+import { ViewModel } from './viewmodel.js';
 import { MobManager } from './mobs.js';
 import { Inventory } from './inventory.js';
 import { Particles } from './particles.js';
@@ -62,8 +63,7 @@ class Game {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMapping = THREE.NoToneMapping; // ACES applied in the final post pass
     this.camera = new THREE.PerspectiveCamera(this.settings.fov, window.innerWidth / window.innerHeight, 0.05, 1600);
     this.camera.position.set(0, 80, 0);
   }
@@ -78,6 +78,8 @@ class Game {
     this.sky = createSky(this.uniforms);
     this.scene.add(this.sky.group);
     this.particles = new Particles(this.scene);
+    this.scene.add(this.camera);
+    this.viewmodel = new ViewModel(this.camera, this.atlasTexture, this.uvs);
     this.fx = createPostFX(this.renderer, this.scene, this.camera);
     // selection outline
     const og = new THREE.BoxGeometry(1.002, 1.002, 1.002);
@@ -499,11 +501,19 @@ class Game {
         else this.selBox.visible = false;
         // step sound
         if (this.player.onGround && (Math.abs(this.player.vel.x) + Math.abs(this.player.vel.z)) > 1.5) this.audio.tick('step');
+        // view model (arm + held item)
+        if ((this.input.mouseLeft && this.player.target) || this.input.mouseRight) this.viewmodel.triggerSwing();
+        const held = this.inventory.held();
+        const vlight = this.world.lightLevelAt(Math.floor(this.player.pos.x), Math.floor(this.player.pos.y + 1), Math.floor(this.player.pos.z), this.uniforms.uDayLight.value);
+        this.viewmodel.update(dt, this.player, held ? held.id : -1, vlight, this.time);
+        this.viewmodel.root.visible = true;
       } else {
         this.world && this.world.update(this.player.pos.x, this.player.pos.z, { gen: 1, mesh: 2 });
+        this.viewmodel.root.visible = false;
       }
       this.particles.update(dt);
     } else {
+      this.viewmodel.root.visible = false;
       // menu backdrop: slowly orbit
       this.camera.position.set(Math.cos(this.time * 0.1) * 4, 80, Math.sin(this.time * 0.1) * 4);
       this.camera.lookAt(0, 82, -10);
@@ -555,4 +565,6 @@ class Game {
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => { window.GAME = new Game(); });
+function bootGame() { window.GAME = new Game(); }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootGame);
+else bootGame();

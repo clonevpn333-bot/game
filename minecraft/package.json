@@ -6,5 +6,8 @@
   "description": "A Minecraft-inspired voxel survival sandbox running in the browser (Three.js, custom built-in shader pack).",
   "scripts": {
     "start": "python3 -m http.server 8099"
+  },
+  "dependencies": {
+    "playwright-core": "^1.49.0"
   }
 }

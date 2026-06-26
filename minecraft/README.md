@@ -13,17 +13,26 @@ thing is self‑contained.
 
 ## ▶ How to run
 
-It's a static site. Serve the folder over HTTP (ES modules don't load from
-`file://`):
+**Easiest — single file:** just open **`voxelcraft.html`** in a browser
+(double‑click it). Everything — Three.js, all game code, textures, CSS — is
+bundled into that one file, so it runs straight from `file://`, no server
+needed.
+
+**Modular dev version:** the `index.html` + `src/` version uses ES modules, so
+it must be served over HTTP:
 
 ```bash
 cd minecraft
-python3 -m http.server 8099
-# then open http://localhost:8099
+python3 -m http.server 8099   # then open http://localhost:8099
 ```
 
-Any static server works (`npx serve`, nginx, etc.). A modern browser with
-WebGL2 is required.
+Rebuild the single file after editing `src/`:
+
+```bash
+node build-single.mjs         # regenerates voxelcraft.html
+```
+
+A modern browser with WebGL2 is required.
 
 ---
 
@@ -84,7 +93,9 @@ WebGL2 is required.
 **Rendering — built‑in shader pack**
 - Volumetric **god rays** from the sun, **bloom**, ACES tone mapping and a
   BSL/Bliss‑style **color grade** (saturation, contrast, vignette).
-- Dynamic sky dome with sunrise/sunset gradients, sun, moon and stars.
+- Dynamic sky dome with sunrise/sunset gradients, soft volumetric clouds, sun,
+  moon and stars.
+- First‑person arm + held‑item view model with idle/walk bob and swing.
 - Waving water surface and swaying foliage, distance fog, underwater tint.
 - Toggle each effect, render distance, FOV and sensitivity in **Settings**.
 

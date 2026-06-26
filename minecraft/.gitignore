@@ -1,6 +1,6 @@
 node_modules/
 package-lock.json
 *.tgz
-_verify*.mjs
+_*.mjs
 *.log
 .DS_Store

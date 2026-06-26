@@ -15,33 +15,35 @@ function hash3(x, y, z, s) {
 function hash2(x, z, s) { return hash3(x, z, 9871, s); }
 
 // ---- biome definitions ------------------------------------------------------
-const TINT = {
-  plains_g: [0.49, 0.74, 0.36], plains_f: [0.43, 0.66, 0.30],
-  forest_g: [0.41, 0.69, 0.31], forest_f: [0.36, 0.60, 0.26],
-  jungle_g: [0.34, 0.78, 0.22], jungle_f: [0.30, 0.70, 0.20],
-  savanna_g: [0.74, 0.72, 0.34], savanna_f: [0.66, 0.66, 0.30],
-  swamp_g: [0.42, 0.52, 0.30], swamp_f: [0.40, 0.50, 0.28],
-  snowy_g: [0.50, 0.62, 0.46], snowy_f: [0.46, 0.58, 0.46],
-  desert_g: [0.62, 0.66, 0.34], desert_f: [0.56, 0.60, 0.30],
-  badlands_g: [0.62, 0.56, 0.30], badlands_f: [0.62, 0.56, 0.30],
-  mountain_g: [0.48, 0.64, 0.40], mountain_f: [0.44, 0.58, 0.38],
+// Tints are gentle MULTIPLIERS over the already-colored grass/leaf textures
+// (kept near-neutral so biomes vary subtly instead of recoloring to neon).
+const BIOME_TINT = {
+  plains_g: [0.96, 1.02, 0.78], plains_f: [0.90, 1.00, 0.74],
+  forest_g: [0.86, 0.98, 0.72], forest_f: [0.80, 0.94, 0.66],
+  jungle_g: [0.80, 1.04, 0.66], jungle_f: [0.74, 1.00, 0.60],
+  savanna_g: [1.02, 0.94, 0.60], savanna_f: [0.96, 0.90, 0.56],
+  swamp_g: [0.74, 0.82, 0.58], swamp_f: [0.70, 0.80, 0.56],
+  snowy_g: [0.88, 0.96, 0.86], snowy_f: [0.84, 0.94, 0.84],
+  desert_g: [0.92, 0.92, 0.66], desert_f: [0.88, 0.90, 0.62],
+  badlands_g: [0.94, 0.86, 0.62], badlands_f: [0.94, 0.86, 0.62],
+  mountain_g: [0.88, 0.98, 0.82], mountain_f: [0.84, 0.94, 0.78],
 };
-const WATER_T = { normal: [0.24, 0.46, 0.92], swamp: [0.36, 0.46, 0.30], cold: [0.22, 0.40, 0.80] };
+const WATER_T = { normal: [0.40, 0.62, 1.00], swamp: [0.50, 0.62, 0.46], cold: [0.42, 0.60, 0.98] };
 
 function biomeDef(id) { return BIOMES[id]; }
 const BIOMES = {
-  ocean:    { name: 'Ocean', top: BLOCK.GRAVEL, sub: BLOCK.SAND, tree: 'none', grassTint: TINT.plains_g, foliageTint: TINT.plains_f, waterTint: WATER_T.normal },
-  beach:    { name: 'Beach', top: BLOCK.SAND, sub: BLOCK.SAND, tree: 'none', grassChance: 0, grassTint: TINT.plains_g, foliageTint: TINT.plains_f, waterTint: WATER_T.normal },
-  plains:   { name: 'Plains', top: BLOCK.GRASS, sub: BLOCK.DIRT, tree: 'oak', treeChance: 0.006, grassChance: 0.20, flowerChance: 0.02, grassTint: TINT.plains_g, foliageTint: TINT.plains_f, waterTint: WATER_T.normal },
-  forest:   { name: 'Forest', top: BLOCK.GRASS, sub: BLOCK.DIRT, tree: 'oakbirch', treeChance: 0.06, grassChance: 0.18, flowerChance: 0.02, grassTint: TINT.forest_g, foliageTint: TINT.forest_f, waterTint: WATER_T.normal },
-  jungle:   { name: 'Jungle', top: BLOCK.GRASS, sub: BLOCK.DIRT, tree: 'jungle', treeChance: 0.10, grassChance: 0.30, flowerChance: 0.01, grassTint: TINT.jungle_g, foliageTint: TINT.jungle_f, waterTint: WATER_T.normal },
-  savanna:  { name: 'Savanna', top: BLOCK.GRASS, sub: BLOCK.DIRT, tree: 'oak', treeChance: 0.008, grassChance: 0.25, grassTint: TINT.savanna_g, foliageTint: TINT.savanna_f, waterTint: WATER_T.normal },
-  swamp:    { name: 'Swamp', top: BLOCK.GRASS, sub: BLOCK.DIRT, tree: 'oak', treeChance: 0.02, grassChance: 0.25, mushroom: true, grassTint: TINT.swamp_g, foliageTint: TINT.swamp_f, waterTint: WATER_T.swamp },
-  desert:   { name: 'Desert', top: BLOCK.SAND, sub: BLOCK.SANDSTONE, tree: 'none', cactus: true, deadbush: true, grassTint: TINT.desert_g, foliageTint: TINT.desert_f, waterTint: WATER_T.normal },
-  badlands: { name: 'Badlands', top: BLOCK.RED_SAND, sub: BLOCK.TERRACOTTA, tree: 'none', deadbush: true, grassTint: TINT.badlands_g, foliageTint: TINT.badlands_f, waterTint: WATER_T.normal },
-  snowy:    { name: 'Snowy Plains', top: BLOCK.GRASS_BLOCK_SNOW, sub: BLOCK.DIRT, tree: 'spruce', treeChance: 0.02, snow: true, grassTint: TINT.snowy_g, foliageTint: TINT.snowy_f, waterTint: WATER_T.cold },
-  taiga:    { name: 'Taiga', top: BLOCK.GRASS, sub: BLOCK.DIRT, tree: 'spruce', treeChance: 0.05, grassChance: 0.10, grassTint: TINT.snowy_g, foliageTint: TINT.snowy_f, waterTint: WATER_T.cold },
-  mountains:{ name: 'Mountains', top: BLOCK.GRASS, sub: BLOCK.DIRT, tree: 'spruce', treeChance: 0.01, mountainous: true, grassTint: TINT.mountain_g, foliageTint: TINT.mountain_f, waterTint: WATER_T.cold },
+  ocean:    { name: 'Ocean', top: BLOCK.GRAVEL, sub: BLOCK.SAND, tree: 'none', grassTint: BIOME_TINT.plains_g, foliageTint: BIOME_TINT.plains_f, waterTint: WATER_T.normal },
+  beach:    { name: 'Beach', top: BLOCK.SAND, sub: BLOCK.SAND, tree: 'none', grassChance: 0, grassTint: BIOME_TINT.plains_g, foliageTint: BIOME_TINT.plains_f, waterTint: WATER_T.normal },
+  plains:   { name: 'Plains', top: BLOCK.GRASS, sub: BLOCK.DIRT, tree: 'oak', treeChance: 0.006, grassChance: 0.20, flowerChance: 0.02, grassTint: BIOME_TINT.plains_g, foliageTint: BIOME_TINT.plains_f, waterTint: WATER_T.normal },
+  forest:   { name: 'Forest', top: BLOCK.GRASS, sub: BLOCK.DIRT, tree: 'oakbirch', treeChance: 0.06, grassChance: 0.18, flowerChance: 0.02, grassTint: BIOME_TINT.forest_g, foliageTint: BIOME_TINT.forest_f, waterTint: WATER_T.normal },
+  jungle:   { name: 'Jungle', top: BLOCK.GRASS, sub: BLOCK.DIRT, tree: 'jungle', treeChance: 0.10, grassChance: 0.30, flowerChance: 0.01, grassTint: BIOME_TINT.jungle_g, foliageTint: BIOME_TINT.jungle_f, waterTint: WATER_T.normal },
+  savanna:  { name: 'Savanna', top: BLOCK.GRASS, sub: BLOCK.DIRT, tree: 'oak', treeChance: 0.008, grassChance: 0.25, grassTint: BIOME_TINT.savanna_g, foliageTint: BIOME_TINT.savanna_f, waterTint: WATER_T.normal },
+  swamp:    { name: 'Swamp', top: BLOCK.GRASS, sub: BLOCK.DIRT, tree: 'oak', treeChance: 0.02, grassChance: 0.25, mushroom: true, grassTint: BIOME_TINT.swamp_g, foliageTint: BIOME_TINT.swamp_f, waterTint: WATER_T.swamp },
+  desert:   { name: 'Desert', top: BLOCK.SAND, sub: BLOCK.SANDSTONE, tree: 'none', cactus: true, deadbush: true, grassTint: BIOME_TINT.desert_g, foliageTint: BIOME_TINT.desert_f, waterTint: WATER_T.normal },
+  badlands: { name: 'Badlands', top: BLOCK.RED_SAND, sub: BLOCK.TERRACOTTA, tree: 'none', deadbush: true, grassTint: BIOME_TINT.badlands_g, foliageTint: BIOME_TINT.badlands_f, waterTint: WATER_T.normal },
+  snowy:    { name: 'Snowy Plains', top: BLOCK.GRASS_BLOCK_SNOW, sub: BLOCK.DIRT, tree: 'spruce', treeChance: 0.02, snow: true, grassTint: BIOME_TINT.snowy_g, foliageTint: BIOME_TINT.snowy_f, waterTint: WATER_T.cold },
+  taiga:    { name: 'Taiga', top: BLOCK.GRASS, sub: BLOCK.DIRT, tree: 'spruce', treeChance: 0.05, grassChance: 0.10, grassTint: BIOME_TINT.snowy_g, foliageTint: BIOME_TINT.snowy_f, waterTint: WATER_T.cold },
+  mountains:{ name: 'Mountains', top: BLOCK.GRASS, sub: BLOCK.DIRT, tree: 'spruce', treeChance: 0.01, mountainous: true, grassTint: BIOME_TINT.mountain_g, foliageTint: BIOME_TINT.mountain_f, waterTint: WATER_T.cold },
 };
 
 export class WorldGen {

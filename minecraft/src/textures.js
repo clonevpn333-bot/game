@@ -37,63 +37,72 @@ class Tile {
 function shade(c, d) { return [c[0] + d, c[1] + d, c[2] + d]; }
 
 // ---- generic palette --------------------------------------------------------
+// Colors tuned toward vanilla Minecraft default texture pack: muted, slightly
+// desaturated, natural. Kept low-saturation so a shader pack reads cleanly.
 const PAL = {
-  stone: [128, 128, 132], dirt: [134, 96, 67], grass_top: [104, 160, 70],
-  grass_side_top: [104, 160, 70], cobble: [122, 122, 126], planks_oak: [162, 130, 78],
-  sand: [219, 206, 160], gravel: [128, 122, 120], bedrock: [70, 70, 74],
-  snow: [240, 244, 250], ice: [150, 190, 235], clay: [159, 164, 177],
-  netherrack: [110, 50, 50], soul_sand: [86, 66, 54], glowstone: [190, 150, 80],
-  obsidian: [22, 16, 34], sandstone: [222, 208, 156], red_sand: [190, 110, 60],
-  terracotta: [152, 94, 67], bricks: [150, 84, 70], stone_bricks: [122, 122, 126],
-  end_stone: [220, 224, 168], nether_brick: [44, 22, 26], purpur: [168, 110, 168],
-  log_oak: [104, 80, 48], log_birch: [216, 212, 200], log_spruce: [60, 42, 28],
-  log_jungle: [118, 88, 56], leaves_oak: [60, 110, 40], leaves_birch: [110, 150, 70],
-  leaves_spruce: [50, 84, 56], leaves_jungle: [44, 110, 36], cactus: [82, 130, 64],
-  diamond: [104, 224, 224], iron: [216, 216, 216], gold: [248, 216, 96],
-  coal: [42, 42, 46], emerald: [80, 220, 120], lapis: [38, 78, 168], redstone: [200, 30, 30],
+  stone: [127, 127, 127], dirt: [121, 95, 69], grass_top: [106, 138, 70],
+  grass_side_top: [106, 138, 70], cobble: [122, 122, 122], planks_oak: [160, 127, 80],
+  sand: [219, 207, 163], gravel: [126, 121, 118], bedrock: [85, 85, 85],
+  snow: [239, 247, 247], ice: [151, 184, 233], clay: [161, 167, 181],
+  netherrack: [97, 38, 38], soul_sand: [85, 67, 56], glowstone: [171, 131, 78],
+  obsidian: [21, 18, 30], sandstone: [217, 206, 160], red_sand: [169, 96, 48],
+  terracotta: [150, 95, 68], bricks: [150, 97, 83], stone_bricks: [122, 122, 122],
+  end_stone: [219, 222, 158], nether_brick: [44, 22, 26], purpur: [169, 125, 169],
+  log_oak: [102, 81, 48], log_birch: [197, 196, 188], log_spruce: [58, 42, 25],
+  log_jungle: [105, 78, 51], leaves_oak: [58, 92, 38], leaves_birch: [100, 130, 67],
+  leaves_spruce: [49, 74, 49], leaves_jungle: [55, 96, 36], cactus: [85, 122, 60],
+  diamond: [108, 219, 214], iron: [216, 216, 216], gold: [231, 198, 91],
+  coal: [40, 40, 40], emerald: [82, 196, 116], lapis: [38, 67, 137], redstone: [171, 32, 32],
 };
 
 // ---- specialized tile painters ---------------------------------------------
 function paintOre(t, base, ore) {
-  t.noiseFill(base[0], base[1], base[2], 16);
+  t.noiseFill(base[0], base[1], base[2], 10);
   const spots = 4 + (t.rng() * 3 | 0);
   for (let s = 0; s < spots; s++) {
     const cx = 2 + (t.rng() * 12 | 0), cy = 2 + (t.rng() * 12 | 0);
     const r = 1 + (t.rng() * 1.4 | 0);
     for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
       if (x*x + y*y <= r*r + 0.5) {
-        const v = (t.rng() - 0.5) * 36;
+        const v = (t.rng() - 0.5) * 22;
         t.set(cx + x, cy + y, ore[0]+v, ore[1]+v, ore[2]+v);
       }
     }
+    // subtle dark outline at edge so the speck reads as a nugget
+    t.set(cx, cy + r + 1, ore[0]-30, ore[1]-30, ore[2]-30);
   }
 }
 function paintPlanks(t, c) {
-  t.noiseFill(c[0], c[1], c[2], 10);
-  const dark = shade(c, -34);
-  for (let y = 0; y < TILE; y += 4) t.rect(0, y, TILE, 1, dark[0], dark[1], dark[2]);
-  // vertical grain
-  for (let i = 0; i < 16; i++) {
+  t.noiseFill(c[0], c[1], c[2], 7);
+  const dark = shade(c, -28), light = shade(c, 14);
+  // clean horizontal plank seams with a faint highlight under each
+  for (let y = 0; y < TILE; y += 4) {
+    t.rect(0, y, TILE, 1, dark[0], dark[1], dark[2]);
+    if (y + 1 < TILE) t.rect(0, y + 1, TILE, 1, light[0], light[1], light[2]);
+  }
+  // sparse vertical grain ticks
+  for (let i = 0; i < 12; i++) {
     const x = t.rng() * TILE | 0, y = t.rng() * TILE | 0;
-    t.set(x, y, c[0]-20, c[1]-20, c[2]-20);
+    t.set(x, y, c[0]-14, c[1]-14, c[2]-14);
   }
 }
 function paintLogSide(t, c) {
-  t.noiseFill(c[0], c[1], c[2], 12);
-  const dark = shade(c, -30), light = shade(c, 18);
+  t.noiseFill(c[0], c[1], c[2], 8);
+  const dark = shade(c, -22), light = shade(c, 12);
+  // vertical bark grooves, gentler than before
   for (let x = 0; x < TILE; x++) {
-    if (x % 5 === 0) for (let y = 0; y < TILE; y++) t.set(x, y, dark[0], dark[1], dark[2]);
-    if (x % 5 === 2) for (let y = 0; y < TILE; y++) t.set(x, y, light[0], light[1], light[2]);
+    if (x % 6 === 0) for (let y = 0; y < TILE; y++) { const v=(t.rng()-0.5)*8; t.set(x, y, dark[0]+v, dark[1]+v, dark[2]+v); }
+    if (x % 6 === 3) for (let y = 0; y < TILE; y++) { const v=(t.rng()-0.5)*8; t.set(x, y, light[0]+v, light[1]+v, light[2]+v); }
   }
 }
 function paintLogTop(t, c) {
-  const bark = shade(c, -24);
+  const bark = shade(c, -20);
   t.fill(c[0], c[1], c[2]);
   const cx = 7.5, cy = 7.5;
   for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) {
     const d = Math.sqrt((x-cx)**2 + (y-cy)**2);
     const ring = Math.sin(d * 1.6) * 0.5 + 0.5;
-    const v = ring * 26 - 13;
+    const v = ring * 16 - 8;
     t.set(x, y, c[0]+v, c[1]+v, c[2]+v);
   }
   // bark border
@@ -101,166 +110,174 @@ function paintLogTop(t, c) {
 }
 function paintLeaves(t, c) {
   t.fill(0,0,0,0);
+  const dk = shade(c, -22), lt = shade(c, 16);
   for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) {
-    if (t.rng() < 0.10) continue; // holes for cutout look
-    const v = (t.rng() - 0.5) * 60;
-    const dark = t.rng() < 0.3 ? -28 : 0;
-    t.set(x, y, c[0]+v+dark, c[1]+v+dark, c[2]+v+dark, 255);
+    if (t.rng() < 0.08) continue; // holes for cutout look
+    const r = t.rng();
+    // cluster into a few tones for depth instead of high-amplitude noise
+    let base = c;
+    if (r < 0.28) base = dk;
+    else if (r > 0.80) base = lt;
+    const v = (t.rng() - 0.5) * 16;
+    t.set(x, y, base[0]+v, base[1]+v, base[2]+v, 255);
   }
 }
 function paintCobble(t, c) {
-  t.noiseFill(c[0]-6, c[1]-6, c[2]-6, 8);
+  t.noiseFill(c[0]-4, c[1]-4, c[2]-4, 6);
   const stones = [[1,1,5,5],[7,1,7,4],[1,7,4,6],[6,6,4,4],[11,8,4,6],[2,12,6,3]];
   for (const [x,y,w,h] of stones) {
-    const v = (t.rng()-0.5)*30;
+    const v = (t.rng()-0.5)*18;
     t.rect(x,y,w,h, c[0]+v, c[1]+v, c[2]+v);
-    t.rect(x,y,w,1, c[0]+v+24, c[1]+v+24, c[2]+v+24); // top highlight
+    t.rect(x,y,w,1, c[0]+v+16, c[1]+v+16, c[2]+v+16); // top highlight
+    t.rect(x,y+h-1,w,1, c[0]+v-16, c[1]+v-16, c[2]+v-16); // bottom shadow
   }
 }
 function paintBricks(t, c) {
-  const mortar = shade(c, -50);
+  const mortar = shade(c, -42);
   t.fill(mortar[0], mortar[1], mortar[2]);
   for (let row = 0; row < 4; row++) {
     const off = (row % 2) * 4;
     for (let col = -1; col < 4; col++) {
       const x = col * 8 + off + 1, y = row * 4 + 1;
-      const v = (t.rng()-0.5)*16;
+      const v = (t.rng()-0.5)*12;
       t.rect(x, y, 6, 3, c[0]+v, c[1]+v, c[2]+v);
+      t.rect(x, y, 6, 1, c[0]+v+12, c[1]+v+12, c[2]+v+12); // faint top highlight
     }
   }
 }
 function paintStoneBricks(t, c) {
-  const mortar = shade(c, -34);
-  t.noiseFill(c[0], c[1], c[2], 10);
+  const mortar = shade(c, -28);
+  t.noiseFill(c[0], c[1], c[2], 7);
   for (let i = 0; i < TILE; i++) { t.set(i,7,mortar[0],mortar[1],mortar[2]); t.set(i,15,mortar[0],mortar[1],mortar[2]); }
   for (let y = 0; y < 8; y++) t.set(7, y, mortar[0],mortar[1],mortar[2]);
   for (let y = 8; y < 16; y++) t.set(3, y, mortar[0],mortar[1],mortar[2]);
   for (let y = 8; y < 16; y++) t.set(12, y, mortar[0],mortar[1],mortar[2]);
 }
 function paintGlass(t) {
-  t.fill(210, 230, 240, 60);
-  for (let i = 0; i < TILE; i++) { t.set(i,0,255,255,255,180); t.set(i,15,200,220,235,140); t.set(0,i,255,255,255,160); t.set(15,i,200,220,235,140); }
-  t.set(3,3,255,255,255,220); t.set(4,3,255,255,255,160); t.set(3,4,255,255,255,160);
-  t.set(11,9,255,255,255,200);
+  t.fill(0, 0, 0, 0);
+  // clean pane: thin lighter frame, mostly transparent interior
+  for (let i = 0; i < TILE; i++) { t.set(i,0,255,255,255,150); t.set(i,15,205,222,232,110); t.set(0,i,255,255,255,130); t.set(15,i,205,222,232,110); }
+  t.set(2,2,255,255,255,170); t.set(3,2,255,255,255,120); t.set(2,3,255,255,255,120);
+  t.set(11,10,255,255,255,140);
 }
 function paintLiquid(t, c, a) {
-  t.noiseFill(c[0], c[1], c[2], 14, a);
+  t.noiseFill(c[0], c[1], c[2], 10, a);
   for (let x = 0; x < TILE; x++) {
     const y = (Math.sin(x*0.9)*1.5 + 4) | 0;
-    t.set(x, y, c[0]+30, c[1]+30, c[2]+30, a);
+    t.set(x, y, c[0]+22, c[1]+22, c[2]+22, a);
   }
 }
 function paintCross(t, draw) { t.fill(0,0,0,0); draw(t); }
 
 function makePainters() {
   return {
-    stone: t => t.noiseFill(...PAL.stone, 16),
-    dirt: t => t.noiseFill(...PAL.dirt, 18),
-    grass_top: t => { t.noiseFill(...PAL.grass_top, 18); for (let i=0;i<24;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,90,140,55);} },
+    stone: t => t.noiseFill(...PAL.stone, 9),
+    dirt: t => { t.noiseFill(...PAL.dirt, 11); for(let i=0;i<10;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,PAL.dirt[0]-14,PAL.dirt[1]-14,PAL.dirt[2]-14);} },
+    grass_top: t => { t.noiseFill(...PAL.grass_top, 9); for (let i=0;i<18;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,95,127,62);} for (let i=0;i<8;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,118,150,80);} },
     grass_side: t => {
-      t.noiseFill(...PAL.dirt, 16);
-      // green overlay top strip with drips
+      t.noiseFill(...PAL.dirt, 11);
+      // thin natural-green top strip with a few drips
       for (let x = 0; x < TILE; x++) {
-        const h = 4 + (Math.sin(x*1.3)*1.5 + (t.rng()*2|0)) | 0;
-        for (let y = 0; y < h; y++) { const v=(t.rng()-0.5)*24; t.set(x,y,PAL.grass_top[0]+v,PAL.grass_top[1]+v,PAL.grass_top[2]+v); }
+        const h = 3 + ((Math.sin(x*1.3)*1.2 + (t.rng()<0.3?1:0)) | 0);
+        for (let y = 0; y < h; y++) { const v=(t.rng()-0.5)*14; t.set(x,y,PAL.grass_top[0]+v,PAL.grass_top[1]+v,PAL.grass_top[2]+v); }
       }
     },
-    grass_snow_side: t => { t.noiseFill(...PAL.dirt, 16); for (let x=0;x<TILE;x++){const h=4+(t.rng()*2|0);for(let y=0;y<h;y++){const v=(t.rng()-0.5)*14;t.set(x,y,PAL.snow[0]+v,PAL.snow[1]+v,PAL.snow[2]+v);}} },
+    grass_snow_side: t => { t.noiseFill(...PAL.dirt, 11); for (let x=0;x<TILE;x++){const h=4+(t.rng()<0.4?1:0);for(let y=0;y<h;y++){const v=(t.rng()-0.5)*8;t.set(x,y,PAL.snow[0]+v,PAL.snow[1]+v,PAL.snow[2]+v);}} },
     cobblestone: t => paintCobble(t, PAL.cobble),
-    mossy_cobble: t => { paintCobble(t, PAL.cobble); for (let i=0;i<40;i++){const x=t.rng()*16|0,y=t.rng()*16|0;if(t.rng()<0.5)t.set(x,y,70,110,50);} },
+    mossy_cobble: t => { paintCobble(t, PAL.cobble); for (let i=0;i<34;i++){const x=t.rng()*16|0,y=t.rng()*16|0;if(t.rng()<0.5)t.set(x,y,76,102,56);} },
     planks_oak: t => paintPlanks(t, PAL.planks_oak),
-    bedrock: t => { t.noiseFill(...PAL.bedrock, 26); for(let i=0;i<10;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,30,30,32);} },
-    sand: t => t.noiseFill(...PAL.sand, 12),
-    red_sand: t => t.noiseFill(...PAL.red_sand, 14),
-    gravel: t => { t.noiseFill(...PAL.gravel, 22); for(let i=0;i<24;i++){const x=t.rng()*16|0,y=t.rng()*16|0,v=(t.rng()-0.5)*60;t.set(x,y,PAL.gravel[0]+v,PAL.gravel[1]+v,PAL.gravel[2]+v);} },
-    snow: t => t.noiseFill(...PAL.snow, 8),
-    ice: t => { t.noiseFill(...PAL.ice, 16, 210); for(let i=0;i<6;i++){const x=t.rng()*16|0;for(let y=0;y<16;y++)t.set(x,y,190,220,250,210);} },
-    packed_ice: t => t.noiseFill(140, 178, 224, 12),
-    clay: t => t.noiseFill(...PAL.clay, 10),
-    netherrack: t => { t.noiseFill(...PAL.netherrack, 22); for(let i=0;i<20;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,70,30,30);} },
-    soul_sand: t => { t.noiseFill(...PAL.soul_sand, 14); for(let i=0;i<3;i++){const x=2+(t.rng()*11|0),y=2+(t.rng()*11|0);t.rect(x,y,2,2,50,38,30);} },
-    glowstone: t => { t.noiseFill(...PAL.glowstone, 22); for(let i=0;i<8;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,255,240,160);} },
-    obsidian: t => { t.noiseFill(...PAL.obsidian, 10); for(let i=0;i<10;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,60,40,90);} },
-    sandstone_top: t => { t.noiseFill(...PAL.sandstone, 8); for(let i=0;i<16;i++)t.set(i,0,200,186,140); },
-    sandstone_side: t => { t.noiseFill(...PAL.sandstone, 8); t.rect(0,0,16,2,200,186,140); t.rect(0,13,16,3,196,182,136); },
-    sandstone_bottom: t => t.noiseFill(...shade(PAL.sandstone,-12), 8),
-    terracotta: t => t.noiseFill(...PAL.terracotta, 14),
+    bedrock: t => { t.noiseFill(...PAL.bedrock, 18); for(let i=0;i<12;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,48,48,48);} for(let i=0;i<8;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,112,112,112);} },
+    sand: t => t.noiseFill(...PAL.sand, 8),
+    red_sand: t => t.noiseFill(...PAL.red_sand, 9),
+    gravel: t => { t.noiseFill(...PAL.gravel, 13); for(let i=0;i<20;i++){const x=t.rng()*16|0,y=t.rng()*16|0,v=(t.rng()-0.5)*36;t.set(x,y,PAL.gravel[0]+v,PAL.gravel[1]+v,PAL.gravel[2]+v);} },
+    snow: t => t.noiseFill(...PAL.snow, 5),
+    ice: t => { t.noiseFill(...PAL.ice, 10, 210); for(let i=0;i<5;i++){const x=t.rng()*16|0;for(let y=0;y<16;y++)t.set(x,y,170,200,238,210);} },
+    packed_ice: t => t.noiseFill(140, 174, 218, 8),
+    clay: t => t.noiseFill(...PAL.clay, 7),
+    netherrack: t => { t.noiseFill(...PAL.netherrack, 14); for(let i=0;i<18;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,70,28,28);} for(let i=0;i<8;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,120,52,52);} },
+    soul_sand: t => { t.noiseFill(...PAL.soul_sand, 9); for(let i=0;i<3;i++){const x=2+(t.rng()*11|0),y=2+(t.rng()*11|0);t.rect(x,y,2,2,54,42,34);} },
+    glowstone: t => { t.noiseFill(...PAL.glowstone, 16); for(let i=0;i<8;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,236,206,140);} },
+    obsidian: t => { t.noiseFill(...PAL.obsidian, 8); for(let i=0;i<10;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,46,34,68);} },
+    sandstone_top: t => { t.noiseFill(...PAL.sandstone, 5); for(let i=0;i<16;i++)t.set(i,0,202,190,148); },
+    sandstone_side: t => { t.noiseFill(...PAL.sandstone, 5); t.rect(0,0,16,2,202,190,148); t.rect(0,13,16,3,200,188,146); },
+    sandstone_bottom: t => t.noiseFill(...shade(PAL.sandstone,-10), 5),
+    terracotta: t => t.noiseFill(...PAL.terracotta, 9),
     bricks: t => paintBricks(t, PAL.bricks),
     stone_bricks: t => paintStoneBricks(t, PAL.stone_bricks),
     nether_brick: t => paintBricks(t, PAL.nether_brick),
-    end_stone: t => { t.noiseFill(...PAL.end_stone, 12); for(let i=0;i<14;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,200,200,150);} },
-    purpur: t => { t.noiseFill(...PAL.purpur, 14); for(let i=0;i<10;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,200,150,200);} },
+    end_stone: t => { t.noiseFill(...PAL.end_stone, 8); for(let i=0;i<12;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,202,206,144);} },
+    purpur: t => { t.noiseFill(...PAL.purpur, 9); for(let i=0;i<10;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,186,150,186);} },
     log_oak_side: t => paintLogSide(t, PAL.log_oak),
-    log_oak_top: t => paintLogTop(t, [150,118,76]),
-    log_birch_side: t => { paintLogSide(t, PAL.log_birch); for(let i=0;i<6;i++){const y=t.rng()*16|0;t.rect(t.rng()*12|0,y,2,1,40,40,40);} },
-    log_birch_top: t => paintLogTop(t, [220,216,204]),
+    log_oak_top: t => paintLogTop(t, [143,115,72]),
+    log_birch_side: t => { paintLogSide(t, PAL.log_birch); for(let i=0;i<6;i++){const y=t.rng()*16|0;t.rect(t.rng()*12|0,y,2,1,55,55,55);} },
+    log_birch_top: t => paintLogTop(t, [205,202,188]),
     log_spruce_side: t => paintLogSide(t, PAL.log_spruce),
-    log_spruce_top: t => paintLogTop(t, [86,62,40]),
+    log_spruce_top: t => paintLogTop(t, [82,60,36]),
     log_jungle_side: t => paintLogSide(t, PAL.log_jungle),
-    log_jungle_top: t => paintLogTop(t, [140,108,70]),
+    log_jungle_top: t => paintLogTop(t, [127,100,64]),
     leaves_oak: t => paintLeaves(t, PAL.leaves_oak),
     leaves_birch: t => paintLeaves(t, PAL.leaves_birch),
     leaves_spruce: t => paintLeaves(t, PAL.leaves_spruce),
     leaves_jungle: t => paintLeaves(t, PAL.leaves_jungle),
-    cactus_side: t => { t.noiseFill(...PAL.cactus, 12); for(let y=0;y<16;y++){t.set(0,y,40,80,40);t.set(15,y,40,80,40);} for(let i=0;i<6;i++){const x=2+(t.rng()*12|0),y=t.rng()*16|0;t.set(x,y,200,200,160);} },
-    cactus_top: t => { t.noiseFill(...shade(PAL.cactus,10), 10); t.rect(5,5,6,6,60,100,50); },
+    cactus_side: t => { t.noiseFill(...PAL.cactus, 8); for(let y=0;y<16;y++){t.set(0,y,52,82,44);t.set(15,y,52,82,44);} for(let i=0;i<6;i++){const x=2+(t.rng()*12|0),y=t.rng()*16|0;t.set(x,y,180,184,140);} },
+    cactus_top: t => { t.noiseFill(...shade(PAL.cactus,8), 7); t.rect(5,5,6,6,66,98,52); },
     gold_ore: t => paintOre(t, PAL.stone, PAL.gold),
-    iron_ore: t => paintOre(t, PAL.stone, [200,160,130]),
+    iron_ore: t => paintOre(t, PAL.stone, [184,150,124]),
     coal_ore: t => paintOre(t, PAL.stone, PAL.coal),
     diamond_ore: t => paintOre(t, PAL.stone, PAL.diamond),
     redstone_ore: t => paintOre(t, PAL.stone, PAL.redstone),
     lapis_ore: t => paintOre(t, PAL.stone, PAL.lapis),
     emerald_ore: t => paintOre(t, PAL.stone, PAL.emerald),
-    diamond_block: t => { t.noiseFill(...shade(PAL.diamond,-30),8); t.rect(2,2,12,12,...PAL.diamond); t.rect(3,3,3,3,200,255,255); },
-    iron_block: t => { t.noiseFill(...PAL.iron,6); t.rect(3,3,3,3,255,255,255); },
-    gold_block: t => { t.noiseFill(...PAL.gold,8); t.rect(3,3,3,3,255,245,180); },
-    emerald_block: t => { t.noiseFill(...shade(PAL.emerald,-20),8); t.rect(2,2,12,12,...PAL.emerald); t.rect(3,3,3,3,160,255,200); },
-    coal_block: t => t.noiseFill(...PAL.coal, 8),
-    lapis_block: t => t.noiseFill(...PAL.lapis, 18),
+    diamond_block: t => { t.noiseFill(...shade(PAL.diamond,-26),6); t.rect(2,2,12,12,...PAL.diamond); t.rect(3,3,3,3,190,240,238); },
+    iron_block: t => { t.noiseFill(...PAL.iron,5); t.rect(3,3,3,3,245,245,245); },
+    gold_block: t => { t.noiseFill(...PAL.gold,6); t.rect(3,3,3,3,250,232,150); },
+    emerald_block: t => { t.noiseFill(...shade(PAL.emerald,-18),6); t.rect(2,2,12,12,...PAL.emerald); t.rect(3,3,3,3,150,228,182); },
+    coal_block: t => t.noiseFill(...PAL.coal, 6),
+    lapis_block: t => t.noiseFill(...PAL.lapis, 12),
     glass: t => paintGlass(t),
-    water: t => paintLiquid(t, [50,90,200], 165),
-    lava: t => paintLiquid(t, [220,110,30], 255),
-    nether_portal: t => paintLiquid(t, [120,40,200], 170),
-    end_portal: t => { t.fill(8,8,24,235); for(let i=0;i<40;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,180,220,255,255);} },
-    crafting_table_top: t => { paintPlanks(t, PAL.planks_oak); t.rect(1,1,14,14,120,90,50); for(let y=2;y<14;y+=3)t.rect(2,y,12,1,90,60,30); t.rect(7,2,1,12,90,60,30); },
-    crafting_table_side: t => { paintPlanks(t, PAL.planks_oak); t.rect(1,8,14,1,90,60,30); t.rect(7,8,1,8,90,60,30); },
-    crafting_table_front: t => { paintPlanks(t, PAL.planks_oak); t.rect(2,2,5,5,90,60,30); t.rect(9,2,5,5,90,60,30); t.rect(2,9,12,5,110,80,46); },
-    furnace_top: t => { paintCobble(t, [110,110,114]); t.rect(5,5,6,6,60,60,64); },
-    furnace_side: t => paintCobble(t, [110,110,114]),
-    furnace_front: t => { paintCobble(t, [110,110,114]); t.rect(4,7,8,6,40,40,44); t.rect(5,8,6,1,60,60,64); },
-    furnace_front_lit: t => { paintCobble(t, [110,110,114]); t.rect(4,7,8,6,30,20,16); for(let i=0;i<14;i++){const x=4+(t.rng()*8|0),y=8+(t.rng()*4|0);t.set(x,y,255,150+(t.rng()*80|0),40);} },
-    chest_top: t => { paintPlanks(t, [150,108,60]); t.rect(1,1,14,14,170,124,70); t.rect(6,1,4,2,60,50,30); },
-    chest_side: t => { paintPlanks(t, [150,108,60]); t.rect(1,4,14,1,90,60,30); },
-    chest_front: t => { paintPlanks(t, [150,108,60]); t.rect(1,4,14,1,90,60,30); t.rect(7,6,2,3,240,210,90); },
-    bookshelf: t => { paintPlanks(t, PAL.planks_oak); const cols=[[200,60,60],[60,120,200],[80,180,90],[210,190,80],[170,90,200]]; for(let s=0;s<2;s++){const y=s*7+1;t.rect(1,y,14,5,80,55,30);for(let x=1;x<15;x+=2){const c=cols[t.rng()*cols.length|0];t.rect(x,y,1,5,c[0],c[1],c[2]);}} },
-    podzol_top: t => { t.noiseFill(110,80,44,16); for(let i=0;i<20;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,80,56,30);} },
-    podzol_side: t => { t.noiseFill(...PAL.dirt,14); t.rect(0,0,16,4,110,80,44); },
-    mycelium_top: t => { t.noiseFill(120,108,124,14); for(let i=0;i<30;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,150,130,160);} },
-    mycelium_side: t => { t.noiseFill(...PAL.dirt,14); t.rect(0,0,16,4,120,108,124); },
-    pumpkin_top: t => { t.noiseFill(200,140,40,12); t.rect(6,1,4,2,120,90,30); },
-    pumpkin_side: t => { t.noiseFill(210,140,36,12); for(let x=2;x<16;x+=4)for(let y=0;y<16;y++)t.set(x,y,170,110,28); },
-    pumpkin_front: t => { t.noiseFill(210,140,36,12); t.rect(3,4,3,3,60,40,16); t.rect(10,4,3,3,60,40,16); t.rect(5,9,6,3,60,40,16); },
-    end_portal_frame_top: t => { t.noiseFill(...PAL.end_stone,8); t.rect(3,3,10,10,40,160,140); },
-    end_portal_frame_side: t => { t.noiseFill(...PAL.end_stone,8); t.rect(0,0,16,5,160,160,120); },
-    farmland: t => { t.noiseFill(90,60,36,10); for(let x=2;x<16;x+=5)for(let y=0;y<16;y++)t.set(x,y,60,40,24); },
-    wool_white: t => t.noiseFill(235,235,235,10),
-    wool_red: t => t.noiseFill(180,60,55,12),
-    wool_blue: t => t.noiseFill(60,80,180,12),
-    wool_green: t => t.noiseFill(80,140,60,12),
-    wool_yellow: t => t.noiseFill(210,190,70,12),
-    wool_black: t => t.noiseFill(40,40,44,10),
-    ladder: t => paintCross(t, t2 => { for(let y=0;y<16;y++){t2.set(2,y,150,110,60);t2.set(13,y,150,110,60);} for(let y=2;y<16;y+=4)for(let x=2;x<14;x++)t2.set(x,y,170,130,70); }),
+    water: t => paintLiquid(t, [55,90,178], 165),
+    lava: t => paintLiquid(t, [207,103,28], 255),
+    nether_portal: t => paintLiquid(t, [108,46,168], 170),
+    end_portal: t => { t.fill(10,10,26,235); for(let i=0;i<40;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,170,206,238,255);} },
+    crafting_table_top: t => { paintPlanks(t, PAL.planks_oak); t.rect(1,1,14,14,124,94,54); for(let y=2;y<14;y+=3)t.rect(2,y,12,1,94,66,36); t.rect(7,2,1,12,94,66,36); },
+    crafting_table_side: t => { paintPlanks(t, PAL.planks_oak); t.rect(1,8,14,1,94,66,36); t.rect(7,8,1,8,94,66,36); },
+    crafting_table_front: t => { paintPlanks(t, PAL.planks_oak); t.rect(2,2,5,5,94,66,36); t.rect(9,2,5,5,94,66,36); t.rect(2,9,12,5,114,84,50); },
+    furnace_top: t => { paintCobble(t, [108,108,108]); t.rect(5,5,6,6,64,64,64); },
+    furnace_side: t => paintCobble(t, [108,108,108]),
+    furnace_front: t => { paintCobble(t, [108,108,108]); t.rect(4,7,8,6,44,44,44); t.rect(5,8,6,1,64,64,64); },
+    furnace_front_lit: t => { paintCobble(t, [108,108,108]); t.rect(4,7,8,6,32,22,18); for(let i=0;i<14;i++){const x=4+(t.rng()*8|0),y=8+(t.rng()*4|0);t.set(x,y,232,140+(t.rng()*70|0),44);} },
+    chest_top: t => { paintPlanks(t, [150,112,64]); t.rect(1,1,14,14,166,124,74); t.rect(6,1,4,2,66,52,32); },
+    chest_side: t => { paintPlanks(t, [150,112,64]); t.rect(1,4,14,1,94,66,36); },
+    chest_front: t => { paintPlanks(t, [150,112,64]); t.rect(1,4,14,1,94,66,36); t.rect(7,6,2,3,224,196,92); },
+    bookshelf: t => { paintPlanks(t, PAL.planks_oak); const cols=[[166,66,60],[66,104,160],[88,150,90],[188,168,82],[150,92,168]]; for(let s=0;s<2;s++){const y=s*7+1;t.rect(1,y,14,5,84,58,32);for(let x=1;x<15;x+=2){const c=cols[t.rng()*cols.length|0];t.rect(x,y,1,5,c[0],c[1],c[2]);}} },
+    podzol_top: t => { t.noiseFill(106,76,42,11); for(let i=0;i<20;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,82,58,32);} },
+    podzol_side: t => { t.noiseFill(...PAL.dirt,10); t.rect(0,0,16,4,106,76,42); },
+    mycelium_top: t => { t.noiseFill(118,106,120,10); for(let i=0;i<26;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,142,124,150);} },
+    mycelium_side: t => { t.noiseFill(...PAL.dirt,10); t.rect(0,0,16,4,118,106,120); },
+    pumpkin_top: t => { t.noiseFill(196,138,42,8); t.rect(6,1,4,2,122,92,34); },
+    pumpkin_side: t => { t.noiseFill(202,138,40,8); for(let x=2;x<16;x+=4)for(let y=0;y<16;y++)t.set(x,y,166,110,30); },
+    pumpkin_front: t => { t.noiseFill(202,138,40,8); t.rect(3,4,3,3,66,44,18); t.rect(10,4,3,3,66,44,18); t.rect(5,9,6,3,66,44,18); },
+    end_portal_frame_top: t => { t.noiseFill(...PAL.end_stone,6); t.rect(3,3,10,10,52,148,132); },
+    end_portal_frame_side: t => { t.noiseFill(...PAL.end_stone,6); t.rect(0,0,16,5,160,160,120); },
+    farmland: t => { t.noiseFill(94,64,40,8); for(let x=2;x<16;x+=5)for(let y=0;y<16;y++)t.set(x,y,64,44,26); },
+    wool_white: t => t.noiseFill(228,228,228,7),
+    wool_red: t => t.noiseFill(160,62,58,8),
+    wool_blue: t => t.noiseFill(60,76,148,8),
+    wool_green: t => t.noiseFill(86,128,60,8),
+    wool_yellow: t => t.noiseFill(190,176,72,8),
+    wool_black: t => t.noiseFill(40,40,44,7),
+    ladder: t => paintCross(t, t2 => { for(let y=0;y<16;y++){t2.set(2,y,150,114,66);t2.set(13,y,150,114,66);} for(let y=2;y<16;y+=4)for(let x=2;x<14;x++)t2.set(x,y,166,128,74); }),
     // crosses / plants
-    tall_grass: t => paintCross(t, t2 => { for(let x=3;x<13;x++){const h=6+(t2.rng()*7|0);for(let y=15;y>15-h;y--){const v=(t2.rng()-0.5)*30;t2.set(x,y,90+v,150+v,55+v);}} }),
+    tall_grass: t => paintCross(t, t2 => { for(let x=3;x<13;x++){const h=6+(t2.rng()*7|0);for(let y=15;y>15-h;y--){const v=(t2.rng()-0.5)*20;t2.set(x,y,96+v,134+v,62+v);}} }),
     dead_bush: t => paintCross(t, t2 => { for(let i=0;i<5;i++){let x=8,y=15;for(let s=0;s<8;s++){t2.set(x,y,120,90,50);x+=(t2.rng()*3|0)-1;y--;}} }),
-    sugar_cane: t => paintCross(t, t2 => { for(let y=15;y>=0;y--){const v=(t2.rng()-0.5)*20;t2.set(7,y,90+v,160+v,80+v);t2.set(8,y,90+v,160+v,80+v);} }),
-    wheat_stage: t => paintCross(t, t2 => { for(let x=2;x<15;x+=4)for(let y=15;y>4;y--){t2.set(x,y,200,180,60);} }),
+    sugar_cane: t => paintCross(t, t2 => { for(let y=15;y>=0;y--){const v=(t2.rng()-0.5)*14;t2.set(7,y,104+v,150+v,86+v);t2.set(8,y,104+v,150+v,86+v);} }),
+    wheat_stage: t => paintCross(t, t2 => { for(let x=2;x<15;x+=4)for(let y=15;y>4;y--){t2.set(x,y,196,176,72);} }),
     cobweb: t => paintCross(t, t2 => { for(let i=0;i<16;i++){t2.set(i,i,230,230,235,200);t2.set(15-i,i,230,230,235,200);t2.set(8,i,220,220,225,160);t2.set(i,8,220,220,225,160);} }),
-    poppy: t => paintCross(t, t2 => { for(let y=6;y<16;y++)t2.set(8,y,40,120,40); t2.rect(6,3,4,4,210,40,40); t2.set(7,4,255,220,60); }),
-    dandelion: t => paintCross(t, t2 => { for(let y=6;y<16;y++)t2.set(8,y,40,120,40); t2.rect(6,3,4,3,240,220,60); }),
-    mushroom_red: t => paintCross(t, t2 => { t2.rect(7,9,2,5,220,210,200); t2.rect(5,5,6,4,200,40,40); for(let i=0;i<4;i++)t2.set(5+(t2.rng()*6|0),5+(t2.rng()*3|0),240,240,240); }),
-    mushroom_brown: t => paintCross(t, t2 => { t2.rect(7,9,2,5,210,200,190); t2.rect(5,6,6,3,150,110,80); }),
-    torch: t => paintCross(t, t2 => { for(let y=6;y<16;y++){t2.set(7,y,150,110,60);t2.set(8,y,130,95,50);} t2.rect(7,3,2,3,255,230,120); t2.set(7,2,255,255,180); t2.set(8,2,255,200,80); }),
+    poppy: t => paintCross(t, t2 => { for(let y=6;y<16;y++)t2.set(8,y,56,108,48); t2.rect(6,3,4,4,196,52,48); t2.set(7,4,232,206,72); }),
+    dandelion: t => paintCross(t, t2 => { for(let y=6;y<16;y++)t2.set(8,y,56,108,48); t2.rect(6,3,4,3,228,204,68); }),
+    mushroom_red: t => paintCross(t, t2 => { t2.rect(7,9,2,5,216,206,196); t2.rect(5,5,6,4,184,52,48); for(let i=0;i<4;i++)t2.set(5+(t2.rng()*6|0),5+(t2.rng()*3|0),236,236,236); }),
+    mushroom_brown: t => paintCross(t, t2 => { t2.rect(7,9,2,5,206,196,186); t2.rect(5,6,6,3,150,112,82); }),
+    torch: t => paintCross(t, t2 => { for(let y=6;y<16;y++){t2.set(7,y,150,114,66);t2.set(8,y,130,98,54);} t2.rect(7,3,2,3,248,222,118); t2.set(7,2,255,248,176); t2.set(8,2,250,198,84); }),
   };
 }
 
@@ -281,7 +298,7 @@ function makeItemPainters() {
     item_flint: t => cross(t, t2 => { t2.rect(4,6,8,5,50,50,54); t2.set(4,6,80,80,84); }),
     item_clay_ball: t => cross(t, t2 => t2.rect(5,6,6,5,...PAL.clay)),
     item_brick: t => cross(t, t2 => t2.rect(4,6,8,4,...PAL.bricks)),
-    item_apple: t => cross(t, t2 => { t2.rect(5,5,6,7,210,40,40); t2.set(8,4,90,150,40); t2.set(6,6,255,140,140); }),
+    item_apple: t => cross(t, t2 => { t2.rect(5,5,6,7,196,52,48); t2.set(8,4,90,138,52); t2.set(6,6,232,140,140); }),
     item_wheat: t => cross(t, t2 => { for(let x=5;x<11;x+=2)for(let y=3;y<14;y++)t2.set(x,y,220,190,70); }),
     item_seeds: t => cross(t, t2 => { for(let i=0;i<6;i++)t2.set(4+(t2.rng()*8|0),6+(t2.rng()*5|0),120,170,70); }),
     item_bread: t => cross(t, t2 => { t2.rect(3,6,10,5,190,140,70); t2.rect(3,6,10,1,220,170,100); }),
@@ -332,11 +349,11 @@ function toolPainter(matColor, kind) {
 export function buildAtlas(extraNames = []) {
   const painters = Object.assign({}, makePainters(), makeItemPainters());
   // tools
-  const mats = { wood:[150,110,60], stone:[130,130,134], iron:[210,210,210], gold:[248,216,96], diamond:[104,224,224] };
+  const mats = { wood:[150,114,66], stone:[127,127,127], iron:[210,210,210], gold:[231,198,91], diamond:[108,219,214] };
   for (const m in mats) for (const k of ['pickaxe','axe','shovel','sword','hoe'])
     painters[`item_${m}_${k}`] = toolPainter(mats[m], k);
   // armor icons (simple)
-  const armorColor = { leather:[150,100,60], iron:[210,210,210], diamond:[104,224,224] };
+  const armorColor = { leather:[150,104,64], iron:[210,210,210], diamond:[108,219,214] };
   for (const m in armorColor) {
     const c = armorColor[m];
     painters[`item_${m}_helmet`] = t => { t.fill(0,0,0,0); t.rect(4,3,8,4,c[0],c[1],c[2]); t.rect(4,7,8,2,c[0]-20,c[1]-20,c[2]-20); };
