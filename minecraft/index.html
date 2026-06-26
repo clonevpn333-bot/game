@@ -995,7 +995,7 @@ function makePainters() {
   return {
     stone: t => t.noiseFill(...PAL.stone, 9),
     dirt: t => { t.noiseFill(...PAL.dirt, 11); for(let i=0;i<10;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,PAL.dirt[0]-14,PAL.dirt[1]-14,PAL.dirt[2]-14);} },
-    grass_top: t => { t.noiseFill(...PAL.grass_top, 9); for (let i=0;i<18;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,95,127,62);} for (let i=0;i<8;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,118,150,80);} },
+    grass_top: t => { t.noiseFill(...PAL.grass_top, 6); const g=PAL.grass_top; for (let i=0;i<10;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,g[0]-12,g[1]-10,g[2]-10);} for (let i=0;i<7;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,g[0]+12,g[1]+12,g[2]+8);} },
     grass_side: t => {
       t.noiseFill(...PAL.dirt, 11);
       // thin natural-green top strip with a few drips
@@ -2514,9 +2514,7 @@ class Player {
 
     this._interact(dt, input);
     this.camera.position.copy(this.eyePos());
-    this.camera.rotation.order = 'YXZ';
-    this.camera.rotation.y = this.yaw;
-    this.camera.rotation.x = this.pitch;
+    this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ'); // z=0: never roll/slant
 
     // void / lava / drown damage handled in survival; here track fall + air
     this._fallAndAir(dt);
@@ -4160,6 +4158,39 @@ void main(){
   gl_FragColor = vec4(pow(max(col, 0.0), vec3(2.2)), 1.0);
 }`;
 
+// tiling cloud texture (white puffs on transparent) for the 3D cloud layer
+function makeCloudTexture() {
+  const S = 128;
+  const c = document.createElement('canvas'); c.width = c.height = S;
+  const ctx = c.getContext('2d');
+  const img = ctx.createImageData(S, S);
+  // simple tiling value noise
+  const R = 16, grid = new Float32Array((R + 1) * (R + 1));
+  for (let i = 0; i < grid.length; i++) grid[i] = Math.random();
+  const at = (x, y) => grid[((y % R) * (R + 1)) + (x % R)];
+  const smooth = t => t * t * (3 - 2 * t);
+  const noise = (fx, fy) => {
+    const x0 = Math.floor(fx), y0 = Math.floor(fy);
+    const tx = smooth(fx - x0), ty = smooth(fy - y0);
+    const a = at(x0, y0), b = at(x0 + 1, y0), cc = at(x0, y0 + 1), d = at(x0 + 1, y0 + 1);
+    return (a * (1 - tx) + b * tx) * (1 - ty) + (cc * (1 - tx) + d * tx) * ty;
+  };
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    let n = 0, amp = 0.6, f = R / S;
+    for (let o = 0; o < 4; o++) { n += amp * noise(x * f, y * f); f *= 2; amp *= 0.5; }
+    const a = Math.max(0, Math.min(1, (n - 0.45) / 0.25));
+    const i = (y * S + x) * 4;
+    const shade = 235 + (n - 0.5) * 30;
+    img.data[i] = shade; img.data[i + 1] = shade; img.data[i + 2] = shade + 8;
+    img.data[i + 3] = a * a * 235;
+  }
+  ctx.putImageData(img, 0, 0);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.magFilter = THREE.LinearFilter; tex.minFilter = THREE.LinearMipmapLinearFilter;
+  return tex;
+}
+
 function createSky(uniforms) {
   const group = new THREE.Group();
   const geo = new THREE.SphereGeometry(900, 32, 16);
@@ -4172,7 +4203,7 @@ function createSky(uniforms) {
     uDay: uniforms.uDayLight,
     uTime: uniforms.uTime,
     uCamPos: uniforms.uCamPos,
-    uClouds: { value: 1 },
+    uClouds: { value: 0 }, // shader haze off — using the real 3D cloud layer below
   };
   const mat = new THREE.ShaderMaterial({ uniforms: skyU, vertexShader: SKY_VERT, fragmentShader: SKY_FRAG, side: THREE.BackSide, depthWrite: false, fog: false });
   const dome = new THREE.Mesh(geo, mat);
@@ -4201,8 +4232,20 @@ function createSky(uniforms) {
   stars.frustumCulled = false;
   group.add(stars);
 
+  // 3D cloud layer: a big horizontal textured plane that scrolls (Minecraft-style)
+  const CLOUD_Y = 128;
+  const cloudTex = makeCloudTexture();
+  cloudTex.repeat.set(10, 10);
+  const cloud = new THREE.Mesh(
+    new THREE.PlaneGeometry(4000, 4000),
+    new THREE.MeshBasicMaterial({ map: cloudTex, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide, fog: false }),
+  );
+  cloud.rotation.x = -Math.PI / 2;
+  cloud.frustumCulled = false;
+  group.add(cloud);
+
   return {
-    group, dome, sun, moon, stars, skyU,
+    group, dome, sun, moon, stars, cloud, skyU,
     setColors(top, mid, bottom, sunCol) { skyU.uTop.value.copy(top); skyU.uMid.value.copy(mid); skyU.uBottom.value.copy(bottom); skyU.uSunColor.value.copy(sunCol); },
     update(camera, sunDir, dayLight) {
       group.position.copy(camera.position);
@@ -4214,6 +4257,10 @@ function createSky(uniforms) {
       stars.material.opacity = Math.pow(1.0 - dayLight, 1.5);
       sun.material.opacity = THREE.MathUtils.clamp(dayLight * 1.3, 0, 1);
       moon.material.opacity = THREE.MathUtils.clamp(1.0 - dayLight, 0, 1);
+      // clouds: fixed world height, scroll slowly, brighten with daylight
+      cloud.position.y = CLOUD_Y - camera.position.y;
+      cloudTex.offset.x = (uniforms.uTime.value * 0.0015) % 1;
+      cloud.material.opacity = (0.35 + 0.55 * dayLight) * 0.95;
     },
   };
 }
@@ -4546,15 +4593,8 @@ class Game {
     this.inventory.armor.fill(null);
     if (mode === 'creative') {
       CREATIVE_ITEMS.forEach((id, i) => { if (i < 36) this.inventory.slots[i] = { id, count: itemDef(id).isBlock ? 64 : 1 }; });
-    } else {
-      // friendly starter kit
-      this.inventory.slots[0] = { id: ITEM.WOOD_PICKAXE, count: 1 };
-      this.inventory.slots[1] = { id: ITEM.WOOD_AXE, count: 1 };
-      this.inventory.slots[2] = { id: ITEM.WOOD_SWORD, count: 1 };
-      this.inventory.slots[3] = { id: BLOCK.CRAFTING_TABLE, count: 1 };
-      this.inventory.slots[4] = { id: ITEM.BREAD, count: 5 };
-      this.inventory.slots[5] = { id: BLOCK.TORCH, count: 16 };
     }
+    // survival: start with an empty inventory (authentic — punch a tree, then craft)
   }
 
   _beginPlay() {

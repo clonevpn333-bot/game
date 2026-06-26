@@ -76,9 +76,7 @@ export class Player {
 
     this._interact(dt, input);
     this.camera.position.copy(this.eyePos());
-    this.camera.rotation.order = 'YXZ';
-    this.camera.rotation.y = this.yaw;
-    this.camera.rotation.x = this.pitch;
+    this.camera.rotation.set(this.pitch, this.yaw, 0, 'YXZ'); // z=0: never roll/slant
 
     // void / lava / drown damage handled in survival; here track fall + air
     this._fallAndAir(dt);

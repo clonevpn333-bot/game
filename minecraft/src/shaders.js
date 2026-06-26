@@ -160,6 +160,39 @@ void main(){
   gl_FragColor = vec4(pow(max(col, 0.0), vec3(2.2)), 1.0);
 }`;
 
+// tiling cloud texture (white puffs on transparent) for the 3D cloud layer
+function makeCloudTexture() {
+  const S = 128;
+  const c = document.createElement('canvas'); c.width = c.height = S;
+  const ctx = c.getContext('2d');
+  const img = ctx.createImageData(S, S);
+  // simple tiling value noise
+  const R = 16, grid = new Float32Array((R + 1) * (R + 1));
+  for (let i = 0; i < grid.length; i++) grid[i] = Math.random();
+  const at = (x, y) => grid[((y % R) * (R + 1)) + (x % R)];
+  const smooth = t => t * t * (3 - 2 * t);
+  const noise = (fx, fy) => {
+    const x0 = Math.floor(fx), y0 = Math.floor(fy);
+    const tx = smooth(fx - x0), ty = smooth(fy - y0);
+    const a = at(x0, y0), b = at(x0 + 1, y0), cc = at(x0, y0 + 1), d = at(x0 + 1, y0 + 1);
+    return (a * (1 - tx) + b * tx) * (1 - ty) + (cc * (1 - tx) + d * tx) * ty;
+  };
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    let n = 0, amp = 0.6, f = R / S;
+    for (let o = 0; o < 4; o++) { n += amp * noise(x * f, y * f); f *= 2; amp *= 0.5; }
+    const a = Math.max(0, Math.min(1, (n - 0.45) / 0.25));
+    const i = (y * S + x) * 4;
+    const shade = 235 + (n - 0.5) * 30;
+    img.data[i] = shade; img.data[i + 1] = shade; img.data[i + 2] = shade + 8;
+    img.data[i + 3] = a * a * 235;
+  }
+  ctx.putImageData(img, 0, 0);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.magFilter = THREE.LinearFilter; tex.minFilter = THREE.LinearMipmapLinearFilter;
+  return tex;
+}
+
 export function createSky(uniforms) {
   const group = new THREE.Group();
   const geo = new THREE.SphereGeometry(900, 32, 16);
@@ -172,7 +205,7 @@ export function createSky(uniforms) {
     uDay: uniforms.uDayLight,
     uTime: uniforms.uTime,
     uCamPos: uniforms.uCamPos,
-    uClouds: { value: 1 },
+    uClouds: { value: 0 }, // shader haze off — using the real 3D cloud layer below
   };
   const mat = new THREE.ShaderMaterial({ uniforms: skyU, vertexShader: SKY_VERT, fragmentShader: SKY_FRAG, side: THREE.BackSide, depthWrite: false, fog: false });
   const dome = new THREE.Mesh(geo, mat);
@@ -201,8 +234,20 @@ export function createSky(uniforms) {
   stars.frustumCulled = false;
   group.add(stars);
 
+  // 3D cloud layer: a big horizontal textured plane that scrolls (Minecraft-style)
+  const CLOUD_Y = 128;
+  const cloudTex = makeCloudTexture();
+  cloudTex.repeat.set(10, 10);
+  const cloud = new THREE.Mesh(
+    new THREE.PlaneGeometry(4000, 4000),
+    new THREE.MeshBasicMaterial({ map: cloudTex, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide, fog: false }),
+  );
+  cloud.rotation.x = -Math.PI / 2;
+  cloud.frustumCulled = false;
+  group.add(cloud);
+
   return {
-    group, dome, sun, moon, stars, skyU,
+    group, dome, sun, moon, stars, cloud, skyU,
     setColors(top, mid, bottom, sunCol) { skyU.uTop.value.copy(top); skyU.uMid.value.copy(mid); skyU.uBottom.value.copy(bottom); skyU.uSunColor.value.copy(sunCol); },
     update(camera, sunDir, dayLight) {
       group.position.copy(camera.position);
@@ -214,6 +259,10 @@ export function createSky(uniforms) {
       stars.material.opacity = Math.pow(1.0 - dayLight, 1.5);
       sun.material.opacity = THREE.MathUtils.clamp(dayLight * 1.3, 0, 1);
       moon.material.opacity = THREE.MathUtils.clamp(1.0 - dayLight, 0, 1);
+      // clouds: fixed world height, scroll slowly, brighten with daylight
+      cloud.position.y = CLOUD_Y - camera.position.y;
+      cloudTex.offset.x = (uniforms.uTime.value * 0.0015) % 1;
+      cloud.material.opacity = (0.35 + 0.55 * dayLight) * 0.95;
     },
   };
 }

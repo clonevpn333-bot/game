@@ -173,7 +173,7 @@ function makePainters() {
   return {
     stone: t => t.noiseFill(...PAL.stone, 9),
     dirt: t => { t.noiseFill(...PAL.dirt, 11); for(let i=0;i<10;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,PAL.dirt[0]-14,PAL.dirt[1]-14,PAL.dirt[2]-14);} },
-    grass_top: t => { t.noiseFill(...PAL.grass_top, 9); for (let i=0;i<18;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,95,127,62);} for (let i=0;i<8;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,118,150,80);} },
+    grass_top: t => { t.noiseFill(...PAL.grass_top, 6); const g=PAL.grass_top; for (let i=0;i<10;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,g[0]-12,g[1]-10,g[2]-10);} for (let i=0;i<7;i++){const x=t.rng()*16|0,y=t.rng()*16|0;t.set(x,y,g[0]+12,g[1]+12,g[2]+8);} },
     grass_side: t => {
       t.noiseFill(...PAL.dirt, 11);
       // thin natural-green top strip with a few drips

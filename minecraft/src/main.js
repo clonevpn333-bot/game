@@ -172,15 +172,8 @@ class Game {
     this.inventory.armor.fill(null);
     if (mode === 'creative') {
       CREATIVE_ITEMS.forEach((id, i) => { if (i < 36) this.inventory.slots[i] = { id, count: itemDef(id).isBlock ? 64 : 1 }; });
-    } else {
-      // friendly starter kit
-      this.inventory.slots[0] = { id: ITEM.WOOD_PICKAXE, count: 1 };
-      this.inventory.slots[1] = { id: ITEM.WOOD_AXE, count: 1 };
-      this.inventory.slots[2] = { id: ITEM.WOOD_SWORD, count: 1 };
-      this.inventory.slots[3] = { id: BLOCK.CRAFTING_TABLE, count: 1 };
-      this.inventory.slots[4] = { id: ITEM.BREAD, count: 5 };
-      this.inventory.slots[5] = { id: BLOCK.TORCH, count: 16 };
     }
+    // survival: start with an empty inventory (authentic — punch a tree, then craft)
   }
 
   _beginPlay() {
