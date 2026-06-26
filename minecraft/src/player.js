@@ -109,8 +109,10 @@ export class Player {
     if (input.key('KeyD')) fx += 1;
     const len = Math.hypot(fx, fz);
     if (len > 0) { fx /= len; fz /= len; }
+    // camera forward(horizontal) = (-sin, -cos), right = (cos, -sin).
+    // fz = -1 is forward (W), fx = +1 is right (D).
     const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);
-    return { x: fx * cos - fz * sin, z: fx * sin + fz * cos, moving: len > 0 };
+    return { x: fx * cos + fz * sin, z: fz * cos - fx * sin, moving: len > 0 };
   }
 
   _flyMove(dt, input) {

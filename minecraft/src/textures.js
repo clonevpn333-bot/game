@@ -109,17 +109,15 @@ function paintLogTop(t, c) {
   for (let i = 0; i < TILE; i++) { t.set(i,0,bark[0],bark[1],bark[2]); t.set(i,15,bark[0],bark[1],bark[2]); t.set(0,i,bark[0],bark[1],bark[2]); t.set(15,i,bark[0],bark[1],bark[2]); }
 }
 function paintLeaves(t, c) {
-  t.fill(0,0,0,0);
-  const dk = shade(c, -22), lt = shade(c, 16);
+  // SOLID leaves (no transparent holes) so canopies are dense, not see-through.
+  const dk = shade(c, -20), lt = shade(c, 14);
+  t.noiseFill(c[0], c[1], c[2], 8);
   for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) {
-    if (t.rng() < 0.08) continue; // holes for cutout look
     const r = t.rng();
-    // cluster into a few tones for depth instead of high-amplitude noise
-    let base = c;
-    if (r < 0.28) base = dk;
-    else if (r > 0.80) base = lt;
-    const v = (t.rng() - 0.5) * 16;
-    t.set(x, y, base[0]+v, base[1]+v, base[2]+v, 255);
+    let base = null;
+    if (r < 0.22) base = dk;
+    else if (r > 0.84) base = lt;
+    if (base) { const v = (t.rng() - 0.5) * 8; t.set(x, y, base[0] + v, base[1] + v, base[2] + v, 255); }
   }
 }
 function paintCobble(t, c) {
