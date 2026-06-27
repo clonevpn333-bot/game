@@ -40,7 +40,7 @@ body.hurt::after { content: ''; position: fixed; inset: 0; background: radial-gr
 .arrow::before { content: ''; position: absolute; right: 0; top: 0; border-left: 10px solid #cfd6df; border-top: 7px solid transparent; border-bottom: 7px solid transparent; }
 #cursor { position: fixed; width: 40px; height: 40px; transform: translate(-50%, -50%); background-size: 80%; background-repeat: no-repeat; background-position: center; pointer-events: none; z-index: 40; image-rendering: pixelated; }
 
-#menu { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(10,16,28,0.5), rgba(4,6,12,0.85)); }
+#menu { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(10,16,28,0.5), rgba(4,6,12,0.85)); pointer-events: auto; }
 #menu.hidden { display: none; }
 .card { background: linear-gradient(180deg, rgba(30,36,48,0.96), rgba(16,20,28,0.96)); border: 2px solid #0c0e13; border-radius: 12px; padding: 30px 40px; width: 360px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.7); }
 .card h1 { text-align: center; font-size: 34px; letter-spacing: 4px; color: #bdeecb; text-shadow: 0 2px 0 #1a3a20; }
