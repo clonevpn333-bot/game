@@ -39,6 +39,7 @@ body.hurt::after { content: ''; position: fixed; inset: 0; background: radial-gr
 .arrow::after { content: ''; position: absolute; left: 0; top: 4px; width: 16px; height: 6px; background: #cfd6df; }
 .arrow::before { content: ''; position: absolute; right: 0; top: 0; border-left: 10px solid #cfd6df; border-top: 7px solid transparent; border-bottom: 7px solid transparent; }
 #cursor { position: fixed; width: 40px; height: 40px; transform: translate(-50%, -50%); background-size: 80%; background-repeat: no-repeat; background-position: center; pointer-events: none; z-index: 40; image-rendering: pixelated; }
+#cursor.hidden { display: none; }
 
 #menu { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(10,16,28,0.5), rgba(4,6,12,0.85)); pointer-events: auto; }
 #menu.hidden { display: none; }
