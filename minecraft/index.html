@@ -1273,8 +1273,9 @@ function makeFamilyPersona(role) {
 // a swinging limb (pivots at the top): segment + an end piece (hand/foot)
 function limb(w, h, d, segCol, x, topY, z, endCol, endH, endW) {
   const grp = new THREE.Group(); grp.position.set(x, topY, z);
-  const seg = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: segCol })); seg.position.y = -h / 2; seg.userData.base = new THREE.Color(segCol); grp.add(seg);
-  if (endCol != null) { const e = new THREE.Mesh(new THREE.BoxGeometry((endW || w * 1.05), endH, d * (endW ? 1.5 : 1.05)), new THREE.MeshBasicMaterial({ color: endCol })); e.position.set(0, -h - endH / 2 + 0.01, endW ? -d * 0.18 : 0); e.userData.base = new THREE.Color(endCol); grp.add(e); }
+  const rad = Math.min(w, d) * 0.5;
+  const seg = new THREE.Mesh(new THREE.CapsuleGeometry(rad, Math.max(0.01, h - rad * 2), 4, 8), new THREE.MeshLambertMaterial({ color: segCol })); seg.position.y = -h / 2; seg.userData.base = new THREE.Color(segCol); grp.add(seg);
+  if (endCol != null) { const e = new THREE.Mesh(new THREE.BoxGeometry((endW || w * 1.1), endH, d * (endW ? 1.5 : 1.1)), new THREE.MeshLambertMaterial({ color: endCol })); e.position.set(0, -h - endH / 2 + 0.04, endW ? -d * 0.18 : 0); e.userData.base = new THREE.Color(endCol); grp.add(e); }
   return grp;
 }
 function buildNpcModel(p) {
@@ -1282,11 +1283,11 @@ function buildNpcModel(p) {
   const shoe = 0x222428, hipY = 0.92, legLen = 0.92;
   // legs (pants + shoes) — pivot at hips
   for (const sx of [-0.13, 0.13]) legs.push(add(limb(0.19, legLen, 0.2, p.pants, sx, hipY, 0, shoe, 0.12, 0.22)));
-  // torso: tapered waist + broader chest
-  add(box(0.4, 0.42, 0.24, p.shirt, 0, 1.14, 0));          // waist
-  add(box(0.52, 0.46, 0.26, p.shirt, 0, 1.5, 0));          // chest/shoulders
-  add(box(0.16, 0.12, 0.16, p.skin, 0, 1.72, 0));          // neck
-  const head = add(box(0.42, 0.44, 0.42, p.skin, 0, 1.98, 0)); // head (a touch smaller, on the neck)
+  // torso: smooth tapered body + rounded head
+  add(capsule(0.22, 0.5, p.shirt, 0, 1.3, 0));            // torso
+  add(box(0.5, 0.18, 0.26, p.shirt, 0, 1.56, 0));         // shoulders
+  add(capsule(0.08, 0.06, p.skin, 0, 1.74, 0));           // neck
+  const head = add(ball(0.26, p.skin, 0, 1.98, 0));       // rounded head
   // face
   add(box(0.085, 0.09, 0.04, 0x20262c, -0.1, 2.0, -0.22)); add(box(0.085, 0.09, 0.04, 0x20262c, 0.1, 2.0, -0.22)); // eyes
   add(box(0.07, 0.06, 0.05, p.skin, 0, 1.92, -0.23));      // nose
@@ -1373,8 +1374,11 @@ function npcReply(p, raw) {
     'The streets are busy today. You been to the park yet?',
   ]));
 }
-function box(w, h, d, color, x, y, z) { const g = new THREE.BoxGeometry(w, h, d); const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color })); m.position.set(x, y, z); m.userData.base = new THREE.Color(color); return m; }
-function legMesh(w, h, d, color, x, hy, z) { const g = new THREE.BoxGeometry(w, h, d); g.translate(0, -h / 2, 0); const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color })); m.position.set(x, hy, z); m.userData.base = new THREE.Color(color); return m; }
+function box(w, h, d, color, x, y, z) { const g = new THREE.BoxGeometry(w, h, d); const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color })); m.position.set(x, y, z); m.userData.base = new THREE.Color(color); return m; }
+function legMesh(w, h, d, color, x, hy, z) { const g = new THREE.BoxGeometry(w, h, d); g.translate(0, -h / 2, 0); const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color })); m.position.set(x, hy, z); m.userData.base = new THREE.Color(color); return m; }
+// smooth primitives for rounded, less-blocky characters
+function ball(r, color, x, y, z) { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 10), new THREE.MeshLambertMaterial({ color })); m.position.set(x, y, z); m.userData.base = new THREE.Color(color); return m; }
+function capsule(r, len, color, x, y, z) { const m = new THREE.Mesh(new THREE.CapsuleGeometry(r, Math.max(0.01, len), 4, 10), new THREE.MeshLambertMaterial({ color })); m.position.set(x, y, z); m.userData.base = new THREE.Color(color); return m; }
 function buildMobModel(type) {
   const g = new THREE.Group(); const legs = []; let head = null; const add = m => { g.add(m); return m; };
   const EYE = 0x20262c;
@@ -1459,7 +1463,7 @@ class Mob {
   }
 }
 function buildCarModel(color) {
-  const g = new THREE.Group(); const add = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: c })); m.position.set(x, y, z); m.userData.base = new THREE.Color(c); g.add(m); return m; };
+  const g = new THREE.Group(); const add = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color: c })); m.position.set(x, y, z); m.userData.base = new THREE.Color(c); g.add(m); return m; };
   const dk = new THREE.Color(color).multiplyScalar(0.7).getHex();
   add(2.5, 0.55, 5.4, color, 0, 0.62, 0);              // main body
   add(2.5, 0.34, 5.4, dk, 0, 0.34, 0);                 // lower skirt (darker)
@@ -1470,14 +1474,17 @@ function buildCarModel(color) {
   add(2.12, 0.66, 0.12, color, 0, 1.18, -1.3);         // windshield pillar front
   add(0.45, 0.2, 0.16, 0xfff2b0, -0.85, 0.66, -2.72); add(0.45, 0.2, 0.16, 0xfff2b0, 0.85, 0.66, -2.72); // headlights
   add(0.45, 0.18, 0.12, 0xcc2222, -0.85, 0.66, 2.72); add(0.45, 0.18, 0.12, 0xcc2222, 0.85, 0.66, 2.72); // taillights
-  for (const [sx, sz] of [[-1.18, -1.7], [1.18, -1.7], [-1.18, 1.7], [1.18, 1.7]]) { add(0.34, 0.86, 0.86, 0x121316, sx, 0.42, sz); add(0.36, 0.34, 0.34, 0x55585e, sx, 0.42, sz); } // wheels + hubs
+  for (const [sx, sz] of [[-1.18, -1.7], [1.18, -1.7], [-1.18, 1.7], [1.18, 1.7]]) { // round wheels
+    const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.34, 14), new THREE.MeshLambertMaterial({ color: 0x121316 })); tire.rotation.z = Math.PI / 2; tire.position.set(sx, 0.46, sz); tire.userData.base = new THREE.Color(0x121316); g.add(tire);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.36, 8), new THREE.MeshLambertMaterial({ color: 0x9aa0a8 })); hub.rotation.z = Math.PI / 2; hub.position.set(sx, 0.46, sz); hub.userData.base = new THREE.Color(0x9aa0a8); g.add(hub);
+  }
   return g;
 }
 class Car {
   constructor(world, x, y, z, dir, color) { this.kind = 'car'; this.world = world; this.pos = new THREE.Vector3(x, y, z); this.dir = dir.clone(); this.speed = 4 + Math.random() * 3; this.group = buildCarModel(color); this.dead = false; this.turnCd = 0; this.yaw = Math.atan2(dir.x, dir.z); this.driver = null; this.driveSpeed = 0; }
 }
 function buildPlaneModel() {
-  const g = new THREE.Group(); const add = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: c })); m.position.set(x, y, z); m.userData.base = new THREE.Color(c); g.add(m); return m; };
+  const g = new THREE.Group(); const add = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color: c })); m.position.set(x, y, z); m.userData.base = new THREE.Color(c); g.add(m); return m; };
   add(1.0, 1.0, 5.2, 0xe6e9ee, 0, 0, 0);              // fuselage (nose at -Z)
   add(0.8, 0.7, 1.0, 0x9fd0e6, 0, 0.4, -1.6);         // cockpit glass
   add(6.6, 0.18, 1.3, 0xd8dce2, 0, 0.1, 0.3);         // main wings
@@ -1610,7 +1617,7 @@ class MobManager {
     // nudge the player if run over
     if (Math.hypot(c.pos.x - player.pos.x, c.pos.z - player.pos.z) < 1.4 && Math.abs(c.pos.y - player.pos.y) < 2) { this.game.damagePlayer(2); player.vel.x += c.dir.x * 6; player.vel.z += c.dir.z * 6; }
   }
-  _tint(group, lvl, flash) { group.traverse(o => { if (o.material && o.userData.base) { if (flash) o.material.color.setRGB(1, 0.4, 0.4); else o.material.color.copy(o.userData.base).multiplyScalar(clamp(lvl, 0.25, 1)); } }); }
+  _tint(group, lvl, flash) { group.traverse(o => { if (o.material && o.userData.base) { if (flash) o.material.color.setRGB(1, 0.35, 0.35); else o.material.color.copy(o.userData.base); } }); }
   _mob(m, dt, player, dayLight) {
     const w = this.world; const dx = player.pos.x - m.pos.x, dz = player.pos.z - m.pos.z; const dist = Math.hypot(dx, dz);
     m.attackCd = Math.max(0, m.attackCd - dt); m.hurt = Math.max(0, m.hurt - dt); m.timer -= dt; if (m.flee) m.flee -= dt;
@@ -2243,6 +2250,9 @@ class Game {
     this.uniforms = { uTime: { value: 0 }, uDay: { value: 1 }, uAmbient: { value: 0.3 }, uFog: { value: new THREE.Color(0xcfe7f7) }, uFogNear: { value: RENDER_DIST * 16 * 0.62 }, uFogFar: { value: RENDER_DIST * 16 * 0.96 } };
     this.materials = makeMaterials(this.tex, this.uniforms);
     this.sky = makeSky(this.uniforms); this.scene.add(this.sky.group);
+    // real lighting for the (non-terrain) entity meshes — gives form to people, cars, etc.
+    this.hemi = new THREE.HemisphereLight(0xbfe3ff, 0x55585e, 0.9); this.scene.add(this.hemi);
+    this.sun = new THREE.DirectionalLight(0xfff2d8, 1.1); this.sun.position.set(40, 80, 20); this.scene.add(this.sun);
     this.weather = new Weather(this.scene);
 
     // selection outline + crack overlay
@@ -2269,10 +2279,10 @@ class Game {
     // a proper Minecraft-style first-person arm: skin forearm reaching up into
     // view from the lower-right, with a blue shirt-sleeve cuff near the camera.
     const arm = new THREE.Group();
-    const skin = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.8), new THREE.MeshBasicMaterial({ color: 0xe7b58a }));
-    skin.geometry.translate(0, 0, -0.3); arm.add(skin); this.arm = skin;
-    const sleeve = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.32, 0.34), new THREE.MeshBasicMaterial({ color: 0x3f7cb4 }));
-    sleeve.position.set(0, 0, 0.18); arm.add(sleeve); this.sleeve = sleeve;
+    const skin = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 0.55, 4, 10), new THREE.MeshLambertMaterial({ color: 0xe7b58a }));
+    skin.rotation.x = Math.PI / 2; skin.position.z = -0.28; arm.add(skin); this.arm = skin;
+    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.34, 12), new THREE.MeshLambertMaterial({ color: 0x3f7cb4 }));
+    sleeve.rotation.x = Math.PI / 2; sleeve.position.set(0, 0, 0.16); arm.add(sleeve); this.sleeve = sleeve;
     arm.position.set(0.6, -0.66, -0.32); arm.rotation.set(0.6, -0.24, 0.16);
     this.hand.add(arm); this.armMesh = arm;
     this.heldGroup = new THREE.Group(); this.hand.add(this.heldGroup); this.heldId = -2;
@@ -2343,11 +2353,11 @@ class Game {
     if (id == null) return grp;
     if (id < 256) {
       const g = new THREE.BoxGeometry(0.34, 0.34, 0.34); this._heldBlockUV(g, id);
-      const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: this.tex, alphaTest: 0.5 })); m.rotation.set(0.2, -0.5, 0); grp.add(m);
+      const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: this.tex, alphaTest: 0.5 })); m.rotation.set(0.2, -0.5, 0); grp.add(m);
     } else {
       const d = itemDef(id); const tier = d.tier || 1;
       const wood = 0x8a5a2e, metal = { 1: 0x9a6a3a, 2: 0x9a9a9a, 3: 0xdcdcdc, 4: 0x5ad7d2 }[tier] || 0x9a9a9a;
-      const bar = (w, h, dp, col, x, y, z) => { const mm = new THREE.Mesh(new THREE.BoxGeometry(w, h, dp), new THREE.MeshBasicMaterial({ color: col })); mm.position.set(x, y, z); grp.add(mm); return mm; };
+      const bar = (w, h, dp, col, x, y, z) => { const mm = new THREE.Mesh(new THREE.BoxGeometry(w, h, dp), new THREE.MeshLambertMaterial({ color: col })); mm.position.set(x, y, z); grp.add(mm); return mm; };
       if (d.gun) { return this.makeGunModel(d.id, bar, grp); }
       if (d.armor) { bar(0.34, 0.3, 0.12, d.acol || 0x999999, 0, 0.1, 0); bar(0.34, 0.06, 0.13, 0x111111, 0, -0.06, 0); grp.rotation.set(0, 0, 0.2); return grp; }
       if (d.melee) {
@@ -2616,6 +2626,9 @@ class Game {
     this.uniforms.uDay.value = 0.1 + 0.9 * dayLight;
     this.uniforms.uTime.value = this.time;
     this.uniforms.uAmbient.value = 0.16 + 0.16 * dayLight;
+    // drive entity lighting from the day/night cycle so people & cars match the world
+    if (this.sun) { this.sun.position.copy(this.camera.position).addScaledVector(sunDir, 60); this.sun.target.position.copy(this.camera.position); this.sun.target.updateMatrixWorld(); this.sun.intensity = 0.35 + 1.05 * dayLight; this.sun.color.setRGB(1, 0.92 - 0.1 * (1 - dayLight), 0.82 - 0.2 * (1 - dayLight)); }
+    if (this.hemi) { this.hemi.intensity = 0.45 + 0.55 * dayLight; }
     // tropical "Neon Bay" palette — warm teal day sky, hot pink/orange sunsets
     const dayTop = new THREE.Color(0x49b7d6), dayBot = new THREE.Color(0xfbe3c8);
     const nightTop = new THREE.Color(0x0a0c22), nightBot = new THREE.Color(0x2a1740);
