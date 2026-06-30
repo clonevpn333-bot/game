@@ -26,6 +26,7 @@ body.hurt::after { content: ''; position: fixed; inset: 0; background: radial-gr
 #ammo { position: fixed; right: 18px; bottom: 18px; font-size: 20px; font-weight: 800; letter-spacing: 1px; color: #ffe98a; text-shadow: 2px 2px 0 #000; font-variant-numeric: tabular-nums; }
 #ammo.hidden { display: none; }
 #money { position: fixed; right: 18px; top: 14px; font-size: 18px; font-weight: 800; color: #7be08a; text-shadow: 2px 2px 0 #000; font-variant-numeric: tabular-nums; }
+#wanted { position: fixed; right: 18px; top: 38px; font-size: 20px; letter-spacing: 2px; color: #ffd23a; text-shadow: 0 0 6px #b8860b, 2px 2px 0 #000; }
 
 .chatpanel { width: 460px; max-width: 92vw; }
 .chathead { font-size: 13px; color: #cfe0ef; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #444; }

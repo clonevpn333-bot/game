@@ -297,11 +297,13 @@ class WorldGen {
     const cont = this.height.fbm(wx * 0.006, wz * 0.006, 4);
     const hills = this.height.fbm(wx * 0.02 + 99, wz * 0.02, 3);
     let h = SEA + 4 + cont * 16 + hills * 6;
-    const t = this.temp.fbm(wx * 0.004 + 11, wz * 0.004, 2);
+    // continent-scale climate: travel far and you reach distinctly different mega-regions
+    const climate = this.temp.fbm(wx * 0.0009 + 500, wz * 0.0009, 2) * 0.9;
+    const t = this.temp.fbm(wx * 0.004 + 11, wz * 0.004, 2) + climate;
     const m = this.moist.fbm(wx * 0.004, wz * 0.004 + 23, 2);
     let biome = 'plains';
-    if (t > 0.35 && m < 0.0) biome = 'desert';
-    else if (t < -0.3) biome = 'snow';
+    if (t > 0.32 && m < 0.0) biome = 'desert';
+    else if (t < -0.32) biome = 'snow';
     else if (m > 0.15) biome = 'forest';
     h = Math.floor(clamp(h, 4, CY - 12));
     c = { h, biome, t, m };
@@ -846,7 +848,7 @@ const ITEM = {
   L_HELM: 292, L_CHEST: 293, L_LEGS: 294, L_BOOTS: 295,
   I_HELM: 296, I_CHEST: 297, I_LEGS: 298, I_BOOTS: 299,
   D_HELM: 300, D_CHEST: 301, D_LEGS: 302, D_BOOTS: 303,
-  PISTOL: 304, SMG: 305, RIFLE: 306, SHOTGUN: 307, SNIPER: 308,
+  PISTOL: 304, SMG: 305, RIFLE: 306, SHOTGUN: 307, SNIPER: 308, CASH: 309,
 };
 // per-block: s=hardness, t=tool, need=min tier to drop anything, drop=item (null=nothing, undefined=self)
 const SURV = {
@@ -903,6 +905,7 @@ it(ITEM.SMG, { name: 'SMG', stack: 1, gun: true, dmg: 4, cd: 0.075, auto: true, 
 it(ITEM.RIFLE, { name: 'Assault Rifle', stack: 1, gun: true, dmg: 7, cd: 0.11, auto: true, pellets: 1, spread: 0.02, range: 90, clip: 30, reload: 1.7, tracer: 0xffe98a });
 it(ITEM.SHOTGUN, { name: 'Shotgun', stack: 1, gun: true, dmg: 3, cd: 0.85, auto: false, pellets: 9, spread: 0.11, range: 26, clip: 6, reload: 2.0, tracer: 0xffd070 });
 it(ITEM.SNIPER, { name: 'Sniper Rifle', stack: 1, gun: true, dmg: 22, cd: 1.25, auto: false, pellets: 1, spread: 0.0, range: 180, clip: 5, reload: 2.4, tracer: 0xcfe8ff });
+it(ITEM.CASH, { name: 'Cash', stack: 9999, cash: true });
 const TSPEED = { wood: 2, stone: 4, iron: 6, diamond: 8 }, TTIER = { wood: T_WOOD, stone: T_STONE, iron: T_IRON, diamond: T_DIAMOND };
 [['wood', 'W'], ['stone', 'S'], ['iron', 'I'], ['diamond', 'D']].forEach(([m, k]) => {
   it(ITEM[k + '_PICK'], { name: cap(m) + ' Pickaxe', stack: 1, tool: 'pickaxe', tier: TTIER[m], speed: TSPEED[m] });
@@ -1036,6 +1039,7 @@ const MOBDEF = {
   enderman: { hostile: true, hp: 30, w: 0.6, h: 2.7, speed: 2.4, dmg: 4, drops: [[ITEM.PEARL, 0, 1]], neutralDay: true },
   slime: { hostile: true, hp: 8, w: 1.0, h: 1.0, speed: 1.4, dmg: 2, drops: [[ITEM.STRING, 0, 1]] },
   npc: { hostile: false, hp: 20, w: 0.6, h: 1.85, speed: 1.35, drops: [], city: true },
+  cop: { hostile: true, hp: 28, w: 0.6, h: 1.85, speed: 2.5, dmg: 0, drops: [], cop: true },
 };
 // ---------------------------------------------------------------------------
 // NPC personas (no API — names, jobs, an economy + a rule-based chat engine)
@@ -1057,8 +1061,18 @@ const SKINS = [0xf2cfa6, 0xe7b58a, 0xc68642, 0x8d5524, 0xffe0bd, 0xd9a066];
 const HAIRS = [0x2b1d10, 0x4a2f17, 0x111111, 0x6b4a2a, 0x8a8a8a, 0xc9a23a, 0xa33b2a];
 const SHIRTS = [0x3f7cb4, 0xb44545, 0x4caf50, 0xcaa23a, 0x8e5cb4, 0x444a52, 0xd2d2d6, 0xd47ba0];
 let NPC_SEQ = 0;
-function makePersona() {
+const LOOT_MATS = [8, 3, 2, 5, 261, 257]; // log, stone, dirt, sand, apple, coal
+function makePersona(homeless) {
   const r = () => Math.random();
+  if (homeless) {
+    return {
+      id: ++NPC_SEQ, first: NPC_FIRST[r() * NPC_FIRST.length | 0], last: NPC_LAST[r() * NPC_LAST.length | 0],
+      job: 'drifter', wage: 4, cls: 'poor', money: Math.round(r() * 14), age: 22 + (r() * 45 | 0),
+      mood: r() < 0.5 ? 'tired' : 'content', hobby: HOBBIES[r() * HOBBIES.length | 0],
+      skin: SKINS[r() * SKINS.length | 0], hair: HAIRS[r() * HAIRS.length | 0], shirt: [0x5a5048, 0x6b5b3a, 0x47443f][r() * 3 | 0], pants: 0x3a352c,
+      homeless: true, loot: LOOT_MATS[r() * LOOT_MATS.length | 0], mem: { name: null, turns: 0, lastTopic: null },
+    };
+  }
   const job = JOBS[r() * JOBS.length | 0];
   const cls = job.cls;
   const money = cls === 'rich' ? 2000 + r() * 9000 : cls === 'middle' ? 400 + r() * 1600 : cls === 'poor' ? r() * 60 : 80 + r() * 600;
@@ -1071,11 +1085,21 @@ function makePersona() {
     mem: { name: null, turns: 0, lastTopic: null }, lastPaid: 0,
   };
 }
+function makeCopPersona() {
+  const r = () => Math.random();
+  return {
+    id: ++NPC_SEQ, first: 'Officer', last: NPC_LAST[r() * NPC_LAST.length | 0],
+    job: 'police officer', wage: 30, cls: 'working', money: Math.round(80 + r() * 300), age: 25 + (r() * 30 | 0),
+    mood: 'busy', hobby: 'keeping the peace', skin: SKINS[r() * SKINS.length | 0], hair: 0x1c2233,
+    shirt: 0x213a78, pants: 0x1a1f2c, cop: true, mem: { name: null, turns: 0, lastTopic: null },
+  };
+}
 function buildNpcModel(p) {
   const g = new THREE.Group(); const legs = []; const add = m => { g.add(m); return m; };
   add(box(0.5, 0.62, 0.26, p.shirt, 0, 1.12, 0));          // torso
   const head = add(box(0.46, 0.46, 0.46, p.skin, 0, 1.66, 0)); // head
-  add(box(0.5, 0.16, 0.5, p.hair, 0, 1.86, 0));            // hair cap
+  if (p.cop) { add(box(0.52, 0.14, 0.5, 0x16203f, 0, 1.9, 0)); add(box(0.5, 0.06, 0.16, 0x16203f, 0, 1.84, -0.28)); add(box(0.1, 0.1, 0.04, 0xe8d24a, 0, 1.16, -0.14)); } // cap + brim + badge
+  else { add(box(0.5, 0.16, 0.5, p.hair, 0, 1.86, 0)); }    // hair cap
   add(box(0.5, 0.12, 0.08, p.hair, 0, 1.74, -0.2));        // fringe
   add(box(0.09, 0.09, 0.04, 0x20262c, -0.1, 1.68, -0.24)); add(box(0.09, 0.09, 0.04, 0x20262c, 0.1, 1.68, -0.24)); // eyes
   add(box(0.07, 0.07, 0.05, p.skin, 0, 1.6, -0.25));       // nose
@@ -1222,12 +1246,17 @@ class ItemEnt {
   constructor(world, x, y, z, item, count, mesh) { this.kind = 'item'; this.world = world; this.pos = new THREE.Vector3(x, y, z); this.vel = new THREE.Vector3((Math.random() - 0.5) * 2, 2.5, (Math.random() - 0.5) * 2); this.w = 0.25; this.h = 0.25; this.item = item; this.count = count; this.age = 0; this.delay = 0.4; this.dead = false; this.group = mesh; }
 }
 class Mob {
-  constructor(type, x, y, z) { this.type = type; this.def = MOBDEF[type]; this.pos = new THREE.Vector3(x, y, z); this.vel = new THREE.Vector3(); this.w = this.def.w; this.h = this.def.h; this.hp = this.def.hp; this.yaw = Math.random() * 6.28; this.onGround = false; this.timer = Math.random() * 3; this.attackCd = 0; this.fuse = 0; this.hurt = 0; this.dead = false; this.phase = Math.random() * 6;
-    let m; if (type === 'npc') { this.npc = makePersona(); m = buildNpcModel(this.npc); } else m = buildMobModel(type);
+  constructor(type, x, y, z, persona) { this.type = type; this.def = MOBDEF[type]; this.pos = new THREE.Vector3(x, y, z); this.vel = new THREE.Vector3(); this.w = this.def.w; this.h = this.def.h; this.hp = this.def.hp; this.yaw = Math.random() * 6.28; this.onGround = false; this.timer = Math.random() * 3; this.attackCd = 0; this.fuse = 0; this.hurt = 0; this.dead = false; this.phase = Math.random() * 6;
+    let m; if (type === 'npc') { this.npc = persona || makePersona(); m = buildNpcModel(this.npc); } else if (type === 'cop') { this.npc = makeCopPersona(); m = buildNpcModel(this.npc); } else m = buildMobModel(type);
     this.group = m.group; this.legs = m.legs; this.head = m.head; }
   aabb() { const hw = this.w / 2; return { minX: this.pos.x - hw, maxX: this.pos.x + hw, minY: this.pos.y, maxY: this.pos.y + this.h, minZ: this.pos.z - hw, maxZ: this.pos.z + hw }; }
   damage(n, kx, kz, mgr) { this.hp -= n; this.hurt = 0.25; if (kx !== undefined) { this.vel.x += kx * 5; this.vel.z += kz * 5; this.vel.y = 4; } if (!this.def.hostile) { this.flee = 5; } if (this.hp <= 0) this.die(mgr); }
-  die(mgr) { if (this.dead) return; this.dead = true; for (const [item, mn, mx] of this.def.drops) { const c = mn + Math.floor(Math.random() * (mx - mn + 1)); for (let i = 0; i < c; i++) mgr.dropItem(this.pos.x, this.pos.y + this.h * 0.4, this.pos.z, item, 1); } }
+  die(mgr) {
+    if (this.dead) return; this.dead = true;
+    mgr.hitFx(this.pos.x, this.pos.y + this.h * 0.5, this.pos.z, this.npc ? 0xb01010 : 0x884422, 16);
+    for (const [item, mn, mx] of this.def.drops) { const c = mn + Math.floor(Math.random() * (mx - mn + 1)); for (let i = 0; i < c; i++) mgr.dropItem(this.pos.x, this.pos.y + this.h * 0.4, this.pos.z, item, 1); }
+    if (this.npc) { const loot = clamp(Math.round((this.npc.money || 0) * 0.25) + 10, 10, 800); mgr.dropCash(this.pos.x, this.pos.y + 0.5, this.pos.z, loot); mgr.alarm(this.pos.x, this.pos.z, 22); if (this.npc.loot) for (let i = 0, n = 1 + (Math.random() * 3 | 0); i < n; i++) mgr.dropItem(this.pos.x, this.pos.y + 0.4, this.pos.z, this.npc.loot, 1); }
+  }
 }
 function buildCarModel(color) {
   const g = new THREE.Group(); const add = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: c })); m.position.set(x, y, z); m.userData.base = new THREE.Color(c); g.add(m); return m; };
@@ -1241,11 +1270,38 @@ function buildCarModel(color) {
   return g;
 }
 class Car {
-  constructor(world, x, y, z, dir, color) { this.world = world; this.pos = new THREE.Vector3(x, y, z); this.dir = dir.clone(); this.speed = 4 + Math.random() * 3; this.group = buildCarModel(color); this.dead = false; this.turnCd = 0; this.yaw = Math.atan2(dir.x, dir.z); }
+  constructor(world, x, y, z, dir, color) { this.kind = 'car'; this.world = world; this.pos = new THREE.Vector3(x, y, z); this.dir = dir.clone(); this.speed = 4 + Math.random() * 3; this.group = buildCarModel(color); this.dead = false; this.turnCd = 0; this.yaw = Math.atan2(dir.x, dir.z); this.driver = null; this.driveSpeed = 0; }
+}
+function buildPlaneModel() {
+  const g = new THREE.Group(); const add = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: c })); m.position.set(x, y, z); m.userData.base = new THREE.Color(c); g.add(m); return m; };
+  add(1.0, 1.0, 5.2, 0xe6e9ee, 0, 0, 0);              // fuselage (nose at -Z)
+  add(0.8, 0.7, 1.0, 0x9fd0e6, 0, 0.4, -1.6);         // cockpit glass
+  add(6.6, 0.18, 1.3, 0xd8dce2, 0, 0.1, 0.3);         // main wings
+  add(2.4, 0.16, 0.9, 0xd8dce2, 0, 0.45, 2.3);        // tail wing
+  add(0.16, 1.1, 0.9, 0xc94d4d, 0, 0.7, 2.4);         // tail fin
+  add(0.5, 0.5, 0.5, 0x33363c, 0, 0, -2.7);           // engine
+  add(1.4, 0.14, 0.14, 0x222428, 0, 0, -3.1);         // propeller
+  add(0.14, 1.4, 0.14, 0x222428, 0, 0, -3.1);
+  return g;
+}
+class Plane {
+  constructor(x, y, z) { this.kind = 'plane'; this.pos = new THREE.Vector3(x, y, z); this.group = buildPlaneModel(); this.throttle = 0.55; this.roll = 0; this.dead = false; this.driver = null; }
 }
 class MobManager {
-  constructor(scene, world, game) { this.scene = scene; this.world = world; this.game = game; this.mobs = []; this.items = []; this.cars = []; this.group = new THREE.Group(); scene.add(this.group); this.spawnT = 0; this.cityT = 0; this.econT = 0; this.maxP = 18; this.maxH = 22; }
-  spawn(type, x, y, z) { const m = new Mob(type, x, y, z); this.mobs.push(m); this.group.add(m.group); return m; }
+  constructor(scene, world, game) { this.scene = scene; this.world = world; this.game = game; this.mobs = []; this.items = []; this.cars = []; this.planes = []; this.fx = []; this.group = new THREE.Group(); scene.add(this.group); this.spawnT = 0; this.cityT = 0; this.econT = 0; this.copT = 0; this.maxP = 18; this.maxH = 22; }
+  spawn(type, x, y, z, persona) { const m = new Mob(type, x, y, z, persona); this.mobs.push(m); this.group.add(m.group); return m; }
+  spawnNpc(x, y, z, homeless) { return this.spawn('npc', x, y, z, makePersona(homeless)); }
+  ruralPopulate(player) {
+    if (this.countNPC() >= 5) return; const w = this.world, gen = this.game.gen;
+    for (let a = 0; a < 30 && this.countNPC() < 5; a++) {
+      const ang = Math.random() * 6.28, r = 14 + Math.random() * 40;
+      const wx = Math.floor(player.pos.x + Math.cos(ang) * r), wz = Math.floor(player.pos.z + Math.sin(ang) * r);
+      if (!w.isLoaded(wx, wz) || (gen && gen.cityAt(wx, wz))) continue;
+      const gy = w.highestY(wx, wz), top = w.getBlock(wx, gy, wz);
+      if (top !== B.GRASS && top !== B.SAND && top !== B.SNOW) continue; if (w.getBlock(wx, gy + 1, wz) !== B.AIR) continue;
+      this.spawnNpc(wx + 0.5, gy + 1, wz + 0.5, Math.random() < 0.45);
+    }
+  }
   dropItem(x, y, z, item, count) { const mesh = this.game.makeDropMesh(item); const e = new ItemEnt(this.world, x, y, z, item, count, mesh); this.items.push(e); this.group.add(mesh); return e; }
   countH() { return this.mobs.filter(m => m.def.hostile).length; }
   countP() { return this.mobs.filter(m => !m.def.hostile && !m.npc).length; }
@@ -1258,18 +1314,51 @@ class MobManager {
     this.items = this.items.filter(it => { if (it.dead) { this.group.remove(it.group); return false; } return true; });
     for (const c of this.cars) this._car(c, dt, player);
     this.cars = this.cars.filter(c => { if (c.dead) { this.group.remove(c.group); return false; } return true; });
+    // particle FX (blood / sparks)
+    for (const f of this.fx) { f.life -= dt; for (let i = 0; i < f.n; i++) { f.vel[i * 3 + 1] -= 14 * dt; f.pos[i * 3] += f.vel[i * 3] * dt; f.pos[i * 3 + 1] += f.vel[i * 3 + 1] * dt; f.pos[i * 3 + 2] += f.vel[i * 3 + 2] * dt; } f.geo.attributes.position.needsUpdate = true; f.mesh.material.opacity = Math.max(0, f.life / f.max); }
+    this.fx = this.fx.filter(f => { if (f.life <= 0) { this.group.remove(f.mesh); f.geo.dispose(); f.mesh.material.dispose(); return false; } return true; });
+    // police response scales with the player's wanted level
+    this._copLoop(dt, player);
     // background economy: NPCs earn wages and spend over time
     this.econT += dt;
     if (this.econT > 2) { const tick = this.econT; this.econT = 0; for (const m of this.mobs) if (m.npc) { const p = m.npc; p.money += p.wage * tick * 0.04; if (Math.random() < 0.15) p.money = Math.max(0, p.money - (5 + Math.random() * 30)); p.money = Math.round(p.money); } }
     // keep the city populated around the player
     this.cityT -= dt;
-    if (this.cityT <= 0) { this.cityT = 4; if (this.game.gen && this.game.gen.cityAt(Math.floor(player.pos.x), Math.floor(player.pos.z))) this.populateCity(player); else this._despawnFar(player); }
+    if (this.cityT <= 0) { this.cityT = 4; if (this.game.gen && this.game.gen.cityAt(Math.floor(player.pos.x), Math.floor(player.pos.z))) this.populateCity(player); else { this._despawnFar(player); this.ruralPopulate(player); } }
   }
   _despawnFar(player) {
-    for (const m of this.mobs) if (m.npc && Math.hypot(m.pos.x - player.pos.x, m.pos.z - player.pos.z) > 70) m.dead = true;
+    for (const m of this.mobs) if (m.npc && !m.def.cop && Math.hypot(m.pos.x - player.pos.x, m.pos.z - player.pos.z) > 70) m.dead = true;
     for (const c of this.cars) if (Math.hypot(c.pos.x - player.pos.x, c.pos.z - player.pos.z) > 80) c.dead = true;
   }
-  countNPC() { return this.mobs.filter(m => m.npc).length; }
+  countCops() { return this.mobs.filter(m => m.def.cop).length; }
+  _copLoop(dt, player) {
+    const want = player.wanted | 0;
+    if (want <= 0) { for (const m of this.mobs) if (m.def.cop) m.dead = true; return; }
+    this.copT -= dt; if (this.copT > 0) return; this.copT = 1.6;
+    const target = Math.min(8, want * 2);
+    let need = target - this.countCops();
+    for (let a = 0; a < 30 && need > 0; a++) {
+      const ang = Math.random() * 6.28, r = 22 + Math.random() * 18;
+      const wx = Math.floor(player.pos.x + Math.cos(ang) * r), wz = Math.floor(player.pos.z + Math.sin(ang) * r);
+      if (!this.world.isLoaded(wx, wz)) continue; const gy = this.world.highestY(wx, wz);
+      if (this.world.getBlock(wx, gy + 1, wz) !== B.AIR) continue;
+      this.spawn('cop', wx + 0.5, gy + 1, wz + 0.5); need--;
+    }
+  }
+  nearestCar(pos, r) { let best = null, bd = r; for (const c of this.cars) { if (c.driver) continue; const d = Math.hypot(c.pos.x - pos.x, c.pos.z - pos.z); if (d < bd) { bd = d; best = c; } } return best; }
+  spawnPlane(player) { const p = new Plane(player.pos.x, player.pos.y + 14, player.pos.z); this.planes.push(p); this.group.add(p.group); return p; }
+  removePlane(p) { this.group.remove(p.group); this.planes = this.planes.filter(x => x !== p); }
+  alarm(x, z, radius) { for (const m of this.mobs) if (m.npc && !m.def.cop) { if (Math.hypot(m.pos.x - x, m.pos.z - z) < radius) { m.flee = 6 + Math.random() * 3; m.timer = 4; } } }
+  muggable(pos, dir) { let best = null, bd = 3; for (const m of this.mobs) { if (!m.npc || m.def.cop) continue; const dx = m.pos.x - pos.x, dz = m.pos.z - pos.z; const d = Math.hypot(dx, dz); if (d < bd) { bd = d; best = m; } } return best; }
+  hitFx(x, y, z, color, n = 10) {
+    const pos = new Float32Array(n * 3), vel = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z; vel[i * 3] = (Math.random() - 0.5) * 5; vel[i * 3 + 1] = 2 + Math.random() * 4; vel[i * 3 + 2] = (Math.random() - 0.5) * 5; }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const mesh = new THREE.Points(geo, new THREE.PointsMaterial({ color, size: 0.18, transparent: true, depthWrite: false }));
+    mesh.frustumCulled = false; this.group.add(mesh); this.fx.push({ mesh, geo, pos, vel, n, life: 0.6, max: 0.6 });
+  }
+  dropCash(x, y, z, amount) { if (amount <= 0) return; this.dropItem(x, y, z, ITEM.CASH, amount); }
+  countNPC() { return this.mobs.filter(m => m.npc && !m.def.cop).length; }
   populateCity(player) {
     const gen = this.game.gen, w = this.world; if (!gen) return;
     // spawn pedestrians on nearby sidewalks
@@ -1296,6 +1385,7 @@ class MobManager {
     }
   }
   _car(c, dt, player) {
+    if (c.driver) return; // player is driving this one
     const gen = this.game.gen, w = this.world;
     if (Math.hypot(c.pos.x - player.pos.x, c.pos.z - player.pos.z) > 100) { c.dead = true; return; }
     c.turnCd -= dt;
@@ -1320,8 +1410,12 @@ class MobManager {
     const w = this.world; const dx = player.pos.x - m.pos.x, dz = player.pos.z - m.pos.z; const dist = Math.hypot(dx, dz);
     m.attackCd = Math.max(0, m.attackCd - dt); m.hurt = Math.max(0, m.hurt - dt); m.timer -= dt; if (m.flee) m.flee -= dt;
     let wx = 0, wz = 0; const hostile = m.def.hostile && !(m.def.neutralDay && dayLight > 0.5);
-    if (hostile && dist < 20 && Math.abs(player.pos.y - m.pos.y) < 6) {
-      if (m.def.creeper && dist < 2.2) { m.fuse += dt; if (m.fuse > 1.4) { this._explode(m, player); m.dead = true; this.group.remove(m.group); return; } }
+    const detect = m.def.cop ? 34 : 20;
+    if (hostile && dist < detect && Math.abs(player.pos.y - m.pos.y) < (m.def.cop ? 8 : 6)) {
+      if (m.def.cop) {
+        if (dist > 8) { wx = dx / dist; wz = dz / dist; }
+        if (dist < 24 && m.attackCd <= 0) { m.attackCd = 0.85; this.game.damagePlayer(3 + Math.random() * 3); this.game._tracer(new THREE.Vector3(m.pos.x, m.pos.y + 1.5, m.pos.z), this.game.player.eye(), 0x9fc2ff); }
+      } else if (m.def.creeper && dist < 2.2) { m.fuse += dt; if (m.fuse > 1.4) { this._explode(m, player); m.dead = true; this.group.remove(m.group); return; } }
       else if (dist > 1.1) { wx = dx / dist; wz = dz / dist; } else if (m.def.dmg > 0 && m.attackCd <= 0) { this.game.damagePlayer(m.def.dmg); m.attackCd = 1; }
       m.yaw = Math.atan2(dx, dz);
     } else if (m.flee > 0) { wx = -dx / (dist || 1); wz = -dz / (dist || 1); m.yaw = Math.atan2(-dx, -dz); }
@@ -1361,7 +1455,7 @@ class MobManager {
     it.age += dt; it.delay -= dt; if (it.age > 180) { it.dead = true; return; }
     it.vel.y -= 26 * dt; entMove(it, this.world, dt); if (it.onGround) { it.vel.x *= 0.6; it.vel.z *= 0.6; }
     const tgt = new THREE.Vector3(player.pos.x, player.pos.y + 0.6, player.pos.z); const d = tgt.distanceTo(it.pos);
-    if (it.delay <= 0 && d < 1.6) { if (d < 0.7) { if (this.game.inventory.add(it.item, it.count) === 0) it.dead = true; } else { it.pos.lerp(tgt, Math.min(1, 9 * dt)); it.vel.set(0, 0, 0); } }
+    if (it.delay <= 0 && d < 1.8) { if (d < 0.8) { if (it.item === ITEM.CASH) { player.money += it.count; it.dead = true; } else if (this.game.inventory.add(it.item, it.count) === 0) it.dead = true; } else { it.pos.lerp(tgt, Math.min(1, 9 * dt)); it.vel.set(0, 0, 0); } }
     it.group.position.set(it.pos.x, it.pos.y + 0.25 + Math.sin(it.age * 3) * 0.06, it.pos.z); it.group.rotation.y += dt * 2;
   }
   _spawnLoop(dt, player, dayLight) {
@@ -1391,8 +1485,8 @@ class MobManager {
     }
   }
   rayHit(o, d, reach) { let best = null, bt = reach; for (const m of this.mobs) { const t = rayAABB(o, d, m.aabb()); if (t != null && t < bt) { bt = t; best = m; } } return best; }
-  attackRay(o, d, reach, dmg) { const m = this.rayHit(o, d, reach); if (m) { const kb = new THREE.Vector3(d.x, 0, d.z).normalize(); m.damage(dmg, kb.x, kb.z, this); return true; } return false; }
-  clear() { for (const m of this.mobs) this.group.remove(m.group); for (const it of this.items) this.group.remove(it.group); for (const c of this.cars) this.group.remove(c.group); this.mobs = []; this.items = []; this.cars = []; }
+  attackRay(o, d, reach, dmg) { const m = this.rayHit(o, d, reach); if (m) { const kb = new THREE.Vector3(d.x, 0, d.z).normalize(); m.damage(dmg, kb.x, kb.z, this); this.hitFx(m.pos.x, m.pos.y + m.h * 0.6, m.pos.z, m.npc ? 0xb01010 : 0x884422, 8); if (m.npc) { this.game.addWanted(m.def.cop ? 1 : 2); this.alarm(m.pos.x, m.pos.z, 18); } return true; } return false; }
+  clear() { for (const m of this.mobs) this.group.remove(m.group); for (const it of this.items) this.group.remove(it.group); for (const c of this.cars) this.group.remove(c.group); for (const p of this.planes) this.group.remove(p.group); for (const f of this.fx) this.group.remove(f.mesh); this.mobs = []; this.items = []; this.cars = []; this.planes = []; this.fx = []; }
 }
 function rayAABB(o, d, b) { let tmin = 0, tmax = Infinity; for (const ax of ['x', 'y', 'z']) { const lo = b['min' + ax.toUpperCase()], hi = b['max' + ax.toUpperCase()]; if (Math.abs(d[ax]) < 1e-8) { if (o[ax] < lo || o[ax] > hi) return null; } else { let t1 = (lo - o[ax]) / d[ax], t2 = (hi - o[ax]) / d[ax]; if (t1 > t2) { const t = t1; t1 = t2; t2 = t; } tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2); if (tmin > tmax) return null; } } return tmin; }
 
@@ -1434,10 +1528,42 @@ class Player {
     this.health = 20; this.hunger = 20; this.sat = 5; this.exhaustion = 0; this.dead = false;
     this.invuln = 0; this.regenT = 0; this.fallStart = null; this.sprinting = false;
     this.gunCd = 0; this.reloadT = 0; this.recoil = 0; this.money = 50;
+    this.wanted = 0; this.heat = 0; this.vehicle = null;
+  }
+  enterVehicle(v) { this.vehicle = v; v.driver = this; if (v.kind === 'car') { v.driveSpeed = v.driveSpeed || 0; this.game.addWanted(1); } this.game.hand.visible = false; }
+  exitVehicle() { const v = this.vehicle; if (!v) return; this.vehicle = null; v.driver = null; this.pos.set(v.pos.x + 1.8, (v.kind === 'plane' ? this.world.highestY(Math.floor(v.pos.x), Math.floor(v.pos.z)) + 1 : v.pos.y + 0.5), v.pos.z); this.vel.set(0, 0, 0); if (v.kind === 'plane') this.game.mobs.removePlane(v); }
+  _vehicle(dt, input) {
+    const v = this.vehicle; const world = this.world;
+    if (v.kind === 'car') {
+      const steer = (input.k('KeyA') ? 1 : 0) - (input.k('KeyD') ? 1 : 0);
+      const accel = (input.k('KeyW') ? 1 : 0) - (input.k('KeyS') ? 1 : 0);
+      v.driveSpeed += accel * 17 * dt; v.driveSpeed *= (input.k('Space') ? 0.9 : 0.99); v.driveSpeed = clamp(v.driveSpeed, -9, 22);
+      if (Math.abs(v.driveSpeed) > 0.4) v.yaw += steer * 1.7 * dt * (v.driveSpeed > 0 ? 1 : -1);
+      const dirx = Math.sin(v.yaw), dirz = Math.cos(v.yaw);
+      const nx = v.pos.x + dirx * v.driveSpeed * dt, nz = v.pos.z + dirz * v.driveSpeed * dt;
+      const gy = world.highestY(Math.floor(nx), Math.floor(nz));
+      if (gy <= v.pos.y + 1.3) { v.pos.x = nx; v.pos.z = nz; v.pos.y += (gy + 1 - v.pos.y) * Math.min(1, dt * 8); } else { v.driveSpeed *= -0.25; }
+      if (Math.abs(v.driveSpeed) > 5) for (const m of this.game.mobs.mobs) { if (Math.abs(m.pos.y - v.pos.y) < 2 && Math.hypot(m.pos.x - v.pos.x, m.pos.z - v.pos.z) < 1.7) { m.damage(22, dirx, dirz, this.game.mobs); if (m.npc && !m.def.cop) this.game.addWanted(2); } }
+      v.group.position.set(v.pos.x, v.pos.y + 0.2, v.pos.z); v.group.rotation.y = v.yaw;
+      this.pos.set(v.pos.x, v.pos.y, v.pos.z); this.vel.set(0, 0, 0);
+    } else { // plane — arcade flight
+      this.yaw -= input.mdx * 0.0022; this.pitch -= input.mdy * 0.0022; this.pitch = clamp(this.pitch, -1.2, 1.2);
+      const roll = (input.k('KeyA') ? 1 : 0) - (input.k('KeyD') ? 1 : 0); v.roll = v.roll * 0.92 + roll * 0.5 * 0.5;
+      v.throttle = clamp(v.throttle + ((input.k('KeyW') ? 1 : 0) - (input.k('KeyS') ? 1 : 0)) * dt * 0.7, 0, 1);
+      const speed = 7 + v.throttle * 60;
+      const cp = Math.cos(this.pitch), fx = Math.sin(this.yaw) * cp, fy = Math.sin(this.pitch), fz = Math.cos(this.yaw) * cp;
+      v.pos.x += fx * speed * dt; v.pos.y += fy * speed * dt; v.pos.z += fz * speed * dt; v.pos.y -= (1 - v.throttle) * 7 * dt;
+      const gy = world.highestY(Math.floor(v.pos.x), Math.floor(v.pos.z));
+      if (v.pos.y < gy + 2) { v.pos.y = gy + 2; if (speed > 24) this.takeDamage(5); }
+      v.group.position.copy(v.pos); v.group.rotation.set(-this.pitch, this.yaw, v.roll, 'YXZ');
+      this.pos.set(v.pos.x, v.pos.y - 1, v.pos.z); this.vel.set(0, 0, 0);
+    }
+    this.updateStats(dt);
   }
   eye() { return new THREE.Vector3(this.pos.x, this.pos.y + EYE, this.pos.z); }
   update(dt, input) {
     dt = Math.min(dt, 0.05);
+    if (this.vehicle) { this._vehicle(dt, input); return; }
     const creative = this.game.mode === 'creative';
     const sens = 0.0022;
     this.yaw -= input.mdx * sens; this.pitch -= input.mdy * sens;
@@ -1698,11 +1824,11 @@ class UI {
     const root = document.createElement('div'); root.id = 'ui';
     root.innerHTML = `<div id="cross"><div id="breakbar"></div></div>
       <div id="stats"><div id="hearts" class="pips"></div><div id="hungers" class="pips"></div></div>
-      <div id="hotbar"></div><div id="selname"></div><div id="ammo" class="hidden"></div><div id="money"></div>
-      <div id="hint">WASD move · mouse look · L/R break/place · 1-9 / scroll · E inventory · Esc menu</div>
+      <div id="hotbar"></div><div id="selname"></div><div id="ammo" class="hidden"></div><div id="money"></div><div id="wanted"></div>
+      <div id="hint">WASD · mouse · L/R break/place · F vehicle · P plane · G mug · R reload · E inv · Esc menu</div>
       <div id="screen" class="hidden"></div><div id="cursor" class="hidden"></div><div id="menu" class="hidden"></div>`;
     document.body.appendChild(root); this.root = root;
-    this.el = { hotbar: root.querySelector('#hotbar'), hearts: root.querySelector('#hearts'), hungers: root.querySelector('#hungers'), selname: root.querySelector('#selname'), ammo: root.querySelector('#ammo'), money: root.querySelector('#money'), screen: root.querySelector('#screen'), cursor: root.querySelector('#cursor'), menu: root.querySelector('#menu'), breakbar: root.querySelector('#breakbar') };
+    this.el = { hotbar: root.querySelector('#hotbar'), hearts: root.querySelector('#hearts'), hungers: root.querySelector('#hungers'), selname: root.querySelector('#selname'), ammo: root.querySelector('#ammo'), money: root.querySelector('#money'), wanted: root.querySelector('#wanted'), screen: root.querySelector('#screen'), cursor: root.querySelector('#cursor'), menu: root.querySelector('#menu'), breakbar: root.querySelector('#breakbar') };
     for (let i = 0; i < 9; i++) { const s = document.createElement('div'); s.className = 'hs'; s.onclick = () => { if (!this.open) this.game.inventory.sel = i; }; this.el.hotbar.appendChild(s); }
     document.addEventListener('mousemove', e => { this._mx = e.clientX; this._my = e.clientY; this._moveCursor(); });
   }
@@ -1726,6 +1852,7 @@ class UI {
     if (sd && sd.gun) { const ammo = sit.ammo == null ? sd.clip : sit.ammo; this.el.ammo.classList.remove('hidden'); this.el.ammo.textContent = p.reloadT > 0 ? 'RELOADING…' : ammo + ' / ' + sd.clip; }
     else this.el.ammo.classList.add('hidden');
     this.el.money.textContent = '$' + (p.money | 0);
+    this.el.wanted.textContent = p.wanted > 0 ? '★'.repeat(p.wanted) : '';
     this.el.breakbar.style.width = (p.breakProgress > 0 ? p.breakProgress * 22 : 0) + 'px';
     if (this.open === 'inv' || this.open === 'craft') this._renderScreen();
     this._moveCursor();
@@ -1971,10 +2098,12 @@ class Game {
       const blockT = this.rayBlockDist(o, dir, d.range);
       let endT = Math.min(blockT, d.range);
       const mob = this.mobs.rayHit(o, dir, Math.min(blockT, d.range));
-      if (mob) { const mt = rayAABB(o, dir, mob.aabb()); if (mt != null) { endT = mt; mob.damage(d.dmg, dir.x, dir.z, this.mobs); } }
+      if (mob) { const mt = rayAABB(o, dir, mob.aabb()); if (mt != null) { endT = mt; mob.damage(d.dmg, dir.x, dir.z, this.mobs); this.mobs.hitFx(mob.pos.x, mob.pos.y + mob.h * 0.6, mob.pos.z, mob.npc ? 0xb01010 : 0x884422, 8); if (mob.npc) { this.addWanted(mob.def.cop ? 1 : 2); this.mobs.alarm(mob.pos.x, mob.pos.z, 22); } } }
       const start = o.clone().addScaledVector(dir, 0.4).addScaledVector(base, 0); // muzzle-ish origin
       this._tracer(start, o.clone().addScaledVector(dir, endT), d.tracer || 0xfff0a0);
     }
+    // firing in town draws police attention
+    if (this.gen && this.gen.cityAt(Math.floor(player.pos.x), Math.floor(player.pos.z)) && player.wanted < 1) this.addWanted(1);
     player.recoil = Math.min(1.4, (player.recoil || 0) + (d.pellets > 1 ? 1.0 : 0.6));
     this.muzzle.material.color.set(d.tracer || 0xfff0a0); this.muzzleT = 0.05; this.muzzle.material.opacity = 1;
     this.muzzle.scale.setScalar(0.7 + Math.random() * 0.6); this.muzzle.rotation.z = Math.random() * 6.28;
@@ -2083,8 +2212,9 @@ class Game {
   }
   onHurt() { document.body.classList.add('hurt'); clearTimeout(this._ht); this._ht = setTimeout(() => document.body.classList.remove('hurt'), 180); }
   damagePlayer(n) { this.player.takeDamage(n); }
-  onDeath() { this.input.unlock(); this.ui.showMenu('death'); }
-  respawn() { const sy = this.world.highestY(8, 8); const p = this.player; p.pos.set(8.5, sy + 2, 8.5); p.vel.set(0, 0, 0); p.health = 20; p.hunger = 20; p.sat = 5; p.dead = false; p.fallStart = null; this.ui.showMenu(null); this.input.lock(); }
+  addWanted(n) { const p = this.player; if (!p) return; p.wanted = Math.min(5, p.wanted + n); p.heat = Math.max(p.heat, 12 + p.wanted * 6); }
+  onDeath() { if (this.player.vehicle) this.player.exitVehicle(); this.player.wanted = 0; this.player.heat = 0; this.input.unlock(); this.ui.showMenu('death'); }
+  respawn() { const sp = this.spawnPt || { x: 8, z: 8 }; const sy = this.world.highestY(sp.x, sp.z); const p = this.player; p.pos.set(sp.x + 0.5, sy + 2, sp.z + 0.5); p.vel.set(0, 0, 0); p.health = 20; p.hunger = 20; p.sat = 5; p.dead = false; p.fallStart = null; p.wanted = 0; p.heat = 0; this.ui.showMenu(null); this.input.lock(); }
   pause() { if (!this.playing || this.paused) return; this.paused = true; this.input.unlock(); this.ui.showMenu('pause'); }
   resume() { this.paused = false; this.ui.showMenu(null); this.input.lock(); }
   loop() {
@@ -2096,14 +2226,34 @@ class Game {
       const sc = this.ui.open === 'inv' || this.ui.open === 'craft' || this.ui.open === 'palette' || this.ui.open === 'chat';
       if (this.input.p('KeyE')) { if (sc) this.ui.close(); else if (!this.paused && !this.ui.open) this.ui.openInventory(); }
       if (this.input.p('Escape')) { if (sc) this.ui.close(); else if (this.paused) this.resume(); else if (!this.ui.open) this.pause(); }
+      if (!sc && !this.paused) {
+        // F: enter/exit nearest vehicle.  P: call in a plane.  G: mug a nearby person.
+        if (this.input.p('KeyF')) { if (this.player.vehicle) this.player.exitVehicle(); else { const car = this.mobs.nearestCar(this.player.pos, 4); if (car) this.player.enterVehicle(car); } }
+        if (this.input.p('KeyP') && !this.player.vehicle) { const pl2 = this.mobs.spawnPlane(this.player); this.player.enterVehicle(pl2); }
+        if (this.input.p('KeyG') && !this.player.vehicle) { const v = new THREE.Vector3(); this.camera.getWorldDirection(v); const t = this.mobs.muggable(this.player.pos, v); if (t) { const loot = Math.min(t.npc.money | 0, 15 + (Math.random() * 60 | 0)); t.npc.money -= loot; this.player.money += loot; t.flee = 7; this.mobs.alarm(t.pos.x, t.pos.z, 16); this.mobs.hitFx(t.pos.x, t.pos.y + 1.2, t.pos.z, 0x6be06b, 8); this.addWanted(1); } }
+      }
+      // wanted decays when you lie low
+      if (this.player.heat > 0) { this.player.heat -= dt; if (this.player.heat <= 0) { this.player.wanted = Math.max(0, this.player.wanted - 1); this.player.heat = this.player.wanted > 0 ? 14 : 0; } }
       const frozen = this.paused || this.ui.open;
       if (!frozen && !this.player.dead) this.player.update(dt, this.input);
       if (this.world) this.world.update(this.player.pos.x, this.player.pos.z);
       if (this.mobs && !frozen) this.mobs.update(dt, this.player, this.dayLight != null ? this.dayLight : 1);
       this.gameTime += dt;
+      const pl = this.player;
+      // when driving/flying, use a third-person chase camera and hide the held viewmodel
+      if (pl.vehicle) {
+        const v = pl.vehicle; let fx, fy, fz;
+        if (v.kind === 'plane') { const cp = Math.cos(pl.pitch); fx = Math.sin(pl.yaw) * cp; fy = Math.sin(pl.pitch); fz = Math.cos(pl.yaw) * cp; }
+        else { fx = Math.sin(v.yaw); fy = 0; fz = Math.cos(v.yaw); }
+        const back = v.kind === 'plane' ? 11 : 8, up = v.kind === 'plane' ? 3.5 : 4;
+        this.camera.position.set(v.pos.x - fx * back, v.pos.y + up - fy * back, v.pos.z - fz * back);
+        this.camera.lookAt(v.pos.x + fx * 2, v.pos.y + 1.2 + fy * 2, v.pos.z + fz * 2);
+        this.hand.visible = false; this.sel.visible = false; this.crack.visible = false;
+        this._sky(dt); if (this.playing) this.ui.update(); this.input.end(); this.renderer.render(this.scene, this.camera); return;
+      }
       // view model: held item + animations (mining swing, walk bob, gun recoil)
       this.updateHeld();
-      const pl = this.player; const hi = this.inventory.held(); const hd = hi ? itemDef(hi.id) : null;
+      const hi = this.inventory.held(); const hd = hi ? itemDef(hi.id) : null;
       const speed = Math.hypot(pl.vel.x, pl.vel.z); const walkBob = pl.onGround ? Math.min(1, speed / 4.4) : 0;
       this._bobT = (this._bobT || 0) + dt * (3 + speed * 1.7);
       const mining = (pl.breakTarget && pl.breakProgress > 0 && this.mode !== 'creative') || (this.mode === 'creative' && this.input.mL && pl.target && !(hd && hd.gun));
