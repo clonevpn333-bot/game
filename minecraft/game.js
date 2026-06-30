@@ -678,6 +678,20 @@ class World {
   }
   relight(cx, cz) { const c = this.getC(cx, cz); if (c && c.state !== 'empty') computeLight(c); }
   remesh(cx, cz) { const c = this.getC(cx, cz); if (c && c.state !== 'empty' && !c._q) { c._q = true; this.meshQ.unshift(c); } }
+  // write blocks without per-block relight/remesh; call flushEdits() once when done (for placing structures)
+  setBlockQuiet(wx, wy, wz, id) {
+    if (wy < 0 || wy >= CY) return false; const cx = Math.floor(wx / CX), cz = Math.floor(wz / CZ); const c = this.getC(cx, cz); if (!c || c.state === 'empty') return false;
+    const lx = wx - cx * CX, lz = wz - cz * CZ; c.blocks[idx(lx, wy, lz)] = id;
+    (this.edits[this.key(cx, cz)] || (this.edits[this.key(cx, cz)] = {}))[idx(lx, wy, lz)] = id;
+    (this._dirty || (this._dirty = new Set())).add(this.key(cx, cz)); return true;
+  }
+  flushEdits() {
+    if (!this._dirty) return; const keys = new Set();
+    for (const k of this._dirty) { const p = k.split(',').map(Number); for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) keys.add(this.key(p[0] + dx, p[1] + dz)); }
+    for (const k of keys) { const c = this.chunks.get(k); if (c && c.state !== 'empty') computeLight(c); }
+    for (const k of keys) { const c = this.chunks.get(k); if (c && c.state === 'meshed') this.mesh(c); }
+    this._dirty = null;
+  }
 
   update(px, pz) {
     const pcx = Math.floor(px / CX), pcz = Math.floor(pz / CZ);
@@ -1130,6 +1144,17 @@ function makeCopPersona() {
     shirt: 0x213a78, pants: 0x1a1f2c, cop: true, mem: { name: null, turns: 0, lastTopic: null },
   };
 }
+function makeFamilyPersona(role) {
+  const r = () => Math.random();
+  const mom = role === 'mom';
+  return {
+    id: ++NPC_SEQ, first: mom ? 'Mom' : 'Dad', last: 'Reyes', role,
+    job: mom ? 'nurse' : 'mechanic', wage: 30, cls: 'middle', money: 600 + (r() * 800 | 0), age: 30 + (r() * 12 | 0),
+    mood: 'cheerful', hobby: mom ? 'cooking' : 'fixing cars',
+    skin: SKINS[r() * SKINS.length | 0], hair: HAIRS[r() * HAIRS.length | 0],
+    shirt: mom ? 0xd47ba0 : 0x3f7cb4, pants: 0x33384a, family: true, mem: { name: null, turns: 0, lastTopic: null },
+  };
+}
 // a swinging limb (pivots at the top): segment + an end piece (hand/foot)
 function limb(w, h, d, segCol, x, topY, z, endCol, endH, endW) {
   const grp = new THREE.Group(); grp.position.set(x, topY, z);
@@ -1173,6 +1198,15 @@ function npcReply(p, raw) {
     if (p.mood === 'cheerful') return pick([s, s + ' 😊'.replace('😊', ''), s + ' Lovely to chat!']);
     return s;
   };
+  // loving parents talk a little differently
+  if (p.family) {
+    const kid = m.name || 'sweetie', who = p.role === 'mom' ? 'your mom' : 'your dad';
+    if (has('home', 'house', 'where', 'go', 'lost')) return pick(['Stay close, ' + kid + ' — let\'s get you home.', 'Home\'s just this way. Follow me!', 'Come on, ' + kid + ', home\'s not far.']);
+    if (has('love', 'hug', 'mom', 'dad', 'family')) return pick(['I love you so much, ' + kid + '. ❤'.replace('❤', ''), 'You\'re going to do great things, kiddo.', 'We\'re so proud of you already.']);
+    if (has('hi', 'hello', 'hey', 'sup', 'goo goo', 'ga ga')) return pick(['There\'s my little one! I\'m ' + who + '.', 'Hi ' + kid + '! Welcome to the world.', 'Aww, hello baby!']);
+    if (has('food', 'hungry', 'eat', 'milk')) return pick(['Let\'s get you fed once we\'re home.', 'Hungry already? Just like your ' + (p.role === 'mom' ? 'dad' : 'mom') + '.']);
+    return pick(['Let\'s head home, ' + kid + '.', 'I\'m right here with you.', 'Everything\'s going to be okay, ' + kid + '.', 'Follow me home and I\'ll take care of you.']);
+  }
   // capture player name
   let mName = raw.match(/\b(?:i'?m|i am|my name is|call me|name's)\s+([A-Za-z][a-z]{1,15})/i);
   if (mName && !has('not', 'fine', 'good', 'ok', 'okay', 'here', 'lost', 'hungry', 'tired', 'rich', 'poor')) { m.name = mName[1][0].toUpperCase() + mName[1].slice(1); return pick(['Nice to meet you, ' + m.name + '! I\'m ' + Name + '.', 'Hey ' + m.name + ', good to meet you. ' + Name + '.', m.name + '? Great name. I\'m ' + Name + ', I\'m a ' + p.job + '.']); }
@@ -1346,6 +1380,7 @@ class MobManager {
   constructor(scene, world, game) { this.scene = scene; this.world = world; this.game = game; this.mobs = []; this.items = []; this.cars = []; this.planes = []; this.fx = []; this.group = new THREE.Group(); scene.add(this.group); this.spawnT = 0; this.cityT = 0; this.econT = 0; this.copT = 0; this.maxP = 18; this.maxH = 22; }
   spawn(type, x, y, z, persona) { const m = new Mob(type, x, y, z, persona); this.mobs.push(m); this.group.add(m.group); return m; }
   spawnNpc(x, y, z, homeless) { return this.spawn('npc', x, y, z, makePersona(homeless)); }
+  spawnFamily(x, y, z) { const mom = this.spawn('npc', x - 1.2, y, z - 0.5, makeFamilyPersona('mom')); const dad = this.spawn('npc', x + 1.2, y, z - 0.5, makeFamilyPersona('dad')); this.family = [mom, dad]; return this.family; }
   ruralPopulate(player) {
     if (this.countNPC() >= 5) return; const w = this.world, gen = this.game.gen;
     for (let a = 0; a < 30 && this.countNPC() < 5; a++) {
@@ -1474,6 +1509,7 @@ class MobManager {
       else if (dist > 1.1) { wx = dx / dist; wz = dz / dist; } else if (m.def.dmg > 0 && m.attackCd <= 0) { this.game.damagePlayer(m.def.dmg); m.attackCd = 1; }
       m.yaw = Math.atan2(dx, dz);
     } else if (m.flee > 0) { wx = -dx / (dist || 1); wz = -dz / (dist || 1); m.yaw = Math.atan2(-dx, -dz); }
+    else if (m.npc && m.goto) { const gx = m.goto.x - m.pos.x, gz = m.goto.z - m.pos.z, gd = Math.hypot(gx, gz); if (gd > 1.8) { wx = gx / gd; wz = gz / gd; m.yaw = Math.atan2(gx, gz); } else { m.goto = null; } }
     else { if (m.timer <= 0) { m.timer = 2 + Math.random() * 4; m.wander = Math.random() < 0.4 ? null : Math.random() * 6.28; } if (m.wander != null) { wx = Math.sin(m.wander); wz = Math.cos(m.wander); m.yaw = m.wander; } }
     const moving = wx || wz; const sp = m.def.speed * (m.flee > 0 ? 1.5 : 1);
     if (moving) { m.vel.x += (wx * sp - m.vel.x) * Math.min(1, 8 * dt); m.vel.z += (wz * sp - m.vel.z) * Math.min(1, 8 * dt); } else { m.vel.x *= 0.7; m.vel.z *= 0.7; }
@@ -1897,11 +1933,11 @@ class UI {
     const root = document.createElement('div'); root.id = 'ui';
     root.innerHTML = `<div id="cross"><div id="breakbar"></div></div>
       <div id="stats"><div id="hearts" class="pips"></div><div id="hungers" class="pips"></div></div>
-      <div id="hotbar"></div><div id="selname"></div><div id="ammo" class="hidden"></div><div id="money"></div><div id="wanted"></div><div id="stage"></div>
+      <div id="hotbar"></div><div id="selname"></div><div id="ammo" class="hidden"></div><div id="money"></div><div id="wanted"></div><div id="stage"></div><div id="objective"></div>
       <div id="hint">WASD · mouse · L/R break/place · F vehicle · P plane · G mug · R reload · E inv · Esc menu</div>
       <div id="screen" class="hidden"></div><div id="cursor" class="hidden"></div><div id="menu" class="hidden"></div>`;
     document.body.appendChild(root); this.root = root;
-    this.el = { hotbar: root.querySelector('#hotbar'), hearts: root.querySelector('#hearts'), hungers: root.querySelector('#hungers'), selname: root.querySelector('#selname'), ammo: root.querySelector('#ammo'), money: root.querySelector('#money'), wanted: root.querySelector('#wanted'), stage: root.querySelector('#stage'), screen: root.querySelector('#screen'), cursor: root.querySelector('#cursor'), menu: root.querySelector('#menu'), breakbar: root.querySelector('#breakbar') };
+    this.el = { hotbar: root.querySelector('#hotbar'), hearts: root.querySelector('#hearts'), hungers: root.querySelector('#hungers'), selname: root.querySelector('#selname'), ammo: root.querySelector('#ammo'), money: root.querySelector('#money'), wanted: root.querySelector('#wanted'), stage: root.querySelector('#stage'), objective: root.querySelector('#objective'), screen: root.querySelector('#screen'), cursor: root.querySelector('#cursor'), menu: root.querySelector('#menu'), breakbar: root.querySelector('#breakbar') };
     for (let i = 0; i < 9; i++) { const s = document.createElement('div'); s.className = 'hs'; s.onclick = () => { if (!this.open) this.game.inventory.sel = i; }; this.el.hotbar.appendChild(s); }
     document.addEventListener('mousemove', e => { this._mx = e.clientX; this._my = e.clientY; this._moveCursor(); });
   }
@@ -2282,16 +2318,70 @@ class Game {
     if (mode === 'creative') { [B.GRASS, B.DIRT, B.STONE, B.COBBLE, B.PLANKS, B.LOG, B.LEAVES, B.GLASS, B.SAND].forEach((id, i) => this.inventory.slots[i] = { id, count: 64 }); }
     // spawn (prefer a road in the city near origin)
     const sp = this.gen.spawnPoint(); this.spawnPt = sp;
-    for (let i = 0; i < 12; i++) this.world.update(sp.x, sp.z);
-    const sy = this.world.highestY(sp.x, sp.z); this.player.pos.set(sp.x + 0.5, Math.max(sy + 2, sp.y + 2), sp.z + 0.5);
+    for (let i = 0; i < 14; i++) this.world.update(sp.x, sp.z);
+    // you're born in a hospital — build it, your home, and your family
+    this.buildBirthScene(sp);
+    this.player.pos.set(this.birthBed.x + 0.5, this.birthBed.y, this.birthBed.z + 0.5);
     if (mode === 'survival') this.mobs.seedAround(this.player);
     this.mobs.populateCity(this.player);
     this.playing = true; this.paused = false; this.hand.visible = true;
     this.ui.showMenu(null); this.input.lock();
   }
+  buildBirthScene(sp) {
+    const W = this.world; const Q = (x, y, z, id) => W.setBlockQuiet(x, y, z, id);
+    const room = (cx, gy, cz, hw, hd, hgt, wall, floor, ceil, glass) => {
+      for (let x = -hw; x <= hw; x++) for (let z = -hd; z <= hd; z++) {
+        Q(cx + x, gy, cz + z, floor);
+        for (let y = 1; y <= hgt; y++) { const edge = (x === -hw || x === hw || z === -hd || z === hd); let id = B.AIR; if (y === hgt) id = ceil; else if (edge) id = ((y === 2 || y === 3) && glass && Math.abs(x) !== hw && Math.abs(z) !== hd && ((x + z) & 1) === 0) ? glass : wall; Q(cx + x, gy + y, cz + z, id); }
+      }
+    };
+    // HOSPITAL at the spawn — clean white room with beds
+    const hgy = W.highestY(sp.x, sp.z), hx = sp.x, hz = sp.z;
+    room(hx, hgy, hz, 5, 4, 5, B.QUARTZ, B.QUARTZ, B.QUARTZ, B.WINDOW);
+    Q(hx, hgy + 1, hz + 4, B.AIR); Q(hx, hgy + 2, hz + 4, B.AIR); Q(hx + 1, hgy + 1, hz + 4, B.AIR); Q(hx + 1, hgy + 2, hz + 4, B.AIR); // doorway
+    for (const bx of [-3, 0, 3]) { Q(hx + bx, hgy + 1, hz - 3, B.WOOL); Q(hx + bx, hgy + 1, hz - 2, B.WOOL); Q(hx + bx, hgy + 1, hz - 4 + 0, B.STUCCO_CORAL); } // beds + pillows
+    Q(hx, hgy + 3, hz - 4, B.STUCCO_CORAL); Q(hx - 1, hgy + 2, hz - 4 + 0.0001 | 0, B.AIR); // red cross accent
+    Q(hx, hgy + 2, hz - 4, B.STUCCO_CORAL); Q(hx + 1, hgy + 3, hz - 4, B.STUCCO_CORAL); Q(hx - 1, hgy + 3, hz - 4, B.STUCCO_CORAL);
+    for (const lx of [-3, 0, 3]) Q(hx + lx, hgy + 4, hz, B.GLOWSTONE); // ceiling lights
+    this.birthBed = { x: hx, y: hgy + 1, z: hz };
+    // HOME — a little house a short walk away
+    const homeZ = hz + 22, hgy2 = W.highestY(hx, homeZ);
+    room(hx, hgy2, homeZ, 4, 3, 4, B.STUCCO_TEAL, B.PLANKS, B.STUCCO_CREAM, B.WINDOW);
+    Q(hx, hgy2 + 1, homeZ - 3, B.AIR); Q(hx, hgy2 + 2, homeZ - 3, B.AIR); // front door (facing hospital)
+    Q(hx - 3, hgy2 + 1, homeZ + 2, B.WOOL); Q(hx - 2, hgy2 + 1, homeZ + 2, B.WOOL); // bed
+    Q(hx + 3, hgy2 + 1, homeZ - 2, B.CRAFTING_TABLE); Q(hx + 2, hgy2 + 1, homeZ - 2, B.FURNACE);
+    Q(hx, hgy2 + 3, homeZ, B.GLOWSTONE); // interior light
+    Q(hx, hgy2 + 5, homeZ, B.NEON); // a little rooftop sign
+    this.home = { x: hx + 0.5, y: hgy2 + 1, z: homeZ + 0.5 };
+    W.flushEdits();
+    // family + objective flow
+    this.mobs.spawnFamily(hx + 0.5, hgy + 1, hz + 1.5);
+    this.story = 0; this.storyT = 0;
+    // a glowing beacon over home so you can find your way
+    if (!this.homeMarker) { this.homeMarker = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 40, 8), new THREE.MeshBasicMaterial({ color: 0x7be0ff, transparent: true, opacity: 0.28, depthWrite: false })); this.scene.add(this.homeMarker); }
+    this.homeMarker.position.set(this.home.x, this.home.y + 20, this.home.z); this.homeMarker.visible = false;
+  }
   onHurt() { document.body.classList.add('hurt'); clearTimeout(this._ht); this._ht = setTimeout(() => document.body.classList.remove('hurt'), 180); }
   damagePlayer(n) { this.player.takeDamage(n); }
   addWanted(n) { const p = this.player; if (!p) return; p.wanted = Math.min(5, p.wanted + n); p.heat = Math.max(p.heat, 12 + p.wanted * 6); }
+  updateStory(dt) {
+    if (this.story == null) return; this.storyT += dt; const p = this.player; let txt = '';
+    if (this.homeMarker) this.homeMarker.visible = this.story === 1;
+    if (this.story === 0) {
+      txt = "You were born at Neon Bay General — say hi to your parents!";
+      const fam = this.mobs.family || []; const near = fam.length && fam.every(m => !m.dead && Math.hypot(m.pos.x - p.pos.x, m.pos.z - p.pos.z) < 6);
+      if ((near && this.storyT > 4) || this.storyT > 16) { this.story = 1; this.storyT = 0; for (const m of (this.mobs.family || [])) if (!m.dead) m.goto = { x: this.home.x, z: this.home.z }; }
+    } else if (this.story === 1) {
+      const d = Math.hypot(this.home.x - p.pos.x, this.home.z - p.pos.z);
+      txt = 'Follow your parents home  (' + Math.round(d) + 'm) →';
+      for (const m of (this.mobs.family || [])) if (!m.dead && !m.goto && Math.hypot(m.pos.x - this.home.x, m.pos.z - this.home.z) > 2.5) m.goto = { x: this.home.x, z: this.home.z };
+      if (d < 5) { this.story = 2; this.storyT = 0; }
+    } else if (this.story === 2) {
+      txt = "Welcome home! Eat, grow up, and live your life in Neon Bay.";
+      if (this.storyT > 9) { this.story = null; }
+    }
+    this.ui.el.objective.textContent = txt;
+  }
   onDeath() { if (this.player.vehicle) this.player.exitVehicle(); this.player.wanted = 0; this.player.heat = 0; this.input.unlock(); this.ui.showMenu('death'); }
   respawn() { const sp = this.spawnPt || { x: 8, z: 8 }; const sy = this.world.highestY(sp.x, sp.z); const p = this.player; p.pos.set(sp.x + 0.5, sy + 2, sp.z + 0.5); p.vel.set(0, 0, 0); p.health = 20; p.hunger = 20; p.sat = 5; p.dead = false; p.fallStart = null; p.wanted = 0; p.heat = 0; this.ui.showMenu(null); this.input.lock(); }
   pause() { if (!this.playing || this.paused) return; this.paused = true; this.input.unlock(); this.ui.showMenu('pause'); }
@@ -2317,6 +2407,7 @@ class Game {
       if (!frozen && !this.player.dead) this.player.update(dt, this.input);
       if (this.world) this.world.update(this.player.pos.x, this.player.pos.z);
       if (this.mobs && !frozen) this.mobs.update(dt, this.player, this.dayLight != null ? this.dayLight : 1);
+      if (!frozen) this.updateStory(dt);
       this.gameTime += dt;
       const pl = this.player;
       // when driving/flying, use a third-person chase camera and hide the held viewmodel

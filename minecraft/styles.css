@@ -28,6 +28,8 @@ body.hurt::after { content: ''; position: fixed; inset: 0; background: radial-gr
 #money { position: fixed; right: 18px; top: 14px; font-size: 18px; font-weight: 800; color: #7be08a; text-shadow: 2px 2px 0 #000; font-variant-numeric: tabular-nums; }
 #wanted { position: fixed; right: 18px; top: 38px; font-size: 20px; letter-spacing: 2px; color: #ffd23a; text-shadow: 0 0 6px #b8860b, 2px 2px 0 #000; }
 #stage { position: fixed; left: 18px; top: 14px; font-size: 16px; font-weight: 800; color: #ffd9f0; text-shadow: 0 0 8px #c0508f, 2px 2px 0 #000; letter-spacing: 1px; }
+#objective { position: fixed; left: 50%; top: 16px; transform: translateX(-50%); max-width: 80vw; text-align: center; font-size: 16px; font-weight: 700; color: #fff7cc; text-shadow: 0 0 10px #d29a30, 2px 2px 0 #000; background: rgba(0,0,0,0.32); padding: 6px 16px; border-radius: 8px; pointer-events: none; }
+#objective:empty { display: none; }
 
 .chatpanel { width: 460px; max-width: 92vw; }
 .chathead { font-size: 13px; color: #cfe0ef; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #444; }
