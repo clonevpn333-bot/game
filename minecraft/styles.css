@@ -30,6 +30,10 @@ body.hurt::after { content: ''; position: fixed; inset: 0; background: radial-gr
 #stage { position: fixed; left: 18px; top: 14px; font-size: 16px; font-weight: 800; color: #ffd9f0; text-shadow: 0 0 8px #c0508f, 2px 2px 0 #000; letter-spacing: 1px; }
 #objective { position: fixed; left: 50%; top: 16px; transform: translateX(-50%); max-width: 80vw; text-align: center; font-size: 16px; font-weight: 700; color: #fff7cc; text-shadow: 0 0 10px #d29a30, 2px 2px 0 #000; background: rgba(0,0,0,0.32); padding: 6px 16px; border-radius: 8px; pointer-events: none; }
 #objective:empty { display: none; }
+#missiontitle { position: fixed; left: 50%; top: 40%; transform: translateX(-50%); text-align: center; pointer-events: none; transition: opacity 0.5s; max-width: 86vw; }
+#missiontitle .mt { font-size: 30px; font-weight: 900; letter-spacing: 2px; color: #fff; text-shadow: 0 2px 12px #000, 0 0 18px rgba(255,140,200,0.5); }
+#missiontitle.pass .mt { color: #ffe14a; text-shadow: 0 2px 12px #000, 0 0 22px rgba(255,200,40,0.7); }
+#missiontitle .ms { font-size: 16px; color: #e8eef6; margin-top: 8px; text-shadow: 0 2px 8px #000; line-height: 1.4; }
 
 .chatpanel { width: 460px; max-width: 92vw; }
 .chathead { font-size: 13px; color: #cfe0ef; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #444; }
