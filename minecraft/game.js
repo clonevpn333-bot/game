@@ -1198,6 +1198,43 @@ function buildNpcModel(p) {
   for (const sx of [-0.34, 0.34]) legs.push(add(limb(0.16, 0.5, 0.18, p.shirt, sx, 1.66, 0, p.skin, 0.18)));
   return { group: g, legs, head };
 }
+// ---------------------------------------------------------------------------
+// Real glTF models (community CC0 assets, loaded at runtime). Falls back to the
+// procedural models above if the model can't be reached (e.g. offline).
+// ---------------------------------------------------------------------------
+const ASSETS = { ready: false };
+// CC0 rigged + animated character (public domain). Swap for any CC0 humanoid GLB.
+const MODEL_CHAR_URL = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/gltf/RobotExpressive/RobotExpressive.glb';
+async function loadModels(onReady) {
+  try {
+    const gltfMod = await import(/* @vite-ignore */ window.__GLTF_URL__);
+    const skMod = await import(/* @vite-ignore */ window.__SK_URL__);
+    ASSETS.SkeletonUtils = skMod;
+    const loader = new gltfMod.GLTFLoader();
+    const url = window.__MODEL_CHAR__ || MODEL_CHAR_URL;
+    loader.load(url, (gltf) => {
+      // normalise: scale so the character is ~1.85 tall with feet at y=0
+      const box = new THREE.Box3().setFromObject(gltf.scene); const sz = new THREE.Vector3(); box.getSize(sz);
+      const s = 1.85 / (sz.y || 1.85); ASSETS.charScale = s; ASSETS.charMinY = box.min.y * s;
+      ASSETS.char = gltf.scene; ASSETS.charAnims = gltf.animations || []; ASSETS.ready = true;
+      if (onReady) onReady();
+    }, undefined, (err) => { console.warn('[models] character GLB unavailable, using built-in models:', err && err.message || err); });
+  } catch (e) { console.warn('[models] glTF loader unavailable, using built-in models:', e && e.message || e); }
+}
+function buildGltfHuman(p) {
+  const clone = ASSETS.SkeletonUtils.clone(ASSETS.char);
+  const inner = new THREE.Group(); inner.add(clone);
+  const s = ASSETS.charScale || 1; clone.scale.setScalar(s); clone.position.y = -(ASSETS.charMinY || 0);
+  // gentle per-person colour variety on the model's materials
+  const tint = new THREE.Color(p.shirt || 0xffffff);
+  clone.traverse(o => { if (o.isMesh && o.material) { o.material = o.material.clone(); if (o.material.color) o.material.color.lerp(tint, 0.25); o.castShadow = false; } });
+  const grp = new THREE.Group(); grp.add(inner);
+  const mixer = new THREE.AnimationMixer(clone); const by = {}; for (const a of (ASSETS.charAnims || [])) by[a.name] = a;
+  const act = n => by[n] ? mixer.clipAction(by[n]) : null;
+  const actions = { idle: act('Idle'), walk: act('Walking') || act('Running'), run: act('Running') };
+  if (actions.idle) actions.idle.play();
+  return { group: grp, legs: [], head: null, mixer, actions, gltf: true };
+}
 // Rule-based conversational engine — varied, persona-flavored, fully offline.
 function npcReply(p, raw) {
   const t = ' ' + raw.toLowerCase().replace(/[^a-z0-9'\s]/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
@@ -1350,8 +1387,8 @@ class ItemEnt {
 }
 class Mob {
   constructor(type, x, y, z, persona) { this.type = type; this.def = MOBDEF[type]; this.pos = new THREE.Vector3(x, y, z); this.vel = new THREE.Vector3(); this.w = this.def.w; this.h = this.def.h; this.hp = this.def.hp; this.yaw = Math.random() * 6.28; this.onGround = false; this.timer = Math.random() * 3; this.attackCd = 0; this.fuse = 0; this.hurt = 0; this.dead = false; this.phase = Math.random() * 6;
-    let m; if (type === 'npc') { this.npc = persona || makePersona(); m = buildNpcModel(this.npc); } else if (type === 'cop') { this.npc = makeCopPersona(); m = buildNpcModel(this.npc); } else m = buildMobModel(type);
-    this.group = m.group; this.legs = m.legs; this.head = m.head; }
+    let m; if (type === 'npc' || type === 'cop') { this.npc = type === 'cop' ? makeCopPersona() : (persona || makePersona()); m = (ASSETS.ready && ASSETS.char) ? buildGltfHuman(this.npc) : buildNpcModel(this.npc); } else m = buildMobModel(type);
+    this.group = m.group; this.legs = m.legs; this.head = m.head; this.mixer = m.mixer || null; this.actions = m.actions || null; this.gltf = !!m.gltf; }
   aabb() { const hw = this.w / 2; return { minX: this.pos.x - hw, maxX: this.pos.x + hw, minY: this.pos.y, maxY: this.pos.y + this.h, minZ: this.pos.z - hw, maxZ: this.pos.z + hw }; }
   damage(n, kx, kz, mgr) { this.hp -= n; this.hurt = 0.25; if (kx !== undefined) { this.vel.x += kx * 5; this.vel.z += kz * 5; this.vel.y = 4; } if (!this.def.hostile) { this.flee = 5; } if (this.hp <= 0) this.die(mgr); }
   die(mgr) {
@@ -1469,6 +1506,16 @@ class MobManager {
     mesh.frustumCulled = false; this.group.add(mesh); this.fx.push({ mesh, geo, pos, vel, n, life: 0.6, max: 0.6 });
   }
   dropCash(x, y, z, amount) { if (amount <= 0) return; this.dropItem(x, y, z, ITEM.CASH, amount); }
+  upgradeNpcModels() {
+    if (!(ASSETS.ready && ASSETS.char)) return;
+    for (const m of this.mobs) {
+      if ((m.type === 'npc' || m.type === 'cop') && !m.gltf) {
+        this.group.remove(m.group); const mm = buildGltfHuman(m.npc);
+        m.group = mm.group; m.legs = mm.legs; m.head = mm.head; m.mixer = mm.mixer; m.actions = mm.actions; m.gltf = true; m._cur = null;
+        m.group.position.set(m.pos.x, m.pos.y, m.pos.z); this.group.add(m.group);
+      }
+    }
+  }
   countNPC() { return this.mobs.filter(m => m.npc && !m.def.cop).length; }
   populateCity(player) {
     const gen = this.game.gen, w = this.world; if (!gen) return;
@@ -1543,6 +1590,12 @@ class MobManager {
     // models face -Z, so offset by PI to make them walk where they look (no moonwalking)
     m.group.rotation.y = m.yaw + Math.PI;
     const mov = Math.hypot(m.vel.x, m.vel.z);
+    if (m.gltf) {
+      // real animated glTF model — drive its own walk/idle clips, no fake box motion
+      m.group.position.set(m.pos.x, m.pos.y, m.pos.z);
+      if (m.mixer) { const a = (moving && m.actions.walk) ? m.actions.walk : m.actions.idle; if (a && m._cur !== a) { if (m._cur) m._cur.fadeOut(0.18); a.reset().fadeIn(0.18).play(); m._cur = a; } if (moving && m.actions.walk) m.actions.walk.timeScale = 0.8 + Math.min(1.4, mov * 0.5); m.mixer.update(dt); }
+      return;
+    }
     m.phase += dt * (5 + mov * 3);
     // exaggerated leg swing (alternating), idle breathing when still
     const sw = (moving || m.def.floaty) ? Math.sin(m.phase) * 1.0 : Math.sin(m.phase * 0.3) * 0.06;
@@ -2170,6 +2223,7 @@ class Game {
     addEventListener('resize', () => { this.camera.aspect = innerWidth / innerHeight; this.camera.updateProjectionMatrix(); this.renderer.setSize(innerWidth, innerHeight); });
     this.input.onLock = (locked) => { if (!locked && this.playing && !this.paused && !this.ui.open) this.pause(); };
     window.GAME = this;
+    loadModels(() => { if (this.mobs) this.mobs.upgradeNpcModels(); }); // pulls CC0 character model (online), falls back to built-in
     this.ui.showMenu('start');
     this.loop();
   }
