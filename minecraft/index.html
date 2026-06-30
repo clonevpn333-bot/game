@@ -32,6 +32,21 @@ body.hurt::after { content: ''; position: fixed; inset: 0; background: radial-gr
 #selname { position: fixed; left: 50%; bottom: 94px; transform: translateX(-50%); font-size: 14px; text-shadow: 1px 1px 0 #000; opacity: 0.92; }
 #ammo { position: fixed; right: 18px; bottom: 18px; font-size: 20px; font-weight: 800; letter-spacing: 1px; color: #ffe98a; text-shadow: 2px 2px 0 #000; font-variant-numeric: tabular-nums; }
 #ammo.hidden { display: none; }
+#money { position: fixed; right: 18px; top: 14px; font-size: 18px; font-weight: 800; color: #7be08a; text-shadow: 2px 2px 0 #000; font-variant-numeric: tabular-nums; }
+
+.chatpanel { width: 460px; max-width: 92vw; }
+.chathead { font-size: 13px; color: #cfe0ef; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #444; }
+.chathead .cls { color: #bdeecb; }
+.chatlog { height: 260px; overflow-y: auto; background: rgba(0,0,0,0.32); border: 1px solid #1a1c20; border-radius: 5px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+.cmsg { font-size: 13.5px; line-height: 1.4; padding: 5px 8px; border-radius: 6px; max-width: 88%; }
+.cmsg.npc { background: rgba(70,110,160,0.32); align-self: flex-start; }
+.cmsg.you { background: rgba(80,150,80,0.30); align-self: flex-end; }
+.cmsg b { color: #fff; }
+.chatrow { display: flex; gap: 6px; margin-top: 8px; }
+.chatrow input { flex: 1; padding: 9px 10px; border-radius: 6px; border: 1px solid #1a1c20; background: #11151b; color: #fff; font-size: 14px; outline: none; }
+.chatrow input:focus { border-color: #5a8; }
+.chatrow button { padding: 9px 14px; border: none; border-radius: 6px; background: linear-gradient(180deg,#4a8f3c,#356b2c); color: #fff; font-weight: 600; cursor: pointer; }
+.chathint { font-size: 11px; color: #8fa0b3; margin-top: 6px; text-align: center; }
 #hint { position: fixed; left: 50%; bottom: 2px; transform: translateX(-50%); font-size: 11px; color: #aebed0; text-shadow: 1px 1px 0 #000; white-space: nowrap; }
 
 #screen { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 20; pointer-events: auto; }
@@ -151,6 +166,7 @@ const B = {
   END_STONE: 36, QUARTZ: 37, IRON_BLOCK: 38, GOLD_BLOCK: 39, DIAMOND_BLOCK: 40,
   EMERALD_ORE: 41, EMERALD_BLOCK: 42, REDSTONE_ORE: 43, REDSTONE_BLOCK: 44,
   BEDROCK: 45, CRAFTING_TABLE: 46, FURNACE: 47,
+  ASPHALT: 48, CONCRETE: 49, ROADLINE: 50, WINDOW: 51,
 };
 
 // definition: faces -> tile names; flags
@@ -204,6 +220,10 @@ const BLOCKS = {
   [B.BEDROCK]: def({ name: 'Bedrock', all: 'bedrock' }),
   [B.CRAFTING_TABLE]: def({ name: 'Crafting Table', top: 'crafting_top', side: 'crafting_side', bottom: 'planks' }),
   [B.FURNACE]: def({ name: 'Furnace', top: 'furnace_top', side: 'furnace_front', bottom: 'furnace_top' }),
+  [B.ASPHALT]: def({ name: 'Asphalt', all: 'asphalt' }),
+  [B.CONCRETE]: def({ name: 'Concrete', all: 'concrete' }),
+  [B.ROADLINE]: def({ name: 'Road Marking', all: 'roadline' }),
+  [B.WINDOW]: def({ name: 'Window', all: 'window', opaque: false, render: 'glass' }),
 };
 function blockDef(id) { return BLOCKS[id] || BLOCKS[B.AIR]; }
 function texOf(d, face) {
@@ -214,7 +234,7 @@ function texOf(d, face) {
   return d.side || d.top;
 }
 const HOTBAR_BLOCKS = [B.GRASS, B.DIRT, B.STONE, B.COBBLE, B.PLANKS, B.LOG, B.LEAVES, B.SAND, B.GLASS];
-const ALL_PLACEABLE = [B.GRASS, B.DIRT, B.STONE, B.COBBLE, B.MOSSY, B.SAND, B.RED_SAND, B.SANDSTONE, B.GRAVEL, B.CLAY, B.TERRACOTTA, B.PLANKS, B.LOG, B.SPRUCE_LOG, B.LEAVES, B.SPRUCE_LEAVES, B.GLASS, B.BRICK, B.BOOKSHELF, B.CRAFTING_TABLE, B.FURNACE, B.WOOL, B.SNOW, B.ICE, B.OBSIDIAN, B.GLOWSTONE, B.NETHERRACK, B.NETHER_BRICK, B.END_STONE, B.QUARTZ, B.BEDROCK, B.COAL, B.IRON, B.GOLD, B.DIAMOND, B.EMERALD_ORE, B.REDSTONE_ORE, B.IRON_BLOCK, B.GOLD_BLOCK, B.DIAMOND_BLOCK, B.EMERALD_BLOCK, B.REDSTONE_BLOCK, B.PUMPKIN, B.CACTUS, B.WATER, B.POPPY, B.TALLGRASS];
+const ALL_PLACEABLE = [B.GRASS, B.DIRT, B.STONE, B.COBBLE, B.MOSSY, B.SAND, B.RED_SAND, B.SANDSTONE, B.GRAVEL, B.CLAY, B.TERRACOTTA, B.PLANKS, B.LOG, B.SPRUCE_LOG, B.LEAVES, B.SPRUCE_LEAVES, B.GLASS, B.BRICK, B.BOOKSHELF, B.CRAFTING_TABLE, B.FURNACE, B.WOOL, B.SNOW, B.ICE, B.OBSIDIAN, B.GLOWSTONE, B.NETHERRACK, B.NETHER_BRICK, B.END_STONE, B.QUARTZ, B.ASPHALT, B.CONCRETE, B.WINDOW, B.BEDROCK, B.COAL, B.IRON, B.GOLD, B.DIAMOND, B.EMERALD_ORE, B.REDSTONE_ORE, B.IRON_BLOCK, B.GOLD_BLOCK, B.DIAMOND_BLOCK, B.EMERALD_BLOCK, B.REDSTONE_BLOCK, B.PUMPKIN, B.CACTUS, B.WATER, B.POPPY, B.TALLGRASS];
 
 // ---------------------------------------------------------------------------
 // Texture atlas (clean, low-noise pixel art)
@@ -227,7 +247,8 @@ function buildAtlas() {
     'pumpkin_side', 'glowstone', 'obsidian', 'poppy', 'tallgrass', 'cactus_top', 'cactus_side', 'mossy', 'wool', 'ice',
     'red_sand', 'terracotta', 'clay', 'netherrack', 'nether_brick', 'end_stone', 'quartz_top', 'quartz_side',
     'iron_block', 'gold_block', 'diamond_block', 'emerald_ore', 'emerald_block', 'redstone_ore', 'redstone_block',
-    'bedrock', 'crafting_top', 'crafting_side', 'furnace_top', 'furnace_front'];
+    'bedrock', 'crafting_top', 'crafting_side', 'furnace_top', 'furnace_front',
+    'asphalt', 'concrete', 'roadline', 'window'];
   const rows = Math.ceil(names.length / COLS);
   const size = COLS * TILE;
   const canvas = document.createElement('canvas');
@@ -306,6 +327,10 @@ function paintTile(name) {
     case 'crafting_side': { const c = [150, 116, 72]; fillN(...c, 5); for (let y = 0; y < TILE; y += 4) rect(0, y, TILE, 1, c[0] - 30, c[1] - 30, c[2] - 30); rect(2, 2, 5, 5, 92, 70, 44); rect(9, 9, 5, 4, 92, 70, 44); rect(3, 10, 3, 3, 110, 84, 52); break; }
     case 'furnace_top': { fillN(96, 96, 100, 5); rect(4, 4, 8, 8, 70, 70, 74); break; }
     case 'furnace_front': { fillN(104, 104, 108, 5); rect(3, 6, 10, 8, 40, 40, 44); rect(4, 7, 8, 4, 70, 44, 20); rect(5, 8, 6, 2, 240, 150, 40); rect(4, 2, 8, 2, 80, 80, 84); break; }
+    case 'asphalt': { fillN(46, 47, 52, 5); for (let i = 0; i < 14; i++) set(rng() * TILE | 0, rng() * TILE | 0, 70, 71, 76); break; }
+    case 'concrete': { fillN(166, 168, 172, 4); rect(0, 0, TILE, 1, 150, 152, 156); rect(0, 15, TILE, 1, 150, 152, 156); break; }
+    case 'roadline': { fillN(46, 47, 52, 4); rect(6, 0, 4, TILE, 226, 200, 70); break; }
+    case 'window': { for (let y = 0; y < TILE; y++) for (let x = 0; x < TILE; x++) set(x, y, 150, 196, 226, 150); rect(0, 0, TILE, 1, 90, 96, 104, 255); rect(0, 7, TILE, 1, 90, 96, 104, 255); rect(0, 0, 1, TILE, 90, 96, 104, 255); rect(7, 0, 1, TILE, 90, 96, 104, 255); rect(15, 0, 1, TILE, 90, 96, 104, 255); for (let i = 0; i < 4; i++) set(2 + i, 2 + i, 230, 245, 252, 220); break; }
     default: fillN(200, 60, 200, 0); break;
   }
   return new ImageData(d, TILE, TILE);
@@ -343,6 +368,8 @@ const TINTS = {
 // ---------------------------------------------------------------------------
 // World generation
 // ---------------------------------------------------------------------------
+// City layout constants (a city is a grid of lots separated by roads)
+const CITY_SPACING = 300, CITY_RADIUS = 120, LOT = 26, ROAD_W = 8, SIDEWALK = 2;
 class WorldGen {
   constructor(seed) {
     this.seed = seed >>> 0;
@@ -354,6 +381,7 @@ class WorldGen {
     this.cave2 = makeNoise(this.seed + 6);
     this.ravine = makeNoise(this.seed + 7);
     this.cache = new Map();
+    this.cityCache = new Map();
   }
   column(wx, wz) {
     const key = wx + ',' + wz;
@@ -381,6 +409,8 @@ class WorldGen {
     const set = (x, y, z, id) => { if (y >= 0 && y < CY) chunk.blocks[idx(x, y, z)] = id; };
     for (let lz = 0; lz < CZ; lz++) for (let lx = 0; lx < CX; lx++) {
       const wx = bx + lx, wz = bz + lz;
+      const ca = this.cityAt(wx, wz);
+      if (ca) { this.genCityColumn(chunk, lx, lz, wx, wz, ca); continue; }
       const col = this.column(wx, wz);
       const h = col.h, biome = col.biome;
       for (let y = 0; y <= h; y++) {
@@ -429,6 +459,78 @@ class WorldGen {
       if (y < 32 && this.cave.fbm3(wx * 0.045, y * 0.07, wz * 0.045, 3) > 0.62) air(y);
     }
   }
+  // --- City generation ---
+  cityInfo(gx, gz) {
+    const key = 'c' + gx + ',' + gz; let info = this.cityCache.get(key); if (info) return info;
+    const cx = gx * CITY_SPACING, cz = gz * CITY_SPACING;
+    const isCity = (gx === 0 && gz === 0) || this.hash(gx, 777, gz) > 0.6;
+    let groundY = SEA + 5;
+    if (isCity) { const cont = this.height.fbm(cx * 0.006, cz * 0.006, 3); groundY = Math.floor(clamp(SEA + 6 + cont * 5, SEA + 3, SEA + 11)); }
+    info = { city: isCity, cx, cz, groundY };
+    if (this.cityCache.size > 400) this.cityCache.clear();
+    this.cityCache.set(key, info); return info;
+  }
+  cityAt(wx, wz) {
+    const gx = Math.round(wx / CITY_SPACING), gz = Math.round(wz / CITY_SPACING);
+    const info = this.cityInfo(gx, gz); if (!info.city) return null;
+    const dx = wx - info.cx, dz = wz - info.cz;
+    if (Math.abs(dx) > CITY_RADIUS || Math.abs(dz) > CITY_RADIUS) return null;
+    return { info, dx, dz };
+  }
+  cityRoadAt(wx, wz) { const ca = this.cityAt(wx, wz); if (!ca) return false; const u = ca.dx + CITY_RADIUS, v = ca.dz + CITY_RADIUS; const ru = ((u % LOT) + LOT) % LOT, rv = ((v % LOT) + LOT) % LOT; return ru < ROAD_W || rv < ROAD_W; }
+  spawnPoint() {
+    for (let r = 0; r < 80; r++) for (let a = 0; a < 12; a++) { const wx = Math.round(Math.cos(a / 12 * 6.283) * r), wz = Math.round(Math.sin(a / 12 * 6.283) * r); if (this.cityRoadAt(wx, wz)) { const ca = this.cityAt(wx, wz); return { x: wx, y: ca.info.groundY, z: wz }; } }
+    const sy = SEA + 8; return { x: 0, y: sy, z: 0 };
+  }
+  genCityColumn(chunk, lx, lz, wx, wz, ca) {
+    const set = (y, id) => { if (y >= 0 && y < CY) chunk.blocks[idx(lx, y, lz)] = id; };
+    const g = ca.info.groundY;
+    for (let y = 0; y <= g; y++) { let id = B.STONE; if (y === 0) id = B.BEDROCK; else if (y <= 2 && this.hash(wx, y, wz) < 0.5) id = B.BEDROCK; else if (y > g - 3) id = B.DIRT; set(y, id); }
+    this.carve(chunk, lx, lz, wx, wz, g - 4);
+    const u = ca.dx + CITY_RADIUS, v = ca.dz + CITY_RADIUS;
+    const ru = ((u % LOT) + LOT) % LOT, rv = ((v % LOT) + LOT) % LOT;
+    const roadU = ru < ROAD_W, roadV = rv < ROAD_W;
+    if (roadU || roadV) {
+      set(g, B.ASPHALT); const c = ROAD_W >> 1;
+      if (!(roadU && roadV)) { if (roadU && ru === c) set(g, B.ROADLINE); else if (roadV && rv === c) set(g, B.ROADLINE); }
+      return;
+    }
+    if (ru < ROAD_W + SIDEWALK || rv < ROAD_W + SIDEWALK || ru >= LOT - SIDEWALK || rv >= LOT - SIDEWALK) {
+      set(g, B.CONCRETE);
+      if (ru === ROAD_W + 1 && rv === ROAD_W + 1) { set(g + 1, B.OBSIDIAN); set(g + 2, B.OBSIDIAN); set(g + 3, B.OBSIDIAN); set(g + 4, B.GLOWSTONE); }
+      else if (ru === ROAD_W + 1 && rv % 7 === 4) set(g + 1, B.PLANKS);
+      return;
+    }
+    // building lot interior
+    const a = ROAD_W + SIDEWALK, W = LOT - SIDEWALK - a; // 14x14
+    const bxL = ru - a, bzL = rv - a;
+    const lotX = Math.floor(u / LOT), lotZ = Math.floor(v / LOT);
+    if (this.hash(lotX, 5, lotZ) < 0.16) { // park
+      set(g, B.GRASS); const cp = W >> 1;
+      if (bxL === cp && bzL === cp) { for (let k = 1; k <= 3; k++) set(g + k, B.LOG); set(g + 4, B.LEAVES); set(g + 5, B.LEAVES); }
+      else if (Math.abs(bxL - cp) <= 1 && Math.abs(bzL - cp) <= 1) set(g + 4, B.LEAVES);
+      else if (bzL === 1 && bxL % 4 === 2) set(g + 1, B.PLANKS);
+      return;
+    }
+    set(g, B.CONCRETE);
+    const stories = 1 + Math.floor(this.hash(lotX, 9, lotZ) * 6); const H = stories * 4;
+    const mr = this.hash(lotX, 13, lotZ);
+    const mat = mr < 0.2 ? B.BRICK : mr < 0.4 ? B.QUARTZ : mr < 0.58 ? B.CONCRETE : mr < 0.74 ? B.SANDSTONE : mr < 0.88 ? B.STONE : B.PLANKS;
+    const corner = (bxL === 0 || bxL === W - 1) && (bzL === 0 || bzL === W - 1);
+    const perim = (bxL === 0 || bxL === W - 1 || bzL === 0 || bzL === W - 1);
+    if (perim) {
+      for (let y = g + 1; y <= g + H; y++) {
+        const sy = (y - (g + 1)) % 4; let id = mat;
+        if ((sy === 1 || sy === 2) && !corner && ((bxL + bzL) % 2 === 0)) id = B.WINDOW;
+        set(y, id);
+      }
+      set(g + H + 1, mat);
+      if (bzL === 0 && bxL === (W >> 1)) { set(g + 1, B.AIR); set(g + 2, B.AIR); } // doorway
+    } else {
+      for (let y = g + 1; y <= g + H; y++) set(y, (y - (g + 1)) % 4 === 0 ? mat : B.AIR);
+      set(g + H + 1, mat);
+    }
+  }
   decorate(chunk) {
     const bx = chunk.cx * CX, bz = chunk.cz * CZ, M = 3;
     const put = (wx, wy, wz, id, mode) => {
@@ -439,7 +541,7 @@ class WorldGen {
     };
     // trees (with margin so canopies seam across chunks)
     for (let oz = -M; oz < CZ + M; oz++) for (let ox = -M; ox < CX + M; ox++) {
-      const wx = bx + ox, wz = bz + oz; const col = this.column(wx, wz);
+      const wx = bx + ox, wz = bz + oz; if (this.cityAt(wx, wz)) continue; const col = this.column(wx, wz);
       if (col.h < SEA + 1 || col.biome === 'desert') continue;
       const density = col.biome === 'forest' ? 0.045 : 0.012;
       if (this.hash(wx, 7, wz) > density) continue;
@@ -447,7 +549,7 @@ class WorldGen {
     }
     // surface plants (within chunk)
     for (let lz = 0; lz < CZ; lz++) for (let lx = 0; lx < CX; lx++) {
-      const wx = bx + lx, wz = bz + lz; const col = this.column(wx, wz);
+      const wx = bx + lx, wz = bz + lz; if (this.cityAt(wx, wz)) continue; const col = this.column(wx, wz);
       if (col.h < SEA + 1) continue;
       const top = chunk.blocks[idx(lx, col.h, lz)];
       const above = idx(lx, col.h + 1, lz);
@@ -560,7 +662,7 @@ function buildGeometry(chunk, world) {
   }
   return out;
 }
-function buf() { return { pos: [], nor: [], uv: [], ao: [], sky: [], tint: [], idx: [], n: 0 }; }
+function buf() { return { pos: [], nor: [], uv: [], ao: [], sky: [], tint: [], sway: [], idx: [], n: 0 }; }
 function tintColor(d, wx, wz, world) { if (d.tint === 'grass') return world.tintAt(wx, wz, 'grass'); if (d.tint === 'foliage') return world.tintAt(wx, wz, 'foliage'); if (d.tint === 'water') return world.tintAt(wx, wz, 'water'); return [1, 1, 1]; }
 function emitFace(b, f, x, y, z, wx, wz, id, d, world, isOp) {
   const face = FACES[f], dir = face.dir;
@@ -589,6 +691,7 @@ function emitFace(b, f, x, y, z, wx, wz, id, d, world, isOp) {
     b.uv.push(uvr[0] + uu * (uvr[2] - uvr[0]), uvr[3] - vv * (uvr[3] - uvr[1]));
     b.sky.push(Math.max(slight, blk)); // combined light level for this face
     b.tint.push(tint[0], tint[1], tint[2]);
+    b.sway.push(d.render === 'leaves' ? 1 : 0); // leaves sway gently in the wind
   }
   b.n += 4;
   if (aoArr[0] + aoArr[2] > aoArr[1] + aoArr[3]) b.idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
@@ -603,7 +706,7 @@ function emitCross(b, x, y, z, wx, wz, d, world) {
       const base = b.n; const A = flip ? c : a, C = flip ? a : c;
       const pts = [[A[0], 0, A[1]], [A[0], 1, A[1]], [C[0], 1, C[1]], [C[0], 0, C[1]]];
       const uvc = [[uvr[0], uvr[3]], [uvr[0], uvr[1]], [uvr[2], uvr[1]], [uvr[2], uvr[3]]];
-      for (let i = 0; i < 4; i++) { b.pos.push(x + pts[i][0], y + pts[i][1], z + pts[i][2]); b.nor.push(0, 1, 0); b.uv.push(uvc[i][0], uvc[i][1]); b.ao.push(0.95); b.sky.push(sky); b.tint.push(tint[0], tint[1], tint[2]); }
+      for (let i = 0; i < 4; i++) { b.pos.push(x + pts[i][0], y + pts[i][1], z + pts[i][2]); b.nor.push(0, 1, 0); b.uv.push(uvc[i][0], uvc[i][1]); b.ao.push(0.95); b.sky.push(sky); b.tint.push(tint[0], tint[1], tint[2]); b.sway.push(pts[i][1] > 0.5 ? 1.8 : 0); }
       b.n += 4; b.idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
     }
   }
@@ -667,6 +770,7 @@ class World {
       g.setAttribute('ao', new THREE.Float32BufferAttribute(d.ao, 1));
       g.setAttribute('skylight', new THREE.Float32BufferAttribute(d.sky, 1));
       g.setAttribute('tint', new THREE.Float32BufferAttribute(d.tint, 3));
+      g.setAttribute('sway', new THREE.Float32BufferAttribute(d.sway, 1));
       g.setIndex(d.idx); g.computeBoundingSphere();
       if (ex) { ex.geometry.dispose(); ex.geometry = g; }
       else { const mesh = new THREE.Mesh(g, this.materials[bk]); mesh.position.set(c.cx * CX, 0, c.cz * CZ); mesh.renderOrder = bk; c.meshes[bk] = mesh; this.group.add(mesh); }
@@ -681,13 +785,18 @@ class World {
 // ---------------------------------------------------------------------------
 function makeMaterials(tex, uniforms) {
   const vert = `
-    attribute float ao; attribute float skylight; attribute vec3 tint;
+    attribute float ao; attribute float skylight; attribute vec3 tint; attribute float sway;
     varying vec2 vUv; varying float vAo; varying float vSky; varying vec3 vTint; varying float vFog;
     uniform float uTime, uFogNear, uFogFar; uniform int uWave;
     void main(){
       vUv=uv; vAo=ao; vSky=skylight; vTint=tint;
       vec4 wp = modelMatrix * vec4(position,1.0);
       if (uWave==1 && normal.y>0.5) wp.y += (sin(uTime*1.5 + wp.x*0.7 + wp.z*0.7) + sin(uTime*0.9 - wp.x*0.4 + wp.z*1.1)*0.5)*0.05 - 0.11;
+      if (sway > 0.0) {
+        float wind = sin(uTime*1.7 + wp.x*0.6 + wp.z*0.6) + 0.4*sin(uTime*2.7 + wp.x*1.4 - wp.z*0.7);
+        wp.x += wind * 0.075 * sway;
+        wp.z += cos(uTime*1.5 + wp.z*0.55 + wp.x*0.3) * 0.06 * sway;
+      }
       vec4 mv = viewMatrix*wp; vFog = clamp((length(mv.xyz)-uFogNear)/(uFogFar-uFogNear),0.0,1.0);
       gl_Position = projectionMatrix*mv;
     }`;
@@ -856,6 +965,8 @@ const SURV = {
   [B.REDSTONE_ORE]: { s: 3, t: 'pickaxe', need: T_IRON, drop: ITEM.REDSTONE, count: 4 },
   [B.CRAFTING_TABLE]: { s: 2.5, t: 'axe' }, [B.FURNACE]: { s: 3.5, t: 'pickaxe', need: T_WOOD },
   [B.BEDROCK]: { s: -1, drop: null },
+  [B.ASPHALT]: { s: 1.5, t: 'pickaxe', need: T_WOOD }, [B.CONCRETE]: { s: 1.6, t: 'pickaxe', need: T_WOOD },
+  [B.ROADLINE]: { s: 1.5, t: 'pickaxe', need: T_WOOD }, [B.WINDOW]: { s: 0.3, drop: null },
 };
 function surv(id) { return SURV[id] || { s: 1 }; }
 function dropOf(id) { const sv = surv(id); if (sv.drop === null) return null; if (sv.drop !== undefined) return sv.drop; return id; }
@@ -1017,7 +1128,120 @@ const MOBDEF = {
   spider: { hostile: true, hp: 16, w: 1.2, h: 0.9, speed: 2.6, dmg: 2, drops: [[ITEM.STRING, 0, 2]], neutralDay: true },
   enderman: { hostile: true, hp: 30, w: 0.6, h: 2.7, speed: 2.4, dmg: 4, drops: [[ITEM.PEARL, 0, 1]], neutralDay: true },
   slime: { hostile: true, hp: 8, w: 1.0, h: 1.0, speed: 1.4, dmg: 2, drops: [[ITEM.STRING, 0, 1]] },
+  npc: { hostile: false, hp: 20, w: 0.6, h: 1.85, speed: 1.35, drops: [], city: true },
 };
+// ---------------------------------------------------------------------------
+// NPC personas (no API — names, jobs, an economy + a rule-based chat engine)
+// ---------------------------------------------------------------------------
+const NPC_FIRST = ['Alex', 'Sam', 'Jordan', 'Maria', 'Liam', 'Noah', 'Emma', 'Olivia', 'Ava', 'Ethan', 'Mia', 'Lucas', 'Sofia', 'Leo', 'Nora', 'Hugo', 'Ivy', 'Max', 'Zoe', 'Theo', 'Ruby', 'Felix', 'Iris', 'Omar', 'Aria', 'Dev', 'Kai', 'Luna', 'Eli', 'Nina', 'Priya', 'Marco'];
+const NPC_LAST = ['Reed', 'Stone', 'Park', 'Vale', 'Cruz', 'Kim', 'Brooks', 'Hayes', 'Nash', 'Wells', 'Frost', 'Lane', 'Quinn', 'Ford', 'Diaz', 'Webb', 'Cole', 'Bell', 'Shaw', 'Okafor'];
+const JOBS = [
+  { t: 'barista', wage: 14, cls: 'working' }, { t: 'teacher', wage: 24, cls: 'working' }, { t: 'software engineer', wage: 62, cls: 'middle' },
+  { t: 'nurse', wage: 34, cls: 'working' }, { t: 'shop owner', wage: 40, cls: 'middle' }, { t: 'bus driver', wage: 20, cls: 'working' },
+  { t: 'chef', wage: 28, cls: 'working' }, { t: 'banker', wage: 80, cls: 'rich' }, { t: 'doctor', wage: 96, cls: 'rich' },
+  { t: 'lawyer', wage: 85, cls: 'rich' }, { t: 'street musician', wage: 8, cls: 'poor' }, { t: 'janitor', wage: 13, cls: 'working' },
+  { t: 'artist', wage: 16, cls: 'poor' }, { t: 'police officer', wage: 30, cls: 'working' }, { t: 'CEO', wage: 220, cls: 'rich' },
+  { t: 'cashier', wage: 12, cls: 'working' }, { t: 'construction worker', wage: 26, cls: 'working' }, { t: 'florist', wage: 18, cls: 'working' },
+  { t: 'taxi driver', wage: 19, cls: 'working' }, { t: 'librarian', wage: 22, cls: 'working' },
+];
+const MOODS = ['cheerful', 'tired', 'busy', 'relaxed', 'grumpy', 'curious', 'anxious', 'content'];
+const HOBBIES = ['painting', 'jogging', 'cooking', 'gaming', 'gardening', 'reading', 'fishing', 'playing guitar', 'chess', 'photography', 'birdwatching', 'baking'];
+const SKINS = [0xf2cfa6, 0xe7b58a, 0xc68642, 0x8d5524, 0xffe0bd, 0xd9a066];
+const HAIRS = [0x2b1d10, 0x4a2f17, 0x111111, 0x6b4a2a, 0x8a8a8a, 0xc9a23a, 0xa33b2a];
+const SHIRTS = [0x3f7cb4, 0xb44545, 0x4caf50, 0xcaa23a, 0x8e5cb4, 0x444a52, 0xd2d2d6, 0xd47ba0];
+let NPC_SEQ = 0;
+function makePersona() {
+  const r = () => Math.random();
+  const job = JOBS[r() * JOBS.length | 0];
+  const cls = job.cls;
+  const money = cls === 'rich' ? 2000 + r() * 9000 : cls === 'middle' ? 400 + r() * 1600 : cls === 'poor' ? r() * 60 : 80 + r() * 600;
+  return {
+    id: ++NPC_SEQ,
+    first: NPC_FIRST[r() * NPC_FIRST.length | 0], last: NPC_LAST[r() * NPC_LAST.length | 0],
+    job: job.t, wage: job.wage, cls, money: Math.round(money), age: 18 + (r() * 50 | 0),
+    mood: MOODS[r() * MOODS.length | 0], hobby: HOBBIES[r() * HOBBIES.length | 0],
+    skin: SKINS[r() * SKINS.length | 0], hair: HAIRS[r() * HAIRS.length | 0], shirt: SHIRTS[r() * SHIRTS.length | 0], pants: 0x33384a + (r() * 0x202020 | 0),
+    mem: { name: null, turns: 0, lastTopic: null }, lastPaid: 0,
+  };
+}
+function buildNpcModel(p) {
+  const g = new THREE.Group(); const legs = []; const add = m => { g.add(m); return m; };
+  add(box(0.5, 0.62, 0.26, p.shirt, 0, 1.12, 0));          // torso
+  const head = add(box(0.46, 0.46, 0.46, p.skin, 0, 1.66, 0)); // head
+  add(box(0.5, 0.16, 0.5, p.hair, 0, 1.86, 0));            // hair cap
+  add(box(0.5, 0.12, 0.08, p.hair, 0, 1.74, -0.2));        // fringe
+  add(box(0.09, 0.09, 0.04, 0x20262c, -0.1, 1.68, -0.24)); add(box(0.09, 0.09, 0.04, 0x20262c, 0.1, 1.68, -0.24)); // eyes
+  add(box(0.07, 0.07, 0.05, p.skin, 0, 1.6, -0.25));       // nose
+  for (const sx of [-0.33, 0.33]) legs.push(add(legMesh(0.15, 0.6, 0.22, p.shirt, sx, 1.42, 0))); // arms (sleeves)
+  for (const sx of [-0.14, 0.14]) legs.push(add(legMesh(0.2, 0.72, 0.22, p.pants, sx, 0.72, 0))); // legs
+  return { group: g, legs, head };
+}
+// Rule-based conversational engine — varied, persona-flavored, fully offline.
+function npcReply(p, raw) {
+  const t = ' ' + raw.toLowerCase().replace(/[^a-z0-9'\s]/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
+  const has = (...ws) => ws.some(w => t.includes(' ' + w + ' '));
+  const pick = a => a[Math.random() * a.length | 0];
+  const m = p.mem; m.turns++;
+  const Name = p.first, full = p.first + ' ' + p.last;
+  const you = m.name ? (', ' + m.name) : '';
+  const moodWrap = s => {
+    if (p.mood === 'grumpy') return pick([s, s + ' ...look, I\'m busy.', 'Ugh. ' + s]);
+    if (p.mood === 'tired') return pick([s, s + ' *yawn*', s + ' Sorry, long day.']);
+    if (p.mood === 'busy') return pick([s, s + ' Gotta keep moving though.']);
+    if (p.mood === 'cheerful') return pick([s, s + ' 😊'.replace('😊', ''), s + ' Lovely to chat!']);
+    return s;
+  };
+  // capture player name
+  let mName = raw.match(/\b(?:i'?m|i am|my name is|call me|name's)\s+([A-Za-z][a-z]{1,15})/i);
+  if (mName && !has('not', 'fine', 'good', 'ok', 'okay', 'here', 'lost', 'hungry', 'tired', 'rich', 'poor')) { m.name = mName[1][0].toUpperCase() + mName[1].slice(1); return pick(['Nice to meet you, ' + m.name + '! I\'m ' + Name + '.', 'Hey ' + m.name + ', good to meet you. ' + Name + '.', m.name + '? Great name. I\'m ' + Name + ', I\'m a ' + p.job + '.']); }
+  if (has('bye', 'goodbye', 'see you', 'see ya', 'later', 'cya', 'farewell', 'gtg', 'gotta go')) return pick(['Take care' + you + '!', 'See you around the city.', 'Bye! Watch the traffic out there.', 'Later' + you + '.']);
+  if (has('thank', 'thanks', 'thx', 'appreciate')) return pick(['Anytime' + you + '!', 'No problem at all.', 'Happy to help.', 'You\'re welcome!']);
+  if (has('hi', 'hello', 'hey', 'yo', 'sup', 'hiya', 'howdy', 'greetings', 'good morning', 'good evening')) { m.lastTopic = 'greet'; return moodWrap(pick(['Hey there' + you + '! I\'m ' + Name + '.', 'Hello! ' + Name + ', nice to meet you.', 'Hi! You new around here?', 'Hey! Welcome to the city.'])); }
+  if (has('how are you', 'how are u', 'how r u', 'hows it going', "how's it going", 'you doing', 'how do you do', 'how have you been', 'hows life', "how's life")) {
+    const byMood = { cheerful: 'Fantastic, thanks for asking!', tired: 'Exhausted, honestly. Work\'s been rough.', busy: 'Swamped, but can\'t complain.', relaxed: 'Pretty chill today.', grumpy: 'Could be better. Could be worse.', curious: 'Curious as ever — lots going on!', anxious: 'A bit on edge, but I\'ll manage.', content: 'Can\'t complain, life\'s good.' };
+    return byMood[p.mood] + ' How about you' + you + '?';
+  }
+  if (has('your name', 'whats your name', "what's your name", 'who are you', 'who r u', 'name')) return pick(['I\'m ' + full + '.', 'Name\'s ' + Name + '. I work as a ' + p.job + '.', 'They call me ' + Name + '.']);
+  if (has('what do you do', 'your job', 'your work', 'occupation', 'for a living', 'where do you work', 'do you work', 'profession', 'career')) {
+    m.lastTopic = 'job';
+    const feel = p.cls === 'rich' ? 'Pays very well, I\'m not complaining.' : p.cls === 'poor' ? 'Doesn\'t pay much, but it\'s what I love.' : 'It pays the bills.';
+    return 'I\'m a ' + p.job + '. ' + feel + ' (about $' + p.wage + '/hr)';
+  }
+  if (has('how much', 'money', 'rich', 'poor', 'broke', 'salary', 'wage', 'earn', 'wealthy', 'cash', 'savings')) {
+    if (p.cls === 'rich') return pick(['Let\'s just say I\'m comfortable — about $' + p.money + ' in the bank.', 'Money? I do alright. ' + p.job + ' life.', 'I\'ve got around $' + p.money + ' saved. Hard work pays off.']);
+    if (p.cls === 'poor') return pick(['Barely scraping by, honestly. Maybe $' + p.money + ' to my name.', 'Money\'s tight. Being a ' + p.job + ' isn\'t lucrative.', 'I\'ve got like $' + p.money + '. Rent\'s brutal.']);
+    return pick(['I get by — around $' + p.money + ' saved up.', 'Middle of the road. A ' + p.job + '\'s wage, you know?', 'Comfortable enough. $' + p.money + ' or so.']);
+  }
+  if (has('class', 'society', 'inequality', 'wealth gap')) return pick(['This city\'s got its rich towers and its poorer corners. I\'m ' + p.cls + ' class, myself.', 'Class is everything here. The CEOs up top, folks like me getting by.']);
+  if (has('city', 'town', 'this place', 'live here', 'neighborhood', 'around here', 'place')) { m.lastTopic = 'city'; return pick(['This city never sleeps — cars, shops, people everywhere.', 'It\'s busy, but it\'s home. Mind the traffic on the roads.', 'Lots of folks here, all chasing something. I like it.', 'Big city life! Skyscrapers, parks, the works.']); }
+  if (has('where', 'how do i get', 'find', 'nearest', 'directions', 'which way', 'shop', 'store', 'bank', 'park', 'restaurant', 'cafe', 'coffee')) {
+    return pick(['Head down the main road and take a left at the lamp post.', 'Couple blocks that way — follow the road markings.', 'There\'s a park near the center, and shops along the avenues.', 'Just follow the sidewalks, you\'ll run into it.']);
+  }
+  if (has('family', 'kids', 'children', 'married', 'wife', 'husband', 'partner', 'spouse', 'son', 'daughter')) return pick(['Got a small family back home, keeps me going.', 'No kids yet, maybe someday.', 'My family means everything to me.', 'It\'s just me and my cat, honestly.']);
+  if (has('weather', 'rain', 'sunny', 'cold', 'hot', 'snow', 'sky')) return pick(['Weather here changes fast — keep an umbrella handy.', 'Looks like it might rain later. Or not. City weather!', 'Nice enough out, I suppose.']);
+  if (has('hobby', 'hobbies', 'free time', 'fun', 'like to do', 'for fun', 'spare time', 'enjoy')) return 'I love ' + p.hobby + ' when I\'m off the clock. ' + pick(['You should try it!', 'Really clears the head.', 'Best part of my week.']);
+  if (has('how old', 'your age', 'age')) return pick(['I\'m ' + p.age + '.', Name + ', age ' + p.age + ', at your service.', p.age + ' years young!']);
+  if (has('job offer', 'hiring', 'work for you', 'need a job', 'looking for work', 'give me a job', 'employ')) return pick(['Ha! I can barely keep my own job. Try the shops downtown.', 'The city job board\'s always posting. Good luck!', 'We might be hiring — talk to my boss, the shop owner.']);
+  if (has('buy', 'sell', 'trade', 'shopping', 'for sale', 'price')) return pick(['I\'m not selling, but the shops down the road might be.', 'Trade? Take it to the market square.', 'Sorry, I\'m just on my lunch break.']);
+  if (has('love you', 'marry me', 'date', 'cute', 'beautiful', 'handsome', 'attractive')) return moodWrap(pick(['Oh— that\'s sweet, but I barely know you!', 'Flattering! Let\'s start with coffee.', 'Ha! You\'re bold, I\'ll give you that.']));
+  if (has('stupid', 'idiot', 'dumb', 'ugly', 'hate you', 'shut up', 'loser', 'moron', 'jerk')) { return p.mood === 'grumpy' ? pick(['Excuse me?! Get lost.', 'Real charming. Goodbye.']) : pick(['...That\'s uncalled for.', 'Wow. Have a nice day, I guess.', 'No need to be rude, friend.']); }
+  if (has('nice', 'cool', 'awesome', 'great', 'good job', 'amazing', 'kind')) return moodWrap(pick(['Aw, thanks' + you + '!', 'You\'re too kind.', 'That made my day.']));
+  if (has('help', 'lost', 'what do i do', 'confused', 'how does this work', 'what now')) return pick(['New in town? Explore the streets, talk to folks, watch for cars.', 'You can build outside the city, or just wander and chat with people like me.', 'Mind the traffic, visit the park, and don\'t get mugged after dark!']);
+  if (has('food', 'hungry', 'eat', 'lunch', 'dinner', 'breakfast', 'snack')) return pick(['There\'s a great cafe a few blocks down.', 'I\'d kill for a sandwich right now.', 'Grab a bite at the market, best food in the city.']);
+  if (has('are you real', 'are you a bot', 'are you ai', 'are you human', 'npc', 'robot', 'computer', 'program')) return pick(['Real as the concrete under your boots, friend.', 'Ha, philosophical today, are we? I\'m as real as this city.', 'I\'m just ' + Name + ', living my life. Same as you.']);
+  if (has('yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'nope', 'no', 'nah')) return pick(['Right.', 'Fair enough.', 'Mm, I hear you.', 'Anyway — what brings you to the city?']);
+  if (has('weather', 'time', 'late', 'night', 'day')) return pick(['Time flies in the city.', 'Getting late — careful after dark.']);
+  if (t.trim().endsWith('?') || has('what', 'why', 'how', 'when', 'who', 'where')) return pick(['Hmm, good question' + you + '. Not sure I\'m the right person to ask.', 'Beats me! I\'m just a ' + p.job + '.', 'Honestly? No idea. The city keeps its secrets.']);
+  // fallback — varied filler + a follow-up that keeps the convo going
+  return moodWrap(pick([
+    'Heh, you\'re an interesting one. Anyway, I\'m ' + Name + ', the ' + p.job + '.',
+    'I hear you. Life in the city, am I right?',
+    'Can\'t say I follow, but it\'s nice to chat. What do you do' + you + '?',
+    'Mm. You from around here?',
+    'Interesting. I\'m off to ' + p.hobby + ' later — you should find a hobby too.',
+    'The streets are busy today. You been to the park yet?',
+  ]));
+}
 function box(w, h, d, color, x, y, z) { const g = new THREE.BoxGeometry(w, h, d); const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color })); m.position.set(x, y, z); m.userData.base = new THREE.Color(color); return m; }
 function legMesh(w, h, d, color, x, hy, z) { const g = new THREE.BoxGeometry(w, h, d); g.translate(0, -h / 2, 0); const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color })); m.position.set(x, hy, z); m.userData.base = new THREE.Color(color); return m; }
 function buildMobModel(type) {
@@ -1091,17 +1315,33 @@ class ItemEnt {
   constructor(world, x, y, z, item, count, mesh) { this.kind = 'item'; this.world = world; this.pos = new THREE.Vector3(x, y, z); this.vel = new THREE.Vector3((Math.random() - 0.5) * 2, 2.5, (Math.random() - 0.5) * 2); this.w = 0.25; this.h = 0.25; this.item = item; this.count = count; this.age = 0; this.delay = 0.4; this.dead = false; this.group = mesh; }
 }
 class Mob {
-  constructor(type, x, y, z) { this.type = type; this.def = MOBDEF[type]; this.pos = new THREE.Vector3(x, y, z); this.vel = new THREE.Vector3(); this.w = this.def.w; this.h = this.def.h; this.hp = this.def.hp; this.yaw = Math.random() * 6.28; this.onGround = false; this.timer = Math.random() * 3; this.attackCd = 0; this.fuse = 0; this.hurt = 0; this.dead = false; this.phase = Math.random() * 6; const m = buildMobModel(type); this.group = m.group; this.legs = m.legs; this.head = m.head; }
+  constructor(type, x, y, z) { this.type = type; this.def = MOBDEF[type]; this.pos = new THREE.Vector3(x, y, z); this.vel = new THREE.Vector3(); this.w = this.def.w; this.h = this.def.h; this.hp = this.def.hp; this.yaw = Math.random() * 6.28; this.onGround = false; this.timer = Math.random() * 3; this.attackCd = 0; this.fuse = 0; this.hurt = 0; this.dead = false; this.phase = Math.random() * 6;
+    let m; if (type === 'npc') { this.npc = makePersona(); m = buildNpcModel(this.npc); } else m = buildMobModel(type);
+    this.group = m.group; this.legs = m.legs; this.head = m.head; }
   aabb() { const hw = this.w / 2; return { minX: this.pos.x - hw, maxX: this.pos.x + hw, minY: this.pos.y, maxY: this.pos.y + this.h, minZ: this.pos.z - hw, maxZ: this.pos.z + hw }; }
   damage(n, kx, kz, mgr) { this.hp -= n; this.hurt = 0.25; if (kx !== undefined) { this.vel.x += kx * 5; this.vel.z += kz * 5; this.vel.y = 4; } if (!this.def.hostile) { this.flee = 5; } if (this.hp <= 0) this.die(mgr); }
   die(mgr) { if (this.dead) return; this.dead = true; for (const [item, mn, mx] of this.def.drops) { const c = mn + Math.floor(Math.random() * (mx - mn + 1)); for (let i = 0; i < c; i++) mgr.dropItem(this.pos.x, this.pos.y + this.h * 0.4, this.pos.z, item, 1); } }
 }
+function buildCarModel(color) {
+  const g = new THREE.Group(); const add = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshBasicMaterial({ color: c })); m.position.set(x, y, z); m.userData.base = new THREE.Color(c); g.add(m); return m; };
+  add(2.0, 0.5, 4.0, color, 0, 0.55, 0);              // lower body
+  add(1.7, 0.55, 2.2, color, 0, 1.05, -0.1);          // cabin
+  add(1.55, 0.4, 2.0, 0x9fd0e6, 0, 1.08, -0.1);       // windows (glass-ish)
+  add(1.72, 0.5, 2.24, color, 0, 1.05, -0.1).scale.set(1.001, 1, 1); // cabin frame overlay (kept simple)
+  add(0.3, 0.18, 0.18, 0xfff2b0, -0.7, 0.6, -2.0); add(0.3, 0.18, 0.18, 0xfff2b0, 0.7, 0.6, -2.0); // headlights (front -Z)
+  add(0.3, 0.16, 0.12, 0xcc2222, -0.7, 0.6, 2.0); add(0.3, 0.16, 0.12, 0xcc2222, 0.7, 0.6, 2.0);   // taillights
+  for (const [sx, sz] of [[-1.0, -1.3], [1.0, -1.3], [-1.0, 1.3], [1.0, 1.3]]) add(0.3, 0.7, 0.7, 0x121316, sx, 0.4, sz); // wheels
+  return g;
+}
+class Car {
+  constructor(world, x, y, z, dir, color) { this.world = world; this.pos = new THREE.Vector3(x, y, z); this.dir = dir.clone(); this.speed = 4 + Math.random() * 3; this.group = buildCarModel(color); this.dead = false; this.turnCd = 0; this.yaw = Math.atan2(dir.x, dir.z); }
+}
 class MobManager {
-  constructor(scene, world, game) { this.scene = scene; this.world = world; this.game = game; this.mobs = []; this.items = []; this.group = new THREE.Group(); scene.add(this.group); this.spawnT = 0; this.maxP = 18; this.maxH = 22; }
+  constructor(scene, world, game) { this.scene = scene; this.world = world; this.game = game; this.mobs = []; this.items = []; this.cars = []; this.group = new THREE.Group(); scene.add(this.group); this.spawnT = 0; this.cityT = 0; this.econT = 0; this.maxP = 18; this.maxH = 22; }
   spawn(type, x, y, z) { const m = new Mob(type, x, y, z); this.mobs.push(m); this.group.add(m.group); return m; }
   dropItem(x, y, z, item, count) { const mesh = this.game.makeDropMesh(item); const e = new ItemEnt(this.world, x, y, z, item, count, mesh); this.items.push(e); this.group.add(mesh); return e; }
   countH() { return this.mobs.filter(m => m.def.hostile).length; }
-  countP() { return this.mobs.filter(m => !m.def.hostile).length; }
+  countP() { return this.mobs.filter(m => !m.def.hostile && !m.npc).length; }
   update(dt, player, dayLight) {
     dt = Math.min(dt, 0.05);
     this._spawnLoop(dt, player, dayLight);
@@ -1109,6 +1349,64 @@ class MobManager {
     this.mobs = this.mobs.filter(m => { if (m.dead) { this.group.remove(m.group); return false; } return true; });
     for (const it of this.items) this._item(it, dt, player);
     this.items = this.items.filter(it => { if (it.dead) { this.group.remove(it.group); return false; } return true; });
+    for (const c of this.cars) this._car(c, dt, player);
+    this.cars = this.cars.filter(c => { if (c.dead) { this.group.remove(c.group); return false; } return true; });
+    // background economy: NPCs earn wages and spend over time
+    this.econT += dt;
+    if (this.econT > 2) { const tick = this.econT; this.econT = 0; for (const m of this.mobs) if (m.npc) { const p = m.npc; p.money += p.wage * tick * 0.04; if (Math.random() < 0.15) p.money = Math.max(0, p.money - (5 + Math.random() * 30)); p.money = Math.round(p.money); } }
+    // keep the city populated around the player
+    this.cityT -= dt;
+    if (this.cityT <= 0) { this.cityT = 4; if (this.game.gen && this.game.gen.cityAt(Math.floor(player.pos.x), Math.floor(player.pos.z))) this.populateCity(player); else this._despawnFar(player); }
+  }
+  _despawnFar(player) {
+    for (const m of this.mobs) if (m.npc && Math.hypot(m.pos.x - player.pos.x, m.pos.z - player.pos.z) > 70) m.dead = true;
+    for (const c of this.cars) if (Math.hypot(c.pos.x - player.pos.x, c.pos.z - player.pos.z) > 80) c.dead = true;
+  }
+  countNPC() { return this.mobs.filter(m => m.npc).length; }
+  populateCity(player) {
+    const gen = this.game.gen, w = this.world; if (!gen) return;
+    // spawn pedestrians on nearby sidewalks
+    let want = 14 - this.countNPC();
+    for (let a = 0; a < 60 && want > 0; a++) {
+      const ang = Math.random() * 6.28, r = 8 + Math.random() * 50;
+      const wx = Math.floor(player.pos.x + Math.cos(ang) * r), wz = Math.floor(player.pos.z + Math.sin(ang) * r);
+      const ca = gen.cityAt(wx, wz); if (!ca) continue; if (!w.isLoaded(wx, wz)) continue;
+      const top = w.getBlock(wx, ca.info.groundY, wz);
+      if (top !== B.CONCRETE) continue; if (w.getBlock(wx, ca.info.groundY + 1, wz) !== B.AIR) continue;
+      this.spawn('npc', wx + 0.5, ca.info.groundY + 1, wz + 0.5); want--;
+    }
+    // spawn cars on nearby roads
+    let wantC = 6 - this.cars.length;
+    for (let a = 0; a < 60 && wantC > 0; a++) {
+      const ang = Math.random() * 6.28, r = 12 + Math.random() * 55;
+      const wx = Math.floor(player.pos.x + Math.cos(ang) * r), wz = Math.floor(player.pos.z + Math.sin(ang) * r);
+      const ca = gen.cityAt(wx, wz); if (!ca || !gen.cityRoadAt(wx, wz) || !w.isLoaded(wx, wz)) continue;
+      const u = ca.dx + CITY_RADIUS, v = ca.dz + CITY_RADIUS; const ru = ((u % LOT) + LOT) % LOT, rv = ((v % LOT) + LOT) % LOT;
+      const dir = ru < ROAD_W ? new THREE.Vector3(0, 0, Math.random() < 0.5 ? 1 : -1) : new THREE.Vector3(Math.random() < 0.5 ? 1 : -1, 0, 0);
+      const colors = [0xb44545, 0x3f6fb4, 0x2c2f36, 0xe8e8ec, 0x4caf50, 0xcaa23a, 0x8e5cb4];
+      const car = new Car(w, wx + 0.5, ca.info.groundY + 1, wz + 0.5, dir, colors[Math.random() * colors.length | 0]);
+      this.cars.push(car); this.group.add(car.group); wantC--;
+    }
+  }
+  _car(c, dt, player) {
+    const gen = this.game.gen, w = this.world;
+    if (Math.hypot(c.pos.x - player.pos.x, c.pos.z - player.pos.z) > 100) { c.dead = true; return; }
+    c.turnCd -= dt;
+    // look ahead; if the road ends or we're at an intersection, choose a new road direction
+    const ahead = (n) => { const nx = Math.floor(c.pos.x + c.dir.x * n), nz = Math.floor(c.pos.z + c.dir.z * n); return gen.cityRoadAt(nx, nz); };
+    if (!ahead(2.2) || (c.turnCd <= 0 && Math.random() < 0.5)) {
+      const opts = [c.dir.clone(), new THREE.Vector3(c.dir.z, 0, -c.dir.x), new THREE.Vector3(-c.dir.z, 0, c.dir.x)];
+      const good = opts.filter(d => { const nx = Math.floor(c.pos.x + d.x * 2.5), nz = Math.floor(c.pos.z + d.z * 2.5); return gen.cityRoadAt(nx, nz); });
+      if (good.length) c.dir.copy(good[Math.random() * good.length | 0]); else c.dir.multiplyScalar(-1);
+      c.turnCd = 1.5 + Math.random();
+    }
+    c.pos.x += c.dir.x * c.speed * dt; c.pos.z += c.dir.z * c.speed * dt;
+    const ca = gen.cityAt(Math.floor(c.pos.x), Math.floor(c.pos.z)); if (ca) c.pos.y = ca.info.groundY + 1;
+    // gentle yaw lerp toward travel dir
+    const ty = Math.atan2(c.dir.x, c.dir.z); let d = ((ty - c.yaw + Math.PI) % (Math.PI * 2)) - Math.PI; c.yaw += d * Math.min(1, dt * 8);
+    c.group.position.set(c.pos.x, c.pos.y + 0.2, c.pos.z); c.group.rotation.y = c.yaw;
+    // nudge the player if run over
+    if (Math.hypot(c.pos.x - player.pos.x, c.pos.z - player.pos.z) < 1.4 && Math.abs(c.pos.y - player.pos.y) < 2) { this.game.damagePlayer(2); player.vel.x += c.dir.x * 6; player.vel.z += c.dir.z * 6; }
   }
   _tint(group, lvl, flash) { group.traverse(o => { if (o.material && o.userData.base) { if (flash) o.material.color.setRGB(1, 0.4, 0.4); else o.material.color.copy(o.userData.base).multiplyScalar(clamp(lvl, 0.25, 1)); } }); }
   _mob(m, dt, player, dayLight) {
@@ -1129,12 +1427,22 @@ class MobManager {
     if (moving && m.onGround && Math.abs(m.pos.x - bx) < Math.abs(m.vel.x * dt) * 0.5 + 1e-4 && Math.abs(m.pos.z - bz) < Math.abs(m.vel.z * dt) * 0.5 + 1e-4) m.vel.y = 7;
     if (m.def.burns && dayLight > 0.8) { const sky = w.getSky(Math.floor(m.pos.x), Math.floor(m.pos.y + m.h), Math.floor(m.pos.z)); if (sky >= 14) { m._b = (m._b || 0) + dt; if (m._b > 1) { m.damage(1, undefined, undefined, this); m._b = 0; } } }
     if (m.pos.y < -24) m.dead = true;
-    m.group.position.set(m.pos.x, m.pos.y, m.pos.z);
-    // models face -Z, so offset by PI to make them walk where they look (no more moonwalking)
+    // models face -Z, so offset by PI to make them walk where they look (no moonwalking)
     m.group.rotation.y = m.yaw + Math.PI;
-    m.phase += dt * (4 + Math.hypot(m.vel.x, m.vel.z) * 2); const sw = (moving || m.def.floaty) ? Math.sin(m.phase) * 0.5 : 0;
+    const mov = Math.hypot(m.vel.x, m.vel.z);
+    m.phase += dt * (5 + mov * 3);
+    // exaggerated leg swing (alternating), idle breathing when still
+    const sw = (moving || m.def.floaty) ? Math.sin(m.phase) * 1.0 : Math.sin(m.phase * 0.3) * 0.06;
     m.legs.forEach((l, i) => l.rotation.x = sw * (i % 2 ? -1 : 1));
-    if (m.def.creeper && m.fuse > 0) { const s = 1 + Math.sin(performance.now() * 0.03) * 0.1 * m.fuse; m.group.scale.setScalar(s); }
+    // springy body bounce + head bob keyed to the gait
+    const bounce = moving ? Math.abs(Math.sin(m.phase)) * 0.09 * Math.min(1, mov) : Math.sin(m.phase * 0.3) * 0.01;
+    m.group.position.set(m.pos.x, m.pos.y + bounce, m.pos.z);
+    if (m.head) m.head.rotation.x = Math.sin(m.phase) * 0.16 * (moving ? 1 : 0.25) + (m.attackCd > 0.7 ? 0.4 : 0);
+    // signature per-type flourishes
+    if (m.type === 'slime') { const sq = 1 + Math.sin(m.phase * 1.3) * 0.22; m.group.scale.set(1 / Math.sqrt(sq), sq, 1 / Math.sqrt(sq)); }
+    else if (m.def.creeper && m.fuse > 0) { const s = 1 + Math.sin(performance.now() * 0.03) * 0.12 * m.fuse; m.group.scale.setScalar(s); }
+    else if (m.type === 'enderman') m.group.scale.set(1, 1 + Math.sin(m.phase * 0.4) * 0.03, 1);
+    else m.group.scale.setScalar(1);
     this._tint(m.group, w.lightLevelAt ? w.lightLevelAt(m.pos.x, m.pos.y + 1, m.pos.z, dayLight) : 1, m.hurt > 0);
   }
   _explode(m, player) {
@@ -1177,7 +1485,7 @@ class MobManager {
   }
   rayHit(o, d, reach) { let best = null, bt = reach; for (const m of this.mobs) { const t = rayAABB(o, d, m.aabb()); if (t != null && t < bt) { bt = t; best = m; } } return best; }
   attackRay(o, d, reach, dmg) { const m = this.rayHit(o, d, reach); if (m) { const kb = new THREE.Vector3(d.x, 0, d.z).normalize(); m.damage(dmg, kb.x, kb.z, this); return true; } return false; }
-  clear() { for (const m of this.mobs) this.group.remove(m.group); for (const it of this.items) this.group.remove(it.group); this.mobs = []; this.items = []; }
+  clear() { for (const m of this.mobs) this.group.remove(m.group); for (const it of this.items) this.group.remove(it.group); for (const c of this.cars) this.group.remove(c.group); this.mobs = []; this.items = []; this.cars = []; }
 }
 function rayAABB(o, d, b) { let tmin = 0, tmax = Infinity; for (const ax of ['x', 'y', 'z']) { const lo = b['min' + ax.toUpperCase()], hi = b['max' + ax.toUpperCase()]; if (Math.abs(d[ax]) < 1e-8) { if (o[ax] < lo || o[ax] > hi) return null; } else { let t1 = (lo - o[ax]) / d[ax], t2 = (hi - o[ax]) / d[ax]; if (t1 > t2) { const t = t1; t1 = t2; t2 = t; } tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2); if (tmin > tmax) return null; } } return tmin; }
 
@@ -1189,7 +1497,7 @@ class Input {
     this.canvas = canvas; this.keys = new Set(); this.pressed = new Set();
     this.mdx = 0; this.mdy = 0; this.locked = false;
     this.mL = false; this.mR = false; this.mLe = false; this.mRe = false; this.wheel = 0;
-    addEventListener('keydown', e => { if (!e.repeat) { this.keys.add(e.code); this.pressed.add(e.code); } if (this.locked && ['Space', 'Tab'].includes(e.code)) e.preventDefault(); });
+    addEventListener('keydown', e => { const ae = document.activeElement; if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return; if (!e.repeat) { this.keys.add(e.code); this.pressed.add(e.code); } if (this.locked && ['Space', 'Tab'].includes(e.code)) e.preventDefault(); });
     addEventListener('keyup', e => this.keys.delete(e.code));
     addEventListener('blur', () => { this.keys.clear(); this.mL = this.mR = false; });
     canvas.addEventListener('mousedown', e => { if (!this.locked) return; if (e.button === 0) { this.mL = true; this.mLe = true; } if (e.button === 2) { this.mR = true; this.mRe = true; } });
@@ -1218,7 +1526,7 @@ class Player {
     this.target = null; this.breakTarget = null; this.breakProgress = 0; this.mineCd = 0;
     this.health = 20; this.hunger = 20; this.sat = 5; this.exhaustion = 0; this.dead = false;
     this.invuln = 0; this.regenT = 0; this.fallStart = null; this.sprinting = false;
-    this.gunCd = 0; this.reloadT = 0; this.recoil = 0;
+    this.gunCd = 0; this.reloadT = 0; this.recoil = 0; this.money = 50;
   }
   eye() { return new THREE.Vector3(this.pos.x, this.pos.y + EYE, this.pos.z); }
   update(dt, input) {
@@ -1273,12 +1581,14 @@ class Player {
       } else {
         const dir = new THREE.Vector3(); this.camera.getWorldDirection(dir);
         const mobAim = this.game.mobs ? this.game.mobs.rayHit(this.eye(), dir, 4.2) : null;
+        const talkable = mobAim && mobAim.type === 'npc';
         if (mobAim) {
           this.breakTarget = null; this.breakProgress = 0;
-          if (input.mLe) { const h = this.game.inventory.held(); const d = h ? itemDef(h.id) : null; const dmg = d && d.tool === 'sword' ? 4 + (d.tier || 0) : (d && d.tool ? 2 : 1); this.game.mobs.attackRay(this.eye(), dir, 4.2, dmg); this.swing = 1; }
+          if (talkable && input.mRe) { this.game.ui.openChat(mobAim); }
+          else if (!talkable && input.mLe) { const h = this.game.inventory.held(); const d = h ? itemDef(h.id) : null; const dmg = d && d.tool === 'sword' ? 4 + (d.tier || 0) : (d && d.tool ? 2 : 1); this.game.mobs.attackRay(this.eye(), dir, 4.2, dmg); this.swing = 1; }
         } else this._mine(dt, input);
         if (input.mLe && !mobAim) this.swing = 1;
-        if (input.mRe && this.target) { this._use(input); this.swing = 1; }
+        if (input.mRe && this.target && !talkable) { this._use(input); this.swing = 1; }
       }
     } else { this.breakTarget = null; this.breakProgress = 0; }
     const inv = this.game.inventory;
@@ -1481,11 +1791,11 @@ class UI {
     const root = document.createElement('div'); root.id = 'ui';
     root.innerHTML = `<div id="cross"><div id="breakbar"></div></div>
       <div id="stats"><div id="hearts" class="pips"></div><div id="hungers" class="pips"></div></div>
-      <div id="hotbar"></div><div id="selname"></div><div id="ammo" class="hidden"></div>
+      <div id="hotbar"></div><div id="selname"></div><div id="ammo" class="hidden"></div><div id="money"></div>
       <div id="hint">WASD move · mouse look · L/R break/place · 1-9 / scroll · E inventory · Esc menu</div>
       <div id="screen" class="hidden"></div><div id="cursor" class="hidden"></div><div id="menu" class="hidden"></div>`;
     document.body.appendChild(root); this.root = root;
-    this.el = { hotbar: root.querySelector('#hotbar'), hearts: root.querySelector('#hearts'), hungers: root.querySelector('#hungers'), selname: root.querySelector('#selname'), ammo: root.querySelector('#ammo'), screen: root.querySelector('#screen'), cursor: root.querySelector('#cursor'), menu: root.querySelector('#menu'), breakbar: root.querySelector('#breakbar') };
+    this.el = { hotbar: root.querySelector('#hotbar'), hearts: root.querySelector('#hearts'), hungers: root.querySelector('#hungers'), selname: root.querySelector('#selname'), ammo: root.querySelector('#ammo'), money: root.querySelector('#money'), screen: root.querySelector('#screen'), cursor: root.querySelector('#cursor'), menu: root.querySelector('#menu'), breakbar: root.querySelector('#breakbar') };
     for (let i = 0; i < 9; i++) { const s = document.createElement('div'); s.className = 'hs'; s.onclick = () => { if (!this.open) this.game.inventory.sel = i; }; this.el.hotbar.appendChild(s); }
     document.addEventListener('mousemove', e => { this._mx = e.clientX; this._my = e.clientY; this._moveCursor(); });
   }
@@ -1508,6 +1818,7 @@ class UI {
     const sd = sit ? itemDef(sit.id) : null;
     if (sd && sd.gun) { const ammo = sit.ammo == null ? sd.clip : sit.ammo; this.el.ammo.classList.remove('hidden'); this.el.ammo.textContent = p.reloadT > 0 ? 'RELOADING…' : ammo + ' / ' + sd.clip; }
     else this.el.ammo.classList.add('hidden');
+    this.el.money.textContent = '$' + (p.money | 0);
     this.el.breakbar.style.width = (p.breakProgress > 0 ? p.breakProgress * 22 : 0) + 'px';
     if (this.open === 'inv' || this.open === 'craft') this._renderScreen();
     this._moveCursor();
@@ -1520,6 +1831,26 @@ class UI {
   }
   openInventory() { if (this.game.mode === 'creative') this.openPalette(); else { this.open = 'inv'; this.game.inventory.craftSize = 2; this._showScreen(); } }
   openTable() { this.open = 'craft'; this.game.inventory.craftSize = 3; this._showScreen(); }
+  openChat(mob) {
+    this.open = 'chat'; this.chatNpc = mob; const p = mob.npc; this.game.input.unlock();
+    const s = this.el.screen; s.classList.remove('hidden');
+    s.innerHTML = `<div class="panel chatpanel">
+      <div class="chathead"><b>${p.first} ${p.last}</b> · ${p.job} · <span class="cls">${p.cls} class</span> · $${p.money} · age ${p.age}</div>
+      <div class="chatlog" id="chatlog"></div>
+      <div class="chatrow"><input id="chatin" autocomplete="off" spellcheck="false" placeholder="Say something…  (Enter to send · Esc to leave)"/><button id="chatsend">Send</button></div>
+      <div class="chathint">Try: their job · money · the city · directions · their hobby · how they're doing</div></div>`;
+    this._chatLog = s.querySelector('#chatlog');
+    const inp = s.querySelector('#chatin');
+    this._appendChat(p.first, npcReply(p, 'hello'), 'npc');
+    const send = () => { const v = inp.value.trim(); if (!v) return; this._appendChat('You', v, 'you'); inp.value = ''; const r = npcReply(p, v); setTimeout(() => this._appendChat(p.first, r, 'npc'), 130); };
+    s.querySelector('#chatsend').onclick = send;
+    inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') send(); else if (e.key === 'Escape') this.close(); });
+    setTimeout(() => inp.focus(), 30);
+  }
+  _appendChat(who, text, cls) {
+    if (!this._chatLog) return; const d = document.createElement('div'); d.className = 'cmsg ' + cls;
+    d.innerHTML = '<b>' + who + ':</b> ' + String(text).replace(/</g, '&lt;'); this._chatLog.appendChild(d); this._chatLog.scrollTop = this._chatLog.scrollHeight;
+  }
   openPalette() {
     this.open = 'palette'; this.game.input.unlock(); const s = this.el.screen; s.classList.remove('hidden'); s.innerHTML = '<div class="panel"><h3>Creative Blocks</h3><div class="pg"></div></div>';
     const grid = s.querySelector('.pg');
@@ -1531,7 +1862,7 @@ class UI {
   _showScreen() { this.game.input.unlock(); this.el.screen.classList.remove('hidden'); this._renderScreen(); }
   close() {
     if (this.open === 'inv' || this.open === 'craft') { const iv = this.game.inventory; for (let i = 0; i < iv.craft.length; i++) if (iv.craft[i]) { iv.add(iv.craft[i].id, iv.craft[i].count); iv.craft[i] = null; } if (iv.cursor) { iv.add(iv.cursor.id, iv.cursor.count); iv.cursor = null; } }
-    this.open = null; this.el.screen.classList.add('hidden'); this.el.cursor.classList.add('hidden');
+    this.open = null; this.chatNpc = null; this._chatLog = null; this.el.screen.classList.add('hidden'); this.el.cursor.classList.add('hidden');
     if (this.game.playing && !this.game.paused) this.game.input.lock();
   }
   _slot(get, set, opts = {}) {
@@ -1676,13 +2007,14 @@ class Game {
   }
   makeHand() {
     this.hand = new THREE.Group(); this.camera.add(this.hand);
-    // a proper Minecraft-style arm: shirt sleeve + longer skin forearm/fist
+    // a proper Minecraft-style first-person arm: skin forearm reaching up into
+    // view from the lower-right, with a blue shirt-sleeve cuff near the camera.
     const arm = new THREE.Group();
-    const sleeve = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.46, 0.34), new THREE.MeshBasicMaterial({ color: 0x3f7cb4 }));
-    sleeve.geometry.translate(0, -0.23, 0); arm.add(sleeve); this.sleeve = sleeve;
-    const skin = new THREE.Mesh(new THREE.BoxGeometry(0.31, 0.66, 0.31), new THREE.MeshBasicMaterial({ color: 0xe7b58a }));
-    skin.geometry.translate(0, -0.46 - 0.33, 0); arm.add(skin); this.arm = skin;
-    arm.position.set(0.62, -0.42, -0.78); arm.rotation.set(-0.32, -0.16, -0.16);
+    const skin = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.8), new THREE.MeshBasicMaterial({ color: 0xe7b58a }));
+    skin.geometry.translate(0, 0, -0.3); arm.add(skin); this.arm = skin;
+    const sleeve = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.32, 0.34), new THREE.MeshBasicMaterial({ color: 0x3f7cb4 }));
+    sleeve.position.set(0, 0, 0.18); arm.add(sleeve); this.sleeve = sleeve;
+    arm.position.set(0.6, -0.66, -0.32); arm.rotation.set(0.6, -0.24, 0.16);
     this.hand.add(arm); this.armMesh = arm;
     this.heldGroup = new THREE.Group(); this.hand.add(this.heldGroup); this.heldId = -2;
     // muzzle flash (for guns) — a small bright billboard at the barrel tip
@@ -1765,7 +2097,16 @@ class Game {
         else if (d.tool === 'sword') { bar(0.06, 0.42, 0.04, metal, 0, 0.28, 0); bar(0.18, 0.05, 0.05, wood, 0, 0.06, 0); }
         else bar(0.1, 0.1, 0.06, metal, 0, 0.22, 0);
         grp.rotation.set(0, 0, 0.4);
-      } else { bar(0.22, 0.22, 0.08, 0xffffff, 0, 0, 0); const sp = grp.children[0]; const c = new THREE.Color(); /* tint by item */ }
+      } else {
+        // generic items (ingots, food, dust, gems...) render as a flat sprite of
+        // their icon, extruded slightly — exactly how Minecraft shows held items.
+        if (!this._dropTex) this._dropTex = new Map();
+        let tex = this._dropTex.get(id);
+        if (!tex) { tex = new THREE.CanvasTexture(this.ui.iconCanvas(id)); tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false; this._dropTex.set(id, tex); }
+        const spr = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.45), new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.25, side: THREE.DoubleSide }));
+        const back = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 0.45), new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.25, side: THREE.DoubleSide })); back.position.z = -0.03;
+        grp.add(spr); grp.add(back); grp.rotation.set(0, -0.35, 0);
+      }
     }
     return grp;
   }
@@ -1812,8 +2153,8 @@ class Game {
     if (id === this.heldId) return; this.heldId = id;
     this.heldGroup.clear();
     const m = this.makeHeldModel(id); const d = id != null ? itemDef(id) : null;
-    if (d && d.gun) m.position.set(0.34, -0.42, -0.5);
-    else m.position.set(0.5, -0.5, -0.62);
+    if (d && d.gun) m.position.set(0.36, -0.4, -0.6);
+    else m.position.set(0.34, -0.3, -0.74);
     this.heldGroup.add(m);
   }
   start(mode) {
@@ -1824,10 +2165,12 @@ class Game {
     this.player = new Player(this);
     this.inventory.slots.fill(null); this.inventory.craft.fill(null); this.inventory.armor.fill(null); this.inventory.cursor = null; this.inventory.sel = 0;
     if (mode === 'creative') { [B.GRASS, B.DIRT, B.STONE, B.COBBLE, B.PLANKS, B.LOG, B.LEAVES, B.GLASS, B.SAND].forEach((id, i) => this.inventory.slots[i] = { id, count: 64 }); }
-    // spawn
-    for (let i = 0; i < 10; i++) this.world.update(8, 8);
-    const sy = this.world.highestY(8, 8); this.player.pos.set(8.5, sy + 2, 8.5);
+    // spawn (prefer a road in the city near origin)
+    const sp = this.gen.spawnPoint(); this.spawnPt = sp;
+    for (let i = 0; i < 12; i++) this.world.update(sp.x, sp.z);
+    const sy = this.world.highestY(sp.x, sp.z); this.player.pos.set(sp.x + 0.5, Math.max(sy + 2, sp.y + 2), sp.z + 0.5);
     if (mode === 'survival') this.mobs.seedAround(this.player);
+    this.mobs.populateCity(this.player);
     this.playing = true; this.paused = false; this.hand.visible = true;
     this.ui.showMenu(null); this.input.lock();
   }
@@ -1843,7 +2186,7 @@ class Game {
 
     if (this.playing) {
       // global keys
-      const sc = this.ui.open === 'inv' || this.ui.open === 'craft' || this.ui.open === 'palette';
+      const sc = this.ui.open === 'inv' || this.ui.open === 'craft' || this.ui.open === 'palette' || this.ui.open === 'chat';
       if (this.input.p('KeyE')) { if (sc) this.ui.close(); else if (!this.paused && !this.ui.open) this.ui.openInventory(); }
       if (this.input.p('Escape')) { if (sc) this.ui.close(); else if (this.paused) this.resume(); else if (!this.ui.open) this.pause(); }
       const frozen = this.paused || this.ui.open;
@@ -1860,9 +2203,13 @@ class Game {
       let sw;
       if (mining) { this._mineT = (this._mineT || 0) + dt; sw = Math.abs(Math.sin(this._mineT * 11)); }
       else { this._mineT = 0; sw = Math.sin((pl.swing || 0) * Math.PI); }
-      let rx = -sw * 0.85, ry = sw * 0.18, rz = 0;
-      let px = Math.cos(this._bobT) * 0.012 * walkBob, py = -sw * 0.13 + Math.abs(Math.sin(this._bobT)) * 0.022 * walkBob, pz = sw * 0.05;
-      if (hd && hd.gun) { pl.recoil = Math.max(0, pl.recoil - dt * 7); rx += pl.recoil * 0.5; pz += pl.recoil * 0.16; py += pl.recoil * 0.02; if (pl.reloadT > 0) { rx += 0.9; py -= 0.18; } }
+      let rx = -sw * 1.2, ry = sw * 0.3, rz = sw * 0.12;
+      // idle breathing sway + pronounced walk bob
+      const idle = this.time;
+      let px = Math.cos(this._bobT) * 0.03 * walkBob + Math.sin(idle * 0.7) * 0.01;
+      let py = -sw * 0.18 + Math.abs(Math.sin(this._bobT)) * 0.05 * walkBob + Math.sin(idle * 1.3) * 0.012;
+      let pz = sw * 0.08;
+      if (hd && hd.gun) { pl.recoil = Math.max(0, pl.recoil - dt * 7); rx += pl.recoil * 0.55; pz += pl.recoil * 0.18; py += pl.recoil * 0.03; if (pl.reloadT > 0) { rx += 1.0; py -= 0.2; ry += 0.3; } }
       this.hand.rotation.set(rx, ry, rz); this.hand.position.set(px, py, pz);
       // muzzle flash + tracer decay
       if (this.muzzleT > 0) this.muzzleT -= dt;
