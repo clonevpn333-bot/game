@@ -1,10 +1,8 @@
-// Bundle Three.js + glTF loaders (base64 blobs) + game.js + CSS into one index.html.
+// Bundle Three.js (base64 blob) + game.js + CSS into one runnable index.html.
+// All characters are built procedurally in-engine — no glTF/GLB loaders needed.
 import fs from 'fs';
 const b64 = f => Buffer.from(fs.readFileSync(f, 'utf8'), 'utf8').toString('base64');
 const threeB64 = b64('vendor/three.module.js');
-const bguB64 = b64('vendor/BufferGeometryUtils.js');
-const gltfB64 = b64('vendor/GLTFLoader.js');
-const skB64 = b64('vendor/SkeletonUtils.js');
 let game = fs.readFileSync('game.js', 'utf8');
 game = game.replace(/^import \* as THREE from 'three';/m, "import * as THREE from '__THREE_URL__';");
 const gameReadable = game.replace(/<\/script>/gi, '<\\/script>');
@@ -25,9 +23,6 @@ ${css}
 <div id="boot">Loading NEON BAY…</div>
 
 <script id="three-src" type="text/plain">${threeB64}</script>
-<script id="bgu-src" type="text/plain">${bguB64}</script>
-<script id="gltf-src" type="text/plain">${gltfB64}</script>
-<script id="sk-src" type="text/plain">${skB64}</script>
 <script id="game-src" type="text/plain">
 ${gameReadable}
 </script>
@@ -39,10 +34,6 @@ ${gameReadable}
   addEventListener('error', ev=>fail(ev.error||ev.message));
   try {
     var threeURL = blobOf(decode(document.getElementById('three-src').textContent));
-    var bguURL = blobOf(decode(document.getElementById('bgu-src').textContent).replace(/from 'three'/g, "from '"+threeURL+"'"));
-    var gltfURL = blobOf(decode(document.getElementById('gltf-src').textContent).replace(/from 'three'/g, "from '"+threeURL+"'").replace("from '../utils/BufferGeometryUtils.js'", "from '"+bguURL+"'"));
-    var skURL = blobOf(decode(document.getElementById('sk-src').textContent).replace(/from 'three'/g, "from '"+threeURL+"'"));
-    window.__GLTF_URL__ = gltfURL; window.__SK_URL__ = skURL;
     var game = document.getElementById('game-src').textContent.replace(/<\\\/script>/gi,'</scr'+'ipt>').replace('__THREE_URL__', threeURL);
     import(blobOf(game)).catch(fail);
   } catch(e){ fail(e); }

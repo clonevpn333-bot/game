@@ -4,7 +4,7 @@
 //  ink-outline & FXAA post pass + HDR bloom, purple-dusk sky, real multi-floor
 //  building facades, enterable venues, cinematic dialogue, and view-frustum +
 //  distance culling so heavy scenes still hold framerate. Higher-poly bouncy
-//  characters with rigged procedural animation. Optional CC0 glTF upgrade online.
+//  characters with rigged procedural animation — every model is built in-engine.
 // ============================================================================
 import * as THREE from 'three';
 
@@ -30,33 +30,6 @@ function mat(c, o) {
   return new THREE.MeshToonMaterial(p);
 }
 function skinMat(c) { const col = new THREE.Color(c); return new THREE.MeshToonMaterial({ color: c, gradientMap: RAMP, emissive: col.clone().multiplyScalar(0.08) }); }
-
-// ---------------------------------------------------------------------------
-// Optional community models (CC0) — loaded online at runtime, procedural first.
-// ---------------------------------------------------------------------------
-const ASSETS = { ready: {} };
-const CHAR_URLS = [
-  'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/gltf/Soldier.glb',
-  'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/models/gltf/RobotExpressive/RobotExpressive.glb',
-];
-async function loadModels() {
-  let GLTFLoader, SkeletonUtils;
-  try { ({ GLTFLoader } = await import(window.__GLTF_URL__)); SkeletonUtils = await import(window.__SK_URL__); }
-  catch (e) { console.warn('[models] loaders unavailable:', e && e.message); return; }
-  ASSETS.SkeletonUtils = SkeletonUtils;
-  const loader = new GLTFLoader();
-  const urls = (window.__MODEL_CHAR__ ? [window.__MODEL_CHAR__] : []).concat(CHAR_URLS);
-  const tryNext = (i) => {
-    if (i >= urls.length) { console.warn('[models] no character GLB reachable; using built-in figures.'); return; }
-    loader.load(urls[i], (gltf) => {
-      const box = new THREE.Box3().setFromObject(gltf.scene), sz = new THREE.Vector3(); box.getSize(sz);
-      gltf.userData.scale = 1.8 / (sz.y || 1.8); gltf.userData.minY = box.min.y;
-      ASSETS.char = gltf; ASSETS.ready.char = true;
-      if (window.GAME) window.GAME.onCharModel(); window.__GAME_ASSETS_READY__ = true;
-    }, undefined, () => tryNext(i + 1));
-  };
-  tryNext(0);
-}
 
 // ---------------------------------------------------------------------------
 // Input
@@ -461,21 +434,7 @@ function animateHuman(f, dt, o) {
     set('hips', 0, Math.sin(t * 0.7) * 0.02, 0); set('legL', 0); set('legR', 0); set('shinL', 0); set('shinR', 0); f.group.position.y = 0;
   }
 }
-function gltfFigure(p) {
-  const gltf = ASSETS.char, clone = ASSETS.SkeletonUtils.clone(gltf.scene);
-  clone.scale.setScalar(gltf.userData.scale); clone.position.y = -gltf.userData.minY * gltf.userData.scale;
-  const tint = new THREE.Color(p.shirt || pick(SHIRTS));
-  clone.traverse(o => { if (o.isMesh) { o.castShadow = false; if (o.material) { o.material = new THREE.MeshToonMaterial({ color: (o.material.color || new THREE.Color(0xcccccc)).clone().lerp(tint, 0.2), gradientMap: RAMP, map: o.material.map || null }); } } });
-  const group = new THREE.Group(); group.add(clone);
-  const mixer = new THREE.AnimationMixer(clone), by = {}; for (const a of gltf.animations) by[a.name] = a;
-  const A = n => by[n] ? mixer.clipAction(by[n]) : null;
-  const actions = { idle: A('Idle'), walk: A('Walk') || A('Walking'), run: A('Run') || A('Running'), talk: A('Idle') };
-  if (actions.idle) actions.idle.play();
-  const f = { group, kind: 'gltf', mixer, actions, _cur: actions.idle, head: null };
-  f.update = (dt, o) => { const st = (o && o.state) || 'idle'; const a = actions[st] || actions.idle; if (a && f._cur !== a) { if (f._cur) f._cur.fadeOut(0.2); a.reset().fadeIn(0.2).play(); f._cur = a; } if (actions.walk) actions.walk.timeScale = st === 'run' ? 1.6 : 1.0; mixer.update(dt); };
-  return f;
-}
-function buildPerson(p) { return (ASSETS.ready.char && ASSETS.char) ? gltfFigure(p) : humanFigure(p); }
+function buildPerson(p) { return humanFigure(p); }
 
 // ---------------------------------------------------------------------------
 // Car
@@ -533,10 +492,9 @@ class Game {
     canvas.addEventListener('mousedown', () => { if (this.playing && !this.paused && !this.ui.modal && !this.input.locked) this.input.lock(); });
     this.input.onLock = (l) => { if (!l && this.playing && !this.paused && !this.ui.modal) this.pause(); };
 
-    window.GAME = this; loadModels();
+    window.GAME = this;
     this.ui.title(); this.loop();
   }
-  onCharModel() { for (const n of this.npcs) if (!n.dead && !n.gltf) n.upgrade(); if (this.player && !this.player.inCar) this.player.upgrade && this.player.upgrade(); }
   start() {
     this.playing = true; this.paused = false; this.menuMode = false; this.ui.modal = null; this.ui.hideTitle();
     this.player.root.visible = true; this.player.spawn();
@@ -638,7 +596,6 @@ class Player {
     this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); game.scene.add(this.root); this.root.visible = false; this._build();
   }
   _build() { const f = buildPerson({ shirt: PLAYER_PURPLE, skin: 0xecbd90, hair: 0x201810, pants: 0x1f2530 }); this.fig = f; this.root.add(f.group); }
-  upgrade() { if (this.fig && this.fig.kind === 'gltf') return; this.root.remove(this.fig.group); this.fig = buildPerson({ shirt: PLAYER_PURPLE }); this.root.add(this.fig.group); }
   spawn() { this.pos.set(30, 0, 30); this.camYaw = Math.PI; this.root.position.copy(this.pos); }
   enterCar(car) { this.inCar = car; car.driver = this; car.ai = false; this.root.visible = false; if (car.aiTraffic) this.game.addWanted(1); }
   exitCar() { const car = this.inCar; if (!car) return; this.inCar = null; car.driver = null; car.ai = true; this.root.visible = true; this.pos.set(car.pos.x + 2.4, 0, car.pos.z); this.vy = 0; }
@@ -684,10 +641,9 @@ class Ped {
     opts = opts || {}; this.game = game; this.cop = !!cop; this.dance = !!opts.dance; this.pos = new THREE.Vector3(x, 0, z); this.yaw = rnd(TAU);
     this.hp = cop ? 60 : 30; this.dead = false; this.removeMe = false; this.flee = 0; this.timer = rnd(3); this.wander = rnd(TAU); this.attackCd = 0; this.deadT = 0;
     this.persona = { shirt: cop ? 0x21407a : pick(SHIRTS), skin: pick(SKIN), hair: pick(HAIR), pants: cop ? 0x16213f : pick(PANTS) };
-    const f = buildPerson(this.persona); this.fig = f; this.gltf = f.kind === 'gltf'; this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); this.root.add(f.group); this.root.position.copy(this.pos); game.scene.add(this.root);
-    if (cop) { const capm = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.14, 0.4), mat(0x11203f)); capm.position.y = f.kind === 'gltf' ? 1.9 : 1.8; this.root.add(capm); }
+    const f = buildPerson(this.persona); this.fig = f; this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); this.root.add(f.group); this.root.position.copy(this.pos); game.scene.add(this.root);
+    if (cop) { const capm = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.14, 0.4), mat(0x11203f)); capm.position.y = 1.95; this.root.add(capm); }
   }
-  upgrade() { this.game.scene.remove(this.root); const f = buildPerson(this.persona); this.fig = f; this.gltf = true; this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); this.root.add(f.group); this.root.position.copy(this.pos); this.game.scene.add(this.root); }
   animateIdle(dt) { if (!this.dead) this.fig.update(dt, { state: this.dance ? 'dance' : 'idle' }); }
   damage(n) { if (this.dead) return; this.hp -= n; this.flee = 7; if (this.hp <= 0) this.die(); }
   die() { this.dead = true; this.deadT = 0; const cash = 10 + (Math.random() * 40 | 0); this.game.player.money += cash; this.game.ui.toast('+$' + cash); }
