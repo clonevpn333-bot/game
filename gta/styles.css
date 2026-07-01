@@ -17,6 +17,8 @@ body.hurt::after { content: ''; position: fixed; inset: 0; background: radial-gr
 #hp { position: fixed; left: 224px; bottom: 24px; width: 230px; height: 15px; background: rgba(0,0,0,0.5); border: 2px solid rgba(0,0,0,0.65); border-radius: 9px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
 #hpfill { height: 100%; width: 100%; background: linear-gradient(90deg,#ff3b6b,#ffb03a,#ffe14a); transition: width 0.15s; }
 #weapon { position: fixed; left: 224px; bottom: 44px; font-size: 13px; letter-spacing: 1px; color: #cfe0ef; text-shadow: 1px 1px 0 #000; }
+#chapter { position: fixed; left: 50%; top: 52px; transform: translateX(-50%); font-size: 12px; font-weight: 800; letter-spacing: 2px; color: #9fdcff; text-shadow: 0 0 10px rgba(80,180,255,0.6), 1px 1px 0 #000; opacity: 0.92; }
+#chapter:empty { display: none; }
 
 #obj { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); max-width: 80vw; text-align: center; font-size: 17px; font-weight: 700; color: #fff7cc; text-shadow: 0 0 12px rgba(210,150,40,0.7), 2px 2px 0 #000; background: rgba(10,8,20,0.42); padding: 7px 18px; border-radius: 10px; border: 1px solid rgba(255,210,90,0.25); }
 #obj:empty { display: none; }

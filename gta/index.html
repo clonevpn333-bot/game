@@ -24,6 +24,8 @@ body.hurt::after { content: ''; position: fixed; inset: 0; background: radial-gr
 #hp { position: fixed; left: 224px; bottom: 24px; width: 230px; height: 15px; background: rgba(0,0,0,0.5); border: 2px solid rgba(0,0,0,0.65); border-radius: 9px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
 #hpfill { height: 100%; width: 100%; background: linear-gradient(90deg,#ff3b6b,#ffb03a,#ffe14a); transition: width 0.15s; }
 #weapon { position: fixed; left: 224px; bottom: 44px; font-size: 13px; letter-spacing: 1px; color: #cfe0ef; text-shadow: 1px 1px 0 #000; }
+#chapter { position: fixed; left: 50%; top: 52px; transform: translateX(-50%); font-size: 12px; font-weight: 800; letter-spacing: 2px; color: #9fdcff; text-shadow: 0 0 10px rgba(80,180,255,0.6), 1px 1px 0 #000; opacity: 0.92; }
+#chapter:empty { display: none; }
 
 #obj { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); max-width: 80vw; text-align: center; font-size: 17px; font-weight: 700; color: #fff7cc; text-shadow: 0 0 12px rgba(210,150,40,0.7), 2px 2px 0 #000; background: rgba(10,8,20,0.42); padding: 7px 18px; border-radius: 10px; border: 1px solid rgba(255,210,90,0.25); }
 #obj:empty { display: none; }
@@ -323,8 +325,9 @@ class City {
       for (const e of [[LOT, 0.6, 0, -LOT / 2], [LOT, 0.6, 0, LOT / 2], [0.6, LOT, -LOT / 2, 0], [0.6, LOT, LOT / 2, 0]]) { const c = new THREE.Mesh(new THREE.BoxGeometry(e[0], 0.34, e[1]), curbMat); c.position.set(cx + e[2], 0.17, cz + e[3]); this.group.add(c); }
       const G = new THREE.Group(); this.group.add(G); this.cullables.push({ o: G, p: new THREE.Vector3(cx, 26, cz), r: 100 });
       const r = rng();
-      if (r < 0.14) this._park(cx, cz, LOT, rng, G);
-      else if (r < 0.42) { const type = ['club', 'hotel', 'diner', 'shop', 'club', 'shop', 'diner', 'club'][(rng() * 8) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
+      if (r < 0.12) this._park(cx, cz, LOT, rng, G);
+      else if (r < 0.40) { const type = ['club', 'hotel', 'diner', 'shop', 'club', 'shop', 'diner', 'club'][(rng() * 8) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
+      else if (r < 0.66) this._tower(cx, cz, LOT - 12, LOT - 14, 42 + rng() * 96, FACADES[(rng() * FACADES.length) | 0], rng, G); // standalone enterable high-rise facing the street
       else this._block(cx, cz, LOT, rng, G);   // mixed block: rows of small shops + central towers
       this._props(cx, cz, LOT, rng, G);         // street furniture on every block
     }
@@ -341,23 +344,35 @@ class City {
     for (const s of [-1, 1]) { const e = new THREE.Mesh(new THREE.BoxGeometry(vertical ? 0.2 : len, 0.02, vertical ? len : 0.2), white); e.position.set(vertical ? x + s * (w / 2 - 1.4) : x, 0.16, vertical ? z : z + s * (d / 2 - 1.4)); this.group.add(e); }
   }
   _tower(x, z, w, d, h, color, rng, G) {
-    const { map, emissive } = facadeTextures(w, h, '#' + color.toString(16).padStart(6, '0'));
+    // EVERY tower is enterable: an open-front ground-floor lobby you can walk into,
+    // with the tall shaft above it (visual only, so 2D collision leaves the floor clear).
+    const h0 = Math.min(4.8, h - 1), t = 0.4, trimMat = mat(new THREE.Color(color).multiplyScalar(0.8).getHex());
+    const wallMat = mat(new THREE.Color(color).multiplyScalar(0.92).getHex());
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), mat(0x2b2733)); floor.position.set(x, 0.12, z); floor.receiveShadow = true; G.add(floor);
+    const wall = (ww, dd, ox, oz) => { const m = new THREE.Mesh(new THREE.BoxGeometry(ww, h0, dd), wallMat); m.position.set(x + ox, h0 / 2, z + oz); m.castShadow = true; m.receiveShadow = true; G.add(m); };
+    wall(w, t, 0, -d / 2); wall(t, d, -w / 2, 0); wall(t, d, w / 2, 0);           // back + two sides
+    this.boxes.push({ x, z: z - d / 2, hw: w / 2 + 0.3, hd: t / 2 + 0.3 });
+    this.boxes.push({ x: x - w / 2, z, hw: t / 2 + 0.3, hd: d / 2 + 0.3 });
+    this.boxes.push({ x: x + w / 2, z, hw: t / 2 + 0.3, hd: d / 2 + 0.3 });
+    for (const sx of [-1, 1]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, h0, 12), trimMat); c.position.set(x + sx * (w / 2 - 0.55), h0 / 2, z + d / 2 - 0.55); c.castShadow = true; G.add(c); this.boxes.push({ x: c.position.x, z: c.position.z, hw: 0.6, hd: 0.6 }); }
+    // lobby fit-out: reception desk, glowing elevator doors, ceiling glow, point light
+    const desk = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, 1.1, 1.3), mat(0x5a4632)); desk.position.set(x, 0.82, z - d * 0.2); desk.castShadow = true; G.add(desk);
+    this.boxes.push({ x, z: z - d * 0.2, hw: w * 0.25 + 0.2, hd: 0.85 });
+    const elev = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w * 0.45, 3), h0 - 1.0, 0.16), mat(0x1a2530, { emissive: 0x2fd0e0, emissiveIntensity: 0.5 })); elev.position.set(x, (h0 - 1.0) / 2, z - d / 2 + 0.35); G.add(elev);
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, 0.14, d * 0.6), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 0.9 })); panel.position.set(x, h0 - 0.4, z); G.add(panel);
+    const pl = new THREE.PointLight(0xffe6c0, 8, 18, 2); pl.position.set(x, h0 - 1, z); G.add(pl);
+    // shaft above the lobby (no ground-level collision)
+    const shaftH = h - h0, { map, emissive } = facadeTextures(w, shaftH, '#' + color.toString(16).padStart(6, '0'));
     const side = () => mat(0xffffff, { map: map.clone(), emissiveMap: emissive.clone(), emissive: 0xffffff, emissiveIntensity: 1.05 });
     const top = mat(color);
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [side(), side(), top, top, side(), side()]); m.position.set(x, h / 2, z); m.castShadow = true; m.receiveShadow = true; G.add(m);
-    // structural trim: base, roof parapet, mid cornices (reads as real stacked floors)
-    const trimMat = mat(new THREE.Color(color).multiplyScalar(0.8).getHex());
-    const base = new THREE.Mesh(new THREE.BoxGeometry(w + 0.8, 1.4, d + 0.8), trimMat); base.position.set(x, 0.7, z); base.castShadow = true; G.add(base);
+    const shaft = new THREE.Mesh(new THREE.BoxGeometry(w, shaftH, d), [side(), side(), top, top, side(), side()]); shaft.position.set(x, h0 + shaftH / 2, z); shaft.castShadow = true; shaft.receiveShadow = true; G.add(shaft);
+    const ledge = new THREE.Mesh(new THREE.BoxGeometry(w + 0.8, 0.6, d + 0.8), trimMat); ledge.position.set(x, h0, z); ledge.castShadow = true; G.add(ledge);
     const para = new THREE.Mesh(new THREE.BoxGeometry(w + 0.6, 1.0, d + 0.6), trimMat); para.position.set(x, h - 0.2, z); para.castShadow = true; G.add(para);
-    const floors = Math.floor(h / 4); for (let fl = 6; fl < floors; fl += 6) { const led = new THREE.Mesh(new THREE.BoxGeometry(w + 0.5, 0.4, d + 0.5), trimMat); led.position.set(x, fl * 4, z); G.add(led); }
+    const floors = Math.floor(shaftH / 4); for (let fl = 6; fl < floors; fl += 6) { const led = new THREE.Mesh(new THREE.BoxGeometry(w + 0.5, 0.4, d + 0.5), trimMat); led.position.set(x, h0 + fl * 4, z); G.add(led); }
     const tank = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, 2.4, d * 0.3), mat(0x33373f)); tank.position.set(x + rnd(-w * 0.2, w * 0.2), h + 1.2, z + rnd(-d * 0.2, d * 0.2)); tank.castShadow = true; G.add(tank);
-    // street-level entrance: glass door + frame + lit lobby glow + a small awning
-    const fz = z + d / 2;
-    const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(2.0, 3.0, 0.2), trimMat); doorFrame.position.set(x, 1.5, fz + 0.12); G.add(doorFrame);
-    const door = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.6, 0.12), mat(0x111820, { emissive: 0xffe6b0, emissiveIntensity: 0.5 })); door.position.set(x, 1.35, fz + 0.24); G.add(door);
-    const awn = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.3, 1.1), mat(pick(NEONS))); awn.position.set(x, 3.1, fz + 0.7); G.add(awn);
-    if (h > 46 && rng() < 0.7) { const nc = pick(NEONS), sh = Math.min(h * 0.5, 20); const sign = new THREE.Mesh(new THREE.BoxGeometry(1.2, sh, 0.5), mat(nc, { emissive: nc, emissiveIntensity: 2.2 })); sign.position.set(x + (rng() < .5 ? -1 : 1) * (w / 2 + 0.4), h * 0.55, z + d / 2 + 0.3); G.add(sign); }
-    this.boxes.push({ x, z, hw: w / 2 + 0.3, hd: d / 2 + 0.3 });
+    const awn = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w * 0.8, 5), 0.3, 1.0), mat(pick(NEONS))); awn.position.set(x, h0 + 0.2, z + d / 2 + 0.5); G.add(awn);
+    if (h > 46 && rng() < 0.7) { const nc = pick(NEONS), sh = Math.min(h * 0.5, 20); const sign = new THREE.Mesh(new THREE.BoxGeometry(1.2, sh, 0.5), mat(nc, { emissive: nc, emissiveIntensity: 2.2 })); sign.position.set(x + (rng() < .5 ? -1 : 1) * (w / 2 + 0.4), h0 + shaftH * 0.55, z + d / 2 + 0.3); G.add(sign); }
+    this.shops.push({ x, z, w, d, type: 'tower' });
   }
   _neonSign(text, hex, x, y, z, w, G) {
     const t = signTexture(text, '#' + hex.toString(16).padStart(6, '0'));
@@ -477,7 +492,9 @@ class City {
 const SKIN = [0xf6d3ab, 0xecbd90, 0xcf9058, 0xa06a40, 0x7a4a28, 0xffe0bd];
 const SHIRTS = [0x3f7cb4, 0xd8484c, 0x4caf50, 0xf0b83a, 0x9a5ec8, 0x3a3f48, 0xe07bb0, 0x2ab5a0, 0xe8e8e8, 0xf07a34, 0x2f74a8];
 const PANTS = [0x2c3242, 0x3a2e26, 0x45454e, 0x2a3b30, 0x554050, 0x1f2530, 0x5a5148];
-const HAIR = [0x241810, 0x0e0e0e, 0x6b4a2a, 0xd0a63a, 0x7a3a20, 0x4a4a4a, 0x2b2b2b];
+const HAIR = [0x241810, 0x0e0e0e, 0x6b4a2a, 0xd0a63a, 0x7a3a20, 0x4a4a4a, 0x2b2b2b, 0x8a2f2f, 0xc0c0c8, 0x5a3fa0];
+const HATS = [0x2a2f3a, 0xb43b3b, 0x2f6fd4, 0x2f9e54, 0xf0b83a, 0xe8e8e8, 0x8a4fd0, 0x101216];
+const HAIR_STYLES = ['buzz', 'bowl', 'bowl', 'mop', 'spiky', 'afro', 'cap', 'beanie', 'bald', 'pony', 'cap'];
 const CARDS = [{ x: 1, z: 0 }, { x: -1, z: 0 }, { x: 0, z: 1 }, { x: 0, z: -1 }];
 function cap(r, len, m, rs) { return new THREE.Mesh(new THREE.CapsuleGeometry(r, len, 8, rs || 16), m); }
 function humanFigure(p) {
@@ -514,7 +531,18 @@ function humanFigure(p) {
   }
   const nose = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.055, 8), Sk); nose.position.set(0, 0.06, 0.122); nose.rotation.x = Math.PI / 2 + 0.4; head.add(nose);
   const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.012, 0.014), mat(0x8a4444)); mouth.position.set(0, 0.025, 0.114); head.add(mouth);
-  const hair1 = new THREE.Mesh(new THREE.SphereGeometry(0.138, 24, 18, 0, TAU, 0, 1.4), Ha); hair1.position.set(0, 0.1, -0.006); head.add(hair1);
+  // ---- varied hair / headwear so nobody's a clone ----
+  const style = p.style || pick(HAIR_STYLES);
+  if (style === 'buzz') { const h = new THREE.Mesh(new THREE.SphereGeometry(0.133, 20, 16, 0, TAU, 0, 1.5), Ha); h.position.set(0, 0.085, -0.004); head.add(h); }
+  else if (style === 'bowl') { const h = new THREE.Mesh(new THREE.SphereGeometry(0.143, 24, 18, 0, TAU, 0, 1.55), Ha); h.position.set(0, 0.1, -0.006); head.add(h); }
+  else if (style === 'mop') { const h = new THREE.Mesh(new THREE.SphereGeometry(0.15, 24, 18, 0, TAU, 0, 1.95), Ha); h.position.set(0, 0.075, -0.02); head.add(h); }
+  else if (style === 'spiky') { const b = new THREE.Mesh(new THREE.SphereGeometry(0.135, 20, 14, 0, TAU, 0, 1.3), Ha); b.position.set(0, 0.1, -0.004); head.add(b); for (let i = 0; i < 8; i++) { const s = new THREE.Mesh(new THREE.ConeGeometry(0.028, 0.1, 5), Ha); s.position.set(rnd(-0.09, 0.09), 0.2, rnd(-0.07, 0.05)); s.rotation.set(rnd(-0.3, 0.3), 0, rnd(-0.3, 0.3)); head.add(s); } }
+  else if (style === 'afro') { const h = new THREE.Mesh(new THREE.SphereGeometry(0.185, 20, 16), Ha); h.position.set(0, 0.14, -0.01); head.add(h); }
+  else if (style === 'pony') { const h = new THREE.Mesh(new THREE.SphereGeometry(0.14, 22, 16, 0, TAU, 0, 1.5), Ha); h.position.set(0, 0.1, -0.006); head.add(h); const tail = cap(0.04, 0.22, Ha, 8); tail.position.set(0, 0.0, -0.14); head.add(tail); }
+  else if (style === 'cap') { const col = pick(HATS); const dome = new THREE.Mesh(new THREE.SphereGeometry(0.143, 20, 14, 0, TAU, 0, 1.5), mat(col)); dome.position.set(0, 0.1, 0); head.add(dome); const brim = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.03, 0.17), mat(col)); brim.position.set(0, 0.105, 0.15); head.add(brim); }
+  else if (style === 'beanie') { const col = pick(HATS); const b = new THREE.Mesh(new THREE.SphereGeometry(0.146, 20, 16, 0, TAU, 0, 1.75), mat(col)); b.position.set(0, 0.085, -0.004); head.add(b); }
+  // 'bald' adds nothing. occasional beard/stubble.
+  if (style !== 'afro' && Math.random() < 0.3) { const beard = new THREE.Mesh(new THREE.SphereGeometry(0.098, 16, 12, 0, TAU, 0, 1.7), Ha); beard.position.set(0, -0.02, 0.02); beard.scale.set(0.92, 0.7, 0.88); head.add(beard); }
   // arms: shirt-sleeved upper arm, bare (skin) forearm, small hand pad — hang at sides
   const arms = {};
   for (const s of ['L', 'R']) {
@@ -525,6 +553,7 @@ function humanFigure(p) {
     const hand = new THREE.Mesh(new THREE.SphereGeometry(0.052, 12, 10), Sk); hand.position.y = -0.29; hand.scale.set(1, 1.15, 0.7); fore.add(hand);
     arms[s] = { arm, fore };
   }
+  if (!p.noScale) { const bs = rnd(0.9, 1.14); group.scale.set(bs * rnd(0.93, 1.08), bs, bs * rnd(0.95, 1.05)); } // varied heights & builds
   const f = { group, kind: 'proc', head, t: rnd(10), j: { hips, chest, head, armL: arms.L.arm, armR: arms.R.arm, foreL: arms.L.fore, foreR: arms.R.fore, legL: legs.L.leg, legR: legs.R.leg, shinL: legs.L.shin, shinR: legs.R.shin } };
   f.update = (dt, o) => animateHuman(f, dt, o || {}); animateHuman(f, 0, { state: 'idle' });
   return f;
@@ -728,14 +757,14 @@ class Player {
     this.inCar = null; this.regen = 0; this.dead = false; this.hasGun = true; this.gunCd = 0;
     this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); game.scene.add(this.root); this.root.visible = false; this._build();
   }
-  _build() { const f = buildPerson({ shirt: PLAYER_PURPLE, skin: 0xecbd90, hair: 0x201810, pants: 0x1f2530 }); this.fig = f; this.root.add(f.group); }
+  _build() { const f = buildPerson({ shirt: PLAYER_PURPLE, skin: 0xecbd90, hair: 0x201810, pants: 0x1f2530, style: 'mop', noScale: true }); this.fig = f; this.root.add(f.group); }
   spawn() { this.pos.set(30, 0, 30); this.camYaw = Math.PI; this.root.position.copy(this.pos); }
   enterCar(car) { this.inCar = car; car.driver = this; car.ai = false; this.root.visible = false; if (car.aiTraffic) this.game.addWanted(1); }
   exitCar() { const car = this.inCar; if (!car) return; this.inCar = null; car.driver = null; car.ai = true; this.root.visible = true; this.pos.set(car.pos.x + 2.4, 0, car.pos.z); this.vy = 0; }
   eye() { return new THREE.Vector3(this.pos.x, this.pos.y + 1.5, this.pos.z); }
   update(dt) {
     const inp = this.game.input;
-    this.camYaw -= inp.mdx * 0.0024; this.camPitch = clamp(this.camPitch - inp.mdy * 0.0024, -0.2, 1.2); this.camDist = clamp(this.camDist + inp.wheel * 0.8, 4, 13);
+    this.camYaw += inp.mdx * 0.0024; this.camPitch = clamp(this.camPitch - inp.mdy * 0.0024, -0.2, 1.2); this.camDist = clamp(this.camDist + inp.wheel * 0.8, 4, 13);
     if (inp.p('KeyF')) { if (this.inCar) this.exitCar(); else { const car = this.game.nearestCar(this.pos, 4.5); if (car) this.enterCar(car); } }
     if (this.inCar) { const car = this.inCar; car.control(dt, inp); this.pos.copy(car.pos); this.yaw = car.yaw; this._stats(dt); return; }
     const fwd = new THREE.Vector3(Math.sin(this.camYaw), 0, Math.cos(this.camYaw)), right = new THREE.Vector3(fwd.z, 0, -fwd.x), wish = new THREE.Vector3();
@@ -774,6 +803,7 @@ class Ped {
     opts = opts || {}; this.game = game; this.cop = !!cop; this.dance = !!opts.dance; this.pos = new THREE.Vector3(x, 0, z); this.yaw = rnd(TAU);
     this.hp = cop ? 60 : 30; this.dead = false; this.removeMe = false; this.flee = 0; this.timer = rnd(3); this.wander = rnd(TAU); this.attackCd = 0; this.deadT = 0;
     this.persona = { shirt: cop ? 0x21407a : pick(SHIRTS), skin: pick(SKIN), hair: pick(HAIR), pants: cop ? 0x16213f : pick(PANTS) };
+    if (cop) { this.persona.style = 'buzz'; this.persona.noScale = true; }
     const f = buildPerson(this.persona); this.fig = f; this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); this.root.add(f.group); this.root.position.copy(this.pos); game.scene.add(this.root);
     if (cop) { const capm = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.14, 0.4), mat(0x11203f)); capm.position.y = 1.95; this.root.add(capm); }
   }
@@ -861,8 +891,9 @@ class Story {
     this.marker.visible = false; this.game.scene.add(this.marker); this.next();
   }
   spawnChar(id, x, z, shirt) { const p = new Ped(this.game, x, z, false); p.persona.shirt = shirt; p.story = true; p.timer = 1e9; p.wander = null; this.game.npcs.push(p); this.chars[id] = p; return p; }
-  next() { this.mi++; const m = MISSIONS[this.mi]; if (!m) { this.state = 'done'; this.setObjective(''); this.game.ui.bigCard('YOU RUN THIS TOWN', 'Free roam — Neon Bay is yours.'); return; } this.state = 'goMeet'; this._setupMeet(m); }
-  _setupMeet(m) { const g = this.chars[m.giver]; this.giver = g; if (g) { this.marker.position.set(g.pos.x, 48, g.pos.z); this.marker.visible = true; this.marker.material.color.set(0xffd23a); } this.setObjective('Go see ' + CHARS[m.giver].name); }
+  next() { this.mi++; const m = MISSIONS[this.mi]; if (!m) { this.state = 'done'; this.setObjective(''); this.setChapter(null); this.game.ui.bigCard('YOU RUN THIS TOWN', 'Free roam — Neon Bay is yours.'); return; } this.state = 'goMeet'; this._setupMeet(m); }
+  setChapter(m) { if (this.game.ui.el.chapter) this.game.ui.el.chapter.textContent = m ? ('CHAPTER ' + (this.mi + 1) + '/' + MISSIONS.length + ' · ' + (m.title || '')) : 'THE BAY IS YOURS'; }
+  _setupMeet(m) { this.setChapter(m); const g = this.chars[m.giver]; this.giver = g; if (g) { this.marker.position.set(g.pos.x, 48, g.pos.z); this.marker.visible = true; this.marker.material.color.set(0xffd23a); } this.setObjective('Go see ' + CHARS[m.giver].name); }
   startStep() {
     const m = MISSIONS[this.mi], s = m.steps[this.si]; this.targets = null;
     if (s.at) { const wp = this.wp(s.at); this.marker.position.set(wp.x, 48, wp.z); this.marker.visible = true; this.marker.material.color.set(s.type === 'kill' ? 0xff5a5a : 0xffd23a); this.stepPos = wp; } else { this.marker.visible = false; this.stepPos = null; }
@@ -940,6 +971,7 @@ class UI {
       <div id="topright"><div id="money">$200</div><div id="wanted"></div></div>
       <div id="hp"><div id="hpfill"></div></div>
       <div id="weapon">Pistol</div>
+      <div id="chapter"></div>
       <div id="obj"></div>
       <div id="toast"></div>
       <div id="dialogue" class="hidden"><div id="dspk"></div><div id="dtext"></div><div id="dhint">click / Space ▸</div></div>
@@ -947,7 +979,7 @@ class UI {
       <div id="crosshair"></div>
       <div id="overlay" class="hidden"></div>`;
     document.body.appendChild(r); this.root = r;
-    this.el = { map: r.querySelector('#map').getContext('2d'), mapc: r.querySelector('#map'), money: r.querySelector('#money'), wanted: r.querySelector('#wanted'), hp: r.querySelector('#hpfill'), obj: r.querySelector('#obj'), toast: r.querySelector('#toast'), dialogue: r.querySelector('#dialogue'), dspk: r.querySelector('#dspk'), dtext: r.querySelector('#dtext'), big: r.querySelector('#bigcard'), weapon: r.querySelector('#weapon'), overlay: r.querySelector('#overlay'), lbTop: r.querySelector('#lbTop'), lbBot: r.querySelector('#lbBot') };
+    this.el = { map: r.querySelector('#map').getContext('2d'), mapc: r.querySelector('#map'), money: r.querySelector('#money'), wanted: r.querySelector('#wanted'), hp: r.querySelector('#hpfill'), obj: r.querySelector('#obj'), chapter: r.querySelector('#chapter'), toast: r.querySelector('#toast'), dialogue: r.querySelector('#dialogue'), dspk: r.querySelector('#dspk'), dtext: r.querySelector('#dtext'), big: r.querySelector('#bigcard'), weapon: r.querySelector('#weapon'), overlay: r.querySelector('#overlay'), lbTop: r.querySelector('#lbTop'), lbBot: r.querySelector('#lbBot') };
     r.querySelector('#dialogue').addEventListener('mousedown', () => this._advance());
     addEventListener('keydown', e => { if ((e.code === 'Space' || e.code === 'Enter') && this._dlg) { e.preventDefault(); this._advance(); } });
   }
