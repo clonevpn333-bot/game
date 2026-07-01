@@ -229,18 +229,21 @@ class City {
     const yellow = mat(0xffe14a, { emissive: 0xffd23a, emissiveIntensity: 1.0 }); const white = mat(0xe8ecf2, { emissive: 0x8a8f98, emissiveIntensity: 0.5 });
     for (let i = 0; i <= N; i++) { const rc = -half + i * CELL; this._road(rc, 0, ROAD, span + ROAD, roadMat, yellow, white, true); this._road(0, rc, span + ROAD, ROAD, roadMat, yellow, white, false); }
     let seed = 1234567; const rng = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    const curbMat = mat(0x9aa0aa), walkMat = mat(0x7f858f, { map: noiseTexture(120, 124, 132, 10) }); walkMat.map.repeat.set(6, 6);
     for (let ix = 0; ix < N; ix++) for (let iz = 0; iz < N; iz++) {
       const cx = -half + ix * CELL + ROAD + LOT / 2, cz = -half + iz * CELL + ROAD + LOT / 2;
-      const sw = new THREE.Mesh(new THREE.BoxGeometry(LOT + ROAD, 0.3, LOT + ROAD), mat(0x8b929c)); sw.position.set(cx, 0.1, cz); sw.receiveShadow = true; this.group.add(sw);
-      const G = new THREE.Group(); this.group.add(G); this.cullables.push({ o: G, p: new THREE.Vector3(cx, 26, cz), r: 92 });
+      // raised sidewalk (lot-wide, does not cover the road) + curb ring at the road edges
+      const sw = new THREE.Mesh(new THREE.BoxGeometry(LOT, 0.22, LOT), walkMat.clone()); sw.material.map = walkMat.map; sw.position.set(cx, 0.11, cz); sw.receiveShadow = true; this.group.add(sw);
+      for (const e of [[LOT, 0.6, 0, -LOT / 2], [LOT, 0.6, 0, LOT / 2], [0.6, LOT, -LOT / 2, 0], [0.6, LOT, LOT / 2, 0]]) { const c = new THREE.Mesh(new THREE.BoxGeometry(e[0], 0.34, e[1]), curbMat); c.position.set(cx + e[2], 0.17, cz + e[3]); this.group.add(c); }
+      const G = new THREE.Group(); this.group.add(G); this.cullables.push({ o: G, p: new THREE.Vector3(cx, 26, cz), r: 96 });
       const r = rng();
-      if (r < 0.13) { this._park(cx, cz, LOT, rng, G); continue; }
-      if (r < 0.58) { const type = ['club', 'hotel', 'diner', 'shop', 'club', 'shop'][(rng() * 6) | 0]; this._venue(cx, cz, LOT, type, rng, G); continue; }
-      const sub = r < 0.82 ? 1 : 2;
-      for (let s = 0; s < sub; s++) {
-        const w = (LOT - 6) / sub - 5, d = LOT - 16;
-        const bx = cx + (sub === 1 ? 0 : (s === 0 ? -1 : 1) * (LOT / 4 - 1)), bz = cz;
-        const h = 24 + rng() * 88; const col = FACADES[(rng() * FACADES.length) | 0];
+      if (r < 0.08) { this._park(cx, cz, LOT, rng, G); continue; }
+      if (r < 0.60) { const type = ['club', 'hotel', 'diner', 'shop', 'club', 'shop', 'diner', 'club'][(rng() * 8) | 0]; this._venue(cx, cz, LOT, type, rng, G); continue; }
+      // tightly-packed block: fill the lot with 1-4 buildings sharing walls
+      const grid = rng() < 0.4 ? 1 : 2; const cellW = (LOT - 4) / grid, cellD = (LOT - 4) / grid;
+      for (let gx = 0; gx < grid; gx++) for (let gz = 0; gz < grid; gz++) {
+        const bx = cx - (LOT - 4) / 2 + cellW * (gx + 0.5), bz = cz - (LOT - 4) / 2 + cellD * (gz + 0.5);
+        const w = cellW - 1.5, d = cellD - 1.5, h = 22 + rng() * 92, col = FACADES[(rng() * FACADES.length) | 0];
         this._tower(bx, bz, w, d, h, col, rng, G);
       }
     }
@@ -267,6 +270,11 @@ class City {
     const para = new THREE.Mesh(new THREE.BoxGeometry(w + 0.6, 1.0, d + 0.6), trimMat); para.position.set(x, h - 0.2, z); para.castShadow = true; G.add(para);
     const floors = Math.floor(h / 4); for (let fl = 6; fl < floors; fl += 6) { const led = new THREE.Mesh(new THREE.BoxGeometry(w + 0.5, 0.4, d + 0.5), trimMat); led.position.set(x, fl * 4, z); G.add(led); }
     const tank = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, 2.4, d * 0.3), mat(0x33373f)); tank.position.set(x + rnd(-w * 0.2, w * 0.2), h + 1.2, z + rnd(-d * 0.2, d * 0.2)); tank.castShadow = true; G.add(tank);
+    // street-level entrance: glass door + frame + lit lobby glow + a small awning
+    const fz = z + d / 2;
+    const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(2.0, 3.0, 0.2), trimMat); doorFrame.position.set(x, 1.5, fz + 0.12); G.add(doorFrame);
+    const door = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.6, 0.12), mat(0x111820, { emissive: 0xffe6b0, emissiveIntensity: 0.5 })); door.position.set(x, 1.35, fz + 0.24); G.add(door);
+    const awn = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.3, 1.1), mat(pick(NEONS))); awn.position.set(x, 3.1, fz + 0.7); G.add(awn);
     if (h > 46 && rng() < 0.7) { const nc = pick(NEONS), sh = Math.min(h * 0.5, 20); const sign = new THREE.Mesh(new THREE.BoxGeometry(1.2, sh, 0.5), mat(nc, { emissive: nc, emissiveIntensity: 2.2 })); sign.position.set(x + (rng() < .5 ? -1 : 1) * (w / 2 + 0.4), h * 0.55, z + d / 2 + 0.3); G.add(sign); }
     this.boxes.push({ x, z, hw: w / 2 + 0.3, hd: d / 2 + 0.3 });
   }
@@ -503,8 +511,8 @@ class Game {
   start() {
     this.playing = true; this.paused = false; this.menuMode = false; this.ui.modal = null; this.ui.hideTitle();
     this.player.root.visible = true; this.player.spawn();
-    for (let i = 0; i < 32; i++) this.spawnPed();
-    for (let i = 0; i < 16; i++) this.spawnTraffic();
+    for (let i = 0; i < 55; i++) this.spawnPed();
+    for (let i = 0; i < 22; i++) this.spawnTraffic();
     let dancers = 0; for (const club of this.city.clubs) for (const d of club.dance) { if (dancers++ >= 6) break; const ped = new Ped(this, d.x, d.z, false, { dance: true }); ped.story = true; this.npcs.push(ped); }
     this.story.begin(); this.input.lock();
   }
@@ -585,7 +593,7 @@ class Game {
     for (const f of this.fx) { f.life -= dt; for (let i = 0; i < f.n; i++) { f.vs[i * 3 + 1] -= 12 * dt; f.ps[i * 3] += f.vs[i * 3] * dt; f.ps[i * 3 + 1] += f.vs[i * 3 + 1] * dt; f.ps[i * 3 + 2] += f.vs[i * 3 + 2] * dt; } f.g.attributes.position.needsUpdate = true; f.m.material.opacity = Math.max(0, f.life / 0.6); }
     this.fx = this.fx.filter(f => { if (f.life <= 0) { this.scene.remove(f.m); f.g.dispose(); f.m.material.dispose(); return false; } return true; });
   }
-  cull() { this.npcs = this.npcs.filter(n => { if (n.removeMe) { this.scene.remove(n.root); return false; } return true; }); if (this.npcs.filter(n => !n.cop && !n.story).length < 28) this.spawnPed(); if (this.cars.length < 15) this.spawnTraffic(); }
+  cull() { this.npcs = this.npcs.filter(n => { if (n.removeMe) { this.scene.remove(n.root); return false; } return true; }); const civ = this.npcs.filter(n => !n.cop && !n.story).length; if (civ < 50) { this.spawnPed(); if (civ < 44) this.spawnPed(); } if (this.cars.length < 20) this.spawnTraffic(); }
 }
 function raySphere(o, d, c, r) { const oc = o.clone().sub(c), b = oc.dot(d), cc = oc.dot(oc) - r * r, h = b * b - cc; if (h < 0) return null; const t = -b - Math.sqrt(h); return t >= 0 ? t : null; }
 
@@ -662,7 +670,11 @@ class Ped {
     else if (this.flee > 0) { wx = -dx / (dist || 1); wz = -dz / (dist || 1); this.yaw = Math.atan2(wx, wz); sp = this.cop ? 6 : 5.5; }
     else if (!this.story) { if (this.timer <= 0) { this.timer = rnd(2, 5); this.wander = Math.random() < 0.35 ? null : rnd(TAU); } if (this.wander != null) { wx = Math.sin(this.wander); wz = Math.cos(this.wander); this.yaw = this.wander; } }
     const moving = !!(wx || wz);
-    this.pos.x += wx * sp * dt; this.pos.z += wz * sp * dt; [this.pos.x, this.pos.z] = this.game.city.collide(this.pos.x, this.pos.z, 0.5);
+    const nx = this.pos.x + wx * sp * dt, nz = this.pos.z + wz * sp * dt;
+    // civilians stay on the sidewalk — don't wander into the road (cops/fleers may cross)
+    if (moving && !this.cop && this.flee <= 0 && this.game.city.onRoad(nx, nz)) { this.wander = this.wander == null ? rnd(TAU) : this.wander + Math.PI; this.timer = rnd(1, 3); }
+    else { this.pos.x = nx; this.pos.z = nz; }
+    [this.pos.x, this.pos.z] = this.game.city.collide(this.pos.x, this.pos.z, 0.5);
     if (!this.story && this.pos.distanceTo(p.pos) > 155) this.removeMe = true;
     this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
     this.fig.update(dt, { state: moving ? (sp > 5 ? 'run' : 'walk') : 'idle' });
