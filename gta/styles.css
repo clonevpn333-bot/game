@@ -6,6 +6,9 @@ body { font-family: "Segoe UI", system-ui, sans-serif; color: #fff; user-select:
 body.hurt::after { content: ''; position: fixed; inset: 0; background: radial-gradient(circle, transparent 38%, rgba(200,0,30,0.55)); pointer-events: none; z-index: 8; }
 #ui { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
 
+.lb { position: fixed; left: 0; right: 0; height: 0; background: #000; z-index: 19; transition: height 0.5s cubic-bezier(.4,0,.2,1); }
+#lbTop { top: 0; } #lbBot { bottom: 0; }
+
 #map { position: fixed; left: 16px; bottom: 16px; border-radius: 50%; box-shadow: 0 4px 20px rgba(0,0,0,0.7), 0 0 0 2px rgba(255,79,163,0.25); }
 #topright { position: fixed; right: 20px; top: 16px; text-align: right; }
 #money { font-size: 30px; font-weight: 900; color: #6cf09a; text-shadow: 0 0 12px rgba(60,230,150,0.55), 2px 2px 0 #04120a; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
