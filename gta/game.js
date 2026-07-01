@@ -582,14 +582,19 @@ class Game {
   endCutscene() { this.cine = null; this.ui.letterbox(false); }
   updateCutscene(dt) {
     const c = this.cine; if (!c) return; c.t += dt; const p = this.player, o = c.other;
-    const speaker = (this.ui._dlg && this.ui._dlg.lines[this.ui._dlg.i]) ? this.ui._dlg.lines[this.ui._dlg.i][0] : null, pTalk = speaker === 'you';
+    const idx = this.ui._dlg ? this.ui._dlg.i : 0;
+    const speaker = (this.ui._dlg && this.ui._dlg.lines[idx]) ? this.ui._dlg.lines[idx][0] : null, pTalk = speaker === 'you';
+    if (idx !== c._idx) { c._idx = idx; c._t0 = c.t; } // fresh cut on each new line
     p.fig.update(dt, { state: pTalk ? 'talk' : 'idle' }); p.root.rotation.y = p.yaw; p.root.position.copy(p.pos);
     o.fig.update(dt, { state: pTalk ? 'idle' : 'talk' }); o.root.rotation.y = o.yaw; o.root.position.copy(o.pos);
-    const mid = new THREE.Vector3((p.pos.x + o.pos.x) / 2, 1.25, (p.pos.z + o.pos.z) / 2);
-    const axis = new THREE.Vector3().subVectors(o.pos, p.pos); axis.y = 0; const sep = Math.max(2.6, axis.length()); axis.normalize();
-    const perp = new THREE.Vector3(-axis.z, 0, axis.x).multiplyScalar(c.side), sway = Math.sin(c.t * 0.4) * 0.6;
-    const camPos = mid.clone().addScaledVector(perp, sep * 1.3 + 3.4 + sway).addScaledVector(axis, Math.sin(c.t * 0.3) * 0.8).add(new THREE.Vector3(0, 0.35, 0));
-    this.camera.position.lerp(camPos, Math.min(1, dt * 4) || 1); this.camera.lookAt(mid);
+    // shot / reverse-shot: over the listener's shoulder, framing the speaker's face
+    const spk = pTalk ? p : o, lis = pTalk ? o : p;
+    const dir = new THREE.Vector3().subVectors(spk.pos, lis.pos); dir.y = 0; if (dir.lengthSq() < 0.01) dir.set(0, 0, 1); dir.normalize();
+    const side = new THREE.Vector3(-dir.z, 0, dir.x).multiplyScalar(pTalk ? 1.05 : -1.05);
+    const slow = Math.sin((c.t - (c._t0 || 0)) * 0.5) * 0.25;
+    const camPos = lis.pos.clone().addScaledVector(dir, -1.5).add(side).add(new THREE.Vector3(0, 1.62 + slow * 0.1, 0)).addScaledVector(dir, slow);
+    const look = new THREE.Vector3(spk.pos.x, 1.55, spk.pos.z);
+    this.camera.position.lerp(camPos, Math.min(1, dt * 5) || 1); this.camera.lookAt(look);
     for (const n of this.npcs) if (!n.dead && n !== o && n.pos.distanceTo(p.pos) < 55) n.animateIdle(dt);
   }
   pause() { if (!this.playing || this.paused) return; this.paused = true; this.input.unlock(); this.ui.pauseMenu(true); }
@@ -768,7 +773,7 @@ class Story {
   constructor(game) { this.game = game; this.mi = -1; this.state = 'idle'; this.marker = null; this.giver = null; this.targets = null; }
   begin() {
     this.chars = {}; const c = this.game.city;
-    this.spawnChar('tony', -c.cell + 6, -c.size / 2 + 50, 0x7a4fb0); this.spawnChar('sal', c.cell, c.cell, 0xc8a23a);
+    this.spawnChar('tony', -c.cell + 6, -c.size / 2 + 50, 0x7a4fb0); this.spawnChar('sal', c.cell, c.cell, 0xc8a23a); this.spawnChar('dezzy', -c.cell, -c.cell, 0xff5aa0);
     this.marker = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 95, 14), new THREE.MeshBasicMaterial({ color: 0xffd23a, transparent: true, opacity: 0.28, depthWrite: false }));
     this.marker.visible = false; this.game.scene.add(this.marker); this.next();
   }
@@ -785,7 +790,7 @@ class Story {
   update(dt) {
     if (this.state === 'cutscene' || this.state === 'done' || this.state === 'idle') return;
     const g = this.game, p = g.player, m = MISSIONS[this.mi];
-    if (this.state === 'goMeet') { if (this.giver && p.pos.distanceTo(this.giver.pos) < 4.5) { this.play(m.before, this.giver, () => { this.si = 0; if (m.steps && m.steps.length) { this.state = 'steps'; this.startStep(); } else this.finish(); }); } this._objDist(this.giver && this.giver.pos); return; }
+    if (this.state === 'goMeet') { if (this.giver && p.pos.distanceTo(this.giver.pos) < 4.5) { this.game.ui.bigCard('CHAPTER ' + (this.mi + 1), m.title || ''); this.play(m.before, this.giver, () => { this.si = 0; if (m.steps && m.steps.length) { this.state = 'steps'; this.startStep(); } else this.finish(); }); } this._objDist(this.giver && this.giver.pos); return; }
     if (this.state === 'steps') {
       const s = m.steps[this.si]; let done = false;
       if (s.type === 'goto') done = this.stepPos && dist2(p.pos, this.stepPos) < 5;
@@ -804,13 +809,40 @@ class Story {
   setObjective(t) { this._lastObj = t; this.game.ui.el.obj.textContent = t; }
 }
 function dist2(a, b) { return Math.hypot(a.x - b.x, a.z - b.z); }
-const CHARS = { tony: { name: 'Tony Marenco', col: '#7fd0ff' }, sal: { name: 'Sal Greco', col: '#ffd23a' }, dezzy: { name: 'Dezzy', col: '#ff7eb0' }, victor: { name: 'Victor Salcido', col: '#ff5a5a' }, you: { name: 'You', col: '#c39bff' } };
+const CHARS = { tony: { name: 'Tony Marenco', col: '#7fd0ff' }, sal: { name: 'Sal Greco', col: '#ffd23a' }, dezzy: { name: 'Dezzy Vale', col: '#ff7eb0' }, victor: { name: 'Victor Salcido', col: '#ff5a5a' }, you: { name: 'You', col: '#c39bff' } };
+// ---- Neon Bay: an eight-chapter rise-and-reckoning arc ----
 const MISSIONS = [
-  { giver: 'tony', reward: 150, before: [['you', "Tony! You said the Bay was paved with gold."], ['tony', "...I may have oversold it. I'm into Victor Salcido for five grand."], ['tony', "His guys lean on my diner every week. Help me dig out and we run this town."], ['you', "Family's family. Where do we start?"]], steps: [], after: [['tony', "First we need cash. Go see Sal at the garage — he fences anything with wheels."]] },
-  { giver: 'tony', reward: 400, before: [['tony', "Sal needs a ride to flip. Grab any car off the street and bring it to his garage."]], steps: [{ type: 'getcar', text: 'Steal any car (press F next to one)' }, { type: 'drive', text: "Deliver it to Sal's garage", at: { char: 'sal' } }], after: [['sal', "Clean pull. Here's your cut, kid. You've got a future in this."]] },
-  { giver: 'tony', reward: 650, before: [['tony', "Cops flagged that plate. Shake the heat before they trace it to us."]], steps: [{ type: 'evade', text: 'Lose the cops — escape your wanted level', wanted: 3 }], after: [['tony', "Whew. Knew you had it in you, cuz."]] },
-  { giver: 'tony', reward: 1500, before: [['tony', "Salcido's done warning us. His crew's hitting the block tonight. Put them down."]], steps: [{ type: 'kill', text: 'Take out the Salcido crew', count: 3, at: { x: 30, z: 30 } }], after: [['tony', "You held the line. But Victor himself? He won't quit now."]] },
-  { giver: 'tony', reward: 6000, before: [['tony', "It ends tonight. Victor's down by the water. Finish it and the Bay is ours."]], steps: [{ type: 'kill', text: 'Take down Victor Salcido', count: 1, at: { x: -20, z: 140 } }], after: [['tony', "It's over. You're the king of Neon Bay now, cuz."]] },
+  { giver: 'tony', reward: 200, title: 'FRESH OFF THE BUS',
+    before: [['you', "Tony. Ten years and you're still hugging me like we owe each other money."], ['tony', "Because we do now, cuz. I owe Victor Salcido five large and he doesn't do payment plans."], ['tony', "You came to the Bay for a fresh start — well, freshest thing here is the debt. Ride with me and we climb out together."], ['you', "Family's family. Point me at it."]],
+    steps: [], after: [['tony', "Atta boy. Go see Sal down at the garage — he turns hot cars into cold cash. Tell him I sent you."]] },
+  { giver: 'sal', reward: 500, title: "SAL'S CUT",
+    before: [['sal', "So you're Tony's cousin. He talks big, owes bigger."], ['sal', "Prove you're useful: lift any ride off the street and park it in my bay. No scratches, no cops."], ['you', "One clean car, coming up."]],
+    steps: [{ type: 'getcar', text: 'Steal any car (get in — press F)' }, { type: 'drive', text: "Deliver it to Sal's garage", at: { char: 'sal' } }],
+    after: [['sal', "Smooth hands. Here's your end. Keep this quiet and there's more where it came from."]] },
+  { giver: 'tony', reward: 700, title: 'HEAT',
+    before: [['tony', "Bad news — that plate was flagged. Blues are sweeping the block right now."], ['tony', "Don't lead 'em to us. Shake the tail, then breathe."]],
+    steps: [{ type: 'evade', text: 'Lose the cops — drop your wanted level', wanted: 3 }],
+    after: [['tony', "Ha! You drive like you were born running. We might actually survive this."]] },
+  { giver: 'dezzy', reward: 900, title: 'THE VELVET ROOM',
+    before: [['dezzy', "You're the new muscle Tony keeps bragging about. I'm Dezzy — I own the club two doors down."], ['dezzy', "Salcido's boys 'tax' me every weekend. Tonight they came early and they're wrecking my floor."], ['you', "Say the word and they're gone."], ['dezzy', "The word's given. Clear them out — gently is optional."]],
+    steps: [{ type: 'kill', text: "Clear Salcido's crew out of the club", count: 3, at: { char: 'dezzy' } }],
+    after: [['dezzy', "First quiet Friday in a year. Stick around, hotshot — this town could use someone with your... enthusiasm."]] },
+  { giver: 'tony', reward: 1400, title: 'DOCK MONEY',
+    before: [['tony', "Victor moves his cash through the docks every night. Hit the runners, take the bag."], ['tony', "It's a message: the Bay isn't his anymore."]],
+    steps: [{ type: 'kill', text: "Take out Victor's dock runners", count: 4, at: { x: 60, z: 250 } }],
+    after: [['tony', "That'll sting him. He's gonna come looking — so let's be ready when he does."]] },
+  { giver: 'dezzy', reward: 1800, title: 'BAD BLOOD',
+    before: [['dezzy', "They grabbed Tony outside the diner. He's alive — shaken, not sliced — but the message is clear."], ['dezzy', "Victor's underboss, Reyes, is calling shots from the strip. Cut the head and the crew scatters."]],
+    steps: [{ type: 'kill', text: 'Take down the underboss Reyes', count: 1, at: { x: -60, z: 33 } }, { type: 'evade', text: 'Get clear before the heat lands', wanted: 3 }],
+    after: [['dezzy', "You just declared war and won the first battle. Victor won't send men next time. He'll come himself."]] },
+  { giver: 'sal', reward: 2500, title: 'THE SETUP',
+    before: [['sal', "Victor wants a sit-down at the waterfront. It's a trap, obviously."], ['sal', "So we spring ours first — I stashed a car for the getaway. Grab it, be at the pier, and don't die."]],
+    steps: [{ type: 'getcar', text: 'Grab a car for the run' }, { type: 'drive', text: 'Get to the waterfront', at: { x: 0, z: 240 } }],
+    after: [['sal', "He's here. Whole crew with him. This is it, kid — everything you came to the Bay for."]] },
+  { giver: 'tony', reward: 8000, title: 'KING OF NEON BAY',
+    before: [['tony', "There he is. Victor Salcido, down by the water, out of favors."], ['you', "Then let's finish what he started."], ['tony', "For the family."]],
+    steps: [{ type: 'kill', text: 'Finish Victor Salcido', count: 1, at: { x: 0, z: 275 } }],
+    after: [['dezzy', "It's over. The Bay's yours now — ours."], ['tony', "King of Neon Bay. Nobody's paved it with gold yet... but give the man a week."]] },
 ];
 
 // ---------------------------------------------------------------------------
