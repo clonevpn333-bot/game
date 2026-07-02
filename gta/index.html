@@ -51,6 +51,14 @@ body.hurt::after { content: ''; position: fixed; inset: 0; background: radial-gr
 #dtext { font-size: 16px; line-height: 1.55; color: #eef3f9; }
 #dhint { font-size: 11px; color: #9a86b0; text-align: right; margin-top: 9px; }
 
+/* breaking-news banner (mission passed / five stars) */
+#news { position: fixed; left: 50%; bottom: 52px; transform: translateX(-50%); z-index: 18; display: flex; align-items: stretch; max-width: 92vw;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6); border-radius: 6px; overflow: hidden; opacity: 0; transition: opacity 0.4s, transform 0.4s; pointer-events: none; }
+#news.on { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+#news.hidden { display: flex; }
+#newstag { background: #d21f2e; color: #fff; font-weight: 900; font-size: 13px; letter-spacing: 1.5px; padding: 8px 12px; white-space: nowrap; }
+#newstxt { background: rgba(12,12,18,0.95); color: #f2f5fa; font-size: 14px; font-weight: 600; padding: 8px 16px; letter-spacing: 0.3px; }
+
 #bigcard { position: fixed; left: 50%; top: 38%; transform: translateX(-50%); text-align: center; z-index: 22; pointer-events: none; transition: opacity 0.4s; }
 #bigcard.hidden { opacity: 0; }
 #bigcard .bc1 { font-size: 40px; font-weight: 900; letter-spacing: 4px; color: #ffe14a; text-shadow: 0 2px 14px #000, 0 0 30px rgba(255,200,40,0.7); }
@@ -493,7 +501,7 @@ class City {
     for (const sx of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, h, 14), wallMat); p.position.set(cx + sx * (w / 2 - 0.6), h / 2, cz + d / 2 - 0.6); p.castShadow = true; G.add(p); this.boxes.push({ x: p.position.x, z: p.position.z, hw: 0.7, hd: 0.7 }); }
     this._neonSign(pick(VENUE_NAMES[type]), accent, cx, h + 1.0, cz + d / 2 + 0.25, w * 0.9, G);
     const under = new THREE.Mesh(new THREE.BoxGeometry(w * 0.94, 0.5, 0.3), mat(accent, { emissive: accent, emissiveIntensity: 1.6 })); under.position.set(cx, h + 0.25, cz + d / 2 + 0.2); G.add(under);
-    const rec = { x: cx, z: cz, w, d, type };
+    const rec = { x: cx, z: cz, w, d, type, strip: under, name: pick(VENUE_NAMES[type]) };
     if (type === 'club') {
       const cols = [0xff3d9a, 0x2fe6ff, 0x9b5cff, 0x4dff9e, 0xffe24a];
       for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) { const col = cols[(a + b + 4) % cols.length]; const tile = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.08, 2.6), mat(col, { emissive: col, emissiveIntensity: 1.4 })); tile.position.set(cx + a * 2.8, 0.32, cz + b * 2.8 - 2); G.add(tile); }
@@ -815,6 +823,7 @@ function buildPistol() {
 // Car
 // ---------------------------------------------------------------------------
 const CAR_COLORS = [0xd23b3b, 0x2f6fd4, 0x24272f, 0xf0f0f4, 0x2fb85e, 0xe8b83a, 0x8a4fd0, 0xf07d2a, 0x18b0b0, 0xf04a7a];
+const PROP = { shop: { cost: 500, rate: 12 }, diner: { cost: 800, rate: 18 }, hotel: { cost: 1500, rate: 32 }, club: { cost: 2500, rate: 55 } };
 function buildCar(color) {
   const g = new THREE.Group(); const paint = mat(color);
   const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.5, 4.6), paint); body.position.y = 0.6; body.castShadow = true; g.add(body);
@@ -890,7 +899,10 @@ class Game {
     for (const camp of (this.city.camps || [])) for (let i = 0; i < 4; i++) { const ped = new Ped(this, camp.x + rnd(-camp.r, camp.r), camp.z + rnd(-camp.r, camp.r), false, { homeless: true, yaw: rnd(TAU) }); ped.story = true; this.npcs.push(ped); }   // camp residents
     for (let i = 0; i < 5; i++) { const [hx, hz] = this.city.snapSidewalk(rnd(-this.city.size / 2 + 16, this.city.size / 2 - 16), rnd(-this.city.size / 2 + 16, this.city.size / 2 - 16)); const ped = new Ped(this, hx, hz, false, { homeless: true, yaw: rnd(TAU) }); ped.story = true; this.npcs.push(ped); }   // scattered homeless on sidewalks
     this.story.begin(); this.input.lock();
-    if (this.saveData) { this.player.money = this.saveData.money != null ? this.saveData.money : this.player.money; this.player.hasGun = !!this.saveData.gun; if (this.player.hasGun) this.player.weapon = 'pistol'; }
+    if (this.saveData) {
+      this.player.money = this.saveData.money != null ? this.saveData.money : this.player.money; this.player.hasGun = !!this.saveData.gun; if (this.player.hasGun) this.player.weapon = 'pistol';
+      for (const i of (this.saveData.own || [])) { const rec = this.city.shops[i]; if (rec && PROP[rec.type]) { rec.owned = true; if (rec.strip) { rec.strip.material.color.set(0x2fe07a); rec.strip.material.emissive.set(0x2fe07a); } } }
+    }
   }
   spawnPed(cluster) {
     const c = this.city; let x, z, tr = 0;
@@ -960,6 +972,26 @@ class Game {
     this.hemi.intensity = 0.42 + day * 0.75 + dusk * 0.35; this.scene.fog.color.copy(mixc(0xcfe0ee, 0x5a3a5e, 0x131024));
     this.dayAmt = day;
   }
+  // ---- property / economy layer: buy venues (B), they pay out every minute ----
+  buyProperty() {
+    const p = this.player;
+    for (const rec of this.city.shops) {
+      if (Math.abs(p.pos.x - rec.x) > (rec.w || 20) / 2 + 4 || Math.abs(p.pos.z - rec.z) > (rec.d || 20) / 2 + 4) continue;
+      const deal = PROP[rec.type]; if (!deal) { this.ui.toast('Not for sale'); return; }
+      if (rec.owned) { this.ui.toast(rec.name + ' is yours — pays $' + deal.rate + '/min'); return; }
+      if (p.money < deal.cost) { this.ui.toast(rec.name + ' costs $' + deal.cost); return; }
+      p.money -= deal.cost; rec.owned = true;
+      if (rec.strip) { rec.strip.material.color.set(0x2fe07a); rec.strip.material.emissive.set(0x2fe07a); }
+      this.ui.toast('★ Bought ' + rec.name + ' (-$' + deal.cost + ') — earns $' + deal.rate + '/min');
+      this.saveGame(); return;
+    }
+    this.ui.toast('Stand inside a venue to buy it');
+  }
+  updateIncome(dt) {
+    this.incomeT = (this.incomeT || 0) + dt; if (this.incomeT < 60) return;
+    this.incomeT -= 60; let sum = 0; for (const rec of this.city.shops) if (rec.owned && PROP[rec.type]) sum += PROP[rec.type].rate;
+    if (sum > 0) { this.player.money += sum; this.ui.toast('Properties paid out +$' + sum); }
+  }
   // ---- E interactions: rob registers, eat at diners, taxi fast-travel ----
   interact() {
     const p = this.player;
@@ -992,7 +1024,7 @@ class Game {
       if (this._bustT > 1.1 && !p.dead) { p.dead = true; this.saveGame(); this.ui.bustedOrDead('BUSTED'); }
     } else this._bustT = 0;
   }
-  saveGame() { try { localStorage.setItem('nb_save', JSON.stringify({ ch: Math.max(0, this.story.mi), money: this.player.money | 0, gun: !!this.player.hasGun })); } catch (e) {} }
+  saveGame() { try { localStorage.setItem('nb_save', JSON.stringify({ ch: Math.max(0, this.story.mi), money: this.player.money | 0, gun: !!this.player.hasGun, own: this.city.shops.map((s, i) => s.owned ? i : -1).filter(i => i >= 0) })); } catch (e) {} }
   _ambient(dt) { for (const c of this.cars) c.update(dt); for (const n of this.npcs) if (!n.story) n.update(dt); this.updateCulling(); }
   intro() {
     this.ui.hideTitle(); this.ui.modal = null; this.menuMode = false; this.introMode = true; this.ui.letterbox(true);
@@ -1046,7 +1078,7 @@ class Game {
       if (this.input.p('Escape')) { if (this.ui.modal) this.ui.closeModal(); else if (this.paused) this.resume(); else this.pause(); }
       const frozen = this.paused || this.ui.modal;
       if (this.cine) { this.updateCutscene(dt); }
-      else if (!frozen) { this.player.update(dt); for (const n of this.npcs) n.update(dt); for (const c of this.cars) c.update(dt); this.story.update(dt); this.updateWanted(dt); this.updatePickups(dt); this.updateBusted(dt); this.cull(); this.player.updateCamera(dt, false); }
+      else if (!frozen) { this.player.update(dt); for (const n of this.npcs) n.update(dt); for (const c of this.cars) c.update(dt); this.story.update(dt); this.updateWanted(dt); this.updatePickups(dt); this.updateBusted(dt); this.updateIncome(dt); this.cull(); this.player.updateCamera(dt, false); }
       else { this.player.updateCamera(dt, true); }
       this.updateFx(dt); this.ui.update(); this.updateCulling();
     }
@@ -1058,14 +1090,17 @@ class Game {
     this._shadowT -= dt; if (this._shadowT <= 0) { this.renderer.shadowMap.needsUpdate = true; this._shadowT = 0.11; }
     this.post.render(); this.input.end();
   }
-  updateWanted(dt) { const p = this.player; if (p.heat > 0) { p.heat -= dt; if (p.heat <= 0) { p.wanted = Math.max(0, p.wanted - 1); p.heat = p.wanted > 0 ? 14 : 0; } } this.copT = (this.copT || 0) - dt; if (p.wanted > 0 && this.copT <= 0) { this.copT = 2.0; const want = Math.min(8, p.wanted * 2); let have = this.npcs.filter(n => n.cop && !n.dead).length; while (have < want) { const a = rnd(TAU), r = rnd(28, 44); this.npcs.push(new Ped(this, p.pos.x + Math.cos(a) * r, p.pos.z + Math.sin(a) * r, true)); have++; } } if (p.wanted === 0) for (const n of this.npcs) if (n.cop) n.removeMe = true; }
+  updateWanted(dt) { const p = this.player; if (p.heat > 0) { p.heat -= dt; if (p.heat <= 0) { p.wanted = Math.max(0, p.wanted - 1); p.heat = p.wanted > 0 ? 14 : 0; } } this.copT = (this.copT || 0) - dt; if (p.wanted > 0 && this.copT <= 0) { this.copT = 2.0; const want = Math.min(8, p.wanted * 2); let have = this.npcs.filter(n => n.cop && !n.dead).length; while (have < want) { const a = rnd(TAU), r = rnd(28, 44); this.npcs.push(new Ped(this, p.pos.x + Math.cos(a) * r, p.pos.z + Math.sin(a) * r, true)); have++; } }
+    // cruiser dispatch at 3+ stars
+    if (p.wanted >= 3) { const want = p.wanted >= 5 ? 3 : p.wanted - 2, have = this.cars.filter(c => c.police && !c.removeMe).length; if (have < want) { const a = rnd(TAU), r = rnd(55, 80); this.cars.push(new PoliceCar(this, this.city.gridLine(p.pos.x + Math.cos(a) * r), clamp(p.pos.z + Math.sin(a) * r, -this.city.size / 2, this.city.size / 2))); if (p.wanted === 5 && !this._n5) { this._n5 = true; this.ui.news('FIVE-STAR MANHUNT — NBPD floods the causeways as chaos grips the Bay'); } } }
+    if (p.wanted === 0) for (const n of this.npcs) if (n.cop) n.removeMe = true; }
   updateFx(dt) {
     for (const t of this.tracers) { t.life -= dt; t.line.material.opacity = Math.max(0, t.life / 0.06); }
     this.tracers = this.tracers.filter(t => { if (t.life <= 0) { this.scene.remove(t.line); t.line.geometry.dispose(); t.line.material.dispose(); return false; } return true; });
     for (const f of this.fx) { f.life -= dt; for (let i = 0; i < f.n; i++) { f.vs[i * 3 + 1] -= 12 * dt; f.ps[i * 3] += f.vs[i * 3] * dt; f.ps[i * 3 + 1] += f.vs[i * 3 + 1] * dt; f.ps[i * 3 + 2] += f.vs[i * 3 + 2] * dt; } f.g.attributes.position.needsUpdate = true; f.m.material.opacity = Math.max(0, f.life / 0.6); }
     this.fx = this.fx.filter(f => { if (f.life <= 0) { this.scene.remove(f.m); f.g.dispose(); f.m.material.dispose(); return false; } return true; });
   }
-  cull() { this.npcs = this.npcs.filter(n => { if (n.removeMe) { this.scene.remove(n.root); return false; } return true; }); const civ = this.npcs.filter(n => !n.cop && !n.story).length; if (civ < 34) { this.spawnPed(); if (civ < 26) this.spawnPed(); } if (this.cars.length < 16) this.spawnTraffic(); }
+  cull() { this.npcs = this.npcs.filter(n => { if (n.removeMe) { this.scene.remove(n.root); return false; } return true; }); this.cars = this.cars.filter(c => { if (c.removeMe) { this.scene.remove(c.root); return false; } return true; }); const civ = this.npcs.filter(n => !n.cop && !n.story).length; if (civ < 34) { this.spawnPed(); if (civ < 26) this.spawnPed(); } if (this.cars.length < 16) this.spawnTraffic(); }
 }
 function raySphere(o, d, c, r) { const oc = o.clone().sub(c), b = oc.dot(d), cc = oc.dot(oc) - r * r, h = b * b - cc; if (h < 0) return null; const t = -b - Math.sqrt(h); return t >= 0 ? t : null; }
 
@@ -1092,6 +1127,7 @@ class Player {
     if (inp.p('Digit1')) { this.weapon = 'fists'; this.game.ui.toast('Fists'); }
     if (inp.p('Digit2') && this.hasGun) { this.weapon = 'pistol'; this.game.ui.toast('Pistol'); }
     if (!this.inCar && inp.p('KeyE')) this.game.interact();
+    if (!this.inCar && inp.p('KeyB')) this.game.buyProperty();
     if (this.inCar) { const car = this.inCar; car.control(dt, inp); this.pos.copy(car.pos); this.yaw = car.yaw; this._stats(dt); return; }
     const fwd = new THREE.Vector3(Math.sin(this.camYaw), 0, Math.cos(this.camYaw)), right = new THREE.Vector3(-fwd.z, 0, fwd.x), wish = new THREE.Vector3();
     if (inp.k('KeyW')) wish.add(fwd); if (inp.k('KeyS')) wish.sub(fwd); if (inp.k('KeyD')) wish.add(right); if (inp.k('KeyA')) wish.sub(right);
@@ -1246,6 +1282,41 @@ class Car {
 }
 
 // ---------------------------------------------------------------------------
+// Police cruiser — dispatched at 3+ stars; sirens flashing, rams your bumper.
+// ---------------------------------------------------------------------------
+class PoliceCar extends Car {
+  constructor(game, x, z) {
+    super(game, x, z, new THREE.Vector3(0, 0, 1), 0xf0f0f4, false);
+    this.police = true; this.copCd = 0;
+    const hood = new THREE.Mesh(new THREE.BoxGeometry(2.02, 0.2, 1.6), mat(0x14161b)); hood.position.set(0, 0.87, -1.5); this.root.add(hood);
+    const doorL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 1.4), mat(0x14161b)); doorL.position.set(-1.02, 0.66, -0.1); this.root.add(doorL);
+    const doorR = doorL.clone(); doorR.position.x = 1.02; this.root.add(doorR);
+    this.lightR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.18, 0.34), mat(0xff2a3a, { emissive: 0xff2030, emissiveIntensity: 2.5 })); this.lightR.position.set(-0.25, 1.62, -0.15); this.root.add(this.lightR);
+    this.lightB = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.18, 0.34), mat(0x2a6aff, { emissive: 0x2050ff, emissiveIntensity: 2.5 })); this.lightB.position.set(0.25, 1.62, -0.15); this.root.add(this.lightB);
+  }
+  update(dt) {
+    if (this.driver) { this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; return; }
+    const g = this.game, p = g.player, t = g.time;
+    this.lightR.material.emissiveIntensity = Math.sin(t * 14) > 0 ? 3.2 : 0.2;
+    this.lightB.material.emissiveIntensity = Math.sin(t * 14) > 0 ? 0.2 : 3.2;
+    if (p.wanted <= 0 || this.pos.distanceTo(p.pos) > 220) { this.removeMe = true; this.root.visible = false; return; }
+    // road-aware pursuit: run the grid toward you, lunge straight when close
+    const c = g.city, dx = p.pos.x - this.pos.x, dz = p.pos.z - this.pos.z, dist = Math.hypot(dx, dz);
+    const onV = c._distToGrid(this.pos.x) < c.road / 2, onH = c._distToGrid(this.pos.z) < c.road / 2;
+    let tx, tz;
+    if (dist < 26) { tx = p.pos.x; tz = p.pos.z; }
+    else if (!onV && !onH) { const gx = c.gridLine(this.pos.x), gz = c.gridLine(this.pos.z); if (Math.abs(gx - this.pos.x) < Math.abs(gz - this.pos.z)) { tx = gx; tz = this.pos.z + Math.sign(dz || 1) * 6; } else { tz = gz; tx = this.pos.x + Math.sign(dx || 1) * 6; } }
+    else if (Math.abs(dx) > Math.abs(dz)) { if (onH) { tx = this.pos.x + Math.sign(dx) * 12; tz = c.gridLine(this.pos.z); } else { tx = this.pos.x; tz = this.pos.z + Math.sign(dz || 1) * 12; } }
+    else { if (onV) { tz = this.pos.z + Math.sign(dz) * 12; tx = c.gridLine(this.pos.x); } else { tz = this.pos.z; tx = this.pos.x + Math.sign(dx || 1) * 12; } }
+    this.yaw = lerpAngle(this.yaw, Math.atan2(tx - this.pos.x, tz - this.pos.z), Math.min(1, dt * 3.6));
+    this.speed = lerp(this.speed, dist > 10 ? 17 : 6, dt * 2);
+    this._move(dt);
+    this.copCd = Math.max(0, this.copCd - dt);
+    if (dist < 9 && this.copCd <= 0) { this.copCd = 7; let cops = 0; for (const n of g.npcs) if (n.cop && !n.dead) cops++; if (cops < 8) { for (let i = 0; i < 2; i++) g.npcs.push(new Ped(g, this.pos.x + rnd(-2, 2), this.pos.z + rnd(-2, 2), true)); } }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Story
 // ---------------------------------------------------------------------------
 class Story {
@@ -1292,7 +1363,7 @@ class Story {
       if (done) { this._armed = null; this.si++; if (m.steps[this.si]) this.startStep(); else this.finish(); }
     }
   }
-  finish() { const m = MISSIONS[this.mi]; this.play(m.after, this.giver, () => { this.game.player.money += m.reward || 0; if (m.gun) { this.game.player.hasGun = true; this.game.player.weapon = 'pistol'; this.game.ui.toast('★ Pistol acquired — Left-click to fire, 1/2 to switch'); } this.game.ui.bigCard('MISSION PASSED', (m.reward ? '+$' + m.reward : '')); this.marker.visible = false; setTimeout(() => this.next(), 2600); }); }
+  finish() { const m = MISSIONS[this.mi]; this.play(m.after, this.giver, () => { this.game.player.money += m.reward || 0; if (m.gun) { this.game.player.hasGun = true; this.game.player.weapon = 'pistol'; this.game.ui.toast('★ Pistol acquired — Left-click to fire, 1/2 to switch'); } this.game.ui.bigCard('MISSION PASSED', (m.reward ? '+$' + m.reward : '')); this.game.ui.news(m.news || ('Witnesses report a new name moving through the Bay after "' + (m.title || '').toLowerCase() + '" rumors — NBPD declines to comment')); this.marker.visible = false; setTimeout(() => this.next(), 2600); }); }
   play(lines, who, done) { this.state = 'cutscene'; this.marker.visible = false; this.game.startCutscene(who); this.game.ui.dialogue(lines || [], () => { this.game.endCutscene(); this.state = 'steps'; done && done(); }); }
   _objDist(v) { if (!v) return; const d = Math.round(this.game.player.pos.distanceTo(v)); const base = this._lastObj || ''; this.game.ui.el.obj.textContent = base.replace(/\s+\d+m.*/, '') + '   ' + d + 'm →'; }
   setObjective(t) { this._lastObj = t; this.game.ui.el.obj.textContent = t; }
@@ -1352,19 +1423,20 @@ class UI {
       <div id="toast"></div>
       <div id="dialogue" class="hidden"><div id="dspk"></div><div id="dtext"></div><div id="dhint">click / Space ▸</div></div>
       <div id="bigcard" class="hidden"><div class="bc1"></div><div class="bc2"></div></div>
+      <div id="news" class="hidden"><span id="newstag">NB-24 NEWS</span><span id="newstxt"></span></div>
       <div id="introcap"></div>
       <div id="introskip" class="hidden">Space ▸ continue &nbsp;·&nbsp; Esc ▸ skip</div>
       <div id="crosshair"></div>
       <div id="overlay" class="hidden"></div>`;
     document.body.appendChild(r); this.root = r;
-    this.el = { map: r.querySelector('#map').getContext('2d'), mapc: r.querySelector('#map'), money: r.querySelector('#money'), wanted: r.querySelector('#wanted'), hp: r.querySelector('#hpfill'), obj: r.querySelector('#obj'), chapter: r.querySelector('#chapter'), toast: r.querySelector('#toast'), introcap: r.querySelector('#introcap'), introskip: r.querySelector('#introskip'), dialogue: r.querySelector('#dialogue'), dspk: r.querySelector('#dspk'), dtext: r.querySelector('#dtext'), big: r.querySelector('#bigcard'), weapon: r.querySelector('#weapon'), overlay: r.querySelector('#overlay'), lbTop: r.querySelector('#lbTop'), lbBot: r.querySelector('#lbBot') };
+    this.el = { map: r.querySelector('#map').getContext('2d'), mapc: r.querySelector('#map'), money: r.querySelector('#money'), wanted: r.querySelector('#wanted'), hp: r.querySelector('#hpfill'), obj: r.querySelector('#obj'), chapter: r.querySelector('#chapter'), toast: r.querySelector('#toast'), introcap: r.querySelector('#introcap'), introskip: r.querySelector('#introskip'), news: r.querySelector('#news'), newstxt: r.querySelector('#newstxt'), dialogue: r.querySelector('#dialogue'), dspk: r.querySelector('#dspk'), dtext: r.querySelector('#dtext'), big: r.querySelector('#bigcard'), weapon: r.querySelector('#weapon'), overlay: r.querySelector('#overlay'), lbTop: r.querySelector('#lbTop'), lbBot: r.querySelector('#lbBot') };
     r.querySelector('#dialogue').addEventListener('mousedown', () => this._advance());
     addEventListener('keydown', e => { if ((e.code === 'Space' || e.code === 'Enter') && this._dlg) { e.preventDefault(); this._advance(); } });
   }
   title() {
     this.modal = 'title'; this.el.overlay.className = 'menu';
     const sv = this.game.saveData, cont = sv && sv.ch > 0 ? `<button id="cont" class="bigbtn">CONTINUE — CH.${Math.min(sv.ch + 1, 8)}</button>` : '';
-    this.el.overlay.innerHTML = `<div class="menuwrap"><div class="logo"><span class="l1">NEON</span><span class="l2">BAY</span></div><div class="tag">VICE • SUN • CHROME</div>${cont}<button id="play" class="bigbtn${cont ? ' ghost' : ''}">${cont ? 'NEW GAME' : 'START'}</button><div class="ctrls"><span><b>WASD</b> move</span><span><b>Shift</b> sprint</span><span><b>Click</b> punch/shoot</span><span><b>1/2</b> weapon</span><span><b>E</b> rob/eat/taxi</span><span><b>F</b> car</span></div><div class="note">Cel-shaded GTA-inspired game. Rob registers, eat at diners, hail taxis, find 12 hidden packages. Day/night cycle. Everything runs offline.</div></div>`;
+    this.el.overlay.innerHTML = `<div class="menuwrap"><div class="logo"><span class="l1">NEON</span><span class="l2">BAY</span></div><div class="tag">VICE • SUN • CHROME</div>${cont}<button id="play" class="bigbtn${cont ? ' ghost' : ''}">${cont ? 'NEW GAME' : 'START'}</button><div class="ctrls"><span><b>WASD</b> move</span><span><b>Shift</b> sprint</span><span><b>Click</b> punch/shoot</span><span><b>1/2</b> weapon</span><span><b>E</b> rob/eat/taxi</span><span><b>B</b> buy property</span><span><b>F</b> car</span></div><div class="note">Cel-shaded GTA-inspired game. Buy clubs and hotels for income, rob registers, dodge cruiser dispatches, find 12 hidden packages. Day/night cycle. Runs offline.</div></div>`;
     this.el.overlay.querySelector('#play').onclick = () => { this.modal = null; try { localStorage.removeItem('nb_save'); } catch (e) {} this.game.saveData = null; this.game.intro(); };
     const cb = this.el.overlay.querySelector('#cont'); if (cb) cb.onclick = () => { this.modal = null; this.game.start(); };
   }
@@ -1378,6 +1450,7 @@ class UI {
   introSkip(on) { this.el.introskip.classList.toggle('hidden', !on); }
   flash() { document.body.classList.add('hurt'); clearTimeout(this._ht); this._ht = setTimeout(() => document.body.classList.remove('hurt'), 160); }
   toast(t) { this.el.toast.textContent = t; this.el.toast.style.opacity = 1; clearTimeout(this._tt); this._tt = setTimeout(() => this.el.toast.style.opacity = 0, 1200); }
+  news(t) { this.el.newstxt.textContent = t; this.el.news.classList.remove('hidden'); this.el.news.classList.add('on'); clearTimeout(this._nt); this._nt = setTimeout(() => { this.el.news.classList.remove('on'); this.el.news.classList.add('hidden'); }, 7000); }
   bigCard(a, b) { this.el.big.classList.remove('hidden'); this.el.big.querySelector('.bc1').textContent = a; this.el.big.querySelector('.bc2').textContent = b || ''; clearTimeout(this._bt); this._bt = setTimeout(() => this.el.big.classList.add('hidden'), 3800); }
   dialogue(lines, done) { this._dlg = { lines, i: 0, done }; this.modal = 'dlg'; this.game.input.unlock(); this.el.dialogue.classList.remove('hidden'); this._showLine(); }
   _showLine() { const d = this._dlg, l = d.lines[d.i]; if (!l) return; const ch = CHARS[l[0]] || { name: l[0], col: '#fff' }; this.el.dspk.textContent = ch.name; this.el.dspk.style.color = ch.col; this.el.dtext.textContent = l[1]; }

@@ -44,6 +44,14 @@ body.hurt::after { content: ''; position: fixed; inset: 0; background: radial-gr
 #dtext { font-size: 16px; line-height: 1.55; color: #eef3f9; }
 #dhint { font-size: 11px; color: #9a86b0; text-align: right; margin-top: 9px; }
 
+/* breaking-news banner (mission passed / five stars) */
+#news { position: fixed; left: 50%; bottom: 52px; transform: translateX(-50%); z-index: 18; display: flex; align-items: stretch; max-width: 92vw;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6); border-radius: 6px; overflow: hidden; opacity: 0; transition: opacity 0.4s, transform 0.4s; pointer-events: none; }
+#news.on { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+#news.hidden { display: flex; }
+#newstag { background: #d21f2e; color: #fff; font-weight: 900; font-size: 13px; letter-spacing: 1.5px; padding: 8px 12px; white-space: nowrap; }
+#newstxt { background: rgba(12,12,18,0.95); color: #f2f5fa; font-size: 14px; font-weight: 600; padding: 8px 16px; letter-spacing: 0.3px; }
+
 #bigcard { position: fixed; left: 50%; top: 38%; transform: translateX(-50%); text-align: center; z-index: 22; pointer-events: none; transition: opacity 0.4s; }
 #bigcard.hidden { opacity: 0; }
 #bigcard .bc1 { font-size: 40px; font-weight: 900; letter-spacing: 4px; color: #ffe14a; text-shadow: 0 2px 14px #000, 0 0 30px rgba(255,200,40,0.7); }
