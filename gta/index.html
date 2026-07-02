@@ -16,6 +16,15 @@ body.hurt::after { content: ''; position: fixed; inset: 0; background: radial-gr
 .lb { position: fixed; left: 0; right: 0; height: 0; background: #000; z-index: 19; transition: height 0.5s cubic-bezier(.4,0,.2,1); }
 #lbTop { top: 0; } #lbBot { bottom: 0; }
 
+/* opening intro cinematic captions */
+#introcap { position: fixed; left: 50%; bottom: 15vh; transform: translate(-50%, 12px); width: 90vw; max-width: 900px; text-align: center; z-index: 21;
+  font-size: 30px; font-weight: 800; letter-spacing: 1px; line-height: 1.35; color: #f4ecff;
+  text-shadow: 0 2px 18px #000, 0 0 26px rgba(120,90,220,0.5); opacity: 0; transition: opacity 0.7s ease, transform 0.7s ease; pointer-events: none; }
+#introcap.show { opacity: 1; transform: translate(-50%, 0); }
+#introcap div + div { margin-top: 4px; font-size: 22px; color: #cdbff0; font-weight: 600; }
+#introskip { position: fixed; right: 22px; bottom: 13vh; z-index: 21; font-size: 12px; letter-spacing: 2px; color: #b7a6d8; text-shadow: 0 1px 4px #000; opacity: 0.8; }
+#introskip.hidden { display: none; }
+
 #map { position: fixed; left: 16px; bottom: 16px; border-radius: 50%; box-shadow: 0 4px 20px rgba(0,0,0,0.7), 0 0 0 2px rgba(255,79,163,0.25); }
 #topright { position: fixed; right: 20px; top: 16px; text-align: right; }
 #money { font-size: 30px; font-weight: 900; color: #6cf09a; text-shadow: 0 0 12px rgba(60,230,150,0.55), 2px 2px 0 #04120a; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
@@ -61,8 +70,10 @@ body.hurt::after { content: ''; position: fixed; inset: 0; background: radial-gr
   background-size: 46px 46px; transform: perspective(340px) rotateX(66deg); transform-origin: bottom; opacity: 0.6; pointer-events: none; }
 .menuwrap { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 34px; }
 .logo { line-height: 0.9; text-align: center; font-weight: 900; letter-spacing: 6px; filter: drop-shadow(0 6px 24px rgba(0,0,0,0.6)); }
-.logo .l1 { display: block; font-size: 92px; color: #ff5fb0; text-shadow: 0 0 8px #ff5fb0, 0 0 26px rgba(255,79,163,0.75), 0 0 60px rgba(255,79,163,0.45); }
-.logo .l2 { display: block; font-size: 92px; color: #45e0ff; text-shadow: 0 0 8px #45e0ff, 0 0 26px rgba(70,210,255,0.75), 0 0 60px rgba(70,210,255,0.4); margin-top: -14px; }
+.logo .l1 { display: block; font-size: 92px; color: #ff5fb0; text-shadow: 0 0 8px #ff5fb0, 0 0 26px rgba(255,79,163,0.75), 0 0 60px rgba(255,79,163,0.45); animation: flickP 4.5s infinite; }
+.logo .l2 { display: block; font-size: 92px; color: #45e0ff; text-shadow: 0 0 8px #45e0ff, 0 0 26px rgba(70,210,255,0.75), 0 0 60px rgba(70,210,255,0.4); margin-top: -14px; animation: flickC 6s infinite; }
+@keyframes flickP { 0%,97%,100%{opacity:1} 92%{opacity:0.55} 94%{opacity:1} 95%{opacity:0.4} 96%{opacity:1} }
+@keyframes flickC { 0%,45%,100%{opacity:1} 42%{opacity:0.5} 43%{opacity:1} 44%{opacity:0.65} }
 .logo.small .l1 { font-size: 56px; }
 .logo .wasted { display: block; font-size: 70px; color: #ff4a4a; text-shadow: 0 0 12px #ff2a2a, 0 0 44px rgba(255,40,40,0.7); }
 .tag { letter-spacing: 8px; font-size: 14px; color: #d7c3ff; text-shadow: 0 0 12px rgba(150,110,255,0.7); margin-top: -6px; }
@@ -638,9 +649,10 @@ class Game {
     this.renderer.toneMapping = this.post.enabled ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping; if (!this.post.enabled) this.renderer.toneMappingExposure = 1.1;
     this.ui = new UI(this);
 
-    this.npcs = []; this.cars = []; this.fx = []; this.tracers = [];
+    this.npcs = []; this.cars = []; this.fx = []; this.tracers = []; this.introMode = false;
     this.player = new Player(this);
     this.story = new Story(this);
+    for (let i = 0; i < 12; i++) this.spawnPed(); for (let i = 0; i < 6; i++) this.spawnTraffic(); // ambient life for the menu / intro
 
     addEventListener('resize', () => { this.camera.aspect = innerWidth / innerHeight; this.camera.updateProjectionMatrix(); this.renderer.setSize(innerWidth, innerHeight); this.post.setSize(); });
     canvas.addEventListener('mousedown', () => { if (this.playing && !this.paused && !this.ui.modal && !this.input.locked) this.input.lock(); });
@@ -708,7 +720,32 @@ class Game {
   }
   pause() { if (!this.playing || this.paused) return; this.paused = true; this.input.unlock(); this.ui.pauseMenu(true); }
   resume() { this.paused = false; this.ui.pauseMenu(false); this.input.lock(); }
-  menuCam() { const t = this.time * 0.1, r = 165; this.camera.position.set(Math.cos(t) * r, 66 + Math.sin(t * 0.6) * 18, Math.sin(t) * r); this.camera.lookAt(0, 20, 0); }
+  menuCam() { const t = this.time * 0.14, r = 118 + Math.sin(t * 0.5) * 48; this.camera.position.set(Math.cos(t) * r, 34 + Math.sin(t * 0.37) * 24, Math.sin(t) * r); this.camera.lookAt(Math.sin(t * 0.3) * 24, 16, Math.cos(t * 0.3) * 24); }
+  _ambient(dt) { for (const c of this.cars) c.update(dt); for (const n of this.npcs) if (!n.story) n.update(dt); this.updateCulling(); }
+  intro() {
+    this.ui.hideTitle(); this.ui.modal = null; this.menuMode = false; this.introMode = true; this.ui.letterbox(true);
+    const H = this.city.size / 2;
+    this._intro = { i: 0, t: 0, from: this.camera.position.clone(), beats: [
+      { pos: [H * 0.8, 130, H * 0.9], look: [0, 26, 0], lines: ['They call me a lot of things back home.', "‘Broke’ is the one that stuck."] },
+      { pos: [72, 54, -H * 0.75], look: [0, 16, 0], lines: ['Six hundred miles of nowhere. One bus ticket.', 'A cousin who swore this city was paved with gold.'] },
+      { pos: [-72, 22, -28], look: [12, 7, 22], lines: ['Neon Bay — palm trees, dirty money,', 'and everybody running from something.'] },
+      { pos: [48, 11, -8], look: [30, 3, 26], lines: ['I came here to disappear.', "Instead — I'm gonna own it."] },
+      { pos: [30, 3.6, 22], look: [30, 1.6, 31], lines: ["Name's mine to make.", "Let's get to work."] },
+    ] };
+    this.ui.introText(this._intro.beats[0].lines); this.ui.introSkip(true);
+  }
+  updateIntro(dt) {
+    const I = this._intro; if (!I) { this.endIntro(); return; }
+    I.t += dt; const b = I.beats[I.i];
+    const to = new THREE.Vector3(b.pos[0], b.pos[1], b.pos[2]); const u = clamp(I.t / 4.4, 0, 1), e = u * u * (3 - 2 * u);
+    this.camera.position.lerpVectors(I.from, to, e); this.camera.lookAt(b.look[0], b.look[1], b.look[2]);
+    if (this.input.p('Escape')) { this.endIntro(); return; }
+    if (I.t > 5.2 || this.input.p('Space') || this.input.p('Enter')) {
+      I.i++; if (I.i >= I.beats.length) { this.endIntro(); return; }
+      I.t = 0; I.from = this.camera.position.clone(); this.ui.introText(I.beats[I.i].lines);
+    }
+  }
+  endIntro() { if (!this.introMode) return; this.introMode = false; this._intro = null; this.ui.introHide(); this.ui.introSkip(false); this.ui.letterbox(false); this.start(); }
   updateCulling() {
     this.camera.updateMatrixWorld(); this._m.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse); this._frustum.setFromProjectionMatrix(this._m);
     const cp = this.camera.position, rd = this.renderDist, rd2 = rd * rd;
@@ -719,7 +756,8 @@ class Game {
   loop() {
     requestAnimationFrame(() => this.loop());
     const dt = Math.min(this.clock.getDelta(), 0.05); this.time += dt;
-    if (this.menuMode) { this.menuCam(); }
+    if (this.menuMode) { this.menuCam(); this._ambient(dt); }
+    else if (this.introMode) { this.updateIntro(dt); this._ambient(dt); }
     else if (this.playing) {
       if (this.input.p('Escape')) { if (this.ui.modal) this.ui.closeModal(); else if (this.paused) this.resume(); else this.pause(); }
       const frozen = this.paused || this.ui.modal;
@@ -763,7 +801,7 @@ class Player {
   eye() { return new THREE.Vector3(this.pos.x, this.pos.y + 1.5, this.pos.z); }
   update(dt) {
     const inp = this.game.input;
-    this.camYaw -= inp.mdx * 0.0024; this.camPitch = clamp(this.camPitch - inp.mdy * 0.0024, -0.2, 1.2); this.camDist = clamp(this.camDist + inp.wheel * 0.8, 4, 13);
+    this.camYaw -= inp.mdx * 0.0024; this.camPitch = clamp(this.camPitch + inp.mdy * 0.0024, -0.2, 1.2); this.camDist = clamp(this.camDist + inp.wheel * 0.8, 4, 13);
     if (inp.p('KeyF')) { if (this.inCar) this.exitCar(); else { const car = this.game.nearestCar(this.pos, 4.5); if (car) this.enterCar(car); } }
     if (this.inCar) { const car = this.inCar; car.control(dt, inp); this.pos.copy(car.pos); this.yaw = car.yaw; this._stats(dt); return; }
     const fwd = new THREE.Vector3(Math.sin(this.camYaw), 0, Math.cos(this.camYaw)), right = new THREE.Vector3(-fwd.z, 0, fwd.x), wish = new THREE.Vector3();
@@ -903,9 +941,10 @@ class Story {
   update(dt) {
     if (this.state === 'cutscene' || this.state === 'done' || this.state === 'idle') return;
     const g = this.game, p = g.player, m = MISSIONS[this.mi];
+    if (!m) return;
     if (this.state === 'goMeet') { if (this.giver && p.pos.distanceTo(this.giver.pos) < 4.5) { this.game.ui.bigCard('CHAPTER ' + (this.mi + 1), m.title || ''); this.play(m.before, this.giver, () => { this.si = 0; if (m.steps && m.steps.length) { this.state = 'steps'; this.startStep(); } else this.finish(); }); } this._objDist(this.giver && this.giver.pos); return; }
     if (this.state === 'steps') {
-      const s = m.steps[this.si]; let done = false;
+      const s = m.steps[this.si]; if (!s) return; let done = false;
       if (s.type === 'goto') done = this.stepPos && dist2(p.pos, this.stepPos) < 5;
       else if (s.type === 'getcar') done = !!p.inCar;
       else if (s.type === 'drive') done = p.inCar && this.stepPos && dist2(p.pos, this.stepPos) < 7;
@@ -975,23 +1014,28 @@ class UI {
       <div id="toast"></div>
       <div id="dialogue" class="hidden"><div id="dspk"></div><div id="dtext"></div><div id="dhint">click / Space ▸</div></div>
       <div id="bigcard" class="hidden"><div class="bc1"></div><div class="bc2"></div></div>
+      <div id="introcap"></div>
+      <div id="introskip" class="hidden">Space ▸ continue &nbsp;·&nbsp; Esc ▸ skip</div>
       <div id="crosshair"></div>
       <div id="overlay" class="hidden"></div>`;
     document.body.appendChild(r); this.root = r;
-    this.el = { map: r.querySelector('#map').getContext('2d'), mapc: r.querySelector('#map'), money: r.querySelector('#money'), wanted: r.querySelector('#wanted'), hp: r.querySelector('#hpfill'), obj: r.querySelector('#obj'), chapter: r.querySelector('#chapter'), toast: r.querySelector('#toast'), dialogue: r.querySelector('#dialogue'), dspk: r.querySelector('#dspk'), dtext: r.querySelector('#dtext'), big: r.querySelector('#bigcard'), weapon: r.querySelector('#weapon'), overlay: r.querySelector('#overlay'), lbTop: r.querySelector('#lbTop'), lbBot: r.querySelector('#lbBot') };
+    this.el = { map: r.querySelector('#map').getContext('2d'), mapc: r.querySelector('#map'), money: r.querySelector('#money'), wanted: r.querySelector('#wanted'), hp: r.querySelector('#hpfill'), obj: r.querySelector('#obj'), chapter: r.querySelector('#chapter'), toast: r.querySelector('#toast'), introcap: r.querySelector('#introcap'), introskip: r.querySelector('#introskip'), dialogue: r.querySelector('#dialogue'), dspk: r.querySelector('#dspk'), dtext: r.querySelector('#dtext'), big: r.querySelector('#bigcard'), weapon: r.querySelector('#weapon'), overlay: r.querySelector('#overlay'), lbTop: r.querySelector('#lbTop'), lbBot: r.querySelector('#lbBot') };
     r.querySelector('#dialogue').addEventListener('mousedown', () => this._advance());
     addEventListener('keydown', e => { if ((e.code === 'Space' || e.code === 'Enter') && this._dlg) { e.preventDefault(); this._advance(); } });
   }
   title() {
     this.modal = 'title'; this.el.overlay.className = 'menu';
     this.el.overlay.innerHTML = `<div class="menuwrap"><div class="logo"><span class="l1">NEON</span><span class="l2">BAY</span></div><div class="tag">VICE • DUSK • CHROME</div><button id="play" class="bigbtn">START</button><div class="ctrls"><span><b>WASD</b> move</span><span><b>Shift</b> sprint</span><span><b>Mouse</b> look</span><span><b>Click</b> shoot</span><span><b>F</b> car</span><span><b>Esc</b> pause</span></div><div class="note">Cel-shaded GTA-inspired game. Walk into the clubs, hotels and diners. Cinematic story cutscenes. Online sessions stream in CC0 characters; offline it runs on the built-in cast.</div></div>`;
-    this.el.overlay.querySelector('#play').onclick = () => { this.modal = null; this.game.start(); };
+    this.el.overlay.querySelector('#play').onclick = () => { this.modal = null; this.game.intro(); };
   }
   hideTitle() { this.el.overlay.className = 'hidden'; }
   pauseMenu(on) { if (on) { this.modal = 'pause'; this.el.overlay.className = 'menu'; this.el.overlay.innerHTML = `<div class="menuwrap"><div class="logo small"><span class="l1">PAUSED</span></div><button id="res" class="bigbtn">RESUME</button><button id="rl" class="bigbtn ghost">QUIT TO TITLE</button></div>`; this.el.overlay.querySelector('#res').onclick = () => this.game.resume(); this.el.overlay.querySelector('#rl').onclick = () => location.reload(); } else { this.modal = null; this.el.overlay.className = 'hidden'; } }
   bustedOrDead(word) { this.modal = 'dead'; this.game.input.unlock(); this.el.overlay.className = 'menu dead'; this.el.overlay.innerHTML = `<div class="menuwrap"><div class="logo small"><span class="wasted">${word}</span></div><button id="res" class="bigbtn">RESPAWN</button></div>`; this.el.overlay.querySelector('#res').onclick = () => location.reload(); }
   closeModal() { if (this.modal === 'pause') this.game.resume(); }
   letterbox(on) { this.el.lbTop.style.height = on ? '11vh' : '0'; this.el.lbBot.style.height = on ? '11vh' : '0'; }
+  introText(lines) { const el = this.el.introcap; el.innerHTML = lines.map(l => '<div>' + l + '</div>').join(''); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
+  introHide() { this.el.introcap.classList.remove('show'); this.el.introcap.innerHTML = ''; }
+  introSkip(on) { this.el.introskip.classList.toggle('hidden', !on); }
   flash() { document.body.classList.add('hurt'); clearTimeout(this._ht); this._ht = setTimeout(() => document.body.classList.remove('hurt'), 160); }
   toast(t) { this.el.toast.textContent = t; this.el.toast.style.opacity = 1; clearTimeout(this._tt); this._tt = setTimeout(() => this.el.toast.style.opacity = 0, 1200); }
   bigCard(a, b) { this.el.big.classList.remove('hidden'); this.el.big.querySelector('.bc1').textContent = a; this.el.big.querySelector('.bc2').textContent = b || ''; clearTimeout(this._bt); this._bt = setTimeout(() => this.el.big.classList.add('hidden'), 3800); }
