@@ -180,7 +180,7 @@ class Post {
     r.setRenderTarget(this.sceneRT); r.clear(); r.render(this.scene, this.camera);
     this.brightMat.uniforms.tDiffuse.value = this.sceneRT.texture; this._pass(this.brightMat, this.rtA);
     let read = this.rtA, write = this.rtB;
-    for (const radius of [1, 2, 3.5]) {
+    for (const radius of [1.5, 3]) {
       this.blurMat.uniforms.tDiffuse.value = read.texture; this.blurMat.uniforms.dir.value.set(radius / this.hw, 0); this._pass(this.blurMat, write); let t = read; read = write; write = t;
       this.blurMat.uniforms.tDiffuse.value = read.texture; this.blurMat.uniforms.dir.value.set(0, radius / this.hh); this._pass(this.blurMat, write); t = read; read = write; write = t;
     }
@@ -274,8 +274,7 @@ class City {
     const desk = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, 1.1, 1.3), mat(0x5a4632)); desk.position.set(x, 0.82, z - d * 0.2); desk.castShadow = true; G.add(desk);
     this.boxes.push({ x, z: z - d * 0.2, hw: w * 0.25 + 0.2, hd: 0.85 });
     const elev = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w * 0.45, 3), h0 - 1.0, 0.16), mat(0x1a2530, { emissive: 0x2fd0e0, emissiveIntensity: 0.5 })); elev.position.set(x, (h0 - 1.0) / 2, z - d / 2 + 0.35); G.add(elev);
-    const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, 0.14, d * 0.6), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 0.9 })); panel.position.set(x, h0 - 0.4, z); G.add(panel);
-    const pl = new THREE.PointLight(0xffe6c0, 8, 18, 2); pl.position.set(x, h0 - 1, z); G.add(pl);
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, 0.16, d * 0.6), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 1.3 })); panel.position.set(x, h0 - 0.4, z); G.add(panel);
     // shaft above the lobby (no ground-level collision)
     const shaftH = h - h0, { map, emissive } = facadeTextures(w, shaftH, '#' + color.toString(16).padStart(6, '0'));
     const side = () => mat(0xffffff, { map: map.clone(), emissiveMap: emissive.clone(), emissive: 0xffffff, emissiveIntensity: 1.05 });
@@ -319,20 +318,17 @@ class City {
       const desk = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, 1.1, 1.6), mat(0x5a4632)); desk.position.set(cx, 0.85, cz - d * 0.22); desk.castShadow = true; G.add(desk);
       this.boxes.push({ x: cx, z: cz - d * 0.22, hw: w * 0.25 + 0.2, hd: 1.0 });
       for (const sx of [-1, 1]) { const sofa = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.8, 1.3), mat(0x8a3a58)); sofa.position.set(cx + sx * (w / 2 - 3), 0.55, cz + d * 0.2); G.add(sofa); }
-      const chand = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 12), mat(0xfff2cf, { emissive: 0xffe6b0, emissiveIntensity: 1.8 })); chand.position.set(cx, h - 1.2, cz); G.add(chand);
-      const pl = new THREE.PointLight(0xffe6c0, 11, 24, 2); pl.position.set(cx, h - 1.2, cz); G.add(pl);
+      const chand = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 12), mat(0xfff2cf, { emissive: 0xffe6b0, emissiveIntensity: 2.2 })); chand.position.set(cx, h - 1.2, cz); G.add(chand);
     } else if (type === 'diner') {
       const counter = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6, 1.05, 1.3), mat(0xc23232)); counter.position.set(cx, 0.82, cz - d * 0.16); counter.castShadow = true; G.add(counter);
       this.boxes.push({ x: cx, z: cz - d * 0.16, hw: w * 0.3 + 0.2, hd: 0.9 });
       for (let s = -2; s <= 2; s++) { const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.9, 12), mat(0x2b2b33)); stool.position.set(cx + s * 2.2, 0.55, cz - d * 0.16 + 1.6); G.add(stool); }
-      const pl = new THREE.PointLight(0xfff0d0, 10, 22, 2); pl.position.set(cx, h - 1, cz); G.add(pl);
-      for (const ox of [-w * 0.25, w * 0.25]) { const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, 0.14, d * 0.5), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 0.9 })); panel.position.set(cx + ox, h - 0.5, cz); G.add(panel); }
+      for (const ox of [-w * 0.25, w * 0.25]) { const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, 0.16, d * 0.5), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 1.3 })); panel.position.set(cx + ox, h - 0.5, cz); G.add(panel); }
     } else {
       const counter = new THREE.Mesh(new THREE.BoxGeometry(w * 0.55, 1.1, 1.4), mat(0x6b4a2e)); counter.position.set(cx, 0.85, cz - d * 0.18); counter.castShadow = true; G.add(counter);
       this.boxes.push({ x: cx, z: cz - d * 0.18, hw: w * 0.275 + 0.2, hd: 0.9 });
       for (const sx of [-1, 1]) { const sh = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.4, d * 0.5), mat(0x45414c)); sh.position.set(cx + sx * (w / 2 - 1.2), 1.3, cz - d * 0.05); G.add(sh); }
-      const pl = new THREE.PointLight(0xffe6c0, 10, 22, 2); pl.position.set(cx, h - 1, cz); G.add(pl);
-      for (const ox of [-w * 0.22, w * 0.22]) { const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.32, 0.14, d * 0.55), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 0.9 })); panel.position.set(cx + ox, h - 0.5, cz - d * 0.05); G.add(panel); }
+      for (const ox of [-w * 0.22, w * 0.22]) { const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.32, 0.16, d * 0.55), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 1.3 })); panel.position.set(cx + ox, h - 0.5, cz - d * 0.05); G.add(panel); }
     }
     this.shops.push(rec);
   }
@@ -532,20 +528,21 @@ class Game {
   constructor() {
     const canvas = document.getElementById('gl');
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
     this.renderer.setSize(innerWidth, innerHeight);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.autoUpdate = false; this._shadowT = 0; // shadows refreshed ~8x/s, not every frame
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.Fog(0x43264f, 130, 340);
+    this.scene.fog = new THREE.Fog(0x43264f, 120, 300);
     this.camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.3, 900);
     this.camera.position.set(0, 60, 130);
-    this.renderDist = 210; this._frustum = new THREE.Frustum(); this._m = new THREE.Matrix4(); this._sph = new THREE.Sphere();
+    this.renderDist = 185; this._frustum = new THREE.Frustum(); this._m = new THREE.Matrix4(); this._sph = new THREE.Sphere();
 
     this.sky = makeSky(); this.scene.add(this.sky);
-    this.hemi = new THREE.HemisphereLight(0xa88ed0, 0x44363f, 1.25); this.scene.add(this.hemi);
+    this.hemi = new THREE.HemisphereLight(0xa88ed0, 0x44363f, 1.4); this.scene.add(this.hemi);
     this.sun = new THREE.DirectionalLight(0xffbe86, 2.35); this.sun.position.set(90, 80, 60); this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(2048, 2048); const sc = this.sun.shadow.camera; sc.left = -80; sc.right = 80; sc.top = 80; sc.bottom = -80; sc.near = 1; sc.far = 420; this.sun.shadow.bias = -0.0006;
+    this.sun.shadow.mapSize.set(1024, 1024); const sc = this.sun.shadow.camera; sc.left = -70; sc.right = 70; sc.top = 70; sc.bottom = -70; sc.near = 1; sc.far = 380; this.sun.shadow.bias = -0.0008;
     this.scene.add(this.sun); this.scene.add(this.sun.target);
     this.fill = new THREE.DirectionalLight(0x8a6bff, 0.6); this.fill.position.set(-70, 45, -55); this.scene.add(this.fill);
 
@@ -570,8 +567,8 @@ class Game {
   start() {
     this.playing = true; this.paused = false; this.menuMode = false; this.ui.modal = null; this.ui.hideTitle();
     this.player.root.visible = true; this.player.spawn();
-    for (let i = 0; i < 55; i++) this.spawnPed();
-    for (let i = 0; i < 22; i++) this.spawnTraffic();
+    for (let i = 0; i < 46; i++) this.spawnPed();
+    for (let i = 0; i < 18; i++) this.spawnTraffic();
     let dancers = 0; for (const club of this.city.clubs) for (const d of club.dance) { if (dancers++ >= 6) break; const ped = new Ped(this, d.x, d.z, false, { dance: true }); ped.story = true; this.npcs.push(ped); }
     this.story.begin(); this.input.lock();
   }
@@ -648,6 +645,8 @@ class Game {
     }
     if (this.player.pos) { this.sun.position.set(this.player.pos.x + 90, 100, this.player.pos.z + 60); this.sun.target.position.copy(this.player.pos); this.sun.target.updateMatrixWorld(); }
     this.sky.position.copy(this.camera.position);
+    // refresh the shadow map only a few times per second (buildings are static)
+    this._shadowT -= dt; if (this._shadowT <= 0) { this.renderer.shadowMap.needsUpdate = true; this._shadowT = 0.11; }
     this.post.render(); this.input.end();
   }
   updateWanted(dt) { const p = this.player; if (p.heat > 0) { p.heat -= dt; if (p.heat <= 0) { p.wanted = Math.max(0, p.wanted - 1); p.heat = p.wanted > 0 ? 14 : 0; } } this.copT = (this.copT || 0) - dt; if (p.wanted > 0 && this.copT <= 0) { this.copT = 2.0; const want = Math.min(8, p.wanted * 2); let have = this.npcs.filter(n => n.cop && !n.dead).length; while (have < want) { const a = rnd(TAU), r = rnd(28, 44); this.npcs.push(new Ped(this, p.pos.x + Math.cos(a) * r, p.pos.z + Math.sin(a) * r, true)); have++; } } if (p.wanted === 0) for (const n of this.npcs) if (n.cop) n.removeMe = true; }
@@ -657,7 +656,7 @@ class Game {
     for (const f of this.fx) { f.life -= dt; for (let i = 0; i < f.n; i++) { f.vs[i * 3 + 1] -= 12 * dt; f.ps[i * 3] += f.vs[i * 3] * dt; f.ps[i * 3 + 1] += f.vs[i * 3 + 1] * dt; f.ps[i * 3 + 2] += f.vs[i * 3 + 2] * dt; } f.g.attributes.position.needsUpdate = true; f.m.material.opacity = Math.max(0, f.life / 0.6); }
     this.fx = this.fx.filter(f => { if (f.life <= 0) { this.scene.remove(f.m); f.g.dispose(); f.m.material.dispose(); return false; } return true; });
   }
-  cull() { this.npcs = this.npcs.filter(n => { if (n.removeMe) { this.scene.remove(n.root); return false; } return true; }); const civ = this.npcs.filter(n => !n.cop && !n.story).length; if (civ < 50) { this.spawnPed(); if (civ < 44) this.spawnPed(); } if (this.cars.length < 20) this.spawnTraffic(); }
+  cull() { this.npcs = this.npcs.filter(n => { if (n.removeMe) { this.scene.remove(n.root); return false; } return true; }); const civ = this.npcs.filter(n => !n.cop && !n.story).length; if (civ < 42) { this.spawnPed(); if (civ < 36) this.spawnPed(); } if (this.cars.length < 16) this.spawnTraffic(); }
 }
 function raySphere(o, d, c, r) { const oc = o.clone().sub(c), b = oc.dot(d), cc = oc.dot(oc) - r * r, h = b * b - cc; if (h < 0) return null; const t = -b - Math.sqrt(h); return t >= 0 ? t : null; }
 
@@ -679,10 +678,10 @@ class Player {
   eye() { return new THREE.Vector3(this.pos.x, this.pos.y + 1.5, this.pos.z); }
   update(dt) {
     const inp = this.game.input;
-    this.camYaw += inp.mdx * 0.0024; this.camPitch = clamp(this.camPitch - inp.mdy * 0.0024, -0.2, 1.2); this.camDist = clamp(this.camDist + inp.wheel * 0.8, 4, 13);
+    this.camYaw -= inp.mdx * 0.0024; this.camPitch = clamp(this.camPitch - inp.mdy * 0.0024, -0.2, 1.2); this.camDist = clamp(this.camDist + inp.wheel * 0.8, 4, 13);
     if (inp.p('KeyF')) { if (this.inCar) this.exitCar(); else { const car = this.game.nearestCar(this.pos, 4.5); if (car) this.enterCar(car); } }
     if (this.inCar) { const car = this.inCar; car.control(dt, inp); this.pos.copy(car.pos); this.yaw = car.yaw; this._stats(dt); return; }
-    const fwd = new THREE.Vector3(Math.sin(this.camYaw), 0, Math.cos(this.camYaw)), right = new THREE.Vector3(fwd.z, 0, -fwd.x), wish = new THREE.Vector3();
+    const fwd = new THREE.Vector3(Math.sin(this.camYaw), 0, Math.cos(this.camYaw)), right = new THREE.Vector3(-fwd.z, 0, fwd.x), wish = new THREE.Vector3();
     if (inp.k('KeyW')) wish.add(fwd); if (inp.k('KeyS')) wish.sub(fwd); if (inp.k('KeyD')) wish.add(right); if (inp.k('KeyA')) wish.sub(right);
     const moving = wish.lengthSq() > 0; if (moving) wish.normalize();
     const sprint = inp.k('ShiftLeft') || inp.k('ShiftRight'), sp = sprint ? 9.5 : 5.0;
