@@ -351,8 +351,9 @@ class City {
       // downtown is tall in the middle, low at the edges — breaks the flat grid skyline
       const hs = clamp(1.2 - Math.hypot(cx, cz) / (half * 1.05), 0.4, 1.25);
       const r = rng();
-      if (r < 0.12) this._park(cx, cz, LOT, rng, G);
-      else if (r < 0.38) { const type = ['club', 'hotel', 'diner', 'shop', 'club', 'shop', 'diner', 'club'][(rng() * 8) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
+      if (r < 0.05) this._camp(cx, cz, LOT, rng, G);      // homeless encampment
+      else if (r < 0.15) this._park(cx, cz, LOT, rng, G);
+      else if (r < 0.40) { const type = ['club', 'hotel', 'diner', 'shop', 'club', 'shop', 'diner', 'club'][(rng() * 8) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
       else if (r < 0.64) this._tower(cx, cz, LOT - 12, LOT - 14, (34 + rng() * 96) * hs, FACADES[(rng() * FACADES.length) | 0], rng, G); // standalone enterable high-rise
       else this._block(cx, cz, LOT, rng, hs, G);   // mixed block: rows of small shops + central towers
       this._props(cx, cz, LOT, rng, G);            // street furniture on every block
@@ -364,6 +365,13 @@ class City {
     const sand = new THREE.Mesh(new THREE.PlaneGeometry(span + 900, 160), mat(0xd6c493)); sand.rotation.x = -Math.PI / 2; sand.position.set(0, 0.03, half + 90); this.group.add(sand);
     for (let i = 0; i < 10; i++) this.palm(rnd(-half + 20, half - 20), half + 46 + rnd(0, 28), this.group);
     this._airport(half);
+    // hidden packages (collectibles)
+    this.packages = [];
+    for (let i = 0; i < 12; i++) {
+      const [px2, pz2] = this.snapSidewalk(rnd(-half + 14, half - 14), rnd(-half + 14, half - 14));
+      const pk = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), mat(0x3ae08a, { emissive: 0x2fe07a, emissiveIntensity: 1.8 }));
+      pk.position.set(px2, 0.5, pz2); this.group.add(pk); this.packages.push({ m: pk, x: px2, z: pz2, got: false });
+    }
   }
   _airport(half) {
     const cz = -half - 105; // runway centre (south of the city), runway runs along Z
@@ -371,10 +379,10 @@ class City {
     const rw = new THREE.Mesh(new THREE.BoxGeometry(30, 0.3, 300), mat(0x2b2e35)); rw.position.set(0, 0.16, cz); this.group.add(rw);
     for (let i = -6; i <= 6; i++) { const d = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.02, 12), mat(0xf0f0f4, { emissive: 0x9aa, emissiveIntensity: 0.4 })); d.position.set(0, 0.33, cz + i * 22); this.group.add(d); }
     const term = new THREE.Mesh(new THREE.BoxGeometry(120, 16, 30), mat(0xc6ccd6)); term.position.set(92, 8, cz - 20); term.castShadow = true; term.receiveShadow = true; this.group.add(term);
-    this.boxes.push({ x: 92, z: cz - 20, hw: 60, hd: 16 });
+    this.boxes.push({ x: 92, z: cz - 20, hw: 60, hd: 16, h: 16 });
     const glass = new THREE.Mesh(new THREE.BoxGeometry(118, 10, 0.4), mat(0x0e2036, { emissive: 0x2f6fd4, emissiveIntensity: 0.4 })); glass.position.set(92, 8, cz - 4.8); this.group.add(glass);
     const ctrl = new THREE.Mesh(new THREE.BoxGeometry(9, 30, 9), mat(0xb0b8c2)); ctrl.position.set(150, 15, cz - 20); ctrl.castShadow = true; this.group.add(ctrl);
-    const ctop = new THREE.Mesh(new THREE.BoxGeometry(13, 6, 13), mat(0x123, { emissive: 0x2f6fd4, emissiveIntensity: 0.3 })); ctop.position.set(150, 32, cz - 20); this.group.add(ctop); this.boxes.push({ x: 150, z: cz - 20, hw: 6, hd: 6 });
+    const ctop = new THREE.Mesh(new THREE.BoxGeometry(13, 6, 13), mat(0x123, { emissive: 0x2f6fd4, emissiveIntensity: 0.3 })); ctop.position.set(150, 32, cz - 20); this.group.add(ctop); this.boxes.push({ x: 150, z: cz - 20, hw: 6, hd: 6, h: 35 });
     this.airport = { z: cz, exit: { x: 24, z: -half - 40 } };
   }
   _road(x, z, w, d, roadMat, yellow, white, vertical) {
@@ -397,7 +405,7 @@ class City {
     for (const sx of [-1, 1]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, h0, 12), trimMat); c.position.set(x + sx * (w / 2 - 0.55), h0 / 2, z + d / 2 - 0.55); c.castShadow = true; G.add(c); this.boxes.push({ x: c.position.x, z: c.position.z, hw: 0.6, hd: 0.6 }); }
     // lobby fit-out: reception desk, glowing elevator doors, ceiling glow, point light
     const desk = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, 1.1, 1.3), mat(0x5a4632)); desk.position.set(x, 0.82, z - d * 0.2); desk.castShadow = true; G.add(desk);
-    this.boxes.push({ x, z: z - d * 0.2, hw: w * 0.25 + 0.2, hd: 0.85 });
+    this.boxes.push({ x, z: z - d * 0.2, hw: w * 0.25 + 0.2, hd: 0.85, h: 1.4 });
     const elev = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w * 0.45, 3), h0 - 1.0, 0.16), mat(0x1a2530, { emissive: 0x2fd0e0, emissiveIntensity: 0.5 })); elev.position.set(x, (h0 - 1.0) / 2, z - d / 2 + 0.35); G.add(elev);
     const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, 0.16, d * 0.6), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 1.3 })); panel.position.set(x, h0 - 0.4, z); G.add(panel);
     // shaft above the lobby (no ground-level collision)
@@ -441,17 +449,17 @@ class City {
       rec.dance = [{ x: cx - 3, z: cz - 1 }, { x: cx + 3, z: cz - 2 }, { x: cx, z: cz + 2 }]; this.clubs.push(rec);
     } else if (type === 'hotel') {
       const desk = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, 1.1, 1.6), mat(0x5a4632)); desk.position.set(cx, 0.85, cz - d * 0.22); desk.castShadow = true; G.add(desk);
-      this.boxes.push({ x: cx, z: cz - d * 0.22, hw: w * 0.25 + 0.2, hd: 1.0 });
+      this.boxes.push({ x: cx, z: cz - d * 0.22, hw: w * 0.25 + 0.2, hd: 1.0, h: 1.4 });
       for (const sx of [-1, 1]) { const sofa = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.8, 1.3), mat(0x8a3a58)); sofa.position.set(cx + sx * (w / 2 - 3), 0.55, cz + d * 0.2); G.add(sofa); }
       const chand = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 12), mat(0xfff2cf, { emissive: 0xffe6b0, emissiveIntensity: 2.2 })); chand.position.set(cx, h - 1.2, cz); G.add(chand);
     } else if (type === 'diner') {
       const counter = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6, 1.05, 1.3), mat(0xc23232)); counter.position.set(cx, 0.82, cz - d * 0.16); counter.castShadow = true; G.add(counter);
-      this.boxes.push({ x: cx, z: cz - d * 0.16, hw: w * 0.3 + 0.2, hd: 0.9 });
+      this.boxes.push({ x: cx, z: cz - d * 0.16, hw: w * 0.3 + 0.2, hd: 0.9, h: 1.3 });
       for (let s = -2; s <= 2; s++) { const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.9, 12), mat(0x2b2b33)); stool.position.set(cx + s * 2.2, 0.55, cz - d * 0.16 + 1.6); G.add(stool); }
       for (const ox of [-w * 0.25, w * 0.25]) { const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, 0.16, d * 0.5), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 1.3 })); panel.position.set(cx + ox, h - 0.5, cz); G.add(panel); }
     } else {
       const counter = new THREE.Mesh(new THREE.BoxGeometry(w * 0.55, 1.1, 1.4), mat(0x6b4a2e)); counter.position.set(cx, 0.85, cz - d * 0.18); counter.castShadow = true; G.add(counter);
-      this.boxes.push({ x: cx, z: cz - d * 0.18, hw: w * 0.275 + 0.2, hd: 0.9 });
+      this.boxes.push({ x: cx, z: cz - d * 0.18, hw: w * 0.275 + 0.2, hd: 0.9, h: 1.4 });
       for (const sx of [-1, 1]) { const sh = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.4, d * 0.5), mat(0x45414c)); sh.position.set(cx + sx * (w / 2 - 1.2), 1.3, cz - d * 0.05); G.add(sh); }
       for (const ox of [-w * 0.22, w * 0.22]) { const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.32, 0.16, d * 0.55), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 1.3 })); panel.position.set(cx + ox, h - 0.5, cz - d * 0.05); G.add(panel); }
     }
@@ -499,13 +507,30 @@ class City {
     for (let i = 0; i < 7; i++) { const f = new THREE.Mesh(new THREE.ConeGeometry(0.55, 4.2, 6), mat(0x2f8f48)); f.position.set(Math.cos(i / 7 * TAU) * 1.7, 6.4, Math.sin(i / 7 * TAU) * 1.7); f.rotation.z = Math.cos(i / 7 * TAU); f.rotation.x = Math.sin(i / 7 * TAU); f.castShadow = true; g.add(f); }
     g.position.set(x, 0.2, z); (G || this.group).add(g);
   }
+  _camp(cx, cz, LOT, rng, G) {
+    // homeless encampment: dirt lot, tents, cardboard, barrel fires
+    this.camps = this.camps || [];
+    const dirt = new THREE.Mesh(new THREE.BoxGeometry(LOT, 0.3, LOT), mat(0x6e6053, { map: noiseTexture(112, 98, 84, 16) })); dirt.position.set(cx, 0.12, cz); dirt.receiveShadow = true; G.add(dirt);
+    const tentCols = [0x4a6c8a, 0x6d8a4a, 0x8a6b4a, 0x7a4a5a, 0x5a5a66];
+    for (let i = 0; i < 4 + (rng() * 3 | 0); i++) {
+      const tx = cx + rnd(-LOT / 2 + 5, LOT / 2 - 5), tz = cz + rnd(-LOT / 2 + 5, LOT / 2 - 5);
+      const tent = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 2.0, 2.2, 4), mat(pick(tentCols))); tent.position.set(tx, 1.1, tz); tent.rotation.y = rnd(TAU); tent.castShadow = true; G.add(tent);
+      this.boxes.push({ x: tx, z: tz, hw: 1.5, hd: 1.5, h: 2.4 });
+    }
+    for (let i = 0; i < 3; i++) { const cb = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.06, 1.1), mat(0xa8906a)); cb.position.set(cx + rnd(-LOT / 2 + 4, LOT / 2 - 4), 0.3, cz + rnd(-LOT / 2 + 4, LOT / 2 - 4)); cb.rotation.y = rnd(TAU); G.add(cb); }
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.0, 12), mat(0x4a3c30)); barrel.position.set(cx, 0.62, cz); barrel.castShadow = true; G.add(barrel);
+    const fire = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.6, 8), mat(0xff8a3a, { emissive: 0xff6a1a, emissiveIntensity: 2.4 })); fire.position.set(cx, 1.35, cz); G.add(fire);
+    const cart = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.9, 0.7), mat(0x9aa0aa)); cart.position.set(cx + 3, 0.75, cz + 2); cart.rotation.y = 0.4; G.add(cart);
+    this.boxes.push({ x: cx, z: cz, hw: 0.6, hd: 0.6, h: 1.6 });
+    this.camps.push({ x: cx, z: cz, r: LOT / 2 - 4 });
+  }
   _vendorStall(x, z) {
     const G = this.group;
     const cart = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.0, 1.2), mat(0x8a5a3a)); cart.position.set(x, 0.6, z); cart.castShadow = true; G.add(cart);
     const goods = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.3, 0.9), mat(pick([0xd23b3b, 0x2fb85e, 0xf0b83a, 0xe0683a]))); goods.position.set(x, 1.2, z); G.add(goods);
     const top = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.12, 1.5), mat(pick([0xff5a5a, 0x4fd0ff, 0xffd23a, 0x4dff9e]))); top.position.set(x, 1.75, z); G.add(top);
     for (const sx of [-1, 1]) { const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.75, 6), mat(0x2a2e36)); pole.position.set(x + sx * 1.15, 0.87, z); G.add(pole); }
-    this.boxes.push({ x, z, hw: 1.4, hd: 0.8 });
+    this.boxes.push({ x, z, hw: 1.4, hd: 0.8, h: 2.0 });
   }
   _lamp(x, z) {
     const g = new THREE.Group();
@@ -553,15 +578,21 @@ function humanFigure(p) {
   for (const s of ['L', 'R']) {
     const sx = s === 'L' ? -1 : 1; const leg = new THREE.Group(); leg.position.set(sx * 0.1, 0, 0); hips.add(leg);
     const thigh = cap(0.1, 0.34, Pa); thigh.position.y = -0.22; leg.add(thigh);
+    const knee = new THREE.Mesh(new THREE.SphereGeometry(0.085, 12, 10), Pa); knee.position.y = -0.45; leg.add(knee);
     const shin = new THREE.Group(); shin.position.y = -0.46; leg.add(shin);
     const shinM = cap(0.08, 0.32, Pa); shinM.position.y = -0.2; shin.add(shinM);
     const foot = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.1, 0.3), Bo); foot.position.set(0, -0.4, 0.08); shin.add(foot);
+    const toe = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), Bo); toe.position.set(0, -0.42, 0.22); toe.scale.set(1, 0.72, 1); shin.add(toe);
     legs[s] = { leg, shin };
   }
-  // torso (waist -> shoulders)
+  // torso (waist -> shoulders) + belt + collar
   const chest = new THREE.Group(); chest.position.y = 0.1; hips.add(chest);
   const prof = [[0.04, 0], [0.15, 0.02], [0.18, 0.14], [0.205, 0.3], [0.215, 0.42], [0.17, 0.5], [0.08, 0.55], [0.03, 0.57]].map(a => new THREE.Vector2(a[0], a[1]));
   const torso = new THREE.Mesh(new THREE.LatheGeometry(prof, 32), Sh); torso.scale.z = 0.72; chest.add(torso);
+  const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.165, 0.17, 0.06, 20), mat(0x1a1a20)); belt.position.y = 0.03; belt.scale.z = 0.76; chest.add(belt);
+  const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.02), mat(0xc9b25a)); buckle.position.set(0, 0.03, 0.13); chest.add(buckle);
+  const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.105, 0.05, 16), mat(new THREE.Color(shirt).multiplyScalar(0.82).getHex())); collar.position.y = 0.55; collar.scale.z = 0.8; chest.add(collar);
+  for (const sx of [-1, 1]) { const sh = new THREE.Mesh(new THREE.SphereGeometry(0.075, 14, 12), Sh); sh.position.set(sx * 0.2, 0.44, 0); chest.add(sh); } // shoulder caps
   // head — ~1/7 of body height (no more bobblehead)
   const head = new THREE.Group(); head.position.y = 0.62; chest.add(head);
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.07, 0.1, 12), Sk); neck.position.y = -0.04; head.add(neck);
@@ -593,9 +624,11 @@ function humanFigure(p) {
   for (const s of ['L', 'R']) {
     const sx = s === 'L' ? -1 : 1; const arm = new THREE.Group(); arm.position.set(sx * 0.2, 0.42, 0); arm.rotation.z = sx * 0.05; chest.add(arm);
     const up = cap(0.056, 0.24, Sh); up.position.y = -0.16; arm.add(up);
+    const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 10), Sk); elbow.position.y = -0.33; arm.add(elbow);
     const fore = new THREE.Group(); fore.position.y = -0.34; arm.add(fore);
     const foreM = cap(0.046, 0.22, Sk); foreM.position.y = -0.14; fore.add(foreM);
     const hand = new THREE.Mesh(new THREE.SphereGeometry(0.052, 12, 10), Sk); hand.position.y = -0.29; hand.scale.set(1, 1.15, 0.7); fore.add(hand);
+    const thumb = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), Sk); thumb.position.set(sx * -0.04, -0.27, 0.02); fore.add(thumb);
     arms[s] = { arm, fore };
   }
   if (!p.noScale) { const bs = rnd(0.9, 1.14); group.scale.set(bs * rnd(0.93, 1.08), bs, bs * rnd(0.95, 1.05)); } // varied heights & builds
@@ -606,7 +639,7 @@ function humanFigure(p) {
 function animateHuman(f, dt, o) {
   const j = f.j, state = o.state || 'idle'; f.t += dt; const t = f.t;
   const set = (n, x, y, z) => { const g = j[n]; if (x !== undefined) g.rotation.x = x; if (y !== undefined) g.rotation.y = y; if (z !== undefined) g.rotation.z = z; };
-  j.chest.scale.set(1, 1, 1);
+  j.chest.scale.set(1, 1, 1); f.group.rotation.x = 0; f.group.rotation.z = 0;
   if (state === 'walk' || state === 'run') {
     const run = state === 'run', amp = run ? 0.9 : 0.55, ph = t * (run ? 10.5 : 7.2);
     set('legL', Math.sin(ph) * amp); set('legR', Math.sin(ph + Math.PI) * amp);
@@ -632,13 +665,73 @@ function animateHuman(f, dt, o) {
     set('hips', 0, Math.sin(ph * 0.5) * 0.28, 0); j.chest.rotation.y = Math.sin(ph * 0.5 + 1) * 0.22; j.chest.rotation.x = 0.05; j.head.rotation.y = Math.sin(ph * 0.5) * 0.22;
     set('legL', Math.sin(ph) * 0.18); set('legR', -Math.sin(ph) * 0.18); set('shinL', 0.12); set('shinR', 0.12);
     const bob = Math.abs(Math.sin(ph)); f.group.position.y = bob * 0.1; j.chest.scale.set(1 - bob * 0.05, 1 + bob * 0.08, 1 - bob * 0.05);
+  } else if (state === 'wave') {
+    zero(j, f); j.armR.rotation.x = -2.6; j.armR.rotation.z = -0.35; j.foreR.rotation.x = -0.3; j.foreR.rotation.z = Math.sin(t * 7) * 0.55;
+    j.head.rotation.y = Math.sin(t * 1.2) * 0.06; j.chest.rotation.x = 0.02;
+  } else if (state === 'phone') {
+    zero(j, f); j.armR.rotation.x = -0.5; j.foreR.rotation.x = -2.15; j.armR.rotation.z = -0.25;
+    j.head.rotation.x = 0.28; j.head.rotation.y = -0.12 + Math.sin(t * 0.7) * 0.03; j.chest.rotation.x = 0.06;
+  } else if (state === 'smoke') {
+    zero(j, f); const cyc = (t % 5) / 5, up = cyc < 0.3 ? Math.sin(cyc / 0.3 * Math.PI) : 0;
+    j.armR.rotation.x = -0.3 - up * 1.35; j.foreR.rotation.x = -0.5 - up * 0.9; j.head.rotation.x = up * 0.14; j.chest.rotation.x = 0.04;
+  } else if (state === 'lean') {
+    zero(j, f); j.chest.rotation.x = -0.14; f.group.position.y = -0.05; f.group.rotation.x = -0.18;
+    j.armL.rotation.z = 0.3; j.armR.rotation.z = -0.3; j.foreL.rotation.x = -0.9; j.foreR.rotation.x = -0.9;
+    set('legL', 0.25); set('legR', 0.25); set('shinL', -0.1); set('shinR', -0.1); j.head.rotation.y = Math.sin(t * 0.5) * 0.12;
+  } else if (state === 'panhandle') {
+    set('legL', -1.5); set('legR', -1.5); set('shinL', 1.7); set('shinR', 1.7); f.group.position.y = -0.42;
+    j.chest.rotation.x = 0.22; j.head.rotation.x = 0.12 + Math.sin(t * 0.9) * 0.05;
+    j.armR.rotation.x = -0.95; j.foreR.rotation.x = -0.35; j.armL.rotation.x = -0.25; j.foreL.rotation.x = -0.7; // cup held out
+  } else if (state === 'sleep') {
+    zero(j, f); f.group.rotation.z = Math.PI / 2; f.group.position.y = -0.62;
+    set('legL', -0.5); set('legR', -0.4); set('shinL', 0.8); set('shinR', 0.7); j.armL.rotation.x = -1.3; j.foreL.rotation.x = -1.1; j.armR.rotation.x = -0.3;
+    j.chest.rotation.x = 0.2; j.head.rotation.x = 0.3;
+  } else if (state === 'workout') {
+    const ph = Math.sin(t * 3.2), dn = (ph + 1) / 2; zero(j, f);
+    set('legL', -dn * 1.5); set('legR', -dn * 1.5); set('shinL', dn * 1.9); set('shinR', dn * 1.9); f.group.position.y = -dn * 0.4;
+    j.armL.rotation.x = -1.5; j.armR.rotation.x = -1.5; j.foreL.rotation.x = -0.15; j.foreR.rotation.x = -0.15; j.chest.rotation.x = 0.1;
+  } else if (state === 'point') {
+    zero(j, f); j.armR.rotation.x = -1.5; j.foreR.rotation.x = -0.06; j.head.rotation.y = -0.1; j.chest.rotation.y = -0.08;
+  } else if (state === 'cheer') {
+    const ph = t * 5, up = Math.abs(Math.sin(ph)); zero(j, f);
+    j.armL.rotation.x = -2.5 - up * 0.4; j.armR.rotation.x = -2.5 - up * 0.4; j.armL.rotation.z = 0.35; j.armR.rotation.z = -0.35;
+    f.group.position.y = up * 0.14; j.head.rotation.x = -0.15; j.chest.scale.set(1, 1 + up * 0.04, 1);
+  } else if (state === 'cower') {
+    zero(j, f); j.chest.rotation.x = 0.85; j.head.rotation.x = 0.5; f.group.position.y = -0.3;
+    set('legL', -0.9); set('legR', -0.9); set('shinL', 1.3); set('shinR', 1.3);
+    j.armL.rotation.x = -2.4; j.armR.rotation.x = -2.4; j.foreL.rotation.x = -1.2; j.foreR.rotation.x = -1.2; // arms over head
+  } else if (state === 'handsup') {
+    zero(j, f); j.armL.rotation.x = -2.9; j.armR.rotation.x = -2.9; j.armL.rotation.z = 0.25; j.armR.rotation.z = -0.25;
+    j.foreL.rotation.x = -0.15; j.foreR.rotation.x = -0.15; j.head.rotation.x = 0.08 + Math.sin(t * 3) * 0.02;
+  } else if (state === 'drunk') {
+    const ph = t * 4.6;
+    set('legL', Math.sin(ph) * 0.5); set('legR', Math.sin(ph + Math.PI) * 0.5);
+    set('shinL', Math.max(0, -Math.sin(ph + 0.5)) * 1.0); set('shinR', Math.max(0, -Math.sin(ph + Math.PI + 0.5)) * 1.0);
+    j.armL.rotation.x = Math.sin(ph * 0.7) * 0.6 - 0.2; j.armR.rotation.x = -Math.sin(ph * 0.6) * 0.6 - 0.2; j.foreL.rotation.x = -0.4; j.foreR.rotation.x = -0.4;
+    j.chest.rotation.z = Math.sin(t * 1.7) * 0.16; j.chest.rotation.x = 0.1; j.head.rotation.z = Math.sin(t * 1.3) * 0.2;
+    set('hips', 0, Math.sin(t * 1.1) * 0.2, 0); f.group.position.y = Math.abs(Math.sin(ph)) * 0.04;
+  } else if (state === 'argue') {
+    const ph = t * 3.4; zero(j, f);
+    j.armR.rotation.x = -1.1 + Math.sin(ph) * 0.5; j.foreR.rotation.x = -0.5 + Math.sin(ph + 1) * 0.4;
+    j.armL.rotation.x = -0.4 + Math.sin(ph * 0.7) * 0.3; j.foreL.rotation.x = -0.6;
+    j.head.rotation.x = -0.06 + Math.sin(ph) * 0.06; j.chest.rotation.x = -0.05; j.head.rotation.y = Math.sin(t * 1.4) * 0.1;
+  } else if (state === 'sweep') {
+    const ph = Math.sin(t * 2.6); zero(j, f);
+    j.armL.rotation.x = -0.8 + ph * 0.25; j.armR.rotation.x = -0.6 - ph * 0.25; j.foreL.rotation.x = -0.5; j.foreR.rotation.x = -0.4;
+    j.chest.rotation.x = 0.28; j.chest.rotation.y = ph * 0.18; j.head.rotation.x = 0.24;
   } else {
-    const b = Math.sin(t * 1.5);
+    const b = Math.sin(t * 1.5); zero(j, f);
     j.chest.rotation.x = 0.02 + b * 0.014; j.chest.rotation.y = Math.sin(t * 0.6) * 0.03; j.chest.scale.set(1, 1 + b * 0.02, 1);
     j.armL.rotation.x = b * 0.04; j.armR.rotation.x = -b * 0.04; j.armL.rotation.z = 0.06; j.armR.rotation.z = -0.06; j.foreL.rotation.x = -0.06; j.foreR.rotation.x = -0.06;
     j.head.rotation.y = Math.sin(t * 0.5) * 0.09; j.head.rotation.x = Math.sin(t * 0.7) * 0.03;
-    set('hips', 0, Math.sin(t * 0.7) * 0.02, 0); set('legL', 0); set('legR', 0); set('shinL', 0); set('shinR', 0); f.group.position.y = 0;
+    set('hips', 0, Math.sin(t * 0.7) * 0.02, 0);
   }
+}
+function zero(j, f) {
+  j.legL.rotation.x = 0; j.legR.rotation.x = 0; j.shinL.rotation.x = 0; j.shinR.rotation.x = 0;
+  j.armL.rotation.set(0, 0, 0.06); j.armR.rotation.set(0, 0, -0.06); j.foreL.rotation.set(-0.06, 0, 0); j.foreR.rotation.set(-0.06, 0, 0);
+  j.hips.rotation.set(0, 0, 0); j.chest.rotation.set(0, 0, 0); j.head.rotation.set(0, 0, 0);
+  f.group.position.y = 0; f.group.rotation.x = 0; f.group.rotation.z = 0;
 }
 function buildPerson(p) { return humanFigure(p); }
 function buildPlane() {
@@ -676,8 +769,14 @@ function buildCar(color) {
   for (const sz of [-1.52, 1.48]) for (const sx of [-1.0, 1.0]) { const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.32, 18), mat(0x0c0d11)); tire.rotation.z = Math.PI / 2; tire.position.set(sx, 0.45, sz); tire.castShadow = true; g.add(tire); const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.21, 0.34, 10), mat(0xc4c9d1)); rim.rotation.z = Math.PI / 2; rim.position.set(sx, 0.45, sz); g.add(rim); }
   const hl = mat(0xfff6d2, { emissive: 0xfff0b0, emissiveIntensity: 2.4 }); for (const sx of [-0.65, 0.65]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.2, 0.1), hl); l.position.set(sx, 0.72, -2.32); g.add(l); }
   const tl = mat(0xff2a2a, { emissive: 0xff1a1a, emissiveIntensity: 2.6 }); for (const sx of [-0.7, 0.7]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.18, 0.1), tl); l.position.set(sx, 0.74, 2.32); g.add(l); }
+  // detail: bumpers, side mirrors, plates, door seams
+  const chrome = mat(0xd8dde4);
+  for (const sz of [-2.36, 2.36]) { const b = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.16, 0.16), chrome); b.position.set(0, 0.5, sz); g.add(b); }
+  for (const sx of [-1.03, 1.03]) { const arm2 = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.04, 0.04), chrome); arm2.position.set(sx, 1.02, -1.15); g.add(arm2); const mir = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.16), mat(0x14161b)); mir.position.set(sx * 1.08, 1.02, -1.15); g.add(mir); }
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.16, 0.02), mat(0xe8e8d8)); plate.position.set(0, 0.55, 2.46); g.add(plate);
   return g;
 }
+function taxiSign() { const s = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.26, 0.4), mat(0xffd23a, { emissive: 0xffd23a, emissiveIntensity: 1.4 })); s.position.set(0, 1.66, -0.15); return s; }
 
 // ---------------------------------------------------------------------------
 // Game
@@ -712,6 +811,7 @@ class Game {
     this.ui = new UI(this);
 
     this.npcs = []; this.cars = []; this.fx = []; this.tracers = []; this.introMode = false;
+    try { this.saveData = JSON.parse(localStorage.getItem('nb_save') || 'null'); } catch (e) { this.saveData = null; }
     this.player = new Player(this);
     this.story = new Story(this);
     for (let i = 0; i < 8; i++) this.spawnPed(); for (let i = 0; i < 5; i++) this.spawnTraffic(); // ambient life for the menu / intro
@@ -731,7 +831,10 @@ class Game {
     let dancers = 0; for (const club of this.city.clubs) for (const d of club.dance) { if (dancers++ >= 6) break; const ped = new Ped(this, d.x, d.z, false, { dance: true }); ped.story = true; this.npcs.push(ped); }
     for (const v of this.city.vendors) { const ped = new Ped(this, v.x, v.z - 1.4, false, { vendor: true, yaw: 0 }); ped.story = true; this.npcs.push(ped); }   // shopkeepers behind the carts
     for (let i = 0; i < 8; i++) { const [lx, lz] = this.city.snapSidewalk(rnd(-this.city.size / 2 + 20, this.city.size / 2 - 20), rnd(-this.city.size / 2 + 20, this.city.size / 2 - 20)); const ped = new Ped(this, lx, lz, false, { loiter: true, yaw: rnd(TAU) }); ped.story = true; this.npcs.push(ped); }   // loiterers sitting around
+    for (const camp of (this.city.camps || [])) for (let i = 0; i < 4; i++) { const ped = new Ped(this, camp.x + rnd(-camp.r, camp.r), camp.z + rnd(-camp.r, camp.r), false, { homeless: true, yaw: rnd(TAU) }); ped.story = true; this.npcs.push(ped); }   // camp residents
+    for (let i = 0; i < 5; i++) { const [hx, hz] = this.city.snapSidewalk(rnd(-this.city.size / 2 + 16, this.city.size / 2 - 16), rnd(-this.city.size / 2 + 16, this.city.size / 2 - 16)); const ped = new Ped(this, hx, hz, false, { homeless: true, yaw: rnd(TAU) }); ped.story = true; this.npcs.push(ped); }   // scattered homeless on sidewalks
     this.story.begin(); this.input.lock();
+    if (this.saveData) { this.player.money = this.saveData.money != null ? this.saveData.money : this.player.money; this.player.hasGun = !!this.saveData.gun; if (this.player.hasGun) this.player.weapon = 'pistol'; }
   }
   spawnPed(cluster) {
     const c = this.city, a = rnd(TAU), r = rnd(22, 110); let x = this.player.pos.x + Math.cos(a) * r, z = this.player.pos.z + Math.sin(a) * r;
@@ -759,6 +862,7 @@ class Game {
     for (const n of this.npcs) { if (n.dead) continue; const t = raySphere(origin, dir, n.pos.clone().setY(n.pos.y + 1.0), 0.7); if (t != null && t < bestT) { bestT = t; victim = n; } }
     const end = origin.clone().addScaledVector(dir, Math.min(bestT, range));
     if (victim) { victim.damage(dmg, dir); this.hitFx(end, 0xff5050, 10); if (!victim.cop) this.addWanted(2); }
+    for (const n of this.npcs) if (!n.dead && n.scare && n.pos.distanceTo(origin) < 22) n.scare(5); // bystanders duck for cover
     this.addTracer(origin.clone().addScaledVector(dir, 1.2), end, 0xffe98a); return victim;
   }
   startCutscene(other) {
@@ -787,6 +891,51 @@ class Game {
   pause() { if (!this.playing || this.paused) return; this.paused = true; this.input.unlock(); this.ui.pauseMenu(true); }
   resume() { this.paused = false; this.ui.pauseMenu(false); this.input.lock(); }
   menuCam() { const t = this.time * 0.14, r = 118 + Math.sin(t * 0.5) * 48; this.camera.position.set(Math.cos(t) * r, 34 + Math.sin(t * 0.37) * 24, Math.sin(t) * r); this.camera.lookAt(Math.sin(t * 0.3) * 24, 16, Math.cos(t * 0.3) * 24); }
+  // ---- day / night cycle (blends day -> dusk -> night palettes) ----
+  updateDayNight() {
+    const phase = (this.time / 300) % 1, elev = Math.cos(phase * TAU);
+    const day = clamp(elev, 0, 1), night = clamp(-elev, 0, 1), dusk = 1 - Math.abs(elev);
+    const mixc = (d, k, n) => new THREE.Color(d).multiplyScalar(day).add(new THREE.Color(k).multiplyScalar(dusk)).add(new THREE.Color(n).multiplyScalar(night));
+    const u = this.sky.children[0].material.uniforms;
+    u.top.value.copy(mixc(0x2f6ad2, 0x3a1d5e, 0x0a0a22)); u.mid.value.copy(mixc(0x74a8e6, 0x8a3f86, 0x1a1438));
+    u.hor.value.copy(mixc(0xdcecf6, 0xe08a88, 0x2c2448)); u.bot.value.copy(mixc(0xa6bccb, 0x3a2646, 0x0c0a1a));
+    this.sun.intensity = 0.4 + day * 2.3 + dusk * 0.9; this.sun.color.copy(mixc(0xfff3da, 0xffb877, 0x93a8e0));
+    this.hemi.intensity = 0.42 + day * 0.75 + dusk * 0.35; this.scene.fog.color.copy(mixc(0xcfe0ee, 0x5a3a5e, 0x131024));
+    this.dayAmt = day;
+  }
+  // ---- E interactions: rob registers, eat at diners, taxi fast-travel ----
+  interact() {
+    const p = this.player;
+    for (const rec of this.city.shops) {
+      if (Math.abs(p.pos.x - rec.x) > (rec.w || 20) / 2 || Math.abs(p.pos.z - rec.z) > (rec.d || 20) / 2) continue;
+      if (rec.type === 'diner' && p.money >= 10) { p.money -= 10; p.health = p.maxHealth; this.ui.toast('Hot meal — HP restored (-$10)'); return; }
+      if (rec.type !== 'tower' && (!rec.robT || this.time > rec.robT)) {
+        rec.robT = this.time + 200; const take = 40 + (Math.random() * 90 | 0); p.money += take; this.addWanted(2);
+        for (const n of this.npcs) if (!n.dead && n.scare && n.pos.distanceTo(p.pos) < 24) n.scare(6);
+        this.ui.toast('Register robbed +$' + take); return;
+      }
+      if (rec.type === 'tower') { this.ui.toast('Lobby — nothing to take here'); return; }
+      this.ui.toast('Register already emptied'); return;
+    }
+    // taxi fast-travel to the current objective
+    for (const c of this.cars) { if (!c.taxi || c.driver) continue; if (c.pos.distanceTo(p.pos) > 5) continue;
+      if (!this.story.marker || !this.story.marker.visible) { this.ui.toast('Taxi: no destination right now'); return; }
+      if (p.money < 50) { this.ui.toast('Taxi: need $50'); return; }
+      p.money -= 50; const m = this.story.marker.position; p.pos.set(m.x + 4, 0, m.z + 4); p.root.position.copy(p.pos); this.ui.toast('Taxi ride -$50'); return; }
+  }
+  updatePickups(dt) {
+    for (const pk of this.city.packages) { if (pk.got) continue; pk.m.rotation.y += dt * 2.2; pk.m.position.y = 0.5 + Math.sin(this.time * 2.4 + pk.x) * 0.12;
+      if (Math.hypot(this.player.pos.x - pk.x, this.player.pos.z - pk.z) < 1.4) { pk.got = true; pk.m.visible = false; this.player.money += 150; const got = this.city.packages.filter(q => q.got).length; this.hitFx(pk.m.position, 0x4dff9e, 10); this.ui.toast('Hidden package ' + got + '/12 +$150'); } }
+  }
+  updateBusted(dt) {
+    const p = this.player;
+    if (p.wanted > 0 && !p.inCar) {
+      let near = false; for (const n of this.npcs) if (n.cop && !n.dead && n.pos.distanceTo(p.pos) < 1.9) { near = true; break; }
+      this._bustT = near ? (this._bustT || 0) + dt : 0;
+      if (this._bustT > 1.1 && !p.dead) { p.dead = true; this.saveGame(); this.ui.bustedOrDead('BUSTED'); }
+    } else this._bustT = 0;
+  }
+  saveGame() { try { localStorage.setItem('nb_save', JSON.stringify({ ch: Math.max(0, this.story.mi), money: this.player.money | 0, gun: !!this.player.hasGun })); } catch (e) {} }
   _ambient(dt) { for (const c of this.cars) c.update(dt); for (const n of this.npcs) if (!n.story) n.update(dt); this.updateCulling(); }
   intro() {
     this.ui.hideTitle(); this.ui.modal = null; this.menuMode = false; this.introMode = true; this.ui.letterbox(true);
@@ -835,12 +984,13 @@ class Game {
       if (this.input.p('Escape')) { if (this.ui.modal) this.ui.closeModal(); else if (this.paused) this.resume(); else this.pause(); }
       const frozen = this.paused || this.ui.modal;
       if (this.cine) { this.updateCutscene(dt); }
-      else if (!frozen) { this.player.update(dt); for (const n of this.npcs) n.update(dt); for (const c of this.cars) c.update(dt); this.story.update(dt); this.updateWanted(dt); this.cull(); this.player.updateCamera(dt, false); }
+      else if (!frozen) { this.player.update(dt); for (const n of this.npcs) n.update(dt); for (const c of this.cars) c.update(dt); this.story.update(dt); this.updateWanted(dt); this.updatePickups(dt); this.updateBusted(dt); this.cull(); this.player.updateCamera(dt, false); }
       else { this.player.updateCamera(dt, true); }
       this.updateFx(dt); this.ui.update(); this.updateCulling();
     }
     if (this.player.pos) { this.sun.position.set(this.player.pos.x - 48, 95, this.player.pos.z - 95); this.sun.target.position.copy(this.player.pos); this.sun.target.updateMatrixWorld(); }
     this.sky.position.copy(this.camera.position);
+    this.updateDayNight();
     if (this.sky.userData.clouds) for (const c of this.sky.userData.clouds.children) { c.position.x += dt * 2.4; if (c.position.x > 720) c.position.x -= 1440; }
     // refresh the shadow map only a few times per second (buildings are static)
     this._shadowT -= dt; if (this._shadowT <= 0) { this.renderer.shadowMap.needsUpdate = true; this._shadowT = 0.11; }
@@ -865,7 +1015,7 @@ class Player {
     this.game = game; this.pos = new THREE.Vector3(0, 0, 0); this.yaw = 0; this.vy = 0; this.onGround = true;
     this.camYaw = 0; this.camPitch = 0.22; this.camDist = 6.5;
     this.health = 100; this.maxHealth = 100; this.money = 200; this.wanted = 0; this.heat = 0;
-    this.inCar = null; this.regen = 0; this.dead = false; this.hasGun = false; this.gunCd = 0; this.punchT = 0; this.shootT = 0;
+    this.inCar = null; this.regen = 0; this.dead = false; this.hasGun = false; this.weapon = 'fists'; this.gunCd = 0; this.punchT = 0; this.shootT = 0;
     this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); game.scene.add(this.root); this.root.visible = false; this._build();
   }
   _build() { const f = buildPerson({ shirt: PLAYER_PURPLE, skin: 0xecbd90, hair: 0x201810, pants: 0x1f2530, style: 'mop', noScale: true }); this.fig = f; this.root.add(f.group); this.gun = buildPistol(); this.gun.position.set(0.02, -0.3, 0.06); this.gun.visible = false; f.j.foreR.add(this.gun); }
@@ -877,29 +1027,37 @@ class Player {
     const inp = this.game.input;
     this.camYaw -= inp.mdx * 0.0024; this.camPitch = clamp(this.camPitch + inp.mdy * 0.0024, -0.2, 1.2); this.camDist = clamp(this.camDist + inp.wheel * 0.8, 4, 13);
     if (inp.p('KeyF')) { if (this.inCar) this.exitCar(); else { const car = this.game.nearestCar(this.pos, 4.5); if (car) this.enterCar(car); } }
+    if (inp.p('Digit1')) { this.weapon = 'fists'; this.game.ui.toast('Fists'); }
+    if (inp.p('Digit2') && this.hasGun) { this.weapon = 'pistol'; this.game.ui.toast('Pistol'); }
+    if (!this.inCar && inp.p('KeyE')) this.game.interact();
     if (this.inCar) { const car = this.inCar; car.control(dt, inp); this.pos.copy(car.pos); this.yaw = car.yaw; this._stats(dt); return; }
     const fwd = new THREE.Vector3(Math.sin(this.camYaw), 0, Math.cos(this.camYaw)), right = new THREE.Vector3(-fwd.z, 0, fwd.x), wish = new THREE.Vector3();
     if (inp.k('KeyW')) wish.add(fwd); if (inp.k('KeyS')) wish.sub(fwd); if (inp.k('KeyD')) wish.add(right); if (inp.k('KeyA')) wish.sub(right);
     const moving = wish.lengthSq() > 0; if (moving) wish.normalize();
-    const sprint = inp.k('ShiftLeft') || inp.k('ShiftRight'), sp = sprint ? 9.5 : 5.0;
+    const inWater = this.pos.z > this.game.city.size / 2 + 95;
+    const sprint = inp.k('ShiftLeft') || inp.k('ShiftRight'), sp = inWater ? 2.6 : (sprint ? 9.5 : 5.0);
     this.pos.x += wish.x * sp * dt; this.pos.z += wish.z * sp * dt;
     [this.pos.x, this.pos.z] = this.game.city.collide(this.pos.x, this.pos.z, 0.5);
     this.pos.x = clamp(this.pos.x, -this.game.city.size / 2 - 60, this.game.city.size / 2 + 60); this.pos.z = clamp(this.pos.z, -this.game.city.size / 2 - 130, this.game.city.size / 2 + 170);
-    if (inp.k('Space') && this.onGround) { this.vy = 7; this.onGround = false; }
+    if (inp.k('Space') && this.onGround && !inWater) { this.vy = 7; this.onGround = false; }
     this.vy -= 22 * dt; this.pos.y += this.vy * dt; if (this.pos.y <= 0) { this.pos.y = 0; this.vy = 0; this.onGround = true; }
     if (moving) this.yaw = lerpAngle(this.yaw, Math.atan2(wish.x, wish.z), Math.min(1, dt * 12));
     this.gunCd = Math.max(0, this.gunCd - dt); this.punchT = Math.max(0, this.punchT - dt); this.shootT = Math.max(0, this.shootT - dt);
+    const armed = this.weapon === 'pistol' && this.hasGun;
     if (this.gunCd <= 0) {
-      if (this.hasGun && inp.mL) { this.gunCd = 0.16; this.shootT = 0.22; const d = new THREE.Vector3(); this.game.camera.getWorldDirection(d); this.yaw = Math.atan2(d.x, d.z); this.game.shootRay(this.eye(), d, 18, 120); }
-      else if (!this.hasGun && inp.mLe) { this.gunCd = 0.42; this.punchT = 0.3; this._punch(); }
+      if (armed && inp.mL) { this.gunCd = 0.16; this.shootT = 0.22; const d = new THREE.Vector3(); this.game.camera.getWorldDirection(d); this.yaw = Math.atan2(d.x, d.z); this.game.shootRay(this.eye(), d, 18, 120); }
+      else if (!armed && inp.mLe) { this.gunCd = 0.42; this.punchT = 0.3; this._punch(); }
     }
+    // swimming in the bay: slow bobbing wade, no jumping
+    const swim = this.pos.z > this.game.city.size / 2 + 95;
+    if (swim) this.pos.y = -0.3 + Math.sin(this.game.time * 2.2) * 0.06;
     this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
-    this.fig.update(dt, { state: moving ? (sprint ? 'run' : 'walk') : 'idle' });
+    this.fig.update(dt, { state: moving ? (sprint && !swim ? 'run' : 'walk') : 'idle' });
     // arm overrides for punch / gun (cosmetic — aim itself is camera-based)
-    if (this.gun) this.gun.visible = this.hasGun;
+    if (this.gun) this.gun.visible = armed;
     const j = this.fig.j;
     if (this.punchT > 0) { const u = 1 - Math.abs(this.punchT / 0.3 - 0.5) * 2; j.armR.rotation.x = -0.3 - u * 1.25; j.armR.rotation.z = -0.1; j.foreR.rotation.x = -0.15; }
-    else if (this.hasGun) { const aim = this.shootT > 0 ? 1 : 0.35; j.armR.rotation.x = -0.5 - aim * 1.0; j.armR.rotation.z = -0.12; j.foreR.rotation.x = -0.12; }
+    else if (armed) { const aim = this.shootT > 0 ? 1 : 0.35; j.armR.rotation.x = -0.5 - aim * 1.0; j.armR.rotation.z = -0.12; j.foreR.rotation.x = -0.12; }
     this._stats(dt);
   }
   _punch() {
@@ -907,7 +1065,7 @@ class Player {
     for (const n of this.game.npcs) { if (n.dead) continue; const dx = n.pos.x - this.pos.x, dz = n.pos.z - this.pos.z, d = Math.hypot(dx, dz); if (d > bd) continue; if ((dx * fx + dz * fz) / (d || 1) < 0.25) continue; bd = d; best = n; }
     if (best) { best.damage(22, { x: fx, z: fz }); best.pos.x += fx * 0.8; best.pos.z += fz * 0.8; this.game.hitFx(best.pos.clone().setY(1.2), 0xffd27a, 6); if (!best.cop) this.game.addWanted(1); }
   }
-  _stats(dt) { this.regen += dt; if (this.health < this.maxHealth && this.wanted === 0 && this.regen > 2) this.health = Math.min(this.maxHealth, this.health + 6 * dt); if (this.health <= 0 && !this.dead) { this.dead = true; this.game.ui.bustedOrDead('WASTED'); } }
+  _stats(dt) { this.regen += dt; if (this.health < this.maxHealth && this.wanted === 0 && this.regen > 2) this.health = Math.min(this.maxHealth, this.health + 6 * dt); if (this.health <= 0 && !this.dead) { this.dead = true; this.game.saveGame(); this.game.ui.bustedOrDead('WASTED'); } }
   hurt(n) { if (this.dead) return; this.health -= n; this.regen = 0; this.game.ui.flash(); }
   updateCamera(dt, frozen) {
     const target = this.inCar ? new THREE.Vector3(this.inCar.pos.x, 1.6, this.inCar.pos.z) : new THREE.Vector3(this.pos.x, this.pos.y + 1.6, this.pos.z);
@@ -915,6 +1073,14 @@ class Player {
     const dist = this.inCar ? 9.5 : this.camDist, pitch = this.inCar ? 0.24 : this.camPitch;
     const off = new THREE.Vector3(Math.sin(this.camYaw + Math.PI) * Math.cos(pitch), Math.sin(pitch), Math.cos(this.camYaw + Math.PI) * Math.cos(pitch)).multiplyScalar(dist);
     let cx = target.x + off.x, cy = target.y + off.y + 0.75, cz = target.z + off.z; if (cy < 0.7) cy = 0.7;
+    // camera collision: march from the player toward the desired spot and stop at walls
+    const boxes = this.game.city.boxes; let k = 1;
+    for (let i = 1; i <= 12; i++) {
+      const u = i / 12, px2 = lerp(target.x, cx, u), py2 = lerp(target.y, cy, u), pz2 = lerp(target.z, cz, u); let hit = false;
+      for (const b of boxes) { if (py2 < (b.h === undefined ? 7 : b.h) && Math.abs(px2 - b.x) < b.hw + 0.35 && Math.abs(pz2 - b.z) < b.hd + 0.35) { hit = true; break; } }
+      if (hit) { k = Math.max(0.12, (i - 1) / 12); break; } k = u;
+    }
+    cx = lerp(target.x, cx, k); cy = lerp(target.y, cy, k); cz = lerp(target.z, cz, k);
     this.game.camera.position.lerp(new THREE.Vector3(cx, cy, cz), Math.min(1, dt * 10) || 1); this.game.camera.lookAt(target);
   }
 }
@@ -925,20 +1091,31 @@ function lerpAngle(a, b, t) { let d = ((b - a + Math.PI) % TAU) - Math.PI; retur
 // ---------------------------------------------------------------------------
 class Ped {
   constructor(game, x, z, cop, opts) {
-    opts = opts || {}; this.game = game; this.cop = !!cop; this.dance = !!opts.dance; this.loiter = !!opts.loiter; this.vendor = !!opts.vendor; this.pos = new THREE.Vector3(x, 0, z); this.yaw = opts.yaw != null ? opts.yaw : rnd(TAU);
-    this.hp = cop ? 60 : 30; this.dead = false; this.removeMe = false; this.flee = 0; this.timer = rnd(3); this.wander = rnd(TAU); this.attackCd = 0; this.deadT = 0;
-    this.persona = { shirt: cop ? 0x21407a : pick(SHIRTS), skin: pick(SKIN), hair: pick(HAIR), pants: cop ? 0x16213f : pick(PANTS) };
-    if (cop) { this.persona.style = 'buzz'; this.persona.noScale = true; }
+    opts = opts || {}; this.game = game; this.cop = !!cop; this.dance = !!opts.dance; this.loiter = !!opts.loiter; this.vendor = !!opts.vendor; this.homeless = !!opts.homeless; this.pos = new THREE.Vector3(x, 0, z); this.yaw = opts.yaw != null ? opts.yaw : rnd(TAU);
+    this.hp = cop ? 60 : 30; this.dead = false; this.removeMe = false; this.flee = 0; this.timer = rnd(3); this.wander = rnd(TAU); this.attackCd = 0; this.deadT = 0; this.cowerT = 0;
+    // district communities: suits downtown, bright beach fits, shabby camp clothes
+    const cc = game.city, halfC = cc.size / 2, downtown = Math.hypot(x, z) < cc.cell * 1.6, beach = z > halfC - 50;
+    if (this.homeless) this.persona = { shirt: pick([0x6a6053, 0x5a5148, 0x4a4a52, 0x6b5a3a]), skin: pick(SKIN), hair: pick([0x4a4a4a, 0x2b2b2b, 0x6b4a2a]), pants: pick([0x3a2e26, 0x4a4a52]), style: pick(['mop', 'bald', 'beanie', 'mop']) };
+    else if (cop) this.persona = { shirt: 0x21407a, skin: pick(SKIN), hair: pick(HAIR), pants: 0x16213f, style: 'buzz', noScale: true };
+    else if (downtown && Math.random() < 0.5) this.persona = { shirt: pick([0x2a2f3a, 0x3a3f48, 0xe8e8e8, 0x1f2530]), skin: pick(SKIN), hair: pick(HAIR), pants: pick([0x1f2530, 0x2c3242]), style: pick(['buzz', 'bowl', 'bald', 'pony']) };
+    else if (beach && Math.random() < 0.6) this.persona = { shirt: pick([0xff7a5a, 0x2fe6c0, 0xffe24a, 0xff5fb0, 0x4fd0ff]), skin: pick(SKIN), hair: pick(HAIR), pants: pick([0xe8e8e8, 0x4fd0ff, 0xff9a5a]), style: pick(['cap', 'spiky', 'afro', 'bald']) };
+    else this.persona = { shirt: pick(SHIRTS), skin: pick(SKIN), hair: pick(HAIR), pants: pick(PANTS) };
+    this.ambient = opts.ambient || (this.homeless ? pick(['panhandle', 'sit', 'sleep']) : this.loiter ? pick(['sit', 'phone', 'smoke', 'lean']) : this.vendor ? pick(['idle', 'sweep', 'wave']) : null);
     const f = buildPerson(this.persona); this.fig = f; this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); this.root.add(f.group); this.root.position.copy(this.pos); game.scene.add(this.root);
     if (cop) { const capm = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.14, 0.4), mat(0x11203f)); capm.position.y = 1.95; this.root.add(capm); }
   }
   animateIdle(dt) { if (!this.dead) this.fig.update(dt, { state: this.dance ? 'dance' : 'idle' }); }
   damage(n) { if (this.dead) return; this.hp -= n; this.flee = 7; if (this.hp <= 0) this.die(); }
   die() { this.dead = true; this.deadT = 0; const cash = 10 + (Math.random() * 40 | 0); this.game.player.money += cash; this.game.ui.toast('+$' + cash); }
+  scare(t) { this.cowerT = Math.max(this.cowerT, t); }
   update(dt) {
     if (this.dead) { this.deadT += dt; this.root.rotation.z = Math.min(Math.PI / 2, this.deadT * 4); this.root.position.copy(this.pos); if (this.deadT > 6) this.removeMe = true; return; }
     if (this.dance) { this.root.rotation.y = this.yaw; this.fig.update(dt, { state: 'dance' }); return; }
-    if ((this.loiter || this.vendor) && this.flee <= 0) { this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; this.fig.update(dt, { state: this.loiter ? 'sit' : 'idle' }); return; }
+    this.cowerT = Math.max(0, this.cowerT - dt);
+    if ((this.loiter || this.vendor || this.homeless) && this.flee <= 0) {
+      this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
+      this.fig.update(dt, { state: this.cowerT > 0 ? 'cower' : (this.ambient || 'idle') }); return;
+    }
     const p = this.game.player, dx = p.pos.x - this.pos.x, dz = p.pos.z - this.pos.z, dist = Math.hypot(dx, dz);
     this.attackCd = Math.max(0, this.attackCd - dt); if (this.flee > 0) this.flee -= dt; this.timer -= dt;
     let wx = 0, wz = 0, sp = this.cop ? 6 : 3.0;
@@ -967,9 +1144,10 @@ class Ped {
 class Car {
   constructor(game, x, z, dir, color, aiTraffic) {
     this.game = game; this.pos = new THREE.Vector3(x, 0, z); this.speed = 0; this.driver = null; this.ai = true; this.aiTraffic = !!aiTraffic; this.turnCd = 1.5;
+    this.taxi = aiTraffic && Math.random() < 0.22; if (this.taxi) color = 0xffd23a;
     this.dir = Math.abs(dir.x) > Math.abs(dir.z) ? { x: Math.sign(dir.x) || 1, z: 0 } : { x: 0, z: Math.sign(dir.z) || 1 };
     this.yaw = Math.atan2(this.dir.x, this.dir.z);
-    this.root = buildCar(color); this.root.add(makeBlob(1.7)); this.root.position.copy(this.pos); game.scene.add(this.root);
+    this.root = buildCar(color); if (this.taxi) this.root.add(taxiSign()); this.root.add(makeBlob(1.7)); this.root.position.copy(this.pos); game.scene.add(this.root);
   }
   control(dt, inp) {
     const acc = (inp.k('KeyW') ? 1 : 0) - (inp.k('KeyS') ? 1 : 0), steer = (inp.k('KeyA') ? 1 : 0) - (inp.k('KeyD') ? 1 : 0);
@@ -1014,10 +1192,12 @@ class Story {
     this.chars = {}; const c = this.game.city;
     this.spawnChar('tony', -c.cell + 6, -c.size / 2 + 50, 0x7a4fb0); this.spawnChar('sal', c.cell, c.cell, 0xc8a23a); this.spawnChar('dezzy', -c.cell, -c.cell, 0xff5aa0);
     this.marker = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 95, 14), new THREE.MeshBasicMaterial({ color: 0xffd23a, transparent: true, opacity: 0.28, depthWrite: false }));
-    this.marker.visible = false; this.game.scene.add(this.marker); this.next();
+    this.marker.visible = false; this.game.scene.add(this.marker);
+    const sv = this.game.saveData; if (sv && sv.ch > 0) this.mi = Math.min(sv.ch, MISSIONS.length) - 1; // resume saved chapter
+    this.next();
   }
   spawnChar(id, x, z, shirt) { const p = new Ped(this.game, x, z, false); p.persona.shirt = shirt; p.story = true; p.timer = 1e9; p.wander = null; this.game.npcs.push(p); this.chars[id] = p; return p; }
-  next() { this.mi++; const m = MISSIONS[this.mi]; if (!m) { this.state = 'done'; this.setObjective(''); this.setChapter(null); this.game.ui.bigCard('YOU RUN THIS TOWN', 'Free roam — Neon Bay is yours.'); return; } this.state = 'goMeet'; this._setupMeet(m); }
+  next() { this.mi++; this.game.saveGame(); const m = MISSIONS[this.mi]; if (!m) { this.state = 'done'; this.setObjective(''); this.setChapter(null); this.game.ui.bigCard('YOU RUN THIS TOWN', 'Free roam — Neon Bay is yours.'); return; } this.state = 'goMeet'; this._setupMeet(m); }
   setChapter(m) { if (this.game.ui.el.chapter) this.game.ui.el.chapter.textContent = m ? ('CHAPTER ' + (this.mi + 1) + '/' + MISSIONS.length + ' · ' + (m.title || '')) : 'THE BAY IS YOURS'; }
   _setupMeet(m) { this.setChapter(m); const g = this.chars[m.giver]; this.giver = g; if (g) { this.marker.position.set(g.pos.x, 48, g.pos.z); this.marker.visible = true; this.marker.material.color.set(0xffd23a); } this.setObjective('Go see ' + CHARS[m.giver].name); }
   startStep() {
@@ -1044,7 +1224,7 @@ class Story {
       if (done) { this._armed = null; this.si++; if (m.steps[this.si]) this.startStep(); else this.finish(); }
     }
   }
-  finish() { const m = MISSIONS[this.mi]; this.play(m.after, this.giver, () => { this.game.player.money += m.reward || 0; if (m.gun) { this.game.player.hasGun = true; this.game.ui.toast('★ Pistol acquired — Left-click to fire'); } this.game.ui.bigCard('MISSION PASSED', (m.reward ? '+$' + m.reward : '')); this.marker.visible = false; setTimeout(() => this.next(), 2600); }); }
+  finish() { const m = MISSIONS[this.mi]; this.play(m.after, this.giver, () => { this.game.player.money += m.reward || 0; if (m.gun) { this.game.player.hasGun = true; this.game.player.weapon = 'pistol'; this.game.ui.toast('★ Pistol acquired — Left-click to fire, 1/2 to switch'); } this.game.ui.bigCard('MISSION PASSED', (m.reward ? '+$' + m.reward : '')); this.marker.visible = false; setTimeout(() => this.next(), 2600); }); }
   play(lines, who, done) { this.state = 'cutscene'; this.marker.visible = false; this.game.startCutscene(who); this.game.ui.dialogue(lines || [], () => { this.game.endCutscene(); this.state = 'steps'; done && done(); }); }
   _objDist(v) { if (!v) return; const d = Math.round(this.game.player.pos.distanceTo(v)); const base = this._lastObj || ''; this.game.ui.el.obj.textContent = base.replace(/\s+\d+m.*/, '') + '   ' + d + 'm →'; }
   setObjective(t) { this._lastObj = t; this.game.ui.el.obj.textContent = t; }
@@ -1114,8 +1294,10 @@ class UI {
   }
   title() {
     this.modal = 'title'; this.el.overlay.className = 'menu';
-    this.el.overlay.innerHTML = `<div class="menuwrap"><div class="logo"><span class="l1">NEON</span><span class="l2">BAY</span></div><div class="tag">VICE • DUSK • CHROME</div><button id="play" class="bigbtn">START</button><div class="ctrls"><span><b>WASD</b> move</span><span><b>Shift</b> sprint</span><span><b>Mouse</b> look</span><span><b>Click</b> shoot</span><span><b>F</b> car</span><span><b>Esc</b> pause</span></div><div class="note">Cel-shaded GTA-inspired game. Walk into the clubs, hotels and diners. Cinematic story cutscenes. Online sessions stream in CC0 characters; offline it runs on the built-in cast.</div></div>`;
-    this.el.overlay.querySelector('#play').onclick = () => { this.modal = null; this.game.intro(); };
+    const sv = this.game.saveData, cont = sv && sv.ch > 0 ? `<button id="cont" class="bigbtn">CONTINUE — CH.${Math.min(sv.ch + 1, 8)}</button>` : '';
+    this.el.overlay.innerHTML = `<div class="menuwrap"><div class="logo"><span class="l1">NEON</span><span class="l2">BAY</span></div><div class="tag">VICE • SUN • CHROME</div>${cont}<button id="play" class="bigbtn${cont ? ' ghost' : ''}">${cont ? 'NEW GAME' : 'START'}</button><div class="ctrls"><span><b>WASD</b> move</span><span><b>Shift</b> sprint</span><span><b>Click</b> punch/shoot</span><span><b>1/2</b> weapon</span><span><b>E</b> rob/eat/taxi</span><span><b>F</b> car</span></div><div class="note">Cel-shaded GTA-inspired game. Rob registers, eat at diners, hail taxis, find 12 hidden packages. Day/night cycle. Everything runs offline.</div></div>`;
+    this.el.overlay.querySelector('#play').onclick = () => { this.modal = null; try { localStorage.removeItem('nb_save'); } catch (e) {} this.game.saveData = null; this.game.intro(); };
+    const cb = this.el.overlay.querySelector('#cont'); if (cb) cb.onclick = () => { this.modal = null; this.game.start(); };
   }
   hideTitle() { this.el.overlay.className = 'hidden'; }
   pauseMenu(on) { if (on) { this.modal = 'pause'; this.el.overlay.className = 'menu'; this.el.overlay.innerHTML = `<div class="menuwrap"><div class="logo small"><span class="l1">PAUSED</span></div><button id="res" class="bigbtn">RESUME</button><button id="rl" class="bigbtn ghost">QUIT TO TITLE</button></div>`; this.el.overlay.querySelector('#res').onclick = () => this.game.resume(); this.el.overlay.querySelector('#rl').onclick = () => location.reload(); } else { this.modal = null; this.el.overlay.className = 'hidden'; } }
@@ -1133,7 +1315,7 @@ class UI {
   _advance() { const d = this._dlg; if (!d) return; d.i++; if (d.i >= d.lines.length) { this.el.dialogue.classList.add('hidden'); this._dlg = null; this.modal = null; if (this.game.playing && !this.game.paused) this.game.input.lock(); d.done && d.done(); } else this._showLine(); }
   update() {
     const p = this.game.player; this.el.money.textContent = '$' + (p.money | 0); this.el.wanted.textContent = p.wanted > 0 ? '★'.repeat(p.wanted) : '';
-    this.el.hp.style.width = clamp(p.health, 0, 100) + '%'; this.el.weapon.textContent = p.inCar ? '' : (p.hasGun ? 'Pistol' : 'Fists');
+    this.el.hp.style.width = clamp(p.health, 0, 100) + '%'; this.el.weapon.textContent = p.inCar ? '' : (p.weapon === 'pistol' && p.hasGun ? 'Pistol' : 'Fists');
     document.getElementById('crosshair').style.display = (!p.inCar && this.game.input.mR) ? 'block' : 'none'; this.minimap();
   }
   minimap() {
