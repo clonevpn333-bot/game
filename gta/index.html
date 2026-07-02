@@ -332,46 +332,98 @@ class City {
     this.build();
   }
   build() {
-    const N = 7, LOT = 46, ROAD = 20, CELL = LOT + ROAD;
+    // ---- VICE CITY layout: west mainland (downtown/port) | bay + causeways | east beach island (Ocean Drive) + ocean ----
+    const N = 8, LOT = 46, ROAD = 20, CELL = LOT + ROAD;
     const span = N * CELL; this.size = span; this.cell = CELL; this.lot = LOT; this.road = ROAD; this.n = N;
     const half = span / 2;
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(span + 700, span + 700), mat(0x6a6c76, { map: noiseTexture(70, 72, 82, 14) }));
+    this.bayIx = 5; this.bayX0 = -half + this.bayIx * CELL + ROAD; this.bayX1 = this.bayX0 + LOT;
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(span + 800, span + 800), mat(0x6a6c76, { map: noiseTexture(70, 72, 82, 14) }));
     ground.material.map.repeat.set(70, 70); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; ground.receiveShadow = true; this.group.add(ground);
     const roadMat = mat(0x4a4c58, { map: noiseTexture(46, 48, 58, 10), emissive: 0x0a0b13, emissiveIntensity: 1 }); roadMat.map.repeat.set(2, 46);
     const yellow = mat(0xffe14a, { emissive: 0xffd23a, emissiveIntensity: 1.0 }); const white = mat(0xe8ecf2, { emissive: 0x8a8f98, emissiveIntensity: 0.5 });
     for (let i = 0; i <= N; i++) { const rc = -half + i * CELL; this._road(rc, 0, ROAD, span + ROAD, roadMat, yellow, white, true); this._road(0, rc, span + ROAD, ROAD, roadMat, yellow, white, false); }
     let seed = 1234567; const rng = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
     const curbMat = mat(0x9aa0aa), walkMat = mat(0x7f858f, { map: noiseTexture(120, 124, 132, 10) }); walkMat.map.repeat.set(6, 6);
+    const DECO = [0xf3c7d4, 0xbfe4e8, 0xf5e3b8, 0xc7e8c9, 0xe8c9f0, 0xffd9b0]; // ocean-drive pastels
+    this._lodMats = new Map();
     for (let ix = 0; ix < N; ix++) for (let iz = 0; iz < N; iz++) {
+      if (ix === this.bayIx) continue; // the bay runs through this column
       const cx = -half + ix * CELL + ROAD + LOT / 2, cz = -half + iz * CELL + ROAD + LOT / 2;
-      // raised sidewalk (lot-wide, does not cover the road) + curb ring at the road edges
       const sw = new THREE.Mesh(new THREE.BoxGeometry(LOT, 0.22, LOT), walkMat.clone()); sw.material.map = walkMat.map; sw.position.set(cx, 0.11, cz); sw.receiveShadow = true; this.group.add(sw);
       for (const e of [[LOT, 0.6, 0, -LOT / 2], [LOT, 0.6, 0, LOT / 2], [0.6, LOT, -LOT / 2, 0], [0.6, LOT, LOT / 2, 0]]) { const c = new THREE.Mesh(new THREE.BoxGeometry(e[0], 0.34, e[1]), curbMat); c.position.set(cx + e[2], 0.17, cz + e[3]); this.group.add(c); }
-      const G = new THREE.Group(); this.group.add(G); this.cullables.push({ o: G, p: new THREE.Vector3(cx, 26, cz), r: 100 });
-      // downtown is tall in the middle, low at the edges — breaks the flat grid skyline
-      const hs = clamp(1.2 - Math.hypot(cx, cz) / (half * 1.05), 0.4, 1.25);
+      const G = new THREE.Group(); this.group.add(G); this._lod = [];
+      // ---- districts ----
+      const east = ix > this.bayIx, port = !east && iz <= 1, downtown = !east && ix >= 2 && ix <= 4 && iz >= 3 && iz <= 6;
       const r = rng();
-      if (r < 0.05) this._camp(cx, cz, LOT, rng, G);      // homeless encampment
-      else if (r < 0.15) this._park(cx, cz, LOT, rng, G);
-      else if (r < 0.40) { const type = ['club', 'hotel', 'diner', 'shop', 'club', 'shop', 'diner', 'club'][(rng() * 8) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
-      else if (r < 0.64) this._tower(cx, cz, LOT - 12, LOT - 14, (34 + rng() * 96) * hs, FACADES[(rng() * FACADES.length) | 0], rng, G); // standalone enterable high-rise
-      else this._block(cx, cz, LOT, rng, hs, G);   // mixed block: rows of small shops + central towers
-      this._props(cx, cz, LOT, rng, G);            // street furniture on every block
+      if (east) { // Vice Beach: pastel art-deco hotels, clubs and low slabs facing the ocean
+        if (r < 0.1) this._park(cx, cz, LOT, rng, G);
+        else if (r < 0.58) { const type = ['hotel', 'club', 'diner', 'hotel', 'shop', 'club'][(rng() * 6) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
+        else this._tower(cx, cz, LOT - 14, LOT - 16, 16 + rng() * 26, DECO[(rng() * DECO.length) | 0], rng, G);
+        if (ix === N - 1) for (let p2 = 0; p2 < 3; p2++) this.palm(cx + LOT / 2 + 6, cz - LOT / 2 + 8 + p2 * 15, this.group); // palm rows on the shore drive
+      } else if (port) { // docklands: warehouses + container yards
+        if (r < 0.7) this._warehouse(cx, cz, LOT, rng, G);
+        else this._block(cx, cz, LOT, rng, 0.45, G);
+      } else if (downtown) { // mainland core: tall glass towers
+        if (r < 0.16) { const type = ['shop', 'diner', 'club'][(rng() * 3) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
+        else this._tower(cx, cz, LOT - 12, LOT - 14, 70 + rng() * 85, FACADES[(rng() * FACADES.length) | 0], rng, G);
+      } else { // little-havana style residential: colorful low blocks, parks, camps
+        if (r < 0.06) this._camp(cx, cz, LOT, rng, G);
+        else if (r < 0.18) this._park(cx, cz, LOT, rng, G);
+        else if (r < 0.44) { const type = ['shop', 'diner', 'club', 'shop', 'diner'][(rng() * 5) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
+        else this._block(cx, cz, LOT, rng, 0.5 + rng() * 0.35, G);
+      }
+      this._props(cx, cz, LOT, rng, G);
+      // ---- Distant-Horizons LOD: cheap flat shells that stand in for the lot at range ----
+      const L = new THREE.Group();
+      for (const s of this._lod) { const m2 = new THREE.Mesh(new THREE.BoxGeometry(s.w, s.h, s.d), this._lodMat(s.c)); m2.position.set(s.x, s.h / 2, s.z); L.add(m2); }
+      this.group.add(L); L.visible = false;
+      this.cullables.push({ o: G, lod: L, p: new THREE.Vector3(cx, 26, cz), r: 105 });
     }
     for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) this._lamp(-half + i * CELL + ROAD / 2, -half + j * CELL + ROAD / 2);
-    for (let i = 0; i < 11; i++) { const a = rng() * TAU, rr = 18 + rng() * (half * 0.7); const [vx, vz] = this.snapSidewalk(Math.cos(a) * rr, Math.sin(a) * rr); this._vendorStall(vx, vz); this.vendors.push({ x: vx, z: vz }); }
-    const water = new THREE.Mesh(new THREE.PlaneGeometry(span + 900, 400), mat(0x2f83c6, { emissive: 0x1d4e7a, emissiveIntensity: 0.25, transparent: true, opacity: 0.9 }));
-    water.rotation.x = -Math.PI / 2; water.position.set(0, 0.06, half + 280); this.group.add(water); this.water = water;
-    const sand = new THREE.Mesh(new THREE.PlaneGeometry(span + 900, 160), mat(0xd6c493)); sand.rotation.x = -Math.PI / 2; sand.position.set(0, 0.03, half + 90); this.group.add(sand);
-    for (let i = 0; i < 10; i++) this.palm(rnd(-half + 20, half - 20), half + 46 + rnd(0, 28), this.group);
+    // ---- the bay + causeway railings ----
+    const bayW = this.bayX1 - this.bayX0;
+    const bay = new THREE.Mesh(new THREE.PlaneGeometry(bayW, span + 40), mat(0x2f83c6, { emissive: 0x1d4e7a, emissiveIntensity: 0.25, transparent: true, opacity: 0.9 }));
+    bay.rotation.x = -Math.PI / 2; bay.position.set((this.bayX0 + this.bayX1) / 2, 0.02, 0); this.group.add(bay);
+    const railMat = mat(0xb8c0ca);
+    for (let i = 0; i <= N; i++) { const rc = -half + i * CELL; for (const s of [-1, 1]) { const rail = new THREE.Mesh(new THREE.BoxGeometry(bayW, 0.8, 0.3), railMat); rail.position.set((this.bayX0 + this.bayX1) / 2, 0.6, rc + s * (ROAD / 2 - 0.6)); this.group.add(rail); } }
+    // ---- the ocean east of Vice Beach ----
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(400, span + 800), mat(0x2f83c6, { emissive: 0x1d4e7a, emissiveIntensity: 0.25, transparent: true, opacity: 0.9 }));
+    water.rotation.x = -Math.PI / 2; water.position.set(half + 260, 0.06, 0); this.group.add(water); this.water = water;
+    const sand = new THREE.Mesh(new THREE.PlaneGeometry(150, span + 800), mat(0xd6c493)); sand.rotation.x = -Math.PI / 2; sand.position.set(half + 70, 0.03, 0); this.group.add(sand);
+    for (let i = 0; i < 14; i++) this.palm(half + 24 + rnd(0, 26), rnd(-half + 15, half - 15), this.group);
     this._airport(half);
-    // hidden packages (collectibles)
+    // named places for the story
+    const LC = (ix, iz) => ({ x: -half + ix * CELL + ROAD + LOT / 2, z: -half + iz * CELL + ROAD + LOT / 2 });
+    this.places = { tonyDiner: LC(1, 4), salGarage: LC(1, 1), dezzyClub: LC(6, 4), docks: LC(3, 0), strip: LC(7, 6), waterfront: { x: (this.bayX0 + this.bayX1) / 2, z: -half + 6 * CELL }, finale: { x: (this.bayX0 + this.bayX1) / 2, z: half } };
+    // hidden packages (kept out of the water)
     this.packages = [];
     for (let i = 0; i < 12; i++) {
-      const [px2, pz2] = this.snapSidewalk(rnd(-half + 14, half - 14), rnd(-half + 14, half - 14));
+      let px2, pz2, tries = 0;
+      do { [px2, pz2] = this.snapSidewalk(rnd(-half + 14, half - 14), rnd(-half + 14, half - 14)); tries++; } while ((this.inBay(px2, pz2) || px2 > half) && tries < 20);
       const pk = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), mat(0x3ae08a, { emissive: 0x2fe07a, emissiveIntensity: 1.8 }));
       pk.position.set(px2, 0.5, pz2); this.group.add(pk); this.packages.push({ m: pk, x: px2, z: pz2, got: false });
     }
+    for (let i = 0; i < 11; i++) { let vx, vz, t2 = 0; do { const a = rng() * TAU, rr = 18 + rng() * (half * 0.7); [vx, vz] = this.snapSidewalk(Math.cos(a) * rr, Math.sin(a) * rr); t2++; } while ((this.inBay(vx, vz) || vx > half) && t2 < 20); this._vendorStall(vx, vz); this.vendors.push({ x: vx, z: vz }); }
+  }
+  _lodMat(c) { if (!this._lodMats.has(c)) this._lodMats.set(c, mat(new THREE.Color(c).multiplyScalar(0.94).getHex())); return this._lodMats.get(c); }
+  inBay(x, z) { return x > this.bayX0 - 1 && x < this.bayX1 + 1 && Math.abs(z) < this.size / 2 + 10; }
+  isWater(x, z) { return (x > this.size / 2 + 95) || (this.inBay(x, z) && !this.onRoad(x, z)); }
+  _warehouse(cx, cz, LOT, rng, G) {
+    // dockland warehouse: open loading front, crates inside, containers in the yard
+    const w = LOT - 10, d = LOT - 16, h = 8 + rng() * 4, t = 0.5, col = pick([0x8a8f98, 0xa08a6a, 0x7a8a96, 0x96786a]);
+    const wallMat = mat(col);
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), mat(0x3a3d44)); floor.position.set(cx, 0.12, cz); floor.receiveShadow = true; G.add(floor);
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 1, t, d + 1), mat(new THREE.Color(col).multiplyScalar(0.8).getHex())); roof.position.set(cx, h, cz); roof.castShadow = true; G.add(roof);
+    const wall = (ww, dd, ox, oz) => { const m = new THREE.Mesh(new THREE.BoxGeometry(ww, h, dd), wallMat); m.position.set(cx + ox, h / 2, cz + oz); m.castShadow = true; m.receiveShadow = true; G.add(m); };
+    wall(w, t, 0, -d / 2); wall(t, d, -w / 2, 0); wall(t, d, w / 2, 0);
+    this.boxes.push({ x: cx, z: cz - d / 2, hw: w / 2 + 0.3, hd: t / 2 + 0.3 });
+    this.boxes.push({ x: cx - w / 2, z: cz, hw: t / 2 + 0.3, hd: d / 2 + 0.3 });
+    this.boxes.push({ x: cx + w / 2, z: cz, hw: t / 2 + 0.3, hd: d / 2 + 0.3 });
+    for (let i = 0; i < 3; i++) { const crate = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.2, 2.2), mat(0x9a7a4a)); crate.position.set(cx + rnd(-w / 3, w / 3), 1.2, cz - d * 0.25 + rnd(-2, 2)); crate.castShadow = true; G.add(crate); this.boxes.push({ x: crate.position.x, z: crate.position.z, hw: 1.3, hd: 1.3, h: 2.4 }); }
+    const cCols = [0xc84a3a, 0x3a6ac8, 0x3aa06a, 0xc8a23a];
+    for (let i = 0; i < 2; i++) { const cont = new THREE.Mesh(new THREE.BoxGeometry(7, 2.6, 2.6), mat(pick(cCols))); cont.position.set(cx - w / 2 + 3, 1.3 + (i === 1 ? 2.6 : 0), cz + d / 2 + 3.6); cont.rotation.y = rnd(-0.08, 0.08); cont.castShadow = true; G.add(cont); if (i === 0) this.boxes.push({ x: cont.position.x, z: cont.position.z, hw: 3.7, hd: 1.5, h: 5.4 }); }
+    this._lod.push({ x: cx, z: cz, w: w + 1, d: d + 1, h, c: col });
+    this.shops.push({ x: cx, z: cz, w, d, type: 'warehouse' });
   }
   _airport(half) {
     const cz = -half - 105; // runway centre (south of the city), runway runs along Z
@@ -419,6 +471,7 @@ class City {
     const tank = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, 2.4, d * 0.3), mat(0x33373f)); tank.position.set(x + rnd(-w * 0.2, w * 0.2), h + 1.2, z + rnd(-d * 0.2, d * 0.2)); tank.castShadow = true; G.add(tank);
     const awn = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w * 0.8, 5), 0.3, 1.0), mat(pick(NEONS))); awn.position.set(x, h0 + 0.2, z + d / 2 + 0.5); G.add(awn);
     if (h > 46 && rng() < 0.7) { const nc = pick(NEONS), sh = Math.min(h * 0.5, 20); const sign = new THREE.Mesh(new THREE.BoxGeometry(1.2, sh, 0.5), mat(nc, { emissive: nc, emissiveIntensity: 2.2 })); sign.position.set(x + (rng() < .5 ? -1 : 1) * (w / 2 + 0.4), h0 + shaftH * 0.55, z + d / 2 + 0.3); G.add(sign); }
+    if (this._lod) this._lod.push({ x, z, w, d, h, c: color });
     this.shops.push({ x, z, w, d, type: 'tower' });
   }
   _neonSign(text, hex, x, y, z, w, G) {
@@ -428,7 +481,8 @@ class City {
   _venue(cx, cz, LOT, type, rng, G) {
     const w = LOT - 10, d = LOT - 14, h = type === 'club' ? 6.5 : 5.4, t = 0.4;
     const accent = type === 'club' ? pick([0xff3d9a, 0x9b5cff, 0x2fe6ff]) : type === 'hotel' ? 0xffd27a : type === 'diner' ? 0xff5a5a : pick(NEONS);
-    const wallMat = mat(pick(FACADES)), floorMat = mat(type === 'club' ? 0x1a1428 : 0x33303d);
+    const wallCol = pick(FACADES), wallMat = mat(wallCol), floorMat = mat(type === 'club' ? 0x1a1428 : 0x33303d);
+    if (this._lod) this._lod.push({ x: cx, z: cz, w: w + 1, d: d + 1, h: h + 1, c: wallCol });
     const floor = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), floorMat); floor.position.set(cx, 0.18, cz); floor.receiveShadow = true; G.add(floor);
     const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 1, t, d + 1), wallMat); roof.position.set(cx, h, cz); roof.castShadow = true; G.add(roof);
     const wall = (ww, dd, ox, oz) => { const m = new THREE.Mesh(new THREE.BoxGeometry(ww, h, dd), wallMat); m.position.set(cx + ox, h / 2, cz + oz); m.castShadow = true; m.receiveShadow = true; G.add(m); };
@@ -466,7 +520,9 @@ class City {
     this.shops.push(rec);
   }
   _smallShop(x, z, w, d, h, rng, G, back) {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(pick(SHOP_COLS))); b.position.set(x, h / 2, z); b.castShadow = true; b.receiveShadow = true; G.add(b);
+    const shopCol = pick(SHOP_COLS);
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(shopCol)); b.position.set(x, h / 2, z); b.castShadow = true; b.receiveShadow = true; G.add(b);
+    if (this._lod) this._lod.push({ x, z, w, d, h, c: shopCol });
     this.boxes.push({ x, z, hw: w / 2 + 0.3, hd: d / 2 + 0.3 });
     const dz = back ? -1 : 1, fz = z + dz * (d / 2 + 0.06);
     const win = new THREE.Mesh(new THREE.BoxGeometry(w * 0.82, 1.5, 0.1), mat(0x18243a, { emissive: pick(WIN_GLOW), emissiveIntensity: 1.1 })); win.position.set(x, 1.5, fz); G.add(win);
@@ -791,7 +847,7 @@ class Game {
     this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.shadowMap.autoUpdate = false; this._shadowT = 0; // shadows refreshed ~8x/s, not every frame
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.Fog(0xcfe0ee, 160, 380);
+    this.scene.fog = new THREE.Fog(0xcfe0ee, 180, 720);
     this.camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.3, 900);
     this.camera.position.set(0, 60, 130);
     this.renderDist = 185; this._frustum = new THREE.Frustum(); this._m = new THREE.Matrix4(); this._sph = new THREE.Sphere();
@@ -837,8 +893,9 @@ class Game {
     if (this.saveData) { this.player.money = this.saveData.money != null ? this.saveData.money : this.player.money; this.player.hasGun = !!this.saveData.gun; if (this.player.hasGun) this.player.weapon = 'pistol'; }
   }
   spawnPed(cluster) {
-    const c = this.city, a = rnd(TAU), r = rnd(22, 110); let x = this.player.pos.x + Math.cos(a) * r, z = this.player.pos.z + Math.sin(a) * r;
-    [x, z] = c.snapSidewalk(x, z); const lim = c.size / 2 + 40; x = clamp(x, -lim, lim); z = clamp(z, -lim, lim);
+    const c = this.city; let x, z, tr = 0;
+    do { const a = rnd(TAU), r = rnd(22, 110); x = this.player.pos.x + Math.cos(a) * r; z = this.player.pos.z + Math.sin(a) * r; [x, z] = c.snapSidewalk(x, z); tr++; } while ((c.inBay(x, z) || x > c.size / 2 + 4) && tr < 12);
+    const lim = c.size / 2 + 20; x = clamp(x, -lim, lim); z = clamp(z, -lim, lim);
     const n = new Ped(this, x, z); this.npcs.push(n);
     if (cluster && Math.random() < 0.5) { const k = 1 + (Math.random() * 2 | 0); for (let i = 0; i < k; i++) { const c2 = new Ped(this, x + rnd(-2.4, 2.4), z + rnd(-2.4, 2.4)); c2.pdir = n.pdir; this.npcs.push(c2); } }   // walk in little crowds
     return n;
@@ -970,8 +1027,13 @@ class Game {
   endIntro() { if (!this.introMode) return; this.introMode = false; if (this.plane) { this.scene.remove(this.plane); this.plane = null; } this._intro = null; this.ui.introHide(); this.ui.introSkip(false); this.ui.letterbox(false); this.start(); }
   updateCulling() {
     this.camera.updateMatrixWorld(); this._m.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse); this._frustum.setFromProjectionMatrix(this._m);
-    const cp = this.camera.position, rd = this.renderDist, rd2 = rd * rd;
-    for (const c of this.city.cullables) { const dx = c.p.x - cp.x, dz = c.p.z - cp.z; c.o.visible = (dx * dx + dz * dz) < rd2 && this._frustum.intersectsSphere(this._sph.set(c.p, c.r)); }
+    const cp = this.camera.position, near2 = 135 * 135;
+    // Distant-Horizons style: full detail near, cheap LOD shells at any distance (in frustum)
+    for (const c of this.city.cullables) {
+      const dx = c.p.x - cp.x, dz = c.p.z - cp.z, near = (dx * dx + dz * dz) < near2;
+      const vis = this._frustum.intersectsSphere(this._sph.set(c.p, c.r));
+      c.o.visible = near && vis; if (c.lod) c.lod.visible = !near && vis;
+    }
     for (const n of this.npcs) { if (n.dead) { continue; } const dx = n.pos.x - cp.x, dz = n.pos.z - cp.z; n.root.visible = (dx * dx + dz * dz) < 145 * 145 && this._frustum.intersectsSphere(this._sph.set(n.root.position, 2.2)); }
     for (const car of this.cars) { const dx = car.pos.x - cp.x, dz = car.pos.z - cp.z; car.root.visible = (dx * dx + dz * dz) < 170 * 170 && this._frustum.intersectsSphere(this._sph.set(car.root.position, 3.4)); }
   }
@@ -1034,11 +1096,11 @@ class Player {
     const fwd = new THREE.Vector3(Math.sin(this.camYaw), 0, Math.cos(this.camYaw)), right = new THREE.Vector3(-fwd.z, 0, fwd.x), wish = new THREE.Vector3();
     if (inp.k('KeyW')) wish.add(fwd); if (inp.k('KeyS')) wish.sub(fwd); if (inp.k('KeyD')) wish.add(right); if (inp.k('KeyA')) wish.sub(right);
     const moving = wish.lengthSq() > 0; if (moving) wish.normalize();
-    const inWater = this.pos.z > this.game.city.size / 2 + 95;
+    const inWater = this.game.city.isWater(this.pos.x, this.pos.z);
     const sprint = inp.k('ShiftLeft') || inp.k('ShiftRight'), sp = inWater ? 2.6 : (sprint ? 9.5 : 5.0);
     this.pos.x += wish.x * sp * dt; this.pos.z += wish.z * sp * dt;
     [this.pos.x, this.pos.z] = this.game.city.collide(this.pos.x, this.pos.z, 0.5);
-    this.pos.x = clamp(this.pos.x, -this.game.city.size / 2 - 60, this.game.city.size / 2 + 60); this.pos.z = clamp(this.pos.z, -this.game.city.size / 2 - 130, this.game.city.size / 2 + 170);
+    this.pos.x = clamp(this.pos.x, -this.game.city.size / 2 - 60, this.game.city.size / 2 + 150); this.pos.z = clamp(this.pos.z, -this.game.city.size / 2 - 130, this.game.city.size / 2 + 40);
     if (inp.k('Space') && this.onGround && !inWater) { this.vy = 7; this.onGround = false; }
     this.vy -= 22 * dt; this.pos.y += this.vy * dt; if (this.pos.y <= 0) { this.pos.y = 0; this.vy = 0; this.onGround = true; }
     if (moving) this.yaw = lerpAngle(this.yaw, Math.atan2(wish.x, wish.z), Math.min(1, dt * 12));
@@ -1048,8 +1110,8 @@ class Player {
       if (armed && inp.mL) { this.gunCd = 0.16; this.shootT = 0.22; const d = new THREE.Vector3(); this.game.camera.getWorldDirection(d); this.yaw = Math.atan2(d.x, d.z); this.game.shootRay(this.eye(), d, 18, 120); }
       else if (!armed && inp.mLe) { this.gunCd = 0.42; this.punchT = 0.3; this._punch(); }
     }
-    // swimming in the bay: slow bobbing wade, no jumping
-    const swim = this.pos.z > this.game.city.size / 2 + 95;
+    // swimming in the bay/ocean: slow bobbing wade, no jumping
+    const swim = inWater;
     if (swim) this.pos.y = -0.3 + Math.sin(this.game.time * 2.2) * 0.06;
     this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
     this.fig.update(dt, { state: moving ? (sprint && !swim ? 'run' : 'walk') : 'idle' });
@@ -1126,7 +1188,7 @@ class Ped {
     const nx = this.pos.x + wx * sp * dt, nz = this.pos.z + wz * sp * dt;
     const [cx, cz] = this.game.city.collide(nx, nz, 0.5);
     // civilians walk the block in straight lines and turn a corner when they hit a curb or wall
-    if (moving && !this.cop && this.flee <= 0 && this.pdir && (this.game.city.onRoad(nx, nz) || Math.hypot(cx - nx, cz - nz) > 0.02)) {
+    if (moving && !this.cop && this.flee <= 0 && this.pdir && (this.game.city.onRoad(nx, nz) || this.game.city.inBay(nx, nz) || nx > this.game.city.size / 2 + 4 || Math.hypot(cx - nx, cz - nz) > 0.02)) {
       const l = { x: this.pdir.z, z: -this.pdir.x }, r = { x: -this.pdir.z, z: this.pdir.x };
       const okL = !this.game.city.onRoad(this.pos.x + l.x, this.pos.z + l.z), okR = !this.game.city.onRoad(this.pos.x + r.x, this.pos.z + r.z);
       this.pdir = okL && okR ? (Math.random() < 0.5 ? l : r) : okL ? l : okR ? r : { x: -this.pdir.x, z: -this.pdir.z };
@@ -1189,8 +1251,10 @@ class Car {
 class Story {
   constructor(game) { this.game = game; this.mi = -1; this.state = 'idle'; this.marker = null; this.giver = null; this.targets = null; }
   begin() {
-    this.chars = {}; const c = this.game.city;
-    this.spawnChar('tony', -c.cell + 6, -c.size / 2 + 50, 0x7a4fb0); this.spawnChar('sal', c.cell, c.cell, 0xc8a23a); this.spawnChar('dezzy', -c.cell, -c.cell, 0xff5aa0);
+    this.chars = {}; const c = this.game.city, P = c.places;
+    this.spawnChar('tony', P.tonyDiner.x + 8, P.tonyDiner.z + c.lot / 2 - 4, 0x7a4fb0);   // outside his diner, Little Havana
+    this.spawnChar('sal', P.salGarage.x, P.salGarage.z + c.lot / 2 - 4, 0xc8a23a);        // the docklands garage
+    this.spawnChar('dezzy', P.dezzyClub.x, P.dezzyClub.z + c.lot / 2 - 4, 0xff5aa0);      // her club on Ocean Drive
     this.marker = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 95, 14), new THREE.MeshBasicMaterial({ color: 0xffd23a, transparent: true, opacity: 0.28, depthWrite: false }));
     this.marker.visible = false; this.game.scene.add(this.marker);
     const sv = this.game.saveData; if (sv && sv.ch > 0) this.mi = Math.min(sv.ch, MISSIONS.length) - 1; // resume saved chapter
@@ -1198,15 +1262,19 @@ class Story {
   }
   spawnChar(id, x, z, shirt) { const p = new Ped(this.game, x, z, false); p.persona.shirt = shirt; p.story = true; p.timer = 1e9; p.wander = null; this.game.npcs.push(p); this.chars[id] = p; return p; }
   next() { this.mi++; this.game.saveGame(); const m = MISSIONS[this.mi]; if (!m) { this.state = 'done'; this.setObjective(''); this.setChapter(null); this.game.ui.bigCard('YOU RUN THIS TOWN', 'Free roam — Neon Bay is yours.'); return; } this.state = 'goMeet'; this._setupMeet(m); }
-  setChapter(m) { if (this.game.ui.el.chapter) this.game.ui.el.chapter.textContent = m ? ('CHAPTER ' + (this.mi + 1) + '/' + MISSIONS.length + ' · ' + (m.title || '')) : 'THE BAY IS YOURS'; }
-  _setupMeet(m) { this.setChapter(m); const g = this.chars[m.giver]; this.giver = g; if (g) { this.marker.position.set(g.pos.x, 48, g.pos.z); this.marker.visible = true; this.marker.material.color.set(0xffd23a); } this.setObjective('Go see ' + CHARS[m.giver].name); }
+  setChapter(m) { const R = ['I', 'II', 'III']; if (this.game.ui.el.chapter) this.game.ui.el.chapter.textContent = m ? ('ACT ' + R[(m.act || 1) - 1] + ' · CH ' + (this.mi + 1) + '/' + MISSIONS.length + ' · ' + (m.title || '')) : 'THE BAY IS YOURS'; }
+  _setupMeet(m) {
+    this.setChapter(m);
+    if (m.act && m.act !== this._act) { this._act = m.act; this.game.ui.bigCard('ACT ' + ['I', 'II', 'III'][m.act - 1], ACT_TITLES[m.act - 1]); }
+    const g = this.chars[m.giver]; this.giver = g; if (g) { this.marker.position.set(g.pos.x, 48, g.pos.z); this.marker.visible = true; this.marker.material.color.set(0xffd23a); } this.setObjective('Go see ' + CHARS[m.giver].name + (m.where ? ' — ' + m.where : ''));
+  }
   startStep() {
     const m = MISSIONS[this.mi], s = m.steps[this.si]; this.targets = null;
     if (s.at) { const wp = this.wp(s.at); this.marker.position.set(wp.x, 48, wp.z); this.marker.visible = true; this.marker.material.color.set(s.type === 'kill' ? 0xff5a5a : 0xffd23a); this.stepPos = wp; } else { this.marker.visible = false; this.stepPos = null; }
     if (s.type === 'kill') { this.targets = []; for (let i = 0; i < (s.count || 1); i++) { const t = new Ped(this.game, this.stepPos.x + rnd(-4, 4), this.stepPos.z + rnd(-4, 4), false); t.persona.shirt = 0x882222; t.hp = 50; t.story = true; this.game.npcs.push(t); this.targets.push(t); } }
     this.setObjective(s.text);
   }
-  wp(at) { if (at.char) { const ch = this.chars[at.char]; return new THREE.Vector3(ch.pos.x, 0, ch.pos.z); } return new THREE.Vector3(at.x, 0, at.z); }
+  wp(at) { if (at.char) { const ch = this.chars[at.char]; return new THREE.Vector3(ch.pos.x, 0, ch.pos.z); } if (at.place) { const p = this.game.city.places[at.place]; return new THREE.Vector3(p.x, 0, p.z); } return new THREE.Vector3(at.x, 0, at.z); }
   update(dt) {
     if (this.state === 'cutscene' || this.state === 'done' || this.state === 'idle') return;
     const g = this.game, p = g.player, m = MISSIONS[this.mi];
@@ -1231,39 +1299,40 @@ class Story {
 }
 function dist2(a, b) { return Math.hypot(a.x - b.x, a.z - b.z); }
 const CHARS = { tony: { name: 'Tony Marenco', col: '#7fd0ff' }, sal: { name: 'Sal Greco', col: '#ffd23a' }, dezzy: { name: 'Dezzy Vale', col: '#ff7eb0' }, victor: { name: 'Victor Salcido', col: '#ff5a5a' }, you: { name: 'You', col: '#c39bff' } };
-// ---- Neon Bay: an eight-chapter rise-and-reckoning arc ----
+const ACT_TITLES = ['FRESH OFF THE PLANE', 'THE COST OF DOING BUSINESS', 'KING TIDE'];
+// ---- Neon Bay: three acts, eight chapters, anchored to real places on the map ----
 const MISSIONS = [
-  { giver: 'tony', reward: 200, title: 'TOUCHDOWN',
-    before: [['you', "Tony. Ten years, and you still meet a plane like you owe it money."], ['tony', "Because I do, cuz. I'm into Victor Salcido for five large and he doesn't do payment plans."], ['tony', "Welcome to Neon Bay. You flew in for a fresh start — freshest thing here's the debt. Climb out of it with me."], ['you', "Family's family. Point me at it."]],
-    steps: [], after: [['tony', "Atta boy. Go see Sal down at the garage — he turns hot cars into cold cash. Tell him I sent you."]] },
-  { giver: 'sal', reward: 500, title: "SAL'S CUT", gun: true,
-    before: [['sal', "So you're Tony's cousin. He talks big, owes bigger."], ['sal', "Prove you're useful: lift any ride off the street and park it in my bay. No scratches, no cops."], ['you', "One clean car, coming up."]],
-    steps: [{ type: 'getcar', text: 'Steal any car (get in — press F)' }, { type: 'drive', text: "Deliver it to Sal's garage", at: { char: 'sal' } }],
-    after: [['sal', "Smooth hands. Here's your cut — and a little insurance."], ['sal', "A piece. This town bites; bite back. Left-click to use it."]] },
-  { giver: 'tony', reward: 700, title: 'HEAT',
-    before: [['tony', "Bad news — that plate was flagged. Blues are sweeping the block right now."], ['tony', "Don't lead 'em to us. Shake the tail, then breathe."]],
+  { act: 1, giver: 'tony', reward: 200, title: 'TOUCHDOWN', where: "his diner in Little Havana",
+    before: [['you', "Tony. Ten years, and you still meet family like you owe it money."], ['tony', "Because I do, cuz. I'm into Victor Salcido for five large and he doesn't do payment plans."], ['tony', "Welcome to Neon Bay — Little Havana's home. The beach across the bay is where the money struts."], ['you', "Family's family. Point me at it."]],
+    steps: [], after: [['tony', "Go see Sal at his garage in the docklands, south side. He turns hot cars into cold cash."]] },
+  { act: 1, giver: 'sal', reward: 500, title: "SAL'S CUT", gun: true, where: 'the docklands garage',
+    before: [['sal', "Tony's cousin, huh. He talks big, owes bigger."], ['sal', "Prove you're useful: lift any ride and park it in my bay. No scratches, no cops."], ['you', "One clean car, coming up."]],
+    steps: [{ type: 'getcar', text: 'Steal any car (get in — press F)' }, { type: 'drive', text: "Deliver it to Sal's garage in the docklands", at: { char: 'sal' } }],
+    after: [['sal', "Smooth hands. Here's your cut — and a little insurance."], ['sal', "A piece. This town bites; bite back. Left-click to fire, 1/2 to switch."]] },
+  { act: 1, giver: 'tony', reward: 700, title: 'HEAT', where: 'Little Havana',
+    before: [['tony', "Bad news — that plate was flagged. Blues are sweeping Havana right now."], ['tony', "Don't lead 'em to us. Shake the tail, then breathe."]],
     steps: [{ type: 'evade', text: 'Lose the cops — drop your wanted level', wanted: 3 }],
-    after: [['tony', "Ha! You drive like you were born running. We might actually survive this."]] },
-  { giver: 'dezzy', reward: 900, title: 'THE VELVET ROOM',
-    before: [['dezzy', "You're the new muscle Tony keeps bragging about. I'm Dezzy — I own the club two doors down."], ['dezzy', "Salcido's boys 'tax' me every weekend. Tonight they came early and they're wrecking my floor."], ['you', "Say the word and they're gone."], ['dezzy', "The word's given. Clear them out — gently is optional."]],
-    steps: [{ type: 'kill', text: "Clear Salcido's crew out of the club", count: 3, at: { char: 'dezzy' } }],
-    after: [['dezzy', "First quiet Friday in a year. Stick around, hotshot — this town could use someone with your... enthusiasm."]] },
-  { giver: 'tony', reward: 1400, title: 'DOCK MONEY',
-    before: [['tony', "Victor moves his cash through the docks every night. Hit the runners, take the bag."], ['tony', "It's a message: the Bay isn't his anymore."]],
-    steps: [{ type: 'kill', text: "Take out Victor's dock runners", count: 4, at: { x: 60, z: 250 } }],
-    after: [['tony', "That'll sting him. He's gonna come looking — so let's be ready when he does."]] },
-  { giver: 'dezzy', reward: 1800, title: 'BAD BLOOD',
-    before: [['dezzy', "They grabbed Tony outside the diner. He's alive — shaken, not sliced — but the message is clear."], ['dezzy', "Victor's underboss, Reyes, is calling shots from the strip. Cut the head and the crew scatters."]],
-    steps: [{ type: 'kill', text: 'Take down the underboss Reyes', count: 1, at: { x: -60, z: 33 } }, { type: 'evade', text: 'Get clear before the heat lands', wanted: 3 }],
-    after: [['dezzy', "You just declared war and won the first battle. Victor won't send men next time. He'll come himself."]] },
-  { giver: 'sal', reward: 2500, title: 'THE SETUP',
-    before: [['sal', "Victor wants a sit-down at the waterfront. It's a trap, obviously."], ['sal', "So we spring ours first — I stashed a car for the getaway. Grab it, be at the pier, and don't die."]],
-    steps: [{ type: 'getcar', text: 'Grab a car for the run' }, { type: 'drive', text: 'Get to the waterfront', at: { x: 0, z: 240 } }],
-    after: [['sal', "He's here. Whole crew with him. This is it, kid — everything you came to the Bay for."]] },
-  { giver: 'tony', reward: 8000, title: 'KING OF NEON BAY',
-    before: [['tony', "There he is. Victor Salcido, down by the water, out of favors."], ['you', "Then let's finish what he started."], ['tony', "For the family."]],
-    steps: [{ type: 'kill', text: 'Finish Victor Salcido', count: 1, at: { x: 0, z: 275 } }],
-    after: [['dezzy', "It's over. The Bay's yours now — ours."], ['tony', "King of Neon Bay. Nobody's paved it with gold yet... but give the man a week."]] },
+    after: [['tony', "Ha! You drive like you were born running. Word's gonna travel — even across the causeway."]] },
+  { act: 2, giver: 'dezzy', reward: 900, title: 'THE VELVET ROOM', where: 'her club on Ocean Drive',
+    before: [['dezzy', "So you're the Havana boy everyone's whispering about. Dezzy Vale — this is my club, and that's my ruined Friday."], ['dezzy', "Salcido's boys 'tax' every neon sign on Ocean Drive. Tonight they came early and started breaking things."], ['you', "Say the word and they're gone."], ['dezzy', "The word's given. Gently is optional."]],
+    steps: [{ type: 'kill', text: "Clear Salcido's crew off Ocean Drive", count: 3, at: { char: 'dezzy' } }],
+    after: [['dezzy', "First quiet night in a year. Stick around, hotshot — the beach could use a new landlord."]] },
+  { act: 2, giver: 'tony', reward: 1400, title: 'DOCK MONEY', where: 'Little Havana',
+    before: [['tony', "Victor's cash sails out of the container yards every night. Hit his runners, take the bag."], ['tony', "It's a message: the Bay isn't his anymore."]],
+    steps: [{ type: 'kill', text: "Take out Victor's runners at the docks", count: 4, at: { place: 'docks' } }],
+    after: [['tony', "That'll sting him. He's gonna come looking — be somewhere loud when he does."]] },
+  { act: 2, giver: 'dezzy', reward: 1800, title: 'BAD BLOOD', where: 'Ocean Drive',
+    before: [['dezzy', "They grabbed Tony outside the diner. He's alive — shaken, not sliced — but the message is clear."], ['dezzy', "Victor's underboss Reyes runs the north strip. Cut the head, the crew scatters."]],
+    steps: [{ type: 'kill', text: 'Take down Reyes on the north strip', count: 1, at: { place: 'strip' } }, { type: 'evade', text: 'Get clear before the heat lands', wanted: 3 }],
+    after: [['dezzy', "War declared, first battle won. Victor won't send men next time. He'll come himself."]] },
+  { act: 3, giver: 'sal', reward: 2500, title: 'THE SETUP', where: 'the docklands garage',
+    before: [['sal', "Victor wants a sit-down mid-bay, on the water. It's a trap, obviously."], ['sal', "So we spring ours first. I stashed wheels for you — be on that causeway, and don't die."]],
+    steps: [{ type: 'getcar', text: 'Grab a car for the run' }, { type: 'drive', text: 'Drive to the bay waterfront', at: { place: 'waterfront' } }],
+    after: [['sal', "He's here. Whole crew. Everything you flew in for, kid — it's tonight."]] },
+  { act: 3, giver: 'tony', reward: 8000, title: 'KING TIDE', where: 'Little Havana',
+    before: [['tony', "Victor's making his stand on the north causeway — water on both sides, nowhere to slip away."], ['you', "Then let's finish what he started."], ['tony', "For the family. For the Bay."]],
+    steps: [{ type: 'kill', text: 'Finish Victor Salcido on the north causeway', count: 1, at: { place: 'finale' } }],
+    after: [['dezzy', "It's over. Ocean Drive to the docklands — the Bay's yours now. Ours."], ['tony', "King of Neon Bay. Nobody's paved it with gold yet... but give the man a week."]] },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1322,6 +1391,9 @@ class UI {
     const g = this.game, x = this.el.map, S = 190, sc = 0.42; x.clearRect(0, 0, S, S);
     x.save(); x.beginPath(); x.arc(S / 2, S / 2, S / 2 - 2, 0, TAU); x.clip(); x.fillStyle = '#160f24'; x.fillRect(0, 0, S, S);
     const px = g.player.pos.x, pz = g.player.pos.z, c = g.city, half = c.size / 2;
+    x.fillStyle = '#1d4066'; // bay + ocean water
+    x.fillRect(S / 2 + (c.bayX0 - px) * sc, 0, (c.bayX1 - c.bayX0) * sc, S);
+    x.fillRect(S / 2 + (half + 12 - px) * sc, 0, S, S);
     x.strokeStyle = '#3a2f4d'; x.lineWidth = c.road * sc;
     for (let i = 0; i <= c.n; i++) { const gx = -half + i * c.cell, sx = S / 2 + (gx - px) * sc, sz = S / 2 + (gx - pz) * sc; x.beginPath(); x.moveTo(sx, 0); x.lineTo(sx, S); x.stroke(); x.beginPath(); x.moveTo(0, sz); x.lineTo(S, sz); x.stroke(); }
     x.fillStyle = '#dfe6ef'; for (const car of g.cars) { const sx = S / 2 + (car.pos.x - px) * sc, sz = S / 2 + (car.pos.z - pz) * sc; x.fillRect(sx - 1.5, sz - 1.5, 3, 3); }
