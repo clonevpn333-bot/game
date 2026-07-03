@@ -22,6 +22,23 @@ body.hurt::after { content: ''; position: fixed; inset: 0; background: radial-gr
 #topright { position: fixed; right: 20px; top: 16px; text-align: right; }
 #money { font-size: 30px; font-weight: 900; color: #6cf09a; text-shadow: 0 0 12px rgba(60,230,150,0.55), 2px 2px 0 #04120a; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
 #wanted { font-size: 24px; letter-spacing: 4px; color: #ffd23a; text-shadow: 0 0 12px rgba(255,190,40,0.7), 2px 2px 0 #000; min-height: 28px; }
+#clock { font-size: 15px; font-weight: 700; letter-spacing: 2px; color: #bfe0f5; text-shadow: 1px 1px 0 #000; margin-top: 2px; font-variant-numeric: tabular-nums; }
+#gps { position: fixed; left: 50%; top: 100px; transform: translateX(-50%); font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #7fe8ff; text-shadow: 0 0 10px rgba(47,230,255,0.6), 1px 1px 0 #000; }
+#gps:empty { display: none; }
+
+/* ---- phone ---- */
+#overlay.phone { display: flex; align-items: center; justify-content: flex-end; padding-right: 6vw; background: rgba(4,4,12,0.28); }
+.phoneui { width: 252px; border-radius: 28px; background: linear-gradient(170deg, #181628, #0c0a18); border: 3px solid #2b2740; box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 34px rgba(120,90,220,0.28); padding: 16px 14px 12px; pointer-events: auto; }
+.pnotch { width: 70px; height: 8px; background: #000; border-radius: 6px; margin: 0 auto 10px; }
+.ptime { text-align: center; font-size: 32px; font-weight: 900; color: #e8f0ff; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+.pstat { text-align: center; font-size: 12px; color: #8fd0a8; margin: 2px 0 10px; }
+.plabel { font-size: 10px; letter-spacing: 3px; color: #6f6890; margin: 4px 2px 5px; }
+.papps { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.papps button, .pwide { background: #232038; border: 1px solid #3a3556; color: #e6e2ff; border-radius: 10px; padding: 10px 6px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.papps button:hover, .pwide:hover { background: #332f52; }
+.pwide { display: block; width: 100%; margin-top: 8px; }
+.pwide.pghost { color: #9a90b8; background: transparent; }
+.phint { text-align: center; font-size: 10px; color: #7a7292; margin-top: 10px; letter-spacing: 1.5px; }
 
 #hp { position: fixed; left: 224px; bottom: 24px; width: 230px; height: 15px; background: rgba(0,0,0,0.5); border: 2px solid rgba(0,0,0,0.65); border-radius: 9px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
 #hpfill { height: 100%; width: 100%; background: linear-gradient(90deg,#ff3b6b,#ffb03a,#ffe14a); transition: width 0.15s; }
