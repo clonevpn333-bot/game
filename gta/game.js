@@ -259,7 +259,8 @@ class City {
       // ---- districts ----
       const east = ix > this.bayIx, port = !east && iz <= 1, downtown = !east && ix >= 2 && ix <= 4 && iz >= 3 && iz <= 6;
       const r = rng();
-      if (east) { // Vice Beach: pastel art-deco hotels, clubs and low slabs facing the ocean
+      if (ix === 2 && iz === 2) this._dealership(cx, cz, LOT, rng, G); // MOTORMAX showroom + spray shop
+      else if (east) { // Vice Beach: pastel art-deco hotels, clubs and low slabs facing the ocean
         if (r < 0.1) this._park(cx, cz, LOT, rng, G);
         else if (r < 0.58) { const type = ['hotel', 'club', 'diner', 'hotel', 'shop', 'club'][(rng() * 6) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
         else this._tower(cx, cz, LOT - 14, LOT - 16, 16 + rng() * 26, DECO[(rng() * DECO.length) | 0], rng, G);
@@ -310,6 +311,54 @@ class City {
     for (let i = 0; i < 11; i++) { let vx, vz, t2 = 0; do { const a = rng() * TAU, rr = 18 + rng() * (half * 0.7); [vx, vz] = this.snapSidewalk(Math.cos(a) * rr, Math.sin(a) * rr); t2++; } while ((this.inBay(vx, vz) || vx > half) && t2 < 20); this._vendorStall(vx, vz); this.vendors.push({ x: vx, z: vz }); }
   }
   _lodMat(c) { if (!this._lodMats.has(c)) this._lodMats.set(c, mat(new THREE.Color(c).multiplyScalar(0.94).getHex())); return this._lodMats.get(c); }
+  // real windows: instanced glass panes (lit + dark) and a slab ring per storey —
+  // actual geometry with floors between rows, not a painted-on texture.
+  _towerWindows(x, z, w, d, h0, shaftH, G) {
+    if (!this._winGeo) {
+      this._winGeo = new THREE.BoxGeometry(2.2, 2.3, 0.14);
+      this._winLit = mat(0xfff0c8, { emissive: 0xffe2a8, emissiveIntensity: 1.5 });
+      this._winDark = mat(0x27313f); this._winDark.roughness = 0.35;
+      this._slabMat = mat(0x555a64);
+    }
+    const floorH = 4, rows = Math.max(1, Math.floor((shaftH - 2.2) / floorH));
+    const colsX = Math.max(1, Math.floor((w - 1.6) / 3.4)), colsZ = Math.max(1, Math.floor((d - 1.6) / 3.4));
+    const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(1, 1, 1), P = new THREE.Vector3();
+    const litM = [], darkM = [];
+    const place = (px, py, pz, ry) => { Q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), ry); P.set(px, py, pz); M.compose(P, Q, S); (Math.random() < 0.45 ? litM : darkM).push(M.clone()); };
+    for (let r = 0; r < rows; r++) {
+      const wy = h0 + 2.2 + r * floorH;
+      for (let c2 = 0; c2 < colsX; c2++) { const wx = x - ((colsX - 1) * 3.4) / 2 + c2 * 3.4; place(wx, wy, z + d / 2 + 0.09, 0); place(wx, wy, z - d / 2 - 0.09, Math.PI); }
+      for (let c2 = 0; c2 < colsZ; c2++) { const wz = z - ((colsZ - 1) * 3.4) / 2 + c2 * 3.4; place(x + w / 2 + 0.09, wy, wz, Math.PI / 2); place(x - w / 2 - 0.09, wy, wz, -Math.PI / 2); }
+    }
+    const inst = (mats, m3) => { if (!mats.length) return; const im = new THREE.InstancedMesh(this._winGeo, m3, mats.length); for (let i = 0; i < mats.length; i++) im.setMatrixAt(i, mats[i]); im.instanceMatrix.needsUpdate = true; G.add(im); };
+    inst(litM, this._winLit); inst(darkM, this._winDark);
+    // one slab ring per storey — the "floors between the windows"
+    const slabs = new THREE.InstancedMesh(new THREE.BoxGeometry(w + 0.5, 0.5, d + 0.5), this._slabMat, rows);
+    for (let r = 0; r < rows; r++) { P.set(x, h0 + 0.6 + r * floorH, z); Q.identity(); M.compose(P, Q, S); slabs.setMatrixAt(r, M); }
+    slabs.instanceMatrix.needsUpdate = true; G.add(slabs);
+  }
+  _dealership(cx, cz, LOT, rng, G) {
+    // MOTORMAX: showroom pad with display cars to buy (B) + a spray shop pad (E in car)
+    this.displays = this.displays || [];
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(LOT - 4, 0.26, LOT - 4), mat(0xd8dde6)); pad.position.set(cx, 0.14, cz); pad.receiveShadow = true; G.add(pad);
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 14, 10), mat(0x2a2e36)); pole.position.set(cx - LOT / 2 + 4, 7, cz + LOT / 2 - 4); pole.castShadow = true; G.add(pole);
+    this._neonSign('MOTORMAX', 0x2fe6ff, cx - LOT / 2 + 4, 13, cz + LOT / 2 - 3.4, 12, G);
+    const specs = [{ kind: 'sports', color: 0xd23b3b, price: 3500, label: 'VELOCE GT' }, { kind: 'monster', color: 0x2f9e54, price: 5000, label: 'RHINO XL' }];
+    specs.forEach((s, i) => {
+      const px = cx - 8 + i * 16, pz = cz - 6;
+      const ped2 = new THREE.Mesh(new THREE.CylinderGeometry(4.4, 4.8, 0.5, 22), mat(0xb8c0ca)); ped2.position.set(px, 0.4, pz); G.add(ped2);
+      this.boxes.push({ x: px, z: pz, hw: 4.6, hd: 4.6, h: 0.9 });
+      const car = buildSpecial(s.kind, s.color); car.position.set(px, 0.65, pz); G.add(car);
+      this.displays.push({ x: px, z: pz, kind: s.kind, color: s.color, price: s.price, label: s.label, root: car });
+      this._neonSign('$' + s.price, 0xffe24a, px, 4.6, pz + 4.9, 5, G);
+    });
+    // spray pad
+    const sp = new THREE.Mesh(new THREE.BoxGeometry(9, 0.28, 9), mat(0xff5fb0, { emissive: 0xff4fa0, emissiveIntensity: 0.5 })); sp.position.set(cx + 12, 0.16, cz + 12); G.add(sp);
+    this._neonSign('SPRAY', 0xff5fb0, cx + 12, 4.2, cz + 16.4, 6, G);
+    const spole = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 4, 8), mat(0x2a2e36)); spole.position.set(cx + 12, 2, cz + 16.6); G.add(spole);
+    this.sprayPad = { x: cx + 12, z: cz + 12 };
+    this._lod.push({ x: cx, z: cz, w: LOT - 6, d: LOT - 6, h: 3, c: 0xd8dde6 });
+  }
   inBay(x, z) { return x > this.bayX0 - 1 && x < this.bayX1 + 1 && Math.abs(z) < this.size / 2 + 10; }
   isWater(x, z) { return (x > this.size / 2 + 95) || (this.inBay(x, z) && !this.onRoad(x, z)); }
   _warehouse(cx, cz, LOT, rng, G) {
@@ -364,14 +413,12 @@ class City {
     this.boxes.push({ x, z: z - d * 0.2, hw: w * 0.25 + 0.2, hd: 0.85, h: 1.4 });
     const elev = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w * 0.45, 3), h0 - 1.0, 0.16), mat(0x1a2530, { emissive: 0x2fd0e0, emissiveIntensity: 0.5 })); elev.position.set(x, (h0 - 1.0) / 2, z - d / 2 + 0.35); G.add(elev);
     const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, 0.16, d * 0.6), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 1.3 })); panel.position.set(x, h0 - 0.4, z); G.add(panel);
-    // shaft above the lobby (no ground-level collision)
-    const shaftH = h - h0, { map, emissive } = facadeTextures(w, shaftH, '#' + color.toString(16).padStart(6, '0'));
-    const side = () => mat(0xffffff, { map: map.clone(), emissiveMap: emissive.clone(), emissive: 0xffffff, emissiveIntensity: 1.05 });
-    const top = mat(color);
-    const shaft = new THREE.Mesh(new THREE.BoxGeometry(w, shaftH, d), [side(), side(), top, top, side(), side()]); shaft.position.set(x, h0 + shaftH / 2, z); shaft.castShadow = true; shaft.receiveShadow = true; G.add(shaft);
+    // shaft above the lobby (no ground-level collision) — REAL 3D windows + floor slabs
+    const shaftH = h - h0;
+    const shaft = new THREE.Mesh(new THREE.BoxGeometry(w, shaftH, d), mat(color)); shaft.position.set(x, h0 + shaftH / 2, z); shaft.castShadow = true; shaft.receiveShadow = true; G.add(shaft);
+    this._towerWindows(x, z, w, d, h0, shaftH, G);
     const ledge = new THREE.Mesh(new THREE.BoxGeometry(w + 0.8, 0.6, d + 0.8), trimMat); ledge.position.set(x, h0, z); ledge.castShadow = true; G.add(ledge);
     const para = new THREE.Mesh(new THREE.BoxGeometry(w + 0.6, 1.0, d + 0.6), trimMat); para.position.set(x, h - 0.2, z); para.castShadow = true; G.add(para);
-    const floors = Math.floor(shaftH / 4); for (let fl = 6; fl < floors; fl += 6) { const led = new THREE.Mesh(new THREE.BoxGeometry(w + 0.5, 0.4, d + 0.5), trimMat); led.position.set(x, h0 + fl * 4, z); G.add(led); }
     const tank = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, 2.4, d * 0.3), mat(0x33373f)); tank.position.set(x + rnd(-w * 0.2, w * 0.2), h + 1.2, z + rnd(-d * 0.2, d * 0.2)); tank.castShadow = true; G.add(tank);
     const awn = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w * 0.8, 5), 0.3, 1.0), mat(pick(NEONS))); awn.position.set(x, h0 + 0.2, z + d / 2 + 0.5); G.add(awn);
     if (h > 46 && rng() < 0.7) { const nc = pick(NEONS), sh = Math.min(h * 0.5, 20); const sign = new THREE.Mesh(new THREE.BoxGeometry(1.2, sh, 0.5), mat(nc, { emissive: nc, emissiveIntensity: 2.2 })); sign.position.set(x + (rng() < .5 ? -1 : 1) * (w / 2 + 0.4), h0 + shaftH * 0.55, z + d / 2 + 0.3); G.add(sign); }
@@ -424,15 +471,24 @@ class City {
     this.shops.push(rec);
   }
   _smallShop(x, z, w, d, h, rng, G, back) {
-    const shopCol = pick(SHOP_COLS);
-    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(shopCol)); b.position.set(x, h / 2, z); b.castShadow = true; b.receiveShadow = true; G.add(b);
-    if (this._lod) this._lod.push({ x, z, w, d, h, c: shopCol });
-    this.boxes.push({ x, z, hw: w / 2 + 0.3, hd: d / 2 + 0.3 });
-    const dz = back ? -1 : 1, fz = z + dz * (d / 2 + 0.06);
-    const win = new THREE.Mesh(new THREE.BoxGeometry(w * 0.82, 1.5, 0.1), mat(0x18243a, { emissive: pick(WIN_GLOW), emissiveIntensity: 1.1 })); win.position.set(x, 1.5, fz); G.add(win);
-    const door = new THREE.Mesh(new THREE.BoxGeometry(0.9, 2.0, 0.12), mat(0x12161e, { emissive: 0xffe6b0, emissiveIntensity: 0.4 })); door.position.set(x + w * 0.3, 1.0, fz + dz * 0.03); G.add(door);
+    // every corner store is walk-in now: open front, three walls, lit interior
+    const shopCol = pick(SHOP_COLS), t = 0.35, dz = back ? -1 : 1;
+    const wallMat = mat(shopCol);
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(w, 0.18, d), mat(0x2e2a34)); floor.position.set(x, 0.12, z); floor.receiveShadow = true; G.add(floor);
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.6, t, d + 0.6), wallMat); roof.position.set(x, h, z); roof.castShadow = true; G.add(roof);
+    const backW = new THREE.Mesh(new THREE.BoxGeometry(w, h, t), wallMat); backW.position.set(x, h / 2, z - dz * d / 2); backW.castShadow = true; backW.receiveShadow = true; G.add(backW);
+    this.boxes.push({ x, z: z - dz * d / 2, hw: w / 2 + 0.25, hd: t / 2 + 0.25 });
+    for (const sx of [-1, 1]) { const side = new THREE.Mesh(new THREE.BoxGeometry(t, h, d), wallMat); side.position.set(x + sx * w / 2, h / 2, z); side.castShadow = true; side.receiveShadow = true; G.add(side); this.boxes.push({ x: x + sx * w / 2, z, hw: t / 2 + 0.25, hd: d / 2 + 0.25 }); }
+    // interior: counter + register glow + shelf + ceiling light
+    const counter = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, 1.0, 1.0), mat(0x5f4530)); counter.position.set(x - w * 0.14, 0.75, z - dz * d * 0.22); counter.castShadow = true; G.add(counter);
+    this.boxes.push({ x: x - w * 0.14, z: z - dz * d * 0.22, hw: w * 0.25 + 0.2, hd: 0.7, h: 1.3 });
+    const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.9, d * 0.5), mat(0x46414d)); shelf.position.set(x + w / 2 - 0.85, 1.05, z); G.add(shelf);
+    const lamp2 = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, 0.12, d * 0.4), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 1.25 })); lamp2.position.set(x, h - 0.35, z); G.add(lamp2);
+    const fz = z + dz * (d / 2 + 0.06);
+    for (const sx of [-1, 1]) { const glassW = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, 1.6, 0.08), mat(0x18243a, { emissive: pick(WIN_GLOW), emissiveIntensity: 0.9, transparent: true, opacity: 0.85 })); glassW.position.set(x + sx * w * 0.32, 1.6, fz - dz * 0.06); G.add(glassW); this.boxes.push({ x: x + sx * w * 0.32, z: fz - dz * 0.06, hw: w * 0.15, hd: 0.2, h: 2.6 }); }
     const awn = new THREE.Mesh(new THREE.BoxGeometry(w * 0.92, 0.22, 1.0), mat(pick(NEONS))); awn.position.set(x, 2.85, fz + dz * 0.5); G.add(awn);
     const sign = this._neonSign(pick(BIZ), pick(NEONS), x, h + 0.45, fz + dz * 0.1, Math.min(w * 0.92, 7), G); if (back) sign.rotation.y = Math.PI;
+    if (this._lod) this._lod.push({ x, z, w, d, h, c: shopCol });
   }
   _block(cx, cz, LOT, rng, hs, G) {
     const n = 3 + (rng() * 2 | 0), sw = (LOT - 8) / n;
@@ -679,6 +735,18 @@ function animateHuman(f, dt, o) {
     const ph = Math.sin(t * 2.6); zero(j, f);
     j.armL.rotation.x = -0.8 + ph * 0.25; j.armR.rotation.x = -0.6 - ph * 0.25; j.foreL.rotation.x = -0.5; j.foreR.rotation.x = -0.4;
     j.chest.rotation.x = 0.28; j.chest.rotation.y = ph * 0.18; j.head.rotation.x = 0.24;
+  } else if (state === 'yank') {
+    // grab the door / driver and haul them out
+    const pull = (Math.sin(t * 6.5) + 1) / 2; zero(j, f);
+    j.armL.rotation.x = -1.55 + pull * 1.05; j.armR.rotation.x = -1.55 + pull * 1.05; j.foreL.rotation.x = -0.35; j.foreR.rotation.x = -0.35;
+    j.chest.rotation.x = 0.3 - pull * 0.42; set('legL', -0.15 + pull * 0.1); set('legR', 0.2 - pull * 0.1); j.head.rotation.x = 0.1;
+  } else if (state === 'knockout') {
+    zero(j, f); f.group.rotation.x = -1.5; f.group.position.y = -0.62; // flat on their back, out cold
+    j.armL.rotation.z = 0.9; j.armR.rotation.z = -0.7; set('legL', -0.25); set('shinL', 0.55); j.head.rotation.x = 0.15;
+  } else if (state === 'hitstun') {
+    zero(j, f); const k = Math.sin(t * 16) * 0.06;
+    j.chest.rotation.x = -0.3 + k; j.head.rotation.x = -0.25; f.group.position.y = -0.06;
+    j.armL.rotation.x = -0.9; j.armR.rotation.x = -0.9; j.foreL.rotation.x = -0.8; j.foreR.rotation.x = -0.8; set('legL', -0.2); set('legR', 0.24);
   } else {
     const b = Math.sin(t * 1.5); zero(j, f);
     j.chest.rotation.x = 0.02 + b * 0.014; j.chest.rotation.y = Math.sin(t * 0.6) * 0.03; j.chest.scale.set(1, 1 + b * 0.02, 1);
@@ -738,6 +806,27 @@ function buildCar(color) {
   return g;
 }
 function taxiSign() { const s = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.26, 0.4), mat(0xffd23a, { emissive: 0xffd23a, emissiveIntensity: 1.4 })); s.position.set(0, 1.66, -0.15); return s; }
+function buildSpecial(kind, color) {
+  const g = new THREE.Group(); const paint = mat(color);
+  if (kind === 'sports') { // low, wide, winged
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.42, 4.7), paint); body.position.y = 0.5; body.castShadow = true; g.add(body);
+    const nose = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 1.2, 1.4, 4), paint); nose.rotation.x = -Math.PI / 2; nose.rotation.y = Math.PI / 4; nose.position.set(0, 0.5, -3.0); g.add(nose);
+    const cab = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.44, 1.9), mat(0x0c1018)); cab.position.set(0, 0.9, 0.2); g.add(cab);
+    const cap2 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 1.5), paint); cap2.position.set(0, 1.14, 0.25); g.add(cap2);
+    for (const sx of [-0.85, 0.85]) { const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.1), paint); post.position.set(sx, 0.9, 2.05); g.add(post); }
+    const wing = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.1, 0.55), paint); wing.position.set(0, 1.12, 2.05); g.add(wing);
+    for (const sz of [-1.55, 1.5]) for (const sx of [-1.05, 1.05]) { const t2 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.34, 16), mat(0x0b0c10)); t2.rotation.z = Math.PI / 2; t2.position.set(sx, 0.4, sz); g.add(t2); const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.36, 8), mat(0xd8b04a)); rim.rotation.z = Math.PI / 2; rim.position.set(sx, 0.4, sz); g.add(rim); }
+    const hl2 = mat(0xfff6d2, { emissive: 0xfff0b0, emissiveIntensity: 2.4 }); for (const sx of [-0.7, 0.7]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.14, 0.1), hl2); l.position.set(sx, 0.56, -2.4); g.add(l); }
+  } else { // monster: lifted body on comically big wheels
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.7, 4.2), paint); body.position.y = 1.75; body.castShadow = true; g.add(body);
+    const cab = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.7, 1.8), paint); cab.position.set(0, 2.35, -0.3); g.add(cab);
+    const glass = new THREE.Mesh(new THREE.BoxGeometry(1.94, 0.5, 1.84), mat(0x0c1018)); glass.position.set(0, 2.35, -0.3); g.add(glass);
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.14, 0.14), mat(0x2a2e36)); bar.position.set(0, 2.8, 0.7); g.add(bar);
+    for (let i = 0; i < 4; i++) { const s = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), mat(0xfff0b0, { emissive: 0xffe6a0, emissiveIntensity: 2 })); s.position.set(-0.75 + i * 0.5, 2.88, 0.7); g.add(s); }
+    for (const sz of [-1.5, 1.5]) for (const sx of [-1.25, 1.25]) { const t2 = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.6, 18), mat(0x0b0c10)); t2.rotation.z = Math.PI / 2; t2.position.set(sx, 0.95, sz); t2.castShadow = true; g.add(t2); const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.62, 10), mat(0xc4c9d1)); rim.rotation.z = Math.PI / 2; rim.position.set(sx, 0.95, sz); g.add(rim); }
+  }
+  return g;
+}
 
 // ---------------------------------------------------------------------------
 // Game
@@ -794,6 +883,10 @@ class Game {
     for (let i = 0; i < 8; i++) { const [lx, lz] = this.city.snapSidewalk(rnd(-this.city.size / 2 + 20, this.city.size / 2 - 20), rnd(-this.city.size / 2 + 20, this.city.size / 2 - 20)); const ped = new Ped(this, lx, lz, false, { loiter: true, yaw: rnd(TAU) }); ped.story = true; this.npcs.push(ped); }   // loiterers sitting around
     for (const camp of (this.city.camps || [])) for (let i = 0; i < 4; i++) { const ped = new Ped(this, camp.x + rnd(-camp.r, camp.r), camp.z + rnd(-camp.r, camp.r), false, { homeless: true, yaw: rnd(TAU) }); ped.story = true; this.npcs.push(ped); }   // camp residents
     for (let i = 0; i < 5; i++) { const [hx, hz] = this.city.snapSidewalk(rnd(-this.city.size / 2 + 16, this.city.size / 2 - 16), rnd(-this.city.size / 2 + 16, this.city.size / 2 - 16)); const ped = new Ped(this, hx, hz, false, { homeless: true, yaw: rnd(TAU) }); ped.story = true; this.npcs.push(ped); }   // scattered homeless on sidewalks
+    // boats in the bay + off the beach (mid-block, clear of the causeways)
+    const bx = (this.city.bayX0 + this.city.bayX1) / 2;
+    for (let i = 0; i < 4; i++) this.cars.push(new Boat(this, bx + rnd(-5, 5), -this.city.size / 2 + 33 + i * 132));
+    for (let i = 0; i < 2; i++) this.cars.push(new Boat(this, this.city.size / 2 + 115, -70 + i * 150));
     this.story.begin(); this.input.lock();
     if (this.saveData) {
       this.player.money = this.saveData.money != null ? this.saveData.money : this.player.money; this.player.hasGun = !!this.saveData.gun; if (this.player.hasGun) this.player.weapon = 'pistol';
@@ -871,6 +964,13 @@ class Game {
   // ---- property / economy layer: buy venues (B), they pay out every minute ----
   buyProperty() {
     const p = this.player;
+    // dealership display cars first
+    for (const d of (this.city.displays || [])) {
+      if (Math.hypot(p.pos.x - d.x, p.pos.z - d.z) > 7) continue;
+      if (p.money < d.price) { this.ui.toast(d.label + ' costs $' + d.price); return; }
+      p.money -= d.price; const car = new Car(this, d.x + 10, d.z + 10, new THREE.Vector3(0, 0, 1), d.color, false, d.kind); car.ai = false; this.cars.push(car);
+      this.ui.toast('★ Bought the ' + d.label + ' (-$' + d.price + ') — it\'s parked beside the pad'); return;
+    }
     for (const rec of this.city.shops) {
       if (Math.abs(p.pos.x - rec.x) > (rec.w || 20) / 2 + 4 || Math.abs(p.pos.z - rec.z) > (rec.d || 20) / 2 + 4) continue;
       const deal = PROP[rec.type]; if (!deal) { this.ui.toast('Not for sale'); return; }
@@ -891,6 +991,14 @@ class Game {
   // ---- E interactions: rob registers, eat at diners, taxi fast-travel ----
   interact() {
     const p = this.player;
+    if (p.inCar) { // spray shop: repaint your ride
+      const sp = this.city.sprayPad;
+      if (sp && Math.hypot(p.pos.x - sp.x, p.pos.z - sp.z) < 7 && !p.inCar.boat) {
+        if (p.money >= 200) { p.money -= 200; p.inCar.repaint(pick(CAR_COLORS)); this.ui.toast('Fresh coat of paint (-$200)'); }
+        else this.ui.toast('Respray costs $200');
+      }
+      return;
+    }
     for (const rec of this.city.shops) {
       if (Math.abs(p.pos.x - rec.x) > (rec.w || 20) / 2 || Math.abs(p.pos.z - rec.z) > (rec.d || 20) / 2) continue;
       if (rec.type === 'diner' && p.money >= 10) { p.money -= 10; p.health = p.maxHealth; this.ui.toast('Hot meal — HP restored (-$10)'); return; }
@@ -981,6 +1089,7 @@ class Game {
     if (this.player.pos) { this.sun.position.set(this.player.pos.x - 48, 95, this.player.pos.z - 95); this.sun.target.position.copy(this.player.pos); this.sun.target.updateMatrixWorld(); }
     this.sky.position.copy(this.camera.position);
     this.updateDayNight();
+    if (this.city.displays) for (const d2 of this.city.displays) d2.root.rotation.y += dt * 0.5;
     if (this.sky.userData.clouds) for (const c of this.sky.userData.clouds.children) { c.position.x += dt * 2.4; if (c.position.x > 720) c.position.x -= 1440; }
     // refresh the shadow map only a few times per second (buildings are static)
     this._shadowT -= dt; if (this._shadowT <= 0) { this.renderer.shadowMap.needsUpdate = true; this._shadowT = 0.11; }
@@ -996,7 +1105,7 @@ class Game {
     for (const f of this.fx) { f.life -= dt; for (let i = 0; i < f.n; i++) { f.vs[i * 3 + 1] -= 12 * dt; f.ps[i * 3] += f.vs[i * 3] * dt; f.ps[i * 3 + 1] += f.vs[i * 3 + 1] * dt; f.ps[i * 3 + 2] += f.vs[i * 3 + 2] * dt; } f.g.attributes.position.needsUpdate = true; f.m.material.opacity = Math.max(0, f.life / 0.6); }
     this.fx = this.fx.filter(f => { if (f.life <= 0) { this.scene.remove(f.m); f.g.dispose(); f.m.material.dispose(); return false; } return true; });
   }
-  cull() { this.npcs = this.npcs.filter(n => { if (n.removeMe) { this.scene.remove(n.root); return false; } return true; }); this.cars = this.cars.filter(c => { if (c.removeMe) { this.scene.remove(c.root); return false; } return true; }); const civ = this.npcs.filter(n => !n.cop && !n.story).length; if (civ < 34) { this.spawnPed(); if (civ < 26) this.spawnPed(); } if (this.cars.length < 16) this.spawnTraffic(); }
+  cull() { this.npcs = this.npcs.filter(n => { if (n.removeMe) { this.scene.remove(n.root); return false; } return true; }); this.cars = this.cars.filter(c => { if (c.removeMe) { this.scene.remove(c.root); return false; } return true; }); const civ = this.npcs.filter(n => !n.cop && !n.story).length; if (civ < 34) { this.spawnPed(); if (civ < 26) this.spawnPed(); } if (this.cars.filter(c => c.aiTraffic && !c.police).length < 15) this.spawnTraffic(); }
 }
 function raySphere(o, d, c, r) { const oc = o.clone().sub(c), b = oc.dot(d), cc = oc.dot(oc) - r * r, h = b * b - cc; if (h < 0) return null; const t = -b - Math.sqrt(h); return t >= 0 ? t : null; }
 
@@ -1008,21 +1117,39 @@ class Player {
     this.game = game; this.pos = new THREE.Vector3(0, 0, 0); this.yaw = 0; this.vy = 0; this.onGround = true;
     this.camYaw = 0; this.camPitch = 0.22; this.camDist = 6.5;
     this.health = 100; this.maxHealth = 100; this.money = 200; this.wanted = 0; this.heat = 0;
-    this.inCar = null; this.regen = 0; this.dead = false; this.hasGun = false; this.weapon = 'fists'; this.gunCd = 0; this.punchT = 0; this.shootT = 0;
+    this.inCar = null; this.regen = 0; this.dead = false; this.hasGun = false; this.weapon = 'fists'; this.gunCd = 0; this.punchT = 0; this.shootT = 0; this.jackT = 0; this.jackCar = null;
     this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); game.scene.add(this.root); this.root.visible = false; this._build();
   }
   _build() { const f = buildPerson({ shirt: PLAYER_PURPLE, skin: 0xecbd90, hair: 0x201810, pants: 0x1f2530, style: 'mop', noScale: true }); this.fig = f; this.root.add(f.group); this.gun = buildPistol(); this.gun.position.set(0.02, -0.3, 0.06); this.gun.visible = false; f.j.foreR.add(this.gun); }
   spawn() { const s = this.spawnPos || { x: 30, z: 30 }; this.pos.set(s.x, 0, s.z); this.camYaw = 0; this.root.position.copy(this.pos); }
-  enterCar(car) { this.inCar = car; car.driver = this; car.ai = false; this.root.visible = false; if (car.aiTraffic) this.game.addWanted(1); }
-  exitCar() { const car = this.inCar; if (!car) return; this.inCar = null; car.driver = null; car.ai = true; this.root.visible = true; this.pos.set(car.pos.x + 2.4, 0, car.pos.z); this.vy = 0; }
+  enterCar(car) { this.inCar = car; car.driver = this; car.ai = false; this.root.visible = false; }
+  exitCar() { const car = this.inCar; if (!car) return; this.inCar = null; car.driver = null; car.ai = false; car.speed = 0; this.root.visible = true; this.pos.set(car.pos.x + 2.4, 0, car.pos.z); this.vy = 0; } // stolen cars STAY parked
+  startJack(car) {
+    // cinematic carjack: stop the car, yank the driver out cold, then take the wheel
+    car.ai = false; car.speed = 0; this.jackT = 1.15; this.jackCar = car;
+    const a = car.yaw + Math.PI / 2, dx = Math.sin(a) * 1.6, dz = Math.cos(a) * 1.6;
+    this.pos.set(car.pos.x + dx, 0, car.pos.z + dz); this.root.position.copy(this.pos);
+    this.yaw = Math.atan2(car.pos.x - this.pos.x, car.pos.z - this.pos.z);
+    if (car.aiTraffic && !car.jacked) {
+      car.jacked = true;
+      const owner = new Ped(this.game, this.pos.x + dx * 0.9, this.pos.z + dz * 0.9); owner.knockT = 3.8; owner.yaw = this.yaw + Math.PI; this.game.npcs.push(owner);
+      this.game.addWanted(1);
+    }
+  }
   eye() { return new THREE.Vector3(this.pos.x, this.pos.y + 1.5, this.pos.z); }
   update(dt) {
     const inp = this.game.input;
     this.camYaw -= inp.mdx * 0.0024; this.camPitch = clamp(this.camPitch + inp.mdy * 0.0024, -0.2, 1.2); this.camDist = clamp(this.camDist + inp.wheel * 0.8, 4, 13);
-    if (inp.p('KeyF')) { if (this.inCar) this.exitCar(); else { const car = this.game.nearestCar(this.pos, 4.5); if (car) this.enterCar(car); } }
+    // carjack animation in progress: locked in the yank until it lands
+    if (this.jackT > 0) {
+      this.jackT -= dt; this.fig.update(dt, { state: 'yank' }); this.root.rotation.y = this.yaw;
+      if (this.jackT <= 0 && this.jackCar) { this.enterCar(this.jackCar); this.jackCar = null; }
+      this._stats(dt); return;
+    }
+    if (inp.p('KeyF')) { if (this.inCar) this.exitCar(); else { const car = this.game.nearestCar(this.pos, 4.5); if (car) { if (car.aiTraffic && !car.jacked && !car.boat) this.startJack(car); else this.enterCar(car); } } }
     if (inp.p('Digit1')) { this.weapon = 'fists'; this.game.ui.toast('Fists'); }
     if (inp.p('Digit2') && this.hasGun) { this.weapon = 'pistol'; this.game.ui.toast('Pistol'); }
-    if (!this.inCar && inp.p('KeyE')) this.game.interact();
+    if (inp.p('KeyE')) this.game.interact();
     if (!this.inCar && inp.p('KeyB')) this.game.buyProperty();
     if (this.inCar) { const car = this.inCar; car.control(dt, inp); this.pos.copy(car.pos); this.yaw = car.yaw; this._stats(dt); return; }
     const fwd = new THREE.Vector3(Math.sin(this.camYaw), 0, Math.cos(this.camYaw)), right = new THREE.Vector3(-fwd.z, 0, fwd.x), wish = new THREE.Vector3();
@@ -1097,14 +1224,17 @@ class Ped {
     this.ambient = opts.ambient || (this.homeless ? pick(['panhandle', 'sit', 'sleep']) : this.loiter ? pick(['sit', 'phone', 'smoke', 'lean']) : this.vendor ? pick(['idle', 'sweep', 'wave']) : null);
     const f = buildPerson(this.persona); this.fig = f; this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); this.root.add(f.group); this.root.position.copy(this.pos); game.scene.add(this.root);
     if (cop) { const capm = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.14, 0.4), mat(0x11203f)); capm.position.y = 1.95; this.root.add(capm); }
+    const [ux, uz] = game.city.collide(x, z, 0.55); if (Math.hypot(ux - x, uz - z) > 0.05) { this.pos.set(ux, 0, uz); this.root.position.copy(this.pos); } // never spawn inside a wall
   }
   animateIdle(dt) { if (!this.dead) this.fig.update(dt, { state: this.dance ? 'dance' : 'idle' }); }
-  damage(n) { if (this.dead) return; this.hp -= n; this.flee = 7; if (this.hp <= 0) this.die(); }
+  damage(n) { if (this.dead) return; this.hp -= n; this.flee = 7; if (this.hp <= 0) this.die(); else this.stunT = 0.45; }
   die() { this.dead = true; this.deadT = 0; const cash = 10 + (Math.random() * 40 | 0); this.game.player.money += cash; this.game.ui.toast('+$' + cash); }
   scare(t) { this.cowerT = Math.max(this.cowerT, t); }
   update(dt) {
     if (this.dead) { this.deadT += dt; this.root.rotation.z = Math.min(Math.PI / 2, this.deadT * 4); this.root.position.copy(this.pos); if (this.deadT > 6) this.removeMe = true; return; }
     if (this.dance) { this.root.rotation.y = this.yaw; this.fig.update(dt, { state: 'dance' }); return; }
+    if (this.knockT > 0) { this.knockT -= dt; this.root.position.copy(this.pos); this.fig.update(dt, { state: 'knockout' }); if (this.knockT <= 0) this.flee = 6; return; } // out cold on the pavement
+    if (this.stunT > 0) { this.stunT -= dt; this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; this.fig.update(dt, { state: 'hitstun' }); return; }   // reeling from a hit
     this.cowerT = Math.max(0, this.cowerT - dt);
     if ((this.loiter || this.vendor || this.homeless) && this.flee <= 0) {
       this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
@@ -1127,6 +1257,13 @@ class Ped {
       this.timer = rnd(3, 8);
     } else { this.pos.x = cx; this.pos.z = cz; }
     if (!this.story && this.pos.distanceTo(p.pos) > 155) this.removeMe = true;
+    // un-stick: if pinched between buildings while trying to walk, relocate to the sidewalk
+    if (moving) {
+      const md = Math.hypot(this.pos.x - (this._px != null ? this._px : this.pos.x), this.pos.z - (this._pz != null ? this._pz : this.pos.z));
+      this.stuckT = md < sp * dt * 0.2 ? (this.stuckT || 0) + dt : 0;
+      if (this.stuckT > 2.5) { const s2 = this.game.city.snapSidewalk(this.pos.x, this.pos.z); const [rx, rz] = this.game.city.collide(s2[0], s2[1], 0.55); this.pos.set(rx, 0, rz); this.stuckT = 0; }
+    }
+    this._px = this.pos.x; this._pz = this.pos.z;
     this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
     this.fig.update(dt, { state: moving ? (sp > 5 ? 'run' : 'walk') : 'idle' });
   }
@@ -1136,23 +1273,30 @@ class Ped {
 // Car
 // ---------------------------------------------------------------------------
 class Car {
-  constructor(game, x, z, dir, color, aiTraffic) {
-    this.game = game; this.pos = new THREE.Vector3(x, 0, z); this.speed = 0; this.driver = null; this.ai = true; this.aiTraffic = !!aiTraffic; this.turnCd = 1.5;
-    this.taxi = aiTraffic && Math.random() < 0.22; if (this.taxi) color = 0xffd23a;
+  constructor(game, x, z, dir, color, aiTraffic, kind) {
+    this.game = game; this.pos = new THREE.Vector3(x, 0, z); this.speed = 0; this.driver = null; this.ai = true; this.aiTraffic = !!aiTraffic; this.turnCd = 1.5; this.kind = kind || null; this.color = color;
+    this.taxi = aiTraffic && !kind && Math.random() < 0.22; if (this.taxi) { color = 0xffd23a; this.color = color; }
+    this.maxSpd = kind === 'sports' ? 50 : kind === 'monster' ? 30 : 36; this.accel = kind === 'sports' ? 36 : kind === 'monster' ? 20 : 24;
     this.dir = Math.abs(dir.x) > Math.abs(dir.z) ? { x: Math.sign(dir.x) || 1, z: 0 } : { x: 0, z: Math.sign(dir.z) || 1 };
     this.yaw = Math.atan2(this.dir.x, this.dir.z);
-    this.root = buildCar(color); if (this.taxi) this.root.add(taxiSign()); this.root.add(makeBlob(1.7)); this.root.position.copy(this.pos); game.scene.add(this.root);
+    this.root = kind ? buildSpecial(kind, color) : buildCar(color); if (this.taxi) this.root.add(taxiSign()); this.root.add(makeBlob(kind === 'monster' ? 2.2 : 1.7)); this.root.position.copy(this.pos); game.scene.add(this.root);
+  }
+  repaint(color) {
+    this.color = color; this.game.scene.remove(this.root);
+    this.root = this.kind ? buildSpecial(this.kind, color) : buildCar(color); if (this.taxi) this.root.add(taxiSign()); this.root.add(makeBlob(this.kind === 'monster' ? 2.2 : 1.7));
+    this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; this.game.scene.add(this.root);
   }
   control(dt, inp) {
     const acc = (inp.k('KeyW') ? 1 : 0) - (inp.k('KeyS') ? 1 : 0), steer = (inp.k('KeyA') ? 1 : 0) - (inp.k('KeyD') ? 1 : 0);
-    this.speed += acc * 24 * dt; this.speed *= (inp.k('Space') ? 0.9 : 0.992); this.speed = clamp(this.speed, -14, 36);
-    if (Math.abs(this.speed) > 0.5) this.yaw += steer * 1.7 * dt * (this.speed > 0 ? 1 : -1);
+    this.speed += acc * this.accel * dt; this.speed *= (inp.k('Space') ? 0.9 : 0.992); this.speed = clamp(this.speed, -14, this.maxSpd);
+    if (Math.abs(this.speed) > 0.5) this.yaw += steer * (this.kind === 'sports' ? 2.0 : 1.7) * dt * (this.speed > 0 ? 1 : -1);
     this._move(dt);
-    if (Math.abs(this.speed) > 7) for (const n of this.game.npcs) { if (!n.dead && n.pos.distanceTo(this.pos) < 2.4) { n.damage(40); if (!n.cop) this.game.addWanted(2); } }
+    const rr = this.kind === 'monster' ? 3.4 : 2.4;
+    if (Math.abs(this.speed) > 7) for (const n of this.game.npcs) { if (!n.dead && n.pos.distanceTo(this.pos) < rr) { n.damage(40); if (!n.cop) this.game.addWanted(2); } }
   }
   update(dt) {
     if (this.driver) { this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; return; }
-    if (!this.ai) return;
+    if (!this.ai) { if (this.pos.distanceTo(this.game.player.pos) > 260) this.removeMe = true; return; } // parked/stolen cars stay put
     const g = this.game, c = g.city, p = g.player;
     if (this.pos.distanceTo(p.pos) > 185) { g.scene.remove(this.root); g.cars = g.cars.filter(x => x !== this); g.spawnTraffic(); return; }
     this.turnCd -= dt; this.speed = lerp(this.speed, 13, dt * 2);
@@ -1175,6 +1319,39 @@ class Car {
     this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
   }
   _move(dt) { const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw); let nx = this.pos.x + fx * this.speed * dt, nz = this.pos.z + fz * this.speed * dt; const [cx, cz] = this.game.city.collide(nx, nz, 1.4); if (cx !== nx || cz !== nz) this.speed *= -0.2; this.pos.x = cx; this.pos.z = cz; this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; }
+}
+
+// ---------------------------------------------------------------------------
+// Boat — drivable on the bay and the ocean (F to board, even mid-swim).
+// ---------------------------------------------------------------------------
+function buildBoat(color) {
+  const g = new THREE.Group();
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.9, 6.2), mat(color)); hull.position.y = 0.45; hull.castShadow = true; g.add(hull);
+  const bow = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 1.35, 2.2, 4), mat(color)); bow.rotation.x = -Math.PI / 2; bow.rotation.y = Math.PI / 4; bow.position.set(0, 0.45, -4.1); g.add(bow);
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.14, 3.4), mat(0xe8dcc0)); deck.position.set(0, 0.95, 0.6); g.add(deck);
+  const dash = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.7, 0.5), mat(0xffffff)); dash.position.set(0, 1.25, -1.2); g.add(dash);
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.5, 0.08), mat(0x0e1826)); glass.position.set(0, 1.7, -1.35); glass.rotation.x = -0.3; g.add(glass);
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 0.9), mat(0xc0392b)); seat.position.set(0, 1.1, 0.6); g.add(seat);
+  const motor = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.6), mat(0x22262e)); motor.position.set(0, 0.9, 3.2); g.add(motor);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.45, 0.16, 5.4), mat(0xffffff)); stripe.position.set(0, 0.72, 0.2); g.add(stripe);
+  return g;
+}
+class Boat {
+  constructor(game, x, z, color) {
+    this.game = game; this.pos = new THREE.Vector3(x, 0, z); this.yaw = rnd(TAU); this.speed = 0; this.driver = null; this.ai = false; this.boat = true; this.aiTraffic = false;
+    this.root = buildBoat(color || pick([0xf0f0f4, 0x2f6fd4, 0xd23b3b, 0x18b0b0])); this.root.position.copy(this.pos); game.scene.add(this.root);
+  }
+  control(dt, inp) {
+    const acc = (inp.k('KeyW') ? 1 : 0) - (inp.k('KeyS') ? 1 : 0), steer = (inp.k('KeyA') ? 1 : 0) - (inp.k('KeyD') ? 1 : 0);
+    this.speed += acc * 14 * dt; this.speed *= 0.99; this.speed = clamp(this.speed, -8, 26);
+    if (Math.abs(this.speed) > 0.4) this.yaw += steer * 1.15 * dt * (this.speed > 0 ? 1 : -1);
+    const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw), nx = this.pos.x + fx * this.speed * dt, nz = this.pos.z + fz * this.speed * dt;
+    const c = this.game.city, ok = c.inBay(nx, nz) || nx > c.size / 2 + 95; // whole bay is navigable (skims under the causeways) + open ocean
+    if (ok) { this.pos.x = nx; this.pos.z = nz; } else this.speed *= -0.25;
+    this._sync();
+  }
+  update(dt) { this._sync(); }
+  _sync() { const t = this.game.time; this.root.position.set(this.pos.x, 0.06 + Math.sin(t * 1.7 + this.pos.x) * 0.05, this.pos.z); this.root.rotation.y = this.yaw; this.root.rotation.x = Math.sin(t * 1.4) * 0.02; }
 }
 
 // ---------------------------------------------------------------------------
@@ -1332,7 +1509,7 @@ class UI {
   title() {
     this.modal = 'title'; this.el.overlay.className = 'menu';
     const sv = this.game.saveData, cont = sv && sv.ch > 0 ? `<button id="cont" class="bigbtn">CONTINUE — CH.${Math.min(sv.ch + 1, 8)}</button>` : '';
-    this.el.overlay.innerHTML = `<div class="menuwrap"><div class="logo"><span class="l1">NEON</span><span class="l2">BAY</span></div><div class="tag">VICE • SUN • CHROME</div>${cont}<button id="play" class="bigbtn${cont ? ' ghost' : ''}">${cont ? 'NEW GAME' : 'START'}</button><div class="ctrls"><span><b>WASD</b> move</span><span><b>Shift</b> sprint</span><span><b>Click</b> punch/shoot</span><span><b>1/2</b> weapon</span><span><b>E</b> rob/eat/taxi</span><span><b>B</b> buy property</span><span><b>F</b> car</span></div><div class="note">Cel-shaded GTA-inspired game. Buy clubs and hotels for income, rob registers, dodge cruiser dispatches, find 12 hidden packages. Day/night cycle. Runs offline.</div></div>`;
+    this.el.overlay.innerHTML = `<div class="menuwrap"><div class="logo"><span class="l1">NEON</span><span class="l2">BAY</span></div><div class="tag">VICE • SUN • CHROME</div>${cont}<button id="play" class="bigbtn${cont ? ' ghost' : ''}">${cont ? 'NEW GAME' : 'START'}</button><div class="ctrls"><span><b>WASD</b> move</span><span><b>Shift</b> sprint</span><span><b>Click</b> punch/shoot</span><span><b>1/2</b> weapon</span><span><b>E</b> rob/eat/taxi</span><span><b>B</b> buy property</span><span><b>F</b> car</span></div><div class="note">Cel-shaded GTA-inspired game. Carjack drivers, buy clubs for income, grab a boat on the bay, hit MOTORMAX for a supercar or monster truck + resprays, dodge cruiser dispatches, find 12 packages. Day/night cycle. Runs offline.</div></div>`;
     this.el.overlay.querySelector('#play').onclick = () => { this.modal = null; try { localStorage.removeItem('nb_save'); } catch (e) {} this.game.saveData = null; this.game.intro(); };
     const cb = this.el.overlay.querySelector('#cont'); if (cb) cb.onclick = () => { this.modal = null; this.game.start(); };
   }
