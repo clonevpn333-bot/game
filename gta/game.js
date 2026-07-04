@@ -1606,7 +1606,7 @@ class Game {
     this.renderer.shadowMap.autoUpdate = false; this._shadowT = 0; // shadows refreshed ~8x/s, not every frame
     this.scene = new THREE.Scene();
     // exponential haze so distant towers dissolve into the storm (colour matches the night sky)
-    this.scene.fog = new THREE.FogExp2(0x080b12, 0.018);
+    this.scene.fog = new THREE.FogExp2(0x0a0e16, 0.009);
     this.camera = new THREE.PerspectiveCamera(62, innerWidth / innerHeight, 0.3, 900);
     this.camera.position.set(0, 6, 18);
     this.renderDist = 185; this._frustum = new THREE.Frustum(); this._m = new THREE.Matrix4(); this._sph = new THREE.Sphere();
@@ -1771,7 +1771,7 @@ class Game {
     this.sun.intensity = 0.5; this.sun.color.set(0x9fb2dc);             // cool moonlight — enough shape to read the world
     this.hemi.intensity = 0.55; this.hemi.color.set(0x2a3550); this.hemi.groundColor.set(0x0c1018);
     if (this.ambient) this.ambient.intensity = 0.34;
-    this.scene.fog.color.set(0x0a0e16); this.scene.fog.density = 0.014; // exponential haze (a touch lighter so mid-range reads)
+    this.scene.fog.color.set(0x0a0e16); this.scene.fog.density = 0.009; // exponential haze — distant towers fade but the skyline still reads
     // crank the neon bloom, wet-shine the asphalt, keep exposure filmic but not pitch-black
     if (this.post && this.post.enabled) { this.post.compMat.uniforms.strength.value = 1.25; this.post.brightMat.uniforms.threshold.value = 0.7; this.post.compMat.uniforms.exposure.value = 1.08; }
     if (this.city.roadMat) this.city.roadMat.emissiveIntensity = 3.2;    // rain-slicked reflectivity
@@ -2461,12 +2461,18 @@ class Car {
     this.dir = Math.abs(dir.x) > Math.abs(dir.z) ? { x: Math.sign(dir.x) || 1, z: 0 } : { x: 0, z: Math.sign(dir.z) || 1 };
     this.yaw = Math.atan2(this.dir.x, this.dir.z);
     this.root = kind ? buildSpecial(kind, color) : buildCar(color); if (this.taxi) this.root.add(taxiSign()); this.root.add(makeBlob(kind === 'monster' ? 2.2 : 1.7)); this.root.position.copy(this.pos); game.scene.add(this.root);
+    this._carLights();
     const dv = this.root.userData.driver; if (dv) dv.visible = this.aiTraffic && !this.jacked;
+  }
+  // headlight spill + taillight glow pooled on the wet asphalt (moves + turns with the car)
+  _carLights() {
+    const spill = lightPool(6.5, 0xfff2d0, 0.55); spill.position.set(0, 0.05, -5.4); spill.scale.set(0.72, 1, 1.25); this.root.add(spill);
+    const rear = lightPool(3.0, 0xff2a1e, 0.5); rear.position.set(0, 0.05, 3.4); this.root.add(rear);
   }
   repaint(color) {
     this.color = color; this.game.scene.remove(this.root);
     this.root = this.kind ? buildSpecial(this.kind, color) : buildCar(color); if (this.taxi) this.root.add(taxiSign()); this.root.add(makeBlob(this.kind === 'monster' ? 2.2 : 1.7));
-    this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; this.game.scene.add(this.root);
+    this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; this.game.scene.add(this.root); this._carLights();
     const dv = this.root.userData.driver; if (dv) dv.visible = this.aiTraffic && !this.jacked && !this.driver;
   }
   control(dt, inp) {
