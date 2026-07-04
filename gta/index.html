@@ -153,7 +153,7 @@ function toonRamp(steps) {
 const RAMP = toonRamp(4);
 function mat(c, o) {
   o = o || {}; const p = { color: c, gradientMap: RAMP };
-  for (const k of ['emissive', 'emissiveIntensity', 'map', 'emissiveMap', 'transparent', 'opacity', 'side', 'depthWrite', 'alphaTest']) if (o[k] !== undefined) p[k] = o[k];
+  for (const k of ['emissive', 'emissiveIntensity', 'map', 'emissiveMap', 'transparent', 'opacity', 'side', 'depthWrite', 'alphaTest', 'polygonOffset', 'polygonOffsetFactor', 'polygonOffsetUnits']) if (o[k] !== undefined) p[k] = o[k];
   return new THREE.MeshToonMaterial(p);
 }
 function skinMat(c) { const col = new THREE.Color(c); return new THREE.MeshToonMaterial({ color: c, gradientMap: RAMP, emissive: col.clone().multiplyScalar(0.08) }); }
@@ -375,6 +375,8 @@ class City {
     const half = span / 2;
     this.bayIx = 5; this.bayX0 = -half + this.bayIx * CELL + ROAD; this.bayX1 = this.bayX0 + LOT;
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(span + 120, span + 120), mat(0x6a6c76, { map: noiseTexture(70, 72, 82, 14) }));
+    // push the ground plane BACK in the depth buffer so any water sitting on it always wins the depth test
+    ground.material.polygonOffset = true; ground.material.polygonOffsetFactor = 1.2; ground.material.polygonOffsetUnits = 3;
     ground.material.map.repeat.set(70, 70); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; ground.receiveShadow = true; this.group.add(ground);
     const roadMat = mat(0x4a4c58, { map: noiseTexture(46, 48, 58, 10), emissive: 0x0a0b13, emissiveIntensity: 1 }); roadMat.map.repeat.set(2, 46);
     const yellow = mat(0xffe14a, { emissive: 0xffd23a, emissiveIntensity: 1.0 }); const white = mat(0xe8ecf2, { emissive: 0x8a8f98, emissiveIntensity: 0.5 });
@@ -398,30 +400,38 @@ class City {
       const sw = new THREE.Mesh(new THREE.BoxGeometry(LOT, 0.22, LOT), walkMat.clone()); sw.material.map = walkMat.map; sw.position.set(cx, 0.11, cz); sw.receiveShadow = true; this.group.add(sw);
       for (const e of [[LOT, 0.6, 0, -LOT / 2], [LOT, 0.6, 0, LOT / 2], [0.6, LOT, -LOT / 2, 0], [0.6, LOT, LOT / 2, 0]]) { const c = new THREE.Mesh(new THREE.BoxGeometry(e[0], 0.34, e[1]), curbMat); c.position.set(cx + e[2], 0.17, cz + e[3]); this.group.add(c); }
       const G = new THREE.Group(); this.group.add(G); this._lod = [];
-      // ---- districts ----
-      const east = ix > this.bayIx, port = !east && iz <= 1, downtown = !east && ix >= 2 && ix <= 4 && iz >= 3 && iz <= 6;
+      // ---- radial zoning: a tall downtown core tapering out through a mixed-use ring to low residential + beach ----
+      const east = ix > this.bayIx, port = !east && iz <= 1, suburb = !east && iz >= 6;
+      const cbdX = 3, cbdZ = 4, distC = Math.hypot(ix - cbdX, iz - cbdZ);        // grid distance from the CBD heart
+      const core01 = clamp(1 - distC / 4.4, 0, 1);                               // 1 downtown → 0 at the fringe
       const r = rng();
-      if (ix === 2 && iz === 2) this._dealership(cx, cz, LOT, rng, G); // MOTORMAX showroom + spray shop
-      else if (ix === 0 && iz === 3) this._jail(cx, cz, LOT, G);        // Bay County lockup
-      else if (ix === 4 && iz === 2) this._gunshop(cx, cz, LOT, G);     // AMMU-BAY
-      else if (ix === 3 && iz === 4) this._bank(cx, cz, LOT, G);        // Bay Mutual bank
-      else if (!east && iz >= 6) this._houses(cx, cz, LOT, rng, G, ix === 1 && iz === 6); // northwest suburbs (your house is here)
-      else if (east) { // Vice Beach: pastel art-deco hotels, clubs and low slabs facing the ocean
-        if (r < 0.1) this._park(cx, cz, LOT, rng, G);
-        else if (r < 0.58) { const type = ['hotel', 'club', 'diner', 'hotel', 'shop', 'club'][(rng() * 6) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
-        else this._tower(cx, cz, LOT - 14, LOT - 16, 16 + rng() * 26, DECO[(rng() * DECO.length) | 0], rng, G);
+      if (ix === 2 && iz === 2) this._dealership(cx, cz, LOT, rng, G);           // MOTORMAX showroom + spray shop
+      else if (ix === 0 && iz === 3) this._jail(cx, cz, LOT, G);                 // Bay County lockup
+      else if (ix === 4 && iz === 2) this._gunshop(cx, cz, LOT, G);              // AMMU-BAY
+      else if (ix === 3 && iz === 4) this._bank(cx, cz, LOT, G);                 // Bay Mutual bank — the civic heart
+      else if (ix === 2 && iz === 4) this._plaza(cx, cz, LOT, rng, G);           // downtown civic plaza + fountain
+      else if (suburb) this._houses(cx, cz, LOT, rng, G, ix === 1 && iz === 6);  // northwest low-density suburbs (your house is here)
+      else if (east) { // Vice Beach: pastel art-deco — taller inland, dropping to low slabs at the sand
+        const shore01 = clamp((ix - this.bayIx) / (N - 1 - this.bayIx), 0, 1);
+        if (r < 0.12) this._park(cx, cz, LOT, rng, G);
+        else if (r < 0.5) { const type = ['hotel', 'club', 'diner', 'hotel', 'shop', 'club'][(rng() * 6) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
+        else this._tower(cx, cz, LOT - 14, LOT - 16, 14 + (1 - shore01) * 42 + rng() * 18, DECO[(rng() * DECO.length) | 0], rng, G);
         if (ix === N - 1) for (let p2 = 0; p2 < 3; p2++) this.palm(cx + LOT / 2 + 6, cz - LOT / 2 + 8 + p2 * 15, this.group); // palm rows on the shore drive
       } else if (port) { // docklands: warehouses + container yards
         if (r < 0.7) this._warehouse(cx, cz, LOT, rng, G);
         else this._block(cx, cz, LOT, rng, 0.45, G);
-      } else if (downtown) { // mainland core: tall glass towers
-        if (r < 0.16) { const type = ['shop', 'diner', 'club'][(rng() * 3) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
-        else this._tower(cx, cz, LOT - 12, LOT - 14, 70 + rng() * 85, FACADES[(rng() * FACADES.length) | 0], rng, G);
-      } else { // little-havana style residential: colorful low blocks, parks, camps
-        if (r < 0.06) this._camp(cx, cz, LOT, rng, G);
-        else if (r < 0.18) this._park(cx, cz, LOT, rng, G);
-        else if (r < 0.44) { const type = ['shop', 'diner', 'club', 'shop', 'diner'][(rng() * 5) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
-        else this._block(cx, cz, LOT, rng, 0.5 + rng() * 0.35, G);
+      } else if (core01 > 0.5) { // CBD: monumental glass towers with setback crowns and rooftop beacons
+        if (r < 0.14) { const type = ['shop', 'club', 'diner'][(rng() * 3) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
+        else this._tower(cx, cz, LOT - 8, LOT - 10, 88 + core01 * 96 + rng() * 34, FACADES[(rng() * FACADES.length) | 0], rng, G, { tall: true });
+      } else if (core01 > 0.22) { // mixed-use mid-rise ring: mid towers, venues, pocket parks
+        if (r < 0.14) this._park(cx, cz, LOT, rng, G);
+        else if (r < 0.44) { const type = ['shop', 'diner', 'club', 'shop'][(rng() * 4) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
+        else this._tower(cx, cz, LOT - 12, LOT - 14, 34 + core01 * 66 + rng() * 22, FACADES[(rng() * FACADES.length) | 0], rng, G, { tall: rng() < 0.35 });
+      } else { // inner residential (Little Havana): low colorful blocks, parks, camps
+        if (r < 0.07) this._camp(cx, cz, LOT, rng, G);
+        else if (r < 0.2) this._park(cx, cz, LOT, rng, G);
+        else if (r < 0.46) { const type = ['shop', 'diner', 'club', 'shop', 'diner'][(rng() * 5) | 0]; this._venue(cx, cz, LOT, type, rng, G); }
+        else this._block(cx, cz, LOT, rng, 0.5 + rng() * 0.3, G);
       }
       this._props(cx, cz, LOT, rng, G);
       // ---- Distant-Horizons LOD: cheap flat shells that stand in for the lot at range ----
@@ -431,15 +441,32 @@ class City {
       this.cullables.push({ o: G, lod: L, p: new THREE.Vector3(cx, 26, cz), r: 105 });
     }
     for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) this._lamp(-half + i * CELL + ROAD / 2, -half + j * CELL + ROAD / 2);
+    // ---- traffic signals: one head per intersection, two shared materials driven by a global cycle ----
+    this.sigMatV = mat(0x114018, { emissive: 0x2fe06a, emissiveIntensity: 2.2 }); // lamp for north-south flow
+    this.sigMatH = mat(0x401111, { emissive: 0xff3a2a, emissiveIntensity: 2.2 }); // lamp for east-west flow
+    this.signals = [];
+    for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) {
+      if (i === this.bayIx || (i > 0 && i <= this.bayIx && j === 0)) { /* keep bay/causeway ends clear */ }
+      const ix2 = -half + i * CELL, jz2 = -half + j * CELL;
+      if (Math.abs(ix2 - (this.bayX0 + this.bayX1) / 2) < LOT) continue; // skip signals sitting in the open bay
+      const px = ix2 + ROAD / 2 - 1.4, pz = jz2 + ROAD / 2 - 1.4; // near-corner of the junction
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 5.2, 8), mat(0x23262d)); pole.position.set(px, 2.6, pz); pole.castShadow = true; this.group.add(pole);
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.14, 0.14), mat(0x23262d)); arm.position.set(px - 1.1, 5.0, pz); this.group.add(arm);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.1, 0.5), mat(0x14161b)); head.position.set(px - 2.1, 4.9, pz); this.group.add(head);
+      const lampV = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), this.sigMatV); lampV.position.set(px - 2.1, 5.15, pz + 0.26); this.group.add(lampV); // top = NS
+      const lampH = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), this.sigMatH); lampH.position.set(px - 2.1, 4.72, pz + 0.26); this.group.add(lampH); // bottom = EW
+    }
     // ---- the bay + causeway railings ----
     const bayW = this.bayX1 - this.bayX0;
-    const bay = new THREE.Mesh(new THREE.PlaneGeometry(bayW, span + 40), mat(0x2f83c6, { emissive: 0x1d4e7a, emissiveIntensity: 0.25, transparent: true, opacity: 0.9 }));
-    bay.rotation.x = -Math.PI / 2; bay.position.set((this.bayX0 + this.bayX1) / 2, 0.02, 0); this.group.add(bay);
+    // bay + ocean sit BELOW the land plane (-0.02) and carry a positive polygon-offset so land always
+    // wins the depth test — no blue z-fighting bleeding up through roads, docks, or bare ground.
+    const bay = new THREE.Mesh(new THREE.PlaneGeometry(bayW, span + 40), mat(0x2b79bc, { emissive: 0x1d4e7a, emissiveIntensity: 0.3 }));
+    bay.rotation.x = -Math.PI / 2; bay.position.set((this.bayX0 + this.bayX1) / 2, 0.03, 0); this.group.add(bay);
     const railMat = mat(0xb8c0ca);
     for (let i = 0; i <= N; i++) { const rc = -half + i * CELL; for (const s of [-1, 1]) { const rail = new THREE.Mesh(new THREE.BoxGeometry(bayW, 0.8, 0.3), railMat); rail.position.set((this.bayX0 + this.bayX1) / 2, 0.6, rc + s * (ROAD / 2 - 0.6)); this.group.add(rail); } }
     // ---- ISLAND: open ocean wraps the whole city, sand ring on every coast ----
-    const water = new THREE.Mesh(new THREE.PlaneGeometry(3600, 3600), mat(0x2f83c6, { emissive: 0x1d4e7a, emissiveIntensity: 0.25, transparent: true, opacity: 0.92 }));
-    water.rotation.x = -Math.PI / 2; water.position.set(0, 0.0, 0); this.group.add(water); this.water = water;
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(3600, 3600), mat(0x2b79bc, { emissive: 0x1d4e7a, emissiveIntensity: 0.3, polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 4 }));
+    water.rotation.x = -Math.PI / 2; water.position.set(0, -0.35, 0); water.renderOrder = -1; this.group.add(water); this.water = water;
     // shores follow the terrain: sand dunes east/south, grassy headland hills west, a ridge up north
     this._shore(half + 62, 0, 130, span + 240, 0xd6c493, 22, 80);   // east sand + dunes
     this._shore(0, -half - 32, span + 240, 70, 0xd6c493, 80, 12);   // south sand
@@ -498,6 +525,16 @@ class City {
     }
     for (let i = 0; i < 11; i++) { let vx, vz, t2 = 0; do { const a = rng() * TAU, rr = 18 + rng() * (half * 0.7); [vx, vz] = this.snapSidewalk(Math.cos(a) * rr, Math.sin(a) * rr); t2++; } while ((this.inBay(vx, vz) || vx > half) && t2 < 20); this._vendorStall(vx, vz); this.vendors.push({ x: vx, z: vz }); }
     for (const v of this.vendors) this.errands.push({ x: v.x, z: v.z + 2.4 }); // hungry pedestrians drift toward the food carts
+    // ---- schedule destination pools for the NPC daily-life FSM ----
+    this.homes = this.homes || [];
+    this.jobs = this.workposts.slice(); // clerks' counters double as the city's jobs
+    this.leisureSpots = [];
+    for (const s of this.shops) if (s.type === 'diner' || s.type === 'club' || s.type === 'shop') this.leisureSpots.push({ x: s.x, z: s.z + (s.d || 12) / 2 + 2 });
+    for (const b of (this.beachSpots || [])) this.leisureSpots.push({ x: b.x, z: b.z });
+    for (const v of this.vendors) this.leisureSpots.push({ x: v.x, z: v.z + 2.4 });
+    if (this.plaza) this.leisureSpots.push({ x: this.plaza.x, z: this.plaza.z + 8 });
+    if (!this.homes.length) this.homes.push({ x: (this.homePos || { x: 0 }).x, z: (this.homePos || { z: 0 }).z });
+    if (!this.leisureSpots.length) this.leisureSpots = this.errands.slice();
   }
   _lodMat(c) { if (!this._lodMats.has(c)) this._lodMats.set(c, mat(new THREE.Color(c).multiplyScalar(0.94).getHex())); return this._lodMats.get(c); }
   // real windows: instanced glass panes (lit + dark) and a slab ring per storey —
@@ -688,6 +725,8 @@ class City {
     for (let i = 0; i < 2; i++) { const mound = new THREE.Mesh(new THREE.SphereGeometry(rnd(2.6, 4.2), 14, 10), mat(0x55924e)); mound.scale.y = 0.16; mound.position.set(cx + rnd(-LOT / 2 + 7, LOT / 2 - 7), 0.12, cz - LOT / 2 + rnd(4, 11)); G.add(mound); } // rolling back yards
     this.palm(cx + rnd(-8, 8), cz + LOT / 2 - 6, G);
     this.errands.push({ x: cx - 11, z: cz + LOT / 2 - 4 });
+    this.homes = this.homes || []; // front-yard doorstep nodes NPCs return to at night
+    this.homes.push({ x: cx - 11, z: cz - 6 + 8 }); this.homes.push({ x: cx + 11, z: cz - 6 + 8 });
   }
   inBay(x, z) { return x > this.bayX0 - 1 && x < this.bayX1 + 1 && Math.abs(z) < this.size / 2 + 10; }
   isWater(x, z) {
@@ -829,9 +868,10 @@ class City {
     for (let i = 0; i < n; i++) { const o = -len / 2 + i * (dash + gap) + dash / 2; const seg = new THREE.Mesh(new THREE.BoxGeometry(vertical ? 0.35 : dash, 0.02, vertical ? dash : 0.35), yellow); seg.position.set(vertical ? x : x + o, 0.17, vertical ? z + o : z); this.group.add(seg); }
     for (const s of [-1, 1]) { const e = new THREE.Mesh(new THREE.BoxGeometry(vertical ? 0.2 : len, 0.02, vertical ? len : 0.2), white); e.position.set(vertical ? x + s * (w / 2 - 1.4) : x, 0.16, vertical ? z : z + s * (d / 2 - 1.4)); this.group.add(e); }
   }
-  _tower(x, z, w, d, h, color, rng, G) {
+  _tower(x, z, w, d, h, color, rng, G, opts) {
     // EVERY tower is enterable: an open-front ground-floor lobby you can walk into,
     // with the tall shaft above it (visual only, so 2D collision leaves the floor clear).
+    opts = opts || {};
     const h0 = Math.min(4.8, h - 1), t = 0.4, trimMat = mat(new THREE.Color(color).multiplyScalar(0.8).getHex());
     const wallCol0 = new THREE.Color(color).multiplyScalar(0.92).getHex(), wallMat = mat(wallCol0, { emissive: wallCol0, emissiveIntensity: 0.14 });
     const floor = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), mat(0x3d3849, { emissive: 0x3d3849, emissiveIntensity: 0.3 })); floor.position.set(x, 0.12, z); floor.receiveShadow = true; G.add(floor);
@@ -849,13 +889,26 @@ class City {
     const rug2 = new THREE.Mesh(new THREE.BoxGeometry(w * 0.45, 0.05, d * 0.4), mat(0x33405e)); rug2.position.set(x, 0.24, z + d * 0.12); rug2.receiveShadow = true; G.add(rug2);
     const pot2 = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.25, 0.5, 10), mat(0xa06a3a)); pot2.position.set(x + w / 2 - 1.3, 0.5, z + d / 2 - 1.5); G.add(pot2);
     const frond2 = new THREE.Mesh(new THREE.SphereGeometry(0.5, 9, 7), mat(0x2f7e44)); frond2.position.set(x + w / 2 - 1.3, 1.1, z + d / 2 - 1.5); G.add(frond2);
-    // shaft above the lobby (no ground-level collision) — REAL 3D windows + floor slabs
+    // ---- massing above the lobby — REAL 3D windows + floor slabs ----
     const shaftH = h - h0;
-    const shaft = new THREE.Mesh(new THREE.BoxGeometry(w, shaftH, d), mat(color)); shaft.position.set(x, h0 + shaftH / 2, z); shaft.castShadow = true; shaft.receiveShadow = true; G.add(shaft);
-    this._towerWindows(x, z, w, d, h0, shaftH, G);
-    const ledge = new THREE.Mesh(new THREE.BoxGeometry(w + 0.8, 0.6, d + 0.8), trimMat); ledge.position.set(x, h0, z); ledge.castShadow = true; G.add(ledge);
-    const para = new THREE.Mesh(new THREE.BoxGeometry(w + 0.6, 1.0, d + 0.6), trimMat); para.position.set(x, h - 0.2, z); para.castShadow = true; G.add(para);
-    const tank = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, 2.4, d * 0.3), mat(0x33373f)); tank.position.set(x + rnd(-w * 0.2, w * 0.2), h + 1.2, z + rnd(-d * 0.2, d * 0.2)); tank.castShadow = true; G.add(tank);
+    if (opts.tall && shaftH > 26) {
+      // stepped skyscraper: full base → setback → slender crown, with windows on the two lower masses
+      const seg = (y0, y1, sc) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w * sc, y1 - y0, d * sc), mat(color)); b.position.set(x, y0 + (y1 - y0) / 2, z); b.castShadow = true; b.receiveShadow = true; G.add(b); };
+      const yA = h0 + shaftH * 0.58, yB = h0 + shaftH * 0.84;
+      seg(h0, yA, 1.0); seg(yA, yB, 0.78); seg(yB, h, 0.55);
+      this._towerWindows(x, z, w, d, h0, shaftH * 0.58, G);
+      this._towerWindows(x, z, w * 0.78, d * 0.78, yA, shaftH * 0.26, G);
+      for (const st of [[h0, 1.0], [yA, 1.0], [yB, 0.78]]) { const l = new THREE.Mesh(new THREE.BoxGeometry(w * st[1] + 0.8, 0.6, d * st[1] + 0.8), trimMat); l.position.set(x, st[0], z); l.castShadow = true; G.add(l); }
+      const para = new THREE.Mesh(new THREE.BoxGeometry(w * 0.55 + 0.6, 1.0, d * 0.55 + 0.6), trimMat); para.position.set(x, h - 0.2, z); para.castShadow = true; G.add(para);
+      const mh = Math.min(16, h * 0.13), mast = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.34, mh, 8), mat(0x2a2e36)); mast.position.set(x, h + mh / 2, z); mast.castShadow = true; G.add(mast);
+      const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.42, 10, 8), mat(0xff3a3a, { emissive: 0xff2a2a, emissiveIntensity: 2.6 })); beacon.position.set(x, h + mh, z); G.add(beacon);
+    } else {
+      const shaft = new THREE.Mesh(new THREE.BoxGeometry(w, shaftH, d), mat(color)); shaft.position.set(x, h0 + shaftH / 2, z); shaft.castShadow = true; shaft.receiveShadow = true; G.add(shaft);
+      this._towerWindows(x, z, w, d, h0, shaftH, G);
+      const ledge = new THREE.Mesh(new THREE.BoxGeometry(w + 0.8, 0.6, d + 0.8), trimMat); ledge.position.set(x, h0, z); ledge.castShadow = true; G.add(ledge);
+      const para = new THREE.Mesh(new THREE.BoxGeometry(w + 0.6, 1.0, d + 0.6), trimMat); para.position.set(x, h - 0.2, z); para.castShadow = true; G.add(para);
+      const tank = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, 2.4, d * 0.3), mat(0x33373f)); tank.position.set(x + rnd(-w * 0.2, w * 0.2), h + 1.2, z + rnd(-d * 0.2, d * 0.2)); tank.castShadow = true; G.add(tank);
+    }
     const awn = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w * 0.8, 5), 0.3, 1.0), mat(pick(NEONS))); awn.position.set(x, h0 + 0.2, z + d / 2 + 0.5); G.add(awn);
     if (h > 46 && rng() < 0.7) { const nc = pick(NEONS), sh = Math.min(h * 0.5, 20); const sign = new THREE.Mesh(new THREE.BoxGeometry(1.2, sh, 0.5), mat(nc, { emissive: nc, emissiveIntensity: 2.2 })); sign.position.set(x + (rng() < .5 ? -1 : 1) * (w / 2 + 0.4), h0 + shaftH * 0.55, z + d / 2 + 0.3); G.add(sign); }
     if (this._lod) this._lod.push({ x, z, w, d, h, c: color });
@@ -982,6 +1035,39 @@ class City {
     const n = 3 + (rng() * 3 | 0); for (let i = 0; i < n; i++) this.palm(cx + rnd(-LOT / 2 + 4, LOT / 2 - 4), cz + rnd(-LOT / 2 + 4, LOT / 2 - 4), G);
     const f = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.6, 0.8, 18), mat(0x808a97)); f.position.set(cx, 0.5, cz); f.castShadow = true; G.add(f);
     const w = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.9, 0.3, 18), mat(0x2fe6ff, { emissive: 0x2fe6ff, emissiveIntensity: 1.1, transparent: true, opacity: 0.9 })); w.position.set(cx, 0.85, cz); G.add(w);
+  }
+  // ---- downtown civic plaza: paved square, tiered fountain, monument column, benches, planters ----
+  _plaza(cx, cz, LOT, rng, G) {
+    const pave = new THREE.Mesh(new THREE.BoxGeometry(LOT - 2, 0.24, LOT - 2), mat(0xb4b9c3, { emissive: 0xb4b9c3, emissiveIntensity: 0.12 })); pave.position.set(cx, 0.13, cz); pave.receiveShadow = true; G.add(pave);
+    const inlay = new THREE.Mesh(new THREE.CylinderGeometry(LOT * 0.32, LOT * 0.32, 0.26, 28), mat(0x969ba8)); inlay.position.set(cx, 0.15, cz); G.add(inlay);
+    // tiered fountain at the centre
+    const b1 = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 4.6, 0.7, 24), mat(0x8a8f98)); b1.position.set(cx, 0.5, cz); b1.castShadow = true; G.add(b1);
+    const w1 = new THREE.Mesh(new THREE.CylinderGeometry(3.8, 3.8, 0.3, 24), mat(0x2fbfe0, { emissive: 0x2fa8d0, emissiveIntensity: 0.9 })); w1.position.set(cx, 0.85, cz); G.add(w1);
+    const b2 = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.4, 0.6, 20), mat(0x8a8f98)); b2.position.set(cx, 1.15, cz); b2.castShadow = true; G.add(b2);
+    const w2 = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, 0.25, 20), mat(0x2fbfe0, { emissive: 0x2fa8d0, emissiveIntensity: 0.9 })); w2.position.set(cx, 1.42, cz); G.add(w2);
+    const jet = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.26, 2.4, 10), mat(0xbfeaf6, { emissive: 0x9fe0f0, emissiveIntensity: 1.1, transparent: true, opacity: 0.6 })); jet.position.set(cx, 2.6, cz); G.add(jet);
+    this.boxes.push({ x: cx, z: cz, hw: 4.7, hd: 4.7, h: 1.6 });
+    // monument column to one side
+    const mx = cx, mz = cz - LOT * 0.3;
+    const mbase = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.7, 2.4), mat(0xa8adb6)); mbase.position.set(mx, 0.5, mz); mbase.castShadow = true; G.add(mbase);
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.65, 6.5, 16), mat(0xd6d2c6)); col.position.set(mx, 4.0, mz); col.castShadow = true; G.add(col);
+    const fig = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.5, 0.7), mat(0xc9c3b6)); fig.position.set(mx, 7.7, mz); fig.castShadow = true; G.add(fig);
+    this.boxes.push({ x: mx, z: mz, hw: 1.3, hd: 1.3, h: 8.4 });
+    // benches ringing the fountain, planters + palms at the corners
+    for (let i = 0; i < 6; i++) {
+      const a = i / 6 * TAU, rr = LOT * 0.34, bxp = cx + Math.cos(a) * rr, bzp = cz + Math.sin(a) * rr;
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.16, 0.7), mat(0x6a4a2e)); seat.position.set(bxp, 0.62, bzp); seat.rotation.y = a; seat.castShadow = true; G.add(seat);
+      const bk = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.5, 0.12), mat(0x6a4a2e)); bk.position.set(bxp - Math.sin(a) * 0.28, 0.92, bzp + Math.cos(a) * 0.28); bk.rotation.y = a; G.add(bk);
+    }
+    for (const cc of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      const px = cx + cc[0] * (LOT * 0.38), pz = cz + cc[1] * (LOT * 0.38);
+      const planter = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.7, 2.2), mat(0x7a6a58)); planter.position.set(px, 0.5, pz); planter.castShadow = true; G.add(planter);
+      this.boxes.push({ x: px, z: pz, hw: 1.2, hd: 1.2, h: 0.9 }); this.palm(px, pz, G);
+    }
+    this._lamp(cx - LOT * 0.4, cz); this._lamp(cx + LOT * 0.4, cz);
+    this.errands.push({ x: cx, z: cz + LOT * 0.32 }); // people gather at the plaza
+    if (this._lod) this._lod.push({ x: cx, z: cz, w: LOT - 2, d: LOT - 2, h: 1, c: 0xb4b9c3 });
+    this.plaza = { x: cx, z: cz };
   }
   palm(x, z, G) {
     const g = new THREE.Group();
@@ -1520,6 +1606,23 @@ class Game {
       else if (d > 150) { w.ped.removeMe = true; w.ped = null; }
     }
   }
+  // ---- city-wide traffic signal cycle: NS green ↔ EW green, with a yellow grace window ----
+  updateTraffic(dt) {
+    const HALF = 12, YELLOW = 2.6, CYCLE = HALF * 2; // 12s each phase, last 2.6s yellow
+    const c = this.city; if (!c.sigMatV) return;
+    const t = (this.time % CYCLE), phase = t < HALF ? 0 : 1, slotLeft = (phase === 0 ? HALF : CYCLE) - t;
+    const greenZ = phase === 0, greenX = phase === 1;
+    // arriving cars must stop on red OR yellow (about to turn)
+    this.trafficRedZ = !greenZ || slotLeft < YELLOW;
+    this.trafficRedX = !greenX || slotLeft < YELLOW;
+    if (phase !== this._trafPhase) { // repaint the shared lamp materials once per phase flip
+      this._trafPhase = phase;
+      c.sigMatV.emissive.set(greenZ ? 0x2fe06a : 0xff3a2a); c.sigMatV.color.set(greenZ ? 0x114018 : 0x401111);
+      c.sigMatH.emissive.set(greenX ? 0x2fe06a : 0xff3a2a); c.sigMatH.color.set(greenX ? 0x114018 : 0x401111);
+    }
+    // flash the soon-to-red lamp during the yellow window
+    if (slotLeft < YELLOW) { const amber = 0xffb020, on = Math.sin(this.time * 8) > 0; (greenZ ? c.sigMatV : c.sigMatH).emissive.set(on ? amber : 0x201200); }
+  }
   // ---- phone GPS: a cyan beam you can drop on any pin from the phone ----
   setGps(name, pt) {
     this.gps = { name, x: pt.x, z: pt.z };
@@ -1702,6 +1805,7 @@ class Game {
     if (this.player.pos) { this.sun.position.set(this.player.pos.x - 48, 95, this.player.pos.z - 95); this.sun.target.position.copy(this.player.pos); this.sun.target.updateMatrixWorld(); }
     this.sky.position.copy(this.camera.position);
     this.updateDayNight();
+    if (this.playing) this.updateTraffic(dt);
     if (this.city.displays) for (const d2 of this.city.displays) d2.root.rotation.y += dt * 0.5;
     const jd = this.city.jailDoor; if (jd) { const tx = this.city.jail.door.x + (this.city.jailOpen ? 2.7 : 0); jd.position.x += (tx - jd.position.x) * Math.min(1, dt * 3.5); } // cell door rolls on its track
     if (this.city.lighthouseBeam) this.city.lighthouseBeam.rotation.y += dt * 0.9; // sweeping beacon
@@ -1810,7 +1914,7 @@ class Player {
     }
     // swimming in the bay/ocean: slow bobbing wade, no jumping
     const swim = inWater;
-    if (swim) this.pos.y = -0.3 + Math.sin(this.game.time * 2.2) * 0.06;
+    if (swim) this.pos.y = -0.32 + Math.sin(this.game.time * 2.2) * 0.06; // bob at the ocean surface
     this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
     const lowHp = this.health < 28 && !swim;
     this.fig.update(dt, { state: moving ? (lowHp ? 'limp' : (sprint && !swim ? 'run' : 'walk')) : (lowHp ? 'limp' : 'idle') });
@@ -1864,7 +1968,12 @@ class Ped {
   constructor(game, x, z, cop, opts) {
     opts = opts || {}; this.game = game; this.cop = !!cop; this.dance = !!opts.dance; this.loiter = !!opts.loiter; this.vendor = !!opts.vendor; this.homeless = !!opts.homeless; this.worker = !!opts.worker; this.pos = new THREE.Vector3(x, 0, z); this.yaw = opts.yaw != null ? opts.yaw : rnd(TAU);
     this.hp = cop ? 60 : 30; this.dead = false; this.removeMe = false; this.flee = 0; this.timer = rnd(3); this.wander = rnd(TAU); this.attackCd = 0; this.deadT = 0; this.cowerT = 0;
-    this.errander = !cop && !this.dance && !this.loiter && !this.vendor && !this.homeless && !this.worker && Math.random() < 0.35; // some folks have somewhere to BE
+    this.errander = !cop && !this.dance && !this.loiter && !this.vendor && !this.homeless && !this.worker; // ordinary citizens live on a schedule
+    if (this.errander) { // a daily life: home to sleep, a job by day, food/leisure at night, and a wallet
+      const c = game.city, pk2 = (a) => a && a.length ? a[(Math.random() * a.length) | 0] : null;
+      this.homeNode = pk2(c.homes); this.jobNode = pk2(c.jobs); this.funNode = pk2(c.leisureSpots);
+      this.funds = 20 + (Math.random() * 230 | 0); this.schedState = null;
+    }
     // district communities: suits downtown, bright beach fits, shabby camp clothes
     const cc = game.city, halfC = cc.size / 2, downtown = Math.hypot(x, z) < cc.cell * 1.6, beach = z > halfC - 50;
     if (this.homeless) this.persona = { shirt: pick([0x6a6053, 0x5a5148, 0x4a4a52, 0x6b5a3a]), skin: pick(SKIN), hair: pick([0x4a4a4a, 0x2b2b2b, 0x6b4a2a]), pants: pick([0x3a2e26, 0x4a4a52]), style: pick(['mop', 'bald', 'beanie', 'mop']) };
@@ -1922,6 +2031,17 @@ class Ped {
       if (dist < 1.9 && this.attackCd <= 0) { this.attackCd = 1.0; p.hurt(4 + Math.random() * 4); this.game.hitFx(p.eye(), 0xffd27a, 5); }
     }
     else if (this.flee > 0) { wx = -dx / (dist || 1); wz = -dz / (dist || 1); this.yaw = Math.atan2(wx, wz); sp = this.cop ? 6 : 5.5; }
+    else if (!this.story && this.homeNode) { // ---- utility-lite daily FSM: work by day, leisure at dusk, home at night ----
+      this.pdir = null; const hr = this.game.hour != null ? this.game.hour : 12;
+      const st = (hr >= 8 && hr < 18) ? 'work' : (hr >= 18 && hr < 23) ? 'fun' : 'home';
+      if (st !== this.schedState) { this.schedState = st; this.schedTarget = st === 'work' ? this.jobNode : st === 'fun' ? this.funNode : this.homeNode; this._spent = false; this._settled = false; }
+      const T = this.schedTarget || this.homeNode;
+      if (T) {
+        const ex = T.x - this.pos.x, ez = T.z - this.pos.z, ed = Math.hypot(ex, ez);
+        if (ed < 3.0) { this._settled = true; if (st === 'fun' && !this._spent) { this._spent = true; this.funds = Math.max(0, (this.funds || 0) - (5 + (Math.random() * 20 | 0))); } this.yaw += Math.sin(this.game.time * 0.4 + this.pos.x) * dt; }
+        else { this._settled = false; wx = ex / ed; wz = ez / ed; this.yaw = Math.atan2(wx, wz); sp = st === 'work' ? 3.4 : 3.0; }
+      }
+    }
     else if (!this.story && this.errandPt) { // somewhere to be: a food cart, a storefront, a towel on the sand
       this.pdir = null;
       const ex = this.errandPt.x - this.pos.x, ez = this.errandPt.z - this.pos.z, ed = Math.hypot(ex, ez);
@@ -1929,7 +2049,6 @@ class Ped {
       else { wx = ex / ed; wz = ez / ed; this.yaw = Math.atan2(wx, wz); }
     }
     else if (!this.story) {
-      if (this.errander && !this.errandPt && Math.random() < dt * 0.09) { const es = this.game.city.errands; if (es && es.length) { const e2 = es[(Math.random() * es.length) | 0]; if (Math.hypot(e2.x - this.pos.x, e2.z - this.pos.z) < 130) this.errandPt = { x: e2.x + rnd(-1.4, 1.4), z: e2.z + rnd(-1.4, 1.4) }; } }
       if (!this.pdir || this.timer <= 0) { this.timer = rnd(3, 8); this.pdir = Math.random() < 0.12 ? null : pick(CARDS); }
       if (this.pdir) { wx = this.pdir.x; wz = this.pdir.z; this.yaw = Math.atan2(wx, wz); }
     }
@@ -2020,6 +2139,11 @@ class Car {
     for (const o of g.cars) { if (o === this || o.boat) continue; const ahead = (o.pos.x - this.pos.x) * this.dir.x + (o.pos.z - this.pos.z) * this.dir.z; const lat = Math.abs((o.pos.x - this.pos.x) * this.dir.z - (o.pos.z - this.pos.z) * this.dir.x); if (ahead > 0 && lat < 2.4 && ahead < scan) { blocked = true; nearGap = Math.min(nearGap, ahead); } }
     { const ahead = (p.pos.x - this.pos.x) * this.dir.x + (p.pos.z - this.pos.z) * this.dir.z, lat = Math.abs((p.pos.x - this.pos.x) * this.dir.z - (p.pos.z - this.pos.z) * this.dir.x); if (!p.inCar && ahead > 0 && lat < 2 && ahead < scan) { blocked = true; nearGap = Math.min(nearGap, ahead); } }
     for (const n of g.npcs) { if (n.dead || n.knockT > 0) continue; const ahead = (n.pos.x - this.pos.x) * this.dir.x + (n.pos.z - this.pos.z) * this.dir.z, lat = Math.abs((n.pos.x - this.pos.x) * this.dir.z - (n.pos.z - this.pos.z) * this.dir.x); if (ahead > 0 && lat < 1.8 && ahead < scan) { blocked = true; nearGap = Math.min(nearGap, ahead); } }
+    // stop at a red light: measure distance to the stop line of the next intersection on our travel axis
+    if (!this.fleeing) {
+      const axisRed = this.dir.z !== 0 ? g.trafficRedZ : g.trafficRedX, dirComp = this.dir.z !== 0 ? this.dir.z : this.dir.x, alongPos = this.dir.z !== 0 ? this.pos.z : this.pos.x;
+      if (axisRed) { let d2line = (c.gridLine(alongPos) - alongPos) * dirComp; if (d2line < 1.5) d2line += c.cell; const stop = d2line - c.road / 2 - 1.2; if (stop > 0.4 && stop < 9) { blocked = true; nearGap = Math.min(nearGap, stop + 0.2); } }
+    }
     this.speed = lerp(this.speed, blocked ? 0 : (this.cruise || 13), dt * (blocked ? 9 : 2));
     if (blocked && nearGap < 6) this.speed = 0; // hard stop before the bumper ahead — never overlap
     this.root.rotation.x = clamp(((this._lastSpd || 0) - this.speed) * 0.05, -0.05, 0.09); this._lastSpd = this.speed; // nose dips under braking
