@@ -327,6 +327,26 @@ class Post {
 }
 
 // ---------------------------------------------------------------------------
+// Rain — a persistent field of stretched vertical streaks that follows the camera.
+// One THREE.Points buffer of N drops recycled around a box; density set by weather.
+// ---------------------------------------------------------------------------
+function makeRain(N) {
+  // each drop is a short vertical line segment (2 verts) so it reads as a streak, not a dot
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(N * 6), vel = new Float32Array(N);
+  const R = 88, TOP = 62, LEN = 1.5;
+  for (let i = 0; i < N; i++) {
+    const x = rnd(-R, R), y = rnd(0, TOP), z = rnd(-R, R);
+    pos[i * 6] = x; pos[i * 6 + 1] = y; pos[i * 6 + 2] = z;
+    pos[i * 6 + 3] = x + rnd(-0.06, 0.06); pos[i * 6 + 4] = y - LEN; pos[i * 6 + 5] = z;
+    vel[i] = rnd(58, 88);
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat2 = new THREE.LineBasicMaterial({ color: 0xc2dcf2, transparent: true, opacity: 0.42, depthWrite: false });
+  const pts = new THREE.LineSegments(geo, mat2); pts.frustumCulled = false; pts.renderOrder = 2;
+  return { pts, geo, pos, vel, N, R, TOP, LEN, mat: mat2 };
+}
+// ---------------------------------------------------------------------------
 // Sky — clear blue daytime dome + sun disc + drifting clouds (follows camera).
 // ---------------------------------------------------------------------------
 function makeSky() {
@@ -378,7 +398,7 @@ class City {
     // push the ground plane BACK in the depth buffer so any water sitting on it always wins the depth test
     ground.material.polygonOffset = true; ground.material.polygonOffsetFactor = 1.2; ground.material.polygonOffsetUnits = 3;
     ground.material.map.repeat.set(70, 70); ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; ground.receiveShadow = true; this.group.add(ground);
-    const roadMat = mat(0x4a4c58, { map: noiseTexture(46, 48, 58, 10), emissive: 0x0a0b13, emissiveIntensity: 1 }); roadMat.map.repeat.set(2, 46);
+    const roadMat = mat(0x4a4c58, { map: noiseTexture(46, 48, 58, 10), emissive: 0x0a0b13, emissiveIntensity: 1 }); roadMat.map.repeat.set(2, 46); this.roadMat = roadMat; // kept so night can wet-shine the asphalt
     const yellow = mat(0xffe14a, { emissive: 0xffd23a, emissiveIntensity: 1.0 }); const white = mat(0xe8ecf2, { emissive: 0x8a8f98, emissiveIntensity: 0.5 });
     for (let i = 0; i <= N; i++) { const rc = -half + i * CELL; this._road(rc, 0, ROAD, span + ROAD, roadMat, yellow, white, true); this._road(0, rc, span + ROAD, ROAD, roadMat, yellow, white, false); }
     let seed = 1234567; const rng = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
@@ -868,6 +888,19 @@ class City {
     for (let i = 0; i < n; i++) { const o = -len / 2 + i * (dash + gap) + dash / 2; const seg = new THREE.Mesh(new THREE.BoxGeometry(vertical ? 0.35 : dash, 0.02, vertical ? dash : 0.35), yellow); seg.position.set(vertical ? x : x + o, 0.17, vertical ? z + o : z); this.group.add(seg); }
     for (const s of [-1, 1]) { const e = new THREE.Mesh(new THREE.BoxGeometry(vertical ? 0.2 : len, 0.02, vertical ? len : 0.2), white); e.position.set(vertical ? x + s * (w / 2 - 1.4) : x, 0.16, vertical ? z : z + s * (d / 2 - 1.4)); this.group.add(e); }
   }
+  // closed street-facing wall with a centered walk-through doorway (kills the hollow open-front look)
+  _frontWall(x, zf, w, h, t, wmat, doorW, G, faceOut) {
+    const dh = Math.min(2.7, h - 0.35), side = Math.max(0.7, (w - doorW) / 2), trim = mat(0x2a2e36), no = faceOut || 1;
+    for (const s of [-1, 1]) {
+      const px = x + s * (doorW / 2 + side / 2);
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(side, h, t), wmat); panel.position.set(px, h / 2, zf); panel.castShadow = true; panel.receiveShadow = true; G.add(panel);
+      this.boxes.push({ x: px, z: zf, hw: side / 2 + 0.2, hd: t / 2 + 0.2 });
+      const win = new THREE.Mesh(new THREE.BoxGeometry(Math.min(side * 0.72, 3.4), Math.min(h * 0.5, 2.1), 0.06), mat(0x18243a, { emissive: pick(WIN_GLOW), emissiveIntensity: 0.85, transparent: true, opacity: 0.9 })); win.position.set(px, h * 0.54, zf + no * (t * 0.5 + 0.02)); G.add(win);
+    }
+    const lintel = new THREE.Mesh(new THREE.BoxGeometry(doorW + 0.5, h - dh, t), wmat); lintel.position.set(x, dh + (h - dh) / 2, zf); lintel.castShadow = true; G.add(lintel); // header above the door — walk under it, no collision box
+    for (const s of [-1, 1]) { const post = new THREE.Mesh(new THREE.BoxGeometry(0.18, dh, 0.2), trim); post.position.set(x + s * (doorW / 2 + 0.09), dh / 2, zf + no * 0.05); G.add(post); }
+    const head = new THREE.Mesh(new THREE.BoxGeometry(doorW + 0.5, 0.2, 0.22), trim); head.position.set(x, dh, zf + no * 0.05); G.add(head);
+  }
   _tower(x, z, w, d, h, color, rng, G, opts) {
     // EVERY tower is enterable: an open-front ground-floor lobby you can walk into,
     // with the tall shaft above it (visual only, so 2D collision leaves the floor clear).
@@ -877,6 +910,7 @@ class City {
     const floor = new THREE.Mesh(new THREE.BoxGeometry(w, 0.2, d), mat(0x3d3849, { emissive: 0x3d3849, emissiveIntensity: 0.3 })); floor.position.set(x, 0.12, z); floor.receiveShadow = true; G.add(floor);
     const wall = (ww, dd, ox, oz) => { const m = new THREE.Mesh(new THREE.BoxGeometry(ww, h0, dd), wallMat); m.position.set(x + ox, h0 / 2, z + oz); m.castShadow = true; m.receiveShadow = true; G.add(m); };
     wall(w, t, 0, -d / 2); wall(t, d, -w / 2, 0); wall(t, d, w / 2, 0);           // back + two sides
+    this._frontWall(x, z + d / 2, w, h0, t, wallMat, 2.8, G);                     // closed front + doorway
     this.boxes.push({ x, z: z - d / 2, hw: w / 2 + 0.3, hd: t / 2 + 0.3 });
     this.boxes.push({ x: x - w / 2, z, hw: t / 2 + 0.3, hd: d / 2 + 0.3 });
     this.boxes.push({ x: x + w / 2, z, hw: t / 2 + 0.3, hd: d / 2 + 0.3 });
@@ -927,6 +961,7 @@ class City {
     const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 1, t, d + 1), wallMat); roof.position.set(cx, h, cz); roof.castShadow = true; G.add(roof);
     const wall = (ww, dd, ox, oz) => { const m = new THREE.Mesh(new THREE.BoxGeometry(ww, h, dd), wallMat); m.position.set(cx + ox, h / 2, cz + oz); m.castShadow = true; m.receiveShadow = true; G.add(m); };
     wall(w, t, 0, -d / 2); wall(t, d, -w / 2, 0); wall(t, d, w / 2, 0);
+    this._frontWall(cx, cz + d / 2, w, h, t, wallMat, 3.0, G); // closed front + doorway
     this.boxes.push({ x: cx, z: cz - d / 2, hw: w / 2 + 0.3, hd: t / 2 + 0.3 });
     this.boxes.push({ x: cx - w / 2, z: cz, hw: t / 2 + 0.3, hd: d / 2 + 0.3 });
     this.boxes.push({ x: cx + w / 2, z: cz, hw: t / 2 + 0.3, hd: d / 2 + 0.3 });
@@ -1003,8 +1038,16 @@ class City {
     this.workposts.push({ x: x - w * 0.14, z: z - dz * (d * 0.22 + 1.3), yaw: dz > 0 ? 0 : Math.PI });
     const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.9, d * 0.5), mat(0x46414d)); shelf.position.set(x + w / 2 - 0.85, 1.05, z); G.add(shelf);
     const lamp2 = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, 0.12, d * 0.4), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 1.25 })); lamp2.position.set(x, h - 0.35, z); G.add(lamp2);
+    // bodega fit-out: a stocked centre gondola + products + a floor mat in muted tones (no more empty cartoon box)
+    const gond = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.35, d * 0.5), mat(0x55504a, { emissive: 0x22201d, emissiveIntensity: 0.2 })); gond.position.set(x + w * 0.08, 0.78, z); gond.castShadow = true; G.add(gond); this.boxes.push({ x: x + w * 0.08, z, hw: 0.55, hd: d * 0.25, h: 1.5 });
+    for (let i = 0; i < 5; i++) { const pr = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.18, 0.42), mat(pick([0xb3423a, 0x3a7e5e, 0xc9a23a, 0x4a6c8a]))); pr.position.set(x + w * 0.08, 0.55 + (i % 2) * 0.44, z - d * 0.22 + i * d * 0.1); G.add(pr); }
+    const fmat = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, 0.05, d * 0.32), mat(0x33373f)); fmat.position.set(x, 0.16, z + dz * d * 0.06); fmat.receiveShadow = true; G.add(fmat);
     const fz = z + dz * (d / 2 + 0.06);
     for (const sx of [-1, 1]) { const glassW = new THREE.Mesh(new THREE.BoxGeometry(w * 0.3, 1.6, 0.08), mat(0x18243a, { emissive: pick(WIN_GLOW), emissiveIntensity: 0.9, transparent: true, opacity: 0.85 })); glassW.position.set(x + sx * w * 0.32, 1.6, fz - dz * 0.06); G.add(glassW); this.boxes.push({ x: x + sx * w * 0.32, z: fz - dz * 0.06, hw: w * 0.15, hd: 0.2, h: 2.6 }); }
+    // storefront header + doorframe: close the top of the front and frame the central doorway (no more hollow gap)
+    const dtop = 2.7; if (h > dtop + 0.2) { const hdr = new THREE.Mesh(new THREE.BoxGeometry(w, h - dtop, t), wallMat); hdr.position.set(x, dtop + (h - dtop) / 2, fz - dz * 0.03); hdr.castShadow = true; G.add(hdr); }
+    for (const s of [-1, 1]) { const post = new THREE.Mesh(new THREE.BoxGeometry(0.16, dtop, 0.2), mat(0x2a2e36)); post.position.set(x + s * w * 0.17, dtop / 2, fz - dz * 0.02); G.add(post); }
+    const sill = new THREE.Mesh(new THREE.BoxGeometry(w, 0.16, 0.24), mat(0x2a2e36)); sill.position.set(x, dtop, fz - dz * 0.02); G.add(sill);
     const awn = new THREE.Mesh(new THREE.BoxGeometry(w * 0.92, 0.22, 1.0), mat(pick(NEONS))); awn.position.set(x, 2.85, fz + dz * 0.5); G.add(awn);
     const sign = this._neonSign(pick(BIZ), pick(NEONS), x, h + 0.45, fz + dz * 0.1, Math.min(w * 0.92, 7), G); if (back) sign.rotation.y = Math.PI;
     if (this._lod) this._lod.push({ x, z, w, d, h, c: shopCol });
@@ -1428,6 +1471,9 @@ class Game {
     this.sun.shadow.mapSize.set(1024, 1024); const sc = this.sun.shadow.camera; sc.left = -70; sc.right = 70; sc.top = 70; sc.bottom = -70; sc.near = 1; sc.far = 380; this.sun.shadow.bias = -0.0008;
     this.scene.add(this.sun); this.scene.add(this.sun.target);
     this.fill = new THREE.DirectionalLight(0x9ab8ff, 0.35); this.fill.position.set(70, 45, 55); this.scene.add(this.fill);
+    // rain field (recycled around the camera) + a dim glow light that sits under the player at night
+    this.rain = makeRain(4200); this.scene.add(this.rain.pts); this.rain.pts.visible = false; this.rainAmt = 0; this.camShake = 0;
+    this.nightLamp = new THREE.PointLight(0xbca6ff, 0, 26, 2); this.scene.add(this.nightLamp);
 
     this.clock = new THREE.Clock(); this.time = 0; this.playing = false; this.paused = false; this.menuMode = true; this.cine = null;
     this.input = new Input(canvas);
@@ -1519,10 +1565,12 @@ class Game {
     this.addWanted(sev); return true;
   }
   shootRay(origin, dir, dmg, range) {
-    let bestT = range, victim = null;
-    for (const n of this.npcs) { if (n.dead) continue; const t = raySphere(origin, dir, n.pos.clone().setY(n.pos.y + 1.0), 0.7); if (t != null && t < bestT) { bestT = t; victim = n; } }
+    let bestT = range, victim = null, hitCar = null;
+    for (const n of this.npcs) { if (n.dead) continue; const t = raySphere(origin, dir, n.pos.clone().setY(n.pos.y + 1.0), 0.7); if (t != null && t < bestT) { bestT = t; victim = n; hitCar = null; } }
+    for (const c of this.cars) { if (c.boat || c === this.player.inCar) continue; const t = raySphere(origin, dir, c.pos.clone().setY(1.0), 1.6); if (t != null && t < bestT) { bestT = t; hitCar = c; victim = null; } }
     const end = origin.clone().addScaledVector(dir, Math.min(bestT, range));
     if (victim) { victim.damage(dmg, dir); this.hitFx(end, 0xff5050, 10); if (!victim.cop) this.reportCrime(origin, 2, { loud: true, quiet: true }); } // gunshots echo — anyone in a block hears
+    else if (hitCar) { hitCar.hp = (hitCar.hp == null ? 120 : hitCar.hp) - dmg * 1.4; this.hitFx(end, 0xffd27a, 8); if (hitCar.hp <= 0 && !hitCar._boom) { hitCar._boom = true; this.explode(hitCar.pos.clone().setY(1.0), 1.15); hitCar.removeMe = true; if (hitCar.driver === this.player) { this.player.inCar = null; this.player.root.visible = true; } } }
     this.player.gunOutT = 4;
     for (const n of this.npcs) if (!n.dead && n.scare && n.pos.distanceTo(origin) < 22) n.scare(5); // bystanders duck for cover
     this.addTracer(origin.clone().addScaledVector(dir, 1.2), end, 0xffe98a); return victim;
@@ -1562,8 +1610,16 @@ class Game {
     u.top.value.copy(mixc(0x2f6ad2, 0x3a1d5e, 0x0a0a22)); u.mid.value.copy(mixc(0x74a8e6, 0x8a3f86, 0x1a1438));
     u.hor.value.copy(mixc(0xdcecf6, 0xe08a88, 0x2c2448)); u.bot.value.copy(mixc(0xa6bccb, 0x3a2646, 0x0c0a1a));
     this.sun.intensity = 0.4 + day * 2.3 + dusk * 0.9; this.sun.color.copy(mixc(0xfff3da, 0xffb877, 0x93a8e0));
-    this.hemi.intensity = 0.42 + day * 0.75 + dusk * 0.35; this.scene.fog.color.copy(mixc(0xcfe0ee, 0x5a3a5e, 0x131024));
+    this.hemi.intensity = 0.26 + day * 0.92 + dusk * 0.4; this.scene.fog.color.copy(mixc(0xcfe0ee, 0x5a3a5e, 0x0a0a14));
     this.dayAmt = day; this.hour = (phase * 24 + 12) % 24; // phase 0 = high noon
+    // ---- neo-noir night: pull the fog in, crank the neon bloom, wet-shine the asphalt ----
+    this.scene.fog.near = lerp(190, 70, night); this.scene.fog.far = lerp(720, 430, night);
+    if (this.post && this.post.enabled) { this.post.compMat.uniforms.strength.value = 0.72 + night * 1.05; this.post.brightMat.uniforms.threshold.value = 1.0 - night * 0.62; this.post.compMat.uniforms.exposure.value = 1.4 - night * 0.16; }
+    if (this.city.roadMat) this.city.roadMat.emissiveIntensity = 1 + night * 2.6; // rain-slicked reflectivity
+    // clear days, rain rolling in at dusk and pouring after dark; the ground glow pools neon under you
+    this.rainAmt = clamp(night * 0.95 + dusk * 0.22, 0, 1); if (this.rain) this.rain.pts.visible = this.playing && this.rainAmt > 0.05;
+    if (this.rain) this.rain.mat.opacity = 0.3 + night * 0.4;
+    if (this.nightLamp && this.player && this.player.pos) { this.nightLamp.position.set(this.player.pos.x, 3.2, this.player.pos.z); this.nightLamp.intensity = night * 2.4; }
   }
   // ---- property / economy layer: buy venues (B), they pay out every minute ----
   buyProperty() {
@@ -1796,11 +1852,12 @@ class Game {
     else if (this.playing) {
       if (this.input.p('Escape')) { if (this.ui.modal) this.ui.closeModal(); else if (this.paused) this.resume(); else this.pause(); }
       if (this.input.p('KeyP') && !this.cine && !this.paused && (!this.ui.modal || this.ui.modal === 'phone')) this.ui.phone(this.ui.modal !== 'phone');
+      if (this.input.p('KeyV') && !this.cine) { this.player.cycleCam(); }
       const frozen = this.paused || this.ui.modal;
       if (this.cine) { this.updateCutscene(dt); }
       else if (!frozen) { this.player.update(dt); for (const n of this.npcs) n.update(dt); for (const c of this.cars) c.update(dt); this.story.update(dt); this.updateWanted(dt); this.updatePickups(dt); this.updateArrest(dt); this.updateJail(dt); this.updateIncome(dt); this.updateWorkers(dt); this.updateGps(); this.cull(); this.player.updateCamera(dt, false); }
       else { this.player.updateCamera(dt, true); }
-      this.updateFx(dt); this.ui.update(); this.updateCulling();
+      this.updateFx(dt); this.updateRain(dt); this.ui.update(); this.updateCulling();
     }
     if (this.player.pos) { this.sun.position.set(this.player.pos.x - 48, 95, this.player.pos.z - 95); this.sun.target.position.copy(this.player.pos); this.sun.target.updateMatrixWorld(); }
     this.sky.position.copy(this.camera.position);
@@ -1823,8 +1880,49 @@ class Game {
   updateFx(dt) {
     for (const t of this.tracers) { t.life -= dt; t.line.material.opacity = Math.max(0, t.life / 0.06); }
     this.tracers = this.tracers.filter(t => { if (t.life <= 0) { this.scene.remove(t.line); t.line.geometry.dispose(); t.line.material.dispose(); return false; } return true; });
-    for (const f of this.fx) { f.life -= dt; for (let i = 0; i < f.n; i++) { f.vs[i * 3 + 1] -= 12 * dt; f.ps[i * 3] += f.vs[i * 3] * dt; f.ps[i * 3 + 1] += f.vs[i * 3 + 1] * dt; f.ps[i * 3 + 2] += f.vs[i * 3 + 2] * dt; } f.g.attributes.position.needsUpdate = true; f.m.material.opacity = Math.max(0, f.life / 0.6); }
-    this.fx = this.fx.filter(f => { if (f.life <= 0) { this.scene.remove(f.m); f.g.dispose(); f.m.material.dispose(); return false; } return true; });
+    for (const f of this.fx) {
+      f.life -= dt; f.age = (f.age || 0) + dt;
+      if (f.flash) { f.flash.intensity = Math.max(0, f.flash.intensity - dt * 20); continue; } // blast light decay
+      if (f.explode) { // fireball: expands + color-lerps white-hot → yellow → orange → ash, then fades
+        const t = clamp(f.age / f.dur, 0, 1), col = f.m.material.color;
+        if (t < 0.14) col.setRGB(1, 1, 0.96); else if (t < 0.34) col.setRGB(1, 0.86, 0.34); else if (t < 0.62) col.setRGB(1, 0.44, 0.12); else col.setRGB(0.42, 0.42, 0.45);
+        for (let i = 0; i < f.n; i++) { f.vs[i * 3 + 1] -= 15 * dt; f.ps[i * 3] += f.vs[i * 3] * dt; f.ps[i * 3 + 1] += f.vs[i * 3 + 1] * dt; f.ps[i * 3 + 2] += f.vs[i * 3 + 2] * dt; }
+        f.g.attributes.position.needsUpdate = true; f.m.material.opacity = Math.max(0, 1 - t); f.m.material.size = f.baseSize * (1 + t * 1.8); continue;
+      }
+      for (let i = 0; i < f.n; i++) { f.vs[i * 3 + 1] -= 12 * dt; f.ps[i * 3] += f.vs[i * 3] * dt; f.ps[i * 3 + 1] += f.vs[i * 3 + 1] * dt; f.ps[i * 3 + 2] += f.vs[i * 3 + 2] * dt; } f.g.attributes.position.needsUpdate = true; f.m.material.opacity = Math.max(0, f.life / 0.6);
+    }
+    this.fx = this.fx.filter(f => { if (f.life <= 0) { if (f.flash) { this.scene.remove(f.flash); } else { this.scene.remove(f.m); f.g.dispose(); f.m.material.dispose(); } return false; } return true; });
+    this.camShake = Math.max(0, (this.camShake || 0) - dt * 2.4);
+  }
+  // ---- rain: recycle the streak field around the camera; density scales with the weather ----
+  updateRain(dt) {
+    const rn = this.rain; if (!rn || !rn.pts.visible) return;
+    const cam = this.camera.position, drift = -7 * dt, active = Math.floor(rn.N * clamp(this.rainAmt, 0, 1));
+    for (let i = 0; i < rn.N; i++) {
+      const o = i * 6;
+      if (i >= active) { if (rn.pos[o + 1] > -900) { rn.pos[o + 1] = -999; rn.pos[o + 4] = -999; } continue; } // parked off-screen when weather is light
+      const fall = rn.vel[i] * dt;
+      rn.pos[o + 1] -= fall; rn.pos[o + 4] -= fall; rn.pos[o] += drift; rn.pos[o + 3] += drift;
+      if (rn.pos[o + 1] < cam.y - 10 || Math.abs(rn.pos[o] - cam.x) > rn.R + 12 || Math.abs(rn.pos[o + 2] - cam.z) > rn.R + 12) {
+        const x = cam.x + rnd(-rn.R, rn.R), z = cam.z + rnd(-rn.R, rn.R), y = cam.y + rnd(14, rn.TOP);
+        rn.pos[o] = x; rn.pos[o + 1] = y; rn.pos[o + 2] = z; rn.pos[o + 3] = x + rnd(-0.06, 0.06); rn.pos[o + 4] = y - rn.LEN; rn.pos[o + 5] = z;
+      }
+    }
+    rn.geo.attributes.position.needsUpdate = true;
+  }
+  // ---- explosion: a fireball particle burst + blast light + proximity screen-shake ----
+  explode(pos, scale) {
+    scale = scale || 1; const n = 64, g = new THREE.BufferGeometry(), ps = new Float32Array(n * 3), vs = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { ps[i * 3] = pos.x; ps[i * 3 + 1] = pos.y; ps[i * 3 + 2] = pos.z; const a = Math.random() * TAU, e = Math.acos(rnd(-1, 1)), sp = rnd(7, 22) * scale; vs[i * 3] = Math.sin(e) * Math.cos(a) * sp; vs[i * 3 + 1] = Math.abs(Math.cos(e)) * sp * 0.7 + 5; vs[i * 3 + 2] = Math.sin(e) * Math.sin(a) * sp; }
+    g.setAttribute('position', new THREE.BufferAttribute(ps, 3));
+    const baseSize = 1.7 * scale, m = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: baseSize, transparent: true, opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending }));
+    this.scene.add(m); this.fx.push({ m, g, ps, vs, n, life: 1.15, dur: 1.1, explode: true, baseSize, age: 0 });
+    const fl = new THREE.PointLight(0xffb060, 9 * scale, 46 * scale, 2); fl.position.set(pos.x, pos.y + 1, pos.z); this.scene.add(fl); this.fx.push({ flash: fl, life: 0.42, age: 0 });
+    const d = this.player.pos.distanceTo(pos); this.camShake = Math.max(this.camShake || 0, clamp(1 - d / 46, 0, 1) * 1.3 * scale);
+    this.hitFx(pos, 0xff8a2a, 18);
+    // catch anyone standing in the blast
+    for (const nn of this.npcs) if (!nn.dead && nn.pos.distanceTo(pos) < 6 * scale) nn.damage(80);
+    if (this.player.pos.distanceTo(pos) < 5 * scale && !this.player.inCar) this.player.hurt(45 * scale);
   }
   cull() { this.npcs = this.npcs.filter(n => { if (n.removeMe) { this.scene.remove(n.root); return false; } return true; }); this.cars = this.cars.filter(c => { if (c.removeMe) { this.scene.remove(c.root); return false; } return true; }); const civ = this.npcs.filter(n => !n.cop && !n.story).length; if (civ < 34) { this.spawnPed(); if (civ < 26) this.spawnPed(); } if (this.cars.filter(c => c.aiTraffic && !c.police).length < 15) this.spawnTraffic(); }
 }
@@ -1836,7 +1934,7 @@ function raySphere(o, d, c, r) { const oc = o.clone().sub(c), b = oc.dot(d), cc 
 class Player {
   constructor(game) {
     this.game = game; this.pos = new THREE.Vector3(0, 0, 0); this.yaw = 0; this.vy = 0; this.onGround = true;
-    this.camYaw = 0; this.camPitch = 0.22; this.camDist = 6.5;
+    this.camYaw = 0; this.camPitch = 0.22; this.camDist = 6.5; this.camMode = 'tps'; // tps | shoulder | fps
     this.health = 100; this.maxHealth = 100; this.money = 200; this.wanted = 0; this.heat = 0;
     this.inCar = null; this.regen = 0; this.dead = false; this.hasGun = false; this.weapon = 'fists'; this.gunCd = 0; this.punchT = 0; this.shootT = 0; this.jackT = 0; this.jackCar = null; this.tazedT = 0; this.gunOutT = 0; this.cuffT = 0;
     this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); game.scene.add(this.root); this.root.visible = false; this._build();
@@ -1942,21 +2040,45 @@ class Player {
       setTimeout(() => { const H = g.city.places.home; this.money = Math.max(0, this.money - 100); this.health = this.maxHealth; this.wanted = 0; this.heat = 0; if (this.inCar) { this.inCar.driver = null; this.inCar = null; this.root.visible = true; }
         this.pos.set(H.x, 0, H.z + 8); this.root.position.copy(this.pos); this.dead = false; for (const n of g.npcs) if (n.cop) n.removeMe = true; for (const c of g.cars) if (c.police) c.removeMe = true; }, 2200); } }
   hurt(n) { if (this.dead) return; this.health -= n; this.regen = 0; this.game.ui.flash(); }
+  cycleCam() {
+    const order = ['tps', 'shoulder', 'fps']; this.camMode = order[(order.indexOf(this.camMode) + 1) % order.length];
+    this.game.ui.toast(this.camMode === 'tps' ? 'Camera: Third-person' : this.camMode === 'shoulder' ? 'Camera: Over-the-shoulder' : 'Camera: First-person');
+  }
   updateCamera(dt, frozen) {
+    const g = this.game, mode = this.inCar ? 'tps' : this.camMode;
+    // ---- true first-person: eye-line looking down camYaw/camPitch through the rain ----
+    if (mode === 'fps') {
+      this.fig.group.visible = false; // hide own body so it doesn't clip the lens
+      const eye = new THREE.Vector3(this.pos.x, this.pos.y + 1.62, this.pos.z);
+      const dir = new THREE.Vector3(Math.sin(this.camYaw) * Math.cos(this.camPitch), -Math.sin(this.camPitch), Math.cos(this.camYaw) * Math.cos(this.camPitch));
+      const fwd = new THREE.Vector3(Math.sin(this.camYaw), 0, Math.cos(this.camYaw)); eye.addScaledVector(fwd, 0.12);
+      const sh = (g.camShake || 0); if (sh > 0) { eye.x += rnd(-sh, sh) * 0.14; eye.y += rnd(-sh, sh) * 0.14; }
+      g.camera.position.copy(eye); g.camera.lookAt(eye.x + dir.x, eye.y + dir.y, eye.z + dir.z); return;
+    }
+    if (this.fig) this.fig.group.visible = true;
     const target = this.inCar ? new THREE.Vector3(this.inCar.pos.x, 1.6, this.inCar.pos.z) : new THREE.Vector3(this.pos.x, this.pos.y + 1.6, this.pos.z);
     if (this.inCar) { const k = 0.12; this.camYaw = lerpAngle(this.camYaw, Math.atan2(Math.sin(this.inCar.yaw), Math.cos(this.inCar.yaw)) + Math.PI, k); }
-    const dist = this.inCar ? 9.5 : this.camDist, pitch = this.inCar ? 0.24 : this.camPitch;
+    // over-the-shoulder: tuck the camera in close and offset to the right
+    const shoulder = mode === 'shoulder';
+    const dist = this.inCar ? 9.5 : (shoulder ? 2.6 : this.camDist), pitch = this.inCar ? 0.24 : (shoulder ? 0.14 : this.camPitch);
     const off = new THREE.Vector3(Math.sin(this.camYaw + Math.PI) * Math.cos(pitch), Math.sin(pitch), Math.cos(this.camYaw + Math.PI) * Math.cos(pitch)).multiplyScalar(dist);
-    let cx = target.x + off.x, cy = target.y + off.y + 0.75, cz = target.z + off.z; const gcam = this.game.city.groundH(cx, cz); if (cy < gcam + 0.7) cy = gcam + 0.7;
+    let cx = target.x + off.x, cy = target.y + off.y + (shoulder ? 0.35 : 0.75), cz = target.z + off.z;
+    if (shoulder) { const rx = Math.cos(this.camYaw), rz = -Math.sin(this.camYaw); cx += rx * 0.9; cz += rz * 0.9; target.x += rx * 0.6; target.z += rz * 0.6; }
+    const gcam = g.city.groundH(cx, cz); if (cy < gcam + 0.7) cy = gcam + 0.7;
     // camera collision: march from the player toward the desired spot and stop at walls
-    const boxes = this.game.city.boxes; let k = 1;
+    const boxes = g.city.boxes; let k = 1;
     for (let i = 1; i <= 12; i++) {
       const u = i / 12, px2 = lerp(target.x, cx, u), py2 = lerp(target.y, cy, u), pz2 = lerp(target.z, cz, u); let hit = false;
       for (const b of boxes) { if (py2 < (b.h === undefined ? 7 : b.h) && Math.abs(px2 - b.x) < b.hw + 0.35 && Math.abs(pz2 - b.z) < b.hd + 0.35) { hit = true; break; } }
       if (hit) { k = Math.max(0.12, (i - 1) / 12); break; } k = u;
     }
     cx = lerp(target.x, cx, k); cy = lerp(target.y, cy, k); cz = lerp(target.z, cz, k);
-    this.game.camera.position.lerp(new THREE.Vector3(cx, cy, cz), Math.min(1, dt * 10) || 1); this.game.camera.lookAt(target);
+    // exponential dampening lerp — heavier weight in a car for physical momentum feel
+    const alpha = this.inCar ? Math.min(1, dt * 6) : Math.min(1, dt * 10);
+    this.game.camera.position.lerp(new THREE.Vector3(cx, cy, cz), alpha || 1);
+    const sh = (g.camShake || 0), lookAt = new THREE.Vector3(target.x, target.y, target.z);
+    if (sh > 0) { this.game.camera.position.x += rnd(-sh, sh) * 0.4; this.game.camera.position.y += rnd(-sh, sh) * 0.4; lookAt.x += rnd(-sh, sh) * 0.5; lookAt.z += rnd(-sh, sh) * 0.5; }
+    this.game.camera.lookAt(lookAt);
   }
 }
 function lerpAngle(a, b, t) { let d = ((b - a + Math.PI) % TAU) - Math.PI; return a + d * t; }
@@ -2081,7 +2203,7 @@ class Ped {
 // ---------------------------------------------------------------------------
 class Car {
   constructor(game, x, z, dir, color, aiTraffic, kind) {
-    this.game = game; this.pos = new THREE.Vector3(x, 0, z); this.speed = 0; this.driver = null; this.ai = true; this.aiTraffic = !!aiTraffic; this.turnCd = 1.5; this.kind = kind || null; this.color = color;
+    this.game = game; this.pos = new THREE.Vector3(x, 0, z); this.speed = 0; this.driver = null; this.ai = true; this.aiTraffic = !!aiTraffic; this.turnCd = 1.5; this.kind = kind || null; this.color = color; this.hp = 120;
     this.taxi = aiTraffic && !kind && (Math.random() < 0.22 || game._forceTaxi); if (this.taxi) { color = 0xffd23a; this.color = color; }
     this.maxSpd = kind === 'sports' ? 50 : kind === 'monster' ? 30 : 36; this.accel = kind === 'sports' ? 36 : kind === 'monster' ? 20 : 24;
     this.dir = Math.abs(dir.x) > Math.abs(dir.z) ? { x: Math.sign(dir.x) || 1, z: 0 } : { x: 0, z: Math.sign(dir.z) || 1 };
@@ -2116,7 +2238,7 @@ class Car {
         cx2 += ux * push * 0.6; cz2 += uz * push * 0.6;
         if (o.ai || o.aiTraffic) { o.pos.x -= ux * push * 0.4; o.pos.z -= uz * push * 0.4; o.speed *= 0.3; o.root.position.copy(o.pos); }
         const hit = Math.hypot(this.vx, this.vz);
-        if (hit > 6 && (this._ramCd || 0) <= 0) { this._ramCd = 0.4; this.game.hitFx(o.pos.clone().setY(1), 0xffe27a, 6); if (o.fleeing) { o._rams = (o._rams || 0) + 1; if (o._rams >= 2) { o.fleeing = false; o.ai = false; o.speed = 0; o.cruise = 0; this.game.hitFx(o.pos.clone().setY(1), 0xff5a3a, 14); } } }
+        if (hit > 6 && (this._ramCd || 0) <= 0) { this._ramCd = 0.4; this.game.hitFx(o.pos.clone().setY(1), 0xffe27a, 6); if (o.fleeing) { o._rams = (o._rams || 0) + 1; if (o._rams >= 2 && !o._boom) { o._boom = true; o.fleeing = false; o.ai = false; o.speed = 0; o.cruise = 0; this.game.explode(o.pos.clone().setY(1.0), 1.15); o.removeMe = true; } } }
         this.speed *= 0.55; this.vx *= 0.45; this.vz *= 0.45;
       }
     }
