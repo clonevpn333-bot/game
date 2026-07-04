@@ -41,6 +41,7 @@ body.snap::after { content: ''; position: fixed; inset: 0; background: #fff; poi
 #chevron { position: fixed; z-index: 6; transform: translate(-50%, -50%); pointer-events: none; display: none; text-align: center; }
 #chevron .chv-arrow { font-size: 30px; line-height: 1; color: #2df0ff; text-shadow: 0 0 10px #2df0ff, 0 0 22px rgba(45,240,255,0.7); display: inline-block; }
 #chevron .chv-dist { margin-top: 3px; font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #cdefff; text-shadow: 0 0 8px rgba(45,240,255,0.7), 1px 1px 0 #000; }
+#flash { position: fixed; inset: 0; background: #cfe0ff; opacity: 0; pointer-events: none; z-index: 7; }
 
 /* ---- phone ---- */
 #overlay.phone { display: flex; align-items: center; justify-content: flex-end; padding-right: 6vw; background: rgba(4,4,12,0.28); }
@@ -159,7 +160,9 @@ const RAMP = toonRamp(24); // retained for legacy references; PBR shading below 
 // ---- PBR material factory: dark, gritty MeshStandardMaterial with real roughness/metalness + env reflections ----
 function mat(c, o) {
   o = o || {};
-  const p = { color: c, roughness: o.roughness != null ? o.roughness : 0.82, metalness: o.metalness != null ? o.metalness : 0.0, envMapIntensity: o.envMapIntensity != null ? o.envMapIntensity : 0.5 };
+  // noir palette lock: mute every surface toward grim concrete/steel (emissive stays saturated, so neon still pops)
+  const col = new THREE.Color(c); if (!o.keepColor) col.offsetHSL(0, -0.32, -0.05);
+  const p = { color: col, roughness: o.roughness != null ? o.roughness : 0.82, metalness: o.metalness != null ? o.metalness : 0.0, envMapIntensity: o.envMapIntensity != null ? o.envMapIntensity : 0.5 };
   for (const k of ['emissive', 'emissiveIntensity', 'map', 'emissiveMap', 'normalMap', 'roughnessMap', 'transparent', 'opacity', 'side', 'depthWrite', 'alphaTest', 'polygonOffset', 'polygonOffsetFactor', 'polygonOffsetUnits']) if (o[k] !== undefined) p[k] = o[k];
   return new THREE.MeshStandardMaterial(p);
 }
@@ -282,13 +285,17 @@ class Post {
         gl_FragColor = vec4(s, 1.0); }` });
     this.compMat = new THREE.ShaderMaterial({ uniforms: {
         tScene: { value: null }, tBloom: { value: null }, tDepth: { value: null }, texel: { value: new THREE.Vector2() },
-        strength: { value: 0.8 }, exposure: { value: 1.4 }, near: { value: 0.1 }, far: { value: 1100 }, ink: { value: 1.0 } }, vertexShader: VERT, fragmentShader: `
+        strength: { value: 0.8 }, exposure: { value: 1.4 }, near: { value: 0.1 }, far: { value: 1100 }, ink: { value: 1.0 }, grainT: { value: 0 } }, vertexShader: VERT, fragmentShader: `
       uniform sampler2D tScene; uniform sampler2D tBloom; uniform sampler2D tDepth; uniform vec2 texel;
-      uniform float strength, exposure, near, far, ink; varying vec2 vUv;
+      uniform float strength, exposure, near, far, ink, grainT; varying vec2 vUv;
       vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), 0.0, 1.0); }
       float lin(vec2 uv){ float z = texture2D(tDepth, uv).x * 2.0 - 1.0; return (2.0*near*far)/(far+near - z*(far-near)); }
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
       void main(){
-        vec3 col = texture2D(tScene, vUv).rgb + texture2D(tBloom, vUv).rgb * strength;
+        // slight chromatic aberration toward the edges (sampled from the scene buffer)
+        vec2 q = vUv - 0.5; float rq = length(q); vec2 ca = q * rq * 0.006;
+        vec3 sc = vec3(texture2D(tScene, vUv + ca).r, texture2D(tScene, vUv).g, texture2D(tScene, vUv - ca).b);
+        vec3 col = sc + texture2D(tBloom, vUv).rgb * strength;
         col *= exposure; col = aces(col);
         if (ink > 0.5) {
           float d = lin(vUv);
@@ -296,9 +303,17 @@ class Post {
           float edge = smoothstep(0.22, 1.0, e / max(d,1.0) * 95.0);
           if (d < far*0.9) col *= 1.0 - edge*0.92;
         }
-        vec2 q = vUv - 0.5; float vig = smoothstep(0.95, 0.28, length(q)); col *= mix(0.7, 1.0, vig);
-        col = mix(col, col * vec3(1.04, 1.0, 0.97), 0.22);
-        gl_FragColor = vec4(pow(col, vec3(1.0/2.2)), 1.0); }` });
+        // ---- NOIR GRADE: desaturate, crush blacks, teal-shadow / amber-highlight split-tone, heavy vignette, film grain ----
+        float luma = dot(col, vec3(0.2126,0.7152,0.0722));
+        col = mix(vec3(luma), col, 0.66);                                   // pull ~34% saturation out
+        col = clamp(col - 0.018, 0.0, 1.0) * 1.03;                          // crush blacks
+        col = pow(col, vec3(1.05));                                         // deepen midtones
+        vec3 shadowTint = vec3(0.86, 1.0, 1.10), highTint = vec3(1.10, 1.02, 0.88);
+        col *= mix(shadowTint, highTint, smoothstep(0.02, 0.62, luma));     // split-tone
+        float vig = smoothstep(1.05, 0.22, rq); col *= mix(0.5, 1.0, vig);  // heavy vignette
+        float grain = (hash(vUv * vec2(1920.0,1080.0) + grainT) - 0.5) * 0.032;
+        col += grain * (1.0 - luma * 0.45);                                 // fine film grain, a touch stronger in shadows
+        gl_FragColor = vec4(pow(clamp(col,0.0,1.0), vec3(1.0/2.2)), 1.0); }` });
     this.fxaaMat = new THREE.ShaderMaterial({ uniforms: { tDiffuse: { value: null }, texel: { value: new THREE.Vector2() } }, vertexShader: VERT, fragmentShader: `
       uniform sampler2D tDiffuse; uniform vec2 texel; varying vec2 vUv;
       float lm(vec3 c){ return dot(c, vec3(0.299,0.587,0.114)); }
@@ -337,7 +352,7 @@ class Post {
     }
     const cu = this.compMat.uniforms; cu.tScene.value = this.sceneRT.texture; cu.tBloom.value = read.texture;
     cu.tDepth.value = this.outline ? this.sceneRT.depthTexture : null; cu.ink.value = this.outline ? 1.0 : 0.0;
-    cu.texel.value.set(1 / this.W, 1 / this.H); cu.near.value = this.camera.near; cu.far.value = this.camera.far;
+    cu.texel.value.set(1 / this.W, 1 / this.H); cu.near.value = this.camera.near; cu.far.value = this.camera.far; cu.grainT.value = (performance.now() * 0.001) % 100;
     this._pass(this.compMat, this.ldrRT);
     this.fxaaMat.uniforms.tDiffuse.value = this.ldrRT.texture; this.fxaaMat.uniforms.texel.value.set(1 / this.W, 1 / this.H);
     this.quad.material = this.fxaaMat; r.setRenderTarget(null); r.render(this.fsScene, this.fsCam);
@@ -1592,7 +1607,7 @@ class Game {
     for (const c of this.cars) { if (c.boat || c === this.player.inCar) continue; const t = raySphere(origin, dir, c.pos.clone().setY(1.0), 1.6); if (t != null && t < bestT) { bestT = t; hitCar = c; victim = null; } }
     const end = origin.clone().addScaledVector(dir, Math.min(bestT, range));
     if (victim) { victim.damage(dmg, dir); this.hitFx(end, 0xff5050, 10); if (!victim.cop) this.reportCrime(origin, 2, { loud: true, quiet: true }); } // gunshots echo — anyone in a block hears
-    else if (hitCar) { hitCar.hp = (hitCar.hp == null ? 120 : hitCar.hp) - dmg * 1.4; this.hitFx(end, 0xffd27a, 8); if (hitCar.hp <= 0 && !hitCar._boom) { hitCar._boom = true; this.explode(hitCar.pos.clone().setY(1.0), 1.15); hitCar.removeMe = true; if (hitCar.driver === this.player) { this.player.inCar = null; this.player.root.visible = true; } } }
+    else if (hitCar) { hitCar.hp = (hitCar.hp == null ? 120 : hitCar.hp) - dmg * 1.4; this.hitFx(end, 0xffd27a, 8); if (hitCar.hp <= 0 && !hitCar._boom) { hitCar._boom = true; this.explode(hitCar.pos.clone().setY(1.0), 1.15, hitCar.color); hitCar.removeMe = true; if (hitCar.driver === this.player) { this.player.inCar = null; this.player.root.visible = true; } } }
     this.player.gunOutT = 4;
     for (const n of this.npcs) if (!n.dead && n.scare && n.pos.distanceTo(origin) < 22) n.scare(5); // bystanders duck for cover
     this.addTracer(origin.clone().addScaledVector(dir, 1.2), end, 0xffe98a); return victim;
@@ -1636,11 +1651,11 @@ class Game {
     this.dayAmt = day; this.hour = (phase * 24 + 12) % 24; // phase 0 = high noon
     // ---- neo-noir night: pull the fog in, crank the neon bloom, wet-shine the asphalt ----
     this.scene.fog.near = lerp(190, 70, night); this.scene.fog.far = lerp(720, 430, night);
-    if (this.post && this.post.enabled) { this.post.compMat.uniforms.strength.value = 0.72 + night * 1.05; this.post.brightMat.uniforms.threshold.value = 1.0 - night * 0.62; this.post.compMat.uniforms.exposure.value = 1.38 - night * 0.44; }
+    if (this.post && this.post.enabled) { this.post.compMat.uniforms.strength.value = 0.6 + night * 0.9; this.post.brightMat.uniforms.threshold.value = 1.0 - night * 0.5; this.post.compMat.uniforms.exposure.value = 1.2 - night * 0.4; }
     if (this.city.roadMat) this.city.roadMat.emissiveIntensity = 1 + night * 2.6; // rain-slicked reflectivity
-    // clear days, rain rolling in at dusk and pouring after dark; the ground glow pools neon under you
-    this.rainAmt = clamp(night * 0.95 + dusk * 0.22, 0, 1); if (this.rain) this.rain.pts.visible = this.playing && this.rainAmt > 0.05;
-    if (this.rain) this.rain.mat.opacity = 0.3 + night * 0.4;
+    // PERSISTENT STORM: it's always raining — a downpour after dark, a steady soak by day
+    this.rainAmt = clamp(0.82 + night * 0.18, 0, 1); if (this.rain) this.rain.pts.visible = this.playing;
+    if (this.rain) this.rain.mat.opacity = 0.34 + night * 0.34;
     if (this.nightLamp && this.player && this.player.pos) { this.nightLamp.position.set(this.player.pos.x, 3.2, this.player.pos.z); this.nightLamp.intensity = night * 2.4; }
   }
   // ---- property / economy layer: buy venues (B), they pay out every minute ----
@@ -1914,7 +1929,7 @@ class Game {
     if (this.player.pos) { this.sun.position.set(this.player.pos.x - 48, 95, this.player.pos.z - 95); this.sun.target.position.copy(this.player.pos); this.sun.target.updateMatrixWorld(); }
     this.sky.position.copy(this.camera.position);
     this.updateDayNight();
-    if (this.playing) this.updateTraffic(dt);
+    if (this.playing) { this.updateTraffic(dt); this.updateStorm(dt); }
     if (this.city.displays) for (const d2 of this.city.displays) d2.root.rotation.y += dt * 0.5;
     const jd = this.city.jailDoor; if (jd) { const tx = this.city.jail.door.x + (this.city.jailOpen ? 2.7 : 0); jd.position.x += (tx - jd.position.x) * Math.min(1, dt * 3.5); } // cell door rolls on its track
     if (this.city.lighthouseBeam) this.city.lighthouseBeam.rotation.y += dt * 0.9; // sweeping beacon
@@ -1935,16 +1950,25 @@ class Game {
     for (const f of this.fx) {
       f.life -= dt; f.age = (f.age || 0) + dt;
       if (f.flash) { f.flash.intensity = Math.max(0, f.flash.intensity - dt * 20); continue; } // blast light decay
+      if (f.flashBall) { const t = clamp(f.age / f.dur, 0, 1); f.m.scale.setScalar(1 + t * 3.2); f.m.material.opacity = Math.max(0, 1 - t); continue; } // white-hot flash
       if (f.explode) { // fireball: expands + color-lerps white-hot → yellow → orange → ash, then fades
         const t = clamp(f.age / f.dur, 0, 1), col = f.m.material.color;
-        // heat gradient: white-hot → plasma yellow → volcanic orange → carbon grey → fade
-        if (t < 0.14) col.setHex(0xfffbe6); else if (t < 0.34) col.setHex(0xffd23f); else if (t < 0.62) col.setHex(0xff5a1f); else col.setHex(0x2b2b2b);
+        if (t < 0.12) col.setHex(0xfffbe6); else if (t < 0.32) col.setHex(0xffd23f); else if (t < 0.6) col.setHex(0xff5a1f); else if (t < 0.8) col.setHex(0x7a2a10); else col.setHex(0x2b2b2b);
         for (let i = 0; i < f.n; i++) { f.vs[i * 3 + 1] -= 15 * dt; f.ps[i * 3] += f.vs[i * 3] * dt; f.ps[i * 3 + 1] += f.vs[i * 3 + 1] * dt; f.ps[i * 3 + 2] += f.vs[i * 3 + 2] * dt; }
         f.g.attributes.position.needsUpdate = true; f.m.material.opacity = Math.max(0, 1 - t); f.m.material.size = f.baseSize * (1 + t * 1.8); continue;
       }
+      if (f.debris) { // ballistic wreckage with gravity, spin, and a ground bounce
+        f.vy -= 22 * dt; f.m.position.x += f.vx * dt; f.m.position.y += f.vy * dt; f.m.position.z += f.vz * dt;
+        f.m.rotation.x += f.sx * dt; f.m.rotation.y += f.sy * dt; f.m.rotation.z += f.sz2 * dt;
+        const gy = this.city.groundH(f.m.position.x, f.m.position.z) + 0.12;
+        if (f.m.position.y < gy) { f.m.position.y = gy; f.vy *= -0.32; f.vx *= 0.62; f.vz *= 0.62; f.sx *= 0.6; f.sy *= 0.6; f.sz2 *= 0.6; }
+        continue;
+      }
+      if (f.smoke) { const t = clamp(f.age / f.dur, 0, 1); for (let i = 0; i < f.n; i++) { f.ps[i * 3] += f.vs[i * 3] * dt; f.ps[i * 3 + 1] += f.vs[i * 3 + 1] * dt; f.ps[i * 3 + 2] += f.vs[i * 3 + 2] * dt; } f.g.attributes.position.needsUpdate = true; f.m.material.opacity = 0.62 * (1 - t); f.m.material.size = f.baseSize * (1 + t * 1.7); continue; }
+      if (f.scorch) { const t = clamp(f.age / f.dur, 0, 1); f.m.material.opacity = 0.78 * (1 - Math.max(0, (t - 0.7) / 0.3)); continue; }
       for (let i = 0; i < f.n; i++) { f.vs[i * 3 + 1] -= 12 * dt; f.ps[i * 3] += f.vs[i * 3] * dt; f.ps[i * 3 + 1] += f.vs[i * 3 + 1] * dt; f.ps[i * 3 + 2] += f.vs[i * 3 + 2] * dt; } f.g.attributes.position.needsUpdate = true; f.m.material.opacity = Math.max(0, f.life / 0.6);
     }
-    this.fx = this.fx.filter(f => { if (f.life <= 0) { if (f.flash) { this.scene.remove(f.flash); } else { this.scene.remove(f.m); f.g.dispose(); f.m.material.dispose(); } return false; } return true; });
+    this.fx = this.fx.filter(f => { if (f.life <= 0) { if (f.flash) { this.scene.remove(f.flash); } else { this.scene.remove(f.m); if (f.g) f.g.dispose(); else if (f.m.geometry) f.m.geometry.dispose(); if (f.m.material) f.m.material.dispose(); } return false; } return true; });
   }
   // ---- slow-mo time dilation: an unscaled accumulator ramps timeScale down, holds, then recovers ----
   triggerSlowMo(target, ramp, hold, recover) {
@@ -1973,20 +1997,58 @@ class Game {
     }
     rn.geo.attributes.position.needsUpdate = true;
   }
-  // ---- explosion: a fireball particle burst + blast light + proximity screen-shake ----
-  explode(pos, scale) {
-    scale = scale || 1; const n = 64, g = new THREE.BufferGeometry(), ps = new Float32Array(n * 3), vs = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { ps[i * 3] = pos.x; ps[i * 3 + 1] = pos.y; ps[i * 3 + 2] = pos.z; const a = Math.random() * TAU, e = Math.acos(rnd(-1, 1)), sp = rnd(7, 22) * scale; vs[i * 3] = Math.sin(e) * Math.cos(a) * sp; vs[i * 3 + 1] = Math.abs(Math.cos(e)) * sp * 0.7 + 5; vs[i * 3 + 2] = Math.sin(e) * Math.sin(a) * sp; }
+  // ---- storm: periodic lightning flash (light spike + white overlay) with delayed, distance-scaled thunder ----
+  updateStorm(dt) {
+    if (this._flash > 0) { this._flash -= dt * 3.4; if (this.ui.el.flash) this.ui.el.flash.style.opacity = Math.max(0, this._flash * 0.42); }
+    this._lightBoost = Math.max(0, (this._lightBoost || 0) - dt * 7);
+    if (this._lightBoost > 0) { this.hemi.intensity += this._lightBoost * 0.8; this.sun.intensity += this._lightBoost * 1.3; }
+    this._boltT = (this._boltT == null) ? rnd(4, 9) : this._boltT - dt;
+    if (this._boltT <= 0) {
+      this._boltT = rnd(6, 14); this._flash = 1.0; this._lightBoost = 2.4;
+      if (this.ui.el.flash) this.ui.el.flash.style.opacity = 0.42;
+      setTimeout(() => this.thunder(rnd(0.5, 2.2)), rnd(500, 2600)); // sound arrives after the flash
+    }
+  }
+  thunder(vol) {
+    try {
+      const ac = this._ac || (this._ac = new (window.AudioContext || window.webkitAudioContext)()); const t = ac.currentTime, dur = 1.5;
+      const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * dur), ac.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2.2);
+      const src = ac.createBufferSource(); src.buffer = buf; const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 340; const gn = ac.createGain(); gn.gain.value = 0.22 * vol;
+      src.connect(lp); lp.connect(gn); gn.connect(ac.destination); src.start(t);
+      const osc = ac.createOscillator(); osc.frequency.value = 46; const og = ac.createGain(); og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.2 * vol, t + 0.12); og.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(og); og.connect(ac.destination); osc.start(t); osc.stop(t + dur);
+    } catch (e) {}
+  }
+  // ---- staged detonation: flash → radial fireball → debris → smoke column → scorch → chain reaction → shake + slow-mo ----
+  explode(pos, scale, color) {
+    scale = scale || 1; const dcol = color != null ? color : 0x2a2c30;
+    // radial fireball particles
+    const n = 90, g = new THREE.BufferGeometry(), ps = new Float32Array(n * 3), vs = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { ps[i * 3] = pos.x; ps[i * 3 + 1] = pos.y; ps[i * 3 + 2] = pos.z; const a = Math.random() * TAU, e = Math.acos(rnd(-1, 1)), sp = rnd(7, 24) * scale; vs[i * 3] = Math.sin(e) * Math.cos(a) * sp; vs[i * 3 + 1] = Math.abs(Math.cos(e)) * sp * 0.7 + 5; vs[i * 3 + 2] = Math.sin(e) * Math.sin(a) * sp; }
     g.setAttribute('position', new THREE.BufferAttribute(ps, 3));
-    const baseSize = 1.7 * scale, m = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: baseSize, transparent: true, opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending }));
-    this.scene.add(m); this.fx.push({ m, g, ps, vs, n, life: 1.15, dur: 1.1, explode: true, baseSize, age: 0 });
-    const fl = new THREE.PointLight(0xffb060, 9 * scale, 46 * scale, 2); fl.position.set(pos.x, pos.y + 1, pos.z); this.scene.add(fl); this.fx.push({ flash: fl, life: 0.42, age: 0 });
-    const d = this.player.pos.distanceTo(pos); this.camShake = Math.max(this.camShake || 0, clamp(1 - d / 46, 0, 1) * 1.3 * scale);
-    if (d < 55) this.triggerSlowMo(0.18, 0.28, 0.35, 0.7); // cinematic hit-stop when the blast is near
-    this.hitFx(pos, 0xff8a2a, 18);
+    const baseSize = 1.9 * scale, m = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: baseSize, transparent: true, opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending }));
+    this.scene.add(m); this.fx.push({ m, g, ps, vs, n, life: 1.2, dur: 1.1, explode: true, baseSize, age: 0 });
+    // primary white-hot flash sprite + blast light
+    const flash = new THREE.Mesh(new THREE.SphereGeometry(1.6 * scale, 12, 10), new THREE.MeshBasicMaterial({ color: 0xfff6d8, transparent: true, opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending })); flash.position.copy(pos); this.scene.add(flash); this.fx.push({ m: flash, flashBall: true, life: 0.16, dur: 0.14, age: 0 });
+    const fl = new THREE.PointLight(0xffb060, 11 * scale, 52 * scale, 2); fl.position.set(pos.x, pos.y + 1, pos.z); this.scene.add(fl); this.fx.push({ flash: fl, life: 0.44, age: 0 });
+    // debris chunks — ballistic boxes with spin that bounce and settle as wreckage
+    for (let i = 0; i < 12; i++) { const sz = rnd(0.22, 0.5); const chunk = new THREE.Mesh(new THREE.BoxGeometry(sz, sz * rnd(0.4, 0.9), sz * rnd(0.6, 1.3)), mat(dcol, { roughness: 0.7, metalness: 0.4 })); chunk.position.set(pos.x, pos.y, pos.z); chunk.castShadow = true; this.scene.add(chunk); const a = Math.random() * TAU; this.fx.push({ debris: true, m: chunk, vx: Math.cos(a) * rnd(3, 10) * scale, vy: rnd(6, 14) * scale, vz: Math.sin(a) * rnd(3, 10) * scale, sx: rnd(-9, 9), sy: rnd(-9, 9), sz2: rnd(-9, 9), life: 7, age: 0 }); }
+    // rising smoke column
+    const sn = 26, sg = new THREE.BufferGeometry(), sp2 = new Float32Array(sn * 3), sv = new Float32Array(sn * 3);
+    for (let i = 0; i < sn; i++) { sp2[i * 3] = pos.x + rnd(-1, 1); sp2[i * 3 + 1] = pos.y + rnd(0, 1.6); sp2[i * 3 + 2] = pos.z + rnd(-1, 1); sv[i * 3] = rnd(-0.6, 0.6); sv[i * 3 + 1] = rnd(1.6, 3.6); sv[i * 3 + 2] = rnd(-0.6, 0.6); }
+    sg.setAttribute('position', new THREE.BufferAttribute(sp2, 3));
+    const sm = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0x17181c, size: 2.6 * scale, transparent: true, opacity: 0.62, depthWrite: false })); this.scene.add(sm); this.fx.push({ smoke: true, m: sm, g: sg, ps: sp2, vs: sv, n: sn, life: 3.4, dur: 3.4, baseSize: 2.6 * scale, age: 0 });
+    // persistent scorch decal on the ground
+    const scdec = new THREE.Mesh(new THREE.CircleGeometry(2.7 * scale, 22), new THREE.MeshBasicMaterial({ color: 0x080809, transparent: true, opacity: 0.78, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })); scdec.rotation.x = -Math.PI / 2; scdec.position.set(pos.x, this.city.groundH(pos.x, pos.z) + 0.06, pos.z); this.scene.add(scdec); this.fx.push({ scorch: true, m: scdec, life: 22, dur: 22, age: 0 });
+    const d = this.player.pos.distanceTo(pos); this.camShake = Math.max(this.camShake || 0, clamp(1 - d / 48, 0, 1) * 1.5 * scale);
+    if (d < 55) this.triggerSlowMo(0.16, 0.3, 0.4, 0.75); // cinematic hit-stop when the blast is near
+    this.hitFx(pos, 0xff8a2a, 20);
     // catch anyone standing in the blast
-    for (const nn of this.npcs) if (!nn.dead && nn.pos.distanceTo(pos) < 6 * scale) nn.damage(80);
+    for (const nn of this.npcs) if (!nn.dead && nn.pos.distanceTo(pos) < 6 * scale) { nn.damage(80); if (nn.scare) nn.scare(8); }
     if (this.player.pos.distanceTo(pos) < 5 * scale && !this.player.inCar) this.player.hurt(45 * scale);
+    // chain reaction: nearby cars take heavy damage and cook off after a short random delay
+    for (const oc of this.cars) { if (oc.boat || oc._boom) continue; if (oc.pos.distanceTo(pos) < 7.5 * scale) { oc.hp = (oc.hp == null ? 120 : oc.hp) - 95; if (oc.hp <= 0) { oc._boom = true; const dp = oc.pos.clone().setY(1.0), dc = oc.color; setTimeout(() => { if (!oc.removeMe) { this.explode(dp, 1.05, dc); oc.removeMe = true; } }, rnd(220, 750)); } } }
   }
   cull() { this.npcs = this.npcs.filter(n => { if (n.removeMe) { this.scene.remove(n.root); return false; } return true; }); this.cars = this.cars.filter(c => { if (c.removeMe) { this.scene.remove(c.root); return false; } return true; }); const civ = this.npcs.filter(n => !n.cop && !n.story).length; if (civ < 34) { this.spawnPed(); if (civ < 26) this.spawnPed(); } if (this.cars.filter(c => c.aiTraffic && !c.police).length < 15) this.spawnTraffic(); }
 }
@@ -2302,7 +2364,7 @@ class Car {
         cx2 += ux * push * 0.6; cz2 += uz * push * 0.6;
         if (o.ai || o.aiTraffic) { o.pos.x -= ux * push * 0.4; o.pos.z -= uz * push * 0.4; o.speed *= 0.3; o.root.position.copy(o.pos); }
         const hit = Math.hypot(this.vx, this.vz);
-        if (hit > 6 && (this._ramCd || 0) <= 0) { this._ramCd = 0.4; this.game.hitFx(o.pos.clone().setY(1), 0xffe27a, 6); if (o.fleeing) { o._rams = (o._rams || 0) + 1; if (o._rams >= 2 && !o._boom) { o._boom = true; o.fleeing = false; o.ai = false; o.speed = 0; o.cruise = 0; this.game.explode(o.pos.clone().setY(1.0), 1.15); o.removeMe = true; } } }
+        if (hit > 6 && (this._ramCd || 0) <= 0) { this._ramCd = 0.4; this.game.hitFx(o.pos.clone().setY(1), 0xffe27a, 6); if (o.fleeing) { o._rams = (o._rams || 0) + 1; if (o._rams >= 2 && !o._boom) { o._boom = true; o.fleeing = false; o.ai = false; o.speed = 0; o.cruise = 0; this.game.explode(o.pos.clone().setY(1.0), 1.15, o.color); o.removeMe = true; } } }
         this.speed *= 0.55; this.vx *= 0.45; this.vz *= 0.45;
       }
     }
@@ -2580,6 +2642,7 @@ class UI {
       <div id="gps"></div>
       <div id="district"></div>
       <div id="chevron"><div class="chv-arrow">➤</div><div class="chv-dist"></div></div>
+      <div id="flash"></div>
       <div id="hp"><div id="hpfill"></div></div>
       <div id="weapon">Pistol</div>
       <div id="chapter"></div>
@@ -2593,7 +2656,7 @@ class UI {
       <div id="crosshair"></div>
       <div id="overlay" class="hidden"></div>`;
     document.body.appendChild(r); this.root = r;
-    this.el = { map: r.querySelector('#map').getContext('2d'), mapc: r.querySelector('#map'), money: r.querySelector('#money'), wanted: r.querySelector('#wanted'), clock: r.querySelector('#clock'), gps: r.querySelector('#gps'), district: r.querySelector('#district'), chevron: r.querySelector('#chevron'), hp: r.querySelector('#hpfill'), obj: r.querySelector('#obj'), chapter: r.querySelector('#chapter'), toast: r.querySelector('#toast'), introcap: r.querySelector('#introcap'), introskip: r.querySelector('#introskip'), news: r.querySelector('#news'), newstxt: r.querySelector('#newstxt'), dialogue: r.querySelector('#dialogue'), dspk: r.querySelector('#dspk'), dtext: r.querySelector('#dtext'), big: r.querySelector('#bigcard'), weapon: r.querySelector('#weapon'), overlay: r.querySelector('#overlay'), lbTop: r.querySelector('#lbTop'), lbBot: r.querySelector('#lbBot') };
+    this.el = { map: r.querySelector('#map').getContext('2d'), mapc: r.querySelector('#map'), money: r.querySelector('#money'), wanted: r.querySelector('#wanted'), clock: r.querySelector('#clock'), gps: r.querySelector('#gps'), district: r.querySelector('#district'), chevron: r.querySelector('#chevron'), flash: r.querySelector('#flash'), hp: r.querySelector('#hpfill'), obj: r.querySelector('#obj'), chapter: r.querySelector('#chapter'), toast: r.querySelector('#toast'), introcap: r.querySelector('#introcap'), introskip: r.querySelector('#introskip'), news: r.querySelector('#news'), newstxt: r.querySelector('#newstxt'), dialogue: r.querySelector('#dialogue'), dspk: r.querySelector('#dspk'), dtext: r.querySelector('#dtext'), big: r.querySelector('#bigcard'), weapon: r.querySelector('#weapon'), overlay: r.querySelector('#overlay'), lbTop: r.querySelector('#lbTop'), lbBot: r.querySelector('#lbBot') };
     r.querySelector('#dialogue').addEventListener('mousedown', () => this._advance());
     addEventListener('keydown', e => { if ((e.code === 'Space' || e.code === 'Enter') && this._dlg) { e.preventDefault(); this._advance(); } });
   }

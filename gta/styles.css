@@ -34,6 +34,7 @@ body.snap::after { content: ''; position: fixed; inset: 0; background: #fff; poi
 #chevron { position: fixed; z-index: 6; transform: translate(-50%, -50%); pointer-events: none; display: none; text-align: center; }
 #chevron .chv-arrow { font-size: 30px; line-height: 1; color: #2df0ff; text-shadow: 0 0 10px #2df0ff, 0 0 22px rgba(45,240,255,0.7); display: inline-block; }
 #chevron .chv-dist { margin-top: 3px; font-size: 13px; font-weight: 800; letter-spacing: 1px; color: #cdefff; text-shadow: 0 0 8px rgba(45,240,255,0.7), 1px 1px 0 #000; }
+#flash { position: fixed; inset: 0; background: #cfe0ff; opacity: 0; pointer-events: none; z-index: 7; }
 
 /* ---- phone ---- */
 #overlay.phone { display: flex; align-items: center; justify-content: flex-end; padding-right: 6vw; background: rgba(4,4,12,0.28); }
