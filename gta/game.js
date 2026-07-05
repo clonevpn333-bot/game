@@ -125,7 +125,7 @@ let _blobTex = null;
 function blobTexture() {
   if (_blobTex) return _blobTex;
   const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
-  const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, 'rgba(0,0,0,0.5)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, 'rgba(0,0,0,0.32)'); g.addColorStop(0.7, 'rgba(0,0,0,0.12)'); g.addColorStop(1, 'rgba(0,0,0,0)');
   x.fillStyle = g; x.fillRect(0, 0, 64, 64); _blobTex = new THREE.CanvasTexture(c); return _blobTex;
 }
 function makeBlob(r) { const m = new THREE.Mesh(new THREE.PlaneGeometry(r * 2, r * 2), new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, depthWrite: false })); m.rotation.x = -Math.PI / 2; m.position.y = 0.04; m.renderOrder = 1; return m; }
@@ -703,6 +703,25 @@ class City {
     let cands = nb.filter(n => n !== fromId); if (!cands.length) cands = nb;                 // dead-end → U-turn
     if (scorer) { let best = cands[0], bs = -1e18; for (const n of cands) { const s = scorer(this.net.nodes[n]); if (s > bs) { bs = s; best = n; } } return best; }
     return cands[(Math.random() * cands.length) | 0];
+  }
+  // A* over the lane graph (edge length = euclidean); returns node-id path start..goal or null
+  pathfind(startId, goalId, maxExpand) {
+    const net = this.net, N = net.nodes, goal = N[goalId]; if (!N[startId] || !goal) return null; if (startId === goalId) return [startId];
+    const g = new Float64Array(N.length).fill(Infinity), f = new Float64Array(N.length).fill(Infinity), came = new Int32Array(N.length).fill(-1);
+    const inOpen = new Uint8Array(N.length), closed = new Uint8Array(N.length), open = [startId];
+    g[startId] = 0; f[startId] = goal.position.distanceTo(N[startId].position); inOpen[startId] = 1;
+    let expand = 0; const lim = maxExpand || 2500;
+    while (open.length) {
+      let bi = 0; for (let i = 1; i < open.length; i++) if (f[open[i]] < f[open[bi]]) bi = i;
+      const cur = open[bi]; open[bi] = open[open.length - 1]; open.pop(); inOpen[cur] = 0;
+      if (cur === goalId) { const path = [cur]; let p = cur; while (came[p] !== -1) { p = came[p]; path.push(p); } return path.reverse(); }
+      closed[cur] = 1; if (++expand > lim) break;
+      for (const eid of N[cur].edges) { const e = net.edges[eid], nb = e.a === cur ? e.b : e.a; if (closed[nb]) continue;
+        const tg = g[cur] + N[cur].position.distanceTo(N[nb].position);
+        if (tg < g[nb]) { came[nb] = cur; g[nb] = tg; f[nb] = tg + goal.position.distanceTo(N[nb].position); if (!inOpen[nb]) { open.push(nb); inOpen[nb] = 1; } }
+      }
+    }
+    return null;
   }
   _lodMat(c) { if (!this._lodMats.has(c)) this._lodMats.set(c, mat(new THREE.Color(c).multiplyScalar(0.94).getHex())); return this._lodMats.get(c); }
   // real windows: instanced glass panes (lit + dark) and a slab ring per storey —
@@ -1621,6 +1640,9 @@ class Game {
     this.fill = new THREE.DirectionalLight(0x6a80c0, 0.12); this.fill.position.set(70, 45, 55); this.scene.add(this.fill);
     // rain field (recycled around the camera) + a dim glow light that sits under the player at night
     this.rain = makeRain(4200); this.scene.add(this.rain.pts); this.rain.pts.visible = false; this.rainAmt = 0; this.camShake = 0; this.timeScale = 1; this._slow = null;
+    // puddle-ripple pool: faint ground-aligned rings that spawn on the wet road, expand and fade (rain hitting puddles)
+    this.ripples = [];
+    for (let i = 0; i < 44; i++) { const m = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.5, 18), new THREE.MeshBasicMaterial({ color: 0x9fc0e0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })); m.rotation.x = -Math.PI / 2; m.visible = false; m.renderOrder = 2; this.scene.add(m); this.ripples.push({ m, life: 0, dur: 1 }); }
     this.nightLamp = new THREE.PointLight(0xffca88, 0, 34, 2); this.scene.add(this.nightLamp);
 
     this.clock = new THREE.Clock(); this.time = 0; this.playing = false; this.paused = false; this.menuMode = true; this.cine = null;
@@ -2045,7 +2067,7 @@ class Game {
       if (this.cine) { this.updateCutscene(dt); }
       else if (!frozen) { this.player.update(sdt); for (const n of this.npcs) n.update(sdt); for (const c of this.cars) c.update(sdt); this.story.update(sdt); this.updateWanted(sdt); this.updatePickups(sdt); this.updateArrest(sdt); this.updateJail(sdt); this.updateIncome(sdt); this.updateWorkers(sdt); this.updateGps(); this.cull(); this.player.updateCamera(dt, false); }
       else { this.player.updateCamera(dt, true); }
-      this.updateFx(sdt); this.camShake = Math.max(0, (this.camShake || 0) - dt * 2.4); this.updateRain(dt); this.updateWaypoint(dt); this.ui.update(); this.updateCulling();
+      this.updateFx(sdt); this.camShake = Math.max(0, (this.camShake || 0) - dt * 2.4); this.updateRain(dt); this.updateRipples(dt); if (!frozen) this.maintainParked(dt); this.updateWaypoint(dt); this.ui.update(); this.updateCulling();
     }
     if (this.player.pos) { this.sun.position.set(this.player.pos.x - 48, 95, this.player.pos.z - 95); this.sun.target.position.copy(this.player.pos); this.sun.target.updateMatrixWorld(); }
     this.sky.position.copy(this.camera.position);
@@ -2059,12 +2081,42 @@ class Game {
     this._shadowT -= dt; if (this._shadowT <= 0) { this.renderer.shadowMap.needsUpdate = true; this._shadowT = 0.11; }
     this.post.render(); this.input.end();
   }
-  updateWanted(dt) { const p = this.player; if (p.heat > 0) { p.heat -= dt; if (p.heat <= 0) { p.wanted = Math.max(0, p.wanted - 1); p.heat = p.wanted > 0 ? 14 : 0; } }
-    if (this.responseT > 0) { this.responseT -= dt; return; } // units are en route — no psychic instant cops
-    this.copT = (this.copT || 0) - dt; if (p.wanted > 0 && this.copT <= 0) { this.copT = 2.0; const want = Math.min(8, p.wanted * 2); let have = this.npcs.filter(n => n.cop && !n.dead).length; while (have < want) { const a = rnd(TAU), r = rnd(34, 50); this.npcs.push(new Ped(this, p.pos.x + Math.cos(a) * r, p.pos.z + Math.sin(a) * r, true)); have++; } }
-    // cruiser dispatch at 3+ stars
-    if (p.wanted >= 3) { const want = p.wanted >= 5 ? 3 : p.wanted - 2, have = this.cars.filter(c => c.police && !c.removeMe).length; if (have < want) { const a = rnd(TAU), r = rnd(55, 80), lim = this.city.half; const sn = this.city.net.nodes[this.city.nearestNode(clamp(p.pos.x + Math.cos(a) * r, -lim, lim), clamp(p.pos.z + Math.sin(a) * r, -lim, lim))]; this.cars.push(new PoliceCar(this, sn.position.x, sn.position.z)); if (p.wanted === 5 && !this._n5) { this._n5 = true; this.ui.news('FIVE-STAR MANHUNT — NBPD floods the causeways as chaos grips the Bay'); } } }
-    if (p.wanted === 0) for (const n of this.npcs) if (n.cop) n.removeMe = true; }
+  // do any active cops currently hold a clear line of sight on the player?
+  _copsSeePlayer() {
+    const p = this.player;
+    for (const c of this.cars) { if (c.police && !c.removeMe && !c.assessing && c.pos.distanceTo(p.pos) < 74 && this._hasLOS(c.pos, p.pos)) return true; }
+    for (const n of this.npcs) { if (n.cop && !n.dead && n.pos.distanceTo(p.pos) < 52 && this._hasLOS(n.pos, p.pos)) return true; }
+    return false;
+  }
+  _hasLOS(a, b) { // cheap occlusion: fail if the sightline crosses a tall building box
+    const steps = 7; for (let i = 1; i < steps; i++) { const t = i / steps, x = lerp(a.x, b.x, t), z = lerp(a.z, b.z, t); for (const box of this.city.boxes) { if ((box.h === undefined ? 7 : box.h) > 1.6 && Math.abs(x - box.x) < box.hw && Math.abs(z - box.z) < box.hd) return false; } } return true;
+  }
+  // a road node minR..maxR away that is NOT in the current camera frustum, so units arrive from off-screen
+  _offscreenNode(minR, maxR) {
+    const p = this.player, net = this.city.net; let fb = null;
+    for (let t = 0; t < 26; t++) { const n = net.nodes[(Math.random() * net.nodes.length) | 0]; if (!n.edges.length) continue; const d = Math.hypot(n.position.x - p.pos.x, n.position.z - p.pos.z); if (d < minR || d > maxR) continue; fb = n; if (!this._frustum.containsPoint(n.position)) return n; }
+    return fb;
+  }
+  updateWanted(dt) {
+    const p = this.player;
+    if (p.wanted > 0) {
+      // stars only cool once the player breaks the cops' line of sight (a "searching" grace, then they clear)
+      this._losT = (this._losT || 0) - dt; if (this._losT <= 0) { this._losT = 0.2; this._copSeen = this._copsSeePlayer(); }
+      if (this._copSeen) { p.seenT = 0; p.searching = false; p.heat = Math.max(p.heat, 6 + p.wanted * 4); }
+      else { p.seenT = (p.seenT || 0) + dt; if (p.seenT > 5) p.searching = true; }
+      if (p.searching) { p.heat -= dt; if (p.heat <= 0) { p.wanted = Math.max(0, p.wanted - 1); p.heat = p.wanted > 0 ? (7 + p.wanted * 3) : 0; p.seenT = 0; if (p.wanted === 0) { p.searching = false; this.ui.toast('You lost the cops.'); } } }
+    } else { p.searching = false; }
+    if (this.responseT > 0) { this.responseT -= dt; return; } // dispatch takes time to arrive
+    // gradual escalation — a couple of foot units per star, cruisers from 3 stars, all arriving from off-screen and driving/walking in
+    this.copT = (this.copT || 0) - dt;
+    if (p.wanted > 0 && !p.searching && this.copT <= 0) {
+      this.copT = 3.0;
+      const wantFoot = Math.min(6, p.wanted + 1), haveFoot = this.npcs.filter(n => n.cop && !n.dead).length;
+      if (haveFoot < wantFoot) { const nd = this._offscreenNode(45, 120); if (nd) this.npcs.push(new Ped(this, nd.position.x, nd.position.z, true)); }
+      if (p.wanted >= 3) { const wantCar = Math.min(3, p.wanted - 2), haveCar = this.cars.filter(c => c.police && !c.removeMe).length; if (haveCar < wantCar) { const nd = this._offscreenNode(60, 150); if (nd) { const pc = new PoliceCar(this, nd.position.x, nd.position.z); pc.fromN = nd.id; this.cars.push(pc); } if (p.wanted === 5 && !this._n5) { this._n5 = true; this.ui.news('FIVE-STAR MANHUNT — NBPD floods the causeways as chaos grips the Bay'); } } }
+    }
+    if (p.wanted === 0) for (const n of this.npcs) if (n.cop) n.removeMe = true;
+  }
   updateFx(dt) {
     for (const t of this.tracers) { t.life -= dt; t.line.material.opacity = Math.max(0, t.life / 0.06); }
     this.tracers = this.tracers.filter(t => { if (t.life <= 0) { this.scene.remove(t.line); t.line.geometry.dispose(); t.line.material.dispose(); return false; } return true; });
@@ -2117,6 +2169,36 @@ class Game {
       }
     }
     rn.geo.attributes.position.needsUpdate = true;
+  }
+  // faint expanding puddle rings on the wet road near the camera (raindrops hitting standing water)
+  updateRipples(dt) {
+    const cam = this.camera.position, city = this.city;
+    this._ripT = (this._ripT || 0) - dt;
+    if (this._ripT <= 0) {
+      this._ripT = 0.06;
+      for (let k = 0; k < 2; k++) { const r = this.ripples.find(x => x.life <= 0); if (!r) break; const a = rnd(TAU), rad = rnd(4, 42), x = cam.x + Math.cos(a) * rad, z = cam.z + Math.sin(a) * rad; if (city.isWater(x, z)) continue; r.dur = r.life = rnd(0.7, 1.2); r.m.position.set(x, city.groundH(x, z) + 0.05, z); r.m.scale.setScalar(0.3); r.m.visible = true; }
+    }
+    for (const r of this.ripples) { if (r.life <= 0) continue; r.life -= dt; const t = 1 - r.life / r.dur; r.m.scale.setScalar(0.3 + t * 2.6); r.m.material.opacity = 0.42 * (1 - t) * (1 - t); if (r.life <= 0) r.m.visible = false; }
+  }
+  // static, enterable parked cars lining the curbs so the streets aren't dead (recycled around the player)
+  spawnParked() {
+    const c = this.city, net = c.net, p = this.player; let node = null;
+    for (let t = 0; t < 14; t++) { const n = net.nodes[(Math.random() * net.nodes.length) | 0]; const d = Math.hypot(n.position.x - p.pos.x, n.position.z - p.pos.z); if (d > 36 && d < 150 && n.edges.length) { node = n; break; } }
+    if (!node) return null;
+    const eid = node.edges[(Math.random() * node.edges.length) | 0], e = net.edges[eid]; if (e.isBridge) return null;
+    const other = net.nodes[e.a === node.id ? e.b : e.a].position, fwd = other.clone().sub(node.position).normalize(), right = new THREE.Vector3(fwd.z, 0, -fwd.x), off = ROAD_CLASS[e.class].width / 2 + 1.5;
+    const base = node.position.clone().addScaledVector(fwd, rnd(0.15, 0.85) * node.position.distanceTo(other)), side = Math.random() < 0.5 ? 1 : -1, x = base.x + right.x * off * side, z = base.z + right.z * off * side;
+    if (!net.isLand(x, z)) return null;
+    const car = new Car(this, x, z, new THREE.Vector3(fwd.x, 0, fwd.z), pick(CAR_COLORS), false); car.ai = false; car.parked = true; car.speed = 0;
+    if (car._spill) car._spill.visible = false; if (car._rear) car._rear.visible = false;
+    car.yaw = Math.atan2(fwd.x, fwd.z) + (side > 0 ? 0 : Math.PI); car.root.rotation.y = car.yaw;
+    const dv = car.root.userData.driver; if (dv) dv.visible = false;
+    this.cars.push(car); return car;
+  }
+  maintainParked(dt) {
+    this._parkT = (this._parkT || 0) - dt; if (this._parkT > 0) return; this._parkT = 0.5;
+    let n = 0; for (const c of this.cars) if (c.parked && !c.driver) n++;
+    for (let k = 0; k < 3 && n < 15; k++) if (this.spawnParked()) n++;   // fill the curbs quickly, then top up
   }
   // ---- storm: periodic lightning flash (light spike + white overlay) with delayed, distance-scaled thunder ----
   updateStorm(dt) {
@@ -2466,8 +2548,9 @@ class Car {
   }
   // headlight spill + taillight glow pooled on the wet asphalt (moves + turns with the car)
   _carLights() {
-    const spill = lightPool(6.5, 0xfff2d0, 0.55); spill.position.set(0, 0.05, -5.4); spill.scale.set(0.72, 1, 1.25); this.root.add(spill);
-    const rear = lightPool(3.0, 0xff2a1e, 0.5); rear.position.set(0, 0.05, 3.4); this.root.add(rear);
+    this._spill = lightPool(6.5, 0xfff2d0, 0.55); this._spill.position.set(0, 0.05, -5.4); this._spill.scale.set(0.72, 1, 1.25); this.root.add(this._spill);
+    this._rear = lightPool(3.0, 0xff2a1e, 0.5); this._rear.position.set(0, 0.05, 3.4); this.root.add(this._rear);
+    if (this.parked) { this._spill.visible = false; this._rear.visible = false; } // parked cars sit dark
   }
   repaint(color) {
     this.color = color; this.game.scene.remove(this.root);
@@ -2597,7 +2680,7 @@ class Boat {
 class PoliceCar extends Car {
   constructor(game, x, z) {
     super(game, x, z, new THREE.Vector3(0, 0, 1), 0xf0f0f4, false);
-    this.police = true; this.copCd = 0;
+    this.police = true; this.copCd = 0; this.assessT = 1.6 + Math.random() * 1.4; this.assessing = true; this.repathT = 0; this.path = null;
     const dv = this.root.userData.driver; if (dv) { dv.visible = true; dv.children[0].material = mat(0x21407a); dv.children[2].material = mat(0x11203f); dv.children[3].material = mat(0x21407a); } // uniformed officer at the wheel
     const hood = new THREE.Mesh(new THREE.BoxGeometry(2.02, 0.2, 1.6), mat(0x14161b)); hood.position.set(0, 0.87, -1.5); this.root.add(hood);
     const doorL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 1.4), mat(0x14161b)); doorL.position.set(-1.02, 0.66, -0.1); this.root.add(doorL);
@@ -2610,22 +2693,26 @@ class PoliceCar extends Car {
     const g = this.game, p = g.player, t = g.time;
     this.lightR.material.emissiveIntensity = Math.sin(t * 14) > 0 ? 3.2 : 0.2;
     this.lightB.material.emissiveIntensity = Math.sin(t * 14) > 0 ? 0.2 : 3.2;
-    if (p.wanted <= 0 || this.pos.distanceTo(p.pos) > 220) { this.removeMe = true; this.root.visible = false; return; }
+    // despawn only when far AND out of view — ease out, never blink away in front of the player
+    if (p.wanted <= 0 || (this.pos.distanceTo(p.pos) > 200 && !g._frustum.containsPoint(this.pos))) { this.removeMe = true; this.root.visible = false; return; }
     const c = g.city, net = c.net, dist = this.pos.distanceTo(p.pos);
-    if (dist < 24) {
-      // in the open — lunge straight at the target, ramming allowed
-      this.yaw = lerpAngle(this.yaw, Math.atan2(p.pos.x - this.pos.x, p.pos.z - this.pos.z), Math.min(1, dt * 3.6));
-      this.speed = lerp(this.speed, dist > 9 ? 16 : 6, dt * 2); this._move(dt); this.along = null; this.toN = null;
+    this.assessT = Math.max(0, (this.assessT || 0) - dt); this.assessing = this.assessT > 0; // a beat to size you up before the chase
+    if (dist < 22 && !this.assessing) {
+      // close quarters — steer onto the player at a measured pace (ramming is slower and rarer now)
+      this.yaw = lerpAngle(this.yaw, Math.atan2(p.pos.x - this.pos.x, p.pos.z - this.pos.z), Math.min(1, dt * 3.0));
+      this.speed = lerp(this.speed, dist > 10 ? 11 : 4, dt * 2); this._move(dt); this.along = null; this.toN = null;
     } else {
-      // run the lane graph toward the player, greedily picking edges that close the gap
+      // A* pursuit along the lane graph toward the player's road node
       if (this.toN == null || !net.nodes[this.toN] || !net.nodes[this.fromN]) this._anchor();
+      this.repathT = (this.repathT || 0) - dt;
+      if (this.repathT <= 0) { this.repathT = 1.2; this.path = c.pathfind(this.fromN, c.nearestNode(p.pos.x, p.pos.z), 1500); }
       let from = net.nodes[this.fromN], to = net.nodes[this.toN];
       if (!from || !to) { this._anchor(); return; }
       let seg = to.position.clone().sub(from.position), segLen = Math.max(0.001, seg.length()), fwd = seg.clone().multiplyScalar(1 / segLen);
       if (this.along == null) this.along = clamp(this.pos.clone().sub(from.position).dot(fwd), 0, segLen);
-      this.speed = lerp(this.speed, 18, dt * 2); this.along += this.speed * dt;
+      this.speed = lerp(this.speed, this.assessing ? 8 : 13, dt * 2); this.along += this.speed * dt;
       let guard = 0;
-      while (this.along >= segLen && guard++ < 4) { const carry = this.along - segLen, prev = this.fromN; this.fromN = this.toN; this.toN = c.pickNext(prev, this.fromN, nd => -nd.position.distanceTo(p.pos)); from = net.nodes[this.fromN]; to = net.nodes[this.toN]; if (!from || !to) { this._anchor(); return; } seg = to.position.clone().sub(from.position); segLen = Math.max(0.001, seg.length()); fwd = seg.clone().multiplyScalar(1 / segLen); this.along = carry; }
+      while (this.along >= segLen && guard++ < 4) { const carry = this.along - segLen, prev = this.fromN; this.fromN = this.toN; this.toN = this._pathNext(prev, this.fromN); this.edgeId = c.edgeBetween(this.fromN, this.toN); from = net.nodes[this.fromN]; to = net.nodes[this.toN]; if (!from || !to) { this._anchor(); return; } seg = to.position.clone().sub(from.position); segLen = Math.max(0.001, seg.length()); fwd = seg.clone().multiplyScalar(1 / segLen); this.along = carry; }
       const right = new THREE.Vector3(fwd.z, 0, -fwd.x), center = from.position.clone().addScaledVector(fwd, clamp(this.along, 0, segLen)).addScaledVector(right, 2.2);
       this.pos.x = lerp(this.pos.x, center.x, Math.min(1, dt * 9)); this.pos.z = lerp(this.pos.z, center.z, Math.min(1, dt * 9)); this.pos.y = c.groundH(this.pos.x, this.pos.z);
       this.yaw = lerpAngle(this.yaw, Math.atan2(fwd.x, fwd.z), Math.min(1, dt * 5));
@@ -2633,7 +2720,14 @@ class PoliceCar extends Car {
       for (const w of (this.root.userData.wheels || [])) w.rotation.x += this.speed * dt / 0.45;
     }
     this.copCd = Math.max(0, this.copCd - dt);
-    if (dist < 9 && this.copCd <= 0) { this.copCd = 7; let cops = 0; for (const n of g.npcs) if (n.cop && !n.dead) cops++; if (cops < 8) { for (let i = 0; i < 2; i++) g.npcs.push(new Ped(g, this.pos.x + rnd(-2, 2), this.pos.z + rnd(-2, 2), true)); } }
+    // officers only pile out when the cruiser has basically stopped beside you — no ped teleporting
+    if (dist < 10 && this.speed < 5 && this.copCd <= 0) { this.copCd = 14; let cops = 0; for (const n of g.npcs) if (n.cop && !n.dead) cops++; if (cops < 5) g.npcs.push(new Ped(g, this.pos.x + rnd(-2, 2), this.pos.z + rnd(-2, 2), true)); }
+  }
+  // next node toward the player: follow the A* path if it still holds our node, else greedily close the gap
+  _pathNext(prev, atId) {
+    const c = this.game.city;
+    if (this.path && this.path.length) { const idx = this.path.indexOf(atId); if (idx >= 0 && idx + 1 < this.path.length) return this.path[idx + 1]; }
+    const p = this.game.player; return c.pickNext(prev, atId, nd => -nd.position.distanceTo(p.pos));
   }
 }
 
