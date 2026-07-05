@@ -649,6 +649,8 @@ class City {
     // offshore islets (boat destinations): Isla Privada + a small cay
     this.islets = [ { x: half + 150, z: -120, r: 52, h: 4.2, priv: true }, { x: half + 138, z: 150, r: 34, h: 2.8 } ];
     this.privIslet = this.islets[0];
+    // airport anchor used by the arrival-flight intro (a southern road node = where you touch down)
+    { const en = this.net.nodes[this.nearestNode(0, this.half * 0.55)], ex = en ? en.position : new THREE.Vector3(0, 0, this.half * 0.55); this.airport = { x: ex.x, z: ex.z, exit: { x: ex.x, z: ex.z } }; }
     this._buildTerrain();
     this._buildRoads();
     this._streetLights();
