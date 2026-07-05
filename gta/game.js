@@ -1120,7 +1120,9 @@ class City {
   }
   _neonSign(text, hex, x, y, z, w, G) {
     const t = signTexture(text, '#' + hex.toString(16).padStart(6, '0'));
-    const s = new THREE.Mesh(new THREE.PlaneGeometry(w, w / 4), mat(0xffffff, { map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 2.4, transparent: true })); s.position.set(x, y, z); G.add(s); return s;
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(w, w / 4), mat(0xffffff, { map: t, emissive: 0xffffff, emissiveMap: t, emissiveIntensity: 2.4, transparent: true })); s.position.set(x, y, z); G.add(s);
+    if (!this.neons) this.neons = []; if (this.brng && this.brng() < 0.22) { s.userData.base = 2.4; s.userData.flick = 0; this.neons.push(s); } // a fifth of signs are bad tubes that stutter
+    return s;
   }
   _venue(cx, cz, LOT, type, rng, G) {
     const w = LOT - 10, d = LOT - 14, h = type === 'club' ? 6.5 : 5.4, t = 0.4;
@@ -1669,6 +1671,12 @@ class Game {
     this.clock = new THREE.Clock(); this.time = 0; this.playing = false; this.paused = false; this.menuMode = true; this.cine = null;
     this.input = new Input(canvas);
     const unlock = () => this._actx(); addEventListener('pointerdown', unlock); addEventListener('keydown', unlock); // resume the audio context inside a user gesture
+    // inject the floating-cash + lens-droplet styling, and build a rain-droplet overlay for the "windshield"
+    try { const st = document.createElement('style'); st.textContent = '.moneypop{position:fixed;transform:translate(-50%,0);color:#7fe08a;font:700 22px/1 system-ui,sans-serif;text-shadow:0 2px 8px #000,0 0 14px #2fe07a;pointer-events:none;z-index:60;transition:transform .95s cubic-bezier(.2,.7,.3,1),opacity .95s ease}#lens{position:fixed;inset:0;pointer-events:none;z-index:5;opacity:0;background-size:cover;mix-blend-mode:screen;transition:opacity .8s ease}'; document.head.appendChild(st);
+      const lc = document.createElement('canvas'); lc.width = lc.height = 512; const lx = lc.getContext('2d');
+      for (let i = 0; i < 90; i++) { const x = Math.random() * 512, y = Math.random() * 512, r = 1 + Math.random() * 4, gr = lx.createRadialGradient(x, y, 0, x, y, r * 2.4); gr.addColorStop(0, 'rgba(178,205,232,' + (0.05 + Math.random() * 0.12) + ')'); gr.addColorStop(1, 'rgba(178,205,232,0)'); lx.fillStyle = gr; lx.beginPath(); lx.arc(x, y, r * 2.4, 0, 7); lx.fill(); }
+      this._lens = document.createElement('div'); this._lens.id = 'lens'; this._lens.style.backgroundImage = 'url(' + lc.toDataURL() + ')'; document.body.appendChild(this._lens);
+    } catch (e) {}
     this.city = new City(this.scene);
     this.post = new Post(this.renderer, this.scene, this.camera);
     this.post.outline = false; // drop the comic ink edge — going for gritty PBR, not cel outlines
@@ -1768,7 +1776,15 @@ class Game {
     if (!seen) { if (opts.quiet !== true) this.ui.toast('Nobody saw that...'); return false; }
     this.addWanted(sev); return true;
   }
+  sfxGun() { const ac = this._actx(); if (!ac) return; try { const t = ac.currentTime; const n = (ac.sampleRate * 0.12) | 0, buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3.2); const s = ac.createBufferSource(); s.buffer = buf; const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 500; const g = ac.createGain(); g.gain.value = 0.32; s.connect(hp); hp.connect(g); g.connect(ac.destination); s.start(t); const o = ac.createOscillator(); o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(60, t + 0.1); const og = ac.createGain(); og.gain.setValueAtTime(0.3, t); og.gain.exponentialRampToValueAtTime(0.001, t + 0.12); o.connect(og); og.connect(ac.destination); o.start(t); o.stop(t + 0.12); } catch (e) {} }
+  muzzleFlash(origin, dir) {
+    const pos = origin.clone().addScaledVector(dir, 0.9);
+    const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: 0xfff2c0, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false })); m.position.copy(pos); m.scale.setScalar(1.4); this.scene.add(m); this.fx.push({ m, life: 0.07, muzzle: true });
+    const l = new THREE.PointLight(0xffe6a0, 6, 14, 2); l.position.copy(pos); this.scene.add(l); this.fx.push({ flash: l, life: 0.07 });
+    this.camShake = Math.max(this.camShake || 0, 0.28); this.sfxGun();
+  }
   shootRay(origin, dir, dmg, range) {
+    this.muzzleFlash(origin, dir);
     let bestT = range, victim = null, hitCar = null;
     for (const n of this.npcs) { if (n.dead) continue; const t = raySphere(origin, dir, n.pos.clone().setY(n.pos.y + 1.0), 0.7); if (t != null && t < bestT) { bestT = t; victim = n; hitCar = null; } }
     for (const c of this.cars) { if (c.boat || c === this.player.inCar) continue; const t = raySphere(origin, dir, c.pos.clone().setY(1.0), 1.6); if (t != null && t < bestT) { bestT = t; hitCar = c; victim = null; } }
@@ -1981,7 +1997,7 @@ class Game {
   }
   updatePickups(dt) {
     for (const pk of this.city.packages) { if (pk.got) continue; pk.m.rotation.y += dt * 2.2; pk.m.position.y = 0.5 + Math.sin(this.time * 2.4 + pk.x) * 0.12;
-      if (Math.hypot(this.player.pos.x - pk.x, this.player.pos.z - pk.z) < 1.4) { pk.got = true; pk.m.visible = false; this.player.money += 150; const got = this.city.packages.filter(q => q.got).length; this.hitFx(pk.m.position, 0x4dff9e, 10); this.ui.toast('Hidden package ' + got + '/12 +$150'); } }
+      if (Math.hypot(this.player.pos.x - pk.x, this.player.pos.z - pk.z) < 1.4) { pk.got = true; pk.m.visible = false; this.player.money += 150; const got = this.city.packages.filter(q => q.got).length; this.hitFx(pk.m.position, 0x4dff9e, 10); this.moneyPop(150, pk.m.position); this.ui.toast('Hidden package ' + got + '/12'); } }
     const bc = this.city.briefcase;
     if (bc && !bc.got) { bc.m.rotation.y += dt * 1.6; if (Math.hypot(this.player.pos.x - bc.x, this.player.pos.z - bc.z) < 2.2) { bc.got = true; bc.m.visible = false; this.player.money += 1000; this.hitFx(bc.m.position, 0xffd23a, 16); this.ui.toast('Isla Privada stash +$1000'); } }
   }
@@ -2089,6 +2105,7 @@ class Game {
       if (this.input.p('Escape')) { if (this.ui.modal) this.ui.closeModal(); else if (this.paused) this.resume(); else this.pause(); }
       if (this.input.p('KeyP') && !this.cine && !this.paused && (!this.ui.modal || this.ui.modal === 'phone')) this.ui.phone(this.ui.modal !== 'phone');
       if (this.input.p('KeyV') && !this.cine) { this.player.cycleCam(); }
+      if (this.input.p('KeyR') && this.player.inCar && !this.player.inCar.boat) this.radioNext();
       const frozen = this.paused || this.ui.modal;
       // slow-mo: the world advances on the dilated step (sdt); the camera, HUD and ramp stay on real dt
       this.updateTimeScale(dt); const sdt = dt * this.timeScale;
@@ -2100,7 +2117,8 @@ class Game {
     if (this.player.pos) { this.sun.position.set(this.player.pos.x - 48, 95, this.player.pos.z - 95); this.sun.target.position.copy(this.player.pos); this.sun.target.updateMatrixWorld(); }
     this.sky.position.copy(this.camera.position);
     this.updateDayNight();
-    if (this.playing) { this.updateTraffic(dt); this.updateStorm(dt); this.updateEngine(dt); this.updateAmbientAudio(dt); }
+    if (this.playing) { this.updateTraffic(dt); this.updateStorm(dt); this.updateEngine(dt); this.updateAmbientAudio(dt); this.updateNeon(dt); this.updateRadio(dt); }
+    if (this._lens) this._lens.style.opacity = (this.playing && !this.paused && this.player.camMode !== 'fps') ? '0.5' : '0';
     if (this.city.displays) for (const d2 of this.city.displays) d2.root.rotation.y += dt * 0.5;
     const jd = this.city.jailDoor; if (jd) { const tx = this.city.jail.door.x + (this.city.jailOpen ? 2.7 : 0); jd.position.x += (tx - jd.position.x) * Math.min(1, dt * 3.5); } // cell door rolls on its track
     if (this.city.lighthouseBeam) this.city.lighthouseBeam.rotation.y += dt * 0.9; // sweeping beacon
@@ -2175,6 +2193,7 @@ class Game {
       if (f.smoke) { const t = clamp(f.age / f.dur, 0, 1); for (let i = 0; i < f.n; i++) { f.ps[i * 3] += f.vs[i * 3] * dt; f.ps[i * 3 + 1] += f.vs[i * 3 + 1] * dt; f.ps[i * 3 + 2] += f.vs[i * 3 + 2] * dt; } f.g.attributes.position.needsUpdate = true; f.m.material.opacity = 0.62 * (1 - t); f.m.material.size = f.baseSize * (1 + t * 1.7); continue; }
       if (f.scorch) { const t = clamp(f.age / f.dur, 0, 1); f.m.material.opacity = 0.78 * (1 - Math.max(0, (t - 0.7) / 0.3)); continue; }
       if (f.puff) { f.m.position.y += f.vy * dt; f.m.position.x += f.dx * dt; const t = clamp(f.age / f.dur, 0, 1); f.m.material.opacity = (f.hot ? 0.6 : 0.4) * (1 - t); f.m.scale.setScalar(1.5 + t * (f.hot ? 1.6 : 3.4)); if (f.hot && t > 0.4) f.m.material.color.setHex(0x2a2c30); f.m.quaternion.copy(this.camera.quaternion); continue; }
+      if (f.muzzle) { const t = clamp(f.age / 0.07, 0, 1); f.m.material.opacity = 0.95 * (1 - t); f.m.scale.setScalar(1.4 + t * 1.6); continue; }
       for (let i = 0; i < f.n; i++) { f.vs[i * 3 + 1] -= 12 * dt; f.ps[i * 3] += f.vs[i * 3] * dt; f.ps[i * 3 + 1] += f.vs[i * 3 + 1] * dt; f.ps[i * 3 + 2] += f.vs[i * 3 + 2] * dt; } f.g.attributes.position.needsUpdate = true; f.m.material.opacity = Math.max(0, f.life / 0.6);
     }
     this.fx = this.fx.filter(f => { if (f.life <= 0) { if (f.flash) { this.scene.remove(f.flash); } else { this.scene.remove(f.m); if (f.g) f.g.dispose(); else if (f.m.geometry) f.m.geometry.dispose(); if (f.m.material) f.m.material.dispose(); } return false; } return true; });
@@ -2308,6 +2327,47 @@ class Game {
     for (let i = 0; i < 4; i++) { o.frequency.setValueAtTime(660, t + i * 0.5); o.frequency.linearRampToValueAtTime(880, t + i * 0.5 + 0.25); o.frequency.linearRampToValueAtTime(660, t + i * 0.5 + 0.5); }
     g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.03, t + 0.25); g.gain.setValueAtTime(0.03, t + 1.7); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.1);
     o.connect(lp); lp.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + 2.1); } catch (e) {} }
+  // faulty-tube neon flicker: a fifth of signs randomly stutter dark for a beat
+  updateNeon(dt) {
+    const ns = this.city.neons; if (!ns) return;
+    for (const s of ns) {
+      if (s.userData.flick > 0) { s.userData.flick -= dt; s.material.emissiveIntensity = (Math.random() < 0.5 ? 0.12 : s.userData.base); if (s.userData.flick <= 0) s.material.emissiveIntensity = s.userData.base; }
+      else if (Math.random() < dt * 0.09) s.userData.flick = rnd(0.18, 0.7);
+    }
+  }
+  // ---- car radio: procedural stations that fade in when you're driving, muffle when you step out ----
+  _radioStations() { return this._stations || (this._stations = [
+    { name: 'NEON 101.5', wave: 'triangle', tempo: 0.17, scale: [0, 3, 5, 7, 10, 12], base: 220, chord: true },
+    { name: 'BASSDRIVE FM', wave: 'sawtooth', tempo: 0.13, scale: [0, 2, 3, 7, 8, 10], base: 110 },
+    { name: 'BAY TALK AM', talk: true, tempo: 0.42 },
+  ]); }
+  updateRadio(dt) {
+    const p = this.player, inCar = !!(p.inCar && !p.inCar.boat); if (!this.radio) this.radio = { station: 0, t: 0, step: 0 };
+    const ac = inCar ? this._actx() : (this._radioGain ? this._ac : null);
+    if (ac && !this._radioGain) { try { this._radioGain = ac.createGain(); this._radioGain.gain.value = 0; this._radioLP = ac.createBiquadFilter(); this._radioLP.type = 'lowpass'; this._radioLP.frequency.value = 3200; this._radioGain.connect(this._radioLP); this._radioLP.connect(ac.destination); } catch (e) {} }
+    if (this._radioGain) { try { this._radioGain.gain.value += ((inCar ? 0.14 : 0) - this._radioGain.gain.value) * Math.min(1, dt * 3); } catch (e) {} }
+    if (!inCar || !ac) return;
+    this.radio.t -= dt; if (this.radio.t <= 0) { const st = this._radioStations()[this.radio.station]; this.radio.t = st.tempo; this._radioBeat(ac, st, this.radio.step++); }
+  }
+  _radioBeat(ac, st, step) {
+    try { const t = ac.currentTime, out = this._radioGain;
+      if (st.talk) { if (step % 7 < 5) { const dur = 0.18 + Math.random() * 0.12, n = (ac.sampleRate * dur) | 0, buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 1.5); const s = ac.createBufferSource(); s.buffer = buf; const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 650 + Math.random() * 900; bp.Q.value = 5; const g = ac.createGain(); g.gain.value = 0.5; s.connect(bp); bp.connect(g); g.connect(out); s.start(t); } return; }
+      const notes = st.chord && step % 4 === 0 ? [0, 2, 4] : [(step * 3) % st.scale.length];
+      for (const ni of notes) { const semi = st.scale[ni % st.scale.length], freq = st.base * Math.pow(2, semi / 12), o = ac.createOscillator(); o.type = st.wave; o.frequency.value = freq; const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.32, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + st.tempo * 1.7); o.connect(g); g.connect(out); o.start(t); o.stop(t + st.tempo * 1.8); }
+      if (step % 4 === 0) { const o = ac.createOscillator(); o.type = 'sine'; o.frequency.value = st.base / 2; const g = ac.createGain(); g.gain.setValueAtTime(0.4, t); g.gain.exponentialRampToValueAtTime(0.0001, t + st.tempo * 2); o.connect(g); g.connect(out); o.start(t); o.stop(t + st.tempo * 2); }
+    } catch (e) {}
+  }
+  radioNext() { if (!this.radio) this.radio = { station: 0, t: 0, step: 0 }; this.radio.station = (this.radio.station + 1) % this._radioStations().length; this.ui.toast('📻 ' + this._radioStations()[this.radio.station].name); }
+  // a floating +$ pop with a chime whenever cash comes in
+  moneyPop(amount, worldPos) {
+    this.sfxChime();
+    try { const el = document.createElement('div'); el.className = 'moneypop'; el.textContent = (amount >= 0 ? '+$' : '-$') + Math.abs(amount | 0);
+      let sx = innerWidth / 2, sy = innerHeight * 0.42;
+      if (worldPos) { const v = worldPos.clone().project(this.camera); if (v.z < 1) { sx = (v.x * 0.5 + 0.5) * innerWidth; sy = (-v.y * 0.5 + 0.5) * innerHeight; } }
+      el.style.left = sx + 'px'; el.style.top = sy + 'px'; document.body.appendChild(el);
+      requestAnimationFrame(() => { el.style.transform = 'translate(-50%,-64px)'; el.style.opacity = '0'; });
+      setTimeout(() => el.remove(), 1000); } catch (e) {}
+  }
   // ---- impact feedback: speed-scaled camera punch + crunch + spark shower, hit-stop on heavy crashes ----
   impactFx(pos, force) {
     const f = clamp(force, 0, 34); this.camShake = Math.max(this.camShake || 0, Math.min(1.7, f * 0.06));
@@ -2561,7 +2621,7 @@ class Ped {
   }
   animateIdle(dt) { if (!this.dead) this.fig.update(dt, { state: this.dance ? 'dance' : 'idle' }); }
   damage(n) { if (this.dead) return; this.hp -= n; this.flee = 7; if (this.hp <= 0) this.die(); else this.stunT = 0.45; }
-  die() { this.dead = true; this.deadT = 0; const cash = 10 + (Math.random() * 40 | 0); this.game.player.money += cash; this.game.ui.toast('+$' + cash); }
+  die() { this.dead = true; this.deadT = 0; const cash = 10 + (Math.random() * 40 | 0); this.game.player.money += cash; this.game.moneyPop(cash, this.pos.clone().setY(1.4)); }
   scare(t) { this.cowerT = Math.max(this.cowerT, t); }
   launch(vx, vz) { if (this.dead) return; this.lvx = clamp(vx, -14, 14); this.lvz = clamp(vz, -14, 14); this.knockT = Math.max(this.knockT || 0, 1.4); this.root.rotation.z = rnd(-1, 1); }
   update(dt) {
