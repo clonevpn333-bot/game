@@ -1814,6 +1814,83 @@ class ReflectiveGround {
 }
 
 // ---------------------------------------------------------------------------
+// A living population — names, ages, jobs, and a street-level social simulation
+// that stages muggings, arguments, divorces and brawls with real ped actors.
+// ---------------------------------------------------------------------------
+const FIRST_NAMES = ['Marco', 'Lena', 'Tariq', 'Yuki', 'Rosa', 'Dmitri', 'Aisha', 'Ivan', 'Nadia', 'Carlos', 'Mei', 'Omar', 'Bianca', 'Kofi', 'Priya', 'Sven', 'Lucia', 'Hassan', 'Greta', 'Diego', 'Fatima', 'Noah', 'Zara', 'Viktor', 'Camila', 'Jin', 'Elena', 'Rashid', 'Ingrid', 'Pablo', 'Yara', 'Leon', 'Mira', 'Kenji', 'Sofia', 'Andre', 'Nia', 'Boris', 'Tessa', 'Ravi', 'Dana', 'Marisol', 'Sami', 'Gio', 'Wren'];
+const LAST_NAMES = ['Marenco', 'Greco', 'Vale', 'Salcido', 'Kowalski', 'Okafor', 'Nakamura', 'Reyes', 'Petrov', 'Haddad', 'Rossi', 'Silva', 'Novak', 'Costa', 'Bauer', 'Ferreira', 'Delgado', 'Ahmed', 'Larsen', 'Moreau', 'Vasquez', 'Romano', 'Khan', 'Jensen', 'Bianchi', 'Serrano', 'Volkov', 'Mendez', 'Park', 'Adeyemi', 'Flores', 'Bergström', 'Osei', 'Duarte'];
+const JOBS = ['barista', 'mechanic', 'banker', 'dealer', 'nurse', 'cabbie', 'DJ', 'chef', 'clerk', 'longshoreman', 'realtor', 'bouncer', 'tattooist', 'fisher', 'courier', 'busker', 'bartender', 'vendor', 'line cook', 'loan shark', 'dockhand', 'florist', 'pawnbroker'];
+const MOODS = ['content', 'tired', 'anxious', 'cheerful', 'grumpy', 'love-struck', 'broke', 'hopeful', 'heartbroken', 'wired'];
+function makePerson() {
+  const first = pick(FIRST_NAMES);
+  return { first, name: first + ' ' + pick(LAST_NAMES), age: 18 + (Math.random() * 54 | 0), job: pick(JOBS), mood: pick(MOODS), wealth: 20 + (Math.random() * 420 | 0), spouse: null, affinity: 0, grudge: 0, met: false };
+}
+class Social {
+  constructor(game) { this.game = game; this.events = []; this.eventT = rnd(6, 12); this.news = []; this.rep = { 'Downtown': 0, 'Little Havana': 0, 'The Docklands': 0, 'Vice Beach': 0, 'Sunset Heights': 0, 'Starfish Island': 0 }; }
+  log(msg) { this.news.unshift({ t: this.game.time, msg }); if (this.news.length > 26) this.news.pop(); }
+  repFor(x, z) { return this.rep[this.game.city.districtAt(x, z)] || 0; }
+  addRep(x, z, d) { const k = this.game.city.districtAt(x, z); if (this.rep[k] == null) this.rep[k] = 0; this.rep[k] = clamp(this.rep[k] + d, -100, 100); }
+  // spawn a controlled actor ped that the sim drives instead of its own AI
+  spawnActor(x, z, shirt) {
+    const g = this.game, P = new Ped(g, x, z, false); P.story = true; P.socialRole = 'act'; P.socialState = 'idle'; P.timer = 1e9; P.wander = null; P.homeNode = null; P.jobNode = null; P.funNode = null;
+    if (shirt != null) { P.persona.shirt = shirt; }
+    g.npcs.push(P); return P;
+  }
+  _sidewalkNear(minR, maxR) {
+    const g = this.game, p = g.player; for (let t = 0; t < 20; t++) { const a = rnd(TAU), r = rnd(minR, maxR), x = p.pos.x + Math.cos(a) * r, z = p.pos.z + Math.sin(a) * r; if (!g.city.net.isLand(x, z)) continue; const sw = g.city.snapSidewalk(x, z); if (g.city.net.isLand(sw[0], sw[1])) return { x: sw[0], z: sw[1] }; } return null;
+  }
+  _moveTo(ped, x, z, spd, dt) { const dx = x - ped.pos.x, dz = z - ped.pos.z, d = Math.hypot(dx, dz) || 1; if (d > 0.4) { ped.pos.x += (dx / d) * spd * dt; ped.pos.z += (dz / d) * spd * dt; ped.pos.y = this.game.city.groundH(ped.pos.x, ped.pos.z); ped.yaw = Math.atan2(dx, dz); ped.socialState = spd > 4 ? 'run' : 'walk'; return false; } return true; }
+  _face(a, b) { a.yaw = Math.atan2(b.pos.x - a.pos.x, b.pos.z - a.pos.z); }
+  hearts(pos, col) { const g = this.game, n = 10, geo = new THREE.BufferGeometry(), ps = new Float32Array(n * 3), vs = new Float32Array(n * 3); for (let i = 0; i < n; i++) { ps[i * 3] = pos.x + rnd(-0.4, 0.4); ps[i * 3 + 1] = pos.y; ps[i * 3 + 2] = pos.z + rnd(-0.4, 0.4); vs[i * 3] = rnd(-1, 1); vs[i * 3 + 1] = rnd(2, 4); vs[i * 3 + 2] = rnd(-1, 1); } geo.setAttribute('position', new THREE.BufferAttribute(ps, 3)); const m = new THREE.Points(geo, new THREE.PointsMaterial({ color: col || 0xff5fae, size: 0.4, transparent: true, depthWrite: false })); g.scene.add(m); g.fx.push({ m, g: geo, ps, vs, n, life: 1.2 }); }
+  startEvent(type) {
+    const loc = this._sidewalkNear(16, 34); if (!loc) return null;
+    const e = { type, phase: 0, t: 0, actors: [], loc, done: false, extra: {} };
+    if (type === 'mug') { const victim = this.spawnActor(loc.x, loc.z), rob = this.spawnActor(loc.x + rnd(-8, -4), loc.z + rnd(-2, 2), 0x22242c); rob.person.mood = 'wired'; e.actors = [victim, rob]; e.victim = victim; e.rob = rob; }
+    else if (type === 'argue') { const a = this.spawnActor(loc.x, loc.z), b = this.spawnActor(loc.x + rnd(1.6, 2.4), loc.z + rnd(-0.6, 0.6)); a.person.spouse = b.person.name; b.person.spouse = a.person.name; e.actors = [a, b]; e.a = a; e.b = b; }
+    else if (type === 'brawl') { const a = this.spawnActor(loc.x, loc.z, 0x883028), b = this.spawnActor(loc.x + rnd(1.8, 2.6), loc.z, 0x2a4a88); e.actors = [a, b]; e.a = a; e.b = b; e.crowd = []; for (let i = 0; i < 3; i++) { const c = this._sidewalkNear(3, 7); if (c) { const on = this.spawnActor(c.x, c.z); e.crowd.push(on); e.actors.push(on); } } }
+    this.events.push(e); return e;
+  }
+  _tick(e, dt) {
+    e.t += dt; const g = this.game, p = g.player;
+    if (e.type === 'mug') {
+      const v = e.victim, r = e.rob; if (v.dead || r.dead) { if (r.dead && !e.rewarded) { e.rewarded = true; p.money += 120; g.moneyPop(120, r.pos.clone().setY(1.4)); this.addRep(p.pos.x, p.pos.z, 10); this.log('You stopped a mugging — the block owes you one'); } e.done = true; return; }
+      if (e.phase === 0) { this._face(r, v); this._face(v, r); if (this._moveTo(r, v.pos.x + 0.9, v.pos.z, 5.5, dt)) { e.phase = 1; e.t = 0; g.ui.toast('💰 A mugging — ' + v.person.first + ' is being robbed!'); v.socialState = 'cower'; v.cowerT = 6; const cash = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.28, 0.18), mat(0x3ae08a, { emissive: 0x2fe07a, emissiveIntensity: 1.2 })); cash.position.set(v.pos.x, 1.0, v.pos.z); g.scene.add(cash); e.cash = cash; } }
+      else if (e.phase === 1) { r.socialState = 'talk'; this._face(r, v); if (e.t > 1.1) { e.phase = 2; e.t = 0; if (e.cash) { g.scene.remove(e.cash); e.cash = null; } this.log(r.person.first + ' snatched a wallet in ' + g.city.districtAt(v.pos.x, v.pos.z)); } }
+      else { r.socialRole = 'act'; const away = { x: r.pos.x + (r.pos.x - v.pos.x), z: r.pos.z + (r.pos.z - v.pos.z) }; this._moveTo(r, e.loc.x + (r.pos.x - e.loc.x) * 3, e.loc.z + (r.pos.z - e.loc.z) * 3, 6.5, dt); r.socialState = 'run'; v.socialState = e.t > 2 ? 'idle' : 'cower'; if (e.t > 9 || r.pos.distanceTo(p.pos) > 90) e.done = true; }
+    } else if (e.type === 'argue') {
+      const a = e.a, b = e.b; if (a.dead || b.dead) { e.done = true; return; }
+      this._face(a, b); this._face(b, a); a.socialState = 'argue'; b.socialState = 'argue';
+      if (Math.sin(e.t * 6) > 0.9) { a.pos.x += Math.sin(a.yaw) * 0.02; } // little lunges
+      if (e.t > 11 && !e.resolved) { e.resolved = true;
+        if (Math.random() < 0.5) { this.log('💔 ' + a.person.first + ' and ' + b.person.first + ' split up for good'); a.person.spouse = null; b.person.spouse = null; g.ui.toast('💔 A couple just called it quits'); e.split = 0; }
+        else { this.log('🥊 ' + a.person.first + ' and ' + b.person.first + ' came to blows'); e.brawl = true; }
+      }
+      if (e.resolved) { if (e.brawl) { if (Math.sin(e.t * 8) > 0.6 && (b._sc = (b._sc || 0) - dt) <= 0) { b._sc = 0.5; b.stunT = 0.3; b.hp -= 4; if (b.hp <= 0) b.die(); } a.socialState = 'talk'; if (e.t > 15) e.done = true; } else { if (this._moveTo(b, b.pos.x + Math.sin(b.yaw + Math.PI) * 12, b.pos.z + Math.cos(b.yaw + Math.PI) * 12, 3.4, dt)) e.done = true; b.socialState = 'walk'; a.socialState = 'idle'; if (e.t > 16) e.done = true; } }
+    } else if (e.type === 'brawl') {
+      const a = e.a, b = e.b; if (a.dead || b.dead) { if (!e.called) { e.called = true; this.log((a.dead ? b.person.first : a.person.first) + ' won a street fight in ' + g.city.districtAt(e.loc.x, e.loc.z)); } e.done = e.t > 3; return; }
+      this._face(a, b); this._face(b, a); const near = a.pos.distanceTo(b.pos) < 2.0;
+      if (!near) { this._moveTo(a, b.pos.x - Math.sin(a.yaw) * 1.3, b.pos.z - Math.cos(a.yaw) * 1.3, 3.2, dt); }
+      else { a.socialState = 'talk'; b.socialState = 'talk'; e._sw = (e._sw || 0) - dt; if (e._sw <= 0) { e._sw = 0.6; const hit = Math.random() < 0.5 ? b : a; hit.stunT = 0.3; hit.hp -= 5; g.hitFx(hit.pos.clone().setY(1.2), 0xffd27a, 4); if (hit.hp <= 0) hit.die(); } }
+      for (const c of (e.crowd || [])) { this._face(c, a); c.socialState = 'idle'; }
+      if (e.t > 26) e.done = true;
+    }
+  }
+  _cleanup(e) { for (const act of e.actors) { if (act && !act.dead) act.removeMe = true; } if (e.cash) this.game.scene.remove(e.cash); }
+  onDeath(ped) {
+    if (!ped || !ped.person) return; const g = this.game;
+    this.addRep(ped.pos.x, ped.pos.z, -6);
+    // anyone nearby who knew them holds a grudge and turns on you if you did it
+    for (const n of g.npcs) { if (n === ped || n.dead || n.cop) continue; if (n.pos.distanceTo(ped.pos) < 16 && Math.random() < 0.5) { n.grudgeAt = g.time; n.flee = 0; n.enemy = true; n.attackAlly = null; } }
+    if (ped.person.spouse) this.log('⚰️ ' + ped.person.first + ' was killed — ' + ped.person.spouse + ' is now a widow(er)');
+  }
+  update(dt) {
+    for (const e of this.events) this._tick(e, dt);
+    this.events = this.events.filter(e => { if (e.done) { this._cleanup(e); return false; } return true; });
+    this.eventT -= dt; if (this.eventT <= 0) { this.eventT = rnd(16, 30); if (this.events.length < 2 && !this.game.player.inCar) { const roll = Math.random(); this.startEvent(roll < 0.4 ? 'mug' : roll < 0.72 ? 'argue' : 'brawl'); } }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Game
 // ---------------------------------------------------------------------------
 class Game {
@@ -1860,6 +1937,7 @@ class Game {
     this.post = new Post(this.renderer, this.scene, this.camera);
     this.post.outline = false; // drop the comic ink edge — going for gritty PBR, not cel outlines
     try { this.reflGround = new ReflectiveGround(this.renderer, this.scene, this.camera, 320); } catch (e) { this.reflGround = null; } // wet-road planar reflection
+    this.social = new Social(this); // the living city: names, families, street-level drama
     this.renderer.toneMapping = this.post.enabled ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping; if (!this.post.enabled) this.renderer.toneMappingExposure = 1.1;
     // image-based lighting: a moody env gives PBR reflections on wet asphalt, glass and chrome
     try { const pmrem = new THREE.PMREMGenerator(this.renderer); const envSrc = makeEnvTexture(); const envRT = pmrem.fromEquirectangular(envSrc); this.scene.environment = envRT.texture; envSrc.dispose(); pmrem.dispose(); } catch (e) { console.warn('[env] disabled:', e && e.message); }
@@ -2297,7 +2375,7 @@ class Game {
     if (this.player.pos) { this.sun.position.set(this.player.pos.x - 48, 95, this.player.pos.z - 95); this.sun.target.position.copy(this.player.pos); this.sun.target.updateMatrixWorld(); }
     this.sky.position.copy(this.camera.position);
     this.updateDayNight();
-    if (this.playing) { this.updateTraffic(dt); this.updateStorm(dt); this.updateEngine(dt); this.updateAmbientAudio(dt); this.updateNeon(dt); this.updateRadio(dt); this.updateBirds(dt); }
+    if (this.playing) { this.updateTraffic(dt); this.updateStorm(dt); this.updateEngine(dt); this.updateAmbientAudio(dt); this.updateNeon(dt); this.updateRadio(dt); this.updateBirds(dt); if (!this.paused && !this.ui.modal && !this.cine) this.social.update(dt); }
     if (this._lens) this._lens.style.opacity = (this.playing && !this.paused && this.player.camMode !== 'fps') ? '0.5' : '0';
     if (this.city.displays) for (const d2 of this.city.displays) d2.root.rotation.y += dt * 0.5;
     const jd = this.city.jailDoor; if (jd) { const tx = this.city.jail.door.x + (this.city.jailOpen ? 2.7 : 0); jd.position.x += (tx - jd.position.x) * Math.min(1, dt * 3.5); } // cell door rolls on its track
@@ -2819,6 +2897,7 @@ class Ped {
     opts = opts || {}; this.game = game; this.cop = !!cop; this.dance = !!opts.dance; this.loiter = !!opts.loiter; this.vendor = !!opts.vendor; this.homeless = !!opts.homeless; this.worker = !!opts.worker; this.pos = new THREE.Vector3(x, 0, z); this.yaw = opts.yaw != null ? opts.yaw : rnd(TAU);
     this.hp = cop ? 60 : 30; this.dead = false; this.removeMe = false; this.flee = 0; this.timer = rnd(3); this.wander = rnd(TAU); this.attackCd = 0; this.deadT = 0; this.cowerT = 0;
     this.errander = !cop && !this.dance && !this.loiter && !this.vendor && !this.homeless && !this.worker; // ordinary citizens live on a schedule
+    this.person = cop ? { first: 'Officer', name: 'Officer ' + pick(LAST_NAMES), job: 'NBPD', age: 24 + (Math.random() * 30 | 0), mood: 'on duty', wealth: 0, affinity: 0, grudge: 0 } : makePerson(); // everyone is somebody
     if (this.errander) { // a daily life: home to sleep, a job by day, food/leisure at night, and a wallet
       const c = game.city, pk2 = (a) => a && a.length ? a[(Math.random() * a.length) | 0] : null;
       this.homeNode = pk2(c.homes); this.jobNode = pk2(c.jobs); this.funNode = pk2(c.leisureSpots);
@@ -2847,7 +2926,7 @@ class Ped {
   }
   animateIdle(dt) { if (!this.dead) this.fig.update(dt, { state: this.dance ? 'dance' : 'idle' }); }
   damage(n) { if (this.dead) return; this.hp -= n; this.flee = 7; if (this.hp <= 0) this.die(); else this.stunT = 0.45; }
-  die() { this.dead = true; this.deadT = 0; const cash = 10 + (Math.random() * 40 | 0); this.game.player.money += cash; this.game.moneyPop(cash, this.pos.clone().setY(1.4)); }
+  die() { if (this.dead) return; this.dead = true; this.deadT = 0; this.socialRole = null; const cash = 10 + (Math.random() * 40 | 0); this.game.player.money += cash; this.game.moneyPop(cash, this.pos.clone().setY(1.4)); if (this.game.social) this.game.social.onDeath(this); }
   scare(t) { this.cowerT = Math.max(this.cowerT, t); }
   launch(vx, vz) { if (this.dead) return; this.lvx = clamp(vx, -14, 14); this.lvz = clamp(vz, -14, 14); this.knockT = Math.max(this.knockT || 0, 1.4); this.root.rotation.z = rnd(-1, 1); }
   update(dt) {
@@ -2863,6 +2942,8 @@ class Ped {
     if (this.knockT > 0) { this.knockT -= dt; if (this.lvx || this.lvz) { this.pos.x += this.lvx * dt; this.pos.z += this.lvz * dt; this.lvx *= Math.max(0, 1 - dt * 3.4); this.lvz *= Math.max(0, 1 - dt * 3.4); const gy = this.game.city.groundH(this.pos.x, this.pos.z); this.pos.y = gy; } this.root.rotation.z *= Math.max(0, 1 - dt * 4); this.root.position.copy(this.pos); this.fig.update(dt, { state: 'knockout' }); if (this.knockT <= 0 && !this.angryT) this.flee = 6; return; } // launched, out cold on the pavement
     if (this.angryT > 0 && this.flee <= 0) { this.angryT -= dt; const pp = this.game.player.pos; this.yaw = Math.atan2(pp.x - this.pos.x, pp.z - this.pos.z); this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; this.fig.update(dt, { state: 'argue' }); return; } // back on their feet, shaking a fist after you
     if (this.stunT > 0) { this.stunT -= dt; this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; this.fig.update(dt, { state: 'hitstun' }); return; }   // reeling from a hit
+    // a citizen playing a part in a street event — the Social sim drives its pose, we just render it
+    if (this.socialRole) { this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; this.fig.update(dt, { state: this.socialState || 'idle' }); return; }
     this.cowerT = Math.max(0, this.cowerT - dt);
     if ((this.loiter || this.vendor || this.homeless || this.worker) && this.flee <= 0) {
       this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
