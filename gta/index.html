@@ -3365,8 +3365,10 @@ class Story {
     this.setObjective(s.text);
   }
   wp(at) { if (at.char) { const ch = this.chars[at.char]; return new THREE.Vector3(ch.pos.x, 0, ch.pos.z); } if (at.place) { const p = this.game.city.places[at.place]; return new THREE.Vector3(p.x, 0, p.z); } return new THREE.Vector3(at.x, 0, at.z); }
-  failStep(why) { this.game.ui.bigCard('MISSION FAILED', why || ''); this.game.ui.toast('Restarting from checkpoint...'); this.cleanupStep(); setTimeout(() => { if (this.state === 'steps') this.startStep(); }, 1800); this._failing = true; setTimeout(() => this._failing = false, 1900); }
+  _delay(sec, fn) { this._pendT = sec; this._pendFn = fn; }                    // game-time timer, not wall-clock — robust across hitches/pauses
+  failStep(why) { this.game.ui.bigCard('MISSION FAILED', why || ''); this.game.ui.toast('Restarting from checkpoint...'); this.cleanupStep(); this._failing = true; this._delay(1.8, () => { this._failing = false; if (this.state === 'steps') this.startStep(); }); }
   update(dt) {
+    if (this._pendT != null) { this._pendT -= dt; if (this._pendT <= 0) { const fn = this._pendFn; this._pendT = null; this._pendFn = null; if (fn) fn(); } }
     if (this.state === 'cutscene' || this.state === 'done' || this.state === 'idle') return;
     const g = this.game, p = g.player, m = MISSIONS[this.mi];
     if (!m) return;
@@ -3396,7 +3398,7 @@ class Story {
       if (done) { this.cleanupStep(); this.si++; if (m.steps[this.si]) this.startStep(); else this.finish(); }
     }
   }
-  finish() { const m = MISSIONS[this.mi]; this.cleanupStep(); this.play(m.after, this.giver, () => { this.game.player.money += m.reward || 0; if (m.gun) { this.game.player.hasGun = true; this.game.player.weapon = 'pistol'; this.game.ui.toast('★ Pistol acquired — Left-click to fire, 1/2 to switch'); } this.game.ui.bigCard('MISSION PASSED', (m.reward ? '+$' + m.reward : '')); this.game.ui.news(m.news || ('Witnesses report a new name moving through the Bay after "' + (m.title || '').toLowerCase() + '" rumors — NBPD declines to comment')); this.marker.visible = false; setTimeout(() => this.next(), 2600); }); }
+  finish() { const m = MISSIONS[this.mi]; this.cleanupStep(); this.play(m.after, this.giver, () => { this.game.player.money += m.reward || 0; if (m.gun) { this.game.player.hasGun = true; this.game.player.weapon = 'pistol'; this.game.ui.toast('★ Pistol acquired — Left-click to fire, 1/2 to switch'); } this.game.ui.bigCard('MISSION PASSED', (m.reward ? '+$' + m.reward : '')); this.game.ui.news(m.news || ('Witnesses report a new name moving through the Bay after "' + (m.title || '').toLowerCase() + '" rumors — NBPD declines to comment')); this.marker.visible = false; this._delay(2.6, () => this.next()); }); }
   play(lines, who, done) { this.state = 'cutscene'; this.marker.visible = false; this.game.startCutscene(who); this.game.ui.dialogue(lines || [], () => { this.game.endCutscene(); this.state = 'steps'; done && done(); }); }
   _objDist(v) { if (!v) return; const d = Math.round(this.game.player.pos.distanceTo(v)); const base = this._lastObj || ''; this.game.ui.el.obj.textContent = base.replace(/\s+\d+m.*/, '') + '   ' + d + 'm →'; }
   setObjective(t) { this._lastObj = t; this.game.ui.el.obj.textContent = t; }
