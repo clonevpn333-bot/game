@@ -1717,6 +1717,9 @@ class Social {
     if (type === 'mug') { const victim = this.spawnActor(loc.x, loc.z), rob = this.spawnActor(loc.x + rnd(-8, -4), loc.z + rnd(-2, 2), 0x22242c); rob.person.mood = 'wired'; e.actors = [victim, rob]; e.victim = victim; e.rob = rob; }
     else if (type === 'argue') { const a = this.spawnActor(loc.x, loc.z), b = this.spawnActor(loc.x + rnd(1.6, 2.4), loc.z + rnd(-0.6, 0.6)); a.person.spouse = b.person.name; b.person.spouse = a.person.name; e.actors = [a, b]; e.a = a; e.b = b; }
     else if (type === 'brawl') { const a = this.spawnActor(loc.x, loc.z, 0x883028), b = this.spawnActor(loc.x + rnd(1.8, 2.6), loc.z, 0x2a4a88); e.actors = [a, b]; e.a = a; e.b = b; e.crowd = []; for (let i = 0; i < 3; i++) { const c = this._sidewalkNear(3, 7); if (c) { const on = this.spawnActor(c.x, c.z); e.crowd.push(on); e.actors.push(on); } } }
+    else if (type === 'wedding') { const a = this.spawnActor(loc.x, loc.z, 0xf0f0f4), b = this.spawnActor(loc.x + 1.4, loc.z, 0xffd9e8); e.actors = [a, b]; e.a = a; e.b = b; e.crowd = []; for (let i = 0; i < 4; i++) { const c = this._sidewalkNear(4, 8); if (c) { const on = this.spawnActor(c.x, c.z); e.crowd.push(on); e.actors.push(on); } }
+      const arch = new THREE.Group(), mm = mat(0xf5e8c8, { emissive: 0xf0d890, emissiveIntensity: 0.35 }); for (const sx of [-1.2, 1.2]) { const post = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 2.6, 8), mm); post.position.set(loc.x + sx, 1.3, loc.z - 0.9); arch.add(post); } const top = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.2, 0.2), mm); top.position.set(loc.x, 2.5, loc.z - 0.9); arch.add(top); for (let i = 0; i < 9; i++) { const f = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), mat(pick([0xff5fae, 0xffe24a, 0xffffff]), { emissive: 0xff5fae, emissiveIntensity: 0.5 })); f.position.set(loc.x - 1.2 + i * 0.3, 2.42, loc.z - 0.9); arch.add(f); } this.game.scene.add(arch); e.arch = arch; }
+    else if (type === 'propose') { const a = this.spawnActor(loc.x, loc.z), b = this.spawnActor(loc.x + 1.2, loc.z); e.actors = [a, b]; e.a = a; e.b = b; }
     this.events.push(e); return e;
   }
   _tick(e, dt) {
@@ -1742,11 +1745,52 @@ class Social {
       else { a.socialState = 'talk'; b.socialState = 'talk'; e._sw = (e._sw || 0) - dt; if (e._sw <= 0) { e._sw = 0.6; const hit = Math.random() < 0.5 ? b : a; hit.stunT = 0.3; hit.hp -= 5; g.hitFx(hit.pos.clone().setY(1.2), 0xffd27a, 4); if (hit.hp <= 0) hit.die(); } }
       for (const c of (e.crowd || [])) { this._face(c, a); c.socialState = 'idle'; }
       if (e.t > 26) e.done = true;
+    } else if (e.type === 'wedding') {
+      const a = e.a, b = e.b; if (a.dead || b.dead) { e.done = true; return; } this._face(a, b); this._face(b, a); a.socialState = 'talk'; b.socialState = 'idle'; for (const c of (e.crowd || [])) { this._face(c, a); c.socialState = 'idle'; }
+      if (e.t > 4 && !e.vowed) { e.vowed = true; this.hearts(a.pos.clone().lerp(b.pos, 0.5).setY(1.95), 0xffd23a); this._cheer(a.pos); a.person.spouse = b.person.name; b.person.spouse = a.person.name; this.log('💍 ' + a.person.first + ' married ' + b.person.first + ' in ' + g.city.districtAt(e.loc.x, e.loc.z)); g.ui.toast('💒 A wedding! ' + a.person.first + ' & ' + b.person.first); }
+      if (e.t > 11) e.done = true;
+    } else if (e.type === 'propose') {
+      const a = e.a, b = e.b; if (a.dead || b.dead) { e.done = true; return; } this._face(a, b); this._face(b, a); a.socialState = 'cower'; b.socialState = 'talk';
+      if (e.t > 4 && !e.answered) { e.answered = true; if (Math.random() < 0.7) { this.hearts(a.pos.clone().lerp(b.pos, 0.5).setY(1.85)); this._cheer(a.pos); a.person.spouse = b.person.name; b.person.spouse = a.person.name; this.log('💗 ' + b.person.first + ' said YES to ' + a.person.first); g.ui.toast('💗 ' + b.person.first + ' said yes!'); } else { this.log('💔 ' + b.person.first + ' turned down ' + a.person.first); g.ui.toast('💔 A proposal just crashed and burned'); e.rej = true; } }
+      if (e.answered && e.rej) this._moveTo(b, b.pos.x + Math.sin(b.yaw + Math.PI) * 10, b.pos.z + Math.cos(b.yaw + Math.PI) * 10, 3.6, dt);
+      if (e.t > 10) e.done = true;
     }
   }
-  _cleanup(e) { for (const act of e.actors) { if (act && !act.dead) act.removeMe = true; } if (e.cash) this.game.scene.remove(e.cash); }
+  _cleanup(e) { for (const act of e.actors) { if (act && !act.dead) act.removeMe = true; } if (e.cash) this.game.scene.remove(e.cash); if (e.arch) this.game.scene.remove(e.arch); }
+  // ---- the player's own social life: talk, flirt, date, marry, recruit, rob ----
+  actions(ped) {
+    const p = this.game.player, per = ped.person, list = [['greet', '👋 Greet'], ['compliment', '🙂 Compliment'], ['flirt', '❤️ Flirt'], ['gift', '🎁 Gift $50']];
+    if (this.canPropose(ped)) list.push(['propose', '💍 Propose']);
+    if (per.affinity >= 50 && !ped.ally) list.push(['recruit', '🤝 Recruit']);
+    list.push(['insult', '😠 Insult'], ['rob', '🔪 Rob']);
+    return list;
+  }
+  canPropose(ped) { return this.game.player.dating === ped && ped.person.affinity >= 70 && !this.game.player.spouse; }
+  act(ped, action) {
+    const g = this.game, p = g.player, per = ped.person; per.met = true; let msg = '';
+    if (action === 'greet') { per.affinity += 5; ped.socialState = 'talk'; msg = pick(['“Evening.”', '“Rough night to be out.”', '“Stay dry.”', '“You from around here?”']); }
+    else if (action === 'compliment') { per.affinity += 8; msg = per.affinity > 25 ? '“…you think so? That’s sweet.”' : '“Uh — thanks.”'; if (per.affinity > 25) this.hearts(ped.pos.clone().setY(1.7)); }
+    else if (action === 'flirt') { if (per.affinity >= 15) { per.affinity += 12; this.hearts(ped.pos.clone().setY(1.7)); msg = '“…maybe you could get my number.”'; if (per.affinity >= 40 && p.dating !== ped && !p.spouse) { p.dating = ped; ped._keep = true; ped.story = true; g.ui.toast('❤️ You’re seeing ' + per.first + ' now'); this.log('❤️ You started seeing ' + per.name); } } else { per.affinity -= 6; msg = '“Easy, stranger.”'; } }
+    else if (action === 'gift') { if (p.money >= 50) { p.money -= 50; per.affinity += 20; this.hearts(ped.pos.clone().setY(1.7)); msg = '“For me? You shouldn’t have.”'; } else msg = '(You’re broke.)'; }
+    else if (action === 'insult') { per.affinity -= 18; msg = pick(['“What’s your problem?!”', '“Say that to my face.”', '“Get lost.”']); ped.socialRole = null; if (Math.random() < 0.5) { ped.fightT = 6; } else { ped.flee = 5; } }
+    else if (action === 'rob') { const take = per.wealth | 0; p.money += take; g.moneyPop(take, ped.pos.clone().setY(1.4)); per.affinity -= 50; per.wealth = 0; ped.socialRole = null; ped.flee = 6; g.reportCrime(ped.pos, 2, { loud: true }); this.addRep(ped.pos.x, ped.pos.z, -8); msg = '(You took $' + take + '.)'; }
+    else if (action === 'recruit') { if (per.affinity >= 50) { ped.ally = true; ped._keep = true; ped.story = true; ped.followPlayer = true; ped.socialRole = null; g.ui.toast(per.first + ' has your back now'); this.log(per.name + ' joined your crew'); return { close: true }; } else msg = '“I barely know you.”'; }
+    else if (action === 'propose') { if (this.canPropose(ped)) { this.marry(ped); return { close: true }; } else msg = '“…we barely know each other.”'; }
+    per.affinity = clamp(per.affinity, -100, 100); return { msg, close: action === 'rob' || action === 'insult' };
+  }
+  marry(ped) {
+    const g = this.game, p = g.player, per = ped.person; p.spouse = per; p.dating = null; per.spouse = 'You'; p.maxHealth = 120; p.health = p.maxHealth;
+    this.hearts(ped.pos.clone().setY(1.9), 0xffd23a); this.hearts(p.pos.clone().setY(1.9), 0xff5fae); this._cheer(ped.pos);
+    g.ui.bigCard('JUST MARRIED', 'You & ' + per.name + ' — till death (or divorce) do you part'); this.log('💍 You married ' + per.name); g.ui.toast('💍 Married ' + per.first + '! +max HP, home stipend');
+    ped.ally = true; ped._keep = true; ped.story = true; ped.followPlayer = true; ped.socialRole = null;
+  }
+  divorce() { const g = this.game, p = g.player; if (!p.spouse) return; const name = p.spouse.name, cost = (p.money * 0.5) | 0; p.money -= cost; p.maxHealth = 100; p.health = Math.min(p.health, 100); this.log('💔 You divorced ' + name + ' (−$' + cost + ')'); g.ui.toast('💔 Divorced ' + p.spouse.first + ' — they took $' + cost); p.spouse = null; for (const n of g.npcs) if (n.person && n.person.spouse === 'You' && n.followPlayer) { n.followPlayer = false; n.ally = false; n.flee = 4; } }
+  haveKid() { const g = this.game, p = g.player; if (!p.spouse) { g.ui.toast('You need a spouse first'); return; } if (p.kids.length >= 4) { g.ui.toast('The house is already full of kids'); return; } const kid = { name: pick(FIRST_NAMES) + ' ' + (p.spouse.name.split(' ')[1] || 'Bay'), age: 0 }; p.kids.push(kid); this.log('👶 ' + kid.name + ' was born'); g.ui.bigCard('IT’S A KID', p.spouse.first + ' and you welcomed ' + kid.name + ' into the world'); }
+  spouseStipend() { const p = this.game.player; if (p.spouse) { const s = 60 + p.kids.length * 25; p.money += s; return s; } return 0; }
+  _cheer(pos) { const ac = this.game._actx(); if (!ac) return; try { const t = ac.currentTime; for (let i = 0; i < 5; i++) { const o = ac.createOscillator(); o.type = 'triangle'; o.frequency.value = 400 + Math.random() * 500; const g = ac.createGain(); g.gain.setValueAtTime(0.0001, t + i * 0.04); g.gain.exponentialRampToValueAtTime(0.06, t + i * 0.04 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.04 + 0.5); o.connect(g); g.connect(ac.destination); o.start(t + i * 0.04); o.stop(t + i * 0.04 + 0.5); } } catch (e) {} }
   onDeath(ped) {
     if (!ped || !ped.person) return; const g = this.game;
+    if (g.player.spouse && ped.person.spouse === 'You') { g.player.spouse = null; g.player.maxHealth = 100; this.log('⚰️ Your spouse ' + ped.person.name + ' was killed'); g.ui.toast('⚰️ You lost your spouse'); }
     this.addRep(ped.pos.x, ped.pos.z, -6);
     // anyone nearby who knew them holds a grudge and turns on you if you did it
     for (const n of g.npcs) { if (n === ped || n.dead || n.cop) continue; if (n.pos.distanceTo(ped.pos) < 16 && Math.random() < 0.5) { n.grudgeAt = g.time; n.flee = 0; n.enemy = true; n.attackAlly = null; } }
@@ -1755,7 +1799,7 @@ class Social {
   update(dt) {
     for (const e of this.events) this._tick(e, dt);
     this.events = this.events.filter(e => { if (e.done) { this._cleanup(e); return false; } return true; });
-    this.eventT -= dt; if (this.eventT <= 0) { this.eventT = rnd(16, 30); if (this.events.length < 2 && !this.game.player.inCar) { const roll = Math.random(); this.startEvent(roll < 0.4 ? 'mug' : roll < 0.72 ? 'argue' : 'brawl'); } }
+    this.eventT -= dt; if (this.eventT <= 0) { this.eventT = rnd(15, 28); if (this.events.length < 2 && !this.game.player.inCar) { const r = Math.random(); this.startEvent(r < 0.26 ? 'mug' : r < 0.46 ? 'argue' : r < 0.62 ? 'brawl' : r < 0.82 ? 'wedding' : 'propose'); } }
   }
 }
 
@@ -1895,6 +1939,7 @@ class Game {
     return [px, pz];
   }
   addWanted(n) { const p = this.player; const was = p.wanted; p.wanted = Math.min(5, p.wanted + n); p.heat = Math.max(p.heat, 12 + p.wanted * 6); if (was === 0 && p.wanted > 0) this.responseT = rnd(7, 12); } // dispatch takes time to arrive
+  _nearestTalkable() { const p = this.player; let best = null, bd = 2.6; for (const n of this.npcs) { if (n.dead || n.cop || n.enemy || n.socialRole || !n.person) continue; const d = n.pos.distanceTo(p.pos); if (d < bd) { bd = d; best = n; } } return best; }
   // ---- witness system: crimes only count if someone actually SAW (or heard) them ----
   reportCrime(pos, sev, opts) {
     opts = opts || {};
@@ -1993,6 +2038,7 @@ class Game {
     this.incomeT = (this.incomeT || 0) + dt; if (this.incomeT < 60) return;
     this.incomeT -= 60; let sum = 0; for (const rec of this.city.shops) if (rec.owned && PROP[rec.type]) sum += PROP[rec.type].rate;
     if (sum > 0) { this.player.money += sum; this.ui.toast('Properties paid out +$' + sum); }
+    const stip = this.social ? this.social.spouseStipend() : 0; if (stip > 0) this.ui.toast('❤️ Household income +$' + stip);
   }
   // ---- day shifts: clerks clock in behind their counters in the morning and walk off at night ----
   updateWorkers(dt) {
@@ -2078,6 +2124,7 @@ class Game {
       if (p.wanted > 0) { this.ui.toast("Can't sleep with the law outside — lose the heat first"); return; }
       p.health = p.maxHealth; p.fatigue = 0; const ph = (this.time / 300) % 1; this.time += ((20 / 24 - ph + 1) % 1) * 300;
       this.saveGame(); this.ui.bigCard('HOME SWEET HOME', 'Slept it off — health full, well-rested, game saved'); return; } }
+    if (!p.inCar && p.weapon !== 'pistol') { const t = this._nearestTalkable(); if (t) { this.ui.socialMenu(t); return; } } // talk to whoever you're facing
     if (p.inCar) { // spray shop: repaint your ride
       const sp = this.city.sprayPad;
       if (sp && Math.hypot(p.pos.x - sp.x, p.pos.z - sp.z) < 7 && !p.inCar.boat) {
@@ -2233,6 +2280,8 @@ class Game {
       if (this.input.p('KeyP') && !this.cine && !this.paused && (!this.ui.modal || this.ui.modal === 'phone')) this.ui.phone(this.ui.modal !== 'phone');
       if (this.input.p('KeyV') && !this.cine) { this.player.cycleCam(); }
       if (this.input.p('KeyR') && this.player.inCar && !this.player.inCar.boat) this.radioNext();
+      if (this.input.p('KeyL') && !this.cine && (!this.ui.modal || this.ui.modal === 'life')) { if (this.ui.modal === 'life') this.ui.socialClose(); else this.ui.lifePanel(); }
+      if (this.input.p('KeyE') && (this.ui.modal === 'social' || this.ui.modal === 'life')) this.ui.socialClose();
       const frozen = this.paused || this.ui.modal;
       // slow-mo: the world advances on the dilated step (sdt); the camera, HUD and ramp stay on real dt
       this.updateTimeScale(dt); const sdt = dt * this.timeScale;
@@ -2605,6 +2654,7 @@ class Player {
     this.game = game; this.pos = new THREE.Vector3(0, 0, 0); this.yaw = 0; this.vy = 0; this.onGround = true;
     this.camYaw = 0; this.camPitch = 0.22; this.camDist = 6.5; this.camMode = 'tps'; // tps | shoulder | fps
     this.health = 100; this.maxHealth = 100; this.money = 200; this.wanted = 0; this.heat = 0; this.fatigue = 0;
+    this.spouse = null; this.kids = []; this.dating = null; // your life
     this.inCar = null; this.regen = 0; this.dead = false; this.hasGun = false; this.weapon = 'fists'; this.gunCd = 0; this.punchT = 0; this.shootT = 0; this.jackT = 0; this.jackCar = null; this.tazedT = 0; this.gunOutT = 0; this.cuffT = 0;
     this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); game.scene.add(this.root); this.root.visible = false; this._build();
   }
@@ -2813,6 +2863,15 @@ class Ped {
     if (this.stunT > 0) { this.stunT -= dt; this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; this.fig.update(dt, { state: 'hitstun' }); return; }   // reeling from a hit
     // a citizen playing a part in a street event — the Social sim drives its pose, we just render it
     if (this.socialRole) { this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; this.fig.update(dt, { state: this.socialState || 'idle' }); return; }
+    // your spouse / recruited crew follows you and fights the people attacking you
+    if (this.followPlayer && !this.dead) {
+      const g = this.game, pl = g.player; let foe = null, fd = 9; for (const n of g.npcs) { if (n === this || n.dead) continue; if ((n.enemy || (n.cop && pl.wanted > 0)) && n.pos.distanceTo(this.pos) < fd) { fd = n.pos.distanceTo(this.pos); foe = n; } }
+      if (foe) { const dx = foe.pos.x - this.pos.x, dz = foe.pos.z - this.pos.z, d = Math.hypot(dx, dz) || 1; this.yaw = Math.atan2(dx, dz); if (d > 1.6) { this.pos.x += dx / d * 4.5 * dt; this.pos.z += dz / d * 4.5 * dt; } else if ((this.attackCd = (this.attackCd || 0) - dt) <= 0) { this.attackCd = 0.8; foe.damage(8, { x: dx / d, z: dz / d }); g.hitFx(foe.pos.clone().setY(1.2), 0xffd27a, 4); } this.pos.y = g.city.groundH(this.pos.x, this.pos.z); this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; this.fig.update(dt, { state: d > 1.6 ? 'run' : 'punch' }); return; }
+      const dxp = pl.pos.x - this.pos.x, dzp = pl.pos.z - this.pos.z, dp = Math.hypot(dxp, dzp) || 1;
+      if (dp > 3.5) { const sp = dp > 12 ? 7 : 4.6; this.pos.x += dxp / dp * sp * dt; this.pos.z += dzp / dp * sp * dt; this.pos.y = g.city.groundH(this.pos.x, this.pos.z); this.yaw = Math.atan2(dxp, dzp); }
+      if (dp > 60) { this.pos.set(pl.pos.x - Math.sin(pl.yaw) * 3, 0, pl.pos.z - Math.cos(pl.yaw) * 3); } // teleport back if left behind
+      this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; this.fig.update(dt, { state: dp > 3.5 ? (dp > 12 ? 'run' : 'walk') : 'idle' }); return;
+    }
     this.cowerT = Math.max(0, this.cowerT - dt);
     if ((this.loiter || this.vendor || this.homeless || this.worker) && this.flee <= 0) {
       this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
@@ -3309,7 +3368,7 @@ class UI {
   hideTitle() { this.el.overlay.className = 'hidden'; }
   pauseMenu(on) { if (on) { this.modal = 'pause'; this.el.overlay.className = 'menu'; this.el.overlay.innerHTML = `<div class="menuwrap"><div class="logo small"><span class="l1">PAUSED</span></div><button id="res" class="bigbtn">RESUME</button><button id="rl" class="bigbtn ghost">QUIT TO TITLE</button></div>`; this.el.overlay.querySelector('#res').onclick = () => this.game.resume(); this.el.overlay.querySelector('#rl').onclick = () => location.reload(); } else { this.modal = null; this.el.overlay.className = 'hidden'; } }
   bustedOrDead(word) { this.modal = 'dead'; this.game.input.unlock(); this.el.overlay.className = 'menu dead'; this.el.overlay.innerHTML = `<div class="menuwrap"><div class="logo small"><span class="wasted">${word}</span></div><button id="res" class="bigbtn">RESPAWN</button></div>`; this.el.overlay.querySelector('#res').onclick = () => location.reload(); }
-  closeModal() { if (this.modal === 'pause') this.game.resume(); else if (this.modal === 'phone') this.phone(false); }
+  closeModal() { if (this.modal === 'pause') this.game.resume(); else if (this.modal === 'phone') this.phone(false); else if (this.modal === 'social' || this.modal === 'life') this.socialClose(); else { this.modal = null; this.el.overlay.className = 'hidden'; this.el.overlay.innerHTML = ''; } }
   // ---- your phone: clock, cash, GPS pins, cab dispatch ----
   phone(on) {
     if (!on) { this.modal = null; this.el.overlay.className = 'hidden'; this.el.overlay.innerHTML = ''; if (this.game.playing && !this.game.paused) this.game.input.lock(); return; }
@@ -3325,6 +3384,28 @@ class UI {
       g._forceTaxi = true; const cab = new Car(g, sw[0], sw[1], new THREE.Vector3(0, 0, -1), 0xffd23a, true); g._forceTaxi = false; cab.speed = 0; g.cars.push(cab);
       this.toast('Cab dispatched — yellow ride on the nearest avenue (E to ride)'); this.phone(false);
     };
+  }
+  socialClose() { this.modal = null; this.el.overlay.className = 'hidden'; this.el.overlay.innerHTML = ''; if (this.game.playing && !this.game.paused) this.game.input.lock(); }
+  socialMenu(ped, sayMsg) {
+    if (!ped || !ped.person) return; const g = this.game, p = g.player, per = ped.person; this.modal = 'social'; g.input.unlock(); this.el.overlay.className = 'phone';
+    const heart = per.affinity >= 70 ? '💞' : per.affinity >= 40 ? '❤️' : per.affinity >= 15 ? '🙂' : per.affinity <= -20 ? '😡' : '😐';
+    const rel = p.dating === ped ? ' · dating' : (per.spouse === 'You' ? ' · your spouse' : (ped.ally ? ' · your crew' : ''));
+    const acts = g.social.actions(ped);
+    this.el.overlay.innerHTML = `<div class="phoneui"><div class="pnotch"></div><div class="ptime">${per.name}</div><div class="pstat">${per.age} · ${per.job} · ${per.mood}${rel}</div><div class="plabel">${heart} rapport ${per.affinity | 0}</div><div id="sline" class="pstat" style="min-height:18px">${sayMsg || (per.met ? '' : '“Do I know you?”')}</div><div class="papps">${acts.map(a => `<button data-act="${a[0]}">${a[1]}</button>`).join('')}</div><button id="sclose" class="pwide pghost">✕ Leave</button><div class="phint">E / ESC — walk away</div></div>`;
+    for (const b of this.el.overlay.querySelectorAll('[data-act]')) b.onclick = () => { const res = g.social.act(ped, b.getAttribute('data-act')); if (res && res.close) this.socialClose(); else this.socialMenu(ped, res && res.msg); };
+    this.el.overlay.querySelector('#sclose').onclick = () => this.socialClose();
+  }
+  lifePanel() {
+    const g = this.game, p = g.player, s = g.social; this.modal = 'life'; g.input.unlock(); this.el.overlay.className = 'phone';
+    const spouse = p.spouse ? '💍 ' + p.spouse.name : '— single —';
+    const kids = p.kids.length ? p.kids.map(k => '👶 ' + k.name).join('<br>') : '— none —';
+    const crew = g.npcs.filter(n => n.ally && n.followPlayer && n.person).map(n => '🤝 ' + n.person.name);
+    const reps = Object.entries(s.rep).map(([k, v]) => `<div class="pstat" style="text-align:left">${k}: <b>${v > 0 ? '+' : ''}${v | 0}</b></div>`).join('');
+    const news = s.news.slice(0, 7).map(n => `<div class="pstat" style="text-align:left">• ${n.msg}</div>`).join('');
+    this.el.overlay.innerHTML = `<div class="phoneui"><div class="pnotch"></div><div class="ptime">YOUR LIFE</div><div class="pstat">Spouse: ${spouse}</div><div class="plabel">KIDS (${p.kids.length})</div><div class="pstat" style="text-align:left">${kids}</div>${crew.length ? '<div class="plabel">CREW</div><div class="pstat" style="text-align:left">' + crew.join('<br>') + '</div>' : ''}${p.spouse ? '<button id="lkid" class="pwide">👶 Start a family (at home)</button><button id="ldiv" class="pwide pghost">💔 Divorce</button>' : ''}<div class="plabel">REPUTATION</div>${reps}<div class="plabel">CITY NEWS</div>${news || '<div class="pstat">a quiet night in the Bay...</div>'}<button id="lclose" class="pwide pghost">✕ Close</button><div class="phint">L / ESC — close</div></div>`;
+    const kd = this.el.overlay.querySelector('#lkid'); if (kd) kd.onclick = () => { const H = g.city.places.home; if (Math.hypot(p.pos.x - H.x, p.pos.z - H.z) < 9) { s.haveKid(); this.lifePanel(); } else this.toast('Go home to start a family'); };
+    const dv = this.el.overlay.querySelector('#ldiv'); if (dv) dv.onclick = () => { s.divorce(); this.lifePanel(); };
+    this.el.overlay.querySelector('#lclose').onclick = () => this.socialClose();
   }
   letterbox(on) { this.el.lbTop.style.height = on ? '11vh' : '0'; this.el.lbBot.style.height = on ? '11vh' : '0'; }
   introText(lines) { const el = this.el.introcap; el.innerHTML = lines.map(l => '<div>' + l + '</div>').join(''); el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
