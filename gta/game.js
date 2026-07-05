@@ -1708,6 +1708,7 @@ class Game {
     this.story.begin(); this.input.lock();
     if (this.saveData) {
       this.player.money = this.saveData.money != null ? this.saveData.money : this.player.money; this.player.hasGun = !!this.saveData.gun; if (this.player.hasGun) this.player.weapon = 'pistol';
+      if (this.saveData.fatigue != null) this.player.fatigue = this.saveData.fatigue; if (this.saveData.t != null) this.time = this.saveData.t;
       for (const i of (this.saveData.own || [])) { const rec = this.city.shops[i]; if (rec && PROP[rec.type]) { rec.owned = true; if (rec.strip) { rec.strip.material.color.set(0x2fe07a); rec.strip.material.emissive.set(0x2fe07a); } } }
     }
   }
@@ -1928,6 +1929,11 @@ class Game {
   // ---- E interactions: rob registers, eat at diners, taxi fast-travel ----
   interact() {
     const p = this.player;
+    // sleep at home takes priority over any overlapping venue you might be standing in
+    if (!p.inCar) { const H = this.city.places.home; if (H && Math.hypot(p.pos.x - H.x, p.pos.z - H.z) < 6.5) {
+      if (p.wanted > 0) { this.ui.toast("Can't sleep with the law outside — lose the heat first"); return; }
+      p.health = p.maxHealth; p.fatigue = 0; const ph = (this.time / 300) % 1; this.time += ((20 / 24 - ph + 1) % 1) * 300;
+      this.saveGame(); this.ui.bigCard('HOME SWEET HOME', 'Slept it off — health full, well-rested, game saved'); return; } }
     if (p.inCar) { // spray shop: repaint your ride
       const sp = this.city.sprayPad;
       if (sp && Math.hypot(p.pos.x - sp.x, p.pos.z - sp.z) < 7 && !p.inCar.boat) {
@@ -1954,8 +1960,8 @@ class Game {
       }
       if (rec.type === 'home') {
         if (p.wanted > 0) { this.ui.toast("Can't sleep with the law outside — lose the heat first"); return; }
-        p.health = p.maxHealth; const ph = (this.time / 300) % 1; this.time += ((20 / 24 - ph + 1) % 1) * 300; // fast-forward to 8 AM
-        this.saveGame(); this.ui.bigCard('HOME SWEET HOME', 'Slept till morning — health full, game saved'); return;
+        p.health = p.maxHealth; p.fatigue = 0; const ph = (this.time / 300) % 1; this.time += ((20 / 24 - ph + 1) % 1) * 300; // fast-forward to 8 AM
+        this.saveGame(); this.ui.bigCard('HOME SWEET HOME', 'Slept it off — health full, well-rested, game saved'); return;
       }
       if (rec.type === 'diner' && p.money >= 10) { p.money -= 10; p.health = p.maxHealth; this.ui.toast('Hot meal — HP restored (-$10)'); return; }
       if (rec.type !== 'tower' && (!rec.robT || this.time > rec.robT)) {
@@ -2028,7 +2034,7 @@ class Game {
       else this.ui.toast('Working the lock... (' + (3 - this._picks) + ' to go)');
     }
   }
-  saveGame() { try { const ch = this.story.freeRoam ? ((this.saveData && this.saveData.ch) || 0) : Math.max(0, this.story.mi); localStorage.setItem('nb_save', JSON.stringify({ ch, money: this.player.money | 0, gun: !!this.player.hasGun, own: this.city.shops.map((s, i) => s.owned ? i : -1).filter(i => i >= 0) })); } catch (e) {} }
+  saveGame() { try { const ch = this.story.freeRoam ? ((this.saveData && this.saveData.ch) || 0) : Math.max(0, this.story.mi); localStorage.setItem('nb_save', JSON.stringify({ ch, money: this.player.money | 0, gun: !!this.player.hasGun, own: this.city.shops.map((s, i) => s.owned ? i : -1).filter(i => i >= 0), fatigue: +(this.player.fatigue || 0).toFixed(3), t: this.time | 0 })); } catch (e) {} }
   _ambient(dt) { for (const c of this.cars) c.update(dt); for (const n of this.npcs) if (!n.story) n.update(dt); this.updateCulling(); }
   intro() {
     this.ui.hideTitle(); this.ui.modal = null; this.menuMode = false; this.introMode = true; this.ui.letterbox(true);
@@ -2088,7 +2094,7 @@ class Game {
       if (this.cine) { this.updateCutscene(dt); }
       else if (!frozen) { this.player.update(sdt); for (const n of this.npcs) n.update(sdt); for (const c of this.cars) c.update(sdt); this.story.update(sdt); this.updateWanted(sdt); this.updatePickups(sdt); this.updateArrest(sdt); this.updateJail(sdt); this.updateIncome(sdt); this.updateWorkers(sdt); this.updateGps(); this.cull(); this.player.updateCamera(dt, false); }
       else { this.player.updateCamera(dt, true); }
-      this.updateFx(sdt); this.camShake = Math.max(0, (this.camShake || 0) - dt * 2.4); this.updateRain(dt); this.updateRipples(dt); if (!frozen) this.maintainParked(dt); this.updateWaypoint(dt); this.ui.update(); this.updateCulling();
+      this.updateFx(sdt); this.camShake = Math.max(0, (this.camShake || 0) - dt * 2.4); this.updateRain(dt); this.updateRipples(dt); if (!frozen) { this.maintainParked(dt); this.updateFatigue(dt); } this.updateWaypoint(dt); this.ui.update(); this.updateCulling();
     }
     if (this.player.pos) { this.sun.position.set(this.player.pos.x - 48, 95, this.player.pos.z - 95); this.sun.target.position.copy(this.player.pos); this.sun.target.updateMatrixWorld(); }
     this.sky.position.copy(this.camera.position);
@@ -2137,6 +2143,13 @@ class Game {
       if (p.wanted >= 3) { const wantCar = Math.min(3, p.wanted - 2), haveCar = this.cars.filter(c => c.police && !c.removeMe).length; if (haveCar < wantCar) { const nd = this._offscreenNode(60, 150); if (nd) { const pc = new PoliceCar(this, nd.position.x, nd.position.z); pc.fromN = nd.id; this.cars.push(pc); } if (p.wanted === 5 && !this._n5) { this._n5 = true; this.ui.news('FIVE-STAR MANHUNT — NBPD floods the causeways as chaos grips the Bay'); } } }
     }
     if (p.wanted === 0) for (const n of this.npcs) if (n.cop) n.removeMe = true;
+  }
+  // fatigue rises the longer you stay awake; sleeping at home clears it (soft pressure, never a hard fail)
+  updateFatigue(dt) {
+    const p = this.player; if (p.dead) return;
+    p.fatigue = Math.min(1, (p.fatigue || 0) + dt / 900); // ~15 minutes awake → fully exhausted
+    this._fatT = (this._fatT || 0) - dt;
+    if (p.fatigue > 0.82 && this._fatT <= 0) { this._fatT = 55; this.ui.toast('😴 You\'re exhausted — get home and sleep'); }
   }
   updateFx(dt) {
     for (const t of this.tracers) { t.life -= dt; t.line.material.opacity = Math.max(0, t.life / 0.06); }
@@ -2285,7 +2298,7 @@ class Player {
   constructor(game) {
     this.game = game; this.pos = new THREE.Vector3(0, 0, 0); this.yaw = 0; this.vy = 0; this.onGround = true;
     this.camYaw = 0; this.camPitch = 0.22; this.camDist = 6.5; this.camMode = 'tps'; // tps | shoulder | fps
-    this.health = 100; this.maxHealth = 100; this.money = 200; this.wanted = 0; this.heat = 0;
+    this.health = 100; this.maxHealth = 100; this.money = 200; this.wanted = 0; this.heat = 0; this.fatigue = 0;
     this.inCar = null; this.regen = 0; this.dead = false; this.hasGun = false; this.weapon = 'fists'; this.gunCd = 0; this.punchT = 0; this.shootT = 0; this.jackT = 0; this.jackCar = null; this.tazedT = 0; this.gunOutT = 0; this.cuffT = 0;
     this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); game.scene.add(this.root); this.root.visible = false; this._build();
   }
@@ -2433,6 +2446,7 @@ class Player {
     const wantFov = 62 + clamp(spd * 0.32, 0, 8); g.camera.fov += (wantFov - g.camera.fov) * Math.min(1, dt * 3); g.camera.updateProjectionMatrix();
     const sh = (g.camShake || 0), lookAt = new THREE.Vector3(target.x, target.y + (this.inCar ? 0.3 : 0.2), target.z);
     if (sh > 0) { this.game.camera.position.x += rnd(-sh, sh) * 0.4; this.game.camera.position.y += rnd(-sh, sh) * 0.4; lookAt.x += rnd(-sh, sh) * 0.5; lookAt.z += rnd(-sh, sh) * 0.5; }
+    const fat = this.fatigue || 0; if (fat > 0.5) { const s = (fat - 0.5) * 2; lookAt.x += Math.sin(g.time * 1.25) * s * 0.28; lookAt.y += Math.sin(g.time * 0.85 + 1.1) * s * 0.16; } // heavy-eyed sway when exhausted
     this.game.camera.lookAt(lookAt);
   }
 }
@@ -2958,7 +2972,7 @@ class UI {
   _advance() { const d = this._dlg; if (!d) return; d.i++; if (d.i >= d.lines.length) { this.el.dialogue.classList.add('hidden'); this._dlg = null; this.modal = null; if (this.game.playing && !this.game.paused) this.game.input.lock(); d.done && d.done(); } else this._showLine(); }
   update() {
     const p = this.game.player, g = this.game; this.el.money.textContent = '$' + (p.money | 0); this.el.wanted.textContent = p.wanted > 0 ? '★'.repeat(p.wanted) : '';
-    const hr = g.hour || 0; this.el.clock.textContent = ('' + (hr | 0)).padStart(2, '0') + ':' + ('' + ((hr % 1) * 60 | 0)).padStart(2, '0') + (hr >= 6 && hr < 19 ? ' ☀' : ' ☾');
+    const hr = g.hour || 0, fat = g.player.fatigue || 0; this.el.clock.textContent = ('' + (hr | 0)).padStart(2, '0') + ':' + ('' + ((hr % 1) * 60 | 0)).padStart(2, '0') + (hr >= 6 && hr < 19 ? ' ☀' : ' ☾') + (fat > 0.6 ? (fat > 0.85 ? ' 😩' : ' 😴') : '');
     this.el.gps.textContent = g.gps ? '➤ ' + g.gps.name + ' — ' + Math.round(Math.hypot(p.pos.x - g.gps.x, p.pos.z - g.gps.z)) + 'm' : '';
     const dist = g.city.districtAt(p.pos.x, p.pos.z); if (dist !== this._lastDistrict) { this._lastDistrict = dist; const el = this.el.district; el.textContent = dist; el.classList.remove('show'); void el.offsetWidth; el.classList.add('show'); }
     this.el.hp.style.width = clamp(p.health, 0, 100) + '%'; this.el.weapon.textContent = p.inCar ? '' : (p.weapon === 'pistol' && p.hasGun ? 'Pistol' : 'Fists');
