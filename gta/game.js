@@ -107,6 +107,19 @@ function noiseTexture(r, g, b, amt) {
   for (let i = 0; i < 64 * 64; i++) { const v = (Math.random() - 0.5) * amt; d.data[i * 4] = r + v; d.data[i * 4 + 1] = g + v; d.data[i * 4 + 2] = b + v; d.data[i * 4 + 3] = 255; }
   x.putImageData(d, 0, 0); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
 }
+// tiling wet-asphalt: dark speckled grain + faint cracks, so the road reads as textured tarmac under the sheen
+let _asphaltTex = null;
+function asphaltTexture() {
+  if (_asphaltTex) return _asphaltTex;
+  const S = 256, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d');
+  const img = x.createImageData(S, S), d = img.data;
+  for (let i = 0; i < S * S; i++) { const n = (Math.random() * 26 - 13) | 0; d[i * 4] = clamp(20 + n, 0, 255); d[i * 4 + 1] = clamp(22 + n, 0, 255); d[i * 4 + 2] = clamp(28 + n, 0, 255); d[i * 4 + 3] = 255; }
+  x.putImageData(img, 0, 0);
+  x.strokeStyle = 'rgba(6,7,10,0.7)'; x.lineWidth = 1.2;
+  for (let i = 0; i < 16; i++) { x.beginPath(); let px = Math.random() * S, py = Math.random() * S; x.moveTo(px, py); for (let j = 0; j < 4; j++) { px += rnd(-46, 46); py += rnd(-46, 46); x.lineTo(px, py); } x.stroke(); }
+  x.fillStyle = 'rgba(160,164,172,0.10)'; for (let i = 0; i < 5; i++) { const mx = Math.random() * S, my = Math.random() * S; x.beginPath(); x.arc(mx, my, rnd(3, 6), 0, TAU); x.stroke(); } // faint manhole rims
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; _asphaltTex = t; return t;
+}
 function signTexture(text, hex) {
   // crisp hi-res neon sign: framed panel, auto-fit weight, tube-glow + hot white core + colored rim
   const c = document.createElement('canvas'); c.width = 512; c.height = 128; const x = c.getContext('2d');
@@ -501,7 +514,7 @@ class City {
     this.DIST_NAMES = ['Downtown', 'Little Havana', 'The Docklands', 'Vice Beach', 'Sunset Heights', 'Starfish Island'];
     this.errands = []; this.workposts = []; this.beachSpots = []; this.camps = []; this.homes = []; this.displays = [];
     this._lodMats = new Map(); this._cull = new Map(); this._lod = []; this._reservedPlots = []; // _lod is a scratch shell list; district cells swap in their own via _cullGroup
-    this.roadMat = mat(0x101216, { roughness: 0.22, metalness: 0.12, envMapIntensity: 1.7, emissive: 0x090b12, emissiveIntensity: 1 }); // rain-slicked asphalt
+    this.roadMat = mat(0x101216, { roughness: 0.2, metalness: 0.14, envMapIntensity: 2.3, emissive: 0x090b12, emissiveIntensity: 1, map: asphaltTexture() }); // rain-slicked, textured tarmac
     // offshore islets (boat destinations): Isla Privada + a small cay
     this.islets = [ { x: half + 150, z: -120, r: 52, h: 4.2, priv: true }, { x: half + 138, z: 150, r: 34, h: 2.8 } ];
     this.privIslet = this.islets[0];
@@ -555,16 +568,18 @@ class City {
   }
   // ---- merged road ribbons per edge + centre-line markings + intersection patches + bridge rails ----
   _buildRoads() {
-    const net = this.net, P = [], I = [], MP = [], MI = []; let vc = 0, mvc = 0;
+    const net = this.net, P = [], I = [], U = [], MP = [], MI = []; let vc = 0, mvc = 0; const TILE = 8;
+    // road-surface quad: also emits world-planar UVs so the asphalt texture tiles across the whole network
+    const rquad = (p1, p2, p3, p4, y) => { for (const p of [p1, p2, p3, p4]) { P.push(p.x, y, p.z); U.push(p.x / TILE, p.z / TILE); } I.push(vc, vc + 1, vc + 2, vc, vc + 2, vc + 3); vc += 4; };
     const quad = (p1, p2, p3, p4, y, arr, iarr, base) => { arr.push(p1.x, y, p1.z, p2.x, y, p2.z, p3.x, y, p3.z, p4.x, y, p4.z); iarr.push(base, base + 1, base + 2, base, base + 2, base + 3); return base + 4; };
     for (const e of net.edges) {
       const a = net.nodes[e.a].position, b = net.nodes[e.b].position, dir = b.clone().sub(a); const len = dir.length(); if (len < 0.4) continue; dir.multiplyScalar(1 / len);
       const perp = new THREE.Vector3(dir.z, 0, -dir.x), w = ROAD_CLASS[e.class].width / 2, y = e.isBridge ? 0.12 : 0.06;
-      vc = quad(a.clone().addScaledVector(perp, w), b.clone().addScaledVector(perp, w), b.clone().addScaledVector(perp, -w), a.clone().addScaledVector(perp, -w), y, P, I, vc);
+      rquad(a.clone().addScaledVector(perp, w), b.clone().addScaledVector(perp, w), b.clone().addScaledVector(perp, -w), a.clone().addScaledVector(perp, -w), y);
       if (e.class !== 'alley' && e.class !== 'residential') { const mw = 0.28; mvc = quad(a.clone().addScaledVector(perp, mw), b.clone().addScaledVector(perp, mw), b.clone().addScaledVector(perp, -mw), a.clone().addScaledVector(perp, -mw), y + 0.02, MP, MI, mvc); }
     }
-    for (const n of net.nodes) { if (n.degree < 1) continue; let w = 0; for (const eid of n.edges) w = Math.max(w, ROAD_CLASS[net.edges[eid].class].width / 2); const c = n.position; vc = quad(new THREE.Vector3(c.x - w, 0, c.z - w), new THREE.Vector3(c.x + w, 0, c.z - w), new THREE.Vector3(c.x + w, 0, c.z + w), new THREE.Vector3(c.x - w, 0, c.z + w), 0.055, P, I, vc); }
-    const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); rg.setIndex(I); rg.computeVertexNormals();
+    for (const n of net.nodes) { if (n.degree < 1) continue; let w = 0; for (const eid of n.edges) w = Math.max(w, ROAD_CLASS[net.edges[eid].class].width / 2); const c = n.position; rquad(new THREE.Vector3(c.x - w, 0, c.z - w), new THREE.Vector3(c.x + w, 0, c.z - w), new THREE.Vector3(c.x + w, 0, c.z + w), new THREE.Vector3(c.x - w, 0, c.z + w), 0.055); }
+    const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); rg.setAttribute('uv', new THREE.Float32BufferAttribute(U, 2)); rg.setIndex(I); rg.computeVertexNormals();
     const road = new THREE.Mesh(rg, this.roadMat); road.receiveShadow = true; this.group.add(road); this.roadMesh = road;
     const mg = new THREE.BufferGeometry(); mg.setAttribute('position', new THREE.Float32BufferAttribute(MP, 3)); mg.setIndex(MI); mg.computeVertexNormals();
     this.group.add(new THREE.Mesh(mg, mat(0xffe14a, { emissive: 0xffd23a, emissiveIntensity: 1.0 })));
@@ -578,6 +593,8 @@ class City {
     this.sigMatB = mat(0x401111, { emissive: 0xff3a2a, emissiveIntensity: 2.2 });
     this.sigMatV = this.sigMatA; this.sigMatH = this.sigMatB;                          // legacy aliases
     this.signals = [];
+    const CW = [], CWI = []; let cwv = 0;  // merged zebra crosswalk stripes
+    const cwQuad = (p1, p2, p3, p4) => { for (const p of [p1, p2, p3, p4]) CW.push(p.x, 0.075, p.z); CWI.push(cwv, cwv + 1, cwv + 2, cwv, cwv + 2, cwv + 3); cwv += 4; };
     for (const n of net.nodes) {
       if (n.degree < 3) continue;
       let big = false; for (const eid of n.edges) { const cl = net.edges[eid].class; if (cl === 'highway' || cl === 'arterial' || cl === 'boulevard' || cl === 'collector') { big = true; break; } }
@@ -590,7 +607,11 @@ class City {
       const la = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), this.sigMatA); la.position.set(n.position.x, 5.15, n.position.z + 0.28); this.group.add(la);
       const lb = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), this.sigMatB); lb.position.set(n.position.x, 4.72, n.position.z + 0.28); this.group.add(lb);
       if (this.brng() < 0.6) this._lamp(n.position.x + 2.4, n.position.z + 2.4);
+      // zebra crosswalk on each approach: stripes run parallel to traffic, banded across the road
+      for (const eid of n.edges) { const e = net.edges[eid], o = e.a === n.id ? e.b : e.a, dir = net.nodes[o].position.clone().sub(n.position).normalize(), perp = new THREE.Vector3(dir.z, 0, -dir.x), rh = ROAD_CLASS[e.class].width / 2, t0 = rh + 0.4, t1 = rh + 2.8;
+        for (let po = -rh + 0.5; po <= rh - 0.5; po += 0.95) { const a = n.position.clone().addScaledVector(dir, t0).addScaledVector(perp, po - 0.18), b = n.position.clone().addScaledVector(dir, t1).addScaledVector(perp, po - 0.18), cc = n.position.clone().addScaledVector(dir, t1).addScaledVector(perp, po + 0.18), d = n.position.clone().addScaledVector(dir, t0).addScaledVector(perp, po + 0.18); cwQuad(a, b, cc, d); } }
     }
+    if (CWI.length) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(CW, 3)); g.setIndex(CWI); g.computeVertexNormals(); this.group.add(new THREE.Mesh(g, mat(0xe8ecf2, { emissive: 0x9498a0, emissiveIntensity: 0.45 }))); }
   }
   // ---- pick a build spot beside the road nearest a POI, on the land side, and reserve the plot ----
   _spotNear(pos, off) {
