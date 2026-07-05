@@ -652,6 +652,7 @@ class City {
     this._buildTerrain();
     this._buildRoads();
     this._streetLights();
+    this._scatterKnockables();
     this._buildSignals();
     this._buildLandmarks();     // reserve landmark plots + set `places` BEFORE the district fill
     this._buildDistricts();     // lattice of buildings fronting the streets, thinned by density
@@ -716,6 +717,13 @@ class City {
     this.group.add(new THREE.Mesh(mg, mat(0xffe14a, { emissive: 0xffd23a, emissiveIntensity: 1.0 })));
     const railMat = mat(0xb8c0ca);
     for (const e of net.edges) { if (!e.isBridge) continue; const a = net.nodes[e.a].position, b = net.nodes[e.b].position, dir = b.clone().sub(a); const len = dir.length(); dir.multiplyScalar(1 / len); const perp = new THREE.Vector3(dir.z, 0, -dir.x), w = ROAD_CLASS[e.class].width / 2, mid = a.clone().lerp(b, 0.5); for (const s of [-1, 1]) { const rail = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, len), railMat); rail.position.set(mid.x + perp.x * s * w, 0.55, mid.z + perp.z * s * w); rail.rotation.y = Math.atan2(dir.x, dir.z); this.group.add(rail); } }
+  }
+  // ---- curbside cones + trash cans you can plough through (they fly off when hit) ----
+  _scatterKnockables() {
+    const net = this.net; this.knockables = []; const rng = mulberry32((net.seed ^ 0xCA5) >>> 0);
+    const addCone = (x, z) => { const g = new THREE.Group(); const c = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.8, 10), mat(0xff6a1a, { emissive: 0xff5a10, emissiveIntensity: 0.5 })); c.position.y = 0.4; c.castShadow = true; g.add(c); const band = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.3, 0.16, 10), mat(0xe8e8e8, { emissive: 0x888888, emissiveIntensity: 0.3 })); band.position.y = 0.42; g.add(band); const base = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.08, 0.62), mat(0x1a1a1a)); base.position.y = 0.04; g.add(base); g.position.set(x, this.groundH(x, z), z); this.group.add(g); this.knockables.push({ m: g, x, z, knocked: false }); };
+    const addCan = (x, z) => { const g = new THREE.Group(); const c = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.3, 1.0, 10), mat(pick([0x2f5a3a, 0x3a3f48, 0x4a3a2a]))); c.position.y = 0.5; c.castShadow = true; g.add(c); const lid = new THREE.Mesh(new THREE.CylinderGeometry(0.37, 0.37, 0.1, 10), mat(0x2a2a2a)); lid.position.y = 1.0; g.add(lid); g.position.set(x, this.groundH(x, z), z); this.group.add(g); this.knockables.push({ m: g, x, z, knocked: false }); };
+    for (const e of net.edges) { if (e.class === 'alley' || e.class === 'highway' || e.isBridge) continue; const a = net.nodes[e.a].position, b = net.nodes[e.b].position, len = a.distanceTo(b); if (len < 24 || rng() > 0.28) continue; const t = 0.3 + rng() * 0.4, p = a.clone().lerp(b, t), dir = b.clone().sub(a).normalize(), perp = new THREE.Vector3(dir.z, 0, -dir.x), off = ROAD_CLASS[e.class].width / 2 - 0.6, side = rng() < 0.5 ? 1 : -1, x = p.x + perp.x * off * side, z = p.z + perp.z * off * side; if (!net.isLand(x, z)) continue; if (rng() < 0.6) addCone(x, z); else addCan(x, z); }
   }
   // ---- traffic signals on real intersections: incident edges split into two phase groups by angle ----
   _buildSignals() {
@@ -2574,6 +2582,22 @@ class Game {
     g.setAttribute('position', new THREE.BufferAttribute(ps, 3)); const m = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffd680, size: 0.24, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
     this.scene.add(m); this.fx.push({ m, g, ps, vs, n, life: 0.5 });
   }
+  glassBits(pos, n) {
+    n = Math.min(14, Math.max(2, n | 0)); const g = new THREE.BufferGeometry(), ps = new Float32Array(n * 3), vs = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { ps[i * 3] = pos.x; ps[i * 3 + 1] = pos.y; ps[i * 3 + 2] = pos.z; vs[i * 3] = rnd(-4, 4); vs[i * 3 + 1] = rnd(1, 6); vs[i * 3 + 2] = rnd(-4, 4); }
+    g.setAttribute('position', new THREE.BufferAttribute(ps, 3)); const m = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xbfe4ff, size: 0.14, transparent: true, opacity: 0.9, depthWrite: false }));
+    this.scene.add(m); this.fx.push({ m, g, ps, vs, n, life: 0.55 });
+  }
+  // plough through a curbside cone / trash can and send it flying
+  knockNearby(car, speed) {
+    if (speed < 4 || !this.city.knockables) return;
+    for (const k of this.city.knockables) { if (k.knocked) continue; const dx = car.pos.x - k.x, dz = car.pos.z - k.z; if (dx * dx + dz * dz < 6.5) this.knockProp(k, car.vx != null ? car.vx : Math.sin(car.yaw) * speed, car.vz != null ? car.vz : Math.cos(car.yaw) * speed); }
+  }
+  knockProp(k, vx, vz) {
+    k.knocked = true; const m = k.m, wp = new THREE.Vector3(); m.getWorldPosition(wp); if (m.parent) m.parent.remove(m); m.position.copy(wp); this.scene.add(m);
+    this.fx.push({ m, debris: true, vx: (vx || 0) * 0.45 + rnd(-2, 2), vy: rnd(3, 7), vz: (vz || 0) * 0.45 + rnd(-2, 2), sx: rnd(-9, 9), sy: rnd(-9, 9), sz2: rnd(-9, 9), life: 6 });
+    this.sfxCrunch(0.35); this.camShake = Math.max(this.camShake || 0, 0.12);
+  }
   // billboarded smoke / flame puff for damaged + burning cars
   carPuff(pos, hot) {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), new THREE.MeshBasicMaterial({ map: glowTexture(), color: hot ? 0xff7a2a : 0x24262b, transparent: true, opacity: hot ? 0.6 : 0.4, depthWrite: false, blending: hot ? THREE.AdditiveBlending : THREE.NormalBlending }));
@@ -2934,16 +2958,29 @@ class Car {
   // ---- progressive damage: crumple panels, smoke, flames, degraded handling, then a fireball + husk ----
   damageCar(amt, at) {
     if (this.boat || this._boom || amt <= 0) return;
-    this.maxHp = this.maxHp || 120; this.hp = (this.hp == null ? this.maxHp : this.hp) - amt;
-    if (amt > 5) this._dent();
+    this.maxHp = this.maxHp || 120; const before = this.hp == null ? this.maxHp : this.hp; this.hp = before - amt;
+    const heavy = amt > 12;
+    if (amt > 4) { this._dent(heavy); this.game.glassBits(this.pos.clone().setY(1.05), Math.min(9, 2 + (amt | 0) / 3)); }
+    if (heavy && Math.random() < 0.7) this._shedPart();                      // a panel or wheel flies off in a big hit
+    // the whole shell visibly sags and lists as it takes damage
+    const w = 1 - clamp(this.hp / this.maxHp, 0, 1); if (this._tilt == null) this._tilt = rnd(-1, 1);
+    this._sagY = -w * 0.14; this._sagZ = this._tilt * w * 0.06;
     if (this.hp < this.maxHp * 0.42 && !this.smoking) this.smoking = true;
     if (this.hp < this.maxHp * 0.16 && !this.burning) this.burning = true;
-    if (this.hp <= 0 && !this._boom) { this.hp = 0; this._boom = true; this.game.explode(this.pos.clone().setY(1.0), 1.2, this.color); this.game.leaveWreck(this); this.removeMe = true; if (this.driver === this.game.player) { this.game.player.inCar = null; this.game.player.root.visible = true; this.game.camShake = 1.5; } }
+    if (this.hp <= 0 && !this._boom) { this.hp = 0; this._boom = true; this.game.explode(this.pos.clone().setY(1.0), 1.2, this.color); this.game.leaveWreck(this); this.removeMe = true; if (this.driver === this.game.player) { this.game.player.inCar = null; this.game.player.root.visible = true; this.game.camShake = 1.6; } }
   }
-  _dent() {
-    const kids = this.root.children.filter(c => c.isMesh && c.geometry && c.geometry.type === 'BoxGeometry' && c !== this._spill && c !== this._rear);
-    if (!kids.length) return; const m = kids[(Math.random() * kids.length) | 0];
-    m.scale.x *= 0.92 + Math.random() * 0.05; m.scale.y *= 0.9 + Math.random() * 0.05; m.position.x += rnd(-0.05, 0.05); m.position.y -= rnd(0, 0.04); m.rotation.z += rnd(-0.06, 0.06);
+  _bodyPanels() { return this.root.children.filter(c => c.isMesh && c.geometry && c.geometry.type === 'BoxGeometry' && c !== this._spill && c !== this._rear); }
+  _dent(heavy) {
+    const kids = this._bodyPanels(); if (!kids.length) return;
+    const nd = heavy ? 2 : 1; for (let i = 0; i < nd; i++) { const m = kids[(Math.random() * kids.length) | 0]; m.scale.x *= 0.86 + Math.random() * 0.06; m.scale.y *= 0.82 + Math.random() * 0.08; m.position.x += rnd(-0.09, 0.09); m.position.y -= rnd(0, 0.08); m.position.z += rnd(-0.06, 0.06); m.rotation.z += rnd(-0.12, 0.12); m.rotation.x += rnd(-0.06, 0.06); }
+  }
+  _shedPart() {
+    const wheels = this.root.userData.wheels || [], kids = this._bodyPanels();
+    let m = null; if (wheels.length && Math.random() < 0.5) { m = wheels[(Math.random() * wheels.length) | 0]; this.root.userData.wheels = wheels.filter(w => w !== m); }
+    else if (kids.length > 3) m = kids[(Math.random() * kids.length) | 0];
+    if (!m || m === this._spill || m === this._rear) return;
+    const wp = new THREE.Vector3(); m.getWorldPosition(wp); this.root.remove(m); m.position.copy(wp); m.rotation.set(rnd(TAU), rnd(TAU), rnd(TAU)); this.game.scene.add(m);
+    this.game.fx.push({ m, debris: true, vx: rnd(-5, 5), vy: rnd(3, 8), vz: rnd(-5, 5), sx: rnd(-7, 7), sy: rnd(-7, 7), sz2: rnd(-7, 7), life: 5 });
   }
   updateDamage(dt) {
     if (this.boat || this._boom) return;
@@ -2985,8 +3022,9 @@ class Car {
     }
     this.pos.x = cx2; this.pos.z = cz2; this.pos.y = this.game.city.groundH(this.pos.x, this.pos.z);
     for (const w of (this.root.userData.wheels || [])) w.rotation.x += Math.hypot(this.vx, this.vz) * Math.sign(this.speed || 1) * dt / 0.45;
-    this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
-    this.root.rotation.z = hb ? clamp((this.vx * Math.cos(this.yaw) - this.vz * Math.sin(this.yaw)) * 0.012, -0.09, 0.09) : 0; // body lean in the slide
+    this.root.position.copy(this.pos); this.root.position.y += (this._sagY || 0); this.root.rotation.y = this.yaw;
+    this.root.rotation.z = (hb ? clamp((this.vx * Math.cos(this.yaw) - this.vz * Math.sin(this.yaw)) * 0.012, -0.09, 0.09) : 0) + (this._sagZ || 0); // body lean in the slide + damage list
+    this.game.knockNearby(this, Math.hypot(this.vx, this.vz)); // scatter street props you plough through
     // brake + reverse lights: taillight pool flares red (white in reverse)
     const braking = hb || (acc < 0 && this.speed > 0.5), reversing = this.speed < -0.5;
     if (this._rear) { this._rear.material.color.setHex(reversing ? 0xffffff : 0xff2a1e); this._rear.material.opacity = (braking || reversing) ? 0.95 : 0.5; this._rear.scale.setScalar((braking || reversing) ? 1.3 : 1.0); }
@@ -3051,9 +3089,9 @@ class Car {
     const center = from.position.clone().addScaledVector(fwd, clamp(this.along, 0, segLen)).addScaledVector(right, lane);
     this.pos.x = lerp(this.pos.x, center.x, Math.min(1, dt * 9)); this.pos.z = lerp(this.pos.z, center.z, Math.min(1, dt * 9)); this.pos.y = c.groundH(this.pos.x, this.pos.z);
     this.yaw = lerpAngle(this.yaw, Math.atan2(fwd.x, fwd.z), Math.min(1, dt * 6));
-    this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
+    this.root.position.copy(this.pos); this.root.position.y += (this._sagY || 0); this.root.rotation.y = this.yaw; this.root.rotation.z = (this._sagZ || 0);
   }
-  _move(dt) { const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw); let nx = this.pos.x + fx * this.speed * dt, nz = this.pos.z + fz * this.speed * dt; const [cx, cz] = this.game.city.collide(nx, nz, 1.4); if (cx !== nx || cz !== nz) this.speed *= -0.2; this.pos.x = cx; this.pos.z = cz; this.pos.y = this.game.city.groundH(this.pos.x, this.pos.z); this.root.position.copy(this.pos); this.root.rotation.y = this.yaw; }
+  _move(dt) { const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw); let nx = this.pos.x + fx * this.speed * dt, nz = this.pos.z + fz * this.speed * dt; const [cx, cz] = this.game.city.collide(nx, nz, 1.4); if (cx !== nx || cz !== nz) this.speed *= -0.2; this.pos.x = cx; this.pos.z = cz; this.pos.y = this.game.city.groundH(this.pos.x, this.pos.z); this.root.position.copy(this.pos); this.root.position.y += (this._sagY || 0); this.root.rotation.y = this.yaw; }
 }
 
 // ---------------------------------------------------------------------------
