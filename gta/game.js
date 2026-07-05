@@ -1781,7 +1781,7 @@ class Game {
     const pos = origin.clone().addScaledVector(dir, 0.9);
     const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTexture(), color: 0xfff2c0, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false })); m.position.copy(pos); m.scale.setScalar(1.4); this.scene.add(m); this.fx.push({ m, life: 0.07, muzzle: true });
     const l = new THREE.PointLight(0xffe6a0, 6, 14, 2); l.position.copy(pos); this.scene.add(l); this.fx.push({ flash: l, life: 0.07 });
-    this.camShake = Math.max(this.camShake || 0, 0.28); this.sfxGun();
+    this.camShake = Math.max(this.camShake || 0, 0.28); this.sfxGun(); this.scareBirds();
   }
   shootRay(origin, dir, dmg, range) {
     this.muzzleFlash(origin, dir);
@@ -2117,7 +2117,7 @@ class Game {
     if (this.player.pos) { this.sun.position.set(this.player.pos.x - 48, 95, this.player.pos.z - 95); this.sun.target.position.copy(this.player.pos); this.sun.target.updateMatrixWorld(); }
     this.sky.position.copy(this.camera.position);
     this.updateDayNight();
-    if (this.playing) { this.updateTraffic(dt); this.updateStorm(dt); this.updateEngine(dt); this.updateAmbientAudio(dt); this.updateNeon(dt); this.updateRadio(dt); }
+    if (this.playing) { this.updateTraffic(dt); this.updateStorm(dt); this.updateEngine(dt); this.updateAmbientAudio(dt); this.updateNeon(dt); this.updateRadio(dt); this.updateBirds(dt); }
     if (this._lens) this._lens.style.opacity = (this.playing && !this.paused && this.player.camMode !== 'fps') ? '0.5' : '0';
     if (this.city.displays) for (const d2 of this.city.displays) d2.root.rotation.y += dt * 0.5;
     const jd = this.city.jailDoor; if (jd) { const tx = this.city.jail.door.x + (this.city.jailOpen ? 2.7 : 0); jd.position.x += (tx - jd.position.x) * Math.min(1, dt * 3.5); } // cell door rolls on its track
@@ -2335,6 +2335,27 @@ class Game {
       else if (Math.random() < dt * 0.09) s.userData.flick = rnd(0.18, 0.7);
     }
   }
+  // ---- pigeon/gull flock: circles overhead, follows the player loosely, scatters on gunfire/blasts ----
+  _makeBird() {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 0.42), mat(0x2a2c32)); g.add(body);
+    const wl = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.03, 0.22), mat(0x23252b)); wl.position.set(-0.32, 0.02, 0); g.add(wl);
+    const wr = wl.clone(); wr.position.x = 0.32; g.add(wr); g.userData.wings = [wl, wr]; return g;
+  }
+  spawnBirds() { this.birds = []; for (let i = 0; i < 12; i++) { const m = this._makeBird(); this.scene.add(m); this.birds.push({ m, ang: rnd(TAU), rad: rnd(10, 26), spd: rnd(0.4, 0.9), y: rnd(22, 34), flap: rnd(TAU), scatter: 0, cx: this.player.pos.x, cz: this.player.pos.z, tr: rnd(10, 26), ty: rnd(22, 34) }); } }
+  updateBirds(dt) {
+    if (!this.birds) this.spawnBirds(); const p = this.player.pos;
+    for (const b of this.birds) {
+      b.scatter = Math.max(0, b.scatter - dt);
+      b.cx += (p.x - b.cx) * Math.min(1, dt * 0.3); b.cz += (p.z - b.cz) * Math.min(1, dt * 0.3);
+      b.ang += b.spd * dt * (b.scatter > 0 ? 2.6 : 1);
+      if (b.scatter > 0) { b.rad += dt * 7; b.y += dt * 5; } else { b.rad += (b.tr - b.rad) * Math.min(1, dt * 0.5); b.y += (b.ty - b.y) * Math.min(1, dt * 0.4); }
+      if (b.rad > 62) { b.rad = rnd(10, 26); b.tr = rnd(10, 26); b.ty = rnd(22, 34); }
+      b.m.position.set(b.cx + Math.cos(b.ang) * b.rad, b.y, b.cz + Math.sin(b.ang) * b.rad); b.m.rotation.y = -b.ang + Math.PI / 2;
+      b.flap += dt * (b.scatter > 0 ? 28 : 13); const fl = Math.sin(b.flap) * 0.75; b.m.userData.wings[0].rotation.z = fl; b.m.userData.wings[1].rotation.z = -fl;
+    }
+  }
+  scareBirds() { if (!this.birds) return; for (const b of this.birds) b.scatter = rnd(2.5, 4.5); }
   // ---- car radio: procedural stations that fade in when you're driving, muffle when you step out ----
   _radioStations() { return this._stations || (this._stations = [
     { name: 'NEON 101.5', wave: 'triangle', tempo: 0.17, scale: [0, 3, 5, 7, 10, 12], base: 220, chord: true },
@@ -2421,9 +2442,9 @@ class Game {
     const scdec = new THREE.Mesh(new THREE.CircleGeometry(2.7 * scale, 22), new THREE.MeshBasicMaterial({ color: 0x080809, transparent: true, opacity: 0.78, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })); scdec.rotation.x = -Math.PI / 2; scdec.position.set(pos.x, this.city.groundH(pos.x, pos.z) + 0.06, pos.z); this.scene.add(scdec); this.fx.push({ scorch: true, m: scdec, life: 22, dur: 22, age: 0 });
     const d = this.player.pos.distanceTo(pos); this.camShake = Math.max(this.camShake || 0, clamp(1 - d / 48, 0, 1) * 1.5 * scale);
     if (d < 55) this.triggerSlowMo(0.16, 0.3, 0.4, 0.75); // cinematic hit-stop when the blast is near
-    this.hitFx(pos, 0xff8a2a, 20);
-    // catch anyone standing in the blast
-    for (const nn of this.npcs) if (!nn.dead && nn.pos.distanceTo(pos) < 6 * scale) { nn.damage(80); if (nn.scare) nn.scare(8); }
+    this.hitFx(pos, 0xff8a2a, 20); this.scareBirds();
+    // catch anyone in the blast; everyone within earshot flinches and rubbernecks toward it
+    for (const nn of this.npcs) { if (nn.dead) continue; const dd = nn.pos.distanceTo(pos); if (dd < 6 * scale) { nn.damage(80); if (nn.scare) nn.scare(8); } else if (dd < 60) { if (nn.scare) nn.scare(3); if (!nn.cop && !nn.enemy) { nn.flee = Math.max(nn.flee || 0, 2.5); nn.yaw = Math.atan2(pos.x - nn.pos.x, pos.z - nn.pos.z); } } }
     if (this.player.pos.distanceTo(pos) < 5 * scale && !this.player.inCar) this.player.hurt(45 * scale);
     // chain reaction: nearby cars take heavy damage and cook off after a short random delay
     for (const oc of this.cars) { if (oc.boat || oc._boom) continue; if (oc.pos.distanceTo(pos) < 7.5 * scale) { oc.hp = (oc.hp == null ? 120 : oc.hp) - 95; if (oc.hp <= 0) { oc._boom = true; const dp = oc.pos.clone().setY(1.0), dc = oc.color; setTimeout(() => { if (!oc.removeMe) { this.explode(dp, 1.05, dc); oc.removeMe = true; } }, rnd(220, 750)); } } }
@@ -2616,6 +2637,14 @@ class Ped {
     else this.persona = { shirt: pick(SHIRTS), skin: pick(SKIN), hair: pick(HAIR), pants: pick(PANTS) };
     this.ambient = opts.ambient || (this.homeless ? pick(['panhandle', 'sit', 'sleep']) : this.worker ? pick(['idle', 'sweep', 'lean', 'wave']) : this.loiter ? pick(['sit', 'phone', 'smoke', 'lean']) : this.vendor ? pick(['idle', 'sweep', 'wave']) : null);
     const f = buildPerson(this.persona); this.fig = f; this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); this.root.add(f.group); this.root.position.copy(this.pos); game.scene.add(this.root);
+    // it's always raining — many citizens carry an umbrella
+    if (!cop && !this.homeless && !this.worker && !opts.worker && Math.random() < 0.5) {
+      const uCol = pick([0x1f2530, 0x2a2f3a, 0x3a2e26, 0x45454e, 0x552a2a, 0x24303a, 0x2a3a4a]), um = new THREE.Group();
+      const canopy = new THREE.Mesh(new THREE.ConeGeometry(0.92, 0.52, 8), mat(uCol)); canopy.position.y = 2.55; um.add(canopy);
+      const rib = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 0.92, 0.02, 8), mat(new THREE.Color(uCol).multiplyScalar(0.7).getHex())); rib.position.y = 2.32; um.add(rib);
+      const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.3, 6), mat(0x1a1a1a)); stick.position.y = 1.95; um.add(stick);
+      um.position.set(0.2, 0, 0.14); this.root.add(um); this.umbrella = um;
+    }
     if (cop) { const capm = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.14, 0.4), mat(0x11203f)); capm.position.y = 1.95; this.root.add(capm); }
     const [ux, uz] = game.city.collide(x, z, 0.55); if (Math.hypot(ux - x, uz - z) > 0.05) { this.pos.set(ux, 0, uz); this.root.position.copy(this.pos); } // never spawn inside a wall
   }
