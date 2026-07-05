@@ -1635,6 +1635,46 @@ function buildSpecial(kind, color) {
 }
 
 // ---------------------------------------------------------------------------
+// Planar ground reflection — a mirrored camera renders the world above into a
+// render target, projected back onto a wet ground plane that follows the
+// player and BLENDS over the textured asphalt via a Fresnel + wetness term.
+// ---------------------------------------------------------------------------
+class ReflectiveGround {
+  constructor(renderer, scene, camera, size) {
+    this.renderer = renderer; this.scene = scene; this.camera = camera; this.enabled = true;
+    this.rt = new THREE.WebGLRenderTarget(512, 512, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+    this.reflCam = new THREE.PerspectiveCamera(); this.textureMatrix = new THREE.Matrix4();
+    this._t = { rwp: new THREE.Vector3(), cwp: new THREE.Vector3(), normal: new THREE.Vector3(), view: new THREE.Vector3(), target: new THREE.Vector3(), look: new THREE.Vector3(), rot: new THREE.Matrix4() };
+    const geo = new THREE.PlaneGeometry(size, size); geo.rotateX(-Math.PI / 2);
+    this.mat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false,
+      uniforms: { tRefl: { value: this.rt.texture }, texMat: { value: this.textureMatrix }, camPos: { value: new THREE.Vector3() }, intensity: { value: 0.16 }, wetness: { value: 1.0 } },
+      vertexShader: `uniform mat4 texMat; varying vec4 vUvR; varying vec3 vW; void main(){ vec4 wp = modelMatrix * vec4(position,1.0); vW = wp.xyz; vUvR = texMat * vec4(position,1.0); gl_Position = projectionMatrix * viewMatrix * wp; }`,
+      fragmentShader: `uniform sampler2D tRefl; uniform vec3 camPos; uniform float intensity, wetness; varying vec4 vUvR; varying vec3 vW;
+        void main(){ vec3 vd = normalize(camPos - vW); float fres = 0.15 + 0.85 * pow(1.0 - clamp(vd.y, 0.0, 1.0), 4.0); vec3 r = texture2DProj(tRefl, vUvR).rgb * 0.8; float a = clamp(fres * wetness * intensity, 0.0, 0.5); gl_FragColor = vec4(r, a); }` });
+    this.mesh = new THREE.Mesh(geo, this.mat); this.mesh.position.y = 0.085; this.mesh.renderOrder = 3; this.mesh.frustumCulled = false; scene.add(this.mesh);
+  }
+  update() {
+    if (!this.enabled) return;
+    try {
+      const s = this.mesh, cam = this.camera, V = this._t;
+      s.position.x = cam.position.x; s.position.z = cam.position.z; s.updateMatrixWorld();
+      V.rwp.setFromMatrixPosition(s.matrixWorld); V.cwp.setFromMatrixPosition(cam.matrixWorld); V.normal.set(0, 1, 0);
+      V.view.subVectors(V.rwp, V.cwp); if (V.view.dot(V.normal) > 0) { s.visible = false; return; } s.visible = true;
+      V.view.reflect(V.normal).negate().add(V.rwp);
+      V.rot.extractRotation(cam.matrixWorld); V.look.set(0, 0, -1).applyMatrix4(V.rot).add(V.cwp);
+      V.target.subVectors(V.rwp, V.look); V.target.reflect(V.normal).negate().add(V.rwp);
+      const rc = this.reflCam; rc.position.copy(V.view); rc.up.set(0, 1, 0).applyMatrix4(V.rot).reflect(V.normal); rc.lookAt(V.target);
+      rc.far = cam.far; rc.near = cam.near; rc.aspect = cam.aspect; rc.fov = cam.fov; rc.projectionMatrix.copy(cam.projectionMatrix); rc.updateMatrixWorld();
+      this.textureMatrix.set(0.5, 0, 0, 0.5, 0, 0.5, 0, 0.5, 0, 0, 0.5, 0.5, 0, 0, 0, 1);
+      this.textureMatrix.multiply(rc.projectionMatrix); this.textureMatrix.multiply(rc.matrixWorldInverse); this.textureMatrix.multiply(s.matrixWorld);
+      this.mat.uniforms.camPos.value.copy(cam.position);
+      s.visible = false; const oldRT = this.renderer.getRenderTarget();
+      this.renderer.setRenderTarget(this.rt); this.renderer.clear(); this.renderer.render(this.scene, rc); this.renderer.setRenderTarget(oldRT); s.visible = true;
+    } catch (e) { this.enabled = false; if (this.mesh) this.mesh.visible = false; }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Game
 // ---------------------------------------------------------------------------
 class Game {
@@ -1680,6 +1720,7 @@ class Game {
     this.city = new City(this.scene);
     this.post = new Post(this.renderer, this.scene, this.camera);
     this.post.outline = false; // drop the comic ink edge — going for gritty PBR, not cel outlines
+    try { this.reflGround = new ReflectiveGround(this.renderer, this.scene, this.camera, 320); } catch (e) { this.reflGround = null; } // wet-road planar reflection
     this.renderer.toneMapping = this.post.enabled ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping; if (!this.post.enabled) this.renderer.toneMappingExposure = 1.1;
     // image-based lighting: a moody env gives PBR reflections on wet asphalt, glass and chrome
     try { const pmrem = new THREE.PMREMGenerator(this.renderer); const envSrc = makeEnvTexture(); const envRT = pmrem.fromEquirectangular(envSrc); this.scene.environment = envRT.texture; envSrc.dispose(); pmrem.dispose(); } catch (e) { console.warn('[env] disabled:', e && e.message); }
@@ -2125,6 +2166,7 @@ class Game {
     if (this.sky.userData.clouds) for (const c of this.sky.userData.clouds.children) { c.position.x += dt * 2.4; if (c.position.x > 720) c.position.x -= 1440; }
     // refresh the shadow map only a few times per second (buildings are static)
     this._shadowT -= dt; if (this._shadowT <= 0) { this.renderer.shadowMap.needsUpdate = true; this._shadowT = 0.11; }
+    if (this.reflGround && (this.playing || this.menuMode)) this.reflGround.update();
     this.post.render(); this.input.end();
   }
   // do any active cops currently hold a clear line of sight on the player?
