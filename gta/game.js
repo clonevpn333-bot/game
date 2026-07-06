@@ -524,6 +524,7 @@ class City {
     this._buildRoads();
     this._streetLights();
     this._scatterKnockables();
+    this._buildTrain();
     this._buildSignals();
     this._buildLandmarks();     // reserve landmark plots + set `places` BEFORE the district fill
     this._buildDistricts();     // lattice of buildings fronting the streets, thinned by density
@@ -589,6 +590,45 @@ class City {
     const railMat = mat(0xb8c0ca);
     for (const e of net.edges) { if (!e.isBridge) continue; const a = net.nodes[e.a].position, b = net.nodes[e.b].position, dir = b.clone().sub(a); const len = dir.length(); dir.multiplyScalar(1 / len); const perp = new THREE.Vector3(dir.z, 0, -dir.x), w = ROAD_CLASS[e.class].width / 2, mid = a.clone().lerp(b, 0.5); for (const s of [-1, 1]) { const rail = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, len), railMat); rail.position.set(mid.x + perp.x * s * w, 0.55, mid.z + perp.z * s * w); rail.rotation.y = Math.atan2(dir.x, dir.z); this.group.add(rail); } }
   }
+  // ---- elevator access + on-demand furnished floors (walls read as glass from inside — the shaft culls away) ----
+  nearElevator(pos) { if (!this.elevators) return null; for (const el of this.elevators) { if (Math.hypot(pos.x - el.x, pos.z - el.z) < 3.2) return el; } return null; }
+  floorY(el, f) { return el.h0 + 0.85 + (f - 1) * 4; }
+  floorRoom(el, f) {
+    if (!this._rooms) this._rooms = new Map();
+    const key = el.cx + ',' + el.cz + ':' + f; if (this._rooms.has(key)) return this._rooms.get(key);
+    const y = this.floorY(el, f), G = new THREE.Group(), w = el.w - 1.2, d = el.d - 1.2, rng = mulberry32(((el.cx * 73 + el.cz * 131 + f * 7) | 0) >>> 0);
+    const carpet = new THREE.Mesh(new THREE.BoxGeometry(w, 0.14, d), mat(pick([0x2c3242, 0x3a3040, 0x2a3a34, 0x3d3849]), { emissive: 0x22242c, emissiveIntensity: 0.25 })); carpet.position.set(el.cx, y - 0.1, el.cz); G.add(carpet);
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.6, 0.1, d * 0.5), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 1.2 })); panel.position.set(el.cx, y + 3.0, el.cz); G.add(panel);
+    const nDesk = 2 + (rng() * 3 | 0);
+    for (let i = 0; i < nDesk; i++) { const dx = el.cx + (rng() - 0.5) * (w - 4), dz = el.cz + (rng() - 0.5) * (d - 5); const desk = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.8, 1.0), mat(0x5a4632)); desk.position.set(dx, y + 0.5, dz); G.add(desk); const mon = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.45, 0.06), mat(0x0c1018, { emissive: pick([0x2fd0e0, 0x3a5a8a, 0x1a2a3a]), emissiveIntensity: 0.9 })); mon.position.set(dx, y + 1.14, dz - 0.2); G.add(mon); const chair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.9, 0.55), mat(0x22262e)); chair.position.set(dx, y + 0.55, dz + 1.0); G.add(chair); }
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.25, 0.5, 10), mat(0xa06a3a)); pot.position.set(el.cx + w / 2 - 1, y + 0.35, el.cz + d / 2 - 1); G.add(pot);
+    const frond = new THREE.Mesh(new THREE.SphereGeometry(0.5, 9, 7), mat(0x2f7e44)); frond.position.set(el.cx + w / 2 - 1, y + 0.95, el.cz + d / 2 - 1); G.add(frond);
+    // elevator doors on this floor (the way back down)
+    const doors = new THREE.Mesh(new THREE.BoxGeometry(Math.min(el.w * 0.45, 3), 2.6, 0.14), mat(0x1a2530, { emissive: 0x2fd0e0, emissiveIntensity: 0.5 })); doors.position.set(el.cx, y + 1.4, el.cz - el.d / 2 + 0.45); G.add(doors);
+    this.group.add(G); this._rooms.set(key, { G, y });
+    if (this._rooms.size > 8) { const first = this._rooms.keys().next().value; const old = this._rooms.get(first); this.group.remove(old.G); this._rooms.delete(first); } // cap live rooms
+    return this._rooms.get(key);
+  }
+  // ---- elevated metro loop: a lit three-car train orbits the city on a guideway ----
+  _buildTrain() {
+    const half = this.half, cx = -half * 0.06, cz = 0, r = half * 0.6, y = 15;
+    this.trainTrack = { cx, cz, r, y };
+    const guide = new THREE.Mesh(new THREE.TorusGeometry(r, 0.38, 6, 140), mat(0x2a2e38, { metalness: 0.3, roughness: 0.5 }));
+    guide.rotation.x = Math.PI / 2; guide.position.set(cx, y - 1.5, cz); this.group.add(guide);
+    const rail2 = new THREE.Mesh(new THREE.TorusGeometry(r, 0.1, 4, 140), mat(0x8a919c, { metalness: 0.6, roughness: 0.3 }));
+    rail2.rotation.x = Math.PI / 2; rail2.position.set(cx, y - 1.05, cz); this.group.add(rail2);
+    for (let a = 0; a < 30; a++) { const ang = a / 30 * TAU, px = cx + Math.cos(ang) * r, pz = cz + Math.sin(ang) * r; if (!this.net.isLand(px, pz)) continue; const h = y - 1.6, pyl = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.75, h, 8), mat(0x272b33)); pyl.position.set(px, h / 2, pz); pyl.castShadow = true; this.group.add(pyl); this.boxes.push({ x: px, z: pz, hw: 0.9, hd: 0.9 }); }
+    this.trainCars = [];
+    for (let i = 0; i < 3; i++) {
+      const car = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.5, 8.6), mat(0x3a4250, { metalness: 0.35, roughness: 0.4 })); body.castShadow = true; car.add(body);
+      const band = new THREE.Mesh(new THREE.BoxGeometry(2.46, 0.8, 8.0), mat(0x101a28, { emissive: 0xffd9a0, emissiveIntensity: 0.9, transparent: true, opacity: 0.92 })); band.position.y = 0.42; car.add(band);
+      const roofl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 7.8), mat(0x2fe6ff, { emissive: 0x2fe6ff, emissiveIntensity: 1.2 })); roofl.position.y = 1.32; car.add(roofl);
+      if (i === 0) { const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), mat(0xfff6d2, { emissive: 0xfff0b0, emissiveIntensity: 3 })); head.position.set(0, 0, -4.4); car.add(head); }
+      this.group.add(car); this.trainCars.push(car);
+    }
+    this.trainT = 0;
+  }
   // ---- curbside cones + trash cans you can plough through (they fly off when hit) ----
   _scatterKnockables() {
     const net = this.net; this.knockables = []; const rng = mulberry32((net.seed ^ 0xCA5) >>> 0);
@@ -652,6 +692,9 @@ class City {
     const pier = poi('pier');
     for (let p = 0; p < 5; p++) this.palm(bm.x + 8 + p * 8, bm.z - 20, G);
     this.beachSpots.push({ x: bm.x + 10, z: bm.z + 14 }); this.errands.push({ x: bm.x + 10, z: bm.z + 14 });
+    // BAYSIDE GALLERIA — a real mall: anchor box + glowing entrance + interior kiosks + a parking field
+    const ml = this._spotNear(bm.clone().add(new THREE.Vector3(-70, 0, -40)), 30); this._mall(ml.x, ml.z); this._reserve(ml, 52); this.places = this.places || {};
+    this.mallPos = { x: ml.x, z: ml.z };
     // SUBURB / Sunset Heights — your house
     const sub = poi('suburbGate'), hm = this._spotNear(sub, 20); this._houses(hm.x, hm.z, 34, this.brng, G, true); this._reserve(hm, 24); this.homePos = { x: hm.x, z: hm.z };
     // ISLAND enclave — Starfish villas
@@ -666,8 +709,42 @@ class City {
       bank: { x: bk.x, z: bk.z }, home: this.homePos, motormax: this.motormax, jail: { x: jl.x, z: jl.z },
       beach: { x: poi('beachMall').x + 20, z: poi('beachMall').z }, waterfront: bayMid,
       finale: { x: bayMid.x, z: net.half * 0.55 }, privado: { x: this.privIslet.x, z: this.privIslet.z },
-      marina: { x: pier.x, z: pier.z }, starfish: this.starfishPlace,
+      marina: { x: pier.x, z: pier.z }, starfish: this.starfishPlace, mall: this.mallPos,
     };
+  }
+  // ---- BAYSIDE GALLERIA: anchor box + parking field between road and doors + interior kiosk strip ----
+  // (real-mall anatomy: one big-box anchor, a lit parking lot out front, small tenants inside one shell)
+  _mall(cx, cz) {
+    const G = this.group, W = 46, D = 28, H = 9;
+    // parking field out front (south side): pale slab + bays + lamp poles + spots for parked cars
+    const lot = new THREE.Mesh(new THREE.BoxGeometry(W + 18, 0.18, 26), mat(0x23262c, { roughness: 0.3, metalness: 0.1, envMapIntensity: 1.4 })); lot.position.set(cx, 0.09, cz + D / 2 + 14); lot.receiveShadow = true; G.add(lot);
+    this.mallParking = [];
+    for (let i = 0; i < 8; i++) { const px = cx - W / 2 - 2 + i * ((W + 8) / 7), pz = cz + D / 2 + 9 + (i % 2) * 10; const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.2, 4.6), mat(0xd8dce4, { emissive: 0x888c94, emissiveIntensity: 0.35 })); stripe.position.set(px, 0.12, pz); G.add(stripe); if (i % 2 === 0) this.mallParking.push({ x: px + 1.6, z: pz, yaw: 0 }); }
+    this._lamp(cx - W / 2 - 4, cz + D / 2 + 14); this._lamp(cx + W / 2 + 4, cz + D / 2 + 14);
+    // the anchor shell (walk in through the glowing south entrance; inside, the shell culls to glass)
+    const shellCol = 0x2e3138, shell = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), mat(shellCol, { emissive: shellCol, emissiveIntensity: 0.1 })); shell.position.set(cx, H / 2, cz); shell.castShadow = true; shell.receiveShadow = true; G.add(shell);
+    const ent = new THREE.Mesh(new THREE.BoxGeometry(10, 5.4, 0.5), mat(0x101a24, { emissive: 0x2fd0e0, emissiveIntensity: 1.1, transparent: true, opacity: 0.85 })); ent.position.set(cx, 2.7, cz + D / 2 + 0.2); G.add(ent);
+    this._neonSign('GALLERIA', 0xff5fb0, cx, H + 1.6, cz + D / 2 + 0.4, 18, G);
+    // collision: back + sides + front split around the 10-wide door
+    this.boxes.push({ x: cx, z: cz - D / 2, hw: W / 2, hd: 0.5 });
+    this.boxes.push({ x: cx - W / 2, z: cz, hw: 0.5, hd: D / 2 }); this.boxes.push({ x: cx + W / 2, z: cz, hw: 0.5, hd: D / 2 });
+    for (const s of [-1, 1]) this.boxes.push({ x: cx + s * (W / 4 + 2.5), z: cz + D / 2, hw: W / 4 - 2.5, hd: 0.5 });
+    // interior: tiled floor, kiosk strip along the back, benches + planters down the middle
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(W - 1, 0.16, D - 1), mat(0xb4b9c3, { emissive: 0x9aa0aa, emissiveIntensity: 0.22 })); floor.position.set(cx, 0.1, cz); floor.receiveShadow = true; G.add(floor);
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(W * 0.8, 0.1, 1.4), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 1.4 })); strip.position.set(cx, H - 1.2, cz); G.add(strip);
+    const KIOSK = [['KICKS+', 0x2fe6ff], ['GLOW SKIN', 0xff5fb0], ['BAY BOOKS', 0xffd23a], ['NOODLE-GO', 0xff5a5a], ['TECHTRIX', 0x9b5cff]];
+    for (let i = 0; i < KIOSK.length; i++) {
+      const kx = cx - W / 2 + 6 + i * ((W - 12) / (KIOSK.length - 1)), kz = cz - D / 2 + 3.2;
+      const booth = new THREE.Mesh(new THREE.BoxGeometry(5.4, 3.2, 3.4), mat(pick(FACADES))); booth.position.set(kx, 1.6, kz); booth.castShadow = true; G.add(booth);
+      this._neonSign(KIOSK[i][0], KIOSK[i][1], kx, 3.9, kz + 1.85, 5, G);
+      const counter = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.0, 0.8), mat(0x5a4632)); counter.position.set(kx, 0.6, kz + 2.6); G.add(counter);
+      this.boxes.push({ x: kx, z: kz, hw: 2.8, hd: 1.8, h: 3.4 });
+      this.shops.push({ x: kx, z: kz + 2.6, w: 5, d: 3, type: 'shop', name: KIOSK[i][0] });
+      this.workposts.push({ x: kx, z: kz + 1.9, yaw: Math.PI }); // leisure spots for these kiosks get added by the shops pass in build()
+    }
+    for (const sx of [-8, 0, 8]) { const bench = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.5, 0.8), mat(0x6a4a2e)); bench.position.set(cx + sx, 0.42, cz + 3); G.add(bench); const planter = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.7, 0.8, 10), mat(0x7a6a58)); planter.position.set(cx + sx + 2, 0.5, cz + 3); G.add(planter); const bush = new THREE.Mesh(new THREE.SphereGeometry(0.55, 9, 7), mat(0x2f7e44)); bush.position.set(cx + sx + 2, 1.15, cz + 3); G.add(bush); this.errands.push({ x: cx + sx, z: cz + 3 }); }
+    const pl = new THREE.PointLight(0xfff0d0, 10, 34, 2); pl.position.set(cx, H - 2, cz); G.add(pl);
+    if (this._lod) this._lod.push({ x: cx, z: cz, w: W, d: D, h: H, c: shellCol });
   }
   // ---- fill each district with buildings fronting its streets, thinned by the density field ----
   _buildDistricts() {
@@ -680,8 +757,10 @@ class City {
         const rw = ROAD_CLASS[ne.edge.class].width / 2;
         if (ne.dist < rw + 6.5 || ne.dist > 40) continue;                              // line the street, leave a clear carriageway
         if (this._isReserved(x, z)) continue;
-        const dens = net.density(x, z); if (rng() > 0.32 + dens * 0.95) continue;       // wilderness thins out at the fringe
-        this._placeBuilding(x, z, 30, net.districtAt(x, z), rng);
+        const d = net.districtAt(x, z), dens = net.density(x, z);
+        if (rng() > 0.32 + dens * 0.95) continue;       // wilderness thins out at the fringe
+        if (d.type === 'suburb' && rng() < 0.44) continue; // suburbs breathe: yards and gaps between houses, stores spread out
+        this._placeBuilding(x, z, 30, d, rng);
       }
     }
   }
@@ -703,7 +782,8 @@ class City {
       else if (r < 0.5) this._venue(x, z, LOT, ['hotel', 'club', 'diner', 'hotel', 'shop'][(rng() * 5) | 0], rng, G);
       else { this._tower(x, z, LOT - 12, LOT - 14, 16 + dens * 46 + rng() * 18, this.DECO[(rng() * this.DECO.length) | 0], rng, G); if (rng() < 0.3) this.palm(x + LOT / 2 + 3, z, G); }
     } else {
-      if (r < 0.16) this._park(x, z, LOT, rng, G);
+      if (r < 0.14) this._park(x, z, LOT, rng, G);
+      else if (r < 0.26) this._venue(x, z, LOT, pick(['shop', 'diner']), rng, G); // the lone corner store / diner every few blocks
       else { this._houses(x, z, LOT, rng, G, false); this.homes.push({ x, z }); }
     }
     this._lod = [];
@@ -1099,6 +1179,9 @@ class City {
     const desk = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, 1.1, 1.3), mat(0x5a4632)); desk.position.set(x, 0.82, z - d * 0.2); desk.castShadow = true; G.add(desk);
     this.boxes.push({ x, z: z - d * 0.2, hw: w * 0.25 + 0.2, hd: 0.85, h: 1.4 });
     const elev = new THREE.Mesh(new THREE.BoxGeometry(Math.min(w * 0.45, 3), h0 - 1.0, 0.16), mat(0x1a2530, { emissive: 0x2fd0e0, emissiveIntensity: 0.5 })); elev.position.set(x, (h0 - 1.0) / 2, z - d / 2 + 0.35); G.add(elev);
+    // a working elevator: E beside the doors opens the floor picker (ride to any storey or the roof)
+    if (!this.elevators) this.elevators = [];
+    this.elevators.push({ x, z: z - d / 2 + 1.4, cx: x, cz: z, w, d, h0, hTop: h, floors: Math.max(1, Math.floor((h - h0 - 2.2) / 4)), doorMat: elev.material });
     const panel = new THREE.Mesh(new THREE.BoxGeometry(w * 0.7, 0.16, d * 0.6), mat(0xfff2d8, { emissive: 0xfff0d0, emissiveIntensity: 1.3 })); panel.position.set(x, h0 - 0.4, z); G.add(panel);
     const rug2 = new THREE.Mesh(new THREE.BoxGeometry(w * 0.45, 0.05, d * 0.4), mat(0x33405e)); rug2.position.set(x, 0.24, z + d * 0.12); rug2.receiveShadow = true; G.add(rug2);
     const pot2 = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.25, 0.5, 10), mat(0xa06a3a)); pot2.position.set(x + w / 2 - 1.3, 0.5, z + d / 2 - 1.5); G.add(pot2);
@@ -1375,12 +1458,13 @@ const HAIR_STYLES = ['buzz', 'bowl', 'bowl', 'mop', 'spiky', 'afro', 'cap', 'bea
 const CARDS = [{ x: 1, z: 0 }, { x: -1, z: 0 }, { x: 0, z: 1 }, { x: 0, z: -1 }];
 function cap(r, len, m, rs) { return new THREE.Mesh(new THREE.CapsuleGeometry(r, len, 14, rs || 22), m); } // higher-poly limbs — smoother, less blocky
 function humanFigure(p) {
+  const fem = !!p.fem, shOff = fem ? 0.172 : 0.2;
   const skin = p.skin || pick(SKIN), shirt = p.shirt || pick(SHIRTS), pants = p.pants || pick(PANTS), hair = p.hair || pick(HAIR);
   const Sk = skinMat(skin), Sh = mat(shirt), Pa = mat(pants), Ha = mat(hair), Bo = mat(0x16161c);
   const group = new THREE.Group();
-  // pelvis / hips
+  // pelvis / hips (fuller hips on female builds)
   const hips = new THREE.Group(); hips.position.y = 0.9; group.add(hips);
-  const pelvis = new THREE.Mesh(new THREE.SphereGeometry(0.16, 20, 16), Pa); pelvis.scale.set(1.1, 0.7, 0.8); pelvis.position.y = 0.02; hips.add(pelvis);
+  const pelvis = new THREE.Mesh(new THREE.SphereGeometry(0.16, 20, 16), Pa); pelvis.scale.set(fem ? 1.22 : 1.1, 0.7, fem ? 0.86 : 0.8); pelvis.position.y = 0.02; hips.add(pelvis);
   // legs: thigh + shin + foot, reaching the ground
   const legs = {};
   for (const s of ['L', 'R']) {
@@ -1400,7 +1484,8 @@ function humanFigure(p) {
   const belt = new THREE.Mesh(new THREE.CylinderGeometry(0.165, 0.17, 0.06, 20), mat(0x1a1a20)); belt.position.y = 0.03; belt.scale.z = 0.76; chest.add(belt);
   const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.02), mat(0xc9b25a)); buckle.position.set(0, 0.03, 0.13); chest.add(buckle);
   const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.105, 0.05, 16), mat(new THREE.Color(shirt).multiplyScalar(0.82).getHex())); collar.position.y = 0.55; collar.scale.z = 0.8; chest.add(collar);
-  for (const sx of [-1, 1]) { const sh = new THREE.Mesh(new THREE.SphereGeometry(0.078, 20, 16), Sh); sh.position.set(sx * 0.2, 0.44, 0); chest.add(sh); } // rounded shoulder caps
+  if (fem) torso.scale.set(0.9, 1, 0.66); // slimmer waist on female builds
+  for (const sx of [-1, 1]) { const sh = new THREE.Mesh(new THREE.SphereGeometry(fem ? 0.066 : 0.078, 20, 16), Sh); sh.position.set(sx * shOff, 0.44, 0); chest.add(sh); } // rounded shoulder caps (narrower for fem)
   // head — ~1/7 of body height (no more bobblehead)
   const head = new THREE.Group(); head.position.y = 0.62; chest.add(head);
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.07, 0.1, 12), Sk); neck.position.y = -0.04; head.add(neck);
@@ -1413,9 +1498,9 @@ function humanFigure(p) {
     const ear = new THREE.Mesh(new THREE.SphereGeometry(0.028, 10, 8), Sk); ear.position.set(sx * 0.125, 0.06, 0.0); ear.scale.set(0.45, 1, 0.7); head.add(ear);
   }
   const nose = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.055, 8), Sk); nose.position.set(0, 0.06, 0.122); nose.rotation.x = Math.PI / 2 + 0.4; head.add(nose);
-  const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.012, 0.014), mat(0x8a4444)); mouth.position.set(0, 0.025, 0.114); head.add(mouth);
+  const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.045, fem ? 0.016 : 0.012, 0.014), mat(fem && Math.random() < 0.6 ? pick([0xc85a6a, 0xb84a5a, 0xd06a78, 0xa83a4a]) : 0x8a4444)); mouth.position.set(0, 0.025, 0.114); head.add(mouth); // lips / lipstick
   // ---- varied hair / headwear (sits above the brow so it never covers the face) ----
-  const style = p.style || pick(HAIR_STYLES);
+  const style = p.style || (fem ? pick(['long', 'bob', 'bun', 'pony', 'long', 'bob', 'long', 'cap']) : pick(HAIR_STYLES));
   const capHair = (r, y, tl, z) => { const h = new THREE.Mesh(new THREE.SphereGeometry(r, 22, 16, 0, TAU, 0, tl), Ha); h.position.set(0, y, z === undefined ? -0.012 : z); head.add(h); return h; };
   if (style === 'buzz') capHair(0.134, 0.12, 1.35);
   else if (style === 'bowl') capHair(0.147, 0.13, 1.3);
@@ -1425,12 +1510,17 @@ function humanFigure(p) {
   else if (style === 'pony') { capHair(0.143, 0.13, 1.3); const tail = cap(0.04, 0.22, Ha, 8); tail.position.set(0, 0.02, -0.15); head.add(tail); }
   else if (style === 'cap') { const col = pick(HATS); const dome = new THREE.Mesh(new THREE.SphereGeometry(0.147, 20, 14, 0, TAU, 0, 1.5), mat(col)); dome.position.set(0, 0.12, -0.01); head.add(dome); const brim = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.03, 0.17), mat(col)); brim.position.set(0, 0.12, 0.15); head.add(brim); }
   else if (style === 'beanie') { const col = pick(HATS); const b = new THREE.Mesh(new THREE.SphereGeometry(0.15, 20, 16, 0, TAU, 0, 1.55), mat(col)); b.position.set(0, 0.115, -0.006); head.add(b); }
-  // 'bald' adds nothing. occasional beard/stubble on the chin (below the mouth).
-  if (style !== 'afro' && Math.random() < 0.28) { const beard = new THREE.Mesh(new THREE.SphereGeometry(0.096, 16, 12, 0, TAU, 1.4, 1.2), Ha); beard.position.set(0, -0.01, 0.03); beard.scale.set(0.92, 0.8, 0.9); head.add(beard); }
+  else if (style === 'long') { capHair(0.15, 0.125, 1.5, -0.01); const back = new THREE.Mesh(new THREE.CapsuleGeometry(0.11, 0.3, 8, 16), Ha); back.position.set(0, -0.06, -0.09); back.scale.set(1.05, 1, 0.6); head.add(back); for (const sx of [-1, 1]) { const side = new THREE.Mesh(new THREE.CapsuleGeometry(0.045, 0.24, 6, 12), Ha); side.position.set(sx * 0.12, -0.04, 0.02); head.add(side); } }
+  else if (style === 'bob') { capHair(0.152, 0.125, 1.55, -0.01); const back = new THREE.Mesh(new THREE.SphereGeometry(0.15, 18, 14, 0, TAU, 0, 2.0), Ha); back.position.set(0, 0.0, -0.03); back.scale.set(1.02, 1.0, 0.85); head.add(back); }
+  else if (style === 'bun') { capHair(0.144, 0.128, 1.35); const bun = new THREE.Mesh(new THREE.SphereGeometry(0.075, 14, 12), Ha); bun.position.set(0, 0.2, -0.08); head.add(bun); }
+  // 'bald' adds nothing. occasional beard/stubble on the chin (male builds only).
+  if (!fem && style !== 'afro' && Math.random() < 0.3) { const beard = new THREE.Mesh(new THREE.SphereGeometry(0.096, 16, 12, 0, TAU, 1.4, 1.2), Ha); beard.position.set(0, -0.01, 0.03); beard.scale.set(0.92, 0.8, 0.9); head.add(beard); }
+  // a skirt on some female builds (moves with the hips, over the legs)
+  if (fem && Math.random() < 0.5) { const skCol = pick([shirt, pants, 0x2a2f3a, 0x8a3a58, 0x3a4a6a, 0x5a3a5a, 0x6a2f4a]); const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.28, 0.44, 22, 1, true), mat(skCol, { side: THREE.DoubleSide })); skirt.position.y = -0.2; hips.add(skirt); }
   // arms: shirt-sleeved upper arm, bare (skin) forearm, small hand pad — hang at sides
   const arms = {};
   for (const s of ['L', 'R']) {
-    const sx = s === 'L' ? -1 : 1; const arm = new THREE.Group(); arm.position.set(sx * 0.2, 0.42, 0); arm.rotation.z = sx * 0.05; chest.add(arm);
+    const sx = s === 'L' ? -1 : 1; const arm = new THREE.Group(); arm.position.set(sx * shOff, 0.42, 0); arm.rotation.z = sx * 0.05; chest.add(arm);
     const up = cap(0.056, 0.24, Sh); up.position.y = -0.16; arm.add(up);
     const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 12), Sk); elbow.position.y = -0.33; arm.add(elbow);
     const fore = new THREE.Group(); fore.position.y = -0.34; arm.add(fore);
@@ -1439,7 +1529,7 @@ function humanFigure(p) {
     const thumb = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), Sk); thumb.position.set(sx * -0.04, -0.27, 0.02); fore.add(thumb);
     arms[s] = { arm, fore };
   }
-  if (!p.noScale) { const bs = rnd(0.9, 1.14); group.scale.set(bs * rnd(0.93, 1.08), bs, bs * rnd(0.95, 1.05)); } // varied heights & builds
+  if (!p.noScale) { const bs = fem ? rnd(0.85, 1.03) : rnd(0.92, 1.16); group.scale.set(bs * rnd(0.93, 1.08), bs, bs * rnd(0.95, 1.05)); } // varied heights & builds (fem slightly shorter on average)
   const f = { group, kind: 'proc', head, t: rnd(10), j: { hips, chest, head, armL: arms.L.arm, armR: arms.R.arm, foreL: arms.L.fore, foreR: arms.R.fore, legL: legs.L.leg, legR: legs.R.leg, shinL: legs.L.shin, shinR: legs.R.shin } };
   f.update = (dt, o) => animateHuman(f, dt, o || {}); animateHuman(f, 0, { state: 'idle' });
   return f;
@@ -1632,6 +1722,38 @@ function buildSpecial(kind, color) {
     g.userData.wheels = [];
     for (const sz of [-1.55, 1.5]) for (const sx of [-1.05, 1.05]) { const wg = new THREE.Group(); wg.position.set(sx, 0.4, sz); const t2 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.34, 16), mat(0x0b0c10)); t2.rotation.z = Math.PI / 2; wg.add(t2); const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.36, 8), mat(0xd8b04a)); rim.rotation.z = Math.PI / 2; wg.add(rim); g.add(wg); g.userData.wheels.push(wg); }
     const hl2 = mat(0xfff6d2, { emissive: 0xfff0b0, emissiveIntensity: 2.4 }); for (const sx of [-0.7, 0.7]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.14, 0.1), hl2); l.position.set(sx, 0.56, -2.4); g.add(l); }
+  } else if (kind === 'bike') { // motorcycle: narrow frame, two inline wheels, a rider hunched over the bars
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.3, 1.9), paint); frame.position.y = 0.72; frame.castShadow = true; g.add(frame);
+    const tank = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), paint); tank.position.set(0, 0.92, -0.35); tank.scale.set(0.8, 0.7, 1.3); g.add(tank);
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.12, 0.7), mat(0x16161c)); seat.position.set(0, 0.94, 0.42); g.add(seat);
+    const forks = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.85, 8), mat(0xc4c9d1)); forks.position.set(0, 0.72, -0.95); forks.rotation.x = 0.4; g.add(forks);
+    const bars = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.05, 0.05), mat(0x2a2e36)); bars.position.set(0, 1.12, -0.82); g.add(bars);
+    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 1.0, 8), mat(0xb8c0ca)); pipe.rotation.x = Math.PI / 2; pipe.position.set(0.2, 0.5, 0.4); g.add(pipe);
+    g.userData.wheels = [];
+    for (const sz of [-0.98, 0.95]) { const wg = new THREE.Group(); wg.position.set(0, 0.42, sz); const t2 = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.13, 16), mat(0x0b0c10)); t2.rotation.z = Math.PI / 2; t2.castShadow = true; wg.add(t2); const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.15, 8), mat(0xc4c9d1)); rim.rotation.z = Math.PI / 2; wg.add(rim); g.add(wg); g.userData.wheels.push(wg); }
+    const hl3 = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), mat(0xfff6d2, { emissive: 0xfff0b0, emissiveIntensity: 2.6 })); hl3.position.set(0, 0.98, -1.12); g.add(hl3);
+    const tl3 = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.05), mat(0xff2a2a, { emissive: 0xff1a1a, emissiveIntensity: 2.6 })); tl3.position.set(0, 0.82, 1.05); g.add(tl3);
+    const rider = new THREE.Group();
+    const rTor = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.3), mat(pick(SHIRTS))); rTor.rotation.x = 0.5; rider.add(rTor);
+    const rHead = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), mat(0x16161c)); rHead.position.set(0, 0.38, -0.18); rider.add(rHead); // helmet
+    const rLegL = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.4, 0.14), mat(pick(PANTS))); rLegL.position.set(-0.2, -0.38, 0.05); rider.add(rLegL);
+    const rLegR = rLegL.clone(); rLegR.position.x = 0.2; rider.add(rLegR);
+    rider.position.set(0, 1.28, 0.3); rider.visible = false; g.add(rider); g.userData.driver = rider;
+  } else if (kind === 'bus') { // city bus: long body, window band, route sign
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.9, 9.4), paint); body.position.y = 1.45; body.castShadow = true; g.add(body);
+    const band = new THREE.Mesh(new THREE.BoxGeometry(2.54, 0.62, 8.6), mat(0x0e1622, { emissive: 0x2a3c55, emissiveIntensity: 0.5, transparent: true, opacity: 0.9 })); band.position.set(0, 1.86, 0.1); g.add(band);
+    const winShield = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.8, 0.1), mat(0x0c1018, { transparent: true, opacity: 0.7 })); winShield.position.set(0, 1.8, -4.66); g.add(winShield);
+    const sign = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.3, 0.06), mat(0x141414, { emissive: 0xffb020, emissiveIntensity: 1.6 })); sign.position.set(0, 2.55, -4.62); g.add(sign);
+    const door = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.5, 1.1), mat(0x10141c)); door.position.set(1.26, 1.1, -2.9); g.add(door);
+    const skirt2 = new THREE.Mesh(new THREE.BoxGeometry(2.56, 0.4, 9.2), mat(0x15171c)); skirt2.position.y = 0.42; g.add(skirt2);
+    g.userData.wheels = [];
+    for (const sz of [-3.1, 3.1]) for (const sx of [-1.16, 1.16]) { const wg = new THREE.Group(); wg.position.set(sx, 0.5, sz); const t2 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.36, 16), mat(0x0b0c10)); t2.rotation.z = Math.PI / 2; t2.castShadow = true; wg.add(t2); g.add(wg); g.userData.wheels.push(wg); }
+    const hl4 = mat(0xfff6d2, { emissive: 0xfff0b0, emissiveIntensity: 2.4 }); for (const sx of [-0.85, 0.85]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.22, 0.1), hl4); l.position.set(sx, 0.9, -4.72); g.add(l); }
+    const tl4 = mat(0xff2a2a, { emissive: 0xff1a1a, emissiveIntensity: 2.6 }); for (const sx of [-0.9, 0.9]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.34, 0.1), tl4); l.position.set(sx, 1.0, 4.72); g.add(l); }
+    // a driver + a few silhouetted passengers in the window band
+    const drv2 = new THREE.Group(); const dT = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.32), mat(pick(SHIRTS))); drv2.add(dT); const dH = new THREE.Mesh(new THREE.SphereGeometry(0.165, 10, 8), skinMat(pick(SKIN))); dH.position.y = 0.46; drv2.add(dH);
+    drv2.position.set(0.7, 1.5, -4.0); drv2.visible = false; g.add(drv2); g.userData.driver = drv2;
+    for (let i = 0; i < 4; i++) { if (Math.random() < 0.6) { const pas = new THREE.Mesh(new THREE.SphereGeometry(0.17, 8, 6), mat(0x0a0d13)); pas.position.set(Math.random() < 0.5 ? -0.8 : 0.8, 1.95, -3 + i * 1.8); g.add(pas); } }
   } else { // monster: lifted body on comically big wheels
     const body = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.7, 4.2), paint); body.position.y = 1.75; body.castShadow = true; g.add(body);
     const cab = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.7, 1.8), paint); cab.position.set(0, 2.35, -0.3); g.add(cab);
@@ -1688,13 +1810,15 @@ class ReflectiveGround {
 // A living population — names, ages, jobs, and a street-level social simulation
 // that stages muggings, arguments, divorces and brawls with real ped actors.
 // ---------------------------------------------------------------------------
-const FIRST_NAMES = ['Marco', 'Lena', 'Tariq', 'Yuki', 'Rosa', 'Dmitri', 'Aisha', 'Ivan', 'Nadia', 'Carlos', 'Mei', 'Omar', 'Bianca', 'Kofi', 'Priya', 'Sven', 'Lucia', 'Hassan', 'Greta', 'Diego', 'Fatima', 'Noah', 'Zara', 'Viktor', 'Camila', 'Jin', 'Elena', 'Rashid', 'Ingrid', 'Pablo', 'Yara', 'Leon', 'Mira', 'Kenji', 'Sofia', 'Andre', 'Nia', 'Boris', 'Tessa', 'Ravi', 'Dana', 'Marisol', 'Sami', 'Gio', 'Wren'];
+const NAMES_M = ['Marco', 'Tariq', 'Dmitri', 'Ivan', 'Carlos', 'Omar', 'Kofi', 'Sven', 'Hassan', 'Diego', 'Noah', 'Viktor', 'Jin', 'Rashid', 'Pablo', 'Leon', 'Kenji', 'Andre', 'Boris', 'Ravi', 'Sami', 'Gio', 'Mateo', 'Amir', 'Dante'];
+const NAMES_F = ['Lena', 'Yuki', 'Rosa', 'Aisha', 'Nadia', 'Mei', 'Bianca', 'Priya', 'Lucia', 'Greta', 'Fatima', 'Zara', 'Camila', 'Elena', 'Ingrid', 'Yara', 'Mira', 'Sofia', 'Nia', 'Tessa', 'Dana', 'Marisol', 'Wren', 'Amara', 'Selin'];
+const FIRST_NAMES = NAMES_M.concat(NAMES_F);
 const LAST_NAMES = ['Marenco', 'Greco', 'Vale', 'Salcido', 'Kowalski', 'Okafor', 'Nakamura', 'Reyes', 'Petrov', 'Haddad', 'Rossi', 'Silva', 'Novak', 'Costa', 'Bauer', 'Ferreira', 'Delgado', 'Ahmed', 'Larsen', 'Moreau', 'Vasquez', 'Romano', 'Khan', 'Jensen', 'Bianchi', 'Serrano', 'Volkov', 'Mendez', 'Park', 'Adeyemi', 'Flores', 'Bergström', 'Osei', 'Duarte'];
 const JOBS = ['barista', 'mechanic', 'banker', 'dealer', 'nurse', 'cabbie', 'DJ', 'chef', 'clerk', 'longshoreman', 'realtor', 'bouncer', 'tattooist', 'fisher', 'courier', 'busker', 'bartender', 'vendor', 'line cook', 'loan shark', 'dockhand', 'florist', 'pawnbroker'];
 const MOODS = ['content', 'tired', 'anxious', 'cheerful', 'grumpy', 'love-struck', 'broke', 'hopeful', 'heartbroken', 'wired'];
 function makePerson() {
-  const first = pick(FIRST_NAMES);
-  return { first, name: first + ' ' + pick(LAST_NAMES), age: 18 + (Math.random() * 54 | 0), job: pick(JOBS), mood: pick(MOODS), wealth: 20 + (Math.random() * 420 | 0), spouse: null, affinity: 0, grudge: 0, met: false };
+  const fem = Math.random() < 0.5, first = pick(fem ? NAMES_F : NAMES_M);
+  return { first, fem, name: first + ' ' + pick(LAST_NAMES), age: 18 + (Math.random() * 54 | 0), job: pick(JOBS), mood: pick(MOODS), wealth: 20 + (Math.random() * 420 | 0), spouse: null, affinity: 0, grudge: 0, met: false };
 }
 class Social {
   constructor(game) { this.game = game; this.events = []; this.eventT = rnd(6, 12); this.news = []; this.rep = { 'Downtown': 0, 'Little Havana': 0, 'The Docklands': 0, 'Vice Beach': 0, 'Sunset Heights': 0, 'Starfish Island': 0 }; }
@@ -1863,6 +1987,7 @@ class Game {
     this.player = new Player(this);
     this.story = new Story(this);
     for (let i = 0; i < 8; i++) this.spawnPed(); for (let i = 0; i < 5; i++) this.spawnTraffic(); // ambient life for the menu / intro
+    for (const sp of (this.city.mallParking || [])) { const pc = new Car(this, sp.x, sp.z, new THREE.Vector3(0, 0, 1), pick(CAR_COLORS), false); pc.ai = false; pc.parked = true; pc.yaw = sp.yaw; pc.root.rotation.y = sp.yaw; if (pc._spill) pc._spill.visible = false; if (pc._rear) pc._rear.visible = false; const dv = pc.root.userData.driver; if (dv) dv.visible = false; this.cars.push(pc); } // shoppers' cars in the Galleria lot
 
     addEventListener('resize', () => { this.camera.aspect = innerWidth / innerHeight; this.camera.updateProjectionMatrix(); this.renderer.setSize(innerWidth, innerHeight); this.post.setSize(); });
     canvas.addEventListener('mousedown', () => { if (this.playing && !this.paused && !this.ui.modal && !this.input.locked) this.input.lock(); });
@@ -1912,7 +2037,10 @@ class Game {
     const eid = node.edges[(Math.random() * node.edges.length) | 0], e = net.edges[eid], other = e.a === node.id ? e.b : e.a, op = net.nodes[other].position;
     const fwd = op.clone().sub(node.position).normalize(), right = new THREE.Vector3(fwd.z, 0, -fwd.x), lane = Math.max(1.6, ROAD_CLASS[e.class].width * 0.22);
     const sp = node.position.clone().addScaledVector(fwd, 4).addScaledVector(right, lane);
-    const car = new Car(this, sp.x, sp.z, new THREE.Vector3(fwd.x, 0, fwd.z), pick(CAR_COLORS), true);
+    // traffic mix: mostly sedans, a slice of motorcycles, the odd city bus on the bigger roads
+    const kr = Math.random(), bigRoad = e.class !== 'alley' && e.class !== 'residential';
+    const kind = (kr < 0.12 && bigRoad) ? 'bus' : kr < 0.26 ? 'bike' : null;
+    const car = new Car(this, sp.x, sp.z, new THREE.Vector3(fwd.x, 0, fwd.z), kind === 'bus' ? pick([0x2a5a8a, 0x3a6a4a, 0x7a3a3a]) : pick(CAR_COLORS), true, kind);
     car.fromN = node.id; car.toN = other; car.edgeId = eid; car.edgeClass = e.class; car.along = 4; car.cruise = Math.min(ROAD_CLASS[e.class].speed, 20);
     this.cars.push(car); return car;
   }
@@ -1927,10 +2055,10 @@ class Game {
   pushOutOfCars(px, pz, radius) {
     for (const c of this.cars) {
       if (c.boat) continue; const dx = px - c.pos.x, dz = pz - c.pos.z;
-      if (dx * dx + dz * dz > 36) continue;
+      if (dx * dx + dz * dz > (c.kind === 'bus' ? 60 : 36)) continue;
       const cos = Math.cos(c.yaw), sin = Math.sin(c.yaw);
       const lx = dx * cos - dz * sin, lz = dx * sin + dz * cos;
-      const hw = (c.kind === 'monster' ? 1.55 : 1.25) + radius, hd = (c.kind === 'monster' ? 2.5 : 2.55) + radius;
+      const hw = (c.kind === 'monster' ? 1.55 : c.kind === 'bus' ? 1.5 : c.kind === 'bike' ? 0.5 : 1.25) + radius, hd = (c.kind === 'monster' ? 2.5 : c.kind === 'bus' ? 4.9 : c.kind === 'bike' ? 1.2 : 2.55) + radius;
       if (Math.abs(lx) < hw && Math.abs(lz) < hd) {
         const ox = hw - Math.abs(lx), oz = hd - Math.abs(lz);
         let nlx = lx, nlz = lz;
@@ -1942,6 +2070,14 @@ class Game {
   }
   addWanted(n) { const p = this.player; const was = p.wanted; p.wanted = Math.min(5, p.wanted + n); p.heat = Math.max(p.heat, 12 + p.wanted * 6); if (was === 0 && p.wanted > 0) this.responseT = rnd(7, 12); } // dispatch takes time to arrive
   _nearestTalkable() { const p = this.player; let best = null, bd = 2.6; for (const n of this.npcs) { if (n.dead || n.cop || n.enemy || n.socialRole || !n.person) continue; const d = n.pos.distanceTo(p.pos); if (d < bd) { bd = d; best = n; } } return best; }
+  // ride a tower elevator to the lobby, any storey (furnished on demand), or the roof
+  rideElevator(el, f) {
+    const p = this.player, c = this.city; this.sfxChime();
+    if (f === 0) { p.floorBase = null; p.pos.set(el.cx, 0, el.cz - el.d / 2 + 1.8); p.vy = 0; this.ui.toast('🛗 Ground floor'); }
+    else if (f === 'roof') { p.floorBase = { x: el.cx, z: el.cz, hw: el.w / 2 - 0.4, hd: el.d / 2 - 0.4, y: el.hTop + 0.25 }; p.pos.set(el.cx, el.hTop + 0.25, el.cz); p.vy = 0; this.ui.toast('🛗 Roof — watch the wind (and the edge)'); }
+    else { const room = c.floorRoom(el, f); p.floorBase = { x: el.cx, z: el.cz, hw: el.w / 2 - 0.7, hd: el.d / 2 - 0.7, y: room.y }; p.pos.set(el.cx, room.y, el.cz - el.d / 2 + 2.2); p.vy = 0; this.ui.toast('🛗 Floor ' + f); }
+    p.root.position.copy(p.pos);
+  }
   // ---- witness system: crimes only count if someone actually SAW (or heard) them ----
   reportCrime(pos, sev, opts) {
     opts = opts || {};
@@ -2126,6 +2262,7 @@ class Game {
       if (p.wanted > 0) { this.ui.toast("Can't sleep with the law outside — lose the heat first"); return; }
       p.health = p.maxHealth; p.fatigue = 0; const ph = (this.time / 300) % 1; this.time += ((20 / 24 - ph + 1) % 1) * 300;
       this.saveGame(); this.ui.bigCard('HOME SWEET HOME', 'Slept it off — health full, well-rested, game saved'); return; } }
+    if (!p.inCar) { const elv = this.city.nearElevator(p.pos); if (elv) { this.ui.elevatorMenu(elv); return; } } // ride the tower elevator
     if (!p.inCar && p.weapon !== 'pistol') { const t = this._nearestTalkable(); if (t) { this.ui.socialMenu(t); return; } } // talk to whoever you're facing
     if (p.inCar) { // spray shop: repaint your ride
       const sp = this.city.sprayPad;
@@ -2300,6 +2437,8 @@ class Game {
     if (this.city.displays) for (const d2 of this.city.displays) d2.root.rotation.y += dt * 0.5;
     const jd = this.city.jailDoor; if (jd) { const tx = this.city.jail.door.x + (this.city.jailOpen ? 2.7 : 0); jd.position.x += (tx - jd.position.x) * Math.min(1, dt * 3.5); } // cell door rolls on its track
     if (this.city.lighthouseBeam) this.city.lighthouseBeam.rotation.y += dt * 0.9; // sweeping beacon
+    // the metro loop runs all night
+    if (this.city.trainCars) { const T = this.city.trainTrack; this.city.trainT += dt * (13 / T.r); for (let i = 0; i < this.city.trainCars.length; i++) { const ang = this.city.trainT - i * (9.2 / T.r), c = this.city.trainCars[i]; c.position.set(T.cx + Math.cos(ang) * T.r, T.y, T.cz + Math.sin(ang) * T.r); c.rotation.y = -ang; } }
     if (this.sky.userData.clouds) for (const c of this.sky.userData.clouds.children) { c.position.x += dt * 2.4; if (c.position.x > 720) c.position.x -= 1440; }
     // refresh the shadow map only a few times per second (buildings are static)
     this._shadowT -= dt; if (this._shadowT <= 0) { this.renderer.shadowMap.needsUpdate = true; this._shadowT = 0.11; }
@@ -2709,6 +2848,14 @@ class Player {
     if (inp.p('KeyF')) { if (this.inCar) this.exitCar(); else { const car = this.game.nearestCar(this.pos, 4.5); if (car) { if (car.aiTraffic && !car.jacked && !car.boat) this.startJack(car); else this.enterCar(car); } } }
     if (inp.p('Digit1')) { this.weapon = 'fists'; this.game.ui.toast('Fists'); }
     if (inp.p('Digit2') && this.hasGun) { this.weapon = 'pistol'; this.gunOutT = 4; this.game.ui.toast('Pistol'); }
+    // emotes (on foot, 3-7): wave · dance · cheer · point · sit — any movement cancels
+    if (!this.inCar) {
+      if (inp.p('Digit3')) { this.emote = { s: 'wave', t: 2.6 }; this.game.ui.toast('👋 Wave'); }
+      if (inp.p('Digit4')) { this.emote = { s: 'dance', t: 6 }; this.game.ui.toast('🕺 Dance'); }
+      if (inp.p('Digit5')) { this.emote = { s: 'cheer', t: 2.6 }; this.game.ui.toast('🙌 Cheer'); }
+      if (inp.p('Digit6')) { this.emote = { s: 'point', t: 2.2 }; this.game.ui.toast('👉 Point'); }
+      if (inp.p('Digit7')) { this.emote = { s: 'sit', t: 12 }; this.game.ui.toast('🪑 Sit (move to stand)'); }
+    }
     if (inp.p('KeyE')) this.game.interact();
     if (!this.inCar && inp.p('KeyB')) this.game.buyProperty();
     if (this.inCar) { const car = this.inCar; car.control(dt, inp); this.pos.copy(car.pos); this.yaw = car.yaw; this._stats(dt); return; }
@@ -2722,7 +2869,10 @@ class Player {
     [this.pos.x, this.pos.z] = this.game.pushOutOfCars(this.pos.x, this.pos.z, 0.42);
     this.pos.x = clamp(this.pos.x, -this.game.city.size / 2 - 260, this.game.city.size / 2 + 300); this.pos.z = clamp(this.pos.z, -this.game.city.size / 2 - 330, this.game.city.size / 2 + 260);
     if (inp.k('Space') && this.onGround && !inWater) { this.vy = 7; this.onGround = false; }
-    const gH = this.game.city.groundH(this.pos.x, this.pos.z);
+    let gH = this.game.city.groundH(this.pos.x, this.pos.z);
+    // standing on an elevated tower floor: the slab is the ground while you stay on it; step off the edge and you fall
+    const fb = this.floorBase;
+    if (fb) { if (Math.abs(this.pos.x - fb.x) < fb.hw && Math.abs(this.pos.z - fb.z) < fb.hd) gH = fb.y; else if (this.pos.y < gH + 1.5) this.floorBase = null; }
     this.vy -= 22 * dt; this.pos.y += this.vy * dt; if (this.pos.y <= gH) { this.pos.y = gH; this.vy = 0; this.onGround = true; }
     if (moving) this.yaw = lerpAngle(this.yaw, Math.atan2(wish.x, wish.z), Math.min(1, dt * 12));
     this.gunCd = Math.max(0, this.gunCd - dt); this.punchT = Math.max(0, this.punchT - dt); this.shootT = Math.max(0, this.shootT - dt);
@@ -2736,7 +2886,9 @@ class Player {
     if (swim) this.pos.y = -0.32 + Math.sin(this.game.time * 2.2) * 0.06; // bob at the ocean surface
     this.root.position.copy(this.pos); this.root.rotation.y = this.yaw;
     const lowHp = this.health < 28 && !swim;
-    this.fig.update(dt, { state: moving ? (lowHp ? 'limp' : (sprint && !swim ? 'run' : 'walk')) : (lowHp ? 'limp' : 'idle') });
+    if (this.emote) { if (moving || this.punchT > 0 || this.shootT > 0) this.emote = null; else { this.emote.t -= dt; if (this.emote.t <= 0) this.emote = null; } }
+    this.fig.update(dt, { state: this.emote ? this.emote.s : (moving ? (lowHp ? 'limp' : (sprint && !swim ? 'run' : 'walk')) : (lowHp ? 'limp' : 'idle')) });
+    if (this.emote) { this.root.position.copy(this.pos); return; } // hold the emote pose cleanly (no arm overrides)
     // arm overrides for punch / gun (cosmetic — aim itself is camera-based)
     if (this.gun) this.gun.visible = armed;
     const j = this.fig.j;
@@ -2833,6 +2985,9 @@ class Ped {
     else if (beach && Math.random() < 0.6) this.persona = { shirt: pick([0xff7a5a, 0x2fe6c0, 0xffe24a, 0xff5fb0, 0x4fd0ff]), skin: pick(SKIN), hair: pick(HAIR), pants: pick([0xe8e8e8, 0x4fd0ff, 0xff9a5a]), style: pick(['cap', 'spiky', 'afro', 'bald']) };
     else this.persona = { shirt: pick(SHIRTS), skin: pick(SKIN), hair: pick(HAIR), pants: pick(PANTS) };
     this.ambient = opts.ambient || (this.homeless ? pick(['panhandle', 'sit', 'sleep']) : this.worker ? pick(['idle', 'sweep', 'lean', 'wave']) : this.loiter ? pick(['sit', 'phone', 'smoke', 'lean']) : this.vendor ? pick(['idle', 'sweep', 'wave']) : null);
+    // half the city is women — cops included; fem builds drop the masculine hairstyle picks
+    this.persona.fem = this.cop ? Math.random() < 0.32 : !!this.person.fem;
+    if (this.persona.fem && ['buzz', 'spiky', 'bowl', 'mop', 'bald'].indexOf(this.persona.style) >= 0) delete this.persona.style;
     const f = buildPerson(this.persona); this.fig = f; this.root = new THREE.Group(); this.root.add(makeBlob(0.55)); this.root.add(f.group); this.root.position.copy(this.pos); game.scene.add(this.root);
     // it's always raining — many citizens carry an umbrella
     if (!cop && !this.homeless && !this.worker && !opts.worker && Math.random() < 0.5) {
@@ -2953,7 +3108,8 @@ class Car {
   constructor(game, x, z, dir, color, aiTraffic, kind) {
     this.game = game; this.pos = new THREE.Vector3(x, 0, z); this.speed = 0; this.driver = null; this.ai = true; this.aiTraffic = !!aiTraffic; this.turnCd = 1.5; this.kind = kind || null; this.color = color; this.hp = 120; this.maxHp = 120;
     this.taxi = aiTraffic && !kind && (Math.random() < 0.22 || game._forceTaxi); if (this.taxi) { color = 0xffd23a; this.color = color; }
-    this.maxSpd = kind === 'sports' ? 50 : kind === 'monster' ? 30 : 36; this.accel = kind === 'sports' ? 36 : kind === 'monster' ? 20 : 24;
+    this.maxSpd = kind === 'sports' ? 50 : kind === 'bike' ? 46 : kind === 'monster' ? 30 : kind === 'bus' ? 21 : 36;
+    this.accel = kind === 'sports' ? 36 : kind === 'bike' ? 32 : kind === 'monster' ? 20 : kind === 'bus' ? 11 : 24;
     this.dir = Math.abs(dir.x) > Math.abs(dir.z) ? { x: Math.sign(dir.x) || 1, z: 0 } : { x: 0, z: Math.sign(dir.z) || 1 };
     this.yaw = Math.atan2(this.dir.x, this.dir.z);
     this.root = kind ? buildSpecial(kind, color) : buildCar(color); if (this.taxi) this.root.add(taxiSign()); this.root.add(makeBlob(kind === 'monster' ? 2.2 : 1.7)); this.root.position.copy(this.pos); game.scene.add(this.root);
@@ -3045,7 +3201,7 @@ class Car {
       this.game.sfxSkid(); this._skidT = (this._skidT || 0) - dt;
       if (this._skidT <= 0) { this._skidT = 0.045; const bx = this.pos.x - Math.sin(this.yaw) * 1.5, bz = this.pos.z - Math.cos(this.yaw) * 1.5, rx = Math.cos(this.yaw) * 0.7, rz = -Math.sin(this.yaw) * 0.7; this.game.skidMark(bx + rx, bz + rz, this.yaw); this.game.skidMark(bx - rx, bz - rz, this.yaw); }
     }
-    const vmag = Math.hypot(this.vx, this.vz), rr = this.kind === 'monster' ? 3.4 : 2.4;
+    const vmag = Math.hypot(this.vx, this.vz), rr = this.kind === 'monster' ? 3.4 : this.kind === 'bus' ? 3.8 : this.kind === 'bike' ? 1.5 : 2.4;
     if (vmag > 7) for (const n of this.game.npcs) { if (!n.dead && n.pos.distanceTo(this.pos) < rr) { n.damage(40); if (n.launch) n.launch(this.vx * 0.5, this.vz * 0.5); if (this.driver === this.game.player) this.game.camShake = Math.max(this.game.camShake || 0, 0.35); if (!n.cop) this.game.reportCrime(this.pos, 2, { quiet: true }); } }
   }
   // anchor the car onto the lane graph: nearest node + the outgoing edge best aligned with our heading
@@ -3229,7 +3385,14 @@ class Story {
     const m = MISSIONS[this.mi], s = m.steps[this.si]; this.targets = null;
     if (s.at) { const wp = this.wp(s.at); this.marker.position.set(wp.x, 48, wp.z); this.marker.visible = true; this.marker.material.color.set(s.type === 'kill' || s.type === 'chase' ? 0xff5a5a : s.type === 'protect' ? 0x4dff9e : s.type === 'photo' ? 0x2fe6ff : 0xffd23a); this.stepPos = wp; } else { this.marker.visible = false; this.stepPos = null; }
     if (s.type === 'kill') { this.targets = []; for (let i = 0; i < (s.count || 1); i++) { const t = new Ped(this.game, this.stepPos.x + rnd(-4, 4), this.stepPos.z + rnd(-4, 4), false); t.persona.shirt = 0x882222; t.hp = 50; t.story = true; t.enemy = true; this.game.npcs.push(t); this.targets.push(t); } }
-    else if (s.type === 'chase') { const car = new Car(this.game, this.stepPos.x, this.stepPos.z, new THREE.Vector3(0, 0, 1), 0x1a1a22, true); car.fleeing = true; car.cruise = 30; car.maxSpd = 40; car._rams = 0; car.taxi = false; const dv = car.root.userData.driver; if (dv) { dv.visible = true; dv.children[0].material = mat(0x882222); } this.game.cars.push(car); this.chaseCar = car; }
+    else if (s.type === 'chase') {
+      // spawn the target ON the road network (nearest lane to the waypoint), never inside a building plot
+      const c = this.game.city, nn = c.net.nodes[c.nearestNode(this.stepPos.x, this.stepPos.z)];
+      const sx = nn ? nn.position.x : this.stepPos.x, sz = nn ? nn.position.z : this.stepPos.z;
+      const car = new Car(this.game, sx, sz, new THREE.Vector3(0, 0, 1), 0x1a1a22, true); car.fleeing = true; car.cruise = 26; car.maxSpd = 38; car._rams = 0; car.taxi = false; car._anchor();
+      const dv = car.root.userData.driver; if (dv) { dv.visible = true; dv.children[0].material = mat(0x882222); } this.game.cars.push(car); this.chaseCar = car;
+      this.marker.position.set(sx, 48, sz); this.stepPos = new THREE.Vector3(sx, 0, sz);
+    }
     else if (s.type === 'pickup') { const pk = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.3), mat(s.color || 0xffd23a, { emissive: s.color || 0xd4a92f, emissiveIntensity: 1.3 })); pk.position.set(this.stepPos.x, 1.2, this.stepPos.z); this.game.scene.add(pk); this.pickupMesh = pk; }
     else if (s.type === 'protect') { const a = new Ped(this.game, this.stepPos.x, this.stepPos.z, false); a.persona.shirt = 0x2f8f6a; a.hp = 70; a.story = true; a.ally = true; this.game.npcs.push(a); this.ally = a; this.targets = []; for (let i = 0; i < (s.count || 3); i++) { const t = new Ped(this.game, this.stepPos.x + rnd(-8, 8), this.stepPos.z + rnd(-8, 8), false); t.persona.shirt = 0x882222; t.hp = 45; t.story = true; t.enemy = true; t.attackAlly = a; this.game.npcs.push(t); this.targets.push(t); } }
     this._stepT0 = this.game.time; this._photoT = 0;
@@ -3254,7 +3417,7 @@ class Story {
       else if (s.type === 'evade') { if (this._armed == null) { this._armed = true; if (s.wanted) g.addWanted(s.wanted); } done = p.wanted <= 0; }
       else if (s.type === 'rob') done = (g.lastBankRobT || 0) > (this._stepT0 || 1e18);
       else if (s.type === 'kill') done = this.targets && this.targets.every(t => t.dead);
-      else if (s.type === 'chase') { const c = this.chaseCar; if (c) { if (c.dead || c._rams >= 2 || (c.hp != null && c.hp <= 0)) done = true; } else done = true; }
+      else if (s.type === 'chase') { const c = this.chaseCar; if (c) { this.marker.position.set(c.pos.x, 48, c.pos.z); if (this.stepPos) this.stepPos.set(c.pos.x, 0, c.pos.z); if (c.dead || c._rams >= 2 || (c.hp != null && c.hp <= 0)) done = true; } else done = true; }
       else if (s.type === 'pickup') { if (this.pickupMesh) { this.pickupMesh.rotation.y += dt * 2; this.pickupMesh.position.y = 1.2 + Math.sin(this.game.time * 2.5) * 0.12; } done = this.stepPos && dist2(p.pos, this.stepPos) < 2.6; }
       else if (s.type === 'photo') { const near = this.stepPos && dist2(p.pos, this.stepPos) < 12; if (near && g.input.p('KeyE')) { this._photoT = 1; g.ui.flashPhoto && g.ui.flashPhoto(); g.ui.toast('📷 Snapshot taken'); } done = this._photoT > 0; }
       else if (s.type === 'protect') { if (this.ally && this.ally.dead) { this.failStep('Your contact was killed'); return; } done = this.targets && this.targets.every(t => t.dead); }
@@ -3378,7 +3541,7 @@ class UI {
     if (!on) { this.modal = null; this.el.overlay.className = 'hidden'; this.el.overlay.innerHTML = ''; if (this.game.playing && !this.game.paused) this.game.input.lock(); return; }
     const g = this.game, p = g.player, hr = g.hour || 0, hh = ('' + (hr | 0)).padStart(2, '0'), mm = ('' + ((hr % 1) * 60 | 0)).padStart(2, '0');
     this.modal = 'phone'; g.input.unlock(); this.el.overlay.className = 'phone';
-    const APPS = [['home', '🏠 Home'], ['gunshop', '🔫 Ammu-Bay'], ['motormax', '🚗 MotorMax'], ['bank', '🏦 Bay Mutual'], ['tonyDiner', "🍽 Tony's"], ['beach', '🌴 The Beach'], ['marina', '⚓ Marina'], ['privado', '🏝 Isla Privada']];
+    const APPS = [['home', '🏠 Home'], ['mall', '🛍 Galleria'], ['gunshop', '🔫 Ammu-Bay'], ['motormax', '🚗 MotorMax'], ['bank', '🏦 Bay Mutual'], ['tonyDiner', "🍽 Tony's"], ['beach', '🌴 The Beach'], ['marina', '⚓ Marina'], ['privado', '🏝 Isla Privada']];
     this.el.overlay.innerHTML = `<div class="phoneui"><div class="pnotch"></div><div class="ptime">${hh}:${mm}</div><div class="pstat">$${p.money | 0} · ${p.wanted > 0 ? '★'.repeat(p.wanted) + ' heat' : 'no heat'}${g.jailed ? ' · JAILED' : ''}</div><div class="plabel">GPS PINS</div><div class="papps">${APPS.map(a => `<button data-gps="${a[0]}">${a[1]}</button>`).join('')}</div><button id="ptaxi" class="pwide">🚕 Call a cab — $50</button><button id="pclear" class="pwide pghost">✕ Clear GPS</button><div class="phint">P / ESC — pocket the phone</div></div>`;
     for (const b of this.el.overlay.querySelectorAll('[data-gps]')) b.onclick = () => { const pt2 = g.city.places[b.getAttribute('data-gps')]; if (pt2) { g.setGps(b.textContent.slice(2).trim(), pt2); this.toast('GPS set — follow the cyan beam'); } this.phone(false); };
     this.el.overlay.querySelector('#pclear').onclick = () => { g.clearGps(); this.phone(false); };
@@ -3390,6 +3553,16 @@ class UI {
     };
   }
   socialClose() { this.modal = null; this.el.overlay.className = 'hidden'; this.el.overlay.innerHTML = ''; if (this.game.playing && !this.game.paused) this.game.input.lock(); }
+  elevatorMenu(el) {
+    const g = this.game; this.modal = 'social'; g.input.unlock(); this.el.overlay.className = 'phone';
+    const shown = Math.min(el.floors, 18), step = Math.max(1, Math.ceil(el.floors / shown));
+    let btns = '<button data-fl="0">G · Lobby</button>';
+    for (let f = 1; f <= el.floors; f += step) btns += `<button data-fl="${f}">Floor ${f}</button>`;
+    btns += '<button data-fl="roof">☁ Roof</button>';
+    this.el.overlay.innerHTML = `<div class="phoneui"><div class="pnotch"></div><div class="ptime">ELEVATOR</div><div class="pstat">${el.floors} floors · pick one</div><div class="papps">${btns}</div><button id="eclose" class="pwide pghost">✕ Stay here</button><div class="phint">E / ESC — close</div></div>`;
+    for (const b of this.el.overlay.querySelectorAll('[data-fl]')) b.onclick = () => { const v = b.getAttribute('data-fl'); this.socialClose(); g.rideElevator(el, v === 'roof' ? 'roof' : (v | 0)); };
+    this.el.overlay.querySelector('#eclose').onclick = () => this.socialClose();
+  }
   socialMenu(ped, sayMsg) {
     if (!ped || !ped.person) return; const g = this.game, p = g.player, per = ped.person; this.modal = 'social'; g.input.unlock(); this.el.overlay.className = 'phone';
     const heart = per.affinity >= 70 ? '💞' : per.affinity >= 40 ? '❤️' : per.affinity >= 15 ? '🙂' : per.affinity <= -20 ? '😡' : '😐';
