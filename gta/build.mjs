@@ -1,9 +1,13 @@
-// Bundle Three.js (base64 blob) + game.js + CSS into one runnable index.html.
+// Bundle Three.js (base64 blob) + the src/ modules + CSS into one runnable index.html.
+// MULTIFILE source: src/NN_name.js parts are concatenated in filename order into a
+// single ES module (shared scope — no cross-imports needed), then inlined offline.
 // All characters are built procedurally in-engine — no glTF/GLB loaders needed.
 import fs from 'fs';
 const b64 = f => Buffer.from(fs.readFileSync(f, 'utf8'), 'utf8').toString('base64');
 const threeB64 = b64('vendor/three.module.js');
-let game = fs.readFileSync('game.js', 'utf8');
+const partFiles = fs.readdirSync('src').filter(f => f.endsWith('.js')).sort();
+let game = partFiles.map(f => fs.readFileSync('src/' + f, 'utf8')).join('\n');
+console.log('concat', partFiles.length, 'modules:', partFiles.join(' '));
 game = game.replace(/^import \* as THREE from 'three';/m, "import * as THREE from '__THREE_URL__';");
 const gameReadable = game.replace(/<\/script>/gi, '<\\/script>');
 const css = fs.readFileSync('styles.css', 'utf8');
