@@ -9,9 +9,16 @@
   #game { display:block; width:100%; height:100%; }
   #boot {
     position:fixed; inset:0; background:#04060a; z-index:10;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    font-family:Georgia, 'Times New Roman', serif; color:#8a97a0; cursor:pointer;
+    font-family:Georgia, 'Times New Roman', serif; color:#8a97a0;
     transition:opacity 2.2s ease; user-select:none;
+  }
+  #keyart { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  #shade { position:absolute; inset:0;
+    background:radial-gradient(ellipse at 50% 42%, rgba(4,6,10,0.18) 0%, rgba(4,6,10,0.55) 62%, rgba(4,6,10,0.88) 100%); }
+  #bootInner {
+    position:relative; z-index:1; height:100%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-shadow:0 2px 20px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.8);
   }
   #boot.gone { opacity:0; pointer-events:none; }
   #boot h1 {
@@ -19,10 +26,19 @@
     margin:0 0 0.4em 0.55em; color:#c9d4da; text-shadow:0 0 24px rgba(255,179,64,0.12);
   }
   #boot .sub { font-size:12px; letter-spacing:0.4em; opacity:0.45; margin-bottom:3.5em; }
-  #boot .opt { font-size:13px; letter-spacing:0.35em; padding:10px 26px; margin:6px;
-    border:1px solid rgba(138,151,160,0.25); opacity:0.75; }
+  #boot .opt { font-size:13px; letter-spacing:0.35em; padding:10px 26px; margin:6px; cursor:pointer;
+    border:1px solid rgba(138,151,160,0.3); background:rgba(4,6,10,0.45); opacity:0.85; }
   #boot .opt:hover { opacity:1; border-color:rgba(255,179,64,0.5); color:#e8d9b0; }
-  #boot .keys { position:absolute; bottom:26px; font-size:10px; letter-spacing:0.22em; opacity:0.3; }
+  #boot .keys { position:absolute; bottom:26px; font-size:10px; letter-spacing:0.22em; opacity:0.4; }
+  .settings { margin-top:2.6em; display:grid; grid-template-columns:auto 170px auto; gap:9px 14px;
+    font-size:10px; letter-spacing:0.3em; opacity:0.85; align-items:center;
+    background:rgba(4,6,10,0.45); padding:14px 20px; border:1px solid rgba(138,151,160,0.16); }
+  .settings input[type=range] { -webkit-appearance:none; appearance:none; width:170px; height:3px;
+    background:rgba(138,151,160,0.35); border-radius:2px; outline:none; cursor:pointer; }
+  .settings input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none;
+    width:11px; height:11px; border-radius:50%; background:#ffb340; box-shadow:0 0 8px rgba(255,179,64,0.6); }
+  .settings input[type=range]::-moz-range-thumb { width:11px; height:11px; border:none; border-radius:50%; background:#ffb340; }
+  .settings .val { min-width:3.5em; text-align:right; opacity:0.7; font-size:9px; }
   #err { position:fixed; inset:auto 0 0 0; z-index:20; color:#b05545; background:rgba(4,6,10,0.9);
     font:12px monospace; padding:8px 14px; display:none; white-space:pre-wrap; }
 </style>
@@ -30,11 +46,21 @@
 <body>
 <canvas id="game"></canvas>
 <div id="boot">
-  <h1>HOLLOW TIDE</h1>
-  <div class="sub">A SMALL THING IN A DROWNED PLACE</div>
-  <div class="opt" id="optStart">BEGIN</div>
-  <div class="opt" id="optContinue" style="display:none">CONTINUE</div>
-  <div class="keys">MOVE&nbsp;WASD&nbsp;&nbsp;·&nbsp;&nbsp;JUMP&nbsp;SPACE&nbsp;&nbsp;·&nbsp;&nbsp;GRAB&nbsp;E&nbsp;&nbsp;·&nbsp;&nbsp;SPRINT&nbsp;SHIFT&nbsp;&nbsp;·&nbsp;&nbsp;SNEAK&nbsp;C&nbsp;&nbsp;·&nbsp;&nbsp;LANTERN&nbsp;Q</div>
+  <canvas id="keyart" width="1600" height="900"></canvas>
+  <div id="shade"></div>
+  <div id="bootInner">
+    <h1>HOLLOW TIDE</h1>
+    <div class="sub">A SMALL THING IN A DROWNED PLACE</div>
+    <div class="opt" id="optStart">BEGIN</div>
+    <div class="opt" id="optContinue" style="display:none">CONTINUE</div>
+    <div class="settings">
+      <span>QUALITY</span><input type="range" id="setQuality" min="0" max="2" step="1" value="2"><span class="val" id="valQuality">HIGH</span>
+      <span>FIELD&nbsp;OF&nbsp;VIEW</span><input type="range" id="setFov" min="28" max="50" step="1" value="34"><span class="val" id="valFov">34°</span>
+      <span>BRIGHTNESS</span><input type="range" id="setBright" min="60" max="150" step="5" value="100"><span class="val" id="valBright">100%</span>
+      <span>VOLUME</span><input type="range" id="setVol" min="0" max="100" step="5" value="80"><span class="val" id="valVol">80%</span>
+    </div>
+    <div class="keys">MOVE&nbsp;WASD&nbsp;&nbsp;·&nbsp;&nbsp;JUMP&nbsp;SPACE&nbsp;&nbsp;·&nbsp;&nbsp;GRAB&nbsp;E&nbsp;&nbsp;·&nbsp;&nbsp;SPRINT&nbsp;SHIFT&nbsp;&nbsp;·&nbsp;&nbsp;SNEAK&nbsp;C&nbsp;&nbsp;·&nbsp;&nbsp;LANTERN&nbsp;Q</div>
+  </div>
 </div>
 <div id="err"></div>
 <script type="module">
@@ -428,10 +454,10 @@ function buildMaterials() {
   MAT.sack = new THREE.MeshStandardMaterial({ map: canvasTexture('sack', 512, (c, s) => paintCloth(c, s, [44, 42, 36])), color: new THREE.Color(0x88837a), roughness: 1.0 });
   MAT.bandage = new THREE.MeshStandardMaterial({ map: canvasTexture('bandage', 512, (c, s) => paintBandage(c, s)), bumpMap: canvasTexture('bandB', 256, (c, s) => paintHeightFromFBM(c, s, 88, 18, 1.5), { linear: true }), bumpScale: 0.4, color: new THREE.Color(0xa8a294), roughness: 0.95 });
 
-  MAT.raincoat = new THREE.MeshStandardMaterial({ map: canvasTexture('coat', 512, (c, s) => paintRaincoat(c, s)), color: new THREE.Color(0xd4551a), roughness: 0.32, metalness: 0.0, emissive: new THREE.Color(0x38130a), emissiveIntensity: 0.3 });
+  MAT.raincoat = new THREE.MeshStandardMaterial({ map: canvasTexture('coat', 512, (c, s) => paintRaincoat(c, s)), color: new THREE.Color(0xd4551a), roughness: 0.42, metalness: 0.0, emissive: new THREE.Color(0x38130a), emissiveIntensity: 0.3 });
   MAT.wax = new THREE.MeshStandardMaterial({ map: canvasTexture('wax', 1024, (c, s) => paintWax(c, s)), bumpMap: canvasTexture('waxB', 512, (c, s) => paintHeightFromFBM(c, s, 61, 7, 1.3), { linear: true }), bumpScale: 0.5, color: new THREE.Color(0x847c6c), roughness: 0.6 });
   MAT.skin = new THREE.MeshStandardMaterial({ map: canvasTexture('wax', 1024, (c, s) => paintWax(c, s)), color: new THREE.Color(0x6b6154), roughness: 0.62 });
-  MAT.dark = new THREE.MeshStandardMaterial({ color: new THREE.Color(0x101214), roughness: 0.9 });
+  MAT.dark = new THREE.MeshStandardMaterial({ color: new THREE.Color(0x0a0b0d), roughness: 0.96 });
   MAT.voidBlack = new THREE.MeshBasicMaterial({ color: new THREE.Color(0x020304) });
 
   MAT.bulb = new THREE.MeshStandardMaterial({ color: new THREE.Color(0x332211), emissive: new THREE.Color(0xffc966), emissiveIntensity: 2.6, roughness: 0.3, fog: false });
@@ -814,85 +840,84 @@ class Eight {
     this.root = new THREE.Group();
     this.root.name = 'eight';
     const j = this.j = {};
-    const S = 1; // she is authored at true scale
 
-    // --- hips & legs ---
-    j.hips = new THREE.Group(); j.hips.position.y = 0.265; this.root.add(j.hips);
+    // --- hips & legs: long enough to read human below the coat hem ---
+    j.hips = new THREE.Group(); j.hips.position.y = 0.285; this.root.add(j.hips);
     const mkLeg = (side) => {
-      const hip = new THREE.Group(); hip.position.set(0.048 * side, -0.01, 0); j.hips.add(hip);
-      const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.031, 0.027, 0.125, 24), MAT.dark);
-      thigh.position.y = -0.0625; hip.add(thigh);
-      const knee = new THREE.Group(); knee.position.y = -0.125; hip.add(knee);
-      const shinParts = mergeGeometries([
-        xformGeo(new THREE.CylinderGeometry(0.026, 0.023, 0.115, 24), 0, -0.0575, 0),
-        xformGeo(new THREE.BoxGeometry(0.052, 0.032, 0.085, 2, 1, 2), 0, -0.118, 0.018), // little boot
-      ]);
-      const shin = new THREE.Mesh(shinParts, MAT.dark);
+      const hip = new THREE.Group(); hip.position.set(0.041 * side, -0.005, 0); j.hips.add(hip);
+      const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.0245, 0.021, 0.14, 32), MAT.dark);
+      thigh.position.y = -0.07; hip.add(thigh);
+      const knee = new THREE.Group(); knee.position.y = -0.14; hip.add(knee);
+      const shin = new THREE.Mesh(mergeGeometries([
+        xformGeo(new THREE.CylinderGeometry(0.02, 0.017, 0.13, 32), 0, -0.065, 0),
+        xformGeo(new THREE.BoxGeometry(0.042, 0.026, 0.075, 2, 1, 2), 0, -0.132, 0.016),
+      ]), MAT.dark);
       knee.add(shin);
       return { hip, knee };
     };
     j.legL = mkLeg(-1); j.legR = mkLeg(1);
 
-    // --- torso under the coat ---
-    j.torso = new THREE.Group(); j.torso.position.y = 0.01; j.hips.add(j.torso);
-    const chest = new THREE.Mesh(new THREE.CapsuleGeometry(0.068, 0.11, 8, 24), MAT.dark);
+    // --- torso ---
+    j.torso = new THREE.Group(); j.torso.position.y = 0.005; j.hips.add(j.torso);
+    const chest = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.115, 12, 32), MAT.dark);
     chest.position.y = 0.115; j.torso.add(chest);
 
-    // --- the raincoat: a lathed shell + three hinged skirt panels ---
+    // --- the raincoat: slim shell, hem above the knee ---
     const coatPts = [];
-    for (let i = 0; i <= 30; i++) {
-      const t = i / 30;
-      const r = lerp(0.098, 0.055, Math.pow(t, 1.35)) * (1 + 0.025 * Math.sin(t * 26) * (1 - t));
-      coatPts.push([r, t * 0.20]);
+    for (let i = 0; i <= 40; i++) {
+      const t = i / 40; // t=0 hem … t=1 collar
+      const r = lerp(0.082, 0.047, Math.pow(t, 0.85)) * (1 + 0.004 * Math.sin(t * 24) * (1 - t));
+      coatPts.push([r, t * 0.185]);
     }
-    const coatShell = new THREE.Mesh(latheProfile(coatPts, 64), MAT.raincoat);
-    coatShell.position.y = 0.055; j.torso.add(coatShell);
+    const coatShell = new THREE.Mesh(latheProfile(coatPts, 96), MAT.raincoat);
+    coatShell.position.y = 0.045; j.torso.add(coatShell);
     j.coat = [];
     const panelGeo = (arc) => {
-      const g = new THREE.CylinderGeometry(0.105, 0.128, 0.115, 24, 3, true, -arc / 2, arc);
-      g.translate(0, -0.0575, 0);
+      const g = new THREE.CylinderGeometry(0.079, 0.092, 0.07, 32, 3, true, -arc / 2, arc);
+      g.translate(0, -0.035, 0);
       return g;
     };
-    for (const [ang, arc] of [[0, 2.0], [2.35, 1.55], [-2.35, 1.55]]) {
-      const p = new THREE.Group(); p.position.y = 0.075; p.rotation.y = ang;
-      const m = new THREE.Mesh(panelGeo(arc), MAT.raincoat);
-      p.add(m); j.torso.add(p); j.coat.push(p);
+    for (const [ang, arc] of [[0, 1.7], [2.4, 1.35], [-2.4, 1.35]]) {
+      const pnl = new THREE.Group(); pnl.position.y = 0.05; pnl.rotation.y = ang;
+      pnl.add(new THREE.Mesh(panelGeo(arc), MAT.raincoat));
+      j.torso.add(pnl); j.coat.push(pnl);
     }
 
     // --- arms ---
     const mkArm = (side) => {
-      const sh = new THREE.Group(); sh.position.set(0.088 * side, 0.185, 0); j.torso.add(sh);
-      const up = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.021, 0.1, 20), MAT.raincoat);
-      up.position.y = -0.05; sh.add(up);
-      const el = new THREE.Group(); el.position.y = -0.1; sh.add(el);
-      const handParts = [xformGeo(new THREE.CylinderGeometry(0.02, 0.017, 0.085, 20), 0, -0.0425, 0)];
-      // three small fingers + thumb — mittened but articulated enough to read
+      const sh = new THREE.Group(); sh.position.set(0.068 * side, 0.185, 0); j.torso.add(sh);
+      const up = new THREE.Mesh(new THREE.CylinderGeometry(0.017, 0.0155, 0.095, 24), MAT.raincoat);
+      up.position.y = -0.0475; sh.add(up);
+      const el = new THREE.Group(); el.position.y = -0.095; sh.add(el);
+      const handParts = [xformGeo(new THREE.CylinderGeometry(0.0145, 0.0125, 0.082, 24), 0, -0.041, 0)];
       for (let f = 0; f < 3; f++)
-        handParts.push(xformGeo(GF.finger(0.05, 0.007, 0.5, 3), (f - 1) * 0.011, -0.085, 0.004));
-      handParts.push(xformGeo(GF.finger(0.035, 0.007, 0.7, 2), 0.016 * side, -0.078, 0.008, 0, 0, -0.5 * side));
+        handParts.push(xformGeo(GF.finger(0.042, 0.0055, 0.5, 3), (f - 1) * 0.009, -0.082, 0.003));
+      handParts.push(xformGeo(GF.finger(0.03, 0.0055, 0.7, 2), 0.013 * side, -0.075, 0.006, 0, 0, -0.5 * side));
       const fore = new THREE.Mesh(mergeGeometries(handParts), MAT.dark);
       el.add(fore);
-      const grip = new THREE.Group(); grip.position.set(0, -0.1, 0.015); el.add(grip);
+      const grip = new THREE.Group(); grip.position.set(0, -0.095, 0.013); el.add(grip);
       return { sh, el, grip };
     };
     j.armL = mkArm(-1); j.armR = mkArm(1);
 
-    // --- head & hood: the face stays in shadow ---
-    j.head = new THREE.Group(); j.head.position.y = 0.245; j.torso.add(j.head);
-    const skull = new THREE.Mesh(new THREE.SphereGeometry(0.052, 32, 24), MAT.dark);
-    skull.position.y = 0.03; j.head.add(skull);
-    const face = new THREE.Mesh(new THREE.SphereGeometry(0.044, 32, 24), MAT.voidBlack);
-    face.position.set(0, 0.028, 0.018); j.head.add(face);
+    // --- head under a peaked hood; the face stays in shadow ---
+    j.head = new THREE.Group(); j.head.position.y = 0.24; j.torso.add(j.head);
+    const skull = new THREE.Mesh(new THREE.SphereGeometry(0.047, 48, 32), MAT.voidBlack);
+    skull.position.y = 0.026; j.head.add(skull);
+    const face = new THREE.Mesh(new THREE.SphereGeometry(0.0395, 48, 32), MAT.voidBlack);
+    face.position.set(0, 0.024, 0.017); j.head.add(face);
     const hoodPts = [];
-    for (let i = 0; i <= 32; i++) {
-      const t = i / 32;
-      const r = 0.075 * Math.sin(Math.PI * (0.08 + t * 0.55)) * (1 + 0.15 * (1 - t));
-      hoodPts.push([Math.max(0.004, r), t * 0.115]);
+    for (let i = 0; i <= 40; i++) {
+      const t = i / 40;
+      const r = 0.0585 * Math.sin(Math.PI * (0.10 + t * 0.62)) * (1 + 0.04 * (1 - t));
+      hoodPts.push([Math.max(0.003, r), t * 0.118]);
     }
-    const hood = new THREE.Mesh(latheProfile(hoodPts, 64), MAT.raincoat);
-    hood.position.y = -0.015; hood.rotation.x = 0.28; j.head.add(hood);
-    const peak = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.05, 20), MAT.raincoat);
-    peak.position.set(0, 0.105, -0.02); peak.rotation.x = -0.7; j.head.add(peak);
+    const hood = new THREE.Mesh(latheProfile(hoodPts, 96), MAT.raincoat);
+    hood.position.y = -0.012; hood.rotation.x = 0.32; j.head.add(hood);
+    const peak = new THREE.Mesh(new THREE.ConeGeometry(0.019, 0.062, 32), MAT.raincoat);
+    peak.position.set(0, 0.078, -0.058); peak.rotation.x = -1.45; j.head.add(peak);
+    const collar = new THREE.Mesh(new THREE.TorusGeometry(0.043, 0.011, 12, 48), MAT.raincoat);
+    collar.position.y = -0.015; collar.rotation.x = Math.PI / 2 - 0.15; j.head.add(collar);
 
     // --- the storm lantern, carried in the left hand ---
     j.lantern = new THREE.Group();
@@ -980,7 +1005,7 @@ class Eight {
     this.coatSwayX += this.coatSwayV * dt;
     this.coatSwayX = clamp(this.coatSwayX, -0.6, 0.6);
 
-    const P = { hipsY: 0.265, hipsRX: 0, headRX: 0, armSwing: 0, legSwing: 0, kneeBend: 0,
+    const P = { hipsY: 0.285, hipsRX: 0, headRX: 0, armSwing: 0, legSwing: 0, kneeBend: 0,
                 armRaiseL: 0, armRaiseR: 0, bob: 0, lean: 0 };
 
     if (ctx.state === 'ground') {
@@ -990,7 +1015,7 @@ class Eight {
         P.armSwing = Math.sin(ph + Math.PI) * 0.6; P.armRaiseL = P.armRaiseR = -1.2;
       } else if (hSpeed < 0.08) {
         // idle — breathing; exhausted idle stoops and heaves
-        P.hipsY = 0.265 - this.exhaustion * 0.02 + Math.sin(this.breath * Math.PI * 2) * 0.002;
+        P.hipsY = 0.285 - this.exhaustion * 0.02 + Math.sin(this.breath * Math.PI * 2) * 0.002;
         P.hipsRX = 0.04 + this.exhaustion * 0.3;
         P.headRX = -0.05 - this.exhaustion * 0.25 + br * 0.02;
         P.armSwing = 0; P.legSwing = 0;
@@ -998,7 +1023,7 @@ class Eight {
       } else {
         const sneak = ctx.moveMode === 'sneak' ? 1 : 0;
         const sprint = ctx.moveMode === 'sprint' ? 1 : 0;
-        P.hipsY = 0.265 - sneak * 0.055 - sprint * 0.004;
+        P.hipsY = 0.285 - sneak * 0.055 - sprint * 0.004;
         P.hipsRX = 0.06 + sneak * 0.42 + sprint * 0.22;
         P.headRX = -0.06 - sneak * 0.3 - sprint * 0.1;
         P.legSwing = Math.sin(ph) * (0.5 + sprint * 0.45 - sneak * 0.18);
@@ -1009,11 +1034,11 @@ class Eight {
       }
       if (ctx.dragging) { P.hipsRX = 0.3; P.armRaiseL = -1.35; P.armRaiseR = -1.35; P.armSwing = 0; }
     } else if (ctx.state === 'air') {
-      P.hipsY = 0.265; P.hipsRX = 0.15;
+      P.hipsY = 0.285; P.hipsRX = 0.15;
       P.legSwing = 0.35; P.kneeBend = 0.9;
       P.armRaiseL = 0.8; P.armRaiseR = 0.8; P.headRX = 0.1;
     } else if (ctx.state === 'hang') {
-      P.hipsY = 0.265; P.hipsRX = -0.12;
+      P.hipsY = 0.285; P.hipsRX = -0.12;
       P.armRaiseL = Math.PI - 0.25; P.armRaiseR = Math.PI - 0.25;
       P.legSwing = Math.sin(t * 2.2) * 0.12; P.kneeBend = 0.5; P.headRX = 0.35;
     } else if (ctx.state === 'mantle') {
@@ -1082,17 +1107,17 @@ class Warden {
     const j = this.j = {};
 
     j.pelvis = new THREE.Group(); j.pelvis.position.y = 1.55; this.root.add(j.pelvis);
-    const pelvisMesh = new THREE.Mesh(displaceGeo(new THREE.SphereGeometry(0.42, 32, 24), 41, 0.05, 3), MAT.sack);
+    const pelvisMesh = new THREE.Mesh(displaceGeo(new THREE.SphereGeometry(0.42, 48, 32), 41, 0.05, 3), MAT.sack);
     pelvisMesh.scale.set(1, 0.8, 0.9); j.pelvis.add(pelvisMesh);
 
     // legs
     const mkLeg = (side) => {
       const hip = new THREE.Group(); hip.position.set(0.26 * side, -0.1, 0); j.pelvis.add(hip);
-      const thigh = new THREE.Mesh(displaceGeo(new THREE.CylinderGeometry(0.17, 0.13, 0.75, 32), 42 + side, 0.015, 4), MAT.sack);
+      const thigh = new THREE.Mesh(displaceGeo(new THREE.CylinderGeometry(0.17, 0.13, 0.75, 48), 42 + side, 0.015, 4), MAT.sack);
       thigh.position.y = -0.375; hip.add(thigh);
       const knee = new THREE.Group(); knee.position.y = -0.75; hip.add(knee);
       const shinParts = mergeGeometries([
-        xformGeo(displaceGeo(new THREE.CylinderGeometry(0.12, 0.1, 0.68, 32), 43 + side, 0.012, 4), 0, -0.34, 0),
+        xformGeo(displaceGeo(new THREE.CylinderGeometry(0.12, 0.1, 0.68, 48), 43 + side, 0.012, 4), 0, -0.34, 0),
         xformGeo(new THREE.BoxGeometry(0.26, 0.14, 0.52, 2, 1, 3), 0, -0.65, 0.1), // heavy boot
       ]);
       const shin = new THREE.Mesh(shinParts, MAT.dark); knee.add(shin);
@@ -1107,7 +1132,7 @@ class Warden {
     const chest = new THREE.Mesh(chestGeo, MAT.sack);
     chest.position.y = 0.72; j.spine.add(chest);
     // sagging shoulder hump
-    const hump = new THREE.Mesh(displaceGeo(new THREE.SphereGeometry(0.38, 32, 24), 45, 0.05, 3), MAT.sack);
+    const hump = new THREE.Mesh(displaceGeo(new THREE.SphereGeometry(0.38, 48, 32), 45, 0.05, 3), MAT.sack);
     hump.position.set(0, 1.05, -0.18); hump.scale.set(1.2, 0.8, 1); j.spine.add(hump);
     // apron of stitched hide
     const apron = new THREE.Mesh(displaceGeo(new THREE.PlaneGeometry(0.85, 1.6, 6, 10), 46, 0.04, 2), MAT.cloth);
@@ -1116,10 +1141,10 @@ class Warden {
     // arms that reach the floor
     const mkArm = (side) => {
       const sh = new THREE.Group(); sh.position.set(0.58 * side, 1.05, 0.05); j.spine.add(sh);
-      const up = new THREE.Mesh(displaceGeo(new THREE.CylinderGeometry(0.13, 0.1, 1.05, 32), 47 + side, 0.014, 4), MAT.sack);
+      const up = new THREE.Mesh(displaceGeo(new THREE.CylinderGeometry(0.13, 0.1, 1.05, 48), 47 + side, 0.014, 4), MAT.sack);
       up.position.y = -0.52; sh.add(up);
       const el = new THREE.Group(); el.position.y = -1.05; sh.add(el);
-      const fore = new THREE.Mesh(displaceGeo(new THREE.CylinderGeometry(0.09, 0.075, 1.1, 32), 48 + side, 0.012, 4), MAT.skin);
+      const fore = new THREE.Mesh(displaceGeo(new THREE.CylinderGeometry(0.09, 0.075, 1.1, 48), 48 + side, 0.012, 4), MAT.skin);
       fore.position.y = -0.55; el.add(fore);
       const wrist = new THREE.Group(); wrist.position.y = -1.1; el.add(wrist);
       const handParts = [xformGeo(new THREE.BoxGeometry(0.2, 0.26, 0.09, 2, 2, 1), 0, -0.13, 0)];
@@ -1322,15 +1347,15 @@ class RendererTwin {
     this.root = new THREE.Group(); this.root.name = 'renderer';
     const j = this.j = {};
     j.pelvis = new THREE.Group(); j.pelvis.position.y = 1.28; this.root.add(j.pelvis);
-    const pelvisMesh = new THREE.Mesh(displaceGeo(new THREE.SphereGeometry(0.24, 32, 24), 61, 0.03, 4), MAT.wax);
+    const pelvisMesh = new THREE.Mesh(displaceGeo(new THREE.SphereGeometry(0.24, 48, 32), 61, 0.03, 4), MAT.wax);
     pelvisMesh.scale.set(1, 0.75, 0.8); j.pelvis.add(pelvisMesh);
     const mkLeg = (side) => {
       const hip = new THREE.Group(); hip.position.set(0.15 * side, -0.05, 0); j.pelvis.add(hip);
-      const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.06, 0.72, 32), MAT.wax);
+      const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.06, 0.72, 48), MAT.wax);
       thigh.position.y = -0.36; hip.add(thigh);
       const knee = new THREE.Group(); knee.position.y = -0.72; hip.add(knee);
       const shin = new THREE.Mesh(mergeGeometries([
-        xformGeo(new THREE.CylinderGeometry(0.055, 0.038, 0.66, 32), 0, -0.33, 0),
+        xformGeo(new THREE.CylinderGeometry(0.055, 0.038, 0.66, 48), 0, -0.33, 0),
         xformGeo(new THREE.BoxGeometry(0.09, 0.05, 0.3, 1, 1, 2), 0, -0.63, 0.08),
       ]), MAT.wax);
       knee.add(shin);
@@ -1338,7 +1363,7 @@ class RendererTwin {
     };
     j.legL = mkLeg(-1); j.legR = mkLeg(1);
     j.spine = new THREE.Group(); j.spine.position.y = 0.1; j.spine.rotation.x = 0.5; j.pelvis.add(j.spine);
-    const torsoGeo = displaceGeo(new THREE.CapsuleGeometry(0.21, 0.6, 8, 32), 62, 0.02, 5);
+    const torsoGeo = displaceGeo(new THREE.CapsuleGeometry(0.21, 0.6, 12, 48), 62, 0.02, 5);
     const torso = new THREE.Mesh(torsoGeo, MAT.wax);
     torso.position.y = 0.45; j.spine.add(torso);
     for (let i = 0; i < 5; i++) { // ribs proud of the waxy skin
@@ -1348,10 +1373,10 @@ class RendererTwin {
     }
     const mkArm = (side) => {
       const sh = new THREE.Group(); sh.position.set(0.26 * side, 0.72, 0.03); j.spine.add(sh);
-      const up = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.045, 0.85, 32), MAT.wax);
+      const up = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.045, 0.85, 48), MAT.wax);
       up.position.y = -0.42; sh.add(up);
       const el = new THREE.Group(); el.position.y = -0.85; sh.add(el);
-      const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.034, 0.9, 32), MAT.wax);
+      const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.034, 0.9, 48), MAT.wax);
       fore.position.y = -0.45; el.add(fore);
       const wrist = new THREE.Group(); wrist.position.y = -0.9; el.add(wrist);
       const handParts = [xformGeo(new THREE.BoxGeometry(0.16, 0.2, 0.05, 2, 2, 1), 0, -0.1, 0)];
@@ -2079,7 +2104,8 @@ class CameraRig {
   impact(a = 0.5) { this.shake = Math.min(1, this.shake + a); }
   update(dt, player, world) {
     const c = this.conf;
-    const margin = c.dist * 0.75;
+    const D = c.dist * 1.18;
+    const margin = D * 0.75;
     const tx = clamp(player.pos.x, this.bounds[0] + margin, this.bounds[1] - margin);
     const fy = this.floorY || 0;
     const ty = fy + (player.pos.y - fy) * c.yFollow;
@@ -2093,7 +2119,7 @@ class CameraRig {
     const pz = clamp(player.pos.z / 2.2, -1, 1);
     const parY = pz * CONFIG.cam.parallax * 0.45;
     const parZ = pz * CONFIG.cam.parallax;
-    let dist = c.dist + parZ;
+    let dist = D + parZ;
     if (this.pushT > 0) {
       this.pushT -= dt;
       const t = 1 - this.pushT / this.pushDur;
@@ -2106,8 +2132,9 @@ class CameraRig {
     this.cam.position.set(this.x + shx, c.height + this.y + parY + shy, dist);
     this.cam.lookAt(this.x + shx, c.lookY + this.y + parY * 0.4 + shy, 0);
     this.cam.rotation.z += c.dutch;
-    if (Math.abs(this.cam.fov - (c.fov || CONFIG.cam.fovBase)) > 0.01) {
-      this.cam.fov = damp(this.cam.fov, c.fov || CONFIG.cam.fovBase, 2, dt);
+    const fovTarget = (c.fov || CONFIG.cam.fovBase) + (this.fovDelta || 0);
+    if (Math.abs(this.cam.fov - fovTarget) > 0.01) {
+      this.cam.fov = damp(this.cam.fov, fovTarget, 2, dt);
       this.cam.updateProjectionMatrix();
     }
   }
@@ -2340,7 +2367,7 @@ class Room {
     let mesh, w, h, d;
     if (kind === 'crate') {
       w = opts.w || 0.5; h = opts.h || 0.5; d = opts.d || 0.5;
-      mesh = new THREE.Mesh(GF.crate(w, h, d, 6 + x | 0), opts.mat || MAT.woodDark);
+      mesh = new THREE.Mesh(GF.crate(w, h, d, 6 + x | 0), opts.mat || MAT.wood);
       opts.mass = opts.mass ?? 1.2;
     } else if (kind === 'can') {
       const r = opts.r || 0.13; h = opts.h || 0.34; w = d = r * 2;
@@ -2728,16 +2755,16 @@ ROOM_DEFS.push({
     R.wallSlab(11, 0, -3.4, 24, 7, 220, MAT.woodDark, 0.4);
     R.batch(displaceGeo(new THREE.BoxGeometry(24, 2.5, 0.3, 12, 3, 1), 221, 0.06, 0.8), MAT.woodDark, 11, 5.8, 3.2);
     // climbing lesson: crate → ledge → upper walkway
-    R.movable('crate', 4.2, 0, -0.6, { w: 0.55, h: 0.55, d: 0.55, mass: 1.3 });
+    R.movable('crate', 5.3, 0, 1.0, { w: 0.55, h: 0.55, d: 0.55, mass: 1.3 });
     R.box(MAT.woodDark, 7.5, 0, -1.2, 2.6, 1.35, 2.2, 'wood');       // mid ledge
     R.box(MAT.wood, 11, 0, -1.2, 4.5, 2.3, 2.2, 'wood');             // upper ledge — jump from mid
     // swing hook across the bilge
     R.hook(13.9, 4.4, -0.7, 1.55);
     R.hook(16.4, 4.4, -0.7, 1.6);
     // landing then descent
-    R.lamp(9, 5.4, -0.5, { cordLen: 1.6, intensity: 26, flicker: 0.45, shadow: true, swing: 1 });
+    R.lamp(7.2, 5.4, 0.9, { cordLen: 1.3, intensity: 34, flicker: 0.18, shadow: true, swing: 1 });
     R.lamp(18, 5.2, 0.3, { cordLen: 1.2, intensity: 18, flicker: 0.1 });
-    R.ambient(0x121c22, 0.5, 0x080a0b);
+    R.ambient(0x121c22, 0.8, 0x080a0b);
     // under-floor crawl pocket with a stub
     R.box(MAT.woodDark, 2.6, 0, 1.8, 2.2, 0.34, 1.4, 'wood');
     R.hideZone(2.6, 0, 1.8, 2.2, 0.36, 1.4);
@@ -4174,7 +4201,7 @@ class RoomManager {
 function main() {
   const canvas = document.getElementById('game');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  const pr = Math.min(window.devicePixelRatio || 1, 1.5);
+  let pr = Math.min(window.devicePixelRatio || 1, 1.5);
   renderer.setPixelRatio(pr);
   renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = true;
@@ -4197,6 +4224,41 @@ function main() {
   const RM = new RoomManager(scene);
   POST.init(renderer, Math.floor(innerWidth * pr), Math.floor(innerHeight * pr));
   const world = buildWorld({ ctrl, rig, RM, eight });
+
+  function applyOpts() {
+    const d = OPTS.data;
+    pr = [0.7, 1.05, Math.min(window.devicePixelRatio || 1, 1.5)][d.quality];
+    renderer.setPixelRatio(pr);
+    renderer.setSize(innerWidth, innerHeight);
+    POST.setSize(Math.floor(innerWidth * pr), Math.floor(innerHeight * pr));
+    const sm = [1024, 1536, 2048][d.quality];
+    CONFIG.budget.shadowMap = sm;
+    scene.traverse(o => {
+      if (o.isLight && o.shadow) {
+        o.shadow.mapSize.setScalar(sm);
+        if (o.shadow.map) { o.shadow.map.dispose(); o.shadow.map = null; }
+      }
+    });
+    rig.fovDelta = d.fov - CONFIG.cam.fovBase;
+    GAME.brightness = d.bright / 100;
+    if (AUDIO.ready) AUDIO.master.gain.value = 0.8 * d.vol / 100;
+    POST.compMat.uniforms.grainAmt.value = d.quality === 0 ? 0.035 : 0.055;
+  }
+  OPTS.read();
+  const bindOpt = (id, key, fmt) => {
+    const el = document.getElementById('set' + id), val = document.getElementById('val' + id);
+    if (!el) return;
+    el.value = OPTS.data[key];
+    const upd = () => { if (val) val.textContent = fmt(OPTS.data[key]); };
+    upd();
+    el.addEventListener('input', () => { OPTS.data[key] = +el.value; OPTS.write(); applyOpts(); upd(); });
+    el.addEventListener('click', (e) => e.stopPropagation());
+  };
+  bindOpt('Quality', 'quality', v => ['LOW', 'MED', 'HIGH'][v]);
+  bindOpt('Fov', 'fov', v => v + '\u00b0');
+  bindOpt('Bright', 'bright', v => v + '%');
+  bindOpt('Vol', 'vol', v => v + '%');
+  applyOpts();
 
   addEventListener('resize', () => {
     renderer.setSize(innerWidth, innerHeight);
@@ -4301,7 +4363,7 @@ function main() {
       // fog eases between rooms
       if (RM.fogTarget !== undefined) scene.fog.density = damp(scene.fog.density, RM.fogTarget, 1.2, dt);
       if (RM.exposureTarget) {
-        const e = damp(POST.compMat.uniforms.exposure.value, RM.exposureTarget, 1.2, dt);
+        const e = damp(POST.compMat.uniforms.exposure.value, RM.exposureTarget * (GAME.brightness || 1), 1.2, dt);
         POST.compMat.uniforms.exposure.value = e;
         POST.brightMat.uniforms.exposure.value = e;
       }
@@ -4328,6 +4390,7 @@ function main() {
     eight.j.lantern.visible = GAME.hasLantern;
     if (roomIdx === 0) eight.exhaustion = 1; // she wakes spent, where the tide left her
     AUDIO.init();
+    applyOpts();
     RM.enter(roomIdx, rig, true);
     const cp = RM.checkpoint;
     ctrl.reset(cp.x, cp.y, cp.z);
@@ -4353,6 +4416,137 @@ function main() {
   });
   return { renderer, scene, camera, eight, ctrl, rig, RM, world };
 }
+
+
+/* ============================== KEY ART ==================================
+   The title painting — brushed in 2D canvas, same palette as the world.  */
+function paintKeyArt() {
+  const c = document.getElementById('keyart');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const rand = mulberry32(808);
+  // sky
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#03050a'); sky.addColorStop(0.5, '#0a141d');
+  sky.addColorStop(0.72, '#0e1c26'); sky.addColorStop(1, '#04070b');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  // storm cloud masses
+  for (let i = 0; i < 46; i++) {
+    const x = rand() * W, y = rand() * H * 0.5, r = 60 + rand() * 200;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(${12 + rand() * 14},${20 + rand() * 16},${26 + rand() * 16},${0.05 + rand() * 0.07})`);
+    g.addColorStop(1, 'rgba(10,16,22,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+  }
+  // a wound of moonlight in the overcast
+  const moon = ctx.createRadialGradient(W * 0.24, H * 0.16, 0, W * 0.24, H * 0.16, 260);
+  moon.addColorStop(0, 'rgba(170,195,210,0.14)'); moon.addColorStop(0.4, 'rgba(150,175,195,0.05)'); moon.addColorStop(1, 'rgba(150,175,195,0)');
+  ctx.fillStyle = moon; ctx.fillRect(0, 0, W, H);
+  // sea
+  const seaY = H * 0.66;
+  const sea = ctx.createLinearGradient(0, seaY, 0, H);
+  sea.addColorStop(0, '#0a151c'); sea.addColorStop(0.4, '#060c11'); sea.addColorStop(1, '#030507');
+  ctx.fillStyle = sea; ctx.fillRect(0, seaY, W, H - seaY);
+  for (let i = 0; i < 90; i++) { // wave glints
+    ctx.fillStyle = `rgba(120,150,165,${0.02 + rand() * 0.05})`;
+    ctx.fillRect(rand() * W, seaY + rand() * (H - seaY) * 0.7, 20 + rand() * 90, 1 + rand());
+  }
+  // THE WORKS — silhouette stacked on the right
+  ctx.fillStyle = '#020407';
+  ctx.fillRect(W * 0.60, H * 0.30, W * 0.34, H * 0.42);
+  ctx.fillRect(W * 0.68, H * 0.20, W * 0.14, H * 0.2);
+  ctx.fillRect(W * 0.88, H * 0.10, W * 0.07, H * 0.62);
+  ctx.beginPath(); // conveyor gantry running to the sea
+  ctx.moveTo(W * 0.60, H * 0.46); ctx.lineTo(W * 0.40, H * 0.62); ctx.lineTo(W * 0.40, H * 0.66); ctx.lineTo(W * 0.60, H * 0.52);
+  ctx.closePath(); ctx.fill();
+  // lighthouse crown + beam
+  ctx.fillRect(W * 0.905, H * 0.065, W * 0.04, H * 0.045);
+  const bx = W * 0.925, by = H * 0.085;
+  const beam = ctx.createLinearGradient(bx, by, W * 0.45, H * 0.30);
+  beam.addColorStop(0, 'rgba(255,190,90,0.30)'); beam.addColorStop(1, 'rgba(255,190,90,0)');
+  ctx.fillStyle = beam;
+  ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(W * 0.40, H * 0.22); ctx.lineTo(W * 0.40, H * 0.40); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,210,130,0.9)';
+  ctx.beginPath(); ctx.arc(bx, by, 5, 0, 7); ctx.fill();
+  // scattered tungsten windows
+  for (let i = 0; i < 26; i++) {
+    const wx = W * (0.61 + rand() * 0.32), wy = H * (0.14 + rand() * 0.52);
+    ctx.fillStyle = `rgba(255,179,64,${0.25 + rand() * 0.5})`;
+    ctx.fillRect(wx, wy, 3 + rand() * 4, 5 + rand() * 6);
+  }
+  // drowned hull ribs, foreground left
+  ctx.strokeStyle = '#020305';
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 5; i++) {
+    ctx.lineWidth = 16 + rand() * 14;
+    ctx.beginPath();
+    const rx = W * (0.03 + i * 0.065), sway = (rand() - 0.5) * 60;
+    ctx.moveTo(rx, H * 0.98);
+    ctx.quadraticCurveTo(rx + 60 + sway, H * 0.55, rx + 180 + sway, H * (0.26 + rand() * 0.1));
+    ctx.stroke();
+  }
+  // beach
+  const beach = ctx.createLinearGradient(0, H * 0.78, 0, H);
+  beach.addColorStop(0, '#0a0d10'); beach.addColorStop(1, '#050708');
+  ctx.fillStyle = beach;
+  ctx.beginPath(); ctx.moveTo(0, H * 0.86); ctx.quadraticCurveTo(W * 0.4, H * 0.78, W, H * 0.84);
+  ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+  // — Eight — small, ember-bright, walking toward the works
+  const ex = W * 0.36, ey = H * 0.845;
+  const pool = ctx.createRadialGradient(ex + 8, ey + 26, 0, ex + 8, ey + 26, 90);
+  pool.addColorStop(0, 'rgba(255,185,90,0.30)'); pool.addColorStop(1, 'rgba(255,185,90,0)');
+  ctx.fillStyle = pool; ctx.beginPath(); ctx.ellipse(ex + 8, ey + 26, 95, 34, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#0c0d10'; // legs
+  ctx.fillRect(ex - 5, ey - 2, 4, 22); ctx.fillRect(ex + 3, ey, 4, 20);
+  const coat = ctx.createLinearGradient(ex, ey - 42, ex, ey);
+  coat.addColorStop(0, '#e06020'); coat.addColorStop(1, '#7e3210');
+  ctx.fillStyle = coat;
+  ctx.beginPath(); // coat, flaring slightly at the hem
+  ctx.moveTo(ex - 9, ey); ctx.quadraticCurveTo(ex - 12, ey - 30, ex - 4, ey - 40);
+  ctx.quadraticCurveTo(ex + 1, ey - 47, ex + 7, ey - 39); // hood peak sweep
+  ctx.quadraticCurveTo(ex + 13, ey - 30, ex + 10, ey);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#050406'; // the dark of the hood
+  ctx.beginPath(); ctx.ellipse(ex + 3.5, ey - 36, 4.5, 5.5, -0.2, 0, 7); ctx.fill();
+  ctx.fillStyle = 'rgba(255,205,120,0.95)'; // the lantern
+  ctx.beginPath(); ctx.arc(ex + 13, ey + 4, 3.4, 0, 7); ctx.fill();
+  const lg = ctx.createRadialGradient(ex + 13, ey + 4, 0, ex + 13, ey + 4, 30);
+  lg.addColorStop(0, 'rgba(255,190,95,0.5)'); lg.addColorStop(1, 'rgba(255,190,95,0)');
+  ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(ex + 13, ey + 4, 30, 0, 7); ctx.fill();
+  // rain
+  ctx.strokeStyle = 'rgba(150,170,180,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 340; i++) {
+    const x = rand() * W, y = rand() * H, len = 12 + rand() * 26;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - len * 0.12, y + len); ctx.stroke();
+  }
+  // vignette + grain
+  const vig = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.85);
+  vig.addColorStop(0, 'rgba(2,3,5,0)'); vig.addColorStop(1, 'rgba(2,3,5,0.72)');
+  ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+  for (let i = 0; i < 2600; i++) {
+    ctx.fillStyle = `rgba(${rand() < 0.5 ? '255,255,255' : '0,0,0'},${0.015 + rand() * 0.03})`;
+    ctx.fillRect(rand() * W, rand() * H, 1, 1);
+  }
+}
+
+/* ============================== OPTIONS ================================== */
+const OPTS = {
+  key: 'hollow_tide_opts',
+  data: { quality: 2, fov: 34, bright: 100, vol: 80 },
+  read() {
+    try {
+      const raw = localStorage.getItem(this.key);
+      if (raw) Object.assign(this.data, JSON.parse(raw));
+    } catch (e) {}
+    this.data.quality = clamp(this.data.quality | 0, 0, 2);
+    this.data.fov = clamp(this.data.fov, 28, 50);
+    this.data.bright = clamp(this.data.bright, 60, 150);
+    this.data.vol = clamp(this.data.vol, 0, 100);
+  },
+  write() { try { localStorage.setItem(this.key, JSON.stringify(this.data)); } catch (e) {} },
+};
 
 /* ============================== SELF_TEST ================================ */
 async function runTests() {
@@ -4542,6 +4736,7 @@ async function runTests() {
 }
 
 /* ============================== ENTRY ==================================== */
+paintKeyArt();
 if (TEST_MODE) runTests();
 else { window.__GAME = main(); window.__POST = POST; }
 </script>
