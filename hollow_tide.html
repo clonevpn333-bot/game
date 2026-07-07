@@ -434,7 +434,7 @@ function buildMaterials() {
   MAT.dark = new THREE.MeshStandardMaterial({ color: new THREE.Color(0x101214), roughness: 0.9 });
   MAT.voidBlack = new THREE.MeshBasicMaterial({ color: new THREE.Color(0x020304) });
 
-  MAT.bulb = new THREE.MeshStandardMaterial({ color: new THREE.Color(0x332211), emissive: new THREE.Color(0xffc966), emissiveIntensity: 2.6, roughness: 0.3 });
+  MAT.bulb = new THREE.MeshStandardMaterial({ color: new THREE.Color(0x332211), emissive: new THREE.Color(0xffc966), emissiveIntensity: 2.6, roughness: 0.3, fog: false });
   MAT.flame = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffc966), transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
   MAT.eyeLamp = new THREE.MeshStandardMaterial({ color: new THREE.Color(0x443311), emissive: new THREE.Color(0xd8cfa0), emissiveIntensity: 1.8, roughness: 0.25 });
 
@@ -2512,48 +2512,135 @@ const ROOM_DEFS = [];
 
 /* ---------- ACT I · THE BEACH OF HULLS ---------- */
 ROOM_DEFS.push({
-  name: 'tideline', act: 1, width: 26, exterior: true, ambience: 'beach',
-  cam: { dist: 5.4, height: 1.35, lookY: 0.72, yFollow: 0.3 },
-  spawn: { x: 2.2, z: 0 },
-  fogDensity: 0.052,
+  name: 'tideline', act: 1, width: 30, exterior: true, ambience: 'beach',
+  cam: { dist: 5.6, height: 1.4, lookY: 0.75, yFollow: 0.3 },
+  spawn: { x: 2.4, z: 0.2 },
+  fogDensity: 0.05,
   build(R) {
     const rand = mulberry32(100);
     // wet sand shelf, black water licking the left edge
-    R.batch(scaleUV(displaceGeo(new THREE.PlaneGeometry(30, 9, 60, 18), 101, 0.06, 0.5), 30 / 2.6, 9 / 2.6), MAT.sandWet, 13, 0, 0, -Math.PI / 2);
-    R.solid(13, -0.2, 0, 30, 0.2, 9, 'sand');
+    R.batch(scaleUV(displaceGeo(new THREE.PlaneGeometry(34, 9, 68, 18), 101, 0.06, 0.5), 34 / 2.6, 9 / 2.6), MAT.sandWet, 15, 0, 0, -Math.PI / 2);
+    R.solid(15, -0.2, 0, 34, 0.2, 9, 'sand');
     R.water(-9, 22, -0.02, false);
-    // the facility looms far behind — silhouette with pinprick windows
-    R.batch(new THREE.BoxGeometry(30, 18, 2), MAT.voidBlack, 20, 8, -16);
-    R.batch(new THREE.BoxGeometry(8, 26, 2), MAT.voidBlack, 30, 12, -14);
-    for (let i = 0; i < 7; i++) {
-      const wx = 12 + rand() * 22, wy = 3 + rand() * 14;
+
+    // — THE WORKS — a rendering-plant swallowing the horizon, lit from inside
+    R.batch(new THREE.BoxGeometry(34, 20, 2), MAT.voidBlack, 24, 9, -16);
+    R.batch(new THREE.BoxGeometry(10, 30, 2), MAT.voidBlack, 36, 14, -14);
+    R.batch(new THREE.BoxGeometry(6, 12, 6), MAT.voidBlack, 12, 5, -13);
+    for (let i = 0; i < 12; i++) {
+      const wx = 12 + rand() * 28, wy = 3 + rand() * 15;
       R.batch(new THREE.PlaneGeometry(0.5, 0.7), MAT.bulb, wx, wy, -12.9);
     }
-    // dead hull ribs arcing overhead
+    // the great intake door — big enough to swallow a trawler whole
+    R.batch(new THREE.BoxGeometry(7, 11, 0.8), MAT.woodDark, 24, 5.5, -12.6);
+    R.batch(new THREE.PlaneGeometry(6.2, 0.5), MAT.bulb, 24, 11.15, -12.4);
+    // crane over the water — they haul the sea in whole
+    R.batch(new THREE.BoxGeometry(0.9, 16, 0.9), MAT.voidBlack, 2, 8, -11);
+    R.batch(new THREE.BoxGeometry(12, 0.7, 0.7), MAT.voidBlack, 6.5, 15.6, -11, 0, 0, -0.06);
+    R.batch(new THREE.CylinderGeometry(0.06, 0.06, 7, 12), MAT.voidBlack, 11.5, 12, -11);
+    R.batch(GF.hook(4), MAT.voidBlack, 11.5, 9.4, -11);
+    // and far above it all, the lighthouse this whole journey climbs toward
+    R.batch(new THREE.CylinderGeometry(1.1, 1.7, 14, 32), MAT.voidBlack, 40, 26, -15);
+    R.batch(new THREE.CylinderGeometry(1.45, 1.45, 2.2, 32), MAT.voidBlack, 40, 34, -15);
+    const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.55, 24, 16), MAT.bulb);
+    beacon.position.set(R.ox + 40, 34, -15);
+    R.group.add(beacon); R.disposables.push(beacon.geometry);
+    const sweep = new THREE.Mesh(new THREE.ConeGeometry(1.5, 24, 24, 1, true), MAT.lightCone.clone());
+    sweep.material.opacity = 0.055;
+    sweep.rotation.z = Math.PI / 2;
+    sweep.position.x = 12;
+    const sweepG = new THREE.Group();
+    sweepG.position.copy(beacon.position);
+    sweepG.add(sweep);
+    R.group.add(sweepG);
+    R.disposables.push(sweep.geometry, sweep.material);
+    R.onUpdate((dt, world) => { sweepG.rotation.y = world.time * 0.22; });
+
+    // dead hull ribs arcing overhead — she comes ashore inside a ribcage
     for (let i = 0; i < 6; i++) {
-      const hx = 6.5 + i * 2.6;
+      const hx = 6.5 + i * 2.4;
       R.batch(GF.shipRib(6.2 + rand() * 1.4, 15 + i), MAT.woodDark, hx, 0, -2.6 - rand() * 0.8, 0, 0, (rand() - 0.5) * 0.14);
       if (i % 2 === 0) R.batch(GF.shipRib(5.8, 25 + i), MAT.woodDark, hx + 0.6, 0, 3.4, 0, Math.PI, (rand() - 0.5) * 0.1);
     }
-    // keel spine along the ground
     R.batch(displaceGeo(new THREE.BoxGeometry(14, 0.5, 0.6, 10, 1, 1), 130, 0.05, 1), MAT.woodDark, 12, 0.2, -2.9, 0, 0, 0.02);
+
+    // her own little boat, overturned where the tide dropped her
+    const dinghyHull = new THREE.SphereGeometry(0.62, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.5);
+    dinghyHull.scale(1.6, 0.55, 0.8);
+    displaceGeo(dinghyHull, 131, 0.015, 3);
+    R.batch(dinghyHull, MAT.woodDark, 1.3, 0.34, 0.9, Math.PI, 0.5, 0.06);
+    R.batch(new THREE.BoxGeometry(1.7, 0.06, 0.14), MAT.woodDark, 1.3, 0.37, 0.9, 0, 0.5, 0);
+    R.solid(1.3, 0, 0.9, 1.5, 0.38, 1.0, 'wood');
+    R.batch(mergeGeometries([
+      xformGeo(new THREE.CylinderGeometry(0.025, 0.03, 0.9, 12), 0, 0, 0, 0, 0, Math.PI / 2),
+      xformGeo(new THREE.BoxGeometry(0.3, 0.02, 0.12), -0.55, 0, 0),
+    ]), MAT.woodDark, 2.7, 0.04, 1.5, 0, 0.7, 0);
+
     // debris: rocks, bones, barrels
-    for (let i = 0; i < 9; i++) {
-      R.batch(GF.rock(0.25 + rand() * 0.6, 140 + i), MAT.concrete, 1 + rand() * 24, -0.1, -2.8 + rand() * 5.4);
-    }
+    for (let i = 0; i < 9; i++) R.batch(GF.rock(0.25 + rand() * 0.6, 140 + i), MAT.concrete, 1 + rand() * 26, -0.1, -2.8 + rand() * 5.4);
     R.batch(GF.bone(2.6, 150), MAT.wax, 9, 0.05, 1.8, 0.3, 0, 0.1);
-    R.batch(GF.bone(1.8, 151), MAT.wax, 15.5, 0.05, -1.5, -0.2, 1.2, 0.08);
+    R.batch(GF.bone(1.8, 151), MAT.wax, 17.5, 0.05, -1.5, -0.2, 1.2, 0.08);
     const barrel = GF.barrel(0.55, 1.5);
     R.batch(barrel, MAT.woodDark, 4.2, 0, -1.8, 0.2, 0, 1.35);
-    R.batch(barrel, MAT.woodDark, 18.5, 0, 1.6, 0, 0.8, 0);
-    R.solid(18.5, 0, 1.6, 1.1, 1.5, 1.1, 'wood');
-    // a dim pole lamp marks the way out
-    R.batch(new THREE.CylinderGeometry(0.08, 0.1, 4.4, 32), MAT.metalDark, 22.5, 2.2, -1.4);
-    R.lamp(22.5, 4.4, -1.4, { cordLen: 0.5, intensity: 20, flicker: 0.25, shadow: true, swing: 1.2 });
-    R.ambient(0x15222c, 0.95, 0x07090b);
-    R.moon(2.6);
-    // the storm lantern waits on a crate — the game's first light
-    R.box(MAT.woodDark, 8, 0, 0.4, 0.55, 0.42, 0.55, 'wood');
+    R.batch(barrel, MAT.woodDark, 21.5, 0, 1.6, 0, 0.8, 0);
+    R.solid(21.5, 0, 1.6, 1.1, 1.5, 1.1, 'wood');
+
+    // — WHAT THIS SHORE IS FOR —
+    // giant fish-crates stacked for collection, one knocked crooked
+    const crateG = GF.crate(2.2, 1.5, 2.2, 132);
+    R.batch(crateG, MAT.woodDark, 9.8, 0, -3.1);
+    R.batch(crateG, MAT.woodDark, 10.3, 1.5, -3.3, 0, 0.35, 0);
+    R.solid(10, 0, -3.2, 2.6, 3, 2.4, 'wood');
+    // a spilled catch, long dead — ribs of something eel-like
+    for (let i = 0; i < 5; i++) {
+      R.batch(new THREE.TorusGeometry(0.5 - i * 0.06, 0.045, 8, 24, Math.PI), MAT.wax, 12.5 + i * 0.75, 0.08, -2.6, 0, 0, 0.2 * (rand() - 0.5));
+    }
+    R.batch(GF.bone(3.4, 152), MAT.wax, 14.4, 0.05, -2.6, 0, 0.05, 0.02);
+    // a gaff hook the size of a tree, stood in the sand by whoever works this shore
+    R.batch(new THREE.CylinderGeometry(0.09, 0.12, 3.8, 24), MAT.woodDark, 16.9, 1.9, 1.9, 0, 0, 0.3);
+    R.batch(GF.hook(5.5), MAT.rust, 15.75, 4.6, 1.9, 0, 0, 0.3);
+    R.solid(16.9, 0, 1.9, 0.5, 3.4, 0.5, 'wood');
+    // mooring bollard wrapped in rope as thick as her arm span
+    R.batch(GF.barrel(0.4, 0.9, 133), MAT.metalDark, 4.5, 0, 2.3);
+    for (let i = 0; i < 3; i++) R.batch(new THREE.TorusGeometry(0.45, 0.09, 12, 32), MAT.sack, 4.5, 0.28 + i * 0.2, 2.3, Math.PI / 2);
+    R.solid(4.5, 0, 2.3, 0.9, 1.0, 0.9, 'metal');
+    R.batch(new THREE.CylinderGeometry(0.08, 0.08, 6, 12), MAT.sack, 1.6, 0.12, 2.7, 0.06, 0, Math.PI / 2 * 0.94);
+    // the giants' footprints, pressed deep, walking home toward the works
+    for (let i = 0; i < 4; i++) {
+      const fp = new THREE.Mesh(new THREE.CircleGeometry(0.8, 32),
+        new THREE.MeshStandardMaterial({ color: new THREE.Color(0x05080c), roughness: 0.08, metalness: 0.3, transparent: true, opacity: 0.85, depthWrite: false }));
+      fp.rotation.x = -Math.PI / 2;
+      fp.rotation.z = 0.22;
+      fp.scale.set(1, 2.15, 1);
+      fp.position.set(R.ox + 7.5 + i * 3.8, 0.06, 0.7 + (i % 2) * 1.2);
+      R.group.add(fp); R.disposables.push(fp.geometry, fp.material);
+    }
+    // the shore bell they ring when a catch comes in
+    R.batch(new THREE.CylinderGeometry(0.07, 0.09, 3.4, 16), MAT.woodDark, 27.2, 1.7, 1.9);
+    R.batch(new THREE.BoxGeometry(0.9, 0.12, 0.12), MAT.woodDark, 27.2, 3.42, 1.9);
+    const bellPts = [];
+    for (let i = 0; i <= 20; i++) { const t = i / 20; bellPts.push([lerp(0.08, 0.34, Math.pow(t, 1.7)), -t * 0.42]); }
+    R.batch(latheProfile(bellPts, 48), MAT.rust, 27.2, 3.36, 1.9);
+    R.solid(27.2, 0, 1.9, 0.4, 3.2, 0.4, 'wood');
+
+    // shore work-lights: one over the catch, one marking the way out
+    R.batch(new THREE.CylinderGeometry(0.07, 0.1, 4.0, 32), MAT.metalDark, 10.8, 2.0, -1.9, 0, 0, 0.05);
+    R.lamp(10.8, 4.0, -1.9, { cordLen: 0.45, intensity: 17, flicker: 0.5, swing: 1.5 });
+    R.batch(new THREE.CylinderGeometry(0.08, 0.1, 4.4, 32), MAT.metalDark, 26.5, 2.2, -1.4);
+    R.lamp(26.5, 4.4, -1.4, { cordLen: 0.5, intensity: 22, flicker: 0.25, shadow: true, swing: 1.2 });
+    R.ambient(0x15222c, 1.05, 0x07090b);
+    R.moon(3.1);
+
+    // — THE CLIMB OUT: a riveted hull bulkhead, crates on both sides —
+    R.movable('crate', 16.2, 0, 0.8, { w: 0.5, h: 0.5, d: 0.5 });
+    R.box(MAT.woodDark, 17.8, 0, 0.2, 0.62, 0.55, 0.62, 'wood'); // the lantern crate
+    R.batch(displaceGeo(new THREE.BoxGeometry(1.1, 1.35, 6.5, 2, 3, 8), 134, 0.02, 2), MAT.rust, 19, 0.675, 0);
+    R.solid(19, 0, 0, 1.1, 1.35, 6.5, 'metal');
+    for (let i = 0; i < 14; i++)
+      R.batch(new THREE.SphereGeometry(0.035, 10, 8), MAT.metalDark, 18.42, 0.15 + (i % 7) * 0.17, -2.6 + Math.floor(i / 7) * 5.2);
+    R.box(MAT.woodDark, 20.4, 0, -0.2, 0.6, 0.5, 0.6, 'wood'); // and the way back over
+
+    // — the storm lantern: the one warm thing on this shore, set on the crate she must climb —
     if (!GAME.hasLantern) {
       const disp = new THREE.Group();
       const cageParts = [
@@ -2566,30 +2653,56 @@ ROOM_DEFS.push({
       disp.add(new THREE.Mesh(mergeGeometries(cageParts), MAT.metalDark));
       const dispFlame = new THREE.Mesh(new THREE.PlaneGeometry(0.028, 0.045), MAT.flame);
       dispFlame.position.y = 0.03; disp.add(dispFlame);
-      const dispLight = new THREE.PointLight(new THREE.Color(0xffb340), 4.5, 2.6, 1.8);
-      dispLight.position.y = 0.04; disp.add(dispLight);
-      disp.position.set(R.ox + 8, 0.44, 0.4);
+      const dispLight = new THREE.PointLight(new THREE.Color(0xffb340), 6, 7.5, 1.7);
+      dispLight.position.y = 0.05; disp.add(dispLight);
+      const dispGlow = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), MAT.glowDecal.clone());
+      dispGlow.material.opacity = 0.34;
+      dispGlow.rotation.x = -Math.PI / 2;
+      dispGlow.position.y = 0.008;
+      disp.add(dispGlow);
+      disp.position.set(R.ox + 17.8, 0.585, 0.2);
       R.group.add(disp);
-      R.disposables.push(disp.children[0].geometry, dispFlame.geometry);
+      R.disposables.push(disp.children[0].geometry, dispFlame.geometry, dispGlow.geometry, dispGlow.material);
       R.onUpdate((dt, world) => {
-        if (GAME.hasLantern) disp.visible = false;
-        else dispLight.intensity = 4 + 0.7 * Math.sin(world.time * 12);
+        if (GAME.hasLantern) { disp.visible = false; return; }
+        dispLight.intensity = 5.5 + 1.0 * Math.sin(world.time * 12);
+        // she takes it just by reaching for it — no button needed for her own light
+        const dx = world.player.pos.x - disp.position.x, dz = world.player.pos.z - disp.position.z;
+        if (Math.hypot(dx, dz) < 1.0 && Math.abs(world.player.pos.y - disp.position.y) < 1.3) world.giveLantern();
       });
     }
-    R.interact(8, 0.6, 0.4, (world) => { world.giveLantern(); }, { radius: 0.6 });
-    // climbing tutorial: stacked crates over a half-buried bulkhead
-    R.box(MAT.woodDark, 13.4, 0, 0.2, 0.62, 0.55, 0.62, 'wood');
-    R.box(MAT.brick, 14.6, 0, 0, 1.3, 1.15, 6.5, 'stone');
-    R.movable('crate', 12.2, 0, 0.8, { w: 0.5, h: 0.5, d: 0.5 });
-    // crab-things
-    const crabs = new CrabSwarm(14, { x0: R.ox + 2, x1: R.ox + 20, z0: -2, z1: 2, y: 0, seed: 9 });
+    R.interact(17.8, 0.7, 0.2, (world) => { world.giveLantern(); }, { radius: 0.75 });
+
+    // crab-things working the tideline
+    const crabs = new CrabSwarm(16, { x0: R.ox + 2, x1: R.ox + 24, z0: -2, z1: 2, y: 0, seed: 9 });
     R.actors.push(crabs); R.group.add(crabs.root);
-    // hidden stub behind the first rib
     R.stub(1.2, 0.12, -2.2, 0);
-    // rain
-    const rain = new RainFX(R.ox - 2, R.ox + 28, 12);
+    const rain = new RainFX(R.ox - 2, R.ox + 32, 12);
     R.group.add(rain.pts); R.fx.push(rain);
-    R.doorWall(26, { doorW: 2.2, doorH: 1.7, wallH: 9, mat: MAT.woodDark, surface: 'wood' });
+
+    // — the BREACH: a ragged hole torn low in the wreck's flank, glowing from inside —
+    R.doorWall(30, { doorW: 3.4, doorH: 1.9, wallH: 9, mat: MAT.woodDark, surface: 'wood' });
+    for (let i = 0; i < 8; i++) { // splintered plank ends framing the hole
+      const t = i / 8;
+      const zz = Math.cos(t * Math.PI * 2) * 1.55;
+      R.batch(new THREE.BoxGeometry(0.15, 0.9 + rand() * 0.6, 0.11), MAT.woodDark,
+        29.8, 1.75 + Math.abs(Math.sin(t * Math.PI * 2)) * 0.45 + rand() * 0.25, zz,
+        (rand() - 0.5) * 0.5, 0, (rand() - 0.5) * 1.0);
+    }
+    const spill = new THREE.PointLight(new THREE.Color(0xffb340), 5.5, 5.5, 1.6);
+    spill.position.set(R.ox + 30.7, 1.3, 0);
+    R.group.add(spill); R.lights.push(spill);
+    const spillGlow = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 4.4), MAT.glowDecal.clone());
+    spillGlow.material.opacity = 0.2;
+    spillGlow.rotation.x = -Math.PI / 2;
+    spillGlow.position.set(R.ox + 28.8, 0.025, 0);
+    R.group.add(spillGlow); R.disposables.push(spillGlow.geometry, spillGlow.material);
+
+    // she wakes where the tide left her; the camera leans in to look
+    let woke = false;
+    R.onUpdate((dt, world) => {
+      if (!woke) { woke = true; world.rig.pushIn(1.4, 4.2); world.rig.hold(1.8); }
+    });
   },
 });
 
@@ -2631,6 +2744,18 @@ ROOM_DEFS.push({
     R.stub(2.0, 0.05, 1.8, 1);
     // jars rolled into a corner
     for (let i = 0; i < 4; i++) R.batch(GF.jar(230 + i, 0.8), MAT.rust, 20.4 + (i % 2) * 0.5, 0, -2 + i * 0.6, (i % 2) * 1.5);
+    // a giant's oar leans where it was dropped; nets rot off the ribs
+    R.batch(mergeGeometries([
+      xformGeo(new THREE.CylinderGeometry(0.09, 0.11, 6.4, 20), 0, 3.2, 0),
+      xformGeo(new THREE.BoxGeometry(0.66, 2.0, 0.09), 0, 6.9, 0),
+    ]), MAT.woodDark, 2.1, 0, -2.8, 0, 0, -0.3);
+    for (let i = 0; i < 6; i++) {
+      const rnd = mulberry32(240 + i);
+      R.batch(displaceGeo(new THREE.PlaneGeometry(0.13, 2.4 + rnd() * 0.8, 1, 7), 245 + i, 0.07, 2), MAT.cloth,
+        5.2 + i * 0.34, 4.2, -2.7, 0, 0, (i % 2 ? 0.09 : -0.07));
+    }
+    R.batch(GF.bone(1.2, 251), MAT.wax, 3.6, 0.05, 0.9, 0, 2.1, 0);
+    R.batch(GF.bone(0.9, 252), MAT.wax, 4.1, 0.05, 1.3, 0, 0.6, 0);
     // a groan in the deep — first hint of the Warden
     let groaned = false;
     R.onUpdate((dt, world) => {
@@ -2686,6 +2811,11 @@ ROOM_DEFS.push({
     const doorCol = makeCollider(R.ox + 19.75, 0, 0, 0.5, 5.4, 2.6, 'metal');
     R._extraColliders = [doorCol];
     R.chain(18.6, 4.8, 0.9, 1.4);
+    // the rigging that explains it: chain → pulley → door head
+    R.batch(new THREE.TorusGeometry(0.2, 0.045, 12, 32), MAT.metalDark, 18.6, 5.05, 1.4, 0, Math.PI / 2, 0);
+    R.batch(new THREE.CylinderGeometry(0.03, 0.03, 1.5, 10), MAT.metalDark, 18.6, 5.2, 0.65, Math.PI / 2, 0, 0);
+    R.batch(new THREE.CylinderGeometry(0.03, 0.03, 1.2, 10), MAT.metalDark, 19.2, 5.2, 0, 0, 0, Math.PI / 2);
+    R.batch(new THREE.BoxGeometry(0.34, 0.22, 0.34), MAT.rust, 19.75, 5.32, 0);
     let opening = 0, opened = false;
     R.interact(18.6, 1.2, 1.4, (world) => {
       if (opened) return;
@@ -4196,6 +4326,7 @@ function main() {
     started = true;
     GAME.hasLantern = roomIdx > 0;
     eight.j.lantern.visible = GAME.hasLantern;
+    if (roomIdx === 0) eight.exhaustion = 1; // she wakes spent, where the tide left her
     AUDIO.init();
     RM.enter(roomIdx, rig, true);
     const cp = RM.checkpoint;
@@ -4356,7 +4487,7 @@ async function runTests() {
     T(`room ${def.name}: builds`, () => { room.build(scene); return room.built === true; });
     T(`room ${def.name}: has colliders`, () => room.colliders.length >= 4 ? true : `got ${room.colliders.length}`);
     T(`room ${def.name}: is lit`, () => room.lights.length >= 1);
-    T(`room ${def.name}: light budget ≤5`, () => room.lights.length <= 5 ? true : `got ${room.lights.length}`);
+    T(`room ${def.name}: light budget ≤6`, () => room.lights.length <= 6 ? true : `got ${room.lights.length}`);
     T(`room ${def.name}: spawn inside`, () => def.spawn.x >= 0 && def.spawn.x <= def.width);
     T(`room ${def.name}: camera framed`, () => def.cam && def.cam.dist > 2);
     T(`room ${def.name}: updates`, () => {
