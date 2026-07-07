@@ -88,7 +88,7 @@ const CONFIG = {
   player: {
     height: 0.55, radius: 0.12,
     walkSpeed: 1.7, sprintSpeed: 2.9, sneakSpeed: 0.72, crawlSpeed: 0.55, dragFactor: 0.55,
-    accel: 14.0, airAccel: 5.0, jumpVel: 3.6, gravity: 13.5,
+    accel: 14.0, airAccel: 5.0, jumpVel: 3.35, gravity: 13.5,
     stepUp: 0.16, grabReach: 0.30, ledgeReachLo: 0.28, ledgeReachHi: 0.62,
     zMin: -2.2, zMax: 2.2,
   },
@@ -1822,14 +1822,14 @@ class PlayerController {
     if (this.state === 'swing') {
       const s = this.swing;
       const g = P.gravity;
-      s.thetaV += (-(g / s.len) * Math.sin(s.theta) - s.thetaV * 0.25 + Input.axisX() * 1.35 * Math.cos(s.theta)) * dt;
+      s.thetaV += (-(g / s.len) * Math.sin(s.theta) - s.thetaV * 0.22 + Input.axisX() * 1.7 * Math.cos(s.theta)) * dt;
       s.theta += s.thetaV * dt;
       this.pos.x = s.pivot.x + Math.sin(s.theta) * s.len;
       this.pos.y = s.pivot.y - Math.cos(s.theta) * s.len - 0.5;
       this.pos.z = damp(this.pos.z, s.pivot.z, 8, dt);
       if (Input.jumpPressed()) {
         this.state = 'air'; this.swing = null;
-        this.vel.set(s.thetaV * s.len * Math.cos(s.theta), s.thetaV * s.len * Math.sin(s.theta) + 0.8, 0);
+        this.vel.set(s.thetaV * s.len * Math.cos(s.theta) * 1.15, s.thetaV * s.len * Math.sin(s.theta) + 1.3, 0);
         this.fallStart = this.pos.y;
         world.onEvent('swingRelease', this.pos);
       }
@@ -1859,7 +1859,7 @@ class PlayerController {
     // jump
     this.coyote = this.grounded ? 0.12 : Math.max(0, this.coyote - dt);
     if (Input.jumpPressed() && this.coyote > 0 && !this.dragging && this.moveMode !== 'crawl') {
-      this.vel.y = P.jumpVel * 0.62;
+      this.vel.y = P.jumpVel;
       this.grounded = false; this.coyote = 0;
       this.state = 'air'; this.fallStart = this.pos.y;
       world.emitSound(this.pos, 0.25 * CONFIG.noise.surfaces[this.groundSurface]);
@@ -1892,8 +1892,8 @@ class PlayerController {
     if (this.state === 'air' && room.hooks) {
       for (const hk of room.hooks) {
         const bx = hk.pivot.x, by = hk.pivot.y - hk.len, bz = hk.pivot.z;
-        if (Math.abs(this.pos.x - bx) < 0.3 && Math.abs(this.pos.z - bz) < 0.5 &&
-            this.pos.y + 0.55 > by - 0.15 && this.pos.y + 0.55 < by + 0.3) {
+        if (Math.abs(this.pos.x - bx) < 0.45 && Math.abs(this.pos.z - bz) < 0.6 &&
+            this.pos.y + 0.55 > by - 0.32 && this.pos.y + 0.55 < by + 0.42) {
           this.state = 'swing';
           this.swing = { pivot: hk.pivot, len: hk.len, theta: clamp((this.pos.x - bx) / hk.len, -0.6, 0.6), thetaV: this.vel.x / hk.len };
           world.onEvent('hookCatch', this.pos);
@@ -2617,10 +2617,10 @@ ROOM_DEFS.push({
     // climbing lesson: crate → ledge → upper walkway
     R.movable('crate', 4.2, 0, -0.6, { w: 0.55, h: 0.55, d: 0.55, mass: 1.3 });
     R.box(MAT.woodDark, 7.5, 0, -1.2, 2.6, 1.35, 2.2, 'wood');       // mid ledge
-    R.box(MAT.wood, 10.2, 0, -1.2, 2.8, 2.3, 2.2, 'wood');           // upper ledge — jump from mid
+    R.box(MAT.wood, 11, 0, -1.2, 4.5, 2.3, 2.2, 'wood');             // upper ledge — jump from mid
     // swing hook across the bilge
-    R.hook(14.6, 4.4, -0.2, 1.55);
-    R.hook(17.9, 4.6, -0.2, 1.75);
+    R.hook(13.9, 4.4, -0.7, 1.55);
+    R.hook(16.4, 4.4, -0.7, 1.6);
     // landing then descent
     R.lamp(9, 5.4, -0.5, { cordLen: 1.6, intensity: 26, flicker: 0.45, shadow: true, swing: 1 });
     R.lamp(18, 5.2, 0.3, { cordLen: 1.2, intensity: 18, flicker: 0.1 });
@@ -2662,8 +2662,8 @@ ROOM_DEFS.push({
     R.batch(new THREE.BoxGeometry(26, 30, 2), MAT.voidBlack, 12, 13, -17);
     for (let i = 0; i < 9; i++) R.batch(new THREE.PlaneGeometry(0.6, 0.8), MAT.bulb, 3 + mulberry32(320 + i)() * 18, 4 + mulberry32(330 + i)() * 18, -15.9);
     // two swings across the black
-    R.hook(7.6, 4.1, 0, 1.65);
-    R.hook(11.2, 4.3, 0, 1.85);
+    R.hook(7.6, 4.1, 0, 2.9);
+    R.hook(11.2, 4.3, 0, 3.0);
     // stool stack to a stub
     R.batch(GF.stool(0.85, 340), MAT.woodDark, 17.6, 0, -1.6);
     R.solid(17.6, 1.55, -1.6, 1.15, 0.16, 1.15, 'wood');
@@ -2823,7 +2823,7 @@ ROOM_DEFS.push({
     R.lamp(25, 8.6, 0.3, { cordLen: 3.0, intensity: 22, flicker: 0.2 });
     R.ambient(0x0e181e, 0.38, 0x06080a);
     // the key — heavy, dragged to the far door
-    R.movable('key', 5.6, 1.62, -2.0, {});
+    R.movable('key', 5.6, 0, -1.55, {});
     R.solid(5.6, 0.9, -2.4, 2.2, 0.72, 1.2, 'wood'); // key shelf ledge
     R.batch(new THREE.BoxGeometry(2.2, 0.72, 1.2, 3, 1, 2), MAT.woodDark, 5.6, 1.26, -2.4);
     // locked act door
@@ -2898,6 +2898,7 @@ ROOM_DEFS.push({
     R.batch(new THREE.BoxGeometry(1.6, 0.42, 1.2), MAT.brick, 18.2, 0.21, 0.4);
     // (crawl gap at z 0.4 under that block: y 0..0.42 → forced crawl)
     R.solid(18.2, 0, 1.35, 1.6, 3, 0.5, 'stone');
+    R.hideZone(18.2, 0, 0.4, 1.7, 0.45, 1.2);
     R.lamp(4, 7.8, 0, { cordLen: 2.8, intensity: 24, flicker: 0.5, swing: 1.4, shadow: true });
     R.lamp(14, 7.8, -0.4, { cordLen: 3.2, intensity: 20, flicker: 0.3 });
     R.ambient(0x0d161c, 0.36, 0x06080a);
@@ -3070,7 +3071,7 @@ ROOM_DEFS.push({
     const brick = R.movable('block', 7.2, beltY, -0.6, { w: 0.62, h: 0.5, d: 0.62, mat: MAT.wax, mass: 2.2, surface: 'flesh' });
     // stairs up to belt level on both shores
     R.box(MAT.metalDark, 3.4, 0, -0.6, 1.4, 0.4, 1.5, 'metal');
-    R.box(MAT.metalDark, 4.6, 0, -0.6, 1.1, 0.78, 1.5, 'metal');
+    R.box(MAT.metalDark, 4.6, 0, -0.6, 1.1, 1.02, 1.5, 'metal');
     R.box(MAT.metalDark, 24.9, 0, -0.6, 1.3, 0.72, 1.5, 'metal');
     // the drive lever
     R.batch(GF.lever(1.2), MAT.metalDark, 2.2, 0, 1.6);
@@ -3313,15 +3314,16 @@ ROOM_DEFS.push({
       R.solid(x, FY + y - 0.2, -0.6, w, 0.22, 1.6, 'wood');
     };
     plat(6.5, 2.8, 3.4);   // platform A
-    plat(12.5, 2.8, 4.6);  // platform B — the lure perch
-    plat(19, 5.4, 4.4);    // platform C — the release lever
+    plat(10.6, 2.8, 2.6);  // platform B — the overlook
+    plat(17.8, 5.4, 4.4);  // platform C — the release lever
     // support beams
-    for (const [bx, by] of [[6.5, 2.8], [12.5, 2.8], [19, 5.4]])
+    for (const [bx, by] of [[6.5, 2.8], [10.6, 2.8], [17.8, 5.4]])
       R.batch(new THREE.BoxGeometry(0.24, by, 0.24), MAT.woodDark, bx - 1, FY + by / 2 - 0.15, -1.2);
     R.chain(4.2, FY + 3.6, FY + 0.35, -0.6);           // ground → A
-    R.chain(16.6, FY + 6.2, FY + 2.95, -0.6);          // B → C
+    R.chain(15.2, FY + 6.2, FY + 2.95, -0.6);          // B → C
     R.batch(new THREE.BoxGeometry(6, 0.3, 0.5), MAT.woodDark, 5.2, FY + 3.75, -0.6); // beam holding chain 1
     R.batch(new THREE.BoxGeometry(7, 0.3, 0.5), MAT.woodDark, 18, FY + 6.35, -0.6);
+    R.batch(new THREE.BoxGeometry(3.4, 0.3, 0.5), MAT.woodDark, 13.2, FY + 6.75, -0.2);
     // — the ballast crate, winched high above his favourite spot —
     const ballast = new THREE.Group();
     const bCrate = new THREE.Mesh(GF.crate(1.6, 1.6, 1.6, 1130), MAT.woodDark);
@@ -3329,7 +3331,7 @@ ROOM_DEFS.push({
     ballast.add(bCrate);
     const bChain = new THREE.Mesh(GF.chainLinks(16), MAT.metalDark);
     bChain.position.y = 1.6; ballast.add(bChain);
-    ballast.position.set(R.ox + 12.5, FY + 6.6, -0.2);
+    ballast.position.set(R.ox + 13.2, FY + 6.6, -0.2);
     R.group.add(ballast);
     R.disposables.push(bCrate.geometry, bChain.geometry);
     // release lever on platform C
@@ -3345,7 +3347,7 @@ ROOM_DEFS.push({
     R._extraColliders = [gateCol];
     // the Warden below, pacing the gallery floor
     const w = new Warden([
-      { x: R.ox + 5, z: -0.8, wait: 2 }, { x: R.ox + 12.5, z: -0.2, wait: 3.5 },
+      { x: R.ox + 5, z: -0.8, wait: 2 }, { x: R.ox + 13.2, z: -0.2, wait: 3.5 },
       { x: R.ox + 20.5, z: -1.2, wait: 2 }, { x: R.ox + 12.5, z: 0.8, wait: 2.5 },
     ], { bounds: [R.ox + 2, R.ox + 22.5] });
     w.root.position.set(R.ox + 8, FY, -0.8);
@@ -3369,7 +3371,7 @@ ROOM_DEFS.push({
           world.emitSound(ballast.position, 2.2);
           world.onEvent('ballastCrash', ballast.position);
           const wx = w.root.position.x;
-          if (w.frozen < 1e8 && wx > R.ox + 11.2 && wx < R.ox + 13.8 && Math.abs(w.root.position.z + 0.2) < 1.6) {
+          if (w.frozen < 1e8 && wx > R.ox + 11.7 && wx < R.ox + 14.7 && Math.abs(w.root.position.z + 0.2) < 1.8) {
             w.frozen = 1e9; // taken by the weight
             world.onEvent('wardenCrushed', ballast.position);
             world.rig.pushIn(1.2, 2.4); world.rig.hold(1.4);
@@ -3512,7 +3514,7 @@ ROOM_DEFS.push({
     R.group.add(lensGroup);
     R.disposables.push(lensGlass.geometry, beam.geometry, beam.material);
     // valves that walk the beam around its ring
-    let beamAngle = Math.PI * 1.25, beamTargetAngle = Math.PI * 1.25;
+    let beamAngle = Math.PI * 7 / 6, beamTargetAngle = Math.PI * 7 / 6;
     const mkValve = (vx, dir) => {
       const v = new THREE.Mesh(GF.valve(0.42), MAT.rust);
       v.position.set(R.ox + vx, FY + 0.72, 1.9);
@@ -4137,7 +4139,8 @@ function main() {
                 ctrl.pos.x > b.x0 && ctrl.pos.x < b.x1 && ctrl.pos.z > b.z0 && ctrl.pos.z < b.z1 &&
                 Math.abs(ctrl.pos.y - b.ytop) < 0.1) ctrl.pos.x += b.speed * dt;
             for (const m of room.movables) {
-              if (b.speed !== 0 && m.pos.x > b.x0 && m.pos.x < b.x1 && m.pos.z > b.z0 && m.pos.z < b.z1 &&
+              if (b.speed !== 0 && m.pos.x + m.half.x > b.x0 && m.pos.x - m.half.x < b.x1 &&
+                  m.pos.z > b.z0 && m.pos.z < b.z1 &&
                   Math.abs((m.pos.y - m.half.y) - b.ytop) < 0.12) m.pos.x += b.speed * dt;
             }
           }
