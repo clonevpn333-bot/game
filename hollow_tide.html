@@ -1386,6 +1386,25 @@ class Warden {
     const j = this.j, ph = this.phase;
     const k = Math.min(1, dt * 7);
     const hunting = this.state === 'hunt' || this.state === 'lunge';
+    // when stopped on his rounds he stoops to his work — hauling, groping the dark for children
+    const busy = !hunting && !frozenPose && moving <= 0 && this.state === 'patrol';
+    if (busy) {
+      const w = Math.sin(t * 1.3), w2 = Math.sin(t * 1.3 + 1.4);
+      j.pelvis.position.y = lerp(j.pelvis.position.y, 1.42, k);
+      j.spine.rotation.x = lerp(j.spine.rotation.x, 1.15 + w * 0.08, k);
+      j.armL.sh.rotation.x = lerp(j.armL.sh.rotation.x, -1.5 + w * 0.5, k);
+      j.armR.sh.rotation.x = lerp(j.armR.sh.rotation.x, -1.5 + w2 * 0.5, k);
+      j.armL.sh.rotation.z = lerp(j.armL.sh.rotation.z, 0.4, k);
+      j.armR.sh.rotation.z = lerp(j.armR.sh.rotation.z, -0.4, k);
+      j.armL.el.rotation.x = lerp(j.armL.el.rotation.x, -0.9, k);
+      j.armR.el.rotation.x = lerp(j.armR.el.rotation.x, -0.9, k);
+      j.head.rotation.x = lerp(j.head.rotation.x, 0.3, k);
+      j.head.rotation.y = lerp(j.head.rotation.y, Math.sin(t * 0.9) * 0.4, k);
+      j.legL.hip.rotation.x = lerp(j.legL.hip.rotation.x, 0, k);
+      j.legR.hip.rotation.x = lerp(j.legR.hip.rotation.x, 0, k);
+      this.eyeLight.intensity = 22 * (0.9 + 0.1 * Math.sin(t * 6));
+      return;
+    }
     const sway = Math.sin(ph) * (moving > 0 ? 1 : 0);
     j.pelvis.position.y = lerp(j.pelvis.position.y, 1.55 + Math.abs(Math.cos(ph)) * 0.045 * (moving > 0 ? 1 : 0), k);
     j.pelvis.rotation.z = lerp(j.pelvis.rotation.z, sway * 0.06, k);
@@ -2896,7 +2915,7 @@ ROOM_DEFS.push({
 
 ROOM_DEFS.push({
   name: 'the_hull', act: 1, width: 22, ambience: 'hull',
-  cam: { dist: 4.8, height: 1.3, lookY: 0.8, yFollow: 0.42 },
+  cam: { dist: 3.9, height: 1.15, lookY: 0.7, yFollow: 0.42, fov: 40 },
   spawn: { x: 1.2, z: 0 },
   fogDensity: 0.06,
   build(R) {
@@ -3096,7 +3115,7 @@ ROOM_DEFS.push({
 
 ROOM_DEFS.push({
   name: 'jar_rows', act: 2, width: 30, ambience: 'cellar',
-  cam: { dist: 5.2, height: 1.45, lookY: 0.85, yFollow: 0.3, dutch: 0.015 },
+  cam: { dist: 6.2, height: 2.0, lookY: 1.0, yFollow: 0.28, dutch: 0.015 },
   spawn: { x: 1.3, z: 0 },
   fogDensity: 0.062,
   build(R) {
@@ -3117,8 +3136,13 @@ ROOM_DEFS.push({
       }
       R.solid(sx, -0.14, 0, sw, 0.2, 7.5, surf);
     }
-    R.wallSlab(15, 0, -3.5, 30, 9, 502, MAT.brick, 0.5);
-    R.batch(scaleUV(new THREE.BoxGeometry(30, 0.6, 8), 9), MAT.concrete, 15, 8.6, 0);
+    R.wallSlab(15, 0, -3.5, 30, 15, 502, MAT.brick, 0.5);
+    R.batch(scaleUV(new THREE.BoxGeometry(30, 0.8, 8), 9), MAT.concrete, 15, 14.4, 0);
+    // colossal brick piers vanishing up into the dark
+    for (const cx of [7, 15, 23]) {
+      R.batch(scaleUV(displaceGeo(new THREE.BoxGeometry(1.4, 14, 1.4, 2, 12, 2), 560 + cx, 0.04, 1), 1.4 / 2.8, 14 / 2.8), MAT.brick, cx, 7, -2.9);
+      R.solid(cx, 0, -2.9, 1.4, 8, 1.4, 'stone');
+    }
     // rows of colossal brine jars — cover
     for (let i = 0; i < 7; i++) {
       const jx = 4 + i * 3.8 + (rand() - 0.5);
@@ -3144,10 +3168,11 @@ ROOM_DEFS.push({
     R.movable('can', 7.2, 0, 0.6);
     R.movable('can', 15.2, 0, -0.8);
     R.movable('can', 20.8, 0, 0.9);
-    R.lamp(7, 8.6, 0, { cordLen: 3.4, intensity: 26, shadow: true, flicker: 0.1 });
-    R.lamp(16, 8.6, -0.5, { cordLen: 4.0, intensity: 24, flicker: 0.32, swing: 1 });
-    R.lamp(25, 8.6, 0.3, { cordLen: 3.0, intensity: 22, flicker: 0.2 });
-    R.ambient(0x0e181e, 0.38, 0x06080a);
+    R.lamp(7, 13.6, 0, { cordLen: 5.4, intensity: 30, shadow: true, flicker: 0.1 });
+    R.lamp(16, 13.6, -0.5, { cordLen: 6.2, intensity: 27, flicker: 0.32, swing: 1 });
+    R.lamp(25, 13.6, 0.3, { cordLen: 5.0, intensity: 24, flicker: 0.2 });
+    R.ambient(0x101c24, 0.7, 0x06080a);
+    { const fill = new THREE.PointLight(new THREE.Color(0xffcf8a), 4.5, 16, 2.0); fill.position.set(R.ox + 15, 3.0, 1.2); R.group.add(fill); R.lights.push(fill); }
     // the key — heavy, dragged to the far door
     R.movable('key', 5.6, 0, -1.55, {});
     R.solid(5.6, 0.9, -2.4, 2.2, 0.72, 1.2, 'wood'); // key shelf ledge
@@ -3195,7 +3220,7 @@ ROOM_DEFS.push({
 
 ROOM_DEFS.push({
   name: 'the_chute', act: 2, width: 20, ambience: 'cellar',
-  cam: { dist: 4.4, height: 1.3, lookY: 0.8, yFollow: 0.3, dutch: 0.03, fov: 37 },
+  cam: { dist: 3.5, height: 1.1, lookY: 0.7, yFollow: 0.3, dutch: 0.04, fov: 44 },
   spawn: { x: 1.2, z: 0 },
   fogDensity: 0.07,
   build(R) {
@@ -3262,7 +3287,7 @@ ROOM_DEFS.push({
 /* ---------- ACT III · THE TALLOW WORKS ---------- */
 ROOM_DEFS.push({
   name: 'rendering_floor', act: 3, width: 26, ambience: 'works',
-  cam: { dist: 5.4, height: 1.6, lookY: 1.0, yFollow: 0.3, dutch: 0.018 },
+  cam: { dist: 6.3, height: 2.1, lookY: 1.1, yFollow: 0.28, dutch: 0.018 },
   spawn: { x: 1.3, z: 0 },
   fogDensity: 0.06,
   build(R) {
@@ -3272,8 +3297,10 @@ ROOM_DEFS.push({
     R.solid(13, -0.2, 0, 26, 0.2, 7.5, 'metal');
     for (let i = 0; i < 40; i++) // rivet heads
       R.batch(new THREE.SphereGeometry(0.03, 12, 8), MAT.rust, 1 + rand() * 24, 0.02, -3 + rand() * 6);
-    R.wallSlab(13, 0, -3.5, 26, 9.5, 702, MAT.rust, 0.5);
-    R.batch(scaleUV(new THREE.BoxGeometry(26, 0.6, 8), 9), MAT.metalDark, 13, 9.2, 0);
+    R.wallSlab(13, 0, -3.5, 26, 15, 702, MAT.rust, 0.5);
+    R.batch(scaleUV(new THREE.BoxGeometry(26, 0.7, 8), 9), MAT.metalDark, 13, 14.6, 0);
+    // riveted stanchions climbing into the gloom
+    for (const cx of [5, 13, 21]) R.batch(new THREE.CylinderGeometry(0.45, 0.55, 14, 24), MAT.rust, cx, 7, -3.0);
     // fat pipes along the back wall
     for (const [py, pr] of [[7.6, 0.34], [6.8, 0.22], [1.2, 0.28]]) {
       R.batch(GF.pipeRun(26, pr, 5, 703 + py), MAT.rust, 13, py, -3.0, 0, 0, Math.PI / 2);
@@ -3303,9 +3330,10 @@ ROOM_DEFS.push({
       R.solid(vx, 0, -2.2, 2.2, 2.6, 2.2, 'metal');
     }
     R.stub(9.5, 0.1, -0.7, 6); // under the first vat's shadow
-    R.lamp(6, 9.2, 0.3, { cordLen: 3.6, intensity: 26, flicker: 0.2, shadow: true });
-    R.lamp(19, 9.2, -0.3, { cordLen: 4.2, intensity: 24, flicker: 0.35, swing: 1 });
-    R.ambient(0x141a16, 0.42, 0x080807);
+    R.lamp(6, 14.0, 0.3, { cordLen: 5.6, intensity: 30, flicker: 0.2, shadow: true });
+    R.lamp(19, 14.0, -0.3, { cordLen: 6.2, intensity: 27, flicker: 0.35, swing: 1 });
+    R.ambient(0x151d18, 0.72, 0x080807);
+    { const fill = new THREE.PointLight(new THREE.Color(0xffc98a), 4.5, 16, 2.0); fill.position.set(R.ox + 13, 3.0, 1.2); R.group.add(fill); R.lights.push(fill); }
     // one of the twins works this floor
     const tw = new RendererTwin([
       { x: R.ox + 21, z: -0.6 }, { x: R.ox + 12, z: 0.8 }, { x: R.ox + 5, z: -1 }, { x: R.ox + 12, z: -2 },
@@ -3547,7 +3575,7 @@ ROOM_DEFS.push({
 /* ---------- ACT IV · THE LONG STAIR ---------- */
 ROOM_DEFS.push({
   name: 'procession', act: 4, width: 28, ambience: 'stair',
-  cam: { dist: 6.4, height: 1.9, lookY: 1.2, yFollow: 0.8, dutch: 0.01 },
+  cam: { dist: 8.2, height: 2.6, lookY: 1.5, yFollow: 0.75, dutch: 0.01 },
   spawn: { x: 1.4, z: 0 },
   fogDensity: 0.05,
   build(R) {
@@ -3800,7 +3828,7 @@ ROOM_DEFS.push({
 
 ROOM_DEFS.push({
   name: 'the_lens', act: 5, width: 27, ambience: 'lens', floorY: 4.68,
-  cam: { dist: 6.8, height: 2.2, lookY: 1.5, yFollow: 0.4 },
+  cam: { dist: 8.6, height: 3.0, lookY: 1.9, yFollow: 0.38 },
   spawn: { x: 1.4, z: 0 },
   fogDensity: 0.038,
   build(R) {
