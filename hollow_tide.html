@@ -1013,6 +1013,12 @@ class Eight {
         P.hipsY = 0.155; P.hipsRX = 1.15; P.headRX = -0.95;
         P.legSwing = Math.sin(ph) * 0.5; P.kneeBend = 1.5;
         P.armSwing = Math.sin(ph + Math.PI) * 0.6; P.armRaiseL = P.armRaiseR = -1.2;
+      } else if (ctx.moveMode === 'crouch') {
+        // held crouch — hunkered low and still, arms drawn in, head tucked
+        P.hipsY = 0.205 + Math.sin(this.breath * Math.PI * 2) * 0.003;
+        P.hipsRX = 0.5; P.headRX = -0.4;
+        P.kneeBend = 1.15; P.armRaiseL = 0.45; P.armRaiseR = 0.45;
+        P.armSwing = 0; P.legSwing = 0;
       } else if (hSpeed < 0.08) {
         // idle — breathing; exhausted idle stoops and heaves
         P.hipsY = 0.285 - this.exhaustion * 0.02 + Math.sin(this.breath * Math.PI * 2) * 0.002;
@@ -1256,7 +1262,11 @@ class Warden {
     const player = world.player;
     this.stimulusAge += dt;
     this.stepEvent = false;
+    if (this.seizing) return;                 // frozen mid-grab; the frame loop drives the pose
     if (this.frozen > 0) { this.frozen -= dt; this.poseBody(dt, world.time, 0, true); return; }
+    const prevHunting = this.state === 'hunt' || this.state === 'lunge';
+    // the task he was set to — hauling, hanging, sweeping — when nothing else calls
+    if (this.task && (this.state === 'patrol')) this.task(dt, world);
 
     // lantern held high is a beacon to his eye
     if (player.lanternUp && !player.hidden) {
@@ -1302,7 +1312,7 @@ class Warden {
         const dir = new THREE.Vector3().subVectors(player.pos, p); dir.y = 0;
         if (dir.lengthSq() > 0.001) dir.normalize();
         p.addScaledVector(dir, 7.2 * dt);
-        if (!player.hidden && p.distanceTo(player.pos) < C.grabRange + 0.35) world.killPlayer('warden');
+        if (!player.hidden && p.distanceTo(player.pos) < C.grabRange + 0.35) world.killPlayer('warden', this);
       } else if (this.lungeT <= -0.42) {
         this.state = 'hunt'; this.recoverT = 1.1;
       }
@@ -1336,9 +1346,41 @@ class Warden {
       }
     }
     // catch on contact while hunting
-    if (this.state === 'hunt' && !player.hidden && p.distanceTo(player.pos) < C.grabRange) world.killPlayer('warden');
+    if (this.state === 'hunt' && !player.hidden && p.distanceTo(player.pos) < C.grabRange) world.killPlayer('warden', this);
+    // the moment he first fixes on her — a bark and the strings drop in
+    const nowHunting = this.state === 'hunt' || this.state === 'lunge';
+    if (nowHunting && !prevHunting) world.onEvent('wardenSpot', p);
     this.root.rotation.y = this.faceAngle;
     this.poseBody(dt, world.time, moving);
+  }
+  /* The grab: he stoops, folds her up in one hand, lifts her to the milk-eye.
+     Her body is scripted onto a rising arc; the arm poses to follow her. */
+  seize(dt, eight, t, world) {
+    const j = this.j, k = Math.min(1, dt * 9), p = this.root.position;
+    const side = (eight.capturedX ?? eight.root.position.x) >= p.x ? 1 : -1;
+    this.faceAngle = damp(this.faceAngle, side > 0 ? Math.PI / 2 : -Math.PI / 2, 9, dt);
+    this.root.rotation.y = this.faceAngle;
+    const reach = smoothstep(0, 0.5, t);        // stoop and reach down
+    const lift = smoothstep(0.55, 1.4, t);      // haul her up to his face
+    // arm rakes down to her, then folds up
+    j.spine.rotation.x = lerp(j.spine.rotation.x, 0.98 - lift * 0.55, k);
+    j.armR.sh.rotation.x = lerp(j.armR.sh.rotation.x, lerp(0.15, -1.35, lift), k);
+    j.armR.sh.rotation.z = lerp(j.armR.sh.rotation.z, -0.45 - side * 0.15, k);
+    j.armR.el.rotation.x = lerp(j.armR.el.rotation.x, lerp(-0.1, -2.0, lift), k);
+    j.armR.wrist.rotation.x = lerp(j.armR.wrist.rotation.x, -0.5, k);
+    j.head.rotation.x = lerp(j.head.rotation.x, 0.1 - lift * 0.35, k);
+    j.armL.sh.rotation.x = lerp(j.armL.sh.rotation.x, -0.3 + reach * 0.2, k);
+    // scripted pickup arc: from where she was caught, up to chest/face height, drawn in
+    const groundY = eight.capturedY ?? 0.05;
+    const targetY = groundY + lift * 2.35;                    // rise to ~2.4m at his chest
+    const targetX = p.x + side * lerp(0.75, 0.42, lift);       // drawn in toward the body
+    eight.root.position.x = damp(eight.root.position.x, targetX, 10, dt);
+    eight.root.position.y = damp(eight.root.position.y, targetY, 10, dt);
+    eight.root.position.z = damp(eight.root.position.z, p.z + 0.35, 8, dt);
+    eight.root.rotation.z = damp(eight.root.rotation.z, side * 0.6, 6, dt);
+    eight.j.legL.hip.rotation.x = Math.sin(t * 11) * 0.5 * (1 - lift * 0.7);
+    eight.j.legR.hip.rotation.x = -Math.sin(t * 11) * 0.5 * (1 - lift * 0.7);
+    this.poseBody(dt, world.time, 0);
   }
   poseBody(dt, t, moving, frozenPose = false) {
     const j = this.j, ph = this.phase;
@@ -1487,6 +1529,8 @@ class RendererTwin {
     const player = world.player;
     this.stepEvent = false;
     this.twitchT -= dt;
+    if (this.seizing) return;
+    if (this.task && this.state === 'sweep') this.task(dt, world);
 
     if (this.senseVibration(world)) {
       this.feelTarget = player.pos.clone();
@@ -1509,7 +1553,7 @@ class RendererTwin {
       this.feelT += dt; speed = 0;
       // pat the ground in widening arcs — lethal to stand near
       if (this.feelT > 2.6) this.state = 'sweep';
-      if (!player.hidden && p.distanceTo(player.pos) < 1.15 && player.state === 'ground') world.killPlayer('renderer');
+      if (!player.hidden && p.distanceTo(player.pos) < 1.15 && player.state === 'ground') world.killPlayer('renderer', this);
     }
     if (target && speed > 0) {
       const dir = new THREE.Vector3().subVectors(target, p); dir.y = 0;
@@ -1532,7 +1576,7 @@ class RendererTwin {
       }
     }
     // touch kill
-    if (!player.hidden && p.distanceTo(player.pos) < C.grabRange && player.state === 'ground') world.killPlayer('renderer');
+    if (!player.hidden && p.distanceTo(player.pos) < C.grabRange && player.state === 'ground') world.killPlayer('renderer', this);
     this.root.rotation.y = this.faceAngle;
     this.poseBody(dt, world.time);
   }
@@ -1574,6 +1618,32 @@ class RendererTwin {
     const twitch = this.twitchT > 0 ? (Math.random() - 0.5) * 0.9 : 0;
     j.head.rotation.z = lerp(j.head.rotation.z, twitch + Math.sin(t * 0.7) * 0.12, this.twitchT > 0 ? 0.8 : k * 0.5);
     j.head.rotation.y = lerp(j.head.rotation.y, Math.sin(t * 0.43) * 0.5, k * 0.4);
+  }
+  /* Blind, it clutches her up to the seam where its face should be, and listens. */
+  seize(dt, eight, t, world) {
+    const j = this.j, k = Math.min(1, dt * 10), p = this.root.position;
+    const side = (eight.capturedX ?? eight.root.position.x) >= p.x ? 1 : -1;
+    this.faceAngle = damp(this.faceAngle, side > 0 ? Math.PI / 2 : -Math.PI / 2, 9, dt);
+    this.root.rotation.y = this.faceAngle;
+    const clutch = smoothstep(0, 0.45, t);
+    const raise = smoothstep(0.5, 1.35, t);
+    j.spine.rotation.x = lerp(j.spine.rotation.x, 1.15 - raise * 0.7, k);
+    j.armL.sh.rotation.x = lerp(j.armL.sh.rotation.x, lerp(-0.3, -1.9, raise), k);
+    j.armR.sh.rotation.x = lerp(j.armR.sh.rotation.x, lerp(-0.3, -1.9, raise), k);
+    j.armL.sh.rotation.z = lerp(j.armL.sh.rotation.z, 0.6 - clutch * 0.3, k);
+    j.armR.sh.rotation.z = lerp(j.armR.sh.rotation.z, -0.6 + clutch * 0.3, k);
+    j.armL.el.rotation.x = lerp(j.armL.el.rotation.x, -1.5, k);
+    j.armR.el.rotation.x = lerp(j.armR.el.rotation.x, -1.5, k);
+    j.head.rotation.x = lerp(j.head.rotation.x, 0.6 - raise * 0.75, k);
+    j.head.rotation.z = Math.sin(t * 7) * 0.25; // it turns her, feeling what it caught
+    const groundY = eight.capturedY ?? 0.05;
+    eight.root.position.x = damp(eight.root.position.x, p.x + side * lerp(0.6, 0.34, raise), 10, dt);
+    eight.root.position.y = damp(eight.root.position.y, groundY + raise * 1.55, 10, dt); // up to the faceless head
+    eight.root.position.z = damp(eight.root.position.z, p.z + 0.3, 8, dt);
+    eight.root.rotation.z = damp(eight.root.rotation.z, -side * 0.5, 6, dt);
+    eight.j.legL.hip.rotation.x = Math.sin(t * 12) * 0.5 * (1 - raise * 0.7);
+    eight.j.legR.hip.rotation.x = -Math.sin(t * 12) * 0.5 * (1 - raise * 0.7);
+    this.poseBody(dt, world.time);
   }
   dispose() { this.root.traverse(o => { if (o.isMesh) o.geometry.dispose(); }); }
 }
@@ -1943,14 +2013,15 @@ class PlayerController {
     const ix = Input.axisX(), iz = Input.axisZ();
     const moving = ix !== 0 || iz !== 0;
     const crawlForced = this.checkLowCeiling(colliders);
+    const wantCrouch = Input.sneak();
     if (crawlForced) this.moveMode = 'crawl';
+    else if (wantCrouch) this.moveMode = moving ? 'sneak' : 'crouch'; // crouch holds even while still
     else if (!moving) this.moveMode = 'idle';
-    else if (Input.sneak()) this.moveMode = 'sneak';
     else if (Input.sprint() && this.e.exhaustion < 0.98) this.moveMode = 'sprint';
     else this.moveMode = 'walk';
 
     let speed = this.moveMode === 'sprint' ? P.sprintSpeed : this.moveMode === 'sneak' ? P.sneakSpeed :
-                this.moveMode === 'crawl' ? P.crawlSpeed : P.walkSpeed;
+                this.moveMode === 'crawl' ? P.crawlSpeed : this.moveMode === 'crouch' ? 0 : P.walkSpeed;
     if (this.dragging) speed *= P.dragFactor / Math.max(1, this.dragging.mass * 0.55);
 
     const accel = this.grounded ? P.accel : P.airAccel;
@@ -2449,21 +2520,13 @@ class Room {
       w = opts.w || 0.5; h = opts.h || 0.5; d = opts.d || 0.5;
       mesh = new THREE.Mesh(GF.crate(w, h, d, 6 + x | 0), opts.mat || MAT.wood);
       opts.mass = opts.mass ?? 1.2;
-      // a pale rope girdle and its own small warmth — the game's "you can move this"
-      const rope = new THREE.Mesh(new THREE.TorusGeometry(w * 0.74, 0.016, 10, 48), MAT.sack);
+      // a rope girdle is the only tell — no glow, read it by its lashings
+      const rope = new THREE.Mesh(new THREE.TorusGeometry(w * 0.74, 0.018, 10, 48), MAT.sack);
       rope.position.y = h * 0.52;
       mesh.add(rope);
-      const knot = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 12), MAT.emberStub);
-      knot.position.set(0, h * 0.52, d * 0.56);
-      mesh.add(knot);
-      const mark = new THREE.PointLight(new THREE.Color(0xffb340), 2.4, 2.8, 1.8);
-      mark.position.y = h + 0.22;
-      mesh.add(mark);
-      const halo = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), MAT.glowDecal.clone());
-      halo.material.opacity = 0.5;
-      halo.position.set(0, h * 0.55, d * 0.58);
-      mesh.add(halo);
-      m2_billboards.push(halo);
+      const rope2 = new THREE.Mesh(new THREE.TorusGeometry(w * 0.74, 0.018, 10, 48), MAT.sack);
+      rope2.position.y = h * 0.52; rope2.rotation.y = Math.PI / 2;
+      mesh.add(rope2);
     } else if (kind === 'can') {
       const r = opts.r || 0.13; h = opts.h || 0.34; w = d = r * 2;
       mesh = new THREE.Mesh(GF.can(r, h), MAT.rust);
@@ -4008,6 +4071,34 @@ const AUDIO = {
     o.connect(f); f.connect(g); g.connect(this.master);
     o.start(); o.stop(this.now() + 2);
   },
+  // the noise he makes the instant he sees her — a wet guttural bark
+  roar(pitch = 1) {
+    if (!this.ready) return;
+    const ctx = this.ctx, t = this.now();
+    const o = ctx.createOscillator(); o.type = 'sawtooth';
+    o.frequency.setValueAtTime(150 * pitch, t);
+    o.frequency.exponentialRampToValueAtTime(60 * pitch, t + 0.5);
+    const o2 = ctx.createOscillator(); o2.type = 'square'; o2.frequency.value = 74 * pitch;
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.setValueAtTime(500, t);
+    f.frequency.exponentialRampToValueAtTime(180, t + 0.55); f.Q.value = 3;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.5, t + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+    o.connect(f); o2.connect(f); f.connect(g); g.connect(this.master);
+    o.start(); o2.start(); o.stop(t + 0.75); o2.stop(t + 0.75);
+    // the chase theme drops in hard
+    this.huntStab();
+    this.huntActive = 4.0;
+  },
+  // a stab of the string cluster + a struck low drum: the music hitting
+  huntStab() {
+    if (!this.ready) return;
+    const t = this.now();
+    for (const f of [110, 130.8, 155.6, 220]) this.tone({ freq: f, dur: 1.4, type: 'sawtooth', gain: 0.05, attack: 0.02 });
+    this.burst({ dur: 0.35, freq: 90, gain: 0.4, glide: -50 });
+    this.tone({ freq: 55, dur: 0.9, type: 'sine', gain: 0.3, glide: -20 });
+  },
   event(type, pos, data, playerPos) {
     if (!this.ready) return;
     const a = this.att(pos, playerPos);
@@ -4020,10 +4111,11 @@ const AUDIO = {
       case 'distantGroan': this.groan(0.5); break;
       case 'wardenReveal': this.groan(0.9); this.tone({ freq: 60, dur: 2.4, type: 'sine', gain: 0.22, glide: -22 }); break;
       case 'wardenLunge': this.burst({ dur: 0.5, type: 'bandpass', freq: 300, q: 1, gain: 0.5, glide: 500 }); this.groan(1); break;
+      case 'wardenSpot': this.roar(1); break;
       case 'wardenCrushed': this.burst({ dur: 0.8, freq: 150, gain: 0.7, glide: -100 }); this.groan(1); break;
       case 'wardenPinned': this.tone({ freq: 200, dur: 1.2, type: 'sine', gain: 0.1, glide: 160 }); break;
       case 'rendererStep': this.burst({ dur: 0.05, type: 'highpass', freq: 1400, q: 1, gain: 0.12 * a * (data || 1) }); break;
-      case 'rendererAlert': this.burst({ dur: 0.7, type: 'bandpass', freq: 2400, q: 6, gain: 0.26, glide: 1200 }); this.tone({ freq: 1900, dur: 0.6, type: 'square', gain: 0.03, glide: 900 }); break;
+      case 'rendererAlert': this.burst({ dur: 0.7, type: 'bandpass', freq: 2400, q: 6, gain: 0.26, glide: 1200 }); this.tone({ freq: 1900, dur: 0.6, type: 'square', gain: 0.03, glide: 900 }); this.huntStab(); this.huntActive = 3.0; break;
       case 'rendererReveal': this.tone({ freq: 84, dur: 2.2, type: 'sine', gain: 0.2, glide: -26 }); this.burst({ dur: 1.4, type: 'bandpass', freq: 3200, q: 8, gain: 0.06 }); break;
       case 'chorusReveal': this.tone({ freq: 220, dur: 2.8, type: 'sine', gain: 0.05, glide: 24 }); this.tone({ freq: 331, dur: 2.8, type: 'sine', gain: 0.04, glide: -20 }); break;
       case 'chorusAngry': this.tone({ freq: 400 + Math.random() * 200, dur: 0.3, type: 'square', gain: 0.05 }); this.burst({ dur: 0.3, type: 'bandpass', freq: 1300, q: 3, gain: 0.14 }); break;
@@ -4073,12 +4165,22 @@ const AUDIO = {
     // hunt cluster follows threat
     const cg = this.clusterGain.gain;
     cg.value = damp(cg.value, threat * 0.85, 1.6, dt);
+    this.huntActive = Math.max((this.huntActive || 0) - dt, threat > 0.4 ? 1.5 : 0);
     // heartbeat under pressure
     this.heartT -= dt;
     if (threat > 0.25 && this.heartT <= 0) {
       this.heartT = 60 / (62 + threat * 74);
       this.tone({ freq: 52, dur: 0.14, type: 'sine', gain: 0.16 + threat * 0.2, glide: -14 });
       setTimeout(() => this.tone({ freq: 44, dur: 0.12, type: 'sine', gain: 0.1 + threat * 0.12, glide: -10 }), 180);
+    }
+    // driving chase pulse — the actual "music" while hunted: a running low ostinato
+    this.pulseT = (this.pulseT || 0) - dt;
+    if (this.huntActive > 0 && this.pulseT <= 0) {
+      this.pulseT = 0.24;
+      const step = (this.pulseStep = ((this.pulseStep || 0) + 1) % 4);
+      const notes = [73.4, 73.4, 87.3, 98.0]; // Dm-ish running bass
+      this.tone({ freq: notes[step], dur: 0.22, type: 'sawtooth', gain: 0.09, glide: -4 });
+      if (step === 0) this.tone({ freq: notes[step] * 2, dur: 0.3, type: 'triangle', gain: 0.03 });
     }
     // the far rooms of the works knock and settle and moan
     this.ambT = (this.ambT ?? 4) - dt;
@@ -4259,12 +4361,24 @@ function buildWorld(ctx) {
       if (type === 'wardenLunge') rig.impact(0.45);
       if (type === 'land' && data > 0.7) rig.impact(0.2);
     },
-    killPlayer(cause) {
-      if (GAME.fade.mode === 'death' || GAME.ended) return;
-      GAME.fade.mode = 'death'; GAME.fade.t = 0;
+    killPlayer(cause, catcher) {
+      if (GAME.fade.mode === 'death' || GAME.fade.mode === 'caught' || GAME.ended) return;
+      GAME.fade.t = 0;
       GAME.fade.color.set(0x000000);
-      AUDIO.event(cause === 'drown' ? 'drown' : 'caught', ctrl.pos, 1, ctrl.pos);
       rig.impact(0.6);
+      if (catcher && catcher.seize) {
+        // a monster has her in hand — play the grab before the dark
+        GAME.fade.mode = 'caught';
+        GAME.caughtBy = catcher;
+        catcher.seizing = true;
+        catcher.state = 'seize';
+        ctx.eight.capturedX = ctrl.pos.x;
+        ctx.eight.capturedY = ctrl.pos.y;
+        AUDIO.event('caught', ctrl.pos, 1, ctrl.pos);
+      } else {
+        GAME.fade.mode = 'death';
+        AUDIO.event(cause === 'drown' ? 'drown' : 'caught', ctrl.pos, 1, ctrl.pos);
+      }
     },
     giveLantern() {
       if (GAME.hasLantern) return;
@@ -4402,6 +4516,7 @@ function main() {
     const cp = RM.checkpoint;
     ctrl.reset(cp.x, cp.y, cp.z);
     eight.faceAngle = Math.PI / 2;
+    eight.root.rotation.z = 0; // clear any grab tilt
     rig.setRoom(ROOM_DEFS[RM.current].cam, [RM.offsets[RM.current], RM.offsets[RM.current] + ROOM_DEFS[RM.current].width], true, ROOM_DEFS[RM.current].floorY || 0);
   }
 
@@ -4430,7 +4545,24 @@ function main() {
       }
     } else {
       // fades
-      if (F.mode === 'death') {
+      if (F.mode === 'caught') {
+        F.t += dt;
+        const catcher = GAME.caughtBy;
+        if (catcher && catcher.seize && catcher.root && catcher.root.parent) catcher.seize(dt, eight, F.t, world);
+        // watch the grab for 1.6s, then the world goes out
+        if (F.t < 1.6) F.amt = 0;
+        else if (F.t < 2.2) F.amt = (F.t - 1.6) / 0.6;
+        else if (F.t < 2.7) F.amt = 1;
+        else if (F.t < 3.2) F.amt = 1 - (F.t - 2.7) / 0.5;
+        else { F.amt = 0; F.mode = 'none'; }
+        if (F.t >= 2.25 && !F.respawned) {
+          F.respawned = true;
+          if (catcher) { catcher.seizing = false; catcher.state = catcher instanceof Warden ? 'patrol' : 'sweep'; }
+          eight.root.rotation.z = 0; GAME.caughtBy = null;
+          respawn();
+        }
+        if (F.mode === 'none') F.respawned = false;
+      } else if (F.mode === 'death') {
         F.t += dt;
         const D = CONFIG.fade.death;
         if (F.t < D * 0.4) F.amt = F.t / (D * 0.4);
@@ -4444,7 +4576,7 @@ function main() {
         if (F.amt <= 0) F.mode = 'none';
       }
 
-      const controlLocked = F.mode === 'death' && F.t < CONFIG.fade.death * 0.6;
+      const controlLocked = F.mode === 'caught' || (F.mode === 'death' && F.t < CONFIG.fade.death * 0.6);
       RM.update(ctrl.pos.x, rig);
       const room = RM.currentRoom();
       if (!controlLocked && room && room.built) {
