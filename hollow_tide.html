@@ -1913,6 +1913,9 @@ class Movable {
             this.vel.y = 0; this.grounded = true;
           } else if (this.vel.y > 0) { this.pos.y = c.min.y - this.half.y; this.vel.y = 0; }
         } else {
+          // a floor/low step is not a wall — if its top is only a little above our
+          // base, let the Y axis seat us on it instead of shoving us sideways
+          if (c.max.y - (this.pos.y - this.half.y) < 0.18) continue;
           const dir = this.vel[axis] > 0 ? 1 : -1;
           if (dir > 0) this.pos[axis] = c.min[axis] - this.half[axis]; else this.pos[axis] = c.max[axis] + this.half[axis];
           this.vel[axis] = 0;
@@ -3173,10 +3176,43 @@ ROOM_DEFS.push({
     R.lamp(25, 13.6, 0.3, { cordLen: 5.0, intensity: 24, flicker: 0.2 });
     R.ambient(0x101c24, 0.7, 0x06080a);
     { const fill = new THREE.PointLight(new THREE.Color(0xffcf8a), 4.5, 16, 2.0); fill.position.set(R.ox + 15, 3.0, 1.2); R.group.add(fill); R.lights.push(fill); }
-    // the key — heavy, dragged to the far door
-    R.movable('key', 5.6, 0, -1.55, {});
-    R.solid(5.6, 0.9, -2.4, 2.2, 0.72, 1.2, 'wood'); // key shelf ledge
-    R.batch(new THREE.BoxGeometry(2.2, 0.72, 1.2, 3, 1, 2), MAT.woodDark, 5.6, 1.26, -2.4);
+    // — STEP 1: the key hangs from a latch-hook, high and out of reach —
+    const keyHung = new THREE.Group();
+    const keyMesh2 = new THREE.Mesh(mergeGeometries([
+      xformGeo(new THREE.TorusGeometry(0.09, 0.025, 12, 32), -0.18, 0.08, 0),
+      xformGeo(new THREE.CylinderGeometry(0.022, 0.022, 0.34, 16), 0.02, 0.08, 0, 0, 0, Math.PI / 2),
+      xformGeo(new THREE.BoxGeometry(0.05, 0.09, 0.03), 0.16, 0.045, 0),
+    ]), MAT.rust);
+    keyHung.add(keyMesh2);
+    const latchChain = new THREE.Mesh(GF.chainLinks(6, 0.04, 0.012), MAT.metalDark);
+    latchChain.position.set(-0.18, 0.9, 0); keyHung.add(latchChain);
+    keyHung.position.set(R.ox + 3.6, 3.5, -2.6);
+    R.group.add(keyHung); R.disposables.push(keyMesh2.geometry, latchChain.geometry);
+    // the real (draggable) key, hidden until the latch lets go
+    const key = R.movable('key', 3.6, -60, -1.8, {});
+    key.mesh.visible = false;
+    // — STEP 1 mechanism: a weight plate; a dragged crate on it trips the latch —
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 1.5, 2, 1, 2), MAT.grate);
+    plate.position.set(R.ox + 12, 0.06, -0.6); plate.receiveShadow = true;
+    R.group.add(plate); R.disposables.push(plate.geometry);
+    R.movable('crate', 9, 0, -0.6, { w: 0.6, h: 0.6, d: 0.6, mass: 1.4 });
+    let latched = true;
+    R.onUpdate((dt, world) => {
+      // is a crate holding the plate down?
+      let pressed = false;
+      for (const m of R.movables) {
+        if (m.kind === 'crate' && Math.abs(m.pos.x - (R.ox + 12)) < 0.8 &&
+            Math.abs(m.pos.z - (-0.6)) < 0.8 && m.pos.y < 0.6) pressed = true;
+      }
+      plate.position.y = pressed ? 0.02 : 0.06;
+      if (pressed && latched) {
+        latched = false;
+        world.onEvent('leverClank', keyHung.position);
+        world.emitSound(new THREE.Vector3(R.ox + 4.6, 1, -2.7), 0.7); // the latch snaps — he may hear
+        keyHung.visible = false;
+        key.mesh.visible = true; key.pos.set(R.ox + 3.6, 1.7, -2.2); key.vel.set(0.2, 0, 0.9); key.grounded = false;
+      }
+    });
     // locked act door
     const doorMesh = new THREE.Mesh(GF.door(2.2, 5.0, 540), MAT.woodDark);
     doorMesh.position.set(R.ox + 29.75, 0, 0); doorMesh.rotation.y = -Math.PI / 2;

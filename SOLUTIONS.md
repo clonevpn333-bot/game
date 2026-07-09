@@ -36,13 +36,18 @@ chain (E)** by the iron door — the pulley above winches it open.
 table (walk into its shadow; don't sprint — under furniture = hidden). Wait for him
 to shuffle off left, then go. *Stub #4: far right corner, on the floor.*
 
-**5 · Jar Rows** *(the tall vault — the main stealth room).* The Warden patrols and
-is **busy at his rounds** (stooping, groping the dark) when he pauses. Rules: **metal
-grates are loud, cloth runners are silent** — creep (hold C) across grates, hide
-under the raised crates, and **kick a can** (walk into it) to send him the wrong way.
-The lock: **drag the giant key (E) from the floor near the entrance all the way to
-the right-hand door.** It's heavy and noisy, so move it in bursts and let go to hide
-whenever he turns. With the key beside the door, **press E at the door** to unlock.
+**5 · Jar Rows** *(the tall vault — the main stealth room, now a 3-step puzzle).*
+The Warden patrols and is **busy at his rounds** (stooping, groping the dark) when he
+pauses. Rules: **metal grates are loud, cloth runners are silent** — creep (hold C)
+across grates, hide under the raised crates, **kick a can** to send him the wrong way.
+1. The **key hangs from a latch-hook high on the left wall**, out of reach. Find the
+   rope-lashed **crate** (mid-room) and **drag it (hold E) onto the iron weight-plate**
+   (center floor). The plate trips the latch and the key **drops to the floor** — but
+   the latch snaps loud, so he may come to look.
+2. Now **drag the fallen key** across to the right-hand door. It's heavy and rings on
+   the metal grates, so move it in bursts, kick a can to pull him away, and let go to
+   hide under a crate whenever he turns.
+3. With the key beside the door, **press E** to unlock.
 *Stub #5: step through the hanging cloth curtain, far right.*
 
 **6 · The Chute.** A trap room. Passing the stacked jars topples them and **wakes the
