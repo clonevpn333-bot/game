@@ -50,11 +50,14 @@ across grates, hide under the raised crates, **kick a can** to send him the wron
 3. With the key beside the door, **press E** to unlock.
 *Stub #5: step through the hanging cloth curtain, far right.*
 
-**6 · The Chute.** A trap room. Passing the stacked jars topples them and **wakes the
-Warden into a hunt — sprint right immediately** (Shift): under the low table, over
-the small crates, and at the far wall a **low slit at floor level** — run at it and
-you auto-crawl through. He can't follow. It's a straight sprint; don't stop.
-*Stub #6: front-left, grab it before triggering the jars.*
+**6 · The Chute** *(a chase — it IS supposed to be one).* The Warden is hauling at
+the far end, guarding the way out (a **lit low slit** on the right — that's your
+goal). Creeping past the stacked jars **topples them**; the crash makes him **rear up
+and roar**, then hunt. That rear-up is your head start — **sprint right immediately**
+(Shift). Key trick: run **through the big low table** — you fit between its legs and
+under the top, but the giant is too big and has to **lumber around the ends**, which
+buys you the distance you need. Reach the lit slit and you **auto-crawl through**; he
+can't fit. Don't stop moving. *Stub #6: front-left — grab it before you trip the jars.*
 
 ## ACT III — THE TALLOW WORKS
 
