@@ -1312,6 +1312,7 @@ class Warden {
         const dir = new THREE.Vector3().subVectors(player.pos, p); dir.y = 0;
         if (dir.lengthSq() > 0.001) dir.normalize();
         p.addScaledVector(dir, 7.2 * dt);
+        resolveActorObstacles(p, 0.5, world.obstacles, p.y);
         if (!player.hidden && p.distanceTo(player.pos) < C.grabRange + 0.35) world.killPlayer('warden', this);
       } else if (this.lungeT <= -0.42) {
         this.state = 'hunt'; this.recoverT = 1.1;
@@ -1329,6 +1330,7 @@ class Warden {
         dir.normalize();
         const bounds = this.opts.bounds;
         p.addScaledVector(dir, Math.min(speed, dist / dt) * dt);
+        resolveActorObstacles(p, 0.5, world.obstacles, p.y); // don't phase through furniture
         if (bounds) { p.x = clamp(p.x, bounds[0], bounds[1]); }
         p.z = clamp(p.z, -2.0, 2.0);
         const targetAngle = Math.atan2(dir.x, dir.z);
@@ -1580,6 +1582,7 @@ class RendererTwin {
       if (dist > 0.05) {
         dir.normalize();
         p.addScaledVector(dir, Math.min(speed, dist / dt) * dt);
+        resolveActorObstacles(p, 0.36, world.obstacles, p.y);
         if (this.opts.bounds) p.x = clamp(p.x, this.opts.bounds[0], this.opts.bounds[1]);
         p.z = clamp(p.z, -1.9, 1.9);
         const ta = Math.atan2(dir.x, dir.z);
@@ -1850,6 +1853,30 @@ function makeCollider(x, y, z, w, h, d, surface = 'wood') {
     max: new THREE.Vector3(x + w / 2, y + h, z + d / 2),
     surface,
   };
+}
+// Push a walking actor (point + radius) out of floor-rooted furniture and walls, in XZ.
+// Skips thin floors and overhead-only colliders relative to the actor's foot height.
+function resolveActorObstacles(pos, radius, obstacles, footY) {
+  if (!obstacles) return;
+  for (const c of obstacles) {
+    if (c.min.y >= footY + 0.6 || c.max.y <= footY + 0.5) continue; // not rooted at his feet
+    const cx = clamp(pos.x, c.min.x, c.max.x);
+    const cz = clamp(pos.z, c.min.z, c.max.z);
+    let dx = pos.x - cx, dz = pos.z - cz;
+    const d2 = dx * dx + dz * dz;
+    if (d2 >= radius * radius) continue;
+    if (d2 > 1e-6) {
+      const d = Math.sqrt(d2);
+      pos.x = cx + (dx / d) * radius;
+      pos.z = cz + (dz / d) * radius;
+    } else { // centre inside the box — eject along least penetration
+      const midx = (c.min.x + c.max.x) / 2, midz = (c.min.z + c.max.z) / 2;
+      const px = (c.max.x - c.min.x) / 2 - Math.abs(pos.x - midx);
+      const pz = (c.max.z - c.min.z) / 2 - Math.abs(pos.z - midz);
+      if (px < pz) pos.x = (pos.x < midx ? c.min.x : c.max.x) + (pos.x < midx ? -radius : radius);
+      else pos.z = (pos.z < midz ? c.min.z : c.max.z) + (pos.z < midz ? -radius : radius);
+    }
+  }
 }
 
 /* A movable prop: crate, can, key… draggable, kickable, stand-on-able. */
@@ -2672,6 +2699,7 @@ class Room {
         world.onEvent('thud', m.pos, m.landEvent);
       }
     }
+    world.obstacles = this.colliders;   // so bosses can collide with this room's furniture
     for (const a of this.actors) a.update(dt, world);
     for (const f of this.fx) f.update(dt, world.time);
     for (const u of this.updaters) u(dt, world);
