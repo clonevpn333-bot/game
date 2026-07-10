@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROLLING THUNDER</title>
+<style>
+:root{
+  --amber:#e8a33d; --amber-dim:#a97728; --ink:#e8e4da; --ink-dim:#9a958a;
+  --bg:#0a0c0a; --panel:rgba(12,14,12,0.82); --red:#c23b2e; --green:#7da05a;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#000}
+body{font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--ink)}
+#game{position:fixed;inset:0}
+#game canvas{display:block}
+.hidden{display:none !important}
+
+/* ---------- generic screens ---------- */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:40;transition:opacity .45s ease;opacity:1}
+.screen.fading{opacity:0;pointer-events:none}
+.scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,6,5,.72) 0%,rgba(4,6,5,.28) 40%,rgba(4,6,5,.78) 100%)}
+.screen > .inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;max-width:1100px;width:92%}
+
+/* ---------- title / menu ---------- */
+.title-block{text-align:center;margin-bottom:38px}
+.title-sup{font-size:13px;letter-spacing:.55em;color:var(--amber);text-transform:uppercase;margin-bottom:10px;font-weight:600}
+.title-main{font-size:76px;font-weight:900;letter-spacing:.12em;line-height:.95;text-transform:uppercase;
+  background:linear-gradient(180deg,#fdf6e3 0%,#e5d9b8 30%,#8f8368 52%,#d9cba4 62%,#5d523c 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 2px 1px rgba(0,0,0,.9)) drop-shadow(0 6px 18px rgba(0,0,0,.6))}
+.title-sub{margin-top:12px;font-size:12px;letter-spacing:.42em;color:var(--ink-dim);text-transform:uppercase}
+.title-rule{width:340px;height:2px;margin:16px auto 0;background:linear-gradient(90deg,transparent,var(--amber),transparent)}
+.menu-list{display:flex;flex-direction:column;gap:10px;min-width:340px}
+.menu-btn{position:relative;display:block;padding:13px 26px;background:linear-gradient(90deg,rgba(20,22,18,.85),rgba(20,22,18,.55));
+  border:1px solid rgba(232,163,61,.22);border-left:3px solid rgba(232,163,61,.55);color:var(--ink);
+  font-size:15px;letter-spacing:.32em;text-transform:uppercase;font-weight:600;cursor:pointer;text-align:left;
+  transition:all .16s ease;outline:none}
+.menu-btn:hover,.menu-btn:focus{background:linear-gradient(90deg,rgba(48,40,22,.92),rgba(30,28,18,.6));border-left-color:var(--amber);color:#fff;padding-left:34px}
+.menu-btn:disabled{opacity:.35;cursor:default}
+.menu-btn:disabled:hover{padding-left:26px}
+.menu-foot{margin-top:34px;font-size:11px;letter-spacing:.22em;color:var(--ink-dim);text-transform:uppercase}
+
+/* ---------- panels (mission select / settings) ---------- */
+.panel-title{font-size:26px;font-weight:800;letter-spacing:.3em;text-transform:uppercase;color:var(--ink);margin-bottom:6px}
+.panel-title small{display:block;font-size:11px;letter-spacing:.4em;color:var(--amber);margin-bottom:8px}
+.panel{background:var(--panel);border:1px solid rgba(232,163,61,.18);padding:26px 30px;width:100%;backdrop-filter:blur(3px)}
+.mission-grid{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:14px}
+.mission-card{display:flex;align-items:center;gap:18px;padding:12px 18px;border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);cursor:pointer;transition:all .15s ease;text-align:left;color:var(--ink);width:100%}
+.mission-card:hover:not(.locked){border-color:var(--amber);background:rgba(232,163,61,.08)}
+.mission-card.locked{opacity:.4;cursor:default}
+.mission-num{font-size:26px;font-weight:900;color:var(--amber);min-width:46px;letter-spacing:.05em}
+.mission-info{flex:1}
+.mission-name{font-size:16px;font-weight:700;letter-spacing:.18em;text-transform:uppercase}
+.mission-desc{font-size:12px;color:var(--ink-dim);margin-top:3px;letter-spacing:.04em}
+.mission-stats{font-size:11px;color:var(--ink-dim);text-align:right;letter-spacing:.08em;line-height:1.6}
+.mission-stats b{color:var(--green)}
+.back-row{margin-top:22px}
+
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:11px 4px;border-bottom:1px solid rgba(255,255,255,.06);width:100%}
+.set-row label{font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink)}
+.set-row .set-val{font-size:12px;color:var(--amber);min-width:52px;text-align:right;font-weight:700}
+.set-row input[type=range]{width:230px;accent-color:var(--amber);cursor:pointer}
+.seg{display:flex;gap:6px}
+.seg button{padding:6px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:var(--ink-dim);
+  font-size:11px;letter-spacing:.15em;text-transform:uppercase;cursor:pointer}
+.seg button.on{background:rgba(232,163,61,.18);border-color:var(--amber);color:#fff}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;z-index:20;pointer-events:none;opacity:0;transition:opacity .4s}
+#hud.on{opacity:1}
+#ammo{position:absolute;right:34px;bottom:28px;text-align:right;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+#ammo .wname{font-size:12px;letter-spacing:.3em;color:var(--ink-dim);text-transform:uppercase;margin-bottom:2px}
+#ammo .mag{font-size:40px;font-weight:800;color:#fff;line-height:1}
+#ammo .mag span{font-size:17px;color:var(--ink-dim);font-weight:600}
+#ammo .gren{font-size:12px;color:var(--ink-dim);margin-top:4px;letter-spacing:.12em}
+#compass-wrap{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:420px;height:34px;overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)}
+#compass{width:420px;height:34px}
+#obj-list{position:absolute;top:64px;left:34px;max-width:380px}
+.obj-item{font-size:13px;letter-spacing:.06em;color:var(--ink);text-shadow:0 1px 3px #000;margin-bottom:5px;display:flex;gap:8px;align-items:baseline}
+.obj-item.done{color:var(--ink-dim);text-decoration:line-through}
+.obj-item::before{content:"▸";color:var(--amber)}
+.obj-item.done::before{content:"✓";color:var(--green)}
+#toast{position:absolute;top:23%;left:50%;transform:translateX(-50%);text-align:center;font-size:19px;font-weight:700;
+  letter-spacing:.34em;text-transform:uppercase;color:#fff;text-shadow:0 2px 8px #000;opacity:0;transition:opacity .4s}
+#toast small{display:block;font-size:11px;letter-spacing:.4em;color:var(--amber);margin-bottom:6px}
+#subtitles{position:absolute;bottom:12%;left:50%;transform:translateX(-50%);max-width:760px;width:86%;text-align:center}
+#subtitles .line{display:inline-block;background:rgba(0,0,0,.62);padding:8px 18px;font-size:16.5px;line-height:1.45;border-radius:2px}
+#subtitles .who{color:var(--amber);font-weight:700;letter-spacing:.06em}
+#crosshair{position:absolute;left:50%;top:50%;width:0;height:0}
+#crosshair .l{position:absolute;background:rgba(255,255,255,.92);box-shadow:0 0 2px rgba(0,0,0,.8)}
+#crosshair .h{width:9px;height:2px;top:-1px}
+#crosshair .v{width:2px;height:9px;left:-1px}
+#hitmarker{position:absolute;left:50%;top:50%;width:0;height:0;opacity:0}
+#hitmarker .m{position:absolute;width:9px;height:2px;background:#fff;box-shadow:0 0 3px #000}
+#hitmarker.kill .m{background:#e04c3c}
+#vignette{position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse at center,transparent 42%,rgba(140,10,6,.55) 78%,rgba(120,4,2,.85) 100%)}
+#dmgdir{position:absolute;left:50%;top:50%;width:0;height:0}
+.dmg-arc{position:absolute;width:120px;height:120px;left:-60px;top:-60px;opacity:0;
+  background:radial-gradient(ellipse 55% 18% at 50% 6%,rgba(220,40,25,.85),transparent 70%);border-radius:50%}
+#interact{position:absolute;left:50%;top:58%;transform:translateX(-50%);font-size:14px;letter-spacing:.2em;color:#fff;
+  text-transform:uppercase;text-shadow:0 1px 4px #000;opacity:0;transition:opacity .2s}
+#interact b{color:var(--amber);border:1px solid var(--amber);padding:1px 7px;margin-right:8px;border-radius:2px}
+.waypoint{position:absolute;pointer-events:none;text-align:center;transform:translate(-50%,-50%)}
+.waypoint .diamond{width:13px;height:13px;margin:0 auto;background:rgba(232,163,61,.14);border:2px solid var(--amber);transform:rotate(45deg);box-shadow:0 0 6px rgba(0,0,0,.7)}
+.waypoint .dist{font-size:10.5px;color:#ffd68a;text-shadow:0 1px 3px #000;margin-top:5px;letter-spacing:.08em;font-weight:600}
+#health-low{position:absolute;inset:0;opacity:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(150,8,4,.9) 100%)}
+
+/* ---------- cinematics ---------- */
+#letterbox .bar{position:fixed;left:0;width:100%;height:0;background:#000;z-index:30;transition:height .8s cubic-bezier(.6,0,.3,1)}
+#lb-top{top:0}#lb-bot{bottom:0}
+#letterbox.on .bar{height:11vh}
+#skip-hint{position:fixed;bottom:13vh;right:30px;z-index:31;font-size:11px;letter-spacing:.3em;color:var(--ink-dim);text-transform:uppercase;opacity:0;transition:opacity .5s}
+#skip-hint.on{opacity:.85}
+
+#fade{position:fixed;inset:0;background:#000;z-index:60;opacity:1;pointer-events:none;transition:opacity .7s ease}
+#fade.slow{transition-duration:1.8s}
+
+/* ---------- mission end ---------- */
+.stats-table{margin:20px 0;width:100%;border-collapse:collapse}
+.stats-table td{padding:9px 4px;font-size:14px;letter-spacing:.14em;border-bottom:1px solid rgba(255,255,255,.07)}
+.stats-table td:last-child{text-align:right;color:var(--amber);font-weight:700}
+.big-result{font-size:38px;font-weight:900;letter-spacing:.28em;text-transform:uppercase;color:#fff;margin-bottom:4px}
+.big-result.fail{color:var(--red)}
+
+/* ---------- credits ---------- */
+#credits-scroll{height:60vh;overflow:hidden;position:relative;width:100%;text-align:center}
+#credits-inner{position:absolute;width:100%;left:0}
+#credits-inner h3{font-size:13px;letter-spacing:.4em;color:var(--amber);text-transform:uppercase;margin:34px 0 8px}
+#credits-inner p{font-size:16px;letter-spacing:.1em;margin:4px 0;color:var(--ink)}
+
+#boot-msg{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink-dim);z-index:5;letter-spacing:.3em;font-size:13px;text-transform:uppercase}
+.paused-note{margin-top:26px;font-size:11px;letter-spacing:.24em;color:var(--ink-dim);text-transform:uppercase;line-height:2.1;text-align:center}
+kbd{border:1px solid rgba(255,255,255,.25);padding:0 6px;border-radius:2px;color:var(--ink);font-family:inherit}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="boot-msg">Loading…</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/*__GAME_JS__*/
+</script>
+</body>
+</html>
