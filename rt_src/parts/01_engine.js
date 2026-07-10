@@ -85,7 +85,7 @@ RT.engine = (() => {
    *           hemiSky,hemiGround,hemiIntensity,fogColor,fogDensity,exposure} */
   E.setAtmosphere = function (p) {
     const geo = skyMesh.geometry, pos = geo.attributes.position, col = geo.attributes.color;
-    const top = new THREE.Color(p.top), hor = new THREE.Color(p.horizon), gnd = new THREE.Color(p.ground || p.horizon);
+    const top = RT.lin(p.top), hor = RT.lin(p.horizon), gnd = RT.lin(p.ground || p.horizon);
     for (let i = 0; i < pos.count; i++) {
       const y = pos.getY(i) / 1600;
       let c;
@@ -100,14 +100,14 @@ RT.engine = (() => {
     sunDisc.position.copy(sd).multiplyScalar(1500);
     sunGlow.position.copy(sd).multiplyScalar(1490);
     sunDisc.lookAt(0, 0, 0); sunGlow.lookAt(0, 0, 0);
-    sunDisc.material.color.set(p.sunDiscColor || 0xffedca);
-    sunGlow.material.color.set(p.sunDiscColor || 0xffd9a0);
+    sunDisc.material.color.set(p.sunDiscColor || 0xffedca).convertSRGBToLinear();
+    sunGlow.material.color.set(p.sunDiscColor || 0xffd9a0).convertSRGBToLinear();
     sunGlow.material.opacity = p.sunGlow != null ? p.sunGlow : 0.28;
     sunDisc.visible = sunGlow.visible = p.sunVisible !== false;
     hemi.color.set(p.hemiSky); hemi.groundColor.set(p.hemiGround); hemi.intensity = p.hemiIntensity;
     fillDir.intensity = p.fillIntensity != null ? p.fillIntensity : 0.25;
-    scene.fog.color.set(p.fogColor); scene.fog.density = p.fogDensity;
-    renderer.setClearColor(p.fogColor);
+    scene.fog.color.set(p.fogColor).convertSRGBToLinear(); scene.fog.density = p.fogDensity;
+    renderer.setClearColor(scene.fog.color);
     renderer.toneMappingExposure = p.exposure != null ? p.exposure : 1.05;
     E.basePalette = p;
   };
@@ -163,7 +163,7 @@ RT.engine = (() => {
     const i = pCount++;
     pPos[i * 3] = x; pPos[i * 3 + 1] = y; pPos[i * 3 + 2] = z;
     pVel[i * 3] = vx; pVel[i * 3 + 1] = vy; pVel[i * 3 + 2] = vz;
-    _pc.set(o.color);
+    _pc.set(o.color).convertSRGBToLinear();
     pCol[i * 4] = _pc.r; pCol[i * 4 + 1] = _pc.g; pCol[i * 4 + 2] = _pc.b; pCol[i * 4 + 3] = o.alpha != null ? o.alpha : 1;
     pSize[i] = o.size || 0.2;
     pLife[i] = pLife0[i] = o.life || 1;

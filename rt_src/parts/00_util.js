@@ -71,11 +71,14 @@ RT.noise = _nz; RT.fbm = fbm;
  * ready for mergeGeos(). One merged geometry = one draw call.
  * ============================================================ */
 const _color = new THREE.Color();
+/* authored colors are sRGB hex; renderer outputs sRGB, so store LINEAR
+ * values in vertex colors for a faithful round-trip */
+RT.lin = (hex) => new THREE.Color(hex).convertSRGBToLinear();
 function paintGeo(geo, hex, variation) {
   const g = geo.index ? geo.toNonIndexed() : geo;
   const n = g.attributes.position.count;
   const cols = new Float32Array(n * 3);
-  _color.set(hex);
+  _color.set(hex).convertSRGBToLinear();
   const r0 = _color.r, g0 = _color.g, b0 = _color.b;
   for (let f = 0; f < n; f += 3) {
     let vr = 1;
@@ -170,7 +173,7 @@ RT.G = G;
 
 /* recolor an already-painted geometry region (all of it) */
 RT.tintGeo = function (geo, hex, mul) {
-  _color.set(hex);
+  _color.set(hex).convertSRGBToLinear();
   const arr = geo.attributes.color.array;
   for (let i = 0; i < arr.length; i += 3) {
     arr[i] = _color.r * (mul || 1); arr[i + 1] = _color.g * (mul || 1); arr[i + 2] = _color.b * (mul || 1);

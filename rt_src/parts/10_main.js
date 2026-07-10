@@ -23,6 +23,7 @@ function boot() {
 
   if (location.hash === '#soldier') { soldierViewer(); return finishBoot(); }
   if (location.hash === '#weapon') { weaponViewer(); return finishBoot(); }
+  if (location.hash === '#map') { mapViewer(); return finishBoot(); }
 
   /* temporary boot scene */
   const ground = RT.meshOf([RT.G.box(200, 0.5, 200, 0x6a7a4a, { y: -0.25, vary: 0.15 })]);
@@ -37,6 +38,29 @@ function finishBoot() {
   RT.$('boot-msg').classList.add('hidden');
   window.RT_BOOT = 'ok';
   console.log('RT boot ok');
+}
+
+/* ---------- Gate C viewer: mission map flyover ---------- */
+function mapViewer() {
+  const params = new URLSearchParams(location.search);
+  const mi = parseInt(params.get('m') || '0', 10);
+  RT.buildMissionWorld(mi);
+  const cam = RT.engine.camera;
+  const cx = parseFloat(params.get('x') || '0');
+  const cy = parseFloat(params.get('y') || '90');
+  const cz = parseFloat(params.get('z') || '120');
+  const lx = parseFloat(params.get('lx') || '0');
+  const ly = parseFloat(params.get('ly') || '0');
+  const lz = parseFloat(params.get('lz') || '-40');
+  cam.position.set(cx, cy, cz);
+  cam.lookAt(lx, ly, lz);
+  if (params.get('ground')) {
+    const gx = parseFloat(params.get('x') || '0'), gz = parseFloat(params.get('z') || '120');
+    cam.position.set(gx, RT.map.groundAt(gx, gz, 99) + 1.65, gz);
+    cam.lookAt(lx, RT.map.groundAt(lx, lz, 99) + 1.4, lz);
+  }
+  RT.engine.onUpdate(() => RT.engine.updateSun(cam.position));
+  window.RT_VIEWER = { map: RT.map };
 }
 
 /* ---------- Gate B viewer: first-person weapon rig ---------- */

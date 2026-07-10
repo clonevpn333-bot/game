@@ -19,7 +19,7 @@ RT.character = (() => {
       const px = pos[f * 9], py = pos[f * 9 + 1], pz = pos[f * 9 + 2];
       const n = RT.noise(px * 9 + py * 7, pz * 9 - py * 5) + RT.noise(px * 21, pz * 21) * 0.5;
       const idx = Math.abs(Math.floor(n * 6)) % cols.length;
-      c.set(cols[idx]);
+      c.set(cols[idx]).convertSRGBToLinear();
       const vr = 0.94 + ((f * 137) % 13) / 100;
       for (let k = 0; k < 3; k++) {
         arr[f * 9 + k * 3] = c.r * vr; arr[f * 9 + k * 3 + 1] = c.g * vr; arr[f * 9 + k * 3 + 2] = c.b * vr;
@@ -107,7 +107,7 @@ RT.character = (() => {
     const g = geo.index ? geo.toNonIndexed() : geo;
     const n = g.attributes.position.count;
     const cols = new Float32Array(n * 3);
-    const c = new THREE.Color(hex);
+    const c = new THREE.Color(hex).convertSRGBToLinear();
     for (let i = 0; i < n; i++) { cols[i * 3] = c.r; cols[i * 3 + 1] = c.g; cols[i * 3 + 2] = c.b; }
     g.setAttribute('color', new THREE.BufferAttribute(cols, 3));
     return g;
