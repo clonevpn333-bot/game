@@ -23,6 +23,8 @@ RT.Terrain = class {
         const z = (iz / this.segs - 0.5) * this.size;
         let h = RT.fbm(x * 0.008 + off1, z * 0.008 + off1, 4, 2.1, 0.5) * amp;
         h += RT.fbm(x * 0.035 + off2, z * 0.035 + off2, 3, 2, 0.5) * amp * 0.22;
+        if (opts.tiltZ) h += z * opts.tiltZ;
+        if (opts.tiltX) h += x * opts.tiltX;
         // gentle bowl rim so map edges rise (natural boundary)
         const edge = Math.max(Math.abs(x), Math.abs(z)) / (this.size / 2);
         h += smoothstep(0.78, 1.0, edge) * (opts.rim != null ? opts.rim : 14);
@@ -89,6 +91,8 @@ RT.Terrain = class {
   }
   _carveRiver(path, width, depth) {
     this.waterCells = new Set();
+    /* accumulate the max dig per cell, then apply once (idempotent) */
+    const digs = new Float32Array(this.grid.length);
     for (let s = 0; s < path.length - 1; s++) {
       const [x0, z0] = path[s], [x1, z1] = path[s + 1];
       const len = Math.hypot(x1 - x0, z1 - z0);
@@ -96,19 +100,20 @@ RT.Terrain = class {
       for (let i = 0; i <= steps; i++) {
         const x = lerp(x0, x1, i / steps), z = lerp(z0, z1, i / steps);
         const [gx, gz] = this._worldToGrid(x, z);
-        const gr = width / this.size * this.segs;
-        for (let iz = Math.floor(gz - gr * 2.5); iz <= Math.ceil(gz + gr * 2.5); iz++)
-          for (let ix = Math.floor(gx - gr * 2.5); ix <= Math.ceil(gx + gr * 2.5); ix++) {
+        const gr = width / this.size * this.segs / 2;
+        for (let iz = Math.floor(gz - gr * 1.5); iz <= Math.ceil(gz + gr * 1.5); iz++)
+          for (let ix = Math.floor(gx - gr * 1.5); ix <= Math.ceil(gx + gr * 1.5); ix++) {
             const d = Math.hypot(ix - gx, iz - gz) / gr;
-            if (d < 2.5) {
+            if (d < 1.5) {
               const idx2 = this._idx(ix, iz);
-              const dig = Math.cos(Math.min(1, d / 1.4) * Math.PI / 2) * depth;
-              this.grid[idx2] = Math.min(this.grid[idx2], this.grid[idx2] - dig + (d > 1.4 ? (d - 1.4) * depth * 0.5 : 0));
-              if (d < 1) this.waterCells.add(idx2);
+              const dig = Math.cos(Math.min(1, d / 1.5) * Math.PI / 2) * depth;
+              if (dig > digs[idx2]) digs[idx2] = dig;
+              if (d < 0.6) this.waterCells.add(idx2);
             }
           }
       }
     }
+    for (let i = 0; i < digs.length; i++) this.grid[i] -= digs[i];
   }
   heightAt(x, z) {
     const [gx, gz] = this._worldToGrid(x, z);
@@ -954,6 +959,218 @@ RT.props = (() => {
     }
     B.buckets.std.push(...g);
     B.collide(x, gy + 1.7, z, 0.4, 3.4, 0.4);
+  };
+
+  /* ---------- bridge over gorge (mission 3) ---------- */
+  P.bridge = function (B, o) {
+    // deck along z from z0 to z1 at height y, width w
+    const { x, z0, z1, y, w } = o;
+    const len = z1 - z0, zc = (z0 + z1) / 2;
+    const g = [];
+    const cg = [];  // center-span bucket (separate mesh so a cutscene can drop it)
+    const cz0 = zc - len / 6, cz1 = zc + len / 6;
+    const inCenter = (z) => o.centerSpan && z > cz0 && z < cz1;
+    const push = (geo, z) => (inCenter(z) ? cg : g).push(geo);
+    const deckC = 0x6e6a60, steelC = 0x4a4e55, railC = 0x3c4046;
+    // deck in three sections so the middle can detach
+    g.push(G.box(w, 0.35, cz0 - z0, deckC, { x, y: y - 0.18, z: (z0 + cz0) / 2, vary: 0.08 }));
+    cg.push(G.box(w, 0.35, cz1 - cz0, deckC, { x, y: y - 0.18, z: zc, vary: 0.08 }));
+    g.push(G.box(w, 0.35, z1 - cz1, deckC, { x, y: y - 0.18, z: (cz1 + z1) / 2, vary: 0.08 }));
+    // deck planks
+    for (let i = 0; i < Math.floor(len / 2.2); i++) {
+      const pz = z0 + 1 + i * 2.2;
+      push(G.box(w + 0.15, 0.05, 0.16, adjc(deckC, 0.8), { x, y: y + 0.02, z: pz }), pz);
+    }
+    // side trusses: posts + diagonals + top chord
+    for (const s of [-1, 1]) {
+      const tx = x + s * (w / 2 - 0.1);
+      g.push(G.box(0.16, 0.14, cz0 - z0, steelC, { x: tx, y: y + 1.35, z: (z0 + cz0) / 2 }));
+      cg.push(G.box(0.16, 0.14, cz1 - cz0, steelC, { x: tx, y: y + 1.35, z: zc }));
+      g.push(G.box(0.16, 0.14, z1 - cz1, steelC, { x: tx, y: y + 1.35, z: (cz1 + z1) / 2 }));
+      for (let i = 0; i <= Math.floor(len / 4); i++) {
+        const pz = Math.min(z0 + i * 4, z1);
+        push(G.box(0.14, 1.45, 0.14, steelC, { x: tx, y: y + 0.68, z: pz }), pz);
+        if (z0 + i * 4 + 4 <= z1)
+          push(G.box(0.1, 0.1, 4.35, steelC, { x: tx, y: y + 0.68, z: z0 + i * 4 + 2, rx: (i % 2 ? -1 : 1) * 0.34 }), z0 + i * 4 + 2);
+      }
+      // guard rail
+      g.push(G.box(0.06, 0.05, len, railC, { x: tx, y: y + 0.95, z: zc }));
+    }
+    // piers down to the gorge floor
+    const nP = Math.max(2, Math.floor(len / 18));
+    for (let i = 0; i < nP; i++) {
+      const pz = z0 + (i + 0.5) * len / nP;
+      const gy = B.h(x, pz);
+      const ph = y - gy;
+      if (ph > 1) {
+        g.push(G.box(w * 0.5, ph, 1.6, 0x7a756a, { x, y: gy + ph / 2 - 0.2, z: pz, vary: 0.12 }));
+        g.push(G.box(w * 0.62, 0.5, 2, 0x6a655c, { x, y: gy + 0.3, z: pz, vary: 0.12 }));
+      }
+    }
+    B.buckets.std.push(...g);
+    B.platform(x - w / 2, z0, x + w / 2, z1, y + 0.02);
+    // truss colliders (block walking off the sides)
+    B.collide(x - w / 2 + 0.1, y + 0.8, zc, 0.25, 1.8, len);
+    B.collide(x + w / 2 - 0.1, y + 0.8, zc, 0.25, 1.8, len);
+    let centerMesh = null;
+    if (o.centerSpan) {
+      centerMesh = RT.meshOf(RT.mergeGeos(cg), RT.MAT.std);
+      B.group.add(centerMesh);
+    }
+    return { zc, centerMesh };
+  };
+
+  /* ---------- fortress stone wall segment ---------- */
+  P.stoneWall = function (B, x0, z0, x1, z1, h, opts) {
+    const len = Math.hypot(x1 - x0, z1 - z0);
+    const ry = Math.atan2(x1 - x0, z1 - z0);
+    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+    const gy = Math.min(B.h(x0, z0), B.h(x1, z1));
+    const g = [];
+    const c = (opts && opts.c) || 0x6e6a60;
+    g.push(G.box(1.1, h, len, c, { x: cx, y: gy + h / 2, z: cz, ry, vary: 0.13 }));
+    // crenellation
+    const nC = Math.floor(len / 1.6);
+    for (let i = 0; i < nC; i++) {
+      if (i % 2) continue;
+      const t = (i + 0.5) / nC - 0.5;
+      g.push(G.box(1.2, 0.55, 0.8, adjc(c, 0.88), {
+        x: cx + Math.sin(ry) * t * len, y: gy + h + 0.26, z: cz + Math.cos(ry) * t * len, ry, vary: 0.12,
+      }));
+    }
+    // base skirt
+    g.push(G.box(1.5, 0.8, len, adjc(c, 0.8), { x: cx, y: gy + 0.3, z: cz, ry, vary: 0.15 }));
+    B.buckets.std.push(...g);
+    B.collideRot(cx, gy + h / 2, cz, 1.15, h + 0.8, len, ry + Math.PI / 2);
+    return { gy };
+  };
+
+  /* ---------- MG nest: sandbag ring + tripod gun ---------- */
+  P.mgNest = function (B, x, z, faceRy) {
+    const gy = B.h(x, z);
+    P.sandbags(B, x + Math.sin(faceRy) * 1.2, z + Math.cos(faceRy) * 1.2, faceRy + Math.PI / 2, 3.6, { rows: 3 });
+    P.sandbags(B, x + Math.sin(faceRy + 1.1) * 1.5, z + Math.cos(faceRy + 1.1) * 1.5, faceRy + Math.PI / 2 + 1.1, 2.4, { rows: 2 });
+    P.sandbags(B, x + Math.sin(faceRy - 1.1) * 1.5, z + Math.cos(faceRy - 1.1) * 1.5, faceRy + Math.PI / 2 - 1.1, 2.4, { rows: 2 });
+    const g = [];
+    const T = (gg) => { gg.applyMatrix4(new THREE.Matrix4().makeRotationY(faceRy)); gg.translate(x, gy, z); return gg; };
+    g.push(T(G.cyl(0.03, 0.03, 0.9, 6, 0x2e3134, { y: 0.55, rx: 0.5 })));
+    g.push(T(G.cyl(0.03, 0.03, 0.9, 6, 0x2e3134, { y: 0.55, rx: 0.5, rz: 2.1 })));
+    g.push(T(G.cyl(0.03, 0.03, 0.9, 6, 0x2e3134, { y: 0.55, rx: 0.5, rz: -2.1 })));
+    g.push(T(G.cbox(0.09, 0.14, 0.9, 0.02, 0x33363a, { y: 0.98, z: 0.1 })));
+    g.push(T(G.cyl(0.022, 0.022, 0.75, 8, 0x26282c, { y: 1.0, z: 0.72, rx: Math.PI / 2 })));
+    g.push(T(G.box(0.02, 0.08, 0.5, 0x26282c, { x: 0.0, y: 1.06, z: 0.5, rx: 0 })));
+    g.push(T(G.cbox(0.16, 0.18, 0.22, 0.02, 0x3a3e30, { x: -0.14, y: 0.98, z: 0.02 })));
+    B.buckets.std.push(...g);
+    B.addCover(x, z, Math.sin(faceRy), Math.cos(faceRy), true);
+    return { gy, gunY: gy + 1.0 };
+  };
+
+  /* ---------- urban ruin block: flat-roof shell, collapsed sections ---------- */
+  P.ruinBlock = function (B, o) {
+    const rnd = RNG((o.seed || (o.x * 7 + o.z * 3)) | 0);
+    const w = o.w || 10, d = o.d || 8, H = o.h || 6;
+    const gy = B._flattenFor(o, w, d);
+    const c = o.c != null ? o.c : rnd.pick([0x8d8578, 0x9a8f7d, 0x7d766a]);
+    const T = 0.3;
+    const geos = [];
+    const wb = (lx, ly, lz, ww, hh, dd, col) => geos.push(G.box(ww, hh, dd, col || c, { x: lx, y: ly, z: lz, vary: 0.12 }));
+    const cs = Math.cos(o.ry || 0), sn = Math.sin(o.ry || 0);
+    const L2W = (lx, lz) => [o.x + lx * cs + lz * sn, o.z - lx * sn + lz * cs];
+    const solid = (lx, ly, lz, ww, hh, dd) => { const [wx, wz] = L2W(lx, lz); B.collideRot(wx, gy + ly, wz, ww, hh, dd, o.ry || 0); };
+    /* four walls with big window grid + one collapsed corner */
+    for (const [axis, sign] of [['x', 1], ['x', -1], ['z', 1], ['z', -1]]) {
+      const len = axis === 'x' ? w : d;
+      const off = (axis === 'x' ? d : w) / 2 - T / 2;
+      const collapsed = o.damage && axis === 'x' && sign === 1;
+      const floors = Math.floor(H / 3);
+      for (let f = 0; f < floors; f++) {
+        const y0 = f * 3;
+        const hFrac = collapsed && f === floors - 1 ? 0.4 : 1;
+        // spandrel
+        if (axis === 'x') { wb(collapsed && f === floors - 1 ? -len * 0.2 : 0, y0 + 0.5, off * sign, len * (collapsed && f === floors - 1 ? 0.6 : 1), 1, T); }
+        else wb(off * sign, y0 + 0.5, 0, T, 1, len);
+        // columns + lintel band
+        const nW = Math.floor(len / 2.4);
+        for (let k = 0; k <= nW; k++) {
+          const wx = (k / nW - 0.5) * (len - 0.7);
+          if (collapsed && f === floors - 1 && wx > 0) continue;
+          if (axis === 'x') wb(wx, y0 + 1.75, off * sign, 0.5, 1.5, T);
+          else wb(off * sign, y0 + 1.75, wx, T, 1.5, 0.5);
+        }
+        if (axis === 'x') { if (!(collapsed && f === floors - 1)) wb(0, y0 + 2.75, off * sign, len, 0.5, T); }
+        else wb(off * sign, y0 + 2.75, 0, T, 0.5, len);
+        if (hFrac === 1) solid(axis === 'x' ? 0 : off * sign, y0 + 1.5, axis === 'x' ? off * sign : 0, axis === 'x' ? len : T, 3, axis === 'x' ? T : len);
+        else solid(axis === 'x' ? -len * 0.2 : off * sign, y0 + 0.7, axis === 'x' ? off * sign : 0, axis === 'x' ? len * 0.6 : T, 1.4, axis === 'x' ? T : len);
+      }
+    }
+    /* floor slabs */
+    wb(0, 0.08, 0, w - 0.2, 0.16, d - 0.2, 0x6a655c);
+    B.platform(...(() => { const [ax, az] = L2W(-w / 2, -d / 2); const [bx, bz] = L2W(w / 2, d / 2); return [Math.min(ax, bx), Math.min(az, bz), Math.max(ax, bx), Math.max(az, bz)]; })(), gy + 0.16);
+    if (!o.noRoof) {
+      wb(0, H + 0.05, 0, w + 0.4, 0.25, d + 0.4, adjc(c, 0.85));
+      solid(0, H + 0.05, 0, w + 0.4, 0.25, d + 0.4);
+    }
+    /* interior clutter + rubble spill */
+    const fm = new THREE.Matrix4().makeRotationY(o.ry || 0);
+    fm.setPosition(o.x, gy, o.z);
+    for (const gg of geos) gg.applyMatrix4(fm);
+    B.buckets.std.push(...geos);
+    if (o.damage) {
+      const [rx, rz] = L2W(w * 0.4, d * 0.55);
+      P.rubble(B, { x: rx, z: rz, r: 2.8, seed: rnd.int(0, 99) });
+    }
+    P.cabinetFallen(B, ...L2W(rnd.range(-w / 4, w / 4), rnd.range(-d / 4, d / 4)), gy, rnd() * 3, rnd);
+    return { gy, L2W };
+  };
+
+  /* ---------- command bunker (mission 5) ---------- */
+  P.bunker = function (B, o) {
+    const w = 12, d = 9, H = 3.2, T = 0.5;
+    const gy = B._flattenFor(o, w + 2, d + 2);
+    const c = 0x5f6058;
+    const geos = [];
+    const wb = (lx, ly, lz, ww, hh, dd, col) => geos.push(G.box(ww, hh, dd, col || c, { x: lx, y: ly, z: lz, vary: 0.1 }));
+    const cs = Math.cos(o.ry || 0), sn = Math.sin(o.ry || 0);
+    const L2W = (lx, lz) => [o.x + lx * cs + lz * sn, o.z - lx * sn + lz * cs];
+    const solid = (lx, ly, lz, ww, hh, dd) => { const [wx, wz] = L2W(lx, lz); B.collideRot(wx, gy + ly, wz, ww, hh, dd, o.ry || 0); };
+    /* front wall with door gap + firing slits */
+    wb(-w / 4 - 0.55, H / 2, d / 2 - T / 2, w / 2 - 1.1, H, T); solid(-w / 4 - 0.55, H / 2, d / 2 - T / 2, w / 2 - 1.1, H, T);
+    wb(w / 4 + 0.55, H / 2, d / 2 - T / 2, w / 2 - 1.1, H, T); solid(w / 4 + 0.55, H / 2, d / 2 - T / 2, w / 2 - 1.1, H, T);
+    wb(0, H - 0.35, d / 2 - T / 2, 1.2, 0.7, T);
+    /* side + back walls with slits */
+    for (const s of [-1, 1]) {
+      wb(s * (w / 2 - T / 2), H / 2, 0, T, H, d); solid(s * (w / 2 - T / 2), H / 2, 0, T, H, d);
+      wb(s * (w / 2 - T / 2 - 0.02), 1.7, 0, T + 0.1, 0.35, 1.6, 0x14161a);
+    }
+    wb(0, H / 2, -d / 2 + T / 2, w, H, T); solid(0, H / 2, -d / 2 + T / 2, w, H, T);
+    /* heavy roof slab + antenna mast */
+    wb(0, H + 0.3, 0, w + 1.2, 0.65, d + 1.2, adjc(c, 0.85)); solid(0, H + 0.3, 0, w + 1.2, 0.65, d + 1.2);
+    geos.push(G.cyl(0.05, 0.07, 4.5, 6, 0x3a3d40, { x: -w / 3, y: H + 2.8, z: -d / 4 }));
+    geos.push(G.box(0.7, 0.06, 0.06, 0x3a3d40, { x: -w / 3, y: H + 4.2, z: -d / 4 }));
+    /* interior: map table, radio rack, crates, lamp glow */
+    wb(0, 0.06, 0, w - T * 2, 0.12, d - T * 2, 0x4c4c46);
+    B.platform(...(() => { const [ax, az] = L2W(-w / 2, -d / 2); const [bx, bz] = L2W(w / 2, d / 2); return [Math.min(ax, bx), Math.min(az, bz), Math.max(ax, bx), Math.max(az, bz)]; })(), gy + 0.12);
+    const fm = new THREE.Matrix4().makeRotationY(o.ry || 0);
+    fm.setPosition(o.x, gy, o.z);
+    for (const gg of geos) gg.applyMatrix4(fm);
+    B.buckets.std.push(...geos);
+    P.table(B, ...L2W(-1.5, -1), gy, o.ry || 0, RNG(9));
+    P.shelf(B, ...L2W(w / 2 - 1, -d / 2 + 1.4), gy, (o.ry || 0) + Math.PI / 2, RNG(10));
+    P.crate(B, ...L2W(2.5, -2.2), { s: 0.9 });
+    const glow = new THREE.PointLight(0xffb060, 1.1, 9, 2);
+    const [lx2, lz2] = L2W(0, 0);
+    glow.position.set(lx2, gy + 2.4, lz2);
+    B.group.add(glow);
+    return { gy, L2W };
+  };
+
+  /* window glow plane (night missions) */
+  P.windowGlow = function (B, x, y, z, ry, w, h) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w || 1.0, h || 1.1),
+      new THREE.MeshBasicMaterial({ color: 0xffc878, transparent: true, opacity: 0.85, side: THREE.DoubleSide }));
+    m.position.set(x, y, z);
+    m.rotation.y = ry;
+    B.group.add(m);
   };
 
   /* instanced vegetation & rocks */

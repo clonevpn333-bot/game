@@ -41,6 +41,19 @@ RT.ai = (() => {
       muzzle: mkMuzzleFlash(rig),
     };
     e.rig.anim.mode = e.state === 'patrol' ? 'walk' : 'idle';
+    /* stealth missions: visible vision cone while unalerted */
+    if (RT.map.def && RT.map.def.stealth) {
+      const half = 1.05; // ~60 deg half-angle
+      const cg = new THREE.CircleGeometry(7, 20, -Math.PI / 2 - half, half * 2);
+      cg.rotateX(-Math.PI / 2);
+      const cone = new THREE.Mesh(cg, new THREE.MeshBasicMaterial({
+        color: 0xd8b13c, transparent: true, opacity: 0.11, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+      }));
+      cone.position.y = 0.12;
+      cone.renderOrder = 3;
+      rig.group.add(cone);
+      e.cone = cone;
+    }
     enemies.push(e);
     return e;
   };
@@ -348,6 +361,7 @@ RT.ai = (() => {
     }
     rig.group.position.set(e.x, e.y, e.z);
     rig.group.rotation.y = e.yaw;
+    if (e.cone) e.cone.visible = (e.state === 'patrol' || e.state === 'guard');
     RT.character.pose(rig, dt);
   }
 

@@ -18,6 +18,7 @@ RT.game = (() => {
     RT.engine.clearWorld();
     RT.ai.reset();
     RT.buildMissionWorld(0);
+    RT.engine.setWeather(null);
     menuDrift = 0;
     GA.state = 'menu';
     RT.ui.showHUD(false);
@@ -78,6 +79,8 @@ RT.game = (() => {
       RT.player.grenades = 4;
       GA.stats = { shots: 0, hits: 0, kills: 0, heads: 0, start: RT.engine.time };
       RT.audio.setAmbient(def.ambient);
+      RT.engine.setWeather(def.weather || null);
+      RT.ui.clearTimer();
       RT.ui.clearSubtitles();
       RT.ui.fade(false, true);
       if (def.intro) GA.playCutscene(def.intro, beginPlay);
@@ -118,6 +121,12 @@ RT.game = (() => {
   };
   GA.resume = function () {
     RT.ui.hideScreens();
+    RT.input.lock();
+    GA.state = 'play';
+  };
+  GA.resumeFromCutscene = function () {
+    RT.weapons.setVisible(true);
+    RT.ui.showHUD(true);
     RT.input.lock();
     GA.state = 'play';
   };
@@ -299,6 +308,7 @@ function boot() {
     }
   });
 
+  if (location.hash) RT.ui.fade(false);
   if (location.hash === '#soldier') { soldierViewer(); return finishBoot(); }
   if (location.hash === '#weapon') { weaponViewer(); return finishBoot(); }
   if (location.hash === '#map') { mapViewer(); return finishBoot(); }
@@ -320,6 +330,22 @@ function boot() {
     god: v => { RT.game.godmode = v; },
     skipCutscene: () => { if (RT.game.cutscene) RT.game.cutscene.t = 1e9; },
     look: (yaw, pitch) => { RT.player.yaw = yaw; RT.player.pitch = pitch || 0; },
+    useNearest: () => {
+      let best = null, bd = 99;
+      const p = RT.player.pos;
+      for (const it of RT.map.interact) {
+        if (it.used) continue;
+        const q = it.getPos ? it.getPos() : it;
+        const d = Math.hypot(q.x - p.x, q.z - p.z);
+        if (d < bd) { bd = d; best = it; }
+      }
+      if (best && bd < 7) {
+        if (best.door) { best.door.open = true; best.door.target = 1.1; best.door.speed = 12; }
+        else if (best.fn) { best.fn(best); if (best.once) best.used = true; }
+        return best.label || 'door';
+      }
+      return null;
+    },
   };
   finishBoot();
 }

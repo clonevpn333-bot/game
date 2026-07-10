@@ -137,6 +137,14 @@ RT.audio = (() => {
     noise(sfx, t, 2.8, { type: 'lowpass', freq: 420, freqEnd: 70, gain: 0.4, decay: 2.5 });
     noise(sfx, t + 0.35, 1.4, { type: 'lowpass', freq: 240, gain: 0.22, decay: 1.3 });
   };
+  AU.mortarWhistle = function (dur) {
+    if (!AU.ensure()) return;
+    tone(sfx, now(), dur || 1.1, { type: 'sine', freq: 2400, freqEnd: 700, gain: 0.09 });
+  };
+  AU.chargeBeep = function (n) {
+    if (!ctx) return;
+    for (let i = 0; i < (n || 3); i++) tone(sfx, now() + i * 0.5, 0.09, { type: 'square', freq: 1800, gain: 0.07 });
+  };
   AU.radioCrackle = function () {
     if (!ctx) return;
     const t = now();

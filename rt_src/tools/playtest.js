@@ -63,6 +63,9 @@ const OUT = '/tmp/claude-0/-home-user-game/ad34b3df-5365-54e0-bbeb-bdacb676b279/
       console.log('fired:', magBefore, '->', magAfter, magAfter < magBefore ? 'OK' : 'NOT FIRING');
       await page.screenshot({ path: OUT + prefix + '_combat.png' });
     }
+    // use any nearby interaction (charges, doors)
+    const used = await page.evaluate('RT_DEBUG.useNearest()');
+    if (used) console.log('  used interact:', used);
     // fast-forward wave timers (defend set-pieces)
     await page.evaluate('(function(){const o = RT.missionRuntime.obj(); if (o && o.waveT > 1) o.waveT = 0.2;})()');
     // clear any group blocking: kill everything alive (playtest shortcut)

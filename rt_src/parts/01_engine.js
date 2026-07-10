@@ -281,6 +281,63 @@ RT.engine = (() => {
     }
   }
 
+  /* ---------- weather: rain streaks + storm lightning ---------- */
+  let rain = null, rainPos = null, weather = null, lightningT = 5, flashT = 0, thunderQueue = 0;
+  const RAIN_N = 420;
+  function initRain() {
+    const geo = new THREE.BufferGeometry();
+    rainPos = new Float32Array(RAIN_N * 6);
+    for (let i = 0; i < RAIN_N; i++) seedDrop(i, true);
+    geo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+    rain = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0x9fb4c8, transparent: true, opacity: 0.34 }));
+    rain.frustumCulled = false;
+    scene.add(rain);
+  }
+  function seedDrop(i, anyY) {
+    const c = camera ? camera.position : { x: 0, y: 10, z: 0 };
+    const x = c.x + (Math.random() - 0.5) * 42;
+    const y = c.y + (anyY ? Math.random() * 22 - 4 : 14 + Math.random() * 8);
+    const z = c.z + (Math.random() - 0.5) * 42;
+    rainPos[i * 6] = x; rainPos[i * 6 + 1] = y; rainPos[i * 6 + 2] = z;
+    rainPos[i * 6 + 3] = x + 0.12; rainPos[i * 6 + 4] = y - 0.55; rainPos[i * 6 + 5] = z;
+  }
+  E.setWeather = function (type) {
+    weather = type;
+    if ((type === 'rain' || type === 'storm') && !rain) initRain();
+    if (rain) rain.visible = type === 'rain' || type === 'storm';
+    lightningT = 4;
+  };
+  function updateWeather(raw) {
+    if (rain && rain.visible) {
+      const fall = weather === 'storm' ? 32 : 24;
+      for (let i = 0; i < RAIN_N; i++) {
+        rainPos[i * 6 + 1] -= fall * raw; rainPos[i * 6 + 4] -= fall * raw;
+        rainPos[i * 6] += 3.5 * raw; rainPos[i * 6 + 3] += 3.5 * raw;
+        if (rainPos[i * 6 + 1] < camera.position.y - 8) seedDrop(i, false);
+      }
+      rain.geometry.attributes.position.needsUpdate = true;
+    }
+    if (weather === 'storm') {
+      lightningT -= raw;
+      if (lightningT <= 0) {
+        lightningT = 5 + Math.random() * 9;
+        flashT = 0.14 + Math.random() * 0.1;
+        thunderQueue = 0.5 + Math.random() * 1.6;
+      }
+      if (thunderQueue > 0) {
+        thunderQueue -= raw;
+        if (thunderQueue <= 0 && RT.audio) RT.audio.thunder(0);
+      }
+      if (flashT > 0) {
+        flashT -= raw;
+        const on = flashT > 0 && (flashT > 0.1 || Math.random() > 0.4);
+        sun.intensity = (E.basePalette ? E.basePalette.sunIntensity : 1) * (on ? 7 : 1);
+        hemi.intensity = (E.basePalette ? E.basePalette.hemiIntensity : 0.4) * (on ? 5 : 1);
+        renderer.toneMappingExposure = (E.basePalette && E.basePalette.exposure || 1) * (on ? 1.5 : 1);
+      }
+    }
+  }
+
   /* ---------- camera shake ---------- */
   let trauma = 0;
   E.shake = a => { trauma = Math.min(1.2, trauma + a); };
@@ -308,7 +365,7 @@ RT.engine = (() => {
       E.time += dt;
       trauma = Math.max(0, trauma - raw * 1.7);
       for (const u of updaters) u(dt, raw);
-      updateParticles(dt); updateTracers(dt); updateDecals(dt); updateLights(dt);
+      updateParticles(dt); updateTracers(dt); updateDecals(dt); updateLights(dt); updateWeather(raw);
       renderer.render(scene, camera);
     };
     requestAnimationFrame(loop);

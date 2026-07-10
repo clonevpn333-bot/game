@@ -45,7 +45,9 @@ RT.ui = (() => {
       '<div id="interact"><b>F</b><span id="interact-label">OPEN</span></div>' +
       '<div id="ammo"><div class="wname" id="ammo-name">M4A3</div>' +
       '<div class="mag"><span id="ammo-mag">30</span> <span id="ammo-res">/ 120</span></div>' +
-      '<div class="gren" id="ammo-gren">FRAG × 4</div></div>';
+      '<div class="gren" id="ammo-gren">FRAG × 4</div></div>' +
+      '<div id="timer" style="position:absolute;top:62px;left:50%;transform:translateX(-50%);font-size:30px;font-weight:800;' +
+      'letter-spacing:.12em;color:#fff;text-shadow:0 2px 6px #000;display:none"></div>';
     for (let i = 0; i < 3; i++) {
       const w = el('div', 'waypoint hidden', hud);
       w.innerHTML = '<div class="diamond"></div><div class="dist">120m</div>';
@@ -380,6 +382,20 @@ RT.ui = (() => {
     ctx.fillStyle = '#e8a33d';
     ctx.fillRect(209, 2, 2, 8);
   }
+
+  /* ---------- countdown timer ---------- */
+  let timerVal = -1;
+  U.setTimer = function (sec) { timerVal = sec; $('timer').style.display = 'block'; };
+  U.clearTimer = function () { timerVal = -1; if ($('timer')) $('timer').style.display = 'none'; };
+  U.tickTimer = function (dt) {
+    if (timerVal < 0) return -1;
+    timerVal -= dt;
+    const t = Math.max(0, timerVal);
+    const e = $('timer');
+    e.textContent = RT.fmtTime(t) + (t < 10 ? '.' + Math.floor((t % 1) * 10) : '');
+    e.style.color = t < 12 ? (Math.sin(RT.engine.time * 9) > 0 ? '#e04c3c' : '#fff') : '#fff';
+    return timerVal;
+  };
 
   /* ---------- per-frame ---------- */
   U.update = function (dt) {
