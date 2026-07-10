@@ -103,16 +103,18 @@ function xform(geo, o) {
   geo.applyMatrix4(_m4);
   return geo;
 }
-/* merge list of non-indexed BufferGeometries (position/normal/color) */
+/* merge list of non-indexed BufferGeometries (position/normal/color/uv) */
 function mergeGeos(list) {
   let total = 0;
   for (const g of list) total += g.attributes.position.count;
   const pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), col = new Float32Array(total * 3);
+  const uv = new Float32Array(total * 2);
   let off = 0;
   for (const g of list) {
     pos.set(g.attributes.position.array, off * 3);
     nor.set(g.attributes.normal.array, off * 3);
     col.set(g.attributes.color.array, off * 3);
+    if (g.attributes.uv) uv.set(g.attributes.uv.array, off * 2);
     off += g.attributes.position.count;
     g.dispose();
   }
@@ -120,6 +122,7 @@ function mergeGeos(list) {
   out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
   out.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  out.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   return out;
 }
 RT.mergeGeos = mergeGeos;
@@ -215,7 +218,28 @@ RT.tintGeo = function (geo, hex, mul) {
 /* ---------- shared materials (few = fast) ---------- */
 RT.MAT = {};
 RT.initMaterials = function () {
-  RT.MAT.std = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0.04 });
+  /* subtle grunge detail map: near-white noise + vertical weathering streaks.
+   * multiplies vertex colors on every merged surface — breaks up flat faces. */
+  const grunge = RT.canvasTex(256, (ctx, s) => {
+    ctx.fillStyle = '#e8e6e2';
+    ctx.fillRect(0, 0, s, s);
+    for (let i = 0; i < 2600; i++) {
+      const v = 200 + (Math.random() * 55) | 0;
+      ctx.fillStyle = `rgba(${v},${v - 4},${v - 10},${0.25 + Math.random() * 0.4})`;
+      ctx.fillRect(Math.random() * s, Math.random() * s, 1 + Math.random() * 2.5, 1 + Math.random() * 2.5);
+    }
+    for (let i = 0; i < 42; i++) { // vertical streaks (weathering / grain)
+      const x = Math.random() * s, w2 = 1 + Math.random() * 3, dk = 175 + Math.random() * 55;
+      const g2 = ctx.createLinearGradient(0, 0, 0, s);
+      g2.addColorStop(0, `rgba(${dk},${dk - 5},${dk - 12},0)`);
+      g2.addColorStop(0.4 + Math.random() * 0.3, `rgba(${dk},${dk - 5},${dk - 12},0.35)`);
+      g2.addColorStop(1, `rgba(${dk},${dk - 5},${dk - 12},0)`);
+      ctx.fillStyle = g2;
+      ctx.fillRect(x, 0, w2, s);
+    }
+  });
+  grunge.wrapS = grunge.wrapT = THREE.RepeatWrapping;
+  RT.MAT.std = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0.04, map: grunge });
   RT.MAT.metal = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.55 });
   RT.MAT.gun = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.35 });
   RT.MAT.gun2 = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.35, side: THREE.DoubleSide });

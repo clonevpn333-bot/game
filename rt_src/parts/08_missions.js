@@ -18,7 +18,7 @@ RT.missions.push({
   },
   ambient: 'birds',
   terrain: {
-    size: 380, segs: 150, seed: 11, amp: 5, rim: 14,
+    size: 380, segs: 164, seed: 11, amp: 5, rim: 14,
     palette: { lush: 0x5d6b38, lush2: 0x71793f, dirt: 0x77664a, rock: 0x74705f, road: 0x6d6354 },
     flats: [{ x: -32, z: 66, r: 26 }, { x: 34, z: 6, r: 24 }, { x: -4, z: -66, r: 42 },
             { x: -60, z: -114, r: 30 }, { x: 4, z: 156, r: 24 }, { x: -20, z: 105, r: 30 }],
@@ -94,7 +94,7 @@ RT.missions.push({
       if (Math.abs(x) < 30 && z > 100) continue; // keep spawn road clear
       P.tree(B, x, z, { s: rnd.range(0.9, 1.6) });
     }
-    P.scatterGrass(B, 4200, 165, 0x5d6b38);
+    P.scatterGrass(B, 10000, 165, 0x5d6b38);
     P.scatterRocks(B, 160, 180);
 
     return {
@@ -289,7 +289,7 @@ RT.missions.push({
     fogColor: 0x0d141d, fogDensity: 0.0095, exposure: 0.92, fillIntensity: 0.08,
   },
   terrain: {
-    size: 360, segs: 140, seed: 23, amp: 3.2, rim: 12,
+    size: 360, segs: 160, seed: 23, amp: 3.2, rim: 12,
     palette: { lush: 0x2c3626, lush2: 0x35402c, dirt: 0x3c3830, rock: 0x3a3a36, road: 0x30302e },
     flats: [{ x: 0, z: 0, r: 70 }, { x: 0, z: 90, r: 26 }, { x: -10, z: -80, r: 30 }],
     roads: [[[4, 150], [0, 60], [0, -20], [-6, -80], [0, -150]], [[-70, 4], [0, 0], [70, -8]]],
@@ -334,7 +334,8 @@ RT.missions.push({
     /* window glow on a few intact windows */
     P.windowGlow(B, 16.9, B.h(16, -66) + 1.55, -63.4, -0.3 + Math.PI / 2, 1.1, 1.1);
     P.windowGlow(B, -24.5, B.h(-26, -58) + 4.3, -55.1, 0.4 + Math.PI / 2, 1.0, 1.0);
-    P.scatterGrass(B, 1600, 150, 0x2c3626);
+    P.scatterGrass(B, 8000, 150, 0x2c3626);
+    P.edgeForest(B, 40, 130, 165, { species: undefined });
     P.scatterRocks(B, 120, 160);
     return {
       playerSpawn: { x: 4, z: 138, ry: Math.PI },
@@ -442,7 +443,7 @@ RT.missions.push({
     fogColor: 0xcaa87b, fogDensity: 0.0032, exposure: 1.0, fillIntensity: 0.14,
   },
   terrain: {
-    size: 400, segs: 150, seed: 37, amp: 5.5, rim: 16, tiltZ: 0.038,
+    size: 400, segs: 164, seed: 37, amp: 5.5, rim: 16, tiltZ: 0.038,
     palette: { lush: 0x66703c, lush2: 0x7a7f44, dirt: 0x827052, rock: 0x7d7666, road: 0x746a58 },
     riverPath: [[-200, -30], [-60, -24], [40, -30], [200, -22]], riverWidth: 30, riverDepth: 12,
     flats: [{ x: 0, z: 16, r: 20, h: 7.5 }, { x: 0, z: -70, r: 24, h: 7.5 }, { x: -8, z: 78, r: 34 }, { x: 26, z: 120, r: 26 }, { x: 0, z: -96, r: 22, h: 7.8 }],
@@ -482,7 +483,8 @@ RT.missions.push({
     P.house(B, { x: -14, z: -94, ry: 0.2, w: 8, d: 7, seed: 86, damage: 1 });
     P.house(B, { x: 12, z: -98, ry: -0.25, w: 8.5, d: 7, seed: 87, damage: 0, ajar: true });
     P.crate(B, 2, -88, { stack: true });
-    P.scatterGrass(B, 3400, 170, 0x66703c);
+    P.scatterGrass(B, 9000, 170, 0x66703c);
+    P.edgeForest(B, 44, 150, 185, {});
     P.scatterRocks(B, 220, 190);
     return {
       playerSpawn: { x: 12, z: 156, ry: Math.PI },
@@ -639,7 +641,7 @@ RT.missions.push({
     fogColor: 0x8f9598, fogDensity: 0.006, exposure: 0.94, fillIntensity: 0.2,
   },
   terrain: {
-    size: 340, segs: 132, seed: 51, amp: 2.4, rim: 10,
+    size: 340, segs: 160, seed: 51, amp: 2.4, rim: 10,
     palette: { lush: 0x4d5537, lush2: 0x5a6040, dirt: 0x5b5546, rock: 0x5f5b50, road: 0x53514c },
     flats: [{ x: 0, z: 0, r: 90 }],
     roads: [[[0, 140], [0, 40], [0, -40], [0, -130]], [[-60, 42], [0, 40], [60, 38]], [[-60, -42], [0, -40], [60, -44]]],
@@ -678,7 +680,8 @@ RT.missions.push({
     for (const [tx, tz] of [[-44, 80], [44, 56], [-46, -36], [40, -80]]) P.deadTree(B, tx, tz);
     let prevTop = null;
     for (const [px, pz] of [[10, 110], [8, 70], [10, 30], [8, -10], [10, -50], [8, -90]]) prevTop = P.powerPole(B, px, pz, prevTop);
-    P.scatterGrass(B, 1400, 140, 0x4d5537);
+    P.scatterGrass(B, 8000, 140, 0x4d5537);
+    P.edgeForest(B, 36, 120, 155, {});
     P.scatterRocks(B, 90, 150);
     return {
       playerSpawn: { x: 2, z: 120, ry: Math.PI },
@@ -771,7 +774,7 @@ RT.missions.push({
     fogColor: 0x272d35, fogDensity: 0.0075, exposure: 0.9, fillIntensity: 0.08,
   },
   terrain: {
-    size: 400, segs: 150, seed: 73, amp: 9, rim: 20,
+    size: 400, segs: 164, seed: 73, amp: 9, rim: 20,
     palette: { lush: 0x3b452c, lush2: 0x46503a, dirt: 0x4a4438, rock: 0x53514c, road: 0x45423c },
     flats: [{ x: 0, z: -80, r: 52, h: 15 }, { x: 6, z: 40, r: 20, h: 6 }, { x: 2, z: 120, r: 24 }],
     roads: [[[6, 160], [6, 100], [2, 40], [0, -10], [0, -50]]],
@@ -820,7 +823,8 @@ RT.missions.push({
     P.rubble(B, { x: 8, z: -24, r: 2.6, seed: 23 });
     P.sandbags(B, 2, -34, 1.4, 5, {});
     for (const [tx, tz] of [[-30, 60], [34, 30], [-36, 0], [40, -20], [-28, 96], [30, 90]]) P.deadTree(B, tx, tz);
-    P.scatterGrass(B, 2600, 170, 0x3b452c);
+    P.scatterGrass(B, 8500, 170, 0x3b452c);
+    P.edgeForest(B, 42, 150, 185, {});
     P.scatterRocks(B, 240, 180);
     return {
       playerSpawn: { x: 2, z: 140, ry: Math.PI },

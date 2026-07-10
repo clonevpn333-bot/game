@@ -365,6 +365,7 @@ RT.engine = (() => {
       E.time += dt;
       trauma = Math.max(0, trauma - raw * 1.7);
       for (const u of updaters) u(dt, raw);
+      if (RT.windMats) for (const m of RT.windMats) m.userData.uTime.value = E.time;
       updateParticles(dt); updateTracers(dt); updateDecals(dt); updateLights(dt); updateWeather(raw);
       renderer.render(scene, camera);
     };
