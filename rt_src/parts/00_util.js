@@ -141,6 +141,7 @@ const G = {
     return xform(paintGeo(g, c, o && o.vary), o);
   },
   cyl(rt, rb, h, seg, c, o) { return xform(paintGeo(new THREE.CylinderGeometry(rt, rb, h, seg), c, o && o.vary), o); },
+  cylo(rt, rb, h, seg, c, o) { return xform(paintGeo(new THREE.CylinderGeometry(rt, rb, h, seg, 1, true), c, o && o.vary), o); },
   tube(r, h, seg, c, o) { return G.cyl(r, r, h, seg, c, o); },
   cone(r, h, seg, c, o) { return xform(paintGeo(new THREE.ConeGeometry(r, h, seg), c, o && o.vary), o); },
   sph(r, ws, hs, c, o) { return xform(paintGeo(new THREE.SphereGeometry(r, ws, hs), c, o && o.vary), o); },
@@ -183,6 +184,7 @@ RT.initMaterials = function () {
   RT.MAT.std = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0.04 });
   RT.MAT.metal = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0.55 });
   RT.MAT.gun = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.35 });
+  RT.MAT.gun2 = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.35, side: THREE.DoubleSide });
   RT.MAT.emissive = new THREE.MeshBasicMaterial({ vertexColors: true });
   RT.MAT.cloth = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1.0, metalness: 0.0 });
   RT.MAT.skin = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.72, metalness: 0.0 });
