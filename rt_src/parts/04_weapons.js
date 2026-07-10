@@ -330,6 +330,7 @@ RT.weapons = (() => {
     vmRoot = new THREE.Group();
     RT.engine.camera.add(vmRoot);
   };
+  W.setVisible = function (v) { if (vmRoot) vmRoot.visible = v; };
 
   W.setLoadout = function (ids, ammoOverride) {
     loadout = ids.slice();

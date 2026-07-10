@@ -101,18 +101,172 @@ RT.missions.push({
       playerSpawn: { x: 4, z: 158, ry: Math.PI },   // facing -z (north)
       squad: [{ x: 1, z: 162 }, { x: 8, z: 163 }, { x: -3, z: 160 }],
       enemies: [
-        { type: 'patrol', x: -30, z: 66, count: 2, radius: 12 },
-        { type: 'guard', x: -28, z: 51, count: 1, dir: [0, 1] },
-        { type: 'guard', x: 30, z: -8, count: 2, dir: [0, 1] },
-        { type: 'guard', x: 36, z: 8, count: 1, dir: [0, 1], upstairs: true },
-        { type: 'patrol', x: 0, z: -60, count: 3, radius: 18 },
-        { type: 'guard', x: -6, z: -57, count: 2, dir: [0.3, 1] },
-        { type: 'guard', x: 4, z: -73, count: 1, dir: [0, 1] },
-        { type: 'guard', x: -14, z: -82, count: 2, dir: [0, -1] },
+        { type: 'patrol', x: -30, z: 66, count: 2, radius: 12, group: 'farmA' },
+        { type: 'guard', x: -28, z: 51, count: 1, dir: [0, 1], group: 'farmA' },
+        { type: 'guard', x: 30, z: -8, count: 2, dir: [0, 1], group: 'houseB' },
+        { type: 'guard', x: 36, z: 8, count: 1, dir: [0, 1], upstairs: true, group: 'houseB' },
+        { type: 'patrol', x: 0, z: -60, count: 3, radius: 18, group: 'village' },
+        { type: 'guard', x: -6, z: -57, count: 2, dir: [0.3, 1], group: 'village' },
+        { type: 'guard', x: 4, z: -73, count: 1, dir: [0, 1], group: 'village' },
+        { type: 'guard', x: -14, z: -82, count: 2, dir: [0, -1], group: 'village' },
       ],
     };
   },
 });
+
+/* ============================================================
+ * Mission runtime: sequential objectives with waypoints,
+ * checkpoints, timed scripts, wave spawns.
+ * ============================================================ */
+RT.missionRuntime = (() => {
+  const M = {};
+  let objectives = [], objIdx = -1, def = null, timers = [];
+  M.checkpoint = null;
+
+  M.start = function (missionDef, info) {
+    def = missionDef;
+    objectives = missionDef.objectives ? missionDef.objectives(M, info) : [];
+    objIdx = -1; timers = [];
+    RT.ui.setObjectives(objectives);
+    M.advance();
+  };
+  M.after = function (t, fn) { timers.push({ t, fn }); };
+  M.say = (who, text, dur) => RT.ui.say(who, text, dur);
+  M.obj = () => objectives[objIdx];
+
+  M.advance = function () {
+    objIdx++;
+    const o = objectives[objIdx];
+    RT.ui.waypointTargets.length = 0;
+    if (!o) { RT.game.missionComplete(); return; }
+    o.hidden = false;
+    RT.ui.refreshObjectives();
+    if (o.text) RT.ui.toast(o.text.toUpperCase(), 'NEW OBJECTIVE');
+    if (o.waypoint) {
+      const wy = o.waypoint.y != null ? o.waypoint.y : RT.map.groundAt(o.waypoint.x, o.waypoint.z, 999) + 1.6;
+      RT.ui.waypointTargets[0] = { x: o.waypoint.x, y: wy, z: o.waypoint.z };
+    }
+    if (o.onStart) o.onStart(M);
+    /* checkpoint at each objective */
+    RT.game.saveCheckpoint();
+  };
+
+  M.update = function (dt) {
+    for (let i = timers.length - 1; i >= 0; i--) {
+      timers[i].t -= dt;
+      if (timers[i].t <= 0) { const fn = timers[i].fn; timers.splice(i, 1); fn(); }
+    }
+    const o = objectives[objIdx];
+    if (!o) return;
+    if (o.update) o.update(dt, M);
+    if (o.check && o.check(M)) {
+      o.done = true;
+      RT.ui.refreshObjectives();
+      if (o.onDone) o.onDone(M);
+      if (RT.audio) RT.audio.objectiveStinger();
+      M.advance();
+    }
+  };
+
+  /* helpers for mission scripts */
+  M.reached = (x, z, r) => Math.hypot(RT.player.pos.x - x, RT.player.pos.z - z) < r;
+  M.groupDead = g => RT.ai.aliveInGroup(g) === 0;
+  M.spawnWave = function (points, group) {
+    for (const [x, z] of points) {
+      const e = RT.ai.spawnEnemy(x, z, { group });
+      e.state = 'alert';
+      e.lastKnown = { x: RT.player.pos.x, z: RT.player.pos.z };
+    }
+  };
+  return M;
+})();
+
+/* ---------- Mission 1 story script ---------- */
+RT.missions[0].intro = {
+  path: [[44, 32, 198], [20, 14, 180], [13, 5.5, 174], [10.5, 3.4, 168]],
+  look: [[0, 4, 120], [0, 3, 130], [0, 2, 140], [2, 1.6, 150]],
+  dur: 14,
+  lines: [
+    { t: 0.5, who: 'LT. MARSH', text: 'Ridge, look alive. Halvory farm, first light — just like the brief.' },
+    { t: 4.2, who: 'LT. MARSH', text: 'Coalition patrol dug in on the homestead. We take it back before the fog burns off.' },
+    { t: 8.6, who: 'DOC OKAFOR', text: 'Nice and quiet. It never stays nice and quiet.' },
+    { t: 11.4, who: 'CPL. VANE', text: 'First one in the field buys the coffee, Sergeant.' },
+  ],
+};
+RT.missions[0].objectives = function (M, info) {
+  return [
+    {
+      text: 'Advance on the farmhouse', waypoint: { x: -30, z: 62 },
+      onStart() {
+        M.after(1.5, () => M.say('LT. MARSH', 'Move up the road. Farmhouse first — watch the fence line.'));
+      },
+      check: () => M.reached(-30, 62, 22) || RT.ai.enemies.some(e => !e.dead && e.group === 'farmA' && e.state === 'combat'),
+    },
+    {
+      text: 'Clear the farmhouse', waypoint: { x: -34, z: 68 },
+      onStart() { M.say('LT. MARSH', 'Contact front! Clear that farmhouse!'); },
+      check: () => M.groupDead('farmA'),
+      onDone() { M.say('DOC OKAFOR', 'Farm’s clear. Told you it wouldn’t stay quiet.'); },
+    },
+    {
+      text: 'Push to the crossroads', waypoint: { x: 26, z: 0 },
+      onStart() {
+        M.after(2, () => M.say('LT. MARSH', 'Crossroads next. There’s a two-story overlooking the bend — check your corners.'));
+      },
+      check: () => M.reached(26, 0, 20) || RT.ai.enemies.some(e => !e.dead && e.group === 'houseB' && e.state === 'combat'),
+    },
+    {
+      text: 'Clear the crossroads house', waypoint: { x: 36, z: 8 },
+      check: () => M.groupDead('houseB'),
+      onDone() { M.say('CPL. VANE', 'Upstairs clear! ...Okay, NOW it’s clear.'); },
+    },
+    {
+      text: 'Sweep the village', waypoint: { x: -4, z: -66 },
+      onStart() {
+        M.after(2.5, () => M.say('LT. MARSH', 'Village edge ahead. They’ll be waiting. Doc, stay on my six.'));
+      },
+      check: () => M.reached(-4, -66, 26) && M.groupDead('village'),
+    },
+    {
+      text: 'Regroup at the barn', waypoint: { x: -52, z: -108 },
+      onStart() {
+        M.say('LT. MARSH', 'Good work. Rally on the red barn, west side.');
+        M.after(6, () => M.say('DOC OKAFOR', 'Something’s off. Birds went quiet.'));
+      },
+      check: () => M.reached(-54, -110, 12),
+    },
+    {
+      text: 'Defend the barn', waypoint: { x: -62, z: -116 },
+      onStart() {
+        M.say('LT. MARSH', 'Radio intercept — counterattack inbound from the east road! Set up on the sandbags!');
+        this.wave = 0; this.waveT = 4;
+        if (RT.audio) RT.audio.combatStinger();
+      },
+      update(dt) {
+        this.waveT -= dt;
+        if (this.waveT <= 0 && this.wave < 3) {
+          this.wave++;
+          this.waveT = this.wave === 3 ? 999 : 22;
+          const spawns = [
+            [[-18, -100], [-24, -92], [-10, -112]],
+            [[-16, -104], [-28, -88], [-6, -118], [-20, -128]],
+            [[-14, -98], [-26, -94], [-12, -120], [-30, -134], [-2, -108]],
+          ][this.wave - 1];
+          M.spawnWave(spawns, 'assault');
+          M.say('CPL. VANE', ['Here they come!', 'More of them — east road!', 'Last push — give ’em everything!'][this.wave - 1]);
+          if (RT.weapons) RT.weapons.giveAmmo(0.4);
+          RT.ui.refreshAmmo();
+        }
+      },
+      check() { return this.wave >= 3 && M.groupDead('assault'); },
+      onDone() {
+        M.say('LT. MARSH', 'That’s the last of them. Halvory farm is ours again.');
+        M.after(2.4, () => M.say('DOC OKAFOR', 'Coffee’s on Vane. Field rules.'));
+      },
+    },
+    { text: '', hidden: true, check: () => false, onStart: () => { M.after(4.5, () => RT.game.missionComplete()); } },
+  ];
+};
 
 /* map viewer support (Gate C) */
 RT.buildMissionWorld = function (idx) {
