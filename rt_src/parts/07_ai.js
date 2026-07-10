@@ -609,6 +609,7 @@ RT.ai = (() => {
     }
     const px = RT.player.pos.x, pz = RT.player.pos.z;
     for (const e of enemies) {
+      if (A._testFreeze && !e.dead) { RT.character.pose(e.rig, dt); continue; }
       // skip far-away idle enemies (perf)
       if (!e.dead && (e.state === 'guard' || e.state === 'patrol')) {
         const d = Math.hypot(e.x - px, e.z - pz);

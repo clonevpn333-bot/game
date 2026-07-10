@@ -329,7 +329,7 @@ function boot() {
     killAll: g => { for (const e of RT.ai.enemies) if (!e.dead && (!g || e.group === g)) RT.ai.damageEnemy(e, 9999); },
     god: v => { RT.game.godmode = v; },
     skipCutscene: () => { if (RT.game.cutscene) RT.game.cutscene.t = 1e9; },
-    look: (yaw, pitch) => { RT.player.yaw = yaw; RT.player.pitch = pitch || 0; },
+    look: (yaw, pitch) => { RT.game.testLockLook = true; RT.player.yaw = yaw; RT.player.pitch = pitch || 0; },
     useNearest: () => {
       let best = null, bd = 99;
       const p = RT.player.pos;
@@ -414,6 +414,18 @@ function weaponViewer() {
   RT.weapons.setLoadout([params.get('w') || 'm4', 'pistol']);
   const cam = RT.engine.camera;
   cam.position.set(0, 1.62, 0);
+  if (params.get('orbit')) {
+    /* detach viewmodel into the world and orbit it for grip inspection */
+    const vm = cam.children[cam.children.length - 1];
+    cam.remove(vm);
+    RT.engine.scene.add(vm);
+    vm.position.set(0, 1.5, -0.9);
+    const oa = parseFloat(params.get('oa') || '0.8');   // orbit angle
+    const oh = parseFloat(params.get('oh') || '1.75');  // camera height
+    const or2 = parseFloat(params.get('or') || '0.85'); // radius
+    cam.position.set(Math.sin(oa) * or2, oh, -0.9 + Math.cos(oa) * or2 * 0.9);
+    cam.lookAt(0, 1.42, -1.15);
+  }
   if (params.get('ads')) RT.input.aim = true;
   if (params.get('fire')) {
     let ft = 0.8;

@@ -84,6 +84,7 @@ RT.player = (() => {
 
     /* look */
     let [mdx, mdy] = I.consumeMouse();
+    if (RT.game && RT.game.testLockLook) { mdx = 0; mdy = 0; } // harness-controlled facing
     if (I.fallback) {
       const ls = 2.4 * dt * 400;
       if (I.keys.ArrowLeft) mdx -= ls; if (I.keys.ArrowRight) mdx += ls;

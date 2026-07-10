@@ -14,6 +14,11 @@ async function launch(opts = {}) {
     args: ['--enable-unsafe-swiftshader', '--disable-gpu-sandbox', '--no-sandbox'],
   });
   const page = await browser.newPage({ viewport: opts.viewport || { width: 1280, height: 720 } });
+  if (opts.lowQuality) {
+    await page.addInitScript(() => {
+      try { localStorage.setItem('rt_settings', JSON.stringify({ sens: 1, fov: 80, volume: 0, quality: 0 })); } catch (e) {}
+    });
+  }
   const errors = [];
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));

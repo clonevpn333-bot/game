@@ -163,6 +163,37 @@ const G = {
     g.translate(0, 0, -d / 2);
     return xform(paintGeo(g, c, o && o.vary), o);
   },
+  /* loft: stitch elliptical cross-section rings along y.
+   * sections: [{y, rx, rz, x?, z?}] bottom→top. Smooth normals, capped ends. */
+  loft(sections, seg, c, o) {
+    const pos = [], idx = [];
+    for (const s of sections) {
+      for (let i = 0; i < seg; i++) {
+        const a = (i / seg) * TAU;
+        pos.push((s.x || 0) + Math.cos(a) * s.rx, s.y, (s.z || 0) + Math.sin(a) * s.rz);
+      }
+    }
+    for (let r = 0; r < sections.length - 1; r++) {
+      for (let i = 0; i < seg; i++) {
+        const a = r * seg + i, b = r * seg + (i + 1) % seg;
+        const c2 = (r + 1) * seg + i, d = (r + 1) * seg + (i + 1) % seg;
+        idx.push(a, c2, b, b, c2, d);
+      }
+    }
+    // caps (fan to centroid)
+    const nRings = sections.length;
+    const bC = pos.length / 3; pos.push(sections[0].x || 0, sections[0].y, sections[0].z || 0);
+    const tC = pos.length / 3; pos.push(sections[nRings - 1].x || 0, sections[nRings - 1].y, sections[nRings - 1].z || 0);
+    for (let i = 0; i < seg; i++) {
+      idx.push(bC, i, (i + 1) % seg);
+      idx.push(tC, (nRings - 1) * seg + (i + 1) % seg, (nRings - 1) * seg + i);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+    g.setIndex(idx);
+    g.computeVertexNormals();
+    return xform(paintGeo(g, c, o && o.vary), o);
+  },
   extrude(shape, depth, c, o, bevel) {
     const g = new THREE.ExtrudeGeometry(shape, bevel ? { depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 1, curveSegments: 3 } : { depth, bevelEnabled: false, curveSegments: 4 });
     g.translate(0, 0, -depth / 2);
