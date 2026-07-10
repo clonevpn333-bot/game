@@ -271,6 +271,18 @@ RT.game = (() => {
     if (GA.state === 'menu') { updateMenu(dt); return; }
     if (GA.state === 'cutscene') { updateCutscene(raw); RT.ai.update(dt * 0.25); return; }
     if (GA.state === 'engage' || GA.state === 'pause') return;
+    /* smoke column beacons */
+    if (RT.map && RT.map.smokeSources && (GA.state === 'play' || GA.state === 'cutscene' || GA.state === 'menu' || GA.state === 'engage')) {
+      for (const s of RT.map.smokeSources) {
+        s.t -= raw;
+        if (s.t <= 0) {
+          s.t = 0.09;
+          RT.engine.particle(s.x + (Math.random() - .5) * 0.8, s.y, s.z + (Math.random() - .5) * 0.8,
+            (Math.random() - .5) * 0.6, 2.2 + Math.random() * 1.6, (Math.random() - .5) * 0.6,
+            { color: [0x2b2926, 0x3a3733, 0x4a4540][(Math.random() * 3) | 0], size: 0.9 + Math.random() * 0.9, life: 3.4 + Math.random() * 2, grav: 0.75, drag: 0.9, grow: -0.35, alpha: 0.6 });
+        }
+      }
+    }
     if (GA.state === 'play' || GA.state === 'dead') {
       RT.player.update(dt);
       const [rp, ry] = RT.weapons.consumeRecoil();
@@ -373,6 +385,13 @@ function mapViewer() {
   const lz = parseFloat(params.get('lz') || '-40');
   cam.position.set(cx, cy, cz);
   cam.lookAt(lx, ly, lz);
+  if (params.get('ortho')) {
+    /* pseudo-orthographic top-down: narrow FOV from very high, fog off */
+    cam.fov = 34; cam.far = 3000; cam.updateProjectionMatrix();
+    cam.position.set(parseFloat(params.get('x') || '0'), 620, parseFloat(params.get('z') || '20') + 1);
+    cam.lookAt(parseFloat(params.get('x') || '0'), 0, parseFloat(params.get('z') || '20'));
+    RT.engine.scene.fog.density = 0.00004;
+  }
   if (params.get('ground')) {
     const gx = parseFloat(params.get('x') || '0'), gz = parseFloat(params.get('z') || '120');
     cam.position.set(gx, RT.map.groundAt(gx, gz, 999) + 1.65, gz);

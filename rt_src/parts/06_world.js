@@ -982,6 +982,36 @@ RT.props = (() => {
     B.collide(x, gy + 0.5, z, 1.7, 1, 1.7);
     B.addCover(x, z, 0, 1, true);
   };
+  /* water tower: navigation landmark visible across the map */
+  P.waterTower = function (B, x, z) {
+    const gy = B.h(x, z);
+    const g = [];
+    const H = 9, tankR = 2.2, tankH = 3;
+    for (const [sx, sz] of [[-1.4, -1.4], [1.4, -1.4], [-1.4, 1.4], [1.4, 1.4]]) {
+      g.push(G.box(0.22, H, 0.22, 0x5a4a38, { x: x + sx * 0.8, y: gy + H / 2, z: z + sz * 0.8, rx: sz * 0.09, rz: -sx * 0.09, vary: 0.12 }));
+    }
+    for (let lv = 0; lv < 3; lv++) {
+      const yy = gy + 2 + lv * 2.6, sp = 1.0 + (1 - lv / 3) * 0.32;
+      g.push(G.box(0.1, 0.12, sp * 2.4, 0x4a3c2c, { x: x - sp, y: yy, z, vary: 0.15 }));
+      g.push(G.box(0.1, 0.12, sp * 2.4, 0x4a3c2c, { x: x + sp, y: yy, z, vary: 0.15 }));
+      g.push(G.box(sp * 2.4, 0.12, 0.1, 0x4a3c2c, { x, y: yy, z: z - sp, vary: 0.15 }));
+      g.push(G.box(sp * 2.4, 0.12, 0.1, 0x4a3c2c, { x, y: yy, z: z + sp, vary: 0.15 }));
+    }
+    g.push(G.cyl(tankR, tankR * 0.92, tankH, 14, 0x6e5a44, { x, y: gy + H + tankH / 2 - 0.4, z, vary: 0.1 }));
+    for (const hy of [-1, 0, 1])
+      g.push(G.torus(tankR + 0.03, 0.05, 5, 16, 0x3f352a, { x, y: gy + H + tankH / 2 - 0.4 + hy, z, rx: Math.PI / 2 }));
+    g.push(G.cone(tankR * 1.12, 1.3, 14, 0x53422f, { x, y: gy + H + tankH + 0.75, z, vary: 0.1 }));
+    for (let i = 0; i < 7; i++) g.push(G.box(0.5, 0.06, 0.06, 0x4a3c2c, { x: x + 1.15, y: gy + 1.2 + i * 1.15, z: z + 0.2 }));
+    B.buckets.std.push(...g);
+    B.collide(x, gy + H / 2, z, 2.6, H + tankH, 2.6);
+    B.addCover(x - 1.8, z, 1, 0, false);
+    return { gy };
+  };
+  /* smoke column: navigation beacon (burning wreck etc.) */
+  P.smokeColumn = function (B, x, z, y) {
+    (RT.map.smokeSources = RT.map.smokeSources || []).push({ x, y: y != null ? y : B.h(x, z) + 0.8, z, t: 0 });
+  };
+
   P.waterPump = function (B, x, z) {
     const gy = B.h(x, z);
     B.buckets.std.push(
