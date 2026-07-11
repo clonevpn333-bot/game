@@ -295,6 +295,42 @@ RT.aircraft = (() => {
     return new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), new THREE.MeshBasicMaterial({ color, fog: false }));
   }
 
+  /* thin cylinder between two points (suspension lines) */
+  function lineSeg(x1, y1, z1, x2, y2, z2, r, c) {
+    const dx = x2 - x1, dy = y2 - y1, dz = z2 - z1, len = Math.hypot(dx, dy, dz);
+    const g = G.cyl(r, r, len, 5, c, {});
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(dx, dy, dz).normalize());
+    const m = new THREE.Matrix4().compose(new THREE.Vector3((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2), q, new THREE.Vector3(1, 1, 1));
+    g.applyMatrix4(m);
+    return g;
+  }
+
+  /* deployable round parachute: canopy dome + gore seams + suspension lines.
+     origin at the harness (jumper's back); canopy sits ~H above. */
+  A.buildChute = function (col) {
+    const g = new THREE.Group();
+    const H = 5.2, R = 3.5;
+    col = col || 0x3a5740;
+    const prof = [];
+    for (let i = 0; i <= 8; i++) { const t = i / 8; prof.push([R * Math.cos(t * Math.PI * 0.5), H + Math.sin(t * Math.PI * 0.5) * 1.5]); }
+    const canopy = RT.meshOf([G.lathe(prof, 20, col)], RT.MAT.cloth, false);
+    canopy.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, side: THREE.DoubleSide });
+    g.add(canopy);
+    /* gore seam ribs + a few alternating darker panels for readability */
+    const ribs = [];
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * TAU;
+      ribs.push(lineSeg(R * 0.98 * Math.cos(a), H + 0.05, R * 0.98 * Math.sin(a), 0, H + 1.5, 0, 0.03, i % 2 ? 0x2c4331 : 0x46644b));
+    }
+    g.add(RT.meshOf(ribs, RT.MAT.std, false));
+    /* suspension lines to the harness */
+    const lines = [];
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * TAU; lines.push(lineSeg(Math.cos(a) * R * 0.9, H - 0.1, Math.sin(a) * R * 0.9, Math.cos(a) * 0.25, 0.5, Math.sin(a) * 0.25, 0.02, 0xd8d2bc)); }
+    g.add(RT.meshOf(lines, RT.MAT.std, false));
+    g.userData.canopy = canopy;
+    return g;
+  };
+
   /* populate the hold with jumpers standing in two rows, gripping the line */
   A.buildJumpers = function (group, count) {
     const jumpers = [];

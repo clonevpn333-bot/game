@@ -175,14 +175,23 @@ RT.ai = (() => {
 
   /* ---------- enemy firing ---------- */
   function enemyFire(e, dt) {
+    /* visible reload cycle: play the reload pose while the mag is swapped */
+    if (e.reloadT > 0) {
+      e.reloadT -= dt;
+      if (e.rig) e.rig.anim.mode = 'reload';
+      return;
+    }
     e.fireCd -= dt;
     if (e.fireCd > 0) return;
     if (e.burstLeft <= 0) {
       e.burstLeft = 3 + (Math.random() * 3 | 0);
       e.fireCd = 0.8 + Math.random() * 1.3; // pause between bursts
+      if (e.magLeft == null) e.magLeft = 24 + (Math.random() * 8 | 0);
+      if (e.magLeft <= 0) { e.reloadT = 1.9 + Math.random() * 0.7; e.magLeft = 26 + (Math.random() * 8 | 0); }
       return;
     }
     e.burstLeft--;
+    e.magLeft = (e.magLeft == null ? 28 : e.magLeft) - 1;
     e.fireCd = 0.11 + Math.random() * 0.04;
     // muzzle fx
     e.muzzle.visible = true;

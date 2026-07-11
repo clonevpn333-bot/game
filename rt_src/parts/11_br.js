@@ -18,6 +18,7 @@ RT.br = (() => {
   let inv = { medkits: 0, armor: 0 };
   let medCast = -1;
   let plane = null, planeActive = false, planeFlightT = 0;
+  let playerChute = null, chuteDeployT = 0;
   const PLANE_CAM = new THREE.Vector3(0, 0.4, 7.6), PLANE_LOOK = new THREE.Vector3(0, -1.1, -15);
 
   const POIS = [
@@ -977,16 +978,29 @@ RT.br = (() => {
         if (I.keys.ArrowLeft) RT.player.yaw += ls; if (I.keys.ArrowRight) RT.player.yaw -= ls;
         if (I.keys.ArrowUp) RT.player.pitch += ls * 0.7; if (I.keys.ArrowDown) RT.player.pitch -= ls * 0.7;
       }
-      RT.player.yaw -= mdx * 0.002; RT.player.pitch = clamp(RT.player.pitch - mdy * 0.002, -1.4, 0.5);
+      RT.player.yaw -= mdx * 0.002; RT.player.pitch = clamp(RT.player.pitch - mdy * 0.002, -1.4, phase === 'chute' ? 1.35 : 0.5);
       const cam = RT.engine.camera;
+      /* freefall pitch-forward; under canopy the camera settles level */
+      const dropTilt = phase === 'drop' ? -0.35 : 0;
       cam.position.set(p.x, p.y, p.z);
-      cam.rotation.set(RT.player.pitch - 0.35, RT.player.yaw, 0);
+      cam.rotation.set(RT.player.pitch + dropTilt, RT.player.yaw, 0);
       RT.engine.updateSun(cam.position);
       const ground = RT.map.groundAt(p.x, p.z, p.y);
       if (phase === 'drop' && (p.y - ground < 80 || (I.pressed('Space') && p.y - ground < 200))) {
         phase = 'chute';
         RT.ui.toastMsg('CHUTE DEPLOYED');
         fallV = Math.min(fallV, 14);
+        if (RT.aircraft && !playerChute) { playerChute = RT.aircraft.buildChute(0x3a5740); RT.engine.scene.add(playerChute); chuteDeployT = 0; }
+        RT.engine.shake(0.75);          // opening shock
+        if (RT.audio && RT.audio.chuteDeploy) RT.audio.chuteDeploy();
+      }
+      /* canopy above the player: unfurl over ~0.6s, then hang + sway */
+      if (playerChute) {
+        chuteDeployT += dt;
+        const dk = Math.min(1, chuteDeployT / 0.6), es = dk * dk * (3 - 2 * dk);
+        playerChute.position.set(p.x, p.y + 1.2, p.z);
+        playerChute.rotation.set(0.04 * Math.sin(RT.engine.time * 0.9), RT.player.yaw, 0.05 * Math.sin(RT.engine.time * 0.7));
+        playerChute.scale.set(0.2 + 0.8 * es, 0.12 + 0.88 * es, 0.2 + 0.8 * es);
       }
       if (p.y - ground <= 1) {
         p.y = ground;
@@ -994,6 +1008,7 @@ RT.br = (() => {
         RT.game.state = 'play';
         RT.weapons.setVisible(true);
         RT.player.pitch = 0;
+        if (playerChute) { RT.engine.scene.remove(playerChute); playerChute = null; }
         RT.ui.toast('FIND WEAPONS', 'LOOT THE BUILDINGS');
         /* bots land */
         for (const b of bots) { b.y = RT.map.groundAt(b.x, b.z, 999); }
@@ -1038,6 +1053,7 @@ RT.br = (() => {
     if (storm) { RT.engine.scene.remove(storm); storm = null; }
     if (nextRing) { RT.engine.scene.remove(nextRing); nextRing = null; }
     if (plane) { RT.engine.scene.remove(plane); plane = null; }
+    if (playerChute) { RT.engine.scene.remove(playerChute); playerChute = null; }
     planeActive = false;
     if (minimap) minimap.style.display = 'none';
     if (RT.audio) { RT.audio.engineStop(); if (RT.audio.planeDrone) RT.audio.planeDrone(false); }

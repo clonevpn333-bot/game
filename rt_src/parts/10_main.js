@@ -597,18 +597,28 @@ function soldierViewer() {
   const world = RT.engine.world;
   world.add(RT.meshOf([RT.G.box(60, 0.4, 60, 0x6a675f, { y: -0.2, vary: 0.1 })]));
   const rigs = [];
-  const setups = [
-    { seed: 11, faction: 'ally', paletteIdx: 0, headgear: 'helmet', mode: 'idle' },
-    { seed: 22, faction: 'ally', paletteIdx: 1, headgear: 'boonie', mode: 'aim' },
-    { seed: 33, faction: 'ally', paletteIdx: 2, headgear: 'beanie', mode: 'walk' },
-    { seed: 44, faction: 'enemy', paletteIdx: 0, headgear: 'helmet', mode: 'run' },
-    { seed: 55, faction: 'enemy', paletteIdx: 1, headgear: 'helmet', mode: 'idle', crouch: 1 },
-  ];
+  const vparams = new URLSearchParams(location.search);
+  let setups;
+  if (vparams.get('modes')) {
+    setups = vparams.get('modes').split(',').map((m, i) => ({ seed: 11 + i * 11, faction: 'ally', paletteIdx: i % 3, headgear: 'helmet', mode: m }));
+  } else {
+    setups = [
+      { seed: 11, faction: 'ally', paletteIdx: 0, headgear: 'helmet', mode: 'idle' },
+      { seed: 22, faction: 'ally', paletteIdx: 1, headgear: 'boonie', mode: 'aim' },
+      { seed: 33, faction: 'ally', paletteIdx: 2, headgear: 'beanie', mode: 'walk' },
+      { seed: 44, faction: 'enemy', paletteIdx: 0, headgear: 'helmet', mode: 'run' },
+      { seed: 55, faction: 'enemy', paletteIdx: 1, headgear: 'helmet', mode: 'idle', crouch: 1 },
+    ];
+  }
+  const spacing = parseFloat(vparams.get('sp') || '1.35');
   setups.forEach((s, i) => {
     const rig = RT.character.build(s);
-    rig.group.position.set((i - (setups.length - 1) / 2) * 1.35, 0, 0);
+    rig.group.position.set((i - (setups.length - 1) / 2) * spacing, 0, 0);
     rig.anim.mode = s.mode;
     if (s.crouch) rig.anim.crouch = 1;
+    if (s.mode === 'skydive') { rig.group.rotation.x = -1.35; rig.group.position.y = 1.4; }   // belly-down freefall
+    if (s.mode === 'dead') { rig.anim.deathT = 1.4; }
+    if (s.mode === 'chute' && RT.aircraft) { rig.group.position.y = 0.0; const ch = RT.aircraft.buildChute(0x3a5740); ch.position.y = 0.9; rig.group.add(ch); }
     world.add(rig.group);
     rigs.push(rig);
   });

@@ -383,6 +383,81 @@ RT.character = (() => {
       dampR(j.kneeR, 0.09, 0, 0, k, dt);
       dampR(j.ankR, -0.03, 0, 0, k, dt);
       if (rig.rifle) { rig.rifle.position.set(0.08, -0.05, 0.16); rig.rifle.rotation.set(0.9, -0.4, 0.15); }
+    } else if (a.mode === 'skydive') {
+      /* freefall arch — belly-down (group tilted by controller), limbs spread star */
+      const fl2 = Math.sin(t * 7 + a.phase * 4) * 0.05;
+      j.hips.position.y = 0.94;
+      dampR(j.hips, 0, 0, 0, k, dt);
+      dampR(j.spine, -0.28, 0, 0, k, dt);
+      dampR(j.chest, -0.22, 0, 0, k, dt);
+      dampR(j.neck, -0.42, 0, 0, k, dt);
+      dampR(j.head, -0.32, 0, 0, k, dt);
+      dampR(j.shL, -1.95, 1.2, 0.62 + fl2, k, dt);
+      dampR(j.elL, -0.55, 0.35, 0, k, dt);
+      dampR(j.shR, -1.95, -1.2, -0.62 - fl2, k, dt);
+      dampR(j.elR, -0.55, -0.35, 0, k, dt);
+      dampR(j.hipL, -0.5, 0.42, 0.22, k, dt);
+      dampR(j.kneeL, 0.72 + fl2, 0, 0, k, dt);
+      dampR(j.ankL, 0, 0, 0, k, dt);
+      dampR(j.hipR, -0.5, -0.42, -0.22, k, dt);
+      dampR(j.kneeR, 0.72 - fl2, 0, 0, k, dt);
+      dampR(j.ankR, 0, 0, 0, k, dt);
+    } else if (a.mode === 'chute') {
+      /* hanging under canopy, both hands up on the risers, legs dangling */
+      const sway = Math.sin(t * 0.9 + a.phase) * 0.06;
+      j.hips.position.y = 0.94;
+      dampR(j.hips, 0.05, sway * 0.5, sway, k, dt);
+      dampR(j.spine, 0.02, 0, -sway * 0.5, k, dt);
+      dampR(j.chest, 0.02, 0, 0, k, dt);
+      dampR(j.neck, -0.08, 0, 0, k, dt);
+      dampR(j.head, -0.04, sway, 0, k, dt);
+      dampR(j.shL, -2.85, 0.35, 0.22, k, dt);
+      dampR(j.elL, -0.6, 0.25, 0, k, dt);
+      dampR(j.shR, -2.85, -0.35, -0.22, k, dt);
+      dampR(j.elR, -0.6, -0.25, 0, k, dt);
+      dampR(j.hipL, -0.12, 0.1, 0.05, k, dt);
+      dampR(j.kneeL, 0.28 + sway, 0, 0, k, dt);
+      dampR(j.hipR, -0.08, -0.1, -0.05, k, dt);
+      dampR(j.kneeR, 0.22 - sway, 0, 0, k, dt);
+    } else if (a.mode === 'reload') {
+      /* shouldered, support hand cycles down to the mag well and back (reads in 3rd person) */
+      a.phase += dt * 3.2;
+      const rp = Math.sin(a.phase) * 0.5 + 0.5;
+      j.hips.position.y = 0.94 - hipDrop;
+      dampR(j.spine, 0.04 + crouch * 0.3, 0, 0, k, dt);
+      dampR(j.chest, 0.06 + fl * 0.5 - 0.12, -0.3, 0, k, dt);
+      dampR(j.neck, 0.14, 0.12, 0, k, dt);
+      dampR(j.head, 0.26, 0.1, 0, k, dt);
+      dampR(j.shR, -1.0, -0.25, -0.12, k, dt);
+      dampR(j.elR, -0.82, -0.4, 0, k, dt);
+      dampR(j.shL, -0.7 - rp * 0.55, 0.5, 0.3, k, dt);
+      dampR(j.elL, -1.3 - rp * 0.6, 0.6, 0, k, dt);
+      dampR(j.hipL, -0.05 - crouch * 0.9, 0, 0.03, k, dt);
+      dampR(j.kneeL, 0.1 + crouch * 1.5, 0, 0, k, dt);
+      dampR(j.ankL, -0.03, 0, 0, k, dt);
+      dampR(j.hipR, 0.02 - crouch * 1.15, 0, -0.03, k, dt);
+      dampR(j.kneeR, 0.08 + crouch * 1.7, 0, 0, k, dt);
+      dampR(j.ankR, -0.02, 0, 0, k, dt);
+      if (rig.rifle) { rig.rifle.position.set(0.1, 0.03, 0.2); rig.rifle.rotation.set(0.2, -0.2, 0.15); }
+    } else if (a.mode === 'slide') {
+      /* low crouched slide, lead leg forward, trailing leg tucked */
+      j.hips.position.y = 0.55;
+      dampR(j.hips, -0.5, 0, 0, k, dt);
+      dampR(j.spine, 0.22, 0, 0, k, dt);
+      dampR(j.chest, 0.16, -0.2, 0, k, dt);
+      dampR(j.neck, 0.1, 0, 0, k, dt);
+      dampR(j.head, 0.05, 0, 0, k, dt);
+      dampR(j.shL, -0.9, 0.4, 0.42, k, dt);
+      dampR(j.elL, -1.2, 0.5, 0, k, dt);
+      dampR(j.shR, -0.7, -0.2, -0.22, k, dt);
+      dampR(j.elR, -1.0, -0.3, 0, k, dt);
+      dampR(j.hipL, -1.4, 0.1, 0.1, k, dt);
+      dampR(j.kneeL, 0.32, 0, 0, k, dt);
+      dampR(j.ankL, -0.1, 0, 0, k, dt);
+      dampR(j.hipR, -0.3, -0.1, -0.1, k, dt);
+      dampR(j.kneeR, 1.7, 0, 0, k, dt);
+      dampR(j.ankR, -0.2, 0, 0, k, dt);
+      if (rig.rifle) { rig.rifle.position.set(0.09, 0.02, 0.2); rig.rifle.rotation.set(0.6, -0.3, 0.1); }
     } else if (a.mode === 'walk' || a.mode === 'run') {
       const run = a.mode === 'run';
       const sp = run ? 1 : 0.62;

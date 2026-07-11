@@ -1754,6 +1754,81 @@ RT.character = (() => {
       dampR(j.kneeR, 0.09, 0, 0, k, dt);
       dampR(j.ankR, -0.03, 0, 0, k, dt);
       if (rig.rifle) { rig.rifle.position.set(0.08, -0.05, 0.16); rig.rifle.rotation.set(0.9, -0.4, 0.15); }
+    } else if (a.mode === 'skydive') {
+      /* freefall arch — belly-down (group tilted by controller), limbs spread star */
+      const fl2 = Math.sin(t * 7 + a.phase * 4) * 0.05;
+      j.hips.position.y = 0.94;
+      dampR(j.hips, 0, 0, 0, k, dt);
+      dampR(j.spine, -0.28, 0, 0, k, dt);
+      dampR(j.chest, -0.22, 0, 0, k, dt);
+      dampR(j.neck, -0.42, 0, 0, k, dt);
+      dampR(j.head, -0.32, 0, 0, k, dt);
+      dampR(j.shL, -1.95, 1.2, 0.62 + fl2, k, dt);
+      dampR(j.elL, -0.55, 0.35, 0, k, dt);
+      dampR(j.shR, -1.95, -1.2, -0.62 - fl2, k, dt);
+      dampR(j.elR, -0.55, -0.35, 0, k, dt);
+      dampR(j.hipL, -0.5, 0.42, 0.22, k, dt);
+      dampR(j.kneeL, 0.72 + fl2, 0, 0, k, dt);
+      dampR(j.ankL, 0, 0, 0, k, dt);
+      dampR(j.hipR, -0.5, -0.42, -0.22, k, dt);
+      dampR(j.kneeR, 0.72 - fl2, 0, 0, k, dt);
+      dampR(j.ankR, 0, 0, 0, k, dt);
+    } else if (a.mode === 'chute') {
+      /* hanging under canopy, both hands up on the risers, legs dangling */
+      const sway = Math.sin(t * 0.9 + a.phase) * 0.06;
+      j.hips.position.y = 0.94;
+      dampR(j.hips, 0.05, sway * 0.5, sway, k, dt);
+      dampR(j.spine, 0.02, 0, -sway * 0.5, k, dt);
+      dampR(j.chest, 0.02, 0, 0, k, dt);
+      dampR(j.neck, -0.08, 0, 0, k, dt);
+      dampR(j.head, -0.04, sway, 0, k, dt);
+      dampR(j.shL, -2.85, 0.35, 0.22, k, dt);
+      dampR(j.elL, -0.6, 0.25, 0, k, dt);
+      dampR(j.shR, -2.85, -0.35, -0.22, k, dt);
+      dampR(j.elR, -0.6, -0.25, 0, k, dt);
+      dampR(j.hipL, -0.12, 0.1, 0.05, k, dt);
+      dampR(j.kneeL, 0.28 + sway, 0, 0, k, dt);
+      dampR(j.hipR, -0.08, -0.1, -0.05, k, dt);
+      dampR(j.kneeR, 0.22 - sway, 0, 0, k, dt);
+    } else if (a.mode === 'reload') {
+      /* shouldered, support hand cycles down to the mag well and back (reads in 3rd person) */
+      a.phase += dt * 3.2;
+      const rp = Math.sin(a.phase) * 0.5 + 0.5;
+      j.hips.position.y = 0.94 - hipDrop;
+      dampR(j.spine, 0.04 + crouch * 0.3, 0, 0, k, dt);
+      dampR(j.chest, 0.06 + fl * 0.5 - 0.12, -0.3, 0, k, dt);
+      dampR(j.neck, 0.14, 0.12, 0, k, dt);
+      dampR(j.head, 0.26, 0.1, 0, k, dt);
+      dampR(j.shR, -1.0, -0.25, -0.12, k, dt);
+      dampR(j.elR, -0.82, -0.4, 0, k, dt);
+      dampR(j.shL, -0.7 - rp * 0.55, 0.5, 0.3, k, dt);
+      dampR(j.elL, -1.3 - rp * 0.6, 0.6, 0, k, dt);
+      dampR(j.hipL, -0.05 - crouch * 0.9, 0, 0.03, k, dt);
+      dampR(j.kneeL, 0.1 + crouch * 1.5, 0, 0, k, dt);
+      dampR(j.ankL, -0.03, 0, 0, k, dt);
+      dampR(j.hipR, 0.02 - crouch * 1.15, 0, -0.03, k, dt);
+      dampR(j.kneeR, 0.08 + crouch * 1.7, 0, 0, k, dt);
+      dampR(j.ankR, -0.02, 0, 0, k, dt);
+      if (rig.rifle) { rig.rifle.position.set(0.1, 0.03, 0.2); rig.rifle.rotation.set(0.2, -0.2, 0.15); }
+    } else if (a.mode === 'slide') {
+      /* low crouched slide, lead leg forward, trailing leg tucked */
+      j.hips.position.y = 0.55;
+      dampR(j.hips, -0.5, 0, 0, k, dt);
+      dampR(j.spine, 0.22, 0, 0, k, dt);
+      dampR(j.chest, 0.16, -0.2, 0, k, dt);
+      dampR(j.neck, 0.1, 0, 0, k, dt);
+      dampR(j.head, 0.05, 0, 0, k, dt);
+      dampR(j.shL, -0.9, 0.4, 0.42, k, dt);
+      dampR(j.elL, -1.2, 0.5, 0, k, dt);
+      dampR(j.shR, -0.7, -0.2, -0.22, k, dt);
+      dampR(j.elR, -1.0, -0.3, 0, k, dt);
+      dampR(j.hipL, -1.4, 0.1, 0.1, k, dt);
+      dampR(j.kneeL, 0.32, 0, 0, k, dt);
+      dampR(j.ankL, -0.1, 0, 0, k, dt);
+      dampR(j.hipR, -0.3, -0.1, -0.1, k, dt);
+      dampR(j.kneeR, 1.7, 0, 0, k, dt);
+      dampR(j.ankR, -0.2, 0, 0, k, dt);
+      if (rig.rifle) { rig.rifle.position.set(0.09, 0.02, 0.2); rig.rifle.rotation.set(0.6, -0.3, 0.1); }
     } else if (a.mode === 'walk' || a.mode === 'run') {
       const run = a.mode === 'run';
       const sp = run ? 1 : 0.62;
@@ -5195,14 +5270,23 @@ RT.ai = (() => {
 
   /* ---------- enemy firing ---------- */
   function enemyFire(e, dt) {
+    /* visible reload cycle: play the reload pose while the mag is swapped */
+    if (e.reloadT > 0) {
+      e.reloadT -= dt;
+      if (e.rig) e.rig.anim.mode = 'reload';
+      return;
+    }
     e.fireCd -= dt;
     if (e.fireCd > 0) return;
     if (e.burstLeft <= 0) {
       e.burstLeft = 3 + (Math.random() * 3 | 0);
       e.fireCd = 0.8 + Math.random() * 1.3; // pause between bursts
+      if (e.magLeft == null) e.magLeft = 24 + (Math.random() * 8 | 0);
+      if (e.magLeft <= 0) { e.reloadT = 1.9 + Math.random() * 0.7; e.magLeft = 26 + (Math.random() * 8 | 0); }
       return;
     }
     e.burstLeft--;
+    e.magLeft = (e.magLeft == null ? 28 : e.magLeft) - 1;
     e.fireCd = 0.11 + Math.random() * 0.04;
     // muzzle fx
     e.muzzle.visible = true;
@@ -8062,18 +8146,28 @@ function soldierViewer() {
   const world = RT.engine.world;
   world.add(RT.meshOf([RT.G.box(60, 0.4, 60, 0x6a675f, { y: -0.2, vary: 0.1 })]));
   const rigs = [];
-  const setups = [
-    { seed: 11, faction: 'ally', paletteIdx: 0, headgear: 'helmet', mode: 'idle' },
-    { seed: 22, faction: 'ally', paletteIdx: 1, headgear: 'boonie', mode: 'aim' },
-    { seed: 33, faction: 'ally', paletteIdx: 2, headgear: 'beanie', mode: 'walk' },
-    { seed: 44, faction: 'enemy', paletteIdx: 0, headgear: 'helmet', mode: 'run' },
-    { seed: 55, faction: 'enemy', paletteIdx: 1, headgear: 'helmet', mode: 'idle', crouch: 1 },
-  ];
+  const vparams = new URLSearchParams(location.search);
+  let setups;
+  if (vparams.get('modes')) {
+    setups = vparams.get('modes').split(',').map((m, i) => ({ seed: 11 + i * 11, faction: 'ally', paletteIdx: i % 3, headgear: 'helmet', mode: m }));
+  } else {
+    setups = [
+      { seed: 11, faction: 'ally', paletteIdx: 0, headgear: 'helmet', mode: 'idle' },
+      { seed: 22, faction: 'ally', paletteIdx: 1, headgear: 'boonie', mode: 'aim' },
+      { seed: 33, faction: 'ally', paletteIdx: 2, headgear: 'beanie', mode: 'walk' },
+      { seed: 44, faction: 'enemy', paletteIdx: 0, headgear: 'helmet', mode: 'run' },
+      { seed: 55, faction: 'enemy', paletteIdx: 1, headgear: 'helmet', mode: 'idle', crouch: 1 },
+    ];
+  }
+  const spacing = parseFloat(vparams.get('sp') || '1.35');
   setups.forEach((s, i) => {
     const rig = RT.character.build(s);
-    rig.group.position.set((i - (setups.length - 1) / 2) * 1.35, 0, 0);
+    rig.group.position.set((i - (setups.length - 1) / 2) * spacing, 0, 0);
     rig.anim.mode = s.mode;
     if (s.crouch) rig.anim.crouch = 1;
+    if (s.mode === 'skydive') { rig.group.rotation.x = -1.35; rig.group.position.y = 1.4; }   // belly-down freefall
+    if (s.mode === 'dead') { rig.anim.deathT = 1.4; }
+    if (s.mode === 'chute' && RT.aircraft) { rig.group.position.y = 0.0; const ch = RT.aircraft.buildChute(0x3a5740); ch.position.y = 0.9; rig.group.add(ch); }
     world.add(rig.group);
     rigs.push(rig);
   });
@@ -8141,6 +8235,7 @@ RT.br = (() => {
   let inv = { medkits: 0, armor: 0 };
   let medCast = -1;
   let plane = null, planeActive = false, planeFlightT = 0;
+  let playerChute = null, chuteDeployT = 0;
   const PLANE_CAM = new THREE.Vector3(0, 0.4, 7.6), PLANE_LOOK = new THREE.Vector3(0, -1.1, -15);
 
   const POIS = [
@@ -9100,16 +9195,29 @@ RT.br = (() => {
         if (I.keys.ArrowLeft) RT.player.yaw += ls; if (I.keys.ArrowRight) RT.player.yaw -= ls;
         if (I.keys.ArrowUp) RT.player.pitch += ls * 0.7; if (I.keys.ArrowDown) RT.player.pitch -= ls * 0.7;
       }
-      RT.player.yaw -= mdx * 0.002; RT.player.pitch = clamp(RT.player.pitch - mdy * 0.002, -1.4, 0.5);
+      RT.player.yaw -= mdx * 0.002; RT.player.pitch = clamp(RT.player.pitch - mdy * 0.002, -1.4, phase === 'chute' ? 1.35 : 0.5);
       const cam = RT.engine.camera;
+      /* freefall pitch-forward; under canopy the camera settles level */
+      const dropTilt = phase === 'drop' ? -0.35 : 0;
       cam.position.set(p.x, p.y, p.z);
-      cam.rotation.set(RT.player.pitch - 0.35, RT.player.yaw, 0);
+      cam.rotation.set(RT.player.pitch + dropTilt, RT.player.yaw, 0);
       RT.engine.updateSun(cam.position);
       const ground = RT.map.groundAt(p.x, p.z, p.y);
       if (phase === 'drop' && (p.y - ground < 80 || (I.pressed('Space') && p.y - ground < 200))) {
         phase = 'chute';
         RT.ui.toastMsg('CHUTE DEPLOYED');
         fallV = Math.min(fallV, 14);
+        if (RT.aircraft && !playerChute) { playerChute = RT.aircraft.buildChute(0x3a5740); RT.engine.scene.add(playerChute); chuteDeployT = 0; }
+        RT.engine.shake(0.75);          // opening shock
+        if (RT.audio && RT.audio.chuteDeploy) RT.audio.chuteDeploy();
+      }
+      /* canopy above the player: unfurl over ~0.6s, then hang + sway */
+      if (playerChute) {
+        chuteDeployT += dt;
+        const dk = Math.min(1, chuteDeployT / 0.6), es = dk * dk * (3 - 2 * dk);
+        playerChute.position.set(p.x, p.y + 1.2, p.z);
+        playerChute.rotation.set(0.04 * Math.sin(RT.engine.time * 0.9), RT.player.yaw, 0.05 * Math.sin(RT.engine.time * 0.7));
+        playerChute.scale.set(0.2 + 0.8 * es, 0.12 + 0.88 * es, 0.2 + 0.8 * es);
       }
       if (p.y - ground <= 1) {
         p.y = ground;
@@ -9117,6 +9225,7 @@ RT.br = (() => {
         RT.game.state = 'play';
         RT.weapons.setVisible(true);
         RT.player.pitch = 0;
+        if (playerChute) { RT.engine.scene.remove(playerChute); playerChute = null; }
         RT.ui.toast('FIND WEAPONS', 'LOOT THE BUILDINGS');
         /* bots land */
         for (const b of bots) { b.y = RT.map.groundAt(b.x, b.z, 999); }
@@ -9161,6 +9270,7 @@ RT.br = (() => {
     if (storm) { RT.engine.scene.remove(storm); storm = null; }
     if (nextRing) { RT.engine.scene.remove(nextRing); nextRing = null; }
     if (plane) { RT.engine.scene.remove(plane); plane = null; }
+    if (playerChute) { RT.engine.scene.remove(playerChute); playerChute = null; }
     planeActive = false;
     if (minimap) minimap.style.display = 'none';
     if (RT.audio) { RT.audio.engineStop(); if (RT.audio.planeDrone) RT.audio.planeDrone(false); }
@@ -9804,6 +9914,42 @@ RT.aircraft = (() => {
   function light(color, r) {
     return new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), new THREE.MeshBasicMaterial({ color, fog: false }));
   }
+
+  /* thin cylinder between two points (suspension lines) */
+  function lineSeg(x1, y1, z1, x2, y2, z2, r, c) {
+    const dx = x2 - x1, dy = y2 - y1, dz = z2 - z1, len = Math.hypot(dx, dy, dz);
+    const g = G.cyl(r, r, len, 5, c, {});
+    const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(dx, dy, dz).normalize());
+    const m = new THREE.Matrix4().compose(new THREE.Vector3((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2), q, new THREE.Vector3(1, 1, 1));
+    g.applyMatrix4(m);
+    return g;
+  }
+
+  /* deployable round parachute: canopy dome + gore seams + suspension lines.
+     origin at the harness (jumper's back); canopy sits ~H above. */
+  A.buildChute = function (col) {
+    const g = new THREE.Group();
+    const H = 5.2, R = 3.5;
+    col = col || 0x3a5740;
+    const prof = [];
+    for (let i = 0; i <= 8; i++) { const t = i / 8; prof.push([R * Math.cos(t * Math.PI * 0.5), H + Math.sin(t * Math.PI * 0.5) * 1.5]); }
+    const canopy = RT.meshOf([G.lathe(prof, 20, col)], RT.MAT.cloth, false);
+    canopy.material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, side: THREE.DoubleSide });
+    g.add(canopy);
+    /* gore seam ribs + a few alternating darker panels for readability */
+    const ribs = [];
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * TAU;
+      ribs.push(lineSeg(R * 0.98 * Math.cos(a), H + 0.05, R * 0.98 * Math.sin(a), 0, H + 1.5, 0, 0.03, i % 2 ? 0x2c4331 : 0x46644b));
+    }
+    g.add(RT.meshOf(ribs, RT.MAT.std, false));
+    /* suspension lines to the harness */
+    const lines = [];
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * TAU; lines.push(lineSeg(Math.cos(a) * R * 0.9, H - 0.1, Math.sin(a) * R * 0.9, Math.cos(a) * 0.25, 0.5, Math.sin(a) * 0.25, 0.02, 0xd8d2bc)); }
+    g.add(RT.meshOf(lines, RT.MAT.std, false));
+    g.userData.canopy = canopy;
+    return g;
+  };
 
   /* populate the hold with jumpers standing in two rows, gripping the line */
   A.buildJumpers = function (group, count) {
