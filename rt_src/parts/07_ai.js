@@ -544,13 +544,70 @@ RT.ai = (() => {
 
   A.aliveInGroup = g => enemies.filter(e => !e.dead && (g ? e.group === g : true)).length;
 
+  /* ---------- destructibles: explosive barrels + breakable glass ---------- */
+  function raySegAABB(o, d, mn, mx, maxT) {
+    let tmin = 0, tmax = maxT;
+    const O = [o.x, o.y, o.z], D = [d.x, d.y, d.z], A2 = [mn.x, mn.y, mn.z], B2 = [mx.x, mx.y, mx.z];
+    for (let a = 0; a < 3; a++) {
+      if (Math.abs(D[a]) < 1e-8) { if (O[a] < A2[a] || O[a] > B2[a]) return -1; }
+      else { let t1 = (A2[a] - O[a]) / D[a], t2 = (B2[a] - O[a]) / D[a]; if (t1 > t2) { const tt = t1; t1 = t2; t2 = tt; } if (t1 > tmin) tmin = t1; if (t2 < tmax) tmax = t2; if (tmin > tmax) return -1; }
+    }
+    return tmin > 0.01 ? tmin : -1;
+  }
+  function shatterGlass(d, px, py, pz) {
+    if (d.broken) return;
+    d.broken = true; d.mesh.visible = false;
+    for (let i = 0; i < 16; i++) {
+      const a = Math.random() * TAU;
+      RT.engine.particle(px + (Math.random() - .5) * 0.3, py + (Math.random() - .5) * 0.5, pz + (Math.random() - .5) * 0.3,
+        Math.cos(a) * (1 + Math.random() * 2), Math.random() * 2 - 1, Math.sin(a) * (1 + Math.random() * 2),
+        { color: 0xc4e2e8, size: 0.05, life: 0.8 + Math.random() * 0.5, grav: -11, drag: 0.8 });
+    }
+    if (RT.audio) RT.audio.glassBreak();
+  }
+  function explodeBarrel(d) {
+    if (d.exploded) return;
+    d.exploded = true; d.mesh.visible = false;
+    if (d.col) d.col.disabled = true;
+    const p = new THREE.Vector3(d.x, d.y + 0.3, d.z);
+    RT.player.explode(p, 6.4, 96);          // FX + player + AI + bots + destructible chain (see PL.explode)
+  }
+  function blastDestructibles(p, r, dmg, skip) {
+    if (!RT.map) return;
+    for (const d of RT.map.destructibles) {
+      if (d === skip) continue;
+      const dd = Math.hypot(d.x - p.x, d.y - p.y, d.z - p.z);
+      if (dd > r) continue;
+      if (d.kind === 'barrel' && !d.exploded) { d.hp -= dmg * (1 - dd / r); if (d.hp <= 0) setTimeout(() => explodeBarrel(d), 70 + Math.random() * 140); }
+      else if (d.kind === 'glass' && !d.broken) shatterGlass(d, d.x, d.y, d.z);
+    }
+  }
+  function damageBarrel(d, dmg, point) {
+    if (d.exploded) return;
+    d.hp -= dmg;
+    if (RT.audio) RT.audio.metalPing();
+    for (let i = 0; i < 5; i++)
+      RT.engine.particle(point.x, point.y, point.z, (Math.random() - .5) * 3, Math.random() * 3, (Math.random() - .5) * 3,
+        { color: 0xffd98a, size: 0.04, life: 0.25, grav: -3, drag: 0.5 });
+    if (d.hp <= 0) explodeBarrel(d);
+  }
+  RT.blastDestructibles = blastDestructibles;
+
   /* ---------- player hitscan resolution ---------- */
   RT.combat = {
+    explodeBarrel, blastDestructibles, shatterGlass,
     playerShot(org, dir, cfg, muzzleWorld) {
       if (RT.game) RT.game.stats.shots++;
       const maxD = cfg.range || 160;
       const wall = RT.map.raycast(org.x, org.y, org.z, dir.x, dir.y, dir.z, maxD);
       const wallD = wall ? wall.dist : maxD;
+      /* bullet penetration through thin cover (never steel barrels / terrain) */
+      let penetrated = false;
+      if (wall && !wall.normal.terrain && wall.col && wall.col.pen !== false && !wall.col.barrel) {
+        const thick = (wall.exit || wall.dist) - wall.dist;
+        if (thick > 0.001 && thick < 0.4) penetrated = true;
+      }
+      const reach = penetrated ? maxD : wallD;
       /* friendly-fire guard: warn instead of damaging */
       for (const al of allies) {
         const rx = al.x - org.x, ry3 = (al.y + 1.15) - org.y, rz = al.z - org.z;
@@ -564,7 +621,7 @@ RT.ai = (() => {
       }
       /* vs enemies (campaign) or bots (BR): sphere tests at head/chest/pelvis/knees */
       const targets = (RT.br && RT.br.active) ? RT.br.hittables() : enemies;
-      let hitE = null, hitD = wallD, hitHead = false;
+      let hitE = null, hitD = reach, hitHead = false;
       for (const e of targets) {
         if (e.dead) continue;
         const zones = [
@@ -584,6 +641,14 @@ RT.ai = (() => {
           }
         }
       }
+      const wallbang = hitE && penetrated && hitD > wallD;
+      /* breakable glass: shatter any pane crossed up to the terminal point (glass never blocks the round) */
+      const term = hitE ? hitD : (wall ? wallD : maxD);
+      for (const d of RT.map.destructibles) {
+        if (d.kind !== 'glass' || d.broken) continue;
+        const gt = raySegAABB(org, dir, d.min, d.max, term + 0.4);
+        if (gt >= 0) shatterGlass(d, org.x + dir.x * gt, org.y + dir.y * gt, org.z + dir.z * gt);
+      }
       /* tracer from muzzle */
       if (cfg.tracer && Math.random() < 1 / cfg.tracer) {
         RT.engine.tracer(muzzleWorld, dir, hitD, 360);
@@ -592,16 +657,26 @@ RT.ai = (() => {
       if (hitE) {
         if (RT.game) RT.game.stats.hits++;
         const dmgMod = RT.weapons ? RT.weapons.modFor(RT.weapons.state().curId).dmg : 1;
+        let dmg = cfg.dmg * dmgMod * (hitHead ? cfg.headMul : 1);
+        if (wallbang) dmg *= 0.5;                                 // penetration damage falloff
         const killed = (RT.br && RT.br.active)
-          ? RT.br.damageBot(hitE, cfg.dmg * dmgMod * (hitHead ? cfg.headMul : 1), hitHead, 'player')
-          : A.damageEnemy(hitE, cfg.dmg * dmgMod * (hitHead ? cfg.headMul : 1), hitHead);
+          ? RT.br.damageBot(hitE, dmg, hitHead, 'player')
+          : A.damageEnemy(hitE, dmg, hitHead);
         if (RT.hud) RT.hud.hitmarker(killed);
         // impact puff on body (no gore)
         const hp = new THREE.Vector3(org.x + dir.x * hitD, org.y + dir.y * hitD, org.z + dir.z * hitD);
         for (let i = 0; i < 4; i++)
           RT.engine.particle(hp.x, hp.y, hp.z, (Math.random() - .5) * 1.6, Math.random() * 1.4, (Math.random() - .5) * 1.6,
             { color: 0x5a5148, size: 0.07, life: 0.4, grav: -4, drag: 2 });
+        if (wallbang && wall) {                                   // entry spray on the penetrated surface
+          const wp = wall.point, wn = wall.normal;
+          RT.engine.decal(new THREE.Vector3(wp.x, wp.y, wp.z), new THREE.Vector3(wn.x, wn.y, wn.z), 0.12, 0x26221c, 10);
+          for (let i = 0; i < 5; i++)
+            RT.engine.particle(wp.x, wp.y, wp.z, (Math.random() - .5) * 3, Math.random() * 2, (Math.random() - .5) * 3, { color: 0xa39a8e, size: 0.05, life: 0.3, grav: -5, drag: 1 });
+        }
         if (RT.audio) RT.audio.hitFeedback(killed);
+      } else if (wall && wall.col && wall.col.barrel) {
+        damageBarrel(wall.col.barrel, cfg.dmg * (RT.weapons ? RT.weapons.modFor(RT.weapons.state().curId).dmg : 1), wall.point);
       } else if (wall) {
         const wp = new THREE.Vector3(wall.point.x, wall.point.y, wall.point.z);
         const wn = new THREE.Vector3(wall.normal.x, wall.normal.y, wall.normal.z);

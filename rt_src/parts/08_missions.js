@@ -44,13 +44,15 @@ RT.missions.push({
     P.hayBale(B, { x: -20, z: 58 });
     P.hayBale(B, { x: -18.4, z: 56.2, ry: 1.2 });
     P.drum(B, -39, 60, {});
+    P.explosiveBarrel(B, -36.4, 58.6, {});         // shoot to clear the sandbag nest
     P.sandbags(B, -28, 52, 0.2, 4.5, {});          // enemy line facing the approach
     P.sandbags(B, -38, 54, -0.3, 4, {});
+    P.window(B, -22, B.h(-22, 63) + 1.35, 63, 0, 1.5, 1.25, {});   // greenhouse pane by the yard
     /* main lane (road): crater → wreck → sandbags → crates → farm gate */
     P.husk(B, 8, 106, 0.5);
     P.sandbags(B, -2, 90, 0.15, 5, {});
     P.crate(B, -10, 76, { stack: true });
-    P.drum(B, -12, 74.4, {});
+    P.explosiveBarrel(B, -12, 74.4, {});           // road-lane cover, primed to blow
     /* west flank: field rows of bales → fence gap → well */
     for (let i = 0; i < 6; i++) P.hayBale(B, { x: -58 + i * 9 + (i % 2) * 3, z: 100 + (i % 3) * 8, ry: i });
     P.hayBale(B, { x: -16, z: 122 });
@@ -71,6 +73,7 @@ RT.missions.push({
     P.smokeColumn(B, 22, -2, null);                 // burning wreck = objective beacon
     P.crate(B, 42, -2, { stack: true });
     P.tires(B, 30, 16);
+    P.explosiveBarrel(B, 33, -6.5, {});             // beside the crossroads defenders
     P.sandbags(B, 30, -8, -0.4, 5, {});             // defenders face the road bend
     P.sandbags(B, 2, 22, 0.1, 5, {});               // player-side cover
     P.crate(B, 12, 36, { stack: true });

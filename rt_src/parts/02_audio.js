@@ -235,6 +235,13 @@ RT.audio = (() => {
   };
   AU.gBounce = () => { if (ctx) tone(sfx, now(), 0.05, { type: 'triangle', freq: 1300 + Math.random() * 500, gain: 0.07 }); };
   AU.throwWhoosh = () => { if (ctx) noise(sfx, now(), 0.18, { type: 'bandpass', freq: 700, q: 1.6, gain: 0.08, decay: 0.16 }); };
+  AU.glassBreak = function () {
+    if (!ctx) return;
+    const t = now();
+    noise(sfx, t, 0.4, { type: 'highpass', freq: 3200, gain: 0.12, decay: 0.34 });
+    for (let i = 0; i < 5; i++) tone(sfx, t + Math.random() * 0.12, 0.09, { type: 'triangle', freq: 2400 + Math.random() * 2600, gain: 0.05 });
+  };
+  AU.metalPing = () => { if (ctx) tone(sfx, now(), 0.12, { type: 'triangle', freq: 1800 + Math.random() * 900, freqEnd: 900, gain: 0.06 }); };
   AU.objectiveStinger = function () {
     if (!ctx) return;
     const t = now();

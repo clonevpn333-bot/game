@@ -422,12 +422,13 @@ RT.weapons = (() => {
   let loadout = [];      // array of ids
   const ammo = {};       // id -> {mag, res}
   let adsK = 0, adsT = 0, fovPunch = 0, raiseK = 0, switchTo = null;
+  let inspectK = 0, inspectT = 0;
   const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
   let reloadT = -1, reloadStage = 0, shellsToLoad = 0;
   let cooldown = 0, pumpT = -1, boltT = -1, flashT = 0, slideBack = 0;
   let recP = 0, recY = 0, vmZ = 0, bobT = 0;
   const SKIN_FP = 0xb98e6d, SLEEVE_FP = 0x585c3c;
-  W.state = () => ({ curId, adsK, ammo: ammo[curId], reloading: reloadT >= 0, raiseK });
+  W.state = () => ({ curId, adsK, ammo: ammo[curId], reloading: reloadT >= 0, raiseK, inspectK });
 
   function assemble(id) {
     if (built[id]) return built[id];
@@ -562,7 +563,8 @@ RT.weapons = (() => {
     if (adsPrevT < 1 && adsT >= 1) fovPunch = 2;                     // 1-frame punch as sights align
     fovPunch = damp(fovPunch, 0, 28, dt);
     const baseFov = RT.settings.fov;
-    RT.engine.camera.fov = lerp(baseFov, cfg.adsFov, adsK) - fovPunch;
+    const moveFov = (RT.player && RT.player.fovBoost || 0) * (1 - adsK);   // tac-sprint / slide widen
+    RT.engine.camera.fov = lerp(baseFov, cfg.adsFov, adsK) - fovPunch + moveFov;
     RT.engine.camera.updateProjectionMatrix();
     if (cfg.scope && RT.$('scope')) RT.$('scope').style.opacity = adsK > 0.82 ? 1 : 0;
     else if (RT.$('scope')) RT.$('scope').style.opacity = 0;
@@ -655,6 +657,19 @@ RT.weapons = (() => {
       -vmZ * 2.2 + lowerK * 0.9 + sprintK * 0.55 + swayY * 1.4 + rl.rx,
       swayX * 1.6 + sprintK * 0.4,
       sprintK * 0.25 + swayX * 0.8 + rl.rz + overTilt);
+    /* weapon inspect (hold I): raise + turn the weapon to examine it */
+    const wantInspect = I.keys.KeyI && reloadT < 0 && !switchTo && raiseK > 0.9 && !opts.sprinting && adsK < 0.1 && !I.fire && pumpT < 0 && boltT < 0;
+    inspectK = damp(inspectK, wantInspect ? 1 : 0, wantInspect ? 6 : 11, dt);
+    inspectT = inspectK > 0.003 ? inspectT + dt : 0;
+    if (inspectK > 0.003) {
+      const wob = Math.sin(inspectT * 1.7), wob2 = Math.sin(inspectT * 1.1 + 1);
+      cur.root.position.x += inspectK * (0.06 + wob2 * 0.012);
+      cur.root.position.y += inspectK * 0.05;
+      cur.root.position.z += inspectK * 0.06;
+      cur.root.rotation.x += inspectK * (-0.32 + wob * 0.06);
+      cur.root.rotation.y += inspectK * (0.95 + wob2 * 0.12);
+      cur.root.rotation.z += inspectK * 0.42;
+    }
     RT.hud && RT.hud.setCrosshairSpread(currentSpread(opts) * 900, adsK);
   };
 

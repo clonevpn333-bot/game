@@ -183,6 +183,19 @@ RT.game = (() => {
   GA.onEnemyKilled = function (e, headshot) {
     GA.stats.kills++;
     if (headshot) GA.stats.heads++;
+    GA.killFx(headshot);
+  };
+  /* brief kill-confirmation hitstop; stronger on headshots, rate-limited, test-safe */
+  GA.killFx = function (big) {
+    const ts = RT.engine.timeScale;
+    if (ts > 1.05 || ts < 0.95) return;                 // don't fight test speed-ups or existing slow-mo
+    const now = performance.now();
+    if (now - (GA._lastKillFx || 0) < (big ? 900 : 1500)) return;
+    GA._lastKillFx = now;
+    const v = big ? 0.32 : 0.55;
+    RT.engine.timeScale = v;
+    clearTimeout(GA._killFxT);
+    GA._killFxT = setTimeout(() => { if (Math.abs(RT.engine.timeScale - v) < 0.02) RT.engine.timeScale = 1; }, big ? 240 : 110);
   };
   GA.onCombatStart = function () {
     if (combatStingerCd <= 0) {

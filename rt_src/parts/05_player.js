@@ -14,8 +14,13 @@ RT.player = (() => {
   let kickP = 0, kickY = 0, recovP = 0;
   let grenades = 4, gCooking = -1;
   let snapAnim = null, landT = 9, losT = 0, losOK = false, losTarget = null;
+  /* movement kit: tac-sprint, slide, mantle, lean */
+  let tacSprint = false, wWas = false, wTapT = -9;
+  let slideT = -1, slideVX = 0, slideVZ = 0, mantle = null, leanK = 0, fovBoostS = 0;
   const EYE = 1.62, EYE_C = 1.08, R = 0.34;
+  const UP = new THREE.Vector3(0, 1, 0);
   const _shake = new THREE.Vector3();
+  PL.fovBoost = 0;
 
   /* nearest live enemy by angular distance from the crosshair (LOS-checked at 4Hz) */
   function findAssistTarget() {
@@ -43,6 +48,32 @@ RT.player = (() => {
     return losOK ? best : null;
   }
 
+  /* ledge detection: if a chest-to-head-high collider sits ahead with clear
+     space above the landing spot, start a scripted mantle onto its top. */
+  function tryMantle(dir) {
+    let dx = dir.x, dz = dir.z;
+    const L = Math.hypot(dx, dz);
+    if (L < 0.1) { dx = -Math.sin(yaw); dz = -Math.cos(yaw); } else { dx /= L; dz /= L; }
+    const px = pos.x + dx * 0.55, pz = pos.z + dz * 0.55;
+    let top = -1;
+    for (const c of RT.map.colliders) {
+      if (c.disabled) continue;
+      if (px < c.min.x - R || px > c.max.x + R || pz < c.min.z - R || pz > c.max.z + R) continue;
+      if (c.min.y <= pos.y + 0.6 && c.max.y > pos.y + 0.5 && c.max.y < pos.y + 1.8) top = Math.max(top, c.max.y);
+    }
+    if (top < 0) return false;
+    const lx = pos.x + dx * 0.95, lz = pos.z + dz * 0.95;
+    for (const c of RT.map.colliders) {          // require headroom over the landing
+      if (c.disabled) continue;
+      if (lx < c.min.x - R || lx > c.max.x + R || lz < c.min.z - R || lz > c.max.z + R) continue;
+      if (c.min.y < top + 1.7 && c.max.y > top + 0.12) return false;
+    }
+    mantle = { t: 0, dur: 0.42, sx: pos.x, sy: pos.y, sz: pos.z, ex: lx, ey: top + 0.02, ez: lz };
+    vel.set(0, 0, 0);
+    if (RT.audio) RT.audio.footstep(1);
+    return true;
+  }
+
   Object.defineProperties(PL, {
     pos: { get: () => pos }, vel: { get: () => vel },
     yaw: { get: () => yaw, set: v => { yaw = v; } },
@@ -51,6 +82,8 @@ RT.player = (() => {
     sprinting: { get: () => sprinting }, speedF: { get: () => speedF },
     grenades: { get: () => grenades, set: v => { grenades = v; } },
     crouched: { get: () => crouchK > 0.5 },
+    sliding: { get: () => slideT >= 0 }, tacSprinting: { get: () => tacSprint },
+    leanK: { get: () => leanK }, mantling: { get: () => !!mantle },
   });
   PL.eyeY = () => pos.y + lerp(EYE, EYE_C, crouchK);
 
@@ -73,11 +106,13 @@ RT.player = (() => {
     lastHurt = RT.engine.time;
     RT.engine.shake(0.12 + amount * 0.004);
     if (RT.audio) RT.audio.hurt();
+    kickP += 0.02 + amount * 0.0012;                     // flinch the view upward
     if (RT.hud) {
       RT.hud.pulseVignette(clamp(1.3 - health / 100, 0.25, 1));
       if (fromPos) {
         const a = Math.atan2(fromPos.x - pos.x, fromPos.z - pos.z);
         RT.hud.damageFrom(a - yaw + Math.PI);
+        kickY += Math.sin(a - yaw) * (0.02 + amount * 0.0009);   // shove toward the hit direction
       }
     }
     if (health <= 0) { health = 0; dead = true; if (RT.game) RT.game.onPlayerDeath(); }
@@ -108,7 +143,7 @@ RT.player = (() => {
 
   PL.update = function (dt) {
     const I = RT.input, cam = RT.engine.camera;
-    if (RT.game && RT.game.state !== 'play') return;
+    if (RT.game && RT.game.state !== 'play') { PL.fovBoost = 0; return; }
 
     /* look */
     let [mdx, mdy] = I.consumeMouse();
@@ -173,39 +208,91 @@ RT.player = (() => {
 
     if (dead) { crouchK = damp(crouchK, 1, 4, dt); applyCamera(dt); return; }
 
-    /* stance */
-    if (I.pressed('KeyC') || I.pressed('ControlLeft')) wantCrouch = !wantCrouch;
+    /* ---- mantle / vault: scripted arc up-and-over a ledge ---- */
+    if (mantle) {
+      mantle.t += dt;
+      const k = Math.min(1, mantle.t / mantle.dur);
+      const vk = smoothstep(0, 0.55, k), hk = smoothstep(0.25, 1, k);
+      pos.x = lerp(mantle.sx, mantle.ex, hk);
+      pos.z = lerp(mantle.sz, mantle.ez, hk);
+      pos.y = lerp(mantle.sy, mantle.ey, vk);
+      vel.set(0, 0, 0); grounded = true; landT = 9;
+      if (k >= 1) { pos.y = RT.map.groundAt(pos.x, pos.z, mantle.ey + 0.4); mantle = null; }
+      if (RT.hud) RT.hud.setHealth(health, RT.engine.time - lastHurt);
+      updateInteract(dt); updateDoors(dt);
+      applyCamera(dt);
+      return;
+    }
+
+    const jumpPressed = I.pressed('Space');
+
+    /* wish (world-space movement direction) */
     const wish = new THREE.Vector3(
       (I.keys.KeyD ? 1 : 0) - (I.keys.KeyA ? 1 : 0), 0,
       (I.keys.KeyS ? 1 : 0) - (I.keys.KeyW ? 1 : 0));
+    const wishWorld = wish.clone().applyAxisAngle(UP, yaw);
     const moving = wish.lengthSq() > 0;
-    sprinting = I.keys.ShiftLeft && I.keys.KeyW && !wantCrouch && !I.aim;
-    if (sprinting) wantCrouch = false;
-    /* snap in, settle out */
-    crouchK = damp(crouchK, wantCrouch ? 1 : 0, wantCrouch ? 18 : 9, dt);
+
+    /* tactical sprint: double-tap W */
+    const wNow = I.keys.KeyW;
+    if (wNow && !wWas) { if (RT.engine.time - wTapT < 0.30) tacSprint = true; wTapT = RT.engine.time; }
+    wWas = wNow;
+    if (!wNow || I.aim || wantCrouch) tacSprint = false;
+    sprinting = (I.keys.ShiftLeft || tacSprint) && wNow && !wantCrouch && !I.aim && slideT < 0;
+
+    /* crouch toggle OR slide (slide requires speed + sprint) */
+    const crouchPressed = I.pressed('KeyC') || I.pressed('ControlLeft');
+    const preSpeed = Math.hypot(vel.x, vel.z);
+    if (crouchPressed) {
+      if (slideT < 0 && grounded && preSpeed > 4.2 && (sprinting || tacSprint)) {
+        slideT = 0.60;
+        const m = preSpeed || 1; slideVX = vel.x / m; slideVZ = vel.z / m;
+        tacSprint = false; wantCrouch = false; sprinting = false;
+        if (RT.audio) RT.audio.footstep(1);
+      } else wantCrouch = !wantCrouch;
+    }
+
+    /* slide integration + slide-cancel (jump out of a slide) */
+    let sliding = slideT >= 0;
+    if (sliding) {
+      slideT -= dt;
+      if (jumpPressed) { slideT = -1; sliding = false; vel.y = 4.8; tacSprint = wNow; }
+    }
+
+    /* stance blend: snap in, settle out */
+    crouchK = damp(crouchK, (wantCrouch || sliding) ? 1 : 0, (wantCrouch || sliding) ? 18 : 9, dt);
 
     /* movement */
     const adsK = RT.weapons ? RT.weapons.state().adsK : 0;
-    let speed = 4.3;
-    if (sprinting) speed = 6.6;
-    if (wantCrouch) speed = 2.3;
-    if (adsK > 0.5) speed = 2.7;
-    wish.normalize().applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-    const accel = grounded ? 38 : 8;
-    vel.x = damp(vel.x, wish.x * speed, accel / speed * 4, dt);
-    vel.z = damp(vel.z, wish.z * speed, accel / speed * 4, dt);
+    if (sliding) {
+      const sk = clamp(slideT / 0.60, 0, 1);
+      const sp = lerp(2.4, 8.8, sk * sk);
+      vel.x = slideVX * sp; vel.z = slideVZ * sp;
+    } else {
+      let speed = 4.3;
+      if (sprinting) speed = tacSprint ? 8.4 : 6.6;
+      if (wantCrouch) speed = 2.3;
+      if (adsK > 0.5) speed = 2.7;
+      wishWorld.normalize();
+      const accel = grounded ? 38 : 8;
+      vel.x = damp(vel.x, wishWorld.x * speed, accel / speed * 4, dt);
+      vel.z = damp(vel.z, wishWorld.z * speed, accel / speed * 4, dt);
+    }
 
-    /* gravity + jump */
+    /* gravity + jump / mantle */
     const ground = RT.map.groundAt(pos.x, pos.z, pos.y);
     vel.y -= 19 * dt;
-    if (I.pressed('Space') && grounded) {
-      vel.y = 5.6;
-      // mantle-lite: extra boost against chest-high obstacle ahead
-      const aheadX = pos.x + Math.sin(-yaw) * 0.7 * 0 + wish.x * 0.6, aheadZ = pos.z + wish.z * 0.6;
-      const og = RT.map.groundAt(aheadX, aheadZ, pos.y + 1.4);
-      if (og - pos.y > 0.5 && og - pos.y < 1.25) vel.y = 6.4;
-      if (RT.audio) RT.audio.footstep(1);
+    if (jumpPressed && grounded && !sliding) {
+      if (!tryMantle(wishWorld)) {
+        vel.y = 5.6;
+        const aheadX = pos.x + wishWorld.x * 0.6, aheadZ = pos.z + wishWorld.z * 0.6;
+        const og = RT.map.groundAt(aheadX, aheadZ, pos.y + 1.4);
+        if (og - pos.y > 0.5 && og - pos.y < 1.25) vel.y = 6.4;
+        if (RT.audio) RT.audio.footstep(1);
+      }
     }
+    if (mantle) { applyCamera(dt); return; }   // mantle began this frame
+
     const fallSpeed = -vel.y;
     pos.y += vel.y * dt;
     if (pos.y <= ground) {
@@ -213,6 +300,22 @@ RT.player = (() => {
       pos.y = ground; vel.y = 0; grounded = true;
     } else grounded = pos.y - ground < 0.08;
     landT += dt;
+
+    /* lean-peek (Z left / X right), collision-clamped */
+    let leanTarget = 0;
+    if (!sprinting && !sliding && grounded) {
+      leanTarget = (I.keys.KeyZ ? 1 : 0) - (I.keys.KeyX ? 1 : 0);
+      if (leanTarget !== 0) {
+        const lrx = Math.cos(yaw) * leanTarget, lrz = Math.sin(yaw) * leanTarget;
+        const hitL = RT.map.raycast(pos.x, PL.eyeY(), pos.z, lrx, 0, lrz, 0.85);
+        if (hitL) leanTarget *= clamp((hitL.dist - 0.2) / 0.6, 0, 1);
+      }
+    }
+    leanK = damp(leanK, leanTarget, 12, dt);
+
+    /* tac-sprint / slide FOV widen (read by weapon camera) */
+    fovBoostS = damp(fovBoostS, (tacSprint ? 8 : 0) + (sliding ? 7 : 0), 10, dt);
+    PL.fovBoost = fovBoostS;
 
     collideMove(vel.x * dt, vel.z * dt);
 
@@ -259,6 +362,12 @@ RT.player = (() => {
     const dip = landT < 0.06 ? (landT / 0.06) * 0.04 : 0.04 * (1 - smoothstep(0.06, 0.28, landT));
     cam.position.set(pos.x + bobX * Math.cos(yaw) + _shake.x, PL.eyeY() + bobY + _shake.y - dip + (dead ? -0.5 : 0), pos.z + bobX * Math.sin(yaw) + _shake.z);
     cam.rotation.set(pitch + _shake.x * 0.8, yaw + _shake.y * 0.8, _shake.z * 0.7 + (dead ? 0.4 : 0));
+    /* lean-peek: slide camera laterally + roll */
+    if (Math.abs(leanK) > 0.001) {
+      cam.position.x += Math.cos(yaw) * leanK * 0.5;
+      cam.position.z += Math.sin(yaw) * leanK * 0.5;
+      cam.rotation.z += leanK * 0.15;
+    }
     RT.engine.updateSun(cam.position);
   }
 
@@ -347,6 +456,8 @@ RT.player = (() => {
     const d2p = Math.hypot(p.x - pos.x, p.y - (pos.y + 1), p.z - pos.z);
     if (d2p < radius) PL.damage(dmg * (1 - d2p / radius), p);
     if (RT.ai) RT.ai.explosionAt(p, radius, dmg);
+    if (RT.br && RT.br.active && RT.br.blastBots) RT.br.blastBots(p, radius, dmg);   // BR bots
+    if (RT.blastDestructibles) RT.blastDestructibles(p, radius, dmg);                 // pop barrels / break glass
   };
 
   /* ---------- interaction ---------- */

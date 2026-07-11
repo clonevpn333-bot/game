@@ -223,6 +223,7 @@ RT.MapBuilder = class {
     this.platforms = [];     // walkable {x0,z0,x1,z1,y}
     this.cover = [];         // {x,z,y, dir:{x,z}, low:bool}
     this.doors = [];         // {pivot, open, closed collider}
+    this.destructibles = []; // explosive barrels + breakable glass (live meshes)
     this.interact = [];      // {x,z,y,r, label, fn, once}
     this.waypointObjs = [];
     this.group = new THREE.Group();
@@ -264,10 +265,10 @@ RT.MapBuilder = class {
 
   /* segment raycast vs colliders + terrain. returns {dist, point, normal} or null */
   raycast(ox, oy, oz, dx, dy, dz, maxDist, skipDoors) {
-    let best = maxDist, bestN = null;
+    let best = maxDist, bestN = null, bestCol = null, bestExit = 0;
     for (const c of this.colliders) {
       if (c.disabled) continue;
-      let tmin = 0, tmax = best, nx = 0, ny = 0, nz = 0;
+      let tmin = 0, tmax = 1e9, nx = 0, ny = 0, nz = 0;
       let hit = true;
       const o = [ox, oy, oz], d = [dx, dy, dz], mn = [c.min.x, c.min.y, c.min.z], mx = [c.max.x, c.max.y, c.max.z];
       let axis = -1, sign = 0;
@@ -288,6 +289,7 @@ RT.MapBuilder = class {
         nx = ny = nz = 0;
         if (axis === 0) nx = sign; else if (axis === 1) ny = sign; else nz = sign;
         bestN = { x: nx, y: ny, z: nz };
+        bestCol = c; bestExit = tmax;
       }
     }
     // terrain march
@@ -312,7 +314,7 @@ RT.MapBuilder = class {
       lastH = dh;
     }
     if (!bestN || best >= maxDist) return null;
-    return { dist: best, point: { x: ox + dx * best, y: oy + dy * best, z: oz + dz * best }, normal: bestN };
+    return { dist: best, point: { x: ox + dx * best, y: oy + dy * best, z: oz + dz * best }, normal: bestN, col: bestCol, exit: bestExit };
   }
 
   finalize() {
@@ -886,6 +888,46 @@ RT.props = (() => {
     B.buckets.std.push(...g);
     B.collide(x, gy + 0.44, z, 0.62, 0.9, 0.62);
     B.addCover(x, z, rnd.spread(1) > 0 ? 1 : -1, rnd.spread(1), true);
+  };
+  /* explosive red drum — live mesh so it can vanish on detonation */
+  P.explosiveBarrel = function (B, x, z, o) {
+    const gy = B.h(x, z);
+    const body = 0x9a3327, ring = 0x35201a, band = 0xc9a53a, cap = 0x2a1712;
+    const g = [G.cyl(0.3, 0.3, 0.88, 14, body, { x, y: gy + 0.44, z, vary: 0.05 })];
+    for (const hy of [-0.3, 0.3]) g.push(G.torus(0.305, 0.02, 5, 14, ring, { x, y: gy + 0.44 + hy, z, rx: Math.PI / 2 }));
+    g.push(G.cyl(0.307, 0.307, 0.16, 14, band, { x, y: gy + 0.44, z }));         // hazard band
+    g.push(G.cyl(0.24, 0.24, 0.05, 12, cap, { x, y: gy + 0.885, z }));           // lid
+    g.push(G.cyl(0.06, 0.06, 0.08, 8, cap, { x, y: gy + 0.92, z }));             // bung
+    const mesh = RT.meshOf(g, RT.MAT.std);
+    B.group.add(mesh);
+    const col = B.collide(x, gy + 0.44, z, 0.62, 0.9, 0.62);
+    const d = { kind: 'barrel', x, y: gy + 0.5, z, r: 0.5, hp: 26, mesh, col, exploded: false };
+    col.barrel = d; col.pen = false;
+    B.destructibles.push(d);
+    return d;
+  };
+  /* breakable window pane — translucent, no collider, shatters when shot */
+  P.glassPane = function (B, x, y, z, ry, w, h) {
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
+      new THREE.MeshStandardMaterial({ color: 0xa8ccd4, transparent: true, opacity: 0.28, roughness: 0.06, metalness: 0.15, side: THREE.DoubleSide }));
+    mesh.position.set(x, y, z); mesh.rotation.y = ry;
+    B.group.add(mesh);
+    const hw = w / 2, th = 0.06, cs = Math.abs(Math.cos(ry)), sn = Math.abs(Math.sin(ry));
+    const ex = cs * hw + sn * th, ez = sn * hw + cs * th;
+    const d = { kind: 'glass', x, y, z, min: { x: x - ex, y: y - h / 2, z: z - ez }, max: { x: x + ex, y: y + h / 2, z: z + ez }, mesh, broken: false };
+    B.destructibles.push(d);
+    return d;
+  };
+  /* framed breakable window (frame boxes + glass pane) at a world position */
+  P.window = function (B, x, y, z, ry, w, h, o) {
+    const fr = (o && o.frame) || 0x4a4038, T = 0.09, cs = Math.cos(ry), sn = Math.sin(ry);
+    const along = (dx) => [x + cs * dx, z - sn * dx];
+    const post = (dx, ww, hh) => { const [px, pz] = along(dx); B.buckets.std.push(G.box(ww, hh, T, fr, { x: px, y, z: pz, ry })); };
+    post(-w / 2, 0.1, h + 0.16); post(w / 2, 0.1, h + 0.16);         // side posts
+    B.buckets.std.push(G.box(w + 0.16, 0.1, T, fr, { x, y: y + h / 2, z, ry }));   // header
+    B.buckets.std.push(G.box(w + 0.16, 0.1, T, fr, { x, y: y - h / 2, z, ry }));   // sill
+    P.glassPane(B, x, y, z, ry, w - 0.06, h - 0.06);
+    return { x, y, z };
   };
   P.crate = function (B, x, z, o) {
     const rnd = RNG(((x * 3 + z * 11) | 0) ^ 55);

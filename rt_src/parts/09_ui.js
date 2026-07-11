@@ -263,11 +263,13 @@ RT.ui = (() => {
   U.controlsCard = function () {
     return RT.settings.controls === 'keyboard'
       ? '<kbd>WASD</kbd> move · <kbd>ARROWS</kbd> look · <kbd>F</kbd> fire (hold) · <kbd>Q</kbd> aim<br>' +
-        '<kbd>E</kbd> use · <kbd>R</kbd> reload · <kbd>1–4</kbd> weapons · <kbd>SHIFT</kbd> sprint<br>' +
-        '<kbd>C</kbd> crouch · <kbd>SPACE</kbd> jump · <kbd>G</kbd> grenade (hold) · <kbd>ESC</kbd> pause'
+        '<kbd>E</kbd> use · <kbd>R</kbd> reload · <kbd>1–4</kbd> weapons · <kbd>SHIFT</kbd> / <kbd>W·W</kbd> sprint<br>' +
+        '<kbd>C</kbd> crouch/slide · <kbd>SPACE</kbd> jump/mantle · <kbd>Z</kbd>/<kbd>X</kbd> lean · <kbd>I</kbd> inspect<br>' +
+        '<kbd>G</kbd> grenade (hold) · <kbd>H</kbd> medkit · <kbd>ESC</kbd> pause'
       : '<kbd>WASD</kbd> move · <kbd>MOUSE</kbd> look · <kbd>LMB</kbd> fire · <kbd>RMB</kbd> aim<br>' +
-        '<kbd>E/F</kbd> use · <kbd>R</kbd> reload · <kbd>1–4</kbd> weapons · <kbd>SHIFT</kbd> sprint<br>' +
-        '<kbd>C</kbd> crouch · <kbd>SPACE</kbd> jump · <kbd>G</kbd> grenade (hold) · <kbd>ESC</kbd> pause';
+        '<kbd>E/F</kbd> use · <kbd>R</kbd> reload · <kbd>1–4</kbd> weapons · <kbd>SHIFT</kbd> / <kbd>W·W</kbd> sprint<br>' +
+        '<kbd>C</kbd> crouch/slide · <kbd>SPACE</kbd> jump/mantle · <kbd>Z</kbd>/<kbd>X</kbd> lean · <kbd>I</kbd> inspect<br>' +
+        '<kbd>G</kbd> grenade (hold) · <kbd>H</kbd> medkit · <kbd>ESC</kbd> pause';
   };
 
   /* ---------- fade / letterbox ---------- */

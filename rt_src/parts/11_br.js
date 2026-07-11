@@ -112,6 +112,11 @@ RT.br = (() => {
         P.mgNest(B, V.x + 16, V.z - 36, Math.PI);
         /* --- connective tissue --- */
         gasStation(B, 210, -20);
+        /* explosive barrels + breakable windows around the POIs (loot-and-destroy flavour) */
+        for (const [bx, bz] of [[C.x - 8, C.z + 148], [C.x + 22, C.z + 138], [210, -14], [G2.x - 26, G2.z + 4], [M.x + 6, M.z + 12], [V.x + 6, V.z + 16]])
+          P.explosiveBarrel(B, bx, bz, {});
+        for (const [wx, wz, wry] of [[C.x - 18, C.z + 132, 0], [C.x + 34, C.z + 132, 0], [208, -12, Math.PI / 2], [M.x - 4, M.z + 20, 0]])
+          P.window(B, wx, B.h(wx, wz) + 1.5, wz, wry, 1.7, 1.4, {});
         P.house(B, { x: -180, z: 40, ry: 0.3, w: 8, d: 7, seed: 800 });   // lone houses
         P.house(B, { x: 230, z: 180, ry: -0.5, w: 8, d: 7, seed: 801 });
         P.house(B, { x: -260, z: -120, ry: 1.2, w: 7.5, d: 6.5, seed: 802, damage: 1 });
@@ -452,10 +457,18 @@ RT.br = (() => {
     b.target = 'player';
     if (b.hp <= 0) {
       killBot(b, from === 'player' ? 'RIDGE (you)' : from);
-      if (from === 'player') { stats.kills++; if (RT.game) RT.game.stats.kills++; }
+      if (from === 'player') { stats.kills++; if (RT.game) { RT.game.stats.kills++; RT.game.killFx(head); } }
       return true;
     }
     return false;
+  };
+  /* splash damage to bots from grenades / explosive barrels */
+  BR.blastBots = function (p, r, dmg) {
+    for (const b of bots) {
+      if (b.dead) continue;
+      const dd = Math.hypot(b.x - p.x, (b.y + 1) - p.y, b.z - p.z);
+      if (dd < r) BR.damageBot(b, dmg * (1 - dd / r), false, 'the storm');
+    }
   };
   function killBot(b, byName) {
     if (b.dead) return;
