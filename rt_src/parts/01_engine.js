@@ -106,11 +106,13 @@ RT.engine = (() => {
     sunGlow.material.color.set(p.sunDiscColor || 0xffd9a0).convertSRGBToLinear();
     sunGlow.material.opacity = p.sunGlow != null ? p.sunGlow : 0.28;
     sunDisc.visible = sunGlow.visible = p.sunVisible !== false;
-    hemi.color.set(p.hemiSky); hemi.groundColor.set(p.hemiGround); hemi.intensity = p.hemiIntensity;
-    fillDir.intensity = p.fillIntensity != null ? p.fillIntensity : 0.25;
-    scene.fog.color.set(p.fogColor).convertSRGBToLinear(); scene.fog.density = p.fogDensity;
+    hemi.color.set(p.hemiSky); hemi.groundColor.set(p.hemiGround); hemi.intensity = p.hemiIntensity * (E.weatherDim || 1);
+    sun.intensity = p.sunIntensity * (E.weatherDim || 1);
+    fillDir.intensity = (p.fillIntensity != null ? p.fillIntensity : 0.25);
+    scene.fog.color.set(E.fogTint || p.fogColor).convertSRGBToLinear();
+    scene.fog.density = p.fogDensity * (E.fogMul || 1);
     renderer.setClearColor(scene.fog.color);
-    renderer.toneMappingExposure = p.exposure != null ? p.exposure : 1.05;
+    renderer.toneMappingExposure = (p.exposure != null ? p.exposure : 1.05) * (E.weatherDim || 1);
     E.basePalette = p;
   };
 
@@ -308,6 +310,14 @@ RT.engine = (() => {
     if ((type === 'rain' || type === 'storm') && !rain) initRain();
     if (rain) rain.visible = type === 'rain' || type === 'storm';
     lightningT = 4;
+    /* fog / overcast dial the atmosphere without changing time-of-day.
+       Only BR uses these + atmospheric rain; campaign rain/storm keep their tuned look. */
+    E.fogMul = 1; E.fogTint = null; E.weatherDim = 1;
+    const br = RT.br && RT.br.active;
+    if (type === 'fog') { E.fogMul = 10; E.fogTint = 0xc6cacb; E.weatherDim = 0.8; }
+    else if (type === 'overcast') { E.fogMul = 3; E.fogTint = 0xb9bcbe; E.weatherDim = 0.7; }
+    else if (br && type === 'rain') { E.fogMul = 3.4; E.fogTint = 0x9aa0a4; E.weatherDim = 0.6; }
+    if (E.basePalette) E.setAtmosphere(E.basePalette);
   };
   function updateWeather(raw) {
     if (rain && rain.visible) {
@@ -352,6 +362,50 @@ RT.engine = (() => {
   };
   Object.defineProperty(E, 'trauma', { get: () => trauma });
 
+  /* ---------- ambient life: high, slow bird flocks drifting across the sky ---------- */
+  let flock = null, flockT = 6;
+  const flockDir = new THREE.Vector3();
+  function makeBird() {
+    const grp = new THREE.Group();
+    const wg = new THREE.BufferGeometry();
+    wg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0, 0.55, 0, -0.3, 0.55, 0, 0.3]), 3));
+    const mat = new THREE.MeshBasicMaterial({ color: 0x26262c, side: THREE.DoubleSide });
+    const R = new THREE.Mesh(wg, mat), L = new THREE.Mesh(wg, mat); L.scale.x = -1;
+    grp.add(L, R); grp.userData = { L, R, ph: Math.random() * TAU };
+    return grp;
+  }
+  function initFlock() {
+    flock = new THREE.Group();
+    for (let i = 0; i < 8; i++) {
+      const b = makeBird();
+      const row = Math.ceil(i / 2);
+      b.position.set((i % 2 ? 1 : -1) * row * 1.7, (Math.random() - .5) * 1.2, row * 1.5);
+      b.scale.setScalar(1 + Math.random() * 0.6);
+      flock.add(b);
+    }
+    flock.visible = false; scene.add(flock);
+  }
+  function spawnFlock(camPos) {
+    const ang = Math.random() * TAU;
+    flockDir.set(Math.cos(ang), 0, Math.sin(ang));
+    flock.position.set(camPos.x - flockDir.x * 280, camPos.y + 48 + Math.random() * 46, camPos.z - flockDir.z * 280);
+    flock.rotation.y = Math.atan2(flockDir.x, flockDir.z);
+    flock.visible = true; flock.userData.travel = 0;
+  }
+  E.updateAmbient = function (dt, camPos) {
+    if (!(RT.game && (RT.game.state === 'play' || RT.game.state === 'br'))) { if (flock) flock.visible = false; return; }
+    if (!flock) initFlock();
+    if (!flock.visible) { flockT -= dt; if (flockT <= 0) { flockT = 20 + Math.random() * 28; spawnFlock(camPos); } return; }
+    flock.position.addScaledVector(flockDir, 14 * dt);
+    flock.userData.travel += 14 * dt;
+    for (const b of flock.children) {
+      b.userData.ph += dt * 6.5;
+      const f = Math.sin(b.userData.ph);
+      b.userData.L.rotation.z = f * 0.55; b.userData.R.rotation.z = -f * 0.55;
+    }
+    if (flock.userData.travel > 600) flock.visible = false;
+  };
+
   /* ---------- main loop ---------- */
   const updaters = [];
   E.onUpdate = fn => updaters.push(fn);
@@ -369,6 +423,7 @@ RT.engine = (() => {
       for (const u of updaters) u(dt, raw);
       if (RT.windMats) for (const m of RT.windMats) m.userData.uTime.value = E.time;
       updateParticles(dt); updateTracers(dt); updateDecals(dt); updateLights(dt); updateWeather(raw);
+      E.updateAmbient(dt, camera.position);
       renderer.render(scene, camera);
     };
     requestAnimationFrame(loop);

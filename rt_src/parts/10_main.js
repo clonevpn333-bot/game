@@ -174,10 +174,26 @@ RT.game = (() => {
     if (GA.state !== 'play') return;
     GA.state = 'dead';
     RT.input.unlock();
-    RT.ui.pulseVignette(1);
+    RT.weapons.setVisible(false);
+    RT.ui.pulseVignette(0.5);   // cinematic darkening, not a blackout — the killcam needs to be visible
+    /* killcam: orbit the death spot, framed on whoever's still shooting at you */
+    let killer = null, kd = 1e9;
+    for (const e of RT.ai.enemies) { if (e.dead) continue; const d = Math.hypot(e.x - RT.player.pos.x, e.z - RT.player.pos.z); if (d < kd) { kd = d; killer = e; } }
+    GA._killcam = { killer, t: 0, cx: RT.player.pos.x, cy: RT.player.pos.y, cz: RT.player.pos.z, dir: Math.random() < 0.5 ? 1 : -1 };
+    RT.ui.toast('KILLED IN ACTION', killer ? 'Last seen: hostile ' + (killer.kind || 'infantry') : 'Regrouping from checkpoint');
     RT.ui.say('DOC OKAFOR', 'Ridge is down! Medic—', 2);
-    setTimeout(() => GA.restartCheckpoint(), 2100);
+    setTimeout(() => { GA._killcam = null; GA.restartCheckpoint(); }, 3200);
   };
+  function updateKillcam(dt) {
+    const kc = GA._killcam, cam = RT.engine.camera;
+    kc.t += dt;
+    const orbit = kc.t * 0.55 * kc.dir;
+    cam.position.set(kc.cx + Math.cos(orbit) * 4.2, kc.cy + 1.7 + Math.sin(kc.t * 0.5) * 0.25, kc.cz + Math.sin(orbit) * 4.2);
+    const k = kc.killer;
+    if (k && !k.dead) cam.lookAt(k.x, k.y + 1.25, k.z);
+    else cam.lookAt(kc.cx, kc.cy + 0.5, kc.cz);
+    RT.engine.updateSun(cam.position);
+  }
 
   /* ---------- combat hooks ---------- */
   GA.onEnemyKilled = function (e, headshot) {
@@ -297,6 +313,10 @@ RT.game = (() => {
     combatStingerCd -= raw;
     RT.ui.update(raw);
     RT.audio.update(raw);
+    /* dynamic combat music (campaign): on during firefights + a short tail after */
+    const inCombat = GA.state === 'play' && !(RT.br && RT.br.active) && RT.ai.inCombat && RT.ai.inCombat();
+    if (inCombat) GA._combatHold = 5; else if (GA._combatHold > 0) GA._combatHold -= raw;
+    if (RT.audio) RT.audio.combatMusic(inCombat || GA._combatHold > 0);
     if (RT.br && (RT.br.active || GA.state === 'br')) RT.br.update(dt, raw);
     if (GA.state === 'br') return;
     if (GA.state === 'menu') { updateMenu(dt); return; }
@@ -317,6 +337,12 @@ RT.game = (() => {
             { color: [0x2b2926, 0x3a3733, 0x4a4540][(Math.random() * 3) | 0], size: 0.9 + Math.random() * 0.9, life: 3.4 + Math.random() * 2, grav: 0.75, drag: 0.9, grow: -0.35, alpha: 0.6 });
         }
       }
+    }
+    if (GA.state === 'dead' && GA._killcam) {
+      updateKillcam(dt);
+      if (!(RT.br && RT.br.active)) RT.ai.update(dt);
+      RT.weapons.updateShells(dt);
+      return;
     }
     if (GA.state === 'play' || GA.state === 'dead') {
       RT.player.update(dt);

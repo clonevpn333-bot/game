@@ -119,7 +119,20 @@ RT.ai = (() => {
       if (RT.player.crouched && dist > 22 && RT.map.def.stealth) return false;
     }
     const hit = RT.map.raycast(e.x, eyeY, e.z, dx / dist, dy / dist, dz / dist, dist - 0.4);
-    return !hit;
+    if (hit) return false;
+    if (RT.smokeVolumes && RT.smokeVolumes.length && smokeBlocks(e.x, eyeY, e.z, dx / dist, dy / dist, dz / dist, dist)) return false;
+    return true;
+  }
+  /* smoke grenades occlude line-of-sight: block if the sightline passes through an active cloud */
+  function smokeBlocks(ox, oy, oz, dx, dy, dz, dist) {
+    for (const s of RT.smokeVolumes) {
+      const px = s.x - ox, py = s.y - oy, pz = s.z - oz;
+      let t = px * dx + py * dy + pz * dz;
+      t = Math.max(0, Math.min(dist, t));
+      const cxp = ox + dx * t - s.x, cyp = oy + dy * t - s.y, czp = oz + dz * t - s.z;
+      if (cxp * cxp + cyp * cyp + czp * czp < s.r * s.r) return true;
+    }
+    return false;
   }
 
   A.alertGroup = function (group, pos) {
@@ -543,6 +556,7 @@ RT.ai = (() => {
   };
 
   A.aliveInGroup = g => enemies.filter(e => !e.dead && (g ? e.group === g : true)).length;
+  A.inCombat = () => enemies.some(e => !e.dead && (e.state === 'combat' || e.state === 'suppressed' || e.state === 'alert'));
 
   /* ---------- destructibles: explosive barrels + breakable glass ---------- */
   function raySegAABB(o, d, mn, mx, maxT) {

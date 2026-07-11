@@ -12,7 +12,8 @@ RT.player = (() => {
   let crouchK = 0, wantCrouch = false, sprinting = false, grounded = true;
   let bobT = 0, speedF = 0, lookVelX = 0, lookVelY = 0;
   let kickP = 0, kickY = 0, recovP = 0;
-  let grenades = 4, gCooking = -1;
+  let grenades = 4, gCooking = -1, smokes = 2;
+  RT.smokeVolumes = RT.smokeVolumes || [];
   let snapAnim = null, landT = 9, losT = 0, losOK = false, losTarget = null;
   /* movement kit: tac-sprint, slide, mantle, lean */
   let tacSprint = false, wWas = false, wTapT = -9;
@@ -81,6 +82,7 @@ RT.player = (() => {
     health: { get: () => health }, dead: { get: () => dead },
     sprinting: { get: () => sprinting }, speedF: { get: () => speedF },
     grenades: { get: () => grenades, set: v => { grenades = v; } },
+    smokes: { get: () => smokes, set: v => { smokes = v; } },
     crouched: { get: () => crouchK > 0.5 },
     sliding: { get: () => slideT >= 0 }, tacSprinting: { get: () => tacSprint },
     leanK: { get: () => leanK }, mantling: { get: () => !!mantle },
@@ -92,7 +94,8 @@ RT.player = (() => {
     vel.set(0, 0, 0);
     yaw = spawn.ry || 0; pitch = 0;
     health = 100; dead = false; lastHurt = -99;
-    grenades = 4;
+    grenades = 4; smokes = 2;
+    RT.smokeVolumes.length = 0;
     RT.engine.camera.position.set(pos.x, PL.eyeY(), pos.z);
   };
   PL.addRecoil = function (p, y) { kickP += p; kickY += y; };
@@ -382,6 +385,7 @@ RT.player = (() => {
   }
   function updateGrenade(dt) {
     const I = RT.input;
+    if (I.pressed('KeyB') && smokes > 0 && gCooking < 0) throwSmoke();
     if (I.keys.KeyG && grenades > 0 && gCooking < 0) gCooking = 0;
     if (gCooking >= 0) {
       gCooking += dt;
@@ -450,6 +454,47 @@ RT.player = (() => {
       return true;
     });
   }
+  /* smoke grenade: throws a canister that blooms a vision-blocking cloud (key B) */
+  function throwSmoke() {
+    smokes--;
+    if (RT.hud) RT.hud.refreshAmmo();
+    const geos = [RT.G.cyl(0.042, 0.042, 0.12, 8, 0x37432f, {}), RT.G.torus(0.043, 0.008, 4, 8, 0x9a9a3a, { y: 0.03, rx: Math.PI / 2 })];
+    const m = RT.meshOf(geos, RT.MAT.gun);
+    const p = new THREE.Vector3(pos.x, PL.eyeY() - 0.1, pos.z);
+    const v = grenadeVel().multiplyScalar(0.85);
+    m.position.copy(p);
+    RT.engine.scene.add(m);
+    if (RT.audio) RT.audio.throwWhoosh();
+    let landed = false, vol = null, emitT = 0, life = 0;
+    (RT.transients = RT.transients || []).push((dt2) => {
+      if (!landed) {
+        v.y -= 9.8 * dt2;
+        const nx = m.position.x + v.x * dt2, ny = m.position.y + v.y * dt2, nz = m.position.z + v.z * dt2;
+        const g = RT.map.groundAt(nx, nz, ny + 0.5);
+        if (ny <= g + 0.06) { m.position.set(nx, g + 0.07, nz); landed = true; vol = { x: nx, y: g + 1.1, z: nz, r: 0.6 }; RT.smokeVolumes.push(vol); if (RT.audio) RT.audio.gBounce(); }
+        else { m.position.set(nx, ny, nz); m.rotation.x += 5 * dt2; }
+        return true;
+      }
+      life += dt2; emitT -= dt2;
+      vol.r = Math.min(3.7, vol.r + dt2 * 1.7);
+      if (emitT <= 0) {
+        emitT = 0.05;
+        for (let i = 0; i < 3; i++) {
+          const a = Math.random() * TAU, rr = Math.random() * vol.r * 0.7;
+          RT.engine.particle(vol.x + Math.cos(a) * rr, vol.y - 0.7 + Math.random() * 1.5, vol.z + Math.sin(a) * rr,
+            (Math.random() - .5) * 0.5, 0.5 + Math.random() * 0.6, (Math.random() - .5) * 0.5,
+            { color: [0x9a9a94, 0xb2b2ac, 0x84847c][i % 3], size: 1.5 + Math.random() * 1.3, life: 2.6 + Math.random() * 1.6, grav: 0.12, drag: 1.4, grow: 0.6, alpha: 0.5 });
+        }
+      }
+      if (life > 12) {
+        const idx = RT.smokeVolumes.indexOf(vol); if (idx >= 0) RT.smokeVolumes.splice(idx, 1);
+        RT.engine.scene.remove(m);
+        return false;
+      }
+      return true;
+    });
+  }
+
   PL.explode = function (p, radius, dmg) {
     RT.fxExplosion(p, radius);
     // damage player

@@ -537,11 +537,13 @@ RT.engine = (() => {
     sunGlow.material.color.set(p.sunDiscColor || 0xffd9a0).convertSRGBToLinear();
     sunGlow.material.opacity = p.sunGlow != null ? p.sunGlow : 0.28;
     sunDisc.visible = sunGlow.visible = p.sunVisible !== false;
-    hemi.color.set(p.hemiSky); hemi.groundColor.set(p.hemiGround); hemi.intensity = p.hemiIntensity;
-    fillDir.intensity = p.fillIntensity != null ? p.fillIntensity : 0.25;
-    scene.fog.color.set(p.fogColor).convertSRGBToLinear(); scene.fog.density = p.fogDensity;
+    hemi.color.set(p.hemiSky); hemi.groundColor.set(p.hemiGround); hemi.intensity = p.hemiIntensity * (E.weatherDim || 1);
+    sun.intensity = p.sunIntensity * (E.weatherDim || 1);
+    fillDir.intensity = (p.fillIntensity != null ? p.fillIntensity : 0.25);
+    scene.fog.color.set(E.fogTint || p.fogColor).convertSRGBToLinear();
+    scene.fog.density = p.fogDensity * (E.fogMul || 1);
     renderer.setClearColor(scene.fog.color);
-    renderer.toneMappingExposure = p.exposure != null ? p.exposure : 1.05;
+    renderer.toneMappingExposure = (p.exposure != null ? p.exposure : 1.05) * (E.weatherDim || 1);
     E.basePalette = p;
   };
 
@@ -739,6 +741,14 @@ RT.engine = (() => {
     if ((type === 'rain' || type === 'storm') && !rain) initRain();
     if (rain) rain.visible = type === 'rain' || type === 'storm';
     lightningT = 4;
+    /* fog / overcast dial the atmosphere without changing time-of-day.
+       Only BR uses these + atmospheric rain; campaign rain/storm keep their tuned look. */
+    E.fogMul = 1; E.fogTint = null; E.weatherDim = 1;
+    const br = RT.br && RT.br.active;
+    if (type === 'fog') { E.fogMul = 10; E.fogTint = 0xc6cacb; E.weatherDim = 0.8; }
+    else if (type === 'overcast') { E.fogMul = 3; E.fogTint = 0xb9bcbe; E.weatherDim = 0.7; }
+    else if (br && type === 'rain') { E.fogMul = 3.4; E.fogTint = 0x9aa0a4; E.weatherDim = 0.6; }
+    if (E.basePalette) E.setAtmosphere(E.basePalette);
   };
   function updateWeather(raw) {
     if (rain && rain.visible) {
@@ -783,6 +793,50 @@ RT.engine = (() => {
   };
   Object.defineProperty(E, 'trauma', { get: () => trauma });
 
+  /* ---------- ambient life: high, slow bird flocks drifting across the sky ---------- */
+  let flock = null, flockT = 6;
+  const flockDir = new THREE.Vector3();
+  function makeBird() {
+    const grp = new THREE.Group();
+    const wg = new THREE.BufferGeometry();
+    wg.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0, 0.55, 0, -0.3, 0.55, 0, 0.3]), 3));
+    const mat = new THREE.MeshBasicMaterial({ color: 0x26262c, side: THREE.DoubleSide });
+    const R = new THREE.Mesh(wg, mat), L = new THREE.Mesh(wg, mat); L.scale.x = -1;
+    grp.add(L, R); grp.userData = { L, R, ph: Math.random() * TAU };
+    return grp;
+  }
+  function initFlock() {
+    flock = new THREE.Group();
+    for (let i = 0; i < 8; i++) {
+      const b = makeBird();
+      const row = Math.ceil(i / 2);
+      b.position.set((i % 2 ? 1 : -1) * row * 1.7, (Math.random() - .5) * 1.2, row * 1.5);
+      b.scale.setScalar(1 + Math.random() * 0.6);
+      flock.add(b);
+    }
+    flock.visible = false; scene.add(flock);
+  }
+  function spawnFlock(camPos) {
+    const ang = Math.random() * TAU;
+    flockDir.set(Math.cos(ang), 0, Math.sin(ang));
+    flock.position.set(camPos.x - flockDir.x * 280, camPos.y + 48 + Math.random() * 46, camPos.z - flockDir.z * 280);
+    flock.rotation.y = Math.atan2(flockDir.x, flockDir.z);
+    flock.visible = true; flock.userData.travel = 0;
+  }
+  E.updateAmbient = function (dt, camPos) {
+    if (!(RT.game && (RT.game.state === 'play' || RT.game.state === 'br'))) { if (flock) flock.visible = false; return; }
+    if (!flock) initFlock();
+    if (!flock.visible) { flockT -= dt; if (flockT <= 0) { flockT = 20 + Math.random() * 28; spawnFlock(camPos); } return; }
+    flock.position.addScaledVector(flockDir, 14 * dt);
+    flock.userData.travel += 14 * dt;
+    for (const b of flock.children) {
+      b.userData.ph += dt * 6.5;
+      const f = Math.sin(b.userData.ph);
+      b.userData.L.rotation.z = f * 0.55; b.userData.R.rotation.z = -f * 0.55;
+    }
+    if (flock.userData.travel > 600) flock.visible = false;
+  };
+
   /* ---------- main loop ---------- */
   const updaters = [];
   E.onUpdate = fn => updaters.push(fn);
@@ -800,6 +854,7 @@ RT.engine = (() => {
       for (const u of updaters) u(dt, raw);
       if (RT.windMats) for (const m of RT.windMats) m.userData.uTime.value = E.time;
       updateParticles(dt); updateTracers(dt); updateDecals(dt); updateLights(dt); updateWeather(raw);
+      E.updateAmbient(dt, camera.position);
       renderer.render(scene, camera);
     };
     requestAnimationFrame(loop);
@@ -1227,6 +1282,39 @@ RT.audio = (() => {
     if (Math.random() < 0.35) tone(mus, t + 1.3, 1.6, { type: 'triangle', freq: [110, 130.8, 164.8][(Math.random() * 3) | 0], gain: 0.04 });
   }
 
+  /* ---------- dynamic combat music: driving bass bed + percussion ---------- */
+  let combatOn = false, combatGain = null, combatOsc = null, combatTimer = 0, combatBeat = 0;
+  AU.combatMusic = function (on) {
+    if (on === combatOn) return;
+    if (on && !AU.ensure()) return;
+    combatOn = on;
+    if (on && ctx) {
+      combatGain = ctx.createGain(); combatGain.gain.value = 0.0001; combatGain.connect(mus);
+      const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 49;
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 170; f.Q.value = 3;
+      const lfo = ctx.createOscillator(); lfo.frequency.value = 2.0; const lg = ctx.createGain(); lg.gain.value = 40;
+      lfo.connect(lg); lg.connect(f.frequency); lfo.start();
+      o.connect(f); f.connect(combatGain); o.start();
+      combatOsc = [o, lfo];
+      combatGain.gain.setTargetAtTime(0.42, now(), 0.7);
+    } else if (ctx && combatGain) {
+      const cg = combatGain, co = combatOsc; combatGain = null; combatOsc = null;
+      cg.gain.setTargetAtTime(0.0001, now(), 0.9);
+      setTimeout(() => { for (const n of co || []) { try { n.stop(); } catch (e) {} } try { cg.disconnect(); } catch (e) {} }, 1500);
+    }
+  };
+  function combatTick(dt) {
+    if (!combatOn || !ctx || !combatGain) return;
+    combatTimer -= dt;
+    if (combatTimer > 0) return;
+    combatTimer = 0.48;
+    const t = now();
+    noise(combatGain, t, 0.07, { type: 'bandpass', freq: 2000, q: 1.4, gain: 0.14, decay: 0.06 });   // hat
+    combatBeat = (combatBeat + 1) % 4;
+    if (combatBeat === 0) noise(combatGain, t, 0.16, { type: 'lowpass', freq: 150, gain: 0.5, decay: 0.14 }); // kick
+    if (combatBeat === 2) tone(combatGain, t, 0.14, { type: 'triangle', freq: 98, gain: 0.3 });              // pulse
+  }
+
   /* vehicle engine loop: filtered saw + noise, RPM-pitched */
   let engineNodes = null;
   AU.engineStart = function () {
@@ -1260,7 +1348,7 @@ RT.audio = (() => {
     nLayer(now(), { dur: 0.8, type: 'lowpass', f0: 120, f1: 60, gain: 0.12 * intensity, att: 0.2, verb: 0.3 });
   };
 
-  AU.update = function (dt) { ambientTick(dt); musicTick(dt); };
+  AU.update = function (dt) { ambientTick(dt); musicTick(dt); combatTick(dt); };
   return AU;
 })();
 
@@ -2721,7 +2809,8 @@ RT.player = (() => {
   let crouchK = 0, wantCrouch = false, sprinting = false, grounded = true;
   let bobT = 0, speedF = 0, lookVelX = 0, lookVelY = 0;
   let kickP = 0, kickY = 0, recovP = 0;
-  let grenades = 4, gCooking = -1;
+  let grenades = 4, gCooking = -1, smokes = 2;
+  RT.smokeVolumes = RT.smokeVolumes || [];
   let snapAnim = null, landT = 9, losT = 0, losOK = false, losTarget = null;
   /* movement kit: tac-sprint, slide, mantle, lean */
   let tacSprint = false, wWas = false, wTapT = -9;
@@ -2790,6 +2879,7 @@ RT.player = (() => {
     health: { get: () => health }, dead: { get: () => dead },
     sprinting: { get: () => sprinting }, speedF: { get: () => speedF },
     grenades: { get: () => grenades, set: v => { grenades = v; } },
+    smokes: { get: () => smokes, set: v => { smokes = v; } },
     crouched: { get: () => crouchK > 0.5 },
     sliding: { get: () => slideT >= 0 }, tacSprinting: { get: () => tacSprint },
     leanK: { get: () => leanK }, mantling: { get: () => !!mantle },
@@ -2801,7 +2891,8 @@ RT.player = (() => {
     vel.set(0, 0, 0);
     yaw = spawn.ry || 0; pitch = 0;
     health = 100; dead = false; lastHurt = -99;
-    grenades = 4;
+    grenades = 4; smokes = 2;
+    RT.smokeVolumes.length = 0;
     RT.engine.camera.position.set(pos.x, PL.eyeY(), pos.z);
   };
   PL.addRecoil = function (p, y) { kickP += p; kickY += y; };
@@ -3091,6 +3182,7 @@ RT.player = (() => {
   }
   function updateGrenade(dt) {
     const I = RT.input;
+    if (I.pressed('KeyB') && smokes > 0 && gCooking < 0) throwSmoke();
     if (I.keys.KeyG && grenades > 0 && gCooking < 0) gCooking = 0;
     if (gCooking >= 0) {
       gCooking += dt;
@@ -3159,6 +3251,47 @@ RT.player = (() => {
       return true;
     });
   }
+  /* smoke grenade: throws a canister that blooms a vision-blocking cloud (key B) */
+  function throwSmoke() {
+    smokes--;
+    if (RT.hud) RT.hud.refreshAmmo();
+    const geos = [RT.G.cyl(0.042, 0.042, 0.12, 8, 0x37432f, {}), RT.G.torus(0.043, 0.008, 4, 8, 0x9a9a3a, { y: 0.03, rx: Math.PI / 2 })];
+    const m = RT.meshOf(geos, RT.MAT.gun);
+    const p = new THREE.Vector3(pos.x, PL.eyeY() - 0.1, pos.z);
+    const v = grenadeVel().multiplyScalar(0.85);
+    m.position.copy(p);
+    RT.engine.scene.add(m);
+    if (RT.audio) RT.audio.throwWhoosh();
+    let landed = false, vol = null, emitT = 0, life = 0;
+    (RT.transients = RT.transients || []).push((dt2) => {
+      if (!landed) {
+        v.y -= 9.8 * dt2;
+        const nx = m.position.x + v.x * dt2, ny = m.position.y + v.y * dt2, nz = m.position.z + v.z * dt2;
+        const g = RT.map.groundAt(nx, nz, ny + 0.5);
+        if (ny <= g + 0.06) { m.position.set(nx, g + 0.07, nz); landed = true; vol = { x: nx, y: g + 1.1, z: nz, r: 0.6 }; RT.smokeVolumes.push(vol); if (RT.audio) RT.audio.gBounce(); }
+        else { m.position.set(nx, ny, nz); m.rotation.x += 5 * dt2; }
+        return true;
+      }
+      life += dt2; emitT -= dt2;
+      vol.r = Math.min(3.7, vol.r + dt2 * 1.7);
+      if (emitT <= 0) {
+        emitT = 0.05;
+        for (let i = 0; i < 3; i++) {
+          const a = Math.random() * TAU, rr = Math.random() * vol.r * 0.7;
+          RT.engine.particle(vol.x + Math.cos(a) * rr, vol.y - 0.7 + Math.random() * 1.5, vol.z + Math.sin(a) * rr,
+            (Math.random() - .5) * 0.5, 0.5 + Math.random() * 0.6, (Math.random() - .5) * 0.5,
+            { color: [0x9a9a94, 0xb2b2ac, 0x84847c][i % 3], size: 1.5 + Math.random() * 1.3, life: 2.6 + Math.random() * 1.6, grav: 0.12, drag: 1.4, grow: 0.6, alpha: 0.5 });
+        }
+      }
+      if (life > 12) {
+        const idx = RT.smokeVolumes.indexOf(vol); if (idx >= 0) RT.smokeVolumes.splice(idx, 1);
+        RT.engine.scene.remove(m);
+        return false;
+      }
+      return true;
+    });
+  }
+
   PL.explode = function (p, radius, dmg) {
     RT.fxExplosion(p, radius);
     // damage player
@@ -4949,7 +5082,20 @@ RT.ai = (() => {
       if (RT.player.crouched && dist > 22 && RT.map.def.stealth) return false;
     }
     const hit = RT.map.raycast(e.x, eyeY, e.z, dx / dist, dy / dist, dz / dist, dist - 0.4);
-    return !hit;
+    if (hit) return false;
+    if (RT.smokeVolumes && RT.smokeVolumes.length && smokeBlocks(e.x, eyeY, e.z, dx / dist, dy / dist, dz / dist, dist)) return false;
+    return true;
+  }
+  /* smoke grenades occlude line-of-sight: block if the sightline passes through an active cloud */
+  function smokeBlocks(ox, oy, oz, dx, dy, dz, dist) {
+    for (const s of RT.smokeVolumes) {
+      const px = s.x - ox, py = s.y - oy, pz = s.z - oz;
+      let t = px * dx + py * dy + pz * dz;
+      t = Math.max(0, Math.min(dist, t));
+      const cxp = ox + dx * t - s.x, cyp = oy + dy * t - s.y, czp = oz + dz * t - s.z;
+      if (cxp * cxp + cyp * cyp + czp * czp < s.r * s.r) return true;
+    }
+    return false;
   }
 
   A.alertGroup = function (group, pos) {
@@ -5373,6 +5519,7 @@ RT.ai = (() => {
   };
 
   A.aliveInGroup = g => enemies.filter(e => !e.dead && (g ? e.group === g : true)).length;
+  A.inCombat = () => enemies.some(e => !e.dead && (e.state === 'combat' || e.state === 'suppressed' || e.state === 'alert'));
 
   /* ---------- destructibles: explosive barrels + breakable glass ---------- */
   function raySegAABB(o, d, mn, mx, maxT) {
@@ -6854,11 +7001,11 @@ RT.ui = (() => {
       ? '<kbd>WASD</kbd> move · <kbd>ARROWS</kbd> look · <kbd>F</kbd> fire (hold) · <kbd>Q</kbd> aim<br>' +
         '<kbd>E</kbd> use · <kbd>R</kbd> reload · <kbd>1–4</kbd> weapons · <kbd>SHIFT</kbd> / <kbd>W·W</kbd> sprint<br>' +
         '<kbd>C</kbd> crouch/slide · <kbd>SPACE</kbd> jump/mantle · <kbd>Z</kbd>/<kbd>X</kbd> lean · <kbd>I</kbd> inspect<br>' +
-        '<kbd>G</kbd> grenade (hold) · <kbd>H</kbd> medkit · <kbd>ESC</kbd> pause'
+        '<kbd>G</kbd> frag (hold) · <kbd>B</kbd> smoke · <kbd>H</kbd> medkit · <kbd>ESC</kbd> pause'
       : '<kbd>WASD</kbd> move · <kbd>MOUSE</kbd> look · <kbd>LMB</kbd> fire · <kbd>RMB</kbd> aim<br>' +
         '<kbd>E/F</kbd> use · <kbd>R</kbd> reload · <kbd>1–4</kbd> weapons · <kbd>SHIFT</kbd> / <kbd>W·W</kbd> sprint<br>' +
         '<kbd>C</kbd> crouch/slide · <kbd>SPACE</kbd> jump/mantle · <kbd>Z</kbd>/<kbd>X</kbd> lean · <kbd>I</kbd> inspect<br>' +
-        '<kbd>G</kbd> grenade (hold) · <kbd>H</kbd> medkit · <kbd>ESC</kbd> pause';
+        '<kbd>G</kbd> frag (hold) · <kbd>B</kbd> smoke · <kbd>H</kbd> medkit · <kbd>ESC</kbd> pause';
   };
 
   /* ---------- fade / letterbox ---------- */
@@ -6934,7 +7081,7 @@ RT.ui = (() => {
     $('ammo-mag').textContent = st.ammo.mag;
     $('ammo-res').textContent = '/ ' + st.ammo.res;
     $('ammo-mag').style.color = st.ammo.mag === 0 ? '#e04c3c' : (st.ammo.mag <= cfg.mag * 0.25 ? '#e8a33d' : '#fff');
-    $('ammo-gren').textContent = 'FRAG × ' + RT.player.grenades;
+    $('ammo-gren').textContent = 'FRAG × ' + RT.player.grenades + (RT.player.smokes ? '   SMOKE × ' + RT.player.smokes : '');
   };
 
   /* ---------- subtitles ---------- */
@@ -7315,10 +7462,26 @@ RT.game = (() => {
     if (GA.state !== 'play') return;
     GA.state = 'dead';
     RT.input.unlock();
-    RT.ui.pulseVignette(1);
+    RT.weapons.setVisible(false);
+    RT.ui.pulseVignette(0.5);   // cinematic darkening, not a blackout — the killcam needs to be visible
+    /* killcam: orbit the death spot, framed on whoever's still shooting at you */
+    let killer = null, kd = 1e9;
+    for (const e of RT.ai.enemies) { if (e.dead) continue; const d = Math.hypot(e.x - RT.player.pos.x, e.z - RT.player.pos.z); if (d < kd) { kd = d; killer = e; } }
+    GA._killcam = { killer, t: 0, cx: RT.player.pos.x, cy: RT.player.pos.y, cz: RT.player.pos.z, dir: Math.random() < 0.5 ? 1 : -1 };
+    RT.ui.toast('KILLED IN ACTION', killer ? 'Last seen: hostile ' + (killer.kind || 'infantry') : 'Regrouping from checkpoint');
     RT.ui.say('DOC OKAFOR', 'Ridge is down! Medic—', 2);
-    setTimeout(() => GA.restartCheckpoint(), 2100);
+    setTimeout(() => { GA._killcam = null; GA.restartCheckpoint(); }, 3200);
   };
+  function updateKillcam(dt) {
+    const kc = GA._killcam, cam = RT.engine.camera;
+    kc.t += dt;
+    const orbit = kc.t * 0.55 * kc.dir;
+    cam.position.set(kc.cx + Math.cos(orbit) * 4.2, kc.cy + 1.7 + Math.sin(kc.t * 0.5) * 0.25, kc.cz + Math.sin(orbit) * 4.2);
+    const k = kc.killer;
+    if (k && !k.dead) cam.lookAt(k.x, k.y + 1.25, k.z);
+    else cam.lookAt(kc.cx, kc.cy + 0.5, kc.cz);
+    RT.engine.updateSun(cam.position);
+  }
 
   /* ---------- combat hooks ---------- */
   GA.onEnemyKilled = function (e, headshot) {
@@ -7438,6 +7601,10 @@ RT.game = (() => {
     combatStingerCd -= raw;
     RT.ui.update(raw);
     RT.audio.update(raw);
+    /* dynamic combat music (campaign): on during firefights + a short tail after */
+    const inCombat = GA.state === 'play' && !(RT.br && RT.br.active) && RT.ai.inCombat && RT.ai.inCombat();
+    if (inCombat) GA._combatHold = 5; else if (GA._combatHold > 0) GA._combatHold -= raw;
+    if (RT.audio) RT.audio.combatMusic(inCombat || GA._combatHold > 0);
     if (RT.br && (RT.br.active || GA.state === 'br')) RT.br.update(dt, raw);
     if (GA.state === 'br') return;
     if (GA.state === 'menu') { updateMenu(dt); return; }
@@ -7458,6 +7625,12 @@ RT.game = (() => {
             { color: [0x2b2926, 0x3a3733, 0x4a4540][(Math.random() * 3) | 0], size: 0.9 + Math.random() * 0.9, life: 3.4 + Math.random() * 2, grav: 0.75, drag: 0.9, grow: -0.35, alpha: 0.6 });
         }
       }
+    }
+    if (GA.state === 'dead' && GA._killcam) {
+      updateKillcam(dt);
+      if (!(RT.br && RT.br.active)) RT.ai.update(dt);
+      RT.weapons.updateShells(dt);
+      return;
     }
     if (GA.state === 'play' || GA.state === 'dead') {
       RT.player.update(dt);
@@ -7824,6 +7997,8 @@ RT.br = (() => {
     const info = def.buildMap(B);
     RT.engine.world.add(B.finalize());
     RT.map.info = info;
+    /* pick this match's weather (applied once BR is live so BR-only rain/fog dimming engages) */
+    BR.weather = ['clear', 'clear', 'overcast', 'fog', 'rain'][Math.floor(Math.random() * 5)];
     RT.engine.setWeather(null);
   }
 
@@ -8453,6 +8628,7 @@ RT.br = (() => {
       RT.player.init({ x: 0, z: 0, ry: 0 });
       RT.player.grenades = 0;
       BR.active = true;
+      if (BR.weather && BR.weather !== 'clear') RT.engine.setWeather(BR.weather);
       phase = 'fly';
       planeT = 0;
       deployed = false;
@@ -8678,6 +8854,7 @@ RT.br = (() => {
     if (nextRing) { RT.engine.scene.remove(nextRing); nextRing = null; }
     if (minimap) minimap.style.display = 'none';
     if (RT.audio) RT.audio.engineStop();
+    RT.engine.setWeather(null);   // clear fog/rain so it doesn't bleed into the campaign
     bots = []; lootItems = []; vehicles = []; curVehicle = null;
     rigPool.length = 0;
   };

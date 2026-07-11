@@ -143,6 +143,8 @@ RT.br = (() => {
     const info = def.buildMap(B);
     RT.engine.world.add(B.finalize());
     RT.map.info = info;
+    /* pick this match's weather (applied once BR is live so BR-only rain/fog dimming engages) */
+    BR.weather = ['clear', 'clear', 'overcast', 'fog', 'rain'][Math.floor(Math.random() * 5)];
     RT.engine.setWeather(null);
   }
 
@@ -772,6 +774,7 @@ RT.br = (() => {
       RT.player.init({ x: 0, z: 0, ry: 0 });
       RT.player.grenades = 0;
       BR.active = true;
+      if (BR.weather && BR.weather !== 'clear') RT.engine.setWeather(BR.weather);
       phase = 'fly';
       planeT = 0;
       deployed = false;
@@ -997,6 +1000,7 @@ RT.br = (() => {
     if (nextRing) { RT.engine.scene.remove(nextRing); nextRing = null; }
     if (minimap) minimap.style.display = 'none';
     if (RT.audio) RT.audio.engineStop();
+    RT.engine.setWeather(null);   // clear fog/rain so it doesn't bleed into the campaign
     bots = []; lootItems = []; vehicles = []; curVehicle = null;
     rigPool.length = 0;
   };

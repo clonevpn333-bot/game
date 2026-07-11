@@ -352,6 +352,39 @@ RT.audio = (() => {
     if (Math.random() < 0.35) tone(mus, t + 1.3, 1.6, { type: 'triangle', freq: [110, 130.8, 164.8][(Math.random() * 3) | 0], gain: 0.04 });
   }
 
+  /* ---------- dynamic combat music: driving bass bed + percussion ---------- */
+  let combatOn = false, combatGain = null, combatOsc = null, combatTimer = 0, combatBeat = 0;
+  AU.combatMusic = function (on) {
+    if (on === combatOn) return;
+    if (on && !AU.ensure()) return;
+    combatOn = on;
+    if (on && ctx) {
+      combatGain = ctx.createGain(); combatGain.gain.value = 0.0001; combatGain.connect(mus);
+      const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 49;
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 170; f.Q.value = 3;
+      const lfo = ctx.createOscillator(); lfo.frequency.value = 2.0; const lg = ctx.createGain(); lg.gain.value = 40;
+      lfo.connect(lg); lg.connect(f.frequency); lfo.start();
+      o.connect(f); f.connect(combatGain); o.start();
+      combatOsc = [o, lfo];
+      combatGain.gain.setTargetAtTime(0.42, now(), 0.7);
+    } else if (ctx && combatGain) {
+      const cg = combatGain, co = combatOsc; combatGain = null; combatOsc = null;
+      cg.gain.setTargetAtTime(0.0001, now(), 0.9);
+      setTimeout(() => { for (const n of co || []) { try { n.stop(); } catch (e) {} } try { cg.disconnect(); } catch (e) {} }, 1500);
+    }
+  };
+  function combatTick(dt) {
+    if (!combatOn || !ctx || !combatGain) return;
+    combatTimer -= dt;
+    if (combatTimer > 0) return;
+    combatTimer = 0.48;
+    const t = now();
+    noise(combatGain, t, 0.07, { type: 'bandpass', freq: 2000, q: 1.4, gain: 0.14, decay: 0.06 });   // hat
+    combatBeat = (combatBeat + 1) % 4;
+    if (combatBeat === 0) noise(combatGain, t, 0.16, { type: 'lowpass', freq: 150, gain: 0.5, decay: 0.14 }); // kick
+    if (combatBeat === 2) tone(combatGain, t, 0.14, { type: 'triangle', freq: 98, gain: 0.3 });              // pulse
+  }
+
   /* vehicle engine loop: filtered saw + noise, RPM-pitched */
   let engineNodes = null;
   AU.engineStart = function () {
@@ -385,6 +418,6 @@ RT.audio = (() => {
     nLayer(now(), { dur: 0.8, type: 'lowpass', f0: 120, f1: 60, gain: 0.12 * intensity, att: 0.2, verb: 0.3 });
   };
 
-  AU.update = function (dt) { ambientTick(dt); musicTick(dt); };
+  AU.update = function (dt) { ambientTick(dt); musicTick(dt); combatTick(dt); };
   return AU;
 })();

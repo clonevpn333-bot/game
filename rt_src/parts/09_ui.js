@@ -266,11 +266,11 @@ RT.ui = (() => {
       ? '<kbd>WASD</kbd> move · <kbd>ARROWS</kbd> look · <kbd>F</kbd> fire (hold) · <kbd>Q</kbd> aim<br>' +
         '<kbd>E</kbd> use · <kbd>R</kbd> reload · <kbd>1–4</kbd> weapons · <kbd>SHIFT</kbd> / <kbd>W·W</kbd> sprint<br>' +
         '<kbd>C</kbd> crouch/slide · <kbd>SPACE</kbd> jump/mantle · <kbd>Z</kbd>/<kbd>X</kbd> lean · <kbd>I</kbd> inspect<br>' +
-        '<kbd>G</kbd> grenade (hold) · <kbd>H</kbd> medkit · <kbd>ESC</kbd> pause'
+        '<kbd>G</kbd> frag (hold) · <kbd>B</kbd> smoke · <kbd>H</kbd> medkit · <kbd>ESC</kbd> pause'
       : '<kbd>WASD</kbd> move · <kbd>MOUSE</kbd> look · <kbd>LMB</kbd> fire · <kbd>RMB</kbd> aim<br>' +
         '<kbd>E/F</kbd> use · <kbd>R</kbd> reload · <kbd>1–4</kbd> weapons · <kbd>SHIFT</kbd> / <kbd>W·W</kbd> sprint<br>' +
         '<kbd>C</kbd> crouch/slide · <kbd>SPACE</kbd> jump/mantle · <kbd>Z</kbd>/<kbd>X</kbd> lean · <kbd>I</kbd> inspect<br>' +
-        '<kbd>G</kbd> grenade (hold) · <kbd>H</kbd> medkit · <kbd>ESC</kbd> pause';
+        '<kbd>G</kbd> frag (hold) · <kbd>B</kbd> smoke · <kbd>H</kbd> medkit · <kbd>ESC</kbd> pause';
   };
 
   /* ---------- fade / letterbox ---------- */
@@ -346,7 +346,7 @@ RT.ui = (() => {
     $('ammo-mag').textContent = st.ammo.mag;
     $('ammo-res').textContent = '/ ' + st.ammo.res;
     $('ammo-mag').style.color = st.ammo.mag === 0 ? '#e04c3c' : (st.ammo.mag <= cfg.mag * 0.25 ? '#e8a33d' : '#fff');
-    $('ammo-gren').textContent = 'FRAG × ' + RT.player.grenades;
+    $('ammo-gren').textContent = 'FRAG × ' + RT.player.grenades + (RT.player.smokes ? '   SMOKE × ' + RT.player.smokes : '');
   };
 
   /* ---------- subtitles ---------- */
