@@ -17,6 +17,8 @@ RT.br = (() => {
   const rigPool = [];
   let inv = { medkits: 0, armor: 0 };
   let medCast = -1;
+  let plane = null, planeActive = false, planeFlightT = 0;
+  const PLANE_CAM = new THREE.Vector3(0, 0.4, 7.6), PLANE_LOOK = new THREE.Vector3(0, -1.1, -15);
 
   const POIS = [
     { name: 'THUNDER CITY', x: 0, z: -140, r: 130 },
@@ -776,6 +778,16 @@ RT.br = (() => {
       RT.player.grenades = 0;
       BR.active = true;
       if (BR.weather && BR.weather !== 'clear') RT.engine.setWeather(BR.weather);
+      /* transport aircraft with jumpers aboard */
+      if (RT.aircraft) {
+        if (plane) RT.engine.scene.remove(plane);
+        plane = RT.aircraft.build();
+        RT.engine.scene.add(plane);
+        const js = RT.aircraft.buildJumpers(plane, 44);
+        for (const jm of js) jm.jumpAt = 1.6 + Math.random() * 11;
+        planeActive = true; planeFlightT = 0;
+        if (RT.audio && RT.audio.planeDrone) RT.audio.planeDrone(true);
+      }
       phase = 'fly';
       planeT = 0;
       deployed = false;
@@ -880,8 +892,26 @@ RT.br = (() => {
     setTimeout(() => RT.ui.showScreen('end-screen'), win ? 1600 : 700);
   }
 
+  /* fly the transport along the path; empty it of jumpers; retire it off-map */
+  function updatePlane(raw) {
+    if (!plane || !planeActive) return;
+    planeFlightT += raw;
+    const pp = planePos(planeFlightT);
+    plane.position.copy(pp);
+    plane.rotation.set(0, Math.atan2(planeDir.x, planeDir.z), -0.05);
+    plane.updateMatrixWorld(true);                 // keep the ride-along camera in sync
+    RT.aircraft.update(plane, raw, 1, planeFlightT > 1.2);
+    const js = plane.userData.jumpers;
+    if (js) for (const jm of js) {
+      if (!jm.jumped && planeFlightT > jm.jumpAt) { jm.jumped = true; jm.rig.group.visible = false; }
+    }
+    RT.aircraft.poseJumpers(plane, raw);
+    if (planeFlightT * 62 > 2100) { RT.engine.scene.remove(plane); planeActive = false; if (RT.audio && RT.audio.planeDrone) RT.audio.planeDrone(false); }
+  }
+
   BR.update = function (dt, raw) {
     if (!BR.active && phase !== 'end') return;
+    if (planeActive) updatePlane(raw);
     matchT += dt;
     /* time-of-day progression: golden hour → dusk over ~9 minutes */
     BR.duskK = clamp(matchT / 540, 0, 1);
@@ -906,19 +936,25 @@ RT.br = (() => {
 
     if (phase === 'fly') {
       planeT += dt;
-      const pp = planePos(planeT);
       const cam = RT.engine.camera;
-      cam.position.copy(pp);
-      cam.rotation.set(-0.5, Math.atan2(-planeDir.x, -planeDir.z), 0);
+      if (plane && planeActive) {
+        /* ride inside the hold, looking aft down the fuselage toward the open ramp */
+        const cp = plane.localToWorld(PLANE_CAM.clone());
+        const lp = plane.localToWorld(PLANE_LOOK.clone());
+        cam.position.copy(cp);
+        cam.lookAt(lp);
+        RT.player.pos.copy(cp);
+      } else {
+        const pp = planePos(planeFlightT);
+        cam.position.copy(pp); cam.rotation.set(-0.5, Math.atan2(-planeDir.x, -planeDir.z), 0);
+        RT.player.pos.copy(pp);
+      }
       RT.engine.updateSun(cam.position);
-      RT.player.pos.set(pp.x, pp.y, pp.z);
       if (planeT > 2 && (RT.input.pressed('Space') || RT.input.pressed('Mouse0'))) { phase = 'drop'; fallV = 4; deployed = false; RT.weapons.setVisible(false); }
-      if (planeT * 62 > 1560) { phase = 'drop'; fallV = 4; deployed = false; }
+      if (planeFlightT * 62 > 1560) { phase = 'drop'; fallV = 4; deployed = false; }
       /* bots drop along the path */
       for (const b of bots) {
-        if (!b.dropped && Math.random() < dt * 0.7 && planeT > 1.5) {
-          b.dropped = true;
-        }
+        if (!b.dropped && Math.random() < dt * 0.7 && planeFlightT > 1.5) b.dropped = true;
       }
       return;
     }
@@ -1001,8 +1037,10 @@ RT.br = (() => {
     phase = 'idle';
     if (storm) { RT.engine.scene.remove(storm); storm = null; }
     if (nextRing) { RT.engine.scene.remove(nextRing); nextRing = null; }
+    if (plane) { RT.engine.scene.remove(plane); plane = null; }
+    planeActive = false;
     if (minimap) minimap.style.display = 'none';
-    if (RT.audio) RT.audio.engineStop();
+    if (RT.audio) { RT.audio.engineStop(); if (RT.audio.planeDrone) RT.audio.planeDrone(false); }
     RT.engine.setWeather(null);   // clear fog/rain so it doesn't bleed into the campaign
     bots = []; lootItems = []; vehicles = []; curVehicle = null;
     rigPool.length = 0;

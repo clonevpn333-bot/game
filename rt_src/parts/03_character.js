@@ -362,6 +362,27 @@ RT.character = (() => {
       dampR(j.kneeR, 0.05 + crouch * 1.7, 0, 0, k, dt);
       dampR(j.ankR, -0.02 - crouch * 0.5, 0, 0, k, dt);
       if (rig.rifle) { rig.rifle.position.set(0.09, 0.02, 0.2); rig.rifle.rotation.set(0.7 + fl, -0.35, 0.1); }
+    } else if (a.mode === 'brace') {
+      /* standing in the aircraft, one hand up gripping the overhead static line, subtle sway */
+      const sway = Math.sin(t * 0.8 + a.phase * 3) * 0.05;
+      const br = Math.sin(t * 1.5 + a.phase) * 0.02;
+      j.hips.position.y = 0.94;
+      dampR(j.hips, 0.02, sway * 0.4, sway, k, dt);
+      dampR(j.spine, 0.05, 0, -sway * 0.6, k, dt);
+      dampR(j.chest, 0.05 + br, sway * 0.3, 0, k, dt);
+      dampR(j.neck, 0.04, sway, 0, k, dt);
+      dampR(j.head, 0.03 + a.aimPitch * 0.2, (a.lookYaw || 0) + sway * 1.4, 0, k, dt);
+      dampR(j.shR, -2.75, -0.15, 0.15, k, dt);    // right arm reaches up to the line
+      dampR(j.elR, -0.4, 0.1, 0, k, dt);
+      dampR(j.shL, -0.55, 0.25, 0.32, k, dt);     // left hand on the rifle
+      dampR(j.elL, -1.05, 0.45, 0, k, dt);
+      dampR(j.hipL, -0.06, 0, 0.06, k, dt);
+      dampR(j.kneeL, 0.12, 0, 0, k, dt);
+      dampR(j.ankL, -0.05, 0, 0, k, dt);
+      dampR(j.hipR, 0.05, 0, -0.06, k, dt);
+      dampR(j.kneeR, 0.09, 0, 0, k, dt);
+      dampR(j.ankR, -0.03, 0, 0, k, dt);
+      if (rig.rifle) { rig.rifle.position.set(0.08, -0.05, 0.16); rig.rifle.rotation.set(0.9, -0.4, 0.15); }
     } else if (a.mode === 'walk' || a.mode === 'run') {
       const run = a.mode === 'run';
       const sp = run ? 1 : 0.62;

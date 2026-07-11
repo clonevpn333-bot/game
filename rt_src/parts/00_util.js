@@ -126,6 +126,7 @@ function mergeGeos(list) {
   return out;
 }
 RT.mergeGeos = mergeGeos;
+RT.paintGeo = paintGeo;
 
 const G = {
   box(w, h, d, c, o) { return xform(paintGeo(new THREE.BoxGeometry(w, h, d), c, o && o.vary), o); },

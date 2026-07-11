@@ -451,6 +451,7 @@ function boot() {
   if (location.hash === '#soldier') { soldierViewer(); return finishBoot(); }
   if (location.hash === '#weapon') { weaponViewer(); return finishBoot(); }
   if (location.hash === '#map') { mapViewer(); return finishBoot(); }
+  if (location.hash === '#plane') { planeViewer(); return finishBoot(); }
 
   RT.weapons.init();
   RT.engine.onUpdate((dt, raw) => RT.game.update(dt, raw));
@@ -623,4 +624,32 @@ function soldierViewer() {
     RT.engine.updateSun(cam.position);
   });
   window.RT_VIEWER = { rigs };
+}
+
+/* ---------- Gate 1 viewer: the drop aircraft ---------- */
+function planeViewer() {
+  RT.engine.setAtmosphere({
+    top: 0x3a5f8e, horizon: 0xe7b878, ground: 0x6a7358,
+    sunDir: new THREE.Vector3(-0.5, 0.5, 0.3), sunColor: 0xffe0b0, sunIntensity: 2.0,
+    hemiSky: 0xbcd0e6, hemiGround: 0x5a5a4a, hemiIntensity: 0.5,
+    fogColor: 0xd8be94, fogDensity: 0.0009, exposure: 1.0, fillIntensity: 0.16,
+  });
+  const plane = RT.aircraft.build();
+  RT.engine.world.add(plane);
+  RT.aircraft.buildJumpers(plane, 40);
+  const cam = RT.engine.camera;
+  const params = new URLSearchParams(location.search);
+  const dist = parseFloat(params.get('dist') || '34');
+  const ang = parseFloat(params.get('ang') || '0.9');
+  const hy = parseFloat(params.get('hy') || '6');
+  const lx = parseFloat(params.get('lx') || '0'), ly = parseFloat(params.get('ly') || '1.5'), lz = parseFloat(params.get('lz') || '-1');
+  if (params.get('inside')) {
+    cam.position.set(parseFloat(params.get('cx') || '0'), parseFloat(params.get('cy') || '0'), parseFloat(params.get('cz') || '6'));
+    cam.lookAt(0, -1, -13);
+  } else {
+    cam.position.set(Math.sin(ang) * dist, hy, Math.cos(ang) * dist);
+    cam.lookAt(lx, ly, lz);
+  }
+  RT.engine.onUpdate((dt) => { RT.aircraft.update(plane, dt, 1, false); RT.aircraft.poseJumpers(plane, dt); RT.engine.updateSun(cam.position); });
+  window.RT_VIEWER = { plane };
 }
