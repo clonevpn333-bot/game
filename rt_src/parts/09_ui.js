@@ -93,6 +93,7 @@ RT.ui = (() => {
       '<button class="menu-btn" id="btn-campaign">Campaign</button>' +
       '<button class="menu-btn" id="btn-br">Thunderdrop <small style="color:var(--amber);letter-spacing:.2em;font-size:10px">· 50-PLAYER BR</small></button>' +
       '<button class="menu-btn" id="btn-continue">Continue</button>' +
+      '<button class="menu-btn" id="btn-armory">Armory</button>' +
       '<button class="menu-btn" id="btn-settings">Settings</button>' +
       '<button class="menu-btn" id="btn-credits">Credits</button></div>' +
       '<div class="menu-foot" style="margin-top:26px">Control scheme</div>' +

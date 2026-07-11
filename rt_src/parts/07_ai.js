@@ -557,6 +557,7 @@ RT.ai = (() => {
   function shatterGlass(d, px, py, pz) {
     if (d.broken) return;
     d.broken = true; d.mesh.visible = false;
+    if (RT.progress) RT.progress.tally('windows', 1);
     for (let i = 0; i < 16; i++) {
       const a = Math.random() * TAU;
       RT.engine.particle(px + (Math.random() - .5) * 0.3, py + (Math.random() - .5) * 0.5, pz + (Math.random() - .5) * 0.3,
@@ -589,7 +590,7 @@ RT.ai = (() => {
     for (let i = 0; i < 5; i++)
       RT.engine.particle(point.x, point.y, point.z, (Math.random() - .5) * 3, Math.random() * 3, (Math.random() - .5) * 3,
         { color: 0xffd98a, size: 0.04, life: 0.25, grav: -3, drag: 0.5 });
-    if (d.hp <= 0) explodeBarrel(d);
+    if (d.hp <= 0) { explodeBarrel(d); if (RT.progress) RT.progress.tally('barrels', 1); }
   }
   RT.blastDestructibles = blastDestructibles;
 

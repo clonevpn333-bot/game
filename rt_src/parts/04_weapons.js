@@ -519,6 +519,7 @@ RT.weapons = (() => {
     if (instant) {
       if (cur) vmRoot.remove(cur.root);
       const asm = assemble(id);
+      if (RT.progress) RT.progress.paintWeapon(asm.root);   // apply selected camo
       vmRoot.add(asm.root);
       cur = asm; curId = id; raiseK = 0.35; switchTo = null;   // raise animates in
       reloadT = -1; pumpT = -1; boltT = -1; cooldown = 0.2;

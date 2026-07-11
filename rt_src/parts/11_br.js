@@ -457,7 +457,7 @@ RT.br = (() => {
     b.target = 'player';
     if (b.hp <= 0) {
       killBot(b, from === 'player' ? 'RIDGE (you)' : from);
-      if (from === 'player') { stats.kills++; if (RT.game) { RT.game.stats.kills++; RT.game.killFx(head); } }
+      if (from === 'player') { stats.kills++; if (RT.game) { RT.game.stats.kills++; RT.game.killFx(head); } if (RT.progress) RT.progress.onKill(head, true); }
       return true;
     }
     return false;
@@ -860,6 +860,7 @@ RT.br = (() => {
     RT.$('st-kills').textContent = stats.kills;
     RT.$('st-acc').textContent = Math.round(stats.dmg);
     RT.$('st-heads').textContent = win ? 'CHAMPION' : '#' + placement + ' / 50';
+    if (RT.progress) RT.progress.onBRResult(placement, stats.kills, win);
     RT.$('btn-next').disabled = true;
     RT.$('btn-retry').textContent = 'Drop Again';
     RT.$('btn-retry').onclick = () => RT.br.startMatch();

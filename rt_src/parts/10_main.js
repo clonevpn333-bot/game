@@ -184,6 +184,7 @@ RT.game = (() => {
     GA.stats.kills++;
     if (headshot) GA.stats.heads++;
     GA.killFx(headshot);
+    if (RT.progress) RT.progress.onKill(headshot, false);
   };
   /* brief kill-confirmation hitstop; stronger on headshots, rate-limited, test-safe */
   GA.killFx = function (big) {
@@ -225,6 +226,7 @@ RT.game = (() => {
     if (!prev || time < prev.time) RT.ui.progress.best[id] = { time: Math.round(time), acc, kills: GA.stats.kills };
     RT.ui.progress.unlocked = Math.max(RT.ui.progress.unlocked, Math.min(RT.missions.length, GA.missionIdx + 2));
     RT.ui.saveProgress();
+    if (RT.progress) RT.progress.onMissionComplete(id, time, acc);
     RT.$('st-l-time').textContent = 'TIME';
     RT.$('st-l-kills').textContent = 'ENEMIES ELIMINATED';
     RT.$('st-l-acc').textContent = 'ACCURACY';
@@ -348,6 +350,7 @@ function boot() {
   RT.engine.init();
   RT.input.init(RT.engine.renderer.domElement);
   RT.ui.init();
+  if (RT.progress) RT.progress.init();
 
   RT.engine.onUpdate((dt, raw) => {
     if (RT.transients) {
