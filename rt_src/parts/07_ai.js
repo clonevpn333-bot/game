@@ -83,8 +83,16 @@ RT.ai = (() => {
       const rig = RT.character.build({ faction: 'ally', seed: 100 + i * 7, headgear: d.headgear, paletteIdx: d.paletteIdx, rifle: true });
       const y = RT.map.groundAt(spawns[i].x, spawns[i].z, 999);
       rig.group.position.set(spawns[i].x, y, spawns[i].z);
+      /* subtle green rim tint so allies read as friendly at a glance */
+      if (!RT.MAT.allyStd) {
+        RT.MAT.allyStd = RT.MAT.std.clone();
+        RT.MAT.allyStd.emissive = new THREE.Color(0x0a2010);
+        RT.MAT.allyStd.emissiveIntensity = 0.55;
+      }
+      for (const m of rig.meshes) if (m.material === RT.MAT.std) m.material = RT.MAT.allyStd;
       RT.engine.world.add(rig.group);
       allies.push({
+        hp: 100, down: false,
         rig, name: d.name, x: spawns[i].x, z: spawns[i].z, y,
         state: 'follow', fireCd: Math.random() * 2, target: null, losT: Math.random() * 0.4,
         offset: [(i - 1) * 2.2 - 1, 2.2 + i * 1.3], muzzle: mkMuzzleFlash(rig), moveTarget: null,
@@ -490,6 +498,9 @@ RT.ai = (() => {
     if (e.dead) return false;
     e.hp -= dmg * (headshot ? 2.4 : 1);
     e.rig.anim.flinch = 1;
+    /* immediate 1-frame jolt; the pose damp blends the recovery */
+    e.rig.j.chest.rotation.x -= headshot ? 0.2 : 0.13;
+    e.rig.j.head.rotation.z += (Math.random() - 0.5) * 0.24;
     if (e.state === 'guard' || e.state === 'patrol') {
       e.state = 'alert';
       e.lastKnown = { x: RT.player.pos.x, z: RT.player.pos.z };
@@ -540,6 +551,17 @@ RT.ai = (() => {
       const maxD = cfg.range || 160;
       const wall = RT.map.raycast(org.x, org.y, org.z, dir.x, dir.y, dir.z, maxD);
       const wallD = wall ? wall.dist : maxD;
+      /* friendly-fire guard: warn instead of damaging */
+      for (const al of allies) {
+        const rx = al.x - org.x, ry3 = (al.y + 1.15) - org.y, rz = al.z - org.z;
+        const t = rx * dir.x + ry3 * dir.y + rz * dir.z;
+        if (t < 0 || t > wallD) continue;
+        const cx = org.x + dir.x * t - al.x, cy = org.y + dir.y * t - (al.y + 1.0), cz = org.z + dir.z * t - al.z;
+        if (Math.hypot(cx, cy * 0.55, cz) < 0.42) {
+          if (RT.ui) RT.ui.friendlyWarn();
+          return;
+        }
+      }
       /* vs enemies: sphere tests at head/chest/pelvis/knees */
       let hitE = null, hitD = wallD, hitHead = false;
       for (const e of enemies) {

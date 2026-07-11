@@ -96,20 +96,25 @@ RT.game = (() => {
     showEngage('CLICK TO ENGAGE');
   }
 
+  GA.doEngage = function () {
+    if (GA.state !== 'engage') return;
+    engageEl.classList.add('hidden');
+    RT.input.lock();
+    RT.weapons.setVisible(true);
+    GA.state = 'play';
+  };
   function showEngage(text) {
     GA.state = 'engage';
     if (!engageEl) {
       engageEl = RT.el('div', '', document.body);
-      engageEl.style.cssText = 'position:fixed;inset:0;z-index:35;display:flex;align-items:center;justify-content:center;' +
-        'background:rgba(0,0,0,.25);cursor:pointer;font-size:17px;letter-spacing:.4em;color:#fff;text-transform:uppercase;text-shadow:0 2px 8px #000';
-      engageEl.onclick = () => {
-        engageEl.classList.add('hidden');
-        RT.input.lock();
-        RT.weapons.setVisible(true);
-        GA.state = 'play';
-      };
+      engageEl.style.cssText = 'position:fixed;inset:0;z-index:35;display:flex;flex-direction:column;gap:26px;align-items:center;justify-content:center;' +
+        'background:rgba(0,0,0,.25);cursor:pointer;color:#fff;text-shadow:0 2px 8px #000;text-align:center';
+      engageEl.onclick = GA.doEngage;
     }
-    engageEl.textContent = text;
+    const kb = RT.input.keyboardMode();
+    engageEl.innerHTML =
+      `<div style="font-size:17px;letter-spacing:.4em;text-transform:uppercase">${kb ? 'CLICK OR PRESS ENTER' : text}</div>` +
+      `<div class="paused-note" style="margin-top:0">${RT.ui.controlsCard()}</div>`;
     engageEl.classList.remove('hidden');
   }
 
@@ -117,6 +122,7 @@ RT.game = (() => {
     if (GA.state !== 'play') return;
     GA.state = 'pause';
     RT.input.unlock();
+    if (RT.$('pause-controls')) RT.$('pause-controls').innerHTML = RT.ui.controlsCard();
     RT.ui.showScreen('pause-screen');
   };
   GA.resume = function () {
@@ -270,7 +276,11 @@ RT.game = (() => {
     RT.audio.update(raw);
     if (GA.state === 'menu') { updateMenu(dt); return; }
     if (GA.state === 'cutscene') { updateCutscene(raw); RT.ai.update(dt * 0.25); return; }
-    if (GA.state === 'engage' || GA.state === 'pause') return;
+    if (GA.state === 'engage') {
+      if (RT.input.pressed('Enter') || RT.input.pressed('NumpadEnter')) GA.doEngage();
+      return;
+    }
+    if (GA.state === 'pause') return;
     /* smoke column beacons */
     if (RT.map && RT.map.smokeSources && (GA.state === 'play' || GA.state === 'cutscene' || GA.state === 'menu' || GA.state === 'engage')) {
       for (const s of RT.map.smokeSources) {

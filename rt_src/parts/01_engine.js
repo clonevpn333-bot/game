@@ -4,6 +4,8 @@
  * ============================================================ */
 RT.settings = {
   sens: 1.0, fov: 80, volume: 0.8, quality: 1, // 0 low, 1 high
+  controls: 'mouse',      // 'mouse' | 'keyboard' (trackpad-friendly, no pointer lock)
+  aimAssist: 2,           // 0 off, 1 low, 2 high (keyboard mode only)
 };
 try {
   const s = JSON.parse(localStorage.getItem('rt_settings') || 'null');
@@ -389,25 +391,34 @@ RT.input = (() => {
   I.pressed = k => { const v = pressed[k]; pressed[k] = false; return v; };
   I.consumeMouse = () => { const r = [I.mdx, I.mdy]; I.mdx = I.mdy = 0; return r; };
 
+  I.keyboardMode = () => RT.settings.controls === 'keyboard';
   I.init = function (dom) {
     document.addEventListener('keydown', e => {
       if (e.repeat) return;
       I.keys[e.code] = true; pressed[e.code] = true;
       if (['Space', 'Tab', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+      if (I.keyboardMode()) {
+        if (e.code === 'KeyF') { I.fire = true; pressed.Mouse0 = true; }
+        if (e.code === 'KeyQ') { I.aim = true; pressed.Aim = true; }
+      }
       if (e.code === 'KeyL') { I.fallback = !I.fallback; if (RT.ui) RT.ui.toastMsg(I.fallback ? 'ARROW-KEY LOOK ENABLED' : 'ARROW-KEY LOOK DISABLED'); }
     });
-    document.addEventListener('keyup', e => { I.keys[e.code] = false; });
+    document.addEventListener('keyup', e => {
+      I.keys[e.code] = false;
+      if (e.code === 'KeyF' && I.keyboardMode()) I.fire = false;
+      if (e.code === 'KeyQ' && I.keyboardMode()) I.aim = false;
+    });
     dom.addEventListener('mousemove', e => {
       if (!I.locked) return;
       I.mdx += e.movementX; I.mdy += e.movementY;
     });
     dom.addEventListener('mousedown', e => {
-      if (e.button === 0) { I.fire = true; pressed.Mouse0 = true; }
-      if (e.button === 2) { I.aim = true; pressed.Mouse2 = true; }
+      if (e.button === 0) { I.fire = true; pressed.Mouse0 = true; }   // trackpad click fires too
+      if (e.button === 2) { I.aim = true; pressed.Mouse2 = true; pressed.Aim = true; }
     });
     dom.addEventListener('mouseup', e => {
-      if (e.button === 0) I.fire = false;
-      if (e.button === 2) I.aim = false;
+      if (e.button === 0 && !(I.keyboardMode() && I.keys.KeyF)) I.fire = false;
+      if (e.button === 2) I.aim = I.keyboardMode() && I.keys.KeyQ;
     });
     dom.addEventListener('contextmenu', e => e.preventDefault());
     dom.addEventListener('wheel', e => { I.wheel += Math.sign(e.deltaY); });
@@ -421,7 +432,10 @@ RT.input = (() => {
     });
     I.dom = dom;
   };
-  I.lock = () => { try { I.dom.requestPointerLock(); } catch (e) { I.fallback = true; } };
+  I.lock = () => {
+    if (I.keyboardMode()) return;                 // keyboard scheme never locks the pointer
+    try { I.dom.requestPointerLock(); } catch (e) { I.fallback = true; }
+  };
   I.unlock = () => { if (I.locked) document.exitPointerLock(); };
   return I;
 })();

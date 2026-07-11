@@ -8,7 +8,7 @@ RT.missions = [];
 RT.missions.push({
   id: 1, title: 'FIRST LIGHT', sub: 'Velkan Ridge — Dawn',
   desc: 'Dawn assault on occupied farmland. Clear the farmhouses, hold the barn.',
-  loadout: ['m4', 'pistol'],
+  loadout: ['m4', 'shotgun', 'pistol'],
   atmosphere: {
     top: 0x2e4a6e, horizon: 0xe89a55, ground: 0x54483a,
     sunDir: new THREE.Vector3(-0.75, 0.22, -0.35), sunColor: 0xffb866, sunIntensity: 2.0,
@@ -318,7 +318,7 @@ RT.missions[0].objectives = function (M, info) {
 RT.missions.push({
   id: 2, title: 'DEAD WIRE', sub: 'Kestrel Town — 0230 Hours',
   desc: 'Night infiltration of a ruined town in the rain. Cut their comms, survive the answer.',
-  loadout: ['m4', 'pistol'],
+  loadout: ['m4', 'dmr', 'pistol'],
   stealth: true, weather: 'rain', ambient: 'rain',
   atmosphere: {
     top: 0x060b14, horizon: 0x14202e, ground: 0x0a0d12,
@@ -472,7 +472,7 @@ RT.missions[1].objectives = function (M) {
 RT.missions.push({
   id: 3, title: 'THE CROSSING', sub: 'Sarn Gorge — 1700 Hours',
   desc: 'Fight through the cliffside village and drop the last bridge over the gorge.',
-  loadout: ['dmr', 'm4'],
+  loadout: ['dmr', 'm4', 'pistol'],
   weather: null, ambient: 'birds',
   atmosphere: {
     top: 0x35537a, horizon: 0xd9b083, ground: 0x584c3c,
@@ -670,7 +670,7 @@ RT.missions[2].objectives = function (M) {
 RT.missions.push({
   id: 4, title: 'HOLLOW POINT', sub: 'Bren District — 0900 Hours',
   desc: 'Overcast urban clear. Room by room, breach by breach.',
-  loadout: ['shotgun', 'm4'],
+  loadout: ['shotgun', 'm4', 'pistol'],
   weather: null, ambient: 'none',
   atmosphere: {
     top: 0x5d666e, horizon: 0x9aa0a2, ground: 0x4c4a45,
@@ -803,7 +803,7 @@ RT.missions[3].objectives = function (M) {
 RT.missions.push({
   id: 5, title: 'ROLLING THUNDER', sub: 'Volan Hill — The Storm',
   desc: 'The hilltop fortress. Break the wall, take the courtyard, burn the command bunker. End it.',
-  loadout: ['m4', 'shotgun'],
+  loadout: ['m4', 'shotgun', 'pistol'],
   weather: 'storm', ambient: 'storm',
   atmosphere: {
     top: 0x141a24, horizon: 0x3a4148, ground: 0x14161a,

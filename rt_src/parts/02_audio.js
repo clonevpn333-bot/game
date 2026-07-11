@@ -4,26 +4,97 @@
  * ============================================================ */
 RT.audio = (() => {
   const AU = {};
-  let ctx = null, master, sfx, amb, mus;
+  let ctx = null, master, comp, sfx, amb, mus, duck, verb, verbGain, shaper;
   let noiseBuf = null;
   let ambNodes = [], ambType = null, ambTimer = 0;
   let musicNodes = [], musicOn = false, musicTimer = 0;
+  let distantVoices = 0;
+  AU._nodes = 0;   // synthesis-layer counter (test hook)
 
   AU.ensure = function () {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return true; }
     try {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
     } catch (e) { return false; }
-    master = ctx.createGain(); master.gain.value = RT.settings.volume; master.connect(ctx.destination);
+    /* mix bus: master gain → compressor glue → destination */
+    comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -16; comp.knee.value = 14; comp.ratio.value = 5;
+    comp.attack.value = 0.004; comp.release.value = 0.18;
+    comp.connect(ctx.destination);
+    master = ctx.createGain(); master.gain.value = RT.settings.volume; master.connect(comp);
     sfx = ctx.createGain(); sfx.gain.value = 0.9; sfx.connect(master);
-    amb = ctx.createGain(); amb.gain.value = 0.5; amb.connect(master);
+    duck = ctx.createGain(); duck.gain.value = 1;          // ambient duck bus
+    duck.connect(master);
+    amb = ctx.createGain(); amb.gain.value = 0.5; amb.connect(duck);
     mus = ctx.createGain(); mus.gain.value = 0.42; mus.connect(master);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    /* convolution reverb with a GENERATED impulse response:
+     * 2s stereo decaying noise burst = outdoor tail */
+    const irLen = ctx.sampleRate * 2;
+    const ir = ctx.createBuffer(2, irLen, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const cd = ir.getChannelData(ch);
+      for (let i = 0; i < irLen; i++) {
+        const t = i / irLen;
+        cd[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 2.4) * Math.exp(-3.2 * t) * 0.5;
+      }
+    }
+    verb = ctx.createConvolver(); verb.buffer = ir;
+    verbGain = ctx.createGain(); verbGain.gain.value = 0.6;
+    verb.connect(verbGain); verbGain.connect(master);
+    /* distortion waveshaper for gunshot cracks */
+    const curve = new Float32Array(256);
+    for (let i = 0; i < 256; i++) { const x = i / 128 - 1; curve[i] = Math.tanh(x * 3.2); }
+    shaper = ctx.createWaveShaper(); shaper.curve = curve; shaper.connect(sfx);
     return true;
   };
   AU.setVolume = v => { if (master) master.gain.value = v; };
+
+  /* ---------- layer helpers (each = one voice in the stack) ---------- */
+  function nLayer(t0, o) {
+    if (!ctx) return;
+    AU._nodes++;
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf; src.loop = true;
+    src.playbackRate.value = (o.rate || 1) * (0.94 + Math.random() * 0.12);
+    const f = ctx.createBiquadFilter();
+    f.type = o.type || 'bandpass';
+    f.frequency.setValueAtTime(o.f0, t0);
+    if (o.f1) f.frequency.exponentialRampToValueAtTime(Math.max(25, o.f1), t0 + o.dur);
+    f.Q.value = o.q || 0.9;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(o.gain, t0 + (o.att || 0.0015));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+    src.connect(f); f.connect(g);
+    g.connect(o.shaped ? shaper : sfx);
+    if (o.verb) { const vs = ctx.createGain(); vs.gain.value = o.verb; g.connect(vs); vs.connect(verb); }
+    src.start(t0); src.stop(t0 + o.dur + 0.05);
+  }
+  function tLayer(t0, o) {
+    if (!ctx) return;
+    AU._nodes++;
+    const osc = ctx.createOscillator();
+    osc.type = o.type || 'sine';
+    osc.frequency.setValueAtTime(o.f0, t0);
+    if (o.f1) osc.frequency.exponentialRampToValueAtTime(Math.max(20, o.f1), t0 + o.dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(o.gain, t0 + (o.att || 0.002));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+    osc.connect(g); g.connect(sfx);
+    if (o.verb) { const vs = ctx.createGain(); vs.gain.value = o.verb; g.connect(vs); vs.connect(verb); }
+    osc.start(t0); osc.stop(t0 + o.dur + 0.05);
+  }
+  /* gunshots duck the ambient bed ~4dB for 200ms */
+  function duckAmbient(t0) {
+    if (!ctx) return;
+    duck.gain.cancelScheduledValues(t0);
+    duck.gain.setTargetAtTime(0.62, t0, 0.012);
+    duck.gain.setTargetAtTime(1.0, t0 + 0.2, 0.09);
+  }
 
   function noise(dest, t0, dur, { type = 'lowpass', freq = 1000, q = 1, gain = 0.5, att = 0.002, decay = null, freqEnd = null } = {}) {
     if (!ctx) return;
@@ -54,49 +125,51 @@ RT.audio = (() => {
   }
   const now = () => ctx ? ctx.currentTime : 0;
 
-  /* ---------- weapons ---------- */
+  /* ---------- weapons: layered synthesis (crack/body/sub/tick/tail) ---------- */
+  const SHOT_RECIPES = {
+    rifle:   { crackDur: 0.011, crackG: 0.5, bodyDur: 0.085, bodyF: 850, bodyG: 0.55, subF: 42, subDur: 0.055, subG: 0.62, verb: 0.32 },
+    dmr:     { crackDur: 0.014, crackG: 0.62, bodyDur: 0.12, bodyF: 700, bodyG: 0.68, subF: 40, subDur: 0.09, subG: 0.8, verb: 0.52 },
+    shotgun: { crackDur: 0.012, crackG: 0.45, bodyDur: 0.13, bodyF: 600, bodyG: 0.85, subF: 38, subDur: 0.1, subG: 0.95, verb: 0.42, wide: true },
+    pistol:  { crackDur: 0.009, crackG: 0.42, bodyDur: 0.06, bodyF: 1000, bodyG: 0.42, subF: 48, subDur: 0.04, subG: 0.4, verb: 0.16 },
+  };
   AU.gunshot = function (profile) {
     if (!AU.ensure()) return;
     const t = now();
-    if (profile === 'rifle') {
-      tone(sfx, t, 0.03, { type: 'square', freq: 2200, freqEnd: 300, gain: 0.18 });
-      noise(sfx, t, 0.16, { type: 'bandpass', freq: 800, q: 0.8, gain: 0.5, decay: 0.14 });
-      tone(sfx, t, 0.11, { freq: 110, freqEnd: 45, gain: 0.5 });
-      noise(sfx, t, 0.34, { type: 'lowpass', freq: 2400, freqEnd: 300, gain: 0.2, decay: 0.32 });
-    } else if (profile === 'dmr') {
-      tone(sfx, t, 0.035, { type: 'square', freq: 1800, freqEnd: 200, gain: 0.2 });
-      noise(sfx, t, 0.2, { type: 'bandpass', freq: 550, q: 0.7, gain: 0.62, decay: 0.18 });
-      tone(sfx, t, 0.16, { freq: 90, freqEnd: 38, gain: 0.62 });
-      noise(sfx, t, 0.55, { type: 'lowpass', freq: 1800, freqEnd: 200, gain: 0.24, decay: 0.5 });
-    } else if (profile === 'shotgun') {
-      noise(sfx, t, 0.22, { type: 'lowpass', freq: 1500, freqEnd: 250, gain: 0.75, decay: 0.2 });
-      tone(sfx, t, 0.18, { freq: 75, freqEnd: 34, gain: 0.7 });
-      noise(sfx, t, 0.5, { type: 'lowpass', freq: 900, freqEnd: 150, gain: 0.25, decay: 0.45 });
-    } else { // pistol
-      tone(sfx, t, 0.02, { type: 'square', freq: 2600, freqEnd: 500, gain: 0.16 });
-      noise(sfx, t, 0.1, { type: 'bandpass', freq: 1100, q: 1, gain: 0.42, decay: 0.09 });
-      tone(sfx, t, 0.07, { freq: 130, freqEnd: 60, gain: 0.35 });
-      noise(sfx, t, 0.2, { type: 'lowpass', freq: 2000, freqEnd: 400, gain: 0.12, decay: 0.18 });
-    }
+    const r = SHOT_RECIPES[profile] || SHOT_RECIPES.rifle;
+    const v = 0.96 + Math.random() * 0.08;                              // ±4% per shot
+    /* 1. crack: hard-attack HP noise through the waveshaper */
+    nLayer(t, { dur: r.crackDur, type: 'highpass', f0: 2500, gain: r.crackG * v, att: 0.001, shaped: true, verb: r.verb * 0.5 });
+    /* 2. body: bandpass sweep 800→300 */
+    nLayer(t, { dur: r.bodyDur, type: 'bandpass', f0: r.bodyF * v, f1: 300, q: 0.8, gain: r.bodyG * v, verb: r.verb });
+    if (r.wide) nLayer(t, { dur: r.bodyDur * 1.3, type: 'bandpass', f0: 420, f1: 200, q: 0.7, gain: r.bodyG * 0.7, verb: r.verb });
+    /* 3. sub-thump: pitch-dropping sine, felt more than heard */
+    tLayer(t, { f0: r.subF * v, f1: 25, dur: r.subDur, gain: r.subG * v, verb: r.verb * 0.4 });
+    /* 4. mechanical tick (bolt cycling) */
+    nLayer(t + 0.012, { dur: 0.005, type: 'bandpass', f0: 3200, q: 2.5, gain: 0.16 });
+    duckAmbient(t);
   };
   AU.enemyShot = function (dist) {
     if (!AU.ensure()) return;
+    if (distantVoices > 6) return;                                      // voice pool cap
+    distantVoices++;
+    setTimeout(() => { distantVoices--; }, 350);
     const t = now();
-    const att = clamp(1 - dist / 110, 0.12, 0.85);
-    noise(sfx, t, 0.13, { type: 'bandpass', freq: clamp(900 - dist * 5, 260, 900), q: 0.9, gain: 0.34 * att, decay: 0.12 });
-    tone(sfx, t, 0.09, { freq: 100, freqEnd: 45, gain: 0.3 * att });
-    if (dist > 40) noise(sfx, t + 0.02, 0.3, { type: 'lowpass', freq: 500, gain: 0.1 * att, decay: 0.28 });
+    const att = clamp(1 - dist / 120, 0.1, 0.85);
+    /* distant = lowpassed body + long tail, no crack */
+    nLayer(t, { dur: 0.1 + dist * 0.0006, type: 'lowpass', f0: clamp(1600 - dist * 11, 320, 1600), gain: 0.4 * att, verb: clamp(dist / 90, 0.25, 0.75) });
+    tLayer(t, { f0: 46, f1: 26, dur: 0.06, gain: 0.32 * att, verb: 0.2 });
+    if (dist < 30) nLayer(t, { dur: 0.008, type: 'highpass', f0: 2600, gain: 0.2, shaped: true });
   };
   AU.allyShot = function () {
     if (!AU.ensure()) return;
     const t = now();
-    noise(sfx, t, 0.12, { type: 'bandpass', freq: 750, q: 0.8, gain: 0.22, decay: 0.11 });
-    tone(sfx, t, 0.08, { freq: 105, freqEnd: 48, gain: 0.2 });
+    nLayer(t, { dur: 0.075, type: 'bandpass', f0: 800, f1: 320, gain: 0.3, verb: 0.25 });
+    tLayer(t, { f0: 44, f1: 27, dur: 0.045, gain: 0.3 });
   };
   AU.crack = function () {
+    /* supersonic near-miss snap: 2ms HP tick */
     if (!ctx) return;
-    const t = now();
-    noise(sfx, t, 0.035, { type: 'highpass', freq: 2800, gain: 0.3, decay: 0.03 });
+    nLayer(now(), { dur: 0.0025, type: 'highpass', f0: 3600, gain: 0.34, att: 0.0006, shaped: true, verb: 0.12 });
   };
   AU.dryClick = () => { if (AU.ensure()) tone(sfx, now(), 0.03, { type: 'square', freq: 900, gain: 0.12 }); };
   AU.magOut = () => { if (ctx) { tone(sfx, now(), 0.04, { type: 'square', freq: 500, gain: 0.1 }); noise(sfx, now(), 0.05, { freq: 1200, gain: 0.08 }); } };

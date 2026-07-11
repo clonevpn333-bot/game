@@ -435,6 +435,8 @@ RT.fmtTime = fmtTime;
  * ============================================================ */
 RT.settings = {
   sens: 1.0, fov: 80, volume: 0.8, quality: 1, // 0 low, 1 high
+  controls: 'mouse',      // 'mouse' | 'keyboard' (trackpad-friendly, no pointer lock)
+  aimAssist: 2,           // 0 off, 1 low, 2 high (keyboard mode only)
 };
 try {
   const s = JSON.parse(localStorage.getItem('rt_settings') || 'null');
@@ -820,25 +822,34 @@ RT.input = (() => {
   I.pressed = k => { const v = pressed[k]; pressed[k] = false; return v; };
   I.consumeMouse = () => { const r = [I.mdx, I.mdy]; I.mdx = I.mdy = 0; return r; };
 
+  I.keyboardMode = () => RT.settings.controls === 'keyboard';
   I.init = function (dom) {
     document.addEventListener('keydown', e => {
       if (e.repeat) return;
       I.keys[e.code] = true; pressed[e.code] = true;
       if (['Space', 'Tab', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+      if (I.keyboardMode()) {
+        if (e.code === 'KeyF') { I.fire = true; pressed.Mouse0 = true; }
+        if (e.code === 'KeyQ') { I.aim = true; pressed.Aim = true; }
+      }
       if (e.code === 'KeyL') { I.fallback = !I.fallback; if (RT.ui) RT.ui.toastMsg(I.fallback ? 'ARROW-KEY LOOK ENABLED' : 'ARROW-KEY LOOK DISABLED'); }
     });
-    document.addEventListener('keyup', e => { I.keys[e.code] = false; });
+    document.addEventListener('keyup', e => {
+      I.keys[e.code] = false;
+      if (e.code === 'KeyF' && I.keyboardMode()) I.fire = false;
+      if (e.code === 'KeyQ' && I.keyboardMode()) I.aim = false;
+    });
     dom.addEventListener('mousemove', e => {
       if (!I.locked) return;
       I.mdx += e.movementX; I.mdy += e.movementY;
     });
     dom.addEventListener('mousedown', e => {
-      if (e.button === 0) { I.fire = true; pressed.Mouse0 = true; }
-      if (e.button === 2) { I.aim = true; pressed.Mouse2 = true; }
+      if (e.button === 0) { I.fire = true; pressed.Mouse0 = true; }   // trackpad click fires too
+      if (e.button === 2) { I.aim = true; pressed.Mouse2 = true; pressed.Aim = true; }
     });
     dom.addEventListener('mouseup', e => {
-      if (e.button === 0) I.fire = false;
-      if (e.button === 2) I.aim = false;
+      if (e.button === 0 && !(I.keyboardMode() && I.keys.KeyF)) I.fire = false;
+      if (e.button === 2) I.aim = I.keyboardMode() && I.keys.KeyQ;
     });
     dom.addEventListener('contextmenu', e => e.preventDefault());
     dom.addEventListener('wheel', e => { I.wheel += Math.sign(e.deltaY); });
@@ -852,7 +863,10 @@ RT.input = (() => {
     });
     I.dom = dom;
   };
-  I.lock = () => { try { I.dom.requestPointerLock(); } catch (e) { I.fallback = true; } };
+  I.lock = () => {
+    if (I.keyboardMode()) return;                 // keyboard scheme never locks the pointer
+    try { I.dom.requestPointerLock(); } catch (e) { I.fallback = true; }
+  };
   I.unlock = () => { if (I.locked) document.exitPointerLock(); };
   return I;
 })();
@@ -865,26 +879,97 @@ RT.input = (() => {
  * ============================================================ */
 RT.audio = (() => {
   const AU = {};
-  let ctx = null, master, sfx, amb, mus;
+  let ctx = null, master, comp, sfx, amb, mus, duck, verb, verbGain, shaper;
   let noiseBuf = null;
   let ambNodes = [], ambType = null, ambTimer = 0;
   let musicNodes = [], musicOn = false, musicTimer = 0;
+  let distantVoices = 0;
+  AU._nodes = 0;   // synthesis-layer counter (test hook)
 
   AU.ensure = function () {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return true; }
     try {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
     } catch (e) { return false; }
-    master = ctx.createGain(); master.gain.value = RT.settings.volume; master.connect(ctx.destination);
+    /* mix bus: master gain → compressor glue → destination */
+    comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -16; comp.knee.value = 14; comp.ratio.value = 5;
+    comp.attack.value = 0.004; comp.release.value = 0.18;
+    comp.connect(ctx.destination);
+    master = ctx.createGain(); master.gain.value = RT.settings.volume; master.connect(comp);
     sfx = ctx.createGain(); sfx.gain.value = 0.9; sfx.connect(master);
-    amb = ctx.createGain(); amb.gain.value = 0.5; amb.connect(master);
+    duck = ctx.createGain(); duck.gain.value = 1;          // ambient duck bus
+    duck.connect(master);
+    amb = ctx.createGain(); amb.gain.value = 0.5; amb.connect(duck);
     mus = ctx.createGain(); mus.gain.value = 0.42; mus.connect(master);
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    /* convolution reverb with a GENERATED impulse response:
+     * 2s stereo decaying noise burst = outdoor tail */
+    const irLen = ctx.sampleRate * 2;
+    const ir = ctx.createBuffer(2, irLen, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const cd = ir.getChannelData(ch);
+      for (let i = 0; i < irLen; i++) {
+        const t = i / irLen;
+        cd[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 2.4) * Math.exp(-3.2 * t) * 0.5;
+      }
+    }
+    verb = ctx.createConvolver(); verb.buffer = ir;
+    verbGain = ctx.createGain(); verbGain.gain.value = 0.6;
+    verb.connect(verbGain); verbGain.connect(master);
+    /* distortion waveshaper for gunshot cracks */
+    const curve = new Float32Array(256);
+    for (let i = 0; i < 256; i++) { const x = i / 128 - 1; curve[i] = Math.tanh(x * 3.2); }
+    shaper = ctx.createWaveShaper(); shaper.curve = curve; shaper.connect(sfx);
     return true;
   };
   AU.setVolume = v => { if (master) master.gain.value = v; };
+
+  /* ---------- layer helpers (each = one voice in the stack) ---------- */
+  function nLayer(t0, o) {
+    if (!ctx) return;
+    AU._nodes++;
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuf; src.loop = true;
+    src.playbackRate.value = (o.rate || 1) * (0.94 + Math.random() * 0.12);
+    const f = ctx.createBiquadFilter();
+    f.type = o.type || 'bandpass';
+    f.frequency.setValueAtTime(o.f0, t0);
+    if (o.f1) f.frequency.exponentialRampToValueAtTime(Math.max(25, o.f1), t0 + o.dur);
+    f.Q.value = o.q || 0.9;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(o.gain, t0 + (o.att || 0.0015));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+    src.connect(f); f.connect(g);
+    g.connect(o.shaped ? shaper : sfx);
+    if (o.verb) { const vs = ctx.createGain(); vs.gain.value = o.verb; g.connect(vs); vs.connect(verb); }
+    src.start(t0); src.stop(t0 + o.dur + 0.05);
+  }
+  function tLayer(t0, o) {
+    if (!ctx) return;
+    AU._nodes++;
+    const osc = ctx.createOscillator();
+    osc.type = o.type || 'sine';
+    osc.frequency.setValueAtTime(o.f0, t0);
+    if (o.f1) osc.frequency.exponentialRampToValueAtTime(Math.max(20, o.f1), t0 + o.dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(o.gain, t0 + (o.att || 0.002));
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+    osc.connect(g); g.connect(sfx);
+    if (o.verb) { const vs = ctx.createGain(); vs.gain.value = o.verb; g.connect(vs); vs.connect(verb); }
+    osc.start(t0); osc.stop(t0 + o.dur + 0.05);
+  }
+  /* gunshots duck the ambient bed ~4dB for 200ms */
+  function duckAmbient(t0) {
+    if (!ctx) return;
+    duck.gain.cancelScheduledValues(t0);
+    duck.gain.setTargetAtTime(0.62, t0, 0.012);
+    duck.gain.setTargetAtTime(1.0, t0 + 0.2, 0.09);
+  }
 
   function noise(dest, t0, dur, { type = 'lowpass', freq = 1000, q = 1, gain = 0.5, att = 0.002, decay = null, freqEnd = null } = {}) {
     if (!ctx) return;
@@ -915,49 +1000,51 @@ RT.audio = (() => {
   }
   const now = () => ctx ? ctx.currentTime : 0;
 
-  /* ---------- weapons ---------- */
+  /* ---------- weapons: layered synthesis (crack/body/sub/tick/tail) ---------- */
+  const SHOT_RECIPES = {
+    rifle:   { crackDur: 0.011, crackG: 0.5, bodyDur: 0.085, bodyF: 850, bodyG: 0.55, subF: 42, subDur: 0.055, subG: 0.62, verb: 0.32 },
+    dmr:     { crackDur: 0.014, crackG: 0.62, bodyDur: 0.12, bodyF: 700, bodyG: 0.68, subF: 40, subDur: 0.09, subG: 0.8, verb: 0.52 },
+    shotgun: { crackDur: 0.012, crackG: 0.45, bodyDur: 0.13, bodyF: 600, bodyG: 0.85, subF: 38, subDur: 0.1, subG: 0.95, verb: 0.42, wide: true },
+    pistol:  { crackDur: 0.009, crackG: 0.42, bodyDur: 0.06, bodyF: 1000, bodyG: 0.42, subF: 48, subDur: 0.04, subG: 0.4, verb: 0.16 },
+  };
   AU.gunshot = function (profile) {
     if (!AU.ensure()) return;
     const t = now();
-    if (profile === 'rifle') {
-      tone(sfx, t, 0.03, { type: 'square', freq: 2200, freqEnd: 300, gain: 0.18 });
-      noise(sfx, t, 0.16, { type: 'bandpass', freq: 800, q: 0.8, gain: 0.5, decay: 0.14 });
-      tone(sfx, t, 0.11, { freq: 110, freqEnd: 45, gain: 0.5 });
-      noise(sfx, t, 0.34, { type: 'lowpass', freq: 2400, freqEnd: 300, gain: 0.2, decay: 0.32 });
-    } else if (profile === 'dmr') {
-      tone(sfx, t, 0.035, { type: 'square', freq: 1800, freqEnd: 200, gain: 0.2 });
-      noise(sfx, t, 0.2, { type: 'bandpass', freq: 550, q: 0.7, gain: 0.62, decay: 0.18 });
-      tone(sfx, t, 0.16, { freq: 90, freqEnd: 38, gain: 0.62 });
-      noise(sfx, t, 0.55, { type: 'lowpass', freq: 1800, freqEnd: 200, gain: 0.24, decay: 0.5 });
-    } else if (profile === 'shotgun') {
-      noise(sfx, t, 0.22, { type: 'lowpass', freq: 1500, freqEnd: 250, gain: 0.75, decay: 0.2 });
-      tone(sfx, t, 0.18, { freq: 75, freqEnd: 34, gain: 0.7 });
-      noise(sfx, t, 0.5, { type: 'lowpass', freq: 900, freqEnd: 150, gain: 0.25, decay: 0.45 });
-    } else { // pistol
-      tone(sfx, t, 0.02, { type: 'square', freq: 2600, freqEnd: 500, gain: 0.16 });
-      noise(sfx, t, 0.1, { type: 'bandpass', freq: 1100, q: 1, gain: 0.42, decay: 0.09 });
-      tone(sfx, t, 0.07, { freq: 130, freqEnd: 60, gain: 0.35 });
-      noise(sfx, t, 0.2, { type: 'lowpass', freq: 2000, freqEnd: 400, gain: 0.12, decay: 0.18 });
-    }
+    const r = SHOT_RECIPES[profile] || SHOT_RECIPES.rifle;
+    const v = 0.96 + Math.random() * 0.08;                              // ±4% per shot
+    /* 1. crack: hard-attack HP noise through the waveshaper */
+    nLayer(t, { dur: r.crackDur, type: 'highpass', f0: 2500, gain: r.crackG * v, att: 0.001, shaped: true, verb: r.verb * 0.5 });
+    /* 2. body: bandpass sweep 800→300 */
+    nLayer(t, { dur: r.bodyDur, type: 'bandpass', f0: r.bodyF * v, f1: 300, q: 0.8, gain: r.bodyG * v, verb: r.verb });
+    if (r.wide) nLayer(t, { dur: r.bodyDur * 1.3, type: 'bandpass', f0: 420, f1: 200, q: 0.7, gain: r.bodyG * 0.7, verb: r.verb });
+    /* 3. sub-thump: pitch-dropping sine, felt more than heard */
+    tLayer(t, { f0: r.subF * v, f1: 25, dur: r.subDur, gain: r.subG * v, verb: r.verb * 0.4 });
+    /* 4. mechanical tick (bolt cycling) */
+    nLayer(t + 0.012, { dur: 0.005, type: 'bandpass', f0: 3200, q: 2.5, gain: 0.16 });
+    duckAmbient(t);
   };
   AU.enemyShot = function (dist) {
     if (!AU.ensure()) return;
+    if (distantVoices > 6) return;                                      // voice pool cap
+    distantVoices++;
+    setTimeout(() => { distantVoices--; }, 350);
     const t = now();
-    const att = clamp(1 - dist / 110, 0.12, 0.85);
-    noise(sfx, t, 0.13, { type: 'bandpass', freq: clamp(900 - dist * 5, 260, 900), q: 0.9, gain: 0.34 * att, decay: 0.12 });
-    tone(sfx, t, 0.09, { freq: 100, freqEnd: 45, gain: 0.3 * att });
-    if (dist > 40) noise(sfx, t + 0.02, 0.3, { type: 'lowpass', freq: 500, gain: 0.1 * att, decay: 0.28 });
+    const att = clamp(1 - dist / 120, 0.1, 0.85);
+    /* distant = lowpassed body + long tail, no crack */
+    nLayer(t, { dur: 0.1 + dist * 0.0006, type: 'lowpass', f0: clamp(1600 - dist * 11, 320, 1600), gain: 0.4 * att, verb: clamp(dist / 90, 0.25, 0.75) });
+    tLayer(t, { f0: 46, f1: 26, dur: 0.06, gain: 0.32 * att, verb: 0.2 });
+    if (dist < 30) nLayer(t, { dur: 0.008, type: 'highpass', f0: 2600, gain: 0.2, shaped: true });
   };
   AU.allyShot = function () {
     if (!AU.ensure()) return;
     const t = now();
-    noise(sfx, t, 0.12, { type: 'bandpass', freq: 750, q: 0.8, gain: 0.22, decay: 0.11 });
-    tone(sfx, t, 0.08, { freq: 105, freqEnd: 48, gain: 0.2 });
+    nLayer(t, { dur: 0.075, type: 'bandpass', f0: 800, f1: 320, gain: 0.3, verb: 0.25 });
+    tLayer(t, { f0: 44, f1: 27, dur: 0.045, gain: 0.3 });
   };
   AU.crack = function () {
+    /* supersonic near-miss snap: 2ms HP tick */
     if (!ctx) return;
-    const t = now();
-    noise(sfx, t, 0.035, { type: 'highpass', freq: 2800, gain: 0.3, decay: 0.03 });
+    nLayer(now(), { dur: 0.0025, type: 'highpass', f0: 3600, gain: 0.34, att: 0.0006, shaped: true, verb: 0.12 });
   };
   AU.dryClick = () => { if (AU.ensure()) tone(sfx, now(), 0.03, { type: 'square', freq: 900, gain: 0.12 }); };
   AU.magOut = () => { if (ctx) { tone(sfx, now(), 0.04, { type: 'square', freq: 500, gain: 0.1 }); noise(sfx, now(), 0.05, { freq: 1200, gain: 0.08 }); } };
@@ -1857,6 +1944,7 @@ RT.weapons = (() => {
     trigger: { index: [0.5, 0.4, 0.25], middle: [1.2, 1.25, 0.95], ring: [1.28, 1.28, 0.95], pinky: [1.32, 1.25, 0.9], thumb: [0.55, 0.7], thumbMode: 'wrap' },
     grip:    { index: [1.15, 1.2, 0.9], middle: [1.22, 1.25, 0.95], ring: [1.28, 1.28, 0.95], pinky: [1.32, 1.25, 0.9], thumb: [0.6, 0.75], thumbMode: 'wrap' },
     support: { index: [1.08, 1.15, 0.85], middle: [1.15, 1.22, 0.9], ring: [1.2, 1.22, 0.9], pinky: [1.25, 1.18, 0.85], thumb: [0.1, 0.12], thumbMode: 'rail' },
+    open:    { index: [0.22, 0.18, 0.12], middle: [0.25, 0.2, 0.14], ring: [0.28, 0.2, 0.14], pinky: [0.3, 0.22, 0.15], thumb: [0.18, 0.15], thumbMode: 'wrap' },
     cup:     { index: [0.72, 0.85, 0.6], middle: [0.8, 0.9, 0.65], ring: [0.85, 0.9, 0.65], pinky: [0.9, 0.85, 0.6], thumb: [0.3, 0.4], thumbMode: 'rail' },
   };
 
@@ -1992,12 +2080,19 @@ RT.weapons = (() => {
 
   function buildArm(side, skin, sleeve, grip, poseName) {
     const grp = new THREE.Group();
-    const geos = buildGloveHand(side, poseName);
-    geos.push(...buildForearm(side, skin, sleeve));
-    const arm = RT.meshOf(geos, RT.MAT.skin, false);
-    if (grip.fdir) arm.quaternion.copy(gripQuat(grip.fdir, grip.pdir));
-    else arm.rotation.fromArray(grip.rot);
-    grp.add(arm);
+    const mk = (pn) => {
+      const geos = buildGloveHand(side, pn);
+      geos.push(...buildForearm(side, skin, sleeve));
+      const m = RT.meshOf(geos, RT.MAT.skin, false);
+      if (grip.fdir) m.quaternion.copy(gripQuat(grip.fdir, grip.pdir));
+      else m.rotation.fromArray(grip.rot);
+      return m;
+    };
+    const closed = mk(poseName);
+    const open = mk('open');
+    open.visible = false;
+    grp.add(closed); grp.add(open);
+    grp.userData.setOpen = v => { closed.visible = !v; open.visible = !!v; };
     return grp;
   }
 
@@ -2035,7 +2130,8 @@ RT.weapons = (() => {
   let vmRoot = null, cur = null, curId = null;
   let loadout = [];      // array of ids
   const ammo = {};       // id -> {mag, res}
-  let adsK = 0, raiseK = 0, switchTo = null;
+  let adsK = 0, adsT = 0, fovPunch = 0, raiseK = 0, switchTo = null;
+  const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
   let reloadT = -1, reloadStage = 0, shellsToLoad = 0;
   let cooldown = 0, pumpT = -1, boltT = -1, flashT = 0, slideBack = 0;
   let recP = 0, recY = 0, vmZ = 0, bobT = 0;
@@ -2117,8 +2213,11 @@ RT.weapons = (() => {
       if (cur) vmRoot.remove(cur.root);
       const asm = assemble(id);
       vmRoot.add(asm.root);
-      cur = asm; curId = id; raiseK = 1; switchTo = null;
+      cur = asm; curId = id; raiseK = 0.35; switchTo = null;   // raise animates in
       reloadT = -1; pumpT = -1; boltT = -1; cooldown = 0.2;
+      if (asm.armL.userData.setOpen) asm.armL.userData.setOpen(false);
+      asm._reloadPose = null;
+      asm.armL.position.copy(asm.armLHome);
     } else if (curId !== id) {
       switchTo = id; reloadT = -1;
     }
@@ -2145,15 +2244,19 @@ RT.weapons = (() => {
       equip(loadout[idx]);
     } else I.wheel = 0;
     if (switchTo) {
-      raiseK -= dt * 5;
+      raiseK -= dt / 0.16;               // fast lower
       if (raiseK <= 0) { const t = switchTo; switchTo = null; equip(t, true); raiseK = 0; }
-    } else if (raiseK < 1) raiseK = Math.min(1, raiseK + dt * 4);
+    } else if (raiseK < 1) raiseK = Math.min(1, raiseK + dt / 0.2);  // fast raise (≤380ms total)
 
-    /* ADS */
+    /* ADS: ≤140ms in, ≤110ms out, ease-out both ways + FOV punch at alignment */
     const wantAds = I.aim && !opts.sprinting && reloadT < 0 && !switchTo && raiseK > 0.9;
-    adsK = damp(adsK, wantAds ? 1 : 0, 12, dt);
+    const adsPrevT = adsT;
+    adsT = clamp(adsT + (wantAds ? dt / 0.14 : -dt / 0.11), 0, 1);
+    adsK = wantAds || adsT > adsPrevT ? easeOutCubic(adsT) : 1 - easeOutCubic(1 - adsT);
+    if (adsPrevT < 1 && adsT >= 1) fovPunch = 2;                     // 1-frame punch as sights align
+    fovPunch = damp(fovPunch, 0, 28, dt);
     const baseFov = RT.settings.fov;
-    RT.engine.camera.fov = lerp(baseFov, cfg.adsFov, adsK * adsK * (3 - 2 * adsK));
+    RT.engine.camera.fov = lerp(baseFov, cfg.adsFov, adsK) - fovPunch;
     RT.engine.camera.updateProjectionMatrix();
     if (cfg.scope && RT.$('scope')) RT.$('scope').style.opacity = adsK > 0.82 ? 1 : 0;
     else if (RT.$('scope')) RT.$('scope').style.opacity = 0;
@@ -2225,7 +2328,7 @@ RT.weapons = (() => {
     const swayY = clamp(mdy * 0.01, -0.018, 0.018) * (1 - adsK * 0.9);
     const bobX = Math.sin(bobT) * 0.009 * speedF * (1 - adsK * 0.9);
     const bobY = -Math.abs(Math.cos(bobT)) * 0.011 * speedF * (1 - adsK * 0.85);
-    vmZ = Math.min(0, vmZ + dt * 0.35);
+    vmZ = Math.min(0, damp(vmZ, 0, 10, dt));   // kick instant, recovery exponential
 
     const hip = cfg.hip;
     const sight = cur.parts.sight;
@@ -2235,15 +2338,17 @@ RT.weapons = (() => {
     const py = lerp(hip[1], adsPos[1], k2) + swayY + bobY + breathe;
     const pz = lerp(hip[2], adsPos[2], k2) + vmZ;
     /* sprint + raise/lower pose */
-    const lowerK = 1 - raiseK;
-    const sprintK = damp(cur._sprintK || 0, opts.sprinting ? 1 : 0, 8, dt);
+    const lowerK = 1 - easeOutCubic(raiseK);
+    /* raise overshoot: 3° tilt bump that settles as the weapon arrives */
+    const overTilt = (!switchTo && raiseK > 0.72 && raiseK < 1) ? Math.sin((raiseK - 0.72) / 0.28 * Math.PI) * 0.052 : 0;
+    const sprintK = damp(cur._sprintK || 0, opts.sprinting ? 1 : 0, opts.sprinting ? 15 : 7.5, dt); // snap in, settle out
     cur._sprintK = sprintK;
     const rl = cur._reloadPose || { rx: 0, rz: 0, y: 0 };
     cur.root.position.set(px + sprintK * -0.06, py - lowerK * 0.45 - sprintK * 0.07 + rl.y, pz + sprintK * 0.06);
     cur.root.rotation.set(
       -vmZ * 2.2 + lowerK * 0.9 + sprintK * 0.55 + swayY * 1.4 + rl.rx,
       swayX * 1.6 + sprintK * 0.4,
-      sprintK * 0.25 + swayX * 0.8 + rl.rz);
+      sprintK * 0.25 + swayX * 0.8 + rl.rz + overTilt);
     RT.hud && RT.hud.setCrosshairSpread(currentSpread(opts) * 900, adsK);
   };
 
@@ -2349,37 +2454,67 @@ RT.weapons = (() => {
       reloadT = 0; reloadStage = 0;
     } else {
       reloadT = 0;
-      cur._magDropped = false; cur._magBack = false;
+      cur._magDropped = false; cur._magBack = false; cur._rack = false;
     }
     if (RT.audio) RT.audio.reloadStart();
   }
   W.startReload = startReload;
 
+  /* keyframed reloads: fast reaches, brief holds, snappy insertions,
+   * finger open/close states, weapon tilt + slap jolts */
+  const s01 = (k, a, b) => clamp((k - a) / (b - a), 0, 1);
+  const eo = easeOutCubic;
+  function setOpenL(v) { if (cur.armL.userData.setOpen) cur.armL.userData.setOpen(v); }
+  function armLTo(hx, hy, hz, k) {
+    cur.armL.position.set(
+      lerp(cur.armL.position.x, hx, k), lerp(cur.armL.position.y, hy, k), lerp(cur.armL.position.z, hz, k));
+  }
+
   function updateReload(dt) {
     const cfg = cur.cfg, am = ammo[curId];
-    if (cfg.pump) { // shell-by-shell
+    const H = cur.armLHome;
+    if (cfg.pump) { /* ------- shotgun: shell-by-shell, interruptible ------- */
+      /* fire cuts the reload short with what's loaded */
+      if (RT.input.fire && am.mag > 0) {
+        reloadT = -1; cur._reloadPose = null; setOpenL(false);
+        cur.armL.position.copy(H);
+        return;
+      }
       reloadT += dt;
       const per = cfg.reloadShell;
       const k = (reloadT % per) / per;
-      // weapon tilts, left hand pushes shells from below
-      const tl = Math.sin(Math.min(1, reloadT * 3) * Math.PI / 2);
-      cur._reloadPose = { rx: tl * 0.12, rz: tl * 0.4, y: -tl * 0.03 };
-      cur.armL.position.y = cur.armLHome.y - 0.1 + 0.1 * Math.sin(k * Math.PI);
-      cur.armL.position.z = cur.armLHome.z + 0.14 - 0.05 * Math.sin(k * Math.PI);
-      if (k > 0.55 && !cur._shellFed) {
+      const tl = eo(Math.min(1, reloadT * 4));
+      cur._reloadPose = { rx: tl * 0.1, rz: tl * 0.52, y: -tl * 0.028 };   // ~30° port-visible tilt
+      /* shuttle: reach down fast (open) → align → push-click (closed, nudge) */
+      const portY = H.y - 0.02, portZ = H.z + 0.17;
+      if (k < 0.42) {            // reach down-back fast, hand opens
+        const r = eo(s01(k, 0, 0.42));
+        cur.armL.position.set(H.x - 0.02, lerp(portY, portY - 0.15, 1 - r * 0 + (1 - r)), lerp(portZ, portZ + 0.1, 1 - r));
+        cur.armL.position.y = portY - 0.15 * (1 - r);
+        setOpenL(k > 0.06 && k < 0.3);
+      } else if (k < 0.62) {     // align at port (brief)
+        cur.armL.position.set(H.x - 0.02 + (k - 0.42) * 0.02, portY, portZ);
+        setOpenL(false);
+      } else {                   // push-click
+        cur.armL.position.set(H.x - 0.02, portY + 0.008, portZ - 0.02);
+      }
+      if (k > 0.64 && !cur._shellFed) {
         cur._shellFed = true;
         am.mag++; am.res--; shellsToLoad--;
+        cur._reloadPose.y += 0.01;                                   // insert nudge
         if (RT.audio) RT.audio.shellLoad();
       }
       if (k < 0.5) cur._shellFed = false;
       if (shellsToLoad <= 0 || am.res <= 0 || am.mag >= cfg.mag) {
         reloadT = -1;
         cur._reloadPose = null;
-        cur.armL.position.copy(cur.armLHome);
+        setOpenL(false);
+        cur.armL.position.copy(H);
         if (pumpT < 0 && !cur._chambered) { pumpT = 0; }
       }
       return;
     }
+
     reloadT += dt;
     const T = cfg.reloadT, k = reloadT / T;
     const mag = cur.parts.mag;
@@ -2388,42 +2523,91 @@ RT.weapons = (() => {
       const take = Math.min(cfg.mag - am.mag, am.res);
       am.mag += take; am.res -= take;
       if (mag) { mag.position.copy(cur.parts.magHome); mag.visible = true; }
-      cur.armL.position.copy(cur.armLHome);
+      cur.armL.position.copy(H);
+      setOpenL(false);
       cur._reloadPose = null;
       return;
     }
-    // stage motions
-    const tilt = Math.sin(Math.min(k / 0.15, 1) * Math.PI / 2) * (1 - smoothstep(0.85, 1, k));
-    cur._reloadPose = { rx: tilt * 0.14, rz: tilt * 0.38, y: -tilt * 0.02 };
-    if (mag) {
-      if (k > 0.16 && k < 0.45) { // mag out & falls
-        if (!cur._magDropped) {
-          cur._magDropped = true;
-          spawnFallingMag(mag);
-          mag.visible = false;
-          if (RT.audio) RT.audio.magOut();
+
+    if (cfg.slide) { /* ------- pistol: tilt, palm-heel insert, slide pinch ------- */
+      const tl = eo(s01(k, 0, 0.1)) * (1 - smoothstep(0.88, 1, k));
+      let jolt = 0;
+      if (k > 0.5 && k < 0.56) jolt = 0.012 * Math.exp(-(k - 0.5) * 60);         // palm-heel bump
+      cur._reloadPose = { rx: tl * 0.1, rz: -tl * 0.4, y: -tl * 0.02 + jolt };   // one-handed tilt inward
+      if (k < 0.08) { armLTo(H.x, H.y - 0.05, H.z, eo(s01(k, 0, 0.08))); }
+      else if (k < 0.3) {                                    // hand darts off with old mag out
+        if (!cur._magDropped) { cur._magDropped = true; if (mag) spawnFallingMag(mag); if (mag) mag.visible = false; if (RT.audio) RT.audio.magOut(); }
+        setOpenL(true);
+        armLTo(H.x - 0.06, H.y - 0.22, H.z + 0.1, eo(s01(k, 0.08, 0.3)));
+      } else if (k < 0.5) {                                  // return with mag, close on contact
+        if (mag) { mag.visible = true; mag.position.copy(cur.parts.magHome); mag.position.y -= (1 - eo(s01(k, 0.3, 0.5))) * 0.16; }
+        if (k > 0.44) setOpenL(false);
+        armLTo(H.x, H.y - 0.03, H.z + 0.02, eo(s01(k, 0.3, 0.5)));
+      } else if (k < 0.56) {                                 // slap
+        if (!cur._magBack) { cur._magBack = true; if (RT.audio) RT.audio.magIn(); }
+      } else if (k < 0.84) {                                 // pinch the slide, rack it
+        const p = eo(s01(k, 0.56, 0.68));
+        armLTo(H.x + 0.02, H.y + 0.1, H.z + 0.05, p);        // hand up to the slide
+        if (k > 0.68 && k < 0.76) cur.parts.action.position.z = 0.028 * eo(s01(k, 0.68, 0.74));
+        else if (k >= 0.76) {
+          if (!cur._rack) { cur._rack = true; if (RT.audio) RT.audio.boltRack(); }
+          cur.parts.action.position.z = Math.max(0, cur.parts.action.position.z - dt * 1.4); // slide snaps home
         }
-      } else if (k >= 0.55 && k < 0.92) { // new mag rides hand up
-        mag.visible = true;
-        const rise = smoothstep(0.55, 0.8, k);
-        mag.position.copy(cur.parts.magHome);
-        mag.position.y -= (1 - rise) * 0.22;
-        mag.position.z += (1 - rise) * 0.05;
-        if (!cur._magBack && rise >= 1) { cur._magBack = true; if (RT.audio) RT.audio.magIn(); }
+      } else {                                               // settle back with overshoot
+        const p = s01(k, 0.84, 1);
+        const os = 1 + 0.05 * Math.sin(Math.min(1, p * 1.4) * Math.PI);
+        cur.armL.position.set(H.x * os, lerp(cur.armL.position.y, H.y, eo(p)) * 1, H.z);
+        armLTo(H.x, H.y, H.z, eo(p));
       }
-      // left hand follows mag
-      if (k > 0.16 && k < 0.92) {
-        const hk = k < 0.45 ? smoothstep(0.16, 0.3, k) : 1 - smoothstep(0.55, 0.85, k);
-        cur.armL.position.y = cur.armLHome.y - hk * 0.24;
-        cur.armL.position.z = cur.armLHome.z + hk * 0.22;
-      } else cur.armL.position.copy(cur.armLHome);
+      return;
     }
-    // action gesture at the end (bolt release / slide rack)
-    if (k > 0.9 && cur.parts.action && !cfg.bolt) {
-      const ak = smoothstep(0.9, 0.94, k) - smoothstep(0.95, 1, k);
-      cur.parts.action.position.z = ak * (cfg.slide ? 0.028 : 0.03);
-      if (!cur._rack && k > 0.94) { cur._rack = true; if (RT.audio) RT.audio.boltRack(); }
-    } else cur._rack = false;
+
+    /* ------- AR / DMR: dart → drop mag → off-screen → arc back → SLAP → bolt flick → settle ------- */
+    const droop = eo(s01(k, 0.02, 0.14)) * (1 - smoothstep(0.86, 0.97, k));
+    let tiltZ = droop * 0.32, tiltX = droop * 0.11, dy2 = -droop * 0.022;
+    let jolt = 0;
+    if (k > 0.72 && k < 0.78) jolt = 0.014 * Math.exp(-(k - 0.72) * 55);          // mag SLAP jolt
+    /* bolt-flick window: weapon tilts right so the player sees the release */
+    if (k > 0.76 && k < 0.9) tiltZ = -eo(s01(k, 0.76, 0.82)) * (1 - smoothstep(0.86, 0.9, k)) * 0.14;
+    cur._reloadPose = { rx: tiltX, rz: tiltZ, y: dy2 + jolt };
+    if (k < 0.05) {                                          // hand leaves handguard FAST
+      armLTo(H.x + 0.03, H.y - 0.06, H.z + 0.14, eo(s01(k, 0, 0.05)));
+    } else if (k < 0.16) {                                   // hits mag release; mag drops; darts away
+      if (!cur._magDropped && k > 0.07) {
+        cur._magDropped = true;
+        if (mag) { spawnFallingMag(mag); mag.visible = false; }
+        if (RT.audio) RT.audio.magOut();
+      }
+      setOpenL(k > 0.1);                                     // fingers open mid-travel
+      armLTo(H.x - 0.09, H.y - 0.26, H.z + 0.16, eo(s01(k, 0.05, 0.16)));
+    } else if (k < 0.5) {
+      /* off-screen beat */
+    } else if (k < 0.72) {                                   // returns with the new mag in an arc
+      const p = eo(s01(k, 0.5, 0.72));
+      const arc = Math.sin(p * Math.PI) * 0.05;
+      if (mag) {
+        mag.visible = true;
+        mag.position.copy(cur.parts.magHome);
+        mag.position.y -= (1 - p) * 0.24;
+        mag.position.z += (1 - p) * 0.06 + arc * 0.3;
+      }
+      if (p > 0.75) setOpenL(false);                          // closes around the mag
+      armLTo(H.x + 0.02 - arc, H.y - 0.1 * (1 - p) - 0.06, H.z + 0.1 * (1 - p) + 0.06, p);
+    } else if (k < 0.76) {
+      if (!cur._magBack) { cur._magBack = true; if (RT.audio) RT.audio.magIn(); }
+    } else if (k < 0.9) {                                    // flick the bolt release
+      const p = eo(s01(k, 0.76, 0.84));
+      armLTo(H.x + 0.05, H.y + 0.07, H.z + 0.3, p);
+      if (cur.parts.action && !cfg.bolt) {
+        if (k > 0.82 && k < 0.86) cur.parts.action.position.z = 0.03;
+        else cur.parts.action.position.z = 0;
+        if (!cur._rack && k > 0.84) { cur._rack = true; if (RT.audio) RT.audio.boltRack(); }
+      }
+    } else {                                                 // snap back to handguard, overshoot-settle
+      const p = s01(k, 0.9, 1);
+      const over = Math.sin(Math.min(1, p * 1.35) * Math.PI) * 0.012;
+      armLTo(H.x - over, H.y + over * 0.5, H.z - over, eo(p));
+    }
   }
 
   function spawnFallingMag(mag) {
@@ -2466,8 +2650,35 @@ RT.player = (() => {
   let bobT = 0, speedF = 0, lookVelX = 0, lookVelY = 0;
   let kickP = 0, kickY = 0, recovP = 0;
   let grenades = 4, gCooking = -1;
+  let snapAnim = null, landT = 9, losT = 0, losOK = false, losTarget = null;
   const EYE = 1.62, EYE_C = 1.08, R = 0.34;
   const _shake = new THREE.Vector3();
+
+  /* nearest live enemy by angular distance from the crosshair (LOS-checked at 4Hz) */
+  function findAssistTarget() {
+    let best = null, bd = 0.12;
+    for (const e of RT.ai.enemies) {
+      if (e.dead) continue;
+      const dx = e.x - pos.x, dz = e.z - pos.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist < 2 || dist > 90) continue;
+      const wantYaw = Math.atan2(-dx, -dz);
+      let dYaw = (wantYaw - yaw + Math.PI) % TAU; if (dYaw < 0) dYaw += TAU; dYaw -= Math.PI;
+      const dPitch = Math.atan2((e.y + 1.2) - PL.eyeY(), dist) - pitch;
+      const ang = Math.hypot(dYaw, dPitch);
+      if (ang < bd) { bd = ang; best = { e, dYaw, dPitch, ang, dist }; }
+    }
+    if (!best) { losTarget = null; return null; }
+    losT -= RT.engine.frameMS / 1000;
+    if (losTarget !== best.e || losT <= 0) {
+      losT = 0.25; losTarget = best.e;
+      const dy = (best.e.y + 1.2) - PL.eyeY();
+      const d3 = Math.hypot(best.dist, dy);
+      losOK = !RT.map.raycast(pos.x, PL.eyeY(), pos.z,
+        (best.e.x - pos.x) / d3, dy / d3, (best.e.z - pos.z) / d3, d3 - 0.5);
+    }
+    return losOK ? best : null;
+  }
 
   Object.defineProperties(PL, {
     pos: { get: () => pos }, vel: { get: () => vel },
@@ -2538,24 +2749,62 @@ RT.player = (() => {
     /* look */
     let [mdx, mdy] = I.consumeMouse();
     if (RT.game && RT.game.testLockLook) { mdx = 0; mdy = 0; } // harness-controlled facing
-    if (I.fallback) {
-      const ls = 2.4 * dt * 400;
-      if (I.keys.ArrowLeft) mdx -= ls; if (I.keys.ArrowRight) mdx += ls;
-      if (I.keys.ArrowUp) mdy -= ls; if (I.keys.ArrowDown) mdy += ls;
+    const adsNow = RT.weapons && RT.weapons.state().adsK > 0.5;
+    const kbLook = I.keyboardMode() || I.fallback;
+
+    /* --- aim assist (keyboard scheme): slowdown / magnetism / ADS snap --- */
+    let assistSlow = 1;
+    const assistLvl = I.keyboardMode() ? RT.settings.aimAssist : 0;
+    if (assistLvl > 0 && RT.ai && RT.game && RT.game.state === 'play') {
+      const tgt = findAssistTarget();
+      if (tgt) {
+        const str = assistLvl === 2 ? 1 : 0.6;
+        if (tgt.ang < 0.07) assistSlow = lerp(1, 0.55, str);                     // slowdown zone ~4°
+        if (I.fire && tgt.ang < 0.0436) {                                        // soft magnetism ~2.5°
+          const step = 0.14 * str * dt;                                          // up to ~8°/s
+          yaw += clamp(tgt.dYaw, -step, step);
+          pitch += clamp(tgt.dPitch, -step, step);
+        }
+        if (I.pressed('Aim') && tgt.ang < 0.0873) {                              // snap-lite on ADS ~5°
+          snapAnim = { t: 0, yawLeft: tgt.dYaw * 0.4 * str, pitchLeft: tgt.dPitch * 0.4 * str };
+        }
+      }
     }
-    const sens = 0.0021 * RT.settings.sens * (RT.weapons && RT.weapons.state().adsK > 0.5 ? 0.6 : 1);
+    if (snapAnim) {
+      const k = Math.min(1, dt / 0.12);
+      yaw += snapAnim.yawLeft * k; pitch += snapAnim.pitchLeft * k;
+      snapAnim.yawLeft *= (1 - k); snapAnim.pitchLeft *= (1 - k);
+      snapAnim.t += dt;
+      if (snapAnim.t >= 0.12) snapAnim = null;
+    }
+
+    /* arrow-key look: 70°/s ramping to 160°/s over 0.35s, instant stop */
+    if (kbLook) {
+      const lx = (I.keys.ArrowRight ? 1 : 0) - (I.keys.ArrowLeft ? 1 : 0);
+      const ly = (I.keys.ArrowDown ? 1 : 0) - (I.keys.ArrowUp ? 1 : 0);
+      if (lx || ly) {
+        PL._lookHold = (PL._lookHold || 0) + dt;
+        const ramp = smoothstep(0, 0.35, PL._lookHold);
+        let rate = (70 + 90 * ramp) * DEG * RT.settings.sens * assistSlow;
+        if (adsNow) rate *= 0.45;
+        const ease = 0.55 + 0.45 * Math.min(1, PL._lookHold / 0.09); // analog-feel ease-in
+        yaw -= lx * rate * ease * dt;
+        pitch -= ly * rate * ease * dt;
+      } else PL._lookHold = 0;
+    }
+    const sens = 0.0021 * RT.settings.sens * (adsNow ? 0.6 : 1) * (I.keyboardMode() ? assistSlow : 1);
     yaw -= mdx * sens; pitch -= mdy * sens;
     pitch = clamp(pitch, -1.45, 1.45);
     lookVelX = damp(lookVelX, mdx / Math.max(dt, 0.001) / 800, 14, dt);
     lookVelY = damp(lookVelY, mdy / Math.max(dt, 0.001) / 800, 14, dt);
 
-    /* recoil: kick applies fast, partial recovery pulls back (frame-rate independent) */
-    const kApply = 1 - Math.exp(-26 * dt);
+    /* recoil: kick is near-instant (1-2 frames), recovery ~10 frames */
+    const kApply = 1 - Math.exp(-85 * dt);
     const dp = kickP * kApply, dy = kickY * kApply;
     pitch += dp; yaw += dy;
     kickP -= dp; kickY -= dy;
     recovP += dp * 0.55;
-    const rec = recovP * (1 - Math.exp(-5.5 * dt));
+    const rec = recovP * (1 - Math.exp(-9 * dt));
     pitch -= rec; recovP -= rec;
 
     if (dead) { crouchK = damp(crouchK, 1, 4, dt); applyCamera(dt); return; }
@@ -2568,7 +2817,8 @@ RT.player = (() => {
     const moving = wish.lengthSq() > 0;
     sprinting = I.keys.ShiftLeft && I.keys.KeyW && !wantCrouch && !I.aim;
     if (sprinting) wantCrouch = false;
-    crouchK = damp(crouchK, wantCrouch ? 1 : 0, 10, dt);
+    /* snap in, settle out */
+    crouchK = damp(crouchK, wantCrouch ? 1 : 0, wantCrouch ? 18 : 9, dt);
 
     /* movement */
     const adsK = RT.weapons ? RT.weapons.state().adsK : 0;
@@ -2592,9 +2842,13 @@ RT.player = (() => {
       if (og - pos.y > 0.5 && og - pos.y < 1.25) vel.y = 6.4;
       if (RT.audio) RT.audio.footstep(1);
     }
+    const fallSpeed = -vel.y;
     pos.y += vel.y * dt;
-    if (pos.y <= ground) { pos.y = ground; vel.y = 0; grounded = true; }
-    else grounded = pos.y - ground < 0.08;
+    if (pos.y <= ground) {
+      if (!grounded && fallSpeed > 3.5) { landT = 0; if (RT.audio) RT.audio.footstep(1); } // land dip
+      pos.y = ground; vel.y = 0; grounded = true;
+    } else grounded = pos.y - ground < 0.08;
+    landT += dt;
 
     collideMove(vel.x * dt, vel.z * dt);
 
@@ -2637,7 +2891,9 @@ RT.player = (() => {
     const bobY = Math.abs(Math.sin(bobT)) * bobA;
     const bobX = Math.sin(bobT * 0.5) * bobA * 0.6;
     RT.engine.getShakeOffset(_shake);
-    cam.position.set(pos.x + bobX * Math.cos(yaw) + _shake.x, PL.eyeY() + bobY + _shake.y + (dead ? -0.5 : 0), pos.z + bobX * Math.sin(yaw) + _shake.z);
+    /* jump-land dip: sharp 4cm drop over 60ms, recover over 220ms */
+    const dip = landT < 0.06 ? (landT / 0.06) * 0.04 : 0.04 * (1 - smoothstep(0.06, 0.28, landT));
+    cam.position.set(pos.x + bobX * Math.cos(yaw) + _shake.x, PL.eyeY() + bobY + _shake.y - dip + (dead ? -0.5 : 0), pos.z + bobX * Math.sin(yaw) + _shake.z);
     cam.rotation.set(pitch + _shake.x * 0.8, yaw + _shake.y * 0.8, _shake.z * 0.7 + (dead ? 0.4 : 0));
     RT.engine.updateSun(cam.position);
   }
@@ -2742,7 +2998,8 @@ RT.player = (() => {
       if (d < (it.r || 1.7) && d < bestD) { bestD = d; curInteract = it; }
     }
     if (RT.hud) RT.hud.setInteract(curInteract ? (curInteract.door ? (curInteract.door.breach ? 'BREACH' : (curInteract.door.open ? 'CLOSE' : 'OPEN')) : curInteract.label) : null);
-    if (curInteract && RT.input.pressed('KeyF')) {
+    const useKey = RT.input.pressed('KeyE') || (!RT.input.keyboardMode() && RT.input.pressed('KeyF'));
+    if (curInteract && useKey) {
       if (curInteract.door) {
         const dr = curInteract.door;
         if (dr.breach && !dr.open) {
@@ -4430,8 +4687,16 @@ RT.ai = (() => {
       const rig = RT.character.build({ faction: 'ally', seed: 100 + i * 7, headgear: d.headgear, paletteIdx: d.paletteIdx, rifle: true });
       const y = RT.map.groundAt(spawns[i].x, spawns[i].z, 999);
       rig.group.position.set(spawns[i].x, y, spawns[i].z);
+      /* subtle green rim tint so allies read as friendly at a glance */
+      if (!RT.MAT.allyStd) {
+        RT.MAT.allyStd = RT.MAT.std.clone();
+        RT.MAT.allyStd.emissive = new THREE.Color(0x0a2010);
+        RT.MAT.allyStd.emissiveIntensity = 0.55;
+      }
+      for (const m of rig.meshes) if (m.material === RT.MAT.std) m.material = RT.MAT.allyStd;
       RT.engine.world.add(rig.group);
       allies.push({
+        hp: 100, down: false,
         rig, name: d.name, x: spawns[i].x, z: spawns[i].z, y,
         state: 'follow', fireCd: Math.random() * 2, target: null, losT: Math.random() * 0.4,
         offset: [(i - 1) * 2.2 - 1, 2.2 + i * 1.3], muzzle: mkMuzzleFlash(rig), moveTarget: null,
@@ -4837,6 +5102,9 @@ RT.ai = (() => {
     if (e.dead) return false;
     e.hp -= dmg * (headshot ? 2.4 : 1);
     e.rig.anim.flinch = 1;
+    /* immediate 1-frame jolt; the pose damp blends the recovery */
+    e.rig.j.chest.rotation.x -= headshot ? 0.2 : 0.13;
+    e.rig.j.head.rotation.z += (Math.random() - 0.5) * 0.24;
     if (e.state === 'guard' || e.state === 'patrol') {
       e.state = 'alert';
       e.lastKnown = { x: RT.player.pos.x, z: RT.player.pos.z };
@@ -4887,6 +5155,17 @@ RT.ai = (() => {
       const maxD = cfg.range || 160;
       const wall = RT.map.raycast(org.x, org.y, org.z, dir.x, dir.y, dir.z, maxD);
       const wallD = wall ? wall.dist : maxD;
+      /* friendly-fire guard: warn instead of damaging */
+      for (const al of allies) {
+        const rx = al.x - org.x, ry3 = (al.y + 1.15) - org.y, rz = al.z - org.z;
+        const t = rx * dir.x + ry3 * dir.y + rz * dir.z;
+        if (t < 0 || t > wallD) continue;
+        const cx = org.x + dir.x * t - al.x, cy = org.y + dir.y * t - (al.y + 1.0), cz = org.z + dir.z * t - al.z;
+        if (Math.hypot(cx, cy * 0.55, cz) < 0.42) {
+          if (RT.ui) RT.ui.friendlyWarn();
+          return;
+        }
+      }
       /* vs enemies: sphere tests at head/chest/pelvis/knees */
       let hitE = null, hitD = wallD, hitHead = false;
       for (const e of enemies) {
@@ -4982,7 +5261,7 @@ RT.missions = [];
 RT.missions.push({
   id: 1, title: 'FIRST LIGHT', sub: 'Velkan Ridge — Dawn',
   desc: 'Dawn assault on occupied farmland. Clear the farmhouses, hold the barn.',
-  loadout: ['m4', 'pistol'],
+  loadout: ['m4', 'shotgun', 'pistol'],
   atmosphere: {
     top: 0x2e4a6e, horizon: 0xe89a55, ground: 0x54483a,
     sunDir: new THREE.Vector3(-0.75, 0.22, -0.35), sunColor: 0xffb866, sunIntensity: 2.0,
@@ -5292,7 +5571,7 @@ RT.missions[0].objectives = function (M, info) {
 RT.missions.push({
   id: 2, title: 'DEAD WIRE', sub: 'Kestrel Town — 0230 Hours',
   desc: 'Night infiltration of a ruined town in the rain. Cut their comms, survive the answer.',
-  loadout: ['m4', 'pistol'],
+  loadout: ['m4', 'dmr', 'pistol'],
   stealth: true, weather: 'rain', ambient: 'rain',
   atmosphere: {
     top: 0x060b14, horizon: 0x14202e, ground: 0x0a0d12,
@@ -5446,7 +5725,7 @@ RT.missions[1].objectives = function (M) {
 RT.missions.push({
   id: 3, title: 'THE CROSSING', sub: 'Sarn Gorge — 1700 Hours',
   desc: 'Fight through the cliffside village and drop the last bridge over the gorge.',
-  loadout: ['dmr', 'm4'],
+  loadout: ['dmr', 'm4', 'pistol'],
   weather: null, ambient: 'birds',
   atmosphere: {
     top: 0x35537a, horizon: 0xd9b083, ground: 0x584c3c,
@@ -5644,7 +5923,7 @@ RT.missions[2].objectives = function (M) {
 RT.missions.push({
   id: 4, title: 'HOLLOW POINT', sub: 'Bren District — 0900 Hours',
   desc: 'Overcast urban clear. Room by room, breach by breach.',
-  loadout: ['shotgun', 'm4'],
+  loadout: ['shotgun', 'm4', 'pistol'],
   weather: null, ambient: 'none',
   atmosphere: {
     top: 0x5d666e, horizon: 0x9aa0a2, ground: 0x4c4a45,
@@ -5777,7 +6056,7 @@ RT.missions[3].objectives = function (M) {
 RT.missions.push({
   id: 5, title: 'ROLLING THUNDER', sub: 'Volan Hill — The Storm',
   desc: 'The hilltop fortress. Break the wall, take the courtyard, burn the command bunker. End it.',
-  loadout: ['m4', 'shotgun'],
+  loadout: ['m4', 'shotgun', 'pistol'],
   weather: 'storm', ambient: 'storm',
   atmosphere: {
     top: 0x141a24, horizon: 0x3a4148, ground: 0x14161a,
@@ -6046,6 +6325,16 @@ RT.ui = (() => {
       '<div id="ammo"><div class="wname" id="ammo-name">M4A3</div>' +
       '<div class="mag"><span id="ammo-mag">30</span> <span id="ammo-res">/ 120</span></div>' +
       '<div class="gren" id="ammo-gren">FRAG × 4</div></div>' +
+      '<div id="hpwrap" style="position:absolute;left:34px;bottom:28px;text-shadow:0 1px 3px #000">' +
+      '<div style="display:flex;align-items:baseline;gap:10px"><span id="hp-num" style="font-size:26px;font-weight:800;color:#fff">100</span>' +
+      '<span style="font-size:10px;letter-spacing:.3em;color:var(--ink-dim)">HP</span></div>' +
+      '<div id="hp-bar" style="display:flex;gap:3px;width:220px;margin-top:5px">' +
+      [0, 1, 2, 3].map(i => `<div style="flex:1;height:7px;background:rgba(255,255,255,.13);position:relative;overflow:hidden">` +
+        `<div class="hp-fill" id="hp-f${i}" style="position:absolute;inset:0;background:#fff;transform-origin:left;transition:transform .18s"></div></div>`).join('') +
+      '</div>' +
+      '<div id="hp-armor" style="display:none;gap:3px;width:220px;margin-top:3px"></div></div>' +
+      '<div id="ff-warn" style="position:absolute;left:50%;top:44%;transform:translateX(-50%);font-size:15px;letter-spacing:.34em;' +
+      'color:#7fe08a;text-shadow:0 1px 6px #000;opacity:0;transition:opacity .15s;font-weight:700">FRIENDLY</div>' +
       '<div id="timer" style="position:absolute;top:62px;left:50%;transform:translateX(-50%);font-size:30px;font-weight:800;' +
       'letter-spacing:.12em;color:#fff;text-shadow:0 2px 6px #000;display:none"></div>';
     for (let i = 0; i < 3; i++) {
@@ -6084,7 +6373,22 @@ RT.ui = (() => {
       '<button class="menu-btn" id="btn-continue">Continue</button>' +
       '<button class="menu-btn" id="btn-settings">Settings</button>' +
       '<button class="menu-btn" id="btn-credits">Credits</button></div>' +
-      '<div class="menu-foot">Click to engage · WASD move · Mouse look</div>');
+      '<div class="menu-foot" style="margin-top:26px">Control scheme</div>' +
+      '<div class="seg" id="ctrl-seg" style="margin-top:8px">' +
+      '<button id="ctrl-mouse">Mouse</button><button id="ctrl-kb">Keyboard / Trackpad</button></div>' +
+      '<div class="menu-foot" id="menu-scheme-hint" style="margin-top:14px"></div>');
+    const syncCtrl = () => {
+      $('ctrl-mouse').className = RT.settings.controls === 'mouse' ? 'on' : '';
+      $('ctrl-kb').className = RT.settings.controls === 'keyboard' ? 'on' : '';
+      $('menu-scheme-hint').textContent = RT.settings.controls === 'keyboard'
+        ? 'WASD move · Arrows look · F fire · Q aim · E use'
+        : 'Click to engage · WASD move · Mouse look';
+      if (U._syncSettings) U._syncSettings();
+    };
+    U._syncCtrl = syncCtrl;
+    $('ctrl-mouse').onclick = () => { RT.settings.controls = 'mouse'; RT.saveSettings(); syncCtrl(); };
+    $('ctrl-kb').onclick = () => { RT.settings.controls = 'keyboard'; RT.saveSettings(); syncCtrl(); };
+    syncCtrl();
     $('btn-campaign').onclick = () => U.showMissionSelect();
     $('btn-continue').onclick = () => {
       const m = Math.min(U.progress.unlocked, RT.missions.length);
@@ -6108,6 +6412,9 @@ RT.ui = (() => {
       '<div class="set-row"><label>Field of View</label><input type="range" id="set-fov" min="70" max="110" step="1"><span class="set-val" id="set-fov-v"></span></div>' +
       '<div class="set-row"><label>Volume</label><input type="range" id="set-vol" min="0" max="1" step="0.05"><span class="set-val" id="set-vol-v"></span></div>' +
       '<div class="set-row"><label>Quality</label><div class="seg"><button id="set-q0">Performance</button><button id="set-q1">Quality</button></div></div>' +
+      '<div class="set-row"><label>Controls</label><div class="seg"><button id="set-c0">Mouse</button><button id="set-c1">Keyboard</button></div></div>' +
+      '<div class="set-row"><label>Aim Assist (keyboard)</label><div class="seg"><button id="set-a0">Off</button><button id="set-a1">Low</button><button id="set-a2">High</button></div></div>' +
+      '<div class="paused-note" id="controls-card" style="margin-top:16px"></div>' +
       '<div class="back-row"><button class="menu-btn" id="btn-set-back">Back</button></div></div>');
     const syncSettings = () => {
       $('set-sens').value = RT.settings.sens; $('set-sens-v').textContent = RT.settings.sens.toFixed(1);
@@ -6115,7 +6422,16 @@ RT.ui = (() => {
       $('set-vol').value = RT.settings.volume; $('set-vol-v').textContent = Math.round(RT.settings.volume * 100) + '%';
       $('set-q0').className = RT.settings.quality ? '' : 'on';
       $('set-q1').className = RT.settings.quality ? 'on' : '';
+      $('set-c0').className = RT.settings.controls === 'mouse' ? 'on' : '';
+      $('set-c1').className = RT.settings.controls === 'keyboard' ? 'on' : '';
+      for (let i = 0; i < 3; i++) $('set-a' + i).className = RT.settings.aimAssist === i ? 'on' : '';
+      $('controls-card').innerHTML = U.controlsCard();
     };
+    $('set-c0').onclick = () => { RT.settings.controls = 'mouse'; RT.saveSettings(); syncSettings(); if (U._syncCtrl) U._syncCtrl(); };
+    $('set-c1').onclick = () => { RT.settings.controls = 'keyboard'; RT.saveSettings(); syncSettings(); if (U._syncCtrl) U._syncCtrl(); };
+    for (let i = 0; i < 3; i++) {
+      $('set-a' + i).onclick = ((n) => () => { RT.settings.aimAssist = n; RT.saveSettings(); syncSettings(); })(i);
+    }
     U._syncSettings = syncSettings;
     $('set-sens').oninput = e => { RT.settings.sens = +e.target.value; syncSettings(); RT.saveSettings(); };
     $('set-fov').oninput = e => { RT.settings.fov = +e.target.value; syncSettings(); RT.saveSettings(); };
@@ -6132,8 +6448,7 @@ RT.ui = (() => {
       '<button class="menu-btn" id="btn-restart">Restart From Checkpoint</button>' +
       '<button class="menu-btn" id="btn-pause-settings">Settings</button>' +
       '<button class="menu-btn" id="btn-quit">Quit To Menu</button></div>' +
-      '<div class="paused-note">WASD move · SHIFT sprint · C crouch · SPACE jump · R reload<br>' +
-      '1-4 weapons · G grenade (hold to cook) · F interact · L arrow-key look</div>');
+      '<div class="paused-note" id="pause-controls"></div>');
     $('btn-resume').onclick = () => RT.game.resume();
     $('btn-restart').onclick = () => RT.game.restartCheckpoint();
     $('btn-pause-settings').onclick = () => U.showSettings('pause-screen');
@@ -6221,6 +6536,17 @@ RT.ui = (() => {
     U.showScreen('mission-select');
   };
 
+  /* per-scheme key card */
+  U.controlsCard = function () {
+    return RT.settings.controls === 'keyboard'
+      ? '<kbd>WASD</kbd> move · <kbd>ARROWS</kbd> look · <kbd>F</kbd> fire (hold) · <kbd>Q</kbd> aim<br>' +
+        '<kbd>E</kbd> use · <kbd>R</kbd> reload · <kbd>1–4</kbd> weapons · <kbd>SHIFT</kbd> sprint<br>' +
+        '<kbd>C</kbd> crouch · <kbd>SPACE</kbd> jump · <kbd>G</kbd> grenade (hold) · <kbd>ESC</kbd> pause'
+      : '<kbd>WASD</kbd> move · <kbd>MOUSE</kbd> look · <kbd>LMB</kbd> fire · <kbd>RMB</kbd> aim<br>' +
+        '<kbd>E/F</kbd> use · <kbd>R</kbd> reload · <kbd>1–4</kbd> weapons · <kbd>SHIFT</kbd> sprint<br>' +
+        '<kbd>C</kbd> crouch · <kbd>SPACE</kbd> jump · <kbd>G</kbd> grenade (hold) · <kbd>ESC</kbd> pause';
+  };
+
   /* ---------- fade / letterbox ---------- */
   U.fade = function (dark, slow) {
     const f = $('fade');
@@ -6251,11 +6577,29 @@ RT.ui = (() => {
     hmT = 0.18;
   };
   U.pulseVignette = function (a) { $('vignette').style.opacity = clamp(a, 0, 1); };
+  let lastHP = 100;
   U.setHealth = function (h, sinceHurt) {
     const low = $('health-low');
     low.style.opacity = h < 45 ? (1 - h / 45) * (0.72 + Math.sin(RT.engine.time * 6) * 0.15) : 0;
     if (sinceHurt > 1.2) $('vignette').style.opacity = clamp(1.15 - h / 100 - sinceHurt * 0.12, 0, 0.9);
+    /* segmented HP bar: 4 × 25, white→red, damage flash, regen pulse */
+    const regen = h > lastHP + 0.01;
+    const hurt = h < lastHP - 0.1;
+    for (let i = 0; i < 4; i++) {
+      const segFill = clamp((h - i * 25) / 25, 0, 1);
+      const f = $('hp-f' + i);
+      if (!f) return;
+      f.style.transform = `scaleX(${segFill})`;
+      const t = h / 100;
+      f.style.background = hurt ? '#fff' : `rgb(${255 - t * 30 | 0},${60 + t * 195 | 0},${55 + t * 185 | 0})`;
+      f.style.boxShadow = regen ? '0 0 6px rgba(140,255,160,.8)' : 'none';
+    }
+    $('hp-num').textContent = Math.ceil(h);
+    $('hp-num').style.color = h < 35 ? '#e04c3c' : '#fff';
+    lastHP = h;
   };
+  let ffT = 0;
+  U.friendlyWarn = function () { $('ff-warn').style.opacity = 1; ffT = 0.7; };
   U.damageFrom = function (angle) {
     const d = el('div', 'dmg-arc', $('dmgdir'));
     d.style.transform = `rotate(${angle}rad)`;
@@ -6366,6 +6710,18 @@ RT.ui = (() => {
       ctx.fillStyle = 'rgba(255,255,255,.4)';
       ctx.fillRect(x, 20, 1, deg % 45 === 0 ? 7 : 4);
     }
+    /* allies: green ticks */
+    if (RT.ai) {
+      for (const al of RT.ai.allies) {
+        const ang = Math.atan2(al.x - RT.player.pos.x, -(al.z - RT.player.pos.z));
+        let d = ang - heading;
+        while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU;
+        const x = 210 + d * pxPerRad;
+        if (x < 4 || x > 416) continue;
+        ctx.fillStyle = '#7fe08a';
+        ctx.fillRect(x - 1.5, 22, 3, 8);
+      }
+    }
     /* objective bearing chevrons */
     for (const t of U.waypointTargets) {
       if (!t) continue;
@@ -6397,10 +6753,55 @@ RT.ui = (() => {
     return timerVal;
   };
 
+  /* ---------- teammate indicators: chevron + name + micro HP bar ---------- */
+  const allyTags = [];
+  const _av = new THREE.Vector3();
+  function updateAllyTags(dt) {
+    if (!RT.ai) return;
+    const allies = RT.ai.allies;
+    while (allyTags.length < allies.length) {
+      const tag = el('div', '', hud);
+      tag.style.cssText = 'position:absolute;pointer-events:none;text-align:center;transform:translate(-50%,-100%);transition:opacity .2s';
+      tag.innerHTML = '<div class="aname" style="font-size:10px;letter-spacing:.14em;color:#8fe096;text-shadow:0 1px 3px #000;font-weight:700"></div>' +
+        '<div style="color:#8fe096;font-size:9px;line-height:5px">▼</div>' +
+        '<div style="width:34px;height:3px;background:rgba(0,0,0,.5);margin:2px auto 0"><div class="ahp" style="height:100%;background:#7fe08a;width:100%"></div></div>';
+      allyTags.push({ tag, occlT: 0, occluded: false });
+    }
+    const cam = RT.engine.camera;
+    allies.forEach((al, i) => {
+      const t = allyTags[i];
+      if (!t) return;
+      const d = Math.hypot(al.x - RT.player.pos.x, al.z - RT.player.pos.z);
+      _av.set(al.x, al.y + 2.05, al.z).project(cam);
+      const behind = _av.z > 1;
+      if (behind || d > 70 || RT.game.state !== 'play') { t.tag.style.opacity = 0; return; }
+      /* occlusion check at 3Hz — dim but never fully hide within 40m */
+      t.occlT -= dt;
+      if (t.occlT <= 0) {
+        t.occlT = 0.33;
+        const dy = (al.y + 1.5) - RT.player.eyeY();
+        const d3 = Math.hypot(d, dy);
+        t.occluded = !!RT.map.raycast(RT.player.pos.x, RT.player.eyeY(), RT.player.pos.z,
+          (al.x - RT.player.pos.x) / d3, dy / d3, (al.z - RT.player.pos.z) / d3, d3 - 0.6);
+      }
+      t.tag.style.left = ((_av.x * 0.5 + 0.5) * innerWidth) + 'px';
+      t.tag.style.top = ((-_av.y * 0.5 + 0.5) * innerHeight) + 'px';
+      t.tag.style.opacity = t.occluded ? (d < 40 ? 0.35 : 0) : clamp(1.3 - d / 70, 0.35, 1);
+      const sc = clamp(1.25 - d / 60, 0.7, 1.15);
+      t.tag.style.transform = `translate(-50%,-100%) scale(${sc})`;
+      const nameEl = t.tag.querySelector('.aname');
+      if (nameEl.textContent !== al.name) nameEl.textContent = al.name;
+      t.tag.querySelector('.ahp').style.width = clamp(al.hp != null ? al.hp : 100, 0, 100) + '%';
+      if (al.down) { nameEl.textContent = al.name + ' — DOWN'; nameEl.style.color = '#e8a33d'; }
+    });
+  }
+
   /* ---------- per-frame ---------- */
   U.update = function (dt) {
     /* hitmarker fade */
     if (hmT > 0) { hmT -= dt; if (hmT <= 0) $('hitmarker').style.opacity = 0; }
+    if (ffT > 0) { ffT -= dt; if (ffT <= 0) $('ff-warn').style.opacity = 0; }
+    updateAllyTags(dt);
     /* toast */
     if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').style.opacity = 0; }
     /* subtitles */
@@ -6522,20 +6923,25 @@ RT.game = (() => {
     showEngage('CLICK TO ENGAGE');
   }
 
+  GA.doEngage = function () {
+    if (GA.state !== 'engage') return;
+    engageEl.classList.add('hidden');
+    RT.input.lock();
+    RT.weapons.setVisible(true);
+    GA.state = 'play';
+  };
   function showEngage(text) {
     GA.state = 'engage';
     if (!engageEl) {
       engageEl = RT.el('div', '', document.body);
-      engageEl.style.cssText = 'position:fixed;inset:0;z-index:35;display:flex;align-items:center;justify-content:center;' +
-        'background:rgba(0,0,0,.25);cursor:pointer;font-size:17px;letter-spacing:.4em;color:#fff;text-transform:uppercase;text-shadow:0 2px 8px #000';
-      engageEl.onclick = () => {
-        engageEl.classList.add('hidden');
-        RT.input.lock();
-        RT.weapons.setVisible(true);
-        GA.state = 'play';
-      };
+      engageEl.style.cssText = 'position:fixed;inset:0;z-index:35;display:flex;flex-direction:column;gap:26px;align-items:center;justify-content:center;' +
+        'background:rgba(0,0,0,.25);cursor:pointer;color:#fff;text-shadow:0 2px 8px #000;text-align:center';
+      engageEl.onclick = GA.doEngage;
     }
-    engageEl.textContent = text;
+    const kb = RT.input.keyboardMode();
+    engageEl.innerHTML =
+      `<div style="font-size:17px;letter-spacing:.4em;text-transform:uppercase">${kb ? 'CLICK OR PRESS ENTER' : text}</div>` +
+      `<div class="paused-note" style="margin-top:0">${RT.ui.controlsCard()}</div>`;
     engageEl.classList.remove('hidden');
   }
 
@@ -6543,6 +6949,7 @@ RT.game = (() => {
     if (GA.state !== 'play') return;
     GA.state = 'pause';
     RT.input.unlock();
+    if (RT.$('pause-controls')) RT.$('pause-controls').innerHTML = RT.ui.controlsCard();
     RT.ui.showScreen('pause-screen');
   };
   GA.resume = function () {
@@ -6696,7 +7103,11 @@ RT.game = (() => {
     RT.audio.update(raw);
     if (GA.state === 'menu') { updateMenu(dt); return; }
     if (GA.state === 'cutscene') { updateCutscene(raw); RT.ai.update(dt * 0.25); return; }
-    if (GA.state === 'engage' || GA.state === 'pause') return;
+    if (GA.state === 'engage') {
+      if (RT.input.pressed('Enter') || RT.input.pressed('NumpadEnter')) GA.doEngage();
+      return;
+    }
+    if (GA.state === 'pause') return;
     /* smoke column beacons */
     if (RT.map && RT.map.smokeSources && (GA.state === 'play' || GA.state === 'cutscene' || GA.state === 'menu' || GA.state === 'engage')) {
       for (const s of RT.map.smokeSources) {

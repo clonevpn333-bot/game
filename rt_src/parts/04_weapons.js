@@ -235,6 +235,7 @@ RT.weapons = (() => {
     trigger: { index: [0.5, 0.4, 0.25], middle: [1.2, 1.25, 0.95], ring: [1.28, 1.28, 0.95], pinky: [1.32, 1.25, 0.9], thumb: [0.55, 0.7], thumbMode: 'wrap' },
     grip:    { index: [1.15, 1.2, 0.9], middle: [1.22, 1.25, 0.95], ring: [1.28, 1.28, 0.95], pinky: [1.32, 1.25, 0.9], thumb: [0.6, 0.75], thumbMode: 'wrap' },
     support: { index: [1.08, 1.15, 0.85], middle: [1.15, 1.22, 0.9], ring: [1.2, 1.22, 0.9], pinky: [1.25, 1.18, 0.85], thumb: [0.1, 0.12], thumbMode: 'rail' },
+    open:    { index: [0.22, 0.18, 0.12], middle: [0.25, 0.2, 0.14], ring: [0.28, 0.2, 0.14], pinky: [0.3, 0.22, 0.15], thumb: [0.18, 0.15], thumbMode: 'wrap' },
     cup:     { index: [0.72, 0.85, 0.6], middle: [0.8, 0.9, 0.65], ring: [0.85, 0.9, 0.65], pinky: [0.9, 0.85, 0.6], thumb: [0.3, 0.4], thumbMode: 'rail' },
   };
 
@@ -370,12 +371,19 @@ RT.weapons = (() => {
 
   function buildArm(side, skin, sleeve, grip, poseName) {
     const grp = new THREE.Group();
-    const geos = buildGloveHand(side, poseName);
-    geos.push(...buildForearm(side, skin, sleeve));
-    const arm = RT.meshOf(geos, RT.MAT.skin, false);
-    if (grip.fdir) arm.quaternion.copy(gripQuat(grip.fdir, grip.pdir));
-    else arm.rotation.fromArray(grip.rot);
-    grp.add(arm);
+    const mk = (pn) => {
+      const geos = buildGloveHand(side, pn);
+      geos.push(...buildForearm(side, skin, sleeve));
+      const m = RT.meshOf(geos, RT.MAT.skin, false);
+      if (grip.fdir) m.quaternion.copy(gripQuat(grip.fdir, grip.pdir));
+      else m.rotation.fromArray(grip.rot);
+      return m;
+    };
+    const closed = mk(poseName);
+    const open = mk('open');
+    open.visible = false;
+    grp.add(closed); grp.add(open);
+    grp.userData.setOpen = v => { closed.visible = !v; open.visible = !!v; };
     return grp;
   }
 
@@ -413,7 +421,8 @@ RT.weapons = (() => {
   let vmRoot = null, cur = null, curId = null;
   let loadout = [];      // array of ids
   const ammo = {};       // id -> {mag, res}
-  let adsK = 0, raiseK = 0, switchTo = null;
+  let adsK = 0, adsT = 0, fovPunch = 0, raiseK = 0, switchTo = null;
+  const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
   let reloadT = -1, reloadStage = 0, shellsToLoad = 0;
   let cooldown = 0, pumpT = -1, boltT = -1, flashT = 0, slideBack = 0;
   let recP = 0, recY = 0, vmZ = 0, bobT = 0;
@@ -495,8 +504,11 @@ RT.weapons = (() => {
       if (cur) vmRoot.remove(cur.root);
       const asm = assemble(id);
       vmRoot.add(asm.root);
-      cur = asm; curId = id; raiseK = 1; switchTo = null;
+      cur = asm; curId = id; raiseK = 0.35; switchTo = null;   // raise animates in
       reloadT = -1; pumpT = -1; boltT = -1; cooldown = 0.2;
+      if (asm.armL.userData.setOpen) asm.armL.userData.setOpen(false);
+      asm._reloadPose = null;
+      asm.armL.position.copy(asm.armLHome);
     } else if (curId !== id) {
       switchTo = id; reloadT = -1;
     }
@@ -523,15 +535,19 @@ RT.weapons = (() => {
       equip(loadout[idx]);
     } else I.wheel = 0;
     if (switchTo) {
-      raiseK -= dt * 5;
+      raiseK -= dt / 0.16;               // fast lower
       if (raiseK <= 0) { const t = switchTo; switchTo = null; equip(t, true); raiseK = 0; }
-    } else if (raiseK < 1) raiseK = Math.min(1, raiseK + dt * 4);
+    } else if (raiseK < 1) raiseK = Math.min(1, raiseK + dt / 0.2);  // fast raise (≤380ms total)
 
-    /* ADS */
+    /* ADS: ≤140ms in, ≤110ms out, ease-out both ways + FOV punch at alignment */
     const wantAds = I.aim && !opts.sprinting && reloadT < 0 && !switchTo && raiseK > 0.9;
-    adsK = damp(adsK, wantAds ? 1 : 0, 12, dt);
+    const adsPrevT = adsT;
+    adsT = clamp(adsT + (wantAds ? dt / 0.14 : -dt / 0.11), 0, 1);
+    adsK = wantAds || adsT > adsPrevT ? easeOutCubic(adsT) : 1 - easeOutCubic(1 - adsT);
+    if (adsPrevT < 1 && adsT >= 1) fovPunch = 2;                     // 1-frame punch as sights align
+    fovPunch = damp(fovPunch, 0, 28, dt);
     const baseFov = RT.settings.fov;
-    RT.engine.camera.fov = lerp(baseFov, cfg.adsFov, adsK * adsK * (3 - 2 * adsK));
+    RT.engine.camera.fov = lerp(baseFov, cfg.adsFov, adsK) - fovPunch;
     RT.engine.camera.updateProjectionMatrix();
     if (cfg.scope && RT.$('scope')) RT.$('scope').style.opacity = adsK > 0.82 ? 1 : 0;
     else if (RT.$('scope')) RT.$('scope').style.opacity = 0;
@@ -603,7 +619,7 @@ RT.weapons = (() => {
     const swayY = clamp(mdy * 0.01, -0.018, 0.018) * (1 - adsK * 0.9);
     const bobX = Math.sin(bobT) * 0.009 * speedF * (1 - adsK * 0.9);
     const bobY = -Math.abs(Math.cos(bobT)) * 0.011 * speedF * (1 - adsK * 0.85);
-    vmZ = Math.min(0, vmZ + dt * 0.35);
+    vmZ = Math.min(0, damp(vmZ, 0, 10, dt));   // kick instant, recovery exponential
 
     const hip = cfg.hip;
     const sight = cur.parts.sight;
@@ -613,15 +629,17 @@ RT.weapons = (() => {
     const py = lerp(hip[1], adsPos[1], k2) + swayY + bobY + breathe;
     const pz = lerp(hip[2], adsPos[2], k2) + vmZ;
     /* sprint + raise/lower pose */
-    const lowerK = 1 - raiseK;
-    const sprintK = damp(cur._sprintK || 0, opts.sprinting ? 1 : 0, 8, dt);
+    const lowerK = 1 - easeOutCubic(raiseK);
+    /* raise overshoot: 3° tilt bump that settles as the weapon arrives */
+    const overTilt = (!switchTo && raiseK > 0.72 && raiseK < 1) ? Math.sin((raiseK - 0.72) / 0.28 * Math.PI) * 0.052 : 0;
+    const sprintK = damp(cur._sprintK || 0, opts.sprinting ? 1 : 0, opts.sprinting ? 15 : 7.5, dt); // snap in, settle out
     cur._sprintK = sprintK;
     const rl = cur._reloadPose || { rx: 0, rz: 0, y: 0 };
     cur.root.position.set(px + sprintK * -0.06, py - lowerK * 0.45 - sprintK * 0.07 + rl.y, pz + sprintK * 0.06);
     cur.root.rotation.set(
       -vmZ * 2.2 + lowerK * 0.9 + sprintK * 0.55 + swayY * 1.4 + rl.rx,
       swayX * 1.6 + sprintK * 0.4,
-      sprintK * 0.25 + swayX * 0.8 + rl.rz);
+      sprintK * 0.25 + swayX * 0.8 + rl.rz + overTilt);
     RT.hud && RT.hud.setCrosshairSpread(currentSpread(opts) * 900, adsK);
   };
 
@@ -727,37 +745,67 @@ RT.weapons = (() => {
       reloadT = 0; reloadStage = 0;
     } else {
       reloadT = 0;
-      cur._magDropped = false; cur._magBack = false;
+      cur._magDropped = false; cur._magBack = false; cur._rack = false;
     }
     if (RT.audio) RT.audio.reloadStart();
   }
   W.startReload = startReload;
 
+  /* keyframed reloads: fast reaches, brief holds, snappy insertions,
+   * finger open/close states, weapon tilt + slap jolts */
+  const s01 = (k, a, b) => clamp((k - a) / (b - a), 0, 1);
+  const eo = easeOutCubic;
+  function setOpenL(v) { if (cur.armL.userData.setOpen) cur.armL.userData.setOpen(v); }
+  function armLTo(hx, hy, hz, k) {
+    cur.armL.position.set(
+      lerp(cur.armL.position.x, hx, k), lerp(cur.armL.position.y, hy, k), lerp(cur.armL.position.z, hz, k));
+  }
+
   function updateReload(dt) {
     const cfg = cur.cfg, am = ammo[curId];
-    if (cfg.pump) { // shell-by-shell
+    const H = cur.armLHome;
+    if (cfg.pump) { /* ------- shotgun: shell-by-shell, interruptible ------- */
+      /* fire cuts the reload short with what's loaded */
+      if (RT.input.fire && am.mag > 0) {
+        reloadT = -1; cur._reloadPose = null; setOpenL(false);
+        cur.armL.position.copy(H);
+        return;
+      }
       reloadT += dt;
       const per = cfg.reloadShell;
       const k = (reloadT % per) / per;
-      // weapon tilts, left hand pushes shells from below
-      const tl = Math.sin(Math.min(1, reloadT * 3) * Math.PI / 2);
-      cur._reloadPose = { rx: tl * 0.12, rz: tl * 0.4, y: -tl * 0.03 };
-      cur.armL.position.y = cur.armLHome.y - 0.1 + 0.1 * Math.sin(k * Math.PI);
-      cur.armL.position.z = cur.armLHome.z + 0.14 - 0.05 * Math.sin(k * Math.PI);
-      if (k > 0.55 && !cur._shellFed) {
+      const tl = eo(Math.min(1, reloadT * 4));
+      cur._reloadPose = { rx: tl * 0.1, rz: tl * 0.52, y: -tl * 0.028 };   // ~30° port-visible tilt
+      /* shuttle: reach down fast (open) → align → push-click (closed, nudge) */
+      const portY = H.y - 0.02, portZ = H.z + 0.17;
+      if (k < 0.42) {            // reach down-back fast, hand opens
+        const r = eo(s01(k, 0, 0.42));
+        cur.armL.position.set(H.x - 0.02, lerp(portY, portY - 0.15, 1 - r * 0 + (1 - r)), lerp(portZ, portZ + 0.1, 1 - r));
+        cur.armL.position.y = portY - 0.15 * (1 - r);
+        setOpenL(k > 0.06 && k < 0.3);
+      } else if (k < 0.62) {     // align at port (brief)
+        cur.armL.position.set(H.x - 0.02 + (k - 0.42) * 0.02, portY, portZ);
+        setOpenL(false);
+      } else {                   // push-click
+        cur.armL.position.set(H.x - 0.02, portY + 0.008, portZ - 0.02);
+      }
+      if (k > 0.64 && !cur._shellFed) {
         cur._shellFed = true;
         am.mag++; am.res--; shellsToLoad--;
+        cur._reloadPose.y += 0.01;                                   // insert nudge
         if (RT.audio) RT.audio.shellLoad();
       }
       if (k < 0.5) cur._shellFed = false;
       if (shellsToLoad <= 0 || am.res <= 0 || am.mag >= cfg.mag) {
         reloadT = -1;
         cur._reloadPose = null;
-        cur.armL.position.copy(cur.armLHome);
+        setOpenL(false);
+        cur.armL.position.copy(H);
         if (pumpT < 0 && !cur._chambered) { pumpT = 0; }
       }
       return;
     }
+
     reloadT += dt;
     const T = cfg.reloadT, k = reloadT / T;
     const mag = cur.parts.mag;
@@ -766,42 +814,91 @@ RT.weapons = (() => {
       const take = Math.min(cfg.mag - am.mag, am.res);
       am.mag += take; am.res -= take;
       if (mag) { mag.position.copy(cur.parts.magHome); mag.visible = true; }
-      cur.armL.position.copy(cur.armLHome);
+      cur.armL.position.copy(H);
+      setOpenL(false);
       cur._reloadPose = null;
       return;
     }
-    // stage motions
-    const tilt = Math.sin(Math.min(k / 0.15, 1) * Math.PI / 2) * (1 - smoothstep(0.85, 1, k));
-    cur._reloadPose = { rx: tilt * 0.14, rz: tilt * 0.38, y: -tilt * 0.02 };
-    if (mag) {
-      if (k > 0.16 && k < 0.45) { // mag out & falls
-        if (!cur._magDropped) {
-          cur._magDropped = true;
-          spawnFallingMag(mag);
-          mag.visible = false;
-          if (RT.audio) RT.audio.magOut();
+
+    if (cfg.slide) { /* ------- pistol: tilt, palm-heel insert, slide pinch ------- */
+      const tl = eo(s01(k, 0, 0.1)) * (1 - smoothstep(0.88, 1, k));
+      let jolt = 0;
+      if (k > 0.5 && k < 0.56) jolt = 0.012 * Math.exp(-(k - 0.5) * 60);         // palm-heel bump
+      cur._reloadPose = { rx: tl * 0.1, rz: -tl * 0.4, y: -tl * 0.02 + jolt };   // one-handed tilt inward
+      if (k < 0.08) { armLTo(H.x, H.y - 0.05, H.z, eo(s01(k, 0, 0.08))); }
+      else if (k < 0.3) {                                    // hand darts off with old mag out
+        if (!cur._magDropped) { cur._magDropped = true; if (mag) spawnFallingMag(mag); if (mag) mag.visible = false; if (RT.audio) RT.audio.magOut(); }
+        setOpenL(true);
+        armLTo(H.x - 0.06, H.y - 0.22, H.z + 0.1, eo(s01(k, 0.08, 0.3)));
+      } else if (k < 0.5) {                                  // return with mag, close on contact
+        if (mag) { mag.visible = true; mag.position.copy(cur.parts.magHome); mag.position.y -= (1 - eo(s01(k, 0.3, 0.5))) * 0.16; }
+        if (k > 0.44) setOpenL(false);
+        armLTo(H.x, H.y - 0.03, H.z + 0.02, eo(s01(k, 0.3, 0.5)));
+      } else if (k < 0.56) {                                 // slap
+        if (!cur._magBack) { cur._magBack = true; if (RT.audio) RT.audio.magIn(); }
+      } else if (k < 0.84) {                                 // pinch the slide, rack it
+        const p = eo(s01(k, 0.56, 0.68));
+        armLTo(H.x + 0.02, H.y + 0.1, H.z + 0.05, p);        // hand up to the slide
+        if (k > 0.68 && k < 0.76) cur.parts.action.position.z = 0.028 * eo(s01(k, 0.68, 0.74));
+        else if (k >= 0.76) {
+          if (!cur._rack) { cur._rack = true; if (RT.audio) RT.audio.boltRack(); }
+          cur.parts.action.position.z = Math.max(0, cur.parts.action.position.z - dt * 1.4); // slide snaps home
         }
-      } else if (k >= 0.55 && k < 0.92) { // new mag rides hand up
-        mag.visible = true;
-        const rise = smoothstep(0.55, 0.8, k);
-        mag.position.copy(cur.parts.magHome);
-        mag.position.y -= (1 - rise) * 0.22;
-        mag.position.z += (1 - rise) * 0.05;
-        if (!cur._magBack && rise >= 1) { cur._magBack = true; if (RT.audio) RT.audio.magIn(); }
+      } else {                                               // settle back with overshoot
+        const p = s01(k, 0.84, 1);
+        const os = 1 + 0.05 * Math.sin(Math.min(1, p * 1.4) * Math.PI);
+        cur.armL.position.set(H.x * os, lerp(cur.armL.position.y, H.y, eo(p)) * 1, H.z);
+        armLTo(H.x, H.y, H.z, eo(p));
       }
-      // left hand follows mag
-      if (k > 0.16 && k < 0.92) {
-        const hk = k < 0.45 ? smoothstep(0.16, 0.3, k) : 1 - smoothstep(0.55, 0.85, k);
-        cur.armL.position.y = cur.armLHome.y - hk * 0.24;
-        cur.armL.position.z = cur.armLHome.z + hk * 0.22;
-      } else cur.armL.position.copy(cur.armLHome);
+      return;
     }
-    // action gesture at the end (bolt release / slide rack)
-    if (k > 0.9 && cur.parts.action && !cfg.bolt) {
-      const ak = smoothstep(0.9, 0.94, k) - smoothstep(0.95, 1, k);
-      cur.parts.action.position.z = ak * (cfg.slide ? 0.028 : 0.03);
-      if (!cur._rack && k > 0.94) { cur._rack = true; if (RT.audio) RT.audio.boltRack(); }
-    } else cur._rack = false;
+
+    /* ------- AR / DMR: dart → drop mag → off-screen → arc back → SLAP → bolt flick → settle ------- */
+    const droop = eo(s01(k, 0.02, 0.14)) * (1 - smoothstep(0.86, 0.97, k));
+    let tiltZ = droop * 0.32, tiltX = droop * 0.11, dy2 = -droop * 0.022;
+    let jolt = 0;
+    if (k > 0.72 && k < 0.78) jolt = 0.014 * Math.exp(-(k - 0.72) * 55);          // mag SLAP jolt
+    /* bolt-flick window: weapon tilts right so the player sees the release */
+    if (k > 0.76 && k < 0.9) tiltZ = -eo(s01(k, 0.76, 0.82)) * (1 - smoothstep(0.86, 0.9, k)) * 0.14;
+    cur._reloadPose = { rx: tiltX, rz: tiltZ, y: dy2 + jolt };
+    if (k < 0.05) {                                          // hand leaves handguard FAST
+      armLTo(H.x + 0.03, H.y - 0.06, H.z + 0.14, eo(s01(k, 0, 0.05)));
+    } else if (k < 0.16) {                                   // hits mag release; mag drops; darts away
+      if (!cur._magDropped && k > 0.07) {
+        cur._magDropped = true;
+        if (mag) { spawnFallingMag(mag); mag.visible = false; }
+        if (RT.audio) RT.audio.magOut();
+      }
+      setOpenL(k > 0.1);                                     // fingers open mid-travel
+      armLTo(H.x - 0.09, H.y - 0.26, H.z + 0.16, eo(s01(k, 0.05, 0.16)));
+    } else if (k < 0.5) {
+      /* off-screen beat */
+    } else if (k < 0.72) {                                   // returns with the new mag in an arc
+      const p = eo(s01(k, 0.5, 0.72));
+      const arc = Math.sin(p * Math.PI) * 0.05;
+      if (mag) {
+        mag.visible = true;
+        mag.position.copy(cur.parts.magHome);
+        mag.position.y -= (1 - p) * 0.24;
+        mag.position.z += (1 - p) * 0.06 + arc * 0.3;
+      }
+      if (p > 0.75) setOpenL(false);                          // closes around the mag
+      armLTo(H.x + 0.02 - arc, H.y - 0.1 * (1 - p) - 0.06, H.z + 0.1 * (1 - p) + 0.06, p);
+    } else if (k < 0.76) {
+      if (!cur._magBack) { cur._magBack = true; if (RT.audio) RT.audio.magIn(); }
+    } else if (k < 0.9) {                                    // flick the bolt release
+      const p = eo(s01(k, 0.76, 0.84));
+      armLTo(H.x + 0.05, H.y + 0.07, H.z + 0.3, p);
+      if (cur.parts.action && !cfg.bolt) {
+        if (k > 0.82 && k < 0.86) cur.parts.action.position.z = 0.03;
+        else cur.parts.action.position.z = 0;
+        if (!cur._rack && k > 0.84) { cur._rack = true; if (RT.audio) RT.audio.boltRack(); }
+      }
+    } else {                                                 // snap back to handguard, overshoot-settle
+      const p = s01(k, 0.9, 1);
+      const over = Math.sin(Math.min(1, p * 1.35) * Math.PI) * 0.012;
+      armLTo(H.x - over, H.y + over * 0.5, H.z - over, eo(p));
+    }
   }
 
   function spawnFallingMag(mag) {

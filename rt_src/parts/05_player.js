@@ -13,8 +13,35 @@ RT.player = (() => {
   let bobT = 0, speedF = 0, lookVelX = 0, lookVelY = 0;
   let kickP = 0, kickY = 0, recovP = 0;
   let grenades = 4, gCooking = -1;
+  let snapAnim = null, landT = 9, losT = 0, losOK = false, losTarget = null;
   const EYE = 1.62, EYE_C = 1.08, R = 0.34;
   const _shake = new THREE.Vector3();
+
+  /* nearest live enemy by angular distance from the crosshair (LOS-checked at 4Hz) */
+  function findAssistTarget() {
+    let best = null, bd = 0.12;
+    for (const e of RT.ai.enemies) {
+      if (e.dead) continue;
+      const dx = e.x - pos.x, dz = e.z - pos.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist < 2 || dist > 90) continue;
+      const wantYaw = Math.atan2(-dx, -dz);
+      let dYaw = (wantYaw - yaw + Math.PI) % TAU; if (dYaw < 0) dYaw += TAU; dYaw -= Math.PI;
+      const dPitch = Math.atan2((e.y + 1.2) - PL.eyeY(), dist) - pitch;
+      const ang = Math.hypot(dYaw, dPitch);
+      if (ang < bd) { bd = ang; best = { e, dYaw, dPitch, ang, dist }; }
+    }
+    if (!best) { losTarget = null; return null; }
+    losT -= RT.engine.frameMS / 1000;
+    if (losTarget !== best.e || losT <= 0) {
+      losT = 0.25; losTarget = best.e;
+      const dy = (best.e.y + 1.2) - PL.eyeY();
+      const d3 = Math.hypot(best.dist, dy);
+      losOK = !RT.map.raycast(pos.x, PL.eyeY(), pos.z,
+        (best.e.x - pos.x) / d3, dy / d3, (best.e.z - pos.z) / d3, d3 - 0.5);
+    }
+    return losOK ? best : null;
+  }
 
   Object.defineProperties(PL, {
     pos: { get: () => pos }, vel: { get: () => vel },
@@ -85,24 +112,62 @@ RT.player = (() => {
     /* look */
     let [mdx, mdy] = I.consumeMouse();
     if (RT.game && RT.game.testLockLook) { mdx = 0; mdy = 0; } // harness-controlled facing
-    if (I.fallback) {
-      const ls = 2.4 * dt * 400;
-      if (I.keys.ArrowLeft) mdx -= ls; if (I.keys.ArrowRight) mdx += ls;
-      if (I.keys.ArrowUp) mdy -= ls; if (I.keys.ArrowDown) mdy += ls;
+    const adsNow = RT.weapons && RT.weapons.state().adsK > 0.5;
+    const kbLook = I.keyboardMode() || I.fallback;
+
+    /* --- aim assist (keyboard scheme): slowdown / magnetism / ADS snap --- */
+    let assistSlow = 1;
+    const assistLvl = I.keyboardMode() ? RT.settings.aimAssist : 0;
+    if (assistLvl > 0 && RT.ai && RT.game && RT.game.state === 'play') {
+      const tgt = findAssistTarget();
+      if (tgt) {
+        const str = assistLvl === 2 ? 1 : 0.6;
+        if (tgt.ang < 0.07) assistSlow = lerp(1, 0.55, str);                     // slowdown zone ~4°
+        if (I.fire && tgt.ang < 0.0436) {                                        // soft magnetism ~2.5°
+          const step = 0.14 * str * dt;                                          // up to ~8°/s
+          yaw += clamp(tgt.dYaw, -step, step);
+          pitch += clamp(tgt.dPitch, -step, step);
+        }
+        if (I.pressed('Aim') && tgt.ang < 0.0873) {                              // snap-lite on ADS ~5°
+          snapAnim = { t: 0, yawLeft: tgt.dYaw * 0.4 * str, pitchLeft: tgt.dPitch * 0.4 * str };
+        }
+      }
     }
-    const sens = 0.0021 * RT.settings.sens * (RT.weapons && RT.weapons.state().adsK > 0.5 ? 0.6 : 1);
+    if (snapAnim) {
+      const k = Math.min(1, dt / 0.12);
+      yaw += snapAnim.yawLeft * k; pitch += snapAnim.pitchLeft * k;
+      snapAnim.yawLeft *= (1 - k); snapAnim.pitchLeft *= (1 - k);
+      snapAnim.t += dt;
+      if (snapAnim.t >= 0.12) snapAnim = null;
+    }
+
+    /* arrow-key look: 70°/s ramping to 160°/s over 0.35s, instant stop */
+    if (kbLook) {
+      const lx = (I.keys.ArrowRight ? 1 : 0) - (I.keys.ArrowLeft ? 1 : 0);
+      const ly = (I.keys.ArrowDown ? 1 : 0) - (I.keys.ArrowUp ? 1 : 0);
+      if (lx || ly) {
+        PL._lookHold = (PL._lookHold || 0) + dt;
+        const ramp = smoothstep(0, 0.35, PL._lookHold);
+        let rate = (70 + 90 * ramp) * DEG * RT.settings.sens * assistSlow;
+        if (adsNow) rate *= 0.45;
+        const ease = 0.55 + 0.45 * Math.min(1, PL._lookHold / 0.09); // analog-feel ease-in
+        yaw -= lx * rate * ease * dt;
+        pitch -= ly * rate * ease * dt;
+      } else PL._lookHold = 0;
+    }
+    const sens = 0.0021 * RT.settings.sens * (adsNow ? 0.6 : 1) * (I.keyboardMode() ? assistSlow : 1);
     yaw -= mdx * sens; pitch -= mdy * sens;
     pitch = clamp(pitch, -1.45, 1.45);
     lookVelX = damp(lookVelX, mdx / Math.max(dt, 0.001) / 800, 14, dt);
     lookVelY = damp(lookVelY, mdy / Math.max(dt, 0.001) / 800, 14, dt);
 
-    /* recoil: kick applies fast, partial recovery pulls back (frame-rate independent) */
-    const kApply = 1 - Math.exp(-26 * dt);
+    /* recoil: kick is near-instant (1-2 frames), recovery ~10 frames */
+    const kApply = 1 - Math.exp(-85 * dt);
     const dp = kickP * kApply, dy = kickY * kApply;
     pitch += dp; yaw += dy;
     kickP -= dp; kickY -= dy;
     recovP += dp * 0.55;
-    const rec = recovP * (1 - Math.exp(-5.5 * dt));
+    const rec = recovP * (1 - Math.exp(-9 * dt));
     pitch -= rec; recovP -= rec;
 
     if (dead) { crouchK = damp(crouchK, 1, 4, dt); applyCamera(dt); return; }
@@ -115,7 +180,8 @@ RT.player = (() => {
     const moving = wish.lengthSq() > 0;
     sprinting = I.keys.ShiftLeft && I.keys.KeyW && !wantCrouch && !I.aim;
     if (sprinting) wantCrouch = false;
-    crouchK = damp(crouchK, wantCrouch ? 1 : 0, 10, dt);
+    /* snap in, settle out */
+    crouchK = damp(crouchK, wantCrouch ? 1 : 0, wantCrouch ? 18 : 9, dt);
 
     /* movement */
     const adsK = RT.weapons ? RT.weapons.state().adsK : 0;
@@ -139,9 +205,13 @@ RT.player = (() => {
       if (og - pos.y > 0.5 && og - pos.y < 1.25) vel.y = 6.4;
       if (RT.audio) RT.audio.footstep(1);
     }
+    const fallSpeed = -vel.y;
     pos.y += vel.y * dt;
-    if (pos.y <= ground) { pos.y = ground; vel.y = 0; grounded = true; }
-    else grounded = pos.y - ground < 0.08;
+    if (pos.y <= ground) {
+      if (!grounded && fallSpeed > 3.5) { landT = 0; if (RT.audio) RT.audio.footstep(1); } // land dip
+      pos.y = ground; vel.y = 0; grounded = true;
+    } else grounded = pos.y - ground < 0.08;
+    landT += dt;
 
     collideMove(vel.x * dt, vel.z * dt);
 
@@ -184,7 +254,9 @@ RT.player = (() => {
     const bobY = Math.abs(Math.sin(bobT)) * bobA;
     const bobX = Math.sin(bobT * 0.5) * bobA * 0.6;
     RT.engine.getShakeOffset(_shake);
-    cam.position.set(pos.x + bobX * Math.cos(yaw) + _shake.x, PL.eyeY() + bobY + _shake.y + (dead ? -0.5 : 0), pos.z + bobX * Math.sin(yaw) + _shake.z);
+    /* jump-land dip: sharp 4cm drop over 60ms, recover over 220ms */
+    const dip = landT < 0.06 ? (landT / 0.06) * 0.04 : 0.04 * (1 - smoothstep(0.06, 0.28, landT));
+    cam.position.set(pos.x + bobX * Math.cos(yaw) + _shake.x, PL.eyeY() + bobY + _shake.y - dip + (dead ? -0.5 : 0), pos.z + bobX * Math.sin(yaw) + _shake.z);
     cam.rotation.set(pitch + _shake.x * 0.8, yaw + _shake.y * 0.8, _shake.z * 0.7 + (dead ? 0.4 : 0));
     RT.engine.updateSun(cam.position);
   }
@@ -289,7 +361,8 @@ RT.player = (() => {
       if (d < (it.r || 1.7) && d < bestD) { bestD = d; curInteract = it; }
     }
     if (RT.hud) RT.hud.setInteract(curInteract ? (curInteract.door ? (curInteract.door.breach ? 'BREACH' : (curInteract.door.open ? 'CLOSE' : 'OPEN')) : curInteract.label) : null);
-    if (curInteract && RT.input.pressed('KeyF')) {
+    const useKey = RT.input.pressed('KeyE') || (!RT.input.keyboardMode() && RT.input.pressed('KeyF'));
+    if (curInteract && useKey) {
       if (curInteract.door) {
         const dr = curInteract.door;
         if (dr.breach && !dr.open) {
