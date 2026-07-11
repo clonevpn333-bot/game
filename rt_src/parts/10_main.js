@@ -144,6 +144,7 @@ RT.game = (() => {
     RT.ui.letterbox(false);
     RT.weapons.setVisible(false);
     GA.cutscene = null;
+    if (RT.br) RT.br.reset();
     setTimeout(() => { GA.showMenuWorld(); }, 780);
   };
 
@@ -169,6 +170,7 @@ RT.game = (() => {
     }, 800);
   };
   GA.onPlayerDeath = function () {
+    if (RT.br && RT.br.active) { RT.br.onPlayerDeath(); return; }
     if (GA.state !== 'play') return;
     GA.state = 'dead';
     RT.input.unlock();
@@ -210,12 +212,18 @@ RT.game = (() => {
     if (!prev || time < prev.time) RT.ui.progress.best[id] = { time: Math.round(time), acc, kills: GA.stats.kills };
     RT.ui.progress.unlocked = Math.max(RT.ui.progress.unlocked, Math.min(RT.missions.length, GA.missionIdx + 2));
     RT.ui.saveProgress();
+    RT.$('st-l-time').textContent = 'TIME';
+    RT.$('st-l-kills').textContent = 'ENEMIES ELIMINATED';
+    RT.$('st-l-acc').textContent = 'ACCURACY';
+    RT.$('st-l-heads').textContent = 'HEADSHOTS';
     RT.$('st-time').textContent = RT.fmtTime(time);
     RT.$('st-kills').textContent = GA.stats.kills;
     RT.$('st-acc').textContent = acc + '%';
     RT.$('st-heads').textContent = GA.stats.heads;
     RT.$('end-title').textContent = 'MISSION COMPLETE';
     RT.$('end-title').classList.remove('fail');
+    RT.$('btn-retry').textContent = 'Replay Mission';
+    RT.$('btn-retry').onclick = () => RT.game.startMission(RT.game.missionIdx);
     RT.$('btn-next').disabled = GA.missionIdx + 1 >= RT.missions.length;
     RT.ui.showHUD(false);
     if (GA.missionIdx === RT.missions.length - 1) {
@@ -274,6 +282,8 @@ RT.game = (() => {
     combatStingerCd -= raw;
     RT.ui.update(raw);
     RT.audio.update(raw);
+    if (RT.br && (RT.br.active || GA.state === 'br')) RT.br.update(dt, raw);
+    if (GA.state === 'br') return;
     if (GA.state === 'menu') { updateMenu(dt); return; }
     if (GA.state === 'cutscene') { updateCutscene(raw); RT.ai.update(dt * 0.25); return; }
     if (GA.state === 'engage') {
@@ -302,8 +312,10 @@ RT.game = (() => {
         lookVelX: 0, lookVelY: 0, dead: RT.player.dead,
       });
       RT.weapons.updateShells(dt);
-      RT.ai.update(dt);
-      RT.missionRuntime.update(dt);
+      if (!(RT.br && RT.br.active)) {
+        RT.ai.update(dt);
+        RT.missionRuntime.update(dt);
+      }
       RT.ui.refreshAmmo();
       if (RT.input.pressed('Escape')) GA.pause();
     }

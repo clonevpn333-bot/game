@@ -562,9 +562,10 @@ RT.ai = (() => {
           return;
         }
       }
-      /* vs enemies: sphere tests at head/chest/pelvis/knees */
+      /* vs enemies (campaign) or bots (BR): sphere tests at head/chest/pelvis/knees */
+      const targets = (RT.br && RT.br.active) ? RT.br.hittables() : enemies;
       let hitE = null, hitD = wallD, hitHead = false;
-      for (const e of enemies) {
+      for (const e of targets) {
         if (e.dead) continue;
         const zones = [
           [e.x, e.y + 1.56, e.z, 0.14, true],
@@ -590,7 +591,10 @@ RT.ai = (() => {
       RT.ai.suppressNear(new THREE.Vector3(org.x + dir.x * hitD, 0, org.z + dir.z * hitD), 5, 0.35);
       if (hitE) {
         if (RT.game) RT.game.stats.hits++;
-        const killed = A.damageEnemy(hitE, cfg.dmg * (hitHead ? cfg.headMul : 1), hitHead);
+        const dmgMod = RT.weapons ? RT.weapons.modFor(RT.weapons.state().curId).dmg : 1;
+        const killed = (RT.br && RT.br.active)
+          ? RT.br.damageBot(hitE, cfg.dmg * dmgMod * (hitHead ? cfg.headMul : 1), hitHead, 'player')
+          : A.damageEnemy(hitE, cfg.dmg * dmgMod * (hitHead ? cfg.headMul : 1), hitHead);
         if (RT.hud) RT.hud.hitmarker(killed);
         // impact puff on body (no gore)
         const hp = new THREE.Vector3(org.x + dir.x * hitD, org.y + dir.y * hitD, org.z + dir.z * hitD);

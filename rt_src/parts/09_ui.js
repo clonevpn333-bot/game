@@ -91,6 +91,7 @@ RT.ui = (() => {
       '<div class="title-rule"></div><div class="title-sub">Single Player · Five Missions</div></div>' +
       '<div class="menu-list">' +
       '<button class="menu-btn" id="btn-campaign">Campaign</button>' +
+      '<button class="menu-btn" id="btn-br">Thunderdrop <small style="color:var(--amber);letter-spacing:.2em;font-size:10px">· 50-PLAYER BR</small></button>' +
       '<button class="menu-btn" id="btn-continue">Continue</button>' +
       '<button class="menu-btn" id="btn-settings">Settings</button>' +
       '<button class="menu-btn" id="btn-credits">Credits</button></div>' +
@@ -111,6 +112,7 @@ RT.ui = (() => {
     $('ctrl-kb').onclick = () => { RT.settings.controls = 'keyboard'; RT.saveSettings(); syncCtrl(); };
     syncCtrl();
     $('btn-campaign').onclick = () => U.showMissionSelect();
+    $('btn-br').onclick = () => RT.br.startMatch();
     $('btn-continue').onclick = () => {
       const m = Math.min(U.progress.unlocked, RT.missions.length);
       RT.game.startMission(m - 1);
@@ -180,10 +182,10 @@ RT.ui = (() => {
       '<div class="big-result" id="end-title">MISSION COMPLETE</div>' +
       '<div class="title-rule"></div>' +
       '<div class="panel" style="max-width:520px;margin-top:26px">' +
-      '<table class="stats-table"><tr><td>TIME</td><td id="st-time">–</td></tr>' +
-      '<tr><td>ENEMIES ELIMINATED</td><td id="st-kills">–</td></tr>' +
-      '<tr><td>ACCURACY</td><td id="st-acc">–</td></tr>' +
-      '<tr><td>HEADSHOTS</td><td id="st-heads">–</td></tr></table>' +
+      '<table class="stats-table"><tr><td id="st-l-time">TIME</td><td id="st-time">–</td></tr>' +
+      '<tr><td id="st-l-kills">ENEMIES ELIMINATED</td><td id="st-kills">–</td></tr>' +
+      '<tr><td id="st-l-acc">ACCURACY</td><td id="st-acc">–</td></tr>' +
+      '<tr><td id="st-l-heads">HEADSHOTS</td><td id="st-heads">–</td></tr></table>' +
       '<div class="menu-list">' +
       '<button class="menu-btn" id="btn-next">Next Mission</button>' +
       '<button class="menu-btn" id="btn-retry">Replay Mission</button>' +

@@ -495,6 +495,21 @@ RT.weapons = (() => {
   W.giveAmmo = function (mult) {
     for (const id of loadout) { ammo[id].res = Math.min(CFG[id].reserve, ammo[id].res + Math.ceil(CFG[id].reserve * (mult || 0.5))); }
   };
+  /* BR: pick up / upgrade a weapon with rarity mods {dmg,kick,mag} */
+  W.mods = {};
+  W.modFor = id => W.mods[id] || { dmg: 1, kick: 1, mag: 1 };
+  W.addWeapon = function (id, mods, ammoBonus) {
+    W.mods[id] = mods || { dmg: 1, kick: 1, mag: 1 };
+    if (!loadout.includes(id)) {
+      loadout.push(id);
+      ammo[id] = { mag: Math.round(CFG[id].mag * W.modFor(id).mag), res: Math.ceil(CFG[id].reserve * 0.5) };
+    } else {
+      ammo[id].res = Math.min(CFG[id].reserve * 2, ammo[id].res + (ammoBonus || Math.ceil(CFG[id].reserve * 0.4)));
+    }
+    equip(id);
+    if (RT.hud) RT.hud.refreshAmmo();
+  };
+  W.giveAmmoFor = function (id, n) { if (ammo[id]) ammo[id].res = Math.min(CFG[id].reserve * 2, ammo[id].res + n); };
   W.ammoOf = id => ammo[id];
   W.loadout = () => loadout;
 
@@ -654,10 +669,11 @@ RT.weapons = (() => {
   const _dir = new THREE.Vector3(), _org = new THREE.Vector3(), _tmp = new THREE.Vector3();
   function fireOnce(opts) {
     const cfg = cur.cfg, am = ammo[curId];
+    const mods = W.modFor(curId);
     am.mag--;
     cooldown = 60 / cfg.rpm;
     /* recoil */
-    recP += cfg.kick * (0.85 + Math.random() * 0.3);
+    recP += cfg.kick * mods.kick * (0.85 + Math.random() * 0.3);
     recY += cfg.kickYaw * (Math.random() - 0.42);
     vmZ -= cfg.vmKick;
     RT.engine.shake(cfg.pellets ? 0.16 : 0.07);

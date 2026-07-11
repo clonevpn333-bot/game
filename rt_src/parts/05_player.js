@@ -64,6 +64,7 @@ RT.player = (() => {
   };
   PL.addRecoil = function (p, y) { kickP += p; kickY += y; };
   PL.state = () => ({ pos: pos.clone(), yaw, pitch, health, grenades });
+  PL.heal = (n) => { if (!dead) health = Math.min(100, health + n); };
   PL.restore = (s) => { pos.copy(s.pos); yaw = s.yaw; pitch = s.pitch; health = 100; dead = false; grenades = Math.max(2, s.grenades); };
 
   PL.damage = function (amount, fromPos) {

@@ -345,6 +345,39 @@ RT.audio = (() => {
     if (Math.random() < 0.35) tone(mus, t + 1.3, 1.6, { type: 'triangle', freq: [110, 130.8, 164.8][(Math.random() * 3) | 0], gain: 0.04 });
   }
 
+  /* vehicle engine loop: filtered saw + noise, RPM-pitched */
+  let engineNodes = null;
+  AU.engineStart = function () {
+    if (!AU.ensure() || engineNodes) return;
+    const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 55;
+    const osc2 = ctx.createOscillator(); osc2.type = 'square'; osc2.frequency.value = 28;
+    const nsrc = ctx.createBufferSource(); nsrc.buffer = noiseBuf; nsrc.loop = true;
+    const nf = ctx.createBiquadFilter(); nf.type = 'lowpass'; nf.frequency.value = 300;
+    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 480; f.Q.value = 2;
+    const g = ctx.createGain(); g.gain.value = 0.0001;
+    osc.connect(f); osc2.connect(f); nsrc.connect(nf); nf.connect(g); f.connect(g); g.connect(sfx);
+    osc.start(); osc2.start(); nsrc.start();
+    g.gain.setTargetAtTime(0.14, now(), 0.1);
+    engineNodes = { osc, osc2, nsrc, g, f };
+  };
+  AU.engineRPM = function (t) { // 0..1
+    if (!engineNodes) return;
+    engineNodes.osc.frequency.setTargetAtTime(55 + t * 130, now(), 0.06);
+    engineNodes.osc2.frequency.setTargetAtTime(28 + t * 60, now(), 0.06);
+    engineNodes.f.frequency.setTargetAtTime(480 + t * 900, now(), 0.08);
+    engineNodes.g.gain.setTargetAtTime(0.1 + t * 0.12, now(), 0.08);
+  };
+  AU.engineStop = function () {
+    if (!engineNodes) return;
+    const e = engineNodes; engineNodes = null;
+    e.g.gain.setTargetAtTime(0.0001, now(), 0.12);
+    setTimeout(() => { try { e.osc.stop(); e.osc2.stop(); e.nsrc.stop(); } catch (x) {} }, 600);
+  };
+  AU.stormRumble = function (intensity) {
+    if (!ctx) return;
+    nLayer(now(), { dur: 0.8, type: 'lowpass', f0: 120, f1: 60, gain: 0.12 * intensity, att: 0.2, verb: 0.3 });
+  };
+
   AU.update = function (dt) { ambientTick(dt); musicTick(dt); };
   return AU;
 })();
