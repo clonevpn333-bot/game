@@ -437,12 +437,21 @@ RT.settings = {
   sens: 1.0, fov: 80, volume: 0.8, quality: 1, // 0 low, 1 high
   controls: 'mouse',      // 'mouse' | 'keyboard' (trackpad-friendly, no pointer lock)
   aimAssist: 2,           // 0 off, 1 low, 2 high (keyboard mode only)
+  difficulty: 1,          // 0 recruit, 1 veteran, 2 hardened
+  autoQuality: 1,         // auto-drop quality if the frame rate tanks
 };
 try {
   const s = JSON.parse(localStorage.getItem('rt_settings') || 'null');
   if (s) Object.assign(RT.settings, s);
 } catch (e) { /* private mode */ }
 RT.saveSettings = () => { try { localStorage.setItem('rt_settings', JSON.stringify(RT.settings)); } catch (e) {} };
+/* difficulty multipliers: enemy damage to you, their accuracy, your outgoing damage */
+const DIFF = [
+  { dmg: 0.62, spread: 1.7, out: 1.25, name: 'Recruit' },
+  { dmg: 1.0, spread: 1.0, out: 1.0, name: 'Veteran' },
+  { dmg: 1.55, spread: 0.68, out: 0.85, name: 'Hardened' },
+];
+RT.difficulty = () => DIFF[RT.settings.difficulty] || DIFF[1];
 
 RT.engine = (() => {
   const E = {};
@@ -848,6 +857,11 @@ RT.engine = (() => {
       last = now;
       emaMS = emaMS * 0.95 + (raw * 1000) * 0.05;
       E.frameMS = emaMS;
+      /* auto quality: sustained sub-22fps in-game drops to performance mode once */
+      if (RT.settings.autoQuality && RT.settings.quality && RT.game && (RT.game.state === 'play' || RT.game.state === 'br')) {
+        E._slowAcc = emaMS > 45 ? (E._slowAcc || 0) + raw : Math.max(0, (E._slowAcc || 0) - raw * 0.5);
+        if (E._slowAcc > 4) { E._slowAcc = 0; RT.settings.quality = 0; E.applyQuality(); RT.saveSettings(); if (RT.ui) RT.ui.toastMsg('AUTO-QUALITY → PERFORMANCE'); }
+      }
       const dt = raw * E.timeScale;
       E.time += dt;
       trauma = Math.max(0, trauma - raw * 1.7);
@@ -4283,6 +4297,27 @@ RT.props = (() => {
     B.destructibles.push(d);
     return d;
   };
+  /* pop-up steel target (firing range): swings down when hit, resets after a beat */
+  P.steelTarget = function (B, x, z, o) {
+    o = o || {};
+    const gy = B.h(x, z), ry = o.ry || 0, s = o.s || 1;
+    const post = 0x4a4c4e, plate = 0xb03a2e;
+    B.buckets.std.push(G.cyl(0.04, 0.05, 0.5 * s, 8, post, { x, y: gy + 0.25 * s, z }));   // stand post
+    const pivot = new THREE.Group();
+    pivot.position.set(x, gy + 0.5 * s, z); pivot.rotation.y = ry;
+    const pl = RT.meshOf([
+      G.cyl(0.22 * s, 0.22 * s, 0.05, 16, plate, { y: 0.22 * s, rx: Math.PI / 2 }),
+      G.torus(0.22 * s, 0.02, 4, 16, 0xe8e2d4, { y: 0.22 * s, rx: 0 }),
+      G.cyl(0.07 * s, 0.07 * s, 0.052, 12, 0xe8e2d4, { y: 0.22 * s, rx: Math.PI / 2 }),
+    ], RT.MAT.std);
+    pivot.add(pl); B.group.add(pivot);
+    const col = B.collide(x, gy + 0.5 * s + 0.22 * s, z, 0.44 * s, 0.44 * s, 0.14);
+    const d = { kind: 'target', x, y: gy + 0.5 * s + 0.22 * s, z, pivot, col, down: 0, hits: 0 };
+    col.target = d;
+    (B.targets = B.targets || []).push(d);
+    B.destructibles.push(d);
+    return d;
+  };
   /* breakable window pane — translucent, no collider, shatters when shot */
   P.glassPane = function (B, x, y, z, ry, w, h) {
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h),
@@ -5163,6 +5198,7 @@ RT.ai = (() => {
     spread *= 1 + RT.player.speedF * 1.1;
     if (RT.player.crouched) spread *= 1.25;
     spread *= 1 + e.suppression * 0.8;
+    spread *= RT.difficulty().spread;                       // difficulty: enemy accuracy
     const dir = _v2.set(p.x - mp.x, py - mp.y, p.z - mp.z).normalize();
     dir.x += (Math.random() - 0.5) * 2 * spread;
     dir.y += (Math.random() - 0.5) * 2 * spread * 0.8;
@@ -5184,7 +5220,7 @@ RT.ai = (() => {
     }
     RT.engine.tracer(mp, dir, Math.min(wall ? wall.dist : maxD, tAlong > 0 ? Math.max(8, tAlong + 6) : maxD), 260);
     if (hitPlayer) {
-      RT.player.damage(7 + Math.random() * 7, new THREE.Vector3(e.x, e.y + 1.5, e.z));
+      RT.player.damage((7 + Math.random() * 7) * RT.difficulty().dmg, new THREE.Vector3(e.x, e.y + 1.5, e.z));
     } else if (wall) {
       const wp = new THREE.Vector3(wall.point.x, wall.point.y, wall.point.z);
       const wn = new THREE.Vector3(wall.normal.x, wall.normal.y, wall.normal.z);
@@ -5560,6 +5596,24 @@ RT.ai = (() => {
       else if (d.kind === 'glass' && !d.broken) shatterGlass(d, d.x, d.y, d.z);
     }
   }
+  function hitTarget(d, point) {
+    d.hits = (d.hits || 0) + 1;
+    if (RT.audio) RT.audio.metalPing();
+    for (let i = 0; i < 6; i++)
+      RT.engine.particle(point.x, point.y, point.z, (Math.random() - .5) * 3.5, Math.random() * 3 + 1, (Math.random() - .5) * 3.5,
+        { color: 0xffe6b0, size: 0.05, life: 0.32, grav: -5, drag: 1 });
+    if (RT.range && RT.range.onHit) RT.range.onHit(d);
+    if (!d.animating) {
+      d.animating = true; let t = 0;
+      (RT.transients = RT.transients || []).push((dt) => {
+        t += dt;
+        const down = t < 0.12 ? t / 0.12 : (t < 1.1 ? 1 : Math.max(0, 1 - (t - 1.1) / 0.25));
+        d.pivot.rotation.x = down * 1.5;
+        if (t > 1.4) { d.pivot.rotation.x = 0; d.animating = false; return false; }
+        return true;
+      });
+    }
+  }
   function damageBarrel(d, dmg, point) {
     if (d.exploded) return;
     d.hp -= dmg;
@@ -5637,6 +5691,7 @@ RT.ai = (() => {
         const dmgMod = RT.weapons ? RT.weapons.modFor(RT.weapons.state().curId).dmg : 1;
         let dmg = cfg.dmg * dmgMod * (hitHead ? cfg.headMul : 1);
         if (wallbang) dmg *= 0.5;                                 // penetration damage falloff
+        dmg *= RT.difficulty().out;                              // difficulty: your outgoing damage
         const killed = (RT.br && RT.br.active)
           ? RT.br.damageBot(hitE, dmg, hitHead, 'player')
           : A.damageEnemy(hitE, dmg, hitHead);
@@ -5655,6 +5710,8 @@ RT.ai = (() => {
         if (RT.audio) RT.audio.hitFeedback(killed);
       } else if (wall && wall.col && wall.col.barrel) {
         damageBarrel(wall.col.barrel, cfg.dmg * (RT.weapons ? RT.weapons.modFor(RT.weapons.state().curId).dmg : 1), wall.point);
+      } else if (wall && wall.col && wall.col.target) {
+        hitTarget(wall.col.target, wall.point);
       } else if (wall) {
         const wp = new THREE.Vector3(wall.point.x, wall.point.y, wall.point.z);
         const wn = new THREE.Vector3(wall.normal.x, wall.normal.y, wall.normal.z);
@@ -6743,13 +6800,39 @@ RT.ui = (() => {
   let hud, subQueue = [], subCur = null, toastT = 0;
   const waypoints = [];
 
-  /* ---------- progress ---------- */
-  U.progress = { unlocked: 1, best: {} };
-  try {
-    const p = JSON.parse(localStorage.getItem('rt_progress') || 'null');
-    if (p) U.progress = p;
-  } catch (e) {}
-  U.saveProgress = () => { try { localStorage.setItem('rt_progress', JSON.stringify(U.progress)); } catch (e) {} };
+  /* ---------- progress (3 save slots) ---------- */
+  U.slot = 0;
+  try { U.slot = Math.min(2, Math.max(0, +(localStorage.getItem('rt_slot') || 0) || 0)); } catch (e) {}
+  const progKey = () => 'rt_progress_' + U.slot;
+  const loadSlot = () => {
+    let p = null;
+    try {
+      let raw = localStorage.getItem(progKey());
+      if (!raw && U.slot === 0) raw = localStorage.getItem('rt_progress');   // migrate legacy save
+      p = JSON.parse(raw || 'null');
+    } catch (e) {}
+    U.progress = p || { unlocked: 1, best: {} };
+  };
+  loadSlot();
+  U.saveProgress = () => { try { localStorage.setItem(progKey(), JSON.stringify(U.progress)); } catch (e) {} };
+  U.slotSummary = (n) => {
+    try {
+      const p = JSON.parse(localStorage.getItem('rt_progress_' + n) || (n === 0 ? localStorage.getItem('rt_progress') : null) || 'null');
+      if (!p) return 'Empty';
+      const lvl = p.xp && RT.progress ? RT.progress.levelFor(p.xp) : 1;
+      return 'Mission ' + Math.min(p.unlocked || 1, 5) + ' · Rank ' + lvl;
+    } catch (e) { return 'Empty'; }
+  };
+  U.switchSlot = (n) => {
+    if (n === U.slot) return;
+    U.saveProgress();
+    U.slot = n; try { localStorage.setItem('rt_slot', n); } catch (e) {}
+    loadSlot();
+    if (RT.progress && RT.progress.refreshArmory) RT.progress.refreshArmory();
+    U.renderSlots && U.renderSlots();
+    $('btn-continue').disabled = U.progress.unlocked <= 1 && !U.progress.best[1];
+  };
+  U.resetSlot = () => { U.progress = { unlocked: 1, best: {} }; U.saveProgress(); if (RT.progress && RT.progress.refreshArmory) RT.progress.refreshArmory(); U.renderSlots && U.renderSlots(); };
 
   /* ---------- build DOM ---------- */
   U.init = function () {
@@ -6760,6 +6843,15 @@ RT.ui = (() => {
     el('div', 'bar', lb).id = 'lb-top';
     el('div', 'bar', lb).id = 'lb-bot';
     const skip = el('div', '', body); skip.id = 'skip-hint'; skip.textContent = 'HOLD SPACE TO SKIP';
+
+    /* loading overlay */
+    const load = el('div', '', body); load.id = 'loading';
+    load.style.cssText = 'position:fixed;inset:0;z-index:60;background:#0b0c0a;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;opacity:0;transition:opacity .3s';
+    load.innerHTML = '<div style="font-size:13px;letter-spacing:.5em;color:var(--amber)">ROLLING THUNDER</div>' +
+      '<div style="width:220px;height:3px;background:rgba(255,255,255,.12);overflow:hidden;border-radius:2px">' +
+      '<div id="load-bar" style="height:100%;width:30%;background:linear-gradient(90deg,transparent,var(--amber),transparent);animation:loadslide 1.1s linear infinite"></div></div>' +
+      '<div id="load-tip" style="max-width:520px;text-align:center;font-size:13px;color:var(--ink-dim);letter-spacing:.04em;line-height:1.5;padding:0 20px"></div>';
+    const st = el('style', '', body); st.textContent = '@keyframes loadslide{0%{transform:translateX(-260px)}100%{transform:translateX(260px)}}';
 
     /* HUD */
     hud = el('div', '', body); hud.id = 'hud';
@@ -6829,6 +6921,7 @@ RT.ui = (() => {
       '<button class="menu-btn" id="btn-br">Thunderdrop <small style="color:var(--amber);letter-spacing:.2em;font-size:10px">· 50-PLAYER BR</small></button>' +
       '<button class="menu-btn" id="btn-continue">Continue</button>' +
       '<button class="menu-btn" id="btn-armory">Armory</button>' +
+      '<button class="menu-btn" id="btn-range">Firing Range</button>' +
       '<button class="menu-btn" id="btn-settings">Settings</button>' +
       '<button class="menu-btn" id="btn-credits">Credits</button></div>' +
       '<div class="menu-foot" style="margin-top:26px">Control scheme</div>' +
@@ -6849,6 +6942,7 @@ RT.ui = (() => {
     syncCtrl();
     $('btn-campaign').onclick = () => U.showMissionSelect();
     $('btn-br').onclick = () => RT.br.startMatch();
+    $('btn-range').onclick = () => RT.range.startRange();
     $('btn-continue').onclick = () => {
       const m = Math.min(U.progress.unlocked, RT.missions.length);
       RT.game.startMission(m - 1);
@@ -6859,9 +6953,24 @@ RT.ui = (() => {
     /* mission select */
     screenShell('mission-select',
       '<div class="panel-title"><small>Campaign</small>Select Mission</div>' +
+      '<div class="menu-foot" style="margin-bottom:8px">Save Slot</div>' +
+      '<div id="slot-row" style="display:flex;gap:10px;margin-bottom:16px"></div>' +
       '<div class="panel"><div class="mission-grid" id="mission-grid"></div>' +
-      '<div class="back-row"><button class="menu-btn" id="btn-ms-back">Back</button></div></div>');
+      '<div class="back-row"><button class="menu-btn" id="btn-ms-back">Back</button>' +
+      '<button class="menu-btn" id="btn-slot-reset" style="opacity:.7">Reset This Slot</button></div></div>');
     $('btn-ms-back').onclick = () => U.showMenu();
+    $('btn-slot-reset').onclick = () => { if (confirm('Reset save slot ' + (U.slot + 1) + '? This erases its campaign + rank progress.')) U.resetSlot(); };
+    U.renderSlots = function () {
+      const row = $('slot-row'); if (!row) return;
+      row.innerHTML = '';
+      for (let n = 0; n < 3; n++) {
+        const b = el('button', 'menu-btn', row);
+        b.style.cssText = 'flex:1;text-align:left;padding:10px 14px;' + (n === U.slot ? 'border-color:var(--amber)' : 'opacity:.65');
+        b.innerHTML = '<div style="font-size:13px;letter-spacing:.1em">SLOT ' + (n + 1) + (n === U.slot ? ' ·' : '') + '</div>' +
+          '<div style="font-size:10px;color:var(--ink-dim);letter-spacing:.06em;margin-top:3px">' + U.slotSummary(n) + '</div>';
+        b.onclick = () => U.switchSlot(n);
+      }
+    };
 
     /* settings */
     screenShell('settings-screen',
@@ -6873,6 +6982,8 @@ RT.ui = (() => {
       '<div class="set-row"><label>Quality</label><div class="seg"><button id="set-q0">Performance</button><button id="set-q1">Quality</button></div></div>' +
       '<div class="set-row"><label>Controls</label><div class="seg"><button id="set-c0">Mouse</button><button id="set-c1">Keyboard</button></div></div>' +
       '<div class="set-row"><label>Aim Assist (keyboard)</label><div class="seg"><button id="set-a0">Off</button><button id="set-a1">Low</button><button id="set-a2">High</button></div></div>' +
+      '<div class="set-row"><label>Difficulty</label><div class="seg"><button id="set-d0">Recruit</button><button id="set-d1">Veteran</button><button id="set-d2">Hardened</button></div></div>' +
+      '<div class="set-row"><label>Auto Quality</label><div class="seg"><button id="set-aq0">Off</button><button id="set-aq1">On</button></div></div>' +
       '<div class="paused-note" id="controls-card" style="margin-top:16px"></div>' +
       '<div class="back-row"><button class="menu-btn" id="btn-set-back">Back</button></div></div>');
     const syncSettings = () => {
@@ -6884,12 +6995,18 @@ RT.ui = (() => {
       $('set-c0').className = RT.settings.controls === 'mouse' ? 'on' : '';
       $('set-c1').className = RT.settings.controls === 'keyboard' ? 'on' : '';
       for (let i = 0; i < 3; i++) $('set-a' + i).className = RT.settings.aimAssist === i ? 'on' : '';
+      for (let i = 0; i < 3; i++) $('set-d' + i).className = RT.settings.difficulty === i ? 'on' : '';
+      for (let i = 0; i < 2; i++) $('set-aq' + i).className = (RT.settings.autoQuality ? 1 : 0) === i ? 'on' : '';
       $('controls-card').innerHTML = U.controlsCard();
     };
     $('set-c0').onclick = () => { RT.settings.controls = 'mouse'; RT.saveSettings(); syncSettings(); if (U._syncCtrl) U._syncCtrl(); };
     $('set-c1').onclick = () => { RT.settings.controls = 'keyboard'; RT.saveSettings(); syncSettings(); if (U._syncCtrl) U._syncCtrl(); };
     for (let i = 0; i < 3; i++) {
       $('set-a' + i).onclick = ((n) => () => { RT.settings.aimAssist = n; RT.saveSettings(); syncSettings(); })(i);
+      $('set-d' + i).onclick = ((n) => () => { RT.settings.difficulty = n; RT.saveSettings(); syncSettings(); })(i);
+    }
+    for (let i = 0; i < 2; i++) {
+      $('set-aq' + i).onclick = ((n) => () => { RT.settings.autoQuality = n; RT.saveSettings(); syncSettings(); })(i);
     }
     U._syncSettings = syncSettings;
     $('set-sens').oninput = e => { RT.settings.sens = +e.target.value; syncSettings(); RT.saveSettings(); };
@@ -6905,13 +7022,23 @@ RT.ui = (() => {
       '<div class="menu-list">' +
       '<button class="menu-btn" id="btn-resume">Resume</button>' +
       '<button class="menu-btn" id="btn-restart">Restart From Checkpoint</button>' +
+      '<button class="menu-btn" id="btn-photo">Photo Mode</button>' +
       '<button class="menu-btn" id="btn-pause-settings">Settings</button>' +
       '<button class="menu-btn" id="btn-quit">Quit To Menu</button></div>' +
       '<div class="paused-note" id="pause-controls"></div>');
     $('btn-resume').onclick = () => RT.game.resume();
     $('btn-restart').onclick = () => RT.game.restartCheckpoint();
+    $('btn-photo').onclick = () => RT.game.enterPhoto();
     $('btn-pause-settings').onclick = () => U.showSettings('pause-screen');
     $('btn-quit').onclick = () => RT.game.quitToMenu();
+
+    /* photo-mode hint bar */
+    const ph = el('div', '', document.body); ph.id = 'photo-hint';
+    ph.style.cssText = 'position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:40;display:none;' +
+      'padding:9px 18px;background:rgba(10,11,10,.6);border:1px solid rgba(232,163,61,.35);border-radius:6px;' +
+      'font-size:12px;letter-spacing:.12em;color:#e8e2d4;text-shadow:0 1px 3px #000';
+    ph.innerHTML = '<b style="color:var(--amber)">PHOTO MODE</b>&nbsp;&nbsp;WASD fly · Arrows/Mouse look · Q/E up-down · Shift boost · <b>P</b> exit';
+    U.showPhotoHint = (on) => { ph.style.display = on ? 'block' : 'none'; };
 
     /* mission end */
     screenShell('end-screen',
@@ -6992,6 +7119,7 @@ RT.ui = (() => {
         `<div class="mission-stats">${best ? `BEST <b>${RT.fmtTime(best.time)}</b><br>ACC <b>${best.acc}%</b> · KILLS <b>${best.kills}</b>` : (locked ? '🔒' : 'NOT COMPLETED')}</div>`;
       if (!locked) b.onclick = () => RT.game.startMission(i);
     });
+    if (U.renderSlots) U.renderSlots();
     U.showScreen('mission-select');
   };
 
@@ -7038,6 +7166,33 @@ RT.ui = (() => {
     hmT = 0.18;
   };
   U.pulseVignette = function (a) { $('vignette').style.opacity = clamp(a, 0, 1); };
+
+  /* loading overlay with rotating field tips */
+  const LOAD_TIPS = [
+    'Double-tap W for a tactical sprint, then slide with Crouch.',
+    'Slide into cover, then cancel with Jump to keep your momentum.',
+    'Vault low walls by jumping into them — mantling clears the ledge.',
+    'Lean around corners with Z and X to peek without exposing yourself.',
+    'Shoot the red barrels near cover to flush entrenched enemies.',
+    'Rounds punch through thin wood and drywall — deny the enemy cover.',
+    'Throw smoke (B) to break line-of-sight and reposition under cover.',
+    'Headshots pay double XP — steady your aim before the trigger.',
+    'Earn XP to unlock weapon camos in the Armory.',
+    'In THUNDERDROP, the storm wall closes in — keep inside the circle.',
+    'Vehicles cross the map fast; arrow keys steer in keyboard mode.',
+    'Hold I to inspect your weapon between firefights.',
+  ];
+  U.showLoading = function (label) {
+    const l = $('loading');
+    $('load-tip').innerHTML = '<b style="color:#cfc8ba">TIP</b>&nbsp;&nbsp;' + (label || LOAD_TIPS[(Math.random() * LOAD_TIPS.length) | 0]);
+    l.style.display = 'flex';
+    requestAnimationFrame(() => { l.style.opacity = '1'; });
+  };
+  U.hideLoading = function () {
+    const l = $('loading');
+    l.style.opacity = '0';
+    setTimeout(() => { if (l.style.opacity === '0') l.style.display = 'none'; }, 320);
+  };
   let lastHP = 100;
   U.setHealth = function (h, sinceHurt) {
     const low = $('health-low');
@@ -7348,6 +7503,7 @@ RT.game = (() => {
     GA.missionIdx = idx;
     RT.ui.hideScreens();
     RT.ui.fade(true);
+    RT.ui.showLoading();
     setTimeout(() => {
       RT.engine.clearWorld();
       RT.ai.reset();
@@ -7370,6 +7526,7 @@ RT.game = (() => {
       RT.engine.setWeather(def.weather || null);
       RT.ui.clearTimer();
       RT.ui.clearSubtitles();
+      RT.ui.hideLoading();
       RT.ui.fade(false, true);
       if (def.intro) GA.playCutscene(def.intro, beginPlay);
       else beginPlay();
@@ -7424,6 +7581,48 @@ RT.game = (() => {
     RT.input.lock();
     GA.state = 'play';
   };
+  /* ---------- photo mode: detached free-fly camera ---------- */
+  GA.enterPhoto = function () {
+    if (GA.state !== 'pause') return;
+    const cam = RT.engine.camera;
+    GA._photo = { x: cam.position.x, y: cam.position.y, z: cam.position.z, yaw: RT.player.yaw, pitch: RT.player.pitch };
+    GA.state = 'photo';
+    RT.ui.hideScreens();
+    RT.ui.showHUD(false);
+    RT.weapons.setVisible(false);
+    RT.ui.showPhotoHint(true);
+    RT.input.lock();
+  };
+  GA.exitPhoto = function () {
+    if (GA.state !== 'photo') return;
+    RT.ui.showPhotoHint(false);
+    GA.state = 'pause';
+    RT.input.unlock();
+    if (RT.$('pause-controls')) RT.$('pause-controls').innerHTML = RT.ui.controlsCard();
+    RT.ui.showScreen('pause-screen');
+  };
+  function updatePhoto(dt) {
+    const I = RT.input, cam = RT.engine.camera, ph = GA._photo;
+    let [mdx, mdy] = I.consumeMouse();
+    if (I.keyboardMode() || I.fallback) {
+      const ls = 1.5 * dt;
+      if (I.keys.ArrowLeft) ph.yaw += ls; if (I.keys.ArrowRight) ph.yaw -= ls;
+      if (I.keys.ArrowUp) ph.pitch += ls; if (I.keys.ArrowDown) ph.pitch -= ls;
+    }
+    ph.yaw -= mdx * 0.002; ph.pitch = clamp(ph.pitch - mdy * 0.002, -1.45, 1.45);
+    const sp = (I.keys.ShiftLeft ? 30 : 12) * dt;
+    const cy = Math.cos(ph.pitch);
+    const fx = -Math.sin(ph.yaw) * cy, fy = Math.sin(ph.pitch), fz = -Math.cos(ph.yaw) * cy;
+    const rx = Math.cos(ph.yaw), rz = -Math.sin(ph.yaw);
+    const mf = (I.keys.KeyW ? 1 : 0) - (I.keys.KeyS ? 1 : 0);
+    const msd = (I.keys.KeyD ? 1 : 0) - (I.keys.KeyA ? 1 : 0);
+    const mu = (I.keys.KeyE ? 1 : 0) - (I.keys.KeyQ ? 1 : 0);
+    ph.x += (fx * mf + rx * msd) * sp; ph.y += (fy * mf + mu) * sp; ph.z += (fz * mf + rz * msd) * sp;
+    cam.position.set(ph.x, ph.y, ph.z);
+    cam.rotation.set(ph.pitch, ph.yaw, 0);
+    RT.engine.updateSun(cam.position);
+    if (I.pressed('KeyP') || I.pressed('Escape')) GA.exitPhoto();
+  }
   GA.quitToMenu = function () {
     RT.input.unlock();
     RT.ui.hideScreens();
@@ -7431,7 +7630,9 @@ RT.game = (() => {
     RT.ui.fade(true);
     RT.ui.letterbox(false);
     RT.weapons.setVisible(false);
-    GA.cutscene = null;
+    GA.cutscene = null; GA._killcam = null; GA._range = false;
+    if (RT.range) RT.range.exit();
+    if (RT.audio) RT.audio.combatMusic(false);
     if (RT.br) RT.br.reset();
     setTimeout(() => { GA.showMenuWorld(); }, 780);
   };
@@ -7444,6 +7645,7 @@ RT.game = (() => {
     };
   };
   GA.restartCheckpoint = function () {
+    if (GA._range) { RT.range.startRange(); return; }
     RT.ui.hideScreens();
     RT.ui.fade(true);
     setTimeout(() => {
@@ -7489,6 +7691,18 @@ RT.game = (() => {
     if (headshot) GA.stats.heads++;
     GA.killFx(headshot);
     if (RT.progress) RT.progress.onKill(headshot, false);
+  };
+  /* victory flair: a burst of colourful confetti + a warm flash */
+  GA.victoryFlair = function () {
+    const p = RT.player.pos;
+    const cols = [0xffd24a, 0xe8a33d, 0x7fe08a, 0x6aa0ff, 0xff6a6a, 0xffffff, 0xc9a028];
+    for (let i = 0; i < 64; i++) {
+      const a = Math.random() * TAU, sp = 3 + Math.random() * 9;
+      RT.engine.particle(p.x + (Math.random() - .5) * 4, p.y + 2 + Math.random() * 2.4, p.z + (Math.random() - .5) * 4,
+        Math.cos(a) * sp, 6 + Math.random() * 8, Math.sin(a) * sp,
+        { color: cols[i % cols.length], size: 0.11 + Math.random() * 0.13, life: 2.4 + Math.random() * 1.6, grav: -6, drag: 0.55, grow: -0.15 });
+    }
+    RT.engine.flash(new THREE.Vector3(p.x, p.y + 3, p.z), 0xffe0a0, 3, 32, 0.5);
   };
   /* brief kill-confirmation hitstop; stronger on headshots, rate-limited, test-safe */
   GA.killFx = function (big) {
@@ -7541,6 +7755,7 @@ RT.game = (() => {
     RT.$('st-heads').textContent = GA.stats.heads;
     RT.$('end-title').textContent = 'MISSION COMPLETE';
     RT.$('end-title').classList.remove('fail');
+    GA.victoryFlair();
     RT.$('btn-retry').textContent = 'Replay Mission';
     RT.$('btn-retry').onclick = () => RT.game.startMission(RT.game.missionIdx);
     RT.$('btn-next').disabled = GA.missionIdx + 1 >= RT.missions.length;
@@ -7613,6 +7828,7 @@ RT.game = (() => {
       if (RT.input.pressed('Enter') || RT.input.pressed('NumpadEnter')) GA.doEngage();
       return;
     }
+    if (GA.state === 'photo') { updatePhoto(dt); return; }
     if (GA.state === 'pause') return;
     /* smoke column beacons */
     if (RT.map && RT.map.smokeSources && (GA.state === 'play' || GA.state === 'cutscene' || GA.state === 'menu' || GA.state === 'engage')) {
@@ -7641,7 +7857,9 @@ RT.game = (() => {
         lookVelX: 0, lookVelY: 0, dead: RT.player.dead,
       });
       RT.weapons.updateShells(dt);
-      if (!(RT.br && RT.br.active)) {
+      if (GA._range) {
+        if (RT.range) RT.range.update(dt);
+      } else if (!(RT.br && RT.br.active)) {
         RT.ai.update(dt);
         RT.missionRuntime.update(dt);
       }
@@ -8611,6 +8829,7 @@ RT.br = (() => {
     RT.audio.menuMusic(false);
     RT.ui.hideScreens();
     RT.ui.fade(true);
+    RT.ui.showLoading('Dropping into Velkan Ridge — 50 combatants, last one standing wins.');
     setTimeout(() => {
       buildBRMap();
       buildStorm();
@@ -8637,6 +8856,7 @@ RT.br = (() => {
       buildBrHud();
       RT.ui.showHUD(true);
       RT.ui.setObjectives([]);
+      RT.ui.hideLoading();
       RT.ui.fade(false, true);
       RT.ui.toast('THUNDERDROP', 'SPACE / CLICK TO JUMP');
       RT.audio.setAmbient('birds');
@@ -8726,6 +8946,7 @@ RT.br = (() => {
       RT.engine.timeScale = 0.35;
       setTimeout(() => { RT.engine.timeScale = 1; }, 900);
       RT.fxExplosion(new THREE.Vector3(RT.player.pos.x, RT.player.pos.y + 8, RT.player.pos.z), 4);
+      if (RT.game.victoryFlair) RT.game.victoryFlair();
       RT.audio.missionCompleteStinger();
     }
     setTimeout(() => RT.ui.showScreen('end-screen'), win ? 1600 : 700);
@@ -8903,6 +9124,7 @@ RT.progress = (() => {
     return { level: lvl, into: xp - acc, need: xpForRank(lvl) };
   }
   P.rankName = lvl => RANKS[Math.min(lvl, RANKS.length) - 1] + (lvl > RANKS.length ? ' ' + (lvl - RANKS.length + 1) : '');
+  P.levelFor = xp => levelFromXP(xp || 0).level;
 
   function data() {
     const pr = U.progress;
@@ -9067,13 +9289,132 @@ RT.progress = (() => {
   P.refreshArmory = refreshArmory;
   P.openArmory = function () { buildArmory(); refreshArmory(); U.showScreen('armory-screen'); };
 
+  /* easter egg: the Konami code unlocks every weapon camo */
+  const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA'];
+  let kseq = [];
+  function konamiWatch() {
+    document.addEventListener('keydown', (e) => {
+      kseq.push(e.code); if (kseq.length > KONAMI.length) kseq.shift();
+      if (kseq.join() === KONAMI.join()) {
+        kseq = [];
+        const pr = data();
+        let n = 0;
+        for (const c of CAMOS) if (!pr.camos.includes(c.id)) { pr.camos.push(c.id); n++; }
+        U.saveProgress(); refreshArmory();
+        RT.ui.toast('⚡ OVERDRIVE ⚡', n ? 'All weapon camos unlocked' : 'You already have everything, Sergeant');
+        if (RT.audio && RT.audio.missionCompleteStinger) RT.audio.missionCompleteStinger();
+        if (RT.game && RT.game.victoryFlair && RT.game.state === 'play') RT.game.victoryFlair();
+      }
+    });
+  }
+
   P.init = function () {
     data();
     buildArmory();
     if (RT.$('btn-armory')) RT.$('btn-armory').onclick = () => P.openArmory();
     refreshArmory();
+    konamiWatch();
   };
   return P;
+})();
+
+
+/* ==================== 13_range.js ==================== */
+/* ============================================================
+ * Tier 5 — Firing Range: a safe practice map with pop-up steel
+ * targets, every weapon, and a live hit counter.
+ * ============================================================ */
+RT.range = (() => {
+  const R = {};
+  let score = 0, best = 0, hudEl = null, targets = [];
+
+  function buildRange() {
+    RT.engine.clearWorld();
+    RT.ai.reset();
+    const def = {
+      atmosphere: RT.missions[0].atmosphere,
+      terrain: {
+        size: 300, segs: 96, seed: 7, amp: 2.2, rim: 8,
+        palette: { lush: 0x5d6b38, lush2: 0x71793f, dirt: 0x77664a, rock: 0x74705f, road: 0x6d6354 },
+        flats: [{ x: 0, z: -55, r: 150 }], roads: [], craters: [],
+      },
+    };
+    RT.engine.setAtmosphere(def.atmosphere);
+    const terrain = new RT.Terrain(def.terrain);
+    const B = new RT.MapBuilder(terrain, 7);
+    RT.map = B; RT.map.def = def;
+    const P = RT.props;
+    /* firing line */
+    P.sandbags(B, -5, 6, 0, 6, {});
+    P.sandbags(B, 6, 6, 0, 5, {});
+    P.crate(B, -10, 7.5, { stack: true });
+    P.crate(B, 11, 7.5, {});
+    P.explosiveBarrel(B, 16, 8, {});
+    P.window(B, -16, B.h(-16, 7) + 1.4, 7, 0, 1.6, 1.3, {});   // a pane to plink
+    /* target rows downrange (negative z), bigger the farther out */
+    targets = [];
+    const rows = [[-12, 3, 1.0], [-28, 4, 1.05], [-55, 4, 1.25], [-100, 3, 1.7]];
+    for (const [dz, n, s] of rows) {
+      for (let i = 0; i < n; i++) targets.push(P.steelTarget(B, (i - (n - 1) / 2) * 6, dz, { s }));
+      P.sign(B, (n / 2) * 6 + 6, dz, 0.2);
+    }
+    /* backstop berm */
+    for (let x = -60; x <= 60; x += 12) P.sandbags(B, x, -120, 0, 13, {});
+    P.scatterGrass(B, 2600, 150, 0x5f6c39);
+    P.scatterRocks(B, 40, 150);
+    RT.engine.world.add(B.finalize());
+    RT.engine.setWeather(null);
+  }
+
+  function buildHud() {
+    if (!hudEl) {
+      hudEl = RT.el('div', '', RT.$('hud'));
+      hudEl.style.cssText = 'position:absolute;top:78px;left:50%;transform:translateX(-50%);text-align:center;color:#fff;text-shadow:0 1px 5px #000';
+    }
+    hudEl.style.display = 'block';
+    updateHud();
+  }
+  function updateHud() {
+    if (hudEl) hudEl.innerHTML = '<div style="font-size:13px;letter-spacing:.34em;color:var(--amber)">FIRING RANGE</div>' +
+      '<div style="font-size:26px;font-weight:800;letter-spacing:.05em">HITS ' + score + (best ? ' <span style="font-size:13px;color:var(--ink-dim)">BEST ' + best + '</span>' : '') + '</div>' +
+      '<div style="font-size:11px;color:var(--ink-dim);letter-spacing:.1em">[T] reset · [1–4] weapons · [B] smoke · ESC pause</div>';
+  }
+  R.onHit = function () { score++; if (score > best) best = score; updateHud(); };
+  R.update = function () {
+    if (RT.input.pressed('KeyT')) {
+      score = 0; updateHud();
+      for (const t of targets) { t.hits = 0; if (t.pivot) t.pivot.rotation.x = 0; }
+      if (RT.audio) RT.audio.objectiveStinger && RT.audio.objectiveStinger();
+    }
+  };
+  R.exit = function () { if (hudEl) { hudEl.style.display = 'none'; hudEl.innerHTML = ''; } score = 0; };
+
+  R.startRange = function () {
+    RT.audio.ensure();
+    RT.audio.menuMusic(false);
+    RT.ui.hideScreens();
+    RT.ui.fade(true);
+    RT.ui.showLoading('Firing range — sight in your weapons and warm up.');
+    setTimeout(() => {
+      buildRange();
+      RT.player.init({ x: 0, z: 9, ry: 0 });          // face downrange (−z)
+      RT.weapons.setLoadout(['m4', 'dmr', 'shotgun', 'pistol'], true);
+      for (const id of ['m4', 'dmr', 'shotgun', 'pistol']) RT.weapons.giveAmmoFor(id, 9999);
+      RT.player.grenades = 4;
+      RT.game.state = 'play';
+      RT.game.missionIdx = -1;
+      RT.game._range = true;
+      score = 0;
+      buildHud();
+      RT.ui.showHUD(true);
+      RT.ui.hideLoading();
+      RT.ui.fade(false, true);
+      RT.ui.toast('FIRING RANGE', 'Ring the steel · [T] to reset');
+      RT.audio.setAmbient('birds');
+      RT.weapons.setVisible(true);
+    }, 700);
+  };
+  return R;
 })();
 
 

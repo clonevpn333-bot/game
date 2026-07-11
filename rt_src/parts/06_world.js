@@ -906,6 +906,27 @@ RT.props = (() => {
     B.destructibles.push(d);
     return d;
   };
+  /* pop-up steel target (firing range): swings down when hit, resets after a beat */
+  P.steelTarget = function (B, x, z, o) {
+    o = o || {};
+    const gy = B.h(x, z), ry = o.ry || 0, s = o.s || 1;
+    const post = 0x4a4c4e, plate = 0xb03a2e;
+    B.buckets.std.push(G.cyl(0.04, 0.05, 0.5 * s, 8, post, { x, y: gy + 0.25 * s, z }));   // stand post
+    const pivot = new THREE.Group();
+    pivot.position.set(x, gy + 0.5 * s, z); pivot.rotation.y = ry;
+    const pl = RT.meshOf([
+      G.cyl(0.22 * s, 0.22 * s, 0.05, 16, plate, { y: 0.22 * s, rx: Math.PI / 2 }),
+      G.torus(0.22 * s, 0.02, 4, 16, 0xe8e2d4, { y: 0.22 * s, rx: 0 }),
+      G.cyl(0.07 * s, 0.07 * s, 0.052, 12, 0xe8e2d4, { y: 0.22 * s, rx: Math.PI / 2 }),
+    ], RT.MAT.std);
+    pivot.add(pl); B.group.add(pivot);
+    const col = B.collide(x, gy + 0.5 * s + 0.22 * s, z, 0.44 * s, 0.44 * s, 0.14);
+    const d = { kind: 'target', x, y: gy + 0.5 * s + 0.22 * s, z, pivot, col, down: 0, hits: 0 };
+    col.target = d;
+    (B.targets = B.targets || []).push(d);
+    B.destructibles.push(d);
+    return d;
+  };
   /* breakable window pane — translucent, no collider, shatters when shot */
   P.glassPane = function (B, x, y, z, ry, w, h) {
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h),

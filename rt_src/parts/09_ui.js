@@ -8,13 +8,39 @@ RT.ui = (() => {
   let hud, subQueue = [], subCur = null, toastT = 0;
   const waypoints = [];
 
-  /* ---------- progress ---------- */
-  U.progress = { unlocked: 1, best: {} };
-  try {
-    const p = JSON.parse(localStorage.getItem('rt_progress') || 'null');
-    if (p) U.progress = p;
-  } catch (e) {}
-  U.saveProgress = () => { try { localStorage.setItem('rt_progress', JSON.stringify(U.progress)); } catch (e) {} };
+  /* ---------- progress (3 save slots) ---------- */
+  U.slot = 0;
+  try { U.slot = Math.min(2, Math.max(0, +(localStorage.getItem('rt_slot') || 0) || 0)); } catch (e) {}
+  const progKey = () => 'rt_progress_' + U.slot;
+  const loadSlot = () => {
+    let p = null;
+    try {
+      let raw = localStorage.getItem(progKey());
+      if (!raw && U.slot === 0) raw = localStorage.getItem('rt_progress');   // migrate legacy save
+      p = JSON.parse(raw || 'null');
+    } catch (e) {}
+    U.progress = p || { unlocked: 1, best: {} };
+  };
+  loadSlot();
+  U.saveProgress = () => { try { localStorage.setItem(progKey(), JSON.stringify(U.progress)); } catch (e) {} };
+  U.slotSummary = (n) => {
+    try {
+      const p = JSON.parse(localStorage.getItem('rt_progress_' + n) || (n === 0 ? localStorage.getItem('rt_progress') : null) || 'null');
+      if (!p) return 'Empty';
+      const lvl = p.xp && RT.progress ? RT.progress.levelFor(p.xp) : 1;
+      return 'Mission ' + Math.min(p.unlocked || 1, 5) + ' · Rank ' + lvl;
+    } catch (e) { return 'Empty'; }
+  };
+  U.switchSlot = (n) => {
+    if (n === U.slot) return;
+    U.saveProgress();
+    U.slot = n; try { localStorage.setItem('rt_slot', n); } catch (e) {}
+    loadSlot();
+    if (RT.progress && RT.progress.refreshArmory) RT.progress.refreshArmory();
+    U.renderSlots && U.renderSlots();
+    $('btn-continue').disabled = U.progress.unlocked <= 1 && !U.progress.best[1];
+  };
+  U.resetSlot = () => { U.progress = { unlocked: 1, best: {} }; U.saveProgress(); if (RT.progress && RT.progress.refreshArmory) RT.progress.refreshArmory(); U.renderSlots && U.renderSlots(); };
 
   /* ---------- build DOM ---------- */
   U.init = function () {
@@ -25,6 +51,15 @@ RT.ui = (() => {
     el('div', 'bar', lb).id = 'lb-top';
     el('div', 'bar', lb).id = 'lb-bot';
     const skip = el('div', '', body); skip.id = 'skip-hint'; skip.textContent = 'HOLD SPACE TO SKIP';
+
+    /* loading overlay */
+    const load = el('div', '', body); load.id = 'loading';
+    load.style.cssText = 'position:fixed;inset:0;z-index:60;background:#0b0c0a;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;opacity:0;transition:opacity .3s';
+    load.innerHTML = '<div style="font-size:13px;letter-spacing:.5em;color:var(--amber)">ROLLING THUNDER</div>' +
+      '<div style="width:220px;height:3px;background:rgba(255,255,255,.12);overflow:hidden;border-radius:2px">' +
+      '<div id="load-bar" style="height:100%;width:30%;background:linear-gradient(90deg,transparent,var(--amber),transparent);animation:loadslide 1.1s linear infinite"></div></div>' +
+      '<div id="load-tip" style="max-width:520px;text-align:center;font-size:13px;color:var(--ink-dim);letter-spacing:.04em;line-height:1.5;padding:0 20px"></div>';
+    const st = el('style', '', body); st.textContent = '@keyframes loadslide{0%{transform:translateX(-260px)}100%{transform:translateX(260px)}}';
 
     /* HUD */
     hud = el('div', '', body); hud.id = 'hud';
@@ -94,6 +129,7 @@ RT.ui = (() => {
       '<button class="menu-btn" id="btn-br">Thunderdrop <small style="color:var(--amber);letter-spacing:.2em;font-size:10px">· 50-PLAYER BR</small></button>' +
       '<button class="menu-btn" id="btn-continue">Continue</button>' +
       '<button class="menu-btn" id="btn-armory">Armory</button>' +
+      '<button class="menu-btn" id="btn-range">Firing Range</button>' +
       '<button class="menu-btn" id="btn-settings">Settings</button>' +
       '<button class="menu-btn" id="btn-credits">Credits</button></div>' +
       '<div class="menu-foot" style="margin-top:26px">Control scheme</div>' +
@@ -114,6 +150,7 @@ RT.ui = (() => {
     syncCtrl();
     $('btn-campaign').onclick = () => U.showMissionSelect();
     $('btn-br').onclick = () => RT.br.startMatch();
+    $('btn-range').onclick = () => RT.range.startRange();
     $('btn-continue').onclick = () => {
       const m = Math.min(U.progress.unlocked, RT.missions.length);
       RT.game.startMission(m - 1);
@@ -124,9 +161,24 @@ RT.ui = (() => {
     /* mission select */
     screenShell('mission-select',
       '<div class="panel-title"><small>Campaign</small>Select Mission</div>' +
+      '<div class="menu-foot" style="margin-bottom:8px">Save Slot</div>' +
+      '<div id="slot-row" style="display:flex;gap:10px;margin-bottom:16px"></div>' +
       '<div class="panel"><div class="mission-grid" id="mission-grid"></div>' +
-      '<div class="back-row"><button class="menu-btn" id="btn-ms-back">Back</button></div></div>');
+      '<div class="back-row"><button class="menu-btn" id="btn-ms-back">Back</button>' +
+      '<button class="menu-btn" id="btn-slot-reset" style="opacity:.7">Reset This Slot</button></div></div>');
     $('btn-ms-back').onclick = () => U.showMenu();
+    $('btn-slot-reset').onclick = () => { if (confirm('Reset save slot ' + (U.slot + 1) + '? This erases its campaign + rank progress.')) U.resetSlot(); };
+    U.renderSlots = function () {
+      const row = $('slot-row'); if (!row) return;
+      row.innerHTML = '';
+      for (let n = 0; n < 3; n++) {
+        const b = el('button', 'menu-btn', row);
+        b.style.cssText = 'flex:1;text-align:left;padding:10px 14px;' + (n === U.slot ? 'border-color:var(--amber)' : 'opacity:.65');
+        b.innerHTML = '<div style="font-size:13px;letter-spacing:.1em">SLOT ' + (n + 1) + (n === U.slot ? ' ·' : '') + '</div>' +
+          '<div style="font-size:10px;color:var(--ink-dim);letter-spacing:.06em;margin-top:3px">' + U.slotSummary(n) + '</div>';
+        b.onclick = () => U.switchSlot(n);
+      }
+    };
 
     /* settings */
     screenShell('settings-screen',
@@ -138,6 +190,8 @@ RT.ui = (() => {
       '<div class="set-row"><label>Quality</label><div class="seg"><button id="set-q0">Performance</button><button id="set-q1">Quality</button></div></div>' +
       '<div class="set-row"><label>Controls</label><div class="seg"><button id="set-c0">Mouse</button><button id="set-c1">Keyboard</button></div></div>' +
       '<div class="set-row"><label>Aim Assist (keyboard)</label><div class="seg"><button id="set-a0">Off</button><button id="set-a1">Low</button><button id="set-a2">High</button></div></div>' +
+      '<div class="set-row"><label>Difficulty</label><div class="seg"><button id="set-d0">Recruit</button><button id="set-d1">Veteran</button><button id="set-d2">Hardened</button></div></div>' +
+      '<div class="set-row"><label>Auto Quality</label><div class="seg"><button id="set-aq0">Off</button><button id="set-aq1">On</button></div></div>' +
       '<div class="paused-note" id="controls-card" style="margin-top:16px"></div>' +
       '<div class="back-row"><button class="menu-btn" id="btn-set-back">Back</button></div></div>');
     const syncSettings = () => {
@@ -149,12 +203,18 @@ RT.ui = (() => {
       $('set-c0').className = RT.settings.controls === 'mouse' ? 'on' : '';
       $('set-c1').className = RT.settings.controls === 'keyboard' ? 'on' : '';
       for (let i = 0; i < 3; i++) $('set-a' + i).className = RT.settings.aimAssist === i ? 'on' : '';
+      for (let i = 0; i < 3; i++) $('set-d' + i).className = RT.settings.difficulty === i ? 'on' : '';
+      for (let i = 0; i < 2; i++) $('set-aq' + i).className = (RT.settings.autoQuality ? 1 : 0) === i ? 'on' : '';
       $('controls-card').innerHTML = U.controlsCard();
     };
     $('set-c0').onclick = () => { RT.settings.controls = 'mouse'; RT.saveSettings(); syncSettings(); if (U._syncCtrl) U._syncCtrl(); };
     $('set-c1').onclick = () => { RT.settings.controls = 'keyboard'; RT.saveSettings(); syncSettings(); if (U._syncCtrl) U._syncCtrl(); };
     for (let i = 0; i < 3; i++) {
       $('set-a' + i).onclick = ((n) => () => { RT.settings.aimAssist = n; RT.saveSettings(); syncSettings(); })(i);
+      $('set-d' + i).onclick = ((n) => () => { RT.settings.difficulty = n; RT.saveSettings(); syncSettings(); })(i);
+    }
+    for (let i = 0; i < 2; i++) {
+      $('set-aq' + i).onclick = ((n) => () => { RT.settings.autoQuality = n; RT.saveSettings(); syncSettings(); })(i);
     }
     U._syncSettings = syncSettings;
     $('set-sens').oninput = e => { RT.settings.sens = +e.target.value; syncSettings(); RT.saveSettings(); };
@@ -170,13 +230,23 @@ RT.ui = (() => {
       '<div class="menu-list">' +
       '<button class="menu-btn" id="btn-resume">Resume</button>' +
       '<button class="menu-btn" id="btn-restart">Restart From Checkpoint</button>' +
+      '<button class="menu-btn" id="btn-photo">Photo Mode</button>' +
       '<button class="menu-btn" id="btn-pause-settings">Settings</button>' +
       '<button class="menu-btn" id="btn-quit">Quit To Menu</button></div>' +
       '<div class="paused-note" id="pause-controls"></div>');
     $('btn-resume').onclick = () => RT.game.resume();
     $('btn-restart').onclick = () => RT.game.restartCheckpoint();
+    $('btn-photo').onclick = () => RT.game.enterPhoto();
     $('btn-pause-settings').onclick = () => U.showSettings('pause-screen');
     $('btn-quit').onclick = () => RT.game.quitToMenu();
+
+    /* photo-mode hint bar */
+    const ph = el('div', '', document.body); ph.id = 'photo-hint';
+    ph.style.cssText = 'position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:40;display:none;' +
+      'padding:9px 18px;background:rgba(10,11,10,.6);border:1px solid rgba(232,163,61,.35);border-radius:6px;' +
+      'font-size:12px;letter-spacing:.12em;color:#e8e2d4;text-shadow:0 1px 3px #000';
+    ph.innerHTML = '<b style="color:var(--amber)">PHOTO MODE</b>&nbsp;&nbsp;WASD fly · Arrows/Mouse look · Q/E up-down · Shift boost · <b>P</b> exit';
+    U.showPhotoHint = (on) => { ph.style.display = on ? 'block' : 'none'; };
 
     /* mission end */
     screenShell('end-screen',
@@ -257,6 +327,7 @@ RT.ui = (() => {
         `<div class="mission-stats">${best ? `BEST <b>${RT.fmtTime(best.time)}</b><br>ACC <b>${best.acc}%</b> · KILLS <b>${best.kills}</b>` : (locked ? '🔒' : 'NOT COMPLETED')}</div>`;
       if (!locked) b.onclick = () => RT.game.startMission(i);
     });
+    if (U.renderSlots) U.renderSlots();
     U.showScreen('mission-select');
   };
 
@@ -303,6 +374,33 @@ RT.ui = (() => {
     hmT = 0.18;
   };
   U.pulseVignette = function (a) { $('vignette').style.opacity = clamp(a, 0, 1); };
+
+  /* loading overlay with rotating field tips */
+  const LOAD_TIPS = [
+    'Double-tap W for a tactical sprint, then slide with Crouch.',
+    'Slide into cover, then cancel with Jump to keep your momentum.',
+    'Vault low walls by jumping into them — mantling clears the ledge.',
+    'Lean around corners with Z and X to peek without exposing yourself.',
+    'Shoot the red barrels near cover to flush entrenched enemies.',
+    'Rounds punch through thin wood and drywall — deny the enemy cover.',
+    'Throw smoke (B) to break line-of-sight and reposition under cover.',
+    'Headshots pay double XP — steady your aim before the trigger.',
+    'Earn XP to unlock weapon camos in the Armory.',
+    'In THUNDERDROP, the storm wall closes in — keep inside the circle.',
+    'Vehicles cross the map fast; arrow keys steer in keyboard mode.',
+    'Hold I to inspect your weapon between firefights.',
+  ];
+  U.showLoading = function (label) {
+    const l = $('loading');
+    $('load-tip').innerHTML = '<b style="color:#cfc8ba">TIP</b>&nbsp;&nbsp;' + (label || LOAD_TIPS[(Math.random() * LOAD_TIPS.length) | 0]);
+    l.style.display = 'flex';
+    requestAnimationFrame(() => { l.style.opacity = '1'; });
+  };
+  U.hideLoading = function () {
+    const l = $('loading');
+    l.style.opacity = '0';
+    setTimeout(() => { if (l.style.opacity === '0') l.style.display = 'none'; }, 320);
+  };
   let lastHP = 100;
   U.setHealth = function (h, sinceHurt) {
     const low = $('health-low');

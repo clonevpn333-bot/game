@@ -6,12 +6,21 @@ RT.settings = {
   sens: 1.0, fov: 80, volume: 0.8, quality: 1, // 0 low, 1 high
   controls: 'mouse',      // 'mouse' | 'keyboard' (trackpad-friendly, no pointer lock)
   aimAssist: 2,           // 0 off, 1 low, 2 high (keyboard mode only)
+  difficulty: 1,          // 0 recruit, 1 veteran, 2 hardened
+  autoQuality: 1,         // auto-drop quality if the frame rate tanks
 };
 try {
   const s = JSON.parse(localStorage.getItem('rt_settings') || 'null');
   if (s) Object.assign(RT.settings, s);
 } catch (e) { /* private mode */ }
 RT.saveSettings = () => { try { localStorage.setItem('rt_settings', JSON.stringify(RT.settings)); } catch (e) {} };
+/* difficulty multipliers: enemy damage to you, their accuracy, your outgoing damage */
+const DIFF = [
+  { dmg: 0.62, spread: 1.7, out: 1.25, name: 'Recruit' },
+  { dmg: 1.0, spread: 1.0, out: 1.0, name: 'Veteran' },
+  { dmg: 1.55, spread: 0.68, out: 0.85, name: 'Hardened' },
+];
+RT.difficulty = () => DIFF[RT.settings.difficulty] || DIFF[1];
 
 RT.engine = (() => {
   const E = {};
@@ -417,6 +426,11 @@ RT.engine = (() => {
       last = now;
       emaMS = emaMS * 0.95 + (raw * 1000) * 0.05;
       E.frameMS = emaMS;
+      /* auto quality: sustained sub-22fps in-game drops to performance mode once */
+      if (RT.settings.autoQuality && RT.settings.quality && RT.game && (RT.game.state === 'play' || RT.game.state === 'br')) {
+        E._slowAcc = emaMS > 45 ? (E._slowAcc || 0) + raw : Math.max(0, (E._slowAcc || 0) - raw * 0.5);
+        if (E._slowAcc > 4) { E._slowAcc = 0; RT.settings.quality = 0; E.applyQuality(); RT.saveSettings(); if (RT.ui) RT.ui.toastMsg('AUTO-QUALITY → PERFORMANCE'); }
+      }
       const dt = raw * E.timeScale;
       E.time += dt;
       trauma = Math.max(0, trauma - raw * 1.7);

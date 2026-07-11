@@ -60,6 +60,7 @@ RT.game = (() => {
     GA.missionIdx = idx;
     RT.ui.hideScreens();
     RT.ui.fade(true);
+    RT.ui.showLoading();
     setTimeout(() => {
       RT.engine.clearWorld();
       RT.ai.reset();
@@ -82,6 +83,7 @@ RT.game = (() => {
       RT.engine.setWeather(def.weather || null);
       RT.ui.clearTimer();
       RT.ui.clearSubtitles();
+      RT.ui.hideLoading();
       RT.ui.fade(false, true);
       if (def.intro) GA.playCutscene(def.intro, beginPlay);
       else beginPlay();
@@ -136,6 +138,48 @@ RT.game = (() => {
     RT.input.lock();
     GA.state = 'play';
   };
+  /* ---------- photo mode: detached free-fly camera ---------- */
+  GA.enterPhoto = function () {
+    if (GA.state !== 'pause') return;
+    const cam = RT.engine.camera;
+    GA._photo = { x: cam.position.x, y: cam.position.y, z: cam.position.z, yaw: RT.player.yaw, pitch: RT.player.pitch };
+    GA.state = 'photo';
+    RT.ui.hideScreens();
+    RT.ui.showHUD(false);
+    RT.weapons.setVisible(false);
+    RT.ui.showPhotoHint(true);
+    RT.input.lock();
+  };
+  GA.exitPhoto = function () {
+    if (GA.state !== 'photo') return;
+    RT.ui.showPhotoHint(false);
+    GA.state = 'pause';
+    RT.input.unlock();
+    if (RT.$('pause-controls')) RT.$('pause-controls').innerHTML = RT.ui.controlsCard();
+    RT.ui.showScreen('pause-screen');
+  };
+  function updatePhoto(dt) {
+    const I = RT.input, cam = RT.engine.camera, ph = GA._photo;
+    let [mdx, mdy] = I.consumeMouse();
+    if (I.keyboardMode() || I.fallback) {
+      const ls = 1.5 * dt;
+      if (I.keys.ArrowLeft) ph.yaw += ls; if (I.keys.ArrowRight) ph.yaw -= ls;
+      if (I.keys.ArrowUp) ph.pitch += ls; if (I.keys.ArrowDown) ph.pitch -= ls;
+    }
+    ph.yaw -= mdx * 0.002; ph.pitch = clamp(ph.pitch - mdy * 0.002, -1.45, 1.45);
+    const sp = (I.keys.ShiftLeft ? 30 : 12) * dt;
+    const cy = Math.cos(ph.pitch);
+    const fx = -Math.sin(ph.yaw) * cy, fy = Math.sin(ph.pitch), fz = -Math.cos(ph.yaw) * cy;
+    const rx = Math.cos(ph.yaw), rz = -Math.sin(ph.yaw);
+    const mf = (I.keys.KeyW ? 1 : 0) - (I.keys.KeyS ? 1 : 0);
+    const msd = (I.keys.KeyD ? 1 : 0) - (I.keys.KeyA ? 1 : 0);
+    const mu = (I.keys.KeyE ? 1 : 0) - (I.keys.KeyQ ? 1 : 0);
+    ph.x += (fx * mf + rx * msd) * sp; ph.y += (fy * mf + mu) * sp; ph.z += (fz * mf + rz * msd) * sp;
+    cam.position.set(ph.x, ph.y, ph.z);
+    cam.rotation.set(ph.pitch, ph.yaw, 0);
+    RT.engine.updateSun(cam.position);
+    if (I.pressed('KeyP') || I.pressed('Escape')) GA.exitPhoto();
+  }
   GA.quitToMenu = function () {
     RT.input.unlock();
     RT.ui.hideScreens();
@@ -143,7 +187,9 @@ RT.game = (() => {
     RT.ui.fade(true);
     RT.ui.letterbox(false);
     RT.weapons.setVisible(false);
-    GA.cutscene = null;
+    GA.cutscene = null; GA._killcam = null; GA._range = false;
+    if (RT.range) RT.range.exit();
+    if (RT.audio) RT.audio.combatMusic(false);
     if (RT.br) RT.br.reset();
     setTimeout(() => { GA.showMenuWorld(); }, 780);
   };
@@ -156,6 +202,7 @@ RT.game = (() => {
     };
   };
   GA.restartCheckpoint = function () {
+    if (GA._range) { RT.range.startRange(); return; }
     RT.ui.hideScreens();
     RT.ui.fade(true);
     setTimeout(() => {
@@ -201,6 +248,18 @@ RT.game = (() => {
     if (headshot) GA.stats.heads++;
     GA.killFx(headshot);
     if (RT.progress) RT.progress.onKill(headshot, false);
+  };
+  /* victory flair: a burst of colourful confetti + a warm flash */
+  GA.victoryFlair = function () {
+    const p = RT.player.pos;
+    const cols = [0xffd24a, 0xe8a33d, 0x7fe08a, 0x6aa0ff, 0xff6a6a, 0xffffff, 0xc9a028];
+    for (let i = 0; i < 64; i++) {
+      const a = Math.random() * TAU, sp = 3 + Math.random() * 9;
+      RT.engine.particle(p.x + (Math.random() - .5) * 4, p.y + 2 + Math.random() * 2.4, p.z + (Math.random() - .5) * 4,
+        Math.cos(a) * sp, 6 + Math.random() * 8, Math.sin(a) * sp,
+        { color: cols[i % cols.length], size: 0.11 + Math.random() * 0.13, life: 2.4 + Math.random() * 1.6, grav: -6, drag: 0.55, grow: -0.15 });
+    }
+    RT.engine.flash(new THREE.Vector3(p.x, p.y + 3, p.z), 0xffe0a0, 3, 32, 0.5);
   };
   /* brief kill-confirmation hitstop; stronger on headshots, rate-limited, test-safe */
   GA.killFx = function (big) {
@@ -253,6 +312,7 @@ RT.game = (() => {
     RT.$('st-heads').textContent = GA.stats.heads;
     RT.$('end-title').textContent = 'MISSION COMPLETE';
     RT.$('end-title').classList.remove('fail');
+    GA.victoryFlair();
     RT.$('btn-retry').textContent = 'Replay Mission';
     RT.$('btn-retry').onclick = () => RT.game.startMission(RT.game.missionIdx);
     RT.$('btn-next').disabled = GA.missionIdx + 1 >= RT.missions.length;
@@ -325,6 +385,7 @@ RT.game = (() => {
       if (RT.input.pressed('Enter') || RT.input.pressed('NumpadEnter')) GA.doEngage();
       return;
     }
+    if (GA.state === 'photo') { updatePhoto(dt); return; }
     if (GA.state === 'pause') return;
     /* smoke column beacons */
     if (RT.map && RT.map.smokeSources && (GA.state === 'play' || GA.state === 'cutscene' || GA.state === 'menu' || GA.state === 'engage')) {
@@ -353,7 +414,9 @@ RT.game = (() => {
         lookVelX: 0, lookVelY: 0, dead: RT.player.dead,
       });
       RT.weapons.updateShells(dt);
-      if (!(RT.br && RT.br.active)) {
+      if (GA._range) {
+        if (RT.range) RT.range.update(dt);
+      } else if (!(RT.br && RT.br.active)) {
         RT.ai.update(dt);
         RT.missionRuntime.update(dt);
       }

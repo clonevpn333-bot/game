@@ -757,6 +757,7 @@ RT.br = (() => {
     RT.audio.menuMusic(false);
     RT.ui.hideScreens();
     RT.ui.fade(true);
+    RT.ui.showLoading('Dropping into Velkan Ridge — 50 combatants, last one standing wins.');
     setTimeout(() => {
       buildBRMap();
       buildStorm();
@@ -783,6 +784,7 @@ RT.br = (() => {
       buildBrHud();
       RT.ui.showHUD(true);
       RT.ui.setObjectives([]);
+      RT.ui.hideLoading();
       RT.ui.fade(false, true);
       RT.ui.toast('THUNDERDROP', 'SPACE / CLICK TO JUMP');
       RT.audio.setAmbient('birds');
@@ -872,6 +874,7 @@ RT.br = (() => {
       RT.engine.timeScale = 0.35;
       setTimeout(() => { RT.engine.timeScale = 1; }, 900);
       RT.fxExplosion(new THREE.Vector3(RT.player.pos.x, RT.player.pos.y + 8, RT.player.pos.z), 4);
+      if (RT.game.victoryFlair) RT.game.victoryFlair();
       RT.audio.missionCompleteStinger();
     }
     setTimeout(() => RT.ui.showScreen('end-screen'), win ? 1600 : 700);

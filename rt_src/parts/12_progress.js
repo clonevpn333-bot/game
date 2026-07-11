@@ -36,6 +36,7 @@ RT.progress = (() => {
     return { level: lvl, into: xp - acc, need: xpForRank(lvl) };
   }
   P.rankName = lvl => RANKS[Math.min(lvl, RANKS.length) - 1] + (lvl > RANKS.length ? ' ' + (lvl - RANKS.length + 1) : '');
+  P.levelFor = xp => levelFromXP(xp || 0).level;
 
   function data() {
     const pr = U.progress;
@@ -200,11 +201,31 @@ RT.progress = (() => {
   P.refreshArmory = refreshArmory;
   P.openArmory = function () { buildArmory(); refreshArmory(); U.showScreen('armory-screen'); };
 
+  /* easter egg: the Konami code unlocks every weapon camo */
+  const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'KeyB', 'KeyA'];
+  let kseq = [];
+  function konamiWatch() {
+    document.addEventListener('keydown', (e) => {
+      kseq.push(e.code); if (kseq.length > KONAMI.length) kseq.shift();
+      if (kseq.join() === KONAMI.join()) {
+        kseq = [];
+        const pr = data();
+        let n = 0;
+        for (const c of CAMOS) if (!pr.camos.includes(c.id)) { pr.camos.push(c.id); n++; }
+        U.saveProgress(); refreshArmory();
+        RT.ui.toast('⚡ OVERDRIVE ⚡', n ? 'All weapon camos unlocked' : 'You already have everything, Sergeant');
+        if (RT.audio && RT.audio.missionCompleteStinger) RT.audio.missionCompleteStinger();
+        if (RT.game && RT.game.victoryFlair && RT.game.state === 'play') RT.game.victoryFlair();
+      }
+    });
+  }
+
   P.init = function () {
     data();
     buildArmory();
     if (RT.$('btn-armory')) RT.$('btn-armory').onclick = () => P.openArmory();
     refreshArmory();
+    konamiWatch();
   };
   return P;
 })();

@@ -200,6 +200,7 @@ RT.ai = (() => {
     spread *= 1 + RT.player.speedF * 1.1;
     if (RT.player.crouched) spread *= 1.25;
     spread *= 1 + e.suppression * 0.8;
+    spread *= RT.difficulty().spread;                       // difficulty: enemy accuracy
     const dir = _v2.set(p.x - mp.x, py - mp.y, p.z - mp.z).normalize();
     dir.x += (Math.random() - 0.5) * 2 * spread;
     dir.y += (Math.random() - 0.5) * 2 * spread * 0.8;
@@ -221,7 +222,7 @@ RT.ai = (() => {
     }
     RT.engine.tracer(mp, dir, Math.min(wall ? wall.dist : maxD, tAlong > 0 ? Math.max(8, tAlong + 6) : maxD), 260);
     if (hitPlayer) {
-      RT.player.damage(7 + Math.random() * 7, new THREE.Vector3(e.x, e.y + 1.5, e.z));
+      RT.player.damage((7 + Math.random() * 7) * RT.difficulty().dmg, new THREE.Vector3(e.x, e.y + 1.5, e.z));
     } else if (wall) {
       const wp = new THREE.Vector3(wall.point.x, wall.point.y, wall.point.z);
       const wn = new THREE.Vector3(wall.normal.x, wall.normal.y, wall.normal.z);
@@ -597,6 +598,24 @@ RT.ai = (() => {
       else if (d.kind === 'glass' && !d.broken) shatterGlass(d, d.x, d.y, d.z);
     }
   }
+  function hitTarget(d, point) {
+    d.hits = (d.hits || 0) + 1;
+    if (RT.audio) RT.audio.metalPing();
+    for (let i = 0; i < 6; i++)
+      RT.engine.particle(point.x, point.y, point.z, (Math.random() - .5) * 3.5, Math.random() * 3 + 1, (Math.random() - .5) * 3.5,
+        { color: 0xffe6b0, size: 0.05, life: 0.32, grav: -5, drag: 1 });
+    if (RT.range && RT.range.onHit) RT.range.onHit(d);
+    if (!d.animating) {
+      d.animating = true; let t = 0;
+      (RT.transients = RT.transients || []).push((dt) => {
+        t += dt;
+        const down = t < 0.12 ? t / 0.12 : (t < 1.1 ? 1 : Math.max(0, 1 - (t - 1.1) / 0.25));
+        d.pivot.rotation.x = down * 1.5;
+        if (t > 1.4) { d.pivot.rotation.x = 0; d.animating = false; return false; }
+        return true;
+      });
+    }
+  }
   function damageBarrel(d, dmg, point) {
     if (d.exploded) return;
     d.hp -= dmg;
@@ -674,6 +693,7 @@ RT.ai = (() => {
         const dmgMod = RT.weapons ? RT.weapons.modFor(RT.weapons.state().curId).dmg : 1;
         let dmg = cfg.dmg * dmgMod * (hitHead ? cfg.headMul : 1);
         if (wallbang) dmg *= 0.5;                                 // penetration damage falloff
+        dmg *= RT.difficulty().out;                              // difficulty: your outgoing damage
         const killed = (RT.br && RT.br.active)
           ? RT.br.damageBot(hitE, dmg, hitHead, 'player')
           : A.damageEnemy(hitE, dmg, hitHead);
@@ -692,6 +712,8 @@ RT.ai = (() => {
         if (RT.audio) RT.audio.hitFeedback(killed);
       } else if (wall && wall.col && wall.col.barrel) {
         damageBarrel(wall.col.barrel, cfg.dmg * (RT.weapons ? RT.weapons.modFor(RT.weapons.state().curId).dmg : 1), wall.point);
+      } else if (wall && wall.col && wall.col.target) {
+        hitTarget(wall.col.target, wall.point);
       } else if (wall) {
         const wp = new THREE.Vector3(wall.point.x, wall.point.y, wall.point.z);
         const wn = new THREE.Vector3(wall.normal.x, wall.normal.y, wall.normal.z);
