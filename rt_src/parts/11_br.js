@@ -22,12 +22,12 @@ RT.br = (() => {
   const PLANE_CAM = new THREE.Vector3(0, 0.4, 7.6), PLANE_LOOK = new THREE.Vector3(0, -1.1, -15);
 
   const POIS = [
-    { name: 'THUNDER CITY', x: 0, z: -140, r: 130 },
-    { name: 'RIDGEWOOD', x: -430, z: 290, r: 150 },
-    { name: 'MILLTOWN', x: 420, z: 330, r: 110 },
-    { name: 'GRAINFIELD', x: 450, z: -380, r: 130 },
-    { name: 'THE DAM', x: -480, z: -330, r: 120 },
-    { name: 'FORT VELKAN', x: -80, z: 560, r: 110 },
+    { name: 'THUNDER CITY', x: 0, z: -110, r: 155 },
+    { name: 'RIDGEWOOD', x: -330, z: 210, r: 200 },
+    { name: 'MILLTOWN', x: 300, z: 250, r: 135 },
+    { name: 'GRAINFIELD', x: 335, z: -255, r: 150 },
+    { name: 'THE DAM', x: -345, z: -235, r: 135 },
+    { name: 'FORT VELKAN', x: -55, z: 375, r: 135 },
   ];
   const BOT_NAMES = ['Vex', 'Karg', 'Onyx', 'Piper', 'Slate', 'Moss', 'Drift', 'Havoc', 'Juno', 'Kilo',
     'Lark', 'Mako', 'Nix', 'Oxide', 'Pike', 'Quill', 'Rook', 'Saber', 'Tarn', 'Umber',
@@ -70,12 +70,8 @@ RT.br = (() => {
         P.husk(B, C.x + 5, C.z - 10, 0.6);
         P.rubble(B, { x: C.x - 35, z: C.z + 5, r: 2.5, seed: 61 });
         P.crate(B, C.x + 18, C.z + 8, { stack: true });
-        /* --- RIDGEWOOD: forest + ranger tower + cabins + creek --- */
+        /* --- RIDGEWOOD: dense forest (built via instanced P.forest below) + tower + cabins --- */
         const F = POIS[1];
-        for (let i = 0; i < 60; i++) {
-          const a = (i / 60) * TAU, r = 20 + (i * 37 % 110);
-          P.tree(B, F.x + Math.cos(a * 3.7) * r, F.z + Math.sin(a * 2.3) * r, { s: 1 + (i % 5) * 0.16 });
-        }
         watchtower(B, F.x, F.z - 30);
         P.house(B, { x: F.x - 60, z: F.z + 40, ry: 0.4, w: 7, d: 6, seed: 960, wallC: 0x6b4d33, porch: true });
         P.house(B, { x: F.x + 70, z: F.z + 60, ry: -0.8, w: 7.5, d: 6, seed: 961, wallC: 0x5e4630 });
@@ -129,10 +125,28 @@ RT.br = (() => {
           P.husk(B, hx, hz, hx * 0.01);
           P.crate(B, hx + 6, hz + 4, {});
         }
-        P.edgeForest(B, 110, 690, 780, {});
-        for (const [cx, cz] of [[-200, 150], [250, -180], [120, 200], [-350, -100], [340, -150], [-100, 350]]) P.copse(B, cx, cz, 5, 14);
-        P.scatterGrass(B, 9000, 760, 0x5f6c39);
-        P.scatterRocks(B, 260, 770);
+        /* dense instanced 3D forest — Ridgewood core, satellite woods, belts + heavy scatter */
+        P.forest(B, {
+          seed: 707,
+          clusters: [
+            { x: F.x, z: F.z, r: 205, n: 1500 },            // Ridgewood: a forest you can get lost in
+            { x: F.x - 120, z: F.z - 140, r: 90, n: 260 },
+            { x: -140, z: 40, r: 90, n: 240 }, { x: 150, z: 30, r: 80, n: 200 },
+            { x: -60, z: -420, r: 110, n: 300 }, { x: 120, z: 470, r: 110, n: 300 },
+            { x: 470, z: 60, r: 100, n: 260 }, { x: -470, z: 80, r: 100, n: 260 },
+            { x: 40, z: 620, r: 120, n: 320 }, { x: -520, z: -60, r: 110, n: 280 },
+          ],
+          scatter: 1500,
+          skip: (x, z) => {
+            for (const p of POIS) { if (p.name === 'RIDGEWOOD') continue; if (Math.hypot(x - p.x, z - p.z) < p.r * 0.72) return true; }
+            return false;
+          },
+          collide: [{ x: F.x, z: F.z, r: 185 }],
+          collideMax: 460,
+        });
+        P.edgeForest(B, 90, 700, 785, {});
+        P.scatterGrass(B, 12000, 770, 0x556133);
+        P.scatterRocks(B, 320, 775);
         return { playerSpawn: { x: 0, z: 0, ry: 0 }, squad: [], enemies: [] };
       },
     };
@@ -432,7 +446,7 @@ RT.br = (() => {
   function botRigAcquire(bot) {
     if (bot.rig) return;
     let slot = rigPool.find(s => !s.user);
-    if (!slot && rigPool.length < 14) {
+    if (!slot && rigPool.length < 18) {
       slot = { rig: RT.character.build({ faction: 'enemy', seed: 7000 + rigPool.length, rifle: true }), user: null };
       slot.rig.group.visible = false;
       RT.engine.world.add(slot.rig.group);
@@ -504,13 +518,13 @@ RT.br = (() => {
   function botsUpdate(dt) {
     const p = RT.player.pos;
     /* tier assignment + far encounters */
-    let fullBudget = 10;
+    let fullBudget = 12;
     for (const b of bots) {
       if (b.dead) continue;
       const d = Math.hypot(b.x - p.x, b.z - p.z);
-      b.tier = d < 80 ? 0 : d < 200 ? 1 : 2;
+      b.tier = d < 100 ? 0 : d < 230 ? 1 : 2;
       if (b.tier === 0 && !b.rig) botRigAcquire(b);
-      if (b.tier > 0 && b.rig && d > 100) botRigRelease(b);
+      if (b.tier > 0 && b.rig && d > 120) botRigRelease(b);
       /* mesh LOD */
       if (b.imposter) {
         b.imposter.visible = b.tier > 0 && d < 340 && !b.rig;
@@ -589,11 +603,12 @@ RT.br = (() => {
         const d3 = Math.hypot(distP, dy);
         b.canSeeP = !RT.map.raycast(b.x, b.y + 1.5, b.z, (p.x - b.x) / d3, dy / d3, (p.z - b.z) / d3, d3 - 0.6);
       }
-      if (b.canSeeP) b.state = 'fight';
+      if (b.canSeeP) { if (b.state !== 'fight') b.acqT = 0; b.state = 'fight'; }
       else if (b.state === 'fight') b.state = 'rotate';
     } else if (b.state === 'fight') b.state = 'rotate';
 
     if (b.state === 'fight') {
+      b.acqT = (b.acqT || 0) + dt;      // time on target — drives the reaction/settle model
       b.faceA = Math.atan2(p.x - b.x, p.z - b.z);
       if (b.rig) { b.rig.rig.anim.mode = 'aim'; b.rig.rig.anim.aimPitch = clamp(Math.atan2(RT.player.eyeY() - (b.y + 1.5), distP), -0.5, 0.5); }
       /* strafe by personality */
@@ -603,8 +618,8 @@ RT.br = (() => {
         if (b.pers === 'rusher' && distP > 18) botMove(b, p.x, p.z, 3.4, dt);
       }
       b.fireT -= dt;
-      if (b.fireT <= 0) {
-        b.fireT = 0.42 + Math.random() * 0.5 * (1 - b.skill * 0.4);
+      if (b.fireT <= 0 && b.acqT > 0.32) {                  // brief reaction before the first shot
+        b.fireT = 0.5 + Math.random() * 0.6 * (1 - b.skill * 0.35);
         botShoot(b, distP);
       }
     } else if (b.state === 'rotate') {
@@ -637,9 +652,10 @@ RT.br = (() => {
     /* muzzle + tracer + hit roll against the player */
     const from = new THREE.Vector3(b.x, b.y + 1.5, b.z);
     if (RT.audio) RT.audio.enemyShot(distP);
-    let err = (1 - b.skill) * 0.09 + distP * 0.0011;
-    if (PHASES.length - circle.idx <= 2) err *= 0.62;              // final-circle bots are sharp
-    err *= 1 + RT.player.speedF * 1.1;
+    let err = 0.055 + (1 - b.skill) * 0.12 + distP * 0.0016;       // humans miss — wider cone
+    if ((b.acqT || 0) < 0.8) err += (0.8 - b.acqT) * 0.22;         // first shots after acquiring go wild (reaction)
+    if (PHASES.length - circle.idx <= 1) err *= 0.82;              // only the very last circle sharpens, mildly
+    err *= 1 + RT.player.speedF * 1.7;                             // a moving target is much harder to hit
     const py = RT.player.eyeY() - 0.25;
     const dir = new THREE.Vector3(RT.player.pos.x - b.x, py - from.y, RT.player.pos.z - b.z).normalize();
     dir.x += (Math.random() - 0.5) * 2 * err;
@@ -656,7 +672,7 @@ RT.br = (() => {
       const cz = from.z + dir.z * tA - RT.player.pos.z;
       const miss = Math.hypot(cx, cy * 0.55, cz);
       if (miss < 0.42) {
-        let dmg = 8 + Math.random() * 7;
+        let dmg = 6 + Math.random() * 6;
         if (inv.armor > 0) { const absorbed = Math.min(inv.armor, dmg * 0.65); inv.armor -= absorbed; dmg -= absorbed; refreshArmorBar(); }
         RT.player.damage(dmg, from);
         if (!RT.player.dead) BR.lastHitBy = b;

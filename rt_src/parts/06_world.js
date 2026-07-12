@@ -332,6 +332,7 @@ RT.MapBuilder = class {
       }
       for (const key in chunks) {
         const m = RT.meshOf(RT.mergeGeos(chunks[key]), RT.MAT.std);
+        m.frustumCulled = false;   // never pop whole prop clusters out when the camera turns
         this.group.add(m);
       }
       this.buckets.std = [];
@@ -1202,6 +1203,85 @@ RT.props = (() => {
       P.tree(B, cx + Math.cos(a) * r, cz + Math.sin(a) * r, { s: rnd.range(0.8, 1.4) });
     }
     for (let i = 0; i < Math.ceil(n / 2); i++) P.bush(B, cx + rnd.spread(spread * 1.2), cz + rnd.spread(spread * 1.2), {});
+  };
+  /* ---- instanced solid-3D forest: dense, dark, gritty, never culls ---- */
+  function treeInstGeo(kind, rnd) {
+    const g = [];
+    if (kind === 'pine') {
+      const bark = 0x33261b, nd = rnd.pick([0x223318, 0x28401d, 0x1c2c14]);
+      g.push(G.cyl(0.13, 0.22, 3.6, 6, bark, { y: 1.8, vary: 0.2 }));
+      const tiers = 5;
+      for (let i = 0; i < tiers; i++) { const t = i / tiers; g.push(G.cone((1.75 - t * 1.2), (1.55 - t * 0.16), 7, adjc(nd, 0.78 + t * 0.42), { y: 1.5 + i * 0.85, vary: 0.22 })); }
+      g.push(G.cone(0.3, 0.85, 6, adjc(nd, 1.3), { y: 1.5 + tiers * 0.85, vary: 0.2 }));
+    } else {
+      const bark = 0x352819, lf = rnd.pick([0x2a3a1c, 0x32421d, 0x243214, 0x374826]);
+      g.push(G.loft([{ y: 0, rx: 0.3, rz: 0.3 }, { y: 1.0, rx: 0.19, rz: 0.19 }, { y: 2.5, rx: 0.12, rz: 0.12, x: 0.1 }], 7, bark, { vary: 0.2 }));
+      for (const [a, by] of [[0.5, 1.9], [2.3, 2.2], [4.1, 2.0], [5.5, 1.7]])
+        g.push(G.cyl(0.05, 0.09, 1.35, 5, bark, { x: Math.cos(a) * 0.35, y: by, z: Math.sin(a) * 0.35, rz: Math.cos(a) * 0.8, rx: -Math.sin(a) * 0.8, vary: 0.2 }));
+      const lobes = 7;
+      for (let i = 0; i < lobes; i++) {
+        const a = (i / lobes) * TAU + rnd.spread(0.5), rr = 0.98 + rnd() * 0.55;
+        g.push(icoBlob(rr, lf, { x: Math.cos(a) * 1.08, y: 3.3 + rnd.spread(0.7), z: Math.sin(a) * 1.08, sy: 0.82, rx: rnd() * 3, ry: rnd() * 3 }, 0.78 + rnd() * 0.32));
+      }
+      g.push(icoBlob(1.3, lf, { y: 4.2, sy: 0.75 }, 1.15));
+    }
+    const merged = RT.mergeGeos(g);
+    merged.deleteAttribute('uv');       // instanced tree material has no map → drop the uv dependency
+    merged.computeVertexNormals();
+    return merged;
+  }
+  let _treeMat = null;
+  function treeMat() { return _treeMat || (_treeMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.93, metalness: 0.0 })); }
+  /* opts: { seed, clusters:[{x,z,r,n}], scatter, skip(x,z), collide:[{x,z,r}], collideMax } */
+  P.forest = function (B, opts) {
+    opts = opts || {};
+    const rnd = RNG(opts.seed || 4242);
+    const half = B.terrain.size / 2 - 8;
+    const variants = [treeInstGeo('oak', rnd), treeInstGeo('pine', rnd), treeInstGeo('oak', rnd), treeInstGeo('pine', rnd)];
+    const positions = [];
+    for (const cl of (opts.clusters || [])) {
+      for (let i = 0; i < (cl.n || 200); i++) {
+        const a = rnd() * TAU, r = Math.sqrt(rnd()) * cl.r;
+        const x = cl.x + Math.cos(a) * r, z = cl.z + Math.sin(a) * r;
+        if (Math.abs(x) > half || Math.abs(z) > half) continue;
+        if (opts.skip && opts.skip(x, z)) continue;
+        positions.push([x, z, 0.9 + rnd() * 0.8]);
+      }
+    }
+    for (let i = 0; i < (opts.scatter || 0); i++) {
+      const x = rnd.spread(half), z = rnd.spread(half);
+      if (opts.skip && opts.skip(x, z)) continue;
+      const gi = B.terrain._idx ? B.terrain._idx(...B.terrain._worldToGrid(x, z).map(Math.round)) : -1;
+      if (B.terrain.roadCells && B.terrain.roadCells.has(gi)) continue;
+      if (B.terrain.waterCells && B.terrain.waterCells.has(gi)) continue;
+      positions.push([x, z, 0.85 + rnd() * 0.9]);
+    }
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), v = new THREE.Vector3(), sc = new THREE.Vector3(), col = new THREE.Color();
+    const buckets = variants.map(() => []);
+    for (const p of positions) buckets[rnd.int(0, variants.length - 1)].push(p);
+    variants.forEach((geo, vi) => {
+      const pts = buckets[vi]; if (!pts.length) return;
+      const im = new THREE.InstancedMesh(geo, treeMat(), pts.length);
+      im.frustumCulled = false; im.castShadow = true; im.receiveShadow = true;
+      let idx = 0;
+      for (const [x, z, s] of pts) {
+        v.set(x, B.h(x, z) - 0.1, z);
+        e.set(0, rnd() * TAU, rnd.spread(0.05)); q.setFromEuler(e);
+        sc.set(s * (0.9 + rnd() * 0.3), s * (0.95 + rnd() * 0.4), s * (0.9 + rnd() * 0.3));
+        m4.compose(v, q, sc); im.setMatrixAt(idx, m4);
+        col.setScalar(0.72 + rnd() * 0.5); im.setColorAt(idx, col);
+        idx++;
+      }
+      im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
+      B.group.add(im);
+    });
+    /* trunk colliders in the requested zones (capped so collision stays cheap) */
+    let added = 0; const cap = opts.collideMax || 500;
+    if (opts.collide) for (const p of positions) {
+      if (added >= cap) break;
+      for (const z2 of opts.collide) { if (Math.hypot(p[0] - z2.x, p[1] - z2.z) < z2.r) { B.collide(p[0], B.h(p[0], p[1]) + 1.4, p[1], 0.55, 3.0, 0.55); added++; break; } }
+    }
+    return positions.length;
   };
   P.deadTree = function (B, x, z) {
     const rnd = RNG(((x * 29 + z * 31) | 0) ^ 9);

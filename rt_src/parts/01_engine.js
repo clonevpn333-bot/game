@@ -455,7 +455,12 @@ RT.engine = (() => {
  * Input: pointer lock mouse-look with arrow-key fallback.
  * ============================================================ */
 RT.input = (() => {
-  const I = { keys: {}, mdx: 0, mdy: 0, fire: false, aim: false, locked: false, fallback: false, wheel: 0 };
+  const I = { keys: {}, mdx: 0, mdy: 0, fire: false, locked: false, fallback: false, wheel: 0, _rmb: false, _kbAim: false, adsToggle: false, _lastDown: 0 };
+  /* effective aim = toggled ADS lock OR held RMB OR keyboard-Q hold */
+  Object.defineProperty(I, 'aim', {
+    get() { return this.adsToggle || this._rmb || this._kbAim; },
+    set(v) { this._kbAim = !!v; },
+  });
   const pressed = {};
   I.pressed = k => { const v = pressed[k]; pressed[k] = false; return v; };
   I.consumeMouse = () => { const r = [I.mdx, I.mdy]; I.mdx = I.mdy = 0; return r; };
@@ -482,12 +487,19 @@ RT.input = (() => {
       I.mdx += e.movementX; I.mdy += e.movementY;
     });
     dom.addEventListener('mousedown', e => {
-      if (e.button === 0) { I.fire = true; pressed.Mouse0 = true; }   // trackpad click fires too
-      if (e.button === 2) { I.aim = true; pressed.Mouse2 = true; pressed.Aim = true; }
+      if (e.button === 0) {
+        I.fire = true; pressed.Mouse0 = true;                        // click fires
+        if (!I.keyboardMode()) {                                     // mouse scheme: double-click toggles ADS lock
+          const now = performance.now();
+          if (now - I._lastDown < 400) { I.adsToggle = !I.adsToggle; if (I.adsToggle) pressed.Aim = true; }
+          I._lastDown = now;
+        }
+      }
+      if (e.button === 2) { I._rmb = true; pressed.Mouse2 = true; pressed.Aim = true; }   // RMB = hold ADS (alt)
     });
     dom.addEventListener('mouseup', e => {
       if (e.button === 0 && !(I.keyboardMode() && I.keys.KeyF)) I.fire = false;
-      if (e.button === 2) I.aim = I.keyboardMode() && I.keys.KeyQ;
+      if (e.button === 2) I._rmb = false;
     });
     dom.addEventListener('contextmenu', e => e.preventDefault());
     dom.addEventListener('wheel', e => { I.wheel += Math.sign(e.deltaY); });
@@ -505,6 +517,6 @@ RT.input = (() => {
     if (I.keyboardMode()) return;                 // keyboard scheme never locks the pointer
     try { I.dom.requestPointerLock(); } catch (e) { I.fallback = true; }
   };
-  I.unlock = () => { if (I.locked) document.exitPointerLock(); };
+  I.unlock = () => { I.adsToggle = false; I._rmb = false; if (I.locked) document.exitPointerLock(); };
   return I;
 })();
