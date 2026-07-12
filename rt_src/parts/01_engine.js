@@ -13,6 +13,7 @@ try {
   const s = JSON.parse(localStorage.getItem('rt_settings') || 'null');
   if (s) Object.assign(RT.settings, s);
 } catch (e) { /* private mode */ }
+RT.settings.controls = 'mouse';   // mouse-only scheme (trackpad = mouse look)
 RT.saveSettings = () => { try { localStorage.setItem('rt_settings', JSON.stringify(RT.settings)); } catch (e) {} };
 /* difficulty multipliers: enemy damage to you, their accuracy, your outgoing damage */
 const DIFF = [
@@ -456,9 +457,9 @@ RT.engine = (() => {
  * ============================================================ */
 RT.input = (() => {
   const I = { keys: {}, mdx: 0, mdy: 0, fire: false, locked: false, fallback: false, wheel: 0, _rmb: false, _kbAim: false, adsToggle: false, _lastDown: 0 };
-  /* effective aim = toggled ADS lock OR held RMB OR keyboard-Q hold */
+  /* effective aim = toggled ADS lock (double-click LMB or RMB toggle it — never a hold) */
   Object.defineProperty(I, 'aim', {
-    get() { return this.adsToggle || this._rmb || this._kbAim; },
+    get() { return this.adsToggle || this._kbAim; },
     set(v) { this._kbAim = !!v; },
   });
   const pressed = {};
@@ -482,11 +483,20 @@ RT.input = (() => {
       if (e.code === 'KeyF' && I.keyboardMode()) I.fire = false;
       if (e.code === 'KeyQ' && I.keyboardMode()) I.aim = false;
     });
-    dom.addEventListener('mousemove', e => {
-      if (!I.locked) return;
-      I.mdx += e.movementX; I.mdy += e.movementY;
+    let lastCX = null, lastCY = null;
+    document.addEventListener('mousemove', e => {      // on document so overlays never block look
+      if (I.locked) {                                  // pointer locked: movementX/Y are the deltas
+        I.mdx += e.movementX || 0; I.mdy += e.movementY || 0; lastCX = lastCY = null; return;
+      }
+      /* unlocked fallback (e.g. embedded preview): derive deltas from cursor position so
+         trackpad/mouse still turns the view even when Pointer Lock is unavailable */
+      if (RT.game && (RT.game.state === 'play' || RT.game.state === 'br')) {
+        if (lastCX != null) { I.mdx += e.clientX - lastCX; I.mdy += e.clientY - lastCY; }
+        lastCX = e.clientX; lastCY = e.clientY;
+      } else { lastCX = lastCY = null; }
     });
     dom.addEventListener('mousedown', e => {
+      if (!I.locked && RT.game && RT.game.state === 'play') I.lock();   // re-grab pointer lock on click
       if (e.button === 0) {
         I.fire = true; pressed.Mouse0 = true;                        // click fires
         if (!I.keyboardMode()) {                                     // mouse scheme: double-click toggles ADS lock
@@ -495,11 +505,10 @@ RT.input = (() => {
           I._lastDown = now;
         }
       }
-      if (e.button === 2) { I._rmb = true; pressed.Mouse2 = true; pressed.Aim = true; }   // RMB = hold ADS (alt)
+      if (e.button === 2) { I.adsToggle = !I.adsToggle; if (I.adsToggle) pressed.Aim = true; pressed.Mouse2 = true; }  // RMB also toggles (no hold)
     });
     dom.addEventListener('mouseup', e => {
       if (e.button === 0 && !(I.keyboardMode() && I.keys.KeyF)) I.fire = false;
-      if (e.button === 2) I._rmb = false;
     });
     dom.addEventListener('contextmenu', e => e.preventDefault());
     dom.addEventListener('wheel', e => { I.wheel += Math.sign(e.deltaY); });
@@ -508,8 +517,7 @@ RT.input = (() => {
       if (!I.locked && RT.game && RT.game.state === 'play') RT.game.pause();
     });
     document.addEventListener('pointerlockerror', () => {
-      I.fallback = true;
-      if (RT.ui) RT.ui.toastMsg('POINTER LOCK UNAVAILABLE — ARROW KEYS TO LOOK, L TO TOGGLE');
+      I.fallback = true;   // pointer lock blocked (e.g. embedded preview) — mouse look still works unlocked
     });
     I.dom = dom;
   };

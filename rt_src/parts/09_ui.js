@@ -132,22 +132,8 @@ RT.ui = (() => {
       '<button class="menu-btn" id="btn-range">Firing Range</button>' +
       '<button class="menu-btn" id="btn-settings">Settings</button>' +
       '<button class="menu-btn" id="btn-credits">Credits</button></div>' +
-      '<div class="menu-foot" style="margin-top:26px">Control scheme</div>' +
-      '<div class="seg" id="ctrl-seg" style="margin-top:8px">' +
-      '<button id="ctrl-mouse">Mouse</button><button id="ctrl-kb">Keyboard / Trackpad</button></div>' +
-      '<div class="menu-foot" id="menu-scheme-hint" style="margin-top:14px"></div>');
-    const syncCtrl = () => {
-      $('ctrl-mouse').className = RT.settings.controls === 'mouse' ? 'on' : '';
-      $('ctrl-kb').className = RT.settings.controls === 'keyboard' ? 'on' : '';
-      $('menu-scheme-hint').textContent = RT.settings.controls === 'keyboard'
-        ? 'WASD move · Arrows look · F fire · Q aim · E use'
-        : 'Click to engage · WASD move · Mouse look';
-      if (U._syncSettings) U._syncSettings();
-    };
-    U._syncCtrl = syncCtrl;
-    $('ctrl-mouse').onclick = () => { RT.settings.controls = 'mouse'; RT.saveSettings(); syncCtrl(); };
-    $('ctrl-kb').onclick = () => { RT.settings.controls = 'keyboard'; RT.saveSettings(); syncCtrl(); };
-    syncCtrl();
+      '<div class="menu-foot" style="margin-top:22px">WASD move · Mouse look · Click fire · Double-click aim</div>');
+    U._syncCtrl = () => { if (U._syncSettings) U._syncSettings(); };
     $('btn-campaign').onclick = () => U.showMissionSelect();
     $('btn-br').onclick = () => RT.br.startMatch();
     $('btn-range').onclick = () => RT.range.startRange();
@@ -188,8 +174,6 @@ RT.ui = (() => {
       '<div class="set-row"><label>Field of View</label><input type="range" id="set-fov" min="70" max="110" step="1"><span class="set-val" id="set-fov-v"></span></div>' +
       '<div class="set-row"><label>Volume</label><input type="range" id="set-vol" min="0" max="1" step="0.05"><span class="set-val" id="set-vol-v"></span></div>' +
       '<div class="set-row"><label>Quality</label><div class="seg"><button id="set-q0">Performance</button><button id="set-q1">Quality</button></div></div>' +
-      '<div class="set-row"><label>Controls</label><div class="seg"><button id="set-c0">Mouse</button><button id="set-c1">Keyboard</button></div></div>' +
-      '<div class="set-row"><label>Aim Assist (keyboard)</label><div class="seg"><button id="set-a0">Off</button><button id="set-a1">Low</button><button id="set-a2">High</button></div></div>' +
       '<div class="set-row"><label>Difficulty</label><div class="seg"><button id="set-d0">Recruit</button><button id="set-d1">Veteran</button><button id="set-d2">Hardened</button></div></div>' +
       '<div class="set-row"><label>Auto Quality</label><div class="seg"><button id="set-aq0">Off</button><button id="set-aq1">On</button></div></div>' +
       '<div class="paused-note" id="controls-card" style="margin-top:16px"></div>' +
@@ -200,17 +184,11 @@ RT.ui = (() => {
       $('set-vol').value = RT.settings.volume; $('set-vol-v').textContent = Math.round(RT.settings.volume * 100) + '%';
       $('set-q0').className = RT.settings.quality ? '' : 'on';
       $('set-q1').className = RT.settings.quality ? 'on' : '';
-      $('set-c0').className = RT.settings.controls === 'mouse' ? 'on' : '';
-      $('set-c1').className = RT.settings.controls === 'keyboard' ? 'on' : '';
-      for (let i = 0; i < 3; i++) $('set-a' + i).className = RT.settings.aimAssist === i ? 'on' : '';
       for (let i = 0; i < 3; i++) $('set-d' + i).className = RT.settings.difficulty === i ? 'on' : '';
       for (let i = 0; i < 2; i++) $('set-aq' + i).className = (RT.settings.autoQuality ? 1 : 0) === i ? 'on' : '';
       $('controls-card').innerHTML = U.controlsCard();
     };
-    $('set-c0').onclick = () => { RT.settings.controls = 'mouse'; RT.saveSettings(); syncSettings(); if (U._syncCtrl) U._syncCtrl(); };
-    $('set-c1').onclick = () => { RT.settings.controls = 'keyboard'; RT.saveSettings(); syncSettings(); if (U._syncCtrl) U._syncCtrl(); };
     for (let i = 0; i < 3; i++) {
-      $('set-a' + i).onclick = ((n) => () => { RT.settings.aimAssist = n; RT.saveSettings(); syncSettings(); })(i);
       $('set-d' + i).onclick = ((n) => () => { RT.settings.difficulty = n; RT.saveSettings(); syncSettings(); })(i);
     }
     for (let i = 0; i < 2; i++) {
