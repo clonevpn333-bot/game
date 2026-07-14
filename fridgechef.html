@@ -111,12 +111,25 @@ p{margin:0}
 }
 #topbar>div{display:flex;gap:8px;align-items:center;pointer-events:auto}
 .icon-btn{
-  width:40px;height:40px;border-radius:var(--r-pill);font-size:17px;
+  position:relative;width:40px;height:40px;border-radius:var(--r-pill);font-size:17px;
   display:flex;align-items:center;justify-content:center;
   background:var(--butter-06);border:1px solid var(--butter-12);
-  transition:transform .12s cubic-bezier(.34,1.56,.64,1);
+  transition:transform .12s cubic-bezier(.34,1.56,.64,1),background .15s;
 }
 .icon-btn:active{transform:scale(.9)}
+#notes-badge{
+  position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;
+  border-radius:var(--r-pill);background:var(--tomato);color:var(--midnight);
+  font:600 10.5px/17px var(--body);text-align:center;display:none;
+}
+#notes-badge.show{display:block}
+#tb-brand{display:none;font:700 19px var(--disp);letter-spacing:-.01em;margin-right:8px;align-self:center}
+#tb-brand em{font-style:normal;color:var(--fridge-glow)}
+#topbar::before{
+  content:"";position:absolute;left:0;right:0;top:0;height:calc(100% + 28px);
+  background:linear-gradient(rgba(19,16,23,.85) 42%,transparent);
+  pointer-events:none;z-index:-1;
+}
 .chip{
   display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;
   border-radius:var(--r-pill);border:1px solid var(--glow-25);
@@ -126,6 +139,10 @@ p{margin:0}
 #wallet.pro{border-color:var(--glow-45);color:var(--fridge-glow);letter-spacing:.18em;font-size:11px}
 #btn-newscan{transition:transform .12s cubic-bezier(.34,1.56,.64,1)}
 #btn-newscan:active{transform:scale(.94)}
+@media(max-width:520px){
+  #btn-newscan{width:40px;height:40px;padding:0;justify-content:center;font-size:15px}
+  #btn-newscan .ns-t{display:none}
+}
 .hidden{display:none!important}
 
 /* ————— screens ————— */
@@ -137,6 +154,15 @@ p{margin:0}
 }
 .screen.active{opacity:1;pointer-events:auto}
 .screen.see-through{background:transparent}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.screen.active>.pad,.screen.active>#landing-stack,.screen.active>#load-copy{
+  animation:rise .45s cubic-bezier(.22,1,.36,1) both;
+}
+.screen,.sheet{scrollbar-width:thin;scrollbar-color:var(--butter-12) transparent}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--butter-12);border-radius:var(--r-pill)}
+::-webkit-scrollbar-track{background:transparent}
+:focus-visible{outline:2px solid var(--glow-45);outline-offset:3px}
 .pad{padding:calc(64px + env(safe-area-inset-top)) 22px calc(24px + env(safe-area-inset-bottom))}
 
 /* ————— buttons ————— */
@@ -149,7 +175,7 @@ p{margin:0}
 .btn:active{transform:scale(.96)}
 .btn.primary{
   background:var(--tomato);color:var(--midnight);
-  box-shadow:0 8px 34px var(--tomato-35),0 2px 14px var(--glow-14);
+  box-shadow:0 8px 34px var(--tomato-35),0 2px 14px var(--glow-14),inset 0 1px 0 rgba(255,244,224,.28);
 }
 .btn.warm{
   background:var(--glow-14);border:1px solid var(--glow-25);color:var(--butter);
@@ -313,7 +339,8 @@ p{margin:0}
 }
 .mchip:active{transform:scale(.93)}
 .mchip.on{border-color:var(--fridge-glow);background:var(--glow-14);box-shadow:0 0 22px var(--glow-14)}
-.mchip.locked .mch-e{filter:blur(3px);opacity:.6}
+.mchip .mch-t{display:none;font:600 13px var(--body);letter-spacing:.03em;color:var(--butter-90)}
+.mchip.locked .mch-e,.mchip.locked .mch-t{filter:blur(3px);opacity:.6}
 .mchip .lock{
   position:absolute;right:6px;top:5px;font-size:10px;background:var(--mid-92);
   border-radius:50%;width:17px;height:17px;display:flex;align-items:center;justify-content:center;
@@ -435,8 +462,9 @@ p{margin:0}
   box-shadow:0 -20px 80px rgba(19,16,23,.85);
   transform:translateY(105%);transition:transform .32s cubic-bezier(.32,.72,.28,1);
   padding:10px 22px calc(26px + env(safe-area-inset-bottom));
+  pointer-events:none;
 }
-.sheet.open{transform:translateY(0)}
+.sheet.open{transform:translateY(0);pointer-events:auto}
 .sheet .grab{width:40px;height:4px;border-radius:var(--r-pill);background:var(--butter-12);margin:6px auto 16px}
 .sheet h3{font-size:1.5rem;margin-bottom:4px}
 .sheet .lbl{display:block;margin:22px 0 6px}
@@ -457,6 +485,105 @@ p{margin:0}
 }
 .settings-foot{margin-top:26px;text-align:center;color:var(--butter-40);font:600 12px var(--body);letter-spacing:.1em}
 #dev-zone{margin-top:14px;border-top:1px dashed var(--butter-12);padding-top:6px}
+
+/* ————— scratchpad ————— */
+.note-add{display:flex;gap:8px;margin:14px 0 6px}
+.note-add input{
+  flex:1;min-width:0;height:52px;padding:0 18px;border-radius:var(--r-pill);
+  background:var(--butter-06);border:1px solid var(--butter-12);color:var(--butter);
+  font:400 16px var(--body);outline:none;
+}
+.note-add input:focus{border-color:var(--glow-45)}
+.note-add .btn{width:auto;min-height:52px;padding:0 24px;font-size:15px}
+.note-item{display:flex;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid var(--butter-06)}
+.note-check{
+  flex:none;width:26px;height:26px;border-radius:9px;border:1.5px solid var(--glow-25);
+  color:transparent;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;
+  transition:background .15s,border-color .15s,color .15s;
+}
+.note-item.done .note-check{background:var(--herb);border-color:var(--herb);color:var(--midnight)}
+.note-text{flex:1;font:600 15px var(--body);color:var(--butter-90);word-break:break-word}
+.note-item.done .note-text{color:var(--butter-40);text-decoration:line-through}
+.note-x{flex:none;width:34px;height:34px;border-radius:50%;color:var(--butter-40);font-size:14px;transition:color .15s}
+#btn-notes-clear{margin-top:14px}
+.mini-add{
+  margin-top:18px;display:inline-flex;align-items:center;gap:8px;padding:10px 18px;
+  border-radius:var(--r-pill);border:1.5px dashed var(--glow-25);color:var(--butter-60);
+  font:600 13px var(--body);transition:border-color .15s,color .15s;
+}
+.drop-hint{display:none;font:400 12.5px var(--body);color:var(--butter-40)}
+.shot-slot.drop,.pantry-slot.drop{border-color:var(--fridge-glow);background:var(--glow-08)}
+
+/* ————— pointer refinements ————— */
+@media(hover:hover){
+  .icon-btn:hover{background:var(--butter-12)}
+  .btn.primary:hover:not(:active){transform:translateY(-1px);box-shadow:0 12px 46px var(--tomato-35),0 3px 18px var(--glow-14),inset 0 1px 0 rgba(255,244,224,.28)}
+  .btn.warm:hover{background:var(--glow-25)}
+  .btn.ghosty:hover{border-color:var(--glow-25);color:var(--butter)}
+  .mood-card:hover:not(:active){transform:translateY(-3px);border-color:var(--tomato);box-shadow:0 14px 44px var(--card-glow)}
+  .thumb:hover:not(:active){border-color:var(--glow-45)}
+  .mchip:hover:not(.locked):not(:active){border-color:var(--glow-45)}
+  .mini-add:hover{border-color:var(--glow-45);color:var(--butter)}
+  .note-x:hover{color:var(--tomato)}
+  .retake:hover{border-color:var(--glow-45)}
+  .pantry-slot:hover{border-color:var(--glow-45);color:var(--butter)}
+  .ghost-link:hover{color:var(--butter-60)}
+  #wall-close:hover{background:var(--butter-12)}
+}
+
+/* ————— laptop / desktop ————— */
+@media(min-width:900px){
+  #app{max-width:none;border:none;box-shadow:none}
+  .pad{padding-top:110px}
+  #tb-brand{display:block}
+  #topbar{padding:calc(14px + env(safe-area-inset-top)) 28px 12px}
+
+  /* landing: cinema on the left, words on the right */
+  #s-landing{display:grid;grid-template-columns:1.08fr .92fr;align-items:center}
+  #hero-spacer{height:100%;min-height:0}
+  #landing-stack{padding:0 7vw 0 0;max-width:620px;gap:18px}
+  #wordmark{font-size:clamp(3.4rem,5.6vw,5rem)}
+  .tagline{font-size:17px;max-width:34ch}
+  #landing-stack .btn{max-width:420px}
+  #landing-stack .lbl{text-align:left!important}
+
+  #s-camera .pad{max-width:660px;width:100%;margin:0 auto}
+  .drop-hint{display:block}
+
+  #s-mood .pad{max-width:920px;width:100%;margin:0 auto}
+  #mood-list{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .mood-card{flex-direction:column;align-items:flex-start;gap:14px;padding:30px 26px;min-height:170px}
+
+  #s-result .pad{max-width:1060px;width:100%;margin:0 auto}
+  #mood-chips{max-width:680px}
+  .mchip{height:52px;gap:10px}
+  .mchip .mch-t{display:inline}
+  .mchip .lock{top:8px;right:8px}
+  .meal-card{display:grid;grid-template-columns:.95fr 1.05fr;column-gap:46px;padding:36px 40px 24px}
+  .mc-right{border-left:1px solid var(--glow-14);padding-left:46px}
+  .mc-toprule{display:none}
+  .meal-card .watermark{grid-column:1/-1}
+  #verdict,#btn-rescan-result{max-width:520px;margin-left:auto;margin-right:auto}
+  #verdict{width:100%}
+
+  #s-error .pad,#s-roast .pad{max-width:640px;width:100%;margin:0 auto}
+  #s-capacity .pad{max-width:560px;width:100%;margin:0 auto}
+
+  #s-onboard .ob-slide{align-items:center}
+  #s-onboard .ob-slide>*{width:100%;max-width:560px}
+
+  .sheet{
+    left:50%;right:auto;top:50%;bottom:auto;width:min(560px,92vw);max-height:82vh;
+    border-radius:var(--r-card);border:1px solid var(--glow-25);
+    transform:translate(-50%,-46%) scale(.97);opacity:0;
+    transition:transform .28s cubic-bezier(.22,1,.36,1),opacity .22s ease;
+    box-shadow:0 40px 120px rgba(19,16,23,.9);
+    padding-bottom:26px;
+  }
+  .sheet.open{transform:translate(-50%,-50%) scale(1);opacity:1}
+  .sheet .grab{display:none}
+  #wall-inner{margin:auto;width:min(580px,92vw)}
+}
 
 #toast{
   position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
@@ -481,11 +608,13 @@ p{margin:0}
 
   <header id="topbar" class="hidden">
     <div>
-      <button class="icon-btn" id="btn-settings" aria-label="Settings">⚙️</button>
-      <button class="icon-btn" id="btn-history" aria-label="History">📖</button>
-      <button class="chip hidden" id="btn-newscan">↺ New scan</button>
+      <span id="tb-brand">Fridge<em>Chef</em></span>
+      <button class="icon-btn" id="btn-settings" aria-label="Settings" title="Settings">⚙️</button>
+      <button class="icon-btn" id="btn-history" aria-label="History" title="Locked-in meals">📖</button>
+      <button class="icon-btn" id="btn-notes" aria-label="Scratchpad" title="Scratchpad">📝<i id="notes-badge"></i></button>
+      <button class="chip hidden" id="btn-newscan" title="Start a new scan">↺<span class="ns-t">&nbsp;New scan</span></button>
     </div>
-    <div><div id="wallet" class="chip">🎟 3 of 3 free scans</div></div>
+    <div><div id="wallet" class="chip" title="Free scans left">🎟 3 of 3 free scans</div></div>
   </header>
 
   <!-- ONBOARDING -->
@@ -550,6 +679,7 @@ p{margin:0}
           <div class="cam-ico">📸</div>
           <p style="font:600 15px var(--body)">Take the photo</p>
           <p style="font:400 13px var(--body);color:var(--butter-40)">opens your camera</p>
+          <p class="drop-hint">or drag &amp; drop an image here</p>
         </div>
         <img id="fridge-img" class="hidden" alt="Your fridge">
         <button class="retake hidden" id="btn-retake">↺ Retake</button>
@@ -590,21 +720,26 @@ p{margin:0}
     <div class="pad">
       <div id="mood-chips"></div>
       <div class="meal-card">
-        <span class="lbl" id="result-lbl">Tonight's call</span>
-        <h1 class="meal-name" id="meal-name"></h1>
-        <p class="meal-pitch" id="meal-pitch"></p>
-        <div class="meta-row">
-          <span class="meta-chip" id="meal-time"></span>
-          <span class="meta-chip" id="meal-diff"></span>
+        <div class="mc-left">
+          <span class="lbl" id="result-lbl">Tonight's call</span>
+          <h1 class="meal-name" id="meal-name"></h1>
+          <p class="meal-pitch" id="meal-pitch"></p>
+          <div class="meta-row">
+            <span class="meta-chip" id="meal-time"></span>
+            <span class="meta-chip" id="meal-diff"></span>
+          </div>
+          <hr class="rule">
+          <span class="lbl">From your fridge</span>
+          <div class="pillbox" id="ings-fridge"></div>
+          <span class="lbl sec-gap" style="display:block">Pantry staples</span>
+          <div class="pillbox" id="ings-staple"></div>
+          <button class="mini-add" id="btn-add-list">＋ Add these to my list</button>
         </div>
-        <hr class="rule">
-        <span class="lbl">From your fridge</span>
-        <div class="pillbox" id="ings-fridge"></div>
-        <span class="lbl sec-gap" style="display:block">Pantry staples</span>
-        <div class="pillbox" id="ings-staple"></div>
-        <hr class="rule">
-        <span class="lbl">How it goes</span>
-        <ol id="steps"></ol>
+        <div class="mc-right">
+          <hr class="rule mc-toprule">
+          <span class="lbl">How it goes</span>
+          <ol id="steps"></ol>
+        </div>
         <div class="watermark">Fridge<em>Chef</em></div>
       </div>
       <div class="locked-line" id="locked-line"></div>
@@ -623,6 +758,7 @@ p{margin:0}
       <div id="roast-text"></div>
       <p class="roast-cap">That's it. That's the fridge.</p>
       <button class="btn warm" id="btn-roast-again" style="max-width:340px">Scan again when you've been grocery shopping 💀</button>
+      <button class="ghost-link" id="btn-roast-notes">start a grocery list instead 📝</button>
     </div>
   </section>
 
@@ -690,6 +826,18 @@ p{margin:0}
       <button class="ghost-link" id="dev-reset-scans" style="margin-top:10px">reset scan wallet</button>
     </div>
     <div class="settings-foot" id="settings-foot">FRIDGECHEF v1.0 — MIDNIGHT DINER</div>
+  </div>
+
+  <div class="sheet" id="sheet-notes" role="dialog" aria-label="Scratchpad">
+    <div class="grab"></div>
+    <h3>Scratchpad 📝</h3>
+    <p class="screen-sub" style="margin-bottom:2px">Groceries to grab, ideas, reminders.</p>
+    <div class="note-add">
+      <input id="note-input" type="text" placeholder="write it down..." maxlength="80" aria-label="New note">
+      <button class="btn warm" id="btn-note-add">Add</button>
+    </div>
+    <div id="note-list"></div>
+    <button class="ghost-link hidden" id="btn-notes-clear">clear crossed-off</button>
   </div>
 
   <div class="sheet" id="sheet-history" role="dialog" aria-label="History">
@@ -768,12 +916,14 @@ function defaultSettings(){
 let settings   = Object.assign(defaultSettings(), store.get("fc_settings", {}));
 let votes      = store.get("fc_votes", []);
 let history    = store.get("fc_history", []);
+let notes      = store.get("fc_notes", []);
 let scansUsed  = store.get("fc_scans_used", 0);
 let pro        = store.get("fc_pro", false);
 let moodCounts = Object.assign({fastest:0,tastiest:0,biggest:0,healthiest:0}, store.get("fc_mood_counts", {}));
 const saveSettings = () => store.set("fc_settings", settings);
 const saveVotes    = () => store.set("fc_votes", votes);
 const saveHistory  = () => store.set("fc_history", history);
+const saveNotes    = () => store.set("fc_notes", notes);
 const saveScans    = () => store.set("fc_scans_used", scansUsed);
 const savePro      = () => store.set("fc_pro", pro);
 const saveMoods    = () => store.set("fc_mood_counts", moodCounts);
@@ -831,7 +981,9 @@ function showScreen(name){
     $("#wallet").classList.toggle("hidden", !ui.wallet);
     $("#btn-settings").classList.toggle("hidden", !ui.tools);
     $("#btn-history").classList.toggle("hidden", !ui.tools);
+    $("#btn-notes").classList.toggle("hidden", !ui.tools);
     $("#btn-newscan").classList.toggle("hidden", !ui.newscan);
+    $("#tb-brand").classList.toggle("hidden", name === "landing"); // the landing has the big wordmark already
     setGLMode(ui.gl);
   } else {
     setGLMode("none");
@@ -970,7 +1122,7 @@ function parseAnalysis(text){
 
 async function callGemini(){
   const parts = [{ text: buildPrompt() }];
-  state.photos.forEach(p => parts.push({ inline_data: { mime_type: "image/jpeg", data: p.b64 } }));
+  state.photos.filter(Boolean).forEach(p => parts.push({ inline_data: { mime_type: "image/jpeg", data: p.b64 } }));
   const body = JSON.stringify({
     contents: [{ parts }],
     generationConfig: { temperature: 0.9, response_mime_type: "application/json" }
@@ -1178,7 +1330,7 @@ function renderMoodChips(){
     const chip = document.createElement("button");
     const locked = !pro && key !== state.mood;
     chip.className = "mchip" + (key === state.mood ? " on" : "") + (locked ? " locked" : "");
-    chip.innerHTML = '<span class="mch-e">' + MOODS[key].emoji + '</span>' + (locked ? '<span class="lock">🔒</span>' : "");
+    chip.innerHTML = '<span class="mch-e">' + MOODS[key].emoji + '</span><span class="mch-t">' + MOODS[key].title + '</span>' + (locked ? '<span class="lock">🔒</span>' : "");
     chip.setAttribute("aria-label", MOODS[key].title + (locked ? " (locked)" : ""));
     chip.addEventListener("click", () => {
       if (locked){ openWall(); return; }
@@ -1256,6 +1408,53 @@ function renderDisliked(){
     box.appendChild(b);
   });
 }
+/* ═════════════════════ SCRATCHPAD ═════════════════════ */
+function renderNotesBadge(){
+  const open = notes.filter(n => !n.done).length;
+  const b = $("#notes-badge");
+  b.textContent = open > 99 ? "99" : String(open);
+  b.classList.toggle("show", open > 0);
+}
+function renderNotesSheet(){
+  const box = $("#note-list"); box.innerHTML = "";
+  if (!notes.length){
+    box.innerHTML = '<p class="empty-note">Nothing written down yet — add the first thing.</p>';
+  }
+  notes.forEach(n => {
+    const row = document.createElement("div");
+    row.className = "note-item" + (n.done ? " done" : "");
+    row.innerHTML = '<button class="note-check" aria-label="Toggle done">✓</button><span class="note-text"></span><button class="note-x" aria-label="Delete">✕</button>';
+    row.querySelector(".note-text").textContent = n.text;
+    row.querySelector(".note-check").addEventListener("click", () => {
+      n.done = !n.done; saveNotes(); renderNotesSheet(); renderNotesBadge();
+    });
+    row.querySelector(".note-x").addEventListener("click", () => {
+      notes = notes.filter(x => x.id !== n.id); saveNotes(); renderNotesSheet(); renderNotesBadge();
+    });
+    box.appendChild(row);
+  });
+  $("#btn-notes-clear").classList.toggle("hidden", !notes.some(n => n.done));
+}
+function addNote(text){
+  text = String(text || "").trim();
+  if (!text) return false;
+  notes.unshift({ id: Date.now() + Math.random(), text, done:false });
+  notes = notes.slice(0, 100);
+  saveNotes(); renderNotesSheet(); renderNotesBadge();
+  return true;
+}
+function addIngredientsToNotes(meal){
+  const have = new Set(notes.map(n => n.text.toLowerCase().trim()));
+  const items = [...meal.fridge_ingredients, ...meal.staple_ingredients]
+    .map(String).filter(i => !have.has(i.toLowerCase().trim()));
+  if (!items.length){ toast("already on your list 📝"); return; }
+  items.reverse().forEach(i => notes.unshift({ id: Date.now() + Math.random(), text: i, done:false }));
+  notes = notes.slice(0, 100);
+  saveNotes(); renderNotesSheet(); renderNotesBadge();
+  toast("added " + items.length + " to your list 📝", "herb");
+}
+function openNotes(){ renderNotesSheet(); openSheet("sheet-notes"); }
+
 function renderHistorySheet(){
   const box = $("#hist-list"); box.innerHTML = "";
   if (!history.length){
@@ -1507,6 +1706,12 @@ function renderHero(t, ts){
   const sway = reducedMotion ? 0 : Math.sin(t * 0.42) * 0.14; // ±8°
   H.fridge.position.y = H.baseY + bob + (GL.mode === "capacity" ? 0.55 : 0);
   H.pool.visible = GL.mode !== "capacity";
+  // wide viewports park the fridge in the left pane; the door transition recenters it
+  const wide = H.cam.aspect > 1.05;
+  const targetX = (GL.transition || GL.mode === "capacity" || !wide) ? 0 : -6.6 * H.cam.aspect * 0.24;
+  H.fx = H.fx == null ? targetX : H.fx + (targetX - H.fx) * (GL.transition ? 0.22 : 0.08);
+  H.fridge.position.x = H.fx;
+  H.pool.position.x = H.fx;
   H.fridge.rotation.y = 0.16 + sway + GL.par.cx * 0.1; // slight constant angle keeps a second face visible
   H.fridge.rotation.x = GL.par.cy * 0.05;
 
@@ -1555,6 +1760,7 @@ function renderHero(t, ts){
 function renderPan(t){
   const P = GL.pan;
   const T = 2.4; // toss cycle seconds
+  P.rig.scale.setScalar(P.cam.aspect > 1.05 ? 0.95 : 0.75); // wide frames earn a bigger pan
   P.rig.rotation.z = Math.sin(t * Math.PI * 2 / T) * 0.075;
   P.rig.rotation.y = 0.55 + Math.sin(t * 0.5) * 0.2; // handle angled back so it fits the portrait frame
   P.chunks.forEach((c, i) => {
@@ -1646,6 +1852,22 @@ function init(){
   });
   $("#btn-photos-done").addEventListener("click", onPhotosConfirmed);
 
+  // desktop: drag & drop images straight onto the slots
+  const wireDrop = (el, idx) => {
+    el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("drop"); });
+    el.addEventListener("dragleave", () => el.classList.remove("drop"));
+    el.addEventListener("drop", async e => {
+      e.preventDefault();
+      el.classList.remove("drop");
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!f || !f.type.startsWith("image/")) return;
+      try { state.photos[idx] = await fileToPhoto(f); } catch(err){ toast("couldn't read that photo — try again"); return; }
+      renderPhotoSlots();
+    });
+  };
+  wireDrop($("#slot-fridge"), 0);
+  wireDrop($("#slot-pantry"), 1);
+
   // result
   $("#thumb-up").addEventListener("click", voteUp);
   $("#thumb-down").addEventListener("click", voteDown);
@@ -1675,6 +1897,30 @@ function init(){
   $("#btn-settings").addEventListener("click", () => { renderSettingsSheet(); openSheet("sheet-settings"); });
   $("#btn-history").addEventListener("click", () => { renderHistorySheet(); openSheet("sheet-history"); });
   $("#scrim").addEventListener("click", closeSheets);
+
+  // scratchpad
+  $("#btn-notes").addEventListener("click", openNotes);
+  $("#btn-roast-notes").addEventListener("click", openNotes);
+  $("#btn-note-add").addEventListener("click", () => {
+    if (addNote($("#note-input").value)) $("#note-input").value = "";
+    $("#note-input").focus();
+  });
+  $("#note-input").addEventListener("keydown", e => {
+    if (e.key === "Enter" && addNote(e.target.value)) e.target.value = "";
+  });
+  $("#btn-notes-clear").addEventListener("click", () => {
+    notes = notes.filter(n => !n.done);
+    saveNotes(); renderNotesSheet(); renderNotesBadge();
+  });
+  $("#btn-add-list").addEventListener("click", () => addIngredientsToNotes(currentMeal()));
+  renderNotesBadge();
+
+  // keyboard: Esc dismisses whatever floats
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    if ($("#wall").classList.contains("open")) closeWall();
+    else closeSheets();
+  });
 
   // hidden dev toggle: 5 taps on the settings footer
   let footTaps = 0, footTimer = null;
