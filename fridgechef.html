@@ -1,0 +1,1699 @@
+<!--
+  ═══════════════════════════════════════════════════════════════════════════
+  FRIDGECHEF — one photo of your fridge, one meal you can cook right now.
+  ═══════════════════════════════════════════════════════════════════════════
+
+  HOW TO RUN
+  ──────────
+  LOCAL TESTING (direct mode):
+    1. In the ==== CONFIG ==== block at the top of the inline script below,
+       keep API_MODE = "direct" and paste your Gemini API key into API_KEY.
+    2. Double-click this file. That's it. No server, no build, no install.
+    ⚠ Direct mode puts your key in the page — LOCAL TESTING ONLY. Never
+      deploy this file anywhere public with a real key in it.
+
+  DEPLOYED (proxy mode — key stays secret):
+    1. Set API_MODE = "proxy" in the CONFIG block (and leave API_KEY as the
+       placeholder — it is ignored in proxy mode).
+    2. Deploy this file together with  netlify/functions/gemini.js  to
+       Netlify (drop the folder, or connect the repo).
+    3. In Netlify → Site settings → Environment variables, add:
+         GEMINI_API_KEY = <your key>
+    4. Done. The browser calls /.netlify/functions/gemini and the function
+       forwards to Gemini server-side. The key never reaches the client.
+
+  Everything else is client-side: no accounts, no cookies, no tracking.
+  Taste memory / settings / history live in localStorage on the device.
+  ═══════════════════════════════════════════════════════════════════════════
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#131017">
+<title>FridgeChef — one photo, one meal</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍳</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ————— MIDNIGHT DINER tokens ————— */
+:root{
+  --midnight:#131017;
+  --fridge-glow:#FFD9A0;
+  --butter:#FFF4E0;
+  --tomato:#FF5A3C;
+  --herb:#9BD4A0;
+
+  --butter-90:rgba(255,244,224,.9);
+  --butter-60:rgba(255,244,224,.6);
+  --butter-40:rgba(255,244,224,.4);
+  --butter-12:rgba(255,244,224,.12);
+  --butter-06:rgba(255,244,224,.06);
+  --glow-45:rgba(255,217,160,.45);
+  --glow-25:rgba(255,217,160,.25);
+  --glow-14:rgba(255,217,160,.14);
+  --glow-08:rgba(255,217,160,.08);
+  --tomato-35:rgba(255,90,60,.35);
+  --tomato-15:rgba(255,90,60,.15);
+  --herb-40:rgba(155,212,160,.4);
+  --herb-15:rgba(155,212,160,.15);
+  --mid-92:rgba(19,16,23,.92);
+  --mid-70:rgba(19,16,23,.7);
+
+  --disp:'Bricolage Grotesque','Inter',system-ui,sans-serif;
+  --body:'Inter',system-ui,sans-serif;
+  --r-card:24px;
+  --r-pill:999px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;background:var(--midnight);color:var(--butter);
+  font-family:var(--body);font-size:16px;line-height:1.45;
+  display:flex;justify-content:center;overscroll-behavior:none;
+}
+#app{
+  position:relative;width:100%;max-width:430px;height:100dvh;min-height:520px;
+  background:var(--midnight);overflow:hidden;
+  box-shadow:0 0 90px var(--glow-08);
+}
+@media(min-width:500px){ #app{border-left:1px solid var(--glow-14);border-right:1px solid var(--glow-14)} }
+
+button{font-family:var(--body);color:inherit;background:none;border:none;padding:0;cursor:pointer;touch-action:manipulation}
+h1,h2,h3{margin:0;font-family:var(--disp);font-weight:800;letter-spacing:-.01em}
+p{margin:0}
+::selection{background:var(--glow-45);color:var(--midnight)}
+
+/* small-caps micro label — a signature type move, used everywhere */
+.lbl{
+  font:600 11px/1.2 var(--body);letter-spacing:.16em;text-transform:uppercase;
+  color:var(--butter-60);
+}
+
+/* ————— canvas + bloom ————— */
+#gl{position:absolute;inset:0;width:100%;height:100%;display:none;z-index:0}
+#gl.on{display:block}
+#bloom{
+  position:absolute;inset:0;z-index:40;pointer-events:none;opacity:0;
+  background:radial-gradient(circle at 50% 44%, var(--fridge-glow) 0%, rgba(255,217,160,.65) 34%, rgba(255,217,160,0) 78%);
+  transition:opacity .45s ease;
+}
+#bloom.out{transition:opacity .6s ease}
+
+/* ————— top bar ————— */
+#topbar{
+  position:absolute;top:0;left:0;right:0;z-index:20;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(10px + env(safe-area-inset-top)) 14px 10px;
+  pointer-events:none;
+}
+#topbar>div{display:flex;gap:8px;align-items:center;pointer-events:auto}
+.icon-btn{
+  width:40px;height:40px;border-radius:var(--r-pill);font-size:17px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--butter-06);border:1px solid var(--butter-12);
+  transition:transform .12s cubic-bezier(.34,1.56,.64,1);
+}
+.icon-btn:active{transform:scale(.9)}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;
+  border-radius:var(--r-pill);border:1px solid var(--glow-25);
+  font:600 12px var(--body);letter-spacing:.02em;color:var(--butter-90);
+  background:var(--mid-70);white-space:nowrap;
+}
+#wallet.pro{border-color:var(--glow-45);color:var(--fridge-glow);letter-spacing:.18em;font-size:11px}
+#btn-newscan{transition:transform .12s cubic-bezier(.34,1.56,.64,1)}
+#btn-newscan:active{transform:scale(.94)}
+.hidden{display:none!important}
+
+/* ————— screens ————— */
+.screen{
+  position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;
+  background:var(--midnight);opacity:0;pointer-events:none;
+  transition:opacity .28s ease;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+}
+.screen.active{opacity:1;pointer-events:auto}
+.screen.see-through{background:transparent}
+.pad{padding:calc(64px + env(safe-area-inset-top)) 22px calc(24px + env(safe-area-inset-bottom))}
+
+/* ————— buttons ————— */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+  min-height:58px;padding:16px 26px;border-radius:var(--r-pill);
+  font:600 17px var(--body);text-align:center;
+  transition:transform .12s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease,opacity .2s;
+}
+.btn:active{transform:scale(.96)}
+.btn.primary{
+  background:var(--tomato);color:var(--midnight);
+  box-shadow:0 8px 34px var(--tomato-35),0 2px 14px var(--glow-14);
+}
+.btn.warm{
+  background:var(--glow-14);border:1px solid var(--glow-25);color:var(--butter);
+}
+.btn.ghosty{border:1px solid var(--butter-12);color:var(--butter-60);background:none;min-height:48px;font-size:15px}
+.btn[disabled]{opacity:.35;pointer-events:none}
+.ghost-link{font:600 13px var(--body);color:var(--butter-40);text-decoration:underline;text-underline-offset:3px}
+
+/* ————— onboarding ————— */
+#s-onboard{z-index:15}
+.ob-track{
+  flex:1;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;
+  scrollbar-width:none;
+}
+.ob-track::-webkit-scrollbar{display:none}
+.ob-slide{
+  flex:0 0 100%;scroll-snap-align:center;display:flex;flex-direction:column;
+  justify-content:center;padding:calc(46px + env(safe-area-inset-top)) 26px 10px;gap:16px;
+}
+.ob-slide h1{font-size:clamp(2.1rem,9vw,2.9rem);line-height:1.02}
+.ob-slide .big-emoji{font-size:58px;line-height:1}
+.ob-sub{color:var(--butter-60);font-size:15.5px;max-width:30ch}
+.ob-foot{padding:8px 26px calc(22px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px;align-items:center}
+.ob-dots{display:flex;gap:8px;justify-content:center;padding:6px 0}
+.ob-dots i{width:7px;height:7px;border-radius:50%;background:var(--butter-12);transition:all .25s}
+.ob-dots i.on{background:var(--fridge-glow);width:22px;border-radius:var(--r-pill)}
+
+/* toggle rows */
+.togs{display:flex;flex-direction:column;gap:4px}
+.tog{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:13px 4px;border-bottom:1px solid var(--butter-06);
+  font:600 15px var(--body);color:var(--butter-90);cursor:pointer;
+}
+.tog input{position:absolute;opacity:0;pointer-events:none}
+.tog i{
+  flex:none;width:46px;height:27px;border-radius:var(--r-pill);position:relative;
+  background:var(--butter-12);transition:background .2s;
+}
+.tog i::after{
+  content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;
+  background:var(--butter);transition:transform .2s cubic-bezier(.34,1.56,.64,1);
+}
+.tog input:checked+i{background:var(--herb)}
+.tog input:checked+i::after{transform:translateX(19px);background:var(--midnight)}
+
+/* ————— landing ————— */
+#s-landing{justify-content:flex-end}
+#hero-spacer{flex:1;min-height:220px;position:relative}
+#css-fridge{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+}
+#css-fridge.on{display:flex}
+.cf-wrap{position:relative;animation:cf-float 3.2s ease-in-out infinite}
+.cf-glowpool{
+  position:absolute;left:50%;bottom:-34px;transform:translateX(-50%);
+  width:210px;height:44px;border-radius:50%;
+  background:radial-gradient(ellipse at center, var(--glow-25), rgba(255,217,160,0) 70%);
+}
+.cf-body{
+  width:148px;height:236px;border-radius:26px;position:relative;overflow:hidden;
+  background:linear-gradient(115deg, var(--butter) 0%, var(--fridge-glow) 58%, rgba(255,217,160,.55) 100%);
+  box-shadow:0 18px 60px var(--glow-14), inset -14px 0 34px rgba(19,16,23,.38);
+}
+.cf-split{position:absolute;left:0;right:0;top:76px;height:5px;background:var(--midnight);opacity:.85}
+.cf-handle{position:absolute;left:14px;width:7px;border-radius:var(--r-pill);background:var(--midnight);opacity:.82}
+.cf-handle.top{top:26px;height:34px}
+.cf-handle.bottom{top:100px;height:58px}
+.cf-feet{display:flex;justify-content:space-between;padding:0 18px;margin-top:-2px}
+.cf-feet i{width:16px;height:10px;border-radius:0 0 6px 6px;background:rgba(19,16,23,.85)}
+@keyframes cf-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+
+#landing-stack{
+  position:relative;z-index:2;display:flex;flex-direction:column;gap:14px;
+  padding:0 24px calc(30px + env(safe-area-inset-bottom));
+}
+#wordmark{
+  font-family:var(--disp);font-weight:800;font-size:clamp(2.6rem,12vw,3.6rem);
+  line-height:.95;letter-spacing:-.03em;
+  text-shadow:0 0 44px var(--glow-25);
+}
+#wordmark em{font-style:normal;color:var(--fridge-glow)}
+.tagline{color:var(--butter-60);font-size:15px;margin:-2px 0 8px}
+
+/* ————— camera ————— */
+.shot-slot{
+  position:relative;border-radius:var(--r-card);overflow:hidden;
+  border:1px solid var(--glow-14);background:var(--butter-06);
+}
+.shot-slot.main{aspect-ratio:4/3.4}
+.shot-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.shot-empty{
+  position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;
+  align-items:center;justify-content:center;color:var(--butter-60);
+}
+.shot-empty .cam-ico{font-size:44px;filter:drop-shadow(0 0 18px var(--glow-45))}
+.retake{
+  position:absolute;right:12px;bottom:12px;height:38px;padding:0 16px;
+  border-radius:var(--r-pill);background:var(--mid-92);border:1px solid var(--butter-12);
+  font:600 13px var(--body);color:var(--butter);
+}
+.pantry-slot{
+  margin-top:12px;border-radius:var(--r-card);border:1.5px dashed var(--glow-25);
+  min-height:76px;display:flex;align-items:center;gap:14px;padding:12px 16px;
+  color:var(--butter-60);font:600 14px var(--body);position:relative;overflow:hidden;
+  transition:transform .12s cubic-bezier(.34,1.56,.64,1);
+}
+.pantry-slot:active{transform:scale(.97)}
+.pantry-slot img{width:70px;height:52px;object-fit:cover;border-radius:12px}
+.pantry-x{
+  margin-left:auto;width:34px;height:34px;border-radius:50%;flex:none;
+  background:var(--butter-06);border:1px solid var(--butter-12);font-size:15px;color:var(--butter-60);
+}
+#camera-cta{margin-top:auto;padding-top:18px;display:flex;flex-direction:column;gap:10px}
+
+/* ————— mood ————— */
+.screen-title{font-size:clamp(1.9rem,8vw,2.5rem);line-height:1.02;margin-bottom:2px}
+.screen-sub{color:var(--butter-60);font-size:14.5px;margin-bottom:18px}
+#mood-list{display:flex;flex-direction:column;gap:12px}
+.mood-card{
+  position:relative;display:flex;align-items:center;gap:16px;width:100%;
+  padding:20px 20px;border-radius:var(--r-card);text-align:left;
+  background:linear-gradient(var(--butter-06),var(--butter-06)),var(--midnight);
+  border:1px solid var(--butter-12);
+  transition:transform .12s cubic-bezier(.34,1.56,.64,1),border-color .12s,box-shadow .12s;
+}
+.mood-card:active{
+  transform:scale(.965);border-color:var(--tomato);
+  box-shadow:0 0 0 1px var(--tomato),0 10px 42px var(--card-glow);
+}
+@media(hover:hover){ .mood-card:hover{border-color:var(--tomato)} }
+.mood-emoji{font-size:36px;line-height:1;filter:drop-shadow(0 0 14px var(--card-glow))}
+.mood-card h2{font-size:clamp(1.55rem,7vw,1.95rem);line-height:1}
+.mood-card p{color:var(--butter-60);font-size:13.5px;margin-top:4px}
+.usual{
+  position:absolute;top:-9px;right:16px;height:22px;padding:0 11px;border-radius:var(--r-pill);
+  background:var(--fridge-glow);color:var(--midnight);font:600 10.5px/22px var(--body);
+  letter-spacing:.12em;text-transform:uppercase;
+}
+
+/* ————— loading ————— */
+#s-loading{justify-content:flex-end;text-align:center}
+#load-copy{padding:0 30px calc(88px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;align-items:center}
+#load-msg{
+  font-family:var(--disp);font-weight:700;font-size:clamp(1.35rem,6.4vw,1.7rem);
+  min-height:2.4em;transition:opacity .3s;color:var(--butter-90);
+}
+#load-msg.fade{opacity:0}
+#css-pan{display:none;font-size:64px;animation:panrock 1.6s ease-in-out infinite}
+#css-pan.on{display:block}
+@keyframes panrock{0%,100%{transform:rotate(-8deg) translateY(0)}50%{transform:rotate(8deg) translateY(-10px)}}
+
+/* ————— result ————— */
+#s-result .pad{padding-bottom:calc(30px + env(safe-area-inset-bottom))}
+#mood-chips{display:flex;gap:8px;margin-bottom:16px}
+.mchip{
+  position:relative;flex:1;height:46px;border-radius:var(--r-pill);
+  border:1px solid var(--butter-12);background:var(--butter-06);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  transition:transform .12s cubic-bezier(.34,1.56,.64,1),border-color .15s;
+}
+.mchip:active{transform:scale(.93)}
+.mchip.on{border-color:var(--fridge-glow);background:var(--glow-14);box-shadow:0 0 22px var(--glow-14)}
+.mchip.locked .mch-e{filter:blur(3px);opacity:.6}
+.mchip .lock{
+  position:absolute;right:6px;top:5px;font-size:10px;background:var(--mid-92);
+  border-radius:50%;width:17px;height:17px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--butter-12);
+}
+.meal-card{
+  position:relative;border-radius:var(--r-card);padding:24px 22px 18px;
+  background:linear-gradient(var(--glow-08),rgba(255,217,160,.02)),var(--midnight);
+  border:1px solid var(--glow-14);
+  box-shadow:0 22px 70px var(--glow-08);
+}
+.meal-name{font-size:clamp(2rem,8vw,3rem);line-height:1;letter-spacing:-.02em;margin:6px 0 10px}
+.meal-pitch{color:var(--butter-60);font-size:15px;max-width:32ch}
+.rule{height:1px;margin:18px 0;background:linear-gradient(90deg,var(--glow-45),rgba(255,217,160,0));border:none}
+.meta-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.meta-chip{
+  height:32px;padding:0 14px;border-radius:var(--r-pill);display:inline-flex;align-items:center;gap:6px;
+  border:1px solid var(--glow-25);font:600 12px var(--body);letter-spacing:.06em;color:var(--butter-90);
+}
+.pillbox{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+.ing{
+  padding:8px 14px;border-radius:var(--r-pill);font:600 13px var(--body);
+  background:var(--glow-14);border:1px solid var(--glow-25);color:var(--butter);
+}
+.ing.staple{background:none;border-color:var(--butter-12);color:var(--butter-60)}
+.sec-gap{margin-top:18px}
+#steps{list-style:none;margin:8px 0 0;padding:0}
+.step{position:relative;padding:11px 0 11px 52px;min-height:52px}
+.step .ghostnum{
+  position:absolute;left:0;top:-4px;font-family:var(--disp);font-weight:800;font-size:56px;
+  line-height:1;color:var(--butter);opacity:.12;user-select:none;
+}
+.step p{font-size:15px;color:var(--butter-90)}
+.watermark{
+  text-align:right;margin-top:14px;font-family:var(--disp);font-weight:700;font-size:12px;
+  letter-spacing:.06em;color:var(--butter-40);
+}
+.watermark em{font-style:normal;color:var(--glow-45)}
+#verdict{display:flex;gap:14px;margin:20px 0 12px}
+.thumb{
+  flex:1;border-radius:var(--r-card);padding:14px 10px;display:flex;flex-direction:column;gap:5px;
+  align-items:center;border:1px solid var(--butter-12);background:var(--butter-06);
+  transition:transform .12s cubic-bezier(.34,1.56,.64,1),border-color .15s,background .2s;
+}
+.thumb:active{transform:scale(.94)}
+.thumb .t-emoji{font-size:30px;line-height:1}
+.thumb .t-lbl{font:600 12px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--butter-60)}
+#thumb-up:active,#thumb-up.done{border-color:var(--herb);background:var(--herb-15);box-shadow:0 0 30px var(--herb-15)}
+#thumb-down:active{border-color:var(--tomato);background:var(--tomato-15);box-shadow:0 0 30px var(--tomato-15)}
+#verdict.voted .thumb{pointer-events:none;opacity:.55}
+#verdict.voted #thumb-up.done{opacity:1}
+.locked-line{display:flex;align-items:center;gap:8px;justify-content:center;color:var(--herb);font:600 13px var(--body);min-height:20px;margin-bottom:10px}
+
+/* ————— roast ————— */
+#s-roast{justify-content:center;text-align:center}
+#s-roast .pad{display:flex;flex-direction:column;gap:22px;align-items:center;justify-content:center;flex:1}
+#roast-text{
+  font-family:var(--disp);font-weight:800;font-size:clamp(2.2rem,11vw,3.4rem);line-height:1.02;
+  letter-spacing:-.02em;max-width:11ch;
+  text-shadow:0 0 60px var(--glow-25);
+  animation:flick 4.2s linear infinite;
+}
+@keyframes flick{
+  0%,100%{opacity:1}2%{opacity:.25}4%{opacity:.95}6%{opacity:.4}8%{opacity:1}
+  42%{opacity:1}44%{opacity:.35}45%{opacity:1}76%{opacity:1}77%{opacity:.6}79%{opacity:1}
+}
+.roast-cap{color:var(--butter-40)}
+
+/* ————— error / capacity ————— */
+#s-error .pad,#s-capacity .pad{display:flex;flex-direction:column;gap:14px;justify-content:center;flex:1;text-align:center;align-items:center}
+#s-capacity .pad{justify-content:flex-end;padding-bottom:calc(46px + env(safe-area-inset-bottom))}
+.err-emoji{font-size:52px}
+.q-card{
+  margin:8px 0;padding:18px 26px;border-radius:var(--r-card);
+  border:1px solid var(--glow-25);background:var(--glow-08);
+}
+.q-num{font-family:var(--disp);font-weight:800;font-size:2.6rem;color:var(--fridge-glow);line-height:1}
+#cap-flicker{animation:flick 3.6s linear infinite;display:inline-block}
+.notify-row{display:flex;gap:8px;width:100%;max-width:330px}
+.notify-row input{
+  flex:1;min-width:0;height:52px;padding:0 18px;border-radius:var(--r-pill);
+  background:var(--butter-06);border:1px solid var(--butter-12);color:var(--butter);
+  font:400 16px var(--body);outline:none;
+}
+.notify-row input:focus{border-color:var(--glow-45)}
+.notify-row .btn{width:auto;min-height:52px;padding:0 20px;font-size:15px}
+#cap-cssfridge{display:none;font-size:64px;animation:flick 3.6s linear infinite}
+#cap-cssfridge.on{display:block}
+
+/* ————— overlays: wall / sheets / toast ————— */
+.overlay{
+  position:absolute;inset:0;z-index:30;display:none;flex-direction:column;
+  background:var(--mid-70);
+  -webkit-backdrop-filter:blur(22px) brightness(.75);backdrop-filter:blur(22px) brightness(.75);
+}
+.overlay.open{display:flex}
+#wall-inner{
+  margin:auto 18px;padding:30px 24px calc(24px);border-radius:var(--r-card);
+  background:var(--mid-92);border:1px solid var(--glow-25);
+  box-shadow:0 30px 90px rgba(19,16,23,.9),0 0 60px var(--glow-08);
+  display:flex;flex-direction:column;gap:16px;position:relative;
+}
+#wall-close{
+  position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:50%;
+  border:1px solid var(--butter-12);background:var(--butter-06);font-size:16px;color:var(--butter-60);
+}
+#wall-inner h2{font-size:clamp(1.9rem,8.4vw,2.5rem);line-height:1.02;max-width:12ch}
+.bene{display:flex;flex-direction:column;gap:10px;margin:2px 0}
+.bene div{display:flex;gap:10px;align-items:center;font:600 14.5px var(--body);color:var(--butter-90)}
+.bene i{width:7px;height:7px;border-radius:50%;background:var(--fridge-glow);flex:none;box-shadow:0 0 10px var(--glow-45)}
+.price-line{color:var(--butter-60);font-size:14px}
+.price-line b{color:var(--butter);font-weight:600}
+
+.sheet{
+  position:absolute;left:0;right:0;bottom:0;z-index:32;max-height:88%;
+  border-radius:var(--r-card) var(--r-card) 0 0;overflow-y:auto;
+  background:linear-gradient(var(--butter-06),var(--butter-06)),var(--midnight);
+  border-top:1px solid var(--glow-25);
+  box-shadow:0 -20px 80px rgba(19,16,23,.85);
+  transform:translateY(105%);transition:transform .32s cubic-bezier(.32,.72,.28,1);
+  padding:10px 22px calc(26px + env(safe-area-inset-bottom));
+}
+.sheet.open{transform:translateY(0)}
+.sheet .grab{width:40px;height:4px;border-radius:var(--r-pill);background:var(--butter-12);margin:6px auto 16px}
+.sheet h3{font-size:1.5rem;margin-bottom:4px}
+.sheet .lbl{display:block;margin:22px 0 6px}
+#scrim{
+  position:absolute;inset:0;z-index:31;background:var(--mid-70);opacity:0;pointer-events:none;transition:opacity .3s;
+}
+#scrim.open{opacity:1;pointer-events:auto}
+
+.hist-item{display:flex;align-items:center;gap:14px;padding:13px 2px;border-bottom:1px solid var(--butter-06)}
+.hist-item .he{font-size:22px}
+.hist-item b{display:block;font:600 15px var(--body);color:var(--butter-90)}
+.hist-item span{font:400 12.5px var(--body);color:var(--butter-40)}
+.empty-note{color:var(--butter-40);font-size:14px;padding:14px 0 8px}
+.dis-chips{display:flex;flex-wrap:wrap;gap:8px;padding:4px 0}
+.dis-chips button{
+  display:inline-flex;gap:8px;align-items:center;padding:8px 14px;border-radius:var(--r-pill);
+  border:1px solid var(--tomato-35);background:var(--tomato-15);font:600 13px var(--body);color:var(--butter);
+}
+.settings-foot{margin-top:26px;text-align:center;color:var(--butter-40);font:600 12px var(--body);letter-spacing:.1em}
+#dev-zone{margin-top:14px;border-top:1px dashed var(--butter-12);padding-top:6px}
+
+#toast{
+  position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
+  z-index:60;max-width:86%;padding:12px 22px;border-radius:var(--r-pill);
+  background:var(--mid-92);border:1px solid var(--butter-12);color:var(--butter);
+  font:600 14px var(--body);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
+  white-space:nowrap;text-overflow:ellipsis;overflow:hidden;
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.herb{border-color:var(--herb-40);box-shadow:0 0 30px var(--herb-15)}
+
+/* ————— motion discipline ————— */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="gl"></canvas>
+  <div id="bloom"></div>
+
+  <header id="topbar" class="hidden">
+    <div>
+      <button class="icon-btn" id="btn-settings" aria-label="Settings">⚙️</button>
+      <button class="icon-btn" id="btn-history" aria-label="History">📖</button>
+      <button class="chip hidden" id="btn-newscan">↺ New scan</button>
+    </div>
+    <div><div id="wallet" class="chip">🎟 3 of 3 free scans</div></div>
+  </header>
+
+  <!-- ONBOARDING -->
+  <section id="s-onboard" class="screen">
+    <div class="ob-track" id="ob-track">
+      <div class="ob-slide">
+        <div class="big-emoji">🍳</div>
+        <h1>Dinner is already in your fridge.</h1>
+        <p class="ob-sub">Take one photo. Pick a mood. Get one meal you can cook right now — nothing you don't have.</p>
+      </div>
+      <div class="ob-slide">
+        <span class="lbl">30 seconds, once</span>
+        <h1>Anything you don't eat?</h1>
+        <p class="ob-sub">We'll never suggest it. Change these anytime in settings.</p>
+        <div class="togs" id="ob-diet"></div>
+      </div>
+      <div class="ob-slide">
+        <span class="lbl">Pantry basics</span>
+        <h1>What's always in your kitchen?</h1>
+        <p class="ob-sub">We'll assume you have these on hand. Toggle off what you don't keep.</p>
+        <div class="togs" id="ob-staples"></div>
+      </div>
+    </div>
+    <div class="ob-foot">
+      <div class="ob-dots" id="ob-dots"><i class="on"></i><i></i><i></i></div>
+      <button class="btn primary" id="ob-next">Next</button>
+      <button class="ghost-link" id="ob-skip">skip for now</button>
+    </div>
+  </section>
+
+  <!-- LANDING -->
+  <section id="s-landing" class="screen see-through">
+    <div id="hero-spacer">
+      <div id="css-fridge">
+        <div class="cf-wrap">
+          <div class="cf-glowpool"></div>
+          <div class="cf-body">
+            <div class="cf-split"></div>
+            <div class="cf-handle top"></div>
+            <div class="cf-handle bottom"></div>
+          </div>
+          <div class="cf-feet"><i></i><i></i></div>
+        </div>
+      </div>
+    </div>
+    <div id="landing-stack">
+      <h1 id="wordmark">Fridge<em>Chef</em></h1>
+      <p class="tagline">It's late. You're hungry. The answer is behind that door.</p>
+      <button class="btn primary" id="btn-scan">📸 Scan my fridge</button>
+      <p class="lbl" style="text-align:center">one photo · one meal · zero decisions</p>
+    </div>
+  </section>
+
+  <!-- CAMERA / PHOTO -->
+  <section id="s-camera" class="screen">
+    <div class="pad" style="display:flex;flex-direction:column;flex:1">
+      <span class="lbl">Step 1 of 2</span>
+      <h1 class="screen-title">Show me the fridge.</h1>
+      <p class="screen-sub">Open the door wide — good light, everything visible.</p>
+      <div class="shot-slot main" id="slot-fridge">
+        <div class="shot-empty" id="fridge-empty">
+          <div class="cam-ico">📸</div>
+          <p style="font:600 15px var(--body)">Take the photo</p>
+          <p style="font:400 13px var(--body);color:var(--butter-40)">opens your camera</p>
+        </div>
+        <img id="fridge-img" class="hidden" alt="Your fridge">
+        <button class="retake hidden" id="btn-retake">↺ Retake</button>
+      </div>
+      <button class="pantry-slot" id="slot-pantry">
+        <span id="pantry-ico">🥫</span>
+        <img id="pantry-img" class="hidden" alt="Your pantry">
+        <span id="pantry-lbl">Add pantry photo <span style="color:var(--butter-40)">(optional)</span></span>
+        <span class="pantry-x hidden" id="btn-pantry-x">✕</span>
+      </button>
+      <div id="camera-cta">
+        <button class="btn primary" id="btn-photos-done" disabled>That's everything — cook</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MOOD -->
+  <section id="s-mood" class="screen">
+    <div class="pad">
+      <span class="lbl">Step 2 of 2</span>
+      <h1 class="screen-title">What are we making?</h1>
+      <p class="screen-sub">Pick the vibe. One tap.</p>
+      <div id="mood-list"></div>
+    </div>
+  </section>
+
+  <!-- LOADING -->
+  <section id="s-loading" class="screen see-through">
+    <div id="load-copy">
+      <div id="css-pan">🍳</div>
+      <span class="lbl">Cooking something up</span>
+      <div id="load-msg">judging your fridge...</div>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="s-result" class="screen">
+    <div class="pad">
+      <div id="mood-chips"></div>
+      <div class="meal-card">
+        <span class="lbl" id="result-lbl">Tonight's call</span>
+        <h1 class="meal-name" id="meal-name"></h1>
+        <p class="meal-pitch" id="meal-pitch"></p>
+        <div class="meta-row">
+          <span class="meta-chip" id="meal-time"></span>
+          <span class="meta-chip" id="meal-diff"></span>
+        </div>
+        <hr class="rule">
+        <span class="lbl">From your fridge</span>
+        <div class="pillbox" id="ings-fridge"></div>
+        <span class="lbl sec-gap" style="display:block">Pantry staples</span>
+        <div class="pillbox" id="ings-staple"></div>
+        <hr class="rule">
+        <span class="lbl">How it goes</span>
+        <ol id="steps"></ol>
+        <div class="watermark">Fridge<em>Chef</em></div>
+      </div>
+      <div class="locked-line" id="locked-line"></div>
+      <div id="verdict">
+        <button class="thumb" id="thumb-up"><span class="t-emoji">👍</span><span class="t-lbl">Lock it in</span></button>
+        <button class="thumb" id="thumb-down"><span class="t-emoji">👎</span><span class="t-lbl">Deal me another</span></button>
+      </div>
+      <button class="btn ghosty" id="btn-rescan-result">↺ New scan</button>
+    </div>
+  </section>
+
+  <!-- ROAST -->
+  <section id="s-roast" class="screen">
+    <div class="pad">
+      <span class="lbl">Fridge verdict 💀</span>
+      <div id="roast-text"></div>
+      <p class="roast-cap">That's it. That's the fridge.</p>
+      <button class="btn warm" id="btn-roast-again" style="max-width:340px">Scan again when you've been grocery shopping 💀</button>
+    </div>
+  </section>
+
+  <!-- ERROR / RETRY -->
+  <section id="s-error" class="screen">
+    <div class="pad">
+      <div class="err-emoji">🫠</div>
+      <h1 class="screen-title" style="max-width:12ch">That didn't cook right.</h1>
+      <p class="screen-sub" id="error-sub" style="margin-bottom:6px">The kitchen got smoky for a second. Your photo's still here — just try again.</p>
+      <button class="btn primary" id="btn-retry" style="max-width:340px">Try that again</button>
+      <button class="ghost-link" id="btn-error-restart">start over instead</button>
+    </div>
+  </section>
+
+  <!-- CAPACITY -->
+  <section id="s-capacity" class="screen see-through">
+    <div class="pad">
+      <div id="cap-cssfridge">🧊</div>
+      <h1 class="screen-title" style="max-width:13ch">We're cooked <span id="cap-flicker">🔥</span></h1>
+      <p class="screen-sub" style="margin-bottom:0">Too many people scanning today. You're in line for tomorrow's batch.</p>
+      <div class="q-card"><span class="lbl">Your place in line</span><div class="q-num" id="queue-num">#000</div></div>
+      <div class="notify-row">
+        <input id="notify-input" type="text" inputmode="email" placeholder="email or number" aria-label="Where should we notify you">
+        <button class="btn warm" id="btn-notify">Notify me</button>
+      </div>
+      <button class="ghost-link" id="btn-cap-home">back to the kitchen</button>
+    </div>
+  </section>
+
+  <!-- THE WALL -->
+  <div class="overlay" id="wall">
+    <div id="wall-inner">
+      <button id="wall-close" aria-label="Close">✕</button>
+      <span class="lbl">FridgeChef Pro</span>
+      <h2>Your fridge has more secrets.</h2>
+      <div class="bene">
+        <div><i></i>Unlimited scans, any hour of the night</div>
+        <div><i></i>All four moods on every result</div>
+        <div><i></i>Your taste memory keeps learning</div>
+      </div>
+      <p class="price-line"><b>$2.99/mo</b> — less than one delivery fee.</p>
+      <button class="btn primary" id="btn-unlock">Unlock FridgeChef Pro</button>
+      <button class="ghost-link" id="btn-restore" style="align-self:center">restore purchase</button>
+    </div>
+  </div>
+
+  <!-- SHEETS -->
+  <div id="scrim"></div>
+
+  <div class="sheet" id="sheet-settings" role="dialog" aria-label="Settings">
+    <div class="grab"></div>
+    <h3>Settings</h3>
+    <span class="lbl">Eating rules</span>
+    <div class="togs" id="set-diet"></div>
+    <span class="lbl">Assumed staples</span>
+    <div class="togs" id="set-staples"></div>
+    <span class="lbl">Taste memory — avoiding these</span>
+    <div class="dis-chips" id="dis-chips"></div>
+    <p class="empty-note" id="dis-empty">Nothing yet. Downvote a meal's star ingredient twice and it lands here.</p>
+    <div id="dev-zone" class="hidden">
+      <span class="lbl">Dev</span>
+      <div class="togs">
+        <label class="tog"><span>FridgeChef Pro (test flag)</span><input type="checkbox" id="dev-pro"><i></i></label>
+      </div>
+      <button class="ghost-link" id="dev-reset-scans" style="margin-top:10px">reset scan wallet</button>
+    </div>
+    <div class="settings-foot" id="settings-foot">FRIDGECHEF v1.0 — MIDNIGHT DINER</div>
+  </div>
+
+  <div class="sheet" id="sheet-history" role="dialog" aria-label="History">
+    <div class="grab"></div>
+    <h3>Locked in 🔒</h3>
+    <p class="screen-sub" style="margin-bottom:6px">Your last 20 keepers.</p>
+    <div id="hist-list"></div>
+  </div>
+
+  <div class="sheet" id="sheet-soon" role="dialog" aria-label="Payments coming soon">
+    <div class="grab"></div>
+    <h3>Payments coming soon</h3>
+    <p class="screen-sub" style="margin-bottom:16px">You're early 🎟 — Pro isn't on sale yet. Nothing was charged, nothing was captured.</p>
+    <button class="btn warm" id="btn-soon-close">Back to cooking</button>
+  </div>
+
+  <div id="toast"></div>
+
+  <input type="file" id="file-fridge" accept="image/*" capture="environment" hidden>
+  <input type="file" id="file-pantry" accept="image/*" capture="environment" hidden>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="window.__threeFailed=true"></script>
+<script>
+"use strict";
+/* ═══════════════════════════════════════════════════════════════════════
+   ==== CONFIG ====
+   ═══════════════════════════════════════════════════════════════════════ */
+const API_MODE = "direct"; // "direct" = key below (LOCAL TESTING ONLY), "proxy" = call PROXY_URL instead
+const API_KEY = "PASTE_KEY_HERE_FOR_LOCAL_TESTING_ONLY";
+const PROXY_URL = "/.netlify/functions/gemini"; // used when API_MODE = "proxy"
+const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const FREE_SCANS = 3;
+
+/* ————— tiny DOM + storage helpers ————— */
+const $ = s => document.querySelector(s);
+const store = {
+  get(k, fb){ try{ const v = localStorage.getItem(k); return v == null ? fb : JSON.parse(v); }catch(e){ return fb; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ————— data model ————— */
+const DIETS = [
+  ["vegetarian","Vegetarian","strictly vegetarian — no meat, poultry, or fish"],
+  ["no_pork","No pork","no pork or pork products"],
+  ["no_seafood","No seafood","no fish or seafood"],
+  ["nut_allergy","Nut allergy","SEVERE NUT ALLERGY — absolutely no nuts, peanuts, or nut products"],
+  ["dairy_free","Dairy-free","no dairy — no milk, cheese, butter, cream, or yogurt"]
+];
+const STAPLES = [
+  ["oil","Oil"],["salt","Salt"],["pepper","Pepper"],["butter","Butter"],
+  ["spices","Common spices"],["eggs","Eggs"],["flour","Flour"],["rice_pasta","Rice / pasta"]
+];
+const MOODS = {
+  fastest:   { emoji:"⚡", title:"Fastest",    sub:"I'm tired, feed me now",  glow:"rgba(255,217,160,.45)" },
+  tastiest:  { emoji:"😋", title:"Tastiest",   sub:"I want something good",   glow:"rgba(255,90,60,.4)"    },
+  biggest:   { emoji:"🍖", title:"Biggest",    sub:"I'm starving",            glow:"rgba(255,244,224,.35)" },
+  healthiest:{ emoji:"🥗", title:"Healthiest", sub:"Keep it clean",           glow:"rgba(155,212,160,.4)"  }
+};
+const MOOD_KEYS = Object.keys(MOODS);
+const LOAD_MSGS = [
+  "judging your fridge...", "consulting the flavor gods...",
+  "sniffing the leftovers...", "checking behind the milk...",
+  "negotiating with the vegetables...", "waking up the midnight chef...",
+  "measuring vibes per serving...", "preheating opinions...",
+  "counting condiments (concerning)...", "plating something good..."
+];
+
+function defaultSettings(){
+  const diet = {}, staples = {};
+  DIETS.forEach(([k]) => diet[k] = false);
+  STAPLES.forEach(([k]) => staples[k] = true);
+  return { diet, staples, onboarded:false };
+}
+let settings   = Object.assign(defaultSettings(), store.get("fc_settings", {}));
+let votes      = store.get("fc_votes", []);
+let history    = store.get("fc_history", []);
+let scansUsed  = store.get("fc_scans_used", 0);
+let pro        = store.get("fc_pro", false);
+let moodCounts = Object.assign({fastest:0,tastiest:0,biggest:0,healthiest:0}, store.get("fc_mood_counts", {}));
+const saveSettings = () => store.set("fc_settings", settings);
+const saveVotes    = () => store.set("fc_votes", votes);
+const saveHistory  = () => store.set("fc_history", history);
+const saveScans    = () => store.set("fc_scans_used", scansUsed);
+const savePro      = () => store.set("fc_pro", pro);
+const saveMoods    = () => store.set("fc_mood_counts", moodCounts);
+
+/* per-scan session state */
+const state = {
+  gen: 0,               // scan generation — stale async guards
+  photos: [],           // [{dataUrl, b64}] max 2 (fridge, pantry)
+  promise: null,        // in-flight analysis promise
+  analysis: null,       // parsed { ingredients_seen, fridge_empty_roast, meals }
+  counted: false,       // has this scan consumed a wallet ticket yet
+  mood: null,
+  mealIdx: 0,
+  votedUp: false
+};
+
+/* taste memory: ingredients downvoted 2+ times */
+function dislikedList(){
+  const tally = {};
+  votes.forEach(v => {
+    if (v.up) return;
+    (v.ingredients || []).slice(0,3).forEach(raw => {
+      const k = String(raw).toLowerCase().trim();
+      if (k) tally[k] = (tally[k]||0) + 1;
+    });
+  });
+  return Object.keys(tally).filter(k => tally[k] >= 2);
+}
+function forgiveIngredient(name){
+  votes = votes.filter(v => v.up || !(v.ingredients||[]).slice(0,3)
+    .some(i => String(i).toLowerCase().trim() === name));
+  saveVotes();
+}
+
+/* ═════════════════════ SCREENS / NAV ═════════════════════ */
+const SCREEN_UI = { // topbar config per screen
+  onboard : null,
+  landing : { wallet:true,  tools:true,  newscan:false, gl:"hero"     },
+  camera  : { wallet:true,  tools:true,  newscan:false, gl:"none"     },
+  mood    : { wallet:true,  tools:true,  newscan:true,  gl:"none"     },
+  loading : { wallet:false, tools:false, newscan:true,  gl:"pan"      },
+  result  : { wallet:true,  tools:true,  newscan:true,  gl:"none"     },
+  roast   : { wallet:false, tools:true,  newscan:true,  gl:"none"     },
+  error   : { wallet:false, tools:false, newscan:true,  gl:"none"     },
+  capacity: { wallet:false, tools:false, newscan:true,  gl:"capacity" }
+};
+let currentScreen = null;
+function showScreen(name){
+  currentScreen = name;
+  document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
+  $("#s-" + name).classList.add("active");
+  const ui = SCREEN_UI[name];
+  $("#topbar").classList.toggle("hidden", !ui);
+  if (ui){
+    $("#wallet").classList.toggle("hidden", !ui.wallet);
+    $("#btn-settings").classList.toggle("hidden", !ui.tools);
+    $("#btn-history").classList.toggle("hidden", !ui.tools);
+    $("#btn-newscan").classList.toggle("hidden", !ui.newscan);
+    setGLMode(ui.gl);
+  } else {
+    setGLMode("none");
+  }
+  if (name === "loading") startLoadingMsgs(); else stopLoadingMsgs();
+}
+
+function toast(msg, kind){
+  const t = $("#toast");
+  t.textContent = msg;
+  t.className = kind ? kind : "";
+  // force reflow so back-to-back toasts re-animate
+  void t.offsetWidth;
+  t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+/* ═════════════════════ WALLET / PRO ═════════════════════ */
+function scansLeft(){ return Math.max(0, FREE_SCANS - scansUsed); }
+function renderWallet(){
+  const w = $("#wallet");
+  if (pro){ w.textContent = "★ PRO"; w.classList.add("pro"); }
+  else { w.textContent = "🎟 " + scansLeft() + " of " + FREE_SCANS + " free scans"; w.classList.remove("pro"); }
+}
+function consumeScan(){
+  if (state.counted) return;
+  state.counted = true;
+  if (!pro){ scansUsed++; saveScans(); renderWallet(); }
+}
+function openWall(){ $("#wall").classList.add("open"); }
+function closeWall(){ $("#wall").classList.remove("open"); }
+
+/* ═════════════════════ PHOTOS ═════════════════════ */
+function readAsDataURL(file){
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(new Error("read failed"));
+    r.readAsDataURL(file);
+  });
+}
+function loadImg(src){
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = () => rej(new Error("decode failed"));
+    img.src = src;
+  });
+}
+async function fileToPhoto(file){
+  const raw = await readAsDataURL(file);
+  const img = await loadImg(raw);
+  const scale = Math.min(1, 1024 / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(img.naturalWidth * scale));
+  c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  const dataUrl = c.toDataURL("image/jpeg", 0.82);
+  return { dataUrl, b64: dataUrl.split(",")[1] };
+}
+function renderPhotoSlots(){
+  const f = state.photos[0], p = state.photos[1];
+  $("#fridge-img").classList.toggle("hidden", !f);
+  $("#fridge-empty").classList.toggle("hidden", !!f);
+  $("#btn-retake").classList.toggle("hidden", !f);
+  if (f) $("#fridge-img").src = f.dataUrl;
+  $("#pantry-img").classList.toggle("hidden", !p);
+  $("#pantry-ico").classList.toggle("hidden", !!p);
+  $("#btn-pantry-x").classList.toggle("hidden", !p);
+  if (p) $("#pantry-img").src = p.dataUrl;
+  $("#pantry-lbl").innerHTML = p ? "Pantry added ✓" : 'Add pantry photo <span style="color:var(--butter-40)">(optional)</span>';
+  $("#btn-photos-done").disabled = !f;
+}
+
+/* ═════════════════════ GEMINI ═════════════════════ */
+function buildPrompt(){
+  const staplesOn = STAPLES.filter(([k]) => settings.staples[k]).map(([,label]) => label.toLowerCase());
+  const dietRules = DIETS.filter(([k]) => settings.diet[k]).map(([,,rule]) => rule);
+  const disliked  = dislikedList();
+  const schema = `{
+  "ingredients_seen": ["..."],
+  "fridge_empty_roast": null,
+  "meals": {
+    "fastest":   [{"name":"","pitch":"","time_minutes":0,"difficulty":"Easy","fridge_ingredients":[],"staple_ingredients":[],"steps":[]}, {"...second backup meal, same shape...":""}],
+    "tastiest":  [{"...2 meals...":""}],
+    "biggest":   [{"...2 meals...":""}],
+    "healthiest":[{"...2 meals...":""}]
+  }
+}`;
+  return [
+    "You are FridgeChef. Look at these photo(s) of a fridge (and optional pantry). Identify every usable food item you can actually see. Then propose meals using ONLY those visible items plus the allowed staples list provided. NEVER include an ingredient that is not visible or in the staples list. Respond with ONLY raw JSON, no markdown fences, no commentary, matching this schema:",
+    schema,
+    "Rules:",
+    "- ALLOWED STAPLES the user confirmed they keep (assume these and NOTHING else beyond the photos): " + (staplesOn.length ? staplesOn.join(", ") : "none — the user keeps no staples, use only what is visible"),
+    "- HARD DIETARY RULES: " + (dietRules.length ? dietRules.join("; ") : "none"),
+    "- AVOID these ingredients — the user dislikes them: " + (disliked.length ? disliked.join(", ") : "none"),
+    '- "meals" must contain exactly the four keys shown. Each is an array of exactly 2 different meals: a primary and a backup.',
+    '- fastest = minimum time and effort. tastiest = most delicious. biggest = most filling. healthiest = lightest and cleanest.',
+    '- "pitch" is one casual line, sentence case. "time_minutes" is an integer. "difficulty" is "Easy" or "Medium". "steps" is 4-8 short plain-verb strings. "fridge_ingredients" only items visible in the photos; "staple_ingredients" only items from the allowed staples list.',
+    '- If you can see fewer than ~3 real food ingredients (condiments and sauces do not count), set every meals array to [] and instead write ONE funny, PG roast line about this fridge in "fridge_empty_roast" (e.g. "bro has condiments and dreams"). Otherwise "fridge_empty_roast" must be null.'
+  ].join("\n");
+}
+
+function parseAnalysis(text){
+  let t = String(text == null ? "" : text).trim();
+  t = t.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "").trim();
+  const a = t.indexOf("{"), b = t.lastIndexOf("}");
+  if (a === -1 || b <= a) return null;
+  let obj;
+  try { obj = JSON.parse(t.slice(a, b + 1)); } catch(e){ return null; }
+  if (!obj || typeof obj !== "object") return null;
+  if (typeof obj.fridge_empty_roast === "string" && obj.fridge_empty_roast.trim()){
+    return { ingredients_seen: obj.ingredients_seen || [], fridge_empty_roast: obj.fridge_empty_roast.trim(), meals: null };
+  }
+  const meals = obj.meals;
+  if (!meals || typeof meals !== "object") return null;
+  const clean = {};
+  for (const key of MOOD_KEYS){
+    const arr = Array.isArray(meals[key]) ? meals[key] : [];
+    const ok = arr.filter(m => m && typeof m === "object" && m.name && Array.isArray(m.steps) && m.steps.length)
+      .map(m => ({
+        name: String(m.name),
+        pitch: String(m.pitch || ""),
+        time_minutes: Math.max(1, parseInt(m.time_minutes, 10) || 15),
+        difficulty: /med/i.test(String(m.difficulty)) ? "Medium" : "Easy",
+        fridge_ingredients: (Array.isArray(m.fridge_ingredients) ? m.fridge_ingredients : []).map(String),
+        staple_ingredients: (Array.isArray(m.staple_ingredients) ? m.staple_ingredients : []).map(String),
+        steps: m.steps.map(String)
+      }));
+    if (!ok.length) return null; // a mood with zero meals = unusable response
+    clean[key] = ok;
+  }
+  return { ingredients_seen: obj.ingredients_seen || [], fridge_empty_roast: null, meals: clean };
+}
+
+async function callGemini(){
+  const parts = [{ text: buildPrompt() }];
+  state.photos.forEach(p => parts.push({ inline_data: { mime_type: "image/jpeg", data: p.b64 } }));
+  const body = JSON.stringify({
+    contents: [{ parts }],
+    generationConfig: { temperature: 0.9, response_mime_type: "application/json" }
+  });
+  const url = API_MODE === "proxy" ? PROXY_URL : GEMINI_ENDPOINT + "?key=" + encodeURIComponent(API_KEY);
+  let res;
+  try {
+    res = await fetch(url, { method:"POST", headers:{ "Content-Type":"application/json" }, body });
+  } catch(e){
+    throw { type:"network" };
+  }
+  if (res.status === 429 || res.status === 503) throw { type:"capacity" };
+  const textBody = await res.text();
+  if (!res.ok){
+    if (/RESOURCE_EXHAUSTED|quota|rate/i.test(textBody)) throw { type:"capacity" };
+    throw { type:"api", status: res.status };
+  }
+  let data;
+  try { data = JSON.parse(textBody); } catch(e){ throw { type:"parse" }; }
+  const raw = data && data.candidates && data.candidates[0] &&
+              data.candidates[0].content && data.candidates[0].content.parts &&
+              data.candidates[0].content.parts.map(p => p.text || "").join("");
+  const parsed = parseAnalysis(raw);
+  if (!parsed) throw { type:"parse" };
+  return parsed;
+}
+
+/* ONE call per scan — all four moods + backups come back together */
+function startAnalysis(){
+  const gen = state.gen;
+  state.analysis = null;
+  state.promise = callGemini().then(parsed => {
+    if (gen !== state.gen) return parsed;
+    state.analysis = parsed;
+    consumeScan(); // a scan only burns a ticket once it actually succeeds
+    return parsed;
+  });
+  state.promise.catch(() => {}); // avoid unhandled rejection while user is still on mood screen
+  return state.promise;
+}
+
+/* ═════════════════════ FLOW ═════════════════════ */
+function newScan(){
+  state.gen++;
+  state.photos = [];
+  state.promise = null;
+  state.analysis = null;
+  state.counted = false;
+  state.mood = null;
+  state.mealIdx = 0;
+  state.votedUp = false;
+  $("#file-fridge").value = "";
+  $("#file-pantry").value = "";
+  renderPhotoSlots();
+  renderWallet();
+  showScreen("landing");
+}
+
+function onScanTap(){
+  // fire the picker inside the tap gesture, then play the identity moment
+  $("#file-fridge").click();
+  playDoorTransition(() => showScreen("camera"));
+}
+
+function onPhotosConfirmed(){
+  if (!state.photos[0]) return;
+  if (!pro && scansUsed >= FREE_SCANS){ openWall(); return; }
+  startAnalysis(); // prefetch while they pick a mood — taps feel instant
+  renderMoodCards();
+  showScreen("mood");
+}
+
+async function pickMood(mood){
+  moodCounts[mood] = (moodCounts[mood]||0) + 1; saveMoods();
+  state.mood = mood;
+  state.mealIdx = 0;
+  state.votedUp = false;
+  await resolveToResult();
+}
+
+async function resolveToResult(){
+  const gen = state.gen;
+  showScreen("loading");
+  const minShow = new Promise(r => setTimeout(r, reducedMotion ? 250 : 1400));
+  try {
+    const p = state.promise || startAnalysis();
+    const [parsed] = await Promise.all([p, minShow]);
+    if (gen !== state.gen) return;
+    if (parsed.fridge_empty_roast){ showRoast(parsed.fridge_empty_roast); return; }
+    renderResult();
+    showScreen("result");
+  } catch(err){
+    if (gen !== state.gen) return;
+    await minShow;
+    if (err && err.type === "capacity") showCapacity();
+    else {
+      $("#error-sub").textContent = err && err.type === "network"
+        ? "Can't reach the kitchen — check your connection, your photo's still here."
+        : "The kitchen got smoky for a second. Your photo's still here — just try again.";
+      showScreen("error");
+    }
+  }
+}
+
+function retryScan(){
+  startAnalysis();
+  if (state.mood) resolveToResult();
+  else { renderMoodCards(); showScreen("mood"); }
+}
+
+function showRoast(line){
+  $("#roast-text").textContent = line;
+  showScreen("roast");
+}
+
+function showCapacity(){
+  // fake-but-honest queue number, derived from the clock
+  $("#queue-num").textContent = "#" + (200 + (Math.floor(Date.now() / 60000) % 700));
+  $("#cap-cssfridge").classList.toggle("on", !GL.ok);
+  showScreen("capacity");
+}
+
+/* ═════════════════════ MOOD SCREEN ═════════════════════ */
+function moodOrder(){
+  return [...MOOD_KEYS].sort((a,b) => (moodCounts[b]||0) - (moodCounts[a]||0));
+}
+function renderMoodCards(){
+  const order = moodOrder();
+  const top = order[0];
+  const showUsual = (moodCounts[top]||0) >= 2 && moodCounts[top] > (moodCounts[order[1]]||0);
+  $("#mood-list").innerHTML = "";
+  order.forEach(key => {
+    const m = MOODS[key];
+    const card = document.createElement("button");
+    card.className = "mood-card";
+    card.style.setProperty("--card-glow", m.glow);
+    card.innerHTML =
+      (showUsual && key === top ? '<span class="usual">usual?</span>' : "") +
+      '<span class="mood-emoji">' + m.emoji + '</span>' +
+      '<span><h2>' + m.title + '</h2><p>' + m.sub + '</p></span>';
+    card.addEventListener("click", () => pickMood(key));
+    $("#mood-list").appendChild(card);
+  });
+}
+
+/* ═════════════════════ LOADING MESSAGES ═════════════════════ */
+let loadTimer = null, loadIdx = 0;
+function startLoadingMsgs(){
+  stopLoadingMsgs();
+  loadIdx = Math.floor(Math.random() * LOAD_MSGS.length);
+  $("#load-msg").textContent = LOAD_MSGS[loadIdx];
+  $("#css-pan").classList.toggle("on", !GL.ok);
+  loadTimer = setInterval(() => {
+    const el = $("#load-msg");
+    el.classList.add("fade");
+    setTimeout(() => {
+      loadIdx = (loadIdx + 1) % LOAD_MSGS.length;
+      el.textContent = LOAD_MSGS[loadIdx];
+      el.classList.remove("fade");
+    }, 300);
+  }, 1500);
+}
+function stopLoadingMsgs(){ if (loadTimer){ clearInterval(loadTimer); loadTimer = null; } }
+
+/* ═════════════════════ RESULT ═════════════════════ */
+function currentMeal(){
+  const arr = state.analysis.meals[state.mood];
+  return arr[state.mealIdx % arr.length];
+}
+function renderResult(){
+  const meal = currentMeal();
+  $("#result-lbl").textContent = MOODS[state.mood].emoji + "  Tonight's " + MOODS[state.mood].title.toLowerCase() + " call";
+  $("#meal-name").textContent = meal.name;
+  $("#meal-pitch").textContent = meal.pitch;
+  $("#meal-time").textContent = "⏱ " + meal.time_minutes + " min";
+  $("#meal-diff").textContent = meal.difficulty === "Medium" ? "◐ Medium" : "○ Easy";
+  const fill = (sel, items, cls) => {
+    const box = $(sel); box.innerHTML = "";
+    (items.length ? items : ["—"]).forEach(i => {
+      const s = document.createElement("span");
+      s.className = "ing" + (cls ? " " + cls : "");
+      s.textContent = i;
+      box.appendChild(s);
+    });
+  };
+  fill("#ings-fridge", meal.fridge_ingredients);
+  fill("#ings-staple", meal.staple_ingredients, "staple");
+  const steps = $("#steps"); steps.innerHTML = "";
+  meal.steps.forEach((txt, i) => {
+    const li = document.createElement("li");
+    li.className = "step";
+    li.innerHTML = '<span class="ghostnum">' + (i+1) + '</span><p></p>';
+    li.querySelector("p").textContent = txt;
+    steps.appendChild(li);
+  });
+  renderMoodChips();
+  $("#verdict").classList.remove("voted");
+  $("#thumb-up").classList.remove("done");
+  $("#locked-line").textContent = "";
+  $("#s-result").scrollTop = 0;
+}
+function renderMoodChips(){
+  const box = $("#mood-chips"); box.innerHTML = "";
+  MOOD_KEYS.forEach(key => {
+    const chip = document.createElement("button");
+    const locked = !pro && key !== state.mood;
+    chip.className = "mchip" + (key === state.mood ? " on" : "") + (locked ? " locked" : "");
+    chip.innerHTML = '<span class="mch-e">' + MOODS[key].emoji + '</span>' + (locked ? '<span class="lock">🔒</span>' : "");
+    chip.setAttribute("aria-label", MOODS[key].title + (locked ? " (locked)" : ""));
+    chip.addEventListener("click", () => {
+      if (locked){ openWall(); return; }
+      if (key === state.mood) return;
+      state.mood = key; state.mealIdx = 0; state.votedUp = false;
+      renderResult();
+    });
+    box.appendChild(chip);
+  });
+}
+function voteUp(){
+  const meal = currentMeal();
+  votes.push({ name: meal.name, ingredients: meal.fridge_ingredients, mood: state.mood, up: true, t: Date.now() });
+  saveVotes();
+  history.unshift({ name: meal.name, mood: state.mood, t: Date.now() });
+  history = history.slice(0, 20);
+  saveHistory();
+  state.votedUp = true;
+  $("#verdict").classList.add("voted");
+  $("#thumb-up").classList.add("done");
+  $("#locked-line").textContent = "nice, locked in 🔒";
+  toast("nice, locked in 🔒", "herb");
+}
+function voteDown(){
+  const meal = currentMeal();
+  votes.push({ name: meal.name, ingredients: meal.fridge_ingredients, mood: state.mood, up: false, t: Date.now() });
+  saveVotes();
+  const arr = state.analysis.meals[state.mood];
+  const next = state.mealIdx + 1;
+  if (next % arr.length === 0 && next >= arr.length){
+    toast("that's everything this fridge can do — fresh scan for fresh ideas");
+  }
+  state.mealIdx = next; // cycles through primary ↔ backup, never dead-ends
+  renderResult();
+}
+
+/* ═════════════════════ SHEETS: settings / history ═════════════════════ */
+function buildToggles(container, defs, bag, onFlip){
+  container.innerHTML = "";
+  defs.forEach(([key, label]) => {
+    const lab = document.createElement("label");
+    lab.className = "tog";
+    lab.innerHTML = "<span></span><input type='checkbox'><i></i>";
+    lab.querySelector("span").textContent = label;
+    const input = lab.querySelector("input");
+    input.checked = !!bag[key];
+    input.addEventListener("change", () => { bag[key] = input.checked; saveSettings(); if (onFlip) onFlip(); });
+    container.appendChild(lab);
+  });
+}
+function openSheet(id){
+  closeSheets();
+  $("#scrim").classList.add("open");
+  $("#" + id).classList.add("open");
+}
+function closeSheets(){
+  $("#scrim").classList.remove("open");
+  document.querySelectorAll(".sheet").forEach(s => s.classList.remove("open"));
+}
+function renderSettingsSheet(){
+  buildToggles($("#set-diet"), DIETS, settings.diet);
+  buildToggles($("#set-staples"), STAPLES, settings.staples);
+  renderDisliked();
+  $("#dev-pro").checked = pro;
+}
+function renderDisliked(){
+  const list = dislikedList();
+  const box = $("#dis-chips"); box.innerHTML = "";
+  $("#dis-empty").classList.toggle("hidden", list.length > 0);
+  list.forEach(name => {
+    const b = document.createElement("button");
+    b.innerHTML = "<span></span> ✕";
+    b.querySelector("span").textContent = name;
+    b.addEventListener("click", () => { forgiveIngredient(name); renderDisliked(); toast("forgiven — " + name + " gets another shot"); });
+    box.appendChild(b);
+  });
+}
+function renderHistorySheet(){
+  const box = $("#hist-list"); box.innerHTML = "";
+  if (!history.length){
+    box.innerHTML = '<p class="empty-note">Nothing locked in yet — go cook something.</p>';
+    return;
+  }
+  history.forEach(h => {
+    const d = new Date(h.t);
+    const row = document.createElement("div");
+    row.className = "hist-item";
+    row.innerHTML = '<span class="he">' + (MOODS[h.mood] ? MOODS[h.mood].emoji : "🍽") + '</span><div><b></b><span class="hd"></span></div>';
+    row.querySelector("b").textContent = h.name;
+    row.querySelector(".hd").textContent =
+      d.toLocaleDateString(undefined, { month:"short", day:"numeric" }) + " · " + (MOODS[h.mood] ? MOODS[h.mood].title : "");
+    box.appendChild(row);
+  });
+}
+
+/* ═════════════════════ THREE.JS — the Midnight Diner showpiece ═════════════════════
+   One renderer, two scenes (hero fridge / pan loader), all procedural geometry.
+   Paused off-screen and on visibilitychange. Graceful CSS fallback if WebGL dies. */
+const GL = {
+  ok:false, renderer:null, canvas:null, raf:null, mode:"none",
+  hero:{}, pan:{}, transition:null,
+  par:{ tx:0, ty:0, cx:0, cy:0 }
+};
+function glSize(){
+  const app = $("#app");
+  return { w: app.clientWidth || 390, h: app.clientHeight || 700 };
+}
+let _softDot = null;
+function softDotTexture(){ // round glow sprite for particles — procedural, no assets
+  if (_softDot) return _softDot;
+  const c = document.createElement("canvas");
+  c.width = c.height = 64;
+  const x = c.getContext("2d");
+  const g = x.createRadialGradient(32, 32, 2, 32, 32, 30);
+  g.addColorStop(0, "rgba(255,217,160,1)");
+  g.addColorStop(0.4, "rgba(255,217,160,.55)");
+  g.addColorStop(1, "rgba(255,217,160,0)");
+  x.fillStyle = g;
+  x.fillRect(0, 0, 64, 64);
+  _softDot = new THREE.CanvasTexture(c);
+  return _softDot;
+}
+function initGL(){
+  if (window.__threeFailed || !window.THREE) return false;
+  GL.canvas = $("#gl");
+  try {
+    GL.renderer = new THREE.WebGLRenderer({ canvas: GL.canvas, antialias:true, alpha:true });
+  } catch(e){ return false; }
+  if (!GL.renderer.getContext()) return false;
+  GL.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  const { w, h } = glSize();
+  GL.renderer.setSize(w, h, false);
+  buildHeroScene(w / h);
+  buildPanScene(w / h);
+  window.addEventListener("resize", () => {
+    const s = glSize();
+    GL.renderer.setSize(s.w, s.h, false);
+    [GL.hero.cam, GL.pan.cam].forEach(c => { c.aspect = s.w / s.h; c.updateProjectionMatrix(); });
+  });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) kickLoop(); });
+  if (!reducedMotion){
+    window.addEventListener("pointermove", e => {
+      const r = $("#app").getBoundingClientRect();
+      GL.par.tx = ((e.clientX - r.left) / r.width  - 0.5) * 2;
+      GL.par.ty = ((e.clientY - r.top)  / r.height - 0.5) * 2;
+    });
+    window.addEventListener("deviceorientation", e => {
+      if (e.gamma == null || e.beta == null) return;
+      GL.par.tx = Math.max(-1, Math.min(1, e.gamma / 30));
+      GL.par.ty = Math.max(-1, Math.min(1, (e.beta - 40) / 30));
+    });
+  }
+  return true;
+}
+function buildHeroScene(aspect){
+  const H = GL.hero;
+  H.scene = new THREE.Scene();
+  H.cam = new THREE.PerspectiveCamera(38, aspect, 0.1, 60);
+  H.camZ0 = 9.6; // far enough back that the fridge floats small in the portrait frame
+  H.camY0 = 0.55;
+  H.baseY = 1.05; // fridge rides in the upper third, above the wordmark stack
+  H.cam.position.set(0, H.camY0, H.camZ0);
+  H.cam.lookAt(0, 0.3, 0);
+  H.scene.add(new THREE.AmbientLight(0xFFD9A0, 0.16));
+  H.key = new THREE.PointLight(0xFFD9A0, 1.2, 40, 1.6);
+  H.key.position.set(3.2, 3.8, 5.0);
+  H.scene.add(H.key);
+
+  const butterMat = new THREE.MeshStandardMaterial({ color:0xFFF4E0, roughness:0.55, metalness:0.08 });
+  const darkMat   = new THREE.MeshStandardMaterial({ color:0x131017, roughness:0.85 });
+  H.fridge = new THREE.Group();
+
+  // cabinet (slightly cartoon-chunky proportions)
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.55, 1.05), butterMat);
+  cab.position.z = -0.09;
+  H.fridge.add(cab);
+  // glowing interior back wall — hidden behind the door until it swings
+  H.glowMat = new THREE.MeshStandardMaterial({ color:0x131017, emissive:0xFFD9A0, emissiveIntensity:0, roughness:1 });
+  const inner = new THREE.Mesh(new THREE.PlaneGeometry(1.32, 2.3), H.glowMat);
+  inner.position.set(0, 0, 0.30);
+  H.fridge.add(inner);
+  for (let i = 0; i < 3; i++){ // shelves catch the light on open
+    const sh = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.045, 0.5), butterMat);
+    sh.position.set(0, -0.7 + i * 0.62, 0.22);
+    H.fridge.add(sh);
+  }
+  // doors on a shared left-edge hinge
+  H.door = new THREE.Group();
+  H.door.position.set(-0.75, 0, 0.435);
+  const mkDoor = (hgt, y) => {
+    const d = new THREE.Mesh(new THREE.BoxGeometry(1.5, hgt, 0.16), butterMat);
+    d.position.set(0.75, y, 0);
+    H.door.add(d);
+    const hd = new THREE.Mesh(new THREE.BoxGeometry(0.075, Math.min(0.62, hgt * 0.5), 0.075), darkMat);
+    hd.position.set(1.34, y + (hgt > 1 ? 0.45 : 0), 0.115);
+    H.door.add(hd);
+  };
+  mkDoor(0.78, 0.865); // freezer up top
+  mkDoor(1.66, -0.4);  // main door
+  H.fridge.add(H.door);
+  [-0.55, 0.55].forEach(x => {
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.22), darkMat);
+    foot.position.set(x, -1.35, 0.28);
+    H.fridge.add(foot);
+  });
+  H.fridge.position.y = H.baseY;
+  H.scene.add(H.fridge);
+
+  // warm light pool grounding the float
+  H.pool = new THREE.Mesh(
+    new THREE.CircleGeometry(1.7, 36),
+    new THREE.MeshBasicMaterial({ color:0xFFD9A0, transparent:true, opacity:0.13, blending:THREE.AdditiveBlending, depthWrite:false })
+  );
+  H.pool.rotation.x = -Math.PI / 2;
+  H.pool.scale.set(1, 0.5, 1);
+  H.pool.position.y = H.baseY - 1.75;
+  H.scene.add(H.pool);
+
+  // drifting dust motes in the tungsten beam
+  const N = 60, pos = new Float32Array(N * 3);
+  H.pSpeed = new Float32Array(N);
+  for (let i = 0; i < N; i++){
+    pos[i*3]   = (Math.random() - 0.5) * 5.5;
+    pos[i*3+1] = (Math.random() - 0.5) * 6.4;
+    pos[i*3+2] = (Math.random() - 0.5) * 2.5;
+    H.pSpeed[i] = 0.05 + Math.random() * 0.14;
+  }
+  const pGeo = new THREE.BufferGeometry();
+  pGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  H.dust = new THREE.Points(pGeo, new THREE.PointsMaterial({
+    color:0xFFD9A0, size:0.16, map:softDotTexture(), transparent:true, opacity:0.55,
+    blending:THREE.AdditiveBlending, depthWrite:false
+  }));
+  H.scene.add(H.dust);
+}
+function buildPanScene(aspect){
+  const P = GL.pan;
+  P.scene = new THREE.Scene();
+  P.cam = new THREE.PerspectiveCamera(40, aspect, 0.1, 60);
+  P.cam.position.set(0, 2.7, 7.6);
+  P.cam.lookAt(0, 0.75, 0);
+  P.scene.add(new THREE.AmbientLight(0xFFD9A0, 0.22));
+  const key = new THREE.PointLight(0xFFD9A0, 1.35, 40, 1.6);
+  key.position.set(1.8, 3.2, 2.6);
+  P.scene.add(key);
+
+  P.rig = new THREE.Group();
+  P.rig.scale.setScalar(0.75);
+  P.rig.position.y = 0.55;
+  const panMat = new THREE.MeshStandardMaterial({ color:0x131017, roughness:0.5, metalness:0.35 });
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(1.02, 0.9, 0.16, 28), panMat);
+  P.rig.add(base);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.075, 10, 28), panMat);
+  rim.rotation.x = Math.PI / 2;
+  rim.position.y = 0.1;
+  P.rig.add(rim);
+  const handle = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.09, 0.2), panMat);
+  handle.position.set(1.55, 0.1, 0);
+  P.rig.add(handle);
+  P.scene.add(P.rig);
+
+  // low-poly food: cube tomato, sphere egg, cylinder carrot slice, herb chunk
+  const mk = (geo, color) => new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, roughness:0.6 }));
+  P.chunks = [
+    mk(new THREE.BoxGeometry(0.3, 0.3, 0.3), 0xFF5A3C),
+    mk(new THREE.SphereGeometry(0.19, 10, 8), 0xFFF4E0),
+    mk(new THREE.CylinderGeometry(0.17, 0.17, 0.09, 12), 0xFFD9A0),
+    mk(new THREE.BoxGeometry(0.2, 0.2, 0.2), 0x9BD4A0)
+  ];
+  P.chunks.forEach((c, i) => { c.position.set(-0.45 + i * 0.3, 0.25, (i % 2) * 0.3 - 0.15); P.rig.add(c); });
+
+  // steam
+  const N = 26, pos = new Float32Array(N * 3);
+  P.sSpeed = new Float32Array(N);
+  for (let i = 0; i < N; i++){
+    pos[i*3] = (Math.random() - 0.5) * 1.4;
+    pos[i*3+1] = 0.3 + Math.random() * 2.0;
+    pos[i*3+2] = (Math.random() - 0.5) * 1.0;
+    P.sSpeed[i] = 0.35 + Math.random() * 0.5;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  P.steam = new THREE.Points(g, new THREE.PointsMaterial({
+    color:0xFFD9A0, size:0.22, map:softDotTexture(), transparent:true, opacity:0.4,
+    blending:THREE.AdditiveBlending, depthWrite:false
+  }));
+  P.scene.add(P.steam);
+}
+function setGLMode(mode){
+  if (!GL.ok){
+    $("#gl").classList.remove("on");
+    $("#css-fridge").classList.toggle("on", mode === "hero");
+    return;
+  }
+  GL.mode = mode;
+  GL.canvas.classList.toggle("on", mode !== "none");
+  if ((mode === "hero" || mode === "capacity") && !GL.transition){
+    // undo any leftover door-transition state (dolly, swing, bloom)
+    GL.hero.cam.position.z = GL.hero.camZ0;
+    GL.hero.cam.position.y = GL.hero.camY0;
+    GL.hero.key.intensity = 1.2;
+    GL.hero.door.rotation.y = mode === "capacity" ? -0.55 : 0;
+    GL.hero.glowMat.emissiveIntensity = mode === "capacity" ? 1.0 : 0;
+  }
+  kickLoop();
+}
+function kickLoop(){
+  if (GL.ok && GL.mode !== "none" && !GL.raf && !document.hidden){
+    GL.raf = requestAnimationFrame(glTick);
+  }
+}
+function glTick(ts){
+  GL.raf = null;
+  if (!GL.ok || GL.mode === "none" || document.hidden) return;
+  GL.raf = requestAnimationFrame(glTick);
+  const t = ts / 1000;
+  if (GL.mode === "hero" || GL.mode === "capacity") renderHero(t, ts);
+  else if (GL.mode === "pan") renderPan(t);
+}
+function renderHero(t, ts){
+  const H = GL.hero;
+  // damped parallax
+  GL.par.cx += (GL.par.tx - GL.par.cx) * 0.06;
+  GL.par.cy += (GL.par.ty - GL.par.cy) * 0.06;
+  const bob = reducedMotion ? 0 : Math.sin(t * (Math.PI * 2 / 3)) * 0.05;
+  const sway = reducedMotion ? 0 : Math.sin(t * 0.42) * 0.14; // ±8°
+  H.fridge.position.y = H.baseY + bob + (GL.mode === "capacity" ? 0.55 : 0);
+  H.pool.visible = GL.mode !== "capacity";
+  H.fridge.rotation.y = 0.16 + sway + GL.par.cx * 0.1; // slight constant angle keeps a second face visible
+  H.fridge.rotation.x = GL.par.cy * 0.05;
+
+  if (!reducedMotion){
+    const pos = H.dust.geometry.attributes.position;
+    for (let i = 0; i < H.pSpeed.length; i++){
+      let y = pos.getY(i) + H.pSpeed[i] * 0.016;
+      if (y > 2.3) y = -2.3;
+      pos.setY(i, y);
+    }
+    pos.needsUpdate = true;
+  }
+
+  if (GL.mode === "capacity"){
+    // door ajar, interior light flickering out
+    H.door.rotation.y = -0.55;
+    if (Math.random() < 0.08) H.capFlick = Math.random() < 0.45 ? 0.15 : 1.4;
+    H.capFlick = H.capFlick == null ? 1.2 : H.capFlick;
+    H.glowMat.emissiveIntensity += ((H.capFlick * 0.9) - H.glowMat.emissiveIntensity) * 0.3;
+    H.key.intensity += ((H.capFlick) - H.key.intensity) * 0.25;
+  }
+
+  if (GL.transition){
+    const tr = GL.transition;
+    const p = Math.min(1, (ts - tr.start) / tr.dur);
+    const e = p < 0.5 ? 4*p*p*p : 1 - Math.pow(-2*p + 2, 3) / 2; // easeInOutCubic
+    H.door.rotation.y = -e * 1.95;                // swing wide on the hinge
+    H.glowMat.emissiveIntensity = e * 2.6;        // interior blooms
+    H.key.intensity = 1.2 + e * 1.6;
+    H.cam.position.z = H.camZ0 - e * 4.6;         // dolly into the light
+    H.cam.position.y = H.camY0 + e * 0.6;
+    if (p > 0.42) $("#bloom").style.opacity = Math.min(1, (p - 0.42) / 0.5);
+    if (p >= 1){
+      GL.transition = null;
+      tr.done();
+      setTimeout(() => {
+        const b = $("#bloom");
+        b.classList.add("out");
+        b.style.opacity = 0;
+        setTimeout(() => b.classList.remove("out"), 700);
+      }, 120);
+    }
+  }
+  GL.renderer.render(H.scene, H.cam);
+}
+function renderPan(t){
+  const P = GL.pan;
+  const T = 2.4; // toss cycle seconds
+  P.rig.rotation.z = Math.sin(t * Math.PI * 2 / T) * 0.075;
+  P.rig.rotation.y = 0.55 + Math.sin(t * 0.5) * 0.2; // handle angled back so it fits the portrait frame
+  P.chunks.forEach((c, i) => {
+    const ph = ((t / T) + i * 0.25) % 1;
+    const air = Math.sin(ph * Math.PI);
+    c.position.y = 0.22 + Math.max(0, air) * 1.05;
+    c.rotation.x = ph * Math.PI * 4;
+    c.rotation.z = ph * Math.PI * 2 + i;
+  });
+  const pos = P.steam.geometry.attributes.position;
+  for (let i = 0; i < P.sSpeed.length; i++){
+    let y = pos.getY(i) + P.sSpeed[i] * 0.016;
+    if (y > 2.6) y = 0.3;
+    pos.setY(i, y);
+    pos.setX(i, pos.getX(i) + Math.sin(y * 3 + i) * 0.002);
+  }
+  pos.needsUpdate = true;
+  GL.renderer.render(P.scene, P.cam);
+}
+/* the identity moment: door swings, light blooms, we're in the kitchen */
+function playDoorTransition(done){
+  if (!GL.ok || GL.mode !== "hero" || reducedMotion){ done(); return; }
+  if (GL.transition) return;
+  GL.transition = { start: performance.now(), dur: 640, done };
+}
+
+/* ═════════════════════ ONBOARDING ═════════════════════ */
+let obSlide = 0;
+function initOnboarding(){
+  buildToggles($("#ob-diet"), DIETS, settings.diet);
+  buildToggles($("#ob-staples"), STAPLES, settings.staples);
+  const track = $("#ob-track");
+  const dots = Array.from($("#ob-dots").children);
+  const sync = () => {
+    obSlide = Math.round(track.scrollLeft / track.clientWidth);
+    dots.forEach((d, i) => d.classList.toggle("on", i === obSlide));
+    $("#ob-next").textContent = obSlide === 2 ? "Start cooking" : "Next";
+  };
+  track.addEventListener("scroll", () => requestAnimationFrame(sync));
+  $("#ob-next").addEventListener("click", () => {
+    if (obSlide >= 2){ finishOnboarding(); return; }
+    track.scrollTo({ left: (obSlide + 1) * track.clientWidth, behavior: reducedMotion ? "auto" : "smooth" });
+  });
+  $("#ob-skip").addEventListener("click", finishOnboarding);
+}
+function finishOnboarding(){
+  settings.onboarded = true;
+  saveSettings();
+  showScreen("landing");
+}
+
+/* ═════════════════════ WIRING ═════════════════════ */
+function init(){
+  GL.ok = initGL();
+
+  renderWallet();
+  renderPhotoSlots();
+  initOnboarding();
+
+  // landing
+  $("#btn-scan").addEventListener("click", onScanTap);
+
+  // photos
+  $("#file-fridge").addEventListener("change", async e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    try { state.photos[0] = await fileToPhoto(f); } catch(err){ toast("couldn't read that photo — try again"); return; }
+    renderPhotoSlots();
+  });
+  $("#file-pantry").addEventListener("change", async e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    try { state.photos[1] = await fileToPhoto(f); } catch(err){ toast("couldn't read that photo — try again"); return; }
+    renderPhotoSlots();
+  });
+  $("#slot-fridge").addEventListener("click", e => {
+    if (e.target.id === "btn-retake") return;
+    if (!state.photos[0]) $("#file-fridge").click();
+  });
+  $("#btn-retake").addEventListener("click", () => { $("#file-fridge").value = ""; $("#file-fridge").click(); });
+  $("#slot-pantry").addEventListener("click", e => {
+    if (e.target.id === "btn-pantry-x"){
+      state.photos.length = 1; // drop pantry, keep fridge
+      $("#file-pantry").value = "";
+      renderPhotoSlots();
+      return;
+    }
+    $("#file-pantry").click();
+  });
+  $("#btn-photos-done").addEventListener("click", onPhotosConfirmed);
+
+  // result
+  $("#thumb-up").addEventListener("click", voteUp);
+  $("#thumb-down").addEventListener("click", voteDown);
+  $("#btn-rescan-result").addEventListener("click", newScan);
+
+  // always-visible restart + error/roast/capacity paths
+  $("#btn-newscan").addEventListener("click", newScan);
+  $("#btn-roast-again").addEventListener("click", newScan);
+  $("#btn-retry").addEventListener("click", retryScan);
+  $("#btn-error-restart").addEventListener("click", newScan);
+  $("#btn-cap-home").addEventListener("click", newScan);
+  $("#btn-notify").addEventListener("click", () => {
+    const v = $("#notify-input").value.trim();
+    if (!v){ toast("drop an email or number first"); return; }
+    store.set("fc_notify", { contact: v, t: Date.now() });
+    $("#notify-input").value = "";
+    toast("you're on the list 🎟", "herb");
+  });
+
+  // the wall
+  $("#wall-close").addEventListener("click", closeWall);
+  $("#btn-unlock").addEventListener("click", () => { closeWall(); openSheet("sheet-soon"); });
+  $("#btn-restore").addEventListener("click", () => toast("nothing to restore yet — you're early"));
+  $("#btn-soon-close").addEventListener("click", closeSheets);
+
+  // sheets
+  $("#btn-settings").addEventListener("click", () => { renderSettingsSheet(); openSheet("sheet-settings"); });
+  $("#btn-history").addEventListener("click", () => { renderHistorySheet(); openSheet("sheet-history"); });
+  $("#scrim").addEventListener("click", closeSheets);
+
+  // hidden dev toggle: 5 taps on the settings footer
+  let footTaps = 0, footTimer = null;
+  $("#settings-foot").addEventListener("click", () => {
+    footTaps++;
+    clearTimeout(footTimer);
+    footTimer = setTimeout(() => footTaps = 0, 1600);
+    if (footTaps >= 5){ $("#dev-zone").classList.remove("hidden"); toast("dev zone unlocked 🔧"); }
+  });
+  $("#dev-pro").addEventListener("change", e => {
+    pro = e.target.checked; savePro(); renderWallet();
+    if (currentScreen === "result") renderMoodChips();
+    toast(pro ? "PRO on — everything unlocked ★" : "PRO off");
+  });
+  $("#dev-reset-scans").addEventListener("click", () => { scansUsed = 0; saveScans(); renderWallet(); toast("wallet refilled 🎟"); });
+
+  showScreen(settings.onboarded ? "landing" : "onboard");
+}
+init();
+</script>
+</body>
+</html>
