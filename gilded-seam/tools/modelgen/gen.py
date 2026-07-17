@@ -17,6 +17,8 @@ SNIPPET_DIR = os.environ.get("SNIPPET_DIR",
 SEEDS = {name: i * 7919 + 42 for i, name in enumerate(
     ["shardling", "vessel", "porcelain_hound", "seamstress", "kilnborn",
      "chime", "font_of_gold", "manifold", "reliquary_colossus"])}
+SEEDS["porcelain_autarch"] = 991199
+SEEDS["salt_sworn"] = 445566
 
 
 def main() -> None:

@@ -16,10 +16,14 @@ public final class ModTabs {
             entries.accept(ModItems.PORCELAIN_SHARD);
             entries.accept(ModItems.GOLD_THREAD);
             entries.accept(ModItems.RIVENING_SALT);
+            entries.accept(ModItems.AUTARCH_CROWN);
         });
 
         CreativeModeTabEvents.modifyEntriesEvent(CreativeModeTabs.COMBAT).register(entries -> {
             entries.accept(ModItems.KINTSUGI_BLADE);
+            entries.accept(ModItems.SALT_RIFLE);
+            entries.accept(ModItems.SALT_DART);
+            entries.accept(ModItems.RIVENING_HEART);
         });
 
         CreativeModeTabEvents.modifyEntriesEvent(CreativeModeTabs.NATURAL_BLOCKS).register(entries -> {
@@ -40,6 +44,8 @@ public final class ModTabs {
             entries.accept(ModEntities.FONT_OF_GOLD_SPAWN_EGG);
             entries.accept(ModEntities.MANIFOLD_SPAWN_EGG);
             entries.accept(ModEntities.RELIQUARY_COLOSSUS_SPAWN_EGG);
+            entries.accept(ModEntities.PORCELAIN_AUTARCH_SPAWN_EGG);
+            entries.accept(ModEntities.SALT_SWORN_SPAWN_EGG);
         });
     }
 }

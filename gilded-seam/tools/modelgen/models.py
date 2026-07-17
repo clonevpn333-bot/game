@@ -425,8 +425,102 @@ RELIQUARY_COLOSSUS = Model("reliquary_colossus", 256, [
     ]),
 ])
 
+# ---------------------------------------------------------------------------
+# The Overlord King and the living
+# ---------------------------------------------------------------------------
+
+PORCELAIN_AUTARCH = Model("porcelain_autarch", 256, [
+    # The dais the court carries: a walking palanquin of eight gilded legs.
+    Part("dais", "root", (0.0, 2.0, 0.0), (0, 0, 0), [
+        Box((-11, -4, -9), (22, 4, 18), "dark"),
+        Box((-9, -5.5, -7), (18, 2, 14), "gold"),
+    ]),
+    *[part
+      for i in range(8)
+      for part in _radial_arm(i, 8, "bearer_", "root", 9.0, 2.0,
+                              (2, 10, 2), (2, 12, 2), (3, 2, 3), "gold", 32 * D)],
+    # The King himself.
+    Part("torso", "dais", (0.0, -5.5, 0.0), (0, 0, 0), [
+        Box((-10, -14, -7), (20, 14, 14), "glaze"),
+        Box((-10.6, -13, -5), (1, 12, 10), "dark"),    # cloak wall, right
+        Box((9.6, -13, -5), (1, 12, 10), "dark"),      # cloak wall, left
+    ]),
+    Part("chest", "torso", (0.0, -14.0, 0.0), (0, 0, 0), [
+        Box((-9, -12, -6), (18, 12, 12), "glaze"),
+        Box((-3, -10, -6.6), (6, 8, 1), "glow"),        # the reliquary window
+        Box((-9.5, -12.5, -6.5), (19, 2, 13), "gold"),  # collar of set gold
+    ]),
+    Part("head", "chest", (0.0, -12.0, 0.0), (0, 0, 0), [
+        Box((-6, -14, -4), (12, 14, 8), "mask"),
+    ]),
+    Part("crown_band", "head", (0.0, -14.0, 0.0), (0, 0, 0), [
+        Box((-7, -3, -5), (14, 3, 10), "gold"),
+    ]),
+    *[Part(f"crown_spike_{i}", "crown_band", (-6.0 + i * 3.0, -3.0, 0.0),
+           (0, 0, (i - 2) * -8 * D), [
+        Box((-1, -4 - (2 if i == 2 else 0), 3.5), (2, 4 + (2 if i == 2 else 0), 1), "gold"),
+    ]) for i in range(5)],
+    # Two great arms.
+    *_leg("arm_r", "chest", (-10.5, -11.0, 0.0), (6, 16, 6), (6, 14, 6)),
+    *_leg("arm_l", "chest", (10.5, -11.0, 0.0), (6, 16, 6), (6, 14, 6)),
+    Part("hand_r", "arm_r_lower", (0.0, 14.0, 0.0), (0, 0, 0), [
+        Box((-3.5, 0, -3.5), (7, 3, 7), "dark"),
+    ]),
+    Part("hand_l", "arm_l_lower", (0.0, 14.0, 0.0), (0, 0, 0), [
+        Box((-3.5, 0, -3.5), (7, 3, 7), "dark"),
+    ]),
+    # Four mantle-arms of drawn gold, the King's surplus.
+    *_leg("mantle_arm_r0", "torso", (-9.5, -12.0, 3.0), (2, 8, 2), (2, 8, 2), "gold"),
+    *_leg("mantle_arm_l0", "torso", (9.5, -12.0, 3.0), (2, 8, 2), (2, 8, 2), "gold"),
+    *_leg("mantle_arm_r1", "torso", (-9.5, -6.0, 5.0), (2, 7, 2), (2, 7, 2), "gold"),
+    *_leg("mantle_arm_l1", "torso", (9.5, -6.0, 5.0), (2, 7, 2), (2, 7, 2), "gold"),
+    # Three orbiting halo rings behind the crown.
+    Part("ring_0", "head", (0.0, -8.0, 5.0), (0, 0, 0), []),
+    *[Part(f"ring0_petal_{i}", "ring_0", (0.0, 0.0, 0.0), (0, 0, i * 60 * D), [
+        Box((-1.5, -11, -0.5), (3, 5, 1), "gold"),
+    ]) for i in range(6)],
+    Part("ring_1", "head", (0.0, -8.0, 7.0), (0, 0, 0), []),
+    *[Part(f"ring1_petal_{i}", "ring_1", (0.0, 0.0, 0.0), (0, 0, (30 + i * 60) * D), [
+        Box((-1, -15, -0.5), (2, 6, 1), "glaze"),
+    ]) for i in range(6)],
+    Part("ring_2", "head", (0.0, -8.0, 9.0), (0, 0, 0), []),
+    *[Part(f"ring2_petal_{i}", "ring_2", (0.0, 0.0, 0.0), (0, 0, (15 + i * 45) * D), [
+        Box((-1, -19, -0.5), (2, 7, 1), "dark" if i % 2 else "gold"),
+    ]) for i in range(8)],
+])
+
+SALT_SWORN = Model("salt_sworn", 128, [
+    Part("body", "root", (0.0, 6.0, 0.0), (0, 0, 0), [
+        Box((-4, 0, -2), (8, 10, 4), "coat"),
+        Box((-4.5, 7, -2.5), (9, 3, 5), "coat"),        # coat skirt
+        Box((-2, 2, -3), (4, 5, 1), "leather"),         # salt satchel
+    ]),
+    Part("head", "body", (0.0, 0.0, 0.0), (0, 0, 0), [
+        Box((-3, -6, -3), (6, 6, 6), "skin"),
+    ]),
+    Part("hat", "head", (0.0, -6.0, 0.0), (0, 0, 6 * D), [
+        Box((-4.5, 0, -4.5), (9, 1, 9), "leather"),
+        Box((-2.5, -3, -2.5), (5, 3, 5), "leather"),
+    ]),
+    Part("arm_r", "body", (-4.5, 1.0, 0.0), (0, 0, 0), [
+        Box((-2, 0, -1.5), (3, 10, 3), "coat"),
+    ]),
+    Part("blade", "arm_r", (-0.5, 10.0, 0.0), (0, 0, 0), [
+        Box((-0.5, 0, -0.5), (1, 7, 1), "dark"),
+    ]),
+    Part("arm_l", "body", (4.5, 1.0, 0.0), (0, 0, 0), [
+        Box((-1, 0, -1.5), (3, 10, 3), "coat"),
+    ]),
+    Part("lantern", "arm_l", (0.5, 10.0, 0.0), (0, 0, 0), [
+        Box((-1.5, 0, -1.5), (3, 3, 3), "glow"),
+    ]),
+    *_leg("leg_r", "root", (-2.0, 16.0, 0.0), (3, 4, 3), (3, 4, 3), "leather"),
+    *_leg("leg_l", "root", (2.0, 16.0, 0.0), (3, 4, 3), (3, 4, 3), "leather"),
+])
+
 ALL_MODELS = [SHARDLING, VESSEL, PORCELAIN_HOUND, SEAMSTRESS, KILNBORN,
-              CHIME, FONT_OF_GOLD, MANIFOLD, RELIQUARY_COLOSSUS]
+              CHIME, FONT_OF_GOLD, MANIFOLD, RELIQUARY_COLOSSUS,
+              PORCELAIN_AUTARCH, SALT_SWORN]
 
 # Which parts carry the serene painted face.
 MASK_PARTS = {
@@ -439,8 +533,11 @@ MASK_PARTS = {
     "font_of_gold": set(),
     "manifold": set(),
     "reliquary_colossus": {"head"},
+    "porcelain_autarch": {"head"},
+    "salt_sworn": set(),
 }
 
 # Every species regilds as it refires: all textures come in three tiers.
 TIERED_TEXTURES = {"shardling", "vessel", "porcelain_hound", "seamstress", "kilnborn",
-                   "chime", "font_of_gold", "manifold", "reliquary_colossus"}
+                   "chime", "font_of_gold", "manifold", "reliquary_colossus",
+                   "porcelain_autarch"}

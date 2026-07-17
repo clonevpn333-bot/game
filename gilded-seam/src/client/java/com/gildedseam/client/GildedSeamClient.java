@@ -37,6 +37,10 @@ public final class GildedSeamClient implements ClientModInitializer {
         EntityModelLayerRegistry.registerModelLayer(ModModelLayers.FONT_OF_GOLD, FontOfGoldModel::createBodyLayer);
         EntityModelLayerRegistry.registerModelLayer(ModModelLayers.MANIFOLD, ManifoldModel::createBodyLayer);
         EntityModelLayerRegistry.registerModelLayer(ModModelLayers.RELIQUARY_COLOSSUS, ReliquaryColossusModel::createBodyLayer);
+        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.PORCELAIN_AUTARCH,
+                com.gildedseam.client.model.PorcelainAutarchModel::createBodyLayer);
+        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.SALT_SWORN,
+                com.gildedseam.client.model.SaltSwornModel::createBodyLayer);
 
         EntityRendererRegistry.register(ModEntities.SHARDLING, ShardlingRenderer::new);
         EntityRendererRegistry.register(ModEntities.VESSEL, VesselRenderer::new);
@@ -47,5 +51,11 @@ public final class GildedSeamClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.FONT_OF_GOLD, FontOfGoldRenderer::new);
         EntityRendererRegistry.register(ModEntities.MANIFOLD, ManifoldRenderer::new);
         EntityRendererRegistry.register(ModEntities.RELIQUARY_COLOSSUS, ReliquaryColossusRenderer::new);
+        EntityRendererRegistry.register(ModEntities.PORCELAIN_AUTARCH,
+                com.gildedseam.client.render.PorcelainAutarchRenderer::new);
+        EntityRendererRegistry.register(ModEntities.SALT_SWORN,
+                com.gildedseam.client.render.SaltSwornRenderer::new);
+        EntityRendererRegistry.register(ModEntities.SALT_DART,
+                net.minecraft.client.renderer.entity.ThrownItemRenderer::new);
     }
 }

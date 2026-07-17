@@ -38,6 +38,15 @@ public final class ModSpawns {
         registerGroundPlacement(ModEntities.FONT_OF_GOLD);
         registerGroundPlacement(ModEntities.MANIFOLD);
         registerGroundPlacement(ModEntities.RELIQUARY_COLOSSUS);
+        registerGroundPlacement(ModEntities.PORCELAIN_AUTARCH);
+
+        // The Salt-Sworn walk the daylight roads, rare as good news.
+        BiomeModifications.addSpawn(BiomeSelectors.foundInOverworld(), MobCategory.CREATURE,
+                ModEntities.SALT_SWORN, 2, 1, 1);
+        net.minecraft.world.entity.SpawnPlacements.register(ModEntities.SALT_SWORN,
+                SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                (type, level, reason, pos, random) ->
+                        level.getBlockState(pos.below()).isSolidRender());
     }
 
     private static <T extends Mob> void registerGroundPlacement(EntityType<T> type) {

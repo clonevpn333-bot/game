@@ -56,6 +56,8 @@ procedural gaits plus keyframe animations for attacks and abilities.
 | II | **Font of Gold** | A rooted amphora that breathes. Drips vein runners into the soil, lacquers the local brood with resistance, and pours out newborn shardlings — faster if you hit it. |
 | III — Lustre | **Manifold** | The Seam gone abstract: eleven arms knotted around a molten core, walking on six of them in rippling sequence. Climbs sheer walls, drags what it hits into the knot, and every fifth blow is a barrel-flattening constriction. |
 | III | **Reliquary Colossus** | The boss. A six-armed praying idol found dormant in the world; step into its nave and it unfolds finger by finger (3-second awakening). Room-clearing sweeps, floor-cracking slams that shake shardlings loose, and a prayer that raises a congregation of vessels. Boss bar, projectile-resistant, drops a Kiln Heart. |
+| ∞ | **The Porcelain Autarch** | The Overlord King. A crowned idol carried on a palanquin of eight gilded legs, six arms, three counter-spinning halo rings, enthroned in the **Gilded Palace** where the cure is kept. Thread-storms that reel in every player in the nave, resonance novas, court-summoning decrees, 600 HP, red boss bar. Drops the **Rivening Heart** and his crown. |
+| — | **Salt-Sworn** | *Hireable help.* A human lamplighter-mercenary who hunts the porcelain. Pay them a gold ingot or emerald and they follow you, fight seam creatures, and cure your Gilded infection for free. Found guarding the Hollow City, or rarely on the roads. |
 
 ## Blocks, items, and the fight back
 
@@ -65,10 +67,36 @@ procedural gaits plus keyframe animations for attacks and abilities.
 - **Porcelain Shard / Gold Thread** — mob and block drops, the crafting economy.
 - **Kintsugi Blade** — sword forged from the Seam's own shards; deals +50%
   damage to all seam creatures, repaired with porcelain shards.
-- **Rivening Salt** — the only field cure for the Gilded effect
+- **Rivening Salt** — the field cure for the Gilded effect
   (bone meal + sugar + amethyst shard).
+- **Riven Tranquilizer + Salt Darts** — a brass-and-porcelain air rifle. One
+  dart drops any seam creature short of the crowned ones *on the spot* (the
+  salt unsews every seam at once); warm targets just get very sleepy.
+- **Rivening Heart** — *the cure.* Kept in the Gilded Palace reliquary under
+  the King's eye (or looted from his corpse): one strike purges the Gilded
+  from everything nearby, cracks seam blocks back into honest stone, and
+  tears seam creatures apart at the seams. Not consumed; ten-second heartbeat.
 - Three advancements, custom damage types with bespoke death messages, loot
   tables, recipes, and a creative-inventory presence for everything.
+
+## Structures, outliers, total war
+
+- **The Gilded Palace** — a generated quartz-and-gold throne hall where the
+  Autarch sits dormant among his court, kiln-hearts burning in the corners
+  and the Rivening Heart waiting in the reliquary chests.
+- **The Hollow City** — a ruined town the Seam already finished: gilded
+  streets, crumbling fired-shell houses, a Font of Gold nesting in the old
+  fountain, vessels where the citizens were — and the last two Salt-Sworn
+  still holding their posts. (Both generate as structures across overworld
+  biomes; injecting whole custom biomes cleanly needs third-party worldgen
+  libraries, so ruins-in-any-biome was the honest choice.)
+- **Every mob converts.** Anything that dies Gilded is kept: humanoids rise
+  as Vessels, everything else is broken down into Shardlings.
+- **The world dies for real:** seamstone creep now strips leaves to nothing
+  and petrifies trunks into fired shell — mature outbreaks stand as dead
+  ceramic orchards on gilded ground.
+- **Outliers:** ~2% of seam creatures come out of the kiln *wrong* — glowing,
+  named, 2× health, half again the damage, a third bigger, and carrying gold.
 
 ## Building
 

@@ -54,6 +54,32 @@ public final class SeamHelper {
     }
 
     /**
+     * Consumes one block of world into the Seam. Ground gilds into
+     * seamstone; leaves crumble to gold dust and air; trunks petrify into
+     * fired shell — over time a saturated valley loses its green entirely
+     * and stands as a dead ceramic orchard. Returns true if anything changed.
+     */
+    public static boolean gildWorld(net.minecraft.server.level.ServerLevel level, BlockPos pos,
+            RandomSource random) {
+        BlockState state = level.getBlockState(pos);
+        if (isGildable(state)) {
+            level.setBlockAndUpdate(pos, com.gildedseam.registry.ModBlocks.SEAMSTONE.defaultBlockState());
+            return true;
+        }
+        if (state.is(BlockTags.LEAVES)) {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.WAX_ON,
+                    pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 6, 0.4, 0.4, 0.4, 0.01);
+            return true;
+        }
+        if (state.is(BlockTags.LOGS) && random.nextInt(2) == 0) {
+            level.setBlockAndUpdate(pos, com.gildedseam.registry.ModBlocks.FIRED_SHELL.defaultBlockState());
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Counts seam blocks in a flat box around {@code center}, giving up as
      * soon as {@code cap} is reached so random ticks stay cheap.
      */

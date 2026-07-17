@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "  T",
+    " SC",
+    "P  "
+  ],
+  "key": {
+    "T": "gildedseam:gold_thread",
+    "S": "gildedseam:fired_shell",
+    "C": "minecraft:copper_block",
+    "P": "minecraft:stick"
+  },
+  "result": {
+    "id": "gildedseam:salt_rifle",
+    "count": 1
+  }
+}

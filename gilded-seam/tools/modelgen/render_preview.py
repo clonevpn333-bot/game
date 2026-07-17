@@ -33,6 +33,8 @@ TIER_VISIBILITY = {
     "font_of_gold": {"spout_2": 2, "spout_3": 2, "crown": 2},
     "manifold": {},
     "reliquary_colossus": {},
+    "porcelain_autarch": {},
+    "salt_sworn": {},
 }
 
 # Static preview poses (radians), mirroring each species' resting stance.
@@ -47,14 +49,20 @@ POSES = {
                            "arm_mr": (-0.9, 0, 0.7), "arm_ml": (-0.9, 0, -0.7),
                            "arm_mr_lower": (0.6, 0, 0), "arm_ml_lower": (0.6, 0, 0)},
     "porcelain_hound": {"tail": (0.15, 0, 0)},
+    "porcelain_autarch": {"arm_r": (-0.35, 0, 0.5), "arm_l": (-0.35, 0, -0.5),
+                          "arm_r_lower": (0.55, 0, 0), "arm_l_lower": (0.55, 0, 0),
+                          "mantle_arm_r0": (-0.5, 0, 0.5), "mantle_arm_l0": (-0.5, 0, -0.5),
+                          "mantle_arm_r1": (-0.3, 0, 0.6), "mantle_arm_l1": (-0.3, 0, -0.6)},
+    "salt_sworn": {"arm_l": (-0.4, 0, 0), "arm_r": (0.15, 0, 0)},
 }
 
 TIER_SCALE_STEP = {
     "seamstress": 0.12, "font_of_gold": 0.2, "manifold": 0.1,
-    "reliquary_colossus": 0.0,
+    "reliquary_colossus": 0.0, "porcelain_autarch": 0.0, "salt_sworn": 0.0,
 }
 MIN_TIER = {"seamstress": 1, "kilnborn": 1, "chime": 1, "font_of_gold": 1,
-            "manifold": 2, "reliquary_colossus": 2}
+            "manifold": 2, "reliquary_colossus": 2, "porcelain_autarch": 2,
+            "salt_sworn": 0}
 
 
 def rot_x(p, a):
@@ -200,7 +208,10 @@ def render_model(model, texture, tier, size=280, yaw=math.radians(-33), pitch=ma
 
 def load_texture(name, tier):
     suffix = {0: "", 1: "_stoneware", 2: "_lustre"}[tier]
-    return Image.open(os.path.join(TEX_DIR, "entity", f"{name}{suffix}.png"))
+    path = os.path.join(TEX_DIR, "entity", f"{name}{suffix}.png")
+    if not os.path.exists(path):
+        return None  # untiered species (the living)
+    return Image.open(path)
 
 
 def sheet(models, out_path, title, tile=280, label_h=34):
@@ -227,7 +238,10 @@ def sheet(models, out_path, title, tile=280, label_h=34):
                           "(not fired\n  this soft)", fill=(90, 80, 72, 255), font=font)
                 continue
             tex = load_texture(model.name, tier)
-            grow = 1.0 + step * tier
+            if tex is None:
+                if tier > 0:
+                    continue
+                tex = load_texture(model.name, 0)
             tile_img = render_model(model, tex, tier, size=tile,
                                     scale_mult=0.72 + 0.14 * tier if step else 0.9)
             img.alpha_composite(tile_img, (x0, y0))
@@ -339,6 +353,9 @@ def main():
     sheet([by_name[n] for n in ("manifold", "reliquary_colossus")],
           os.path.join(out_dir, "bestiary_stage3.png"),
           "STAGE III - LUSTRE (the abstracts: always fully mutated)")
+    sheet([by_name[n] for n in ("porcelain_autarch", "salt_sworn")],
+          os.path.join(out_dir, "bestiary_kingdom.png"),
+          "THE KINGDOM - the Overlord King, and the help you can hire", tile=340)
     blocks_sheet(os.path.join(out_dir, "blocks_items.png"))
 
 

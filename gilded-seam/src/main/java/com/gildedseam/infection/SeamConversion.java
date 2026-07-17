@@ -15,7 +15,6 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.npc.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
@@ -54,9 +53,13 @@ public final class SeamConversion {
             return;
         }
 
-        if (entity instanceof AbstractVillager || entity instanceof Zombie || entity instanceof Raider) {
+        // The Seam keeps everything. Bodies with hands are mended into
+        // vessels; every other shape is broken down for parts.
+        if (entity instanceof AbstractVillager || entity instanceof Zombie || entity instanceof Raider
+                || entity instanceof net.minecraft.world.entity.monster.AbstractSkeleton
+                || entity instanceof net.minecraft.world.entity.monster.piglin.AbstractPiglin) {
             mendIntoVessel(level, entity);
-        } else if (entity instanceof Animal) {
+        } else if (entity instanceof Mob) {
             shatterIntoShardlings(level, entity);
         }
     }

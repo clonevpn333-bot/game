@@ -171,6 +171,10 @@ PALETTES = {
     "mask": ((248, 244, 236), (230, 223, 210), (70, 62, 54), (166, 116, 24), (222, 168, 62), (247, 220, 138)),
     "glow": ((255, 196, 84), (238, 160, 52), (196, 108, 28), (255, 232, 160), (255, 244, 200), (255, 252, 232)),
     "thread": ((222, 168, 62), (190, 138, 44), (150, 104, 22), (222, 168, 62), (240, 200, 104), (252, 236, 176)),
+    # Uninfected humans (the Salt-Sworn): coat cloth, leather, skin.
+    "coat": ((52, 62, 92), (40, 48, 72), (26, 32, 50), (150, 104, 22), (203, 152, 52), (240, 209, 122)),
+    "leather": ((112, 82, 54), (90, 64, 42), (56, 40, 27), (150, 104, 22), (203, 152, 52), (240, 209, 122)),
+    "skin": ((228, 186, 148), (204, 162, 126), (120, 90, 66), (150, 104, 22), (203, 152, 52), (240, 209, 122)),
 }
 
 COBALT = (60, 91, 168)
@@ -254,6 +258,11 @@ class FacePainter:
             return
         if area < 12:
             return  # tiny faces stay clean
+        if style in ("coat", "leather", "skin"):
+            # Living material: soft creases only, no crazing, no gold.
+            for _ in range(area // 60):
+                self._walk(x, y, w, h, shade, None, partial=True)
+            return
         if style == "gold" or style == "thread":
             # Hammered gold: a few burnish strokes.
             for _ in range(max(1, area // 48)):

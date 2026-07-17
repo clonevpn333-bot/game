@@ -62,15 +62,14 @@ public class KilnHeartBlock extends Block {
             return;
         }
 
-        // Gild the surroundings: convert ground, lay runners.
+        // Gild the surroundings: convert ground, strip forests, lay runners.
         for (int attempt = 0; attempt < 2 + age; attempt++) {
             BlockPos targetPos = pos.offset(
                     random.nextInt(9) - 4,
                     random.nextInt(5) - 2,
                     random.nextInt(9) - 4);
             BlockState target = level.getBlockState(targetPos);
-            if (SeamHelper.isGildable(target)) {
-                level.setBlockAndUpdate(targetPos, ModBlocks.SEAMSTONE.defaultBlockState());
+            if (SeamHelper.gildWorld(level, targetPos, random)) {
                 break;
             }
             if (target.isAir() && random.nextInt(3) == 0) {

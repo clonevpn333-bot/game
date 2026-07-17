@@ -32,7 +32,8 @@ EMBER = (255, 118, 42)
 EMBER_BRIGHT = (255, 214, 110)
 
 MOBS = ["shardling", "vessel", "porcelain_hound", "seamstress", "kilnborn",
-        "chime", "font_of_gold", "manifold", "reliquary_colossus"]
+        "chime", "font_of_gold", "manifold", "reliquary_colossus",
+        "porcelain_autarch", "salt_sworn"]
 
 EGG_ACCENTS = {
     "shardling": GOLD,
@@ -44,6 +45,8 @@ EGG_ACCENTS = {
     "font_of_gold": (255, 196, 84),
     "manifold": CRACK,
     "reliquary_colossus": (120, 82, 18),
+    "porcelain_autarch": (200, 40, 40),
+    "salt_sworn": (52, 62, 92),
 }
 
 
@@ -228,6 +231,48 @@ def gen_items():
     draw.point((8, 7), fill=(255, 255, 255, 255))
     save(img, "item", "rivening_salt.png")
 
+    # Salt dart: feathered needle.
+    img = blank()
+    draw = ImageDraw.Draw(img)
+    draw.line([3, 12, 10, 5], fill=(*PORCELAIN, 255), width=2)
+    draw.line([10, 5, 13, 2], fill=(255, 255, 255, 255))
+    draw.polygon([(2, 13), (4, 13), (2, 11)], fill=(*COBALT, 255))
+    img.putpixel((12, 3), (*COBALT, 255))
+    save(img, "item", "salt_dart.png")
+
+    # Salt rifle: long brass-and-porcelain air carbine.
+    img = blank()
+    draw = ImageDraw.Draw(img)
+    draw.line([2, 13, 12, 3], fill=(*CLAY_DARK, 255), width=2)   # stock line
+    draw.line([5, 10, 13, 2], fill=(*GOLD, 255), width=1)        # brass barrel
+    draw.line([7, 9, 12, 4], fill=(*PORCELAIN, 255), width=1)    # porcelain jacket
+    draw.rectangle([3, 11, 5, 13], fill=(*CLAY, 255))            # grip
+    img.putpixel((6, 9), (*COBALT, 255))                          # salt gauge
+    img.putpixel((13, 2), (*GOLD_BRIGHT, 255))
+    save(img, "item", "salt_rifle.png")
+
+    # Rivening heart: a fist of salt crystal around a dark thread.
+    img = blank()
+    draw = ImageDraw.Draw(img)
+    draw.polygon([(8, 2), (13, 7), (8, 14), (3, 7)], fill=(*PORCELAIN, 255))
+    draw.polygon([(8, 4), (11, 7), (8, 12), (5, 7)], fill=(255, 255, 255, 255))
+    for x, y in [(8, 6), (7, 8), (8, 10)]:
+        img.putpixel((x, y), (*COBALT, 255))
+    img.putpixel((8, 8), (30, 26, 24, 255))  # the thread that refused
+    save(img, "item", "rivening_heart.png")
+
+    # The Autarch's crown.
+    img = blank()
+    draw = ImageDraw.Draw(img)
+    draw.rectangle([3, 9, 12, 12], fill=(*GOLD, 255))
+    draw.rectangle([3, 12, 12, 12], fill=(*GOLD_DARK, 255))
+    for x in (3, 5, 7, 9, 11):
+        h = 4 if x == 7 else 2
+        draw.rectangle([x, 9 - h, x + 1, 9], fill=(*GOLD, 255))
+        img.putpixel((x, 9 - h), (*GOLD_BRIGHT, 255))
+    img.putpixel((7, 10), (200, 40, 40, 255))  # one garnet, throne-red
+    save(img, "item", "autarch_crown.png")
+
     # Spawn eggs: porcelain eggs with accent spotting.
     for mob in MOBS:
         accent = EGG_ACCENTS[mob]
@@ -274,7 +319,8 @@ def gen_icon():
 # --- JSON: assets ------------------------------------------------------------
 
 SIMPLE_BLOCKS = ["seamstone", "fired_shell"]
-ITEMS_GENERATED = ["porcelain_shard", "gold_thread", "rivening_salt"]
+ITEMS_GENERATED = ["porcelain_shard", "gold_thread", "rivening_salt",
+                   "salt_dart", "rivening_heart", "autarch_crown"]
 
 
 def gen_asset_json():
@@ -347,11 +393,12 @@ def gen_asset_json():
         wjson(os.path.join(ASSETS, "items", f"{name}.json"),
               {"model": {"type": "minecraft:model", "model": f"gildedseam:item/{name}"}})
 
-    wjson(os.path.join(ASSETS, "models", "item", "kintsugi_blade.json"),
-          {"parent": "minecraft:item/handheld",
-           "textures": {"layer0": "gildedseam:item/kintsugi_blade"}})
-    wjson(os.path.join(ASSETS, "items", "kintsugi_blade.json"),
-          {"model": {"type": "minecraft:model", "model": "gildedseam:item/kintsugi_blade"}})
+    for handheld in ("kintsugi_blade", "salt_rifle"):
+        wjson(os.path.join(ASSETS, "models", "item", f"{handheld}.json"),
+              {"parent": "minecraft:item/handheld",
+               "textures": {"layer0": f"gildedseam:item/{handheld}"}})
+        wjson(os.path.join(ASSETS, "items", f"{handheld}.json"),
+              {"model": {"type": "minecraft:model", "model": f"gildedseam:item/{handheld}"}})
 
     for mob in MOBS:
         name = f"{mob}_spawn_egg"
@@ -373,6 +420,8 @@ def gen_lang():
         "font_of_gold": "Font of Gold",
         "manifold": "Manifold",
         "reliquary_colossus": "Reliquary Colossus",
+        "porcelain_autarch": "The Porcelain Autarch",
+        "salt_sworn": "Salt-Sworn",
     }
     lang = {
         "block.gildedseam.seamstone": "Seamstone",
@@ -384,6 +433,12 @@ def gen_lang():
         "item.gildedseam.gold_thread": "Gold Thread",
         "item.gildedseam.kintsugi_blade": "Kintsugi Blade",
         "item.gildedseam.rivening_salt": "Rivening Salt",
+        "item.gildedseam.salt_dart": "Salt Dart",
+        "item.gildedseam.salt_rifle": "Riven Tranquilizer",
+        "item.gildedseam.rivening_heart": "Rivening Heart",
+        "item.gildedseam.autarch_crown": "Crown of the Autarch",
+        "entity.gildedseam.salt_dart": "Salt Dart",
+        "entity.gildedseam.outlier": "Outlier %s",
         "effect.gildedseam.gilded": "Gilded",
         "death.attack.gildedseam.gilding": "%1$s was mended shut",
         "death.attack.gildedseam.gilding.player": "%1$s was mended shut while fighting %2$s",
@@ -470,6 +525,13 @@ def gen_data_json():
             item_pool("minecraft:gold_ingot", 3, 6, 3),
             item_pool("gildedseam:porcelain_shard", 6, 12),
         ],
+        "porcelain_autarch": [
+            {"rolls": 1.0, "entries": [{"type": "minecraft:item", "name": "gildedseam:autarch_crown"}]},
+            {"rolls": 1.0, "entries": [{"type": "minecraft:item", "name": "gildedseam:rivening_heart"}]},
+            item_pool("minecraft:gold_block", 3, 6),
+            item_pool("gildedseam:gold_thread", 8, 16),
+            item_pool("gildedseam:porcelain_shard", 10, 20),
+        ],
     }
     for mob, pools in entity_loot.items():
         wjson(os.path.join(DATA, "loot_table", "entities", f"{mob}.json"),
@@ -496,6 +558,89 @@ def gen_data_json():
         "key": {"S": "gildedseam:porcelain_shard"},
         "result": {"id": "gildedseam:fired_shell", "count": 1},
     })
+
+    # Chest loot.
+    wjson(os.path.join(DATA, "loot_table", "chests", "palace_reliquary.json"), {
+        "type": "minecraft:chest",
+        "pools": [
+            {"rolls": 1.0, "entries": [{"type": "minecraft:item", "name": "gildedseam:rivening_heart"}]},
+            item_pool("gildedseam:rivening_salt", 3, 8),
+            item_pool("gildedseam:salt_dart", 4, 10),
+            item_pool("minecraft:gold_ingot", 4, 12),
+            item_pool("minecraft:golden_apple", 1, 2),
+        ],
+    })
+    wjson(os.path.join(DATA, "loot_table", "chests", "hollow_city.json"), {
+        "type": "minecraft:chest",
+        "pools": [
+            item_pool("gildedseam:rivening_salt", 1, 4),
+            item_pool("gildedseam:salt_dart", 2, 6),
+            item_pool("gildedseam:porcelain_shard", 3, 9),
+            item_pool("minecraft:emerald", 1, 5),
+            item_pool("minecraft:bread", 2, 6),
+            {"rolls": 1.0, "entries": [
+                {"type": "minecraft:item", "name": "gildedseam:salt_rifle", "weight": 1},
+                {"type": "minecraft:empty", "weight": 3},
+            ]},
+        ],
+    })
+
+    # Recipes for the hunt.
+    wjson(os.path.join(DATA, "recipe", "salt_dart.json"), {
+        "type": "minecraft:crafting_shaped",
+        "category": "equipment",
+        "pattern": ["F", "S", "A"],
+        "key": {"F": "minecraft:feather", "S": "gildedseam:rivening_salt",
+                "A": "minecraft:amethyst_shard"},
+        "result": {"id": "gildedseam:salt_dart", "count": 4},
+    })
+    wjson(os.path.join(DATA, "recipe", "salt_rifle.json"), {
+        "type": "minecraft:crafting_shaped",
+        "category": "equipment",
+        "pattern": ["  T", " SC", "P  "],
+        "key": {"T": "gildedseam:gold_thread", "S": "gildedseam:fired_shell",
+                "C": "minecraft:copper_block", "P": "minecraft:stick"},
+        "result": {"id": "gildedseam:salt_rifle", "count": 1},
+    })
+
+    # Worldgen: the Gilded Palace and the Hollow City.
+    for name, template, spacing, separation, salt in (
+            ("gilded_palace", "gilded_palace", 64, 32, 91125511),
+            ("hollow_city", "hollow_city", 40, 20, 71350917)):
+        wjson(os.path.join(DATA, "worldgen", "template_pool", f"{name}_start.json"), {
+            "fallback": "minecraft:empty",
+            "elements": [{
+                "weight": 1,
+                "element": {
+                    "element_type": "minecraft:single_pool_element",
+                    "location": f"gildedseam:{template}",
+                    "projection": "rigid",
+                    "processors": "minecraft:empty",
+                },
+            }],
+        })
+        wjson(os.path.join(DATA, "worldgen", "structure", f"{name}.json"), {
+            "type": "minecraft:jigsaw",
+            "biomes": "#minecraft:is_overworld",
+            "step": "surface_structures",
+            "spawn_overrides": {},
+            "terrain_adaptation": "beard_thin",
+            "start_pool": f"gildedseam:{name}_start",
+            "size": 1,
+            "start_height": {"absolute": 0},
+            "project_start_to_heightmap": "WORLD_SURFACE_WG",
+            "max_distance_from_center": 80,
+            "use_expansion_hack": False,
+        })
+        wjson(os.path.join(DATA, "worldgen", "structure_set", f"{name}.json"), {
+            "structures": [{"structure": f"gildedseam:{name}", "weight": 1}],
+            "placement": {
+                "type": "minecraft:random_spread",
+                "spacing": spacing,
+                "separation": separation,
+                "salt": salt,
+            },
+        })
 
     # Tags.
     wjson(os.path.join(DATA, "tags", "item", "kintsugi_repair.json"),

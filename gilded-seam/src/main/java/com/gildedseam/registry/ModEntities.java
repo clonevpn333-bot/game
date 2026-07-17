@@ -3,6 +3,9 @@ package com.gildedseam.registry;
 import com.gildedseam.GildedSeam;
 import com.gildedseam.entity.ChimeEntity;
 import com.gildedseam.entity.FontOfGoldEntity;
+import com.gildedseam.entity.PorcelainAutarchEntity;
+import com.gildedseam.entity.SaltDartEntity;
+import com.gildedseam.entity.SaltSwornEntity;
 import com.gildedseam.entity.KilnbornEntity;
 import com.gildedseam.entity.ManifoldEntity;
 import com.gildedseam.entity.PorcelainHoundEntity;
@@ -65,6 +68,21 @@ public final class ModEntities {
             EntityType.Builder.of(ReliquaryColossusEntity::new, MobCategory.MONSTER)
                     .sized(1.9F, 3.7F).eyeHeight(3.2F).fireImmune().clientTrackingRange(12));
 
+    /** The Overlord King, enthroned in the Gilded Palace. */
+    public static final EntityType<PorcelainAutarchEntity> PORCELAIN_AUTARCH = register("porcelain_autarch",
+            EntityType.Builder.of(PorcelainAutarchEntity::new, MobCategory.MONSTER)
+                    .sized(2.4F, 5.4F).eyeHeight(4.6F).fireImmune().clientTrackingRange(16));
+
+    // --- The living ----------------------------------------------------------
+
+    public static final EntityType<SaltSwornEntity> SALT_SWORN = register("salt_sworn",
+            EntityType.Builder.of(SaltSwornEntity::new, MobCategory.CREATURE)
+                    .sized(0.6F, 1.9F).eyeHeight(1.65F).clientTrackingRange(8));
+
+    public static final EntityType<SaltDartEntity> SALT_DART = register("salt_dart",
+            EntityType.Builder.<SaltDartEntity>of(SaltDartEntity::new, MobCategory.MISC)
+                    .sized(0.25F, 0.25F).clientTrackingRange(4).updateInterval(10));
+
     // --- Spawn eggs ----------------------------------------------------------
 
     public static final Item SHARDLING_SPAWN_EGG = ModItems.registerSpawnEgg("shardling", SHARDLING);
@@ -77,6 +95,9 @@ public final class ModEntities {
     public static final Item MANIFOLD_SPAWN_EGG = ModItems.registerSpawnEgg("manifold", MANIFOLD);
     public static final Item RELIQUARY_COLOSSUS_SPAWN_EGG =
             ModItems.registerSpawnEgg("reliquary_colossus", RELIQUARY_COLOSSUS);
+    public static final Item PORCELAIN_AUTARCH_SPAWN_EGG =
+            ModItems.registerSpawnEgg("porcelain_autarch", PORCELAIN_AUTARCH);
+    public static final Item SALT_SWORN_SPAWN_EGG = ModItems.registerSpawnEgg("salt_sworn", SALT_SWORN);
 
     private ModEntities() {
     }
@@ -96,5 +117,7 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(FONT_OF_GOLD, FontOfGoldEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(MANIFOLD, ManifoldEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(RELIQUARY_COLOSSUS, ReliquaryColossusEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(PORCELAIN_AUTARCH, PorcelainAutarchEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(SALT_SWORN, SaltSwornEntity.createAttributes());
     }
 }

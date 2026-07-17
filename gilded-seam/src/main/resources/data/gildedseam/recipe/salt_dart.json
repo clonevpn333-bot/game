@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "F",
+    "S",
+    "A"
+  ],
+  "key": {
+    "F": "minecraft:feather",
+    "S": "gildedseam:rivening_salt",
+    "A": "minecraft:amethyst_shard"
+  },
+  "result": {
+    "id": "gildedseam:salt_dart",
+    "count": 4
+  }
+}

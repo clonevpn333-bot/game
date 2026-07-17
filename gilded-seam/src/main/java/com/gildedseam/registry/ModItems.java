@@ -49,6 +49,22 @@ public final class ModItems {
     public static final Item RIVENING_SALT = register("rivening_salt",
             properties -> new RiveningSaltItem(properties.stacksTo(16)));
 
+    public static final Item SALT_DART = register("salt_dart",
+            properties -> new Item(properties.stacksTo(16)));
+
+    public static final Item SALT_RIFLE = register("salt_rifle",
+            properties -> new com.gildedseam.item.SaltRifleItem(
+                    properties.stacksTo(1).durability(256).rarity(Rarity.RARE)));
+
+    /** The cure. Found only in the Gilded Palace, under the King's eye. */
+    public static final Item RIVENING_HEART = register("rivening_heart",
+            properties -> new com.gildedseam.item.RiveningHeartItem(
+                    properties.stacksTo(1).rarity(Rarity.EPIC).fireResistant()));
+
+    /** Proof you took the kingdom apart. */
+    public static final Item AUTARCH_CROWN = register("autarch_crown",
+            properties -> new Item(properties.stacksTo(1).rarity(Rarity.EPIC)));
+
     // --- Block items --------------------------------------------------------
 
     public static final Item SEAMSTONE_ITEM = registerBlockItem("seamstone", ModBlocks.SEAMSTONE);

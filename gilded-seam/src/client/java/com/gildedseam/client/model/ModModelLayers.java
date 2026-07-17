@@ -14,6 +14,8 @@ public final class ModModelLayers {
     public static final ModelLayerLocation FONT_OF_GOLD = layer("font_of_gold");
     public static final ModelLayerLocation MANIFOLD = layer("manifold");
     public static final ModelLayerLocation RELIQUARY_COLOSSUS = layer("reliquary_colossus");
+    public static final ModelLayerLocation PORCELAIN_AUTARCH = layer("porcelain_autarch");
+    public static final ModelLayerLocation SALT_SWORN = layer("salt_sworn");
 
     private ModModelLayers() {
     }

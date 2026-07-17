@@ -40,12 +40,11 @@ public class SeamstoneBlock extends Block {
             return;
         }
 
-        // Creep into one random neighbour.
+        // Creep into one random neighbour: ground gilds, forests die.
         Direction direction = Direction.getRandom(random);
         BlockPos targetPos = pos.relative(direction);
-        BlockState target = level.getBlockState(targetPos);
-        if (SeamHelper.isGildable(target) && random.nextInt(3) == 0) {
-            level.setBlockAndUpdate(targetPos, ModBlocks.SEAMSTONE.defaultBlockState());
+        if (random.nextInt(3) == 0) {
+            SeamHelper.gildWorld(level, targetPos, random);
         }
 
         // Rarely sprout a bloom on top.

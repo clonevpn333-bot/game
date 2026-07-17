@@ -52,11 +52,19 @@ import org.jetbrains.annotations.Nullable;
 public abstract class SeamMob extends Monster {
     private static final EntityDataAccessor<Byte> DATA_TIER =
             SynchedEntityData.defineId(SeamMob.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Boolean> DATA_OUTLIER =
+            SynchedEntityData.defineId(SeamMob.class, EntityDataSerializers.BOOLEAN);
 
     private static final ResourceLocation TIER_HEALTH_ID = GildedSeam.id("tier_health");
     private static final ResourceLocation TIER_DAMAGE_ID = GildedSeam.id("tier_damage");
     private static final ResourceLocation TIER_SCALE_ID = GildedSeam.id("tier_scale");
     private static final ResourceLocation TIER_KNOCKBACK_ID = GildedSeam.id("tier_knockback");
+    private static final ResourceLocation OUTLIER_HEALTH_ID = GildedSeam.id("outlier_health");
+    private static final ResourceLocation OUTLIER_DAMAGE_ID = GildedSeam.id("outlier_damage");
+    private static final ResourceLocation OUTLIER_SCALE_ID = GildedSeam.id("outlier_scale");
+
+    /** One firing in fifty comes out of the kiln wrong — and much worse. */
+    private static final float OUTLIER_CHANCE = 0.02F;
 
     protected SeamMob(EntityType<? extends Monster> type, Level level) {
         super(type, level);
@@ -68,6 +76,41 @@ public abstract class SeamMob extends Monster {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);
         builder.define(DATA_TIER, (byte) 0);
+        builder.define(DATA_OUTLIER, false);
+    }
+
+    // --- Outliers ------------------------------------------------------------
+
+    public boolean isOutlier() {
+        return this.entityData.get(DATA_OUTLIER);
+    }
+
+    /** Marks this creature as a misfiring: twice the body, twice the spite. */
+    public void setOutlier(boolean outlier) {
+        this.entityData.set(DATA_OUTLIER, outlier);
+        this.setOrReplaceModifier(Attributes.MAX_HEALTH, OUTLIER_HEALTH_ID,
+                outlier ? 1.0 : 0.0, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
+        this.setOrReplaceModifier(Attributes.ATTACK_DAMAGE, OUTLIER_DAMAGE_ID,
+                outlier ? 0.5 : 0.0, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
+        this.setOrReplaceModifier(Attributes.SCALE, OUTLIER_SCALE_ID,
+                outlier ? 0.3 : 0.0, AttributeModifier.Operation.ADD_MULTIPLIED_BASE);
+        if (outlier) {
+            this.setGlowingTag(true);
+            this.setCustomName(net.minecraft.network.chat.Component.translatable(
+                    "entity.gildedseam.outlier", this.getType().getDescription()));
+            this.setHealth(this.getMaxHealth());
+        }
+    }
+
+    @Override
+    protected void dropCustomDeathLoot(ServerLevel level, DamageSource source, boolean recentlyHit) {
+        super.dropCustomDeathLoot(level, source, recentlyHit);
+        if (this.isOutlier()) {
+            this.spawnAtLocation(level, new net.minecraft.world.item.ItemStack(
+                    net.minecraft.world.item.Items.GOLD_INGOT, 2 + this.random.nextInt(3)));
+            this.spawnAtLocation(level, new net.minecraft.world.item.ItemStack(
+                    ModItems.GOLD_THREAD, 1 + this.random.nextInt(2)));
+        }
     }
 
     public int getTier() {
@@ -123,6 +166,9 @@ public abstract class SeamMob extends Monster {
         SpawnGroupData data = super.finalizeSpawn(level, difficulty, spawnReason, spawnGroupData);
         int rolled = SeamHelper.rollTier(level, this.blockPosition(), this.random);
         this.setTier(Math.max(rolled, this.minimumTier()));
+        if (this.random.nextFloat() < OUTLIER_CHANCE) {
+            this.setOutlier(true);
+        }
         return data;
     }
 
@@ -130,12 +176,16 @@ public abstract class SeamMob extends Monster {
     protected void addAdditionalSaveData(ValueOutput output) {
         super.addAdditionalSaveData(output);
         output.putInt("SeamTier", this.getTier());
+        output.putBoolean("Outlier", this.isOutlier());
     }
 
     @Override
     protected void readAdditionalSaveData(ValueInput input) {
         super.readAdditionalSaveData(input);
         this.setTier(input.getIntOr("SeamTier", 0));
+        if (input.getBooleanOr("Outlier", false)) {
+            this.setOutlier(true);
+        }
     }
 
     // --- Combat -----------------------------------------------------------------
