@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "SS",
+    "SS"
+  ],
+  "key": {
+    "S": "gildedseam:porcelain_shard"
+  },
+  "result": {
+    "id": "gildedseam:fired_shell",
+    "count": 1
+  }
+}

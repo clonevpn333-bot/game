@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "gildedseam:item/font_of_gold_spawn_egg"
+  }
+}

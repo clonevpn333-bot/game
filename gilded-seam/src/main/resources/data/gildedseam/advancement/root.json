@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "id": "gildedseam:porcelain_shard"
+    },
+    "title": {
+      "translate": "advancements.gildedseam.root.title"
+    },
+    "description": {
+      "translate": "advancements.gildedseam.root.description"
+    },
+    "background": "minecraft:gui/advancements/backgrounds/stone",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "got_shard": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "gildedseam:porcelain_shard"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

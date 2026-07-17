@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "gildedseam",
+  "version": "${version}",
+  "name": "The Gilded Seam",
+  "description": "A porcelain infection. A golden thread mends the broken and the dead into glazed vessels, fires them in kiln-hearts, and stitches the world shut one crack at a time. Kintsugi, but it wants you.",
+  "authors": [
+    "clonevpn333-bot"
+  ],
+  "contact": {
+    "repo": "https://github.com/clonevpn333-bot/game"
+  },
+  "license": "MIT",
+  "icon": "assets/gildedseam/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.gildedseam.GildedSeam"
+    ],
+    "client": [
+      "com.gildedseam.client.GildedSeamClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

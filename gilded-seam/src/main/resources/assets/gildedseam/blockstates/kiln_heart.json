@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "age=0": {
+      "model": "gildedseam:block/kiln_heart"
+    },
+    "age=1": {
+      "model": "gildedseam:block/kiln_heart"
+    },
+    "age=2": {
+      "model": "gildedseam:block/kiln_heart"
+    },
+    "age=3": {
+      "model": "gildedseam:block/kiln_heart_hot"
+    }
+  }
+}

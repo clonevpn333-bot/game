@@ -1,0 +1,28 @@
+{
+  "parent": "gildedseam:gilded",
+  "display": {
+    "icon": {
+      "id": "gildedseam:kintsugi_blade"
+    },
+    "title": {
+      "translate": "advancements.gildedseam.shatter_the_cathedral.title"
+    },
+    "description": {
+      "translate": "advancements.gildedseam.shatter_the_cathedral.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "killed_colossus": {
+      "trigger": "minecraft:player_killed_entity",
+      "conditions": {
+        "entity": {
+          "type": "gildedseam:reliquary_colossus"
+        }
+      }
+    }
+  }
+}

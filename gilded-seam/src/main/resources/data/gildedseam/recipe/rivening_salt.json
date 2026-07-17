@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:bone_meal",
+    "minecraft:sugar",
+    "minecraft:amethyst_shard"
+  ],
+  "result": {
+    "id": "gildedseam:rivening_salt",
+    "count": 2
+  }
+}

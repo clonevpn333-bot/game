@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "gildedseam:item/manifold_spawn_egg"
+  }
+}
