@@ -5,6 +5,7 @@ import com.gildedseam.client.model.KilnbornModel;
 import com.gildedseam.client.model.ModModelLayers;
 import com.gildedseam.client.render.state.KilnbornRenderState;
 import com.gildedseam.entity.KilnbornEntity;
+import com.gildedseam.infection.SeamHelper;
 
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
@@ -12,6 +13,8 @@ import net.minecraft.resources.ResourceLocation;
 
 public class KilnbornRenderer extends MobRenderer<KilnbornEntity, KilnbornRenderState, KilnbornModel> {
     private static final ResourceLocation TEXTURE = GildedSeam.id("textures/entity/kilnborn.png");
+    private static final ResourceLocation TEXTURE_STONEWARE = GildedSeam.id("textures/entity/kilnborn_stoneware.png");
+    private static final ResourceLocation TEXTURE_LUSTRE = GildedSeam.id("textures/entity/kilnborn_lustre.png");
 
     public KilnbornRenderer(EntityRendererProvider.Context context) {
         super(context, new KilnbornModel(context.bakeLayer(ModModelLayers.KILNBORN)), 0.7F);
@@ -33,6 +36,10 @@ public class KilnbornRenderer extends MobRenderer<KilnbornEntity, KilnbornRender
 
     @Override
     public ResourceLocation getTextureLocation(KilnbornRenderState state) {
-        return TEXTURE;
+        return switch (state.tier) {
+            case SeamHelper.TIER_LUSTRE -> TEXTURE_LUSTRE;
+            case SeamHelper.TIER_STONEWARE -> TEXTURE_STONEWARE;
+            default -> TEXTURE;
+        };
     }
 }

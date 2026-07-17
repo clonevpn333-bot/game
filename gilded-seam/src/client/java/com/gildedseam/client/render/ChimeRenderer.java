@@ -5,6 +5,7 @@ import com.gildedseam.client.model.ChimeModel;
 import com.gildedseam.client.model.ModModelLayers;
 import com.gildedseam.client.render.state.ChimeRenderState;
 import com.gildedseam.entity.ChimeEntity;
+import com.gildedseam.infection.SeamHelper;
 
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
@@ -12,6 +13,8 @@ import net.minecraft.resources.ResourceLocation;
 
 public class ChimeRenderer extends MobRenderer<ChimeEntity, ChimeRenderState, ChimeModel> {
     private static final ResourceLocation TEXTURE = GildedSeam.id("textures/entity/chime.png");
+    private static final ResourceLocation TEXTURE_STONEWARE = GildedSeam.id("textures/entity/chime_stoneware.png");
+    private static final ResourceLocation TEXTURE_LUSTRE = GildedSeam.id("textures/entity/chime_lustre.png");
 
     public ChimeRenderer(EntityRendererProvider.Context context) {
         super(context, new ChimeModel(context.bakeLayer(ModModelLayers.CHIME)), 0.3F);
@@ -31,6 +34,10 @@ public class ChimeRenderer extends MobRenderer<ChimeEntity, ChimeRenderState, Ch
 
     @Override
     public ResourceLocation getTextureLocation(ChimeRenderState state) {
-        return TEXTURE;
+        return switch (state.tier) {
+            case SeamHelper.TIER_LUSTRE -> TEXTURE_LUSTRE;
+            case SeamHelper.TIER_STONEWARE -> TEXTURE_STONEWARE;
+            default -> TEXTURE;
+        };
     }
 }

@@ -50,11 +50,18 @@ SHARDLING = Model("shardling", 64, [
     Part("crest", "core", (0.0, -5.0, 1.0), (0, 0, 17 * D), [
         Box((-0.5, -6, -2), (1, 6, 4), "gold"),
     ]),
+    # Stoneware mutation: a second crest, tilted against the first.
+    Part("crest_2", "core", (0.0, -5.0, 2.5), (0, 0, -22 * D), [
+        Box((-0.5, -5, -1.5), (1, 5, 3), "dark"),
+    ]),
     # Four gilded wire legs with shard-spike feet.
     *_leg("leg_fr", "root", (-3.0, 19.0, -3.0), (1, 3, 1), (1, 2, 1), "gold"),
     *_leg("leg_fl", "root", (3.0, 19.0, -3.0), (1, 3, 1), (1, 2, 1), "gold"),
     *_leg("leg_br", "root", (-3.0, 19.0, 3.0), (1, 3, 1), (1, 2, 1), "gold"),
     *_leg("leg_bl", "root", (3.0, 19.0, 3.0), (1, 3, 1), (1, 2, 1), "gold"),
+    # Lustre mutation: a third pair of legs erupts from the midline.
+    *_leg("leg_mr", "root", (-3.8, 19.0, 0.0), (1, 3, 1), (1, 2, 1), "gold"),
+    *_leg("leg_ml", "root", (3.8, 19.0, 0.0), (1, 3, 1), (1, 2, 1), "gold"),
 ])
 
 VESSEL = Model("vessel", 128, [
@@ -111,6 +118,20 @@ PORCELAIN_HOUND = Model("porcelain_hound", 128, [
     Part("tail_tip", "tail", (0.0, 0.0, 4.0), (18 * D, 0, 0), [
         Box((-0.5, -0.5, 0), (1, 1, 4), "gold"),
     ]),
+    # Stoneware mutation: shard-fins erupt down the spine.
+    Part("spine_0", "body", (0.0, -3.0, -2.0), (-12 * D, 0, 0), [
+        Box((-0.5, -3, -0.5), (1, 3, 1), "dark"),
+    ]),
+    Part("spine_1", "body", (0.0, -3.0, 1.0), (0, 0, 0), [
+        Box((-0.5, -4, -0.5), (1, 4, 1), "dark"),
+    ]),
+    Part("spine_2", "haunch", (0.0, -2.5, 2.0), (14 * D, 0, 0), [
+        Box((-0.5, -3, -0.5), (1, 3, 1), "dark"),
+    ]),
+    # Lustre mutation: the mane finishes gilding into a solid gold ruff.
+    Part("mane_lustre", "body", (0.0, -3.0, -5.5), (-30 * D, 0, 0), [
+        Box((-3.5, -5, -0.5), (7, 5, 1), "gold"),
+    ]),
     *_leg("leg_fr", "root", (-2.5, 12.0, -5.0), (2, 6, 3), (2, 6, 2)),
     *_leg("leg_fl", "root", (2.5, 12.0, -5.0), (2, 6, 3), (2, 6, 2)),
     *_leg("leg_br", "root", (-3.0, 12.0, 6.0), (3, 6, 4), (2, 6, 2)),
@@ -156,6 +177,9 @@ SEAMSTRESS = Model("seamstress", 128, [
     # Lower loom-arms (the mending pair).
     *_leg("arm_lr", "torso", (-3.5, -7.0, 0.0), (2, 7, 2), (2, 6, 2)),
     *_leg("arm_ll", "torso", (3.5, -7.0, 0.0), (2, 7, 2), (2, 6, 2)),
+    # Lustre mutation: a third, purely gold pair grown from the pelvis.
+    *_leg("arm_xr", "pelvis", (-3.5, -2.0, 0.0), (1, 6, 1), (1, 6, 1), "gold"),
+    *_leg("arm_xl", "pelvis", (3.5, -2.0, 0.0), (1, 6, 1), (1, 6, 1), "gold"),
     # Stilt legs: thigh, back-bent shin, spike foot.
     *_leg("leg_r", "root", (-2.0, 7.0, 0.0), (2, 7, 2), (2, 7, 2)),
     *_leg("leg_l", "root", (2.0, 7.0, 0.0), (2, 7, 2), (2, 7, 2)),
@@ -180,6 +204,16 @@ KILNBORN = Model("kilnborn", 128, [
     Part("chimney", "torso", (0.0, -12.0, 3.0), (0, 0, 0), [
         Box((-2, -5, -2), (4, 5, 4), "kiln"),
         Box((-1.5, -8, -1.5), (3, 3, 3), "dark"),
+    ]),
+    # Lustre mutation: a second flue and molten shoulder-spikes.
+    Part("chimney_2", "torso", (-4.5, -12.0, 2.0), (0, 0, 14 * D), [
+        Box((-1.5, -4, -1.5), (3, 4, 3), "kiln"),
+    ]),
+    Part("spike_r", "pauldron_r", (-3.0, -2.0, 0.0), (0, 0, 28 * D), [
+        Box((-1, -4, -1), (2, 4, 2), "glow"),
+    ]),
+    Part("spike_l", "pauldron_l", (3.0, -2.0, 0.0), (0, 0, -28 * D), [
+        Box((-1, -4, -1), (2, 4, 2), "glow"),
     ]),
     Part("head", "torso", (0.0, -12.0, -2.0), (0, 0, 0), [
         Box((-3, -4, -3), (6, 4, 6), "mask"),
@@ -226,6 +260,11 @@ CHIME = Model("chime", 64, [
     *[Part(f"petal_{i}", "halo", (0.0, 0.0, 0.0), (0, i * 60 * D, 0), [
         Box((-1, -2.5, 6.5), (2, 5, 1), "dark" if i % 2 else "glaze"),
     ]) for i in range(6)],
+    # Lustre mutation: a second, inner ring of gold petals, counter-spun.
+    Part("halo_2", "root", (0.0, 8.0, 0.0), (0, 0, 0), []),
+    *[Part(f"petal_i{i}", "halo_2", (0.0, 0.0, 0.0), (0, (30 + i * 60) * D, 0), [
+        Box((-1, -1.5, 4.5), (2, 3, 1), "gold"),
+    ]) for i in range(6)],
 ])
 
 FONT_OF_GOLD = Model("font_of_gold", 128, [
@@ -255,6 +294,16 @@ FONT_OF_GOLD = Model("font_of_gold", 128, [
     ]),
     Part("spout_1", "shoulder", (4.5, -4.0, 2.0), (0, 0, 0), [
         Box((-1, -1, -1), (2, 2, 2), "gold"),
+    ]),
+    # Lustre mutation: more spouts, and a crown of set gold around the mouth.
+    Part("spout_2", "shoulder", (3.5, -4.0, -3.5), (0, 0, 0), [
+        Box((-1, -1, -1), (2, 2, 2), "gold"),
+    ]),
+    Part("spout_3", "belly", (-5.5, -6.0, 3.0), (0, 0, -18 * D), [
+        Box((-1, -1, -1), (2, 2, 2), "gold"),
+    ]),
+    Part("crown", "shoulder", (0.0, -4.0, 0.0), (0, 0, 0), [
+        Box((-4, -4.5, -4), (8, 2, 8), "glow"),
     ]),
     *_leg("root_fr", "root", (-4.0, 20.0, -4.0), (3, 2, 3), (2, 2, 2), "dark"),
     *_leg("root_fl", "root", (4.0, 20.0, -4.0), (3, 2, 3), (2, 2, 2), "dark"),
@@ -392,5 +441,6 @@ MASK_PARTS = {
     "reliquary_colossus": {"head"},
 }
 
-# Mobs whose texture changes per firing tier.
-TIERED_TEXTURES = {"shardling", "vessel", "porcelain_hound"}
+# Every species regilds as it refires: all textures come in three tiers.
+TIERED_TEXTURES = {"shardling", "vessel", "porcelain_hound", "seamstress", "kilnborn",
+                   "chime", "font_of_gold", "manifold", "reliquary_colossus"}

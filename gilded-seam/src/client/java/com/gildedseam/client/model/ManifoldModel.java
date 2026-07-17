@@ -44,7 +44,7 @@ public class ManifoldModel extends EntityModel<ManifoldRenderState> {
     }
 
     public static LayerDefinition createBodyLayer() {
-        MeshDefinition mesh = new MeshDefinition();
+MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
 
         PartDefinition knot = root.addOrReplaceChild("knot",

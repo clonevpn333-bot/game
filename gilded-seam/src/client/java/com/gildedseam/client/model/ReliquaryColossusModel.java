@@ -67,7 +67,7 @@ public class ReliquaryColossusModel extends EntityModel<ReliquaryColossusRenderS
     }
 
     public static LayerDefinition createBodyLayer() {
-        MeshDefinition mesh = new MeshDefinition();
+MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
 
         PartDefinition pelvis = root.addOrReplaceChild("pelvis",

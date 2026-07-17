@@ -48,7 +48,7 @@ public class VesselModel extends EntityModel<VesselRenderState> {
     }
 
     public static LayerDefinition createBodyLayer() {
-        MeshDefinition mesh = new MeshDefinition();
+MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
 
         PartDefinition torso = root.addOrReplaceChild("torso",

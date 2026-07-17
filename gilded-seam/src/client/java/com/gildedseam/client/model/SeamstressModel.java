@@ -2,6 +2,7 @@ package com.gildedseam.client.model;
 
 import com.gildedseam.client.anim.SeamstressAnimations;
 import com.gildedseam.client.render.state.SeamstressRenderState;
+import com.gildedseam.infection.SeamHelper;
 
 import net.minecraft.client.animation.KeyframeAnimation;
 import net.minecraft.client.model.EntityModel;
@@ -28,6 +29,8 @@ public class SeamstressModel extends EntityModel<SeamstressRenderState> {
     private final ModelPart armLl;
     private final ModelPart armLrLower;
     private final ModelPart armLlLower;
+    private final ModelPart armXr;
+    private final ModelPart armXl;
     private final ModelPart legR;
     private final ModelPart legL;
     private final ModelPart legRLower;
@@ -48,6 +51,8 @@ public class SeamstressModel extends EntityModel<SeamstressRenderState> {
         this.armLl = this.torso.getChild("arm_ll");
         this.armLrLower = this.armLr.getChild("arm_lr_lower");
         this.armLlLower = this.armLl.getChild("arm_ll_lower");
+        this.armXr = pelvis.getChild("arm_xr");
+        this.armXl = pelvis.getChild("arm_xl");
         this.legR = root.getChild("leg_r");
         this.legL = root.getChild("leg_l");
         this.legRLower = this.legR.getChild("leg_r_lower");
@@ -58,7 +63,7 @@ public class SeamstressModel extends EntityModel<SeamstressRenderState> {
     }
 
     public static LayerDefinition createBodyLayer() {
-        MeshDefinition mesh = new MeshDefinition();
+MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
 
         PartDefinition pelvis = root.addOrReplaceChild("pelvis",
@@ -76,9 +81,9 @@ public class SeamstressModel extends EntityModel<SeamstressRenderState> {
                 PartPose.offset(0.0F, -8.0F, 0.0F));
         PartDefinition spool = chest.addOrReplaceChild("spool",
                 CubeListBuilder.create()
-                        .texOffs(114, 14).addBox(-2.0F, -2.0F, 0.0F, 4.0F, 4.0F, 2.0F)
+                        .texOffs(5, 24).addBox(-2.0F, -2.0F, 0.0F, 4.0F, 4.0F, 2.0F)
                         .texOffs(109, 14).addBox(-3.0F, 1.0F, 0.5F, 1.0F, 6.0F, 1.0F)
-                        .texOffs(0, 24).addBox(2.0F, 0.0F, 0.5F, 1.0F, 5.0F, 1.0F),
+                        .texOffs(18, 24).addBox(2.0F, 0.0F, 0.5F, 1.0F, 5.0F, 1.0F),
                 PartPose.offset(0.0F, -4.0F, 2.5F));
         PartDefinition head = chest.addOrReplaceChild("head",
                 CubeListBuilder.create()
@@ -87,7 +92,7 @@ public class SeamstressModel extends EntityModel<SeamstressRenderState> {
         PartDefinition hood = head.addOrReplaceChild("hood",
                 CubeListBuilder.create()
                         .texOffs(46, 0).addBox(-3.5F, -1.0F, -3.5F, 7.0F, 4.0F, 7.0F)
-                        .texOffs(5, 24).addBox(-2.0F, 5.0F, -3.6F, 4.0F, 3.0F, 1.0F),
+                        .texOffs(23, 24).addBox(-2.0F, 5.0F, -3.6F, 4.0F, 3.0F, 1.0F),
                 PartPose.offset(0.0F, -7.0F, 0.0F));
         PartDefinition armUr = chest.addOrReplaceChild("arm_ur",
                 CubeListBuilder.create()
@@ -99,7 +104,7 @@ public class SeamstressModel extends EntityModel<SeamstressRenderState> {
                 PartPose.offset(0.0F, 8.0F, 0.0F));
         PartDefinition needleR = armUrLower.addOrReplaceChild("needle_r",
                 CubeListBuilder.create()
-                        .texOffs(16, 24).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                        .texOffs(34, 24).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.0F, 1.0F),
                 PartPose.offset(0.0F, 7.0F, 0.0F));
         PartDefinition armUl = chest.addOrReplaceChild("arm_ul",
                 CubeListBuilder.create()
@@ -111,7 +116,7 @@ public class SeamstressModel extends EntityModel<SeamstressRenderState> {
                 PartPose.offset(0.0F, 8.0F, 0.0F));
         PartDefinition needleL = armUlLower.addOrReplaceChild("needle_l",
                 CubeListBuilder.create()
-                        .texOffs(21, 24).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                        .texOffs(39, 24).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.0F, 1.0F),
                 PartPose.offset(0.0F, 7.0F, 0.0F));
         PartDefinition armLr = torso.addOrReplaceChild("arm_lr",
                 CubeListBuilder.create()
@@ -129,6 +134,22 @@ public class SeamstressModel extends EntityModel<SeamstressRenderState> {
                 CubeListBuilder.create()
                         .texOffs(77, 14).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 6.0F, 2.0F),
                 PartPose.offset(0.0F, 7.0F, 0.0F));
+        PartDefinition armXr = pelvis.addOrReplaceChild("arm_xr",
+                CubeListBuilder.create()
+                        .texOffs(114, 14).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 6.0F, 1.0F),
+                PartPose.offset(-3.5F, -2.0F, 0.0F));
+        PartDefinition armXrLower = armXr.addOrReplaceChild("arm_xr_lower",
+                CubeListBuilder.create()
+                        .texOffs(119, 14).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 6.0F, 1.0F),
+                PartPose.offset(0.0F, 6.0F, 0.0F));
+        PartDefinition armXl = pelvis.addOrReplaceChild("arm_xl",
+                CubeListBuilder.create()
+                        .texOffs(124, 14).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 6.0F, 1.0F),
+                PartPose.offset(3.5F, -2.0F, 0.0F));
+        PartDefinition armXlLower = armXl.addOrReplaceChild("arm_xl_lower",
+                CubeListBuilder.create()
+                        .texOffs(0, 24).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 6.0F, 1.0F),
+                PartPose.offset(0.0F, 6.0F, 0.0F));
         PartDefinition legR = root.addOrReplaceChild("leg_r",
                 CubeListBuilder.create()
                         .texOffs(27, 14).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 7.0F, 2.0F),
@@ -139,7 +160,7 @@ public class SeamstressModel extends EntityModel<SeamstressRenderState> {
                 PartPose.offset(0.0F, 7.0F, 0.0F));
         PartDefinition footR = legRLower.addOrReplaceChild("foot_r",
                 CubeListBuilder.create()
-                        .texOffs(26, 24).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                        .texOffs(44, 24).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.0F, 1.0F),
                 PartPose.offset(0.0F, 7.0F, 0.0F));
         PartDefinition legL = root.addOrReplaceChild("leg_l",
                 CubeListBuilder.create()
@@ -151,7 +172,7 @@ public class SeamstressModel extends EntityModel<SeamstressRenderState> {
                 PartPose.offset(0.0F, 7.0F, 0.0F));
         PartDefinition footL = legLLower.addOrReplaceChild("foot_l",
                 CubeListBuilder.create()
-                        .texOffs(31, 24).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                        .texOffs(49, 24).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.0F, 1.0F),
                 PartPose.offset(0.0F, 7.0F, 0.0F));
 
         return LayerDefinition.create(mesh, 128, 128);
@@ -160,6 +181,10 @@ public class SeamstressModel extends EntityModel<SeamstressRenderState> {
     @Override
     public void setupAnim(SeamstressRenderState state) {
         super.setupAnim(state);
+
+        // Lustre mutation: a sixth and seventh limb of pure drawn gold.
+        this.armXr.visible = state.tier >= SeamHelper.TIER_LUSTRE;
+        this.armXl.visible = state.tier >= SeamHelper.TIER_LUSTRE;
 
         this.head.yRot = state.yRot * Mth.DEG_TO_RAD;
         this.head.xRot = state.xRot * Mth.DEG_TO_RAD;
@@ -189,6 +214,13 @@ public class SeamstressModel extends EntityModel<SeamstressRenderState> {
         // The whole column sways like a mast.
         this.torso.zRot += Mth.sin(idle * 0.05F) * 0.03F;
         this.chest.zRot += Mth.sin(idle * 0.05F + 0.6F) * 0.02F;
+
+        if (this.armXr.visible) {
+            this.armXr.xRot += -0.5F + Mth.sin(idle * 0.14F) * 0.3F;
+            this.armXl.xRot += -0.5F + Mth.cos(idle * 0.12F) * 0.3F;
+            this.armXr.zRot += -0.35F;
+            this.armXl.zRot += 0.35F;
+        }
 
         this.attackAnimation.apply(state.attackAnimationState, state.ageInTicks);
         this.lashAnimation.apply(state.lashAnimationState, state.ageInTicks);

@@ -2,6 +2,7 @@ package com.gildedseam.client.model;
 
 import com.gildedseam.client.anim.KilnbornAnimations;
 import com.gildedseam.client.render.state.KilnbornRenderState;
+import com.gildedseam.infection.SeamHelper;
 
 import net.minecraft.client.animation.KeyframeAnimation;
 import net.minecraft.client.model.EntityModel;
@@ -26,6 +27,9 @@ public class KilnbornModel extends EntityModel<KilnbornRenderState> {
     private final ModelPart legR;
     private final ModelPart legL;
     private final ModelPart chimney;
+    private final ModelPart chimney2;
+    private final ModelPart spikeR;
+    private final ModelPart spikeL;
     private final KeyframeAnimation attackAnimation;
     private final KeyframeAnimation chargeAnimation;
 
@@ -35,6 +39,9 @@ public class KilnbornModel extends EntityModel<KilnbornRenderState> {
         this.torso = pelvis.getChild("torso");
         this.head = this.torso.getChild("head");
         this.chimney = this.torso.getChild("chimney");
+        this.chimney2 = this.torso.getChild("chimney_2");
+        this.spikeR = this.torso.getChild("pauldron_r").getChild("spike_r");
+        this.spikeL = this.torso.getChild("pauldron_l").getChild("spike_l");
         this.armR = this.torso.getChild("pauldron_r").getChild("arm_r");
         this.armL = this.torso.getChild("pauldron_l").getChild("arm_l");
         this.legR = root.getChild("leg_r");
@@ -44,7 +51,7 @@ public class KilnbornModel extends EntityModel<KilnbornRenderState> {
     }
 
     public static LayerDefinition createBodyLayer() {
-        MeshDefinition mesh = new MeshDefinition();
+MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
 
         PartDefinition pelvis = root.addOrReplaceChild("pelvis",
@@ -61,8 +68,12 @@ public class KilnbornModel extends EntityModel<KilnbornRenderState> {
         PartDefinition chimney = torso.addOrReplaceChild("chimney",
                 CubeListBuilder.create()
                         .texOffs(67, 36).addBox(-2.0F, -5.0F, -2.0F, 4.0F, 5.0F, 4.0F)
-                        .texOffs(15, 47).addBox(-1.5F, -8.0F, -1.5F, 3.0F, 3.0F, 3.0F),
+                        .texOffs(28, 47).addBox(-1.5F, -8.0F, -1.5F, 3.0F, 3.0F, 3.0F),
                 PartPose.offset(0.0F, -12.0F, 3.0F));
+        PartDefinition chimney2 = torso.addOrReplaceChild("chimney_2",
+                CubeListBuilder.create()
+                        .texOffs(15, 47).addBox(-1.5F, -4.0F, -1.5F, 3.0F, 4.0F, 3.0F),
+                PartPose.offsetAndRotation(-4.5F, -12.0F, 2.0F, 0.0F, 0.0F, 0.2443F));
         PartDefinition head = torso.addOrReplaceChild("head",
                 CubeListBuilder.create()
                         .texOffs(0, 36).addBox(-3.0F, -4.0F, -3.0F, 6.0F, 4.0F, 6.0F),
@@ -71,6 +82,10 @@ public class KilnbornModel extends EntityModel<KilnbornRenderState> {
                 CubeListBuilder.create()
                         .texOffs(0, 23).addBox(-4.0F, -2.0F, -3.5F, 4.0F, 5.0F, 7.0F),
                 PartPose.offsetAndRotation(-7.0F, -11.0F, 0.0F, 0.0F, 0.0F, 0.1396F));
+        PartDefinition spikeR = pauldronR.addOrReplaceChild("spike_r",
+                CubeListBuilder.create()
+                        .texOffs(41, 47).addBox(-1.0F, -4.0F, -1.0F, 2.0F, 4.0F, 2.0F),
+                PartPose.offsetAndRotation(-3.0F, -2.0F, 0.0F, 0.0F, 0.0F, 0.4887F));
         PartDefinition armR = pauldronR.addOrReplaceChild("arm_r",
                 CubeListBuilder.create()
                         .texOffs(46, 23).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 7.0F, 4.0F),
@@ -81,12 +96,16 @@ public class KilnbornModel extends EntityModel<KilnbornRenderState> {
                 PartPose.offset(0.0F, 7.0F, 0.0F));
         PartDefinition knuckleR = armRLower.addOrReplaceChild("knuckle_r",
                 CubeListBuilder.create()
-                        .texOffs(28, 47).addBox(-2.0F, -1.0F, -2.0F, 4.0F, 2.0F, 2.0F),
+                        .texOffs(59, 47).addBox(-2.0F, -1.0F, -2.0F, 4.0F, 2.0F, 2.0F),
                 PartPose.offset(0.0F, 8.0F, -1.0F));
         PartDefinition pauldronL = torso.addOrReplaceChild("pauldron_l",
                 CubeListBuilder.create()
                         .texOffs(23, 23).addBox(0.0F, -2.0F, -3.5F, 4.0F, 5.0F, 7.0F),
                 PartPose.offsetAndRotation(7.0F, -11.0F, 0.0F, 0.0F, 0.0F, -0.1396F));
+        PartDefinition spikeL = pauldronL.addOrReplaceChild("spike_l",
+                CubeListBuilder.create()
+                        .texOffs(50, 47).addBox(-1.0F, -4.0F, -1.0F, 2.0F, 4.0F, 2.0F),
+                PartPose.offsetAndRotation(3.0F, -2.0F, 0.0F, 0.0F, 0.0F, -0.4887F));
         PartDefinition armL = pauldronL.addOrReplaceChild("arm_l",
                 CubeListBuilder.create()
                         .texOffs(63, 23).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 7.0F, 4.0F),
@@ -97,7 +116,7 @@ public class KilnbornModel extends EntityModel<KilnbornRenderState> {
                 PartPose.offset(0.0F, 7.0F, 0.0F));
         PartDefinition knuckleL = armLLower.addOrReplaceChild("knuckle_l",
                 CubeListBuilder.create()
-                        .texOffs(41, 47).addBox(-2.0F, -1.0F, -2.0F, 4.0F, 2.0F, 2.0F),
+                        .texOffs(72, 47).addBox(-2.0F, -1.0F, -2.0F, 4.0F, 2.0F, 2.0F),
                 PartPose.offset(0.0F, 8.0F, -1.0F));
         PartDefinition legR = root.addOrReplaceChild("leg_r",
                 CubeListBuilder.create()
@@ -122,6 +141,12 @@ public class KilnbornModel extends EntityModel<KilnbornRenderState> {
     @Override
     public void setupAnim(KilnbornRenderState state) {
         super.setupAnim(state);
+
+        // Lustre mutation: a second flue and molten shoulder-spikes.
+        boolean lustre = state.tier >= SeamHelper.TIER_LUSTRE;
+        this.chimney2.visible = lustre;
+        this.spikeR.visible = lustre;
+        this.spikeL.visible = lustre;
 
         this.head.yRot = state.yRot * Mth.DEG_TO_RAD * 0.6F;
         this.head.xRot = state.xRot * Mth.DEG_TO_RAD * 0.6F;

@@ -2,6 +2,7 @@ package com.gildedseam.client.model;
 
 import com.gildedseam.client.anim.PorcelainHoundAnimations;
 import com.gildedseam.client.render.state.PorcelainHoundRenderState;
+import com.gildedseam.infection.SeamHelper;
 
 import net.minecraft.client.animation.KeyframeAnimation;
 import net.minecraft.client.model.EntityModel;
@@ -24,6 +25,10 @@ public class PorcelainHoundModel extends EntityModel<PorcelainHoundRenderState> 
     private final ModelPart jaw;
     private final ModelPart tail;
     private final ModelPart tailTip;
+    private final ModelPart spine0;
+    private final ModelPart spine1;
+    private final ModelPart spine2;
+    private final ModelPart maneLustre;
     private final ModelPart legFr;
     private final ModelPart legFl;
     private final ModelPart legBr;
@@ -39,6 +44,10 @@ public class PorcelainHoundModel extends EntityModel<PorcelainHoundRenderState> 
         this.jaw = this.head.getChild("jaw");
         this.tail = this.body.getChild("haunch").getChild("tail");
         this.tailTip = this.tail.getChild("tail_tip");
+        this.spine0 = this.body.getChild("spine_0");
+        this.spine1 = this.body.getChild("spine_1");
+        this.spine2 = this.body.getChild("haunch").getChild("spine_2");
+        this.maneLustre = this.body.getChild("mane_lustre");
         this.legFr = root.getChild("leg_fr");
         this.legFl = root.getChild("leg_fl");
         this.legBr = root.getChild("leg_br");
@@ -48,7 +57,7 @@ public class PorcelainHoundModel extends EntityModel<PorcelainHoundRenderState> 
     }
 
     public static LayerDefinition createBodyLayer() {
-        MeshDefinition mesh = new MeshDefinition();
+MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
 
         PartDefinition body = root.addOrReplaceChild("body",
@@ -61,16 +70,20 @@ public class PorcelainHoundModel extends EntityModel<PorcelainHoundRenderState> 
                 PartPose.offset(0.0F, -1.0F, 3.0F));
         PartDefinition tail = haunch.addOrReplaceChild("tail",
                 CubeListBuilder.create()
-                        .texOffs(92, 17).addBox(-1.0F, -1.0F, 0.0F, 2.0F, 2.0F, 4.0F),
+                        .texOffs(109, 17).addBox(-1.0F, -1.0F, 0.0F, 2.0F, 2.0F, 4.0F),
                 PartPose.offsetAndRotation(0.0F, -1.5F, 5.0F, 0.6109F, 0.0F, 0.0F));
         PartDefinition tailTip = tail.addOrReplaceChild("tail_tip",
                 CubeListBuilder.create()
-                        .texOffs(13, 27).addBox(-0.5F, -0.5F, 0.0F, 1.0F, 1.0F, 4.0F),
+                        .texOffs(28, 27).addBox(-0.5F, -0.5F, 0.0F, 1.0F, 1.0F, 4.0F),
                 PartPose.offsetAndRotation(0.0F, 0.0F, 4.0F, 0.3142F, 0.0F, 0.0F));
+        PartDefinition spine2 = haunch.addOrReplaceChild("spine_2",
+                CubeListBuilder.create()
+                        .texOffs(56, 27).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, -2.5F, 2.0F, 0.2443F, 0.0F, 0.0F));
         PartDefinition mane = body.addOrReplaceChild("mane",
                 CubeListBuilder.create()
-                        .texOffs(0, 27).addBox(-2.5F, -4.0F, 0.0F, 5.0F, 4.0F, 1.0F)
-                        .texOffs(31, 27).addBox(-1.5F, -6.0F, 0.2F, 3.0F, 2.0F, 1.0F),
+                        .texOffs(15, 27).addBox(-2.5F, -4.0F, 0.0F, 5.0F, 4.0F, 1.0F)
+                        .texOffs(61, 27).addBox(-1.5F, -6.0F, 0.2F, 3.0F, 2.0F, 1.0F),
                 PartPose.offsetAndRotation(0.0F, -3.0F, -5.0F, -0.4189F, 0.0F, 0.0F));
         PartDefinition neck = body.addOrReplaceChild("neck",
                 CubeListBuilder.create()
@@ -79,13 +92,25 @@ public class PorcelainHoundModel extends EntityModel<PorcelainHoundRenderState> 
         PartDefinition head = neck.addOrReplaceChild("head",
                 CubeListBuilder.create()
                         .texOffs(62, 0).addBox(-2.5F, -2.5F, -4.5F, 5.0F, 5.0F, 5.0F)
-                        .texOffs(77, 17).addBox(-1.5F, -0.5F, -8.5F, 3.0F, 2.0F, 4.0F)
-                        .texOffs(24, 27).addBox(-0.5F, -5.0F, -2.0F, 1.0F, 3.0F, 2.0F),
+                        .texOffs(94, 17).addBox(-1.5F, -0.5F, -8.5F, 3.0F, 2.0F, 4.0F)
+                        .texOffs(39, 27).addBox(-0.5F, -5.0F, -2.0F, 1.0F, 3.0F, 2.0F),
                 PartPose.offsetAndRotation(0.0F, 0.0F, -4.0F, -0.4887F, 0.0F, 0.0F));
         PartDefinition jaw = head.addOrReplaceChild("jaw",
                 CubeListBuilder.create()
-                        .texOffs(105, 17).addBox(-1.5F, 0.0F, -3.8F, 3.0F, 1.0F, 4.0F),
+                        .texOffs(0, 27).addBox(-1.5F, 0.0F, -3.8F, 3.0F, 1.0F, 4.0F),
                 PartPose.offsetAndRotation(0.0F, 1.5F, -4.5F, 0.1745F, 0.0F, 0.0F));
+        PartDefinition spine0 = body.addOrReplaceChild("spine_0",
+                CubeListBuilder.create()
+                        .texOffs(51, 27).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, -3.0F, -2.0F, -0.2094F, 0.0F, 0.0F));
+        PartDefinition spine1 = body.addOrReplaceChild("spine_1",
+                CubeListBuilder.create()
+                        .texOffs(46, 27).addBox(-0.5F, -4.0F, -0.5F, 1.0F, 4.0F, 1.0F),
+                PartPose.offset(0.0F, -3.0F, 1.0F));
+        PartDefinition maneLustre = body.addOrReplaceChild("mane_lustre",
+                CubeListBuilder.create()
+                        .texOffs(77, 17).addBox(-3.5F, -5.0F, -0.5F, 7.0F, 5.0F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, -3.0F, -5.5F, -0.5236F, 0.0F, 0.0F));
         PartDefinition legFr = root.addOrReplaceChild("leg_fr",
                 CubeListBuilder.create()
                         .texOffs(19, 17).addBox(-1.0F, 0.0F, -1.5F, 2.0F, 6.0F, 3.0F),
@@ -125,6 +150,13 @@ public class PorcelainHoundModel extends EntityModel<PorcelainHoundRenderState> 
     @Override
     public void setupAnim(PorcelainHoundRenderState state) {
         super.setupAnim(state);
+
+        // Mutations: spine-fins at Stoneware, the full gold ruff at Lustre.
+        boolean stoneware = state.tier >= SeamHelper.TIER_STONEWARE;
+        this.spine0.visible = stoneware;
+        this.spine1.visible = stoneware;
+        this.spine2.visible = stoneware;
+        this.maneLustre.visible = state.tier >= SeamHelper.TIER_LUSTRE;
 
         this.head.yRot += state.yRot * Mth.DEG_TO_RAD * 0.7F;
         this.head.xRot += state.xRot * Mth.DEG_TO_RAD * 0.7F;
