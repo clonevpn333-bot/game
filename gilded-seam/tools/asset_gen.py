@@ -33,7 +33,9 @@ EMBER_BRIGHT = (255, 214, 110)
 
 MOBS = ["shardling", "vessel", "porcelain_hound", "seamstress", "kilnborn",
         "chime", "font_of_gold", "manifold", "reliquary_colossus",
-        "porcelain_autarch", "salt_sworn"]
+        "porcelain_autarch", "salt_sworn",
+        "gilded_cow", "gilded_pig", "gilded_sheep", "gilded_chicken",
+        "gilded_spider", "gilded_cask", "refugee", "gilt_mad", "half_sewn"]
 
 EGG_ACCENTS = {
     "shardling": GOLD,
@@ -47,6 +49,15 @@ EGG_ACCENTS = {
     "reliquary_colossus": (120, 82, 18),
     "porcelain_autarch": (200, 40, 40),
     "salt_sworn": (52, 62, 92),
+    "gilded_cow": (94, 74, 62),
+    "gilded_pig": (222, 168, 62),
+    "gilded_sheep": (247, 220, 138),
+    "gilded_chicken": (244, 239, 230),
+    "gilded_spider": (62, 55, 48),
+    "gilded_cask": (120, 150, 90),
+    "refugee": (112, 82, 54),
+    "gilt_mad": (222, 168, 62),
+    "half_sewn": (228, 186, 148),
 }
 
 
@@ -318,7 +329,7 @@ def gen_icon():
 
 # --- JSON: assets ------------------------------------------------------------
 
-SIMPLE_BLOCKS = ["seamstone", "fired_shell"]
+SIMPLE_BLOCKS = ["seamstone", "fired_shell", "gilt_mass"]
 ITEMS_GENERATED = ["porcelain_shard", "gold_thread", "rivening_salt",
                    "salt_dart", "rivening_heart", "autarch_crown"]
 
@@ -422,6 +433,15 @@ def gen_lang():
         "reliquary_colossus": "Reliquary Colossus",
         "porcelain_autarch": "The Porcelain Autarch",
         "salt_sworn": "Salt-Sworn",
+        "gilded_cow": "Chinaware Bull",
+        "gilded_pig": "Tithe Swine",
+        "gilded_sheep": "Thread-Fleece",
+        "gilded_chicken": "Cloche Hen",
+        "gilded_spider": "Tureen Spider",
+        "gilded_cask": "Crackle Cask",
+        "refugee": "Refugee",
+        "gilt_mad": "Gilt-Mad Prophet",
+        "half_sewn": "Half-Sewn",
     }
     lang = {
         "block.gildedseam.seamstone": "Seamstone",
@@ -429,6 +449,25 @@ def gen_lang():
         "block.gildedseam.porcelain_bloom": "Porcelain Bloom",
         "block.gildedseam.kiln_heart": "Kiln Heart",
         "block.gildedseam.fired_shell": "Fired Shell",
+        "block.gildedseam.gilt_mass": "Gilt Mass",
+        "dialogue.gildedseam.refugee.0": "<Refugee> It took the whole valley. The trees just... stopped being trees.",
+        "dialogue.gildedseam.refugee.1": "<Refugee> Don't listen when it rings. My brother listened.",
+        "dialogue.gildedseam.refugee.2": "<Refugee> The King sits in a palace of white stone. That's where they took the cure. That's where they took everything.",
+        "dialogue.gildedseam.refugee.3": "<Refugee> If you had bread... or a blade... maybe I could be brave about it.",
+        "dialogue.gildedseam.refugee.rallied": "<Refugee> Alright. Alright! Point me at the porcelain.",
+        "dialogue.gildedseam.refugee.rallied_idle": "<Refugee> Still with you. Still terrified. Lead on.",
+        "dialogue.gildedseam.gilt_mad.0": "<Gilt-Mad> Every crack is a mouth, friend, and the gold is what it says!",
+        "dialogue.gildedseam.gilt_mad.1": "<Gilt-Mad> I gave it my left hand and it gave me back a better one. Ring the bell. RING THE BELL.",
+        "dialogue.gildedseam.gilt_mad.2": "<Gilt-Mad> The King wears three halos because heaven fits him three times.",
+        "dialogue.gildedseam.gilt_mad.3": "<Gilt-Mad> You want to riven it? The heart, struck on the forge. But why would anyone want to be unfinished?",
+        "gildedseam.rivening.begins": "The Rivening has begun. Stand and watch.",
+        "gildedseam.rivening.done": "The thread lets go. The valley is unsewn.",
+        "advancements.gildedseam.find_palace.title": "The Palace of White Stone",
+        "advancements.gildedseam.find_palace.description": "Find where the King keeps the cure",
+        "advancements.gildedseam.slay_the_king.title": "Regicide, in Porcelain",
+        "advancements.gildedseam.slay_the_king.description": "Break the Porcelain Autarch",
+        "advancements.gildedseam.the_rivening.title": "The Rivening",
+        "advancements.gildedseam.the_rivening.description": "Strike the Rivening Heart against a kiln and unsew the world",
         "item.gildedseam.porcelain_shard": "Porcelain Shard",
         "item.gildedseam.gold_thread": "Gold Thread",
         "item.gildedseam.kintsugi_blade": "Kintsugi Blade",
@@ -488,6 +527,10 @@ def gen_data_json():
         }
 
     wjson(os.path.join(DATA, "loot_table", "blocks", "seamstone.json"), self_drop("seamstone"))
+    wjson(os.path.join(DATA, "loot_table", "blocks", "gilt_mass.json"), {
+        "type": "minecraft:block",
+        "pools": [item_pool("minecraft:gold_nugget", 4, 9)],
+    })
     wjson(os.path.join(DATA, "loot_table", "blocks", "fired_shell.json"), self_drop("fired_shell"))
     wjson(os.path.join(DATA, "loot_table", "blocks", "gilded_vein.json"), {
         "type": "minecraft:block",
@@ -525,6 +568,16 @@ def gen_data_json():
             item_pool("minecraft:gold_ingot", 3, 6, 3),
             item_pool("gildedseam:porcelain_shard", 6, 12),
         ],
+        "gilded_cow": [item_pool("gildedseam:porcelain_shard", 1, 3, 1)],
+        "gilded_pig": [item_pool("gildedseam:porcelain_shard", 1, 2, 1)],
+        "gilded_sheep": [item_pool("gildedseam:gold_thread", 1, 2, 1)],
+        "gilded_chicken": [item_pool("gildedseam:porcelain_shard", 0, 1, 1)],
+        "gilded_spider": [item_pool("gildedseam:gold_thread", 0, 2, 1),
+                          item_pool("minecraft:string", 0, 2, 1)],
+        "gilded_cask": [item_pool("gildedseam:porcelain_shard", 1, 3, 1),
+                        item_pool("minecraft:gunpowder", 0, 2, 1)],
+        "half_sewn": [item_pool("gildedseam:gold_thread", 0, 2, 1),
+                      item_pool("gildedseam:porcelain_shard", 0, 2, 1)],
         "porcelain_autarch": [
             {"rolls": 1.0, "entries": [{"type": "minecraft:item", "name": "gildedseam:autarch_crown"}]},
             {"rolls": 1.0, "entries": [{"type": "minecraft:item", "name": "gildedseam:rivening_heart"}]},
@@ -606,7 +659,8 @@ def gen_data_json():
     # Worldgen: the Gilded Palace and the Hollow City.
     for name, template, spacing, separation, salt in (
             ("gilded_palace", "gilded_palace", 64, 32, 91125511),
-            ("hollow_city", "hollow_city", 40, 20, 71350917)):
+            ("hollow_city", "hollow_city", 40, 20, 71350917),
+            ("refuge_hamlet", "refuge_hamlet", 28, 14, 55231998)):
         wjson(os.path.join(DATA, "worldgen", "template_pool", f"{name}_start.json"), {
             "fallback": "minecraft:empty",
             "elements": [{
@@ -647,7 +701,7 @@ def gen_data_json():
           {"replace": False, "values": ["gildedseam:porcelain_shard"]})
     wjson(os.path.join(MCDATA, "tags", "block", "mineable", "pickaxe.json"),
           {"replace": False, "values": ["gildedseam:seamstone", "gildedseam:kiln_heart",
-                                        "gildedseam:fired_shell"]})
+                                        "gildedseam:fired_shell", "gildedseam:gilt_mass"]})
     wjson(os.path.join(MCDATA, "tags", "damage_type", "bypasses_armor.json"),
           {"replace": False, "values": ["gildedseam:gilding"]})
 
@@ -685,6 +739,45 @@ def gen_data_json():
             "trigger": "minecraft:effects_changed",
             "conditions": {"effects": {"gildedseam:gilded": {}}},
         }},
+    })
+    wjson(os.path.join(DATA, "advancement", "find_palace.json"), {
+        "parent": "gildedseam:gilded",
+        "display": {
+            "icon": {"id": "minecraft:quartz_block"},
+            "title": {"translate": "advancements.gildedseam.find_palace.title"},
+            "description": {"translate": "advancements.gildedseam.find_palace.description"},
+            "frame": "goal", "show_toast": True, "announce_to_chat": True, "hidden": False,
+        },
+        "criteria": {"entered": {
+            "trigger": "minecraft:location",
+            "conditions": {"player": [{
+                "condition": "minecraft:location_check",
+                "predicate": {"structures": "gildedseam:gilded_palace"},
+            }]},
+        }},
+    })
+    wjson(os.path.join(DATA, "advancement", "slay_the_king.json"), {
+        "parent": "gildedseam:find_palace",
+        "display": {
+            "icon": {"id": "gildedseam:autarch_crown"},
+            "title": {"translate": "advancements.gildedseam.slay_the_king.title"},
+            "description": {"translate": "advancements.gildedseam.slay_the_king.description"},
+            "frame": "challenge", "show_toast": True, "announce_to_chat": True, "hidden": False,
+        },
+        "criteria": {"killed": {
+            "trigger": "minecraft:player_killed_entity",
+            "conditions": {"entity": {"type": "gildedseam:porcelain_autarch"}},
+        }},
+    })
+    wjson(os.path.join(DATA, "advancement", "the_rivening.json"), {
+        "parent": "gildedseam:slay_the_king",
+        "display": {
+            "icon": {"id": "gildedseam:rivening_heart"},
+            "title": {"translate": "advancements.gildedseam.the_rivening.title"},
+            "description": {"translate": "advancements.gildedseam.the_rivening.description"},
+            "frame": "challenge", "show_toast": True, "announce_to_chat": True, "hidden": False,
+        },
+        "criteria": {"done": {"trigger": "minecraft:impossible"}},
     })
     wjson(os.path.join(DATA, "advancement", "shatter_the_cathedral.json"), {
         "parent": "gildedseam:gilded",

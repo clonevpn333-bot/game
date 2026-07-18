@@ -47,6 +47,19 @@ public class SeamstoneBlock extends Block {
             SeamHelper.gildWorld(level, targetPos, random);
         }
 
+        // Late-stage decay: old seamstone in a saturated valley either sets
+        // into solid gilt or crumbles away entirely, pitting the world.
+        if (SeamHelper.countSeamNear(level, pos, 5, 40) >= 32) {
+            if (random.nextInt(20) == 0) {
+                level.setBlockAndUpdate(pos, ModBlocks.GILT_MASS.defaultBlockState());
+                return;
+            }
+            if (random.nextInt(30) == 0) {
+                level.removeBlock(pos, false);
+                return;
+            }
+        }
+
         // Rarely sprout a bloom on top.
         BlockPos above = pos.above();
         if (random.nextInt(24) == 0 && level.getBlockState(above).isAir()) {

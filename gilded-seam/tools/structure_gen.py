@@ -310,6 +310,67 @@ def build_city():
     t.save("hollow_city")
 
 
+# ---------------------------------------------------------------------------
+# The Refuge Hamlet — where the scared people went. Three intact cottages,
+# a well, a lamplighter on watch, and one prophet nobody invited.
+# ---------------------------------------------------------------------------
+
+PLANKS = "minecraft:spruce_planks"
+LOG = "minecraft:spruce_log"
+COBBLE = "minecraft:cobblestone"
+LANTERN = "minecraft:lantern"
+
+
+def build_hamlet():
+    W, H, L = 33, 10, 33
+    t = Template(W, H, L)
+    t.fill(0, 0, 0, W - 1, 0, L - 1, "minecraft:coarse_dirt")
+
+    def cottage(x0, z0, w, l, door_dx):
+        t.fill(x0, 0, z0, x0 + w - 1, 0, z0 + l - 1, COBBLE)
+        for y in (1, 2, 3):
+            for x in range(x0, x0 + w):
+                t.set(x, y, z0, PLANKS)
+                t.set(x, y, z0 + l - 1, PLANKS)
+            for z in range(z0, z0 + l):
+                t.set(x0, y, z, PLANKS)
+                t.set(x0 + w - 1, y, z, PLANKS)
+        for x, z in ((x0, z0), (x0 + w - 1, z0), (x0, z0 + l - 1), (x0 + w - 1, z0 + l - 1)):
+            t.fill(x, 1, z, x, 3, z, LOG, {"axis": "y"})
+        t.fill(x0, 4, z0, x0 + w - 1, 4, z0 + l - 1, PLANKS)
+        t.fill(x0 + 1, 4, z0 + 1, x0 + w - 2, 4, z0 + l - 2, PLANKS)
+        # Doorway and a window.
+        t.fill(x0 + door_dx, 1, z0, x0 + door_dx, 2, z0, "minecraft:air")
+        t.set(x0 + 2, 2, z0 + l - 1, "minecraft:glass")
+        t.set(x0 + w - 2, 1, z0 + 2, LANTERN, {"hanging": "false"})
+
+    cottage(3, 4, 8, 7, 3)
+    cottage(21, 5, 9, 8, 4)
+    cottage(11, 21, 9, 8, 4)
+
+    # The well.
+    t.fill(15, 1, 12, 18, 1, 15, COBBLE)
+    t.fill(16, 0, 13, 17, 1, 14, "minecraft:water")
+    for x, z in ((15, 12), (18, 12), (15, 15), (18, 15)):
+        t.fill(x, 1, z, x, 3, z, "minecraft:cobblestone_wall")
+    t.fill(15, 4, 12, 18, 4, 15, PLANKS)
+
+    # The people.
+    t.entity(6.5, 1.0, 7.5, "gildedseam:refugee")
+    t.entity(24.5, 1.0, 8.5, "gildedseam:refugee")
+    t.entity(14.5, 1.0, 24.5, "gildedseam:refugee")
+    t.entity(19.5, 1.0, 18.5, "gildedseam:refugee")
+    t.entity(10.5, 1.0, 16.5, "gildedseam:salt_sworn")
+    t.entity(27.5, 1.0, 27.5, "gildedseam:gilt_mad")
+
+    # A shared pantry.
+    t.set(5, 1, 5, CHEST, {"facing": "south"},
+          {"id": "minecraft:chest", "LootTable": "gildedseam:chests/hollow_city"})
+
+    t.save("refuge_hamlet")
+
+
 if __name__ == "__main__":
     build_palace()
     build_city()
+    build_hamlet()

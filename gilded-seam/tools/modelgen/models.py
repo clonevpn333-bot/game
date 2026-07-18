@@ -426,6 +426,307 @@ RELIQUARY_COLOSSUS = Model("reliquary_colossus", 256, [
 ])
 
 # ---------------------------------------------------------------------------
+# The gilded livestock — every farmyard shape, kept. Mutation parts are
+# named mut1_* (Stoneware) and mut2_* (Lustre); the client toggles them
+# by prefix.
+# ---------------------------------------------------------------------------
+
+GILDED_COW = Model("gilded_cow", 128, [
+    Part("body", "root", (0.0, 11.0, 0.0), (0, 0, 0), [
+        Box((-6, -10, -9), (12, 10, 18), "glaze"),
+        Box((-0.5, 0, -8), (1, 1, 16), "gold"),          # belly seam
+    ]),
+    Part("hump", "body", (0.0, -10.0, -4.0), (0, 0, 0), [
+        Box((-3, -3, -2), (6, 3, 6), "kiln"),             # the kiln-vent hump
+    ]),
+    Part("head", "body", (0.0, -8.0, -9.0), (0, 0, 0), [
+        Box((-4, -3, -6), (8, 7, 6), "mask"),
+    ]),
+    Part("jaw", "head", (0.0, 4.0, -6.0), (8 * D, 0, 0), [
+        Box((-3.5, 0, 0), (3, 2, 5), "dark"),             # the jaw, split
+        Box((0.5, 0, 0), (3, 2, 5), "dark"),
+        Box((-0.5, 0, 0.5), (1, 2, 4), "glow"),           # gold between the halves
+    ]),
+    Part("horn_r", "head", (-4.0, -2.0, -3.0), (0, 0, 35 * D), [
+        Box((-1, -3, -1), (1, 3, 1), "gold"),
+    ]),
+    Part("horn_l", "head", (4.0, -2.0, -3.0), (0, 0, -35 * D), [
+        Box((0, -3, -1), (1, 3, 1), "gold"),
+    ]),
+    Part("tail", "body", (0.0, -9.0, 9.0), (30 * D, 0, 0), [
+        Box((-0.5, 0, 0), (1, 6, 1), "thread"),
+    ]),
+    *_leg("leg_fr", "root", (-4.0, 11.0, -6.0), (3, 7, 3), (3, 6, 3)),
+    *_leg("leg_fl", "root", (4.0, 11.0, -6.0), (3, 7, 3), (3, 6, 3)),
+    *_leg("leg_br", "root", (-4.0, 11.0, 6.0), (3, 7, 3), (3, 6, 3)),
+    *_leg("leg_bl", "root", (4.0, 11.0, 6.0), (3, 7, 3), (3, 6, 3)),
+    # Stoneware: plates buckle up along the spine.
+    Part("mut1_spine_0", "body", (0.0, -10.0, 1.0), (-10 * D, 0, 0), [
+        Box((-0.5, -4, -0.5), (1, 4, 1), "dark"),
+    ]),
+    Part("mut1_spine_1", "body", (0.0, -10.0, 5.0), (10 * D, 0, 0), [
+        Box((-0.5, -3, -0.5), (1, 3, 1), "dark"),
+    ]),
+    # Lustre: the vent blooms.
+    Part("mut2_bloom", "hump", (0.0, -3.0, 1.0), (0, 0, 0), [
+        Box((-3, -5, -0.5), (6, 5, 1), "gold"),
+        Box((-0.5, -5, -3), (1, 5, 6), "gold"),
+        Box((-1, -3, -1), (2, 2, 2), "glow"),
+    ]),
+])
+
+GILDED_PIG = Model("gilded_pig", 128, [
+    Part("body", "root", (0.0, 16.0, 0.0), (0, 0, 0), [
+        Box((-5, -8, -7), (10, 8, 14), "glaze"),          # the pot
+    ]),
+    Part("lid", "body", (0.0, -8.0, 0.0), (0, 0, 0), [
+        Box((-4, -2, -5), (8, 2, 10), "dark"),
+        Box((-1, -4, -1), (2, 2, 2), "gold"),             # lid handle
+    ]),
+    Part("head", "body", (0.0, -4.0, -7.0), (0, 0, 0), [
+        Box((-3.5, -3, -4), (7, 6, 4), "mask"),
+    ]),
+    Part("snout", "head", (0.0, 0.0, -4.0), (0, 0, 0), [
+        Box((-1.5, -1, -3), (3, 3, 3), "gold"),           # spout snout
+    ]),
+    Part("tail", "body", (0.0, -6.0, 7.0), (-40 * D, 0, 0), [
+        Box((-0.5, 0, 0), (1, 1, 3), "thread"),
+        Box((-0.5, -1, 2), (1, 1, 1), "thread"),
+    ]),
+    *_leg("leg_fr", "root", (-3.0, 16.0, -4.5), (3, 4, 3), (3, 4, 3)),
+    *_leg("leg_fl", "root", (3.0, 16.0, -4.5), (3, 4, 3), (3, 4, 3)),
+    *_leg("leg_br", "root", (-3.0, 16.0, 4.5), (3, 4, 3), (3, 4, 3)),
+    *_leg("leg_bl", "root", (3.0, 16.0, 4.5), (3, 4, 3), (3, 4, 3)),
+    # Stoneware: side spouts start leaking.
+    Part("mut1_spout_r", "body", (-5.0, -4.0, 0.0), (0, 0, 20 * D), [
+        Box((-2, -1, -1), (2, 2, 2), "gold"),
+    ]),
+    Part("mut1_spout_l", "body", (5.0, -4.0, 0.0), (0, 0, -20 * D), [
+        Box((0, -1, -1), (2, 2, 2), "gold"),
+    ]),
+    # Lustre: the lid lifts on a ring of light, and a third pair of legs.
+    Part("mut2_glow_ring", "body", (0.0, -8.5, 0.0), (0, 0, 0), [
+        Box((-3.5, 0, -4.5), (7, 1, 9), "glow"),
+    ]),
+    *_leg("mut2_leg_mr", "root", (-3.6, 16.0, 0.0), (3, 4, 3), (3, 4, 3), "gold"),
+    *_leg("mut2_leg_ml", "root", (3.6, 16.0, 0.0), (3, 4, 3), (3, 4, 3), "gold"),
+])
+
+GILDED_SHEEP = Model("gilded_sheep", 128, [
+    Part("body", "root", (0.0, 13.0, 0.0), (0, 0, 0), [
+        Box((-4, -6, -8), (8, 6, 16), "glaze"),
+    ]),
+    Part("fleece", "body", (0.0, -6.0, 0.0), (0, 0, 0), [
+        Box((-5, -3, -9), (10, 5, 18), "thread"),          # wool of wound gold
+    ]),
+    Part("head", "body", (0.0, -4.0, -8.0), (0, 0, 0), [
+        Box((-3, -3, -5), (6, 6, 5), "mask"),
+        Box((-4, -2, -3), (1, 2, 3), "glaze"),             # ear r
+        Box((3, -2, -3), (1, 2, 3), "glaze"),              # ear l
+    ]),
+    Part("tail", "fleece", (0.0, 0.0, 9.0), (20 * D, 0, 0), [
+        Box((-1, 0, 0), (2, 3, 1), "thread"),
+    ]),
+    *_leg("leg_fr", "root", (-2.5, 13.0, -6.0), (2, 6, 2), (2, 5, 2), "gold"),
+    *_leg("leg_fl", "root", (2.5, 13.0, -6.0), (2, 6, 2), (2, 5, 2), "gold"),
+    *_leg("leg_br", "root", (-2.5, 13.0, 6.0), (2, 6, 2), (2, 5, 2), "gold"),
+    *_leg("leg_bl", "root", (2.5, 13.0, 6.0), (2, 6, 2), (2, 5, 2), "gold"),
+    # Stoneware: needles work their way out of the fleece.
+    *[Part(f"mut1_needle_{i}", "fleece", (-3.0 + i * 2.0, -3.0, -6.0 + i * 4.0),
+           ((-20 + i * 12) * D, 0, (25 - i * 15) * D), [
+        Box((-0.5, -4, -0.5), (1, 4, 1), "gold"),
+    ]) for i in range(4)],
+    # Lustre: the spool the thread was always for.
+    Part("mut2_spool", "fleece", (0.0, -3.0, 2.0), (0, 0, 0), [
+        Box((-2, -6, -2), (4, 6, 4), "dark"),
+        Box((-2.5, -5, -2.5), (5, 3, 5), "thread"),
+    ]),
+])
+
+GILDED_CHICKEN = Model("gilded_chicken", 64, [
+    Part("body", "root", (0.0, 16.0, 0.0), (0, 0, 0), [
+        Box((-3.5, -6, -4.5), (7, 6, 9), "glaze"),         # the teapot
+    ]),
+    Part("head", "body", (0.0, -5.0, -3.5), (0, 0, 0), [
+        Box((-2, -4, -2), (4, 4, 4), "mask"),
+        Box((-1, -5, -1), (2, 1, 2), "gold"),              # comb
+    ]),
+    Part("beak", "head", (0.0, -2.0, -2.0), (0, 0, 0), [
+        Box((-1, -0.5, -3), (2, 1, 3), "gold"),            # spout beak
+    ]),
+    Part("handle", "body", (0.0, -4.0, 4.5), (-30 * D, 0, 0), [
+        Box((-1, 0, 0), (2, 5, 1), "dark"),                # tail handle
+    ]),
+    Part("wing_r", "body", (-3.5, -5.0, -1.0), (0, 0, 0), [
+        Box((-1, 0, -2), (1, 4, 6), "dark"),
+    ]),
+    Part("wing_l", "body", (3.5, -5.0, -1.0), (0, 0, 0), [
+        Box((0, 0, -2), (1, 4, 6), "dark"),
+    ]),
+    *_leg("leg_r", "root", (-1.5, 16.0, 0.0), (1, 6, 1), (2, 2, 2), "gold"),
+    *_leg("leg_l", "root", (1.5, 16.0, 0.0), (1, 6, 1), (2, 2, 2), "gold"),
+    # Stoneware: a second set of wing-plates.
+    Part("mut1_wing2_r", "body", (-3.5, -3.0, 1.0), (0, 0, 20 * D), [
+        Box((-1, 0, -1), (1, 3, 4), "gold"),
+    ]),
+    Part("mut1_wing2_l", "body", (3.5, -3.0, 1.0), (0, 0, -20 * D), [
+        Box((0, 0, -1), (1, 3, 4), "gold"),
+    ]),
+    # Lustre: the second head. A teapot may have two spouts.
+    Part("mut2_head2", "body", (2.0, -5.5, -2.5), (0, -25 * D, -15 * D), [
+        Box((-1.5, -3.5, -1.5), (3, 3, 3), "mask"),
+        Box((-0.5, -2.5, -3.5), (1, 1, 2), "gold"),
+    ]),
+])
+
+GILDED_SPIDER = Model("gilded_spider", 128, [
+    Part("abdomen", "root", (0.0, 15.0, 3.0), (0, 0, 0), [
+        Box((-5, -4, -1), (10, 6, 10), "glaze"),           # the tureen
+    ]),
+    Part("lid", "abdomen", (0.0, -4.0, 4.0), (0, 0, 0), [
+        Box((-4, -1.5, -4), (8, 2, 8), "dark"),
+        Box((-1, -3, -1), (2, 2, 2), "gold"),
+    ]),
+    Part("cephalo", "root", (0.0, 15.0, -3.0), (0, 0, 0), [
+        Box((-4, -3, -6), (8, 5, 7), "glaze"),
+        Box((-3, 2, -5.8), (6, 3, 1), "mask"),             # the face, underneath
+    ]),
+    *[Part(f"leg_{i}", "root", (-4.5 if i < 4 else 4.5, 13.0, -4.0 + (i % 4) * 2.6),
+           (0, (30 - (i % 4) * 20) * D * (1 if i < 4 else -1), (55 * D) * (1 if i < 4 else -1)), [
+        Box((-1 if i < 4 else 0, 0, -0.5), (1, 7, 1), "gold"),
+    ]) for i in range(8)],
+    *[Part(f"leg_{i}_mid", f"leg_{i}", (-0.5 if i < 4 else 0.5, 7.0, 0.0),
+           (0, 0, (-95 * D) * (1 if i < 4 else -1)), [
+        Box((-0.5, 0, -0.5), (1, 9, 1), "gold"),
+    ]) for i in range(8)],
+    # Stoneware: the lid sprouts a warning gem and rim-spikes.
+    Part("mut1_gem", "lid", (0.0, -3.0, 0.0), (0, 0, 0), [
+        Box((-1, -2, -1), (2, 2, 2), "glow"),
+    ]),
+    Part("mut1_spikes", "abdomen", (0.0, -4.5, 1.0), (0, 0, 0), [
+        Box((-4.5, 0, -0.5), (1, 2, 1), "gold"),
+        Box((3.5, 0, -0.5), (1, 2, 1), "gold"),
+    ]),
+    # Lustre: a ninth and tenth leg. The tureen sets more places.
+    *[Part(f"mut2_leg_{i}", "root", (-4.5 if i == 0 else 4.5, 13.0, 4.6),
+           (0, (-25 * D) * (1 if i == 0 else -1), (55 * D) * (1 if i == 0 else -1)), [
+        Box((-1 if i == 0 else 0, 0, -0.5), (1, 7, 1), "gold"),
+    ]) for i in range(2)],
+    *[Part(f"mut2_leg_{i}_mid", f"mut2_leg_{i}", (-0.5 if i == 0 else 0.5, 7.0, 0.0),
+           (0, 0, (-95 * D) * (1 if i == 0 else -1)), [
+        Box((-0.5, 0, -0.5), (1, 9, 1), "gold"),
+    ]) for i in range(2)],
+])
+
+GILDED_CASK = Model("gilded_cask", 64, [
+    # The creeper's silhouette, refired as a crazed powder-urn.
+    Part("body", "root", (0.0, 20.0, 0.0), (0, 0, 0), [
+        Box((-4, -14, -3), (8, 14, 6), "glaze"),
+        Box((-3.5, -12.5, -3.6), (7, 7, 1), "mask"),       # the face plate
+        Box((-4.2, -5, -3.2), (8, 1, 6), "gold"),          # hoop band, low
+        Box((-4.2, -10, -3.2), (8, 1, 6), "gold"),         # hoop band, high
+    ]),
+    *_leg("leg_fr", "root", (-2.0, 20.0, -2.5), (3, 4, 3), (2, 0, 2)),
+    *_leg("leg_fl", "root", (2.0, 20.0, -2.5), (3, 4, 3), (2, 0, 2)),
+    *_leg("leg_br", "root", (-2.0, 20.0, 2.5), (3, 4, 3), (2, 0, 2)),
+    *_leg("leg_bl", "root", (2.0, 20.0, 2.5), (3, 4, 3), (2, 0, 2)),
+    # Stoneware: pressure vents.
+    Part("mut1_vent_r", "body", (-4.0, -8.0, 0.0), (0, 0, 25 * D), [
+        Box((-2, -1, -1), (2, 2, 2), "kiln"),
+    ]),
+    Part("mut1_vent_l", "body", (4.0, -8.0, 0.0), (0, 0, -25 * D), [
+        Box((0, -1, -1), (2, 2, 2), "kiln"),
+    ]),
+    # Lustre: the stopper-crown. It is very full now.
+    Part("mut2_crown", "body", (0.0, -14.0, 0.0), (0, 0, 0), [
+        Box((-2, -3, -2), (4, 3, 4), "glow"),
+        Box((-3, -1, -3), (6, 1, 6), "gold"),
+    ]),
+])
+
+# ---------------------------------------------------------------------------
+# The folk — the people the Seam has not finished with yet.
+# ---------------------------------------------------------------------------
+
+REFUGEE = Model("refugee", 128, [
+    Part("body", "root", (0.0, 6.0, 0.0), (0, 0, 0), [
+        Box((-4, 0, -2), (8, 10, 4), "leather"),
+        Box((-4.5, 6, -2.5), (9, 4, 5), "leather"),        # ragged skirt
+    ]),
+    Part("bundle", "body", (0.0, 1.0, 2.0), (0, 0, 0), [
+        Box((-2.5, 0, 0), (5, 4, 3), "coat"),              # everything they own
+    ]),
+    Part("head", "body", (0.0, 0.0, 0.0), (0, 0, 0), [
+        Box((-3, -6, -3), (6, 6, 6), "skin"),
+    ]),
+    Part("hood", "head", (0.0, -6.0, 0.0), (0, 0, 0), [
+        Box((-3.5, 0, -3.5), (7, 4, 7), "coat"),
+        Box((-3.5, 4, 1), (7, 3, 3), "coat"),              # cowl down the back
+    ]),
+    Part("arm_r", "body", (-4.5, 1.0, 0.0), (0, 0, 0), [
+        Box((-2, 0, -1.5), (3, 10, 3), "leather"),
+    ]),
+    Part("arm_l", "body", (4.5, 1.0, 0.0), (0, 0, 0), [
+        Box((-1, 0, -1.5), (3, 10, 3), "leather"),
+    ]),
+    *_leg("leg_r", "root", (-2.0, 16.0, 0.0), (3, 4, 3), (3, 4, 3), "leather"),
+    *_leg("leg_l", "root", (2.0, 16.0, 0.0), (3, 4, 3), (3, 4, 3), "leather"),
+])
+
+GILT_MAD = Model("gilt_mad", 128, [
+    Part("body", "root", (0.0, 6.0, 0.0), (0, 0, 0), [
+        Box((-4, 0, -2), (8, 10, 4), "coat"),
+        Box((-5, 7, -3), (10, 6, 6), "coat"),              # long robe skirt
+        Box((-0.5, 1, -2.5), (1, 8, 1), "gold"),           # self-sewn seam, worn proudly
+    ]),
+    Part("head", "body", (0.0, 0.0, 0.0), (0, 0, 0), [
+        Box((-3, -6, -3), (6, 6, 6), "skin"),
+    ]),
+    Part("half_mask", "head", (0.0, -6.0, 0.0), (0, 0, 0), [
+        Box((-3.2, 0.5, -3.3), (6, 3, 1), "gold"),         # gold half-mask over the eyes
+    ]),
+    Part("arm_r", "body", (-4.5, 1.0, 0.0), (0, 0, 0), [
+        Box((-2, 0, -1.5), (3, 10, 3), "coat"),
+    ]),
+    Part("bell", "arm_r", (-0.5, 10.0, 0.0), (0, 0, 0), [
+        Box((-1.5, 0, -1.5), (3, 3, 3), "gold"),           # the handbell
+    ]),
+    Part("arm_l", "body", (4.5, 1.0, 0.0), (0, 0, 0), [
+        Box((-1, 0, -1.5), (3, 10, 3), "coat"),
+    ]),
+    *_leg("leg_r", "root", (-2.0, 16.0, 0.0), (3, 4, 3), (3, 4, 3), "coat"),
+    *_leg("leg_l", "root", (2.0, 16.0, 0.0), (3, 4, 3), (3, 4, 3), "coat"),
+])
+
+HALF_SEWN = Model("half_sewn", 128, [
+    # A person the Seam has not finished. Half flesh, half ware.
+    Part("body", "root", (0.0, 6.0, 0.0), (0, 0, 0), [
+        Box((-4, 0, -2), (8, 10, 4), "skin"),
+        Box((-4.2, 1, -2.4), (4, 7, 1), "glaze"),          # chest, already ware
+        Box((0.2, 2, -2.3), (1, 6, 1), "gold"),            # the working seam
+    ]),
+    Part("head", "body", (0.0, 0.0, 0.0), (0, 0, 0), [
+        Box((-3, -6, -3), (6, 6, 6), "skin"),
+        Box((-3.2, -6.2, -3.2), (3, 6, 1), "mask"),        # half the face, replaced
+    ]),
+    Part("arm_r", "body", (-4.5, 1.0, 0.0), (0, 0, 0), [
+        Box((-2, 0, -1.5), (3, 10, 3), "glaze"),           # this arm is finished
+    ]),
+    Part("arm_l", "body", (4.5, 1.0, 0.0), (0, 0, 0), [
+        Box((-1, 0, -1.5), (3, 10, 3), "skin"),            # this one is not
+    ]),
+    *_leg("leg_r", "root", (-2.0, 16.0, 0.0), (3, 4, 3), (3, 4, 3), "glaze"),
+    *_leg("leg_l", "root", (2.0, 16.0, 0.0), (3, 4, 3), (3, 4, 3), "leather"),
+    # Stoneware: more patches.
+    Part("mut1_patch", "body", (0.0, 0.0, 0.0), (0, 0, 0), [
+        Box((0.4, 2, 1.4), (3, 5, 1), "glaze"),
+        Box((-3.4, 6, 1.4), (2, 3, 1), "glaze"),
+    ]),
+    # Lustre: the surplus arrives early.
+    *_leg("mut2_spare_arm", "body", (-4.0, 6.0, 1.0), (2, 6, 2), (2, 5, 2), "gold"),
+])
+
+# ---------------------------------------------------------------------------
 # The Overlord King and the living
 # ---------------------------------------------------------------------------
 
@@ -455,6 +756,36 @@ PORCELAIN_AUTARCH = Model("porcelain_autarch", 256, [
     ]),
     Part("crown_band", "head", (0.0, -14.0, 0.0), (0, 0, 0), [
         Box((-7, -3, -5), (14, 3, 10), "gold"),
+        Box((-6.3, -1, -5.3), (12, 1, 1), "dark"),      # crown filigree course
+    ]),
+    # Regalia: brow and chin bands, shoulder shrines, hanging censers.
+    Part("brow_band", "head", (0.0, -10.0, -4.2), (0, 0, 0), [
+        Box((-6, 0, 0), (12, 2, 1), "gold"),
+    ]),
+    Part("chin_band", "head", (0.0, -2.0, -4.2), (0, 0, 0), [
+        Box((-3, 0, 0), (6, 2, 1), "gold"),
+    ]),
+    Part("shrine_r", "chest", (-6.0, -12.5, 2.0), (0, 0, 8 * D), [
+        Box((-2.5, -6, -2), (5, 6, 4), "dark"),
+        Box((-1.5, -5, -2.4), (3, 4, 1), "gold"),
+    ]),
+    Part("shrine_l", "chest", (6.0, -12.5, 2.0), (0, 0, -8 * D), [
+        Box((-2.5, -6, -2), (5, 6, 4), "dark"),
+        Box((-1.5, -5, -2.4), (3, 4, 1), "gold"),
+    ]),
+    Part("censer_r", "dais", (-9.0, -5.5, -8.0), (0, 0, 0), [
+        Box((-0.5, 0, -0.5), (1, 5, 1), "dark"),
+        Box((-1.5, 5, -1.5), (3, 3, 3), "glow"),
+    ]),
+    Part("censer_l", "dais", (9.0, -5.5, -8.0), (0, 0, 0), [
+        Box((-0.5, 0, -0.5), (1, 5, 1), "dark"),
+        Box((-1.5, 5, -1.5), (3, 3, 3), "glow"),
+    ]),
+    Part("fringe_f", "dais", (0.0, -1.0, -9.2), (6 * D, 0, 0), [
+        Box((-9, 0, 0), (18, 5, 1), "thread"),
+    ]),
+    Part("fringe_b", "dais", (0.0, -1.0, 9.2), (-6 * D, 0, 0), [
+        Box((-9, 0, 0), (18, 5, 1), "thread"),
     ]),
     *[Part(f"crown_spike_{i}", "crown_band", (-6.0 + i * 3.0, -3.0, 0.0),
            (0, 0, (i - 2) * -8 * D), [
@@ -520,7 +851,9 @@ SALT_SWORN = Model("salt_sworn", 128, [
 
 ALL_MODELS = [SHARDLING, VESSEL, PORCELAIN_HOUND, SEAMSTRESS, KILNBORN,
               CHIME, FONT_OF_GOLD, MANIFOLD, RELIQUARY_COLOSSUS,
-              PORCELAIN_AUTARCH, SALT_SWORN]
+              PORCELAIN_AUTARCH, SALT_SWORN,
+              GILDED_COW, GILDED_PIG, GILDED_SHEEP, GILDED_CHICKEN,
+              GILDED_SPIDER, GILDED_CASK, REFUGEE, GILT_MAD, HALF_SEWN]
 
 # Which parts carry the serene painted face.
 MASK_PARTS = {
@@ -535,9 +868,19 @@ MASK_PARTS = {
     "reliquary_colossus": {"head"},
     "porcelain_autarch": {"head"},
     "salt_sworn": set(),
+    "gilded_cow": {"head"},
+    "gilded_pig": {"head"},
+    "gilded_sheep": {"head"},
+    "gilded_chicken": {"head", "mut2_head2"},
+    "gilded_spider": {"cephalo"},
+    "gilded_cask": {"body"},
+    "refugee": set(),
+    "gilt_mad": set(),
+    "half_sewn": {"head"},
 }
 
 # Every species regilds as it refires: all textures come in three tiers.
 TIERED_TEXTURES = {"shardling", "vessel", "porcelain_hound", "seamstress", "kilnborn",
                    "chime", "font_of_gold", "manifold", "reliquary_colossus",
-                   "porcelain_autarch"}
+                   "porcelain_autarch", "gilded_cow", "gilded_pig", "gilded_sheep",
+                   "gilded_chicken", "gilded_spider", "gilded_cask", "half_sewn"}

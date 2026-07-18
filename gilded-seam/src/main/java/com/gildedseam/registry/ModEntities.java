@@ -3,7 +3,11 @@ package com.gildedseam.registry;
 import com.gildedseam.GildedSeam;
 import com.gildedseam.entity.ChimeEntity;
 import com.gildedseam.entity.FontOfGoldEntity;
+import com.gildedseam.entity.GildedBeastEntity;
+import com.gildedseam.entity.GiltMadEntity;
+import com.gildedseam.entity.HalfSewnEntity;
 import com.gildedseam.entity.PorcelainAutarchEntity;
+import com.gildedseam.entity.RefugeeEntity;
 import com.gildedseam.entity.SaltDartEntity;
 import com.gildedseam.entity.SaltSwornEntity;
 import com.gildedseam.entity.KilnbornEntity;
@@ -73,6 +77,34 @@ public final class ModEntities {
             EntityType.Builder.of(PorcelainAutarchEntity::new, MobCategory.MONSTER)
                     .sized(2.4F, 5.4F).eyeHeight(4.6F).fireImmune().clientTrackingRange(16));
 
+    // --- The gilded livestock: every farmyard shape, kept -------------------
+
+    public static final EntityType<GildedBeastEntity> GILDED_COW = beast("gilded_cow", 1.25F, 1.6F);
+    public static final EntityType<GildedBeastEntity> GILDED_PIG = beast("gilded_pig", 0.9F, 1.15F);
+    public static final EntityType<GildedBeastEntity> GILDED_SHEEP = beast("gilded_sheep", 0.9F, 1.3F);
+    public static final EntityType<GildedBeastEntity> GILDED_CHICKEN = beast("gilded_chicken", 0.5F, 0.9F);
+    public static final EntityType<GildedBeastEntity> GILDED_SPIDER = beast("gilded_spider", 1.3F, 0.9F);
+    public static final EntityType<GildedBeastEntity> GILDED_CASK = beast("gilded_cask", 0.7F, 1.8F);
+
+    // --- The folk -------------------------------------------------------------
+
+    public static final EntityType<RefugeeEntity> REFUGEE = register("refugee",
+            EntityType.Builder.of(RefugeeEntity::new, MobCategory.CREATURE)
+                    .sized(0.6F, 1.9F).eyeHeight(1.65F).clientTrackingRange(8));
+
+    public static final EntityType<GiltMadEntity> GILT_MAD = register("gilt_mad",
+            EntityType.Builder.of(GiltMadEntity::new, MobCategory.CREATURE)
+                    .sized(0.6F, 1.9F).eyeHeight(1.65F).clientTrackingRange(8));
+
+    public static final EntityType<HalfSewnEntity> HALF_SEWN = register("half_sewn",
+            EntityType.Builder.of(HalfSewnEntity::new, MobCategory.MONSTER)
+                    .sized(0.6F, 1.9F).eyeHeight(1.62F).clientTrackingRange(8));
+
+    private static EntityType<GildedBeastEntity> beast(String name, float width, float height) {
+        return register(name, EntityType.Builder.of(GildedBeastEntity::new, MobCategory.MONSTER)
+                .sized(width, height).clientTrackingRange(8));
+    }
+
     // --- The living ----------------------------------------------------------
 
     public static final EntityType<SaltSwornEntity> SALT_SWORN = register("salt_sworn",
@@ -98,6 +130,15 @@ public final class ModEntities {
     public static final Item PORCELAIN_AUTARCH_SPAWN_EGG =
             ModItems.registerSpawnEgg("porcelain_autarch", PORCELAIN_AUTARCH);
     public static final Item SALT_SWORN_SPAWN_EGG = ModItems.registerSpawnEgg("salt_sworn", SALT_SWORN);
+    public static final Item GILDED_COW_SPAWN_EGG = ModItems.registerSpawnEgg("gilded_cow", GILDED_COW);
+    public static final Item GILDED_PIG_SPAWN_EGG = ModItems.registerSpawnEgg("gilded_pig", GILDED_PIG);
+    public static final Item GILDED_SHEEP_SPAWN_EGG = ModItems.registerSpawnEgg("gilded_sheep", GILDED_SHEEP);
+    public static final Item GILDED_CHICKEN_SPAWN_EGG = ModItems.registerSpawnEgg("gilded_chicken", GILDED_CHICKEN);
+    public static final Item GILDED_SPIDER_SPAWN_EGG = ModItems.registerSpawnEgg("gilded_spider", GILDED_SPIDER);
+    public static final Item GILDED_CASK_SPAWN_EGG = ModItems.registerSpawnEgg("gilded_cask", GILDED_CASK);
+    public static final Item REFUGEE_SPAWN_EGG = ModItems.registerSpawnEgg("refugee", REFUGEE);
+    public static final Item GILT_MAD_SPAWN_EGG = ModItems.registerSpawnEgg("gilt_mad", GILT_MAD);
+    public static final Item HALF_SEWN_SPAWN_EGG = ModItems.registerSpawnEgg("half_sewn", HALF_SEWN);
 
     private ModEntities() {
     }
@@ -119,5 +160,14 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(RELIQUARY_COLOSSUS, ReliquaryColossusEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(PORCELAIN_AUTARCH, PorcelainAutarchEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(SALT_SWORN, SaltSwornEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(GILDED_COW, GildedBeastEntity.createAttributes(30.0, 0.28, 6.0));
+        FabricDefaultAttributeRegistry.register(GILDED_PIG, GildedBeastEntity.createAttributes(24.0, 0.3, 5.0));
+        FabricDefaultAttributeRegistry.register(GILDED_SHEEP, GildedBeastEntity.createAttributes(22.0, 0.3, 4.0));
+        FabricDefaultAttributeRegistry.register(GILDED_CHICKEN, GildedBeastEntity.createAttributes(12.0, 0.34, 3.0));
+        FabricDefaultAttributeRegistry.register(GILDED_SPIDER, GildedBeastEntity.createAttributes(20.0, 0.34, 5.0));
+        FabricDefaultAttributeRegistry.register(GILDED_CASK, GildedBeastEntity.createAttributes(26.0, 0.3, 6.0));
+        FabricDefaultAttributeRegistry.register(REFUGEE, RefugeeEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(GILT_MAD, GiltMadEntity.createAttributes());
+        FabricDefaultAttributeRegistry.register(HALF_SEWN, HalfSewnEntity.createAttributes());
     }
 }

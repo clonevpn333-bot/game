@@ -39,6 +39,15 @@ public final class ModSpawns {
         registerGroundPlacement(ModEntities.MANIFOLD);
         registerGroundPlacement(ModEntities.RELIQUARY_COLOSSUS);
         registerGroundPlacement(ModEntities.PORCELAIN_AUTARCH);
+        BiomeModifications.addSpawn(BiomeSelectors.foundInOverworld(), MobCategory.MONSTER,
+                ModEntities.HALF_SEWN, 8, 1, 2);
+        for (var type : java.util.List.of(ModEntities.GILDED_COW, ModEntities.GILDED_PIG,
+                ModEntities.GILDED_SHEEP, ModEntities.GILDED_CHICKEN, ModEntities.GILDED_SPIDER,
+                ModEntities.GILDED_CASK, ModEntities.HALF_SEWN)) {
+            registerGroundPlacement(type);
+        }
+        registerGroundPlacement(ModEntities.REFUGEE);
+        registerGroundPlacement(ModEntities.GILT_MAD);
 
         // The Salt-Sworn walk the daylight roads, rare as good news.
         BiomeModifications.addSpawn(BiomeSelectors.foundInOverworld(), MobCategory.CREATURE,

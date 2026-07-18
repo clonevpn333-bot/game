@@ -40,6 +40,22 @@ public class RiveningHeartItem extends Item {
     }
 
     @Override
+    public InteractionResult useOn(net.minecraft.world.item.context.UseOnContext context) {
+        Level level = context.getLevel();
+        if (level.getBlockState(context.getClickedPos()).is(ModBlocks.KILN_HEART)
+                && level instanceof ServerLevel serverLevel) {
+            serverLevel.setBlockAndUpdate(context.getClickedPos(),
+                    net.minecraft.world.level.block.Blocks.MAGMA_BLOCK.defaultBlockState());
+            com.gildedseam.infection.RiveningCascade.start(serverLevel, context.getClickedPos());
+            if (context.getPlayer() != null) {
+                context.getPlayer().getCooldowns().addCooldown(context.getItemInHand(), 600);
+            }
+            return InteractionResult.SUCCESS;
+        }
+        return super.useOn(context);
+    }
+
+    @Override
     public InteractionResult use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (!(level instanceof ServerLevel serverLevel)) {

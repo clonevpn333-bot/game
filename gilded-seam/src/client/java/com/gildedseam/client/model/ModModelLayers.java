@@ -16,6 +16,15 @@ public final class ModModelLayers {
     public static final ModelLayerLocation RELIQUARY_COLOSSUS = layer("reliquary_colossus");
     public static final ModelLayerLocation PORCELAIN_AUTARCH = layer("porcelain_autarch");
     public static final ModelLayerLocation SALT_SWORN = layer("salt_sworn");
+    public static final ModelLayerLocation GILDED_COW = layer("gilded_cow");
+    public static final ModelLayerLocation GILDED_PIG = layer("gilded_pig");
+    public static final ModelLayerLocation GILDED_SHEEP = layer("gilded_sheep");
+    public static final ModelLayerLocation GILDED_CHICKEN = layer("gilded_chicken");
+    public static final ModelLayerLocation GILDED_SPIDER = layer("gilded_spider");
+    public static final ModelLayerLocation GILDED_CASK = layer("gilded_cask");
+    public static final ModelLayerLocation REFUGEE = layer("refugee");
+    public static final ModelLayerLocation GILT_MAD = layer("gilt_mad");
+    public static final ModelLayerLocation HALF_SEWN = layer("half_sewn");
 
     private ModModelLayers() {
     }

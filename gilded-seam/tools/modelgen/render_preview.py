@@ -139,7 +139,20 @@ def render_model(model, texture, tier, size=280, yaw=math.radians(-33), pitch=ma
     light = tuple(v / ll for v in light)
 
     for part in model.parts:
-        if vis.get(part.name, 0) > tier:
+        min_tier = vis.get(part.name)
+        if min_tier is None:
+            root_name = part.name.split("/")[-1]
+            min_tier = 1 if root_name.startswith("mut1_") else 2 if root_name.startswith("mut2_") else 0
+            # Children of hidden mutation parts hide with their parent.
+            parents = model.part_map()
+            node = part
+            while node is not None:
+                if node.name.startswith("mut1_"):
+                    min_tier = max(min_tier, 1)
+                if node.name.startswith("mut2_"):
+                    min_tier = max(min_tier, 2)
+                node = parents.get(node.parent)
+        if min_tier > tier:
             continue
         tf = transform_chain(model, part, pose)
         for box in part.boxes:
@@ -353,6 +366,15 @@ def main():
     sheet([by_name[n] for n in ("manifold", "reliquary_colossus")],
           os.path.join(out_dir, "bestiary_stage3.png"),
           "STAGE III - LUSTRE (the abstracts: always fully mutated)")
+    sheet([by_name[n] for n in ("gilded_cow", "gilded_pig", "gilded_sheep")],
+          os.path.join(out_dir, "bestiary_livestock1.png"),
+          "THE GILDED FARMYARD I - every normal mob, kept in its own shape")
+    sheet([by_name[n] for n in ("gilded_chicken", "gilded_spider", "gilded_cask")],
+          os.path.join(out_dir, "bestiary_livestock2.png"),
+          "THE GILDED FARMYARD II - chicken / spider / creeper, refired")
+    sheet([by_name[n] for n in ("half_sewn", "refugee", "gilt_mad")],
+          os.path.join(out_dir, "bestiary_people.png"),
+          "THE PEOPLE - infected, scared, and gilt-mad")
     sheet([by_name[n] for n in ("porcelain_autarch", "salt_sworn")],
           os.path.join(out_dir, "bestiary_kingdom.png"),
           "THE KINGDOM - the Overlord King, and the help you can hire", tile=340)

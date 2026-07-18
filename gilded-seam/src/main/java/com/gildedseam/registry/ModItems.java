@@ -72,6 +72,7 @@ public final class ModItems {
     public static final Item PORCELAIN_BLOOM_ITEM = registerBlockItem("porcelain_bloom", ModBlocks.PORCELAIN_BLOOM);
     public static final Item KILN_HEART_ITEM = registerBlockItem("kiln_heart", ModBlocks.KILN_HEART);
     public static final Item FIRED_SHELL_ITEM = registerBlockItem("fired_shell", ModBlocks.FIRED_SHELL);
+    public static final Item GILT_MASS_ITEM = registerBlockItem("gilt_mass", ModBlocks.GILT_MASS);
 
     private ModItems() {
     }

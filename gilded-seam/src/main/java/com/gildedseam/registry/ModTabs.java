@@ -32,6 +32,7 @@ public final class ModTabs {
             entries.accept(ModItems.PORCELAIN_BLOOM_ITEM);
             entries.accept(ModItems.KILN_HEART_ITEM);
             entries.accept(ModItems.FIRED_SHELL_ITEM);
+            entries.accept(ModItems.GILT_MASS_ITEM);
         });
 
         CreativeModeTabEvents.modifyEntriesEvent(CreativeModeTabs.SPAWN_EGGS).register(entries -> {
@@ -46,6 +47,15 @@ public final class ModTabs {
             entries.accept(ModEntities.RELIQUARY_COLOSSUS_SPAWN_EGG);
             entries.accept(ModEntities.PORCELAIN_AUTARCH_SPAWN_EGG);
             entries.accept(ModEntities.SALT_SWORN_SPAWN_EGG);
+            entries.accept(ModEntities.GILDED_COW_SPAWN_EGG);
+            entries.accept(ModEntities.GILDED_PIG_SPAWN_EGG);
+            entries.accept(ModEntities.GILDED_SHEEP_SPAWN_EGG);
+            entries.accept(ModEntities.GILDED_CHICKEN_SPAWN_EGG);
+            entries.accept(ModEntities.GILDED_SPIDER_SPAWN_EGG);
+            entries.accept(ModEntities.GILDED_CASK_SPAWN_EGG);
+            entries.accept(ModEntities.REFUGEE_SPAWN_EGG);
+            entries.accept(ModEntities.GILT_MAD_SPAWN_EGG);
+            entries.accept(ModEntities.HALF_SEWN_SPAWN_EGG);
         });
     }
 }

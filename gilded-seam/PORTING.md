@@ -25,6 +25,9 @@ and 26.2. Checklist for the first `./gradlew build`:
 | Keyframe animations | model classes | Uses the 1.21.6+ baked pattern: `AnimationDefinition.bake(root)` → `KeyframeAnimation.apply(animState, ageInTicks)`. |
 | Advancement background | `data/gildedseam/advancement/root.json` | Uses the sprite-id form (`minecraft:gui/advancements/backgrounds/stone`). If the toast shows a missing texture, switch to the full texture path form. |
 | Loom config | `build.gradle` | `splitEnvironmentSourceSets()` + `loom.mods` retained from Loom 1.x; if Loom 1.15 renamed either, the error message at configuration time will say so. |
+| Portal ambience | `KilnHeartBlock.tryBreachNether` | Uses `SoundEvents.PORTAL_TRIGGER` and dimension lookup via `ServerLevel.getServer().getLevel(Level.NETHER)`; both stable since 1.16, but verify the Nether seed position clamp (`findNetherSeedPos`) against 26.2's dimension height constants. |
+| Advancement award | `RiveningCascade` finale | Awards `gildedseam:the_rivening` via `player.getAdvancements().award(holder, "done")` after a `ServerAdvancementManager.get(id)` lookup — method names for the manager lookup are the likeliest rename risk. |
+| Dialogue delivery | `RefugeeEntity`, `GiltMadEntity` | Uses `Player.displayClientMessage(Component, true)` for the action-bar speech lines (stable), and `ItemTags.SWORDS` for the convince-check. |
 
 Everything else — registries with `ResourceKey` + `setId`, entity types built
 via `EntityType.Builder...build(key)`, `FabricDefaultAttributeRegistry`,

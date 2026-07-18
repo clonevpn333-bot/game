@@ -52,6 +52,14 @@ public final class ModBlocks {
                     .lightLevel(state -> 7 + state.getValue(KilnHeartBlock.AGE) * 2)
                     .sound(SoundType.DECORATED_POT));
 
+    /** What the deep Seam finally sets into: dead weight, pure gilt. */
+    public static final Block GILT_MASS = register("gilt_mass", Block::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.GOLD)
+                    .strength(3.0F, 6.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.METAL));
+
     public static final Block FIRED_SHELL = register("fired_shell", Block::new,
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.QUARTZ)

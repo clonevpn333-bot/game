@@ -86,6 +86,64 @@ public class KilnHeartBlock extends Block {
         if (age == 3 && random.nextInt(4) == 0 && !SeamHelper.isMobCapped(level, pos)) {
             fireMob(level, pos, random);
         }
+
+        // The breach: gold thread follows heat. A mature heart standing near
+        // a nether portal spools itself through and seeds a heart on the
+        // other side — the portal streams gold the whole while.
+        if (age == 3 && random.nextInt(8) == 0) {
+            tryBreachNether(level, pos);
+        }
+    }
+
+    private static void tryBreachNether(ServerLevel level, BlockPos pos) {
+        if (level.dimension() != net.minecraft.world.level.Level.OVERWORLD) {
+            return;
+        }
+        BlockPos portalPos = null;
+        for (BlockPos candidate : BlockPos.betweenClosed(pos.offset(-8, -4, -8), pos.offset(8, 4, 8))) {
+            if (level.getBlockState(candidate).is(net.minecraft.world.level.block.Blocks.NETHER_PORTAL)) {
+                portalPos = candidate.immutable();
+                break;
+            }
+        }
+        if (portalPos == null) {
+            return;
+        }
+        ServerLevel nether = level.getServer().getLevel(net.minecraft.world.level.Level.NETHER);
+        if (nether == null) {
+            return;
+        }
+        BlockPos seed = findNetherSeedPos(nether, portalPos.getX() / 8, portalPos.getZ() / 8);
+        if (seed == null || SeamHelper.countSeamNear(nether, seed, 8, 4) > 0) {
+            return;
+        }
+        nether.setBlockAndUpdate(seed, ModBlocks.KILN_HEART.defaultBlockState());
+        for (net.minecraft.core.Direction dir : net.minecraft.core.Direction.Plane.HORIZONTAL) {
+            BlockPos side = seed.relative(dir);
+            if (nether.getBlockState(side).isAir()) {
+                nether.setBlockAndUpdate(side, ModBlocks.GILDED_VEIN.defaultBlockState());
+            }
+        }
+        // Both mouths of the thread announce it.
+        level.playSound(null, portalPos, SoundEvents.PORTAL_TRIGGER, SoundSource.BLOCKS, 2.0F, 0.5F);
+        level.playSound(null, portalPos, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 2.0F, 0.5F);
+        level.sendParticles(ParticleTypes.WAX_ON,
+                portalPos.getX() + 0.5, portalPos.getY() + 1.0, portalPos.getZ() + 0.5,
+                80, 0.6, 1.4, 0.6, 0.15);
+        nether.playSound(null, seed, SoundEvents.DECORATED_POT_SHATTER, SoundSource.BLOCKS, 2.0F, 0.4F);
+        nether.sendParticles(ParticleTypes.WAX_ON,
+                seed.getX() + 0.5, seed.getY() + 1.0, seed.getZ() + 0.5, 60, 1.0, 1.0, 1.0, 0.1);
+    }
+
+    private static BlockPos findNetherSeedPos(ServerLevel nether, int x, int z) {
+        for (int y = 96; y > 34; y--) {
+            BlockPos pos = new BlockPos(x, y, z);
+            if (nether.getBlockState(pos).isAir() && !nether.getBlockState(pos.below()).isAir()
+                    && nether.getBlockState(pos.below()).isSolidRender()) {
+                return pos;
+            }
+        }
+        return null;
     }
 
     private static void fireMob(ServerLevel level, BlockPos pos, RandomSource random) {

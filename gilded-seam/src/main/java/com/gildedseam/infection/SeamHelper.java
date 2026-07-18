@@ -46,6 +46,9 @@ public final class SeamHelper {
 
     /** True for blocks the Seam is willing to gild over. */
     public static boolean isGildable(BlockState state) {
+        if (state.is(Blocks.GRASS_BLOCK)) {
+            return false; // the grass, inexplicably, refuses the thread
+        }
         return state.is(BlockTags.BASE_STONE_OVERWORLD)
                 || state.is(BlockTags.DIRT)
                 || state.is(Blocks.SAND)

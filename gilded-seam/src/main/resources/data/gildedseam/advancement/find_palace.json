@@ -1,0 +1,33 @@
+{
+  "parent": "gildedseam:gilded",
+  "display": {
+    "icon": {
+      "id": "minecraft:quartz_block"
+    },
+    "title": {
+      "translate": "advancements.gildedseam.find_palace.title"
+    },
+    "description": {
+      "translate": "advancements.gildedseam.find_palace.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "entered": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": [
+          {
+            "condition": "minecraft:location_check",
+            "predicate": {
+              "structures": "gildedseam:gilded_palace"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

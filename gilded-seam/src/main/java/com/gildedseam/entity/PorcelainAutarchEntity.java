@@ -102,7 +102,8 @@ public class PorcelainAutarchEntity extends SeamMob {
                 .add(Attributes.KNOCKBACK_RESISTANCE, 1.0)
                 .add(Attributes.FOLLOW_RANGE, 80.0)
                 .add(Attributes.STEP_HEIGHT, 2.0)
-                .add(Attributes.ATTACK_KNOCKBACK, 2.5);
+                .add(Attributes.ATTACK_KNOCKBACK, 2.5)
+                .add(Attributes.SCALE, 1.75);
     }
 
     @Override

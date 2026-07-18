@@ -20,6 +20,10 @@ SEEDS = {name: i * 7919 + 42 for i, name in enumerate(
 SEEDS["porcelain_autarch"] = 991199
 SEEDS["salt_sworn"] = 445566
 
+for _i, _n in enumerate(["gilded_cow","gilded_pig","gilded_sheep","gilded_chicken",
+                          "gilded_spider","gilded_cask","refugee","gilt_mad","half_sewn"]):
+    SEEDS[_n] = 31337 + _i * 101
+
 
 def main() -> None:
     os.makedirs(TEXTURE_DIR, exist_ok=True)

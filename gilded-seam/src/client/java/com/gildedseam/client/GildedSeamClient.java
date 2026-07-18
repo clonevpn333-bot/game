@@ -57,5 +57,44 @@ public final class GildedSeamClient implements ClientModInitializer {
                 com.gildedseam.client.render.SaltSwornRenderer::new);
         EntityRendererRegistry.register(ModEntities.SALT_DART,
                 net.minecraft.client.renderer.entity.ThrownItemRenderer::new);
+
+        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_COW,
+                com.gildedseam.client.model.GildedBeastLayers::createGildedCowLayer);
+        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_PIG,
+                com.gildedseam.client.model.GildedBeastLayers::createGildedPigLayer);
+        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_SHEEP,
+                com.gildedseam.client.model.GildedBeastLayers::createGildedSheepLayer);
+        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_CHICKEN,
+                com.gildedseam.client.model.GildedBeastLayers::createGildedChickenLayer);
+        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_SPIDER,
+                com.gildedseam.client.model.GildedBeastLayers::createGildedSpiderLayer);
+        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_CASK,
+                com.gildedseam.client.model.GildedBeastLayers::createGildedCaskLayer);
+        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.REFUGEE,
+                com.gildedseam.client.model.FolkLayers::createRefugeeLayer);
+        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.GILT_MAD,
+                com.gildedseam.client.model.FolkLayers::createGiltMadLayer);
+        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.HALF_SEWN,
+                com.gildedseam.client.model.FolkLayers::createHalfSewnLayer);
+
+        registerBeast(ModEntities.GILDED_COW, ModModelLayers.GILDED_COW, "gilded_cow");
+        registerBeast(ModEntities.GILDED_PIG, ModModelLayers.GILDED_PIG, "gilded_pig");
+        registerBeast(ModEntities.GILDED_SHEEP, ModModelLayers.GILDED_SHEEP, "gilded_sheep");
+        registerBeast(ModEntities.GILDED_CHICKEN, ModModelLayers.GILDED_CHICKEN, "gilded_chicken");
+        registerBeast(ModEntities.GILDED_SPIDER, ModModelLayers.GILDED_SPIDER, "gilded_spider");
+        registerBeast(ModEntities.GILDED_CASK, ModModelLayers.GILDED_CASK, "gilded_cask");
+
+        EntityRendererRegistry.register(ModEntities.REFUGEE, context ->
+                new com.gildedseam.client.render.FolkRenderer(context, ModModelLayers.REFUGEE, "refugee", false));
+        EntityRendererRegistry.register(ModEntities.GILT_MAD, context ->
+                new com.gildedseam.client.render.FolkRenderer(context, ModModelLayers.GILT_MAD, "gilt_mad", false));
+        EntityRendererRegistry.register(ModEntities.HALF_SEWN, context ->
+                new com.gildedseam.client.render.FolkRenderer(context, ModModelLayers.HALF_SEWN, "half_sewn", true));
+    }
+
+    private static void registerBeast(net.minecraft.world.entity.EntityType<com.gildedseam.entity.GildedBeastEntity> type,
+            net.minecraft.client.model.geom.ModelLayerLocation layer, String name) {
+        EntityRendererRegistry.register(type, context ->
+                new com.gildedseam.client.render.GildedBeastRenderer(context, layer, name));
     }
 }

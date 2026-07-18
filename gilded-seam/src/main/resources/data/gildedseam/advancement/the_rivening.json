@@ -1,0 +1,23 @@
+{
+  "parent": "gildedseam:slay_the_king",
+  "display": {
+    "icon": {
+      "id": "gildedseam:rivening_heart"
+    },
+    "title": {
+      "translate": "advancements.gildedseam.the_rivening.title"
+    },
+    "description": {
+      "translate": "advancements.gildedseam.the_rivening.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}

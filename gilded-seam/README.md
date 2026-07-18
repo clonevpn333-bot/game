@@ -40,7 +40,7 @@ alone.
      heavily gilded texture — and on some species the Seam stops pretending
      anatomy matters. **Vessels grow a second pair of arms.**
 
-## The bestiary (9 all-custom creatures)
+## The bestiary (20 all-custom creatures)
 
 Every model is built from scratch (no vanilla reskins), with hand-tuned
 procedural gaits plus keyframe animations for attacks and abilities.
@@ -58,6 +58,34 @@ procedural gaits plus keyframe animations for attacks and abilities.
 | III | **Reliquary Colossus** | The boss. A six-armed praying idol found dormant in the world; step into its nave and it unfolds finger by finger (3-second awakening). Room-clearing sweeps, floor-cracking slams that shake shardlings loose, and a prayer that raises a congregation of vessels. Boss bar, projectile-resistant, drops a Kiln Heart. |
 | ∞ | **The Porcelain Autarch** | The Overlord King. A crowned idol carried on a palanquin of eight gilded legs, six arms, three counter-spinning halo rings, enthroned in the **Gilded Palace** where the cure is kept. Thread-storms that reel in every player in the nave, resonance novas, court-summoning decrees, 600 HP, red boss bar. Drops the **Rivening Heart** and his crown. |
 | — | **Salt-Sworn** | *Hireable help.* A human lamplighter-mercenary who hunts the porcelain. Pay them a gold ingot or emerald and they follow you, fight seam creatures, and cure your Gilded infection for free. Found guarding the Hollow City, or rarely on the roads. |
+
+### The Gilded Farmyard — every normal mob, kept in its own shape
+
+Scape-and-Run style: the common mobs are not melted down into generic
+shardlings any more — each one is mended into **its own infected form**, a
+fully custom model with its **own Bisque → Stoneware → Lustre mutation
+stages** (new anatomy appears at each firing, not just a palette swap).
+Fish alone are exempt — the thread will not cross water.
+
+| Original | Becomes | Mutation line |
+| --- | --- | --- |
+| Cow | **Chinaware Bull** | Split ewer jaw with a glowing seam; Stoneware grows a kiln-hump on its back; Lustre opens a porcelain bloom out of the hump. |
+| Pig | **Tithe Swine** | A lidded pot on legs with a teapot-spout snout; the lid finial swells each firing; Lustre adds a second set of legs and a gold ring. |
+| Sheep | **Thread-Fleece** | Fleece re-spun as gold thread; Stoneware bristles with darning needles; Lustre carries a full spool on its spine. |
+| Chicken | **Cloche Hen** | A teapot that pecks; Stoneware adds a second set of wing-plates; Lustre grows a **second spout-head**. |
+| Spider | **Tureen Spider** | A soup tureen on eight gold wire legs, face underneath the bowl; Lustre adds legs nine and ten. |
+| Creeper | **Crackle Cask** | A tall crazed urn in gold hoops that shatters into shardlings on death; Lustre is crowned. Leaps like the spider. |
+| Villagers / zombies / skeletons / piglins / raiders | **Vessel** | The classic mended dead — extra gilded arms at Lustre. |
+| Anything else | **Shardlings** | Whatever cannot be mended whole is broken down and re-fired as saucer-crabs. |
+
+### The people (what's left of them)
+
+| Who | What |
+| --- | --- |
+| **Refugee** | The scared ones, hiding in roadside hamlets. **Talk to them** (empty hand) and they answer — four voices of quiet dread. **Convince them** (give bread, or approach holding any sword) and they *rally*: they stop fleeing, follow you, and fight the Seam at your side. |
+| **Gilt-Mad Prophet** | The crazy ones. Half a gold mask, a hand-bell, a robe, and a sermon about how beautiful the mending is. Harmless, unsettling, slowly gilding themselves on purpose. |
+| **Half-Sewn** | The infected ones, caught mid-conversion — one side skin, one side glaze, dragging their porcelain half behind them. Hostile; they remember doors. |
+| **Salt-Sworn** | The fighters (see above) — hireable, loyal, and carrying the salt. |
 
 ## Blocks, items, and the fight back
 
@@ -90,13 +118,35 @@ procedural gaits plus keyframe animations for attacks and abilities.
   still holding their posts. (Both generate as structures across overworld
   biomes; injecting whole custom biomes cleanly needs third-party worldgen
   libraries, so ruins-in-any-biome was the honest choice.)
-- **Every mob converts.** Anything that dies Gilded is kept: humanoids rise
-  as Vessels, everything else is broken down into Shardlings.
-- **The world dies for real:** seamstone creep now strips leaves to nothing
-  and petrifies trunks into fired shell — mature outbreaks stand as dead
-  ceramic orchards on gilded ground.
+- **Refuge Hamlets** — three spruce cottages, a well and a pantry, scattered
+  randomly through the overworld: this is where the Refugees hide, usually
+  with one Salt-Sworn on watch and one Gilt-Mad Prophet nobody invited.
+- **Every mob converts** into its own infected form (see the Farmyard table);
+  fish alone are spared.
+- **The world dies for real:** seamstone creep strips leaves to nothing and
+  petrifies trunks into fired shell — and old, saturated seamstone keeps
+  rotting after that: it slumps into **Gilt Mass** (a soft gold dross you can
+  mine for nuggets) or collapses into open pits. Mature outbreaks end as
+  cratered gold wasteland. Grass alone refuses the thread — the Seam cannot
+  explain it and neither can we.
+- **The Nether breach:** if a Kiln Heart matures within reach of a nether
+  portal, the portal *fires* — a screaming trigger-flash, gold pouring
+  through the frame — and a new Kiln Heart seeds itself on the far side,
+  veins already crawling. The infection does not stay in the overworld.
 - **Outliers:** ~2% of seam creatures come out of the kiln *wrong* — glowing,
   named, 2× health, half again the damage, a third bigger, and carrying gold.
+
+## The goal — tasks, the cure, and the Rivening
+
+A main-quest advancement line walks you to the ending: **catch the Gilded →
+find the Gilded Palace → slay the Porcelain Autarch → perform the Rivening.**
+
+The Rivening Heart in your hand will purge locally, but used *on a Kiln
+Heart* it does something else entirely: the kiln goes dark, and a **Rivening
+wave** rolls out from it — an expanding ring of salt-light you can watch
+cross the horizon, unsewing every seam block back to honest stone, tearing
+seam creatures apart as it passes, bells rising pitch by pitch until the
+world-cracking finale. The cinematic ending, rendered in the world itself.
 
 ## Building
 

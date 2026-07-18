@@ -53,15 +53,50 @@ public final class SeamConversion {
             return;
         }
 
-        // The Seam keeps everything. Bodies with hands are mended into
-        // vessels; every other shape is broken down for parts.
+        // Fish alone are spared: gold sinks, and the Seam has learned not
+        // to waste thread on water.
+        if (entity instanceof net.minecraft.world.entity.animal.WaterAnimal) {
+            return;
+        }
+
+        // Every species is kept in its own shape. Bodies with hands are
+        // mended into vessels; the farmyard is refired species by species;
+        // anything without its own pattern is broken down for parts.
         if (entity instanceof AbstractVillager || entity instanceof Zombie || entity instanceof Raider
                 || entity instanceof net.minecraft.world.entity.monster.AbstractSkeleton
                 || entity instanceof net.minecraft.world.entity.monster.piglin.AbstractPiglin) {
             mendIntoVessel(level, entity);
-        } else if (entity instanceof Mob) {
-            shatterIntoShardlings(level, entity);
+        } else if (entity instanceof Mob mob) {
+            var beastType = beastFormOf(mob);
+            if (beastType != null) {
+                refireAsBeast(level, mob, beastType);
+            } else {
+                shatterIntoShardlings(level, entity);
+            }
         }
+    }
+
+    @org.jetbrains.annotations.Nullable
+    private static net.minecraft.world.entity.EntityType<com.gildedseam.entity.GildedBeastEntity> beastFormOf(Mob mob) {
+        if (mob instanceof net.minecraft.world.entity.animal.Cow) return ModEntities.GILDED_COW;
+        if (mob instanceof net.minecraft.world.entity.animal.Pig) return ModEntities.GILDED_PIG;
+        if (mob instanceof net.minecraft.world.entity.animal.sheep.Sheep) return ModEntities.GILDED_SHEEP;
+        if (mob instanceof net.minecraft.world.entity.animal.Chicken) return ModEntities.GILDED_CHICKEN;
+        if (mob instanceof net.minecraft.world.entity.monster.Spider) return ModEntities.GILDED_SPIDER;
+        if (mob instanceof net.minecraft.world.entity.monster.Creeper) return ModEntities.GILDED_CASK;
+        return null;
+    }
+
+    private static void refireAsBeast(ServerLevel level, Mob corpse,
+            net.minecraft.world.entity.EntityType<com.gildedseam.entity.GildedBeastEntity> type) {
+        com.gildedseam.entity.GildedBeastEntity beast = type.create(level, EntitySpawnReason.CONVERSION);
+        if (beast == null) {
+            return;
+        }
+        beast.snapTo(corpse.getX(), corpse.getY(), corpse.getZ(), corpse.getYRot(), 0.0F);
+        beast.setTier(SeamHelper.rollTier(level, corpse.blockPosition(), level.random));
+        level.addFreshEntity(beast);
+        playMendingEffects(level, corpse.blockPosition());
     }
 
     private static void mendIntoVessel(ServerLevel level, LivingEntity corpse) {

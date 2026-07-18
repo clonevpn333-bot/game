@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "gildedseam:item/half_sewn_spawn_egg"
+  }
+}
