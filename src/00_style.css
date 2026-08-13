@@ -1,0 +1,26 @@
+/* 00_style.css — owner: 95_ui.js agent (UI). Core/base rules here; UI agent owns the rest. */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%; height: 100%; overflow: hidden; background: #05070a;
+  color: #cfe6ee;
+  font-family: "Helvetica Neue", "Inter", "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  cursor: none;
+  user-select: none; -webkit-user-select: none;
+  overscroll-behavior: none;
+}
+#gl { position: fixed; inset: 0; display: block; width: 100%; height: 100%; }
+#ui { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+#ui .clickable { pointer-events: auto; cursor: none; }
+#boot {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 18px; background: #05070a;
+  transition: opacity .8s ease; letter-spacing: .32em; font-size: 12px; color: #4d7f8c;
+}
+#boot.gone { opacity: 0; pointer-events: none; }
+#bootbar { width: 240px; height: 2px; background: #12222a; overflow: hidden; }
+#bootbar i { display: block; height: 100%; width: 0%; background: #00e5ff; box-shadow: 0 0 12px #00e5ff; transition: width .3s ease; }
+#fatal {
+  position: fixed; inset: 0; z-index: 200; display: none; padding: 40px; background: #07080b;
+  color: #ff5c7a; font: 12px/1.6 monospace; white-space: pre-wrap; overflow: auto;
+}
