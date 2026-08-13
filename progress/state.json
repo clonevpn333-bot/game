@@ -1,0 +1,124 @@
+{
+  "title": "VOLTHAVEN",
+  "updated": "2026-08-13 17:33 UTC",
+  "wave": 1,
+  "note": "Wave 1 builders running in parallel. Critics spawn as pieces land.",
+  "blockers": [
+    "GitHub repo creation returned 403 (the app has no repo-creation scope) — work is pushed to the designated branch of the existing repo instead.",
+    "cdnjs is blocked by this sandbox's egress policy. The shipped HTML still loads three.js r128 from cdnjs; the local capture harness serves a byte-identical copy so screenshots work.",
+    "Real Cyberpunk 2077 screenshots cannot be fetched (egress). Blind A/B is run against each critic's own reference knowledge of the game, with the frame described before judgement to keep it honest."
+  ],
+  "pieces": [
+    {
+      "id": "core",
+      "name": "Render core & post FX",
+      "file": "10_core.js",
+      "axis": "LOOKS",
+      "status": "building",
+      "rounds": 0,
+      "verdict": null,
+      "gap": null,
+      "shots": []
+    },
+    {
+      "id": "mat",
+      "name": "Procedural materials",
+      "file": "20_materials.js",
+      "axis": "LOOKS",
+      "status": "building",
+      "rounds": 0,
+      "verdict": null,
+      "gap": null,
+      "shots": []
+    },
+    {
+      "id": "world",
+      "name": "City generation",
+      "file": "30_world.js",
+      "axis": "LOOKS",
+      "status": "building",
+      "rounds": 0,
+      "verdict": null,
+      "gap": null,
+      "shots": []
+    },
+    {
+      "id": "chars",
+      "name": "Characters & animation",
+      "file": "40_chars.js",
+      "axis": "LOOKS/FEELS",
+      "status": "building",
+      "rounds": 0,
+      "verdict": null,
+      "gap": null,
+      "shots": []
+    },
+    {
+      "id": "combat",
+      "name": "Combat & trackpad control",
+      "file": "50_combat.js",
+      "axis": "FEELS",
+      "status": "building",
+      "rounds": 0,
+      "verdict": null,
+      "gap": null,
+      "shots": []
+    },
+    {
+      "id": "ai",
+      "name": "Enemy AI & legibility",
+      "file": "60_ai.js",
+      "axis": "FEELS",
+      "status": "building",
+      "rounds": 0,
+      "verdict": null,
+      "gap": null,
+      "shots": []
+    },
+    {
+      "id": "story",
+      "name": "Campaign & dialogue",
+      "file": "70_story.js",
+      "axis": "READS",
+      "status": "building",
+      "rounds": 0,
+      "verdict": null,
+      "gap": null,
+      "shots": []
+    },
+    {
+      "id": "missions",
+      "name": "Mission runtime",
+      "file": "80_missions.js",
+      "axis": "READS/FEELS",
+      "status": "building",
+      "rounds": 0,
+      "verdict": null,
+      "gap": null,
+      "shots": []
+    },
+    {
+      "id": "audio",
+      "name": "Procedural audio",
+      "file": "90_audio.js",
+      "axis": "FEELS",
+      "status": "building",
+      "rounds": 0,
+      "verdict": null,
+      "gap": null,
+      "shots": []
+    },
+    {
+      "id": "ui",
+      "name": "UI, HUD & reticle",
+      "file": "95_ui.js",
+      "axis": "LOOKS/FEELS",
+      "status": "building",
+      "rounds": 0,
+      "verdict": null,
+      "gap": null,
+      "shots": []
+    }
+  ],
+  "log": []
+}

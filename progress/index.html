@@ -1,0 +1,211 @@
+<title>Volthaven Build Board</title>
+<style>
+:root{
+  --bg:#080b0e; --panel:#0d1216; --line:#1b262d; --ink:#cfe0e8; --dim:#728694;
+  --cyan:#00e5ff; --amber:#ffb340; --mag:#ff2d6f; --green:#7cff5a;
+}
+/* Deliberately single-theme: this is a console for a game set at night in a wet city.
+   Every colour is painted explicitly so it holds on either host ground. */
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.6 ui-sans-serif,-apple-system,"Segoe UI",system-ui,sans-serif;
+  padding:22px 18px 80px;max-width:1080px;margin-inline:auto;-webkit-text-size-adjust:100%;
+  font-variant-numeric:tabular-nums}
+h1{font-size:clamp(26px,7vw,42px);letter-spacing:.16em;margin:0 0 2px;font-weight:600}
+.sub{color:var(--dim);font-size:13px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.meta{color:var(--dim);font-size:12.5px;margin-bottom:20px}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 22px}
+.legend span{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);
+  border:1px solid var(--line);border-radius:99px;padding:3px 10px}
+.legend i{display:inline-block;width:7px;height:7px;border-radius:99px;background:var(--c);margin-right:6px;vertical-align:middle}
+.note{background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--amber);
+  padding:12px 14px;border-radius:5px;font-size:13.5px;margin-bottom:16px}
+.blockers{background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--mag);
+  padding:12px 14px 12px 30px;border-radius:5px;font-size:13px;color:var(--dim);margin-bottom:26px}
+.blockers li{margin:5px 0}
+.piece{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:15px 16px;margin-bottom:14px}
+.piece header{display:flex;flex-wrap:wrap;align-items:center;gap:9px}
+.piece h2{font-size:16px;margin:0;font-weight:600;letter-spacing:.01em}
+.dot{width:8px;height:8px;border-radius:99px;background:var(--c);box-shadow:0 0 9px var(--c);flex:none}
+code{font:11.5px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--dim);
+  border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+.axis{font-size:10.5px;letter-spacing:.12em;color:var(--cyan);border:1px solid var(--line);border-radius:99px;padding:2px 8px}
+.status{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-left:auto}
+.rounds{font-size:11px;color:var(--dim)}
+.verdict{margin:11px 0 0;font-size:13.5px}
+.verdict.pass b{color:var(--green)} .verdict.fail b{color:var(--mag)}
+.gap{margin:7px 0 0;font-size:13.5px;color:var(--ink)}
+.gap span{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:2px}
+.hist{margin:10px 0 0;padding-left:16px;font-size:12.5px;color:var(--dim)}
+.hist b{color:var(--ink);font-weight:600}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:11px;margin-top:13px}
+.shot{margin:0;border:1px solid var(--line);border-radius:5px;overflow:hidden;background:#000}
+.shot img{display:block;width:100%;height:auto}
+.shot .missing{padding:34px 10px;text-align:center;color:var(--dim);font-size:12px}
+figcaption{padding:7px 9px;font-size:11.5px;background:var(--panel);color:var(--dim)}
+figcaption b{color:var(--ink);font-weight:600;display:block}
+figcaption .when{display:block;font-size:10.5px;opacity:.75}
+figcaption .note{display:block;background:none;border:0;padding:4px 0 0;font-size:11.5px;color:var(--dim)}
+.log{margin-top:34px}
+.log h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+.log ol{list-style:none;padding:0;margin:0;border-left:1px solid var(--line)}
+.log li{padding:7px 0 7px 15px;position:relative;font-size:13px}
+.log li::before{content:"";position:absolute;left:-3.5px;top:15px;width:6px;height:6px;border-radius:99px;background:var(--line)}
+.log .t{color:var(--dim);font-size:11px;margin-right:8px;font-family:ui-monospace,monospace}
+.log .who{color:var(--cyan);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;margin-right:7px}
+</style>
+
+<div class="sub">build progress</div>
+<h1>VOLTHAVEN</h1>
+<div class="meta">Wave 1 · updated 2026-08-13 17:33 UTC</div>
+
+<div class="note">Wave 1 builders running in parallel. Critics spawn as pieces land.</div>
+
+<div class="legend">
+  <span><i style="--c:#ffb340"></i>building</span><span><i style="--c:#7cbcff"></i>critiquing</span><span><i style="--c:#ff2d6f"></i>rejected</span><span><i style="--c:#7cff5a"></i>passed</span><span><i style="--c:#c98bff"></i>integrating</span><span><i style="--c:#ff2d6f"></i>blocked</span>
+</div>
+
+<section class="piece" id="p-core">
+  <header>
+    <span class="dot" style="--c:#ffb340"></span>
+    <h2>Render core &amp; post FX</h2>
+    <code>10_core.js</code>
+    <span class="axis">LOOKS</span>
+    <span class="status" style="--c:#ffb340">building</span>
+    <span class="rounds"></span>
+  </header>
+  
+  
+  
+  
+</section>
+<section class="piece" id="p-mat">
+  <header>
+    <span class="dot" style="--c:#ffb340"></span>
+    <h2>Procedural materials</h2>
+    <code>20_materials.js</code>
+    <span class="axis">LOOKS</span>
+    <span class="status" style="--c:#ffb340">building</span>
+    <span class="rounds"></span>
+  </header>
+  
+  
+  
+  
+</section>
+<section class="piece" id="p-world">
+  <header>
+    <span class="dot" style="--c:#ffb340"></span>
+    <h2>City generation</h2>
+    <code>30_world.js</code>
+    <span class="axis">LOOKS</span>
+    <span class="status" style="--c:#ffb340">building</span>
+    <span class="rounds"></span>
+  </header>
+  
+  
+  
+  
+</section>
+<section class="piece" id="p-chars">
+  <header>
+    <span class="dot" style="--c:#ffb340"></span>
+    <h2>Characters &amp; animation</h2>
+    <code>40_chars.js</code>
+    <span class="axis">LOOKS/FEELS</span>
+    <span class="status" style="--c:#ffb340">building</span>
+    <span class="rounds"></span>
+  </header>
+  
+  
+  
+  
+</section>
+<section class="piece" id="p-combat">
+  <header>
+    <span class="dot" style="--c:#ffb340"></span>
+    <h2>Combat &amp; trackpad control</h2>
+    <code>50_combat.js</code>
+    <span class="axis">FEELS</span>
+    <span class="status" style="--c:#ffb340">building</span>
+    <span class="rounds"></span>
+  </header>
+  
+  
+  
+  
+</section>
+<section class="piece" id="p-ai">
+  <header>
+    <span class="dot" style="--c:#ffb340"></span>
+    <h2>Enemy AI &amp; legibility</h2>
+    <code>60_ai.js</code>
+    <span class="axis">FEELS</span>
+    <span class="status" style="--c:#ffb340">building</span>
+    <span class="rounds"></span>
+  </header>
+  
+  
+  
+  
+</section>
+<section class="piece" id="p-story">
+  <header>
+    <span class="dot" style="--c:#ffb340"></span>
+    <h2>Campaign &amp; dialogue</h2>
+    <code>70_story.js</code>
+    <span class="axis">READS</span>
+    <span class="status" style="--c:#ffb340">building</span>
+    <span class="rounds"></span>
+  </header>
+  
+  
+  
+  
+</section>
+<section class="piece" id="p-missions">
+  <header>
+    <span class="dot" style="--c:#ffb340"></span>
+    <h2>Mission runtime</h2>
+    <code>80_missions.js</code>
+    <span class="axis">READS/FEELS</span>
+    <span class="status" style="--c:#ffb340">building</span>
+    <span class="rounds"></span>
+  </header>
+  
+  
+  
+  
+</section>
+<section class="piece" id="p-audio">
+  <header>
+    <span class="dot" style="--c:#ffb340"></span>
+    <h2>Procedural audio</h2>
+    <code>90_audio.js</code>
+    <span class="axis">FEELS</span>
+    <span class="status" style="--c:#ffb340">building</span>
+    <span class="rounds"></span>
+  </header>
+  
+  
+  
+  
+</section>
+<section class="piece" id="p-ui">
+  <header>
+    <span class="dot" style="--c:#ffb340"></span>
+    <h2>UI, HUD &amp; reticle</h2>
+    <code>95_ui.js</code>
+    <span class="axis">LOOKS/FEELS</span>
+    <span class="status" style="--c:#ffb340">building</span>
+    <span class="rounds"></span>
+  </header>
+  
+  
+  
+  
+</section>
+
+<ul class="blockers"><li>GitHub repo creation returned 403 (the app has no repo-creation scope) — work is pushed to the designated branch of the existing repo instead.</li><li>cdnjs is blocked by this sandbox's egress policy. The shipped HTML still loads three.js r128 from cdnjs; the local capture harness serves a byte-identical copy so screenshots work.</li><li>Real Cyberpunk 2077 screenshots cannot be fetched (egress). Blind A/B is run against each critic's own reference knowledge of the game, with the frame described before judgement to keep it honest.</li></ul>
+
+
