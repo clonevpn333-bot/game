@@ -1,12 +1,13 @@
 {
   "title": "VOLTHAVEN",
-  "updated": "2026-08-13 17:33 UTC",
+  "updated": "2026-08-15 20:55 UTC",
   "wave": 1,
-  "note": "Wave 1 builders running in parallel. Critics spawn as pieces land.",
+  "note": "Wave 1 was killed mid-flight by an account session limit — all ten builders terminated before finishing. Three had written real code by then. Everything else is still a stub. Revised plan: sequential builds, 2-3 agents at a time, not ten.",
   "blockers": [
-    "GitHub repo creation returned 403 (the app has no repo-creation scope) — work is pushed to the designated branch of the existing repo instead.",
-    "cdnjs is blocked by this sandbox's egress policy. The shipped HTML still loads three.js r128 from cdnjs; the local capture harness serves a byte-identical copy so screenshots work.",
-    "Real Cyberpunk 2077 screenshots cannot be fetched (egress). Blind A/B is run against each critic's own reference knowledge of the game, with the frame described before judgement to keep it honest."
+    "HARD BLOCKER: the ten parallel builders exhausted the account session limit within minutes and all ten were terminated by the API. Limit resets 21:40 UTC. Fan-out width is the cause — the retry runs 2-3 agents at a time.",
+    "GitHub repo creation returned 403 (this app has no repo-creation scope). Work is pushed to claude/cyberpunk-threejs-game-aytbja on clonevpn333-bot/game.",
+    "cdnjs is blocked by sandbox egress policy. Shipped HTML still loads three.js r128 from cdnjs; the capture harness serves a byte-identical copy locally.",
+    "Real Cyberpunk 2077 screenshots cannot be fetched (egress). Blind A/B would run against each critic reference knowledge — no critic has run yet."
   ],
   "pieces": [
     {
@@ -14,21 +15,28 @@
       "name": "Render core & post FX",
       "file": "10_core.js",
       "axis": "LOOKS",
-      "status": "building",
-      "rounds": 0,
-      "verdict": null,
-      "gap": null,
-      "shots": []
+      "status": "rejected",
+      "rounds": 1,
+      "verdict": "Not shippable yet — self-assessed, no critic has run",
+      "gap": "The full post chain (SSAO, SSR, volumetrics, 6-mip bloom, ACES + grade, FXAA) is architected and runs at 146 draw calls with a clean console, but it was never tuned. Emissive surfaces clip to flat white with no bloom halo, and the test camera points at the sky dome instead of the street, so the frame is 70% empty navy.",
+      "shots": [
+        {
+          "src": ".shots/core_check.png",
+          "label": "Render core, coretest scene",
+          "when": "wave 1",
+          "note": "Post stack live; values untuned, camera misframed."
+        }
+      ]
     },
     {
       "id": "mat",
       "name": "Procedural materials",
       "file": "20_materials.js",
       "axis": "LOOKS",
-      "status": "building",
+      "status": "queued",
       "rounds": 0,
       "verdict": null,
-      "gap": null,
+      "gap": "Not started — builder terminated before writing any code.",
       "shots": []
     },
     {
@@ -36,10 +44,10 @@
       "name": "City generation",
       "file": "30_world.js",
       "axis": "LOOKS",
-      "status": "building",
+      "status": "queued",
       "rounds": 0,
       "verdict": null,
-      "gap": null,
+      "gap": "Not started — builder terminated before writing any code.",
       "shots": []
     },
     {
@@ -47,10 +55,10 @@
       "name": "Characters & animation",
       "file": "40_chars.js",
       "axis": "LOOKS/FEELS",
-      "status": "building",
+      "status": "queued",
       "rounds": 0,
       "verdict": null,
-      "gap": null,
+      "gap": "Not started — builder terminated before writing any code.",
       "shots": []
     },
     {
@@ -58,10 +66,10 @@
       "name": "Combat & trackpad control",
       "file": "50_combat.js",
       "axis": "FEELS",
-      "status": "building",
+      "status": "blocked",
       "rounds": 0,
       "verdict": null,
-      "gap": null,
+      "gap": "File was truncated mid-write when the agent was killed; reverted to stub to keep the build green. Weapon catalog design survived in the lost draft and is being rewritten.",
       "shots": []
     },
     {
@@ -69,10 +77,10 @@
       "name": "Enemy AI & legibility",
       "file": "60_ai.js",
       "axis": "FEELS",
-      "status": "building",
+      "status": "queued",
       "rounds": 0,
       "verdict": null,
-      "gap": null,
+      "gap": "Not started — builder terminated before writing any code.",
       "shots": []
     },
     {
@@ -81,9 +89,9 @@
       "file": "70_story.js",
       "axis": "READS",
       "status": "building",
-      "rounds": 0,
+      "rounds": 1,
       "verdict": null,
-      "gap": null,
+      "gap": "4 of 12 missions written (Acts I complete through m04). Prose quality is high — Cantor degradation is a four-stage authored ladder. Needs Acts II and III, the dialogue graph, endings, barks and codex.",
       "shots": []
     },
     {
@@ -91,10 +99,10 @@
       "name": "Mission runtime",
       "file": "80_missions.js",
       "axis": "READS/FEELS",
-      "status": "building",
+      "status": "queued",
       "rounds": 0,
       "verdict": null,
-      "gap": null,
+      "gap": "Not started — builder terminated before writing any code.",
       "shots": []
     },
     {
@@ -102,10 +110,10 @@
       "name": "Procedural audio",
       "file": "90_audio.js",
       "axis": "FEELS",
-      "status": "building",
+      "status": "queued",
       "rounds": 0,
       "verdict": null,
-      "gap": null,
+      "gap": "Not started — builder terminated before writing any code.",
       "shots": []
     },
     {
@@ -113,12 +121,28 @@
       "name": "UI, HUD & reticle",
       "file": "95_ui.js",
       "axis": "LOOKS/FEELS",
-      "status": "building",
+      "status": "queued",
       "rounds": 0,
       "verdict": null,
-      "gap": null,
+      "gap": "Not started — builder terminated before writing any code.",
       "shots": []
     }
   ],
-  "log": []
+  "log": [
+    {
+      "ts": "17:35",
+      "piece": "wave 1",
+      "detail": "Ten builders launched in parallel across ten files."
+    },
+    {
+      "ts": "17:40",
+      "piece": "API",
+      "detail": "All ten terminated: account session limit exhausted. Root cause is fan-out width, not any individual agent."
+    },
+    {
+      "ts": "20:55",
+      "piece": "triage",
+      "detail": "Salvaged 10_core.js (1537 lines, sound architecture) and 70_story.js (509 lines, 4 missions). 50_combat.js was truncated and reverted to stub."
+    }
+  ]
 }
