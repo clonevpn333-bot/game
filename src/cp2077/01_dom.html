@@ -1,0 +1,152 @@
+
+<!-- ==================== HUD ==================== -->
+<div id="hud">
+  <div id="vitals" class="hudBox">
+    <div id="hpRow"><span id="hpNum">100</span><span id="hpMax">/100</span><span id="armTag">ARM 0</span></div>
+    <div id="hpBar"><div id="hpChip"></div><div id="hpFill"></div></div>
+    <div id="armBar"><div id="armFill"></div></div>
+    <div id="stamBar"><div id="stamFill"></div></div>
+    <div id="ramWrap"></div>
+  </div>
+
+  <div id="wpn" class="hudBox">
+    <div id="wName">UNARMED</div>
+    <div id="wMode">—</div>
+    <div id="ammo">0<small>/0</small></div>
+    <div id="wBar"><div id="wFill"></div></div>
+    <div id="reloadTag"></div>
+    <div id="grenTag"></div>
+  </div>
+
+  <div id="miniWrap" class="hudBox">
+    <canvas id="mini" width="424" height="424"></canvas>
+    <div id="miniInfo"><span id="district">NIGHT CITY</span><span id="clock">12:00</span></div>
+    <div id="wanted"></div>
+  </div>
+
+  <div id="quest" class="hudBox">
+    <div id="qTitle">— CURRENT JOB —</div>
+    <div id="qName"></div>
+    <div id="qObjs"></div>
+  </div>
+
+  <div id="compass" class="hudBox"><div id="compassTrack"></div></div>
+  <div id="notes"></div>
+
+  <div id="call"><div id="callAv"><canvas id="callCv" width="270" height="112"></canvas></div>
+    <div id="callName"></div><div id="callTxt"></div></div>
+
+  <div id="scanPanel" class="panel cut-s">
+    <div class="hdr">SCAN :: TARGET DOSSIER</div>
+    <div id="scanRows" style="padding:7px 0"></div>
+  </div>
+  <div id="qhack"></div>
+  <div id="prompt"></div>
+</div>
+
+<div id="xh"><div id="xhDot"></div></div>
+<div id="hitmark">✕</div>
+<div id="scanFx"></div>
+<div id="subs"></div>
+
+<!-- ==================== DEATH ==================== -->
+<div id="death"><div id="deathT">WASTED</div><div id="deathS">flatlined in night city</div>
+  <button class="btn" id="deathBtn" style="pointer-events:auto">RELOAD LAST SAVE</button></div>
+
+<!-- ==================== BOOT ==================== -->
+<div id="boot">
+  <div id="bootLogo">CYBERPUNK<br>2077<small>G H O S T L I N E</small></div>
+  <div id="bootBarWrap"><div id="bootBar"></div></div>
+  <div id="bootMsg">INITIALISING</div>
+  <div id="bootTip"></div>
+</div>
+
+<!-- ==================== MAIN MENU ==================== -->
+<div id="mm" class="screen">
+  <div id="mmInner">
+    <div id="mmTitle">CYBERPUNK<b>2077</b></div>
+    <div id="mmSub">GHOSTLINE  //  NIGHT CITY  //  2077</div>
+    <div id="mmBtns">
+      <button class="mmBtn" data-a="new">New Game</button>
+      <button class="mmBtn" data-a="cont">Continue</button>
+      <button class="mmBtn" data-a="set">Settings</button>
+      <button class="mmBtn" data-a="cred">Credits</button>
+    </div>
+  </div>
+  <div id="mmFoot">
+    <span>WEBGL2 DEFERRED · CLUSTERED LIGHTING · CSM · SSAO · VOLUMETRICS</span>
+    <span id="mmGpu">GPU: —</span>
+  </div>
+</div>
+
+<!-- ==================== CHARACTER CREATOR ==================== -->
+<div id="cc" class="screen">
+  <div class="mHead"><div class="mTitle">CREATE MERC</div>
+    <div class="tabs" id="ccTabs">
+      <button class="tab on" data-t="path">Lifepath</button>
+      <button class="tab" data-t="body">Body</button>
+      <button class="tab" data-t="face">Face</button>
+      <button class="tab" data-t="attr">Attributes</button>
+    </div></div>
+  <div id="ccBody">
+    <div id="ccPrev"><canvas id="ccCv"></canvas></div>
+    <div id="ccSide"><div class="scroll" id="ccPanel" style="flex:1"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn gh" id="ccBack">BACK</button>
+        <button class="btn" id="ccGo" style="flex:1">ENTER NIGHT CITY</button>
+      </div></div>
+  </div>
+  <div class="mFoot"><span><b class="key">DRAG</b>ROTATE</span><span><b class="key">WHEEL</b>ZOOM</span></div>
+</div>
+
+<!-- ==================== PAUSE / INVENTORY / CHAR / JOURNAL / MAP ==================== -->
+<div id="pause" class="screen">
+  <div class="mHead"><div class="mTitle" id="pTitleTxt">INVENTORY</div>
+    <div class="tabs" id="pTabs">
+      <button class="tab on" data-t="inv">Inventory</button>
+      <button class="tab" data-t="chr">Character</button>
+      <button class="tab" data-t="cyb">Cyberware</button>
+      <button class="tab" data-t="jrn">Journal</button>
+      <button class="tab" data-t="map">Map</button>
+      <button class="tab" data-t="phn">Phone</button>
+      <button class="tab" data-t="set">Settings</button>
+    </div></div>
+  <div class="mBody" id="pBody"></div>
+  <div class="mFoot"><span><b class="key">TAB</b>CLOSE</span><span><b class="key">ESC</b>MAIN MENU</span>
+    <span id="pMoney" style="margin-left:auto;color:var(--yl)">€$ 0</span></div>
+</div>
+
+<!-- ==================== METRO ==================== -->
+<div id="metro" class="screen">
+  <div class="mHead"><div class="mTitle">NCART · NIGHT CITY AREA RAPID TRANSIT</div></div>
+  <div class="mBody">
+    <div class="col panel cut-s" style="width:min(360px,32vw)">
+      <div class="hdr">SELECT DESTINATION</div>
+      <div class="scroll" id="metroList" style="padding:9px"></div>
+    </div>
+    <div class="col panel cut-s" style="flex:1"><div class="hdr">SERVICE MAP</div>
+      <div style="flex:1;min-height:0;position:relative"><canvas id="metroMapCv"></canvas></div></div>
+  </div>
+  <div class="mFoot"><span><b class="key">ESC</b>LEAVE PLATFORM</span></div>
+</div>
+
+<!-- ==================== VENDOR ==================== -->
+<div id="shop" class="screen">
+  <div class="mHead"><div class="mTitle" id="shopName">VENDOR</div></div>
+  <div class="mBody">
+    <div class="col panel cut-s" style="flex:1"><div class="hdr" id="shopHdrA">FOR SALE</div>
+      <div class="scroll" id="shopBuy" style="padding:8px"></div></div>
+    <div class="col panel cut-s" style="width:min(330px,28vw)"><div class="hdr">DETAILS</div>
+      <div class="scroll" id="shopInfo" style="padding:13px"></div></div>
+    <div class="col panel cut-s" style="flex:1"><div class="hdr">YOUR STASH</div>
+      <div class="scroll" id="shopSell" style="padding:8px"></div></div>
+  </div>
+  <div class="mFoot"><span><b class="key">ESC</b>DONE</span>
+    <span id="shopMoney" style="margin-left:auto;color:var(--yl)">€$ 0</span></div>
+</div>
+
+<!-- ==================== DIALOGUE ==================== -->
+<div id="dlg"><div id="dlgBox">
+  <div id="dlgWho"></div><div id="dlgTxt"></div><div id="dlgOpts"></div></div></div>
+
+<div id="fade"></div>
