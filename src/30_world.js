@@ -598,7 +598,8 @@ VH.World = (function () {
     rain = makeRain(group, spec);
 
     /* ---- spawns + bounds ------------------------------------------------ */
-    world.spawns.player.set(0, 0, spec.blockLen * 0.35);
+    /* inside the first lit block, facing down the canyon — not behind it */
+    world.spawns.player.set(0, 0, -spec.blockLen * 0.45);
     world.bounds.set(
       new THREE.Vector3(-halfW - 30, 0, -totalLen - 20),
       new THREE.Vector3(halfW + 30, 80, spec.blockLen + 20)

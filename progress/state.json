@@ -1,13 +1,12 @@
 {
   "title": "VOLTHAVEN",
-  "updated": "2026-08-16 01:24 UTC",
-  "wave": 2,
-  "note": "40_chars.js written in full: 24-bone rig, procedural skinning, 18 authored clips with real anticipation/contact/recovery, locomotion blending and procedural layers. Meshes are being submitted (draw counts confirm) but do not appear on screen — active bug, triage steps written into GAUNTLET.md.",
+  "updated": "2026-08-16 02:14 UTC",
+  "wave": 3,
+  "note": "Root cause found and fixed: the PMREM environment map was turning every MeshStandardMaterial black — that single bug was the unlit road, the flat facades AND the invisible characters. Game now boots straight into a walkable, vibrant Volthaven with a third-person player.",
   "blockers": [
-    "Wave 1 fan-out (10 parallel builders) exhausted the account session limit and all ten were killed. Now building sequentially in the main session.",
-    "GitHub repo creation returned 403 (no repo-creation scope on this app). Work is on claude/cyberpunk-threejs-game-aytbja in clonevpn333-bot/game.",
-    "cdnjs blocked by egress policy; shipped HTML still targets cdnjs, capture harness serves an identical r128 locally.",
-    "No image host is reachable (only raw.githubusercontent.com), so a grader subagent cannot be handed an actual Cyberpunk 2077 screenshot. The gauntlet will run against a named reference scene the grader describes from memory before seeing our frame."
+    "GitHub repo creation returned 403 (no repo-creation scope). Work is on claude/cyberpunk-threejs-game-aytbja in clonevpn333-bot/game.",
+    "cdnjs blocked by egress; shipped HTML targets cdnjs, capture harness serves an identical r128 locally.",
+    "WebSearch/WebFetch DO work (curl does not) — reference research is available and is now used."
   ],
   "pieces": [
     {
@@ -16,9 +15,9 @@
       "file": "10_core.js",
       "axis": "LOOKS",
       "status": "building",
-      "rounds": 3,
+      "rounds": 5,
       "verdict": null,
-      "gap": "Pipeline debugged with a new pixel probe and a per-buffer viewer (?showpass=). Found and fixed: volumetric in-scatter had no scattering coefficient (fog buffer was a wall of white); bloom gain accumulated ~30x across the mip chain. Raw scene and resolve buffers are now correct and filmic. Remaining: the sky still reads too bright relative to the street, and the road is under-lit.",
+      "gap": "Post chain working end to end. Fixed this pass: PMREM env map poisoning all standard materials; volumetric in-scatter with no scattering coefficient; bloom summing ~30x across mips. Grade warmed and saturated (sat 1.42) per direction that Night City is vibrant, not dreary. Remaining: sky is an empty void, needs city glow and distant towers.",
       "shots": [
         {
           "src": ".shots/keep_scene.png",
@@ -40,9 +39,9 @@
       "file": "20_materials.js",
       "axis": "LOOKS",
       "status": "building",
-      "rounds": 1,
+      "rounds": 2,
       "verdict": null,
-      "gap": "Written: wet asphalt with puddle roughness mask, concrete with downward staining and rust bleed, panelled/rusted metal, lit-window generator, neon sign generator (tube/matrix/backlit/painted), skin, fabric, chrome, water, holo. Not yet validated in a showcase render.",
+      "gap": "Wet asphalt now visibly mirrors coloured signage. Albedos rebalanced twice — first authored far too dark to ever light. Remaining: puddle edges are soft blobs rather than shaped water.",
       "shots": []
     },
     {
@@ -51,32 +50,53 @@
       "file": "30_world.js",
       "axis": "LOOKS",
       "status": "building",
-      "rounds": 1,
+      "rounds": 3,
       "verdict": null,
-      "gap": "Seven districts parameterised; Undertide built and rendering at 213 draw calls / 16k tris. Facades use a plinth-floors-crown system with shanty additions, fire escapes, AC units, catenary cables, blade signs, steam, rain, and a distant skyline. Cover points and colliders emitted. Needs the other six districts verified and crowd/vehicles added.",
-      "shots": []
+      "gap": "Undertide vibrant and dense at ~254 draw calls: per-building wall material variety, neon shopfront strips, painted colour bands, five lamp colour temperatures, blade signs. Remaining: no crowds, no vehicles, and six districts still unrendered.",
+      "shots": [
+        {
+          "src": ".shots/keep_street3.png",
+          "label": "Undertide after vibrancy pass",
+          "when": "wave 3",
+          "note": "Colour variety, neon strips, blade signs, wet reflections."
+        }
+      ]
     },
     {
       "id": "chars",
       "name": "Characters & animation",
       "file": "40_chars.js",
       "axis": "LOOKS/FEELS",
-      "status": "rejected",
-      "rounds": 1,
-      "verdict": "Cannot grade — nothing visible to capture",
-      "gap": "Full character and animation system implemented and building clean. Draw calls 213->258 and triangles 16.1k->34.5k with 7 archetypes spawned, so the skinned meshes ARE submitted to the renderer, but none appear in frame. Skeleton rebind with identity bind matrix did not fix it. Triage order recorded in GAUNTLET.md: swap to a flat MeshBasicMaterial first to separate shading failure from geometry/placement failure.",
-      "shots": []
+      "status": "building",
+      "rounds": 4,
+      "verdict": null,
+      "gap": "Characters visible and correctly skinned. Two real bugs fixed: three r128 routes 20 bones through a float vertex texture that returns zeros on this driver (switched to CPU skinning), and the env map was blackening the materials. Remaining: animation not yet graded on a contact sheet.",
+      "shots": [
+        {
+          "src": ".shots/keep_chars.png",
+          "label": "Seven archetypes, skinned",
+          "when": "wave 3",
+          "note": "Distinct silhouettes: coat, vest, shield, sniper, brute, robe, civilian."
+        }
+      ]
     },
     {
       "id": "combat",
       "name": "Combat & trackpad control",
       "file": "50_combat.js",
       "axis": "FEELS",
-      "status": "blocked",
-      "rounds": 0,
+      "status": "building",
+      "rounds": 1,
       "verdict": null,
-      "gap": "File was truncated mid-write when the agent was killed; reverted to stub to keep the build green. Weapon catalog design survived in the lost draft and is being rewritten.",
-      "shots": []
+      "gap": "Written and playable: trackpad camera (cursor-X yaw with dead zone, no pointer lock), WASD movement with accel/decel, capsule-vs-box collision, camera collision, three weapons, hitscan with falloff and headshots, tracers, impacts, dash with i-frames, melee, Focus slow-mo. Not yet tuned for feel; no enemies to fight yet.",
+      "shots": [
+        {
+          "src": ".shots/keep_play.png",
+          "label": "Playable: Kas in Volthaven",
+          "when": "wave 3",
+          "note": "Third person, trackpad camera, walking down the Undertide."
+        }
+      ]
     },
     {
       "id": "ai",
@@ -135,6 +155,21 @@
     }
   ],
   "log": [
+    {
+      "ts": "now",
+      "piece": "chars",
+      "detail": "GPU bone-texture path returns zeros on this driver; switched to CPU skinning. Characters render."
+    },
+    {
+      "ts": "now",
+      "piece": "core",
+      "detail": "ROOT CAUSE: PMREM env map blackened every MeshStandardMaterial. One bug behind the dark road, flat buildings and invisible characters."
+    },
+    {
+      "ts": "now",
+      "piece": "combat",
+      "detail": "Player controller online — game boots into a walkable Volthaven in third person."
+    },
     {
       "ts": "21:0x",
       "piece": "world+mat",
