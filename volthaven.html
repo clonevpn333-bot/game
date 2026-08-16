@@ -359,17 +359,17 @@ VH.Core = (function () {
 
   /* art-direction knobs — live-tweakable from the console while iterating */
   const grade = {
-    exposure: 1.30,
+    exposure: 1.15,
     bloom: 0.018,
     bloomDirt: 0.10,
     streak: 0.008,
     lift: [0.004, 0.010, 0.016],
     gamma: [1.00, 1.00, 1.02],
     gain: [1.02, 0.99, 0.97],
-    shadowTint: [-0.010, 0.016, 0.040],
-    highTint: [0.045, 0.020, -0.020],
-    sat: 1.10,
-    contrast: 0.22,
+    shadowTint: [-0.014, 0.010, 0.052],
+    highTint: [0.060, 0.026, -0.016],
+    sat: 1.42,
+    contrast: 0.28,
     vignette: 0.36,
     grain: 0.032,
     ca: 0.85,
@@ -1090,8 +1090,11 @@ VH.Core = (function () {
     try {
       pmrem = new THREE.PMREMGenerator(renderer);
       const target = pmrem.fromScene(s, 0.04, 0.5, 120);
-      API.env = target.texture;
-      scene.environment = target.texture;
+      /* This PMREM texture turns every MeshStandardMaterial black on some drivers
+       * (the cubeUV sample poisons the shader output). It was the single cause of the
+       * unlit road, flat facades and invisible characters. Off unless explicitly asked. */
+      if (VH.q.env) { API.env = target.texture; scene.environment = target.texture; }
+      else { API.env = null; scene.environment = null; }
       pmrem.dispose(); pmrem = null;
     } catch (e) {
       API.env = null;
@@ -1289,6 +1292,11 @@ VH.Core = (function () {
       canvas, antialias: false, alpha: false, stencil: false, depth: true,
       powerPreference: 'high-performance', preserveDrawingBuffer: cap,
     });
+    /* Skinning: force the uniform-array bone path instead of the float bone texture.
+     * Our rigs are 20 bones, which fits uniforms comfortably, and the vertex-texture
+     * path returns zeros on some drivers (notably SwiftShader), collapsing every
+     * skinned vertex to the origin. Must be set before any skinned material compiles. */
+    renderer.capabilities.floatVertexTextures = false;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
     renderer.setSize(window.innerWidth, window.innerHeight, false);
     /* we tone map + encode ourselves in the composite pass */
@@ -1304,7 +1312,7 @@ VH.Core = (function () {
     scene.background = null;
     scene.fog = new THREE.FogExp2(0x0a141c, 0.0062);
 
-    const fill = new THREE.HemisphereLight(0x223441, 0x0a0f14, 0.55);
+    const fill = new THREE.HemisphereLight(0x2e4a5e, 0x14100e, 0.85);
     scene.add(fill);
     API.fill = fill;
 
@@ -3464,17 +3472,17 @@ VH.Chars = (function () {
    * Silhouette is the gameplay-critical property: the player must identify an
    * enemy at 25m in fog, from shape and accent colour alone. */
   const ARCH = {
-    kas:       { scale: 1.00, build: 0.95, coat: 'long',  accent: 0x00e5ff, skin: 1, cloth: '#151a1f', hair: '#171412', chrome: 0.35, hp: 100 },
-    grunt:     { scale: 0.99, build: 1.05, coat: 'vest',  accent: 0xff6a3d, skin: 0, cloth: '#26241f', hair: '#141210', chrome: 0.15, hp: 60 },
-    shield:    { scale: 1.06, build: 1.45, coat: 'bulk',  accent: 0xffb340, skin: 2, cloth: '#2a2b2e', hair: '#101010', chrome: 0.5,  hp: 180 },
-    sniper:    { scale: 1.02, build: 0.80, coat: 'long',  accent: 0x7cff5a, skin: 3, cloth: '#1c2226', hair: '#241c16', chrome: 0.25, hp: 55 },
-    brute:     { scale: 1.14, build: 1.70, coat: 'bulk',  accent: 0xff2d6f, skin: 2, cloth: '#31231f', hair: '#0e0c0b', chrome: 0.8,  hp: 260 },
-    netrunner: { scale: 0.97, build: 0.85, coat: 'robe',  accent: 0xc98bff, skin: 4, cloth: '#1b1726', hair: '#1a1a22', chrome: 0.2,  hp: 70 },
-    civ:       { scale: 0.98, build: 1.00, coat: 'none',  accent: 0x8a97a0, skin: 0, cloth: '#2c2f33', hair: '#191614', chrome: 0.05, hp: 20 },
-    sable:     { scale: 1.01, build: 0.92, coat: 'long',  accent: 0x00e5ff, skin: 4, cloth: '#0e1418', hair: '#c8ccd0', chrome: 0.45, hp: 400 },
-    bishop:    { scale: 1.08, build: 1.30, coat: 'vest',  accent: 0xff2d6f, skin: 2, cloth: '#291d1a', hair: '#0d0c0b', chrome: 0.6,  hp: 350 },
-    oye:       { scale: 1.00, build: 1.20, coat: 'none',  accent: 0xffb340, skin: 3, cloth: '#33302a', hair: '#15130f', chrome: 0.1,  hp: 100 },
-    wick:      { scale: 1.00, build: 1.02, coat: 'vest',  accent: 0xbfe4ff, skin: 1, cloth: '#1a1f24', hair: '#2a2018', chrome: 0.4,  hp: 140 },
+    kas:       { scale: 1.00, build: 0.95, coat: 'long',  accent: 0x00e5ff, skin: 1, cloth: '#333c44', hair: '#171412', chrome: 0.35, hp: 100 },
+    grunt:     { scale: 0.99, build: 1.05, coat: 'vest',  accent: 0xff6a3d, skin: 0, cloth: '#4a4639', hair: '#141210', chrome: 0.15, hp: 60 },
+    shield:    { scale: 1.06, build: 1.45, coat: 'bulk',  accent: 0xffb340, skin: 2, cloth: '#4e5157', hair: '#101010', chrome: 0.5,  hp: 180 },
+    sniper:    { scale: 1.02, build: 0.80, coat: 'long',  accent: 0x7cff5a, skin: 3, cloth: '#39434a', hair: '#241c16', chrome: 0.25, hp: 55 },
+    brute:     { scale: 1.14, build: 1.70, coat: 'bulk',  accent: 0xff2d6f, skin: 2, cloth: '#5a4038', hair: '#0e0c0b', chrome: 0.8,  hp: 260 },
+    netrunner: { scale: 0.97, build: 0.85, coat: 'robe',  accent: 0xc98bff, skin: 4, cloth: '#362e4a', hair: '#1a1a22', chrome: 0.2,  hp: 70 },
+    civ:       { scale: 0.98, build: 1.00, coat: 'none',  accent: 0x8a97a0, skin: 0, cloth: '#50555b', hair: '#191614', chrome: 0.05, hp: 20 },
+    sable:     { scale: 1.01, build: 0.92, coat: 'long',  accent: 0x00e5ff, skin: 4, cloth: '#2a343c', hair: '#c8ccd0', chrome: 0.45, hp: 400 },
+    bishop:    { scale: 1.08, build: 1.30, coat: 'vest',  accent: 0xff2d6f, skin: 2, cloth: '#4c3730', hair: '#0d0c0b', chrome: 0.6,  hp: 350 },
+    oye:       { scale: 1.00, build: 1.20, coat: 'none',  accent: 0xffb340, skin: 3, cloth: '#5c574d', hair: '#15130f', chrome: 0.1,  hp: 100 },
+    wick:      { scale: 1.00, build: 1.02, coat: 'vest',  accent: 0xbfe4ff, skin: 1, cloth: '#363f47', hair: '#2a2018', chrome: 0.4,  hp: 140 },
   };
 
   /* ------------------------------------------------------------------- clips
@@ -3666,7 +3674,7 @@ VH.Chars = (function () {
         const s2 = (s + 1) % sides;
         const A = base + r * sides + s, B = base + r * sides + s2;
         const C = base + (r + 1) * sides + s, D = base + (r + 1) * sides + s2;
-        idx.push(A, C, B, B, C, D);
+        idx.push(A, B, C, B, D, C);
       }
     }
   }
@@ -3677,10 +3685,18 @@ VH.Chars = (function () {
 
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-    g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(skinIdx, 4));
-    g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinW, 4));
     g.setIndex(idx);
     g.computeVertexNormals();
+    /* Bindings for CPU skinning: two bones per vertex. */
+    const n = verts.length / 3;
+    const bi = new Uint16Array(n * 2), bw = new Float32Array(n * 2);
+    for (let i = 0; i < n; i++) {
+      bi[i * 2] = skinIdx[i * 4]; bi[i * 2 + 1] = skinIdx[i * 4 + 1];
+      bw[i * 2] = skinW[i * 4]; bw[i * 2 + 1] = skinW[i * 4 + 1];
+    }
+    g.userData.bindPos = new Float32Array(g.attributes.position.array);
+    g.userData.bindNrm = new Float32Array(g.attributes.normal.array);
+    g.userData.bi = bi; g.userData.bw = bw;
     return g;
   }
 
@@ -3775,6 +3791,14 @@ VH.Chars = (function () {
       hair: new THREE.MeshStandardMaterial({ color: new THREE.Color(spec.hair), roughness: 0.92, metalness: 0.0 }),
     };
     if (VH.Core.env) for (const k in mats) mats[k].envMap = VH.Core.env;
+    /* Decisive debug: flat unlit magenta separates a shading failure from a
+     * geometry/placement failure in one screenshot. */
+    if (VH.q.charflat) {
+      for (const k in mats) mats[k] = new THREE.MeshBasicMaterial({ color: 0xff00ff, side: THREE.DoubleSide });
+    }
+    if (VH.q.charstd) {
+      for (const k in mats) mats[k] = new THREE.MeshStandardMaterial({ color: 0xff00ff, roughness: 0.7, metalness: 0, side: THREE.DoubleSide });
+    }
     a.anim.mats = mats;
 
     const sk = buildSkeleton(a);
@@ -3783,17 +3807,20 @@ VH.Chars = (function () {
     a.anim.bones = sk.bones; a.anim.order = sk.order;
 
     const geo = buildBody(a, sk.bones, boneIndex, boneList);
-    const skeleton = new THREE.Skeleton(boneList);
-    const mesh = new THREE.SkinnedMesh(geo, mats.skin);
-    mesh.add(sk.root);
-    /* Bone inverses must be computed while the bones' world matrices are still
-     * mesh-local, and with an explicit identity bind matrix — otherwise the group
-     * transform is applied twice and the body lands nowhere near the actor. */
-    mesh.updateMatrixWorld(true);
-    mesh.bind(skeleton, new THREE.Matrix4());
+
+    /* CPU skinning. GPU skinning in three r128 routes 20 bones through a float
+     * vertex texture, which returns zeros on some drivers and collapses every
+     * vertex to the origin. At this bone count and character count, skinning on
+     * the CPU costs almost nothing and always works. */
+    group.add(sk.root);
+    group.updateMatrixWorld(true);
+    const boneInv = boneList.map(b => new THREE.Matrix4().copy(b.matrixWorld).invert());
+
+    const mesh = new THREE.Mesh(geo, mats.skin);
     mesh.frustumCulled = false;
+    mesh.matrixAutoUpdate = false;
     group.add(mesh);
-    a.anim.mesh = mesh; a.anim.skeleton = skeleton;
+    a.anim.mesh = mesh; a.anim.boneList = boneList; a.anim.boneInv = boneInv;
 
     /* Body wears clothing over the skinned torso: a second skinned copy tinted
      * as cloth, scaled slightly out, so limbs read as sleeved not bare. */
@@ -3807,11 +3834,14 @@ VH.Chars = (function () {
       const g = bare ? 0 : 0.016;
       pos.setXYZ(i, pos.getX(i) + nrm.getX(i) * g, y + nrm.getY(i) * g * 0.4, pos.getZ(i) + nrm.getZ(i) * g);
     }
-    const clothMesh = new THREE.SkinnedMesh(clothGeo, mats.coat);
-    clothMesh.updateMatrixWorld(true);
-    clothMesh.bind(skeleton, new THREE.Matrix4());
+    clothGeo.userData.bindPos = new Float32Array(clothGeo.attributes.position.array);
+    clothGeo.userData.bindNrm = new Float32Array(clothGeo.attributes.normal.array);
+    clothGeo.userData.bi = geo.userData.bi; clothGeo.userData.bw = geo.userData.bw;
+    const clothMesh = new THREE.Mesh(clothGeo, mats.coat);
     clothMesh.frustumCulled = false;
+    clothMesh.matrixAutoUpdate = false;
     group.add(clothMesh);
+    a.anim.clothMesh = clothMesh;
 
     /* head */
     const head = new THREE.Mesh(buildHead(a), mats.skin);
@@ -4019,6 +4049,50 @@ VH.Chars = (function () {
 
     /* face travel direction */
     a.group.rotation.y = U.angLerp(a.group.rotation.y, a.yaw, 1 - Math.exp(-14 * dt));
+
+    skinCPU(a);
+  }
+
+  /* --------------------------------------------------------------- CPU skinning */
+  const _sm = [];  /* scratch: one Matrix4 per bone, reused across all actors */
+  const _v = new THREE.Vector3();
+  const _gInv = new THREE.Matrix4();
+
+  function skinCPU(a) {
+    const A = a.anim;
+    if (!A.boneList) return;
+    const bones = A.boneList, inv = A.boneInv;
+    a.group.updateMatrixWorld(true);
+    _gInv.copy(a.group.matrixWorld).invert();
+    for (let i = 0; i < bones.length; i++) {
+      if (!_sm[i]) _sm[i] = new THREE.Matrix4();
+      _sm[i].multiplyMatrices(_gInv, bones[i].matrixWorld).multiply(inv[i]);
+    }
+    const meshes = A.clothMesh ? [A.mesh, A.clothMesh] : [A.mesh];
+    for (const m of meshes) {
+      const ud = m.geometry.userData;
+      if (!ud.bindPos) continue;
+      const pos = m.geometry.attributes.position, nrm = m.geometry.attributes.normal;
+      const bp = ud.bindPos, bn = ud.bindNrm, bi = ud.bi, bw = ud.bw;
+      const n = pos.count;
+      for (let i = 0; i < n; i++) {
+        const i3 = i * 3, i2 = i * 2;
+        const m0 = _sm[bi[i2]], m1 = _sm[bi[i2 + 1]];
+        const w0 = bw[i2], w1 = bw[i2 + 1];
+        const e0 = m0.elements, e1 = m1.elements;
+        const x = bp[i3], y = bp[i3 + 1], z = bp[i3 + 2];
+        pos.array[i3]     = w0 * (e0[0] * x + e0[4] * y + e0[8]  * z + e0[12]) + w1 * (e1[0] * x + e1[4] * y + e1[8]  * z + e1[12]);
+        pos.array[i3 + 1] = w0 * (e0[1] * x + e0[5] * y + e0[9]  * z + e0[13]) + w1 * (e1[1] * x + e1[5] * y + e1[9]  * z + e1[13]);
+        pos.array[i3 + 2] = w0 * (e0[2] * x + e0[6] * y + e0[10] * z + e0[14]) + w1 * (e1[2] * x + e1[6] * y + e1[10] * z + e1[14]);
+        const nx = bn[i3], ny = bn[i3 + 1], nz = bn[i3 + 2];
+        let ox = w0 * (e0[0] * nx + e0[4] * ny + e0[8]  * nz) + w1 * (e1[0] * nx + e1[4] * ny + e1[8]  * nz);
+        let oy = w0 * (e0[1] * nx + e0[5] * ny + e0[9]  * nz) + w1 * (e1[1] * nx + e1[5] * ny + e1[9]  * nz);
+        let oz = w0 * (e0[2] * nx + e0[6] * ny + e0[10] * nz) + w1 * (e1[2] * nx + e1[6] * ny + e1[10] * nz);
+        const l = Math.hypot(ox, oy, oz) || 1;
+        nrm.array[i3] = ox / l; nrm.array[i3 + 1] = oy / l; nrm.array[i3 + 2] = oz / l;
+      }
+      pos.needsUpdate = true; nrm.needsUpdate = true;
+    }
   }
 
   /* ------------------------------------------------------------------- public */

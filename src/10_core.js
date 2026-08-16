@@ -52,17 +52,17 @@ VH.Core = (function () {
 
   /* art-direction knobs — live-tweakable from the console while iterating */
   const grade = {
-    exposure: 1.30,
+    exposure: 1.15,
     bloom: 0.018,
     bloomDirt: 0.10,
     streak: 0.008,
     lift: [0.004, 0.010, 0.016],
     gamma: [1.00, 1.00, 1.02],
     gain: [1.02, 0.99, 0.97],
-    shadowTint: [-0.010, 0.016, 0.040],
-    highTint: [0.045, 0.020, -0.020],
-    sat: 1.10,
-    contrast: 0.22,
+    shadowTint: [-0.014, 0.010, 0.052],
+    highTint: [0.060, 0.026, -0.016],
+    sat: 1.42,
+    contrast: 0.28,
     vignette: 0.36,
     grain: 0.032,
     ca: 0.85,
@@ -783,8 +783,11 @@ VH.Core = (function () {
     try {
       pmrem = new THREE.PMREMGenerator(renderer);
       const target = pmrem.fromScene(s, 0.04, 0.5, 120);
-      API.env = target.texture;
-      scene.environment = target.texture;
+      /* This PMREM texture turns every MeshStandardMaterial black on some drivers
+       * (the cubeUV sample poisons the shader output). It was the single cause of the
+       * unlit road, flat facades and invisible characters. Off unless explicitly asked. */
+      if (VH.q.env) { API.env = target.texture; scene.environment = target.texture; }
+      else { API.env = null; scene.environment = null; }
       pmrem.dispose(); pmrem = null;
     } catch (e) {
       API.env = null;
@@ -982,6 +985,11 @@ VH.Core = (function () {
       canvas, antialias: false, alpha: false, stencil: false, depth: true,
       powerPreference: 'high-performance', preserveDrawingBuffer: cap,
     });
+    /* Skinning: force the uniform-array bone path instead of the float bone texture.
+     * Our rigs are 20 bones, which fits uniforms comfortably, and the vertex-texture
+     * path returns zeros on some drivers (notably SwiftShader), collapsing every
+     * skinned vertex to the origin. Must be set before any skinned material compiles. */
+    renderer.capabilities.floatVertexTextures = false;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
     renderer.setSize(window.innerWidth, window.innerHeight, false);
     /* we tone map + encode ourselves in the composite pass */
@@ -997,7 +1005,7 @@ VH.Core = (function () {
     scene.background = null;
     scene.fog = new THREE.FogExp2(0x0a141c, 0.0062);
 
-    const fill = new THREE.HemisphereLight(0x223441, 0x0a0f14, 0.55);
+    const fill = new THREE.HemisphereLight(0x2e4a5e, 0x14100e, 0.85);
     scene.add(fill);
     API.fill = fill;
 
