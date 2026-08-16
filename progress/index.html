@@ -57,9 +57,9 @@ figcaption .note{display:block;background:none;border:0;padding:4px 0 0;font-siz
 
 <div class="sub">build progress</div>
 <h1>VOLTHAVEN</h1>
-<div class="meta">Wave 2 · updated 2026-08-16 00:47 UTC</div>
+<div class="meta">Wave 2 · updated 2026-08-16 01:24 UTC</div>
 
-<div class="note">Switched to building directly rather than fanning out builders. Materials and the city generator are now written and the render pipeline is debugged end to end. The street reads as a real place in the raw scene buffer; the remaining problem is lighting balance in the post chain.</div>
+<div class="note">40_chars.js written in full: 24-bone rig, procedural skinning, 18 authored clips with real anticipation/contact/recovery, locomotion blending and procedural layers. Meshes are being submitted (draw counts confirm) but do not appear on screen — active bug, triage steps written into GAUNTLET.md.</div>
 
 <div class="legend">
   <span><i style="--c:#ffb340"></i>building</span><span><i style="--c:#7cbcff"></i>critiquing</span><span><i style="--c:#ff2d6f"></i>rejected</span><span><i style="--c:#7cff5a"></i>passed</span><span><i style="--c:#c98bff"></i>integrating</span><span><i style="--c:#ff2d6f"></i>blocked</span>
@@ -115,15 +115,15 @@ figcaption .note{display:block;background:none;border:0;padding:4px 0 0;font-siz
 </section>
 <section class="piece" id="p-chars">
   <header>
-    <span class="dot" style="--c:#5b6b76"></span>
+    <span class="dot" style="--c:#ff2d6f"></span>
     <h2>Characters &amp; animation</h2>
     <code>40_chars.js</code>
     <span class="axis">LOOKS/FEELS</span>
-    <span class="status" style="--c:#5b6b76">queued</span>
-    <span class="rounds"></span>
+    <span class="status" style="--c:#ff2d6f">rejected</span>
+    <span class="rounds">round 1</span>
   </header>
-  
-  <p class="gap"><span>largest remaining gap</span>Not started — builder terminated before writing any code.</p>
+  <p class="verdict fail"><b>Cannot grade — nothing visible to capture</b></p>
+  <p class="gap"><span>largest remaining gap</span>Full character and animation system implemented and building clean. Draw calls 213-&gt;258 and triangles 16.1k-&gt;34.5k with 7 archetypes spawned, so the skinned meshes ARE submitted to the renderer, but none appear in frame. Skeleton rebind with identity bind matrix did not fix it. Triage order recorded in GAUNTLET.md: swap to a flat MeshBasicMaterial first to separate shading failure from geometry/placement failure.</p>
   
   
 </section>

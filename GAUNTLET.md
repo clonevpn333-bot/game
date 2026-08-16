@@ -53,7 +53,27 @@ Web access from this sandbox is asymmetric and this trips people up:
 
 ## Known real gaps as of last session
 
-1. No player, no menu, no HUD, no mission runtime — `40/50/60/80/90/95` are 11-26 line stubs.
+0. **ACTIVE BUG — characters render but are invisible.** `40_chars.js` is now a full
+   implementation (24-bone rig, procedurally skinned tapered-tube body, 18 authored clips
+   with anticipation/contact/recovery, locomotion blend, upper-body one-shot masking,
+   additive hit reactions, breathing/look-at/coat-sway layers, 11 archetypes, canvas
+   portraits). It builds clean and the draw counts prove the meshes are submitted:
+   world alone = 213 calls / 16.1k tris, world + 7 archetypes = 258 calls / 34.5k tris.
+   But nothing appears in frame at `?chartest=kas&charline=1`.
+   Already tried: rebinding with `mesh.updateMatrixWorld(true)` + explicit identity
+   bind matrix (correct fix for double-applied group transforms) — no change.
+   Next things to check, in order:
+     a) Screenshot with `?showpass=scene` — is the body in the raw buffer and only lost
+        in post, or absent from the scene render too?
+     b) Log `mesh.geometry.boundingSphere` and a few skinned vertex positions; the body
+        geometry is built from bone *world* positions, so if `segmentGeometry` produced
+        degenerate or NaN verts the mesh draws nothing visible.
+     c) Swap `mats.skin` for `MeshBasicMaterial({color:0xff00ff})` to separate a shading
+        failure from a geometry/placement failure. Do this FIRST — it is one line and
+        answers the question outright.
+   Do not build combat/AI on top of this until a body is visibly on screen.
+
+1. No player, no menu, no HUD, no mission runtime — `50/60/80/90/95` are 11-26 line stubs.
 2. Volumetric in-scatter was crushed to 0.010 to stop a blowout. That killed neon bleed,
    which is the defining effect. Retune it up, don't leave it off.
 3. Road is unlit: pool cap is 8 lights and lamp spacing leaves the near street dark.

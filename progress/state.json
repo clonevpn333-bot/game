@@ -1,8 +1,8 @@
 {
   "title": "VOLTHAVEN",
-  "updated": "2026-08-16 00:47 UTC",
+  "updated": "2026-08-16 01:24 UTC",
   "wave": 2,
-  "note": "Switched to building directly rather than fanning out builders. Materials and the city generator are now written and the render pipeline is debugged end to end. The street reads as a real place in the raw scene buffer; the remaining problem is lighting balance in the post chain.",
+  "note": "40_chars.js written in full: 24-bone rig, procedural skinning, 18 authored clips with real anticipation/contact/recovery, locomotion blending and procedural layers. Meshes are being submitted (draw counts confirm) but do not appear on screen — active bug, triage steps written into GAUNTLET.md.",
   "blockers": [
     "Wave 1 fan-out (10 parallel builders) exhausted the account session limit and all ten were killed. Now building sequentially in the main session.",
     "GitHub repo creation returned 403 (no repo-creation scope on this app). Work is on claude/cyberpunk-threejs-game-aytbja in clonevpn333-bot/game.",
@@ -61,10 +61,10 @@
       "name": "Characters & animation",
       "file": "40_chars.js",
       "axis": "LOOKS/FEELS",
-      "status": "queued",
-      "rounds": 0,
-      "verdict": null,
-      "gap": "Not started — builder terminated before writing any code.",
+      "status": "rejected",
+      "rounds": 1,
+      "verdict": "Cannot grade — nothing visible to capture",
+      "gap": "Full character and animation system implemented and building clean. Draw calls 213->258 and triangles 16.1k->34.5k with 7 archetypes spawned, so the skinned meshes ARE submitted to the renderer, but none appear in frame. Skeleton rebind with identity bind matrix did not fix it. Triage order recorded in GAUNTLET.md: swap to a flat MeshBasicMaterial first to separate shading failure from geometry/placement failure.",
       "shots": []
     },
     {
