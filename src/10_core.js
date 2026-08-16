@@ -71,7 +71,7 @@ VH.Core = (function () {
     fogHeight: 0.075,
     fogBaseY: -1.0,
     fogColor: [0.055, 0.085, 0.115],
-    fogAmb: 0.11,
+    fogAmb: 0.055,
     fogScatter: 0.010,
     aoStrength: 0.85,
     ssr: 0.90,
@@ -1005,7 +1005,7 @@ VH.Core = (function () {
     scene.background = null;
     scene.fog = new THREE.FogExp2(0x0a141c, 0.0062);
 
-    const fill = new THREE.HemisphereLight(0x2e4a5e, 0x14100e, 0.85);
+    const fill = new THREE.HemisphereLight(0x243c4e, 0x110d0b, 0.30);
     scene.add(fill);
     API.fill = fill;
 

@@ -15,7 +15,7 @@ VH.World = (function () {
       streetW: 24, blockLen: 30, blocks: 5,
       hMin: 9, hMax: 26, setback: 0.18,
       wall: 'metalRust', plinth: 'concreteStain', ground: 'asphaltWet',
-      accents: [0xff2d6f, 0xffb340, 0x00e5ff],
+      accents: [0xff2d6f, 0x00e5ff, 0xffb340, 0x7cff5a, 0xc98bff, 0xff3320],
       accentBias: 0, flooded: 0.42, shanty: 0.85, awnings: 0.5,
       fogColor: [0.050, 0.075, 0.098], fogDensity: 0.013,
       signs: ['DRY DOCK 9', 'NINEFOLD', 'SALTLIGHT', 'GLASSJAW', 'TIDEWATER', 'FIRSTLIGHT LOANS'],
@@ -26,7 +26,7 @@ VH.World = (function () {
       streetW: 15, blockLen: 22, blocks: 6,
       hMin: 7, hMax: 16, setback: 0.1,
       wall: 'concrete', plinth: 'metalPanel', ground: 'asphaltWet',
-      accents: [0xffb340, 0xff2d6f, 0x7cff5a],
+      accents: [0xffb340, 0xff2d6f, 0x7cff5a, 0x00e5ff, 0xffd9a8],
       accentBias: 0, flooded: 0.0, shanty: 0.6, awnings: 1.0,
       fogColor: [0.075, 0.062, 0.045], fogDensity: 0.012,
       signs: ['HALCYON NOODLE', 'KETTLE', 'PACHINKO OSAKI', 'MERIDIAN CLINIC', 'VOLT-EX'],
@@ -37,7 +37,7 @@ VH.World = (function () {
       streetW: 34, blockLen: 44, blocks: 4,
       hMin: 16, hMax: 48, setback: 0.26,
       wall: 'concrete', plinth: 'concreteStain', ground: 'asphaltWet',
-      accents: [0xffb340, 0x00e5ff, 0xff2d6f],
+      accents: [0xffb340, 0x00e5ff, 0xff2d6f, 0xc98bff],
       accentBias: 0, flooded: 0.0, shanty: 0.15, awnings: 0.1,
       fogColor: [0.055, 0.070, 0.092], fogDensity: 0.010,
       signs: ['VOLT-EX', 'SABLE', 'CHOIR PUBLIC UTILITY', 'TIDEWATER'],
@@ -48,7 +48,7 @@ VH.World = (function () {
       streetW: 30, blockLen: 36, blocks: 4,
       hMin: 24, hMax: 60, setback: 0.3,
       wall: 'glassDark', plinth: 'concrete', ground: 'asphaltWet',
-      accents: [0x00e5ff, 0xbfe4ff, 0x00e5ff],
+      accents: [0x00e5ff, 0xbfe4ff, 0x7cff5a],
       accentBias: 0, flooded: 0.0, shanty: 0.0, awnings: 0.0,
       fogColor: [0.042, 0.062, 0.088], fogDensity: 0.009,
       signs: ['SABLE', 'ANDRADE-SABLE CONTINUITY', 'CONTINUITY'],
@@ -59,7 +59,7 @@ VH.World = (function () {
       streetW: 20, blockLen: 26, blocks: 5,
       hMin: 8, hMax: 14, setback: 0.05,
       wall: 'metalPanel', plinth: 'concrete', ground: 'concrete',
-      accents: [0x00e5ff, 0xffb340, 0xbfe4ff],
+      accents: [0x00e5ff, 0xffb340, 0xbfe4ff, 0xff2d6f],
       accentBias: 0, flooded: 0.0, shanty: 0.1, awnings: 0.2,
       fogColor: [0.048, 0.066, 0.086], fogDensity: 0.012,
       signs: ['TRANSIT', 'MAG-LINE 4', 'SABLE', 'KETTLE'],
@@ -70,7 +70,7 @@ VH.World = (function () {
       streetW: 26, blockLen: 30, blocks: 4,
       hMin: 2, hMax: 6, setback: 0.0,
       wall: 'metalRust', plinth: 'concreteStain', ground: 'concrete',
-      accents: [0xff2d6f, 0xffb340, 0x00e5ff],
+      accents: [0xff2d6f, 0x00e5ff, 0xffb340, 0x7cff5a, 0xc98bff, 0xff3320],
       accentBias: 0, flooded: 0.0, shanty: 0.4, awnings: 0.0,
       fogColor: [0.058, 0.078, 0.105], fogDensity: 0.008,
       signs: ['SALTLIGHT', 'NINEFOLD'], towers: 26, high: true,
@@ -173,14 +173,28 @@ VH.World = (function () {
   }
 
   /* ------------------------------------------------------------- building kit */
+  const WALLS = ['concrete', 'concreteStain', 'metalPanel', 'metalRust'];
   function buildFacade(batch, parent, spec, rnd, ox, oz, w, d, h, faceDir) {
-    const wallMat = spec.wall;
+    /* A block where every building shares one material reads as a backlot. */
+    const wallMat = spec.clean ? spec.wall : WALLS[Math.floor(rnd() * WALLS.length)];
     /* main mass */
     batch.add(wallMat, box(w, h, d), [ox, h / 2, oz]);
 
     /* plinth / ground floor — a different material and slightly proud of the wall */
     const plinthH = 4.2;
     batch.add(spec.plinth, box(w + 0.35, plinthH, d + 0.35), [ox, plinthH / 2, oz]);
+    /* a painted band of shopfront colour above the plinth */
+    if (rnd() < 0.7) {
+      const bandCol = spec.accents[Math.floor(rnd() * spec.accents.length)];
+      const bandMat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(bandCol).multiplyScalar(0.30), roughness: 0.7, metalness: 0.1,
+        emissive: new THREE.Color(bandCol), emissiveIntensity: 0.30,
+      });
+      const band = new THREE.Mesh(box(w + 0.5, 0.9, d + 0.5), bandMat);
+      band.position.set(ox, plinthH + 0.45, oz);
+      band.matrixAutoUpdate = false; band.updateMatrix();
+      parent.add(band);
+    }
 
     /* window bands: an emissive plane per floor, inset into the wall.
      * Rendered as one plane per face with a tiling window texture — cheap and reads well. */
@@ -266,6 +280,24 @@ VH.World = (function () {
 
     /* kerb */
     batch.add(spec.plinth, box(3.0, 0.34, spec.blockLen), [x + side * 1.5, 0.17, z]);
+
+    /* Continuous neon strip above the shopfronts. Reads at any distance, colours the
+     * wet ground, and costs one emissive quad per block side. */
+    const stripCol = spec.accents[Math.floor(rnd() * spec.accents.length)];
+    const strip = new THREE.Mesh(new THREE.PlaneGeometry(spec.blockLen, 0.16),
+      VH.Mat.neon(stripCol, 5.0));
+    strip.position.set(x + side * 4.0, 4.35, z);
+    strip.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2;
+    strip.matrixAutoUpdate = false; strip.updateMatrix();
+    parent.add(strip);
+    if (VH.Core.registerLight) {
+      for (let k = 0; k < 2; k++) {
+        VH.Core.registerLight(null, {
+          pos: new THREE.Vector3(x + side * 3.4, 4.0, z - spec.blockLen * (0.25 + k * 0.5)),
+          color: stripCol, intensity: 7.0, distance: 16, importance: 1.1, fog: true,
+        });
+      }
+    }
 
     /* bollards */
     for (let i = 0; i < 4; i++) {
@@ -494,14 +526,14 @@ VH.World = (function () {
           used += w + 1.5 + rnd() * 2.5;
 
           /* signage on the street-facing edge */
-          if (rnd() < 0.55) {
+          if (rnd() < 0.92) {
             const text = spec.signs[Math.floor(rnd() * spec.signs.length)];
             const col = spec.accents[Math.floor(rnd() * spec.accents.length)];
             const sx = side * (halfW + 4.4);
             bladeSign(group, batch, text, sx, 7 + rnd() * 7, z, side > 0 ? -Math.PI / 2 : Math.PI / 2, col, (rnd() * 1000) | 0);
           }
           /* small horizontal shop sign at street level */
-          if (rnd() < 0.7) {
+          if (rnd() < 1.0) {
             const text = spec.signs[Math.floor(rnd() * spec.signs.length)];
             const col = spec.accents[Math.floor(rnd() * spec.accents.length)];
             const s = makeSignMesh(text, { color: col, size: 0.95, seed: (rnd() * 1000) | 0, style: rnd() < 0.3 ? 'matrix' : 'tube' });
@@ -526,14 +558,16 @@ VH.World = (function () {
         const lx = side * (halfW + 1.2);
         batch.add('metalPanel', new THREE.CylinderGeometry(0.09, 0.13, 7.2, 8), [lx, 3.6, lz]);
         batch.add('metalPanel', box(2.2, 0.12, 0.14), [lx - side * 1.1, 7.15, lz]);
-        const head = new THREE.Mesh(box(0.75, 0.22, 0.42), VH.Mat.neon(0xffb340, 5.5));
+        const LAMPCOLS = [0xffb340, 0xffb340, 0xbfe4ff, 0x00e5ff, 0xff2d6f];
+        const lampCol = LAMPCOLS[Math.floor(rnd() * LAMPCOLS.length)];
+        const head = new THREE.Mesh(box(0.75, 0.22, 0.42), VH.Mat.neon(lampCol, 5.5));
         head.position.set(lx - side * 2.0, 7.0, lz);
         head.matrixAutoUpdate = false; head.updateMatrix();
         group.add(head);
         if (VH.Core.registerLight) {
           VH.Core.registerLight(null, {
             pos: new THREE.Vector3(lx - side * 2.0, 6.6, lz),
-            color: 0xffb340, intensity: 24.0, distance: 28, importance: 3.0, fog: true, fogGain: 1.0,
+            color: lampCol, intensity: 22.0, distance: 26, importance: 3.0, fog: true, fogGain: 1.0,
           });
         }
         }

@@ -169,12 +169,12 @@ VH.Mat = (function () {
     const alb = cvs(S, S);
     {
       const g = alb.getContext('2d');
-      g.fillStyle = '#282c30'; g.fillRect(0, 0, S, S);
+      g.fillStyle = '#191c1f'; g.fillRect(0, 0, S, S);
       /* aggregate: thousands of small stones */
       const r = U.rng(4242);
       for (let i = 0; i < 14000; i++) {
         const x = r() * S, y = r() * S, rad = 0.6 + r() * 2.6;
-        const v = 46 + r() * 78;
+        const v = 30 + r() * 56;
         g.fillStyle = 'rgba(' + v + ',' + (v + 2) + ',' + (v + 4) + ',' + (0.25 + r() * 0.5).toFixed(2) + ')';
         g.beginPath(); g.arc(x, y, rad, 0, 6.2832); g.fill();
       }
@@ -449,7 +449,7 @@ VH.Mat = (function () {
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
           /* most windows are dark — a fully lit building looks fake */
-          if (r() < (opts.darkChance === undefined ? 0.56 : opts.darkChance)) continue;
+          if (r() < (opts.darkChance === undefined ? 0.38 : opts.darkChance)) continue;
           const t = r();
           let col;
           if (t < 0.58) col = [255, 186, 112];       /* sodium/incandescent interior */
