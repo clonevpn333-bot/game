@@ -52,10 +52,10 @@ VH.Core = (function () {
 
   /* art-direction knobs — live-tweakable from the console while iterating */
   const grade = {
-    exposure: 1.06,
-    bloom: 0.85,
-    bloomDirt: 0.55,
-    streak: 0.35,
+    exposure: 1.30,
+    bloom: 0.018,
+    bloomDirt: 0.10,
+    streak: 0.008,
     lift: [0.004, 0.010, 0.016],
     gamma: [1.00, 1.00, 1.02],
     gain: [1.02, 0.99, 0.97],
@@ -63,15 +63,16 @@ VH.Core = (function () {
     highTint: [0.045, 0.020, -0.020],
     sat: 1.10,
     contrast: 0.22,
-    vignette: 0.42,
-    grain: 0.055,
-    ca: 1.30,
+    vignette: 0.36,
+    grain: 0.032,
+    ca: 0.85,
     rain: 0.55,
     fogDensity: 0.030,
     fogHeight: 0.075,
     fogBaseY: -1.0,
     fogColor: [0.055, 0.085, 0.115],
-    fogAmb: 0.55,
+    fogAmb: 0.11,
+    fogScatter: 0.010,
     aoStrength: 0.85,
     ssr: 0.90,
   };
@@ -371,7 +372,7 @@ VH.Core = (function () {
       DEPTH,
       'uniform mat4 uCamMat;',
       'uniform vec3 uCamPos;',
-      'uniform float uSteps, uMaxDist, uDensity, uHeight, uBaseY, uTime, uAmb, uNoise;',
+      'uniform float uSteps, uMaxDist, uDensity, uHeight, uBaseY, uTime, uAmb, uNoise, uScatter;',
       'uniform vec3 uFogCol;',
       'uniform vec3 uLPos[8];',
       'uniform vec3 uLCol[8];',
@@ -408,8 +409,9 @@ VH.Core = (function () {
       '        float att = 1.0/(1.0 + d2/(r*r));',
       '        att *= att;',
       '        float ph = hg(dot(L*inversesqrt(max(d2,0.0001)), wd), 0.45);',
-      '        sc += uLCol[l]*att*ph;',
+      '        sc += uLCol[l]*att*ph*uScatter;',
       '      }',
+      '      sc = min(sc, vec3(0.22));',
       '      float ext = dens*dt;',
       '      acc += sc*dens*dt*T;',
       '      T *= exp(-ext);',
@@ -422,9 +424,9 @@ VH.Core = (function () {
       tDepth: { value: null },
       uCamMat: { value: new THREE.Matrix4() }, uCamPos: { value: new THREE.Vector3() },
       uNear: { value: 0.1 }, uFar: { value: 1000 }, uTan: { value: 0.5 }, uAspect: { value: 1.7 },
-      uSteps: { value: 18 }, uMaxDist: { value: 190 }, uDensity: { value: 0.03 },
+      uSteps: { value: 18 }, uMaxDist: { value: 130 }, uDensity: { value: 0.03 },
       uHeight: { value: 0.075 }, uBaseY: { value: -1 }, uTime: { value: 0 },
-      uAmb: { value: 0.55 }, uNoise: { value: 1 },
+      uAmb: { value: 0.30 }, uNoise: { value: 1 }, uScatter: { value: 0.018 },
       uFogCol: { value: new THREE.Vector3(0.055, 0.085, 0.115) },
       uLPos: { value: mkVecArr(8) }, uLCol: { value: mkVecArr(8) },
       uLR: { value: new Float32Array(8) }, uLCount: { value: 0 },
@@ -476,7 +478,7 @@ VH.Core = (function () {
       '}'
     ].join('\n'), {
       tSrc: { value: null }, uTexel: { value: V2(1, 1) },
-      uThreshold: { value: 1.0 }, uKnee: { value: 0.65 }, uClamp: { value: 40 },
+      uThreshold: { value: 1.0 }, uKnee: { value: 0.65 }, uClamp: { value: 8 },
     });
 
     /* ---- bloom downsample (13 tap) --------------------------------------- */
@@ -995,6 +997,10 @@ VH.Core = (function () {
     scene.background = null;
     scene.fog = new THREE.FogExp2(0x0a141c, 0.0062);
 
+    const fill = new THREE.HemisphereLight(0x223441, 0x0a0f14, 0.55);
+    scene.add(fill);
+    API.fill = fill;
+
     camera = new THREE.PerspectiveCamera(55, window.innerWidth / Math.max(1, window.innerHeight), 0.1, 1000);
     camera.position.copy(camTarget.pos);
     scene.add(camera);
@@ -1186,6 +1192,7 @@ VH.Core = (function () {
       u.uSteps.value = Q.volSteps; u.uTime.value = time;
       u.uDensity.value = grade.fogDensity; u.uHeight.value = grade.fogHeight;
       u.uBaseY.value = grade.fogBaseY; u.uAmb.value = grade.fogAmb;
+      u.uScatter.value = grade.fogScatter;
       u.uNoise.value = Q.level >= 1 ? 1 : 0;
       u.uFogCol.value.set(grade.fogColor[0], grade.fogColor[1], grade.fogColor[2]);
       setDepthUniforms(u);
@@ -1220,7 +1227,7 @@ VH.Core = (function () {
       const u = passes.bright.uniforms;
       u.tSrc.value = rt.lit.texture;
       u.uTexel.value.set(1 / rt.lit.width, 1 / rt.lit.height);
-      u.uThreshold.value = RTType === THREE.HalfFloatType ? 0.90 : 0.55;
+      u.uThreshold.value = RTType === THREE.HalfFloatType ? 2.2 : 0.90;
       u.uKnee.value = 0.62;
       blit(passes.bright, bloomDown[0]);
 
@@ -1240,7 +1247,7 @@ VH.Core = (function () {
         uu.tPrev.value = bloomDown[i].texture;
         uu.uTexel.value.set(1 / bloomUp[i + 1].width, 1 / bloomUp[i + 1].height);
         uu.uRadius.value = 1.9;
-        uu.uMix.value = 0.82;
+        uu.uMix.value = 0.55;
         blit(passes.up, bloomUp[i]);
       }
     }
@@ -1290,8 +1297,25 @@ VH.Core = (function () {
       blit(passes.comp, rt.ldr);
     }
 
+    /* ---- 8b. buffer viewer: ?showpass=scene|lit|ao|ssr|vol|bloom|ldr ------ */
+    if (VH.q.showpass) {
+      const map = { scene: rt.scene, lit: rt.lit, ao: rt.ao, ssr: rt.ssr, vol: rt.vol, ldr: rt.ldr,
+                    bloom: (bloomUp && bloomUp[0]) ? bloomUp[0] : null };
+      const t = map[VH.q.showpass];
+      if (t) {
+        passes.copy.uniforms.tSrc.value = t.texture;
+        blit(passes.copy, null);
+        stats.calls = renderer.info.render.calls;
+        stats.tris = renderer.info.render.triangles;
+        return;
+      }
+    }
+
     /* ---- 9. FXAA to screen ----------------------------------------------- */
-    {
+    if (VH.q.nofxaa) {
+      passes.copy.uniforms.tSrc.value = rt.ldr.texture;
+      blit(passes.copy, null);
+    } else {
       const u = passes.fxaa.uniforms;
       u.tSrc.value = rt.ldr.texture;
       u.uTexel.value.set(1 / rt.ldr.width, 1 / rt.ldr.height);
@@ -1521,8 +1545,37 @@ VH.Core = (function () {
   }
 
   /* -------------------------------------------------------------------- API */
+  /* Read a pixel out of each intermediate target. Guessing at a blown-out frame from
+   * screenshots alone is guesswork; this gives the actual numbers per stage. */
+  function probe(px, py) {
+    const out = {};
+    const x = px === undefined ? (W / 2) | 0 : px | 0;
+    const y = py === undefined ? (H * 0.78) | 0 : py | 0;
+    const rd = (target, name, scale) => {
+      if (!target) { out[name] = null; return; }
+      try {
+        const isF = target.texture.type !== THREE.UnsignedByteType;
+        const b = isF ? new Float32Array(4) : new Uint8Array(4);
+        const sx = Math.min(target.width - 1, Math.max(0, (x * (scale || 1)) | 0));
+        const sy = Math.min(target.height - 1, Math.max(0, (y * (scale || 1)) | 0));
+        renderer.readRenderTargetPixels(target, sx, sy, 1, 1, b);
+        out[name] = [+b[0].toFixed(4), +b[1].toFixed(4), +b[2].toFixed(4), +b[3].toFixed(3)];
+      } catch (e) { out[name] = 'ERR ' + e.message; }
+    };
+    rd(rt.scene, 'scene');
+    rd(rt.lit, 'lit');
+    if (Q.ao) rd(rt.ao, 'ao', Q.aoScale);
+    if (Q.ssr) rd(rt.ssr, 'ssr', Q.ssrScale);
+    if (Q.vol) rd(rt.vol, 'vol', Q.volScale);
+    if (bloomUp && bloomUp[0]) rd(bloomUp[0], 'bloom');
+    rd(rt.ldr, 'ldr');
+    out.rtType = (RTType === THREE.HalfFloatType) ? 'half' : 'byte';
+    out.at = [x, y];
+    return out;
+  }
+
   const API = {
-    init, render, resize, setQuality, shake, hitstop, registerLight,
+    init, render, resize, setQuality, shake, hitstop, registerLight, probe,
     camTarget,
     scene: null, camera: null, renderer: null, env: null,
     get sky() { return skyMesh; },

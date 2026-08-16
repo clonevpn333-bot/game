@@ -45,10 +45,13 @@
     progress(0.45, 'VOLTHAVEN');
     const seed = +(VH.q.seed || 20770);
     const startMission = VH.q.mission || null;
-    const district = startMission && VH.Story.missions[startMission] ? VH.Story.missions[startMission].district : undefined;
+    let district = startMission && VH.Story.missions[startMission] ? VH.Story.missions[startMission].district : undefined;
+    if (VH.q.worldtest && VH.q.worldtest !== '1') district = VH.q.worldtest;
     step('World.build', () => {
       VH.ctx.world = VH.World.build(seed, district);
       if (VH.ctx.world && VH.ctx.world.group) VH.ctx.scene.add(VH.ctx.world.group);
+      /* materials created during world build need the env map applied too */
+      if (VH.Mat.refreshEnv) VH.Mat.refreshEnv();
     });
 
     progress(0.68, 'CHARACTERS');

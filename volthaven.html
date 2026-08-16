@@ -359,10 +359,10 @@ VH.Core = (function () {
 
   /* art-direction knobs — live-tweakable from the console while iterating */
   const grade = {
-    exposure: 1.06,
-    bloom: 0.85,
-    bloomDirt: 0.55,
-    streak: 0.35,
+    exposure: 1.30,
+    bloom: 0.018,
+    bloomDirt: 0.10,
+    streak: 0.008,
     lift: [0.004, 0.010, 0.016],
     gamma: [1.00, 1.00, 1.02],
     gain: [1.02, 0.99, 0.97],
@@ -370,15 +370,16 @@ VH.Core = (function () {
     highTint: [0.045, 0.020, -0.020],
     sat: 1.10,
     contrast: 0.22,
-    vignette: 0.42,
-    grain: 0.055,
-    ca: 1.30,
+    vignette: 0.36,
+    grain: 0.032,
+    ca: 0.85,
     rain: 0.55,
     fogDensity: 0.030,
     fogHeight: 0.075,
     fogBaseY: -1.0,
     fogColor: [0.055, 0.085, 0.115],
-    fogAmb: 0.55,
+    fogAmb: 0.11,
+    fogScatter: 0.010,
     aoStrength: 0.85,
     ssr: 0.90,
   };
@@ -678,7 +679,7 @@ VH.Core = (function () {
       DEPTH,
       'uniform mat4 uCamMat;',
       'uniform vec3 uCamPos;',
-      'uniform float uSteps, uMaxDist, uDensity, uHeight, uBaseY, uTime, uAmb, uNoise;',
+      'uniform float uSteps, uMaxDist, uDensity, uHeight, uBaseY, uTime, uAmb, uNoise, uScatter;',
       'uniform vec3 uFogCol;',
       'uniform vec3 uLPos[8];',
       'uniform vec3 uLCol[8];',
@@ -715,8 +716,9 @@ VH.Core = (function () {
       '        float att = 1.0/(1.0 + d2/(r*r));',
       '        att *= att;',
       '        float ph = hg(dot(L*inversesqrt(max(d2,0.0001)), wd), 0.45);',
-      '        sc += uLCol[l]*att*ph;',
+      '        sc += uLCol[l]*att*ph*uScatter;',
       '      }',
+      '      sc = min(sc, vec3(0.22));',
       '      float ext = dens*dt;',
       '      acc += sc*dens*dt*T;',
       '      T *= exp(-ext);',
@@ -729,9 +731,9 @@ VH.Core = (function () {
       tDepth: { value: null },
       uCamMat: { value: new THREE.Matrix4() }, uCamPos: { value: new THREE.Vector3() },
       uNear: { value: 0.1 }, uFar: { value: 1000 }, uTan: { value: 0.5 }, uAspect: { value: 1.7 },
-      uSteps: { value: 18 }, uMaxDist: { value: 190 }, uDensity: { value: 0.03 },
+      uSteps: { value: 18 }, uMaxDist: { value: 130 }, uDensity: { value: 0.03 },
       uHeight: { value: 0.075 }, uBaseY: { value: -1 }, uTime: { value: 0 },
-      uAmb: { value: 0.55 }, uNoise: { value: 1 },
+      uAmb: { value: 0.30 }, uNoise: { value: 1 }, uScatter: { value: 0.018 },
       uFogCol: { value: new THREE.Vector3(0.055, 0.085, 0.115) },
       uLPos: { value: mkVecArr(8) }, uLCol: { value: mkVecArr(8) },
       uLR: { value: new Float32Array(8) }, uLCount: { value: 0 },
@@ -783,7 +785,7 @@ VH.Core = (function () {
       '}'
     ].join('\n'), {
       tSrc: { value: null }, uTexel: { value: V2(1, 1) },
-      uThreshold: { value: 1.0 }, uKnee: { value: 0.65 }, uClamp: { value: 40 },
+      uThreshold: { value: 1.0 }, uKnee: { value: 0.65 }, uClamp: { value: 8 },
     });
 
     /* ---- bloom downsample (13 tap) --------------------------------------- */
@@ -1302,6 +1304,10 @@ VH.Core = (function () {
     scene.background = null;
     scene.fog = new THREE.FogExp2(0x0a141c, 0.0062);
 
+    const fill = new THREE.HemisphereLight(0x223441, 0x0a0f14, 0.55);
+    scene.add(fill);
+    API.fill = fill;
+
     camera = new THREE.PerspectiveCamera(55, window.innerWidth / Math.max(1, window.innerHeight), 0.1, 1000);
     camera.position.copy(camTarget.pos);
     scene.add(camera);
@@ -1493,6 +1499,7 @@ VH.Core = (function () {
       u.uSteps.value = Q.volSteps; u.uTime.value = time;
       u.uDensity.value = grade.fogDensity; u.uHeight.value = grade.fogHeight;
       u.uBaseY.value = grade.fogBaseY; u.uAmb.value = grade.fogAmb;
+      u.uScatter.value = grade.fogScatter;
       u.uNoise.value = Q.level >= 1 ? 1 : 0;
       u.uFogCol.value.set(grade.fogColor[0], grade.fogColor[1], grade.fogColor[2]);
       setDepthUniforms(u);
@@ -1527,7 +1534,7 @@ VH.Core = (function () {
       const u = passes.bright.uniforms;
       u.tSrc.value = rt.lit.texture;
       u.uTexel.value.set(1 / rt.lit.width, 1 / rt.lit.height);
-      u.uThreshold.value = RTType === THREE.HalfFloatType ? 0.90 : 0.55;
+      u.uThreshold.value = RTType === THREE.HalfFloatType ? 2.2 : 0.90;
       u.uKnee.value = 0.62;
       blit(passes.bright, bloomDown[0]);
 
@@ -1547,7 +1554,7 @@ VH.Core = (function () {
         uu.tPrev.value = bloomDown[i].texture;
         uu.uTexel.value.set(1 / bloomUp[i + 1].width, 1 / bloomUp[i + 1].height);
         uu.uRadius.value = 1.9;
-        uu.uMix.value = 0.82;
+        uu.uMix.value = 0.55;
         blit(passes.up, bloomUp[i]);
       }
     }
@@ -1597,8 +1604,25 @@ VH.Core = (function () {
       blit(passes.comp, rt.ldr);
     }
 
+    /* ---- 8b. buffer viewer: ?showpass=scene|lit|ao|ssr|vol|bloom|ldr ------ */
+    if (VH.q.showpass) {
+      const map = { scene: rt.scene, lit: rt.lit, ao: rt.ao, ssr: rt.ssr, vol: rt.vol, ldr: rt.ldr,
+                    bloom: (bloomUp && bloomUp[0]) ? bloomUp[0] : null };
+      const t = map[VH.q.showpass];
+      if (t) {
+        passes.copy.uniforms.tSrc.value = t.texture;
+        blit(passes.copy, null);
+        stats.calls = renderer.info.render.calls;
+        stats.tris = renderer.info.render.triangles;
+        return;
+      }
+    }
+
     /* ---- 9. FXAA to screen ----------------------------------------------- */
-    {
+    if (VH.q.nofxaa) {
+      passes.copy.uniforms.tSrc.value = rt.ldr.texture;
+      blit(passes.copy, null);
+    } else {
       const u = passes.fxaa.uniforms;
       u.tSrc.value = rt.ldr.texture;
       u.uTexel.value.set(1 / rt.ldr.width, 1 / rt.ldr.height);
@@ -1828,8 +1852,37 @@ VH.Core = (function () {
   }
 
   /* -------------------------------------------------------------------- API */
+  /* Read a pixel out of each intermediate target. Guessing at a blown-out frame from
+   * screenshots alone is guesswork; this gives the actual numbers per stage. */
+  function probe(px, py) {
+    const out = {};
+    const x = px === undefined ? (W / 2) | 0 : px | 0;
+    const y = py === undefined ? (H * 0.78) | 0 : py | 0;
+    const rd = (target, name, scale) => {
+      if (!target) { out[name] = null; return; }
+      try {
+        const isF = target.texture.type !== THREE.UnsignedByteType;
+        const b = isF ? new Float32Array(4) : new Uint8Array(4);
+        const sx = Math.min(target.width - 1, Math.max(0, (x * (scale || 1)) | 0));
+        const sy = Math.min(target.height - 1, Math.max(0, (y * (scale || 1)) | 0));
+        renderer.readRenderTargetPixels(target, sx, sy, 1, 1, b);
+        out[name] = [+b[0].toFixed(4), +b[1].toFixed(4), +b[2].toFixed(4), +b[3].toFixed(3)];
+      } catch (e) { out[name] = 'ERR ' + e.message; }
+    };
+    rd(rt.scene, 'scene');
+    rd(rt.lit, 'lit');
+    if (Q.ao) rd(rt.ao, 'ao', Q.aoScale);
+    if (Q.ssr) rd(rt.ssr, 'ssr', Q.ssrScale);
+    if (Q.vol) rd(rt.vol, 'vol', Q.volScale);
+    if (bloomUp && bloomUp[0]) rd(bloomUp[0], 'bloom');
+    rd(rt.ldr, 'ldr');
+    out.rtType = (RTType === THREE.HalfFloatType) ? 'half' : 'byte';
+    out.at = [x, y];
+    return out;
+  }
+
   const API = {
-    init, render, resize, setQuality, shake, hitstop, registerLight,
+    init, render, resize, setQuality, shake, hitstop, registerLight, probe,
     camTarget,
     scene: null, camera: null, renderer: null, env: null,
     get sky() { return skyMesh; },
@@ -1845,42 +1898,1505 @@ VH.Core = (function () {
 
 
 /* ==================== 20_materials.js ==================== */
-/* 20_materials.js — procedural textures & materials. OWNER: materials agent. STUB. */
+/* 20_materials.js — procedural textures & PBR materials. Everything computed at runtime.
+ * OWNER: main. Art bible: wet, dense, lived-in. Light comes from sources, never ambient wash.
+ */
 VH.Mat = (function () {
+  const U = VH.util;
   const cache = {};
-  const palette = { cyan: 0x00e5ff, magenta: 0xff2d6f, amber: 0xffb340, green: 0x7cff5a, base: 0x2a3238 };
-  function init() {}
-  function get(n) {
-    if (cache[n]) return cache[n];
-    const m = new THREE.MeshStandardMaterial({ color: 0x3a4248, roughness: 0.85, metalness: 0.1 });
-    cache[n] = m; return m;
+  const texCache = {};
+  const stdMats = [];
+  let renderer = null;
+  let aniso = 4;
+
+  /* ------------------------------------------------------------------ palette */
+  const palette = {
+    /* structure */
+    asphalt: 0x0a0c0e, concrete: 0x2b2f33, concreteDark: 0x171b1e,
+    metal: 0x32383d, rust: 0x6b3a22, glass: 0x05080b,
+    /* light sources — the only saturated things in the frame */
+    cyan: 0x00e5ff, magenta: 0xff2d6f, amber: 0xffb340,
+    green: 0x7cff5a, red: 0xff3320, warmWhite: 0xffd9a8, coldWhite: 0xbfe4ff,
+    /* faction accents */
+    sable: 0x00e5ff, ninefold: 0xff2d6f, civic: 0xffb340, medical: 0x7cff5a,
+    /* atmosphere */
+    fog: 0x0e1a22, water: 0x060d12, skyLow: 0x121c26, skyHigh: 0x04070a,
+  };
+
+  /* ------------------------------------------------------------- canvas utils */
+  function cvs(w, h) {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    return c;
   }
-  function tex() { return null; }
-  function makeSign() { return null; }
-  return { init, get, tex, makeSign, palette, noise2D: VH.util.noise2D, fbm: VH.util.fbm };
+
+  function canvasTex(w, h, draw, repeat, opts) {
+    const c = cvs(w, h);
+    const g = c.getContext('2d');
+    draw(g, w, h);
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    if (repeat) t.repeat.set(repeat[0], repeat[1]);
+    t.anisotropy = aniso;
+    if (opts && opts.srgb) t.encoding = THREE.sRGBEncoding;
+    t.needsUpdate = true;
+    t._canvas = c;
+    return t;
+  }
+
+  /* Height field -> tangent-space normal map. The single most valuable helper here:
+   * almost every surface reads as plastic until it has a normal map. */
+  function heightToNormal(srcCanvas, strength, repeat) {
+    const w = srcCanvas.width, h = srcCanvas.height;
+    const sg = srcCanvas.getContext('2d');
+    const src = sg.getImageData(0, 0, w, h).data;
+    const out = new Uint8Array(w * h * 4);
+    const s = strength === undefined ? 2.0 : strength;
+    const at = (x, y) => {
+      x = (x + w) % w; y = (y + h) % h;
+      const i = (y * w + x) * 4;
+      return (src[i] * 0.299 + src[i + 1] * 0.587 + src[i + 2] * 0.114) / 255;
+    };
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const dx = (at(x - 1, y) - at(x + 1, y)) * s;
+        const dy = (at(x, y - 1) - at(x, y + 1)) * s;
+        let nx = dx, ny = dy, nz = 1.0;
+        const l = Math.hypot(nx, ny, nz) || 1;
+        nx /= l; ny /= l; nz /= l;
+        const i = (y * w + x) * 4;
+        out[i] = (nx * 0.5 + 0.5) * 255;
+        out[i + 1] = (ny * 0.5 + 0.5) * 255;
+        out[i + 2] = (nz * 0.5 + 0.5) * 255;
+        out[i + 3] = 255;
+      }
+    }
+    const t = new THREE.DataTexture(out, w, h, THREE.RGBAFormat);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    if (repeat) t.repeat.set(repeat[0], repeat[1]);
+    t.anisotropy = aniso;
+    t.needsUpdate = true;
+    return t;
+  }
+
+  /* Pack a grayscale canvas into the green channel (roughness) / blue (metalness)
+   * of an RGB texture, matching three's aoMap/roughnessMap/metalnessMap convention. */
+  function packORM(aoC, roughC, metalC) {
+    const w = roughC.width, h = roughC.height;
+    const rd = c => c ? c.getContext('2d').getImageData(0, 0, w, h).data : null;
+    const A = rd(aoC), R = rd(roughC), M = rd(metalC);
+    const out = new Uint8Array(w * h * 4);
+    for (let i = 0; i < w * h; i++) {
+      const j = i * 4;
+      out[j] = A ? A[j] : 255;
+      out[j + 1] = R ? R[j] : 200;
+      out[j + 2] = M ? M[j] : 0;
+      out[j + 3] = 255;
+    }
+    const t = new THREE.DataTexture(out, w, h, THREE.RGBAFormat);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.anisotropy = aniso;
+    t.needsUpdate = true;
+    return t;
+  }
+
+  /* deterministic per-texture rng so builds are reproducible */
+  function noiseFill(g, w, h, amt, mono) {
+    const img = g.getImageData(0, 0, w, h), d = img.data;
+    const r = U.rng(12345);
+    for (let i = 0; i < d.length; i += 4) {
+      if (mono) { const n = (r() - 0.5) * amt; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+      else { d[i] += (r() - 0.5) * amt; d[i + 1] += (r() - 0.5) * amt; d[i + 2] += (r() - 0.5) * amt; }
+    }
+    g.putImageData(img, 0, 0);
+  }
+
+  /* fbm splotches — the workhorse for grime, wear, and puddle masks */
+  function fbmField(g, w, h, o) {
+    o = o || {};
+    const scale = o.scale || 0.02, oct = o.oct || 5;
+    const lo = o.lo === undefined ? 0 : o.lo, hi = o.hi === undefined ? 255 : o.hi;
+    const ox = o.ox || 0, oy = o.oy || 0;
+    const warp = o.warp || 0;
+    const img = g.createImageData(w, h), d = img.data;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        let sx = x * scale + ox, sy = y * scale + oy;
+        if (warp) {
+          sx += U.fbm(x * scale * 2.1, y * scale * 2.1, 3) * warp;
+          sy += U.fbm(x * scale * 2.1 + 5.3, y * scale * 2.1 + 1.7, 3) * warp;
+        }
+        let v = U.fbm(sx, sy, oct) * 0.5 + 0.5;
+        if (o.ridged) v = 1 - Math.abs(v * 2 - 1);
+        if (o.pow) v = Math.pow(v, o.pow);
+        const c = lo + v * (hi - lo);
+        const i = (y * w + x) * 4;
+        d[i] = d[i + 1] = d[i + 2] = c; d[i + 3] = 255;
+      }
+    }
+    g.putImageData(img, 0, 0);
+  }
+
+  /* vertical grime streaks running DOWN from an edge — real buildings are dirtiest
+   * under every horizontal ledge, and nothing says "real" faster than getting this right */
+  function dripStreaks(g, w, h, o) {
+    o = o || {};
+    const r = U.rng(o.seed || 99);
+    const n = o.count || 60;
+    g.save();
+    for (let i = 0; i < n; i++) {
+      const x = r() * w;
+      const top = o.fromTop ? 0 : r() * h * 0.6;
+      const len = (o.len || 0.5) * h * (0.25 + r() * 0.9);
+      const wid = 1 + r() * (o.width || 5);
+      const a = (o.alpha || 0.16) * (0.35 + r() * 0.65);
+      const grd = g.createLinearGradient(0, top, 0, top + len);
+      grd.addColorStop(0, 'rgba(' + (o.col || '10,9,7') + ',' + a.toFixed(3) + ')');
+      grd.addColorStop(0.25, 'rgba(' + (o.col || '10,9,7') + ',' + (a * 0.8).toFixed(3) + ')');
+      grd.addColorStop(1, 'rgba(' + (o.col || '10,9,7') + ',0)');
+      g.fillStyle = grd;
+      g.fillRect(x, top, wid, len);
+    }
+    g.restore();
+  }
+
+  /* ------------------------------------------------------------------ surfaces */
+
+  /* ---- WET ASPHALT: the hero surface. Aggregate + tyre polish + oil + puddles. */
+  function asphaltMaps(wet) {
+    const S = 1024;
+    /* albedo */
+    const alb = cvs(S, S);
+    {
+      const g = alb.getContext('2d');
+      g.fillStyle = '#282c30'; g.fillRect(0, 0, S, S);
+      /* aggregate: thousands of small stones */
+      const r = U.rng(4242);
+      for (let i = 0; i < 14000; i++) {
+        const x = r() * S, y = r() * S, rad = 0.6 + r() * 2.6;
+        const v = 46 + r() * 78;
+        g.fillStyle = 'rgba(' + v + ',' + (v + 2) + ',' + (v + 4) + ',' + (0.25 + r() * 0.5).toFixed(2) + ')';
+        g.beginPath(); g.arc(x, y, rad, 0, 6.2832); g.fill();
+      }
+      /* tyre polish lanes running along Z (v axis) */
+      for (const lane of [0.22, 0.5, 0.78]) {
+        const grd = g.createLinearGradient((lane - 0.09) * S, 0, (lane + 0.09) * S, 0);
+        grd.addColorStop(0, 'rgba(0,0,0,0)');
+        grd.addColorStop(0.5, 'rgba(46,50,55,0.5)');
+        grd.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = grd; g.fillRect((lane - 0.09) * S, 0, 0.18 * S, S);
+      }
+      /* patched repairs: darker rectangles with ragged edges */
+      for (let i = 0; i < 7; i++) {
+        const x = r() * S, y = r() * S, pw = 60 + r() * 200, ph = 40 + r() * 160;
+        g.fillStyle = 'rgba(30,33,36,' + (0.35 + r() * 0.4).toFixed(2) + ')';
+        g.beginPath();
+        g.moveTo(x, y);
+        for (let k = 0; k < 10; k++) {
+          const t = k / 10 * 6.2832;
+          g.lineTo(x + Math.cos(t) * pw * (0.4 + r() * 0.2), y + Math.sin(t) * ph * (0.4 + r() * 0.2));
+        }
+        g.closePath(); g.fill();
+      }
+      /* cracks */
+      g.strokeStyle = 'rgba(20,22,24,0.75)';
+      for (let i = 0; i < 26; i++) {
+        g.lineWidth = 0.6 + r() * 1.8;
+        g.beginPath();
+        let x = r() * S, y = r() * S, a = r() * 6.2832;
+        g.moveTo(x, y);
+        for (let k = 0; k < 14; k++) {
+          a += (r() - 0.5) * 1.1;
+          x += Math.cos(a) * (6 + r() * 22); y += Math.sin(a) * (6 + r() * 22);
+          g.lineTo(x, y);
+        }
+        g.stroke();
+      }
+      /* worn lane markings — broken, dirty, never bright white */
+      g.save();
+      g.globalAlpha = 0.5;
+      for (const lane of [0.36, 0.64]) {
+        for (let y = 0; y < S; y += 150) {
+          const wear = 0.25 + U.fbm(lane * 8, y * 0.01, 3) * 0.5;
+          g.fillStyle = 'rgba(150,140,118,' + wear.toFixed(2) + ')';
+          g.fillRect(lane * S - 5, y, 10, 84);
+        }
+      }
+      g.restore();
+      noiseFill(g, S, S, 14, true);
+    }
+
+    /* height (for normal): aggregate bumps + cracks, plus puddle depressions */
+    const hgt = cvs(512, 512);
+    {
+      const g = hgt.getContext('2d');
+      fbmField(g, 512, 512, { scale: 0.09, oct: 5, lo: 100, hi: 165 });
+      const r = U.rng(777);
+      for (let i = 0; i < 5000; i++) {
+        const x = r() * 512, y = r() * 512, rad = 0.6 + r() * 2.0;
+        const v = 150 + r() * 80;
+        g.fillStyle = 'rgba(' + v + ',' + v + ',' + v + ',0.5)';
+        g.beginPath(); g.arc(x, y, rad, 0, 6.2832); g.fill();
+      }
+      /* cracks are LOW */
+      g.strokeStyle = 'rgba(40,40,40,0.9)';
+      for (let i = 0; i < 22; i++) {
+        g.lineWidth = 0.8 + r() * 1.6;
+        g.beginPath();
+        let x = r() * 512, y = r() * 512, a = r() * 6.2832;
+        g.moveTo(x, y);
+        for (let k = 0; k < 12; k++) { a += (r() - 0.5) * 1.1; x += Math.cos(a) * (5 + r() * 16); y += Math.sin(a) * (5 + r() * 16); g.lineTo(x, y); }
+        g.stroke();
+      }
+    }
+
+    /* roughness: this is where wetness lives.
+     * dry asphalt ~0.82; puddles ~0.06 (near mirror). Soft edges. */
+    const rgh = cvs(512, 512);
+    {
+      const g = rgh.getContext('2d');
+      /* base variation */
+      fbmField(g, 512, 512, { scale: 0.014, oct: 4, lo: 175, hi: 225 });
+      if (wet) {
+        /* puddle mask: large low-frequency blobs, thresholded with a soft edge,
+         * biased to where the height field is low */
+        const img = g.getImageData(0, 0, 512, 512), d = img.data;
+        const hg = hgt.getContext('2d').getImageData(0, 0, 512, 512).data;
+        for (let y = 0; y < 512; y++) {
+          for (let x = 0; x < 512; x++) {
+            const i = (y * 512 + x) * 4;
+            let p = U.fbm(x * 0.0075 + 11.3, y * 0.0075 + 4.1, 4) * 0.5 + 0.5;
+            /* low ground collects water */
+            const lowness = 1 - hg[i] / 255;
+            p = p * 0.72 + lowness * 0.45;
+            const puddle = U.smoothstep(0.52, 0.68, p);
+            /* thin wet film everywhere, deep mirror in the puddles */
+            const dry = d[i] / 255;
+            const rough = U.lerp(dry * 0.72, 0.045, puddle);
+            d[i] = d[i + 1] = d[i + 2] = rough * 255;
+          }
+        }
+        g.putImageData(img, 0, 0);
+      }
+    }
+
+    /* metalness: wet asphalt gets a touch of specular lift in puddles.
+     * We fake water's fresnel by raising metalness slightly where roughness is low. */
+    const met = cvs(512, 512);
+    {
+      const g = met.getContext('2d');
+      const rd = rgh.getContext('2d').getImageData(0, 0, 512, 512).data;
+      const img = g.createImageData(512, 512), d = img.data;
+      for (let i = 0; i < 512 * 512; i++) {
+        const j = i * 4;
+        const rough = rd[j] / 255;
+        const m = wet ? U.smoothstep(0.35, 0.06, rough) * 0.42 : 0.02;
+        d[j] = d[j + 1] = d[j + 2] = m * 255; d[j + 3] = 255;
+      }
+      g.putImageData(img, 0, 0);
+    }
+
+    return { alb, hgt, rgh, met };
+  }
+
+  /* ---- CONCRETE: formwork lines, cold joints, rust bleed, downward staining */
+  function concreteMaps(dark) {
+    const S = 512;
+    const alb = cvs(S, S);
+    {
+      const g = alb.getContext('2d');
+      const base = dark ? '#2d3236' : '#454b50';
+      g.fillStyle = base; g.fillRect(0, 0, S, S);
+      /* mottling */
+      const tmp = cvs(S, S);
+      fbmField(tmp.getContext('2d'), S, S, { scale: 0.02, oct: 5, lo: 0, hi: 255 });
+      g.save(); g.globalAlpha = 0.24; g.globalCompositeOperation = 'overlay';
+      g.drawImage(tmp, 0, 0); g.restore();
+      /* formwork board lines: horizontal seams every ~1/6 with slight offset */
+      const r = U.rng(31);
+      g.strokeStyle = 'rgba(0,0,0,0.35)';
+      for (let i = 1; i < 6; i++) {
+        const y = i * S / 6 + (r() - 0.5) * 4;
+        g.lineWidth = 1.4; g.beginPath(); g.moveTo(0, y); g.lineTo(S, y); g.stroke();
+        g.strokeStyle = 'rgba(255,255,255,0.045)';
+        g.lineWidth = 1; g.beginPath(); g.moveTo(0, y + 1.6); g.lineTo(S, y + 1.6); g.stroke();
+        g.strokeStyle = 'rgba(0,0,0,0.35)';
+      }
+      /* tie-rod holes */
+      for (let i = 0; i < 26; i++) {
+        const x = r() * S, y = r() * S;
+        g.fillStyle = 'rgba(0,0,0,0.5)';
+        g.beginPath(); g.arc(x, y, 2.2 + r() * 1.4, 0, 6.2832); g.fill();
+        /* rust bleed below the hole */
+        const grd = g.createLinearGradient(0, y, 0, y + 40);
+        grd.addColorStop(0, 'rgba(120,62,30,0.34)');
+        grd.addColorStop(1, 'rgba(120,62,30,0)');
+        g.fillStyle = grd; g.fillRect(x - 2.5, y, 5, 40);
+      }
+      /* spalling: patches where the surface has broken away */
+      for (let i = 0; i < 9; i++) {
+        const x = r() * S, y = r() * S, rad = 8 + r() * 26;
+        g.fillStyle = 'rgba(58,54,48,' + (0.3 + r() * 0.35).toFixed(2) + ')';
+        g.beginPath();
+        for (let k = 0; k <= 9; k++) { const t = k / 9 * 6.2832; const rr = rad * (0.6 + r() * 0.6); g.lineTo(x + Math.cos(t) * rr, y + Math.sin(t) * rr); }
+        g.closePath(); g.fill();
+      }
+      /* the important part: dirt running DOWN */
+      dripStreaks(g, S, S, { count: 90, alpha: 0.2, width: 7, len: 0.55, col: '8,8,7', seed: 5 });
+      /* salt bloom — this is a coastal city eating itself */
+      for (let i = 0; i < 40; i++) {
+        const x = r() * S, y = r() * S, rad = 4 + r() * 22;
+        const grd = g.createRadialGradient(x, y, 0, x, y, rad);
+        grd.addColorStop(0, 'rgba(196,200,196,0.14)');
+        grd.addColorStop(1, 'rgba(196,200,196,0)');
+        g.fillStyle = grd; g.beginPath(); g.arc(x, y, rad, 0, 6.2832); g.fill();
+      }
+      noiseFill(g, S, S, 12, true);
+    }
+    const hgt = cvs(S, S);
+    {
+      const g = hgt.getContext('2d');
+      fbmField(g, S, S, { scale: 0.05, oct: 5, lo: 110, hi: 150 });
+      const r = U.rng(31);
+      g.strokeStyle = 'rgba(60,60,60,0.9)';
+      for (let i = 1; i < 6; i++) { const y = i * S / 6 + (r() - 0.5) * 4; g.lineWidth = 2; g.beginPath(); g.moveTo(0, y); g.lineTo(S, y); g.stroke(); }
+      for (let i = 0; i < 26; i++) { const x = r() * S, y = r() * S; g.fillStyle = 'rgba(50,50,50,0.9)'; g.beginPath(); g.arc(x, y, 2.4, 0, 6.2832); g.fill(); }
+    }
+    const rgh = cvs(S, S);
+    fbmField(rgh.getContext('2d'), S, S, { scale: 0.03, oct: 4, lo: 190, hi: 240 });
+    return { alb, hgt, rgh };
+  }
+
+  /* ---- METAL PANELS: panel grid, rivets, weld seams, edge wear, seam rust */
+  function metalMaps(rusty) {
+    const S = 512;
+    const alb = cvs(S, S), hgt = cvs(S, S), rgh = cvs(S, S);
+    const r = U.rng(rusty ? 808 : 202);
+    {
+      const g = alb.getContext('2d');
+      g.fillStyle = rusty ? '#4d382a' : '#464e55'; g.fillRect(0, 0, S, S);
+      const tmp = cvs(S, S);
+      fbmField(tmp.getContext('2d'), S, S, { scale: 0.03, oct: 5, lo: 40, hi: 215 });
+      g.save(); g.globalAlpha = 0.2; g.globalCompositeOperation = 'overlay'; g.drawImage(tmp, 0, 0); g.restore();
+      /* panel grid with varied cell sizes */
+      const cuts = [0, 0.28, 0.5, 0.77, 1];
+      g.strokeStyle = 'rgba(0,0,0,0.62)'; g.lineWidth = 2.4;
+      for (const c of cuts) {
+        g.beginPath(); g.moveTo(c * S, 0); g.lineTo(c * S, S); g.stroke();
+        g.beginPath(); g.moveTo(0, c * S); g.lineTo(S, c * S); g.stroke();
+      }
+      /* highlight on the lower/right side of each seam = a raised panel edge */
+      g.strokeStyle = 'rgba(190,200,210,0.10)'; g.lineWidth = 1.2;
+      for (const c of cuts) {
+        g.beginPath(); g.moveTo(c * S + 2.5, 0); g.lineTo(c * S + 2.5, S); g.stroke();
+        g.beginPath(); g.moveTo(0, c * S + 2.5); g.lineTo(S, c * S + 2.5); g.stroke();
+      }
+      /* rivets along every seam */
+      for (const c of cuts) {
+        for (let t = 8; t < S; t += 26) {
+          for (const [x, y] of [[c * S, t], [t, c * S]]) {
+            g.fillStyle = 'rgba(18,20,22,0.85)';
+            g.beginPath(); g.arc(x, y, 2.4, 0, 6.2832); g.fill();
+            g.fillStyle = 'rgba(210,218,226,0.16)';
+            g.beginPath(); g.arc(x - 0.7, y - 0.7, 1.3, 0, 6.2832); g.fill();
+          }
+        }
+      }
+      if (rusty) {
+        /* rust starts at seams and bleeds down */
+        for (const c of cuts) {
+          dripStreaks(g, S, S, { count: 26, alpha: 0.3, width: 6, len: 0.4, col: '128,58,24', seed: 9 + c * 40, fromTop: false });
+          const grd = g.createLinearGradient(0, c * S, 0, c * S + 60);
+          grd.addColorStop(0, 'rgba(122,56,24,0.42)');
+          grd.addColorStop(1, 'rgba(122,56,24,0)');
+          g.fillStyle = grd; g.fillRect(0, c * S, S, 60);
+        }
+        /* eaten-through patches */
+        for (let i = 0; i < 20; i++) {
+          const x = r() * S, y = r() * S, rad = 6 + r() * 30;
+          const grd = g.createRadialGradient(x, y, 0, x, y, rad);
+          grd.addColorStop(0, 'rgba(92,40,16,0.62)');
+          grd.addColorStop(0.6, 'rgba(126,62,28,0.34)');
+          grd.addColorStop(1, 'rgba(126,62,28,0)');
+          g.fillStyle = grd; g.beginPath(); g.arc(x, y, rad, 0, 6.2832); g.fill();
+        }
+      }
+      noiseFill(g, S, S, 16, true);
+    }
+    {
+      const g = hgt.getContext('2d');
+      g.fillStyle = '#8a8a8a'; g.fillRect(0, 0, S, S);
+      const cuts = [0, 0.28, 0.5, 0.77, 1];
+      g.strokeStyle = '#303030'; g.lineWidth = 3;
+      for (const c of cuts) { g.beginPath(); g.moveTo(c * S, 0); g.lineTo(c * S, S); g.stroke(); g.beginPath(); g.moveTo(0, c * S); g.lineTo(S, c * S); g.stroke(); }
+      for (const c of cuts) for (let t = 8; t < S; t += 26) for (const [x, y] of [[c * S, t], [t, c * S]]) { g.fillStyle = '#d8d8d8'; g.beginPath(); g.arc(x, y, 2.4, 0, 6.2832); g.fill(); }
+    }
+    {
+      const g = rgh.getContext('2d');
+      fbmField(g, S, S, { scale: 0.04, oct: 4, lo: rusty ? 190 : 90, hi: rusty ? 245 : 165 });
+    }
+    return { alb, hgt, rgh };
+  }
+
+  /* ---- LIT WINDOWS: the skyline's only light source. Irregular, varied warmth. */
+  function windowTex(cols, rows, seed, opts) {
+    opts = opts || {};
+    const S = 512;
+    return canvasTex(S, S, (g, w, h) => {
+      const r = U.rng(seed || 11);
+      g.fillStyle = '#000'; g.fillRect(0, 0, w, h);
+      const cw = w / cols, ch = h / rows;
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          /* most windows are dark — a fully lit building looks fake */
+          if (r() < (opts.darkChance === undefined ? 0.56 : opts.darkChance)) continue;
+          const t = r();
+          let col;
+          if (t < 0.58) col = [255, 186, 112];       /* sodium/incandescent interior */
+          else if (t < 0.84) col = [166, 214, 240];  /* cold fluorescent office */
+          else if (t < 0.95) col = [120, 255, 160];  /* screen glow */
+          else col = [255, 90, 130];                 /* something wrong in that room */
+          const a = 0.30 + r() * 0.70;
+          const px = x * cw, py = y * ch;
+          const iw = cw * 0.62, ih = ch * 0.5;
+          const ix = px + cw * 0.19, iy = py + ch * 0.26;
+          g.fillStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + a.toFixed(2) + ')';
+          g.fillRect(ix, iy, iw, ih);
+          /* blinds / partial occlusion — this is what makes windows read as rooms */
+          if (r() < 0.34) {
+            g.fillStyle = 'rgba(0,0,0,0.62)';
+            const bh = ih * (0.25 + r() * 0.6);
+            g.fillRect(ix, iy, iw, bh);
+          }
+          if (r() < 0.2) {
+            g.fillStyle = 'rgba(0,0,0,0.5)';
+            g.fillRect(ix + iw * (0.2 + r() * 0.4), iy, iw * 0.16, ih);  /* someone standing */
+          }
+          /* hot core so bloom has something to grab */
+          g.fillStyle = 'rgba(255,255,255,' + (a * 0.32).toFixed(2) + ')';
+          g.fillRect(ix + iw * 0.2, iy + ih * 0.2, iw * 0.6, ih * 0.5);
+        }
+      }
+    }, opts.repeat || [1, 1], { srgb: true });
+  }
+
+  /* ---- SIGNAGE: the storytelling workhorse. */
+  const GLYPH_STACK = '"Helvetica Neue Condensed","Arial Narrow",Impact,"Haettenschweiler",sans-serif';
+
+  function makeSign(text, o) {
+    o = o || {};
+    const vertical = !!o.vertical;
+    const style = o.style || 'tube';            /* tube | matrix | backlit | painted */
+    const col = o.color || palette.cyan;
+    const decay = o.decay === undefined ? 0.25 : o.decay;
+    const r = U.rng(o.seed || (text.length * 977 + 13));
+    const cr = (col >> 16) & 255, cg = (col >> 8) & 255, cb = col & 255;
+    const rgb = cr + ',' + cg + ',' + cb;
+
+    const chars = String(text).split('');
+    const W = vertical ? 128 : Math.max(128, Math.min(1024, 74 * chars.length));
+    const H = vertical ? Math.max(128, Math.min(1024, 96 * chars.length)) : 128;
+
+    return canvasTex(W, H, (g, w, h) => {
+      g.fillStyle = '#000'; g.fillRect(0, 0, w, h);
+
+      if (style === 'matrix') {
+        /* LED dot matrix ticker */
+        const dot = 5, gap = 2, step = dot + gap;
+        g.font = '700 ' + Math.floor(h * 0.6) + 'px ' + GLYPH_STACK;
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        const tmp = cvs(w, h);
+        const tg = tmp.getContext('2d');
+        tg.fillStyle = '#fff'; tg.font = g.font; tg.textAlign = 'center'; tg.textBaseline = 'middle';
+        tg.fillText(text, w / 2, h / 2);
+        const d = tg.getImageData(0, 0, w, h).data;
+        for (let y = 0; y < h; y += step) {
+          for (let x = 0; x < w; x += step) {
+            const i = ((y | 0) * w + (x | 0)) * 4;
+            const on = d[i + 3] > 90;
+            const a = on ? (r() < decay * 0.25 ? 0.15 : 0.95) : 0.045;
+            g.fillStyle = 'rgba(' + rgb + ',' + a.toFixed(2) + ')';
+            g.fillRect(x, y, dot, dot);
+          }
+        }
+        return;
+      }
+
+      if (style === 'painted') {
+        /* painted-and-peeling wall logo — NOT emissive, used as an albedo decal */
+        g.font = '700 ' + Math.floor((vertical ? w : h) * 0.62) + 'px ' + GLYPH_STACK;
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillStyle = 'rgba(' + rgb + ',0.82)';
+        if (vertical) {
+          const per = h / chars.length;
+          chars.forEach((c, i) => g.fillText(c, w / 2, per * (i + 0.5)));
+        } else g.fillText(text, w / 2, h / 2);
+        /* peel it */
+        g.globalCompositeOperation = 'destination-out';
+        for (let i = 0; i < 260; i++) {
+          const x = r() * w, y = r() * h, rad = 1 + r() * 9;
+          g.fillStyle = 'rgba(0,0,0,' + (0.25 + r() * 0.6).toFixed(2) + ')';
+          g.beginPath(); g.arc(x, y, rad, 0, 6.2832); g.fill();
+        }
+        g.globalCompositeOperation = 'source-over';
+        return;
+      }
+
+      /* tube / backlit: glow halo, then bright core, then tube ends */
+      const fs = Math.floor((vertical ? w : h) * (vertical ? 0.74 : 0.62));
+      g.font = '700 ' + fs + 'px ' + GLYPH_STACK;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+
+      if (style === 'backlit') {
+        /* a lit panel with dark letterforms knocked out of it */
+        const grd = g.createLinearGradient(0, 0, 0, h);
+        grd.addColorStop(0, 'rgba(' + rgb + ',0.92)');
+        grd.addColorStop(1, 'rgba(' + rgb + ',0.62)');
+        g.fillStyle = grd; g.fillRect(4, 4, w - 8, h - 8);
+        g.globalCompositeOperation = 'destination-out';
+        if (vertical) { const per = h / chars.length; chars.forEach((c, i) => g.fillText(c, w / 2, per * (i + 0.5))); }
+        else g.fillText(text, w / 2, h / 2);
+        g.globalCompositeOperation = 'source-over';
+        return;
+      }
+
+      /* neon tube: three passes — wide halo, tight halo, white-hot core */
+      const draw = (alpha, blur, colStr, lw) => {
+        g.save();
+        g.shadowColor = 'rgba(' + rgb + ',' + alpha + ')';
+        g.shadowBlur = blur;
+        g.strokeStyle = colStr; g.lineWidth = lw; g.lineJoin = 'round';
+        g.fillStyle = colStr;
+        if (vertical) {
+          const per = h / chars.length;
+          chars.forEach((c, i) => {
+            if (r() < decay * 0.18) return;              /* dead segment */
+            g.strokeText(c, w / 2, per * (i + 0.5));
+          });
+        } else {
+          g.strokeText(text, w / 2, h / 2);
+        }
+        g.restore();
+      };
+      draw(0.9, 34, 'rgba(' + rgb + ',0.30)', 13);
+      draw(0.9, 16, 'rgba(' + rgb + ',0.75)', 7);
+      draw(1.0, 7, 'rgba(255,255,255,0.95)', 2.6);
+      /* tube end caps + mounting standoffs */
+      g.fillStyle = 'rgba(40,44,48,0.9)';
+      if (vertical) { g.fillRect(w * 0.5 - 2, 2, 4, 8); g.fillRect(w * 0.5 - 2, h - 10, 4, 8); }
+      else { g.fillRect(4, h * 0.5 - 2, 8, 4); g.fillRect(w - 12, h * 0.5 - 2, 8, 4); }
+    }, [1, 1], { srgb: true });
+  }
+
+  /* ---- SKIN / FABRIC / CHROME ------------------------------------------- */
+  function skinTex(tone) {
+    const tones = [[214, 168, 138], [178, 128, 98], [126, 86, 62], [88, 58, 42], [232, 192, 166]];
+    const t = tones[(tone || 0) % tones.length];
+    return canvasTex(256, 256, (g, w, h) => {
+      g.fillStyle = 'rgb(' + t[0] + ',' + t[1] + ',' + t[2] + ')'; g.fillRect(0, 0, w, h);
+      const tmp = cvs(w, h);
+      fbmField(tmp.getContext('2d'), w, h, { scale: 0.06, oct: 5, lo: 90, hi: 175 });
+      g.save(); g.globalAlpha = 0.28; g.globalCompositeOperation = 'overlay'; g.drawImage(tmp, 0, 0); g.restore();
+      const r = U.rng(60 + (tone || 0));
+      /* pores + blemishes */
+      for (let i = 0; i < 2600; i++) {
+        const x = r() * w, y = r() * h;
+        g.fillStyle = 'rgba(' + (t[0] * 0.72 | 0) + ',' + (t[1] * 0.68 | 0) + ',' + (t[2] * 0.68 | 0) + ',' + (0.05 + r() * 0.14).toFixed(2) + ')';
+        g.beginPath(); g.arc(x, y, 0.5 + r() * 1.3, 0, 6.2832); g.fill();
+      }
+      /* subsurface warmth in the thin areas */
+      for (let i = 0; i < 20; i++) {
+        const x = r() * w, y = r() * h, rad = 12 + r() * 40;
+        const grd = g.createRadialGradient(x, y, 0, x, y, rad);
+        grd.addColorStop(0, 'rgba(198,86,74,0.10)');
+        grd.addColorStop(1, 'rgba(198,86,74,0)');
+        g.fillStyle = grd; g.beginPath(); g.arc(x, y, rad, 0, 6.2832); g.fill();
+      }
+      noiseFill(g, w, h, 8, false);
+    }, [1, 1], { srgb: true });
+  }
+
+  function fabricTex(base, seed) {
+    return canvasTex(256, 256, (g, w, h) => {
+      g.fillStyle = base || '#14171a'; g.fillRect(0, 0, w, h);
+      const r = U.rng(seed || 5);
+      /* weave */
+      for (let y = 0; y < h; y += 2) {
+        g.fillStyle = 'rgba(255,255,255,0.028)';
+        g.fillRect(0, y, w, 1);
+      }
+      for (let x = 0; x < w; x += 2) {
+        g.fillStyle = 'rgba(0,0,0,0.045)';
+        g.fillRect(x, 0, 1, h);
+      }
+      const tmp = cvs(w, h);
+      fbmField(tmp.getContext('2d'), w, h, { scale: 0.05, oct: 4, lo: 90, hi: 170 });
+      g.save(); g.globalAlpha = 0.3; g.globalCompositeOperation = 'overlay'; g.drawImage(tmp, 0, 0); g.restore();
+      /* wear at creases */
+      for (let i = 0; i < 24; i++) {
+        const x = r() * w, y = r() * h, len = 20 + r() * 90, a = r() * 6.2832;
+        g.strokeStyle = 'rgba(190,190,185,0.05)'; g.lineWidth = 1 + r() * 2.4;
+        g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len); g.stroke();
+      }
+      noiseFill(g, w, h, 10, true);
+    }, [1, 1], { srgb: true });
+  }
+
+  /* ------------------------------------------------------------------ builders */
+  function std(o) {
+    const m = new THREE.MeshStandardMaterial(o);
+    stdMats.push(m);
+    return m;
+  }
+
+  function build(name) {
+    switch (name) {
+
+      case 'asphalt': case 'asphaltWet': {
+        const wet = name === 'asphaltWet';
+        const M = asphaltMaps(wet);
+        const rep = [7, 7];
+        const map = new THREE.CanvasTexture(M.alb);
+        map.wrapS = map.wrapT = THREE.RepeatWrapping; map.repeat.set(rep[0], rep[1]);
+        map.encoding = THREE.sRGBEncoding; map.anisotropy = aniso;
+        const rgh = new THREE.CanvasTexture(M.rgh);
+        rgh.wrapS = rgh.wrapT = THREE.RepeatWrapping; rgh.repeat.set(rep[0], rep[1]); rgh.anisotropy = aniso;
+        const met = new THREE.CanvasTexture(M.met);
+        met.wrapS = met.wrapT = THREE.RepeatWrapping; met.repeat.set(rep[0], rep[1]); met.anisotropy = aniso;
+        const nrm = heightToNormal(M.hgt, wet ? 1.1 : 2.2, rep);
+        return std({
+          color: 0xffffff, map, roughnessMap: rgh, metalnessMap: met, normalMap: nrm,
+          normalScale: new THREE.Vector2(wet ? 0.55 : 1.0, wet ? 0.55 : 1.0),
+          roughness: 1.0, metalness: 1.0, envMapIntensity: wet ? 2.2 : 0.7,
+        });
+      }
+
+      case 'concrete': case 'concreteStain': {
+        const M = concreteMaps(name === 'concreteStain');
+        const rep = [3, 3];
+        const map = new THREE.CanvasTexture(M.alb);
+        map.wrapS = map.wrapT = THREE.RepeatWrapping; map.repeat.set(rep[0], rep[1]);
+        map.encoding = THREE.sRGBEncoding; map.anisotropy = aniso;
+        const rgh = new THREE.CanvasTexture(M.rgh);
+        rgh.wrapS = rgh.wrapT = THREE.RepeatWrapping; rgh.repeat.set(rep[0], rep[1]);
+        return std({
+          color: 0xffffff, map, roughnessMap: rgh, normalMap: heightToNormal(M.hgt, 1.6, rep),
+          roughness: 1.0, metalness: 0.0, envMapIntensity: 0.5,
+        });
+      }
+
+      case 'metalPanel': case 'metalRust': {
+        const M = metalMaps(name === 'metalRust');
+        const rep = [2, 2];
+        const map = new THREE.CanvasTexture(M.alb);
+        map.wrapS = map.wrapT = THREE.RepeatWrapping; map.repeat.set(rep[0], rep[1]);
+        map.encoding = THREE.sRGBEncoding; map.anisotropy = aniso;
+        const rgh = new THREE.CanvasTexture(M.rgh);
+        rgh.wrapS = rgh.wrapT = THREE.RepeatWrapping; rgh.repeat.set(rep[0], rep[1]);
+        return std({
+          color: 0xffffff, map, roughnessMap: rgh, normalMap: heightToNormal(M.hgt, 1.9, rep),
+          roughness: 1.0, metalness: name === 'metalRust' ? 0.35 : 0.85, envMapIntensity: 1.4,
+        });
+      }
+
+      case 'glassDark':
+        return std({ color: 0x05080b, roughness: 0.08, metalness: 0.55, envMapIntensity: 2.4 });
+
+      case 'glassLit': {
+        const t = windowTex(9, 14, 21);
+        return new THREE.MeshBasicMaterial({ map: t, color: 0xffffff, toneMapped: true });
+      }
+
+      case 'trimLit':
+        return new THREE.MeshBasicMaterial({ color: 0x9fe8ff, toneMapped: true });
+
+      case 'neonCyan': return neon(palette.cyan);
+      case 'neonMagenta': return neon(palette.magenta);
+      case 'neonAmber': return neon(palette.amber);
+      case 'neonRed': return neon(palette.red);
+      case 'neonGreen': return neon(palette.green);
+
+      case 'plasticBlack':
+        return std({ color: 0x0d1013, roughness: 0.42, metalness: 0.0, envMapIntensity: 0.9 });
+
+      case 'fabricDark': {
+        const t = fabricTex('#14171a', 5);
+        return std({ map: t, roughness: 0.92, metalness: 0.0, envMapIntensity: 0.35 });
+      }
+
+      case 'skin': {
+        const t = skinTex(0);
+        return std({ map: t, roughness: 0.62, metalness: 0.0, envMapIntensity: 0.7 });
+      }
+
+      case 'chrome':
+        return std({ color: 0xc8d2da, roughness: 0.18, metalness: 1.0, envMapIntensity: 2.0 });
+
+      case 'water':
+        return std({ color: 0x060d12, roughness: 0.035, metalness: 0.6, transparent: true, opacity: 0.94, envMapIntensity: 2.6 });
+
+      case 'holo':
+        return new THREE.MeshBasicMaterial({ color: palette.cyan, transparent: true, opacity: 0.34, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+
+      case 'decal':
+        return std({ color: 0x1a1d20, roughness: 0.9, metalness: 0, transparent: true, polygonOffset: true, polygonOffsetFactor: -2 });
+
+      default:
+        return std({ color: 0x33393e, roughness: 0.85, metalness: 0.08, envMapIntensity: 0.6 });
+    }
+  }
+
+  /* Emissive neon. Values > 1 so the bloom bright-pass has real headroom to work with —
+   * this is why the sign bleeds light instead of just being a bright rectangle. */
+  function neon(color, intensity) {
+    const m = new THREE.MeshStandardMaterial({
+      color: 0x0a0a0a, emissive: new THREE.Color(color),
+      emissiveIntensity: intensity === undefined ? 3.2 : intensity,
+      roughness: 0.35, metalness: 0.0,
+    });
+    stdMats.push(m);
+    return m;
+  }
+
+  /* ------------------------------------------------------------------- public */
+  function get(name) {
+    if (!cache[name]) cache[name] = build(name);
+    return cache[name];
+  }
+
+  function tex(name, opts) {
+    const key = name + JSON.stringify(opts || {});
+    if (texCache[key]) return texCache[key];
+    let t = null;
+    if (name === 'windows') t = windowTex((opts && opts.cols) || 9, (opts && opts.rows) || 14, (opts && opts.seed) || 3, opts);
+    else if (name === 'skin') t = skinTex((opts && opts.tone) || 0);
+    else if (name === 'fabric') t = fabricTex(opts && opts.base, opts && opts.seed);
+    texCache[key] = t;
+    return t;
+  }
+
+  /* Called by Core once the PMREM env map exists. Reflections are most of the
+   * "expensive" look — without this everything reads as flat paint. */
+  function refreshEnv() {
+    const env = VH.Core && VH.Core.env;
+    if (!env) return;
+    for (const m of stdMats) { m.envMap = env; m.needsUpdate = true; }
+  }
+
+  function init(r) {
+    renderer = r;
+    try { aniso = Math.min(8, renderer.capabilities.getMaxAnisotropy()); } catch (e) { aniso = 4; }
+    /* Pre-build the surfaces the world leans on so the first frame is not a hitch. */
+    ['asphaltWet', 'concrete', 'concreteStain', 'metalPanel', 'metalRust', 'glassDark'].forEach(get);
+    refreshEnv();
+  }
+
+  return {
+    init, get, tex, makeSign, refreshEnv, palette, neon,
+    canvasTex, heightToNormal, fbmField, dripStreaks, packORM,
+    noise2D: U.noise2D, fbm: U.fbm,
+    get materials() { return cache; },
+  };
 })();
 
 
 /* ==================== 30_world.js ==================== */
-/* 30_world.js — procedural city. OWNER: world agent. STUB. */
+/* 30_world.js — procedural city. Every mesh generated in code.
+ * OWNER: main. Serves two masters: combat space and photograph. See CONTRACT §5.
+ */
 VH.World = (function () {
+  const U = VH.util;
   let world = null;
-  function build(seed, district) {
-    const group = new THREE.Group();
-    const g = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), VH.Mat.get('asphalt'));
-    g.rotation.x = -Math.PI / 2; group.add(g);
-    world = {
-      group, colliders: [], lights: [], district: district || 'undertide',
-      navSample: () => ({ y: 0, walkable: true }),
-      spawns: { player: new THREE.Vector3(0, 0, 0), enemy: [], cover: [] },
-      bounds: new THREE.Box3(new THREE.Vector3(-200, 0, -200), new THREE.Vector3(200, 80, 200)),
+  let rain = null, steamPuffs = [], flickers = [], water = null, T = 0;
+
+  /* ------------------------------------------------------------ district specs
+   * Each district is the same generator driven by a different parameter set, plus
+   * a few bespoke touches. Identity comes from palette, height profile, and props. */
+  const DISTRICTS = {
+    undertide: {
+      label: 'Undertide',
+      streetW: 24, blockLen: 30, blocks: 5,
+      hMin: 9, hMax: 26, setback: 0.18,
+      wall: 'metalRust', plinth: 'concreteStain', ground: 'asphaltWet',
+      accents: [0xff2d6f, 0xffb340, 0x00e5ff],
+      accentBias: 0, flooded: 0.42, shanty: 0.85, awnings: 0.5,
+      fogColor: [0.050, 0.075, 0.098], fogDensity: 0.013,
+      signs: ['DRY DOCK 9', 'NINEFOLD', 'SALTLIGHT', 'GLASSJAW', 'TIDEWATER', 'FIRSTLIGHT LOANS'],
+      towers: 16,
+    },
+    market: {
+      label: 'Kettle Market',
+      streetW: 15, blockLen: 22, blocks: 6,
+      hMin: 7, hMax: 16, setback: 0.1,
+      wall: 'concrete', plinth: 'metalPanel', ground: 'asphaltWet',
+      accents: [0xffb340, 0xff2d6f, 0x7cff5a],
+      accentBias: 0, flooded: 0.0, shanty: 0.6, awnings: 1.0,
+      fogColor: [0.075, 0.062, 0.045], fogDensity: 0.012,
+      signs: ['HALCYON NOODLE', 'KETTLE', 'PACHINKO OSAKI', 'MERIDIAN CLINIC', 'VOLT-EX'],
+      towers: 12,
+    },
+    spine: {
+      label: 'The Spine',
+      streetW: 34, blockLen: 44, blocks: 4,
+      hMin: 16, hMax: 48, setback: 0.26,
+      wall: 'concrete', plinth: 'concreteStain', ground: 'asphaltWet',
+      accents: [0xffb340, 0x00e5ff, 0xff2d6f],
+      accentBias: 0, flooded: 0.0, shanty: 0.15, awnings: 0.1,
+      fogColor: [0.055, 0.070, 0.092], fogDensity: 0.010,
+      signs: ['VOLT-EX', 'SABLE', 'CHOIR PUBLIC UTILITY', 'TIDEWATER'],
+      towers: 22, elevated: true,
+    },
+    sablecore: {
+      label: 'Sable Core',
+      streetW: 30, blockLen: 36, blocks: 4,
+      hMin: 24, hMax: 60, setback: 0.3,
+      wall: 'glassDark', plinth: 'concrete', ground: 'asphaltWet',
+      accents: [0x00e5ff, 0xbfe4ff, 0x00e5ff],
+      accentBias: 0, flooded: 0.0, shanty: 0.0, awnings: 0.0,
+      fogColor: [0.042, 0.062, 0.088], fogDensity: 0.009,
+      signs: ['SABLE', 'ANDRADE-SABLE CONTINUITY', 'CONTINUITY'],
+      towers: 20, clean: true,
+    },
+    transit: {
+      label: 'Transit',
+      streetW: 20, blockLen: 26, blocks: 5,
+      hMin: 8, hMax: 14, setback: 0.05,
+      wall: 'metalPanel', plinth: 'concrete', ground: 'concrete',
+      accents: [0x00e5ff, 0xffb340, 0xbfe4ff],
+      accentBias: 0, flooded: 0.0, shanty: 0.1, awnings: 0.2,
+      fogColor: [0.048, 0.066, 0.086], fogDensity: 0.012,
+      signs: ['TRANSIT', 'MAG-LINE 4', 'SABLE', 'KETTLE'],
+      towers: 10, interior: true,
+    },
+    rooftops: {
+      label: 'Rooftops',
+      streetW: 26, blockLen: 30, blocks: 4,
+      hMin: 2, hMax: 6, setback: 0.0,
+      wall: 'metalRust', plinth: 'concreteStain', ground: 'concrete',
+      accents: [0xff2d6f, 0xffb340, 0x00e5ff],
+      accentBias: 0, flooded: 0.0, shanty: 0.4, awnings: 0.0,
+      fogColor: [0.058, 0.078, 0.105], fogDensity: 0.008,
+      signs: ['SALTLIGHT', 'NINEFOLD'], towers: 26, high: true,
+    },
+    spire: {
+      label: 'The Spire',
+      streetW: 40, blockLen: 40, blocks: 3,
+      hMin: 30, hMax: 70, setback: 0.34,
+      wall: 'concrete', plinth: 'metalPanel', ground: 'concrete',
+      accents: [0x00e5ff, 0xbfe4ff, 0x7cff5a],
+      accentBias: 0, flooded: 0.0, shanty: 0.0, awnings: 0.0,
+      fogColor: [0.038, 0.058, 0.082], fogDensity: 0.011,
+      signs: ['CHOIR', 'CONTINUITY'], towers: 8, interior: true, choir: true,
+    },
+  };
+
+  /* ------------------------------------------------------------------ helpers */
+  const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+  const M = n => VH.Mat.get(n);
+
+  function addCollider(list, x, y, z, hw, hh, hd) {
+    list.push({ type: 'box', x: x, y: y, z: z, hw: hw, hh: hh, hd: hd });
+  }
+
+  /* Collect geometry per material, merge once at the end. This is what keeps the
+   * draw call count in the low hundreds instead of the low thousands. */
+  function Batch() {
+    const buckets = new Map();
+    return {
+      add(matName, geo, pos, rot, scale) {
+        if (!buckets.has(matName)) buckets.set(matName, []);
+        buckets.get(matName).push(U.xform(geo, pos, rot, scale));
+      },
+      flush(parent) {
+        let calls = 0;
+        buckets.forEach((geos, matName) => {
+          const merged = U.mergeGeometries(geos);
+          if (!merged) return;
+          geos.forEach(g => g.dispose());
+          const mesh = new THREE.Mesh(merged, M(matName));
+          mesh.matrixAutoUpdate = false;
+          parent.add(mesh);
+          calls++;
+        });
+        buckets.clear();
+        return calls;
+      },
     };
+  }
+
+  /* ------------------------------------------------------------------ signage */
+  function makeSignMesh(text, o) {
+    o = o || {};
+    const t = VH.Mat.makeSign(text, o);
+    const img = t.image || t._canvas;
+    const ar = img ? img.width / img.height : 1;
+    const h = o.size || 3.2;
+    const w = h * ar;
+    const mat = new THREE.MeshBasicMaterial({
+      map: t, transparent: true, toneMapped: true,
+      blending: o.style === 'painted' ? THREE.NormalBlending : THREE.AdditiveBlending,
+      depthWrite: false, side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    mesh.userData.signMat = mat;
+    return mesh;
+  }
+
+  /* A blade sign: the vertical projecting sign that defines a cyberpunk street.
+   * Includes the mounting arm, because signs that float unsupported read as fake. */
+  function bladeSign(parent, batch, text, x, y, z, facing, color, seed) {
+    const g = new THREE.Group();
+    const sign = makeSignMesh(text, { vertical: true, color: color, size: 5.2, seed: seed, decay: 0.3 });
+    sign.position.set(0, 0, 0);
+    g.add(sign);
+    /* backing panel so the sign has a body from behind */
+    const bb = sign.geometry.parameters;
+    const back = new THREE.Mesh(box(bb.width * 1.12, bb.height * 1.06, 0.22), M('metalRust'));
+    back.position.z = -0.16;
+    g.add(back);
+    /* mounting arm back to the wall */
+    const arm = new THREE.Mesh(box(0.14, 0.14, 1.5), M('metalPanel'));
+    arm.position.set(0, bb.height * 0.42, -0.9);
+    g.add(arm);
+    const arm2 = arm.clone(); arm2.position.y = -bb.height * 0.42;
+    g.add(arm2);
+    g.position.set(x, y, z);
+    g.rotation.y = facing;
+    parent.add(g);
+    /* A sign that does not light the wall behind it and the water below it reads as a
+     * sticker. This registration is what puts colour into the street. */
+    if (VH.Core.registerLight) {
+      VH.Core.registerLight(null, {
+        pos: new THREE.Vector3(x - Math.sin(facing) * 1.2, y, z + Math.cos(facing) * 1.2),
+        color: color, intensity: 11.0, distance: 24, importance: 2.2, fog: true, fogGain: 1.0,
+      });
+    }
+    flickers.push({ mat: sign.userData.signMat, base: 1, seed: Math.random() * 100, rate: 0.2 + Math.random() * 0.8, dead: Math.random() < 0.12 });
+    return g;
+  }
+
+  /* ------------------------------------------------------------- building kit */
+  function buildFacade(batch, parent, spec, rnd, ox, oz, w, d, h, faceDir) {
+    const wallMat = spec.wall;
+    /* main mass */
+    batch.add(wallMat, box(w, h, d), [ox, h / 2, oz]);
+
+    /* plinth / ground floor — a different material and slightly proud of the wall */
+    const plinthH = 4.2;
+    batch.add(spec.plinth, box(w + 0.35, plinthH, d + 0.35), [ox, plinthH / 2, oz]);
+
+    /* window bands: an emissive plane per floor, inset into the wall.
+     * Rendered as one plane per face with a tiling window texture — cheap and reads well. */
+    const floors = Math.max(1, Math.floor((h - plinthH) / 3.4));
+    if (floors > 0 && !spec.interior) {
+      const bandH = floors * 3.4;
+      const winTex = VH.Mat.tex('windows', {
+        cols: Math.max(3, Math.round(w / 2.6)), rows: floors,
+        seed: (ox * 7 + oz * 13 + h) | 0, darkChance: spec.clean ? 0.34 : 0.58,
+      });
+      const wm = new THREE.MeshBasicMaterial({ map: winTex, toneMapped: true });
+      /* four faces */
+      const faces = [
+        { pw: w, px: ox, pz: oz + d / 2 + 0.02, ry: 0 },
+        { pw: w, px: ox, pz: oz - d / 2 - 0.02, ry: Math.PI },
+        { pw: d, px: ox + w / 2 + 0.02, pz: oz, ry: Math.PI / 2 },
+        { pw: d, px: ox - w / 2 - 0.02, pz: oz, ry: -Math.PI / 2 },
+      ];
+      for (const f of faces) {
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(f.pw * 0.92, bandH), wm);
+        m.position.set(f.px, plinthH + bandH / 2, f.pz);
+        m.rotation.y = f.ry;
+        m.matrixAutoUpdate = false; m.updateMatrix();
+        parent.add(m);
+      }
+    }
+
+    /* roof crown: mechanical housing, water tanks, antenna */
+    const crownW = w * (0.3 + rnd() * 0.35), crownD = d * (0.3 + rnd() * 0.35);
+    const crownH = 1.6 + rnd() * 3.2;
+    batch.add('metalPanel', box(crownW, crownH, crownD), [ox + (rnd() - 0.5) * w * 0.3, h + crownH / 2, oz + (rnd() - 0.5) * d * 0.3]);
+    if (rnd() < 0.6) {
+      const tankR = 0.9 + rnd() * 0.7, tankH = 2.0 + rnd() * 1.8;
+      batch.add('metalRust', new THREE.CylinderGeometry(tankR, tankR, tankH, 10),
+        [ox + (rnd() - 0.5) * w * 0.5, h + tankH / 2, oz + (rnd() - 0.5) * d * 0.5]);
+    }
+    if (rnd() < 0.7) {
+      const mh = 3 + rnd() * 7;
+      batch.add('metalPanel', box(0.14, mh, 0.14), [ox + (rnd() - 0.5) * w * 0.6, h + mh / 2, oz + (rnd() - 0.5) * d * 0.6]);
+    }
+
+    /* shanty additions: bolted-on volumes that break the box silhouette.
+     * This single feature is most of what stops the skyline reading as extruded cubes. */
+    const nAdd = spec.shanty > 0 ? Math.floor(rnd() * 4 * spec.shanty) : 0;
+    for (let i = 0; i < nAdd; i++) {
+      const aw = 1.6 + rnd() * 3.2, ah = 1.8 + rnd() * 2.6, ad = 1.4 + rnd() * 2.2;
+      const side = Math.floor(rnd() * 4);
+      const ay = plinthH + rnd() * Math.max(1, h - plinthH - ah);
+      let ax = ox, az = oz;
+      if (side === 0) az = oz + d / 2 + ad / 2 - 0.2;
+      else if (side === 1) az = oz - d / 2 - ad / 2 + 0.2;
+      else if (side === 2) ax = ox + w / 2 + aw / 2 - 0.2;
+      else ax = ox - w / 2 - aw / 2 + 0.2;
+      batch.add('metalRust', box(aw, ah, ad), [ax, ay + ah / 2, az]);
+      /* support struts underneath so it looks bolted on, not floating */
+      batch.add('metalPanel', box(0.1, ay - plinthH + 0.4, 0.1), [ax, plinthH + (ay - plinthH) / 2, az]);
+    }
+
+    /* fire escape on the street-facing side */
+    if (rnd() < 0.55 && !spec.clean) {
+      const fz = oz + faceDir * (d / 2 + 0.55);
+      for (let f = 1; f * 3.4 < h - 2; f++) {
+        const fy = plinthH + f * 3.4;
+        batch.add('metalPanel', box(w * 0.5, 0.1, 1.1), [ox, fy, fz]);
+        batch.add('metalPanel', box(w * 0.5, 0.9, 0.06), [ox, fy + 0.5, fz + 0.5 * faceDir]);
+        /* diagonal stair */
+        batch.add('metalPanel', box(0.7, 0.08, 3.3), [ox + w * 0.2, fy + 1.7, fz], [-0.85, 0, 0]);
+      }
+    }
+
+    /* AC units and vents clinging to the wall */
+    const nAC = 2 + Math.floor(rnd() * 5);
+    for (let i = 0; i < nAC; i++) {
+      const ay = plinthH + rnd() * (h - plinthH - 1);
+      const side = rnd() < 0.5 ? 1 : -1;
+      batch.add('metalPanel', box(0.85, 0.7, 0.6), [ox + (rnd() - 0.5) * w * 0.8, ay, oz + side * (d / 2 + 0.3)]);
+    }
+  }
+
+  /* --------------------------------------------------------------- street kit */
+  function streetProps(batch, parent, spec, rnd, x, z, side, cover) {
+    const facing = side > 0 ? Math.PI : 0;
+
+    /* kerb */
+    batch.add(spec.plinth, box(3.0, 0.34, spec.blockLen), [x + side * 1.5, 0.17, z]);
+
+    /* bollards */
+    for (let i = 0; i < 4; i++) {
+      const bz = z - spec.blockLen / 2 + (i + 0.5) * spec.blockLen / 4;
+      batch.add('metalPanel', new THREE.CylinderGeometry(0.12, 0.14, 0.9, 8), [x + side * 0.4, 0.45, bz]);
+    }
+
+    /* dumpsters / crates / jersey barriers — these are also the cover system */
+    const nProps = 2 + Math.floor(rnd() * 3);
+    for (let i = 0; i < nProps; i++) {
+      const pz = z - spec.blockLen / 2 + rnd() * spec.blockLen;
+      const px = x + side * (2.2 + rnd() * 1.6);
+      const kind = rnd();
+      if (kind < 0.4) {
+        batch.add('metalRust', box(2.0, 1.25, 1.1), [px, 0.62, pz], [0, (rnd() - 0.5) * 0.4, 0]);
+        addCollider(world.colliders, px, 0.62, pz, 1.0, 0.63, 0.55);
+        cover.push({ pos: new THREE.Vector3(px, 0, pz), normal: new THREE.Vector3(-side, 0, 0), h: 1.25 });
+      } else if (kind < 0.75) {
+        const n = 1 + Math.floor(rnd() * 3);
+        for (let k = 0; k < n; k++) {
+          const s = 0.7 + rnd() * 0.35;
+          batch.add('metalPanel', box(s, s, s), [px + (rnd() - 0.5), s / 2 + k * s, pz + (rnd() - 0.5)], [0, rnd() * 1.5, 0]);
+        }
+        addCollider(world.colliders, px, 0.5, pz, 0.8, 0.6, 0.8);
+        cover.push({ pos: new THREE.Vector3(px, 0, pz), normal: new THREE.Vector3(-side, 0, 0), h: 1.0 });
+      } else {
+        batch.add('concreteStain', box(1.9, 1.0, 0.7), [px, 0.5, pz], [0, (rnd() - 0.5) * 0.3, 0]);
+        addCollider(world.colliders, px, 0.5, pz, 0.95, 0.5, 0.35);
+        cover.push({ pos: new THREE.Vector3(px, 0, pz), normal: new THREE.Vector3(-side, 0, 0), h: 1.0 });
+      }
+    }
+
+    /* awnings over the shopfronts */
+    if (rnd() < spec.awnings) {
+      const az = z + (rnd() - 0.5) * spec.blockLen * 0.5;
+      batch.add('fabricDark', box(3.4, 0.1, 1.9), [x + side * 3.0, 3.1, az], [side * 0.22, 0, 0]);
+      batch.add('metalPanel', box(0.07, 0.9, 0.07), [x + side * 4.4, 2.6, az - 0.8]);
+      batch.add('metalPanel', box(0.07, 0.9, 0.07), [x + side * 4.4, 2.6, az + 0.8]);
+    }
+
+    /* pipes running along the facade */
+    const py = 1.2 + rnd() * 6;
+    batch.add('metalRust', new THREE.CylinderGeometry(0.11, 0.11, spec.blockLen, 7),
+      [x + side * 0.7, py, z], [Math.PI / 2, 0, 0]);
+  }
+
+  /* Cables strung across the street. Catenary curves — straight lines look wrong. */
+  function cables(parent, spec, rnd, zc) {
+    const half = spec.streetW / 2 + 3;
+    const n = 2 + Math.floor(rnd() * 3);
+    const geos = [];
+    for (let i = 0; i < n; i++) {
+      const y0 = 7 + rnd() * 9;
+      const sag = 1.2 + rnd() * 2.4;
+      const z = zc + (rnd() - 0.5) * spec.blockLen * 0.8;
+      const pts = [];
+      for (let k = 0; k <= 12; k++) {
+        const t = k / 12;
+        const x = U.lerp(-half, half, t);
+        const y = y0 - Math.sin(t * Math.PI) * sag;
+        pts.push(new THREE.Vector3(x, y, z + Math.sin(t * 3.1) * 0.3));
+      }
+      const curve = new THREE.CatmullRomCurve3(pts);
+      geos.push(new THREE.TubeGeometry(curve, 14, 0.035, 4, false));
+      /* a few hanging lamps on the wire */
+      if (rnd() < 0.6) {
+        const t = 0.3 + rnd() * 0.4;
+        const p = curve.getPoint(t);
+        const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6),
+          VH.Mat.neon(rnd() < 0.5 ? 0xffb340 : 0xffd9a8, 4.0));
+        lamp.position.copy(p); lamp.position.y -= 0.25;
+        lamp.matrixAutoUpdate = false; lamp.updateMatrix();
+        parent.add(lamp);
+        if (VH.Core.registerLight) VH.Core.registerLight(lamp, { color: 0xffb340, intensity: 7.0, distance: 15, fog: true });
+      }
+    }
+    const merged = U.mergeGeometries(geos);
+    geos.forEach(g => g.dispose());
+    if (merged) {
+      const m = new THREE.Mesh(merged, M('plasticBlack'));
+      m.matrixAutoUpdate = false;
+      parent.add(m);
+    }
+  }
+
+  /* ------------------------------------------------------- distant silhouettes */
+  function skyline(parent, spec, rnd) {
+    const batch = Batch();
+    const n = spec.towers;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + rnd() * 0.3;
+      const dist = 150 + rnd() * 260;
+      const x = Math.cos(a) * dist, z = Math.sin(a) * dist - 40;
+      const w = 16 + rnd() * 34, d = 16 + rnd() * 34;
+      const h = 50 + rnd() * 150;
+      batch.add('concrete', box(w, h, d), [x, h / 2, z]);
+      /* window grid — at this distance it is the only thing you see of them */
+      const winTex = VH.Mat.tex('windows', { cols: 10, rows: 22, seed: (i * 31) | 0, darkChance: 0.62 });
+      const wm = new THREE.MeshBasicMaterial({ map: winTex, toneMapped: true });
+      const face = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.9, h * 0.86), wm);
+      face.position.set(x, h * 0.48, z + d / 2 + 0.5);
+      face.lookAt(0, h * 0.48, 0);
+      face.position.set(x, h * 0.48, z);
+      const dir = new THREE.Vector3(-x, 0, -z).normalize();
+      face.position.addScaledVector(dir, -Math.max(w, d) / 2 - 0.5);
+      face.matrixAutoUpdate = false; face.updateMatrix();
+      parent.add(face);
+      /* aircraft warning light */
+      if (rnd() < 0.5) {
+        const l = new THREE.Mesh(new THREE.SphereGeometry(0.9, 6, 5), VH.Mat.neon(0xff3320, 5));
+        l.position.set(x, h + 1.5, z);
+        l.matrixAutoUpdate = false; l.updateMatrix();
+        parent.add(l);
+      }
+    }
+    batch.flush(parent);
+  }
+
+  /* ------------------------------------------------------------------- rain */
+  function makeRain(parent, spec) {
+    const N = 2600;
+    const g = new THREE.BufferGeometry();
+    const pos = new Float32Array(N * 3);
+    const len = new Float32Array(N);
+    const r = U.rng(9);
+    for (let i = 0; i < N; i++) {
+      pos[i * 3] = (r() - 0.5) * 90;
+      pos[i * 3 + 1] = r() * 40;
+      pos[i * 3 + 2] = (r() - 0.5) * 130;
+      len[i] = 0.5 + r() * 1.4;
+    }
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('alen', new THREE.BufferAttribute(len, 1));
+    const mat = new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 }, uCam: { value: new THREE.Vector3() } },
+      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: [
+        'attribute float alen; uniform float uTime; uniform vec3 uCam; varying float vA;',
+        'void main(){',
+        '  vec3 p = position;',
+        '  p.y = mod(p.y - uTime*22.0, 40.0);',
+        '  p.x += sin(uTime*0.3)*1.5;',
+        /* keep the rain volume centred on the camera */
+        '  p.x += floor(uCam.x/90.0+0.5)*90.0;',
+        '  p.z += floor(uCam.z/130.0+0.5)*130.0;',
+        '  vec4 mv = modelViewMatrix * vec4(p,1.0);',
+        '  vA = alen;',
+        '  gl_Position = projectionMatrix * mv;',
+        '  gl_PointSize = max(1.0, 2.2 * (30.0/max(1.0,-mv.z)));',
+        '}',
+      ].join('\n'),
+      fragmentShader: [
+        'varying float vA;',
+        'void main(){',
+        '  vec2 c = gl_PointCoord - 0.5;',
+        '  float a = smoothstep(0.5, 0.0, length(c)) * 0.30;',
+        '  gl_FragColor = vec4(vec3(0.55,0.68,0.80)*a, a);',
+        '}',
+      ].join('\n'),
+    });
+    const pts = new THREE.Points(g, mat);
+    pts.frustumCulled = false;
+    parent.add(pts);
+    return { pts: pts, mat: mat };
+  }
+
+  /* --------------------------------------------------------------- generator */
+  function build(seed, districtId) {
+    const id = DISTRICTS[districtId] ? districtId : 'undertide';
+    const spec = DISTRICTS[id];
+    const rnd = U.rng((seed || 20770) + id.length * 7919);
+
+    const group = new THREE.Group();
+    const colliders = [];
+    const cover = [];
+    const enemySpawns = [];
+    flickers = []; steamPuffs = [];
+
+    world = {
+      group: group, colliders: colliders, lights: [], district: id, spec: spec,
+      navSample: navSample, spawns: { player: new THREE.Vector3(), enemy: enemySpawns, cover: cover },
+      bounds: new THREE.Box3(),
+    };
+
+    const batch = Batch();
+    const totalLen = spec.blockLen * spec.blocks;
+    const halfW = spec.streetW / 2;
+
+    /* ---- ground ------------------------------------------------------- */
+    const groundGeo = new THREE.PlaneGeometry(320, 420, 1, 1);
+    const ground = new THREE.Mesh(groundGeo, M(spec.ground));
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.z = -totalLen / 2 + spec.blockLen;
+    ground.matrixAutoUpdate = false; ground.updateMatrix();
+    group.add(ground);
+
+    /* sidewalks, raised */
+    for (const side of [-1, 1]) {
+      batch.add(spec.plinth, box(6, 0.34, totalLen + 60), [side * (halfW + 3), 0.17, -totalLen / 2 + spec.blockLen]);
+    }
+
+    /* ---- flooding (Undertide) ------------------------------------------ */
+    if (spec.flooded > 0) {
+      const wGeo = new THREE.PlaneGeometry(spec.streetW + 2, totalLen + 40, 24, 60);
+      water = new THREE.Mesh(wGeo, M('water'));
+      water.rotation.x = -Math.PI / 2;
+      water.position.set(0, 0.06, -totalLen / 2 + spec.blockLen);
+      group.add(water);
+      water.userData.base = wGeo.attributes.position.array.slice();
+    } else water = null;
+
+    /* ---- buildings both sides ------------------------------------------ */
+    for (let b = 0; b < spec.blocks; b++) {
+      const zc = -b * spec.blockLen;
+      for (const side of [-1, 1]) {
+        /* two buildings per block per side, varied width */
+        let used = 0;
+        while (used < spec.blockLen - 4) {
+          const w = 8 + rnd() * 12;
+          const d = 10 + rnd() * 10;
+          const h = spec.hMin + rnd() * (spec.hMax - spec.hMin);
+          const z = zc - spec.blockLen / 2 + used + w / 2;
+          const x = side * (halfW + 6 + d / 2);
+          buildFacade(batch, group, spec, rnd, x, z, d, w, h, -side);
+          addCollider(colliders, x, h / 2, z, d / 2, h / 2, w / 2);
+          used += w + 1.5 + rnd() * 2.5;
+
+          /* signage on the street-facing edge */
+          if (rnd() < 0.55) {
+            const text = spec.signs[Math.floor(rnd() * spec.signs.length)];
+            const col = spec.accents[Math.floor(rnd() * spec.accents.length)];
+            const sx = side * (halfW + 4.4);
+            bladeSign(group, batch, text, sx, 7 + rnd() * 7, z, side > 0 ? -Math.PI / 2 : Math.PI / 2, col, (rnd() * 1000) | 0);
+          }
+          /* small horizontal shop sign at street level */
+          if (rnd() < 0.7) {
+            const text = spec.signs[Math.floor(rnd() * spec.signs.length)];
+            const col = spec.accents[Math.floor(rnd() * spec.accents.length)];
+            const s = makeSignMesh(text, { color: col, size: 0.95, seed: (rnd() * 1000) | 0, style: rnd() < 0.3 ? 'matrix' : 'tube' });
+            s.position.set(side * (halfW + 5.6), 3.9, z);
+            s.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2;
+            group.add(s);
+            if (VH.Core.registerLight) {
+              VH.Core.registerLight(null, {
+                pos: new THREE.Vector3(side * (halfW + 4.2), 3.6, z),
+                color: col, intensity: 9.0, distance: 18, importance: 1.4, fog: true,
+              });
+            }
+          }
+        }
+        streetProps(batch, group, spec, rnd, side * halfW, zc, side, cover);
+
+        /* Sodium street lamp. The road is the second-brightest surface in a wet
+         * night street — without a ground-level source the asphalt has nothing to
+         * mirror and the whole frame dies from the bottom up. */
+        for (const lfrac of [0.15, 0.62]) {
+        const lz = zc - spec.blockLen * lfrac;
+        const lx = side * (halfW + 1.2);
+        batch.add('metalPanel', new THREE.CylinderGeometry(0.09, 0.13, 7.2, 8), [lx, 3.6, lz]);
+        batch.add('metalPanel', box(2.2, 0.12, 0.14), [lx - side * 1.1, 7.15, lz]);
+        const head = new THREE.Mesh(box(0.75, 0.22, 0.42), VH.Mat.neon(0xffb340, 5.5));
+        head.position.set(lx - side * 2.0, 7.0, lz);
+        head.matrixAutoUpdate = false; head.updateMatrix();
+        group.add(head);
+        if (VH.Core.registerLight) {
+          VH.Core.registerLight(null, {
+            pos: new THREE.Vector3(lx - side * 2.0, 6.6, lz),
+            color: 0xffb340, intensity: 24.0, distance: 28, importance: 3.0, fog: true, fogGain: 1.0,
+          });
+        }
+        }
+      }
+      cables(group, spec, rnd, zc);
+
+      /* enemy spawn points down the street */
+      enemySpawns.push(new THREE.Vector3((rnd() - 0.5) * spec.streetW * 0.7, 0, zc - spec.blockLen * 0.3));
+      enemySpawns.push(new THREE.Vector3((rnd() - 0.5) * spec.streetW * 0.7, 0, zc - spec.blockLen * 0.7));
+    }
+
+    /* ---- foreground occluder: a pipe / sign arm cutting the frame ------- */
+    batch.add('metalRust', new THREE.CylinderGeometry(0.22, 0.22, spec.streetW + 14, 8),
+      [0, 9.4, 4], [0, 0, Math.PI / 2]);
+
+    /* ---- steam from grates --------------------------------------------- */
+    for (let i = 0; i < 7; i++) {
+      const sx = (rnd() - 0.5) * spec.streetW * 0.8;
+      const sz = -rnd() * totalLen;
+      batch.add('metalPanel', box(1.4, 0.06, 1.4), [sx, 0.04, sz]);
+      const puff = makeSteam(sx, sz);
+      group.add(puff.mesh);
+      steamPuffs.push(puff);
+    }
+
+    batch.flush(group);
+    skyline(group, spec, rnd);
+    rain = makeRain(group, spec);
+
+    /* ---- spawns + bounds ------------------------------------------------ */
+    world.spawns.player.set(0, 0, spec.blockLen * 0.35);
+    world.bounds.set(
+      new THREE.Vector3(-halfW - 30, 0, -totalLen - 20),
+      new THREE.Vector3(halfW + 30, 80, spec.blockLen + 20)
+    );
+    /* street walls so the player cannot walk into the buildings sideways */
+    addCollider(colliders, -halfW - 20, 20, -totalLen / 2, 14, 20, totalLen);
+    addCollider(colliders, halfW + 20, 20, -totalLen / 2, 14, 20, totalLen);
+
+    /* hand the grade over to Core so fog matches the district */
+    if (VH.Core.grade && spec.fogColor) {
+      VH.Core.grade.fogColor = spec.fogColor.slice();
+      VH.Core.grade.fogDensity = spec.fogDensity;
+    }
+
+    T = 0;
     return world;
   }
-  function update() {}
-  function raycastGround() { return 0; }
-  function segments() { return ['undertide']; }
-  return { build, update, raycastGround, segments };
+
+  /* ------------------------------------------------------------------ steam */
+  function makeSteam(x, z) {
+    const N = 26;
+    const g = new THREE.BufferGeometry();
+    const pos = new Float32Array(N * 3), ph = new Float32Array(N), sc = new Float32Array(N);
+    const r = U.rng((x * 31 + z * 17) | 0 || 3);
+    for (let i = 0; i < N; i++) {
+      pos[i * 3] = (r() - 0.5) * 1.2; pos[i * 3 + 1] = 0; pos[i * 3 + 2] = (r() - 0.5) * 1.2;
+      ph[i] = r(); sc[i] = 1.4 + r() * 2.6;
+    }
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('aph', new THREE.BufferAttribute(ph, 1));
+    g.setAttribute('asc', new THREE.BufferAttribute(sc, 1));
+    const mat = new THREE.ShaderMaterial({
+      uniforms: { uTime: { value: 0 } },
+      transparent: true, depthWrite: false, blending: THREE.NormalBlending,
+      vertexShader: [
+        'attribute float aph; attribute float asc; uniform float uTime; varying float vF;',
+        'void main(){',
+        '  float t = fract(aph + uTime*0.13);',
+        '  vec3 p = position;',
+        '  p.y += t*5.0;',
+        '  p.x += sin(t*3.0 + aph*6.28)*0.9*t;',
+        '  p.z += cos(t*2.4 + aph*6.28)*0.7*t;',
+        '  vF = (1.0-t)*smoothstep(0.0,0.15,t);',
+        '  vec4 mv = modelViewMatrix * vec4(p,1.0);',
+        '  gl_Position = projectionMatrix * mv;',
+        '  gl_PointSize = asc * (1.0+t*3.0) * (260.0/max(1.0,-mv.z));',
+        '}',
+      ].join('\n'),
+      fragmentShader: [
+        'varying float vF;',
+        'void main(){',
+        '  vec2 c = gl_PointCoord-0.5;',
+        '  float a = smoothstep(0.5,0.05,length(c)) * vF * 0.13;',
+        '  gl_FragColor = vec4(vec3(0.62,0.70,0.76), a);',
+        '}',
+      ].join('\n'),
+    });
+    const mesh = new THREE.Points(g, mat);
+    mesh.position.set(x, 0.1, z);
+    mesh.frustumCulled = false;
+    return { mesh: mesh, mat: mat };
+  }
+
+  /* ------------------------------------------------------------------ queries */
+  function navSample(x, z) {
+    if (!world) return { y: 0, walkable: true };
+    const halfW = world.spec.streetW / 2;
+    /* raised sidewalks either side of the roadway */
+    if (Math.abs(x) > halfW && Math.abs(x) < halfW + 6) return { y: 0.34, walkable: true };
+    if (Math.abs(x) >= halfW + 6) return { y: 0.34, walkable: false };
+    return { y: 0, walkable: true };
+  }
+  function raycastGround(x, z) { return navSample(x, z).y; }
+  function segments() { return Object.keys(DISTRICTS); }
+
+  /* ------------------------------------------------------------------ update */
+  function update(dt) {
+    if (!world) return;
+    T += dt;
+    if (rain) {
+      rain.mat.uniforms.uTime.value = T;
+      if (VH.Core.camera) rain.mat.uniforms.uCam.value.copy(VH.Core.camera.position);
+    }
+    for (const s of steamPuffs) s.mat.uniforms.uTime.value = T;
+
+    /* sign flicker — a dead tube and a failing ballast are free storytelling */
+    for (const f of flickers) {
+      if (!f.mat) continue;
+      if (f.dead) { f.mat.opacity = 0.06 + Math.max(0, Math.sin(T * 9 + f.seed)) * 0.1; continue; }
+      const n = U.noise2D(T * f.rate + f.seed, f.seed * 0.3);
+      f.mat.opacity = n > -0.72 ? 1 : 0.25 + Math.random() * 0.4;
+    }
+
+    /* water ripples */
+    if (water) {
+      const pos = water.geometry.attributes.position;
+      const base = water.userData.base;
+      for (let i = 0; i < pos.count; i++) {
+        const x = base[i * 3], y = base[i * 3 + 1];
+        pos.array[i * 3 + 2] = Math.sin(x * 0.7 + T * 1.3) * 0.035 + Math.sin(y * 0.9 - T * 0.9) * 0.03;
+      }
+      pos.needsUpdate = true;
+    }
+  }
+
+  /* ------------------------------------------------------------- world test */
+  const CAMS = {
+    street: { pos: [0.5, 1.7, 9], look: [-0.5, 3.0, -34] },
+    low: { pos: [3.2, 0.5, 4], look: [-1.5, 6.0, -34] },
+    wide: { pos: [14, 8, 30], look: [0, 8, -46] },
+    up: { pos: [0, 1.3, 8], look: [2, 22, -18] },
+  };
+  function testUpdate() {
+    const c = CAMS[VH.q.cam || 'street'] || CAMS.street;
+    const t = VH.Core.camTarget;
+    t.pos.set(c.pos[0], c.pos[1], c.pos[2]);
+    t.look.set(c.look[0], c.look[1], c.look[2]);
+    t.fov = +(VH.q.fov || 52);
+  }
+  if (VH.q.worldtest) {
+    VH.on('worldtest', testUpdate);
+  }
+
+  return {
+    build: build, update: function (dt) { update(dt); if (VH.q.worldtest) testUpdate(); },
+    raycastGround: raycastGround, navSample: navSample, segments: segments,
+    districts: DISTRICTS,
+    get current() { return world; },
+  };
 })();
 
 
@@ -2567,10 +4083,13 @@ VH.UI = (function () {
     progress(0.45, 'VOLTHAVEN');
     const seed = +(VH.q.seed || 20770);
     const startMission = VH.q.mission || null;
-    const district = startMission && VH.Story.missions[startMission] ? VH.Story.missions[startMission].district : undefined;
+    let district = startMission && VH.Story.missions[startMission] ? VH.Story.missions[startMission].district : undefined;
+    if (VH.q.worldtest && VH.q.worldtest !== '1') district = VH.q.worldtest;
     step('World.build', () => {
       VH.ctx.world = VH.World.build(seed, district);
       if (VH.ctx.world && VH.ctx.world.group) VH.ctx.scene.add(VH.ctx.world.group);
+      /* materials created during world build need the env map applied too */
+      if (VH.Mat.refreshEnv) VH.Mat.refreshEnv();
     });
 
     progress(0.68, 'CHARACTERS');

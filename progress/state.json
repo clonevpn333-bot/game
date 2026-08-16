@@ -1,13 +1,13 @@
 {
   "title": "VOLTHAVEN",
-  "updated": "2026-08-15 20:55 UTC",
-  "wave": 1,
-  "note": "Wave 1 was killed mid-flight by an account session limit — all ten builders terminated before finishing. Three had written real code by then. Everything else is still a stub. Revised plan: sequential builds, 2-3 agents at a time, not ten.",
+  "updated": "2026-08-16 00:47 UTC",
+  "wave": 2,
+  "note": "Switched to building directly rather than fanning out builders. Materials and the city generator are now written and the render pipeline is debugged end to end. The street reads as a real place in the raw scene buffer; the remaining problem is lighting balance in the post chain.",
   "blockers": [
-    "HARD BLOCKER: the ten parallel builders exhausted the account session limit within minutes and all ten were terminated by the API. Limit resets 21:40 UTC. Fan-out width is the cause — the retry runs 2-3 agents at a time.",
-    "GitHub repo creation returned 403 (this app has no repo-creation scope). Work is pushed to claude/cyberpunk-threejs-game-aytbja on clonevpn333-bot/game.",
-    "cdnjs is blocked by sandbox egress policy. Shipped HTML still loads three.js r128 from cdnjs; the capture harness serves a byte-identical copy locally.",
-    "Real Cyberpunk 2077 screenshots cannot be fetched (egress). Blind A/B would run against each critic reference knowledge — no critic has run yet."
+    "Wave 1 fan-out (10 parallel builders) exhausted the account session limit and all ten were killed. Now building sequentially in the main session.",
+    "GitHub repo creation returned 403 (no repo-creation scope on this app). Work is on claude/cyberpunk-threejs-game-aytbja in clonevpn333-bot/game.",
+    "cdnjs blocked by egress policy; shipped HTML still targets cdnjs, capture harness serves an identical r128 locally.",
+    "No image host is reachable (only raw.githubusercontent.com), so a grader subagent cannot be handed an actual Cyberpunk 2077 screenshot. The gauntlet will run against a named reference scene the grader describes from memory before seeing our frame."
   ],
   "pieces": [
     {
@@ -15,16 +15,22 @@
       "name": "Render core & post FX",
       "file": "10_core.js",
       "axis": "LOOKS",
-      "status": "rejected",
-      "rounds": 1,
-      "verdict": "Not shippable yet — self-assessed, no critic has run",
-      "gap": "The full post chain (SSAO, SSR, volumetrics, 6-mip bloom, ACES + grade, FXAA) is architected and runs at 146 draw calls with a clean console, but it was never tuned. Emissive surfaces clip to flat white with no bloom halo, and the test camera points at the sky dome instead of the street, so the frame is 70% empty navy.",
+      "status": "building",
+      "rounds": 3,
+      "verdict": null,
+      "gap": "Pipeline debugged with a new pixel probe and a per-buffer viewer (?showpass=). Found and fixed: volumetric in-scatter had no scattering coefficient (fog buffer was a wall of white); bloom gain accumulated ~30x across the mip chain. Raw scene and resolve buffers are now correct and filmic. Remaining: the sky still reads too bright relative to the street, and the road is under-lit.",
       "shots": [
         {
-          "src": ".shots/core_check.png",
-          "label": "Render core, coretest scene",
-          "when": "wave 1",
-          "note": "Post stack live; values untuned, camera misframed."
+          "src": ".shots/keep_scene.png",
+          "label": "Raw scene buffer (pre-post)",
+          "when": "wave 2",
+          "note": "This is the geometry and lighting before post — dark street, lit windows, warm glow down the canyon."
+        },
+        {
+          "src": ".shots/keep_street.png",
+          "label": "Final composite, Undertide",
+          "when": "wave 2",
+          "note": "Post chain applied. Sky too bright, road under-lit — the current largest gap."
         }
       ]
     },
@@ -33,10 +39,10 @@
       "name": "Procedural materials",
       "file": "20_materials.js",
       "axis": "LOOKS",
-      "status": "queued",
-      "rounds": 0,
+      "status": "building",
+      "rounds": 1,
       "verdict": null,
-      "gap": "Not started — builder terminated before writing any code.",
+      "gap": "Written: wet asphalt with puddle roughness mask, concrete with downward staining and rust bleed, panelled/rusted metal, lit-window generator, neon sign generator (tube/matrix/backlit/painted), skin, fabric, chrome, water, holo. Not yet validated in a showcase render.",
       "shots": []
     },
     {
@@ -44,10 +50,10 @@
       "name": "City generation",
       "file": "30_world.js",
       "axis": "LOOKS",
-      "status": "queued",
-      "rounds": 0,
+      "status": "building",
+      "rounds": 1,
       "verdict": null,
-      "gap": "Not started — builder terminated before writing any code.",
+      "gap": "Seven districts parameterised; Undertide built and rendering at 213 draw calls / 16k tris. Facades use a plinth-floors-crown system with shanty additions, fire escapes, AC units, catenary cables, blade signs, steam, rain, and a distant skyline. Cover points and colliders emitted. Needs the other six districts verified and crowd/vehicles added.",
       "shots": []
     },
     {
@@ -129,6 +135,16 @@
     }
   ],
   "log": [
+    {
+      "ts": "21:0x",
+      "piece": "world+mat",
+      "detail": "Wrote 20_materials.js and 30_world.js directly (no subagents). First city street renders."
+    },
+    {
+      "ts": "21:1x",
+      "piece": "core",
+      "detail": "Root-caused the white-frame bug with a render-target pixel probe: volumetric in-scatter accumulated light with no scattering coefficient, and bloom summed ~30x across six mips. Both fixed; raw scene buffer confirmed correct."
+    },
     {
       "ts": "17:35",
       "piece": "wave 1",
