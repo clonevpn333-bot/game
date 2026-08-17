@@ -42,8 +42,21 @@ jobs:
           gradle-version: release
           cache-read-only: false
 
+      # On failure, print just the lines that say what broke, at the very end
+      # of the log, so a failed build is cheap to diagnose.
       - name: Build
-        run: gradle --no-daemon --stacktrace build
+        run: |
+          set +e
+          gradle --no-daemon build > /tmp/build.log 2>&1
+          code=$?
+          if [ "$code" -ne 0 ]; then
+            echo "===== BUILD FAILED - filtered diagnostics ====="
+            grep -nE "error:|FAILURE:|What went wrong|Could not (find|resolve|get)|Caused by:|cannot find symbol|does not exist|Plugin \[id" /tmp/build.log | head -80
+            echo "===== last 25 raw lines ====="
+            tail -25 /tmp/build.log
+            echo "===== END ====="
+          fi
+          exit $code
 
       - name: Show what was produced
         run: ls -la build/libs
