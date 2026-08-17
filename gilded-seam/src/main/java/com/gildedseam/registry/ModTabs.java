@@ -1,61 +1,82 @@
 package com.gildedseam.registry;
 
-import net.fabricmc.fabric.api.itemgroup.v1.CreativeModeTabEvents;
-import net.minecraft.world.item.CreativeModeTabs;
+import com.gildedseam.GildedSeam;
+
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
 
 /**
- * Creative inventory placement. (Fabric API renamed ItemGroupEvents to
- * CreativeModeTabEvents in 26.1 to match official names.)
+ * The mod's own page in the creative inventory.
+ *
+ * <p>Everything the Amberblight adds lives in one tab of its own rather than
+ * being scattered through the vanilla ones, so the whole mod can be browsed
+ * in a single place: blocks first, then the tools that fight it, then the
+ * bestiary as spawn eggs.
  */
 public final class ModTabs {
+    public static final ResourceKey<CreativeModeTab> AMBERBLIGHT_KEY =
+            ResourceKey.create(Registries.CREATIVE_MODE_TAB, GildedSeam.id("amberblight"));
+
+    public static CreativeModeTab amberblight;
+
     private ModTabs() {
     }
 
     public static void init() {
-        CreativeModeTabEvents.modifyEntriesEvent(CreativeModeTabs.INGREDIENTS).register(entries -> {
-            entries.accept(ModItems.PORCELAIN_SHARD);
-            entries.accept(ModItems.GOLD_THREAD);
-            entries.accept(ModItems.RIVENING_SALT);
-            entries.accept(ModItems.AUTARCH_CROWN);
-        });
+        amberblight = Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, AMBERBLIGHT_KEY,
+                CreativeModeTab.builder(CreativeModeTab.Row.TOP, 0)
+                        .title(Component.translatable("itemGroup.gildedseam.amberblight"))
+                        .icon(() -> new ItemStack(ModItems.KILN_HEART_ITEM))
+                        .displayItems((params, out) -> {
+                            // The infection itself.
+                            out.accept(ModItems.KILN_HEART_ITEM);
+                            out.accept(ModItems.SEAMSTONE_ITEM);
+                            out.accept(ModItems.GILDED_VEIN_ITEM);
+                            out.accept(ModItems.PORCELAIN_BLOOM_ITEM);
+                            out.accept(ModItems.GILT_MASS_ITEM);
+                            out.accept(ModItems.FIRED_SHELL_ITEM);
 
-        CreativeModeTabEvents.modifyEntriesEvent(CreativeModeTabs.COMBAT).register(entries -> {
-            entries.accept(ModItems.KINTSUGI_BLADE);
-            entries.accept(ModItems.SALT_RIFLE);
-            entries.accept(ModItems.SALT_DART);
-            entries.accept(ModItems.RIVENING_HEART);
-        });
+                            // What it leaves behind, and what you make of it.
+                            out.accept(ModItems.PORCELAIN_SHARD);
+                            out.accept(ModItems.GOLD_THREAD);
+                            out.accept(ModItems.RIVENING_SALT);
 
-        CreativeModeTabEvents.modifyEntriesEvent(CreativeModeTabs.NATURAL_BLOCKS).register(entries -> {
-            entries.accept(ModItems.SEAMSTONE_ITEM);
-            entries.accept(ModItems.GILDED_VEIN_ITEM);
-            entries.accept(ModItems.PORCELAIN_BLOOM_ITEM);
-            entries.accept(ModItems.KILN_HEART_ITEM);
-            entries.accept(ModItems.FIRED_SHELL_ITEM);
-            entries.accept(ModItems.GILT_MASS_ITEM);
-        });
+                            // How you fight back.
+                            out.accept(ModItems.KINTSUGI_BLADE);
+                            out.accept(ModItems.SALT_RIFLE);
+                            out.accept(ModItems.SALT_DART);
+                            out.accept(ModItems.RIVENING_HEART);
+                            out.accept(ModItems.AUTARCH_CROWN);
 
-        CreativeModeTabEvents.modifyEntriesEvent(CreativeModeTabs.SPAWN_EGGS).register(entries -> {
-            entries.accept(ModEntities.SHARDLING_SPAWN_EGG);
-            entries.accept(ModEntities.VESSEL_SPAWN_EGG);
-            entries.accept(ModEntities.PORCELAIN_HOUND_SPAWN_EGG);
-            entries.accept(ModEntities.SEAMSTRESS_SPAWN_EGG);
-            entries.accept(ModEntities.KILNBORN_SPAWN_EGG);
-            entries.accept(ModEntities.CHIME_SPAWN_EGG);
-            entries.accept(ModEntities.FONT_OF_GOLD_SPAWN_EGG);
-            entries.accept(ModEntities.MANIFOLD_SPAWN_EGG);
-            entries.accept(ModEntities.RELIQUARY_COLOSSUS_SPAWN_EGG);
-            entries.accept(ModEntities.PORCELAIN_AUTARCH_SPAWN_EGG);
-            entries.accept(ModEntities.SALT_SWORN_SPAWN_EGG);
-            entries.accept(ModEntities.GILDED_COW_SPAWN_EGG);
-            entries.accept(ModEntities.GILDED_PIG_SPAWN_EGG);
-            entries.accept(ModEntities.GILDED_SHEEP_SPAWN_EGG);
-            entries.accept(ModEntities.GILDED_CHICKEN_SPAWN_EGG);
-            entries.accept(ModEntities.GILDED_SPIDER_SPAWN_EGG);
-            entries.accept(ModEntities.GILDED_CASK_SPAWN_EGG);
-            entries.accept(ModEntities.REFUGEE_SPAWN_EGG);
-            entries.accept(ModEntities.GILT_MAD_SPAWN_EGG);
-            entries.accept(ModEntities.HALF_SEWN_SPAWN_EGG);
-        });
+                            // The bestiary.
+                            out.accept(ModEntities.SHARDLING_SPAWN_EGG);
+                            out.accept(ModEntities.VESSEL_SPAWN_EGG);
+                            out.accept(ModEntities.PORCELAIN_HOUND_SPAWN_EGG);
+                            out.accept(ModEntities.SEAMSTRESS_SPAWN_EGG);
+                            out.accept(ModEntities.KILNBORN_SPAWN_EGG);
+                            out.accept(ModEntities.CHIME_SPAWN_EGG);
+                            out.accept(ModEntities.FONT_OF_GOLD_SPAWN_EGG);
+                            out.accept(ModEntities.MANIFOLD_SPAWN_EGG);
+                            out.accept(ModEntities.RELIQUARY_COLOSSUS_SPAWN_EGG);
+                            out.accept(ModEntities.PORCELAIN_AUTARCH_SPAWN_EGG);
+                            out.accept(ModEntities.GILDED_COW_SPAWN_EGG);
+                            out.accept(ModEntities.GILDED_PIG_SPAWN_EGG);
+                            out.accept(ModEntities.GILDED_SHEEP_SPAWN_EGG);
+                            out.accept(ModEntities.GILDED_CHICKEN_SPAWN_EGG);
+                            out.accept(ModEntities.GILDED_SPIDER_SPAWN_EGG);
+                            out.accept(ModEntities.GILDED_CASK_SPAWN_EGG);
+                            out.accept(ModEntities.HALF_SEWN_SPAWN_EGG);
+
+                            // The living.
+                            out.accept(ModEntities.SALT_SWORN_SPAWN_EGG);
+                            out.accept(ModEntities.REFUGEE_SPAWN_EGG);
+                            out.accept(ModEntities.GILT_MAD_SPAWN_EGG);
+                        })
+                        .build());
     }
 }

@@ -83,5 +83,6 @@
   "item.gildedseam.salt_sworn_spawn_egg": "Salt-Sworn Spawn Egg",
   "item.gildedseam.seamstress_spawn_egg": "Seamstress Spawn Egg",
   "item.gildedseam.shardling_spawn_egg": "Shardling Spawn Egg",
-  "item.gildedseam.vessel_spawn_egg": "Vessel Spawn Egg"
+  "item.gildedseam.vessel_spawn_egg": "Vessel Spawn Egg",
+  "itemGroup.gildedseam.amberblight": "The Amberblight"
 }
