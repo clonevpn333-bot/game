@@ -9,12 +9,12 @@ import com.gildedseam.infection.SeamHelper;
 
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class VesselRenderer extends MobRenderer<VesselEntity, VesselRenderState, VesselModel> {
-    private static final ResourceLocation TEXTURE = GildedSeam.id("textures/entity/vessel.png");
-    private static final ResourceLocation TEXTURE_STONEWARE = GildedSeam.id("textures/entity/vessel_stoneware.png");
-    private static final ResourceLocation TEXTURE_LUSTRE = GildedSeam.id("textures/entity/vessel_lustre.png");
+    private static final Identifier TEXTURE = GildedSeam.id("textures/entity/vessel.png");
+    private static final Identifier TEXTURE_STONEWARE = GildedSeam.id("textures/entity/vessel_stoneware.png");
+    private static final Identifier TEXTURE_LUSTRE = GildedSeam.id("textures/entity/vessel_lustre.png");
 
     public VesselRenderer(EntityRendererProvider.Context context) {
         super(context, new VesselModel(context.bakeLayer(ModModelLayers.VESSEL)), 0.5F);
@@ -35,7 +35,7 @@ public class VesselRenderer extends MobRenderer<VesselEntity, VesselRenderState,
     }
 
     @Override
-    public ResourceLocation getTextureLocation(VesselRenderState state) {
+    public Identifier getTextureLocation(VesselRenderState state) {
         return switch (state.tier) {
             case SeamHelper.TIER_LUSTRE -> TEXTURE_LUSTRE;
             case SeamHelper.TIER_STONEWARE -> TEXTURE_STONEWARE;

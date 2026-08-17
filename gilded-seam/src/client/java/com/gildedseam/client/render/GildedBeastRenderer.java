@@ -9,13 +9,13 @@ import com.gildedseam.infection.SeamHelper;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /** One renderer for the whole gilded farmyard; species picked by name. */
 public class GildedBeastRenderer extends MobRenderer<GildedBeastEntity, GildedBeastRenderState, GildedBeastModel> {
-    private final ResourceLocation texture;
-    private final ResourceLocation textureStoneware;
-    private final ResourceLocation textureLustre;
+    private final Identifier texture;
+    private final Identifier textureStoneware;
+    private final Identifier textureLustre;
 
     public GildedBeastRenderer(EntityRendererProvider.Context context, ModelLayerLocation layer, String name) {
         super(context, new GildedBeastModel(context.bakeLayer(layer), GildedBeastModel.CONFIGS.get(name)), 0.5F);
@@ -37,7 +37,7 @@ public class GildedBeastRenderer extends MobRenderer<GildedBeastEntity, GildedBe
     }
 
     @Override
-    public ResourceLocation getTextureLocation(GildedBeastRenderState state) {
+    public Identifier getTextureLocation(GildedBeastRenderState state) {
         return switch (state.tier) {
             case SeamHelper.TIER_LUSTRE -> this.textureLustre;
             case SeamHelper.TIER_STONEWARE -> this.textureStoneware;

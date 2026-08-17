@@ -9,7 +9,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.sounds.SoundEvent;
@@ -55,13 +55,13 @@ public abstract class SeamMob extends Monster {
     private static final EntityDataAccessor<Boolean> DATA_OUTLIER =
             SynchedEntityData.defineId(SeamMob.class, EntityDataSerializers.BOOLEAN);
 
-    private static final ResourceLocation TIER_HEALTH_ID = GildedSeam.id("tier_health");
-    private static final ResourceLocation TIER_DAMAGE_ID = GildedSeam.id("tier_damage");
-    private static final ResourceLocation TIER_SCALE_ID = GildedSeam.id("tier_scale");
-    private static final ResourceLocation TIER_KNOCKBACK_ID = GildedSeam.id("tier_knockback");
-    private static final ResourceLocation OUTLIER_HEALTH_ID = GildedSeam.id("outlier_health");
-    private static final ResourceLocation OUTLIER_DAMAGE_ID = GildedSeam.id("outlier_damage");
-    private static final ResourceLocation OUTLIER_SCALE_ID = GildedSeam.id("outlier_scale");
+    private static final Identifier TIER_HEALTH_ID = GildedSeam.id("tier_health");
+    private static final Identifier TIER_DAMAGE_ID = GildedSeam.id("tier_damage");
+    private static final Identifier TIER_SCALE_ID = GildedSeam.id("tier_scale");
+    private static final Identifier TIER_KNOCKBACK_ID = GildedSeam.id("tier_knockback");
+    private static final Identifier OUTLIER_HEALTH_ID = GildedSeam.id("outlier_health");
+    private static final Identifier OUTLIER_DAMAGE_ID = GildedSeam.id("outlier_damage");
+    private static final Identifier OUTLIER_SCALE_ID = GildedSeam.id("outlier_scale");
 
     /** One firing in fifty comes out of the kiln wrong — and much worse. */
     private static final float OUTLIER_CHANCE = 0.02F;
@@ -146,7 +146,7 @@ public abstract class SeamMob extends Monster {
     }
 
     private void setOrReplaceModifier(Holder<net.minecraft.world.entity.ai.attributes.Attribute> attribute,
-            ResourceLocation id, double amount, AttributeModifier.Operation operation) {
+            Identifier id, double amount, AttributeModifier.Operation operation) {
         AttributeInstance instance = this.getAttribute(attribute);
         if (instance == null) {
             return;

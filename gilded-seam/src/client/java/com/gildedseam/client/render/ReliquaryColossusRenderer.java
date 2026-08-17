@@ -9,13 +9,13 @@ import com.gildedseam.infection.SeamHelper;
 
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class ReliquaryColossusRenderer
         extends MobRenderer<ReliquaryColossusEntity, ReliquaryColossusRenderState, ReliquaryColossusModel> {
-    private static final ResourceLocation TEXTURE = GildedSeam.id("textures/entity/reliquary_colossus.png");
-    private static final ResourceLocation TEXTURE_STONEWARE = GildedSeam.id("textures/entity/reliquary_colossus_stoneware.png");
-    private static final ResourceLocation TEXTURE_LUSTRE = GildedSeam.id("textures/entity/reliquary_colossus_lustre.png");
+    private static final Identifier TEXTURE = GildedSeam.id("textures/entity/reliquary_colossus.png");
+    private static final Identifier TEXTURE_STONEWARE = GildedSeam.id("textures/entity/reliquary_colossus_stoneware.png");
+    private static final Identifier TEXTURE_LUSTRE = GildedSeam.id("textures/entity/reliquary_colossus_lustre.png");
 
     public ReliquaryColossusRenderer(EntityRendererProvider.Context context) {
         super(context, new ReliquaryColossusModel(context.bakeLayer(ModModelLayers.RELIQUARY_COLOSSUS)), 1.1F);
@@ -39,7 +39,7 @@ public class ReliquaryColossusRenderer
     }
 
     @Override
-    public ResourceLocation getTextureLocation(ReliquaryColossusRenderState state) {
+    public Identifier getTextureLocation(ReliquaryColossusRenderState state) {
         return switch (state.tier) {
             case SeamHelper.TIER_LUSTRE -> TEXTURE_LUSTRE;
             case SeamHelper.TIER_STONEWARE -> TEXTURE_STONEWARE;

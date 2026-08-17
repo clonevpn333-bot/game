@@ -9,12 +9,12 @@ import com.gildedseam.infection.SeamHelper;
 
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class ShardlingRenderer extends MobRenderer<ShardlingEntity, ShardlingRenderState, ShardlingModel> {
-    private static final ResourceLocation TEXTURE = GildedSeam.id("textures/entity/shardling.png");
-    private static final ResourceLocation TEXTURE_STONEWARE = GildedSeam.id("textures/entity/shardling_stoneware.png");
-    private static final ResourceLocation TEXTURE_LUSTRE = GildedSeam.id("textures/entity/shardling_lustre.png");
+    private static final Identifier TEXTURE = GildedSeam.id("textures/entity/shardling.png");
+    private static final Identifier TEXTURE_STONEWARE = GildedSeam.id("textures/entity/shardling_stoneware.png");
+    private static final Identifier TEXTURE_LUSTRE = GildedSeam.id("textures/entity/shardling_lustre.png");
 
     public ShardlingRenderer(EntityRendererProvider.Context context) {
         super(context, new ShardlingModel(context.bakeLayer(ModModelLayers.SHARDLING)), 0.35F);
@@ -33,7 +33,7 @@ public class ShardlingRenderer extends MobRenderer<ShardlingEntity, ShardlingRen
     }
 
     @Override
-    public ResourceLocation getTextureLocation(ShardlingRenderState state) {
+    public Identifier getTextureLocation(ShardlingRenderState state) {
         return switch (state.tier) {
             case SeamHelper.TIER_LUSTRE -> TEXTURE_LUSTRE;
             case SeamHelper.TIER_STONEWARE -> TEXTURE_STONEWARE;

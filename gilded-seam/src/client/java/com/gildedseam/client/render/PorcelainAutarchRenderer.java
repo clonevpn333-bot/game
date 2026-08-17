@@ -9,13 +9,13 @@ import com.gildedseam.infection.SeamHelper;
 
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class PorcelainAutarchRenderer
         extends MobRenderer<PorcelainAutarchEntity, PorcelainAutarchRenderState, PorcelainAutarchModel> {
-    private static final ResourceLocation TEXTURE = GildedSeam.id("textures/entity/porcelain_autarch.png");
-    private static final ResourceLocation TEXTURE_STONEWARE = GildedSeam.id("textures/entity/porcelain_autarch_stoneware.png");
-    private static final ResourceLocation TEXTURE_LUSTRE = GildedSeam.id("textures/entity/porcelain_autarch_lustre.png");
+    private static final Identifier TEXTURE = GildedSeam.id("textures/entity/porcelain_autarch.png");
+    private static final Identifier TEXTURE_STONEWARE = GildedSeam.id("textures/entity/porcelain_autarch_stoneware.png");
+    private static final Identifier TEXTURE_LUSTRE = GildedSeam.id("textures/entity/porcelain_autarch_lustre.png");
 
     public PorcelainAutarchRenderer(EntityRendererProvider.Context context) {
         super(context, new PorcelainAutarchModel(context.bakeLayer(ModModelLayers.PORCELAIN_AUTARCH)), 1.4F);
@@ -41,7 +41,7 @@ public class PorcelainAutarchRenderer
     }
 
     @Override
-    public ResourceLocation getTextureLocation(PorcelainAutarchRenderState state) {
+    public Identifier getTextureLocation(PorcelainAutarchRenderState state) {
         return switch (state.tier) {
             case SeamHelper.TIER_LUSTRE -> TEXTURE_LUSTRE;
             case SeamHelper.TIER_STONEWARE -> TEXTURE_STONEWARE;

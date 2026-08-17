@@ -12,7 +12,7 @@ import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -42,8 +42,8 @@ public final class RiveningCascade {
     private static final float MAX_RADIUS = 96.0F;
     private static final float SPEED_PER_TICK = 0.6F;
     private static final int SAMPLES_PER_TICK = 700;
-    private static final ResourceLocation FINAL_ADVANCEMENT =
-            ResourceLocation.fromNamespaceAndPath("gildedseam", "the_rivening");
+    private static final Identifier FINAL_ADVANCEMENT =
+            Identifier.fromNamespaceAndPath("gildedseam", "the_rivening");
 
     private static final List<RiveningCascade> ACTIVE = new ArrayList<>();
 

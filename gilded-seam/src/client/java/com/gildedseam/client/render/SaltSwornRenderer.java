@@ -8,10 +8,10 @@ import com.gildedseam.entity.SaltSwornEntity;
 
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class SaltSwornRenderer extends MobRenderer<SaltSwornEntity, SaltSwornRenderState, SaltSwornModel> {
-    private static final ResourceLocation TEXTURE = GildedSeam.id("textures/entity/salt_sworn.png");
+    private static final Identifier TEXTURE = GildedSeam.id("textures/entity/salt_sworn.png");
 
     public SaltSwornRenderer(EntityRendererProvider.Context context) {
         super(context, new SaltSwornModel(context.bakeLayer(ModModelLayers.SALT_SWORN)), 0.5F);
@@ -29,7 +29,7 @@ public class SaltSwornRenderer extends MobRenderer<SaltSwornEntity, SaltSwornRen
     }
 
     @Override
-    public ResourceLocation getTextureLocation(SaltSwornRenderState state) {
+    public Identifier getTextureLocation(SaltSwornRenderState state) {
         return TEXTURE;
     }
 }

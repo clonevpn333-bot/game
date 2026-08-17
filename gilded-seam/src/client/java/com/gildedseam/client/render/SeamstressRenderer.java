@@ -9,12 +9,12 @@ import com.gildedseam.infection.SeamHelper;
 
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class SeamstressRenderer extends MobRenderer<SeamstressEntity, SeamstressRenderState, SeamstressModel> {
-    private static final ResourceLocation TEXTURE = GildedSeam.id("textures/entity/seamstress.png");
-    private static final ResourceLocation TEXTURE_STONEWARE = GildedSeam.id("textures/entity/seamstress_stoneware.png");
-    private static final ResourceLocation TEXTURE_LUSTRE = GildedSeam.id("textures/entity/seamstress_lustre.png");
+    private static final Identifier TEXTURE = GildedSeam.id("textures/entity/seamstress.png");
+    private static final Identifier TEXTURE_STONEWARE = GildedSeam.id("textures/entity/seamstress_stoneware.png");
+    private static final Identifier TEXTURE_LUSTRE = GildedSeam.id("textures/entity/seamstress_lustre.png");
 
     public SeamstressRenderer(EntityRendererProvider.Context context) {
         super(context, new SeamstressModel(context.bakeLayer(ModModelLayers.SEAMSTRESS)), 0.45F);
@@ -35,7 +35,7 @@ public class SeamstressRenderer extends MobRenderer<SeamstressEntity, Seamstress
     }
 
     @Override
-    public ResourceLocation getTextureLocation(SeamstressRenderState state) {
+    public Identifier getTextureLocation(SeamstressRenderState state) {
         return switch (state.tier) {
             case SeamHelper.TIER_LUSTRE -> TEXTURE_LUSTRE;
             case SeamHelper.TIER_STONEWARE -> TEXTURE_STONEWARE;

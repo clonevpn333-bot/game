@@ -9,12 +9,12 @@ import com.gildedseam.infection.SeamHelper;
 
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class ChimeRenderer extends MobRenderer<ChimeEntity, ChimeRenderState, ChimeModel> {
-    private static final ResourceLocation TEXTURE = GildedSeam.id("textures/entity/chime.png");
-    private static final ResourceLocation TEXTURE_STONEWARE = GildedSeam.id("textures/entity/chime_stoneware.png");
-    private static final ResourceLocation TEXTURE_LUSTRE = GildedSeam.id("textures/entity/chime_lustre.png");
+    private static final Identifier TEXTURE = GildedSeam.id("textures/entity/chime.png");
+    private static final Identifier TEXTURE_STONEWARE = GildedSeam.id("textures/entity/chime_stoneware.png");
+    private static final Identifier TEXTURE_LUSTRE = GildedSeam.id("textures/entity/chime_lustre.png");
 
     public ChimeRenderer(EntityRendererProvider.Context context) {
         super(context, new ChimeModel(context.bakeLayer(ModModelLayers.CHIME)), 0.3F);
@@ -33,7 +33,7 @@ public class ChimeRenderer extends MobRenderer<ChimeEntity, ChimeRenderState, Ch
     }
 
     @Override
-    public ResourceLocation getTextureLocation(ChimeRenderState state) {
+    public Identifier getTextureLocation(ChimeRenderState state) {
         return switch (state.tier) {
             case SeamHelper.TIER_LUSTRE -> TEXTURE_LUSTRE;
             case SeamHelper.TIER_STONEWARE -> TEXTURE_STONEWARE;

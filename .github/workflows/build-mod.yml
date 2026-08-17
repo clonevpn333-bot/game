@@ -70,10 +70,14 @@ jobs:
               echo "----- API ORACLE: anything named like a resource id -----"
               unzip -l "$jar" | grep -oE "net/minecraft/[A-Za-z0-9/_]*/(Identifier|ResourceKey|ResourceLocation)\\.class" | sort -u | head -10
               echo "----- API ORACLE: constructors -----"
-              for c in net.minecraft.world.item.SpawnEggItem net.minecraft.server.level.ServerBossEvent net.minecraft.world.phys.Vec3; do
-                echo "### $c"
-                javap -p -cp "$jar" "$c" 2>/dev/null | grep -E "public|atCenterOf" | head -10
-              done
+              echo "### Identifier factories"
+              javap -p -cp "$jar" net.minecraft.resources.Identifier 2>/dev/null | grep -E "static .*Identifier" | head -12
+              echo "### Item.Properties (spawn egg / component binding)"
+              javap -p -cp "$jar" 'net.minecraft.world.item.Item$Properties' 2>/dev/null | grep -iE "spawn|egg|Properties [a-z]" | head -20
+              echo "### Vec3 statics"
+              javap -p -cp "$jar" net.minecraft.world.phys.Vec3 2>/dev/null | grep -iE "atCenterOf|atLowerCornerOf|static" | head -8
+              echo "### EntityType statics"
+              javap -p -cp "$jar" net.minecraft.world.entity.EntityType 2>/dev/null | grep -iE "static|Builder" | head -10
               echo "----- API ORACLE: member signatures -----"
               for c in net.minecraft.world.level.Level net.minecraft.core.BlockPos net.minecraft.world.entity.player.Player net.minecraft.world.item.SpawnEggItem net.minecraft.server.level.ServerBossEvent; do
                 echo "### $c"

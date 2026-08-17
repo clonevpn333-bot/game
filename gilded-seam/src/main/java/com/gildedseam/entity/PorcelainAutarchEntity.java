@@ -79,7 +79,7 @@ public class PorcelainAutarchEntity extends SeamMob {
     public final AnimationState decreeAnimationState = new AnimationState();
 
     private final net.minecraft.server.level.ServerBossEvent bossEvent =
-            new net.minecraft.server.level.ServerBossEvent(this.getDisplayName(),
+            new net.minecraft.server.level.ServerBossEvent(java.util.UUID.randomUUID(), this.getDisplayName(),
                     BossEvent.BossBarColor.RED, BossEvent.BossBarOverlay.NOTCHED_10);
 
     private int awakenTicks;

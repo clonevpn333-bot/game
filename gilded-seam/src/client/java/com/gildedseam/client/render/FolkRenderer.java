@@ -9,14 +9,14 @@ import com.gildedseam.infection.SeamHelper;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Mob;
 
 /** One renderer for all the human folk; the half-sewn gets tier textures. */
 public class FolkRenderer extends MobRenderer<Mob, FolkRenderState, FolkModel> {
-    private final ResourceLocation texture;
-    private final ResourceLocation textureStoneware;
-    private final ResourceLocation textureLustre;
+    private final Identifier texture;
+    private final Identifier textureStoneware;
+    private final Identifier textureLustre;
     private final boolean tiered;
 
     public FolkRenderer(EntityRendererProvider.Context context, ModelLayerLocation layer,
@@ -40,7 +40,7 @@ public class FolkRenderer extends MobRenderer<Mob, FolkRenderState, FolkModel> {
     }
 
     @Override
-    public ResourceLocation getTextureLocation(FolkRenderState state) {
+    public Identifier getTextureLocation(FolkRenderState state) {
         if (!this.tiered) {
             return this.texture;
         }

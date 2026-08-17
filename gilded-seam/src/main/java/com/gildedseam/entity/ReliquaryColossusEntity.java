@@ -243,8 +243,7 @@ public class ReliquaryColossusEntity extends SeamMob {
 
         ServerBossEventHolder(ReliquaryColossusEntity owner) {
             this.owner = owner;
-            this.event = new net.minecraft.server.level.ServerBossEvent(
-                    owner.getDisplayName(), BossEvent.BossBarColor.YELLOW, BossEvent.BossBarOverlay.NOTCHED_6);
+            this.event = new net.minecraft.server.level.ServerBossEvent(java.util.UUID.randomUUID(), owner.getDisplayName(), BossEvent.BossBarColor.YELLOW, BossEvent.BossBarOverlay.NOTCHED_6);
         }
 
         void update() {

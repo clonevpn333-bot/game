@@ -9,12 +9,12 @@ import com.gildedseam.infection.SeamHelper;
 
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class FontOfGoldRenderer extends MobRenderer<FontOfGoldEntity, FontOfGoldRenderState, FontOfGoldModel> {
-    private static final ResourceLocation TEXTURE = GildedSeam.id("textures/entity/font_of_gold.png");
-    private static final ResourceLocation TEXTURE_STONEWARE = GildedSeam.id("textures/entity/font_of_gold_stoneware.png");
-    private static final ResourceLocation TEXTURE_LUSTRE = GildedSeam.id("textures/entity/font_of_gold_lustre.png");
+    private static final Identifier TEXTURE = GildedSeam.id("textures/entity/font_of_gold.png");
+    private static final Identifier TEXTURE_STONEWARE = GildedSeam.id("textures/entity/font_of_gold_stoneware.png");
+    private static final Identifier TEXTURE_LUSTRE = GildedSeam.id("textures/entity/font_of_gold_lustre.png");
 
     public FontOfGoldRenderer(EntityRendererProvider.Context context) {
         super(context, new FontOfGoldModel(context.bakeLayer(ModModelLayers.FONT_OF_GOLD)), 0.6F);
@@ -33,7 +33,7 @@ public class FontOfGoldRenderer extends MobRenderer<FontOfGoldEntity, FontOfGold
     }
 
     @Override
-    public ResourceLocation getTextureLocation(FontOfGoldRenderState state) {
+    public Identifier getTextureLocation(FontOfGoldRenderState state) {
         return switch (state.tier) {
             case SeamHelper.TIER_LUSTRE -> TEXTURE_LUSTRE;
             case SeamHelper.TIER_STONEWARE -> TEXTURE_STONEWARE;
