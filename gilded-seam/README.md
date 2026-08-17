@@ -178,3 +178,36 @@ pip install pillow
 python3 tools/modelgen/gen.py   # entity geometry snippets + entity textures
 python3 tools/asset_gen.py      # block/item textures, icon, all JSON assets
 ```
+
+---
+
+## AmberBench: the modelling toolkit (`tools/bench/`)
+
+Hand-authoring `CubeListBuilder` chains is why the first creatures looked like
+furniture. `tools/bench/` is this project's own model compiler, written to be
+strictly more expressive than what the game accepts, and it lowers to plain
+vanilla `LayerDefinition` code:
+
+| Feature | Why it matters |
+| --- | --- |
+| **Per-box rotation** | Vanilla can only rotate a *part*. Boxes here carry their own `rot`/`pivot` and the compiler hoists each into a synthetic part, so organic angles are one line instead of hand-nested parts. |
+| **`mirror()`** | Author one side of a creature; the other is reflected exactly - pivots, box origins and rotation signs all flipped. |
+| **`chain()`** | Tapering multi-segment limbs: tongues, tentacles, spines, fingers, horns. One call, six links. |
+| **`torus()` / `radial()`** | Rings and radial arrays - the Sovereign's haloes, wrist rings, rib cages, crowns. |
+| **Auto texture sizing** | The packer tries 32 -> 512 and picks the smallest sheet the geometry fits, so an edit can never silently overflow the UVs. |
+| **Host silhouettes** | `anatomy.py` holds the *vanilla* proportions of each mob. Infected variants start from them, so a blighted cow is still a cow. |
+| **Corruption operators** | `split_open()`, `grafted_arm()`, `lolling_tongue()`, `eye_stalks()`, `spine_plates()`, `antler_roots()`, `extra_legs()`, `resin_growth()` - each emits `mut1_`/`mut2_` parts that appear as the creature is fired further. |
+| **One source of truth** | The same compiled tree feeds the Java emitter, the texture painter and the renderer, so the preview is provably the model the game builds. |
+
+```bash
+pip install pillow
+python3 tools/bench/gen.py previews/   # Java + textures + bestiary sheets
+```
+
+## Downloading the jar
+
+The sandbox this was authored in cannot reach the Fabric or Mojang maven
+repositories, so the build runs in CI instead:
+`.github/workflows/build-mod.yml` builds on every push and publishes the jar
+both as a workflow artifact and as the rolling **`latest-blight`**
+prerelease. Drop it in `.minecraft/mods` next to Fabric API for 26.2.
