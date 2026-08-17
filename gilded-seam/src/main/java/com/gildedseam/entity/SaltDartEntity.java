@@ -31,7 +31,9 @@ public class SaltDartEntity extends ThrowableItemProjectile {
     }
 
     public SaltDartEntity(Level level, LivingEntity shooter) {
-        super(ModEntities.SALT_DART, shooter, level);
+        // 26.2 threw item projectiles carry their stack explicitly.
+        super(ModEntities.SALT_DART, shooter, level,
+                new net.minecraft.world.item.ItemStack(ModItems.SALT_DART));
     }
 
     @Override

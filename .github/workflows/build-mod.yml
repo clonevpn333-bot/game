@@ -61,6 +61,10 @@ jobs:
               echo "----- API ORACLE: anything named like a resource id -----"
               unzip -l "$jar" | grep -oE "net/minecraft/[A-Za-z0-9/_]*/(Identifier|ResourceKey|ResourceLocation)\\.class" | sort -u | head -10
               echo "----- API ORACLE: constructors -----"
+              echo "### ThrowableItemProjectile constructors"
+              javap -p -cp "$jar" net.minecraft.world.entity.projectile.throwableitemprojectile.ThrowableItemProjectile 2>/dev/null | grep -E "ThrowableItemProjectile\(" | head -6
+              echo "### LevelAccessor day time"
+              javap -p -cp "$jar" net.minecraft.world.level.LevelAccessor 2>/dev/null | grep -iE "day|time" | head -6
               echo "### Identifier factories"
               javap -p -cp "$jar" net.minecraft.resources.Identifier 2>/dev/null | grep -E "fromNamespaceAndPath|parse|of\(" | head -10
               echo "### Item.Properties (spawn egg / component binding)"

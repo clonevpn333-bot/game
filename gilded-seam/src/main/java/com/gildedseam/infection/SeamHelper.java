@@ -107,7 +107,7 @@ public final class SeamHelper {
      */
     public static int rollTier(LevelAccessor level, BlockPos pos, RandomSource random) {
         int saturation = countSeamNear(level, pos, 6, 48);
-        long days = level.dayTime() / 24000L;
+        long days = level.getLevelData().getDayTime() / 24000L;
 
         int tier = TIER_BISQUE;
         if ((saturation >= 10 || days >= 8) && random.nextFloat() < 0.45F) {
