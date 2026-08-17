@@ -50,10 +50,16 @@ jobs:
           ./gradlew --no-daemon build > /tmp/build.log 2>&1
           code=$?
           if [ "$code" -ne 0 ]; then
-            echo "===== BUILD FAILED - filtered diagnostics ====="
-            grep -nE "error:|FAILURE:|What went wrong|Could not (find|resolve|get)|Caused by:|cannot find symbol|does not exist|Plugin \[id" /tmp/build.log | head -80
-            echo "===== last 25 raw lines ====="
-            tail -25 /tmp/build.log
+            echo "===== BUILD FAILED ====="
+            echo "total errors: $(grep -c 'error:' /tmp/build.log)"
+            echo "----- distinct messages (count first) -----"
+            grep -oE 'error: .*' /tmp/build.log | sed 's/error: //' | sort | uniq -c | sort -rn | head -40
+            echo "----- distinct missing symbols -----"
+            grep -oE 'symbol: +(method|class|variable) .*' /tmp/build.log | sort | uniq -c | sort -rn | head -40
+            echo "----- first sites -----"
+            grep -oE '[A-Za-z0-9_]+\.java:[0-9]+: error: [^\n]*' /tmp/build.log | head -45
+            echo "----- non-compile failures -----"
+            grep -E 'FAILURE:|What went wrong|Could not (find|resolve|get)|Plugin \[id' /tmp/build.log | head -15
             echo "===== END ====="
           fi
           exit $code

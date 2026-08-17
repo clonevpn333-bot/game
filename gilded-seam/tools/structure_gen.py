@@ -370,7 +370,149 @@ def build_hamlet():
     t.save("refuge_hamlet")
 
 
+
+
+# ---------------------------------------------------------------------------
+# THE MOTHER — where the blight came from.
+#
+# A colossal pale oak grown over something it should not have grown over.
+# The trunk is hollow; inside, at the bottom of a root-cage, sits the World
+# Core: a knot of kiln-hearts and poured resin that is still pumping. This is
+# the structure the whole infection is downstream of, and the only place the
+# Rivening can be finished for good.
+# ---------------------------------------------------------------------------
+
+PALE_LOG = "minecraft:pale_oak_log"
+PALE_WOOD = "minecraft:pale_oak_wood"
+PALE_LEAVES = "minecraft:pale_oak_leaves"
+RESIN = "minecraft:resin_block"
+RESIN_BRICK = "minecraft:resin_bricks"
+CREAK = "minecraft:creaking_heart"
+EYE_OPEN = "minecraft:open_eyeblossom"
+
+
+def build_mother_tree():
+    import math as _m
+    W, H, L = 49, 72, 49
+    t = Template(W, H, L)
+    cx = cz = W // 2
+
+    def disc(y, r, name, props=None, hollow=0):
+        rr = r * r
+        hr = hollow * hollow
+        for x in range(W):
+            for z in range(L):
+                d = (x - cx) ** 2 + (z - cz) ** 2
+                if d <= rr and d >= hr:
+                    t.set(x, y, z, name, props)
+
+    # --- buttress roots crawling out across the ground -------------------
+    for i in range(10):
+        a = (2 * _m.pi * i) / 10
+        for step in range(4, 23):
+            x = int(round(cx + _m.sin(a) * step))
+            z = int(round(cz + _m.cos(a) * step))
+            if not (0 <= x < W and 0 <= z < L):
+                continue
+            h = max(0, 5 - step // 4)
+            for y in range(h + 1):
+                t.set(x, y, z, PALE_LOG if step % 3 else RESIN)
+            if step % 5 == 0:
+                t.set(x, h + 1, z, EYE_OPEN)
+
+    # --- the trunk: hollow, tapering, resin-veined ------------------------
+    for y in range(0, 46):
+        r = 8 - y // 9
+        disc(y, r, PALE_LOG, {"axis": "y"}, hollow=max(0, r - 2))
+        # Resin bleeding down the outside of the bark.
+        if y % 3 == 0:
+            for i in range(6):
+                a = (2 * _m.pi * i) / 6 + y * 0.15
+                x = int(round(cx + _m.sin(a) * r))
+                z = int(round(cz + _m.cos(a) * r))
+                if 0 <= x < W and 0 <= z < L:
+                    t.set(x, y, z, RESIN)
+        # Creaking hearts set into the wood, still beating.
+        if y in (12, 21, 30, 38):
+            t.set(cx + r - 1, y, cz, CREAK, {"active": "true", "natural": "true"})
+
+    # --- the hollow: a root cage around the core -------------------------
+    for y in range(1, 14):
+        disc(y, 6, "minecraft:air", hollow=0)
+    for i in range(12):
+        a = (2 * _m.pi * i) / 12
+        for y in range(1, 14):
+            wobble = _m.sin(y * 0.4 + i) * 1.2
+            x = int(round(cx + _m.sin(a) * (5 + wobble)))
+            z = int(round(cz + _m.cos(a) * (5 + wobble)))
+            if 0 <= x < W and 0 <= z < L:
+                t.set(x, y, z, PALE_LOG if y % 4 else RESIN)
+
+    # --- the World Core ---------------------------------------------------
+    t.fill(cx - 2, 1, cz - 2, cx + 2, 5, cz + 2, RESIN)
+    t.fill(cx - 1, 2, cz - 1, cx + 1, 4, cz + 1, KILN)
+    t.set(cx, 3, cz, KILN)
+    for dx, dz in ((-3, 0), (3, 0), (0, -3), (0, 3)):
+        t.set(cx + dx, 1, cz + dz, BLOOM)
+        t.fill(cx + dx, 0, cz + dz, cx + dx, 0, cz + dz, SEAMSTONE)
+    for x in range(cx - 6, cx + 7):
+        for z in range(cz - 6, cz + 7):
+            if (x - cx) ** 2 + (z - cz) ** 2 <= 36:
+                t.set(x, 0, z, SEAMSTONE)
+                if (x + z) % 4 == 0:
+                    t.set(x, 1, z, VEIN)
+
+    # The reliquary: what you came for.
+    t.set(cx - 5, 1, cz, CHEST, {"facing": "east"},
+          {"id": "minecraft:chest", "LootTable": "gildedseam:chests/palace_reliquary"})
+    t.set(cx + 5, 1, cz, CHEST, {"facing": "west"},
+          {"id": "minecraft:chest", "LootTable": "gildedseam:chests/palace_reliquary"})
+
+    # --- canopy -----------------------------------------------------------
+    for y in range(44, 66):
+        t_ = (y - 44) / 21.0
+        r = int(round(20 * _m.sin(_m.pi * (0.18 + 0.82 * t_)) * (1.0 - 0.25 * t_)))
+        if r < 2:
+            continue
+        rr, inner = r * r, (r - 3) ** 2
+        for x in range(W):
+            for z in range(L):
+                d = (x - cx) ** 2 + (z - cz) ** 2
+                if inner <= d <= rr and (x + y + z) % 3 != 0:
+                    t.set(x, y, z, PALE_LEAVES, {"persistent": "true"})
+    # Boughs reaching out of the canopy, dripping.
+    for i in range(8):
+        a = (2 * _m.pi * i) / 8
+        for step in range(3, 17):
+            x = int(round(cx + _m.sin(a) * step))
+            z = int(round(cz + _m.cos(a) * step))
+            y = 46 + step // 3
+            if 0 <= x < W and 0 <= z < L and y < H:
+                t.set(x, y, z, PALE_WOOD)
+                if step % 4 == 0:
+                    for dy in range(1, 4):
+                        if y - dy > 0:
+                            t.set(x, y - dy, z, RESIN)
+
+    # --- the congregation --------------------------------------------------
+    t.entity(cx, 6.0, cz, "gildedseam:reliquary_colossus")
+    for i, eid in enumerate(("gildedseam:manifold", "gildedseam:seamstress",
+                             "gildedseam:kilnborn", "gildedseam:font_of_gold")):
+        a = (2 * _m.pi * i) / 4
+        t.entity(cx + _m.sin(a) * 4, 2.0, cz + _m.cos(a) * 4, eid)
+    for i in range(8):
+        a = (2 * _m.pi * i) / 8 + 0.4
+        t.entity(cx + _m.sin(a) * 14, 6.0, cz + _m.cos(a) * 14, "gildedseam:shardling")
+    for i, eid in enumerate(("gildedseam:gilded_cow", "gildedseam:gilded_pig",
+                             "gildedseam:gilded_sheep", "gildedseam:half_sewn")):
+        a = (2 * _m.pi * i) / 4 + 0.8
+        t.entity(cx + _m.sin(a) * 18, 6.0, cz + _m.cos(a) * 18, eid)
+
+    t.save("mother_tree")
+
+
 if __name__ == "__main__":
     build_palace()
     build_city()
     build_hamlet()
+    build_mother_tree()
