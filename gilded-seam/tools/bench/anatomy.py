@@ -354,3 +354,29 @@ def extra_legs(anchor: str, *, at: tuple, tier: int = 2, count: int = 2,
                            curl=(0, 0, side * -64 * D),
                            root_rot=(0, side * 12 * D, side * 58 * D)))
     return parts
+
+
+def eye_cluster(anchor: str, *, at: tuple, count: int = 4, tier: int = 1,
+                spread: tuple = (4.0, 3.0), size: float = 2.6,
+                out: float = -1.0, name: str = "eyes") -> list[Part]:
+    """A knot of eyeballs bulging straight out of the hide.
+
+    Unlike `eye_stalks` these sit tight against the body, which is what makes
+    a blighted animal unsettling at a glance rather than only in close-up:
+    you register the eyes before you register what they are attached to."""
+    p = f"mut{tier}_{name}"
+    x, y, z = at
+    sx, sy = spread
+    parts = [Part(p, anchor, (x, y, z), (0, 0, 0), [])]
+    for i in range(count):
+        a = (i / max(1, count - 1) - 0.5) * 2.0
+        b = math.sin(i * 2.399)  # scattered, not in a row
+        s_i = size * (0.72 + 0.38 * abs(math.cos(i * 1.7)))
+        parts.append(Part(f"{p}_e{i}", p,
+                          (a * sx, b * sy, out * (0.4 + 0.25 * abs(b))),
+                          (0, a * 26 * D, b * 20 * D),
+                          [_b((-s_i / 2, -s_i / 2, -s_i * 0.62), (s_i, s_i, s_i * 0.62),
+                              "eye"),
+                           _b((-s_i * 0.62, -s_i * 0.62, -s_i * 0.3),
+                              (s_i * 1.24, s_i * 1.24, s_i * 0.4), "sinew")]))
+    return parts

@@ -147,9 +147,13 @@ class Painter:
     # -- eyes -------------------------------------------------------------
 
     def eye(self, x, y, w, h, iris=None, pupil_slit=False):
-        """One eye filling the given rect: sclera, iris, pupil, glint."""
+        """One eye filling the given rect: dark rim, sclera, iris, pupil, glint.
+
+        The rim matters - without it a pale sclera disappears into pale bark
+        and the whole point of eyes-where-eyes-should-not-be is lost."""
         base, sh, darkc, accent, bright = MATS["eye"]
         iris = iris or accent
+        rim = (18, 12, 9)
         cx, cy = x + w / 2.0, y + h / 2.0
         rx, ry = max(1.0, w / 2.0), max(1.0, h / 2.0)
         for j in range(h):
@@ -157,25 +161,28 @@ class Painter:
                 nx = (i + 0.5 - w / 2.0) / rx
                 ny = (j + 0.5 - h / 2.0) / ry
                 r = math.sqrt(nx * nx + ny * ny)
-                if r > 1.02:
+                if r > 1.06:
                     continue
-                if r > 0.72:
-                    c = mix(base, sh, (r - 0.72) / 0.30)
-                elif r > 0.40:
-                    c = mix(iris, shade(iris, 0.62), (r - 0.40) / 0.32)
+                if r > 0.88:
+                    c = rim
+                elif r > 0.62:
+                    c = mix(base, sh, (r - 0.62) / 0.26)
+                elif r > 0.34:
+                    c = mix(iris, shade(iris, 0.55), (r - 0.34) / 0.28)
                 else:
-                    c = darkc
-                    if pupil_slit and abs(nx) > 0.16:
-                        c = shade(iris, 0.7)
+                    c = (10, 8, 7)
+                    if pupil_slit and abs(nx) > 0.14:
+                        c = shade(iris, 0.65)
                 self._put(x + i, y + j, c)
         if w >= 3 and h >= 3:
-            self._put(int(cx - rx * 0.42), int(cy - ry * 0.42), bright)
+            self._put(int(cx - rx * 0.40), int(cy - ry * 0.44), (255, 252, 242))
 
     def eye_field(self, x, y, w, h, count=3, iris=None):
         """A cluster of small eyes scattered over a face - the blight's habit
         of opening eyes wherever it finishes growing."""
         for _ in range(count):
-            s = self.rng.choice((2, 2, 3)) if min(w, h) >= 4 else 2
+            s = self.rng.choice((3, 4, 4, 5)) if min(w, h) >= 6 else (
+                3 if min(w, h) >= 4 else 2)
             if w - s < 1 or h - s < 1:
                 return
             ex = x + self.rng.randrange(w - s + 1)
@@ -236,7 +243,13 @@ class Painter:
             for i in range(w):
                 self._put(x + i, y + h - 1, shade(darkc, 1.2))
         elif mat == "eye":
-            self.eye(x, y, w, h)
+            if front:
+                self.eye(x, y, w, h)
+            else:
+                base_s, sh_s, dk, ac, br = MATS["sinew"]
+                for j in range(h):
+                    for i in range(w):
+                        self._put(x + i, y + j, shade(dk, 0.85 + 0.3 * self.rng.random()))
         elif mat == "rot":
             self._speckle(x, y, w, h, darkc, 0.16)
             self._grain(x, y, w, h, base, darkc, vertical=False, density=0.4)
@@ -270,8 +283,8 @@ class Painter:
             self._grain(x, y, w, h, base, sh, vertical=True, density=0.35)
 
         # Late-stage infection weeps amber through whatever it is riding on.
-        if self.blight > 1.0 and mat not in BLIGHT_MATS and area >= 12:
-            for _ in range(int(self.blight - 1.0 + area / 90)):
+        if self.blight > 0.35 and mat not in BLIGHT_MATS and area >= 10:
+            for _ in range(max(1, int(self.blight * 0.8 + area / 110))):
                 self._crack(x, y, w, h, MATS["amber"][0], glint=MATS["amber"][4])
 
 

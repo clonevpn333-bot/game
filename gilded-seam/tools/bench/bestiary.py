@@ -13,6 +13,7 @@ import math
 
 from core import D, Box, Model, Part, chain, mirror, radial, torus
 from anatomy import (GROUND, HOSTS, antler_roots, chicken_host, creeper_host,
+                     eye_cluster,
                      extra_legs, eye_stalks, grafted_arm, humanoid,
                      lolling_tongue, resin_growth, spider_host, spine_plates,
                      split_open)
@@ -44,6 +45,8 @@ def blighted_cow() -> Model:
     p += antler_roots("head", at=(-2.5, 0.5, -3.0), tier=2, side=-1, name="roots_r")
     p += antler_roots("head", at=(2.5, 0.5, -3.0), tier=2, side=1, name="roots_l")
     p += eye_stalks("body", at=(0.0, 0.5, 5.0), count=3, tier=2, spread=3.2)
+    p += eye_cluster("head", at=(0.0, 3.0, -6.0), count=4, tier=1, spread=(3.2, 2.2), size=2.8)
+    p += eye_cluster("body", at=(-6.2, 4.0, 3.0), count=3, tier=1, spread=(1.4, 3.0), size=2.4, out=-0.6)
     return _m("blighted_cow", p)
 
 
@@ -61,6 +64,7 @@ def blighted_pig() -> Model:
                      name="arm_r")
     p += eye_stalks("head", at=(0.0, 0.0, -4.0), count=4, tier=2, spread=2.6,
                     length=2.4)
+    p += eye_cluster("head", at=(0.0, 3.0, -8.2), count=5, tier=1, spread=(3.0, 2.4), size=2.6)
     return _m("blighted_pig", p)
 
 
@@ -79,6 +83,8 @@ def blighted_sheep() -> Model:
     p += grafted_arm("body", at=(4.5, 2.0, -4.0), tier=2, side=1, scale=0.95,
                      name="arm_l")
     p += antler_roots("head", at=(-2.0, 0.0, -4.0), tier=2, side=-1, name="roots_r")
+    p += eye_cluster("head", at=(0.0, 2.5, -8.2), count=4, tier=1, spread=(2.4, 2.0), size=2.4)
+    p += eye_cluster("body", at=(0.0, -0.5, -6.0), count=4, tier=1, spread=(3.4, 1.6), size=2.6, out=-0.6)
     return _m("blighted_sheep", p)
 
 
@@ -96,6 +102,7 @@ def blighted_chicken() -> Model:
                      name="arm_l")
     p += eye_stalks("head", at=(0.0, 0.0, -1.0), count=3, tier=2, spread=1.8,
                     length=2.0)
+    p += eye_cluster("head", at=(0.0, 2.0, -3.2), count=3, tier=1, spread=(1.6, 1.4), size=2.0)
     return _m("blighted_chicken", p)
 
 
@@ -110,6 +117,7 @@ def blighted_spider() -> Model:
                         length=11.0, side=side, name=f"legs{i}")
     p += eye_stalks("head", at=(0.0, -3.5, -5.0), count=4, tier=2, spread=3.0,
                     length=2.6)
+    p += eye_cluster("head", at=(0.0, -1.0, -8.2), count=6, tier=1, spread=(3.4, 2.6), size=2.4)
     return _m("blighted_spider", p)
 
 
@@ -129,6 +137,7 @@ def blighted_creeper() -> Model:
     p += eye_stalks("head", at=(0.0, -8.0, -2.0), count=5, tier=2, spread=3.0,
                     length=2.2)
     p += lolling_tongue("head", at=(0.0, -1.0, -4.0), tier=2, segments=5, thick=1.2)
+    p += eye_cluster("head", at=(0.0, -4.0, -4.2), count=5, tier=1, spread=(3.2, 2.6), size=2.8)
     return _m("blighted_creeper", p)
 
 
@@ -147,6 +156,7 @@ def blighted_wolf() -> Model:
                      name="arm_l")
     p += eye_stalks("body", at=(0.0, -0.5, 4.0), count=3, tier=2, spread=2.4,
                     length=2.4)
+    p += eye_cluster("head", at=(0.0, 2.0, -6.2), count=4, tier=1, spread=(2.4, 2.0), size=2.4)
     return _m("blighted_wolf", p)
 
 
@@ -161,6 +171,7 @@ def blighted_rabbit() -> Model:
                     side=-1, name="legs_r")
     p += extra_legs("body", at=(3.0, 3.0, 1.0), tier=2, count=2, length=7.0,
                     side=1, name="legs_l")
+    p += eye_cluster("head", at=(0.0, 1.0, -5.2), count=4, tier=1, spread=(2.0, 1.6), size=2.0)
     return _m("blighted_rabbit", p)
 
 
@@ -176,6 +187,7 @@ def blighted_goat() -> Model:
     p += grafted_arm("body", at=(5.0, 2.0, -4.0), tier=2, side=1, scale=1.0,
                      name="arm_l")
     p += eye_stalks("body", at=(0.0, 0.0, 5.0), count=4, tier=2, spread=3.0)
+    p += eye_cluster("head", at=(0.0, 2.5, -7.2), count=4, tier=1, spread=(2.2, 2.2), size=2.4)
     return _m("blighted_goat", p)
 
 
@@ -379,6 +391,7 @@ def half_sapped() -> Model:
     # The finished half: bark where an arm used to be.
     p.append(Part("mut1_barkarm", "arm_r", (0.0, 0.0, 0.0), (0, 0, 0),
                   [Box((-4.4, -2.4, -2.4), (4.8, 13, 4.8), "bark")]))
+    p += eye_cluster("body", at=(2.0, -8.0, -2.4), count=4, tier=1, spread=(2.2, 3.0), size=2.2, out=-0.5)
     return _m("half_sapped", p)
 
 
