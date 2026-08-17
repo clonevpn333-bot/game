@@ -8,7 +8,7 @@ install. No CDN, no downloads, no external assets of any kind.
 
 ## What it is
 
-**One HTML file. ~11,200 lines. 511 KB.** Everything below is generated in code
+**One HTML file. ~13,700 lines. 625 KB.** Everything below is generated in code
 at load time: every texture, every mesh, every animation, the entire city.
 
 | | |
@@ -17,7 +17,8 @@ at load time: every texture, every mesh, every animation, the entire city.
 | World | 5.2 × 6.4 km at true metric scale, ~7,750 buildings, 490 roads, 13,000 graph nodes |
 | Materials | 30 PBR materials synthesised procedurally into GPU array textures |
 | Characters | 24-bone skinned humans at anatomical proportions, fully procedural animation |
-| Story | Original narrative, cast, and dialogue written for this project |
+| Story | Original narrative, cast, dialogue and two romance arcs |
+| Audio | Fully synthesised — weapons, engines, city ambience and five radio stations, from oscillators and shaped noise |
 
 ---
 
@@ -51,6 +52,27 @@ the style drives massing, palette, greebling and signage density:
 | **Neo-Kitsch** | rich, ornamented, marble and gold | Charter Hill, North Oaks, Coastview |
 
 ---
+
+## Audio
+
+There are no audio files, because there are no files. Every sound is built at
+runtime from oscillators, filtered noise and a synthesised convolution reverb:
+
+- **Weapons** — each class has a tuned body / crack / tail triplet; tech
+  weapons add a rail whine, smart weapons a lock chirp
+- **Vehicles** — a per-car oscillator bank (three detuned saws, a sub and an
+  intake-noise layer) driven live by RPM and load, with tyre scrub on drift
+- **World** — traffic rumble, rain, wind and mains hum mixed continuously from
+  the environment state, plus sporadic sirens, gunfire, AV flybys and NCART
+  passes placed positionally around you
+- **Radio** — five procedurally composed stations (`B` toggles, `N` cycles):
+  RADIO NEON 105.9, PACIFICA DUB 88.1, MAELSTROM FM 92.3, KABUKI CITY POP
+  101.5 and BADLANDS 66. Each is a generator with its own scale, tempo,
+  drive and rhythmic character, scheduled with a lookahead clock.
+
+Positioning is computed by hand — inverse-square distance gain and equal-power
+pan against the camera basis — which keeps a hundred simultaneous city sources
+cheap.
 
 ## Rendering pipeline
 
@@ -111,6 +133,19 @@ streaks, irregular splotches and a cavity-darkening pass do the work.
 
 ## Characters
 
+Bodies are lofted from a real anthropometric table: nine measured trunk
+stations from pelvic floor to acromion, so the waist is genuinely the narrowest
+point and the chest is deeper than it is wide. Sections are superellipses, not
+circles, which is what keeps a torso from reading as a tube. Faces are built by
+a field of localised gaussians — brow ridge, orbits with lid and bag, nasal
+root and dorsum and alae, cheekbones and the hollow under them, both lips, the
+philtrum, the mandibular angle — so features compose anatomically instead of
+sitting on a sphere. Hands have four fingers of three phalanges and an opposed
+thumb; the crowd LOD swaps them for a mitten at distance.
+
+The lower face is skinned to a jaw bone pivoting at the temporomandibular
+joint, so characters actually open their mouths when they speak.
+
 A 24-bone skeleton at the standard 7.5-head canon, 1.78 m reference stature.
 Bodies are built from tapered elliptical cross-sections with correct hip/waist/
 rib/shoulder progression; heads are sculpted analytically — a displacement field
@@ -132,6 +167,16 @@ pedestrian in the crowd can run its own cycle.
 - **NCART metro** — five lines, nineteen stations, ride between any of them
 - **Quickhacks** — scanner, RAM budget, Ping / Short Circuit / Reboot Optics / Overheat / System Reset / Cyberpsychosis
 - **Cyberware, perks, five attributes, lifepaths, levelling, street cred, vendors, ripperdocs, loot, lore shards**
+- **Living crowd** — every pedestrian gets a purpose from the clock: commuting
+  at rush hour, at work through the day, drinking after dark, heading home.
+  Destinations are real buildings, real metro stations and real neon clusters,
+  offset onto the pavement. Crowd density follows the hour
+- **NCPD** — ambient patrols plus a five-tier dispatch ladder. Units converge
+  on where the crime happened rather than on you, cruisers drive the road graph
+  with sirens and drop officers on arrival, and heat only cools while nobody
+  has eyes on you
+- **Romance** — two arcs (Static and Ryder) with affinity earned through
+  dialogue, a gated private scene each, and relationship state in the save
 - **Menus** — inventory, character sheet, cyberware, journal, full pannable city map, phone, settings
 - Wanted system with NCPD response and MaxTac at five stars
 - Day/night cycle, dynamic rain and wetness, autosave to `localStorage`
@@ -143,6 +188,7 @@ pedestrian in the crowd can run its own cycle.
 | `WASD` move · `Shift` sprint · `Space` jump · `C` crouch | `Mouse` look · `LMB` fire · `RMB` aim |
 | `1-3` weapons · `R` reload · `G` grenade | `E` interact · `F` enter/exit vehicle |
 | `Q` scanner · `H` quickhack | `Tab` inventory · `M` map · `J` journal · `Esc` settings |
+| `B` radio on/off · `N` next station | Weapon HUD hides when empty-handed |
 | `F5` quicksave · `F9` quickload | |
 
 Quality auto-adapts to your frame rate unless you pick a preset yourself.
@@ -193,7 +239,9 @@ bash src/cp2077/build.sh          # → cyberpunk2077.html
 | `70_char` | anatomy, skinning, animation |
 | `80_vehicle` `82_weapon` | vehicles and weapons |
 | `90_render` | deferred renderer |
-| `A0_npc` `B0_story` `C0_ui` `D0_game` | AI, narrative, interface, game loop |
+| `35_audio` | procedural audio + radio |
+| `A0_npc` `A2_life` | crowd AI, daily agendas, NCPD |
+| `B0_story` `C0_ui` `D0_game` | narrative, interface, game loop |
 
 ---
 

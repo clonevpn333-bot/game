@@ -70,6 +70,94 @@ const CAST = {
     voice:"guarded, exhausted, still trying" },
 };
 
+/* -------------------------------------------------------------------------
+   CAST APPEARANCE
+   Each named character gets a real body config, so holocalls render the actual
+   person rather than a placeholder, and they can be spawned in the world.
+   ------------------------------------------------------------------------- */
+const CAST_LOOK = {
+  odds: { height:1.66, build:.34, fem:true, skin:[.84,.66,.53],
+    face:{ chin:1.1, jaw:.9, brow:.8, nose:1.0, cheek:1.4, lips:1.2, hair:1.0, hairStyle:2,
+           hairCol:[.05,.04,.04], eyeCol:[.26,.20,.14], eyeGlow:0 },
+    clothes:{ torso:"coat", torsoCol:[.42,.34,.06], sleeves:"long", pads:false, bulk:.02,
+              legs:"leather", legCol:[.09,.09,.10], bootCol:[.07,.07,.08], bootHigh:true,
+              head:"none", headCol:[.2,.2,.2] },
+    cyber:{ optics:true, opticCol:[1,.78,.1] } },
+  wren: { height:1.71, build:.30, fem:true, skin:[.36,.24,.18],
+    face:{ chin:1.0, jaw:.95, brow:1.0, nose:1.1, cheek:1.2, lips:1.3, hair:1.1, hairStyle:0,
+           hairCol:[.05,.04,.04], eyeCol:[.05,.85,.95], eyeGlow:2.4 },
+    clothes:{ torso:"jacket", torsoCol:[.08,.20,.26], sleeves:"long", pads:false, bulk:0,
+              legs:"fabric", legCol:[.08,.10,.13], bootCol:[.07,.07,.09], bootHigh:false,
+              head:"none", headCol:[.2,.2,.2] },
+    cyber:{ optics:true, opticCol:[0,.9,1], spine:true } },
+  ryder: { height:1.91, build:.92, fem:false, skin:[.48,.33,.24],
+    face:{ chin:1.4, jaw:1.6, brow:1.5, nose:1.3, cheek:1.0, lips:.8, hair:.3, hairStyle:3,
+           hairCol:[.14,.12,.10], eyeCol:[.24,.20,.16], eyeGlow:0 },
+    clothes:{ torso:"jacket", torsoCol:[.20,.22,.18], sleeves:"short", pads:true,
+              padCol:[.12,.13,.11], bulk:.12, legs:"fabric", legCol:[.16,.17,.14],
+              bootCol:[.08,.08,.07], bootHigh:true, head:"none", headCol:[.2,.2,.2] },
+    cyber:{ armR:true, armL:true, jaw:true, spine:true, optics:true, opticCol:[1,.35,.05] } },
+  static: { height:1.60, build:.16, fem:true, skin:[.90,.74,.62],
+    face:{ chin:.8, jaw:.7, brow:.9, nose:.9, cheek:1.1, lips:1.1, hair:1.3, hairStyle:1,
+           hairCol:[.55,.2,.95], eyeCol:[.7,.2,1], eyeGlow:2.2 },
+    clothes:{ torso:"crop", torsoCol:[.26,.10,.42], sleeves:"long", pads:false, bulk:0,
+              legs:"fabric", legCol:[.10,.10,.16], bootCol:[.14,.06,.22], bootHigh:true,
+              head:"visor", headCol:[.6,.15,.9] },
+    cyber:{ optics:true, opticCol:[.8,.2,1], spine:true, armL:true } },
+  teodora: { height:1.58, build:.62, fem:true, skin:[.62,.44,.33],
+    face:{ chin:1.1, jaw:1.2, brow:1.0, nose:1.2, cheek:1.3, lips:1.2, hair:1.0, hairStyle:2,
+           hairCol:[.72,.62,.42], eyeCol:[.22,.16,.12], eyeGlow:0 },
+    clothes:{ torso:"coat", torsoCol:[.20,.34,.24], sleeves:"long", pads:false, bulk:.05,
+              legs:"fabric", legCol:[.18,.16,.14], bootCol:[.10,.09,.08], bootHigh:false,
+              head:"none", headCol:[.2,.2,.2] },
+    cyber:{} },
+  sendo: { height:1.79, build:.36, fem:false, skin:[.88,.71,.58],
+    face:{ chin:1.2, jaw:1.1, brow:1.2, nose:1.0, cheek:.9, lips:.8, hair:.7, hairStyle:0,
+           hairCol:[.60,.60,.62], eyeCol:[.20,.22,.26], eyeGlow:0 },
+    clothes:{ torso:"coat", torsoCol:[.07,.07,.09], sleeves:"long", pads:false, bulk:0,
+              legs:"fabric", legCol:[.06,.06,.08], bootCol:[.05,.05,.06], bootHigh:false,
+              head:"none", headCol:[.1,.1,.1] },
+    cyber:{ optics:true, opticCol:[.9,.85,.7] } },
+  vex: { height:1.76, build:.70, fem:true, skin:[.74,.55,.42],
+    face:{ chin:1.2, jaw:1.4, brow:1.4, nose:1.0, cheek:1.1, lips:.9, hair:.4, hairStyle:2,
+           hairCol:[.26,.16,.08], eyeCol:[.9,.4,.05], eyeGlow:1.6 },
+    clothes:{ torso:"jacket", torsoCol:[.10,.10,.12], sleeves:"long", pads:true,
+              padCol:[.06,.06,.07], bulk:.14, legs:"fabric", legCol:[.08,.08,.10],
+              bootCol:[.05,.05,.06], bootHigh:true, head:"none", headCol:[.1,.1,.1] },
+    cyber:{ optics:true, opticCol:[1,.3,.05], armR:true, legs:true } },
+  kado: { height:1.73, build:.50, fem:false, skin:[.84,.66,.53],
+    face:{ chin:1.0, jaw:1.1, brow:1.0, nose:1.1, cheek:1.0, lips:1.0, hair:.9, hairStyle:0,
+           hairCol:[.12,.08,.06], eyeCol:[0,.9,1], eyeGlow:1.8 },
+    clothes:{ torso:"shirt", torsoCol:[.16,.30,.34], sleeves:"short", pads:false, bulk:0,
+              legs:"fabric", legCol:[.14,.16,.18], bootCol:[.08,.08,.09], bootHigh:false,
+              head:"none", headCol:[.2,.2,.2] },
+    cyber:{ optics:true, opticCol:[0,.9,1], armR:true } },
+  quint: { height:1.69, build:.44, fem:true, skin:[.70,.50,.38],
+    face:{ chin:1.0, jaw:1.0, brow:1.1, nose:1.0, cheek:1.1, lips:1.0, hair:.9, hairStyle:2,
+           hairCol:[.12,.08,.06], eyeCol:[.24,.28,.30], eyeGlow:0 },
+    clothes:{ torso:"jacket", torsoCol:[.08,.11,.22], sleeves:"long", pads:true,
+              padCol:[.05,.07,.14], bulk:.08, legs:"fabric", legCol:[.08,.09,.14],
+              bootCol:[.06,.06,.07], bootHigh:false, head:"none", headCol:[.1,.1,.1] },
+    cyber:{ optics:true, opticCol:[.2,.6,1] } },
+};
+
+/* -------------------------------------------------------------------------
+   ROMANCE
+   Two arcs, gated on affinity earned through dialogue choices and by taking
+   their jobs. Each has a threshold that unlocks a private scene, and a state
+   the save file carries.
+   ------------------------------------------------------------------------- */
+const ROMANCE = {
+  static: { id:"static", name:"Ilse \"Static\" Bergmann", who:"static",
+    blurb:"Eleven months below the waterline and she still argues like she has somewhere to be.",
+    gate:55, scene:"d_rom_static", place:{ x:-1760, z:1780, label:"THE DROWNED MALL" },
+    stages:["Wary","Talking","Trusted","Close"] },
+  ryder: { id:"ryder", name:"Ryder Malachai Cross", who:"ryder",
+    blurb:"He has not let anyone pick the entry point in twelve years. He let you.",
+    gate:55, scene:"d_rom_ryder", place:{ x:1180, z:700, label:"THE ARROYO SHOP" },
+    stages:["Professional","Warmer","Trusted","Close"] },
+};
+
 /* =========================================================================
    QUEST DATABASE
    Each quest is a list of stages; each stage carries objectives, an optional
@@ -303,6 +391,7 @@ d_ryder_intro: {
   r3: { who:"ryder", text:"...Green. It was green.\n\nSit down. Start at the beginning, and don't leave anything out, because I'm going to check.",
     opts:[
       { t:"Sendo-Kuroi are harvesting the dying and selling them as consultants.", to:"r4" },
+      { t:"I'd rather have you than anyone else in this city.", to:"r4", rom:"ryder" },
       { t:"There's a rig called Ghostline. It's killing me at the rate of one day per day.", to:"r4" },
     ]},
   r4: { who:"ryder", text:"I spent twelve years making corporations problems go away. Never once got to be the problem.\n\nI'm in. But I pick the entry point, and if I say we walk away, we walk away.",
@@ -330,8 +419,11 @@ d_static_intro: {
   s3: { who:"static", text:"Not from here. Ghostline's core is the only shell that fits her, and it's eighty-three floors up in a building with three relays and a colonel.\n\nBut I can take a relay. Give me a body on that roof and I'll give you a hole in their net.",
     opts:[
       { t:"You'll get your body on the roof.", to:"ADVANCE" },
+      { t:"Eleven months down here. When did you last talk to anyone in person?", to:"s5", rom:"static" },
       { t:"What do you want out of this?", to:"s4" },
     ]},
+  s5: { who:"static", text:"...Tuesday. A guy came to fix the pump. He didn't say much.\n\nThis is nice. This is — yeah. Ask me things more often.",
+    opts:[ { t:"I will.", to:"ADVANCE" }, { t:"What do you want out of this?", to:"s4" } ]},
   s4: { who:"static", text:"Sendo's got about nine thousand people on shelves. Nine thousand. I want the shelf turned off. That's it. That's the whole want.",
     opts:[ { t:"Then we want the same thing.", to:"ADVANCE" } ]},
 },
@@ -500,6 +592,65 @@ d_ending: {
   end_purge: { who:"wren", text:"Nine thousand people stop screaming. Including me. That's — that's the right maths, that's obviously the right maths.\n\nDon't stand there doing it slowly. Do it fast and go home.", opts:[{ t:"[END]", to:"FINISH:purge" }]},
   end_cast: { who:"wren", text:"Every engram, unshelled, unowned, on the open net. No corporation can put nine thousand awake people back in a box.\n\nIt's going to be chaos. It's going to be *theirs*.", opts:[{ t:"[END]", to:"FINISH:broadcast" }]},
   end_keep: { who:"wren", text:"You're going to leave it running.\n\n...Okay. Okay. Then in nine days I stop being a passenger and start being a driver, and you know that, and you're doing it anyway.\n\nI'll try to be someone you'd have liked.", opts:[{ t:"[END]", to:"FINISH:keep" }]},
+},
+
+/* ---------------------------- ROMANCE ---------------------------------- */
+d_rom_static: {
+  start:"m1",
+  m1: { who:"static", text:"You came down here without being asked. Nobody does that. People come down here when they need something.",
+    opts:[
+      { t:"I didn't need anything.", to:"m2", rom:"static" },
+      { t:"Maybe I needed to sit somewhere quiet.", to:"m2", rom:"static" },
+      { t:"I need something.", to:"m1b" },
+    ]},
+  m1b: { who:"static", text:"...Right. Of course. Okay. What.",
+    opts:[ { t:"Nothing. That was a lie. I just came down.", to:"m2", rom:"static" } ]},
+  m2: { who:"static", text:"There's a spot two levels up where the water got in through the skylight and the whole atrium turned into a pond. At night the signs on the boulevard reflect off it and it looks like the city's underneath you.\n\nI go up there. Sometimes.",
+    opts:[
+      { t:"Show me.", to:"m3", rom:"static" },
+      { t:"You said you hadn't been outside in eleven months.", to:"m2b" },
+    ]},
+  m2b: { who:"static", text:"It's indoors! It's technically indoors. It has a ROOF. Most of a roof.",
+    opts:[ { t:"Show me.", to:"m3", rom:"static" } ]},
+  m3: { who:"static", text:"[Later, on the flooded gallery]\n\nOkay so — I know what happens next. You go do the thing at Sendo, and either it works or it doesn't, and there's a version of this where I never see you again and I've done the maths on that and I do not like the number.",
+    opts:[
+      { t:"Then let's not run that version.", to:"m4", rom:"static", romBig:true },
+      { t:"You'd still have the shelf turned off.", to:"m3b" },
+      { t:"Static. Breathe.", to:"m4", rom:"static", romBig:true },
+    ]},
+  m3b: { who:"static", text:"Yeah. I'd have that. That's — yeah, that's the thing I said I wanted, and it turns out I want a second thing now, which is extremely inconvenient.",
+    opts:[ { t:"Then let's get you both.", to:"m4", rom:"static", romBig:true } ]},
+  m4: { who:"static", text:"...Okay.\n\nOkay. Stay a while. The signs cycle through about forty minutes of pattern before they repeat. You should see the whole loop at least once.",
+    opts:[ { t:"[Stay]", to:"ROMANCE:static" } ]},
+},
+d_rom_ryder: {
+  start:"y1",
+  y1: { who:"ryder", text:"Shop's closed.\n\n...It's not closed. Sit down.",
+    opts:[
+      { t:"[Sit]", to:"y2", rom:"ryder" },
+      { t:"You always this welcoming?", to:"y1b" },
+    ]},
+  y1b: { who:"ryder", text:"No. That's the point I was making.",
+    opts:[ { t:"[Sit]", to:"y2", rom:"ryder" } ]},
+  y2: { who:"ryder", text:"Twelve years I picked the entry point. Every job. Because the one time I didn't, four people I knew came home in boxes and I carried two of them.\n\nYou asked me to come in on this and I said I'd pick the entry point, and then I let you pick it. Three times now.",
+    opts:[
+      { t:"You trust me.", to:"y3", rom:"ryder" },
+      { t:"I hadn't noticed you were counting.", to:"y2b" },
+    ]},
+  y2b: { who:"ryder", text:"I count everything. It's the only reason I'm still upright.",
+    opts:[ { t:"You trust me.", to:"y3", rom:"ryder" } ]},
+  y3: { who:"ryder", text:"I do. And I've been trying to work out for about a week whether that's a professional problem.\n\nDecided it isn't. Wanted you to hear me say it out loud, in case it is.",
+    opts:[
+      { t:"It isn't a problem.", to:"y4", rom:"ryder", romBig:true },
+      { t:"And if it is?", to:"y3b" },
+      { t:"Let's keep it professional.", to:"y_end" },
+    ]},
+  y3b: { who:"ryder", text:"Then it's mine to carry, and I'll carry it, and nothing changes about how I do the work.\n\nBut I'd rather it wasn't.",
+    opts:[ { t:"It isn't a problem.", to:"y4", rom:"ryder", romBig:true } ]},
+  y_end: { who:"ryder", text:"Understood. Nothing changes.\n\n...Coffee's still on, though. Sit as long as you want.",
+    opts:[ { t:"[Stay a while]", to:"END" } ]},
+  y4: { who:"ryder", text:"Alright.\n\nThen here's what happens: we finish this. We take that core apart. And afterwards I show you the coast road north — it's four hours of nothing and it is the only quiet left in this state.",
+    opts:[ { t:"[Stay]", to:"ROMANCE:ryder" } ]},
 },
 
 /* -------------------- generic ambient / vendor lines -------------------- */

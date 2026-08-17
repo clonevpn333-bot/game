@@ -566,8 +566,11 @@ void main(){
   /* the city's own bounce: warm sodium near the ground, cooler and weaker as
      you climb above the sign line. This is what actually lights Night City. */
   float streetLevel = clamp(1.0 - (wp.y - 2.0) * 0.016, 0.0, 1.0);
-  vec3 cityGlow = mix(vec3(0.055,0.048,0.082), vec3(0.30,0.15,0.085), streetLevel);
-  irr += cityGlow * uNightAmt * (0.55 + uAmbInt * 0.85) * 3.6;
+  /* Sodium/neon bounce. This used to be a heavily saturated red-orange, which
+     tinted asphalt and concrete a raw flesh colour at street level. Keep it
+     warm but close to neutral and let the actual neon lights carry the hue. */
+  vec3 cityGlow = mix(vec3(0.052,0.050,0.068), vec3(0.175,0.152,0.130), streetLevel);
+  irr += cityGlow * uNightAmt * (0.55 + uAmbInt * 0.85) * 3.2;
   vec3 R = reflect(-V, N);
   vec3 envSpec = skyRadiance(normalize(vec3(R.x, max(R.y,-0.05), R.z)), uSunDir, uTurb, 1.0)*uAmbInt;
   envSpec = mix(envSpec, irr*1.4, rough*rough);
@@ -1157,5 +1160,65 @@ void main(){
   float a = clamp(core + crack*0.75, 0.0, 1.0) * vCol.a;
   if (a < 0.01) discard;
   oCol = vec4(vCol.rgb*mix(1.0, 0.25, core), a);
+}`;
+</script>
+<script>
+/* ============================================================================
+   PORTRAIT PASS
+   Renders a real skinned character into a small offscreen target for holocall
+   panels, then composites it into the HUD. Three-point studio lighting plus a
+   rim so the face reads at 200 px without needing the full deferred pipeline.
+   ========================================================================== */
+SH.portraitFS = `#version 300 es
+precision highp float;
+precision highp sampler2DArray;
+${SH.common}
+in vec3 vWPos; in vec3 vNrm; in vec2 vUv; in vec4 vCol; in vec4 vMat;
+in vec4 vClip; in vec4 vPrevClip;
+uniform sampler2DArray uAlb, uSrf;
+uniform vec3 uCamPos, uKeyCol, uFillCol, uRimCol;
+uniform float uTime;
+out vec4 oCol;
+void main(){
+  vec4 A = texture(uAlb, vec3(vUv, vMat.x));
+  vec4 S = texture(uSrf, vec3(vUv, vMat.x));
+  vec3 N = normalize(vNrm);
+  vec3 V = normalize(uCamPos - vWPos);
+  vec3 alb = A.rgb * vCol.rgb;
+  float rough = clamp(S.z*vMat.y, 0.08, 1.0);
+  float model = vMat.w;
+
+  vec3 K = normalize(vec3(-0.55, 0.62, 0.80));   // key, camera left and high
+  vec3 F = normalize(vec3( 0.80, 0.10, 0.45));   // fill, opposite and flat
+  float nk = max(dot(N, K), 0.0), nf = max(dot(N, F), 0.0);
+  vec3 diff = uKeyCol * nk + uFillCol * nf * 0.45;
+  /* skin gets a warm wrap so the shadow terminator does not go grey */
+  if (model > 0.5 && model < 1.5) {
+    float w = clamp((dot(N,K)+0.45)/1.45, 0.0, 1.0);
+    diff = uKeyCol * w + vec3(0.55,0.16,0.12) * pow(1.0-nk, 3.0) * 0.5 + uFillCol*nf*0.40;
+  }
+  vec3 H = normalize(K+V);
+  float spec = pow(max(dot(N,H),0.0), mix(90.0, 8.0, rough)) * (1.0-rough) * 0.5;
+  float rim = pow(1.0 - max(dot(N,V),0.0), 2.6);
+  vec3 c = alb * (diff + 0.10) + spec + uRimCol * rim * 0.9;
+  c += vCol.rgb * vCol.a * 1.4;                  // emissive chrome / optics
+  c = c / (c + 0.85);                            // gentle filmic knee
+  oCol = vec4(pow(c, vec3(1.0/2.2)), 1.0);
+}`;
+
+/* composite the portrait texture into a screen-space rect */
+SH.blitFS = `#version 300 es
+precision highp float;
+in vec2 vUv; uniform sampler2D uTex; uniform vec4 uRect; uniform float uFade;
+out vec4 oCol;
+void main(){
+  vec2 uv = (vUv - uRect.xy) / uRect.zw;
+  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) discard;
+  vec4 c = texture(uTex, vec2(uv.x, uv.y));
+  /* scanline + edge falloff so it reads as a transmitted feed */
+  float sl = 0.90 + 0.10*sin(uv.y*300.0);
+  float edge = smoothstep(0.0,0.06,uv.x)*smoothstep(0.0,0.06,1.0-uv.x)
+             * smoothstep(0.0,0.05,uv.y)*smoothstep(0.0,0.05,1.0-uv.y);
+  oCol = vec4(c.rgb*sl, edge*uFade);
 }`;
 </script>

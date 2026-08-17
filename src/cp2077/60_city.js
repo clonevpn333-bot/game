@@ -280,6 +280,33 @@ buildRoads() {
   return this;
 },
 
+/* Push a cylinder of radius r out of any building it overlaps. Shared by the
+   player and by every NPC — the crowd previously had no collision at all and
+   walked straight through the city. Writes into `out` and returns it. */
+collide(x, z, r, y, out) {
+  out = out || (this._colOut || (this._colOut = [0,0]));
+  out[0] = x; out[1] = z;
+  const cands = this.bldGrid.query(x, z, 28, this._colTmp || (this._colTmp = []));
+  for (let k = 0; k < cands.length; k++) {
+    const b = cands[k];
+    if (y !== undefined && y > b.y + b.h + 0.5) continue;
+    const dx = out[0] - b.x, dz = out[1] - b.z;
+    const c = cos(-b.rot), s2 = sin(-b.rot);
+    const lx = dx*c - dz*s2, lz = dx*s2 + dz*c;
+    const ex = b.hw + r, ez = b.hd + r;
+    if (abs(lx) < ex && abs(lz) < ez) {
+      /* eject along the shallower penetration axis */
+      let plx = lx, plz = lz;
+      if (ex - abs(lx) < ez - abs(lz)) plx = sign(lx || 1)*ex;
+      else plz = sign(lz || 1)*ez;
+      const rc = cos(b.rot), rs = sin(b.rot);
+      out[0] = b.x + plx*rc - plz*rs;
+      out[1] = b.z + plx*rs + plz*rc;
+    }
+  }
+  return out;
+},
+
 /* road surface test. `cands` lets a caller hoist the spatial-hash query out of
    an inner loop — the sector terrain pass does this and it is worth ~9 ms. */
 onRoad(x, z, out, cands) {

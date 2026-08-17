@@ -296,6 +296,108 @@ const WMESH = {
 };
 
 /* ==========================================================================
+   VIEWMODEL ARMS
+   The player's own forearms and hands, built in weapon space so they travel
+   with the viewmodel transform. Grip anchors are per weapon-class: a pistol
+   is presented one-handed with the support hand cupping under, a long gun is
+   held at grip and handguard, a blade is held two-handed on the tsuka.
+   Rebuilt whenever the player's appearance changes so the skin tone, sleeve
+   and chrome always match the character you actually made.
+   ======================================================================== */
+const VARMS = {
+  cache: {}, cfg: null,
+
+  /* grip -> [right hand pos, left hand pos or null, left hand roll] */
+  anchors(W) {
+    switch (W.cls) {
+      case "Pistol": case "Revolver":
+        return { r:[0.000,-0.030,-0.010], l:[-0.030,-0.075, 0.010], twoHand:true, lRoll:0.5 };
+      case "SMG": case "Smart SMG":
+        return { r:[0.000,-0.030,-0.020], l:[0.000,-0.015, 0.170], twoHand:true, lRoll:0.2 };
+      case "Assault Rifle": case "LMG":
+        return { r:[0.000,-0.030,-0.030], l:[0.000,-0.020, 0.235], twoHand:true, lRoll:0.15 };
+      case "Shotgun":
+        return { r:[0.000,-0.030,-0.030], l:[0.000,-0.020, 0.230], twoHand:true, lRoll:0.15 };
+      case "Sniper": case "Tech Rifle":
+        return { r:[0.000,-0.030,-0.040], l:[0.000,-0.030, 0.140], twoHand:true, lRoll:0.15 };
+      case "Katana": case "Blunt":
+        return { r:[0.000,-0.060, 0.000], l:[0.000,-0.130, 0.000], twoHand:true, lRoll:0 };
+      case "Grenade":
+        return { r:[0.000,-0.040,-0.020], l:null, twoHand:false, lRoll:0 };
+      default:
+        return { r:[0.030,-0.020, 0.020], l:[-0.060,-0.020, 0.010], twoHand:true, lRoll:0, bare:true };
+    }
+  },
+
+  build(id, cfg) {
+    const W = WEAPONS[id];
+    const A = this.anchors(W);
+    const B = new MeshBuilder();
+    const skinL = TEX.id("skin"), fab = TEX.id("fabric"), lea = TEX.id("leather");
+    const met = TEX.id("metalPanel"), tec = TEX.id("tech");
+    const sk = (cfg && cfg.skin) || [.80,.60,.50];
+    const sleeveCol = (cfg && cfg.clothes && cfg.clothes.torsoCol) || [.14,.15,.18];
+    const chromeR = !!(cfg && cfg.cyber && cfg.cyber.armR);
+    const chromeL = !!(cfg && cfg.cyber && cfg.cyber.armL);
+    const s = (cfg && cfg.height ? cfg.height : 1.78) / 1.78;
+
+    /* one arm: elbow behind the camera, forearm running to the grip */
+    const arm = (hand, side, chrome, roll) => {
+      const hx = hand[0], hy = hand[1], hz = hand[2];
+      /* Elbow sits back and out. It must stay clearly in FRONT of the near
+         plane once the weapon is placed, or the forearms clip away entirely —
+         which is exactly what happened with the first, longer reach. */
+      const ex = hx + side * 0.118 * s;
+      const ey = hy - 0.112 * s;
+      const ez = hz - 0.200 * s;
+      const wristX = hx + side*0.010*s, wristY = hy + 0.020*s, wristZ = hz - 0.055*s;
+      if (chrome) {
+        B.mat(met, .45, 1, 0).col(.44,.46,.50,0).uv(2.6);
+        BODY.limb(B, [ex,ey,ez], [wristX,wristY,wristZ],
+                  BODY.prof(6, 0.050*s, 0.046*s, 0.030*s), 0, 0, 12, 0.82);
+        B.mat(tec, .5, 1, 0).col(.5,.55,.62, .45).uv(3);
+        BODY.limb(B, [lerp(ex,wristX,.15), lerp(ey,wristY,.15), lerp(ez,wristZ,.15)],
+                     [lerp(ex,wristX,.55), lerp(ey,wristY,.55), lerp(ez,wristZ,.55)],
+                  BODY.prof(3, 0.052*s, 0.052*s, 0.050*s), 0, 0, 10, 0.82);
+      } else {
+        /* sleeve over the upper part, bare forearm and wrist below */
+        B.mat(lea, 1, .12, 0).colv(sleeveCol, 0).uv(1.8);
+        BODY.limb(B, [ex,ey,ez], [lerp(ex,wristX,.52), lerp(ey,wristY,.52), lerp(ez,wristZ,.52)],
+                  BODY.prof(5, 0.058*s, 0.050*s, 0.043*s), 0, 0, 12, 0.86);
+        B.mat(skinL, 1, 1, 1).colv(sk, 0).uv(2.4);
+        BODY.limb(B, [lerp(ex,wristX,.48), lerp(ey,wristY,.48), lerp(ez,wristZ,.48)],
+                     [wristX,wristY,wristZ],
+                  BODY.prof(5, 0.040*s, 0.036*s, 0.026*s), 0, 0, 12, 0.80);
+      }
+      /* the hand itself, rotated to grip the weapon */
+      B.mat(chrome ? met : skinL, chrome ? .45 : 1, chrome ? 1 : 1, chrome ? 0 : 1)
+       .colv(chrome ? [.46,.48,.52] : sk, 0).uv(2.6);
+      const m0 = B.nv;
+      BODY.hand(B, 0, 0, 0, s, 0, side, A.bare ? 0.10 : 0.92);
+      const q = Q4.n(), M = M4.n();
+      /* palm faces inward and the fingers wrap forward around the grip */
+      Q4.euler(q, -1.25, side * 0.30, roll + side * 0.22);
+      M4.trs(M, hx, hy + 0.035*s, hz, q[0], q[1], q[2], q[3], 1, 1, 1);
+      B.transform(m0, M);
+    };
+
+    arm(A.r, -1, chromeR, 0);
+    if (A.twoHand && A.l) arm(A.l, 1, chromeL, A.lRoll);
+
+    const m = B.build();
+    return m;
+  },
+
+  get(id, cfg) {
+    const key = id + "|" + (cfg ? cfg.seed : 0);
+    if (!this.cache[key]) this.cache[key] = this.build(id, cfg);
+    return this.cache[key];
+  },
+  invalidate() { for (const k in this.cache) { if (this.cache[k]) GX.freeMesh(this.cache[k]); }
+    this.cache = {}; },
+};
+
+/* ==========================================================================
    RUNTIME WEAPON STATE
    ======================================================================== */
 class WeaponInst {

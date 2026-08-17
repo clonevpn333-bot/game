@@ -8,6 +8,8 @@
      [9] bloom mip chain    [10] composite/ACES   [11] FXAA
    ========================================================================== */
 const MAXL = 256, TILES_X = 32, TILES_Y = 18;
+/* holocall portrait target — 300x210 panel, so 10:7 */
+const PORTRAIT_W = 400, PORTRAIT_H = 280;
 
 const RENDER = {
   W: 1, H: 1, scale: 1, quality: 2,
@@ -73,6 +75,8 @@ buildPrograms() {
   P.neon   = GX.program(SH.neonVS, SH.neonFS, "neon");
   P.water  = GX.program(SH.waterVS, SH.waterFS, "water");
   P.decal  = GX.program(SH.decalVS, SH.decalFS, "decal");
+  P.portrait = GX.program(SH.skinVS, SH.portraitFS, "portrait");
+  P.blit   = GX.program(FST.vs, SH.blitFS, "blit");
 },
 
 resize(force) {
@@ -114,6 +118,10 @@ resize(force) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   GX._fbo = null;
   if (this.rt.litD) { gl.deleteFramebuffer(this.rt.litD.f); this.rt.litD = null; }
+  /* holocall portrait target, fixed size and independent of resolution scale */
+  /* aspect must match the holocall panel or the face is stretched by the blit */
+  this.rt.portrait = GX.fbo(PORTRAIT_W, PORTRAIT_H,
+    [{ ifmt: gl.RGBA8, fmt: gl.RGBA, type: gl.UNSIGNED_BYTE, filter: gl.LINEAR }], "tex");
   this.rt.bloom = [];
   let bw = w>>1, bh = h>>1;
   for (let i = 0; i < 6; i++) {
@@ -142,7 +150,8 @@ setCamera(px, py, pz, yaw, pitch, roll, fovDeg) {
   this.fwd = [fx, fy, fz];
   /* camera basis for billboards */
   const rl = hypot(fz, -fx) || 1;
-  this.right = [fz/rl, 0, -fx/rl];
+  /* true screen-right for this basis is -X at yaw 0 */
+  this.right = [-fz/rl, 0, fx/rl];
   this.up = [ this.right[2]*fy - 0*fz, 0*fx - this.right[0]*fz, this.right[0]*fy - this.right[2]*fx ];
   const ul = hypot(this.up[0], this.up[1], this.up[2]) || 1;
   this.up[0]/=ul; this.up[1]/=ul; this.up[2]/=ul;
@@ -167,7 +176,7 @@ updateEnv(dt) {
   /* Night City is lit by its own signage, not by the sky, so the night floor
      for ambient is deliberately high and the exposure opens up with it. */
   this.ambInt = lerp(0.55, 0.80, dayl);
-  e.exposure = lerp(1.48, 0.88, dayl);
+  e.exposure = lerp(1.48, 0.72, dayl);   // daylight was still clipping highlights
   e.turb = lerp(2.0, 3.1, e.rain);
   /* Density is per-metre: the ray-march multiplies by segment length, so this
      targets ~65% transmittance at 260 m on a clear day and ~25% in heavy rain. */
@@ -594,6 +603,69 @@ post(fx) {
     gl.uniform2f(f.u.uTexel, 1/this.W, 1/this.H);
     FST.draw();
   }
+},
+
+/* ---- holocall portrait: a second, tiny camera on one character --------- */
+portraitPass(mesh, sk, tint) {
+  const gl = this.gl;
+  if (!mesh || !this.rt.portrait) return;
+  GX.bindFbo(this.rt.portrait);
+  gl.clearColor(0.02, 0.03, 0.05, 1); gl.clearDepth(0);
+  gl.depthMask(true); GX._depth = null;
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  GX.depth(true, true, gl.GEQUAL);
+  GX.cull(0); GX.blend(0);
+
+  /* frame the head: camera 0.85 m out, slightly above eye height */
+  const h = mesh.height || 1.78;
+  /* framed like a video call: head and shoulders, camera just off-axis */
+  const eye = [0.24, h*0.985, 1.18];
+  const tgt = [0.0,  h*0.945, 0.02];
+  const view = this._pv || (this._pv = M4.n());
+  const proj = this._pp2 || (this._pp2 = M4.n());
+  const vp = this._pvp || (this._pvp = M4.n());
+  M4.lookAt(view, eye[0], eye[1], eye[2], tgt[0], tgt[1], tgt[2], 0, 1, 0);
+  /* must match the engine's reversed-Z depth state (clear 0, test GEQUAL) —
+     a standard projection here inverts the test and eats the whole model */
+  M4.perspInfRevZ(proj, 21*D2R, PORTRAIT_W/PORTRAIT_H, 0.05);
+  M4.mul(vp, proj, view);
+
+  const p = GX.use(this.prog.portrait);
+  gl.uniformMatrix4fv(p.u.uVP, false, vp);
+  gl.uniformMatrix4fv(p.u.uPrevVP, false, vp);
+  const ident = this._ident || (this._ident = M4.n());
+  gl.uniformMatrix4fv(p.u.uModel, false, ident);
+  gl.uniformMatrix4fv(p.u.uPrevModel, false, ident);
+  gl.uniform3fv(p.u.uCamPos, new Float32Array(eye));
+  gl.uniform1f(p.u.uTime, this.frameT);
+  gl.uniform1f(p.u.uBoneCount, BONE.COUNT);
+  const kc = tint || [1.0, 0.95, 0.88];
+  gl.uniform3f(p.u.uKeyCol, kc[0]*1.15, kc[1]*1.10, kc[2]*1.05);
+  gl.uniform3f(p.u.uFillCol, 0.22, 0.30, 0.44);
+  gl.uniform3f(p.u.uRimCol, kc[0]*0.55, kc[1]*0.75, kc[2]*1.0);
+  GX.bindTex(0, TEX.albArr); gl.uniform1i(p.u.uAlb, 0);
+  GX.bindTex(1, TEX.srfArr); gl.uniform1i(p.u.uSrf, 1);
+  gl.activeTexture(gl.TEXTURE2);
+  gl.bindTexture(gl.TEXTURE_2D, this.bones.t);
+  gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 4, BONE.COUNT, gl.RGBA, gl.FLOAT, sk.tex);
+  gl.uniform1i(p.u.uBones, 2);
+  gl.viewport(0, 0, PORTRAIT_W, PORTRAIT_H);
+  GX.bindTex(3, this.bones); gl.uniform1i(p.u.uPrevBones, 3);
+  GX.draw(mesh);
+  GX.cull(gl.BACK);
+},
+/* draw the portrait over the finished frame, in normalised screen coords */
+blitPortrait(rect, fade) {
+  const gl = this.gl;
+  GX.bindFbo(null);
+  GX.depth(false, false);
+  GX.blend(1);
+  const p = GX.use(this.prog.blit);
+  GX.bindTex(0, this.rt.portrait.cols[0]); gl.uniform1i(p.u.uTex, 0);
+  gl.uniform4f(p.u.uRect, rect[0], rect[1], rect[2], rect[3]);
+  gl.uniform1f(p.u.uFade, fade);
+  FST.draw();
+  GX.blend(0);
 },
 
 applyQuality(q) {

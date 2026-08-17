@@ -114,6 +114,8 @@ buildSector(si, sj) {
     this.shell(B, G, b);
   }
   this.viaduct(B, x0, z0, x1, z1);
+  this.freeway(B, x0, z0, x1, z1);
+  this.skybridges(B, G, x0, z0, x1, z1);
   this.metroStations(B, G, x0, z0, x1, z1);
 
   const rec = { solid: B.build(), glass: G.build(), i: si, j: sj,
@@ -525,6 +527,211 @@ formMarket(B, G, b) {
     B.cylinder(b.x+i*b.hw*.3, y, b.z+b.hd*1.1, .2, .2, b.h, 8, false, .4);
 },
 
+/* --------------------------------------------------------------------------
+   ELEVATED FREEWAY
+   The highway data existed from the first build but was never given geometry.
+   These are the structures that define Night City's vertical read: multi-lane
+   decks carried 14-20 m up on paired pylons, running straight over the top of
+   whole blocks rather than around them.
+   ------------------------------------------------------------------------ */
+freeway(B, x0, z0, x1, z1) {
+  const Lc = this.L;
+  if (!CITY.highways) return;
+  for (const hwy of CITY.highways) {
+    const pts = hwy.pts;
+    for (let i = 0; i < pts.length-1; i++) {
+      const a = pts[i], b = pts[i+1];
+      const len = hypot(b[0]-a[0], b[1]-a[1]);
+      const steps = max(1, ceil(len/26));
+      for (let sIdx = 0; sIdx < steps; sIdx++) {
+        const t0 = sIdx/steps, t1 = (sIdx+1)/steps;
+        const ax = lerp(a[0],b[0],t0), az = lerp(a[1],b[1],t0);
+        const bx = lerp(a[0],b[0],t1), bz = lerp(a[1],b[1],t1);
+        const mx = (ax+bx)*.5, mz = (az+bz)*.5;
+        if (mx < x0 || mx >= x1 || mz < z0 || mz >= z1) continue;
+        const dx = bx-ax, dz = bz-az, l = hypot(dx,dz) || 1;
+        const ux = dx/l, uz = dz/l, px = -uz, pz = ux;
+        const g = CITY.height(mx, mz);
+        const y = g + hwy.h;
+        const hwid = hwy.w*.5;
+        /* deck */
+        B.mat(Lc.asphalt, 1, 1, 0).col(1,1,1,0).uv(.13);
+        B.quad([ax+px*hwid, y, az+pz*hwid], [bx+px*hwid, y, bz+pz*hwid],
+               [bx-px*hwid, y, bz-pz*hwid], [ax-px*hwid, y, az-pz*hwid], hwy.w*.13, l*.13);
+        /* lane markings down the centre */
+        if (sIdx % 2 === 0) {
+          B.mat(Lc.concrete, .5, 0, 0).col(.92,.90,.86,0).uv(.4);
+          B.quad([ax+px*.16, y+.02, az+pz*.16], [bx+px*.16, y+.02, bz+pz*.16],
+                 [bx-px*.16, y+.02, bz-pz*.16], [ax-px*.16, y+.02, az-pz*.16], .3, l*.4);
+        }
+        /* box girder underside */
+        B.mat(Lc.concrete, 1, 1, 0).col(.30,.30,.31,0).uv(.12);
+        B.quad([ax-px*hwid*.8, y-2.2, az-pz*hwid*.8], [bx-px*hwid*.8, y-2.2, bz-pz*hwid*.8],
+               [bx+px*hwid*.8, y-2.2, bz+pz*hwid*.8], [ax+px*hwid*.8, y-2.2, az+pz*hwid*.8], hwy.w*.12, l*.12);
+        for (let sd = -1; sd <= 1; sd += 2) {
+          B.quad([ax+px*hwid*sd, y-2.2, az+pz*hwid*sd], [bx+px*hwid*sd, y-2.2, bz+pz*hwid*sd],
+                 [bx+px*hwid*sd, y, bz+pz*hwid*sd], [ax+px*hwid*sd, y, az+pz*hwid*sd], l*.12, 2.2*.2);
+          /* crash barrier + lighting mast */
+          B.mat(Lc.concrete, 1, 1, 0).col(.46,.46,.47,0).uv(.3);
+          B.quad([ax+px*hwid*sd, y, az+pz*hwid*sd], [bx+px*hwid*sd, y, bz+pz*hwid*sd],
+                 [bx+px*hwid*sd, y+1.0, bz+pz*hwid*sd], [ax+px*hwid*sd, y+1.0, az+pz*hwid*sd], l*.3, .3);
+          B.mat(Lc.concrete, 1, 1, 0).col(.30,.30,.31,0).uv(.12);
+        }
+        /* pylons every fourth segment: a Y-shaped pier straddling the deck */
+        if (sIdx % 4 === 0) {
+          B.mat(Lc.concrete, 1, 1, 0).col(.34,.34,.35,0).uv(.10);
+          B.box(mx-2.0, g, mz-2.0, mx+2.0, y-3.4, mz+2.0);
+          B.box(mx-hwid*0.75, y-3.4, mz-1.6, mx+hwid*0.75, y-2.2, mz+1.6);
+          B.box(mx-3.2, g, mz-3.2, mx+3.2, g+1.0, mz+3.2);
+        }
+      }
+    }
+  }
+},
+
+/* --------------------------------------------------------------------------
+   SKYBRIDGES
+   Enclosed links between neighbouring towers. Together with the freeways and
+   the overhead clutter these are what stop the skyline reading as a set of
+   unrelated boxes and start it reading as one continuous structure.
+   ------------------------------------------------------------------------ */
+skybridges(B, G, x0, z0, x1, z1) {
+  const Lc = this.L;
+  const list = CITY.bldGrid.query((x0+x1)*.5, (z0+z1)*.5, CITY.SECTOR*.8, []);
+  const seen = new Set();
+  for (const a of list) {
+    if (seen.has(a.id)) continue; seen.add(a.id);
+    if (a.x < x0 || a.x >= x1 || a.z < z0 || a.z >= z1) continue;
+    if (a.h < 42) continue;
+    const R = rng((a.seed ^ 0xB21D) >>> 0);
+    if (R() > 0.42) continue;
+    /* find a partner tower that is close, tall enough, and not the same one */
+    let best = null, bd = 1e9;
+    for (const b of list) {
+      if (b === a || b.h < 34) continue;
+      const d = hypot(b.x-a.x, b.z-a.z);
+      const gap = d - (a.hw + b.hw);
+      if (gap < 10 || gap > 62) continue;
+      if (d < bd) { bd = d; best = b; }
+    }
+    if (!best) continue;
+    const b = best;
+    /* pick a deck height both towers actually reach */
+    const top = min(a.y + a.h, b.y + b.h);
+    const bot = max(a.y, b.y) + 20;
+    if (top - bot < 12) continue;
+    const y = bot + R()*(top - bot - 8);
+    const dx = b.x-a.x, dz = b.z-a.z, l = hypot(dx,dz)||1;
+    const ux = dx/l, uz = dz/l, px = -uz, pz = ux;
+    const sx = a.x + ux*a.hw, sz = a.z + uz*a.hd;
+    const ex = b.x - ux*b.hw, ez = b.z - uz*b.hd;
+    const w = 2.4 + R()*2.2, h = 3.0 + R()*1.4;
+    /* floor, roof, and two glazed flanks */
+    B.mat(Lc.metal, .8, 1, 0).col(.30,.31,.34,0).uv(.24);
+    B.quad([sx+px*w, y, sz+pz*w], [ex+px*w, y, ez+pz*w],
+           [ex-px*w, y, ez-pz*w], [sx-px*w, y, sz-pz*w], w*2*.24, l*.24);
+    B.quad([sx-px*w, y+h, sz-pz*w], [ex-px*w, y+h, ez-pz*w],
+           [ex+px*w, y+h, ez+pz*w], [sx+px*w, y+h, sz+pz*w], w*2*.24, l*.24);
+    G.mat(Lc.glass, 1, 1, 0).col(.42,.46,.50,0).uv(1/6, 0, 0, 1/4);
+    for (let sd = -1; sd <= 1; sd += 2) {
+      G.quad([sx+px*w*sd, y, sz+pz*w*sd], [ex+px*w*sd, y, ez+pz*w*sd],
+             [ex+px*w*sd, y+h, ez+pz*w*sd], [sx+px*w*sd, y+h, sz+pz*w*sd], l/6, h/4);
+    }
+    /* truss ribs so it reads as engineered, not extruded */
+    B.mat(Lc.metal, .7, 1, 0).col(.22,.23,.26,0).uv(.4);
+    const ribs = max(2, (l/6)|0);
+    for (let i = 0; i <= ribs; i++) {
+      const t = i/ribs;
+      const rx = lerp(sx,ex,t), rz = lerp(sz,ez,t);
+      for (let sd = -1; sd <= 1; sd += 2)
+        B.box(rx+px*w*sd-0.10, y, rz+pz*w*sd-0.10, rx+px*w*sd+0.10, y+h, rz+pz*w*sd+0.10);
+    }
+  }
+},
+
+/* --------------------------------------------------------------------------
+   OVERHEAD CLUTTER
+   Cables, pipe runs, banners and lantern strings slung across the street. In
+   the reference material the sky over Night City is almost never clear — it
+   is cut up by exactly this kind of infrastructure, and its absence was the
+   single biggest reason the streets read as an ordinary city.
+   ------------------------------------------------------------------------ */
+overhead(D, N, x0, z0, x1, z1) {
+  const Lc = this.L;
+  const cands = CITY.roadGrid.query((x0+x1)*.5, (z0+z1)*.5, CITY.CHUNK*.8, []);
+  const seen = new Set();
+  for (const r of cands) {
+    if (seen.has(r)) continue; seen.add(r);
+    if (r.w < CITY.ROADW.street) continue;
+    const len = hypot(r.x1-r.x0, r.z1-r.z0);
+    if (len < 20) continue;
+    const dx = (r.x1-r.x0)/len, dz = (r.z1-r.z0)/len;
+    const px = -dz, pz = dx;
+    const R = rng(((r.x0*7919) ^ (r.z0*104729)) >>> 0);
+    const n = max(1, (len/26)|0);
+    for (let i = 0; i < n; i++) {
+      const t = (i + 0.5)/n * len;
+      const cx = r.x0 + dx*t, cz = r.z0 + dz*t;
+      if (cx < x0 || cx >= x1 || cz < z0 || cz >= z1) continue;
+      if (CITY.cityFalloff(cx, cz) > .4) continue;
+      const g = CITY.height(cx, cz);
+      const span = r.w*.5 + 5;
+      const kind = R();
+      const y = g + 7.5 + R()*7;
+      if (kind < .34) {
+        /* catenary cable bundle with a sag */
+        D.mat(Lc.metal, .9, 1, 0).col(.08,.08,.09,0).uv(1);
+        const segs = 8;
+        for (let k = 0; k < segs; k++) {
+          const u0 = -1 + 2*k/segs, u1 = -1 + 2*(k+1)/segs;
+          const y0 = y - (1 - u0*u0)*1.1, y1 = y - (1 - u1*u1)*1.1;
+          D.box(cx+px*span*u0-0.05, y0-0.05, cz+pz*span*u0-0.05,
+                cx+px*span*u1+0.05, y1+0.05, cz+pz*span*u1+0.05);
+        }
+        /* lantern string — the Kabuki/Japantown signature */
+        if (R() < .55) {
+          for (let k = 1; k < segs; k++) {
+            const u = -1 + 2*k/segs;
+            const yy = y - (1 - u*u)*1.1;
+            const c = R() < .6 ? [1,.28,.16] : [1,.82,.30];
+            N.matRaw(3*64/255, R()*.4, 0, 3.2/8).colv(c, 1);
+            N.box(cx+px*span*u-0.16, yy-0.42, cz+pz*span*u-0.16,
+                  cx+px*span*u+0.16, yy-0.10, cz+pz*span*u+0.16);
+          }
+        }
+      } else if (kind < .58) {
+        /* service pipe run crossing the street on brackets */
+        D.mat(Lc.rust, 1, 1, 0).col(.62,.58,.52,0).uv(.5);
+        D.box(cx-px*span-0.2, y, cz-pz*span-0.2, cx+px*span+0.2, y+0.42, cz+pz*span+0.2);
+        D.mat(Lc.metal, .9, 1, 0).col(.30,.30,.32,0).uv(.6);
+        for (let sd = -1; sd <= 1; sd += 2)
+          D.box(cx+px*span*sd*0.92-0.14, y-1.4, cz+pz*span*sd*0.92-0.14,
+                cx+px*span*sd*0.92+0.14, y, cz+pz*span*sd*0.92+0.14);
+      } else if (kind < .78) {
+        /* hanging banner with a lit edge */
+        const col = hsl(R(), .85, .5);
+        D.mat(Lc.fabric, 1, 0, 0).colv(col, 0).uv(.5);
+        const bw = 1.2 + R()*1.6, bh = 3 + R()*4;
+        D.box(cx-px*span*0.5-bw, y-bh, cz-pz*span*0.5-0.06,
+              cx-px*span*0.5+bw, y, cz-pz*span*0.5+0.06);
+        N.matRaw(0, R(), 0, 3/8).colv(col, 1);
+        N.box(cx-px*span*0.5-bw, y-bh-0.08, cz-pz*span*0.5-0.05,
+              cx-px*span*0.5+bw, y-bh, cz-pz*span*0.5+0.05);
+      } else {
+        /* traffic gantry with signal heads */
+        D.mat(Lc.metal, .8, 1, 0).col(.24,.25,.27,0).uv(.5);
+        D.box(cx-px*span-0.12, y, cz-pz*span-0.12, cx+px*span+0.12, y+0.28, cz+pz*span+0.12);
+        for (let sd = -1; sd <= 1; sd += 2) {
+          D.box(cx+px*span*sd-0.16, g, cz+pz*span*sd-0.16, cx+px*span*sd+0.16, y+0.28, cz+pz*span*sd+0.16);
+          N.matRaw(3*64/255, .1, 0, 4/8).col(R()<.5?1:.1, R()<.5?.1:1, .12, 1);
+          N.box(cx+px*span*sd*0.55-0.14, y-0.62, cz+pz*span*sd*0.55-0.10,
+                cx+px*span*sd*0.55+0.14, y-0.34, cz+pz*span*sd*0.55+0.10);
+        }
+      }
+    }
+  }
+},
+
 /* --------------------------- metro viaducts ----------------------------- */
 viaduct(B, x0, z0, x1, z1) {
   const Lc = this.L;
@@ -600,6 +807,7 @@ buildChunk(ci, cj) {
     if (b.x < x0 || b.x >= x1 || b.z < z0 || b.z >= z1) continue;
     this.detail(D, N, b, lights);
   }
+  this.overhead(D, N, x0, z0, x1, z1);
   const pr = CITY.propGrid ? CITY.propGrid.query((x0+x1)*.5, (z0+z1)*.5, C*.75, []) : [];
   for (const p of pr) {
     if (p.x < x0 || p.x >= x1 || p.z < z0 || p.z >= z1) continue;
@@ -674,6 +882,31 @@ detail(D, N, b, lights) {
       N.boxYaw(b.x+ox*1.10, y+3.2, b.z+oz*1.10, nx?.9:b.hw*.7, .07, nz?.9:b.hd*.7, b.rot);
       lights.push({ x:b.x+ox*1.2, y:y+3.1, z:b.z+oz*1.2, r:11,
                     cr:col[0]*2.4, cg:col[1]*2.4, cb:col[2]*2.4, kind:0 });
+    }
+  }
+  /* --- Japanese-influenced dressing on Kitsch blocks: flared eaves over the
+         shopfront, and the occasional street torii. Arasaka's cultural pull
+         shows up in the vernacular architecture, not just the corporate towers. */
+  if (b.style === STYLE.KITSCH && R() < .55) {
+    const c = cos(b.rot), s2 = sin(b.rot);
+    for (let f = 1; f < min(b.floors, 8); f += 3) {
+      const yy = y + f*3.6;
+      D.mat(Lc.metal, .85, 1, 0).col(.14,.13,.15,0).uv(.4);
+      D.boxYaw(b.x, yy, b.z, b.hw*1.22, .16, b.hd*1.22, b.rot);
+      D.mat(Lc.paint, 1, 0, 0).col(.40,.08,.12,0).uv(.5);
+      D.boxYaw(b.x, yy-0.24, b.z, b.hw*1.10, .10, b.hd*1.10, b.rot);
+    }
+    if (R() < .30) {
+      /* torii-style gate straddling the frontage */
+      const gx = b.x - b.hd*s2*1.9, gz = b.z + b.hd*c*1.9;
+      D.mat(Lc.paint, 1, 0, 0).col(.62,.06,.10,0).uv(.6);
+      for (let sd = -1; sd <= 1; sd += 2)
+        D.cylinder(gx + c*b.hw*0.9*sd, y, gz + s2*b.hw*0.9*sd, .22, .19, 5.4, 10, false, .6);
+      D.boxYaw(gx, y+5.6, gz, b.hw*1.15, .16, .26, b.rot);
+      D.boxYaw(gx, y+4.9, gz, b.hw*0.95, .12, .20, b.rot);
+      N.matRaw(0, R()*.5, 0, 3.4/8).col(1,.30,.16,1);
+      N.boxYaw(gx, y+5.42, gz, b.hw*1.05, .05, .06, b.rot);
+      lights.push({ x:gx, y:y+5.2, z:gz, r:13, cr:2.6, cg:.7, cb:.4, kind:0 });
     }
   }
   /* --- signage: the single biggest contributor to the Night City read --- */

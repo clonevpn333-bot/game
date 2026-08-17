@@ -23,7 +23,7 @@ const GAME = {
     inv:[], slots:["corvid", null, null], slot:0, hacks:["qh_ping","qh_short"],
     cyber:{}, grenades:3, wanted:0, wantedT:0,
     weapon:null, aim:0, vehicle:null, shard:false, integrity:1,
-    contacts:["odds"], messages:[], questsDone:[], shards:[],
+    contacts:["odds"], messages:[], questsDone:[], shards:[], rel:{}, romance:null,
     stats:{ kills:0, headshots:0, dist:0, drives:0, quests:0 },
     body: null, sk: null, model: M4.n(), prevModel: M4.n(), phase: 0,
     lastGround: 0, jumpBuf: 0, coyote: 0, doubleJumped: false,
@@ -53,6 +53,20 @@ async boot() {
   await step(0.52, "FABRICATING VEHICLES", () => { VEHICLE.buildAll(); });
   await step(0.62, "MACHINING WEAPONS", () => { WMESH.buildAll(); });
   await step(0.72, "GROWING POPULATION", () => { NPCS.buildBodies(); });
+  await step(0.80, "CASTING", () => {
+    /* the named cast get full-detail bodies so holocalls show the real person */
+    this.castMesh = {}; this.castSk = {};
+    for (const id in CAST_LOOK) {
+      const L = CAST_LOOK[id];
+      const cfg = { height:L.height, build:L.build, fem:L.fem, skin:L.skin, face:L.face,
+                    clothes:L.clothes, cyber:L.cyber, seed:(id.charCodeAt(0)*7919)>>>0, arch:id, lod:0 };
+      const m = BODY.build(cfg);
+      if (!m) continue;
+      m.height = L.height;
+      this.castMesh[id] = m;
+      this.castSk[id] = new Skeleton(L.height/1.78);
+    }
+  });
   await step(0.88, "WARMING THE GRID", () => {
     PARTICLES.init();
     RENDER.applyQuality(2);
@@ -77,6 +91,13 @@ async boot() {
 /* ---------------------------------------------------------------- input - */
 bindInput() {
   const cv = $("gl");
+  /* Browsers require a user gesture before an AudioContext may start. */
+  const unlock = () => {
+    if (AUDIO.ready) { AUDIO.resume(); return; }
+    if (AUDIO.init()) { RADIO.setOn(this.radioOn !== false && !!this.P.vehicle); }
+  };
+  window.addEventListener("pointerdown", unlock);
+  window.addEventListener("keydown", unlock);
   window.addEventListener("keydown", (e) => {
     const k = e.key.toLowerCase();
     if (this.keys[k]) return;
@@ -138,13 +159,22 @@ onKey(k, e) {
   if (k === "1") this.selectSlot(0);
   if (k === "2") this.selectSlot(1);
   if (k === "3") this.selectSlot(2);
-  if (k === "r") { if (this.P.weapon) this.P.weapon.startReload(); }
+  if (k === "r") { if (this.P.weapon && this.P.weapon.startReload()) {
+    const pz = this.eyePos(V3.n());
+    AUDIO.reload(0, pz);
+    setTimeout(() => AUDIO.reload(1, this.eyePos(V3.n())), this.P.weapon.W.reload*380);
+    setTimeout(() => AUDIO.reload(2, this.eyePos(V3.n())), this.P.weapon.W.reload*720);
+  } }
   if (k === "e") this.interact();
   if (k === "f") this.enterExitVehicle();
   if (k === "g") this.throwGrenade();
   if (k === "q") this.toggleScanner();
   if (k === "h") this.useHack();
   if (k === "c") this.P.crouchToggle = !this.P.crouchToggle;
+  if (k === "b") { this.radioOn = !RADIO.on; RADIO.setOn(this.radioOn);
+    UI.note(RADIO.on ? ("RADIO · <b>" + RADIO.cur.name + "</b>") : "RADIO OFF"); }
+  if (k === "n") { const st = RADIO.next(); RADIO.setOn(true); this.radioOn = true;
+    UI.note("RADIO · <b>" + st.name + "</b> · " + st.genre); }
   if (k === "f5") { e.preventDefault(); this.saveGame(); UI.note("QUICKSAVE", "xp"); }
   if (k === "f9") { e.preventDefault(); this.loadGame(); }
 },
@@ -173,17 +203,25 @@ beginGame() {
   Object.assign(P.attrs, C.attrs);
   P.money = LIFEPATHS[C.lifepath].money;
   P.cfg = {
-    height: C.height, build: C.build, skin: C.skin, face: C.face,
+    height: C.height, build: C.build, skin: C.skin, face: C.face, fem: C.fem,
     clothes: C.clothes, cyber: C.cyber, seed: C.seed, arch: "player",
   };
   if (P.body) GX.freeMesh(P.body);
   P.body = BODY.build(P.cfg);
   P.sk = new Skeleton(C.height/1.78);
+  VARMS.invalidate();
   /* nudge to the nearest street node so the opening frame is never inside a
      building interior */
   const startNode = TRAFFIC.nearestNode(-548, -2180);
-  P.x = startNode ? startNode.x : -548;
-  P.z = startNode ? startNode.z : -2180;
+  let sx = startNode ? startNode.x : -548, sz = startNode ? startNode.z : -2180;
+  /* road nodes can still land inside a footprint, so eject with a generous
+     radius and step outward until the spot is genuinely clear */
+  for (let i = 0; i < 8; i++) {
+    const c = CITY.collide(sx, sz, 1.4, 0);
+    if (hypot(c[0]-sx, c[1]-sz) < 0.01) break;
+    sx = c[0]; sz = c[1];
+  }
+  P.x = sx; P.z = sz;
   P.y = CITY.height(P.x, P.z);
   P.yaw = 0.7;
   P.inv = [
@@ -193,7 +231,7 @@ beginGame() {
   P.hacks = ["qh_ping", "qh_short"];
   P.contacts = ["odds"];
   P.messages = [{ from:"odds", t:"NOW", b:"Noodle bar. Kabuki. Don't be seen coming in and don't be seen leaving. — O" }];
-  P.questsDone = []; P.shards = []; P.perks = [];
+  P.questsDone = []; P.shards = []; P.perks = []; P.rel = {}; P.romance = null;
   P.shard = false; P.integrity = 1;
   P.stats = { kills:0, headshots:0, dist:0, drives:0, quests:0 };
   this.recalc();
@@ -207,8 +245,19 @@ beginGame() {
     UI.show(null);
     UI.fade(false);
     this.capturePointer();
+    /* Opening brief: who you are, where you are, and what you are doing here.
+       Delivered as staged cards rather than assuming the player already knows. */
+    const L = LIFEPATHS[P.lifepath];
+    UI.cards([
+      { t:"NIGHT CITY", s:"2077 · " + CITY.districtName(P.x, P.z).toUpperCase() + ", WATSON", d:3.4 },
+      { t:P.name, s:L.name.toUpperCase() + " · MERC FOR HIRE", d:3.2 },
+      { t:"THE JOB", s:"ODESSA NAKAMURA-VANCE HAS WORK. THE PAY IS GOOD ENOUGH THAT YOU DIDN'T ASK THE SECOND QUESTION.", d:4.4 },
+      { t:"", s:"FOLLOW THE YELLOW MARKER · [TAB] INVENTORY · [M] MAP · [J] JOBS · [B] RADIO", d:4.6 },
+    ]);
     UI.note("NIGHT CITY · " + CITY.districtName(P.x, P.z).toUpperCase(), "xp");
-    setTimeout(() => UI.call("odds", "You're late, and you're standing in the rain like a tourist. Inside. Now.", 7), 2200);
+    setTimeout(() => this.startCall("odds",
+      "You're late. You're standing in the rain outside my bar like a tourist who lost his tour. " +
+      "Get inside — the marker on your optics is the door.", 8), 2400);
   });
 },
 
@@ -233,6 +282,26 @@ addXP(n) {
     UI.note("LEVEL UP · <b>" + P.level + "</b>", "xp");
   }
 },
+/* affinity, and the scene it unlocks */
+addAffinity(who, n) {
+  const P = this.P;
+  P.rel[who] = min(100, (P.rel[who] || 0) + n);
+  const R = ROMANCE[who];
+  if (!R) return;
+  const stage = min(3, (P.rel[who] / 26) | 0);
+  if (stage !== P._relStage_) { /* per-character stage note */ }
+  if (P.rel[who] >= R.gate && !P.romanceReady) P.romanceReady = {};
+  if (P.rel[who] >= R.gate && P.romanceReady && !P.romanceReady[who]) {
+    P.romanceReady[who] = true;
+    UI.note("<b>" + CAST[who].short.toUpperCase() + "</b> WANTS TO TALK", "xp");
+    P.messages.push({ from: who, t: "NOW",
+      b: who === "static"
+        ? "come down. not for a job. — I"
+        : "Shop's open. No work. Just come by. — R" });
+    this.setWaypoint(R.place.x, R.place.z, true);
+  }
+},
+
 addStreet(n) {
   const P = this.P;
   P.street += n;
@@ -381,6 +450,18 @@ beginDialogue(dlgId) {
     else if (res && res.indexOf("finish:") === 0) this.finishGame(res.slice(7));
   });
 },
+/* Start a holocall: 3D portrait, jaw-synced delivery, and subtitles. There is
+   no voice acting in a 500 KB file, so the line is always readable on screen. */
+startCall(who, text, dur) {
+  this.callActive = true; this.callWho = who; this.callT = 0;
+  this.callDur = dur || max(3.2, text.length * 0.055);
+  this.callFade = 0;
+  const c = CAST[who];
+  this.callTint = c ? hex2rgb(parseInt(c.col.slice(1), 16)) : [1,.95,.9];
+  AUDIO.holocall();
+  UI.call(who, text, this.callDur + 1.4);
+  UI.sub(c ? c.short.toUpperCase() : who, text, this.callDur + 1.2);
+},
 phoneCall(who, dlgId) {
   if (dlgId && DIALOGUE[dlgId]) { this.beginDialogue(dlgId); return; }
   const lines = {
@@ -391,7 +472,7 @@ phoneCall(who, dlgId) {
     teodora:"Vista Del Rey thanks you. Come eat sometime when nobody's shooting.",
     quint:"Filed under a case number that doesn't exist. Which means it's safe. For now.",
   };
-  UI.call(who, lines[who] || "...", 6.5);
+  this.startCall(who, lines[who] || "...", 6.5);
   const q = this.activeQuest;
   const s = q && q.stages[this.questStage];
   if (s && s.call === who) setTimeout(() => this.advanceStage(), 700);
@@ -439,7 +520,9 @@ updatePlayer(dt) {
   /* --- look ---------------------------------------------------------- */
   if (this.pointerLocked) {
     const s = this.sens * (P.aim > .5 ? 0.55 : 1);
-    P.yaw -= this.mouse.dx * s;
+    /* screen-right is -X in this camera basis, so yaw must INCREASE when the
+       mouse moves right — the old sign mirrored horizontal look */
+    P.yaw += this.mouse.dx * s;
     P.pitch -= this.mouse.dy * s * (this.invertY ? -1 : 1);
     P.pitch = clamp(P.pitch, -1.50, 1.50);
   }
@@ -468,8 +551,9 @@ updatePlayer(dt) {
   spd *= lerp(1, 0.52, P.aim);
 
   const c = cos(P.yaw), s = sin(P.yaw);
-  const wx = (-s*iz + c*ix) * spd;
-  const wz = ( c*iz + s*ix) * spd;
+  /* forward = (-sin yaw, cos yaw); right = (-cos yaw, -sin yaw) */
+  const wx = (-s*iz - c*ix) * spd;
+  const wz = ( c*iz - s*ix) * spd;
   const accel = P.grounded ? 16 : 3.5;
   P.vx = damp(P.vx, wx, accel, dt);
   P.vz = damp(P.vz, wz, accel, dt);
@@ -479,7 +563,7 @@ updatePlayer(dt) {
   P.vy -= 24 * dt;
   if (K[" "] && P.jumpBuf <= 0) {
     if (P.grounded || P.coyote > 0) { P.vy = 8.2; P.grounded = false; P.coyote = 0;
-      P.jumpBuf = 0.25; P.doubleJumped = false; }
+      P.jumpBuf = 0.25; P.doubleJumped = false; AUDIO.jump([P.x,P.y,P.z]); }
     else if (!P.doubleJumped && P.cyber.legs) { P.vy = 7.4; P.doubleJumped = true; P.jumpBuf = 0.25;
       PARTICLES.sparks(P.x, P.y+0.2, P.z, 8, 0.3, 0.9, 1); }
   }
@@ -514,6 +598,7 @@ updatePlayer(dt) {
       const fall = (-P.vy - 12) * (P.cyber.legs ? 1.6 : 4.0);
       if (fall > 1) this.hurt(fall, 0, 0, true);
     }
+    if (!P.grounded) AUDIO.land([P.x,P.y,P.z], P.vy < -9);
     P.y = g2; P.vy = 0; P.grounded = true; P.doubleJumped = false; P.coyote = 0.12;
   } else { P.grounded = false; P.coyote -= dt; }
 
@@ -522,7 +607,10 @@ updatePlayer(dt) {
   P.phase += hs * dt * 0.55;
   P.bob = damp(P.bob, P.grounded ? hs/6 : 0, 8, dt);
   P.step += hs*dt;
-  if (P.step > 2.1 && P.grounded) { P.step = 0;
+  const strideLen = lerp(2.1, 1.5, P.sprint);
+  if (P.step > strideLen && P.grounded) { P.step = 0;
+    const surf = CITY.cityFalloff(P.x, P.z) > .45 ? "sand" : "stone";
+    AUDIO.step([P.x, P.y, P.z], surf, P.sprint > 0.4, P.crouch > 0.5);
     PARTICLES.spawn(P.x, P.y+0.05, P.z, 0, 0.25, 0, 0.10, .35,.34,.32, 0.35, 0, 3, 0.4); }
 
   /* --- combat -------------------------------------------------------- */
@@ -547,8 +635,14 @@ updatePlayer(dt) {
   }
   /* --- wanted level -------------------------------------------------- */
   if (P.wanted > 0) {
-    P.wantedT -= dt;
-    if (P.wantedT <= 0) { P.wanted--; P.wantedT = 26; }
+    /* the timer only runs while no NCPD unit can see you */
+    let seen = false;
+    for (const u of POLICE.units)
+      if (u.state !== "dead" && u.aware > 0.4 && hypot(u.x-P.x, u.z-P.z) < 70) { seen = true; break; }
+    P.wantedT -= seen ? -dt*0.5 : dt;
+    P.wantedT = min(P.wantedT, 40);
+    if (P.wantedT <= 0) { P.wanted--; P.wantedT = 26;
+      if (P.wanted === 0) UI.note("HEAT COOLED", "xp"); }
   }
   /* --- animate the player's own body (for shadow + third-person bits) - */
   if (P.sk) {
@@ -557,7 +651,7 @@ updatePlayer(dt) {
     if (P.weapon) ANIM.aimOverlay(P.sk, P.weapon.W.hands||0, max(P.aim, 0.25), -P.pitch*0.5);
     P.sk.pose();
     M4.cpy(P.prevModel, P.model);
-    const q = Q4.n(); Q4.euler(q, 0, P.yaw, 0);
+    const q = Q4.n(); Q4.euler(q, 0, -P.yaw, 0);
     M4.trs(P.model, P.x, P.y, P.z, q[0],q[1],q[2],q[3], 1,1,1);
   }
 },
@@ -593,6 +687,9 @@ updateDriving(dt) {
         0.34, .32,.31,.30, 0.9, 0, 1.6, 0.4);
     }
   }
+  AUDIO.engineUpdate("player", car.rpm, sat(abs(car.throttle)) * 0.7 + car.driftAmt*0.3, null, 1);
+  if (car.driftAmt > 0.3 && car.grounded) AUDIO.skid([car.p[0],car.p[1],car.p[2]], car.driftAmt);
+  if (K["h"]) AUDIO.horn([car.p[0],car.p[1],car.p[2]]);
   if (car.destroyed) this.exitVehicle();
 },
 enterExitVehicle() {
@@ -607,6 +704,8 @@ enterExitVehicle() {
   best.ai = null; best.occupant = P;
   P.vehicle = best;
   P.stats.drives++;
+  AUDIO.engineStart("player");
+  if (this.radioOn !== false) RADIO.setOn(true);
   UI.note("DRIVING · <b>" + best.C.name + "</b>");
 },
 exitVehicle() {
@@ -618,6 +717,8 @@ exitVehicle() {
   P.y = CITY.height(P.x, P.z);
   P.vx = car.v[0]*0.3; P.vz = car.v[2]*0.3; P.vy = 0;
   car.occupant = null;
+  AUDIO.engineStop("player");
+  RADIO.setOn(false);
   if (!car.destroyed) { car.ai = { node: TRAFFIC.nearestNode(car.p[0], car.p[2]), next:null, t:0, cruise: 9 };
     TRAFFIC.pickNext(car); }
   P.vehicle = null;
@@ -652,6 +753,7 @@ playerShoot() {
   /* muzzle flash + light */
   const mz = V3.mad(this.tmpC, eye, dir, 0.75);
   PARTICLES.muzzle(mz[0], mz[1], mz[2], dir[0], dir[1], dir[2], W.cls === "Shotgun" ? 1.6 : 1);
+  AUDIO.gun(W.cls, mz, W.sys);
   this.dynLights.push({ x:mz[0], y:mz[1], z:mz[2], r:16, cr:5.5, cg:3.6, cb:1.6, kind:0, ttl:0.06 });
   const pellets = W.pellets || 1;
   const critBase = 0.08 + P.attrs.cool*0.02 + (P.perks.indexOf("p_cool2")>=0 && this.killT>0 ? 0.2 : 0);
@@ -675,7 +777,7 @@ playerShoot() {
   }
   /* shell ejection */
   if (W.mag > 0 && W.cls !== "Revolver") {
-    const rx = cos(P.yaw), rz = sin(P.yaw);
+    const rx = -cos(P.yaw), rz = -sin(P.yaw);
     PARTICLES.spawn(eye[0]+rx*0.25, eye[1]-0.12, eye[2]+rz*0.25,
       rx*2.4+(Math.random()-.5), 2.2, rz*2.4+(Math.random()-.5),
       0.022, 0.85,0.65,0.25, 1.2, 1, 0.6, -13, 1.6);
@@ -732,6 +834,7 @@ applyHit(hit, dmg, crit, dir) {
   if (hit.npc) {
     const r = NPCS.damage(hit.npc, dmg, dir[0], dir[2], crit);
     PARTICLES.impact(hit.x, hit.y, hit.z, -dir[0], -dir[1], -dir[2], "flesh");
+    AUDIO.impact("flesh", [hit.x, hit.y, hit.z]);
     if (crit || hit.head) PARTICLES.blood(hit.x, hit.y, hit.z, dir[0], dir[1], dir[2]);
     if (this.showDmg) UI.dmgNum(hit.x, hit.y, hit.z, dmg, crit || hit.head);
     this.hitmark(crit || hit.head);
@@ -741,14 +844,17 @@ applyHit(hit, dmg, crit, dir) {
   } else if (hit.car) {
     hit.car.damage(dmg);
     PARTICLES.impact(hit.x, hit.y, hit.z, -dir[0], -dir[1], -dir[2], "metal");
+    AUDIO.impact("metal", [hit.x, hit.y, hit.z]);
     this.hitmark(false);
     if (hit.car.burn > 0 && !hit.car._boom) { hit.car._boom = true;
       setTimeout(() => { PARTICLES.explosion(hit.car.p[0], hit.car.p[1]+0.6, hit.car.p[2], 3);
+        AUDIO.explosion([hit.car.p[0], hit.car.p[1]+0.6, hit.car.p[2]]);
         this.dynLights.push({ x:hit.car.p[0], y:hit.car.p[1]+1, z:hit.car.p[2], r:44,
           cr:8, cg:4, cb:1.2, kind:0, ttl:0.6 });
         this.radiusDamage(hit.car.p[0], hit.car.p[1], hit.car.p[2], 8, 140); }, 1400); }
   } else {
     PARTICLES.impact(hit.x, hit.y, hit.z, -dir[0], -dir[1], -dir[2], "stone");
+    AUDIO.impact("stone", [hit.x, hit.y, hit.z]);
     /* power weapons ricochet off hard surfaces */
     const W = P.weapon && P.weapon.W;
     if (W && W.ricochet && Math.random() < 0.22) {
@@ -756,6 +862,7 @@ applyHit(hit, dmg, crit, dir) {
       V3.nrm(nd, nd);
       const o2 = V3.set(V3.n(), hit.x, hit.y, hit.z);
       const h2 = this.traceShot(o2, nd, 26, 0);
+      AUDIO.ricochet([hit.x, hit.y, hit.z]);
       if (h2 && h2.npc) this.applyHit(h2, P.weapon.damage*0.55, false, nd);
       this.tracer(o2, h2 ? [h2.x,h2.y,h2.z] : V3.mad(V3.n(), o2, nd, 26), [1,0.75,0.4]);
     }
@@ -774,6 +881,7 @@ tracer(a, b, col) {
   }
 },
 hitmark(crit) {
+  AUDIO.hitmark(crit);
   const h = $("hitmark");
   h.className = crit ? "crit" : "";
   h.style.opacity = "1";
@@ -795,6 +903,7 @@ onKill(npc) {
       else this.stageKills++;   // any hostile counts toward the encounter
     }
   }
+  AUDIO.kill();
   this.addXP(40 + npc.A.hp*0.4);
   this.addStreet(6);
   if (P.perks.indexOf("p_body3") >= 0) P.hp = min(P.maxHp, P.hp + P.maxHp*0.12);
@@ -817,6 +926,7 @@ playerMelee() {
   const dir = this.aimRay(this.tmpB);
   const range = w.W.range * (P.cyber.arms ? 1.3 : 1);
   const hit = this.traceShot(eye, dir, range, 0);
+  if (w.W.cls === "Katana") AUDIO.blade(eye); else AUDIO.melee(!!(hit && hit.npc), eye);
   if (hit && hit.npc) {
     let dmg = w.damage * (1 + P.attrs.body*0.12) * (P.cyber.arms ? ITEMS[P.cyber.arms].melee : 1);
     const crit = Math.random() < 0.2;
@@ -845,6 +955,7 @@ updateGrenades(dt) {
     PARTICLES.spawn(g.x, g.y, g.z, 0,0,0, 0.05, 0.4,1,0.5, 0.09, 1, 0.1, 0, 1);
     if (g.t <= 0) {
       PARTICLES.explosion(g.x, g.y+0.4, g.z, 3.4);
+      AUDIO.explosion([g.x, g.y+0.4, g.z]);
       this.dynLights.push({ x:g.x, y:g.y+1.2, z:g.z, r:46, cr:9, cg:4.6, cb:1.4, kind:0, ttl:0.5 });
       this.radiusDamage(g.x, g.y, g.z, WEAPONS.frag.radius, WEAPONS.frag.dmg);
       NPCS.alertArea(g.x, g.z, 60);
@@ -881,6 +992,7 @@ npcShoot(n, px, pz) {
   V3.nrm(d, d);
   const mz = V3.mad(V3.n(), eye, d, 0.5);
   PARTICLES.muzzle(mz[0], mz[1], mz[2], d[0], d[1], d[2], 0.8);
+  AUDIO.gun(W.cls, mz, W.sys);
   this.dynLights.push({ x:mz[0], y:mz[1], z:mz[2], r:12, cr:4, cg:2.6, cb:1.1, kind:0, ttl:0.05 });
   const hit = this.traceShot(eye, d, W.range, 0);
   const distToPlayer = hypot(tx-eye[0], tz-eye[2]);
@@ -910,6 +1022,7 @@ hurt(amt, dx, dz, fall) {
   P.hp -= a;
   this.fx.damage = min(1, this.fx.damage + a/60);
   this.hitFlash = 0.35;
+  AUDIO.hurt(sat(a/45));
   $("dmgVig").style.opacity = String(sat(1 - P.hp/P.maxHp) * 0.9);
   if (P.hp <= 0) {
     if (P.cyber.circ && P.reviveT <= 0) {
@@ -923,6 +1036,7 @@ hurt(amt, dx, dz, fall) {
 die() {
   const P = this.P;
   P.hp = 0;
+  AUDIO.death();
   $("death").classList.add("on");
   this.releasePointer();
   this.started = false;
@@ -941,17 +1055,13 @@ respawn() {
 },
 raiseWanted(n) {
   const P = this.P;
+  const before = P.wanted;
   P.wanted = min(5, P.wanted + n);
-  P.wantedT = 30;
-  if (P.wanted >= 1) {
-    UI.note("NCPD RESPONDING · <b>LEVEL " + P.wanted + "</b>", "bad");
-    for (let i = 0; i < P.wanted*2; i++) {
-      const a = Math.random()*TAU, d = 44 + Math.random()*40;
-      const arch = P.wanted >= 5 ? "maxtac" : "cop";
-      const c = NPCS.spawn(arch, P.x+cos(a)*d, P.z+sin(a)*d, { hostile:true, aware:0.9 });
-      c.state = "combat";
-    }
-  }
+  P.wantedT = 34;
+  /* POLICE owns the actual response; this only records the scene so units
+     converge on where it happened rather than teleporting onto the player */
+  POLICE.reportCrime(P.x, P.z);
+  if (P.wanted > before) UI.note("WANTED · <b>LEVEL " + P.wanted + "</b>", "bad");
 },
 nearCivilians(r) {
   for (const n of NPCS.list)
@@ -962,6 +1072,7 @@ nearCivilians(r) {
 /* ========================== QUICKHACKS ================================ */
 toggleScanner() {
   this.scanning = !this.scanning;
+  AUDIO.ui("scan");
   $("scanFx").classList.toggle("on", this.scanning);
   if (!this.scanning) { UI.scan(null); $("qhack").classList.remove("on"); }
 },
@@ -976,6 +1087,7 @@ useHack() {
   if (P.ram < cost) { UI.note("INSUFFICIENT RAM", "bad"); return; }
   P.ram -= cost;
   this.fx.hack = 1;
+  AUDIO.ui("hack");
   const n = t.npc;
   if (h.dmg) {
     const dm = h.dmg * (1 + P.attrs.int*0.08) * (P.perks.indexOf("p_int2")>=0 ? 1.35 : 1);
@@ -1009,6 +1121,22 @@ interact() {
     this.fx.glitch = 1;
     setTimeout(() => this.advanceStage(), 900);
     return;
+  }
+  /* a companion waiting on you */
+  if (P.romanceReady) for (const k in P.romanceReady) {
+    const R = ROMANCE[k];
+    if (!R || P.romanceDone && P.romanceDone[k]) continue;
+    if (hypot(P.x-R.place.x, P.z-R.place.z) < 14) {
+      (P.romanceDone || (P.romanceDone = {}))[k] = true;
+      UI.startDialogue(R.scene, (res) => {
+        if (res && res.indexOf("ROMANCE:") === 0) {
+          P.romance = res.slice(8);
+          UI.note("YOU AND <b>" + CAST[P.romance].short.toUpperCase() + "</b>", "xp");
+        }
+        this.capturePointer();
+      });
+      return;
+    }
   }
   /* metro station */
   for (const s of CITY.metro.stations) {
@@ -1208,6 +1336,7 @@ saveGame() {
     inv:P.inv, slots:P.slots, slot:P.slot, hacks:P.hacks, cyber:P.cyber,
     grenades:P.grenades, shard:P.shard, integrity:P.integrity,
     contacts:P.contacts, messages:P.messages, questsDone:P.questsDone, shards:P.shards,
+    rel:P.rel, romance:P.romance,
     stats:P.stats, cfg:P.cfg, quest: this.activeQuest ? this.activeQuest.id : null,
     stage: this.questStage, time: RENDER.env.time, rain: RENDER.env.rain,
   };
@@ -1229,12 +1358,14 @@ loadGame() {
     hacks:d.hacks||["qh_ping"], cyber:d.cyber||{}, grenades:d.grenades||0,
     shard:d.shard, integrity:d.integrity===undefined?1:d.integrity,
     contacts:d.contacts||["odds"], messages:d.messages||[], questsDone:d.questsDone||[],
-    shards:d.shards||[], stats:d.stats||{kills:0,headshots:0,dist:0,drives:0,quests:0},
+    shards:d.shards||[], rel:d.rel||{}, romance:d.romance||null,
+    stats:d.stats||{kills:0,headshots:0,dist:0,drives:0,quests:0},
     cfg:d.cfg, vehicle:null,
   });
   if (P.cfg) { if (P.body) GX.freeMesh(P.body); P.body = BODY.build(P.cfg);
-    P.sk = new Skeleton(P.cfg.height/1.78); }
+    P.sk = new Skeleton(P.cfg.height/1.78); VARMS.invalidate(); }
   this.recalc();
+  POLICE.reset();
   this.activeQuest = d.quest ? QUESTS[d.quest] : null;
   this.questStage = d.stage || 0;
   this.stageKills = 0;
@@ -1341,12 +1472,14 @@ frame(now) {
       this.updateGrenades(simDt);
       TRAFFIC.update(simDt, P.x, P.z, RENDER.env);
       NPCS.updateCrowd(simDt, P.x, P.z, P.wanted > 0);
+      POLICE.update(simDt, P);
       this.checkStage();
       this.updateInteractPrompt();
       this.updateScan();
     }
     PARTICLES.update(dt);
     this.updateRain(dt);
+    this.updateAudio(dt);
     WORLD.ensure(P.x, P.z, 5.5);
     /* camera */
     const eye = this.eyePos(this.tmpA);
@@ -1371,6 +1504,22 @@ frame(now) {
     if (this.killT > 0) this.killT -= dt;
     if (P.hp < P.maxHp*0.3) this.fx.damage = max(this.fx.damage, 0.25 + sin(this.time*4)*0.08);
     $("dmgVig").style.opacity = String(sat(1 - P.hp/P.maxHp) * 0.75);
+    /* holocall portrait: animate and render the caller as real geometry */
+    if (this.callActive) {
+      this.callT += dt;
+      const sk = this.castSk[this.callWho];
+      const mesh = this.castMesh[this.callWho];
+      if (sk && mesh) {
+        /* talk drives the jaw bone, which the head mesh is genuinely skinned to */
+        const speaking = this.callT < this.callDur;
+        if (speaking) ANIM.talk(sk, this.callT*1.35, 3.1, 1.0);
+        else ANIM.idle(sk, this.callT, 3.1);
+        sk.pose();
+        RENDER.portraitPass(mesh, sk, this.callTint);
+        this.callFade = damp(this.callFade, this.callT < this.callDur + 0.5 ? 1 : 0, 7, dt);
+        if (this.callFade < 0.02 && this.callT > this.callDur) this.callActive = false;
+      }
+    }
     /* HUD */
     UI.updateHUD(P);
     UI.tickChip(dt);
@@ -1409,6 +1558,52 @@ adaptQuality() {
     if (S.resScale < 1.0) { S.resScale = min(1.0, S.resScale + 0.06); RENDER.resize(true); this._adaptCool = this.time + 6; }
   }
   if (this._adaptCool === undefined) this._adaptCool = this.time + 6;
+},
+
+/* Live audio mix: ambience density from what is actually around the player,
+   engine voices for the nearest few cars, and the radio's lookahead scheduler. */
+updateAudio(dt) {
+  if (!AUDIO.ready) return;
+  const P = this.P;
+  RADIO.update();
+  /* density drives the traffic rumble bed */
+  let near = 0;
+  for (const c of TRAFFIC.cars) if (hypot(c.p[0]-P.x, c.p[2]-P.z) < 90) near++;
+  const dens = sat(near/9) * (1 - CITY.cityFalloff(P.x, P.z));
+  const neon = WORLD.lightHash.query(P.x, P.z, 14, this._ltmp || (this._ltmp = [])).length > 2;
+  AUDIO.ambience(dt, RENDER.env, dens, false, neon);
+
+  /* voice the three closest traffic cars, retire the rest */
+  const sorted = TRAFFIC.cars.slice().sort((a,b) =>
+    (hypot(a.p[0]-P.x,a.p[2]-P.z)) - (hypot(b.p[0]-P.x,b.p[2]-P.z)));
+  const want = new Set();
+  for (let i = 0; i < min(3, sorted.length); i++) {
+    const c = sorted[i];
+    if (hypot(c.p[0]-P.x, c.p[2]-P.z) > 70) break;
+    const id = "car" + c.id;
+    want.add(id);
+    AUDIO.engineStart(id);
+    AUDIO.engineUpdate(id, c.rpm, sat(abs(c.throttle)), c.p, 10);
+  }
+  for (const id of AUDIO.engines.keys())
+    if (id !== "player" && !want.has(id)) AUDIO.engineStop(id);
+
+  /* sporadic city one-shots — the thing that makes a city sound inhabited */
+  this._ambT = (this._ambT || 0) - dt;
+  if (this._ambT <= 0) {
+    this._ambT = 3 + Math.random()*7;
+    const a = Math.random()*TAU, d = 40 + Math.random()*120;
+    const pos = [P.x + cos(a)*d, P.y + 4 + Math.random()*20, P.z + sin(a)*d];
+    const r = Math.random();
+    const kind = r < 0.22 ? "distantSiren" : r < 0.40 ? "distantGun"
+               : r < 0.58 ? "flyby" : r < 0.74 ? "trainPass" : "crowd";
+    AUDIO.cityEvent(pos, kind);
+  }
+  /* low-health heartbeat */
+  if (P.hp < P.maxHp*0.28) {
+    this._hbT = (this._hbT || 0) - dt;
+    if (this._hbT <= 0) { this._hbT = 0.85; AUDIO.heartbeat(); }
+  }
 },
 
 updateInteractPrompt() {
@@ -1650,10 +1845,14 @@ render(dt, menuMode) {
   GX.cull(gl.BACK);
 
   /* first-person weapon viewmodel */
-  if (!menuMode && this.started && P.weapon && P.weapon.mesh && !P.vehicle) {
+  if (!menuMode && this.started && P.weapon && !P.vehicle) {
     const pg2 = RENDER.useGbuf("gbuf");
     const m = this.viewmodelMatrix(dt);
-    RENDER.drawMesh(pg2, P.weapon.mesh, m);
+    GX.cull(0);                       // hands are thin; show both faces
+    const arms = VARMS.get(P.weapon.id, P.cfg);
+    if (arms) RENDER.drawMesh(pg2, arms, m);
+    if (P.weapon.mesh && P.weapon.W.cls !== "Melee") RENDER.drawMesh(pg2, P.weapon.mesh, m);
+    GX.cull(gl.BACK);
   }
 
   /* ---------------- lighting + effects ---------------- */
@@ -1679,6 +1878,11 @@ render(dt, menuMode) {
 
   /* ---------------- post ---------------- */
   RENDER.post(this.fx);
+  /* holocall portrait sits on top of the finished frame */
+  if (this.callActive && this.callFade > 0.01) {
+    const r = UI.callRect();
+    if (r) RENDER.blitPortrait(r, this.callFade);
+  }
 },
 
 viewmodelMatrix(dt) {
@@ -1695,8 +1899,10 @@ viewmodelMatrix(dt) {
   const idleX = sin(this.time*0.9)*0.004*(1-P.aim);
   const idleY = cos(this.time*1.3)*0.003*(1-P.aim);
   /* hip position vs sighted position */
-  const hipX = 0.20, hipY = -0.20, hipZ = 0.42;
-  const adsX = 0.0,  adsY = -0.055, adsZ = 0.30;
+  /* Weapon sits further forward than a bare model would need, so the arms
+     behind it clear the near plane; ADS pulls it to the optical centre. */
+  const hipX = 0.165, hipY = -0.150, hipZ = 0.520;
+  const adsX = 0.0,   adsY = -0.046, adsZ = 0.345;
   const a = P.aim;
   let ox = lerp(hipX, adsX, a) + bx + idleX + w.swayX;
   let oy = lerp(hipY, adsY, a) + by + idleY + w.swayY - P.crouch*0.03;

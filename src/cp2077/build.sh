@@ -11,6 +11,7 @@ PARTS=(
   10_core.js
   20_gl.js
   30_tex.js
+  35_audio.js
   40_shaders.js
   50_geo.js
   60_city.js
@@ -20,6 +21,7 @@ PARTS=(
   82_weapon.js
   90_render.js
   A0_npc.js
+  A2_life.js
   B0_story.js
   C0_ui.js
   D0_game.js

@@ -26,6 +26,7 @@ bootDone() {
 show(id) {
   for (const s of document.querySelectorAll(".screen")) s.classList.remove("on");
   if (id) $(id).classList.add("on");
+  if (typeof AUDIO !== "undefined" && AUDIO.ready) AUDIO.ui(id ? "open" : "close");
   this.screen = id;
   $("hud").classList.toggle("on", !id && GAME.started);
 },
@@ -85,9 +86,12 @@ updateHUD(P) {
   const cells = $("ramWrap").children;
   for (let i = 0; i < cells.length; i++)
     cells[i].classList.toggle("full", i < round(P.ram));
-  /* weapon */
+  /* weapon panel — hidden entirely when you are empty-handed, since an
+     ammo readout for fists is noise */
   const w = P.weapon;
-  if (w) {
+  const bare = !w || w.W.sys === WSYS.MELEE && w.id === "fist";
+  $("wpn").style.display = bare ? "none" : "block";
+  if (w && !bare) {
     $("wName").textContent = w.W.name;
     $("wMode").textContent = WSYS_NAME[w.W.sys] + " · " + w.W.cls.toUpperCase();
     if (w.W.mag > 0) $("ammo").innerHTML = w.ammo + "<small>/" + w.reserve + "</small>";
@@ -95,7 +99,11 @@ updateHUD(P) {
     $("wFill").style.right = (100 - (w.W.mag ? w.ammo/w.W.mag : 1)*100) + "%";
     $("reloadTag").textContent = w.reloading > 0 ? "RELOADING" : (w.needsReload() ? "PRESS R" : "");
     $("grenTag").textContent = "GRENADE ×" + P.grenades + "  [G]";
+    $("ammo").style.display = w.W.mag > 0 ? "block" : "none";
+    $("wBar").style.display = w.W.mag > 0 ? "block" : "none";
   }
+  /* quick bar: what you are actually carrying, always visible */
+  this.quickBar(P);
   /* clock + district */
   const t = RENDER.env.time % 86400;
   const hh = (t/3600)|0, mm = ((t%3600)/60)|0;
@@ -105,7 +113,8 @@ updateHUD(P) {
   const stars = $("wanted").children;
   for (let i = 0; i < stars.length; i++) stars[i].classList.toggle("on", i < P.wanted);
   /* compass */
-  const deg = ((-P.yaw*R2D) % 360 + 360) % 360;
+  /* forward is (-sin yaw, cos yaw) and north is -Z, so bearing = 180 + yaw */
+  const deg = ((180 + P.yaw*R2D) % 360 + 360) % 360;
   const W = $("compass").clientWidth, PPD = W/90;
   for (const e of this.compassEls) {
     let d = (+e.dataset.a - deg + 540) % 360 - 180;
@@ -123,12 +132,57 @@ updateHUD(P) {
       q.stages.forEach((s, i) => {
         if (i > GAME.questStage + 1) return;
         const d = el("div", "qObj" + (i < GAME.questStage ? " done" : ""), s.obj);
+        if (i === GAME.questStage) d.id = "qActive";
         box.appendChild(d);
       });
+    }
+    /* live distance on the active objective so you always know where to go */
+    const act = $("qActive");
+    const mk = q.stages[GAME.questStage] && q.stages[GAME.questStage].marker;
+    if (act && mk) {
+      const d = round(hypot(P.x-mk.x, P.z-mk.z));
+      if (act.dataset.d !== String(d)) {
+        act.dataset.d = String(d);
+        act.textContent = q.stages[GAME.questStage].obj + "  ·  " +
+          (d > 999 ? (d/1000).toFixed(1) + " km" : d + " m");
+      }
     }
     $("quest").style.display = "block";
   } else $("quest").style.display = "none";
 },
+/* A compact always-on readout of consumables, grenades and equipped hacks,
+   so the inventory is legible without opening a menu. */
+quickBar(P) {
+  const box = $("quick");
+  if (!box) return;
+  const sig = P.inv.length + "|" + P.grenades + "|" + P.hacks.join(",") + "|" +
+              P.slots.join(",") + "|" + P.slot + "|" + P.money;
+  if (box.dataset.sig === sig) return;
+  box.dataset.sig = sig;
+  box.innerHTML = "";
+  const add = (icon, label, sub, cls) => {
+    const d = el("div", "qItem" + (cls ? " " + cls : ""));
+    d.innerHTML = "<i>" + icon + "</i><b>" + label + "</b>" +
+                  (sub ? "<s>" + sub + "</s>" : "");
+    box.appendChild(d);
+  };
+  P.slots.forEach((wid, i) => {
+    if (!wid) return;
+    const W = WEAPONS[wid];
+    add(String(i+1), W.name, W.cls, i === P.slot ? "on" : "");
+  });
+  if (P.grenades > 0) add("G", "×" + P.grenades, "GRENADE");
+  const consum = {};
+  for (const it of P.inv) {
+    if (!it.i) continue;
+    const d = ITEMS[it.i];
+    if (d && d.kind === "consumable") consum[it.i] = (consum[it.i]||0) + it.n;
+  }
+  for (const k in consum) add(ITEMS[k].icon, "×" + consum[k], ITEMS[k].name.split(" ")[0]);
+  for (const h of P.hacks) add(ITEMS[h].icon, ITEMS[h].name.split(" ")[0], ITEMS[h].ram + " RAM", "hack");
+  add("€", fmt(P.money), "EDDIES", "money");
+},
+
 tickChip(dt) {
   if (this._chipShown === undefined) this._chipShown = 1;
   this._chipShown = damp(this._chipShown, this._chip === undefined ? 1 : this._chip, 2.2, dt);
@@ -136,6 +190,8 @@ tickChip(dt) {
 
 /* ---- notifications ---------------------------------------------------- */
 note(txt, cls) {
+  if (typeof AUDIO !== "undefined" && AUDIO.ready)
+    AUDIO.ui(cls === "xp" ? "xp" : cls === "bad" ? "bad" : "notify");
   const n = el("div", "note" + (cls ? " " + cls : ""));
   n.innerHTML = txt;
   $("notes").appendChild(n);
@@ -275,7 +331,9 @@ choose(i) {
   if (!o) return;
   if (o.skill && (GAME.P.attrs[o.skill]||0) < o.need) return;
   if (o.act === "bonus") GAME.P.money += 4500, this.note("NEGOTIATED · <b>+€$4,500</b>", "xp");
+  if (o.rom) GAME.addAffinity(o.rom, o.romBig ? 22 : 9);
   const to = o.to;
+  if (to && to.indexOf("ROMANCE:") === 0) return this.endDialogue(to);
   if (to === "END") return this.endDialogue(null);
   if (to === "ADVANCE") return this.endDialogue("advance");
   if (to === "SHOP") { this.endDialogue(null); GAME.openShop(); return; }
@@ -305,34 +363,40 @@ call(whoId, text, dur) {
   $("callName").textContent = who ? who.short : whoId;
   $("callName").style.color = who ? who.col : "#fcee0a";
   $("callTxt").textContent = text;
+  const cv = $("callCv"), av = $("callAv");
+  if (av.clientWidth) { cv.width = av.clientWidth; cv.height = av.clientHeight; }
   this.drawCallAvatar(who);
   clearTimeout(this._callT);
   this._callT = setTimeout(() => box.classList.remove("on"), (dur||6)*1000);
 },
+/* screen-space rect of the call portrait, in 0..1 GL coords (y up) */
+callRect() {
+  const box = $("callAv");
+  if (!box || !$("call").classList.contains("on")) return null;
+  const r = box.getBoundingClientRect();
+  const W = window.innerWidth, H = window.innerHeight;
+  return [r.left/W, 1 - (r.bottom/H), r.width/W, r.height/H];
+},
 drawCallAvatar(who) {
+  /* Only the overlay furniture: the 3D portrait itself is drawn by the engine
+     into the WebGL canvas behind this element. */
   const c = $("callCv"), g = c.getContext("2d");
   const col = who ? who.col : "#fcee0a";
-  g.clearRect(0,0,c.width,c.height);
-  const grd = g.createLinearGradient(0,0,0,c.height);
-  grd.addColorStop(0, "rgba(20,28,40,1)"); grd.addColorStop(1, "rgba(6,10,16,1)");
-  g.fillStyle = grd; g.fillRect(0,0,c.width,c.height);
-  /* abstract signal portrait — scanlines + a glitched silhouette */
-  const seed = who ? who.id.charCodeAt(0) : 7;
-  g.save(); g.translate(c.width/2, c.height);
-  g.fillStyle = col; g.globalAlpha = 0.30;
-  g.beginPath();
-  g.ellipse(0, -34, 21, 26, 0, 0, TAU); g.fill();
-  g.beginPath(); g.moveTo(-38, 0); g.quadraticCurveTo(0, -30, 38, 0); g.lineTo(38, 0); g.lineTo(-38,0);
-  g.fill();
-  g.restore();
-  g.globalAlpha = 1;
-  g.strokeStyle = "rgba(255,255,255,.06)";
+  g.clearRect(0, 0, c.width, c.height);
+  g.strokeStyle = "rgba(255,255,255,.05)";
   for (let y = 0; y < c.height; y += 3) { g.beginPath(); g.moveTo(0,y); g.lineTo(c.width,y); g.stroke(); }
-  g.strokeStyle = col; g.globalAlpha = .8; g.lineWidth = 1;
-  g.strokeRect(6, 6, c.width-12, c.height-12);
+  g.strokeStyle = col; g.globalAlpha = .85; g.lineWidth = 1;
+  const m = 6, L = 16;
+  g.beginPath();
+  g.moveTo(m, m+L); g.lineTo(m, m); g.lineTo(m+L, m);
+  g.moveTo(c.width-m-L, m); g.lineTo(c.width-m, m); g.lineTo(c.width-m, m+L);
+  g.moveTo(c.width-m, c.height-m-L); g.lineTo(c.width-m, c.height-m); g.lineTo(c.width-m-L, c.height-m);
+  g.moveTo(m+L, c.height-m); g.lineTo(m, c.height-m); g.lineTo(m, c.height-m-L);
+  g.stroke();
   g.globalAlpha = 1;
   g.fillStyle = col; g.font = "9px monospace";
-  g.fillText("● LIVE", 12, 20);
+  g.fillText("\u25CF LIVE", 12, 20);
+  g.fillText("ENCRYPTED", c.width-64, c.height-12);
 },
 
 /* ---- subtitles -------------------------------------------------------- */
@@ -471,7 +535,7 @@ drawMapInto(cv, cam, opts) {
   /* --- player --- */
   const P = GAME.P;
   const ps = S(P.x, P.z);
-  g.save(); g.translate(ps.x, ps.y); g.rotate(-P.yaw);
+  g.save(); g.translate(ps.x, ps.y); g.rotate(PI - P.yaw);
   g.fillStyle = "#fcee0a";
   g.beginPath(); g.moveTo(0,-8); g.lineTo(6,7); g.lineTo(0,4); g.lineTo(-6,7); g.closePath(); g.fill();
   g.restore();
@@ -504,7 +568,7 @@ drawMini(P) {
   const W = cv.width, H = cv.height;
   g.save();
   g.beginPath(); g.rect(0,0,W,H); g.clip();
-  g.translate(W/2, H/2); g.rotate(P.yaw); g.translate(-W/2, -H/2);
+  g.translate(W/2, H/2); g.rotate(PI - P.yaw); g.translate(-W/2, -H/2);
   const S = (x,z) => ({ x:(x-cam.x)*cam.zoom + W/2, y:(z-cam.z)*cam.zoom + H/2 });
   g.fillStyle = "#050a10"; g.fillRect(-W, -H, W*3, H*3);
   g.fillStyle = "#08131c";
@@ -567,6 +631,7 @@ drawMini(P) {
 
 /* ======================= PAUSE MENU ==================================== */
 setTab(t) {
+  if (typeof AUDIO !== "undefined" && AUDIO.ready && this.tab !== t) AUDIO.ui("tab");
   this.tab = t;
   for (const o of $("pTabs").children) o.classList.toggle("on", o.dataset.t === t);
   const titles = { inv:"INVENTORY", chr:"CHARACTER", cyb:"CYBERWARE", jrn:"JOURNAL",
@@ -918,6 +983,31 @@ buildPhone(body) {
       d.appendChild(b);
       right.appendChild(d);
     }
+    const rel = P.rel && P.rel[id];
+    if (ROMANCE[id] && rel !== undefined) {
+      right.appendChild(el("div", "hdr", "RELATIONSHIP"));
+      const R = ROMANCE[id];
+      const stage = min(3, (rel / 26) | 0);
+      const b = el("div", "bar"); const fi = el("i");
+      fi.style.width = round(sat(rel/100)*100) + "%";
+      fi.style.background = P.romance === id ? "#ff2b6d" : c.col;
+      b.appendChild(fi); b.style.margin = "8px 0";
+      right.appendChild(b);
+      const st = el("div", "rSub", (P.romance === id ? "TOGETHER" : R.stages[stage]) +
+        " · " + round(rel) + "/100");
+      st.style.textTransform = "none";
+      right.appendChild(st);
+      const bl = el("div", "pFlav", R.blurb);
+      right.appendChild(bl);
+      if (P.romanceReady && P.romanceReady[id] && !(P.romanceDone && P.romanceDone[id])) {
+        const g = el("div", "rSub", "WAITING FOR YOU AT " + R.place.label);
+        g.style.color = "var(--yl)";
+        right.appendChild(g);
+        const bb = el("button", "btn", "SET WAYPOINT");
+        bb.onclick = () => { GAME.setWaypoint(R.place.x, R.place.z); this.closeMenus(); };
+        right.appendChild(bb);
+      }
+    }
     if (GAME.canCall(id)) {
       const b = el("button", "btn", "CALL " + c.short.toUpperCase());
       b.style.marginTop = "12px";
@@ -1013,6 +1103,24 @@ buildSettings(body) {
   right.appendChild(bar);
 },
 
+/* Staged title cards — used for the opening brief and act transitions. */
+cards(list) {
+  const box = $("cards");
+  if (!box) return;
+  let i = 0;
+  const step = () => {
+    if (i >= list.length) { box.classList.remove("on"); box.innerHTML = ""; return; }
+    const c = list[i++];
+    box.innerHTML = (c.t ? "<h2>" + c.t + "</h2>" : "") + "<p>" + c.s + "</p>";
+    box.classList.remove("on");
+    void box.offsetWidth;
+    box.classList.add("on");
+    if (typeof AUDIO !== "undefined" && AUDIO.ready) AUDIO.ui("tab");
+    setTimeout(step, c.d * 1000);
+  };
+  step();
+},
+
 closeMenus() { this.show(null); GAME.capturePointer(); },
 
 /* ======================= CHARACTER CREATOR ============================= */
@@ -1023,7 +1131,7 @@ initCC() {
   this.ccCfg = {
     name: "V", lifepath: "street", height: 1.78, build: .42,
     skin: SKIN_TONES[2].slice(), fem: false,
-    face: { chin:1, brow:1, nose:1, cheek:1, lips:1, hair:1,
+    face: { chin:1, brow:1, nose:1, cheek:1, lips:1, jaw:1, hair:1, hairStyle:0,
             hairCol: HAIR_COLS[0].slice(), eyeCol:[.22,.32,.42], eyeGlow:0 },
     clothes: { torso:"jacket", torsoCol:[.16,.17,.20], sleeves:"long", pads:true,
                padCol:[.10,.10,.12], bulk:.05, legs:"fabric", legCol:[.10,.10,.12],
@@ -1103,12 +1211,15 @@ drawCC() {
     chips("LEGS", [["Fabric","fabric"],["Leather","leather"],["Shorts","shorts"]], C.clothes.legs, v => C.clothes.legs = v);
     chips("HEAD", [["None","none"],["Cap","cap"],["Beanie","beanie"],["Visor","visor"]], C.clothes.head, v => C.clothes.head = v);
   } else if (t === "face") {
-    slider("JAW / CHIN", C.face.chin, .3, 1.8, v => C.face.chin = v);
+    slider("CHIN", C.face.chin, .3, 1.8, v => C.face.chin = v);
+    slider("JAW WIDTH", C.face.jaw, .2, 1.8, v => C.face.jaw = v);
     slider("BROW", C.face.brow, .2, 1.8, v => C.face.brow = v);
     slider("NOSE", C.face.nose, .3, 1.8, v => C.face.nose = v);
     slider("CHEEKBONES", C.face.cheek, .2, 1.8, v => C.face.cheek = v);
     slider("LIPS", C.face.lips, .3, 1.8, v => C.face.lips = v);
     slider("HAIR VOLUME", C.face.hair, 0, 1.4, v => C.face.hair = v);
+    chips("HAIR STYLE", [["Crop",0],["Mohawk",1],["Tied back",2],["Buzz",3]],
+      C.face.hairStyle, v => C.face.hairStyle = v);
     swatches("HAIR COLOUR", HAIR_COLS, C.face.hairCol, v => C.face.hairCol = v);
     swatches("EYES", [[.22,.32,.42],[.30,.22,.14],[.16,.36,.22],[.42,.42,.46],
       [1,.35,.05],[0,.9,1],[1,.1,.3],[.7,.2,1]], C.face.eyeCol, v => { C.face.eyeCol = v;

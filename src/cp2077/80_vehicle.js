@@ -22,19 +22,54 @@ const VEHICLE = {
   buildAll() {
     for (const k in VEHICLE_CLASSES) this.meshes[k] = this.build(k);
     const W = new MeshBuilder();
-    W.mat(TEX.id("rubber"), 1, 0, 0).col(.09,.09,.10,0).uv(2.4);
-    W.lathe([0,-0.12, 0.34,-0.12, 0.36,-0.06, 0.36,0.06, 0.34,0.12, 0,0.12], 16, 0,0,0, 1,1,0);
-    W.mat(TEX.id("metalPanel"), .35, 1, 0).col(.52,.53,.56,0).uv(3);
-    W.lathe([0,-0.055, 0.21,-0.05, 0.235,0, 0.21,0.05, 0,0.055], 14, 0,0,0, 1,1,0);
-    W.mat(TEX.id("gunmetal"), .3, 1, 0).col(.3,.31,.33,0).uv(4);
-    for (let i = 0; i < 5; i++) {
-      const a = i/5*TAU;
-      W.box(cos(a)*0.06-0.012, -0.062, sin(a)*0.06-0.012, cos(a)*0.06+0.012, 0.062, sin(a)*0.06+0.012);
+    /* tyre: sidewall bulge, shoulder radius, flat contact patch */
+    W.mat(TEX.id("rubber"), 1, 0, 0).col(.075,.075,.08,0).uv(2.4);
+    W.lathe([0.215,-0.115, 0.268,-0.118, 0.318,-0.105, 0.348,-0.070,
+             0.356,-0.030, 0.356, 0.030, 0.348, 0.070, 0.318, 0.105,
+             0.268, 0.118, 0.215, 0.115], 22, 0,0,0, 1,1,0);
+    /* rim barrel + dished face */
+    W.mat(TEX.id("metalPanel"), .28, 1, 0).col(.60,.62,.66,0).uv(3);
+    W.lathe([0.215,-0.112, 0.222,-0.060, 0.222, 0.060, 0.215, 0.112], 22, 0,0,0, 1,1,0);
+    W.lathe([0.0,0.070, 0.055,0.076, 0.140,0.082, 0.200,0.072, 0.222,0.055], 22, 0,0,0, 1,1,0);
+    /* ten spokes, tapered */
+    W.mat(TEX.id("metalPanel"), .32, 1, 0).col(.54,.56,.60,0).uv(3);
+    for (let i = 0; i < 10; i++) {
+      const a = i/10*TAU, ca = cos(a), sa = sin(a);
+      for (let k = 0; k < 4; k++) {
+        const t0 = 0.06 + k*0.038, t1 = t0 + 0.038;
+        const w0 = 0.030*(1 - k*0.14), w1 = 0.030*(1 - (k+1)*0.14);
+        W.quad([ca*t0 - sa*w0, 0.062, sa*t0 + ca*w0], [ca*t1 - sa*w1, 0.068, sa*t1 + ca*w1],
+               [ca*t1 + sa*w1, 0.068, sa*t1 - ca*w1], [ca*t0 + sa*w0, 0.062, sa*t0 - ca*w0], 1, 1);
+      }
     }
+    /* brake disc + caliper behind the spokes */
+    W.mat(TEX.id("gunmetal"), .35, 1, 0).col(.30,.31,.33,0).uv(4);
+    W.lathe([0.0,0.0, 0.055,0.004, 0.170,0.006, 0.172,-0.006, 0.055,-0.004, 0,0], 18, 0,0,0,1,1,0);
+    W.mat(TEX.id("paintKitsch"), .5, .2, 0).col(.72,.10,.06,0).uv(3);
+    W.box(-0.028, -0.020, 0.120, 0.028, 0.030, 0.176);
+    W.mat(TEX.id("gunmetal"), .3, 1, 0).col(.18,.18,.20,0).uv(4);
+    W.lathe([0.0,0.074, 0.052,0.080, 0.054,0.070, 0,0.068], 14, 0,0,0,1,1,0);
     this.wheelMesh = W.build();
     return this;
   },
 
+  /* ---------------------------------------------------------------------
+     CHASSIS
+     Bodies are lofted: a longitudinal set of stations, each carrying a
+     superellipse cross-section whose width, sill height, shoulder height and
+     corner sharpness are all functions of position along the car. That is
+     what produces a real automotive surface — a tumblehome that leans in
+     toward the roof, a sill that tucks under, and a shoulder line running the
+     length of the body — instead of an extruded box.
+
+     Silhouette targets per class (proportions, not badges):
+       hatch  — tall cabin, short overhangs, upright tail
+       sedan  — long bonnet, three-box, gentle roof arc
+       sport  — cab-backward, low nose, fastback tail
+       hyper  — mid-engined wedge, extreme rake, wide rear haunches
+       muscle — long flat bonnet, high belt, kicked-up tail
+       suv/van— slab sides, high roof, blunt fascia
+     --------------------------------------------------------------------- */
   build(kind) {
     const C = VEHICLE_CLASSES[kind];
     const B = new MeshBuilder();
@@ -44,134 +79,249 @@ const VEHICLE = {
     const hw = W*.5, hl = L*.5;
     if (C.bike) return this.buildBike(B, C);
 
-    const lowSlung = kind === "sport" || kind === "hyper";
-    const boxy = kind === "van" || kind === "suv" || kind === "police";
-    const sillY = 0.30, beltY = lowSlung ? 0.80 : (boxy ? 1.10 : 0.92);
-    const roofY = H;
+    const S = {
+      hatch:  { nose:0.44, tail:0.42, cabF: 0.16, cabR:-0.46, roof:0.98, belt:0.56, sill:0.30,
+                rakeF:0.30, rakeR:0.16, haunch:1.00, wheelR:0.33, tumble:0.90, nOut:2.5 },
+      sedan:  { nose:0.40, tail:0.36, cabF: 0.02, cabR:-0.52, roof:0.96, belt:0.58, sill:0.28,
+                rakeF:0.40, rakeR:0.34, haunch:1.02, wheelR:0.34, tumble:0.86, nOut:2.8 },
+      sport:  { nose:0.30, tail:0.34, cabF:-0.10, cabR:-0.56, roof:0.92, belt:0.60, sill:0.22,
+                rakeF:0.52, rakeR:0.50, haunch:1.10, wheelR:0.34, tumble:0.78, nOut:3.2 },
+      hyper:  { nose:0.24, tail:0.30, cabF:-0.16, cabR:-0.50, roof:0.88, belt:0.60, sill:0.18,
+                rakeF:0.60, rakeR:0.56, haunch:1.16, wheelR:0.35, tumble:0.72, nOut:3.6 },
+      muscle: { nose:0.46, tail:0.34, cabF:-0.06, cabR:-0.54, roof:0.94, belt:0.62, sill:0.26,
+                rakeF:0.42, rakeR:0.30, haunch:1.08, wheelR:0.36, tumble:0.84, nOut:3.0 },
+      suv:    { nose:0.38, tail:0.30, cabF: 0.20, cabR:-0.54, roof:1.00, belt:0.58, sill:0.36,
+                rakeF:0.26, rakeR:0.12, haunch:1.02, wheelR:0.40, tumble:0.95, nOut:2.3 },
+      van:    { nose:0.26, tail:0.20, cabF: 0.30, cabR:-0.62, roof:1.00, belt:0.54, sill:0.34,
+                rakeF:0.22, rakeR:0.06, haunch:1.00, wheelR:0.38, tumble:0.97, nOut:2.2 },
+      police: { nose:0.40, tail:0.34, cabF: 0.04, cabR:-0.52, roof:0.96, belt:0.58, sill:0.28,
+                rakeF:0.38, rakeR:0.30, haunch:1.04, wheelR:0.35, tumble:0.86, nOut:2.8 },
+    }[kind] || { nose:0.40, tail:0.36, cabF:0.02, cabR:-0.52, roof:0.96, belt:0.58, sill:0.28,
+                 rakeF:0.40, rakeR:0.34, haunch:1.02, wheelR:0.34, tumble:0.86, nOut:2.8 };
 
-    /* ---- lower body: a swept 8-point section extruded along the length -- */
-    B.mat(car, 1, 1, 0).col(1,1,1,0).uv(.55);
-    const sections = [
-      { z:-hl,        w:hw*0.80, y0:0.34, y1:beltY*0.86 },
-      { z:-hl*0.86,   w:hw*0.94, y0:0.26, y1:beltY*0.94 },
-      { z:-hl*0.50,   w:hw*1.00, y0:0.22, y1:beltY },
-      { z: 0,         w:hw*1.00, y0:0.22, y1:beltY },
-      { z: hl*0.50,   w:hw*1.00, y0:0.22, y1:beltY },
-      { z: hl*0.86,   w:hw*0.94, y0:0.26, y1:beltY*0.96 },
-      { z: hl,        w:hw*0.78, y0:0.34, y1:beltY*0.80 },
-    ];
-    const ring = (s) => {
-      /* 10-point rounded rectangle in the XY plane at depth z */
-      const p = [];
-      const w = s.w, y0 = s.y0, y1 = s.y1, r = min(w, (y1-y0))*0.30;
-      p.push([-w+r, y0], [w-r, y0], [w, y0+r], [w, y1-r*0.6], [w-r*0.6, y1],
-             [-w+r*0.6, y1], [-w, y1-r*0.6], [-w, y0+r]);
-      return p;
+    const roofY = H * S.roof, beltY = H * S.belt, sillY = H * S.sill;
+    const wz = hl * 0.66;                       // wheel centres
+    const wr = S.wheelR;
+
+    /* ---- longitudinal shape functions (t = z/hl in [-1, 1]) ---------- */
+    const halfW = (t) => {
+      /* widest over the rear haunches, tapering into both fascias */
+      let w = hw * (1 - 0.14*Math.pow(abs(t), 3.2));
+      if (t < -0.25) w *= lerp(1, S.haunch, sat((-t - 0.25)/0.55));
+      if (t > 0.55) w *= lerp(1, 0.90, sat((t-0.55)/0.45));
+      if (t < -0.86) w *= lerp(1, 0.88, sat((-t - 0.86)/0.14));
+      return w;
     };
-    for (let i = 0; i < sections.length-1; i++) {
-      const A = ring(sections[i]), Bg = ring(sections[i+1]);
-      const za = sections[i].z, zb = sections[i+1].z;
-      for (let k = 0; k < A.length; k++) {
-        const k2 = (k+1)%A.length;
-        B.quad([A[k][0], A[k][1], za], [A[k2][0], A[k2][1], za],
-               [Bg[k2][0], Bg[k2][1], zb], [Bg[k][0], Bg[k][1], zb], 1, 1);
-      }
-    }
-    /* end caps */
-    for (const s of [sections[0], sections[sections.length-1]]) {
-      const A = ring(s);
-      const cxs = 0, cys = (s.y0+s.y1)*.5;
-      for (let k = 0; k < A.length; k++) {
-        const k2 = (k+1)%A.length;
-        const sgn = s.z < 0 ? 1 : -1;
-        const a = B.vert(cxs, cys, s.z, 0,0,sgn, 0,0);
-        const b2 = B.vert(A[k][0], A[k][1], s.z, 0,0,sgn, A[k][0], A[k][1]);
-        const c = B.vert(A[k2][0], A[k2][1], s.z, 0,0,sgn, A[k2][0], A[k2][1]);
-        if (sgn > 0) B.idx.push(a, c, b2); else B.idx.push(a, b2, c);
-      }
-    }
-    /* ---- greenhouse ---------------------------------------------------- */
-    const cabZ0 = boxy ? -hl*0.30 : -hl*0.10, cabZ1 = boxy ? hl*0.62 : hl*0.50;
-    const rake = lowSlung ? 0.42 : 0.28;
-    B.mat(met, .5, 1, 0).col(.12,.12,.14,0).uv(.8);
-    /* A/B/C pillars */
-    for (let sx = -1; sx <= 1; sx += 2) {
-      B.box(sx*hw*0.92-0.05, beltY, cabZ1-0.08, sx*hw*0.92+0.05, roofY, cabZ1+0.02);
-      B.box(sx*hw*0.94-0.05, beltY, cabZ0-0.02, sx*hw*0.94+0.05, roofY, cabZ0+0.08);
-      B.box(sx*hw*0.94-0.05, beltY, (cabZ0+cabZ1)*.5-0.04, sx*hw*0.94+0.05, roofY, (cabZ0+cabZ1)*.5+0.04);
-    }
-    /* roof */
+    const topY = (t) => {
+      /* bonnet -> windscreen base -> roof -> backlight -> boot */
+      if (t > S.cabF) return lerp(beltY*1.02, beltY*(1 - S.nose*0.20), sat((t - S.cabF)/(1 - S.cabF)));
+      if (t > S.cabR) return beltY;
+      return lerp(beltY, beltY*(1 - S.tail*0.16), sat((S.cabR - t)/(1 + S.cabR)));
+    };
+    const botY = (t) => sillY * (1 - 0.30*Math.pow(abs(t), 2.6));
+
+    /* ---- loft the lower body ---------------------------------------- */
+    const NS = 22, NR = 16;
     B.mat(car, 1, 1, 0).col(1,1,1,0).uv(.55);
-    B.box(-hw*0.92, roofY-0.06, cabZ0, hw*0.92, roofY, cabZ1);
-    /* glazing */
-    B.mat(gls, .55, .6, 0).col(.16,.19,.22,0).uv(.6);
-    B.quad([-hw*0.86, beltY, cabZ1], [hw*0.86, beltY, cabZ1],
-           [hw*0.80, roofY-0.04, cabZ1-rake], [-hw*0.80, roofY-0.04, cabZ1-rake]);   // windscreen
-    B.quad([hw*0.80, roofY-0.04, cabZ0+rake*0.8], [hw*0.86, beltY, cabZ0],
-           [-hw*0.86, beltY, cabZ0], [-hw*0.80, roofY-0.04, cabZ0+rake*0.8]);        // rear glass
-    for (let sx = -1; sx <= 1; sx += 2) {
-      B.quad([sx*hw*0.93, beltY, cabZ0+0.06], [sx*hw*0.93, beltY, cabZ1-0.06],
-             [sx*hw*0.88, roofY-0.05, cabZ1-0.14], [sx*hw*0.88, roofY-0.05, cabZ0+0.14]);
+    const ringPt = (t, i) => {
+      const a = i/NR*TAU, ca = cos(a), sa = sin(a);
+      const w = halfW(t), yT = topY(t), yB = botY(t);
+      const cy = (yT + yB)*0.5, ry = (yT - yB)*0.5;
+      const n = S.nOut;
+      const cx2 = Math.sign(ca)*Math.pow(abs(ca), 2/n);
+      const cy2 = Math.sign(sa)*Math.pow(abs(sa), 2/n);
+      /* tumblehome: pull the top of the section inboard */
+      const lean = 1 - (1 - S.tumble) * sat(cy2) ;
+      return [cx2*w*lean, cy + cy2*ry, t*hl];
+    };
+    const base = B.nv;
+    for (let sIdx = 0; sIdx <= NS; sIdx++) {
+      const t = -1 + 2*sIdx/NS;
+      for (let i = 0; i <= NR; i++) {
+        const p = ringPt(t, i);
+        const q = ringPt(t, i+1), r = ringPt(t + 0.001, i);
+        const ux = q[0]-p[0], uy = q[1]-p[1], uz = q[2]-p[2];
+        const vx = r[0]-p[0], vy = r[1]-p[1], vz = r[2]-p[2];
+        let nx = uy*vz-uz*vy, ny = uz*vx-ux*vz, nz = ux*vy-uy*vx;
+        const nl = hypot(nx,ny,nz)||1;
+        B.vert(p[0], p[1], p[2], nx/nl, ny/nl, nz/nl, i/NR*2.2, sIdx/NS*2.2);
+      }
     }
-    /* ---- lights, grille, exhaust, plates ------------------------------- */
-    B.mat(tec, .18, .4, 0).col(.9,.95,1, .9).uv(2);
-    B.box(-hw*0.80, beltY*0.62, hl-0.06, -hw*0.30, beltY*0.62+0.10, hl+0.02);
-    B.box( hw*0.30, beltY*0.62, hl-0.06,  hw*0.80, beltY*0.62+0.10, hl+0.02);
-    B.mat(tec, .18, .4, 0).col(1,.10,.16, 1.0).uv(2);
-    B.box(-hw*0.84, beltY*0.62, -hl-0.02, -hw*0.22, beltY*0.62+0.11, -hl+0.05);
-    B.box( hw*0.22, beltY*0.62, -hl-0.02,  hw*0.84, beltY*0.62+0.11, -hl+0.05);
-    B.mat(gun, .6, 1, 0).col(.1,.1,.11,0).uv(2);
-    B.box(-hw*0.55, beltY*0.30, hl-0.02, hw*0.55, beltY*0.55, hl+0.03);
-    B.mat(gun, .45, 1, 0).col(.35,.35,.37,0).uv(3);
-    B.cylinder(-hw*0.5, 0.24, -hl-0.02, 0.052, 0.052, 0.10, 8, true, 3);
-    B.cylinder(-hw*0.34, 0.24, -hl-0.02, 0.052, 0.052, 0.10, 8, true, 3);
-    /* mirrors */
-    B.mat(car, 1, 1, 0).col(1,1,1,0);
-    for (let sx = -1; sx <= 1; sx += 2)
-      B.box(sx*hw*0.96, beltY+0.04, cabZ1-0.34, sx*(hw*0.96+0.14), beltY+0.16, cabZ1-0.18);
-    /* ---- class-specific dressing --------------------------------------- */
+    for (let sIdx = 0; sIdx < NS; sIdx++) for (let i = 0; i < NR; i++) {
+      const a = base + sIdx*(NR+1) + i, b = a + NR + 1;
+      B.idx.push(a, b, a+1, a+1, b, b+1);
+    }
+    /* fascia caps */
+    for (const t of [-1, 1]) {
+      const cy = (topY(t) + botY(t))*0.5;
+      const c = B.vert(0, cy, t*hl, 0, 0, sign(t), 0, 0);
+      for (let i = 0; i < NR; i++) {
+        const p = ringPt(t, i), q = ringPt(t, i+1);
+        const a = B.vert(p[0],p[1],p[2], 0,0,sign(t), p[0], p[1]);
+        const b2 = B.vert(q[0],q[1],q[2], 0,0,sign(t), q[0], q[1]);
+        if (t > 0) B.idx.push(c, a, b2); else B.idx.push(c, b2, a);
+      }
+    }
+    B.smoothNormals(0.004);
+
+    /* ---- wheel arches: a flared lip around each wheel well ----------- */
+    B.mat(car, 1, 1, 0).col(.86,.86,.88,0).uv(.6);
+    for (let sx = -1; sx <= 1; sx += 2) for (let sz = -1; sz <= 1; sz += 2) {
+      const cz = sz*wz;
+      const t = cz/hl;
+      const w = halfW(t);
+      const seg = 12;
+      for (let i = 0; i < seg; i++) {
+        const a0 = PI*i/seg, a1 = PI*(i+1)/seg;
+        const R0 = wr*1.30, R1 = wr*1.46;
+        const P0 = [sx*w*0.99, wr*0.32 + sin(a0)*R0, cz - cos(a0)*R0];
+        const P1 = [sx*w*0.99, wr*0.32 + sin(a1)*R0, cz - cos(a1)*R0];
+        const P2 = [sx*(w*0.99 + 0.045), wr*0.32 + sin(a1)*R1, cz - cos(a1)*R1];
+        const P3 = [sx*(w*0.99 + 0.045), wr*0.32 + sin(a0)*R1, cz - cos(a0)*R1];
+        if (sx > 0) B.quad(P0, P1, P2, P3, 1, 1); else B.quad(P3, P2, P1, P0, 1, 1);
+      }
+      /* dark wheel-well interior so the arch reads as an opening */
+      B.mat(gun, .9, .3, 0).col(.05,.05,.055,0).uv(1);
+      for (let i = 0; i < seg; i++) {
+        const a0 = PI*i/seg, a1 = PI*(i+1)/seg;
+        const R0 = wr*1.28;
+        B.quad([sx*w*0.97, wr*0.32 + sin(a0)*R0, cz - cos(a0)*R0],
+               [sx*w*0.97, wr*0.32 + sin(a1)*R0, cz - cos(a1)*R0],
+               [sx*w*0.55, wr*0.32 + sin(a1)*R0, cz - cos(a1)*R0],
+               [sx*w*0.55, wr*0.32 + sin(a0)*R0, cz - cos(a0)*R0], 1, 1);
+      }
+      B.mat(car, 1, 1, 0).col(.86,.86,.88,0).uv(.6);
+    }
+
+    /* ---- greenhouse: pillars, roof panel, raked glass ---------------- */
+    const cabZ0 = S.cabR*hl, cabZ1 = S.cabF*hl;
+    const wCab = halfW((S.cabF + S.cabR)*0.5);
+    B.mat(met, .5, 1, 0).col(.10,.10,.12,0).uv(.9);
+    for (let sx = -1; sx <= 1; sx += 2) {
+      const px = sx*wCab*0.90;
+      /* A pillar leans back with the windscreen rake */
+      B.box(px-0.035, beltY, cabZ1 - S.rakeF*hl*0.55, px+0.035, roofY, cabZ1 - S.rakeF*hl*0.55 + 0.09);
+      B.box(px-0.032, beltY, cabZ0 + S.rakeR*hl*0.42 - 0.09, px+0.032, roofY, cabZ0 + S.rakeR*hl*0.42);
+      B.box(px-0.030, beltY, (cabZ0+cabZ1)*.5-0.035, px+0.030, roofY, (cabZ0+cabZ1)*.5+0.035);
+    }
+    B.mat(car, 1, 1, 0).col(1,1,1,0).uv(.55);
+    /* roof panel with a slight crown */
+    const rz0 = cabZ0 + S.rakeR*hl*0.42, rz1 = cabZ1 - S.rakeF*hl*0.55;
+    for (let i = 0; i < 6; i++) {
+      const u0 = -1 + 2*i/6, u1 = -1 + 2*(i+1)/6;
+      const y0 = roofY - 0.022*u0*u0, y1 = roofY - 0.022*u1*u1;
+      B.quad([u0*wCab*0.90, y0, rz1], [u1*wCab*0.90, y1, rz1],
+             [u1*wCab*0.90, y1, rz0], [u0*wCab*0.90, y0, rz0], 1, 1);
+    }
+    B.mat(gls, .5, .6, 0).col(.13,.16,.19,0).uv(.6);
+    B.quad([-wCab*0.88, beltY, cabZ1], [wCab*0.88, beltY, cabZ1],
+           [wCab*0.86, roofY-0.03, rz1], [-wCab*0.86, roofY-0.03, rz1]);
+    B.quad([wCab*0.86, roofY-0.03, rz0], [wCab*0.88, beltY, cabZ0],
+           [-wCab*0.88, beltY, cabZ0], [-wCab*0.86, roofY-0.03, rz0]);
+    for (let sx = -1; sx <= 1; sx += 2) {
+      B.quad([sx*wCab*0.905, beltY, rz0+0.02], [sx*wCab*0.905, beltY, rz1-0.02],
+             [sx*wCab*0.875, roofY-0.035, rz1-0.10], [sx*wCab*0.875, roofY-0.035, rz0+0.10]);
+    }
+
+    /* ---- fascias: lights, grille, splitter, diffuser ----------------- */
+    const fw = halfW(1);
+    B.mat(tec, .16, .4, 0).col(.92,.96,1, 1.1).uv(2);
+    if (kind === "hyper" || kind === "sport") {
+      /* full-width light bar — the signature future-car cue */
+      B.box(-fw*0.86, beltY*0.70, hl-0.05, fw*0.86, beltY*0.70+0.045, hl+0.015);
+    } else {
+      B.box(-fw*0.84, beltY*0.66, hl-0.06, -fw*0.34, beltY*0.66+0.085, hl+0.015);
+      B.box( fw*0.34, beltY*0.66, hl-0.06,  fw*0.84, beltY*0.66+0.085, hl+0.015);
+    }
+    const rwv = halfW(-1);
+    B.mat(tec, .16, .4, 0).col(1,.10,.16, 1.2).uv(2);
+    B.box(-rwv*0.88, beltY*0.68, -hl-0.015, rwv*0.88, beltY*0.68+0.05, -hl+0.05);
+    B.mat(gun, .55, 1, 0).col(.07,.07,.08,0).uv(2);
+    B.box(-fw*0.60, beltY*0.30, hl-0.02, fw*0.60, beltY*0.56, hl+0.025);      // grille
+    B.box(-fw*0.86, sillY*0.42, hl-0.10, fw*0.86, sillY*0.42+0.05, hl+0.05);  // splitter
+    B.box(-rwv*0.80, sillY*0.40, -hl-0.05, rwv*0.80, sillY*0.40+0.09, -hl+0.10); // diffuser
+    B.mat(gun, .45, 1, 0).col(.32,.33,.35,0).uv(3);
+    B.cylinder(-rwv*0.52, sillY*0.55, -hl-0.02, 0.048, 0.048, 0.10, 8, true, 3);
+    B.cylinder(-rwv*0.36, sillY*0.55, -hl-0.02, 0.048, 0.048, 0.10, 8, true, 3);
+    /* side sills + shoulder crease */
+    B.mat(car, 1, 1, 0).col(.80,.80,.82,0).uv(.7);
+    for (let sx = -1; sx <= 1; sx += 2) {
+      B.box(sx*hw*0.97-0.02, sillY*0.42, -hl*0.62, sx*hw*0.97+0.02, sillY*0.42+0.055, hl*0.62);
+    }
+    /* mirrors on stalks */
+    B.mat(met, .45, 1, 0).col(.14,.14,.16,0).uv(2);
+    for (let sx = -1; sx <= 1; sx += 2) {
+      B.box(sx*wCab*0.90, beltY+0.02, cabZ1-0.30, sx*(wCab*0.90+0.055), beltY+0.055, cabZ1-0.24);
+      B.mat(car, 1, 1, 0).col(1,1,1,0);
+      B.box(sx*(wCab*0.90+0.045), beltY+0.005, cabZ1-0.33, sx*(wCab*0.90+0.155), beltY+0.085, cabZ1-0.21);
+      B.mat(met, .45, 1, 0).col(.14,.14,.16,0);
+    }
+    /* door shut lines */
+    B.mat(gun, .8, .4, 0).col(.05,.05,.06,0).uv(2);
+    for (let sx = -1; sx <= 1; sx += 2) {
+      B.box(sx*hw*0.995, sillY*0.5, cabZ1-0.03, sx*hw*1.005, beltY, cabZ1+0.01);
+      B.box(sx*hw*0.995, sillY*0.5, cabZ0-0.01, sx*hw*1.005, beltY, cabZ0+0.03);
+    }
+
+    /* ---- class dressing --------------------------------------------- */
     if (kind === "police") {
-      B.mat(gun, .5, 1, 0).col(.06,.06,.07,0).uv(2);
-      B.box(-hw*0.6, roofY, (cabZ0+cabZ1)*.5-0.16, hw*0.6, roofY+0.10, (cabZ0+cabZ1)*.5+0.16);
-      B.mat(tec, .2, .5, 0).col(.15,.35,1, 2.4).uv(3);
-      B.box(-hw*0.58, roofY+0.10, (cabZ0+cabZ1)*.5-0.14, -0.02, roofY+0.19, (cabZ0+cabZ1)*.5+0.14);
-      B.mat(tec, .2, .5, 0).col(1,.1,.2, 2.4).uv(3);
-      B.box(0.02, roofY+0.10, (cabZ0+cabZ1)*.5-0.14, hw*0.58, roofY+0.19, (cabZ0+cabZ1)*.5+0.14);
+      B.mat(gun, .5, 1, 0).col(.05,.05,.06,0).uv(2);
+      B.box(-wCab*0.66, roofY, (cabZ0+cabZ1)*.5-0.14, wCab*0.66, roofY+0.075, (cabZ0+cabZ1)*.5+0.14);
+      B.mat(tec, .2, .5, 0).col(.12,.32,1, 3.0).uv(3);
+      B.box(-wCab*0.64, roofY+0.075, (cabZ0+cabZ1)*.5-0.12, -0.015, roofY+0.165, (cabZ0+cabZ1)*.5+0.12);
+      B.mat(tec, .2, .5, 0).col(1,.09,.18, 3.0).uv(3);
+      B.box(0.015, roofY+0.075, (cabZ0+cabZ1)*.5-0.12, wCab*0.64, roofY+0.165, (cabZ0+cabZ1)*.5+0.12);
       B.mat(met, .8, 1, 0).col(.05,.05,.06,0).uv(1);
-      B.box(-hw*1.02, 0.30, hl*0.55, hw*1.02, 0.62, hl+0.10);
+      B.box(-hw*1.01, sillY*0.5, hl*0.72, hw*1.01, beltY*0.72, hl+0.09);   // push bar
+      B.mat(car, 1, 1, 0).col(1,1,1,0).uv(.6);
+      for (let sx = -1; sx <= 1; sx += 2)                                   // livery panel
+        B.box(sx*hw*1.002, sillY*0.55, -hl*0.30, sx*hw*1.012, beltY*0.92, hl*0.35);
     }
     if (kind === "hyper" || kind === "sport") {
-      B.mat(gun, .35, 1, 0).col(.08,.08,.09,0).uv(2);
-      B.box(-hw*0.92, beltY*0.92, -hl-0.16, hw*0.92, beltY*0.92+0.05, -hl+0.06);
+      B.mat(gun, .35, 1, 0).col(.06,.06,.07,0).uv(2);
+      /* swan-neck rear wing */
+      B.box(-hw*0.86, beltY*1.02, -hl-0.14, hw*0.86, beltY*1.02+0.035, -hl+0.10);
       for (let sx = -1; sx <= 1; sx += 2)
-        B.box(sx*hw*0.86, beltY*0.60, -hl-0.14, sx*hw*0.92, beltY*0.95, -hl+0.02);
+        B.box(sx*hw*0.62-0.02, beltY*0.80, -hl-0.02, sx*hw*0.62+0.02, beltY*1.02, -hl+0.06);
+      /* side intakes ahead of the rear wheels */
+      B.mat(gun, .8, 1, 0).col(.04,.04,.045,0).uv(2);
+      for (let sx = -1; sx <= 1; sx += 2)
+        B.box(sx*hw*0.94, sillY*0.8, -hl*0.42, sx*hw*1.005, beltY*0.86, -hl*0.16);
+    }
+    if (kind === "muscle") {
+      B.mat(gun, .5, 1, 0).col(.06,.06,.07,0).uv(2);
+      B.box(-0.16, topY(0.62)-0.005, hl*0.40, 0.16, topY(0.62)+0.075, hl*0.66);   // bonnet scoop
     }
     if (kind === "van" || kind === "suv") {
-      B.mat(met, .9, 1, 0).col(.3,.3,.32,0).uv(1.4);
-      B.box(-hw*0.86, roofY, cabZ0+0.1, hw*0.86, roofY+0.10, cabZ1-0.1);
+      B.mat(met, .9, 1, 0).col(.26,.26,.28,0).uv(1.4);
+      B.box(-wCab*0.86, roofY, cabZ0+0.10, wCab*0.86, roofY+0.055, cabZ1-0.10);
       for (let i = 0; i < 4; i++)
-        B.box(-hw*0.86, roofY+0.10, cabZ0+0.2+i*0.5, hw*0.86, roofY+0.16, cabZ0+0.26+i*0.5);
+        B.box(-wCab*0.86, roofY+0.055, cabZ0+0.22+i*0.46, wCab*0.86, roofY+0.10, cabZ0+0.29+i*0.46);
     }
-    /* interior — visible in first person while driving */
-    B.mat(TEX.id("leather"), 1, .1, 0).col(.10,.10,.12,0).uv(1.6);
-    B.box(-hw*0.86, beltY-0.30, cabZ1-0.42, hw*0.86, beltY-0.22, cabZ1-0.10);   // dash
+
+    /* ---- interior (visible from the driver's seat) ------------------- */
+    B.mat(TEX.id("leather"), 1, .1, 0).col(.09,.09,.11,0).uv(1.6);
+    B.box(-wCab*0.86, beltY-0.26, cabZ1-0.44, wCab*0.86, beltY-0.17, cabZ1-0.10);   // dash
+    B.box(-wCab*0.88, beltY-0.30, cabZ1-0.10, wCab*0.88, beltY-0.24, cabZ0+0.10);   // centre console
     for (let sx = -1; sx <= 1; sx += 2) {
-      B.box(sx*hw*0.42-0.24, 0.42, cabZ1-0.98, sx*hw*0.42+0.24, 0.62, cabZ1-0.52); // seat base
-      B.box(sx*hw*0.42-0.24, 0.62, cabZ1-1.02, sx*hw*0.42+0.24, 1.14, cabZ1-0.92); // backrest
+      B.box(sx*wCab*0.44-0.22, sillY+0.14, cabZ1-0.98, sx*wCab*0.44+0.22, sillY+0.32, cabZ1-0.50);
+      B.box(sx*wCab*0.44-0.22, sillY+0.32, cabZ1-1.02, sx*wCab*0.44+0.22, sillY+0.86, cabZ1-0.92);
+      B.box(sx*wCab*0.44-0.20, sillY+0.86, cabZ1-1.00, sx*wCab*0.44+0.20, sillY+0.98, cabZ1-0.94);
     }
-    B.mat(TEX.id("holoPanel"), .15, .4, 0).col(.05,.5,.7, 1.1).uv(2);
-    B.box(-0.18, beltY-0.28, cabZ1-0.44, 0.30, beltY-0.16, cabZ1-0.40);
-    B.mat(gun, .5, 1, 0).col(.12,.12,.14,0).uv(3);
-    B.cylinder(-hw*0.42, beltY-0.20, cabZ1-0.56, 0.16, 0.16, 0.03, 14, true, 3);
+    B.mat(TEX.id("holoPanel"), .15, .4, 0).col(.06,.55,.78, 1.3).uv(2);
+    B.box(-0.20, beltY-0.245, cabZ1-0.455, 0.26, beltY-0.185, cabZ1-0.445);          // cluster
+    B.box(-0.09, beltY-0.29, cabZ1-0.20, 0.11, beltY-0.245, cabZ1-0.12);             // centre screen
+    B.mat(gun, .5, 1, 0).col(.10,.10,.12,0).uv(3);
+    const swZ = cabZ1-0.56, swY = beltY-0.16;
+    B.cylinder(-wCab*0.44, swY, swZ, 0.155, 0.155, 0.028, 16, true, 3);
 
     const m = B.build();
     m.cls = C; m.kind = kind;
-    /* wheel anchors */
-    const wz = hl*0.66, wx = hw*0.92, wy = 0.34;
-    m.wheels = [[-wx, wy, wz], [wx, wy, wz], [-wx, wy, -wz], [wx, wy, -wz]];
-    m.wheelR = kind === "suv" || kind === "van" ? 0.40 : 0.36;
-    m.seatL = [-hw*0.42, 0.98, cabZ1-0.72];
-    m.seatR = [ hw*0.42, 0.98, cabZ1-0.72];
+    const wx = hw*0.90;
+    m.wheels = [[-wx, wr, wz], [wx, wr, wz], [-wx, wr, -wz], [wx, wr, -wz]];
+    m.wheelR = wr;
+    m.seatL = [-wCab*0.44, sillY+1.02, cabZ1-0.70];
+    m.seatR = [ wCab*0.44, sillY+1.02, cabZ1-0.70];
     return m;
   },
 
@@ -232,7 +382,7 @@ class Car {
     const c = cos(this.yaw), s = sin(this.yaw);
     /* body-frame velocity */
     const fx = -s, fz = c;                        // forward
-    const rx = c,  rz = s;                        // right
+    const rx = -c, rz = -s;                       // right
     let vf = this.v[0]*fx + this.v[2]*fz;
     let vr = this.v[0]*rx + this.v[2]*rz;
     this.speed = hypot(this.v[0], this.v[2]);
@@ -294,7 +444,7 @@ class Car {
     /* keep the chassis matrix ready for the renderer */
     M4.cpy(this.prevModel, this.model);
     const q = Q4.n();
-    Q4.euler(q, this.pitch, this.yaw, this.roll);
+    Q4.euler(q, this.pitch, -this.yaw, this.roll);
     M4.trs(this.model, this.p[0], this.p[1], this.p[2], q[0], q[1], q[2], q[3], 1, 1, 1);
     return this;
   }
@@ -338,7 +488,13 @@ const TRAFFIC = {
       this.pickNext(car);
       this.cars.push(car);
     }
-    for (const c of this.cars) this.driveAI(c, dt, px, pz);
+    for (const c of this.cars) {
+      /* Skip anything another system is already driving: the car the player is
+         sitting in, and NCPD units under POLICE control. Both used to fall
+         through to the ambient AI and double-integrate — or crash on a null ai. */
+      if (c.occupant || c.policeControlled) continue;
+      this.driveAI(c, dt, px, pz);
+    }
   },
   nearestNode(x, z) {
     const cands = CITY.nodeGrid.query(x, z, 160, []);
@@ -349,6 +505,7 @@ const TRAFFIC = {
   },
   pickNext(car) {
     const a = car.ai;
+    if (!a) return;                      // player-driven or police-controlled
     const n = a.node;
     if (!n || !n.e.length) { a.next = null; return; }
     /* prefer continuing roughly straight — keeps traffic from ping-ponging */
@@ -368,7 +525,8 @@ const TRAFFIC = {
   },
   driveAI(car, dt, px, pz) {
     const a = car.ai;
-    if (!a || !a.next) { this.pickNext(car); car.throttle = 0; car.update(dt); return; }
+    if (!a) { car.throttle = 0; car.update(dt); return; }
+    if (!a.next) { this.pickNext(car); car.throttle = 0; car.update(dt); return; }
     const tx = a.next.x, tz = a.next.z;
     const dx = tx-car.p[0], dz = tz-car.p[2];
     const dist = hypot(dx, dz);

@@ -74,6 +74,8 @@ const NPCS = {
       cheek: rrange(R,.4,1.5), lips: rrange(R,.5,1.6),
       hair: arch === "maelstrom" && R()<.5 ? 0 : (R() < .12 ? 0 : rrange(R,.5,1.2)),
       hairCol, eyeCol: R()<.16 ? [.9,.4,.05] : [.22,.32,.42], eyeGlow: 0,
+      jaw: rrange(R,.5,1.5),
+      hairStyle: wild ? irange(R,0,3) : (R()<.2 ? 2 : (R()<.15 ? 3 : 0)),
     };
     /* faction-coded wardrobes — you read gang affiliation at 40 m */
     const pal = {
@@ -123,7 +125,7 @@ const NPCS = {
       if (arch === "maelstrom") { cyber.optics = true; cyber.opticCol = [1,.08,.06]; face.eyeCol=[1,.1,.05]; face.eyeGlow=2.2; }
       if (arch === "maxtac") { cyber.optics = true; cyber.armR = cyber.armL = true; cyber.legs = true; }
     }
-    return { height, build, skin, face, clothes, cyber, seed: (R()*1e9)|0, arch, fem };
+    return { height, build, skin, face, clothes, cyber, seed: (R()*1e9)|0, arch, fem, lod: 1 };
   },
 
   /* ---------------------------------------------------------------------- */
@@ -161,7 +163,9 @@ const NPCS = {
       if (n.state === "dead" && n.deathT > 26) { this.list.splice(i,1); continue; }
       if (d > 260 && !n.quest && n.state !== "dead") { this.list.splice(i,1); continue; }
     }
-    if (this.spawnTimer <= 0 && this.list.length < this.MAXCROWD) {
+    const hour = (RENDER.env.time / 3600) % 24;
+    const cap = max(6, (this.MAXCROWD * LIFE.crowdScale(hour)) | 0);
+    if (this.spawnTimer <= 0 && this.list.length < cap) {
       this.spawnTimer = 0.16;
       const a = R()*TAU, dd = 42 + R()*95;
       const x = px + cos(a)*dd, z = pz + sin(a)*dd;
@@ -180,6 +184,7 @@ const NPCS = {
           arch = wpick(table, R);
         }
         const n = this.spawn(arch, x, z);
+        n.agenda = LIFE.agendaFor(hour, arch, R);
         n.state = n.sitting ? "sit" : "walk";
         this.repath(n);
       }
@@ -188,9 +193,17 @@ const NPCS = {
   },
 
   repath(n) {
-    const node = TRAFFIC.nearestNode(n.x + (this.R()-.5)*80, n.z + (this.R()-.5)*80);
-    if (node) n.dest = { x: node.x + (this.R()-.5)*7, z: node.z + (this.R()-.5)*7 };
-    n.pathT = 4 + this.R()*8;
+    /* purpose first, position second — LIFE decides where this person is
+       actually trying to get to at this hour */
+    const hour = (RENDER.env.time / 3600) % 24;
+    if (!n.agenda) n.agenda = LIFE.agendaFor(hour, n.arch, this.R);
+    const d = LIFE.destinationFor(n, this.R);
+    if (d) n.dest = d;
+    else {
+      const node = TRAFFIC.nearestNode(n.x + (this.R()-.5)*80, n.z + (this.R()-.5)*80);
+      if (node) n.dest = LIFE.pavement(node, this.R);
+    }
+    n.pathT = 10 + this.R()*14;
   },
 
   update(n, dt, px, pz, hostileMode) {
@@ -217,7 +230,8 @@ const NPCS = {
       case "idle": {
         n.speed = damp(n.speed, 0, 8, dt);
         ANIM.idle(n.sk, n.stateT + n.seed, n.seed, n.weapon ? (n.weapon.W.hands||0) : null);
-        if (n.stateT > 3 + n.seed) { n.state = "walk"; n.stateT = 0; this.repath(n); }
+        const wait = n.lingerT || (3 + n.seed);
+        if (n.stateT > wait) { n.lingerT = 0; n.state = "walk"; n.stateT = 0; this.repath(n); }
         break; }
       case "sit": {
         n.speed = 0;
@@ -236,7 +250,7 @@ const NPCS = {
         if (!n.dest || n.pathT <= 0) this.repath(n);
         if (n.dest) {
           const dx = n.dest.x-n.x, dz = n.dest.z-n.z, d = hypot(dx,dz);
-          if (d < 2.2) this.repath(n);
+          if (d < 2.4) { LIFE.onArrive(n, this.R); this.repath(n); }
           else {
             const want = atan2(-dx, dz);
             n.yaw = angLerp(n.yaw, want, 1 - Math.exp(-4.5*dt));
@@ -253,7 +267,10 @@ const NPCS = {
             n.speed = damp(n.speed, tgt, 5, dt);
             n.vx = -sin(n.yaw)*n.speed + clamp(sx, -1.6, 1.6);
             n.vz =  cos(n.yaw)*n.speed + clamp(sz, -1.6, 1.6);
-            n.x += n.vx*dt; n.z += n.vz*dt;
+            const c1 = CITY.collide(n.x + n.vx*dt, n.z + n.vz*dt, 0.38, n.y);
+            /* if the wall stopped us, repath rather than grind against it */
+            if (hypot(c1[0]-(n.x+n.vx*dt), c1[1]-(n.z+n.vz*dt)) > 0.02) n.pathT = 0;
+            n.x = c1[0]; n.z = c1[1];
             n.y = damp(n.y, CITY.height(n.x, n.z), 12, dt);
           }
         }
@@ -267,13 +284,23 @@ const NPCS = {
         const want = atan2(-dx/d, dz/d);
         n.yaw = angLerp(n.yaw, want, 1 - Math.exp(-8*dt));
         n.speed = damp(n.speed, n.A.speed*2.35, 7, dt);
-        n.x += -sin(n.yaw)*n.speed*dt; n.z += cos(n.yaw)*n.speed*dt;
+        const c2 = CITY.collide(n.x - sin(n.yaw)*n.speed*dt, n.z + cos(n.yaw)*n.speed*dt, 0.38, n.y);
+        n.x = c2[0]; n.z = c2[1];
         n.y = damp(n.y, CITY.height(n.x, n.z), 12, dt);
         n.phase += n.speed*dt*0.44;
         ANIM.locomotion(n.sk, n.phase, n.speed, n.stateT, n.seed);
         if (n.stateT > 10) { n.state = "walk"; n.stateT = 0; this.repath(n); }
         break; }
       case "combat": this.combat(n, dt, px, pz); break;
+    }
+    /* stepping indoors: shrink out of sight, then recycle the body */
+    if (n.enteringT > 0) {
+      n.enteringT -= dt;
+      if (n.enteringT <= 0) {
+        const i = this.list.indexOf(n);
+        if (i >= 0) this.list.splice(i, 1);
+        return;
+      }
     }
     ANIM.hit(n.sk, max(0, n.hitT), n.hitDx, n.hitDz);
     n.sk.pose();
@@ -294,8 +321,9 @@ const NPCS = {
     n.speed = damp(n.speed, abs(move) > 0 ? n.A.speed*1.5 : n.A.speed*0.55, 6, dt);
     const fx = -sin(n.yaw), fz = cos(n.yaw);
     const rx = cos(n.yaw), rz = sin(n.yaw);
-    n.x += (fx*move + rx*strafe*0.6) * n.speed * dt;
-    n.z += (fz*move + rz*strafe*0.6) * n.speed * dt;
+    const c3 = CITY.collide(n.x + (fx*move + rx*strafe*0.6) * n.speed * dt,
+                            n.z + (fz*move + rz*strafe*0.6) * n.speed * dt, 0.38, n.y);
+    n.x = c3[0]; n.z = c3[1];
     n.y = damp(n.y, CITY.height(n.x, n.z), 12, dt);
     n.phase += n.speed*dt*0.55;
     if (abs(move) > 0.1 || abs(strafe) > 0.3)
@@ -327,7 +355,7 @@ const NPCS = {
   updateMatrix(n) {
     M4.cpy(n.prevModel, n.model);
     const q = Q4.n();
-    Q4.euler(q, 0, n.yaw, 0);
+    Q4.euler(q, 0, -n.yaw, 0);
     M4.trs(n.model, n.x, n.y, n.z, q[0], q[1], q[2], q[3], 1, 1, 1);
   },
 

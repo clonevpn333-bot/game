@@ -195,6 +195,22 @@ canvas{display:block;position:absolute;inset:0;width:100%;height:100%}
   clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
 .star.on{opacity:1;box-shadow:0 0 10px var(--rd)}
 
+/* carried-items quick bar, bottom-centre */
+#quick{left:50%;bottom:26px;transform:translateX(-50%);display:flex;gap:6px;
+  align-items:stretch;max-width:min(760px,58vw);flex-wrap:wrap;justify-content:center}
+.qItem{display:flex;align-items:center;gap:7px;padding:5px 10px;background:rgba(6,10,16,.72);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.10);
+  clip-path:polygon(0 0,calc(100% - 7px) 0,100% 7px,100% 100%,7px 100%,0 calc(100% - 7px))}
+.qItem i{font-style:normal;font-size:11px;color:var(--dim);min-width:12px;text-align:center;
+  letter-spacing:.1em}
+.qItem b{font-family:var(--disp);font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--ink)}
+.qItem s{text-decoration:none;font-size:9px;letter-spacing:.16em;color:#5d6b7d}
+.qItem.on{box-shadow:inset 0 0 0 1px var(--yl);background:rgba(252,238,10,.14)}
+.qItem.on b{color:var(--yl)}
+.qItem.on i{color:var(--yl)}
+.qItem.hack i,.qItem.hack b{color:var(--cy)}
+.qItem.money b{color:var(--yl)}
+
 /* quest tracker, left-middle */
 #quest{left:30px;top:96px;width:270px}
 #qTitle{font-size:9px;letter-spacing:.32em;color:var(--yl);margin-bottom:6px}
@@ -302,13 +318,17 @@ canvas{display:block;position:absolute;inset:0;width:100%;height:100%}
 .note.bad{color:var(--rd);box-shadow:inset 0 0 0 1px rgba(255,0,60,.35)}
 .note b{color:#fff;font-weight:400}
 @keyframes noteIn{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
-#call{position:absolute;left:30px;bottom:150px;z-index:28;width:270px;display:none}
+#call{position:absolute;left:30px;bottom:150px;z-index:28;width:300px;display:none}
 #call.on{display:block;animation:noteIn .3s}
-#callAv{height:112px;background:linear-gradient(160deg,#1b2432,#0a0e14);position:relative;overflow:hidden}
+/* The holocall portrait is real 3D rendered by the engine into the canvas
+   underneath, so this element must stay transparent — an opaque panel here
+   hid the character completely. It contributes the frame and the LIVE tag. */
+#callAv{height:210px;background:transparent;position:relative;overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)}
 #callAv canvas{position:absolute;inset:0;width:100%;height:100%}
 #callName{font-family:var(--disp);font-size:16px;font-weight:700;letter-spacing:.1em;
   padding:8px 12px 2px;color:var(--yl)}
-#callTxt{font-size:12px;line-height:1.6;padding:0 12px 11px;color:var(--ink);min-height:44px}
+#callTxt{font-size:12.5px;line-height:1.65;padding:0 12px 12px;color:var(--ink);min-height:44px;max-height:120px;overflow:hidden}
 
 /* ================= MAP =================================================== */
 #mapCv{width:100%;height:100%;display:block;cursor:grab;background:#04060a}
@@ -381,12 +401,23 @@ select,input[type=text]{font-family:var(--mono);font-size:11px;background:rgba(2
 #fade{position:absolute;inset:0;z-index:70;background:#000;opacity:0;pointer-events:none;
   transition:opacity .5s}
 #fade.on{opacity:1}
-#subs{position:absolute;left:50%;bottom:11%;transform:translateX(-50%);z-index:29;
+#subs{position:absolute;left:50%;bottom:15%;transform:translateX(-50%);z-index:29;
   text-align:center;max-width:76vw;font-size:16px;line-height:1.6;color:#fff;
   text-shadow:0 2px 9px #000;display:none;pointer-events:none}
 #subs.on{display:block}
 #subs b{color:var(--yl);font-weight:700;letter-spacing:.14em;font-size:11px;
   font-family:var(--mono);display:block;margin-bottom:3px}
+
+/* ---- staged title cards (opening brief, act transitions) ---------------- */
+#cards{position:absolute;left:clamp(30px,7vw,110px);top:38%;z-index:31;max-width:min(620px,60vw);
+  pointer-events:none;opacity:0}
+#cards.on{animation:cardIn 1s ease-out forwards}
+#cards h2{font-family:var(--disp);font-size:clamp(30px,5.4vw,68px);font-weight:900;
+  letter-spacing:.02em;line-height:.94;color:var(--yl);text-shadow:0 0 36px rgba(252,238,10,.35)}
+#cards p{font-family:var(--mono);font-size:12px;letter-spacing:.26em;color:var(--ink);
+  margin-top:12px;line-height:2;text-transform:uppercase}
+@keyframes cardIn{0%{opacity:0;transform:translateX(-18px)}
+  14%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
 
 /* ================= METRO / SHOP / VENDOR ================================= */
 #metro{z-index:45}
