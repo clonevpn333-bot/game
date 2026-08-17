@@ -32,7 +32,7 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
-import net.minecraft.world.entity.animal.IronGolem;
+import net.minecraft.world.entity.animal.golem.IronGolem;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -112,7 +112,7 @@ public class KilnbornEntity extends SeamMob {
     @Override
     public void aiStep() {
         super.aiStep();
-        if (this.level().isClientSide) {
+        if (this.level().isClientSide()) {
             if (this.isOverfired() && this.random.nextInt(3) == 0) {
                 this.level().addParticle(ParticleTypes.FLAME,
                         this.getRandomX(0.6), this.getY() + 0.6 + this.random.nextDouble() * 1.2, this.getRandomZ(0.6),

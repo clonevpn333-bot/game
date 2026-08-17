@@ -89,10 +89,10 @@ public class ChimeEntity extends SeamMob {
     @Override
     public void aiStep() {
         super.aiStep();
-        if (!this.level().isClientSide && this.ringCooldown > 0) {
+        if (!this.level().isClientSide() && this.ringCooldown > 0) {
             this.ringCooldown--;
         }
-        if (this.level().isClientSide && this.random.nextInt(6) == 0) {
+        if (this.level().isClientSide() && this.random.nextInt(6) == 0) {
             this.level().addParticle(ParticleTypes.END_ROD,
                     this.getRandomX(0.8), this.getY() + 0.3 + this.random.nextDouble() * 0.4, this.getRandomZ(0.8),
                     0.0, -0.01, 0.0);

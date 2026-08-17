@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.tags.BlockTags;
 
 /**
@@ -128,7 +129,7 @@ public final class SeamHelper {
 
     /** True if this neighbourhood is already crowded with seam creatures. */
     public static boolean isMobCapped(net.minecraft.server.level.ServerLevel level, BlockPos pos) {
-        AABB box = AABB.ofSize(pos.getCenter(), 48.0, 24.0, 48.0);
+        AABB box = AABB.ofSize(Vec3.atCenterOf(pos), 48.0, 24.0, 48.0);
         return level.getEntitiesOfClass(SeamMob.class, box).size() >= LOCAL_MOB_CAP;
     }
 

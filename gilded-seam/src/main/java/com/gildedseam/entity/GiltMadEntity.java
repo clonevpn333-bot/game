@@ -50,7 +50,7 @@ public class GiltMadEntity extends PathfinderMob {
     @Override
     public void aiStep() {
         super.aiStep();
-        if (this.level().isClientSide) {
+        if (this.level().isClientSide()) {
             return;
         }
         // The bell, and the devotion.
@@ -66,9 +66,9 @@ public class GiltMadEntity extends PathfinderMob {
     @Override
     protected InteractionResult mobInteract(Player player, InteractionHand hand) {
         if (player.getItemInHand(hand).isEmpty()) {
-            if (!this.level().isClientSide) {
-                player.displayClientMessage(Component.translatable(
-                        "dialogue.gildedseam.gilt_mad." + this.random.nextInt(DIALOGUE_LINES)), false);
+            if (!this.level().isClientSide()) {
+                player.sendSystemMessage(Component.translatable(
+                        "dialogue.gildedseam.gilt_mad." + this.random.nextInt(DIALOGUE_LINES)));
                 this.playSound(SoundEvents.BELL_BLOCK, 0.8F, 1.8F);
             }
             return InteractionResult.SUCCESS;

@@ -80,7 +80,7 @@ public class FontOfGoldEntity extends SeamMob {
     @Override
     public void aiStep() {
         super.aiStep();
-        if (this.level().isClientSide) {
+        if (this.level().isClientSide()) {
             if (this.random.nextInt(4) == 0) {
                 this.level().addParticle(ParticleTypes.FALLING_HONEY,
                         this.getRandomX(0.5), this.getY() + 0.9 + this.random.nextDouble() * 0.5, this.getRandomZ(0.5),

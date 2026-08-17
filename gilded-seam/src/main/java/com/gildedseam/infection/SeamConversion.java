@@ -15,8 +15,8 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.monster.Zombie;
-import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.monster.zombie.Zombie;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.raid.Raider;
 
@@ -55,7 +55,7 @@ public final class SeamConversion {
 
         // Fish alone are spared: gold sinks, and the Seam has learned not
         // to waste thread on water.
-        if (entity instanceof net.minecraft.world.entity.animal.WaterAnimal) {
+        if (entity instanceof net.minecraft.world.entity.animal.fish.WaterAnimal) {
             return;
         }
 
@@ -63,7 +63,7 @@ public final class SeamConversion {
         // mended into vessels; the farmyard is refired species by species;
         // anything without its own pattern is broken down for parts.
         if (entity instanceof AbstractVillager || entity instanceof Zombie || entity instanceof Raider
-                || entity instanceof net.minecraft.world.entity.monster.AbstractSkeleton
+                || entity instanceof net.minecraft.world.entity.monster.skeleton.AbstractSkeleton
                 || entity instanceof net.minecraft.world.entity.monster.piglin.AbstractPiglin) {
             mendIntoVessel(level, entity);
         } else if (entity instanceof Mob mob) {
@@ -78,11 +78,11 @@ public final class SeamConversion {
 
     @org.jetbrains.annotations.Nullable
     private static net.minecraft.world.entity.EntityType<com.gildedseam.entity.GildedBeastEntity> beastFormOf(Mob mob) {
-        if (mob instanceof net.minecraft.world.entity.animal.Cow) return ModEntities.GILDED_COW;
-        if (mob instanceof net.minecraft.world.entity.animal.Pig) return ModEntities.GILDED_PIG;
+        if (mob instanceof net.minecraft.world.entity.animal.cow.Cow) return ModEntities.GILDED_COW;
+        if (mob instanceof net.minecraft.world.entity.animal.pig.Pig) return ModEntities.GILDED_PIG;
         if (mob instanceof net.minecraft.world.entity.animal.sheep.Sheep) return ModEntities.GILDED_SHEEP;
-        if (mob instanceof net.minecraft.world.entity.animal.Chicken) return ModEntities.GILDED_CHICKEN;
-        if (mob instanceof net.minecraft.world.entity.monster.Spider) return ModEntities.GILDED_SPIDER;
+        if (mob instanceof net.minecraft.world.entity.animal.chicken.Chicken) return ModEntities.GILDED_CHICKEN;
+        if (mob instanceof net.minecraft.world.entity.monster.spider.Spider) return ModEntities.GILDED_SPIDER;
         if (mob instanceof net.minecraft.world.entity.monster.Creeper) return ModEntities.GILDED_CASK;
         return null;
     }
@@ -94,7 +94,7 @@ public final class SeamConversion {
             return;
         }
         beast.snapTo(corpse.getX(), corpse.getY(), corpse.getZ(), corpse.getYRot(), 0.0F);
-        beast.setTier(SeamHelper.rollTier(level, corpse.blockPosition(), level.random));
+        beast.setTier(SeamHelper.rollTier(level, corpse.blockPosition(), level.getRandom()));
         level.addFreshEntity(beast);
         playMendingEffects(level, corpse.blockPosition());
     }
@@ -105,7 +105,7 @@ public final class SeamConversion {
             return;
         }
         vessel.snapTo(corpse.getX(), corpse.getY(), corpse.getZ(), corpse.getYRot(), 0.0F);
-        vessel.setTier(SeamHelper.rollTier(level, corpse.blockPosition(), level.random));
+        vessel.setTier(SeamHelper.rollTier(level, corpse.blockPosition(), level.getRandom()));
         vessel.beginRising();
         level.addFreshEntity(vessel);
         playMendingEffects(level, corpse.blockPosition());
@@ -119,11 +119,11 @@ public final class SeamConversion {
                 continue;
             }
             shardling.snapTo(
-                    corpse.getX() + (level.random.nextDouble() - 0.5) * 0.6,
+                    corpse.getX() + (level.getRandom().nextDouble() - 0.5) * 0.6,
                     corpse.getY(),
-                    corpse.getZ() + (level.random.nextDouble() - 0.5) * 0.6,
-                    level.random.nextFloat() * 360.0F, 0.0F);
-            shardling.setTier(SeamHelper.rollTier(level, corpse.blockPosition(), level.random));
+                    corpse.getZ() + (level.getRandom().nextDouble() - 0.5) * 0.6,
+                    level.getRandom().nextFloat() * 360.0F, 0.0F);
+            shardling.setTier(SeamHelper.rollTier(level, corpse.blockPosition(), level.getRandom()));
             level.addFreshEntity(shardling);
         }
         playMendingEffects(level, corpse.blockPosition());

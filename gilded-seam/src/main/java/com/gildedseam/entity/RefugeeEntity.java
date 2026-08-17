@@ -111,8 +111,8 @@ public class RefugeeEntity extends PathfinderMob {
                 stack.consume(1, player);
                 this.entityData.set(DATA_RALLIED, true);
                 this.leaderId = player.getUUID();
-                player.displayClientMessage(
-                        Component.translatable("dialogue.gildedseam.refugee.rallied"), false);
+                player.sendSystemMessage(
+                        Component.translatable("dialogue.gildedseam.refugee.rallied"));
                 level.sendParticles(ParticleTypes.HAPPY_VILLAGER,
                         this.getX(), this.getY() + 1.5, this.getZ(), 10, 0.4, 0.5, 0.4, 0.0);
                 this.playSound(SoundEvents.VILLAGER_YES, 1.0F, 1.0F);
@@ -121,11 +121,11 @@ public class RefugeeEntity extends PathfinderMob {
         }
 
         if (stack.isEmpty()) {
-            if (!this.level().isClientSide) {
+            if (!this.level().isClientSide()) {
                 String key = this.isRallied()
                         ? "dialogue.gildedseam.refugee.rallied_idle"
                         : "dialogue.gildedseam.refugee." + this.random.nextInt(DIALOGUE_LINES);
-                player.displayClientMessage(Component.translatable(key), false);
+                player.sendSystemMessage(Component.translatable(key));
                 this.playSound(SoundEvents.VILLAGER_AMBIENT, 1.0F, 1.1F);
             }
             return InteractionResult.SUCCESS;

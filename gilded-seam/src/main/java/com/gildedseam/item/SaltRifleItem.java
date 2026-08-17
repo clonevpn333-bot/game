@@ -33,7 +33,7 @@ public class SaltRifleItem extends Item {
 
         ItemStack darts = findDarts(player);
         if (darts.isEmpty() && !player.hasInfiniteMaterials()) {
-            if (!level.isClientSide) {
+            if (!level.isClientSide()) {
                 player.playSound(SoundEvents.DISPENSER_FAIL, 1.0F, 1.2F);
             }
             return InteractionResult.FAIL;

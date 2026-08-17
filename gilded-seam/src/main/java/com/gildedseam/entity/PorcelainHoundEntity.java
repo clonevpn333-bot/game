@@ -28,7 +28,7 @@ import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.npc.AbstractVillager;
+import net.minecraft.world.entity.npc.villager.AbstractVillager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -83,7 +83,7 @@ public class PorcelainHoundEntity extends SeamMob {
     @Override
     public void aiStep() {
         super.aiStep();
-        if (!this.level().isClientSide && this.howlCooldown > 0) {
+        if (!this.level().isClientSide() && this.howlCooldown > 0) {
             this.howlCooldown--;
         }
     }

@@ -69,7 +69,7 @@ public class SeamstoneBlock extends Block {
 
     @Override
     public void stepOn(Level level, BlockPos pos, BlockState state, Entity entity) {
-        if (!level.isClientSide && entity instanceof LivingEntity living && level.random.nextInt(20) == 0) {
+        if (!level.isClientSide() && entity instanceof LivingEntity living && level.getRandom().nextInt(20) == 0) {
             SeamHelper.gild(living, 120, 0);
         }
         super.stepOn(level, pos, state, entity);

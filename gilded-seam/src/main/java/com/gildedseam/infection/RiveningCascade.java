@@ -23,6 +23,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * <b>The Rivening</b> — the ending, and it is cinematic.
@@ -59,8 +60,8 @@ public final class RiveningCascade {
         ACTIVE.add(new RiveningCascade(level, center));
         level.playSound(null, center, SoundEvents.DECORATED_POT_SHATTER, SoundSource.BLOCKS, 3.0F, 0.5F);
         level.playSound(null, center, SoundEvents.BELL_RESONATE, SoundSource.BLOCKS, 3.0F, 0.5F);
-        for (ServerPlayer player : level.getPlayers(p -> p.distanceToSqr(center.getCenter()) < 160.0 * 160.0)) {
-            player.displayClientMessage(Component.translatable("gildedseam.rivening.begins"), true);
+        for (ServerPlayer player : level.getPlayers(p -> p.distanceToSqr(Vec3.atCenterOf(center)) < 160.0 * 160.0)) {
+            player.sendSystemMessage(Component.translatable("gildedseam.rivening.begins"));
         }
     }
 
@@ -81,9 +82,9 @@ public final class RiveningCascade {
         // Unsew a band of world. Random sampling keeps each tick cheap while
         // the repeated passes leave nothing standing.
         for (int i = 0; i < SAMPLES_PER_TICK; i++) {
-            float angle = this.level.random.nextFloat() * Mth.TWO_PI;
-            float dist = inner + this.level.random.nextFloat() * SPEED_PER_TICK * 2.0F;
-            int dy = this.level.random.nextInt(33) - 16;
+            float angle = this.level.getRandom().nextFloat() * Mth.TWO_PI;
+            float dist = inner + this.level.getRandom().nextFloat() * SPEED_PER_TICK * 2.0F;
+            int dy = this.level.getRandom().nextInt(33) - 16;
             BlockPos pos = this.center.offset(
                     Mth.floor(Mth.cos(angle) * dist), dy, Mth.floor(Mth.sin(angle) * dist));
             cleanse(this.level, pos);
@@ -113,7 +114,7 @@ public final class RiveningCascade {
         }
 
         // The wavefront purges the living and unmakes the porcelain.
-        AABB band = AABB.ofSize(this.center.getCenter(), this.radius * 2.0 + 4.0, 64.0, this.radius * 2.0 + 4.0);
+        AABB band = AABB.ofSize(Vec3.atCenterOf(this.center), this.radius * 2.0 + 4.0, 64.0, this.radius * 2.0 + 4.0);
         for (LivingEntity entity : this.level.getEntitiesOfClass(LivingEntity.class, band)) {
             double dist = Math.sqrt(Math.pow(entity.getX() - this.center.getX() - 0.5, 2)
                     + Math.pow(entity.getZ() - this.center.getZ() - 0.5, 2));
@@ -141,8 +142,8 @@ public final class RiveningCascade {
                 24, 6.0, 3.0, 6.0, 0.0);
         AdvancementHolder advancement = this.level.getServer().getAdvancements().get(FINAL_ADVANCEMENT);
         for (ServerPlayer player : this.level.getPlayers(
-                p -> p.distanceToSqr(this.center.getCenter()) < 200.0 * 200.0)) {
-            player.displayClientMessage(Component.translatable("gildedseam.rivening.done"), false);
+                p -> p.distanceToSqr(Vec3.atCenterOf(this.center)) < 200.0 * 200.0)) {
+            player.sendSystemMessage(Component.translatable("gildedseam.rivening.done"));
             if (advancement != null) {
                 player.getAdvancements().award(advancement, "done");
             }
