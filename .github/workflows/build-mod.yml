@@ -33,21 +33,21 @@ jobs:
           distribution: temurin
           java-version: "25"
 
-      # The checked-in wrapper was generated offline and pinned a Gradle
-      # build that does not exist, so the toolchain is resolved here instead
-      # of trusting gradle-wrapper.properties.
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Cache Gradle
+        uses: actions/cache@v4
         with:
-          gradle-version: release
-          cache-read-only: false
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('gilded-seam/**/*.gradle', 'gilded-seam/gradle.properties') }}
+          restore-keys: ${{ runner.os }}-gradle-
 
       # On failure, print just the lines that say what broke, at the very end
       # of the log, so a failed build is cheap to diagnose.
       - name: Build
         run: |
           set +e
-          gradle --no-daemon build > /tmp/build.log 2>&1
+          ./gradlew --no-daemon build > /tmp/build.log 2>&1
           code=$?
           if [ "$code" -ne 0 ]; then
             echo "===== BUILD FAILED - filtered diagnostics ====="
