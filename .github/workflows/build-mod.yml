@@ -60,6 +60,17 @@ jobs:
             grep -oE '[A-Za-z0-9_]+\.java:[0-9]+: error: [^\n]*' /tmp/build.log | head -45
             echo "----- non-compile failures -----"
             grep -E 'FAILURE:|What went wrong|Could not (find|resolve|get)|Plugin \[id' /tmp/build.log | head -15
+            echo "----- API ORACLE: locating classes in the resolved Minecraft jar -----"
+            jar=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null | grep -iE "minecraft" | grep -viE "sources|javadoc" | head -1)
+            echo "jar: $jar"
+            if [ -n "$jar" ]; then
+              unzip -l "$jar" | grep -oE "net/minecraft/[A-Za-z0-9/_]*/(ResourceLocation|Cow|Pig|Chicken|Spider|Creeper|Sheep|Zombie|AbstractSkeleton|AbstractVillager|Villager|IronGolem|WaterAnimal|ServerLevelAccessor|ThrowableItemProjectile|SpawnEggItem|ServerBossEvent|Monster|PathfinderMob)\\.class" | sort -u | head -50
+              echo "----- API ORACLE: member signatures -----"
+              for c in net.minecraft.world.level.Level net.minecraft.core.BlockPos net.minecraft.world.entity.player.Player net.minecraft.world.item.SpawnEggItem net.minecraft.server.level.ServerBossEvent; do
+                echo "### $c"
+                javap -cp "$jar" "$c" 2>/dev/null | grep -iE "isClientSide|getRandom|random|center|Message|public $(echo $c | sed 's/.*\.//')" | head -12
+              done
+            fi
             echo "===== END ====="
           fi
           exit $code
