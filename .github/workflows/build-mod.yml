@@ -33,18 +33,17 @@ jobs:
           distribution: temurin
           java-version: "25"
 
-      - name: Cache Gradle and Loom
-        uses: actions/cache@v4
+      # The checked-in wrapper was generated offline and pinned a Gradle
+      # build that does not exist, so the toolchain is resolved here instead
+      # of trusting gradle-wrapper.properties.
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-            gilded-seam/.gradle/loom-cache
-          key: ${{ runner.os }}-gradle-${{ hashFiles('gilded-seam/**/*.gradle', 'gilded-seam/gradle.properties') }}
-          restore-keys: ${{ runner.os }}-gradle-
+          gradle-version: release
+          cache-read-only: false
 
       - name: Build
-        run: ./gradlew --no-daemon build
+        run: gradle --no-daemon --stacktrace build
 
       - name: Show what was produced
         run: ls -la build/libs
