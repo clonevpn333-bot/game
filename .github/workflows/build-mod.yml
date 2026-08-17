@@ -50,16 +50,7 @@ jobs:
           ./gradlew --no-daemon build > /tmp/build.log 2>&1
           code=$?
           if [ "$code" -ne 0 ]; then
-            echo "===== BUILD FAILED ====="
-            echo "total errors: $(grep -c 'error:' /tmp/build.log)"
-            echo "----- distinct messages (count first) -----"
-            grep -oE 'error: .*' /tmp/build.log | sed 's/error: //' | sort | uniq -c | sort -rn | head -40
-            echo "----- distinct missing symbols -----"
-            grep -oE 'symbol: +(method|class|variable) .*' /tmp/build.log | sort | uniq -c | sort -rn | head -40
-            echo "----- first sites -----"
-            grep -oE '[A-Za-z0-9_]+\.java:[0-9]+: error: [^\n]*' /tmp/build.log | head -45
-            echo "----- non-compile failures -----"
-            grep -E 'FAILURE:|What went wrong|Could not (find|resolve|get)|Plugin \[id' /tmp/build.log | head -15
+            echo "===== BUILD FAILED (oracle first, errors last) ====="
             echo "----- API ORACLE: locating classes in the resolved Minecraft jar -----"
             jar=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null | grep -iE "minecraft" | grep -viE "sources|javadoc" | head -1)
             echo "jar: $jar"
@@ -84,6 +75,15 @@ jobs:
                 javap -cp "$jar" "$c" 2>/dev/null | grep -iE "isClientSide|getRandom|random|center|Message|public $(echo $c | sed 's/.*\.//')" | head -12
               done
             fi
+            echo "total errors: $(grep -c 'error:' /tmp/build.log)"
+            echo "----- distinct messages (count first) -----"
+            grep -oE 'error: .*' /tmp/build.log | sed 's/error: //' | sort | uniq -c | sort -rn | head -40
+            echo "----- distinct missing symbols -----"
+            grep -oE 'symbol: +(method|class|variable) .*' /tmp/build.log | sort | uniq -c | sort -rn | head -40
+            echo "----- first sites -----"
+            grep -oE '[A-Za-z0-9_]+\.java:[0-9]+: error: [^\n]*' /tmp/build.log | head -45
+            echo "----- non-compile failures -----"
+            grep -E 'FAILURE:|What went wrong|Could not (find|resolve|get)|Plugin \[id' /tmp/build.log | head -15
             echo "===== END ====="
           fi
           exit $code
