@@ -60,7 +60,7 @@ public final class RiveningCascade {
         ACTIVE.add(new RiveningCascade(level, center));
         level.playSound(null, center, SoundEvents.DECORATED_POT_SHATTER, SoundSource.BLOCKS, 3.0F, 0.5F);
         level.playSound(null, center, SoundEvents.BELL_RESONATE, SoundSource.BLOCKS, 3.0F, 0.5F);
-        for (ServerPlayer player : level.getPlayers(p -> p.distanceToSqr(Vec3.atCenterOf(center)) < 160.0 * 160.0)) {
+        for (ServerPlayer player : level.getPlayers(p -> p.distanceToSqr(Vec3.atLowerCornerOf(center).add(0.5, 0.5, 0.5)) < 160.0 * 160.0)) {
             player.sendSystemMessage(Component.translatable("gildedseam.rivening.begins"));
         }
     }
@@ -114,7 +114,7 @@ public final class RiveningCascade {
         }
 
         // The wavefront purges the living and unmakes the porcelain.
-        AABB band = AABB.ofSize(Vec3.atCenterOf(this.center), this.radius * 2.0 + 4.0, 64.0, this.radius * 2.0 + 4.0);
+        AABB band = AABB.ofSize(Vec3.atLowerCornerOf(this.center).add(0.5, 0.5, 0.5), this.radius * 2.0 + 4.0, 64.0, this.radius * 2.0 + 4.0);
         for (LivingEntity entity : this.level.getEntitiesOfClass(LivingEntity.class, band)) {
             double dist = Math.sqrt(Math.pow(entity.getX() - this.center.getX() - 0.5, 2)
                     + Math.pow(entity.getZ() - this.center.getZ() - 0.5, 2));
@@ -142,7 +142,7 @@ public final class RiveningCascade {
                 24, 6.0, 3.0, 6.0, 0.0);
         AdvancementHolder advancement = this.level.getServer().getAdvancements().get(FINAL_ADVANCEMENT);
         for (ServerPlayer player : this.level.getPlayers(
-                p -> p.distanceToSqr(Vec3.atCenterOf(this.center)) < 200.0 * 200.0)) {
+                p -> p.distanceToSqr(Vec3.atLowerCornerOf(this.center).add(0.5, 0.5, 0.5)) < 200.0 * 200.0)) {
             player.sendSystemMessage(Component.translatable("gildedseam.rivening.done"));
             if (advancement != null) {
                 player.getAdvancements().award(advancement, "done");
