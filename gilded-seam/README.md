@@ -204,10 +204,29 @@ pip install pillow
 python3 tools/bench/gen.py previews/   # Java + textures + bestiary sheets
 ```
 
-## Downloading the jar
+## Download
 
-The sandbox this was authored in cannot reach the Fabric or Mojang maven
-repositories, so the build runs in CI instead:
-`.github/workflows/build-mod.yml` builds on every push and publishes the jar
-both as a workflow artifact and as the rolling **`latest-blight`**
-prerelease. Drop it in `.minecraft/mods` next to Fabric API for 26.2.
+**[Download the jar](https://github.com/clonevpn333-bot/game/releases/download/latest-blight/gilded-seam-1.0.0.jar)**
+- or browse the [latest-blight release](https://github.com/clonevpn333-bot/game/releases/tag/latest-blight).
+
+Drop it in `.minecraft/mods` next to Fabric API for Minecraft 26.2.
+
+The jar is built by `.github/workflows/build-mod.yml` on every push, because
+the environment this was authored in cannot reach the Fabric or Mojang maven
+repositories. That workflow also doubles as an API oracle: on a failed build
+it reads the resolved game jar and prints where classes actually live, which
+is how the 26.2 port was done without the jar in hand.
+
+### What 26.2 changed, for anyone porting something else
+
+| Change | Replacement |
+| --- | --- |
+| `ResourceLocation` renamed | `net.minecraft.resources.Identifier` |
+| Mobs regrouped per species | `animal.cow.Cow`, `animal.pig.Pig`, `animal.chicken.Chicken`, `animal.sheep.Sheep`, `animal.fish.WaterAnimal`, `animal.golem.IronGolem`, `monster.zombie.Zombie`, `monster.spider.Spider`, `monster.skeleton.AbstractSkeleton`, `npc.villager.AbstractVillager` |
+| `Level.isClientSide` / `.random` now private | `isClientSide()` / `getRandom()` |
+| `BlockPos.getCenter()`, `Vec3.atCenterOf()` removed | `Vec3.atLowerCornerOf(pos).add(0.5, 0.5, 0.5)` |
+| `Player.displayClientMessage` removed | `sendSystemMessage` / `sendOverlayMessage` |
+| `ServerBossEvent` constructor | now leads with a `UUID` |
+| `SpawnEggItem(type, props)` | `SpawnEggItem(props)`; the entity comes from the item id |
+| `ThrowableItemProjectile` | carries its `ItemStack` explicitly |
+| Fabric dropped Yarn names | `ItemGroupEvents` to `CreativeModeTabEvents`, `EntityModelLayerRegistry` to `ModelLayerRegistry` |
