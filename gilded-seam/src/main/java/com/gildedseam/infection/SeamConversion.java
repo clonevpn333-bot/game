@@ -84,56 +84,29 @@ public final class SeamConversion {
 
     @org.jetbrains.annotations.Nullable
     private static net.minecraft.world.entity.EntityType<com.gildedseam.entity.GildedBeastEntity> beastFormOf(Mob mob) {
-        // Matched on the vanilla entity type rather than the class, because
-        // types are stable registry constants while the classes move between
-        // packages from one release to the next.
-        net.minecraft.world.entity.EntityType<?> host = mob.getType();
-        if (host == net.minecraft.world.entity.EntityType.COW
-                || host == net.minecraft.world.entity.EntityType.MOOSHROOM) {
-            return ModEntities.GILDED_COW;
-        }
-        if (host == net.minecraft.world.entity.EntityType.PIG) {
-            return ModEntities.GILDED_PIG;
-        }
-        if (host == net.minecraft.world.entity.EntityType.SHEEP) {
-            return ModEntities.GILDED_SHEEP;
-        }
-        if (host == net.minecraft.world.entity.EntityType.CHICKEN) {
-            return ModEntities.GILDED_CHICKEN;
-        }
-        if (host == net.minecraft.world.entity.EntityType.SPIDER
-                || host == net.minecraft.world.entity.EntityType.CAVE_SPIDER) {
-            return ModEntities.GILDED_SPIDER;
-        }
-        if (host == net.minecraft.world.entity.EntityType.CREEPER) {
-            return ModEntities.GILDED_CASK;
-        }
-        if (host == net.minecraft.world.entity.EntityType.WOLF) {
-            return ModEntities.GILDED_WOLF;
-        }
-        if (host == net.minecraft.world.entity.EntityType.GOAT) {
-            return ModEntities.GILDED_GOAT;
-        }
-        if (host == net.minecraft.world.entity.EntityType.RABBIT) {
-            return ModEntities.GILDED_HARE;
-        }
-        if (host == net.minecraft.world.entity.EntityType.FOX) {
-            return ModEntities.GILDED_FOX;
-        }
-        if (host == net.minecraft.world.entity.EntityType.CAT
-                || host == net.minecraft.world.entity.EntityType.OCELOT) {
-            return ModEntities.GILDED_CAT;
-        }
-        if (host == net.minecraft.world.entity.EntityType.HORSE
-                || host == net.minecraft.world.entity.EntityType.DONKEY
-                || host == net.minecraft.world.entity.EntityType.MULE) {
-            return ModEntities.GILDED_HORSE;
-        }
-        if (host == net.minecraft.world.entity.EntityType.LLAMA
-                || host == net.minecraft.world.entity.EntityType.TRADER_LLAMA) {
-            return ModEntities.GILDED_LLAMA;
-        }
-        return null;
+        // Matched on the host's registry id rather than its class or a static
+        // type constant. Both of those moved in 26.2 - the classes into
+        // per-species packages, the constants out of EntityType entirely -
+        // whereas "minecraft:cow" is the one name that never changes. It also
+        // lets one blighted form cover a whole family of hosts.
+        String host = net.minecraft.world.entity.EntityType.getKey(mob.getType()).toString();
+        return switch (host) {
+            case "minecraft:cow", "minecraft:mooshroom" -> ModEntities.GILDED_COW;
+            case "minecraft:pig" -> ModEntities.GILDED_PIG;
+            case "minecraft:sheep" -> ModEntities.GILDED_SHEEP;
+            case "minecraft:chicken" -> ModEntities.GILDED_CHICKEN;
+            case "minecraft:spider", "minecraft:cave_spider" -> ModEntities.GILDED_SPIDER;
+            case "minecraft:creeper" -> ModEntities.GILDED_CASK;
+            case "minecraft:wolf" -> ModEntities.GILDED_WOLF;
+            case "minecraft:goat" -> ModEntities.GILDED_GOAT;
+            case "minecraft:rabbit" -> ModEntities.GILDED_HARE;
+            case "minecraft:fox" -> ModEntities.GILDED_FOX;
+            case "minecraft:cat", "minecraft:ocelot" -> ModEntities.GILDED_CAT;
+            case "minecraft:horse", "minecraft:donkey", "minecraft:mule",
+                 "minecraft:camel" -> ModEntities.GILDED_HORSE;
+            case "minecraft:llama", "minecraft:trader_llama" -> ModEntities.GILDED_LLAMA;
+            default -> null;
+        };
     }
 
     private static void refireAsBeast(ServerLevel level, Mob corpse,

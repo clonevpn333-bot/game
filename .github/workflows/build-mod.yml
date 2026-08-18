@@ -92,14 +92,6 @@ jobs:
             grep -oE '[A-Za-z0-9_]+\.java:[0-9]+: error: [^\n]*' /tmp/build.log | sort -u | head -12
             echo "----- non-compile failures -----"
             grep -E 'FAILURE:|What went wrong|Could not (find|resolve|get)|Plugin \[id' /tmp/build.log | head -15
-            echo "----- FABRIC: model layer registry methods -----"
-            for fj in $(find ~/.gradle/caches -name "*fabric*rendering*.jar" -o -name "fabric-api-*.jar" 2>/dev/null | head -6); do
-              javap -cp "$fj" net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry 2>/dev/null | head -8
-            done
-            echo "----- FABRIC: where model layers register now -----"
-            for fj in $(find ~/.gradle/caches -name "*fabric*rendering*.jar" -o -name "fabric-api-*.jar" 2>/dev/null | head -6); do
-              unzip -l "$fj" 2>/dev/null | grep -oE "net/fabricmc/fabric/api/client/[A-Za-z/0-9]*\\.class" | grep -iE "layer|model|render" | sort -u | head -14
-            done
             echo "===== END ====="
           fi
           exit $code
