@@ -475,61 +475,133 @@ def the_lacuna() -> Model:
 
 
 def blighted_warden() -> Model:
-    """It was already blind. Now it is full of eyes and cannot use them.
+    """The Warden, from its own model. It was already blind.
 
-    Keeps the Warden's build exactly - the enormous shoulders, the low-slung
-    ribcage, the long arms, the head with nothing on the front of it - and
-    puts the thing it lacked into it. The sensory tendrils are replaced with
-    branching antler roots, and the chest cavity is a lantern.
+    Every box below is the vanilla Warden's, read out of the Minecraft jar by
+    calling WardenModel.createBodyLayer() and walking the mesh - body 18x21x11,
+    head 16x16x10, arms 8x28x8 hung at x +/-13, the flat 9x21 ribcage plates and
+    the 16x16 tendril quads. Nothing is re-proportioned, because the horror of
+    this one is recognition: it has to be unmistakably the Warden before it is
+    anything else.
+
+    What the blight adds is the sense it never had. The tendrils it listened
+    with have gone woody and branched, the ribcage has been forced open, and
+    the chest cavity that used to pulse is now a lantern full of eyes - on a
+    creature with no eyes at all.
     """
     parts = [
-        Part("body", "root", (0.0, GROUND - 34.0, 0.0), (0, 0, 0),
-             [Box((-9, -20, -6), (18, 21, 12), "sculkflesh")]),
-        Part("ribs", "body", (0.0, -13.0, -6.2), (0, 0, 0),
-             [Box((-7, -8, -1.4), (14, 16, 2), "rot")]),
-        Part("lantern", "ribs", (0.0, 0.0, -1.6), (0, 0, 0),
-             [Box((-4.5, -5.5, -2.4), (9, 11, 3), "amberglow")]),
-        # Shoulders: the Warden's defining mass.
-        Part("shoulders", "body", (0.0, -20.0, 0.0), (0, 0, 0),
-             [Box((-13, -8, -7), (26, 9, 14), "sculkflesh")]),
-        Part("head", "shoulders", (0.0, -8.0, 0.0), (0, 0, 0),
-             [Box((-5, -8, -5), (10, 8, 10), "sculkflesh")]),
-        # No eyes on the face. That was true before and it is still true.
-        Part("face_jaw", "head", (0.0, -1.0, -5.0), (18 * D, 0, 0),
-             [Box((-4, 0, -4), (8, 3, 4), "rot")]),
+        Part("bone", "root", (0.0, 24.0, 0.0), (0, 0, 0), []),
+        Part("body", "bone", (0.0, -21.0, 0.0), (0, 0, 0),
+             [Box((-9, -13, -4), (18, 21, 11), "sculkflesh")]),
+        Part("head", "body", (0.0, -13.0, 0.0), (0, 0, 0),
+             [Box((-8, -16, -5), (16, 16, 10), "sculkflesh")]),
+    ]
+    for side, tag in ((-1, "r"), (1, "l")):
+        parts.append(Part(f"leg_{tag}", "bone", (side * 5.9, -13.0, 0.0), (0, 0, 0),
+                          [Box((-2.9 if side < 0 else -3.1, 0, -3), (6, 13, 6),
+                               "sculkflesh")]))
+        parts.append(Part(f"arm_{tag}", "body", (side * 13.0, -13.0, 1.0), (0, 0, 0),
+                          [Box((-4, 0, -4), (8, 28, 8), "sculkflesh")]))
+        # The ribcage plates are flat quads in vanilla. Here they are prised
+        # off the chest and given thickness, so the cage stands open.
+        parts.append(Part(f"ribcage_{tag}", "body", (side * 7.0, -2.0, -4.0),
+                          (0, 0, side * 26 * D),
+                          [Box((-7 if side < 0 else -2, -11, -0.6), (9, 21, 1.4),
+                               "tooth")]))
+        # Sensory tendrils, gone woody and branched.
+        parts += chain(f"tendril_{tag}", "head", (side * 8.0, -12.0, 0.0), 4,
+                       (2.6, 7.0, 2.6), "bark", taper=0.78,
+                       curl=(-14 * D, side * 10 * D, side * 16 * D),
+                       root_rot=(-26 * D, side * 18 * D, side * 40 * D))
+        parts += _giant_hand(f"claw_{tag}", f"arm_{tag}", (0.0, 28.0, 0.0), 0.6, 1.0)
+
+    # The chest, forced open. It is a lantern now.
+    parts.append(Part("cavity", "body", (0.0, -4.0, -4.4), (0, 0, 0),
+                      [Box((-7, -9, -1.2), (14, 18, 2), "rot")]))
+    parts.append(Part("lantern", "cavity", (0.0, 0.0, -1.6), (0, 0, 0),
+                      [Box((-5, -7, -2.4), (10, 14, 3), "amberglow")]))
+    for i in range(8):
+        a = (2 * math.pi * i) / 8
+        parts.append(Part(f"cavityeye{i}", "cavity",
+                          (math.sin(a) * 5.2, math.cos(a) * 7.6, -2.2), (0, 0, 0),
+                          [Box((-1.7, -1.7, -1.0), (3.4, 3.4, 1.0), "eye:bloom")]))
+    # A face on something that has never had one.
+    parts.append(Part("face_jaw", "head", (0.0, -1.0, -5.0), (18 * D, 0, 0),
+                      [Box((-6, 0, -6), (12, 3.4, 6), "rot")]))
+    for i in range(7):
+        parts.append(Part(f"fang{i}", "face_jaw", (-4.8 + i * 1.6, -0.4, -4.6),
+                          (0, 0, 0),
+                          [Box((-0.6, -3.0, -0.6), (1.2, 3.0, 1.2), "tooth")]))
+    parts += lolling_tongue("face_jaw", at=(0.0, 1.4, -3.0), tier=0, segments=8,
+                            thick=1.7, name="tongue")
+    parts += eye_cluster("head", at=(0.0, -8.0, -5.2), count=6, tier=0,
+                         spread=(9.0, 4.0), size=3.2, name="faceeyes")
+    parts += eye_stalks("body", at=(0.0, -13.0, 7.0), count=5, tier=0,
+                        spread=7.0, length=5.0, name="backstalks")
+    parts += flayed("body", at=(-9.0, -6.0, 1.0), length=12.0, height=9.0, ribs=6,
+                    tier=0, side=-1, spine=True, name="flank")
+    return _m("blighted_warden", parts, tex=256)
+
+
+def blighted_enderman() -> Model:
+    """The Enderman, from its own model. It cannot leave any more.
+
+    Vanilla's boxes, exactly: an 8x12x4 body, an 8x8x8 head, and the limbs that
+    make it what it is - 2x30x2, two units thick and thirty long. Get those
+    wrong and it is just a tall man.
+
+    Resin has grown through the joints and jammed the teleport, so the welds
+    are visible at every hinge, and the limbs have been forced to different
+    lengths by it. It walks everywhere now. Slowly.
+    """
+    leg_h, arm_h = 30.0, 30.0
+    hip = GROUND - leg_h
+    parts = [
+        Part("body", "root", (0.0, hip, 0.0), (0, 0, 0),
+             [Box((-4, -12, -2), (8, 12, 4), "voidflesh")]),
+        Part("head", "body", (0.0, -12.0, 0.0), (0, 0, 0),
+             [Box((-4, -8, -4), (8, 8, 8), "voidflesh")]),
+        Part("face_jaw", "head", (0.0, -1.0, -4.0), (26 * D, 0, 0),
+             [Box((-3, 0, -4), (6, 2.6, 4.5), "rot")]),
     ]
     for i in range(6):
-        parts.append(Part(f"fang{i}", "face_jaw", (-3.0 + i * 1.2, -0.5, -3.0),
+        parts.append(Part(f"fang{i}", "face_jaw", (-2.2 + i * 0.9, -0.4, -3.2),
                           (0, 0, 0),
-                          [Box((-0.5, -2.4, -0.5), (1, 2.4, 1), "tooth")]))
-    # Six ribs peeled off the cage.
-    for i in range(6):
-        for side in (-1, 1):
-            parts.append(Part(f"rib{i}{'r' if side < 0 else 'l'}", "body",
-                              (side * 6.0, -19.0 + i * 3.0, -6.4),
-                              (0, 0, side * (22 + 8 * i) * D),
-                              [Box((-1.4, -1.0, -1.6), (2.8, 10.0, 2.6), "tooth")]))
-    # Antler roots where the sensory tendrils were.
-    for side in (-1, 1):
-        tag = "r" if side < 0 else "l"
-        parts += chain(f"tendril_{tag}", "head", (side * 3.5, -8.0, -1.0), 4,
-                       (2.4, 7.0, 2.4), "bark", taper=0.78,
-                       curl=(-12 * D, side * 10 * D, side * 14 * D),
-                       root_rot=(-30 * D, side * 20 * D, side * 34 * D))
-        parts += chain(f"arm_{tag}", "shoulders", (side * 13.0, -3.0, 0.0), 4,
-                       (6.0, 12.0, 6.0), "sculkflesh", taper=0.88,
-                       curl=(8 * D, 0, side * 6 * D),
-                       root_rot=(12 * D, 0, side * 14 * D))
-        parts += _giant_hand(f"claw_{tag}", f"arm_{tag}_3", (0.0, 9.0, 0.0), 0.55, 1.0)
-        parts += chain(f"leg_{tag}", "root", (side * 5.0, GROUND - 15.0, 0.0), 3,
-                       (5.5, 6.0, 5.5), "sculkflesh", taper=0.9)
-    parts += eye_cluster("shoulders", at=(0.0, -6.0, -7.2), count=7, tier=0,
-                         spread=(11.0, 3.0), size=3.0, name="shouldereyes")
-    parts += eye_stalks("body", at=(0.0, -20.0, 6.0), count=5, tier=0,
-                        spread=7.0, length=5.0, name="backstalks")
-    parts += lolling_tongue("face_jaw", at=(0.0, 1.0, -2.5), tier=0, segments=8,
-                            thick=1.6, name="tongue")
-    return _m("blighted_warden", parts, tex=256)
+                          [Box((-0.4, -2.0, -0.4), (0.8, 2.0, 0.8), "tooth")]))
+    # The two burning eyes, exactly where vanilla puts them, and a third the
+    # blight added above the bridge.
+    for side, tag in ((-1, "r"), (1, "l")):
+        parts.append(Part(f"eye_{tag}", "head", (side * 2.2, -4.4, -4.2), (0, 0, 0),
+                          [Box((-2.0, -1.1, -0.8), (4.0, 2.2, 1.0), "eye:void")]))
+    parts.append(Part("eye_third", "head", (0.0, -7.0, -3.2), (0, 0, 0),
+                      [Box((-1.6, -1.6, -1.4), (3.2, 3.2, 1.6), "eye:bloom")]))
+    parts += eye_stalks("head", at=(0.0, -8.0, 0.0), count=4, tier=0, spread=2.6,
+                        length=4.2, name="crown")
+    for side, tag in ((-1, "r"), (1, "l")):
+        # Jammed to different lengths: 30 on one side, shortened on the other.
+        al = arm_h * (1.0 if side < 0 else 0.82)
+        ll = leg_h * (0.88 if side < 0 else 1.0)
+        parts.append(Part(f"arm_{tag}", "body", (side * 5.0, -10.0, 0.0),
+                          (0, 0, side * 4 * D),
+                          [Box((-1, -2, -1), (2, al, 2), "voidflesh")]))
+        parts += _giant_hand(f"hand_{tag}", f"arm_{tag}", (0.0, al - 2.0, 0.0),
+                             0.3, 0.85)
+        parts.append(Part(f"leg_{tag}", "root", (side * 2.0, GROUND - ll, 0.0),
+                          (0, 0, 0),
+                          [Box((-1, 0, -1), (2, ll, 2), "voidflesh")]))
+        # Resin welded into the hinges, which is why nothing folds.
+        for k, frac in enumerate((0.18, 0.52, 0.84)):
+            parts.append(Part(f"weld_a{tag}{k}", f"arm_{tag}", (0.0, al * frac, 0.0),
+                              (0, 0, 0),
+                              [Box((-2.2, -1.8, -2.2), (4.4, 3.6, 4.4), "amber")]))
+            parts.append(Part(f"weld_l{tag}{k}", f"leg_{tag}", (0.0, ll * frac, 0.0),
+                              (0, 0, 0),
+                              [Box((-2.4, -2.0, -2.4), (4.8, 4.0, 4.8), "amber")]))
+    parts += flayed("body", at=(4.0, -6.0, 0.0), length=9.0, height=7.0, ribs=5,
+                    tier=0, side=1, name="flank")
+    parts += chain("drape", "body", (0.0, -2.0, 2.2), 5, (5.0, 6.0, 2.0),
+                   "amber", taper=0.86, curl=(4 * D, 0, 2 * D))
+    return _m("blighted_enderman", parts, tex=256)
 
 
 def blighted_wither() -> Model:

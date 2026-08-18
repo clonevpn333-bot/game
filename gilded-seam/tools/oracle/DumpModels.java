@@ -48,11 +48,17 @@ public final class DumpModels {
         Class<?> cls = Class.forName(className);
         Object layer = null;
         Method chosen = null;
-        // createBodyLayer() usually takes nothing; some take a deformation or
-        // a size. Try every static method that returns a LayerDefinition.
+        List<String> tried = new ArrayList<>();
+        // createBodyLayer() usually takes nothing; some take a deformation, a
+        // size, or a boolean. Try every static method that returns a
+        // LayerDefinition, and if none works say exactly why - a silent "no
+        // factory" is the least useful thing this could report.
         for (Method m : cls.getDeclaredMethods()) {
             if (!Modifier.isStatic(m.getModifiers())) continue;
             if (!m.getReturnType().getSimpleName().equals("LayerDefinition")) continue;
+            StringBuilder sig = new StringBuilder(m.getName() + "(");
+            for (Class<?> pt : m.getParameterTypes()) sig.append(pt.getSimpleName()).append(",");
+            sig.append(")");
             try {
                 Object[] argv = new Object[m.getParameterCount()];
                 for (int i = 0; i < argv.length; i++) argv[i] = defaultFor(m.getParameterTypes()[i]);
@@ -60,11 +66,18 @@ public final class DumpModels {
                 layer = m.invoke(null, argv);
                 chosen = m;
                 break;
-            } catch (Throwable ignored) {
-                // try the next candidate
+            } catch (Throwable t) {
+                Throwable c = t.getCause() != null ? t.getCause() : t;
+                tried.add(sig + " -> " + c.getClass().getSimpleName() + ": " + c.getMessage());
             }
         }
-        if (layer == null) return "{\"error\":\"no usable LayerDefinition factory\"}";
+        if (layer == null) {
+            // Some models keep their factory on a sibling class (a *Model
+            // holding several layers, or a dedicated *Layers holder).
+            return "{\"error\":" + quote("no usable LayerDefinition factory; tried "
+                    + (tried.isEmpty() ? "nothing (no static LayerDefinition methods)"
+                                       : String.join(" | ", tried))) + "}";
+        }
 
         Object mesh = fieldOfType(layer, "MeshDefinition");
         Object rootPart = fieldOfType(mesh, "PartDefinition");

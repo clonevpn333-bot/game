@@ -175,7 +175,11 @@ jobs:
           javac -nowarn -cp "$jar$deps" -d /tmp/oracle tools/oracle/DumpModels.java 2>&1 | tail -5
           # Find the real class names first; packages move between versions.
           : > /tmp/classes.txt
-          for n in WardenModel WitherBossModel EnderDragonModel EndermanModel; do
+          for n in WardenModel WitherBossModel EnderDragonModel EndermanModel \
+                   CowModel PigModel SheepModel ChickenModel SpiderModel \
+                   CreeperModel WolfModel GoatModel RabbitModel FoxModel \
+                   OcelotModel CatModel HorseModel LlamaModel VillagerModel \
+                   IronGolemModel RavagerModel HoglinModel; do
             for j in $jars; do
               unzip -l "$j" 2>/dev/null | grep -oE "net/minecraft/[A-Za-z0-9/_]*/$n\.class" | head -1 >> /tmp/classes.txt
             done
@@ -184,6 +188,20 @@ jobs:
           cat /tmp/classes.txt
           names=$(sed 's#/#.#g; s#\.class$##' /tmp/classes.txt | tr '\n' ' ')
           echo "dumping: $names"
+          echo "--- static LayerDefinition factories on each ---"
+          for c in $names; do
+            echo "### $c"
+            for j in $jars; do
+              javap -p -cp "$j" "$c" 2>/dev/null | grep -E "LayerDefinition" | head -4
+            done
+          done
+          echo "--- static LayerDefinition factories on each ---"
+          for c in $names; do
+            echo "### $c"
+            for j in $jars; do
+              javap -p -cp "$j" "$c" 2>/dev/null | grep -E "LayerDefinition" | head -6
+            done
+          done
           java -cp "$jar$deps:/tmp/oracle" DumpModels $names > /tmp/vanilla-models.json 2>/tmp/dump.err
           echo "--- stderr ---"; tail -5 /tmp/dump.err
           echo "--- bytes: $(wc -c < /tmp/vanilla-models.json) ---"
