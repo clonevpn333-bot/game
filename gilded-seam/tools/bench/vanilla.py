@@ -138,6 +138,46 @@ def vanilla_host(model: str, *, mats: dict[str, str], skip: tuple = (),
     return parts
 
 
+def jointify(parts: list[Part], legs: dict[str, str], *, hind: set[str] = frozenset(),
+             hoof: str | None = None) -> list[Part]:
+    """Splits vanilla's single-box legs into thigh, shank and foot.
+
+    Vanilla legs are one rigid box, which is exactly why a vanilla walk can
+    only swing them from the shoulder. The bench's IK gait needs joints. This
+    takes the leg bone as dumped and cuts the *same* column into three, so the
+    standing silhouette is bit-for-bit the vanilla leg and the animation engine
+    still has knees to bend.
+
+    `legs` maps the vanilla bone name onto the tag this toolchain uses
+    (``right_front_leg`` -> ``fr``), because the gait code looks for
+    ``leg_fr``, ``leg_fr_1`` and ``foot_fr``.
+    """
+    out: list[Part] = []
+    for part in parts:
+        tag = legs.get(part.name)
+        if tag is None or not part.boxes:
+            out.append(part)
+            continue
+        box = part.boxes[0]
+        ox, oy, oz = box.origin
+        lw, lh, ld = box.size
+        is_hind = part.name in hind
+        thigh_h = lh * (0.40 if is_hind else 0.44)
+        shank_h = lh * (0.42 if is_hind else 0.38)
+        foot_h = lh - thigh_h - shank_h
+        narrow = max(1.2, lw - 0.7)
+        inset = (lw - narrow) / 2.0
+        out.append(Part(f"leg_{tag}", part.parent, part.pivot, part.rot,
+                        [Box((ox, oy, oz), (lw, thigh_h, ld), box.mat)]))
+        out.append(Part(f"leg_{tag}_1", f"leg_{tag}", (0.0, thigh_h, 0.0), (0, 0, 0),
+                        [Box((ox + inset, 0.0, oz + 0.2), (narrow, shank_h, ld - 0.4),
+                             box.mat)]))
+        out.append(Part(f"foot_{tag}", f"leg_{tag}_1", (0.0, shank_h, 0.0), (0, 0, 0),
+                        [Box((ox, 0.0, oz - 0.4), (lw, foot_h, ld + 0.6),
+                             hoof or box.mat)]))
+    return out
+
+
 def describe(model: str) -> str:
     """One line per bone, for eyeballing a dump before building on it."""
     body = load()[model]

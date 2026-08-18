@@ -12,6 +12,7 @@ from __future__ import annotations
 import math
 
 from core import D, Box, Model, Part, chain, mirror, radial, torus
+import vanilla as V
 from anatomy import (GROUND, HOSTS, antler_roots, chicken_host, creeper_host,
                      rabbit_host, flayed,
                      infected_face,
@@ -30,6 +31,56 @@ def _m(name, parts, tex=0):
 # ---------------------------------------------------------------------------
 
 
+# Hosts built from the actual vanilla skeleton.
+#
+# The rule of this mod is that an infected cow still reads as a cow, and the
+# surest way to honour that is to stop re-typing the cow. CI calls each vanilla
+# model's createBodyLayer(), walks the mesh and commits the geometry; `vanilla`
+# turns that into bench parts. So these are not proportioned *like* the vanilla
+# animals - they are the vanilla animals, with resin painted on.
+#
+# (dump name, materials, legs -> tag, hind legs, bones to drop)
+VANILLA_HOSTS = {
+    "cow": ("CowModel", {"*": "cow_hide", "head": "cow_white"},
+            {"right_front_leg": "fr", "left_front_leg": "fl",
+             "right_hind_leg": "br", "left_hind_leg": "bl"}, ()),
+    "pig": ("PigModel", {"*": "pig_skin"},
+            {"right_front_leg": "fr", "left_front_leg": "fl",
+             "right_hind_leg": "br", "left_hind_leg": "bl"}, ()),
+    "sheep": ("SheepModel", {"*": "sheep_face"},
+              {"right_front_leg": "fr", "left_front_leg": "fl",
+               "right_hind_leg": "br", "left_hind_leg": "bl"}, ()),
+    "goat": ("GoatModel", {"*": "goat_fur", "left_horn": "tooth",
+                           "right_horn": "tooth", "nose": "goat_fur"},
+             {"right_front_leg": "fr", "left_front_leg": "fl",
+              "right_hind_leg": "br", "left_hind_leg": "bl"}, ()),
+    "llama": ("LlamaModel", {"*": "llama_fur"},
+              {"right_front_leg": "fr", "left_front_leg": "fl",
+               "right_hind_leg": "br", "left_hind_leg": "bl"},
+              ("chest",)),
+}
+
+
+def vanilla_quad(host: str, *, eye_style: str = "round", spares: int = 3,
+                 head: str = "head") -> list[Part]:
+    """A vanilla quadruped, jointed and given a face."""
+    model, mats, legs, skip = VANILLA_HOSTS[host]
+    parts = V.vanilla_host(model, mats=mats, skip=skip)
+    hind = {n for n, t in legs.items() if t.startswith("b")}
+    parts = V.jointify(parts, legs, hind=hind)
+    # Measure the head off the geometry rather than assuming it.
+    hw, hh, hd = 8.0, 8.0, 6.0
+    for part in parts:
+        if part.name == head and part.boxes:
+            hw, hh, hd = part.boxes[0].size
+            break
+    parts += infected_face(head, hw, hh, hd,
+                           eye=max(3.0, min(5.0, hw * 0.52)),
+                           teeth=5 if hw >= 6 else 4,
+                           style=eye_style, spares=spares)
+    return parts
+
+
 # Every host gets its own pathology.
 #
 # The previous version ran nearly all of them through one `_corrupt_quad`
@@ -44,7 +95,7 @@ def _m(name, parts, tex=0):
 
 def blighted_cow() -> Model:
     """Opened along the ribs on one side. It still chews."""
-    p = HOSTS["cow"].build()
+    p = vanilla_quad("cow")
     p += flayed("body", at=(-6.0, 4.0, -1.0), length=11.0, height=7.0, ribs=6,
                 tier=1, side=-1, spine=True, name="flank")
     p += spine_plates("body", from_z=-6.0, to_z=7.0, y=0.0, count=6, tier=1,
@@ -63,7 +114,7 @@ def blighted_cow() -> Model:
 
 def blighted_pig() -> Model:
     """Burst from underneath. It walks on more legs than it was issued."""
-    p = HOSTS["pig"].build()
+    p = vanilla_quad("pig")
     p += flayed("body", at=(0.0, 8.6, 1.0), length=10.0, height=5.0, ribs=5,
                 tier=1, side=1, name="belly")
     p += lolling_tongue("head", at=(0.0, 7.0, -8.0), tier=1, segments=5, thick=1.4)
@@ -81,7 +132,7 @@ def blighted_pig() -> Model:
 
 def blighted_sheep() -> Model:
     """Shorn to the spine. The fleece went hard before it came off."""
-    p = HOSTS["sheep"].build()
+    p = vanilla_quad("sheep")
     # The wound runs along the back, not the flank: it has been stripped.
     p += flayed("body", at=(0.0, 4.4, 0.0), length=13.0, height=5.0, ribs=7,
                 tier=1, side=-1, spine=True, name="shorn")
@@ -100,8 +151,8 @@ def blighted_sheep() -> Model:
 
 def blighted_goat() -> Model:
     """The throat opened and the horns kept going."""
-    p = HOSTS["goat"].build()
-    p += flayed("neck", at=(0.0, -2.0, 1.2), length=5.0, height=4.0, ribs=4,
+    p = vanilla_quad("goat")
+    p += flayed("head", at=(0.0, 6.0, 2.0), length=5.0, height=4.0, ribs=4,
                 tier=1, side=1, name="throat")
     p += flayed("body", at=(5.0, 4.5, 2.0), length=8.0, height=6.0, ribs=5,
                 tier=2, side=1, name="flank")
@@ -111,7 +162,7 @@ def blighted_goat() -> Model:
     p += antler_roots("head", at=(0.0, -0.5, -5.0), tier=2, side=1, name="crown_c")
     p += eye_cluster("head", at=(0.0, 1.5, -9.0), count=5, tier=1,
                      spread=(2.2, 3.4), size=2.2)
-    p += eye_stalks("neck", at=(0.0, -3.0, -1.0), count=3, tier=2, spread=2.0,
+    p += eye_stalks("head", at=(0.0, 5.0, -1.0), count=3, tier=2, spread=2.0,
                     length=3.2)
     return _m("blighted_goat", p)
 
@@ -121,7 +172,7 @@ def blighted_horse() -> Model:
     p = HOSTS["horse"].build()
     p += flayed("body", at=(0.0, 13.0, 2.0), length=15.0, height=6.0, ribs=8,
                 tier=1, side=1, name="barrel")
-    p += flayed("neck", at=(0.0, -5.0, 1.5), length=6.0, height=5.0, ribs=4,
+    p += flayed("body", at=(0.0, -2.0, -8.0), length=6.0, height=5.0, ribs=4,
                 tier=2, side=-1, name="withers")
     p += lolling_tongue("head", at=(0.0, 4.0, -9.0), tier=1, segments=8, thick=1.2)
     p += spine_plates("body", from_z=-8.0, to_z=9.0, y=0.0, count=8, tier=1,
@@ -130,21 +181,21 @@ def blighted_horse() -> Model:
                      name="arm_r")
     p += grafted_arm("body", at=(5.5, 6.5, -6.0), tier=2, side=1, scale=0.85,
                      name="arm_l")
-    p += eye_cluster("neck", at=(0.0, -8.0, -3.5), count=5, tier=1,
+    p += eye_cluster("head", at=(0.0, 6.0, -3.5), count=5, tier=1,
                      spread=(2.6, 4.0), size=2.4, name="neckeyes")
     return _m("blighted_horse", p)
 
 
 def blighted_llama() -> Model:
     """The neck is the wound. It carries the whole length of it open."""
-    p = HOSTS["llama"].build()
-    p += flayed("neck", at=(0.0, -7.0, 1.6), length=13.0, height=4.2, ribs=9,
+    p = vanilla_quad("llama")
+    p += flayed("head", at=(0.0, 8.0, 1.6), length=13.0, height=4.2, ribs=9,
                 tier=1, side=-1, spine=True, name="throat")
     p += lolling_tongue("head", at=(0.0, 3.5, -8.0), tier=1, segments=9, thick=0.9)
-    p += eye_stalks("neck", at=(0.0, -12.0, -1.5), count=5, tier=2, spread=2.2,
+    p += eye_stalks("head", at=(0.0, 14.0, -1.5), count=5, tier=2, spread=2.2,
                     length=3.6)
     p += resin_growth("body", at=(0.0, -1.0, 4.0), size=(6, 5, 5), tier=1)
-    p += grafted_arm("neck", at=(-3.0, -10.0, 0.0), tier=2, side=-1, scale=0.7,
+    p += grafted_arm("head", at=(-3.0, 12.0, 0.0), tier=2, side=-1, scale=0.7,
                      name="arm_r")
     p += eye_cluster("head", at=(0.0, 1.5, -9.0), count=4, tier=1,
                      spread=(1.8, 2.6), size=2.0)
