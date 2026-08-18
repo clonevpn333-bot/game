@@ -71,7 +71,6 @@ public final class ModBlocks {
             com.gildedseam.block.BlightPortalBlock::new,
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_ORANGE)
-                    .noCollission()
                     .noLootTable()
                     .strength(-1.0F, 3600000.0F)
                     .lightLevel(state -> 11)

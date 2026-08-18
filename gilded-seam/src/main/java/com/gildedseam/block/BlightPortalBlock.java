@@ -46,14 +46,17 @@ public class BlightPortalBlock extends Block {
     }
 
     @Override
-    protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
+    protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity,
+            net.minecraft.world.level.block.InsideBlockEffectApplier effects) {
         if (!(level instanceof ServerLevel serverLevel) || !entity.canUsePortal(false)) {
             return;
         }
-        entity.setPortalCooldown();
-        if (entity.portalCooldown > 0) {
+        // Check the cooldown before setting it, or the gate spits you straight
+        // back out: setting it first makes the guard below always true.
+        if (entity.isOnPortalCooldown()) {
             return;
         }
+        entity.setPortalCooldown();
         ModDimensions.sendThroughGate(serverLevel, entity);
     }
 

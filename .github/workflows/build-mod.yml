@@ -101,7 +101,21 @@ jobs:
               javap -p -cp "$jar" net.minecraft.world.phys.Vec3 2>/dev/null | grep -iE "atCenterOf|atLowerCornerOf|static" | head -8
               echo "### EntityType statics"
               javap -p -cp "$jar" net.minecraft.world.entity.EntityType 2>/dev/null | grep -iE "static|Builder" | head -10
-              echo "----- API ORACLE: member signatures -----"
+                echo "### spawn eggs: how does an entity get into the world"
+              javap -p -cp "$jar" net.minecraft.world.entity.EntityType 2>/dev/null | grep -E "spawn\(|create\(" | head -8
+              echo "--- EntitySpawnReason constants"
+              javap -p -cp "$jar" net.minecraft.world.entity.EntitySpawnReason 2>/dev/null | grep -E "public static final" | head -14
+              echo "--- SpawnEggItem"
+              javap -p -cp "$jar" net.minecraft.world.item.SpawnEggItem 2>/dev/null | head -12
+              echo "--- Entity placement + creative check"
+              javap -p -cp "$jar" net.minecraft.world.entity.Entity 2>/dev/null | grep -E "snapTo|moveTo|setPos\(" | head -6
+              javap -p -cp "$jar" net.minecraft.world.entity.player.Player 2>/dev/null | grep -iE "infinite|creative|abilities" | head -6
+              echo "### block hooks that keep moving"
+              javap -p -cp "$jar" net.minecraft.world.level.block.state.BlockBehaviour 2>/dev/null | grep -E "entityInside|stepOn" | head -4
+              javap -p -cp "$jar" 'net.minecraft.world.level.block.state.BlockBehaviour$Properties' 2>/dev/null | grep -iE "ollis" | head -4
+              echo "### item use animation enum"
+              unzip -l "$jar" | grep -oE "net/minecraft/world/item/(ItemUseAnimation|UseAnim)\.class" | sort -u
+            echo "----- API ORACLE: member signatures -----"
               for c in net.minecraft.world.level.Level net.minecraft.core.BlockPos net.minecraft.world.entity.player.Player net.minecraft.world.item.SpawnEggItem net.minecraft.server.level.ServerBossEvent; do
                 echo "### $c"
                 javap -cp "$jar" "$c" 2>/dev/null | grep -iE "isClientSide|getRandom|random|center|Message|public $(echo $c | sed 's/.*\.//')" | head -12

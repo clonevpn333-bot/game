@@ -14,7 +14,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
-import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.item.ToolMaterial;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.tags.BlockTags;
@@ -102,9 +101,8 @@ public final class ModItems {
     static Item registerSpawnEgg(String name, EntityType<? extends net.minecraft.world.entity.Mob> type) {
         ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, GildedSeam.id(name + "_spawn_egg"));
         return Registry.register(BuiltInRegistries.ITEM, key,
-                // 26.2 spawn eggs resolve their entity from the item id
-                // (<entity>_spawn_egg), so the type is only used for naming.
-                new SpawnEggItem(new Item.Properties().setId(key)));
+                new com.gildedseam.item.BlightSpawnEggItem(
+                        type, new Item.Properties().setId(key)));
     }
 
     public static void init() {

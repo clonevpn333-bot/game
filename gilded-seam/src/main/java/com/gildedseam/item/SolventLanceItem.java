@@ -11,7 +11,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.UseAnim;
+import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.level.Level;
 
 /**
@@ -47,8 +47,8 @@ public class SolventLanceItem extends Item {
     }
 
     @Override
-    public UseAnim getUseAnimation(ItemStack stack) {
-        return UseAnim.BOW;
+    public ItemUseAnimation getUseAnimation(ItemStack stack) {
+        return ItemUseAnimation.BOW;
     }
 
     @Override
@@ -84,7 +84,9 @@ public class SolventLanceItem extends Item {
             player.push(-player.getLookAngle().x * 0.42F * charge, 0.12F * charge,
                     -player.getLookAngle().z * 0.42F * charge);
             player.getCooldowns().addCooldown(stack, COOLDOWN_TICKS);
-            stack.hurtAndBreak(1, serverLevel, player, item -> { });
+            if (player instanceof net.minecraft.server.level.ServerPlayer served) {
+                stack.hurtAndBreak(1, serverLevel, served, item -> { });
+            }
         }
         return true;
     }
