@@ -111,14 +111,14 @@ public final class SeamHelper {
         // which is the honest signal anyway: the blight matures where it has
         // been feeding, not merely where the world is old.
 
-        int tier = TIER_BISQUE;
+        int tier = TIER_BISQUE + HordeCall.tierBonus();
         if (saturation >= 10 && random.nextFloat() < 0.45F) {
             tier = TIER_STONEWARE;
         }
         if (saturation >= 28 && random.nextFloat() < 0.35F) {
             tier = TIER_LUSTRE;
         }
-        return tier;
+        return Math.min(TIER_LUSTRE, tier);
     }
 
     /** Applies (or refreshes) the Gilded infection on a target. */

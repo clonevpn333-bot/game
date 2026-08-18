@@ -40,7 +40,13 @@ public final class SeamConversion {
         if (!(entity.level() instanceof ServerLevel level)) {
             return;
         }
-        if (entity instanceof SeamMob || entity instanceof Player) {
+        if (entity instanceof SeamMob) {
+            // A seam creature dying is not a loss to the blight; it is fuel.
+            // Pressure is what makes attrition escalate rather than exhaust.
+            HordeCall.feed();
+            return;
+        }
+        if (entity instanceof Player) {
             return;
         }
 

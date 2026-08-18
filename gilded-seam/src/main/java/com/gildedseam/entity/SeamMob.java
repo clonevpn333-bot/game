@@ -197,7 +197,12 @@ public abstract class SeamMob extends Monster {
                 && attacker.getMainHandItem().is(ModItems.KINTSUGI_BLADE)) {
             amount *= 1.5F;
         }
-        return super.hurtServer(level, source, amount);
+        boolean hurt = super.hurtServer(level, source, amount);
+        // Nothing of the blight is hurt privately: the neighbourhood answers.
+        if (hurt && source.getEntity() instanceof LivingEntity caller) {
+            com.gildedseam.infection.HordeCall.answer(this, level, caller);
+        }
+        return hurt;
     }
 
     @Override

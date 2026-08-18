@@ -140,6 +140,7 @@ public final class RiveningCascade {
         this.level.sendParticles(ParticleTypes.SONIC_BOOM,
                 this.center.getX() + 0.5, this.center.getY() + 2.0, this.center.getZ() + 0.5,
                 24, 6.0, 3.0, 6.0, 0.0);
+        HordeCall.reset();
         AdvancementHolder advancement = this.level.getServer().getAdvancements().get(FINAL_ADVANCEMENT);
         for (ServerPlayer player : this.level.getPlayers(
                 p -> p.distanceToSqr(Vec3.atLowerCornerOf(this.center).add(0.5, 0.5, 0.5)) < 200.0 * 200.0)) {
