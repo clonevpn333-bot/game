@@ -42,14 +42,38 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('gilded-seam/**/*.gradle', 'gilded-seam/gradle.properties') }}
           restore-keys: ${{ runner.os }}-gradle-
 
+      # Which GeckoLib actually exists for this Minecraft version is not
+      # guessable, and guessing wrong fails resolution before a single line is
+      # compiled - which stops the jar being published at all. So ask, every
+      # run, and never block the build on the answer.
+      - name: GeckoLib versions
+        continue-on-error: true
+        run: |
+          set +e
+          mc=$(grep -oP '(?<=^minecraft_version=).*' gradle.properties)
+          echo "minecraft_version = $mc"
+          for art in "geckolib-fabric-$mc" "geckolib-fabric" "geckolib"; do
+            url="https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/software/bernie/geckolib/$art/maven-metadata.xml"
+            hit=$(curl -sL -o /tmp/meta.xml -w "%{http_code}" "$url")
+            echo "[$hit] $art"
+            [ "$hit" = "200" ] && grep -oE "<version>[^<]+</version>" /tmp/meta.xml | tail -12
+          done
+          echo "----- cloudsmith package search -----"
+          curl -sL "https://api.cloudsmith.io/v1/packages/geckolib3/geckolib/?query=geckolib-fabric-$mc&page_size=30" \
+            | grep -oE '"(name|version)": *"[^"]*"' | paste - - | head -30
+          echo "----- modrinth -----"
+          curl -sL "https://api.modrinth.com/v2/project/geckolib/version?loaders=%5B%22fabric%22%5D&game_versions=%5B%22$mc%22%5D" \
+            | grep -oE '"(version_number|id)": *"[^"]*"' | head -20
+          exit 0
+
       # On failure, print just the lines that say what broke, at the very end
       # of the log, so a failed build is cheap to diagnose.
       - name: Build
         run: |
           set +e
           ./gradlew --no-daemon build > /tmp/build.log 2>&1
-          code=$?
-          if [ "$code" -ne 0 ]; then
+          status=$?
+          if [ "$status" -ne 0 ]; then
             echo "===== BUILD FAILED (oracle first, errors last) ====="
             echo "----- API ORACLE: locating classes in the resolved Minecraft jar -----"
             jar=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null | grep -iE "minecraft" | grep -viE "sources|javadoc" | head -1)
@@ -92,21 +116,9 @@ jobs:
             grep -oE '[A-Za-z0-9_]+\.java:[0-9]+: error: [^\n]*' /tmp/build.log | sort -u | head -12
             echo "----- non-compile failures -----"
             grep -E 'FAILURE:|What went wrong|Could not (find|resolve|get)|Plugin \[id' /tmp/build.log | head -15
-            echo "----- GECKOLIB: what versions actually exist -----"
-            for base in "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/software/bernie/geckolib" \
-                        "https://api.modrinth.com/maven/maven/modrinth/geckolib"; do
-              for art in "geckolib-fabric-26.2" "geckolib-fabric" "geckolib"; do
-                url="$base/$art/maven-metadata.xml"
-                code=$(curl -s -o /tmp/meta.xml -w "%{http_code}" "$url" || echo 000)
-                if [ "$code" = "200" ]; then
-                  echo "FOUND $url"
-                  grep -oE "<version>[^<]+</version>" /tmp/meta.xml | tail -8
-                fi
-              done
-            done
             echo "===== END ====="
           fi
-          exit $code
+          exit $status
 
       - name: Show what was produced
         run: ls -la build/libs

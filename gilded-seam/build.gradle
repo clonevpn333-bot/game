@@ -33,8 +33,14 @@ dependencies {
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     // Keyframed animation: real windups, blending and easing, which vanilla's
-    // model system cannot express.
-    implementation "software.bernie.geckolib:geckolib-fabric-${project.minecraft_version}:${project.geckolib_version}"
+    // model system cannot express. The published version for a given Minecraft
+    // release is not guessable, and a wrong guess fails the whole build at
+    // resolution time - which stops the jar being published at all. So the
+    // version is opt-in: `none` builds without it and still ships the geometry
+    // and animation files, and CI prints the versions that really exist.
+    if (project.geckolib_version != "none") {
+        implementation "software.bernie.geckolib:geckolib-fabric-${project.minecraft_version}:${project.geckolib_version}"
+    }
 }
 
 loom {
