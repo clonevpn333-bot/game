@@ -119,6 +119,7 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
 
     private final Config config;
     private final ModelPart body;
+    private final ModelPart jaw;
     private final ModelPart head;
     private float bodyBaseY = Float.NaN;
     private final ModelPart[] legs;
@@ -130,6 +131,7 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
         super(root);
         this.config = config;
         this.body = resolve(root, "body");
+        this.jaw = resolve(root, config.head() + "/face/face_jaw");
         this.head = resolve(root, config.head());
         this.legs = resolveAll(root, config.legs());
         this.mut1 = resolveAll(root, config.mut1());
@@ -221,6 +223,14 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
             this.head.zRot = -Mth.sin(gait) * 0.04F * speed;
         }
 
+        // --- the jaw ------------------------------------------------------
+        // It never fully closes, and it chews on the stride.
+        if (this.jaw != null) {
+            this.jaw.xRot = 0.42F
+                    + Mth.sin(age * 0.13F) * 0.12F
+                    + Math.abs(Mth.sin(gait)) * 0.22F * speed;
+        }
+
         // --- everything that hangs ---------------------------------------
         // Tongues and grafted limbs trail a quarter-cycle behind and keep
         // moving after the body stops.
@@ -256,6 +266,10 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
             }
             if (this.body != null) {
                 this.body.xRot -= lunge * 0.18F;
+            }
+            if (this.jaw != null) {
+                // The bite opens wide on the coil and snaps shut on contact.
+                this.jaw.xRot += Math.max(0.0F, -lunge) * 1.1F - Math.max(0.0F, lunge) * 0.35F;
             }
             for (ModelPart part : this.mut2) {
                 if (part != null) {

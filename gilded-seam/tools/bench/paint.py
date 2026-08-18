@@ -147,35 +147,42 @@ class Painter:
     # -- eyes -------------------------------------------------------------
 
     def eye(self, x, y, w, h, iris=None, pupil_slit=False):
-        """One eye filling the given rect: dark rim, sclera, iris, pupil, glint.
+        """One eye filling the given rect.
 
-        The rim matters - without it a pale sclera disappears into pale bark
-        and the whole point of eyes-where-eyes-should-not-be is lost."""
+        A radial falloff looks right at 12 pixels and turns into checkerboard
+        at four, which is the size these are actually drawn at, so small eyes
+        are laid out explicitly instead: a full sclera, a solid pupil block in
+        the middle, an iris ring if there is room, and a rim so the eye reads
+        against pale bark. Legibility beats fidelity at this scale.
+        """
         base, sh, darkc, accent, bright = MATS["eye"]
         iris = iris or accent
-        rim = (18, 12, 9)
-        cx, cy = x + w / 2.0, y + h / 2.0
-        rx, ry = max(1.0, w / 2.0), max(1.0, h / 2.0)
-        for j in range(h):
-            for i in range(w):
-                nx = (i + 0.5 - w / 2.0) / rx
-                ny = (j + 0.5 - h / 2.0) / ry
-                r = math.sqrt(nx * nx + ny * ny)
-                if r > 1.06:
-                    continue
-                if r > 0.88:
-                    c = rim
-                elif r > 0.62:
-                    c = mix(base, sh, (r - 0.62) / 0.26)
-                elif r > 0.34:
-                    c = mix(iris, shade(iris, 0.55), (r - 0.34) / 0.28)
-                else:
-                    c = (10, 8, 7)
-                    if pupil_slit and abs(nx) > 0.14:
-                        c = shade(iris, 0.65)
-                self._put(x + i, y + j, c)
-        if w >= 3 and h >= 3:
-            self._put(int(cx - rx * 0.40), int(cy - ry * 0.44), (255, 252, 242))
+        rim = (16, 11, 8)
+        pupil = (8, 6, 5)
+
+        # Sclera over the whole face, with a rim on the outer ring.
+        for j_ in range(h):
+            for i_ in range(w):
+                edge = (i_ == 0 or j_ == 0 or i_ == w - 1 or j_ == h - 1)
+                self._put(x + i_, y + j_, rim if (edge and min(w, h) >= 4) else base)
+
+        # Pupil: a solid block, sized to the face so it never disappears.
+        pw = 1 if min(w, h) <= 3 else (2 if min(w, h) <= 6 else max(2, min(w, h) // 3))
+        ph = pw
+        px0 = x + (w - pw) // 2
+        py0 = y + (h - ph) // 2
+        # Iris ring one pixel out from the pupil, where there is room.
+        if min(w, h) >= 5:
+            for j_ in range(py0 - 1 - y, py0 - 1 - y + ph + 2):
+                for i_ in range(px0 - 1 - x, px0 - 1 - x + pw + 2):
+                    if 0 <= i_ < w and 0 <= j_ < h:
+                        self._put(x + i_, y + j_, iris)
+        for j_ in range(ph):
+            for i_ in range(pw):
+                self._put(px0 + i_, py0 + j_, pupil)
+        # Wet highlight, top-left of the pupil.
+        if min(w, h) >= 4:
+            self._put(px0 - 1, py0 - 1, (255, 253, 246))
 
     def eye_field(self, x, y, w, h, count=3, iris=None):
         """A cluster of small eyes scattered over a face - the blight's habit
@@ -191,7 +198,7 @@ class Painter:
 
     # -- material dispatch ------------------------------------------------
 
-    def face(self, x, y, w, h, mat, up=False, front=False):
+    def face(self, x, y, w, h, mat, up=False, front=False, back=False):
         spec = MATS.get(mat, MATS["bark"])
         base, sh, darkc, accent, bright = spec
         # Flat fill with a vertical light falloff and fine noise.
@@ -243,7 +250,10 @@ class Painter:
             for i in range(w):
                 self._put(x + i, y + h - 1, shade(darkc, 1.2))
         elif mat == "eye":
-            if front:
+            # An eyeball is a sphere pretending to be a cube: every face but
+            # the one buried in the socket looks back at you, so the eye
+            # reads from any angle rather than only head-on.
+            if not back:
                 self.eye(x, y, w, h)
             else:
                 base_s, sh_s, dk, ac, br = MATS["sinew"]
@@ -310,7 +320,8 @@ def paint(model: Model, seed: int, blight: float = 1.0,
                 if w <= 0 or h <= 0:
                     continue
                 p.face(x, y, w, h, b.mat, up=(name == "top"),
-                       front=(name == "front"))
+                       front=(name == "front"),
+                       back=(name in ("back", "bottom")))
             n = eyes.get(stem)
             if n:
                 x, y, w, h = rects["front"]

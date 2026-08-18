@@ -88,6 +88,9 @@ class Quad:
             tw, th, td, tm, trx = self.tail
             parts.append(Part("tail", "body", (0.0, 1.0, bd / 2), (trx, 0, 0),
                               [_b((-tw / 2, 0, 0), (tw, th, td), tm)]))
+        parts.extend(infected_face("head", hw, hh, hd,
+                                   eye=max(3.0, min(5.0, hw * 0.52)),
+                                   teeth=5 if hw >= 6 else 4))
         for tag, sx, sz in (("fr", -1, -1), ("fl", 1, -1), ("br", -1, 1), ("bl", 1, 1)):
             parts.append(Part(f"leg_{tag}", "root",
                               (sx * self.leg_x, GROUND - lh, sz * self.leg_z),
@@ -153,6 +156,10 @@ def creeper_host() -> list[Part]:
         Part("head", "body", (0.0, 0.0, 0.0), (0, 0, 0),
              [_b((-4, -8, -4), (8, 8, 8), "creeper_skin")]),
     ]
+    # The creeper's head is a cube with the face on the front; the blight
+    # gives that face somewhere to open.
+    parts.extend(infected_face("head", 8, 8, 4, eye=4.2, teeth=5,
+                               jaw_mat="creeper_skin"))
     for tag, sx, sz in (("fr", -1, -1), ("fl", 1, -1), ("br", -1, 1), ("bl", 1, 1)):
         parts.append(Part(f"leg_{tag}", "root", (sx * 2, 18.0, sz * 4), (0, 0, 0),
                           [_b((-2, 0, -2), (4, 6, 4), "creeper_skin")]))
@@ -176,6 +183,9 @@ def spider_host() -> list[Part]:
                           [_b((-8, -1, -1), (8, 2, 2), "spider_shell")]))
         parts.append(Part(f"leg_r{i}_2", f"leg_r{i}", (-8.0, 0.0, 0.0), (0, 0, -80 * D),
                           [_b((-9, -1, -1), (9, 2, 2), "spider_shell")]))
+    # Spiders already have eyes; the blight adds more, and a mouth.
+    parts.extend(infected_face("head", 8, 8, 4, eye=3.4, teeth=6,
+                               jaw_mat="spider_shell"))
     parts.extend(mirror([p for p in parts if p.name.startswith("leg_r")],
                         "leg_r", "leg_l"))
     return parts
@@ -197,6 +207,8 @@ def chicken_host() -> list[Part]:
              [_b((-1, 0, -3), (1, 4, 6), "feather")]),
     ]
     parts.extend(mirror(parts[-1:], "wing_r", "wing_l"))
+    parts.extend(infected_face("head", 4, 6, 3, eye=3.0, teeth=4,
+                               jaw_mat="feather"))
     parts.append(Part("leg_r", "root", (-2.0, 19.0, 1.0), (0, 0, 0),
                       [_b((-1, 0, -3), (3, 5, 3), "beak")]))
     parts.extend(mirror(parts[-1:], "leg_r", "leg_l"))
@@ -397,4 +409,75 @@ def eye_cluster(anchor: str, *, at: tuple, count: int = 4, tier: int = 1,
                               "eye"),
                            _b((-s_i * 0.62, -s_i * 0.62, -s_i * 0.3),
                               (s_i * 1.24, s_i * 1.24, s_i * 0.4), "sinew")]))
+    return parts
+
+
+def infected_face(anchor: str, hw: float, hh: float, hd: float, *,
+                  eye: float = 2.6, teeth: int = 5, jaw_mat: str = "flesh",
+                  tier: int = 0, name: str = "face") -> list[Part]:
+    """The blight's face, built to stand proud of the skull.
+
+    A host with a plain box for a head reads as a reskin no matter what is
+    happening to the rest of it, so every infected creature gets this from
+    stage one: eyeballs that bulge out past the snout in their own sinew
+    sockets, an unhinged lower jaw on a real pivot, two opposed rows of
+    teeth, and a tongue sitting in the gap. All of it is geometry rather than
+    paint, so it catches the light and throws shadow at any angle.
+
+    `anchor` is the head part; `hw/hh/hd` its box dimensions, so the face
+    scales itself to whatever it is growing out of.
+    """
+    p = f"mut{tier}_{name}" if tier else name
+    front = -hd
+    parts: list[Part] = [Part(p, anchor, (0.0, 0.0, 0.0), (0, 0, 0), [])]
+
+    # --- eyes ------------------------------------------------------------
+    # Set wide and high, and pushed a full unit clear of the face so they
+    # break the silhouette instead of sitting flush in it.
+    for side, tag in ((-1, "r"), (1, "l")):
+        ex = side * hw * 0.29
+        ey = hh * 0.30
+        parts.append(Part(f"{p}_socket_{tag}", p, (ex, ey, front + 0.2),
+                          (0, side * 24 * D, side * -10 * D),
+                          [_b((-eye * 0.62, -eye * 0.62, -0.9),
+                              (eye * 1.24, eye * 1.24, 1.0), "sinew")]))
+        parts.append(Part(f"{p}_eye_{tag}", f"{p}_socket_{tag}", (0.0, 0.0, -0.9),
+                          (0, 0, 0),
+                          [_b((-eye / 2, -eye / 2, -eye * 0.8),
+                              (eye, eye, eye * 0.8), "eye")]))
+        # A brow of hardened resin over each eye, so the face has a scowl.
+        parts.append(Part(f"{p}_brow_{tag}", p, (ex, ey - eye * 0.72, front + 0.1),
+                          (0, 0, side * 14 * D),
+                          [_b((-eye * 0.7, -0.9, -1.2), (eye * 1.4, 1.1, 1.4), "chitin")]))
+
+    # Spare eyes crowded onto the skull: the face is wrong before the rest
+    # of the body has begun to change.
+    for i, (sx, sy, sc) in enumerate(((-0.30, -0.55, 0.55), (0.34, -0.62, 0.45),
+                                      (0.0, -0.80, 0.40))):
+        s = eye * sc
+        parts.append(Part(f"{p}_spare{i}", p,
+                          (sx * hw, sy * hh + hh * 0.30, front + 0.3),
+                          (0, sx * 40 * D, sy * 26 * D),
+                          [_b((-s / 2, -s / 2, -s * 0.85), (s, s, s * 0.85), "eye")]))
+
+    # --- upper jaw and its teeth -----------------------------------------
+    parts.append(Part(f"{p}_maw", p, (0.0, hh * 0.66, front + 0.4), (0, 0, 0),
+                      [_b((-hw * 0.42, -1.2, -1.6), (hw * 0.84, 1.6, 1.8), jaw_mat)]))
+    for i in range(teeth):
+        t = (i / max(1, teeth - 1) - 0.5) * 2.0
+        parts.append(Part(f"{p}_ut{i}", f"{p}_maw",
+                          (t * hw * 0.34, 0.4, -0.9), (0, 0, t * 8 * D),
+                          [_b((-0.45, 0, -0.45), (0.9, 1.9 - abs(t) * 0.5, 0.9), "tooth")]))
+
+    # --- lower jaw, hinged and hanging open ------------------------------
+    parts.append(Part(f"{p}_jaw", p, (0.0, hh * 0.70, front + 1.6), (26 * D, 0, 0),
+                      [_b((-hw * 0.40, 0, -3.0), (hw * 0.80, 1.6, 3.2), jaw_mat)]))
+    for i in range(teeth):
+        t = (i / max(1, teeth - 1) - 0.5) * 2.0
+        parts.append(Part(f"{p}_lt{i}", f"{p}_jaw",
+                          (t * hw * 0.32, 0.1, -2.4), (0, 0, t * -8 * D),
+                          [_b((-0.4, -1.7 + abs(t) * 0.4, -0.4),
+                              (0.8, 1.7 - abs(t) * 0.4, 0.8), "tooth")]))
+    parts.append(Part(f"{p}_gullet", f"{p}_jaw", (0.0, 0.2, -1.4), (0, 0, 0),
+                      [_b((-hw * 0.26, -0.2, -1.4), (hw * 0.52, 0.9, 1.8), "tongue")]))
     return parts
