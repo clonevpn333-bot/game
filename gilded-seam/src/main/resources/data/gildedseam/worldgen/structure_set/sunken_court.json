@@ -1,0 +1,14 @@
+{
+  "structures": [
+    {
+      "structure": "gildedseam:sunken_court",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 24,
+    "separation": 11,
+    "salt": 448120733
+  }
+}

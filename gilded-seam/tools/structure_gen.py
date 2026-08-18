@@ -511,8 +511,106 @@ def build_mother_tree():
     t.save("mother_tree")
 
 
+
+
+# ---------------------------------------------------------------------------
+# THE SUNKEN COURT — the Creaking's arena, in the hollow.
+#
+# A ring of heartwood pillars around a pool of poured gold, with the Creaking
+# sitting waist-deep at the centre. The floor is a raised ring you fight on;
+# the pool is the hazard, and the pillars are the only cover from a reach that
+# crosses the whole room. Nothing spawns here by accident: this is a built
+# place, so arriving means finding it.
+# ---------------------------------------------------------------------------
+
+PALE_PLANK = "minecraft:pale_oak_planks"
+RESIN_BRICK_BLOCK = "minecraft:resin_bricks"
+
+
+def build_sunken_court():
+    import math as _m
+    W, H, L = 45, 24, 45
+    t = Template(W, H, L)
+    cx = cz = W // 2
+
+    def ring(y, r0, r1, name, props=None):
+        for x in range(W):
+            for z in range(L):
+                d = _m.sqrt((x - cx) ** 2 + (z - cz) ** 2)
+                if r0 <= d <= r1:
+                    t.set(x, y, z, name, props)
+
+    # Floor: an outer walkway of resin brick, then the pool.
+    for y in (0,):
+        ring(y, 0, 21, RESIN_BRICK_BLOCK)
+    ring(1, 13, 21, PALE_PLANK)
+    ring(2, 18, 21, PALE_LOG, {"axis": "y"})
+    # The pool itself, sunk two deep and filled with gold.
+    for y in (0, 1):
+        ring(y, 0, 12.4, GOLD if y else SEAMSTONE)
+    ring(1, 0, 9.0, "minecraft:gold_block")
+    # Veins crawling out of the pool onto the walkway.
+    for i in range(40):
+        a = (2 * _m.pi * i) / 40
+        for step in range(13, 19):
+            x = int(round(cx + _m.sin(a) * step))
+            z = int(round(cz + _m.cos(a) * step))
+            if (x + z + step) % 3 == 0 and 0 <= x < W and 0 <= z < L:
+                t.set(x, 2, z, VEIN)
+
+    # Twelve pillars of heartwood, ringing the pool, each crowned with resin.
+    for i in range(12):
+        a = (2 * _m.pi * i) / 12
+        px = int(round(cx + _m.sin(a) * 16))
+        pz = int(round(cz + _m.cos(a) * 16))
+        h = 13 + (i % 3) * 2
+        for y in range(1, h):
+            t.set(px, y, pz, PALE_LOG, {"axis": "y"})
+            if y in (5, 9) or y == h - 1:
+                for dx, dz in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    t.set(px + dx, y, pz + dz, RESIN)
+        t.set(px, h, pz, KILN if i % 4 == 0 else CREAK,
+              {"age": "3"} if i % 4 == 0 else {"active": "true", "natural": "true"})
+        # Eyeblossoms at the foot of every pillar: the room is watching.
+        for dx, dz in ((2, 0), (-2, 0), (0, 2), (0, -2)):
+            t.set(px + dx, 1, pz + dz, EYE_OPEN)
+
+    # A canopy of pale oak overhead, so the court feels roofed and closed.
+    for y in (20, 21):
+        for x in range(W):
+            for z in range(L):
+                d = _m.sqrt((x - cx) ** 2 + (z - cz) ** 2)
+                if d <= 20 and (x + z + y) % 4 != 0:
+                    t.set(x, y, z, PALE_LEAVES, {"persistent": "true"})
+
+    # The way in: a gate frame on the north edge, already built, unlit.
+    for h in range(1, 6):
+        t.set(cx - 2, h, 1, PALE_LOG, {"axis": "y"})
+        t.set(cx + 2, h, 1, PALE_LOG, {"axis": "y"})
+    for x in range(cx - 2, cx + 3):
+        t.set(x, 6, 1, PALE_LOG, {"axis": "x"})
+        t.set(x, 0, 1, PALE_LOG, {"axis": "x"})
+
+    # Two chests of supplies on the walkway - this is a boss room, and the
+    # player arriving may have spent everything getting here.
+    t.set(cx - 17, 2, cz, CHEST, {"facing": "east"},
+          {"id": "minecraft:chest", "LootTable": "gildedseam:chests/palace_reliquary"})
+    t.set(cx + 17, 2, cz, CHEST, {"facing": "west"},
+          {"id": "minecraft:chest", "LootTable": "gildedseam:chests/palace_reliquary"})
+
+    # The Creaking, waist-deep at the centre, and its court around the rim.
+    t.entity(cx, 2.0, cz, "gildedseam:the_creaking")
+    for i in range(6):
+        a = (2 * _m.pi * i) / 6 + 0.3
+        t.entity(cx + _m.sin(a) * 18, 3.0, cz + _m.cos(a) * 18,
+                 ("gildedseam:manifold", "gildedseam:seamstress",
+                  "gildedseam:kilnborn")[i % 3])
+    t.save("sunken_court")
+
+
 if __name__ == "__main__":
     build_palace()
     build_city()
     build_hamlet()
     build_mother_tree()
+    build_sunken_court()
