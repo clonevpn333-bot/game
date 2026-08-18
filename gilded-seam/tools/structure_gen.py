@@ -392,22 +392,33 @@ EYE_OPEN = "minecraft:open_eyeblossom"
 
 
 def build_mother_tree():
-    """The Mother Tree - grown, not extruded.
+    """The Mother Tree, built to the proportions of a real tree of life.
 
-    The first version of this was a cylinder with a lens of leaves balanced on
-    top, which reads as a mushroom from every angle. A tree does not do that.
-    It flares into the ground on buttress roots, its trunk tapers on a curve
-    rather than a straight line, and its crown is not one blob - it is the sum
-    of where the limbs ended. So this builds limbs first and hangs the canopy
-    off their tips.
+    The failure of every previous attempt was proportion, not detail. A tree
+    like this is not a column with foliage on top - the trunk is the *subject*.
+    For the lower third it is wider than it is tall, it is split into buttress
+    lobes by fissures deep enough to walk into, and rather than tapering away
+    it flares back *outward* at the top to carry a bough mass that spreads far
+    wider than the trunk is tall.
+
+    So the shape is built in four registers:
+
+      0-14   buttress: enormous, deeply lobed, roots welding into ground
+      14-34  shaft: narrowing on a concave curve, fissures shallowing
+      34-46  flare: widening again into the crotch the boughs leave from
+      36-84  boughs and canopy: many limbs, spreading near-horizontally
+             before they lift, under one broad slightly-flattened crown
+
+    The trunk carries faces. In the reference it is animals carved into the
+    bark; here it is the things the blight has taken, set into the wood and
+    still moving - which is the same idea with the kindness removed.
     """
     import math as _m
-    W, H, L = 49, 84, 49
+    W, H, L = 65, 96, 65
     t = Template(W, H, L)
     cx = cz = W // 2
 
     def blob(x, y, z, r, name, props=None, jitter=0):
-        """A rough sphere - the unit every woody thing here is drawn with."""
         ri = int(_m.ceil(r))
         rr = r * r
         for dx in range(-ri, ri + 1):
@@ -416,147 +427,196 @@ def build_mother_tree():
                     d = dx * dx + dy * dy + dz * dz
                     if d > rr:
                         continue
-                    if jitter and d > rr * 0.55 and (dx * 7 + dy * 13 + dz * 5) % 4 == 0:
+                    if jitter and d > rr * 0.5 and (dx * 7 + dy * 13 + dz * 5) % 5 < jitter:
                         continue
                     px, py, pz = x + dx, y + dy, z + dz
                     if 0 <= px < W and 0 <= py < H and 0 <= pz < L:
                         t.set(px, py, pz, name, props)
 
-    def limb(x, y, z, yaw, pitch, length, r0, r1, mat, props=None,
-             droop=0.0, steps=None):
-        """Draws a tapering limb along an arc and returns where it ended.
-
-        `droop` bends the limb over its length - positive sags, negative
-        reaches for the sky. Branches that travel in a straight line are the
-        other half of why the old tree looked manufactured.
-        """
-        steps = steps or int(length * 2)
+    def limb(x, y, z, yaw, pitch, length, r0, r1, mat, props=None, droop=0.0):
+        steps = max(4, int(length * 1.6))
         for i in range(steps + 1):
             f = i / steps
             p = pitch + droop * f * f
             d = length * f
-            px = x + _m.sin(yaw) * _m.cos(p) * d
-            py = y + _m.sin(p) * d
-            pz = z + _m.cos(yaw) * _m.cos(p) * d
-            blob(int(round(px)), int(round(py)), int(round(pz)),
+            blob(int(round(x + _m.sin(yaw) * _m.cos(p) * d)),
+                 int(round(y + _m.sin(p) * d)),
+                 int(round(z + _m.cos(yaw) * _m.cos(p) * d)),
                  r0 + (r1 - r0) * f, mat, props)
-        f = 1.0
         p = pitch + droop
         return (x + _m.sin(yaw) * _m.cos(p) * length,
                 y + _m.sin(p) * length,
                 z + _m.cos(yaw) * _m.cos(p) * length)
 
-    # --- buttress roots ---------------------------------------------------
-    # Tall flared arches that carry the trunk into the ground, with daylight
-    # under them. This is the silhouette that says "old tree" before you have
-    # even looked up.
-    for i in range(9):
-        a = (2 * _m.pi * i) / 9 + 0.18
-        limb(cx + _m.sin(a) * 3, 15, cz + _m.cos(a) * 3, a, -0.62,
-             21.0, 3.4, 1.0, PALE_LOG, droop=-0.5)
-        # Surface roots crawling on out past the arch.
-        ex = cx + _m.sin(a) * 20
-        ez = cz + _m.cos(a) * 20
-        limb(ex, 1, ez, a + 0.30, -0.06, 7.0, 1.5, 0.7, RESIN)
-        limb(ex, 1, ez, a - 0.34, -0.05, 6.0, 1.4, 0.7, PALE_LOG)
-        for k in range(3):
-            rx = int(round(cx + _m.sin(a + k * 0.2) * (11 + k * 5)))
-            rz = int(round(cz + _m.cos(a + k * 0.2) * (11 + k * 5)))
-            if 0 <= rx < W and 0 <= rz < L:
-                t.set(rx, 1, rz, EYE_OPEN)
+    # --- the trunk --------------------------------------------------------
+    LOBES = 11          # buttress count; the fissures fall between them
 
-    # --- trunk ------------------------------------------------------------
-    # Concave taper: fat and flaring for the first ten blocks, then settling.
-    for y in range(0, 52):
-        f = y / 51.0
-        r = 12.5 * (1.0 - f) ** 1.9 + 4.2
-        ri = int(_m.ceil(r))
-        rr, hr = r * r, max(0.0, r - 2.6) ** 2
+    def profile(y):
+        """Radius of the trunk at height y, before lobing."""
+        if y <= 14:                          # buttress
+            f = y / 14.0
+            return 21.0 - 6.0 * f ** 0.75
+        if y <= 34:                          # shaft
+            f = (y - 14) / 20.0
+            return 15.0 - 6.2 * f ** 1.35
+        f = min(1.0, (y - 34) / 12.0)        # flare back out
+        return 8.8 + 1.9 * f ** 1.5
+
+    def lobing(y):
+        """How pronounced the buttress fissures are at height y."""
+        if y <= 14:
+            return 4.2 - 1.4 * (y / 14.0)
+        if y <= 34:
+            return 2.8 * (1.0 - (y - 14) / 20.0) + 0.6
+        return 0.6
+
+    for y in range(0, 47):
+        base = profile(y)
+        amp = lobing(y)
+        ri = int(_m.ceil(base + amp)) + 1
         for dx in range(-ri, ri + 1):
             for dz in range(-ri, ri + 1):
-                d = dx * dx + dz * dz
-                if not (hr <= d <= rr):
+                d = _m.hypot(dx, dz)
+                if d < 0.5:
+                    d = 0.5
+                a = _m.atan2(dx, dz)
+                # Lobes, with a slow twist up the trunk so the fissures spiral.
+                r = base + amp * _m.cos(LOBES * a + y * 0.055)
+                if d > r:
                     continue
-                # Ridged bark, so the trunk is not a smooth pipe.
-                if (dx * 3 + dz * 5 + y) % 11 == 0 and d > rr * 0.7:
+                # Hollow: a thick wall, not a solid pillar.
+                inner = r - (7.0 if y < 20 else 5.0)
+                if y < 20 and d < inner:
+                    continue
+                if 20 <= y <= 34 and d < r - 5.5:
                     continue
                 px, pz = cx + dx, cz + dz
                 if 0 <= px < W and 0 <= pz < L:
                     t.set(px, y, pz, PALE_LOG, {"axis": "y"})
-        if y % 4 == 0:
-            for k in range(5):
-                a = (2 * _m.pi * k) / 5 + y * 0.21
-                px = int(round(cx + _m.sin(a) * (r - 0.4)))
-                pz = int(round(cz + _m.cos(a) * (r - 0.4)))
+
+        # Resin bleeding out of the fissures, heaviest low down.
+        if y % 3 == 0:
+            for k in range(LOBES):
+                a = (2 * _m.pi * (k + 0.5)) / LOBES - y * 0.055 / LOBES
+                r = base - amp * 0.7
+                px = int(round(cx + _m.sin(a) * r))
+                pz = int(round(cz + _m.cos(a) * r))
                 if 0 <= px < W and 0 <= pz < L:
                     t.set(px, y, pz, RESIN)
-        if y in (16, 25, 34, 43):
-            t.set(cx + int(r) - 1, y, cz, CREAK,
-                  {"active": "true", "natural": "true"})
 
-    # --- limbs ------------------------------------------------------------
-    # Five primaries, each forking twice. The tips are collected and the
-    # canopy is grown from them, so the crown follows the branching instead
-    # of being a hat sitting on top of it.
+    # --- faces in the bark ------------------------------------------------
+    # The reference has animals carved into the trunk. These are not carvings.
+    for k in range(16):
+        a = (2 * _m.pi * k) / 16 + 0.2
+        y = 6 + (k * 5) % 34
+        r = profile(y) + lobing(y) * _m.cos(LOBES * a + y * 0.055) - 0.5
+        px = int(round(cx + _m.sin(a) * r))
+        pz = int(round(cz + _m.cos(a) * r))
+        if not (0 <= px < W and 0 <= pz < L):
+            continue
+        t.set(px, y, pz, CREAK if k % 3 else KILN,
+              {"active": "true", "natural": "true"} if k % 3 else None)
+        for dy, dx2 in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            qx, qy = px + dx2, y + dy
+            if 0 <= qx < W and 0 < qy < H:
+                t.set(qx, qy, pz, RESIN)
+
+    # --- surface roots ----------------------------------------------------
+    for i in range(LOBES):
+        a = (2 * _m.pi * i) / LOBES
+        ex = cx + _m.sin(a) * 19
+        ez = cz + _m.cos(a) * 19
+        limb(ex, 2, ez, a + 0.22, -0.05, 11.0, 2.6, 0.8, PALE_LOG)
+        limb(ex, 1, ez, a - 0.30, -0.04, 8.0, 2.0, 0.8, RESIN)
+        for k in range(4):
+            rx = int(round(cx + _m.sin(a + k * 0.14) * (22 + k * 3)))
+            rz = int(round(cz + _m.cos(a + k * 0.14) * (22 + k * 3)))
+            if 0 <= rx < W and 0 <= rz < L:
+                t.set(rx, 1, rz, EYE_OPEN if k % 2 else RESIN)
+
+    # --- boughs -----------------------------------------------------------
+    # Twelve primaries leaving the flare almost horizontally, lifting as they
+    # go. Spread first, height second: that is the whole silhouette.
     tips = []
-    for i in range(5):
-        a = (2 * _m.pi * i) / 5 + 0.4
-        base_y = 38 + (i % 3) * 4
-        end = limb(cx + _m.sin(a) * 3, base_y, cz + _m.cos(a) * 3,
-                   a, 0.86, 17.0, 3.2, 1.7, PALE_WOOD, droop=-0.26)
+    for i in range(8):
+        a = (2 * _m.pi * i) / 8 + 0.26
+        y0 = 39 + (i % 3) * 2
+        # Nearly flat out of the crotch, lifting only at the end. Spread is
+        # what makes the crown wide; height is what makes it a column.
+        e1 = limb(cx + _m.sin(a) * 6, y0, cz + _m.cos(a) * 6,
+                  a, 0.14, 26.0, 5.2, 2.4, PALE_WOOD, droop=0.40)
         for j in (-1, 1):
-            end2 = limb(end[0], end[1], end[2], a + j * 0.42, 0.52,
-                        11.0, 1.7, 1.0, PALE_WOOD, droop=-0.18)
-            tips.append(end2)
-            for k in (-1, 1):
-                tips.append(limb(end2[0], end2[1], end2[2],
-                                 a + j * 0.42 + k * 0.5, 0.34, 6.5, 1.0, 0.6,
-                                 PALE_WOOD, droop=-0.12))
-    # A crown limb straight up the middle, so the tree has a peak.
-    tips.append(limb(cx, 50, cz, 0.0, 1.45, 13.0, 2.6, 1.2, PALE_WOOD))
+            e2 = limb(e1[0], e1[1], e1[2], a + j * 0.40, 0.34,
+                      14.0, 2.4, 1.3, PALE_WOOD, droop=0.30)
+            tips.append(e2)
+    # A few short verticals off the crotch so the middle of the crown is not
+    # a hole when you stand under it.
+    for i in range(4):
+        a = (2 * _m.pi * i) / 4 + 0.9
+        tips.append(limb(cx + _m.sin(a) * 4, 45, cz + _m.cos(a) * 4,
+                         a, 0.95, 16.0, 2.6, 1.2, PALE_WOOD, droop=0.1))
+    tips.append(limb(cx, 46, cz, 0.0, 1.45, 15.0, 3.0, 1.4, PALE_WOOD))
 
     # --- canopy -----------------------------------------------------------
-    for (tx, ty, tz) in tips:
-        blob(int(round(tx)), int(round(ty)), int(round(tz)), 6.2,
-             PALE_LEAVES, {"persistent": "true"}, jitter=1)
-    # Resin hanging out of the boughs, and eyeblossoms opening in the crown.
+    # One broad, slightly flattened crown, hollow inside so it costs a shell
+    # rather than a solid mass - and so light reaches the boughs beneath it.
+    leaf = {"persistent": "true"}
+    # Big masses on the branch ends. These are the crown.
+    for n, (tx, ty, tz) in enumerate(tips):
+        blob(int(round(tx)), int(round(ty)) + 5, int(round(tz)),
+             6.6 if n % 3 == 0 else 5.4, PALE_LEAVES, leaf, jitter=2)
+    # A dome across the top only, closing the separate masses into one crown
+    # while leaving the underside open so the limbs stay visible beneath it.
+    top_y, RX, RY = 62, 29.0, 17.0
+    for dx in range(-int(RX) - 1, int(RX) + 2):
+        for dz in range(-int(RX) - 1, int(RX) + 2):
+            for dy in range(1, int(RY) + 2):
+                q = (dx * dx + dz * dz) / (RX * RX) + (dy * dy) / (RY * RY)
+                if q > 1.0 or q < 0.74:
+                    continue
+                if (dx * 5 + dy * 11 + dz * 7) % 7 == 0:
+                    continue
+                px, py, pz = cx + dx, top_y + dy, cz + dz
+                if 0 <= px < W and 0 <= py < H and 0 <= pz < L:
+                    t.set(px, py, pz, PALE_LEAVES, leaf)
+
+    # Resin hanging out of the canopy, and eyeblossoms opening in the crown.
     for n, (tx, ty, tz) in enumerate(tips):
         if n % 3:
             continue
         px, pz = int(round(tx)), int(round(tz))
-        for dy in range(1, 6 + (n % 4)):
-            py = int(round(ty)) - 6 - dy
+        for dy in range(1, 5 + (n % 6)):
+            py = int(round(ty)) - 5 - dy
             if 0 <= px < W and 0 <= pz < L and 0 < py < H:
                 t.set(px, py, pz, RESIN)
-        if 0 <= px < W and 0 <= pz < L and int(ty) + 6 < H:
-            t.set(px, int(round(ty)) + 6, pz, EYE_OPEN)
+        if 0 <= px < W and 0 <= pz < L and int(ty) + 5 < H:
+            t.set(px, int(round(ty)) + 5, pz, EYE_OPEN)
 
-    # --- the hollow: a root cage around the core --------------------------
-    for y in range(1, 15):
-        r = 6.5
+    # --- the hollow and the World Core ------------------------------------
+    for y in range(1, 19):
+        r = 6.6
         ri = int(_m.ceil(r))
         for dx in range(-ri, ri + 1):
             for dz in range(-ri, ri + 1):
                 if dx * dx + dz * dz <= r * r:
                     t.set(cx + dx, y, cz + dz, "minecraft:air")
-    for i in range(14):
-        a = (2 * _m.pi * i) / 14
-        for y in range(1, 15):
-            wobble = _m.sin(y * 0.42 + i) * 1.3
-            x = int(round(cx + _m.sin(a) * (6 + wobble)))
-            z = int(round(cz + _m.cos(a) * (6 + wobble)))
+    for i in range(16):
+        a = (2 * _m.pi * i) / 16
+        for y in range(1, 19):
+            wob = _m.sin(y * 0.4 + i) * 1.3
+            x = int(round(cx + _m.sin(a) * (6.8 + wob)))
+            z = int(round(cz + _m.cos(a) * (6.8 + wob)))
             if 0 <= x < W and 0 <= z < L:
                 t.set(x, y, z, PALE_LOG if y % 4 else RESIN)
 
-    # --- the World Core ---------------------------------------------------
     t.fill(cx - 2, 1, cz - 2, cx + 2, 5, cz + 2, RESIN)
     t.fill(cx - 1, 2, cz - 1, cx + 1, 4, cz + 1, KILN)
     t.set(cx, 3, cz, KILN)
     for dx, dz in ((-3, 0), (3, 0), (0, -3), (0, 3)):
         t.set(cx + dx, 1, cz + dz, BLOOM)
-    for x in range(cx - 7, cx + 8):
-        for z in range(cz - 7, cz + 8):
-            if (x - cx) ** 2 + (z - cz) ** 2 <= 49:
+    for x in range(cx - 8, cx + 9):
+        for z in range(cz - 8, cz + 9):
+            if (x - cx) ** 2 + (z - cz) ** 2 <= 64:
                 t.set(x, 0, z, SEAMSTONE)
                 if (x + z) % 4 == 0:
                     t.set(x, 1, z, VEIN)
@@ -574,11 +634,11 @@ def build_mother_tree():
         t.entity(cx + _m.sin(a) * 4, 2.0, cz + _m.cos(a) * 4, eid)
     for i in range(8):
         a = (2 * _m.pi * i) / 8 + 0.4
-        t.entity(cx + _m.sin(a) * 15, 2.0, cz + _m.cos(a) * 15, "gildedseam:shardling")
+        t.entity(cx + _m.sin(a) * 26, 2.0, cz + _m.cos(a) * 26, "gildedseam:shardling")
     for i, eid in enumerate(("gildedseam:gilded_cow", "gildedseam:gilded_pig",
                              "gildedseam:gilded_sheep", "gildedseam:half_sewn")):
         a = (2 * _m.pi * i) / 4 + 0.8
-        t.entity(cx + _m.sin(a) * 20, 2.0, cz + _m.cos(a) * 20, eid)
+        t.entity(cx + _m.sin(a) * 29, 2.0, cz + _m.cos(a) * 29, eid)
 
     t.save("mother_tree")
 

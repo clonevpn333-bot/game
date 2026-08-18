@@ -136,7 +136,7 @@ STRUCTURE_LABELS = {
     "refuge_hamlet": ("Refuge Hamlet",
                       "Boarded windows, one lantern still lit, survivors inside."),
     "mother_tree": ("The Mother Tree",
-                    "49x72x49 of pale oak grown over the World Core."),
+                    "65x96x65 of pale oak grown over the World Core."),
     "sunken_court": ("The Sunken Court",
                      "The Creaking's arena, in the hollow, under the canopy."),
 }

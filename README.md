@@ -32,7 +32,7 @@ horns and its four legs, and grows a pair of hands.
 | **Call of the Horde** | hit one and everything of the blight within 28 blocks turns on you. Every seam death raises the minimum firing tier of the next ones, so attrition makes the enemy worse. |
 | **The Unmaking** | around a matured kiln heart the world stops being replaced and starts being subtracted — blocks light up, hang, and blow away into nothing. |
 | **The Creaking hollow** | a real dimension, reached by building a pale oak gate and lighting it with a key made from the Sovereign's crown. |
-| **The Mother Tree** | a 49×72×49 pale oak grown over the World Core, where the infection came from. |
+| **The Mother Tree** | a 65×96×65 pale oak grown over the World Core, where the infection came from. |
 
 Everything about the mod itself lives in **[`gilded-seam/README.md`](gilded-seam/README.md)**,
 including the AmberBench modelling toolkit and the 26.2 porting notes.
