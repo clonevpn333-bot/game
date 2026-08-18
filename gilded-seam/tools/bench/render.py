@@ -55,9 +55,13 @@ def _chain(model: Model, part, pose):
     def apply(p):
         for node in stack:
             rot = pose.get(node.name, node.rot)
-            p = _rz(p, rot[2])
-            p = _ry(p, rot[1])
+            # Vanilla's ModelPart pushes z, then y, then x onto the matrix
+            # stack, so a point meets x first. GeckoLib does the same. Any
+            # other order silently disagrees with the game on every part that
+            # rotates about more than one axis - fingers, angled eye sockets.
             p = _rx(p, rot[0])
+            p = _ry(p, rot[1])
+            p = _rz(p, rot[2])
             p = (p[0] + node.pivot[0], p[1] + node.pivot[1], p[2] + node.pivot[2])
         return p
 
