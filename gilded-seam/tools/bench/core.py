@@ -195,7 +195,7 @@ def torus(name: str, parent: str, pivot: Vec, radius: float, segments: int,
     """A ring built from `segments` chords - the Sovereign's floating haloes."""
     hub = Part(name, parent, pivot, rot, [])
     parts = [hub]
-    chord = 2.0 * radius * math.sin(math.pi / segments) + 0.6
+    chord = 2.0 * radius * math.sin(math.pi / segments) + thickness * 0.9
     for i in range(segments):
         a = (2.0 * math.pi * i) / segments
         parts.append(Part(f"{name}_s{i}", name,

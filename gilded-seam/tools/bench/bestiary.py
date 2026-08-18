@@ -13,6 +13,7 @@ import math
 
 from core import D, Box, Model, Part, chain, mirror, radial, torus
 from anatomy import (GROUND, HOSTS, antler_roots, chicken_host, creeper_host,
+                     infected_face,
                      eye_cluster,
                      extra_legs, eye_stalks, grafted_arm, humanoid,
                      lolling_tongue, resin_growth, spider_host, spine_plates,
@@ -534,6 +535,7 @@ EYE_FIELDS = {
 
 # Species that keep a living, uninfected texture (no tier variants).
 LIVING = {"tapper", "refugee"}
+UNTIERED = {"creaking_hand", "the_creaking"}
 
 DISPLAY = {
     "blighted_cow": ("Blighted Cow", "hide and horns intact; the flank is not"),
@@ -556,3 +558,143 @@ DISPLAY = {
     "tapper": ("Resin Tapper", "hireable; cuts the blight for a living"),
     "refugee": ("Refugee", "scared; can be talked into fighting"),
 }
+
+
+# ---------------------------------------------------------------------------
+# THE CREAKING - what the blight was always growing toward
+# ---------------------------------------------------------------------------
+
+
+def _giant_hand(prefix: str, parent: str, at: tuple, scale: float,
+                curl: float = 1.0) -> list[Part]:
+    """One colossal hand: palm, thumb and four fingers with claws.
+
+    Built as its own function because it is used twice - once on the arm that
+    comes through the portal, and once on each arm of the full body - and the
+    two have to be recognisably the same hand.
+    """
+    s = scale
+    parts = [
+        Part(prefix, parent, at, (0, 0, 0),
+             [Box((-5 * s, -1.5 * s, -6 * s), (10 * s, 3 * s, 11 * s), "heartwood"),
+              Box((-5.2 * s, -1.7 * s, -2 * s), (10.4 * s, 1.2 * s, 5 * s), "amber")]),
+    ]
+    # Four fingers off the front edge, splayed and curling in.
+    for i in range(4):
+        fx = (-3.3 + i * 2.2) * s
+        parts += chain(f"{prefix}_f{i}", prefix, (fx, 0.5 * s, -5.5 * s), 4,
+                       (2.0 * s, 3.6 * s, 2.0 * s), "bark", taper=0.84,
+                       curl=(24 * D * curl, 0, 0),
+                       root_rot=(6 * D, (i - 1.5) * 9 * D, (i - 1.5) * 6 * D))
+        tip = f"{prefix}_f{i}_3"
+        parts.append(Part(f"{prefix}_c{i}", tip, (0.0, 2.6 * s, 0.0), (14 * D, 0, 0),
+                          [Box((-0.9 * s, 0, -0.9 * s), (1.8 * s, 3.4 * s, 1.8 * s), "tooth")]))
+    # Thumb, set low and opposed.
+    parts += chain(f"{prefix}_th", prefix, (-5 * s, 0.5 * s, -1.5 * s), 3,
+                   (2.4 * s, 3.4 * s, 2.4 * s), "bark", taper=0.85,
+                   curl=(18 * D * curl, 0, 10 * D),
+                   root_rot=(10 * D, -26 * D, -62 * D))
+    parts.append(Part(f"{prefix}_thc", f"{prefix}_th_2", (0.0, 2.4 * s, 0.0), (12 * D, 0, 0),
+                      [Box((-0.9 * s, 0, -0.9 * s), (1.8 * s, 3.2 * s, 1.8 * s), "tooth")]))
+    # An eye in the palm. It watches what it reaches for.
+    parts.append(Part(f"{prefix}_palmeye", prefix, (0.0, -1.7 * s, -1.0 * s), (0, 0, 0),
+                      [Box((-2.2 * s, -1.2 * s, -2.2 * s),
+                           (4.4 * s, 1.4 * s, 4.4 * s), "eye:bloom")]))
+    return parts
+
+
+def creaking_hand() -> Model:
+    """THE CREAKING HAND.
+
+    All that fits through a gate: a forearm and a hand, reaching in. The arm
+    is cut at the elbow by the portal ring it is coming through, and the ring
+    itself is part of the model so the thing always reads as *arriving* rather
+    than as a creature that happens to have no body.
+    """
+    parts: list[Part] = []
+    # The gate ring it is coming through, hanging in the air behind the arm.
+    parts += torus("ring", "root", (0.0, -14.0, 10.0), 11.5, 26, 3.0, "amberglow",
+                   rot=(90 * D, 0, 0))
+    parts += torus("ring2", "root", (0.0, -14.0, 11.6), 13.5, 28, 2.0, "heartwood",
+                   rot=(90 * D, 0, 0))
+    # Forearm, thickest where it disappears into the ring.
+    parts += chain("arm", "root", (0.0, -14.0, 10.0), 6, (10.5, 7.0, 10.5),
+                   "heartwood", taper=0.93, curl=(-4 * D, 0, 0),
+                   root_rot=(-88 * D, 0, 0))
+    # Resin bands where the bark has split along the forearm.
+    # Split bark, not bracelets: bands sit inside the arm's own width.
+    for i, host in enumerate(("arm_1", "arm_3")):
+        parts += torus(f"band{i}", host, (0.0, 3.2, 0.0), 4.4 - i * 0.3, 14, 1.2,
+                       "amber")
+    parts += _giant_hand("hand", "arm_5", (0.0, 6.0, 0.0), 1.2)
+    # Sap still running off it from the crossing.
+    for i in range(5):
+        a = (2 * math.pi * i) / 5
+        parts += chain(f"drip{i}", "arm_3", (math.sin(a) * 5.0, 4.0, math.cos(a) * 5.0),
+                       3, (1.6, 4.0, 1.6), "amber", taper=0.7, curl=(0, 0, 0))
+    return _m("creaking_hand", parts, tex=256)
+
+
+def the_creaking() -> Model:
+    """THE CREAKING, rising out of the gilded pool.
+
+    Only the upper body exists as geometry: it sits waist-deep in the gold it
+    grew in, so the model ends at the waterline and the sap sheets off it
+    instead of legs. Torso, shoulders, both arms, and a skull crowned with
+    pale oak, with the heart burning in an open chest.
+    """
+    parts: list[Part] = []
+    # Torso: a barrel of heartwood, ribs peeled outward.
+    parts.append(Part("torso", "root", (0.0, -26.0, 0.0), (0, 0, 0),
+                      [Box((-20, -30, -13), (40, 42, 26), "heartwood")]))
+    parts.append(Part("waterline", "torso", (0.0, 12.0, 0.0), (0, 0, 0),
+                      [Box((-22, -2, -15), (44, 4, 30), "amberglow")]))
+    for i in range(6):
+        yy = -26.0 + i * 5.5
+        for side in (-1, 1):
+            parts.append(Part(f"rib{i}{'r' if side < 0 else 'l'}", "torso",
+                              (side * 17.0, yy, -12.0), (0, 0, side * 26 * D),
+                              [Box((-2.2, -1.6, -2.2), (4.4, 11.0, 3.6), "palewood")]))
+    # The chest stands open on the heart.
+    parts.append(Part("cavity", "torso", (0.0, -14.0, -13.0), (0, 0, 0),
+                      [Box((-11, -13, -1.5), (22, 26, 3), "flesh")]))
+    parts.append(Part("heart", "cavity", (0.0, 0.0, -2.0), (0, 0, 0),
+                      [Box((-7, -9, -2.5), (14, 18, 4), "amberglow")]))
+    for i in range(10):
+        a = (2 * math.pi * i) / 10
+        parts.append(Part(f"chesteye{i}", "cavity",
+                          (math.sin(a) * 8.5, math.cos(a) * 10.5, -2.2), (0, 0, 0),
+                          [Box((-1.8, -1.8, -1.0), (3.6, 3.6, 1.0), "eye:bloom")]))
+    # Shoulders and arms - the same hands that came through the gate.
+    for side, tag in ((-1, "r"), (1, "l")):
+        parts.append(Part(f"pauldron_{tag}", "torso", (side * 20.0, -26.0, 0.0),
+                          (0, 0, side * -18 * D),
+                          [Box((-9 if side < 0 else 0, -7, -11), (9, 14, 22), "chitin")]))
+        parts += chain(f"arm_{tag}", f"pauldron_{tag}", (side * 4.5, 4.0, 0.0), 3,
+                       (10.0, 15.0, 10.0), "heartwood", taper=0.86,
+                       curl=(18 * D, 0, side * 10 * D),
+                       root_rot=(-24 * D, 0, side * 34 * D))
+        parts += _giant_hand(f"hand_{tag}", f"arm_{tag}_2", (0.0, 12.0, 0.0), 1.0,
+                             curl=0.7)
+    # Neck and skull.
+    parts.append(Part("neck", "torso", (0.0, -30.0, 0.0), (0, 0, 0),
+                      [Box((-7, -8, -7), (14, 8, 14), "sinew")]))
+    parts.append(Part("head", "neck", (0.0, -8.0, 0.0), (0, 0, 0),
+                      [Box((-12, -18, -11), (24, 18, 22), "palewood")]))
+    parts += infected_face("head", 24, 18, 11, eye=7.0, teeth=9, jaw_mat="heartwood",
+                           style="bloom", spares=3)
+    # A crown of pale oak, because it is still a tree.
+    for i in range(7):
+        a = (2 * math.pi * i) / 7
+        parts += chain(f"crown{i}", "head", (math.sin(a) * 7.0, -18.0, math.cos(a) * 6.0),
+                       4, (3.4, 7.0, 3.4), "bark", taper=0.78,
+                       curl=(math.sin(a) * 14 * D, 0, math.cos(a) * 14 * D),
+                       root_rot=(math.sin(a) * 26 * D, a, -math.cos(a) * 26 * D))
+    return _m("the_creaking", parts, tex=256)
+
+
+BESTIARY["creaking_hand"] = creaking_hand
+BESTIARY["the_creaking"] = the_creaking
+DISPLAY["creaking_hand"] = ("The Creaking Hand", "all that fits through a gate")
+DISPLAY["the_creaking"] = ("The Creaking", "waist-deep in the gold it grew in")
+EYE_FIELDS["the_creaking"] = {"torso": 4, "head": 2}
