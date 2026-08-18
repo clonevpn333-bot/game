@@ -103,17 +103,19 @@ public final class SeamHelper {
 
     /**
      * Rolls the firing tier for a creature emerging at {@code pos}.
-     * Saturation (nearby seam blocks) and world age both push it upward.
+     * Saturation - how much seam already surrounds the spot - pushes it up.
      */
     public static int rollTier(LevelAccessor level, BlockPos pos, RandomSource random) {
         int saturation = countSeamNear(level, pos, 6, 48);
-        long days = level.getLevelData().getDayTime() / 24000L;
+        // Escalation is driven purely by how saturated the ground already is,
+        // which is the honest signal anyway: the blight matures where it has
+        // been feeding, not merely where the world is old.
 
         int tier = TIER_BISQUE;
-        if ((saturation >= 10 || days >= 8) && random.nextFloat() < 0.45F) {
+        if (saturation >= 10 && random.nextFloat() < 0.45F) {
             tier = TIER_STONEWARE;
         }
-        if ((saturation >= 32 || (saturation >= 16 && days >= 20)) && random.nextFloat() < 0.35F) {
+        if (saturation >= 28 && random.nextFloat() < 0.35F) {
             tier = TIER_LUSTRE;
         }
         return tier;
