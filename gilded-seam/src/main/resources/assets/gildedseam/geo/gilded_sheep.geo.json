@@ -6,8 +6,8 @@
     "identifier": "geometry.gilded_sheep",
     "texture_width": 128,
     "texture_height": 128,
-    "visible_bounds_width": 2.8000000000000003,
-    "visible_bounds_height": 3.3600000000000003,
+    "visible_bounds_width": 2.8081833333333335,
+    "visible_bounds_height": 3.36982,
     "visible_bounds_offset": [
      0,
      1,
@@ -3240,8 +3240,8 @@
      "name": "mut1_eyes_e0",
      "pivot": [
       -2.4,
-      18.5,
-      -6.4
+      15.5,
+      -16.6
      ],
      "parent": "mut1_eyes",
      "rotation": [
@@ -3253,8 +3253,8 @@
       {
        "origin": [
         -3.72,
-        17.18,
-        -8.0368
+        14.18,
+        -18.2368
        ],
        "size": [
         2.64,
@@ -3269,8 +3269,8 @@
       {
        "origin": [
         -4.0368,
-        16.8632,
-        -7.192
+        13.8632,
+        -17.392
        ],
        "size": [
         3.2736,
@@ -3288,8 +3288,8 @@
      "name": "mut1_eyes_e1",
      "pivot": [
       -0.8,
-      17.1476,
-      -6.5691
+      14.1476,
+      -16.7691
      ],
      "parent": "mut1_eyes",
      "rotation": [
@@ -3301,8 +3301,8 @@
       {
        "origin": [
         -1.7228,
-        16.2248,
-        -7.7133
+        13.2248,
+        -17.9133
        ],
        "size": [
         1.8455,
@@ -3317,8 +3317,8 @@
       {
        "origin": [
         -1.9442,
-        16.0034,
-        -7.1227
+        13.0034,
+        -17.3227
        ],
        "size": [
         2.2884,
@@ -3336,8 +3336,8 @@
      "name": "mut1_eyes_e2",
      "pivot": [
       0.8,
-      20.4927,
-      -6.6491
+      17.4927,
+      -16.8491
      ],
      "parent": "mut1_eyes",
      "rotation": [
@@ -3349,8 +3349,8 @@
       {
        "origin": [
         -0.5049,
-        19.1878,
-        -8.2671
+        16.1878,
+        -18.4671
        ],
        "size": [
         2.6097,
@@ -3365,8 +3365,8 @@
       {
        "origin": [
         -0.818,
-        18.8746,
-        -7.432
+        15.8746,
+        -17.632
        ],
        "size": [
         3.2361,
@@ -3384,8 +3384,8 @@
      "name": "mut1_eyes_e3",
      "pivot": [
       2.4,
-      16.9163,
-      -6.598
+      13.9163,
+      -16.798
      ],
      "parent": "mut1_eyes",
      "rotation": [
@@ -3397,8 +3397,8 @@
       {
        "origin": [
         1.3636,
-        15.88,
-        -7.883
+        12.88,
+        -18.083
        ],
        "size": [
         2.0727,
@@ -3413,8 +3413,8 @@
       {
        "origin": [
         1.1149,
-        15.6312,
-        -7.2198
+        12.6312,
+        -17.4198
        ],
        "size": [
         2.5702,
@@ -3429,7 +3429,7 @@
      ]
     },
     {
-     "name": "mut1_eyes",
+     "name": "mut1_witherseyes",
      "pivot": [
       0.0,
       18.5,
@@ -3438,13 +3438,13 @@
      "parent": "body"
     },
     {
-     "name": "mut1_eyes_e0",
+     "name": "mut1_witherseyes_e0",
      "pivot": [
       -3.4,
       18.5,
       -6.24
      ],
-     "parent": "mut1_eyes",
+     "parent": "mut1_witherseyes",
      "rotation": [
       0.0,
       26.0,
@@ -3486,13 +3486,13 @@
      ]
     },
     {
-     "name": "mut1_eyes_e1",
+     "name": "mut1_witherseyes_e1",
      "pivot": [
       -1.1333,
       17.4181,
       -6.3414
      ],
-     "parent": "mut1_eyes",
+     "parent": "mut1_witherseyes",
      "rotation": [
       0.0,
       8.667,
@@ -3534,13 +3534,13 @@
      ]
     },
     {
-     "name": "mut1_eyes_e2",
+     "name": "mut1_witherseyes_e2",
      "pivot": [
       1.1333,
       20.0941,
       -6.3895
      ],
-     "parent": "mut1_eyes",
+     "parent": "mut1_witherseyes",
      "rotation": [
       0.0,
       -8.667,
@@ -3582,13 +3582,13 @@
      ]
     },
     {
-     "name": "mut1_eyes_e3",
+     "name": "mut1_witherseyes_e3",
      "pivot": [
       3.4,
       17.2331,
       -6.3588
      ],
-     "parent": "mut1_eyes",
+     "parent": "mut1_witherseyes",
      "rotation": [
       0.0,
       -26.0,

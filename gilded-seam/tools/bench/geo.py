@@ -25,7 +25,7 @@ from __future__ import annotations
 import json
 import math
 
-from core import Model, face_rects
+from core import Model, face_rects, validate
 
 GROUND = 24.0
 
@@ -37,6 +37,7 @@ GROUND = 24.0
 
 def to_geo(model: Model, name: str) -> dict:
     """Converts a compiled bench model into a GeckoLib geometry document."""
+    validate(model)
     pm = model.part_map()
     bones = []
 

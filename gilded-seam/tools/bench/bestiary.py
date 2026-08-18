@@ -47,7 +47,8 @@ def blighted_cow() -> Model:
     p += antler_roots("head", at=(2.5, 0.5, -3.0), tier=2, side=1, name="roots_l")
     p += eye_stalks("body", at=(0.0, 0.5, 5.0), count=3, tier=2, spread=3.2)
     p += eye_cluster("head", at=(0.0, 3.0, -6.0), count=4, tier=1, spread=(3.2, 2.2), size=2.8)
-    p += eye_cluster("body", at=(-6.2, 4.0, 3.0), count=3, tier=1, spread=(1.4, 3.0), size=2.4, out=-0.6)
+    p += eye_cluster("body", at=(-6.2, 4.0, 3.0), count=3, tier=1, spread=(1.4, 3.0),
+                     size=2.4, out=-0.6, name="flankeyes")
     return _m("blighted_cow", p)
 
 
@@ -85,7 +86,8 @@ def blighted_sheep() -> Model:
                      name="arm_l")
     p += antler_roots("head", at=(-2.0, 0.0, -4.0), tier=2, side=-1, name="roots_r")
     p += eye_cluster("head", at=(0.0, 2.5, -8.2), count=4, tier=1, spread=(2.4, 2.0), size=2.4)
-    p += eye_cluster("body", at=(0.0, -0.5, -6.0), count=4, tier=1, spread=(3.4, 1.6), size=2.6, out=-0.6)
+    p += eye_cluster("body", at=(0.0, -0.5, -6.0), count=4, tier=1, spread=(3.4, 1.6),
+                     size=2.6, out=-0.6, name="witherseyes")
     return _m("blighted_sheep", p)
 
 

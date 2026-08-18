@@ -223,21 +223,6 @@ public final class GildedBeastLayers {
                         .texOffs(52, 74).addBox(-1.2091F, -1.2091F, -1.4993F, 2.4182F, 2.4182F, 1.4993F)
                         .texOffs(45, 69).addBox(-1.4993F, -1.4993F, -0.7255F, 2.9985F, 2.9985F, 0.9673F),
                 PartPose.offsetAndRotation(3.2F, 1.742F, -0.598F, 0.0F, 0.4538F, 0.2764F));
-        PartDefinition mut1EyesE0 = mut1Eyes.addOrReplaceChild("mut1_eyes_e0",
-                CubeListBuilder.create()
-                        .texOffs(78, 57).addBox(-1.32F, -1.32F, -1.6368F, 2.64F, 2.64F, 1.6368F)
-                        .texOffs(54, 69).addBox(-1.6368F, -1.6368F, -0.792F, 3.2736F, 3.2736F, 1.056F),
-                PartPose.offsetAndRotation(-1.4F, 0.0F, -0.24F, 0.0F, -0.4538F, 0.0F));
-        PartDefinition mut1EyesE1 = mut1Eyes.addOrReplaceChild("mut1_eyes_e1",
-                CubeListBuilder.create()
-                        .texOffs(59, 74).addBox(-0.9228F, -0.9228F, -1.1442F, 1.8455F, 1.8455F, 1.1442F)
-                        .texOffs(66, 74).addBox(-1.1442F, -1.1442F, -0.5537F, 2.2884F, 2.2884F, 0.7382F),
-                PartPose.offsetAndRotation(0.0F, 2.0286F, -0.3414F, 0.0F, 0.0F, 0.236F));
-        PartDefinition mut1EyesE2 = mut1Eyes.addOrReplaceChild("mut1_eyes_e2",
-                CubeListBuilder.create()
-                        .texOffs(89, 57).addBox(-1.3049F, -1.3049F, -1.618F, 2.6097F, 2.6097F, 1.618F)
-                        .texOffs(63, 69).addBox(-1.618F, -1.618F, -0.7829F, 3.2361F, 3.2361F, 1.0439F),
-                PartPose.offsetAndRotation(1.4F, -2.989F, -0.3895F, 0.0F, 0.4538F, -0.3478F));
         PartDefinition tail = body.addOrReplaceChild("tail",
                 CubeListBuilder.create()
                         .texOffs(18, 39).addBox(-0.5F, 0.0F, 0.0F, 1.0F, 8.0F, 1.0F),
@@ -468,40 +453,20 @@ public final class GildedBeastLayers {
                 CubeListBuilder.create()
                         .texOffs(27, 69).addBox(-1.2F, -2.4F, -1.2F, 2.4F, 2.4F, 2.4F),
                 PartPose.offset(0.0F, -3.0F, 0.0F));
-        PartDefinition mut1Eyes = body.addOrReplaceChild("mut1_eyes",
+        PartDefinition mut1Flankeyes = body.addOrReplaceChild("mut1_flankeyes",
                 CubeListBuilder.create(),
                 PartPose.offset(-6.2F, 4.0F, 3.0F));
-        PartDefinition mut1EyesE0 = mut1Eyes.addOrReplaceChild("mut1_eyes_e0",
-                CubeListBuilder.create()
-                        .texOffs(34, 57).addBox(-1.54F, -1.54F, -1.9096F, 3.08F, 3.08F, 1.9096F)
-                        .texOffs(45, 57).addBox(-1.9096F, -1.9096F, -0.924F, 3.8192F, 3.8192F, 1.232F),
-                PartPose.offsetAndRotation(-3.2F, 0.0F, -0.4F, 0.0F, -0.4538F, 0.0F));
-        PartDefinition mut1EyesE1 = mut1Eyes.addOrReplaceChild("mut1_eyes_e1",
-                CubeListBuilder.create()
-                        .texOffs(45, 74).addBox(-1.0765F, -1.0765F, -1.3349F, 2.1531F, 2.1531F, 1.3349F)
-                        .texOffs(36, 69).addBox(-1.3349F, -1.3349F, -0.6459F, 2.6698F, 2.6698F, 0.8612F),
-                PartPose.offsetAndRotation(-1.0667F, 1.4876F, -0.5691F, 0.0F, -0.1513F, 0.236F));
-        PartDefinition mut1EyesE2 = mut1Eyes.addOrReplaceChild("mut1_eyes_e2",
-                CubeListBuilder.create()
-                        .texOffs(56, 57).addBox(-1.5223F, -1.5223F, -1.8877F, 3.0447F, 3.0447F, 1.8877F)
-                        .texOffs(67, 57).addBox(-1.8877F, -1.8877F, -0.9134F, 3.7754F, 3.7754F, 1.2179F),
-                PartPose.offsetAndRotation(1.0667F, -2.1919F, -0.6491F, 0.0F, 0.1513F, -0.3478F));
-        PartDefinition mut1EyesE3 = mut1Eyes.addOrReplaceChild("mut1_eyes_e3",
-                CubeListBuilder.create()
-                        .texOffs(52, 74).addBox(-1.2091F, -1.2091F, -1.4993F, 2.4182F, 2.4182F, 1.4993F)
-                        .texOffs(45, 69).addBox(-1.4993F, -1.4993F, -0.7255F, 2.9985F, 2.9985F, 0.9673F),
-                PartPose.offsetAndRotation(3.2F, 1.742F, -0.598F, 0.0F, 0.4538F, 0.2764F));
-        PartDefinition mut1EyesE0 = mut1Eyes.addOrReplaceChild("mut1_eyes_e0",
+        PartDefinition mut1FlankeyesE0 = mut1Flankeyes.addOrReplaceChild("mut1_flankeyes_e0",
                 CubeListBuilder.create()
                         .texOffs(78, 57).addBox(-1.32F, -1.32F, -1.6368F, 2.64F, 2.64F, 1.6368F)
                         .texOffs(54, 69).addBox(-1.6368F, -1.6368F, -0.792F, 3.2736F, 3.2736F, 1.056F),
                 PartPose.offsetAndRotation(-1.4F, 0.0F, -0.24F, 0.0F, -0.4538F, 0.0F));
-        PartDefinition mut1EyesE1 = mut1Eyes.addOrReplaceChild("mut1_eyes_e1",
+        PartDefinition mut1FlankeyesE1 = mut1Flankeyes.addOrReplaceChild("mut1_flankeyes_e1",
                 CubeListBuilder.create()
                         .texOffs(59, 74).addBox(-0.9228F, -0.9228F, -1.1442F, 1.8455F, 1.8455F, 1.1442F)
                         .texOffs(66, 74).addBox(-1.1442F, -1.1442F, -0.5537F, 2.2884F, 2.2884F, 0.7382F),
                 PartPose.offsetAndRotation(0.0F, 2.0286F, -0.3414F, 0.0F, 0.0F, 0.236F));
-        PartDefinition mut1EyesE2 = mut1Eyes.addOrReplaceChild("mut1_eyes_e2",
+        PartDefinition mut1FlankeyesE2 = mut1Flankeyes.addOrReplaceChild("mut1_flankeyes_e2",
                 CubeListBuilder.create()
                         .texOffs(89, 57).addBox(-1.3049F, -1.3049F, -1.618F, 2.6097F, 2.6097F, 1.618F)
                         .texOffs(63, 69).addBox(-1.618F, -1.618F, -0.7829F, 3.2361F, 3.2361F, 1.0439F),
@@ -1136,26 +1101,6 @@ public final class GildedBeastLayers {
                         .texOffs(85, 64).addBox(-1.0364F, -1.0364F, -1.2851F, 2.0727F, 2.0727F, 1.2851F)
                         .texOffs(0, 64).addBox(-1.2851F, -1.2851F, -0.6218F, 2.5702F, 2.5702F, 0.8291F),
                 PartPose.offsetAndRotation(2.4F, 1.5837F, -0.598F, 0.0F, 0.4538F, 0.2764F));
-        PartDefinition mut1EyesE0 = mut1Eyes.addOrReplaceChild("mut1_eyes_e0",
-                CubeListBuilder.create()
-                        .texOffs(22, 53).addBox(-1.43F, -1.43F, -1.7732F, 2.86F, 2.86F, 1.7732F)
-                        .texOffs(33, 53).addBox(-1.7732F, -1.7732F, -0.858F, 3.5464F, 3.5464F, 1.144F),
-                PartPose.offsetAndRotation(-3.4F, 0.0F, -0.24F, 0.0F, -0.4538F, 0.0F));
-        PartDefinition mut1EyesE1 = mut1Eyes.addOrReplaceChild("mut1_eyes_e1",
-                CubeListBuilder.create()
-                        .texOffs(92, 64).addBox(-0.9996F, -0.9996F, -1.2396F, 1.9993F, 1.9993F, 1.2396F)
-                        .texOffs(99, 64).addBox(-1.2396F, -1.2396F, -0.5998F, 2.4791F, 2.4791F, 0.7997F),
-                PartPose.offsetAndRotation(-1.1333F, 1.0819F, -0.3414F, 0.0F, -0.1513F, 0.236F));
-        PartDefinition mut1EyesE2 = mut1Eyes.addOrReplaceChild("mut1_eyes_e2",
-                CubeListBuilder.create()
-                        .texOffs(44, 53).addBox(-1.4136F, -1.4136F, -1.7529F, 2.8272F, 2.8272F, 1.7529F)
-                        .texOffs(55, 53).addBox(-1.7529F, -1.7529F, -0.8482F, 3.5057F, 3.5057F, 1.1309F),
-                PartPose.offsetAndRotation(1.1333F, -1.5941F, -0.3895F, 0.0F, 0.1513F, -0.3478F));
-        PartDefinition mut1EyesE3 = mut1Eyes.addOrReplaceChild("mut1_eyes_e3",
-                CubeListBuilder.create()
-                        .texOffs(106, 64).addBox(-1.1227F, -1.1227F, -1.3922F, 2.2454F, 2.2454F, 1.3922F)
-                        .texOffs(9, 64).addBox(-1.3922F, -1.3922F, -0.6736F, 2.7843F, 2.7843F, 0.8982F),
-                PartPose.offsetAndRotation(3.4F, 1.2669F, -0.3588F, 0.0F, 0.4538F, 0.2764F));
         PartDefinition mut1Fleecerift = body.addOrReplaceChild("mut1_fleecerift",
                 CubeListBuilder.create()
                         .texOffs(19, 45).addBox(-3.0F, -2.5F, -0.8F, 6.0F, 5.0F, 2.0F),
@@ -1386,45 +1331,25 @@ public final class GildedBeastLayers {
                 CubeListBuilder.create()
                         .texOffs(100, 73).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3138F, 1.0F),
                 PartPose.offsetAndRotation(0.0F, 1.425F, 0.0F, 0.3491F, 0.0F, 0.0F));
-        PartDefinition mut1Eyes = body.addOrReplaceChild("mut1_eyes",
+        PartDefinition mut1Witherseyes = body.addOrReplaceChild("mut1_witherseyes",
                 CubeListBuilder.create(),
                 PartPose.offset(0.0F, -0.5F, -6.0F));
-        PartDefinition mut1EyesE0 = mut1Eyes.addOrReplaceChild("mut1_eyes_e0",
-                CubeListBuilder.create()
-                        .texOffs(0, 53).addBox(-1.32F, -1.32F, -1.6368F, 2.64F, 2.64F, 1.6368F)
-                        .texOffs(111, 59).addBox(-1.6368F, -1.6368F, -0.792F, 3.2736F, 3.2736F, 1.056F),
-                PartPose.offsetAndRotation(-2.4F, 0.0F, -0.4F, 0.0F, -0.4538F, 0.0F));
-        PartDefinition mut1EyesE1 = mut1Eyes.addOrReplaceChild("mut1_eyes_e1",
-                CubeListBuilder.create()
-                        .texOffs(71, 64).addBox(-0.9228F, -0.9228F, -1.1442F, 1.8455F, 1.8455F, 1.1442F)
-                        .texOffs(78, 64).addBox(-1.1442F, -1.1442F, -0.5537F, 2.2884F, 2.2884F, 0.7382F),
-                PartPose.offsetAndRotation(-0.8F, 1.3524F, -0.5691F, 0.0F, -0.1513F, 0.236F));
-        PartDefinition mut1EyesE2 = mut1Eyes.addOrReplaceChild("mut1_eyes_e2",
-                CubeListBuilder.create()
-                        .texOffs(11, 53).addBox(-1.3049F, -1.3049F, -1.618F, 2.6097F, 2.6097F, 1.618F)
-                        .texOffs(120, 59).addBox(-1.618F, -1.618F, -0.7829F, 3.2361F, 3.2361F, 1.0439F),
-                PartPose.offsetAndRotation(0.8F, -1.9927F, -0.6491F, 0.0F, 0.1513F, -0.3478F));
-        PartDefinition mut1EyesE3 = mut1Eyes.addOrReplaceChild("mut1_eyes_e3",
-                CubeListBuilder.create()
-                        .texOffs(85, 64).addBox(-1.0364F, -1.0364F, -1.2851F, 2.0727F, 2.0727F, 1.2851F)
-                        .texOffs(0, 64).addBox(-1.2851F, -1.2851F, -0.6218F, 2.5702F, 2.5702F, 0.8291F),
-                PartPose.offsetAndRotation(2.4F, 1.5837F, -0.598F, 0.0F, 0.4538F, 0.2764F));
-        PartDefinition mut1EyesE0 = mut1Eyes.addOrReplaceChild("mut1_eyes_e0",
+        PartDefinition mut1WitherseyesE0 = mut1Witherseyes.addOrReplaceChild("mut1_witherseyes_e0",
                 CubeListBuilder.create()
                         .texOffs(22, 53).addBox(-1.43F, -1.43F, -1.7732F, 2.86F, 2.86F, 1.7732F)
                         .texOffs(33, 53).addBox(-1.7732F, -1.7732F, -0.858F, 3.5464F, 3.5464F, 1.144F),
                 PartPose.offsetAndRotation(-3.4F, 0.0F, -0.24F, 0.0F, -0.4538F, 0.0F));
-        PartDefinition mut1EyesE1 = mut1Eyes.addOrReplaceChild("mut1_eyes_e1",
+        PartDefinition mut1WitherseyesE1 = mut1Witherseyes.addOrReplaceChild("mut1_witherseyes_e1",
                 CubeListBuilder.create()
                         .texOffs(92, 64).addBox(-0.9996F, -0.9996F, -1.2396F, 1.9993F, 1.9993F, 1.2396F)
                         .texOffs(99, 64).addBox(-1.2396F, -1.2396F, -0.5998F, 2.4791F, 2.4791F, 0.7997F),
                 PartPose.offsetAndRotation(-1.1333F, 1.0819F, -0.3414F, 0.0F, -0.1513F, 0.236F));
-        PartDefinition mut1EyesE2 = mut1Eyes.addOrReplaceChild("mut1_eyes_e2",
+        PartDefinition mut1WitherseyesE2 = mut1Witherseyes.addOrReplaceChild("mut1_witherseyes_e2",
                 CubeListBuilder.create()
                         .texOffs(44, 53).addBox(-1.4136F, -1.4136F, -1.7529F, 2.8272F, 2.8272F, 1.7529F)
                         .texOffs(55, 53).addBox(-1.7529F, -1.7529F, -0.8482F, 3.5057F, 3.5057F, 1.1309F),
                 PartPose.offsetAndRotation(1.1333F, -1.5941F, -0.3895F, 0.0F, 0.1513F, -0.3478F));
-        PartDefinition mut1EyesE3 = mut1Eyes.addOrReplaceChild("mut1_eyes_e3",
+        PartDefinition mut1WitherseyesE3 = mut1Witherseyes.addOrReplaceChild("mut1_witherseyes_e3",
                 CubeListBuilder.create()
                         .texOffs(106, 64).addBox(-1.1227F, -1.1227F, -1.3922F, 2.2454F, 2.2454F, 1.3922F)
                         .texOffs(9, 64).addBox(-1.3922F, -1.3922F, -0.6736F, 2.7843F, 2.7843F, 0.8982F),

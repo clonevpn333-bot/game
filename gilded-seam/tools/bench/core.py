@@ -319,8 +319,30 @@ def _var(name: str) -> str:
     return bits[0] + "".join(s.capitalize() for s in bits[1:])
 
 
+def validate(model: Model) -> None:
+    """Refuses a model with two parts sharing a name.
+
+    A duplicate is not a cosmetic problem. `addOrReplaceChild` replaces, so the
+    second part quietly deletes the first from the vanilla part tree; GeckoLib
+    resolves bones by name and picks one arbitrarily; and the emitted Java does
+    not compile. All three failures come from the same typo, and only the last
+    one is loud - so it is caught here, at the source.
+    """
+    seen: dict[str, int] = {}
+    for part in model.parts:
+        seen[part.name] = seen.get(part.name, 0) + 1
+    dupes = sorted(n for n, c in seen.items() if c > 1)
+    if dupes:
+        raise ValueError(f"{model.name}: duplicate part names: {', '.join(dupes)}")
+    known = {p.name for p in model.parts} | {"root"}
+    orphans = sorted({p.parent for p in model.parts} - known)
+    if orphans:
+        raise ValueError(f"{model.name}: parts parented to nothing: {', '.join(orphans)}")
+
+
 def emit_java(model: Model) -> str:
     """Emits the body of a createBodyLayer() for the lowered model."""
+    validate(model)
     lines = ["        MeshDefinition mesh = new MeshDefinition();",
              "        PartDefinition root = mesh.getRoot();", ""]
     seen = {"root": "root"}
