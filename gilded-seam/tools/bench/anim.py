@@ -49,8 +49,14 @@ GAITS = {
     "pace":  {"phases": (0.0, 0.5, 0.0, 0.5), "duty": 0.50},
     # Front pair, then back pair. Hares and anything that hops.
     "bound": {"phases": (0.0, 0.06, 0.42, 0.48), "duty": 0.36},
+    # Transverse gallop. Duty below 0.5 means there are moments with nothing
+    # on the ground at all - the suspension phase is what makes a run a run
+    # rather than a walk played fast.
+    "gallop": {"phases": (0.0, 0.13, 0.52, 0.66), "duty": 0.31},
     # Two legs.
     "biped": {"phases": (0.0, 0.5), "duty": 0.62},
+    # Two legs, airborne. A sprint, and for the big ones a stagger.
+    "sprint": {"phases": (0.0, 0.5), "duty": 0.38},
 }
 
 
@@ -173,12 +179,28 @@ def locomotion(limbs: list[Limb], *, period: float, gait: str = "walk",
                body: str | None = None, spine: list[str] | None = None,
                head: str | None = None, jaw: str | None = None,
                tail: list[str] | None = None, bob: float | None = None,
-               samples: int = 24, sway: float = 1.0, limp: float = 0.0) -> dict:
+               samples: int = 24, sway: float = 1.0, limp: float = 0.0,
+               flex: float = 0.0, wrong: float = 0.0, airborne: float = 0.0) -> dict:
     """Bakes a full locomotion cycle.
 
     `limp` drags one diagonal, which is what stops thirteen species that all
     walk correctly from all walking *identically* - these are sick animals and
     they should not move like show ponies.
+
+    Three parameters separate a run from a walk played fast, which is what a
+    sped-up walk cycle always looks like:
+
+    `flex` gathers and extends the spine once per stride. A galloping animal
+    folds in the middle and throws itself open again, and that single curve
+    carries more of the read than the legs do.
+
+    `airborne` lifts the whole body during the suspension phase - the moment
+    with no feet down at all - so the creature actually leaves the ground.
+
+    `wrong` is the haunting. It over-extends one side past where the joint
+    should stop, lets the head loll off the direction of travel, and hangs the
+    jaw slack. The animal is not running well. It is running *at you*, on a
+    body that no longer entirely belongs to it.
     """
     pattern = GAITS[gait]
     phases, duty = pattern["phases"], pattern["duty"]
@@ -201,14 +223,23 @@ def locomotion(limbs: list[Limb], *, period: float, gait: str = "walk",
         # --- body: drop onto each footfall, roll into the stride ------------
         beats = 2 if gait in ("walk", "trot", "pace") else 1
         drop = -bob * (0.5 - 0.5 * math.cos(2 * math.pi * beats * u))
+        # Suspension: everything is off the ground at once, so lift the body
+        # instead of only bouncing it.
+        drop -= airborne * reach * 0.16 * max(0.0, math.sin(2 * math.pi * u - 0.4)) ** 2
         surge = bob * 0.35 * math.sin(2 * math.pi * u)
         roll = sway * 3.2 * math.sin(2 * math.pi * u)
         pitch = sway * 2.1 * math.sin(2 * math.pi * beats * u + 0.9)
+        # Gather and extend: the body folds shut and throws itself open once
+        # per stride. This is the curve that reads as speed.
+        pitch += flex * 13.0 * math.sin(2 * math.pi * u - 0.55)
         yaw = sway * 1.6 * math.sin(2 * math.pi * u + 1.9)
+        yaw += wrong * 5.0 * math.sin(2 * math.pi * u * 0.5 + 1.1)
 
         if body:
-            put(body, "position", t, [0, drop, surge])
-            put(body, "rotation", t, [pitch, yaw, roll])
+            put(body, "position", t, [wrong * 0.7 * math.sin(2 * math.pi * u * 0.5),
+                                      drop, surge])
+            put(body, "rotation", t, [pitch, yaw, roll + wrong * 6.0
+                                      * math.sin(2 * math.pi * u * 0.5 + 2.4)])
 
         # The spine passes the body's roll along with a delay, so the animal
         # bends through its length instead of turning as one rigid block.
@@ -223,13 +254,20 @@ def locomotion(limbs: list[Limb], *, period: float, gait: str = "walk",
         # catches up late. Counter most of the bob, lag the rest.
         if head:
             hl = 0.18
+            # `wrong` stops the head stabilising and lets it loll instead.
+            steady = 1.0 - 0.8 * wrong
             put(head, "rotation", t,
-                [-pitch * 0.55 + 2.6 * math.sin(2 * math.pi * (u - hl) + 1.2),
-                 -yaw * 0.4 + 2.2 * math.sin(2 * math.pi * (u - hl)),
-                 -roll * 0.45])
+                [-pitch * 0.55 * steady + 2.6 * math.sin(2 * math.pi * (u - hl) + 1.2)
+                 + wrong * 9.0 * math.sin(2 * math.pi * (u - 0.3) * 0.5),
+                 -yaw * 0.4 * steady + 2.2 * math.sin(2 * math.pi * (u - hl))
+                 + wrong * 14.0 * math.sin(2 * math.pi * u * 0.5 + 0.8),
+                 -roll * 0.45 * steady + wrong * 11.0
+                 * math.sin(2 * math.pi * u * 0.5 + 2.0)])
         if jaw:
+            # Slack, not chewing: at speed it simply hangs open.
             put(jaw, "rotation", t,
-                [11 + 7 * (0.5 - 0.5 * math.cos(2 * math.pi * beats * u)), 0, 0])
+                [11 + 7 * (0.5 - 0.5 * math.cos(2 * math.pi * beats * u))
+                 + wrong * 26.0, 0, 0])
 
         # Tails and other dangling chains: each link copies the one above it
         # a little later and a little wider. Follow-through, for free.
@@ -245,8 +283,10 @@ def locomotion(limbs: list[Limb], *, period: float, gait: str = "walk",
         for k, limb in enumerate(limbs):
             phase = u + phases[k % len(phases)]
             drag = limp if (k % 3 == 0) else 0.0
-            z, y = _foot_path(phase, stride=stride * (1.0 - drag),
-                              lift=lift * (1.0 - drag * 1.6), duty=duty,
+            # One side reaches further than a joint should allow.
+            over = 1.0 + (wrong * 0.30 if k % 2 else -wrong * 0.12)
+            z, y = _foot_path(phase, stride=stride * (1.0 - drag) * over,
+                              lift=lift * (1.0 - drag * 1.6) * over, duty=duty,
                               push=bob * 0.5)
             upper = limb.lengths[0]
             lower = sum(limb.lengths[1:]) or upper * 0.9

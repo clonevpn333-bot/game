@@ -84,10 +84,17 @@ def main() -> None:
             f"animation.{shipped}.walk": A.locomotion(
                 limbs, period=period, gait=gait_name, body="body", head="head",
                 jaw=jaw, tail=tail, sway=sway, limp=limp),
+            # Not the walk played fast. A gallop has a suspension phase, the
+            # spine gathers and throws open once a stride, and `wrong` lets the
+            # head loll and one side over-reach - it is coming at you on a body
+            # it no longer fully owns.
             f"animation.{shipped}.run": A.locomotion(
-                limbs, period=period * 0.62, gait="bound" if gait_name == "bound"
-                else "trot", body="body", head="head", jaw=jaw, tail=tail,
-                sway=sway * 1.35, limp=limp * 0.5, stride=None, lift=None),
+                limbs, period=period * 0.55,
+                gait="bound" if gait_name == "bound" else
+                     ("sprint" if gait_name == "biped" else "gallop"),
+                body="body", head="head", jaw=jaw, tail=tail,
+                sway=sway * 1.3, limp=limp * 0.4, flex=1.0, wrong=0.85,
+                airborne=1.0, samples=30),
             f"animation.{shipped}.attack": A.strike(
                 arms=arms, length=0.78, head="head", jaw=jaw, body="body",
                 legs=limbs, stagger=0.11, reach=84.0, step=1.6),
