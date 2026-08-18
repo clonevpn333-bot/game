@@ -70,6 +70,11 @@ public final class ModItems {
             properties -> new com.gildedseam.item.HeartwoodKeyItem(
                     properties.stacksTo(1).durability(8).rarity(Rarity.EPIC)));
 
+    /** Plant it and watch the Mother Tree take about three minutes to happen. */
+    public static final Item HEARTWOOD_SEED = register("heartwood_seed",
+            properties -> new com.gildedseam.item.HeartwoodSeedItem(
+                    properties.stacksTo(4).rarity(Rarity.EPIC)));
+
     /** Proof you took the kingdom apart. */
     public static final Item AUTARCH_CROWN = register("autarch_crown",
             properties -> new Item(properties.stacksTo(1).rarity(Rarity.EPIC)));

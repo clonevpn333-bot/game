@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "rlr",
+    "lcl",
+    "rlr"
+  ],
+  "key": {
+    "r": "minecraft:resin_clump",
+    "l": "minecraft:pale_oak_log",
+    "c": "minecraft:creaking_heart"
+  },
+  "result": {
+    "id": "gildedseam:heartwood_seed",
+    "count": 1
+  }
+}

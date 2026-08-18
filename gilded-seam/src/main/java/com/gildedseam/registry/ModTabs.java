@@ -54,6 +54,7 @@ public final class ModTabs {
                             out.accept(ModItems.RIVENING_HEART);
                             out.accept(ModItems.AUTARCH_CROWN);
                             out.accept(ModItems.HEARTWOOD_KEY);
+                            out.accept(ModItems.HEARTWOOD_SEED);
 
                             // The bestiary.
                             out.accept(ModEntities.SHARDLING_SPAWN_EGG);

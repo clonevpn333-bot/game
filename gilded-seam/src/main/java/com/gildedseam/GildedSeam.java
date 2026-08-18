@@ -41,6 +41,8 @@ public final class GildedSeam implements ModInitializer {
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK
                 .register(com.gildedseam.infection.RiveningCascade::tickAll);
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK
+                .register(com.gildedseam.infection.Quickening::tickAll);
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK
                 .register(com.gildedseam.infection.Unmaking::tickAll);
 
         LOGGER.info("The Gilded Seam is threading its first needle.");
