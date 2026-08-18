@@ -61,6 +61,13 @@ jobs:
               echo "----- API ORACLE: anything named like a resource id -----"
               unzip -l "$jar" | grep -oE "net/minecraft/[A-Za-z0-9/_]*/(Identifier|ResourceKey|ResourceLocation)\\.class" | sort -u | head -10
               echo "----- API ORACLE: constructors -----"
+              echo "### Fabric client rendering registries"
+              fab=$(find ~/.gradle/caches -name "fabric-api*.jar" -o -name "fabric-rendering*.jar" 2>/dev/null | head -3)
+              for fj in $fab; do unzip -l "$fj" 2>/dev/null | grep -oE "net/fabricmc/fabric/api/client/rendering/v[0-9]+/[A-Za-z]*(Registry|Renderer)[A-Za-z]*\\.class" | sort -u | head -12; done
+              echo "### EntityRenderState fields"
+              javap -p -cp "$jar" net.minecraft.client.renderer.entity.state.LivingEntityRenderState 2>/dev/null | grep -iE "walk|attack|age|Rot" | head -12
+              echo "### ModelPart members"
+              javap -p -cp "$jar" net.minecraft.client.model.geom.ModelPart 2>/dev/null | grep -iE "hasChild|getChild|visible" | head -6
               echo "### ThrowableItemProjectile constructors"
               javap -p -cp "$jar" net.minecraft.world.entity.projectile.throwableitemprojectile.ThrowableItemProjectile 2>/dev/null | grep -E "ThrowableItemProjectile\(" | head -6
               echo "### LevelAccessor day time"
@@ -84,8 +91,8 @@ jobs:
             grep -oE 'error: .*' /tmp/build.log | sed 's/error: //' | sort | uniq -c | sort -rn | head -40
             echo "----- distinct missing symbols -----"
             grep -oE 'symbol: +(method|class|variable) .*' /tmp/build.log | sort | uniq -c | sort -rn | head -40
-            echo "----- first sites -----"
-            grep -oE '[A-Za-z0-9_]+\.java:[0-9]+: error: [^\n]*' /tmp/build.log | head -45
+            echo "----- sample sites -----"
+            grep -oE '[A-Za-z0-9_]+\.java:[0-9]+: error: [^\n]*' /tmp/build.log | sort -u | head -12
             echo "----- non-compile failures -----"
             grep -E 'FAILURE:|What went wrong|Could not (find|resolve|get)|Plugin \[id' /tmp/build.log | head -15
             echo "===== END ====="
