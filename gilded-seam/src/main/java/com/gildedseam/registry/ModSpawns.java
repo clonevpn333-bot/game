@@ -45,6 +45,7 @@ public final class ModSpawns {
                 ModEntities.GILDED_SHEEP, ModEntities.GILDED_CHICKEN, ModEntities.GILDED_SPIDER,
                 ModEntities.GILDED_CASK, ModEntities.GILDED_WOLF,
                 ModEntities.GILDED_GOAT, ModEntities.GILDED_HARE,
+                ModEntities.GILDED_FOX, ModEntities.GILDED_CAT, ModEntities.GILDED_HORSE, ModEntities.GILDED_LLAMA,
                 ModEntities.HALF_SEWN)) {
             registerGroundPlacement(type);
         }

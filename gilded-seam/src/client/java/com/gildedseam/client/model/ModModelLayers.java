@@ -25,6 +25,10 @@ public final class ModModelLayers {
     public static final ModelLayerLocation GILDED_WOLF = layer("gilded_wolf");
     public static final ModelLayerLocation GILDED_GOAT = layer("gilded_goat");
     public static final ModelLayerLocation GILDED_HARE = layer("gilded_hare");
+    public static final ModelLayerLocation GILDED_FOX = layer("gilded_fox");
+    public static final ModelLayerLocation GILDED_CAT = layer("gilded_cat");
+    public static final ModelLayerLocation GILDED_HORSE = layer("gilded_horse");
+    public static final ModelLayerLocation GILDED_LLAMA = layer("gilded_llama");
     public static final ModelLayerLocation REFUGEE = layer("refugee");
     public static final ModelLayerLocation GILT_MAD = layer("gilt_mad");
     public static final ModelLayerLocation HALF_SEWN = layer("half_sewn");

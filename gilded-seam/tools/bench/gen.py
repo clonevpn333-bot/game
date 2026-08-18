@@ -34,6 +34,10 @@ LEGACY = {
     "blighted_wolf": "gilded_wolf",
     "blighted_goat": "gilded_goat",
     "blighted_rabbit": "gilded_hare",
+    "blighted_fox": "gilded_fox",
+    "blighted_cat": "gilded_cat",
+    "blighted_horse": "gilded_horse",
+    "blighted_llama": "gilded_llama",
 }
 # The Tangle, the Colossus, the Tapper and the Refugee are authored here and
 # rendered for the bestiary, but their in-game entity classes still carry the

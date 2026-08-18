@@ -2613,4 +2613,1412 @@ public final class GildedBeastLayers {
 
         return LayerDefinition.create(mesh, 64, 64);
     }
+
+    public static LayerDefinition createGildedFoxLayer() {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+
+        PartDefinition body = root.addOrReplaceChild("body",
+                CubeListBuilder.create()
+                        .texOffs(0, 0).addBox(-3.0F, 0.0F, -5.5F, 6.0F, 5.0F, 11.0F),
+                PartPose.offset(0.0F, 11.0F, 0.0F));
+        PartDefinition head = body.addOrReplaceChild("head",
+                CubeListBuilder.create()
+                        .texOffs(52, 0).addBox(-4.0F, 0.0F, -6.0F, 8.0F, 6.0F, 6.0F),
+                PartPose.offset(0.0F, -1.0F, -6.0F));
+        PartDefinition snout = head.addOrReplaceChild("snout",
+                CubeListBuilder.create()
+                        .texOffs(117, 17).addBox(-1.5F, 0.0F, -2.0F, 3.0F, 2.0F, 2.0F),
+                PartPose.offset(0.0F, 2.7F, -6.0F));
+        PartDefinition earR = head.addOrReplaceChild("ear_r",
+                CubeListBuilder.create()
+                        .texOffs(112, 26).addBox(-2.0F, 0.0F, -0.5F, 2.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(-3.0F, -1.0F, -2.0F, 0.0F, 0.0F, -0.384F));
+        PartDefinition earL = head.addOrReplaceChild("ear_l",
+                CubeListBuilder.create()
+                        .texOffs(119, 26).addBox(0.0F, 0.0F, -0.5F, 2.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(3.0F, -1.0F, -2.0F, 0.0F, 0.0F, 0.384F));
+        PartDefinition mut1Tongue = head.addOrReplaceChild("mut1_tongue",
+                CubeListBuilder.create()
+                        .texOffs(0, 31).addBox(-0.55F, 0.0F, -0.5F, 1.1F, 2.6F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 4.0F, -6.0F, 1.0123F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue1 = mut1Tongue.addOrReplaceChild("mut1_tongue_1",
+                CubeListBuilder.create()
+                        .texOffs(95, 31).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.439F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.6F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue2 = mut1Tongue1.addOrReplaceChild("mut1_tongue_2",
+                CubeListBuilder.create()
+                        .texOffs(100, 31).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.288F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.439F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue3 = mut1Tongue2.addOrReplaceChild("mut1_tongue_3",
+                CubeListBuilder.create()
+                        .texOffs(105, 31).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.1463F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.288F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue4 = mut1Tongue3.addOrReplaceChild("mut1_tongue_4",
+                CubeListBuilder.create()
+                        .texOffs(110, 31).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.0134F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.1463F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1TongueTip = mut1Tongue4.addOrReplaceChild("mut1_tongue_tip",
+                CubeListBuilder.create()
+                        .texOffs(115, 31).addBox(-0.6F, 0.0F, -0.5F, 1.2F, 1.6F, 1.0F),
+                PartPose.offset(0.0F, 2.0F, 0.0F));
+        PartDefinition mut1Eyes = head.addOrReplaceChild("mut1_eyes",
+                CubeListBuilder.create(),
+                PartPose.offset(0.0F, 2.0F, -6.2F));
+        PartDefinition mut1EyesE0 = mut1Eyes.addOrReplaceChild("mut1_eyes_e0",
+                CubeListBuilder.create()
+                        .texOffs(76, 17).addBox(-1.32F, -1.32F, -1.6368F, 2.64F, 2.64F, 1.6368F)
+                        .texOffs(58, 26).addBox(-1.6368F, -1.6368F, -0.792F, 3.2736F, 3.2736F, 1.056F),
+                PartPose.offsetAndRotation(-2.4F, 0.0F, -0.4F, 0.0F, -0.4538F, 0.0F));
+        PartDefinition mut1EyesE1 = mut1Eyes.addOrReplaceChild("mut1_eyes_e1",
+                CubeListBuilder.create()
+                        .texOffs(59, 31).addBox(-0.9228F, -0.9228F, -1.1442F, 1.8455F, 1.8455F, 1.1442F)
+                        .texOffs(66, 31).addBox(-1.1442F, -1.1442F, -0.5537F, 2.2884F, 2.2884F, 0.7382F),
+                PartPose.offsetAndRotation(-0.8F, 1.3524F, -0.5691F, 0.0F, -0.1513F, 0.236F));
+        PartDefinition mut1EyesE2 = mut1Eyes.addOrReplaceChild("mut1_eyes_e2",
+                CubeListBuilder.create()
+                        .texOffs(87, 17).addBox(-1.3049F, -1.3049F, -1.618F, 2.6097F, 2.6097F, 1.618F)
+                        .texOffs(67, 26).addBox(-1.618F, -1.618F, -0.7829F, 3.2361F, 3.2361F, 1.0439F),
+                PartPose.offsetAndRotation(0.8F, -1.9927F, -0.6491F, 0.0F, 0.1513F, -0.3478F));
+        PartDefinition mut1EyesE3 = mut1Eyes.addOrReplaceChild("mut1_eyes_e3",
+                CubeListBuilder.create()
+                        .texOffs(73, 31).addBox(-1.0364F, -1.0364F, -1.2851F, 2.0727F, 2.0727F, 1.2851F)
+                        .texOffs(76, 26).addBox(-1.2851F, -1.2851F, -0.6218F, 2.5702F, 2.5702F, 0.8291F),
+                PartPose.offsetAndRotation(2.4F, 1.5837F, -0.598F, 0.0F, 0.4538F, 0.2764F));
+        PartDefinition mut2RootsR = head.addOrReplaceChild("mut2_roots_r",
+                CubeListBuilder.create()
+                        .texOffs(58, 17).addBox(-0.8F, 0.0F, -0.8F, 1.6F, 4.0F, 1.6F),
+                PartPose.offsetAndRotation(-2.0F, 0.0F, -3.0F, -0.4189F, 0.0F, -0.5236F));
+        PartDefinition mut2RootsR1 = mut2RootsR.addOrReplaceChild("mut2_roots_r_1",
+                CubeListBuilder.create()
+                        .texOffs(107, 17).addBox(-0.624F, 0.0F, -0.624F, 1.248F, 3.5327F, 1.248F),
+                PartPose.offsetAndRotation(0.0F, 4.0F, 0.0F, -0.2443F, -0.1745F, -0.384F));
+        PartDefinition mut2RootsR2 = mut2RootsR1.addOrReplaceChild("mut2_roots_r_2",
+                CubeListBuilder.create()
+                        .texOffs(20, 31).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.12F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 3.5327F, 0.0F, -0.2443F, -0.1745F, -0.384F));
+        PartDefinition mut2RootsRB = mut2RootsR1.addOrReplaceChild("mut2_roots_r_b",
+                CubeListBuilder.create()
+                        .texOffs(25, 31).addBox(-0.55F, 0.0F, -0.55F, 1.1F, 3.0F, 1.1F),
+                PartPose.offsetAndRotation(0.0F, 2.0F, 0.0F, -0.5236F, 0.0F, 0.8029F));
+        PartDefinition mut2RootsRB1 = mut2RootsRB.addOrReplaceChild("mut2_roots_r_b_1",
+                CubeListBuilder.create()
+                        .texOffs(30, 31).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.6833F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 3.0F, 0.0F, -0.1745F, 0.0F, -0.4538F));
+        PartDefinition mut2RootsL = head.addOrReplaceChild("mut2_roots_l",
+                CubeListBuilder.create()
+                        .texOffs(67, 17).addBox(-0.8F, 0.0F, -0.8F, 1.6F, 4.0F, 1.6F),
+                PartPose.offsetAndRotation(2.0F, 0.0F, -3.0F, -0.4189F, 0.0F, 0.5236F));
+        PartDefinition mut2RootsL1 = mut2RootsL.addOrReplaceChild("mut2_roots_l_1",
+                CubeListBuilder.create()
+                        .texOffs(112, 17).addBox(-0.624F, 0.0F, -0.624F, 1.248F, 3.5327F, 1.248F),
+                PartPose.offsetAndRotation(0.0F, 4.0F, 0.0F, -0.2443F, 0.1745F, 0.384F));
+        PartDefinition mut2RootsL2 = mut2RootsL1.addOrReplaceChild("mut2_roots_l_2",
+                CubeListBuilder.create()
+                        .texOffs(35, 31).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.12F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 3.5327F, 0.0F, -0.2443F, 0.1745F, 0.384F));
+        PartDefinition mut2RootsLB = mut2RootsL1.addOrReplaceChild("mut2_roots_l_b",
+                CubeListBuilder.create()
+                        .texOffs(40, 31).addBox(-0.55F, 0.0F, -0.55F, 1.1F, 3.0F, 1.1F),
+                PartPose.offsetAndRotation(0.0F, 2.0F, 0.0F, -0.5236F, 0.0F, -0.8029F));
+        PartDefinition mut2RootsLB1 = mut2RootsLB.addOrReplaceChild("mut2_roots_l_b_1",
+                CubeListBuilder.create()
+                        .texOffs(45, 31).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.6833F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 3.0F, 0.0F, -0.1745F, 0.0F, 0.4538F));
+        PartDefinition tail = body.addOrReplaceChild("tail",
+                CubeListBuilder.create()
+                        .texOffs(35, 0).addBox(-2.0F, 0.0F, 0.0F, 4.0F, 9.0F, 4.0F),
+                PartPose.offsetAndRotation(0.0F, 1.0F, 5.5F, -0.35F, 0.0F, 0.0F));
+        PartDefinition mut1Flank = body.addOrReplaceChild("mut1_flank",
+                CubeListBuilder.create()
+                        .texOffs(27, 17).addBox(-2.25F, -2.0F, -0.8F, 4.5F, 4.0F, 2.0F),
+                PartPose.offset(0.0F, 3.0F, 1.0F));
+        PartDefinition mut1FlankFlapR = mut1Flank.addOrReplaceChild("mut1_flank_flap_r",
+                CubeListBuilder.create()
+                        .texOffs(40, 17).addBox(-2.475F, -2.0F, -1.0F, 2.475F, 4.0F, 1.6F),
+                PartPose.offsetAndRotation(-2.25F, 0.0F, 0.0F, 0.0F, -0.4887F, 0.0F));
+        PartDefinition mut1FlankFlapL = mut1Flank.addOrReplaceChild("mut1_flank_flap_l",
+                CubeListBuilder.create()
+                        .texOffs(49, 17).addBox(0.0F, -2.0F, -1.0F, 2.475F, 4.0F, 1.6F),
+                PartPose.offsetAndRotation(2.25F, 0.0F, 0.0F, 0.0F, 0.4887F, 0.0F));
+        PartDefinition mut1FlankStrand0 = mut1Flank.addOrReplaceChild("mut1_flank_strand0",
+                CubeListBuilder.create()
+                        .texOffs(80, 31).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.2F, 1.0F),
+                PartPose.offsetAndRotation(-1.125F, -1.4F, -0.9F, 0.0F, 0.0F, 0.3142F));
+        PartDefinition mut1FlankStrand1 = mut1Flank.addOrReplaceChild("mut1_flank_strand1",
+                CubeListBuilder.create()
+                        .texOffs(85, 31).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.2F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, -0.8F, -0.9F, 0.0F, 0.0F, 0.1047F));
+        PartDefinition mut1FlankStrand2 = mut1Flank.addOrReplaceChild("mut1_flank_strand2",
+                CubeListBuilder.create()
+                        .texOffs(90, 31).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.2F, 1.0F),
+                PartPose.offsetAndRotation(1.125F, -0.2F, -0.9F, 0.0F, 0.0F, -0.1047F));
+        PartDefinition mut1FlankEyes = mut1Flank.addOrReplaceChild("mut1_flank_eyes",
+                CubeListBuilder.create()
+                        .texOffs(50, 31).addBox(-1.44F, -1.12F, -0.6F, 2.88F, 2.24F, 0.6F),
+                PartPose.offset(0.0F, 0.0F, -0.9F));
+        PartDefinition mut1Plates = body.addOrReplaceChild("mut1_plates",
+                CubeListBuilder.create(),
+                PartPose.offset(0.0F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP0 = mut1Plates.addOrReplaceChild("mut1_plates_p0",
+                CubeListBuilder.create()
+                        .texOffs(22, 26).addBox(-1.2F, -1.54F, -0.8F, 2.4F, 1.54F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, -4.0F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP1 = mut1Plates.addOrReplaceChild("mut1_plates_p1",
+                CubeListBuilder.create()
+                        .texOffs(31, 26).addBox(-1.2F, -2.431F, -0.8F, 2.4F, 2.431F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, -1.75F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP2 = mut1Plates.addOrReplaceChild("mut1_plates_p2",
+                CubeListBuilder.create()
+                        .texOffs(98, 17).addBox(-1.2F, -2.8F, -0.8F, 2.4F, 2.8F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, 0.5F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP3 = mut1Plates.addOrReplaceChild("mut1_plates_p3",
+                CubeListBuilder.create()
+                        .texOffs(40, 26).addBox(-1.2F, -2.431F, -0.8F, 2.4F, 2.431F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, 2.75F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP4 = mut1Plates.addOrReplaceChild("mut1_plates_p4",
+                CubeListBuilder.create()
+                        .texOffs(49, 26).addBox(-1.2F, -1.54F, -0.8F, 2.4F, 1.54F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, 5.0F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut2ArmR = body.addOrReplaceChild("mut2_arm_r",
+                CubeListBuilder.create()
+                        .texOffs(117, 0).addBox(-1.14F, 0.0F, -1.14F, 2.28F, 5.7F, 2.28F),
+                PartPose.offsetAndRotation(-3.2F, 2.0F, -3.0F, 0.1396F, 0.0F, -0.5934F));
+        PartDefinition mut2ArmRFore = mut2ArmR.addOrReplaceChild("mut2_arm_r_fore",
+                CubeListBuilder.create()
+                        .texOffs(0, 17).addBox(-0.95F, 0.0F, -0.95F, 1.9F, 5.7F, 1.9F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -1.0821F, 0.0F, 0.3142F));
+        PartDefinition mut2ArmRHand = mut2ArmRFore.addOrReplaceChild("mut2_arm_r_hand",
+                CubeListBuilder.create()
+                        .texOffs(0, 26).addBox(-1.33F, 0.0F, -0.855F, 2.66F, 2.09F, 1.71F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -0.2443F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF0 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f0",
+                CubeListBuilder.create()
+                        .texOffs(120, 31).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-1.045F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.1833F));
+        PartDefinition mut2ArmRF01 = mut2ArmRF0.addOrReplaceChild("mut2_arm_r_f0_1",
+                CubeListBuilder.create()
+                        .texOffs(35, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF02 = mut2ArmRF01.addOrReplaceChild("mut2_arm_r_f0_2",
+                CubeListBuilder.create()
+                        .texOffs(40, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF1 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f1",
+                CubeListBuilder.create()
+                        .texOffs(0, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-0.3325F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.0611F));
+        PartDefinition mut2ArmRF11 = mut2ArmRF1.addOrReplaceChild("mut2_arm_r_f1_1",
+                CubeListBuilder.create()
+                        .texOffs(45, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF12 = mut2ArmRF11.addOrReplaceChild("mut2_arm_r_f1_2",
+                CubeListBuilder.create()
+                        .texOffs(50, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF2 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f2",
+                CubeListBuilder.create()
+                        .texOffs(5, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(0.38F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.0611F));
+        PartDefinition mut2ArmRF21 = mut2ArmRF2.addOrReplaceChild("mut2_arm_r_f2_1",
+                CubeListBuilder.create()
+                        .texOffs(55, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF22 = mut2ArmRF21.addOrReplaceChild("mut2_arm_r_f2_2",
+                CubeListBuilder.create()
+                        .texOffs(60, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF3 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f3",
+                CubeListBuilder.create()
+                        .texOffs(10, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(1.0925F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.1833F));
+        PartDefinition mut2ArmRF31 = mut2ArmRF3.addOrReplaceChild("mut2_arm_r_f3_1",
+                CubeListBuilder.create()
+                        .texOffs(65, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF32 = mut2ArmRF31.addOrReplaceChild("mut2_arm_r_f3_2",
+                CubeListBuilder.create()
+                        .texOffs(70, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRThumb = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_thumb",
+                CubeListBuilder.create()
+                        .texOffs(75, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.425F, 1.0F),
+                PartPose.offsetAndRotation(-1.33F, 0.95F, 0.0F, 0.0F, 0.0F, -1.2217F));
+        PartDefinition mut2ArmRThumb1 = mut2ArmRThumb.addOrReplaceChild("mut2_arm_r_thumb_1",
+                CubeListBuilder.create()
+                        .texOffs(80, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3138F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.425F, 0.0F, 0.3491F, 0.0F, 0.0F));
+        PartDefinition mut2ArmL = body.addOrReplaceChild("mut2_arm_l",
+                CubeListBuilder.create()
+                        .texOffs(9, 17).addBox(-1.14F, 0.0F, -1.14F, 2.28F, 5.7F, 2.28F),
+                PartPose.offsetAndRotation(3.2F, 2.0F, -3.0F, 0.1396F, 0.0F, 0.5934F));
+        PartDefinition mut2ArmLFore = mut2ArmL.addOrReplaceChild("mut2_arm_l_fore",
+                CubeListBuilder.create()
+                        .texOffs(18, 17).addBox(-0.95F, 0.0F, -0.95F, 1.9F, 5.7F, 1.9F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -1.0821F, 0.0F, -0.3142F));
+        PartDefinition mut2ArmLHand = mut2ArmLFore.addOrReplaceChild("mut2_arm_l_hand",
+                CubeListBuilder.create()
+                        .texOffs(11, 26).addBox(-1.33F, 0.0F, -0.855F, 2.66F, 2.09F, 1.71F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -0.2443F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF0 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f0",
+                CubeListBuilder.create()
+                        .texOffs(15, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-1.045F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.1833F));
+        PartDefinition mut2ArmLF01 = mut2ArmLF0.addOrReplaceChild("mut2_arm_l_f0_1",
+                CubeListBuilder.create()
+                        .texOffs(85, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF02 = mut2ArmLF01.addOrReplaceChild("mut2_arm_l_f0_2",
+                CubeListBuilder.create()
+                        .texOffs(90, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF1 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f1",
+                CubeListBuilder.create()
+                        .texOffs(20, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-0.3325F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.0611F));
+        PartDefinition mut2ArmLF11 = mut2ArmLF1.addOrReplaceChild("mut2_arm_l_f1_1",
+                CubeListBuilder.create()
+                        .texOffs(95, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF12 = mut2ArmLF11.addOrReplaceChild("mut2_arm_l_f1_2",
+                CubeListBuilder.create()
+                        .texOffs(100, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF2 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f2",
+                CubeListBuilder.create()
+                        .texOffs(25, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(0.38F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.0611F));
+        PartDefinition mut2ArmLF21 = mut2ArmLF2.addOrReplaceChild("mut2_arm_l_f2_1",
+                CubeListBuilder.create()
+                        .texOffs(105, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF22 = mut2ArmLF21.addOrReplaceChild("mut2_arm_l_f2_2",
+                CubeListBuilder.create()
+                        .texOffs(110, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF3 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f3",
+                CubeListBuilder.create()
+                        .texOffs(30, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(1.0925F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.1833F));
+        PartDefinition mut2ArmLF31 = mut2ArmLF3.addOrReplaceChild("mut2_arm_l_f3_1",
+                CubeListBuilder.create()
+                        .texOffs(115, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF32 = mut2ArmLF31.addOrReplaceChild("mut2_arm_l_f3_2",
+                CubeListBuilder.create()
+                        .texOffs(120, 36).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLThumb = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_thumb",
+                CubeListBuilder.create()
+                        .texOffs(0, 40).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.425F, 1.0F),
+                PartPose.offsetAndRotation(-1.33F, 0.95F, 0.0F, 0.0F, 0.0F, -1.2217F));
+        PartDefinition mut2ArmLThumb1 = mut2ArmLThumb.addOrReplaceChild("mut2_arm_l_thumb_1",
+                CubeListBuilder.create()
+                        .texOffs(5, 40).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3138F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.425F, 0.0F, 0.3491F, 0.0F, 0.0F));
+        PartDefinition mut2Stalks = body.addOrReplaceChild("mut2_stalks",
+                CubeListBuilder.create(),
+                PartPose.offset(0.0F, 0.0F, 4.0F));
+        PartDefinition mut2StalksS0 = mut2Stalks.addOrReplaceChild("mut2_stalks_s0",
+                CubeListBuilder.create()
+                        .texOffs(5, 31).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(-2.6F, 0.0F, -0.8F, -0.3142F, -0.4538F, -0.5236F));
+        PartDefinition mut2StalksE0 = mut2StalksS0.addOrReplaceChild("mut2_stalks_e0",
+                CubeListBuilder.create()
+                        .texOffs(85, 26).addBox(-1.2F, -2.4F, -1.2F, 2.4F, 2.4F, 2.4F),
+                PartPose.offset(0.0F, -3.0F, 0.0F));
+        PartDefinition mut2StalksS1 = mut2Stalks.addOrReplaceChild("mut2_stalks_s1",
+                CubeListBuilder.create()
+                        .texOffs(10, 31).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, -0.0F, -0.3142F, 0.0F, 0.0F));
+        PartDefinition mut2StalksE1 = mut2StalksS1.addOrReplaceChild("mut2_stalks_e1",
+                CubeListBuilder.create()
+                        .texOffs(94, 26).addBox(-1.2F, -2.4F, -1.2F, 2.4F, 2.4F, 2.4F),
+                PartPose.offset(0.0F, -3.0F, 0.0F));
+        PartDefinition mut2StalksS2 = mut2Stalks.addOrReplaceChild("mut2_stalks_s2",
+                CubeListBuilder.create()
+                        .texOffs(15, 31).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(2.6F, 0.0F, -0.8F, -0.3142F, 0.4538F, 0.5236F));
+        PartDefinition mut2StalksE2 = mut2StalksS2.addOrReplaceChild("mut2_stalks_e2",
+                CubeListBuilder.create()
+                        .texOffs(103, 26).addBox(-1.2F, -2.4F, -1.2F, 2.4F, 2.4F, 2.4F),
+                PartPose.offset(0.0F, -3.0F, 0.0F));
+        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
+                CubeListBuilder.create()
+                        .texOffs(81, 0).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 6.0F, 2.0F),
+                PartPose.offset(-2.5F, 18.0F, -3.5F));
+        PartDefinition legFl = root.addOrReplaceChild("leg_fl",
+                CubeListBuilder.create()
+                        .texOffs(90, 0).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 6.0F, 2.0F),
+                PartPose.offset(2.5F, 18.0F, -3.5F));
+        PartDefinition legBr = root.addOrReplaceChild("leg_br",
+                CubeListBuilder.create()
+                        .texOffs(99, 0).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 6.0F, 2.0F),
+                PartPose.offset(-2.5F, 18.0F, 3.5F));
+        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
+                CubeListBuilder.create()
+                        .texOffs(108, 0).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 6.0F, 2.0F),
+                PartPose.offset(2.5F, 18.0F, 3.5F));
+
+        return LayerDefinition.create(mesh, 128, 128);
+    }
+
+    public static LayerDefinition createGildedCatLayer() {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+
+        PartDefinition body = root.addOrReplaceChild("body",
+                CubeListBuilder.create()
+                        .texOffs(0, 0).addBox(-3.0F, 0.0F, -5.0F, 6.0F, 5.0F, 10.0F),
+                PartPose.offset(0.0F, 12.0F, 0.0F));
+        PartDefinition head = body.addOrReplaceChild("head",
+                CubeListBuilder.create()
+                        .texOffs(38, 0).addBox(-2.5F, 0.0F, -5.0F, 5.0F, 4.0F, 5.0F),
+                PartPose.offset(0.0F, -1.0F, -5.0F));
+        PartDefinition earR = head.addOrReplaceChild("ear_r",
+                CubeListBuilder.create()
+                        .texOffs(29, 46).addBox(-2.0F, 0.0F, -0.5F, 2.0F, 2.0F, 1.0F),
+                PartPose.offsetAndRotation(-1.8F, -0.5F, -1.5F, 0.0F, 0.0F, -0.384F));
+        PartDefinition earL = head.addOrReplaceChild("ear_l",
+                CubeListBuilder.create()
+                        .texOffs(36, 46).addBox(0.0F, 0.0F, -0.5F, 2.0F, 2.0F, 1.0F),
+                PartPose.offsetAndRotation(1.8F, -0.5F, -1.5F, 0.0F, 0.0F, 0.384F));
+        PartDefinition mut1Tongue = head.addOrReplaceChild("mut1_tongue",
+                CubeListBuilder.create()
+                        .texOffs(0, 46).addBox(-0.55F, 0.0F, -0.5F, 1.1F, 2.6F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 3.0F, -5.0F, 1.0123F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue1 = mut1Tongue.addOrReplaceChild("mut1_tongue_1",
+                CubeListBuilder.create()
+                        .texOffs(15, 51).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.439F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.6F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue2 = mut1Tongue1.addOrReplaceChild("mut1_tongue_2",
+                CubeListBuilder.create()
+                        .texOffs(20, 51).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.288F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.439F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue3 = mut1Tongue2.addOrReplaceChild("mut1_tongue_3",
+                CubeListBuilder.create()
+                        .texOffs(25, 51).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.1463F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.288F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue4 = mut1Tongue3.addOrReplaceChild("mut1_tongue_4",
+                CubeListBuilder.create()
+                        .texOffs(30, 51).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.0134F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.1463F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue5 = mut1Tongue4.addOrReplaceChild("mut1_tongue_5",
+                CubeListBuilder.create()
+                        .texOffs(35, 51).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.8888F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.0134F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1TongueTip = mut1Tongue5.addOrReplaceChild("mut1_tongue_tip",
+                CubeListBuilder.create()
+                        .texOffs(40, 51).addBox(-0.6F, 0.0F, -0.5F, 1.2F, 1.6F, 1.0F),
+                PartPose.offset(0.0F, 2.0F, 0.0F));
+        PartDefinition mut1Eyes = head.addOrReplaceChild("mut1_eyes",
+                CubeListBuilder.create(),
+                PartPose.offset(0.0F, 1.5F, -5.2F));
+        PartDefinition mut1EyesE0 = mut1Eyes.addOrReplaceChild("mut1_eyes_e0",
+                CubeListBuilder.create()
+                        .texOffs(40, 26).addBox(-1.32F, -1.32F, -1.6368F, 2.64F, 2.64F, 1.6368F)
+                        .texOffs(9, 41).addBox(-1.6368F, -1.6368F, -0.792F, 3.2736F, 3.2736F, 1.056F),
+                PartPose.offsetAndRotation(-2.4F, 0.0F, -0.4F, 0.0F, -0.4538F, 0.0F));
+        PartDefinition mut1EyesE1 = mut1Eyes.addOrReplaceChild("mut1_eyes_e1",
+                CubeListBuilder.create()
+                        .texOffs(43, 46).addBox(-0.9228F, -0.9228F, -1.1442F, 1.8455F, 1.8455F, 1.1442F)
+                        .texOffs(50, 46).addBox(-1.1442F, -1.1442F, -0.5537F, 2.2884F, 2.2884F, 0.7382F),
+                PartPose.offsetAndRotation(-0.8F, 1.3524F, -0.5691F, 0.0F, -0.1513F, 0.236F));
+        PartDefinition mut1EyesE2 = mut1Eyes.addOrReplaceChild("mut1_eyes_e2",
+                CubeListBuilder.create()
+                        .texOffs(51, 26).addBox(-1.3049F, -1.3049F, -1.618F, 2.6097F, 2.6097F, 1.618F)
+                        .texOffs(18, 41).addBox(-1.618F, -1.618F, -0.7829F, 3.2361F, 3.2361F, 1.0439F),
+                PartPose.offsetAndRotation(0.8F, -1.9927F, -0.6491F, 0.0F, 0.1513F, -0.3478F));
+        PartDefinition mut1EyesE3 = mut1Eyes.addOrReplaceChild("mut1_eyes_e3",
+                CubeListBuilder.create()
+                        .texOffs(57, 46).addBox(-1.0364F, -1.0364F, -1.2851F, 2.0727F, 2.0727F, 1.2851F)
+                        .texOffs(27, 41).addBox(-1.2851F, -1.2851F, -0.6218F, 2.5702F, 2.5702F, 0.8291F),
+                PartPose.offsetAndRotation(2.4F, 1.5837F, -0.598F, 0.0F, 0.4538F, 0.2764F));
+        PartDefinition tail = body.addOrReplaceChild("tail",
+                CubeListBuilder.create()
+                        .texOffs(33, 0).addBox(-0.5F, 0.0F, 0.0F, 1.0F, 9.0F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.0F, 5.0F, -0.9F, 0.0F, 0.0F));
+        PartDefinition mut1Flank = body.addOrReplaceChild("mut1_flank",
+                CubeListBuilder.create()
+                        .texOffs(9, 26).addBox(-2.0F, -1.75F, -0.8F, 4.0F, 3.5F, 2.0F),
+                PartPose.offset(0.0F, 3.0F, 1.0F));
+        PartDefinition mut1FlankFlapR = mut1Flank.addOrReplaceChild("mut1_flank_flap_r",
+                CubeListBuilder.create()
+                        .texOffs(22, 26).addBox(-2.2F, -1.75F, -1.0F, 2.2F, 3.5F, 1.6F),
+                PartPose.offsetAndRotation(-2.0F, 0.0F, 0.0F, 0.0F, -0.4887F, 0.0F));
+        PartDefinition mut1FlankFlapL = mut1Flank.addOrReplaceChild("mut1_flank_flap_l",
+                CubeListBuilder.create()
+                        .texOffs(31, 26).addBox(0.0F, -1.75F, -1.0F, 2.2F, 3.5F, 1.6F),
+                PartPose.offsetAndRotation(2.0F, 0.0F, 0.0F, 0.0F, 0.4887F, 0.0F));
+        PartDefinition mut1FlankStrand0 = mut1Flank.addOrReplaceChild("mut1_flank_strand0",
+                CubeListBuilder.create()
+                        .texOffs(0, 51).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.925F, 1.0F),
+                PartPose.offsetAndRotation(-1.0F, -1.225F, -0.9F, 0.0F, 0.0F, 0.3142F));
+        PartDefinition mut1FlankStrand1 = mut1Flank.addOrReplaceChild("mut1_flank_strand1",
+                CubeListBuilder.create()
+                        .texOffs(5, 51).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.925F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, -0.7F, -0.9F, 0.0F, 0.0F, 0.1047F));
+        PartDefinition mut1FlankStrand2 = mut1Flank.addOrReplaceChild("mut1_flank_strand2",
+                CubeListBuilder.create()
+                        .texOffs(10, 51).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.925F, 1.0F),
+                PartPose.offsetAndRotation(1.0F, -0.175F, -0.9F, 0.0F, 0.0F, -0.1047F));
+        PartDefinition mut1FlankEyes = mut1Flank.addOrReplaceChild("mut1_flank_eyes",
+                CubeListBuilder.create()
+                        .texOffs(20, 46).addBox(-1.28F, -0.98F, -0.6F, 2.56F, 1.96F, 0.6F),
+                PartPose.offset(0.0F, 0.0F, -0.9F));
+        PartDefinition mut1Plates = body.addOrReplaceChild("mut1_plates",
+                CubeListBuilder.create(),
+                PartPose.offset(0.0F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP0 = mut1Plates.addOrReplaceChild("mut1_plates_p0",
+                CubeListBuilder.create()
+                        .texOffs(31, 35).addBox(-1.2F, -1.54F, -0.8F, 2.4F, 1.54F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, -4.0F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP1 = mut1Plates.addOrReplaceChild("mut1_plates_p1",
+                CubeListBuilder.create()
+                        .texOffs(40, 35).addBox(-1.2F, -2.431F, -0.8F, 2.4F, 2.431F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, -1.75F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP2 = mut1Plates.addOrReplaceChild("mut1_plates_p2",
+                CubeListBuilder.create()
+                        .texOffs(0, 35).addBox(-1.2F, -2.8F, -0.8F, 2.4F, 2.8F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, 0.5F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP3 = mut1Plates.addOrReplaceChild("mut1_plates_p3",
+                CubeListBuilder.create()
+                        .texOffs(49, 35).addBox(-1.2F, -2.431F, -0.8F, 2.4F, 2.431F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, 2.75F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP4 = mut1Plates.addOrReplaceChild("mut1_plates_p4",
+                CubeListBuilder.create()
+                        .texOffs(0, 41).addBox(-1.2F, -1.54F, -0.8F, 2.4F, 1.54F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, 5.0F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut2ArmR = body.addOrReplaceChild("mut2_arm_r",
+                CubeListBuilder.create()
+                        .texOffs(36, 16).addBox(-1.14F, 0.0F, -1.14F, 2.28F, 5.7F, 2.28F),
+                PartPose.offsetAndRotation(-3.0F, 2.0F, -2.5F, 0.1396F, 0.0F, -0.5934F));
+        PartDefinition mut2ArmRFore = mut2ArmR.addOrReplaceChild("mut2_arm_r_fore",
+                CubeListBuilder.create()
+                        .texOffs(45, 16).addBox(-0.95F, 0.0F, -0.95F, 1.9F, 5.7F, 1.9F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -1.0821F, 0.0F, 0.3142F));
+        PartDefinition mut2ArmRHand = mut2ArmRFore.addOrReplaceChild("mut2_arm_r_hand",
+                CubeListBuilder.create()
+                        .texOffs(9, 35).addBox(-1.33F, 0.0F, -0.855F, 2.66F, 2.09F, 1.71F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -0.2443F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF0 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f0",
+                CubeListBuilder.create()
+                        .texOffs(45, 51).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-1.045F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.1833F));
+        PartDefinition mut2ArmRF01 = mut2ArmRF0.addOrReplaceChild("mut2_arm_r_f0_1",
+                CubeListBuilder.create()
+                        .texOffs(20, 55).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF02 = mut2ArmRF01.addOrReplaceChild("mut2_arm_r_f0_2",
+                CubeListBuilder.create()
+                        .texOffs(25, 55).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF1 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f1",
+                CubeListBuilder.create()
+                        .texOffs(50, 51).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-0.3325F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.0611F));
+        PartDefinition mut2ArmRF11 = mut2ArmRF1.addOrReplaceChild("mut2_arm_r_f1_1",
+                CubeListBuilder.create()
+                        .texOffs(30, 55).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF12 = mut2ArmRF11.addOrReplaceChild("mut2_arm_r_f1_2",
+                CubeListBuilder.create()
+                        .texOffs(35, 55).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF2 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f2",
+                CubeListBuilder.create()
+                        .texOffs(55, 51).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(0.38F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.0611F));
+        PartDefinition mut2ArmRF21 = mut2ArmRF2.addOrReplaceChild("mut2_arm_r_f2_1",
+                CubeListBuilder.create()
+                        .texOffs(40, 55).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF22 = mut2ArmRF21.addOrReplaceChild("mut2_arm_r_f2_2",
+                CubeListBuilder.create()
+                        .texOffs(45, 55).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF3 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f3",
+                CubeListBuilder.create()
+                        .texOffs(60, 51).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(1.0925F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.1833F));
+        PartDefinition mut2ArmRF31 = mut2ArmRF3.addOrReplaceChild("mut2_arm_r_f3_1",
+                CubeListBuilder.create()
+                        .texOffs(50, 55).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF32 = mut2ArmRF31.addOrReplaceChild("mut2_arm_r_f3_2",
+                CubeListBuilder.create()
+                        .texOffs(55, 55).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRThumb = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_thumb",
+                CubeListBuilder.create()
+                        .texOffs(60, 55).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.425F, 1.0F),
+                PartPose.offsetAndRotation(-1.33F, 0.95F, 0.0F, 0.0F, 0.0F, -1.2217F));
+        PartDefinition mut2ArmRThumb1 = mut2ArmRThumb.addOrReplaceChild("mut2_arm_r_thumb_1",
+                CubeListBuilder.create()
+                        .texOffs(0, 59).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3138F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.425F, 0.0F, 0.3491F, 0.0F, 0.0F));
+        PartDefinition mut2ArmL = body.addOrReplaceChild("mut2_arm_l",
+                CubeListBuilder.create()
+                        .texOffs(54, 16).addBox(-1.14F, 0.0F, -1.14F, 2.28F, 5.7F, 2.28F),
+                PartPose.offsetAndRotation(3.0F, 2.0F, -2.5F, 0.1396F, 0.0F, 0.5934F));
+        PartDefinition mut2ArmLFore = mut2ArmL.addOrReplaceChild("mut2_arm_l_fore",
+                CubeListBuilder.create()
+                        .texOffs(0, 26).addBox(-0.95F, 0.0F, -0.95F, 1.9F, 5.7F, 1.9F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -1.0821F, 0.0F, -0.3142F));
+        PartDefinition mut2ArmLHand = mut2ArmLFore.addOrReplaceChild("mut2_arm_l_hand",
+                CubeListBuilder.create()
+                        .texOffs(20, 35).addBox(-1.33F, 0.0F, -0.855F, 2.66F, 2.09F, 1.71F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -0.2443F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF0 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f0",
+                CubeListBuilder.create()
+                        .texOffs(0, 55).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-1.045F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.1833F));
+        PartDefinition mut2ArmLF01 = mut2ArmLF0.addOrReplaceChild("mut2_arm_l_f0_1",
+                CubeListBuilder.create()
+                        .texOffs(5, 59).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF02 = mut2ArmLF01.addOrReplaceChild("mut2_arm_l_f0_2",
+                CubeListBuilder.create()
+                        .texOffs(10, 59).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF1 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f1",
+                CubeListBuilder.create()
+                        .texOffs(5, 55).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-0.3325F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.0611F));
+        PartDefinition mut2ArmLF11 = mut2ArmLF1.addOrReplaceChild("mut2_arm_l_f1_1",
+                CubeListBuilder.create()
+                        .texOffs(15, 59).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF12 = mut2ArmLF11.addOrReplaceChild("mut2_arm_l_f1_2",
+                CubeListBuilder.create()
+                        .texOffs(20, 59).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF2 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f2",
+                CubeListBuilder.create()
+                        .texOffs(10, 55).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(0.38F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.0611F));
+        PartDefinition mut2ArmLF21 = mut2ArmLF2.addOrReplaceChild("mut2_arm_l_f2_1",
+                CubeListBuilder.create()
+                        .texOffs(25, 59).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF22 = mut2ArmLF21.addOrReplaceChild("mut2_arm_l_f2_2",
+                CubeListBuilder.create()
+                        .texOffs(30, 59).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF3 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f3",
+                CubeListBuilder.create()
+                        .texOffs(15, 55).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(1.0925F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.1833F));
+        PartDefinition mut2ArmLF31 = mut2ArmLF3.addOrReplaceChild("mut2_arm_l_f3_1",
+                CubeListBuilder.create()
+                        .texOffs(35, 59).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF32 = mut2ArmLF31.addOrReplaceChild("mut2_arm_l_f3_2",
+                CubeListBuilder.create()
+                        .texOffs(40, 59).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLThumb = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_thumb",
+                CubeListBuilder.create()
+                        .texOffs(45, 59).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.425F, 1.0F),
+                PartPose.offsetAndRotation(-1.33F, 0.95F, 0.0F, 0.0F, 0.0F, -1.2217F));
+        PartDefinition mut2ArmLThumb1 = mut2ArmLThumb.addOrReplaceChild("mut2_arm_l_thumb_1",
+                CubeListBuilder.create()
+                        .texOffs(50, 59).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3138F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.425F, 0.0F, 0.3491F, 0.0F, 0.0F));
+        PartDefinition mut2Stalks = body.addOrReplaceChild("mut2_stalks",
+                CubeListBuilder.create(),
+                PartPose.offset(0.0F, 0.0F, 4.0F));
+        PartDefinition mut2StalksS0 = mut2Stalks.addOrReplaceChild("mut2_stalks_s0",
+                CubeListBuilder.create()
+                        .texOffs(5, 46).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(-2.6F, 0.0F, -0.8F, -0.3142F, -0.4538F, -0.5236F));
+        PartDefinition mut2StalksE0 = mut2StalksS0.addOrReplaceChild("mut2_stalks_e0",
+                CubeListBuilder.create()
+                        .texOffs(36, 41).addBox(-1.2F, -2.4F, -1.2F, 2.4F, 2.4F, 2.4F),
+                PartPose.offset(0.0F, -3.0F, 0.0F));
+        PartDefinition mut2StalksS1 = mut2Stalks.addOrReplaceChild("mut2_stalks_s1",
+                CubeListBuilder.create()
+                        .texOffs(10, 46).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, -0.0F, -0.3142F, 0.0F, 0.0F));
+        PartDefinition mut2StalksE1 = mut2StalksS1.addOrReplaceChild("mut2_stalks_e1",
+                CubeListBuilder.create()
+                        .texOffs(45, 41).addBox(-1.2F, -2.4F, -1.2F, 2.4F, 2.4F, 2.4F),
+                PartPose.offset(0.0F, -3.0F, 0.0F));
+        PartDefinition mut2StalksS2 = mut2Stalks.addOrReplaceChild("mut2_stalks_s2",
+                CubeListBuilder.create()
+                        .texOffs(15, 46).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(2.6F, 0.0F, -0.8F, -0.3142F, 0.4538F, 0.5236F));
+        PartDefinition mut2StalksE2 = mut2StalksS2.addOrReplaceChild("mut2_stalks_e2",
+                CubeListBuilder.create()
+                        .texOffs(54, 41).addBox(-1.2F, -2.4F, -1.2F, 2.4F, 2.4F, 2.4F),
+                PartPose.offset(0.0F, -3.0F, 0.0F));
+        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
+                CubeListBuilder.create()
+                        .texOffs(0, 16).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 7.0F, 2.0F),
+                PartPose.offset(-2.0F, 17.0F, -3.5F));
+        PartDefinition legFl = root.addOrReplaceChild("leg_fl",
+                CubeListBuilder.create()
+                        .texOffs(9, 16).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 7.0F, 2.0F),
+                PartPose.offset(2.0F, 17.0F, -3.5F));
+        PartDefinition legBr = root.addOrReplaceChild("leg_br",
+                CubeListBuilder.create()
+                        .texOffs(18, 16).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 7.0F, 2.0F),
+                PartPose.offset(-2.0F, 17.0F, 3.5F));
+        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
+                CubeListBuilder.create()
+                        .texOffs(27, 16).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 7.0F, 2.0F),
+                PartPose.offset(2.0F, 17.0F, 3.5F));
+
+        return LayerDefinition.create(mesh, 64, 64);
+    }
+
+    public static LayerDefinition createGildedHorseLayer() {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+
+        PartDefinition body = root.addOrReplaceChild("body",
+                CubeListBuilder.create()
+                        .texOffs(0, 0).addBox(-5.0F, 0.0F, -11.0F, 10.0F, 11.0F, 22.0F),
+                PartPose.offset(0.0F, 2.0F, 0.0F));
+        PartDefinition head = body.addOrReplaceChild("head",
+                CubeListBuilder.create()
+                        .texOffs(17, 34).addBox(-3.0F, 0.0F, -8.0F, 6.0F, 8.0F, 8.0F),
+                PartPose.offset(0.0F, -4.0F, -11.0F));
+        PartDefinition snout = head.addOrReplaceChild("snout",
+                CubeListBuilder.create()
+                        .texOffs(18, 55).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 4.0F, 2.0F),
+                PartPose.offset(0.0F, 3.6F, -8.0F));
+        PartDefinition earR = head.addOrReplaceChild("ear_r",
+                CubeListBuilder.create()
+                        .texOffs(9, 70).addBox(-1.5F, 0.0F, -0.5F, 1.5F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(-2.2F, -2.0F, -4.0F, 0.0F, 0.0F, -0.384F));
+        PartDefinition earL = head.addOrReplaceChild("ear_l",
+                CubeListBuilder.create()
+                        .texOffs(16, 70).addBox(0.0F, 0.0F, -0.5F, 1.5F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(2.2F, -2.0F, -4.0F, 0.0F, 0.0F, 0.384F));
+        PartDefinition mut1Tongue = head.addOrReplaceChild("mut1_tongue",
+                CubeListBuilder.create()
+                        .texOffs(23, 70).addBox(-0.55F, 0.0F, -0.5F, 1.1F, 2.6F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 6.0F, -11.0F, 1.0123F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue1 = mut1Tongue.addOrReplaceChild("mut1_tongue_1",
+                CubeListBuilder.create()
+                        .texOffs(7, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.439F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.6F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue2 = mut1Tongue1.addOrReplaceChild("mut1_tongue_2",
+                CubeListBuilder.create()
+                        .texOffs(12, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.288F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.439F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue3 = mut1Tongue2.addOrReplaceChild("mut1_tongue_3",
+                CubeListBuilder.create()
+                        .texOffs(17, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.1463F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.288F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue4 = mut1Tongue3.addOrReplaceChild("mut1_tongue_4",
+                CubeListBuilder.create()
+                        .texOffs(22, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.0134F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.1463F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue5 = mut1Tongue4.addOrReplaceChild("mut1_tongue_5",
+                CubeListBuilder.create()
+                        .texOffs(27, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.8888F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.0134F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue6 = mut1Tongue5.addOrReplaceChild("mut1_tongue_6",
+                CubeListBuilder.create()
+                        .texOffs(32, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.7718F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.8888F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1TongueTip = mut1Tongue6.addOrReplaceChild("mut1_tongue_tip",
+                CubeListBuilder.create()
+                        .texOffs(37, 75).addBox(-0.6F, 0.0F, -0.5F, 1.2F, 1.6F, 1.0F),
+                PartPose.offset(0.0F, 2.0F, 0.0F));
+        PartDefinition mut1Eyes = head.addOrReplaceChild("mut1_eyes",
+                CubeListBuilder.create(),
+                PartPose.offset(0.0F, 2.0F, -11.2F));
+        PartDefinition mut1EyesE0 = mut1Eyes.addOrReplaceChild("mut1_eyes_e0",
+                CubeListBuilder.create()
+                        .texOffs(60, 55).addBox(-1.32F, -1.32F, -1.6368F, 2.64F, 2.64F, 1.6368F)
+                        .texOffs(83, 64).addBox(-1.6368F, -1.6368F, -0.792F, 3.2736F, 3.2736F, 1.056F),
+                PartPose.offsetAndRotation(-2.4F, 0.0F, -0.4F, 0.0F, -0.4538F, 0.0F));
+        PartDefinition mut1EyesE1 = mut1Eyes.addOrReplaceChild("mut1_eyes_e1",
+                CubeListBuilder.create()
+                        .texOffs(113, 70).addBox(-0.9228F, -0.9228F, -1.1442F, 1.8455F, 1.8455F, 1.1442F)
+                        .texOffs(120, 70).addBox(-1.1442F, -1.1442F, -0.5537F, 2.2884F, 2.2884F, 0.7382F),
+                PartPose.offsetAndRotation(-0.8F, 1.3524F, -0.5691F, 0.0F, -0.1513F, 0.236F));
+        PartDefinition mut1EyesE2 = mut1Eyes.addOrReplaceChild("mut1_eyes_e2",
+                CubeListBuilder.create()
+                        .texOffs(71, 55).addBox(-1.3049F, -1.3049F, -1.618F, 2.6097F, 2.6097F, 1.618F)
+                        .texOffs(92, 64).addBox(-1.618F, -1.618F, -0.7829F, 3.2361F, 3.2361F, 1.0439F),
+                PartPose.offsetAndRotation(0.8F, -1.9927F, -0.6491F, 0.0F, 0.1513F, -0.3478F));
+        PartDefinition mut1EyesE3 = mut1Eyes.addOrReplaceChild("mut1_eyes_e3",
+                CubeListBuilder.create()
+                        .texOffs(0, 75).addBox(-1.0364F, -1.0364F, -1.2851F, 2.0727F, 2.0727F, 1.2851F)
+                        .texOffs(101, 64).addBox(-1.2851F, -1.2851F, -0.6218F, 2.5702F, 2.5702F, 0.8291F),
+                PartPose.offsetAndRotation(2.4F, 1.5837F, -0.598F, 0.0F, 0.4538F, 0.2764F));
+        PartDefinition mut2RootsR = head.addOrReplaceChild("mut2_roots_r",
+                CubeListBuilder.create()
+                        .texOffs(31, 55).addBox(-0.8F, 0.0F, -0.8F, 1.6F, 4.0F, 1.6F),
+                PartPose.offsetAndRotation(-2.0F, 0.0F, -3.0F, -0.4189F, 0.0F, -0.5236F));
+        PartDefinition mut2RootsR1 = mut2RootsR.addOrReplaceChild("mut2_roots_r_1",
+                CubeListBuilder.create()
+                        .texOffs(15, 64).addBox(-0.624F, 0.0F, -0.624F, 1.248F, 3.5327F, 1.248F),
+                PartPose.offsetAndRotation(0.0F, 4.0F, 0.0F, -0.2443F, -0.1745F, -0.384F));
+        PartDefinition mut2RootsR2 = mut2RootsR1.addOrReplaceChild("mut2_roots_r_2",
+                CubeListBuilder.create()
+                        .texOffs(43, 70).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.12F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 3.5327F, 0.0F, -0.2443F, -0.1745F, -0.384F));
+        PartDefinition mut2RootsRB = mut2RootsR1.addOrReplaceChild("mut2_roots_r_b",
+                CubeListBuilder.create()
+                        .texOffs(48, 70).addBox(-0.55F, 0.0F, -0.55F, 1.1F, 3.0F, 1.1F),
+                PartPose.offsetAndRotation(0.0F, 2.0F, 0.0F, -0.5236F, 0.0F, 0.8029F));
+        PartDefinition mut2RootsRB1 = mut2RootsRB.addOrReplaceChild("mut2_roots_r_b_1",
+                CubeListBuilder.create()
+                        .texOffs(53, 70).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.6833F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 3.0F, 0.0F, -0.1745F, 0.0F, -0.4538F));
+        PartDefinition mut2RootsL = head.addOrReplaceChild("mut2_roots_l",
+                CubeListBuilder.create()
+                        .texOffs(40, 55).addBox(-0.8F, 0.0F, -0.8F, 1.6F, 4.0F, 1.6F),
+                PartPose.offsetAndRotation(2.0F, 0.0F, -3.0F, -0.4189F, 0.0F, 0.5236F));
+        PartDefinition mut2RootsL1 = mut2RootsL.addOrReplaceChild("mut2_roots_l_1",
+                CubeListBuilder.create()
+                        .texOffs(20, 64).addBox(-0.624F, 0.0F, -0.624F, 1.248F, 3.5327F, 1.248F),
+                PartPose.offsetAndRotation(0.0F, 4.0F, 0.0F, -0.2443F, 0.1745F, 0.384F));
+        PartDefinition mut2RootsL2 = mut2RootsL1.addOrReplaceChild("mut2_roots_l_2",
+                CubeListBuilder.create()
+                        .texOffs(58, 70).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.12F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 3.5327F, 0.0F, -0.2443F, 0.1745F, 0.384F));
+        PartDefinition mut2RootsLB = mut2RootsL1.addOrReplaceChild("mut2_roots_l_b",
+                CubeListBuilder.create()
+                        .texOffs(63, 70).addBox(-0.55F, 0.0F, -0.55F, 1.1F, 3.0F, 1.1F),
+                PartPose.offsetAndRotation(0.0F, 2.0F, 0.0F, -0.5236F, 0.0F, -0.8029F));
+        PartDefinition mut2RootsLB1 = mut2RootsLB.addOrReplaceChild("mut2_roots_l_b_1",
+                CubeListBuilder.create()
+                        .texOffs(68, 70).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.6833F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 3.0F, 0.0F, -0.1745F, 0.0F, 0.4538F));
+        PartDefinition tail = body.addOrReplaceChild("tail",
+                CubeListBuilder.create()
+                        .texOffs(46, 34).addBox(-1.5F, 0.0F, 0.0F, 3.0F, 12.0F, 3.0F),
+                PartPose.offsetAndRotation(0.0F, 1.0F, 11.0F, -0.4F, 0.0F, 0.0F));
+        PartDefinition mut1Flank = body.addOrReplaceChild("mut1_flank",
+                CubeListBuilder.create()
+                        .texOffs(59, 34).addBox(-3.5F, -3.5F, -0.8F, 7.0F, 7.0F, 2.0F),
+                PartPose.offset(0.0F, 6.0F, 1.0F));
+        PartDefinition mut1FlankFlapR = mut1Flank.addOrReplaceChild("mut1_flank_flap_r",
+                CubeListBuilder.create()
+                        .texOffs(78, 34).addBox(-3.85F, -3.5F, -1.0F, 3.85F, 7.0F, 1.6F),
+                PartPose.offsetAndRotation(-3.5F, 0.0F, 0.0F, 0.0F, -0.4887F, 0.0F));
+        PartDefinition mut1FlankFlapL = mut1Flank.addOrReplaceChild("mut1_flank_flap_l",
+                CubeListBuilder.create()
+                        .texOffs(91, 34).addBox(0.0F, -3.5F, -1.0F, 3.85F, 7.0F, 1.6F),
+                PartPose.offsetAndRotation(3.5F, 0.0F, 0.0F, 0.0F, 0.4887F, 0.0F));
+        PartDefinition mut1FlankStrand0 = mut1Flank.addOrReplaceChild("mut1_flank_strand0",
+                CubeListBuilder.create()
+                        .texOffs(0, 64).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.85F, 1.0F),
+                PartPose.offsetAndRotation(-1.75F, -2.45F, -0.9F, 0.0F, 0.0F, 0.3142F));
+        PartDefinition mut1FlankStrand1 = mut1Flank.addOrReplaceChild("mut1_flank_strand1",
+                CubeListBuilder.create()
+                        .texOffs(5, 64).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.85F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, -1.4F, -0.9F, 0.0F, 0.0F, 0.1047F));
+        PartDefinition mut1FlankStrand2 = mut1Flank.addOrReplaceChild("mut1_flank_strand2",
+                CubeListBuilder.create()
+                        .texOffs(10, 64).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.85F, 1.0F),
+                PartPose.offsetAndRotation(1.75F, -0.35F, -0.9F, 0.0F, 0.0F, -0.1047F));
+        PartDefinition mut1FlankEyes = mut1Flank.addOrReplaceChild("mut1_flank_eyes",
+                CubeListBuilder.create()
+                        .texOffs(49, 55).addBox(-2.24F, -1.96F, -0.6F, 4.48F, 3.92F, 0.6F),
+                PartPose.offset(0.0F, 0.0F, -0.9F));
+        PartDefinition mut1Plates = body.addOrReplaceChild("mut1_plates",
+                CubeListBuilder.create(),
+                PartPose.offset(0.0F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP0 = mut1Plates.addOrReplaceChild("mut1_plates_p0",
+                CubeListBuilder.create()
+                        .texOffs(47, 64).addBox(-1.2F, -1.54F, -0.8F, 2.4F, 1.54F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, -4.0F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP1 = mut1Plates.addOrReplaceChild("mut1_plates_p1",
+                CubeListBuilder.create()
+                        .texOffs(56, 64).addBox(-1.2F, -2.431F, -0.8F, 2.4F, 2.431F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, -1.75F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP2 = mut1Plates.addOrReplaceChild("mut1_plates_p2",
+                CubeListBuilder.create()
+                        .texOffs(82, 55).addBox(-1.2F, -2.8F, -0.8F, 2.4F, 2.8F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, 0.5F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP3 = mut1Plates.addOrReplaceChild("mut1_plates_p3",
+                CubeListBuilder.create()
+                        .texOffs(65, 64).addBox(-1.2F, -2.431F, -0.8F, 2.4F, 2.431F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, 2.75F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP4 = mut1Plates.addOrReplaceChild("mut1_plates_p4",
+                CubeListBuilder.create()
+                        .texOffs(74, 64).addBox(-1.2F, -1.54F, -0.8F, 2.4F, 1.54F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, 5.0F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut2ArmR = body.addOrReplaceChild("mut2_arm_r",
+                CubeListBuilder.create()
+                        .texOffs(104, 34).addBox(-1.14F, 0.0F, -1.14F, 2.28F, 5.7F, 2.28F),
+                PartPose.offsetAndRotation(-5.5F, 3.0F, -6.0F, 0.1396F, 0.0F, -0.5934F));
+        PartDefinition mut2ArmRFore = mut2ArmR.addOrReplaceChild("mut2_arm_r_fore",
+                CubeListBuilder.create()
+                        .texOffs(113, 34).addBox(-0.95F, 0.0F, -0.95F, 1.9F, 5.7F, 1.9F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -1.0821F, 0.0F, 0.3142F));
+        PartDefinition mut2ArmRHand = mut2ArmRFore.addOrReplaceChild("mut2_arm_r_hand",
+                CubeListBuilder.create()
+                        .texOffs(25, 64).addBox(-1.33F, 0.0F, -0.855F, 2.66F, 2.09F, 1.71F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -0.2443F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF0 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f0",
+                CubeListBuilder.create()
+                        .texOffs(42, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-1.045F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.1833F));
+        PartDefinition mut2ArmRF01 = mut2ArmRF0.addOrReplaceChild("mut2_arm_r_f0_1",
+                CubeListBuilder.create()
+                        .texOffs(82, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF02 = mut2ArmRF01.addOrReplaceChild("mut2_arm_r_f0_2",
+                CubeListBuilder.create()
+                        .texOffs(87, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF1 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f1",
+                CubeListBuilder.create()
+                        .texOffs(47, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-0.3325F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.0611F));
+        PartDefinition mut2ArmRF11 = mut2ArmRF1.addOrReplaceChild("mut2_arm_r_f1_1",
+                CubeListBuilder.create()
+                        .texOffs(92, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF12 = mut2ArmRF11.addOrReplaceChild("mut2_arm_r_f1_2",
+                CubeListBuilder.create()
+                        .texOffs(97, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF2 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f2",
+                CubeListBuilder.create()
+                        .texOffs(52, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(0.38F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.0611F));
+        PartDefinition mut2ArmRF21 = mut2ArmRF2.addOrReplaceChild("mut2_arm_r_f2_1",
+                CubeListBuilder.create()
+                        .texOffs(102, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF22 = mut2ArmRF21.addOrReplaceChild("mut2_arm_r_f2_2",
+                CubeListBuilder.create()
+                        .texOffs(107, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF3 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f3",
+                CubeListBuilder.create()
+                        .texOffs(57, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(1.0925F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.1833F));
+        PartDefinition mut2ArmRF31 = mut2ArmRF3.addOrReplaceChild("mut2_arm_r_f3_1",
+                CubeListBuilder.create()
+                        .texOffs(112, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF32 = mut2ArmRF31.addOrReplaceChild("mut2_arm_r_f3_2",
+                CubeListBuilder.create()
+                        .texOffs(117, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRThumb = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_thumb",
+                CubeListBuilder.create()
+                        .texOffs(122, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.425F, 1.0F),
+                PartPose.offsetAndRotation(-1.33F, 0.95F, 0.0F, 0.0F, 0.0F, -1.2217F));
+        PartDefinition mut2ArmRThumb1 = mut2ArmRThumb.addOrReplaceChild("mut2_arm_r_thumb_1",
+                CubeListBuilder.create()
+                        .texOffs(0, 79).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3138F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.425F, 0.0F, 0.3491F, 0.0F, 0.0F));
+        PartDefinition mut2ArmL = body.addOrReplaceChild("mut2_arm_l",
+                CubeListBuilder.create()
+                        .texOffs(0, 55).addBox(-1.14F, 0.0F, -1.14F, 2.28F, 5.7F, 2.28F),
+                PartPose.offsetAndRotation(5.5F, 3.0F, -6.0F, 0.1396F, 0.0F, 0.5934F));
+        PartDefinition mut2ArmLFore = mut2ArmL.addOrReplaceChild("mut2_arm_l_fore",
+                CubeListBuilder.create()
+                        .texOffs(9, 55).addBox(-0.95F, 0.0F, -0.95F, 1.9F, 5.7F, 1.9F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -1.0821F, 0.0F, -0.3142F));
+        PartDefinition mut2ArmLHand = mut2ArmLFore.addOrReplaceChild("mut2_arm_l_hand",
+                CubeListBuilder.create()
+                        .texOffs(36, 64).addBox(-1.33F, 0.0F, -0.855F, 2.66F, 2.09F, 1.71F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -0.2443F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF0 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f0",
+                CubeListBuilder.create()
+                        .texOffs(62, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-1.045F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.1833F));
+        PartDefinition mut2ArmLF01 = mut2ArmLF0.addOrReplaceChild("mut2_arm_l_f0_1",
+                CubeListBuilder.create()
+                        .texOffs(5, 79).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF02 = mut2ArmLF01.addOrReplaceChild("mut2_arm_l_f0_2",
+                CubeListBuilder.create()
+                        .texOffs(10, 79).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF1 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f1",
+                CubeListBuilder.create()
+                        .texOffs(67, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-0.3325F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.0611F));
+        PartDefinition mut2ArmLF11 = mut2ArmLF1.addOrReplaceChild("mut2_arm_l_f1_1",
+                CubeListBuilder.create()
+                        .texOffs(15, 79).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF12 = mut2ArmLF11.addOrReplaceChild("mut2_arm_l_f1_2",
+                CubeListBuilder.create()
+                        .texOffs(20, 79).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF2 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f2",
+                CubeListBuilder.create()
+                        .texOffs(72, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(0.38F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.0611F));
+        PartDefinition mut2ArmLF21 = mut2ArmLF2.addOrReplaceChild("mut2_arm_l_f2_1",
+                CubeListBuilder.create()
+                        .texOffs(25, 79).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF22 = mut2ArmLF21.addOrReplaceChild("mut2_arm_l_f2_2",
+                CubeListBuilder.create()
+                        .texOffs(30, 79).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF3 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f3",
+                CubeListBuilder.create()
+                        .texOffs(77, 75).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(1.0925F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.1833F));
+        PartDefinition mut2ArmLF31 = mut2ArmLF3.addOrReplaceChild("mut2_arm_l_f3_1",
+                CubeListBuilder.create()
+                        .texOffs(35, 79).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF32 = mut2ArmLF31.addOrReplaceChild("mut2_arm_l_f3_2",
+                CubeListBuilder.create()
+                        .texOffs(40, 79).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLThumb = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_thumb",
+                CubeListBuilder.create()
+                        .texOffs(45, 79).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.425F, 1.0F),
+                PartPose.offsetAndRotation(-1.33F, 0.95F, 0.0F, 0.0F, 0.0F, -1.2217F));
+        PartDefinition mut2ArmLThumb1 = mut2ArmLThumb.addOrReplaceChild("mut2_arm_l_thumb_1",
+                CubeListBuilder.create()
+                        .texOffs(50, 79).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3138F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.425F, 0.0F, 0.3491F, 0.0F, 0.0F));
+        PartDefinition mut2Stalks = body.addOrReplaceChild("mut2_stalks",
+                CubeListBuilder.create(),
+                PartPose.offset(0.0F, 0.0F, 4.0F));
+        PartDefinition mut2StalksS0 = mut2Stalks.addOrReplaceChild("mut2_stalks_s0",
+                CubeListBuilder.create()
+                        .texOffs(28, 70).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(-2.6F, 0.0F, -0.8F, -0.3142F, -0.4538F, -0.5236F));
+        PartDefinition mut2StalksE0 = mut2StalksS0.addOrReplaceChild("mut2_stalks_e0",
+                CubeListBuilder.create()
+                        .texOffs(110, 64).addBox(-1.2F, -2.4F, -1.2F, 2.4F, 2.4F, 2.4F),
+                PartPose.offset(0.0F, -3.0F, 0.0F));
+        PartDefinition mut2StalksS1 = mut2Stalks.addOrReplaceChild("mut2_stalks_s1",
+                CubeListBuilder.create()
+                        .texOffs(33, 70).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, -0.0F, -0.3142F, 0.0F, 0.0F));
+        PartDefinition mut2StalksE1 = mut2StalksS1.addOrReplaceChild("mut2_stalks_e1",
+                CubeListBuilder.create()
+                        .texOffs(119, 64).addBox(-1.2F, -2.4F, -1.2F, 2.4F, 2.4F, 2.4F),
+                PartPose.offset(0.0F, -3.0F, 0.0F));
+        PartDefinition mut2StalksS2 = mut2Stalks.addOrReplaceChild("mut2_stalks_s2",
+                CubeListBuilder.create()
+                        .texOffs(38, 70).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(2.6F, 0.0F, -0.8F, -0.3142F, 0.4538F, 0.5236F));
+        PartDefinition mut2StalksE2 = mut2StalksS2.addOrReplaceChild("mut2_stalks_e2",
+                CubeListBuilder.create()
+                        .texOffs(0, 70).addBox(-1.2F, -2.4F, -1.2F, 2.4F, 2.4F, 2.4F),
+                PartPose.offset(0.0F, -3.0F, 0.0F));
+        PartDefinition mut2LegsR0 = body.addOrReplaceChild("mut2_legs_r0",
+                CubeListBuilder.create()
+                        .texOffs(91, 55).addBox(-0.9F, 0.0F, -0.9F, 1.8F, 3.3333F, 1.8F),
+                PartPose.offsetAndRotation(-5.0F, 8.0F, 2.0F, 0.0F, -0.2094F, -1.0123F));
+        PartDefinition mut2LegsR01 = mut2LegsR0.addOrReplaceChild("mut2_legs_r0_1",
+                CubeListBuilder.create()
+                        .texOffs(73, 70).addBox(-0.72F, 0.0F, -0.72F, 1.44F, 2.9814F, 1.44F),
+                PartPose.offsetAndRotation(0.0F, 3.3333F, 0.0F, 0.0F, 0.0F, 1.117F));
+        PartDefinition mut2LegsR02 = mut2LegsR01.addOrReplaceChild("mut2_legs_r0_2",
+                CubeListBuilder.create()
+                        .texOffs(78, 70).addBox(-0.576F, 0.0F, -0.576F, 1.152F, 2.6667F, 1.152F),
+                PartPose.offsetAndRotation(0.0F, 2.9814F, 0.0F, 0.0F, 0.0F, 1.117F));
+        PartDefinition mut2LegsR1 = body.addOrReplaceChild("mut2_legs_r1",
+                CubeListBuilder.create()
+                        .texOffs(100, 55).addBox(-0.9F, 0.0F, -0.9F, 1.8F, 3.3333F, 1.8F),
+                PartPose.offsetAndRotation(-5.0F, 8.0F, 5.4F, 0.0F, -0.2094F, -1.0123F));
+        PartDefinition mut2LegsR11 = mut2LegsR1.addOrReplaceChild("mut2_legs_r1_1",
+                CubeListBuilder.create()
+                        .texOffs(83, 70).addBox(-0.72F, 0.0F, -0.72F, 1.44F, 2.9814F, 1.44F),
+                PartPose.offsetAndRotation(0.0F, 3.3333F, 0.0F, 0.0F, 0.0F, 1.117F));
+        PartDefinition mut2LegsR12 = mut2LegsR11.addOrReplaceChild("mut2_legs_r1_2",
+                CubeListBuilder.create()
+                        .texOffs(88, 70).addBox(-0.576F, 0.0F, -0.576F, 1.152F, 2.6667F, 1.152F),
+                PartPose.offsetAndRotation(0.0F, 2.9814F, 0.0F, 0.0F, 0.0F, 1.117F));
+        PartDefinition mut2LegsL0 = body.addOrReplaceChild("mut2_legs_l0",
+                CubeListBuilder.create()
+                        .texOffs(109, 55).addBox(-0.9F, 0.0F, -0.9F, 1.8F, 3.3333F, 1.8F),
+                PartPose.offsetAndRotation(5.0F, 8.0F, 2.0F, 0.0F, 0.2094F, 1.0123F));
+        PartDefinition mut2LegsL01 = mut2LegsL0.addOrReplaceChild("mut2_legs_l0_1",
+                CubeListBuilder.create()
+                        .texOffs(93, 70).addBox(-0.72F, 0.0F, -0.72F, 1.44F, 2.9814F, 1.44F),
+                PartPose.offsetAndRotation(0.0F, 3.3333F, 0.0F, 0.0F, 0.0F, -1.117F));
+        PartDefinition mut2LegsL02 = mut2LegsL01.addOrReplaceChild("mut2_legs_l0_2",
+                CubeListBuilder.create()
+                        .texOffs(98, 70).addBox(-0.576F, 0.0F, -0.576F, 1.152F, 2.6667F, 1.152F),
+                PartPose.offsetAndRotation(0.0F, 2.9814F, 0.0F, 0.0F, 0.0F, -1.117F));
+        PartDefinition mut2LegsL1 = body.addOrReplaceChild("mut2_legs_l1",
+                CubeListBuilder.create()
+                        .texOffs(118, 55).addBox(-0.9F, 0.0F, -0.9F, 1.8F, 3.3333F, 1.8F),
+                PartPose.offsetAndRotation(5.0F, 8.0F, 5.4F, 0.0F, 0.2094F, 1.0123F));
+        PartDefinition mut2LegsL11 = mut2LegsL1.addOrReplaceChild("mut2_legs_l1_1",
+                CubeListBuilder.create()
+                        .texOffs(103, 70).addBox(-0.72F, 0.0F, -0.72F, 1.44F, 2.9814F, 1.44F),
+                PartPose.offsetAndRotation(0.0F, 3.3333F, 0.0F, 0.0F, 0.0F, -1.117F));
+        PartDefinition mut2LegsL12 = mut2LegsL11.addOrReplaceChild("mut2_legs_l1_2",
+                CubeListBuilder.create()
+                        .texOffs(108, 70).addBox(-0.576F, 0.0F, -0.576F, 1.152F, 2.6667F, 1.152F),
+                PartPose.offsetAndRotation(0.0F, 2.9814F, 0.0F, 0.0F, 0.0F, -1.117F));
+        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
+                CubeListBuilder.create()
+                        .texOffs(65, 0).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 16.0F, 4.0F),
+                PartPose.offset(-4.0F, 8.0F, -8.0F));
+        PartDefinition legFl = root.addOrReplaceChild("leg_fl",
+                CubeListBuilder.create()
+                        .texOffs(82, 0).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 16.0F, 4.0F),
+                PartPose.offset(4.0F, 8.0F, -8.0F));
+        PartDefinition legBr = root.addOrReplaceChild("leg_br",
+                CubeListBuilder.create()
+                        .texOffs(99, 0).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 16.0F, 4.0F),
+                PartPose.offset(-4.0F, 8.0F, 8.0F));
+        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
+                CubeListBuilder.create()
+                        .texOffs(0, 34).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 16.0F, 4.0F),
+                PartPose.offset(4.0F, 8.0F, 8.0F));
+
+        return LayerDefinition.create(mesh, 128, 128);
+    }
+
+    public static LayerDefinition createGildedLlamaLayer() {
+        MeshDefinition mesh = new MeshDefinition();
+        PartDefinition root = mesh.getRoot();
+
+        PartDefinition body = root.addOrReplaceChild("body",
+                CubeListBuilder.create()
+                        .texOffs(0, 0).addBox(-4.0F, 0.0F, -8.0F, 8.0F, 12.0F, 16.0F),
+                PartPose.offset(0.0F, 2.0F, 0.0F));
+        PartDefinition head = body.addOrReplaceChild("head",
+                CubeListBuilder.create()
+                        .texOffs(101, 0).addBox(-2.0F, 0.0F, -6.0F, 4.0F, 8.0F, 6.0F),
+                PartPose.offset(0.0F, -8.0F, -9.0F));
+        PartDefinition earR = head.addOrReplaceChild("ear_r",
+                CubeListBuilder.create()
+                        .texOffs(18, 44).addBox(-1.5F, 0.0F, -0.5F, 1.5F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(-1.8F, -2.5F, -2.5F, 0.0F, 0.0F, -0.384F));
+        PartDefinition earL = head.addOrReplaceChild("ear_l",
+                CubeListBuilder.create()
+                        .texOffs(25, 44).addBox(0.0F, 0.0F, -0.5F, 1.5F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(1.8F, -2.5F, -2.5F, 0.0F, 0.0F, 0.384F));
+        PartDefinition mut1Tongue = head.addOrReplaceChild("mut1_tongue",
+                CubeListBuilder.create()
+                        .texOffs(47, 44).addBox(-0.55F, 0.0F, -0.5F, 1.1F, 2.6F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.0F, -9.0F, 1.0123F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue1 = mut1Tongue.addOrReplaceChild("mut1_tongue_1",
+                CubeListBuilder.create()
+                        .texOffs(118, 44).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.439F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.6F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue2 = mut1Tongue1.addOrReplaceChild("mut1_tongue_2",
+                CubeListBuilder.create()
+                        .texOffs(123, 44).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.288F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.439F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue3 = mut1Tongue2.addOrReplaceChild("mut1_tongue_3",
+                CubeListBuilder.create()
+                        .texOffs(0, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.1463F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.288F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1Tongue4 = mut1Tongue3.addOrReplaceChild("mut1_tongue_4",
+                CubeListBuilder.create()
+                        .texOffs(5, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.0134F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 2.1463F, 0.0F, 0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1TongueTip = mut1Tongue4.addOrReplaceChild("mut1_tongue_tip",
+                CubeListBuilder.create()
+                        .texOffs(10, 49).addBox(-0.6F, 0.0F, -0.5F, 1.2F, 1.6F, 1.0F),
+                PartPose.offset(0.0F, 2.0F, 0.0F));
+        PartDefinition mut1Eyes = head.addOrReplaceChild("mut1_eyes",
+                CubeListBuilder.create(),
+                PartPose.offset(0.0F, -2.0F, -9.2F));
+        PartDefinition mut1EyesE0 = mut1Eyes.addOrReplaceChild("mut1_eyes_e0",
+                CubeListBuilder.create()
+                        .texOffs(102, 29).addBox(-1.32F, -1.32F, -1.6368F, 2.64F, 2.64F, 1.6368F)
+                        .texOffs(88, 38).addBox(-1.6368F, -1.6368F, -0.792F, 3.2736F, 3.2736F, 1.056F),
+                PartPose.offsetAndRotation(-2.4F, 0.0F, -0.4F, 0.0F, -0.4538F, 0.0F));
+        PartDefinition mut1EyesE1 = mut1Eyes.addOrReplaceChild("mut1_eyes_e1",
+                CubeListBuilder.create()
+                        .texOffs(97, 44).addBox(-0.9228F, -0.9228F, -1.1442F, 1.8455F, 1.8455F, 1.1442F)
+                        .texOffs(104, 44).addBox(-1.1442F, -1.1442F, -0.5537F, 2.2884F, 2.2884F, 0.7382F),
+                PartPose.offsetAndRotation(-0.8F, 1.3524F, -0.5691F, 0.0F, -0.1513F, 0.236F));
+        PartDefinition mut1EyesE2 = mut1Eyes.addOrReplaceChild("mut1_eyes_e2",
+                CubeListBuilder.create()
+                        .texOffs(113, 29).addBox(-1.3049F, -1.3049F, -1.618F, 2.6097F, 2.6097F, 1.618F)
+                        .texOffs(97, 38).addBox(-1.618F, -1.618F, -0.7829F, 3.2361F, 3.2361F, 1.0439F),
+                PartPose.offsetAndRotation(0.8F, -1.9927F, -0.6491F, 0.0F, 0.1513F, -0.3478F));
+        PartDefinition mut1EyesE3 = mut1Eyes.addOrReplaceChild("mut1_eyes_e3",
+                CubeListBuilder.create()
+                        .texOffs(111, 44).addBox(-1.0364F, -1.0364F, -1.2851F, 2.0727F, 2.0727F, 1.2851F)
+                        .texOffs(106, 38).addBox(-1.2851F, -1.2851F, -0.6218F, 2.5702F, 2.5702F, 0.8291F),
+                PartPose.offsetAndRotation(2.4F, 1.5837F, -0.598F, 0.0F, 0.4538F, 0.2764F));
+        PartDefinition mut2RootsR = head.addOrReplaceChild("mut2_roots_r",
+                CubeListBuilder.create()
+                        .texOffs(84, 29).addBox(-0.8F, 0.0F, -0.8F, 1.6F, 4.0F, 1.6F),
+                PartPose.offsetAndRotation(-2.0F, 0.0F, -3.0F, -0.4189F, 0.0F, -0.5236F));
+        PartDefinition mut2RootsR1 = mut2RootsR.addOrReplaceChild("mut2_roots_r_1",
+                CubeListBuilder.create()
+                        .texOffs(9, 38).addBox(-0.624F, 0.0F, -0.624F, 1.248F, 3.5327F, 1.248F),
+                PartPose.offsetAndRotation(0.0F, 4.0F, 0.0F, -0.2443F, -0.1745F, -0.384F));
+        PartDefinition mut2RootsR2 = mut2RootsR1.addOrReplaceChild("mut2_roots_r_2",
+                CubeListBuilder.create()
+                        .texOffs(67, 44).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.12F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 3.5327F, 0.0F, -0.2443F, -0.1745F, -0.384F));
+        PartDefinition mut2RootsRB = mut2RootsR1.addOrReplaceChild("mut2_roots_r_b",
+                CubeListBuilder.create()
+                        .texOffs(72, 44).addBox(-0.55F, 0.0F, -0.55F, 1.1F, 3.0F, 1.1F),
+                PartPose.offsetAndRotation(0.0F, 2.0F, 0.0F, -0.5236F, 0.0F, 0.8029F));
+        PartDefinition mut2RootsRB1 = mut2RootsRB.addOrReplaceChild("mut2_roots_r_b_1",
+                CubeListBuilder.create()
+                        .texOffs(77, 44).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.6833F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 3.0F, 0.0F, -0.1745F, 0.0F, -0.4538F));
+        PartDefinition mut2RootsL = head.addOrReplaceChild("mut2_roots_l",
+                CubeListBuilder.create()
+                        .texOffs(93, 29).addBox(-0.8F, 0.0F, -0.8F, 1.6F, 4.0F, 1.6F),
+                PartPose.offsetAndRotation(2.0F, 0.0F, -3.0F, -0.4189F, 0.0F, 0.5236F));
+        PartDefinition mut2RootsL1 = mut2RootsL.addOrReplaceChild("mut2_roots_l_1",
+                CubeListBuilder.create()
+                        .texOffs(14, 38).addBox(-0.624F, 0.0F, -0.624F, 1.248F, 3.5327F, 1.248F),
+                PartPose.offsetAndRotation(0.0F, 4.0F, 0.0F, -0.2443F, 0.1745F, 0.384F));
+        PartDefinition mut2RootsL2 = mut2RootsL1.addOrReplaceChild("mut2_roots_l_2",
+                CubeListBuilder.create()
+                        .texOffs(82, 44).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.12F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 3.5327F, 0.0F, -0.2443F, 0.1745F, 0.384F));
+        PartDefinition mut2RootsLB = mut2RootsL1.addOrReplaceChild("mut2_roots_l_b",
+                CubeListBuilder.create()
+                        .texOffs(87, 44).addBox(-0.55F, 0.0F, -0.55F, 1.1F, 3.0F, 1.1F),
+                PartPose.offsetAndRotation(0.0F, 2.0F, 0.0F, -0.5236F, 0.0F, -0.8029F));
+        PartDefinition mut2RootsLB1 = mut2RootsLB.addOrReplaceChild("mut2_roots_l_b_1",
+                CubeListBuilder.create()
+                        .texOffs(92, 44).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.6833F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 3.0F, 0.0F, -0.1745F, 0.0F, 0.4538F));
+        PartDefinition tail = body.addOrReplaceChild("tail",
+                CubeListBuilder.create()
+                        .texOffs(75, 29).addBox(-1.0F, 0.0F, 0.0F, 2.0F, 4.0F, 2.0F),
+                PartPose.offsetAndRotation(0.0F, 1.0F, 8.0F, -0.6F, 0.0F, 0.0F));
+        PartDefinition mut1Flank = body.addOrReplaceChild("mut1_flank",
+                CubeListBuilder.create()
+                        .texOffs(0, 29).addBox(-2.75F, -3.0F, -0.8F, 5.5F, 6.0F, 2.0F),
+                PartPose.offset(0.0F, 5.0F, 1.0F));
+        PartDefinition mut1FlankFlapR = mut1Flank.addOrReplaceChild("mut1_flank_flap_r",
+                CubeListBuilder.create()
+                        .texOffs(17, 29).addBox(-3.025F, -3.0F, -1.0F, 3.025F, 6.0F, 1.6F),
+                PartPose.offsetAndRotation(-2.75F, 0.0F, 0.0F, 0.0F, -0.4887F, 0.0F));
+        PartDefinition mut1FlankFlapL = mut1Flank.addOrReplaceChild("mut1_flank_flap_l",
+                CubeListBuilder.create()
+                        .texOffs(28, 29).addBox(0.0F, -3.0F, -1.0F, 3.025F, 6.0F, 1.6F),
+                PartPose.offsetAndRotation(2.75F, 0.0F, 0.0F, 0.0F, 0.4887F, 0.0F));
+        PartDefinition mut1FlankStrand0 = mut1Flank.addOrReplaceChild("mut1_flank_strand0",
+                CubeListBuilder.create()
+                        .texOffs(32, 44).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.3F, 1.0F),
+                PartPose.offsetAndRotation(-1.375F, -2.1F, -0.9F, 0.0F, 0.0F, 0.3142F));
+        PartDefinition mut1FlankStrand1 = mut1Flank.addOrReplaceChild("mut1_flank_strand1",
+                CubeListBuilder.create()
+                        .texOffs(37, 44).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.3F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, -1.2F, -0.9F, 0.0F, 0.0F, 0.1047F));
+        PartDefinition mut1FlankStrand2 = mut1Flank.addOrReplaceChild("mut1_flank_strand2",
+                CubeListBuilder.create()
+                        .texOffs(42, 44).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.3F, 1.0F),
+                PartPose.offsetAndRotation(1.375F, -0.3F, -0.9F, 0.0F, 0.0F, -0.1047F));
+        PartDefinition mut1FlankEyes = mut1Flank.addOrReplaceChild("mut1_flank_eyes",
+                CubeListBuilder.create()
+                        .texOffs(19, 38).addBox(-1.76F, -1.68F, -0.6F, 3.52F, 3.36F, 0.6F),
+                PartPose.offset(0.0F, 0.0F, -0.9F));
+        PartDefinition mut1Plates = body.addOrReplaceChild("mut1_plates",
+                CubeListBuilder.create(),
+                PartPose.offset(0.0F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP0 = mut1Plates.addOrReplaceChild("mut1_plates_p0",
+                CubeListBuilder.create()
+                        .texOffs(52, 38).addBox(-1.2F, -1.54F, -0.8F, 2.4F, 1.54F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, -4.0F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP1 = mut1Plates.addOrReplaceChild("mut1_plates_p1",
+                CubeListBuilder.create()
+                        .texOffs(61, 38).addBox(-1.2F, -2.431F, -0.8F, 2.4F, 2.431F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, -1.75F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP2 = mut1Plates.addOrReplaceChild("mut1_plates_p2",
+                CubeListBuilder.create()
+                        .texOffs(0, 38).addBox(-1.2F, -2.8F, -0.8F, 2.4F, 2.8F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, 0.5F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP3 = mut1Plates.addOrReplaceChild("mut1_plates_p3",
+                CubeListBuilder.create()
+                        .texOffs(70, 38).addBox(-1.2F, -2.431F, -0.8F, 2.4F, 2.431F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, 2.75F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut1PlatesP4 = mut1Plates.addOrReplaceChild("mut1_plates_p4",
+                CubeListBuilder.create()
+                        .texOffs(79, 38).addBox(-1.2F, -1.54F, -0.8F, 2.4F, 1.54F, 1.6F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, 5.0F, -0.2793F, 0.0F, 0.0F));
+        PartDefinition mut2ArmR = body.addOrReplaceChild("mut2_arm_r",
+                CubeListBuilder.create()
+                        .texOffs(39, 29).addBox(-1.14F, 0.0F, -1.14F, 2.28F, 5.7F, 2.28F),
+                PartPose.offsetAndRotation(-4.5F, 2.0F, -5.0F, 0.1396F, 0.0F, -0.5934F));
+        PartDefinition mut2ArmRFore = mut2ArmR.addOrReplaceChild("mut2_arm_r_fore",
+                CubeListBuilder.create()
+                        .texOffs(48, 29).addBox(-0.95F, 0.0F, -0.95F, 1.9F, 5.7F, 1.9F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -1.0821F, 0.0F, 0.3142F));
+        PartDefinition mut2ArmRHand = mut2ArmRFore.addOrReplaceChild("mut2_arm_r_hand",
+                CubeListBuilder.create()
+                        .texOffs(30, 38).addBox(-1.33F, 0.0F, -0.855F, 2.66F, 2.09F, 1.71F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -0.2443F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF0 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f0",
+                CubeListBuilder.create()
+                        .texOffs(15, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-1.045F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.1833F));
+        PartDefinition mut2ArmRF01 = mut2ArmRF0.addOrReplaceChild("mut2_arm_r_f0_1",
+                CubeListBuilder.create()
+                        .texOffs(55, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF02 = mut2ArmRF01.addOrReplaceChild("mut2_arm_r_f0_2",
+                CubeListBuilder.create()
+                        .texOffs(60, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF1 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f1",
+                CubeListBuilder.create()
+                        .texOffs(20, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-0.3325F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.0611F));
+        PartDefinition mut2ArmRF11 = mut2ArmRF1.addOrReplaceChild("mut2_arm_r_f1_1",
+                CubeListBuilder.create()
+                        .texOffs(65, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF12 = mut2ArmRF11.addOrReplaceChild("mut2_arm_r_f1_2",
+                CubeListBuilder.create()
+                        .texOffs(70, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF2 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f2",
+                CubeListBuilder.create()
+                        .texOffs(25, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(0.38F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.0611F));
+        PartDefinition mut2ArmRF21 = mut2ArmRF2.addOrReplaceChild("mut2_arm_r_f2_1",
+                CubeListBuilder.create()
+                        .texOffs(75, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF22 = mut2ArmRF21.addOrReplaceChild("mut2_arm_r_f2_2",
+                CubeListBuilder.create()
+                        .texOffs(80, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF3 = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_f3",
+                CubeListBuilder.create()
+                        .texOffs(30, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(1.0925F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.1833F));
+        PartDefinition mut2ArmRF31 = mut2ArmRF3.addOrReplaceChild("mut2_arm_r_f3_1",
+                CubeListBuilder.create()
+                        .texOffs(85, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRF32 = mut2ArmRF31.addOrReplaceChild("mut2_arm_r_f3_2",
+                CubeListBuilder.create()
+                        .texOffs(90, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmRThumb = mut2ArmRHand.addOrReplaceChild("mut2_arm_r_thumb",
+                CubeListBuilder.create()
+                        .texOffs(95, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.425F, 1.0F),
+                PartPose.offsetAndRotation(-1.33F, 0.95F, 0.0F, 0.0F, 0.0F, -1.2217F));
+        PartDefinition mut2ArmRThumb1 = mut2ArmRThumb.addOrReplaceChild("mut2_arm_r_thumb_1",
+                CubeListBuilder.create()
+                        .texOffs(100, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3138F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.425F, 0.0F, 0.3491F, 0.0F, 0.0F));
+        PartDefinition mut2ArmL = body.addOrReplaceChild("mut2_arm_l",
+                CubeListBuilder.create()
+                        .texOffs(57, 29).addBox(-1.14F, 0.0F, -1.14F, 2.28F, 5.7F, 2.28F),
+                PartPose.offsetAndRotation(4.5F, 2.0F, -5.0F, 0.1396F, 0.0F, 0.5934F));
+        PartDefinition mut2ArmLFore = mut2ArmL.addOrReplaceChild("mut2_arm_l_fore",
+                CubeListBuilder.create()
+                        .texOffs(66, 29).addBox(-0.95F, 0.0F, -0.95F, 1.9F, 5.7F, 1.9F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -1.0821F, 0.0F, -0.3142F));
+        PartDefinition mut2ArmLHand = mut2ArmLFore.addOrReplaceChild("mut2_arm_l_hand",
+                CubeListBuilder.create()
+                        .texOffs(41, 38).addBox(-1.33F, 0.0F, -0.855F, 2.66F, 2.09F, 1.71F),
+                PartPose.offsetAndRotation(0.0F, 5.7F, 0.0F, -0.2443F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF0 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f0",
+                CubeListBuilder.create()
+                        .texOffs(35, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-1.045F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.1833F));
+        PartDefinition mut2ArmLF01 = mut2ArmLF0.addOrReplaceChild("mut2_arm_l_f0_1",
+                CubeListBuilder.create()
+                        .texOffs(105, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF02 = mut2ArmLF01.addOrReplaceChild("mut2_arm_l_f0_2",
+                CubeListBuilder.create()
+                        .texOffs(110, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF1 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f1",
+                CubeListBuilder.create()
+                        .texOffs(40, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(-0.3325F, 2.09F, 0.0F, 0.1047F, 0.0F, -0.0611F));
+        PartDefinition mut2ArmLF11 = mut2ArmLF1.addOrReplaceChild("mut2_arm_l_f1_1",
+                CubeListBuilder.create()
+                        .texOffs(115, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF12 = mut2ArmLF11.addOrReplaceChild("mut2_arm_l_f1_2",
+                CubeListBuilder.create()
+                        .texOffs(120, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF2 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f2",
+                CubeListBuilder.create()
+                        .texOffs(45, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(0.38F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.0611F));
+        PartDefinition mut2ArmLF21 = mut2ArmLF2.addOrReplaceChild("mut2_arm_l_f2_1",
+                CubeListBuilder.create()
+                        .texOffs(0, 53).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF22 = mut2ArmLF21.addOrReplaceChild("mut2_arm_l_f2_2",
+                CubeListBuilder.create()
+                        .texOffs(5, 53).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF3 = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_f3",
+                CubeListBuilder.create()
+                        .texOffs(50, 49).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.52F, 1.0F),
+                PartPose.offsetAndRotation(1.0925F, 2.09F, 0.0F, 0.1047F, 0.0F, 0.1833F));
+        PartDefinition mut2ArmLF31 = mut2ArmLF3.addOrReplaceChild("mut2_arm_l_f3_1",
+                CubeListBuilder.create()
+                        .texOffs(10, 53).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.4096F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.52F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLF32 = mut2ArmLF31.addOrReplaceChild("mut2_arm_l_f3_2",
+                CubeListBuilder.create()
+                        .texOffs(15, 53).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3072F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.4096F, 0.0F, 0.384F, 0.0F, 0.0F));
+        PartDefinition mut2ArmLThumb = mut2ArmLHand.addOrReplaceChild("mut2_arm_l_thumb",
+                CubeListBuilder.create()
+                        .texOffs(20, 53).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.425F, 1.0F),
+                PartPose.offsetAndRotation(-1.33F, 0.95F, 0.0F, 0.0F, 0.0F, -1.2217F));
+        PartDefinition mut2ArmLThumb1 = mut2ArmLThumb.addOrReplaceChild("mut2_arm_l_thumb_1",
+                CubeListBuilder.create()
+                        .texOffs(25, 53).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.3138F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 1.425F, 0.0F, 0.3491F, 0.0F, 0.0F));
+        PartDefinition mut2Stalks = body.addOrReplaceChild("mut2_stalks",
+                CubeListBuilder.create(),
+                PartPose.offset(0.0F, 0.0F, 4.0F));
+        PartDefinition mut2StalksS0 = mut2Stalks.addOrReplaceChild("mut2_stalks_s0",
+                CubeListBuilder.create()
+                        .texOffs(52, 44).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(-2.6F, 0.0F, -0.8F, -0.3142F, -0.4538F, -0.5236F));
+        PartDefinition mut2StalksE0 = mut2StalksS0.addOrReplaceChild("mut2_stalks_e0",
+                CubeListBuilder.create()
+                        .texOffs(115, 38).addBox(-1.2F, -2.4F, -1.2F, 2.4F, 2.4F, 2.4F),
+                PartPose.offset(0.0F, -3.0F, 0.0F));
+        PartDefinition mut2StalksS1 = mut2Stalks.addOrReplaceChild("mut2_stalks_s1",
+                CubeListBuilder.create()
+                        .texOffs(57, 44).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 0.0F, -0.0F, -0.3142F, 0.0F, 0.0F));
+        PartDefinition mut2StalksE1 = mut2StalksS1.addOrReplaceChild("mut2_stalks_e1",
+                CubeListBuilder.create()
+                        .texOffs(0, 44).addBox(-1.2F, -2.4F, -1.2F, 2.4F, 2.4F, 2.4F),
+                PartPose.offset(0.0F, -3.0F, 0.0F));
+        PartDefinition mut2StalksS2 = mut2Stalks.addOrReplaceChild("mut2_stalks_s2",
+                CubeListBuilder.create()
+                        .texOffs(62, 44).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+                PartPose.offsetAndRotation(2.6F, 0.0F, -0.8F, -0.3142F, 0.4538F, 0.5236F));
+        PartDefinition mut2StalksE2 = mut2StalksS2.addOrReplaceChild("mut2_stalks_e2",
+                CubeListBuilder.create()
+                        .texOffs(9, 44).addBox(-1.2F, -2.4F, -1.2F, 2.4F, 2.4F, 2.4F),
+                PartPose.offset(0.0F, -3.0F, 0.0F));
+        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
+                CubeListBuilder.create()
+                        .texOffs(49, 0).addBox(-1.5F, 0.0F, -1.5F, 3.0F, 14.0F, 3.0F),
+                PartPose.offset(-3.0F, 10.0F, -6.0F));
+        PartDefinition legFl = root.addOrReplaceChild("leg_fl",
+                CubeListBuilder.create()
+                        .texOffs(62, 0).addBox(-1.5F, 0.0F, -1.5F, 3.0F, 14.0F, 3.0F),
+                PartPose.offset(3.0F, 10.0F, -6.0F));
+        PartDefinition legBr = root.addOrReplaceChild("leg_br",
+                CubeListBuilder.create()
+                        .texOffs(75, 0).addBox(-1.5F, 0.0F, -1.5F, 3.0F, 14.0F, 3.0F),
+                PartPose.offset(-3.0F, 10.0F, 6.0F));
+        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
+                CubeListBuilder.create()
+                        .texOffs(88, 0).addBox(-1.5F, 0.0F, -1.5F, 3.0F, 14.0F, 3.0F),
+                PartPose.offset(3.0F, 10.0F, 6.0F));
+
+        return LayerDefinition.create(mesh, 128, 128);
+    }
 }

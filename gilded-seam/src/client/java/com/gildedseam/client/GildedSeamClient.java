@@ -76,6 +76,14 @@ public final class GildedSeamClient implements ClientModInitializer {
                 com.gildedseam.client.model.GildedBeastLayers::createGildedGoatLayer);
         ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_HARE,
                 com.gildedseam.client.model.GildedBeastLayers::createGildedHareLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_FOX,
+                com.gildedseam.client.model.GildedBeastLayers::createGildedFoxLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_CAT,
+                com.gildedseam.client.model.GildedBeastLayers::createGildedCatLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_HORSE,
+                com.gildedseam.client.model.GildedBeastLayers::createGildedHorseLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_LLAMA,
+                com.gildedseam.client.model.GildedBeastLayers::createGildedLlamaLayer);
         ModelLayerRegistry.registerModelLayer(ModModelLayers.REFUGEE,
                 com.gildedseam.client.model.FolkLayers::createRefugeeLayer);
         ModelLayerRegistry.registerModelLayer(ModModelLayers.GILT_MAD,
@@ -92,6 +100,10 @@ public final class GildedSeamClient implements ClientModInitializer {
         registerBeast(ModEntities.GILDED_WOLF, ModModelLayers.GILDED_WOLF, "gilded_wolf");
         registerBeast(ModEntities.GILDED_GOAT, ModModelLayers.GILDED_GOAT, "gilded_goat");
         registerBeast(ModEntities.GILDED_HARE, ModModelLayers.GILDED_HARE, "gilded_hare");
+        registerBeast(ModEntities.GILDED_FOX, ModModelLayers.GILDED_FOX, "gilded_fox");
+        registerBeast(ModEntities.GILDED_CAT, ModModelLayers.GILDED_CAT, "gilded_cat");
+        registerBeast(ModEntities.GILDED_HORSE, ModModelLayers.GILDED_HORSE, "gilded_horse");
+        registerBeast(ModEntities.GILDED_LLAMA, ModModelLayers.GILDED_LLAMA, "gilded_llama");
 
         EntityRendererRegistry.register(ModEntities.REFUGEE, context ->
                 new com.gildedseam.client.render.FolkRenderer(context, ModModelLayers.REFUGEE, "refugee", false));

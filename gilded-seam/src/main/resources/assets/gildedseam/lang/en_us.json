@@ -90,5 +90,13 @@
   "entity.gildedseam.gilded_goat": "Blighted Goat",
   "item.gildedseam.gilded_goat_spawn_egg": "Blighted Goat Spawn Egg",
   "entity.gildedseam.gilded_hare": "Blighted Hare",
-  "item.gildedseam.gilded_hare_spawn_egg": "Blighted Hare Spawn Egg"
+  "item.gildedseam.gilded_hare_spawn_egg": "Blighted Hare Spawn Egg",
+  "entity.gildedseam.gilded_fox": "Blighted Fox",
+  "item.gildedseam.gilded_fox_spawn_egg": "Blighted Fox Spawn Egg",
+  "entity.gildedseam.gilded_cat": "Blighted Cat",
+  "item.gildedseam.gilded_cat_spawn_egg": "Blighted Cat Spawn Egg",
+  "entity.gildedseam.gilded_horse": "Blighted Horse",
+  "item.gildedseam.gilded_horse_spawn_egg": "Blighted Horse Spawn Egg",
+  "entity.gildedseam.gilded_llama": "Blighted Llama",
+  "item.gildedseam.gilded_llama_spawn_egg": "Blighted Llama Spawn Egg"
 }

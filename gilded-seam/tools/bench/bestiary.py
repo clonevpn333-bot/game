@@ -160,6 +160,68 @@ def blighted_wolf() -> Model:
     return _m("blighted_wolf", p)
 
 
+def _corrupt_quad(host: str, name: str, *, rift_z: float, rift: tuple,
+                  tongue_at: tuple, eyes_at: tuple, arm_at: tuple,
+                  legs_at: tuple | None = None, roots: bool = False,
+                  tongue_len: int = 5) -> Model:
+    """The standard progression, fitted to one host's proportions."""
+    p = HOSTS[host].build()
+    w, h = rift
+    p += split_open("body", at=(0.0, rift_z, 1.0), width=w, height=h, tier=1,
+                    name="flank")
+    p += spine_plates("body", from_z=-4.0, to_z=5.0, y=0.0, count=5, tier=1,
+                      height=2.8)
+    p += lolling_tongue("head", at=tongue_at, tier=1, segments=tongue_len,
+                        thick=1.1)
+    p += eye_cluster("head", at=eyes_at, count=4, tier=1, spread=(2.4, 2.0),
+                     size=2.4)
+    ax, ay, az = arm_at
+    p += grafted_arm("body", at=(-ax, ay, az), tier=2, side=-1, scale=0.95,
+                     name="arm_r")
+    p += grafted_arm("body", at=(ax, ay, az), tier=2, side=1, scale=0.95,
+                     name="arm_l")
+    p += eye_stalks("body", at=(0.0, 0.0, 4.0), count=3, tier=2, spread=2.6)
+    if roots:
+        p += antler_roots("head", at=(-2.0, 0.0, -3.0), tier=2, side=-1,
+                          name="roots_r")
+        p += antler_roots("head", at=(2.0, 0.0, -3.0), tier=2, side=1,
+                          name="roots_l")
+    if legs_at:
+        lx, ly, lz = legs_at
+        p += extra_legs("body", at=(-lx, ly, lz), tier=2, count=2, length=8.0,
+                        side=-1, name="legs_r")
+        p += extra_legs("body", at=(lx, ly, lz), tier=2, count=2, length=8.0,
+                        side=1, name="legs_l")
+    return _m(name, p)
+
+
+def blighted_fox() -> Model:
+    # Foxes keep their brush; the blight just puts eyes along it.
+    return _corrupt_quad("fox", "blighted_fox", rift_z=3.0, rift=(4.5, 4.0),
+                         tongue_at=(0.0, 4.0, -6.0), eyes_at=(0.0, 2.0, -6.2),
+                         arm_at=(3.2, 2.0, -3.0), roots=True)
+
+
+def blighted_cat() -> Model:
+    return _corrupt_quad("cat", "blighted_cat", rift_z=3.0, rift=(4.0, 3.5),
+                         tongue_at=(0.0, 3.0, -5.0), eyes_at=(0.0, 1.5, -5.2),
+                         arm_at=(3.0, 2.0, -2.5), tongue_len=6)
+
+
+def blighted_horse() -> Model:
+    # The big one: room for a second set of legs under the barrel.
+    return _corrupt_quad("horse", "blighted_horse", rift_z=6.0, rift=(7.0, 7.0),
+                         tongue_at=(0.0, 6.0, -11.0), eyes_at=(0.0, 2.0, -11.2),
+                         arm_at=(5.5, 3.0, -6.0), legs_at=(5.0, 8.0, 2.0),
+                         roots=True, tongue_len=7)
+
+
+def blighted_llama() -> Model:
+    return _corrupt_quad("llama", "blighted_llama", rift_z=5.0, rift=(5.5, 6.0),
+                         tongue_at=(0.0, 2.0, -9.0), eyes_at=(0.0, -2.0, -9.2),
+                         arm_at=(4.5, 2.0, -5.0), roots=True)
+
+
 def blighted_rabbit() -> Model:
     p = HOSTS["rabbit"].build()
     p += split_open("body", at=(0.0, 3.0, 1.0), width=4.0, height=3.5, tier=1,
@@ -437,6 +499,10 @@ BESTIARY = {
     "blighted_wolf": blighted_wolf,
     "blighted_rabbit": blighted_rabbit,
     "blighted_goat": blighted_goat,
+    "blighted_fox": blighted_fox,
+    "blighted_cat": blighted_cat,
+    "blighted_horse": blighted_horse,
+    "blighted_llama": blighted_llama,
     "the_tangle": the_tangle,
     "heartwood_colossus": heartwood_colossus,
     "amber_sovereign": amber_sovereign,
@@ -456,6 +522,10 @@ EYE_FIELDS = {
     "blighted_wolf": {"mut1_ribs": 3},
     "blighted_rabbit": {"mut1_ribs": 2},
     "blighted_goat": {"mut1_flank": 3},
+    "blighted_fox": {"mut1_flank": 3},
+    "blighted_cat": {"mut1_flank": 3},
+    "blighted_horse": {"mut1_flank": 3},
+    "blighted_llama": {"mut1_flank": 3},
     "the_tangle": {"core": 4},
     "heartwood_colossus": {"cavity": 4, "trunk": 3},
     "amber_sovereign": {"core": 4, "mantle": 3, "head": 2, "chest": 2},
@@ -475,6 +545,10 @@ DISPLAY = {
     "blighted_wolf": ("Blighted Wolf", "pale oak out of the skull"),
     "blighted_rabbit": ("Blighted Hare", "small, fast, and wrong"),
     "blighted_goat": ("Blighted Goat", "rooted horns, grafted hands"),
+    "blighted_fox": ("Blighted Fox", "keeps the brush; eyes along it"),
+    "blighted_cat": ("Blighted Cat", "small, quiet, and watching"),
+    "blighted_horse": ("Blighted Horse", "six legs under the barrel"),
+    "blighted_llama": ("Blighted Llama", "spits something worse now"),
     "the_tangle": ("The Tangle", "abstract: a knot that kept building hands"),
     "heartwood_colossus": ("Heartwood Colossus", "abstract: a pale oak that stood up"),
     "amber_sovereign": ("The Amber Sovereign", "six unattached arms, three haloes"),

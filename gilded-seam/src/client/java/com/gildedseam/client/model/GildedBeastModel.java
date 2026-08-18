@@ -91,7 +91,31 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
                                   "body/head/mut1_eyes"},
                     new String[] {"body/head/mut2_stalks", "body/mut2_legs_r0",
                                   "body/mut2_legs_l0"},
-                    new String[] {"body/head/mut1_tongue"}, 1.30F, 1.05F)));
+                    new String[] {"body/head/mut1_tongue"}, 1.30F, 1.05F)),
+            Map.entry("gilded_fox", new Config("body/head", QUAD_LEGS,
+                    new String[] {"body/mut1_flank", "body/mut1_plates",
+                                  "body/head/mut1_tongue", "body/head/mut1_eyes"},
+                    new String[] {"body/mut2_arm_r", "body/mut2_arm_l",
+                                  "body/mut2_stalks"},
+                    new String[] {"body/head/mut1_tongue"}, 1.0F, 1.05F)),
+            Map.entry("gilded_cat", new Config("body/head", QUAD_LEGS,
+                    new String[] {"body/mut1_flank", "body/mut1_plates",
+                                  "body/head/mut1_tongue", "body/head/mut1_eyes"},
+                    new String[] {"body/mut2_arm_r", "body/mut2_arm_l",
+                                  "body/mut2_stalks"},
+                    new String[] {"body/head/mut1_tongue"}, 1.15F, 1.1F)),
+            Map.entry("gilded_horse", new Config("body/head", QUAD_LEGS,
+                    new String[] {"body/mut1_flank", "body/mut1_plates",
+                                  "body/head/mut1_tongue", "body/head/mut1_eyes"},
+                    new String[] {"body/mut2_arm_r", "body/mut2_arm_l",
+                                  "body/mut2_stalks"},
+                    new String[] {"body/head/mut1_tongue"}, 0.68F, 1.0F)),
+            Map.entry("gilded_llama", new Config("body/head", QUAD_LEGS,
+                    new String[] {"body/mut1_flank", "body/mut1_plates",
+                                  "body/head/mut1_tongue", "body/head/mut1_eyes"},
+                    new String[] {"body/mut2_arm_r", "body/mut2_arm_l",
+                                  "body/mut2_stalks"},
+                    new String[] {"body/head/mut1_tongue"}, 0.72F, 0.95F)));
 
     private final Config config;
     private final ModelPart body;

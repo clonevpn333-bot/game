@@ -84,15 +84,55 @@ public final class SeamConversion {
 
     @org.jetbrains.annotations.Nullable
     private static net.minecraft.world.entity.EntityType<com.gildedseam.entity.GildedBeastEntity> beastFormOf(Mob mob) {
-        if (mob instanceof net.minecraft.world.entity.animal.cow.Cow) return ModEntities.GILDED_COW;
-        if (mob instanceof net.minecraft.world.entity.animal.pig.Pig) return ModEntities.GILDED_PIG;
-        if (mob instanceof net.minecraft.world.entity.animal.sheep.Sheep) return ModEntities.GILDED_SHEEP;
-        if (mob instanceof net.minecraft.world.entity.animal.chicken.Chicken) return ModEntities.GILDED_CHICKEN;
-        if (mob instanceof net.minecraft.world.entity.monster.spider.Spider) return ModEntities.GILDED_SPIDER;
-        if (mob instanceof net.minecraft.world.entity.monster.Creeper) return ModEntities.GILDED_CASK;
-        if (mob instanceof net.minecraft.world.entity.animal.wolf.Wolf) return ModEntities.GILDED_WOLF;
-        if (mob instanceof net.minecraft.world.entity.animal.goat.Goat) return ModEntities.GILDED_GOAT;
-        if (mob instanceof net.minecraft.world.entity.animal.rabbit.Rabbit) return ModEntities.GILDED_HARE;
+        // Matched on the vanilla entity type rather than the class, because
+        // types are stable registry constants while the classes move between
+        // packages from one release to the next.
+        net.minecraft.world.entity.EntityType<?> host = mob.getType();
+        if (host == net.minecraft.world.entity.EntityType.COW
+                || host == net.minecraft.world.entity.EntityType.MOOSHROOM) {
+            return ModEntities.GILDED_COW;
+        }
+        if (host == net.minecraft.world.entity.EntityType.PIG) {
+            return ModEntities.GILDED_PIG;
+        }
+        if (host == net.minecraft.world.entity.EntityType.SHEEP) {
+            return ModEntities.GILDED_SHEEP;
+        }
+        if (host == net.minecraft.world.entity.EntityType.CHICKEN) {
+            return ModEntities.GILDED_CHICKEN;
+        }
+        if (host == net.minecraft.world.entity.EntityType.SPIDER
+                || host == net.minecraft.world.entity.EntityType.CAVE_SPIDER) {
+            return ModEntities.GILDED_SPIDER;
+        }
+        if (host == net.minecraft.world.entity.EntityType.CREEPER) {
+            return ModEntities.GILDED_CASK;
+        }
+        if (host == net.minecraft.world.entity.EntityType.WOLF) {
+            return ModEntities.GILDED_WOLF;
+        }
+        if (host == net.minecraft.world.entity.EntityType.GOAT) {
+            return ModEntities.GILDED_GOAT;
+        }
+        if (host == net.minecraft.world.entity.EntityType.RABBIT) {
+            return ModEntities.GILDED_HARE;
+        }
+        if (host == net.minecraft.world.entity.EntityType.FOX) {
+            return ModEntities.GILDED_FOX;
+        }
+        if (host == net.minecraft.world.entity.EntityType.CAT
+                || host == net.minecraft.world.entity.EntityType.OCELOT) {
+            return ModEntities.GILDED_CAT;
+        }
+        if (host == net.minecraft.world.entity.EntityType.HORSE
+                || host == net.minecraft.world.entity.EntityType.DONKEY
+                || host == net.minecraft.world.entity.EntityType.MULE) {
+            return ModEntities.GILDED_HORSE;
+        }
+        if (host == net.minecraft.world.entity.EntityType.LLAMA
+                || host == net.minecraft.world.entity.EntityType.TRADER_LLAMA) {
+            return ModEntities.GILDED_LLAMA;
+        }
         return null;
     }
 
