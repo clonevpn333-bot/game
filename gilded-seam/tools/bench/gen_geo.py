@@ -20,6 +20,7 @@ from core import lower, pack_uvs
 from geo import (animation, breathe, gait, key, strike, track, write_animations,
                  write_geo)
 import bestiary as B
+import anim as A
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                      "..", ".."))
@@ -29,25 +30,31 @@ ANIM_DIR = os.path.join(ROOT, "src", "main", "resources", "assets", "gildedseam"
                         "animations")
 
 QUAD_LEGS = ["leg_fr", "leg_fl", "leg_br", "leg_bl"]
+QUAD_HIND = {"leg_br", "leg_bl"}
+SPIDER_LEGS = ["leg_r0", "leg_r1", "leg_r2", "leg_r3",
+               "leg_l0", "leg_l1", "leg_l2", "leg_l3"]
 
-# Per-species timing. A hare does not walk like a horse, and a walk cycle that
-# ignores that is the thing that makes modded mobs feel weightless.
+# Per-species locomotion. Gait comes first, because which feet leave the ground
+# together is what you actually recognise an animal by from across a field: a
+# llama paces, a wolf trots, a hare bounds, a cow walks a careful four-beat.
+# `limp` drags one diagonal - these animals are sick, and none of them should
+# move like a show pony.
+#
+#   (shipped, legs, hind, period, gait, sway, limp, tail)
 BEASTS = {
-    "blighted_cow":     ("gilded_cow", QUAD_LEGS, 0.92, 24.0, 1.2),
-    "blighted_pig":     ("gilded_pig", QUAD_LEGS, 0.74, 27.0, 0.9),
-    "blighted_sheep":   ("gilded_sheep", QUAD_LEGS, 0.86, 25.0, 1.0),
-    "blighted_goat":    ("gilded_goat", QUAD_LEGS, 0.80, 27.0, 1.0),
-    "blighted_wolf":    ("gilded_wolf", QUAD_LEGS, 0.58, 33.0, 1.3),
-    "blighted_fox":     ("gilded_fox", QUAD_LEGS, 0.54, 34.0, 1.3),
-    "blighted_cat":     ("gilded_cat", QUAD_LEGS, 0.50, 31.0, 1.1),
-    "blighted_rabbit":  ("gilded_hare", QUAD_LEGS, 0.44, 38.0, 1.8),
-    "blighted_horse":   ("gilded_horse", QUAD_LEGS, 1.05, 22.0, 1.5),
-    "blighted_llama":   ("gilded_llama", QUAD_LEGS, 0.98, 23.0, 1.2),
-    "blighted_chicken": ("gilded_chicken", ["leg_r", "leg_l"], 0.40, 34.0, 1.0),
-    "blighted_creeper": ("gilded_cask", QUAD_LEGS, 0.70, 20.0, 0.8),
-    "blighted_spider":  ("gilded_spider",
-                         ["leg_r0", "leg_r1", "leg_r2", "leg_r3",
-                          "leg_l0", "leg_l1", "leg_l2", "leg_l3"], 0.52, 16.0, 0.5),
+    "blighted_cow":     ("gilded_cow", QUAD_LEGS, QUAD_HIND, 1.15, "walk", 1.0, 0.10, ["tail"]),
+    "blighted_pig":     ("gilded_pig", QUAD_LEGS, QUAD_HIND, 0.84, "walk", 1.3, 0.06, ["tail"]),
+    "blighted_sheep":   ("gilded_sheep", QUAD_LEGS, QUAD_HIND, 0.98, "walk", 1.1, 0.14, ["tail"]),
+    "blighted_goat":    ("gilded_goat", QUAD_LEGS, QUAD_HIND, 0.88, "walk", 0.9, 0.05, ["tail"]),
+    "blighted_wolf":    ("gilded_wolf", QUAD_LEGS, QUAD_HIND, 0.62, "trot", 0.7, 0.04, ["tail"]),
+    "blighted_fox":     ("gilded_fox", QUAD_LEGS, QUAD_HIND, 0.56, "trot", 0.8, 0.08, ["tail"]),
+    "blighted_cat":     ("gilded_cat", QUAD_LEGS, QUAD_HIND, 0.54, "trot", 0.9, 0.03, ["tail"]),
+    "blighted_rabbit":  ("gilded_hare", QUAD_LEGS, QUAD_HIND, 0.50, "bound", 1.4, 0.00, ["tail"]),
+    "blighted_horse":   ("gilded_horse", QUAD_LEGS, QUAD_HIND, 1.22, "walk", 0.8, 0.12, ["tail"]),
+    "blighted_llama":   ("gilded_llama", QUAD_LEGS, QUAD_HIND, 1.06, "pace", 1.6, 0.09, ["tail"]),
+    "blighted_chicken": ("gilded_chicken", ["leg_r", "leg_l"], set(), 0.46, "biped", 1.5, 0.07, []),
+    "blighted_creeper": ("gilded_cask", QUAD_LEGS, QUAD_HIND, 0.78, "walk", 1.2, 0.18, []),
+    "blighted_spider":  ("gilded_spider", SPIDER_LEGS, set(), 0.58, "walk", 0.5, 0.05, []),
 }
 
 
@@ -55,29 +62,51 @@ def main() -> None:
     os.makedirs(GEO_DIR, exist_ok=True)
     os.makedirs(ANIM_DIR, exist_ok=True)
 
-    for bench_name, (shipped, legs, period, swing, bounce) in BEASTS.items():
+    for bench_name, cfg in BEASTS.items():
+        shipped, legs, hind, period, gait_name, sway, limp, tail = cfg
         model = lower(B.BESTIARY[bench_name]())
         pack_uvs(model)
         write_geo(model, shipped, os.path.join(GEO_DIR, f"{shipped}.geo.json"))
 
+        limbs = A.measure_limbs(model, legs, hind)
         jaw = "face_jaw"
+        have = {p.name for p in model.parts}
+        tail = [t for t in tail if t in have]
+        # Grafted arms are the thing that mauls you; the mouth is a backup.
+        arms = [c for c in (["mut2_arm_r", "mut2_arm_r_fore", "mut2_arm_r_hand"],
+                            ["mut2_arm_l", "mut2_arm_l_fore", "mut2_arm_l_hand"])
+                if c[0] in have]
+
         anims = {
-            f"animation.{shipped}.idle": breathe("body", length=4.0, depth=0.4, extra={
-                jaw: {"rotation": track(
-                    key(0.0, [14, 0, 0]),
-                    key(2.0, [20, 0, 0]),
-                    key(4.0, [14, 0, 0]),
-                )},
-            }),
-            f"animation.{shipped}.walk": gait(legs, period=period, swing=swing,
-                                              body="body", head="head", jaw=jaw,
-                                              bounce=bounce),
-            f"animation.{shipped}.attack": strike("head", [], length=0.8,
-                                                  jaw=jaw, body="body"),
+            f"animation.{shipped}.idle": A.idle(
+                body="body", head="head", jaw=jaw, limbs=limbs, tail=tail,
+                period=4.0 + 0.7 * len(shipped) % 2.3, unease=sway),
+            f"animation.{shipped}.walk": A.locomotion(
+                limbs, period=period, gait=gait_name, body="body", head="head",
+                jaw=jaw, tail=tail, sway=sway, limp=limp),
+            f"animation.{shipped}.run": A.locomotion(
+                limbs, period=period * 0.62, gait="bound" if gait_name == "bound"
+                else "trot", body="body", head="head", jaw=jaw, tail=tail,
+                sway=sway * 1.35, limp=limp * 0.5, stride=None, lift=None),
+            f"animation.{shipped}.attack": A.strike(
+                arms=arms, length=0.78, head="head", jaw=jaw, body="body",
+                legs=limbs, stagger=0.11, reach=84.0, step=1.6),
         }
         write_animations(os.path.join(ANIM_DIR, f"{shipped}.animation.json"), anims)
 
     # --- the Creaking, hand and body ------------------------------------
+    # Six arms is not six copies of one arm. They fire in sequence, outside
+    # pair first, and the small sternum pair last and fastest, so a swing
+    # arrives as a rolling mauling rather than a synchronised clap.
+    CREAK_ARMS = [
+        ["arm0_r", "arm0_r_1", "arm0_r_2", "hand0_r"],
+        ["arm0_l", "arm0_l_1", "arm0_l_2", "hand0_l"],
+        ["arm1_r", "arm1_r_1", "arm1_r_2", "hand1_r"],
+        ["arm1_l", "arm1_l_1", "arm1_l_2", "hand1_l"],
+        ["arms_r", "arms_r_1", "arms_r_2", "hands_r"],
+        ["arms_l", "arms_l_1", "arms_l_2", "hands_l"],
+    ]
+
     for bench_name, shipped in (("creaking_hand", "creaking_hand"),
                                 ("the_creaking", "the_creaking"),
                                 ("creaking_risen", "creaking_risen")):
@@ -85,73 +114,45 @@ def main() -> None:
                       else getattr(B, bench_name)())
         pack_uvs(model)
         write_geo(model, shipped, os.path.join(GEO_DIR, f"{shipped}.geo.json"))
+        have = {p.name for p in model.parts}
 
-    # The hand reaches, grabs, and drags back through the gate.
-    hand_fingers = [f"hand_f{i}" for i in range(4)] + ["hand_th"]
-    write_animations(os.path.join(ANIM_DIR, "creaking_hand.animation.json"), {
-        "animation.creaking_hand.idle": animation(5.0, {
-            "arm": {"rotation": track(key(0.0, [0, 0, 0]), key(2.5, [0, 4, 2]),
-                                      key(5.0, [0, 0, 0]))},
-            **{f: {"rotation": track(key(0.0, [0, 0, 0]), key(2.5, [10, 0, 0]),
-                                     key(5.0, [0, 0, 0]))} for f in hand_fingers},
-        }),
-        "animation.creaking_hand.reach": animation(1.6, {
-            "arm": {"rotation": track(
-                key(0.0, [0, 0, 0]),
-                key(0.5, [14, 0, 0]),
-                key(0.95, [-34, 0, 0], easing="easeOutQuart"),
-                key(1.6, [0, 0, 0]))},
-            **{f: {"rotation": track(
-                key(0.0, [0, 0, 0]),
-                key(0.5, [-22, 0, 0]),
-                key(1.05, [48, 0, 0], easing="easeOutQuart"),
-                key(1.6, [0, 0, 0]))} for f in hand_fingers},
-        }, loop=False),
-        "animation.creaking_hand.slam": animation(1.2, {
-            "arm": {"rotation": track(
-                key(0.0, [0, 0, 0]),
-                key(0.45, [42, 0, 0]),
-                key(0.62, [-58, 0, 0], easing="easeOutQuart"),
-                key(1.2, [0, 0, 0]))},
-        }, loop=False),
-    })
+        if shipped == "creaking_hand":
+            fingers = [[f"hand_f{i}", f"hand_f{i}_1", f"hand_f{i}_2"]
+                       for i in range(4)] + [["hand_th", "hand_th_1"]]
+            fingers = [c for c in fingers if c[0] in have]
+            write_animations(os.path.join(ANIM_DIR, f"{shipped}.animation.json"), {
+                "animation.creaking_hand.idle": A.idle(
+                    body="arm", period=6.0, depth=0.9, limbs=[], unease=0.7),
+                # It comes through the gate, opens, and closes on something.
+                "animation.creaking_hand.reach": A.strike(
+                    arms=fingers, length=1.9, body="arm", stagger=0.07,
+                    reach=54.0, step=3.0),
+                "animation.creaking_hand.slam": A.strike(
+                    arms=[["arm"]] + fingers, length=1.25, body="arm",
+                    stagger=0.04, reach=96.0, step=4.5),
+            })
+            continue
 
-    for shipped in ("the_creaking", "creaking_risen"):
-        arms = [f"arm{k}_{t}" for k in (0, 1) for t in ("r", "l")]
+        arms = [c for c in CREAK_ARMS if c[0] in have]
+        legs = A.measure_limbs(model, ["leg_r", "leg_l"], set()) if "leg_r" in have else []
         anims = {
-            f"animation.{shipped}.idle": breathe("chest", length=5.5, depth=0.7, extra={
-                "head": {"rotation": track(key(0.0, [0, 0, 0]), key(2.75, [4, 6, 0]),
-                                           key(5.5, [0, 0, 0]))},
-                "face_jaw": {"rotation": track(key(0.0, [16, 0, 0]),
-                                               key(2.75, [26, 0, 0]),
-                                               key(5.5, [16, 0, 0]))},
-                **{a: {"rotation": track(key(0.0, [0, 0, 0]),
-                                         key(2.75, [6, 0, 3]),
-                                         key(5.5, [0, 0, 0]))} for a in arms},
-            }),
-            f"animation.{shipped}.roar": animation(2.4, {
-                "chest": {"rotation": track(key(0.0, [0, 0, 0]), key(0.7, [-14, 0, 0]),
-                                            key(1.4, [8, 0, 0], easing="easeOutQuart"),
-                                            key(2.4, [0, 0, 0]))},
-                "head": {"rotation": track(key(0.0, [0, 0, 0]), key(0.7, [-30, 0, 0]),
-                                           key(1.5, [12, 0, 0], easing="easeOutQuart"),
-                                           key(2.4, [0, 0, 0]))},
-                "face_jaw": {"rotation": track(key(0.0, [16, 0, 0]),
-                                               key(0.7, [62, 0, 0]),
-                                               key(1.8, [58, 0, 0]),
-                                               key(2.4, [16, 0, 0]))},
-                **{a: {"rotation": track(key(0.0, [0, 0, 0]), key(0.7, [-24, 0, 0]),
-                                         key(1.4, [18, 0, 0], easing="easeOutQuart"),
-                                         key(2.4, [0, 0, 0]))} for a in arms},
-            }, loop=False),
-            f"animation.{shipped}.slam": strike("head", arms, length=1.3,
-                                                jaw="face_jaw", body="chest"),
+            f"animation.{shipped}.idle": A.idle(
+                body="chest", head="head", jaw="face_jaw", limbs=legs,
+                period=6.4, depth=1.1, unease=0.8),
+            f"animation.{shipped}.roar": A.strike(
+                arms=arms, length=2.6, head="head", jaw="face_jaw",
+                body="chest", legs=legs, stagger=0.09, reach=62.0, step=2.0),
+            f"animation.{shipped}.slam": A.strike(
+                arms=arms, length=1.5, head="head", jaw="face_jaw",
+                body="chest", legs=legs, stagger=0.06, reach=108.0, step=5.0),
         }
-        if shipped == "creaking_risen":
-            anims[f"animation.{shipped}.walk"] = gait(["leg_r", "leg_l"], period=1.5,
-                                                      swing=17.0, body="torso",
-                                                      head="head", jaw="face_jaw",
-                                                      bounce=2.2)
+        if legs:
+            anims[f"animation.{shipped}.walk"] = A.locomotion(
+                legs, period=2.1, gait="biped", body="torso", head="head",
+                jaw="face_jaw", sway=1.3, limp=0.16, samples=28)
+            anims[f"animation.{shipped}.charge"] = A.locomotion(
+                legs, period=1.35, gait="biped", body="torso", head="head",
+                jaw="face_jaw", sway=1.8, limp=0.0, samples=28)
         write_animations(os.path.join(ANIM_DIR, f"{shipped}.animation.json"), anims)
 
     print("done.")

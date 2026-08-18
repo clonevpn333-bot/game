@@ -1,0 +1,396 @@
+"""Locomotion and combat animation, solved rather than hand-keyed.
+
+The animations this replaces were rotation curves: every leg swung like a
+pendulum about its shoulder, which is the single most recognisable tell of a
+cheap modded mob. Real legs do not do that. A real leg *lifts* - the foot
+leaves the ground, folds toward the body, swings through, and is set back down
+in front - and the body drops onto each footfall instead of gliding.
+
+So this module does not write keyframes directly. It builds the motion the way
+an animator would think about it, and bakes the result:
+
+  1. A **gait** is a set of foot phases. Which foot leaves the ground when is
+     the difference between a walk, a trot, a pace and a bound, and it is the
+     first thing you read about an animal from a distance.
+  2. Each foot gets a **trajectory in space**, not an angle. During stance it
+     is pinned to the ground and travels backwards under the body at exactly
+     the speed the body travels forward, so it does not skate. During swing it
+     lifts on an arc, with the peak past the middle so the leg snaps forward
+     and sets down softly.
+  3. The joint angles come from **inverse kinematics** - given where the hip is
+     and where the foot must be, solve the triangle. Knees and hocks are given
+     opposing bend directions because that is how a quadruped is actually put
+     together.
+  4. The body **bobs, rolls, pitches and yaws** off the same phase clock, and
+     the head and neck lag it, because a head that moves in lockstep with the
+     shoulders reads as a puppet.
+
+Everything is then sampled and written out as ordinary GeckoLib keyframes, so
+the game needs no runtime support for any of it.
+"""
+
+from __future__ import annotations
+
+import math
+
+DEG = 180.0 / math.pi
+
+# ---------------------------------------------------------------------------
+# Gait patterns: the phase, in cycles, at which each foot leaves the ground.
+# ---------------------------------------------------------------------------
+# Quadruped foot order is always (front-right, front-left, back-right, back-left).
+GAITS = {
+    # Lateral-sequence walk. The classic four-beat: no two feet lift together,
+    # which is what makes a walk look careful and heavy.
+    "walk":  {"phases": (0.0, 0.5, 0.75, 0.25), "duty": 0.68},
+    # Diagonal pairs, two beats, suspension between. Dogs, wolves, cats.
+    "trot":  {"phases": (0.0, 0.5, 0.5, 0.0), "duty": 0.48},
+    # Lateral pairs. Camels and llamas do this, and it rolls the body sideways.
+    "pace":  {"phases": (0.0, 0.5, 0.0, 0.5), "duty": 0.50},
+    # Front pair, then back pair. Hares and anything that hops.
+    "bound": {"phases": (0.0, 0.06, 0.42, 0.48), "duty": 0.36},
+    # Two legs.
+    "biped": {"phases": (0.0, 0.5), "duty": 0.62},
+}
+
+
+def _smooth(t: float) -> float:
+    return t * t * (3.0 - 2.0 * t)
+
+
+def _foot_path(phase: float, *, stride: float, lift: float, duty: float,
+               push: float = 0.0):
+    """Where a foot is, relative to its neutral spot, at a point in the cycle.
+
+    Returns (z, y): z forward-positive along the direction of travel, y up.
+    Stance is a straight backwards slide - the foot is on the ground and the
+    animal moves over it. Swing is an arc, weighted so the foot is highest
+    just after it leaves and reaches forward before it lands.
+    """
+    p = phase % 1.0
+    if p < duty:                                    # planted
+        t = p / duty
+        return stride * (0.5 - t), -push * math.sin(math.pi * t)
+    t = (p - duty) / (1.0 - duty)                   # in the air
+    # Ease out of the ground fast, ease into the landing slow.
+    z = stride * (-0.5 + _smooth(t))
+    y = lift * math.sin(math.pi * min(1.0, t * 1.12)) ** 0.72
+    return z, y
+
+
+def _ik2(hip_y: float, target_z: float, target_y: float,
+         upper: float, lower: float, flip: float):
+    """Two-bone IK in the sagittal plane, by the law of cosines.
+
+    Angles come back as (thigh, shank) rotations about x, in radians, with the
+    convention the geometry uses: positive swings the limb forward. `flip`
+    is +1 for a knee that folds backwards and -1 for one that folds forwards,
+    which is the whole difference between a foreleg and a hind leg.
+    """
+    dz, dy = target_z, hip_y - target_y
+    dist = math.hypot(dz, dy)
+    reach = upper + lower
+    dist = max(1e-4, min(dist, reach * 0.999))      # never lock straight
+    # Angle from vertical to the hip->foot line.
+    base = math.atan2(dz, max(1e-4, dy))
+    cos_knee = (upper * upper + lower * lower - dist * dist) / (2 * upper * lower)
+    knee = math.acos(max(-1.0, min(1.0, cos_knee)))
+    cos_hip = (upper * upper + dist * dist - lower * lower) / (2 * upper * dist)
+    hip = math.acos(max(-1.0, min(1.0, cos_hip)))
+    thigh = base + flip * hip
+    shank = flip * -(math.pi - knee)
+    return thigh, shank
+
+
+class Limb:
+    """One leg, measured off the model rather than guessed at."""
+
+    def __init__(self, root: str, segments: list[str], foot: str | None,
+                 lengths: list[float], hip_y: float, flip: float):
+        self.root = root
+        self.segments = segments
+        self.foot = foot
+        self.lengths = lengths
+        self.hip_y = hip_y
+        self.flip = flip
+
+    @property
+    def reach(self) -> float:
+        return sum(self.lengths)
+
+
+def measure_limbs(model, roots: list[str], hind: set[str] | None = None):
+    """Reads limb chains out of a compiled bench model.
+
+    Walks down from each named root through its single-child descendants,
+    recording how long each segment is from the distance between pivots. That
+    is why the animations are per-species without anyone tuning them: a hare's
+    shank really is short, and the solver is told so by the model.
+    """
+    pm = model.part_map()
+    children: dict[str, list[str]] = {}
+    for part in model.parts:
+        children.setdefault(part.parent, []).append(part.name)
+
+    hind = hind or set()
+    limbs = []
+    for root in roots:
+        if root not in pm:
+            continue
+        chain = [root]
+        node = root
+        while True:
+            kids = [c for c in children.get(node, [])
+                    if "__r" not in c and (c.startswith("leg_") or c.startswith("foot_")
+                                           or c.startswith("hand") or c.startswith("arm"))]
+            if not kids:
+                break
+            node = sorted(kids, key=len)[0]
+            chain.append(node)
+        lengths = []
+        for i in range(1, len(chain)):
+            piv = pm[chain[i]].pivot
+            lengths.append(max(0.5, abs(piv[1])))
+        if not lengths:
+            # Single-box limb: fall back to the box height so it still moves.
+            box = pm[root].boxes[0] if pm[root].boxes else None
+            lengths = [box.size[1] if box else 8.0]
+        hip_y = pm[root].pivot[1]
+        foot = chain[-1] if chain[-1].startswith("foot") else None
+        segs = [c for c in chain if c != foot]
+        limbs.append(Limb(root, segs, foot, lengths, hip_y,
+                          -1.0 if root in hind else 1.0))
+    return limbs
+
+
+# ---------------------------------------------------------------------------
+# The gait itself
+# ---------------------------------------------------------------------------
+
+
+def locomotion(limbs: list[Limb], *, period: float, gait: str = "walk",
+               stride: float | None = None, lift: float | None = None,
+               body: str | None = None, spine: list[str] | None = None,
+               head: str | None = None, jaw: str | None = None,
+               tail: list[str] | None = None, bob: float | None = None,
+               samples: int = 24, sway: float = 1.0, limp: float = 0.0) -> dict:
+    """Bakes a full locomotion cycle.
+
+    `limp` drags one diagonal, which is what stops thirteen species that all
+    walk correctly from all walking *identically* - these are sick animals and
+    they should not move like show ponies.
+    """
+    pattern = GAITS[gait]
+    phases, duty = pattern["phases"], pattern["duty"]
+    reach = max(limb.reach for limb in limbs)
+    stride = stride if stride is not None else reach * 0.62
+    lift = lift if lift is not None else reach * 0.26
+    bob = bob if bob is not None else reach * 0.055
+
+    tracks: dict[str, dict[str, dict]] = {}
+
+    def put(bone, channel, t, vec, easing="easeInOutSine"):
+        chan = tracks.setdefault(bone, {}).setdefault(channel, {})
+        chan[str(round(t, 4))] = {"vector": [round(v, 3) for v in vec],
+                                  "easing": easing}
+
+    for i in range(samples + 1):
+        u = i / samples
+        t = round(u * period, 4)
+
+        # --- body: drop onto each footfall, roll into the stride ------------
+        beats = 2 if gait in ("walk", "trot", "pace") else 1
+        drop = -bob * (0.5 - 0.5 * math.cos(2 * math.pi * beats * u))
+        surge = bob * 0.35 * math.sin(2 * math.pi * u)
+        roll = sway * 3.2 * math.sin(2 * math.pi * u)
+        pitch = sway * 2.1 * math.sin(2 * math.pi * beats * u + 0.9)
+        yaw = sway * 1.6 * math.sin(2 * math.pi * u + 1.9)
+
+        if body:
+            put(body, "position", t, [0, drop, surge])
+            put(body, "rotation", t, [pitch, yaw, roll])
+
+        # The spine passes the body's roll along with a delay, so the animal
+        # bends through its length instead of turning as one rigid block.
+        for k, bone in enumerate(spine or []):
+            lag = 0.10 * (k + 1)
+            put(bone, "rotation", t,
+                [sway * 1.4 * math.sin(2 * math.pi * (u - lag) + 0.6),
+                 sway * 2.4 * math.sin(2 * math.pi * (u - lag) + 1.9),
+                 sway * 2.0 * math.sin(2 * math.pi * (u - lag))])
+
+        # A head does not ride the shoulders: it holds itself steady and
+        # catches up late. Counter most of the bob, lag the rest.
+        if head:
+            hl = 0.18
+            put(head, "rotation", t,
+                [-pitch * 0.55 + 2.6 * math.sin(2 * math.pi * (u - hl) + 1.2),
+                 -yaw * 0.4 + 2.2 * math.sin(2 * math.pi * (u - hl)),
+                 -roll * 0.45])
+        if jaw:
+            put(jaw, "rotation", t,
+                [11 + 7 * (0.5 - 0.5 * math.cos(2 * math.pi * beats * u)), 0, 0])
+
+        # Tails and other dangling chains: each link copies the one above it
+        # a little later and a little wider. Follow-through, for free.
+        for k, bone in enumerate(tail or []):
+            lag = 0.14 * (k + 1)
+            amp = 3.0 + 2.2 * k
+            put(bone, "rotation", t,
+                [amp * 0.6 * math.sin(2 * math.pi * (u - lag) + 2.2),
+                 amp * math.sin(2 * math.pi * (u - lag)),
+                 amp * 0.5 * math.sin(2 * math.pi * (u - lag) + 1.0)])
+
+        # --- legs: solve, don't swing --------------------------------------
+        for k, limb in enumerate(limbs):
+            phase = u + phases[k % len(phases)]
+            drag = limp if (k % 3 == 0) else 0.0
+            z, y = _foot_path(phase, stride=stride * (1.0 - drag),
+                              lift=lift * (1.0 - drag * 1.6), duty=duty,
+                              push=bob * 0.5)
+            upper = limb.lengths[0]
+            lower = sum(limb.lengths[1:]) or upper * 0.9
+            # The hip itself rides the body, so the foot target moves with it.
+            thigh, shank = _ik2(upper + lower, z, y - drop, upper, lower, limb.flip)
+            put(limb.segments[0], "rotation", t, [thigh * DEG, 0, 0])
+            if len(limb.segments) > 1:
+                per = shank / max(1, len(limb.segments) - 1)
+                for s, bone in enumerate(limb.segments[1:]):
+                    put(bone, "rotation", t, [per * DEG, 0, 0])
+            if limb.foot:
+                # Ankle keeps the foot level with the ground through stance,
+                # then points on the way through - heel strike, toe off.
+                level = -(thigh + shank)
+                airborne = max(0.0, y) / max(1e-3, lift)
+                put(limb.foot, "rotation", t,
+                    [(level * DEG) * 0.85 - 26.0 * airborne, 0, 0])
+
+    return {"loop": True, "animation_length": round(period, 3),
+            "bones": {b: c for b, c in tracks.items()}}
+
+
+# ---------------------------------------------------------------------------
+# Attacks
+# ---------------------------------------------------------------------------
+
+
+def strike(*, arms: list[list[str]], length: float = 0.9,
+           head: str | None = None, jaw: str | None = None,
+           body: str | None = None, legs: list[Limb] | None = None,
+           stagger: float = 0.0, reach: float = 78.0,
+           step: float = 0.0) -> dict:
+    """Anticipation, contact, follow-through, settle.
+
+    The contact frame is deliberately short and lands on a hard ease so the
+    blow arrives rather than drifts in; everything else is slow. The body
+    counter-moves *away* first - that anticipation is what gives a hit its
+    weight - then drives through and overshoots before settling.
+
+    `stagger` offsets each arm in time. Two arms that fire together read as a
+    clap; two arms a tenth of a second apart read as a mauling.
+    """
+    tracks: dict[str, dict[str, dict]] = {}
+
+    def put(bone, channel, t, vec, easing="easeInOutSine"):
+        chan = tracks.setdefault(bone, {}).setdefault(channel, {})
+        chan[str(round(max(0.0, t), 4))] = {"vector": [round(v, 3) for v in vec],
+                                            "easing": easing}
+
+    coil, hit, over = length * 0.40, length * 0.53, length * 0.72
+
+    for a, chain in enumerate(arms):
+        off = stagger * a
+        for s, bone in enumerate(chain):
+            # Down the arm each joint fires slightly later and travels less:
+            # the shoulder starts it, the hand finishes it.
+            delay = 0.035 * s
+            scale = 1.0 - 0.22 * s
+            put(bone, "rotation", 0.0, [0, 0, 0])
+            put(bone, "rotation", coil + off + delay,
+                [-reach * 0.42 * scale, 0, 6 * scale], "easeInQuart")
+            put(bone, "rotation", hit + off + delay,
+                [reach * scale, 0, -4 * scale], "easeOutQuart")
+            put(bone, "rotation", over + off + delay,
+                [-reach * 0.14 * scale, 0, 0])
+            put(bone, "rotation", length, [0, 0, 0])
+
+    if body:
+        put(body, "rotation", 0.0, [0, 0, 0])
+        put(body, "rotation", coil, [-9, 7, 0], "easeInQuart")
+        put(body, "rotation", hit, [13, -6, 0], "easeOutQuart")
+        put(body, "rotation", over, [-3, 2, 0])
+        put(body, "rotation", length, [0, 0, 0])
+        put(body, "position", 0.0, [0, 0, 0])
+        put(body, "position", coil, [0, 0.6, -step * 0.4], "easeInQuart")
+        put(body, "position", hit, [0, -1.4, step], "easeOutQuart")
+        put(body, "position", length, [0, 0, 0])
+
+    if head:
+        put(head, "rotation", 0.0, [0, 0, 0])
+        put(head, "rotation", coil, [-21, 0, 0], "easeInQuart")
+        put(head, "rotation", hit, [24, 0, 0], "easeOutQuart")
+        put(head, "rotation", length, [0, 0, 0])
+    if jaw:
+        put(jaw, "rotation", 0.0, [12, 0, 0])
+        put(jaw, "rotation", coil, [52, 0, 0])
+        put(jaw, "rotation", hit, [8, 0, 0], "easeOutQuart")
+        put(jaw, "rotation", length, [12, 0, 0])
+
+    # The legs brace: it steps into the blow and takes the recoil.
+    for k, limb in enumerate(legs or []):
+        side = 1 if k % 2 == 0 else -1
+        put(limb.segments[0], "rotation", 0.0, [0, 0, 0])
+        put(limb.segments[0], "rotation", coil, [10 * side, 0, 0], "easeInQuart")
+        put(limb.segments[0], "rotation", hit, [-16 * side, 0, 0], "easeOutQuart")
+        put(limb.segments[0], "rotation", length, [0, 0, 0])
+        if limb.foot:
+            put(limb.foot, "rotation", coil, [-8, 0, 0])
+            put(limb.foot, "rotation", hit, [12, 0, 0], "easeOutQuart")
+            put(limb.foot, "rotation", length, [0, 0, 0])
+
+    return {"loop": False, "animation_length": round(length, 3), "bones": tracks}
+
+
+def idle(*, body: str, period: float = 4.4, depth: float = 0.6,
+         head: str | None = None, jaw: str | None = None,
+         limbs: list[Limb] | None = None, tail: list[str] | None = None,
+         samples: int = 16, unease: float = 1.0) -> dict:
+    """Breathing, weight shifting, and a head that keeps looking around.
+
+    Nothing here stands still. The weight shift is slower than the breath and
+    not a whole number of breaths long, so the two never quite line up and the
+    loop does not tick.
+    """
+    tracks: dict[str, dict[str, dict]] = {}
+
+    def put(bone, channel, t, vec):
+        chan = tracks.setdefault(bone, {}).setdefault(channel, {})
+        chan[str(round(t, 4))] = {"vector": [round(v, 3) for v in vec],
+                                  "easing": "easeInOutSine"}
+
+    for i in range(samples + 1):
+        u = i / samples
+        t = round(u * period, 4)
+        breath = -depth * (0.5 - 0.5 * math.cos(2 * math.pi * u))
+        shift = unease * 1.5 * math.sin(2 * math.pi * u * 0.5)
+        put(body, "position", t, [shift * 0.35, breath, 0])
+        put(body, "rotation", t, [breath * 0.8, shift * 0.5, shift])
+        if head:
+            put(head, "rotation", t,
+                [-breath * 0.6 + unease * 2.0 * math.sin(2 * math.pi * u * 1.5 + 0.7),
+                 unease * 6.0 * math.sin(2 * math.pi * u * 0.5 + 2.1),
+                 unease * 1.6 * math.sin(2 * math.pi * u * 0.75)])
+        if jaw:
+            put(jaw, "rotation", t,
+                [13 + 6 * (0.5 - 0.5 * math.cos(2 * math.pi * u)), 0, 0])
+        for k, limb in enumerate(limbs or []):
+            side = 1 if k % 2 == 0 else -1
+            put(limb.segments[0], "rotation", t, [shift * 0.9 * side, 0, 0])
+        for k, bone in enumerate(tail or []):
+            lag = 0.2 * (k + 1)
+            put(bone, "rotation", t,
+                [2.0 * math.sin(2 * math.pi * (u - lag) * 0.5),
+                 (3.0 + 1.5 * k) * math.sin(2 * math.pi * (u - lag) * 0.5 + 1.0),
+                 2.0 * math.sin(2 * math.pi * (u - lag))])
+
+    return {"loop": True, "animation_length": round(period, 3), "bones": tracks}

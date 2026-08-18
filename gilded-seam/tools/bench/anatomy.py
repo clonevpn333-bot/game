@@ -43,6 +43,7 @@ class Quad:
     leg_z: float = 6.0
     head_mat: str | None = None
     leg_mat: str | None = None
+    hoof_mat: str | None = None
     snout: tuple | None = None       # (w, h, d, mat)
     ears: tuple | None = None        # (w, h, d, mat, x, y, z)
     horns: bool = False
@@ -97,10 +98,42 @@ class Quad:
                                    teeth=5 if hw >= 6 else 4,
                                    style=self.eye_style, spares=self.eye_spares))
         for tag, sx, sz in (("fr", -1, -1), ("fl", 1, -1), ("br", -1, 1), ("bl", 1, 1)):
-            parts.append(Part(f"leg_{tag}", "root",
-                              (sx * self.leg_x, GROUND - lh, sz * self.leg_z),
-                              (0, 0, 0),
-                              [_b((-lw / 2, 0, -ld / 2), (lw, lh, ld), lm)]))
+            parts.extend(self._limb(tag, sx, sz, lw, lh, ld, lm))
+        return parts
+
+    def _limb(self, tag, sx, sz, lw, lh, ld, lm) -> list[Part]:
+        """A leg with joints in it, instead of one rigid post.
+
+        Vanilla legs are a single box, which is why a vanilla walk can only
+        swing them like a pendulum - there is no knee to bend and no foot to
+        lift. This splits the same column into thigh, shank and foot. At rest
+        every joint is at zero and the three stack back into exactly the box
+        that was there before, so the animal's standing silhouette is
+        unchanged; under animation the leg can now fold, lift and plant.
+
+        Front and hind limbs get different proportions on purpose: a hind leg
+        carries a longer shank and a hock that breaks the other way, and that
+        asymmetry is most of what makes a quadruped read as an animal rather
+        than a table walking.
+        """
+        hind = sz > 0
+        thigh_h = lh * (0.40 if hind else 0.44)
+        shank_h = lh * (0.42 if hind else 0.38)
+        foot_h = lh - thigh_h - shank_h
+        top = GROUND - lh
+        # Slight taper down the limb - thicker at the shoulder, narrow at the
+        # ankle - so it reads as a leg and not as a chair leg.
+        tw, sw = lw, max(1.5, lw - 0.7)
+        parts = [
+            Part(f"leg_{tag}", "root", (sx * self.leg_x, top, sz * self.leg_z),
+                 (0, 0, 0),
+                 [_b((-tw / 2, 0, -ld / 2), (tw, thigh_h, ld), lm)]),
+            Part(f"leg_{tag}_1", f"leg_{tag}", (0.0, thigh_h, 0.0), (0, 0, 0),
+                 [_b((-sw / 2, 0, -ld / 2 + 0.2), (sw, shank_h, ld - 0.4), lm)]),
+            Part(f"foot_{tag}", f"leg_{tag}_1", (0.0, shank_h, 0.0), (0, 0, 0),
+                 [_b((-lw / 2, 0, -ld / 2 - 0.4), (lw, foot_h, ld + 0.6),
+                     self.hoof_mat or lm)]),
+        ]
         return parts
 
 
