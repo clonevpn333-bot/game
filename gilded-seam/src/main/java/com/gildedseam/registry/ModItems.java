@@ -61,6 +61,11 @@ public final class ModItems {
             properties -> new com.gildedseam.item.RiveningHeartItem(
                     properties.stacksTo(1).rarity(Rarity.EPIC).fireResistant()));
 
+    /** The only thing that hurts the Creaking. */
+    public static final Item SOLVENT_LANCE = register("solvent_lance",
+            properties -> new com.gildedseam.item.SolventLanceItem(
+                    properties.stacksTo(1).durability(384).rarity(Rarity.RARE)));
+
     /** Made from the Sovereign's crown; opens the way into the hollow. */
     public static final Item HEARTWOOD_KEY = register("heartwood_key",
             properties -> new com.gildedseam.item.HeartwoodKeyItem(

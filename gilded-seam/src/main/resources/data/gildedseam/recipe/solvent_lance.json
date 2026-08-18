@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "sss",
+    "ptl",
+    "ppg"
+  ],
+  "key": {
+    "s": "gildedseam:fired_shell",
+    "p": "minecraft:pale_oak_log",
+    "t": "gildedseam:rivening_salt",
+    "l": "gildedseam:gold_thread",
+    "g": "minecraft:copper_ingot"
+  },
+  "result": {
+    "id": "gildedseam:solvent_lance",
+    "count": 1
+  }
+}

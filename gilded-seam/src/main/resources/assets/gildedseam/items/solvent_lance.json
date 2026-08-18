@@ -1,0 +1,34 @@
+{
+  "model": {
+    "type": "minecraft:range_dispatch",
+    "property": "minecraft:use_duration",
+    "scale": 0.03333333333,
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "gildedseam:item/solvent_lance"
+    },
+    "entries": [
+      {
+        "threshold": 0.06,
+        "model": {
+          "type": "minecraft:model",
+          "model": "gildedseam:item/solvent_lance_pump_0"
+        }
+      },
+      {
+        "threshold": 0.33,
+        "model": {
+          "type": "minecraft:model",
+          "model": "gildedseam:item/solvent_lance_pump_1"
+        }
+      },
+      {
+        "threshold": 0.66,
+        "model": {
+          "type": "minecraft:model",
+          "model": "gildedseam:item/solvent_lance_charged"
+        }
+      }
+    ]
+  }
+}

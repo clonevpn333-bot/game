@@ -100,5 +100,6 @@
   "entity.gildedseam.gilded_llama": "Blighted Llama",
   "item.gildedseam.gilded_llama_spawn_egg": "Blighted Llama Spawn Egg",
   "item.gildedseam.heartwood_key": "Heartwood Key",
-  "block.gildedseam.blight_portal": "Heartwood Gate"
+  "block.gildedseam.blight_portal": "Heartwood Gate",
+  "item.gildedseam.solvent_lance": "Solvent Lance"
 }

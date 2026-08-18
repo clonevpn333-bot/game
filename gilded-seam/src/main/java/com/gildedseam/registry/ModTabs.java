@@ -49,6 +49,7 @@ public final class ModTabs {
                             // How you fight back.
                             out.accept(ModItems.KINTSUGI_BLADE);
                             out.accept(ModItems.SALT_RIFLE);
+                            out.accept(ModItems.SOLVENT_LANCE);
                             out.accept(ModItems.SALT_DART);
                             out.accept(ModItems.RIVENING_HEART);
                             out.accept(ModItems.AUTARCH_CROWN);
