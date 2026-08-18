@@ -66,43 +66,6 @@ jobs:
             | grep -oE '"(version_number|id)": *"[^"]*"' | head -20
           exit 0
 
-      # Guessing at a Warden's proportions produces something that is not a
-      # Warden. The real numbers are inside the jar, as code, in each model's
-      # createBodyLayer() - so call it and walk what comes back. The dump is
-      # uploaded as an artifact and becomes the source for the boss models.
-      - name: Dump vanilla model geometry
-        continue-on-error: true
-        run: |
-          set +e
-          jar=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null | grep -iE "minecraft" | grep -viE "sources|javadoc" | head -1)
-          echo "jar: $jar"
-          [ -z "$jar" ] && exit 0
-          deps=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null | grep -iE "joml|guava|datafixerupper|fastutil|slf4j|gson|brigadier|authlib" | tr '\n' ':')
-          mkdir -p /tmp/oracle
-          javac -nowarn -cp "$jar:$deps" -d /tmp/oracle tools/oracle/DumpModels.java 2>&1 | tail -5
-          # Find the real class names first; packages move between versions.
-          for n in WardenModel WitherBossModel EnderDragonModel EndermanModel \
-                   IronGolemModel RavagerModel HoglinModel; do
-            unzip -l "$jar" | grep -oE "net/minecraft/[A-Za-z0-9/_]*/$n\.class" | head -2
-          done > /tmp/classes.txt
-          cat /tmp/classes.txt
-          names=$(sed 's#/#.#g; s#\.class$##' /tmp/classes.txt | tr '\n' ' ')
-          echo "dumping: $names"
-          java -cp "$jar:$deps:/tmp/oracle" DumpModels $names > /tmp/vanilla-models.json 2>/tmp/dump.err
-          echo "--- stderr ---"; tail -5 /tmp/dump.err
-          echo "--- bytes: $(wc -c < /tmp/vanilla-models.json) ---"
-          head -c 1200 /tmp/vanilla-models.json
-          mkdir -p oracle-out && cp /tmp/vanilla-models.json oracle-out/ 2>/dev/null
-          exit 0
-
-      - name: Upload vanilla model dump
-        continue-on-error: true
-        uses: actions/upload-artifact@v4
-        with:
-          name: vanilla-models
-          path: gilded-seam/oracle-out/vanilla-models.json
-          if-no-files-found: warn
-
       # On failure, print just the lines that say what broke, at the very end
       # of the log, so a failed build is cheap to diagnose.
       - name: Build
@@ -191,3 +154,41 @@ jobs:
             --title "Amberblight - latest build" \
             --notes "Automatic build of ${GITHUB_SHA::7} for Minecraft 26.2 (Fabric). Drop the jar in .minecraft/mods alongside Fabric API." \
             --prerelease
+
+      # Guessing at a Warden's proportions produces something that is not a
+      # Warden. The real numbers are inside the jar, as code, in each model's
+      # createBodyLayer() - so call it and walk what comes back. The dump is
+      # uploaded as an artifact and becomes the source for the boss models.
+      - name: Dump vanilla model geometry
+        continue-on-error: true
+        run: |
+          set +e
+          jar=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null | grep -iE "minecraft" | grep -viE "sources|javadoc" | head -1)
+          echo "jar: $jar"
+          [ -z "$jar" ] && exit 0
+          deps=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null | grep -iE "joml|guava|datafixerupper|fastutil|slf4j|gson|brigadier|authlib" | tr '\n' ':')
+          mkdir -p /tmp/oracle
+          javac -nowarn -cp "$jar:$deps" -d /tmp/oracle tools/oracle/DumpModels.java 2>&1 | tail -5
+          # Find the real class names first; packages move between versions.
+          for n in WardenModel WitherBossModel EnderDragonModel EndermanModel; do
+            unzip -l "$jar" | grep -oE "net/minecraft/[A-Za-z0-9/_]*/$n\.class" | head -2
+          done > /tmp/classes.txt
+          cat /tmp/classes.txt
+          names=$(sed 's#/#.#g; s#\.class$##' /tmp/classes.txt | tr '\n' ' ')
+          echo "dumping: $names"
+          java -cp "$jar:$deps:/tmp/oracle" DumpModels $names > /tmp/vanilla-models.json 2>/tmp/dump.err
+          echo "--- stderr ---"; tail -5 /tmp/dump.err
+          echo "--- bytes: $(wc -c < /tmp/vanilla-models.json) ---"
+          echo "=====VANILLA-MODELS-BEGIN====="
+          python3 -c 'import json,sys; d=json.load(open("/tmp/vanilla-models.json"))["models"]; [print("MODEL",k.split(".")[-1],"tex",v.get("texture")) or [print("BONE",json.dumps(b,separators=(",",":"))) for b in v.get("bones",[])] if "error" not in v else print("ERR",k,v["error"]) for k,v in d.items()]'
+          echo "=====VANILLA-MODELS-END====="
+          mkdir -p oracle-out && cp /tmp/vanilla-models.json oracle-out/ 2>/dev/null
+          exit 0
+
+      - name: Upload vanilla model dump
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: vanilla-models
+          path: gilded-seam/oracle-out/vanilla-models.json
+          if-no-files-found: warn
