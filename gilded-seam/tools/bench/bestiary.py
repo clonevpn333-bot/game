@@ -13,6 +13,7 @@ import math
 
 from core import D, Box, Model, Part, chain, mirror, radial, torus
 from anatomy import (GROUND, HOSTS, antler_roots, chicken_host, creeper_host,
+                     rabbit_host,
                      infected_face,
                      eye_cluster,
                      extra_legs, eye_stalks, grafted_arm, humanoid,
@@ -226,7 +227,7 @@ def blighted_llama() -> Model:
 
 
 def blighted_rabbit() -> Model:
-    p = HOSTS["rabbit"].build()
+    p = rabbit_host()
     p += split_open("body", at=(0.0, 3.0, 1.0), width=4.0, height=3.5, tier=1,
                     depth=1.4, name="ribs")
     p += lolling_tongue("head", at=(0.0, 3.0, -4.0), tier=1, segments=5, thick=0.9)

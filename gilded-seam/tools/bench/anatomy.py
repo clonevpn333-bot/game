@@ -30,28 +30,60 @@ def _b(o, s, mat, **kw) -> Box:
 
 @dataclass
 class Quad:
-    """A vanilla-proportioned quadruped."""
+    """A quadruped, built from what actually distinguishes one from another.
+
+    The previous version of this class was a cow with adjustable numbers, and
+    every animal generated from it came out a cow: same uniform legs at all
+    four corners, no neck, a flat plate for a muzzle, and a rabbit standing
+    upright on stilts. The fields below exist because they are the features
+    you actually identify an animal by at a glance -
+
+      * fore and hind limbs sized and placed separately. Almost no animal has
+        four identical legs, and the ones that come closest (horses) still
+        carry them at different heights.
+      * a real neck. On a llama it is the entire silhouette; a llama without
+        one is a beige cow.
+      * a muzzle with length and its own height on the skull, because a fox, a
+        wolf and a sheep differ mostly in the shape of the face.
+      * haunches - the heavy rear thigh mass on anything that springs.
+      * a shoulder ruff, which is the reason a wolf reads as a wolf from
+        behind.
+    """
 
     hide: str
     body: tuple = (12, 10, 18)      # w, h, d
     body_y: float = 4.0
+    body_pitch: float = 0.0         # nose-down tilt, for crouched builds
     head: tuple = (8, 8, 6)
     head_y: float = 4.0
     head_z: float = -9.0
-    leg: tuple = (4, 12, 4)
+    head_pitch: float = 0.0
+    # (w, h, d, pitch, y, z) - the head hangs off the end of it when present.
+    neck: tuple | None = None
+    leg: tuple = (4, 12, 4)         # fallback when fore/hind are not given
     leg_x: float = 4.0
     leg_z: float = 6.0
+    fore_leg: tuple | None = None
+    hind_leg: tuple | None = None
+    fore_at: tuple | None = None    # (x, z)
+    hind_at: tuple | None = None
+    plantigrade: bool = False       # hind foot flat and long, like a hare
+    haunch: tuple | None = None     # (w, h, d) heavy rear thigh
+    ruff: tuple | None = None       # (w, h, d, mat, y, z) shoulder mane
     head_mat: str | None = None
     leg_mat: str | None = None
     hoof_mat: str | None = None
-    snout: tuple | None = None       # (w, h, d, mat)
-    ears: tuple | None = None        # (w, h, d, mat, x, y, z)
+    muzzle: tuple | None = None     # (w, h, d, mat, y)
+    snout: tuple | None = None      # legacy flat plate; muzzle supersedes it
+    ears: tuple | None = None       # (w, h, d, mat, x, y, z)
+    ear_roll: float = -22.0         # degrees; upright vs. lopped
     horns: bool = False
-    tail: tuple | None = None        # (w, h, d, mat, rot_x)
-    fleece: float = 0.0              # wool overlay inflation
+    horn_sweep: float = -30.0       # degrees back from vertical
+    beard: tuple | None = None      # (w, h, d, mat)
+    tail: tuple | None = None       # (w, h, d, mat, rot_x)
+    tail_links: int = 1
+    fleece: float = 0.0
     fleece_mat: str = "wool"
-    # Real pupils differ by species and keeping that true is most of why an
-    # infected animal still reads as that animal.
     eye_style: str = "round"
     eye_spares: int = 3
 
@@ -60,48 +92,101 @@ class Quad:
         lm = self.leg_mat or self.hide
         bw, bh, bd = self.body
         hw, hh, hd = self.head
-        lw, lh, ld = self.leg
         parts = [
-            Part("body", "root", (0.0, self.body_y, 0.0), (0, 0, 0),
+            Part("body", "root", (0.0, self.body_y, 0.0),
+                 (self.body_pitch * D, 0, 0),
                  [_b((-bw / 2, 0, -bd / 2), (bw, bh, bd), self.hide)]),
-            Part("head", "body", (0.0, self.head_y - self.body_y, self.head_z),
-                 (0, 0, 0),
-                 [_b((-hw / 2, 0, -hd), (hw, hh, hd), hm)]),
         ]
+
+        head_parent, head_off = "body", (0.0, self.head_y - self.body_y,
+                                         self.head_z)
+        if self.neck:
+            nw, nh, nd, npitch, ny, nz = self.neck
+            parts.append(Part("neck", "body", (0.0, ny, nz), (npitch * D, 0, 0),
+                              [_b((-nw / 2, -nh, -nd / 2), (nw, nh, nd), self.hide)]))
+            head_parent, head_off = "neck", (0.0, -nh, 0.0)
+
+        parts.append(Part("head", head_parent, head_off,
+                          (self.head_pitch * D, 0, 0),
+                          [_b((-hw / 2, 0, -hd), (hw, hh, hd), hm)]))
+
         if self.fleece:
             parts[0].boxes.append(
                 _b((-bw / 2, 0, -bd / 2), (bw, bh, bd), self.fleece_mat,
                    grow=self.fleece))
-            parts[1].boxes.append(
+            head = next(p for p in parts if p.name == "head")
+            head.boxes.append(
                 _b((-hw / 2, 0, -hd + 1), (hw, hh - 1, hd - 2), self.fleece_mat,
                    grow=self.fleece * 0.7))
-        if self.snout:
+
+        # A muzzle is a box with length, not a plate stuck on the front.
+        if self.muzzle:
+            mw, mh, md, mm, my = self.muzzle
+            parts.append(Part("muzzle", "head", (0.0, my, -hd), (0, 0, 0),
+                              [_b((-mw / 2, 0, -md), (mw, mh, md), mm)]))
+        elif self.snout:
             sw, sh, sd, sm = self.snout
             parts.append(Part("snout", "head", (0.0, hh * 0.45, -hd), (0, 0, 0),
                               [_b((-sw / 2, 0, -sd), (sw, sh, sd), sm)]))
+
+        if self.beard:
+            gw, gh, gd, gm = self.beard
+            parts.append(Part("beard", "head", (0.0, hh - 0.5, -hd + 0.5),
+                              (0, 0, 0),
+                              [_b((-gw / 2, 0, -gd), (gw, gh, gd), gm)]))
+
         if self.ears:
             ew, eh, ed, em, ex, ey, ez = self.ears
-            parts.append(Part("ear_r", "head", (-ex, ey, ez), (0, 0, -22 * D),
+            parts.append(Part("ear_r", "head", (-ex, ey, ez),
+                              (0, 0, self.ear_roll * D),
                               [_b((-ew, 0, -ed / 2), (ew, eh, ed), em)]))
             parts.extend(mirror(parts[-1:], "ear_r", "ear_l"))
+
         if self.horns:
             parts.append(Part("horn_r", "head", (-hw / 2, 1.0, -hd + 1.5),
-                              (0, 0, -30 * D),
+                              (0, 0, self.horn_sweep * D),
                               [_b((-3, -1, -1), (3, 1.5, 1.5), "tooth")]))
             parts.extend(mirror(parts[-1:], "horn_r", "horn_l"))
+
+        if self.ruff:
+            rw, rh, rd, rm, ry, rz = self.ruff
+            parts.append(Part("ruff", "body", (0.0, ry, rz), (0, 0, 0),
+                              [_b((-rw / 2, 0, -rd / 2), (rw, rh, rd), rm)]))
+
         if self.tail:
             tw, th, td, tm, trx = self.tail
-            parts.append(Part("tail", "body", (0.0, 1.0, bd / 2), (trx, 0, 0),
-                              [_b((-tw / 2, 0, 0), (tw, th, td), tm)]))
+            seg = th / max(1, self.tail_links)
+            parent, piv = "body", (0.0, 1.0, bd / 2)
+            for i in range(self.tail_links):
+                name = "tail" if i == 0 else f"tail_{i}"
+                parts.append(Part(name, parent, piv,
+                                  (trx if i == 0 else trx * 0.35, 0, 0),
+                                  [_b((-tw / 2, 0, 0), (tw, seg, td), tm)]))
+                parent, piv = name, (0.0, seg, 0.0)
+
         parts.extend(infected_face("head", hw, hh, hd,
                                    eye=max(3.0, min(5.0, hw * 0.52)),
                                    teeth=5 if hw >= 6 else 4,
                                    style=self.eye_style, spares=self.eye_spares))
-        for tag, sx, sz in (("fr", -1, -1), ("fl", 1, -1), ("br", -1, 1), ("bl", 1, 1)):
-            parts.extend(self._limb(tag, sx, sz, lw, lh, ld, lm))
+
+        fore = self.fore_leg or self.leg
+        hind = self.hind_leg or self.leg
+        fx, fz = self.fore_at or (self.leg_x, self.leg_z)
+        hx, hz = self.hind_at or (self.leg_x, self.leg_z)
+        for tag, sx in (("fr", -1), ("fl", 1)):
+            parts.extend(self._limb(tag, sx, -fz, fx, fore, lm, hind=False))
+        for tag, sx in (("br", -1), ("bl", 1)):
+            if self.haunch:
+                qw, qh, qd = self.haunch
+                parts.append(Part(f"haunch_{tag}", "body",
+                                  (sx * (hx + 0.3), GROUND - self.body_y - qh - hind[1] * 0.55,
+                                   hz - qd * 0.15),
+                                  (0, 0, 0),
+                                  [_b((-qw / 2, 0, -qd / 2), (qw, qh, qd), lm)]))
+            parts.extend(self._limb(tag, sx, hz, hx, hind, lm, hind=True))
         return parts
 
-    def _limb(self, tag, sx, sz, lw, lh, ld, lm) -> list[Part]:
+    def _limb(self, tag, sx, sz, at_x, dims, lm, *, hind) -> list[Part]:
         """A leg with joints in it, instead of one rigid post.
 
         Vanilla legs are a single box, which is why a vanilla walk can only
@@ -111,89 +196,181 @@ class Quad:
         that was there before, so the animal's standing silhouette is
         unchanged; under animation the leg can now fold, lift and plant.
 
-        Front and hind limbs get different proportions on purpose: a hind leg
-        carries a longer shank and a hock that breaks the other way, and that
-        asymmetry is most of what makes a quadruped read as an animal rather
-        than a table walking.
+        Fore and hind get different proportions on purpose: a hind leg carries
+        a longer shank and a hock that breaks the other way, and that asymmetry
+        is most of what makes a quadruped read as an animal rather than a table
+        walking.
         """
-        hind = sz > 0
+        lw, lh, ld = dims
         thigh_h = lh * (0.40 if hind else 0.44)
         shank_h = lh * (0.42 if hind else 0.38)
         foot_h = lh - thigh_h - shank_h
         top = GROUND - lh
-        # Slight taper down the limb - thicker at the shoulder, narrow at the
-        # ankle - so it reads as a leg and not as a chair leg.
         tw, sw = lw, max(1.5, lw - 0.7)
-        parts = [
-            Part(f"leg_{tag}", "root", (sx * self.leg_x, top, sz * self.leg_z),
-                 (0, 0, 0),
+        # A hare does not stand on its toes: the hind foot is long and flat.
+        fd = ld + (5.0 if (hind and self.plantigrade) else 0.6)
+        fh = max(1.0, foot_h * (0.55 if (hind and self.plantigrade) else 1.0))
+        return [
+            Part(f"leg_{tag}", "root", (sx * at_x, top, sz), (0, 0, 0),
                  [_b((-tw / 2, 0, -ld / 2), (tw, thigh_h, ld), lm)]),
             Part(f"leg_{tag}_1", f"leg_{tag}", (0.0, thigh_h, 0.0), (0, 0, 0),
                  [_b((-sw / 2, 0, -ld / 2 + 0.2), (sw, shank_h, ld - 0.4), lm)]),
             Part(f"foot_{tag}", f"leg_{tag}_1", (0.0, shank_h, 0.0), (0, 0, 0),
-                 [_b((-lw / 2, 0, -ld / 2 - 0.4), (lw, foot_h, ld + 0.6),
+                 [_b((-lw / 2, 0, -ld / 2 - 0.4), (lw, fh, fd),
                      self.hoof_mat or lm)]),
         ]
-        return parts
 
 
-# Vanilla proportions, straight off the vanilla models.
+# Proportions taken from the vanilla models, then given the parts vanilla
+# implies but does not model separately - a wolf's muzzle, a llama's neck.
 HOSTS: dict[str, Quad] = {
     "cow": Quad("cow_hide", body=(12, 10, 18), body_y=4, head=(8, 8, 6),
-                head_y=4, head_z=-9, leg=(4, 12, 4), leg_x=4, leg_z=6,
-                horns=True, snout=(6, 4, 1, "cow_white"),
+                head_y=4, head_z=-9,
+                fore_leg=(4, 12, 4), hind_leg=(4, 12, 4),
+                fore_at=(4, 6), hind_at=(4, 6),
+                horns=True, muzzle=(6, 4, 2, "cow_white", 3.4),
                 ears=(2, 3, 1, "cow_hide", 4.5, 1.5, -3),
-                tail=(1, 8, 1, "cow_hide", -0.35),
-                 eye_style="bar", eye_spares=3),
+                tail=(1, 8, 1, "cow_hide", -0.35), tail_links=2,
+                eye_style="bar", eye_spares=3),
+
     "pig": Quad("pig_skin", body=(10, 8, 16), body_y=10, head=(8, 8, 8),
-                head_y=10, head_z=-8, leg=(4, 6, 4), leg_x=3, leg_z=5,
-                snout=(4, 3, 1, "pig_skin"),
-                ears=(2, 2, 1, "pig_skin", 4.2, 0.5, -5),
+                head_y=10, head_z=-8,
+                fore_leg=(4, 6, 4), hind_leg=(4, 6, 4),
+                fore_at=(3, 5), hind_at=(3, 5),
+                muzzle=(4, 3, 1.5, "pig_skin", 4.0),
+                ears=(2, 2, 1, "pig_skin", 4.2, 0.5, -5), ear_roll=34.0,
                 tail=(1, 3, 1, "pig_skin", -0.8),
-                 eye_style="bar", eye_spares=2),
-    "sheep": Quad("sheep_face", body=(8, 6, 16), body_y=6, head=(6, 6, 8),
-                  head_y=6, head_z=-8, leg=(4, 12, 4), leg_x=3, leg_z=5,
+                eye_style="bar", eye_spares=2),
+
+    # Deep-chested, short-legged, heavy fleece, long narrow face.
+    "sheep": Quad("sheep_face", body=(8, 8, 16), body_y=5, head=(6, 6, 8),
+                  head_y=6, head_z=-8,
+                  fore_leg=(4, 11, 4), hind_leg=(4, 11, 4),
+                  fore_at=(3, 5), hind_at=(3, 5),
+                  muzzle=(4, 3, 2, "sheep_face", 3.2),
+                  ears=(3, 2, 1, "sheep_face", 3.2, 1.0, -4), ear_roll=52.0,
+                  tail=(2, 4, 2, "wool", -0.3),
                   fleece=1.75,
+                  eye_style="bar", eye_spares=3),
+
+    # Not a cow: narrower, longer face, horns swept back, and a beard.
+    "goat": Quad("goat_fur", body=(9, 9, 15), body_y=5, head=(5, 6, 9),
+                 head_y=3, head_z=-8,
+                 neck=(4, 5, 5, -18.0, 1.0, -6.0),
+                 fore_leg=(3, 13, 3), hind_leg=(4, 12, 4),
+                 fore_at=(3, 5), hind_at=(3.4, 5),
+                 horns=True, horn_sweep=-96.0,
+                 muzzle=(3.5, 3, 2, "goat_fur", 3.2),
+                 beard=(2, 4, 1.5, "goat_fur"),
+                 ears=(3.5, 1.5, 1, "goat_fur", 2.6, 1.2, -3), ear_roll=72.0,
+                 tail=(1.5, 3, 1.5, "goat_fur", -1.4),
                  eye_style="bar", eye_spares=3),
-    "rabbit": Quad("rabbit_fur", body=(6, 5, 10), body_y=15, head=(5, 4, 5),
-                   head_y=13, head_z=-5, leg=(2, 4, 2), leg_x=2, leg_z=3.5,
-                   ears=(1.5, 5, 1, "rabbit_fur", 1.6, -1.0, -1.0),
-                   tail=(2, 2, 2, "rabbit_fur", -0.6),
-                 eye_style="round", eye_spares=3),
-    "goat": Quad("goat_fur", body=(9, 8, 16), body_y=6, head=(5, 6, 7),
-                 head_y=6, head_z=-8, leg=(3, 12, 3), leg_x=3, leg_z=5,
-                 horns=True, ears=(3, 1.5, 1, "goat_fur", 3.0, 1.5, -3),
-                 tail=(1, 3, 1, "goat_fur", -0.9),
-                 eye_style="bar", eye_spares=3),
-    "fox": Quad("fox_fur", body=(6, 5, 11), body_y=11, head=(8, 6, 6),
-                head_y=10, head_z=-6, leg=(2, 6, 2), leg_x=2.5, leg_z=3.5,
-                snout=(3, 2, 2, "fox_fur"),
-                ears=(2, 3, 1, "fox_fur", 3.0, -1.0, -2.0),
-                tail=(4, 9, 4, "fox_fur", -0.35),
+
+    # Big head, low slung body, short legs, enormous brush of a tail.
+    "fox": Quad("fox_fur", body=(6, 5, 12), body_y=12, head=(8, 6, 6),
+                head_y=10, head_z=-6, head_pitch=6.0,
+                fore_leg=(2, 7, 2), hind_leg=(2, 7, 2),
+                fore_at=(2.4, 4), hind_at=(2.4, 4),
+                haunch=(4, 5, 6),
+                muzzle=(3, 2.5, 4, "fox_snout", 3.0),
+                ears=(2.5, 4, 1, "fox_fur", 3.2, -1.4, -2.0), ear_roll=-10.0,
+                tail=(5, 11, 5, "fox_fur", -0.10), tail_links=2,
+                eye_style="slit", eye_spares=2),
+
+    # Deep chest, shoulder ruff, blunt muzzle, tail carried out behind.
+    "wolf": Quad("wolf_fur", body=(6, 7, 11), body_y=8, head=(6, 6, 5),
+                 head_y=6, head_z=-6,
+                 fore_leg=(2.5, 9, 2.5), hind_leg=(2.5, 9, 2.5),
+                 fore_at=(2.6, 4), hind_at=(2.6, 4),
+                 haunch=(4, 5, 5),
+                 ruff=(9, 7, 8, "wolf_fur", -0.6, -2.0),
+                 muzzle=(3, 3, 4, "wolf_fur", 3.0),
+                 ears=(2, 3, 1, "wolf_fur", 2.5, -0.5, -1.5), ear_roll=-8.0,
+                 tail=(2.5, 9, 2.5, "wolf_fur", -0.9), tail_links=2,
                  eye_style="slit", eye_spares=2),
-    "cat": Quad("cat_fur", body=(6, 5, 10), body_y=12, head=(5, 4, 5),
-                head_y=11, head_z=-5, leg=(2, 7, 2), leg_x=2, leg_z=3.5,
-                ears=(2, 2, 1, "cat_fur", 1.8, -0.5, -1.5),
-                tail=(1, 9, 1, "cat_fur", -0.9),
-                 eye_style="slit", eye_spares=3),
-    "horse": Quad("horse_hide", body=(10, 11, 22), body_y=2, head=(6, 8, 8),
-                  head_y=-2, head_z=-11, leg=(4, 16, 4), leg_x=4, leg_z=8,
-                  snout=(4, 4, 2, "horse_hide"),
-                  ears=(1.5, 3, 1, "horse_hide", 2.2, -2.0, -4.0),
-                  tail=(3, 12, 3, "horse_hide", -0.4),
-                 eye_style="bar", eye_spares=2),
-    "llama": Quad("llama_fur", body=(8, 12, 16), body_y=2, head=(4, 8, 6),
-                  head_y=-6, head_z=-9, leg=(3, 14, 3), leg_x=3, leg_z=6,
-                  ears=(1.5, 3, 1, "llama_fur", 1.8, -2.5, -2.5),
+
+    # Slim, long-backed, front legs longer than the hind, whip tail.
+    "cat": Quad("cat_fur", body=(5, 5, 11), body_y=12, head=(5, 4.5, 5),
+                head_y=10, head_z=-5,
+                fore_leg=(2, 10, 2), hind_leg=(2, 9, 2),
+                fore_at=(1.8, 4), hind_at=(2.2, 4),
+                haunch=(3.5, 4.5, 5),
+                muzzle=(3, 2, 1.5, "cat_fur", 2.4),
+                ears=(2, 2.5, 1, "cat_fur", 1.8, -0.5, -1.5), ear_roll=-6.0,
+                tail=(1.2, 10, 1.2, "cat_fur", -1.1), tail_links=3,
+                eye_style="slit", eye_spares=3),
+
+    # Long neck carrying a small head, long legs, deep body.
+    "horse": Quad("horse_hide", body=(10, 11, 22), body_y=3, head=(5, 6, 10),
+                  head_y=3, head_z=-11, head_pitch=14.0,
+                  neck=(5, 12, 7, -38.0, 1.0, -8.0),
+                  fore_leg=(4, 17, 4), hind_leg=(4.5, 17, 4.5),
+                  fore_at=(4, 8), hind_at=(4, 8),
+                  muzzle=(4, 4, 3, "horse_hide", 2.6),
+                  ears=(1.5, 3, 1, "horse_hide", 2.0, -1.5, -3.0), ear_roll=-14.0,
+                  tail=(3, 13, 3, "horse_hide", -0.4), tail_links=2,
+                  eye_style="bar", eye_spares=2),
+
+    # The neck is the animal. Small head, very long muzzle, banana ears.
+    "llama": Quad("llama_fur", body=(9, 12, 16), body_y=3, head=(4, 5, 9),
+                  head_y=0, head_z=-4, head_pitch=8.0,
+                  neck=(4.5, 15, 5, -12.0, 1.0, -6.0),
+                  fore_leg=(3.5, 15, 3.5), hind_leg=(3.5, 15, 3.5),
+                  fore_at=(3.2, 6), hind_at=(3.2, 6),
+                  muzzle=(3, 2.5, 2, "llama_fur", 2.6),
+                  ears=(1.5, 4, 1, "llama_fur", 1.6, -1.5, -2.0), ear_roll=-9.0,
                   tail=(2, 4, 2, "llama_fur", -0.6),
-                 eye_style="bar", eye_spares=2),
-    "wolf": Quad("wolf_fur", body=(6, 6, 12), body_y=8, head=(6, 6, 6),
-                 head_y=7, head_z=-6, leg=(2, 8, 2), leg_x=2.5, leg_z=4,
-                 snout=(3, 3, 2, "wolf_fur"),
-                 ears=(2, 3, 1, "wolf_fur", 2.5, -0.5, -1.5),
-                 tail=(2, 8, 2, "wolf_fur", -0.5),
-                 eye_style="slit", eye_spares=2),
+                  eye_style="bar", eye_spares=2),
 }
+
+
+def rabbit_host() -> list[Part]:
+    """A hare, crouched, which is the only pose a hare is ever in.
+
+    Built as its own thing rather than a shrunken cow. The mass sits over
+    enormous hind haunches, the hind feet are long and flat on the ground, the
+    forelegs are thin props holding the chest up, and the ears are half the
+    height of the animal. Standing it on four matching posts, which is what
+    the shared quadruped produced, threw away every one of those.
+    """
+    parts = [
+        Part("body", "root", (0.0, 13.0, 1.0), (-14 * D, 0, 0),
+             [_b((-3, 0, -5), (6, 6, 10), "rabbit_fur")]),
+        Part("head", "body", (0.0, -3.0, -5.0), (10 * D, 0, 0),
+             [_b((-2.5, 0, -4), (5, 4.5, 5), "rabbit_fur")]),
+        Part("nose", "head", (0.0, 2.4, -4.0), (0, 0, 0),
+             [_b((-1, 0, -1), (2, 1.5, 1), "rabbit_nose")]),
+        Part("ear_r", "head", (-1.7, -0.4, -1.2), (-6 * D, -8 * D, -13 * D),
+             [_b((-1, -6, -0.5), (2, 6.5, 1), "rabbit_fur")]),
+    ]
+    parts.extend(mirror(parts[-1:], "ear_r", "ear_l"))
+    parts.append(Part("tail", "body", (0.0, 1.0, 5.0), (-0.5, 0, 0),
+                      [_b((-1.5, 0, 0), (3, 3, 2), "rabbit_fur")]))
+    parts.extend(infected_face("head", 5, 4.5, 5, eye=3.4, teeth=4,
+                               style="round", spares=3))
+    # Forelegs: thin, near-vertical props.
+    for tag, sx in (("fr", -1), ("fl", 1)):
+        parts += [
+            Part(f"leg_{tag}", "root", (sx * 2.0, 17.0, -3.5), (0, 0, 0),
+                 [_b((-1, 0, -1), (2, 4, 2), "rabbit_fur")]),
+            Part(f"leg_{tag}_1", f"leg_{tag}", (0.0, 4.0, 0.0), (0, 0, 0),
+                 [_b((-0.9, 0, -0.9), (1.8, 3, 1.8), "rabbit_fur")]),
+            Part(f"foot_{tag}", f"leg_{tag}_1", (0.0, 3.0, 0.0), (0, 0, 0),
+                 [_b((-1, 0, -1.6), (2, 1.5, 2.6), "rabbit_fur")]),
+        ]
+    # Hind: a big haunch, a short shank, and a long flat foot.
+    for tag, sx in (("br", -1), ("bl", 1)):
+        parts += [
+            Part(f"haunch_{tag}", "body", (sx * 2.6, 1.0, 3.0), (0, 0, 0),
+                 [_b((-1.5, 0, -3), (3, 5, 6), "rabbit_fur")]),
+            Part(f"leg_{tag}", "root", (sx * 2.6, 17.5, 3.5), (0, 0, 0),
+                 [_b((-1.2, 0, -1.2), (2.4, 3.5, 2.4), "rabbit_fur")]),
+            Part(f"leg_{tag}_1", f"leg_{tag}", (0.0, 3.5, 0.0), (32 * D, 0, 0),
+                 [_b((-1.1, 0, -1.1), (2.2, 2.5, 2.2), "rabbit_fur")]),
+            Part(f"foot_{tag}", f"leg_{tag}_1", (0.0, 2.5, 0.0), (-32 * D, 0, 0),
+                 [_b((-1.2, 0, -5.2), (2.4, 1.2, 7), "rabbit_fur")]),
+        ]
+    return parts
 
 
 def creeper_host() -> list[Part]:
@@ -240,26 +417,48 @@ def spider_host() -> list[Part]:
 
 
 def chicken_host() -> list[Part]:
+    """A hen: upright, tail-heavy, and mostly beak and comb from the front.
+
+    The old version was a box with two pegs. What actually makes a chicken
+    recognisable is the vertical stack - feet, thin scaled legs, a body tipped
+    back with the tail up, and a small head carried high and forward on a
+    neck - plus three separate red bits on the face that do not exist on any
+    other animal here: comb on top, wattle underneath, beak between them.
+    """
     parts = [
-        Part("body", "root", (0.0, 11.0, 0.0), (0, 0, 0),
-             [_b((-3, 0, -4), (6, 8, 8), "feather")]),
-        Part("head", "body", (0.0, -4.0, -4.0), (0, 0, 0),
-             [_b((-2, 0, -3), (4, 6, 3), "feather")]),
-        Part("beak", "head", (0.0, 2.0, -3.0), (0, 0, 0),
-             [_b((-2, 0, -2), (4, 2, 2), "beak")]),
-        Part("wattle", "head", (0.0, 3.0, -3.0), (0, 0, 0),
-             [_b((-1, 0, -2), (2, 2, 2), "comb")]),
-        Part("comb", "head", (0.0, 0.0, -1.5), (0, 0, 0),
-             [_b((-0.5, -2, -2), (1, 2, 4), "comb")]),
-        Part("wing_r", "body", (-3.0, 1.0, -1.0), (0, 0, 0),
-             [_b((-1, 0, -3), (1, 4, 6), "feather")]),
+        # Body tipped back so the tail rides high, the way a hen stands.
+        Part("body", "root", (0.0, 10.5, 0.0), (6 * D, 0, 0),
+             [_b((-3, 0, -4), (6, 7, 9), "feather")]),
+        Part("tailfan", "body", (0.0, 0.5, 5.0), (-42 * D, 0, 0),
+             [_b((-2.5, 0, 0), (5, 6, 1.5), "feather")]),
+        Part("neck", "body", (0.0, 1.0, -3.5), (7 * D, 0, 0),
+             [_b((-1.5, -5, -1.5), (3, 5, 3), "feather")]),
+        Part("head", "neck", (0.0, -5.0, 0.0), (0, 0, 0),
+             [_b((-2, 0, -3), (4, 5, 3), "feather")]),
+        Part("beak", "head", (0.0, 2.2, -3.0), (0, 0, 0),
+             [_b((-1.5, 0, -2.5), (3, 2, 2.5), "beak")]),
+        # Comb along the crown, wattle hanging under the beak. Both red, both
+        # jagged, and together they are the whole silhouette of the head.
+        Part("comb", "head", (0.0, 0.0, -1.0), (0, 0, 0),
+             [_b((-0.6, -2.5, -2.0), (1.2, 2.5, 4.5), "comb_red")]),
+        Part("wattle", "head", (0.0, 4.0, -2.6), (0, 0, 0),
+             [_b((-1.1, 0, -1.2), (2.2, 3, 1.2), "comb_red")]),
+        Part("wing_r", "body", (-3.0, 1.0, -2.0), (0, 0, 0),
+             [_b((-1, 0, 0), (1, 5, 7), "feather")]),
     ]
     parts.extend(mirror(parts[-1:], "wing_r", "wing_l"))
-    parts.extend(infected_face("head", 4, 6, 3, eye=3.0, teeth=4,
-                               jaw_mat="feather", style="round", spares=2))
-    parts.append(Part("leg_r", "root", (-2.0, 19.0, 1.0), (0, 0, 0),
-                      [_b((-1, 0, -3), (3, 5, 3), "beak")]))
-    parts.extend(mirror(parts[-1:], "leg_r", "leg_l"))
+    parts.extend(infected_face("head", 4, 5, 3, eye=3.0, teeth=4,
+                               jaw_mat="beak", style="round", spares=2))
+    # Scaled legs with a real hock, and splayed three-toed feet.
+    for tag, sx in (("r", -1), ("l", 1)):
+        parts += [
+            Part(f"leg_{tag}", "root", (sx * 2.0, 16.5, 0.5), (0, 0, 0),
+                 [_b((-1.3, 0, -1.3), (2.6, 4, 2.6), "beak")]),
+            Part(f"leg_{tag}_1", f"leg_{tag}", (0.0, 4.0, 0.0), (0, 0, 0),
+                 [_b((-1.05, 0, -1.05), (2.1, 2.5, 2.1), "beak")]),
+            Part(f"foot_{tag}", f"leg_{tag}_1", (0.0, 2.5, 0.0), (0, 0, 0),
+                 [_b((-1.6, 0, -2.6), (3.2, 1, 4), "beak")]),
+        ]
     return parts
 
 
