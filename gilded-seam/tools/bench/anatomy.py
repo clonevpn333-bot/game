@@ -515,6 +515,74 @@ def split_open(anchor: str, *, at: tuple, width: float, height: float,
     return parts
 
 
+def flayed(anchor: str, *, at: tuple, length: float, height: float,
+           ribs: int = 5, tier: int = 1, side: int = -1, name: str = "flay",
+           viscera: bool = True, spine: bool = False) -> list[Part]:
+    """Hide torn off and peeled back, exposing the ribcage and what it held.
+
+    `split_open` makes a wound. This makes an *absence*: a whole panel of hide
+    and muscle stripped away down the flank, the skin left hanging in a ragged
+    curtain at the edge of it, and the bare ribs standing in the gap with the
+    gut sagging out between them.
+
+    Built rib by rib rather than as one striped box, because a ribcage reads as
+    a ribcage only when you can see daylight between the bones. Each rib is
+    curved by rolling it further as it goes down the body, and the lower ones
+    are shorter and further apart - the pattern the eye expects from an animal
+    that has been opened up.
+    """
+    p = f"mut{tier}_{name}"
+    x, y, z = at
+    parts = [
+        # The cavity itself: dark, set into the body, so ribs stand proud.
+        Part(p, anchor, (x, y, z), (0, 0, 0),
+             [_b((0 if side < 0 else -0.9, -height / 2, -length / 2),
+                 (0.9, height, length), "rot")]),
+    ]
+    # Ribs, curving as they descend.
+    for i in range(ribs):
+        f = i / max(1, ribs - 1)
+        rib_h = height * (0.92 - 0.34 * f)
+        roll = (14 + 30 * f) * side
+        parts.append(Part(f"{p}_rib{i}", p,
+                          (side * 0.35, -height * 0.42,
+                           -length / 2 + length * (0.10 + 0.80 * f)),
+                          (0, 0, roll * D),
+                          [_b((-0.55 if side < 0 else -0.35, 0, -0.6),
+                              (0.9, rib_h, 1.2), "tooth")]))
+    # Gut sagging out between the lower ribs.
+    if viscera:
+        parts.append(Part(f"{p}_gut", p, (side * 0.9, height * 0.06, 0.0),
+                          (0, 0, 0),
+                          [_b((-1.1 if side < 0 else -0.5, 0, -length * 0.26),
+                              (1.6, height * 0.40, length * 0.52), "flesh")]))
+        parts.append(Part(f"{p}_gut2", f"{p}_gut", (0.0, height * 0.34, 0.0),
+                          (0, 0, -18 * side * D),
+                          [_b((-0.8 if side < 0 else -0.4, 0, -length * 0.16),
+                              (1.2, height * 0.30, length * 0.32), "sinew")]))
+    # The hide itself, still attached along the bottom edge of the wound and
+    # hanging off it. It drapes downward (+y is down here) and peels outward,
+    # rather than jutting off the front like a paddle.
+    parts.append(Part(f"{p}_pelt", p, (side * 0.5, height * 0.44, length * 0.12),
+                      (0, 0, (34 * side) * D),
+                      [_b((-1.1 if side < 0 else -0.1, 0, -length * 0.30),
+                          (1.2, height * 0.72, length * 0.60), "hide_torn")]))
+    parts.append(Part(f"{p}_pelt2", f"{p}_pelt", (0.0, height * 0.70, 0.0),
+                      (0, 0, (20 * side) * D),
+                      [_b((-0.9 if side < 0 else -0.1, 0, -length * 0.20),
+                          (1.0, height * 0.42, length * 0.40), "hide_torn")]))
+    # Vertebrae showing where the panel runs up onto the back.
+    if spine:
+        for i in range(max(2, ribs - 1)):
+            f = i / max(1, ribs - 2)
+            parts.append(Part(f"{p}_vert{i}", p,
+                              (side * 0.2, -height * 0.52,
+                               -length / 2 + length * (0.18 + 0.66 * f)),
+                              (0, 0, 0),
+                              [_b((-0.7, -1.1, -0.7), (1.4, 1.4, 1.4), "tooth")]))
+    return parts
+
+
 def grafted_arm(anchor: str, *, at: tuple, tier: int = 2, side: int = -1,
                 scale: float = 1.0, name: str = "arm") -> list[Part]:
     """A human arm - shoulder, forearm, hand, four fingers and a thumb -

@@ -13,7 +13,7 @@ import math
 
 from core import D, Box, Model, Part, chain, mirror, radial, torus
 from anatomy import (GROUND, HOSTS, antler_roots, chicken_host, creeper_host,
-                     rabbit_host,
+                     rabbit_host, flayed,
                      infected_face,
                      eye_cluster,
                      extra_legs, eye_stalks, grafted_arm, humanoid,
@@ -30,236 +30,246 @@ def _m(name, parts, tex=0):
 # ---------------------------------------------------------------------------
 
 
+# Every host gets its own pathology.
+#
+# The previous version ran nearly all of them through one `_corrupt_quad`
+# helper, which gave the fox, the cat, the horse and the llama the same rift in
+# the same place, the same eye cluster on the head, the same symmetric pair of
+# arms at the same height, and the same fan of eye stalks on the rump. Four
+# animals, one disease. What follows gives each species a *different* disease -
+# a different part of the body opens, a different thing grows out of it, and
+# most of them are no longer symmetric, because nothing about this should look
+# designed.
+
+
 def blighted_cow() -> Model:
+    """Opened along the ribs on one side. It still chews."""
     p = HOSTS["cow"].build()
-    # Stage 1: the flank splits, the spine erupts, the jaw unhinges.
-    p += split_open("body", at=(0.0, 5.0, 1.0), width=7.0, height=6.0, tier=1,
-                    name="flank")
+    p += flayed("body", at=(-6.0, 4.0, -1.0), length=11.0, height=7.0, ribs=6,
+                tier=1, side=-1, spine=True, name="flank")
     p += spine_plates("body", from_z=-6.0, to_z=7.0, y=0.0, count=6, tier=1,
                       height=3.4)
     p += lolling_tongue("head", at=(0.0, 6.0, -5.0), tier=1, segments=6)
-    p += resin_growth("body", at=(-4.5, 3.0, -5.0), size=(4, 4, 4), tier=1)
-    # Stage 2: arms it should not have, and a crown of pale oak.
-    p += grafted_arm("body", at=(-6.0, 2.5, -5.0), tier=2, side=-1, scale=1.1,
+    p += resin_growth("body", at=(4.5, 3.0, -5.0), size=(4, 4, 4), tier=1)
+    # One arm, out of the opened side. Asymmetry is the point.
+    p += grafted_arm("body", at=(-6.5, 2.0, -3.0), tier=2, side=-1, scale=1.2,
                      name="arm_r")
-    p += grafted_arm("body", at=(6.0, 2.5, -5.0), tier=2, side=1, scale=1.1,
-                     name="arm_l")
     p += antler_roots("head", at=(-2.5, 0.5, -3.0), tier=2, side=-1, name="roots_r")
     p += antler_roots("head", at=(2.5, 0.5, -3.0), tier=2, side=1, name="roots_l")
-    p += eye_stalks("body", at=(0.0, 0.5, 5.0), count=3, tier=2, spread=3.2)
-    p += eye_cluster("head", at=(0.0, 3.0, -6.0), count=4, tier=1, spread=(3.2, 2.2), size=2.8)
-    p += eye_cluster("body", at=(-6.2, 4.0, 3.0), count=3, tier=1, spread=(1.4, 3.0),
-                     size=2.4, out=-0.6, name="flankeyes")
+    p += eye_cluster("head", at=(0.0, 3.0, -6.2), count=4, tier=1,
+                     spread=(3.2, 2.2), size=2.8)
     return _m("blighted_cow", p)
 
 
 def blighted_pig() -> Model:
+    """Burst from underneath. It walks on more legs than it was issued."""
     p = HOSTS["pig"].build()
-    p += split_open("body", at=(0.0, 8.0, 2.0), width=6.0, height=5.0, tier=1,
-                    name="belly")
+    p += flayed("body", at=(0.0, 8.6, 1.0), length=10.0, height=5.0, ribs=5,
+                tier=1, side=1, name="belly")
     p += lolling_tongue("head", at=(0.0, 7.0, -8.0), tier=1, segments=5, thick=1.4)
     p += resin_growth("body", at=(0.0, -0.5, 3.0), size=(5, 4, 5), tier=1)
     p += extra_legs("body", at=(-4.5, 6.0, -1.0), tier=2, count=2, length=9.0,
                     side=-1, name="legs_r")
-    p += extra_legs("body", at=(4.5, 6.0, -1.0), tier=2, count=2, length=9.0,
+    p += extra_legs("body", at=(4.5, 6.0, -1.0), tier=2, count=3, length=9.0,
                     side=1, name="legs_l")
-    p += grafted_arm("body", at=(-5.0, 2.0, -6.0), tier=2, side=-1, scale=0.9,
-                     name="arm_r")
     p += eye_stalks("head", at=(0.0, 0.0, -4.0), count=4, tier=2, spread=2.6,
-                    length=2.4)
-    p += eye_cluster("head", at=(0.0, 3.0, -8.2), count=5, tier=1, spread=(3.0, 2.4), size=2.6)
+                    length=2.6)
+    p += eye_cluster("head", at=(0.0, 3.0, -8.2), count=5, tier=1,
+                     spread=(3.0, 2.4), size=2.6)
     return _m("blighted_pig", p)
 
 
 def blighted_sheep() -> Model:
+    """Shorn to the spine. The fleece went hard before it came off."""
     p = HOSTS["sheep"].build()
-    # The fleece keeps growing after the sheep stops.
-    p += split_open("body", at=(0.0, 3.0, 3.0), width=6.0, height=5.0, tier=1,
-                    name="fleecerift")
+    # The wound runs along the back, not the flank: it has been stripped.
+    p += flayed("body", at=(0.0, 4.4, 0.0), length=13.0, height=5.0, ribs=7,
+                tier=1, side=-1, spine=True, name="shorn")
     p += spine_plates("body", from_z=-5.0, to_z=6.0, y=-1.0, count=5, tier=1,
                       height=3.0)
     p += lolling_tongue("head", at=(0.0, 5.0, -7.0), tier=1, segments=5, thick=1.3)
-    p += eye_stalks("body", at=(0.0, -1.0, -4.0), count=5, tier=2, spread=3.4,
-                    length=3.6)
-    p += grafted_arm("body", at=(-4.5, 2.0, -4.0), tier=2, side=-1, scale=0.95,
-                     name="arm_r")
-    p += grafted_arm("body", at=(4.5, 2.0, -4.0), tier=2, side=1, scale=0.95,
+    p += eye_cluster("body", at=(0.0, 2.0, -7.0), count=6, tier=1,
+                     spread=(4.2, 1.8), size=2.6, out=-0.6, name="wooleyes")
+    p += grafted_arm("body", at=(4.8, 3.0, -4.0), tier=2, side=1, scale=0.95,
                      name="arm_l")
     p += antler_roots("head", at=(-2.0, 0.0, -4.0), tier=2, side=-1, name="roots_r")
-    p += eye_cluster("head", at=(0.0, 2.5, -8.2), count=4, tier=1, spread=(2.4, 2.0), size=2.4)
-    p += eye_cluster("body", at=(0.0, -0.5, -6.0), count=4, tier=1, spread=(3.4, 1.6),
-                     size=2.6, out=-0.6, name="witherseyes")
+    p += eye_cluster("head", at=(0.0, 2.5, -8.2), count=4, tier=1,
+                     spread=(2.4, 2.0), size=2.4)
     return _m("blighted_sheep", p)
 
 
-def blighted_chicken() -> Model:
-    p = chicken_host()
-    # The neck keeps going.
-    p += chain("mut1_neck", "body", (0.0, -3.0, -3.0), 4, (2.4, 2.2, 2.4),
-               "sinew", taper=0.9, curl=(-8 * D, 0, 0), root_rot=(-16 * D, 0, 0))
-    p += lolling_tongue("head", at=(0.0, 3.0, -3.0), tier=1, segments=4, thick=1.0)
-    p += split_open("body", at=(0.0, 4.0, 3.0), width=4.0, height=4.0, tier=1,
-                    depth=1.6, name="crop")
-    p += grafted_arm("body", at=(-3.0, 2.0, -2.0), tier=2, side=-1, scale=0.7,
+def blighted_goat() -> Model:
+    """The throat opened and the horns kept going."""
+    p = HOSTS["goat"].build()
+    p += flayed("neck", at=(0.0, -2.0, 1.2), length=5.0, height=4.0, ribs=4,
+                tier=1, side=1, name="throat")
+    p += flayed("body", at=(5.0, 4.5, 2.0), length=8.0, height=6.0, ribs=5,
+                tier=2, side=1, name="flank")
+    p += lolling_tongue("head", at=(0.0, 5.5, -8.5), tier=1, segments=7, thick=1.0)
+    p += antler_roots("head", at=(-2.4, 0.0, -2.0), tier=1, side=-1, name="crown_r")
+    p += antler_roots("head", at=(2.4, 0.0, -2.0), tier=1, side=1, name="crown_l")
+    p += antler_roots("head", at=(0.0, -0.5, -5.0), tier=2, side=1, name="crown_c")
+    p += eye_cluster("head", at=(0.0, 1.5, -9.0), count=5, tier=1,
+                     spread=(2.2, 3.4), size=2.2)
+    p += eye_stalks("neck", at=(0.0, -3.0, -1.0), count=3, tier=2, spread=2.0,
+                    length=3.2)
+    return _m("blighted_goat", p)
+
+
+def blighted_horse() -> Model:
+    """Opened under the barrel. The neck did not stop growing."""
+    p = HOSTS["horse"].build()
+    p += flayed("body", at=(0.0, 13.0, 2.0), length=15.0, height=6.0, ribs=8,
+                tier=1, side=1, name="barrel")
+    p += flayed("neck", at=(0.0, -5.0, 1.5), length=6.0, height=5.0, ribs=4,
+                tier=2, side=-1, name="withers")
+    p += lolling_tongue("head", at=(0.0, 4.0, -9.0), tier=1, segments=8, thick=1.2)
+    p += spine_plates("body", from_z=-8.0, to_z=9.0, y=0.0, count=8, tier=1,
+                      height=3.6)
+    p += grafted_arm("body", at=(-5.5, 5.0, -8.0), tier=2, side=-1, scale=1.1,
                      name="arm_r")
-    p += grafted_arm("body", at=(3.0, 2.0, -2.0), tier=2, side=1, scale=0.7,
+    p += grafted_arm("body", at=(5.5, 6.5, -6.0), tier=2, side=1, scale=0.85,
                      name="arm_l")
-    p += eye_stalks("head", at=(0.0, 0.0, -1.0), count=3, tier=2, spread=1.8,
+    p += eye_cluster("neck", at=(0.0, -8.0, -3.5), count=5, tier=1,
+                     spread=(2.6, 4.0), size=2.4, name="neckeyes")
+    return _m("blighted_horse", p)
+
+
+def blighted_llama() -> Model:
+    """The neck is the wound. It carries the whole length of it open."""
+    p = HOSTS["llama"].build()
+    p += flayed("neck", at=(0.0, -7.0, 1.6), length=13.0, height=4.2, ribs=9,
+                tier=1, side=-1, spine=True, name="throat")
+    p += lolling_tongue("head", at=(0.0, 3.5, -8.0), tier=1, segments=9, thick=0.9)
+    p += eye_stalks("neck", at=(0.0, -12.0, -1.5), count=5, tier=2, spread=2.2,
+                    length=3.6)
+    p += resin_growth("body", at=(0.0, -1.0, 4.0), size=(6, 5, 5), tier=1)
+    p += grafted_arm("neck", at=(-3.0, -10.0, 0.0), tier=2, side=-1, scale=0.7,
+                     name="arm_r")
+    p += eye_cluster("head", at=(0.0, 1.5, -9.0), count=4, tier=1,
+                     spread=(1.8, 2.6), size=2.0)
+    return _m("blighted_llama", p)
+
+
+def blighted_wolf() -> Model:
+    """The ruff tore away. The shoulders underneath are bare."""
+    p = HOSTS["wolf"].build()
+    p += flayed("body", at=(-4.0, 3.0, -2.0), length=9.0, height=6.0, ribs=6,
+                tier=1, side=-1, spine=True, name="shoulder")
+    p += lolling_tongue("head", at=(0.0, 4.5, -5.5), tier=1, segments=7, thick=1.2)
+    p += spine_plates("body", from_z=-4.0, to_z=5.0, y=-0.5, count=6, tier=1,
+                      height=3.2)
+    # Arms come out from under the ruff, not off the ribs.
+    p += grafted_arm("ruff", at=(-4.5, 3.0, -1.0), tier=2, side=-1, scale=0.9,
+                     name="arm_r")
+    p += grafted_arm("ruff", at=(4.5, 3.0, -1.0), tier=2, side=1, scale=0.9,
+                     name="arm_l")
+    p += eye_stalks("body", at=(0.0, -0.5, 4.0), count=3, tier=2, spread=2.4,
+                    length=2.4)
+    p += eye_cluster("head", at=(0.0, 2.0, -6.2), count=4, tier=1,
+                     spread=(2.4, 2.0), size=2.4)
+    return _m("blighted_wolf", p)
+
+
+def blighted_fox() -> Model:
+    """The brush stripped to its vertebrae, and still wagging."""
+    p = HOSTS["fox"].build()
+    p += flayed("tail", at=(0.0, 4.0, 0.0), length=7.0, height=4.0, ribs=6,
+                tier=1, side=1, viscera=False, name="brush")
+    p += flayed("body", at=(3.4, 2.5, 1.0), length=7.0, height=4.5, ribs=4,
+                tier=2, side=1, name="flank")
+    p += lolling_tongue("head", at=(0.0, 4.0, -9.5), tier=1, segments=6)
+    p += eye_cluster("tail", at=(0.0, 5.0, 0.0), count=5, tier=1,
+                     spread=(2.6, 5.0), size=2.2, name="brusheyes")
+    p += grafted_arm("body", at=(-3.4, 3.5, 3.0), tier=2, side=-1, scale=0.65,
+                     name="arm_r")
+    p += eye_cluster("head", at=(0.0, 2.0, -6.2), count=4, tier=1,
+                     spread=(3.0, 2.0), size=2.4)
+    return _m("blighted_fox", p)
+
+
+def blighted_cat() -> Model:
+    """Spine laid open. The tail is a whip of loose bone."""
+    p = HOSTS["cat"].build()
+    p += flayed("body", at=(0.0, 2.2, 0.0), length=10.0, height=4.0, ribs=7,
+                tier=1, side=-1, spine=True, viscera=False, name="spine")
+    p += lolling_tongue("head", at=(0.0, 3.0, -5.0), tier=1, segments=8, thick=0.8)
+    p += eye_stalks("tail", at=(0.0, 3.0, 0.0), count=4, tier=2, spread=1.4,
                     length=2.0)
-    p += eye_cluster("head", at=(0.0, 2.0, -3.2), count=3, tier=1, spread=(1.6, 1.4), size=2.0)
+    p += grafted_arm("body", at=(3.0, 3.0, -3.5), tier=2, side=1, scale=0.6,
+                     name="arm_l")
+    p += eye_cluster("head", at=(0.0, 1.5, -5.2), count=4, tier=1,
+                     spread=(2.4, 2.0), size=2.4)
+    return _m("blighted_cat", p)
+
+
+def blighted_rabbit() -> Model:
+    """The haunches split. The ears are cartilage and nothing else."""
+    p = rabbit_host()
+    p += flayed("haunch_br", at=(-1.6, 2.0, 0.0), length=5.5, height=4.5,
+                ribs=4, tier=1, side=-1, name="haunch")
+    p += flayed("body", at=(0.0, 2.6, 1.0), length=7.0, height=4.0, ribs=5,
+                tier=2, side=1, name="back")
+    p += lolling_tongue("head", at=(0.0, 3.0, -4.0), tier=1, segments=5, thick=0.9)
+    p += eye_stalks("ear_r", at=(0.0, -4.0, 0.0), count=3, tier=2, spread=1.0,
+                    length=2.2)
+    # One oversized arm off the back, far too big for the animal carrying it.
+    p += grafted_arm("body", at=(2.6, 1.0, 2.0), tier=2, side=1, scale=1.15,
+                     name="arm_l")
+    p += eye_cluster("head", at=(0.0, 1.0, -5.2), count=4, tier=1,
+                     spread=(2.0, 1.6), size=2.0)
+    return _m("blighted_rabbit", p)
+
+
+def blighted_chicken() -> Model:
+    """Breast opened, wings stripped back to the bones of the wing."""
+    p = chicken_host()
+    p += flayed("body", at=(0.0, 3.0, -4.2), length=6.0, height=5.0, ribs=5,
+                tier=1, side=1, name="breast")
+    p += flayed("wing_r", at=(-0.8, 2.5, 2.0), length=6.0, height=3.0, ribs=4,
+                tier=2, side=-1, viscera=False, name="pinion")
+    p += lolling_tongue("head", at=(0.0, 3.0, -3.0), tier=1, segments=4, thick=1.0)
+    p += eye_stalks("comb", at=(0.0, -2.0, 0.0), count=4, tier=2, spread=1.4,
+                    length=2.4)
+    p += grafted_arm("body", at=(3.2, 2.0, -2.0), tier=2, side=1, scale=0.7,
+                     name="arm_l")
+    p += eye_cluster("head", at=(0.0, 2.0, -3.2), count=3, tier=1,
+                     spread=(1.6, 1.4), size=2.0)
     return _m("blighted_chicken", p)
 
 
 def blighted_spider() -> Model:
     p = spider_host()
     p += split_open("abdomen", at=(0.0, 0.0, 4.0), width=7.0, height=6.0, tier=1,
-                    name="sac")
+                    depth=2.4, name="sac")
+    p += flayed("abdomen", at=(4.0, 0.0, 0.0), length=8.0, height=6.0, ribs=5,
+                tier=2, side=1, viscera=False, name="carapace")
     p += lolling_tongue("head", at=(0.0, 2.0, -7.0), tier=1, segments=5, thick=1.2)
     p += resin_growth("abdomen", at=(0.0, -4.5, 0.0), size=(5, 4, 6), tier=1)
-    for i, side in ((0, -1), (1, 1)):
+    for side in (-1, 1):
         p += extra_legs("abdomen", at=(side * 4.5, 0.0, 2.0), tier=2, count=2,
-                        length=11.0, side=side, name=f"legs{i}")
+                        length=10.0, side=side,
+                        name="legs_r" if side < 0 else "legs_l")
     p += eye_stalks("head", at=(0.0, -3.5, -5.0), count=4, tier=2, spread=3.0,
-                    length=2.6)
-    p += eye_cluster("head", at=(0.0, -1.0, -8.2), count=6, tier=1, spread=(3.4, 2.6), size=2.4)
+                    length=2.8)
+    p += eye_cluster("head", at=(0.0, -1.0, -8.2), count=6, tier=1,
+                     spread=(3.4, 2.6), size=2.4)
     return _m("blighted_spider", p)
 
 
 def blighted_creeper() -> Model:
     p = creeper_host()
-    # It was always going to come apart; now it does it slowly.
     p += split_open("body", at=(0.0, 6.0, -2.0), width=6.0, height=8.0, tier=1,
-                    depth=2.4, name="core")
-    p += resin_growth("body", at=(0.0, 6.0, 0.0), size=(4, 5, 4), tier=1,
-                      name="heart")
-    p += spine_plates("body", from_z=1.0, to_z=1.0, y=0.0, count=4, tier=1,
-                      height=2.6)
-    p += grafted_arm("body", at=(-4.0, 2.0, 0.0), tier=2, side=-1, scale=0.9,
-                     name="arm_r")
-    p += grafted_arm("body", at=(4.0, 2.0, 0.0), tier=2, side=1, scale=0.9,
-                     name="arm_l")
-    p += eye_stalks("head", at=(0.0, -8.0, -2.0), count=5, tier=2, spread=3.0,
-                    length=2.2)
-    p += lolling_tongue("head", at=(0.0, -1.0, -4.0), tier=2, segments=5, thick=1.2)
-    p += eye_cluster("head", at=(0.0, -4.0, -4.2), count=5, tier=1, spread=(3.2, 2.6), size=2.8)
+                    depth=2.6, name="cask")
+    p += flayed("body", at=(-4.0, 8.0, 1.0), length=9.0, height=7.0, ribs=6,
+                tier=2, side=-1, name="seam")
+    p += resin_growth("body", at=(0.0, 2.0, 2.5), size=(6, 5, 4), tier=1)
+    p += lolling_tongue("head", at=(0.0, 6.0, -4.0), tier=1, segments=5, thick=1.2)
+    p += eye_stalks("body", at=(0.0, 1.0, 2.0), count=4, tier=2, spread=3.0,
+                    length=3.0)
+    p += eye_cluster("head", at=(0.0, 3.0, -4.2), count=4, tier=1,
+                     spread=(3.0, 3.0), size=2.6)
     return _m("blighted_creeper", p)
-
-
-def blighted_wolf() -> Model:
-    p = HOSTS["wolf"].build()
-    p += split_open("body", at=(0.0, 4.0, 2.0), width=5.0, height=5.0, tier=1,
-                    depth=1.8, name="ribs")
-    p += lolling_tongue("head", at=(0.0, 5.0, -5.0), tier=1, segments=6, thick=1.2)
-    p += spine_plates("body", from_z=-4.0, to_z=5.0, y=-0.5, count=5, tier=1,
-                      height=2.8)
-    p += antler_roots("head", at=(-2.0, 0.0, -3.0), tier=2, side=-1, name="roots_r")
-    p += antler_roots("head", at=(2.0, 0.0, -3.0), tier=2, side=1, name="roots_l")
-    p += grafted_arm("body", at=(-3.5, 2.0, -3.0), tier=2, side=-1, scale=0.85,
-                     name="arm_r")
-    p += grafted_arm("body", at=(3.5, 2.0, -3.0), tier=2, side=1, scale=0.85,
-                     name="arm_l")
-    p += eye_stalks("body", at=(0.0, -0.5, 4.0), count=3, tier=2, spread=2.4,
-                    length=2.4)
-    p += eye_cluster("head", at=(0.0, 2.0, -6.2), count=4, tier=1, spread=(2.4, 2.0), size=2.4)
-    return _m("blighted_wolf", p)
-
-
-def _corrupt_quad(host: str, name: str, *, rift_z: float, rift: tuple,
-                  tongue_at: tuple, eyes_at: tuple, arm_at: tuple,
-                  legs_at: tuple | None = None, roots: bool = False,
-                  tongue_len: int = 5) -> Model:
-    """The standard progression, fitted to one host's proportions."""
-    p = HOSTS[host].build()
-    w, h = rift
-    p += split_open("body", at=(0.0, rift_z, 1.0), width=w, height=h, tier=1,
-                    name="flank")
-    p += spine_plates("body", from_z=-4.0, to_z=5.0, y=0.0, count=5, tier=1,
-                      height=2.8)
-    p += lolling_tongue("head", at=tongue_at, tier=1, segments=tongue_len,
-                        thick=1.1)
-    p += eye_cluster("head", at=eyes_at, count=4, tier=1, spread=(2.4, 2.0),
-                     size=2.4)
-    ax, ay, az = arm_at
-    p += grafted_arm("body", at=(-ax, ay, az), tier=2, side=-1, scale=0.95,
-                     name="arm_r")
-    p += grafted_arm("body", at=(ax, ay, az), tier=2, side=1, scale=0.95,
-                     name="arm_l")
-    p += eye_stalks("body", at=(0.0, 0.0, 4.0), count=3, tier=2, spread=2.6)
-    if roots:
-        p += antler_roots("head", at=(-2.0, 0.0, -3.0), tier=2, side=-1,
-                          name="roots_r")
-        p += antler_roots("head", at=(2.0, 0.0, -3.0), tier=2, side=1,
-                          name="roots_l")
-    if legs_at:
-        lx, ly, lz = legs_at
-        p += extra_legs("body", at=(-lx, ly, lz), tier=2, count=2, length=8.0,
-                        side=-1, name="legs_r")
-        p += extra_legs("body", at=(lx, ly, lz), tier=2, count=2, length=8.0,
-                        side=1, name="legs_l")
-    return _m(name, p)
-
-
-def blighted_fox() -> Model:
-    # Foxes keep their brush; the blight just puts eyes along it.
-    return _corrupt_quad("fox", "blighted_fox", rift_z=3.0, rift=(4.5, 4.0),
-                         tongue_at=(0.0, 4.0, -6.0), eyes_at=(0.0, 2.0, -6.2),
-                         arm_at=(3.2, 2.0, -3.0), roots=True)
-
-
-def blighted_cat() -> Model:
-    return _corrupt_quad("cat", "blighted_cat", rift_z=3.0, rift=(4.0, 3.5),
-                         tongue_at=(0.0, 3.0, -5.0), eyes_at=(0.0, 1.5, -5.2),
-                         arm_at=(3.0, 2.0, -2.5), tongue_len=6)
-
-
-def blighted_horse() -> Model:
-    # The big one: room for a second set of legs under the barrel.
-    return _corrupt_quad("horse", "blighted_horse", rift_z=6.0, rift=(7.0, 7.0),
-                         tongue_at=(0.0, 6.0, -11.0), eyes_at=(0.0, 2.0, -11.2),
-                         arm_at=(5.5, 3.0, -6.0), legs_at=(5.0, 8.0, 2.0),
-                         roots=True, tongue_len=7)
-
-
-def blighted_llama() -> Model:
-    return _corrupt_quad("llama", "blighted_llama", rift_z=5.0, rift=(5.5, 6.0),
-                         tongue_at=(0.0, 2.0, -9.0), eyes_at=(0.0, -2.0, -9.2),
-                         arm_at=(4.5, 2.0, -5.0), roots=True)
-
-
-def blighted_rabbit() -> Model:
-    p = rabbit_host()
-    p += split_open("body", at=(0.0, 3.0, 1.0), width=4.0, height=3.5, tier=1,
-                    depth=1.4, name="ribs")
-    p += lolling_tongue("head", at=(0.0, 3.0, -4.0), tier=1, segments=5, thick=0.9)
-    p += eye_stalks("head", at=(0.0, -0.5, -2.0), count=4, tier=2, spread=2.0,
-                    length=2.0)
-    p += extra_legs("body", at=(-3.0, 3.0, 1.0), tier=2, count=2, length=7.0,
-                    side=-1, name="legs_r")
-    p += extra_legs("body", at=(3.0, 3.0, 1.0), tier=2, count=2, length=7.0,
-                    side=1, name="legs_l")
-    p += eye_cluster("head", at=(0.0, 1.0, -5.2), count=4, tier=1, spread=(2.0, 1.6), size=2.0)
-    return _m("blighted_rabbit", p)
-
-
-def blighted_goat() -> Model:
-    p = HOSTS["goat"].build()
-    p += split_open("body", at=(0.0, 4.0, 2.0), width=6.0, height=6.0, tier=1,
-                    name="flank")
-    p += antler_roots("head", at=(-2.0, 0.0, -3.0), tier=1, side=-1, name="roots_r")
-    p += antler_roots("head", at=(2.0, 0.0, -3.0), tier=1, side=1, name="roots_l")
-    p += lolling_tongue("head", at=(0.0, 5.0, -6.0), tier=1, segments=6, thick=1.2)
-    p += grafted_arm("body", at=(-5.0, 2.0, -4.0), tier=2, side=-1, scale=1.0,
-                     name="arm_r")
-    p += grafted_arm("body", at=(5.0, 2.0, -4.0), tier=2, side=1, scale=1.0,
-                     name="arm_l")
-    p += eye_stalks("body", at=(0.0, 0.0, 5.0), count=4, tier=2, spread=3.0)
-    p += eye_cluster("head", at=(0.0, 2.5, -7.2), count=4, tier=1, spread=(2.2, 2.2), size=2.4)
-    return _m("blighted_goat", p)
-
-
-# ---------------------------------------------------------------------------
-# The abstracts - no host left to recognise
-# ---------------------------------------------------------------------------
 
 
 def the_tangle() -> Model:
