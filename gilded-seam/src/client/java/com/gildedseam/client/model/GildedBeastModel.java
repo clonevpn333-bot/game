@@ -94,7 +94,9 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
                     new String[] {"body/head/mut1_tongue"}, 1.30F, 1.05F)));
 
     private final Config config;
+    private final ModelPart body;
     private final ModelPart head;
+    private float bodyBaseY = Float.NaN;
     private final ModelPart[] legs;
     private final ModelPart[] mut1;
     private final ModelPart[] mut2;
@@ -103,6 +105,7 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
     public GildedBeastModel(ModelPart root, Config config) {
         super(root);
         this.config = config;
+        this.body = resolve(root, "body");
         this.head = resolve(root, config.head());
         this.legs = resolveAll(root, config.legs());
         this.mut1 = resolveAll(root, config.mut1());
@@ -146,44 +149,93 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
         setVisible(this.mut1, state.tier >= SeamHelper.TIER_STONEWARE);
         setVisible(this.mut2, state.tier >= SeamHelper.TIER_LUSTRE);
 
-        if (this.head != null) {
-            this.head.yRot = state.yRot * Mth.DEG_TO_RAD;
-            this.head.xRot = state.xRot * Mth.DEG_TO_RAD;
-        }
-
         float pos = state.walkAnimationPos;
-        float speed = state.walkAnimationSpeed;
+        float speed = Math.min(1.0F, state.walkAnimationSpeed);
         float freq = this.config.gaitFreq();
         float amp = this.config.gaitAmp();
-        // Diagonal pairs, the way a real quadruped moves: front-left swings
-        // with back-right. Legs beyond the fourth join the nearest pair.
+        float age = state.ageInTicks;
+        float gait = pos * freq;
+
+        // --- the gait ----------------------------------------------------
+        // A plain sine reads as floaty. Adding the second harmonic makes the
+        // leg snap forward and drag back, which is what gives a walk its
+        // punch; the diagonal pairing is how a real quadruped actually moves.
         for (int i = 0; i < this.legs.length; i++) {
             ModelPart leg = this.legs[i];
             if (leg == null) {
                 continue;
             }
             float phase = (((i % 2) + ((i / 2) % 2)) % 2) * Mth.PI;
-            leg.xRot = Mth.cos(pos * freq + phase) * amp * speed;
+            float th = gait + phase;
+            float swing = Mth.sin(th) + 0.35F * Mth.sin(2.0F * th);
+            leg.xRot = swing * amp * speed;
+            // Legs lift slightly on the forward half of the stride.
+            leg.zRot = Mth.cos(th) * 0.06F * speed;
         }
 
-        // Anything hanging keeps swinging after the body stops - tongues and
-        // grafted limbs never quite settle.
-        float sway = Mth.sin(state.ageInTicks * 0.09F);
+        // --- weight ------------------------------------------------------
+        // The body drops onto each footfall and rolls into the stride. Two
+        // bounces per cycle, because both diagonals hit the ground.
+        if (this.body != null) {
+            if (Float.isNaN(this.bodyBaseY)) {
+                this.bodyBaseY = this.body.y;
+            }
+            float bounce = Math.abs(Mth.cos(gait)) * speed;
+            float breath = Mth.sin(age * 0.06F) * 0.18F * (1.0F - speed);
+            this.body.y = this.bodyBaseY - bounce * 1.15F + breath;
+            this.body.zRot = Mth.sin(gait) * 0.05F * speed;
+            this.body.xRot = -bounce * 0.05F;
+        }
+
+        // --- head --------------------------------------------------------
+        if (this.head != null) {
+            this.head.yRot = state.yRot * Mth.DEG_TO_RAD;
+            // The head lags the body's bounce instead of tracking it, which
+            // is most of what makes an animated walk feel weighted.
+            this.head.xRot = state.xRot * Mth.DEG_TO_RAD
+                    + Mth.cos(gait - 0.6F) * 0.09F * speed;
+            this.head.zRot = -Mth.sin(gait) * 0.04F * speed;
+        }
+
+        // --- everything that hangs ---------------------------------------
+        // Tongues and grafted limbs trail a quarter-cycle behind and keep
+        // moving after the body stops.
+        float sway = Mth.sin(age * 0.09F);
+        float trail = Mth.sin(gait - Mth.HALF_PI) * speed;
         for (ModelPart part : this.dangle) {
             if (part != null) {
-                part.xRot += sway * 0.16F + speed * 0.10F;
-                part.zRot = Mth.cos(state.ageInTicks * 0.07F) * 0.12F;
+                part.xRot += sway * 0.14F + trail * 0.22F;
+                part.zRot = Mth.cos(age * 0.07F) * 0.12F + trail * 0.10F;
             }
         }
 
-        if (state.attackSwing > 0.0F) {
-            float lunge = Mth.sin(state.attackSwing * Mth.PI);
+        // --- the strike --------------------------------------------------
+        // Three beats rather than one sine: a slow wind-up, a snap, and a
+        // recoil that overshoots before settling. Punchy comes from the
+        // asymmetry - the strike takes a fifth of the time the wind-up does.
+        float swing = state.attackSwing;
+        if (swing > 0.0F) {
+            float lunge;
+            if (swing < 0.35F) {
+                float k = swing / 0.35F;
+                lunge = -0.35F * k * k;            // coil back
+            } else if (swing < 0.55F) {
+                float k = (swing - 0.35F) / 0.20F;
+                lunge = -0.35F + 1.60F * k * k;    // snap
+            } else {
+                float k = (swing - 0.55F) / 0.45F;
+                lunge = 1.25F * (1.0F - k) * (1.0F - k * 0.4F);
+            }
             if (this.head != null) {
-                this.head.xRot -= lunge * 0.5F;
+                this.head.xRot -= lunge * 0.55F;
+                this.head.y -= lunge * 0.6F;
+            }
+            if (this.body != null) {
+                this.body.xRot -= lunge * 0.18F;
             }
             for (ModelPart part : this.mut2) {
                 if (part != null) {
-                    part.xRot -= lunge * 0.7F;
+                    part.xRot -= lunge * 0.75F;
                 }
             }
         }
