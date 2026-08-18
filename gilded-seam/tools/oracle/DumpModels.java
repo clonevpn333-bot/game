@@ -37,6 +37,10 @@ public final class DumpModels {
             } catch (Throwable t) {
                 body = "{\"error\":" + quote(t.getClass().getSimpleName() + ": " + t.getMessage()) + "}";
             }
+            if (body.startsWith("{\"error\":\"no usable LayerDefinition factory; "
+                    + "tried nothing")) {
+                continue;                     // not a layer holder; ignore
+            }
             if (!first) System.out.println(",");
             first = false;
             System.out.print(quote(name) + ":" + body);

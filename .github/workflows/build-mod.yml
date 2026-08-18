@@ -174,19 +174,19 @@ jobs:
           deps=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null | grep -iE "joml|guava|datafixerupper|fastutil|slf4j|gson|brigadier|authlib|netty|commons|log4j|oshi|jopt|lwjgl|text2speech|blocklist" | tr '\n' ':')
           mkdir -p /tmp/oracle
           javac -nowarn -cp "$jar$deps" -d /tmp/oracle tools/oracle/DumpModels.java 2>&1 | tail -5
-          # Find the real class names first; packages move between versions.
+          # Six of the twenty had no static factory on the class itself -
+          # vanilla keeps some layer definitions on sibling holders. Rather
+          # than hunt each one, enumerate every model class in the client jar
+          # and let the dumper skip the ones with nothing to call. One sweep,
+          # every mob, and it stays correct when Mojang moves things again.
           : > /tmp/classes.txt
-          for n in WardenModel WitherBossModel EnderDragonModel EndermanModel \
-                   CowModel PigModel SheepModel ChickenModel SpiderModel \
-                   CreeperModel WolfModel GoatModel RabbitModel FoxModel \
-                   OcelotModel CatModel HorseModel LlamaModel VillagerModel \
-                   IronGolemModel RavagerModel HoglinModel; do
-            for j in $jars; do
-              unzip -l "$j" 2>/dev/null | grep -oE "net/minecraft/[A-Za-z0-9/_]*/$n\.class" | head -1 >> /tmp/classes.txt
-            done
+          for j in $jars; do
+            unzip -l "$j" 2>/dev/null \
+              | grep -oE "net/minecraft/client/model/[A-Za-z0-9/_]*\.class" \
+              | grep -v '\$' >> /tmp/classes.txt
           done
           sort -u -o /tmp/classes.txt /tmp/classes.txt
-          cat /tmp/classes.txt
+          echo "model classes found: $(wc -l < /tmp/classes.txt)"
           names=$(sed 's#/#.#g; s#\.class$##' /tmp/classes.txt | tr '\n' ' ')
           echo "dumping: $names"
           echo "--- static LayerDefinition factories on each ---"
