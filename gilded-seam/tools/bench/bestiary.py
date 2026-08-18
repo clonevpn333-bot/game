@@ -335,6 +335,374 @@ def heartwood_colossus() -> Model:
     return _m("heartwood_colossus", parts)
 
 
+# ---------------------------------------------------------------------------
+# The abstracts. These are what the blight builds when it stops copying.
+#
+# Everything else in this mod is a hijacked animal, and hijacked animals are
+# limited by the animal. An abstract has no host and no body plan to respect,
+# which is exactly why it is the dangerous end of the bestiary: nothing about
+# its shape has to make sense, and nothing about it is symmetrical.
+# ---------------------------------------------------------------------------
+
+
+def the_choir() -> Model:
+    """A column of fused throats. It is the sound that reaches you first.
+
+    No limbs at all - it moves by growing forward and rotting behind. What it
+    has instead is mouths: nineteen of them, at every height, all open, all
+    facing different directions.
+    """
+    parts = [
+        Part("stalk", "root", (0.0, GROUND - 4.0, 0.0), (0, 0, 0),
+             [Box((-6, -34, -6), (12, 34, 12), "sinew")]),
+        Part("bell", "stalk", (0.0, -34.0, 0.0), (0, 0, 0),
+             [Box((-9, -10, -9), (18, 12, 18), "flesh")]),
+    ]
+    for i in range(19):
+        f = i / 18.0
+        a = i * 2.399963          # golden angle, so nothing lines up
+        r = 5.0 + 3.5 * math.sin(f * 5.0)
+        y = -3.0 - f * 38.0
+        tag = f"maw{i}"
+        parts.append(Part(tag, "stalk", (math.sin(a) * r, y, math.cos(a) * r),
+                          (math.sin(a * 1.7) * 30 * D, -a, math.cos(a) * 24 * D),
+                          [Box((-2.8, -2.6, -4.6), (5.6, 5.2, 5.0), "rot")]))
+        parts.append(Part(f"{tag}_jaw", tag, (0.0, 2.0, -3.6), (34 * D, 0, 0),
+                          [Box((-2.4, 0, -3.4), (4.8, 1.8, 3.6), "tongue")]))
+        for k in range(4):
+            parts.append(Part(f"{tag}_t{k}", tag, (-1.8 + k * 1.2, -2.2, -4.0),
+                              (0, 0, 0),
+                              [Box((-0.45, 0, -0.45), (0.9, 2.0 + (k % 2), 0.9),
+                                   "tooth")]))
+    parts += chain("root_a", "stalk", (0.0, 0.0, 0.0), 4, (5.0, 6.0, 5.0),
+                   "bark", taper=0.8, curl=(0, 12 * D, 14 * D),
+                   root_rot=(30 * D, 0, 40 * D))
+    parts += chain("root_b", "stalk", (0.0, 0.0, 0.0), 4, (4.4, 6.0, 4.4),
+                   "bark", taper=0.8, curl=(0, -14 * D, -12 * D),
+                   root_rot=(-24 * D, 0, -46 * D))
+    parts += eye_stalks("bell", at=(0.0, -10.0, 0.0), count=7, tier=0,
+                        spread=6.0, length=5.0, name="crown")
+    return _m("the_choir", parts, tex=256)
+
+
+def the_harrow() -> Model:
+    """Legs, and a socket where a body should be. It walks over you.
+
+    Seven legs of three different lengths around a suspended amber sac. There
+    is no front. It does not turn to face you because every direction is
+    already the front.
+    """
+    parts = [
+        Part("hub", "root", (0.0, GROUND - 26.0, 0.0), (0, 0, 0),
+             [Box((-7, -7, -7), (14, 14, 14), "chitin")]),
+        Part("sac", "hub", (0.0, 5.0, 0.0), (0, 0, 0),
+             [Box((-5.5, 0, -5.5), (11, 13, 11), "amberglow")]),
+        Part("ring", "hub", (0.0, 0.0, 0.0), (0, 0, 0),
+             [Box((-9, -2, -9), (18, 4, 18), "bark")]),
+    ]
+    for i in range(7):
+        a = (2 * math.pi * i) / 7
+        length = (17.0, 24.0, 11.0)[i % 3]
+        thick = 3.4 - 0.5 * (i % 3)
+        parts += chain(f"leg{i}", "hub", (math.sin(a) * 8.0, 0.0, math.cos(a) * 8.0),
+                       4, (thick, length * 0.34, thick), "bark", taper=0.82,
+                       curl=(0, 0, 46 * D),
+                       root_rot=(math.cos(a) * -64 * D, -a, math.sin(a) * 64 * D))
+        parts.append(Part(f"claw{i}", f"leg{i}_3", (0.0, length * 0.28, 0.0),
+                          (0, 0, 0),
+                          [Box((-1.0, 0, -1.0), (2.0, 5.0, 2.0), "tooth")]))
+    parts += eye_cluster("sac", at=(0.0, 6.0, -5.4), count=6, tier=0,
+                         spread=(5.0, 5.0), size=3.0, name="sacked")
+    parts += chain("drip", "sac", (0.0, 13.0, 0.0), 4, (2.4, 4.0, 2.4), "amber",
+                   taper=0.76, curl=(4 * D, 0, 3 * D))
+    return _m("the_harrow", parts, tex=256)
+
+
+def the_lacuna() -> Model:
+    """A hole in the shape of an animal, held open by resin.
+
+    The blight took a host and then took the host away. What is left is the
+    negative: a shell of hardened sap in the outline of something four-legged,
+    with nothing inside it but eyes and the strands holding the gap apart.
+    """
+    parts = [
+        # Edges only. The first version used slabs three thick and the outline
+        # filled itself in - it read as a solid crate rather than as a gap.
+        # These are struts along the edges of the volume, and the space
+        # between them is the entire point of the creature.
+        Part("shell", "root", (0.0, 4.0, 0.0), (0, 0, 0),
+             [Box((sx * 7.2 - 0.9, sy * 6.5 + 6.5 - 0.9, -13), (1.8, 1.8, 26), "amber")
+              for sx in (-1, 1) for sy in (-1, 1)]
+             + [Box((sx * 7.2 - 0.9, 0, sz * 12.1 + 12.1 - 0.9), (1.8, 15, 1.8), "amber")
+                for sx in (-1, 1) for sz in (-1, 1)]
+             + [Box((-7.2, sy * 6.5 + 6.5 - 0.9, sz * 12.1 + 12.1 - 0.9),
+                    (14.4, 1.8, 1.8), "amber")
+                for sy in (-1, 1) for sz in (-1, 1)]),
+        Part("skull", "shell", (0.0, 1.0, -13.0), (0, 0, 0),
+             [Box((sx * 4.3 - 0.8, sy * 5.2 + 5.2 - 0.8, -9), (1.6, 1.6, 9), "amber")
+              for sx in (-1, 1) for sy in (-1, 1)]
+             + [Box((-4.3, sy * 5.2 + 5.2 - 0.8, -9), (8.6, 1.6, 1.6), "amber")
+                for sy in (-1, 1)]),
+    ]
+    # Strands holding the void open, at random angles.
+    for i in range(11):
+        f = i / 10.0
+        a = i * 2.399963
+        parts.append(Part(f"strand{i}", "shell",
+                          (math.sin(a) * 5.5, 2.0 + f * 10.0, -11.0 + f * 22.0),
+                          (0, 0, math.cos(a) * 40 * D),
+                          [Box((-0.7, 0, -0.7), (1.4, 11.0, 1.4), "amber")]))
+    # And the eyes, floating in the space where the animal used to be.
+    for i in range(9):
+        a = i * 2.399963
+        f = i / 8.0
+        parts.append(Part(f"void_eye{i}", "shell",
+                          (math.sin(a) * 4.0, 4.0 + f * 7.0, -10.0 + f * 20.0),
+                          (0, -a, 0),
+                          [Box((-2.0, -2.0, -2.0), (4.0, 4.0, 4.0), "eye:void")]))
+    for tag, sx, sz in (("fr", -1, -1), ("fl", 1, -1), ("br", -1, 1), ("bl", 1, 1)):
+        parts += chain(f"leg_{tag}", "shell", (sx * 6.0, 14.0, sz * 9.0), 3,
+                       (3.0, 4.0, 3.0), "amber", taper=0.86,
+                       curl=(sz * 6 * D, 0, sx * 4 * D))
+    return _m("the_lacuna", parts, tex=256)
+
+
+# ---------------------------------------------------------------------------
+# The taken. Four things the blight should never have been able to reach, and
+# did. Each is built from its own vanilla silhouette rather than from a shared
+# boss template, because the horror of these is recognition.
+# ---------------------------------------------------------------------------
+
+
+def blighted_warden() -> Model:
+    """It was already blind. Now it is full of eyes and cannot use them.
+
+    Keeps the Warden's build exactly - the enormous shoulders, the low-slung
+    ribcage, the long arms, the head with nothing on the front of it - and
+    puts the thing it lacked into it. The sensory tendrils are replaced with
+    branching antler roots, and the chest cavity is a lantern.
+    """
+    parts = [
+        Part("body", "root", (0.0, GROUND - 34.0, 0.0), (0, 0, 0),
+             [Box((-9, -20, -6), (18, 21, 12), "sculkflesh")]),
+        Part("ribs", "body", (0.0, -13.0, -6.2), (0, 0, 0),
+             [Box((-7, -8, -1.4), (14, 16, 2), "rot")]),
+        Part("lantern", "ribs", (0.0, 0.0, -1.6), (0, 0, 0),
+             [Box((-4.5, -5.5, -2.4), (9, 11, 3), "amberglow")]),
+        # Shoulders: the Warden's defining mass.
+        Part("shoulders", "body", (0.0, -20.0, 0.0), (0, 0, 0),
+             [Box((-13, -8, -7), (26, 9, 14), "sculkflesh")]),
+        Part("head", "shoulders", (0.0, -8.0, 0.0), (0, 0, 0),
+             [Box((-5, -8, -5), (10, 8, 10), "sculkflesh")]),
+        # No eyes on the face. That was true before and it is still true.
+        Part("face_jaw", "head", (0.0, -1.0, -5.0), (18 * D, 0, 0),
+             [Box((-4, 0, -4), (8, 3, 4), "rot")]),
+    ]
+    for i in range(6):
+        parts.append(Part(f"fang{i}", "face_jaw", (-3.0 + i * 1.2, -0.5, -3.0),
+                          (0, 0, 0),
+                          [Box((-0.5, -2.4, -0.5), (1, 2.4, 1), "tooth")]))
+    # Six ribs peeled off the cage.
+    for i in range(6):
+        for side in (-1, 1):
+            parts.append(Part(f"rib{i}{'r' if side < 0 else 'l'}", "body",
+                              (side * 6.0, -19.0 + i * 3.0, -6.4),
+                              (0, 0, side * (22 + 8 * i) * D),
+                              [Box((-1.4, -1.0, -1.6), (2.8, 10.0, 2.6), "tooth")]))
+    # Antler roots where the sensory tendrils were.
+    for side in (-1, 1):
+        tag = "r" if side < 0 else "l"
+        parts += chain(f"tendril_{tag}", "head", (side * 3.5, -8.0, -1.0), 4,
+                       (2.4, 7.0, 2.4), "bark", taper=0.78,
+                       curl=(-12 * D, side * 10 * D, side * 14 * D),
+                       root_rot=(-30 * D, side * 20 * D, side * 34 * D))
+        parts += chain(f"arm_{tag}", "shoulders", (side * 13.0, -3.0, 0.0), 4,
+                       (6.0, 12.0, 6.0), "sculkflesh", taper=0.88,
+                       curl=(8 * D, 0, side * 6 * D),
+                       root_rot=(12 * D, 0, side * 14 * D))
+        parts += _giant_hand(f"claw_{tag}", f"arm_{tag}_3", (0.0, 9.0, 0.0), 0.55, 1.0)
+        parts += chain(f"leg_{tag}", "root", (side * 5.0, GROUND - 15.0, 0.0), 3,
+                       (5.5, 6.0, 5.5), "sculkflesh", taper=0.9)
+    parts += eye_cluster("shoulders", at=(0.0, -6.0, -7.2), count=7, tier=0,
+                         spread=(11.0, 3.0), size=3.0, name="shouldereyes")
+    parts += eye_stalks("body", at=(0.0, -20.0, 6.0), count=5, tier=0,
+                        spread=7.0, length=5.0, name="backstalks")
+    parts += lolling_tongue("face_jaw", at=(0.0, 1.0, -2.5), tier=0, segments=8,
+                            thick=1.6, name="tongue")
+    return _m("blighted_warden", parts, tex=256)
+
+
+def blighted_wither() -> Model:
+    """Three skulls, and the resin grew a fourth that does not fit.
+
+    The ribcage and the three heads on their spine are kept; what changes is
+    that it is no longer floating. Roots have grown down out of the spine and
+    taken the weight, so it stands - and the fourth skull hangs underneath on
+    a stalk, upside down, still working.
+    """
+    parts = [
+        Part("spine", "root", (0.0, GROUND - 40.0, 0.0), (0, 0, 0),
+             [Box((-3, -4, -3), (6, 24, 6), "bonewood")]),
+        Part("ribcage", "spine", (0.0, -4.0, 0.0), (0, 0, 0),
+             [Box((-11, -3, -3), (22, 6, 6), "bonewood")]),
+    ]
+    for i in range(5):
+        for side in (-1, 1):
+            parts.append(Part(f"rib{i}{'r' if side < 0 else 'l'}", "ribcage",
+                              (side * (3.0 + i * 1.6), 2.0, 0.0),
+                              (0, 0, side * (14 + 12 * i) * D),
+                              [Box((-1.1, 0, -1.4), (2.2, 12.0 - i * 1.4, 2.8),
+                                   "bonewood")]))
+    # Three skulls on the crossbar, plus a fourth slung underneath.
+    for k, (x, sc) in enumerate(((0.0, 1.0), (-9.0, 0.78), (9.0, 0.78))):
+        tag = f"skull{k}"
+        parts.append(Part(tag, "ribcage", (x, -3.0, 0.0),
+                          (0, (k - 1) * 16 * D, (k - 1) * -6 * D),
+                          [Box((-5 * sc, -9 * sc, -5 * sc), (10 * sc, 9 * sc, 10 * sc),
+                               "bonewood")]))
+        parts.append(Part(f"{tag}_jaw", tag, (0.0, -1.5 * sc, -4.0 * sc),
+                          (16 * D, 0, 0),
+                          [Box((-4 * sc, 0, -4 * sc), (8 * sc, 2.6 * sc, 4.5 * sc),
+                               "rot")]))
+        for i in range(5):
+            parts.append(Part(f"{tag}_t{i}", f"{tag}_jaw",
+                              (-3.0 * sc + i * 1.5 * sc, -0.4, -3.2 * sc), (0, 0, 0),
+                              [Box((-0.5, -2.2 * sc, -0.5), (1, 2.2 * sc, 1), "tooth")]))
+        for side in (-1, 1):
+            parts.append(Part(f"{tag}_eye_{'r' if side < 0 else 'l'}", tag,
+                              (side * 2.4 * sc, -5.0 * sc, -5.0 * sc), (0, 0, 0),
+                              [Box((-1.8 * sc, -1.8 * sc, -1.2), (3.6 * sc, 3.6 * sc, 1.4),
+                                   "eye:bloom")]))
+    # The fourth: hanging under the cage on a stalk, inverted.
+    parts += chain("gullet", "ribcage", (2.0, 4.0, 1.0), 4, (3.0, 5.0, 3.0),
+                   "sinew", taper=0.86, curl=(6 * D, 0, -8 * D),
+                   root_rot=(10 * D, 0, -14 * D))
+    parts.append(Part("skull3", "gullet_3", (0.0, 4.0, 0.0), (math.pi, 0, 0.4),
+                      [Box((-4, 0, -4), (8, 8, 8), "bonewood")]))
+    parts.append(Part("skull3_jaw", "skull3", (0.0, 7.0, -3.0), (-26 * D, 0, 0),
+                      [Box((-3.4, 0, -3.6), (6.8, 2.4, 4.0), "rot")]))
+    parts += eye_cluster("skull3", at=(0.0, 3.0, -4.2), count=5, tier=0,
+                         spread=(3.2, 3.2), size=2.6, name="undereyes")
+    # Roots taking the weight it used to not need.
+    for i in range(5):
+        a = (2 * math.pi * i) / 5 + 0.4
+        parts += chain(f"root{i}", "spine", (math.sin(a) * 3.0, 20.0, math.cos(a) * 3.0),
+                       4, (3.2, 6.0, 3.2), "bark", taper=0.84,
+                       curl=(0, 0, 10 * D),
+                       root_rot=(math.cos(a) * 26 * D, -a, math.sin(a) * 26 * D))
+    return _m("blighted_wither", parts, tex=256)
+
+
+def blighted_dragon() -> Model:
+    """Grounded. The wings set into resin before it could land properly.
+
+    The Ender Dragon's proportions are kept - the long neck, the deep chest,
+    the whip tail - but the membranes have hardened into amber sheets that no
+    longer fold, so it drags them. It walks now. That is worse.
+    """
+    parts = [
+        Part("chest", "root", (0.0, GROUND - 30.0, 0.0), (0, 0, 0),
+             [Box((-9, -12, -14), (18, 14, 28), "dragonhide")]),
+        Part("hips", "chest", (0.0, -2.0, 14.0), (0, 0, 0),
+             [Box((-7, -8, 0), (14, 10, 14), "dragonhide")]),
+    ]
+    # Neck: five segments, rising then levelling.
+    parts += chain("neck", "chest", (0.0, -9.0, -14.0), 5, (7.0, 8.0, 7.0),
+                   "dragonhide", taper=0.88, curl=(-14 * D, 0, 0),
+                   root_rot=(-58 * D, 0, 0))
+    parts.append(Part("head", "neck_4", (0.0, 7.0, 0.0), (44 * D, 0, 0),
+                      [Box((-5, -5, -13), (10, 9, 14), "dragonhide")]))
+    parts.append(Part("face_jaw", "head", (0.0, 3.5, -11.0), (20 * D, 0, 0),
+                      [Box((-4, 0, -9), (8, 3, 10), "rot")]))
+    for i in range(7):
+        parts.append(Part(f"fang{i}", "head", (-3.6 + i * 1.2, 4.0, -11.0 + (i % 2) * 1.5),
+                          (0, 0, 0),
+                          [Box((-0.55, 0, -0.55), (1.1, 3.2, 1.1), "tooth")]))
+    for side in (-1, 1):
+        tag = "r" if side < 0 else "l"
+        parts.append(Part(f"horn_{tag}", "head", (side * 4.0, -4.0, -3.0),
+                          (-24 * D, side * 16 * D, side * 26 * D),
+                          [Box((-1.4, -9, -1.4), (2.8, 9, 2.8), "tooth")]))
+        parts += eye_cluster("head", at=(side * 4.6, -1.0, -7.0), count=3, tier=0,
+                             spread=(1.4, 3.0), size=2.8, out=side * 0.8,
+                             name=f"eyes_{tag}")
+        # Wing: an arm, then hardened amber sheets between the fingers.
+        parts += chain(f"wing_{tag}", "chest", (side * 9.0, -10.0, -6.0), 3,
+                       (5.0, 14.0, 5.0), "dragonhide", taper=0.85,
+                       curl=(0, side * -10 * D, side * 16 * D),
+                       root_rot=(-14 * D, side * 20 * D, side * 68 * D))
+        for k in range(4):
+            parts.append(Part(f"sheet_{tag}{k}", f"wing_{tag}_2",
+                              (0.0, 6.0, -6.0 + k * 4.0),
+                              (0, side * (10 + k * 9) * D, side * 8 * D),
+                              [Box((-0.8 if side < 0 else -0.2, -2.0, -1.6),
+                                   (1.0, 20.0 - k * 3.0, 3.2), "amber")]))
+        parts += chain(f"leg_{tag}", "root", (side * 7.0, GROUND - 14.0, -6.0), 3,
+                       (5.0, 5.5, 5.0), "dragonhide", taper=0.88)
+        parts += chain(f"hind_{tag}", "root", (side * 6.0, GROUND - 16.0, 12.0), 3,
+                       (5.5, 6.5, 5.5), "dragonhide", taper=0.88)
+    parts += chain("tail", "hips", (0.0, -2.0, 14.0), 7, (6.0, 9.0, 6.0),
+                   "dragonhide", taper=0.82, curl=(3 * D, 0, 2 * D),
+                   root_rot=(-8 * D, 0, 0))
+    parts += spine_plates("chest", from_z=-12.0, to_z=12.0, y=-12.0, count=8,
+                          tier=0, height=5.0, name="crest")
+    return _m("blighted_dragon", parts, tex=512)
+
+
+def blighted_enderman() -> Model:
+    """Too tall for the room, and it stopped being able to leave.
+
+    The silhouette is intact: the absurd height, the thin limbs, the small
+    head. The blight has jammed the teleport - resin has grown through the
+    joints - so the limbs now hang at lengths that do not match, and it walks
+    everywhere, slowly, on legs that are no longer the same size.
+    """
+    parts = [
+        Part("body", "root", (0.0, GROUND - 44.0, 0.0), (0, 0, 0),
+             [Box((-4, -20, -3), (8, 20, 6), "voidflesh")]),
+        Part("head", "body", (0.0, -20.0, 0.0), (0, 0, 0),
+             [Box((-4, -8, -4), (8, 8, 8), "voidflesh")]),
+        Part("face_jaw", "head", (0.0, -1.0, -4.0), (24 * D, 0, 0),
+             [Box((-3, 0, -4), (6, 2.6, 4.5), "rot")]),
+    ]
+    for i in range(6):
+        parts.append(Part(f"fang{i}", "face_jaw", (-2.2 + i * 0.9, -0.4, -3.2),
+                          (0, 0, 0),
+                          [Box((-0.4, -2.0, -0.4), (0.8, 2.0, 0.8), "tooth")]))
+    # The signature: two burning eyes, wide apart, and now a third above.
+    for side in (-1, 1):
+        parts.append(Part(f"eye_{'r' if side < 0 else 'l'}", "head",
+                          (side * 2.4, -4.6, -4.2), (0, 0, 0),
+                          [Box((-2.0, -1.2, -0.8), (4.0, 2.4, 1.0), "eye:void")]))
+    parts.append(Part("eye_third", "head", (0.0, -7.2, -3.4), (0, 0, 0),
+                      [Box((-1.6, -1.6, -1.4), (3.2, 3.2, 1.6), "eye:bloom")]))
+    parts += eye_stalks("head", at=(0.0, -8.0, 0.0), count=4, tier=0, spread=2.6,
+                        length=4.0, name="crown")
+    # Limbs of deliberately mismatched length - the joints are full of resin.
+    for side, tag in ((-1, "r"), (1, "l")):
+        arm_len = 15.0 if side < 0 else 12.0
+        parts += chain(f"arm_{tag}", "body", (side * 5.0, -18.0, 0.0), 3,
+                       (2.6, arm_len, 2.6), "voidflesh", taper=0.94,
+                       curl=(4 * D, 0, side * 3 * D),
+                       root_rot=(6 * D, 0, side * 8 * D))
+        parts += _giant_hand(f"hand_{tag}", f"arm_{tag}_2",
+                             (0.0, arm_len * 0.88, 0.0), 0.34, 0.8)
+        leg_len = 13.0 if side < 0 else 15.5
+        parts += chain(f"leg_{tag}", "root", (side * 2.4, GROUND - leg_len * 2.2, 0.0),
+                       3, (3.0, leg_len, 3.0), "voidflesh", taper=0.92,
+                       curl=(0, 0, side * 2 * D))
+        # Resin welded into the joints, which is why it cannot fold.
+        for k in range(3):
+            # chain() names its first link without a suffix.
+            link = f"leg_{tag}" if k == 0 else f"leg_{tag}_{k}"
+            parts.append(Part(f"weld_{tag}{k}", link,
+                              (0.0, leg_len * 0.4, 0.0), (0, 0, 0),
+                              [Box((-2.4, -2.0, -2.4), (4.8, 4.0, 4.8), "amber")]))
+    parts += chain("drape", "body", (0.0, -19.0, 3.0), 5, (5.0, 6.0, 2.0),
+                   "amber", taper=0.86, curl=(4 * D, 0, 2 * D))
+    return _m("blighted_enderman", parts, tex=256)
+
+
 def amber_sovereign() -> Model:
     """THE AMBER SOVEREIGN.
 
@@ -649,90 +1017,179 @@ def creaking_hand() -> Model:
 
 
 def _creaking_torso(legs: bool) -> list[Part]:
-    """The body itself: a heavyweight humanoid with too many arms.
+    """The body: hunched, narrow, arboreal - not a gorilla.
 
-    Proportioned like something built to hit: enormous deltoids and pectorals,
-    a chest that reads wider than it is tall, and a head deliberately far too
-    small for it, sunk between the shoulders so it looks less like a face than
-    like something the body carries. Six arms - two heavy pairs and one small
-    pair folded at the sternum - because a silhouette with the wrong count is
-    unsettling faster than any amount of texture detail.
+    The previous version was a forty-six-wide horizontal slab of chest with a
+    tiny head sunk into it and heavy arms hanging off either side, which is
+    the exact silhouette of a great ape and read as one. Everything here is
+    turned ninety degrees away from that:
+
+      * the trunk is **narrow and tall**, splintered like standing deadwood,
+        with the mass in the vertical rather than across the shoulders
+      * the shoulders are **hunched above the head**, the way a vulture stands,
+        so the skull sits in a well between them
+      * the skull is **elongated and thrust forward** on a short thick neck -
+        a long jaw and deep sockets, not a cube
+      * the six arms all hang **forward and down** at different lengths, the
+        longest reaching past the ground line, and they are deliberately not
+        mirrored. Symmetry reads as designed; this should read as grown
+      * the crown is **swept-back antlers**, not a disc
+
+    What survives from the old one is the open chest cavity with the heart in
+    it, because that part was working.
     """
     parts: list[Part] = []
 
-    # Hips only exist on the walking version; in the pool it ends at the gold.
     root_y = -34.0 if legs else -26.0
-    parts.append(Part("torso", "root", (0.0, root_y, 0.0), (0, 0, 0),
-                      [Box((-15, -18, -10), (30, 22, 20), "heartwood")]))
-    # Slab of chest, wider than tall, overhanging the waist.
-    parts.append(Part("chest", "torso", (0.0, -18.0, 0.0), (0, 0, 0),
-                      [Box((-23, -16, -12), (46, 18, 24), "heartwood"),
-                       Box((-24, -17, -13), (48, 5, 26), "chitin")]))
-    # Pectoral plates, angled inward so the chest reads as muscle not a box.
-    for side in (-1, 1):
-        parts.append(Part(f"pec_{'r' if side < 0 else 'l'}", "chest",
-                          (side * 13.0, -8.0, -12.2), (0, side * -16 * D, side * 10 * D),
-                          [Box((-7 if side < 0 else 0, -7, -3.5), (7, 15, 4),
-                               "heartwood"),
-                           Box((-7.2 if side < 0 else -0.2, -7.5, -3.8), (7.4, 3, 4.4),
-                               "chitin")]))
-    # Ribs peeled outward from the sternum.
-    for i in range(5):
-        yy = -14.0 + i * 3.4
+    # Trunk: narrow, tall, and leaning forward over its own feet.
+    parts.append(Part("torso", "root", (0.0, root_y, 0.0), (-9 * D, 0, 0),
+                      [Box((-11, -20, -9), (22, 24, 18), "heartwood"),
+                       Box((-12.5, -14, -10), (25, 8, 20), "bark")]))
+    # Chest stays narrow; the height does the work.
+    parts.append(Part("chest", "torso", (0.0, -20.0, 0.0), (-7 * D, 0, 0),
+                      [Box((-13, -26, -10), (26, 28, 20), "heartwood")]))
+    # Splintered staves running up the trunk, standing off the surface.
+    for i in range(7):
+        a = (2 * math.pi * i) / 7 + 0.3
+        parts.append(Part(f"stave{i}", "chest",
+                          (math.sin(a) * 12.0, -12.0, math.cos(a) * 9.0),
+                          (0, -a, math.sin(a) * 9 * D),
+                          [Box((-1.8, -15, -1.8), (3.6, 30, 3.6), "bark")]))
+
+    # Ribcage, standing open. Ribs curl further as they descend.
+    for i in range(6):
+        f = i / 5.0
         for side in (-1, 1):
             parts.append(Part(f"rib{i}{'r' if side < 0 else 'l'}", "chest",
-                              (side * 7.0, yy, -12.4), (0, 0, side * 30 * D),
-                              [Box((-2.0, -1.4, -2.0), (4.0, 12.0, 3.2), "palewood")]))
-    # The heart, in a cavity between the pectorals.
-    parts.append(Part("cavity", "chest", (0.0, -7.0, -12.6), (0, 0, 0),
-                      [Box((-7, -8, -1.2), (14, 16, 2), "flesh")]))
+                              (side * 5.0, -22.0 + i * 3.6, -10.4),
+                              (0, 0, side * (26 + 26 * f) * D),
+                              [Box((-1.6, -1.2, -1.8), (3.2, 13.0 - 3.0 * f, 3.0),
+                                   "tooth")]))
+    parts.append(Part("cavity", "chest", (0.0, -14.0, -10.6), (0, 0, 0),
+                      [Box((-6.5, -9, -1.2), (13, 18, 2), "rot")]))
     parts.append(Part("heart", "cavity", (0.0, 0.0, -1.6), (0, 0, 0),
-                      [Box((-4.5, -6, -2.2), (9, 12, 3), "amberglow")]))
+                      [Box((-4.5, -6, -2.4), (9, 12, 3), "amberglow")]))
     for i in range(8):
         a = (2 * math.pi * i) / 8
         parts.append(Part(f"chesteye{i}", "cavity",
-                          (math.sin(a) * 5.4, math.cos(a) * 6.6, -2.0), (0, 0, 0),
+                          (math.sin(a) * 5.0, math.cos(a) * 7.4, -2.2), (0, 0, 0),
                           [Box((-1.7, -1.7, -1.0), (3.4, 3.4, 1.0), "eye:bloom")]))
+    # Gut hanging out of the bottom of the cage.
+    parts.append(Part("viscera", "chest", (1.5, -2.0, -9.0), (0, 0, 0),
+                      [Box((-4, -3, -3), (8, 11, 6), "flesh")]))
+    parts.append(Part("viscera2", "viscera", (0.0, 8.0, 0.0), (14 * D, 0, -12 * D),
+                      [Box((-2.6, 0, -2.2), (5.2, 9, 4.4), "sinew")]))
 
-    # --- six arms ------------------------------------------------------
-    # Two heavy pairs off the shoulder shelf and one small pair at the
-    # sternum, all built from the same hand that came through the gate.
+    # --- shoulders, hunched above the head ------------------------------
     for side, tag in ((-1, "r"), (1, "l")):
-        parts.append(Part(f"delt_{tag}", "chest", (side * 23.0, -12.0, 0.0),
-                          (0, 0, side * -20 * D),
-                          [Box((-11 if side < 0 else 0, -9, -11), (11, 20, 22), "chitin")]))
-        for k, (drop, thick, scale, out) in enumerate(((2.0, 11.0, 1.15, 14),
-                                                       (9.0, 8.5, 0.9, 30))):
-            arm = f"arm{k}_{tag}"
-            parts += chain(arm, f"delt_{tag}", (side * 3.0, drop, 0.0), 3,
-                           (thick, 14.0, thick), "heartwood", taper=0.87,
-                           curl=(20 * D, 0, side * 12 * D),
-                           root_rot=(-18 * D, 0, side * out * D))
-            parts += _giant_hand(f"hand{k}_{tag}", f"{arm}_2", (0.0, 11.0, 0.0),
-                                 scale, curl=0.85)
-        # The small pair, folded in tight against the sternum.
-        small = f"arms_{tag}"
-        parts += chain(small, "chest", (side * 9.0, -4.0, -11.0), 3,
-                       (5.0, 8.0, 5.0), "sinew", taper=0.85,
-                       curl=(46 * D, 0, side * -18 * D),
-                       root_rot=(-52 * D, side * 20 * D, side * 26 * D))
-        parts += _giant_hand(f"hands_{tag}", f"{small}_2", (0.0, 6.0, 0.0), 0.5,
-                             curl=1.3)
+        hunch = 5.0 if side < 0 else 2.0     # not level; nothing here is
+        parts.append(Part(f"delt_{tag}", "chest",
+                          (side * 12.0, -26.0 - hunch, -1.0),
+                          (0, 0, side * -34 * D),
+                          [Box((-9 if side < 0 else 0, -12, -9), (9, 20, 18),
+                               "bark"),
+                           Box((-8 if side < 0 else 1, -14, -8), (7, 5, 16),
+                               "chitin")]))
+        # Spines off the shoulder caps.
+        for k in range(3):
+            parts.append(Part(f"spur_{tag}{k}", f"delt_{tag}",
+                              (side * 5.0, -11.0 + k * 4.0, -4.0 + k * 4.0),
+                              (0, 0, side * -58 * D),
+                              [Box((-1.2, -9 + k * 1.6, -1.2), (2.4, 9 - k * 1.6, 2.4),
+                                   "tooth")]))
 
-    # --- the head it carries -------------------------------------------
-    # Small, low, and set back between the shoulders.
-    parts.append(Part("neck", "chest", (0.0, -15.0, 3.0), (14 * D, 0, 0),
-                      [Box((-4, -6, -4), (8, 7, 8), "sinew")]))
-    parts.append(Part("head", "neck", (0.0, -6.0, 0.0), (-10 * D, 0, 0),
-                      [Box((-6.5, -9, -6), (13, 9, 12), "palewood")]))
-    parts.extend(infected_face("head", 13, 9, 6, eye=4.4, teeth=7,
-                               jaw_mat="heartwood", style="bloom", spares=3))
+    # --- growth that ignores the body plan ------------------------------
+    # Branches out of the torso at angles no skeleton would produce, some
+    # ending in nothing. This is the part that stops it reading as a big man:
+    # the outline never resolves into a shape you can name.
+    for i in range(9):
+        a = i * 2.399963                     # golden angle - never repeats
+        f = i / 8.0
+        parts += chain(f"bough{i}", "chest",
+                       (math.sin(a) * 11.0, -6.0 - f * 20.0, math.cos(a) * 8.0),
+                       3 + (i % 3), (3.4 - f * 1.2, 9.0 + f * 5.0, 3.4 - f * 1.2),
+                       "bark", taper=0.8,
+                       curl=(math.cos(a) * 14 * D, math.sin(a) * 10 * D,
+                             math.sin(a * 1.3) * 18 * D),
+                       root_rot=(math.cos(a) * 56 * D, -a,
+                                 math.sin(a) * 62 * D))
+    # A second, half-formed ribcage growing out of the left flank, as if the
+    # thing tried to build another one of itself and stopped.
+    parts.append(Part("twin", "chest", (14.0, -16.0, -2.0), (0, -34 * D, 24 * D),
+                      [Box((-6, -12, -7), (12, 16, 14), "heartwood")]))
+    for i in range(4):
+        parts.append(Part(f"twinrib{i}", "twin", (0.0, -10.0 + i * 3.2, -7.2),
+                          (0, 0, (34 + 16 * i) * D),
+                          [Box((-1.4, -1.0, -1.4), (2.8, 9.0, 2.4), "tooth")]))
+    parts.append(Part("twineye", "twin", (0.0, -4.0, -7.6), (0, 0, 0),
+                      [Box((-2.6, -2.6, -1.2), (5.2, 5.2, 1.4), "eye:bloom")]))
+
+    # --- the head: long skull thrust forward ----------------------------
+    parts.append(Part("neckstalk", "chest", (0.0, -24.0, -3.0), (26 * D, 0, 0),
+                      [Box((-4.5, -9, -4.5), (9, 10, 9), "sinew")]))
+    parts.append(Part("head", "neckstalk", (0.0, -9.0, 0.0), (14 * D, 0, 0),
+                      [Box((-6, -8, -15), (12, 11, 17), "palewood")]))
+    # The skull is not a mask sitting on a neck - it is still partly the tree.
+    # Splinters run back out of it into the shoulders, and it is not level.
     for i in range(5):
-        a = (2 * math.pi * i) / 5
-        parts += chain(f"crown{i}", "head", (math.sin(a) * 3.6, -9.0, math.cos(a) * 3.2),
-                       3, (2.2, 5.0, 2.2), "bark", taper=0.78,
-                       curl=(math.sin(a) * 16 * D, 0, math.cos(a) * 16 * D),
-                       root_rot=(math.sin(a) * 30 * D, a, -math.cos(a) * 30 * D))
+        a = i * 2.399963
+        parts.append(Part(f"splinter{i}", "head",
+                          (math.sin(a) * 5.0, -6.0 + i * 1.4, -2.0 + math.cos(a) * 4.0),
+                          (math.cos(a) * 30 * D, -a, math.sin(a) * 34 * D),
+                          [Box((-1.1, -1.0, -1.1), (2.2, 13.0 - i * 1.5, 2.2), "bark")]))
+    # Long upper jaw running out past the skull.
+    parts.append(Part("snout", "head", (0.0, 5.0, -15.0), (0, 0, 0),
+                      [Box((-4.5, -5, -9), (9, 6, 9), "palewood")]))
+    for i in range(7):
+        parts.append(Part(f"fang{i}", "snout", (-3.6 + i * 1.2, 1.0, -8.0 + (i % 2)),
+                          (0, 0, 0),
+                          [Box((-0.6, 0, -0.6), (1.2, 3.4 - (i % 3) * 0.7, 1.2),
+                               "tooth")]))
+    parts.append(Part("face_jaw", "head", (0.0, 3.0, -13.0), (22 * D, 0, 0),
+                      [Box((-4, 0, -10), (8, 3.6, 11), "heartwood")]))
+    for i in range(6):
+        parts.append(Part(f"jawfang{i}", "face_jaw", (-3.0 + i * 1.2, 0.0, -9.0 + (i % 2)),
+                          (0, 0, 0),
+                          [Box((-0.55, -3.0, -0.55), (1.1, 3.0, 1.1), "tooth")]))
+    parts += lolling_tongue("face_jaw", at=(0.0, 1.6, -6.0), tier=0, segments=7,
+                            thick=1.6, name="tongue")
+    # Sockets set deep, two on one side and three on the other.
+    for side, tag, n in ((-1, "r", 2), (1, "l", 3)):
+        for k in range(n):
+            parts.append(Part(f"socket_{tag}{k}", "head",
+                              (side * (3.4 + k * 1.4), -2.0 + k * 2.6, -9.0 - k * 2.0),
+                              (0, side * -22 * D, 0),
+                              [Box((-2.2, -2.2, -1.0), (4.4, 4.4, 1.4), "rot")]))
+            parts.append(Part(f"eye_{tag}{k}", f"socket_{tag}{k}", (0.0, 0.0, -1.0),
+                              (0, 0, 0),
+                              [Box((-1.8, -1.8, -1.8), (3.6, 3.6, 2.2), "eye:bloom")]))
+    # Antlers: swept back off the skull, forking. Not a crown, not a disc.
+    for side in (-1, 1):
+        tag = "r" if side < 0 else "l"
+        parts += chain(f"antler_{tag}", "head", (side * 4.5, -8.0, -4.0), 4,
+                       (2.8, 8.0, 2.8), "bark", taper=0.78,
+                       curl=(-16 * D, side * 8 * D, side * 12 * D),
+                       root_rot=(-44 * D, side * 24 * D, side * 30 * D))
+        parts += chain(f"tine_{tag}", f"antler_{tag}_2", (0.0, 4.0, 0.0), 2,
+                       (1.8, 6.0, 1.8), "bark", taper=0.8,
+                       curl=(-12 * D, 0, side * 20 * D),
+                       root_rot=(-30 * D, 0, side * 46 * D))
+
+    # --- six arms, forward and down, three different lengths ------------
+    # (drop, thickness, links, forward swing, out swing)
+    SETS = ((-22.0, 9.0, 5, 34, 16), (-12.0, 7.0, 4, 22, 26), (-2.0, 5.0, 3, 12, 40))
+    for side, tag in ((-1, "r"), (1, "l")):
+        for k, (drop, thick, links, fwd, out) in enumerate(SETS):
+            # Break the mirror: one side reaches further than the other.
+            skew = 1.0 + (0.16 if side < 0 else -0.10) * (k + 1)
+            arm = f"arm{k}_{tag}"
+            parts += chain(arm, f"delt_{tag}", (side * 4.0, drop, -2.0), links,
+                           (thick, 13.0 * skew, thick), "heartwood", taper=0.86,
+                           curl=(9 * D, 0, side * 7 * D),
+                           root_rot=(fwd * skew * D, side * 6 * D, side * out * D))
+            parts += _giant_hand(f"hand{k}_{tag}", f"{arm}_{links - 1}",
+                                 (0.0, 13.0 * skew * 0.86 ** (links - 1), 0.0),
+                                 0.5 + 0.16 * (2 - k), 1.0)
     return parts
 
 
@@ -780,6 +1237,18 @@ def creaking_risen() -> Model:
     return _m("creaking_risen", parts, tex=512)
 
 
+
+for _fn in (the_choir, the_harrow, the_lacuna, blighted_warden,
+            blighted_wither, blighted_dragon, blighted_enderman):
+    BESTIARY[_fn.__name__] = _fn
+
+EYE_FIELDS["the_choir"] = {"stalk": 5, "bell": 3}
+EYE_FIELDS["the_harrow"] = {"sac": 4}
+EYE_FIELDS["the_lacuna"] = {"shell": 6}
+EYE_FIELDS["blighted_warden"] = {"shoulders": 4, "body": 3}
+EYE_FIELDS["blighted_wither"] = {"ribcage": 3}
+EYE_FIELDS["blighted_dragon"] = {"head": 3, "chest": 2}
+EYE_FIELDS["blighted_enderman"] = {"head": 2}
 
 BESTIARY["creaking_hand"] = creaking_hand
 BESTIARY["the_creaking"] = the_creaking

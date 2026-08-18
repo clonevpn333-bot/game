@@ -101,6 +101,56 @@ def main() -> None:
         }
         write_animations(os.path.join(ANIM_DIR, f"{shipped}.animation.json"), anims)
 
+    # --- abstracts and the taken -----------------------------------------
+    # (bench name, body bone, head bone, jaw bone, limb roots, arm chains)
+    OTHERS = {
+        "the_choir": ("stalk", "bell", "maw0_jaw", [], []),
+        "the_harrow": ("hub", "sac", None,
+                       [f"leg{i}" for i in range(7)], []),
+        "the_lacuna": ("shell", "skull", None,
+                       ["leg_fr", "leg_fl", "leg_br", "leg_bl"], []),
+        "blighted_warden": ("body", "head", "face_jaw", ["leg_r", "leg_l"],
+                            [["arm_r", "arm_r_1", "arm_r_2", "arm_r_3"],
+                             ["arm_l", "arm_l_1", "arm_l_2", "arm_l_3"]]),
+        "blighted_wither": ("ribcage", "skull0", "skull0_jaw", [], []),
+        "blighted_dragon": ("chest", "head", "face_jaw",
+                            ["leg_r", "leg_l", "hind_r", "hind_l"],
+                            [["neck", "neck_1", "neck_2", "neck_3", "neck_4"]]),
+        "blighted_enderman": ("body", "head", "face_jaw", ["leg_r", "leg_l"],
+                              [["arm_r", "arm_r_1", "arm_r_2"],
+                               ["arm_l", "arm_l_1", "arm_l_2"]]),
+    }
+    for bench_name, (body, head, jaw, legroots, armchains) in OTHERS.items():
+        model = lower(B.BESTIARY[bench_name]())
+        pack_uvs(model)
+        write_geo(model, bench_name, os.path.join(GEO_DIR, f"{bench_name}.geo.json"))
+        have = {p.name for p in model.parts}
+        limbs = A.measure_limbs(model, [r for r in legroots if r in have], set())
+        arms = [c for c in armchains if c[0] in have]
+        anims = {
+            f"animation.{bench_name}.idle": A.idle(
+                body=body, head=head if head in have else None,
+                jaw=jaw if jaw and jaw in have else None,
+                limbs=limbs, period=5.6, depth=0.9, unease=1.1),
+            f"animation.{bench_name}.attack": A.strike(
+                arms=arms, length=1.1, head=head if head in have else None,
+                jaw=jaw if jaw and jaw in have else None, body=body,
+                legs=limbs, stagger=0.09, reach=92.0, step=2.4),
+        }
+        if limbs:
+            anims[f"animation.{bench_name}.walk"] = A.locomotion(
+                limbs, period=1.5, gait="biped" if len(limbs) == 2 else "walk",
+                body=body, head=head if head in have else None,
+                jaw=jaw if jaw and jaw in have else None, sway=1.2, limp=0.14,
+                samples=26)
+            anims[f"animation.{bench_name}.run"] = A.locomotion(
+                limbs, period=0.95,
+                gait="sprint" if len(limbs) == 2 else "gallop",
+                body=body, head=head if head in have else None,
+                jaw=jaw if jaw and jaw in have else None, sway=1.5, limp=0.0,
+                flex=1.0, wrong=0.9, airborne=1.0, samples=30)
+        write_animations(os.path.join(ANIM_DIR, f"{bench_name}.animation.json"), anims)
+
     # --- the Creaking, hand and body ------------------------------------
     # Six arms is not six copies of one arm. They fire in sequence, outside
     # pair first, and the small sternum pair last and fastest, so a swing

@@ -462,22 +462,117 @@ def chicken_host() -> list[Part]:
     return parts
 
 
-def humanoid(skin: str, cloth: str, *, tall: float = 0.0) -> list[Part]:
-    """Vanilla humanoid proportions - villagers, the dead, the living."""
-    return [
-        Part("body", "root", (0.0, 12.0 - tall, 0.0), (0, 0, 0),
-             [_b((-4, -12, -2), (8, 12, 4), cloth)]),
-        Part("head", "body", (0.0, -12.0, 0.0), (0, 0, 0),
-             [_b((-4, -8, -4), (8, 8, 8), skin)]),
-        Part("arm_r", "body", (-4.0, -10.0, 0.0), (0, 0, 0),
-             [_b((-4, -2, -2), (4, 12, 4), cloth)]),
-        Part("arm_l", "body", (4.0, -10.0, 0.0), (0, 0, 0),
-             [_b((0, -2, -2), (4, 12, 4), cloth)]),
-        Part("leg_r", "root", (-2.0, 12.0, 0.0), (0, 0, 0),
-             [_b((-2, 0, -2), (4, 12, 4), cloth)]),
-        Part("leg_l", "root", (2.0, 12.0, 0.0), (0, 0, 0),
-             [_b((-2, 0, -2), (4, 12, 4), cloth)]),
+def human_face(anchor: str, *, hw: float = 8.0, hh: float = 8.0,
+               hd: float = 8.0, skin: str = "skin", eye: str = "eye_human",
+               name: str = "face", hollow: float = 0.0) -> list[Part]:
+    """An actual face, in geometry, on a person.
+
+    The people in this mod had eight-by-eight cubes for heads and nothing on
+    them - no eyes, no mouth, no nose. A flat cube reads as a mannequin no
+    matter what the texture does, and these are supposed to be the last people
+    alive. So: a brow with a real overhang, eyeballs that stand out of their
+    sockets, a nose bridge, cheekbones, and a jaw that hangs slightly open.
+
+    `hollow` sinks the eyes and sharpens the cheeks - the difference between a
+    survivor and someone who has been awake for six days.
+    """
+    p = name
+    front = -hd / 2
+    ex = hw * 0.21
+    ey = -hh * 0.10
+    parts = [
+        # Brow ridge, overhanging - this is what casts the eyes into shadow.
+        Part(f"{p}_brow", anchor, (0.0, ey - hh * 0.17, front),
+             (0, 0, 0),
+             [_b((-hw * 0.44, -hh * 0.10, -0.9 - hollow * 0.5),
+                 (hw * 0.88, hh * 0.16, 1.0 + hollow * 0.5), skin)]),
+        Part(f"{p}_nose", anchor, (0.0, ey + hh * 0.10, front), (0, 0, 0),
+             [_b((-hw * 0.10, -hh * 0.14, -1.3), (hw * 0.20, hh * 0.32, 1.4), skin)]),
+        Part(f"{p}_jaw", anchor, (0.0, hh * 0.30, front + hd * 0.10),
+             (7 * D, 0, 0),
+             [_b((-hw * 0.34, 0, -hd * 0.34), (hw * 0.68, hh * 0.22, hd * 0.36),
+                 skin)]),
+        Part(f"{p}_mouth", f"{p}_jaw", (0.0, 0.0, -hd * 0.32), (0, 0, 0),
+             [_b((-hw * 0.22, -hh * 0.06, -0.5), (hw * 0.44, hh * 0.09, 0.6),
+                 "tongue")]),
     ]
+    for side, tag in ((-1, "r"), (1, "l")):
+        # Socket sunk into the skull, eyeball standing proud of it.
+        parts.append(Part(f"{p}_socket_{tag}", anchor,
+                          (side * ex, ey, front + 0.2), (0, 0, 0),
+                          [_b((-hw * 0.15, -hh * 0.12, -0.4),
+                              (hw * 0.30, hh * 0.24, 0.6), "rot")]))
+        parts.append(Part(f"{p}_eye_{tag}", f"{p}_socket_{tag}",
+                          (0.0, 0.0, -0.4), (0, side * -9 * D, 0),
+                          [_b((-hw * 0.12, -hh * 0.09, -0.9),
+                              (hw * 0.24, hh * 0.18, 1.0), eye)]))
+        parts.append(Part(f"{p}_cheek_{tag}", anchor,
+                          (side * hw * 0.30, ey + hh * 0.20, front + 0.4),
+                          (0, 0, side * 12 * D),
+                          [_b((-hw * 0.11, -hh * 0.09, -0.7),
+                              (hw * 0.22, hh * 0.20, 0.8), skin)]))
+    return parts
+
+
+def humanoid(skin: str, cloth: str, *, tall: float = 0.0, build: float = 1.0,
+             face: bool = True, hollow: float = 0.0, hair: str | None = None,
+             pack: bool = False, eye: str = "eye_human") -> list[Part]:
+    """A person, at a height a person actually is.
+
+    Vanilla humanoids are 32 units and read stubby next to everything else in
+    this mod; these are 36 with longer legs and a neck, which is most of the
+    difference. `build` widens the frame, `hollow` starves the face, `pack`
+    straps salvage to their back, and they all get a face with eyes in it.
+    """
+    w = 8.0 * build
+    leg_h = 14.0 + tall
+    body_h = 13.0
+    hip = GROUND - leg_h
+    parts = [
+        Part("body", "root", (0.0, hip, 0.0), (0, 0, 0),
+             [_b((-w / 2, -body_h, -2.2), (w, body_h, 4.4), cloth)]),
+        # Shoulders as their own mass, so the frame is not a plank.
+        Part("shoulders", "body", (0.0, -body_h + 1.0, 0.0), (0, 0, 0),
+             [_b((-w / 2 - 0.8, -2.6, -2.6), (w + 1.6, 3.4, 5.2), cloth)]),
+        Part("neck", "shoulders", (0.0, -2.0, 0.0), (0, 0, 0),
+             [_b((-1.9, -2.6, -1.9), (3.8, 3.0, 3.8), skin)]),
+        Part("head", "neck", (0.0, -2.6, 0.0), (0, 0, 0),
+             [_b((-4, -8, -4), (8, 8, 8), skin)]),
+    ]
+    if hair:
+        parts.append(Part("hair", "head", (0.0, -8.0, 0.0), (0, 0, 0),
+                          [_b((-4.3, 0, -4.3), (8.6, 4.0, 8.6), hair)]))
+    if face:
+        parts += human_face("head", hw=8, hh=8, hd=8, skin=skin, eye=eye,
+                            hollow=hollow)
+        # The face parts hang off the head's own origin, which sits 8 up.
+        for part in parts:
+            if part.parent == "head" and part.name.startswith("face_"):
+                px, py, pz = part.pivot
+                part.pivot = (px, py - 4.0, pz)
+    for side, tag in ((-1, "r"), (1, "l")):
+        parts.append(Part(f"arm_{tag}", "shoulders", (side * (w / 2 + 1.6), -0.4, 0.0),
+                          (0, 0, side * -4 * D),
+                          [_b((-2.0, -1.4, -2.0), (4, 8.0, 4), cloth)]))
+        parts.append(Part(f"arm_{tag}_1", f"arm_{tag}", (0.0, 6.6, 0.0), (0, 0, 0),
+                          [_b((-1.8, 0, -1.8), (3.6, 7.0, 3.6), cloth)]))
+        parts.append(Part(f"hand_{tag}", f"arm_{tag}_1", (0.0, 7.0, 0.0), (0, 0, 0),
+                          [_b((-1.9, 0, -1.9), (3.8, 3.0, 3.8), skin)]))
+        parts.append(Part(f"leg_{tag}", "root", (side * 2.2, hip, 0.0), (0, 0, 0),
+                          [_b((-2.1, 0, -2.1), (4.2, leg_h * 0.52, 4.2), cloth)]))
+        parts.append(Part(f"leg_{tag}_1", f"leg_{tag}", (0.0, leg_h * 0.52, 0.0),
+                          (0, 0, 0),
+                          [_b((-1.9, 0, -1.9), (3.8, leg_h * 0.34, 3.8), cloth)]))
+        parts.append(Part(f"foot_{tag}", f"leg_{tag}_1", (0.0, leg_h * 0.34, 0.0),
+                          (0, 0, 0),
+                          [_b((-2.1, 0, -3.2), (4.2, leg_h * 0.14, 5.4), "bark")]))
+    if pack:
+        parts.append(Part("pack", "body", (0.0, -body_h * 0.62, 2.4), (0, 0, 0),
+                          [_b((-3.4, -4.0, 0), (6.8, 8.0, 3.4), "bark"),
+                           _b((-3.8, -1.0, 0.2), (7.6, 1.6, 3.6), "sinew")]))
+        parts.append(Part("bedroll", "pack", (0.0, -4.6, 1.6), (0, 90 * D, 0),
+                          [_b((-1.6, -1.6, -4.0), (3.2, 3.2, 8.0), "wool")]))
+    return parts
 
 
 # ---------------------------------------------------------------------------
