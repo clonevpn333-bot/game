@@ -93,6 +93,13 @@ public class KilnHeartBlock extends Block {
         if (age == 3 && random.nextInt(8) == 0) {
             tryBreachNether(level, pos);
         }
+
+        // The Unmaking: past a certain saturation the heart stops replacing
+        // the world and starts subtracting it. Break the heart to stop it.
+        if (age == 3 && random.nextInt(24) == 0
+                && SeamHelper.countSeamNear(level, pos, 6, 48) >= 40) {
+            com.gildedseam.infection.Unmaking.begin(level, pos);
+        }
     }
 
     private static void tryBreachNether(ServerLevel level, BlockPos pos) {
