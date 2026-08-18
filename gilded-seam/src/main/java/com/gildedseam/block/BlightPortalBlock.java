@@ -47,7 +47,7 @@ public class BlightPortalBlock extends Block {
 
     @Override
     protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity,
-            net.minecraft.world.level.block.InsideBlockEffectApplier effects) {
+            net.minecraft.world.entity.InsideBlockEffectApplier effects, boolean inside) {
         if (!(level instanceof ServerLevel serverLevel) || !entity.canUsePortal(false)) {
             return;
         }
