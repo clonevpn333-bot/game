@@ -31,6 +31,7 @@ public class ReliquaryColossusRenderer
             float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.tier = entity.getTier();
+        state.attackSwing = entity.getAttackAnim(partialTick);
         state.dormant = entity.isDormant();
         state.awakenAnimationState.copyFrom(entity.awakenAnimationState);
         state.sweepAnimationState.copyFrom(entity.sweepAnimationState);

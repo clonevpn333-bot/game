@@ -29,6 +29,7 @@ public class ShardlingRenderer extends MobRenderer<ShardlingEntity, ShardlingRen
     public void extractRenderState(ShardlingEntity entity, ShardlingRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.tier = entity.getTier();
+        state.attackSwing = entity.getAttackAnim(partialTick);
         state.attackAnimationState.copyFrom(entity.attackAnimationState);
     }
 

@@ -29,6 +29,7 @@ public class KilnbornRenderer extends MobRenderer<KilnbornEntity, KilnbornRender
     public void extractRenderState(KilnbornEntity entity, KilnbornRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.tier = entity.getTier();
+        state.attackSwing = entity.getAttackAnim(partialTick);
         state.overfired = entity.isOverfired();
         state.attackAnimationState.copyFrom(entity.attackAnimationState);
         state.chargeAnimationState.copyFrom(entity.chargeAnimationState);

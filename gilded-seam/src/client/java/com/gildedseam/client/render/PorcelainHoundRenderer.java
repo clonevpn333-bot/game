@@ -29,6 +29,7 @@ public class PorcelainHoundRenderer extends MobRenderer<PorcelainHoundEntity, Po
     public void extractRenderState(PorcelainHoundEntity entity, PorcelainHoundRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.tier = entity.getTier();
+        state.attackSwing = entity.getAttackAnim(partialTick);
         state.attackAnimationState.copyFrom(entity.attackAnimationState);
         state.howlAnimationState.copyFrom(entity.howlAnimationState);
     }

@@ -29,6 +29,7 @@ public class FontOfGoldRenderer extends MobRenderer<FontOfGoldEntity, FontOfGold
     public void extractRenderState(FontOfGoldEntity entity, FontOfGoldRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.tier = entity.getTier();
+        state.attackSwing = entity.getAttackAnim(partialTick);
         state.birthAnimationState.copyFrom(entity.birthAnimationState);
     }
 

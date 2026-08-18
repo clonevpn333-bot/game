@@ -87,8 +87,8 @@ public class FolkModel extends EntityModel<FolkRenderState> {
             this.head.zRot += 0.08F;
         }
 
-        if (state.attackTime > 0.0F) {
-            float swing = Mth.sin(state.attackTime * Mth.PI);
+        if (state.attackSwing > 0.0F) {
+            float swing = Mth.sin(state.attackSwing * Mth.PI);
             this.armR.xRot += -swing * 1.6F;
         }
     }

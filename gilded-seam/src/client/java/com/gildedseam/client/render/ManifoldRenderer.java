@@ -29,6 +29,7 @@ public class ManifoldRenderer extends MobRenderer<ManifoldEntity, ManifoldRender
     public void extractRenderState(ManifoldEntity entity, ManifoldRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.tier = entity.getTier();
+        state.attackSwing = entity.getAttackAnim(partialTick);
         state.climbing = entity.isClimbing();
         state.attackAnimationState.copyFrom(entity.attackAnimationState);
         state.constrictAnimationState.copyFrom(entity.constrictAnimationState);

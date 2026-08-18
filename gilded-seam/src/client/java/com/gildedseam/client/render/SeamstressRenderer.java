@@ -29,6 +29,7 @@ public class SeamstressRenderer extends MobRenderer<SeamstressEntity, Seamstress
     public void extractRenderState(SeamstressEntity entity, SeamstressRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.tier = entity.getTier();
+        state.attackSwing = entity.getAttackAnim(partialTick);
         state.attackAnimationState.copyFrom(entity.attackAnimationState);
         state.lashAnimationState.copyFrom(entity.lashAnimationState);
         state.mendAnimationState.copyFrom(entity.mendAnimationState);

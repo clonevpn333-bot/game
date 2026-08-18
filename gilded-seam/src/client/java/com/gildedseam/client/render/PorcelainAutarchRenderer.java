@@ -31,6 +31,7 @@ public class PorcelainAutarchRenderer
             float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.tier = entity.getTier();
+        state.attackSwing = entity.getAttackAnim(partialTick);
         state.dormant = entity.isDormant();
         state.enraged = entity.getHealth() < entity.getMaxHealth() / 3.0F;
         state.awakenAnimationState.copyFrom(entity.awakenAnimationState);

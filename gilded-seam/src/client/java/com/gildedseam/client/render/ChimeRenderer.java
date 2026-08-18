@@ -29,6 +29,7 @@ public class ChimeRenderer extends MobRenderer<ChimeEntity, ChimeRenderState, Ch
     public void extractRenderState(ChimeEntity entity, ChimeRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.tier = entity.getTier();
+        state.attackSwing = entity.getAttackAnim(partialTick);
         state.ringAnimationState.copyFrom(entity.ringAnimationState);
     }
 

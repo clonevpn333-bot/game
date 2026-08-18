@@ -33,6 +33,7 @@ public class GildedBeastRenderer extends MobRenderer<GildedBeastEntity, GildedBe
     public void extractRenderState(GildedBeastEntity entity, GildedBeastRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.tier = entity.getTier();
+        state.attackSwing = entity.getAttackAnim(partialTick);
         state.attackAnimationState.copyFrom(entity.attackAnimationState);
     }
 

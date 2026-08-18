@@ -29,6 +29,7 @@ public class VesselRenderer extends MobRenderer<VesselEntity, VesselRenderState,
     public void extractRenderState(VesselEntity entity, VesselRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.tier = entity.getTier();
+        state.attackSwing = entity.getAttackAnim(partialTick);
         state.rising = entity.isRising();
         state.attackAnimationState.copyFrom(entity.attackAnimationState);
         state.risingAnimationState.copyFrom(entity.risingAnimationState);

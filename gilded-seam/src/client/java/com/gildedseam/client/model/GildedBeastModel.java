@@ -158,8 +158,8 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
             }
         }
 
-        if (state.attackTime > 0.0F) {
-            float lunge = Mth.sin(state.attackTime * Mth.PI);
+        if (state.attackSwing > 0.0F) {
+            float lunge = Mth.sin(state.attackSwing * Mth.PI);
             if (this.head != null) {
                 this.head.xRot -= lunge * 0.5F;
             }

@@ -2033,14 +2033,14 @@ public class PorcelainAutarchModel extends EntityModel<PorcelainAutarchRenderSta
 
         // Decrees and sweeps: every arm reaches at once, which is the only
         // time all six agree on anything.
-        if (state.attackTime > 0.0F) {
-            float swing = Mth.sin(state.attackTime * Mth.PI);
+        if (state.attackSwing > 0.0F) {
+            float swing = Mth.sin(state.attackSwing * Mth.PI);
             for (int i = 0; i < this.floats.length; i++) {
                 this.floats[i].xRot = -swing * 0.9F;
                 this.hands[i].xRot -= swing * 0.6F;
             }
             this.jaw.xRot += swing * 0.5F;
-            this.chest.zRot = Mth.sin(state.attackTime * Mth.PI * 2.0F) * 0.05F;
+            this.chest.zRot = Mth.sin(state.attackSwing * Mth.PI * 2.0F) * 0.05F;
         } else {
             for (ModelPart hub : this.floats) {
                 hub.xRot = 0.0F;
