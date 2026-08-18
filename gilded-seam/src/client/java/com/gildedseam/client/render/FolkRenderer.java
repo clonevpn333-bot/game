@@ -37,6 +37,7 @@ public class FolkRenderer extends MobRenderer<Mob, FolkRenderState, FolkModel> {
     public void extractRenderState(Mob entity, FolkRenderState state, float partialTick) {
         super.extractRenderState(entity, state, partialTick);
         state.tier = entity instanceof SeamMob seamMob ? seamMob.getTier() : 0;
+        state.attackSwing = entity.getAttackAnim(partialTick);
     }
 
     @Override

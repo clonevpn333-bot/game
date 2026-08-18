@@ -1972,16 +1972,6 @@ public class PorcelainAutarchModel extends EntityModel<PorcelainAutarchRenderSta
         return LayerDefinition.create(mesh, 256, 256);
     }
 
-    private void applyEnthronedPose() {
-        this.head.xRot = PorcelainAutarchAnimations.THRONE_HEAD_X * Mth.DEG_TO_RAD;
-        this.torso.xRot = 10.0F * Mth.DEG_TO_RAD;
-        this.armR.xRot = PorcelainAutarchAnimations.THRONE_ARM_X * Mth.DEG_TO_RAD;
-        this.armL.xRot = PorcelainAutarchAnimations.THRONE_ARM_X * Mth.DEG_TO_RAD;
-        this.armR.zRot = 12.0F * Mth.DEG_TO_RAD;
-        this.armL.zRot = -12.0F * Mth.DEG_TO_RAD;
-        this.armRLower.xRot = PorcelainAutarchAnimations.THRONE_ELBOW_X * Mth.DEG_TO_RAD;
-        this.armLLower.xRot = PorcelainAutarchAnimations.THRONE_ELBOW_X * Mth.DEG_TO_RAD;
-    }
 
     @Override
     public void setupAnim(PorcelainAutarchRenderState state) {
