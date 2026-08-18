@@ -70,6 +70,9 @@ public final class ModTabs {
                             out.accept(ModEntities.GILDED_CHICKEN_SPAWN_EGG);
                             out.accept(ModEntities.GILDED_SPIDER_SPAWN_EGG);
                             out.accept(ModEntities.GILDED_CASK_SPAWN_EGG);
+                            out.accept(ModEntities.GILDED_WOLF_SPAWN_EGG);
+                            out.accept(ModEntities.GILDED_GOAT_SPAWN_EGG);
+                            out.accept(ModEntities.GILDED_HARE_SPAWN_EGG);
                             out.accept(ModEntities.HALF_SEWN_SPAWN_EGG);
 
                             // The living.

@@ -90,6 +90,9 @@ public final class SeamConversion {
         if (mob instanceof net.minecraft.world.entity.animal.chicken.Chicken) return ModEntities.GILDED_CHICKEN;
         if (mob instanceof net.minecraft.world.entity.monster.spider.Spider) return ModEntities.GILDED_SPIDER;
         if (mob instanceof net.minecraft.world.entity.monster.Creeper) return ModEntities.GILDED_CASK;
+        if (mob instanceof net.minecraft.world.entity.animal.wolf.Wolf) return ModEntities.GILDED_WOLF;
+        if (mob instanceof net.minecraft.world.entity.animal.goat.Goat) return ModEntities.GILDED_GOAT;
+        if (mob instanceof net.minecraft.world.entity.animal.rabbit.Rabbit) return ModEntities.GILDED_HARE;
         return null;
     }
 

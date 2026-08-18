@@ -85,6 +85,9 @@ public final class ModEntities {
     public static final EntityType<GildedBeastEntity> GILDED_CHICKEN = beast("gilded_chicken", 0.5F, 0.9F);
     public static final EntityType<GildedBeastEntity> GILDED_SPIDER = beast("gilded_spider", 1.3F, 0.9F);
     public static final EntityType<GildedBeastEntity> GILDED_CASK = beast("gilded_cask", 0.7F, 1.8F);
+    public static final EntityType<GildedBeastEntity> GILDED_WOLF = beast("gilded_wolf", 0.7F, 1.0F);
+    public static final EntityType<GildedBeastEntity> GILDED_GOAT = beast("gilded_goat", 0.95F, 1.35F);
+    public static final EntityType<GildedBeastEntity> GILDED_HARE = beast("gilded_hare", 0.5F, 0.6F);
 
     // --- The folk -------------------------------------------------------------
 
@@ -136,6 +139,9 @@ public final class ModEntities {
     public static final Item GILDED_CHICKEN_SPAWN_EGG = ModItems.registerSpawnEgg("gilded_chicken", GILDED_CHICKEN);
     public static final Item GILDED_SPIDER_SPAWN_EGG = ModItems.registerSpawnEgg("gilded_spider", GILDED_SPIDER);
     public static final Item GILDED_CASK_SPAWN_EGG = ModItems.registerSpawnEgg("gilded_cask", GILDED_CASK);
+    public static final Item GILDED_WOLF_SPAWN_EGG = ModItems.registerSpawnEgg("gilded_wolf", GILDED_WOLF);
+    public static final Item GILDED_GOAT_SPAWN_EGG = ModItems.registerSpawnEgg("gilded_goat", GILDED_GOAT);
+    public static final Item GILDED_HARE_SPAWN_EGG = ModItems.registerSpawnEgg("gilded_hare", GILDED_HARE);
     public static final Item REFUGEE_SPAWN_EGG = ModItems.registerSpawnEgg("refugee", REFUGEE);
     public static final Item GILT_MAD_SPAWN_EGG = ModItems.registerSpawnEgg("gilt_mad", GILT_MAD);
     public static final Item HALF_SEWN_SPAWN_EGG = ModItems.registerSpawnEgg("half_sewn", HALF_SEWN);
@@ -166,6 +172,9 @@ public final class ModEntities {
         FabricDefaultAttributeRegistry.register(GILDED_CHICKEN, GildedBeastEntity.createAttributes(12.0, 0.34, 3.0));
         FabricDefaultAttributeRegistry.register(GILDED_SPIDER, GildedBeastEntity.createAttributes(20.0, 0.34, 5.0));
         FabricDefaultAttributeRegistry.register(GILDED_CASK, GildedBeastEntity.createAttributes(26.0, 0.3, 6.0));
+        FabricDefaultAttributeRegistry.register(GILDED_WOLF, GildedBeastEntity.createAttributes(24.0, 0.36, 7.0));
+        FabricDefaultAttributeRegistry.register(GILDED_GOAT, GildedBeastEntity.createAttributes(26.0, 0.3, 6.0));
+        FabricDefaultAttributeRegistry.register(GILDED_HARE, GildedBeastEntity.createAttributes(14.0, 0.42, 4.0));
         FabricDefaultAttributeRegistry.register(REFUGEE, RefugeeEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(GILT_MAD, GiltMadEntity.createAttributes());
         FabricDefaultAttributeRegistry.register(HALF_SEWN, HalfSewnEntity.createAttributes());

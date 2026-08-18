@@ -70,6 +70,12 @@ public final class GildedSeamClient implements ClientModInitializer {
                 com.gildedseam.client.model.GildedBeastLayers::createGildedSpiderLayer);
         ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_CASK,
                 com.gildedseam.client.model.GildedBeastLayers::createGildedCaskLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_WOLF,
+                com.gildedseam.client.model.GildedBeastLayers::createGildedWolfLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_GOAT,
+                com.gildedseam.client.model.GildedBeastLayers::createGildedGoatLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_HARE,
+                com.gildedseam.client.model.GildedBeastLayers::createGildedHareLayer);
         ModelLayerRegistry.registerModelLayer(ModModelLayers.REFUGEE,
                 com.gildedseam.client.model.FolkLayers::createRefugeeLayer);
         ModelLayerRegistry.registerModelLayer(ModModelLayers.GILT_MAD,
@@ -83,6 +89,9 @@ public final class GildedSeamClient implements ClientModInitializer {
         registerBeast(ModEntities.GILDED_CHICKEN, ModModelLayers.GILDED_CHICKEN, "gilded_chicken");
         registerBeast(ModEntities.GILDED_SPIDER, ModModelLayers.GILDED_SPIDER, "gilded_spider");
         registerBeast(ModEntities.GILDED_CASK, ModModelLayers.GILDED_CASK, "gilded_cask");
+        registerBeast(ModEntities.GILDED_WOLF, ModModelLayers.GILDED_WOLF, "gilded_wolf");
+        registerBeast(ModEntities.GILDED_GOAT, ModModelLayers.GILDED_GOAT, "gilded_goat");
+        registerBeast(ModEntities.GILDED_HARE, ModModelLayers.GILDED_HARE, "gilded_hare");
 
         EntityRendererRegistry.register(ModEntities.REFUGEE, context ->
                 new com.gildedseam.client.render.FolkRenderer(context, ModModelLayers.REFUGEE, "refugee", false));

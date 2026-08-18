@@ -84,5 +84,11 @@
   "item.gildedseam.seamstress_spawn_egg": "Seamstress Spawn Egg",
   "item.gildedseam.shardling_spawn_egg": "Shardling Spawn Egg",
   "item.gildedseam.vessel_spawn_egg": "Vessel Spawn Egg",
-  "itemGroup.gildedseam.amberblight": "The Amberblight"
+  "itemGroup.gildedseam.amberblight": "The Amberblight",
+  "entity.gildedseam.gilded_wolf": "Blighted Wolf",
+  "item.gildedseam.gilded_wolf_spawn_egg": "Blighted Wolf Spawn Egg",
+  "entity.gildedseam.gilded_goat": "Blighted Goat",
+  "item.gildedseam.gilded_goat_spawn_egg": "Blighted Goat Spawn Egg",
+  "entity.gildedseam.gilded_hare": "Blighted Hare",
+  "item.gildedseam.gilded_hare_spawn_egg": "Blighted Hare Spawn Egg"
 }

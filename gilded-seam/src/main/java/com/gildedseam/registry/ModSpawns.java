@@ -43,7 +43,9 @@ public final class ModSpawns {
                 ModEntities.HALF_SEWN, 8, 1, 2);
         for (var type : java.util.List.of(ModEntities.GILDED_COW, ModEntities.GILDED_PIG,
                 ModEntities.GILDED_SHEEP, ModEntities.GILDED_CHICKEN, ModEntities.GILDED_SPIDER,
-                ModEntities.GILDED_CASK, ModEntities.HALF_SEWN)) {
+                ModEntities.GILDED_CASK, ModEntities.GILDED_WOLF,
+                ModEntities.GILDED_GOAT, ModEntities.GILDED_HARE,
+                ModEntities.HALF_SEWN)) {
             registerGroundPlacement(type);
         }
         registerGroundPlacement(ModEntities.REFUGEE);

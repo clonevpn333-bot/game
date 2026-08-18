@@ -31,12 +31,14 @@ LEGACY = {
     "blighted_spider": "gilded_spider",
     "blighted_creeper": "gilded_cask",
     "amber_sovereign": "porcelain_autarch",
+    "blighted_wolf": "gilded_wolf",
+    "blighted_goat": "gilded_goat",
+    "blighted_rabbit": "gilded_hare",
 }
 # The Tangle, the Colossus, the Tapper and the Refugee are authored here and
 # rendered for the bestiary, but their in-game entity classes still carry the
 # previous geometry; they are wired in the next pass.
-UNWIRED = {"the_tangle", "heartwood_colossus", "tapper", "refugee", "half_sapped",
-           "blighted_wolf", "blighted_rabbit", "blighted_goat"}
+UNWIRED = {"the_tangle", "heartwood_colossus", "tapper", "refugee", "half_sapped"}
 SNIP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out")
 
 # Green Sap / Hardened / Amberlit - how far the resin has taken the body.
