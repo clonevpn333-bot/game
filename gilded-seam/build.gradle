@@ -15,12 +15,26 @@ base {
 
 repositories {
     // Loom adds the repositories needed for Minecraft and Fabric artifacts.
+    // GeckoLib publishes to Cloudsmith; Modrinth's maven is the fallback.
+    maven {
+        name = "GeckoLib"
+        url = "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/"
+    }
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content { includeGroup "maven.modrinth" }
+    }
 }
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // Keyframed animation: real windups, blending and easing, which vanilla's
+    // model system cannot express.
+    implementation "software.bernie.geckolib:geckolib-fabric-${project.minecraft_version}:${project.geckolib_version}"
 }
 
 loom {

@@ -92,6 +92,18 @@ jobs:
             grep -oE '[A-Za-z0-9_]+\.java:[0-9]+: error: [^\n]*' /tmp/build.log | sort -u | head -12
             echo "----- non-compile failures -----"
             grep -E 'FAILURE:|What went wrong|Could not (find|resolve|get)|Plugin \[id' /tmp/build.log | head -15
+            echo "----- GECKOLIB: what versions actually exist -----"
+            for base in "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/software/bernie/geckolib" \
+                        "https://api.modrinth.com/maven/maven/modrinth/geckolib"; do
+              for art in "geckolib-fabric-26.2" "geckolib-fabric" "geckolib"; do
+                url="$base/$art/maven-metadata.xml"
+                code=$(curl -s -o /tmp/meta.xml -w "%{http_code}" "$url" || echo 000)
+                if [ "$code" = "200" ]; then
+                  echo "FOUND $url"
+                  grep -oE "<version>[^<]+</version>" /tmp/meta.xml | tail -8
+                fi
+              done
+            done
             echo "===== END ====="
           fi
           exit $code
