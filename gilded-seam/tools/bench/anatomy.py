@@ -49,6 +49,10 @@ class Quad:
     tail: tuple | None = None        # (w, h, d, mat, rot_x)
     fleece: float = 0.0              # wool overlay inflation
     fleece_mat: str = "wool"
+    # Real pupils differ by species and keeping that true is most of why an
+    # infected animal still reads as that animal.
+    eye_style: str = "round"
+    eye_spares: int = 3
 
     def build(self) -> list[Part]:
         hm = self.head_mat or self.hide
@@ -90,7 +94,8 @@ class Quad:
                               [_b((-tw / 2, 0, 0), (tw, th, td), tm)]))
         parts.extend(infected_face("head", hw, hh, hd,
                                    eye=max(3.0, min(5.0, hw * 0.52)),
-                                   teeth=5 if hw >= 6 else 4))
+                                   teeth=5 if hw >= 6 else 4,
+                                   style=self.eye_style, spares=self.eye_spares))
         for tag, sx, sz in (("fr", -1, -1), ("fl", 1, -1), ("br", -1, 1), ("bl", 1, 1)):
             parts.append(Part(f"leg_{tag}", "root",
                               (sx * self.leg_x, GROUND - lh, sz * self.leg_z),
@@ -105,46 +110,56 @@ HOSTS: dict[str, Quad] = {
                 head_y=4, head_z=-9, leg=(4, 12, 4), leg_x=4, leg_z=6,
                 horns=True, snout=(6, 4, 1, "cow_white"),
                 ears=(2, 3, 1, "cow_hide", 4.5, 1.5, -3),
-                tail=(1, 8, 1, "cow_hide", -0.35)),
+                tail=(1, 8, 1, "cow_hide", -0.35),
+                 eye_style="bar", eye_spares=3),
     "pig": Quad("pig_skin", body=(10, 8, 16), body_y=10, head=(8, 8, 8),
                 head_y=10, head_z=-8, leg=(4, 6, 4), leg_x=3, leg_z=5,
                 snout=(4, 3, 1, "pig_skin"),
                 ears=(2, 2, 1, "pig_skin", 4.2, 0.5, -5),
-                tail=(1, 3, 1, "pig_skin", -0.8)),
+                tail=(1, 3, 1, "pig_skin", -0.8),
+                 eye_style="bar", eye_spares=2),
     "sheep": Quad("sheep_face", body=(8, 6, 16), body_y=6, head=(6, 6, 8),
                   head_y=6, head_z=-8, leg=(4, 12, 4), leg_x=3, leg_z=5,
-                  fleece=1.75),
+                  fleece=1.75,
+                 eye_style="bar", eye_spares=3),
     "rabbit": Quad("rabbit_fur", body=(6, 5, 10), body_y=15, head=(5, 4, 5),
                    head_y=13, head_z=-5, leg=(2, 4, 2), leg_x=2, leg_z=3.5,
                    ears=(1.5, 5, 1, "rabbit_fur", 1.6, -1.0, -1.0),
-                   tail=(2, 2, 2, "rabbit_fur", -0.6)),
+                   tail=(2, 2, 2, "rabbit_fur", -0.6),
+                 eye_style="round", eye_spares=3),
     "goat": Quad("goat_fur", body=(9, 8, 16), body_y=6, head=(5, 6, 7),
                  head_y=6, head_z=-8, leg=(3, 12, 3), leg_x=3, leg_z=5,
                  horns=True, ears=(3, 1.5, 1, "goat_fur", 3.0, 1.5, -3),
-                 tail=(1, 3, 1, "goat_fur", -0.9)),
+                 tail=(1, 3, 1, "goat_fur", -0.9),
+                 eye_style="bar", eye_spares=3),
     "fox": Quad("fox_fur", body=(6, 5, 11), body_y=11, head=(8, 6, 6),
                 head_y=10, head_z=-6, leg=(2, 6, 2), leg_x=2.5, leg_z=3.5,
                 snout=(3, 2, 2, "fox_fur"),
                 ears=(2, 3, 1, "fox_fur", 3.0, -1.0, -2.0),
-                tail=(4, 9, 4, "fox_fur", -0.35)),
+                tail=(4, 9, 4, "fox_fur", -0.35),
+                 eye_style="slit", eye_spares=2),
     "cat": Quad("cat_fur", body=(6, 5, 10), body_y=12, head=(5, 4, 5),
                 head_y=11, head_z=-5, leg=(2, 7, 2), leg_x=2, leg_z=3.5,
                 ears=(2, 2, 1, "cat_fur", 1.8, -0.5, -1.5),
-                tail=(1, 9, 1, "cat_fur", -0.9)),
+                tail=(1, 9, 1, "cat_fur", -0.9),
+                 eye_style="slit", eye_spares=3),
     "horse": Quad("horse_hide", body=(10, 11, 22), body_y=2, head=(6, 8, 8),
                   head_y=-2, head_z=-11, leg=(4, 16, 4), leg_x=4, leg_z=8,
                   snout=(4, 4, 2, "horse_hide"),
                   ears=(1.5, 3, 1, "horse_hide", 2.2, -2.0, -4.0),
-                  tail=(3, 12, 3, "horse_hide", -0.4)),
+                  tail=(3, 12, 3, "horse_hide", -0.4),
+                 eye_style="bar", eye_spares=2),
     "llama": Quad("llama_fur", body=(8, 12, 16), body_y=2, head=(4, 8, 6),
                   head_y=-6, head_z=-9, leg=(3, 14, 3), leg_x=3, leg_z=6,
                   ears=(1.5, 3, 1, "llama_fur", 1.8, -2.5, -2.5),
-                  tail=(2, 4, 2, "llama_fur", -0.6)),
+                  tail=(2, 4, 2, "llama_fur", -0.6),
+                 eye_style="bar", eye_spares=2),
     "wolf": Quad("wolf_fur", body=(6, 6, 12), body_y=8, head=(6, 6, 6),
                  head_y=7, head_z=-6, leg=(2, 8, 2), leg_x=2.5, leg_z=4,
                  snout=(3, 3, 2, "wolf_fur"),
                  ears=(2, 3, 1, "wolf_fur", 2.5, -0.5, -1.5),
-                 tail=(2, 8, 2, "wolf_fur", -0.5)),
+                 tail=(2, 8, 2, "wolf_fur", -0.5),
+                 eye_style="slit", eye_spares=2),
 }
 
 
@@ -159,7 +174,7 @@ def creeper_host() -> list[Part]:
     # The creeper's head is a cube with the face on the front; the blight
     # gives that face somewhere to open.
     parts.extend(infected_face("head", 8, 8, 4, eye=4.2, teeth=5,
-                               jaw_mat="creeper_skin"))
+                               jaw_mat="creeper_skin", style="void", spares=2))
     for tag, sx, sz in (("fr", -1, -1), ("fl", 1, -1), ("br", -1, 1), ("bl", 1, 1)):
         parts.append(Part(f"leg_{tag}", "root", (sx * 2, 18.0, sz * 4), (0, 0, 0),
                           [_b((-2, 0, -2), (4, 6, 4), "creeper_skin")]))
@@ -185,7 +200,7 @@ def spider_host() -> list[Part]:
                           [_b((-9, -1, -1), (9, 2, 2), "spider_shell")]))
     # Spiders already have eyes; the blight adds more, and a mouth.
     parts.extend(infected_face("head", 8, 8, 4, eye=3.4, teeth=6,
-                               jaw_mat="spider_shell"))
+                               jaw_mat="spider_shell", style="simple", spares=3))
     parts.extend(mirror([p for p in parts if p.name.startswith("leg_r")],
                         "leg_r", "leg_l"))
     return parts
@@ -208,7 +223,7 @@ def chicken_host() -> list[Part]:
     ]
     parts.extend(mirror(parts[-1:], "wing_r", "wing_l"))
     parts.extend(infected_face("head", 4, 6, 3, eye=3.0, teeth=4,
-                               jaw_mat="feather"))
+                               jaw_mat="feather", style="round", spares=2))
     parts.append(Part("leg_r", "root", (-2.0, 19.0, 1.0), (0, 0, 0),
                       [_b((-1, 0, -3), (3, 5, 3), "beak")]))
     parts.extend(mirror(parts[-1:], "leg_r", "leg_l"))
@@ -414,7 +429,8 @@ def eye_cluster(anchor: str, *, at: tuple, count: int = 4, tier: int = 1,
 
 def infected_face(anchor: str, hw: float, hh: float, hd: float, *,
                   eye: float = 2.6, teeth: int = 5, jaw_mat: str = "flesh",
-                  tier: int = 0, name: str = "face") -> list[Part]:
+                  tier: int = 0, name: str = "face",
+                  style: str = "round", spares: int = 3) -> list[Part]:
     """The blight's face, built to stand proud of the skull.
 
     A host with a plain box for a head reads as a reskin no matter what is
@@ -444,7 +460,7 @@ def infected_face(anchor: str, hw: float, hh: float, hd: float, *,
         parts.append(Part(f"{p}_eye_{tag}", f"{p}_socket_{tag}", (0.0, 0.0, -0.9),
                           (0, 0, 0),
                           [_b((-eye / 2, -eye / 2, -eye * 0.8),
-                              (eye, eye, eye * 0.8), "eye")]))
+                              (eye, eye, eye * 0.8), "eye:" + style)]))
         # A brow of hardened resin over each eye, so the face has a scowl.
         parts.append(Part(f"{p}_brow_{tag}", p, (ex, ey - eye * 0.72, front + 0.1),
                           (0, 0, side * 14 * D),
@@ -452,13 +468,13 @@ def infected_face(anchor: str, hw: float, hh: float, hd: float, *,
 
     # Spare eyes crowded onto the skull: the face is wrong before the rest
     # of the body has begun to change.
-    for i, (sx, sy, sc) in enumerate(((-0.30, -0.55, 0.55), (0.34, -0.62, 0.45),
-                                      (0.0, -0.80, 0.40))):
+    for i, (sx, sy, sc) in enumerate((((-0.30, -0.55, 0.55), (0.34, -0.62, 0.45),
+                                       (0.0, -0.80, 0.40))[:spares])):
         s = eye * sc
         parts.append(Part(f"{p}_spare{i}", p,
                           (sx * hw, sy * hh + hh * 0.30, front + 0.3),
                           (0, sx * 40 * D, sy * 26 * D),
-                          [_b((-s / 2, -s / 2, -s * 0.85), (s, s, s * 0.85), "eye")]))
+                          [_b((-s / 2, -s / 2, -s * 0.85), (s, s, s * 0.85), "eye:bloom" if i % 2 else "eye:" + style)]))
 
     # --- upper jaw and its teeth -----------------------------------------
     parts.append(Part(f"{p}_maw", p, (0.0, hh * 0.66, front + 0.4), (0, 0, 0),

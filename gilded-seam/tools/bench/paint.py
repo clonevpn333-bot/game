@@ -146,32 +146,75 @@ class Painter:
 
     # -- eyes -------------------------------------------------------------
 
-    def eye(self, x, y, w, h, iris=None, pupil_slit=False):
-        """One eye filling the given rect.
+    def eye(self, x, y, w, h, iris=None, style="round"):
+        """One eye, drawn to the species rather than from a template.
 
-        A radial falloff looks right at 12 pixels and turns into checkerboard
-        at four, which is the size these are actually drawn at, so small eyes
-        are laid out explicitly instead: a full sclera, a solid pupil block in
-        the middle, an iris ring if there is room, and a rim so the eye reads
-        against pale bark. Legibility beats fidelity at this scale.
+        Real animals do not share a pupil: ungulates have a horizontal bar,
+        hunting mammals a vertical slit, spiders a scatter of simple eyes.
+        Keeping that true is most of why a blighted cow still reads as a cow
+        even with four extra eyes on its skull. The blight's own creatures use
+        `bloom`, an eyeblossom rather than an eye - petals around a dark
+        centre, the way the flowers in a pale garden open after dark.
+
+        Styles: round, bar, slit, simple, void, bloom.
         """
         base, sh, darkc, accent, bright = MATS["eye"]
         iris = iris or accent
         rim = (16, 11, 8)
         pupil = (8, 6, 5)
+        cx, cy = w / 2.0, h / 2.0
 
-        # Sclera over the whole face, with a rim on the outer ring.
         for j_ in range(h):
             for i_ in range(w):
                 edge = (i_ == 0 or j_ == 0 or i_ == w - 1 or j_ == h - 1)
                 self._put(x + i_, y + j_, rim if (edge and min(w, h) >= 4) else base)
 
-        # Pupil: a solid block, sized to the face so it never disappears.
-        pw = 1 if min(w, h) <= 3 else (2 if min(w, h) <= 6 else max(2, min(w, h) // 3))
-        ph = pw
+        if style == "void":
+            # A creeper's eye is a hole. The blight lights the hole.
+            for j_ in range(1, max(2, h - 1)):
+                for i_ in range(1, max(2, w - 1)):
+                    self._put(x + i_, y + j_, pupil)
+            if min(w, h) >= 4:
+                for i_ in range(1, w - 1):
+                    self._put(x + i_, y + 1, MATS["amberglow"][0])
+            return
+
+        if style == "simple":
+            # Spiders: several small domes rather than one eye.
+            for (fx, fy) in ((0.28, 0.32), (0.62, 0.28), (0.44, 0.62), (0.74, 0.66)):
+                px_ = x + max(0, min(w - 1, int(fx * w)))
+                py_ = y + max(0, min(h - 1, int(fy * h)))
+                self._put(px_, py_, pupil)
+                if min(w, h) >= 5:
+                    self._put(px_, max(y, py_ - 1), shade(MATS["spider_eye"][0], 1.0))
+            return
+
+        if style == "bloom":
+            # An eyeblossom: petals of amber around a dark centre.
+            for j_ in range(h):
+                for i_ in range(w):
+                    dx, dy = (i_ + 0.5 - cx) / max(1.0, cx), (j_ + 0.5 - cy) / max(1.0, cy)
+                    r = math.sqrt(dx * dx + dy * dy)
+                    if r < 0.34:
+                        self._put(x + i_, y + j_, pupil)
+                    elif r < 0.82 and ((i_ + j_) % 2 == 0 or min(w, h) < 5):
+                        self._put(x + i_, y + j_, MATS["amberglow"][0])
+                    elif r < 0.95:
+                        self._put(x + i_, y + j_, iris)
+            return
+
+        # --- pupils that are actually shaped ------------------------------
+        if style == "bar":
+            ph = 1 if h <= 4 else 2
+            pw = max(2, w - 2)
+        elif style == "slit":
+            pw = 1 if w <= 4 else 2
+            ph = max(2, h - 2)
+        else:
+            pw = ph = 1 if min(w, h) <= 3 else (2 if min(w, h) <= 6 else min(w, h) // 3)
         px0 = x + (w - pw) // 2
         py0 = y + (h - ph) // 2
-        # Iris ring one pixel out from the pupil, where there is room.
+
         if min(w, h) >= 5:
             for j_ in range(py0 - 1 - y, py0 - 1 - y + ph + 2):
                 for i_ in range(px0 - 1 - x, px0 - 1 - x + pw + 2):
@@ -180,7 +223,6 @@ class Painter:
         for j_ in range(ph):
             for i_ in range(pw):
                 self._put(px0 + i_, py0 + j_, pupil)
-        # Wet highlight, top-left of the pupil.
         if min(w, h) >= 4:
             self._put(px0 - 1, py0 - 1, (255, 253, 246))
 
@@ -199,7 +241,7 @@ class Painter:
     # -- material dispatch ------------------------------------------------
 
     def face(self, x, y, w, h, mat, up=False, front=False, back=False):
-        spec = MATS.get(mat, MATS["bark"])
+        spec = MATS.get(mat.split(":", 1)[0], MATS["bark"])
         base, sh, darkc, accent, bright = spec
         # Flat fill with a vertical light falloff and fine noise.
         for j in range(h):
@@ -249,12 +291,12 @@ class Painter:
         elif mat == "tooth":
             for i in range(w):
                 self._put(x + i, y + h - 1, shade(darkc, 1.2))
-        elif mat == "eye":
+        elif mat.startswith("eye"):
             # An eyeball is a sphere pretending to be a cube: every face but
             # the one buried in the socket looks back at you, so the eye
             # reads from any angle rather than only head-on.
             if not back:
-                self.eye(x, y, w, h)
+                self.eye(x, y, w, h, style=(mat.split(":", 1)[1] if ":" in mat else "round"))
             else:
                 base_s, sh_s, dk, ac, br = MATS["sinew"]
                 for j in range(h):

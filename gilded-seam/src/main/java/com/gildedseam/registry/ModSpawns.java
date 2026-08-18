@@ -19,7 +19,25 @@ public final class ModSpawns {
     private ModSpawns() {
     }
 
+    /** The first kiln heart in a world is not placed by a structure. */
+    public static final net.minecraft.resources.ResourceKey<
+            net.minecraft.world.level.levelgen.placement.PlacedFeature> BLIGHT_SCAR =
+            net.minecraft.resources.ResourceKey.create(
+                    net.minecraft.core.registries.Registries.PLACED_FEATURE,
+                    com.gildedseam.GildedSeam.id("blight_scar"));
+
     public static void init() {
+        // Without this the infection could only ever be found inside a
+        // structure, which means most worlds would never see it start. A rare
+        // surface kiln heart is the seed: it gilds the ground around itself,
+        // lays veins, and begins firing creatures once it matures.
+        BiomeModifications.create(com.gildedseam.GildedSeam.id("blight_seed"))
+                .add(net.fabricmc.fabric.api.biome.v1.ModificationPhase.ADDITIONS,
+                        BiomeSelectors.foundInOverworld(),
+                        context -> context.getGenerationSettings().addFeature(
+                                net.minecraft.world.level.levelgen.GenerationStep.Decoration
+                                        .VEGETAL_DECORATION,
+                                BLIGHT_SCAR));
         BiomeModifications.addSpawn(BiomeSelectors.foundInOverworld(), MobCategory.MONSTER,
                 ModEntities.SHARDLING, 24, 2, 4);
         BiomeModifications.addSpawn(BiomeSelectors.foundInOverworld(), MobCategory.MONSTER,
