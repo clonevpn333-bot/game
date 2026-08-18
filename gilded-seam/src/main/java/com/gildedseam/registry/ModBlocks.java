@@ -66,6 +66,17 @@ public final class ModBlocks {
                     .strength(1.2F, 4.0F)
                     .sound(SoundType.DECORATED_POT));
 
+    /** The membrane inside a lit Heartwood Gate. */
+    public static final Block BLIGHT_PORTAL = register("blight_portal",
+            com.gildedseam.block.BlightPortalBlock::new,
+            BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_ORANGE)
+                    .noCollission()
+                    .noLootTable()
+                    .strength(-1.0F, 3600000.0F)
+                    .lightLevel(state -> 11)
+                    .sound(SoundType.WOOD));
+
     private ModBlocks() {
     }
 

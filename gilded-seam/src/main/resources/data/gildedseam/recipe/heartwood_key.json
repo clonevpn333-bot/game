@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "ppp",
+    "pcp",
+    "ptp"
+  ],
+  "key": {
+    "p": "minecraft:pale_oak_log",
+    "c": "gildedseam:autarch_crown",
+    "t": "gildedseam:gold_thread"
+  },
+  "result": {
+    "id": "gildedseam:heartwood_key",
+    "count": 1
+  }
+}

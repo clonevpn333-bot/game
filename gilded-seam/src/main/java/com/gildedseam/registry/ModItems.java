@@ -61,6 +61,11 @@ public final class ModItems {
             properties -> new com.gildedseam.item.RiveningHeartItem(
                     properties.stacksTo(1).rarity(Rarity.EPIC).fireResistant()));
 
+    /** Made from the Sovereign's crown; opens the way into the hollow. */
+    public static final Item HEARTWOOD_KEY = register("heartwood_key",
+            properties -> new com.gildedseam.item.HeartwoodKeyItem(
+                    properties.stacksTo(1).durability(8).rarity(Rarity.EPIC)));
+
     /** Proof you took the kingdom apart. */
     public static final Item AUTARCH_CROWN = register("autarch_crown",
             properties -> new Item(properties.stacksTo(1).rarity(Rarity.EPIC)));

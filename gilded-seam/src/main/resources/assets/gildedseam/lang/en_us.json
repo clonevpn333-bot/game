@@ -98,5 +98,7 @@
   "entity.gildedseam.gilded_horse": "Blighted Horse",
   "item.gildedseam.gilded_horse_spawn_egg": "Blighted Horse Spawn Egg",
   "entity.gildedseam.gilded_llama": "Blighted Llama",
-  "item.gildedseam.gilded_llama_spawn_egg": "Blighted Llama Spawn Egg"
+  "item.gildedseam.gilded_llama_spawn_egg": "Blighted Llama Spawn Egg",
+  "item.gildedseam.heartwood_key": "Heartwood Key",
+  "block.gildedseam.blight_portal": "Heartwood Gate"
 }
