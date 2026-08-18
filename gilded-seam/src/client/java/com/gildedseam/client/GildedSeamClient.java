@@ -22,24 +22,24 @@ import com.gildedseam.client.render.VesselRenderer;
 import com.gildedseam.registry.ModEntities;
 
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.rendering.v1.EntityModelLayerRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 
 public final class GildedSeamClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.SHARDLING, ShardlingModel::createBodyLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.VESSEL, VesselModel::createBodyLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.PORCELAIN_HOUND, PorcelainHoundModel::createBodyLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.SEAMSTRESS, SeamstressModel::createBodyLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.KILNBORN, KilnbornModel::createBodyLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.CHIME, ChimeModel::createBodyLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.FONT_OF_GOLD, FontOfGoldModel::createBodyLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.MANIFOLD, ManifoldModel::createBodyLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.RELIQUARY_COLOSSUS, ReliquaryColossusModel::createBodyLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.PORCELAIN_AUTARCH,
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.SHARDLING, ShardlingModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.VESSEL, VesselModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.PORCELAIN_HOUND, PorcelainHoundModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.SEAMSTRESS, SeamstressModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.KILNBORN, KilnbornModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.CHIME, ChimeModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.FONT_OF_GOLD, FontOfGoldModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.MANIFOLD, ManifoldModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.RELIQUARY_COLOSSUS, ReliquaryColossusModel::createBodyLayer);
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.PORCELAIN_AUTARCH,
                 com.gildedseam.client.model.PorcelainAutarchModel::createBodyLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.SALT_SWORN,
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.SALT_SWORN,
                 com.gildedseam.client.model.SaltSwornModel::createBodyLayer);
 
         EntityRendererRegistry.register(ModEntities.SHARDLING, ShardlingRenderer::new);
@@ -58,23 +58,23 @@ public final class GildedSeamClient implements ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.SALT_DART,
                 net.minecraft.client.renderer.entity.ThrownItemRenderer::new);
 
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_COW,
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_COW,
                 com.gildedseam.client.model.GildedBeastLayers::createGildedCowLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_PIG,
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_PIG,
                 com.gildedseam.client.model.GildedBeastLayers::createGildedPigLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_SHEEP,
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_SHEEP,
                 com.gildedseam.client.model.GildedBeastLayers::createGildedSheepLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_CHICKEN,
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_CHICKEN,
                 com.gildedseam.client.model.GildedBeastLayers::createGildedChickenLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_SPIDER,
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_SPIDER,
                 com.gildedseam.client.model.GildedBeastLayers::createGildedSpiderLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_CASK,
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.GILDED_CASK,
                 com.gildedseam.client.model.GildedBeastLayers::createGildedCaskLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.REFUGEE,
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.REFUGEE,
                 com.gildedseam.client.model.FolkLayers::createRefugeeLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.GILT_MAD,
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.GILT_MAD,
                 com.gildedseam.client.model.FolkLayers::createGiltMadLayer);
-        EntityModelLayerRegistry.registerModelLayer(ModModelLayers.HALF_SEWN,
+        ModelLayerRegistry.registerModelLayer(ModModelLayers.HALF_SEWN,
                 com.gildedseam.client.model.FolkLayers::createHalfSewnLayer);
 
         registerBeast(ModEntities.GILDED_COW, ModModelLayers.GILDED_COW, "gilded_cow");
