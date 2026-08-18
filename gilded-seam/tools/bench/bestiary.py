@@ -635,66 +635,143 @@ def creaking_hand() -> Model:
     return _m("creaking_hand", parts, tex=256)
 
 
-def the_creaking() -> Model:
-    """THE CREAKING, rising out of the gilded pool.
+def _creaking_torso(legs: bool) -> list[Part]:
+    """The body itself: a heavyweight humanoid with too many arms.
 
-    Only the upper body exists as geometry: it sits waist-deep in the gold it
-    grew in, so the model ends at the waterline and the sap sheets off it
-    instead of legs. Torso, shoulders, both arms, and a skull crowned with
-    pale oak, with the heart burning in an open chest.
+    Proportioned like something built to hit: enormous deltoids and pectorals,
+    a chest that reads wider than it is tall, and a head deliberately far too
+    small for it, sunk between the shoulders so it looks less like a face than
+    like something the body carries. Six arms - two heavy pairs and one small
+    pair folded at the sternum - because a silhouette with the wrong count is
+    unsettling faster than any amount of texture detail.
     """
     parts: list[Part] = []
-    # Torso: a barrel of heartwood, ribs peeled outward.
-    parts.append(Part("torso", "root", (0.0, -26.0, 0.0), (0, 0, 0),
-                      [Box((-20, -30, -13), (40, 42, 26), "heartwood")]))
-    parts.append(Part("waterline", "torso", (0.0, 12.0, 0.0), (0, 0, 0),
-                      [Box((-22, -2, -15), (44, 4, 30), "amberglow")]))
-    for i in range(6):
-        yy = -26.0 + i * 5.5
+
+    # Hips only exist on the walking version; in the pool it ends at the gold.
+    root_y = -34.0 if legs else -26.0
+    parts.append(Part("torso", "root", (0.0, root_y, 0.0), (0, 0, 0),
+                      [Box((-15, -18, -10), (30, 22, 20), "heartwood")]))
+    # Slab of chest, wider than tall, overhanging the waist.
+    parts.append(Part("chest", "torso", (0.0, -18.0, 0.0), (0, 0, 0),
+                      [Box((-23, -16, -12), (46, 18, 24), "heartwood"),
+                       Box((-24, -17, -13), (48, 5, 26), "chitin")]))
+    # Pectoral plates, angled inward so the chest reads as muscle not a box.
+    for side in (-1, 1):
+        parts.append(Part(f"pec_{'r' if side < 0 else 'l'}", "chest",
+                          (side * 13.0, -8.0, -12.2), (0, side * -16 * D, side * 10 * D),
+                          [Box((-7 if side < 0 else 0, -7, -3.5), (7, 15, 4),
+                               "heartwood"),
+                           Box((-7.2 if side < 0 else -0.2, -7.5, -3.8), (7.4, 3, 4.4),
+                               "chitin")]))
+    # Ribs peeled outward from the sternum.
+    for i in range(5):
+        yy = -14.0 + i * 3.4
         for side in (-1, 1):
-            parts.append(Part(f"rib{i}{'r' if side < 0 else 'l'}", "torso",
-                              (side * 17.0, yy, -12.0), (0, 0, side * 26 * D),
-                              [Box((-2.2, -1.6, -2.2), (4.4, 11.0, 3.6), "palewood")]))
-    # The chest stands open on the heart.
-    parts.append(Part("cavity", "torso", (0.0, -14.0, -13.0), (0, 0, 0),
-                      [Box((-11, -13, -1.5), (22, 26, 3), "flesh")]))
-    parts.append(Part("heart", "cavity", (0.0, 0.0, -2.0), (0, 0, 0),
-                      [Box((-7, -9, -2.5), (14, 18, 4), "amberglow")]))
-    for i in range(10):
-        a = (2 * math.pi * i) / 10
+            parts.append(Part(f"rib{i}{'r' if side < 0 else 'l'}", "chest",
+                              (side * 7.0, yy, -12.4), (0, 0, side * 30 * D),
+                              [Box((-2.0, -1.4, -2.0), (4.0, 12.0, 3.2), "palewood")]))
+    # The heart, in a cavity between the pectorals.
+    parts.append(Part("cavity", "chest", (0.0, -7.0, -12.6), (0, 0, 0),
+                      [Box((-7, -8, -1.2), (14, 16, 2), "flesh")]))
+    parts.append(Part("heart", "cavity", (0.0, 0.0, -1.6), (0, 0, 0),
+                      [Box((-4.5, -6, -2.2), (9, 12, 3), "amberglow")]))
+    for i in range(8):
+        a = (2 * math.pi * i) / 8
         parts.append(Part(f"chesteye{i}", "cavity",
-                          (math.sin(a) * 8.5, math.cos(a) * 10.5, -2.2), (0, 0, 0),
-                          [Box((-1.8, -1.8, -1.0), (3.6, 3.6, 1.0), "eye:bloom")]))
-    # Shoulders and arms - the same hands that came through the gate.
+                          (math.sin(a) * 5.4, math.cos(a) * 6.6, -2.0), (0, 0, 0),
+                          [Box((-1.7, -1.7, -1.0), (3.4, 3.4, 1.0), "eye:bloom")]))
+
+    # --- six arms ------------------------------------------------------
+    # Two heavy pairs off the shoulder shelf and one small pair at the
+    # sternum, all built from the same hand that came through the gate.
     for side, tag in ((-1, "r"), (1, "l")):
-        parts.append(Part(f"pauldron_{tag}", "torso", (side * 20.0, -26.0, 0.0),
-                          (0, 0, side * -18 * D),
-                          [Box((-9 if side < 0 else 0, -7, -11), (9, 14, 22), "chitin")]))
-        parts += chain(f"arm_{tag}", f"pauldron_{tag}", (side * 4.5, 4.0, 0.0), 3,
-                       (10.0, 15.0, 10.0), "heartwood", taper=0.86,
-                       curl=(18 * D, 0, side * 10 * D),
-                       root_rot=(-24 * D, 0, side * 34 * D))
-        parts += _giant_hand(f"hand_{tag}", f"arm_{tag}_2", (0.0, 12.0, 0.0), 1.0,
-                             curl=0.7)
-    # Neck and skull.
-    parts.append(Part("neck", "torso", (0.0, -30.0, 0.0), (0, 0, 0),
-                      [Box((-7, -8, -7), (14, 8, 14), "sinew")]))
-    parts.append(Part("head", "neck", (0.0, -8.0, 0.0), (0, 0, 0),
-                      [Box((-12, -18, -11), (24, 18, 22), "palewood")]))
-    parts += infected_face("head", 24, 18, 11, eye=7.0, teeth=9, jaw_mat="heartwood",
-                           style="bloom", spares=3)
-    # A crown of pale oak, because it is still a tree.
-    for i in range(7):
-        a = (2 * math.pi * i) / 7
-        parts += chain(f"crown{i}", "head", (math.sin(a) * 7.0, -18.0, math.cos(a) * 6.0),
-                       4, (3.4, 7.0, 3.4), "bark", taper=0.78,
-                       curl=(math.sin(a) * 14 * D, 0, math.cos(a) * 14 * D),
-                       root_rot=(math.sin(a) * 26 * D, a, -math.cos(a) * 26 * D))
-    return _m("the_creaking", parts, tex=256)
+        parts.append(Part(f"delt_{tag}", "chest", (side * 23.0, -12.0, 0.0),
+                          (0, 0, side * -20 * D),
+                          [Box((-11 if side < 0 else 0, -9, -11), (11, 20, 22), "chitin")]))
+        for k, (drop, thick, scale, out) in enumerate(((2.0, 11.0, 1.15, 14),
+                                                       (9.0, 8.5, 0.9, 30))):
+            arm = f"arm{k}_{tag}"
+            parts += chain(arm, f"delt_{tag}", (side * 3.0, drop, 0.0), 3,
+                           (thick, 14.0, thick), "heartwood", taper=0.87,
+                           curl=(20 * D, 0, side * 12 * D),
+                           root_rot=(-18 * D, 0, side * out * D))
+            parts += _giant_hand(f"hand{k}_{tag}", f"{arm}_2", (0.0, 11.0, 0.0),
+                                 scale, curl=0.85)
+        # The small pair, folded in tight against the sternum.
+        small = f"arms_{tag}"
+        parts += chain(small, "chest", (side * 9.0, -4.0, -11.0), 3,
+                       (5.0, 8.0, 5.0), "sinew", taper=0.85,
+                       curl=(46 * D, 0, side * -18 * D),
+                       root_rot=(-52 * D, side * 20 * D, side * 26 * D))
+        parts += _giant_hand(f"hands_{tag}", f"{small}_2", (0.0, 6.0, 0.0), 0.5,
+                             curl=1.3)
+
+    # --- the head it carries -------------------------------------------
+    # Small, low, and set back between the shoulders.
+    parts.append(Part("neck", "chest", (0.0, -15.0, 3.0), (14 * D, 0, 0),
+                      [Box((-4, -6, -4), (8, 7, 8), "sinew")]))
+    parts.append(Part("head", "neck", (0.0, -6.0, 0.0), (-10 * D, 0, 0),
+                      [Box((-6.5, -9, -6), (13, 9, 12), "palewood")]))
+    parts.extend(infected_face("head", 13, 9, 6, eye=4.4, teeth=7,
+                               jaw_mat="heartwood", style="bloom", spares=3))
+    for i in range(5):
+        a = (2 * math.pi * i) / 5
+        parts += chain(f"crown{i}", "head", (math.sin(a) * 3.6, -9.0, math.cos(a) * 3.2),
+                       3, (2.2, 5.0, 2.2), "bark", taper=0.78,
+                       curl=(math.sin(a) * 16 * D, 0, math.cos(a) * 16 * D),
+                       root_rot=(math.sin(a) * 30 * D, a, -math.cos(a) * 30 * D))
+    return parts
+
+
+def the_creaking() -> Model:
+    """THE CREAKING, waist-deep in the gilded pool.
+
+    The hollow version: no legs, because it has never stood up. The model ends
+    at a waterline of poured gold that is part of the geometry, so it reads as
+    something rising out of the pool rather than standing in a puddle.
+    """
+    parts = _creaking_torso(legs=False)
+    parts.append(Part("waterline", "root", (0.0, -4.0, 0.0), (0, 0, 0),
+                      [Box((-26, -2, -22), (52, 4, 44), "amberglow"),
+                       Box((-30, 0, -26), (60, 3, 52), "amber")]))
+    # Sap sheeting off it, still running back into the pool.
+    for i in range(9):
+        a = (2 * math.pi * i) / 9
+        parts += chain(f"sheet{i}", "torso",
+                       (math.sin(a) * 13.0, 0.0, math.cos(a) * 8.0), 3,
+                       (2.6, 5.0, 2.6), "amber", taper=0.74)
+    return _m("the_creaking", parts, tex=512)
+
+
+def creaking_risen() -> Model:
+    """THE CREAKING, standing.
+
+    What steps through into the overworld: the same body with legs under it,
+    dug in and braced. Nothing else in the mod is built at this scale.
+    """
+    parts = _creaking_torso(legs=True)
+    for side, tag in ((-1, "r"), (1, "l")):
+        parts += chain(f"leg_{tag}", "root", (side * 9.0, -34.0, 0.0), 3,
+                       (13.0, 13.0, 13.0), "heartwood", taper=0.88,
+                       curl=(-8 * D, 0, side * 6 * D),
+                       root_rot=(6 * D, 0, side * -7 * D))
+        parts.append(Part(f"foot_{tag}", f"leg_{tag}_2", (0.0, 11.0, 0.0), (0, 0, 0),
+                          [Box((-7, 0, -12), (14, 5, 20), "bark")]))
+        # Roots spilling off each foot, gripping whatever it lands on.
+        for i in range(4):
+            a = (2 * math.pi * i) / 4
+            parts += chain(f"root_{tag}{i}", f"foot_{tag}",
+                           (math.sin(a) * 4.0, 4.0, math.cos(a) * 6.0), 3,
+                           (2.4, 4.0, 2.4), "bark", taper=0.76,
+                           root_rot=(math.cos(a) * 42 * D, 0, -math.sin(a) * 42 * D))
+    return _m("creaking_risen", parts, tex=512)
+
 
 
 BESTIARY["creaking_hand"] = creaking_hand
 BESTIARY["the_creaking"] = the_creaking
+BESTIARY["creaking_risen"] = creaking_risen
 DISPLAY["creaking_hand"] = ("The Creaking Hand", "all that fits through a gate")
 DISPLAY["the_creaking"] = ("The Creaking", "waist-deep in the gold it grew in")
+DISPLAY["creaking_risen"] = ("The Creaking, Risen", "what steps into the overworld")
 EYE_FIELDS["the_creaking"] = {"torso": 4, "head": 2}
