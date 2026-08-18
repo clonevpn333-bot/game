@@ -1,5 +1,6 @@
 package com.gildedseam.entity;
 
+import com.gildedseam.infection.LustreGifts;
 import com.gildedseam.infection.SeamConversion;
 import com.gildedseam.infection.SeamHelper;
 import com.gildedseam.registry.ModEntities;
@@ -44,6 +45,38 @@ public class GildedBeastEntity extends SeamMob {
     public GildedBeastEntity(EntityType<? extends GildedBeastEntity> type, Level level) {
         super(type, level);
         this.xpReward = 5;
+    }
+
+    /** Ticks until this one can use its gift again. */
+    private int giftCooldown;
+
+    /**
+     * At full maturity a blighted animal stops being a bigger version of the
+     * stage below and starts doing something the animal never could. Each
+     * species gets its own; see {@link LustreGifts}.
+     */
+    @Override
+    public void aiStep() {
+        super.aiStep();
+        if (!(this.level() instanceof ServerLevel level)) {
+            return;
+        }
+        if (this.giftCooldown > 0) {
+            this.giftCooldown--;
+            return;
+        }
+        if (this.getTier() < SeamHelper.TIER_LUSTRE) {
+            return;
+        }
+        LivingEntity target = this.getTarget();
+        if (target == null || !target.isAlive() || !this.hasLineOfSight(target)) {
+            return;
+        }
+        int wait = LustreGifts.fire(this, level, target);
+        if (wait > 0) {
+            // Stagger, so a herd never fires in unison.
+            this.giftCooldown = wait + this.random.nextInt(40);
+        }
     }
 
     public static AttributeSupplier.Builder createAttributes(double health, double speed, double damage) {
