@@ -56,7 +56,7 @@ public final class LustreGifts {
                 if (dist > 7.0) {
                     return 0;
                 }
-                shove(level, mob, 6.5, 0.62, MobEffects.SLOWNESS, 70, 1);
+                shove(level, mob, 6.5, 0.62, 70, 1);
                 boom(level, mob, SoundEvents.RAVAGER_ROAR, 1.4F, 0.5F);
                 return BASE_COOLDOWN + 40;
             }
@@ -68,7 +68,7 @@ public final class LustreGifts {
                 for (int i = 0; i < 2; i++) {
                     spawnAlly(level, mob, com.gildedseam.registry.ModEntities.SHARDLING);
                 }
-                boom(level, mob, SoundEvents.SLIME_SQUISH, 1.1F, 0.6F);
+                boom(level, mob, SoundEvents.HONEY_BLOCK_STEP, 1.1F, 0.6F);
                 return BASE_COOLDOWN + 120;
             }
             case "gilded_sheep" -> {
@@ -87,7 +87,7 @@ public final class LustreGifts {
                 Vec3 at = target.position().subtract(mob.position()).normalize();
                 mob.setDeltaMovement(at.x * 1.5, 0.42, at.z * 1.5);
                 mob.hasImpulse = true;
-                boom(level, mob, SoundEvents.GOAT_RAM_IMPACT, 1.2F, 0.6F);
+                boom(level, mob, SoundEvents.WOOD_HIT, 1.2F, 0.6F);
                 return BASE_COOLDOWN;
             }
             case "gilded_horse" -> {
@@ -95,10 +95,10 @@ public final class LustreGifts {
                 mob.addEffect(new MobEffectInstance(MobEffects.SPEED, 100, 2));
                 BlockPos under = mob.blockPosition().below();
                 if (level.getBlockState(under).isSolidRender()
-                        && level.getBlockState(mob.blockPositionRaw()).isAir()) {
+                        && level.getBlockState(mob.blockPosition()).isAir()) {
                     level.setBlock(under, ModBlocks.GILDED_VEIN.defaultBlockState(), 3);
                 }
-                boom(level, mob, SoundEvents.HORSE_GALLOP, 1.0F, 0.5F);
+                boom(level, mob, SoundEvents.HONEY_BLOCK_STEP, 1.0F, 0.5F);
                 return 40;
             }
             case "gilded_llama" -> {
@@ -109,7 +109,7 @@ public final class LustreGifts {
                 target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 120, 2), mob);
                 target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 60, 0), mob);
                 line(level, mob, target, ParticleTypes.FALLING_HONEY);
-                boom(level, mob, SoundEvents.LLAMA_SPIT, 1.2F, 0.6F);
+                boom(level, mob, SoundEvents.DISPENSER_FAIL, 1.2F, 0.6F);
                 return BASE_COOLDOWN + 30;
             }
             case "gilded_chicken" -> {
@@ -118,7 +118,7 @@ public final class LustreGifts {
                     return 0;
                 }
                 spawnAlly(level, mob, com.gildedseam.registry.ModEntities.GILDED_CHICKEN);
-                boom(level, mob, SoundEvents.CHICKEN_EGG, 1.3F, 0.5F);
+                boom(level, mob, SoundEvents.DECORATED_POT_INSERT, 1.3F, 0.5F);
                 return BASE_COOLDOWN + 160;
             }
             case "gilded_wolf" -> {
@@ -129,7 +129,7 @@ public final class LustreGifts {
                     ally.addEffect(new MobEffectInstance(MobEffects.SPEED, 160, 1));
                     ally.setTarget(target);
                 }
-                boom(level, mob, SoundEvents.WOLF_HOWL, 1.6F, 0.5F);
+                boom(level, mob, SoundEvents.WARDEN_SONIC_CHARGE, 1.6F, 0.5F);
                 return BASE_COOLDOWN + 90;
             }
             case "gilded_fox" -> {
@@ -139,7 +139,7 @@ public final class LustreGifts {
                 }
                 if (!player.getOffhandItem().isEmpty()) {
                     player.getOffhandItem().shrink(1);
-                    boom(level, mob, SoundEvents.FOX_EAT, 1.1F, 0.7F);
+                    boom(level, mob, SoundEvents.FISHING_BOBBER_RETRIEVE, 1.1F, 0.7F);
                     mob.setDeltaMovement(mob.position().subtract(target.position())
                             .normalize().scale(0.9).add(0, 0.35, 0));
                     mob.hasImpulse = true;
@@ -156,7 +156,7 @@ public final class LustreGifts {
                         .subtract(target.getLookAngle().scale(2.2));
                 mob.snapTo(behind.x, target.getY(), behind.z, mob.getYRot(), 0.0F);
                 puff(level, mob, ParticleTypes.SMOKE, 24, 0.6);
-                boom(level, mob, SoundEvents.CAT_HISS, 1.0F, 0.7F);
+                boom(level, mob, SoundEvents.AMETHYST_CLUSTER_HIT, 1.0F, 0.7F);
                 return BASE_COOLDOWN + 60;
             }
             case "gilded_hare" -> {
@@ -179,7 +179,7 @@ public final class LustreGifts {
                     level.setBlock(at, Blocks.COBWEB.defaultBlockState(), 3);
                 }
                 target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 80, 2), mob);
-                boom(level, mob, SoundEvents.SPIDER_STEP, 1.2F, 0.5F);
+                boom(level, mob, SoundEvents.WOOD_HIT, 1.2F, 0.5F);
                 return BASE_COOLDOWN + 50;
             }
             case "gilded_cask" -> {
@@ -215,15 +215,14 @@ public final class LustreGifts {
     // -----------------------------------------------------------------------
 
     private static void shove(ServerLevel level, SeamMob mob, double radius,
-            double force, net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> effect,
-            int ticks, int amp) {
+            double force, int ticks, int amp) {
         AABB reach = mob.getBoundingBox().inflate(radius);
         List<LivingEntity> caught = level.getEntitiesOfClass(LivingEntity.class, reach,
                 e -> !(e instanceof SeamMob) && e.isAlive());
         for (LivingEntity victim : caught) {
             Vec3 away = victim.position().subtract(mob.position()).normalize();
             victim.push(away.x * force, 0.42, away.z * force);
-            victim.addEffect(new MobEffectInstance(effect, ticks, amp), mob);
+            victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, ticks, amp), mob);
         }
         puff(level, mob, ParticleTypes.SCULK_CHARGE_POP, 50, radius * 0.5);
     }
@@ -254,9 +253,8 @@ public final class LustreGifts {
     }
 
     private static void boom(ServerLevel level, SeamMob mob,
-            net.minecraft.core.Holder<net.minecraft.sounds.SoundEvent> sound,
-            float volume, float pitch) {
-        level.playSound(null, mob.blockPosition(), sound.value(), SoundSource.HOSTILE,
+            net.minecraft.sounds.SoundEvent sound, float volume, float pitch) {
+        level.playSound(null, mob.blockPosition(), sound, SoundSource.HOSTILE,
                 volume, pitch);
     }
 }

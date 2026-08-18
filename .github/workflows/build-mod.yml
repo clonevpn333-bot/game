@@ -160,6 +160,7 @@ jobs:
       # createBodyLayer() - so call it and walk what comes back. The dump is
       # uploaded as an artifact and becomes the source for the boss models.
       - name: Dump vanilla model geometry
+        if: always()
         continue-on-error: true
         run: |
           set +e
@@ -212,6 +213,7 @@ jobs:
           exit 0
 
       - name: Upload vanilla model dump
+        if: always()
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
@@ -224,6 +226,7 @@ jobs:
       # build hosts straight from vanilla geometry. [skip ci] stops this from
       # re-triggering the workflow it runs inside.
       - name: Commit the model dump
+        if: always()
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
