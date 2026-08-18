@@ -31,8 +31,8 @@ public class HeartwoodSeedItem extends Item {
         }
         if (Quickening.isGrowingNear(serverLevel, context.getClickedPos())) {
             if (context.getPlayer() != null) {
-                context.getPlayer().displayClientMessage(
-                        Component.literal("Something is already growing here."), true);
+                context.getPlayer().sendOverlayMessage(
+                        Component.literal("Something is already growing here."));
             }
             return InteractionResult.FAIL;
         }
