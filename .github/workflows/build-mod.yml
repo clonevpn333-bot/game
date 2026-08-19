@@ -196,7 +196,8 @@ jobs:
               data/minecraft/worldgen/biome/nether_wastes.json \
               data/minecraft/worldgen/biome/deep_dark.json \
               data/minecraft/advancement/end/kill_dragon.json \
-              data/minecraft/worldgen/configured_feature/ore_quartz_nether.json \
+              data/minecraft/worldgen/configured_feature/ore_quartz.json \
+              data/minecraft/worldgen/configured_feature/ore_gravel_nether.json \
               data/minecraft/worldgen/configured_feature/glowstone_extra.json \
               data/minecraft/worldgen/configured_feature/patch_fire.json \
               data/minecraft/worldgen/configured_feature/sculk_vein.json \
@@ -204,7 +205,9 @@ jobs:
               data/minecraft/worldgen/placed_feature/ore_quartz_nether.json \
               data/minecraft/worldgen/placed_feature/glowstone_extra.json \
               data/minecraft/worldgen/placed_feature/patch_fire.json \
-              data/minecraft/worldgen/placed_feature/sculk_vein.json ; do
+              data/minecraft/worldgen/placed_feature/sculk_vein.json \
+              data/minecraft/worldgen/structure_set/strongholds.json \
+              data/minecraft/worldgen/structure_set/villages.json ; do
             name=$(echo "$f" | sed 's#data/minecraft/##; s#/#_#g')
             if unzip -p "$jar" "$f" > "$out/$name" 2>/dev/null && [ -s "$out/$name" ]; then
               echo "  $name  ($(wc -c < "$out/$name") bytes)"
@@ -225,9 +228,11 @@ jobs:
       # Every vanilla id our data files name, checked against the ids the jar
       # actually has. A renamed block in a surface rule is a hard load failure;
       # a renamed sound event is worse, because it is quiet.
+      # Deliberately not continue-on-error: an unknown id is a real defect and
+      # should turn the run red. The jar is already built and published by the
+      # time this runs, so a red run here still leaves something to test.
       - name: Check the vanilla ids we name
         if: always()
-        continue-on-error: true
         timeout-minutes: 3
         working-directory: gilded-seam
         run: |

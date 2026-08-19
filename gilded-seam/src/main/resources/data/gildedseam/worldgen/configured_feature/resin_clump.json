@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:multiface_growth",
+  "config": {
+    "block": "minecraft:resin_clump",
+    "search_range": 20,
+    "chance_of_spreading": 0.7,
+    "can_place_on_floor": true,
+    "can_place_on_ceiling": true,
+    "can_place_on_wall": true,
+    "can_be_placed_on": [
+      "gildedseam:seamstone",
+      "gildedseam:gilt_mass",
+      "gildedseam:fired_shell",
+      "minecraft:resin_block",
+      "minecraft:resin_bricks",
+      "minecraft:polished_deepslate",
+      "minecraft:ochre_froglight",
+      "minecraft:pale_moss_block",
+      "minecraft:pale_oak_log",
+      "minecraft:tuff"
+    ]
+  }
+}

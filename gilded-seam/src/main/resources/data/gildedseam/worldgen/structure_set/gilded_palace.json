@@ -6,9 +6,10 @@
     }
   ],
   "placement": {
-    "type": "minecraft:random_spread",
-    "spacing": 256,
-    "separation": 112,
-    "salt": 91125511
+    "type": "minecraft:concentric_rings",
+    "distance": 160,
+    "spread": 16,
+    "count": 12,
+    "preferred_biomes": "#minecraft:is_overworld"
   }
 }

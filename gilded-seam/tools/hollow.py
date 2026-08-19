@@ -300,7 +300,7 @@ def biome(name, spec):
         "downfall": 0.0,
         "effects": {"water_color": spec["water"]},
         "carvers": ["minecraft:nether_cave"],
-        "features": [[], [], [], [], [], [], [], [], [], []],
+        "features": feature_lists(name),
         "spawners": {
             "monster": [
                 {"type": ours(mob), "weight": w, "minCount": lo, "maxCount": hi}
@@ -342,6 +342,140 @@ def biome(name, spec):
     }
 
 
+# --------------------------------------------------------------------------
+# What grows on it.
+#
+# Terrain alone is scenery. These are the things that make the hollow read as
+# somewhere that is alive in the wrong way: resin creeping over the walls,
+# thread mats underfoot, blind flowers standing in the dark.
+#
+# The shapes here are Mojang's, copied out of the jar. `patch_fire` is the
+# model for all three of the scatter features - note that vanilla does *not*
+# use `random_patch` for it: the configured feature is a bare `simple_block`
+# and all the patching lives in the placement list, as count, then random
+# offset, then a predicate that checks both the block itself and the one under
+# it. Doing it their way means it behaves the way vanilla scatter behaves.
+# --------------------------------------------------------------------------
+
+# Everything a floor in the hollow can be made of, for the "is there ground
+# under this" half of the scatter predicate. It has to list all four palettes,
+# because a feature does not know which biome invoked it.
+FLOORS = [
+    ours("seamstone"),
+    ours("gilt_mass"),
+    ours("fired_shell"),
+    "minecraft:resin_block",
+    "minecraft:resin_bricks",
+    "minecraft:polished_deepslate",
+    "minecraft:ochre_froglight",
+    "minecraft:pale_moss_block",
+    "minecraft:pale_oak_log",
+    "minecraft:tuff",
+]
+
+
+def scatter_feature(block):
+    """A configured feature that places one block. The scatter is in placement."""
+    return {
+        "type": "minecraft:simple_block",
+        "config": {
+            "to_place": {
+                "type": "minecraft:simple_state_provider",
+                "state": {"Name": block},
+            },
+        },
+    }
+
+
+def scatter_placement(feature, attempts, per_chunk, spread_xz=7, spread_y=3):
+    return {
+        "feature": feature,
+        "placement": [
+            {"type": "minecraft:count", "count": per_chunk},
+            {"type": "minecraft:in_square"},
+            {"type": "minecraft:height_range",
+             "height": {"type": "minecraft:uniform",
+                        "min_inclusive": {"above_bottom": 4},
+                        "max_inclusive": {"below_top": 4}}},
+            {"type": "minecraft:biome"},
+            {"type": "minecraft:count", "count": attempts},
+            {"type": "minecraft:random_offset",
+             "xz_spread": {"type": "minecraft:trapezoid",
+                           "min": -spread_xz, "max": spread_xz, "plateau": 0},
+             "y_spread": {"type": "minecraft:trapezoid",
+                          "min": -spread_y, "max": spread_y, "plateau": 0}},
+            {"type": "minecraft:block_predicate_filter",
+             "predicate": {"type": "minecraft:all_of", "predicates": [
+                 {"type": "minecraft:matching_block_tag", "tag": "minecraft:air"},
+                 {"type": "minecraft:matching_blocks", "blocks": FLOORS,
+                  "offset": [0, -1, 0]},
+             ]}},
+        ],
+    }
+
+
+# Resin is a multiface block, so it grows the way sculk vein does: over floor,
+# wall and ceiling alike, spreading from wherever it takes hold. This is the
+# single feature that does most of the work of making the hollow look infected
+# rather than merely dark.
+RESIN_CLUMP = {
+    "type": "minecraft:multiface_growth",
+    "config": {
+        "block": "minecraft:resin_clump",
+        "search_range": 20,
+        "chance_of_spreading": 0.7,
+        "can_place_on_floor": True,
+        "can_place_on_ceiling": True,
+        "can_place_on_wall": True,
+        "can_be_placed_on": FLOORS,
+    },
+}
+
+
+def features():
+    """(configured, placed) by name."""
+    configured = {
+        "gilded_vein_mat": scatter_feature(ours("gilded_vein")),
+        "porcelain_bloom": scatter_feature(ours("porcelain_bloom")),
+        "resin_clump": RESIN_CLUMP,
+    }
+    placed = {
+        "gilded_vein_mat": scatter_placement(ours("gilded_vein_mat"), 72, 4),
+        "porcelain_bloom": scatter_placement(ours("porcelain_bloom"), 24, 2),
+        "resin_clump": {
+            "feature": ours("resin_clump"),
+            "placement": [
+                {"type": "minecraft:count", "count": 24},
+                {"type": "minecraft:in_square"},
+                {"type": "minecraft:height_range",
+                 "height": {"type": "minecraft:uniform",
+                            "min_inclusive": {"above_bottom": 4},
+                            "max_inclusive": {"below_top": 4}}},
+                {"type": "minecraft:biome"},
+            ],
+        },
+    }
+    return configured, placed
+
+
+# Which features each biome gets, and at which decoration step. Index 7 is
+# underground decoration, index 9 is vegetation - the same slots the nether
+# uses for its ores and its mushrooms.
+GROWTH = {
+    "creaking_hollow": {7: ["resin_clump"], 9: ["gilded_vein_mat", "porcelain_bloom"]},
+    "pale_colonnade": {7: ["resin_clump"], 9: ["porcelain_bloom"]},
+    "amber_flats": {7: ["resin_clump"], 9: ["gilded_vein_mat"]},
+    "lantern_deeps": {7: ["resin_clump"], 9: ["gilded_vein_mat", "porcelain_bloom"]},
+}
+
+
+def feature_lists(name):
+    steps = [[] for _ in range(10)]
+    for index, names in GROWTH.get(name, {}).items():
+        steps[index] = [ours(n) for n in names]
+    return steps
+
+
 def write(path, obj):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as handle:
@@ -360,6 +494,11 @@ def main():
 
     write(os.path.join(OURS, "worldgen", "noise_settings", "creaking.json"),
           noise_settings(nether))
+    configured, placed = features()
+    for name, obj in configured.items():
+        write(os.path.join(OURS, "worldgen", "configured_feature", name + ".json"), obj)
+    for name, obj in placed.items():
+        write(os.path.join(OURS, "worldgen", "placed_feature", name + ".json"), obj)
     for name, spec in BIOMES.items():
         write(os.path.join(OURS, "worldgen", "biome", name + ".json"), biome(name, spec))
     write(os.path.join(OURS, "dimension", "creaking.json"), dimension())

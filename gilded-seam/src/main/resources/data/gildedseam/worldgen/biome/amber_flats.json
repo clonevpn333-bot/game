@@ -16,9 +16,13 @@
     [],
     [],
     [],
+    [
+      "gildedseam:resin_clump"
+    ],
     [],
-    [],
-    []
+    [
+      "gildedseam:gilded_vein_mat"
+    ]
   ],
   "spawners": {
     "monster": [
