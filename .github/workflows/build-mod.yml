@@ -308,10 +308,28 @@ jobs:
             echo "level-name=smoke"
             echo "sync-chunk-writes=false"
           } > run/server.properties
-          timeout 600 ./gradlew --no-daemon runServer > /tmp/server.log 2>&1
-          echo "--- gradle exit: $? (124 = timed out, expected: the server does not stop itself)"
+          # A Minecraft server does not stop by itself, so waiting on it always
+          # cost the full timeout - ten minutes per build to learn something
+          # the log states in the first thirty seconds. Start it, watch the
+          # log, and stop the moment it has answered: "Done (" means the world
+          # generated, and the process dying on its own means it did not.
+          ./gradlew --no-daemon runServer > /tmp/server.log 2>&1 &
+          gradle=$!
+          answer=""
+          for i in $(seq 1 120); do
+            if grep -q 'Done (' /tmp/server.log; then answer="generated"; break; fi
+            if grep -q "can't proceed with server load" /tmp/server.log; then
+              answer="datapack"; break
+            fi
+            kill -0 "$gradle" 2>/dev/null || { answer="died"; break; }
+            sleep 5
+          done
+          kill -TERM "$gradle" 2>/dev/null
+          pkill -f "net.minecraft" 2>/dev/null
+          wait "$gradle" 2>/dev/null
           echo "===== SERVER SMOKE TEST ====="
-          if grep -q 'Done (' /tmp/server.log; then
+          echo "--- verdict after $((i * 5))s: ${answer:-timed out}"
+          if [ "$answer" = "generated" ]; then
             echo "WORLD GENERATED OK"
             grep -m1 'Done (' /tmp/server.log
           else

@@ -1488,10 +1488,17 @@ def creaking_risen() -> Model:
     """
     parts = _creaking_torso(legs=True)
     for side, tag in ((-1, "r"), (1, "l")):
-        parts += chain(f"leg_{tag}", "root", (side * 9.0, -34.0, 0.0), 3,
-                       (13.0, 13.0, 13.0), "heartwood", taper=0.88,
+        # These have to *reach the floor*, which the first version did not: it
+        # hung them from y=-34, above the mass rather than below it, and three
+        # thirteen-unit links ran out eighteen units short of the ground. The
+        # legs were both floating and buried inside the tentacle canopy, which
+        # is why the standing version looked identical to the hanging one.
+        # Hung from the underside now, spread wide enough to be seen, and long
+        # enough to be standing on something.
+        parts += chain(f"leg_{tag}", "torso", (side * 17.0, 13.0, 2.0), 3,
+                       (15.0, 13.5, 15.0), "heartwood", taper=0.88,
                        curl=(-8 * D, 0, side * 6 * D),
-                       root_rot=(6 * D, 0, side * -7 * D))
+                       root_rot=(6 * D, 0, side * -11 * D))
         parts.append(Part(f"foot_{tag}", f"leg_{tag}_2", (0.0, 11.0, 0.0), (0, 0, 0),
                           [Box((-7, 0, -12), (14, 5, 20), "bark")]))
         # Roots spilling off each foot, gripping whatever it lands on.
