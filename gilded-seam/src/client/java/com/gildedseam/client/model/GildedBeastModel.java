@@ -1,10 +1,14 @@
 package com.gildedseam.client.model;
 
+import com.gildedseam.GildedSeam;
+import com.gildedseam.client.anim.gen.GenAnimations;
 import com.gildedseam.client.render.state.GildedBeastRenderState;
 import com.gildedseam.infection.SeamHelper;
 
 import java.util.Map;
 
+import net.minecraft.client.animation.AnimationDefinition;
+import net.minecraft.client.animation.KeyframeAnimation;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.util.Mth;
@@ -127,7 +131,14 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
     private final ModelPart[] mut2;
     private final ModelPart[] dangle;
 
-    public GildedBeastModel(ModelPart root, Config config) {
+    // Solved on the bench and baked here. Null means this creature has no
+    // generated animation of that kind, or baking it failed - see `bake`.
+    private final KeyframeAnimation idleAnim;
+    private final KeyframeAnimation walkAnim;
+    private final KeyframeAnimation runAnim;
+    private final KeyframeAnimation attackAnim;
+
+    public GildedBeastModel(ModelPart root, Config config, String name) {
         super(root);
         this.config = config;
         this.body = resolve(root, "body");
@@ -137,6 +148,37 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
         this.mut1 = resolveAll(root, config.mut1());
         this.mut2 = resolveAll(root, config.mut2());
         this.dangle = resolveAll(root, config.dangle());
+
+        GenAnimations gen = GenAnimations.of(name);
+        this.idleAnim = bake(root, gen == null ? null : gen.idle(), name);
+        this.walkAnim = bake(root, gen == null ? null : gen.walk(), name);
+        this.runAnim = bake(root, gen == null ? null : gen.run(), name);
+        this.attackAnim = bake(root, gen == null ? null : gen.attack(), name);
+    }
+
+    /**
+     * Bakes a generated animation onto this model's parts.
+     *
+     * <p>Baking resolves every bone the animation names against the model, and
+     * a name that is not there is fatal. That should not happen - the geometry
+     * and the animations are generated from the same bench model in the same
+     * run - but "should not" is not "cannot", and the failure would be a client
+     * crash on spawning a cow. A miss costs this creature its solved gait and
+     * drops it back to the procedural one below, which is what it had before
+     * any of this existed.
+     */
+    private static KeyframeAnimation bake(ModelPart root, AnimationDefinition definition,
+                                          String name) {
+        if (definition == null) {
+            return null;
+        }
+        try {
+            return definition.bake(root);
+        } catch (RuntimeException failed) {
+            GildedSeam.LOGGER.warn("{}: could not bake an animation onto the model, "
+                    + "falling back to the procedural gait", name, failed);
+            return null;
+        }
     }
 
     /** Missing parts resolve to null rather than throwing, so a geometry edit
@@ -181,6 +223,11 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
         float amp = this.config.gaitAmp();
         float age = state.ageInTicks;
         float gait = pos * freq;
+
+        if (this.walkAnim != null) {
+            solved(state, pos, speed, age);
+            return;
+        }
 
         // --- the gait ----------------------------------------------------
         // A plain sine reads as floaty. Adding the second harmonic makes the
@@ -276,6 +323,49 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
                     part.xRot -= lunge * 0.75F;
                 }
             }
+        }
+    }
+
+    /**
+     * The solved path: gaits, an idle and a swing that came off the bench.
+     *
+     * <p>The procedural gait below this is a sine wave through each leg from
+     * the shoulder. It has no knee in it - a leg cannot lift, only swing - and
+     * "run" is the same curve driven faster, which is why a charging cow looks
+     * like a walking cow on fast-forward. What replaces it is solved: an IK
+     * pass over limb lengths measured off this creature's own geometry, so the
+     * foot follows a real path and the joints bend to reach it, and the run is
+     * a separate gait with a suspension phase rather than the walk sped up.
+     *
+     * <p>Walk and run are driven by `applyWalk`, which takes the distance
+     * walked rather than a clock, so the cycle stays locked to the feet at any
+     * speed. The idle is driven the same way off `ageInTicks`, which is what
+     * makes it loop continuously while the creature is standing still.
+     */
+    private void solved(GildedBeastRenderState state, float pos, float speed, float age) {
+        // Under a third of full speed it is walking; above two thirds it is
+        // running; between, whichever is closer, so the changeover happens
+        // once rather than flickering back and forth on the boundary.
+        boolean running = this.runAnim != null && speed > 0.55F;
+        KeyframeAnimation moving = running ? this.runAnim : this.walkAnim;
+
+        if (speed > 0.02F) {
+            moving.applyWalk(pos, speed, running ? 3.6F : 5.4F, 2.6F);
+        } else if (this.idleAnim != null) {
+            // Standing. `applyWalk` off the clock rather than off distance,
+            // with a full amplitude, is a continuously looping idle.
+            this.idleAnim.applyWalk(age, 1.0F, 14.0F, 1.0F);
+        }
+
+        if (this.attackAnim != null) {
+            this.attackAnim.apply(state.attackAnimationState, age);
+        }
+
+        // Look-at is not animation - it is where the creature is pointing -
+        // so it is applied on top of whatever the gait just did.
+        if (this.head != null) {
+            this.head.yRot += state.yRot * Mth.DEG_TO_RAD;
+            this.head.xRot += state.xRot * Mth.DEG_TO_RAD;
         }
     }
 }

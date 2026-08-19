@@ -18,7 +18,7 @@ public class GildedBeastRenderer extends MobRenderer<GildedBeastEntity, GildedBe
     private final Identifier textureLustre;
 
     public GildedBeastRenderer(EntityRendererProvider.Context context, ModelLayerLocation layer, String name) {
-        super(context, new GildedBeastModel(context.bakeLayer(layer), GildedBeastModel.CONFIGS.get(name)), 0.5F);
+        super(context, new GildedBeastModel(context.bakeLayer(layer), GildedBeastModel.CONFIGS.get(name), name), 0.5F);
         this.texture = GildedSeam.id("textures/entity/" + name + ".png");
         this.textureStoneware = GildedSeam.id("textures/entity/" + name + "_stoneware.png");
         this.textureLustre = GildedSeam.id("textures/entity/" + name + "_lustre.png");
