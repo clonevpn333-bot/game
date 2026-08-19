@@ -96,8 +96,10 @@ public final class Unmaking {
         // actually reached. An anchor outside the front does nothing at all -
         // which is what stops a player finding a hole in the ground on their
         // first morning, a thousand blocks from anything they did.
+        // `true` here means "this site is finished", which is the right answer:
+        // an anchor the front has not reached is not paused, it is not a site.
         if (!Blightfront.allows(this.level, this.anchor)) {
-            return;
+            return true;
         }
         for (int i = 0; i < SAMPLES_PER_TICK; i++) {
             int dx = random.nextInt(RADIUS * 2 + 1) - RADIUS;

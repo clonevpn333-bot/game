@@ -205,6 +205,21 @@ jobs:
             p="data/minecraft/worldgen/configured_feature/$cand.json"
             unzip -l "$jar" | grep -q "$p" && { echo "--- $cand"; unzip -p "$jar" "$p"; break; }
           done
+          echo "===== where a level keeps its spawn point ====="
+          # `getSharedSpawnPos()` is gone in 26.2 and I am not guessing at the
+          # replacement. Print every spawn-shaped member on the three types
+          # that could own it.
+          ljar=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null \
+            | grep -iE "minecraft" | grep -viE "sources|javadoc" \
+            | xargs -I{} sh -c 'unzip -l {} 2>/dev/null | grep -q "net/minecraft/world/level/Level.class" && echo {}' \
+            | head -1)
+          for c in net.minecraft.world.level.Level \
+                   net.minecraft.server.level.ServerLevel \
+                   net.minecraft.world.level.storage.LevelData \
+                   net.minecraft.world.level.storage.WritableLevelData; do
+            echo "--- $c"
+            javap -p -cp "$ljar" "$c" 2>&1 | grep -iE "spawn|respawn" | head -12
+          done
           echo "===== a vanilla noise_settings, in full ====="
           # The creaking dimension borrows minecraft:nether and comes out
           # looking like nothing - generic stone, because the nether's surface
