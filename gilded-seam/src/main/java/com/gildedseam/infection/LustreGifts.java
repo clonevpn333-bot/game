@@ -86,7 +86,6 @@ public final class LustreGifts {
                 }
                 Vec3 at = target.position().subtract(mob.position()).normalize();
                 mob.setDeltaMovement(at.x * 1.5, 0.42, at.z * 1.5);
-                mob.hasImpulse = true;
                 boom(level, mob, SoundEvents.WOOD_HIT, 1.2F, 0.6F);
                 return BASE_COOLDOWN;
             }
@@ -142,8 +141,7 @@ public final class LustreGifts {
                     boom(level, mob, SoundEvents.FISHING_BOBBER_RETRIEVE, 1.1F, 0.7F);
                     mob.setDeltaMovement(mob.position().subtract(target.position())
                             .normalize().scale(0.9).add(0, 0.35, 0));
-                    mob.hasImpulse = true;
-                    return BASE_COOLDOWN + 200;
+                        return BASE_COOLDOWN + 200;
                 }
                 return 0;
             }
@@ -166,7 +164,6 @@ public final class LustreGifts {
                 }
                 Vec3 to = target.position().subtract(mob.position()).normalize();
                 mob.setDeltaMovement(to.x * 1.15, 0.72, to.z * 1.15);
-                mob.hasImpulse = true;
                 return 26;
             }
             case "gilded_spider" -> {

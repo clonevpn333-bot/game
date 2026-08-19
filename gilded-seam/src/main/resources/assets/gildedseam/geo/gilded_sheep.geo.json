@@ -22,6 +22,7 @@
       18.0,
       -8.0
      ],
+     "parent": "body",
      "cubes": [
       {
        "origin": [

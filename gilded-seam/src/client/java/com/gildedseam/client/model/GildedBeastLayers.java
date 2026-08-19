@@ -13,13 +13,54 @@ public final class GildedBeastLayers {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
 
-        PartDefinition head = root.addOrReplaceChild("head",
+        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
+                CubeListBuilder.create()
+                        .texOffs(0, 29).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 5.28F, 4.0F),
+                PartPose.offset(-4.0F, 12.0F, -5.0F));
+        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
+                CubeListBuilder.create()
+                        .texOffs(85, 29).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 4.56F, 3.6F),
+                PartPose.offset(0.0F, 5.28F, 0.0F));
+        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
+                CubeListBuilder.create()
+                        .texOffs(56, 39).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.16F, 4.6F),
+                PartPose.offset(0.0F, 4.56F, 0.0F));
+        PartDefinition legBr = root.addOrReplaceChild("leg_br",
+                CubeListBuilder.create()
+                        .texOffs(17, 29).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 4.8F, 4.0F),
+                PartPose.offset(-4.0F, 12.0F, 7.0F));
+        PartDefinition legBr1 = legBr.addOrReplaceChild("leg_br_1",
+                CubeListBuilder.create()
+                        .texOffs(100, 29).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 5.04F, 3.6F),
+                PartPose.offset(0.0F, 4.8F, 0.0F));
+        PartDefinition footBr = legBr1.addOrReplaceChild("foot_br",
+                CubeListBuilder.create()
+                        .texOffs(75, 39).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.16F, 4.6F),
+                PartPose.offset(0.0F, 5.04F, 0.0F));
+        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
+                CubeListBuilder.create()
+                        .texOffs(34, 29).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 4.8F, 4.0F),
+                PartPose.offset(4.0F, 12.0F, 7.0F));
+        PartDefinition legBl1 = legBl.addOrReplaceChild("leg_bl_1",
+                CubeListBuilder.create()
+                        .texOffs(0, 39).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 5.04F, 3.6F),
+                PartPose.offset(0.0F, 4.8F, 0.0F));
+        PartDefinition footBl = legBl1.addOrReplaceChild("foot_bl",
+                CubeListBuilder.create()
+                        .texOffs(94, 39).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.16F, 4.6F),
+                PartPose.offset(0.0F, 5.04F, 0.0F));
+        PartDefinition body = root.addOrReplaceChild("body",
+                CubeListBuilder.create()
+                        .texOffs(0, 0).addBox(-6.0F, -10.0F, -7.0F, 12.0F, 18.0F, 10.0F)
+                        .texOffs(49, 49).addBox(-2.0F, 2.0F, -8.0F, 4.0F, 6.0F, 1.0F),
+                PartPose.offsetAndRotation(0.0F, 5.0F, 2.0F, 1.571F, 0.0F, 0.0F));
+        PartDefinition head = body.addOrReplaceChild("head",
                 CubeListBuilder.create()
                         .texOffs(70, 0).addBox(-4.0F, -4.0F, -6.0F, 8.0F, 8.0F, 6.0F)
                         .texOffs(43, 64).addBox(-3.0F, 1.0F, -7.0F, 6.0F, 3.0F, 1.0F)
                         .texOffs(0, 70).addBox(-5.0F, -5.0F, -5.0F, 1.0F, 3.0F, 1.0F)
                         .texOffs(5, 70).addBox(4.0F, -5.0F, -5.0F, 1.0F, 3.0F, 1.0F),
-                PartPose.offset(0.0F, 4.0F, -8.0F));
+                PartPose.offset(0.0F, -1.0F, -10.0F));
         PartDefinition face = head.addOrReplaceChild("face",
                 CubeListBuilder.create(),
                 PartPose.offset(0.0F, 0.0F, 0.0F));
@@ -202,47 +243,6 @@ public final class GildedBeastLayers {
                         .texOffs(67, 70).addBox(-1.2091F, -1.2091F, -1.4993F, 2.4182F, 2.4182F, 1.4993F)
                         .texOffs(112, 64).addBox(-1.4993F, -1.4993F, -0.7255F, 2.9985F, 2.9985F, 0.9673F),
                 PartPose.offsetAndRotation(3.2F, 1.742F, -0.598F, 0.0F, 0.4538F, 0.2764F));
-        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
-                CubeListBuilder.create()
-                        .texOffs(0, 29).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 5.28F, 4.0F),
-                PartPose.offset(-4.0F, 12.0F, -5.0F));
-        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
-                CubeListBuilder.create()
-                        .texOffs(85, 29).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 4.56F, 3.6F),
-                PartPose.offset(0.0F, 5.28F, 0.0F));
-        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
-                CubeListBuilder.create()
-                        .texOffs(56, 39).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.16F, 4.6F),
-                PartPose.offset(0.0F, 4.56F, 0.0F));
-        PartDefinition legBr = root.addOrReplaceChild("leg_br",
-                CubeListBuilder.create()
-                        .texOffs(17, 29).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 4.8F, 4.0F),
-                PartPose.offset(-4.0F, 12.0F, 7.0F));
-        PartDefinition legBr1 = legBr.addOrReplaceChild("leg_br_1",
-                CubeListBuilder.create()
-                        .texOffs(100, 29).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 5.04F, 3.6F),
-                PartPose.offset(0.0F, 4.8F, 0.0F));
-        PartDefinition footBr = legBr1.addOrReplaceChild("foot_br",
-                CubeListBuilder.create()
-                        .texOffs(75, 39).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.16F, 4.6F),
-                PartPose.offset(0.0F, 5.04F, 0.0F));
-        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
-                CubeListBuilder.create()
-                        .texOffs(34, 29).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 4.8F, 4.0F),
-                PartPose.offset(4.0F, 12.0F, 7.0F));
-        PartDefinition legBl1 = legBl.addOrReplaceChild("leg_bl_1",
-                CubeListBuilder.create()
-                        .texOffs(0, 39).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 5.04F, 3.6F),
-                PartPose.offset(0.0F, 4.8F, 0.0F));
-        PartDefinition footBl = legBl1.addOrReplaceChild("foot_bl",
-                CubeListBuilder.create()
-                        .texOffs(94, 39).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.16F, 4.6F),
-                PartPose.offset(0.0F, 5.04F, 0.0F));
-        PartDefinition body = root.addOrReplaceChild("body",
-                CubeListBuilder.create()
-                        .texOffs(0, 0).addBox(-6.0F, -10.0F, -7.0F, 12.0F, 18.0F, 10.0F)
-                        .texOffs(49, 49).addBox(-2.0F, 2.0F, -8.0F, 4.0F, 6.0F, 1.0F),
-                PartPose.offsetAndRotation(0.0F, 5.0F, 2.0F, 1.571F, 0.0F, 0.0F));
         PartDefinition mut1Flank = body.addOrReplaceChild("mut1_flank",
                 CubeListBuilder.create()
                         .texOffs(45, 0).addBox(0.0F, -3.5F, -5.5F, 0.9F, 7.0F, 11.0F),
@@ -430,11 +430,51 @@ public final class GildedBeastLayers {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
 
-        PartDefinition head = root.addOrReplaceChild("head",
+        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
+                CubeListBuilder.create()
+                        .texOffs(0, 25).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 2.64F, 4.0F),
+                PartPose.offset(-3.0F, 18.0F, -5.0F));
+        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
+                CubeListBuilder.create()
+                        .texOffs(91, 33).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 2.28F, 3.6F),
+                PartPose.offset(0.0F, 2.64F, 0.0F));
+        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
+                CubeListBuilder.create()
+                        .texOffs(109, 25).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 1.08F, 4.6F),
+                PartPose.offset(0.0F, 2.28F, 0.0F));
+        PartDefinition legBr = root.addOrReplaceChild("leg_br",
+                CubeListBuilder.create()
+                        .texOffs(57, 33).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 2.4F, 4.0F),
+                PartPose.offset(-3.0F, 18.0F, 7.0F));
+        PartDefinition legBr1 = legBr.addOrReplaceChild("leg_br_1",
+                CubeListBuilder.create()
+                        .texOffs(34, 25).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 2.52F, 3.6F),
+                PartPose.offset(0.0F, 2.4F, 0.0F));
+        PartDefinition footBr = legBr1.addOrReplaceChild("foot_br",
+                CubeListBuilder.create()
+                        .texOffs(0, 33).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 1.08F, 4.6F),
+                PartPose.offset(0.0F, 2.52F, 0.0F));
+        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
+                CubeListBuilder.create()
+                        .texOffs(74, 33).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 2.4F, 4.0F),
+                PartPose.offset(3.0F, 18.0F, 7.0F));
+        PartDefinition legBl1 = legBl.addOrReplaceChild("leg_bl_1",
+                CubeListBuilder.create()
+                        .texOffs(49, 25).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 2.52F, 3.6F),
+                PartPose.offset(0.0F, 2.4F, 0.0F));
+        PartDefinition footBl = legBl1.addOrReplaceChild("foot_bl",
+                CubeListBuilder.create()
+                        .texOffs(19, 33).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 1.08F, 4.6F),
+                PartPose.offset(0.0F, 2.52F, 0.0F));
+        PartDefinition body = root.addOrReplaceChild("body",
+                CubeListBuilder.create()
+                        .texOffs(0, 0).addBox(-5.0F, -10.0F, -7.0F, 10.0F, 16.0F, 8.0F),
+                PartPose.offsetAndRotation(0.0F, 11.0F, 2.0F, 1.571F, 0.0F, 0.0F));
+        PartDefinition head = body.addOrReplaceChild("head",
                 CubeListBuilder.create()
                         .texOffs(37, 0).addBox(-4.0F, -4.0F, -8.0F, 8.0F, 8.0F, 8.0F)
                         .texOffs(71, 47).addBox(-2.0F, 0.0F, -9.0F, 4.0F, 3.0F, 1.0F),
-                PartPose.offset(0.0F, 12.0F, -6.0F));
+                PartPose.offset(0.0F, 1.0F, -8.0F));
         PartDefinition face = head.addOrReplaceChild("face",
                 CubeListBuilder.create(),
                 PartPose.offset(0.0F, 0.0F, 0.0F));
@@ -613,46 +653,6 @@ public final class GildedBeastLayers {
                         .texOffs(22, 47).addBox(-1.3655F, -1.3655F, -1.6932F, 2.731F, 2.731F, 1.6932F)
                         .texOffs(27, 53).addBox(-1.6932F, -1.6932F, -0.8193F, 3.3864F, 3.3864F, 1.0924F),
                 PartPose.offsetAndRotation(3.0F, -0.4089F, -0.4426F, 0.0F, 0.4538F, -0.0595F));
-        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
-                CubeListBuilder.create()
-                        .texOffs(0, 25).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 2.64F, 4.0F),
-                PartPose.offset(-3.0F, 18.0F, -5.0F));
-        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
-                CubeListBuilder.create()
-                        .texOffs(91, 33).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 2.28F, 3.6F),
-                PartPose.offset(0.0F, 2.64F, 0.0F));
-        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
-                CubeListBuilder.create()
-                        .texOffs(109, 25).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 1.08F, 4.6F),
-                PartPose.offset(0.0F, 2.28F, 0.0F));
-        PartDefinition legBr = root.addOrReplaceChild("leg_br",
-                CubeListBuilder.create()
-                        .texOffs(57, 33).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 2.4F, 4.0F),
-                PartPose.offset(-3.0F, 18.0F, 7.0F));
-        PartDefinition legBr1 = legBr.addOrReplaceChild("leg_br_1",
-                CubeListBuilder.create()
-                        .texOffs(34, 25).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 2.52F, 3.6F),
-                PartPose.offset(0.0F, 2.4F, 0.0F));
-        PartDefinition footBr = legBr1.addOrReplaceChild("foot_br",
-                CubeListBuilder.create()
-                        .texOffs(0, 33).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 1.08F, 4.6F),
-                PartPose.offset(0.0F, 2.52F, 0.0F));
-        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
-                CubeListBuilder.create()
-                        .texOffs(74, 33).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 2.4F, 4.0F),
-                PartPose.offset(3.0F, 18.0F, 7.0F));
-        PartDefinition legBl1 = legBl.addOrReplaceChild("leg_bl_1",
-                CubeListBuilder.create()
-                        .texOffs(49, 25).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 2.52F, 3.6F),
-                PartPose.offset(0.0F, 2.4F, 0.0F));
-        PartDefinition footBl = legBl1.addOrReplaceChild("foot_bl",
-                CubeListBuilder.create()
-                        .texOffs(19, 33).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 1.08F, 4.6F),
-                PartPose.offset(0.0F, 2.52F, 0.0F));
-        PartDefinition body = root.addOrReplaceChild("body",
-                CubeListBuilder.create()
-                        .texOffs(0, 0).addBox(-5.0F, -10.0F, -7.0F, 10.0F, 16.0F, 8.0F),
-                PartPose.offsetAndRotation(0.0F, 11.0F, 2.0F, 1.571F, 0.0F, 0.0F));
         PartDefinition mut1Belly = body.addOrReplaceChild("mut1_belly",
                 CubeListBuilder.create()
                         .texOffs(70, 0).addBox(-0.9F, -2.5F, -5.0F, 0.9F, 5.0F, 10.0F),
@@ -781,10 +781,50 @@ public final class GildedBeastLayers {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
 
-        PartDefinition head = root.addOrReplaceChild("head",
+        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
+                CubeListBuilder.create()
+                        .texOffs(0, 23).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 5.28F, 4.0F),
+                PartPose.offset(-3.0F, 12.0F, -5.0F));
+        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
+                CubeListBuilder.create()
+                        .texOffs(68, 23).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 4.56F, 3.6F),
+                PartPose.offset(0.0F, 5.28F, 0.0F));
+        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
+                CubeListBuilder.create()
+                        .texOffs(18, 33).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.16F, 4.6F),
+                PartPose.offset(0.0F, 4.56F, 0.0F));
+        PartDefinition legBr = root.addOrReplaceChild("leg_br",
+                CubeListBuilder.create()
+                        .texOffs(17, 23).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 4.8F, 4.0F),
+                PartPose.offset(-3.0F, 12.0F, 7.0F));
+        PartDefinition legBr1 = legBr.addOrReplaceChild("leg_br_1",
+                CubeListBuilder.create()
+                        .texOffs(83, 23).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 5.04F, 3.6F),
+                PartPose.offset(0.0F, 4.8F, 0.0F));
+        PartDefinition footBr = legBr1.addOrReplaceChild("foot_br",
+                CubeListBuilder.create()
+                        .texOffs(37, 33).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.16F, 4.6F),
+                PartPose.offset(0.0F, 5.04F, 0.0F));
+        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
+                CubeListBuilder.create()
+                        .texOffs(34, 23).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 4.8F, 4.0F),
+                PartPose.offset(3.0F, 12.0F, 7.0F));
+        PartDefinition legBl1 = legBl.addOrReplaceChild("leg_bl_1",
+                CubeListBuilder.create()
+                        .texOffs(98, 23).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 5.04F, 3.6F),
+                PartPose.offset(0.0F, 4.8F, 0.0F));
+        PartDefinition footBl = legBl1.addOrReplaceChild("foot_bl",
+                CubeListBuilder.create()
+                        .texOffs(56, 33).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.16F, 4.6F),
+                PartPose.offset(0.0F, 5.04F, 0.0F));
+        PartDefinition body = root.addOrReplaceChild("body",
+                CubeListBuilder.create()
+                        .texOffs(0, 0).addBox(-4.0F, -10.0F, -7.0F, 8.0F, 16.0F, 6.0F),
+                PartPose.offsetAndRotation(0.0F, 5.0F, 2.0F, 1.571F, 0.0F, 0.0F));
+        PartDefinition head = body.addOrReplaceChild("head",
                 CubeListBuilder.create()
                         .texOffs(58, 0).addBox(-3.0F, -4.0F, -6.0F, 6.0F, 6.0F, 8.0F),
-                PartPose.offset(0.0F, 6.0F, -8.0F));
+                PartPose.offset(0.0F, 1.0F, -10.0F));
         PartDefinition face = head.addOrReplaceChild("face",
                 CubeListBuilder.create(),
                 PartPose.offset(0.0F, 0.0F, 0.0F));
@@ -943,46 +983,6 @@ public final class GildedBeastLayers {
                         .texOffs(14, 60).addBox(-1.0364F, -1.0364F, -1.2851F, 2.0727F, 2.0727F, 1.2851F)
                         .texOffs(45, 55).addBox(-1.2851F, -1.2851F, -0.6218F, 2.5702F, 2.5702F, 0.8291F),
                 PartPose.offsetAndRotation(2.4F, 1.5837F, -0.598F, 0.0F, 0.4538F, 0.2764F));
-        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
-                CubeListBuilder.create()
-                        .texOffs(0, 23).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 5.28F, 4.0F),
-                PartPose.offset(-3.0F, 12.0F, -5.0F));
-        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
-                CubeListBuilder.create()
-                        .texOffs(68, 23).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 4.56F, 3.6F),
-                PartPose.offset(0.0F, 5.28F, 0.0F));
-        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
-                CubeListBuilder.create()
-                        .texOffs(18, 33).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.16F, 4.6F),
-                PartPose.offset(0.0F, 4.56F, 0.0F));
-        PartDefinition legBr = root.addOrReplaceChild("leg_br",
-                CubeListBuilder.create()
-                        .texOffs(17, 23).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 4.8F, 4.0F),
-                PartPose.offset(-3.0F, 12.0F, 7.0F));
-        PartDefinition legBr1 = legBr.addOrReplaceChild("leg_br_1",
-                CubeListBuilder.create()
-                        .texOffs(83, 23).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 5.04F, 3.6F),
-                PartPose.offset(0.0F, 4.8F, 0.0F));
-        PartDefinition footBr = legBr1.addOrReplaceChild("foot_br",
-                CubeListBuilder.create()
-                        .texOffs(37, 33).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.16F, 4.6F),
-                PartPose.offset(0.0F, 5.04F, 0.0F));
-        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
-                CubeListBuilder.create()
-                        .texOffs(34, 23).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 4.8F, 4.0F),
-                PartPose.offset(3.0F, 12.0F, 7.0F));
-        PartDefinition legBl1 = legBl.addOrReplaceChild("leg_bl_1",
-                CubeListBuilder.create()
-                        .texOffs(98, 23).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 5.04F, 3.6F),
-                PartPose.offset(0.0F, 4.8F, 0.0F));
-        PartDefinition footBl = legBl1.addOrReplaceChild("foot_bl",
-                CubeListBuilder.create()
-                        .texOffs(56, 33).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.16F, 4.6F),
-                PartPose.offset(0.0F, 5.04F, 0.0F));
-        PartDefinition body = root.addOrReplaceChild("body",
-                CubeListBuilder.create()
-                        .texOffs(0, 0).addBox(-4.0F, -10.0F, -7.0F, 8.0F, 16.0F, 6.0F),
-                PartPose.offsetAndRotation(0.0F, 5.0F, 2.0F, 1.571F, 0.0F, 0.0F));
         PartDefinition mut1Shorn = body.addOrReplaceChild("mut1_shorn",
                 CubeListBuilder.create()
                         .texOffs(29, 0).addBox(0.0F, -2.5F, -6.5F, 0.9F, 5.0F, 13.0F),
@@ -1199,10 +1199,74 @@ public final class GildedBeastLayers {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
 
-        PartDefinition head = root.addOrReplaceChild("head",
+        PartDefinition legL = root.addOrReplaceChild("leg_l",
+                CubeListBuilder.create()
+                        .texOffs(44, 15).addBox(-1.0F, 0.0F, -3.0F, 3.0F, 2.2F, 3.0F),
+                PartPose.offset(1.0F, 19.0F, 1.0F));
+        PartDefinition legL1 = legL.addOrReplaceChild("leg_l_1",
+                CubeListBuilder.create()
+                        .texOffs(83, 15).addBox(-0.65F, 0.0F, -2.8F, 2.3F, 1.9F, 2.6F),
+                PartPose.offset(0.0F, 2.2F, 0.0F));
+        PartDefinition footL = legL1.addOrReplaceChild("foot_l",
+                CubeListBuilder.create()
+                        .texOffs(14, 15).addBox(-1.0F, 0.0F, -3.4F, 3.0F, 0.9F, 3.6F),
+                PartPose.offset(0.0F, 1.9F, 0.0F));
+        PartDefinition legR = root.addOrReplaceChild("leg_r",
+                CubeListBuilder.create()
+                        .texOffs(57, 15).addBox(-1.0F, 0.0F, -3.0F, 3.0F, 2.2F, 3.0F),
+                PartPose.offset(-2.0F, 19.0F, 1.0F));
+        PartDefinition legR1 = legR.addOrReplaceChild("leg_r_1",
+                CubeListBuilder.create()
+                        .texOffs(94, 15).addBox(-0.65F, 0.0F, -2.8F, 2.3F, 1.9F, 2.6F),
+                PartPose.offset(0.0F, 2.2F, 0.0F));
+        PartDefinition footR = legR1.addOrReplaceChild("foot_r",
+                CubeListBuilder.create()
+                        .texOffs(29, 15).addBox(-1.0F, 0.0F, -3.4F, 3.0F, 0.9F, 3.6F),
+                PartPose.offset(0.0F, 1.9F, 0.0F));
+        PartDefinition rightWing = root.addOrReplaceChild("right_wing",
+                CubeListBuilder.create()
+                        .texOffs(40, 0).addBox(0.0F, 0.0F, -3.0F, 1.0F, 4.0F, 6.0F),
+                PartPose.offset(-4.0F, 13.0F, 0.0F));
+        PartDefinition mut2Pinion = rightWing.addOrReplaceChild("mut2_pinion",
+                CubeListBuilder.create()
+                        .texOffs(85, 0).addBox(0.0F, -1.5F, -3.0F, 0.9F, 3.0F, 6.0F),
+                PartPose.offset(-0.8F, 2.5F, 2.0F));
+        PartDefinition mut2PinionRib0 = mut2Pinion.addOrReplaceChild("mut2_pinion_rib0",
+                CubeListBuilder.create()
+                        .texOffs(33, 28).addBox(-0.55F, 0.0F, -0.6F, 0.9F, 2.76F, 1.2F),
+                PartPose.offsetAndRotation(-0.35F, -1.26F, -2.4F, 0.0F, 0.0F, -0.2443F));
+        PartDefinition mut2PinionRib1 = mut2Pinion.addOrReplaceChild("mut2_pinion_rib1",
+                CubeListBuilder.create()
+                        .texOffs(121, 28).addBox(-0.55F, 0.0F, -0.6F, 0.9F, 2.42F, 1.2F),
+                PartPose.offsetAndRotation(-0.35F, -1.26F, -0.8F, 0.0F, 0.0F, -0.4189F));
+        PartDefinition mut2PinionRib2 = mut2Pinion.addOrReplaceChild("mut2_pinion_rib2",
+                CubeListBuilder.create()
+                        .texOffs(0, 33).addBox(-0.55F, 0.0F, -0.6F, 0.9F, 2.08F, 1.2F),
+                PartPose.offsetAndRotation(-0.35F, -1.26F, 0.8F, 0.0F, 0.0F, -0.5934F));
+        PartDefinition mut2PinionRib3 = mut2Pinion.addOrReplaceChild("mut2_pinion_rib3",
+                CubeListBuilder.create()
+                        .texOffs(5, 33).addBox(-0.55F, 0.0F, -0.6F, 0.9F, 1.74F, 1.2F),
+                PartPose.offsetAndRotation(-0.35F, -1.26F, 2.4F, 0.0F, 0.0F, -0.7679F));
+        PartDefinition mut2PinionPelt = mut2Pinion.addOrReplaceChild("mut2_pinion_pelt",
+                CubeListBuilder.create()
+                        .texOffs(111, 0).addBox(-1.1F, 0.0F, -1.8F, 1.2F, 2.16F, 3.6F),
+                PartPose.offsetAndRotation(-0.5F, 1.32F, 0.72F, 0.0F, 0.0F, -0.5934F));
+        PartDefinition mut2PinionPelt2 = mut2PinionPelt.addOrReplaceChild("mut2_pinion_pelt2",
+                CubeListBuilder.create()
+                        .texOffs(59, 28).addBox(-0.9F, 0.0F, -1.2F, 1.0F, 1.26F, 2.4F),
+                PartPose.offsetAndRotation(0.0F, 2.1F, 0.0F, 0.0F, 0.0F, -0.3491F));
+        PartDefinition leftWing = root.addOrReplaceChild("left_wing",
+                CubeListBuilder.create()
+                        .texOffs(55, 0).addBox(-1.0F, 0.0F, -3.0F, 1.0F, 4.0F, 6.0F),
+                PartPose.offset(4.0F, 13.0F, 0.0F));
+        PartDefinition body = root.addOrReplaceChild("body",
+                CubeListBuilder.create()
+                        .texOffs(0, 0).addBox(-3.0F, -4.0F, -3.0F, 6.0F, 8.0F, 6.0F),
+                PartPose.offsetAndRotation(0.0F, 16.0F, 0.0F, 1.571F, 0.0F, 0.0F));
+        PartDefinition head = body.addOrReplaceChild("head",
                 CubeListBuilder.create()
                         .texOffs(70, 0).addBox(-2.0F, -6.0F, -2.0F, 4.0F, 6.0F, 3.0F),
-                PartPose.offset(0.0F, 15.0F, -4.0F));
+                PartPose.offset(0.0F, -1.0F, -4.0F));
         PartDefinition beak = head.addOrReplaceChild("beak",
                 CubeListBuilder.create()
                         .texOffs(48, 22).addBox(-2.0F, -4.0F, -4.0F, 4.0F, 2.0F, 2.0F),
@@ -1363,70 +1427,6 @@ public final class GildedBeastLayers {
                         .texOffs(94, 28).addBox(-1.0874F, -1.0874F, -1.3484F, 2.1748F, 2.1748F, 1.3484F)
                         .texOffs(0, 28).addBox(-1.3484F, -1.3484F, -0.6524F, 2.6967F, 2.6967F, 0.8699F),
                 PartPose.offsetAndRotation(1.6F, -1.3949F, -0.6491F, 0.0F, 0.4538F, -0.3478F));
-        PartDefinition legL = root.addOrReplaceChild("leg_l",
-                CubeListBuilder.create()
-                        .texOffs(44, 15).addBox(-1.0F, 0.0F, -3.0F, 3.0F, 2.2F, 3.0F),
-                PartPose.offset(1.0F, 19.0F, 1.0F));
-        PartDefinition legL1 = legL.addOrReplaceChild("leg_l_1",
-                CubeListBuilder.create()
-                        .texOffs(83, 15).addBox(-0.65F, 0.0F, -2.8F, 2.3F, 1.9F, 2.6F),
-                PartPose.offset(0.0F, 2.2F, 0.0F));
-        PartDefinition footL = legL1.addOrReplaceChild("foot_l",
-                CubeListBuilder.create()
-                        .texOffs(14, 15).addBox(-1.0F, 0.0F, -3.4F, 3.0F, 0.9F, 3.6F),
-                PartPose.offset(0.0F, 1.9F, 0.0F));
-        PartDefinition legR = root.addOrReplaceChild("leg_r",
-                CubeListBuilder.create()
-                        .texOffs(57, 15).addBox(-1.0F, 0.0F, -3.0F, 3.0F, 2.2F, 3.0F),
-                PartPose.offset(-2.0F, 19.0F, 1.0F));
-        PartDefinition legR1 = legR.addOrReplaceChild("leg_r_1",
-                CubeListBuilder.create()
-                        .texOffs(94, 15).addBox(-0.65F, 0.0F, -2.8F, 2.3F, 1.9F, 2.6F),
-                PartPose.offset(0.0F, 2.2F, 0.0F));
-        PartDefinition footR = legR1.addOrReplaceChild("foot_r",
-                CubeListBuilder.create()
-                        .texOffs(29, 15).addBox(-1.0F, 0.0F, -3.4F, 3.0F, 0.9F, 3.6F),
-                PartPose.offset(0.0F, 1.9F, 0.0F));
-        PartDefinition rightWing = root.addOrReplaceChild("right_wing",
-                CubeListBuilder.create()
-                        .texOffs(40, 0).addBox(0.0F, 0.0F, -3.0F, 1.0F, 4.0F, 6.0F),
-                PartPose.offset(-4.0F, 13.0F, 0.0F));
-        PartDefinition mut2Pinion = rightWing.addOrReplaceChild("mut2_pinion",
-                CubeListBuilder.create()
-                        .texOffs(85, 0).addBox(0.0F, -1.5F, -3.0F, 0.9F, 3.0F, 6.0F),
-                PartPose.offset(-0.8F, 2.5F, 2.0F));
-        PartDefinition mut2PinionRib0 = mut2Pinion.addOrReplaceChild("mut2_pinion_rib0",
-                CubeListBuilder.create()
-                        .texOffs(33, 28).addBox(-0.55F, 0.0F, -0.6F, 0.9F, 2.76F, 1.2F),
-                PartPose.offsetAndRotation(-0.35F, -1.26F, -2.4F, 0.0F, 0.0F, -0.2443F));
-        PartDefinition mut2PinionRib1 = mut2Pinion.addOrReplaceChild("mut2_pinion_rib1",
-                CubeListBuilder.create()
-                        .texOffs(121, 28).addBox(-0.55F, 0.0F, -0.6F, 0.9F, 2.42F, 1.2F),
-                PartPose.offsetAndRotation(-0.35F, -1.26F, -0.8F, 0.0F, 0.0F, -0.4189F));
-        PartDefinition mut2PinionRib2 = mut2Pinion.addOrReplaceChild("mut2_pinion_rib2",
-                CubeListBuilder.create()
-                        .texOffs(0, 33).addBox(-0.55F, 0.0F, -0.6F, 0.9F, 2.08F, 1.2F),
-                PartPose.offsetAndRotation(-0.35F, -1.26F, 0.8F, 0.0F, 0.0F, -0.5934F));
-        PartDefinition mut2PinionRib3 = mut2Pinion.addOrReplaceChild("mut2_pinion_rib3",
-                CubeListBuilder.create()
-                        .texOffs(5, 33).addBox(-0.55F, 0.0F, -0.6F, 0.9F, 1.74F, 1.2F),
-                PartPose.offsetAndRotation(-0.35F, -1.26F, 2.4F, 0.0F, 0.0F, -0.7679F));
-        PartDefinition mut2PinionPelt = mut2Pinion.addOrReplaceChild("mut2_pinion_pelt",
-                CubeListBuilder.create()
-                        .texOffs(111, 0).addBox(-1.1F, 0.0F, -1.8F, 1.2F, 2.16F, 3.6F),
-                PartPose.offsetAndRotation(-0.5F, 1.32F, 0.72F, 0.0F, 0.0F, -0.5934F));
-        PartDefinition mut2PinionPelt2 = mut2PinionPelt.addOrReplaceChild("mut2_pinion_pelt2",
-                CubeListBuilder.create()
-                        .texOffs(59, 28).addBox(-0.9F, 0.0F, -1.2F, 1.0F, 1.26F, 2.4F),
-                PartPose.offsetAndRotation(0.0F, 2.1F, 0.0F, 0.0F, 0.0F, -0.3491F));
-        PartDefinition leftWing = root.addOrReplaceChild("left_wing",
-                CubeListBuilder.create()
-                        .texOffs(55, 0).addBox(-1.0F, 0.0F, -3.0F, 1.0F, 4.0F, 6.0F),
-                PartPose.offset(4.0F, 13.0F, 0.0F));
-        PartDefinition body = root.addOrReplaceChild("body",
-                CubeListBuilder.create()
-                        .texOffs(0, 0).addBox(-3.0F, -4.0F, -3.0F, 6.0F, 8.0F, 6.0F),
-                PartPose.offsetAndRotation(0.0F, 16.0F, 0.0F, 1.571F, 0.0F, 0.0F));
         PartDefinition mut1Breast = body.addOrReplaceChild("mut1_breast",
                 CubeListBuilder.create()
                         .texOffs(25, 0).addBox(-0.9F, -2.5F, -3.0F, 0.9F, 5.0F, 6.0F),
@@ -1934,10 +1934,50 @@ public final class GildedBeastLayers {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
 
-        PartDefinition head = root.addOrReplaceChild("head",
+        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
+                CubeListBuilder.create()
+                        .texOffs(47, 17).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 2.64F, 4.0F),
+                PartPose.offset(-2.0F, 18.0F, -4.0F));
+        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
+                CubeListBuilder.create()
+                        .texOffs(17, 36).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 2.28F, 3.6F),
+                PartPose.offset(0.0F, 2.64F, 0.0F));
+        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
+                CubeListBuilder.create()
+                        .texOffs(36, 28).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 1.08F, 4.6F),
+                PartPose.offset(0.0F, 2.28F, 0.0F));
+        PartDefinition legBr = root.addOrReplaceChild("leg_br",
+                CubeListBuilder.create()
+                        .texOffs(112, 28).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 2.4F, 4.0F),
+                PartPose.offset(-2.0F, 18.0F, 4.0F));
+        PartDefinition legBr1 = legBr.addOrReplaceChild("leg_br_1",
+                CubeListBuilder.create()
+                        .texOffs(81, 17).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 2.52F, 3.6F),
+                PartPose.offset(0.0F, 2.4F, 0.0F));
+        PartDefinition footBr = legBr1.addOrReplaceChild("foot_br",
+                CubeListBuilder.create()
+                        .texOffs(55, 28).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 1.08F, 4.6F),
+                PartPose.offset(0.0F, 2.52F, 0.0F));
+        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
+                CubeListBuilder.create()
+                        .texOffs(0, 36).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 2.4F, 4.0F),
+                PartPose.offset(2.0F, 18.0F, 4.0F));
+        PartDefinition legBl1 = legBl.addOrReplaceChild("leg_bl_1",
+                CubeListBuilder.create()
+                        .texOffs(96, 17).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 2.52F, 3.6F),
+                PartPose.offset(0.0F, 2.4F, 0.0F));
+        PartDefinition footBl = legBl1.addOrReplaceChild("foot_bl",
+                CubeListBuilder.create()
+                        .texOffs(74, 28).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 1.08F, 4.6F),
+                PartPose.offset(0.0F, 2.52F, 0.0F));
+        PartDefinition body = root.addOrReplaceChild("body",
+                CubeListBuilder.create()
+                        .texOffs(33, 0).addBox(-4.0F, 0.0F, -2.0F, 8.0F, 12.0F, 4.0F),
+                PartPose.offset(0.0F, 6.0F, 0.0F));
+        PartDefinition head = body.addOrReplaceChild("head",
                 CubeListBuilder.create()
                         .texOffs(0, 0).addBox(-4.0F, -8.0F, -4.0F, 8.0F, 8.0F, 8.0F),
-                PartPose.offset(0.0F, 6.0F, 0.0F));
+                PartPose.offset(0.0F, 0.0F, 0.0F));
         PartDefinition face = head.addOrReplaceChild("face",
                 CubeListBuilder.create(),
                 PartPose.offset(0.0F, 0.0F, 0.0F));
@@ -2076,46 +2116,6 @@ public final class GildedBeastLayers {
                         .texOffs(86, 49).addBox(-1.1227F, -1.1227F, -1.3922F, 2.2454F, 2.2454F, 1.3922F)
                         .texOffs(18, 49).addBox(-1.3922F, -1.3922F, -0.6736F, 2.7843F, 2.7843F, 0.8982F),
                 PartPose.offsetAndRotation(3.0F, 2.3755F, -0.598F, 0.0F, 0.4538F, 0.2764F));
-        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
-                CubeListBuilder.create()
-                        .texOffs(47, 17).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 2.64F, 4.0F),
-                PartPose.offset(-2.0F, 18.0F, -4.0F));
-        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
-                CubeListBuilder.create()
-                        .texOffs(17, 36).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 2.28F, 3.6F),
-                PartPose.offset(0.0F, 2.64F, 0.0F));
-        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
-                CubeListBuilder.create()
-                        .texOffs(36, 28).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 1.08F, 4.6F),
-                PartPose.offset(0.0F, 2.28F, 0.0F));
-        PartDefinition legBr = root.addOrReplaceChild("leg_br",
-                CubeListBuilder.create()
-                        .texOffs(112, 28).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 2.4F, 4.0F),
-                PartPose.offset(-2.0F, 18.0F, 4.0F));
-        PartDefinition legBr1 = legBr.addOrReplaceChild("leg_br_1",
-                CubeListBuilder.create()
-                        .texOffs(81, 17).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 2.52F, 3.6F),
-                PartPose.offset(0.0F, 2.4F, 0.0F));
-        PartDefinition footBr = legBr1.addOrReplaceChild("foot_br",
-                CubeListBuilder.create()
-                        .texOffs(55, 28).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 1.08F, 4.6F),
-                PartPose.offset(0.0F, 2.52F, 0.0F));
-        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
-                CubeListBuilder.create()
-                        .texOffs(0, 36).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 2.4F, 4.0F),
-                PartPose.offset(2.0F, 18.0F, 4.0F));
-        PartDefinition legBl1 = legBl.addOrReplaceChild("leg_bl_1",
-                CubeListBuilder.create()
-                        .texOffs(96, 17).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 2.52F, 3.6F),
-                PartPose.offset(0.0F, 2.4F, 0.0F));
-        PartDefinition footBl = legBl1.addOrReplaceChild("foot_bl",
-                CubeListBuilder.create()
-                        .texOffs(74, 28).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 1.08F, 4.6F),
-                PartPose.offset(0.0F, 2.52F, 0.0F));
-        PartDefinition body = root.addOrReplaceChild("body",
-                CubeListBuilder.create()
-                        .texOffs(33, 0).addBox(-4.0F, 0.0F, -2.0F, 8.0F, 12.0F, 4.0F),
-                PartPose.offset(0.0F, 6.0F, 0.0F));
         PartDefinition mut1Cask = body.addOrReplaceChild("mut1_cask",
                 CubeListBuilder.create()
                         .texOffs(79, 0).addBox(-3.0F, -4.0F, -1.04F, 6.0F, 8.0F, 2.6F),
@@ -2746,12 +2746,53 @@ public final class GildedBeastLayers {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
 
-        PartDefinition head = root.addOrReplaceChild("head",
+        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
+                CubeListBuilder.create()
+                        .texOffs(76, 28).addBox(0.0F, 0.0F, 0.0F, 3.0F, 4.4F, 3.0F),
+                PartPose.offset(-3.0F, 14.0F, -6.0F));
+        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
+                CubeListBuilder.create()
+                        .texOffs(102, 28).addBox(0.35F, 0.0F, 0.2F, 2.3F, 3.8F, 2.6F),
+                PartPose.offset(0.0F, 4.4F, 0.0F));
+        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
+                CubeListBuilder.create()
+                        .texOffs(0, 43).addBox(0.0F, 0.0F, -0.4F, 3.0F, 1.8F, 3.6F),
+                PartPose.offset(0.0F, 3.8F, 0.0F));
+        PartDefinition legBr = root.addOrReplaceChild("leg_br",
+                CubeListBuilder.create()
+                        .texOffs(30, 50).addBox(0.0F, 4.0F, 0.0F, 3.0F, 2.4F, 3.0F),
+                PartPose.offset(-3.0F, 14.0F, 4.0F));
+        PartDefinition legBr1 = legBr.addOrReplaceChild("leg_br_1",
+                CubeListBuilder.create()
+                        .texOffs(43, 43).addBox(0.35F, 0.0F, 0.2F, 2.3F, 2.52F, 2.6F),
+                PartPose.offset(0.0F, 2.4F, 0.0F));
+        PartDefinition footBr = legBr1.addOrReplaceChild("foot_br",
+                CubeListBuilder.create()
+                        .texOffs(0, 50).addBox(0.0F, 0.0F, -0.4F, 3.0F, 1.08F, 3.6F),
+                PartPose.offset(0.0F, 2.52F, 0.0F));
+        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
+                CubeListBuilder.create()
+                        .texOffs(43, 50).addBox(0.0F, 4.0F, 0.0F, 3.0F, 2.4F, 3.0F),
+                PartPose.offset(1.0F, 14.0F, 4.0F));
+        PartDefinition legBl1 = legBl.addOrReplaceChild("leg_bl_1",
+                CubeListBuilder.create()
+                        .texOffs(54, 43).addBox(0.35F, 0.0F, 0.2F, 2.3F, 2.52F, 2.6F),
+                PartPose.offset(0.0F, 2.4F, 0.0F));
+        PartDefinition footBl = legBl1.addOrReplaceChild("foot_bl",
+                CubeListBuilder.create()
+                        .texOffs(15, 50).addBox(0.0F, 0.0F, -0.4F, 3.0F, 1.08F, 3.6F),
+                PartPose.offset(0.0F, 2.52F, 0.0F));
+        PartDefinition body = root.addOrReplaceChild("body",
+                CubeListBuilder.create()
+                        .texOffs(0, 0).addBox(-4.0F, -17.0F, -7.0F, 9.0F, 11.0F, 16.0F)
+                        .texOffs(51, 0).addBox(-5.0F, -18.0F, -8.0F, 11.0F, 14.0F, 11.0F),
+                PartPose.offset(0.0F, 24.0F, 0.0F));
+        PartDefinition head = body.addOrReplaceChild("head",
                 CubeListBuilder.create()
                         .texOffs(75, 62).addBox(-6.0F, -11.0F, -10.0F, 3.0F, 2.0F, 1.0F)
                         .texOffs(84, 62).addBox(2.0F, -11.0F, -10.0F, 3.0F, 2.0F, 1.0F)
                         .texOffs(19, 28).addBox(-0.5F, -3.0F, -14.0F, 0.6F, 7.0F, 5.0F),
-                PartPose.offset(1.0F, 14.0F, 0.0F));
+                PartPose.offset(1.0F, -10.0F, 0.0F));
         PartDefinition nose = head.addOrReplaceChild("nose",
                 CubeListBuilder.create()
                         .texOffs(96, 0).addBox(-3.0F, -4.0F, -8.0F, 5.0F, 7.0F, 10.0F),
@@ -3030,47 +3071,6 @@ public final class GildedBeastLayers {
                 CubeListBuilder.create()
                         .texOffs(104, 56).addBox(-1.2F, -2.4F, -1.2F, 2.4F, 2.4F, 2.4F),
                 PartPose.offset(0.0F, -3.2F, 0.0F));
-        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
-                CubeListBuilder.create()
-                        .texOffs(76, 28).addBox(0.0F, 0.0F, 0.0F, 3.0F, 4.4F, 3.0F),
-                PartPose.offset(-3.0F, 14.0F, -6.0F));
-        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
-                CubeListBuilder.create()
-                        .texOffs(102, 28).addBox(0.35F, 0.0F, 0.2F, 2.3F, 3.8F, 2.6F),
-                PartPose.offset(0.0F, 4.4F, 0.0F));
-        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
-                CubeListBuilder.create()
-                        .texOffs(0, 43).addBox(0.0F, 0.0F, -0.4F, 3.0F, 1.8F, 3.6F),
-                PartPose.offset(0.0F, 3.8F, 0.0F));
-        PartDefinition legBr = root.addOrReplaceChild("leg_br",
-                CubeListBuilder.create()
-                        .texOffs(30, 50).addBox(0.0F, 4.0F, 0.0F, 3.0F, 2.4F, 3.0F),
-                PartPose.offset(-3.0F, 14.0F, 4.0F));
-        PartDefinition legBr1 = legBr.addOrReplaceChild("leg_br_1",
-                CubeListBuilder.create()
-                        .texOffs(43, 43).addBox(0.35F, 0.0F, 0.2F, 2.3F, 2.52F, 2.6F),
-                PartPose.offset(0.0F, 2.4F, 0.0F));
-        PartDefinition footBr = legBr1.addOrReplaceChild("foot_br",
-                CubeListBuilder.create()
-                        .texOffs(0, 50).addBox(0.0F, 0.0F, -0.4F, 3.0F, 1.08F, 3.6F),
-                PartPose.offset(0.0F, 2.52F, 0.0F));
-        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
-                CubeListBuilder.create()
-                        .texOffs(43, 50).addBox(0.0F, 4.0F, 0.0F, 3.0F, 2.4F, 3.0F),
-                PartPose.offset(1.0F, 14.0F, 4.0F));
-        PartDefinition legBl1 = legBl.addOrReplaceChild("leg_bl_1",
-                CubeListBuilder.create()
-                        .texOffs(54, 43).addBox(0.35F, 0.0F, 0.2F, 2.3F, 2.52F, 2.6F),
-                PartPose.offset(0.0F, 2.4F, 0.0F));
-        PartDefinition footBl = legBl1.addOrReplaceChild("foot_bl",
-                CubeListBuilder.create()
-                        .texOffs(15, 50).addBox(0.0F, 0.0F, -0.4F, 3.0F, 1.08F, 3.6F),
-                PartPose.offset(0.0F, 2.52F, 0.0F));
-        PartDefinition body = root.addOrReplaceChild("body",
-                CubeListBuilder.create()
-                        .texOffs(0, 0).addBox(-4.0F, -17.0F, -7.0F, 9.0F, 11.0F, 16.0F)
-                        .texOffs(51, 0).addBox(-5.0F, -18.0F, -8.0F, 11.0F, 14.0F, 11.0F),
-                PartPose.offset(0.0F, 24.0F, 0.0F));
         PartDefinition mut2Flank = body.addOrReplaceChild("mut2_flank",
                 CubeListBuilder.create()
                         .texOffs(0, 28).addBox(-0.9F, -3.0F, -4.0F, 0.9F, 6.0F, 8.0F),
@@ -3354,6 +3354,34 @@ public final class GildedBeastLayers {
                         .texOffs(14, 36).addBox(-0.8636F, -0.8636F, -1.0709F, 1.7273F, 1.7273F, 1.0709F)
                         .texOffs(21, 36).addBox(-1.0709F, -1.0709F, -0.5182F, 2.1418F, 2.1418F, 0.6909F),
                 PartPose.offsetAndRotation(2.0F, 1.2669F, -0.598F, 0.0F, 0.4538F, 0.2764F));
+        PartDefinition tail = body.addOrReplaceChild("tail",
+                CubeListBuilder.create()
+                        .texOffs(112, 0).addBox(-2.0F, -3.008F, -1.013F, 4.0F, 4.0F, 4.0F),
+                PartPose.offset(0.0F, -27.992F, -3.987F));
+        PartDefinition legFr = body.addOrReplaceChild("leg_fr",
+                CubeListBuilder.create()
+                        .texOffs(92, 25).addBox(-0.9F, -1.0F, -0.9F, 2.0F, 1.76F, 2.0F),
+                PartPose.offsetAndRotation(-2.0F, 0.389F, -5.928F, 0.393F, 0.0F, 0.0F));
+        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
+                CubeListBuilder.create()
+                        .texOffs(27, 31).addBox(-0.55F, 0.0F, -0.7F, 1.3F, 1.52F, 1.6F),
+                PartPose.offset(0.0F, 1.76F, 0.0F));
+        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
+                CubeListBuilder.create()
+                        .texOffs(70, 25).addBox(-0.9F, 0.0F, -1.3F, 2.0F, 0.72F, 2.6F),
+                PartPose.offset(0.0F, 1.52F, 0.0F));
+        PartDefinition legFl = body.addOrReplaceChild("leg_fl",
+                CubeListBuilder.create()
+                        .texOffs(101, 25).addBox(-1.0F, -1.0F, -1.0F, 2.0F, 1.76F, 2.0F),
+                PartPose.offsetAndRotation(2.0F, 0.389F, -5.828F, 0.393F, 0.0F, 0.0F));
+        PartDefinition legFl1 = legFl.addOrReplaceChild("leg_fl_1",
+                CubeListBuilder.create()
+                        .texOffs(34, 31).addBox(-0.65F, 0.0F, -0.8F, 1.3F, 1.52F, 1.6F),
+                PartPose.offset(0.0F, 1.76F, 0.0F));
+        PartDefinition footFl = legFl1.addOrReplaceChild("foot_fl",
+                CubeListBuilder.create()
+                        .texOffs(81, 25).addBox(-1.0F, 0.0F, -1.4F, 2.0F, 0.72F, 2.6F),
+                PartPose.offset(0.0F, 1.52F, 0.0F));
         PartDefinition mut2Back = body.addOrReplaceChild("mut2_back",
                 CubeListBuilder.create()
                         .texOffs(37, 0).addBox(-0.9F, -2.0F, -3.5F, 0.9F, 4.0F, 7.0F),
@@ -3462,34 +3490,6 @@ public final class GildedBeastLayers {
                 CubeListBuilder.create()
                         .texOffs(30, 40).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.5904F, 1.0F),
                 PartPose.offsetAndRotation(0.0F, 1.725F, 0.0F, 0.3491F, 0.0F, 0.0F));
-        PartDefinition tail = root.addOrReplaceChild("tail",
-                CubeListBuilder.create()
-                        .texOffs(112, 0).addBox(-2.0F, -3.008F, -1.013F, 4.0F, 4.0F, 4.0F),
-                PartPose.offset(0.0F, -4.992F, 0.013F));
-        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
-                CubeListBuilder.create()
-                        .texOffs(92, 25).addBox(-0.9F, -1.0F, -0.9F, 2.0F, 1.76F, 2.0F),
-                PartPose.offsetAndRotation(-2.0F, 1.924F, 0.383F, 0.393F, 0.0F, 0.0F));
-        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
-                CubeListBuilder.create()
-                        .texOffs(27, 31).addBox(-0.55F, 0.0F, -0.7F, 1.3F, 1.52F, 1.6F),
-                PartPose.offset(0.0F, 1.76F, 0.0F));
-        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
-                CubeListBuilder.create()
-                        .texOffs(70, 25).addBox(-0.9F, 0.0F, -1.3F, 2.0F, 0.72F, 2.6F),
-                PartPose.offset(0.0F, 1.52F, 0.0F));
-        PartDefinition legFl = root.addOrReplaceChild("leg_fl",
-                CubeListBuilder.create()
-                        .texOffs(101, 25).addBox(-1.0F, -1.0F, -1.0F, 2.0F, 1.76F, 2.0F),
-                PartPose.offsetAndRotation(2.0F, 1.924F, 0.483F, 0.393F, 0.0F, 0.0F));
-        PartDefinition legFl1 = legFl.addOrReplaceChild("leg_fl_1",
-                CubeListBuilder.create()
-                        .texOffs(34, 31).addBox(-0.65F, 0.0F, -0.8F, 1.3F, 1.52F, 1.6F),
-                PartPose.offset(0.0F, 1.76F, 0.0F));
-        PartDefinition footFl = legFl1.addOrReplaceChild("foot_fl",
-                CubeListBuilder.create()
-                        .texOffs(81, 25).addBox(-1.0F, 0.0F, -1.4F, 2.0F, 0.72F, 2.6F),
-                PartPose.offset(0.0F, 1.52F, 0.0F));
 
         return LayerDefinition.create(mesh, 128, 128);
     }
@@ -3498,10 +3498,50 @@ public final class GildedBeastLayers {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
 
-        PartDefinition head = root.addOrReplaceChild("head",
+        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
+                CubeListBuilder.create()
+                        .texOffs(22, 26).addBox(2.0F, 0.5F, -1.0F, 2.0F, 2.64F, 2.0F),
+                PartPose.offset(-5.0F, 17.5F, 0.0F));
+        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
+                CubeListBuilder.create()
+                        .texOffs(9, 37).addBox(2.35F, 0.0F, -0.8F, 1.3F, 2.28F, 1.6F),
+                PartPose.offset(0.0F, 2.64F, 0.0F));
+        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
+                CubeListBuilder.create()
+                        .texOffs(111, 26).addBox(2.0F, 0.0F, -1.4F, 2.0F, 1.08F, 2.6F),
+                PartPose.offset(0.0F, 2.28F, 0.0F));
+        PartDefinition legBr = root.addOrReplaceChild("leg_br",
+                CubeListBuilder.create()
+                        .texOffs(33, 32).addBox(2.0F, 0.5F, -1.0F, 2.0F, 2.4F, 2.0F),
+                PartPose.offset(-5.0F, 17.5F, 7.0F));
+        PartDefinition legBr1 = legBr.addOrReplaceChild("leg_br_1",
+                CubeListBuilder.create()
+                        .texOffs(58, 26).addBox(2.35F, 0.0F, -0.8F, 1.3F, 2.52F, 1.6F),
+                PartPose.offset(0.0F, 2.4F, 0.0F));
+        PartDefinition footBr = legBr1.addOrReplaceChild("foot_br",
+                CubeListBuilder.create()
+                        .texOffs(0, 32).addBox(2.0F, 0.0F, -1.4F, 2.0F, 1.08F, 2.6F),
+                PartPose.offset(0.0F, 2.52F, 0.0F));
+        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
+                CubeListBuilder.create()
+                        .texOffs(42, 32).addBox(2.0F, 0.5F, -1.0F, 2.0F, 2.4F, 2.0F),
+                PartPose.offset(-1.0F, 17.5F, 7.0F));
+        PartDefinition legBl1 = legBl.addOrReplaceChild("leg_bl_1",
+                CubeListBuilder.create()
+                        .texOffs(65, 26).addBox(2.35F, 0.0F, -0.8F, 1.3F, 2.52F, 1.6F),
+                PartPose.offset(0.0F, 2.4F, 0.0F));
+        PartDefinition footBl = legBl1.addOrReplaceChild("foot_bl",
+                CubeListBuilder.create()
+                        .texOffs(11, 32).addBox(2.0F, 0.0F, -1.4F, 2.0F, 1.08F, 2.6F),
+                PartPose.offset(0.0F, 2.52F, 0.0F));
+        PartDefinition body = root.addOrReplaceChild("body",
+                CubeListBuilder.create()
+                        .texOffs(0, 0).addBox(-3.0F, 3.999F, -3.5F, 6.0F, 11.0F, 6.0F),
+                PartPose.offsetAndRotation(0.0F, 16.0F, -6.0F, 1.571F, 0.0F, 0.0F));
+        PartDefinition head = body.addOrReplaceChild("head",
                 CubeListBuilder.create()
                         .texOffs(44, 0).addBox(-3.0F, -2.0F, -5.0F, 8.0F, 6.0F, 6.0F),
-                PartPose.offset(-1.0F, 16.5F, -3.0F));
+                PartPose.offset(-1.0F, 0.5F, 3.0F));
         PartDefinition nose = head.addOrReplaceChild("nose",
                 CubeListBuilder.create()
                         .texOffs(104, 18).addBox(-1.0F, 2.01F, -8.0F, 4.0F, 2.0F, 3.0F),
@@ -3652,46 +3692,6 @@ public final class GildedBeastLayers {
                         .texOffs(21, 42).addBox(-1.0364F, -1.0364F, -1.2851F, 2.0727F, 2.0727F, 1.2851F)
                         .texOffs(0, 37).addBox(-1.2851F, -1.2851F, -0.6218F, 2.5702F, 2.5702F, 0.8291F),
                 PartPose.offsetAndRotation(3.0F, 1.5837F, -0.598F, 0.0F, 0.4538F, 0.2764F));
-        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
-                CubeListBuilder.create()
-                        .texOffs(22, 26).addBox(2.0F, 0.5F, -1.0F, 2.0F, 2.64F, 2.0F),
-                PartPose.offset(-5.0F, 17.5F, 0.0F));
-        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
-                CubeListBuilder.create()
-                        .texOffs(9, 37).addBox(2.35F, 0.0F, -0.8F, 1.3F, 2.28F, 1.6F),
-                PartPose.offset(0.0F, 2.64F, 0.0F));
-        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
-                CubeListBuilder.create()
-                        .texOffs(111, 26).addBox(2.0F, 0.0F, -1.4F, 2.0F, 1.08F, 2.6F),
-                PartPose.offset(0.0F, 2.28F, 0.0F));
-        PartDefinition legBr = root.addOrReplaceChild("leg_br",
-                CubeListBuilder.create()
-                        .texOffs(33, 32).addBox(2.0F, 0.5F, -1.0F, 2.0F, 2.4F, 2.0F),
-                PartPose.offset(-5.0F, 17.5F, 7.0F));
-        PartDefinition legBr1 = legBr.addOrReplaceChild("leg_br_1",
-                CubeListBuilder.create()
-                        .texOffs(58, 26).addBox(2.35F, 0.0F, -0.8F, 1.3F, 2.52F, 1.6F),
-                PartPose.offset(0.0F, 2.4F, 0.0F));
-        PartDefinition footBr = legBr1.addOrReplaceChild("foot_br",
-                CubeListBuilder.create()
-                        .texOffs(0, 32).addBox(2.0F, 0.0F, -1.4F, 2.0F, 1.08F, 2.6F),
-                PartPose.offset(0.0F, 2.52F, 0.0F));
-        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
-                CubeListBuilder.create()
-                        .texOffs(42, 32).addBox(2.0F, 0.5F, -1.0F, 2.0F, 2.4F, 2.0F),
-                PartPose.offset(-1.0F, 17.5F, 7.0F));
-        PartDefinition legBl1 = legBl.addOrReplaceChild("leg_bl_1",
-                CubeListBuilder.create()
-                        .texOffs(65, 26).addBox(2.35F, 0.0F, -0.8F, 1.3F, 2.52F, 1.6F),
-                PartPose.offset(0.0F, 2.4F, 0.0F));
-        PartDefinition footBl = legBl1.addOrReplaceChild("foot_bl",
-                CubeListBuilder.create()
-                        .texOffs(11, 32).addBox(2.0F, 0.0F, -1.4F, 2.0F, 1.08F, 2.6F),
-                PartPose.offset(0.0F, 2.52F, 0.0F));
-        PartDefinition body = root.addOrReplaceChild("body",
-                CubeListBuilder.create()
-                        .texOffs(0, 0).addBox(-3.0F, 3.999F, -3.5F, 6.0F, 11.0F, 6.0F),
-                PartPose.offsetAndRotation(0.0F, 16.0F, -6.0F, 1.571F, 0.0F, 0.0F));
         PartDefinition tail = body.addOrReplaceChild("tail",
                 CubeListBuilder.create()
                         .texOffs(25, 0).addBox(2.0F, 0.0F, -1.0F, 4.0F, 9.0F, 5.0F),
@@ -4779,13 +4779,57 @@ public final class GildedBeastLayers {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
 
-        PartDefinition head = root.addOrReplaceChild("head",
+        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
+                CubeListBuilder.create()
+                        .texOffs(0, 43).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 6.16F, 4.0F),
+                PartPose.offset(-3.5F, 10.0F, -5.0F));
+        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
+                CubeListBuilder.create()
+                        .texOffs(0, 54).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 5.32F, 3.6F),
+                PartPose.offset(0.0F, 6.16F, 0.0F));
+        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
+                CubeListBuilder.create()
+                        .texOffs(30, 54).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.52F, 4.6F),
+                PartPose.offset(0.0F, 5.32F, 0.0F));
+        PartDefinition legBr = root.addOrReplaceChild("leg_br",
+                CubeListBuilder.create()
+                        .texOffs(17, 43).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 5.6F, 4.0F),
+                PartPose.offset(-3.5F, 10.0F, 6.0F));
+        PartDefinition legBr1 = legBr.addOrReplaceChild("leg_br_1",
+                CubeListBuilder.create()
+                        .texOffs(68, 43).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 5.88F, 3.6F),
+                PartPose.offset(0.0F, 5.6F, 0.0F));
+        PartDefinition footBr = legBr1.addOrReplaceChild("foot_br",
+                CubeListBuilder.create()
+                        .texOffs(49, 54).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.52F, 4.6F),
+                PartPose.offset(0.0F, 5.88F, 0.0F));
+        PartDefinition rightChest = root.addOrReplaceChild("right_chest",
+                CubeListBuilder.create()
+                        .texOffs(27, 29).addBox(-3.0F, 0.0F, 0.0F, 8.0F, 8.0F, 3.0F),
+                PartPose.offsetAndRotation(-8.5F, 3.0F, 3.0F, 0.0F, 1.571F, 0.0F));
+        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
+                CubeListBuilder.create()
+                        .texOffs(34, 43).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 5.6F, 4.0F),
+                PartPose.offset(3.5F, 10.0F, 6.0F));
+        PartDefinition legBl1 = legBl.addOrReplaceChild("leg_bl_1",
+                CubeListBuilder.create()
+                        .texOffs(83, 43).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 5.88F, 3.6F),
+                PartPose.offset(0.0F, 5.6F, 0.0F));
+        PartDefinition footBl = legBl1.addOrReplaceChild("foot_bl",
+                CubeListBuilder.create()
+                        .texOffs(68, 54).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.52F, 4.6F),
+                PartPose.offset(0.0F, 5.88F, 0.0F));
+        PartDefinition body = root.addOrReplaceChild("body",
+                CubeListBuilder.create()
+                        .texOffs(0, 0).addBox(-6.0F, -10.0F, -7.0F, 12.0F, 18.0F, 10.0F),
+                PartPose.offsetAndRotation(0.0F, 5.0F, 2.0F, 1.571F, 0.0F, 0.0F));
+        PartDefinition head = body.addOrReplaceChild("head",
                 CubeListBuilder.create()
                         .texOffs(0, 29).addBox(-2.0F, -14.0F, -10.0F, 4.0F, 4.0F, 9.0F)
                         .texOffs(45, 0).addBox(-4.0F, -16.0F, -6.0F, 8.0F, 18.0F, 6.0F)
                         .texOffs(13, 64).addBox(-4.0F, -19.0F, -4.0F, 3.0F, 3.0F, 2.0F)
                         .texOffs(24, 64).addBox(1.0F, -19.0F, -4.0F, 3.0F, 3.0F, 2.0F),
-                PartPose.offset(0.0F, 7.0F, -6.0F));
+                PartPose.offset(0.0F, 2.0F, -8.0F));
         PartDefinition face = head.addOrReplaceChild("face",
                 CubeListBuilder.create(),
                 PartPose.offset(0.0F, 0.0F, 0.0F));
@@ -5131,50 +5175,6 @@ public final class GildedBeastLayers {
                         .texOffs(51, 76).addBox(-0.8636F, -0.8636F, -1.0709F, 1.7273F, 1.7273F, 1.0709F)
                         .texOffs(58, 76).addBox(-1.0709F, -1.0709F, -0.5182F, 2.1418F, 2.1418F, 0.6909F),
                 PartPose.offsetAndRotation(1.8F, 2.0588F, -0.598F, 0.0F, 0.4538F, 0.2764F));
-        PartDefinition legFr = root.addOrReplaceChild("leg_fr",
-                CubeListBuilder.create()
-                        .texOffs(0, 43).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 6.16F, 4.0F),
-                PartPose.offset(-3.5F, 10.0F, -5.0F));
-        PartDefinition legFr1 = legFr.addOrReplaceChild("leg_fr_1",
-                CubeListBuilder.create()
-                        .texOffs(0, 54).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 5.32F, 3.6F),
-                PartPose.offset(0.0F, 6.16F, 0.0F));
-        PartDefinition footFr = legFr1.addOrReplaceChild("foot_fr",
-                CubeListBuilder.create()
-                        .texOffs(30, 54).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.52F, 4.6F),
-                PartPose.offset(0.0F, 5.32F, 0.0F));
-        PartDefinition legBr = root.addOrReplaceChild("leg_br",
-                CubeListBuilder.create()
-                        .texOffs(17, 43).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 5.6F, 4.0F),
-                PartPose.offset(-3.5F, 10.0F, 6.0F));
-        PartDefinition legBr1 = legBr.addOrReplaceChild("leg_br_1",
-                CubeListBuilder.create()
-                        .texOffs(68, 43).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 5.88F, 3.6F),
-                PartPose.offset(0.0F, 5.6F, 0.0F));
-        PartDefinition footBr = legBr1.addOrReplaceChild("foot_br",
-                CubeListBuilder.create()
-                        .texOffs(49, 54).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.52F, 4.6F),
-                PartPose.offset(0.0F, 5.88F, 0.0F));
-        PartDefinition rightChest = root.addOrReplaceChild("right_chest",
-                CubeListBuilder.create()
-                        .texOffs(27, 29).addBox(-3.0F, 0.0F, 0.0F, 8.0F, 8.0F, 3.0F),
-                PartPose.offsetAndRotation(-8.5F, 3.0F, 3.0F, 0.0F, 1.571F, 0.0F));
-        PartDefinition legBl = root.addOrReplaceChild("leg_bl",
-                CubeListBuilder.create()
-                        .texOffs(34, 43).addBox(-2.0F, 0.0F, -2.0F, 4.0F, 5.6F, 4.0F),
-                PartPose.offset(3.5F, 10.0F, 6.0F));
-        PartDefinition legBl1 = legBl.addOrReplaceChild("leg_bl_1",
-                CubeListBuilder.create()
-                        .texOffs(83, 43).addBox(-1.65F, 0.0F, -1.8F, 3.3F, 5.88F, 3.6F),
-                PartPose.offset(0.0F, 5.6F, 0.0F));
-        PartDefinition footBl = legBl1.addOrReplaceChild("foot_bl",
-                CubeListBuilder.create()
-                        .texOffs(68, 54).addBox(-2.0F, 0.0F, -2.4F, 4.0F, 2.52F, 4.6F),
-                PartPose.offset(0.0F, 5.88F, 0.0F));
-        PartDefinition body = root.addOrReplaceChild("body",
-                CubeListBuilder.create()
-                        .texOffs(0, 0).addBox(-6.0F, -10.0F, -7.0F, 12.0F, 18.0F, 10.0F),
-                PartPose.offsetAndRotation(0.0F, 5.0F, 2.0F, 1.571F, 0.0F, 0.0F));
         PartDefinition mut1Bulb = body.addOrReplaceChild("mut1_bulb",
                 CubeListBuilder.create()
                         .texOffs(92, 29).addBox(-3.0F, -2.5F, -2.5F, 6.0F, 5.0F, 5.0F),

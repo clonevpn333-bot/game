@@ -84,6 +84,11 @@ def vanilla_quad(host: str, *, eye_style: str = "round", spares: int = 3,
     parts = V.vanilla_host(model, mats=mats, skip=skip)
     hind = {n for n, t in legs.items() if t.startswith("b")}
     parts = V.jointify(parts, legs, hind=hind)
+    # Vanilla hangs the head off root alongside the body. The gait drops and
+    # rolls the body every stride, so anything that is merely a sibling gets
+    # left behind - which is why heads and tails appeared to come loose.
+    parts = V.reparent(parts, {"head": "body", "tail": "body",
+                               "tailfan": "body", "neck": "body"})
     # Measure the head off the geometry rather than assuming it.
     hw, hh, hd = 8.0, 8.0, 6.0
     for part in parts:

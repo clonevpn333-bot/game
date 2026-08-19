@@ -99,26 +99,56 @@ def vanilla_host(model: str, *, mats: dict[str, str], skip: tuple = (),
             continue
         kept[name] = bone
 
-    # Vanilla nests through structural bones ("bone", "root") that carry no
-    # cubes. Those are kept when something hangs off them and dropped when the
-    # dump flattened them away, so parents always resolve.
-    def parent_of(bone) -> str:
-        # The dump records absolute positions, so a bone's parent is whichever
-        # kept bone its offset was measured against.
+    # Resolving a parent by position is why limbs came off their bodies. When a
+    # bone's parent was one of the skipped structural groups (a hare's
+    # `backlegs`, a chicken's overlay), nothing matched and the limb silently
+    # fell back to `root` - so it floated exactly where it had been but no
+    # longer moved with the animal.
+    #
+    # Every bone is matched against *all* bones now, skipped ones included, and
+    # a skipped parent is flattened away properly: the child inherits its
+    # grandparent and absorbs the skipped bone's offset. Falling back to root
+    # is a bug, not a default, so it says so.
+    everything = {b["name"]: b for b in bones if b["name"] != "root"}
+
+    def resolve(bone):
+        """Returns (parent name, extra offset to absorb)."""
         want = tuple(round(bone["abs"][i] - bone["offset"][i], 4) for i in range(3))
-        for cand_name, cand in kept.items():
+        if want == (0.0, 0.0, 0.0):
+            return "root", (0.0, 0.0, 0.0)
+        best = None
+        for cand_name, cand in everything.items():
             if cand_name == bone["name"]:
                 continue
             if tuple(round(v, 4) for v in cand["abs"]) == want:
-                return rename.get(cand_name, cand_name)
-        return "root"
+                # Prefer a parent that survived; a deeper one is more specific.
+                if best is None or (cand_name in kept and best not in kept):
+                    best = cand_name
+        if best is None:
+            return "root", (0.0, 0.0, 0.0)
+        carry = (0.0, 0.0, 0.0)
+        # Walk up through dropped ancestors, folding their offsets in.
+        guard = 0
+        while best not in kept and guard < 16:
+            guard += 1
+            up = everything[best]
+            carry = tuple(carry[i] + up["offset"][i] for i in range(3))
+            nxt, extra = resolve(up)
+            carry = tuple(carry[i] + extra[i] for i in range(3))
+            best = nxt
+            if best == "root":
+                return "root", carry
+        return rename.get(best, best), carry
 
     parts: list[Part] = []
     for name, bone in kept.items():
         out_name = rename.get(name, name)
-        parent = "root" if name == root_at else parent_of(bone)
+        if name == root_at:
+            parent, carry = "root", (0.0, 0.0, 0.0)
+        else:
+            parent, carry = resolve(bone)
         if parent == out_name:
-            parent = "root"
+            parent, carry = "root", (0.0, 0.0, 0.0)
         rot = tuple(bone.get("rot", (0.0, 0.0, 0.0)))
         boxes = []
         for cube in bone.get("cubes", []):
@@ -133,8 +163,8 @@ def vanilla_host(model: str, *, mats: dict[str, str], skip: tuple = (),
             grow = float(cube.get("grow") or 0.0)
             boxes.append(Box(tuple(float(v) for v in origin), size,
                              _material(name, mats), grow=grow))
-        parts.append(Part(out_name, parent, tuple(float(v) for v in bone["offset"]),
-                          rot, boxes))
+        pivot = tuple(float(bone["offset"][i]) + carry[i] for i in range(3))
+        parts.append(Part(out_name, parent, pivot, rot, boxes))
     return parts
 
 
@@ -175,6 +205,46 @@ def jointify(parts: list[Part], legs: dict[str, str], *, hind: set[str] = frozen
         out.append(Part(f"foot_{tag}", f"leg_{tag}_1", (0.0, shank_h, 0.0), (0, 0, 0),
                         [Box((ox, 0.0, oz - 0.4), (lw, foot_h, ld + 0.6),
                              hoof or box.mat)]))
+    return out
+
+
+def reparent(parts: list[Part], moves: dict[str, str]) -> list[Part]:
+    """Hangs parts off a new parent, keeping them exactly where they were.
+
+    Vanilla rigs are mostly *flat*: the head, the body and every leg are all
+    children of root, animated independently. That is fine for vanilla, which
+    barely translates the body - but this mod's gait drops and rolls the body
+    by a couple of units every stride, and a head that is only a sibling stays
+    behind. That is the "limbs coming off the body" you see.
+
+    So the head and tail are hung under the body after ingestion. The pivot is
+    rebased by the difference in absolute position, so nothing moves at rest;
+    it only changes what follows what once something animates.
+    """
+    absolute: dict[str, tuple] = {}
+    by_name = {p.name: p for p in parts}
+
+    def abs_of(name: str, guard: int = 0) -> tuple:
+        if name == "root" or name not in by_name or guard > 16:
+            return (0.0, 0.0, 0.0)
+        if name in absolute:
+            return absolute[name]
+        part = by_name[name]
+        up = abs_of(part.parent, guard + 1)
+        absolute[name] = tuple(up[i] + part.pivot[i] for i in range(3))
+        return absolute[name]
+
+    out = []
+    for part in parts:
+        target = moves.get(part.name)
+        if target is None or target not in by_name:
+            out.append(part)
+            continue
+        here = abs_of(part.name)
+        there = abs_of(target)
+        out.append(Part(part.name, target,
+                        tuple(here[i] - there[i] for i in range(3)),
+                        part.rot, part.boxes))
     return out
 
 
