@@ -68,6 +68,25 @@ BEASTS = {
 }
 
 
+def chains_of(have: set, prefix: str, count: int) -> list[list[str]]:
+    """Collects `prefix0`, `prefix0_1`, `prefix0_2`, ... into whole chains.
+
+    `chain()` names its first link without a suffix, so a tentacle is
+    `tend3, tend3_1, tend3_2` and not `tend3_0, tend3_1`. Walking the names
+    rather than assuming a length means a chain that got longer or shorter in
+    the geometry is still animated end to end.
+    """
+    out = []
+    for i in range(count):
+        if f"{prefix}{i}" not in have:
+            continue
+        chain = [f"{prefix}{i}"]
+        while f"{prefix}{i}_{len(chain)}" in have:
+            chain.append(f"{prefix}{i}_{len(chain)}")
+        out.append(chain)
+    return out
+
+
 def main() -> None:
     os.makedirs(GEO_DIR, exist_ok=True)
     os.makedirs(ANIM_DIR, exist_ok=True)
@@ -135,7 +154,13 @@ def main() -> None:
         "blighted_warden": ("body", "head", "face_jaw", ["leg_r", "leg_l"],
                             [["arm_r", "claw_r", "claw_r_f0", "claw_r_f0_1"],
                              ["arm_l", "claw_l", "claw_l_f0", "claw_l_f0_1"]]),
-        "blighted_wither": ("ribcage", "skull0", "skull0_jaw", [], []),
+        # Rebuilt on WitherBossModel, so the bones are vanilla's: a ribcage,
+        # three named heads, and no arms at all - what moves instead is the
+        # curtain of roots it now hangs in and the tendrils venting out of the
+        # collapsed head.
+        "blighted_wither": ("ribcage", "center_head", "center_head_jaw", [],
+                            [[f"right_head_tend{k}", f"right_head_tend{k}_1",
+                              f"right_head_tend{k}_2"] for k in range(6)]),
         # Rebuilt on the vanilla skeleton, so the bones are vanilla's names put
         # through the toolchain's convention: a body rather than a chest, four
         # jointed legs rather than four stubs, and the neck is five real links
@@ -181,6 +206,17 @@ def main() -> None:
         # and the dragon's is the longest thing in the mod. The idle gets a
         # travelling wave laid over it - and over the neck, offset so the two
         # ends of the animal are never doing the same thing at once.
+        if bench_name == "blighted_wither":
+            # It hangs in the roots, so the roots are what carries its weight
+            # about - a slow sway through the whole curtain rather than a body
+            # that bobs on nothing.
+            curtain = chains_of(have, "root", 7)
+            if curtain:
+                wave = A.writhe(curtain, period=7.2, samples=16, amp=4.0,
+                                tip=2.2, lag=0.15)
+                idle = anims[f"animation.{bench_name}.idle"]
+                for bone, channels in wave["bones"].items():
+                    idle["bones"].setdefault(bone, {}).update(channels)
         if bench_name == "blighted_dragon":
             tails = [[f"tail{i}" for i in range(12) if f"tail{i}" in have],
                      [f"neck{i}" for i in range(5) if f"neck{i}" in have]]
@@ -236,23 +272,12 @@ def main() -> None:
         # They are tendrils, so they get `writhe` and `lash` rather than the
         # arm code - and whole chains, every link, not the first three: a wave
         # that stops a third of the way down a limb is not a wave.
-        def links(prefix, count):
-            out = []
-            for i in range(count):
-                if f"{prefix}{i}" not in have:
-                    continue
-                chain = [f"{prefix}{i}"]
-                while f"{prefix}{i}_{len(chain)}" in have:
-                    chain.append(f"{prefix}{i}_{len(chain)}")
-                out.append(chain)
-            return out
-
-        tendrils = links("tend", 18)
+        tendrils = chains_of(have, "tend", 18)
         # The cables it hangs from move too, a beat behind: the mass drags on
         # them. Only the lower half of each is worth keyframing - the ends are
         # buried in the ceiling and a wave up there is invisible and costs the
         # same to ship as one down here.
-        moorings = [c[2:] for c in links("moor", 14)]
+        moorings = [c[2:] for c in chains_of(have, "moor", 14)]
         legs = []
         anims = {
             # Nearly nine seconds a cycle. Slow is what makes it read as heavy.

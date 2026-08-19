@@ -19,9 +19,15 @@
     "killed_colossus": {
       "trigger": "minecraft:player_killed_entity",
       "conditions": {
-        "entity": {
-          "type": "gildedseam:reliquary_colossus"
-        }
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "minecraft:entity_type": "gildedseam:reliquary_colossus"
+            }
+          }
+        ]
       }
     }
   }

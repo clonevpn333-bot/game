@@ -697,61 +697,111 @@ def blighted_enderman() -> Model:
 def blighted_wither() -> Model:
     """Three skulls, and the resin grew a fourth that does not fit.
 
-    The ribcage and the three heads on their spine are kept; what changes is
-    that it is no longer floating. Roots have grown down out of the spine and
-    taken the weight, so it stands - and the fourth skull hangs underneath on
-    a stalk, upside down, still working.
+    Built on the real WitherBossModel now. The hand-made version had a
+    twenty-two-unit crossbar where the Wither's shoulders are twenty and three
+    thick, a six-by-twenty-four spine where the real one is three by ten, and
+    five pairs of curved ribs where the Wither has three straight bars welded
+    across its front. It read as a skeleton; a Wither is not a skeleton, it is
+    a piece of scaffolding with three heads bolted to it, and that difference
+    is most of why it looked wrong.
+
+    Doubled in size, because the Wither's renderer draws its model at twice
+    scale and reading the mesh alone gets you a Wither the size of a chicken.
+
+    What the resin did to it: it can no longer hold itself up. The Wither
+    hovers on nothing, and nothing is exactly what resin adds weight to - so
+    the spine has put out roots that reach the floor and take the load, and it
+    hangs in them like something in a sling. The centre skull has split along
+    the jaw. The left is half-cased in amber and does not open at all. The
+    right has collapsed inward and is venting tendrils. And there is a fourth,
+    slung under the cage on a stalk, upside down, still working.
     """
-    parts = [
-        Part("spine", "root", (0.0, GROUND - 40.0, 0.0), (0, 0, 0),
-             [Box((-3, -4, -3), (6, 24, 6), "bonewood")]),
-        Part("ribcage", "spine", (0.0, -4.0, 0.0), (0, 0, 0),
-             [Box((-11, -3, -3), (22, 6, 6), "bonewood")]),
-    ]
-    for i in range(5):
-        for side in (-1, 1):
-            parts.append(Part(f"rib{i}{'r' if side < 0 else 'l'}", "ribcage",
-                              (side * (3.0 + i * 1.6), 2.0, 0.0),
-                              (0, 0, side * (14 + 12 * i) * D),
-                              [Box((-1.1, 0, -1.4), (2.2, 12.0 - i * 1.4, 2.8),
-                                   "bonewood")]))
-    # Three skulls on the crossbar, plus a fourth slung underneath.
-    for k, (x, sc) in enumerate(((0.0, 1.0), (-9.0, 0.78), (9.0, 0.78))):
-        tag = f"skull{k}"
-        parts.append(Part(tag, "ribcage", (x, -3.0, 0.0),
-                          (0, (k - 1) * 16 * D, (k - 1) * -6 * D),
-                          [Box((-5 * sc, -9 * sc, -5 * sc), (10 * sc, 9 * sc, 10 * sc),
-                               "bonewood")]))
-        parts.append(Part(f"{tag}_jaw", tag, (0.0, -1.5 * sc, -4.0 * sc),
-                          (16 * D, 0, 0),
-                          [Box((-4 * sc, 0, -4 * sc), (8 * sc, 2.6 * sc, 4.5 * sc),
-                               "rot")]))
-        for i in range(5):
-            parts.append(Part(f"{tag}_t{i}", f"{tag}_jaw",
-                              (-3.0 * sc + i * 1.5 * sc, -0.4, -3.2 * sc), (0, 0, 0),
-                              [Box((-0.5, -2.2 * sc, -0.5), (1, 2.2 * sc, 1), "tooth")]))
-        for side in (-1, 1):
-            parts.append(Part(f"{tag}_eye_{'r' if side < 0 else 'l'}", tag,
-                              (side * 2.4 * sc, -5.0 * sc, -5.0 * sc), (0, 0, 0),
-                              [Box((-1.8 * sc, -1.8 * sc, -1.2), (3.6 * sc, 3.6 * sc, 1.4),
-                                   "eye:bloom")]))
-    # The fourth: hanging under the cage on a stalk, inverted.
-    parts += chain("gullet", "ribcage", (2.0, 4.0, 1.0), 4, (3.0, 5.0, 3.0),
+    mats = {"*": "bonewood", "ribcage": "bonewood"}
+    parts = V.vanilla_host("WitherBossModel", mats=mats)
+    # Vanilla hangs all of it off root at the same origin, so nothing inherits
+    # anything. Make the scaffold real: the cage under the shoulders, the tail
+    # under the cage, the heads on the bar.
+    parts = V.reparent(parts, {"ribcage": "shoulders", "tail": "ribcage",
+                               "center_head": "shoulders",
+                               "left_head": "shoulders",
+                               "right_head": "shoulders"})
+    parts = V.rescale(parts, 2.0)
+    # And lift it, because at true scale the tail hangs twenty units through
+    # the floor. It floats - it always did - so this is the height it floats at.
+    parts = [Part(p.name, p.parent,
+                  (p.pivot[0], p.pivot[1] - 30.0, p.pivot[2]) if p.parent == "root"
+                  else p.pivot, p.rot, p.boxes)
+             for p in parts]
+
+    # --- and then the resin got into it ------------------------------------
+    HEADS = (("center_head", 1.0, "split"),
+             ("left_head", 0.75, "cased"),
+             ("right_head", 0.75, "collapsed"))
+    for name, sc, state in HEADS:
+        if state == "split":
+            # Hinged open along the jaw, and there is a second mouth inside it.
+            parts.append(Part(f"{name}_jaw", name, (0.0, 4.0, -6.0), (30 * D, 0, 0),
+                              [Box((-7, 0, -8), (14, 4, 9), "rot")]))
+            for i in range(7):
+                parts.append(Part(f"{name}_t{i}", f"{name}_jaw",
+                                  (-5.4 + i * 1.8, -0.4, -6.0), (0, 0, 0),
+                                  [Box((-0.7, -4.2, -0.7), (1.4, 4.4, 1.4), "tooth")]))
+            parts += lolling_tongue(f"{name}_jaw", at=(0.0, 1.8, -4.0), tier=0,
+                                    segments=8, thick=2.2, name=f"{name}_tongue")
+            parts += eye_cluster(name, at=(0.0, -3.0, -8.4), count=5, tier=2,
+                                 spread=(4.4, 3.0), size=3.0, name=f"{name}_eyes")
+        elif state == "cased":
+            # Set solid. It has not opened since it went under.
+            parts.append(Part(f"{name}_case", name, (0.0, 0.0, 0.0), (0, 0, 0),
+                              [Box((-7, -7, -7), (14, 14, 14), "amber")]))
+            parts.append(Part(f"{name}_eye", name, (0.0, -1.0, -7.4), (0, 0, 0),
+                              [Box((-3.4, -3.4, -1.4), (6.8, 6.8, 1.6), "eye:bloom")]))
+            for k in range(4):
+                parts += chain(f"{name}_drip{k}", name,
+                               (-4.5 + k * 3.0, 6.0, -3.0 + (k % 2) * 4.0), 3,
+                               (2.2, 4.5, 2.2), "amber", taper=0.74)
+        else:
+            # Fallen in on itself. What comes out of it is not bone.
+            parts.append(Part(f"{name}_crater", name, (0.0, -2.0, -4.0),
+                              (0, 0, 0),
+                              [Box((-5, -3, -3), (10, 7, 4), "rot")]))
+            for k in range(6):
+                a = k * 2.399963
+                parts += chain(f"{name}_tend{k}", f"{name}_crater",
+                               (math.sin(a) * 3.0, -1.0, -2.0), 4,
+                               (2.4 - k * 0.15, 6.0, 2.4 - k * 0.15), "sinew",
+                               taper=0.82,
+                               curl=(9 * D, 0, math.sin(a * 1.7) * 8 * D),
+                               root_rot=(math.cos(a) * 34 * D, a, 0))
+    # The cage is open. There is more in there than there should be.
+    parts += flayed("ribcage", at=(0.0, 8.0, -3.0), length=14.0, height=7.0,
+                    ribs=5, tier=2, side=1, name="cage")
+    parts += eye_cluster("ribcage", at=(0.0, 12.0, -4.0), count=7, tier=1,
+                         spread=(4.0, 6.0), size=2.4, name="cage_eyes")
+    # The fourth skull: slung under the cage on a stalk, inverted.
+    parts += chain("gullet", "tail", (2.0, 8.0, 1.0), 4, (4.0, 7.0, 4.0),
                    "sinew", taper=0.86, curl=(6 * D, 0, -8 * D),
                    root_rot=(10 * D, 0, -14 * D))
-    parts.append(Part("skull3", "gullet_3", (0.0, 4.0, 0.0), (math.pi, 0, 0.4),
-                      [Box((-4, 0, -4), (8, 8, 8), "bonewood")]))
-    parts.append(Part("skull3_jaw", "skull3", (0.0, 7.0, -3.0), (-26 * D, 0, 0),
-                      [Box((-3.4, 0, -3.6), (6.8, 2.4, 4.0), "rot")]))
-    parts += eye_cluster("skull3", at=(0.0, 3.0, -4.2), count=5, tier=0,
-                         spread=(3.2, 3.2), size=2.6, name="undereyes")
-    # Roots taking the weight it used to not need.
-    for i in range(5):
-        a = (2 * math.pi * i) / 5 + 0.4
-        parts += chain(f"root{i}", "spine", (math.sin(a) * 3.0, 20.0, math.cos(a) * 3.0),
-                       4, (3.2, 6.0, 3.2), "bark", taper=0.84,
-                       curl=(0, 0, 10 * D),
-                       root_rot=(math.cos(a) * 26 * D, -a, math.sin(a) * 26 * D))
+    parts.append(Part("skull3", "gullet_3", (0.0, 5.0, 0.0), (math.pi, 0, 0.4),
+                      [Box((-5, 0, -5), (10, 10, 10), "bonewood")]))
+    parts.append(Part("skull3_jaw", "skull3", (0.0, 9.0, -4.0), (-26 * D, 0, 0),
+                      [Box((-4.2, 0, -4.4), (8.4, 3.0, 5.0), "rot")]))
+    parts += eye_cluster("skull3", at=(0.0, 4.0, -5.2), count=5, tier=0,
+                         spread=(3.6, 3.6), size=2.8, name="undereyes")
+    # Roots out of the spine, reaching the floor. This is what holds it up now.
+    # Off the cage rather than off the tail: the tail already sits at forty-odd
+    # degrees, so anything hung there inherits the lean and fans out behind it
+    # like whiskers instead of hanging like something load-bearing.
+    for i in range(7):
+        a = i * 2.399963
+        parts += chain(f"root{i}", "ribcage", (math.sin(a) * 5.0, 19.0,
+                                               math.cos(a) * 5.0),
+                       5, (5.0 - i * 0.35, 11.0, 5.0 - i * 0.35), "bark",
+                       taper=0.88,
+                       curl=(-5 * D, 0, math.sin(a) * 5 * D),
+                       root_rot=((9.0 + i * 3.0) * D, a, 0))
+    parts += spine_plates("ribcage", from_z=-3.0, to_z=3.0, y=2.0, count=6,
+                          tier=1, height=5.0, name="crest")
     return _m("blighted_wither", parts, tex=256)
 
 

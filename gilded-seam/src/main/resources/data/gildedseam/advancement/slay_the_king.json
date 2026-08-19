@@ -19,9 +19,15 @@
     "killed": {
       "trigger": "minecraft:player_killed_entity",
       "conditions": {
-        "entity": {
-          "type": "gildedseam:porcelain_autarch"
-        }
+        "entity": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "minecraft:entity_type": "gildedseam:porcelain_autarch"
+            }
+          }
+        ]
       }
     }
   }
