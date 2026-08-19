@@ -1,0 +1,5 @@
+-proc:none
+-d
+/tmp/jc/out
+-nowarn
+@/tmp/jc/files.txt

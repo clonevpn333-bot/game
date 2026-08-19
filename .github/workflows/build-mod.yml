@@ -182,7 +182,7 @@ jobs:
           : > /tmp/classes.txt
           for j in $jars; do
             unzip -l "$j" 2>/dev/null \
-              | grep -oE "net/minecraft/client/(model|renderer)/[A-Za-z0-9/_]*\.class" \
+              | grep -oE "net/minecraft/client/model/[A-Za-z0-9/_]*\.class" \
               | grep -v '\$' >> /tmp/classes.txt
           done
           sort -u -o /tmp/classes.txt /tmp/classes.txt
@@ -203,7 +203,8 @@ jobs:
               javap -p -cp "$j" "$c" 2>/dev/null | grep -E "LayerDefinition" | head -6
             done
           done
-          java -cp "$jar$deps:/tmp/oracle" DumpModels $names > /tmp/vanilla-models.json 2>/tmp/dump.err
+          timeout 240 java -cp "$jar$deps:/tmp/oracle" DumpModels $names > /tmp/vanilla-models.json 2>/tmp/dump.err
+          echo "dump exit: $? (124 = timed out)"
           echo "--- stderr ---"; tail -5 /tmp/dump.err
           echo "--- bytes: $(wc -c < /tmp/vanilla-models.json) ---"
           echo "=====VANILLA-MODELS-BEGIN====="
