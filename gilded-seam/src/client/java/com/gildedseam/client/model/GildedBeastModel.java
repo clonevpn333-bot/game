@@ -137,6 +137,8 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
     private final KeyframeAnimation walkAnim;
     private final KeyframeAnimation runAnim;
     private final KeyframeAnimation attackAnim;
+    private final KeyframeAnimation deathAnim;
+    private final KeyframeAnimation riseAnim;
 
     public GildedBeastModel(ModelPart root, Config config, String name) {
         super(root);
@@ -154,6 +156,8 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
         this.walkAnim = bake(root, gen == null ? null : gen.walk(), name);
         this.runAnim = bake(root, gen == null ? null : gen.run(), name);
         this.attackAnim = bake(root, gen == null ? null : gen.attack(), name);
+        this.deathAnim = bake(root, gen == null ? null : gen.death(), name);
+        this.riseAnim = bake(root, gen == null ? null : gen.rise(), name);
     }
 
     /**
@@ -343,6 +347,20 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
      * makes it loop continuously while the creature is standing still.
      */
     private void solved(GildedBeastRenderState state, float pos, float speed, float age) {
+        // Going down, lying there, and getting back up own the whole body -
+        // nothing walks while it is falling over. The death animation's last
+        // keyframe is deliberately a settled pose, so holding it once the
+        // animation has run out is the creature lying on the floor rather than
+        // a creature frozen mid-fall.
+        if (state.downed && this.deathAnim != null) {
+            this.deathAnim.apply(state.deathAnimationState, age);
+            return;
+        }
+        if (this.riseAnim != null && state.riseAnimationState.isStarted()) {
+            this.riseAnim.apply(state.riseAnimationState, age);
+            return;
+        }
+
         // Under a third of full speed it is walking; above two thirds it is
         // running; between, whichever is closer, so the changeover happens
         // once rather than flickering back and forth on the boundary.

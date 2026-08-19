@@ -35,6 +35,9 @@ public class GildedBeastRenderer extends MobRenderer<GildedBeastEntity, GildedBe
         state.tier = entity.getTier();
         state.attackSwing = entity.getAttackAnim(partialTick);
         state.attackAnimationState.copyFrom(entity.attackAnimationState);
+        state.downed = entity.isDowned();
+        state.deathAnimationState.copyFrom(entity.deathAnimationState);
+        state.riseAnimationState.copyFrom(entity.riseAnimationState);
     }
 
     @Override

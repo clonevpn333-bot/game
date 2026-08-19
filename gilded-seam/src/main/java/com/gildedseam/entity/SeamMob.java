@@ -33,6 +33,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 
+import net.minecraft.world.entity.AnimationState;
+
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -74,6 +76,43 @@ public abstract class SeamMob extends Monster {
     public static final int RISE_DELAY = 1200;          // one minute
 
     private int downedTicks;
+
+    /**
+     * Client-side only. The server decides when a creature goes down and when
+     * it gets back up, and says so with entity events 61 and 62; these are
+     * what the renderer reads to know how far through either it is. They are
+     * never ticked or saved - an {@link AnimationState} is a stopwatch, not
+     * state.
+     */
+    public final AnimationState deathAnimationState = new AnimationState();
+    public final AnimationState riseAnimationState = new AnimationState();
+
+    /** Client-side countdown that stops {@link #riseAnimationState}. */
+    private int risingTicks;
+
+    /** Events 61 and 62, broadcast by {@code goDown} and {@code rise}. */
+    public static final byte EVENT_DOWN = 61;
+    public static final byte EVENT_RISE = 62;
+
+    @Override
+    public void handleEntityEvent(byte id) {
+        // Starting one and stopping the other matters: a creature that is
+        // knocked down again while still standing up would otherwise play both
+        // at once and end up somewhere between the two.
+        if (id == EVENT_DOWN) {
+            this.riseAnimationState.stop();
+            this.deathAnimationState.start(this.tickCount);
+        } else if (id == EVENT_RISE) {
+            this.deathAnimationState.stop();
+            this.riseAnimationState.start(this.tickCount);
+            // Comfortably longer than the longest generated rise; the pose it
+            // ends on is the neutral one, so overshooting is invisible and
+            // undershooting would snap.
+            this.risingTicks = 80;
+        } else {
+            super.handleEntityEvent(id);
+        }
+    }
 
     protected SeamMob(EntityType<? extends Monster> type, Level level) {
         super(type, level);
@@ -118,7 +157,7 @@ public abstract class SeamMob extends Monster {
         this.getNavigation().stop();
         this.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
         this.setNoAi(true);
-        level.broadcastEntityEvent(this, (byte) 61);     // client: play the fall
+        level.broadcastEntityEvent(this, EVENT_DOWN);     // client: play the fall
         level.playSound(null, this.blockPosition(), SoundEvents.DECORATED_POT_SHATTER,
                 net.minecraft.sounds.SoundSource.HOSTILE, 1.2F, 0.55F);
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.FALLING_HONEY,
@@ -148,7 +187,7 @@ public abstract class SeamMob extends Monster {
                 net.minecraft.world.effect.MobEffects.SPEED, 400, 1));
         this.addEffect(new MobEffectInstance(
                 net.minecraft.world.effect.MobEffects.RESISTANCE, 200, 0));
-        level.broadcastEntityEvent(this, (byte) 62);      // client: play the rise
+        level.broadcastEntityEvent(this, EVENT_RISE);     // client: play the rise
         level.playSound(null, this.blockPosition(), SoundEvents.CREAKING_HEART_SPAWN,
                 net.minecraft.sounds.SoundSource.HOSTILE, 1.6F, 0.6F);
         level.sendParticles(net.minecraft.core.particles.ParticleTypes.SCULK_SOUL,
@@ -320,6 +359,16 @@ public abstract class SeamMob extends Monster {
     @Override
     public void aiStep() {
         super.aiStep();
+        // An AnimationState runs until something stops it, and nothing else
+        // will: the server has already moved on by the time the getting-up is
+        // over. Left alone the creature would hold the last frame of its rise
+        // forever and never walk again.
+        if (this.level().isClientSide) {
+            if (this.risingTicks > 0 && --this.risingTicks == 0) {
+                this.riseAnimationState.stop();
+            }
+            return;
+        }
         if (!(this.level() instanceof ServerLevel level) || !this.isDowned()) {
             return;
         }
