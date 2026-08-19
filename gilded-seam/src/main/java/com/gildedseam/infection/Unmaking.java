@@ -92,6 +92,13 @@ public final class Unmaking {
             return true;
         }
 
+        // The world is only allowed to come apart where the blight has
+        // actually reached. An anchor outside the front does nothing at all -
+        // which is what stops a player finding a hole in the ground on their
+        // first morning, a thousand blocks from anything they did.
+        if (!Blightfront.allows(this.level, this.anchor)) {
+            return;
+        }
         for (int i = 0; i < SAMPLES_PER_TICK; i++) {
             int dx = random.nextInt(RADIUS * 2 + 1) - RADIUS;
             int dz = random.nextInt(RADIUS * 2 + 1) - RADIUS;

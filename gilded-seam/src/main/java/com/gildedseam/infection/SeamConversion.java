@@ -55,6 +55,12 @@ public final class SeamConversion {
         if (!gilded && !killedBySeam) {
             return;
         }
+        // A cow that dies outside the front dies. The blight cannot claim
+        // ground it has not reached, and a player who kills a wolf a thousand
+        // blocks from anything should not watch it stand back up gilded.
+        if (!Blightfront.allows(level, entity.blockPosition())) {
+            return;
+        }
         if (SeamHelper.isMobCapped(level, entity.blockPosition())) {
             return;
         }

@@ -1110,7 +1110,7 @@ def amber_sovereign() -> Model:
 
 def half_sapped() -> Model:
     """A person the blight has not finished: one side still theirs."""
-    p = humanoid("skin", "cloth")
+    p = humanoid("skin", "cloth", trouser="bark")
     p += split_open("body", at=(2.0, -6.0, -2.0), width=4.0, height=7.0, tier=1,
                     depth=1.4, name="chest")
     p += lolling_tongue("head", at=(0.0, -1.0, -4.0), tier=1, segments=5,
@@ -1129,7 +1129,7 @@ def half_sapped() -> Model:
 
 def tapper() -> Model:
     """The hireable resin-tapper: living, armed, and sick of this."""
-    p = humanoid("skin", "cloth")
+    p = humanoid("skin", "cloth", trouser="leather")
     p.append(Part("hat", "head", (0.0, -8.0, 0.0), (0, 0, 5 * D),
                   [Box((-5.5, -1, -5.5), (11, 1.5, 11), "leather"),
                    Box((-3.5, -4, -3.5), (7, 3, 7), "leather")]))
@@ -1145,7 +1145,7 @@ def tapper() -> Model:
 
 
 def refugee() -> Model:
-    p = humanoid("skin", "leather")
+    p = humanoid("skin", "leather", trouser="cloth")
     p.append(Part("hood", "head", (0.0, -8.0, 0.0), (0, 0, 0),
                   [Box((-4.6, -1.2, -4.6), (9.2, 3.4, 9.2), "cloth"),
                    Box((-4.6, 2.2, -3.6), (1.2, 6, 8.2), "cloth"),

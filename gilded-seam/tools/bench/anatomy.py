@@ -516,17 +516,25 @@ def human_face(anchor: str, *, hw: float = 8.0, hh: float = 8.0,
 
 def humanoid(skin: str, cloth: str, *, tall: float = 0.0, build: float = 1.0,
              face: bool = True, hollow: float = 0.0, hair: str | None = None,
-             pack: bool = False, eye: str = "eye_human") -> list[Part]:
+             pack: bool = False, eye: str = "eye_human",
+             trouser: str | None = None) -> list[Part]:
     """A person, at a height a person actually is.
 
     Vanilla humanoids are 32 units and read stubby next to everything else in
     this mod; these are 36 with longer legs and a neck, which is most of the
     difference. `build` widens the frame, `hollow` starves the face, `pack`
     straps salvage to their back, and they all get a face with eyes in it.
+
+    The legs take `trouser` rather than `cloth`. They were the same material as
+    the coat, and a coat that is the same colour as the leg beneath it reads as
+    a coat that goes down to the ankle - so everyone in the mod looked like a
+    small person in a long robe. The geometry was always right; nothing about
+    it could be seen. Two tones is the whole fix.
     """
     w = 8.0 * build
-    leg_h = 14.0 + tall
-    body_h = 13.0
+    leg_h = 15.0 + tall
+    body_h = 12.0
+    trouser = trouser or cloth
     hip = GROUND - leg_h
     parts = [
         Part("body", "root", (0.0, hip, 0.0), (0, 0, 0),
@@ -559,10 +567,10 @@ def humanoid(skin: str, cloth: str, *, tall: float = 0.0, build: float = 1.0,
         parts.append(Part(f"hand_{tag}", f"arm_{tag}_1", (0.0, 7.0, 0.0), (0, 0, 0),
                           [_b((-1.9, 0, -1.9), (3.8, 3.0, 3.8), skin)]))
         parts.append(Part(f"leg_{tag}", "root", (side * 2.2, hip, 0.0), (0, 0, 0),
-                          [_b((-2.1, 0, -2.1), (4.2, leg_h * 0.52, 4.2), cloth)]))
+                          [_b((-2.1, 0, -2.1), (4.2, leg_h * 0.52, 4.2), trouser)]))
         parts.append(Part(f"leg_{tag}_1", f"leg_{tag}", (0.0, leg_h * 0.52, 0.0),
                           (0, 0, 0),
-                          [_b((-1.9, 0, -1.9), (3.8, leg_h * 0.34, 3.8), cloth)]))
+                          [_b((-1.9, 0, -1.9), (3.8, leg_h * 0.34, 3.8), trouser)]))
         parts.append(Part(f"foot_{tag}", f"leg_{tag}_1", (0.0, leg_h * 0.34, 0.0),
                           (0, 0, 0),
                           [_b((-2.1, 0, -3.2), (4.2, leg_h * 0.14, 5.4), "bark")]))

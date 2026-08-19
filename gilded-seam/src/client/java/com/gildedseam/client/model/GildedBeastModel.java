@@ -139,6 +139,7 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
     private final KeyframeAnimation attackAnim;
     private final KeyframeAnimation deathAnim;
     private final KeyframeAnimation riseAnim;
+    private final ModelPart rootPart;
 
     public GildedBeastModel(ModelPart root, Config config, String name) {
         super(root);
@@ -151,6 +152,7 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
         this.mut2 = resolveAll(root, config.mut2());
         this.dangle = resolveAll(root, config.dangle());
 
+        this.rootPart = root;
         GenAnimations gen = GenAnimations.of(name);
         this.idleAnim = bake(root, gen == null ? null : gen.idle(), name);
         this.walkAnim = bake(root, gen == null ? null : gen.walk(), name);
@@ -347,6 +349,12 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
      * makes it loop continuously while the creature is standing still.
      */
     private void solved(GildedBeastRenderState state, float pos, float speed, float age) {
+        // Keyframes are applied *on top of* the rest pose, not instead of it.
+        // Without a reset every frame they accumulate, and after a second or
+        // two the creature has folded itself inside out. This is the whole of
+        // the "walking is glitching" bug.
+        this.rootPart.resetPose();
+
         // Going down, lying there, and getting back up own the whole body -
         // nothing walks while it is falling over. The death animation's last
         // keyframe is deliberately a settled pose, so holding it once the
@@ -368,11 +376,16 @@ public class GildedBeastModel extends EntityModel<GildedBeastRenderState> {
         KeyframeAnimation moving = running ? this.runAnim : this.walkAnim;
 
         if (speed > 0.02F) {
-            moving.applyWalk(pos, speed, running ? 3.6F : 5.4F, 2.6F);
+            // The fourth argument multiplies every rotation. Vanilla authors
+            // its animations small and scales them up here; these are solved
+            // at the angle they should actually play, so the scale is one.
+            // At 2.6 a walking cow swung its legs through two and a half turns
+            // a stride.
+            moving.applyWalk(pos, speed, running ? 4.4F : 6.0F, 1.0F);
         } else if (this.idleAnim != null) {
             // Standing. `applyWalk` off the clock rather than off distance,
             // with a full amplitude, is a continuously looping idle.
-            this.idleAnim.applyWalk(age, 1.0F, 14.0F, 1.0F);
+            this.idleAnim.applyWalk(age, 1.0F, 26.0F, 1.0F);
         }
 
         if (this.attackAnim != null) {

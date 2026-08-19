@@ -19,25 +19,15 @@ public final class ModSpawns {
     private ModSpawns() {
     }
 
-    /** The first kiln heart in a world is not placed by a structure. */
-    public static final net.minecraft.resources.ResourceKey<
-            net.minecraft.world.level.levelgen.placement.PlacedFeature> BLIGHT_SCAR =
-            net.minecraft.resources.ResourceKey.create(
-                    net.minecraft.core.registries.Registries.PLACED_FEATURE,
-                    com.gildedseam.GildedSeam.id("blight_scar"));
-
     public static void init() {
-        // Without this the infection could only ever be found inside a
-        // structure, which means most worlds would never see it start. A rare
-        // surface kiln heart is the seed: it gilds the ground around itself,
-        // lays veins, and begins firing creatures once it matures.
-        BiomeModifications.create(com.gildedseam.GildedSeam.id("blight_seed"))
-                .add(net.fabricmc.fabric.api.biome.v1.ModificationPhase.ADDITIONS,
-                        BiomeSelectors.foundInOverworld(),
-                        context -> context.getGenerationSettings().addFeature(
-                                net.minecraft.world.level.levelgen.GenerationStep.Decoration
-                                        .VEGETAL_DECORATION,
-                                BLIGHT_SCAR));
+        // Kiln hearts used to be scattered across every overworld biome as a
+        // seed, on the reasoning that otherwise a world might never see the
+        // infection start. The effect was the opposite of the intent: the
+        // infection did not start, it was simply already everywhere, including
+        // under the player's feet on the first morning.
+        //
+        // The Mother Tree at world spawn is the seed now, and the blight
+        // reaches out from it - see Blightfront. Nothing is pre-sown.
         BiomeModifications.addSpawn(BiomeSelectors.foundInOverworld(), MobCategory.MONSTER,
                 ModEntities.SHARDLING, 24, 2, 4);
         BiomeModifications.addSpawn(BiomeSelectors.foundInOverworld(), MobCategory.MONSTER,
@@ -79,8 +69,21 @@ public final class ModSpawns {
                         level.getBlockState(pos.below()).isSolidRender());
     }
 
+    /**
+     * Ground placement, gated on how far the blight has actually got.
+     *
+     * <p>This is the single change that gives the mod an opening. The vanilla
+     * monster rules still apply - light level, spawnable block, the usual - and
+     * then the front has to allow it as well. Outside the front the overworld
+     * is untouched; inside the sanctuary ring at spawn nothing hunts you at
+     * all. Everything else in the mod asks the same question of the same
+     * object, so the edge the player can see is the edge the spawner uses.
+     */
     private static <T extends Mob> void registerGroundPlacement(EntityType<T> type) {
         net.minecraft.world.entity.SpawnPlacements.register(type, SpawnPlacementTypes.ON_GROUND,
-                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkMonsterSpawnRules);
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                (spawned, level, reason, pos, random) ->
+                        com.gildedseam.infection.Blightfront.allows(level, pos)
+                                && Monster.checkMonsterSpawnRules(spawned, level, reason, pos, random));
     }
 }
