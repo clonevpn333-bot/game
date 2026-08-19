@@ -195,7 +195,16 @@ jobs:
               data/minecraft/dimension_type/the_nether.json \
               data/minecraft/worldgen/biome/nether_wastes.json \
               data/minecraft/worldgen/biome/deep_dark.json \
-              data/minecraft/advancement/end/kill_dragon.json ; do
+              data/minecraft/advancement/end/kill_dragon.json \
+              data/minecraft/worldgen/configured_feature/ore_quartz_nether.json \
+              data/minecraft/worldgen/configured_feature/glowstone_extra.json \
+              data/minecraft/worldgen/configured_feature/patch_fire.json \
+              data/minecraft/worldgen/configured_feature/sculk_vein.json \
+              data/minecraft/worldgen/configured_feature/pale_moss_patch.json \
+              data/minecraft/worldgen/placed_feature/ore_quartz_nether.json \
+              data/minecraft/worldgen/placed_feature/glowstone_extra.json \
+              data/minecraft/worldgen/placed_feature/patch_fire.json \
+              data/minecraft/worldgen/placed_feature/sculk_vein.json ; do
             name=$(echo "$f" | sed 's#data/minecraft/##; s#/#_#g')
             if unzip -p "$jar" "$f" > "$out/$name" 2>/dev/null && [ -s "$out/$name" ]; then
               echo "  $name  ($(wc -c < "$out/$name") bytes)"
@@ -212,6 +221,22 @@ jobs:
           done | sort -u | tr '\n' ' '
           echo
           exit 0
+
+      # Every vanilla id our data files name, checked against the ids the jar
+      # actually has. A renamed block in a surface rule is a hard load failure;
+      # a renamed sound event is worse, because it is quiet.
+      - name: Check the vanilla ids we name
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 3
+        working-directory: gilded-seam
+        run: |
+          set +e
+          jar=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null \
+            | grep -iE "minecraft" | grep -viE "sources|javadoc" \
+            | xargs -I{} sh -c 'unzip -l {} 2>/dev/null | grep -q "data/minecraft/dimension_type/" && echo {}' \
+            | head -1)
+          python3 tools/check_vanilla_ids.py "$jar"
 
       - name: Commit the reference data
         if: always()

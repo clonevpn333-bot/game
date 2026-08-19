@@ -1,6 +1,9 @@
 {
   "replace": false,
   "values": [
-    "gildedseam:creaking_hollow"
+    "gildedseam:creaking_hollow",
+    "gildedseam:pale_colonnade",
+    "gildedseam:amber_flats",
+    "gildedseam:lantern_deeps"
   ]
 }

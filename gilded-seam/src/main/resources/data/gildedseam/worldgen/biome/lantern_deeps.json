@@ -3,7 +3,7 @@
   "temperature": 0.4,
   "downfall": 0.0,
   "effects": {
-    "water_color": "#5c3a12"
+    "water_color": "#6a5218"
   },
   "carvers": [
     "minecraft:nether_cave"
@@ -23,28 +23,22 @@
   "spawners": {
     "monster": [
       {
-        "type": "gildedseam:shardling",
-        "weight": 60,
+        "type": "gildedseam:porcelain_hound",
+        "weight": 45,
         "minCount": 2,
         "maxCount": 4
       },
       {
-        "type": "gildedseam:vessel",
-        "weight": 40,
-        "minCount": 1,
-        "maxCount": 3
-      },
-      {
-        "type": "gildedseam:porcelain_hound",
+        "type": "gildedseam:shardling",
         "weight": 25,
         "minCount": 2,
         "maxCount": 3
       },
       {
-        "type": "gildedseam:half_sewn",
-        "weight": 12,
+        "type": "gildedseam:seamstress",
+        "weight": 10,
         "minCount": 1,
-        "maxCount": 2
+        "maxCount": 1
       }
     ],
     "creature": [],
@@ -57,10 +51,10 @@
   },
   "spawn_costs": {},
   "attributes": {
-    "minecraft:visual/fog_color": "#241203",
-    "minecraft:visual/sky_color": "#120a04",
+    "minecraft:visual/fog_color": "#3b2c10",
+    "minecraft:visual/sky_color": "#191307",
     "minecraft:audio/ambient_sounds": {
-      "loop": "minecraft:ambient.nether_wastes.loop",
+      "loop": "minecraft:ambient.warped_forest.loop",
       "mood": {
         "sound": "minecraft:ambient.cave",
         "tick_delay": 4200,
@@ -68,7 +62,7 @@
         "offset": 2.0
       },
       "additions": {
-        "sound": "minecraft:ambient.nether_wastes.additions",
+        "sound": "minecraft:ambient.warped_forest.additions",
         "tick_chance": 0.0143
       }
     },

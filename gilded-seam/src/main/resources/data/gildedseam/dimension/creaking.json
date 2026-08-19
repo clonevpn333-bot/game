@@ -4,8 +4,57 @@
     "type": "minecraft:noise",
     "settings": "gildedseam:creaking",
     "biome_source": {
-      "type": "minecraft:fixed",
-      "biome": "gildedseam:creaking_hollow"
+      "type": "minecraft:multi_noise",
+      "biomes": [
+        {
+          "biome": "gildedseam:creaking_hollow",
+          "parameters": {
+            "temperature": 0.0,
+            "humidity": 0.0,
+            "continentalness": 0.0,
+            "erosion": 0.0,
+            "weirdness": 0.0,
+            "offset": 0.0,
+            "depth": 0.0
+          }
+        },
+        {
+          "biome": "gildedseam:pale_colonnade",
+          "parameters": {
+            "temperature": -0.5,
+            "humidity": 0.0,
+            "continentalness": 0.0,
+            "erosion": 0.0,
+            "weirdness": 0.175,
+            "offset": 0.0,
+            "depth": 0.0
+          }
+        },
+        {
+          "biome": "gildedseam:amber_flats",
+          "parameters": {
+            "temperature": 0.0,
+            "humidity": -0.5,
+            "continentalness": 0.0,
+            "erosion": 0.0,
+            "weirdness": 0.0,
+            "offset": 0.0,
+            "depth": 0.0
+          }
+        },
+        {
+          "biome": "gildedseam:lantern_deeps",
+          "parameters": {
+            "temperature": 0.0,
+            "humidity": 0.5,
+            "continentalness": 0.0,
+            "erosion": 0.0,
+            "weirdness": 0.375,
+            "offset": 0.0,
+            "depth": 0.0
+          }
+        }
+      ]
     }
   }
 }
