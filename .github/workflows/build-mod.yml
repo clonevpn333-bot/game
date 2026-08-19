@@ -212,7 +212,7 @@ jobs:
           echo "minecraft jars:"; echo "$jars"
           [ -z "$jars" ] && exit 0
           jar=$(echo "$jars" | tr '\n' ':')
-          deps=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null | grep -iE "joml|guava|datafixerupper|fastutil|slf4j|gson|brigadier|authlib|netty|commons|log4j|oshi|jopt|lwjgl|text2speech|blocklist" | tr '\n' ':')
+          deps=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null | grep -iE "joml|guava|datafixerupper|fastutil|slf4j|gson|brigadier|authlib|netty|commons|log4j|oshi|jopt|lwjgl|text2speech|blocklist|logging" | tr '\n' ':')
           mkdir -p /tmp/oracle
           javac -nowarn -cp "$jar$deps" -d /tmp/oracle tools/oracle/DumpModels.java 2>&1 | tail -5
           # Six of the twenty had no static factory on the class itself -
