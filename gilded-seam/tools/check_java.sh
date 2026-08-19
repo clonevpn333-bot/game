@@ -14,6 +14,9 @@ javac -proc:none -d /tmp/gs-java-out -nowarn @/tmp/gs-java-files.txt 2>&1 \
   | grep -E "error:" \
   | grep -viE "does not exist|cannot find symbol|symbol:|location:" \
   > /tmp/gs-java-structural.txt
+# javac drops a javac.<timestamp>.args beside itself when it re-execs with an
+# argument file. Harmless, but it litters the repo root, so sweep it.
+rm -f javac.*.args
 count=$(wc -l < /tmp/gs-java-structural.txt)
 echo "$(wc -l < /tmp/gs-java-files.txt) files, $count structural errors"
 [ "$count" -gt 0 ] && cat /tmp/gs-java-structural.txt

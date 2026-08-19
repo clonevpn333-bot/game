@@ -437,6 +437,169 @@ def idle(*, body: str, period: float = 4.4, depth: float = 0.6,
 
 
 # ---------------------------------------------------------------------------
+# Things with no bones in them
+# ---------------------------------------------------------------------------
+
+
+def writhe(chains: list[list[str]], *, period: float = 6.0, samples: int = 20,
+           amp: float = 14.0, tip: float = 2.4, lag: float = 0.17,
+           body: str | None = None, head: str | None = None,
+           jaw: str | None = None, swell: float = 1.0,
+           drift: float = 0.0) -> dict:
+    """Tentacles. Not arms - `strike` was making them punch.
+
+    Feeding tendrils to the arm code was the whole problem: an arm has a
+    shoulder, an elbow and an intent, so `strike` rotates every joint toward
+    the same instant of contact. Eighteen of those firing a tenth of a second
+    apart is not a monster, it is a drum solo, and that is exactly what it
+    looked like.
+
+    A tentacle has no joints and no intent. What travels down it is a *wave*,
+    and three things make that read:
+
+      * each link repeats the link above it a beat later (`lag`), so the shape
+        moves outward along the limb rather than the whole limb swinging;
+      * the amplitude grows toward the tip (`tip`), because the root is
+        carrying the weight of everything past it and can barely move;
+      * every chain gets its own phase, so no two are ever at the same point
+        in the cycle and the mass never pulses.
+
+    A second, much slower swell rides on top at an incommensurate rate, which
+    is what stops a loop this long from reading as a loop.
+    """
+    tracks: dict[str, dict[str, dict]] = {}
+
+    def put(bone, channel, t, vec):
+        chan = tracks.setdefault(bone, {}).setdefault(channel, {})
+        chan[str(round(t, 4))] = {"vector": [round(v, 3) for v in vec],
+                                  "easing": "easeInOutSine"}
+
+    for i in range(samples + 1):
+        u = i / samples
+        t = round(u * period, 4)
+        for c, chain in enumerate(chains):
+            # 2.399963 rad is the golden angle; spreading phases by it is the
+            # cheapest way to guarantee nothing ever lines up.
+            base = c * 2.399963
+            n = max(1, len(chain) - 1)
+            for s, bone in enumerate(chain):
+                w = 2 * math.pi * (u - s * lag) + base
+                grow = 1.0 + (tip - 1.0) * (s / n)
+                a = amp * grow
+                # The slow swell opens and closes the whole limb; it is a
+                # half-cycle over the loop so it never repeats within it.
+                breathe = swell * 6.0 * math.sin(math.pi * u + base) * (s / n)
+                put(bone, "rotation", t,
+                    [a * math.sin(w) + breathe + drift * grow,
+                     a * 0.42 * math.sin(w * 0.5 + base * 1.3),
+                     a * 0.66 * math.cos(w + 0.9)])
+
+    if body:
+        for i in range(samples + 1):
+            u = i / samples
+            t = round(u * period, 4)
+            heave = -1.8 * (0.5 - 0.5 * math.cos(2 * math.pi * u))
+            roll = 2.2 * math.sin(2 * math.pi * u * 0.5)
+            put(body, "position", t, [roll * 0.6, heave, roll * 0.3])
+            put(body, "rotation", t, [heave * 1.2, roll * 0.7, roll])
+            if head:
+                put(head, "rotation", t,
+                    [-heave * 2.0 + 3.0 * math.sin(2 * math.pi * u * 1.5 + 0.7),
+                     7.0 * math.sin(2 * math.pi * u * 0.5 + 2.1),
+                     2.4 * math.sin(2 * math.pi * u * 0.75)])
+            if jaw:
+                put(jaw, "rotation", t,
+                    [16 + 11 * (0.5 - 0.5 * math.cos(2 * math.pi * u * 0.5)), 0, 0])
+
+    return {"loop": True, "animation_length": round(period, 3), "bones": tracks}
+
+
+def lash(chains: list[list[str]], *, length: float = 1.9, reach: float = 70.0,
+         groups: int = 3, body: str | None = None, head: str | None = None,
+         jaw: str | None = None, step: float = 0.0,
+         flare: bool = False) -> dict:
+    """A whip, which is the opposite shape to a punch.
+
+    A punch has every joint arriving together. A whip has the *base* leading
+    and each link arriving later than the one before it - the energy runs out
+    to the tip, which is why the tip is the part that breaks the sound barrier.
+    So the per-link delay here is deliberately large and runs base-first, where
+    `strike` uses a small delay for the opposite reason.
+
+    Before that the limb curls the wrong way and holds - a coil, up and back
+    over itself like a scorpion - and the hold is what tells you it is coming.
+
+    `groups` splits the tendrils into waves so they do not all arrive at once;
+    `flare` throws them outward and upward instead of forward, for a roar.
+    """
+    tracks: dict[str, dict[str, dict]] = {}
+
+    def put(bone, channel, t, vec, easing="easeInOutSine"):
+        chan = tracks.setdefault(bone, {}).setdefault(channel, {})
+        chan[str(round(max(0.0, t), 4))] = {"vector": [round(v, 3) for v in vec],
+                                            "easing": easing}
+
+    coil, hold, throw = length * 0.26, length * 0.44, length * 0.62
+
+    for c, chain in enumerate(chains):
+        wave = (c % max(1, groups)) / max(1, groups)
+        off = wave * length * 0.16
+        spin = c * 2.399963
+        n = max(1, len(chain) - 1)
+        for s, bone in enumerate(chain):
+            # Base first, tip last: this is the crack.
+            delay = (length * 0.20) * (s / n)
+            grow = 0.55 + 0.85 * (s / n)
+            if flare:
+                out_x, out_y, out_z = (-reach * 0.75 * grow,
+                                       math.sin(spin) * 26 * grow,
+                                       math.cos(spin) * 34 * grow)
+            else:
+                out_x, out_y, out_z = (reach * grow,
+                                       math.sin(spin) * 12 * grow,
+                                       math.cos(spin) * 10 * grow)
+            put(bone, "rotation", 0.0, [0, 0, 0])
+            put(bone, "rotation", coil + off + delay * 0.35,
+                [-reach * 0.55 * grow, math.sin(spin) * 18 * grow,
+                 math.cos(spin) * 22 * grow], "easeOutQuart")
+            # The hold. Nothing moves; that is the point of it.
+            put(bone, "rotation", hold + off + delay * 0.35,
+                [-reach * 0.50 * grow, math.sin(spin) * 16 * grow,
+                 math.cos(spin) * 20 * grow], "linear")
+            put(bone, "rotation", throw + off + delay,
+                [out_x, out_y, out_z], "easeOutQuart")
+            put(bone, "rotation", length * 0.86 + off + delay,
+                [out_x * -0.18, out_y * 0.3, out_z * 0.3])
+            put(bone, "rotation", length, [0, 0, 0])
+
+    if body:
+        put(body, "rotation", 0.0, [0, 0, 0])
+        put(body, "rotation", coil, [-11, 8, 3], "easeOutQuart")
+        put(body, "rotation", hold, [-10, 8, 3], "linear")
+        put(body, "rotation", throw, [16, -7, -2], "easeOutQuart")
+        put(body, "rotation", length, [0, 0, 0])
+        put(body, "position", 0.0, [0, 0, 0])
+        put(body, "position", coil, [0, 1.4, -step * 0.5], "easeOutQuart")
+        put(body, "position", hold, [0, 1.4, -step * 0.5], "linear")
+        put(body, "position", throw, [0, -2.6, step], "easeOutQuart")
+        put(body, "position", length, [0, 0, 0])
+    if head:
+        put(head, "rotation", 0.0, [0, 0, 0])
+        put(head, "rotation", coil, [-26, 0, 0], "easeOutQuart")
+        put(head, "rotation", hold, [-25, 0, 0], "linear")
+        put(head, "rotation", throw, [30, 0, 0], "easeOutQuart")
+        put(head, "rotation", length, [0, 0, 0])
+    if jaw:
+        put(jaw, "rotation", 0.0, [14, 0, 0])
+        put(jaw, "rotation", coil, [66, 0, 0], "easeOutQuart")
+        put(jaw, "rotation", hold, [70, 0, 0], "linear")
+        put(jaw, "rotation", throw, [10, 0, 0], "easeOutQuart")
+        put(jaw, "rotation", length, [14, 0, 0])
+
+    return {"loop": False, "animation_length": round(length, 3), "bones": tracks}
+
+
+# ---------------------------------------------------------------------------
 # Dying, lying there, and getting back up
 # ---------------------------------------------------------------------------
 

@@ -76,24 +76,42 @@ VANILLA_HOSTS = {
               ("chest",)),
 }
 
+# Bones whose rest rotation is a baked-in pose rather than a shape, and the
+# bone that actually carries the skull when it is not the one called `head`.
+VANILLA_FLAT = {"goat": ("nose",)}
+VANILLA_SKULL = {"goat": "nose", "chicken": "head"}
+
 
 def vanilla_quad(host: str, *, eye_style: str = "round", spares: int = 3,
-                 head: str = "head") -> list[Part]:
+                 head: str | None = None) -> list[Part]:
     """A vanilla quadruped, jointed and given a face."""
     model, mats, legs, skip = VANILLA_HOSTS[host]
+    head = head or VANILLA_SKULL.get(host, "head")
     parts = V.vanilla_host(model, mats=mats, skip=skip)
+    parts = V.flatten(parts, VANILLA_FLAT.get(host, ()))
     hind = {n for n, t in legs.items() if t.startswith("b")}
     parts = V.jointify(parts, legs, hind=hind)
     # Vanilla hangs the head off root alongside the body. The gait drops and
     # rolls the body every stride, so anything that is merely a sibling gets
     # left behind - which is why heads and tails appeared to come loose.
-    parts = V.reparent(parts, {"head": "body", "tail": "body",
-                               "tailfan": "body", "neck": "body"})
-    # Measure the head off the geometry rather than assuming it.
+    moves = {"head": "body", "tail": "body", "tailfan": "body", "neck": "body"}
+    loose = {p.name for p in parts if p.parent == "root" and p.name in moves}
+    if loose:
+        # Only worth splitting the body if something is about to be hung on it.
+        # The body is modelled upright and laid down with a 90-degree rotation;
+        # a head re-hung on that inherits the lie-down, which is exactly how
+        # heads ended up on the wrong side of their animals.
+        parts = V.unrotate(parts, ("body",))
+    parts = V.reparent(parts, moves)
+    # Measure the head off the geometry rather than assuming it. The *biggest*
+    # box wins, not the first: a goat's head bone lists two ears and a beard
+    # before anything skull-shaped, and sizing a face off an ear is how the
+    # goat ended up with no visible face at all.
     hw, hh, hd = 8.0, 8.0, 6.0
     for part in parts:
         if part.name == head and part.boxes:
-            hw, hh, hd = part.boxes[0].size
+            big = max(part.boxes, key=lambda b: b.size[0] * b.size[1] * b.size[2])
+            hw, hh, hd = big.size
             break
     parts += infected_face(head, hw, hh, hd,
                            eye=max(3.0, min(5.0, hw * 0.52)),
@@ -278,7 +296,7 @@ def blighted_cat() -> Model:
 def blighted_rabbit() -> Model:
     """The haunches split. The ears are cartilage and nothing else."""
     p = vanilla_quad("rabbit", eye_style="round", spares=3)
-    p += flayed("right_haunch", at=(-1.6, 2.0, 0.0), length=5.5, height=4.5,
+    p += flayed("leg_br", at=(-1.6, 2.0, 0.0), length=5.5, height=4.5,
                 ribs=4, tier=1, side=-1, name="haunch")
     p += flayed("body", at=(0.0, 2.6, 1.0), length=7.0, height=4.0, ribs=5,
                 tier=2, side=1, name="back")
@@ -1185,22 +1203,41 @@ def _creaking_torso(legs: bool) -> list[Part]:
     root_y = -30.0 if legs else -22.0
 
     # The bundle it hangs from: roots into the ceiling, converging downward.
+    # These carry the whole mass, so they are cables rather than threads - but
+    # they have to stay *separate* cables. Bunched inside a seven-unit radius
+    # at six units thick they overlapped into one solid column and the thing
+    # looked like it was growing out of a tree trunk. So: spread wide at the
+    # ceiling, converging as they descend, and no two the same gauge.
+    #
+    # The rotation is worked out rather than guessed. A link's box runs along
+    # local +y and the stack composes z, then y, then x, so a bone at
+    # `(theta, a, 0)` points along `(sin t sin a, cos t, sin t cos a)` - which
+    # is straight out along the radius at angle `a`, tipped `theta` off
+    # vertical. Negative theta therefore leans *inward*, which is what a
+    # suspension cable does: wide where it meets the ceiling, gathered where it
+    # takes the load.
     for i in range(14):
         a = i * 2.399963
         f = i / 13.0
+        gauge = 4.4 - f * 2.4
         parts += chain(f"moor{i}", "root",
-                       (math.sin(a) * (5 + f * 7), root_y - 40.0,
-                        math.cos(a) * (5 + f * 7)),
-                       5, (2.2 - f * 0.8, 9.0 + f * 3.0, 2.2 - f * 0.8),
-                       "sinew", taper=0.92,
-                       curl=(math.cos(a) * 4 * D, 0, math.sin(a) * 4 * D),
-                       root_rot=(math.cos(a) * 7 * D, -a, math.sin(a) * 7 * D))
+                       (math.sin(a) * (20 + f * 16), root_y - 50.0,
+                        math.cos(a) * (20 + f * 16)),
+                       5, (gauge, 11.0 + f * 3.0, gauge),
+                       # Bark, not sinew: the cables are structure and the
+                       # tentacles are the creature, and at a glance across a
+                       # dark cavern they need to be told apart.
+                       "bark", taper=0.9,
+                       curl=(-3 * D, 0, math.sin(a * 2.3) * 4 * D),
+                       root_rot=(-(16.0 + f * 12.0) * D, a, 0))
 
     # The mass. Not a torso - an irregular knot, wider than tall.
     parts.append(Part("torso", "root", (0.0, root_y, 0.0), (0, 0, 0),
-                      [Box((-17, -16, -15), (34, 26, 30), "heartwood"),
-                       Box((-20, -8, -12), (40, 12, 24), "bark"),
-                       Box((-13, -22, -11), (26, 10, 22), "heartwood")]))
+                      [Box((-23, -20, -20), (46, 34, 40), "heartwood"),
+                       Box((-27, -10, -16), (54, 16, 32), "bark"),
+                       Box((-17, -29, -14), (34, 13, 28), "heartwood"),
+                       # An overhang at the front, so the mass leans over you.
+                       Box((-20, -6, -30), (40, 20, 14), "bark")]))
     # Lobes hung off it at golden-angle intervals, no two alike.
     for i in range(11):
         a = i * 2.399963
@@ -1212,21 +1249,25 @@ def _creaking_torso(legs: bool) -> list[Part]:
                           [Box((-5 - f * 2, -5, -5), (10 + f * 4, 12 + f * 6, 10),
                                "heartwood" if i % 2 else "bark")]))
 
-    # The core: where a chest would be, if it had one.
-    parts.append(Part("chest", "torso", (0.0, -6.0, -14.0), (0, 0, 0),
-                      [Box((-9, -11, -2), (18, 22, 3), "rot")]))
-    parts.append(Part("heart", "chest", (0.0, 0.0, -2.2), (0, 0, 0),
-                      [Box((-6, -8, -3), (12, 16, 4), "amberglow")]))
+    # The core: where a chest would be, if it had one. It sits on the *front*
+    # face of the overhang rather than inside the mass - the first version was
+    # buried a dozen units deep in heartwood and the eyes, which are the only
+    # thing on this creature that ever looks back at you, could not be seen
+    # from any angle you would ever fight it from.
+    parts.append(Part("chest", "torso", (0.0, -24.0, -20.0), (-22 * D, 0, 0),
+                      [Box((-13, -15, -3), (26, 30, 4), "rot")]))
+    parts.append(Part("heart", "chest", (0.0, 0.0, -3.2), (0, 0, 0),
+                      [Box((-8, -11, -4), (16, 22, 5), "amberglow")]))
     # Rings of eyes orbiting it, three deep, none aligned.
-    for ring, (count, radius, depth) in enumerate(((7, 11.0, -3.0),
-                                                   (11, 16.0, -1.6),
-                                                   (13, 21.0, -0.6))):
+    for ring, (count, radius, depth) in enumerate(((7, 12.0, -4.4),
+                                                   (11, 18.0, -2.6),
+                                                   (13, 24.0, -1.2))):
         for i in range(count):
             a = i * 2.399963 + ring * 0.7
             parts.append(Part(f"eye_r{ring}_{i}", "chest",
                               (math.sin(a) * radius, math.cos(a) * radius * 0.8, depth),
                               (0, 0, 0),
-                              [Box((-1.9, -1.9, -1.1), (3.8, 3.8, 1.2), "eye:bloom")]))
+                              [Box((-2.6, -2.6, -1.6), (5.2, 5.2, 1.8), "eye:bloom")]))
 
     # Mouths, all over, all angles. This is the face - there isn't one.
     for i in range(14):
@@ -1246,33 +1287,95 @@ def _creaking_torso(legs: bool) -> list[Part]:
                               [Box((-0.55, 0, -0.55), (1.1, 2.6 + (k % 2) * 1.2, 1.1),
                                    "tooth")]))
     # The one that matters, and the only bone the animation engine drives.
-    parts.append(Part("head", "torso", (0.0, -16.0, -13.0), (0, 0, 0),
-                      [Box((-7, -6, -8), (14, 10, 9), "palewood")]))
-    parts.append(Part("face_jaw", "head", (0.0, 3.0, -7.0), (26 * D, 0, 0),
-                      [Box((-5.5, 0, -8), (11, 3.4, 9), "rot")]))
-    for i in range(8):
-        parts.append(Part(f"fang{i}", "face_jaw", (-4.6 + i * 1.3, -0.4, -7.0 + (i % 2)),
+    #
+    # Everything else on this creature is a field of small repeated things -
+    # lobes, mouths, eyes, tentacles - and a field has no focal point. So one
+    # element is built at a scale nothing else on the model comes near: a prow
+    # of pale oak that hangs off the front of the overhang and points down at
+    # whatever is beneath it. When it moves, it is the thing you watch.
+    parts.append(Part("head", "torso", (0.0, -14.0, -28.0), (14 * D, 0, 0),
+                      [Box((-11, -9, -26), (22, 18, 28), "palewood"),
+                       Box((-8, -13, -18), (16, 6, 18), "bark"),
+                       # A brow shelf, so there is somewhere for a face to be
+                       # in shadow.
+                       Box((-13, -12, -12), (26, 7, 12), "heartwood")]))
+    parts.append(Part("face_jaw", "head", (0.0, 8.0, -22.0), (24 * D, 0, 0),
+                      [Box((-9, 0, -20), (18, 6, 24), "rot")]))
+    for i in range(10):
+        parts.append(Part(f"fang{i}", "face_jaw",
+                          (-8.0 + i * 1.8, -0.4, -17.0 + (i % 3) * 4.0),
                           (0, 0, 0),
-                          [Box((-0.6, -3.4, -0.6), (1.2, 3.4, 1.2), "tooth")]))
-    parts += lolling_tongue("face_jaw", at=(0.0, 1.6, -5.0), tier=0, segments=9,
-                            thick=1.8, name="tongue")
+                          [Box((-1.1, -6.5, -1.1), (2.2, 6.6, 2.2), "tooth")]))
+    # And the upper set, so the mouth closes on something.
+    for i in range(10):
+        parts.append(Part(f"tusk{i}", "head",
+                          (-8.0 + i * 1.8, 8.4, -17.5 + (i % 3) * 4.0),
+                          (0, 0, 0),
+                          [Box((-1.1, 0, -1.1), (2.2, 6.0 + (i % 2) * 2.5, 2.2),
+                               "tooth")]))
+    parts += lolling_tongue("face_jaw", at=(0.0, 2.6, -14.0), tier=0, segments=11,
+                            thick=4.2, name="tongue")
 
-    # Tendrils. Dozens, unpaired, every length - these are what reach you.
+    # Tendrils. Unpaired, every length - these are what reach you, so they are
+    # built like limbs and not like hair. The mass they hang off is forty units
+    # across; a two-pixel string against that reads as a stray thread, which is
+    # exactly how the first pass looked. Each one leaves the body at nine or
+    # ten units thick - as thick as a cow's whole leg - and tapers hard down
+    # its length, so the root is heavy enough to swing something and the tip
+    # still comes to a point.
+    #
+    # Three grades, because one grade of tentacle is a fringe:
+    #   0-5   haulers - short, enormous, they take the weight and drag
+    #   6-11  reachers - long and mid-weight, these are the ones that find you
+    #  12-17  feelers  - thin, restless, always the first to move
     for i in range(18):
-        a = i * 2.399963
+        # Not the golden angle over a full circle - that spreads them evenly,
+        # and evenly spread radial limbs read as a spider, which is a shape
+        # people have a name for. Squeezing the sequence into a 260-degree arc
+        # centred on the front piles the long ones toward whoever is looking
+        # and leaves the back of the mass nearly bare.
+        a = math.pi + (((i * 2.399963) % (2 * math.pi)) - math.pi) * 0.72
         f = i / 17.0
-        links = 5 + (i % 5)
-        thick = 2.8 - f * 1.5
+        grade = i // 6
+        links = (4, 7, 6)[grade] + (i % 3)
+        thick = (11.5, 8.5, 5.5)[grade] - (i % 3) * 0.6
+        # Segment lengths are chosen against the totals, not by eye: with a
+        # taper of 0.84 a chain comes out about `seg * 3.5` long at four links
+        # and `seg * 6.5` at nine. The first pass used sixteen-unit segments
+        # and produced hundred-and-thirty-unit tentacles that hung straight
+        # down through the floor. These come to roughly 35 / 65 / 33.
+        seg = (9.0, 11.0, 6.5)[grade] + (i % 4) * 1.2
+        # They leave from the flanks, not the underside: splayed hard outward
+        # at the root, curling back down along their length, so they arch away
+        # from the mass and droop. A canopy, not a skirt.
+        splay = (74.0, 62.0, 48.0)[grade] + (i % 3) * 7.0
         parts += chain(f"tend{i}", "torso",
-                       (math.sin(a) * (6 + f * 9), 7.0 + (i % 4) * 2.0,
-                        math.cos(a) * (6 + f * 9)),
-                       links, (thick, 11.0 + f * 7.0, thick), "sinew", taper=0.9,
-                       curl=(math.cos(a) * 5 * D, math.sin(a) * 4 * D,
-                             math.sin(a * 1.7) * 7 * D),
-                       root_rot=(math.cos(a) * 11 * D, -a, math.sin(a) * 11 * D))
+                       (math.sin(a) * (14 + f * 5), -8.0 + (i % 5) * 4.5,
+                        math.cos(a) * (14 + f * 5) * 0.9),
+                       links, (thick, seg, thick * 0.86), "sinew", taper=0.84,
+                       curl=(11 * D, math.sin(a * 1.7) * 5 * D,
+                             math.sin(a * 2.9) * 8 * D),
+                       root_rot=(splay * D, a, 0))
+        # Where a tendril meets the mass it is not a clean joint - it is a
+        # swollen collar of the same stuff, so the limb looks grown rather than
+        # plugged in.
+        parts.append(Part(f"tend{i}_collar", f"tend{i}", (0.0, 0.0, 0.0),
+                          (0, 0, 0),
+                          [Box((-thick * 0.78, -2.5, -thick * 0.78),
+                               (thick * 1.56, 7.0, thick * 1.56),
+                               "bark" if grade == 0 else "heartwood")]))
+        # Barbs down the heavy ones. They face backwards, like a hook.
+        if grade < 2:
+            for k in range(1, min(links, 4)):
+                seg_name = f"tend{i}_{k}"
+                parts.append(Part(f"tend{i}_barb{k}", seg_name,
+                                  (0.0, seg * 0.45, thick * 0.4),
+                                  (-52 * D, k * 1.1, 0),
+                                  [Box((-1.4, -0.6, -1.4),
+                                       (2.8, 6.5 - k * 0.9, 2.8), "tooth")]))
     # And the drip: what hangs below where legs would be.
     parts += chain("drip", "torso", (0.0, 10.0, 0.0), 8 if legs else 5,
-                   (4.0, 9.0, 4.0), "amber", taper=0.86,
+                   (7.5, 9.0, 7.5), "amber", taper=0.86,
                    curl=(2 * D, 0, 3 * D))
     return parts
 
@@ -1285,9 +1388,13 @@ def the_creaking() -> Model:
     something rising out of the pool rather than standing in a puddle.
     """
     parts = _creaking_torso(legs=False)
-    parts.append(Part("waterline", "root", (0.0, -4.0, 0.0), (0, 0, 0),
-                      [Box((-26, -2, -22), (52, 4, 44), "amberglow"),
-                       Box((-30, 0, -26), (60, 3, 52), "amber")]))
+    # The pool has to cut *through* it, not sit under it. At y=-4 there were
+    # eight units of daylight between the surface and the underside of the
+    # mass, so it read as a thing standing on a gold table. At -18 the mass is
+    # in the gold up to its middle, which is the whole idea.
+    parts.append(Part("waterline", "root", (0.0, -18.0, 0.0), (0, 0, 0),
+                      [Box((-34, -2, -30), (68, 4, 60), "amberglow"),
+                       Box((-40, 0, -34), (80, 3, 68), "amber")]))
     # Sap sheeting off it, still running back into the pool.
     for i in range(9):
         a = (2 * math.pi * i) / 9

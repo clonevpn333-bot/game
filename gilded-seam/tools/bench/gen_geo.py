@@ -212,19 +212,40 @@ def main() -> None:
 
         # No arms, no legs. The tendrils are what moves, and there are
         # eighteen of them at four different lengths.
-        arms = [[f"tend{i}", f"tend{i}_1", f"tend{i}_2"] for i in range(18)
-                if f"tend{i}" in have]
+        # They are tendrils, so they get `writhe` and `lash` rather than the
+        # arm code - and whole chains, every link, not the first three: a wave
+        # that stops a third of the way down a limb is not a wave.
+        def links(prefix, count):
+            out = []
+            for i in range(count):
+                if f"{prefix}{i}" not in have:
+                    continue
+                chain = [f"{prefix}{i}"]
+                while f"{prefix}{i}_{len(chain)}" in have:
+                    chain.append(f"{prefix}{i}_{len(chain)}")
+                out.append(chain)
+            return out
+
+        tendrils = links("tend", 18)
+        # The cables it hangs from move too, a beat behind: the mass drags on
+        # them. Only the lower half of each is worth keyframing - the ends are
+        # buried in the ceiling and a wave up there is invisible and costs the
+        # same to ship as one down here.
+        moorings = [c[2:] for c in links("moor", 14)]
         legs = []
         anims = {
-            f"animation.{shipped}.idle": A.idle(
-                body="chest", head="head", jaw="face_jaw", limbs=legs,
-                period=6.4, depth=1.1, unease=0.8),
-            f"animation.{shipped}.roar": A.strike(
-                arms=arms, length=2.6, head="head", jaw="face_jaw",
-                body="chest", legs=legs, stagger=0.09, reach=62.0, step=2.0),
-            f"animation.{shipped}.slam": A.strike(
-                arms=arms, length=1.5, head="head", jaw="face_jaw",
-                body="chest", legs=legs, stagger=0.06, reach=108.0, step=5.0),
+            # Nearly nine seconds a cycle. Slow is what makes it read as heavy.
+            f"animation.{shipped}.idle": A.writhe(
+                tendrils + moorings, period=8.6, samples=16, amp=11.0,
+                tip=3.1, lag=0.19, body="torso", head="head", jaw="face_jaw"),
+            # A roar throws everything outward and holds it open.
+            f"animation.{shipped}.roar": A.lash(
+                tendrils, length=2.6, reach=58.0, groups=2, body="torso",
+                head="head", jaw="face_jaw", step=1.5, flare=True),
+            # A slam brings them down in three waves.
+            f"animation.{shipped}.slam": A.lash(
+                tendrils, length=1.7, reach=104.0, groups=3, body="torso",
+                head="head", jaw="face_jaw", step=5.0),
         }
         if legs:
             anims[f"animation.{shipped}.walk"] = A.locomotion(
