@@ -44,6 +44,8 @@ public final class GildedSeam implements ModInitializer {
                 .register(com.gildedseam.infection.Quickening::tickAll);
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK
                 .register(com.gildedseam.infection.Unmaking::tickAll);
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK
+                .register(com.gildedseam.infection.Creep::tickAll);
         // The Mother Tree is not an item you place. It is already there when
         // you arrive, at world spawn, and everything else radiates from it.
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED
