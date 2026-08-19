@@ -758,56 +758,132 @@ def blighted_wither() -> Model:
 def blighted_dragon() -> Model:
     """Grounded. The wings set into resin before it could land properly.
 
-    The Ender Dragon's proportions are kept - the long neck, the deep chest,
-    the whip tail - but the membranes have hardened into amber sheets that no
-    longer fold, so it drags them. It walks now. That is worse.
+    Built on the real Ender Dragon now, not on a memory of one. The hand-made
+    version was the right idea at the wrong proportions - a chest twenty-eight
+    units deep where the dragon's is sixty-four, a five-link neck where the
+    dragon has five *necks* ten units apart, three-link stub wings where a wing
+    is a hundred and twelve units of span. Read out of the jar it is
+    unmistakably the dragon, and the infection is grafted on afterwards.
+
+    Vanilla rigs the dragon flat - every neck link, every one of the twelve
+    tail links and both wings hang off the root, and `EnderDragonRenderer`
+    chains them by hand each frame. Nothing here does that, so the chain is
+    made real: each link is hung off the one in front, keeping its exact
+    position, and after that a wave down the neck or the tail is one animation
+    instead of thirty-seven bones of bookkeeping.
+
+    Two thirds scale. At full size the wingspan is fourteen blocks, which is
+    correct for the dragon that circles the End and wrong for something that
+    has to come at you down a gallery.
     """
-    parts = [
-        Part("chest", "root", (0.0, GROUND - 30.0, 0.0), (0, 0, 0),
-             [Box((-9, -12, -14), (18, 14, 28), "dragonhide")]),
-        Part("hips", "chest", (0.0, -2.0, 14.0), (0, 0, 0),
-             [Box((-7, -8, 0), (14, 10, 14), "dragonhide")]),
-    ]
-    # Neck: five segments, rising then levelling.
-    parts += chain("neck", "chest", (0.0, -9.0, -14.0), 5, (7.0, 8.0, 7.0),
-                   "dragonhide", taper=0.88, curl=(-14 * D, 0, 0),
-                   root_rot=(-58 * D, 0, 0))
-    parts.append(Part("head", "neck_4", (0.0, 7.0, 0.0), (44 * D, 0, 0),
-                      [Box((-5, -5, -13), (10, 9, 14), "dragonhide")]))
-    parts.append(Part("face_jaw", "head", (0.0, 3.5, -11.0), (20 * D, 0, 0),
-                      [Box((-4, 0, -9), (8, 3, 10), "rot")]))
-    for i in range(7):
-        parts.append(Part(f"fang{i}", "head", (-3.6 + i * 1.2, 4.0, -11.0 + (i % 2) * 1.5),
-                          (0, 0, 0),
-                          [Box((-0.55, 0, -0.55), (1.1, 3.2, 1.1), "tooth")]))
-    for side in (-1, 1):
-        tag = "r" if side < 0 else "l"
-        parts.append(Part(f"horn_{tag}", "head", (side * 4.0, -4.0, -3.0),
-                          (-24 * D, side * 16 * D, side * 26 * D),
-                          [Box((-1.4, -9, -1.4), (2.8, 9, 2.8), "tooth")]))
-        parts += eye_cluster("head", at=(side * 4.6, -1.0, -7.0), count=3, tier=0,
-                             spread=(1.4, 3.0), size=2.8, out=side * 0.8,
+    mats = {"*": "dragonhide", "jaw": "rot"}
+    # The gait solver finds limbs by name - `leg_fr`, `leg_fr_1`, `foot_fr` -
+    # so the dragon's own three-part legs are renamed into that convention
+    # rather than being re-cut by `jointify`. They are already jointed; vanilla
+    # gives the dragon a thigh, a shin and a foot, which is more than most of
+    # the animals in this mod start with.
+    rename = {}
+    for side, tag in (("right", "r"), ("left", "l")):
+        for kind, pos in (("front", "f"), ("hind", "b")):
+            rename[f"{side}_{kind}_leg"] = f"leg_{pos}{tag}"
+            rename[f"{side}_{kind}_leg_tip"] = f"leg_{pos}{tag}_1"
+            rename[f"{side}_{kind}_foot"] = f"foot_{pos}{tag}"
+    parts = V.vanilla_host("EnderDragonModel", mats=mats, rename=rename)
+    # A wing bone carries two cubes: the arm bone and, separately, the flat
+    # quad that vanilla textures as the membrane. They are one bone, so the
+    # material map cannot tell them apart - the membrane has to be picked out
+    # by its shape. It is the one with no thickness.
+    fixed = []
+    for part in parts:
+        if "wing" in part.name and part.boxes:
+            fixed.append(Part(part.name, part.parent, part.pivot, part.rot,
+                              [Box(b.origin, b.size,
+                                   "amber" if b.size[1] < 1.0 else b.mat,
+                                   grow=b.grow) for b in part.boxes]))
+        else:
+            fixed.append(part)
+    parts = fixed
+    # Necks and tail into real chains; wings and legs onto the body.
+    moves = {"neck0": "body", "head": "neck4", "tail0": "body"}
+    for i in range(1, 5):
+        moves[f"neck{i}"] = f"neck{i - 1}"
+    for i in range(1, 12):
+        moves[f"tail{i}"] = f"tail{i - 1}"
+    for side in ("right", "left"):
+        moves[f"{side}_wing"] = "body"
+    for tag in ("fr", "fl", "br", "bl"):
+        moves[f"leg_{tag}"] = "body"
+    parts = V.reparent(parts, moves)
+    parts = V.rescale(parts, 0.66)
+    # Vanilla's rest pose is a flying pose - wings straight out, neck level -
+    # because the renderer overwrites all of it every frame from the dragon's
+    # flight path. Nothing here does that, and a dragon held flat reads as a
+    # model aeroplane. So it is posed on the ground: wings swept back and
+    # drooping under their own set weight, the neck lifted into an S, the head
+    # dropped at the end of it, the tail heavy.
+    pose = {"right_wing": (0, -34 * D, 26 * D),
+            "left_wing": (0, 34 * D, -26 * D),
+            "right_wing_tip": (0, -22 * D, 30 * D),
+            "left_wing_tip": (0, 22 * D, -30 * D),
+            "neck0": (-26 * D, 0, 0), "neck1": (-14 * D, 0, 0),
+            "neck2": (6 * D, 0, 0), "neck3": (18 * D, 0, 0),
+            "neck4": (16 * D, 0, 0), "head": (10 * D, 0, 0),
+            "tail0": (7 * D, 0, 0), "tail1": (5 * D, -3 * D, 0),
+            "tail2": (4 * D, -4 * D, 0), "tail3": (2 * D, -5 * D, 0),
+            "tail4": (0, -5 * D, 0), "tail5": (-2 * D, -4 * D, 0),
+            "tail6": (-3 * D, -2 * D, 0), "tail7": (-3 * D, 2 * D, 0),
+            "tail8": (-2 * D, 4 * D, 0), "tail9": (0, 5 * D, 0),
+            "tail10": (2 * D, 4 * D, 0), "tail11": (3 * D, 3 * D, 0)}
+    parts = [Part(p.name, p.parent, p.pivot, pose.get(p.name, p.rot), p.boxes)
+             for p in parts]
+
+    # --- and then the resin got into it ------------------------------------
+    #
+    # It came down in the pool and could not get out again. What is wrong with
+    # it is concentrated where a flying animal is most vulnerable to something
+    # that sets: the wing joints, which no longer fold, and the throat, which
+    # is the longest run of soft tissue on the body.
+    for side, tag in ((-1, "r"), (1, "l")):
+        wing = f"{'right' if side < 0 else 'left'}_wing"
+        # The membranes are vanilla's own, so nothing is bolted over them. What
+        # is added is what happened to them: resin ran off the trailing edge
+        # while the wing was still beating and set there, so the whole span is
+        # fringed with drips of different lengths and the wing no longer folds.
+        for k in range(7):
+            reach = 3.0 + k * 3.4
+            parts += chain(f"drip_{tag}{k}",
+                           wing if k < 4 else f"{wing}_tip",
+                           (side * (5.0 + k * 5.5), 2.0, 24.0 - k * 1.5), 3,
+                           (3.4 - k * 0.25, reach, 3.4 - k * 0.25), "amber",
+                           taper=0.74, curl=(4 * D, 0, side * 5 * D))
+        # And where the joint should hinge, a swollen collar of set resin.
+        parts.append(Part(f"lock_{tag}", wing, (side * 34.0, 0.0, 0.0),
+                          (0, 0, side * 8 * D),
+                          [Box((-7, -7, -8), (14, 14, 22), "amber")]))
+        parts += eye_cluster("head", at=(side * 5.4, -3.0, -9.0), count=3, tier=1,
+                             spread=(2.0, 3.4), size=2.6, out=side * 0.9,
                              name=f"eyes_{tag}")
-        # Wing: an arm, then hardened amber sheets between the fingers.
-        parts += chain(f"wing_{tag}", "chest", (side * 9.0, -10.0, -6.0), 3,
-                       (5.0, 14.0, 5.0), "dragonhide", taper=0.85,
-                       curl=(0, side * -10 * D, side * 16 * D),
-                       root_rot=(-14 * D, side * 20 * D, side * 68 * D))
-        for k in range(4):
-            parts.append(Part(f"sheet_{tag}{k}", f"wing_{tag}_2",
-                              (0.0, 6.0, -6.0 + k * 4.0),
-                              (0, side * (10 + k * 9) * D, side * 8 * D),
-                              [Box((-0.8 if side < 0 else -0.2, -2.0, -1.6),
-                                   (1.0, 20.0 - k * 3.0, 3.2), "amber")]))
-        parts += chain(f"leg_{tag}", "root", (side * 7.0, GROUND - 14.0, -6.0), 3,
-                       (5.0, 5.5, 5.0), "dragonhide", taper=0.88)
-        parts += chain(f"hind_{tag}", "root", (side * 6.0, GROUND - 16.0, 12.0), 3,
-                       (5.5, 6.5, 5.5), "dragonhide", taper=0.88)
-    parts += chain("tail", "hips", (0.0, -2.0, 14.0), 7, (6.0, 9.0, 6.0),
-                   "dragonhide", taper=0.82, curl=(3 * D, 0, 2 * D),
-                   root_rot=(-8 * D, 0, 0))
-    parts += spine_plates("chest", from_z=-12.0, to_z=12.0, y=-12.0, count=8,
-                          tier=0, height=5.0, name="crest")
+    # The throat is open from the jaw to the chest - five necks of it.
+    for i in range(5):
+        parts += flayed(f"neck{i}", at=(0.0, 1.4, -3.4), length=5.0, height=3.4,
+                        ribs=3, tier=1, side=1 if i % 2 else -1,
+                        name=f"throat{i}")
+    parts += flayed("body", at=(0.0, 2.0, -6.0), length=22.0, height=9.0, ribs=7,
+                    tier=2, side=1, name="flank")
+    # A second set of jaws behind the first, where the tongue was.
+    parts.append(Part("gullet", "jaw", (0.0, 1.0, -6.0), (-14 * D, 0, 0),
+                      [Box((-3.5, 0, -7.0), (7, 4, 8), "rot")]))
+    for i in range(6):
+        parts.append(Part(f"fang{i}", "jaw", (-4.4 + i * 1.8, 0.6, -9.0 + (i % 2) * 3.0),
+                          (0, 0, 0),
+                          [Box((-0.7, -4.2, -0.7), (1.4, 4.4, 1.4), "tooth")]))
+    parts += spine_plates("body", from_z=-8.0, to_z=30.0, y=-1.0, count=9,
+                          tier=1, height=6.0, name="crest")
+    # The tail stopped being a tail somewhere around the eighth link.
+    for i in range(7, 12):
+        parts.append(Part(f"barb{i}", f"tail{i}",
+                          (0.0, -3.0, 0.0), (-40 * D, i * 1.2, 0),
+                          [Box((-1.3, -7.0, -1.3), (2.6, 8.0, 2.6), "tooth")]))
     return _m("blighted_dragon", parts, tex=512)
 
 

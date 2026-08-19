@@ -302,6 +302,28 @@ def unrotate(parts: list[Part], names: tuple = ("body",)) -> list[Part]:
     return out
 
 
+def rescale(parts: list[Part], factor: float) -> list[Part]:
+    """Shrinks or grows a whole rig about the origin.
+
+    Vanilla's Ender Dragon is modelled at its true size - a hundred and twelve
+    units of wing on each side, seven blocks - which is correct for the dragon
+    and too much for a boss that has to fit down a corridor. Scaling the
+    geometry rather than the renderer keeps the entity's collision box and its
+    model in the same units, so a hit lands where the wing looks like it is.
+    """
+    if factor == 1.0:
+        return list(parts)
+    out = []
+    for part in parts:
+        out.append(Part(
+            part.name, part.parent,
+            tuple(v * factor for v in part.pivot), part.rot,
+            [Box(tuple(v * factor for v in b.origin),
+                 tuple(max(0.6, v * factor) for v in b.size),
+                 b.mat, grow=b.grow * factor) for b in part.boxes]))
+    return out
+
+
 def flatten(parts: list[Part], names: tuple = ()) -> list[Part]:
     """Zeroes the rest rotation on named bones.
 

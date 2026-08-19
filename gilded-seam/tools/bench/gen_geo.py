@@ -133,9 +133,14 @@ def main() -> None:
                             [["arm_r", "arm_r_1", "arm_r_2", "arm_r_3"],
                              ["arm_l", "arm_l_1", "arm_l_2", "arm_l_3"]]),
         "blighted_wither": ("ribcage", "skull0", "skull0_jaw", [], []),
-        "blighted_dragon": ("chest", "head", "face_jaw",
-                            ["leg_r", "leg_l", "hind_r", "hind_l"],
-                            [["neck", "neck_1", "neck_2", "neck_3", "neck_4"]]),
+        # Rebuilt on the vanilla skeleton, so the bones are vanilla's names put
+        # through the toolchain's convention: a body rather than a chest, four
+        # jointed legs rather than four stubs, and the neck is five real links
+        # driven as one arm chain.
+        "blighted_dragon": ("body", "head", "jaw",
+                            ["leg_fr", "leg_fl", "leg_br", "leg_bl"],
+                            [["neck0", "neck1", "neck2", "neck3", "neck4",
+                              "head"]]),
         "blighted_enderman": ("body", "head", "face_jaw", ["leg_r", "leg_l"],
                               [["arm_r", "arm_r_1", "arm_r_2"],
                                ["arm_l", "arm_l_1", "arm_l_2"]]),
@@ -169,6 +174,19 @@ def main() -> None:
                 body=body, head=head if head in have else None,
                 jaw=jaw if jaw and jaw in have else None, sway=1.5, limp=0.0,
                 flex=1.0, wrong=0.9, airborne=1.0, samples=30)
+        # A twelve-link tail that does not move is twelve links of dead weight,
+        # and the dragon's is the longest thing in the mod. The idle gets a
+        # travelling wave laid over it - and over the neck, offset so the two
+        # ends of the animal are never doing the same thing at once.
+        if bench_name == "blighted_dragon":
+            tails = [[f"tail{i}" for i in range(12) if f"tail{i}" in have],
+                     [f"neck{i}" for i in range(5) if f"neck{i}" in have]]
+            tails = [c for c in tails if c]
+            wave = A.writhe(tails, period=5.6, samples=18, amp=5.0, tip=2.6,
+                            lag=0.13)
+            idle = anims[f"animation.{bench_name}.idle"]
+            for bone, channels in wave["bones"].items():
+                idle["bones"].setdefault(bone, {}).update(channels)
         write_animations(os.path.join(ANIM_DIR, f"{bench_name}.animation.json"), anims)
 
     # --- the Creaking, hand and body ------------------------------------
