@@ -20,6 +20,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # A run that hangs is worse than a run that fails: it burns minutes, it
+    # holds the queue, and it never tells anyone anything. Nothing here has
+    # ever legitimately taken half an hour.
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: gilded-seam
@@ -162,6 +166,7 @@ jobs:
       - name: Dump vanilla model geometry
         if: always()
         continue-on-error: true
+        timeout-minutes: 12
         run: |
           set +e
           # Entity models are CLIENT classes. minecraft-common.jar does not
@@ -189,20 +194,14 @@ jobs:
           echo "model classes found: $(wc -l < /tmp/classes.txt)"
           names=$(sed 's#/#.#g; s#\.class$##' /tmp/classes.txt | tr '\n' ' ')
           echo "dumping: $names"
-          echo "--- static LayerDefinition factories on each ---"
-          for c in $names; do
-            echo "### $c"
-            for j in $jars; do
-              javap -p -cp "$j" "$c" 2>/dev/null | grep -E "LayerDefinition" | head -4
-            done
-          done
-          echo "--- static LayerDefinition factories on each ---"
-          for c in $names; do
-            echo "### $c"
-            for j in $jars; do
-              javap -p -cp "$j" "$c" 2>/dev/null | grep -E "LayerDefinition" | head -6
-            done
-          done
+          # There used to be a javap survey here that printed the static
+          # LayerDefinition factories on every class - and it was pasted in
+          # twice. Two hundred and twenty classes, several jars each, two
+          # passes: about fifteen hundred JVM starts, which took this step past
+          # half an hour and left it running long after the build it belonged
+          # to had finished. It was scaffolding from before the dumper could
+          # report for itself, and the dumper's own per-model error line says
+          # the same thing more precisely and for free.
           timeout 240 java -cp "$jar$deps:/tmp/oracle" DumpModels $names > /tmp/vanilla-models.json 2>/tmp/dump.err
           echo "dump exit: $? (124 = timed out)"
           echo "--- stderr ---"; tail -5 /tmp/dump.err
