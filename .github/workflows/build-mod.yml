@@ -189,6 +189,23 @@ jobs:
                 | grep -oE "data/minecraft/worldgen/placed_feature/[A-Za-z0-9_]+\.json" | head -60); do
             unzip -p "$jar" "$f" 2>/dev/null | tr -d ' \n' | grep -oE '"type":"[a-z0-9_:]+"'
           done | sort -u
+          echo "===== the animation API, as it actually is ====="
+          # The mod plays animations through vanilla's keyframe system
+          # (AnimationDefinition.bake -> KeyframeAnimation.apply). Driving a
+          # *cyclic* one off walk speed needs whichever method 26.2 spells
+          # that with, and guessing at it is a build per guess.
+          cjar=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null \
+            | grep -iE "minecraft" | grep -viE "sources|javadoc" \
+            | xargs -I{} sh -c 'unzip -l {} 2>/dev/null | grep -q "net/minecraft/client/animation/KeyframeAnimation.class" && echo {}' \
+            | head -1)
+          for c in net.minecraft.client.animation.KeyframeAnimation \
+                   net.minecraft.client.animation.AnimationDefinition \
+                   net.minecraft.client.animation.AnimationChannel \
+                   net.minecraft.client.animation.KeyframeAnimations \
+                   net.minecraft.client.model.EntityModel; do
+            echo "--- $c"
+            javap -p -cp "$cjar" "$c" 2>&1 | head -30
+          done
           echo "===== a vanilla advancement that filters on entity type ====="
           # Two of the mod's advancements fail with "Unknown registry key in
           # entity_sub_predicate_type: minecraft:type", which means the entity

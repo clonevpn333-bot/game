@@ -37,7 +37,16 @@ DEATHS = {
     "gilded_chicken": "burst", "gilded_wolf": "fold", "gilded_fox": "fold",
     "gilded_cat": "fold", "gilded_hare": "burst", "gilded_cask": "burst",
     "gilded_spider": "buckle",
+    # The abstracts and the taken. Nothing in this mod should die the same way
+    # twice, and the big ones have the most room to make a show of it.
+    "the_choir": "burst", "the_harrow": "buckle", "the_lacuna": "fold",
+    "blighted_warden": "topple", "blighted_wither": "burst",
+    "blighted_dragon": "buckle", "blighted_enderman": "fold",
 }
+
+# The Creaking is the exception the whole death rule is written around: it does
+# not fall and it does not get back up, because it was never standing.
+NO_DEATH = {"the_creaking", "creaking_risen", "creaking_hand"}
 
 QUAD_LEGS = ["leg_fr", "leg_fl", "leg_br", "leg_bl"]
 QUAD_HIND = {"leg_br", "leg_bl"}
@@ -206,6 +215,20 @@ def main() -> None:
         # and the dragon's is the longest thing in the mod. The idle gets a
         # travelling wave laid over it - and over the neck, offset so the two
         # ends of the animal are never doing the same thing at once.
+        # Everything falls, and everything gets back up worse. The big ones
+        # take longer over both, which is most of what makes a boss feel like
+        # one - a Warden going over is four seconds of going over.
+        if bench_name not in NO_DEATH:
+            reach = max(8.0, min(26.0, limbs[0].reach if limbs else 16.0))
+            anims[f"animation.{bench_name}.death"] = A.collapse(
+                body=body, head=head if head in have else None,
+                jaw=jaw if jaw and jaw in have else None, limbs=limbs,
+                length=2.6 + 0.4 * (len(bench_name) % 4),
+                style=DEATHS.get(bench_name, "fold"), height=reach)
+            anims[f"animation.{bench_name}.rise"] = A.rise(
+                body=body, head=head if head in have else None,
+                jaw=jaw if jaw and jaw in have else None, limbs=limbs,
+                length=3.4, height=reach)
         if bench_name == "blighted_wither":
             # It hangs in the roots, so the roots are what carries its weight
             # about - a slow sway through the whole curtain rather than a body
