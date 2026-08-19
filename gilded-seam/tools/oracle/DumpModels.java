@@ -28,6 +28,7 @@ import java.util.Map;
 public final class DumpModels {
 
     public static void main(String[] args) {
+        warmUp();
         System.out.println("{\"models\":{");
         boolean first = true;
         for (String name : args) {
@@ -46,6 +47,50 @@ public final class DumpModels {
             System.out.print(quote(name) + ":" + body);
         }
         System.out.println("\n}}");
+    }
+
+    /**
+     * Force the game's utility classes to initialise before anything reflects.
+     *
+     * <p>{@code WitherBossModel.createBodyLayer} came back as
+     * "NoClassDefFoundError: Could not initialize class net.minecraft.util.Mth"
+     * - which is the JVM's way of saying that {@code Mth}'s static initialiser
+     * threw <em>at some earlier point</em> and the class is now permanently
+     * poisoned for this process. The real failure happened once, somewhere
+     * upstream, and every later model that touches {@code Mth} inherits it.
+     *
+     * <p>Touching the classes here, first and in the open, means either they
+     * initialise cleanly - in which case the models that depend on them dump -
+     * or the original exception is printed with its own stack trace instead of
+     * being laundered into a misleading error on whichever model happened to
+     * ask for it first. Failures are deliberately not fatal: a dump of a
+     * hundred and twenty-eight models is worth having even if one of these
+     * cannot be reached.
+     */
+    private static void warmUp() {
+        String[] classes = {
+            "net.minecraft.SharedConstants",
+            "net.minecraft.util.Mth",
+            "net.minecraft.core.Direction",
+            "net.minecraft.client.model.geom.PartPose",
+            "net.minecraft.client.model.geom.builders.CubeDeformation",
+        };
+        for (String name : classes) {
+            try {
+                Class.forName(name, true, DumpModels.class.getClassLoader());
+            } catch (Throwable t) {
+                System.err.println("warm-up: " + name + " -> " + t);
+            }
+        }
+        // Bootstrap registers block/item/sound registries. Several models read
+        // them indirectly; it is optional because it is slow and not every
+        // version exposes it under the same name.
+        try {
+            Class<?> boot = Class.forName("net.minecraft.server.Bootstrap");
+            boot.getMethod("bootStrap").invoke(null);
+        } catch (Throwable t) {
+            System.err.println("warm-up: Bootstrap -> " + t);
+        }
     }
 
     private static String dumpClass(String className) throws Exception {
