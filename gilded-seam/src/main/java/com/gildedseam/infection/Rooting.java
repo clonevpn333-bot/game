@@ -14,7 +14,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlac
 import com.gildedseam.GildedSeam;
 
 /**
- * Puts the Mother Tree at world spawn, once, when the world is first made.
+ * Puts the Mother Tree in the ground, once, when the world is first made.
  *
  * <p>It used to be an item you placed. That is the wrong shape for the thing
  * the entire mod grows out of: it made the source of the infection a decoration
@@ -23,8 +23,8 @@ import com.gildedseam.GildedSeam;
  *
  * <p>So you spawn looking at it. The ground under it is wrong, the clearing
  * around it is quiet, and everything the blight does afterwards radiates from
- * this point - see {@link Blightfront}, which centres on world spawn precisely
- * so that the tree and the front are the same fact seen two ways.
+ * this point - see {@link Blightfront}, which centres on the same place
+ * precisely so that the tree and the front are the same fact seen two ways.
  *
  * <p>Placed from the structure template rather than generated as a worldgen
  * structure, because a worldgen structure lands where the generator decides and
@@ -49,10 +49,11 @@ public final class Rooting {
         if (level.getGameTime() > 200L) {
             return;
         }
-        BlockPos spawn = level.getSharedSpawnPos();
-        plant(level, spawn);
-        GildedSeam.LOGGER.info("The Mother Tree is rooted at world spawn ({}, {}).",
-                spawn.getX(), spawn.getZ());
+        // Where the front is centred, which is the origin - see Blightfront.
+        BlockPos here = Blightfront.origin(level);
+        plant(level, here);
+        GildedSeam.LOGGER.info("The Mother Tree is rooted at ({}, {}).",
+                here.getX(), here.getZ());
     }
 
     /**
