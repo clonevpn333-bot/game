@@ -893,7 +893,7 @@
       }
      }
     },
-    "arm_r_1": {
+    "claw_r": {
      "rotation": {
       "0.0": {
        "vector": [
@@ -937,7 +937,7 @@
       }
      }
     },
-    "arm_r_2": {
+    "claw_r_f0": {
      "rotation": {
       "0.0": {
        "vector": [
@@ -981,7 +981,7 @@
       }
      }
     },
-    "arm_r_3": {
+    "claw_r_f0_1": {
      "rotation": {
       "0.0": {
        "vector": [
@@ -1069,7 +1069,7 @@
       }
      }
     },
-    "arm_l_1": {
+    "claw_l": {
      "rotation": {
       "0.0": {
        "vector": [
@@ -1113,7 +1113,7 @@
       }
      }
     },
-    "arm_l_2": {
+    "claw_l_f0": {
      "rotation": {
       "0.0": {
        "vector": [
@@ -1157,7 +1157,7 @@
       }
      }
     },
-    "arm_l_3": {
+    "claw_l_f0_1": {
      "rotation": {
       "0.0": {
        "vector": [

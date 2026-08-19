@@ -27,4 +27,9 @@ echo "$(wc -l < /tmp/gs-java-files.txt) files, $count structural errors"
 # tells the two apart. It is the check that would have caught `Player` in
 # SeamMob before it cost a build.
 python3 "$(dirname "$0")/check_imports.py"
+
+# And the same failure mode one layer out: GeckoLib silently ignores an
+# animation track aimed at a bone that does not exist, so a mistyped chain
+# plays perfectly and does nothing.
+python3 "$(dirname "$0")/check_anims.py"
 exit 0

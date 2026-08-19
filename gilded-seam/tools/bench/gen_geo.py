@@ -129,9 +129,12 @@ def main() -> None:
                        [f"leg{i}" for i in range(7)], []),
         "the_lacuna": ("shell", "skull", None,
                        ["leg_fr", "leg_fl", "leg_br", "leg_bl"], []),
+        # The Warden's arm is one rigid box, as vanilla's is - there is no
+        # `arm_r_1`, and driving one meant the whole swing landed on nothing.
+        # The chain that does exist runs arm, hand, finger.
         "blighted_warden": ("body", "head", "face_jaw", ["leg_r", "leg_l"],
-                            [["arm_r", "arm_r_1", "arm_r_2", "arm_r_3"],
-                             ["arm_l", "arm_l_1", "arm_l_2", "arm_l_3"]]),
+                            [["arm_r", "claw_r", "claw_r_f0", "claw_r_f0_1"],
+                             ["arm_l", "claw_l", "claw_l_f0", "claw_l_f0_1"]]),
         "blighted_wither": ("ribcage", "skull0", "skull0_jaw", [], []),
         # Rebuilt on the vanilla skeleton, so the bones are vanilla's names put
         # through the toolchain's convention: a body rather than a chest, four
