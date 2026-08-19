@@ -243,3 +243,41 @@ jobs:
           git pull --rebase origin "${GITHUB_REF_NAME}" || true
           git push origin "HEAD:${GITHUB_REF_NAME}" || echo "push failed; artifact still uploaded"
           exit 0
+
+      # The mod compiled and shipped for weeks without anyone knowing whether a
+      # world would actually generate with it installed. It would not. So boot a
+      # real dedicated server, let it build a world, and read the log: "Done ("
+      # only appears once generation finished and the server is accepting
+      # players. This is the test that catches a datapack that hangs rather
+      # than throws.
+      - name: Does a world actually generate
+        if: always()
+        continue-on-error: true
+        run: |
+          set +e
+          mkdir -p run
+          echo "eula=true" > run/eula.txt
+          {
+            echo "online-mode=false"
+            echo "max-tick-time=-1"
+            echo "level-name=smoke"
+            echo "sync-chunk-writes=false"
+          } > run/server.properties
+          timeout 600 ./gradlew --no-daemon runServer > /tmp/server.log 2>&1
+          echo "--- gradle exit: $? (124 = timed out, expected: the server does not stop itself)"
+          echo "===== SERVER SMOKE TEST ====="
+          if grep -q 'Done (' /tmp/server.log; then
+            echo "WORLD GENERATED OK"
+            grep -m1 'Done (' /tmp/server.log
+          else
+            echo "WORLD DID NOT FINISH GENERATING"
+          fi
+          echo "----- last preparing/loading lines -----"
+          grep -iE "Preparing|Loading|level|dimension|datapack|registry" /tmp/server.log | tail -20
+          echo "----- exceptions -----"
+          grep -iE "Exception|Caused by|ERROR\]|FATAL|failed to load|Missing|Unknown|could not" /tmp/server.log \
+            | grep -viE "advancement|recipe book" | head -30
+          echo "----- our own log lines -----"
+          grep -i "gilded\|amberblight\|seam" /tmp/server.log | head -15
+          echo "===== END SMOKE ====="
+          exit 0
