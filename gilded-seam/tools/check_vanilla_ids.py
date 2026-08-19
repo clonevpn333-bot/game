@@ -127,6 +127,7 @@ def main(argv):
         print("  jar knows %-20s %4d" % (kind, len(ids)))
 
     bad = []
+    unverifiable = {}
     checked = 0
     for base, _dirs, files in os.walk(DATA):
         for name in files:
@@ -148,12 +149,21 @@ def main(argv):
                     continue
                 pool = known.get(kind)
                 if not pool:
+                    # A kind we reference that the jar gave us no list for. Skipping
+                    # it quietly would make this whole check a no-op that reports
+                    # success, which is the exact failure mode it exists to catch.
+                    unverifiable.setdefault(kind, set()).add(ident)
                     continue
                 checked += 1
                 if ident not in pool:
                     bad.append((os.path.relpath(path, ROOT), kind, ident))
 
     print("checked %d vanilla ids across the mod's data" % checked)
+    if unverifiable:
+        print("\nno list in the jar for these kinds - the check cannot see them:")
+        for kind, ids in sorted(unverifiable.items()):
+            print("  %-18s %d ids, e.g. %s" % (kind, len(ids), sorted(ids)[0]))
+        return 1
     if bad:
         print("\nunknown ids - these will fail at load, or worse, be ignored:")
         for where, kind, ident in bad:
