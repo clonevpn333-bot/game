@@ -54,6 +54,22 @@ VANILLA_HOSTS = {
                            "right_horn": "tooth", "nose": "goat_fur"},
              {"right_front_leg": "fr", "left_front_leg": "fl",
               "right_hind_leg": "br", "left_hind_leg": "bl"}, ()),
+    # Mojang split the animals into Adult*/Baby*/Cold* variants, so the adult
+    # geometry lives under a different class name than the folder suggests.
+    "chicken": ("AdultChickenModel",
+                {"*": "feather", "beak": "beak", "red_thing": "comb_red",
+                 "left_leg": "beak", "right_leg": "beak"},
+                {"right_leg": "r", "left_leg": "l"}, ()),
+    "fox": ("AdultFoxModel", {"*": "fox_fur", "nose": "fox_snout"},
+            {"right_front_leg": "fr", "left_front_leg": "fl",
+             "right_hind_leg": "br", "left_hind_leg": "bl"}, ()),
+    "rabbit": ("AdultRabbitModel", {"*": "rabbit_fur", "nose": "rabbit_nose"},
+               {"right_front_leg": "fr", "left_front_leg": "fl",
+                "right_hind_leg": "br", "left_hind_leg": "bl"},
+               ("backlegs", "frontlegs")),
+    "creeper": ("CreeperModel", {"*": "creeper_skin"},
+                {"right_front_leg": "fr", "left_front_leg": "fl",
+                 "right_hind_leg": "br", "left_hind_leg": "bl"}, ()),
     "llama": ("LlamaModel", {"*": "llama_fur"},
               {"right_front_leg": "fr", "left_front_leg": "fl",
                "right_hind_leg": "br", "left_hind_leg": "bl"},
@@ -224,7 +240,7 @@ def blighted_wolf() -> Model:
 
 def blighted_fox() -> Model:
     """The brush stripped to its vertebrae, and still wagging."""
-    p = HOSTS["fox"].build()
+    p = vanilla_quad("fox", eye_style="slit", spares=2)
     p += flayed("tail", at=(0.0, 4.0, 0.0), length=7.0, height=4.0, ribs=6,
                 tier=1, side=1, viscera=False, name="brush")
     p += flayed("body", at=(3.4, 2.5, 1.0), length=7.0, height=4.5, ribs=4,
@@ -256,13 +272,13 @@ def blighted_cat() -> Model:
 
 def blighted_rabbit() -> Model:
     """The haunches split. The ears are cartilage and nothing else."""
-    p = rabbit_host()
-    p += flayed("haunch_br", at=(-1.6, 2.0, 0.0), length=5.5, height=4.5,
+    p = vanilla_quad("rabbit", eye_style="round", spares=3)
+    p += flayed("right_haunch", at=(-1.6, 2.0, 0.0), length=5.5, height=4.5,
                 ribs=4, tier=1, side=-1, name="haunch")
     p += flayed("body", at=(0.0, 2.6, 1.0), length=7.0, height=4.0, ribs=5,
                 tier=2, side=1, name="back")
     p += lolling_tongue("head", at=(0.0, 3.0, -4.0), tier=1, segments=5, thick=0.9)
-    p += eye_stalks("ear_r", at=(0.0, -4.0, 0.0), count=3, tier=2, spread=1.0,
+    p += eye_stalks("right_ear", at=(0.0, -4.0, 0.0), count=3, tier=2, spread=1.0,
                     length=2.2)
     # One oversized arm off the back, far too big for the animal carrying it.
     p += grafted_arm("body", at=(2.6, 1.0, 2.0), tier=2, side=1, scale=1.15,
@@ -274,13 +290,13 @@ def blighted_rabbit() -> Model:
 
 def blighted_chicken() -> Model:
     """Breast opened, wings stripped back to the bones of the wing."""
-    p = chicken_host()
+    p = vanilla_quad("chicken", eye_style="round", spares=2)
     p += flayed("body", at=(0.0, 3.0, -4.2), length=6.0, height=5.0, ribs=5,
                 tier=1, side=1, name="breast")
-    p += flayed("wing_r", at=(-0.8, 2.5, 2.0), length=6.0, height=3.0, ribs=4,
+    p += flayed("right_wing", at=(-0.8, 2.5, 2.0), length=6.0, height=3.0, ribs=4,
                 tier=2, side=-1, viscera=False, name="pinion")
     p += lolling_tongue("head", at=(0.0, 3.0, -3.0), tier=1, segments=4, thick=1.0)
-    p += eye_stalks("comb", at=(0.0, -2.0, 0.0), count=4, tier=2, spread=1.4,
+    p += eye_stalks("red_thing", at=(0.0, -2.0, 0.0), count=4, tier=2, spread=1.4,
                     length=2.4)
     p += grafted_arm("body", at=(3.2, 2.0, -2.0), tier=2, side=1, scale=0.7,
                      name="arm_l")
@@ -309,7 +325,7 @@ def blighted_spider() -> Model:
 
 
 def blighted_creeper() -> Model:
-    p = creeper_host()
+    p = vanilla_quad("creeper", eye_style="void", spares=3)
     p += split_open("body", at=(0.0, 6.0, -2.0), width=6.0, height=8.0, tier=1,
                     depth=2.6, name="cask")
     p += flayed("body", at=(-4.0, 8.0, 1.0), length=9.0, height=7.0, ribs=6,

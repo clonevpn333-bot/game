@@ -182,7 +182,7 @@ jobs:
           : > /tmp/classes.txt
           for j in $jars; do
             unzip -l "$j" 2>/dev/null \
-              | grep -oE "net/minecraft/client/model/[A-Za-z0-9/_]*\.class" \
+              | grep -oE "net/minecraft/client/(model|renderer)/[A-Za-z0-9/_]*\.class" \
               | grep -v '\$' >> /tmp/classes.txt
           done
           sort -u -o /tmp/classes.txt /tmp/classes.txt
