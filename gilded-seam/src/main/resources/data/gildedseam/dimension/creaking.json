@@ -2,7 +2,7 @@
   "type": "gildedseam:creaking",
   "generator": {
     "type": "minecraft:noise",
-    "settings": "minecraft:nether",
+    "settings": "gildedseam:creaking",
     "biome_source": {
       "type": "minecraft:fixed",
       "biome": "gildedseam:creaking_hollow"

@@ -2,13 +2,8 @@
   "has_precipitation": false,
   "temperature": 0.4,
   "downfall": 0.0,
-  "creature_spawn_probability": 0.03,
   "effects": {
-    "sky_color": 1710618,
-    "fog_color": 3021060,
-    "water_color": 4079166,
-    "water_fog_color": 1250585
-
+    "water_color": "#5c3a12"
   },
   "spawners": {
     "monster": [],
@@ -22,5 +17,29 @@
   },
   "spawn_costs": {},
   "carvers": [],
-  "features": []
+  "features": [],
+  "attributes": {
+    "minecraft:visual/fog_color": "#241203",
+    "minecraft:visual/sky_color": "#120a04",
+    "minecraft:audio/ambient_sounds": {
+      "loop": "minecraft:ambient.nether_wastes.loop",
+      "mood": {
+        "sound": "minecraft:ambient.cave",
+        "tick_delay": 4200,
+        "block_search_extent": 8,
+        "offset": 2.0
+      },
+      "additions": {
+        "sound": "minecraft:ambient.nether_wastes.additions",
+        "tick_chance": 0.0143
+      }
+    },
+    "minecraft:audio/background_music": {
+      "default": {
+        "sound": "minecraft:music.overworld.deep_dark",
+        "min_delay": 18000,
+        "max_delay": 40000
+      }
+    }
+  }
 }
