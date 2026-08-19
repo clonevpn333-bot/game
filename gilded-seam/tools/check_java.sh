@@ -20,4 +20,11 @@ rm -f javac.*.args
 count=$(wc -l < /tmp/gs-java-structural.txt)
 echo "$(wc -l < /tmp/gs-java-files.txt) files, $count structural errors"
 [ "$count" -gt 0 ] && cat /tmp/gs-java-structural.txt
+
+# The filter above throws away every "cannot find symbol", which is right
+# without a Minecraft jar and wrong for the one case that matters: a class used
+# and never imported looks identical to a class that only resolves in CI. This
+# tells the two apart. It is the check that would have caught `Player` in
+# SeamMob before it cost a build.
+python3 "$(dirname "$0")/check_imports.py"
 exit 0
