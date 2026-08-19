@@ -17,6 +17,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from core import lower, pack_uvs
+from animjava import write_index, write_java_animations
 from geo import (animation, breathe, gait, key, strike, track, write_animations,
                  write_geo)
 import bestiary as B
@@ -96,6 +97,25 @@ def chains_of(have: set, prefix: str, count: int) -> list[list[str]]:
     return out
 
 
+# Every creature `ship()` has written Java for, and which kinds it got.
+SHIPPED: list = []
+
+JAVA_ANIM_DIR = os.path.join(ROOT, "src", "client", "java", "com", "gildedseam",
+                             "client", "anim", "gen")
+
+
+def ship(shipped: str, anims: dict) -> None:
+    """Writes an animation set both ways.
+
+    The JSON is for the bench's own viewer and for anyone who wants to open
+    these in Blockbench. The Java is what the game plays - see `animjava` for
+    why that is a separate path rather than the same file read at runtime.
+    """
+    write_animations(os.path.join(ANIM_DIR, f"{shipped}.animation.json"), anims)
+    _, kinds = write_java_animations(shipped, anims, JAVA_ANIM_DIR)
+    SHIPPED.append((shipped, kinds))
+
+
 def main() -> None:
     os.makedirs(GEO_DIR, exist_ok=True)
     os.makedirs(ANIM_DIR, exist_ok=True)
@@ -147,7 +167,7 @@ def main() -> None:
                 body="body", head="head", jaw=jaw, limbs=limbs, length=2.2,
                 height=max(6.0, min(20.0, limbs[0].reach if limbs else 12.0))),
         }
-        write_animations(os.path.join(ANIM_DIR, f"{shipped}.animation.json"), anims)
+        ship(shipped, anims)
 
     # --- abstracts and the taken -----------------------------------------
     # (bench name, body bone, head bone, jaw bone, limb roots, arm chains)
@@ -249,7 +269,7 @@ def main() -> None:
             idle = anims[f"animation.{bench_name}.idle"]
             for bone, channels in wave["bones"].items():
                 idle["bones"].setdefault(bone, {}).update(channels)
-        write_animations(os.path.join(ANIM_DIR, f"{bench_name}.animation.json"), anims)
+        ship(bench_name, anims)
 
     # --- the Creaking, hand and body ------------------------------------
     # Six arms is not six copies of one arm. They fire in sequence, outside
@@ -277,7 +297,7 @@ def main() -> None:
             fingers = [[f"hand_f{i}", f"hand_f{i}_1", f"hand_f{i}_2"]
                        for i in range(4)] + [["hand_th", "hand_th_1"]]
             fingers = [c for c in fingers if c[0] in have]
-            write_animations(os.path.join(ANIM_DIR, f"{shipped}.animation.json"), {
+            ship(shipped, {
                 "animation.creaking_hand.idle": A.idle(
                     body="arm", period=6.0, depth=0.9, limbs=[], unease=0.7),
                 # It comes through the gate, opens, and closes on something.
@@ -323,8 +343,10 @@ def main() -> None:
             anims[f"animation.{shipped}.charge"] = A.locomotion(
                 legs, period=1.35, gait="biped", body="torso", head="head",
                 jaw="face_jaw", sway=1.8, limp=0.0, samples=28)
-        write_animations(os.path.join(ANIM_DIR, f"{shipped}.animation.json"), anims)
+        ship(shipped, anims)
 
+    write_index(SHIPPED, JAVA_ANIM_DIR)
+    print(f"animation index: {len(SHIPPED)} creature(s)")
     print("done.")
 
 
