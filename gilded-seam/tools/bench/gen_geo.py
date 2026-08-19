@@ -210,8 +210,11 @@ def main() -> None:
             })
             continue
 
-        arms = [c for c in CREAK_ARMS if c[0] in have]
-        legs = A.measure_limbs(model, ["leg_r", "leg_l"], set()) if "leg_r" in have else []
+        # No arms, no legs. The tendrils are what moves, and there are
+        # eighteen of them at four different lengths.
+        arms = [[f"tend{i}", f"tend{i}_1", f"tend{i}_2"] for i in range(18)
+                if f"tend{i}" in have]
+        legs = []
         anims = {
             f"animation.{shipped}.idle": A.idle(
                 body="chest", head="head", jaw="face_jaw", limbs=legs,

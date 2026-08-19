@@ -1161,179 +1161,119 @@ def creaking_hand() -> Model:
 
 
 def _creaking_torso(legs: bool) -> list[Part]:
-    """The body: hunched, narrow, arboreal - not a gorilla.
+    """Not a figure. A hanging mass with things growing off it.
 
-    The previous version was a forty-six-wide horizontal slab of chest with a
-    tiny head sunk into it and heavy arms hanging off either side, which is
-    the exact silhouette of a great ape and read as one. Everything here is
-    turned ninety degrees away from that:
+    Every previous version of this was a body: shoulders, a head, arms, legs.
+    A body is something you can size up, and anything you can size up stops
+    being frightening about ten seconds after you meet it. So there is no
+    skeleton here to read.
 
-      * the trunk is **narrow and tall**, splintered like standing deadwood,
-        with the mass in the vertical rather than across the shoulders
-      * the shoulders are **hunched above the head**, the way a vulture stands,
-        so the skull sits in a well between them
-      * the skull is **elongated and thrust forward** on a short thick neck -
-        a long jaw and deep sockets, not a cube
-      * the six arms all hang **forward and down** at different lengths, the
-        longest reaching past the ground line, and they are deliberately not
-        mirrored. Symmetry reads as designed; this should read as grown
-      * the crown is **swept-back antlers**, not a disc
+    What replaces it, working from the cosmic-horror playbook - a body of
+    bodies, a maelstrom rather than a silhouette:
 
-    What survives from the old one is the open chest cavity with the heart in
-    it, because that part was working.
+      * it **hangs**. A bundle of roots descends from above and never reaches
+        the ground; the mass is suspended in it, and `legs` only decides how
+        far down the tapering drip beneath it goes.
+      * **no arms.** Tendrils instead, dozens, at every length and thickness,
+        hanging and dragging. None of them paired.
+      * **no face.** Mouths open all over the mass at every angle, and rings of
+        eyes orbit the core where a chest would have been.
+      * **no symmetry anywhere.** Every element is placed on the golden angle,
+        which never repeats and never lines up.
     """
     parts: list[Part] = []
+    root_y = -30.0 if legs else -22.0
 
-    root_y = -34.0 if legs else -26.0
-    # Trunk: narrow, tall, and leaning forward over its own feet.
-    parts.append(Part("torso", "root", (0.0, root_y, 0.0), (-9 * D, 0, 0),
-                      [Box((-11, -20, -9), (22, 24, 18), "heartwood"),
-                       Box((-12.5, -14, -10), (25, 8, 20), "bark")]))
-    # Chest stays narrow; the height does the work.
-    parts.append(Part("chest", "torso", (0.0, -20.0, 0.0), (-7 * D, 0, 0),
-                      [Box((-13, -26, -10), (26, 28, 20), "heartwood")]))
-    # Splintered staves running up the trunk, standing off the surface.
-    for i in range(7):
-        a = (2 * math.pi * i) / 7 + 0.3
-        parts.append(Part(f"stave{i}", "chest",
-                          (math.sin(a) * 12.0, -12.0, math.cos(a) * 9.0),
-                          (0, -a, math.sin(a) * 9 * D),
-                          [Box((-1.8, -15, -1.8), (3.6, 30, 3.6), "bark")]))
-
-    # Ribcage, standing open. Ribs curl further as they descend.
-    for i in range(6):
-        f = i / 5.0
-        for side in (-1, 1):
-            parts.append(Part(f"rib{i}{'r' if side < 0 else 'l'}", "chest",
-                              (side * 5.0, -22.0 + i * 3.6, -10.4),
-                              (0, 0, side * (26 + 26 * f) * D),
-                              [Box((-1.6, -1.2, -1.8), (3.2, 13.0 - 3.0 * f, 3.0),
-                                   "tooth")]))
-    parts.append(Part("cavity", "chest", (0.0, -14.0, -10.6), (0, 0, 0),
-                      [Box((-6.5, -9, -1.2), (13, 18, 2), "rot")]))
-    parts.append(Part("heart", "cavity", (0.0, 0.0, -1.6), (0, 0, 0),
-                      [Box((-4.5, -6, -2.4), (9, 12, 3), "amberglow")]))
-    for i in range(8):
-        a = (2 * math.pi * i) / 8
-        parts.append(Part(f"chesteye{i}", "cavity",
-                          (math.sin(a) * 5.0, math.cos(a) * 7.4, -2.2), (0, 0, 0),
-                          [Box((-1.7, -1.7, -1.0), (3.4, 3.4, 1.0), "eye:bloom")]))
-    # Gut hanging out of the bottom of the cage.
-    parts.append(Part("viscera", "chest", (1.5, -2.0, -9.0), (0, 0, 0),
-                      [Box((-4, -3, -3), (8, 11, 6), "flesh")]))
-    parts.append(Part("viscera2", "viscera", (0.0, 8.0, 0.0), (14 * D, 0, -12 * D),
-                      [Box((-2.6, 0, -2.2), (5.2, 9, 4.4), "sinew")]))
-
-    # --- shoulders, hunched above the head ------------------------------
-    for side, tag in ((-1, "r"), (1, "l")):
-        hunch = 5.0 if side < 0 else 2.0     # not level; nothing here is
-        parts.append(Part(f"delt_{tag}", "chest",
-                          (side * 12.0, -26.0 - hunch, -1.0),
-                          (0, 0, side * -34 * D),
-                          [Box((-9 if side < 0 else 0, -12, -9), (9, 20, 18),
-                               "bark"),
-                           Box((-8 if side < 0 else 1, -14, -8), (7, 5, 16),
-                               "chitin")]))
-        # Spines off the shoulder caps.
-        for k in range(3):
-            parts.append(Part(f"spur_{tag}{k}", f"delt_{tag}",
-                              (side * 5.0, -11.0 + k * 4.0, -4.0 + k * 4.0),
-                              (0, 0, side * -58 * D),
-                              [Box((-1.2, -9 + k * 1.6, -1.2), (2.4, 9 - k * 1.6, 2.4),
-                                   "tooth")]))
-
-    # --- growth that ignores the body plan ------------------------------
-    # Branches out of the torso at angles no skeleton would produce, some
-    # ending in nothing. This is the part that stops it reading as a big man:
-    # the outline never resolves into a shape you can name.
-    for i in range(9):
-        a = i * 2.399963                     # golden angle - never repeats
-        f = i / 8.0
-        parts += chain(f"bough{i}", "chest",
-                       (math.sin(a) * 11.0, -6.0 - f * 20.0, math.cos(a) * 8.0),
-                       3 + (i % 3), (3.4 - f * 1.2, 9.0 + f * 5.0, 3.4 - f * 1.2),
-                       "bark", taper=0.8,
-                       curl=(math.cos(a) * 14 * D, math.sin(a) * 10 * D,
-                             math.sin(a * 1.3) * 18 * D),
-                       root_rot=(math.cos(a) * 56 * D, -a,
-                                 math.sin(a) * 62 * D))
-    # A second, half-formed ribcage growing out of the left flank, as if the
-    # thing tried to build another one of itself and stopped.
-    parts.append(Part("twin", "chest", (14.0, -16.0, -2.0), (0, -34 * D, 24 * D),
-                      [Box((-6, -12, -7), (12, 16, 14), "heartwood")]))
-    for i in range(4):
-        parts.append(Part(f"twinrib{i}", "twin", (0.0, -10.0 + i * 3.2, -7.2),
-                          (0, 0, (34 + 16 * i) * D),
-                          [Box((-1.4, -1.0, -1.4), (2.8, 9.0, 2.4), "tooth")]))
-    parts.append(Part("twineye", "twin", (0.0, -4.0, -7.6), (0, 0, 0),
-                      [Box((-2.6, -2.6, -1.2), (5.2, 5.2, 1.4), "eye:bloom")]))
-
-    # --- the head: long skull thrust forward ----------------------------
-    parts.append(Part("neckstalk", "chest", (0.0, -24.0, -3.0), (26 * D, 0, 0),
-                      [Box((-4.5, -9, -4.5), (9, 10, 9), "sinew")]))
-    parts.append(Part("head", "neckstalk", (0.0, -9.0, 0.0), (14 * D, 0, 0),
-                      [Box((-6, -8, -15), (12, 11, 17), "palewood")]))
-    # The skull is not a mask sitting on a neck - it is still partly the tree.
-    # Splinters run back out of it into the shoulders, and it is not level.
-    for i in range(5):
+    # The bundle it hangs from: roots into the ceiling, converging downward.
+    for i in range(14):
         a = i * 2.399963
-        parts.append(Part(f"splinter{i}", "head",
-                          (math.sin(a) * 5.0, -6.0 + i * 1.4, -2.0 + math.cos(a) * 4.0),
-                          (math.cos(a) * 30 * D, -a, math.sin(a) * 34 * D),
-                          [Box((-1.1, -1.0, -1.1), (2.2, 13.0 - i * 1.5, 2.2), "bark")]))
-    # Long upper jaw running out past the skull.
-    parts.append(Part("snout", "head", (0.0, 5.0, -15.0), (0, 0, 0),
-                      [Box((-4.5, -5, -9), (9, 6, 9), "palewood")]))
-    for i in range(7):
-        parts.append(Part(f"fang{i}", "snout", (-3.6 + i * 1.2, 1.0, -8.0 + (i % 2)),
-                          (0, 0, 0),
-                          [Box((-0.6, 0, -0.6), (1.2, 3.4 - (i % 3) * 0.7, 1.2),
-                               "tooth")]))
-    parts.append(Part("face_jaw", "head", (0.0, 3.0, -13.0), (22 * D, 0, 0),
-                      [Box((-4, 0, -10), (8, 3.6, 11), "heartwood")]))
-    for i in range(6):
-        parts.append(Part(f"jawfang{i}", "face_jaw", (-3.0 + i * 1.2, 0.0, -9.0 + (i % 2)),
-                          (0, 0, 0),
-                          [Box((-0.55, -3.0, -0.55), (1.1, 3.0, 1.1), "tooth")]))
-    parts += lolling_tongue("face_jaw", at=(0.0, 1.6, -6.0), tier=0, segments=7,
-                            thick=1.6, name="tongue")
-    # Sockets set deep, two on one side and three on the other.
-    for side, tag, n in ((-1, "r", 2), (1, "l", 3)):
-        for k in range(n):
-            parts.append(Part(f"socket_{tag}{k}", "head",
-                              (side * (3.4 + k * 1.4), -2.0 + k * 2.6, -9.0 - k * 2.0),
-                              (0, side * -22 * D, 0),
-                              [Box((-2.2, -2.2, -1.0), (4.4, 4.4, 1.4), "rot")]))
-            parts.append(Part(f"eye_{tag}{k}", f"socket_{tag}{k}", (0.0, 0.0, -1.0),
-                              (0, 0, 0),
-                              [Box((-1.8, -1.8, -1.8), (3.6, 3.6, 2.2), "eye:bloom")]))
-    # Antlers: swept back off the skull, forking. Not a crown, not a disc.
-    for side in (-1, 1):
-        tag = "r" if side < 0 else "l"
-        parts += chain(f"antler_{tag}", "head", (side * 4.5, -8.0, -4.0), 4,
-                       (2.8, 8.0, 2.8), "bark", taper=0.78,
-                       curl=(-16 * D, side * 8 * D, side * 12 * D),
-                       root_rot=(-44 * D, side * 24 * D, side * 30 * D))
-        parts += chain(f"tine_{tag}", f"antler_{tag}_2", (0.0, 4.0, 0.0), 2,
-                       (1.8, 6.0, 1.8), "bark", taper=0.8,
-                       curl=(-12 * D, 0, side * 20 * D),
-                       root_rot=(-30 * D, 0, side * 46 * D))
+        f = i / 13.0
+        parts += chain(f"moor{i}", "root",
+                       (math.sin(a) * (5 + f * 7), root_y - 40.0,
+                        math.cos(a) * (5 + f * 7)),
+                       5, (2.2 - f * 0.8, 9.0 + f * 3.0, 2.2 - f * 0.8),
+                       "sinew", taper=0.92,
+                       curl=(math.cos(a) * 4 * D, 0, math.sin(a) * 4 * D),
+                       root_rot=(math.cos(a) * 7 * D, -a, math.sin(a) * 7 * D))
 
-    # --- six arms, forward and down, three different lengths ------------
-    # (drop, thickness, links, forward swing, out swing)
-    SETS = ((-22.0, 9.0, 5, 34, 16), (-12.0, 7.0, 4, 22, 26), (-2.0, 5.0, 3, 12, 40))
-    for side, tag in ((-1, "r"), (1, "l")):
-        for k, (drop, thick, links, fwd, out) in enumerate(SETS):
-            # Break the mirror: one side reaches further than the other.
-            skew = 1.0 + (0.16 if side < 0 else -0.10) * (k + 1)
-            arm = f"arm{k}_{tag}"
-            parts += chain(arm, f"delt_{tag}", (side * 4.0, drop, -2.0), links,
-                           (thick, 13.0 * skew, thick), "heartwood", taper=0.86,
-                           curl=(9 * D, 0, side * 7 * D),
-                           root_rot=(fwd * skew * D, side * 6 * D, side * out * D))
-            parts += _giant_hand(f"hand{k}_{tag}", f"{arm}_{links - 1}",
-                                 (0.0, 13.0 * skew * 0.86 ** (links - 1), 0.0),
-                                 0.5 + 0.16 * (2 - k), 1.0)
+    # The mass. Not a torso - an irregular knot, wider than tall.
+    parts.append(Part("torso", "root", (0.0, root_y, 0.0), (0, 0, 0),
+                      [Box((-17, -16, -15), (34, 26, 30), "heartwood"),
+                       Box((-20, -8, -12), (40, 12, 24), "bark"),
+                       Box((-13, -22, -11), (26, 10, 22), "heartwood")]))
+    # Lobes hung off it at golden-angle intervals, no two alike.
+    for i in range(11):
+        a = i * 2.399963
+        f = i / 10.0
+        r = 13.0 + 5.0 * math.sin(f * 7.0)
+        parts.append(Part(f"lobe{i}", "torso",
+                          (math.sin(a) * r, -12.0 + f * 18.0, math.cos(a) * r * 0.8),
+                          (math.cos(a) * 24 * D, -a, math.sin(a) * 24 * D),
+                          [Box((-5 - f * 2, -5, -5), (10 + f * 4, 12 + f * 6, 10),
+                               "heartwood" if i % 2 else "bark")]))
+
+    # The core: where a chest would be, if it had one.
+    parts.append(Part("chest", "torso", (0.0, -6.0, -14.0), (0, 0, 0),
+                      [Box((-9, -11, -2), (18, 22, 3), "rot")]))
+    parts.append(Part("heart", "chest", (0.0, 0.0, -2.2), (0, 0, 0),
+                      [Box((-6, -8, -3), (12, 16, 4), "amberglow")]))
+    # Rings of eyes orbiting it, three deep, none aligned.
+    for ring, (count, radius, depth) in enumerate(((7, 11.0, -3.0),
+                                                   (11, 16.0, -1.6),
+                                                   (13, 21.0, -0.6))):
+        for i in range(count):
+            a = i * 2.399963 + ring * 0.7
+            parts.append(Part(f"eye_r{ring}_{i}", "chest",
+                              (math.sin(a) * radius, math.cos(a) * radius * 0.8, depth),
+                              (0, 0, 0),
+                              [Box((-1.9, -1.9, -1.1), (3.8, 3.8, 1.2), "eye:bloom")]))
+
+    # Mouths, all over, all angles. This is the face - there isn't one.
+    for i in range(14):
+        a = i * 2.399963
+        f = i / 13.0
+        r = 15.0 + 4.0 * math.cos(f * 9.0)
+        tag = f"maw{i}"
+        parts.append(Part(tag, "torso",
+                          (math.sin(a) * r, -16.0 + f * 24.0, math.cos(a) * r * 0.85),
+                          (math.sin(a * 1.4) * 40 * D, -a, math.cos(a) * 34 * D),
+                          [Box((-4.5, -4.0, -6.0), (9, 8, 6), "rot")]))
+        parts.append(Part(f"{tag}_jaw", tag, (0.0, 3.2, -5.0), (30 * D, 0, 0),
+                          [Box((-4.0, 0, -4.6), (8, 2.6, 5), "tongue")]))
+        for k in range(5):
+            parts.append(Part(f"{tag}_t{k}", tag, (-3.2 + k * 1.6, -3.6, -5.4),
+                              (0, 0, 0),
+                              [Box((-0.55, 0, -0.55), (1.1, 2.6 + (k % 2) * 1.2, 1.1),
+                                   "tooth")]))
+    # The one that matters, and the only bone the animation engine drives.
+    parts.append(Part("head", "torso", (0.0, -16.0, -13.0), (0, 0, 0),
+                      [Box((-7, -6, -8), (14, 10, 9), "palewood")]))
+    parts.append(Part("face_jaw", "head", (0.0, 3.0, -7.0), (26 * D, 0, 0),
+                      [Box((-5.5, 0, -8), (11, 3.4, 9), "rot")]))
+    for i in range(8):
+        parts.append(Part(f"fang{i}", "face_jaw", (-4.6 + i * 1.3, -0.4, -7.0 + (i % 2)),
+                          (0, 0, 0),
+                          [Box((-0.6, -3.4, -0.6), (1.2, 3.4, 1.2), "tooth")]))
+    parts += lolling_tongue("face_jaw", at=(0.0, 1.6, -5.0), tier=0, segments=9,
+                            thick=1.8, name="tongue")
+
+    # Tendrils. Dozens, unpaired, every length - these are what reach you.
+    for i in range(18):
+        a = i * 2.399963
+        f = i / 17.0
+        links = 5 + (i % 5)
+        thick = 2.8 - f * 1.5
+        parts += chain(f"tend{i}", "torso",
+                       (math.sin(a) * (6 + f * 9), 7.0 + (i % 4) * 2.0,
+                        math.cos(a) * (6 + f * 9)),
+                       links, (thick, 11.0 + f * 7.0, thick), "sinew", taper=0.9,
+                       curl=(math.cos(a) * 5 * D, math.sin(a) * 4 * D,
+                             math.sin(a * 1.7) * 7 * D),
+                       root_rot=(math.cos(a) * 11 * D, -a, math.sin(a) * 11 * D))
+    # And the drip: what hangs below where legs would be.
+    parts += chain("drip", "torso", (0.0, 10.0, 0.0), 8 if legs else 5,
+                   (4.0, 9.0, 4.0), "amber", taper=0.86,
+                   curl=(2 * D, 0, 3 * D))
     return parts
 
 
