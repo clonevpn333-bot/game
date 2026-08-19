@@ -165,7 +165,15 @@ jobs:
       # them schema drift, and both of them things the jar knows the answer to,
       # because it ships its own worldgen data. Reading Mojang's file for the
       # thing we are copying beats guessing at what the field is called now.
-      - name: Worldgen schema, straight out of the jar
+      # The same argument as the model dump, applied to datapack JSON: the jar
+      # ships Mojang's own data, so anything this mod needs to match can be
+      # read rather than remembered. Schema drift has cost this project a
+      # dimension type, a worldgen feature and an entity predicate already.
+      #
+      # These are *copied out and committed*, not printed. A three-hundred-line
+      # noise settings file does not survive a log tail, and slicing it out of
+      # CI output by character range is not a way to read a file.
+      - name: Reference data, straight out of the jar
         if: always()
         continue-on-error: true
         timeout-minutes: 4
@@ -177,60 +185,48 @@ jobs:
             | head -1)
           echo "data jar: $jar"
           [ -z "$jar" ] && exit 0
-          echo "===== a vanilla dimension_type, in full ====="
-          unzip -p "$jar" data/minecraft/dimension_type/the_nether.json
-          echo "===== feature types actually registered ====="
+          out=tools/oracle/vanilla
+          mkdir -p "$out"
+          for f in \
+              data/minecraft/worldgen/noise_settings/nether.json \
+              data/minecraft/worldgen/noise_settings/overworld.json \
+              data/minecraft/worldgen/noise_settings/end.json \
+              data/minecraft/worldgen/noise_settings/caves.json \
+              data/minecraft/dimension_type/the_nether.json \
+              data/minecraft/worldgen/biome/nether_wastes.json \
+              data/minecraft/worldgen/biome/deep_dark.json \
+              data/minecraft/advancement/end/kill_dragon.json ; do
+            name=$(echo "$f" | sed 's#data/minecraft/##; s#/#_#g')
+            if unzip -p "$jar" "$f" > "$out/$name" 2>/dev/null && [ -s "$out/$name" ]; then
+              echo "  $name  ($(wc -c < "$out/$name") bytes)"
+            else
+              rm -f "$out/$name"
+              echo "  $name  NOT IN JAR"
+            fi
+          done
+          echo "----- feature types that exist -----"
           for f in $(unzip -l "$jar" \
                 | grep -oE "data/minecraft/worldgen/configured_feature/[A-Za-z0-9_]+\.json"); do
-            unzip -p "$jar" "$f" 2>/dev/null | tr -d ' \n' | grep -oE '"type":"[a-z0-9_:]+"' | head -1
-          done | sort -u
-          echo "===== placement modifier types actually used ====="
-          for f in $(unzip -l "$jar" \
-                | grep -oE "data/minecraft/worldgen/placed_feature/[A-Za-z0-9_]+\.json" | head -60); do
-            unzip -p "$jar" "$f" 2>/dev/null | tr -d ' \n' | grep -oE '"type":"[a-z0-9_:]+"'
-          done | sort -u
-          echo "===== a vanilla advancement that filters on entity type ====="
-          # Two of the mod's advancements fail with "Unknown registry key in
-          # entity_sub_predicate_type: minecraft:type", which means the entity
-          # predicate now dispatches sub-predicates on `type` and the entity
-          # *type* match has moved to some other key. Mojang's own kill
-          # advancements say which one.
-          for f in $(unzip -l "$jar" \
-                | grep -oE "data/minecraft/advancement/[A-Za-z0-9_/]+\.json"); do
-            unzip -p "$jar" "$f" 2>/dev/null | grep -q "player_killed_entity" \
-              && { echo "--- $f"; unzip -p "$jar" "$f"; break; }
-          done
-          echo "===== a vanilla random-patch-shaped feature, in full ====="
-          for cand in patch_grass_plain patch_sugar_cane patch_dead_bush flower_default; do
-            p="data/minecraft/worldgen/configured_feature/$cand.json"
-            unzip -l "$jar" | grep -q "$p" && { echo "--- $cand"; unzip -p "$jar" "$p"; break; }
-          done
-          echo "===== a vanilla noise_settings, in full ====="
-          # The creaking dimension borrows minecraft:nether and comes out
-          # looking like nothing - generic stone, because the nether's surface
-          # rules key off nether biomes and ours is not one. It needs its own,
-          # and the schema is too big to invent.
-          unzip -p "$jar" data/minecraft/worldgen/noise_settings/nether.json | head -120
-          echo "===== the animation API, as it actually is ====="
-          # The mod plays animations through vanilla's keyframe system
-          # (AnimationDefinition.bake -> KeyframeAnimation.apply). Driving a
-          # *cyclic* one off walk speed needs whichever method 26.2 spells
-          # that with, and guessing at it is a build per guess.
-          cjar=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null \
-            | grep -iE "minecraft" | grep -viE "sources|javadoc" \
-            | xargs -I{} sh -c 'unzip -l {} 2>/dev/null | grep -q "net/minecraft/client/animation/KeyframeAnimation.class" && echo {}' \
-            | head -1)
-          for c in net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager \
-                   net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate \
-                   net.minecraft.client.animation.AnimationDefinition\$Builder \
-                   net.minecraft.client.animation.KeyframeAnimation \
-                   net.minecraft.client.animation.AnimationDefinition \
-                   net.minecraft.client.animation.AnimationChannel \
-                   net.minecraft.client.animation.KeyframeAnimations \
-                   net.minecraft.client.model.EntityModel; do
-            echo "--- $c"
-            javap -p -cp "$cjar" "$c" 2>&1 | head -30
-          done
+            unzip -p "$jar" "$f" 2>/dev/null | tr -d ' \n' \
+              | grep -oE '"type":"[a-z0-9_:]+"' | head -1
+          done | sort -u | tr '\n' ' '
+          echo
+          exit 0
+
+      - name: Commit the reference data
+        if: always()
+        continue-on-error: true
+        run: |
+          set +e
+          [ -d tools/oracle/vanilla ] || exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/oracle/vanilla
+          git diff --cached --quiet && echo "reference data unchanged" && exit 0
+          git commit -m "Vanilla reference data, from the ${GITHUB_SHA::7} jar [skip ci]"
+          git pull --rebase origin "${GITHUB_REF_NAME}" || true
+          git push origin "HEAD:${GITHUB_REF_NAME}" || echo "push failed"
+          exit 0
 
       # Guessing at a Warden's proportions produces something that is not a
       # Warden. The real numbers are inside the jar, as code, in each model's
