@@ -159,6 +159,42 @@ jobs:
             --notes "Automatic build of ${GITHUB_SHA::7} for Minecraft 26.2 (Fabric). Drop the jar in .minecraft/mods alongside Fabric API." \
             --prerelease
 
+      # The same argument as the model dump, applied to datapack JSON. The
+      # server refused to load with "Unknown registry key ...:
+      # minecraft:random_patch" and "No key has_ender_dragon_fight" - both of
+      # them schema drift, and both of them things the jar knows the answer to,
+      # because it ships its own worldgen data. Reading Mojang's file for the
+      # thing we are copying beats guessing at what the field is called now.
+      - name: Worldgen schema, straight out of the jar
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 4
+        run: |
+          set +e
+          jar=$(find ~/.gradle/caches -name "*.jar" 2>/dev/null \
+            | grep -iE "minecraft" | grep -viE "sources|javadoc" \
+            | xargs -I{} sh -c 'unzip -l {} 2>/dev/null | grep -q "data/minecraft/dimension_type/" && echo {}' \
+            | head -1)
+          echo "data jar: $jar"
+          [ -z "$jar" ] && exit 0
+          echo "===== a vanilla dimension_type, in full ====="
+          unzip -p "$jar" data/minecraft/dimension_type/the_nether.json
+          echo "===== feature types actually registered ====="
+          for f in $(unzip -l "$jar" \
+                | grep -oE "data/minecraft/worldgen/configured_feature/[A-Za-z0-9_]+\.json"); do
+            unzip -p "$jar" "$f" 2>/dev/null | tr -d ' \n' | grep -oE '"type":"[a-z0-9_:]+"' | head -1
+          done | sort -u
+          echo "===== placement modifier types actually used ====="
+          for f in $(unzip -l "$jar" \
+                | grep -oE "data/minecraft/worldgen/placed_feature/[A-Za-z0-9_]+\.json" | head -60); do
+            unzip -p "$jar" "$f" 2>/dev/null | tr -d ' \n' | grep -oE '"type":"[a-z0-9_:]+"'
+          done | sort -u
+          echo "===== a vanilla random-patch-shaped feature, in full ====="
+          for cand in patch_grass_plain patch_sugar_cane patch_dead_bush flower_default; do
+            p="data/minecraft/worldgen/configured_feature/$cand.json"
+            unzip -l "$jar" | grep -q "$p" && { echo "--- $cand"; unzip -p "$jar" "$p"; break; }
+          done
+
       # Guessing at a Warden's proportions produces something that is not a
       # Warden. The real numbers are inside the jar, as code, in each model's
       # createBodyLayer() - so call it and walk what comes back. The dump is
