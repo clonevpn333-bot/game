@@ -434,3 +434,134 @@ def idle(*, body: str, period: float = 4.4, depth: float = 0.6,
                  2.0 * math.sin(2 * math.pi * (u - lag))])
 
     return {"loop": True, "animation_length": round(period, 3), "bones": tracks}
+
+
+# ---------------------------------------------------------------------------
+# Dying, lying there, and getting back up
+# ---------------------------------------------------------------------------
+
+
+def collapse(*, body: str, head: str | None = None, jaw: str | None = None,
+             limbs: list[Limb] | None = None, tail: list[str] | None = None,
+             length: float = 1.5, style: str = "fold", height: float = 12.0) -> dict:
+    """A death that ends with a body on the floor, not a despawn.
+
+    Four ways to go down, because thirteen animals dropping identically is the
+    thing that makes a kill feel like a counter ticking:
+
+      fold      the legs give out first and it comes down on its chest
+      topple    it stays rigid and falls sideways like furniture
+      buckle    the head goes down, the hindquarters follow, a slow crumple
+      burst     it comes apart upward, then what is left drops
+
+    The last keyframe is the pose it will hold for the next minute, so it has
+    to be a *settled* one - flat, still, and unmistakably down.
+    """
+    tracks: dict[str, dict[str, dict]] = {}
+
+    def put(bone, channel, t, vec, easing="easeInOutSine"):
+        tracks.setdefault(bone, {}).setdefault(channel, {})[str(round(t, 4))] = {
+            "vector": [round(v, 3) for v in vec], "easing": easing}
+
+    drop = -height * 0.62
+    if style == "topple":
+        put(body, "rotation", 0.0, [0, 0, 0])
+        put(body, "rotation", length * 0.30, [0, 0, -14], "easeInQuart")
+        put(body, "rotation", length * 0.72, [0, 0, -78], "easeInQuart")
+        put(body, "rotation", length, [4, 0, -90])
+        put(body, "position", 0.0, [0, 0, 0])
+        put(body, "position", length, [0, drop, 0], "easeOutQuad")
+    elif style == "burst":
+        put(body, "position", 0.0, [0, 0, 0])
+        put(body, "position", length * 0.22, [0, -height * 0.30, 0], "easeOutQuart")
+        put(body, "position", length, [0, drop, 0], "easeInQuart")
+        put(body, "rotation", length * 0.22, [-22, 0, 9])
+        put(body, "rotation", length, [88, 0, 0])
+    elif style == "buckle":
+        put(body, "rotation", 0.0, [0, 0, 0])
+        put(body, "rotation", length * 0.34, [26, 0, 4], "easeInQuart")
+        put(body, "rotation", length * 0.70, [64, 0, -6])
+        put(body, "rotation", length, [86, 0, -3])
+        put(body, "position", 0.0, [0, 0, 0])
+        put(body, "position", length, [0, drop, 0], "easeInQuart")
+    else:                                     # fold
+        put(body, "rotation", 0.0, [0, 0, 0])
+        put(body, "rotation", length * 0.40, [16, 0, 0], "easeInQuart")
+        put(body, "rotation", length, [84, 0, 6])
+        put(body, "position", 0.0, [0, 0, 0])
+        put(body, "position", length * 0.40, [0, -height * 0.12, 0])
+        put(body, "position", length, [0, drop, 0], "easeInQuart")
+
+    if head:
+        put(head, "rotation", 0.0, [0, 0, 0])
+        put(head, "rotation", length * 0.45, [-26, 12, 0], "easeInQuart")
+        put(head, "rotation", length, [34, 26, 14])       # lolling, face down
+    if jaw:
+        put(jaw, "rotation", 0.0, [12, 0, 0])
+        put(jaw, "rotation", length * 0.5, [48, 0, 0])
+        put(jaw, "rotation", length, [40, 0, 0])          # stays hanging open
+    for k, limb in enumerate(limbs or []):
+        side = 1 if k % 2 == 0 else -1
+        put(limb.segments[0], "rotation", 0.0, [0, 0, 0])
+        put(limb.segments[0], "rotation", length * 0.35, [-30 * side, 0, 0], "easeInQuart")
+        put(limb.segments[0], "rotation", length, [72 + 14 * side, 0, 12 * side])
+        for seg in limb.segments[1:]:
+            put(seg, "rotation", length * 0.35, [40, 0, 0])
+            put(seg, "rotation", length, [-96, 0, 0])     # folded under it
+        if limb.foot:
+            put(limb.foot, "rotation", length, [26, 0, 0])
+    for k, bone in enumerate(tail or []):
+        put(bone, "rotation", length * 0.5, [10 + 8 * k, 12, 0])
+        put(bone, "rotation", length, [4, 22 + 10 * k, 0])
+    return {"loop": False, "animation_length": round(length, 3), "bones": tracks}
+
+
+def rise(*, body: str, head: str | None = None, jaw: str | None = None,
+         limbs: list[Limb] | None = None, length: float = 2.2,
+         height: float = 12.0) -> dict:
+    """Getting back up, badly.
+
+    Deliberately not the collapse reversed. It hauls one side up first, hangs
+    there, then snaps upright and overshoots - the read is *effort*, and then
+    something that is angrier than it was when it went down.
+    """
+    tracks: dict[str, dict[str, dict]] = {}
+
+    def put(bone, channel, t, vec, easing="easeInOutSine"):
+        tracks.setdefault(bone, {}).setdefault(channel, {})[str(round(t, 4))] = {
+            "vector": [round(v, 3) for v in vec], "easing": easing}
+
+    drop = -height * 0.62
+    put(body, "position", 0.0, [0, drop, 0])
+    put(body, "position", length * 0.30, [0, drop * 0.86, 0])
+    put(body, "position", length * 0.74, [0, drop * 0.16, 0], "easeOutQuart")
+    put(body, "position", length * 0.86, [0, height * 0.06, 0])   # overshoot
+    put(body, "position", length, [0, 0, 0])
+    put(body, "rotation", 0.0, [84, 0, 6])
+    put(body, "rotation", length * 0.30, [70, 14, 18])            # one side first
+    put(body, "rotation", length * 0.74, [12, -6, -8], "easeOutQuart")
+    put(body, "rotation", length * 0.86, [-14, 0, 0])
+    put(body, "rotation", length, [0, 0, 0])
+    if head:
+        put(head, "rotation", 0.0, [34, 26, 14])
+        put(head, "rotation", length * 0.55, [40, -18, -6])
+        put(head, "rotation", length * 0.80, [-34, 0, 0], "easeOutQuart")   # snaps up
+        put(head, "rotation", length, [0, 0, 0])
+    if jaw:
+        put(jaw, "rotation", 0.0, [40, 0, 0])
+        put(jaw, "rotation", length * 0.78, [62, 0, 0], "easeOutQuart")     # roar
+        put(jaw, "rotation", length, [14, 0, 0])
+    for k, limb in enumerate(limbs or []):
+        side = 1 if k % 2 == 0 else -1
+        put(limb.segments[0], "rotation", 0.0, [72 + 14 * side, 0, 12 * side])
+        put(limb.segments[0], "rotation", length * (0.34 + 0.08 * k), [-24, 0, 0],
+            "easeOutQuart")
+        put(limb.segments[0], "rotation", length, [0, 0, 0])
+        for seg in limb.segments[1:]:
+            put(seg, "rotation", 0.0, [-96, 0, 0])
+            put(seg, "rotation", length * 0.7, [18, 0, 0], "easeOutQuart")
+            put(seg, "rotation", length, [0, 0, 0])
+        if limb.foot:
+            put(limb.foot, "rotation", 0.0, [26, 0, 0])
+            put(limb.foot, "rotation", length, [0, 0, 0])
+    return {"loop": False, "animation_length": round(length, 3), "bones": tracks}

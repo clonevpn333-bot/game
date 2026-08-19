@@ -54,6 +54,9 @@ public abstract class SeamMob extends Monster {
             SynchedEntityData.defineId(SeamMob.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<Boolean> DATA_OUTLIER =
             SynchedEntityData.defineId(SeamMob.class, EntityDataSerializers.BOOLEAN);
+    /** Down but not finished. The client renders the collapse from this. */
+    private static final EntityDataAccessor<Boolean> DATA_DOWNED =
+            SynchedEntityData.defineId(SeamMob.class, EntityDataSerializers.BOOLEAN);
 
     private static final Identifier TIER_HEALTH_ID = GildedSeam.id("tier_health");
     private static final Identifier TIER_DAMAGE_ID = GildedSeam.id("tier_damage");
@@ -66,14 +69,102 @@ public abstract class SeamMob extends Monster {
     /** One firing in fifty comes out of the kiln wrong — and much worse. */
     private static final float OUTLIER_CHANCE = 0.02F;
 
+    /** How long a body lies there before it gets back up. */
+    public static final int RISE_DELAY = 1200;          // one minute
+
+    private int downedTicks;
+
     protected SeamMob(EntityType<? extends Monster> type, Level level) {
         super(type, level);
+    }
+
+    public boolean isDowned() {
+        return this.entityData.get(DATA_DOWNED);
+    }
+
+    /** Ticks left before it rises, for the renderer to lean on. */
+    public int getDownedTicks() {
+        return this.downedTicks;
+    }
+
+    /**
+     * Whether this one can still come back. The Creaking is exempt - a boss
+     * that refuses to die is a chore, not a threat - and so is anything that
+     * has already been through it and come out at full maturity.
+     */
+    protected boolean canRise() {
+        return this.getTier() < SeamHelper.TIER_LUSTRE;
+    }
+
+    /**
+     * Killing a seam mob does not finish it.
+     *
+     * <p>It falls where it stood and lies there for a full minute, and then it
+     * gets up faster, angrier and one stage further gone, with the abilities
+     * that stage brings. The corpse is the fight's clock: a minute is long
+     * enough to break contact, loot, reposition or run, and short enough that
+     * standing still is never the answer.
+     *
+     * <p>A body on the floor can be <b>finished</b> - see
+     * {@code finish} - which is the only way to make a kill permanent before
+     * full maturity, and the reason to carry rivening salt.
+     */
+    private void goDown(ServerLevel level, DamageSource source) {
+        this.entityData.set(DATA_DOWNED, true);
+        this.downedTicks = RISE_DELAY;
+        this.setHealth(1.0F);
+        this.setTarget(null);
+        this.getNavigation().stop();
+        this.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
+        this.setNoAi(true);
+        level.broadcastEntityEvent(this, (byte) 61);     // client: play the fall
+        level.playSound(null, this.blockPosition(), SoundEvents.DECORATED_POT_SHATTER,
+                net.minecraft.sounds.SoundSource.HOSTILE, 1.2F, 0.55F);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.FALLING_HONEY,
+                this.getX(), this.getY() + this.getBbHeight() * 0.4, this.getZ(),
+                30, 0.4, 0.3, 0.4, 0.02);
+    }
+
+    /** Puts a downed body out for good. */
+    public void finish(ServerLevel level) {
+        this.entityData.set(DATA_DOWNED, false);
+        this.downedTicks = 0;
+        this.setNoAi(false);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.ASH,
+                this.getX(), this.getY() + 0.4, this.getZ(), 40, 0.5, 0.4, 0.5, 0.03);
+        level.playSound(null, this.blockPosition(), SoundEvents.AMETHYST_CLUSTER_BREAK,
+                net.minecraft.sounds.SoundSource.HOSTILE, 1.4F, 0.5F);
+        this.setHealth(0.0F);
+        this.die(this.damageSources().genericKill());
+    }
+
+    private void rise(ServerLevel level) {
+        this.entityData.set(DATA_DOWNED, false);
+        this.setNoAi(false);
+        this.setTier(Math.min(SeamHelper.TIER_LUSTRE, this.getTier() + 1));
+        this.setHealth(this.getMaxHealth());
+        this.addEffect(new MobEffectInstance(
+                net.minecraft.world.effect.MobEffects.SPEED, 400, 1));
+        this.addEffect(new MobEffectInstance(
+                net.minecraft.world.effect.MobEffects.RESISTANCE, 200, 0));
+        level.broadcastEntityEvent(this, (byte) 62);      // client: play the rise
+        level.playSound(null, this.blockPosition(), SoundEvents.CREAKING_HEART_SPAWN,
+                net.minecraft.sounds.SoundSource.HOSTILE, 1.6F, 0.6F);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.SCULK_SOUL,
+                this.getX(), this.getY() + this.getBbHeight() * 0.5, this.getZ(),
+                50, 0.5, 0.6, 0.5, 0.05);
+        // Whatever put it down is the first thing it looks for.
+        Player nearest = level.getNearestPlayer(this, 24.0);
+        if (nearest != null) {
+            this.setTarget(nearest);
+        }
     }
 
     // --- Firing tier ---------------------------------------------------------
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        builder.define(DATA_DOWNED, false);
         super.defineSynchedData(builder);
         builder.define(DATA_TIER, (byte) 0);
         builder.define(DATA_OUTLIER, false);
@@ -192,10 +283,30 @@ public abstract class SeamMob extends Monster {
 
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+        // A body on the floor. Rivening salt or the kintsugi blade ends it for
+        // good; anything else is wasted on it, and it will get up.
+        if (this.isDowned()) {
+            if (source.getEntity() instanceof LivingEntity finisher
+                    && (finisher.getMainHandItem().is(ModItems.RIVENING_SALT)
+                        || finisher.getMainHandItem().is(ModItems.KINTSUGI_BLADE))) {
+                this.finish(level);
+                return true;
+            }
+            return false;
+        }
         // The kintsugi blade knows where the seams are.
         if (source.getEntity() instanceof LivingEntity attacker
                 && attacker.getMainHandItem().is(ModItems.KINTSUGI_BLADE)) {
             amount *= 1.5F;
+        }
+        // Lethal, but not final: it goes down and the clock starts.
+        if (this.canRise() && amount >= this.getHealth()
+                && !source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+            this.goDown(level, source);
+            if (source.getEntity() instanceof LivingEntity caller) {
+                com.gildedseam.infection.HordeCall.answer(this, level, caller);
+            }
+            return true;
         }
         boolean hurt = super.hurtServer(level, source, amount);
         // Nothing of the blight is hurt privately: the neighbourhood answers.
@@ -203,6 +314,31 @@ public abstract class SeamMob extends Monster {
             com.gildedseam.infection.HordeCall.answer(this, level, caller);
         }
         return hurt;
+    }
+
+    @Override
+    public void aiStep() {
+        super.aiStep();
+        if (!(this.level() instanceof ServerLevel level) || !this.isDowned()) {
+            return;
+        }
+        this.downedTicks--;
+        // It twitches harder the closer it is to getting up, so a body is
+        // never quiet scenery - you can see the minute running out.
+        if (this.downedTicks % 20 == 0) {
+            float urgency = 1.0F - this.downedTicks / (float) RISE_DELAY;
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIMSON_SPORE,
+                    this.getX(), this.getY() + 0.3, this.getZ(),
+                    2 + (int) (urgency * 8), 0.35, 0.15, 0.35, 0.01);
+            if (urgency > 0.6F && this.getRandom().nextInt(3) == 0) {
+                level.playSound(null, this.blockPosition(), SoundEvents.CREAKING_HEART_IDLE,
+                        net.minecraft.sounds.SoundSource.HOSTILE, 0.8F,
+                        0.5F + urgency * 0.5F);
+            }
+        }
+        if (this.downedTicks <= 0) {
+            this.rise(level);
+        }
     }
 
     @Override

@@ -222,6 +222,11 @@ public class PorcelainAutarchEntity extends SeamMob {
     }
 
     @Override
+    protected boolean canRise() {
+        return false;      // bosses die when they die
+    }
+
+    @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
         if (this.isDormant()) {
             this.beginAwakening();

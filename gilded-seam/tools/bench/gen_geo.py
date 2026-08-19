@@ -29,6 +29,16 @@ GEO_DIR = os.path.join(ROOT, "src", "main", "resources", "assets", "gildedseam",
 ANIM_DIR = os.path.join(ROOT, "src", "main", "resources", "assets", "gildedseam",
                         "animations")
 
+# How each one dies. Thirteen identical collapses is what makes a kill feel
+# like a counter ticking rather than an event.
+DEATHS = {
+    "gilded_cow": "topple", "gilded_pig": "burst", "gilded_sheep": "fold",
+    "gilded_goat": "topple", "gilded_horse": "buckle", "gilded_llama": "buckle",
+    "gilded_chicken": "burst", "gilded_wolf": "fold", "gilded_fox": "fold",
+    "gilded_cat": "fold", "gilded_hare": "burst", "gilded_cask": "burst",
+    "gilded_spider": "buckle",
+}
+
 QUAD_LEGS = ["leg_fr", "leg_fl", "leg_br", "leg_bl"]
 QUAD_HIND = {"leg_br", "leg_bl"}
 SPIDER_LEGS = ["leg_r0", "leg_r1", "leg_r2", "leg_r3",
@@ -98,6 +108,16 @@ def main() -> None:
             f"animation.{shipped}.attack": A.strike(
                 arms=arms, length=0.78, head="head", jaw=jaw, body="body",
                 legs=limbs, stagger=0.11, reach=84.0, step=1.6),
+            # Killing one does not finish it: it falls where it stood, lies
+            # there for a minute, and gets back up worse.
+            f"animation.{shipped}.death": A.collapse(
+                body="body", head="head", jaw=jaw, limbs=limbs, tail=tail,
+                length=1.4 + 0.3 * (len(shipped) % 3),
+                style=DEATHS.get(shipped, "fold"),
+                height=max(6.0, min(20.0, limbs[0].reach if limbs else 12.0))),
+            f"animation.{shipped}.rise": A.rise(
+                body="body", head="head", jaw=jaw, limbs=limbs, length=2.2,
+                height=max(6.0, min(20.0, limbs[0].reach if limbs else 12.0))),
         }
         write_animations(os.path.join(ANIM_DIR, f"{shipped}.animation.json"), anims)
 

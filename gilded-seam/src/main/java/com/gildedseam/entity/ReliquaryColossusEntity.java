@@ -190,6 +190,11 @@ public class ReliquaryColossusEntity extends SeamMob {
     }
 
     @Override
+    protected boolean canRise() {
+        return false;      // bosses die when they die
+    }
+
+    @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
         // Waking the church the rude way also works.
         if (this.isDormant()) {
