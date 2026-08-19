@@ -189,6 +189,17 @@ jobs:
                 | grep -oE "data/minecraft/worldgen/placed_feature/[A-Za-z0-9_]+\.json" | head -60); do
             unzip -p "$jar" "$f" 2>/dev/null | tr -d ' \n' | grep -oE '"type":"[a-z0-9_:]+"'
           done | sort -u
+          echo "===== a vanilla advancement that filters on entity type ====="
+          # Two of the mod's advancements fail with "Unknown registry key in
+          # entity_sub_predicate_type: minecraft:type", which means the entity
+          # predicate now dispatches sub-predicates on `type` and the entity
+          # *type* match has moved to some other key. Mojang's own kill
+          # advancements say which one.
+          for f in $(unzip -l "$jar" \
+                | grep -oE "data/minecraft/advancement/[A-Za-z0-9_/]+\.json"); do
+            unzip -p "$jar" "$f" 2>/dev/null | grep -q "player_killed_entity" \
+              && { echo "--- $f"; unzip -p "$jar" "$f"; break; }
+          done
           echo "===== a vanilla random-patch-shaped feature, in full ====="
           for cand in patch_grass_plain patch_sugar_cane patch_dead_bush flower_default; do
             p="data/minecraft/worldgen/configured_feature/$cand.json"
