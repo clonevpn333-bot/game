@@ -149,9 +149,45 @@ def scan(roots: list[str]) -> int:
     return problems
 
 
+# Members of Minecraft types that are methods here, not fields. Without the
+# jar nothing local can tell the two apart - `level.isClientSide` reports
+# "cannot find symbol", exactly like every other net.minecraft reference, and
+# sails through the filter. It cost a build once. The list grows as they are
+# found; each entry is a mistake that cannot be made twice.
+FIELD_NOT_METHOD = {
+    "isClientSide": "Level.isClientSide is private in 26.2; call isClientSide()",
+}
+
+BARE = {name: re.compile(rf"\.{name}\b\s*(?!\()") for name in FIELD_NOT_METHOD}
+
+
+def house_rules(roots: list[str]) -> int:
+    """Flags members read as fields that are methods on this version."""
+    problems = 0
+    for root in roots:
+        for base, _dirs, names in os.walk(root):
+            for filename in names:
+                if not filename.endswith(".java"):
+                    continue
+                path = os.path.join(base, filename)
+                with open(path, encoding="utf-8", errors="replace") as fh:
+                    raw = fh.read()
+                body = strip(raw)
+                for name, why in FIELD_NOT_METHOD.items():
+                    if not BARE[name].search(body):
+                        continue
+                    line_no = next(
+                        (i + 1 for i, l in enumerate(raw.splitlines())
+                         if BARE[name].search(l)), 1)
+                    print(f"{path}:{line_no}: {why}")
+                    problems += 1
+    return problems
+
+
 if __name__ == "__main__":
     here = os.path.dirname(os.path.abspath(__file__))
     targets = sys.argv[1:] or [os.path.join(here, "..", "src")]
-    count = scan([os.path.normpath(t) for t in targets])
+    targets = [os.path.normpath(t) for t in targets]
+    count = scan(targets) + house_rules(targets)
     print(f"{count} unresolvable name(s)")
     sys.exit(1 if count else 0)

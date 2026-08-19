@@ -363,7 +363,7 @@ public abstract class SeamMob extends Monster {
         // will: the server has already moved on by the time the getting-up is
         // over. Left alone the creature would hold the last frame of its rise
         // forever and never walk again.
-        if (this.level().isClientSide) {
+        if (this.level().isClientSide()) {
             if (this.risingTicks > 0 && --this.risingTicks == 0) {
                 this.riseAnimationState.stop();
             }
