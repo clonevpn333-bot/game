@@ -78,8 +78,14 @@ public final class DumpModels {
         for (String name : classes) {
             try {
                 Class.forName(name, true, DumpModels.class.getClassLoader());
+                System.err.println("warm-up: " + name + " ok");
             } catch (Throwable t) {
-                System.err.println("warm-up: " + name + " -> " + t);
+                // The *first* failure carries the real cause; every later
+                // "Could not initialize class" is just the corpse. Print the
+                // whole trace, once, rather than a one-line summary that has
+                // already been laundered.
+                System.err.println("warm-up: " + name + " FAILED");
+                t.printStackTrace();
             }
         }
         // Bootstrap registers block/item/sound registries. Several models read
