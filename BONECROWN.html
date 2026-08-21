@@ -497,7 +497,7 @@ function esc(s) { return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': 
 /* ── settings ───────────────────────────────────────────────────────────── */
 const SET = {
   master: 0.8, sfx: 0.85, music: 0.5, sens: 1.0, invertY: 0, quality: 1, shake: 1,
-  shadows: 1, fov: 62, dmgnums: 1, autoLock: 1, fpsShow: 0
+  shadows: 1, fov: 62, dmgnums: 1, autoLock: 1, fpsShow: 0, camFollow: 1
 };
 const QUALITY = [
   { n: 'LOW', dpr: 0.72, shadow: 0, fog: 0.9, parts: 0.4, draw: 190, aa: false, grass: 0.35 },
@@ -643,7 +643,11 @@ const IN = {
       if (e.button === 2) { this.mouse.rdown = true; this.clicks.r = 1; }
       this.mouse.dragging = false; this._px = e.clientX; this._py = e.clientY;
     });
-    addEventListener('mouseup', e => { if (e.button === 0) this.mouse.down = false; if (e.button === 2) this.mouse.rdown = false; });
+    addEventListener('mouseup', e => {
+      if (e.button === 0) this.mouse.down = false;
+      if (e.button === 2) this.mouse.rdown = false;
+      if (!this.mouse.down && !this.mouse.rdown) this._clearDrag = true;
+    });
     addEventListener('mousemove', e => {
       if (this._px != null && (this.mouse.down || this.mouse.rdown)) {
         const dx = e.clientX - this._px, dy = e.clientY - this._py;
@@ -663,7 +667,10 @@ const IN = {
   k(...names) { for (const n of names) if (this.keys[n]) return true; return false; },
   hit(...names) { for (const n of names) if (this.pressed[n]) { return true; } return false; },
   consume(...names) { let got = false; for (const n of names) if (this.pressed[n]) { got = true; this.pressed[n] = 0; } return got; },
-  endFrame() { this.pressed = {}; this.mouse.dx = 0; this.mouse.dy = 0; this.wheel = 0; this.clicks.l = 0; this.clicks.r = 0; }
+  endFrame() {
+    this.pressed = {}; this.mouse.dx = 0; this.mouse.dy = 0; this.wheel = 0; this.clicks.l = 0; this.clicks.r = 0;
+    if (this._clearDrag) { this._clearDrag = false; this.mouse.dragging = false; }
+  }
 };
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -4351,14 +4358,28 @@ class PlayerActor extends Actor {
       const poise = PStat.poise;
       const pd = (opts.poise || 10);
       if (this.hp > 0) {
-        if (pd * 12 > poise || opts.knock) {
-          this.setState('stagger'); this.stagger = pd * 12 > poise * 2.2 || opts.knock ? 1.35 : .72;
-          this.anim.play(this.stagger > 1 ? 'knock' : 'hitheavy', .06, 1, true);
-          const kb = this.stagger > 1 ? 5.6 : 3.0;
+        const immune = this.staggerImmune > 0;
+        if ((pd * 12 > poise || opts.knock) && !immune) {
+          this.setState('stagger'); this.stagger = (pd * 12 > poise * 2.2 || opts.knock) ? 1.05 : .52;
+          this.anim.play(this.stagger > .9 ? 'knock' : 'hitheavy', .06, 1, true);
+          const kb = this.stagger > .9 ? 5.6 : 3.0;
           this.vel.set(-toAtk.x * kb, 0, -toAtk.z * kb);
+          // you cannot be juggled: brief mercy invulnerability, then no restagger for a beat
+          this.iframe = max(this.iframe, this.stagger > .9 ? .55 : .40);
+          this.staggerImmune = this.stagger + 1.5;
         } else if (!blocked) {
-          this.setState('stagger'); this.stagger = .38; this.anim.play('hit', .05, 1, true);
-          this.vel.set(-toAtk.x * 1.5, 0, -toAtk.z * 1.5);
+          if (immune) {
+            // already reeling — flinch without taking control away
+            if (this.state === 'idle' || this.state === 'move') this.anim.play('hit', .05, 1.6, true);
+            this.moveBy(-toAtk.x * .12, -toAtk.z * .12);
+            this.iframe = max(this.iframe, .22);
+          } else {
+            this.setState('stagger'); this.stagger = .28;
+            this.anim.play('hit', .05, 1, true);
+            this.vel.set(-toAtk.x * 1.5, 0, -toAtk.z * 1.5);
+            this.iframe = max(this.iframe, .18);
+            this.staggerImmune = 1.25;
+          }
         }
       }
     }
@@ -4481,6 +4502,7 @@ PlayerActor.prototype.update = function (dt) {
   if (this.dead) { A.update(dt); this.sync(); return; }
   // timers
   this.iframe = max(0, this.iframe - dt);
+  this.staggerImmune = max(0, (this.staggerImmune || 0) - dt);
   this.comboWin = max(0, this.comboWin - dt);
   this.riposteT = max(0, this.riposteT - dt);
   this.rollEndT = max(0, (this.rollEndT || 0) - dt);
@@ -4498,8 +4520,9 @@ PlayerActor.prototype.update = function (dt) {
   const canMove = this.state === 'idle' || this.state === 'move' || (this.state === 'attack' && this.moveT > (this.move.cancel || 99));
   let mx = 0, mz = 0;
   if (!Game.uiBlocking()) {
-    const f = new THREE.Vector3(sin(Cam.yaw), 0, cos(Cam.yaw));
-    const r = new THREE.Vector3(f.z, 0, -f.x);
+    // the camera sits at +(sin,cos)*dist from the target, so it LOOKS along -(sin,cos)
+    const f = new THREE.Vector3(-sin(Cam.yaw), 0, -cos(Cam.yaw));
+    const r = new THREE.Vector3(-f.z, 0, f.x);
     if (IN.k('w')) { mx += f.x; mz += f.z; }
     if (IN.k('s')) { mx -= f.x; mz -= f.z; }
     if (IN.k('a')) { mx -= r.x; mz -= r.z; }
@@ -4520,10 +4543,11 @@ PlayerActor.prototype.update = function (dt) {
       this.lmbT += dt;
       if (!IN.mouse.down) {
         this.lmbDown = false;
-        if (this.canAct() || (this.state === 'attack' && this.moveT > this.move.cancel * .8)) {
+        if (IN.mouse.dragging) { /* that was a camera drag, not a swing */ }
+        else if (this.canAct() || (this.state === 'attack' && this.moveT > this.move.cancel * .8)) {
           if (this.lmbT > .30) this.tryAttack(true, this.lmbT > .8); else this.tryAttack(false);
         } else this.queued = this.lmbT > .30 ? 'heavy' : 'light';
-      } else if (this.lmbT > 1.4) { this.lmbDown = false; if (this.canAct()) this.tryAttack(true, true); }
+      } else if (this.lmbT > 1.4 && !IN.mouse.dragging) { this.lmbDown = false; if (this.canAct()) this.tryAttack(true, true); }
     }
     if (IN.consume('j')) { if (this.canAct()) this.tryAttack(false); else this.queued = 'light'; }
     if (IN.consume('k')) { if (this.canAct()) this.tryAttack(true); else this.queued = 'heavy'; }
@@ -4837,6 +4861,7 @@ class Enemy extends Actor {
     for (const e of Game.enemies) if (e !== this && !e.dead && !e.woke && e.def.ai === 'pack' && e.pos.distanceTo(this.pos) < 16) { e.woke = 1; e.state = 'chase'; e.target = Game.player; }
   }
   die(opts) {
+    this.releaseToken();
     this.dead = true; this.hp = 0; this.state = 'dead'; this.deadT = 0; this.move = null;
     this.anim.play('death', .07, 1, true);
     Sound.hit('die', this.boss ? 1 : .6);
@@ -4926,6 +4951,7 @@ class Enemy extends Actor {
         break;
       }
       case 'stagger': {
+        this.releaseToken();
         this.stagger -= dt;
         this.moveBy(this.vel.x * dt, this.vel.z * dt);
         this.vel.multiplyScalar(1 - min(1, dt * 5));
@@ -4982,8 +5008,7 @@ class Enemy extends Actor {
     }
     if (!opts.length) return null;
     // aggression tokens keep the pack from all swinging at once
-    const heavy = this.def.ai === 'heavy' || this.boss;
-    if (!heavy && !this.token) { if (!Game.takeToken(this)) return null; this.token = true; }
+    if (!this.boss && !this.token) { if (!Game.takeToken(this)) return null; this.token = true; }
     const c = opts[floor(rnd() * opts.length)];
     return c;
   }
@@ -4994,7 +5019,7 @@ class Enemy extends Actor {
     const dur = this.clipDur(m.clip) || m.dur;
     this.anim.play(m.clip, .08, dur / (m.dur / (m.spd || 1)), true);
     this.cool['m' + pick.i] = (m.cd || rr(.9, 2.2)) / (this.buff > 0 ? 1.5 : 1);
-    this.globalCool = (this.boss ? rr(.25, .8) : rr(.7, 1.9)) / (this.buff > 0 ? 1.6 : 1);
+    this.globalCool = (this.boss ? rr(.3, .9) : rr(1.0, 2.4)) / (this.buff > 0 ? 1.5 : 1);
     if (m.tell) { this.telegraph = m.win[0] / (m.spd || 1); Sound.hit(this.boss ? 'boss' : 'ui', .4); }
     if (m.sfx) Sound.hit(m.sfx, this.boss ? .9 : .6);
   }
@@ -5140,7 +5165,7 @@ function makeProjMesh(type) {
 const G = { scene: null, camera: null, renderer: null, clock: null };
 const Cam = {
   yaw: 0, pitch: .18, dist: 6.2, distWant: 6.2, target: new THREE.Vector3(), pos: new THREE.Vector3(),
-  shake: new THREE.Vector3(), lockBlend: 0,
+  shake: new THREE.Vector3(), lockBlend: 0, manual: 0,
   update(dt, player) {
     const sens = SET.sens;
     if (!Game.uiBlocking()) {
@@ -5148,12 +5173,12 @@ const Cam = {
       if (IN.k('arrowright')) this.yaw -= 2.4 * dt * sens;
       if (IN.k('arrowup')) this.pitch += 1.5 * dt * sens * (SET.invertY ? -1 : 1);
       if (IN.k('arrowdown')) this.pitch -= 1.5 * dt * sens * (SET.invertY ? -1 : 1);
-      if (IN.mouse.dx || IN.mouse.dy) {
-        if (IN.mouse.rdown || (IN.mouse.down && IN.mouse.dragging && !player.lmbDown)) {
-          this.yaw -= IN.mouse.dx * .0045 * sens;
-          this.pitch -= IN.mouse.dy * .0035 * sens * (SET.invertY ? -1 : 1);
-        }
+      if ((IN.mouse.dx || IN.mouse.dy) && (IN.mouse.rdown || IN.mouse.down)) {
+        this.yaw -= IN.mouse.dx * .0045 * sens;
+        this.pitch -= IN.mouse.dy * .0035 * sens * (SET.invertY ? -1 : 1);
+        if (IN.mouse.dragging) this.manual = 1.2;
       }
+      if (IN.k('arrowleft', 'arrowright', 'arrowup', 'arrowdown')) this.manual = 1.2;
       if (IN.wheel) this.distWant = clamp(this.distWant + IN.wheel * .006, 2.6, 12);
     }
     this.pitch = clamp(this.pitch, -.42, 1.02);
@@ -5178,6 +5203,11 @@ const Cam = {
       this.lockBlend = damp(this.lockBlend, 0, 8, dt);
       tgt.set(player.pos.x, player.pos.y + player.h * .72, player.pos.z);
       this.target.lerp(tgt, 1 - Math.exp(-11 * dt));
+      this.manual = max(0, (this.manual || 0) - dt);
+      if (SET.camFollow && this.manual <= 0 && player.inputMag > .1 && !player.dead) {
+        const rate = SET.camFollow === 2 ? 2.6 : 1.3;
+        this.yaw = angApproach(this.yaw, player.yaw + PI, rate * dt);
+      }
     }
     const cp = cos(this.pitch);
     const px = this.target.x + sin(this.yaw) * this.dist * cp;
@@ -5193,7 +5223,7 @@ const Cam = {
   }
 };
 const Game = {
-  state: 'boot', enemies: [], projectiles: [], player: null, tokens: 0, maxTokens: 2,
+  state: 'boot', enemies: [], projectiles: [], player: null, tokens: 0, rTokens: 0, maxTokens: 2,
   boss: null, bossHpDirty: false, inBossFight: false, respawnTimer: 0, playT: 0, dialogNPC: null,
   init() {
     const canvas = $('#glcanvas');
@@ -5220,7 +5250,7 @@ const Game = {
   /* ── enemy population ── */
   clearEnemies() {
     for (const e of this.enemies) { if (e.mesh.parent) e.mesh.parent.remove(e.mesh); disposeTree(e.mesh); }
-    this.enemies.length = 0; this.tokens = 0; this.boss = null; this.inBossFight = false;
+    this.enemies.length = 0; this.tokens = 0; this.rTokens = 0; this.boss = null; this.inBossFight = false;
     UI.bossBar(null);
     for (const p of this.projectiles) { if (p.mesh.parent) p.mesh.parent.remove(p.mesh); }
     this.projectiles.length = 0;
@@ -5248,8 +5278,16 @@ const Game = {
     this.populate();
     for (const c of World.chests) if (c.obj && P.flags['chest_' + c.id]) { /* stays open */ }
   },
-  takeToken(e) { if (this.tokens < this.maxTokens) { this.tokens++; return true; } return false; },
-  freeToken(e) { this.tokens = max(0, this.tokens - 1); },
+  takeToken(e) {
+    const ranged = e.def.ai === 'ranged' || e.def.ai === 'caster';
+    if (ranged) { if (this.rTokens < 1) { this.rTokens++; return true; } return false; }
+    if (this.tokens < this.maxTokens) { this.tokens++; return true; }
+    return false;
+  },
+  freeToken(e) {
+    const ranged = e.def.ai === 'ranged' || e.def.ai === 'caster';
+    if (ranged) this.rTokens = max(0, this.rTokens - 1); else this.tokens = max(0, this.tokens - 1);
+  },
   summon(src, m) {
     const n = m.count || 1;
     for (let i = 0; i < n; i++) {
@@ -5988,6 +6026,11 @@ const UI = {
     slider('Sensitivity', 'sens', .2, 3, .05, v => v.toFixed(2) + '×');
     slider('Field of View', 'fov', 45, 90, 1, v => round(v) + '°');
     slider('Screen Shake', 'shake', 0, 1.5, .05, v => round(v * 100) + '%');
+    const cf = el('div', 'slider'); cf.appendChild(el('label', '', 'Camera Follow'));
+    const segf = el('div', 'seg');
+    ['OFF', 'SOFT', 'SNAPPY'].forEach((t, i) => { const d = el('div', SET.camFollow === i ? 'on' : '', t);
+      d.onclick = () => { SET.camFollow = i; Sound.hit('ui'); this.renderSettings(); Save.write(); }; segf.appendChild(d); });
+    cf.appendChild(segf); b.appendChild(cf);
     const inv = el('div', 'slider'); inv.appendChild(el('label', '', 'Invert Vertical'));
     const seg1 = el('div', 'seg');
     ['OFF', 'ON'].forEach((t, i) => { const d = el('div', SET.invertY === i ? 'on' : '', t);
@@ -6021,8 +6064,12 @@ const UI = {
   renderControls() {
     const b = $('#ctrlbody');
     const rows = [
-      ['Move', 'W A S D'], ['Look', 'ARROW KEYS  ·  or DRAG with the mouse'], ['Zoom', 'SCROLL / TRACKPAD PINCH'],
-      ['Light Attack', 'LEFT CLICK (tap)  ·  J'], ['Heavy Attack', 'LEFT CLICK (hold, release)  ·  K'],
+      ['Move', 'W A S D  (relative to the camera)'],
+      ['Look', 'ARROW KEYS  ·  or DRAG with either mouse button'],
+      ['Auto-Follow', 'the camera swings in behind you as you run — tune it in Settings'],
+      ['Zoom', 'SCROLL / TRACKPAD PINCH'],
+      ['Light Attack', 'LEFT CLICK (tap — a drag turns the camera instead)  ·  J'],
+      ['Heavy Attack', 'LEFT CLICK (hold, release)  ·  K'],
       ['Charged Heavy', 'HOLD LEFT CLICK past a second'],
       ['Guard / Parry', 'SHIFT (hold)  ·  RIGHT CLICK  ·  L'], ['Dodge Roll', 'SPACE'], ['Backstep', 'SPACE while standing still'],
       ['Drink Flask', 'R'], ['Lock On', 'Q'], ['Interact', 'E'], ['Swap Weapon', '1  2  3  4'],
