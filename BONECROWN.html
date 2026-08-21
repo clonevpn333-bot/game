@@ -242,6 +242,11 @@ h1,h2,h3{font-weight:400;letter-spacing:.18em;text-transform:uppercase}
 .mat{display:inline-flex;align-items:center;gap:5px;margin-right:12px;font-size:12px;color:#b6a988}
 .matgrid{display:flex;flex-wrap:wrap;gap:4px 0}
 #fps{position:absolute;right:8px;bottom:4px;font-size:10px;color:#4e4738;letter-spacing:.1em}
+#mousehint{position:absolute;left:50%;transform:translateX(-50%);bottom:11%;font-size:11px;letter-spacing:.22em;
+  color:#a2967a;background:rgba(8,6,4,.66);padding:6px 14px;border-left:2px solid #7a6a42;border-right:2px solid #7a6a42;
+  display:none;animation:mh 2.4s ease-in-out infinite}
+#mousehint.on{display:block}
+@keyframes mh{0%,100%{opacity:.55}50%{opacity:1}}
 </style>
 </head>
 <body>
@@ -281,6 +286,7 @@ h1,h2,h3{font-weight:400;letter-spacing:.18em;text-transform:uppercase}
       <path d="M13 2 L16 6 L13 5 L10 6 Z" fill="#e8dcb8" stroke="none"/>
       <circle cx="13" cy="13" r="8" stroke-dasharray="4 5"/></g></svg>
     <div id="fps"></div>
+    <div id="mousehint">CLICK TO CAPTURE THE MOUSE &nbsp;·&nbsp; ESC RELEASES IT</div>
   </div>
 
   <!-- ============ TITLE ============ -->
@@ -307,7 +313,7 @@ h1,h2,h3{font-weight:400;letter-spacing:.18em;text-transform:uppercase}
       <button data-a="lore">The Giant</button>
     </div>
     <div class="saveinfo" id="saveinfo"></div>
-    <div class="foot">ARROW KEYS OR DRAG TO LOOK · WASD TO MOVE · NO POINTER LOCK</div>
+    <div class="foot">CLICK TO CAPTURE THE MOUSE · WASD TO MOVE · ESC RELEASES</div>
   </div>
 
   <!-- ============ PAUSE ============ -->
@@ -497,7 +503,7 @@ function esc(s) { return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': 
 /* ── settings ───────────────────────────────────────────────────────────── */
 const SET = {
   master: 0.8, sfx: 0.85, music: 0.5, sens: 1.0, invertY: 0, quality: 1, shake: 1,
-  shadows: 1, fov: 62, dmgnums: 1, autoLock: 1, fpsShow: 0, camFollow: 1
+  shadows: 1, fov: 62, dmgnums: 1, autoLock: 1, fpsShow: 0, camFollow: 1, mouseLook: 1
 };
 const QUALITY = [
   { n: 'LOW', dpr: 0.72, shadow: 0, fog: 0.9, parts: 0.4, draw: 190, aa: false, grass: 0.35 },
@@ -625,8 +631,21 @@ const Sound = {
 /* ── input (no pointer lock — keys + drag) ──────────────────────────────── */
 const IN = {
   keys: {}, pressed: {}, mouse: { x: 0, y: 0, dx: 0, dy: 0, down: false, rdown: false, dragging: false },
-  clicks: { l: 0, r: 0 }, wheel: 0, anyKeyTime: 0,
+  clicks: { l: 0, r: 0 }, wheel: 0, anyKeyTime: 0, locked: false, swallow: false, canvas: null,
+  grab() {
+    if (!this.canvas || this.locked || !SET.mouseLook) return;
+    const r = this.canvas.requestPointerLock && this.canvas.requestPointerLock();
+    if (r && r.catch) r.catch(() => { });
+  },
+  release() { if (document.pointerLockElement) { try { document.exitPointerLock(); } catch (e) { } } },
   init(canvas) {
+    this.canvas = canvas;
+    document.addEventListener('pointerlockchange', () => {
+      this.locked = document.pointerLockElement === canvas;
+      if (!this.locked) { this.mouse.down = this.mouse.rdown = false; }
+      UI.mouseHint();
+    });
+    document.addEventListener('pointerlockerror', () => { this.locked = false; UI.mouseHint(); });
     addEventListener('keydown', e => {
       const k = e.key.toLowerCase();
       if (!this.keys[k]) this.pressed[k] = 1;
@@ -639,6 +658,8 @@ const IN = {
     canvas.addEventListener('contextmenu', e => e.preventDefault());
     canvas.addEventListener('mousedown', e => {
       Sound.init(); Sound.resume();
+      // first click in play captures the mouse; that click is not a swing
+      if (!this.locked && SET.mouseLook && Game.state === 'play' && !UI.modal) { this.grab(); this.swallow = true; }
       if (e.button === 0) { this.mouse.down = true; this.clicks.l = 1; }
       if (e.button === 2) { this.mouse.rdown = true; this.clicks.r = 1; }
       this.mouse.dragging = false; this._px = e.clientX; this._py = e.clientY;
@@ -649,6 +670,10 @@ const IN = {
       if (!this.mouse.down && !this.mouse.rdown) this._clearDrag = true;
     });
     addEventListener('mousemove', e => {
+      if (this.locked) {   // pointer lock: raw deltas, no button needed
+        this.mouse.dx += e.movementX || 0; this.mouse.dy += e.movementY || 0;
+        return;
+      }
       if (this._px != null && (this.mouse.down || this.mouse.rdown)) {
         const dx = e.clientX - this._px, dy = e.clientY - this._py;
         if (abs(dx) + abs(dy) > 3) this.mouse.dragging = true;
@@ -4538,7 +4563,7 @@ PlayerActor.prototype.update = function (dt) {
       if (!this.blocking) { this.blocking = true; if (hasMove('parry')) this.parryT = .22; }
     } else if (this.blocking) this.blocking = false;
     // attacks — tap LMB for light, hold for heavy
-    if (IN.clicks.l) { this.lmbT = 0; this.lmbDown = true; }
+    if (IN.clicks.l) { if (IN.swallow) IN.swallow = false; else { this.lmbT = 0; this.lmbDown = true; } }
     if (this.lmbDown) {
       this.lmbT += dt;
       if (!IN.mouse.down) {
@@ -5173,10 +5198,11 @@ const Cam = {
       if (IN.k('arrowright')) this.yaw -= 2.4 * dt * sens;
       if (IN.k('arrowup')) this.pitch += 1.5 * dt * sens * (SET.invertY ? -1 : 1);
       if (IN.k('arrowdown')) this.pitch -= 1.5 * dt * sens * (SET.invertY ? -1 : 1);
-      if ((IN.mouse.dx || IN.mouse.dy) && (IN.mouse.rdown || IN.mouse.down)) {
-        this.yaw -= IN.mouse.dx * .0045 * sens;
-        this.pitch -= IN.mouse.dy * .0035 * sens * (SET.invertY ? -1 : 1);
-        if (IN.mouse.dragging) this.manual = 1.2;
+      if ((IN.mouse.dx || IN.mouse.dy) && (IN.locked || IN.mouse.rdown || IN.mouse.down)) {
+        const k = IN.locked ? .0026 : .0045;
+        this.yaw -= IN.mouse.dx * k * sens;
+        this.pitch -= IN.mouse.dy * k * .78 * sens * (SET.invertY ? -1 : 1);
+        this.manual = 1.2;
       }
       if (IN.k('arrowleft', 'arrowright', 'arrowup', 'arrowdown')) this.manual = 1.2;
       if (IN.wheel) this.distWant = clamp(this.distWant + IN.wheel * .006, 2.6, 12);
@@ -5436,6 +5462,7 @@ Object.assign(Game, {
   },
   onPlayerDeath() {
     this.state = 'dead';
+    IN.release();
     const lost = floor(P.marrow * .28);
     P.marrow -= lost;
     $('#deathsub').innerHTML = (lost > 0 ? 'You spill ' + fmt(lost) + ' marrow into the ground.<br>' : '') +
@@ -5833,6 +5860,7 @@ const Dialog = {
   show(who, text, opts) {
     ['pause', 'inventory', 'station', 'map', 'quests', 'log', 'settings', 'controls', 'lore'].forEach(i => UI.hide(i));
     if (Preview.on) Preview.stop();
+    IN.release();
     this.open = true; UI.modal = 'dialog';
     const d = $('#dialog'); d.classList.add('on');
     d.querySelector('.who').textContent = who;
@@ -5888,10 +5916,16 @@ const UI = {
     Dialog.close();
     this.modal = null;
     if (Preview.on) Preview.stop();
+    this.mouseHint();
   },
   openModal(id, render) {
     this.closeAll(); this.modal = id; this.show(id); if (render) render();
+    IN.release(); this.mouseHint();
     Sound.hit('uibig');
+  },
+  mouseHint() {
+    const h = $('#mousehint'); if (!h) return;
+    h.classList.toggle('on', !!(SET.mouseLook && !IN.locked && Game.state === 'play' && !this.modal));
   },
   toast(txt, cls) {
     const t = el('div', 'toast ' + (cls || ''), esc(txt));
@@ -5966,7 +6000,7 @@ const UI = {
     // hud fade
     const wantHud = Game.state === 'play' || Game.state === 'paused';
     if (wantHud !== this.hudOn) { this.hudOn = wantHud; $('#hud').classList.toggle('on', wantHud); }
-    if (Game.state === 'play') { this.refreshHUD(); }
+    if (Game.state === 'play') { this.refreshHUD(); if ((this._mh = (this._mh || 0) + dt) > .4) { this._mh = 0; this.mouseHint(); } }
     // boss bar
     if (this._boss) {
       if (this._boss.dead) { this.bossBar(null); }
@@ -6026,6 +6060,11 @@ const UI = {
     slider('Sensitivity', 'sens', .2, 3, .05, v => v.toFixed(2) + '×');
     slider('Field of View', 'fov', 45, 90, 1, v => round(v) + '°');
     slider('Screen Shake', 'shake', 0, 1.5, .05, v => round(v * 100) + '%');
+    const ml = el('div', 'slider'); ml.appendChild(el('label', '', 'Mouse Look'));
+    const segm = el('div', 'seg');
+    ['DRAG ONLY', 'POINTER LOCK'].forEach((t, i) => { const d = el('div', SET.mouseLook === i ? 'on' : '', t);
+      d.onclick = () => { SET.mouseLook = i; if (!i) IN.release(); Sound.hit('ui'); this.renderSettings(); Save.write(); }; segm.appendChild(d); });
+    ml.appendChild(segm); b.appendChild(ml);
     const cf = el('div', 'slider'); cf.appendChild(el('label', '', 'Camera Follow'));
     const segf = el('div', 'seg');
     ['OFF', 'SOFT', 'SNAPPY'].forEach((t, i) => { const d = el('div', SET.camFollow === i ? 'on' : '', t);
@@ -6065,7 +6104,8 @@ const UI = {
     const b = $('#ctrlbody');
     const rows = [
       ['Move', 'W A S D  (relative to the camera)'],
-      ['Look', 'ARROW KEYS  ·  or DRAG with either mouse button'],
+      ['Look', 'MOVE THE MOUSE (click once to capture it)  ·  ARROW KEYS  ·  or DRAG'],
+      ['Release Mouse', 'ESC'],
       ['Auto-Follow', 'the camera swings in behind you as you run — tune it in Settings'],
       ['Zoom', 'SCROLL / TRACKPAD PINCH'],
       ['Light Attack', 'LEFT CLICK (tap — a drag turns the camera instead)  ·  J'],
@@ -7035,6 +7075,7 @@ function startPlay(isNew) {
   Save.write();
 }
 function quitToTitle() {
+  IN.release();
   Save.write();
   UI.closeAll();
   Game.clearEnemies();
