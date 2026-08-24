@@ -939,14 +939,14 @@ stoneVariant('smooth_red_sandstone', T.speck('#c0702f', '#b06729', 24), { hard: 
 /* name, planks, planksDark, bark, barkDark, logCore, leaf, leafDark, flags */
 var WOODS = [
   { n: 'oak', p: '#b0904f', pd: '#98793f', b: '#6b542e', bd: '#4f3e21', c: '#b9945a', lf: '#4f8f2c', lfd: '#3d701f' },
-  { n: 'spruce', p: '#7a5a36', pd: '#63482a', b: '#4a3721', bd: '#3a2a19', c: '#8b6a41', lf: '#3d6b3a', lfd: '#2e522c' },
-  { n: 'birch', p: '#d0bb7c', pd: '#b8a468', b: '#dcdcd4', bd: '#b6b6ad', c: '#c8b077', lf: '#68a53c', lfd: '#54882f' },
+  { n: 'spruce', p: '#7a5a36', pd: '#63482a', b: '#4a3721', bd: '#3a2a19', c: '#8b6a41', lf: '#5a8f5c', lfd: '#456f47', fixedLeaf: 1 },
+  { n: 'birch', p: '#d0bb7c', pd: '#b8a468', b: '#dcdcd4', bd: '#b6b6ad', c: '#c8b077', lf: '#84b355', lfd: '#6d9945', fixedLeaf: 1 },
   { n: 'jungle', p: '#a2704b', pd: '#8a5e3d', b: '#57431f', bd: '#423317', c: '#9a7148', lf: '#3fa019', lfd: '#2f7d12' },
   { n: 'acacia', p: '#b46237', pd: '#99502c', b: '#6a5c40', bd: '#4f452f', c: '#a45c33', lf: '#6f9c34', lfd: '#5a802a' },
   { n: 'dark_oak', p: '#4b3418', pd: '#3a2812', b: '#3b2b16', bd: '#2c2010', c: '#503818', lf: '#3c6b25', lfd: '#2d521c' },
   { n: 'mangrove', p: '#763228', pd: '#5f281f', b: '#5a3d31', bd: '#452e25', c: '#7a3529', lf: '#5b9137', lfd: '#48732b' },
   { n: 'cherry', p: '#dcb2a2', pd: '#c39a8b', b: '#3b2a2c', bd: '#2c2021', c: '#dfb6a6', lf: '#eba0c0', lfd: '#d886aa', pinkLeaf: 1 },
-  { n: 'pale_oak', p: '#e5e0d6', pd: '#cfc9be', b: '#5d5a52', bd: '#46433d', c: '#dedad0', lf: '#a8b39c', lfd: '#8d9882' },
+  { n: 'pale_oak', p: '#e5e0d6', pd: '#cfc9be', b: '#5d5a52', bd: '#46433d', c: '#dedad0', lf: '#c6d0a4', lfd: '#a9b487', fixedLeaf: 1 },
   { n: 'crimson', p: '#6a344b', pd: '#54293b', b: '#5a2b3c', bd: '#452130', c: '#883f5b', lf: '#7b1f28', lfd: '#611820', nether: 1 },
   { n: 'warped', p: '#2b6a63', pd: '#22534e', b: '#38292f', bd: '#2a1f23', c: '#2c8177', lf: '#1a7573', lfd: '#145b59', nether: 1 }
 ];
@@ -984,7 +984,7 @@ function woodFamily(w) {
   } else {
     defBlock(w.n + '_leaves', {
       tex: T.leaves(w.lf, w.lfd), hard: 0.2, tool: 'hoe', opaque: false, solid: true,
-      tint: w.pinkLeaf ? null : 'foliage', waving: 2, absorb: 1, sound: 'grass',
+      tint: (w.pinkLeaf || w.fixedLeaf) ? null : 'foliage', waving: 2, absorb: 1, sound: 'grass',
       group: 'nature', flam: 30, drop: null, growth: 'leaves'
     });
     defBlock(w.n + '_sapling', {
@@ -4906,14 +4906,14 @@ stoneVariant('smooth_red_sandstone', T.speck('#c0702f', '#b06729', 24), { hard: 
 /* name, planks, planksDark, bark, barkDark, logCore, leaf, leafDark, flags */
 var WOODS = [
   { n: 'oak', p: '#b0904f', pd: '#98793f', b: '#6b542e', bd: '#4f3e21', c: '#b9945a', lf: '#4f8f2c', lfd: '#3d701f' },
-  { n: 'spruce', p: '#7a5a36', pd: '#63482a', b: '#4a3721', bd: '#3a2a19', c: '#8b6a41', lf: '#3d6b3a', lfd: '#2e522c' },
-  { n: 'birch', p: '#d0bb7c', pd: '#b8a468', b: '#dcdcd4', bd: '#b6b6ad', c: '#c8b077', lf: '#68a53c', lfd: '#54882f' },
+  { n: 'spruce', p: '#7a5a36', pd: '#63482a', b: '#4a3721', bd: '#3a2a19', c: '#8b6a41', lf: '#5a8f5c', lfd: '#456f47', fixedLeaf: 1 },
+  { n: 'birch', p: '#d0bb7c', pd: '#b8a468', b: '#dcdcd4', bd: '#b6b6ad', c: '#c8b077', lf: '#84b355', lfd: '#6d9945', fixedLeaf: 1 },
   { n: 'jungle', p: '#a2704b', pd: '#8a5e3d', b: '#57431f', bd: '#423317', c: '#9a7148', lf: '#3fa019', lfd: '#2f7d12' },
   { n: 'acacia', p: '#b46237', pd: '#99502c', b: '#6a5c40', bd: '#4f452f', c: '#a45c33', lf: '#6f9c34', lfd: '#5a802a' },
   { n: 'dark_oak', p: '#4b3418', pd: '#3a2812', b: '#3b2b16', bd: '#2c2010', c: '#503818', lf: '#3c6b25', lfd: '#2d521c' },
   { n: 'mangrove', p: '#763228', pd: '#5f281f', b: '#5a3d31', bd: '#452e25', c: '#7a3529', lf: '#5b9137', lfd: '#48732b' },
   { n: 'cherry', p: '#dcb2a2', pd: '#c39a8b', b: '#3b2a2c', bd: '#2c2021', c: '#dfb6a6', lf: '#eba0c0', lfd: '#d886aa', pinkLeaf: 1 },
-  { n: 'pale_oak', p: '#e5e0d6', pd: '#cfc9be', b: '#5d5a52', bd: '#46433d', c: '#dedad0', lf: '#a8b39c', lfd: '#8d9882' },
+  { n: 'pale_oak', p: '#e5e0d6', pd: '#cfc9be', b: '#5d5a52', bd: '#46433d', c: '#dedad0', lf: '#c6d0a4', lfd: '#a9b487', fixedLeaf: 1 },
   { n: 'crimson', p: '#6a344b', pd: '#54293b', b: '#5a2b3c', bd: '#452130', c: '#883f5b', lf: '#7b1f28', lfd: '#611820', nether: 1 },
   { n: 'warped', p: '#2b6a63', pd: '#22534e', b: '#38292f', bd: '#2a1f23', c: '#2c8177', lf: '#1a7573', lfd: '#145b59', nether: 1 }
 ];
@@ -4951,7 +4951,7 @@ function woodFamily(w) {
   } else {
     defBlock(w.n + '_leaves', {
       tex: T.leaves(w.lf, w.lfd), hard: 0.2, tool: 'hoe', opaque: false, solid: true,
-      tint: w.pinkLeaf ? null : 'foliage', waving: 2, absorb: 1, sound: 'grass',
+      tint: (w.pinkLeaf || w.fixedLeaf) ? null : 'foliage', waving: 2, absorb: 1, sound: 'grass',
       group: 'nature', flam: 30, drop: null, growth: 'leaves'
     });
     defBlock(w.n + '_sapling', {
@@ -12568,7 +12568,8 @@ void main(){
   // absorption through the water column
   vec3 waterCol = vTint;
   float absorb = 1.0 - exp(-thickness * 0.30);
-  vec3 refr = mix(behind, waterCol * (0.30 + 0.70*sky), absorb);
+  // water carries the time of day too, or the sea glows at midnight
+  vec3 refr = mix(behind, waterCol * (0.30 + 0.70*sky) * (0.20 + 0.80*uDay), absorb);
 
   // reflection: sky plus a sun specular
   vec3 R = reflect(-V, wn);
@@ -13258,7 +13259,7 @@ function updateSky(timeOfDay, dim, rain, biome) {
   /* the sky fill is a soft, only slightly cool ambient; the sun carries the
      warmth and most of the intensity on lit faces */
   /* night keeps a floor so the world is still readable by moonlight */
-  R.sky.skyLight = [lerp(0.23, 0.42, day) + zen[0] * 0.14, lerp(0.24, 0.43, day) + zen[1] * 0.13, lerp(0.31, 0.52, day) + zen[2] * 0.14];
+  R.sky.skyLight = [lerp(0.23, 0.43, day) + zen[0] * 0.13, lerp(0.24, 0.435, day) + zen[1] * 0.12, lerp(0.29, 0.47, day) + zen[2] * 0.12];
   if (dim === DIM_NETHER) R.sky.skyLight = [0.74, 0.42, 0.33];
   else if (dim === DIM_END) R.sky.skyLight = [0.40, 0.36, 0.50];
   R.sky.blockLight = [1.0, 0.72, 0.42];
@@ -18375,6 +18376,26 @@ function updatePlayer(game, dt, input) {
     else if (!p.effects.fireres) { p.burnT = (p.burnT || 0) + dt; if (p.burnT > 0.5) { p.burnT = 0; playerHurt(game, 1, null, true); } }
   }
   if (p.y < -18 && !p.creative) playerHurt(game, 4 * dt * 10, null, true);
+
+  /* suffocation: a solid block where your head is */
+  var headId = world.getId(p.dim, Math.floor(p.x), Math.floor(p.camY), Math.floor(p.z));
+  if (headId && BLOCKS[headId].solid && BLOCKS[headId].opaque && BLOCKS[headId].collide && !p.creative) {
+    p.sufT = (p.sufT || 0) + dt;
+    if (p.sufT > 0.5) { p.sufT = 0; playerHurt(game, 1, null, true); }
+  } else p.sufT = 0;
+
+  /* prickly and sticky blocks you are standing in or against */
+  var hw2 = p.w * 0.5 - 0.02;
+  for (var cx2 = -1; cx2 <= 1; cx2 += 2) for (var cz2 = -1; cz2 <= 1; cz2 += 2) {
+    var tid = world.getId(p.dim, Math.floor(p.x + cx2 * hw2), Math.floor(p.y + 0.4), Math.floor(p.z + cz2 * hw2));
+    if (!tid) continue;
+    var tb = BLOCKS[tid];
+    if (tb.name === 'cactus' || tb.name === 'sweet_berry_bush' || tb.name === 'wither_rose') {
+      p.thornT = (p.thornT || 0) + dt;
+      if (p.thornT > 0.5) { p.thornT = 0; playerHurt(game, tb.name === 'cactus' ? 1 : 0.5, null, true); }
+    }
+    if (tb.name === 'sweet_berry_bush' || tb.name === 'cobweb') { p.vx *= 0.25; p.vz *= 0.25; }
+  }
 
   /* --- hunger, regeneration --- */
   if (!p.creative) {

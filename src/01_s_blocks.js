@@ -420,14 +420,14 @@ stoneVariant('smooth_red_sandstone', T.speck('#c0702f', '#b06729', 24), { hard: 
 /* name, planks, planksDark, bark, barkDark, logCore, leaf, leafDark, flags */
 var WOODS = [
   { n: 'oak', p: '#b0904f', pd: '#98793f', b: '#6b542e', bd: '#4f3e21', c: '#b9945a', lf: '#4f8f2c', lfd: '#3d701f' },
-  { n: 'spruce', p: '#7a5a36', pd: '#63482a', b: '#4a3721', bd: '#3a2a19', c: '#8b6a41', lf: '#3d6b3a', lfd: '#2e522c' },
-  { n: 'birch', p: '#d0bb7c', pd: '#b8a468', b: '#dcdcd4', bd: '#b6b6ad', c: '#c8b077', lf: '#68a53c', lfd: '#54882f' },
+  { n: 'spruce', p: '#7a5a36', pd: '#63482a', b: '#4a3721', bd: '#3a2a19', c: '#8b6a41', lf: '#5a8f5c', lfd: '#456f47', fixedLeaf: 1 },
+  { n: 'birch', p: '#d0bb7c', pd: '#b8a468', b: '#dcdcd4', bd: '#b6b6ad', c: '#c8b077', lf: '#84b355', lfd: '#6d9945', fixedLeaf: 1 },
   { n: 'jungle', p: '#a2704b', pd: '#8a5e3d', b: '#57431f', bd: '#423317', c: '#9a7148', lf: '#3fa019', lfd: '#2f7d12' },
   { n: 'acacia', p: '#b46237', pd: '#99502c', b: '#6a5c40', bd: '#4f452f', c: '#a45c33', lf: '#6f9c34', lfd: '#5a802a' },
   { n: 'dark_oak', p: '#4b3418', pd: '#3a2812', b: '#3b2b16', bd: '#2c2010', c: '#503818', lf: '#3c6b25', lfd: '#2d521c' },
   { n: 'mangrove', p: '#763228', pd: '#5f281f', b: '#5a3d31', bd: '#452e25', c: '#7a3529', lf: '#5b9137', lfd: '#48732b' },
   { n: 'cherry', p: '#dcb2a2', pd: '#c39a8b', b: '#3b2a2c', bd: '#2c2021', c: '#dfb6a6', lf: '#eba0c0', lfd: '#d886aa', pinkLeaf: 1 },
-  { n: 'pale_oak', p: '#e5e0d6', pd: '#cfc9be', b: '#5d5a52', bd: '#46433d', c: '#dedad0', lf: '#a8b39c', lfd: '#8d9882' },
+  { n: 'pale_oak', p: '#e5e0d6', pd: '#cfc9be', b: '#5d5a52', bd: '#46433d', c: '#dedad0', lf: '#c6d0a4', lfd: '#a9b487', fixedLeaf: 1 },
   { n: 'crimson', p: '#6a344b', pd: '#54293b', b: '#5a2b3c', bd: '#452130', c: '#883f5b', lf: '#7b1f28', lfd: '#611820', nether: 1 },
   { n: 'warped', p: '#2b6a63', pd: '#22534e', b: '#38292f', bd: '#2a1f23', c: '#2c8177', lf: '#1a7573', lfd: '#145b59', nether: 1 }
 ];
@@ -465,7 +465,7 @@ function woodFamily(w) {
   } else {
     defBlock(w.n + '_leaves', {
       tex: T.leaves(w.lf, w.lfd), hard: 0.2, tool: 'hoe', opaque: false, solid: true,
-      tint: w.pinkLeaf ? null : 'foliage', waving: 2, absorb: 1, sound: 'grass',
+      tint: (w.pinkLeaf || w.fixedLeaf) ? null : 'foliage', waving: 2, absorb: 1, sound: 'grass',
       group: 'nature', flam: 30, drop: null, growth: 'leaves'
     });
     defBlock(w.n + '_sapling', {

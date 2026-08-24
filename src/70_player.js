@@ -871,6 +871,26 @@ function updatePlayer(game, dt, input) {
   }
   if (p.y < -18 && !p.creative) playerHurt(game, 4 * dt * 10, null, true);
 
+  /* suffocation: a solid block where your head is */
+  var headId = world.getId(p.dim, Math.floor(p.x), Math.floor(p.camY), Math.floor(p.z));
+  if (headId && BLOCKS[headId].solid && BLOCKS[headId].opaque && BLOCKS[headId].collide && !p.creative) {
+    p.sufT = (p.sufT || 0) + dt;
+    if (p.sufT > 0.5) { p.sufT = 0; playerHurt(game, 1, null, true); }
+  } else p.sufT = 0;
+
+  /* prickly and sticky blocks you are standing in or against */
+  var hw2 = p.w * 0.5 - 0.02;
+  for (var cx2 = -1; cx2 <= 1; cx2 += 2) for (var cz2 = -1; cz2 <= 1; cz2 += 2) {
+    var tid = world.getId(p.dim, Math.floor(p.x + cx2 * hw2), Math.floor(p.y + 0.4), Math.floor(p.z + cz2 * hw2));
+    if (!tid) continue;
+    var tb = BLOCKS[tid];
+    if (tb.name === 'cactus' || tb.name === 'sweet_berry_bush' || tb.name === 'wither_rose') {
+      p.thornT = (p.thornT || 0) + dt;
+      if (p.thornT > 0.5) { p.thornT = 0; playerHurt(game, tb.name === 'cactus' ? 1 : 0.5, null, true); }
+    }
+    if (tb.name === 'sweet_berry_bush' || tb.name === 'cobweb') { p.vx *= 0.25; p.vz *= 0.25; }
+  }
+
   /* --- hunger, regeneration --- */
   if (!p.creative) {
     p.exhaustion += dt * 0.005;

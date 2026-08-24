@@ -287,7 +287,8 @@ void main(){
   // absorption through the water column
   vec3 waterCol = vTint;
   float absorb = 1.0 - exp(-thickness * 0.30);
-  vec3 refr = mix(behind, waterCol * (0.30 + 0.70*sky), absorb);
+  // water carries the time of day too, or the sea glows at midnight
+  vec3 refr = mix(behind, waterCol * (0.30 + 0.70*sky) * (0.20 + 0.80*uDay), absorb);
 
   // reflection: sky plus a sun specular
   vec3 R = reflect(-V, wn);

@@ -202,7 +202,7 @@ function updateSky(timeOfDay, dim, rain, biome) {
   /* the sky fill is a soft, only slightly cool ambient; the sun carries the
      warmth and most of the intensity on lit faces */
   /* night keeps a floor so the world is still readable by moonlight */
-  R.sky.skyLight = [lerp(0.23, 0.42, day) + zen[0] * 0.14, lerp(0.24, 0.43, day) + zen[1] * 0.13, lerp(0.31, 0.52, day) + zen[2] * 0.14];
+  R.sky.skyLight = [lerp(0.23, 0.43, day) + zen[0] * 0.13, lerp(0.24, 0.435, day) + zen[1] * 0.12, lerp(0.29, 0.47, day) + zen[2] * 0.12];
   if (dim === DIM_NETHER) R.sky.skyLight = [0.74, 0.42, 0.33];
   else if (dim === DIM_END) R.sky.skyLight = [0.40, 0.36, 0.50];
   R.sky.blockLight = [1.0, 0.72, 0.42];
