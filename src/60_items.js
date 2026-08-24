@@ -318,13 +318,15 @@ function canHarvest(blockDef, heldItem) {
   return it.tier >= blockDef.tier;
 }
 function miningSpeed(blockDef, heldItem) {
+  /* Only the right kind of tool speeds a block up; the penalty for lacking
+     the tier lives in breakTimeFor, so it must not be applied twice here. */
   var base = 1;
   if (heldItem) {
     var it = ITEMS[heldItem];
     if (it && it.tool === blockDef.tool) base = it.speed;
     else if (it && it.tool === 'sword' && blockDef.name === 'cobweb') base = 15;
+    else if (it && it.tool === 'shears' && (blockDef.name === 'cobweb' || /leaves|wool/.test(blockDef.name))) base = 5;
   }
-  if (!canHarvest(blockDef, heldItem)) base *= 0.28;
   return base;
 }
 function breakTimeFor(blockDef, heldItem, onGround, inWater) {

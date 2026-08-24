@@ -15099,20 +15099,22 @@ function updateEntity(game, e, dt) {
   }
 
   /* apply movement */
-  var accel = speed * (e.inWater ? 0.5 : 1) * 6;
+  /* def.speed is in the same units the real game uses for its movement
+     attribute; ~18 blocks per second per unit reads right in practice */
+  var accel = speed * (e.inWater ? 0.5 : 1) * 12;
   if (def.fly || (def.water && e.inWater)) {
     e.vx += mvX * accel * dt * 3;
     e.vz += mvZ * accel * dt * 3;
     var wantY = e.target ? (e.target.y + (def.fly ? 3 : 0.5) - e.y) : ((e.wy === undefined ? e.y : e.wy) - e.y);
     e.vy += clamp(wantY, -1, 1) * 2.2 * dt * 3;
     e.vx *= Math.pow(0.10, dt); e.vy *= Math.pow(0.10, dt); e.vz *= Math.pow(0.10, dt);
-    e.vx = clamp(e.vx, -speed * 22, speed * 22);
-    e.vy = clamp(e.vy, -speed * 16, speed * 16);
-    e.vz = clamp(e.vz, -speed * 22, speed * 22);
+    e.vx = clamp(e.vx, -speed * 30, speed * 30);
+    e.vy = clamp(e.vy, -speed * 22, speed * 22);
+    e.vz = clamp(e.vz, -speed * 30, speed * 30);
   } else {
     e.vx += mvX * accel * dt * 8;
     e.vz += mvZ * accel * dt * 8;
-    var mx = speed * 9;
+    var mx = speed * 18;
     var hs = Math.hypot(e.vx, e.vz);
     if (hs > mx) { e.vx = e.vx / hs * mx; e.vz = e.vz / hs * mx; }
     /* jump over a one-block step */
@@ -15135,7 +15137,7 @@ function updateEntity(game, e, dt) {
 
   /* walk animation drive */
   var hspd = Math.hypot(e.vx, e.vz);
-  e.walkAmt = clamp(hspd / Math.max(0.5, speed * 9), 0, 1) * (e.onGround || def.fly || def.water ? 1 : 0.35);
+  e.walkAmt = clamp(hspd / Math.max(0.5, speed * 18), 0, 1) * (e.onGround || def.fly || def.water ? 1 : 0.35);
   e.walkPhase += hspd * dt * 1.4;
 
   /* environment damage */
@@ -15198,19 +15200,22 @@ function applyPhysics(game, e, dt, def) {
     if (e.vy < -34) e.vy = -34;
   }
   var before = e.vy;
-  var r = collideAxis(world, e.dim, e, e.vx * dt, e.vy * dt, e.vz * dt);
+  /* remember what we asked for, so "did we hit something" can be answered
+     after friction has already changed the velocity */
+  var wantX = e.vx * dt, wantZ = e.vz * dt;
+  var r = collideAxis(world, e.dim, e, wantX, e.vy * dt, wantZ);
   e.onGround = (before < 0 && Math.abs(r.dy - before * dt) > 1e-7);
+  if (Math.abs(r.dx - wantX) > 1e-7) e.vx = 0;
+  if (Math.abs(r.dz - wantZ) > 1e-7) e.vz = 0;
   if (e.onGround) {
     if (before < -18 && !def.fly && !e.inWater) damageEntity(game, e, Math.floor((-before - 18) * 0.7), null, true);
     e.vy = 0;
-    var fr = Math.pow(0.02, dt);
+    var fr = Math.pow(0.06, dt);
     e.vx *= fr; e.vz *= fr;
   } else if (!def.fly && !(def.water && e.inWater)) {
     var af = Math.pow(0.45, dt);
     e.vx *= af; e.vz *= af;
   }
-  if (Math.abs(r.dx - e.vx * dt) > 1e-7) e.vx = 0;
-  if (Math.abs(r.dz - e.vz * dt) > 1e-7) e.vz = 0;
   if (r.dy > 0 && e.vy > 0) e.vy = 0;
 }
 
@@ -16043,13 +16048,15 @@ function canHarvest(blockDef, heldItem) {
   return it.tier >= blockDef.tier;
 }
 function miningSpeed(blockDef, heldItem) {
+  /* Only the right kind of tool speeds a block up; the penalty for lacking
+     the tier lives in breakTimeFor, so it must not be applied twice here. */
   var base = 1;
   if (heldItem) {
     var it = ITEMS[heldItem];
     if (it && it.tool === blockDef.tool) base = it.speed;
     else if (it && it.tool === 'sword' && blockDef.name === 'cobweb') base = 15;
+    else if (it && it.tool === 'shears' && (blockDef.name === 'cobweb' || /leaves|wool/.test(blockDef.name))) base = 5;
   }
-  if (!canHarvest(blockDef, heldItem)) base *= 0.28;
   return base;
 }
 function breakTimeFor(blockDef, heldItem, onGround, inWater) {
