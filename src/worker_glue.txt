@@ -1,0 +1,13 @@
+/* ---- worker glue: message pump for the terrain generation worker ---- */
+self.onmessage = function (e) {
+  var m = e.data;
+  if (m.cmd === 'init') {
+    WorldGen.init(m.seed);
+    self.postMessage({ cmd: 'ready' });
+  } else if (m.cmd === 'gen') {
+    var res = WorldGen.generateColumn(m.dim, m.cx, m.cz);
+    self.postMessage({ cmd: 'chunk', dim: m.dim, cx: m.cx, cz: m.cz, key: m.key, data: res.data,
+                       heights: res.heights, biomes: res.biomes, oceanFloor: res.oceanFloor,
+                       nonEmpty: res.nonEmpty, structures: res.structures }, res.transfer);
+  }
+};
