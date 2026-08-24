@@ -332,7 +332,7 @@ function drawParticles(game, fogStart, fogEnd) {
 }
 
 /* ============================== WEATHER ================================= */
-var WEA = { f: new Float32Array(3000 * 6 * 7), n: 0, vao: null, vbo: null };
+var WEA = { f: new Float32Array(3200 * 6 * 7), n: 0, vao: null, vbo: null };
 function initWeatherBuffers() {
   WEA.vao = gl.createVertexArray();
   gl.bindVertexArray(WEA.vao);
@@ -351,7 +351,7 @@ function drawWeather(game) {
   var p = game.player;
   var biome = game.world.getBiome(p.dim, Math.floor(p.x), Math.floor(p.z));
   var snowy = biome.snow;
-  var n = Math.floor(w.rain * (snowy ? 900 : 1600));
+  var n = Math.floor(w.rain * (snowy ? 1100 : 2800));
   WEA.n = 0;
   var F = WEA.f;
   var t = game.time;
@@ -362,7 +362,7 @@ function drawWeather(game) {
     var ang = h * Math.PI * 2, rad = Math.sqrt(h2) * R2;
     var px = Math.floor(p.x) + Math.cos(ang) * rad;
     var pz = Math.floor(p.z) + Math.sin(ang) * rad;
-    var fall = snowy ? 2.4 : 14.0;
+    var fall = snowy ? 2.4 : 22.0;
     var seed = (h + h2) * 40;
     var py = p.y + 14 - mod(t * fall + seed * 20, 26);
     if (snowy) { px += Math.sin(t * 0.7 + seed) * 0.9; pz += Math.cos(t * 0.55 + seed) * 0.9; }
@@ -385,7 +385,7 @@ function drawWeather(game) {
   gl.uniformMatrix4fv(wp.u.uVP, false, R.vp);
   gl.uniform3f(wp.u.uRight, R.view[0], R.view[4], R.view[8]);
   gl.uniform1f(wp.u.uTime, game.time);
-  gl.uniform1f(wp.u.uAlpha, 0.42 * w.rain);
+  gl.uniform1f(wp.u.uAlpha, (snowy ? 0.55 : 0.30) * w.rain);
   gl.uniform3f(wp.u.uColor, snowy ? 0.95 : 0.62, snowy ? 0.97 : 0.70, snowy ? 1.0 : 0.86);
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);

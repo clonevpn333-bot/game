@@ -12847,7 +12847,7 @@ out vec2 vUV; out float vKind;
 void main(){
   float s = aParam.x;
   vec3 up = vec3(0.0, 1.0, 0.0);
-  vec3 p = aPos + uRight*aCorner.x*s*0.14 + up*aCorner.y*s*(aParam.y>0.5?0.14:0.75);
+  vec3 p = aPos + uRight*aCorner.x*s*(aParam.y>0.5?0.13:0.055) + up*aCorner.y*s*(aParam.y>0.5?0.13:1.05);
   vUV = aCorner*0.5+0.5; vKind = aParam.y;
   gl_Position = uVP*vec4(p,1.0);
 }`;
@@ -13186,7 +13186,7 @@ function updateSky(timeOfDay, dim, rain, biome) {
     zen = lerp3(zen, [grey[0] * (0.3 + day * 0.9), grey[1] * (0.3 + day * 0.9), grey[2] * (0.3 + day * 0.9)], rain * 0.85);
     hor = lerp3(hor, [grey[0] * (0.45 + day), grey[1] * (0.45 + day), grey[2] * (0.45 + day)], rain * 0.85);
     sun = lerp3(sun, [0.5, 0.52, 0.55], rain * 0.8);
-    day *= 1 - rain * 0.55;
+    day *= 1 - rain * 0.34;
   }
   if (dim === DIM_NETHER) {
     zen = [0.22, 0.045, 0.035]; hor = [0.34, 0.07, 0.05]; sun = [0.9, 0.42, 0.28]; day = 0.55;
@@ -13200,14 +13200,15 @@ function updateSky(timeOfDay, dim, rain, biome) {
     var fc = col(biome.fog);
     R.sky.fog = [fc[0] / 255, fc[1] / 255, fc[2] / 255];
   }
-  R.sky.ambient = lerp(0.10, 0.24, day);
+  R.sky.ambient = 0.24;
   /* the Nether and the End have no sky light at all, so their ambient has to
      carry the whole scene — otherwise everything reads as pure black */
   if (dim === DIM_NETHER) R.sky.ambient = 1.0;      /* no sky light at all */
   else if (dim === DIM_END) R.sky.ambient = 0.18;   /* the End does have sky light */
   /* the sky fill is a soft, only slightly cool ambient; the sun carries the
      warmth and most of the intensity on lit faces */
-  R.sky.skyLight = [lerp(0.12, 0.40, day) + zen[0] * 0.14, lerp(0.13, 0.41, day) + zen[1] * 0.13, lerp(0.16, 0.44, day) + zen[2] * 0.14];
+  /* night keeps a floor so the world is still readable by moonlight */
+  R.sky.skyLight = [lerp(0.23, 0.42, day) + zen[0] * 0.14, lerp(0.24, 0.43, day) + zen[1] * 0.13, lerp(0.31, 0.52, day) + zen[2] * 0.14];
   if (dim === DIM_NETHER) R.sky.skyLight = [0.74, 0.42, 0.33];
   else if (dim === DIM_END) R.sky.skyLight = [0.40, 0.36, 0.50];
   R.sky.blockLight = [1.0, 0.72, 0.42];
@@ -13927,7 +13928,7 @@ function drawParticles(game, fogStart, fogEnd) {
 }
 
 /* ============================== WEATHER ================================= */
-var WEA = { f: new Float32Array(3000 * 6 * 7), n: 0, vao: null, vbo: null };
+var WEA = { f: new Float32Array(3200 * 6 * 7), n: 0, vao: null, vbo: null };
 function initWeatherBuffers() {
   WEA.vao = gl.createVertexArray();
   gl.bindVertexArray(WEA.vao);
@@ -13946,7 +13947,7 @@ function drawWeather(game) {
   var p = game.player;
   var biome = game.world.getBiome(p.dim, Math.floor(p.x), Math.floor(p.z));
   var snowy = biome.snow;
-  var n = Math.floor(w.rain * (snowy ? 900 : 1600));
+  var n = Math.floor(w.rain * (snowy ? 1100 : 2800));
   WEA.n = 0;
   var F = WEA.f;
   var t = game.time;
@@ -13957,7 +13958,7 @@ function drawWeather(game) {
     var ang = h * Math.PI * 2, rad = Math.sqrt(h2) * R2;
     var px = Math.floor(p.x) + Math.cos(ang) * rad;
     var pz = Math.floor(p.z) + Math.sin(ang) * rad;
-    var fall = snowy ? 2.4 : 14.0;
+    var fall = snowy ? 2.4 : 22.0;
     var seed = (h + h2) * 40;
     var py = p.y + 14 - mod(t * fall + seed * 20, 26);
     if (snowy) { px += Math.sin(t * 0.7 + seed) * 0.9; pz += Math.cos(t * 0.55 + seed) * 0.9; }
@@ -13980,7 +13981,7 @@ function drawWeather(game) {
   gl.uniformMatrix4fv(wp.u.uVP, false, R.vp);
   gl.uniform3f(wp.u.uRight, R.view[0], R.view[4], R.view[8]);
   gl.uniform1f(wp.u.uTime, game.time);
-  gl.uniform1f(wp.u.uAlpha, 0.42 * w.rain);
+  gl.uniform1f(wp.u.uAlpha, (snowy ? 0.55 : 0.30) * w.rain);
   gl.uniform3f(wp.u.uColor, snowy ? 0.95 : 0.62, snowy ? 0.97 : 0.70, snowy ? 1.0 : 0.86);
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);

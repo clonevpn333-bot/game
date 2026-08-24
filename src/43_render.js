@@ -180,7 +180,7 @@ function updateSky(timeOfDay, dim, rain, biome) {
     zen = lerp3(zen, [grey[0] * (0.3 + day * 0.9), grey[1] * (0.3 + day * 0.9), grey[2] * (0.3 + day * 0.9)], rain * 0.85);
     hor = lerp3(hor, [grey[0] * (0.45 + day), grey[1] * (0.45 + day), grey[2] * (0.45 + day)], rain * 0.85);
     sun = lerp3(sun, [0.5, 0.52, 0.55], rain * 0.8);
-    day *= 1 - rain * 0.55;
+    day *= 1 - rain * 0.34;
   }
   if (dim === DIM_NETHER) {
     zen = [0.22, 0.045, 0.035]; hor = [0.34, 0.07, 0.05]; sun = [0.9, 0.42, 0.28]; day = 0.55;
@@ -194,14 +194,15 @@ function updateSky(timeOfDay, dim, rain, biome) {
     var fc = col(biome.fog);
     R.sky.fog = [fc[0] / 255, fc[1] / 255, fc[2] / 255];
   }
-  R.sky.ambient = lerp(0.10, 0.24, day);
+  R.sky.ambient = 0.24;
   /* the Nether and the End have no sky light at all, so their ambient has to
      carry the whole scene — otherwise everything reads as pure black */
   if (dim === DIM_NETHER) R.sky.ambient = 1.0;      /* no sky light at all */
   else if (dim === DIM_END) R.sky.ambient = 0.18;   /* the End does have sky light */
   /* the sky fill is a soft, only slightly cool ambient; the sun carries the
      warmth and most of the intensity on lit faces */
-  R.sky.skyLight = [lerp(0.12, 0.40, day) + zen[0] * 0.14, lerp(0.13, 0.41, day) + zen[1] * 0.13, lerp(0.16, 0.44, day) + zen[2] * 0.14];
+  /* night keeps a floor so the world is still readable by moonlight */
+  R.sky.skyLight = [lerp(0.23, 0.42, day) + zen[0] * 0.14, lerp(0.24, 0.43, day) + zen[1] * 0.13, lerp(0.31, 0.52, day) + zen[2] * 0.14];
   if (dim === DIM_NETHER) R.sky.skyLight = [0.74, 0.42, 0.33];
   else if (dim === DIM_END) R.sky.skyLight = [0.40, 0.36, 0.50];
   R.sky.blockLight = [1.0, 0.72, 0.42];

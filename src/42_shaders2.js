@@ -173,7 +173,7 @@ out vec2 vUV; out float vKind;
 void main(){
   float s = aParam.x;
   vec3 up = vec3(0.0, 1.0, 0.0);
-  vec3 p = aPos + uRight*aCorner.x*s*0.14 + up*aCorner.y*s*(aParam.y>0.5?0.14:0.75);
+  vec3 p = aPos + uRight*aCorner.x*s*(aParam.y>0.5?0.13:0.055) + up*aCorner.y*s*(aParam.y>0.5?0.13:1.05);
   vUV = aCorner*0.5+0.5; vKind = aParam.y;
   gl_Position = uVP*vec4(p,1.0);
 }`;
