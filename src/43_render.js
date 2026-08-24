@@ -33,6 +33,7 @@ function initRenderer(canvas) {
   R.progEntity = makeProgram('entity', SH.entityVS, SH.entityFS);
   R.progView = makeProgram('view', SH.viewVS, SH.viewFS);
   R.progPart = makeProgram('part', SH.partVS, SH.partFS);
+  R.progCrack = makeProgram('crack', SH.crackVS, SH.crackFS);
   R.progWeather = makeProgram('weather', SH.weatherVS, SH.weatherFS);
   R.progBright = makeProgram('bright', SH.postVS, SH.brightFS);
   R.progBlur = makeProgram('blur', SH.postVS, SH.blurFS);

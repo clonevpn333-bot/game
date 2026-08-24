@@ -1247,3 +1247,32 @@ CT('shulker', function (p, o) {
   p.rect(6, 4, 4, 4, shade(o.d, 0.8));
   return p;
 });
+
+/* ------------------------------------------------------ break overlay -- */
+/* Ten progressively worse crack sheets, drawn over the block being mined. */
+var CRACK_LAYERS = [];
+function bakeCrackTiles() {
+  if (CRACK_LAYERS.length) return;
+  for (var s = 0; s < 10; s++) {
+    var p = new Pain();
+    p.seed(0x2f00 + s * 977);
+    p.clear();
+    var walks = 1 + Math.floor(s * 0.9);
+    var alpha = 110 + s * 15;
+    for (var l = 0; l < walks; l++) {
+      var x = Math.floor(p.rng() * 16), y = Math.floor(p.rng() * 16);
+      var len = 4 + Math.floor(p.rng() * (4 + s));
+      var horiz = p.rng() < 0.5;
+      var dx = p.rng() < 0.5 ? 1 : -1, dy = p.rng() < 0.5 ? 1 : -1;
+      for (var i = 0; i < len; i++) {
+        p.set(x, y, 16, 13, 11, alpha);
+        if (horiz) { x += dx; if (p.rng() < 0.34) y += dy; }
+        else { y += dy; if (p.rng() < 0.34) x += dx; }
+        if (p.rng() < 0.10) dx = -dx;
+        if (p.rng() < 0.10) dy = -dy;
+        if (x < 0 || x > 15 || y < 0 || y > 15) break;
+      }
+    }
+    CRACK_LAYERS.push(rawLayer('crack:' + s, p.d));
+  }
+}

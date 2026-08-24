@@ -741,6 +741,7 @@ function boot2(canvas) {
   classifyPasses();
   bakeAllBlockTextures();
   bakeItemIcons();
+  bakeCrackTiles();
   prebakeEntityTiles();
   setLoading('Uploading atlas (' + TEX_LAYERS.length + ' tiles)…', 0.25);
   setTimeout(function () { boot3(canvas); }, 20);

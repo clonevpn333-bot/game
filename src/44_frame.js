@@ -336,18 +336,63 @@ void main(){ o = uColor; }`);
   gl.bindVertexArray(null);
 }
 function drawSelection(game) {
-  var t = game.player.target;
-  if (!t || game.ui.screen) return;
+  var hit = game.hit;
+  var p = game.player;
+  if (!hit || UI.screen || p.dead || game.cameraMode !== 0 && false) return;
   if (!_selProg) initSelection();
+
+  /* the outline follows the block's own shape, so a slab or a fence reads */
+  var boxes = blockBoxesFor(hit.id, hit.st) || FULLBOX1;
+  var bx0 = 1, by0 = 1, bz0 = 1, bx1 = 0, by1 = 0, bz1 = 0;
+  for (var i = 0; i < boxes.length; i++) {
+    var q = boxes[i];
+    if (q[0] < bx0) bx0 = q[0]; if (q[1] < by0) by0 = q[1]; if (q[2] < bz0) bz0 = q[2];
+    if (q[3] > bx1) bx1 = q[3]; if (q[4] > by1) by1 = q[4]; if (q[5] > bz1) bz1 = q[5];
+  }
+
   gl.useProgram(_selProg.p);
   gl.uniformMatrix4fv(_selProg.u.uVP, false, R.vp);
-  var b = t.box || [0, 0, 0, 1, 1, 1];
-  gl.uniform3f(_selProg.u.uOrigin, t.x + b[0] - 0.002, t.y + b[1] - 0.002, t.z + b[2] - 0.002);
-  gl.uniform3f(_selProg.u.uSize, (b[3] - b[0]) + 0.004, (b[4] - b[1]) + 0.004, (b[5] - b[2]) + 0.004);
-  gl.uniform4f(_selProg.u.uColor, 0.03, 0.03, 0.04, 0.55);
+  gl.uniform3f(_selProg.u.uOrigin, hit.x + bx0 - 0.006, hit.y + by0 - 0.006, hit.z + bz0 - 0.006);
+  gl.uniform3f(_selProg.u.uSize, (bx1 - bx0) + 0.012, (by1 - by0) + 0.012, (bz1 - bz0) + 0.012);
+  gl.uniform4f(_selProg.u.uColor, 0.02, 0.02, 0.03, 0.7);
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.depthMask(false);
   gl.bindVertexArray(_selVAO);
   gl.drawArrays(gl.LINES, 0, 24);
+  gl.depthMask(true);
   gl.disable(gl.BLEND);
+
+  /* crack overlay while the block is being mined */
+  if (p.breaking && p.breakTotal > 0 && p.breakProgress > 0 &&
+    p.breaking.x === hit.x && p.breaking.y === hit.y && p.breaking.z === hit.z && CRACK_LAYERS.length) {
+    var stage = clamp(Math.floor(p.breakProgress / p.breakTotal * 10), 0, 9);
+    EBUF.n = 0;
+    _ecol[0] = _ecol[1] = _ecol[2] = 1; _ecol[3] = 0;
+    _elight[0] = 1; _elight[1] = 0;
+    mIdent();
+    mTranslate(hit.x, hit.y, hit.z);
+    for (var k = 0; k < boxes.length; k++) {
+      var b2 = boxes[k];
+      emitBox(EBUF, b2[0] * 16, b2[1] * 16, b2[2] * 16,
+        (b2[3] - b2[0]) * 16, (b2[4] - b2[1]) * 16, (b2[5] - b2[2]) * 16, CRACK_LAYERS[stage], 0.10, true);
+    }
+    if (EBUF.n) {
+      gl.bindVertexArray(EBUF.vao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, EBUF.vbo);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, EBUF.f, 0, EBUF.n);
+      var ep = R.progCrack;
+      gl.useProgram(ep.p);
+      gl.uniformMatrix4fv(ep.u.uVP, false, R.vp);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D_ARRAY, R.atlas); gl.uniform1i(ep.u.uAtlas, 0);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.depthMask(false);
+      gl.disable(gl.CULL_FACE);
+      gl.drawArrays(gl.TRIANGLES, 0, EBUF.n / EV_STRIDE);
+      gl.enable(gl.CULL_FACE);
+      gl.depthMask(true);
+      gl.disable(gl.BLEND);
+    }
+  }
 }

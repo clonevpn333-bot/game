@@ -329,3 +329,26 @@ void main(){
   float lB = lum(b);
   oColor = vec4((lB < lMin || lB > lMax) ? a : b, 1.0);
 }`;
+
+/* block-break overlay: dark cracks blended over whatever is underneath */
+SH.crackVS = `#version 300 es
+precision highp float;
+layout(location=0) in vec3 aPos;
+layout(location=1) in vec3 aNormal;
+layout(location=2) in vec2 aUV;
+layout(location=3) in float aLayer;
+layout(location=4) in vec4 aColor;
+layout(location=5) in vec2 aLight;
+uniform mat4 uVP;
+out vec2 vUV; out float vLayer;
+void main(){ vUV = aUV; vLayer = aLayer; gl_Position = uVP * vec4(aPos, 1.0); }`;
+SH.crackFS = `#version 300 es
+precision highp float;
+in vec2 vUV; in float vLayer;
+uniform mediump sampler2DArray uAtlas;
+layout(location=0) out vec4 oColor;
+void main(){
+  vec4 t = texture(uAtlas, vec3(vUV, vLayer));
+  if (t.a < 0.02) discard;
+  oColor = vec4(0.02, 0.015, 0.015, t.a * 0.82);
+}`;
