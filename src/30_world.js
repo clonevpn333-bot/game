@@ -88,6 +88,8 @@ function World(seed) {
   this.requestList = [];
   this.stats = { gen: 0, meshed: 0, lit: 0, chunks: 0 };
   this.tickQueue = [];
+  this.landmarks = [];
+  this.pendingMobs = [];
 }
 
 World.prototype.initWorkers = function (srcText, count) {
@@ -117,7 +119,36 @@ World.prototype.onWorkerMsg = function (m) {
   this.stats.gen++;
   if (m.structures) this.applyStructureData(dim, m.structures);
 };
-World.prototype.applyStructureData = function () { };
+/* The generator hands back a list of things it could not place itself:
+   chest contents, mob spawners and the mobs that live in the structure. */
+World.prototype.applyStructureData = function (dim, list) {
+  for (var i = 0; i < list.length; i++) {
+    var s = list[i];
+    if (s.t === 'mark') { this.landmarks.push({ x: s.x, z: s.z, name: s.name, dim: dim }); continue; }
+    if (s.t === 'mob') { this.pendingMobs.push({ dim: dim, x: s.x + 0.5, y: s.y, z: s.z + 0.5, mob: s.mob }); continue; }
+    var c = this.dims[dim][(s.x >> 4) + ',' + (s.z >> 4)];
+    if (!c) continue;
+    var key = s.x + ',' + s.y + ',' + s.z;
+    if (s.t === 'chest') {
+      var be = makeBlockEntity('chest', s.x, s.y, s.z);
+      be.dim = dim;
+      be.name = 'Chest';
+      var rng = makeRNG(hash3(s.x, s.y, s.z, (this.seed ^ 0x1f2e) >>> 0) >>> 0);
+      var items = rollLoot(s.loot, rng);
+      for (var k = 0; k < items.length && k < 27; k++) {
+        var slot = Math.floor(rng() * 27);
+        if (be.items[slot]) slot = k;
+        be.items[slot] = items[k];
+      }
+      c.blockEntities[key] = be;
+    } else if (s.t === 'spawner') {
+      var sp = makeBlockEntity('spawner', s.x, s.y, s.z);
+      sp.dim = dim;
+      sp.mob = s.mob;
+      c.blockEntities[key] = sp;
+    }
+  }
+};
 
 World.prototype.chunkAt = function (dim, cx, cz) {
   return this.dims[dim][cx + ',' + cz];

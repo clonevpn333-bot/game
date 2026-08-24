@@ -257,7 +257,7 @@ function randomTickBlock(game, x, y, z) {
     var lv = Math.max((light >> 4) & 15, light & 15);
     if (lv < 9) return;
     var below = world.getId(dim, x, y - 1, z);
-    var wet = below === BID.farmland_wet ? 1 : 0;
+    var wet = (below === BID.farmland && world.getState(dim, x, y - 1, z) > 0) ? 1 : 0;
     if (Math.random() < 0.14 + wet * 0.18) world.setBlock(dim, x, y, z, bpack(id, st + 1));
     return;
   }
@@ -277,12 +277,12 @@ function randomTickBlock(game, x, y, z) {
     }
     return;
   }
-  if (id === BID.farmland || id === BID.farmland_wet) {
+  if (id === BID.farmland) {
     var water = false;
     for (var wx = -4; wx <= 4 && !water; wx++) for (var wz = -4; wz <= 4; wz++)
       if (world.getId(dim, x + wx, y, z + wz) === BID.water) { water = true; break; }
-    var want = water ? BID.farmland_wet : BID.farmland;
-    if (want !== id) world.setBlock(dim, x, y, z, want);
+    var want = water ? 7 : 0;
+    if (want !== st) world.setBlock(dim, x, y, z, bpack(id, want));
     else if (!water && Math.random() < 0.12 && world.getId(dim, x, y + 1, z) === 0) world.setBlock(dim, x, y, z, BID.dirt);
     return;
   }

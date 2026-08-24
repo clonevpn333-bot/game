@@ -272,7 +272,9 @@ function emitFace(buf, def, box, f, lx, ly, lz, onEdge, flags) {
       _lt[i] = lightBase;
     }
   }
-  buf.quad(_p, _uv, layer, _lt, _ao, shade, flags,
+  /* the low three flag bits carry the face index, which the shader turns
+     back into the surface normal */
+  buf.quad(_p, _uv, layer, _lt, _ao, shade, flags | f,
     _ao[0] + _ao[2] > _ao[1] + _ao[3] ? 0 : 1);
 }
 
@@ -442,8 +444,8 @@ function emitFluid(def, st, lx, ly, lz) {
     _uv[0] = 0; _uv[1] = 0; _uv[2] = 0; _uv[3] = 16; _uv[4] = 16; _uv[5] = 16; _uv[6] = 16; _uv[7] = 0;
     var lu = _nbL[NIDX(lx, ly + 1, lz)];
     var lu4 = [lu, lu, lu, lu];
-    buf.quad(_p, _uv, layer, lu4, a4, 255, flags, 0);
-    buf.quad(_p, _uv, layer, lu4, a4, 255, flags, 1);
+    buf.quad(_p, _uv, layer, lu4, a4, 255, flags | 2, 0);
+    buf.quad(_p, _uv, layer, lu4, a4, 255, flags | 2, 1);
   }
   /* sides */
   var sides = [[0, 1, 0, h10, h11], [1, -1, 0, h00, h01], [4, 0, 1, h11, h01], [5, 0, -1, h00, h10]];
@@ -470,8 +472,8 @@ function emitFluid(def, st, lx, ly, lz) {
     _uv[4] = 16; _uv[5] = 16 - hb * 16; _uv[6] = 0; _uv[7] = 16 - ha * 16;
     var ls = _nbL[NIDX(lx + d[0], ly + d[1], lz + d[2])];
     var ls4 = [ls, ls, ls, ls];
-    buf.quad(_p, _uv, layer, ls4, a4, Math.round(FACE_SHADE[f] * 255), flags, 0);
-    buf.quad(_p, _uv, layer, ls4, a4, Math.round(FACE_SHADE[f] * 255), flags, 1);
+    buf.quad(_p, _uv, layer, ls4, a4, Math.round(FACE_SHADE[f] * 255), flags | f, 0);
+    buf.quad(_p, _uv, layer, ls4, a4, Math.round(FACE_SHADE[f] * 255), flags | f, 1);
   }
   /* bottom */
   var below = _nbB[NIDX(lx, ly - 1, lz)] & ID_MASK;
@@ -479,6 +481,6 @@ function emitFluid(def, st, lx, ly, lz) {
     _p[0] = lx; _p[1] = ly; _p[2] = lz; _p[3] = lx + 1; _p[4] = ly; _p[5] = lz;
     _p[6] = lx + 1; _p[7] = ly; _p[8] = lz + 1; _p[9] = lx; _p[10] = ly; _p[11] = lz + 1;
     _uv[0] = 0; _uv[1] = 0; _uv[2] = 16; _uv[3] = 0; _uv[4] = 16; _uv[5] = 16; _uv[6] = 0; _uv[7] = 16;
-    buf.quad(_p, _uv, layer, l4, a4, Math.round(FACE_SHADE[3] * 255), flags, 0);
+    buf.quad(_p, _uv, layer, l4, a4, Math.round(FACE_SHADE[3] * 255), flags | 3, 0);
   }
 }

@@ -588,6 +588,7 @@ function gameTick(game, dt) {
     }
     updateEntity(game, e, dt);
   }
+  drainPendingMobs(game);
   if (!p.creative) trySpawnMobs(game, dt);
   updateParticles(game, dt);
   tickBlockEntities(game, dt);
@@ -620,6 +621,25 @@ function gameTick(game, dt) {
     if (!MOBS[be.type].boss) continue;
     var bd = Math.hypot(be.x - p.x, be.z - p.z);
     if (bd < 120) { game.boss = be; break; }
+  }
+}
+
+/* Mobs that belong to a structure appear once their chunk is meshed. */
+function drainPendingMobs(game) {
+  var list = game.world.pendingMobs;
+  if (!list.length) return;
+  var p = game.player;
+  for (var i = list.length - 1; i >= 0; i--) {
+    var m = list[i];
+    var c = game.world.chunkAt(m.dim, Math.floor(m.x) >> 4, Math.floor(m.z) >> 4);
+    if (!c || !c.meshed) {
+      if (!c) { list[i] = list[list.length - 1]; list.pop(); }
+      continue;
+    }
+    list[i] = list[list.length - 1]; list.pop();
+    if (!MOBS[m.mob]) continue;
+    if (game.entities.length > 320) continue;
+    game.entities.push(makeEntity(m.mob, m.dim, m.x, m.y, m.z, { persist: true }));
   }
 }
 
@@ -720,8 +740,17 @@ function boot3(canvas) {
   setLoading('Generating world…', 0.45);
   setTimeout(function () { boot4(canvas); }, 20);
 }
+function seedFromURL() {
+  var m = /[?&#]seed=([^&#]+)/.exec(location.href);
+  if (!m) return (Math.random() * 0xffffffff) >>> 0;
+  var raw = decodeURIComponent(m[1]);
+  if (/^-?\d+$/.test(raw)) return (parseInt(raw, 10) >>> 0);
+  var h = 2166136261;
+  for (var i = 0; i < raw.length; i++) { h ^= raw.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
 function boot4(canvas) {
-  var seed = (Math.random() * 0xffffffff) >>> 0;
+  var seed = seedFromURL();
   var g = createGame(canvas, seed);
   Game = g;
   window.game = g;
@@ -739,6 +768,22 @@ function boot4(canvas) {
     g.dayTime = 23500;
     logMessage(g, 'Good morning.', '#aaffaa');
   };
+  /* the equivalent of /locate: walk outward through the structure grid */
+  g.locate = function (name, fromX, fromZ) {
+    var def = null;
+    for (var i = 0; i < STRUCT_DEFS.length; i++) if (STRUCT_DEFS[i].name === name) def = STRUCT_DEFS[i];
+    if (!def) return null;
+    var px = fromX === undefined ? g.player.x : fromX, pz = fromZ === undefined ? g.player.z : fromZ;
+    var crx = Math.floor((px / 16) / def.spacing), crz = Math.floor((pz / 16) / def.spacing);
+    for (var ring = 0; ring < 40; ring++) {
+      for (var dx = -ring; dx <= ring; dx++) for (var dz = -ring; dz <= ring; dz++) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
+        var pos = structRegionPos(def, crx + dx, crz + dz, 0);
+        if (structValid(def, pos)) return { x: pos.cx * 16 + 8, y: pos.y, z: pos.cz * 16 + 8, name: name };
+      }
+    }
+    return null;
+  };
   g.onBossKilled = function (e) {
     logMessage(g, MOBS[e.type].disp + ' defeated!', '#ffdd55');
     if (e.type === 'ender_dragon') spawnXP(g, e.dim, e.x, e.y, e.z, 500);
@@ -746,6 +791,10 @@ function boot4(canvas) {
 
   loadGame(g);
   setupInput(g);
+
+  /* the main thread keeps its own copy of the noise fields so it can answer
+     climate and structure-location queries without asking a worker */
+  WorldGen.init(g.seed);
 
   var workerSrc = document.getElementById('worker-src').textContent;
   g.world.initWorkers(workerSrc, Math.min(6, Math.max(2, (navigator.hardwareConcurrency || 4) - 1)));
@@ -770,7 +819,7 @@ function boot4(canvas) {
 
 /* Walk outward from the origin until we find dry, open land — nobody wants
    to spawn a hundred blocks out to sea or inside a mountain. */
-function findSpawnPoint(g) {
+function findSpawnPoint(g, relax) {
   var w = g.world, dim = g.player.dim;
   var best = null;
   for (var r = 0; r < 12 && !best; r++) {
@@ -789,12 +838,14 @@ function findSpawnPoint(g) {
       if (bi && bi.name.indexOf('ocean') >= 0) continue;
       /* open sky and room to stand — never inside a canopy */
       if (w.getId(dim, x, h + 1, z) !== 0 || w.getId(dim, x, h + 2, z) !== 0) continue;
-      if (((w.getLight(dim, x, h + 1, z) >> 4) & 15) < 15) continue;
-      var clear = true;
-      for (var ox = -1; ox <= 1 && clear; ox++) for (var oz = -1; oz <= 1; oz++) {
-        if (w.getId(dim, x + ox, h + 1, z + oz) !== 0) { clear = false; break; }
+      if (relax < 2 && ((w.getLight(dim, x, h + 1, z) >> 4) & 15) < 15) continue;
+      if (relax < 1) {
+        var clear = true;
+        for (var ox = -1; ox <= 1 && clear; ox++) for (var oz = -1; oz <= 1; oz++) {
+          if (w.getId(dim, x + ox, h + 1, z + oz) !== 0) { clear = false; break; }
+        }
+        if (!clear) continue;
       }
-      if (!clear) continue;
       best = { x: x, y: h + 1, z: z };
     }
   }
@@ -812,7 +863,12 @@ function waitForSpawn(g) {
   if (!g.spawned) {
     g.spawned = true;
     if (!g.loadedSave) {
-      var spot = findSpawnPoint(g);
+      g.spawnTries = (g.spawnTries || 0) + 1;
+      var spot = findSpawnPoint(g, g.spawnTries > 90 ? 2 : (g.spawnTries > 45 ? 1 : 0));
+      if (!spot && g.spawnTries > 150) {
+        /* nothing dry anywhere nearby — stand on the sea and get on with it */
+        spot = { x: 0, y: Math.max(SEA + 1, g.world.getHeight(g.player.dim, 0, 0) + 1), z: 0 };
+      }
       if (!spot) { requestAnimationFrame(function () { waitForSpawn(g); }); g.spawned = false; return; }
       p.x = spot.x + 0.5; p.z = spot.z + 0.5; p.y = spot.y;
       p.spawnX = spot.x; p.spawnY = spot.y; p.spawnZ = spot.z;

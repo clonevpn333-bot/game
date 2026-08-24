@@ -58,7 +58,7 @@ void main(){
   float sky = vLight.x, blk = vLight.y;
   float sh = shadowFactorE(vWorld, N, ndl);
   vec3 light = uSkyLightCol*(uAmbient + 0.52*sky*sky)
-             + uSunCol*(ndl*sh*sky*sky*uDay)*0.62
+             + uSunCol*(ndl*sh*sky*sky*uDay)*0.85
              + uBlockLightCol*pow(blk,1.55)*1.05;
   // soften the hard cuboid shading a little so mobs read as solid volumes,
   // then bias the side faces down so the silhouette still reads as boxes
@@ -68,7 +68,7 @@ void main(){
   float d = length(vWorld - uCamPos);
   vec3 dir = normalize(vWorld - uCamPos);
   float f = clamp((d-uFogStart)/max(uFogEnd-uFogStart,1.0),0.0,1.0); f*=f;
-  vec3 fogCol = mix(skyGradient(dir), uFogTint, 0.55);
+  vec3 fogCol = mix(skyGradient(dir), uFogTint, 0.38);
   if (uUnderwater==1){ fogCol=uUnderwaterCol; f=min(f,0.6);
     col = mix(col, uUnderwaterCol*(0.25+0.75*sky), clamp(d/26.0,0.0,1.0)); }
   col = mix(col, fogCol, f);
@@ -283,13 +283,21 @@ void main(){
   col += texture(uGod, vUV).rgb * uGodAmt;
   col *= uExposure;
   col = tonemap(col);
+  // a gentle grade: the tonemap flattens the palette, so put a little
+  // saturation and contrast back before the tint and vignette
+  float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
+  col = clamp(mix(vec3(lum), col, 1.22), 0.0, 1.0);
+  col = clamp((col - 0.5) * 1.06 + 0.5, 0.0, 1.0);
   col = mix(col, uTintCol, uTintAmt);
   float d = length(vUV-0.5);
   col *= 1.0 - uVignette*smoothstep(0.35,0.95,d);
   // a hint of dither breaks up banding in the sky gradient
   float dth = fract(sin(dot(vUV*vec2(1024.0,768.0), vec2(12.9898,78.233)))*43758.5453);
   col += (dth-0.5)/255.0;
-  oColor = vec4(pow(col, vec3(1.0/2.2)), 1.0);
+  // The palette is hand-painted in display space, so the pipeline stays there
+  // too: no extra gamma encode, which is what keeps the colours from washing
+  // out into pastel.
+  oColor = vec4(col, 1.0);
 }`;
 
 SH.fxaaFS = `#version 300 es

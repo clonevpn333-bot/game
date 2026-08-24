@@ -195,7 +195,9 @@ function updateSky(timeOfDay, dim, rain, biome) {
     R.sky.fog = [fc[0] / 255, fc[1] / 255, fc[2] / 255];
   }
   R.sky.ambient = lerp(0.10, 0.24, day);
-  R.sky.skyLight = [lerp(0.13, 0.50, day) + zen[0] * 0.30, lerp(0.15, 0.55, day) + zen[1] * 0.26, lerp(0.21, 0.64, day) + zen[2] * 0.24];
+  /* the sky fill is a soft, only slightly cool ambient; the sun carries the
+     warmth and most of the intensity on lit faces */
+  R.sky.skyLight = [lerp(0.12, 0.40, day) + zen[0] * 0.14, lerp(0.13, 0.41, day) + zen[1] * 0.13, lerp(0.16, 0.44, day) + zen[2] * 0.14];
   R.sky.blockLight = [1.0, 0.72, 0.42];
 }
 

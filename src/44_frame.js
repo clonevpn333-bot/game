@@ -85,8 +85,8 @@ function renderFrame(game) {
   var underwater = p.eyeInLiquid === 'water' ? 1 : 0;
   var uwCol = underwater ? col(biome.waterFog) : [0, 0, 0];
   var uwv = [uwCol[0] / 255 * 1.6, uwCol[1] / 255 * 1.6, uwCol[2] / 255 * 1.6];
-  var fogEnd = far * (underwater ? 0.10 : 0.94);
-  var fogStart = fogEnd * (underwater ? 0.02 : 0.52);
+  var fogEnd = far * (underwater ? 0.10 : 0.98);
+  var fogStart = fogEnd * (underwater ? 0.02 : 0.72);
   if (game.weather.rain > 0.1) { fogEnd *= 1 - game.weather.rain * 0.35; fogStart *= 0.7; }
   if (dim === DIM_NETHER) { fogEnd = Math.min(fogEnd, 130); fogStart = 8; }
 

@@ -359,6 +359,15 @@ function sampleDensity(x, y, z) {
   var c0 = c00 + (c10 - c00) * ty, c1 = c01 + (c11 - c01) * ty;
   return c0 + (c1 - c0) * tz;
 }
+
+/* The lattice is sampled every 4 blocks horizontally, which on its own turns
+   hillsides into rice terraces.  Correcting each column by the difference
+   between its full-resolution height and the interpolated lattice height
+   makes the surface follow the real height field for free. */
+function densityAt(x, y, z, colH) {
+  var lat = bilinLat(_latH, x / GX, z / GZ);
+  return sampleDensity(x, y, z) + (colH - lat) * 0.30;
+}
 function sampleCave(x, y, z) {
   var fy = y / CG;
   var y0 = fy | 0;
@@ -428,7 +437,7 @@ function genOverworld(cx, cz, sections, out) {
         if (y <= 2) {
           v = (y === 0 || rand3(wx, y, wz, 77) < (0.75 - y * 0.25)) ? ID.bedrock : idStone;
         } else {
-          var d = sampleDensity(x, y, z);
+          var d = densityAt(x, y, z, colH);
           if (d > 0) {
             var cavev = sampleCave(x, y, z);
             if (cavev > 0) {

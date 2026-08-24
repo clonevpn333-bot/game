@@ -660,6 +660,20 @@ function chorusPlant(sections, x, y, z, rng) {
 }
 
 /* ============================ ENTRY POINT =============================== */
+/* Recompute the top solid block per column after structures have edited it. */
+function rebuildHeights(sections, heights) {
+  for (var z = 0; z < CH_W; z++) for (var x = 0; x < CH_W; x++) {
+    var ci = z * CH_W + x;
+    var start = Math.min(CH_H - 1, (heights[ci] || 0) + 40);
+    var y = start;
+    for (; y >= 0; y--) {
+      var id = getBlockRaw(sections, x, y, z) & ID_MASK;
+      if (id !== 0 && id !== BID.water) break;
+    }
+    heights[ci] = y < 0 ? 0 : y;
+  }
+}
+
 WorldGen.generateColumn = function (dim, cx, cz) {
   _latCache = {};
   var sections = new Array(N_SECT);
@@ -671,7 +685,11 @@ WorldGen.generateColumn = function (dim, cx, cz) {
     genOverworld(cx, cz, sections, out);
     decorate(cx, cz, sections, out.heights);
   }
-  if (WorldGen.structurePass) WorldGen.structurePass(dim, cx, cz, sections, out);
+  if (WorldGen.structurePass) {
+    WorldGen.structurePass(dim, cx, cz, sections, out);
+    /* structures carve and build, so the surface map has to be redone */
+    rebuildHeights(sections, out.heights);
+  }
 
   var biomes = new Uint8Array(CH_AREA);
   biomes.set(_bioCol);

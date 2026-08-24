@@ -1994,6 +1994,15 @@ function sampleDensity(x, y, z) {
   var c0 = c00 + (c10 - c00) * ty, c1 = c01 + (c11 - c01) * ty;
   return c0 + (c1 - c0) * tz;
 }
+
+/* The lattice is sampled every 4 blocks horizontally, which on its own turns
+   hillsides into rice terraces.  Correcting each column by the difference
+   between its full-resolution height and the interpolated lattice height
+   makes the surface follow the real height field for free. */
+function densityAt(x, y, z, colH) {
+  var lat = bilinLat(_latH, x / GX, z / GZ);
+  return sampleDensity(x, y, z) + (colH - lat) * 0.30;
+}
 function sampleCave(x, y, z) {
   var fy = y / CG;
   var y0 = fy | 0;
@@ -2063,7 +2072,7 @@ function genOverworld(cx, cz, sections, out) {
         if (y <= 2) {
           v = (y === 0 || rand3(wx, y, wz, 77) < (0.75 - y * 0.25)) ? ID.bedrock : idStone;
         } else {
-          var d = sampleDensity(x, y, z);
+          var d = densityAt(x, y, z, colH);
           if (d > 0) {
             var cavev = sampleCave(x, y, z);
             if (cavev > 0) {
@@ -3013,6 +3022,20 @@ function chorusPlant(sections, x, y, z, rng) {
 }
 
 /* ============================ ENTRY POINT =============================== */
+/* Recompute the top solid block per column after structures have edited it. */
+function rebuildHeights(sections, heights) {
+  for (var z = 0; z < CH_W; z++) for (var x = 0; x < CH_W; x++) {
+    var ci = z * CH_W + x;
+    var start = Math.min(CH_H - 1, (heights[ci] || 0) + 40);
+    var y = start;
+    for (; y >= 0; y--) {
+      var id = getBlockRaw(sections, x, y, z) & ID_MASK;
+      if (id !== 0 && id !== BID.water) break;
+    }
+    heights[ci] = y < 0 ? 0 : y;
+  }
+}
+
 WorldGen.generateColumn = function (dim, cx, cz) {
   _latCache = {};
   var sections = new Array(N_SECT);
@@ -3024,7 +3047,11 @@ WorldGen.generateColumn = function (dim, cx, cz) {
     genOverworld(cx, cz, sections, out);
     decorate(cx, cz, sections, out.heights);
   }
-  if (WorldGen.structurePass) WorldGen.structurePass(dim, cx, cz, sections, out);
+  if (WorldGen.structurePass) {
+    WorldGen.structurePass(dim, cx, cz, sections, out);
+    /* structures carve and build, so the surface map has to be redone */
+    rebuildHeights(sections, out.heights);
+  }
 
   var biomes = new Uint8Array(CH_AREA);
   biomes.set(_bioCol);
@@ -3046,6 +3073,1133 @@ WorldGen.generateColumn = function (dim, cx, cz) {
     nonEmpty: nonEmpty, structures: out.structures, transfer: transfer
   };
 };
+
+
+/* ============================ 05_s_structures.js ============================ */
+/* =========================================================================
+ * STRUCTURES
+ *
+ * Every structure is placed on its own sparse grid: the world is cut into
+ * regions of N chunks, one candidate chunk is drawn deterministically from
+ * each region, and a structure exists there if the biome and terrain agree.
+ * Generation is then done per chunk — a builder clips every write to the
+ * chunk currently being generated — so a structure spanning many chunks
+ * comes out identical no matter which chunk is generated first.
+ * ========================================================================= */
+
+var SB = {                       /* the clipping builder */
+  sections: null, cx: 0, cz: 0, bx: 0, bz: 0, out: null, rng: null
+};
+function sbBegin(sections, cx, cz, out) {
+  SB.sections = sections; SB.cx = cx; SB.cz = cz;
+  SB.bx = cx * CH_W; SB.bz = cz * CH_W; SB.out = out;
+}
+function sbSet(wx, wy, wz, v) {
+  if (wy < 1 || wy >= CH_H) return;
+  var lx = wx - SB.bx, lz = wz - SB.bz;
+  if (lx < 0 || lx > 15 || lz < 0 || lz > 15) return;
+  setBlockRaw(SB.sections, lx, wy, lz, v);
+}
+function sbGet(wx, wy, wz) {
+  if (wy < 0 || wy >= CH_H) return 0;
+  var lx = wx - SB.bx, lz = wz - SB.bz;
+  if (lx < 0 || lx > 15 || lz < 0 || lz > 15) return -1;   /* outside: unknown */
+  return getBlockRaw(SB.sections, lx, wy, lz) & ID_MASK;
+}
+function sbFill(x0, y0, z0, x1, y1, z1, v) {
+  if (x0 > x1) { var t = x0; x0 = x1; x1 = t; }
+  if (y0 > y1) { var t2 = y0; y0 = y1; y1 = t2; }
+  if (z0 > z1) { var t3 = z0; z0 = z1; z1 = t3; }
+  /* clip to the chunk before looping, so a 60-block hall costs nothing in
+     the 55 chunks it does not touch */
+  var lx0 = Math.max(x0, SB.bx), lx1 = Math.min(x1, SB.bx + 15);
+  var lz0 = Math.max(z0, SB.bz), lz1 = Math.min(z1, SB.bz + 15);
+  if (lx0 > lx1 || lz0 > lz1) return;
+  var ly0 = Math.max(1, y0), ly1 = Math.min(CH_H - 1, y1);
+  for (var y = ly0; y <= ly1; y++)
+    for (var z = lz0; z <= lz1; z++)
+      for (var x = lx0; x <= lx1; x++)
+        setBlockRaw(SB.sections, x - SB.bx, y, z - SB.bz, v);
+}
+/* hollow box: walls of `wall`, interior of `inner` (0 = air) */
+function sbBox(x0, y0, z0, x1, y1, z1, wall, inner) {
+  sbFill(x0, y0, z0, x1, y1, z1, wall);
+  if (x1 - x0 > 1 && y1 - y0 > 1 && z1 - z0 > 1)
+    sbFill(x0 + 1, y0 + 1, z0 + 1, x1 - 1, y1 - 1, z1 - 1, inner || 0);
+}
+function sbFrame(x0, y0, z0, x1, y1, z1, v) {   /* walls only, open top/bottom */
+  sbFill(x0, y0, z0, x1, y1, z0, v);
+  sbFill(x0, y0, z1, x1, y1, z1, v);
+  sbFill(x0, y0, z0, x0, y1, z1, v);
+  sbFill(x1, y0, z0, x1, y1, z1, v);
+}
+function sbChest(wx, wy, wz, loot, facing) {
+  sbSet(wx, wy, wz, bpack(BID.chest, facing === undefined ? 0 : facing));
+  var lx = wx - SB.bx, lz = wz - SB.bz;
+  if (lx < 0 || lx > 15 || lz < 0 || lz > 15) return;
+  SB.out.structures = SB.out.structures || [];
+  SB.out.structures.push({ t: 'chest', x: wx, y: wy, z: wz, loot: loot });
+}
+function sbSpawner(wx, wy, wz, mob) {
+  sbSet(wx, wy, wz, BID.spawner);
+  var lx = wx - SB.bx, lz = wz - SB.bz;
+  if (lx < 0 || lx > 15 || lz < 0 || lz > 15) return;
+  SB.out.structures = SB.out.structures || [];
+  SB.out.structures.push({ t: 'spawner', x: wx, y: wy, z: wz, mob: mob });
+}
+function sbMob(wx, wy, wz, mob) {
+  var lx = wx - SB.bx, lz = wz - SB.bz;
+  if (lx < 0 || lx > 15 || lz < 0 || lz > 15) return;
+  SB.out.structures = SB.out.structures || [];
+  SB.out.structures.push({ t: 'mob', x: wx, y: wy, z: wz, mob: mob });
+}
+function sbMark(wx, wz, name) {
+  var lx = wx - SB.bx, lz = wz - SB.bz;
+  if (lx < 0 || lx > 15 || lz < 0 || lz > 15) return;
+  SB.out.structures = SB.out.structures || [];
+  SB.out.structures.push({ t: 'mark', x: wx, z: wz, name: name });
+}
+
+/* ------------------------------------------------------- placement ---- */
+var STRUCT_DEFS = [];
+function defStruct(o) { STRUCT_DEFS.push(o); return o; }
+
+function structRegionPos(def, rx, rz, salt) {
+  var rng = makeRNG(hash2(rx, rz, (def.salt + salt) >>> 0) >>> 0);
+  var span = def.spacing - def.separation;
+  var cx = rx * def.spacing + Math.floor(rng() * span);
+  var cz = rz * def.spacing + Math.floor(rng() * span);
+  return { cx: cx, cz: cz, rng: rng };
+}
+
+/* Does this structure exist at that candidate chunk?  Biome and terrain are
+   sampled at the centre only, which is how the real game does it too. */
+function structValid(def, pos) {
+  var wx = pos.cx * 16 + 8, wz = pos.cz * 16 + 8;
+  if (def.dim === undefined || def.dim === DIM_OVERWORLD) {
+    var cl = climateAt(wx, wz);
+    var h = heightFrom(wx, wz, cl);
+    var bio = BIOMES[pickBiome(wx, wz, h, cl)];
+    if (def.biomes && def.biomes.indexOf(bio.name) < 0) return false;
+    if (def.notBiomes && def.notBiomes.indexOf(bio.name) >= 0) return false;
+    if (def.ocean) { if (h > SEA - 12) return false; }
+    else if (def.needLand !== false && h < SEA + 1) return false;
+    if (def.maxSlope !== undefined) {
+      var h2 = heightFrom(wx + 12, wz + 12, climateAt(wx + 12, wz + 12));
+      var h3 = heightFrom(wx - 12, wz - 12, climateAt(wx - 12, wz - 12));
+      if (Math.abs(h2 - h) > def.maxSlope || Math.abs(h3 - h) > def.maxSlope) return false;
+    }
+    pos.y = Math.round(h);
+    pos.biome = bio;
+  } else {
+    pos.y = def.y || 64;
+  }
+  if (def.chance !== undefined && pos.rng() > def.chance) return false;
+  return true;
+}
+
+WorldGen.structurePass = function (dim, cx, cz, sections, out) {
+  sbBegin(sections, cx, cz, out);
+  for (var i = 0; i < STRUCT_DEFS.length; i++) {
+    var def = STRUCT_DEFS[i];
+    if ((def.dim === undefined ? DIM_OVERWORLD : def.dim) !== dim) continue;
+    var reach = Math.ceil(def.radius / 16) + 1;
+    var r0x = Math.floor((cx - reach) / def.spacing), r1x = Math.floor((cx + reach) / def.spacing);
+    var r0z = Math.floor((cz - reach) / def.spacing), r1z = Math.floor((cz + reach) / def.spacing);
+    for (var rx = r0x; rx <= r1x; rx++) for (var rz = r0z; rz <= r1z; rz++) {
+      var pos = structRegionPos(def, rx, rz, 0);
+      if (Math.abs(pos.cx - cx) > reach || Math.abs(pos.cz - cz) > reach) continue;
+      if (!structValid(def, pos)) continue;
+      SB.rng = makeRNG(hash2(pos.cx, pos.cz, (def.salt ^ 0x9e37) >>> 0) >>> 0);
+      def.build(pos.cx * 16 + 8, pos.y, pos.cz * 16 + 8, SB.rng, pos);
+    }
+  }
+};
+
+/* small deterministic helpers used by the builders */
+function pickR(rng, arr) { return arr[Math.floor(rng() * arr.length) % arr.length]; }
+function chanceR(rng, p) { return rng() < p; }
+
+/* ====================== VILLAGE ========================================= */
+var VILLAGE_STYLES = {
+  plains: { planks: 'oak_planks', log: 'oak_log', stairs: 'oak_stairs', slab: 'oak_slab',
+    wall: 'cobblestone', path: 'dirt_path', door: 'oak_door', fence: 'oak_fence',
+    roof: 'oak_stairs', light: 'torch', glass: 'glass_pane' },
+  desert: { planks: 'smooth_sandstone', log: 'cut_sandstone', stairs: 'sandstone_stairs', slab: 'sandstone_slab',
+    wall: 'sandstone', path: 'smooth_sandstone', door: 'acacia_door', fence: 'acacia_fence',
+    roof: 'smooth_sandstone', light: 'torch', glass: 'glass_pane' },
+  savanna: { planks: 'acacia_planks', log: 'acacia_log', stairs: 'acacia_stairs', slab: 'acacia_slab',
+    wall: 'cobblestone', path: 'dirt_path', door: 'acacia_door', fence: 'acacia_fence',
+    roof: 'acacia_stairs', light: 'torch', glass: 'glass_pane' },
+  taiga: { planks: 'spruce_planks', log: 'spruce_log', stairs: 'spruce_stairs', slab: 'spruce_slab',
+    wall: 'cobblestone', path: 'dirt_path', door: 'spruce_door', fence: 'spruce_fence',
+    roof: 'spruce_stairs', light: 'torch', glass: 'glass_pane' },
+  snowy: { planks: 'spruce_planks', log: 'spruce_log', stairs: 'spruce_stairs', slab: 'spruce_slab',
+    wall: 'cobblestone', path: 'dirt_path', door: 'spruce_door', fence: 'spruce_fence',
+    roof: 'spruce_stairs', light: 'torch', glass: 'glass_pane' }
+};
+function styleIds(st) {
+  var o = {};
+  for (var k in st) o[k] = BID[st[k]] === undefined ? BID.oak_planks : BID[st[k]];
+  return o;
+}
+function villageStyleFor(bio) {
+  var n = bio ? bio.name : 'plains';
+  if (n.indexOf('desert') >= 0) return VILLAGE_STYLES.desert;
+  if (n.indexOf('savanna') >= 0) return VILLAGE_STYLES.savanna;
+  if (n.indexOf('snow') >= 0 || n.indexOf('frozen') >= 0 || n === 'grove') return VILLAGE_STYLES.snowy;
+  if (n.indexOf('taiga') >= 0) return VILLAGE_STYLES.taiga;
+  return VILLAGE_STYLES.plains;
+}
+
+function clearAbove(x0, z0, x1, z1, y, h) {
+  sbFill(x0, y, z0, x1, y + h, z1, 0);
+}
+/* drop a foundation down to whatever ground is under the building */
+function foundation(x0, z0, x1, z1, y, mat) {
+  for (var x = Math.max(x0, SB.bx); x <= Math.min(x1, SB.bx + 15); x++)
+    for (var z = Math.max(z0, SB.bz); z <= Math.min(z1, SB.bz + 15); z++) {
+      for (var d = 0; d < 8; d++) {
+        var id = sbGet(x, y - 1 - d, z);
+        if (id !== 0 && id !== BID.water && !BLOCKS[id].liquid) break;
+        sbSet(x, y - 1 - d, z, mat);
+      }
+    }
+}
+
+function buildHouse(x, y, z, w, d, rng, S, kind) {
+  var ids = styleIds(S);
+  var x0 = x - (w >> 1), z0 = z - (d >> 1), x1 = x0 + w - 1, z1 = z0 + d - 1;
+  var wallH = kind === 'tall' ? 5 : 3;
+  clearAbove(x0 - 1, z0 - 1, x1 + 1, z1 + 1, y + 1, wallH + 5);
+  foundation(x0, z0, x1, z1, y, ids.wall);
+  sbFill(x0, y, z0, x1, y, z1, ids.planks);
+  /* walls with corner posts */
+  sbFrame(x0, y + 1, z0, x1, y + wallH, z1, ids.planks);
+  sbFill(x0, y + 1, z0, x0, y + wallH, z0, ids.log);
+  sbFill(x1, y + 1, z0, x1, y + wallH, z0, ids.log);
+  sbFill(x0, y + 1, z1, x0, y + wallH, z1, ids.log);
+  sbFill(x1, y + 1, z1, x1, y + wallH, z1, ids.log);
+  sbFill(x0 + 1, y + 1, z0 + 1, x1 - 1, y + wallH, z1 - 1, 0);
+
+  /* windows */
+  for (var wx2 = x0 + 2; wx2 <= x1 - 2; wx2 += 2) {
+    sbSet(wx2, y + 2, z0, ids.glass);
+    sbSet(wx2, y + 2, z1, ids.glass);
+  }
+  for (var wz2 = z0 + 2; wz2 <= z1 - 2; wz2 += 2) {
+    sbSet(x0, y + 2, wz2, ids.glass);
+    sbSet(x1, y + 2, wz2, ids.glass);
+  }
+  /* door on the -Z wall */
+  var dx = x0 + ((w >> 1));
+  sbSet(dx, y + 1, z0, bpack(ids.door, 0));
+  sbSet(dx, y + 2, z0, bpack(ids.door, 8));
+  sbSet(dx, y, z0 - 1, BID[S.path] === undefined ? BID.dirt_path : BID[S.path]);
+
+  /* pitched roof out of stairs */
+  var span = Math.min(w, d);
+  var layers = Math.ceil(span / 2);
+  for (var r = 0; r < layers; r++) {
+    var ry = y + wallH + 1 + r;
+    var ax0 = x0 - 1 + r, ax1 = x1 + 1 - r, az0 = z0 - 1 + r, az1 = z1 + 1 - r;
+    if (ax0 > ax1 || az0 > az1) break;
+    if (w >= d) {
+      sbFill(ax0, ry, az0, ax1, ry, az0, bpack(ids.roof, 2));       /* facing +Z */
+      sbFill(ax0, ry, az1, ax1, ry, az1, bpack(ids.roof, 0));
+      sbFill(ax0, ry, az0 + 1, ax0, ry, az1 - 1, ids.slab);
+      sbFill(ax1, ry, az0 + 1, ax1, ry, az1 - 1, ids.slab);
+      if (r === layers - 1) sbFill(ax0, ry, az0, ax1, ry, az1, ids.slab);
+      else sbFill(ax0 + 1, ry, az0 + 1, ax1 - 1, ry, az1 - 1, 0);
+    } else {
+      sbFill(ax0, ry, az0, ax0, ry, az1, bpack(ids.roof, 1));
+      sbFill(ax1, ry, az0, ax1, ry, az1, bpack(ids.roof, 3));
+      if (r === layers - 1) sbFill(ax0, ry, az0, ax1, ry, az1, ids.slab);
+      else sbFill(ax0 + 1, ry, az0 + 1, ax1 - 1, ry, az1 - 1, 0);
+    }
+  }
+
+  /* furnishings */
+  var lightId = BID[S.light] === undefined ? BID.torch : BID[S.light];
+  sbSet(x0 + 1, y + 3, z0 + 1, lightId);
+  sbSet(x1 - 1, y + 3, z1 - 1, lightId);
+  if (kind === 'house' || kind === 'tall') {
+    sbSet(x0 + 1, y + 1, z1 - 1, BID.red_bed === undefined ? BID.white_wool : BID.red_bed);
+    sbSet(x0 + 2, y + 1, z1 - 1, BID.white_wool);
+    sbChest(x1 - 1, y + 1, z0 + 1, 'village_house', 0);
+    sbSet(x1 - 1, y + 1, z1 - 2, BID.crafting_table);
+  }
+  if (kind === 'smith') {
+    sbSet(x0 + 1, y + 1, z1 - 1, BID.furnace);
+    sbSet(x0 + 2, y + 1, z1 - 1, BID.blast_furnace);
+    sbSet(x0 + 1, y + 1, z1 - 2, BID.smithing_table);
+    sbSet(x1 - 1, y + 1, z1 - 1, BID.anvil);
+    sbChest(x1 - 1, y + 1, z0 + 1, 'village_smith', 0);
+    sbFill(x0 + 2, y + 1, z0 + 1, x0 + 2, y + 1, z0 + 1, BID.lava);
+    sbFill(x0 + 1, y, z0 + 1, x0 + 3, y, z0 + 2, BID.stone_bricks);
+  }
+  if (kind === 'library') {
+    sbFill(x0 + 1, y + 1, z1 - 1, x1 - 1, y + 3, z1 - 1, BID.bookshelf);
+    sbSet(x0 + 1, y + 1, z0 + 1, BID.lectern);
+    sbSet(x1 - 1, y + 1, z0 + 1, BID.cartography_table);
+  }
+  sbMob(x, y + 1, z, 'villager');
+  if (kind === 'house' || kind === 'tall') sbMob(x + 1, y + 1, z, 'villager');
+}
+
+function buildFarm(x, y, z, w, d, rng, S) {
+  var ids = styleIds(S);
+  var x0 = x - (w >> 1), z0 = z - (d >> 1), x1 = x0 + w - 1, z1 = z0 + d - 1;
+  clearAbove(x0, z0, x1, z1, y + 1, 4);
+  foundation(x0, z0, x1, z1, y, BID.dirt);
+  sbFrame(x0, y, z0, x1, y, z1, BID.oak_log);
+  sbFrame(x0, y + 1, z0, x1, y + 1, z1, ids.fence);
+  sbFill(x0 + 1, y, z0 + 1, x1 - 1, y, z1 - 1, BID.farmland);
+  /* an irrigation channel down the middle */
+  var mz = (z0 + z1) >> 1;
+  sbFill(x0 + 1, y, mz, x1 - 1, y, mz, BID.water);
+  var crops = [BID.wheat, BID.carrots, BID.potatoes, BID.beetroots];
+  var crop = crops[Math.floor(rng() * crops.length) % crops.length];
+  if (crop === undefined) crop = BID.wheat;
+  for (var cx2 = x0 + 1; cx2 <= x1 - 1; cx2++)
+    for (var cz2 = z0 + 1; cz2 <= z1 - 1; cz2++) {
+      if (cz2 === mz) continue;
+      sbSet(cx2, y + 1, cz2, bpack(crop, Math.floor(rng() * 8)));
+    }
+  sbSet(x0, y + 2, z0, BID.torch);
+  sbSet(x1, y + 2, z1, BID.torch);
+}
+
+function buildWell(x, y, z, rng, S) {
+  var ids = styleIds(S);
+  clearAbove(x - 3, z - 3, x + 3, z + 3, y + 1, 8);
+  sbFill(x - 2, y, z - 2, x + 2, y, z + 2, ids.wall);
+  sbFill(x - 1, y - 4, z - 1, x + 1, y, z + 1, BID.water);
+  sbFrame(x - 2, y + 1, z - 2, x + 2, y + 1, z + 2, ids.wall);
+  sbFill(x - 1, y + 1, z - 1, x + 1, y + 1, z + 1, BID.water);
+  var posts = [[x - 2, z - 2], [x + 2, z - 2], [x - 2, z + 2], [x + 2, z + 2]];
+  for (var i = 0; i < 4; i++) sbFill(posts[i][0], y + 2, posts[i][1], posts[i][0], y + 4, posts[i][1], ids.log);
+  sbFill(x - 2, y + 5, z - 2, x + 2, y + 5, z + 2, ids.slab);
+  sbSet(x, y + 5, z, ids.planks);
+  sbMob(x + 3, y + 1, z, 'villager');
+  sbMob(x - 3, y + 1, z, 'iron_golem');
+}
+
+defStruct({
+  name: 'village', salt: 0x51a3, spacing: 32, separation: 10, radius: 56, chance: 0.62,
+  maxSlope: 7,
+  biomes: ['plains', 'sunflower_plains', 'meadow', 'savanna', 'savanna_plateau', 'desert',
+    'taiga', 'snowy_plains', 'snowy_taiga', 'old_growth_pine_taiga'],
+  build: function (x, y, z, rng, pos) {
+    var S = villageStyleFor(pos.biome);
+    var ids = styleIds(S);
+    sbMark(x, z, 'Village');
+    buildWell(x, y, z, rng, S);
+    /* roads radiate from the well; buildings sit along them */
+    var arms = 4;
+    for (var a = 0; a < arms; a++) {
+      var ang = a * Math.PI / 2;
+      var dx = Math.round(Math.cos(ang)), dz = Math.round(Math.sin(ang));
+      var len = 16 + Math.floor(rng() * 14);
+      for (var t = 3; t <= len; t++) {
+        var rxp = x + dx * t, rzp = z + dz * t;
+        for (var w2 = -1; w2 <= 1; w2++) {
+          var px = rxp + (dz ? w2 : 0), pz = rzp + (dx ? w2 : 0);
+          var gy = y;
+          sbSet(px, gy, pz, BID[S.path] === undefined ? BID.dirt_path : BID[S.path]);
+          sbFill(px, gy + 1, pz, px, gy + 3, pz, 0);
+        }
+        if (t % 6 === 0 && rng() < 0.8) {
+          var side = rng() < 0.5 ? 1 : -1;
+          var ox = rxp + (dz ? 0 : side * 5), oz = rzp + (dx ? 0 : side * 5);
+          if (!dz) { ox = rxp; oz = rzp + side * 5; }
+          else { ox = rxp + side * 5; oz = rzp; }
+          var roll = rng();
+          if (roll < 0.16) buildFarm(ox, y, oz, 7 + (rng() * 3 | 0) * 2, 7, rng, S);
+          else if (roll < 0.28) buildHouse(ox, y, oz, 7, 7, rng, S, 'smith');
+          else if (roll < 0.40) buildHouse(ox, y, oz, 7, 7, rng, S, 'library');
+          else if (roll < 0.62) buildHouse(ox, y, oz, 7, 9, rng, S, 'tall');
+          else buildHouse(ox, y, oz, 7, 7, rng, S, 'house');
+        }
+        if (t % 5 === 2 && rng() < 0.4) {
+          var lx = rxp + (dz ? 2 : 0), lz = rzp + (dx ? 2 : 0);
+          sbFill(lx, y + 1, lz, lx, y + 3, lz, BID.oak_fence);
+          sbSet(lx, y + 4, lz, BID.lantern);
+        }
+      }
+    }
+  }
+});
+
+/* ====================== DESERT AND JUNGLE TEMPLES ======================= */
+defStruct({
+  name: 'desert_pyramid', salt: 0x2f71, spacing: 28, separation: 8, radius: 24, chance: 0.75,
+  biomes: ['desert'], maxSlope: 6,
+  build: function (x, y, z, rng) {
+    sbMark(x, z, 'Desert Pyramid');
+    var SS = BID.sandstone, CS = BID.cut_sandstone, CH = BID.chiseled_sandstone;
+    var base = y - 1;
+    clearAbove(x - 11, z - 11, x + 11, z + 11, base + 1, 16);
+    for (var lvl = 0; lvl < 10; lvl++) {
+      var r = 10 - lvl;
+      if (r < 1) break;
+      sbFill(x - r, base + lvl, z - r, x + r, base + lvl, z + r, lvl % 3 === 0 ? CS : SS);
+    }
+    /* two towers */
+    for (var s = -1; s <= 1; s += 2) {
+      sbFill(x + s * 9, base, z - 9, x + s * 9, base + 10, z - 9, SS);
+      sbFill(x + s * 9 - 1, base + 10, z - 10, x + s * 9 + 1, base + 12, z - 8, SS);
+      sbFill(x + s * 9, base + 11, z - 9, x + s * 9, base + 12, z - 9, 0);
+      sbSet(x + s * 9, base + 13, z - 9, CH);
+    }
+    /* entrance hall */
+    sbFill(x - 2, base + 1, z - 10, x + 2, base + 4, z + 2, 0);
+    sbFill(x - 2, base, z - 10, x + 2, base, z + 2, SS);
+    sbFill(x - 1, base + 1, z + 1, x + 1, base + 3, z + 1, CH);
+    /* hidden treasure room below the floor */
+    var ty = base - 12;
+    sbBox(x - 5, ty, z - 5, x + 5, ty + 5, z + 5, SS, 0);
+    sbFill(x - 1, ty + 1, z - 1, x + 1, ty + 1, z + 1, BID.blue_terracotta);
+    sbSet(x, ty + 1, z, BID.tnt);
+    sbFill(x, ty + 1, z, x, ty + 1, z, BID.tnt);
+    sbSet(x, ty + 2, z, BID.stone_pressure_plate);
+    sbChest(x - 4, ty + 1, z - 4, 'desert_temple', 0);
+    sbChest(x + 4, ty + 1, z - 4, 'desert_temple', 0);
+    sbChest(x - 4, ty + 1, z + 4, 'desert_temple', 0);
+    sbChest(x + 4, ty + 1, z + 4, 'desert_temple', 0);
+    /* shaft down from the hall */
+    sbFill(x, ty + 5, z, x, base, z, 0);
+    /* decorative orange/blue motif on the face */
+    for (var m = -1; m <= 1; m++) sbFill(x + m, base + 5, z - 10, x + m, base + 7, z - 10, m === 0 ? BID.orange_terracotta : BID.blue_terracotta);
+  }
+});
+
+defStruct({
+  name: 'jungle_temple', salt: 0x77c1, spacing: 30, separation: 9, radius: 18, chance: 0.6,
+  biomes: ['jungle', 'sparse_jungle', 'bamboo_jungle'], maxSlope: 7,
+  build: function (x, y, z, rng) {
+    sbMark(x, z, 'Jungle Temple');
+    var C = BID.mossy_cobblestone, CB = BID.cobblestone, CS = BID.chiseled_stone_bricks;
+    var base = y - 1;
+    clearAbove(x - 7, z - 8, x + 7, z + 8, base + 1, 14);
+    sbBox(x - 6, base, z - 7, x + 6, base + 9, z + 7, rng() < 0.5 ? C : CB, 0);
+    /* stepped entrance */
+    sbFill(x - 2, base + 1, z - 7, x + 2, base + 4, z - 7, 0);
+    sbFill(x - 2, base + 1, z - 8, x + 2, base + 1, z - 8, C);
+    /* upper floor and roof crenellations */
+    sbFill(x - 5, base + 5, z - 6, x + 5, base + 5, z + 6, CB);
+    for (var i = -6; i <= 6; i += 2) { sbSet(x + i, base + 10, z - 7, C); sbSet(x + i, base + 10, z + 7, C); }
+    for (var j = -7; j <= 7; j += 2) { sbSet(x - 6, base + 10, z + j, C); sbSet(x + 6, base + 10, z + j, C); }
+    /* trapped corridor with the classic tripwire and dispensers */
+    sbFill(x - 4, base + 1, z - 5, x + 4, base + 4, z + 5, 0);
+    sbFill(x - 1, base + 1, z + 3, x + 1, base + 1, z + 5, CB);
+    sbSet(x - 2, base + 2, z + 4, BID.dispenser);
+    sbSet(x + 2, base + 2, z + 4, BID.dispenser);
+    sbFill(x - 1, base + 2, z + 4, x + 1, base + 2, z + 4, BID.tripwire_hook);
+    sbChest(x, base + 1, z + 5, 'jungle_temple', 0);
+    /* puzzle levers */
+    sbFill(x - 4, base + 1, z - 4, x - 2, base + 3, z - 4, CS);
+    for (var l = 0; l < 3; l++) sbSet(x - 4 + l, base + 2, z - 3, bpack(BID.lever, 0));
+    sbChest(x - 4, base + 6, z + 4, 'jungle_temple', 0);
+    /* vines creeping over the stone */
+    for (var v = 0; v < 60; v++) {
+      var vx = x - 6 + Math.floor(rng() * 13), vz = z - 7 + Math.floor(rng() * 15);
+      var vy = base + 1 + Math.floor(rng() * 9);
+      if (sbGet(vx, vy, vz) === 0 && BID.vine !== undefined) sbSet(vx, vy, vz, BID.vine);
+    }
+  }
+});
+
+/* ====================== WITCH HUT / IGLOO / DESERT WELL ================= */
+defStruct({
+  name: 'swamp_hut', salt: 0x3311, spacing: 26, separation: 8, radius: 12, chance: 0.5,
+  biomes: ['swamp', 'mangrove_swamp'], needLand: false,
+  build: function (x, y, z, rng) {
+    var base = Math.max(y, SEA) + 3;
+    sbMark(x, z, "Witch's Hut");
+    clearAbove(x - 4, z - 5, x + 4, z + 5, base, 8);
+    for (var px = -3; px <= 3; px += 6) for (var pz = -4; pz <= 4; pz += 8)
+      sbFill(x + px, base - 6, z + pz, x + px, base - 1, z + pz, BID.spruce_log);
+    sbFill(x - 3, base - 1, z - 4, x + 3, base - 1, z + 4, BID.spruce_planks);
+    sbFrame(x - 3, base, z - 4, x + 3, base + 3, z + 4, BID.spruce_planks);
+    sbFill(x - 4, base + 4, z - 5, x + 4, base + 4, z + 5, BID.spruce_slab);
+    sbFill(x, base, z - 4, x, base + 1, z - 4, 0);
+    sbSet(x - 2, base, z + 3, BID.cauldron);
+    sbSet(x + 2, base, z + 3, BID.crafting_table);
+    sbSet(x + 2, base, z - 3, BID.brewing_stand === undefined ? BID.crafting_table : BID.brewing_stand);
+    sbFill(x - 1, base, z, x + 1, base, z, 0);
+    sbSet(x - 2, base + 2, z, BID.torch);
+    sbMob(x, base + 1, z, 'witch');
+    sbMob(x + 1, base + 1, z + 1, 'cat');
+  }
+});
+defStruct({
+  name: 'igloo', salt: 0x6a2d, spacing: 24, separation: 8, radius: 8, chance: 0.5,
+  biomes: ['snowy_plains', 'snowy_taiga', 'snowy_slopes', 'frozen_peaks', 'ice_spikes'],
+  build: function (x, y, z, rng) {
+    sbMark(x, z, 'Igloo');
+    var S = BID.snow_block, base = y;
+    clearAbove(x - 5, z - 5, x + 5, z + 5, base + 1, 8);
+    for (var dy = 0; dy <= 4; dy++) {
+      var r = Math.round(Math.sqrt(Math.max(0, 16 - dy * dy)));
+      for (var dx = -r; dx <= r; dx++) for (var dz = -r; dz <= r; dz++) {
+        if (dx * dx + dz * dz > r * r) continue;
+        var shell = dx * dx + dz * dz > (r - 1) * (r - 1) || dy === 4;
+        sbSet(x + dx, base + dy, z + dz, shell ? S : 0);
+      }
+    }
+    sbFill(x - 1, base + 1, z + 3, x + 1, base + 2, z + 5, 0);
+    sbFill(x - 1, base, z + 3, x + 1, base, z + 5, S);
+    sbSet(x - 2, base + 1, z - 2, BID.red_bed === undefined ? BID.white_wool : BID.red_bed);
+    sbSet(x + 2, base + 1, z - 2, BID.crafting_table);
+    sbSet(x + 2, base + 1, z + 1, BID.furnace);
+    sbSet(x, base + 3, z, BID.redstone_torch);
+    sbSet(x - 2, base + 1, z + 1, BID.oak_trapdoor);
+    /* the cellar under the carpet */
+    if (rng() < 0.5) {
+      var cy = base - 10;
+      sbBox(x - 3, cy, z - 3, x + 3, cy + 4, z + 3, BID.stone_bricks, 0);
+      sbFill(x, cy + 4, z, x, base, z, BID.ladder);
+      sbChest(x - 2, cy + 1, z - 2, 'igloo', 0);
+      sbSet(x + 1, cy + 1, z + 1, BID.brewing_stand === undefined ? BID.crafting_table : BID.brewing_stand);
+      sbMob(x + 2, cy + 1, z + 2, 'zombie_villager');
+      sbMob(x - 2, cy + 1, z + 2, 'villager');
+    }
+  }
+});
+defStruct({
+  name: 'desert_well', salt: 0x18b7, spacing: 14, separation: 5, radius: 5, chance: 0.10,
+  biomes: ['desert'],
+  build: function (x, y, z, rng) {
+    var SS = BID.sandstone, SL = BID.sandstone_slab;
+    sbFill(x - 2, y, z - 2, x + 2, y, z + 2, SS);
+    sbFill(x - 1, y - 3, z - 1, x + 1, y, z + 1, BID.water);
+    for (var i = -1; i <= 1; i += 2) for (var j = -1; j <= 1; j += 2)
+      sbFill(x + i * 2, y + 1, z + j * 2, x + i * 2, y + 3, z + j * 2, SS);
+    sbFill(x - 2, y + 4, z - 2, x + 2, y + 4, z + 2, SL);
+  }
+});
+
+/* ====================== RUINED PORTAL =================================== */
+defStruct({
+  name: 'ruined_portal', salt: 0x44e9, spacing: 16, separation: 5, radius: 10, chance: 0.30,
+  build: function (x, y, z, rng) {
+    var O = BID.obsidian, CO = BID.crying_obsidian;
+    var w = 3 + Math.floor(rng() * 2), h = 4 + Math.floor(rng() * 2);
+    var vertical = rng() < 0.5;
+    clearAbove(x - w - 2, z - w - 2, x + w + 2, z + w + 2, y + 1, h + 3);
+    for (var a = -1; a <= w; a++) for (var b = 0; b <= h; b++) {
+      var edge = (a === -1 || a === w || b === 0 || b === h);
+      if (!edge) continue;
+      if (rng() < 0.28) continue;                 /* ruined: bits are missing */
+      var bx = vertical ? x + a : x, bz = vertical ? z : z + a;
+      sbSet(bx, y + b, bz, rng() < 0.2 ? CO : O);
+    }
+    /* scorched ground and rubble */
+    for (var i = 0; i < 90; i++) {
+      var rx = x + Math.floor(rng() * 13) - 6, rz = z + Math.floor(rng() * 13) - 6;
+      var ry = y + Math.floor(rng() * 3) - 1;
+      if (rng() < 0.5) sbSet(rx, ry, rz, BID.netherrack);
+      else if (rng() < 0.25) sbSet(rx, ry, rz, BID.magma_block);
+      else if (rng() < 0.1) sbSet(rx, ry + 1, rz, BID.fire);
+      else if (rng() < 0.2) sbSet(rx, ry, rz, BID.blackstone);
+      else if (rng() < 0.1) sbSet(rx, ry, rz, BID.gold_block);
+    }
+    sbChest(x + 2, y + 1, z + 2, 'ruined_portal', 0);
+  }
+});
+
+/* ====================== PILLAGER OUTPOST ================================ */
+defStruct({
+  name: 'pillager_outpost', salt: 0x9a13, spacing: 34, separation: 12, radius: 14, chance: 0.35,
+  maxSlope: 8,
+  notBiomes: ['ocean', 'deep_ocean', 'frozen_ocean', 'warm_ocean', 'lukewarm_ocean', 'cold_ocean',
+    'deep_frozen_ocean', 'deep_cold_ocean', 'deep_lukewarm_ocean', 'mushroom_fields'],
+  build: function (x, y, z, rng) {
+    sbMark(x, z, 'Pillager Outpost');
+    var L = BID.dark_oak_log, P = BID.dark_oak_planks, F = BID.dark_oak_fence, S = BID.dark_oak_slab;
+    clearAbove(x - 5, z - 5, x + 5, z + 5, y + 1, 20);
+    foundation(x - 4, z - 4, x + 4, z + 4, y, BID.cobblestone);
+    /* four legs and the tower shaft */
+    for (var i = -3; i <= 3; i += 6) for (var j = -3; j <= 3; j += 6)
+      sbFill(x + i, y, z + j, x + i, y + 9, z + j, L);
+    for (var lvl = 0; lvl < 3; lvl++) {
+      var fy = y + 3 + lvl * 4;
+      sbFill(x - 3, fy, z - 3, x + 3, fy, z + 3, P);
+      sbFrame(x - 3, fy + 1, z - 3, x + 3, fy + 2, z + 3, lvl === 2 ? P : F);
+      sbFill(x - 2, fy + 1, z - 2, x + 2, fy + 2, z + 2, 0);
+    }
+    var ty = y + 11;
+    sbFill(x - 4, ty, z - 4, x + 4, ty, z + 4, P);
+    sbFrame(x - 4, ty + 1, z - 4, x + 4, ty + 2, z + 4, F);
+    sbFill(x - 4, ty + 4, z - 4, x + 4, ty + 4, z + 4, S);
+    for (var c = -4; c <= 4; c += 8) for (var d = -4; d <= 4; d += 8)
+      sbFill(x + c, ty + 1, z + d, x + c, ty + 3, z + d, L);
+    /* ladder up the middle */
+    sbFill(x, y + 1, z, x, ty, z, 0);
+    sbFill(x, y + 1, z + 1, x, ty, z + 1, BID.ladder);
+    sbChest(x + 2, ty + 1, z + 2, 'outpost', 0);
+    /* banner post out front */
+    sbFill(x + 5, y + 1, z, x + 5, y + 4, z, L);
+    sbSet(x + 5, y + 5, z, BID.white_wool);
+    sbMob(x, ty + 1, z, 'pillager');
+    sbMob(x + 1, ty + 1, z + 1, 'pillager');
+    sbMob(x - 2, y + 1, z - 2, 'pillager');
+    sbMob(x + 2, y + 1, z + 3, 'pillager');
+  }
+});
+
+/* ====================== SHIPWRECK / BURIED TREASURE ===================== */
+defStruct({
+  name: 'shipwreck', salt: 0x2b8f, spacing: 20, separation: 6, radius: 14, chance: 0.35,
+  ocean: true, needLand: false,
+  build: function (x, y, z, rng) {
+    sbMark(x, z, 'Shipwreck');
+    var P = BID.oak_planks, L = BID.oak_log, S = BID.oak_stairs, F = BID.oak_fence;
+    var base = Math.max(4, y + 1);
+    var tilt = rng() < 0.5 ? 1 : 0;
+    /* hull: 18 long, 6 wide, tapering at both ends */
+    for (var i = -9; i <= 9; i++) {
+      var half = Math.max(1, 3 - Math.floor(Math.abs(i) / 4));
+      var yy = base + (tilt ? Math.floor((i + 9) / 6) : 0);
+      sbFill(x - half, yy, z + i, x + half, yy, z + i, P);
+      sbFill(x - half, yy + 1, z + i, x - half, yy + 3, z + i, P);
+      sbFill(x + half, yy + 1, z + i, x + half, yy + 3, z + i, P);
+      if ((i + 9) % 5 === 0) {
+        sbFill(x - half, yy + 1, z + i, x + half, yy + 1, z + i, L);
+      }
+      if (rng() < 0.22) sbSet(x - half, yy + 3, z + i, 0);
+      if (rng() < 0.22) sbSet(x + half, yy + 2, z + i, 0);
+    }
+    /* deck and masts */
+    sbFill(x - 3, base + 4, z - 6, x + 3, base + 4, z + 6, P);
+    for (var m = -4; m <= 4; m += 8) sbFill(x, base + 5, z + m, x, base + 11, z + m, L);
+    sbFill(x - 2, base + 8, z - 4, x + 2, base + 10, z - 4, BID.white_wool);
+    /* three cargo holds */
+    sbChest(x, base + 1, z - 7, 'shipwreck_treasure', 0);
+    sbChest(x, base + 1, z + 7, 'shipwreck_supply', 0);
+    sbChest(x + 1, base + 5, z + 5, 'shipwreck_map', 0);
+    for (var g = 0; g < 24; g++) {
+      var gx = x - 3 + Math.floor(rng() * 7), gz = z - 9 + Math.floor(rng() * 19);
+      if (sbGet(gx, base + 1, gz) === 0 && rng() < 0.4) sbSet(gx, base + 1, gz, BID.seagrass === undefined ? 0 : BID.seagrass);
+    }
+  }
+});
+defStruct({
+  name: 'buried_treasure', salt: 0x7f21, spacing: 12, separation: 4, radius: 3, chance: 0.06,
+  biomes: ['beach', 'snowy_beach', 'stony_shore'],
+  build: function (x, y, z, rng) {
+    sbChest(x, y - 3, z, 'buried_treasure', 0);
+    sbFill(x - 1, y - 4, z - 1, x + 1, y - 2, z + 1, BID.sand);
+    sbSet(x, y - 3, z, bpack(BID.chest, 0));
+  }
+});
+
+/* ====================== OCEAN MONUMENT ================================== */
+defStruct({
+  name: 'ocean_monument', salt: 0x5d02, spacing: 40, separation: 14, radius: 34, chance: 0.55,
+  ocean: true, needLand: false,
+  biomes: ['deep_ocean', 'deep_cold_ocean', 'deep_lukewarm_ocean', 'deep_frozen_ocean', 'ocean', 'cold_ocean', 'lukewarm_ocean'],
+  build: function (x, y, z, rng) {
+    sbMark(x, z, 'Ocean Monument');
+    var P = BID.prismarine, B = BID.prismarine_bricks, D = BID.dark_prismarine, S = BID.sea_lantern;
+    var base = Math.max(6, Math.min(y + 1, SEA - 22));
+    /* foundation plinth */
+    sbFill(x - 28, base - 1, z - 28, x + 28, base - 1, z + 28, B);
+    /* outer wall */
+    sbFrame(x - 28, base, z - 28, x + 28, base + 22, z + 28, P);
+    /* main hall */
+    sbBox(x - 12, base, z - 12, x + 12, base + 16, z + 12, B, 0);
+    sbFill(x - 10, base + 1, z - 10, x + 10, base + 1, z + 10, D);
+    for (var i = -8; i <= 8; i += 8) for (var j = -8; j <= 8; j += 8) {
+      sbFill(x + i, base + 1, z + j, x + i, base + 15, z + j, P);
+      sbSet(x + i, base + 8, z + j, S);
+    }
+    /* wings */
+    for (var a = -1; a <= 1; a += 2) for (var b = -1; b <= 1; b += 2) {
+      var wx = x + a * 20, wz = z + b * 20;
+      sbBox(wx - 6, base, wz - 6, wx + 6, base + 10, wz + 6, P, 0);
+      sbSet(wx, base + 5, wz, S);
+      sbFill(wx - 1, base + 1, wz - 1, wx + 1, base + 1, wz + 1, D);
+      sbMob(wx, base + 3, wz, 'guardian');
+    }
+    /* the treasure core */
+    sbBox(x - 4, base + 4, z - 4, x + 4, base + 10, z + 4, D, 0);
+    sbFill(x - 1, base + 5, z - 1, x + 1, base + 7, z + 1, BID.gold_block);
+    /* lantern grid on the roof */
+    for (var lx = -24; lx <= 24; lx += 8) for (var lz = -24; lz <= 24; lz += 8)
+      sbSet(x + lx, base + 22, z + lz, S);
+    sbMob(x, base + 12, z, 'elder_guardian');
+    sbMob(x + 14, base + 6, z, 'elder_guardian');
+    sbMob(x - 14, base + 6, z, 'elder_guardian');
+    for (var g = 0; g < 10; g++) sbMob(x + Math.floor(rng() * 40) - 20, base + 4 + Math.floor(rng() * 10), z + Math.floor(rng() * 40) - 20, 'guardian');
+  }
+});
+
+/* ====================== WOODLAND MANSION ================================ */
+defStruct({
+  name: 'woodland_mansion', salt: 0x8e44, spacing: 68, separation: 20, radius: 34, chance: 0.85,
+  biomes: ['dark_forest', 'pale_garden'], maxSlope: 8,
+  build: function (x, y, z, rng) {
+    sbMark(x, z, 'Woodland Mansion');
+    var P = BID.dark_oak_planks, L = BID.dark_oak_log, C = BID.cobblestone;
+    var W = 27, D = 21;
+    var x0 = x - (W >> 1), z0 = z - (D >> 1), x1 = x0 + W, z1 = z0 + D;
+    clearAbove(x0 - 2, z0 - 2, x1 + 2, z1 + 2, y + 1, 26);
+    foundation(x0, z0, x1, z1, y, C);
+    sbFill(x0, y, z0, x1, y, z1, C);
+    for (var floor = 0; floor < 3; floor++) {
+      var fy = y + 1 + floor * 6;
+      sbFill(x0, fy - 1, z0, x1, fy - 1, z1, P);
+      sbFrame(x0, fy, z0, x1, fy + 4, z1, P);
+      /* corner and mid posts */
+      for (var px = x0; px <= x1; px += 6) {
+        sbFill(px, fy, z0, px, fy + 4, z0, L);
+        sbFill(px, fy, z1, px, fy + 4, z1, L);
+      }
+      for (var pz = z0; pz <= z1; pz += 5) {
+        sbFill(x0, fy, pz, x0, fy + 4, pz, L);
+        sbFill(x1, fy, pz, x1, fy + 4, pz, L);
+      }
+      /* windows */
+      for (var wx = x0 + 2; wx < x1; wx += 3) {
+        sbFill(wx, fy + 1, z0, wx, fy + 2, z0, BID.glass_pane);
+        sbFill(wx, fy + 1, z1, wx, fy + 2, z1, BID.glass_pane);
+      }
+      for (var wz = z0 + 2; wz < z1; wz += 3) {
+        sbFill(x0, fy + 1, wz, x0, fy + 2, wz, BID.glass_pane);
+        sbFill(x1, fy + 1, wz, x1, fy + 2, wz, BID.glass_pane);
+      }
+      /* interior rooms on a 6x5 grid */
+      for (var rxi = 0; rxi < 4; rxi++) for (var rzi = 0; rzi < 4; rzi++) {
+        var rx0 = x0 + 1 + rxi * 6, rz0 = z0 + 1 + rzi * 5;
+        var rx1 = Math.min(x1 - 1, rx0 + 5), rz1 = Math.min(z1 - 1, rz0 + 4);
+        sbFill(rx0, fy, rz0, rx1, fy + 4, rz1, 0);
+        sbFrame(rx0, fy, rz0, rx1, fy + 4, rz1, P);
+        /* a doorway per room */
+        sbFill(rx0 + 2, fy, rz0, rx0 + 3, fy + 1, rz0, 0);
+        var roll = rng();
+        if (roll < 0.18) {           /* bedroom */
+          sbSet(rx0 + 1, fy, rz1 - 1, BID.red_bed === undefined ? BID.red_wool : BID.red_bed);
+          sbSet(rx0 + 2, fy, rz1 - 1, BID.red_wool);
+          sbChest(rx1 - 1, fy, rz0 + 1, 'mansion', 0);
+        } else if (roll < 0.30) {    /* library */
+          sbFill(rx0 + 1, fy, rz1 - 1, rx1 - 1, fy + 2, rz1 - 1, BID.bookshelf);
+          sbSet(rx0 + 1, fy, rz0 + 1, BID.lectern);
+        } else if (roll < 0.40) {    /* altar */
+          sbFill(rx0 + 2, fy, rz0 + 2, rx0 + 3, fy, rz0 + 2, BID.red_carpet === undefined ? BID.red_wool : BID.red_carpet);
+          sbSet(rx0 + 2, fy, rz0 + 3, BID.dark_oak_stairs);
+        } else if (roll < 0.5) {     /* storage */
+          sbChest(rx0 + 1, fy, rz0 + 1, 'mansion', 0);
+          sbSet(rx0 + 2, fy, rz0 + 1, BID.barrel);
+        }
+        sbSet(rx0 + 1, fy + 3, rz0 + 1, BID.torch);
+        if (rng() < 0.35) sbMob(rx0 + 2, fy + 1, rz0 + 2, rng() < 0.5 ? 'vindicator' : 'evoker');
+      }
+      /* stairwell */
+      sbFill(x + 1, fy, z, x + 3, fy + 4, z + 2, 0);
+      sbFill(x + 1, fy, z, x + 1, fy + 5, z, BID.ladder);
+    }
+    /* grand entrance and roof */
+    sbFill(x - 1, y + 1, z0, x + 1, y + 3, z0, 0);
+    sbFill(x - 2, y + 1, z0 - 2, x + 2, y + 1, z0 - 1, BID.cobblestone_slab);
+    var ry = y + 19;
+    sbFill(x0 - 1, ry, z0 - 1, x1 + 1, ry, z1 + 1, P);
+    sbFrame(x0 - 1, ry + 1, z0 - 1, x1 + 1, ry + 2, z1 + 1, BID.dark_oak_fence);
+    for (var t = x0; t <= x1; t += 6) { sbFill(t, ry + 1, z0 - 1, t, ry + 3, z0 - 1, L); sbFill(t, ry + 1, z1 + 1, t, ry + 3, z1 + 1, L); }
+    sbMob(x, y + 2, z + 2, 'vindicator');
+    sbMob(x + 3, y + 2, z + 2, 'evoker');
+  }
+});
+
+/* ====================== MINESHAFT ======================================= */
+defStruct({
+  name: 'mineshaft', salt: 0x1f3c, spacing: 16, separation: 5, radius: 40, chance: 0.5,
+  needLand: false,
+  build: function (x, y, z, rng, pos) {
+    var top = Math.min(pos.y - 8, SEA - 4);
+    var by = clamp(14 + Math.floor(rng() * 34), 12, Math.max(14, top));
+    var P = BID.oak_planks, F = BID.oak_fence, L = BID.oak_log, R = BID.rail;
+    /* a few long corridors radiating from the hub, each with side branches */
+    var arms = 3 + Math.floor(rng() * 3);
+    for (var a = 0; a < arms; a++) {
+      var ang = rng() * Math.PI * 2;
+      var dx = Math.abs(Math.cos(ang)) > Math.abs(Math.sin(ang)) ? (Math.cos(ang) > 0 ? 1 : -1) : 0;
+      var dz = dx === 0 ? (Math.sin(ang) > 0 ? 1 : -1) : 0;
+      var len = 24 + Math.floor(rng() * 34);
+      var cy = by;
+      for (var t = 0; t < len; t++) {
+        var px = x + dx * t, pz = z + dz * t;
+        if (t % 14 === 13) cy += rng() < 0.5 ? -1 : 1;
+        sbFill(px - (dz ? 1 : 0), cy, pz - (dx ? 1 : 0), px + (dz ? 1 : 0), cy + 2, pz + (dx ? 1 : 0), 0);
+        sbFill(px - (dz ? 1 : 0), cy - 1, pz - (dx ? 1 : 0), px + (dz ? 1 : 0), cy - 1, pz + (dx ? 1 : 0), BID.oak_planks);
+        if (t % 5 === 0) {
+          /* support frame */
+          sbFill(px - (dz ? 1 : 0), cy, pz - (dx ? 1 : 0), px - (dz ? 1 : 0), cy + 1, pz - (dx ? 1 : 0), F);
+          sbFill(px + (dz ? 1 : 0), cy, pz + (dx ? 1 : 0), px + (dz ? 1 : 0), cy + 1, pz + (dx ? 1 : 0), F);
+          sbFill(px - (dz ? 1 : 0), cy + 2, pz - (dx ? 1 : 0), px + (dz ? 1 : 0), cy + 2, pz + (dx ? 1 : 0), L);
+          if (rng() < 0.35) sbSet(px, cy + 2, pz, BID.torch);
+        }
+        if (rng() < 0.6) sbSet(px, cy, pz, R);
+        if (rng() < 0.05) sbSet(px, cy, pz, BID.cobweb === undefined ? 0 : BID.cobweb);
+        if (rng() < 0.035) { sbSpawner(px, cy, pz, 'cave_spider'); sbFill(px - 2, cy - 1, pz - 2, px + 2, cy + 2, pz + 2, 0); }
+        if (rng() < 0.03) sbChest(px + (dz ? 1 : 0), cy, pz + (dx ? 1 : 0), 'mineshaft', 0);
+        /* side branch */
+        if (t > 6 && rng() < 0.06) {
+          var sdx = dz, sdz = dx, sl = 6 + Math.floor(rng() * 12), sgn = rng() < 0.5 ? 1 : -1;
+          for (var s = 1; s < sl; s++) {
+            var sx = px + sdx * s * sgn, sz = pz + sdz * s * sgn;
+            sbFill(sx - (sdz ? 1 : 0), cy, sz - (sdx ? 1 : 0), sx + (sdz ? 1 : 0), cy + 2, sz + (sdx ? 1 : 0), 0);
+            if (s % 5 === 0) sbFill(sx, cy + 2, sz, sx, cy + 2, sz, L);
+            if (rng() < 0.04) sbChest(sx, cy, sz, 'mineshaft', 0);
+          }
+        }
+      }
+    }
+    /* the hub room */
+    sbFill(x - 3, by, z - 3, x + 3, by + 3, z + 3, 0);
+    sbFill(x - 3, by - 1, z - 3, x + 3, by - 1, z + 3, P);
+    sbFill(x - 3, by, z - 3, x - 3, by + 2, z - 3, L);
+    sbFill(x + 3, by, z + 3, x + 3, by + 2, z + 3, L);
+    sbSet(x, by + 3, z, BID.torch);
+    sbChest(x + 2, by, z + 2, 'mineshaft', 0);
+  }
+});
+
+/* ====================== DUNGEON ========================================= */
+defStruct({
+  name: 'dungeon', salt: 0x3c7b, spacing: 8, separation: 3, radius: 6, chance: 0.14,
+  needLand: false,
+  build: function (x, y, z, rng, pos) {
+    var by = 8 + Math.floor(rng() * Math.max(8, Math.min(70, pos.y - 12)));
+    var w = 3 + Math.floor(rng() * 2), d = 3 + Math.floor(rng() * 2);
+    sbFill(x - w, by, z - d, x + w, by + 3, z + d, 0);
+    for (var fx = -w; fx <= w; fx++) for (var fz = -d; fz <= d; fz++) {
+      sbSet(x + fx, by - 1, z + fz, rng() < 0.35 ? BID.mossy_cobblestone : BID.cobblestone);
+    }
+    sbFrame(x - w, by, z - d, x + w, by + 3, z + d, BID.cobblestone);
+    sbFill(x - w, by + 4, z - d, x + w, by + 4, z + d, BID.cobblestone);
+    var mobs = ['zombie', 'skeleton', 'spider'];
+    sbSpawner(x, by, z, mobs[Math.floor(rng() * 3) % 3]);
+    sbChest(x - w + 1, by, z - d + 1, 'dungeon', 0);
+    if (rng() < 0.5) sbChest(x + w - 1, by, z + d - 1, 'dungeon', 0);
+  }
+});
+
+/* ====================== STRONGHOLD ====================================== */
+defStruct({
+  name: 'stronghold', salt: 0xa17e, spacing: 72, separation: 22, radius: 46, chance: 0.55,
+  needLand: false,
+  build: function (x, y, z, rng, pos) {
+    var by = clamp(12 + Math.floor(rng() * 22), 10, Math.max(14, pos.y - 24));
+    var SB2 = BID.stone_bricks, MO = BID.mossy_stone_bricks, CR = BID.cracked_stone_bricks;
+    function brick() { var r = rng(); return r < 0.18 ? MO : (r < 0.32 ? CR : SB2); }
+    sbMark(x, z, 'Stronghold');
+    /* central spiral staircase room */
+    sbBox(x - 5, by, z - 5, x + 5, by + 10, z + 5, SB2, 0);
+    for (var s = 0; s < 20; s++) {
+      var ang = s * 0.6, r = 3;
+      sbSet(Math.round(x + Math.cos(ang) * r), by + Math.floor(s / 2), Math.round(z + Math.sin(ang) * r), SB2);
+    }
+    /* corridors to five rooms */
+    var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (var a = 0; a < 4; a++) {
+      var dx = dirs[a][0], dz = dirs[a][1];
+      var len = 18 + Math.floor(rng() * 20);
+      for (var t = 5; t < len; t++) {
+        var px = x + dx * t, pz = z + dz * t;
+        sbFill(px - (dz ? 1 : 0), by, pz - (dx ? 1 : 0), px + (dz ? 1 : 0), by + 3, pz + (dx ? 1 : 0), 0);
+        sbFill(px - (dz ? 2 : 0), by - 1, pz - (dx ? 2 : 0), px + (dz ? 2 : 0), by - 1, pz + (dx ? 2 : 0), brick());
+        sbFill(px - (dz ? 2 : 0), by + 4, pz - (dx ? 2 : 0), px + (dz ? 2 : 0), by + 4, pz + (dx ? 2 : 0), brick());
+        sbFill(px - (dz ? 2 : 0), by, pz - (dx ? 2 : 0), px - (dz ? 2 : 0), by + 3, pz - (dx ? 2 : 0), brick());
+        sbFill(px + (dz ? 2 : 0), by, pz + (dx ? 2 : 0), px + (dz ? 2 : 0), by + 3, pz + (dx ? 2 : 0), brick());
+        if (t % 7 === 0) sbSet(px, by + 3, pz, BID.torch);
+        if (rng() < 0.02) sbSpawner(px, by, pz, 'silverfish');
+      }
+      var rx = x + dx * len, rz = z + dz * len;
+      var roll = rng();
+      if (a === 0) {
+        /* the portal room */
+        sbBox(rx - 6, by - 1, rz - 6, rx + 6, by + 8, rz + 6, SB2, 0);
+        sbFill(rx - 5, by, rz - 5, rx + 5, by, rz + 5, brick());
+        sbFill(rx - 2, by - 1, rz - 2, rx + 2, by - 1, rz + 2, BID.lava);
+        for (var i = -2; i <= 2; i++) {
+          sbSet(rx + i, by, rz - 2, bpack(BID.end_portal_frame, 0));
+          sbSet(rx + i, by, rz + 2, bpack(BID.end_portal_frame, 2));
+          sbSet(rx - 2, by, rz + i, bpack(BID.end_portal_frame, 1));
+          sbSet(rx + 2, by, rz + i, bpack(BID.end_portal_frame, 3));
+        }
+        sbFill(rx - 1, by, rz - 1, rx + 1, by, rz + 1, 0);
+        sbFill(rx - 4, by + 1, rz - 4, rx - 4, by + 3, rz - 4, BID.stone_bricks_stairs);
+        sbSpawner(rx + 4, by + 1, rz + 4, 'silverfish');
+        sbMark(rx, rz, 'End Portal');
+      } else if (roll < 0.4) {
+        /* library */
+        sbBox(rx - 6, by - 1, rz - 6, rx + 6, by + 9, rz + 6, SB2, 0);
+        for (var sh = -4; sh <= 4; sh += 4) {
+          sbFill(rx + sh, by, rz - 5, rx + sh, by + 3, rz + 5, BID.bookshelf);
+        }
+        sbFill(rx - 5, by + 5, rz - 5, rx + 5, by + 5, rz + 5, BID.oak_planks);
+        sbFill(rx - 1, by + 5, rz - 1, rx + 1, by + 5, rz + 1, 0);
+        sbChest(rx + 5, by, rz + 5, 'stronghold_library', 0);
+        sbChest(rx - 5, by + 6, rz - 5, 'stronghold_library', 0);
+        sbSet(rx, by + 4, rz, BID.torch);
+      } else if (roll < 0.7) {
+        /* storeroom */
+        sbBox(rx - 4, by - 1, rz - 4, rx + 4, by + 5, rz + 4, SB2, 0);
+        sbChest(rx, by, rz, 'stronghold_corridor', 0);
+        sbFill(rx - 3, by, rz - 3, rx - 3, by + 2, rz - 3, BID.iron_bars);
+      } else {
+        /* prison cells */
+        sbBox(rx - 5, by - 1, rz - 4, rx + 5, by + 5, rz + 4, SB2, 0);
+        for (var c = -4; c <= 4; c += 4) {
+          sbFill(rx + c, by, rz - 3, rx + c, by + 3, rz + 3, BID.iron_bars);
+          sbFill(rx + c, by + 1, rz, rx + c, by + 2, rz, 0);
+        }
+        sbSpawner(rx, by, rz + 3, 'zombie');
+      }
+    }
+  }
+});
+
+/* ====================== ANCIENT CITY ==================================== */
+defStruct({
+  name: 'ancient_city', salt: 0xcc19, spacing: 80, separation: 26, radius: 40, chance: 0.5,
+  needLand: false,
+  build: function (x, y, z, rng) {
+    var by = 10;
+    var D = BID.deepslate_bricks, T = BID.deepslate_tiles, P = BID.polished_deepslate;
+    var S = BID.sculk, SC = BID.sculk_catalyst, SS = BID.sculk_sensor, SH = BID.sculk_shrieker;
+    sbMark(x, z, 'Ancient City');
+    /* clear the cavern */
+    for (var cx2 = -32; cx2 <= 32; cx2 += 1) {
+      var lx = x + cx2;
+      if (lx < SB.bx - 1 || lx > SB.bx + 16) continue;
+      for (var cz2 = -32; cz2 <= 32; cz2++) {
+        var lz = z + cz2;
+        var d = Math.sqrt(cx2 * cx2 + cz2 * cz2);
+        if (d > 32) continue;
+        var h = Math.round(18 - d * 0.28);
+        sbFill(lx, by, lz, lx, by + h, lz, 0);
+        sbSet(lx, by - 1, lz, d < 26 ? (rng() < 0.5 ? D : T) : BID.deepslate);
+        if (rng() < 0.10) sbSet(lx, by, lz, S);
+      }
+    }
+    /* the central sanctuary */
+    sbFill(x - 10, by, z - 10, x + 10, by, z + 10, T);
+    sbBox(x - 8, by, z - 8, x + 8, by + 10, z + 8, D, 0);
+    for (var i = -8; i <= 8; i += 4) {
+      sbFill(x + i, by + 1, z - 8, x + i, by + 9, z - 8, P);
+      sbFill(x + i, by + 1, z + 8, x + i, by + 9, z + 8, P);
+    }
+    sbFill(x - 2, by + 1, z - 2, x + 2, by + 3, z + 2, 0);
+    sbFill(x - 1, by + 1, z - 1, x + 1, by + 1, z + 1, BID.reinforced_deepslate === undefined ? P : BID.reinforced_deepslate);
+    sbSet(x, by + 1, z, SC);
+    /* the frame that once held something */
+    for (var f = -3; f <= 3; f++) { sbSet(x + f, by + 6, z, D); sbSet(x, by + 6, z + f, D); }
+    /* outlying structures and the redstone-lit ruins */
+    for (var b = 0; b < 12; b++) {
+      var ang = rng() * Math.PI * 2, r = 12 + rng() * 18;
+      var bx2 = Math.round(x + Math.cos(ang) * r), bz2 = Math.round(z + Math.sin(ang) * r);
+      var w = 3 + Math.floor(rng() * 4), h2 = 4 + Math.floor(rng() * 6);
+      sbBox(bx2 - w, by, bz2 - w, bx2 + w, by + h2, bz2 + w, rng() < 0.5 ? D : T, 0);
+      sbFill(bx2 - w + 1, by + 1, bz2 - w, bx2 - w + 1, by + 2, bz2 - w, 0);
+      if (rng() < 0.6) sbChest(bx2, by + 1, bz2, 'ancient_city', 0);
+      sbSet(bx2 + 1, by + 1, bz2 + 1, SS);
+      if (rng() < 0.5) sbSet(bx2 - 1, by + 1, bz2 - 1, SH);
+      sbSet(bx2, by + h2 - 1, bz2, BID.soul_lantern);
+    }
+    /* sculk veins and shriekers scattered through the floor */
+    for (var s2 = 0; s2 < 220; s2++) {
+      var sx = x + Math.floor(rng() * 60) - 30, sz = z + Math.floor(rng() * 60) - 30;
+      var roll = rng();
+      if (roll < 0.6) sbSet(sx, by, sz, S);
+      else if (roll < 0.75) sbSet(sx, by, sz, SS);
+      else if (roll < 0.85) sbSet(sx, by, sz, SH);
+      else sbSet(sx, by, sz, SC);
+    }
+    sbMob(x, by + 2, z, 'warden');
+  }
+});
+
+/* ====================== NETHER FORTRESS ================================= */
+defStruct({
+  name: 'nether_fortress', salt: 0x4d81, spacing: 24, separation: 8, radius: 44, chance: 0.7,
+  dim: DIM_NETHER, y: 60,
+  build: function (x, y, z, rng) {
+    var NB = BID.nether_bricks, NF = BID.nether_bricks_wall, NS = BID.nether_bricks_stairs;
+    var by = 42 + Math.floor(rng() * 24);
+    sbMark(x, z, 'Nether Fortress');
+    /* bridges */
+    for (var a = 0; a < 4; a++) {
+      var dx = a < 2 ? (a === 0 ? 1 : -1) : 0, dz = a < 2 ? 0 : (a === 2 ? 1 : -1);
+      var len = 30 + Math.floor(rng() * 24);
+      for (var t = 0; t < len; t++) {
+        var px = x + dx * t, pz = z + dz * t;
+        sbFill(px - (dz ? 2 : 0), by, pz - (dx ? 2 : 0), px + (dz ? 2 : 0), by, pz + (dx ? 2 : 0), NB);
+        sbFill(px - (dz ? 2 : 0), by + 1, pz - (dx ? 2 : 0), px - (dz ? 2 : 0), by + 1, pz - (dx ? 2 : 0), NF);
+        sbFill(px + (dz ? 2 : 0), by + 1, pz + (dx ? 2 : 0), px + (dz ? 2 : 0), by + 1, pz + (dx ? 2 : 0), NF);
+        sbFill(px - (dz ? 1 : 0), by + 1, pz - (dx ? 1 : 0), px + (dz ? 1 : 0), by + 4, pz + (dx ? 1 : 0), 0);
+        if (t % 8 === 4) {
+          sbFill(px - (dz ? 2 : 0), by - 1, pz - (dx ? 2 : 0), px - (dz ? 2 : 0), by - 8, pz - (dx ? 2 : 0), NB);
+          sbFill(px + (dz ? 2 : 0), by - 1, pz + (dx ? 2 : 0), px + (dz ? 2 : 0), by - 8, pz + (dx ? 2 : 0), NB);
+        }
+        if (rng() < 0.03) sbMob(px, by + 1, pz, 'blaze');
+        if (rng() < 0.04) sbMob(px, by + 1, pz, 'wither_skeleton');
+      }
+      /* a tower where the bridge ends */
+      var ex = x + dx * len, ez = z + dz * len;
+      sbBox(ex - 4, by, ez - 4, ex + 4, by + 12, ez + 4, NB, 0);
+      sbFill(ex - 3, by + 1, ez - 3, ex + 3, by + 11, ez + 3, 0);
+      sbFrame(ex - 4, by + 13, ez - 4, ex + 4, by + 14, ez + 4, NF);
+      sbSet(ex, by + 1, ez, BID.nether_wart);
+      sbFill(ex - 1, by, ez - 1, ex + 1, by, ez + 1, BID.soul_sand);
+      sbFill(ex - 1, by + 1, ez - 1, ex + 1, by + 1, ez + 1, BID.nether_wart);
+      sbChest(ex + 3, by + 1, ez + 3, 'nether_fortress', 0);
+      if (rng() < 0.6) { sbSpawner(ex, by + 5, ez, 'blaze'); sbFill(ex - 2, by + 4, ez - 2, ex + 2, by + 7, ez + 2, 0); }
+    }
+    /* the central keep */
+    sbBox(x - 6, by - 1, z - 6, x + 6, by + 10, z + 6, NB, 0);
+    sbFill(x - 5, by, z - 5, x + 5, by + 9, z + 5, 0);
+    sbFill(x - 5, by - 1, z - 5, x + 5, by - 1, z + 5, NB);
+    for (var q = -5; q <= 5; q += 5) {
+      sbFill(x + q, by, z - 5, x + q, by + 9, z - 5, BID.red_nether_bricks);
+      sbFill(x + q, by, z + 5, x + q, by + 9, z + 5, BID.red_nether_bricks);
+    }
+    sbFill(x - 2, by, z - 2, x + 2, by, z + 2, BID.soul_sand);
+    sbFill(x - 2, by + 1, z - 2, x + 2, by + 1, z + 2, BID.nether_wart);
+    sbChest(x, by + 1, z + 4, 'nether_fortress', 0);
+    sbMob(x, by + 1, z, 'wither_skeleton');
+    sbMob(x + 2, by + 1, z + 2, 'wither_skeleton');
+    sbMob(x - 2, by + 1, z - 2, 'blaze');
+  }
+});
+
+/* ====================== BASTION ========================================= */
+defStruct({
+  name: 'bastion', salt: 0x7b2e, spacing: 30, separation: 12, radius: 26, chance: 0.5,
+  dim: DIM_NETHER, y: 60,
+  build: function (x, y, z, rng) {
+    var B = BID.blackstone, PB = BID.polished_blackstone, BB = BID.polished_blackstone_bricks;
+    var G = BID.gilded_blackstone === undefined ? BID.gold_block : BID.gilded_blackstone;
+    var by = 48 + Math.floor(rng() * 18);
+    sbMark(x, z, 'Bastion Remnant');
+    /* massive plinth */
+    sbFill(x - 20, by - 6, z - 20, x + 20, by, z + 20, B);
+    sbFill(x - 17, by + 1, z - 17, x + 17, by + 1, z + 17, BB);
+    /* four corner towers */
+    for (var a = -1; a <= 1; a += 2) for (var b = -1; b <= 1; b += 2) {
+      var tx = x + a * 14, tz = z + b * 14;
+      sbBox(tx - 5, by + 1, tz - 5, tx + 5, by + 18, tz + 5, BB, 0);
+      sbFill(tx - 4, by + 2, tz - 4, tx + 4, by + 17, tz + 4, 0);
+      sbFrame(tx - 6, by + 19, tz - 6, tx + 6, by + 20, tz + 6, PB);
+      sbChest(tx, by + 2, tz, 'bastion', 0);
+      sbSet(tx + 2, by + 2, tz + 2, G);
+      sbMob(tx, by + 3, tz, 'piglin_brute');
+      sbMob(tx + 2, by + 3, tz, 'piglin');
+    }
+    /* the central bridge and treasure */
+    sbFill(x - 3, by + 8, z - 17, x + 3, by + 8, z + 17, BB);
+    sbFrame(x - 3, by + 9, z - 17, x + 3, by + 10, z + 17, PB);
+    sbBox(x - 6, by + 8, z - 6, x + 6, by + 16, z + 6, BB, 0);
+    sbFill(x - 5, by + 9, z - 5, x + 5, by + 15, z + 5, 0);
+    sbFill(x - 2, by + 9, z - 2, x + 2, by + 9, z + 2, G);
+    sbChest(x, by + 10, z, 'bastion_treasure', 0);
+    /* lava moat and ruined edges */
+    for (var i = 0; i < 200; i++) {
+      var rx = x + Math.floor(rng() * 44) - 22, rz = z + Math.floor(rng() * 44) - 22;
+      var ry = by + Math.floor(rng() * 20);
+      if (rng() < 0.3) sbSet(rx, ry, rz, 0);
+      else if (rng() < 0.2) sbSet(rx, ry, rz, B);
+      else if (rng() < 0.05) sbSet(rx, ry, rz, BID.magma_block);
+    }
+    sbMob(x, by + 10, z + 3, 'piglin');
+    sbMob(x + 2, by + 10, z - 3, 'hoglin');
+  }
+});
+
+/* ====================== END CITY ======================================== */
+defStruct({
+  name: 'end_city', salt: 0x2ad4, spacing: 20, separation: 8, radius: 26, chance: 0.5,
+  dim: DIM_END, y: 60,
+  build: function (x, y, z, rng) {
+    /* only out on the far islands */
+    var d = Math.sqrt(x * x + z * z);
+    if (d < 900) return;
+    var by = 0;
+    for (var probe = 90; probe > 20; probe--) {
+      var id = sbGet(x, probe, z);
+      if (id > 0) { by = probe + 1; break; }
+      if (id === -1) { by = 62; break; }
+    }
+    if (!by) return;
+    sbMark(x, z, 'End City');
+    var P = BID.purpur_block, PP = BID.purpur_pillar, ES = BID.end_stone_bricks, PS = BID.purpur_stairs;
+    var levels = 3 + Math.floor(rng() * 4);
+    var cy = by;
+    for (var l = 0; l < levels; l++) {
+      var r = 6 - Math.floor(l / 2);
+      sbFill(x - r, cy, z - r, x + r, cy, z + r, ES);
+      sbBox(x - r, cy, z - r, x + r, cy + 7, z + r, P, 0);
+      sbFill(x - r + 1, cy + 1, z - r + 1, x + r - 1, cy + 6, z + r - 1, 0);
+      for (var c = -r; c <= r; c += r * 2) for (var e = -r; e <= r; e += r * 2)
+        sbFill(x + c, cy + 1, z + e, x + c, cy + 6, z + e, PP);
+      /* windows */
+      for (var w = -r + 2; w <= r - 2; w += 2) {
+        sbSet(x + w, cy + 3, z - r, BID.purple_stained_glass === undefined ? 0 : BID.purple_stained_glass);
+        sbSet(x + w, cy + 3, z + r, BID.purple_stained_glass === undefined ? 0 : BID.purple_stained_glass);
+      }
+      if (rng() < 0.6) sbChest(x + r - 1, cy + 1, z + r - 1, 'end_city', 0);
+      sbSet(x, cy + 6, z, BID.end_rod);
+      sbMob(x + 1, cy + 1, z + 1, 'shulker');
+      if (rng() < 0.5) sbMob(x - 2, cy + 1, z - 2, 'shulker');
+      cy += 8;
+    }
+    /* the ship, moored alongside */
+    if (rng() < 0.4) {
+      var sx = x + 16, sz = z, sy = by + 12;
+      for (var i = -10; i <= 10; i++) {
+        var half = Math.max(1, 3 - Math.floor(Math.abs(i) / 4));
+        sbFill(sx - half, sy, sz + i, sx + half, sy, sz + i, P);
+        sbFill(sx - half, sy + 1, sz + i, sx - half, sy + 4, sz + i, P);
+        sbFill(sx + half, sy + 1, sz + i, sx + half, sy + 4, sz + i, P);
+      }
+      sbFill(sx - 2, sy + 5, sz - 6, sx + 2, sy + 5, sz + 6, P);
+      sbFill(sx, sy + 6, sz - 2, sx, sy + 14, sz - 2, PP);
+      sbChest(sx, sy + 1, sz - 8, 'end_ship', 0);
+      sbChest(sx, sy + 1, sz + 8, 'end_ship', 0);
+      sbSet(sx, sy + 6, sz + 8, PP);
+      sbMob(sx, sy + 2, sz, 'shulker');
+      sbMob(sx + 2, sy + 6, sz + 4, 'shulker');
+    }
+  }
+});
+
+/* ====================== FOSSILS ========================================= */
+defStruct({
+  name: 'fossil', salt: 0x5511, spacing: 16, separation: 6, radius: 8, chance: 0.10,
+  needLand: false,
+  biomes: ['desert', 'swamp', 'badlands', 'wooded_badlands', 'eroded_badlands', 'mangrove_swamp'],
+  build: function (x, y, z, rng, pos) {
+    var by = clamp(28 + Math.floor(rng() * 32), 20, Math.max(24, pos.y - 8));
+    var B = rng() < 0.75 ? BID.bone_block : BID.coal_ore;
+    /* a spine with ribs */
+    var len = 9 + Math.floor(rng() * 6);
+    var horiz = rng() < 0.5;
+    for (var t = 0; t < len; t++) {
+      var px = horiz ? x + t : x, pz = horiz ? z : z + t;
+      sbSet(px, by, pz, B);
+      if (t % 2 === 0 && t > 1 && t < len - 1) {
+        for (var r = 1; r <= 3; r++) {
+          if (horiz) { sbSet(px, by + r, pz - r); sbSet(px, by + r, pz + r); }
+          else { sbSet(px - r, by + r, pz); sbSet(px + r, by + r, pz); }
+        }
+      }
+    }
+    /* skull */
+    sbFill(horiz ? x - 2 : x - 1, by, horiz ? z - 1 : z - 2, horiz ? x : x + 1, by + 2, horiz ? z + 1 : z, B);
+  }
+});
 
 /* ---- worker glue: message pump for the terrain generation worker ---- */
 self.onmessage = function (e) {
@@ -4743,6 +5897,15 @@ function sampleDensity(x, y, z) {
   var c0 = c00 + (c10 - c00) * ty, c1 = c01 + (c11 - c01) * ty;
   return c0 + (c1 - c0) * tz;
 }
+
+/* The lattice is sampled every 4 blocks horizontally, which on its own turns
+   hillsides into rice terraces.  Correcting each column by the difference
+   between its full-resolution height and the interpolated lattice height
+   makes the surface follow the real height field for free. */
+function densityAt(x, y, z, colH) {
+  var lat = bilinLat(_latH, x / GX, z / GZ);
+  return sampleDensity(x, y, z) + (colH - lat) * 0.30;
+}
 function sampleCave(x, y, z) {
   var fy = y / CG;
   var y0 = fy | 0;
@@ -4812,7 +5975,7 @@ function genOverworld(cx, cz, sections, out) {
         if (y <= 2) {
           v = (y === 0 || rand3(wx, y, wz, 77) < (0.75 - y * 0.25)) ? ID.bedrock : idStone;
         } else {
-          var d = sampleDensity(x, y, z);
+          var d = densityAt(x, y, z, colH);
           if (d > 0) {
             var cavev = sampleCave(x, y, z);
             if (cavev > 0) {
@@ -5762,6 +6925,20 @@ function chorusPlant(sections, x, y, z, rng) {
 }
 
 /* ============================ ENTRY POINT =============================== */
+/* Recompute the top solid block per column after structures have edited it. */
+function rebuildHeights(sections, heights) {
+  for (var z = 0; z < CH_W; z++) for (var x = 0; x < CH_W; x++) {
+    var ci = z * CH_W + x;
+    var start = Math.min(CH_H - 1, (heights[ci] || 0) + 40);
+    var y = start;
+    for (; y >= 0; y--) {
+      var id = getBlockRaw(sections, x, y, z) & ID_MASK;
+      if (id !== 0 && id !== BID.water) break;
+    }
+    heights[ci] = y < 0 ? 0 : y;
+  }
+}
+
 WorldGen.generateColumn = function (dim, cx, cz) {
   _latCache = {};
   var sections = new Array(N_SECT);
@@ -5773,7 +6950,11 @@ WorldGen.generateColumn = function (dim, cx, cz) {
     genOverworld(cx, cz, sections, out);
     decorate(cx, cz, sections, out.heights);
   }
-  if (WorldGen.structurePass) WorldGen.structurePass(dim, cx, cz, sections, out);
+  if (WorldGen.structurePass) {
+    WorldGen.structurePass(dim, cx, cz, sections, out);
+    /* structures carve and build, so the surface map has to be redone */
+    rebuildHeights(sections, out.heights);
+  }
 
   var biomes = new Uint8Array(CH_AREA);
   biomes.set(_bioCol);
@@ -5795,6 +6976,1133 @@ WorldGen.generateColumn = function (dim, cx, cz) {
     nonEmpty: nonEmpty, structures: out.structures, transfer: transfer
   };
 };
+
+
+/* ============================ 05_s_structures.js ============================ */
+/* =========================================================================
+ * STRUCTURES
+ *
+ * Every structure is placed on its own sparse grid: the world is cut into
+ * regions of N chunks, one candidate chunk is drawn deterministically from
+ * each region, and a structure exists there if the biome and terrain agree.
+ * Generation is then done per chunk — a builder clips every write to the
+ * chunk currently being generated — so a structure spanning many chunks
+ * comes out identical no matter which chunk is generated first.
+ * ========================================================================= */
+
+var SB = {                       /* the clipping builder */
+  sections: null, cx: 0, cz: 0, bx: 0, bz: 0, out: null, rng: null
+};
+function sbBegin(sections, cx, cz, out) {
+  SB.sections = sections; SB.cx = cx; SB.cz = cz;
+  SB.bx = cx * CH_W; SB.bz = cz * CH_W; SB.out = out;
+}
+function sbSet(wx, wy, wz, v) {
+  if (wy < 1 || wy >= CH_H) return;
+  var lx = wx - SB.bx, lz = wz - SB.bz;
+  if (lx < 0 || lx > 15 || lz < 0 || lz > 15) return;
+  setBlockRaw(SB.sections, lx, wy, lz, v);
+}
+function sbGet(wx, wy, wz) {
+  if (wy < 0 || wy >= CH_H) return 0;
+  var lx = wx - SB.bx, lz = wz - SB.bz;
+  if (lx < 0 || lx > 15 || lz < 0 || lz > 15) return -1;   /* outside: unknown */
+  return getBlockRaw(SB.sections, lx, wy, lz) & ID_MASK;
+}
+function sbFill(x0, y0, z0, x1, y1, z1, v) {
+  if (x0 > x1) { var t = x0; x0 = x1; x1 = t; }
+  if (y0 > y1) { var t2 = y0; y0 = y1; y1 = t2; }
+  if (z0 > z1) { var t3 = z0; z0 = z1; z1 = t3; }
+  /* clip to the chunk before looping, so a 60-block hall costs nothing in
+     the 55 chunks it does not touch */
+  var lx0 = Math.max(x0, SB.bx), lx1 = Math.min(x1, SB.bx + 15);
+  var lz0 = Math.max(z0, SB.bz), lz1 = Math.min(z1, SB.bz + 15);
+  if (lx0 > lx1 || lz0 > lz1) return;
+  var ly0 = Math.max(1, y0), ly1 = Math.min(CH_H - 1, y1);
+  for (var y = ly0; y <= ly1; y++)
+    for (var z = lz0; z <= lz1; z++)
+      for (var x = lx0; x <= lx1; x++)
+        setBlockRaw(SB.sections, x - SB.bx, y, z - SB.bz, v);
+}
+/* hollow box: walls of `wall`, interior of `inner` (0 = air) */
+function sbBox(x0, y0, z0, x1, y1, z1, wall, inner) {
+  sbFill(x0, y0, z0, x1, y1, z1, wall);
+  if (x1 - x0 > 1 && y1 - y0 > 1 && z1 - z0 > 1)
+    sbFill(x0 + 1, y0 + 1, z0 + 1, x1 - 1, y1 - 1, z1 - 1, inner || 0);
+}
+function sbFrame(x0, y0, z0, x1, y1, z1, v) {   /* walls only, open top/bottom */
+  sbFill(x0, y0, z0, x1, y1, z0, v);
+  sbFill(x0, y0, z1, x1, y1, z1, v);
+  sbFill(x0, y0, z0, x0, y1, z1, v);
+  sbFill(x1, y0, z0, x1, y1, z1, v);
+}
+function sbChest(wx, wy, wz, loot, facing) {
+  sbSet(wx, wy, wz, bpack(BID.chest, facing === undefined ? 0 : facing));
+  var lx = wx - SB.bx, lz = wz - SB.bz;
+  if (lx < 0 || lx > 15 || lz < 0 || lz > 15) return;
+  SB.out.structures = SB.out.structures || [];
+  SB.out.structures.push({ t: 'chest', x: wx, y: wy, z: wz, loot: loot });
+}
+function sbSpawner(wx, wy, wz, mob) {
+  sbSet(wx, wy, wz, BID.spawner);
+  var lx = wx - SB.bx, lz = wz - SB.bz;
+  if (lx < 0 || lx > 15 || lz < 0 || lz > 15) return;
+  SB.out.structures = SB.out.structures || [];
+  SB.out.structures.push({ t: 'spawner', x: wx, y: wy, z: wz, mob: mob });
+}
+function sbMob(wx, wy, wz, mob) {
+  var lx = wx - SB.bx, lz = wz - SB.bz;
+  if (lx < 0 || lx > 15 || lz < 0 || lz > 15) return;
+  SB.out.structures = SB.out.structures || [];
+  SB.out.structures.push({ t: 'mob', x: wx, y: wy, z: wz, mob: mob });
+}
+function sbMark(wx, wz, name) {
+  var lx = wx - SB.bx, lz = wz - SB.bz;
+  if (lx < 0 || lx > 15 || lz < 0 || lz > 15) return;
+  SB.out.structures = SB.out.structures || [];
+  SB.out.structures.push({ t: 'mark', x: wx, z: wz, name: name });
+}
+
+/* ------------------------------------------------------- placement ---- */
+var STRUCT_DEFS = [];
+function defStruct(o) { STRUCT_DEFS.push(o); return o; }
+
+function structRegionPos(def, rx, rz, salt) {
+  var rng = makeRNG(hash2(rx, rz, (def.salt + salt) >>> 0) >>> 0);
+  var span = def.spacing - def.separation;
+  var cx = rx * def.spacing + Math.floor(rng() * span);
+  var cz = rz * def.spacing + Math.floor(rng() * span);
+  return { cx: cx, cz: cz, rng: rng };
+}
+
+/* Does this structure exist at that candidate chunk?  Biome and terrain are
+   sampled at the centre only, which is how the real game does it too. */
+function structValid(def, pos) {
+  var wx = pos.cx * 16 + 8, wz = pos.cz * 16 + 8;
+  if (def.dim === undefined || def.dim === DIM_OVERWORLD) {
+    var cl = climateAt(wx, wz);
+    var h = heightFrom(wx, wz, cl);
+    var bio = BIOMES[pickBiome(wx, wz, h, cl)];
+    if (def.biomes && def.biomes.indexOf(bio.name) < 0) return false;
+    if (def.notBiomes && def.notBiomes.indexOf(bio.name) >= 0) return false;
+    if (def.ocean) { if (h > SEA - 12) return false; }
+    else if (def.needLand !== false && h < SEA + 1) return false;
+    if (def.maxSlope !== undefined) {
+      var h2 = heightFrom(wx + 12, wz + 12, climateAt(wx + 12, wz + 12));
+      var h3 = heightFrom(wx - 12, wz - 12, climateAt(wx - 12, wz - 12));
+      if (Math.abs(h2 - h) > def.maxSlope || Math.abs(h3 - h) > def.maxSlope) return false;
+    }
+    pos.y = Math.round(h);
+    pos.biome = bio;
+  } else {
+    pos.y = def.y || 64;
+  }
+  if (def.chance !== undefined && pos.rng() > def.chance) return false;
+  return true;
+}
+
+WorldGen.structurePass = function (dim, cx, cz, sections, out) {
+  sbBegin(sections, cx, cz, out);
+  for (var i = 0; i < STRUCT_DEFS.length; i++) {
+    var def = STRUCT_DEFS[i];
+    if ((def.dim === undefined ? DIM_OVERWORLD : def.dim) !== dim) continue;
+    var reach = Math.ceil(def.radius / 16) + 1;
+    var r0x = Math.floor((cx - reach) / def.spacing), r1x = Math.floor((cx + reach) / def.spacing);
+    var r0z = Math.floor((cz - reach) / def.spacing), r1z = Math.floor((cz + reach) / def.spacing);
+    for (var rx = r0x; rx <= r1x; rx++) for (var rz = r0z; rz <= r1z; rz++) {
+      var pos = structRegionPos(def, rx, rz, 0);
+      if (Math.abs(pos.cx - cx) > reach || Math.abs(pos.cz - cz) > reach) continue;
+      if (!structValid(def, pos)) continue;
+      SB.rng = makeRNG(hash2(pos.cx, pos.cz, (def.salt ^ 0x9e37) >>> 0) >>> 0);
+      def.build(pos.cx * 16 + 8, pos.y, pos.cz * 16 + 8, SB.rng, pos);
+    }
+  }
+};
+
+/* small deterministic helpers used by the builders */
+function pickR(rng, arr) { return arr[Math.floor(rng() * arr.length) % arr.length]; }
+function chanceR(rng, p) { return rng() < p; }
+
+/* ====================== VILLAGE ========================================= */
+var VILLAGE_STYLES = {
+  plains: { planks: 'oak_planks', log: 'oak_log', stairs: 'oak_stairs', slab: 'oak_slab',
+    wall: 'cobblestone', path: 'dirt_path', door: 'oak_door', fence: 'oak_fence',
+    roof: 'oak_stairs', light: 'torch', glass: 'glass_pane' },
+  desert: { planks: 'smooth_sandstone', log: 'cut_sandstone', stairs: 'sandstone_stairs', slab: 'sandstone_slab',
+    wall: 'sandstone', path: 'smooth_sandstone', door: 'acacia_door', fence: 'acacia_fence',
+    roof: 'smooth_sandstone', light: 'torch', glass: 'glass_pane' },
+  savanna: { planks: 'acacia_planks', log: 'acacia_log', stairs: 'acacia_stairs', slab: 'acacia_slab',
+    wall: 'cobblestone', path: 'dirt_path', door: 'acacia_door', fence: 'acacia_fence',
+    roof: 'acacia_stairs', light: 'torch', glass: 'glass_pane' },
+  taiga: { planks: 'spruce_planks', log: 'spruce_log', stairs: 'spruce_stairs', slab: 'spruce_slab',
+    wall: 'cobblestone', path: 'dirt_path', door: 'spruce_door', fence: 'spruce_fence',
+    roof: 'spruce_stairs', light: 'torch', glass: 'glass_pane' },
+  snowy: { planks: 'spruce_planks', log: 'spruce_log', stairs: 'spruce_stairs', slab: 'spruce_slab',
+    wall: 'cobblestone', path: 'dirt_path', door: 'spruce_door', fence: 'spruce_fence',
+    roof: 'spruce_stairs', light: 'torch', glass: 'glass_pane' }
+};
+function styleIds(st) {
+  var o = {};
+  for (var k in st) o[k] = BID[st[k]] === undefined ? BID.oak_planks : BID[st[k]];
+  return o;
+}
+function villageStyleFor(bio) {
+  var n = bio ? bio.name : 'plains';
+  if (n.indexOf('desert') >= 0) return VILLAGE_STYLES.desert;
+  if (n.indexOf('savanna') >= 0) return VILLAGE_STYLES.savanna;
+  if (n.indexOf('snow') >= 0 || n.indexOf('frozen') >= 0 || n === 'grove') return VILLAGE_STYLES.snowy;
+  if (n.indexOf('taiga') >= 0) return VILLAGE_STYLES.taiga;
+  return VILLAGE_STYLES.plains;
+}
+
+function clearAbove(x0, z0, x1, z1, y, h) {
+  sbFill(x0, y, z0, x1, y + h, z1, 0);
+}
+/* drop a foundation down to whatever ground is under the building */
+function foundation(x0, z0, x1, z1, y, mat) {
+  for (var x = Math.max(x0, SB.bx); x <= Math.min(x1, SB.bx + 15); x++)
+    for (var z = Math.max(z0, SB.bz); z <= Math.min(z1, SB.bz + 15); z++) {
+      for (var d = 0; d < 8; d++) {
+        var id = sbGet(x, y - 1 - d, z);
+        if (id !== 0 && id !== BID.water && !BLOCKS[id].liquid) break;
+        sbSet(x, y - 1 - d, z, mat);
+      }
+    }
+}
+
+function buildHouse(x, y, z, w, d, rng, S, kind) {
+  var ids = styleIds(S);
+  var x0 = x - (w >> 1), z0 = z - (d >> 1), x1 = x0 + w - 1, z1 = z0 + d - 1;
+  var wallH = kind === 'tall' ? 5 : 3;
+  clearAbove(x0 - 1, z0 - 1, x1 + 1, z1 + 1, y + 1, wallH + 5);
+  foundation(x0, z0, x1, z1, y, ids.wall);
+  sbFill(x0, y, z0, x1, y, z1, ids.planks);
+  /* walls with corner posts */
+  sbFrame(x0, y + 1, z0, x1, y + wallH, z1, ids.planks);
+  sbFill(x0, y + 1, z0, x0, y + wallH, z0, ids.log);
+  sbFill(x1, y + 1, z0, x1, y + wallH, z0, ids.log);
+  sbFill(x0, y + 1, z1, x0, y + wallH, z1, ids.log);
+  sbFill(x1, y + 1, z1, x1, y + wallH, z1, ids.log);
+  sbFill(x0 + 1, y + 1, z0 + 1, x1 - 1, y + wallH, z1 - 1, 0);
+
+  /* windows */
+  for (var wx2 = x0 + 2; wx2 <= x1 - 2; wx2 += 2) {
+    sbSet(wx2, y + 2, z0, ids.glass);
+    sbSet(wx2, y + 2, z1, ids.glass);
+  }
+  for (var wz2 = z0 + 2; wz2 <= z1 - 2; wz2 += 2) {
+    sbSet(x0, y + 2, wz2, ids.glass);
+    sbSet(x1, y + 2, wz2, ids.glass);
+  }
+  /* door on the -Z wall */
+  var dx = x0 + ((w >> 1));
+  sbSet(dx, y + 1, z0, bpack(ids.door, 0));
+  sbSet(dx, y + 2, z0, bpack(ids.door, 8));
+  sbSet(dx, y, z0 - 1, BID[S.path] === undefined ? BID.dirt_path : BID[S.path]);
+
+  /* pitched roof out of stairs */
+  var span = Math.min(w, d);
+  var layers = Math.ceil(span / 2);
+  for (var r = 0; r < layers; r++) {
+    var ry = y + wallH + 1 + r;
+    var ax0 = x0 - 1 + r, ax1 = x1 + 1 - r, az0 = z0 - 1 + r, az1 = z1 + 1 - r;
+    if (ax0 > ax1 || az0 > az1) break;
+    if (w >= d) {
+      sbFill(ax0, ry, az0, ax1, ry, az0, bpack(ids.roof, 2));       /* facing +Z */
+      sbFill(ax0, ry, az1, ax1, ry, az1, bpack(ids.roof, 0));
+      sbFill(ax0, ry, az0 + 1, ax0, ry, az1 - 1, ids.slab);
+      sbFill(ax1, ry, az0 + 1, ax1, ry, az1 - 1, ids.slab);
+      if (r === layers - 1) sbFill(ax0, ry, az0, ax1, ry, az1, ids.slab);
+      else sbFill(ax0 + 1, ry, az0 + 1, ax1 - 1, ry, az1 - 1, 0);
+    } else {
+      sbFill(ax0, ry, az0, ax0, ry, az1, bpack(ids.roof, 1));
+      sbFill(ax1, ry, az0, ax1, ry, az1, bpack(ids.roof, 3));
+      if (r === layers - 1) sbFill(ax0, ry, az0, ax1, ry, az1, ids.slab);
+      else sbFill(ax0 + 1, ry, az0 + 1, ax1 - 1, ry, az1 - 1, 0);
+    }
+  }
+
+  /* furnishings */
+  var lightId = BID[S.light] === undefined ? BID.torch : BID[S.light];
+  sbSet(x0 + 1, y + 3, z0 + 1, lightId);
+  sbSet(x1 - 1, y + 3, z1 - 1, lightId);
+  if (kind === 'house' || kind === 'tall') {
+    sbSet(x0 + 1, y + 1, z1 - 1, BID.red_bed === undefined ? BID.white_wool : BID.red_bed);
+    sbSet(x0 + 2, y + 1, z1 - 1, BID.white_wool);
+    sbChest(x1 - 1, y + 1, z0 + 1, 'village_house', 0);
+    sbSet(x1 - 1, y + 1, z1 - 2, BID.crafting_table);
+  }
+  if (kind === 'smith') {
+    sbSet(x0 + 1, y + 1, z1 - 1, BID.furnace);
+    sbSet(x0 + 2, y + 1, z1 - 1, BID.blast_furnace);
+    sbSet(x0 + 1, y + 1, z1 - 2, BID.smithing_table);
+    sbSet(x1 - 1, y + 1, z1 - 1, BID.anvil);
+    sbChest(x1 - 1, y + 1, z0 + 1, 'village_smith', 0);
+    sbFill(x0 + 2, y + 1, z0 + 1, x0 + 2, y + 1, z0 + 1, BID.lava);
+    sbFill(x0 + 1, y, z0 + 1, x0 + 3, y, z0 + 2, BID.stone_bricks);
+  }
+  if (kind === 'library') {
+    sbFill(x0 + 1, y + 1, z1 - 1, x1 - 1, y + 3, z1 - 1, BID.bookshelf);
+    sbSet(x0 + 1, y + 1, z0 + 1, BID.lectern);
+    sbSet(x1 - 1, y + 1, z0 + 1, BID.cartography_table);
+  }
+  sbMob(x, y + 1, z, 'villager');
+  if (kind === 'house' || kind === 'tall') sbMob(x + 1, y + 1, z, 'villager');
+}
+
+function buildFarm(x, y, z, w, d, rng, S) {
+  var ids = styleIds(S);
+  var x0 = x - (w >> 1), z0 = z - (d >> 1), x1 = x0 + w - 1, z1 = z0 + d - 1;
+  clearAbove(x0, z0, x1, z1, y + 1, 4);
+  foundation(x0, z0, x1, z1, y, BID.dirt);
+  sbFrame(x0, y, z0, x1, y, z1, BID.oak_log);
+  sbFrame(x0, y + 1, z0, x1, y + 1, z1, ids.fence);
+  sbFill(x0 + 1, y, z0 + 1, x1 - 1, y, z1 - 1, BID.farmland);
+  /* an irrigation channel down the middle */
+  var mz = (z0 + z1) >> 1;
+  sbFill(x0 + 1, y, mz, x1 - 1, y, mz, BID.water);
+  var crops = [BID.wheat, BID.carrots, BID.potatoes, BID.beetroots];
+  var crop = crops[Math.floor(rng() * crops.length) % crops.length];
+  if (crop === undefined) crop = BID.wheat;
+  for (var cx2 = x0 + 1; cx2 <= x1 - 1; cx2++)
+    for (var cz2 = z0 + 1; cz2 <= z1 - 1; cz2++) {
+      if (cz2 === mz) continue;
+      sbSet(cx2, y + 1, cz2, bpack(crop, Math.floor(rng() * 8)));
+    }
+  sbSet(x0, y + 2, z0, BID.torch);
+  sbSet(x1, y + 2, z1, BID.torch);
+}
+
+function buildWell(x, y, z, rng, S) {
+  var ids = styleIds(S);
+  clearAbove(x - 3, z - 3, x + 3, z + 3, y + 1, 8);
+  sbFill(x - 2, y, z - 2, x + 2, y, z + 2, ids.wall);
+  sbFill(x - 1, y - 4, z - 1, x + 1, y, z + 1, BID.water);
+  sbFrame(x - 2, y + 1, z - 2, x + 2, y + 1, z + 2, ids.wall);
+  sbFill(x - 1, y + 1, z - 1, x + 1, y + 1, z + 1, BID.water);
+  var posts = [[x - 2, z - 2], [x + 2, z - 2], [x - 2, z + 2], [x + 2, z + 2]];
+  for (var i = 0; i < 4; i++) sbFill(posts[i][0], y + 2, posts[i][1], posts[i][0], y + 4, posts[i][1], ids.log);
+  sbFill(x - 2, y + 5, z - 2, x + 2, y + 5, z + 2, ids.slab);
+  sbSet(x, y + 5, z, ids.planks);
+  sbMob(x + 3, y + 1, z, 'villager');
+  sbMob(x - 3, y + 1, z, 'iron_golem');
+}
+
+defStruct({
+  name: 'village', salt: 0x51a3, spacing: 32, separation: 10, radius: 56, chance: 0.62,
+  maxSlope: 7,
+  biomes: ['plains', 'sunflower_plains', 'meadow', 'savanna', 'savanna_plateau', 'desert',
+    'taiga', 'snowy_plains', 'snowy_taiga', 'old_growth_pine_taiga'],
+  build: function (x, y, z, rng, pos) {
+    var S = villageStyleFor(pos.biome);
+    var ids = styleIds(S);
+    sbMark(x, z, 'Village');
+    buildWell(x, y, z, rng, S);
+    /* roads radiate from the well; buildings sit along them */
+    var arms = 4;
+    for (var a = 0; a < arms; a++) {
+      var ang = a * Math.PI / 2;
+      var dx = Math.round(Math.cos(ang)), dz = Math.round(Math.sin(ang));
+      var len = 16 + Math.floor(rng() * 14);
+      for (var t = 3; t <= len; t++) {
+        var rxp = x + dx * t, rzp = z + dz * t;
+        for (var w2 = -1; w2 <= 1; w2++) {
+          var px = rxp + (dz ? w2 : 0), pz = rzp + (dx ? w2 : 0);
+          var gy = y;
+          sbSet(px, gy, pz, BID[S.path] === undefined ? BID.dirt_path : BID[S.path]);
+          sbFill(px, gy + 1, pz, px, gy + 3, pz, 0);
+        }
+        if (t % 6 === 0 && rng() < 0.8) {
+          var side = rng() < 0.5 ? 1 : -1;
+          var ox = rxp + (dz ? 0 : side * 5), oz = rzp + (dx ? 0 : side * 5);
+          if (!dz) { ox = rxp; oz = rzp + side * 5; }
+          else { ox = rxp + side * 5; oz = rzp; }
+          var roll = rng();
+          if (roll < 0.16) buildFarm(ox, y, oz, 7 + (rng() * 3 | 0) * 2, 7, rng, S);
+          else if (roll < 0.28) buildHouse(ox, y, oz, 7, 7, rng, S, 'smith');
+          else if (roll < 0.40) buildHouse(ox, y, oz, 7, 7, rng, S, 'library');
+          else if (roll < 0.62) buildHouse(ox, y, oz, 7, 9, rng, S, 'tall');
+          else buildHouse(ox, y, oz, 7, 7, rng, S, 'house');
+        }
+        if (t % 5 === 2 && rng() < 0.4) {
+          var lx = rxp + (dz ? 2 : 0), lz = rzp + (dx ? 2 : 0);
+          sbFill(lx, y + 1, lz, lx, y + 3, lz, BID.oak_fence);
+          sbSet(lx, y + 4, lz, BID.lantern);
+        }
+      }
+    }
+  }
+});
+
+/* ====================== DESERT AND JUNGLE TEMPLES ======================= */
+defStruct({
+  name: 'desert_pyramid', salt: 0x2f71, spacing: 28, separation: 8, radius: 24, chance: 0.75,
+  biomes: ['desert'], maxSlope: 6,
+  build: function (x, y, z, rng) {
+    sbMark(x, z, 'Desert Pyramid');
+    var SS = BID.sandstone, CS = BID.cut_sandstone, CH = BID.chiseled_sandstone;
+    var base = y - 1;
+    clearAbove(x - 11, z - 11, x + 11, z + 11, base + 1, 16);
+    for (var lvl = 0; lvl < 10; lvl++) {
+      var r = 10 - lvl;
+      if (r < 1) break;
+      sbFill(x - r, base + lvl, z - r, x + r, base + lvl, z + r, lvl % 3 === 0 ? CS : SS);
+    }
+    /* two towers */
+    for (var s = -1; s <= 1; s += 2) {
+      sbFill(x + s * 9, base, z - 9, x + s * 9, base + 10, z - 9, SS);
+      sbFill(x + s * 9 - 1, base + 10, z - 10, x + s * 9 + 1, base + 12, z - 8, SS);
+      sbFill(x + s * 9, base + 11, z - 9, x + s * 9, base + 12, z - 9, 0);
+      sbSet(x + s * 9, base + 13, z - 9, CH);
+    }
+    /* entrance hall */
+    sbFill(x - 2, base + 1, z - 10, x + 2, base + 4, z + 2, 0);
+    sbFill(x - 2, base, z - 10, x + 2, base, z + 2, SS);
+    sbFill(x - 1, base + 1, z + 1, x + 1, base + 3, z + 1, CH);
+    /* hidden treasure room below the floor */
+    var ty = base - 12;
+    sbBox(x - 5, ty, z - 5, x + 5, ty + 5, z + 5, SS, 0);
+    sbFill(x - 1, ty + 1, z - 1, x + 1, ty + 1, z + 1, BID.blue_terracotta);
+    sbSet(x, ty + 1, z, BID.tnt);
+    sbFill(x, ty + 1, z, x, ty + 1, z, BID.tnt);
+    sbSet(x, ty + 2, z, BID.stone_pressure_plate);
+    sbChest(x - 4, ty + 1, z - 4, 'desert_temple', 0);
+    sbChest(x + 4, ty + 1, z - 4, 'desert_temple', 0);
+    sbChest(x - 4, ty + 1, z + 4, 'desert_temple', 0);
+    sbChest(x + 4, ty + 1, z + 4, 'desert_temple', 0);
+    /* shaft down from the hall */
+    sbFill(x, ty + 5, z, x, base, z, 0);
+    /* decorative orange/blue motif on the face */
+    for (var m = -1; m <= 1; m++) sbFill(x + m, base + 5, z - 10, x + m, base + 7, z - 10, m === 0 ? BID.orange_terracotta : BID.blue_terracotta);
+  }
+});
+
+defStruct({
+  name: 'jungle_temple', salt: 0x77c1, spacing: 30, separation: 9, radius: 18, chance: 0.6,
+  biomes: ['jungle', 'sparse_jungle', 'bamboo_jungle'], maxSlope: 7,
+  build: function (x, y, z, rng) {
+    sbMark(x, z, 'Jungle Temple');
+    var C = BID.mossy_cobblestone, CB = BID.cobblestone, CS = BID.chiseled_stone_bricks;
+    var base = y - 1;
+    clearAbove(x - 7, z - 8, x + 7, z + 8, base + 1, 14);
+    sbBox(x - 6, base, z - 7, x + 6, base + 9, z + 7, rng() < 0.5 ? C : CB, 0);
+    /* stepped entrance */
+    sbFill(x - 2, base + 1, z - 7, x + 2, base + 4, z - 7, 0);
+    sbFill(x - 2, base + 1, z - 8, x + 2, base + 1, z - 8, C);
+    /* upper floor and roof crenellations */
+    sbFill(x - 5, base + 5, z - 6, x + 5, base + 5, z + 6, CB);
+    for (var i = -6; i <= 6; i += 2) { sbSet(x + i, base + 10, z - 7, C); sbSet(x + i, base + 10, z + 7, C); }
+    for (var j = -7; j <= 7; j += 2) { sbSet(x - 6, base + 10, z + j, C); sbSet(x + 6, base + 10, z + j, C); }
+    /* trapped corridor with the classic tripwire and dispensers */
+    sbFill(x - 4, base + 1, z - 5, x + 4, base + 4, z + 5, 0);
+    sbFill(x - 1, base + 1, z + 3, x + 1, base + 1, z + 5, CB);
+    sbSet(x - 2, base + 2, z + 4, BID.dispenser);
+    sbSet(x + 2, base + 2, z + 4, BID.dispenser);
+    sbFill(x - 1, base + 2, z + 4, x + 1, base + 2, z + 4, BID.tripwire_hook);
+    sbChest(x, base + 1, z + 5, 'jungle_temple', 0);
+    /* puzzle levers */
+    sbFill(x - 4, base + 1, z - 4, x - 2, base + 3, z - 4, CS);
+    for (var l = 0; l < 3; l++) sbSet(x - 4 + l, base + 2, z - 3, bpack(BID.lever, 0));
+    sbChest(x - 4, base + 6, z + 4, 'jungle_temple', 0);
+    /* vines creeping over the stone */
+    for (var v = 0; v < 60; v++) {
+      var vx = x - 6 + Math.floor(rng() * 13), vz = z - 7 + Math.floor(rng() * 15);
+      var vy = base + 1 + Math.floor(rng() * 9);
+      if (sbGet(vx, vy, vz) === 0 && BID.vine !== undefined) sbSet(vx, vy, vz, BID.vine);
+    }
+  }
+});
+
+/* ====================== WITCH HUT / IGLOO / DESERT WELL ================= */
+defStruct({
+  name: 'swamp_hut', salt: 0x3311, spacing: 26, separation: 8, radius: 12, chance: 0.5,
+  biomes: ['swamp', 'mangrove_swamp'], needLand: false,
+  build: function (x, y, z, rng) {
+    var base = Math.max(y, SEA) + 3;
+    sbMark(x, z, "Witch's Hut");
+    clearAbove(x - 4, z - 5, x + 4, z + 5, base, 8);
+    for (var px = -3; px <= 3; px += 6) for (var pz = -4; pz <= 4; pz += 8)
+      sbFill(x + px, base - 6, z + pz, x + px, base - 1, z + pz, BID.spruce_log);
+    sbFill(x - 3, base - 1, z - 4, x + 3, base - 1, z + 4, BID.spruce_planks);
+    sbFrame(x - 3, base, z - 4, x + 3, base + 3, z + 4, BID.spruce_planks);
+    sbFill(x - 4, base + 4, z - 5, x + 4, base + 4, z + 5, BID.spruce_slab);
+    sbFill(x, base, z - 4, x, base + 1, z - 4, 0);
+    sbSet(x - 2, base, z + 3, BID.cauldron);
+    sbSet(x + 2, base, z + 3, BID.crafting_table);
+    sbSet(x + 2, base, z - 3, BID.brewing_stand === undefined ? BID.crafting_table : BID.brewing_stand);
+    sbFill(x - 1, base, z, x + 1, base, z, 0);
+    sbSet(x - 2, base + 2, z, BID.torch);
+    sbMob(x, base + 1, z, 'witch');
+    sbMob(x + 1, base + 1, z + 1, 'cat');
+  }
+});
+defStruct({
+  name: 'igloo', salt: 0x6a2d, spacing: 24, separation: 8, radius: 8, chance: 0.5,
+  biomes: ['snowy_plains', 'snowy_taiga', 'snowy_slopes', 'frozen_peaks', 'ice_spikes'],
+  build: function (x, y, z, rng) {
+    sbMark(x, z, 'Igloo');
+    var S = BID.snow_block, base = y;
+    clearAbove(x - 5, z - 5, x + 5, z + 5, base + 1, 8);
+    for (var dy = 0; dy <= 4; dy++) {
+      var r = Math.round(Math.sqrt(Math.max(0, 16 - dy * dy)));
+      for (var dx = -r; dx <= r; dx++) for (var dz = -r; dz <= r; dz++) {
+        if (dx * dx + dz * dz > r * r) continue;
+        var shell = dx * dx + dz * dz > (r - 1) * (r - 1) || dy === 4;
+        sbSet(x + dx, base + dy, z + dz, shell ? S : 0);
+      }
+    }
+    sbFill(x - 1, base + 1, z + 3, x + 1, base + 2, z + 5, 0);
+    sbFill(x - 1, base, z + 3, x + 1, base, z + 5, S);
+    sbSet(x - 2, base + 1, z - 2, BID.red_bed === undefined ? BID.white_wool : BID.red_bed);
+    sbSet(x + 2, base + 1, z - 2, BID.crafting_table);
+    sbSet(x + 2, base + 1, z + 1, BID.furnace);
+    sbSet(x, base + 3, z, BID.redstone_torch);
+    sbSet(x - 2, base + 1, z + 1, BID.oak_trapdoor);
+    /* the cellar under the carpet */
+    if (rng() < 0.5) {
+      var cy = base - 10;
+      sbBox(x - 3, cy, z - 3, x + 3, cy + 4, z + 3, BID.stone_bricks, 0);
+      sbFill(x, cy + 4, z, x, base, z, BID.ladder);
+      sbChest(x - 2, cy + 1, z - 2, 'igloo', 0);
+      sbSet(x + 1, cy + 1, z + 1, BID.brewing_stand === undefined ? BID.crafting_table : BID.brewing_stand);
+      sbMob(x + 2, cy + 1, z + 2, 'zombie_villager');
+      sbMob(x - 2, cy + 1, z + 2, 'villager');
+    }
+  }
+});
+defStruct({
+  name: 'desert_well', salt: 0x18b7, spacing: 14, separation: 5, radius: 5, chance: 0.10,
+  biomes: ['desert'],
+  build: function (x, y, z, rng) {
+    var SS = BID.sandstone, SL = BID.sandstone_slab;
+    sbFill(x - 2, y, z - 2, x + 2, y, z + 2, SS);
+    sbFill(x - 1, y - 3, z - 1, x + 1, y, z + 1, BID.water);
+    for (var i = -1; i <= 1; i += 2) for (var j = -1; j <= 1; j += 2)
+      sbFill(x + i * 2, y + 1, z + j * 2, x + i * 2, y + 3, z + j * 2, SS);
+    sbFill(x - 2, y + 4, z - 2, x + 2, y + 4, z + 2, SL);
+  }
+});
+
+/* ====================== RUINED PORTAL =================================== */
+defStruct({
+  name: 'ruined_portal', salt: 0x44e9, spacing: 16, separation: 5, radius: 10, chance: 0.30,
+  build: function (x, y, z, rng) {
+    var O = BID.obsidian, CO = BID.crying_obsidian;
+    var w = 3 + Math.floor(rng() * 2), h = 4 + Math.floor(rng() * 2);
+    var vertical = rng() < 0.5;
+    clearAbove(x - w - 2, z - w - 2, x + w + 2, z + w + 2, y + 1, h + 3);
+    for (var a = -1; a <= w; a++) for (var b = 0; b <= h; b++) {
+      var edge = (a === -1 || a === w || b === 0 || b === h);
+      if (!edge) continue;
+      if (rng() < 0.28) continue;                 /* ruined: bits are missing */
+      var bx = vertical ? x + a : x, bz = vertical ? z : z + a;
+      sbSet(bx, y + b, bz, rng() < 0.2 ? CO : O);
+    }
+    /* scorched ground and rubble */
+    for (var i = 0; i < 90; i++) {
+      var rx = x + Math.floor(rng() * 13) - 6, rz = z + Math.floor(rng() * 13) - 6;
+      var ry = y + Math.floor(rng() * 3) - 1;
+      if (rng() < 0.5) sbSet(rx, ry, rz, BID.netherrack);
+      else if (rng() < 0.25) sbSet(rx, ry, rz, BID.magma_block);
+      else if (rng() < 0.1) sbSet(rx, ry + 1, rz, BID.fire);
+      else if (rng() < 0.2) sbSet(rx, ry, rz, BID.blackstone);
+      else if (rng() < 0.1) sbSet(rx, ry, rz, BID.gold_block);
+    }
+    sbChest(x + 2, y + 1, z + 2, 'ruined_portal', 0);
+  }
+});
+
+/* ====================== PILLAGER OUTPOST ================================ */
+defStruct({
+  name: 'pillager_outpost', salt: 0x9a13, spacing: 34, separation: 12, radius: 14, chance: 0.35,
+  maxSlope: 8,
+  notBiomes: ['ocean', 'deep_ocean', 'frozen_ocean', 'warm_ocean', 'lukewarm_ocean', 'cold_ocean',
+    'deep_frozen_ocean', 'deep_cold_ocean', 'deep_lukewarm_ocean', 'mushroom_fields'],
+  build: function (x, y, z, rng) {
+    sbMark(x, z, 'Pillager Outpost');
+    var L = BID.dark_oak_log, P = BID.dark_oak_planks, F = BID.dark_oak_fence, S = BID.dark_oak_slab;
+    clearAbove(x - 5, z - 5, x + 5, z + 5, y + 1, 20);
+    foundation(x - 4, z - 4, x + 4, z + 4, y, BID.cobblestone);
+    /* four legs and the tower shaft */
+    for (var i = -3; i <= 3; i += 6) for (var j = -3; j <= 3; j += 6)
+      sbFill(x + i, y, z + j, x + i, y + 9, z + j, L);
+    for (var lvl = 0; lvl < 3; lvl++) {
+      var fy = y + 3 + lvl * 4;
+      sbFill(x - 3, fy, z - 3, x + 3, fy, z + 3, P);
+      sbFrame(x - 3, fy + 1, z - 3, x + 3, fy + 2, z + 3, lvl === 2 ? P : F);
+      sbFill(x - 2, fy + 1, z - 2, x + 2, fy + 2, z + 2, 0);
+    }
+    var ty = y + 11;
+    sbFill(x - 4, ty, z - 4, x + 4, ty, z + 4, P);
+    sbFrame(x - 4, ty + 1, z - 4, x + 4, ty + 2, z + 4, F);
+    sbFill(x - 4, ty + 4, z - 4, x + 4, ty + 4, z + 4, S);
+    for (var c = -4; c <= 4; c += 8) for (var d = -4; d <= 4; d += 8)
+      sbFill(x + c, ty + 1, z + d, x + c, ty + 3, z + d, L);
+    /* ladder up the middle */
+    sbFill(x, y + 1, z, x, ty, z, 0);
+    sbFill(x, y + 1, z + 1, x, ty, z + 1, BID.ladder);
+    sbChest(x + 2, ty + 1, z + 2, 'outpost', 0);
+    /* banner post out front */
+    sbFill(x + 5, y + 1, z, x + 5, y + 4, z, L);
+    sbSet(x + 5, y + 5, z, BID.white_wool);
+    sbMob(x, ty + 1, z, 'pillager');
+    sbMob(x + 1, ty + 1, z + 1, 'pillager');
+    sbMob(x - 2, y + 1, z - 2, 'pillager');
+    sbMob(x + 2, y + 1, z + 3, 'pillager');
+  }
+});
+
+/* ====================== SHIPWRECK / BURIED TREASURE ===================== */
+defStruct({
+  name: 'shipwreck', salt: 0x2b8f, spacing: 20, separation: 6, radius: 14, chance: 0.35,
+  ocean: true, needLand: false,
+  build: function (x, y, z, rng) {
+    sbMark(x, z, 'Shipwreck');
+    var P = BID.oak_planks, L = BID.oak_log, S = BID.oak_stairs, F = BID.oak_fence;
+    var base = Math.max(4, y + 1);
+    var tilt = rng() < 0.5 ? 1 : 0;
+    /* hull: 18 long, 6 wide, tapering at both ends */
+    for (var i = -9; i <= 9; i++) {
+      var half = Math.max(1, 3 - Math.floor(Math.abs(i) / 4));
+      var yy = base + (tilt ? Math.floor((i + 9) / 6) : 0);
+      sbFill(x - half, yy, z + i, x + half, yy, z + i, P);
+      sbFill(x - half, yy + 1, z + i, x - half, yy + 3, z + i, P);
+      sbFill(x + half, yy + 1, z + i, x + half, yy + 3, z + i, P);
+      if ((i + 9) % 5 === 0) {
+        sbFill(x - half, yy + 1, z + i, x + half, yy + 1, z + i, L);
+      }
+      if (rng() < 0.22) sbSet(x - half, yy + 3, z + i, 0);
+      if (rng() < 0.22) sbSet(x + half, yy + 2, z + i, 0);
+    }
+    /* deck and masts */
+    sbFill(x - 3, base + 4, z - 6, x + 3, base + 4, z + 6, P);
+    for (var m = -4; m <= 4; m += 8) sbFill(x, base + 5, z + m, x, base + 11, z + m, L);
+    sbFill(x - 2, base + 8, z - 4, x + 2, base + 10, z - 4, BID.white_wool);
+    /* three cargo holds */
+    sbChest(x, base + 1, z - 7, 'shipwreck_treasure', 0);
+    sbChest(x, base + 1, z + 7, 'shipwreck_supply', 0);
+    sbChest(x + 1, base + 5, z + 5, 'shipwreck_map', 0);
+    for (var g = 0; g < 24; g++) {
+      var gx = x - 3 + Math.floor(rng() * 7), gz = z - 9 + Math.floor(rng() * 19);
+      if (sbGet(gx, base + 1, gz) === 0 && rng() < 0.4) sbSet(gx, base + 1, gz, BID.seagrass === undefined ? 0 : BID.seagrass);
+    }
+  }
+});
+defStruct({
+  name: 'buried_treasure', salt: 0x7f21, spacing: 12, separation: 4, radius: 3, chance: 0.06,
+  biomes: ['beach', 'snowy_beach', 'stony_shore'],
+  build: function (x, y, z, rng) {
+    sbChest(x, y - 3, z, 'buried_treasure', 0);
+    sbFill(x - 1, y - 4, z - 1, x + 1, y - 2, z + 1, BID.sand);
+    sbSet(x, y - 3, z, bpack(BID.chest, 0));
+  }
+});
+
+/* ====================== OCEAN MONUMENT ================================== */
+defStruct({
+  name: 'ocean_monument', salt: 0x5d02, spacing: 40, separation: 14, radius: 34, chance: 0.55,
+  ocean: true, needLand: false,
+  biomes: ['deep_ocean', 'deep_cold_ocean', 'deep_lukewarm_ocean', 'deep_frozen_ocean', 'ocean', 'cold_ocean', 'lukewarm_ocean'],
+  build: function (x, y, z, rng) {
+    sbMark(x, z, 'Ocean Monument');
+    var P = BID.prismarine, B = BID.prismarine_bricks, D = BID.dark_prismarine, S = BID.sea_lantern;
+    var base = Math.max(6, Math.min(y + 1, SEA - 22));
+    /* foundation plinth */
+    sbFill(x - 28, base - 1, z - 28, x + 28, base - 1, z + 28, B);
+    /* outer wall */
+    sbFrame(x - 28, base, z - 28, x + 28, base + 22, z + 28, P);
+    /* main hall */
+    sbBox(x - 12, base, z - 12, x + 12, base + 16, z + 12, B, 0);
+    sbFill(x - 10, base + 1, z - 10, x + 10, base + 1, z + 10, D);
+    for (var i = -8; i <= 8; i += 8) for (var j = -8; j <= 8; j += 8) {
+      sbFill(x + i, base + 1, z + j, x + i, base + 15, z + j, P);
+      sbSet(x + i, base + 8, z + j, S);
+    }
+    /* wings */
+    for (var a = -1; a <= 1; a += 2) for (var b = -1; b <= 1; b += 2) {
+      var wx = x + a * 20, wz = z + b * 20;
+      sbBox(wx - 6, base, wz - 6, wx + 6, base + 10, wz + 6, P, 0);
+      sbSet(wx, base + 5, wz, S);
+      sbFill(wx - 1, base + 1, wz - 1, wx + 1, base + 1, wz + 1, D);
+      sbMob(wx, base + 3, wz, 'guardian');
+    }
+    /* the treasure core */
+    sbBox(x - 4, base + 4, z - 4, x + 4, base + 10, z + 4, D, 0);
+    sbFill(x - 1, base + 5, z - 1, x + 1, base + 7, z + 1, BID.gold_block);
+    /* lantern grid on the roof */
+    for (var lx = -24; lx <= 24; lx += 8) for (var lz = -24; lz <= 24; lz += 8)
+      sbSet(x + lx, base + 22, z + lz, S);
+    sbMob(x, base + 12, z, 'elder_guardian');
+    sbMob(x + 14, base + 6, z, 'elder_guardian');
+    sbMob(x - 14, base + 6, z, 'elder_guardian');
+    for (var g = 0; g < 10; g++) sbMob(x + Math.floor(rng() * 40) - 20, base + 4 + Math.floor(rng() * 10), z + Math.floor(rng() * 40) - 20, 'guardian');
+  }
+});
+
+/* ====================== WOODLAND MANSION ================================ */
+defStruct({
+  name: 'woodland_mansion', salt: 0x8e44, spacing: 68, separation: 20, radius: 34, chance: 0.85,
+  biomes: ['dark_forest', 'pale_garden'], maxSlope: 8,
+  build: function (x, y, z, rng) {
+    sbMark(x, z, 'Woodland Mansion');
+    var P = BID.dark_oak_planks, L = BID.dark_oak_log, C = BID.cobblestone;
+    var W = 27, D = 21;
+    var x0 = x - (W >> 1), z0 = z - (D >> 1), x1 = x0 + W, z1 = z0 + D;
+    clearAbove(x0 - 2, z0 - 2, x1 + 2, z1 + 2, y + 1, 26);
+    foundation(x0, z0, x1, z1, y, C);
+    sbFill(x0, y, z0, x1, y, z1, C);
+    for (var floor = 0; floor < 3; floor++) {
+      var fy = y + 1 + floor * 6;
+      sbFill(x0, fy - 1, z0, x1, fy - 1, z1, P);
+      sbFrame(x0, fy, z0, x1, fy + 4, z1, P);
+      /* corner and mid posts */
+      for (var px = x0; px <= x1; px += 6) {
+        sbFill(px, fy, z0, px, fy + 4, z0, L);
+        sbFill(px, fy, z1, px, fy + 4, z1, L);
+      }
+      for (var pz = z0; pz <= z1; pz += 5) {
+        sbFill(x0, fy, pz, x0, fy + 4, pz, L);
+        sbFill(x1, fy, pz, x1, fy + 4, pz, L);
+      }
+      /* windows */
+      for (var wx = x0 + 2; wx < x1; wx += 3) {
+        sbFill(wx, fy + 1, z0, wx, fy + 2, z0, BID.glass_pane);
+        sbFill(wx, fy + 1, z1, wx, fy + 2, z1, BID.glass_pane);
+      }
+      for (var wz = z0 + 2; wz < z1; wz += 3) {
+        sbFill(x0, fy + 1, wz, x0, fy + 2, wz, BID.glass_pane);
+        sbFill(x1, fy + 1, wz, x1, fy + 2, wz, BID.glass_pane);
+      }
+      /* interior rooms on a 6x5 grid */
+      for (var rxi = 0; rxi < 4; rxi++) for (var rzi = 0; rzi < 4; rzi++) {
+        var rx0 = x0 + 1 + rxi * 6, rz0 = z0 + 1 + rzi * 5;
+        var rx1 = Math.min(x1 - 1, rx0 + 5), rz1 = Math.min(z1 - 1, rz0 + 4);
+        sbFill(rx0, fy, rz0, rx1, fy + 4, rz1, 0);
+        sbFrame(rx0, fy, rz0, rx1, fy + 4, rz1, P);
+        /* a doorway per room */
+        sbFill(rx0 + 2, fy, rz0, rx0 + 3, fy + 1, rz0, 0);
+        var roll = rng();
+        if (roll < 0.18) {           /* bedroom */
+          sbSet(rx0 + 1, fy, rz1 - 1, BID.red_bed === undefined ? BID.red_wool : BID.red_bed);
+          sbSet(rx0 + 2, fy, rz1 - 1, BID.red_wool);
+          sbChest(rx1 - 1, fy, rz0 + 1, 'mansion', 0);
+        } else if (roll < 0.30) {    /* library */
+          sbFill(rx0 + 1, fy, rz1 - 1, rx1 - 1, fy + 2, rz1 - 1, BID.bookshelf);
+          sbSet(rx0 + 1, fy, rz0 + 1, BID.lectern);
+        } else if (roll < 0.40) {    /* altar */
+          sbFill(rx0 + 2, fy, rz0 + 2, rx0 + 3, fy, rz0 + 2, BID.red_carpet === undefined ? BID.red_wool : BID.red_carpet);
+          sbSet(rx0 + 2, fy, rz0 + 3, BID.dark_oak_stairs);
+        } else if (roll < 0.5) {     /* storage */
+          sbChest(rx0 + 1, fy, rz0 + 1, 'mansion', 0);
+          sbSet(rx0 + 2, fy, rz0 + 1, BID.barrel);
+        }
+        sbSet(rx0 + 1, fy + 3, rz0 + 1, BID.torch);
+        if (rng() < 0.35) sbMob(rx0 + 2, fy + 1, rz0 + 2, rng() < 0.5 ? 'vindicator' : 'evoker');
+      }
+      /* stairwell */
+      sbFill(x + 1, fy, z, x + 3, fy + 4, z + 2, 0);
+      sbFill(x + 1, fy, z, x + 1, fy + 5, z, BID.ladder);
+    }
+    /* grand entrance and roof */
+    sbFill(x - 1, y + 1, z0, x + 1, y + 3, z0, 0);
+    sbFill(x - 2, y + 1, z0 - 2, x + 2, y + 1, z0 - 1, BID.cobblestone_slab);
+    var ry = y + 19;
+    sbFill(x0 - 1, ry, z0 - 1, x1 + 1, ry, z1 + 1, P);
+    sbFrame(x0 - 1, ry + 1, z0 - 1, x1 + 1, ry + 2, z1 + 1, BID.dark_oak_fence);
+    for (var t = x0; t <= x1; t += 6) { sbFill(t, ry + 1, z0 - 1, t, ry + 3, z0 - 1, L); sbFill(t, ry + 1, z1 + 1, t, ry + 3, z1 + 1, L); }
+    sbMob(x, y + 2, z + 2, 'vindicator');
+    sbMob(x + 3, y + 2, z + 2, 'evoker');
+  }
+});
+
+/* ====================== MINESHAFT ======================================= */
+defStruct({
+  name: 'mineshaft', salt: 0x1f3c, spacing: 16, separation: 5, radius: 40, chance: 0.5,
+  needLand: false,
+  build: function (x, y, z, rng, pos) {
+    var top = Math.min(pos.y - 8, SEA - 4);
+    var by = clamp(14 + Math.floor(rng() * 34), 12, Math.max(14, top));
+    var P = BID.oak_planks, F = BID.oak_fence, L = BID.oak_log, R = BID.rail;
+    /* a few long corridors radiating from the hub, each with side branches */
+    var arms = 3 + Math.floor(rng() * 3);
+    for (var a = 0; a < arms; a++) {
+      var ang = rng() * Math.PI * 2;
+      var dx = Math.abs(Math.cos(ang)) > Math.abs(Math.sin(ang)) ? (Math.cos(ang) > 0 ? 1 : -1) : 0;
+      var dz = dx === 0 ? (Math.sin(ang) > 0 ? 1 : -1) : 0;
+      var len = 24 + Math.floor(rng() * 34);
+      var cy = by;
+      for (var t = 0; t < len; t++) {
+        var px = x + dx * t, pz = z + dz * t;
+        if (t % 14 === 13) cy += rng() < 0.5 ? -1 : 1;
+        sbFill(px - (dz ? 1 : 0), cy, pz - (dx ? 1 : 0), px + (dz ? 1 : 0), cy + 2, pz + (dx ? 1 : 0), 0);
+        sbFill(px - (dz ? 1 : 0), cy - 1, pz - (dx ? 1 : 0), px + (dz ? 1 : 0), cy - 1, pz + (dx ? 1 : 0), BID.oak_planks);
+        if (t % 5 === 0) {
+          /* support frame */
+          sbFill(px - (dz ? 1 : 0), cy, pz - (dx ? 1 : 0), px - (dz ? 1 : 0), cy + 1, pz - (dx ? 1 : 0), F);
+          sbFill(px + (dz ? 1 : 0), cy, pz + (dx ? 1 : 0), px + (dz ? 1 : 0), cy + 1, pz + (dx ? 1 : 0), F);
+          sbFill(px - (dz ? 1 : 0), cy + 2, pz - (dx ? 1 : 0), px + (dz ? 1 : 0), cy + 2, pz + (dx ? 1 : 0), L);
+          if (rng() < 0.35) sbSet(px, cy + 2, pz, BID.torch);
+        }
+        if (rng() < 0.6) sbSet(px, cy, pz, R);
+        if (rng() < 0.05) sbSet(px, cy, pz, BID.cobweb === undefined ? 0 : BID.cobweb);
+        if (rng() < 0.035) { sbSpawner(px, cy, pz, 'cave_spider'); sbFill(px - 2, cy - 1, pz - 2, px + 2, cy + 2, pz + 2, 0); }
+        if (rng() < 0.03) sbChest(px + (dz ? 1 : 0), cy, pz + (dx ? 1 : 0), 'mineshaft', 0);
+        /* side branch */
+        if (t > 6 && rng() < 0.06) {
+          var sdx = dz, sdz = dx, sl = 6 + Math.floor(rng() * 12), sgn = rng() < 0.5 ? 1 : -1;
+          for (var s = 1; s < sl; s++) {
+            var sx = px + sdx * s * sgn, sz = pz + sdz * s * sgn;
+            sbFill(sx - (sdz ? 1 : 0), cy, sz - (sdx ? 1 : 0), sx + (sdz ? 1 : 0), cy + 2, sz + (sdx ? 1 : 0), 0);
+            if (s % 5 === 0) sbFill(sx, cy + 2, sz, sx, cy + 2, sz, L);
+            if (rng() < 0.04) sbChest(sx, cy, sz, 'mineshaft', 0);
+          }
+        }
+      }
+    }
+    /* the hub room */
+    sbFill(x - 3, by, z - 3, x + 3, by + 3, z + 3, 0);
+    sbFill(x - 3, by - 1, z - 3, x + 3, by - 1, z + 3, P);
+    sbFill(x - 3, by, z - 3, x - 3, by + 2, z - 3, L);
+    sbFill(x + 3, by, z + 3, x + 3, by + 2, z + 3, L);
+    sbSet(x, by + 3, z, BID.torch);
+    sbChest(x + 2, by, z + 2, 'mineshaft', 0);
+  }
+});
+
+/* ====================== DUNGEON ========================================= */
+defStruct({
+  name: 'dungeon', salt: 0x3c7b, spacing: 8, separation: 3, radius: 6, chance: 0.14,
+  needLand: false,
+  build: function (x, y, z, rng, pos) {
+    var by = 8 + Math.floor(rng() * Math.max(8, Math.min(70, pos.y - 12)));
+    var w = 3 + Math.floor(rng() * 2), d = 3 + Math.floor(rng() * 2);
+    sbFill(x - w, by, z - d, x + w, by + 3, z + d, 0);
+    for (var fx = -w; fx <= w; fx++) for (var fz = -d; fz <= d; fz++) {
+      sbSet(x + fx, by - 1, z + fz, rng() < 0.35 ? BID.mossy_cobblestone : BID.cobblestone);
+    }
+    sbFrame(x - w, by, z - d, x + w, by + 3, z + d, BID.cobblestone);
+    sbFill(x - w, by + 4, z - d, x + w, by + 4, z + d, BID.cobblestone);
+    var mobs = ['zombie', 'skeleton', 'spider'];
+    sbSpawner(x, by, z, mobs[Math.floor(rng() * 3) % 3]);
+    sbChest(x - w + 1, by, z - d + 1, 'dungeon', 0);
+    if (rng() < 0.5) sbChest(x + w - 1, by, z + d - 1, 'dungeon', 0);
+  }
+});
+
+/* ====================== STRONGHOLD ====================================== */
+defStruct({
+  name: 'stronghold', salt: 0xa17e, spacing: 72, separation: 22, radius: 46, chance: 0.55,
+  needLand: false,
+  build: function (x, y, z, rng, pos) {
+    var by = clamp(12 + Math.floor(rng() * 22), 10, Math.max(14, pos.y - 24));
+    var SB2 = BID.stone_bricks, MO = BID.mossy_stone_bricks, CR = BID.cracked_stone_bricks;
+    function brick() { var r = rng(); return r < 0.18 ? MO : (r < 0.32 ? CR : SB2); }
+    sbMark(x, z, 'Stronghold');
+    /* central spiral staircase room */
+    sbBox(x - 5, by, z - 5, x + 5, by + 10, z + 5, SB2, 0);
+    for (var s = 0; s < 20; s++) {
+      var ang = s * 0.6, r = 3;
+      sbSet(Math.round(x + Math.cos(ang) * r), by + Math.floor(s / 2), Math.round(z + Math.sin(ang) * r), SB2);
+    }
+    /* corridors to five rooms */
+    var dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (var a = 0; a < 4; a++) {
+      var dx = dirs[a][0], dz = dirs[a][1];
+      var len = 18 + Math.floor(rng() * 20);
+      for (var t = 5; t < len; t++) {
+        var px = x + dx * t, pz = z + dz * t;
+        sbFill(px - (dz ? 1 : 0), by, pz - (dx ? 1 : 0), px + (dz ? 1 : 0), by + 3, pz + (dx ? 1 : 0), 0);
+        sbFill(px - (dz ? 2 : 0), by - 1, pz - (dx ? 2 : 0), px + (dz ? 2 : 0), by - 1, pz + (dx ? 2 : 0), brick());
+        sbFill(px - (dz ? 2 : 0), by + 4, pz - (dx ? 2 : 0), px + (dz ? 2 : 0), by + 4, pz + (dx ? 2 : 0), brick());
+        sbFill(px - (dz ? 2 : 0), by, pz - (dx ? 2 : 0), px - (dz ? 2 : 0), by + 3, pz - (dx ? 2 : 0), brick());
+        sbFill(px + (dz ? 2 : 0), by, pz + (dx ? 2 : 0), px + (dz ? 2 : 0), by + 3, pz + (dx ? 2 : 0), brick());
+        if (t % 7 === 0) sbSet(px, by + 3, pz, BID.torch);
+        if (rng() < 0.02) sbSpawner(px, by, pz, 'silverfish');
+      }
+      var rx = x + dx * len, rz = z + dz * len;
+      var roll = rng();
+      if (a === 0) {
+        /* the portal room */
+        sbBox(rx - 6, by - 1, rz - 6, rx + 6, by + 8, rz + 6, SB2, 0);
+        sbFill(rx - 5, by, rz - 5, rx + 5, by, rz + 5, brick());
+        sbFill(rx - 2, by - 1, rz - 2, rx + 2, by - 1, rz + 2, BID.lava);
+        for (var i = -2; i <= 2; i++) {
+          sbSet(rx + i, by, rz - 2, bpack(BID.end_portal_frame, 0));
+          sbSet(rx + i, by, rz + 2, bpack(BID.end_portal_frame, 2));
+          sbSet(rx - 2, by, rz + i, bpack(BID.end_portal_frame, 1));
+          sbSet(rx + 2, by, rz + i, bpack(BID.end_portal_frame, 3));
+        }
+        sbFill(rx - 1, by, rz - 1, rx + 1, by, rz + 1, 0);
+        sbFill(rx - 4, by + 1, rz - 4, rx - 4, by + 3, rz - 4, BID.stone_bricks_stairs);
+        sbSpawner(rx + 4, by + 1, rz + 4, 'silverfish');
+        sbMark(rx, rz, 'End Portal');
+      } else if (roll < 0.4) {
+        /* library */
+        sbBox(rx - 6, by - 1, rz - 6, rx + 6, by + 9, rz + 6, SB2, 0);
+        for (var sh = -4; sh <= 4; sh += 4) {
+          sbFill(rx + sh, by, rz - 5, rx + sh, by + 3, rz + 5, BID.bookshelf);
+        }
+        sbFill(rx - 5, by + 5, rz - 5, rx + 5, by + 5, rz + 5, BID.oak_planks);
+        sbFill(rx - 1, by + 5, rz - 1, rx + 1, by + 5, rz + 1, 0);
+        sbChest(rx + 5, by, rz + 5, 'stronghold_library', 0);
+        sbChest(rx - 5, by + 6, rz - 5, 'stronghold_library', 0);
+        sbSet(rx, by + 4, rz, BID.torch);
+      } else if (roll < 0.7) {
+        /* storeroom */
+        sbBox(rx - 4, by - 1, rz - 4, rx + 4, by + 5, rz + 4, SB2, 0);
+        sbChest(rx, by, rz, 'stronghold_corridor', 0);
+        sbFill(rx - 3, by, rz - 3, rx - 3, by + 2, rz - 3, BID.iron_bars);
+      } else {
+        /* prison cells */
+        sbBox(rx - 5, by - 1, rz - 4, rx + 5, by + 5, rz + 4, SB2, 0);
+        for (var c = -4; c <= 4; c += 4) {
+          sbFill(rx + c, by, rz - 3, rx + c, by + 3, rz + 3, BID.iron_bars);
+          sbFill(rx + c, by + 1, rz, rx + c, by + 2, rz, 0);
+        }
+        sbSpawner(rx, by, rz + 3, 'zombie');
+      }
+    }
+  }
+});
+
+/* ====================== ANCIENT CITY ==================================== */
+defStruct({
+  name: 'ancient_city', salt: 0xcc19, spacing: 80, separation: 26, radius: 40, chance: 0.5,
+  needLand: false,
+  build: function (x, y, z, rng) {
+    var by = 10;
+    var D = BID.deepslate_bricks, T = BID.deepslate_tiles, P = BID.polished_deepslate;
+    var S = BID.sculk, SC = BID.sculk_catalyst, SS = BID.sculk_sensor, SH = BID.sculk_shrieker;
+    sbMark(x, z, 'Ancient City');
+    /* clear the cavern */
+    for (var cx2 = -32; cx2 <= 32; cx2 += 1) {
+      var lx = x + cx2;
+      if (lx < SB.bx - 1 || lx > SB.bx + 16) continue;
+      for (var cz2 = -32; cz2 <= 32; cz2++) {
+        var lz = z + cz2;
+        var d = Math.sqrt(cx2 * cx2 + cz2 * cz2);
+        if (d > 32) continue;
+        var h = Math.round(18 - d * 0.28);
+        sbFill(lx, by, lz, lx, by + h, lz, 0);
+        sbSet(lx, by - 1, lz, d < 26 ? (rng() < 0.5 ? D : T) : BID.deepslate);
+        if (rng() < 0.10) sbSet(lx, by, lz, S);
+      }
+    }
+    /* the central sanctuary */
+    sbFill(x - 10, by, z - 10, x + 10, by, z + 10, T);
+    sbBox(x - 8, by, z - 8, x + 8, by + 10, z + 8, D, 0);
+    for (var i = -8; i <= 8; i += 4) {
+      sbFill(x + i, by + 1, z - 8, x + i, by + 9, z - 8, P);
+      sbFill(x + i, by + 1, z + 8, x + i, by + 9, z + 8, P);
+    }
+    sbFill(x - 2, by + 1, z - 2, x + 2, by + 3, z + 2, 0);
+    sbFill(x - 1, by + 1, z - 1, x + 1, by + 1, z + 1, BID.reinforced_deepslate === undefined ? P : BID.reinforced_deepslate);
+    sbSet(x, by + 1, z, SC);
+    /* the frame that once held something */
+    for (var f = -3; f <= 3; f++) { sbSet(x + f, by + 6, z, D); sbSet(x, by + 6, z + f, D); }
+    /* outlying structures and the redstone-lit ruins */
+    for (var b = 0; b < 12; b++) {
+      var ang = rng() * Math.PI * 2, r = 12 + rng() * 18;
+      var bx2 = Math.round(x + Math.cos(ang) * r), bz2 = Math.round(z + Math.sin(ang) * r);
+      var w = 3 + Math.floor(rng() * 4), h2 = 4 + Math.floor(rng() * 6);
+      sbBox(bx2 - w, by, bz2 - w, bx2 + w, by + h2, bz2 + w, rng() < 0.5 ? D : T, 0);
+      sbFill(bx2 - w + 1, by + 1, bz2 - w, bx2 - w + 1, by + 2, bz2 - w, 0);
+      if (rng() < 0.6) sbChest(bx2, by + 1, bz2, 'ancient_city', 0);
+      sbSet(bx2 + 1, by + 1, bz2 + 1, SS);
+      if (rng() < 0.5) sbSet(bx2 - 1, by + 1, bz2 - 1, SH);
+      sbSet(bx2, by + h2 - 1, bz2, BID.soul_lantern);
+    }
+    /* sculk veins and shriekers scattered through the floor */
+    for (var s2 = 0; s2 < 220; s2++) {
+      var sx = x + Math.floor(rng() * 60) - 30, sz = z + Math.floor(rng() * 60) - 30;
+      var roll = rng();
+      if (roll < 0.6) sbSet(sx, by, sz, S);
+      else if (roll < 0.75) sbSet(sx, by, sz, SS);
+      else if (roll < 0.85) sbSet(sx, by, sz, SH);
+      else sbSet(sx, by, sz, SC);
+    }
+    sbMob(x, by + 2, z, 'warden');
+  }
+});
+
+/* ====================== NETHER FORTRESS ================================= */
+defStruct({
+  name: 'nether_fortress', salt: 0x4d81, spacing: 24, separation: 8, radius: 44, chance: 0.7,
+  dim: DIM_NETHER, y: 60,
+  build: function (x, y, z, rng) {
+    var NB = BID.nether_bricks, NF = BID.nether_bricks_wall, NS = BID.nether_bricks_stairs;
+    var by = 42 + Math.floor(rng() * 24);
+    sbMark(x, z, 'Nether Fortress');
+    /* bridges */
+    for (var a = 0; a < 4; a++) {
+      var dx = a < 2 ? (a === 0 ? 1 : -1) : 0, dz = a < 2 ? 0 : (a === 2 ? 1 : -1);
+      var len = 30 + Math.floor(rng() * 24);
+      for (var t = 0; t < len; t++) {
+        var px = x + dx * t, pz = z + dz * t;
+        sbFill(px - (dz ? 2 : 0), by, pz - (dx ? 2 : 0), px + (dz ? 2 : 0), by, pz + (dx ? 2 : 0), NB);
+        sbFill(px - (dz ? 2 : 0), by + 1, pz - (dx ? 2 : 0), px - (dz ? 2 : 0), by + 1, pz - (dx ? 2 : 0), NF);
+        sbFill(px + (dz ? 2 : 0), by + 1, pz + (dx ? 2 : 0), px + (dz ? 2 : 0), by + 1, pz + (dx ? 2 : 0), NF);
+        sbFill(px - (dz ? 1 : 0), by + 1, pz - (dx ? 1 : 0), px + (dz ? 1 : 0), by + 4, pz + (dx ? 1 : 0), 0);
+        if (t % 8 === 4) {
+          sbFill(px - (dz ? 2 : 0), by - 1, pz - (dx ? 2 : 0), px - (dz ? 2 : 0), by - 8, pz - (dx ? 2 : 0), NB);
+          sbFill(px + (dz ? 2 : 0), by - 1, pz + (dx ? 2 : 0), px + (dz ? 2 : 0), by - 8, pz + (dx ? 2 : 0), NB);
+        }
+        if (rng() < 0.03) sbMob(px, by + 1, pz, 'blaze');
+        if (rng() < 0.04) sbMob(px, by + 1, pz, 'wither_skeleton');
+      }
+      /* a tower where the bridge ends */
+      var ex = x + dx * len, ez = z + dz * len;
+      sbBox(ex - 4, by, ez - 4, ex + 4, by + 12, ez + 4, NB, 0);
+      sbFill(ex - 3, by + 1, ez - 3, ex + 3, by + 11, ez + 3, 0);
+      sbFrame(ex - 4, by + 13, ez - 4, ex + 4, by + 14, ez + 4, NF);
+      sbSet(ex, by + 1, ez, BID.nether_wart);
+      sbFill(ex - 1, by, ez - 1, ex + 1, by, ez + 1, BID.soul_sand);
+      sbFill(ex - 1, by + 1, ez - 1, ex + 1, by + 1, ez + 1, BID.nether_wart);
+      sbChest(ex + 3, by + 1, ez + 3, 'nether_fortress', 0);
+      if (rng() < 0.6) { sbSpawner(ex, by + 5, ez, 'blaze'); sbFill(ex - 2, by + 4, ez - 2, ex + 2, by + 7, ez + 2, 0); }
+    }
+    /* the central keep */
+    sbBox(x - 6, by - 1, z - 6, x + 6, by + 10, z + 6, NB, 0);
+    sbFill(x - 5, by, z - 5, x + 5, by + 9, z + 5, 0);
+    sbFill(x - 5, by - 1, z - 5, x + 5, by - 1, z + 5, NB);
+    for (var q = -5; q <= 5; q += 5) {
+      sbFill(x + q, by, z - 5, x + q, by + 9, z - 5, BID.red_nether_bricks);
+      sbFill(x + q, by, z + 5, x + q, by + 9, z + 5, BID.red_nether_bricks);
+    }
+    sbFill(x - 2, by, z - 2, x + 2, by, z + 2, BID.soul_sand);
+    sbFill(x - 2, by + 1, z - 2, x + 2, by + 1, z + 2, BID.nether_wart);
+    sbChest(x, by + 1, z + 4, 'nether_fortress', 0);
+    sbMob(x, by + 1, z, 'wither_skeleton');
+    sbMob(x + 2, by + 1, z + 2, 'wither_skeleton');
+    sbMob(x - 2, by + 1, z - 2, 'blaze');
+  }
+});
+
+/* ====================== BASTION ========================================= */
+defStruct({
+  name: 'bastion', salt: 0x7b2e, spacing: 30, separation: 12, radius: 26, chance: 0.5,
+  dim: DIM_NETHER, y: 60,
+  build: function (x, y, z, rng) {
+    var B = BID.blackstone, PB = BID.polished_blackstone, BB = BID.polished_blackstone_bricks;
+    var G = BID.gilded_blackstone === undefined ? BID.gold_block : BID.gilded_blackstone;
+    var by = 48 + Math.floor(rng() * 18);
+    sbMark(x, z, 'Bastion Remnant');
+    /* massive plinth */
+    sbFill(x - 20, by - 6, z - 20, x + 20, by, z + 20, B);
+    sbFill(x - 17, by + 1, z - 17, x + 17, by + 1, z + 17, BB);
+    /* four corner towers */
+    for (var a = -1; a <= 1; a += 2) for (var b = -1; b <= 1; b += 2) {
+      var tx = x + a * 14, tz = z + b * 14;
+      sbBox(tx - 5, by + 1, tz - 5, tx + 5, by + 18, tz + 5, BB, 0);
+      sbFill(tx - 4, by + 2, tz - 4, tx + 4, by + 17, tz + 4, 0);
+      sbFrame(tx - 6, by + 19, tz - 6, tx + 6, by + 20, tz + 6, PB);
+      sbChest(tx, by + 2, tz, 'bastion', 0);
+      sbSet(tx + 2, by + 2, tz + 2, G);
+      sbMob(tx, by + 3, tz, 'piglin_brute');
+      sbMob(tx + 2, by + 3, tz, 'piglin');
+    }
+    /* the central bridge and treasure */
+    sbFill(x - 3, by + 8, z - 17, x + 3, by + 8, z + 17, BB);
+    sbFrame(x - 3, by + 9, z - 17, x + 3, by + 10, z + 17, PB);
+    sbBox(x - 6, by + 8, z - 6, x + 6, by + 16, z + 6, BB, 0);
+    sbFill(x - 5, by + 9, z - 5, x + 5, by + 15, z + 5, 0);
+    sbFill(x - 2, by + 9, z - 2, x + 2, by + 9, z + 2, G);
+    sbChest(x, by + 10, z, 'bastion_treasure', 0);
+    /* lava moat and ruined edges */
+    for (var i = 0; i < 200; i++) {
+      var rx = x + Math.floor(rng() * 44) - 22, rz = z + Math.floor(rng() * 44) - 22;
+      var ry = by + Math.floor(rng() * 20);
+      if (rng() < 0.3) sbSet(rx, ry, rz, 0);
+      else if (rng() < 0.2) sbSet(rx, ry, rz, B);
+      else if (rng() < 0.05) sbSet(rx, ry, rz, BID.magma_block);
+    }
+    sbMob(x, by + 10, z + 3, 'piglin');
+    sbMob(x + 2, by + 10, z - 3, 'hoglin');
+  }
+});
+
+/* ====================== END CITY ======================================== */
+defStruct({
+  name: 'end_city', salt: 0x2ad4, spacing: 20, separation: 8, radius: 26, chance: 0.5,
+  dim: DIM_END, y: 60,
+  build: function (x, y, z, rng) {
+    /* only out on the far islands */
+    var d = Math.sqrt(x * x + z * z);
+    if (d < 900) return;
+    var by = 0;
+    for (var probe = 90; probe > 20; probe--) {
+      var id = sbGet(x, probe, z);
+      if (id > 0) { by = probe + 1; break; }
+      if (id === -1) { by = 62; break; }
+    }
+    if (!by) return;
+    sbMark(x, z, 'End City');
+    var P = BID.purpur_block, PP = BID.purpur_pillar, ES = BID.end_stone_bricks, PS = BID.purpur_stairs;
+    var levels = 3 + Math.floor(rng() * 4);
+    var cy = by;
+    for (var l = 0; l < levels; l++) {
+      var r = 6 - Math.floor(l / 2);
+      sbFill(x - r, cy, z - r, x + r, cy, z + r, ES);
+      sbBox(x - r, cy, z - r, x + r, cy + 7, z + r, P, 0);
+      sbFill(x - r + 1, cy + 1, z - r + 1, x + r - 1, cy + 6, z + r - 1, 0);
+      for (var c = -r; c <= r; c += r * 2) for (var e = -r; e <= r; e += r * 2)
+        sbFill(x + c, cy + 1, z + e, x + c, cy + 6, z + e, PP);
+      /* windows */
+      for (var w = -r + 2; w <= r - 2; w += 2) {
+        sbSet(x + w, cy + 3, z - r, BID.purple_stained_glass === undefined ? 0 : BID.purple_stained_glass);
+        sbSet(x + w, cy + 3, z + r, BID.purple_stained_glass === undefined ? 0 : BID.purple_stained_glass);
+      }
+      if (rng() < 0.6) sbChest(x + r - 1, cy + 1, z + r - 1, 'end_city', 0);
+      sbSet(x, cy + 6, z, BID.end_rod);
+      sbMob(x + 1, cy + 1, z + 1, 'shulker');
+      if (rng() < 0.5) sbMob(x - 2, cy + 1, z - 2, 'shulker');
+      cy += 8;
+    }
+    /* the ship, moored alongside */
+    if (rng() < 0.4) {
+      var sx = x + 16, sz = z, sy = by + 12;
+      for (var i = -10; i <= 10; i++) {
+        var half = Math.max(1, 3 - Math.floor(Math.abs(i) / 4));
+        sbFill(sx - half, sy, sz + i, sx + half, sy, sz + i, P);
+        sbFill(sx - half, sy + 1, sz + i, sx - half, sy + 4, sz + i, P);
+        sbFill(sx + half, sy + 1, sz + i, sx + half, sy + 4, sz + i, P);
+      }
+      sbFill(sx - 2, sy + 5, sz - 6, sx + 2, sy + 5, sz + 6, P);
+      sbFill(sx, sy + 6, sz - 2, sx, sy + 14, sz - 2, PP);
+      sbChest(sx, sy + 1, sz - 8, 'end_ship', 0);
+      sbChest(sx, sy + 1, sz + 8, 'end_ship', 0);
+      sbSet(sx, sy + 6, sz + 8, PP);
+      sbMob(sx, sy + 2, sz, 'shulker');
+      sbMob(sx + 2, sy + 6, sz + 4, 'shulker');
+    }
+  }
+});
+
+/* ====================== FOSSILS ========================================= */
+defStruct({
+  name: 'fossil', salt: 0x5511, spacing: 16, separation: 6, radius: 8, chance: 0.10,
+  needLand: false,
+  biomes: ['desert', 'swamp', 'badlands', 'wooded_badlands', 'eroded_badlands', 'mangrove_swamp'],
+  build: function (x, y, z, rng, pos) {
+    var by = clamp(28 + Math.floor(rng() * 32), 20, Math.max(24, pos.y - 8));
+    var B = rng() < 0.75 ? BID.bone_block : BID.coal_ore;
+    /* a spine with ribs */
+    var len = 9 + Math.floor(rng() * 6);
+    var horiz = rng() < 0.5;
+    for (var t = 0; t < len; t++) {
+      var px = horiz ? x + t : x, pz = horiz ? z : z + t;
+      sbSet(px, by, pz, B);
+      if (t % 2 === 0 && t > 1 && t < len - 1) {
+        for (var r = 1; r <= 3; r++) {
+          if (horiz) { sbSet(px, by + r, pz - r); sbSet(px, by + r, pz + r); }
+          else { sbSet(px - r, by + r, pz); sbSet(px + r, by + r, pz); }
+        }
+      }
+    }
+    /* skull */
+    sbFill(horiz ? x - 2 : x - 1, by, horiz ? z - 1 : z - 2, horiz ? x : x + 1, by + 2, horiz ? z + 1 : z, B);
+  }
+});
 
 
 /* ============================ 10_tex_core.js ============================ */
@@ -9013,7 +11321,9 @@ function emitFace(buf, def, box, f, lx, ly, lz, onEdge, flags) {
       _lt[i] = lightBase;
     }
   }
-  buf.quad(_p, _uv, layer, _lt, _ao, shade, flags,
+  /* the low three flag bits carry the face index, which the shader turns
+     back into the surface normal */
+  buf.quad(_p, _uv, layer, _lt, _ao, shade, flags | f,
     _ao[0] + _ao[2] > _ao[1] + _ao[3] ? 0 : 1);
 }
 
@@ -9183,8 +11493,8 @@ function emitFluid(def, st, lx, ly, lz) {
     _uv[0] = 0; _uv[1] = 0; _uv[2] = 0; _uv[3] = 16; _uv[4] = 16; _uv[5] = 16; _uv[6] = 16; _uv[7] = 0;
     var lu = _nbL[NIDX(lx, ly + 1, lz)];
     var lu4 = [lu, lu, lu, lu];
-    buf.quad(_p, _uv, layer, lu4, a4, 255, flags, 0);
-    buf.quad(_p, _uv, layer, lu4, a4, 255, flags, 1);
+    buf.quad(_p, _uv, layer, lu4, a4, 255, flags | 2, 0);
+    buf.quad(_p, _uv, layer, lu4, a4, 255, flags | 2, 1);
   }
   /* sides */
   var sides = [[0, 1, 0, h10, h11], [1, -1, 0, h00, h01], [4, 0, 1, h11, h01], [5, 0, -1, h00, h10]];
@@ -9211,8 +11521,8 @@ function emitFluid(def, st, lx, ly, lz) {
     _uv[4] = 16; _uv[5] = 16 - hb * 16; _uv[6] = 0; _uv[7] = 16 - ha * 16;
     var ls = _nbL[NIDX(lx + d[0], ly + d[1], lz + d[2])];
     var ls4 = [ls, ls, ls, ls];
-    buf.quad(_p, _uv, layer, ls4, a4, Math.round(FACE_SHADE[f] * 255), flags, 0);
-    buf.quad(_p, _uv, layer, ls4, a4, Math.round(FACE_SHADE[f] * 255), flags, 1);
+    buf.quad(_p, _uv, layer, ls4, a4, Math.round(FACE_SHADE[f] * 255), flags | f, 0);
+    buf.quad(_p, _uv, layer, ls4, a4, Math.round(FACE_SHADE[f] * 255), flags | f, 1);
   }
   /* bottom */
   var below = _nbB[NIDX(lx, ly - 1, lz)] & ID_MASK;
@@ -9220,7 +11530,7 @@ function emitFluid(def, st, lx, ly, lz) {
     _p[0] = lx; _p[1] = ly; _p[2] = lz; _p[3] = lx + 1; _p[4] = ly; _p[5] = lz;
     _p[6] = lx + 1; _p[7] = ly; _p[8] = lz + 1; _p[9] = lx; _p[10] = ly; _p[11] = lz + 1;
     _uv[0] = 0; _uv[1] = 0; _uv[2] = 16; _uv[3] = 0; _uv[4] = 16; _uv[5] = 16; _uv[6] = 0; _uv[7] = 16;
-    buf.quad(_p, _uv, layer, l4, a4, Math.round(FACE_SHADE[3] * 255), flags, 0);
+    buf.quad(_p, _uv, layer, l4, a4, Math.round(FACE_SHADE[3] * 255), flags | 3, 0);
   }
 }
 
@@ -9316,6 +11626,8 @@ function World(seed) {
   this.requestList = [];
   this.stats = { gen: 0, meshed: 0, lit: 0, chunks: 0 };
   this.tickQueue = [];
+  this.landmarks = [];
+  this.pendingMobs = [];
 }
 
 World.prototype.initWorkers = function (srcText, count) {
@@ -9345,7 +11657,36 @@ World.prototype.onWorkerMsg = function (m) {
   this.stats.gen++;
   if (m.structures) this.applyStructureData(dim, m.structures);
 };
-World.prototype.applyStructureData = function () { };
+/* The generator hands back a list of things it could not place itself:
+   chest contents, mob spawners and the mobs that live in the structure. */
+World.prototype.applyStructureData = function (dim, list) {
+  for (var i = 0; i < list.length; i++) {
+    var s = list[i];
+    if (s.t === 'mark') { this.landmarks.push({ x: s.x, z: s.z, name: s.name, dim: dim }); continue; }
+    if (s.t === 'mob') { this.pendingMobs.push({ dim: dim, x: s.x + 0.5, y: s.y, z: s.z + 0.5, mob: s.mob }); continue; }
+    var c = this.dims[dim][(s.x >> 4) + ',' + (s.z >> 4)];
+    if (!c) continue;
+    var key = s.x + ',' + s.y + ',' + s.z;
+    if (s.t === 'chest') {
+      var be = makeBlockEntity('chest', s.x, s.y, s.z);
+      be.dim = dim;
+      be.name = 'Chest';
+      var rng = makeRNG(hash3(s.x, s.y, s.z, (this.seed ^ 0x1f2e) >>> 0) >>> 0);
+      var items = rollLoot(s.loot, rng);
+      for (var k = 0; k < items.length && k < 27; k++) {
+        var slot = Math.floor(rng() * 27);
+        if (be.items[slot]) slot = k;
+        be.items[slot] = items[k];
+      }
+      c.blockEntities[key] = be;
+    } else if (s.t === 'spawner') {
+      var sp = makeBlockEntity('spawner', s.x, s.y, s.z);
+      sp.dim = dim;
+      sp.mob = s.mob;
+      c.blockEntities[key] = sp;
+    }
+  }
+};
 
 World.prototype.chunkAt = function (dim, cx, cz) {
   return this.dims[dim][cx + ',' + cz];
@@ -9971,7 +12312,7 @@ void main(){
   vec3 skyTerm = uSkyLightCol * (uAmbient + 0.52 * sky * sky) * shade;
   vec3 blockTerm = uBlockLightCol * pow(blk, 1.55) * 1.05;
 
-  vec3 light = (skyTerm + sunTerm * 0.62 + blockTerm) * ao;
+  vec3 light = (skyTerm + sunTerm * 0.95 + blockTerm) * ao;
   vec3 col = albedo * light;
 
   // distance fog, tinted toward the sky the camera is looking at
@@ -9979,7 +12320,7 @@ void main(){
   vec3 dir = normalize(vWorld - uCamPos);
   float f = clamp((d - uFogStart) / max(uFogEnd - uFogStart, 1.0), 0.0, 1.0);
   f = f*f;
-  vec3 fogCol = mix(skyGradient(dir), uFogTint, 0.55);
+  vec3 fogCol = mix(skyGradient(dir), uFogTint, 0.38);
   if (uUnderwater == 1) {
     float wf = clamp(d / 26.0, 0.0, 1.0);
     col = mix(col, uUnderwaterCol * (0.25 + 0.75*sky), wf*wf);
@@ -10283,7 +12624,7 @@ void main(){
   float sky = vLight.x, blk = vLight.y;
   float sh = shadowFactorE(vWorld, N, ndl);
   vec3 light = uSkyLightCol*(uAmbient + 0.52*sky*sky)
-             + uSunCol*(ndl*sh*sky*sky*uDay)*0.62
+             + uSunCol*(ndl*sh*sky*sky*uDay)*0.85
              + uBlockLightCol*pow(blk,1.55)*1.05;
   // soften the hard cuboid shading a little so mobs read as solid volumes,
   // then bias the side faces down so the silhouette still reads as boxes
@@ -10293,7 +12634,7 @@ void main(){
   float d = length(vWorld - uCamPos);
   vec3 dir = normalize(vWorld - uCamPos);
   float f = clamp((d-uFogStart)/max(uFogEnd-uFogStart,1.0),0.0,1.0); f*=f;
-  vec3 fogCol = mix(skyGradient(dir), uFogTint, 0.55);
+  vec3 fogCol = mix(skyGradient(dir), uFogTint, 0.38);
   if (uUnderwater==1){ fogCol=uUnderwaterCol; f=min(f,0.6);
     col = mix(col, uUnderwaterCol*(0.25+0.75*sky), clamp(d/26.0,0.0,1.0)); }
   col = mix(col, fogCol, f);
@@ -10508,13 +12849,21 @@ void main(){
   col += texture(uGod, vUV).rgb * uGodAmt;
   col *= uExposure;
   col = tonemap(col);
+  // a gentle grade: the tonemap flattens the palette, so put a little
+  // saturation and contrast back before the tint and vignette
+  float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
+  col = clamp(mix(vec3(lum), col, 1.22), 0.0, 1.0);
+  col = clamp((col - 0.5) * 1.06 + 0.5, 0.0, 1.0);
   col = mix(col, uTintCol, uTintAmt);
   float d = length(vUV-0.5);
   col *= 1.0 - uVignette*smoothstep(0.35,0.95,d);
   // a hint of dither breaks up banding in the sky gradient
   float dth = fract(sin(dot(vUV*vec2(1024.0,768.0), vec2(12.9898,78.233)))*43758.5453);
   col += (dth-0.5)/255.0;
-  oColor = vec4(pow(col, vec3(1.0/2.2)), 1.0);
+  // The palette is hand-painted in display space, so the pipeline stays there
+  // too: no extra gamma encode, which is what keeps the colours from washing
+  // out into pastel.
+  oColor = vec4(col, 1.0);
 }`;
 
 SH.fxaaFS = `#version 300 es
@@ -10743,7 +13092,9 @@ function updateSky(timeOfDay, dim, rain, biome) {
     R.sky.fog = [fc[0] / 255, fc[1] / 255, fc[2] / 255];
   }
   R.sky.ambient = lerp(0.10, 0.24, day);
-  R.sky.skyLight = [lerp(0.13, 0.50, day) + zen[0] * 0.30, lerp(0.15, 0.55, day) + zen[1] * 0.26, lerp(0.21, 0.64, day) + zen[2] * 0.24];
+  /* the sky fill is a soft, only slightly cool ambient; the sun carries the
+     warmth and most of the intensity on lit faces */
+  R.sky.skyLight = [lerp(0.12, 0.40, day) + zen[0] * 0.14, lerp(0.13, 0.41, day) + zen[1] * 0.13, lerp(0.16, 0.44, day) + zen[2] * 0.14];
   R.sky.blockLight = [1.0, 0.72, 0.42];
 }
 
@@ -10869,8 +13220,8 @@ function renderFrame(game) {
   var underwater = p.eyeInLiquid === 'water' ? 1 : 0;
   var uwCol = underwater ? col(biome.waterFog) : [0, 0, 0];
   var uwv = [uwCol[0] / 255 * 1.6, uwCol[1] / 255 * 1.6, uwCol[2] / 255 * 1.6];
-  var fogEnd = far * (underwater ? 0.10 : 0.94);
-  var fogStart = fogEnd * (underwater ? 0.02 : 0.52);
+  var fogEnd = far * (underwater ? 0.10 : 0.98);
+  var fogStart = fogEnd * (underwater ? 0.02 : 0.72);
   if (game.weather.rain > 0.1) { fogEnd *= 1 - game.weather.rain * 0.35; fogStart *= 0.7; }
   if (dim === DIM_NETHER) { fogEnd = Math.min(fogEnd, 130); fogStart = 8; }
 
@@ -14827,6 +17178,107 @@ function findRecipe(grid, w, h) {
 }
 
 
+/* ============================ 64_loot.js ============================ */
+/* =========================================================================
+ * LOOT TABLES — what you find in the chests structures leave behind.
+ * Each entry is [item, minCount, maxCount, weight].
+ * ========================================================================= */
+
+var LOOT = {
+  village_house: [['bread', 1, 4, 8], ['wheat_seeds', 1, 3, 6], ['apple', 1, 3, 5], ['emerald', 1, 2, 3],
+    ['iron_ingot', 1, 2, 3], ['oak_sapling', 1, 2, 4], ['stick', 1, 5, 6], ['coal', 1, 4, 5],
+    ['potato', 1, 4, 4], ['carrot', 1, 4, 4], ['iron_pickaxe', 1, 1, 1], ['book', 1, 1, 2]],
+  village_smith: [['iron_ingot', 1, 5, 8], ['gold_ingot', 1, 3, 4], ['diamond', 1, 2, 2],
+    ['iron_pickaxe', 1, 1, 3], ['iron_sword', 1, 1, 3], ['iron_chestplate', 1, 1, 2],
+    ['obsidian', 1, 3, 3], ['coal', 2, 6, 6], ['bread', 1, 3, 4], ['apple', 1, 3, 4]],
+  desert_temple: [['diamond', 1, 3, 3], ['gold_ingot', 2, 7, 8], ['iron_ingot', 1, 5, 8],
+    ['emerald', 1, 3, 4], ['bone', 4, 6, 8], ['rotten_flesh', 3, 7, 8], ['saddle', 1, 1, 3],
+    ['golden_apple', 1, 1, 2], ['enchanted_golden_apple', 1, 1, 1], ['horse_armor_gold', 1, 1, 1],
+    ['gunpowder', 1, 8, 6], ['sand', 4, 8, 4]],
+  jungle_temple: [['diamond', 1, 3, 2], ['gold_ingot', 2, 7, 6], ['iron_ingot', 1, 5, 8],
+    ['emerald', 1, 3, 4], ['bamboo', 1, 3, 5], ['bone', 4, 6, 8], ['rotten_flesh', 3, 7, 8],
+    ['saddle', 1, 1, 3], ['book', 1, 1, 4], ['cocoa_beans', 1, 3, 5]],
+  igloo: [['apple', 1, 3, 6], ['coal', 1, 4, 8], ['gold_nugget', 1, 3, 4], ['stone_axe', 1, 1, 2],
+    ['emerald', 1, 1, 2], ['wheat', 2, 3, 6], ['golden_apple', 1, 1, 1]],
+  mineshaft: [['iron_ingot', 1, 5, 10], ['gold_ingot', 1, 3, 5], ['diamond', 1, 2, 3],
+    ['coal', 3, 8, 10], ['bread', 1, 3, 15], ['redstone', 4, 9, 5], ['lapis_lazuli', 2, 6, 5],
+    ['rail', 4, 8, 20], ['powered_rail', 1, 4, 5], ['torch', 1, 16, 15], ['name_tag', 1, 1, 1],
+    ['melon_seeds', 2, 4, 5], ['pumpkin_seeds', 2, 4, 5], ['beetroot_seeds', 2, 4, 5]],
+  dungeon: [['saddle', 1, 1, 20], ['golden_apple', 1, 1, 15], ['enchanted_golden_apple', 1, 1, 2],
+    ['bread', 1, 1, 20], ['wheat', 1, 4, 20], ['bucket', 1, 1, 10], ['redstone', 1, 4, 15],
+    ['iron_ingot', 1, 4, 10], ['name_tag', 1, 1, 10], ['gold_ingot', 1, 4, 5],
+    ['bone', 1, 8, 10], ['gunpowder', 1, 8, 10], ['string', 1, 8, 10], ['music_disc_13', 1, 1, 4]],
+  stronghold_library: [['book', 1, 3, 20], ['paper', 2, 7, 20], ['enchanted_book', 1, 1, 10],
+    ['emerald', 1, 3, 5], ['iron_ingot', 1, 5, 10], ['bread', 1, 3, 15], ['map', 1, 1, 5],
+    ['compass', 1, 1, 5]],
+  stronghold_corridor: [['iron_ingot', 1, 5, 10], ['gold_ingot', 1, 3, 5], ['redstone', 4, 9, 5],
+    ['bread', 1, 3, 15], ['apple', 1, 3, 15], ['iron_pickaxe', 1, 1, 5], ['iron_sword', 1, 1, 5],
+    ['iron_chestplate', 1, 1, 5], ['iron_boots', 1, 1, 5], ['golden_apple', 1, 1, 5],
+    ['ender_pearl', 1, 1, 10]],
+  ancient_city: [['echo_shard', 1, 3, 8], ['disc_fragment_5', 1, 1, 4], ['diamond', 1, 3, 6],
+    ['iron_ingot', 1, 5, 8], ['book', 1, 1, 10], ['enchanted_book', 1, 1, 6],
+    ['sculk', 4, 10, 8], ['soul_torch', 1, 4, 8], ['candle', 1, 4, 4], ['bone', 1, 6, 8],
+    ['amethyst_shard', 1, 4, 5], ['golden_apple', 1, 1, 3], ['name_tag', 1, 1, 3]],
+  nether_fortress: [['diamond', 1, 3, 5], ['gold_ingot', 1, 5, 15], ['iron_ingot', 1, 5, 15],
+    ['golden_sword', 1, 1, 5], ['golden_chestplate', 1, 1, 5], ['flint_and_steel', 1, 1, 5],
+    ['nether_wart', 3, 7, 10], ['saddle', 1, 1, 10], ['obsidian', 2, 4, 5], ['gold_nugget', 4, 12, 10]],
+  bastion: [['gold_ingot', 2, 8, 20], ['gold_nugget', 4, 12, 20], ['golden_apple', 1, 1, 8],
+    ['iron_ingot', 1, 5, 10], ['crying_obsidian', 1, 3, 8], ['magma_cream', 1, 3, 8],
+    ['golden_sword', 1, 1, 5], ['spectral_arrow', 4, 12, 8], ['string', 2, 6, 8]],
+  bastion_treasure: [['netherite_ingot', 1, 1, 3], ['netherite_upgrade_smithing_template', 1, 1, 4],
+    ['ancient_debris', 1, 2, 4], ['diamond', 2, 6, 8], ['gold_block', 1, 3, 8],
+    ['enchanted_golden_apple', 1, 1, 4], ['golden_apple', 1, 2, 8], ['gold_ingot', 4, 12, 15]],
+  outpost: [['dark_oak_log', 1, 4, 10], ['crossbow', 1, 1, 5], ['arrow', 2, 6, 15],
+    ['iron_ingot', 1, 3, 8], ['bread', 1, 4, 12], ['potato', 2, 5, 10], ['wheat', 2, 5, 10],
+    ['emerald', 1, 2, 5], ['tripwire_hook', 1, 2, 5]],
+  mansion: [['diamond', 1, 3, 4], ['gold_ingot', 1, 4, 8], ['iron_ingot', 1, 5, 10],
+    ['emerald', 1, 3, 6], ['book', 1, 1, 10], ['enchanted_book', 1, 1, 5],
+    ['lead', 1, 2, 5], ['golden_apple', 1, 1, 5], ['totem_of_undying', 1, 1, 2],
+    ['bread', 1, 4, 10], ['redstone', 2, 6, 6]],
+  shipwreck_treasure: [['emerald', 1, 5, 15], ['iron_ingot', 1, 5, 15], ['gold_ingot', 1, 5, 10],
+    ['diamond', 1, 2, 4], ['lapis_lazuli', 1, 6, 10], ['gold_nugget', 1, 10, 10],
+    ['heart_of_the_sea', 1, 1, 2], ['nautilus_shell', 1, 2, 4]],
+  shipwreck_supply: [['bread', 1, 5, 15], ['cooked_cod', 1, 4, 10], ['cooked_salmon', 1, 4, 10],
+    ['potato', 2, 6, 10], ['carrot', 4, 8, 10], ['wheat', 8, 21, 10], ['coal', 2, 8, 8],
+    ['leather_chestplate', 1, 1, 5], ['tnt', 1, 2, 3], ['bamboo', 1, 3, 5], ['paper', 1, 12, 8]],
+  shipwreck_map: [['map', 1, 1, 12], ['compass', 1, 1, 8], ['paper', 1, 10, 10],
+    ['book', 1, 5, 10], ['feather', 1, 5, 10], ['clock', 1, 1, 5]],
+  buried_treasure: [['heart_of_the_sea', 1, 1, 100], ['iron_ingot', 1, 4, 30], ['gold_ingot', 1, 4, 20],
+    ['diamond', 1, 2, 12], ['emerald', 4, 8, 12], ['prismarine_crystals', 1, 5, 10],
+    ['cooked_cod', 2, 4, 10], ['tnt', 1, 2, 6]],
+  ruined_portal: [['obsidian', 1, 2, 20], ['flint_and_steel', 1, 1, 8], ['gold_nugget', 4, 24, 20],
+    ['gold_ingot', 2, 8, 15], ['golden_apple', 1, 1, 8], ['golden_helmet', 1, 1, 5],
+    ['golden_sword', 1, 1, 5], ['fire_charge', 1, 1, 5], ['bell', 1, 1, 3], ['glistering_melon_slice', 4, 12, 8]],
+  end_city: [['diamond', 2, 7, 10], ['emerald', 2, 6, 10], ['iron_ingot', 4, 8, 10],
+    ['gold_ingot', 2, 7, 10], ['beetroot_seeds', 1, 10, 5], ['saddle', 1, 1, 3],
+    ['diamond_sword', 1, 1, 3], ['diamond_chestplate', 1, 1, 3], ['diamond_pickaxe', 1, 1, 3]],
+  end_ship: [['elytra', 1, 1, 100], ['diamond', 2, 7, 12], ['gold_ingot', 2, 7, 12],
+    ['iron_ingot', 4, 8, 12], ['emerald', 2, 6, 12], ['diamond_chestplate', 1, 1, 6],
+    ['dragon_breath', 1, 1, 6], ['enchanted_golden_apple', 1, 1, 4]]
+};
+
+function rollLoot(name, rng) {
+  var table = LOOT[name] || LOOT.dungeon;
+  var total = 0;
+  for (var i = 0; i < table.length; i++) total += table[i][3];
+  var rolls = 3 + Math.floor(rng() * 5);
+  var items = [];
+  for (var r = 0; r < rolls; r++) {
+    var pick = rng() * total, acc = 0, chosen = table[0];
+    for (var j = 0; j < table.length; j++) {
+      acc += table[j][3];
+      if (pick <= acc) { chosen = table[j]; break; }
+    }
+    var item = chosen[0];
+    if (!ITEMS[item]) continue;
+    var n = chosen[1] + Math.floor(rng() * (chosen[2] - chosen[1] + 1));
+    if (n <= 0) continue;
+    items.push(makeStack(item, Math.min(n, ITEMS[item].stack)));
+  }
+  return items;
+}
+
+
 /* ============================ 70_player.js ============================ */
 /* =========================================================================
  * PLAYER — inventory, physics, mining, placing, hunger, XP and combat.
@@ -17907,7 +20359,7 @@ function randomTickBlock(game, x, y, z) {
     var lv = Math.max((light >> 4) & 15, light & 15);
     if (lv < 9) return;
     var below = world.getId(dim, x, y - 1, z);
-    var wet = below === BID.farmland_wet ? 1 : 0;
+    var wet = (below === BID.farmland && world.getState(dim, x, y - 1, z) > 0) ? 1 : 0;
     if (Math.random() < 0.14 + wet * 0.18) world.setBlock(dim, x, y, z, bpack(id, st + 1));
     return;
   }
@@ -17927,12 +20379,12 @@ function randomTickBlock(game, x, y, z) {
     }
     return;
   }
-  if (id === BID.farmland || id === BID.farmland_wet) {
+  if (id === BID.farmland) {
     var water = false;
     for (var wx = -4; wx <= 4 && !water; wx++) for (var wz = -4; wz <= 4; wz++)
       if (world.getId(dim, x + wx, y, z + wz) === BID.water) { water = true; break; }
-    var want = water ? BID.farmland_wet : BID.farmland;
-    if (want !== id) world.setBlock(dim, x, y, z, want);
+    var want = water ? 7 : 0;
+    if (want !== st) world.setBlock(dim, x, y, z, bpack(id, want));
     else if (!water && Math.random() < 0.12 && world.getId(dim, x, y + 1, z) === 0) world.setBlock(dim, x, y, z, BID.dirt);
     return;
   }
@@ -18708,6 +21160,7 @@ function gameTick(game, dt) {
     }
     updateEntity(game, e, dt);
   }
+  drainPendingMobs(game);
   if (!p.creative) trySpawnMobs(game, dt);
   updateParticles(game, dt);
   tickBlockEntities(game, dt);
@@ -18740,6 +21193,25 @@ function gameTick(game, dt) {
     if (!MOBS[be.type].boss) continue;
     var bd = Math.hypot(be.x - p.x, be.z - p.z);
     if (bd < 120) { game.boss = be; break; }
+  }
+}
+
+/* Mobs that belong to a structure appear once their chunk is meshed. */
+function drainPendingMobs(game) {
+  var list = game.world.pendingMobs;
+  if (!list.length) return;
+  var p = game.player;
+  for (var i = list.length - 1; i >= 0; i--) {
+    var m = list[i];
+    var c = game.world.chunkAt(m.dim, Math.floor(m.x) >> 4, Math.floor(m.z) >> 4);
+    if (!c || !c.meshed) {
+      if (!c) { list[i] = list[list.length - 1]; list.pop(); }
+      continue;
+    }
+    list[i] = list[list.length - 1]; list.pop();
+    if (!MOBS[m.mob]) continue;
+    if (game.entities.length > 320) continue;
+    game.entities.push(makeEntity(m.mob, m.dim, m.x, m.y, m.z, { persist: true }));
   }
 }
 
@@ -18840,8 +21312,17 @@ function boot3(canvas) {
   setLoading('Generating world…', 0.45);
   setTimeout(function () { boot4(canvas); }, 20);
 }
+function seedFromURL() {
+  var m = /[?&#]seed=([^&#]+)/.exec(location.href);
+  if (!m) return (Math.random() * 0xffffffff) >>> 0;
+  var raw = decodeURIComponent(m[1]);
+  if (/^-?\d+$/.test(raw)) return (parseInt(raw, 10) >>> 0);
+  var h = 2166136261;
+  for (var i = 0; i < raw.length; i++) { h ^= raw.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
 function boot4(canvas) {
-  var seed = (Math.random() * 0xffffffff) >>> 0;
+  var seed = seedFromURL();
   var g = createGame(canvas, seed);
   Game = g;
   window.game = g;
@@ -18859,6 +21340,22 @@ function boot4(canvas) {
     g.dayTime = 23500;
     logMessage(g, 'Good morning.', '#aaffaa');
   };
+  /* the equivalent of /locate: walk outward through the structure grid */
+  g.locate = function (name, fromX, fromZ) {
+    var def = null;
+    for (var i = 0; i < STRUCT_DEFS.length; i++) if (STRUCT_DEFS[i].name === name) def = STRUCT_DEFS[i];
+    if (!def) return null;
+    var px = fromX === undefined ? g.player.x : fromX, pz = fromZ === undefined ? g.player.z : fromZ;
+    var crx = Math.floor((px / 16) / def.spacing), crz = Math.floor((pz / 16) / def.spacing);
+    for (var ring = 0; ring < 40; ring++) {
+      for (var dx = -ring; dx <= ring; dx++) for (var dz = -ring; dz <= ring; dz++) {
+        if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
+        var pos = structRegionPos(def, crx + dx, crz + dz, 0);
+        if (structValid(def, pos)) return { x: pos.cx * 16 + 8, y: pos.y, z: pos.cz * 16 + 8, name: name };
+      }
+    }
+    return null;
+  };
   g.onBossKilled = function (e) {
     logMessage(g, MOBS[e.type].disp + ' defeated!', '#ffdd55');
     if (e.type === 'ender_dragon') spawnXP(g, e.dim, e.x, e.y, e.z, 500);
@@ -18866,6 +21363,10 @@ function boot4(canvas) {
 
   loadGame(g);
   setupInput(g);
+
+  /* the main thread keeps its own copy of the noise fields so it can answer
+     climate and structure-location queries without asking a worker */
+  WorldGen.init(g.seed);
 
   var workerSrc = document.getElementById('worker-src').textContent;
   g.world.initWorkers(workerSrc, Math.min(6, Math.max(2, (navigator.hardwareConcurrency || 4) - 1)));
@@ -18890,7 +21391,7 @@ function boot4(canvas) {
 
 /* Walk outward from the origin until we find dry, open land — nobody wants
    to spawn a hundred blocks out to sea or inside a mountain. */
-function findSpawnPoint(g) {
+function findSpawnPoint(g, relax) {
   var w = g.world, dim = g.player.dim;
   var best = null;
   for (var r = 0; r < 12 && !best; r++) {
@@ -18909,12 +21410,14 @@ function findSpawnPoint(g) {
       if (bi && bi.name.indexOf('ocean') >= 0) continue;
       /* open sky and room to stand — never inside a canopy */
       if (w.getId(dim, x, h + 1, z) !== 0 || w.getId(dim, x, h + 2, z) !== 0) continue;
-      if (((w.getLight(dim, x, h + 1, z) >> 4) & 15) < 15) continue;
-      var clear = true;
-      for (var ox = -1; ox <= 1 && clear; ox++) for (var oz = -1; oz <= 1; oz++) {
-        if (w.getId(dim, x + ox, h + 1, z + oz) !== 0) { clear = false; break; }
+      if (relax < 2 && ((w.getLight(dim, x, h + 1, z) >> 4) & 15) < 15) continue;
+      if (relax < 1) {
+        var clear = true;
+        for (var ox = -1; ox <= 1 && clear; ox++) for (var oz = -1; oz <= 1; oz++) {
+          if (w.getId(dim, x + ox, h + 1, z + oz) !== 0) { clear = false; break; }
+        }
+        if (!clear) continue;
       }
-      if (!clear) continue;
       best = { x: x, y: h + 1, z: z };
     }
   }
@@ -18932,7 +21435,12 @@ function waitForSpawn(g) {
   if (!g.spawned) {
     g.spawned = true;
     if (!g.loadedSave) {
-      var spot = findSpawnPoint(g);
+      g.spawnTries = (g.spawnTries || 0) + 1;
+      var spot = findSpawnPoint(g, g.spawnTries > 90 ? 2 : (g.spawnTries > 45 ? 1 : 0));
+      if (!spot && g.spawnTries > 150) {
+        /* nothing dry anywhere nearby — stand on the sea and get on with it */
+        spot = { x: 0, y: Math.max(SEA + 1, g.world.getHeight(g.player.dim, 0, 0) + 1), z: 0 };
+      }
       if (!spot) { requestAnimationFrame(function () { waitForSpawn(g); }); g.spawned = false; return; }
       p.x = spot.x + 0.5; p.z = spot.z + 0.5; p.y = spot.y;
       p.spawnX = spot.x; p.spawnY = spot.y; p.spawnZ = spot.z;

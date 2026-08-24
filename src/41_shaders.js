@@ -181,7 +181,7 @@ void main(){
   vec3 skyTerm = uSkyLightCol * (uAmbient + 0.52 * sky * sky) * shade;
   vec3 blockTerm = uBlockLightCol * pow(blk, 1.55) * 1.05;
 
-  vec3 light = (skyTerm + sunTerm * 0.62 + blockTerm) * ao;
+  vec3 light = (skyTerm + sunTerm * 0.95 + blockTerm) * ao;
   vec3 col = albedo * light;
 
   // distance fog, tinted toward the sky the camera is looking at
@@ -189,7 +189,7 @@ void main(){
   vec3 dir = normalize(vWorld - uCamPos);
   float f = clamp((d - uFogStart) / max(uFogEnd - uFogStart, 1.0), 0.0, 1.0);
   f = f*f;
-  vec3 fogCol = mix(skyGradient(dir), uFogTint, 0.55);
+  vec3 fogCol = mix(skyGradient(dir), uFogTint, 0.38);
   if (uUnderwater == 1) {
     float wf = clamp(d / 26.0, 0.0, 1.0);
     col = mix(col, uUnderwaterCol * (0.25 + 0.75*sky), wf*wf);
