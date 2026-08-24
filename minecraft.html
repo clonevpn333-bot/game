@@ -17770,7 +17770,10 @@ function rayBoxes(ox, oy, oz, dx, dy, dz, bx, by, bz, boxes, maxDist) {
     var x0 = bx + b[0], y0 = by + b[1], z0 = bz + b[2];
     var x1 = bx + b[3], y1 = by + b[4], z1 = bz + b[5];
     var tmin = 0, tmax = maxDist, face = -1;
-    var axes = [[ox, dx, x0, x1, 0, 1], [oy, dy, y0, y1, 2, 3], [oz, dz, z0, z1, 4, 5]];
+    /* The face we hit is the one we enter through: travelling in +X we cross
+       the box's -X face, and vice versa — so the pairs are the negative face
+       first, positive second. */
+    var axes = [[ox, dx, x0, x1, 1, 0], [oy, dy, y0, y1, 3, 2], [oz, dz, z0, z1, 5, 4]];
     var ok = true;
     for (var a = 0; a < 3; a++) {
       var o = axes[a][0], d = axes[a][1], lo = axes[a][2], hi = axes[a][3];
