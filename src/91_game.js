@@ -822,27 +822,56 @@ function boot4(canvas) {
     giveItem(g, 'crafting_table', 1);
   }
 
+  g.spawnCol = findSpawnColumn(g);
+  p.x = g.spawnCol.x + 0.5; p.z = g.spawnCol.z + 0.5;
+  p.y = SEA + 40; p.camY = p.y + 1.62;
   setLoading('Loading terrain…', 0.6);
   waitForSpawn(g);
 }
 
-/* Walk outward from the origin until we find dry, open land — nobody wants
-   to spawn a hundred blocks out to sea or inside a mountain. */
+/* The main thread has its own copy of the noise fields, so a dry starting
+   column can be found analytically before a single chunk has arrived — no
+   more spawning in the middle of an ocean because the search gave up. */
+function findSpawnColumn(g) {
+  for (var r = 0; r < 400; r++) {
+    var steps = Math.max(1, r * 6);
+    for (var a = 0; a < steps; a++) {
+      var ang = a / steps * Math.PI * 2 + r * 0.618;
+      var x = Math.round(Math.cos(ang) * r * 12);
+      var z = Math.round(Math.sin(ang) * r * 12);
+      var cl = climateAt(x, z);
+      var h = heightFrom(x, z, cl);
+      if (h < SEA + 3 || h > SEA + 90) continue;
+      var bio = BIOMES[pickBiome(x, z, h, cl)];
+      if (!bio) continue;
+      var n = bio.name;
+      if (n.indexOf('ocean') >= 0 || n.indexOf('river') >= 0 || n.indexOf('beach') >= 0) continue;
+      if (n.indexOf('peaks') >= 0 || n.indexOf('badlands') >= 0) continue;
+      return { x: x, z: z, biome: n };
+    }
+  }
+  return { x: 0, z: 0, biome: 'unknown' };
+}
+
+/* Walk outward from the target column until we find dry, open land — nobody
+   wants to spawn inside a tree or on a cliff edge. */
 function findSpawnPoint(g, relax) {
   var w = g.world, dim = g.player.dim;
   var best = null;
-  for (var r = 0; r < 12 && !best; r++) {
-    for (var a = 0; a < Math.max(1, r * 8) && !best; a++) {
-      var ang = a / Math.max(1, r * 8) * Math.PI * 2;
-      var x = Math.round(Math.cos(ang) * r * 12);
-      var z = Math.round(Math.sin(ang) * r * 12);
+  for (var r = 0; r < 22 && !best; r++) {
+    for (var a = 0; a < Math.max(1, r * 10) && !best; a++) {
+      var ang = a / Math.max(1, r * 10) * Math.PI * 2;
+      var x = g.spawnCol.x + Math.round(Math.cos(ang) * r * 6);
+      var z = g.spawnCol.z + Math.round(Math.sin(ang) * r * 6);
       var c = w.chunkAt(dim, x >> 4, z >> 4);
       if (!c || !c.loaded) continue;
       var h = w.getHeight(dim, x, z);
       if (h <= SEA) continue;
       var ground = w.getId(dim, x, h, z);
-      if (!ground || !BLOCKS[ground].solid) continue;
+      if (!ground || !BLOCKS[ground].solid || !BLOCKS[ground].opaque) continue;
       if (BLOCKS[ground].liquid) continue;
+      /* standing on a treetop is not a spawn */
+      if (/_leaves|_log|_stem|_wood|_hyphae/.test(BLOCKS[ground].name)) continue;
       var bi = w.getBiome(dim, x, z);
       if (bi && bi.name.indexOf('ocean') >= 0) continue;
       /* open sky and room to stand — never inside a canopy */
@@ -874,9 +903,9 @@ function waitForSpawn(g) {
     if (!g.loadedSave) {
       g.spawnTries = (g.spawnTries || 0) + 1;
       var spot = findSpawnPoint(g, g.spawnTries > 90 ? 2 : (g.spawnTries > 45 ? 1 : 0));
-      if (!spot && g.spawnTries > 150) {
-        /* nothing dry anywhere nearby — stand on the sea and get on with it */
-        spot = { x: 0, y: Math.max(SEA + 1, g.world.getHeight(g.player.dim, 0, 0) + 1), z: 0 };
+      if (!spot && g.spawnTries > 200) {
+        var hh = g.world.getHeight(g.player.dim, g.spawnCol.x, g.spawnCol.z);
+        spot = { x: g.spawnCol.x, y: Math.max(SEA + 1, hh + 1), z: g.spawnCol.z };
       }
       if (!spot) { requestAnimationFrame(function () { waitForSpawn(g); }); g.spawned = false; return; }
       p.x = spot.x + 0.5; p.z = spot.z + 0.5; p.y = spot.y;
