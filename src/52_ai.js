@@ -127,6 +127,9 @@ function updateEntity(game, e, dt) {
   if (def.primed) { updatePrimedTNT(game, e, dt); return; }
   if (def.falling) { updateFallingBlock(game, e, dt); return; }
 
+  if (e.type === 'wither' && typeof updateWither === 'function' && updateWither(game, e, dt)) { applyPhysics(game, e, dt, def); return; }
+  if (e.type === 'warden' && typeof wardenSense === 'function') wardenSense(game, e, dt);
+
   var p = game.player;
   var toP = null, distP = 1e9;
   if (p.dim === e.dim && !p.dead) {
@@ -140,6 +143,7 @@ function updateEntity(game, e, dt) {
   var wantsTarget = def.hostile && !def.static && !(def.neutral && !e.angry) &&
     !(def.neutralInLight && game.world.getLight(e.dim, Math.floor(e.x), Math.floor(e.y), Math.floor(e.z)) >> 4 > 8 && !e.angry);
   if (def.defender && !e.angry) wantsTarget = false;
+  if (def.blind) wantsTarget = false;   /* the warden hunts by sound, set above */
   if (wantsTarget && toP && distP < aggro) {
     if (def.type === 'enderman' && !e.angry) {
       /* the stare mechanic: only aggravated when the player looks at it */
@@ -291,6 +295,8 @@ function hasLineOfSight(world, a, b) {
 
 function applyPhysics(game, e, dt, def) {
   var world = game.world;
+  var hc = world.chunkAt(e.dim, Math.floor(e.x) >> 4, Math.floor(e.z) >> 4);
+  if (!hc || !hc.loaded) { e.vy = 0; return; }
   var lq = liquidAt(world, e.dim, e.x, e.y + e.h * 0.4, e.z);
   e.inWater = lq === 'water';
   e.inLava = lq === 'lava';
@@ -347,6 +353,7 @@ function killEntity(game, e, source) {
   if (e.dead) return;
   e.dead = true; e.deathTime = 0;
   var def = MOBS[e.type];
+  if (e.type === 'end_crystal' && typeof onCrystalDestroyed === 'function') { onCrystalDestroyed(game, e); e.remove = true; }
   if (def.splits && (e.sizeMul || 1) > 0.6) {
     for (var i = 0; i < 3; i++) {
       var c = makeEntity(e.type, e.dim, e.x + (Math.random() - 0.5), e.y + 0.2, e.z + (Math.random() - 0.5), { sizeMul: (e.sizeMul || 1) * 0.5 });

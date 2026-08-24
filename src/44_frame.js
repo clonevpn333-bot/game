@@ -29,6 +29,9 @@ function gatherVisible(world, dim, camX, camY, camZ, frustum, maxDist) {
   }
 }
 
+/* The shadow pass only needs the sections the shadow map actually covers,
+   which is a fraction of what the camera sees at a long render distance. */
+var _shadowCull = 0, _shadowCam = [0, 0, 0];
 function drawChunkPass(prog, pass, sortFar) {
   var n = _visible.length / 3;
   var order = null;
@@ -43,6 +46,11 @@ function drawChunkPass(prog, pass, sortFar) {
     var c = _visible[idx * 3], sy = _visible[idx * 3 + 1];
     var m = c.mesh[sy][pass];
     if (!m) continue;
+    if (_shadowCull > 0) {
+      var ddx = c.cx * 16 + 8 - _shadowCam[0], ddz = c.cz * 16 + 8 - _shadowCam[2];
+      var ddy = sy * 16 + 8 - _shadowCam[1];
+      if (ddx * ddx + ddy * ddy + ddz * ddz > _shadowCull) continue;
+    }
     gl.uniform3f(prog.u.uChunkOrigin, c.cx * 16, sy * 16, c.cz * 16);
     if (prog.u.uTintTex && c.tintTex) {
       gl.activeTexture(gl.TEXTURE1);
@@ -96,6 +104,8 @@ function renderFrame(game) {
   if (shadowOn) {
     var range = Math.min(78, R.settings.renderDistance * 12);
     buildShadowMatrix(camX, camY, camZ, range);
+    _shadowCull = (range * 1.9) * (range * 1.9);
+    _shadowCam[0] = camX; _shadowCam[1] = camY; _shadowCam[2] = camZ;
     R.shadowFBO.bind();
     gl.clear(gl.DEPTH_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST);
@@ -111,6 +121,7 @@ function renderFrame(game) {
     gl.uniform1f(sp.u.uAlphaTest, 1);
     drawChunkPass(sp, PASS_CUTOUT, false);
     gl.enable(gl.CULL_FACE);
+    _shadowCull = 0;
   }
 
   /* --------------------------------- scene ----------------------------- */

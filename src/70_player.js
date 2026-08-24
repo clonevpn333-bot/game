@@ -401,6 +401,7 @@ function placeBlock(game, hit) {
   if (nb.render === 'door') world.setBlock(p.dim, tx, ty + 1, tz, bpack(bid, st | 8));
   if (nb.tall) world.setBlock(p.dim, tx, ty + 1, tz, bpack(bid, 8));
   playSound(game, 'place', tx + 0.5, ty + 0.5, tz + 0.5);
+  if (bid === BID.wither_skeleton_skull) checkWitherSummon(game, p.dim, tx, ty, tz);
   if (!p.creative) { s.count--; if (s.count <= 0) p.inv[p.sel] = null; }
   game.ui.dirty = true;
   p.placeSwing = 1;
@@ -495,7 +496,7 @@ function interactBlock(game, hit) {
     playSound(game, 'click', hit.x, hit.y, hit.z);
     return true;
   }
-  if (b.name === 'bed') { game.trySleep(); return true; }
+  if (b.render === 'bed') { game.trySleep(hit); return true; }
   if (b.name === 'crafting_table') { showScreen(game, 'crafting'); return true; }
   /* hoe tills dirt, shovel makes paths, axe strips logs, flint lights fires */
   var held = heldItem(p);
@@ -727,6 +728,11 @@ function updatePlayer(game, dt, input) {
   if (p.portalCool > 0) p.portalCool -= dt;
 
   if (p.dead) { p.deathTime += dt; return; }
+
+  /* Never simulate against a chunk that has not arrived yet — otherwise the
+     player falls straight through the world while it is still streaming in. */
+  var here = world.chunkAt(p.dim, Math.floor(p.x) >> 4, Math.floor(p.z) >> 4);
+  if (!here || !here.loaded) { p.vy = 0; p.fallStart = null; return; }
 
   var eyeBlock = world.getId(p.dim, Math.floor(p.x), Math.floor(p.camY), Math.floor(p.z));
   p.submerged = eyeBlock === BID.water;

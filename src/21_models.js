@@ -69,6 +69,7 @@ function buildModel(id, state) {
     case 'none': return [];
     case 'cube': return [mkBox(0, 0, 0, 16, 16, 16, L, { cull: true })];
     case 'box': return [mkBox(0, 0, 0, 16, def.boxes ? def.boxes[0].t[1] : 16, 16, L, { cull: true })];
+    case 'skull': return [mkBox(4, 0, 4, 12, 8, 12, L, {})];
     case 'slab': {
       var half = state & 3;
       if (half === 2) return [mkBox(0, 0, 0, 16, 16, 16, L, { cull: true })];

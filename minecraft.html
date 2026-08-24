@@ -1301,6 +1301,26 @@ var B_STONE, B_DIRT, B_GRASS, B_WATER, B_LAVA, B_SAND, B_GRAVEL, B_BEDROCK, B_DE
 
 /* Fast lookup tables the mesher and physics hammer every frame. */
 var IS_OPAQUE = null, IS_SOLID = null, LIGHT_EMIT = null, IS_LIQUID = null, LIGHT_ABSORB = null;
+/* --------------------------------------------------------------- heads -- */
+(function () {
+  var heads = [
+    ['skeleton_skull', 'face_skeleton', 'Skeleton Skull'],
+    ['wither_skeleton_skull', 'face_wither_skeleton', 'Wither Skeleton Skull'],
+    ['zombie_head', 'face_zombie', 'Zombie Head'],
+    ['creeper_head', 'face_creeper', 'Creeper Head'],
+    ['player_head', 'face_player', 'Player Head'],
+    ['piglin_head', 'face_piglin', 'Piglin Head'],
+    ['dragon_head', 'face_dragon', 'Dragon Head']
+  ];
+  for (var i = 0; i < heads.length; i++) {
+    defBlock(heads[i][0], {
+      render: 'skull', tex: T.custom(heads[i][1]), disp: heads[i][2],
+      hard: 1, solid: false, opaque: false, collide: true, place: 'rot16',
+      group: 'deco', stack: 64, sound: 'stone'
+    });
+  }
+})();
+
 function buildBlockTables() {
   var n = BLOCKS.length;
   IS_OPAQUE = new Uint8Array(n); IS_SOLID = new Uint8Array(n);
@@ -5248,6 +5268,26 @@ var B_STONE, B_DIRT, B_GRASS, B_WATER, B_LAVA, B_SAND, B_GRAVEL, B_BEDROCK, B_DE
 
 /* Fast lookup tables the mesher and physics hammer every frame. */
 var IS_OPAQUE = null, IS_SOLID = null, LIGHT_EMIT = null, IS_LIQUID = null, LIGHT_ABSORB = null;
+/* --------------------------------------------------------------- heads -- */
+(function () {
+  var heads = [
+    ['skeleton_skull', 'face_skeleton', 'Skeleton Skull'],
+    ['wither_skeleton_skull', 'face_wither_skeleton', 'Wither Skeleton Skull'],
+    ['zombie_head', 'face_zombie', 'Zombie Head'],
+    ['creeper_head', 'face_creeper', 'Creeper Head'],
+    ['player_head', 'face_player', 'Player Head'],
+    ['piglin_head', 'face_piglin', 'Piglin Head'],
+    ['dragon_head', 'face_dragon', 'Dragon Head']
+  ];
+  for (var i = 0; i < heads.length; i++) {
+    defBlock(heads[i][0], {
+      render: 'skull', tex: T.custom(heads[i][1]), disp: heads[i][2],
+      hard: 1, solid: false, opaque: false, collide: true, place: 'rot16',
+      group: 'deco', stack: 64, sound: 'stone'
+    });
+  }
+})();
+
 function buildBlockTables() {
   var n = BLOCKS.length;
   IS_OPAQUE = new Uint8Array(n); IS_SOLID = new Uint8Array(n);
@@ -10904,6 +10944,7 @@ function buildModel(id, state) {
     case 'none': return [];
     case 'cube': return [mkBox(0, 0, 0, 16, 16, 16, L, { cull: true })];
     case 'box': return [mkBox(0, 0, 0, 16, def.boxes ? def.boxes[0].t[1] : 16, 16, L, { cull: true })];
+    case 'skull': return [mkBox(4, 0, 4, 12, 8, 12, L, {})];
     case 'slab': {
       var half = state & 3;
       if (half === 2) return [mkBox(0, 0, 0, 16, 16, 16, L, { cull: true })];
@@ -13281,6 +13322,9 @@ function gatherVisible(world, dim, camX, camY, camZ, frustum, maxDist) {
   }
 }
 
+/* The shadow pass only needs the sections the shadow map actually covers,
+   which is a fraction of what the camera sees at a long render distance. */
+var _shadowCull = 0, _shadowCam = [0, 0, 0];
 function drawChunkPass(prog, pass, sortFar) {
   var n = _visible.length / 3;
   var order = null;
@@ -13295,6 +13339,11 @@ function drawChunkPass(prog, pass, sortFar) {
     var c = _visible[idx * 3], sy = _visible[idx * 3 + 1];
     var m = c.mesh[sy][pass];
     if (!m) continue;
+    if (_shadowCull > 0) {
+      var ddx = c.cx * 16 + 8 - _shadowCam[0], ddz = c.cz * 16 + 8 - _shadowCam[2];
+      var ddy = sy * 16 + 8 - _shadowCam[1];
+      if (ddx * ddx + ddy * ddy + ddz * ddz > _shadowCull) continue;
+    }
     gl.uniform3f(prog.u.uChunkOrigin, c.cx * 16, sy * 16, c.cz * 16);
     if (prog.u.uTintTex && c.tintTex) {
       gl.activeTexture(gl.TEXTURE1);
@@ -13348,6 +13397,8 @@ function renderFrame(game) {
   if (shadowOn) {
     var range = Math.min(78, R.settings.renderDistance * 12);
     buildShadowMatrix(camX, camY, camZ, range);
+    _shadowCull = (range * 1.9) * (range * 1.9);
+    _shadowCam[0] = camX; _shadowCam[1] = camY; _shadowCam[2] = camZ;
     R.shadowFBO.bind();
     gl.clear(gl.DEPTH_BUFFER_BIT);
     gl.enable(gl.DEPTH_TEST);
@@ -13363,6 +13414,7 @@ function renderFrame(game) {
     gl.uniform1f(sp.u.uAlphaTest, 1);
     drawChunkPass(sp, PASS_CUTOUT, false);
     gl.enable(gl.CULL_FACE);
+    _shadowCull = 0;
   }
 
   /* --------------------------------- scene ----------------------------- */
@@ -15028,6 +15080,9 @@ function updateEntity(game, e, dt) {
   if (def.primed) { updatePrimedTNT(game, e, dt); return; }
   if (def.falling) { updateFallingBlock(game, e, dt); return; }
 
+  if (e.type === 'wither' && typeof updateWither === 'function' && updateWither(game, e, dt)) { applyPhysics(game, e, dt, def); return; }
+  if (e.type === 'warden' && typeof wardenSense === 'function') wardenSense(game, e, dt);
+
   var p = game.player;
   var toP = null, distP = 1e9;
   if (p.dim === e.dim && !p.dead) {
@@ -15041,6 +15096,7 @@ function updateEntity(game, e, dt) {
   var wantsTarget = def.hostile && !def.static && !(def.neutral && !e.angry) &&
     !(def.neutralInLight && game.world.getLight(e.dim, Math.floor(e.x), Math.floor(e.y), Math.floor(e.z)) >> 4 > 8 && !e.angry);
   if (def.defender && !e.angry) wantsTarget = false;
+  if (def.blind) wantsTarget = false;   /* the warden hunts by sound, set above */
   if (wantsTarget && toP && distP < aggro) {
     if (def.type === 'enderman' && !e.angry) {
       /* the stare mechanic: only aggravated when the player looks at it */
@@ -15192,6 +15248,8 @@ function hasLineOfSight(world, a, b) {
 
 function applyPhysics(game, e, dt, def) {
   var world = game.world;
+  var hc = world.chunkAt(e.dim, Math.floor(e.x) >> 4, Math.floor(e.z) >> 4);
+  if (!hc || !hc.loaded) { e.vy = 0; return; }
   var lq = liquidAt(world, e.dim, e.x, e.y + e.h * 0.4, e.z);
   e.inWater = lq === 'water';
   e.inLava = lq === 'lava';
@@ -15248,6 +15306,7 @@ function killEntity(game, e, source) {
   if (e.dead) return;
   e.dead = true; e.deathTime = 0;
   var def = MOBS[e.type];
+  if (e.type === 'end_crystal' && typeof onCrystalDestroyed === 'function') { onCrystalDestroyed(game, e); e.remove = true; }
   if (def.splits && (e.sizeMul || 1) > 0.6) {
     for (var i = 0; i < 3; i++) {
       var c = makeEntity(e.type, e.dim, e.x + (Math.random() - 0.5), e.y + 0.2, e.z + (Math.random() - 0.5), { sizeMul: (e.sizeMul || 1) * 0.5 });
@@ -17823,6 +17882,7 @@ function placeBlock(game, hit) {
   if (nb.render === 'door') world.setBlock(p.dim, tx, ty + 1, tz, bpack(bid, st | 8));
   if (nb.tall) world.setBlock(p.dim, tx, ty + 1, tz, bpack(bid, 8));
   playSound(game, 'place', tx + 0.5, ty + 0.5, tz + 0.5);
+  if (bid === BID.wither_skeleton_skull) checkWitherSummon(game, p.dim, tx, ty, tz);
   if (!p.creative) { s.count--; if (s.count <= 0) p.inv[p.sel] = null; }
   game.ui.dirty = true;
   p.placeSwing = 1;
@@ -17917,7 +17977,7 @@ function interactBlock(game, hit) {
     playSound(game, 'click', hit.x, hit.y, hit.z);
     return true;
   }
-  if (b.name === 'bed') { game.trySleep(); return true; }
+  if (b.render === 'bed') { game.trySleep(hit); return true; }
   if (b.name === 'crafting_table') { showScreen(game, 'crafting'); return true; }
   /* hoe tills dirt, shovel makes paths, axe strips logs, flint lights fires */
   var held = heldItem(p);
@@ -18149,6 +18209,11 @@ function updatePlayer(game, dt, input) {
   if (p.portalCool > 0) p.portalCool -= dt;
 
   if (p.dead) { p.deathTime += dt; return; }
+
+  /* Never simulate against a chunk that has not arrived yet — otherwise the
+     player falls straight through the world while it is still streaming in. */
+  var here = world.chunkAt(p.dim, Math.floor(p.x) >> 4, Math.floor(p.z) >> 4);
+  if (!here || !here.loaded) { p.vy = 0; p.fallStart = null; return; }
 
   var eyeBlock = world.getId(p.dim, Math.floor(p.x), Math.floor(p.camY), Math.floor(p.z));
   p.submerged = eyeBlock === BID.water;
@@ -21036,22 +21101,26 @@ function pumpChunks(game, budgetMs) {
     asked++;
   }
 
-  /* light newly generated chunks whose neighbours are present */
-  for (var j = 0; j < sp.length; j++) {
-    if (performance.now() - t0 > budgetMs) break;
+  /* Light and mesh get separate time budgets.  Sharing one clock lets the
+     lighting pass eat the whole frame and starve meshing, which shows up as
+     a world that loads terrain but never draws it. */
+  var lit = 0;
+  for (var j = 0; j < sp.length && lit < 2; j++) {
+    if (performance.now() - t0 > 3) break;
     var cx2 = pcx + sp[j][0], cz2 = pcz + sp[j][1];
     var c = world.chunkAt(dim, cx2, cz2);
     if (!c || !c.loaded || c.lit) continue;
     world.initChunkLight(c);
-    break;
+    lit++;
   }
 
-  world.propagate(dim, 20000);
+  world.propagate(dim, 14000);
 
   /* mesh: nearest unmeshed chunk with all four neighbours loaded */
+  var t1 = performance.now();
   var meshed = 0;
   for (var k = 0; k < sp.length && meshed < 3; k++) {
-    if (performance.now() - t0 > budgetMs) break;
+    if (performance.now() - t1 > 6) break;
     var cx3 = pcx + sp[k][0], cz3 = pcz + sp[k][1];
     if (sp[k][2] > rd) continue;
     var c3 = world.chunkAt(dim, cx3, cz3);
@@ -21065,7 +21134,8 @@ function pumpChunks(game, budgetMs) {
   /* re-mesh dirty sections */
   var q = world.meshQueue;
   var remeshed = 0;
-  while (q.length && remeshed < 12 && performance.now() - t0 < budgetMs + 4) {
+  var t2 = performance.now();
+  while (q.length && remeshed < 12 && performance.now() - t2 < 4) {
     var job = q.shift();
     var c4 = world.chunkAt(job[0], job[1], job[2]);
     if (!c4 || !c4.meshed) continue;
@@ -21309,6 +21379,8 @@ function gameTick(game, dt) {
     updateEntity(game, e, dt);
   }
   drainPendingMobs(game);
+  updateDragonFight(game, dt);
+  updateSleep(game, dt);
   if (!p.creative) trySpawnMobs(game, dt);
   updateParticles(game, dt);
   tickBlockEntities(game, dt);
@@ -21486,11 +21558,7 @@ function boot4(canvas) {
   g.remeshAll = function () { remeshAll(g); };
   g.growTree = function (dim, x, y, z, kind) { growTree(g, dim, x, y, z, kind); };
   g.travelDimension = function (to) { travelDimension(g, to); };
-  g.trySleep = function () {
-    if (g.isDay) { logMessage(g, 'You can only sleep at night.', '#ff9955'); return; }
-    g.dayTime = 23500;
-    logMessage(g, 'Good morning.', '#aaffaa');
-  };
+  g.trySleep = function (hit) { return trySleepInBed(g, hit || { x: Math.floor(g.player.x), y: Math.floor(g.player.y), z: Math.floor(g.player.z) }); };
   /* the equivalent of /locate: walk outward through the structure grid */
   g.locate = function (name, fromX, fromZ) {
     var def = null;
@@ -21645,7 +21713,10 @@ function DIAG() {
     mobs: Object.keys(MOBS).length, biomes: BIOMES.length, recipes: RECIPES.length,
     chunks: g.world.stats.chunks, meshed: g.world.stats.meshed,
     entities: g.entities.length, fps: g.fps,
-    player: { x: g.player.x, y: g.player.y, z: g.player.z, dim: g.player.dim },
+    player: { x: g.player.x, y: g.player.y, z: g.player.z, dim: g.player.dim,
+      spawn: [g.player.spawnX, g.player.spawnY, g.player.spawnZ], hp: g.player.hp, onGround: g.player.onGround,
+      surface: g.world.getHeight(g.player.dim, Math.floor(g.player.x), Math.floor(g.player.z)),
+      below: BLOCKS[g.world.getId(g.player.dim, Math.floor(g.player.x), Math.floor(g.player.y) - 1, Math.floor(g.player.z))].name },
     errors: window.__errors || []
   };
 }
@@ -22104,6 +22175,185 @@ function rsRegisterPlate(game, dim, x, y, z) {
 function rsPressButton(game, dim, x, y, z) {
   RS.buttons = RS.buttons || {};
   RS.buttons[rsKey(dim, x, y, z)] = { t: 1.0, dim: dim, x: x, y: y, z: z };
+}
+
+
+/* ============================ 93_bosses.js ============================ */
+/* =========================================================================
+ * BOSS FIGHTS — the dragon's crystals and flight pattern, summoning the
+ * Wither, the Warden's sculk senses, and sleeping through the night.
+ * ========================================================================= */
+
+/* -------------------------------------------------------- ender dragon -- */
+function updateDragonFight(game, dt) {
+  var list = game.entities;
+  var dragon = null, crystals = [];
+  for (var i = 0; i < list.length; i++) {
+    var e = list[i];
+    if (e.dead || e.remove) continue;
+    if (e.type === 'ender_dragon') dragon = e;
+    else if (e.type === 'end_crystal') crystals.push(e);
+  }
+  if (!dragon) return;
+  var p = game.player;
+
+  /* a living crystal feeds the dragon; the beam gives the player a target */
+  dragon.healSource = null;
+  if (crystals.length) {
+    var best = null, bestD = 1e9;
+    for (var c = 0; c < crystals.length; c++) {
+      var d2 = (crystals[c].x - dragon.x) * (crystals[c].x - dragon.x) + (crystals[c].z - dragon.z) * (crystals[c].z - dragon.z);
+      if (d2 < bestD) { bestD = d2; best = crystals[c]; }
+    }
+    dragon.healSource = best;
+    dragon.healT = (dragon.healT || 0) + dt;
+    if (dragon.healT > 0.5) {
+      dragon.healT = 0;
+      dragon.hp = Math.min(dragon.maxHp, dragon.hp + 1);
+    }
+    if (Math.random() < dt * 26) {
+      var t = Math.random();
+      spawnParticle(game, dragon.dim,
+        best.x + (dragon.x - best.x) * t, best.y + 1.4 + (dragon.y + 1 - best.y - 1.4) * t,
+        best.z + (dragon.z - best.z) * t, 0, 0.2, 0, 0.85, 0.35, 0.95, 0.10, 0.5);
+    }
+  }
+
+  /* flight: wide circles over the pillars, diving at the player now and then */
+  dragon.phaseT = (dragon.phaseT || 0) - dt;
+  if (dragon.phaseT <= 0) {
+    if (dragon.phase === 'dive') { dragon.phase = 'circle'; dragon.phaseT = 8 + Math.random() * 8; }
+    else { dragon.phase = crystals.length ? 'circle' : 'dive'; dragon.phaseT = 6 + Math.random() * 6; }
+  }
+  if (dragon.phase === 'circle' || !dragon.phase) {
+    dragon.orbit = (dragon.orbit || 0) + dt * 0.45;
+    var r = 44;
+    dragon.wx = Math.cos(dragon.orbit) * r;
+    dragon.wz = Math.sin(dragon.orbit) * r;
+    dragon.wy = 112 + Math.sin(dragon.orbit * 1.7) * 8;
+    dragon.target = null;
+  } else {
+    dragon.target = p.dim === dragon.dim && !p.dead ? p : null;
+  }
+
+  /* the dragon breathes on you when it is close and not orbiting */
+  dragon.breathCool = (dragon.breathCool || 0) - dt;
+  if (dragon.phase === 'dive' && p.dim === dragon.dim && dragon.breathCool <= 0) {
+    var pd = Math.hypot(p.x - dragon.x, p.z - dragon.z);
+    if (pd < 26) {
+      dragon.breathCool = 5;
+      fireProjectile(game, dragon, 'ghast_fireball', p);
+      playSound(game, 'bossroar', dragon.x, dragon.y, dragon.z);
+    }
+  }
+}
+/* the crystal explodes when hit and stops feeding the dragon */
+function onCrystalDestroyed(game, e) {
+  explode(game, e.x, e.y + 0.6, e.z, 3.2, e.dim);
+}
+
+/* ------------------------------------------------------------- wither -- */
+/* three wither skulls on a T of soul sand, exactly as it has always been. */
+function checkWitherSummon(game, dim, x, y, z) {
+  var w = game.world;
+  var SK = BID.wither_skeleton_skull, SS = BID.soul_sand, SO = BID.soul_soil;
+  if (SK === undefined) return false;
+  function soul(bx, by, bz) { var id = w.getId(dim, bx, by, bz); return id === SS || id === SO; }
+  function skull(bx, by, bz) { return w.getId(dim, bx, by, bz) === SK; }
+  /* the placed skull can be any of the three, so test both orientations from
+     each possible centre */
+  for (var ox = -1; ox <= 1; ox++) for (var axis = 0; axis < 2; axis++) {
+    var cx = x - (axis === 0 ? ox : 0), cz = z - (axis === 1 ? ox : 0);
+    var dx = axis === 0 ? 1 : 0, dz = axis === 1 ? 1 : 0;
+    if (!skull(cx, y, cz) || !skull(cx - dx, y, cz - dz) || !skull(cx + dx, y, cz + dz)) continue;
+    if (!soul(cx, y - 1, cz) || !soul(cx, y - 2, cz)) continue;
+    if (!soul(cx - dx, y - 1, cz - dz) || !soul(cx + dx, y - 1, cz + dz)) continue;
+    /* clear the frame and let it loose */
+    for (var i = -1; i <= 1; i++) {
+      w.setBlock(dim, cx + dx * i, y, cz + dz * i, 0);
+      w.setBlock(dim, cx + dx * i, y - 1, cz + dz * i, 0);
+    }
+    w.setBlock(dim, cx, y - 2, cz, 0);
+    var e = makeEntity('wither', dim, cx + 0.5, y - 2, cz + 0.5, { persist: true, spawnT: 0, invulnT: 8 });
+    e.hp = 150;
+    game.entities.push(e);
+    game.shake = 1.0;
+    playSound(game, 'bossroar', cx, y, cz, 0.7);
+    logMessage(game, 'The Wither has been summoned!', '#ff6666');
+    return true;
+  }
+  return false;
+}
+function updateWither(game, e, dt) {
+  if (e.invulnT > 0) {
+    e.invulnT -= dt;
+    e.hp = Math.min(e.maxHp, e.hp + e.maxHp / 8 * dt);
+    e.armsUp = true;
+    if (Math.random() < dt * 30)
+      spawnParticle(game, e.dim, e.x + (Math.random() - 0.5) * 3, e.y + 2 + Math.random() * 2, e.z + (Math.random() - 0.5) * 3,
+        0, 1, 0, 0.25, 0.25, 0.25, 0.12, 0.9);
+    if (e.invulnT <= 0) { explode(game, e.x, e.y + 2, e.z, 5, e.dim); playSound(game, 'bossroar', e.x, e.y, e.z); }
+    return true;                 /* skip normal AI while charging up */
+  }
+  /* second phase: below half health it dives and gains armour */
+  if (e.hp < e.maxHp * 0.5) e.phase2 = true;
+  return false;
+}
+
+/* ------------------------------------------------------------- warden -- */
+/* The warden is blind; it homes in on noise instead of sight. */
+function wardenSense(game, e, dt) {
+  var p = game.player;
+  if (p.dim !== e.dim) return;
+  var d = Math.hypot(p.x - e.x, p.z - e.z);
+  var noisy = Math.hypot(p.vx, p.vz) > 2.0 || p.sprinting || (p.breaking && p.breakProgress > 0);
+  e.anger = e.anger || 0;
+  if (d < 24 && noisy) e.anger = Math.min(100, e.anger + dt * 32);
+  else if (d < 6) e.anger = Math.min(100, e.anger + dt * 18);
+  else e.anger = Math.max(0, e.anger - dt * 3);
+  e.target = e.anger > 40 ? p : null;
+  if (e.anger > 80 && !e.roaring) { e.roaring = 1.4; playSound(game, 'bossroar', e.x, e.y, e.z, 0.8); }
+  if (e.roaring > 0) e.roaring -= dt;
+  if (Math.random() < dt * (2 + e.anger * 0.06))
+    spawnParticle(game, e.dim, e.x + (Math.random() - 0.5), e.y + 2.4, e.z + (Math.random() - 0.5), 0, 0.7, 0, 0.15, 0.75, 0.8, 0.06, 0.8);
+}
+
+/* -------------------------------------------------------------- sleep -- */
+function trySleepInBed(game, hit) {
+  var p = game.player;
+  if (game.isDay && !(game.weather.rain > 0.6)) {
+    logMessage(game, 'You can only sleep at night or during a storm.', '#ff9955');
+    return false;
+  }
+  var hostileNear = false;
+  for (var i = 0; i < game.entities.length; i++) {
+    var e = game.entities[i];
+    if (e.dim !== p.dim || e.dead) continue;
+    if (!MOBS[e.type].hostile) continue;
+    if (Math.hypot(e.x - p.x, e.y - p.y, e.z - p.z) < 8) { hostileNear = true; break; }
+  }
+  if (hostileNear) {
+    logMessage(game, 'You may not rest now, there are monsters nearby.', '#ff9955');
+    return false;
+  }
+  p.spawnX = hit.x; p.spawnY = hit.y + 1; p.spawnZ = hit.z; p.spawnDim = p.dim;
+  game.sleeping = 1.6;
+  logMessage(game, 'Respawn point set.', '#aaffaa');
+  return true;
+}
+function updateSleep(game, dt) {
+  if (!game.sleeping) return;
+  game.sleeping -= dt;
+  /* run the clock forward fast, and clear the weather on waking */
+  game.dayTime = (game.dayTime + dt * 9000) % 24000;
+  if (game.sleeping <= 0) {
+    game.sleeping = 0;
+    game.dayTime = 100;
+    game.weather.targetRain = 0;
+    game.weather.rain = 0;
+    game.player.hp = Math.min(game.player.maxHp, game.player.hp + 3);
+    logMessage(game, 'Good morning.', '#ffffcc');
+  }
 }
 
 </script>

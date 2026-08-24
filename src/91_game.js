@@ -316,22 +316,26 @@ function pumpChunks(game, budgetMs) {
     asked++;
   }
 
-  /* light newly generated chunks whose neighbours are present */
-  for (var j = 0; j < sp.length; j++) {
-    if (performance.now() - t0 > budgetMs) break;
+  /* Light and mesh get separate time budgets.  Sharing one clock lets the
+     lighting pass eat the whole frame and starve meshing, which shows up as
+     a world that loads terrain but never draws it. */
+  var lit = 0;
+  for (var j = 0; j < sp.length && lit < 2; j++) {
+    if (performance.now() - t0 > 3) break;
     var cx2 = pcx + sp[j][0], cz2 = pcz + sp[j][1];
     var c = world.chunkAt(dim, cx2, cz2);
     if (!c || !c.loaded || c.lit) continue;
     world.initChunkLight(c);
-    break;
+    lit++;
   }
 
-  world.propagate(dim, 20000);
+  world.propagate(dim, 14000);
 
   /* mesh: nearest unmeshed chunk with all four neighbours loaded */
+  var t1 = performance.now();
   var meshed = 0;
   for (var k = 0; k < sp.length && meshed < 3; k++) {
-    if (performance.now() - t0 > budgetMs) break;
+    if (performance.now() - t1 > 6) break;
     var cx3 = pcx + sp[k][0], cz3 = pcz + sp[k][1];
     if (sp[k][2] > rd) continue;
     var c3 = world.chunkAt(dim, cx3, cz3);
@@ -345,7 +349,8 @@ function pumpChunks(game, budgetMs) {
   /* re-mesh dirty sections */
   var q = world.meshQueue;
   var remeshed = 0;
-  while (q.length && remeshed < 12 && performance.now() - t0 < budgetMs + 4) {
+  var t2 = performance.now();
+  while (q.length && remeshed < 12 && performance.now() - t2 < 4) {
     var job = q.shift();
     var c4 = world.chunkAt(job[0], job[1], job[2]);
     if (!c4 || !c4.meshed) continue;
@@ -589,6 +594,8 @@ function gameTick(game, dt) {
     updateEntity(game, e, dt);
   }
   drainPendingMobs(game);
+  updateDragonFight(game, dt);
+  updateSleep(game, dt);
   if (!p.creative) trySpawnMobs(game, dt);
   updateParticles(game, dt);
   tickBlockEntities(game, dt);
@@ -766,11 +773,7 @@ function boot4(canvas) {
   g.remeshAll = function () { remeshAll(g); };
   g.growTree = function (dim, x, y, z, kind) { growTree(g, dim, x, y, z, kind); };
   g.travelDimension = function (to) { travelDimension(g, to); };
-  g.trySleep = function () {
-    if (g.isDay) { logMessage(g, 'You can only sleep at night.', '#ff9955'); return; }
-    g.dayTime = 23500;
-    logMessage(g, 'Good morning.', '#aaffaa');
-  };
+  g.trySleep = function (hit) { return trySleepInBed(g, hit || { x: Math.floor(g.player.x), y: Math.floor(g.player.y), z: Math.floor(g.player.z) }); };
   /* the equivalent of /locate: walk outward through the structure grid */
   g.locate = function (name, fromX, fromZ) {
     var def = null;
@@ -925,7 +928,10 @@ function DIAG() {
     mobs: Object.keys(MOBS).length, biomes: BIOMES.length, recipes: RECIPES.length,
     chunks: g.world.stats.chunks, meshed: g.world.stats.meshed,
     entities: g.entities.length, fps: g.fps,
-    player: { x: g.player.x, y: g.player.y, z: g.player.z, dim: g.player.dim },
+    player: { x: g.player.x, y: g.player.y, z: g.player.z, dim: g.player.dim,
+      spawn: [g.player.spawnX, g.player.spawnY, g.player.spawnZ], hp: g.player.hp, onGround: g.player.onGround,
+      surface: g.world.getHeight(g.player.dim, Math.floor(g.player.x), Math.floor(g.player.z)),
+      below: BLOCKS[g.world.getId(g.player.dim, Math.floor(g.player.x), Math.floor(g.player.y) - 1, Math.floor(g.player.z))].name },
     errors: window.__errors || []
   };
 }

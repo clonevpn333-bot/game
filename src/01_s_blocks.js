@@ -788,6 +788,26 @@ var B_STONE, B_DIRT, B_GRASS, B_WATER, B_LAVA, B_SAND, B_GRAVEL, B_BEDROCK, B_DE
 
 /* Fast lookup tables the mesher and physics hammer every frame. */
 var IS_OPAQUE = null, IS_SOLID = null, LIGHT_EMIT = null, IS_LIQUID = null, LIGHT_ABSORB = null;
+/* --------------------------------------------------------------- heads -- */
+(function () {
+  var heads = [
+    ['skeleton_skull', 'face_skeleton', 'Skeleton Skull'],
+    ['wither_skeleton_skull', 'face_wither_skeleton', 'Wither Skeleton Skull'],
+    ['zombie_head', 'face_zombie', 'Zombie Head'],
+    ['creeper_head', 'face_creeper', 'Creeper Head'],
+    ['player_head', 'face_player', 'Player Head'],
+    ['piglin_head', 'face_piglin', 'Piglin Head'],
+    ['dragon_head', 'face_dragon', 'Dragon Head']
+  ];
+  for (var i = 0; i < heads.length; i++) {
+    defBlock(heads[i][0], {
+      render: 'skull', tex: T.custom(heads[i][1]), disp: heads[i][2],
+      hard: 1, solid: false, opaque: false, collide: true, place: 'rot16',
+      group: 'deco', stack: 64, sound: 'stone'
+    });
+  }
+})();
+
 function buildBlockTables() {
   var n = BLOCKS.length;
   IS_OPAQUE = new Uint8Array(n); IS_SOLID = new Uint8Array(n);
