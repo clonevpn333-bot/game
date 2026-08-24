@@ -359,6 +359,7 @@ World.prototype.setBlock = function (dim, x, y, z, v, noLight) {
     }
   }
   this.markDirtyAt(dim, x, y, z);
+  if (typeof rsMaybeNotify === 'function') rsMaybeNotify(dim, x, y, z, oldId, newId);
   if (noLight) return;
   this.updateLightAt(dim, x, y, z, oldId, newId);
 };

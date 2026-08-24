@@ -477,9 +477,17 @@ function interactBlock(game, hit) {
     playSound(game, 'door', hit.x, hit.y, hit.z);
     return true;
   }
-  if (b.render === 'lever' || b.render === 'button') {
+  if (b.render === 'lever') {
     world.setBlock(p.dim, hit.x, hit.y, hit.z, bpack(hit.id, st ^ 8));
     playSound(game, 'click', hit.x, hit.y, hit.z);
+    return true;
+  }
+  if (b.render === 'button') {
+    if ((st & 8) === 0) {
+      world.setBlock(p.dim, hit.x, hit.y, hit.z, bpack(hit.id, st | 8));
+      rsPressButton(game, p.dim, hit.x, hit.y, hit.z);
+      playSound(game, 'click', hit.x, hit.y, hit.z, 1.3);
+    }
     return true;
   }
   if (b.name === 'repeater' || b.name === 'comparator') {

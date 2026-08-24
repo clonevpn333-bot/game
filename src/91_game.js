@@ -592,6 +592,7 @@ function gameTick(game, dt) {
   if (!p.creative) trySpawnMobs(game, dt);
   updateParticles(game, dt);
   tickBlockEntities(game, dt);
+  tickRedstone(game, dt);
   randomTicks(game, dt);
   tickFluids(game, dt);
   if (game.dimSwitchPending) finishDimSwitch(game);
@@ -907,7 +908,7 @@ function frame(g, now) {
 
   if (g.frozen) { updateCamera(g, dt); updateViewModel(g, dt); g.time += dt; updateWorldTime(g, dt); }
   else if (!UI.screen || UI.screen === 'death') gameTick(g, dt);
-  else { updateViewModel(g, dt); updateCamera(g, dt); g.time += dt; tickBlockEntities(g, dt); }
+  else { updateViewModel(g, dt); updateCamera(g, dt); g.time += dt; tickBlockEntities(g, dt); tickRedstone(g, dt); }
 
   pumpChunks(g, 6);
   renderFrame(g);
