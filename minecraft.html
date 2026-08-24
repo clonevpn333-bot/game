@@ -15279,6 +15279,47 @@ function updateEntity(game, e, dt) {
     e.headPitch = 0;
   }
 
+  /* ------------------------------------------------------------------
+     Steering: a mob that walks straight at a wall stays there forever, so
+     the intended direction is tested before the velocity is integrated and,
+     if it is blocked by something too tall to hop, swung along the wall.
+     A detour target takes over for a couple of seconds when even that fails.
+     ------------------------------------------------------------------ */
+  if ((mvX || mvZ) && !def.fly && !def.static && !(def.water && e.inWater)) {
+    if (e.detourT > 0) {
+      e.detourT -= dt;
+      var ddx = e.detourX - e.x, ddz = e.detourZ - e.z;
+      var dd = Math.hypot(ddx, ddz);
+      if (dd > 0.8) { mvX = ddx / dd; mvZ = ddz / dd; e.yaw = Math.atan2(mvX, -mvZ); }
+      else e.detourT = 0;
+    }
+    var probe = e.w * 0.5 + 0.45;
+    var fy0 = Math.floor(e.y);
+    if (blockedAhead(world, e, mvX, mvZ, probe, fy0)) {
+      var slx = -mvZ, slz = mvX;
+      var openL = sideClearance(world, e, slx, slz, fy0);
+      var openR = sideClearance(world, e, -slx, -slz, fy0);
+      if (openL > 0 || openR > 0) {
+        /* commit to one side long enough to actually round the obstacle */
+        if (e.sideDir === undefined || !(e.sideT > 0)) {
+          e.sideDir = openL === openR
+            ? (rand2(Math.floor(e.x), Math.floor(e.z), 91) < 0.5 ? 1 : -1)
+            : (openL > openR ? 1 : -1);
+          e.sideT = 2.6;
+        }
+        e.sideT -= dt;
+        if (e.sideDir > 0 && openL === 0) { e.sideDir = -1; e.sideT = 2.6; }
+        else if (e.sideDir < 0 && openR === 0) { e.sideDir = 1; e.sideT = 2.6; }
+        mvX = slx * e.sideDir; mvZ = slz * e.sideDir;
+        e.yaw = Math.atan2(mvX, -mvZ);
+      }
+    } else if (e.sideT > 0) {
+      /* the way is open again — carry on around the corner for a moment so
+         the mob does not immediately turn back into the wall it just left */
+      e.sideT -= dt;
+    }
+  }
+
   /* apply movement */
   /* def.speed is in the same units the real game uses for its movement
      attribute; ~18 blocks per second per unit reads right in practice */
@@ -15300,8 +15341,6 @@ function updateEntity(game, e, dt) {
     if (hs > mx) { e.vx = e.vx / hs * mx; e.vz = e.vz / hs * mx; }
     /* jump over a one-block step */
     if ((mvX || mvZ) && e.onGround && e.jumpCool <= 0) {
-      var ax = Math.round(e.x + mvX * (e.w * 0.5 + 0.35));
-      var az = Math.round(e.z + mvZ * (e.w * 0.5 + 0.35));
       var fx = Math.floor(e.x + mvX * (e.w * 0.5 + 0.35));
       var fz = Math.floor(e.z + mvZ * (e.w * 0.5 + 0.35));
       var solidAhead = isSolidAt(world, e.dim, fx, Math.floor(e.y), fz);
@@ -15315,6 +15354,24 @@ function updateEntity(game, e, dt) {
     }
   }
   applyPhysics(game, e, dt, def);
+
+  /* If a mob wants to move but has not covered ground for a while, it is
+     wedged on geometry — pick a new wander target and try again. */
+  if ((mvX || mvZ) && !def.fly && !def.static) {
+    var moved = Math.hypot(e.x - (e.lastPX === undefined ? e.x : e.lastPX), e.z - (e.lastPZ === undefined ? e.z : e.lastPZ));
+    e.stuckT = moved < 0.02 * (dt * 20) ? (e.stuckT || 0) + dt : 0;
+    e.lastPX = e.x; e.lastPZ = e.z;
+    if (e.stuckT > 1.0) {
+      e.stuckT = 0;
+      e.wanderT = 0;
+      if (e.onGround && e.jumpCool <= 0) { e.vy = 8.4; e.jumpCool = 0.4; }
+      var a2 = Math.random() * Math.PI * 2;
+      e.detourX = e.x + Math.cos(a2) * 8;
+      e.detourZ = e.z + Math.sin(a2) * 8;
+      e.detourT = 1.8;
+      e.wx = e.detourX; e.wz = e.detourZ;
+    }
+  } else e.stuckT = 0;
 
   /* walk animation drive */
   var hspd = Math.hypot(e.vx, e.vz);
@@ -15343,6 +15400,31 @@ function updateEntity(game, e, dt) {
   } else e.despawnT = 0;
 }
 
+/* How many blocks of clear ground there are along a sideways direction. */
+function sideClearance(world, e, mx, mz, fy) {
+  var d = Math.hypot(mx, mz);
+  if (d < 1e-6) return 0;
+  var n = 0;
+  for (var i = 1; i <= 4; i++) {
+    var px = Math.floor(e.x + mx / d * (e.w * 0.5 + 0.4 * i));
+    var pz = Math.floor(e.z + mz / d * (e.w * 0.5 + 0.4 * i));
+    if (isSolidAt(world, e.dim, px, fy, pz) && isSolidAt(world, e.dim, px, fy + 1, pz)) break;
+    n++;
+  }
+  return n;
+}
+/* Is the way ahead blocked by something the mob cannot simply step over? */
+function blockedAhead(world, e, mx, mz, probe, fy) {
+  var d = Math.hypot(mx, mz);
+  if (d < 1e-6) return false;
+  var px = Math.floor(e.x + mx / d * probe), pz = Math.floor(e.z + mz / d * probe);
+  var atFeet = isSolidAt(world, e.dim, px, fy, pz);
+  var atHead = isSolidAt(world, e.dim, px, fy + 1, pz);
+  if (!atFeet && !atHead) return false;
+  /* a single step with headroom is fine — the jump handles it */
+  if (atFeet && !atHead && !isSolidAt(world, e.dim, px, fy + 2, pz)) return false;
+  return true;
+}
 function isSolidAt(world, dim, x, y, z) {
   var id = world.getId(dim, x, y, z);
   return id !== 0 && BLOCKS[id].solid && BLOCKS[id].collide;
