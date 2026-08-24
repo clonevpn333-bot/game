@@ -143,9 +143,9 @@ function drawViewModel(game) {
      so the swing arc moves hand and item together the way a real arm does. */
   mIdent();
   mTranslate(
-    0.46 + VM.swayX * 0.075 + VM.bobX - VM.sprintT * 0.02,
-    -0.44 + VM.swayY * 0.070 + VM.bobY + VM.dropY - eqDrop - VM.sneakT * 0.075 - VM.useProg * 0.05,
-    -0.80 + VM.sprintT * 0.07 + lift * 0.28
+    0.34 + VM.swayX * 0.075 + VM.bobX - VM.sprintT * 0.02,
+    -0.30 + VM.swayY * 0.070 + VM.bobY + VM.dropY - eqDrop - VM.sneakT * 0.075 - VM.useProg * 0.05,
+    -0.66 + VM.sprintT * 0.07 + lift * 0.28
   );
   mRotZ(VM.rollZ + VM.bobRot * 0.5 + eq * 0.5);
   mRotY(-VM.swayX * 0.18 - VM.sprintT * 0.22);
@@ -180,9 +180,9 @@ function drawViewModel(game) {
   mIdent();
   var blockT = VM.blockT;
   mTranslate(
-    -0.46 - VM.swayX * 0.075 - VM.bobX + blockT * 0.14,
-    -0.46 + VM.swayY * 0.070 - VM.bobY * 0.8 + VM.dropY - VM.sneakT * 0.075 - blockT * 0.06,
-    -0.80 + VM.sprintT * 0.07 + blockT * 0.12
+    -0.36 - VM.swayX * 0.075 - VM.bobX + blockT * 0.14,
+    -0.34 + VM.swayY * 0.070 - VM.bobY * 0.8 + VM.dropY - VM.sneakT * 0.075 - blockT * 0.06,
+    -0.66 + VM.sprintT * 0.07 + blockT * 0.12
   );
   mRotZ(VM.rollZ * 0.7 - VM.bobRot * 0.5);
   mRotY(-VM.swayX * 0.18 + VM.sprintT * 0.22 - blockT * 0.5);
@@ -237,47 +237,67 @@ var SKIN = '#c58c5b', SKIN_D = '#a5714a', SLEEVE = '#3f74b8', SLEEVE_D = '#2f599
    Working outward from the hand rather than down from the shoulder keeps the
    grip locked to the item through the whole swing. */
 function drawArm(game, side, holding) {
-  var S = 1 / 16;
   mPush();
   mScale(side, 1, 1);
-  mRotY(-0.42);
-  mRotZ(-0.46);
-  mRotX(0.52 + (holding ? 0.0 : 0.14));
-  mScale(0.86, 0.86, 1.0);
+  /* The limb runs back from the fist and is tilted hard down and outward so
+     the shoulder end leaves the frame at the bottom corner instead of
+     ploughing through the near plane. */
+  mRotZ(-0.34);
+  mRotY(-0.30);
+  mRotX(1.02 + (holding ? 0.0 : 0.10));
   _ecol[3] = 0;
   /* fist */
-  emitBox(EBUF, -1.9, -1.9, -1.4, 3.8, 3.8, 4.2, partTile(SKIN, 0.05), 0);
-  /* forearm receding into the corner */
-  emitBox(EBUF, -1.75, -1.75, 2.6, 3.5, 3.5, 4.4, partTile(SKIN_D, 0.04), 0);
-  /* sleeve */
-  emitBox(EBUF, -1.95, -1.95, 6.6, 3.9, 3.9, 9.5, partTile(SLEEVE, 0.05), 0.05);
-  /* cuff, so the sleeve edge reads at a glance */
-  emitBox(EBUF, -2.0, -2.0, 6.5, 4.0, 4.0, 1.0, partTile(SLEEVE_D, 0.03), 0.10);
+  emitBox(EBUF, -1.75, -1.75, -1.6, 3.5, 3.5, 3.6, partTile(SKIN, 0.05), 0);
+  /* wrist and forearm */
+  emitBox(EBUF, -1.6, -1.6, 2.0, 3.2, 3.2, 3.4, partTile(SKIN, 0.04), 0);
+  /* rolled sleeve */
+  emitBox(EBUF, -1.85, -1.85, 5.2, 3.7, 3.7, 8.4, partTile(SLEEVE, 0.05), 0.04);
+  /* cuff line where the sleeve meets the skin */
+  emitBox(EBUF, -1.95, -1.95, 5.1, 3.9, 3.9, 0.9, partTile(SLEEVE_D, 0.03), 0.06);
   mPop();
 }
 
 /* ------------------------------------------------------- held things -- */
 function drawHeldBlock(game, id, stack) {
   var b = BLOCKS[id];
-  mPush();
-  mTranslate(0.03, -0.02, -0.09);
-  mRotY(0.72);
-  mRotX(0.20);
-  mRotZ(0.05);
-  mScale(0.38, 0.38, 0.38);
-  mTranslate(-0.5, -0.5, -0.5);
-  var boxes = modelFor(id, stack ? (stack.state || 0) : 0);
-  if (!boxes || b.render === 'cross' || b.render === 'flat') {
+  /* pick the upright variant for blocks whose default state is wall-mounted */
+  var heldState = 0;
+  if (b.render === 'torch') heldState = 2;
+  else if (b.render === 'lever') heldState = 5;
+  var boxes = modelFor(id, heldState);
+  if (!boxes || b.render === 'cross' || b.render === 'flat' || b.render === 'crop') {
     /* plants and other sprite blocks hang flat in the hand */
+    mPush();
+    mTranslate(-0.06, 0.12, -0.14);
+    mRotY(0.66); mRotZ(-0.18); mRotX(0.26);
+    mScale(0.56, 0.56, 0.56);
+    drawExtrudedSprite(b.layers ? b.layers[4] : 0, 1.0);
     mPop();
-    drawExtrudedSprite(b.layers ? b.layers[0] : 0, 1.0);
     return;
   }
-  var lay = [0, 0, 0, 0, 0, 0];
+  /* Fit whatever the model actually is into the hand: a torch, a slab and a
+     full cube all want to end up about the same apparent size. */
+  var x0 = 16, y0 = 16, z0 = 16, x1 = 0, y1 = 0, z1 = 0;
   for (var i = 0; i < boxes.length; i++) {
     var q = boxes[i];
-    for (var f = 0; f < 6; f++) lay[f] = faceLayer(q, b, f);
-    emitBox(EBUF, q.x0, q.y0, q.z0, q.x1 - q.x0, q.y1 - q.y0, q.z1 - q.z0, lay.slice(), 0);
+    if (q.x0 < x0) x0 = q.x0; if (q.y0 < y0) y0 = q.y0; if (q.z0 < z0) z0 = q.z0;
+    if (q.x1 > x1) x1 = q.x1; if (q.y1 > y1) y1 = q.y1; if (q.z1 > z1) z1 = q.z1;
+  }
+  var ext = Math.max(x1 - x0, Math.max(y1 - y0, z1 - z0)) || 16;
+  var fit = 0.42 * (16 / ext);
+  fit = Math.min(fit, 0.90);
+  mPush();
+  mTranslate(-0.05, 0.12, -0.15);
+  mRotY(0.70);
+  mRotX(0.22);
+  mRotZ(0.06);
+  mScale(fit, fit, fit);
+  mTranslate(-(x0 + x1) / 32, -(y0 + y1) / 32, -(z0 + z1) / 32);
+  var lay = [0, 0, 0, 0, 0, 0];
+  for (var k = 0; k < boxes.length; k++) {
+    var r = boxes[k];
+    for (var f = 0; f < 6; f++) lay[f] = faceLayer(r, b, f);
+    emitBox(EBUF, r.x0, r.y0, r.z0, r.x1 - r.x0, r.y1 - r.y0, r.z1 - r.z0, lay.slice(), 0, true);
   }
   mPop();
 }
@@ -288,13 +308,15 @@ function drawHeldItem(game, name, it) {
     return;
   }
   mPush();
-  /* tools are held blade-forward and tilted, the way the real hand does it */
+  /* Tools sit above and slightly in front of the fist with the blade angled
+     up and toward the middle of the screen, so the silhouette clears the arm
+     instead of hiding behind it. */
   var toolish = it && (it.tool || it.durability);
-  mTranslate(0.02, 0.02, -0.06);
-  mRotY(toolish ? 0.42 : 0.62);
-  mRotZ(toolish ? -0.52 : -0.10);
-  mRotX(toolish ? 0.16 : 0.28);
-  mScale(0.44, 0.44, 0.44);
+  mTranslate(-0.06, 0.12, -0.15);
+  mRotY(toolish ? 0.48 : 0.64);
+  mRotZ(toolish ? 0.52 : 0.14);
+  mRotX(toolish ? 0.10 : 0.24);
+  mScale(0.46, 0.46, 0.46);
   drawExtrudedSprite(layer, 1.0);
   mPop();
 }
@@ -305,7 +327,7 @@ var _extrudeCache = {};
 function drawExtrudedSprite(layer, scale) {
   var d = TEX_LAYERS[layer];
   if (!d) return;
-  var TH = 0.9;              /* thickness in model units */
+  var TH = 1.15;             /* thickness in model units */
   var S = scale === undefined ? 1 : scale;
   mPush();
   mScale(S, S, S);

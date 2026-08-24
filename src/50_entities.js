@@ -61,12 +61,16 @@ function xfDir(o, x, y, z) {
 
 /* Emit one cuboid (model units, 1/16 block) under the current transform. */
 var _ecol = [1, 1, 1, 0], _elight = [1, 0];
-function emitBox(buf, x, y, z, w, h, d, layer, inflate) {
+/* When boxUV is set the face UVs follow the box's own extents inside the
+   16-unit cell, exactly like the chunk mesher does — without it a torch or a
+   slab would stretch the whole tile across a sliver of geometry. */
+function emitBox(buf, x, y, z, w, h, d, layer, inflate, boxUV) {
   inflate = inflate || 0;
   var S = 1 / 16;
   var x0 = (x - inflate) * S, y0 = (y - inflate) * S, z0 = (z - inflate) * S;
   var x1 = (x + w + inflate) * S, y1 = (y + h + inflate) * S, z1 = (z + d + inflate) * S;
   var xs = [x0, x1], ys = [y0, y1], zs = [z0, z1];
+  var tx = [x, x + w], ty = [y, y + h], tz = [z, z + d];
   var perFace = typeof layer !== 'number';
   for (var f = 0; f < 6; f++) {
     var vs = FACE_V[f], d3 = FACE_DIR[f];
@@ -79,13 +83,25 @@ function emitBox(buf, x, y, z, w, h, d, layer, inflate) {
       var s = vs[vi];
       xfPoint(_ev, xs[s[0]], ys[s[1]], zs[s[2]]);
       var uu, vv;
-      switch (f) {
-        case 0: uu = 1 - s[2]; vv = 1 - s[1]; break;
-        case 1: uu = s[2]; vv = 1 - s[1]; break;
-        case 2: uu = s[0]; vv = s[2]; break;
-        case 3: uu = s[0]; vv = 1 - s[2]; break;
-        case 4: uu = s[0]; vv = 1 - s[1]; break;
-        default: uu = 1 - s[0]; vv = 1 - s[1];
+      if (boxUV) {
+        var cxu = tx[s[0]], cyu = ty[s[1]], czu = tz[s[2]];
+        switch (f) {
+          case 0: uu = (16 - czu) / 16; vv = (16 - cyu) / 16; break;
+          case 1: uu = czu / 16; vv = (16 - cyu) / 16; break;
+          case 2: uu = cxu / 16; vv = czu / 16; break;
+          case 3: uu = cxu / 16; vv = (16 - czu) / 16; break;
+          case 4: uu = cxu / 16; vv = (16 - cyu) / 16; break;
+          default: uu = (16 - cxu) / 16; vv = (16 - cyu) / 16;
+        }
+      } else {
+        switch (f) {
+          case 0: uu = 1 - s[2]; vv = 1 - s[1]; break;
+          case 1: uu = s[2]; vv = 1 - s[1]; break;
+          case 2: uu = s[0]; vv = s[2]; break;
+          case 3: uu = s[0]; vv = 1 - s[2]; break;
+          case 4: uu = s[0]; vv = 1 - s[1]; break;
+          default: uu = 1 - s[0]; vv = 1 - s[1];
+        }
       }
       var o = buf.n;
       var F = buf.f;

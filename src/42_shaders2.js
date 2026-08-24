@@ -60,9 +60,10 @@ void main(){
   vec3 light = uSkyLightCol*(uAmbient + 0.52*sky*sky)
              + uSunCol*(ndl*sh*sky*sky*uDay)*0.85
              + uBlockLightCol*pow(blk,1.55)*1.05;
-  // soften the hard cuboid shading a little so mobs read as solid volumes,
-  // then bias the side faces down so the silhouette still reads as boxes
-  light *= 0.62 + 0.30*(N.y*0.5+0.5) + 0.12*abs(N.x);
+  // Face shading matched to the terrain's, so a mob standing next to a block
+  // reads with the same solidity instead of looking flat and pasted on.
+  float fs = N.y > 0.5 ? 1.0 : (N.y < -0.5 ? 0.52 : (abs(N.x) > 0.5 ? 0.68 : 0.85));
+  light *= fs;
   vec3 col = albedo * light;
   col = mix(col, uOverlayCol.rgb, uOverlayCol.a * vColor.a);
   float d = length(vWorld - uCamPos);
@@ -113,7 +114,8 @@ void main(){
   float fill = max(dot(N, normalize(vec3(-0.5,0.2,0.4))), 0.0);
   // the hand always keeps a little light of its own, so it never goes black
   vec3 amb = uSkyLightCol*(uAmbient+0.62*sky*sky) + uBlockLightCol*pow(blk,1.55)*1.05 + vec3(0.14,0.135,0.13);
-  vec3 light = amb * (0.42 + 0.44*kd + 0.16*fill) + uSunCol*kd*sky*uDay*0.30;
+  float fs = N.y > 0.5 ? 1.0 : (N.y < -0.5 ? 0.58 : (abs(N.x) > 0.5 ? 0.74 : 0.88));
+  vec3 light = (amb * (0.52 + 0.34*kd + 0.14*fill) + uSunCol*kd*sky*uDay*0.30) * fs;
   vec3 col = texel.rgb * vColor.rgb * light;
   col = mix(col, uOverlayCol.rgb, uOverlayCol.a*vColor.a);
   oColor = vec4(col, 1.0);
