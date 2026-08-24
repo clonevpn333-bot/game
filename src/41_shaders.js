@@ -89,7 +89,7 @@ void main(){
   uint wave  = (flags >> 5u) & 3u;
   uint tintId= (flags >> 3u) & 3u;
 
-  vUV = vec2(aUV) * (1.0/16.0);
+  vUV = vec2(aUV) * (1.0/256.0);
   vLayer = float(aLayer);
 
   float waveAmt = 0.0;
@@ -137,7 +137,7 @@ in vec3 vTint;
 in float vWave;
 
 uniform mediump sampler2DArray uAtlas;
-uniform sampler2DShadow uShadowMap;
+uniform highp sampler2DShadow uShadowMap;
 uniform mat4 uShadowMat;
 uniform vec3 uCamPos;
 uniform vec3 uSkyLightCol;
@@ -178,10 +178,10 @@ void main(){
   float sunVis = sky * sky;
   float sh = ndl > 0.0 ? shadowFactor(vWorld, ndl) : 1.0;
   vec3 sunTerm = uSunCol * (ndl * sh * sunVis * uDay);
-  vec3 skyTerm = uSkyLightCol * (uAmbient + 0.85 * sky * sky) * shade;
-  vec3 blockTerm = uBlockLightCol * pow(blk, 1.55) * 1.25;
+  vec3 skyTerm = uSkyLightCol * (uAmbient + 0.52 * sky * sky) * shade;
+  vec3 blockTerm = uBlockLightCol * pow(blk, 1.55) * 1.05;
 
-  vec3 light = (skyTerm + sunTerm * 1.15 + blockTerm) * ao;
+  vec3 light = (skyTerm + sunTerm * 0.62 + blockTerm) * ao;
   vec3 col = albedo * light;
 
   // distance fog, tinted toward the sky the camera is looking at
@@ -214,7 +214,7 @@ in float vWave;
 uniform mediump sampler2DArray uAtlas;
 uniform sampler2D uSceneColor;
 uniform sampler2D uSceneDepth;
-uniform sampler2DShadow uShadowMap;
+uniform highp sampler2DShadow uShadowMap;
 uniform mat4 uShadowMat;
 uniform vec3 uCamPos;
 uniform vec3 uSkyLightCol;
@@ -320,7 +320,7 @@ out vec2 vUV;
 out float vLayer;
 void main(){
   vec3 p = vec3(aPos) * (1.0/16.0) + uChunkOrigin;
-  vUV = vec2(aUV) * (1.0/16.0);
+  vUV = vec2(aUV) * (1.0/256.0);
   vLayer = float(aLayer);
   gl_Position = uVP * vec4(p,1.0);
 }`;

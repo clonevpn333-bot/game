@@ -60,7 +60,7 @@ function drawChunkPass(prog, pass, sortFar) {
 function renderFrame(game) {
   var world = game.world, p = game.player;
   var dim = p.dim;
-  var camX = p.camX, camY = p.camY, camZ = p.camZ;
+  var camX = p.camX, camY = p.camRenderY, camZ = p.camZ;
   var W = R.width, H = R.height;
   R.drawn = 0; R.tris = 0; R.frame++;
 
@@ -146,7 +146,7 @@ function renderFrame(game) {
   gl.bindTexture(gl.TEXTURE_2D_ARRAY, R.atlas);
   gl.uniform1i(cp.u.uAtlas, 0);
   gl.activeTexture(gl.TEXTURE2);
-  gl.bindTexture(gl.TEXTURE_2D, shadowOn ? R.shadowFBO.depth : R.white);
+  gl.bindTexture(gl.TEXTURE_2D, shadowOn ? R.shadowFBO.depth : R.noShadow);
   gl.uniform1i(cp.u.uShadowMap, 2);
   gl.uniformMatrix4fv(cp.u.uShadowMat, false, R.shadowMat);
   gl.uniform1f(cp.u.uShadowTexel, 1 / R.shadowSize);
@@ -194,7 +194,7 @@ function renderFrame(game) {
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D_ARRAY, R.atlas); gl.uniform1i(wp.u.uAtlas, 0);
   gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, R.sceneCopy.color); gl.uniform1i(wp.u.uSceneColor, 3);
   gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, R.sceneCopy.depth); gl.uniform1i(wp.u.uSceneDepth, 4);
-  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, shadowOn ? R.shadowFBO.depth : R.white); gl.uniform1i(wp.u.uShadowMap, 2);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, shadowOn ? R.shadowFBO.depth : R.noShadow); gl.uniform1i(wp.u.uShadowMap, 2);
   gl.uniformMatrix4fv(wp.u.uShadowMat, false, R.shadowMat);
   gl.uniform1f(wp.u.uShadowTexel, 1 / R.shadowSize);
   gl.uniform1i(wp.u.uShadowOn, shadowOn ? 1 : 0);
@@ -276,7 +276,7 @@ function postProcess(game, camX, camY, camZ, underwater, biome) {
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, R.sceneFBO.color); gl.uniform1i(comp.u.uScene, 0);
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, R.settings.bloom ? R.bloomA.color : R.white); gl.uniform1i(comp.u.uBloom, 1);
   gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, godAmt > 0 ? R.godFBO.color : R.white); gl.uniform1i(comp.u.uGod, 2);
-  gl.uniform1f(comp.u.uBloomAmt, R.settings.bloom ? 0.55 : 0);
+  gl.uniform1f(comp.u.uBloomAmt, R.settings.bloom ? 0.26 : 0);
   gl.uniform1f(comp.u.uGodAmt, godAmt);
   gl.uniform1f(comp.u.uExposure, game.exposure);
   gl.uniform1f(comp.u.uVignette, underwater ? 0.55 : 0.30);

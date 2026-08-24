@@ -23,7 +23,7 @@ SH.entityFS = `#version 300 es
 in vec3 vWorld; in vec3 vNormal; in vec2 vUV; in float vLayer;
 in vec4 vColor; in vec2 vLight;
 uniform mediump sampler2DArray uAtlas;
-uniform sampler2DShadow uShadowMap;
+uniform highp sampler2DShadow uShadowMap;
 uniform mat4 uShadowMat;
 uniform vec3 uCamPos;
 uniform vec3 uSkyLightCol;
@@ -57,11 +57,12 @@ void main(){
   float ndl = max(dot(N, uSunDir), 0.0);
   float sky = vLight.x, blk = vLight.y;
   float sh = shadowFactorE(vWorld, N, ndl);
-  vec3 light = uSkyLightCol*(uAmbient + 0.85*sky*sky)
-             + uSunCol*(ndl*sh*sky*sky*uDay)*1.15
-             + uBlockLightCol*pow(blk,1.55)*1.25;
-  // soften the hard cuboid shading a little so mobs read as solid volumes
-  light *= 0.72 + 0.28*(N.y*0.5+0.5);
+  vec3 light = uSkyLightCol*(uAmbient + 0.52*sky*sky)
+             + uSunCol*(ndl*sh*sky*sky*uDay)*0.62
+             + uBlockLightCol*pow(blk,1.55)*1.05;
+  // soften the hard cuboid shading a little so mobs read as solid volumes,
+  // then bias the side faces down so the silhouette still reads as boxes
+  light *= 0.62 + 0.30*(N.y*0.5+0.5) + 0.12*abs(N.x);
   vec3 col = albedo * light;
   col = mix(col, uOverlayCol.rgb, uOverlayCol.a * vColor.a);
   float d = length(vWorld - uCamPos);
@@ -110,8 +111,8 @@ void main(){
   vec3 key = normalize(vec3(0.35, 0.75, 0.55));
   float kd = max(dot(N, key), 0.0);
   float fill = max(dot(N, normalize(vec3(-0.5,0.2,0.4))), 0.0);
-  vec3 amb = uSkyLightCol*(uAmbient+0.8*sky*sky) + uBlockLightCol*pow(blk,1.55)*1.2;
-  vec3 light = amb * (0.55 + 0.55*kd + 0.22*fill) + uSunCol*kd*sky*uDay*0.55;
+  vec3 amb = uSkyLightCol*(uAmbient+0.62*sky*sky) + uBlockLightCol*pow(blk,1.55)*1.05;
+  vec3 light = amb * (0.42 + 0.44*kd + 0.16*fill) + uSunCol*kd*sky*uDay*0.30;
   vec3 col = texel.rgb * vColor.rgb * light;
   col = mix(col, uOverlayCol.rgb, uOverlayCol.a*vColor.a);
   oColor = vec4(col, 1.0);

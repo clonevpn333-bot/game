@@ -573,6 +573,7 @@ function tileLayer(desc) {
   var key = descKey(desc);
   var idx = TEX_INDEX[key];
   if (idx !== undefined) return idx;
+  if (typeof ATLAS_LAYERS !== 'undefined' && ATLAS_LAYERS) console.warn('tile created after atlas upload:', key);
   var p = new Pain();
   bakeInto(p, desc);
   unifyTile(p.d);
@@ -593,6 +594,7 @@ function tileLayer(desc) {
 function rawLayer(key, d) {
   var idx = TEX_INDEX[key];
   if (idx !== undefined) return idx;
+  if (typeof ATLAS_LAYERS !== 'undefined' && ATLAS_LAYERS) console.warn('tile created after atlas upload:', key);
   idx = TEX_LAYERS.length;
   TEX_LAYERS.push(d);
   TEX_INDEX[key] = idx;

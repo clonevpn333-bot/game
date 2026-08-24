@@ -137,20 +137,23 @@ function drawViewModel(game) {
   var eq = 1 - VM.equipT;
   var eqDrop = eq * eq * 0.55;
 
-  /* ---------------------------- right hand ---------------------------- */
+  /* ---------------------------- right hand ----------------------------
+     The origin of this frame is the hand.  Everything downstream (the arm
+     going back to the shoulder, the item held in the fingers) hangs off it,
+     so the swing arc moves hand and item together the way a real arm does. */
   mIdent();
   mTranslate(
-    0.36 + VM.swayX * 0.10 + VM.bobX - VM.sprintT * 0.03,
-    -0.42 + VM.swayY * 0.09 + VM.bobY + VM.dropY - eqDrop - VM.sneakT * 0.10 - VM.useProg * 0.06,
-    -0.52 + VM.sprintT * 0.06 + lift * 0.30
+    0.46 + VM.swayX * 0.075 + VM.bobX - VM.sprintT * 0.02,
+    -0.44 + VM.swayY * 0.070 + VM.bobY + VM.dropY - eqDrop - VM.sneakT * 0.075 - VM.useProg * 0.05,
+    -0.80 + VM.sprintT * 0.07 + lift * 0.28
   );
   mRotZ(VM.rollZ + VM.bobRot * 0.5 + eq * 0.5);
   mRotY(-VM.swayX * 0.18 - VM.sprintT * 0.22);
   mRotX(VM.swayY * 0.16 + VM.bobRot * 0.4 + VM.sprintT * 0.34 - lift * 1.1);
   /* the swing itself: an arc through the shoulder, not a pivot at the wrist */
-  mRotX(-sw * 1.15);
-  mRotZ(sw * 0.28);
-  mTranslate(0, sw * 0.06, sw * 0.10);
+  mRotX(-sw * 1.05);
+  mRotZ(sw * 0.24);
+  mTranslate(0, sw * 0.05, sw * 0.09);
 
   if (p.eating) {
     var bite = Math.sin(game.time * 22) * 0.06 * VM.useProg;
@@ -177,9 +180,9 @@ function drawViewModel(game) {
   mIdent();
   var blockT = VM.blockT;
   mTranslate(
-    -0.36 - VM.swayX * 0.10 - VM.bobX + blockT * 0.14,
-    -0.44 + VM.swayY * 0.09 - VM.bobY * 0.8 + VM.dropY - VM.sneakT * 0.10 - blockT * 0.06,
-    -0.52 + VM.sprintT * 0.06 + blockT * 0.10
+    -0.46 - VM.swayX * 0.075 - VM.bobX + blockT * 0.14,
+    -0.46 + VM.swayY * 0.070 - VM.bobY * 0.8 + VM.dropY - VM.sneakT * 0.075 - blockT * 0.06,
+    -0.80 + VM.sprintT * 0.07 + blockT * 0.12
   );
   mRotZ(VM.rollZ * 0.7 - VM.bobRot * 0.5);
   mRotY(-VM.swayX * 0.18 + VM.sprintT * 0.22 - blockT * 0.5);
@@ -203,8 +206,8 @@ function drawViewModel(game) {
   var vp = R.progView;
   gl.useProgram(vp.p);
   gl.uniformMatrix4fv(vp.u.uVP, false, _vmVP);
-  gl.uniform3fv(vp.u.uSunDir, R.sky.sunDir);
-  gl.uniform3fv(vp.u.uSunCol, R.sky.sunCol);
+  gl.uniform3fv(vp.u.uSunDir, R.sunDir);
+  gl.uniform3fv(vp.u.uSunCol, R.sky.sun);
   gl.uniform3fv(vp.u.uSkyLightCol, R.sky.skyLight);
   gl.uniform3fv(vp.u.uBlockLightCol, R.sky.blockLight);
   gl.uniform1f(vp.u.uAmbient, R.sky.ambient);
@@ -228,23 +231,28 @@ function heldEmissive(p) {
 }
 
 /* ------------------------------------------------------------- arms --- */
-var SKIN = '#c58c5b', SKIN_D = '#a5714a', SLEEVE = '#3a6fb0', SLEEVE_D = '#2e5a92';
+var SKIN = '#c58c5b', SKIN_D = '#a5714a', SLEEVE = '#3f74b8', SLEEVE_D = '#2f5992';
+/* The arm is a 4x4 limb that starts at the hand (the current frame origin)
+   and recedes toward the shoulder, off the bottom corner of the screen.
+   Working outward from the hand rather than down from the shoulder keeps the
+   grip locked to the item through the whole swing. */
 function drawArm(game, side, holding) {
-  /* 4x12x4 arm in model units, pivoted at the shoulder, with a rolled-up
-     sleeve so the silhouette matches the player skin */
+  var S = 1 / 16;
   mPush();
   mScale(side, 1, 1);
-  mTranslate(0.04, 0.02, 0.30);
-  mRotZ(-0.16);
-  mRotX(holding ? 0.10 : 0.30);
-  mRotY(0.12);
-  /* hand + forearm (skin) */
+  mRotY(-0.42);
+  mRotZ(-0.46);
+  mRotX(0.52 + (holding ? 0.0 : 0.14));
+  mScale(0.86, 0.86, 1.0);
   _ecol[3] = 0;
-  emitBox(EBUF, -2.0, -11.0, -2.0, 4, 6, 4, partTile(SKIN, 0.05), 0);
-  /* upper arm (sleeve) */
-  emitBox(EBUF, -2.05, -5.0, -2.05, 4, 8, 4, partTile(SLEEVE, 0.05), 0.06);
-  /* cuff shading strip so the sleeve edge reads at a glance */
-  emitBox(EBUF, -2.10, -5.4, -2.10, 4, 1, 4, partTile(SLEEVE_D, 0.03), 0.12);
+  /* fist */
+  emitBox(EBUF, -1.9, -1.9, -1.4, 3.8, 3.8, 4.2, partTile(SKIN, 0.05), 0);
+  /* forearm receding into the corner */
+  emitBox(EBUF, -1.75, -1.75, 2.6, 3.5, 3.5, 4.4, partTile(SKIN_D, 0.04), 0);
+  /* sleeve */
+  emitBox(EBUF, -1.95, -1.95, 6.6, 3.9, 3.9, 9.5, partTile(SLEEVE, 0.05), 0.05);
+  /* cuff, so the sleeve edge reads at a glance */
+  emitBox(EBUF, -2.0, -2.0, 6.5, 4.0, 4.0, 1.0, partTile(SLEEVE_D, 0.03), 0.10);
   mPop();
 }
 
@@ -252,10 +260,11 @@ function drawArm(game, side, holding) {
 function drawHeldBlock(game, id, stack) {
   var b = BLOCKS[id];
   mPush();
-  mTranslate(0.02, -0.08, -0.10);
-  mRotY(0.62);
-  mRotX(0.18);
-  mScale(0.44, 0.44, 0.44);
+  mTranslate(0.03, -0.02, -0.09);
+  mRotY(0.72);
+  mRotX(0.20);
+  mRotZ(0.05);
+  mScale(0.38, 0.38, 0.38);
   mTranslate(-0.5, -0.5, -0.5);
   var boxes = modelFor(id, stack ? (stack.state || 0) : 0);
   if (!boxes || b.render === 'cross' || b.render === 'flat') {
@@ -281,11 +290,11 @@ function drawHeldItem(game, name, it) {
   mPush();
   /* tools are held blade-forward and tilted, the way the real hand does it */
   var toolish = it && (it.tool || it.durability);
-  mTranslate(0.00, -0.02, -0.06);
-  mRotY(toolish ? 0.30 : 0.55);
-  mRotZ(toolish ? -0.34 : 0.0);
-  mRotX(toolish ? 0.10 : 0.22);
-  mScale(0.52, 0.52, 0.52);
+  mTranslate(0.02, 0.02, -0.06);
+  mRotY(toolish ? 0.42 : 0.62);
+  mRotZ(toolish ? -0.52 : -0.10);
+  mRotX(toolish ? 0.16 : 0.28);
+  mScale(0.44, 0.44, 0.44);
   drawExtrudedSprite(layer, 1.0);
   mPop();
 }
@@ -300,7 +309,8 @@ function drawExtrudedSprite(layer, scale) {
   var S = scale === undefined ? 1 : scale;
   mPush();
   mScale(S, S, S);
-  mTranslate(-8, -8, 0);
+  /* the sprite lives in 16-unit space, so centre it in world units */
+  mTranslate(-0.5, -0.5, -TH / 32);
   /* front and back faces as a single thin box carrying the full sprite */
   spriteFace(layer, 0, 0, 16, 16, TH);
   /* rim: walk the alpha mask and emit a side quad on every silhouette edge */

@@ -915,3 +915,62 @@ function tryStepUp(world, p, dx, dz) {
   if (p.y < save.y - 1e-6) { p.x = save.x; p.y = save.y; p.z = save.z; return false; }
   return true;
 }
+
+/* ---------------------------------------------------------- the camera -- */
+/* Everything the renderer reads about the eye lives here: position with
+   bob and shake, field of view, roll, and what the eye is submerged in. */
+function updateCamera(game, dt) {
+  var p = game.player, world = game.world;
+
+  var wantFov = 1.0;
+  if (p.sprinting && !p.dead) wantFov *= 1.115;
+  if (p.flying && p.sprinting) wantFov *= 1.06;
+  if (p.charging) wantFov *= 1 - Math.min(0.15, (p.chargeTime || 0) * 0.15);
+  if (game.zooming) wantFov *= 0.26;
+  if (p.effects.speed) wantFov *= 1.05;
+  p.fovMul = approach(p.fovMul === undefined ? wantFov : p.fovMul, wantFov, dt * 9);
+
+  var bobX = 0, bobY = 0, roll = 0;
+  if (R.settings.viewBob && game.cameraMode === 0 && !p.dead) {
+    var a = p.bobAmt * (p.sprinting ? 1.25 : 1);
+    bobX = Math.cos(p.bobPhase) * 0.055 * a;
+    bobY = -Math.abs(Math.sin(p.bobPhase)) * 0.055 * a;
+    roll = Math.sin(p.bobPhase) * 0.017 * a;
+  }
+  /* strafing tilts the horizon very slightly, the way a real head does */
+  var sinY = Math.sin(p.yaw), cosY = Math.cos(p.yaw);
+  var lateral = p.vx * cosY + p.vz * sinY;
+  roll += clamp(-lateral * 0.006, -0.045, 0.045);
+  if (p.dead) roll += Math.min(1.4, p.deathTime * 2.2);
+  p.roll = roll;
+
+  var shake = game.shake;
+  var sx = 0, sy = 0;
+  if (shake > 0.001) {
+    sx = (Math.random() - 0.5) * shake * 0.55;
+    sy = (Math.random() - 0.5) * shake * 0.55;
+  }
+
+  var right = [cosY, 0, sinY];
+  var ex = p.x + right[0] * bobX + sx;
+  var ey = p.camY + bobY + sy - (p.dead ? Math.min(1.1, p.deathTime * 1.8) : 0);
+  var ez = p.z + right[2] * bobX;
+
+  if (game.cameraMode !== 0) {
+    var back = game.cameraMode === 1 ? 1 : -1;
+    var dx = Math.cos(p.pitch) * Math.sin(p.yaw) * back;
+    var dy = Math.sin(p.pitch) * back;
+    var dz = -Math.cos(p.pitch) * Math.cos(p.yaw) * back;
+    var dist = 4.2;
+    /* pull the camera in so it never ends up inside a wall */
+    for (var s = 0.25; s <= dist; s += 0.25) {
+      if (isSolidAt(world, p.dim, Math.floor(ex - dx * s), Math.floor(ey - dy * s), Math.floor(ez - dz * s))) { dist = Math.max(0.4, s - 0.3); break; }
+    }
+    ex -= dx * dist; ey -= dy * dist; ez -= dz * dist;
+  }
+
+  p.camX = ex; p.camY2 = ey; p.camZ = ez;
+  p.camRenderY = ey;
+  var eb = world.getId(p.dim, Math.floor(ex), Math.floor(ey), Math.floor(ez));
+  p.eyeInLiquid = eb && BLOCKS[eb].liquid ? BLOCKS[eb].liquid : null;
+}

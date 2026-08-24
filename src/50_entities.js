@@ -202,7 +202,7 @@ function drawEntities(game, fogStart, fogEnd, underwater, uwv, shadowOn) {
   var world = game.world, p = game.player, dim = p.dim;
   var list = game.entities;
   EBUF.n = 0;
-  var camX = p.camX, camY = p.camY, camZ = p.camZ;
+  var camX = p.camX, camY = p.camRenderY, camZ = p.camZ;
   var maxD = Math.min(R.settings.renderDistance * 16, 120);
   var maxD2 = maxD * maxD;
   var drew = 0;
@@ -230,7 +230,7 @@ function drawEntities(game, fogStart, fogEnd, underwater, uwv, shadowOn) {
   gl.uniform3fv(ep.u.uUnderwaterCol, uwv);
   gl.uniform4f(ep.u.uOverlayCol, 1.0, 0.25, 0.25, 1.0);
   gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D_ARRAY, R.atlas); gl.uniform1i(ep.u.uAtlas, 0);
-  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, shadowOn ? R.shadowFBO.depth : R.white); gl.uniform1i(ep.u.uShadowMap, 2);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, shadowOn ? R.shadowFBO.depth : R.noShadow); gl.uniform1i(ep.u.uShadowMap, 2);
   gl.uniformMatrix4fv(ep.u.uShadowMat, false, R.shadowMat);
   gl.uniform1f(ep.u.uShadowTexel, 1 / R.shadowSize);
   gl.uniform1i(ep.u.uShadowOn, shadowOn ? 1 : 0);

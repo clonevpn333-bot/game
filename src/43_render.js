@@ -11,7 +11,7 @@ var R = {
   shadowFBO: null, shadowSize: 2048,
   width: 0, height: 0, scale: 1,
   settings: {
-    renderDistance: 8, shadows: true, bloom: true, godRays: true, fxaa: true,
+    renderDistance: 8, shadows: true, bloom: true, godRays: true, fxaa: false,
     smoothLight: true, fancyWater: true, fov: 74, renderScale: 1.0, maxFps: 0, viewBob: true,
     viewModel: true, particles: true, entityShadows: true, clouds: true, waveGrass: true
   },
@@ -41,6 +41,7 @@ function initRenderer(canvas) {
   R.progFXAA = makeProgram('fxaa', SH.postVS, SH.fxaaFS);
   R.atlas = uploadBlockTextures();
   R.white = makeWhiteTex();
+  R.noShadow = makeDummyShadowTex();
   R.shadowFBO = new FBO(R.shadowSize, R.shadowSize, { color: false, depth: true, compare: true });
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
@@ -193,8 +194,8 @@ function updateSky(timeOfDay, dim, rain, biome) {
     var fc = col(biome.fog);
     R.sky.fog = [fc[0] / 255, fc[1] / 255, fc[2] / 255];
   }
-  R.sky.ambient = lerp(0.11, 0.30, day);
-  R.sky.skyLight = [lerp(0.14, 0.62, day) + zen[0] * 0.4, lerp(0.16, 0.68, day) + zen[1] * 0.35, lerp(0.24, 0.80, day) + zen[2] * 0.3];
+  R.sky.ambient = lerp(0.10, 0.24, day);
+  R.sky.skyLight = [lerp(0.13, 0.50, day) + zen[0] * 0.30, lerp(0.15, 0.55, day) + zen[1] * 0.26, lerp(0.21, 0.64, day) + zen[2] * 0.24];
   R.sky.blockLight = [1.0, 0.72, 0.42];
 }
 

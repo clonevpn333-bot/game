@@ -479,22 +479,26 @@ function surfacePass(cx, cz, sections, heights) {
     var ci = z * CH_W + x, wx = bx + x, wz = bz + z;
     var bio = BIOMES[_bioCol[ci]];
     var noiseD = 2 + Math.round((WG.surfN.get2(wx, wz) + 1) * 1.6);
-    var depth = -1, airAbove = true;
-    var underwater = false;
-    for (var y = CH_H - 1; y >= 1; y--) {
+    /* Only the topmost solid column gets dressed — cave floors keep their
+       stone, and the heightmap records the real surface. */
+    var surfY = -1, underwater = false;
+    for (var sy = CH_H - 1; sy >= 1; sy--) {
+      var sid = getBlockRaw(sections, x, sy, z) & ID_MASK;
+      if (sid === 0 || sid === ID.water || sid === ID.lava) continue;
+      surfY = sy;
+      underwater = (getBlockRaw(sections, x, sy + 1, z) & ID_MASK) === ID.water;
+      break;
+    }
+    if (surfY < 1) { heights[ci] = 0; continue; }
+    heights[ci] = surfY;
+    var depth = -1;
+    for (var y = surfY; y >= 1 && y > surfY - (noiseD + 4); y--) {
       var v = getBlockRaw(sections, x, y, z);
       var id = v & ID_MASK;
-      if (id === 0 || id === ID.water || id === ID.lava) {
-        airAbove = true; depth = -1;
-        if (id === ID.water) underwater = true;
-        continue;
-      }
-      if (id === ID.bedrock) { airAbove = false; continue; }
-      if (airAbove) {
-        depth = 0; airAbove = false;
-        underwater = (getBlockRaw(sections, x, y + 1, z) & ID_MASK) === ID.water;
-      } else if (depth >= 0) depth++;
-      if (depth < 0 || depth > noiseD + 2) continue;
+      if (id === 0 || id === ID.water || id === ID.lava) break;
+      if (id === ID.bedrock) break;
+      depth++;
+      if (depth > noiseD + 2) break;
       if (id !== ID.stone && id !== ID.deepslate && id !== ID.granite && id !== ID.diorite &&
         id !== ID.andesite && id !== ID.tuff) continue;
 
@@ -516,7 +520,6 @@ function surfacePass(cx, cz, sections, heights) {
       }
       if (nv && nv !== id) setBlockRaw(sections, x, y, z, nv);
       if (depth === 0) {
-        heights[ci] = y;
         /* snow blanket and ice sheets */
         if (bio.snow && !underwater && y + 1 < CH_H) {
           var above = getBlockRaw(sections, x, y + 1, z) & ID_MASK;
@@ -526,6 +529,8 @@ function surfacePass(cx, cz, sections, heights) {
           var wtop = getBlockRaw(sections, x, SEA, z) & ID_MASK;
           if (wtop === ID.water) setBlockRaw(sections, x, SEA, z, ID.ice);
         }
+        if (bio.snow && !underwater && y + 1 < CH_H &&
+          (getBlockRaw(sections, x, y + 1, z) & ID_MASK) === ID.snow) heights[ci] = y + 1;
       }
     }
   }

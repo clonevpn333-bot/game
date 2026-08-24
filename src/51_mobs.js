@@ -862,3 +862,26 @@ defMob('falling_block', { model: { parts: [], eye: 0.5 }, w: 0.98, h: 0.98, hp: 
 (function () {
   for (var k in MOBS) if (MOBS[k].glow) MOBS[k].emitLight = 8;
 })();
+
+/* -------------------------------------------------------- tile prebake -- */
+/* Part tiles are created lazily the first time a model is drawn, but the
+   texture array is uploaded once at boot — so every tile any entity could
+   ever need has to exist before that upload. */
+function prebakeEntityTiles() {
+  function walk(parts) {
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i];
+      if (p.tex) customTile(p.tex, p.texParams);
+      else if (p.col !== null && p.col !== undefined) partTile(p.col, p.v);
+      if (p.kids) walk(p.kids);
+    }
+  }
+  for (var k in MOBS) {
+    var m = MOBS[k];
+    if (m.model && m.model.parts) walk(m.model.parts);
+  }
+  /* first-person arms and the particle sprite */
+  partTile(SKIN, 0.05); partTile(SKIN_D, 0.04);
+  partTile(SLEEVE, 0.05); partTile(SLEEVE_D, 0.03);
+  partTile('#ffffff', 0);
+}
