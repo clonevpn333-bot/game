@@ -438,7 +438,7 @@ function quickMove(game, idx) {
 /* --------------------------------------------------------- rendering -- */
 function buildSlotGrid(game, parent, slots, cols, cls) {
   var grid = el('div', 'slotgrid ' + (cls || ''), parent);
-  if (cols) grid.style.gridTemplateColumns = 'repeat(' + cols + ', 44px)';
+  if (cols) grid.style.gridTemplateColumns = 'repeat(' + cols + ', 40px)';
   for (var i = 0; i < slots.length; i++) {
     var sl = slots[i];
     var idx = UI.slots.length;

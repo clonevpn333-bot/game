@@ -738,7 +738,7 @@ SCREEN_REFRESH.creative = function () { };
 /* ============================== MENUS =================================== */
 SCREEN_BUILDERS.death = function (game, box) {
   box.classList.add('centered');
-  el('div', 'bigtitle', box, 'You Died!');
+  el('div', 'bigtitle deathtitle', box, 'You Died!');
   el('div', 'subtext', box, game.deathCause || '');
   var b = el('button', 'bigbtn', box, 'Respawn');
   b.addEventListener('click', function () { respawnPlayer(game); });
@@ -863,3 +863,26 @@ function drawPlayerDoll(game) {
     ctx.globalAlpha = 1;
   }
 }
+
+SCREEN_BUILDERS.help = function (game, box) {
+  box.classList.add('centered', 'optionsgui');
+  el('div', 'bigtitle', box, 'Controls');
+  var rows = [
+    ['Move', 'W A S D'], ['Jump', 'Space'], ['Sneak', 'Shift'], ['Sprint', 'Ctrl'],
+    ['Look', 'Mouse'], ['Mine / attack', 'Left click'], ['Place / use', 'Right click'],
+    ['Pick block', 'Middle click'], ['Hotbar', '1 – 9 or scroll'], ['Drop item', 'Q'],
+    ['Swap hands', 'F'], ['Inventory', 'E'], ['Zoom', 'C'], ['Debug info', 'F3'],
+    ['Camera', 'F5'], ['Hide HUD', 'F1'], ['Controls', 'H'], ['Menu', 'Esc'],
+    ['Fly (creative)', 'double-tap Space']
+  ];
+  var list = el('div', 'optlist', box);
+  for (var i = 0; i < rows.length; i++) {
+    var r = el('div', 'optrow helprow', list);
+    el('span', 'helpk', r, rows[i][0]);
+    el('span', 'helpv', r, rows[i][1]);
+  }
+  el('div', 'tdim', box, 'Add ?seed=yourseed to the address to play a specific world.');
+  var b = el('button', 'bigbtn', box, 'Back');
+  b.addEventListener('click', function () { hideScreen(game); });
+};
+SCREEN_REFRESH.help = function () { };

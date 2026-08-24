@@ -124,6 +124,9 @@ function setupInput(game) {
         if (!UI.screen) { var t = p.offhand; p.offhand = p.inv[p.sel]; p.inv[p.sel] = t; UI.dirty = true; }
         break;
       case 'KeyC': if (!UI.screen) game.zooming = true; break;
+      case 'KeyH':
+        if (UI.screen === 'help') hideScreen(game); else if (!UI.screen) showScreen(game, 'help');
+        break;
       case 'KeyT': break;
     }
     /* double-tap space to fly in creative */

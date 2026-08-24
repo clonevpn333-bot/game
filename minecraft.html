@@ -292,7 +292,8 @@ img { image-rendering: pixelated; -webkit-user-drag: none; }
 .cursoritem.hidden { display: none; }
 .cursoritem img { width: 100%; height: 100%; }
 
-.bigtitle { font-size: 30px; color: #d43a3a; text-shadow: 3px 3px 0 #3a1010; letter-spacing: .06em; }
+.bigtitle { font-size: 26px; color: #2f2f2f; text-shadow: 2px 2px 0 rgba(255,255,255,.55); letter-spacing: .06em; }
+.deathtitle { color: #c62f2f; text-shadow: 3px 3px 0 #3a1010; font-size: 32px; }
 .subtext { font-size: 12px; color: #555; }
 .bigbtn, .optbtn {
   width: 260px; padding: 9px 12px; font: inherit; font-size: 13px; cursor: pointer; color: #f2f2f2;
@@ -307,6 +308,11 @@ img { image-rendering: pixelated; -webkit-user-drag: none; }
 .optlabel { font-size: 11px; color: #3a3a3a; }
 .optslider { width: 100%; }
 .optbtn { width: 100%; padding: 5px; font-size: 11px; }
+
+.helprow { flex-direction: row; justify-content: space-between; align-items: baseline;
+  border-bottom: 1px dotted #9a9a9a; padding-bottom: 2px; }
+.helpk { font-size: 11.5px; color: #333; }
+.helpv { font-size: 11.5px; color: #1d4f8a; }
 
 </style>
 </head>
@@ -19408,7 +19414,7 @@ function quickMove(game, idx) {
 /* --------------------------------------------------------- rendering -- */
 function buildSlotGrid(game, parent, slots, cols, cls) {
   var grid = el('div', 'slotgrid ' + (cls || ''), parent);
-  if (cols) grid.style.gridTemplateColumns = 'repeat(' + cols + ', 44px)';
+  if (cols) grid.style.gridTemplateColumns = 'repeat(' + cols + ', 40px)';
   for (var i = 0; i < slots.length; i++) {
     var sl = slots[i];
     var idx = UI.slots.length;
@@ -20185,7 +20191,7 @@ SCREEN_REFRESH.creative = function () { };
 /* ============================== MENUS =================================== */
 SCREEN_BUILDERS.death = function (game, box) {
   box.classList.add('centered');
-  el('div', 'bigtitle', box, 'You Died!');
+  el('div', 'bigtitle deathtitle', box, 'You Died!');
   el('div', 'subtext', box, game.deathCause || '');
   var b = el('button', 'bigbtn', box, 'Respawn');
   b.addEventListener('click', function () { respawnPlayer(game); });
@@ -20310,6 +20316,29 @@ function drawPlayerDoll(game) {
     ctx.globalAlpha = 1;
   }
 }
+
+SCREEN_BUILDERS.help = function (game, box) {
+  box.classList.add('centered', 'optionsgui');
+  el('div', 'bigtitle', box, 'Controls');
+  var rows = [
+    ['Move', 'W A S D'], ['Jump', 'Space'], ['Sneak', 'Shift'], ['Sprint', 'Ctrl'],
+    ['Look', 'Mouse'], ['Mine / attack', 'Left click'], ['Place / use', 'Right click'],
+    ['Pick block', 'Middle click'], ['Hotbar', '1 – 9 or scroll'], ['Drop item', 'Q'],
+    ['Swap hands', 'F'], ['Inventory', 'E'], ['Zoom', 'C'], ['Debug info', 'F3'],
+    ['Camera', 'F5'], ['Hide HUD', 'F1'], ['Controls', 'H'], ['Menu', 'Esc'],
+    ['Fly (creative)', 'double-tap Space']
+  ];
+  var list = el('div', 'optlist', box);
+  for (var i = 0; i < rows.length; i++) {
+    var r = el('div', 'optrow helprow', list);
+    el('span', 'helpk', r, rows[i][0]);
+    el('span', 'helpv', r, rows[i][1]);
+  }
+  el('div', 'tdim', box, 'Add ?seed=yourseed to the address to play a specific world.');
+  var b = el('button', 'bigbtn', box, 'Back');
+  b.addEventListener('click', function () { hideScreen(game); });
+};
+SCREEN_REFRESH.help = function () { };
 
 
 /* ============================ 90_blockentities.js ============================ */
@@ -20909,6 +20938,9 @@ function setupInput(game) {
         if (!UI.screen) { var t = p.offhand; p.offhand = p.inv[p.sel]; p.inv[p.sel] = t; UI.dirty = true; }
         break;
       case 'KeyC': if (!UI.screen) game.zooming = true; break;
+      case 'KeyH':
+        if (UI.screen === 'help') hideScreen(game); else if (!UI.screen) showScreen(game, 'help');
+        break;
       case 'KeyT': break;
     }
     /* double-tap space to fly in creative */
