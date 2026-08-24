@@ -79,6 +79,7 @@ out vec3 vNormal;
 out vec4 vLight;
 out vec3 vTint;
 out float vWave;
+out float vLava;
 
 const vec3 NORMALS[6] = vec3[6](
   vec3(1,0,0), vec3(-1,0,0), vec3(0,1,0), vec3(0,-1,0), vec3(0,0,1), vec3(0,0,-1));
@@ -118,6 +119,7 @@ void main(){
   else if (tintId == 3u) tint = uWaterTint;
   vTint = tint;
 
+  vLava = float((flags >> 7u) & 1u);
   vNormal = NORMALS[int(flags & 7u)];
   vWorld = p;
   float sky = float((aLightAO.x >> 4u) & 15u) / 15.0;
@@ -228,6 +230,7 @@ uniform vec3 uUnderwaterCol;
 uniform float uNear;
 uniform float uFar;
 uniform int uIsLava;
+in float vLava;
 uniform float uShadowTexel;
 uniform int uShadowOn;
 
@@ -257,10 +260,13 @@ void main(){
   vec3 V = normalize(uCamPos - vWorld);
   float t = uTime;
 
-  if (uIsLava == 1) {
+  if (uIsLava == 1 || vLava > 0.5) {
     vec3 lc = texel.rgb;
-    float glow = 0.7 + 0.5*fbm2(vWorld.xz*0.6 + vec2(t*0.15, -t*0.11));
-    oColor = vec4(lc * glow * 1.6, 1.0);
+    float glow = 0.82 + 0.34*fbm2(vWorld.xz*0.55 + vec2(t*0.13, -t*0.09));
+    // hot cracks drift across the surface
+    float crack = smoothstep(0.62, 0.95, fbm2(vWorld.xz*1.9 + vec2(-t*0.06, t*0.05)));
+    vec3 col = lc * glow * 1.02 + vec3(1.0, 0.46, 0.10) * crack * 0.34;
+    oColor = vec4(col, 1.0);
     return;
   }
 

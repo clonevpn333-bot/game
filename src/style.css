@@ -131,7 +131,7 @@ img { image-rendering: pixelated; -webkit-user-drag: none; }
 /* ------------------------------------------------------------ screens -- */
 .screen {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  background: rgba(8,9,12,.66); pointer-events: auto; overflow: auto; padding: 20px;
+  background: rgba(8,9,12,.52); pointer-events: auto; overflow: auto; padding: 16px;
   backdrop-filter: blur(2px);
 }
 .screen.hidden { display: none; }
@@ -140,26 +140,38 @@ img { image-rendering: pixelated; -webkit-user-drag: none; }
   border: 4px solid;
   border-color: #fefefe #565656 #565656 #fefefe;
   box-shadow: 0 8px 40px rgba(0,0,0,.6);
-  padding: 12px 14px 14px; color: #3f3f3f; min-width: 420px;
+  padding: 12px 14px 14px; color: #3f3f3f; min-width: 400px;
+  max-height: calc(100vh - 32px); overflow-y: auto; overflow-x: hidden;
   image-rendering: pixelated;
 }
+.gui::-webkit-scrollbar { width: 10px; }
+.gui::-webkit-scrollbar-track { background: #9a9a9a; }
+.gui::-webkit-scrollbar-thumb { background: #6f6f6f; border: 1px solid #4a4a4a; }
 .gui.centered { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 380px; padding: 26px 34px; }
 .guititle { font-size: 14px; color: #404040; margin-bottom: 8px; letter-spacing: .04em; }
 .guilabel { font-size: 12px; color: #4a4a4a; margin: 10px 0 4px; }
 
-.slotgrid { display: grid; grid-template-columns: repeat(9, 44px); gap: 2px; }
+.slotgrid { display: grid; grid-template-columns: repeat(9, 40px); gap: 2px; }
 .slot, .creativeslot {
-  position: relative; width: 42px; height: 42px; background: #8b8b8b;
+  position: relative; width: 38px; height: 38px; background: #8b8b8b;
   border: 2px solid; border-color: #373737 #ffffff #ffffff #373737;
 }
 .slot:hover, .creativeslot:hover { background: #b6b6b6; }
 .outslot { background: #7e7e7e; }
-.slot.ghost-helmet::after, .slot.ghost-chestplate::after, .slot.ghost-leggings::after,
-.slot.ghost-boots::after, .slot.ghost-shield::after, .slot.ghost-lapis::after,
-.slot.ghost-template::after, .slot.ghost-ingot::after, .slot.ghost-blaze::after {
-  content: ''; position: absolute; inset: 6px; opacity: .22;
-  background: currentColor; border-radius: 2px;
+/* empty equipment slots show a faint silhouette of what belongs there */
+.slot[class*="ghost-"]::after {
+  content: ''; position: absolute; inset: 7px; opacity: .28;
+  background: #4e4e4e; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
 }
+.slot.ghost-helmet::after { clip-path: polygon(10% 20%,90% 20%,90% 100%,68% 100%,68% 62%,32% 62%,32% 100%,10% 100%); }
+.slot.ghost-chestplate::after { clip-path: polygon(0 8%,26% 8%,50% 26%,74% 8%,100% 8%,100% 100%,0 100%); }
+.slot.ghost-leggings::after { clip-path: polygon(8% 0,92% 0,92% 100%,58% 100%,58% 48%,42% 48%,42% 100%,8% 100%); }
+.slot.ghost-boots::after { clip-path: polygon(6% 24%,42% 24%,42% 74%,58% 74%,58% 24%,94% 24%,94% 100%,6% 100%); }
+.slot.ghost-shield::after { clip-path: polygon(12% 4%,88% 4%,88% 62%,50% 98%,12% 62%); }
+.slot.ghost-lapis::after { clip-path: circle(30% at 50% 50%); }
+.slot.ghost-template::after { clip-path: polygon(16% 6%,84% 6%,84% 94%,16% 94%); }
+.slot.ghost-ingot::after { clip-path: polygon(8% 62%,92% 62%,80% 34%,20% 34%); }
+.slot.ghost-blaze::after { clip-path: polygon(44% 4%,56% 4%,56% 96%,44% 96%); }
 .mainpack { margin-bottom: 8px; }
 .hotpack { margin-top: 2px; }
 .invsection { margin-top: 10px; }
@@ -241,7 +253,7 @@ img { image-rendering: pixelated; -webkit-user-drag: none; }
 .tradeitem img { width: 100%; height: 100%; }
 .traderight { display: flex; gap: 8px; align-items: center; }
 
-.creativegui { max-width: 900px; }
+.creativegui { max-width: 760px; }
 .tabs { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 6px; }
 .tab {
   padding: 4px 9px; font-size: 11px; cursor: pointer; background: #8b8b8b;
@@ -249,12 +261,12 @@ img { image-rendering: pixelated; -webkit-user-drag: none; }
 }
 .tab.sel { background: #d8d8d8; border-color: #fff #6a6a6a #6a6a6a #fff; }
 .searchbox {
-  width: 100%; padding: 5px 8px; font: inherit; font-size: 12px; margin-bottom: 6px;
-  background: #6f6f6f; color: #fff; border: 2px solid; border-color: #373737 #fff #fff #373737;
+  width: 100%; padding: 6px 9px; font: inherit; font-size: 12px; margin-bottom: 6px;
+  background: #f0f0f0; color: #222; border: 2px solid; border-color: #373737 #fff #fff #373737;
 }
 .creativelist {
-  display: grid; grid-template-columns: repeat(14, 44px); gap: 2px;
-  max-height: 340px; overflow-y: auto; padding: 4px;
+  display: grid; grid-template-columns: repeat(13, 40px); gap: 2px;
+  max-height: 296px; overflow-y: auto; padding: 4px;
   background: #9a9a9a; border: 2px solid; border-color: #373737 #fff #fff #373737;
 }
 

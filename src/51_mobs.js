@@ -885,3 +885,18 @@ function prebakeEntityTiles() {
   partTile(SLEEVE, 0.05); partTile(SLEEVE_D, 0.03);
   partTile('#ffffff', 0);
 }
+
+/* The end crystals that heal the dragon: a floating cube in a cage of fire. */
+defMob('end_crystal', {
+  model: { parts: [
+    P('core', [0, 12, 0], [-4, -4, -4, 8, 8, 8], '#d8c8f0', { tex: 'face_dragon' }),
+    P('frame', [0, 12, 0], [-6, -6, -6, 12, 12, 12], '#3a2a52', { inflate: 0 }),
+    P('base', [0, 0, 0], [-6, 0, -6, 12, 3, 12], '#1b1420')
+  ], eye: 0.9 },
+  w: 1.0, h: 1.6, hp: 5, speed: 0, static: true, xp: 0, disp: 'End Crystal',
+  anim: function (e, pose, t) {
+    pose.core = { ry: t * 1.1, rx: Math.sin(t * 0.9) * 0.3, ty: Math.sin(t * 1.4) * 1.6 };
+    pose.frame = { ry: -t * 0.6, s: 1.0 };
+  },
+  drops: [], explodes: false
+});

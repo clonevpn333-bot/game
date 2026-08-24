@@ -637,7 +637,9 @@ function drainPendingMobs(game) {
       continue;
     }
     list[i] = list[list.length - 1]; list.pop();
+    if (m.mob === 'end_crystal_marker') m.mob = 'end_crystal';
     if (!MOBS[m.mob]) continue;
+    if (m.mob === 'ender_dragon' && game.entities.some(function (e) { return e.type === 'ender_dragon'; })) continue;
     if (game.entities.length > 320) continue;
     game.entities.push(makeEntity(m.mob, m.dim, m.x, m.y, m.z, { persist: true }));
   }

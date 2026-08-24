@@ -607,7 +607,7 @@ function genEnd(cx, cz, sections, out) {
     if (dc < 190) {
       /* central island: a broad plateau that falls away at the rim */
       var edge = clamp((190 - dc) / 60, 0, 1);
-      var hh = 96 + WG.endN.get2(wx, wz) * 9 * edge;
+      var hh = 96 + WG.endN.get2(wx, wz) * 7 * edge + WG.endN.get2(wx * 3.1 + 500, wz * 3.1 - 500) * 3.5 * edge;
       var thick = 6 + 22 * smoothstep(edge);
       for (var y = Math.floor(hh - thick); y <= Math.floor(hh); y++) {
         if (y < 2) continue;
@@ -635,6 +635,50 @@ function genEnd(cx, cz, sections, out) {
   }
   out.heights = heights;
   out.oceanFloor = heights;
+
+  /* ---- the centre of the End: obsidian pillars, crystals, exit portal ---- */
+  for (var pi = 0; pi < 10; pi++) {
+    var pa = pi * Math.PI * 2 / 10;
+    var prad = 42 + (pi % 3) * 3;
+    var pxw = Math.round(Math.cos(pa) * prad), pzw = Math.round(Math.sin(pa) * prad);
+    if (Math.abs(pxw - (bx + 8)) > 20 || Math.abs(pzw - (bz + 8)) > 20) continue;
+    var ph = 76 + ((pi * 7) % 5) * 7;         /* 76..104 */
+    var pr = 2 + (pi % 3);
+    for (var dx = -pr - 1; dx <= pr + 1; dx++) for (var dz = -pr - 1; dz <= pr + 1; dz++) {
+      if (dx * dx + dz * dz > (pr + 0.6) * (pr + 0.6)) continue;
+      var lx2 = pxw + dx - bx, lz2 = pzw + dz - bz;
+      if (lx2 < 0 || lx2 > 15 || lz2 < 0 || lz2 > 15) continue;
+      for (var py2 = 96; py2 <= 96 + ph - 76 + 14; py2++) setBlockRaw(sections, lx2, py2, lz2, ID.obsidian);
+      setBlockRaw(sections, lx2, 96 + ph - 76 + 15, lz2, ID.bedrock);
+    }
+    /* the crystal on top, with its iron cage */
+    var cy = 96 + ph - 76 + 16;
+    var clx = pxw - bx, clz = pzw - bz;
+    if (clx >= 0 && clx <= 15 && clz >= 0 && clz <= 15) {
+      setBlockRaw(sections, clx, cy, clz, ID.fire);
+      out.structures = out.structures || [];
+      out.structures.push({ t: 'mob', x: pxw, y: cy + 1, z: pzw, mob: 'end_crystal_marker' });
+    }
+  }
+  /* exit portal pad */
+  if (Math.abs(bx + 8) < 40 && Math.abs(bz + 8) < 40) {
+    for (var ex = -4; ex <= 4; ex++) for (var ez = -4; ez <= 4; ez++) {
+      if (Math.abs(ex) + Math.abs(ez) > 5) continue;
+      var elx = ex - bx, elz = ez - bz;
+      if (elx < 0 || elx > 15 || elz < 0 || elz > 15) continue;
+      for (var ey = 94; ey <= 96; ey++) setBlockRaw(sections, elx, ey, elz, ID.bedrock);
+      setBlockRaw(sections, elx, 97, elz, 0);
+    }
+    var olx = -bx, olz = -bz;
+    if (olx >= 0 && olx <= 15 && olz >= 0 && olz <= 15) {
+      setBlockRaw(sections, olx, 97, olz, ID.bedrock);
+      setBlockRaw(sections, olx, 98, olz, ID.end_portal === undefined ? ID.bedrock : ID.end_portal);
+      out.structures = out.structures || [];
+      out.structures.push({ t: 'mob', x: 0, y: 128, z: 0, mob: 'ender_dragon' });
+      out.structures.push({ t: 'mark', x: 0, z: 0, name: 'The End' });
+    }
+  }
+
   /* chorus plants on the highlands */
   var rng = chunkRNG(cx, cz, 0x2ee1);
   for (var q = 0; q < 4; q++) {

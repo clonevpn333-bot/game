@@ -111,7 +111,8 @@ void main(){
   vec3 key = normalize(vec3(0.35, 0.75, 0.55));
   float kd = max(dot(N, key), 0.0);
   float fill = max(dot(N, normalize(vec3(-0.5,0.2,0.4))), 0.0);
-  vec3 amb = uSkyLightCol*(uAmbient+0.62*sky*sky) + uBlockLightCol*pow(blk,1.55)*1.05;
+  // the hand always keeps a little light of its own, so it never goes black
+  vec3 amb = uSkyLightCol*(uAmbient+0.62*sky*sky) + uBlockLightCol*pow(blk,1.55)*1.05 + vec3(0.14,0.135,0.13);
   vec3 light = amb * (0.42 + 0.44*kd + 0.16*fill) + uSunCol*kd*sky*uDay*0.30;
   vec3 col = texel.rgb * vColor.rgb * light;
   col = mix(col, uOverlayCol.rgb, uOverlayCol.a*vColor.a);

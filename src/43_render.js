@@ -195,9 +195,15 @@ function updateSky(timeOfDay, dim, rain, biome) {
     R.sky.fog = [fc[0] / 255, fc[1] / 255, fc[2] / 255];
   }
   R.sky.ambient = lerp(0.10, 0.24, day);
+  /* the Nether and the End have no sky light at all, so their ambient has to
+     carry the whole scene — otherwise everything reads as pure black */
+  if (dim === DIM_NETHER) R.sky.ambient = 1.0;      /* no sky light at all */
+  else if (dim === DIM_END) R.sky.ambient = 0.18;   /* the End does have sky light */
   /* the sky fill is a soft, only slightly cool ambient; the sun carries the
      warmth and most of the intensity on lit faces */
   R.sky.skyLight = [lerp(0.12, 0.40, day) + zen[0] * 0.14, lerp(0.13, 0.41, day) + zen[1] * 0.13, lerp(0.16, 0.44, day) + zen[2] * 0.14];
+  if (dim === DIM_NETHER) R.sky.skyLight = [0.74, 0.42, 0.33];
+  else if (dim === DIM_END) R.sky.skyLight = [0.40, 0.36, 0.50];
   R.sky.blockLight = [1.0, 0.72, 0.42];
 }
 

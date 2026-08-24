@@ -424,7 +424,9 @@ function emitFluid(def, st, lx, ly, lz) {
   var buf = _mbuf[PASS_TRANS];
   var id = def.id;
   var layer = def.layers[2];
-  var flags = (def.tintIdx << 3) | (3 << 5);
+  /* bit 7 marks lava, so the translucent shader can tell the two fluids
+     apart inside a single draw call */
+  var flags = (def.tintIdx << 3) | (3 << 5) | (def.liquid === 'lava' ? 128 : 0);
   var light = _nbL[NIDX(lx, ly, lz)];
   var upRaw = fluidAt(lx, ly + 1, lz, id);
   var topFull = upRaw >= 0;

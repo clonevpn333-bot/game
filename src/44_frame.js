@@ -88,7 +88,8 @@ function renderFrame(game) {
   var fogEnd = far * (underwater ? 0.10 : 0.98);
   var fogStart = fogEnd * (underwater ? 0.02 : 0.72);
   if (game.weather.rain > 0.1) { fogEnd *= 1 - game.weather.rain * 0.35; fogStart *= 0.7; }
-  if (dim === DIM_NETHER) { fogEnd = Math.min(fogEnd, 130); fogStart = 8; }
+  if (dim === DIM_NETHER) { fogEnd = Math.min(fogEnd, 116); fogStart = 26; }
+  else if (dim === DIM_END) { fogStart = fogEnd * 0.86; }
 
   /* ------------------------------- shadow pass ------------------------- */
   var shadowOn = R.settings.shadows && dim === DIM_OVERWORLD && R.sky.day > 0.05;

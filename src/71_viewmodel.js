@@ -123,7 +123,7 @@ function drawViewModel(game) {
   /* light the hand with the block light where the player stands, so a torch
      in a dark cave actually lights the arm holding it */
   var lb = game.world.getLight(p.dim, Math.floor(p.x), Math.floor(p.camY), Math.floor(p.z));
-  _elight[0] = ((lb >> 4) & 15) / 15;
+  _elight[0] = p.dim === DIM_OVERWORLD ? ((lb >> 4) & 15) / 15 : 0.85;
   _elight[1] = Math.max(((lb) & 15) / 15, heldEmissive(p) ? 0.85 : 0);
   _ecol[0] = _ecol[1] = _ecol[2] = 1; _ecol[3] = 0;
 
