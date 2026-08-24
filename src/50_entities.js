@@ -67,8 +67,10 @@ function emitBox(buf, x, y, z, w, h, d, layer, inflate) {
   var x0 = (x - inflate) * S, y0 = (y - inflate) * S, z0 = (z - inflate) * S;
   var x1 = (x + w + inflate) * S, y1 = (y + h + inflate) * S, z1 = (z + d + inflate) * S;
   var xs = [x0, x1], ys = [y0, y1], zs = [z0, z1];
+  var perFace = typeof layer !== 'number';
   for (var f = 0; f < 6; f++) {
     var vs = FACE_V[f], d3 = FACE_DIR[f];
+    var lay = perFace ? layer[f] : layer;
     xfDir(_en, d3[0], d3[1], d3[2]);
     var base = buf.n;
     if ((base / EV_STRIDE) + 6 > EBUF.cap) return;
@@ -90,7 +92,7 @@ function emitBox(buf, x, y, z, w, h, d, layer, inflate) {
       F[o] = _ev[0]; F[o + 1] = _ev[1]; F[o + 2] = _ev[2];
       F[o + 3] = _en[0]; F[o + 4] = _en[1]; F[o + 5] = _en[2];
       F[o + 6] = uu; F[o + 7] = vv;
-      F[o + 8] = layer;
+      F[o + 8] = lay;
       F[o + 9] = _ecol[0]; F[o + 10] = _ecol[1]; F[o + 11] = _ecol[2]; F[o + 12] = _ecol[3];
       F[o + 13] = _elight[0]; F[o + 14] = _elight[1];
       buf.n = o + EV_STRIDE;

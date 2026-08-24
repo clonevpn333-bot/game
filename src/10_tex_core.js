@@ -589,6 +589,23 @@ function tileLayer(desc) {
   return idx;
 }
 
+/* Register a hand-painted buffer (item icons, mob faces) as a texture layer. */
+function rawLayer(key, d) {
+  var idx = TEX_INDEX[key];
+  if (idx !== undefined) return idx;
+  idx = TEX_LAYERS.length;
+  TEX_LAYERS.push(d);
+  TEX_INDEX[key] = idx;
+  var r = 0, g = 0, b = 0, n = 0, hasA = false;
+  for (var i = 0; i < d.length; i += 4) {
+    if (d[i + 3] < 250) hasA = true;
+    if (d[i + 3] > 0) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+  }
+  n = n || 1;
+  TEX_META.push({ avg: [r / n / 255, g / n / 255, b / n / 255], hasAlpha: hasA });
+  return idx;
+}
+
 /* Resolve each block's per-face tile layers.  Face order matches the mesher:
    0:+X 1:-X 2:+Y 3:-Y 4:+Z 5:-Z */
 function bakeAllBlockTextures() {
