@@ -14,7 +14,7 @@ var VM = {
   rollZ: 0, rollVZ: 0,                            /* strafe roll */
   bobX: 0, bobY: 0, bobRot: 0,                    /* walk bob */
   dropY: 0, dropVY: 0,                            /* landing / jump drop */
-  swing: 0, swingActive: false, swingKind: 0,
+  swing: 0, swingActive: false, swingKind: 0, swingStyle: 0, swingTime: 0.30,
   useProg: 0,
   equipT: 1, lastItem: null, equipDrop: 0,
   lastYaw: 0, lastPitch: 0, lastVY: 0,
@@ -71,7 +71,7 @@ function updateViewModel(game, dt) {
 
   /* ---- swing: anticipation → strike → settle ---- */
   if (VM.swingActive) {
-    VM.swing += dt / (VM.swingKind === 1 ? 0.32 : 0.30);
+    VM.swing += dt / (VM.swingTime || 0.30);
     if (VM.swing >= 1) { VM.swing = 0; VM.swingActive = false; }
   }
 
@@ -87,8 +87,15 @@ function updateViewModel(game, dt) {
   VM.useProg = approach(VM.useProg, target, dt * 7);
   if (p.charging) p.chargeTime = (p.chargeTime || 0) + dt;
 }
+var SWING_STYLE_FOR = { sword: 1, pickaxe: 2, axe: 2, shovel: 3, hoe: 3 };
+var SWING_TIME = [0.28, 0.30, 0.40, 0.34];
 function startSwing(kind) {
   VM.swing = 0; VM.swingActive = true; VM.swingKind = kind || 0;
+  /* Placing or using something is always the short forward poke; only a real
+     attack or a mining stroke gets the tool's own motion. */
+  var it = VM.lastItem ? ITEMS[VM.lastItem] : null;
+  VM.swingStyle = (kind === 1 || !it) ? 0 : (SWING_STYLE_FOR[it.icon] || 0);
+  VM.swingTime = SWING_TIME[VM.swingStyle];
 }
 
 /* The swing the real game uses: the hand drops and sweeps across on a
@@ -96,12 +103,55 @@ function startSwing(kind) {
    Applied as a transform on the hand frame, so the arm and whatever it is
    holding move together. */
 var DEG = Math.PI / 180;
+/* 0 before a, eased 0..1 across [a,b], 1 after — the building block every
+   swing below is cut from. */
+function vmPhase(sp, a, b) {
+  if (sp <= a) return 0;
+  if (sp >= b) return 1;
+  var t = (sp - a) / (b - a);
+  return t * t * (3 - 2 * t);
+}
+/* A swing is a wind-up that peaks early and unwinds, plus a strike that peaks
+   late and settles. Both are zero at each end, so the hand always comes home
+   without a snap. */
 function applySwingTransform(sp, side) {
+  var style = VM.swingStyle || 0;
+  var wind, hit;
+  if (style === 1) {                         /* sword: cocked back, swept across */
+    wind = vmPhase(sp, 0, 0.26) - vmPhase(sp, 0.26, 0.54);
+    hit = vmPhase(sp, 0.22, 0.54) - vmPhase(sp, 0.66, 1);
+    mTranslate(side * (0.15 * wind - 0.22 * hit), 0.11 * wind - 0.12 * hit,
+      0.11 * wind - 0.19 * hit);
+    mRotY(side * (0.58 * wind - 0.80 * hit));
+    mRotZ(side * (0.48 * wind - 1.25 * hit));
+    mRotX(-0.62 * wind + 0.80 * hit);
+    return;
+  }
+  if (style === 2) {                         /* pick and axe: overhead, driven down */
+    wind = vmPhase(sp, 0, 0.30) - vmPhase(sp, 0.30, 0.58);
+    hit = vmPhase(sp, 0.26, 0.56) - vmPhase(sp, 0.70, 1);
+    mTranslate(side * (0.06 * wind - 0.08 * hit), 0.22 * wind - 0.24 * hit,
+      0.15 * wind - 0.29 * hit);
+    mRotX(-1.10 * wind + 1.25 * hit);
+    mRotZ(side * (0.22 * wind - 0.30 * hit));
+    mRotY(side * (0.10 * wind - 0.20 * hit));
+    return;
+  }
+  if (style === 3) {                         /* shovel and hoe: a low scoop */
+    wind = vmPhase(sp, 0, 0.28) - vmPhase(sp, 0.28, 0.56);
+    hit = vmPhase(sp, 0.24, 0.58) - vmPhase(sp, 0.68, 1);
+    mTranslate(side * (0.07 * wind - 0.13 * hit), 0.15 * wind - 0.24 * hit,
+      0.07 * wind - 0.28 * hit);
+    mRotX(-0.40 * wind + 1.00 * hit);
+    mRotZ(side * (-0.18 * wind + 0.34 * hit));
+    mRotY(side * (0.08 * wind - 0.14 * hit));
+    return;
+  }
+  /* bare hand, blocks and everything else: the game's own punch arc. The
+     lateral part is damped because at this field of view the full sweep puts
+     the forearm right over the crosshair. */
   var fSq = Math.sin(sp * sp * Math.PI);
   var fRt = Math.sin(Math.sqrt(sp) * Math.PI);
-  /* The real game's swing sweeps the hand toward the middle of the screen.
-     At this field of view that puts the forearm right over the crosshair, so
-     the lateral part is damped hard — the arc still reads, the view stays. */
   mTranslate(side * -0.40 * fRt * 0.38, 0.20 * Math.sin(Math.sqrt(sp) * Math.PI * 2) * 0.55,
     -0.20 * Math.sin(sp * Math.PI));
   mRotY(side * (45 + fSq * -20) * DEG);
@@ -116,62 +166,74 @@ function applySwingTransform(sp, side) {
    sprite, so a sword has an edge and a bucket has a rim. Units are the usual
    sixteenths of a block. Each entry is [x, y, z, w, h, d, colour]. */
 var ITEM_MODELS = {
-  sword: function (c) { return [
-    [-0.6, -7, -0.6, 1.2, 5, 1.2, '#5b3f20'],
-    [-0.9, -7.6, -0.9, 1.8, 0.9, 1.8, '#3f2a14'],
-    [-2.6, -2.2, -0.7, 5.2, 1.2, 1.4, '#6a4a26'],
-    [-0.75, -1, -0.5, 1.5, 9, 1.0, c],
-    [-0.4, 8, -0.35, 0.8, 1.6, 0.7, c]
+  sword: function (c) { var d = shade(c, 0.80), g = '#6a4a26'; return [
+    [-0.9, -8.4, -0.9, 1.8, 6.4, 1.8, '#5b3f20'],      /* grip */
+    [-1.35, -9.4, -1.35, 2.7, 1.3, 2.7, '#3f2a14'],    /* pommel */
+    [-1.05, -5.6, -1.05, 2.1, 1.0, 2.1, '#3f2a14'],    /* grip wrap */
+    [-4.2, -2.4, -1.05, 8.4, 1.9, 2.1, g],             /* crossguard */
+    [-4.9, -2.7, -1.2, 1.3, 2.5, 2.4, shade(g, 0.78)],
+    [3.6, -2.7, -1.2, 1.3, 2.5, 2.4, shade(g, 0.78)],
+    [-1.1, -0.7, -0.65, 2.2, 2.2, 1.3, c],             /* ricasso */
+    [-1.15, 1.2, -0.55, 2.3, 12.0, 1.1, c],            /* blade */
+    [-0.4, 1.2, -0.62, 0.8, 12.0, 1.24, d],            /* fuller down the middle */
+    [-0.8, 13.0, -0.45, 1.6, 2.2, 0.9, c],             /* taper */
+    [-0.35, 15.1, -0.32, 0.7, 1.2, 0.64, c]            /* point */
   ]; },
-  pickaxe: function (c) { return [
-    [-0.6, -8, -0.6, 1.2, 12, 1.2, '#6b4d28'],
-    [-5.5, 4.2, -0.7, 11, 1.6, 1.4, c],
-    [-6.4, 3.0, -0.6, 1.4, 1.6, 1.2, c],
-    [5.0, 3.0, -0.6, 1.4, 1.6, 1.2, c],
-    [-1.1, 3.4, -0.9, 2.2, 1.6, 1.8, '#4a3520']
+  pickaxe: function (c) { var d = shade(c, 0.82); return [
+    [-0.9, -9.5, -0.9, 1.8, 17, 1.8, '#6b4d28'],
+    [-1.15, 4.4, -1.15, 2.3, 1.7, 2.3, '#4a3520'],
+    [-7.0, 6.0, -1.0, 14, 2.3, 2.0, c],                /* head bar */
+    [-7.0, 5.4, -0.9, 14, 0.7, 1.8, d],
+    [-8.1, 4.0, -0.9, 1.7, 2.6, 1.8, c],               /* tines */
+    [6.4, 4.0, -0.9, 1.7, 2.6, 1.8, c],
+    [-8.9, 2.6, -0.7, 1.3, 1.8, 1.4, d],
+    [7.6, 2.6, -0.7, 1.3, 1.8, 1.4, d]
   ]; },
-  axe: function (c) { return [
-    [-0.6, -8, -0.6, 1.2, 12, 1.2, '#6b4d28'],
-    [0.4, 1.4, -0.7, 2.0, 5.6, 1.4, c],
-    [2.2, 0.6, -0.8, 2.2, 7.2, 1.6, c],
-    [4.2, 1.6, -0.6, 1.0, 5.2, 1.2, c],
-    [-1.0, 3.0, -0.9, 1.8, 1.4, 1.8, '#4a3520']
+  axe: function (c) { var d = shade(c, 0.82); return [
+    [-0.9, -9.5, -0.9, 1.8, 17, 1.8, '#6b4d28'],
+    [-1.15, 3.8, -1.15, 2.3, 1.7, 2.3, '#4a3520'],
+    [0.8, 2.0, -1.0, 2.6, 8.2, 2.0, c],                /* cheek */
+    [3.2, 1.0, -1.1, 2.9, 10.2, 2.2, c],               /* bit */
+    [5.9, 2.2, -0.8, 1.5, 7.8, 1.6, d],                /* edge */
+    [-2.8, 6.2, -0.9, 3.6, 2.1, 1.8, c]                /* poll */
   ]; },
-  shovel: function (c) { return [
-    [-0.6, -8, -0.6, 1.2, 12, 1.2, '#6b4d28'],
-    [-1.9, 3.4, -0.6, 3.8, 4.4, 1.2, c],
-    [-1.4, 2.6, -0.6, 2.8, 1.0, 1.2, c],
-    [-1.0, 2.2, -0.9, 2.0, 1.2, 1.8, '#4a3520']
+  shovel: function (c) { var d = shade(c, 0.82); return [
+    [-0.9, -9.5, -0.9, 1.8, 16, 1.8, '#6b4d28'],
+    [-1.15, 3.2, -1.15, 2.3, 1.7, 2.3, '#4a3520'],
+    [-2.3, 4.4, -0.85, 4.6, 1.4, 1.7, c],              /* shoulder */
+    [-3.5, 5.6, -1.0, 7.0, 5.0, 2.0, c],               /* pan */
+    [-3.0, 10.2, -0.85, 6.0, 1.6, 1.7, d]              /* lip */
   ]; },
-  hoe: function (c) { return [
-    [-0.6, -8, -0.6, 1.2, 12, 1.2, '#6b4d28'],
-    [-4.6, 4.0, -0.6, 5.4, 1.4, 1.2, c],
-    [-4.6, 2.4, -0.6, 1.3, 1.8, 1.2, c],
-    [-1.0, 3.2, -0.9, 1.8, 1.4, 1.8, '#4a3520']
+  hoe: function (c) { var d = shade(c, 0.82); return [
+    [-0.9, -9.5, -0.9, 1.8, 17, 1.8, '#6b4d28'],
+    [-1.15, 4.2, -1.15, 2.3, 1.7, 2.3, '#4a3520'],
+    [-7.2, 6.4, -0.9, 8.2, 2.1, 1.8, c],               /* arm */
+    [-7.6, 3.2, -0.9, 2.1, 3.4, 1.8, c],               /* blade */
+    [-7.6, 2.6, -0.8, 2.1, 0.8, 1.6, d]
   ]; },
   bucket: function (c) { return [
-    [-2.6, -4, -2.6, 5.2, 0.9, 5.2, '#9a9a9a'],
-    [-3.0, -3.2, -3.0, 0.9, 7.0, 6.0, '#c6c6c6'],
-    [2.1, -3.2, -3.0, 0.9, 7.0, 6.0, '#a4a4a4'],
-    [-3.0, -3.2, -3.0, 6.0, 7.0, 0.9, '#b8b8b8'],
-    [-3.0, -3.2, 2.1, 6.0, 7.0, 0.9, '#9a9a9a'],
-    [-2.2, 3.0, -2.2, 4.4, 0.6, 4.4, c],
-    [-3.2, 3.6, -3.2, 6.4, 0.9, 6.4, '#d4d4d4'],
-    [-2.1, 4.4, -0.5, 4.2, 0.7, 1.0, '#8f8f8f']
+    [-3.3, -5.0, -3.3, 6.6, 1.1, 6.6, '#9a9a9a'],
+    [-3.8, -4.0, -3.8, 1.1, 8.8, 7.6, '#c6c6c6'],
+    [2.7, -4.0, -3.8, 1.1, 8.8, 7.6, '#a4a4a4'],
+    [-3.8, -4.0, -3.8, 7.6, 8.8, 1.1, '#b8b8b8'],
+    [-3.8, -4.0, 2.7, 7.6, 8.8, 1.1, '#9a9a9a'],
+    [-2.8, 3.6, -2.8, 5.6, 0.9, 5.6, c],               /* whatever is inside */
+    [-4.1, 4.6, -4.1, 8.2, 1.1, 8.2, '#d4d4d4'],       /* rim */
+    [-2.6, 5.6, -0.6, 5.2, 0.9, 1.2, '#8f8f8f']        /* handle */
   ]; },
   rod: function (c) { return [
-    [-0.5, -7, -0.5, 1.0, 13, 1.0, '#6b4d28'],
-    [-0.35, 6, -0.35, 0.7, 3.5, 0.7, '#8b6a3d'],
-    [-0.2, 2, -3.6, 0.4, 0.4, 3.6, '#e8e8e8']
+    [-0.75, -8.5, -0.75, 1.5, 17, 1.5, '#6b4d28'],
+    [-0.55, 8.5, -0.55, 1.1, 4.5, 1.1, '#8b6a3d'],
+    [-0.28, 3.0, -5.2, 0.56, 0.56, 5.2, '#e8e8e8']
   ]; },
-  ingot: function (c) { return [
-    [-3.4, -1.1, -2.0, 6.8, 2.2, 4.0, c],
-    [-2.6, 1.0, -1.4, 5.2, 0.6, 2.8, c]
+  ingot: function (c) { var d = shade(c, 0.84); return [
+    [-4.2, -1.5, -2.5, 8.4, 3.0, 5.0, c],
+    [-3.2, 1.4, -1.8, 6.4, 0.8, 3.6, d]
   ]; },
-  gem: function (c) { return [
-    [-1.8, -2.2, -1.4, 3.6, 2.2, 2.8, c],
-    [-2.4, 0, -1.8, 4.8, 2.0, 3.6, c],
-    [-1.6, 2.0, -1.2, 3.2, 1.8, 2.4, c]
+  gem: function (c) { var d = shade(c, 0.86); return [
+    [-2.2, -3.0, -1.7, 4.4, 3.0, 3.4, d],
+    [-3.0, 0, -2.2, 6.0, 2.4, 4.4, c],
+    [-2.0, 2.4, -1.5, 4.0, 2.4, 3.0, d]
   ]; }
 };
 var ITEM_MODEL_FOR = {
@@ -180,8 +242,11 @@ var ITEM_MODEL_FOR = {
 };
 /* Where along the model the fingers close, in the same sixteenths — a sword is
    held near the pommel, an ingot in the middle of the palm. */
-var ITEM_GRIP = { sword: 4.6, pickaxe: 5.2, axe: 5.2, shovel: 5.2, hoe: 5.2, rod: 4.0,
+var ITEM_GRIP = { sword: 5.6, pickaxe: 6.2, axe: 6.2, shovel: 6.2, hoe: 6.2, rod: 5.0,
   bucket: 0, ingot: 0, gem: 0 };
+/* Hand-sized: a sword fills a lot more of the frame than a lump of iron. */
+var ITEM_SCALE = { sword: 0.40, pickaxe: 0.37, axe: 0.37, shovel: 0.37, hoe: 0.37,
+  rod: 0.40, bucket: 0.55, ingot: 0.72, gem: 0.72 };
 function drawSolidItem(game, kind, colour) {
   var build = ITEM_MODELS[kind];
   if (!build) return false;
@@ -404,11 +469,14 @@ function drawHeldItem(game, name, it) {
     /* A built model is gripped, not pinned to a plane: the fist closes around
        the handle and the head of the tool leans away over the knuckles. */
     var upright = solid === 'bucket' || solid === 'ingot' || solid === 'gem';
-    mTranslate(-0.04, 0.10, -0.16);
-    mRotY(upright ? 0.42 : 0.30);
-    mRotZ(upright ? 0.06 : 0.40);
-    mRotX(upright ? 0.10 : -0.06);
-    mScale(0.44, 0.44, 0.44);
+    /* biased out toward the corner: a long tool swung through the middle of
+       the frame buries the crosshair */
+    mTranslate(upright ? -0.03 : 0.03, upright ? 0.10 : 0.03, -0.17);
+    mRotY(upright ? 0.42 : 0.26);
+    mRotZ(upright ? 0.06 : 0.34);
+    mRotX(upright ? 0.10 : -0.04);
+    var sc = ITEM_SCALE[solid] || 0.5;
+    mScale(sc, sc, sc);
     drawSolidItem(game, solid, it.color);
   } else {
     mTranslate(-0.06, 0.12, -0.15);

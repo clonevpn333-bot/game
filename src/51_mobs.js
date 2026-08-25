@@ -1030,8 +1030,10 @@ function prebakeEntityTiles() {
       for (var mi = 0; mi < mb.length; mi++) partTile(mb[mi][6], 0.035);
     }
     for (var ii = 0; ii < ITEM_LIST.length; ii++) {
-      var iit = ITEM_LIST[ii];
-      if (iit.color && ITEM_MODEL_FOR[iit.icon]) partTile(iit.color, 0.035);
+      var iit = ITEM_LIST[ii], mk2 = iit.icon && ITEM_MODEL_FOR[iit.icon];
+      if (!mk2) continue;
+      var mb2 = ITEM_MODELS[mk2](iit.color || '#c0c0c0');
+      for (var mj = 0; mj < mb2.length; mj++) partTile(mb2[mj][6], 0.035);
     }
   }
 }
