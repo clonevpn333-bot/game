@@ -147,7 +147,7 @@ function setupInput(game) {
         if (UI.screen === 'achievements') hideScreen(game);
         else if (!UI.screen) showScreen(game, 'achievements');
         break;
-      case 'KeyT': break;
+      case 'KeyT': if (!UI.screen) { netOpenChat(game); ev.preventDefault(); } break;
     }
     /* double-tap W to sprint, the way most people expect it */
     if (ev.code === 'KeyW' && !ev.repeat) {
@@ -993,6 +993,8 @@ function waitForSpawn(g) {
   g.ready = true;
   g.lastFrame = performance.now();
   requestAnimationFrame(function (t) { frame(g, t); });
+  /* arriving from a multiplayer invite link: answer it straight away */
+  netBootJoin(g);
 }
 
 function frame(g, now) {

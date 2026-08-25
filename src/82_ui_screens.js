@@ -761,6 +761,8 @@ SCREEN_BUILDERS.pause = function (game, box) {
     logMessage(game, 'Game mode: ' + (game.player.creative ? 'Creative' : 'Survival'), '#ffff88');
     hideScreen(game);
   });
+  var bM = el('button', 'bigbtn', box, NET.active ? 'Multiplayer (' + NET.status + ')' : 'Multiplayer');
+  bM.addEventListener('click', function () { showScreen(game, 'multiplayer'); });
   var bA = el('button', 'bigbtn', box, 'Achievements (L)');
   bA.addEventListener('click', function () { showScreen(game, 'achievements'); });
   var b4 = el('button', 'bigbtn', box, 'Save World');
@@ -884,6 +886,7 @@ SCREEN_BUILDERS.help = function (game, box) {
     ['Swap hands', 'F'], ['Inventory', 'E'], ['Zoom', 'C'], ['Debug info', 'F3'],
     ['Camera', 'F5'], ['Hide HUD', 'F1'], ['Controls', 'H'], ['Menu', 'Esc'],
     ['X-ray', 'X'], ['Fullbright', 'B'], ['Vein miner', 'V'], ['Achievements', 'L'],
+    ['Chat', 'T'], ['Multiplayer', 'Esc → Multiplayer'],
     ['Fly (creative)', 'double-tap Space']
   ];
   var list = el('div', 'optlist', box);
