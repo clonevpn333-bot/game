@@ -11,10 +11,11 @@ var R = {
   shadowFBO: null, shadowSize: 2048,
   width: 0, height: 0, scale: 1,
   settings: {
-    renderDistance: 8, shadows: true, bloom: true, godRays: true, fxaa: false,
+    renderDistance: 8, shadows: true, bloom: true, godRays: true, fxaa: false, dof: true,
     smoothLight: true, fancyWater: true, fov: 74, renderScale: 1.0, maxFps: 0, viewBob: true,
     viewModel: true, particles: true, entityShadows: true, clouds: true, waveGrass: true,
-    sharpTextures: true, xray: false, fullbright: false, veinMiner: true
+    sharpTextures: true, xray: false, fullbright: false, veinMiner: true,
+    motionBlur: true
   },
   frame: 0,
   sunDir: new Float32Array([0, 1, 0]),
@@ -76,6 +77,8 @@ function resizeRenderer() {
   R.bloomB = new FBO(Math.max(1, rw >> 2), Math.max(1, rh >> 2), { float: true });
   R.godFBO = new FBO(Math.max(1, rw >> 1), Math.max(1, rh >> 1), { float: true });
   R.ldrFBO = new FBO(rw, rh, {});
+  if (R.prevFBO) R.prevFBO.dispose();
+  R.prevFBO = new FBO(rw, rh, {});
 }
 
 /* ---------------------------------------------------- mesh GL objects -- */

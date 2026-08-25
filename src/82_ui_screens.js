@@ -804,6 +804,8 @@ SCREEN_BUILDERS.options = function (game, box) {
   toggle('Waving Plants', 'waveGrass');
   toggle('Clouds', 'clouds');
   toggle('Sharp Textures', 'sharpTextures', function () { applyAtlasFilter(); });
+  toggle('Motion Blur', 'motionBlur');
+  toggle('Depth of Field', 'dof');
   toggle('X-Ray (X)', 'xray', function () { game.setXray(R.settings.xray); });
   toggle('Fullbright (B)', 'fullbright');
   toggle('Vein Miner', 'veinMiner');

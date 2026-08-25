@@ -110,6 +110,90 @@ function applySwingTransform(sp, side) {
   mRotY(side * -45 * DEG);
 }
 
+
+/* --------------------------------------------------- solid item models --
+   Tools held in the hand are built from real boxes rather than an extruded
+   sprite, so a sword has an edge and a bucket has a rim. Units are the usual
+   sixteenths of a block. Each entry is [x, y, z, w, h, d, colour]. */
+var ITEM_MODELS = {
+  sword: function (c) { return [
+    [-0.6, -7, -0.6, 1.2, 5, 1.2, '#5b3f20'],
+    [-0.9, -7.6, -0.9, 1.8, 0.9, 1.8, '#3f2a14'],
+    [-2.6, -2.2, -0.7, 5.2, 1.2, 1.4, '#6a4a26'],
+    [-0.75, -1, -0.5, 1.5, 9, 1.0, c],
+    [-0.4, 8, -0.35, 0.8, 1.6, 0.7, c]
+  ]; },
+  pickaxe: function (c) { return [
+    [-0.6, -8, -0.6, 1.2, 12, 1.2, '#6b4d28'],
+    [-5.5, 4.2, -0.7, 11, 1.6, 1.4, c],
+    [-6.4, 3.0, -0.6, 1.4, 1.6, 1.2, c],
+    [5.0, 3.0, -0.6, 1.4, 1.6, 1.2, c],
+    [-1.1, 3.4, -0.9, 2.2, 1.6, 1.8, '#4a3520']
+  ]; },
+  axe: function (c) { return [
+    [-0.6, -8, -0.6, 1.2, 12, 1.2, '#6b4d28'],
+    [0.4, 1.4, -0.7, 2.0, 5.6, 1.4, c],
+    [2.2, 0.6, -0.8, 2.2, 7.2, 1.6, c],
+    [4.2, 1.6, -0.6, 1.0, 5.2, 1.2, c],
+    [-1.0, 3.0, -0.9, 1.8, 1.4, 1.8, '#4a3520']
+  ]; },
+  shovel: function (c) { return [
+    [-0.6, -8, -0.6, 1.2, 12, 1.2, '#6b4d28'],
+    [-1.9, 3.4, -0.6, 3.8, 4.4, 1.2, c],
+    [-1.4, 2.6, -0.6, 2.8, 1.0, 1.2, c],
+    [-1.0, 2.2, -0.9, 2.0, 1.2, 1.8, '#4a3520']
+  ]; },
+  hoe: function (c) { return [
+    [-0.6, -8, -0.6, 1.2, 12, 1.2, '#6b4d28'],
+    [-4.6, 4.0, -0.6, 5.4, 1.4, 1.2, c],
+    [-4.6, 2.4, -0.6, 1.3, 1.8, 1.2, c],
+    [-1.0, 3.2, -0.9, 1.8, 1.4, 1.8, '#4a3520']
+  ]; },
+  bucket: function (c) { return [
+    [-2.6, -4, -2.6, 5.2, 0.9, 5.2, '#9a9a9a'],
+    [-3.0, -3.2, -3.0, 0.9, 7.0, 6.0, '#c6c6c6'],
+    [2.1, -3.2, -3.0, 0.9, 7.0, 6.0, '#a4a4a4'],
+    [-3.0, -3.2, -3.0, 6.0, 7.0, 0.9, '#b8b8b8'],
+    [-3.0, -3.2, 2.1, 6.0, 7.0, 0.9, '#9a9a9a'],
+    [-2.2, 3.0, -2.2, 4.4, 0.6, 4.4, c],
+    [-3.2, 3.6, -3.2, 6.4, 0.9, 6.4, '#d4d4d4'],
+    [-2.1, 4.4, -0.5, 4.2, 0.7, 1.0, '#8f8f8f']
+  ]; },
+  rod: function (c) { return [
+    [-0.5, -7, -0.5, 1.0, 13, 1.0, '#6b4d28'],
+    [-0.35, 6, -0.35, 0.7, 3.5, 0.7, '#8b6a3d'],
+    [-0.2, 2, -3.6, 0.4, 0.4, 3.6, '#e8e8e8']
+  ]; },
+  ingot: function (c) { return [
+    [-3.4, -1.1, -2.0, 6.8, 2.2, 4.0, c],
+    [-2.6, 1.0, -1.4, 5.2, 0.6, 2.8, c]
+  ]; },
+  gem: function (c) { return [
+    [-1.8, -2.2, -1.4, 3.6, 2.2, 2.8, c],
+    [-2.4, 0, -1.8, 4.8, 2.0, 3.6, c],
+    [-1.6, 2.0, -1.2, 3.2, 1.8, 2.4, c]
+  ]; }
+};
+var ITEM_MODEL_FOR = {
+  sword: 'sword', pickaxe: 'pickaxe', axe: 'axe', shovel: 'shovel', hoe: 'hoe',
+  bucket: 'bucket', rod: 'rod', ingot: 'ingot', gem: 'gem'
+};
+/* Where along the model the fingers close, in the same sixteenths — a sword is
+   held near the pommel, an ingot in the middle of the palm. */
+var ITEM_GRIP = { sword: 4.6, pickaxe: 5.2, axe: 5.2, shovel: 5.2, hoe: 5.2, rod: 4.0,
+  bucket: 0, ingot: 0, gem: 0 };
+function drawSolidItem(game, kind, colour) {
+  var build = ITEM_MODELS[kind];
+  if (!build) return false;
+  var boxes = build(colour || '#c0c0c0');
+  var gy = ITEM_GRIP[kind] || 0;
+  for (var i = 0; i < boxes.length; i++) {
+    var b = boxes[i];
+    emitBox(EBUF, b[0], b[1] + gy, b[2], b[3], b[4], b[5], partTile(b[6], 0.035), 0);
+  }
+  return true;
+}
+
 /* ---------------------------------------------------------------- draw -- */
 var _vmProj = M4.create(), _vmView = M4.create(), _vmVP = M4.create();
 
@@ -147,8 +231,8 @@ function drawViewModel(game) {
      so the swing arc moves hand and item together the way a real arm does. */
   mIdent();
   mTranslate(
-    0.34 + VM.swayX * 0.075 + VM.bobX - VM.sprintT * 0.02,
-    -0.30 + VM.swayY * 0.070 + VM.bobY + VM.dropY - eqDrop - VM.sneakT * 0.075 - VM.useProg * 0.05,
+    0.40 + VM.swayX * 0.075 + VM.bobX - VM.sprintT * 0.02,
+    -0.34 + VM.swayY * 0.070 + VM.bobY + VM.dropY - eqDrop - VM.sneakT * 0.075 - VM.useProg * 0.05,
     -0.66 + VM.sprintT * 0.07 + lift * 0.28
   );
   mRotZ(VM.rollZ + VM.bobRot * 0.5 + eq * 0.5);
@@ -181,8 +265,8 @@ function drawViewModel(game) {
   mIdent();
   var blockT = VM.blockT;
   mTranslate(
-    -0.36 - VM.swayX * 0.075 - VM.bobX + blockT * 0.14,
-    -0.34 + VM.swayY * 0.070 - VM.bobY * 0.8 + VM.dropY - VM.sneakT * 0.075 - blockT * 0.06,
+    -0.50 - VM.swayX * 0.075 - VM.bobX + blockT * 0.16,
+    -0.36 + VM.swayY * 0.070 - VM.bobY * 0.8 + VM.dropY - VM.sneakT * 0.075 - blockT * 0.06,
     -0.66 + VM.sprintT * 0.07 + blockT * 0.12
   );
   mRotZ(VM.rollZ * 0.7 - VM.bobRot * 0.5);
@@ -195,9 +279,9 @@ function drawViewModel(game) {
     else if (off) drawHeldItem(game, off.item, oit);
     mPop();
     drawArm(game, -1, !!off);
-  } else if (!itemName || VM.sprintT > 0.3) {
-    drawArm(game, -1, false);
   }
+  /* The off hand only appears when it is holding something — running with two
+     bare arms in shot looked like a swimming animation. */
 
   if (EBUF.n === 0) return;
 
@@ -243,18 +327,20 @@ function drawArm(game, side, holding) {
   /* The limb runs back from the fist and is tilted hard down and outward so
      the shoulder end leaves the frame at the bottom corner instead of
      ploughing through the near plane. */
-  mRotZ(-0.34);
-  mRotY(-0.30);
-  mRotX(1.02 + (holding ? 0.0 : 0.10));
+  /* Outward is +X for the right hand: the shoulder end has to leave through
+     the bottom corner of its own side, not cut back across the screen. */
+  mRotZ(0.54);
+  mRotY(0.12);
+  mRotX(1.12 + (holding ? 0.0 : 0.06));
   _ecol[3] = 0;
   /* fist */
-  emitBox(EBUF, -1.75, -1.75, -1.6, 3.5, 3.5, 3.6, partTile(SKIN, 0.05), 0);
+  emitBox(EBUF, -1.45, -1.45, -1.3, 2.9, 2.9, 3.0, partTile(SKIN, 0.05), 0);
   /* wrist and forearm */
-  emitBox(EBUF, -1.6, -1.6, 2.0, 3.2, 3.2, 3.4, partTile(SKIN, 0.04), 0);
+  emitBox(EBUF, -1.35, -1.35, 1.7, 2.7, 2.7, 2.8, partTile(SKIN, 0.04), 0);
   /* rolled sleeve */
-  emitBox(EBUF, -1.85, -1.85, 5.2, 3.7, 3.7, 8.4, partTile(SLEEVE, 0.05), 0.04);
+  emitBox(EBUF, -1.6, -1.6, 4.4, 3.2, 3.2, 9.4, partTile(SLEEVE, 0.05), 0.03);
   /* cuff line where the sleeve meets the skin */
-  emitBox(EBUF, -1.95, -1.95, 5.1, 3.9, 3.9, 0.9, partTile(SLEEVE_D, 0.03), 0.06);
+  emitBox(EBUF, -1.7, -1.7, 4.3, 3.4, 3.4, 0.9, partTile(SLEEVE_D, 0.03), 0.05);
   mPop();
 }
 
@@ -313,12 +399,25 @@ function drawHeldItem(game, name, it) {
      up and toward the middle of the screen, so the silhouette clears the arm
      instead of hiding behind it. */
   var toolish = it && (it.tool || it.durability);
-  mTranslate(-0.06, 0.12, -0.15);
-  mRotY(toolish ? 0.48 : 0.64);
-  mRotZ(toolish ? 0.52 : 0.14);
-  mRotX(toolish ? 0.10 : 0.24);
-  mScale(0.46, 0.46, 0.46);
-  drawExtrudedSprite(layer, 1.0);
+  var solid = it && ITEM_MODEL_FOR[it.icon];
+  if (solid) {
+    /* A built model is gripped, not pinned to a plane: the fist closes around
+       the handle and the head of the tool leans away over the knuckles. */
+    var upright = solid === 'bucket' || solid === 'ingot' || solid === 'gem';
+    mTranslate(-0.04, 0.10, -0.16);
+    mRotY(upright ? 0.42 : 0.30);
+    mRotZ(upright ? 0.06 : 0.40);
+    mRotX(upright ? 0.10 : -0.06);
+    mScale(0.44, 0.44, 0.44);
+    drawSolidItem(game, solid, it.color);
+  } else {
+    mTranslate(-0.06, 0.12, -0.15);
+    mRotY(toolish ? 0.48 : 0.64);
+    mRotZ(toolish ? 0.52 : 0.14);
+    mRotX(toolish ? 0.10 : 0.24);
+    mScale(0.46, 0.46, 0.46);
+    drawExtrudedSprite(layer, 1.0);
+  }
   mPop();
 }
 

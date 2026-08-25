@@ -273,6 +273,15 @@ uniform float uVignette;
 uniform vec3 uTintCol;
 uniform float uTintAmt;
 uniform float uTime;
+uniform sampler2D uPrev;
+uniform float uBlurAmt;
+/* x unused, y = strength, z = near plane, w = far plane */
+uniform vec4 uDof;
+uniform sampler2D uDofDepth;
+uniform vec2 uCTexel;
+float linearDepth(float dz){
+  return (2.0 * uDof.z * uDof.w) / (uDof.w + uDof.z - (dz * 2.0 - 1.0) * (uDof.w - uDof.z));
+}
 layout(location=0) out vec4 oColor;
 
 vec3 tonemap(vec3 x){
@@ -282,6 +291,28 @@ vec3 tonemap(vec3 x){
 }
 void main(){
   vec3 col = texture(uScene, vUV).rgb;
+  /* Depth of field. The eye focuses on whatever is under the crosshair, so the
+     focal distance is just the depth at the centre of the screen; everything
+     much nearer or further goes soft. That separation is what actually sells
+     depth on a flat panel. Six taps on a ring, radius from the circle of
+     confusion, and only where the blur would be visible at all. */
+  if (uDof.y > 0.001) {
+    float focus = clamp(linearDepth(texture(uDofDepth, vec2(0.5)).r), 5.0, 90.0);
+    float lin = linearDepth(texture(uDofDepth, vUV).r);
+    float coc = clamp(abs(lin - focus) / max(lin, focus) * uDof.y, 0.0, 1.0);
+    coc *= coc;
+    if (coc > 0.02) {
+      vec2 r = uCTexel * (1.0 + coc * 6.0);
+      vec3 acc = col;
+      acc += texture(uScene, vUV + vec2( r.x, 0.0)).rgb;
+      acc += texture(uScene, vUV + vec2(-r.x, 0.0)).rgb;
+      acc += texture(uScene, vUV + vec2( 0.0, r.y)).rgb;
+      acc += texture(uScene, vUV + vec2( 0.0, -r.y)).rgb;
+      acc += texture(uScene, vUV + r * 0.72).rgb;
+      acc += texture(uScene, vUV - r * 0.72).rgb;
+      col = mix(col, acc / 7.0, min(1.0, coc * 1.6));
+    }
+  }
   col += texture(uBloom, vUV).rgb * uBloomAmt;
   col += texture(uGod, vUV).rgb * uGodAmt;
   col *= uExposure;
@@ -289,8 +320,14 @@ void main(){
   // a gentle grade: the tonemap flattens the palette, so put a little
   // saturation and contrast back before the tint and vignette
   float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
-  col = clamp(mix(vec3(lum), col, 1.22), 0.0, 1.0);
-  col = clamp((col - 0.5) * 1.06 + 0.5, 0.0, 1.0);
+  // A softer grade: pull saturation back under one, lift the shadows a little
+  // and warm the midtones, which reads as comfortable rather than poster-bright.
+  col = clamp(mix(vec3(lum), col, 0.97), 0.0, 1.0);
+  col = clamp((col - 0.5) * 1.02 + 0.5, 0.0, 1.0);
+  col = mix(col, col * vec3(1.035, 1.005, 0.955), 0.55);
+  /* lift the shadows toward a neutral slate rather than a cold blue one, so
+     dark foliage stays green instead of going grey */
+  col = col * (1.0 - 0.045) + 0.042 * vec3(0.50, 0.49, 0.50) * (1.0 - lum);
   col = mix(col, uTintCol, uTintAmt);
   float d = length(vUV-0.5);
   col *= 1.0 - uVignette*smoothstep(0.35,0.95,d);

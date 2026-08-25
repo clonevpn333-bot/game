@@ -75,6 +75,17 @@ CT('face_cave_spider', function (p) {
   for (var i = 0; i < p.d.length; i += 4) { p.d[i] = p.d[i] * 0.5; p.d[i + 2] = clamp(p.d[i + 2] * 1.8, 0, 255); }
   return p;
 });
+CT('golem_body', function (p) {
+  /* Hammered iron plate: seams, rivets and the vine that always creeps up a
+     golem's chest. Painted rather than modelled, so the torso is not a slab. */
+  p.fill('#d9d4c6').noise(0.055);
+  p.rect(0, 4, 16, 1, '#bcb5a4'); p.rect(0, 11, 16, 1, '#bcb5a4');
+  p.rect(7, 0, 1, 16, '#c9c2b1');
+  p.rect(1, 1, 1, 1, '#a79e8c'); p.rect(14, 1, 1, 1, '#a79e8c');
+  p.rect(1, 14, 1, 1, '#a79e8c'); p.rect(14, 14, 1, 1, '#a79e8c');
+  p.rect(3, 6, 2, 1, '#cdc6b5'); p.rect(11, 8, 2, 1, '#cdc6b5');
+  return p;
+});
 CT('face_villager', function (p) {
   faceBase(p, '#c39774');
   p.rect(3, 6, 3, 2, '#f0f0f0'); p.rect(10, 6, 3, 2, '#f0f0f0');

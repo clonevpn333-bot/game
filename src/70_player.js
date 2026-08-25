@@ -769,6 +769,10 @@ function playerAttack(game, target) {
     spawnParticle(game, p.dim, target.x + (Math.random() - 0.5), target.y + target.h * 0.6, target.z + (Math.random() - 0.5),
       (Math.random() - 0.5) * 2, Math.random() * 2, (Math.random() - 0.5) * 2, 1, 0.95, 0.5, 0.08, 0.5);
   if (it && it.tool === 'sword') damageHeld(game, 1);
+  /* an axe bites harder but costs more of the swing timer */
+  if (it && it.tool === 'axe') damageHeld(game, 1);
+  playSound(game, 'thud', target.x, target.y, target.z, crit ? 1.5 : 1.05, 0.9);
+  game.shake = Math.max(game.shake, 0.05 + Math.min(0.10, dmg * 0.008));
   p.attackCooldown = 1;
   p.exhaustion += 0.1;
 }
@@ -890,8 +894,21 @@ function updatePlayer(game, dt, input) {
       var dist = p.fallStart - p.y;
       var ff = enchLevel(p.armor[3], 'feather_falling');
       if (dist > 3 && !p.creative && !p.effects.slowfall) {
-        var dmgF = (dist - 3) * (1 - ff * 0.12);
-        if (dmgF > 0) { playerHurt(game, dmgF, null, true); playSound(game, 'thud', p.x, p.y, p.z); }
+        /* one point per block past three, whole numbers, with the screen
+           kick and the sound scaled to how far you actually fell */
+        var dmgF = Math.floor((dist - 3) * (1 - ff * 0.12));
+        if (dmgF > 0) {
+          playerHurt(game, dmgF, null, true);
+          playSound(game, 'thud', p.x, p.y, p.z, Math.max(0.5, 1.2 - dist * 0.02), Math.min(1, 0.4 + dist * 0.05));
+          game.shake = Math.max(game.shake, Math.min(0.75, dmgF * 0.07));
+          for (var fp = 0; fp < Math.min(24, dmgF * 3); fp++) {
+            var gid2 = world.getId(p.dim, Math.floor(p.x), Math.floor(p.y - 0.2), Math.floor(p.z));
+            var gc = gid2 ? BLOCKS[gid2].avgColor : [0.6, 0.6, 0.6];
+            spawnParticle(game, p.dim, p.x + (Math.random() - 0.5) * 0.8, p.y + 0.06,
+              p.z + (Math.random() - 0.5) * 0.8, (Math.random() - 0.5) * 2.5, Math.random() * 1.8,
+              (Math.random() - 0.5) * 2.5, gc[0], gc[1], gc[2], 0.07, 0.5);
+          }
+        } else if (dist > 2) playSound(game, 'step_stone', p.x, p.y, p.z, 0.8, 0.5);
       }
       p.fallStart = null;
     }

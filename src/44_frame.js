@@ -79,6 +79,7 @@ function renderFrame(game) {
   var fov = R.settings.fov * (Math.PI / 180) * p.fovMul;
   var far = Math.max(160, R.settings.renderDistance * 16 + 64);
   M4.perspective(R.proj, fov, W / H, 0.05, far);
+  R.zNear = 0.05; R.zFar = far;
   var dirX = Math.cos(p.pitch) * Math.sin(p.yaw);
   var dirY = Math.sin(p.pitch);
   var dirZ = -Math.cos(p.pitch) * Math.cos(p.yaw);
@@ -280,7 +281,7 @@ function postProcess(game, camX, camY, camZ, underwater, biome) {
   }
 
   /* composite + tonemap into the LDR buffer, then FXAA to screen */
-  var target = R.settings.fxaa ? R.ldrFBO : null;
+  var target = (R.settings.fxaa || R.settings.motionBlur) ? R.ldrFBO : null;
   if (target) target.bind();
   else { gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, gl.canvas.width, gl.canvas.height); }
   var comp = R.progComposite;
@@ -295,7 +296,30 @@ function postProcess(game, camX, camY, camZ, underwater, biome) {
   gl.uniform3fv(comp.u.uTintCol, game.screenTint);
   gl.uniform1f(comp.u.uTintAmt, game.screenTintAmt);
   gl.uniform1f(comp.u.uTime, game.time);
+  /* Motion blur: how much of the previous frame to carry, driven by how fast
+     the view is actually turning and moving. Static views stay perfectly sharp. */
+  var pp = game.player;
+  var mbTurn = Math.abs(angleDiff(pp.yaw, R.lastYaw === undefined ? pp.yaw : R.lastYaw)) +
+    Math.abs(pp.pitch - (R.lastPitch === undefined ? pp.pitch : R.lastPitch));
+  var mbMove = Math.hypot(pp.vx, pp.vz) * 0.012;
+  R.lastYaw = pp.yaw; R.lastPitch = pp.pitch;
+  var mb = R.settings.motionBlur ? Math.min(0.42, mbTurn * 1.9 + mbMove) : 0;
+  gl.uniform1f(comp.u.uBlurAmt, mb);
+  var dofAmt = R.settings.dof ? (underwater ? 1.35 : 0.60) : 0;
+  gl.uniform4f(comp.u.uDof, 0, dofAmt, R.zNear || 0.05, R.zFar || 256);
+  gl.uniform2f(comp.u.uCTexel, 1 / W, 1 / H);
+  gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, R.sceneFBO.depth);
+  gl.uniform1i(comp.u.uDofDepth, 4);
+  gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, R.prevFBO.color); gl.uniform1i(comp.u.uPrev, 3);
   fullscreenQuad();
+
+  /* keep this frame for the next one to blend against */
+  if (R.settings.motionBlur && target) {
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, R.ldrFBO.fb);
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, R.prevFBO.fb);
+    gl.blitFramebuffer(0, 0, W, H, 0, 0, W, H, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
 
   if (target) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);

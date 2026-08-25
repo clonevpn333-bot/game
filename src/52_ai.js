@@ -425,7 +425,10 @@ function damageEntity(game, target, amount, source, noKnock) {
     if (!noKnock) {
       var dx = target.x - source.x, dz = target.z - source.z;
       var d = Math.hypot(dx, dz) || 1;
-      target.vx += dx / d * 6; target.vz += dz / d * 6; target.vy = Math.max(target.vy, 5.5);
+      /* knockback scales with the blow, so a diamond sword actually shoves */
+      var kb = 4.5 + Math.min(4, amount * 0.35);
+      target.vx += dx / d * kb; target.vz += dz / d * kb;
+      target.vy = Math.max(target.vy, 4.0 + Math.min(2.5, amount * 0.18));
     }
   }
   playSound(game, 'hurt', target.x, target.y, target.z);

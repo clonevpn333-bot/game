@@ -440,12 +440,50 @@ defMob('allay', {
 });
 
 /* ============================== VILLAGERS =============================== */
+/* A villager reads by three things: the big nose, the robe that hides the
+   legs, and the arms clasped together in front. The nose is a child of the
+   head so it turns with it — it used to sit at the model root and stay put
+   while the head looked away. */
+function villagerModel(robe, trim) {
+  var skin = '#c39774', linen = '#b9a488', boot = '#463829';
+  /* Real villager proportions, in the game's sixteenths with the feet at zero:
+     12-tall legs, a 12-tall torso, a 10-tall head, and the robe as an
+     oversized overlay of the torso that hangs down past the hips. */
+  var head = P('head', [0, 24, 0], [-4, 0, -4, 8, 10, 8], skin, { tex: 'face_villager' });
+  head.kids = [
+    /* the nose is two units of overhang, not a beak */
+    P('nose', [0, 4, -4], [-1, -2, -2, 2, 4, 2], '#b58a68')
+  ];
+  /* The forearms are clasped in front of the belly as one folded group, which
+     is the pose the villager is always in when it is not working. */
+  var arms = P('arms', [0, 21, 0], null, null);
+  arms.kids = [
+    /* upper arms hang straight down at the sides ... */
+    P('armR', [-6, 0, 0], [-2, -8, -2, 4, 8, 4], robe),
+    P('armL', [6, 0, 0], [-2, -8, -2, 4, 8, 4], robe),
+    /* ... and the forearms come forward and cross over the belly */
+    P('hands', [0, -6, -4], [-4, 0, -2, 8, 4, 4], skin)
+  ];
+  var parts = [
+    head,
+    P('body', [0, 12, 0], [-4, 0, -3, 8, 12, 6], linen),
+    P('robe', [0, 6, 0], [-4, 0, -3, 8, 15, 6], robe, { inflate: 0.5 }),
+    P('sash', [0, 15, 0], [-4, 0, -3, 8, 2.5, 6], trim || shade(robe, 0.7), { inflate: 0.6 }),
+    arms,
+    P('legL', [2, 12, 0], [-2, -12, -2, 4, 12, 4], boot),
+    P('legR', [-2, 12, 0], [-2, -12, -2, 4, 12, 4], boot)
+  ];
+  return { parts: parts, eye: 1.62, plan: 'biped', scale: 0.94 };
+}
 defMob('villager', {
-  model: bipedModel({ skin: '#c39774', shirt: '#8a6a4a', pants: '#6f4f38', headTex: 'face_villager', armW: 4,
-    extra: [P('nose', [0, 26, -4], [-1, 0, -1, 2, 2, 1], '#a87e5c')] }),
-  w: 0.6, h: 1.95, hp: 20, speed: 0.09, anim: function (e, pose, t) {
-    animBiped(e, pose, t);
-    pose.armL = { rx: -0.6, rz: 0.1 }; pose.armR = { rx: -0.6, rz: -0.1 };
+  model: villagerModel('#8a6a4a', '#6f4f38'),
+  w: 0.6, h: 1.95, hp: 20, speed: 0.09, scale: 0.94, anim: function (e, pose, t) {
+    var sw = e.walkPhase * 1.6, amp = 0.6 * e.walkAmt;
+    pose.legL = { rx: Math.sin(sw) * amp }; pose.legR = { rx: Math.sin(sw + Math.PI) * amp };
+    pose.head = { rx: e.headPitch * 0.5, ry: e.headYaw };
+    /* The whole folded group tips forward so the forearms clear the belly;
+       it rocks a little with the stride instead of swinging free. */
+    pose.arms = { rx: 0.05 + Math.sin(sw) * 0.05 * e.walkAmt };
   },
   trades: true, babyScale: 0.5,
   spawn: null
@@ -454,14 +492,42 @@ defMob('wandering_trader', {
   model: bipedModel({ skin: '#c39774', shirt: '#2f4f8a', pants: '#3a3a5a', headTex: 'face_villager' }),
   w: 0.6, h: 1.95, hp: 20, speed: 0.10, anim: animBiped, trades: true, spawn: null
 });
+/* The golem is all shoulders and hanging arms — a wide slab of a torso that
+   tapers to short legs, with a flat head and a heavy brow. */
 defMob('iron_golem', {
-  model: bipedModel({ skin: '#c8c0b0', shirt: '#b8b0a0', pants: '#a89c88', headTex: 'golem_face',
-    headW: 8, headH: 10, bodyY: 22, legH: 22, armH: 22, armW: 6 }),
-  w: 1.4, h: 2.7, hp: 100, dmg: 12, speed: 0.09, scale: 1.35, defender: true,
+  model: (function () {
+    var iron = '#d9d4c6', dark = '#b3ab99', vine = '#5f7f3e';
+    /* Measured off the real model: a 43-unit tower with an 18-wide chest, a
+       narrow waist and 30-unit arms that hang almost to the ground. */
+    var head = P('head', [0, 33, -2], [-4, 0, -5.5, 8, 10, 8], iron, { tex: 'golem_face' });
+    head.kids = [P('nose', [0, 3.5, -5.5], [-1, -2.5, -2, 2, 5, 2], dark)];
+    return { parts: [
+      head,
+      P('neck', [0, 31, -1], [-2.5, 0, -2.5, 5, 3, 5], dark),
+      P('body', [0, 21, 0], [-9, 0, -6, 18, 12, 11], iron, { tex: 'golem_body', texAll: true }),
+      P('waist', [0, 16, 0], [-4.5, 0, -3, 9, 5, 6], dark),
+      /* a couple of creepers of vine, not a billboard */
+      P('vineA', [-3, 22, -6], [-1, 0, -0.35, 2, 8, 0.7], vine),
+      P('vineB', [2, 24, -6], [-1, 0, -0.35, 2, 5, 0.7], vine),
+      P('vineC', [4, 21, -6], [-1, 0, -0.35, 3, 2, 0.7], vine),
+      P('armL', [11, 33.5, 0], [-2, -30, -3, 4, 30, 6], iron),
+      P('armR', [-11, 33.5, 0], [-2, -30, -3, 4, 30, 6], iron),
+      P('legL', [4, 16, 0], [-3.5, -16, -2.5, 6, 16, 5], dark),
+      P('legR', [-4, 16, 0], [-3.5, -16, -2.5, 6, 16, 5], dark)
+    ], eye: 2.4, plan: 'biped' };
+  })(),
+  w: 1.4, h: 2.7, hp: 100, dmg: 12, speed: 0.09, scale: 1.0, defender: true,
   anim: function (e, pose, t) {
-    poseWalk(pose, e, e.walkPhase * 1.1, 0.55 * e.walkAmt, 0.6);
-    pose.head = { ry: e.headYaw * 0.5 };
-    if (e.attackTime > 0) { var a = 1 - e.attackTime / 0.5, s = Math.sin(a * Math.PI); pose.armL = { rx: -s * 2.0 }; pose.armR = { rx: -s * 2.0 }; }
+    var sw = e.walkPhase * 0.9, amp = 0.45 * e.walkAmt;
+    pose.legL = { rx: Math.sin(sw) * amp }; pose.legR = { rx: Math.sin(sw + Math.PI) * amp };
+    /* the arms swing stiffly and hang, they do not counter-swing like a human */
+    pose.armL = { rx: Math.sin(sw + Math.PI) * amp * 0.5, rz: -0.06 };
+    pose.armR = { rx: Math.sin(sw) * amp * 0.5, rz: 0.06 };
+    pose.head = { ry: e.headYaw * 0.4 };
+    if (e.attackTime > 0) {
+      var a = 1 - e.attackTime / 0.5, sA = Math.sin(a * Math.PI);
+      pose.armL = { rx: -sA * 2.2, rz: -0.1 }; pose.armR = { rx: -sA * 2.2, rz: 0.1 };
+    }
   },
   drops: [{ item: 'iron_ingot', min: 3, max: 5 }, { item: 'poppy', min: 0, max: 2 }], spawn: null
 });
@@ -944,7 +1010,7 @@ function prebakeEntityTiles() {
     for (var i = 0; i < parts.length; i++) {
       var p = parts[i];
       if (p.tex) customTile(p.tex, p.texParams);
-      else if (p.col !== null && p.col !== undefined) partTile(p.col, p.v);
+      if (p.col !== null && p.col !== undefined) partTile(p.col, p.v);
       if (p.kids) walk(p.kids);
     }
   }
@@ -957,6 +1023,17 @@ function prebakeEntityTiles() {
   partTile(SLEEVE, 0.05); partTile(SLEEVE_D, 0.03);
   partTile('#ffffff', 0);
   partTile('#b8f048', 0.02);
+  /* the held-tool box models paint from their own small palette */
+  if (typeof ITEM_MODELS !== 'undefined') {
+    for (var mk in ITEM_MODELS) {
+      var mb = ITEM_MODELS[mk]('#ffffff');
+      for (var mi = 0; mi < mb.length; mi++) partTile(mb[mi][6], 0.035);
+    }
+    for (var ii = 0; ii < ITEM_LIST.length; ii++) {
+      var iit = ITEM_LIST[ii];
+      if (iit.color && ITEM_MODEL_FOR[iit.icon]) partTile(iit.color, 0.035);
+    }
+  }
 }
 
 /* The end crystals that heal the dragon: a floating cube in a cage of fire. */
