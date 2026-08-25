@@ -54,46 +54,118 @@ function animFloat(e, pose, t) {
 }
 
 /* ============================== PASSIVE ================================= */
+function cattleModel(hide, spots) {
+  /* Vanilla cow proportions: 12 wide, 10 deep body on 12-tall legs, with the
+     head, snout, ears and horns that make it read as a cow from any angle. */
+  var dark = shade(hide, 0.82);
+  var parts = [
+    P('body', [0, 10, 0], [-6, 0, -9, 12, 10, 18], hide),
+    P('head', [0, 18, -9], [-4, 0, -6, 8, 8, 6], hide, { tex: 'face_cow' }),
+    P('legFL', [4, 12, -6], [-2, -12, -2, 4, 12, 4], dark),
+    P('legFR', [-4, 12, -6], [-2, -12, -2, 4, 12, 4], dark),
+    P('legBL', [4, 12, 6], [-2, -12, -2, 4, 12, 4], dark),
+    P('legBR', [-4, 12, 6], [-2, -12, -2, 4, 12, 4], dark),
+    P('udder', [0, 10, 5], [-3, -2, -2, 6, 2, 4], '#d8a0a0'),
+    P('tail', [0, 19, 9], [-1, -9, 0, 2, 9, 2], dark)
+  ];
+  parts[1].kids = [
+    P('snout', [0, 1, -6], [-3, 0, -2, 6, 4, 2], '#e0c8b0'),
+    P('earL', [4, 5, -2], [0, -1, -1, 3, 2, 1], hide),
+    P('earR', [-4, 5, -2], [-3, -1, -1, 3, 2, 1], hide),
+    P('hornL', [3, 7, -3], [0, 0, 0, 1, 3, 1], '#e0d8c0'),
+    P('hornR', [-3, 7, -3], [-1, 0, 0, 1, 3, 1], '#e0d8c0')
+  ];
+  if (spots) parts = parts.concat(spots);
+  return { parts: parts, eye: 1.3, plan: 'quad' };
+}
 defMob('cow', {
-  model: quadModel({ body: '#4a3225', head: '#4a3225', headTex: 'face_cow', bodyY: 12, bodyLen: 16, bodyW: 8, bodyH: 10, legH: 12, headSize: 8, headY: 6,
-    extra: [P('hornL', [4, 24, -9], [0, 0, 0, 1, 3, 1], '#e0d8c0'), P('hornR', [-4, 24, -9], [-1, 0, 0, 1, 3, 1], '#e0d8c0')] }),
+  model: cattleModel('#4a3225'),
   w: 0.9, h: 1.4, hp: 10, speed: 0.09, anim: animQuad, babyScale: 0.55, babyHeadScale: 1.35,
   drops: [{ item: 'beef', min: 1, max: 3 }, { item: 'leather', min: 0, max: 2 }],
+  breedWith: ['wheat'],
   spawn: { biomes: ['plains', 'forest', 'meadow', 'savanna', 'sunflower_plains', 'taiga', 'flower_forest'], light: 9, group: [2, 4], surface: true }
 });
 defMob('mooshroom', {
-  model: quadModel({ body: '#a02a2a', head: '#a02a2a', headTex: 'face_cow', bodyY: 12, bodyLen: 16, bodyW: 8, bodyH: 10, legH: 12, headSize: 8, headY: 6,
-    extra: [P('m1', [3, 22, 2], [0, 0, 0, 3, 1, 3], '#b52a24'), P('m2', [-3, 22, -3], [0, 0, 0, 3, 1, 3], '#b52a24')] }),
+  model: cattleModel('#a02a2a', [
+    P('m1', [4, 20, 3], [0, 0, 0, 3, 1, 3], '#c8c0b0'),
+    P('m2', [-4, 20, -3], [-3, 0, -3, 3, 1, 3], '#c8c0b0'),
+    P('m3', [1, 20, 7], [0, 0, 0, 3, 1, 3], '#c8c0b0')
+  ]),
   w: 0.9, h: 1.4, hp: 10, speed: 0.09, anim: animQuad, babyScale: 0.55,
   drops: [{ item: 'beef', min: 1, max: 3 }, { item: 'leather', min: 0, max: 2 }],
+  breedWith: ['wheat'],
   spawn: { biomes: ['mushroom_fields'], light: 9, group: [2, 4], surface: true }
 });
 defMob('pig', {
-  model: quadModel({ body: '#e39699', headTex: 'face_pig', bodyY: 10, bodyLen: 16, bodyW: 8, bodyH: 8, legH: 10, headSize: 8, headY: 4 }),
-  w: 0.9, h: 1.0, hp: 10, speed: 0.09, anim: animQuad, babyScale: 0.55, babyHeadScale: 1.35,
+  /* 10 wide, 16 long body on stubby 6-tall legs, with the flat snout that is
+     the whole silhouette of a pig */
+  model: (function () {
+    var hide = '#e39699', dark = '#c87f82';
+    var parts = [
+      P('body', [0, 6, 0], [-5, 0, -8, 10, 8, 16], hide),
+      P('head', [0, 8, -8], [-4, 0, -8, 8, 8, 8], hide, { tex: 'face_pig' }),
+      P('legFL', [3, 6, -5], [-2, -6, -2, 4, 6, 4], dark),
+      P('legFR', [-3, 6, -5], [-2, -6, -2, 4, 6, 4], dark),
+      P('legBL', [3, 6, 5], [-2, -6, -2, 4, 6, 4], dark),
+      P('legBR', [-3, 6, 5], [-2, -6, -2, 4, 6, 4], dark),
+      P('tail', [0, 12, 8], [-1, 0, 0, 2, 2, 2], dark)
+    ];
+    parts[1].kids = [
+      P('snout', [0, 2, -8], [-2, 0, -1, 4, 3, 1], '#d07f84'),
+      P('earL', [3, 7, -3], [0, 0, -1, 2, 2, 1], dark),
+      P('earR', [-3, 7, -3], [-2, 0, -1, 2, 2, 1], dark)
+    ];
+    return { parts: parts, eye: 0.85, plan: 'quad' };
+  })(),
+  w: 0.9, h: 0.9, hp: 10, speed: 0.09, anim: animQuad, babyScale: 0.55, babyHeadScale: 1.35,
   drops: [{ item: 'porkchop', min: 1, max: 3 }],
+  breedWith: ['carrot', 'potato', 'beetroot'],
   spawn: { biomes: ['plains', 'forest', 'meadow', 'sunflower_plains', 'taiga', 'jungle'], light: 9, group: [2, 4], surface: true }
 });
 defMob('sheep', {
-  model: quadModel({ body: '#e9ecec', bodyTex: 'wool_fluff', head: '#d8c8b8', headTex: 'face_sheep',
-    bodyY: 12, bodyLen: 16, bodyW: 9, bodyH: 10, legH: 12, headSize: 7, headY: 5 }),
+  /* a slim body under an oversized fleece, which is what reads as "sheep" */
+  model: (function () {
+    var skin = '#d8c8b8', wool = '#e9ecec';
+    var parts = [
+      P('body', [0, 12, 0], [-4, 0, -8, 8, 6, 16], skin),
+      P('fleece', [0, 11, 0], [-4, 0, -8, 8, 7, 16], wool, { tex: 'wool_fluff', inflate: 1.75 }),
+      P('head', [0, 14, -8], [-3, 0, -6, 6, 6, 8], skin, { tex: 'face_sheep' }),
+      P('legFL', [3, 12, -5], [-2, -12, -2, 4, 12, 4], skin),
+      P('legFR', [-3, 12, -5], [-2, -12, -2, 4, 12, 4], skin),
+      P('legBL', [3, 12, 5], [-2, -12, -2, 4, 12, 4], skin),
+      P('legBR', [-3, 12, 5], [-2, -12, -2, 4, 12, 4], skin)
+    ];
+    parts[2].kids = [
+      P('fleeceHead', [0, 0, -1], [-3, 0, -3, 6, 6, 6], wool, { tex: 'wool_fluff', inflate: 0.9 }),
+      P('earL', [3, 4, -3], [0, 0, -1, 1, 2, 2], skin),
+      P('earR', [-3, 4, -3], [-1, 0, -1, 1, 2, 2], skin)
+    ];
+    return { parts: parts, eye: 1.1, plan: 'quad' };
+  })(),
   w: 0.9, h: 1.3, hp: 8, speed: 0.09, anim: animQuad, babyScale: 0.55, babyHeadScale: 1.3, woolColour: true,
   drops: [{ item: 'mutton', min: 1, max: 2 }, { item: 'white_wool', min: 1, max: 1 }],
+  breedWith: ['wheat'],
   spawn: { biomes: ['plains', 'forest', 'meadow', 'sunflower_plains', 'taiga', 'snowy_plains', 'flower_forest', 'windswept_hills'], light: 9, group: [2, 4], surface: true }
 });
 defMob('chicken', {
+  /* beak and wattle are what make a white box a chicken */
   model: {
     parts: [
-      P('head', [0, 9, -4], [-2, 0, -3, 4, 4, 3], '#e8e8e8', { tex: 'face_chicken' }),
-      P('body', [0, 6, 0], [-3, 0, -4, 6, 6, 8], '#e8e8e8'),
+      P('body', [0, 5, 0], [-3, 0, -4, 6, 6, 8], '#e8e8e8'),
+      P('head', [0, 9, -4], [-2, 0, -3, 4, 6, 3], '#e8e8e8', { tex: 'face_chicken', kids: [
+        P('beak', [0, 2, -3], [-2, 0, -2, 4, 2, 2], '#e0a020'),
+        P('wattle', [0, 0, -3], [-1, 0, -2, 2, 2, 2], '#c03030')
+      ] }),
       P('wingL', [3, 10, -2], [0, -4, -3, 1, 5, 6], '#dcdcdc'),
       P('wingR', [-3, 10, -2], [-1, -4, -3, 1, 5, 6], '#dcdcdc'),
       P('legL', [2, 5, 1], [-1, -5, -2, 2, 5, 4], '#e0a020'),
-      P('legR', [-2, 5, 1], [-1, -5, -2, 2, 5, 4], '#e0a020')
-    ], eye: 0.65
+      P('legR', [-2, 5, 1], [-1, -5, -2, 2, 5, 4], '#e0a020'),
+      P('tail', [0, 10, 4], [-2, 0, 0, 4, 4, 1], '#dcdcdc')
+    ], eye: 0.6
   },
   w: 0.4, h: 0.7, hp: 4, speed: 0.09, anim: animBird, babyScale: 0.5,
   drops: [{ item: 'chicken', min: 1, max: 1 }, { item: 'feather', min: 0, max: 2 }],
+  breedWith: ['wheat_seeds', 'melon_seeds', 'pumpkin_seeds', 'beetroot_seeds'],
   spawn: { biomes: ['plains', 'forest', 'jungle', 'sunflower_plains', 'swamp'], light: 9, group: [3, 4], surface: true }
 });
 defMob('rabbit', {

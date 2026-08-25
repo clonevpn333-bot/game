@@ -14254,46 +14254,118 @@ function animFloat(e, pose, t) {
 }
 
 /* ============================== PASSIVE ================================= */
+function cattleModel(hide, spots) {
+  /* Vanilla cow proportions: 12 wide, 10 deep body on 12-tall legs, with the
+     head, snout, ears and horns that make it read as a cow from any angle. */
+  var dark = shade(hide, 0.82);
+  var parts = [
+    P('body', [0, 10, 0], [-6, 0, -9, 12, 10, 18], hide),
+    P('head', [0, 18, -9], [-4, 0, -6, 8, 8, 6], hide, { tex: 'face_cow' }),
+    P('legFL', [4, 12, -6], [-2, -12, -2, 4, 12, 4], dark),
+    P('legFR', [-4, 12, -6], [-2, -12, -2, 4, 12, 4], dark),
+    P('legBL', [4, 12, 6], [-2, -12, -2, 4, 12, 4], dark),
+    P('legBR', [-4, 12, 6], [-2, -12, -2, 4, 12, 4], dark),
+    P('udder', [0, 10, 5], [-3, -2, -2, 6, 2, 4], '#d8a0a0'),
+    P('tail', [0, 19, 9], [-1, -9, 0, 2, 9, 2], dark)
+  ];
+  parts[1].kids = [
+    P('snout', [0, 1, -6], [-3, 0, -2, 6, 4, 2], '#e0c8b0'),
+    P('earL', [4, 5, -2], [0, -1, -1, 3, 2, 1], hide),
+    P('earR', [-4, 5, -2], [-3, -1, -1, 3, 2, 1], hide),
+    P('hornL', [3, 7, -3], [0, 0, 0, 1, 3, 1], '#e0d8c0'),
+    P('hornR', [-3, 7, -3], [-1, 0, 0, 1, 3, 1], '#e0d8c0')
+  ];
+  if (spots) parts = parts.concat(spots);
+  return { parts: parts, eye: 1.3, plan: 'quad' };
+}
 defMob('cow', {
-  model: quadModel({ body: '#4a3225', head: '#4a3225', headTex: 'face_cow', bodyY: 12, bodyLen: 16, bodyW: 8, bodyH: 10, legH: 12, headSize: 8, headY: 6,
-    extra: [P('hornL', [4, 24, -9], [0, 0, 0, 1, 3, 1], '#e0d8c0'), P('hornR', [-4, 24, -9], [-1, 0, 0, 1, 3, 1], '#e0d8c0')] }),
+  model: cattleModel('#4a3225'),
   w: 0.9, h: 1.4, hp: 10, speed: 0.09, anim: animQuad, babyScale: 0.55, babyHeadScale: 1.35,
   drops: [{ item: 'beef', min: 1, max: 3 }, { item: 'leather', min: 0, max: 2 }],
+  breedWith: ['wheat'],
   spawn: { biomes: ['plains', 'forest', 'meadow', 'savanna', 'sunflower_plains', 'taiga', 'flower_forest'], light: 9, group: [2, 4], surface: true }
 });
 defMob('mooshroom', {
-  model: quadModel({ body: '#a02a2a', head: '#a02a2a', headTex: 'face_cow', bodyY: 12, bodyLen: 16, bodyW: 8, bodyH: 10, legH: 12, headSize: 8, headY: 6,
-    extra: [P('m1', [3, 22, 2], [0, 0, 0, 3, 1, 3], '#b52a24'), P('m2', [-3, 22, -3], [0, 0, 0, 3, 1, 3], '#b52a24')] }),
+  model: cattleModel('#a02a2a', [
+    P('m1', [4, 20, 3], [0, 0, 0, 3, 1, 3], '#c8c0b0'),
+    P('m2', [-4, 20, -3], [-3, 0, -3, 3, 1, 3], '#c8c0b0'),
+    P('m3', [1, 20, 7], [0, 0, 0, 3, 1, 3], '#c8c0b0')
+  ]),
   w: 0.9, h: 1.4, hp: 10, speed: 0.09, anim: animQuad, babyScale: 0.55,
   drops: [{ item: 'beef', min: 1, max: 3 }, { item: 'leather', min: 0, max: 2 }],
+  breedWith: ['wheat'],
   spawn: { biomes: ['mushroom_fields'], light: 9, group: [2, 4], surface: true }
 });
 defMob('pig', {
-  model: quadModel({ body: '#e39699', headTex: 'face_pig', bodyY: 10, bodyLen: 16, bodyW: 8, bodyH: 8, legH: 10, headSize: 8, headY: 4 }),
-  w: 0.9, h: 1.0, hp: 10, speed: 0.09, anim: animQuad, babyScale: 0.55, babyHeadScale: 1.35,
+  /* 10 wide, 16 long body on stubby 6-tall legs, with the flat snout that is
+     the whole silhouette of a pig */
+  model: (function () {
+    var hide = '#e39699', dark = '#c87f82';
+    var parts = [
+      P('body', [0, 6, 0], [-5, 0, -8, 10, 8, 16], hide),
+      P('head', [0, 8, -8], [-4, 0, -8, 8, 8, 8], hide, { tex: 'face_pig' }),
+      P('legFL', [3, 6, -5], [-2, -6, -2, 4, 6, 4], dark),
+      P('legFR', [-3, 6, -5], [-2, -6, -2, 4, 6, 4], dark),
+      P('legBL', [3, 6, 5], [-2, -6, -2, 4, 6, 4], dark),
+      P('legBR', [-3, 6, 5], [-2, -6, -2, 4, 6, 4], dark),
+      P('tail', [0, 12, 8], [-1, 0, 0, 2, 2, 2], dark)
+    ];
+    parts[1].kids = [
+      P('snout', [0, 2, -8], [-2, 0, -1, 4, 3, 1], '#d07f84'),
+      P('earL', [3, 7, -3], [0, 0, -1, 2, 2, 1], dark),
+      P('earR', [-3, 7, -3], [-2, 0, -1, 2, 2, 1], dark)
+    ];
+    return { parts: parts, eye: 0.85, plan: 'quad' };
+  })(),
+  w: 0.9, h: 0.9, hp: 10, speed: 0.09, anim: animQuad, babyScale: 0.55, babyHeadScale: 1.35,
   drops: [{ item: 'porkchop', min: 1, max: 3 }],
+  breedWith: ['carrot', 'potato', 'beetroot'],
   spawn: { biomes: ['plains', 'forest', 'meadow', 'sunflower_plains', 'taiga', 'jungle'], light: 9, group: [2, 4], surface: true }
 });
 defMob('sheep', {
-  model: quadModel({ body: '#e9ecec', bodyTex: 'wool_fluff', head: '#d8c8b8', headTex: 'face_sheep',
-    bodyY: 12, bodyLen: 16, bodyW: 9, bodyH: 10, legH: 12, headSize: 7, headY: 5 }),
+  /* a slim body under an oversized fleece, which is what reads as "sheep" */
+  model: (function () {
+    var skin = '#d8c8b8', wool = '#e9ecec';
+    var parts = [
+      P('body', [0, 12, 0], [-4, 0, -8, 8, 6, 16], skin),
+      P('fleece', [0, 11, 0], [-4, 0, -8, 8, 7, 16], wool, { tex: 'wool_fluff', inflate: 1.75 }),
+      P('head', [0, 14, -8], [-3, 0, -6, 6, 6, 8], skin, { tex: 'face_sheep' }),
+      P('legFL', [3, 12, -5], [-2, -12, -2, 4, 12, 4], skin),
+      P('legFR', [-3, 12, -5], [-2, -12, -2, 4, 12, 4], skin),
+      P('legBL', [3, 12, 5], [-2, -12, -2, 4, 12, 4], skin),
+      P('legBR', [-3, 12, 5], [-2, -12, -2, 4, 12, 4], skin)
+    ];
+    parts[2].kids = [
+      P('fleeceHead', [0, 0, -1], [-3, 0, -3, 6, 6, 6], wool, { tex: 'wool_fluff', inflate: 0.9 }),
+      P('earL', [3, 4, -3], [0, 0, -1, 1, 2, 2], skin),
+      P('earR', [-3, 4, -3], [-1, 0, -1, 1, 2, 2], skin)
+    ];
+    return { parts: parts, eye: 1.1, plan: 'quad' };
+  })(),
   w: 0.9, h: 1.3, hp: 8, speed: 0.09, anim: animQuad, babyScale: 0.55, babyHeadScale: 1.3, woolColour: true,
   drops: [{ item: 'mutton', min: 1, max: 2 }, { item: 'white_wool', min: 1, max: 1 }],
+  breedWith: ['wheat'],
   spawn: { biomes: ['plains', 'forest', 'meadow', 'sunflower_plains', 'taiga', 'snowy_plains', 'flower_forest', 'windswept_hills'], light: 9, group: [2, 4], surface: true }
 });
 defMob('chicken', {
+  /* beak and wattle are what make a white box a chicken */
   model: {
     parts: [
-      P('head', [0, 9, -4], [-2, 0, -3, 4, 4, 3], '#e8e8e8', { tex: 'face_chicken' }),
-      P('body', [0, 6, 0], [-3, 0, -4, 6, 6, 8], '#e8e8e8'),
+      P('body', [0, 5, 0], [-3, 0, -4, 6, 6, 8], '#e8e8e8'),
+      P('head', [0, 9, -4], [-2, 0, -3, 4, 6, 3], '#e8e8e8', { tex: 'face_chicken', kids: [
+        P('beak', [0, 2, -3], [-2, 0, -2, 4, 2, 2], '#e0a020'),
+        P('wattle', [0, 0, -3], [-1, 0, -2, 2, 2, 2], '#c03030')
+      ] }),
       P('wingL', [3, 10, -2], [0, -4, -3, 1, 5, 6], '#dcdcdc'),
       P('wingR', [-3, 10, -2], [-1, -4, -3, 1, 5, 6], '#dcdcdc'),
       P('legL', [2, 5, 1], [-1, -5, -2, 2, 5, 4], '#e0a020'),
-      P('legR', [-2, 5, 1], [-1, -5, -2, 2, 5, 4], '#e0a020')
-    ], eye: 0.65
+      P('legR', [-2, 5, 1], [-1, -5, -2, 2, 5, 4], '#e0a020'),
+      P('tail', [0, 10, 4], [-2, 0, 0, 4, 4, 1], '#dcdcdc')
+    ], eye: 0.6
   },
   w: 0.4, h: 0.7, hp: 4, speed: 0.09, anim: animBird, babyScale: 0.5,
   drops: [{ item: 'chicken', min: 1, max: 1 }, { item: 'feather', min: 0, max: 2 }],
+  breedWith: ['wheat_seeds', 'melon_seeds', 'pumpkin_seeds', 'beetroot_seeds'],
   spawn: { biomes: ['plains', 'forest', 'jungle', 'sunflower_plains', 'swamp'], light: 9, group: [3, 4], surface: true }
 });
 defMob('rabbit', {
@@ -18495,8 +18567,10 @@ function updatePlayer(game, dt, input) {
     var uid = world.getId(p.dim, Math.floor(p.x), Math.floor(p.y - 0.1), Math.floor(p.z));
     if (uid && BLOCKS[uid].slip) slip = BLOCKS[uid].slip;
   }
-  var accel = p.onGround ? 34 * (0.6 / slip) : (p.flying ? 30 : 8);
-  if (p.inWater && !p.flying) accel = 14;
+  /* Minecraft builds speed over several ticks rather than instantly; without
+     that ramp the character reads as twitchy rather than weighty. */
+  var accel = p.onGround ? 13 * (0.6 / slip) : (p.flying ? 16 : 2.6);
+  if (p.inWater && !p.flying) accel = 7;
   p.vx += (wantX - p.vx) * Math.min(1, accel * dt);
   p.vz += (wantZ - p.vz) * Math.min(1, accel * dt);
 
@@ -18571,7 +18645,7 @@ function updatePlayer(game, dt, input) {
   /* --- head bob and footsteps --- */
   var hspd = Math.hypot(p.x - p.lastX, p.z - p.lastZ);
   p.lastX = p.x; p.lastZ = p.z;
-  p.bobPhase += hspd * 5.2;
+  p.bobPhase += hspd * 2.9;   /* ~2 steps per second at walking pace */
   p.bobAmt = approach(p.bobAmt, p.onGround ? Math.min(1, hspd / (dt * 5.6)) : 0, dt * 6);
   p.stepSoundDist += hspd;
   if (p.stepSoundDist > (p.sneaking ? 3.2 : 2.0) && p.onGround) {
@@ -18668,6 +18742,7 @@ function groundBelow(world, p) {
 }
 function tryStepUp(world, p, dx, dz) {
   var save = { x: p.x, y: p.y, z: p.z };
+  var beforeY = p.y;
   p.y += 0.6;
   var r = collideAxis(world, p.dim, p, dx, 0, dz);
   var moved = Math.abs(r.dx) > 1e-6 || Math.abs(r.dz) > 1e-6;
@@ -18675,6 +18750,8 @@ function tryStepUp(world, p, dx, dz) {
   /* settle back down onto whatever we stepped onto */
   var down = collideAxis(world, p.dim, p, 0, -0.6, 0);
   if (p.y < save.y - 1e-6) { p.x = save.x; p.y = save.y; p.z = save.z; return false; }
+  /* the body moves up instantly, the eye catches up over a moment */
+  p.stepSmooth = clamp((p.stepSmooth || 0) + (p.y - beforeY), 0, 1.1);
   return true;
 }
 
@@ -18695,9 +18772,9 @@ function updateCamera(game, dt) {
   var bobX = 0, bobY = 0, roll = 0;
   if (R.settings.viewBob && game.cameraMode === 0 && !p.dead) {
     var a = p.bobAmt * (p.sprinting ? 1.25 : 1);
-    bobX = Math.cos(p.bobPhase) * 0.055 * a;
-    bobY = -Math.abs(Math.sin(p.bobPhase)) * 0.055 * a;
-    roll = Math.sin(p.bobPhase) * 0.017 * a;
+    bobX = Math.cos(p.bobPhase) * 0.048 * a;
+    bobY = (Math.cos(p.bobPhase * 2) * 0.5 - 0.5) * 0.042 * a;
+    roll = Math.sin(p.bobPhase) * 0.014 * a;
   }
   /* strafing tilts the horizon very slightly, the way a real head does */
   var sinY = Math.sin(p.yaw), cosY = Math.cos(p.yaw);
@@ -18715,7 +18792,8 @@ function updateCamera(game, dt) {
 
   var right = [cosY, 0, sinY];
   var ex = p.x + right[0] * bobX + sx;
-  var ey = p.camY + bobY + sy - (p.dead ? Math.min(1.1, p.deathTime * 1.8) : 0);
+  p.stepSmooth = approach(p.stepSmooth || 0, 0, dt * 7);
+  var ey = p.camY + bobY + sy - p.stepSmooth - (p.dead ? Math.min(1.1, p.deathTime * 1.8) : 0);
   var ez = p.z + right[2] * bobX;
 
   if (game.cameraMode !== 0) {
@@ -18802,9 +18880,9 @@ function updateViewModel(game, dt) {
   /* ---- walk bob (figure-eight, weighted toward the down-beat) ---- */
   var amt = p.bobAmt * (p.sprinting ? 1.35 : 1) * (p.onGround ? 1 : 0.25);
   var ph = p.bobPhase;
-  VM.bobX = Math.sin(ph) * 0.052 * amt;
-  VM.bobY = (-Math.abs(Math.cos(ph)) + 0.35) * 0.048 * amt;
-  VM.bobRot = Math.sin(ph * 2 + 0.6) * 0.055 * amt;
+  VM.bobX = Math.sin(ph) * 0.044 * amt;
+  VM.bobY = (Math.cos(ph * 2) * 0.5 - 0.15) * 0.040 * amt;
+  VM.bobRot = Math.sin(ph + 0.6) * 0.048 * amt;
 
   VM.sprintT = approach(VM.sprintT, p.sprinting && p.onGround ? 1 : 0, dt * 6);
   VM.sneakT = approach(VM.sneakT, p.sneaking ? 1 : 0, dt * 9);
@@ -18812,7 +18890,7 @@ function updateViewModel(game, dt) {
 
   /* ---- swing: anticipation → strike → settle ---- */
   if (VM.swingActive) {
-    VM.swing += dt / (VM.swingKind === 1 ? 0.34 : 0.26);
+    VM.swing += dt / (VM.swingKind === 1 ? 0.32 : 0.30);
     if (VM.swing >= 1) { VM.swing = 0; VM.swingActive = false; }
   }
 
@@ -18832,18 +18910,19 @@ function startSwing(kind) {
   VM.swing = 0; VM.swingActive = true; VM.swingKind = kind || 0;
 }
 
-/* Punchy swing curve: pulls back a touch, snaps through, settles slowly. */
-function swingCurve(t) {
-  if (t < 0.16) return -0.30 * Math.sin(t / 0.16 * Math.PI * 0.5);        /* wind-up */
-  if (t < 0.42) { var u = (t - 0.16) / 0.26; return -0.30 + 1.30 * u * u * (3 - 2 * u); }  /* strike */
-  var v = (t - 0.42) / 0.58;
-  return 1.00 * (1 - v) * (1 - v) * Math.cos(v * 5.2) + 0;                /* settle wobble */
-}
-function swingLift(t) {
-  if (t < 0.16) return t / 0.16 * 0.06;
-  if (t < 0.42) return 0.06 - ((t - 0.16) / 0.26) * 0.22;
-  var v = (t - 0.42) / 0.58;
-  return -0.16 * (1 - v) * (1 - v);
+/* The swing the real game uses: the hand drops and sweeps across on a
+   sqrt-eased arc, which is why it reads as a heavy blow rather than a twitch.
+   Applied as a transform on the hand frame, so the arm and whatever it is
+   holding move together. */
+var DEG = Math.PI / 180;
+function applySwingTransform(sp, side) {
+  var fSq = Math.sin(sp * sp * Math.PI);
+  var fRt = Math.sin(Math.sqrt(sp) * Math.PI);
+  mTranslate(side * -0.40 * fRt, 0.20 * Math.sin(Math.sqrt(sp) * Math.PI * 2), -0.20 * Math.sin(sp * Math.PI));
+  mRotY(side * (45 + fSq * -20) * DEG);
+  mRotZ(side * fRt * -20 * DEG);
+  mRotX(fRt * -80 * DEG);
+  mRotY(side * -45 * DEG);
 }
 
 /* ---------------------------------------------------------------- draw -- */
@@ -18873,8 +18952,7 @@ function drawViewModel(game) {
   var it = itemName ? ITEMS[itemName] : null;
 
   var t = VM.swingActive ? VM.swing : 0;
-  var sw = VM.swingActive ? swingCurve(t) : 0;
-  var lift = VM.swingActive ? swingLift(t) : 0;
+  var lift = 0;
   var eq = 1 - VM.equipT;
   var eqDrop = eq * eq * 0.55;
 
@@ -18890,11 +18968,8 @@ function drawViewModel(game) {
   );
   mRotZ(VM.rollZ + VM.bobRot * 0.5 + eq * 0.5);
   mRotY(-VM.swayX * 0.18 - VM.sprintT * 0.22);
-  mRotX(VM.swayY * 0.16 + VM.bobRot * 0.4 + VM.sprintT * 0.34 - lift * 1.1);
-  /* the swing itself: an arc through the shoulder, not a pivot at the wrist */
-  mRotX(-sw * 1.05);
-  mRotZ(sw * 0.24);
-  mTranslate(0, sw * 0.05, sw * 0.09);
+  mRotX(VM.swayY * 0.16 + VM.bobRot * 0.4 + VM.sprintT * 0.34);
+  if (VM.swingActive) applySwingTransform(t, 1);
 
   if (p.eating) {
     var bite = Math.sin(game.time * 22) * 0.06 * VM.useProg;

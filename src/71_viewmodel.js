@@ -61,9 +61,9 @@ function updateViewModel(game, dt) {
   /* ---- walk bob (figure-eight, weighted toward the down-beat) ---- */
   var amt = p.bobAmt * (p.sprinting ? 1.35 : 1) * (p.onGround ? 1 : 0.25);
   var ph = p.bobPhase;
-  VM.bobX = Math.sin(ph) * 0.052 * amt;
-  VM.bobY = (-Math.abs(Math.cos(ph)) + 0.35) * 0.048 * amt;
-  VM.bobRot = Math.sin(ph * 2 + 0.6) * 0.055 * amt;
+  VM.bobX = Math.sin(ph) * 0.044 * amt;
+  VM.bobY = (Math.cos(ph * 2) * 0.5 - 0.15) * 0.040 * amt;
+  VM.bobRot = Math.sin(ph + 0.6) * 0.048 * amt;
 
   VM.sprintT = approach(VM.sprintT, p.sprinting && p.onGround ? 1 : 0, dt * 6);
   VM.sneakT = approach(VM.sneakT, p.sneaking ? 1 : 0, dt * 9);
@@ -71,7 +71,7 @@ function updateViewModel(game, dt) {
 
   /* ---- swing: anticipation → strike → settle ---- */
   if (VM.swingActive) {
-    VM.swing += dt / (VM.swingKind === 1 ? 0.34 : 0.26);
+    VM.swing += dt / (VM.swingKind === 1 ? 0.32 : 0.30);
     if (VM.swing >= 1) { VM.swing = 0; VM.swingActive = false; }
   }
 
@@ -91,18 +91,19 @@ function startSwing(kind) {
   VM.swing = 0; VM.swingActive = true; VM.swingKind = kind || 0;
 }
 
-/* Punchy swing curve: pulls back a touch, snaps through, settles slowly. */
-function swingCurve(t) {
-  if (t < 0.16) return -0.30 * Math.sin(t / 0.16 * Math.PI * 0.5);        /* wind-up */
-  if (t < 0.42) { var u = (t - 0.16) / 0.26; return -0.30 + 1.30 * u * u * (3 - 2 * u); }  /* strike */
-  var v = (t - 0.42) / 0.58;
-  return 1.00 * (1 - v) * (1 - v) * Math.cos(v * 5.2) + 0;                /* settle wobble */
-}
-function swingLift(t) {
-  if (t < 0.16) return t / 0.16 * 0.06;
-  if (t < 0.42) return 0.06 - ((t - 0.16) / 0.26) * 0.22;
-  var v = (t - 0.42) / 0.58;
-  return -0.16 * (1 - v) * (1 - v);
+/* The swing the real game uses: the hand drops and sweeps across on a
+   sqrt-eased arc, which is why it reads as a heavy blow rather than a twitch.
+   Applied as a transform on the hand frame, so the arm and whatever it is
+   holding move together. */
+var DEG = Math.PI / 180;
+function applySwingTransform(sp, side) {
+  var fSq = Math.sin(sp * sp * Math.PI);
+  var fRt = Math.sin(Math.sqrt(sp) * Math.PI);
+  mTranslate(side * -0.40 * fRt, 0.20 * Math.sin(Math.sqrt(sp) * Math.PI * 2), -0.20 * Math.sin(sp * Math.PI));
+  mRotY(side * (45 + fSq * -20) * DEG);
+  mRotZ(side * fRt * -20 * DEG);
+  mRotX(fRt * -80 * DEG);
+  mRotY(side * -45 * DEG);
 }
 
 /* ---------------------------------------------------------------- draw -- */
@@ -132,8 +133,7 @@ function drawViewModel(game) {
   var it = itemName ? ITEMS[itemName] : null;
 
   var t = VM.swingActive ? VM.swing : 0;
-  var sw = VM.swingActive ? swingCurve(t) : 0;
-  var lift = VM.swingActive ? swingLift(t) : 0;
+  var lift = 0;
   var eq = 1 - VM.equipT;
   var eqDrop = eq * eq * 0.55;
 
@@ -149,11 +149,8 @@ function drawViewModel(game) {
   );
   mRotZ(VM.rollZ + VM.bobRot * 0.5 + eq * 0.5);
   mRotY(-VM.swayX * 0.18 - VM.sprintT * 0.22);
-  mRotX(VM.swayY * 0.16 + VM.bobRot * 0.4 + VM.sprintT * 0.34 - lift * 1.1);
-  /* the swing itself: an arc through the shoulder, not a pivot at the wrist */
-  mRotX(-sw * 1.05);
-  mRotZ(sw * 0.24);
-  mTranslate(0, sw * 0.05, sw * 0.09);
+  mRotX(VM.swayY * 0.16 + VM.bobRot * 0.4 + VM.sprintT * 0.34);
+  if (VM.swingActive) applySwingTransform(t, 1);
 
   if (p.eating) {
     var bite = Math.sin(game.time * 22) * 0.06 * VM.useProg;

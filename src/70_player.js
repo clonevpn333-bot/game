@@ -773,8 +773,10 @@ function updatePlayer(game, dt, input) {
     var uid = world.getId(p.dim, Math.floor(p.x), Math.floor(p.y - 0.1), Math.floor(p.z));
     if (uid && BLOCKS[uid].slip) slip = BLOCKS[uid].slip;
   }
-  var accel = p.onGround ? 34 * (0.6 / slip) : (p.flying ? 30 : 8);
-  if (p.inWater && !p.flying) accel = 14;
+  /* Minecraft builds speed over several ticks rather than instantly; without
+     that ramp the character reads as twitchy rather than weighty. */
+  var accel = p.onGround ? 13 * (0.6 / slip) : (p.flying ? 16 : 2.6);
+  if (p.inWater && !p.flying) accel = 7;
   p.vx += (wantX - p.vx) * Math.min(1, accel * dt);
   p.vz += (wantZ - p.vz) * Math.min(1, accel * dt);
 
@@ -849,7 +851,7 @@ function updatePlayer(game, dt, input) {
   /* --- head bob and footsteps --- */
   var hspd = Math.hypot(p.x - p.lastX, p.z - p.lastZ);
   p.lastX = p.x; p.lastZ = p.z;
-  p.bobPhase += hspd * 5.2;
+  p.bobPhase += hspd * 2.9;   /* ~2 steps per second at walking pace */
   p.bobAmt = approach(p.bobAmt, p.onGround ? Math.min(1, hspd / (dt * 5.6)) : 0, dt * 6);
   p.stepSoundDist += hspd;
   if (p.stepSoundDist > (p.sneaking ? 3.2 : 2.0) && p.onGround) {
@@ -946,6 +948,7 @@ function groundBelow(world, p) {
 }
 function tryStepUp(world, p, dx, dz) {
   var save = { x: p.x, y: p.y, z: p.z };
+  var beforeY = p.y;
   p.y += 0.6;
   var r = collideAxis(world, p.dim, p, dx, 0, dz);
   var moved = Math.abs(r.dx) > 1e-6 || Math.abs(r.dz) > 1e-6;
@@ -953,6 +956,8 @@ function tryStepUp(world, p, dx, dz) {
   /* settle back down onto whatever we stepped onto */
   var down = collideAxis(world, p.dim, p, 0, -0.6, 0);
   if (p.y < save.y - 1e-6) { p.x = save.x; p.y = save.y; p.z = save.z; return false; }
+  /* the body moves up instantly, the eye catches up over a moment */
+  p.stepSmooth = clamp((p.stepSmooth || 0) + (p.y - beforeY), 0, 1.1);
   return true;
 }
 
@@ -973,9 +978,9 @@ function updateCamera(game, dt) {
   var bobX = 0, bobY = 0, roll = 0;
   if (R.settings.viewBob && game.cameraMode === 0 && !p.dead) {
     var a = p.bobAmt * (p.sprinting ? 1.25 : 1);
-    bobX = Math.cos(p.bobPhase) * 0.055 * a;
-    bobY = -Math.abs(Math.sin(p.bobPhase)) * 0.055 * a;
-    roll = Math.sin(p.bobPhase) * 0.017 * a;
+    bobX = Math.cos(p.bobPhase) * 0.048 * a;
+    bobY = (Math.cos(p.bobPhase * 2) * 0.5 - 0.5) * 0.042 * a;
+    roll = Math.sin(p.bobPhase) * 0.014 * a;
   }
   /* strafing tilts the horizon very slightly, the way a real head does */
   var sinY = Math.sin(p.yaw), cosY = Math.cos(p.yaw);
@@ -993,7 +998,8 @@ function updateCamera(game, dt) {
 
   var right = [cosY, 0, sinY];
   var ex = p.x + right[0] * bobX + sx;
-  var ey = p.camY + bobY + sy - (p.dead ? Math.min(1.1, p.deathTime * 1.8) : 0);
+  p.stepSmooth = approach(p.stepSmooth || 0, 0, dt * 7);
+  var ey = p.camY + bobY + sy - p.stepSmooth - (p.dead ? Math.min(1.1, p.deathTime * 1.8) : 0);
   var ez = p.z + right[2] * bobX;
 
   if (game.cameraMode !== 0) {
