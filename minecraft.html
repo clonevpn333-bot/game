@@ -348,6 +348,31 @@ img { image-rendering: pixelated; -webkit-user-drag: none; }
 .creditclean .cheatbig { color: #8fe07a; }
 .cheatsmall { font-size: 11.5px; color: #c9bfd6; margin-top: 4px; }
 
+/* ------------------------------------------------- crafting layout ------ */
+.invtop { display: flex; gap: 22px; align-items: center; justify-content: center; padding: 4px 2px 10px; }
+.craft3, .craft2 { gap: 3px; }
+.craft2 { grid-template-columns: repeat(2, 40px) !important; }
+.craft3 { grid-template-columns: repeat(3, 40px) !important; }
+.craftout .slot { width: 52px; height: 52px; background: #7c7c7c;
+  border-color: #2f2f2f #ffffff #ffffff #2f2f2f; }
+.craftout { align-self: center; }
+.arrow { width: 40px; height: 26px; opacity: .75;
+  background:
+    linear-gradient(#5e5e5e,#5e5e5e) 0 10px / 26px 6px no-repeat,
+    conic-gradient(from -45deg at 100% 50%, transparent 0 25%, #5e5e5e 0 50%, transparent 0) 16px 0 / 26px 26px no-repeat; }
+.invsection { margin-top: 12px; border-top: 2px solid #a8a8a8; padding-top: 10px; }
+.guilabel { text-transform: uppercase; letter-spacing: .1em; font-size: 10px; color: #5a5a5a; }
+.booklist { max-height: 108px; }
+.bookitem { width: 34px; height: 34px; }
+.recipebook { margin-top: 12px; border-top: 2px solid #a8a8a8; padding-top: 8px; }
+.mainpack, .hotpack { justify-content: center; }
+.hotpack { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #a0a0a0; }
+
+.gui { max-width: 660px; }
+.creativegui { max-width: 760px; }
+.optionsgui { max-width: 620px; }
+.creditsgui { max-width: 620px; }
+
 </style>
 </head>
 <body>
@@ -14159,6 +14184,8 @@ function drawEntities(game, fogStart, fogEnd, underwater, uwv, shadowOn) {
 function buildEntityMesh(game, e) {
   var def = MOBS[e.type];
   if (!def) return;
+  if (def.isItem) { buildDroppedItem(game, e); return; }
+  if (def.isXP) { buildXpOrb(game, e); return; }
   var model = def.model;
   var lightByte = game.world.getLight(e.dim, Math.floor(e.x), Math.floor(e.y + e.h * 0.5), Math.floor(e.z));
   _elight[0] = ((lightByte >> 4) & 15) / 15;
@@ -14183,6 +14210,65 @@ function buildEntityMesh(game, e) {
     _pose.head.s = def.babyHeadScale;
   }
   renderParts(EBUF, model.parts, _pose);
+}
+
+/* A dropped item: block items tumble as little cubes, everything else as the
+   flat extruded sprite, both spinning and bobbing the way they should. */
+function buildDroppedItem(game, e) {
+  if (!e.item) return;
+  var it = ITEMS[e.item];
+  var lightByte = game.world.getLight(e.dim, Math.floor(e.x), Math.floor(e.y + 0.2), Math.floor(e.z));
+  _elight[0] = ((lightByte >> 4) & 15) / 15;
+  _elight[1] = (lightByte & 15) / 15;
+  _ecol[0] = _ecol[1] = _ecol[2] = 1; _ecol[3] = 0;
+
+  var bob = Math.sin(game.time * 2.2 + e.seed) * 0.06;
+  var spin = game.time * 1.1 + e.seed;
+
+  /* a stack of more than one shows as a small pile */
+  var copies = e.count > 32 ? 3 : (e.count > 8 ? 2 : 1);
+  for (var c = 0; c < copies; c++) {
+    mIdent();
+    mTranslate(e.x + (c ? (c === 1 ? 0.07 : -0.06) : 0), e.y + 0.22 + bob + c * 0.045,
+      e.z + (c ? (c === 1 ? -0.05 : 0.06) : 0));
+    mRotY(spin + c * 0.7);
+    if (it && it.block && BID[it.block] !== undefined) {
+      var id = BID[it.block];
+      var b = BLOCKS[id];
+      var boxes = modelFor(id, 0);
+      mScale(0.30, 0.30, 0.30);
+      if (!boxes || b.render === 'cross' || b.render === 'flat' || b.render === 'crop') {
+        drawExtrudedSprite(b.layers ? b.layers[4] : 0, 1.0);
+      } else {
+        mTranslate(-0.5, -0.5, -0.5);
+        var lay = [0, 0, 0, 0, 0, 0];
+        for (var k = 0; k < boxes.length; k++) {
+          var q = boxes[k];
+          for (var f = 0; f < 6; f++) lay[f] = faceLayer(q, b, f);
+          emitBox(buf0(), q.x0, q.y0, q.z0, q.x1 - q.x0, q.y1 - q.y0, q.z1 - q.z0, lay.slice(), 0, true);
+        }
+      }
+    } else {
+      var layer = ITEM_LAYER[e.item];
+      if (layer === undefined) continue;
+      mScale(0.42, 0.42, 0.42);
+      drawExtrudedSprite(layer, 1.0);
+    }
+  }
+}
+function buf0() { return EBUF; }
+
+/* XP orbs: a small glowing lozenge that pulses. */
+function buildXpOrb(game, e) {
+  _elight[0] = 1; _elight[1] = 1;
+  _ecol[0] = 0.72; _ecol[1] = 1.0; _ecol[2] = 0.42; _ecol[3] = 0;
+  var pulse = 1 + Math.sin(game.time * 5 + e.seed) * 0.16;
+  var sz = (e.count > 16 ? 1.5 : (e.count > 6 ? 1.2 : 0.95)) * pulse;
+  mIdent();
+  mTranslate(e.x, e.y + 0.18 + Math.sin(game.time * 3 + e.seed) * 0.04, e.z);
+  mRotY(game.time * 2.4 + e.seed);
+  emitBox(EBUF, -sz, -sz, -sz, sz * 2, sz * 2, sz * 2, partTile('#b8f048', 0.02), 0);
+  _ecol[0] = _ecol[1] = _ecol[2] = 1;
 }
 
 /* ============================= PARTICLES ================================ */
@@ -15272,6 +15358,7 @@ function prebakeEntityTiles() {
   partTile(SKIN, 0.05); partTile(SKIN, 0.04); partTile(SKIN_D, 0.04); partTile(SKIN_D, 0.05);
   partTile(SLEEVE, 0.05); partTile(SLEEVE_D, 0.03);
   partTile('#ffffff', 0);
+  partTile('#b8f048', 0.02);
 }
 
 /* The end crystals that heal the dragon: a floating cube in a cage of fire. */
@@ -16613,55 +16700,80 @@ function metalShape(p, pts, c) {
 }
 
 /* ------------------------------------------------------------- tools -- */
+/* Tools are drawn the way the real icons read: a wooden haft running corner to
+   corner with a bound head, highlight up-left, shadow down-right. */
+function haft(p, x0, y0, x1, y1, w) {
+  var dark = col('#5d4222'), mid = col('#7a5a30'), lite = col('#96703d');
+  diagLine(p, x0, y0, x1, y1, mid, w || 2);
+  diagLine(p, x0, y0 - 1, x1, y1 - 1, lite, 1);
+  diagLine(p, x0 + 1, y0 + 1, x1 + 1, y1 + 1, dark, 1);
+}
+function headShade(p, x, y, c, t) {
+  var b = col(c);
+  p.px(x, y, t < 0.34 ? shade(b, 1.42) : (t > 0.70 ? shade(b, 0.58) : b));
+}
 II('sword', function (p, c) {
-  handle(p, 3, 14, 6, 11);
-  metalShape(p, [5, 10, 6, 11], '#4a3a20');       /* guard base */
-  var g = col('#5a4626');
-  p.px(4, 11, g); p.px(7, 10, g); p.px(4, 12, g); p.px(3, 12, g);
-  var b = col(c), hi = shade(b, 1.4), lo = shade(b, 0.6);
+  haft(p, 3, 13, 6, 10);
+  var g = col('#4a3520');
+  p.px(4, 12, g); p.px(3, 13, g); p.px(2, 14, g);
+  /* cross guard */
+  var gd = col('#6a5030');
+  p.px(4, 10, gd); p.px(5, 11, gd); p.px(6, 9, gd); p.px(7, 10, gd);
+  /* blade, two texels wide with a lit edge */
   for (var i = 0; i < 9; i++) {
-    var x = 6 + i, y = 9 - i;
-    p.px(x, y, hi); p.px(x + 1, y, b); p.px(x + 1, y + 1, lo);
+    var x = 5 + i, y = 10 - i;
+    headShade(p, x, y, c, 0.15);
+    headShade(p, x + 1, y, c, 0.5);
+    headShade(p, x + 1, y + 1, c, 0.85);
   }
-  p.px(14, 1, hi); p.px(15, 0, hi);
+  headShade(p, 14, 1, c, 0.1); headShade(p, 15, 0, c, 0.1);
   outlineDark(p);
 });
 II('pickaxe', function (p, c) {
-  handle(p, 4, 14, 9, 8);
-  var b = col(c), hi = shade(b, 1.35), lo = shade(b, 0.62);
-  for (var x = 3; x <= 13; x++) {
-    var arc = Math.round(Math.abs(x - 8) * 0.55);
-    p.px(x, 3 + arc, hi); p.px(x, 4 + arc, b); p.px(x, 5 + arc, lo);
+  haft(p, 4, 14, 9, 8);
+  /* a swept head with the two points curling down */
+  for (var i = 0; i <= 12; i++) {
+    var x = 2 + i;
+    var lift = Math.round(Math.abs(x - 8) * Math.abs(x - 8) * 0.055);
+    headShade(p, x, 3 + lift, c, 0.2);
+    headShade(p, x, 4 + lift, c, 0.55);
+    if (x < 4 || x > 12) headShade(p, x, 5 + lift, c, 0.85);
   }
-  p.px(2, 6, b); p.px(2, 7, lo); p.px(14, 6, b); p.px(14, 7, lo);
-  p.px(1, 8, lo); p.px(15, 8, lo);
+  headShade(p, 1, 7, c, 0.9); headShade(p, 15, 7, c, 0.9);
+  /* binding where the head meets the haft */
+  p.px(8, 6, col('#4a3520')); p.px(9, 6, col('#4a3520')); p.px(8, 7, col('#5d4222'));
   outlineDark(p);
 });
 II('axe', function (p, c) {
-  handle(p, 4, 14, 9, 7);
-  var b = col(c), hi = shade(b, 1.35), lo = shade(b, 0.62);
-  for (var y = 2; y <= 9; y++) {
-    var w = y < 6 ? y - 1 : 10 - y;
-    for (var x = 8; x < 8 + Math.max(2, w + 2); x++) p.px(x, y, x < 10 ? hi : (x > 12 ? lo : b));
+  haft(p, 4, 14, 9, 6);
+  /* a proper axe bit: wide at the cutting edge, narrow at the eye */
+  for (var y = 2; y <= 10; y++) {
+    var d = Math.abs(y - 6);
+    var wLeft = 8 - d, wRight = 12 - Math.round(d * 1.4);
+    for (var x = wLeft; x <= wRight; x++) headShade(p, x, y, c, (x - wLeft) / Math.max(1, wRight - wLeft));
   }
-  for (var y2 = 3; y2 <= 8; y2++) { p.px(7, y2, b); if (y2 > 4 && y2 < 8) p.px(6, y2, lo); }
+  p.px(8, 6, col('#4a3520')); p.px(8, 7, col('#4a3520'));
   outlineDark(p);
 });
 II('shovel', function (p, c) {
-  handle(p, 4, 14, 10, 7);
-  var b = col(c), hi = shade(b, 1.35), lo = shade(b, 0.62);
-  for (var y = 2; y <= 7; y++) for (var x = 9; x <= 13; x++) {
-    if (y === 2 && (x === 9 || x === 13)) continue;
-    if (y === 7 && (x === 9 || x === 13)) continue;
-    p.px(x, y, x < 11 ? hi : (x > 12 ? lo : b));
+  haft(p, 4, 14, 10, 8);
+  /* a rounded scoop */
+  for (var y = 2; y <= 8; y++) {
+    var w = (y === 2 || y === 8) ? 1 : 2;
+    for (var x = 9 - w + 1; x <= 12 + w - 1; x++) {
+      if (x < 8 || x > 14) continue;
+      headShade(p, x, y, c, (x - 9) / 4);
+    }
   }
+  p.px(9, 8, col('#4a3520')); p.px(10, 9, col('#4a3520'));
   outlineDark(p);
 });
 II('hoe', function (p, c) {
-  handle(p, 4, 14, 10, 6);
-  var b = col(c), hi = shade(b, 1.35), lo = shade(b, 0.62);
-  for (var x = 4; x <= 11; x++) { p.px(x, 3, hi); p.px(x, 4, b); }
-  p.px(11, 5, lo); p.px(11, 6, lo); p.px(4, 5, lo);
+  haft(p, 4, 14, 10, 5);
+  for (var x = 3; x <= 10; x++) { headShade(p, x, 2, c, 0.2); headShade(p, x, 3, c, 0.6); }
+  headShade(p, 10, 4, c, 0.8); headShade(p, 10, 5, c, 0.9);
+  headShade(p, 3, 4, c, 0.85);
+  p.px(10, 5, col('#4a3520'));
   outlineDark(p);
 });
 II('shears', function (p, c) {
@@ -16824,41 +16936,56 @@ II('rocket', function (p, c) {
 });
 
 /* ------------------------------------------------------------ armour -- */
+function plate(p, x, y, c, t) {
+  var b = col(c);
+  p.px(x, y, t < 0.3 ? shade(b, 1.34) : (t > 0.72 ? shade(b, 0.6) : b));
+}
 II('armor_helmet', function (p, c) {
-  var b = col(c), hi = shade(b, 1.25), lo = shade(b, 0.65);
-  for (var y = 3; y <= 12; y++) for (var x = 3; x <= 12; x++) {
-    if (y > 7 && x > 5 && x < 10) continue;
-    if ((y === 3 || y === 12) && (x < 4 || x > 11)) continue;
-    p.px(x, y, x < 6 ? hi : (x > 10 ? lo : b));
+  for (var y = 3; y <= 8; y++) for (var x = 3; x <= 12; x++) {
+    if ((y === 3) && (x < 4 || x > 11)) continue;
+    plate(p, x, y, c, (x - 3) / 9);
   }
+  /* cheek guards either side of the visor */
+  for (var y2 = 9; y2 <= 12; y2++) {
+    for (var x2 = 3; x2 <= 5; x2++) plate(p, x2, y2, c, 0.2);
+    for (var x3 = 10; x3 <= 12; x3++) plate(p, x3, y2, c, 0.8);
+  }
+  /* visor slit */
+  for (var v = 6; v <= 9; v++) p.set(v, 8, 24, 22, 26, 190);
   outlineDark(p);
 });
 II('armor_chestplate', function (p, c) {
-  var b = col(c), hi = shade(b, 1.25), lo = shade(b, 0.65);
-  for (var y = 3; y <= 12; y++) for (var x = 2; x <= 13; x++) {
-    if (y < 5 && x > 5 && x < 10) continue;
-    if (y > 5 && (x < 4 || x > 11)) continue;
-    p.px(x, y, x < 6 ? hi : (x > 10 ? lo : b));
+  for (var y = 4; y <= 12; y++) for (var x = 3; x <= 12; x++) {
+    if (y < 6 && x > 5 && x < 10) continue;             /* neck opening */
+    plate(p, x, y, c, (x - 3) / 9);
   }
+  /* pauldrons */
+  for (var y2 = 4; y2 <= 7; y2++) { plate(p, 1, y2, c, 0.15); plate(p, 2, y2, c, 0.2);
+    plate(p, 13, y2, c, 0.85); plate(p, 14, y2, c, 0.9); }
+  for (var s2 = 4; s2 <= 11; s2++) p.set(s2, 9, 30, 28, 32, 120);
   outlineDark(p);
 });
 II('armor_leggings', function (p, c) {
-  var b = col(c), hi = shade(b, 1.25), lo = shade(b, 0.65);
-  for (var y = 2; y <= 13; y++) for (var x = 3; x <= 12; x++) {
-    if (y > 6 && x > 6 && x < 9) continue;
-    p.px(x, y, x < 6 ? hi : (x > 10 ? lo : b));
+  for (var y = 2; y <= 6; y++) for (var x = 3; x <= 12; x++) plate(p, x, y, c, (x - 3) / 9);
+  for (var y2 = 7; y2 <= 13; y2++) {
+    for (var x2 = 3; x2 <= 6; x2++) plate(p, x2, y2, c, 0.2);
+    for (var x3 = 9; x3 <= 12; x3++) plate(p, x3, y2, c, 0.8);
   }
+  for (var b = 3; b <= 12; b++) p.set(b, 6, 30, 28, 32, 120);
   outlineDark(p);
 });
 II('armor_boots', function (p, c) {
-  var b = col(c), hi = shade(b, 1.25), lo = shade(b, 0.65);
-  for (var y = 6; y <= 12; y++) for (var x = 3; x <= 12; x++) {
-    if (y < 10 && x > 5 && x < 10) continue;
-    p.px(x, y, x < 6 ? hi : (x > 10 ? lo : b));
+  for (var y = 6; y <= 9; y++) {
+    for (var x = 2; x <= 5; x++) plate(p, x, y, c, 0.2);
+    for (var x2 = 10; x2 <= 13; x2++) plate(p, x2, y, c, 0.8);
+  }
+  /* the foot spreads forward at the bottom */
+  for (var y2 = 10; y2 <= 12; y2++) {
+    for (var x3 = 1; x3 <= 6; x3++) plate(p, x3, y2, c, 0.25);
+    for (var x4 = 9; x4 <= 14; x4++) plate(p, x4, y2, c, 0.75);
   }
   outlineDark(p);
 });
-
 /* -------------------------------------------------------------- food -- */
 II('apple', function (p, c) {
   p.disc(7, 9, 4.6, col(c));
@@ -18714,8 +18841,8 @@ function updatePlayer(game, dt, input) {
   var len = Math.hypot(fwd, str);
   if (len > 1) { fwd /= len; str /= len; }
   p.sneaking = input.sneak && p.onGround && !p.flying;
-  if (input.sprint && fwd > 0 && p.food > 6 && !p.sneaking) p.sprinting = true;
-  if (fwd <= 0 || p.food <= 6) p.sprinting = false;
+  if ((input.sprint || game.sprintLatch) && fwd > 0 && p.food > 6 && !p.sneaking) p.sprinting = true;
+  if (fwd <= 0 || p.food <= 6 || p.sneaking) { p.sprinting = false; game.sprintLatch = false; }
 
   var speed = 4.317;
   if (p.sprinting) speed = 5.612;
@@ -20089,7 +20216,7 @@ SCREEN_BUILDERS.inventory = function (game, box) {
 SCREEN_REFRESH.inventory = function (game) { updateCraftOutput(game); drawPlayerDoll(game); };
 
 SCREEN_BUILDERS.crafting = function (game, box) {
-  guiTitle(box, 'Crafting');
+  guiTitle(box, 'Crafting Table');
   UI.craftW = 3;
   var top = el('div', 'invtop', box);
   var cs = [];
@@ -20098,6 +20225,7 @@ SCREEN_BUILDERS.crafting = function (game, box) {
   arrowEl(top);
   buildSlotGrid(game, top, [craftOutSlot(game)], 1, 'craftout');
   var book = el('div', 'recipebook', box);
+  el('div', 'guilabel', book, 'Recipe book — click to fill the grid');
   buildRecipeBook(game, book);
   addPlayerInventory(game, box);
   updateCraftOutput(game);
@@ -20154,7 +20282,6 @@ function consumeCraft(game) {
 
 /* recipe book: everything craftable from what you carry, one click to fill */
 function buildRecipeBook(game, parent) {
-  el('div', 'guilabel', parent, 'Craftable');
   var list = el('div', 'booklist', parent);
   var have = {};
   var p = game.player;
@@ -21408,7 +21535,8 @@ function createGame(canvas, seed) {
 /* ------------------------------------------------------------- input -- */
 var KEYMAP = {
   KeyW: 'forward', KeyS: 'back', KeyA: 'left', KeyD: 'right',
-  Space: 'jump', ShiftLeft: 'sneak', ShiftRight: 'sneak', ControlLeft: 'sprint'
+  Space: 'jump', ShiftLeft: 'sneak', ShiftRight: 'sneak',
+  ControlLeft: 'sprint', ControlRight: 'sprint'
 };
 function setupInput(game) {
   var canvas = game.canvas;
@@ -21505,6 +21633,13 @@ function setupInput(game) {
         break;
       case 'KeyT': break;
     }
+    /* double-tap W to sprint, the way most people expect it */
+    if (ev.code === 'KeyW' && !ev.repeat) {
+      var nw = performance.now();
+      if (nw - (game.lastW || 0) < 300) game.sprintLatch = true;
+      game.lastW = nw;
+    }
+
     /* double-tap space to fly in creative */
     if (ev.code === 'Space' && p.creative) {
       var now = performance.now();
@@ -21516,6 +21651,7 @@ function setupInput(game) {
     game.keys[ev.code] = false;
     var k = KEYMAP[ev.code];
     if (k) game.input[k] = false;
+    if (ev.code === 'KeyW') game.sprintLatch = false;
     if (ev.code === 'KeyC') game.zooming = false;
   });
   window.addEventListener('blur', function () {

@@ -265,6 +265,8 @@ function drawEntities(game, fogStart, fogEnd, underwater, uwv, shadowOn) {
 function buildEntityMesh(game, e) {
   var def = MOBS[e.type];
   if (!def) return;
+  if (def.isItem) { buildDroppedItem(game, e); return; }
+  if (def.isXP) { buildXpOrb(game, e); return; }
   var model = def.model;
   var lightByte = game.world.getLight(e.dim, Math.floor(e.x), Math.floor(e.y + e.h * 0.5), Math.floor(e.z));
   _elight[0] = ((lightByte >> 4) & 15) / 15;
@@ -289,6 +291,65 @@ function buildEntityMesh(game, e) {
     _pose.head.s = def.babyHeadScale;
   }
   renderParts(EBUF, model.parts, _pose);
+}
+
+/* A dropped item: block items tumble as little cubes, everything else as the
+   flat extruded sprite, both spinning and bobbing the way they should. */
+function buildDroppedItem(game, e) {
+  if (!e.item) return;
+  var it = ITEMS[e.item];
+  var lightByte = game.world.getLight(e.dim, Math.floor(e.x), Math.floor(e.y + 0.2), Math.floor(e.z));
+  _elight[0] = ((lightByte >> 4) & 15) / 15;
+  _elight[1] = (lightByte & 15) / 15;
+  _ecol[0] = _ecol[1] = _ecol[2] = 1; _ecol[3] = 0;
+
+  var bob = Math.sin(game.time * 2.2 + e.seed) * 0.06;
+  var spin = game.time * 1.1 + e.seed;
+
+  /* a stack of more than one shows as a small pile */
+  var copies = e.count > 32 ? 3 : (e.count > 8 ? 2 : 1);
+  for (var c = 0; c < copies; c++) {
+    mIdent();
+    mTranslate(e.x + (c ? (c === 1 ? 0.07 : -0.06) : 0), e.y + 0.22 + bob + c * 0.045,
+      e.z + (c ? (c === 1 ? -0.05 : 0.06) : 0));
+    mRotY(spin + c * 0.7);
+    if (it && it.block && BID[it.block] !== undefined) {
+      var id = BID[it.block];
+      var b = BLOCKS[id];
+      var boxes = modelFor(id, 0);
+      mScale(0.30, 0.30, 0.30);
+      if (!boxes || b.render === 'cross' || b.render === 'flat' || b.render === 'crop') {
+        drawExtrudedSprite(b.layers ? b.layers[4] : 0, 1.0);
+      } else {
+        mTranslate(-0.5, -0.5, -0.5);
+        var lay = [0, 0, 0, 0, 0, 0];
+        for (var k = 0; k < boxes.length; k++) {
+          var q = boxes[k];
+          for (var f = 0; f < 6; f++) lay[f] = faceLayer(q, b, f);
+          emitBox(buf0(), q.x0, q.y0, q.z0, q.x1 - q.x0, q.y1 - q.y0, q.z1 - q.z0, lay.slice(), 0, true);
+        }
+      }
+    } else {
+      var layer = ITEM_LAYER[e.item];
+      if (layer === undefined) continue;
+      mScale(0.42, 0.42, 0.42);
+      drawExtrudedSprite(layer, 1.0);
+    }
+  }
+}
+function buf0() { return EBUF; }
+
+/* XP orbs: a small glowing lozenge that pulses. */
+function buildXpOrb(game, e) {
+  _elight[0] = 1; _elight[1] = 1;
+  _ecol[0] = 0.72; _ecol[1] = 1.0; _ecol[2] = 0.42; _ecol[3] = 0;
+  var pulse = 1 + Math.sin(game.time * 5 + e.seed) * 0.16;
+  var sz = (e.count > 16 ? 1.5 : (e.count > 6 ? 1.2 : 0.95)) * pulse;
+  mIdent();
+  mTranslate(e.x, e.y + 0.18 + Math.sin(game.time * 3 + e.seed) * 0.04, e.z);
+  mRotY(game.time * 2.4 + e.seed);
+  emitBox(EBUF, -sz, -sz, -sz, sz * 2, sz * 2, sz * 2, partTile('#b8f048', 0.02), 0);
+  _ecol[0] = _ecol[1] = _ecol[2] = 1;
 }
 
 /* ============================= PARTICLES ================================ */

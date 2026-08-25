@@ -51,7 +51,8 @@ function createGame(canvas, seed) {
 /* ------------------------------------------------------------- input -- */
 var KEYMAP = {
   KeyW: 'forward', KeyS: 'back', KeyA: 'left', KeyD: 'right',
-  Space: 'jump', ShiftLeft: 'sneak', ShiftRight: 'sneak', ControlLeft: 'sprint'
+  Space: 'jump', ShiftLeft: 'sneak', ShiftRight: 'sneak',
+  ControlLeft: 'sprint', ControlRight: 'sprint'
 };
 function setupInput(game) {
   var canvas = game.canvas;
@@ -148,6 +149,13 @@ function setupInput(game) {
         break;
       case 'KeyT': break;
     }
+    /* double-tap W to sprint, the way most people expect it */
+    if (ev.code === 'KeyW' && !ev.repeat) {
+      var nw = performance.now();
+      if (nw - (game.lastW || 0) < 300) game.sprintLatch = true;
+      game.lastW = nw;
+    }
+
     /* double-tap space to fly in creative */
     if (ev.code === 'Space' && p.creative) {
       var now = performance.now();
@@ -159,6 +167,7 @@ function setupInput(game) {
     game.keys[ev.code] = false;
     var k = KEYMAP[ev.code];
     if (k) game.input[k] = false;
+    if (ev.code === 'KeyW') game.sprintLatch = false;
     if (ev.code === 'KeyC') game.zooming = false;
   });
   window.addEventListener('blur', function () {

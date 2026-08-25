@@ -956,6 +956,7 @@ function prebakeEntityTiles() {
   partTile(SKIN, 0.05); partTile(SKIN, 0.04); partTile(SKIN_D, 0.04); partTile(SKIN_D, 0.05);
   partTile(SLEEVE, 0.05); partTile(SLEEVE_D, 0.03);
   partTile('#ffffff', 0);
+  partTile('#b8f048', 0.02);
 }
 
 /* The end crystals that heal the dragon: a floating cube in a cage of fire. */

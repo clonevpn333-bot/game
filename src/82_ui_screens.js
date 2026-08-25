@@ -102,7 +102,7 @@ SCREEN_BUILDERS.inventory = function (game, box) {
 SCREEN_REFRESH.inventory = function (game) { updateCraftOutput(game); drawPlayerDoll(game); };
 
 SCREEN_BUILDERS.crafting = function (game, box) {
-  guiTitle(box, 'Crafting');
+  guiTitle(box, 'Crafting Table');
   UI.craftW = 3;
   var top = el('div', 'invtop', box);
   var cs = [];
@@ -111,6 +111,7 @@ SCREEN_BUILDERS.crafting = function (game, box) {
   arrowEl(top);
   buildSlotGrid(game, top, [craftOutSlot(game)], 1, 'craftout');
   var book = el('div', 'recipebook', box);
+  el('div', 'guilabel', book, 'Recipe book — click to fill the grid');
   buildRecipeBook(game, book);
   addPlayerInventory(game, box);
   updateCraftOutput(game);
@@ -167,7 +168,6 @@ function consumeCraft(game) {
 
 /* recipe book: everything craftable from what you carry, one click to fill */
 function buildRecipeBook(game, parent) {
-  el('div', 'guilabel', parent, 'Craftable');
   var list = el('div', 'booklist', parent);
   var have = {};
   var p = game.player;

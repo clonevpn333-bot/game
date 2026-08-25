@@ -340,3 +340,28 @@ img { image-rendering: pixelated; -webkit-user-drag: none; }
 .cheatbig { font-size: 22px; color: #ff6a6a; letter-spacing: .14em; }
 .creditclean .cheatbig { color: #8fe07a; }
 .cheatsmall { font-size: 11.5px; color: #c9bfd6; margin-top: 4px; }
+
+/* ------------------------------------------------- crafting layout ------ */
+.invtop { display: flex; gap: 22px; align-items: center; justify-content: center; padding: 4px 2px 10px; }
+.craft3, .craft2 { gap: 3px; }
+.craft2 { grid-template-columns: repeat(2, 40px) !important; }
+.craft3 { grid-template-columns: repeat(3, 40px) !important; }
+.craftout .slot { width: 52px; height: 52px; background: #7c7c7c;
+  border-color: #2f2f2f #ffffff #ffffff #2f2f2f; }
+.craftout { align-self: center; }
+.arrow { width: 40px; height: 26px; opacity: .75;
+  background:
+    linear-gradient(#5e5e5e,#5e5e5e) 0 10px / 26px 6px no-repeat,
+    conic-gradient(from -45deg at 100% 50%, transparent 0 25%, #5e5e5e 0 50%, transparent 0) 16px 0 / 26px 26px no-repeat; }
+.invsection { margin-top: 12px; border-top: 2px solid #a8a8a8; padding-top: 10px; }
+.guilabel { text-transform: uppercase; letter-spacing: .1em; font-size: 10px; color: #5a5a5a; }
+.booklist { max-height: 108px; }
+.bookitem { width: 34px; height: 34px; }
+.recipebook { margin-top: 12px; border-top: 2px solid #a8a8a8; padding-top: 8px; }
+.mainpack, .hotpack { justify-content: center; }
+.hotpack { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #a0a0a0; }
+
+.gui { max-width: 660px; }
+.creativegui { max-width: 760px; }
+.optionsgui { max-width: 620px; }
+.creditsgui { max-width: 620px; }

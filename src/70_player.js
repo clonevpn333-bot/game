@@ -800,8 +800,8 @@ function updatePlayer(game, dt, input) {
   var len = Math.hypot(fwd, str);
   if (len > 1) { fwd /= len; str /= len; }
   p.sneaking = input.sneak && p.onGround && !p.flying;
-  if (input.sprint && fwd > 0 && p.food > 6 && !p.sneaking) p.sprinting = true;
-  if (fwd <= 0 || p.food <= 6) p.sprinting = false;
+  if ((input.sprint || game.sprintLatch) && fwd > 0 && p.food > 6 && !p.sneaking) p.sprinting = true;
+  if (fwd <= 0 || p.food <= 6 || p.sneaking) { p.sprinting = false; game.sprintLatch = false; }
 
   var speed = 4.317;
   if (p.sprinting) speed = 5.612;

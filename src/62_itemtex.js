@@ -46,55 +46,80 @@ function metalShape(p, pts, c) {
 }
 
 /* ------------------------------------------------------------- tools -- */
+/* Tools are drawn the way the real icons read: a wooden haft running corner to
+   corner with a bound head, highlight up-left, shadow down-right. */
+function haft(p, x0, y0, x1, y1, w) {
+  var dark = col('#5d4222'), mid = col('#7a5a30'), lite = col('#96703d');
+  diagLine(p, x0, y0, x1, y1, mid, w || 2);
+  diagLine(p, x0, y0 - 1, x1, y1 - 1, lite, 1);
+  diagLine(p, x0 + 1, y0 + 1, x1 + 1, y1 + 1, dark, 1);
+}
+function headShade(p, x, y, c, t) {
+  var b = col(c);
+  p.px(x, y, t < 0.34 ? shade(b, 1.42) : (t > 0.70 ? shade(b, 0.58) : b));
+}
 II('sword', function (p, c) {
-  handle(p, 3, 14, 6, 11);
-  metalShape(p, [5, 10, 6, 11], '#4a3a20');       /* guard base */
-  var g = col('#5a4626');
-  p.px(4, 11, g); p.px(7, 10, g); p.px(4, 12, g); p.px(3, 12, g);
-  var b = col(c), hi = shade(b, 1.4), lo = shade(b, 0.6);
+  haft(p, 3, 13, 6, 10);
+  var g = col('#4a3520');
+  p.px(4, 12, g); p.px(3, 13, g); p.px(2, 14, g);
+  /* cross guard */
+  var gd = col('#6a5030');
+  p.px(4, 10, gd); p.px(5, 11, gd); p.px(6, 9, gd); p.px(7, 10, gd);
+  /* blade, two texels wide with a lit edge */
   for (var i = 0; i < 9; i++) {
-    var x = 6 + i, y = 9 - i;
-    p.px(x, y, hi); p.px(x + 1, y, b); p.px(x + 1, y + 1, lo);
+    var x = 5 + i, y = 10 - i;
+    headShade(p, x, y, c, 0.15);
+    headShade(p, x + 1, y, c, 0.5);
+    headShade(p, x + 1, y + 1, c, 0.85);
   }
-  p.px(14, 1, hi); p.px(15, 0, hi);
+  headShade(p, 14, 1, c, 0.1); headShade(p, 15, 0, c, 0.1);
   outlineDark(p);
 });
 II('pickaxe', function (p, c) {
-  handle(p, 4, 14, 9, 8);
-  var b = col(c), hi = shade(b, 1.35), lo = shade(b, 0.62);
-  for (var x = 3; x <= 13; x++) {
-    var arc = Math.round(Math.abs(x - 8) * 0.55);
-    p.px(x, 3 + arc, hi); p.px(x, 4 + arc, b); p.px(x, 5 + arc, lo);
+  haft(p, 4, 14, 9, 8);
+  /* a swept head with the two points curling down */
+  for (var i = 0; i <= 12; i++) {
+    var x = 2 + i;
+    var lift = Math.round(Math.abs(x - 8) * Math.abs(x - 8) * 0.055);
+    headShade(p, x, 3 + lift, c, 0.2);
+    headShade(p, x, 4 + lift, c, 0.55);
+    if (x < 4 || x > 12) headShade(p, x, 5 + lift, c, 0.85);
   }
-  p.px(2, 6, b); p.px(2, 7, lo); p.px(14, 6, b); p.px(14, 7, lo);
-  p.px(1, 8, lo); p.px(15, 8, lo);
+  headShade(p, 1, 7, c, 0.9); headShade(p, 15, 7, c, 0.9);
+  /* binding where the head meets the haft */
+  p.px(8, 6, col('#4a3520')); p.px(9, 6, col('#4a3520')); p.px(8, 7, col('#5d4222'));
   outlineDark(p);
 });
 II('axe', function (p, c) {
-  handle(p, 4, 14, 9, 7);
-  var b = col(c), hi = shade(b, 1.35), lo = shade(b, 0.62);
-  for (var y = 2; y <= 9; y++) {
-    var w = y < 6 ? y - 1 : 10 - y;
-    for (var x = 8; x < 8 + Math.max(2, w + 2); x++) p.px(x, y, x < 10 ? hi : (x > 12 ? lo : b));
+  haft(p, 4, 14, 9, 6);
+  /* a proper axe bit: wide at the cutting edge, narrow at the eye */
+  for (var y = 2; y <= 10; y++) {
+    var d = Math.abs(y - 6);
+    var wLeft = 8 - d, wRight = 12 - Math.round(d * 1.4);
+    for (var x = wLeft; x <= wRight; x++) headShade(p, x, y, c, (x - wLeft) / Math.max(1, wRight - wLeft));
   }
-  for (var y2 = 3; y2 <= 8; y2++) { p.px(7, y2, b); if (y2 > 4 && y2 < 8) p.px(6, y2, lo); }
+  p.px(8, 6, col('#4a3520')); p.px(8, 7, col('#4a3520'));
   outlineDark(p);
 });
 II('shovel', function (p, c) {
-  handle(p, 4, 14, 10, 7);
-  var b = col(c), hi = shade(b, 1.35), lo = shade(b, 0.62);
-  for (var y = 2; y <= 7; y++) for (var x = 9; x <= 13; x++) {
-    if (y === 2 && (x === 9 || x === 13)) continue;
-    if (y === 7 && (x === 9 || x === 13)) continue;
-    p.px(x, y, x < 11 ? hi : (x > 12 ? lo : b));
+  haft(p, 4, 14, 10, 8);
+  /* a rounded scoop */
+  for (var y = 2; y <= 8; y++) {
+    var w = (y === 2 || y === 8) ? 1 : 2;
+    for (var x = 9 - w + 1; x <= 12 + w - 1; x++) {
+      if (x < 8 || x > 14) continue;
+      headShade(p, x, y, c, (x - 9) / 4);
+    }
   }
+  p.px(9, 8, col('#4a3520')); p.px(10, 9, col('#4a3520'));
   outlineDark(p);
 });
 II('hoe', function (p, c) {
-  handle(p, 4, 14, 10, 6);
-  var b = col(c), hi = shade(b, 1.35), lo = shade(b, 0.62);
-  for (var x = 4; x <= 11; x++) { p.px(x, 3, hi); p.px(x, 4, b); }
-  p.px(11, 5, lo); p.px(11, 6, lo); p.px(4, 5, lo);
+  haft(p, 4, 14, 10, 5);
+  for (var x = 3; x <= 10; x++) { headShade(p, x, 2, c, 0.2); headShade(p, x, 3, c, 0.6); }
+  headShade(p, 10, 4, c, 0.8); headShade(p, 10, 5, c, 0.9);
+  headShade(p, 3, 4, c, 0.85);
+  p.px(10, 5, col('#4a3520'));
   outlineDark(p);
 });
 II('shears', function (p, c) {
@@ -257,41 +282,56 @@ II('rocket', function (p, c) {
 });
 
 /* ------------------------------------------------------------ armour -- */
+function plate(p, x, y, c, t) {
+  var b = col(c);
+  p.px(x, y, t < 0.3 ? shade(b, 1.34) : (t > 0.72 ? shade(b, 0.6) : b));
+}
 II('armor_helmet', function (p, c) {
-  var b = col(c), hi = shade(b, 1.25), lo = shade(b, 0.65);
-  for (var y = 3; y <= 12; y++) for (var x = 3; x <= 12; x++) {
-    if (y > 7 && x > 5 && x < 10) continue;
-    if ((y === 3 || y === 12) && (x < 4 || x > 11)) continue;
-    p.px(x, y, x < 6 ? hi : (x > 10 ? lo : b));
+  for (var y = 3; y <= 8; y++) for (var x = 3; x <= 12; x++) {
+    if ((y === 3) && (x < 4 || x > 11)) continue;
+    plate(p, x, y, c, (x - 3) / 9);
   }
+  /* cheek guards either side of the visor */
+  for (var y2 = 9; y2 <= 12; y2++) {
+    for (var x2 = 3; x2 <= 5; x2++) plate(p, x2, y2, c, 0.2);
+    for (var x3 = 10; x3 <= 12; x3++) plate(p, x3, y2, c, 0.8);
+  }
+  /* visor slit */
+  for (var v = 6; v <= 9; v++) p.set(v, 8, 24, 22, 26, 190);
   outlineDark(p);
 });
 II('armor_chestplate', function (p, c) {
-  var b = col(c), hi = shade(b, 1.25), lo = shade(b, 0.65);
-  for (var y = 3; y <= 12; y++) for (var x = 2; x <= 13; x++) {
-    if (y < 5 && x > 5 && x < 10) continue;
-    if (y > 5 && (x < 4 || x > 11)) continue;
-    p.px(x, y, x < 6 ? hi : (x > 10 ? lo : b));
+  for (var y = 4; y <= 12; y++) for (var x = 3; x <= 12; x++) {
+    if (y < 6 && x > 5 && x < 10) continue;             /* neck opening */
+    plate(p, x, y, c, (x - 3) / 9);
   }
+  /* pauldrons */
+  for (var y2 = 4; y2 <= 7; y2++) { plate(p, 1, y2, c, 0.15); plate(p, 2, y2, c, 0.2);
+    plate(p, 13, y2, c, 0.85); plate(p, 14, y2, c, 0.9); }
+  for (var s2 = 4; s2 <= 11; s2++) p.set(s2, 9, 30, 28, 32, 120);
   outlineDark(p);
 });
 II('armor_leggings', function (p, c) {
-  var b = col(c), hi = shade(b, 1.25), lo = shade(b, 0.65);
-  for (var y = 2; y <= 13; y++) for (var x = 3; x <= 12; x++) {
-    if (y > 6 && x > 6 && x < 9) continue;
-    p.px(x, y, x < 6 ? hi : (x > 10 ? lo : b));
+  for (var y = 2; y <= 6; y++) for (var x = 3; x <= 12; x++) plate(p, x, y, c, (x - 3) / 9);
+  for (var y2 = 7; y2 <= 13; y2++) {
+    for (var x2 = 3; x2 <= 6; x2++) plate(p, x2, y2, c, 0.2);
+    for (var x3 = 9; x3 <= 12; x3++) plate(p, x3, y2, c, 0.8);
   }
+  for (var b = 3; b <= 12; b++) p.set(b, 6, 30, 28, 32, 120);
   outlineDark(p);
 });
 II('armor_boots', function (p, c) {
-  var b = col(c), hi = shade(b, 1.25), lo = shade(b, 0.65);
-  for (var y = 6; y <= 12; y++) for (var x = 3; x <= 12; x++) {
-    if (y < 10 && x > 5 && x < 10) continue;
-    p.px(x, y, x < 6 ? hi : (x > 10 ? lo : b));
+  for (var y = 6; y <= 9; y++) {
+    for (var x = 2; x <= 5; x++) plate(p, x, y, c, 0.2);
+    for (var x2 = 10; x2 <= 13; x2++) plate(p, x2, y, c, 0.8);
+  }
+  /* the foot spreads forward at the bottom */
+  for (var y2 = 10; y2 <= 12; y2++) {
+    for (var x3 = 1; x3 <= 6; x3++) plate(p, x3, y2, c, 0.25);
+    for (var x4 = 9; x4 <= 14; x4++) plate(p, x4, y2, c, 0.75);
   }
   outlineDark(p);
 });
-
 /* -------------------------------------------------------------- food -- */
 II('apple', function (p, c) {
   p.disc(7, 9, 4.6, col(c));
