@@ -99,7 +99,11 @@ var DEG = Math.PI / 180;
 function applySwingTransform(sp, side) {
   var fSq = Math.sin(sp * sp * Math.PI);
   var fRt = Math.sin(Math.sqrt(sp) * Math.PI);
-  mTranslate(side * -0.40 * fRt, 0.20 * Math.sin(Math.sqrt(sp) * Math.PI * 2), -0.20 * Math.sin(sp * Math.PI));
+  /* The real game's swing sweeps the hand toward the middle of the screen.
+     At this field of view that puts the forearm right over the crosshair, so
+     the lateral part is damped hard — the arc still reads, the view stays. */
+  mTranslate(side * -0.40 * fRt * 0.38, 0.20 * Math.sin(Math.sqrt(sp) * Math.PI * 2) * 0.55,
+    -0.20 * Math.sin(sp * Math.PI));
   mRotY(side * (45 + fSq * -20) * DEG);
   mRotZ(side * fRt * -20 * DEG);
   mRotX(fRt * -80 * DEG);

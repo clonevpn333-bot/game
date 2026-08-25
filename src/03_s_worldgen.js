@@ -188,7 +188,7 @@ function pickBiome(x, z, h, cl) {
      cheese    - one-sided high threshold => isolated blobby caverns
      spaghetti - intersection of two thin sheets => winding tunnels
      noodle    - the same trick, thinner and deeper => tight worm caves      */
-var CHEESE_T = 0.265, SPAG_T = 0.0335, NOODLE_T = 0.0250;
+var CHEESE_T = 0.190, SPAG_T = 0.064, NOODLE_T = 0.046;
 
 function caveField(x, y, z, surfaceH) {
   if (y < 4) return -1;
@@ -560,16 +560,18 @@ function badlandsBlock(wx, y, wz, depth, bio, underwater) {
 }
 
 /* ----------------------------------------------------------------- ores -- */
+/* size = ore blocks per vein, tries = veins per chunk (fractional allowed).
+   These land within a few percent of the real game's per-chunk totals. */
 var ORE_TABLE = [
-  { name: 'coal', size: 14, tries: 22, min: 40, max: 200, sq: true },
-  { name: 'iron', size: 9, tries: 16, min: 6, max: 130, sq: true },
-  { name: 'iron', size: 5, tries: 8, min: 100, max: 190, sq: false },
-  { name: 'copper', size: 12, tries: 14, min: 30, max: 130, sq: true },
-  { name: 'gold', size: 8, tries: 5, min: 6, max: 60, sq: true },
-  { name: 'redstone', size: 9, tries: 8, min: 4, max: 46, sq: true },
-  { name: 'lapis', size: 7, tries: 3, min: 8, max: 64, sq: true },
-  { name: 'diamond', size: 6, tries: 3, min: 3, max: 40, sq: true },
-  { name: 'emerald', size: 3, tries: 2, min: 90, max: 180, sq: false, biome: 'windswept' }
+  { name: 'coal', size: 17, tries: 20, min: 40, max: 190 },
+  { name: 'iron', size: 9, tries: 12, min: 6, max: 130 },
+  { name: 'iron', size: 9, tries: 5, min: 100, max: 190 },
+  { name: 'copper', size: 12, tries: 11, min: 30, max: 120 },
+  { name: 'gold', size: 9, tries: 1.4, min: 6, max: 58 },
+  { name: 'redstone', size: 8, tries: 4, min: 4, max: 44 },
+  { name: 'lapis', size: 7, tries: 0.8, min: 8, max: 62 },
+  { name: 'diamond', size: 5, tries: 0.9, min: 3, max: 38 },
+  { name: 'emerald', size: 3, tries: 1.2, min: 90, max: 180, biome: 'windswept' }
 ];
 function orePass(cx, cz, sections) {
   var rng = chunkRNG(cx, cz, 0x51ed);
@@ -580,7 +582,7 @@ function orePass(cx, cz, sections) {
       var bn = BIOMES[_bioCol[8 * CH_W + 8]].name;
       if (bn.indexOf(e.biome) < 0) continue;
     }
-    var tries = e.tries;
+    var tries = Math.floor(e.tries) + (rng() < (e.tries % 1) ? 1 : 0);
     for (var t = 0; t < tries; t++) {
       var ox = rng() * CH_W, oz = rng() * CH_W;
       var oy = e.min + rng() * (e.max - e.min);
@@ -606,23 +608,41 @@ function orePass(cx, cz, sections) {
 function placeOreVein(sections, ox, oy, oz, size, oreName, rng) {
   var ID = BID;
   var idStoneOre = ID[oreName + '_ore'], idDeepOre = ID['deepslate_' + oreName + '_ore'];
-  var ang = rng() * Math.PI * 2;
-  var len = size / 8 + 1;
-  for (var i = 0; i < size; i++) {
-    var t = i / size;
-    var px = ox + Math.cos(ang) * (t - 0.5) * len * 2 + (rng() - 0.5) * 2;
-    var pz = oz + Math.sin(ang) * (t - 0.5) * len * 2 + (rng() - 0.5) * 2;
-    var py = oy + (rng() - 0.5) * 2.4;
-    var r = 0.8 + rng() * 0.9;
-    for (var dy = -2; dy <= 2; dy++) for (var dz = -2; dz <= 2; dz++) for (var dx = -2; dx <= 2; dx++) {
-      var xx = Math.round(px) + dx, yy = Math.round(py) + dy, zz = Math.round(pz) + dz;
-      if (xx < 0 || xx > 15 || zz < 0 || zz > 15 || yy < 1 || yy >= CH_H) continue;
-      if (dx * dx + dy * dy + dz * dz > r * r * 2.2) continue;
+  /* `size` is the number of ore blocks in the vein, the way the real game
+     counts it — a short random walk that lays down roughly that many. */
+  var ang = rng() * Math.PI * 2, pitch = (rng() - 0.5) * 0.9;
+  var px = ox, py = oy, pz = oz;
+  var placed = 0, guard = 0;
+  while (placed < size && guard++ < size * 10) {
+    var xx = Math.round(px), yy = Math.round(py), zz = Math.round(pz);
+    if (xx >= 0 && xx <= 15 && zz >= 0 && zz <= 15 && yy >= 1 && yy < CH_H) {
       var cur = getBlockRaw(sections, xx, yy, zz) & ID_MASK;
-      if (cur === ID.stone || cur === ID.granite || cur === ID.diorite || cur === ID.andesite || cur === ID.tuff)
-        setBlockRaw(sections, xx, yy, zz, idStoneOre);
-      else if (cur === ID.deepslate) setBlockRaw(sections, xx, yy, zz, idDeepOre);
+      if (cur === ID.stone || cur === ID.granite || cur === ID.diorite || cur === ID.andesite || cur === ID.tuff) {
+        setBlockRaw(sections, xx, yy, zz, idStoneOre); placed++;
+      } else if (cur === ID.deepslate) {
+        setBlockRaw(sections, xx, yy, zz, idDeepOre); placed++;
+      }
     }
+    /* thicken a little so veins are blobs rather than strings */
+    if (rng() < 0.45 && placed < size) {
+      var sx = xx + (rng() < 0.5 ? 1 : -1), sy = yy + (rng() < 0.35 ? (rng() < 0.5 ? 1 : -1) : 0), sz = zz;
+      if (rng() < 0.5) { sz = zz + (rng() < 0.5 ? 1 : -1); sx = xx; }
+      if (sx >= 0 && sx <= 15 && sz >= 0 && sz <= 15 && sy >= 1 && sy < CH_H) {
+        var c2 = getBlockRaw(sections, sx, sy, sz) & ID_MASK;
+        if (c2 === ID.stone || c2 === ID.granite || c2 === ID.diorite || c2 === ID.andesite || c2 === ID.tuff) {
+          setBlockRaw(sections, sx, sy, sz, idStoneOre); placed++;
+        } else if (c2 === ID.deepslate) { setBlockRaw(sections, sx, sy, sz, idDeepOre); placed++; }
+      }
+    }
+    px += Math.cos(ang) * 0.55 + (rng() - 0.5) * 0.6;
+    pz += Math.sin(ang) * 0.55 + (rng() - 0.5) * 0.6;
+    py += pitch * 0.45 + (rng() - 0.5) * 0.6;
+    ang += (rng() - 0.5) * 0.7;
+    /* fold the walk back inside the chunk instead of wandering out of it */
+    if (px < 0.5) { px = 1 - px; ang = Math.PI - ang; }
+    else if (px > 14.5) { px = 29 - px; ang = Math.PI - ang; }
+    if (pz < 0.5) { pz = 1 - pz; ang = -ang; }
+    else if (pz > 14.5) { pz = 29 - pz; ang = -ang; }
   }
 }
 function placeBlob(sections, ox, oy, oz, r, id, rng) {

@@ -40,7 +40,8 @@ function createGame(canvas, seed) {
     hit: null, hitEntity: null,
     boss: null,
     ready: false,
-    deathCause: ''
+    deathCause: '',
+    ach: {}, cheated: false, cheatReason: ''
   };
   g.player = makePlayer(g);
   UI.dirty = true;
@@ -126,9 +127,9 @@ function setupInput(game) {
         break;
       case 'KeyC': if (!UI.screen) game.zooming = true; break;
       case 'KeyX':
-        R.settings.xray = !R.settings.xray;
-        game.setXray(R.settings.xray);
-        logMessage(game, 'X-ray ' + (R.settings.xray ? 'on' : 'off'), '#88ddff');
+        if (R.settings.xray) { R.settings.xray = false; game.setXray(false); }
+        else if (game.cheated) { R.settings.xray = true; game.setXray(true); }
+        else showScreen(game, 'cheatconfirm');
         break;
       case 'KeyB':
         R.settings.fullbright = !R.settings.fullbright;
@@ -140,6 +141,10 @@ function setupInput(game) {
         break;
       case 'KeyH':
         if (UI.screen === 'help') hideScreen(game); else if (!UI.screen) showScreen(game, 'help');
+        break;
+      case 'KeyL':
+        if (UI.screen === 'achievements') hideScreen(game);
+        else if (!UI.screen) showScreen(game, 'achievements');
         break;
       case 'KeyT': break;
     }
@@ -476,6 +481,8 @@ function travelDimension(game, to) {
   p.vx = p.vy = p.vz = 0;
   game.dimSwitchPending = { x: nx, z: nz, to: to, from: from };
   logMessage(game, 'Travelling to ' + ['the Overworld', 'the Nether', 'the End'][to] + '…', '#c8a0ff');
+  if (to === DIM_NETHER) unlockAch(game, 'nether');
+  if (to === DIM_END) unlockAch(game, 'end');
   playSound(game, 'portal', p.x, p.y, p.z);
   game.portalFade = 1;
   UI.dirty = true;
@@ -564,7 +571,7 @@ function saveGame(game) {
         inv: p.inv, armor: p.armor, offhand: p.offhand,
         spawnX: p.spawnX, spawnY: p.spawnY, spawnZ: p.spawnZ
       },
-      edits: game.edits
+      edits: game.edits, ach: game.ach || {}, cheated: !!game.cheated, cheatReason: game.cheatReason || ''
     };
     localStorage.setItem('voxelcraft.save', JSON.stringify(data));
     return true;
@@ -579,6 +586,9 @@ function loadGame(game) {
     game.seed = d.seed;
     game.dayTime = d.dayTime;
     game.edits = d.edits || {};
+    game.ach = d.ach || {};
+    game.cheated = !!d.cheated;
+    game.cheatReason = d.cheatReason || '';
     var p = game.player;
     var s = d.p;
     p.x = s.x; p.y = s.y; p.z = s.z; p.yaw = s.yaw; p.pitch = s.pitch; p.dim = s.dim;
@@ -823,7 +833,13 @@ function boot4(canvas) {
   };
   g.onBossKilled = function (e) {
     logMessage(g, MOBS[e.type].disp + ' defeated!', '#ffdd55');
-    if (e.type === 'ender_dragon') spawnXP(g, e.dim, e.x, e.y, e.z, 500);
+    if (e.type === 'ender_dragon') {
+      spawnXP(g, e.dim, e.x, e.y, e.z, 500);
+      unlockAch(g, 'dragon');
+      setTimeout(function () { showCredits(g); }, 2200);
+    }
+    if (e.type === 'wither') unlockAch(g, 'wither');
+    if (e.type === 'warden') unlockAch(g, 'warden');
   };
 
   loadGame(g);

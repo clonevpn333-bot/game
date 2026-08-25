@@ -359,6 +359,7 @@ function renderOffers(game) {
         if (st.item === 'book') st.item = 'enchanted_book';
         UI.enchSeed = (Math.random() * 0xffffffff) >>> 0;
         playSound(game, 'levelup', p.x, p.y, p.z);
+        unlockAch(game, 'enchant');
         for (var q = 0; q < 30; q++) spawnParticle(game, p.dim, p.x + (Math.random() - 0.5) * 2, p.y + 1 + Math.random(), p.z + (Math.random() - 0.5) * 2, 0, 1, 0, 0.6, 0.4, 0.9, 0.07, 1.0);
         rollOffers(game);
         refreshScreen(game);
@@ -650,6 +651,7 @@ function commitTrade(game) {
   UI.trader.xp = (UI.trader.xp || 0) + 2;
   addXP(game, 3 + Math.floor(Math.random() * 4));
   playSound(game, 'orb', game.player.x, game.player.y, game.player.z);
+  unlockAch(game, 'trade');
   renderTrades(game);
 }
 function renderTrades(game) {
@@ -759,6 +761,8 @@ SCREEN_BUILDERS.pause = function (game, box) {
     logMessage(game, 'Game mode: ' + (game.player.creative ? 'Creative' : 'Survival'), '#ffff88');
     hideScreen(game);
   });
+  var bA = el('button', 'bigbtn', box, 'Achievements (L)');
+  bA.addEventListener('click', function () { showScreen(game, 'achievements'); });
   var b4 = el('button', 'bigbtn', box, 'Save World');
   b4.addEventListener('click', function () { game.save(); logMessage(game, 'World saved.', '#88ff88'); });
 };
@@ -877,7 +881,7 @@ SCREEN_BUILDERS.help = function (game, box) {
     ['Pick block', 'Middle click'], ['Hotbar', '1 – 9 or scroll'], ['Drop item', 'Q'],
     ['Swap hands', 'F'], ['Inventory', 'E'], ['Zoom', 'C'], ['Debug info', 'F3'],
     ['Camera', 'F5'], ['Hide HUD', 'F1'], ['Controls', 'H'], ['Menu', 'Esc'],
-    ['X-ray', 'X'], ['Fullbright', 'B'], ['Vein miner', 'V'],
+    ['X-ray', 'X'], ['Fullbright', 'B'], ['Vein miner', 'V'], ['Achievements', 'L'],
     ['Fly (creative)', 'double-tap Space']
   ];
   var list = el('div', 'optlist', box);

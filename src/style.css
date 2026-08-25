@@ -306,3 +306,37 @@ img { image-rendering: pixelated; -webkit-user-drag: none; }
   border-bottom: 1px dotted #9a9a9a; padding-bottom: 2px; }
 .helpk { font-size: 11.5px; color: #333; }
 .helpv { font-size: 11.5px; color: #1d4f8a; }
+
+/* ------------------------------------------------ achievements & credits */
+.achtoasts { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.achtoast {
+  background: rgba(18,14,26,.94); border: 2px solid #6a4bbf; padding: 7px 12px; min-width: 230px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.6); animation: achIn .35s ease-out;
+}
+.achtoast.out { animation: achOut .9s ease-in forwards; }
+@keyframes achIn { from { transform: translateX(120%); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes achOut { to { transform: translateX(120%); opacity: 0 } }
+.achtitle { font-size: 10.5px; color: #d8b24a; letter-spacing: .08em; }
+.achname { font-size: 13px; color: #fff; margin-top: 2px; }
+.achdesc { font-size: 10.5px; color: #9a93ad; margin-top: 1px; }
+
+.achlist { display: flex; flex-direction: column; gap: 2px; width: 100%; max-height: 46vh; overflow-y: auto;
+  background: #9a9a9a; padding: 5px; border: 2px solid; border-color: #373737 #fff #fff #373737; }
+.achrow { display: flex; justify-content: space-between; gap: 12px; padding: 3px 7px; background: #8b8b8b; }
+.achrow.got { background: #cfe0b8; }
+.achn { font-size: 11.5px; color: #2c2c2c; }
+.achrow.got .achn { color: #1d4a12; }
+.achd { font-size: 10.5px; color: #5c5c5c; text-align: right; }
+.subtext.warn { color: #a33; }
+.bigbtn.danger { background: linear-gradient(180deg,#a34a4a,#7a2f2f); border-color: #d89090 #401414 #401414 #d89090; }
+
+.creditsgui { min-width: 560px; }
+.creditscroll { width: 100%; height: 58vh; overflow: hidden; background: #0b0810; border: 2px solid #2a2136; position: relative; }
+.creditinner { position: absolute; left: 0; right: 0; padding: 12px 20px; text-align: center; }
+.creditline { font-size: 13px; color: #cfc6e0; line-height: 1.8; }
+.creditline.head { color: #d8b24a; letter-spacing: .12em; font-size: 12px; }
+.creditcheat { border: 2px solid #7a2020; background: rgba(60,10,10,.55); padding: 12px; margin-bottom: 18px; }
+.creditclean { border: 2px solid #2a6a2a; background: rgba(10,50,15,.5); padding: 12px; margin-bottom: 18px; }
+.cheatbig { font-size: 22px; color: #ff6a6a; letter-spacing: .14em; }
+.creditclean .cheatbig { color: #8fe07a; }
+.cheatsmall { font-size: 11.5px; color: #c9bfd6; margin-top: 4px; }

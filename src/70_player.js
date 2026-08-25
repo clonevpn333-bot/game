@@ -56,10 +56,15 @@ function giveItem(game, item, count) {
         p.inv[i] = makeStack(item, take);
         count -= take;
       }
-      if (count <= 0) { game.ui.dirty = true; return 0; }
+      if (count <= 0) {
+        game.ui.dirty = true;
+        if (typeof achOnItem === 'function') achOnItem(game, item);
+        return 0;
+      }
     }
   }
   game.ui.dirty = true;
+  if (typeof achOnItem === 'function') achOnItem(game, item);
   return count;
 }
 function countItem(game, item) {
@@ -332,6 +337,7 @@ function updateBreaking(game, dt, hit) {
 /* Vein miner: breaking one ore takes the whole connected vein with it, at a
    proportional cost in tool durability and hunger. */
 var VEIN_MAX = 64;
+var VEIN_GROUPS = { ore: 1 };
 function veinOf(game, x, y, z, id) {
   var world = game.world, dim = game.player.dim;
   var seen = {}, out = [], stack = [[x, y, z]];
@@ -378,7 +384,8 @@ function breakBlock(game, x, y, z) {
   p.breaking = null; p.breakProgress = 0;
 
   /* take the rest of the vein with it */
-  if (R.settings.veinMiner && b.group === 'ore' && !game._veining && canHarvest(b, heldItem(p))) {
+  if (R.settings.veinMiner && !game._veining && !p.creative && VEIN_GROUPS[b.group] &&
+      canHarvest(b, heldItem(p))) {
     game._veining = true;
     var vein = veinOf(game, x, y, z, id);
     for (var v = 0; v < vein.length; v++) {

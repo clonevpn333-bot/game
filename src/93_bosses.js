@@ -158,6 +158,7 @@ function trySleepInBed(game, hit) {
   p.spawnX = hit.x; p.spawnY = hit.y + 1; p.spawnZ = hit.z; p.spawnDim = p.dim;
   game.sleeping = 1.6;
   logMessage(game, 'Respawn point set.', '#aaffaa');
+  unlockAch(game, 'bed');
   return true;
 }
 function updateSleep(game, dt) {

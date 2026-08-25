@@ -314,6 +314,40 @@ img { image-rendering: pixelated; -webkit-user-drag: none; }
 .helpk { font-size: 11.5px; color: #333; }
 .helpv { font-size: 11.5px; color: #1d4f8a; }
 
+/* ------------------------------------------------ achievements & credits */
+.achtoasts { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.achtoast {
+  background: rgba(18,14,26,.94); border: 2px solid #6a4bbf; padding: 7px 12px; min-width: 230px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.6); animation: achIn .35s ease-out;
+}
+.achtoast.out { animation: achOut .9s ease-in forwards; }
+@keyframes achIn { from { transform: translateX(120%); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes achOut { to { transform: translateX(120%); opacity: 0 } }
+.achtitle { font-size: 10.5px; color: #d8b24a; letter-spacing: .08em; }
+.achname { font-size: 13px; color: #fff; margin-top: 2px; }
+.achdesc { font-size: 10.5px; color: #9a93ad; margin-top: 1px; }
+
+.achlist { display: flex; flex-direction: column; gap: 2px; width: 100%; max-height: 46vh; overflow-y: auto;
+  background: #9a9a9a; padding: 5px; border: 2px solid; border-color: #373737 #fff #fff #373737; }
+.achrow { display: flex; justify-content: space-between; gap: 12px; padding: 3px 7px; background: #8b8b8b; }
+.achrow.got { background: #cfe0b8; }
+.achn { font-size: 11.5px; color: #2c2c2c; }
+.achrow.got .achn { color: #1d4a12; }
+.achd { font-size: 10.5px; color: #5c5c5c; text-align: right; }
+.subtext.warn { color: #a33; }
+.bigbtn.danger { background: linear-gradient(180deg,#a34a4a,#7a2f2f); border-color: #d89090 #401414 #401414 #d89090; }
+
+.creditsgui { min-width: 560px; }
+.creditscroll { width: 100%; height: 58vh; overflow: hidden; background: #0b0810; border: 2px solid #2a2136; position: relative; }
+.creditinner { position: absolute; left: 0; right: 0; padding: 12px 20px; text-align: center; }
+.creditline { font-size: 13px; color: #cfc6e0; line-height: 1.8; }
+.creditline.head { color: #d8b24a; letter-spacing: .12em; font-size: 12px; }
+.creditcheat { border: 2px solid #7a2020; background: rgba(60,10,10,.55); padding: 12px; margin-bottom: 18px; }
+.creditclean { border: 2px solid #2a6a2a; background: rgba(10,50,15,.5); padding: 12px; margin-bottom: 18px; }
+.cheatbig { font-size: 22px; color: #ff6a6a; letter-spacing: .14em; }
+.creditclean .cheatbig { color: #8fe07a; }
+.cheatsmall { font-size: 11.5px; color: #c9bfd6; margin-top: 4px; }
+
 </style>
 </head>
 <body>
@@ -1861,7 +1895,7 @@ function pickBiome(x, z, h, cl) {
      cheese    - one-sided high threshold => isolated blobby caverns
      spaghetti - intersection of two thin sheets => winding tunnels
      noodle    - the same trick, thinner and deeper => tight worm caves      */
-var CHEESE_T = 0.265, SPAG_T = 0.0335, NOODLE_T = 0.0250;
+var CHEESE_T = 0.190, SPAG_T = 0.064, NOODLE_T = 0.046;
 
 function caveField(x, y, z, surfaceH) {
   if (y < 4) return -1;
@@ -2233,16 +2267,18 @@ function badlandsBlock(wx, y, wz, depth, bio, underwater) {
 }
 
 /* ----------------------------------------------------------------- ores -- */
+/* size = ore blocks per vein, tries = veins per chunk (fractional allowed).
+   These land within a few percent of the real game's per-chunk totals. */
 var ORE_TABLE = [
-  { name: 'coal', size: 14, tries: 22, min: 40, max: 200, sq: true },
-  { name: 'iron', size: 9, tries: 16, min: 6, max: 130, sq: true },
-  { name: 'iron', size: 5, tries: 8, min: 100, max: 190, sq: false },
-  { name: 'copper', size: 12, tries: 14, min: 30, max: 130, sq: true },
-  { name: 'gold', size: 8, tries: 5, min: 6, max: 60, sq: true },
-  { name: 'redstone', size: 9, tries: 8, min: 4, max: 46, sq: true },
-  { name: 'lapis', size: 7, tries: 3, min: 8, max: 64, sq: true },
-  { name: 'diamond', size: 6, tries: 3, min: 3, max: 40, sq: true },
-  { name: 'emerald', size: 3, tries: 2, min: 90, max: 180, sq: false, biome: 'windswept' }
+  { name: 'coal', size: 17, tries: 20, min: 40, max: 190 },
+  { name: 'iron', size: 9, tries: 12, min: 6, max: 130 },
+  { name: 'iron', size: 9, tries: 5, min: 100, max: 190 },
+  { name: 'copper', size: 12, tries: 11, min: 30, max: 120 },
+  { name: 'gold', size: 9, tries: 1.4, min: 6, max: 58 },
+  { name: 'redstone', size: 8, tries: 4, min: 4, max: 44 },
+  { name: 'lapis', size: 7, tries: 0.8, min: 8, max: 62 },
+  { name: 'diamond', size: 5, tries: 0.9, min: 3, max: 38 },
+  { name: 'emerald', size: 3, tries: 1.2, min: 90, max: 180, biome: 'windswept' }
 ];
 function orePass(cx, cz, sections) {
   var rng = chunkRNG(cx, cz, 0x51ed);
@@ -2253,7 +2289,7 @@ function orePass(cx, cz, sections) {
       var bn = BIOMES[_bioCol[8 * CH_W + 8]].name;
       if (bn.indexOf(e.biome) < 0) continue;
     }
-    var tries = e.tries;
+    var tries = Math.floor(e.tries) + (rng() < (e.tries % 1) ? 1 : 0);
     for (var t = 0; t < tries; t++) {
       var ox = rng() * CH_W, oz = rng() * CH_W;
       var oy = e.min + rng() * (e.max - e.min);
@@ -2279,23 +2315,41 @@ function orePass(cx, cz, sections) {
 function placeOreVein(sections, ox, oy, oz, size, oreName, rng) {
   var ID = BID;
   var idStoneOre = ID[oreName + '_ore'], idDeepOre = ID['deepslate_' + oreName + '_ore'];
-  var ang = rng() * Math.PI * 2;
-  var len = size / 8 + 1;
-  for (var i = 0; i < size; i++) {
-    var t = i / size;
-    var px = ox + Math.cos(ang) * (t - 0.5) * len * 2 + (rng() - 0.5) * 2;
-    var pz = oz + Math.sin(ang) * (t - 0.5) * len * 2 + (rng() - 0.5) * 2;
-    var py = oy + (rng() - 0.5) * 2.4;
-    var r = 0.8 + rng() * 0.9;
-    for (var dy = -2; dy <= 2; dy++) for (var dz = -2; dz <= 2; dz++) for (var dx = -2; dx <= 2; dx++) {
-      var xx = Math.round(px) + dx, yy = Math.round(py) + dy, zz = Math.round(pz) + dz;
-      if (xx < 0 || xx > 15 || zz < 0 || zz > 15 || yy < 1 || yy >= CH_H) continue;
-      if (dx * dx + dy * dy + dz * dz > r * r * 2.2) continue;
+  /* `size` is the number of ore blocks in the vein, the way the real game
+     counts it — a short random walk that lays down roughly that many. */
+  var ang = rng() * Math.PI * 2, pitch = (rng() - 0.5) * 0.9;
+  var px = ox, py = oy, pz = oz;
+  var placed = 0, guard = 0;
+  while (placed < size && guard++ < size * 10) {
+    var xx = Math.round(px), yy = Math.round(py), zz = Math.round(pz);
+    if (xx >= 0 && xx <= 15 && zz >= 0 && zz <= 15 && yy >= 1 && yy < CH_H) {
       var cur = getBlockRaw(sections, xx, yy, zz) & ID_MASK;
-      if (cur === ID.stone || cur === ID.granite || cur === ID.diorite || cur === ID.andesite || cur === ID.tuff)
-        setBlockRaw(sections, xx, yy, zz, idStoneOre);
-      else if (cur === ID.deepslate) setBlockRaw(sections, xx, yy, zz, idDeepOre);
+      if (cur === ID.stone || cur === ID.granite || cur === ID.diorite || cur === ID.andesite || cur === ID.tuff) {
+        setBlockRaw(sections, xx, yy, zz, idStoneOre); placed++;
+      } else if (cur === ID.deepslate) {
+        setBlockRaw(sections, xx, yy, zz, idDeepOre); placed++;
+      }
     }
+    /* thicken a little so veins are blobs rather than strings */
+    if (rng() < 0.45 && placed < size) {
+      var sx = xx + (rng() < 0.5 ? 1 : -1), sy = yy + (rng() < 0.35 ? (rng() < 0.5 ? 1 : -1) : 0), sz = zz;
+      if (rng() < 0.5) { sz = zz + (rng() < 0.5 ? 1 : -1); sx = xx; }
+      if (sx >= 0 && sx <= 15 && sz >= 0 && sz <= 15 && sy >= 1 && sy < CH_H) {
+        var c2 = getBlockRaw(sections, sx, sy, sz) & ID_MASK;
+        if (c2 === ID.stone || c2 === ID.granite || c2 === ID.diorite || c2 === ID.andesite || c2 === ID.tuff) {
+          setBlockRaw(sections, sx, sy, sz, idStoneOre); placed++;
+        } else if (c2 === ID.deepslate) { setBlockRaw(sections, sx, sy, sz, idDeepOre); placed++; }
+      }
+    }
+    px += Math.cos(ang) * 0.55 + (rng() - 0.5) * 0.6;
+    pz += Math.sin(ang) * 0.55 + (rng() - 0.5) * 0.6;
+    py += pitch * 0.45 + (rng() - 0.5) * 0.6;
+    ang += (rng() - 0.5) * 0.7;
+    /* fold the walk back inside the chunk instead of wandering out of it */
+    if (px < 0.5) { px = 1 - px; ang = Math.PI - ang; }
+    else if (px > 14.5) { px = 29 - px; ang = Math.PI - ang; }
+    if (pz < 0.5) { pz = 1 - pz; ang = -ang; }
+    else if (pz > 14.5) { pz = 29 - pz; ang = -ang; }
   }
 }
 function placeBlob(sections, ox, oy, oz, r, id, rng) {
@@ -5828,7 +5882,7 @@ function pickBiome(x, z, h, cl) {
      cheese    - one-sided high threshold => isolated blobby caverns
      spaghetti - intersection of two thin sheets => winding tunnels
      noodle    - the same trick, thinner and deeper => tight worm caves      */
-var CHEESE_T = 0.265, SPAG_T = 0.0335, NOODLE_T = 0.0250;
+var CHEESE_T = 0.190, SPAG_T = 0.064, NOODLE_T = 0.046;
 
 function caveField(x, y, z, surfaceH) {
   if (y < 4) return -1;
@@ -6200,16 +6254,18 @@ function badlandsBlock(wx, y, wz, depth, bio, underwater) {
 }
 
 /* ----------------------------------------------------------------- ores -- */
+/* size = ore blocks per vein, tries = veins per chunk (fractional allowed).
+   These land within a few percent of the real game's per-chunk totals. */
 var ORE_TABLE = [
-  { name: 'coal', size: 14, tries: 22, min: 40, max: 200, sq: true },
-  { name: 'iron', size: 9, tries: 16, min: 6, max: 130, sq: true },
-  { name: 'iron', size: 5, tries: 8, min: 100, max: 190, sq: false },
-  { name: 'copper', size: 12, tries: 14, min: 30, max: 130, sq: true },
-  { name: 'gold', size: 8, tries: 5, min: 6, max: 60, sq: true },
-  { name: 'redstone', size: 9, tries: 8, min: 4, max: 46, sq: true },
-  { name: 'lapis', size: 7, tries: 3, min: 8, max: 64, sq: true },
-  { name: 'diamond', size: 6, tries: 3, min: 3, max: 40, sq: true },
-  { name: 'emerald', size: 3, tries: 2, min: 90, max: 180, sq: false, biome: 'windswept' }
+  { name: 'coal', size: 17, tries: 20, min: 40, max: 190 },
+  { name: 'iron', size: 9, tries: 12, min: 6, max: 130 },
+  { name: 'iron', size: 9, tries: 5, min: 100, max: 190 },
+  { name: 'copper', size: 12, tries: 11, min: 30, max: 120 },
+  { name: 'gold', size: 9, tries: 1.4, min: 6, max: 58 },
+  { name: 'redstone', size: 8, tries: 4, min: 4, max: 44 },
+  { name: 'lapis', size: 7, tries: 0.8, min: 8, max: 62 },
+  { name: 'diamond', size: 5, tries: 0.9, min: 3, max: 38 },
+  { name: 'emerald', size: 3, tries: 1.2, min: 90, max: 180, biome: 'windswept' }
 ];
 function orePass(cx, cz, sections) {
   var rng = chunkRNG(cx, cz, 0x51ed);
@@ -6220,7 +6276,7 @@ function orePass(cx, cz, sections) {
       var bn = BIOMES[_bioCol[8 * CH_W + 8]].name;
       if (bn.indexOf(e.biome) < 0) continue;
     }
-    var tries = e.tries;
+    var tries = Math.floor(e.tries) + (rng() < (e.tries % 1) ? 1 : 0);
     for (var t = 0; t < tries; t++) {
       var ox = rng() * CH_W, oz = rng() * CH_W;
       var oy = e.min + rng() * (e.max - e.min);
@@ -6246,23 +6302,41 @@ function orePass(cx, cz, sections) {
 function placeOreVein(sections, ox, oy, oz, size, oreName, rng) {
   var ID = BID;
   var idStoneOre = ID[oreName + '_ore'], idDeepOre = ID['deepslate_' + oreName + '_ore'];
-  var ang = rng() * Math.PI * 2;
-  var len = size / 8 + 1;
-  for (var i = 0; i < size; i++) {
-    var t = i / size;
-    var px = ox + Math.cos(ang) * (t - 0.5) * len * 2 + (rng() - 0.5) * 2;
-    var pz = oz + Math.sin(ang) * (t - 0.5) * len * 2 + (rng() - 0.5) * 2;
-    var py = oy + (rng() - 0.5) * 2.4;
-    var r = 0.8 + rng() * 0.9;
-    for (var dy = -2; dy <= 2; dy++) for (var dz = -2; dz <= 2; dz++) for (var dx = -2; dx <= 2; dx++) {
-      var xx = Math.round(px) + dx, yy = Math.round(py) + dy, zz = Math.round(pz) + dz;
-      if (xx < 0 || xx > 15 || zz < 0 || zz > 15 || yy < 1 || yy >= CH_H) continue;
-      if (dx * dx + dy * dy + dz * dz > r * r * 2.2) continue;
+  /* `size` is the number of ore blocks in the vein, the way the real game
+     counts it — a short random walk that lays down roughly that many. */
+  var ang = rng() * Math.PI * 2, pitch = (rng() - 0.5) * 0.9;
+  var px = ox, py = oy, pz = oz;
+  var placed = 0, guard = 0;
+  while (placed < size && guard++ < size * 10) {
+    var xx = Math.round(px), yy = Math.round(py), zz = Math.round(pz);
+    if (xx >= 0 && xx <= 15 && zz >= 0 && zz <= 15 && yy >= 1 && yy < CH_H) {
       var cur = getBlockRaw(sections, xx, yy, zz) & ID_MASK;
-      if (cur === ID.stone || cur === ID.granite || cur === ID.diorite || cur === ID.andesite || cur === ID.tuff)
-        setBlockRaw(sections, xx, yy, zz, idStoneOre);
-      else if (cur === ID.deepslate) setBlockRaw(sections, xx, yy, zz, idDeepOre);
+      if (cur === ID.stone || cur === ID.granite || cur === ID.diorite || cur === ID.andesite || cur === ID.tuff) {
+        setBlockRaw(sections, xx, yy, zz, idStoneOre); placed++;
+      } else if (cur === ID.deepslate) {
+        setBlockRaw(sections, xx, yy, zz, idDeepOre); placed++;
+      }
     }
+    /* thicken a little so veins are blobs rather than strings */
+    if (rng() < 0.45 && placed < size) {
+      var sx = xx + (rng() < 0.5 ? 1 : -1), sy = yy + (rng() < 0.35 ? (rng() < 0.5 ? 1 : -1) : 0), sz = zz;
+      if (rng() < 0.5) { sz = zz + (rng() < 0.5 ? 1 : -1); sx = xx; }
+      if (sx >= 0 && sx <= 15 && sz >= 0 && sz <= 15 && sy >= 1 && sy < CH_H) {
+        var c2 = getBlockRaw(sections, sx, sy, sz) & ID_MASK;
+        if (c2 === ID.stone || c2 === ID.granite || c2 === ID.diorite || c2 === ID.andesite || c2 === ID.tuff) {
+          setBlockRaw(sections, sx, sy, sz, idStoneOre); placed++;
+        } else if (c2 === ID.deepslate) { setBlockRaw(sections, sx, sy, sz, idDeepOre); placed++; }
+      }
+    }
+    px += Math.cos(ang) * 0.55 + (rng() - 0.5) * 0.6;
+    pz += Math.sin(ang) * 0.55 + (rng() - 0.5) * 0.6;
+    py += pitch * 0.45 + (rng() - 0.5) * 0.6;
+    ang += (rng() - 0.5) * 0.7;
+    /* fold the walk back inside the chunk instead of wandering out of it */
+    if (px < 0.5) { px = 1 - px; ang = Math.PI - ang; }
+    else if (px > 14.5) { px = 29 - px; ang = Math.PI - ang; }
+    if (pz < 0.5) { pz = 1 - pz; ang = -ang; }
+    else if (pz > 14.5) { pz = 29 - pz; ang = -ang; }
   }
 }
 function placeBlob(sections, ox, oy, oz, r, id, rng) {
@@ -17875,10 +17949,15 @@ function giveItem(game, item, count) {
         p.inv[i] = makeStack(item, take);
         count -= take;
       }
-      if (count <= 0) { game.ui.dirty = true; return 0; }
+      if (count <= 0) {
+        game.ui.dirty = true;
+        if (typeof achOnItem === 'function') achOnItem(game, item);
+        return 0;
+      }
     }
   }
   game.ui.dirty = true;
+  if (typeof achOnItem === 'function') achOnItem(game, item);
   return count;
 }
 function countItem(game, item) {
@@ -18151,6 +18230,7 @@ function updateBreaking(game, dt, hit) {
 /* Vein miner: breaking one ore takes the whole connected vein with it, at a
    proportional cost in tool durability and hunger. */
 var VEIN_MAX = 64;
+var VEIN_GROUPS = { ore: 1 };
 function veinOf(game, x, y, z, id) {
   var world = game.world, dim = game.player.dim;
   var seen = {}, out = [], stack = [[x, y, z]];
@@ -18197,7 +18277,8 @@ function breakBlock(game, x, y, z) {
   p.breaking = null; p.breakProgress = 0;
 
   /* take the rest of the vein with it */
-  if (R.settings.veinMiner && b.group === 'ore' && !game._veining && canHarvest(b, heldItem(p))) {
+  if (R.settings.veinMiner && !game._veining && !p.creative && VEIN_GROUPS[b.group] &&
+      canHarvest(b, heldItem(p))) {
     game._veining = true;
     var vein = veinOf(game, x, y, z, id);
     for (var v = 0; v < vein.length; v++) {
@@ -18979,7 +19060,11 @@ var DEG = Math.PI / 180;
 function applySwingTransform(sp, side) {
   var fSq = Math.sin(sp * sp * Math.PI);
   var fRt = Math.sin(Math.sqrt(sp) * Math.PI);
-  mTranslate(side * -0.40 * fRt, 0.20 * Math.sin(Math.sqrt(sp) * Math.PI * 2), -0.20 * Math.sin(sp * Math.PI));
+  /* The real game's swing sweeps the hand toward the middle of the screen.
+     At this field of view that puts the forearm right over the crosshair, so
+     the lateral part is damped hard — the arc still reads, the view stays. */
+  mTranslate(side * -0.40 * fRt * 0.38, 0.20 * Math.sin(Math.sqrt(sp) * Math.PI * 2) * 0.55,
+    -0.20 * Math.sin(sp * Math.PI));
   mRotY(side * (45 + fSq * -20) * DEG);
   mRotZ(side * fRt * -20 * DEG);
   mRotX(fRt * -80 * DEG);
@@ -19508,6 +19593,7 @@ function buildHUD(game) {
   UI.els.debug = el('div', 'debug', hud);
   UI.els.effects = el('div', 'effects', hud);
   UI.els.bossbar = el('div', 'bossbar', hud);
+  UI.els.achievements = el('div', 'achtoasts', hud);
   UI.els.subtitle = el('div', 'subtitle', hud);
 
   UI.els.screen = el('div', 'screen hidden', root);
@@ -20231,6 +20317,7 @@ function renderOffers(game) {
         if (st.item === 'book') st.item = 'enchanted_book';
         UI.enchSeed = (Math.random() * 0xffffffff) >>> 0;
         playSound(game, 'levelup', p.x, p.y, p.z);
+        unlockAch(game, 'enchant');
         for (var q = 0; q < 30; q++) spawnParticle(game, p.dim, p.x + (Math.random() - 0.5) * 2, p.y + 1 + Math.random(), p.z + (Math.random() - 0.5) * 2, 0, 1, 0, 0.6, 0.4, 0.9, 0.07, 1.0);
         rollOffers(game);
         refreshScreen(game);
@@ -20522,6 +20609,7 @@ function commitTrade(game) {
   UI.trader.xp = (UI.trader.xp || 0) + 2;
   addXP(game, 3 + Math.floor(Math.random() * 4));
   playSound(game, 'orb', game.player.x, game.player.y, game.player.z);
+  unlockAch(game, 'trade');
   renderTrades(game);
 }
 function renderTrades(game) {
@@ -20631,6 +20719,8 @@ SCREEN_BUILDERS.pause = function (game, box) {
     logMessage(game, 'Game mode: ' + (game.player.creative ? 'Creative' : 'Survival'), '#ffff88');
     hideScreen(game);
   });
+  var bA = el('button', 'bigbtn', box, 'Achievements (L)');
+  bA.addEventListener('click', function () { showScreen(game, 'achievements'); });
   var b4 = el('button', 'bigbtn', box, 'Save World');
   b4.addEventListener('click', function () { game.save(); logMessage(game, 'World saved.', '#88ff88'); });
 };
@@ -20749,7 +20839,7 @@ SCREEN_BUILDERS.help = function (game, box) {
     ['Pick block', 'Middle click'], ['Hotbar', '1 – 9 or scroll'], ['Drop item', 'Q'],
     ['Swap hands', 'F'], ['Inventory', 'E'], ['Zoom', 'C'], ['Debug info', 'F3'],
     ['Camera', 'F5'], ['Hide HUD', 'F1'], ['Controls', 'H'], ['Menu', 'Esc'],
-    ['X-ray', 'X'], ['Fullbright', 'B'], ['Vein miner', 'V'],
+    ['X-ray', 'X'], ['Fullbright', 'B'], ['Vein miner', 'V'], ['Achievements', 'L'],
     ['Fly (creative)', 'double-tap Space']
   ];
   var list = el('div', 'optlist', box);
@@ -21278,7 +21368,8 @@ function createGame(canvas, seed) {
     hit: null, hitEntity: null,
     boss: null,
     ready: false,
-    deathCause: ''
+    deathCause: '',
+    ach: {}, cheated: false, cheatReason: ''
   };
   g.player = makePlayer(g);
   UI.dirty = true;
@@ -21364,9 +21455,9 @@ function setupInput(game) {
         break;
       case 'KeyC': if (!UI.screen) game.zooming = true; break;
       case 'KeyX':
-        R.settings.xray = !R.settings.xray;
-        game.setXray(R.settings.xray);
-        logMessage(game, 'X-ray ' + (R.settings.xray ? 'on' : 'off'), '#88ddff');
+        if (R.settings.xray) { R.settings.xray = false; game.setXray(false); }
+        else if (game.cheated) { R.settings.xray = true; game.setXray(true); }
+        else showScreen(game, 'cheatconfirm');
         break;
       case 'KeyB':
         R.settings.fullbright = !R.settings.fullbright;
@@ -21378,6 +21469,10 @@ function setupInput(game) {
         break;
       case 'KeyH':
         if (UI.screen === 'help') hideScreen(game); else if (!UI.screen) showScreen(game, 'help');
+        break;
+      case 'KeyL':
+        if (UI.screen === 'achievements') hideScreen(game);
+        else if (!UI.screen) showScreen(game, 'achievements');
         break;
       case 'KeyT': break;
     }
@@ -21714,6 +21809,8 @@ function travelDimension(game, to) {
   p.vx = p.vy = p.vz = 0;
   game.dimSwitchPending = { x: nx, z: nz, to: to, from: from };
   logMessage(game, 'Travelling to ' + ['the Overworld', 'the Nether', 'the End'][to] + '…', '#c8a0ff');
+  if (to === DIM_NETHER) unlockAch(game, 'nether');
+  if (to === DIM_END) unlockAch(game, 'end');
   playSound(game, 'portal', p.x, p.y, p.z);
   game.portalFade = 1;
   UI.dirty = true;
@@ -21802,7 +21899,7 @@ function saveGame(game) {
         inv: p.inv, armor: p.armor, offhand: p.offhand,
         spawnX: p.spawnX, spawnY: p.spawnY, spawnZ: p.spawnZ
       },
-      edits: game.edits
+      edits: game.edits, ach: game.ach || {}, cheated: !!game.cheated, cheatReason: game.cheatReason || ''
     };
     localStorage.setItem('voxelcraft.save', JSON.stringify(data));
     return true;
@@ -21817,6 +21914,9 @@ function loadGame(game) {
     game.seed = d.seed;
     game.dayTime = d.dayTime;
     game.edits = d.edits || {};
+    game.ach = d.ach || {};
+    game.cheated = !!d.cheated;
+    game.cheatReason = d.cheatReason || '';
     var p = game.player;
     var s = d.p;
     p.x = s.x; p.y = s.y; p.z = s.z; p.yaw = s.yaw; p.pitch = s.pitch; p.dim = s.dim;
@@ -22061,7 +22161,13 @@ function boot4(canvas) {
   };
   g.onBossKilled = function (e) {
     logMessage(g, MOBS[e.type].disp + ' defeated!', '#ffdd55');
-    if (e.type === 'ender_dragon') spawnXP(g, e.dim, e.x, e.y, e.z, 500);
+    if (e.type === 'ender_dragon') {
+      spawnXP(g, e.dim, e.x, e.y, e.z, 500);
+      unlockAch(g, 'dragon');
+      setTimeout(function () { showCredits(g); }, 2200);
+    }
+    if (e.type === 'wither') unlockAch(g, 'wither');
+    if (e.type === 'warden') unlockAch(g, 'warden');
   };
 
   loadGame(g);
@@ -22852,6 +22958,7 @@ function trySleepInBed(game, hit) {
   p.spawnX = hit.x; p.spawnY = hit.y + 1; p.spawnZ = hit.z; p.spawnDim = p.dim;
   game.sleeping = 1.6;
   logMessage(game, 'Respawn point set.', '#aaffaa');
+  unlockAch(game, 'bed');
   return true;
 }
 function updateSleep(game, dt) {
@@ -22868,6 +22975,191 @@ function updateSleep(game, dt) {
     logMessage(game, 'Good morning.', '#ffffcc');
   }
 }
+
+
+/* ============================ 94_achievements.js ============================ */
+/* =========================================================================
+ * ACHIEVEMENTS, CHEATS AND THE END CREDITS
+ *
+ * Achievements are only awarded on an honest world.  Turning on X-ray marks
+ * the save as cheated for good — it disables every remaining achievement and
+ * the credits say so at the end.
+ * ========================================================================= */
+
+var ACHIEVEMENTS = [
+  { id: 'wood', name: 'Getting Wood', desc: 'Punch a tree.' },
+  { id: 'bench', name: 'Benchmarking', desc: 'Craft a crafting table.' },
+  { id: 'pick', name: 'Time to Mine!', desc: 'Craft a pickaxe.' },
+  { id: 'stone', name: 'Stone Age', desc: 'Mine stone with a pickaxe.' },
+  { id: 'furnace', name: 'Hot Topic', desc: 'Craft a furnace.' },
+  { id: 'iron', name: 'Acquire Hardware', desc: 'Smelt an iron ingot.' },
+  { id: 'ironpick', name: "Isn't It Iron Pick", desc: 'Craft an iron pickaxe.' },
+  { id: 'diamond', name: 'Diamonds!', desc: 'Find a diamond.' },
+  { id: 'diamondgear', name: 'Cutting Edge', desc: 'Craft something from diamond.' },
+  { id: 'bed', name: 'Sweet Dreams', desc: 'Sleep in a bed.' },
+  { id: 'farm', name: 'Bake Bread', desc: 'Bake a loaf of bread.' },
+  { id: 'enchant', name: 'Enchanter', desc: 'Enchant an item.' },
+  { id: 'trade', name: 'What a Deal!', desc: 'Trade with a villager.' },
+  { id: 'obsidian', name: 'Ice Bucket Challenge', desc: 'Obtain obsidian.' },
+  { id: 'nether', name: 'We Need to Go Deeper', desc: 'Build a portal and enter the Nether.' },
+  { id: 'fortress', name: 'A Terrible Fortress', desc: 'Find a nether fortress.' },
+  { id: 'blaze', name: 'Into Fire', desc: 'Take a blaze rod from a blaze.' },
+  { id: 'pearl', name: 'The Next Generation', desc: 'Get an ender pearl.' },
+  { id: 'eye', name: 'Eye Spy', desc: 'Craft an eye of ender.' },
+  { id: 'stronghold', name: 'Deeper and Deeper', desc: 'Find a stronghold.' },
+  { id: 'end', name: 'The End?', desc: 'Enter the End.' },
+  { id: 'dragon', name: 'Free the End', desc: 'Defeat the Ender Dragon.' },
+  { id: 'wither', name: 'Withering Heights', desc: 'Defeat the Wither.' },
+  { id: 'beacon', name: 'Beaconator', desc: 'Craft a beacon.' },
+  { id: 'netherite', name: 'Cover Me in Debris', desc: 'Craft netherite gear.' },
+  { id: 'elytra', name: "Sky's the Limit", desc: 'Find an elytra.' },
+  { id: 'warden', name: 'It Spreads', desc: 'Meet the Warden and live.' },
+  { id: 'monument', name: 'Deep Sea Diver', desc: 'Find an ocean monument.' }
+];
+var ACH_BY_ID = {};
+for (var _a = 0; _a < ACHIEVEMENTS.length; _a++) ACH_BY_ID[ACHIEVEMENTS[_a].id] = ACHIEVEMENTS[_a];
+
+/* item name -> achievement it grants when you first obtain it */
+var ACH_ITEM = {
+  oak_log: 'wood', birch_log: 'wood', spruce_log: 'wood', jungle_log: 'wood',
+  acacia_log: 'wood', dark_oak_log: 'wood', mangrove_log: 'wood', cherry_log: 'wood',
+  crafting_table: 'bench', furnace: 'furnace', iron_ingot: 'iron', diamond: 'diamond',
+  bread: 'farm', obsidian: 'obsidian', blaze_rod: 'blaze', ender_pearl: 'pearl',
+  ender_eye: 'eye', beacon: 'beacon', elytra: 'elytra', cobblestone: 'stone',
+  wooden_pickaxe: 'pick', stone_pickaxe: 'pick', iron_pickaxe: 'ironpick',
+  diamond_pickaxe: 'diamondgear', diamond_sword: 'diamondgear', diamond_chestplate: 'diamondgear',
+  netherite_ingot: 'netherite', netherite_pickaxe: 'netherite', netherite_sword: 'netherite'
+};
+
+function achState(game) {
+  if (!game.ach) game.ach = {};
+  return game.ach;
+}
+function unlockAch(game, id) {
+  var a = ACH_BY_ID[id];
+  if (!a) return;
+  var st = achState(game);
+  if (st[id]) return;
+  if (game.cheated) return;              /* no trophies on a cheated world */
+  st[id] = 1;
+  showAchToast(game, a);
+  playSound(game, 'levelup', game.player.x, game.player.y, game.player.z, 1.4, 0.5);
+}
+function achOnItem(game, itemName) {
+  var id = ACH_ITEM[itemName];
+  if (id) unlockAch(game, id);
+}
+function achCount(game) {
+  var st = achState(game), n = 0;
+  for (var k in st) if (st[k]) n++;
+  return n;
+}
+
+/* ------------------------------------------------------------- toast --- */
+function showAchToast(game, a) {
+  var host = UI.els.achievements;
+  if (!host) return;
+  var t = el('div', 'achtoast', host);
+  el('div', 'achtitle', t, 'Achievement Unlocked!');
+  el('div', 'achname', t, a.name);
+  el('div', 'achdesc', t, a.desc);
+  setTimeout(function () { t.classList.add('out'); }, 4200);
+  setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 5200);
+}
+
+/* ------------------------------------------------------------ cheating -- */
+function markCheated(game, why) {
+  if (game.cheated) return;
+  game.cheated = true;
+  game.cheatReason = why || 'X-ray';
+  logMessage(game, 'Cheats enabled — achievements are disabled for this world.', '#ff8866');
+}
+
+/* Asking before switching X-ray on, because it cannot be taken back. */
+SCREEN_BUILDERS.cheatconfirm = function (game, box) {
+  box.classList.add('centered');
+  el('div', 'bigtitle', box, 'Enable X-Ray?');
+  el('div', 'subtext', box, 'X-ray strips the world down to ores and lights everything up.');
+  el('div', 'subtext', box, 'It counts as cheating: achievements will be permanently');
+  el('div', 'subtext', box, 'disabled for this world, and the end credits will say so.');
+  if (achCount(game) > 0) {
+    el('div', 'subtext warn', box, 'You already have ' + achCount(game) + ' achievement' +
+      (achCount(game) === 1 ? '' : 's') + ' on this world.');
+  }
+  var yes = el('button', 'bigbtn danger', box, 'Yes, enable X-ray');
+  yes.addEventListener('click', function () {
+    markCheated(game, 'X-ray');
+    R.settings.xray = true;
+    hideScreen(game);
+    game.setXray(true);
+  });
+  var no = el('button', 'bigbtn', box, 'No, keep it fair');
+  no.addEventListener('click', function () { R.settings.xray = false; hideScreen(game); });
+};
+SCREEN_REFRESH.cheatconfirm = function () { };
+
+/* --------------------------------------------------- achievement list -- */
+SCREEN_BUILDERS.achievements = function (game, box) {
+  box.classList.add('centered', 'optionsgui');
+  el('div', 'bigtitle', box, 'Achievements');
+  var st = achState(game);
+  el('div', 'subtext', box, achCount(game) + ' of ' + ACHIEVEMENTS.length + ' unlocked' +
+    (game.cheated ? ' — disabled, this world used ' + game.cheatReason : ''));
+  var list = el('div', 'achlist', box);
+  for (var i = 0; i < ACHIEVEMENTS.length; i++) {
+    var a = ACHIEVEMENTS[i];
+    var row = el('div', 'achrow' + (st[a.id] ? ' got' : ''), list);
+    el('span', 'achn', row, st[a.id] ? a.name : '???');
+    el('span', 'achd', row, st[a.id] ? a.desc : a.desc);
+  }
+  var b = el('button', 'bigbtn', box, 'Back');
+  b.addEventListener('click', function () { hideScreen(game); });
+};
+SCREEN_REFRESH.achievements = function () { };
+
+/* ----------------------------------------------------------- credits --- */
+var CREDITS_LINES = [
+  '', 'VOXELCRAFT', '', 'You have freed the End.', '',
+  '— WORLD —', 'terrain, caves and cliffs', 'sixty-two biomes', 'twenty kinds of structure',
+  'three dimensions', '',
+  '— BUILT FROM NOTHING —', 'every texture painted at runtime',
+  'every sound synthesised', 'no images, no audio files', 'one HTML file', '',
+  '— THE LONG WAY DOWN —', 'wood', 'stone', 'iron', 'diamond', 'obsidian',
+  'the Nether', 'blaze rods', 'ender pearls', 'the stronghold', 'the End', '',
+  'Thank you for playing.', ''
+];
+function showCredits(game) {
+  game.creditsT = 0;
+  showScreen(game, 'credits');
+}
+SCREEN_BUILDERS.credits = function (game, box) {
+  box.classList.add('centered', 'creditsgui');
+  var scroll = el('div', 'creditscroll', box);
+  var inner = el('div', 'creditinner', scroll);
+  if (game.cheated) {
+    var w = el('div', 'creditcheat', inner);
+    el('div', 'cheatbig', w, 'YOU CHEATED');
+    el('div', 'cheatsmall', w, 'This world used ' + (game.cheatReason || 'cheats') + '.');
+    el('div', 'cheatsmall', w, 'No achievements were earned.');
+  } else {
+    var g2 = el('div', 'creditclean', inner);
+    el('div', 'cheatbig', g2, 'FAIR AND SQUARE');
+    el('div', 'cheatsmall', g2, achCount(game) + ' of ' + ACHIEVEMENTS.length + ' achievements earned.');
+  }
+  for (var i = 0; i < CREDITS_LINES.length; i++) {
+    var line = CREDITS_LINES[i];
+    el('div', line === line.toUpperCase() && line.length > 2 ? 'creditline head' : 'creditline', inner, line);
+  }
+  UI.els.creditInner = inner;
+  var b = el('button', 'bigbtn', box, 'Continue');
+  b.addEventListener('click', function () { hideScreen(game); });
+};
+SCREEN_REFRESH.credits = function (game) {
+  var inner = UI.els.creditInner;
+  if (!inner) return;
+  game.creditsT = (game.creditsT || 0) + 0.016;
+  inner.style.transform = 'translateY(' + Math.max(-inner.scrollHeight, 240 - game.creditsT * 42) + 'px)';
+};
 
 </script>
 </body>

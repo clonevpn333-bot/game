@@ -113,6 +113,7 @@ function buildHUD(game) {
   UI.els.debug = el('div', 'debug', hud);
   UI.els.effects = el('div', 'effects', hud);
   UI.els.bossbar = el('div', 'bossbar', hud);
+  UI.els.achievements = el('div', 'achtoasts', hud);
   UI.els.subtitle = el('div', 'subtitle', hud);
 
   UI.els.screen = el('div', 'screen hidden', root);
