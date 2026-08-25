@@ -276,8 +276,10 @@ function updateFallingBlock(game, e, dt) {
   applyPhysics(game, e, dt, MOBS.falling_block);
   if (e.onGround) {
     var bx = Math.floor(e.x), by = Math.round(e.y), bz = Math.floor(e.z);
-    if (game.world.getId(e.dim, bx, by, bz) === 0) game.world.setBlock(e.dim, bx, by, bz, e.blockVal);
-    else dropItem(game, e.dim, e.x, e.y, e.z, BLOCKS[e.blockVal & ID_MASK].name, 1);
+    if (game.world.getId(e.dim, bx, by, bz) === 0) {
+      game.world.setBlock(e.dim, bx, by, bz, e.blockVal);
+      playSound(game, 'thud', bx, by, bz, 0.8, 0.5);
+    } else dropItem(game, e.dim, e.x, e.y, e.z, BLOCKS[e.blockVal & ID_MASK].name, 1);
     e.remove = true;
   }
 }

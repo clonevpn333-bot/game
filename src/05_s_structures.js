@@ -308,8 +308,8 @@ function buildWell(x, y, z, rng, S) {
 }
 
 defStruct({
-  name: 'village', salt: 0x51a3, spacing: 32, separation: 10, radius: 56, chance: 0.62,
-  maxSlope: 7,
+  name: 'village', salt: 0x51a3, spacing: 22, separation: 7, radius: 56, chance: 0.62,
+  maxSlope: 10,
   biomes: ['plains', 'sunflower_plains', 'meadow', 'savanna', 'savanna_plateau', 'desert',
     'taiga', 'snowy_plains', 'snowy_taiga', 'old_growth_pine_taiga'],
   build: function (x, y, z, rng, pos) {
@@ -355,7 +355,7 @@ defStruct({
 
 /* ====================== DESERT AND JUNGLE TEMPLES ======================= */
 defStruct({
-  name: 'desert_pyramid', salt: 0x2f71, spacing: 28, separation: 8, radius: 24, chance: 0.75,
+  name: 'desert_pyramid', salt: 0x2f71, spacing: 20, separation: 6, radius: 24, chance: 0.75,
   biomes: ['desert'], maxSlope: 6,
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Desert Pyramid');
@@ -397,7 +397,7 @@ defStruct({
 });
 
 defStruct({
-  name: 'jungle_temple', salt: 0x77c1, spacing: 30, separation: 9, radius: 18, chance: 0.6,
+  name: 'jungle_temple', salt: 0x77c1, spacing: 20, separation: 6, radius: 18, chance: 0.6,
   biomes: ['jungle', 'sparse_jungle', 'bamboo_jungle'], maxSlope: 7,
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Jungle Temple');
@@ -434,7 +434,7 @@ defStruct({
 
 /* ====================== WITCH HUT / IGLOO / DESERT WELL ================= */
 defStruct({
-  name: 'swamp_hut', salt: 0x3311, spacing: 26, separation: 8, radius: 12, chance: 0.5,
+  name: 'swamp_hut', salt: 0x3311, spacing: 18, separation: 6, radius: 12, chance: 0.5,
   biomes: ['swamp', 'mangrove_swamp'], needLand: false,
   build: function (x, y, z, rng) {
     var base = Math.max(y, SEA) + 3;
@@ -456,7 +456,7 @@ defStruct({
   }
 });
 defStruct({
-  name: 'igloo', salt: 0x6a2d, spacing: 24, separation: 8, radius: 8, chance: 0.5,
+  name: 'igloo', salt: 0x6a2d, spacing: 18, separation: 6, radius: 8, chance: 0.5,
   biomes: ['snowy_plains', 'snowy_taiga', 'snowy_slopes', 'frozen_peaks', 'ice_spikes'],
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Igloo');
@@ -504,7 +504,7 @@ defStruct({
 
 /* ====================== RUINED PORTAL =================================== */
 defStruct({
-  name: 'ruined_portal', salt: 0x44e9, spacing: 16, separation: 5, radius: 10, chance: 0.30,
+  name: 'ruined_portal', salt: 0x44e9, spacing: 14, separation: 4, radius: 10, chance: 0.34,
   build: function (x, y, z, rng) {
     var O = BID.obsidian, CO = BID.crying_obsidian;
     var w = 3 + Math.floor(rng() * 2), h = 4 + Math.floor(rng() * 2);
@@ -533,7 +533,7 @@ defStruct({
 
 /* ====================== PILLAGER OUTPOST ================================ */
 defStruct({
-  name: 'pillager_outpost', salt: 0x9a13, spacing: 34, separation: 12, radius: 14, chance: 0.35,
+  name: 'pillager_outpost', salt: 0x9a13, spacing: 24, separation: 8, radius: 14, chance: 0.35,
   maxSlope: 8,
   notBiomes: ['ocean', 'deep_ocean', 'frozen_ocean', 'warm_ocean', 'lukewarm_ocean', 'cold_ocean',
     'deep_frozen_ocean', 'deep_cold_ocean', 'deep_lukewarm_ocean', 'mushroom_fields'],
@@ -573,7 +573,7 @@ defStruct({
 
 /* ====================== SHIPWRECK / BURIED TREASURE ===================== */
 defStruct({
-  name: 'shipwreck', salt: 0x2b8f, spacing: 20, separation: 6, radius: 14, chance: 0.35,
+  name: 'shipwreck', salt: 0x2b8f, spacing: 16, separation: 5, radius: 14, chance: 0.35,
   ocean: true, needLand: false,
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Shipwreck');
@@ -619,7 +619,7 @@ defStruct({
 
 /* ====================== OCEAN MONUMENT ================================== */
 defStruct({
-  name: 'ocean_monument', salt: 0x5d02, spacing: 40, separation: 14, radius: 34, chance: 0.55,
+  name: 'ocean_monument', salt: 0x5d02, spacing: 30, separation: 10, radius: 34, chance: 0.55,
   ocean: true, needLand: false,
   biomes: ['deep_ocean', 'deep_cold_ocean', 'deep_lukewarm_ocean', 'deep_frozen_ocean', 'ocean', 'cold_ocean', 'lukewarm_ocean'],
   build: function (x, y, z, rng) {
@@ -660,7 +660,7 @@ defStruct({
 
 /* ====================== WOODLAND MANSION ================================ */
 defStruct({
-  name: 'woodland_mansion', salt: 0x8e44, spacing: 68, separation: 20, radius: 34, chance: 0.85,
+  name: 'woodland_mansion', salt: 0x8e44, spacing: 46, separation: 14, radius: 34, chance: 0.85,
   biomes: ['dark_forest', 'pale_garden'], maxSlope: 8,
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Woodland Mansion');
@@ -810,7 +810,7 @@ defStruct({
 
 /* ====================== STRONGHOLD ====================================== */
 defStruct({
-  name: 'stronghold', salt: 0xa17e, spacing: 72, separation: 22, radius: 46, chance: 0.55,
+  name: 'stronghold', salt: 0xa17e, spacing: 56, separation: 18, radius: 46, chance: 0.6,
   needLand: false,
   build: function (x, y, z, rng, pos) {
     var by = clamp(12 + Math.floor(rng() * 22), 10, Math.max(14, pos.y - 24));

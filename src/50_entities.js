@@ -150,7 +150,14 @@ function renderParts(buf, parts, pose) {
       if (r.s) mScale(r.s, r.s, r.s);
     }
     if (p.col !== null && p.col !== undefined) {
-      var layer = p.tex ? customTile(p.tex, p.texParams) : partTile(p.col, p.v);
+      var layer;
+      if (p.tex) {
+        /* A face belongs on the front of the head only — painting it on all
+           six sides is why every mob looked like it had eyes on its back. */
+        var faceL = customTile(p.tex, p.texParams);
+        var plain = partTile(p.col, p.v);
+        layer = p.texAll ? faceL : [plain, plain, plain, plain, plain, faceL];
+      } else layer = partTile(p.col, p.v);
       emitBox(buf, p.box[0], p.box[1], p.box[2], p.box[3], p.box[4], p.box[5], layer, p.inflate);
     }
     if (p.kids) renderParts(buf, p.kids, pose);

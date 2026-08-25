@@ -399,18 +399,26 @@ function breakBlock(game, x, y, z) {
   /* anything resting on the block falls or pops off */
   supportCheck(game, x, y, z);
 }
+/* Whatever was resting on the broken block now has nothing under it: sand and
+   gravel become falling entities (and the column above them follows), plants
+   pop off as items. */
 function supportCheck(game, x, y, z) {
-  var world = game.world;
-  var above = world.getId(game.player.dim, x, y + 1, z);
-  if (above === 0) return;
-  var ab = BLOCKS[above];
-  if (ab.fall) {
-    world.setBlock(game.player.dim, x, y + 1, z, 0);
-    var e = makeEntity('falling_block', game.player.dim, x + 0.5, y + 1, z + 0.5, { blockVal: above });
-    game.entities.push(e);
-  } else if (ab.needsSupport || ab.render === 'cross' || ab.render === 'flat' || ab.render === 'crop') {
-    world.setBlock(game.player.dim, x, y + 1, z, 0);
-    if (ITEMS[ab.name]) dropItem(game, game.player.dim, x + 0.5, y + 1.5, z + 0.5, resolveDrop(ab) || ab.name, 1, true);
+  var world = game.world, dim = game.player.dim;
+  for (var up = 1; up <= 48; up++) {
+    var above = world.getId(dim, x, y + up, z);
+    if (above === 0) return;
+    var ab = BLOCKS[above];
+    if (ab.fall) {
+      var raw = world.getRaw(dim, x, y + up, z);
+      world.setBlock(dim, x, y + up, z, 0);
+      game.entities.push(makeEntity('falling_block', dim, x + 0.5, y + up, z + 0.5, { blockVal: raw }));
+      continue;                       /* keep going: the whole column falls */
+    }
+    if (ab.needsSupport || ab.render === 'cross' || ab.render === 'flat' || ab.render === 'crop') {
+      world.setBlock(dim, x, y + up, z, 0);
+      if (ITEMS[ab.name]) dropItem(game, dim, x + 0.5, y + up + 0.5, z + 0.5, resolveDrop(ab) || ab.name, 1, true);
+    }
+    return;
   }
 }
 function placeBlock(game, hit) {

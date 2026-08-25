@@ -461,7 +461,7 @@ function trySpawnMobs(game, dt) {
   if (game.spawnTimer > 0) return;
   game.spawnTimer = 1.2;
   var p = game.player, world = game.world;
-  var cap = { hostile: 42, passive: 18, water: 12, ambient: 8 };
+  var cap = { hostile: 42, passive: 34, water: 12, ambient: 8 };
   var counts = { hostile: 0, passive: 0, water: 0, ambient: 0 };
   for (var i = 0; i < game.entities.length; i++) {
     var d = MOBS[game.entities[i].type];
@@ -488,7 +488,9 @@ function trySpawnMobs(game, dt) {
       if (sp.structure) continue;
       var grp = def.hostile ? 'hostile' : (def.water ? 'water' : 'passive');
       if (counts[grp] >= cap[grp]) continue;
-      candidates.push(def);
+      /* weight lets the common animals outnumber the rare ones */
+      var wgt = sp.weight || 1;
+      for (var w2 = 0; w2 < wgt; w2++) candidates.push(def);
     }
     if (!candidates.length) continue;
     var pick = candidates[(Math.random() * candidates.length) | 0];

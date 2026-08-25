@@ -1895,14 +1895,16 @@ function pickBiome(x, z, h, cl) {
      cheese    - one-sided high threshold => isolated blobby caverns
      spaghetti - intersection of two thin sheets => winding tunnels
      noodle    - the same trick, thinner and deeper => tight worm caves      */
-var CHEESE_T = 0.190, SPAG_T = 0.064, NOODLE_T = 0.046;
+var CHEESE_T = 0.170, SPAG_T = 0.074, NOODLE_T = 0.054;
 
 function caveField(x, y, z, surfaceH) {
   if (y < 4) return -1;
   var depth = surfaceH - y;
-  if (depth < 5) return -1;
-  /* soften the roof so caves rarely open straight onto the surface */
-  var bias = depth < 16 ? (16 - depth) * 0.055 : 0;
+  if (depth < 2) return -1;
+  /* Caves may break the surface — that is where entrances come from — but the
+     roof is stiffened steeply with depth so openings stay occasional rather
+     than turning the ground into lace. */
+  var bias = depth < 22 ? (22 - depth) * 0.052 : 0;
 
   var c1 = WG.cheese.get3(x, y * 1.45, z);
   var cheese = (c1 - CHEESE_T - bias * 0.5) * 6.0;
@@ -1957,10 +1959,13 @@ function heightFrom(x, z, cl) {
   var base = WG.splCont.get(cl.cont);
   var eroF = WG.splEro.get(cl.ero);
   var inland = clamp((cl.cont + 0.16) * 3.2, 0, 1);
-  var peaks = WG.splPV.get(cl.pv) * eroF * 128 * inland;
+  var peaks = WG.splPV.get(cl.pv) * eroF * 168 * inland;
   var jag = 0;
-  if (eroF > 0.5 && peaks > 22) jag = Math.abs(WG.jag.get2(x, z)) * (eroF - 0.5) * 90;
-  var detail = WG.detail.get2(x, z) * (14 + eroF * 48);
+  if (eroF > 0.4 && peaks > 14) jag = Math.abs(WG.jag.get2(x, z)) * (eroF - 0.4) * 130;
+  /* two detail octaves: broad rolls plus the small dips and hummocks that
+     make ground look walked-on rather than extruded */
+  var detail = WG.detail.get2(x, z) * (20 + eroF * 62)
+    + WG.detail.get2(x * 3.7 + 1200, z * 3.7 - 800) * (5.5 + eroF * 9);
   var h = base + peaks + jag + detail * inland;
   var rv = Math.abs(WG.river.get2(x, z));
   if (rv < 0.024 && cl.cont > -0.16) {
@@ -3522,8 +3527,8 @@ function buildWell(x, y, z, rng, S) {
 }
 
 defStruct({
-  name: 'village', salt: 0x51a3, spacing: 32, separation: 10, radius: 56, chance: 0.62,
-  maxSlope: 7,
+  name: 'village', salt: 0x51a3, spacing: 22, separation: 7, radius: 56, chance: 0.62,
+  maxSlope: 10,
   biomes: ['plains', 'sunflower_plains', 'meadow', 'savanna', 'savanna_plateau', 'desert',
     'taiga', 'snowy_plains', 'snowy_taiga', 'old_growth_pine_taiga'],
   build: function (x, y, z, rng, pos) {
@@ -3569,7 +3574,7 @@ defStruct({
 
 /* ====================== DESERT AND JUNGLE TEMPLES ======================= */
 defStruct({
-  name: 'desert_pyramid', salt: 0x2f71, spacing: 28, separation: 8, radius: 24, chance: 0.75,
+  name: 'desert_pyramid', salt: 0x2f71, spacing: 20, separation: 6, radius: 24, chance: 0.75,
   biomes: ['desert'], maxSlope: 6,
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Desert Pyramid');
@@ -3611,7 +3616,7 @@ defStruct({
 });
 
 defStruct({
-  name: 'jungle_temple', salt: 0x77c1, spacing: 30, separation: 9, radius: 18, chance: 0.6,
+  name: 'jungle_temple', salt: 0x77c1, spacing: 20, separation: 6, radius: 18, chance: 0.6,
   biomes: ['jungle', 'sparse_jungle', 'bamboo_jungle'], maxSlope: 7,
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Jungle Temple');
@@ -3648,7 +3653,7 @@ defStruct({
 
 /* ====================== WITCH HUT / IGLOO / DESERT WELL ================= */
 defStruct({
-  name: 'swamp_hut', salt: 0x3311, spacing: 26, separation: 8, radius: 12, chance: 0.5,
+  name: 'swamp_hut', salt: 0x3311, spacing: 18, separation: 6, radius: 12, chance: 0.5,
   biomes: ['swamp', 'mangrove_swamp'], needLand: false,
   build: function (x, y, z, rng) {
     var base = Math.max(y, SEA) + 3;
@@ -3670,7 +3675,7 @@ defStruct({
   }
 });
 defStruct({
-  name: 'igloo', salt: 0x6a2d, spacing: 24, separation: 8, radius: 8, chance: 0.5,
+  name: 'igloo', salt: 0x6a2d, spacing: 18, separation: 6, radius: 8, chance: 0.5,
   biomes: ['snowy_plains', 'snowy_taiga', 'snowy_slopes', 'frozen_peaks', 'ice_spikes'],
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Igloo');
@@ -3718,7 +3723,7 @@ defStruct({
 
 /* ====================== RUINED PORTAL =================================== */
 defStruct({
-  name: 'ruined_portal', salt: 0x44e9, spacing: 16, separation: 5, radius: 10, chance: 0.30,
+  name: 'ruined_portal', salt: 0x44e9, spacing: 14, separation: 4, radius: 10, chance: 0.34,
   build: function (x, y, z, rng) {
     var O = BID.obsidian, CO = BID.crying_obsidian;
     var w = 3 + Math.floor(rng() * 2), h = 4 + Math.floor(rng() * 2);
@@ -3747,7 +3752,7 @@ defStruct({
 
 /* ====================== PILLAGER OUTPOST ================================ */
 defStruct({
-  name: 'pillager_outpost', salt: 0x9a13, spacing: 34, separation: 12, radius: 14, chance: 0.35,
+  name: 'pillager_outpost', salt: 0x9a13, spacing: 24, separation: 8, radius: 14, chance: 0.35,
   maxSlope: 8,
   notBiomes: ['ocean', 'deep_ocean', 'frozen_ocean', 'warm_ocean', 'lukewarm_ocean', 'cold_ocean',
     'deep_frozen_ocean', 'deep_cold_ocean', 'deep_lukewarm_ocean', 'mushroom_fields'],
@@ -3787,7 +3792,7 @@ defStruct({
 
 /* ====================== SHIPWRECK / BURIED TREASURE ===================== */
 defStruct({
-  name: 'shipwreck', salt: 0x2b8f, spacing: 20, separation: 6, radius: 14, chance: 0.35,
+  name: 'shipwreck', salt: 0x2b8f, spacing: 16, separation: 5, radius: 14, chance: 0.35,
   ocean: true, needLand: false,
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Shipwreck');
@@ -3833,7 +3838,7 @@ defStruct({
 
 /* ====================== OCEAN MONUMENT ================================== */
 defStruct({
-  name: 'ocean_monument', salt: 0x5d02, spacing: 40, separation: 14, radius: 34, chance: 0.55,
+  name: 'ocean_monument', salt: 0x5d02, spacing: 30, separation: 10, radius: 34, chance: 0.55,
   ocean: true, needLand: false,
   biomes: ['deep_ocean', 'deep_cold_ocean', 'deep_lukewarm_ocean', 'deep_frozen_ocean', 'ocean', 'cold_ocean', 'lukewarm_ocean'],
   build: function (x, y, z, rng) {
@@ -3874,7 +3879,7 @@ defStruct({
 
 /* ====================== WOODLAND MANSION ================================ */
 defStruct({
-  name: 'woodland_mansion', salt: 0x8e44, spacing: 68, separation: 20, radius: 34, chance: 0.85,
+  name: 'woodland_mansion', salt: 0x8e44, spacing: 46, separation: 14, radius: 34, chance: 0.85,
   biomes: ['dark_forest', 'pale_garden'], maxSlope: 8,
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Woodland Mansion');
@@ -4024,7 +4029,7 @@ defStruct({
 
 /* ====================== STRONGHOLD ====================================== */
 defStruct({
-  name: 'stronghold', salt: 0xa17e, spacing: 72, separation: 22, radius: 46, chance: 0.55,
+  name: 'stronghold', salt: 0xa17e, spacing: 56, separation: 18, radius: 46, chance: 0.6,
   needLand: false,
   build: function (x, y, z, rng, pos) {
     var by = clamp(12 + Math.floor(rng() * 22), 10, Math.max(14, pos.y - 24));
@@ -5882,14 +5887,16 @@ function pickBiome(x, z, h, cl) {
      cheese    - one-sided high threshold => isolated blobby caverns
      spaghetti - intersection of two thin sheets => winding tunnels
      noodle    - the same trick, thinner and deeper => tight worm caves      */
-var CHEESE_T = 0.190, SPAG_T = 0.064, NOODLE_T = 0.046;
+var CHEESE_T = 0.170, SPAG_T = 0.074, NOODLE_T = 0.054;
 
 function caveField(x, y, z, surfaceH) {
   if (y < 4) return -1;
   var depth = surfaceH - y;
-  if (depth < 5) return -1;
-  /* soften the roof so caves rarely open straight onto the surface */
-  var bias = depth < 16 ? (16 - depth) * 0.055 : 0;
+  if (depth < 2) return -1;
+  /* Caves may break the surface — that is where entrances come from — but the
+     roof is stiffened steeply with depth so openings stay occasional rather
+     than turning the ground into lace. */
+  var bias = depth < 22 ? (22 - depth) * 0.052 : 0;
 
   var c1 = WG.cheese.get3(x, y * 1.45, z);
   var cheese = (c1 - CHEESE_T - bias * 0.5) * 6.0;
@@ -5944,10 +5951,13 @@ function heightFrom(x, z, cl) {
   var base = WG.splCont.get(cl.cont);
   var eroF = WG.splEro.get(cl.ero);
   var inland = clamp((cl.cont + 0.16) * 3.2, 0, 1);
-  var peaks = WG.splPV.get(cl.pv) * eroF * 128 * inland;
+  var peaks = WG.splPV.get(cl.pv) * eroF * 168 * inland;
   var jag = 0;
-  if (eroF > 0.5 && peaks > 22) jag = Math.abs(WG.jag.get2(x, z)) * (eroF - 0.5) * 90;
-  var detail = WG.detail.get2(x, z) * (14 + eroF * 48);
+  if (eroF > 0.4 && peaks > 14) jag = Math.abs(WG.jag.get2(x, z)) * (eroF - 0.4) * 130;
+  /* two detail octaves: broad rolls plus the small dips and hummocks that
+     make ground look walked-on rather than extruded */
+  var detail = WG.detail.get2(x, z) * (20 + eroF * 62)
+    + WG.detail.get2(x * 3.7 + 1200, z * 3.7 - 800) * (5.5 + eroF * 9);
   var h = base + peaks + jag + detail * inland;
   var rv = Math.abs(WG.river.get2(x, z));
   if (rv < 0.024 && cl.cont > -0.16) {
@@ -7509,8 +7519,8 @@ function buildWell(x, y, z, rng, S) {
 }
 
 defStruct({
-  name: 'village', salt: 0x51a3, spacing: 32, separation: 10, radius: 56, chance: 0.62,
-  maxSlope: 7,
+  name: 'village', salt: 0x51a3, spacing: 22, separation: 7, radius: 56, chance: 0.62,
+  maxSlope: 10,
   biomes: ['plains', 'sunflower_plains', 'meadow', 'savanna', 'savanna_plateau', 'desert',
     'taiga', 'snowy_plains', 'snowy_taiga', 'old_growth_pine_taiga'],
   build: function (x, y, z, rng, pos) {
@@ -7556,7 +7566,7 @@ defStruct({
 
 /* ====================== DESERT AND JUNGLE TEMPLES ======================= */
 defStruct({
-  name: 'desert_pyramid', salt: 0x2f71, spacing: 28, separation: 8, radius: 24, chance: 0.75,
+  name: 'desert_pyramid', salt: 0x2f71, spacing: 20, separation: 6, radius: 24, chance: 0.75,
   biomes: ['desert'], maxSlope: 6,
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Desert Pyramid');
@@ -7598,7 +7608,7 @@ defStruct({
 });
 
 defStruct({
-  name: 'jungle_temple', salt: 0x77c1, spacing: 30, separation: 9, radius: 18, chance: 0.6,
+  name: 'jungle_temple', salt: 0x77c1, spacing: 20, separation: 6, radius: 18, chance: 0.6,
   biomes: ['jungle', 'sparse_jungle', 'bamboo_jungle'], maxSlope: 7,
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Jungle Temple');
@@ -7635,7 +7645,7 @@ defStruct({
 
 /* ====================== WITCH HUT / IGLOO / DESERT WELL ================= */
 defStruct({
-  name: 'swamp_hut', salt: 0x3311, spacing: 26, separation: 8, radius: 12, chance: 0.5,
+  name: 'swamp_hut', salt: 0x3311, spacing: 18, separation: 6, radius: 12, chance: 0.5,
   biomes: ['swamp', 'mangrove_swamp'], needLand: false,
   build: function (x, y, z, rng) {
     var base = Math.max(y, SEA) + 3;
@@ -7657,7 +7667,7 @@ defStruct({
   }
 });
 defStruct({
-  name: 'igloo', salt: 0x6a2d, spacing: 24, separation: 8, radius: 8, chance: 0.5,
+  name: 'igloo', salt: 0x6a2d, spacing: 18, separation: 6, radius: 8, chance: 0.5,
   biomes: ['snowy_plains', 'snowy_taiga', 'snowy_slopes', 'frozen_peaks', 'ice_spikes'],
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Igloo');
@@ -7705,7 +7715,7 @@ defStruct({
 
 /* ====================== RUINED PORTAL =================================== */
 defStruct({
-  name: 'ruined_portal', salt: 0x44e9, spacing: 16, separation: 5, radius: 10, chance: 0.30,
+  name: 'ruined_portal', salt: 0x44e9, spacing: 14, separation: 4, radius: 10, chance: 0.34,
   build: function (x, y, z, rng) {
     var O = BID.obsidian, CO = BID.crying_obsidian;
     var w = 3 + Math.floor(rng() * 2), h = 4 + Math.floor(rng() * 2);
@@ -7734,7 +7744,7 @@ defStruct({
 
 /* ====================== PILLAGER OUTPOST ================================ */
 defStruct({
-  name: 'pillager_outpost', salt: 0x9a13, spacing: 34, separation: 12, radius: 14, chance: 0.35,
+  name: 'pillager_outpost', salt: 0x9a13, spacing: 24, separation: 8, radius: 14, chance: 0.35,
   maxSlope: 8,
   notBiomes: ['ocean', 'deep_ocean', 'frozen_ocean', 'warm_ocean', 'lukewarm_ocean', 'cold_ocean',
     'deep_frozen_ocean', 'deep_cold_ocean', 'deep_lukewarm_ocean', 'mushroom_fields'],
@@ -7774,7 +7784,7 @@ defStruct({
 
 /* ====================== SHIPWRECK / BURIED TREASURE ===================== */
 defStruct({
-  name: 'shipwreck', salt: 0x2b8f, spacing: 20, separation: 6, radius: 14, chance: 0.35,
+  name: 'shipwreck', salt: 0x2b8f, spacing: 16, separation: 5, radius: 14, chance: 0.35,
   ocean: true, needLand: false,
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Shipwreck');
@@ -7820,7 +7830,7 @@ defStruct({
 
 /* ====================== OCEAN MONUMENT ================================== */
 defStruct({
-  name: 'ocean_monument', salt: 0x5d02, spacing: 40, separation: 14, radius: 34, chance: 0.55,
+  name: 'ocean_monument', salt: 0x5d02, spacing: 30, separation: 10, radius: 34, chance: 0.55,
   ocean: true, needLand: false,
   biomes: ['deep_ocean', 'deep_cold_ocean', 'deep_lukewarm_ocean', 'deep_frozen_ocean', 'ocean', 'cold_ocean', 'lukewarm_ocean'],
   build: function (x, y, z, rng) {
@@ -7861,7 +7871,7 @@ defStruct({
 
 /* ====================== WOODLAND MANSION ================================ */
 defStruct({
-  name: 'woodland_mansion', salt: 0x8e44, spacing: 68, separation: 20, radius: 34, chance: 0.85,
+  name: 'woodland_mansion', salt: 0x8e44, spacing: 46, separation: 14, radius: 34, chance: 0.85,
   biomes: ['dark_forest', 'pale_garden'], maxSlope: 8,
   build: function (x, y, z, rng) {
     sbMark(x, z, 'Woodland Mansion');
@@ -8011,7 +8021,7 @@ defStruct({
 
 /* ====================== STRONGHOLD ====================================== */
 defStruct({
-  name: 'stronghold', salt: 0xa17e, spacing: 72, separation: 22, radius: 46, chance: 0.55,
+  name: 'stronghold', salt: 0xa17e, spacing: 56, separation: 18, radius: 46, chance: 0.6,
   needLand: false,
   build: function (x, y, z, rng, pos) {
     var by = clamp(12 + Math.floor(rng() * 22), 10, Math.max(14, pos.y - 24));
@@ -14034,7 +14044,14 @@ function renderParts(buf, parts, pose) {
       if (r.s) mScale(r.s, r.s, r.s);
     }
     if (p.col !== null && p.col !== undefined) {
-      var layer = p.tex ? customTile(p.tex, p.texParams) : partTile(p.col, p.v);
+      var layer;
+      if (p.tex) {
+        /* A face belongs on the front of the head only — painting it on all
+           six sides is why every mob looked like it had eyes on its back. */
+        var faceL = customTile(p.tex, p.texParams);
+        var plain = partTile(p.col, p.v);
+        layer = p.texAll ? faceL : [plain, plain, plain, plain, plain, faceL];
+      } else layer = partTile(p.col, p.v);
       emitBox(buf, p.box[0], p.box[1], p.box[2], p.box[3], p.box[4], p.box[5], layer, p.inflate);
     }
     if (p.kids) renderParts(buf, p.kids, pose);
@@ -14382,7 +14399,7 @@ defMob('cow', {
   w: 0.9, h: 1.4, hp: 10, speed: 0.09, anim: animQuad, babyScale: 0.55, babyHeadScale: 1.35,
   drops: [{ item: 'beef', min: 1, max: 3 }, { item: 'leather', min: 0, max: 2 }],
   breedWith: ['wheat'],
-  spawn: { biomes: ['plains', 'forest', 'meadow', 'savanna', 'sunflower_plains', 'taiga', 'flower_forest'], light: 9, group: [2, 4], surface: true }
+  spawn: { biomes: ['plains', 'forest', 'meadow', 'savanna', 'sunflower_plains', 'taiga', 'flower_forest', 'birch_forest', 'cherry_grove'], light: 9, group: [3, 5], weight: 2, surface: true }
 });
 defMob('mooshroom', {
   model: cattleModel('#a02a2a', [
@@ -14444,7 +14461,7 @@ defMob('sheep', {
   w: 0.9, h: 1.3, hp: 8, speed: 0.09, anim: animQuad, babyScale: 0.55, babyHeadScale: 1.3, woolColour: true,
   drops: [{ item: 'mutton', min: 1, max: 2 }, { item: 'white_wool', min: 1, max: 1 }],
   breedWith: ['wheat'],
-  spawn: { biomes: ['plains', 'forest', 'meadow', 'sunflower_plains', 'taiga', 'snowy_plains', 'flower_forest', 'windswept_hills'], light: 9, group: [2, 4], surface: true }
+  spawn: { biomes: ['plains', 'forest', 'meadow', 'sunflower_plains', 'taiga', 'snowy_plains', 'flower_forest', 'windswept_hills', 'savanna', 'birch_forest', 'old_growth_birch_forest', 'grove', 'snowy_taiga', 'cherry_grove', 'windswept_forest', 'windswept_gravelly_hills'], light: 9, group: [4, 7], weight: 3, surface: true }
 });
 defMob('chicken', {
   /* beak and wattle are what make a white box a chicken */
@@ -15737,7 +15754,7 @@ function trySpawnMobs(game, dt) {
   if (game.spawnTimer > 0) return;
   game.spawnTimer = 1.2;
   var p = game.player, world = game.world;
-  var cap = { hostile: 42, passive: 18, water: 12, ambient: 8 };
+  var cap = { hostile: 42, passive: 34, water: 12, ambient: 8 };
   var counts = { hostile: 0, passive: 0, water: 0, ambient: 0 };
   for (var i = 0; i < game.entities.length; i++) {
     var d = MOBS[game.entities[i].type];
@@ -15764,7 +15781,9 @@ function trySpawnMobs(game, dt) {
       if (sp.structure) continue;
       var grp = def.hostile ? 'hostile' : (def.water ? 'water' : 'passive');
       if (counts[grp] >= cap[grp]) continue;
-      candidates.push(def);
+      /* weight lets the common animals outnumber the rare ones */
+      var wgt = sp.weight || 1;
+      for (var w2 = 0; w2 < wgt; w2++) candidates.push(def);
     }
     if (!candidates.length) continue;
     var pick = candidates[(Math.random() * candidates.length) | 0];
@@ -16086,8 +16105,10 @@ function updateFallingBlock(game, e, dt) {
   applyPhysics(game, e, dt, MOBS.falling_block);
   if (e.onGround) {
     var bx = Math.floor(e.x), by = Math.round(e.y), bz = Math.floor(e.z);
-    if (game.world.getId(e.dim, bx, by, bz) === 0) game.world.setBlock(e.dim, bx, by, bz, e.blockVal);
-    else dropItem(game, e.dim, e.x, e.y, e.z, BLOCKS[e.blockVal & ID_MASK].name, 1);
+    if (game.world.getId(e.dim, bx, by, bz) === 0) {
+      game.world.setBlock(e.dim, bx, by, bz, e.blockVal);
+      playSound(game, 'thud', bx, by, bz, 0.8, 0.5);
+    } else dropItem(game, e.dim, e.x, e.y, e.z, BLOCKS[e.blockVal & ID_MASK].name, 1);
     e.remove = true;
   }
 }
@@ -18292,18 +18313,26 @@ function breakBlock(game, x, y, z) {
   /* anything resting on the block falls or pops off */
   supportCheck(game, x, y, z);
 }
+/* Whatever was resting on the broken block now has nothing under it: sand and
+   gravel become falling entities (and the column above them follows), plants
+   pop off as items. */
 function supportCheck(game, x, y, z) {
-  var world = game.world;
-  var above = world.getId(game.player.dim, x, y + 1, z);
-  if (above === 0) return;
-  var ab = BLOCKS[above];
-  if (ab.fall) {
-    world.setBlock(game.player.dim, x, y + 1, z, 0);
-    var e = makeEntity('falling_block', game.player.dim, x + 0.5, y + 1, z + 0.5, { blockVal: above });
-    game.entities.push(e);
-  } else if (ab.needsSupport || ab.render === 'cross' || ab.render === 'flat' || ab.render === 'crop') {
-    world.setBlock(game.player.dim, x, y + 1, z, 0);
-    if (ITEMS[ab.name]) dropItem(game, game.player.dim, x + 0.5, y + 1.5, z + 0.5, resolveDrop(ab) || ab.name, 1, true);
+  var world = game.world, dim = game.player.dim;
+  for (var up = 1; up <= 48; up++) {
+    var above = world.getId(dim, x, y + up, z);
+    if (above === 0) return;
+    var ab = BLOCKS[above];
+    if (ab.fall) {
+      var raw = world.getRaw(dim, x, y + up, z);
+      world.setBlock(dim, x, y + up, z, 0);
+      game.entities.push(makeEntity('falling_block', dim, x + 0.5, y + up, z + 0.5, { blockVal: raw }));
+      continue;                       /* keep going: the whole column falls */
+    }
+    if (ab.needsSupport || ab.render === 'cross' || ab.render === 'flat' || ab.render === 'crop') {
+      world.setBlock(dim, x, y + up, z, 0);
+      if (ITEMS[ab.name]) dropItem(game, dim, x + 0.5, y + up + 0.5, z + 0.5, resolveDrop(ab) || ab.name, 1, true);
+    }
+    return;
   }
 }
 function placeBlock(game, hit) {
@@ -21779,8 +21808,9 @@ function updateWorldTime(game, dt) {
   var w = game.weather;
   w.nextChange -= dt;
   if (w.nextChange <= 0) {
-    if (w.targetRain > 0) { w.targetRain = 0; w.nextChange = 300 + Math.random() * 900; }
-    else { w.targetRain = 0.5 + Math.random() * 0.5; w.nextChange = 120 + Math.random() * 480; }
+    /* clear weather is the normal state — rain is an event, not a mood */
+    if (w.targetRain > 0) { w.targetRain = 0; w.nextChange = 900 + Math.random() * 2100; }
+    else { w.targetRain = 0.5 + Math.random() * 0.5; w.nextChange = 80 + Math.random() * 220; }
     if (w.targetRain > 0.85) w.thunderStorm = true; else w.thunderStorm = false;
   }
   w.rain = approach(w.rain, game.player.dim === DIM_OVERWORLD ? w.targetRain : 0, dt * 0.12);
@@ -22037,7 +22067,8 @@ function paintHUD(game) {
       'Time ' + Math.floor(game.dayTime) + (game.isDay ? ' (day)' : ' (night)') + '   Rain ' + game.weather.rain.toFixed(2) + '\n' +
       'Chunks ' + w.stats.chunks + ' loaded, ' + w.stats.meshed + ' meshed, ' + w.jobs + ' jobs\n' +
       'Entities ' + game.entities.length + '   Particles ' + game.particles.length + '\n' +
-      'Facing ' + facingName(p.yaw) + '   ' + (game.hit ? 'Looking at ' + BLOCKS[game.hit.id].disp : '');
+      'Facing ' + facingName(p.yaw) + '   ' + (game.hit ? 'Looking at ' + BLOCKS[game.hit.id].disp : '') + '\n' +
+      nearestStructureLine(game);
   } else UI.els.debug.classList.add('hidden');
 
   /* chat log */
@@ -22070,6 +22101,24 @@ function paintHUD(game) {
 
   /* break progress on the crosshair */
   if (UI.screen) refreshScreen(game);
+}
+/* A short "what is near me" line, so structures are actually findable. */
+var _nearCache = { t: -99, text: '' };
+function nearestStructureLine(game) {
+  if (game.time - _nearCache.t < 3) return _nearCache.text;
+  _nearCache.t = game.time;
+  var want = ['village', 'mineshaft', 'stronghold', 'desert_pyramid', 'pillager_outpost', 'ocean_monument'];
+  var out = [];
+  for (var i = 0; i < want.length && out.length < 3; i++) {
+    /* a short scan only — the debug line must not cost a frame */
+    var s = game.locate ? game.locate(want[i], undefined, undefined, 9) : null;
+    if (!s) continue;
+    var d = Math.round(Math.hypot(s.x - game.player.x, s.z - game.player.z));
+    if (d > 1400) continue;
+    out.push(want[i].replace(/_/g, ' ') + ' ' + d + 'm (' + s.x + ',' + s.z + ')');
+  }
+  _nearCache.text = out.length ? 'Nearby: ' + out.join('   ') : 'Nearby: nothing within 1400m';
+  return _nearCache.text;
 }
 function facingName(yaw) {
   var d = Math.round(mod(yaw, Math.PI * 2) / (Math.PI / 2)) & 3;
@@ -22144,13 +22193,13 @@ function boot4(canvas) {
   g.travelDimension = function (to) { travelDimension(g, to); };
   g.trySleep = function (hit) { return trySleepInBed(g, hit || { x: Math.floor(g.player.x), y: Math.floor(g.player.y), z: Math.floor(g.player.z) }); };
   /* the equivalent of /locate: walk outward through the structure grid */
-  g.locate = function (name, fromX, fromZ) {
+  g.locate = function (name, fromX, fromZ, maxRings) {
     var def = null;
     for (var i = 0; i < STRUCT_DEFS.length; i++) if (STRUCT_DEFS[i].name === name) def = STRUCT_DEFS[i];
     if (!def) return null;
     var px = fromX === undefined ? g.player.x : fromX, pz = fromZ === undefined ? g.player.z : fromZ;
     var crx = Math.floor((px / 16) / def.spacing), crz = Math.floor((pz / 16) / def.spacing);
-    for (var ring = 0; ring < 40; ring++) {
+    for (var ring = 0; ring < (maxRings || 40); ring++) {
       for (var dx = -ring; dx <= ring; dx++) for (var dz = -ring; dz <= ring; dz++) {
         if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
         var pos = structRegionPos(def, crx + dx, crz + dz, 0);

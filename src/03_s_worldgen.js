@@ -188,14 +188,16 @@ function pickBiome(x, z, h, cl) {
      cheese    - one-sided high threshold => isolated blobby caverns
      spaghetti - intersection of two thin sheets => winding tunnels
      noodle    - the same trick, thinner and deeper => tight worm caves      */
-var CHEESE_T = 0.190, SPAG_T = 0.064, NOODLE_T = 0.046;
+var CHEESE_T = 0.170, SPAG_T = 0.074, NOODLE_T = 0.054;
 
 function caveField(x, y, z, surfaceH) {
   if (y < 4) return -1;
   var depth = surfaceH - y;
-  if (depth < 5) return -1;
-  /* soften the roof so caves rarely open straight onto the surface */
-  var bias = depth < 16 ? (16 - depth) * 0.055 : 0;
+  if (depth < 2) return -1;
+  /* Caves may break the surface — that is where entrances come from — but the
+     roof is stiffened steeply with depth so openings stay occasional rather
+     than turning the ground into lace. */
+  var bias = depth < 22 ? (22 - depth) * 0.052 : 0;
 
   var c1 = WG.cheese.get3(x, y * 1.45, z);
   var cheese = (c1 - CHEESE_T - bias * 0.5) * 6.0;
@@ -250,10 +252,13 @@ function heightFrom(x, z, cl) {
   var base = WG.splCont.get(cl.cont);
   var eroF = WG.splEro.get(cl.ero);
   var inland = clamp((cl.cont + 0.16) * 3.2, 0, 1);
-  var peaks = WG.splPV.get(cl.pv) * eroF * 128 * inland;
+  var peaks = WG.splPV.get(cl.pv) * eroF * 168 * inland;
   var jag = 0;
-  if (eroF > 0.5 && peaks > 22) jag = Math.abs(WG.jag.get2(x, z)) * (eroF - 0.5) * 90;
-  var detail = WG.detail.get2(x, z) * (14 + eroF * 48);
+  if (eroF > 0.4 && peaks > 14) jag = Math.abs(WG.jag.get2(x, z)) * (eroF - 0.4) * 130;
+  /* two detail octaves: broad rolls plus the small dips and hummocks that
+     make ground look walked-on rather than extruded */
+  var detail = WG.detail.get2(x, z) * (20 + eroF * 62)
+    + WG.detail.get2(x * 3.7 + 1200, z * 3.7 - 800) * (5.5 + eroF * 9);
   var h = base + peaks + jag + detail * inland;
   var rv = Math.abs(WG.river.get2(x, z));
   if (rv < 0.024 && cl.cont > -0.16) {

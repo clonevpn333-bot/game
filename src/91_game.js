@@ -451,8 +451,9 @@ function updateWorldTime(game, dt) {
   var w = game.weather;
   w.nextChange -= dt;
   if (w.nextChange <= 0) {
-    if (w.targetRain > 0) { w.targetRain = 0; w.nextChange = 300 + Math.random() * 900; }
-    else { w.targetRain = 0.5 + Math.random() * 0.5; w.nextChange = 120 + Math.random() * 480; }
+    /* clear weather is the normal state — rain is an event, not a mood */
+    if (w.targetRain > 0) { w.targetRain = 0; w.nextChange = 900 + Math.random() * 2100; }
+    else { w.targetRain = 0.5 + Math.random() * 0.5; w.nextChange = 80 + Math.random() * 220; }
     if (w.targetRain > 0.85) w.thunderStorm = true; else w.thunderStorm = false;
   }
   w.rain = approach(w.rain, game.player.dim === DIM_OVERWORLD ? w.targetRain : 0, dt * 0.12);
@@ -709,7 +710,8 @@ function paintHUD(game) {
       'Time ' + Math.floor(game.dayTime) + (game.isDay ? ' (day)' : ' (night)') + '   Rain ' + game.weather.rain.toFixed(2) + '\n' +
       'Chunks ' + w.stats.chunks + ' loaded, ' + w.stats.meshed + ' meshed, ' + w.jobs + ' jobs\n' +
       'Entities ' + game.entities.length + '   Particles ' + game.particles.length + '\n' +
-      'Facing ' + facingName(p.yaw) + '   ' + (game.hit ? 'Looking at ' + BLOCKS[game.hit.id].disp : '');
+      'Facing ' + facingName(p.yaw) + '   ' + (game.hit ? 'Looking at ' + BLOCKS[game.hit.id].disp : '') + '\n' +
+      nearestStructureLine(game);
   } else UI.els.debug.classList.add('hidden');
 
   /* chat log */
@@ -742,6 +744,24 @@ function paintHUD(game) {
 
   /* break progress on the crosshair */
   if (UI.screen) refreshScreen(game);
+}
+/* A short "what is near me" line, so structures are actually findable. */
+var _nearCache = { t: -99, text: '' };
+function nearestStructureLine(game) {
+  if (game.time - _nearCache.t < 3) return _nearCache.text;
+  _nearCache.t = game.time;
+  var want = ['village', 'mineshaft', 'stronghold', 'desert_pyramid', 'pillager_outpost', 'ocean_monument'];
+  var out = [];
+  for (var i = 0; i < want.length && out.length < 3; i++) {
+    /* a short scan only — the debug line must not cost a frame */
+    var s = game.locate ? game.locate(want[i], undefined, undefined, 9) : null;
+    if (!s) continue;
+    var d = Math.round(Math.hypot(s.x - game.player.x, s.z - game.player.z));
+    if (d > 1400) continue;
+    out.push(want[i].replace(/_/g, ' ') + ' ' + d + 'm (' + s.x + ',' + s.z + ')');
+  }
+  _nearCache.text = out.length ? 'Nearby: ' + out.join('   ') : 'Nearby: nothing within 1400m';
+  return _nearCache.text;
 }
 function facingName(yaw) {
   var d = Math.round(mod(yaw, Math.PI * 2) / (Math.PI / 2)) & 3;
@@ -816,13 +836,13 @@ function boot4(canvas) {
   g.travelDimension = function (to) { travelDimension(g, to); };
   g.trySleep = function (hit) { return trySleepInBed(g, hit || { x: Math.floor(g.player.x), y: Math.floor(g.player.y), z: Math.floor(g.player.z) }); };
   /* the equivalent of /locate: walk outward through the structure grid */
-  g.locate = function (name, fromX, fromZ) {
+  g.locate = function (name, fromX, fromZ, maxRings) {
     var def = null;
     for (var i = 0; i < STRUCT_DEFS.length; i++) if (STRUCT_DEFS[i].name === name) def = STRUCT_DEFS[i];
     if (!def) return null;
     var px = fromX === undefined ? g.player.x : fromX, pz = fromZ === undefined ? g.player.z : fromZ;
     var crx = Math.floor((px / 16) / def.spacing), crz = Math.floor((pz / 16) / def.spacing);
-    for (var ring = 0; ring < 40; ring++) {
+    for (var ring = 0; ring < (maxRings || 40); ring++) {
       for (var dx = -ring; dx <= ring; dx++) for (var dz = -ring; dz <= ring; dz++) {
         if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
         var pos = structRegionPos(def, crx + dx, crz + dz, 0);

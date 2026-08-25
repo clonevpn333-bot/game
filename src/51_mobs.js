@@ -83,7 +83,7 @@ defMob('cow', {
   w: 0.9, h: 1.4, hp: 10, speed: 0.09, anim: animQuad, babyScale: 0.55, babyHeadScale: 1.35,
   drops: [{ item: 'beef', min: 1, max: 3 }, { item: 'leather', min: 0, max: 2 }],
   breedWith: ['wheat'],
-  spawn: { biomes: ['plains', 'forest', 'meadow', 'savanna', 'sunflower_plains', 'taiga', 'flower_forest'], light: 9, group: [2, 4], surface: true }
+  spawn: { biomes: ['plains', 'forest', 'meadow', 'savanna', 'sunflower_plains', 'taiga', 'flower_forest', 'birch_forest', 'cherry_grove'], light: 9, group: [3, 5], weight: 2, surface: true }
 });
 defMob('mooshroom', {
   model: cattleModel('#a02a2a', [
@@ -145,7 +145,7 @@ defMob('sheep', {
   w: 0.9, h: 1.3, hp: 8, speed: 0.09, anim: animQuad, babyScale: 0.55, babyHeadScale: 1.3, woolColour: true,
   drops: [{ item: 'mutton', min: 1, max: 2 }, { item: 'white_wool', min: 1, max: 1 }],
   breedWith: ['wheat'],
-  spawn: { biomes: ['plains', 'forest', 'meadow', 'sunflower_plains', 'taiga', 'snowy_plains', 'flower_forest', 'windswept_hills'], light: 9, group: [2, 4], surface: true }
+  spawn: { biomes: ['plains', 'forest', 'meadow', 'sunflower_plains', 'taiga', 'snowy_plains', 'flower_forest', 'windswept_hills', 'savanna', 'birch_forest', 'old_growth_birch_forest', 'grove', 'snowy_taiga', 'cherry_grove', 'windswept_forest', 'windswept_gravelly_hills'], light: 9, group: [4, 7], weight: 3, surface: true }
 });
 defMob('chicken', {
   /* beak and wattle are what make a white box a chicken */
