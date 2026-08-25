@@ -13,7 +13,8 @@ var R = {
   settings: {
     renderDistance: 8, shadows: true, bloom: true, godRays: true, fxaa: false,
     smoothLight: true, fancyWater: true, fov: 74, renderScale: 1.0, maxFps: 0, viewBob: true,
-    viewModel: true, particles: true, entityShadows: true, clouds: true, waveGrass: true
+    viewModel: true, particles: true, entityShadows: true, clouds: true, waveGrass: true,
+    sharpTextures: true
   },
   frame: 0,
   sunDir: new Float32Array([0, 1, 0]),

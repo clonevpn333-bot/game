@@ -129,12 +129,28 @@ function uploadBlockTextures() {
   for (var i = 0; i < n; i++) big.set(TEX_LAYERS[i], i * TS * TS * 4);
   gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, 0, TS, TS, n, gl.RGBA, gl.UNSIGNED_BYTE, big);
   gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
-  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.REPEAT);
   gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.REPEAT);
-  if (GLX.aniso) gl.texParameterf(gl.TEXTURE_2D_ARRAY, GLX.aniso.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(8, GLX.maxAniso));
+  applyAtlasFilter(tex);
   return tex;
+}
+
+/* The tiles are 16x16 pixel art: anisotropic filtering and blended mip levels
+   turn them to mush, because mip 1 is already half the detail.  Sharp mode
+   samples the nearest texel and never blends, which is the look this art
+   was drawn for; the smooth path stays available for anyone who prefers it. */
+function applyAtlasFilter(tex) {
+  var t = tex || R.atlas;
+  if (!t) return;
+  var sharp = !R.settings || R.settings.sharpTextures !== false;
+  gl.bindTexture(gl.TEXTURE_2D_ARRAY, t);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER,
+    sharp ? gl.NEAREST_MIPMAP_NEAREST : gl.NEAREST_MIPMAP_LINEAR);
+  if (GLX.aniso) {
+    gl.texParameterf(gl.TEXTURE_2D_ARRAY, GLX.aniso.TEXTURE_MAX_ANISOTROPY_EXT,
+      sharp ? 1 : Math.min(8, GLX.maxAniso));
+  }
 }
 
 /* a 1x1 white texture used wherever a sampler must be bound but unused */

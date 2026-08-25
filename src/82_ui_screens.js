@@ -799,6 +799,7 @@ SCREEN_BUILDERS.options = function (game, box) {
   toggle('View Bobbing', 'viewBob');
   toggle('Waving Plants', 'waveGrass');
   toggle('Clouds', 'clouds');
+  toggle('Sharp Textures', 'sharpTextures', function () { applyAtlasFilter(); });
   var vrow = el('div', 'optrow', list);
   var vlab = el('label', 'optlabel', vrow, 'Volume: ' + Math.round(AUDIO.volume * 100) + '%');
   var vin = el('input', 'optslider', vrow);
