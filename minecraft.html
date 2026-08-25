@@ -13156,13 +13156,25 @@ function initRenderer(canvas) {
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
   gl.cullFace(gl.BACK);
-  resizeRenderer(canvas.width, canvas.height);
+  R.canvas = canvas;
+  resizeRenderer();
   return true;
 }
 
-function resizeRenderer(w, h) {
+/* Sizes the canvas backing store to the display (the element only carries a
+   CSS size, so without this the whole game renders at the 300x150 default and
+   is stretched), then sizes the offscreen buffers to the render scale. */
+function resizeRenderer() {
+  var canvas = R.canvas || (gl && gl.canvas);
+  if (!canvas) return;
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var cssW = canvas.clientWidth || window.innerWidth;
+  var cssH = canvas.clientHeight || window.innerHeight;
+  var dw = Math.max(64, Math.round(cssW * dpr));
+  var dh = Math.max(64, Math.round(cssH * dpr));
+  if (canvas.width !== dw || canvas.height !== dh) { canvas.width = dw; canvas.height = dh; }
   var s = R.settings.renderScale;
-  var rw = Math.max(64, Math.floor(w * s)), rh = Math.max(64, Math.floor(h * s));
+  var rw = Math.max(64, Math.floor(dw * s)), rh = Math.max(64, Math.floor(dh * s));
   if (R.width === rw && R.height === rh) return;
   R.width = rw; R.height = rh;
   if (R.sceneFBO) { R.sceneFBO.dispose(); R.sceneCopy.dispose(); R.bloomA.dispose(); R.bloomB.dispose(); R.godFBO.dispose(); R.ldrFBO.dispose(); }
@@ -15468,7 +15480,8 @@ function applyPhysics(game, e, dt, def) {
   /* remember what we asked for, so "did we hit something" can be answered
      after friction has already changed the velocity */
   var wantX = e.vx * dt, wantZ = e.vz * dt;
-  var r = collideAxis(world, e.dim, e, wantX, e.vy * dt, wantZ);
+  var wantY = e.vy * dt;
+  var r = collideAxis(world, e.dim, e, wantX, wantY, wantZ);
   e.onGround = (before < 0 && Math.abs(r.dy - before * dt) > 1e-7);
   if (Math.abs(r.dx - wantX) > 1e-7) e.vx = 0;
   if (Math.abs(r.dz - wantZ) > 1e-7) e.vz = 0;
@@ -15481,7 +15494,7 @@ function applyPhysics(game, e, dt, def) {
     var af = Math.pow(0.45, dt);
     e.vx *= af; e.vz *= af;
   }
-  if (r.dy > 0 && e.vy > 0) e.vy = 0;
+  if (e.vy > 0 && Math.abs(r.dy - wantY) > 1e-7) e.vy = 0;
 }
 
 /* ------------------------------------------------------------ damage -- */
@@ -15894,14 +15907,20 @@ function updateFallingBlock(game, e, dt) {
 /* ============================ SOUND ENGINE ============================== */
 /* Everything is synthesised at runtime — no audio assets, same as textures. */
 var AUDIO = { ctx: null, master: null, enabled: true, volume: 0.6 };
+/* Browsers hand back a suspended AudioContext, and it only resumes from
+   inside a real user gesture — so this is called from every key and click,
+   not just the first one. */
 function initAudio() {
-  if (AUDIO.ctx) return;
   try {
-    var AC = window.AudioContext || window.webkitAudioContext;
-    AUDIO.ctx = new AC();
-    AUDIO.master = AUDIO.ctx.createGain();
-    AUDIO.master.gain.value = AUDIO.volume;
-    AUDIO.master.connect(AUDIO.ctx.destination);
+    if (!AUDIO.ctx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) { AUDIO.enabled = false; return; }
+      AUDIO.ctx = new AC();
+      AUDIO.master = AUDIO.ctx.createGain();
+      AUDIO.master.gain.value = AUDIO.volume;
+      AUDIO.master.connect(AUDIO.ctx.destination);
+    }
+    if (AUDIO.ctx.state !== 'running' && AUDIO.ctx.resume) AUDIO.ctx.resume();
   } catch (err) { AUDIO.enabled = false; }
 }
 function noiseBuffer(ctx, dur) {
@@ -15944,7 +15963,7 @@ var SOUNDS = {
   bossroar: { type: 'tone', f: 90, f2: 40, dur: 1.6, gain: 0.5, wave: 'sawtooth' }
 };
 function playSound(game, name, x, y, z, pitch, vol) {
-  if (!AUDIO.enabled || !AUDIO.ctx) return;
+  if (!AUDIO.enabled || !AUDIO.ctx || AUDIO.ctx.state !== 'running') return;
   var s = SOUNDS[name];
   if (!s) return;
   var dist = 0;
@@ -18491,7 +18510,8 @@ function updatePlayer(game, dt, input) {
   var prevY = p.y, wasGround = p.onGround;
   var sneakBlock = p.sneaking && p.onGround;
   var oldX = p.x, oldZ = p.z;
-  var r = collideAxis(world, p.dim, p, p.vx * dt, p.vy * dt, p.vz * dt);
+  var wantY = p.vy * dt;
+  var r = collideAxis(world, p.dim, p, p.vx * dt, wantY, p.vz * dt);
   if (sneakBlock && !groundBelow(world, p)) {
     p.x = oldX; p.z = oldZ;
     var stepX = collideAxis(world, p.dim, p, p.vx * dt, 0, 0);
@@ -18508,7 +18528,9 @@ function updatePlayer(game, dt, input) {
   if (Math.abs(r.dz - p.vz * dt) > 1e-7) {
     if (p.onGround && tryStepUp(world, p, 0, p.vz * dt)) { } else p.vz = 0;
   }
-  if (r.dy > 0 && p.vy > 0) p.vy = 0;
+  /* only a ceiling stops an upward move — an unobstructed one must not,
+     or the jump dies on its very first frame */
+  if (p.vy > 0 && Math.abs(r.dy - wantY) > 1e-7) p.vy = 0;
 
   /* --- fall damage --- */
   if (!p.onGround && !p.inWater && !p.flying) {
@@ -21115,6 +21137,7 @@ function setupInput(game) {
   var p = game.player;
 
   canvas.addEventListener('click', function () {
+    initAudio();
     if (!UI.screen) game.requestPointerLock();
   });
   document.addEventListener('pointerlockchange', function () {
@@ -21204,6 +21227,7 @@ function setupInput(game) {
     game.input = {}; game.keys = {};
   });
   window.addEventListener('resize', function () { resizeRenderer(); });
+  document.addEventListener('pointerup', function () { initAudio(); });
 }
 function showHeldName(game) {
   var s = heldStack(game.player);

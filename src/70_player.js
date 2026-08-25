@@ -805,7 +805,8 @@ function updatePlayer(game, dt, input) {
   var prevY = p.y, wasGround = p.onGround;
   var sneakBlock = p.sneaking && p.onGround;
   var oldX = p.x, oldZ = p.z;
-  var r = collideAxis(world, p.dim, p, p.vx * dt, p.vy * dt, p.vz * dt);
+  var wantY = p.vy * dt;
+  var r = collideAxis(world, p.dim, p, p.vx * dt, wantY, p.vz * dt);
   if (sneakBlock && !groundBelow(world, p)) {
     p.x = oldX; p.z = oldZ;
     var stepX = collideAxis(world, p.dim, p, p.vx * dt, 0, 0);
@@ -822,7 +823,9 @@ function updatePlayer(game, dt, input) {
   if (Math.abs(r.dz - p.vz * dt) > 1e-7) {
     if (p.onGround && tryStepUp(world, p, 0, p.vz * dt)) { } else p.vz = 0;
   }
-  if (r.dy > 0 && p.vy > 0) p.vy = 0;
+  /* only a ceiling stops an upward move — an unobstructed one must not,
+     or the jump dies on its very first frame */
+  if (p.vy > 0 && Math.abs(r.dy - wantY) > 1e-7) p.vy = 0;
 
   /* --- fall damage --- */
   if (!p.onGround && !p.inWater && !p.flying) {

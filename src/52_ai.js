@@ -392,7 +392,8 @@ function applyPhysics(game, e, dt, def) {
   /* remember what we asked for, so "did we hit something" can be answered
      after friction has already changed the velocity */
   var wantX = e.vx * dt, wantZ = e.vz * dt;
-  var r = collideAxis(world, e.dim, e, wantX, e.vy * dt, wantZ);
+  var wantY = e.vy * dt;
+  var r = collideAxis(world, e.dim, e, wantX, wantY, wantZ);
   e.onGround = (before < 0 && Math.abs(r.dy - before * dt) > 1e-7);
   if (Math.abs(r.dx - wantX) > 1e-7) e.vx = 0;
   if (Math.abs(r.dz - wantZ) > 1e-7) e.vz = 0;
@@ -405,7 +406,7 @@ function applyPhysics(game, e, dt, def) {
     var af = Math.pow(0.45, dt);
     e.vx *= af; e.vz *= af;
   }
-  if (r.dy > 0 && e.vy > 0) e.vy = 0;
+  if (e.vy > 0 && Math.abs(r.dy - wantY) > 1e-7) e.vy = 0;
 }
 
 /* ------------------------------------------------------------ damage -- */

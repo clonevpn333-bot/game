@@ -47,13 +47,25 @@ function initRenderer(canvas) {
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.CULL_FACE);
   gl.cullFace(gl.BACK);
-  resizeRenderer(canvas.width, canvas.height);
+  R.canvas = canvas;
+  resizeRenderer();
   return true;
 }
 
-function resizeRenderer(w, h) {
+/* Sizes the canvas backing store to the display (the element only carries a
+   CSS size, so without this the whole game renders at the 300x150 default and
+   is stretched), then sizes the offscreen buffers to the render scale. */
+function resizeRenderer() {
+  var canvas = R.canvas || (gl && gl.canvas);
+  if (!canvas) return;
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var cssW = canvas.clientWidth || window.innerWidth;
+  var cssH = canvas.clientHeight || window.innerHeight;
+  var dw = Math.max(64, Math.round(cssW * dpr));
+  var dh = Math.max(64, Math.round(cssH * dpr));
+  if (canvas.width !== dw || canvas.height !== dh) { canvas.width = dw; canvas.height = dh; }
   var s = R.settings.renderScale;
-  var rw = Math.max(64, Math.floor(w * s)), rh = Math.max(64, Math.floor(h * s));
+  var rw = Math.max(64, Math.floor(dw * s)), rh = Math.max(64, Math.floor(dh * s));
   if (R.width === rw && R.height === rh) return;
   R.width = rw; R.height = rh;
   if (R.sceneFBO) { R.sceneFBO.dispose(); R.sceneCopy.dispose(); R.bloomA.dispose(); R.bloomB.dispose(); R.godFBO.dispose(); R.ldrFBO.dispose(); }

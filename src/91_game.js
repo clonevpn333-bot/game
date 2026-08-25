@@ -57,6 +57,7 @@ function setupInput(game) {
   var p = game.player;
 
   canvas.addEventListener('click', function () {
+    initAudio();
     if (!UI.screen) game.requestPointerLock();
   });
   document.addEventListener('pointerlockchange', function () {
@@ -146,6 +147,7 @@ function setupInput(game) {
     game.input = {}; game.keys = {};
   });
   window.addEventListener('resize', function () { resizeRenderer(); });
+  document.addEventListener('pointerup', function () { initAudio(); });
 }
 function showHeldName(game) {
   var s = heldStack(game.player);

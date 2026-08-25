@@ -285,14 +285,20 @@ function updateFallingBlock(game, e, dt) {
 /* ============================ SOUND ENGINE ============================== */
 /* Everything is synthesised at runtime — no audio assets, same as textures. */
 var AUDIO = { ctx: null, master: null, enabled: true, volume: 0.6 };
+/* Browsers hand back a suspended AudioContext, and it only resumes from
+   inside a real user gesture — so this is called from every key and click,
+   not just the first one. */
 function initAudio() {
-  if (AUDIO.ctx) return;
   try {
-    var AC = window.AudioContext || window.webkitAudioContext;
-    AUDIO.ctx = new AC();
-    AUDIO.master = AUDIO.ctx.createGain();
-    AUDIO.master.gain.value = AUDIO.volume;
-    AUDIO.master.connect(AUDIO.ctx.destination);
+    if (!AUDIO.ctx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) { AUDIO.enabled = false; return; }
+      AUDIO.ctx = new AC();
+      AUDIO.master = AUDIO.ctx.createGain();
+      AUDIO.master.gain.value = AUDIO.volume;
+      AUDIO.master.connect(AUDIO.ctx.destination);
+    }
+    if (AUDIO.ctx.state !== 'running' && AUDIO.ctx.resume) AUDIO.ctx.resume();
   } catch (err) { AUDIO.enabled = false; }
 }
 function noiseBuffer(ctx, dur) {
@@ -335,7 +341,7 @@ var SOUNDS = {
   bossroar: { type: 'tone', f: 90, f2: 40, dur: 1.6, gain: 0.5, wave: 'sawtooth' }
 };
 function playSound(game, name, x, y, z, pitch, vol) {
-  if (!AUDIO.enabled || !AUDIO.ctx) return;
+  if (!AUDIO.enabled || !AUDIO.ctx || AUDIO.ctx.state !== 'running') return;
   var s = SOUNDS[name];
   if (!s) return;
   var dist = 0;
