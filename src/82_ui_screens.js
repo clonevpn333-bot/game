@@ -800,6 +800,9 @@ SCREEN_BUILDERS.options = function (game, box) {
   toggle('Waving Plants', 'waveGrass');
   toggle('Clouds', 'clouds');
   toggle('Sharp Textures', 'sharpTextures', function () { applyAtlasFilter(); });
+  toggle('X-Ray (X)', 'xray', function () { game.setXray(R.settings.xray); });
+  toggle('Fullbright (B)', 'fullbright');
+  toggle('Vein Miner', 'veinMiner');
   var vrow = el('div', 'optrow', list);
   var vlab = el('label', 'optlabel', vrow, 'Volume: ' + Math.round(AUDIO.volume * 100) + '%');
   var vin = el('input', 'optslider', vrow);
@@ -874,6 +877,7 @@ SCREEN_BUILDERS.help = function (game, box) {
     ['Pick block', 'Middle click'], ['Hotbar', '1 – 9 or scroll'], ['Drop item', 'Q'],
     ['Swap hands', 'F'], ['Inventory', 'E'], ['Zoom', 'C'], ['Debug info', 'F3'],
     ['Camera', 'F5'], ['Hide HUD', 'F1'], ['Controls', 'H'], ['Menu', 'Esc'],
+    ['X-ray', 'X'], ['Fullbright', 'B'], ['Vein miner', 'V'],
     ['Fly (creative)', 'double-tap Space']
   ];
   var list = el('div', 'optlist', box);

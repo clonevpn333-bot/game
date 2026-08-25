@@ -125,6 +125,19 @@ function setupInput(game) {
         if (!UI.screen) { var t = p.offhand; p.offhand = p.inv[p.sel]; p.inv[p.sel] = t; UI.dirty = true; }
         break;
       case 'KeyC': if (!UI.screen) game.zooming = true; break;
+      case 'KeyX':
+        R.settings.xray = !R.settings.xray;
+        game.setXray(R.settings.xray);
+        logMessage(game, 'X-ray ' + (R.settings.xray ? 'on' : 'off'), '#88ddff');
+        break;
+      case 'KeyB':
+        R.settings.fullbright = !R.settings.fullbright;
+        logMessage(game, 'Fullbright ' + (R.settings.fullbright ? 'on' : 'off'), '#ffee88');
+        break;
+      case 'KeyV':
+        R.settings.veinMiner = !R.settings.veinMiner;
+        logMessage(game, 'Vein miner ' + (R.settings.veinMiner ? 'on' : 'off'), '#aaffaa');
+        break;
       case 'KeyH':
         if (UI.screen === 'help') hideScreen(game); else if (!UI.screen) showScreen(game, 'help');
         break;
@@ -355,7 +368,11 @@ function pumpChunks(game, budgetMs) {
   var q = world.meshQueue;
   var remeshed = 0;
   var t2 = performance.now();
-  while (q.length && remeshed < 12 && performance.now() - t2 < 4) {
+  /* a bulk rebuild (x-ray, smooth lighting, a settings change) gets a much
+     bigger slice, or the world takes half a minute to catch up */
+  var bulk = q.length > 200;
+  var maxRemesh = bulk ? 64 : 12, msRemesh = bulk ? 14 : 4;
+  while (q.length && remeshed < maxRemesh && performance.now() - t2 < msRemesh) {
     var job = q.shift();
     var c4 = world.chunkAt(job[0], job[1], job[2]);
     if (!c4 || !c4.meshed) continue;
@@ -777,6 +794,14 @@ function boot4(canvas) {
   };
   g.save = function () { return saveGame(g); };
   g.remeshAll = function () { remeshAll(g); };
+  /* x-ray changes what the mesher emits, so the world has to be rebuilt */
+  g.setXray = function (on) {
+    setXray(on);
+    if (on) R.settings.fullbright = true;
+    remeshAll(g);
+    logMessage(g, on ? 'X-ray on — rebuilding the world, give it a few seconds.'
+      : 'X-ray off — rebuilding.', '#88ddff');
+  };
   g.growTree = function (dim, x, y, z, kind) { growTree(g, dim, x, y, z, kind); };
   g.travelDimension = function (to) { travelDimension(g, to); };
   g.trySleep = function (hit) { return trySleepInBed(g, hit || { x: Math.floor(g.player.x), y: Math.floor(g.player.y), z: Math.floor(g.player.z) }); };

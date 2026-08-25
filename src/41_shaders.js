@@ -152,6 +152,7 @@ uniform int uUnderwater;
 uniform vec3 uUnderwaterCol;
 uniform float uShadowTexel;
 uniform int uShadowOn;
+uniform float uMinLight;
 
 layout(location=0) out vec4 oColor;
 
@@ -184,6 +185,7 @@ void main(){
   vec3 blockTerm = uBlockLightCol * pow(blk, 1.55) * 1.05;
 
   vec3 light = (skyTerm + sunTerm * 0.95 + blockTerm) * ao;
+  light = max(light, vec3(uMinLight));
   vec3 col = albedo * light;
 
   // distance fog, tinted toward the sky the camera is looking at

@@ -12,6 +12,23 @@
  *   u8  flags   normal(3) | tint(2) | wave(2)
  * ========================================================================= */
 
+/* --------------------------------------------------------------- x-ray -- */
+var XRAY_ON = false;
+var XRAY_KEEP = null;
+function buildXrayTable() {
+  XRAY_KEEP = new Uint8Array(BLOCKS.length);
+  for (var i = 1; i < BLOCKS.length; i++) {
+    var b = BLOCKS[i];
+    if (!b) continue;
+    if (b.group === 'ore' || b.liquid === 'lava' || /ancient_debris|spawner|chest|amethyst_cluster|budding_amethyst|glowstone|sculk_shrieker|end_portal_frame|diamond_block|emerald_block|gold_block|bedrock/.test(b.name))
+      XRAY_KEEP[i] = 1;
+  }
+}
+function setXray(on) {
+  if (!XRAY_KEEP) buildXrayTable();
+  XRAY_ON = !!on;
+}
+
 var PASS_OPAQUE = 0, PASS_CUTOUT = 1, PASS_TRANS = 2;
 var TRANSLUCENT_NAMES = ['ice', 'slime_block', 'honey_block', 'nether_portal', 'tinted_glass'];
 
@@ -105,7 +122,12 @@ function meshSection(world, chunk, sy) {
       for (var x = -1; x <= 16; x++) {
         var i = NIDX(x, y, z);
         if (wy < 0 || wy >= CH_H) { _nbB[i] = 0; _nbL[i] = wy >= CH_H ? 0xF0 : 0; continue; }
-        _nbB[i] = world.getRaw(dim, wx0 + x, wy, wz0 + z);
+        var rawN = world.getRaw(dim, wx0 + x, wy, wz0 + z);
+        /* X-ray hides everything that is not worth digging for, including in
+           the neighbour cache — otherwise hidden blocks would still cull the
+           faces of the ores you are trying to see. */
+        if (XRAY_ON && rawN && !XRAY_KEEP[rawN & ID_MASK]) rawN = 0;
+        _nbB[i] = rawN;
         _nbL[i] = world.getLight(dim, wx0 + x, wy, wz0 + z);
       }
     }

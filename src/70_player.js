@@ -329,6 +329,29 @@ function updateBreaking(game, dt, hit) {
   }
   if (p.breakProgress >= p.breakTotal) breakBlock(game, p.breaking.x, p.breaking.y, p.breaking.z);
 }
+/* Vein miner: breaking one ore takes the whole connected vein with it, at a
+   proportional cost in tool durability and hunger. */
+var VEIN_MAX = 64;
+function veinOf(game, x, y, z, id) {
+  var world = game.world, dim = game.player.dim;
+  var seen = {}, out = [], stack = [[x, y, z]];
+  seen[x + ',' + y + ',' + z] = 1;
+  while (stack.length && out.length < VEIN_MAX) {
+    var c = stack.pop();
+    out.push(c);
+    for (var dx = -1; dx <= 1; dx++) for (var dy = -1; dy <= 1; dy++) for (var dz = -1; dz <= 1; dz++) {
+      if (!dx && !dy && !dz) continue;
+      var nx = c[0] + dx, ny = c[1] + dy, nz = c[2] + dz;
+      var k = nx + ',' + ny + ',' + nz;
+      if (seen[k]) continue;
+      if (world.getId(dim, nx, ny, nz) !== id) continue;
+      seen[k] = 1;
+      stack.push([nx, ny, nz]);
+    }
+  }
+  return out;
+}
+
 function breakBlock(game, x, y, z) {
   var p = game.player, world = game.world;
   var raw = world.getRaw(p.dim, x, y, z);
@@ -353,6 +376,19 @@ function breakBlock(game, x, y, z) {
   if (!p.creative && b.tool) damageHeld(game, 1);
   p.exhaustion += 0.005;
   p.breaking = null; p.breakProgress = 0;
+
+  /* take the rest of the vein with it */
+  if (R.settings.veinMiner && b.group === 'ore' && !game._veining && canHarvest(b, heldItem(p))) {
+    game._veining = true;
+    var vein = veinOf(game, x, y, z, id);
+    for (var v = 0; v < vein.length; v++) {
+      var c2 = vein[v];
+      if (c2[0] === x && c2[1] === y && c2[2] === z) continue;
+      if (!p.creative && heldStack(p) === null) break;   /* tool broke */
+      breakBlock(game, c2[0], c2[1], c2[2]);
+    }
+    game._veining = false;
+  }
   /* anything resting on the block falls or pops off */
   supportCheck(game, x, y, z);
 }

@@ -11237,6 +11237,23 @@ function quadrantFor(fc, left) {
  *   u8  flags   normal(3) | tint(2) | wave(2)
  * ========================================================================= */
 
+/* --------------------------------------------------------------- x-ray -- */
+var XRAY_ON = false;
+var XRAY_KEEP = null;
+function buildXrayTable() {
+  XRAY_KEEP = new Uint8Array(BLOCKS.length);
+  for (var i = 1; i < BLOCKS.length; i++) {
+    var b = BLOCKS[i];
+    if (!b) continue;
+    if (b.group === 'ore' || b.liquid === 'lava' || /ancient_debris|spawner|chest|amethyst_cluster|budding_amethyst|glowstone|sculk_shrieker|end_portal_frame|diamond_block|emerald_block|gold_block|bedrock/.test(b.name))
+      XRAY_KEEP[i] = 1;
+  }
+}
+function setXray(on) {
+  if (!XRAY_KEEP) buildXrayTable();
+  XRAY_ON = !!on;
+}
+
 var PASS_OPAQUE = 0, PASS_CUTOUT = 1, PASS_TRANS = 2;
 var TRANSLUCENT_NAMES = ['ice', 'slime_block', 'honey_block', 'nether_portal', 'tinted_glass'];
 
@@ -11330,7 +11347,12 @@ function meshSection(world, chunk, sy) {
       for (var x = -1; x <= 16; x++) {
         var i = NIDX(x, y, z);
         if (wy < 0 || wy >= CH_H) { _nbB[i] = 0; _nbL[i] = wy >= CH_H ? 0xF0 : 0; continue; }
-        _nbB[i] = world.getRaw(dim, wx0 + x, wy, wz0 + z);
+        var rawN = world.getRaw(dim, wx0 + x, wy, wz0 + z);
+        /* X-ray hides everything that is not worth digging for, including in
+           the neighbour cache — otherwise hidden blocks would still cull the
+           faces of the ores you are trying to see. */
+        if (XRAY_ON && rawN && !XRAY_KEEP[rawN & ID_MASK]) rawN = 0;
+        _nbB[i] = rawN;
         _nbL[i] = world.getLight(dim, wx0 + x, wy, wz0 + z);
       }
     }
@@ -12478,6 +12500,7 @@ uniform int uUnderwater;
 uniform vec3 uUnderwaterCol;
 uniform float uShadowTexel;
 uniform int uShadowOn;
+uniform float uMinLight;
 
 layout(location=0) out vec4 oColor;
 
@@ -12510,6 +12533,7 @@ void main(){
   vec3 blockTerm = uBlockLightCol * pow(blk, 1.55) * 1.05;
 
   vec3 light = (skyTerm + sunTerm * 0.95 + blockTerm) * ao;
+  light = max(light, vec3(uMinLight));
   vec3 col = albedo * light;
 
   // distance fog, tinted toward the sky the camera is looking at
@@ -13139,7 +13163,7 @@ var R = {
     renderDistance: 8, shadows: true, bloom: true, godRays: true, fxaa: false,
     smoothLight: true, fancyWater: true, fov: 74, renderScale: 1.0, maxFps: 0, viewBob: true,
     viewModel: true, particles: true, entityShadows: true, clouds: true, waveGrass: true,
-    sharpTextures: true
+    sharpTextures: true, xray: false, fullbright: false, veinMiner: true
   },
   frame: 0,
   sunDir: new Float32Array([0, 1, 0]),
@@ -13378,6 +13402,7 @@ function setSkyUniforms(p, camPos, dim, rain, moonPhase, time) {
   if (p.u.uSkyLightCol) gl.uniform3fv(p.u.uSkyLightCol, R.sky.skyLight);
   if (p.u.uBlockLightCol) gl.uniform3fv(p.u.uBlockLightCol, R.sky.blockLight);
   if (p.u.uAmbient) gl.uniform1f(p.u.uAmbient, R.sky.ambient);
+  if (p.u.uMinLight) gl.uniform1f(p.u.uMinLight, R.settings.fullbright ? 0.88 : 0.0);
 }
 
 
@@ -18123,6 +18148,29 @@ function updateBreaking(game, dt, hit) {
   }
   if (p.breakProgress >= p.breakTotal) breakBlock(game, p.breaking.x, p.breaking.y, p.breaking.z);
 }
+/* Vein miner: breaking one ore takes the whole connected vein with it, at a
+   proportional cost in tool durability and hunger. */
+var VEIN_MAX = 64;
+function veinOf(game, x, y, z, id) {
+  var world = game.world, dim = game.player.dim;
+  var seen = {}, out = [], stack = [[x, y, z]];
+  seen[x + ',' + y + ',' + z] = 1;
+  while (stack.length && out.length < VEIN_MAX) {
+    var c = stack.pop();
+    out.push(c);
+    for (var dx = -1; dx <= 1; dx++) for (var dy = -1; dy <= 1; dy++) for (var dz = -1; dz <= 1; dz++) {
+      if (!dx && !dy && !dz) continue;
+      var nx = c[0] + dx, ny = c[1] + dy, nz = c[2] + dz;
+      var k = nx + ',' + ny + ',' + nz;
+      if (seen[k]) continue;
+      if (world.getId(dim, nx, ny, nz) !== id) continue;
+      seen[k] = 1;
+      stack.push([nx, ny, nz]);
+    }
+  }
+  return out;
+}
+
 function breakBlock(game, x, y, z) {
   var p = game.player, world = game.world;
   var raw = world.getRaw(p.dim, x, y, z);
@@ -18147,6 +18195,19 @@ function breakBlock(game, x, y, z) {
   if (!p.creative && b.tool) damageHeld(game, 1);
   p.exhaustion += 0.005;
   p.breaking = null; p.breakProgress = 0;
+
+  /* take the rest of the vein with it */
+  if (R.settings.veinMiner && b.group === 'ore' && !game._veining && canHarvest(b, heldItem(p))) {
+    game._veining = true;
+    var vein = veinOf(game, x, y, z, id);
+    for (var v = 0; v < vein.length; v++) {
+      var c2 = vein[v];
+      if (c2[0] === x && c2[1] === y && c2[2] === z) continue;
+      if (!p.creative && heldStack(p) === null) break;   /* tool broke */
+      breakBlock(game, c2[0], c2[1], c2[2]);
+    }
+    game._veining = false;
+  }
   /* anything resting on the block falls or pops off */
   supportCheck(game, x, y, z);
 }
@@ -20611,6 +20672,9 @@ SCREEN_BUILDERS.options = function (game, box) {
   toggle('Waving Plants', 'waveGrass');
   toggle('Clouds', 'clouds');
   toggle('Sharp Textures', 'sharpTextures', function () { applyAtlasFilter(); });
+  toggle('X-Ray (X)', 'xray', function () { game.setXray(R.settings.xray); });
+  toggle('Fullbright (B)', 'fullbright');
+  toggle('Vein Miner', 'veinMiner');
   var vrow = el('div', 'optrow', list);
   var vlab = el('label', 'optlabel', vrow, 'Volume: ' + Math.round(AUDIO.volume * 100) + '%');
   var vin = el('input', 'optslider', vrow);
@@ -20685,6 +20749,7 @@ SCREEN_BUILDERS.help = function (game, box) {
     ['Pick block', 'Middle click'], ['Hotbar', '1 – 9 or scroll'], ['Drop item', 'Q'],
     ['Swap hands', 'F'], ['Inventory', 'E'], ['Zoom', 'C'], ['Debug info', 'F3'],
     ['Camera', 'F5'], ['Hide HUD', 'F1'], ['Controls', 'H'], ['Menu', 'Esc'],
+    ['X-ray', 'X'], ['Fullbright', 'B'], ['Vein miner', 'V'],
     ['Fly (creative)', 'double-tap Space']
   ];
   var list = el('div', 'optlist', box);
@@ -21298,6 +21363,19 @@ function setupInput(game) {
         if (!UI.screen) { var t = p.offhand; p.offhand = p.inv[p.sel]; p.inv[p.sel] = t; UI.dirty = true; }
         break;
       case 'KeyC': if (!UI.screen) game.zooming = true; break;
+      case 'KeyX':
+        R.settings.xray = !R.settings.xray;
+        game.setXray(R.settings.xray);
+        logMessage(game, 'X-ray ' + (R.settings.xray ? 'on' : 'off'), '#88ddff');
+        break;
+      case 'KeyB':
+        R.settings.fullbright = !R.settings.fullbright;
+        logMessage(game, 'Fullbright ' + (R.settings.fullbright ? 'on' : 'off'), '#ffee88');
+        break;
+      case 'KeyV':
+        R.settings.veinMiner = !R.settings.veinMiner;
+        logMessage(game, 'Vein miner ' + (R.settings.veinMiner ? 'on' : 'off'), '#aaffaa');
+        break;
       case 'KeyH':
         if (UI.screen === 'help') hideScreen(game); else if (!UI.screen) showScreen(game, 'help');
         break;
@@ -21528,7 +21606,11 @@ function pumpChunks(game, budgetMs) {
   var q = world.meshQueue;
   var remeshed = 0;
   var t2 = performance.now();
-  while (q.length && remeshed < 12 && performance.now() - t2 < 4) {
+  /* a bulk rebuild (x-ray, smooth lighting, a settings change) gets a much
+     bigger slice, or the world takes half a minute to catch up */
+  var bulk = q.length > 200;
+  var maxRemesh = bulk ? 64 : 12, msRemesh = bulk ? 14 : 4;
+  while (q.length && remeshed < maxRemesh && performance.now() - t2 < msRemesh) {
     var job = q.shift();
     var c4 = world.chunkAt(job[0], job[1], job[2]);
     if (!c4 || !c4.meshed) continue;
@@ -21950,6 +22032,14 @@ function boot4(canvas) {
   };
   g.save = function () { return saveGame(g); };
   g.remeshAll = function () { remeshAll(g); };
+  /* x-ray changes what the mesher emits, so the world has to be rebuilt */
+  g.setXray = function (on) {
+    setXray(on);
+    if (on) R.settings.fullbright = true;
+    remeshAll(g);
+    logMessage(g, on ? 'X-ray on — rebuilding the world, give it a few seconds.'
+      : 'X-ray off — rebuilding.', '#88ddff');
+  };
   g.growTree = function (dim, x, y, z, kind) { growTree(g, dim, x, y, z, kind); };
   g.travelDimension = function (to) { travelDimension(g, to); };
   g.trySleep = function (hit) { return trySleepInBed(g, hit || { x: Math.floor(g.player.x), y: Math.floor(g.player.y), z: Math.floor(g.player.z) }); };

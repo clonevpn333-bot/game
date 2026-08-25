@@ -14,7 +14,7 @@ var R = {
     renderDistance: 8, shadows: true, bloom: true, godRays: true, fxaa: false,
     smoothLight: true, fancyWater: true, fov: 74, renderScale: 1.0, maxFps: 0, viewBob: true,
     viewModel: true, particles: true, entityShadows: true, clouds: true, waveGrass: true,
-    sharpTextures: true
+    sharpTextures: true, xray: false, fullbright: false, veinMiner: true
   },
   frame: 0,
   sunDir: new Float32Array([0, 1, 0]),
@@ -253,4 +253,5 @@ function setSkyUniforms(p, camPos, dim, rain, moonPhase, time) {
   if (p.u.uSkyLightCol) gl.uniform3fv(p.u.uSkyLightCol, R.sky.skyLight);
   if (p.u.uBlockLightCol) gl.uniform3fv(p.u.uBlockLightCol, R.sky.blockLight);
   if (p.u.uAmbient) gl.uniform1f(p.u.uAmbient, R.sky.ambient);
+  if (p.u.uMinLight) gl.uniform1f(p.u.uMinLight, R.settings.fullbright ? 0.88 : 0.0);
 }
