@@ -223,59 +223,6 @@ function poseQuadWalk(pose, swing, amp) {
 
 /* ================================ DRAW ================================= */
 var _pose = {};
-/* The player's own body.
- *
- * The camera is the model's head. Everything below it is drawn for real, at
- * the real height, so the torso, arms and legs hang off the view exactly
- * where a person's would and run off the bottom of the screen the way they
- * should. Only the head itself is skipped in first person, because the
- * camera is inside it — and from anybody else's point of view the head is
- * there and correct.
- *
- * The body yaw is the thing that has to be handled differently in first
- * person. Everywhere else a body lags the head and snaps around once the
- * twist gets too big, which is right when you are watching someone from
- * outside. Seen from inside the chest that same lag sweeps the whole torso
- * across the screen every time you turn, which reads as the body spinning
- * around you. So in first person the body simply tracks the head: turn, and
- * the torso stays put in the frame where it belongs.
- */
-function selfBodyEntity(game) {
-  var p = game.player;
-  if (p.spectator || !R.settings.selfBody) return null;
-  var skin = (typeof NET !== 'undefined' ? (NET.skin || 0) : 0) % PLAYER_SKINS.length;
-  var want = 'player' + skin;
-  var self = game.selfEnt;
-  if (!self || self.type !== want) {
-    self = game.selfEnt = makeEntity(want, p.dim, p.x, p.y, p.z, { persist: true });
-    self.yaw = self.bodyYaw = p.yaw;
-  }
-  self.dim = p.dim; self.x = p.x; self.y = p.y; self.z = p.z;
-  self.pitch = p.pitch; self.headPitch = p.pitch;
-  self.dead = false; self.hurtTime = 0;
-  /* Full size, always. Only what is drawn differs between the two views. */
-  self.sizeMul = 1;
-
-  var spd = Math.hypot(p.vx, p.vz);
-  if (game.cameraMode === 0) {
-    self.yaw = p.yaw;                 /* locked to the head: no sweep, no spin */
-    self.headYaw = 0;
-  } else {
-    /* third person: the legs point where you are going, the head leads, and
-       the twist between them is capped the way the real one is */
-    if (spd > 0.5) self.bodyYaw = Math.atan2(p.vx, -p.vz);
-    var twist = angleDiff(p.yaw, self.bodyYaw);
-    if (Math.abs(twist) > 0.85) self.bodyYaw = p.yaw - (twist > 0 ? 0.85 : -0.85);
-    self.yaw += angleDiff(self.bodyYaw, self.yaw) * 0.30;
-    self.headYaw = angleDiff(p.yaw, self.yaw);
-  }
-  self.walkAmt = approach(self.walkAmt, Math.min(1, spd / 4.3), 0.25);
-  self.walkPhase = p.bobPhase;
-  self.sneaking = p.sneaking; self.onGround = p.onGround;
-  if (game.sleeping) self.walkAmt = 0;
-  return self;
-}
-
 function drawEntities(game, fogStart, fogEnd, underwater, uwv, shadowOn) {
   var world = game.world, p = game.player, dim = p.dim;
   var list = game.entities;
@@ -292,23 +239,6 @@ function drawEntities(game, fogStart, fogEnd, underwater, uwv, shadowOn) {
     if (d2 > maxD2) continue;
     if (!R.frustum.boxIn(e.x - 2, e.y - 1, e.z - 2, e.x + 2, e.y + e.h + 2, e.z + 2)) continue;
     buildEntityMesh(game, e);
-    drew++;
-  }
-  var self = selfBodyEntity(game);
-  if (self) {
-    var sp = MOBS[self.type].model.parts;
-    var first = game.cameraMode === 0;
-    /* First person draws the legs and nothing else.
-       The eye sits a tenth of a block above the shoulders, so a torso drawn
-       there is not a torso from the inside — it is a wall of shirt across the
-       whole screen the moment you tip your head down, and no amount of
-       scaling or nudging changes that, because that is simply where your
-       chest is relative to your eyes. The arms are the view model's job
-       already. Legs and feet are the part you can actually look at, so that
-       is the part that gets drawn. Everyone else still sees all of you. */
-    if (first) { sp[0].hidden = true; sp[1].hidden = true; sp[2].hidden = true; sp[3].hidden = true; }
-    buildEntityMesh(game, self);
-    if (first) { sp[0].hidden = false; sp[1].hidden = false; sp[2].hidden = false; sp[3].hidden = false; }
     drew++;
   }
   if (EBUF.n === 0) return;

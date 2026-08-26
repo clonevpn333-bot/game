@@ -761,6 +761,8 @@ SCREEN_BUILDERS.pause = function (game, box) {
     logMessage(game, 'Game mode: ' + (game.player.creative ? 'Creative' : 'Survival'), '#ffff88');
     hideScreen(game);
   });
+  var bW = el('button', 'bigbtn', box, 'Worlds');
+  bW.addEventListener('click', function () { showScreen(game, 'worlds'); });
   var bM = el('button', 'bigbtn', box, NET.active ? 'Multiplayer (' + NET.status + ')' : 'Multiplayer');
   bM.addEventListener('click', function () { showScreen(game, 'multiplayer'); });
   var bA = el('button', 'bigbtn', box, 'Achievements (L)');
@@ -808,7 +810,6 @@ SCREEN_BUILDERS.options = function (game, box) {
   toggle('Sharp Textures', 'sharpTextures', function () { applyAtlasFilter(); });
   toggle('Motion Blur', 'motionBlur');
   toggle('Depth of Field', 'dof');
-  toggle('Show Own Body', 'selfBody');
   toggle('X-Ray (X)', 'xray', function () { game.setXray(R.settings.xray); });
   toggle('Fullbright (B)', 'fullbright');
   toggle('Vein Miner', 'veinMiner');
@@ -901,3 +902,63 @@ SCREEN_BUILDERS.help = function (game, box) {
   b.addEventListener('click', function () { hideScreen(game); });
 };
 SCREEN_REFRESH.help = function () { };
+
+
+/* ------------------------------------------------------------- worlds -- */
+SCREEN_BUILDERS.worlds = function (game, box) {
+  box.classList.add('centered', 'optionsgui', 'netgui');
+  el('div', 'bigtitle', box, 'Select World');
+  el('div', 'subtext', box, 'Currently playing: ' + (game.worldName || 'My World'));
+
+  var list = el('div', 'worldlist', box);
+  var worlds = listWorlds();
+  if (!worlds.length) el('div', 'subtext', list, 'No saved worlds yet — make one below.');
+  for (var i = 0; i < worlds.length; i++) {
+    (function (w) {
+      var row = el('div', 'worldrow' + (w.id === game.worldId ? ' worldcur' : ''), list);
+      var info = el('div', 'worldinfo', row);
+      el('div', 'worldname', info, w.name);
+      el('div', 'worldmeta', info,
+        w.mode + '  ·  seed ' + w.seed + (w.saved ? '  ·  ' + new Date(w.saved).toLocaleString() : ''));
+      var play = el('button', 'optbtn', row, w.id === game.worldId ? 'Playing' : 'Play');
+      if (w.id === game.worldId) play.disabled = true;
+      else play.addEventListener('click', function () {
+        openWorld(w.id, w.name, w.seed, w.mode === 'creative');
+      });
+      var del = el('button', 'optbtn worlddel', row, 'Delete');
+      del.addEventListener('click', function () {
+        if (del.textContent !== 'Sure?') { del.textContent = 'Sure?'; return; }
+        deleteWorld(w.id);
+        showScreen(game, 'worlds');
+      });
+    })(worlds[i]);
+  }
+
+  el('div', 'bigtitle worldsub', box, 'Create New World');
+  var nameRow = el('div', 'optrow', box);
+  el('label', 'optlabel', nameRow, 'World name');
+  var nameIn = el('input', 'netinput', nameRow);
+  nameIn.type = 'text'; nameIn.maxLength = 28; nameIn.value = 'New World';
+  var seedRow = el('div', 'optrow', box);
+  el('label', 'optlabel', seedRow, 'Seed (blank for random)');
+  var seedIn = el('input', 'netinput', seedRow);
+  seedIn.type = 'text'; seedIn.maxLength = 24; seedIn.placeholder = 'any word or number';
+  var modeRow = el('div', 'optrow', box);
+  el('label', 'optlabel', modeRow, 'Mode');
+  var creative = false;
+  var modeBtn = el('button', 'optbtn', modeRow, 'Survival');
+  modeBtn.addEventListener('click', function () {
+    creative = !creative;
+    modeBtn.textContent = creative ? 'Creative' : 'Survival';
+  });
+  var make = el('button', 'bigbtn', box, 'Create New World');
+  make.addEventListener('click', function () {
+    var name = (nameIn.value || 'New World').slice(0, 28);
+    var id = worldSlug(name) + '-' + Math.random().toString(36).slice(2, 6);
+    make.disabled = true; make.textContent = 'Generating…';
+    openWorld(id, name, seedFromText(seedIn.value), creative);
+  });
+
+  var back = el('button', 'bigbtn', box, 'Back');
+  back.addEventListener('click', function () { showScreen(game, 'pause'); });
+};

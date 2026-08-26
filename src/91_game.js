@@ -568,6 +568,63 @@ function growTree(game, dim, x, y, z, kind) {
   playSound(game, 'place', x, y, z, 0.7);
 }
 
+/* ------------------------------------------------------------- worlds -- */
+/* Every world is its own save under its own key, the way the real game keeps
+   them: a name you chose, the seed it grew from, the mode you played it in
+   and when you last touched it. */
+function worldKey(id) { return 'voxelcraft.world.' + (id || 'default'); }
+function worldSlug(name) {
+  var s = String(name || 'World').toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '').slice(0, 28);
+  return s || 'world';
+}
+function listWorlds() {
+  var out = [];
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k.indexOf('voxelcraft.world.') !== 0) continue;
+      var d = JSON.parse(localStorage.getItem(k));
+      if (!d) continue;
+      out.push({ id: k.slice(17), name: d.name || 'World', seed: d.seed >>> 0,
+        mode: d.mode || 'survival', saved: d.saved || 0 });
+    }
+    /* the single save from before worlds had names still deserves a home */
+    var old = localStorage.getItem('voxelcraft.save');
+    if (old) {
+      var o = JSON.parse(old);
+      if (o) out.push({ id: 'default', name: 'My World', seed: o.seed >>> 0,
+        mode: 'survival', saved: o.saved || 0, legacy: true });
+    }
+  } catch (e) { }
+  out.sort(function (a, b) { return b.saved - a.saved; });
+  return out;
+}
+function deleteWorld(id) { try { localStorage.removeItem(worldKey(id)); } catch (e) { } }
+function seedFromText(txt) {
+  txt = String(txt || '').trim();
+  if (!txt) return (Math.random() * 0xffffffff) >>> 0;
+  if (/^-?\d+$/.test(txt)) return parseInt(txt, 10) >>> 0;
+  var h = 2166136261;
+  for (var i = 0; i < txt.length; i++) { h ^= txt.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+/* Opening a world is a reload into it: same path every time, no special case
+   for a world that is already running. */
+function openWorld(id, name, seed, creative) {
+  var base = location.href.split('#')[0].split('?')[0];
+  location.href = base + '#world=' + encodeURIComponent(id) + '&seed=' + (seed >>> 0) +
+    '&name=' + encodeURIComponent(name) + (creative ? '&mode=creative' : '');
+  location.reload();
+}
+function worldFromURL() {
+  var id = /[#&?]world=([^&#]+)/.exec(location.href);
+  var nm = /[#&?]name=([^&#]+)/.exec(location.href);
+  return { id: id ? decodeURIComponent(id[1]) : 'default',
+    name: nm ? decodeURIComponent(nm[1]) : 'My World',
+    creative: /[#&?]mode=creative/.test(location.href) };
+}
+
 /* ---------------------------------------------------------- save/load -- */
 function saveGame(game) {
   try {
@@ -583,16 +640,21 @@ function saveGame(game) {
       },
       edits: game.edits, ach: game.ach || {}, cheated: !!game.cheated, cheatReason: game.cheatReason || ''
     };
-    localStorage.setItem('voxelcraft.save', JSON.stringify(data));
+    data.name = game.worldName || 'World';
+    data.mode = game.player.creative ? 'creative' : 'survival';
+    data.saved = Date.now();
+    localStorage.setItem(worldKey(game.worldId), JSON.stringify(data));
+    localStorage.setItem('voxelcraft.last', game.worldId);
     return true;
   } catch (e) { return false; }
 }
 function loadGame(game) {
   try {
-    var raw = localStorage.getItem('voxelcraft.save');
+    var raw = localStorage.getItem(worldKey(game.worldId));
     if (!raw) return false;
     var d = JSON.parse(raw);
     if (!d || d.v !== 3) return false;
+    game.worldName = d.name || game.worldName || 'World';
     game.seed = d.seed;
     game.dayTime = d.dayTime;
     game.edits = d.edits || {};
@@ -824,7 +886,10 @@ function seedFromURL() {
 }
 function boot4(canvas) {
   var seed = seedFromURL();
+  var wi = worldFromURL();
   var g = createGame(canvas, seed);
+  g.worldId = wi.id; g.worldName = wi.name;
+  if (wi.creative) { g.player.creative = true; }
   Game = g;
   window.game = g;
 

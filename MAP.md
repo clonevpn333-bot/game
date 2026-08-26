@@ -25,7 +25,7 @@ slice, edit it, then `node tools/build.js` to regenerate `minecraft.html`.
 | `src/42_shaders2.js` | 405 | post-processing shaders — composite, bloom, DOF, FXAA |
 | `src/43_render.js` | 261 | renderer state, settings, resize |
 | `src/44_frame.js` | 426 | the per-frame render order and post pass |
-| `src/50_entities.js` | 553 | entity draw buffer, the box emitter, body plans |
+| `src/50_entities.js` | 483 | entity draw buffer, the box emitter, body plans |
 | `src/51_mobs.js` | 1067 | every mob definition and its animation |
 | `src/52_ai.js` | 548 | entity physics, pathing, aggro, damage |
 | `src/53_effects.js` | 393 | particles and weather |
@@ -37,9 +37,9 @@ slice, edit it, then `node tools/build.js` to regenerate `minecraft.html`.
 | `src/71_viewmodel.js` | 567 | first-person arms, held item models, swing animation |
 | `src/80_ui_icons.js` | 113 | HUD icon painting |
 | `src/81_ui_core.js` | 476 | HUD layout, slots, inventory click handling |
-| `src/82_ui_screens.js` | 904 | every full-screen UI |
+| `src/82_ui_screens.js` | 965 | every full-screen UI |
 | `src/90_blockentities.js` | 468 | furnaces, chests, fluids, random ticks |
-| `src/91_game.js` | 1050 | boot, the main loop, input, save and load, spawn |
+| `src/91_game.js` | 1115 | boot, the main loop, input, save and load, spawn |
 | `src/92_redstone.js` | 443 | redstone simulation |
 | `src/93_bosses.js` | 197 | dragon and wither fights |
 | `src/94_achievements.js` | 183 | achievements and the credits |
@@ -591,20 +591,19 @@ quadModel  50_entities.js:191
 poseWalk  50_entities.js:210
 poseQuadWalk  50_entities.js:218
 _pose  50_entities.js:225
-selfBodyEntity  50_entities.js:243
-drawEntities  50_entities.js:279
-buildEntityMesh  50_entities.js:337
-buildDroppedItem  50_entities.js:370
-buf0  50_entities.js:412
-buildXpOrb  50_entities.js:415
-PV  50_entities.js:428
-PART  50_entities.js:429
-initParticleBuffers  50_entities.js:430
-CORNERS  50_entities.js:444
-drawParticles  50_entities.js:445
-WEA  50_entities.js:491
-initWeatherBuffers  50_entities.js:492
-drawWeather  50_entities.js:504
+drawEntities  50_entities.js:226
+buildEntityMesh  50_entities.js:267
+buildDroppedItem  50_entities.js:300
+buf0  50_entities.js:342
+buildXpOrb  50_entities.js:345
+PV  50_entities.js:358
+PART  50_entities.js:359
+initParticleBuffers  50_entities.js:360
+CORNERS  50_entities.js:374
+drawParticles  50_entities.js:375
+WEA  50_entities.js:421
+initWeatherBuffers  50_entities.js:422
+drawWeather  50_entities.js:434
 ```
 
 ### 51_mobs.js
@@ -941,13 +940,14 @@ renderCreativeList  82_ui_screens.js:710
 SCREEN_REFRESH.creative  82_ui_screens.js:738
 SCREEN_BUILDERS.death  82_ui_screens.js:741
 SCREEN_BUILDERS.pause  82_ui_screens.js:750
-SCREEN_BUILDERS.options  82_ui_screens.js:771
-SCREEN_REFRESH.death  82_ui_screens.js:827
-SCREEN_REFRESH.pause  82_ui_screens.js:828
-SCREEN_REFRESH.options  82_ui_screens.js:829
-drawPlayerDoll  82_ui_screens.js:832
-SCREEN_BUILDERS.help  82_ui_screens.js:880
-SCREEN_REFRESH.help  82_ui_screens.js:903
+SCREEN_BUILDERS.options  82_ui_screens.js:773
+SCREEN_REFRESH.death  82_ui_screens.js:828
+SCREEN_REFRESH.pause  82_ui_screens.js:829
+SCREEN_REFRESH.options  82_ui_screens.js:830
+drawPlayerDoll  82_ui_screens.js:833
+SCREEN_BUILDERS.help  82_ui_screens.js:881
+SCREEN_REFRESH.help  82_ui_screens.js:904
+SCREEN_BUILDERS.worlds  82_ui_screens.js:908
 ```
 
 ### 90_blockentities.js
@@ -996,25 +996,32 @@ safeYAt  91_game.js:514
 buildPortalFrame  91_game.js:525
 buildEndPlatform  91_game.js:544
 growTree  91_game.js:555
-saveGame  91_game.js:572
-loadGame  91_game.js:590
-gameTick  91_game.js:614
-drainPendingMobs  91_game.js:679
-paintHUD  91_game.js:700
-_nearCache  91_game.js:759
-nearestStructureLine  91_game.js:760
-facingName  91_game.js:776
-boot  91_game.js:782
-setLoading  91_game.js:791
-boot2  91_game.js:799
-boot3  91_game.js:808
-seedFromURL  91_game.js:816
-boot4  91_game.js:825
-findSpawnColumn  91_game.js:898
-findSpawnPoint  91_game.js:925
-waitForSpawn  91_game.js:960
-frame  91_game.js:994
-DIAG  91_game.js:1023
+worldKey  91_game.js:575
+worldSlug  91_game.js:576
+listWorlds  91_game.js:581
+deleteWorld  91_game.js:603
+seedFromText  91_game.js:604
+openWorld  91_game.js:614
+worldFromURL  91_game.js:620
+saveGame  91_game.js:629
+loadGame  91_game.js:651
+gameTick  91_game.js:676
+drainPendingMobs  91_game.js:741
+paintHUD  91_game.js:762
+_nearCache  91_game.js:821
+nearestStructureLine  91_game.js:822
+facingName  91_game.js:838
+boot  91_game.js:844
+setLoading  91_game.js:853
+boot2  91_game.js:861
+boot3  91_game.js:870
+seedFromURL  91_game.js:878
+boot4  91_game.js:887
+findSpawnColumn  91_game.js:963
+findSpawnPoint  91_game.js:990
+waitForSpawn  91_game.js:1025
+frame  91_game.js:1059
+DIAG  91_game.js:1088
 ```
 
 ### 92_redstone.js

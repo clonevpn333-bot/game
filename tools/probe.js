@@ -97,30 +97,24 @@ const PROBES = [
         : 'FAIL ' + boxes.length + ' boxes, y ' + lo + '..' + hi;
     } },
 
-  { name: 'self-body', fn: () => {
+  { name: 'worlds', fn: () => {
       const g = window.game;
-      g.cameraMode = 0;
-      const e = selfBodyEntity(g);
-      if (!e) return 'FAIL no body entity';
-      const parts = MOBS[e.type].model.parts.map(p => p.n).join(',');
-      return 'type=' + e.type + ' parts=' + parts +
-        ' size=' + e.sizeMul + ' (first person draws legL,legR only)';
-    } },
-
-  { name: 'body-no-spin', fn: () => {
-      const g = window.game, p = g.player;
-      g.cameraMode = 0; p.vx = p.vz = 0;
-      let worst = 0, drift = 0;
-      for (let i = 0; i < 60; i++) {
-        p.yaw += 0.09;                      /* stand still and spin the view */
-        const e = selfBodyEntity(g);
-        worst = Math.max(worst, Math.abs(angleDiff(p.yaw, e.yaw)));
-        drift = Math.abs(e.y - p.y);
-      }
-      return (worst < 1e-6 && drift < 1e-6)
-        ? 'body locked to the head while turning (max offset ' + worst.toFixed(6)
-          + ' rad), drawn at the true height'
-        : 'FAIL yaw offset ' + worst.toFixed(3) + ' rad, height drift ' + drift.toFixed(3);
+      g.worldId = 'probe-abc'; g.worldName = 'Probe World'; g.seed = 4242;
+      if (!saveGame(g)) return 'FAIL save refused';
+      const all = listWorlds();
+      const mine = all.find(w => w.id === 'probe-abc');
+      const slug = worldSlug('My  Cool World!!');
+      const s1 = seedFromText('hello'), s2 = seedFromText('hello'), s3 = seedFromText('12345');
+      g.seed = 0; g.worldName = '';
+      const ok = loadGame(g);
+      deleteWorld('probe-abc');
+      const gone = !listWorlds().some(w => w.id === 'probe-abc');
+      return (mine && mine.name === 'Probe World' && slug === 'my-cool-world' &&
+        s1 === s2 && s3 === 12345 && ok && g.seed === 4242 && g.worldName === 'Probe World' && gone)
+        ? all.length + ' world(s) listed, save/load round-trips by id, slug=' + slug +
+          ', text seed stable, numeric seed exact, delete works'
+        : 'FAIL listed=' + (mine ? 'y' : 'n') + ' slug=' + slug + ' load=' + ok +
+          ' seed=' + g.seed + ' name=' + g.worldName + ' deleted=' + gone;
     } },
 
   { name: 'enderman', fn: () => {
