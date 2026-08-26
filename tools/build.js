@@ -52,3 +52,6 @@ ${mainBundle}
 fs.writeFileSync(path.join(ROOT, 'minecraft.html'), out);
 const kb = (Buffer.byteLength(out) / 1024).toFixed(1);
 console.log('built minecraft.html  ' + kb + ' KB   (' + files.length + ' modules, ' + shared.length + ' shared)');
+
+/* keep the code map in step with the sources */
+try { require('./map.js'); } catch (e) { }

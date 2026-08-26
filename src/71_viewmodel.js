@@ -88,7 +88,7 @@ function updateViewModel(game, dt) {
   if (p.charging) p.chargeTime = (p.chargeTime || 0) + dt;
 }
 var SWING_STYLE_FOR = { sword: 1, pickaxe: 2, axe: 2, shovel: 3, hoe: 3 };
-var SWING_TIME = [0.28, 0.30, 0.40, 0.34];
+var SWING_TIME = [0.28, 0.28, 0.42, 0.36];
 function startSwing(kind) {
   VM.swing = 0; VM.swingActive = true; VM.swingKind = kind || 0;
   /* Placing or using something is always the short forward poke; only a real
@@ -116,40 +116,52 @@ function vmPhase(sp, a, b) {
    without a snap. */
 function applySwingTransform(sp, side) {
   var style = VM.swingStyle || 0;
-  var wind, hit;
-  if (style === 1) {                         /* sword: cocked back, swept across */
+  var wind, hit, settle;
+  /* the little counter-move at the tail: the tool overshoots and comes back,
+     which is what stops a swing reading as a piston stroke */
+  settle = sp > 0.70 ? Math.sin((sp - 0.70) / 0.30 * Math.PI) : 0;
+
+  if (style === 1) {
+    /* SWORD — a sweep across the view. Almost all of the motion is roll and
+       yaw, so the blade travels sideways through the frame rather than
+       pumping toward the camera and back. */
+    wind = vmPhase(sp, 0, 0.20) - vmPhase(sp, 0.20, 0.46);
+    hit = vmPhase(sp, 0.16, 0.50) - vmPhase(sp, 0.64, 1);
+    mTranslate(side * (0.15 * wind - 0.26 * hit), 0.06 * wind - 0.05 * hit,
+      0.02 * wind - 0.08 * hit);
+    mRotZ(side * (-0.48 * wind + 1.38 * hit - 0.10 * settle));
+    mRotY(side * (0.58 * wind - 1.18 * hit));
+    mRotX(-0.20 * wind + 0.22 * hit);
+    return;
+  }
+  if (style === 2) {
+    /* PICKAXE and AXE — the tool is raised behind the shoulder and swung
+       down through an arc. The arc is a pitch about the fist, so the head
+       travels a long way while the hand barely moves. */
+    wind = vmPhase(sp, 0, 0.30) - vmPhase(sp, 0.30, 0.60);
+    hit = vmPhase(sp, 0.26, 0.58) - vmPhase(sp, 0.72, 1);
+    mTranslate(side * (0.02 * wind - 0.05 * hit), 0.17 * wind + 0.03 * hit,
+      0.02 * wind - 0.05 * hit);
+    /* the arc is big but bounded: driving further than this puts the head
+       through the bottom of the frame, where you cannot see it land */
+    mRotX(-0.98 * wind + 0.98 * hit - 0.10 * settle);
+    mRotZ(side * (-0.26 * wind + 0.34 * hit));
+    mRotY(side * (0.12 * wind - 0.14 * hit));
+    return;
+  }
+  if (style === 3) {
+    /* SHOVEL and HOE — driven down into the ground and scooped back out. */
     wind = vmPhase(sp, 0, 0.26) - vmPhase(sp, 0.26, 0.54);
-    hit = vmPhase(sp, 0.22, 0.54) - vmPhase(sp, 0.66, 1);
-    mTranslate(side * (0.15 * wind - 0.22 * hit), 0.11 * wind - 0.12 * hit,
-      0.11 * wind - 0.19 * hit);
-    mRotY(side * (0.58 * wind - 0.80 * hit));
-    mRotZ(side * (0.48 * wind - 1.25 * hit));
-    mRotX(-0.62 * wind + 0.80 * hit);
+    hit = vmPhase(sp, 0.22, 0.56) - vmPhase(sp, 0.70, 1);
+    mTranslate(side * (0.03 * wind - 0.05 * hit), 0.12 * wind - 0.20 * hit,
+      0.02 * wind - 0.06 * hit);
+    mRotX(-0.55 * wind + 1.35 * hit - 0.10 * settle);
+    mRotZ(side * (-0.14 * wind + 0.30 * hit));
+    mRotY(side * (0.08 * wind - 0.12 * hit));
     return;
   }
-  if (style === 2) {                         /* pick and axe: overhead, driven down */
-    wind = vmPhase(sp, 0, 0.30) - vmPhase(sp, 0.30, 0.58);
-    hit = vmPhase(sp, 0.26, 0.56) - vmPhase(sp, 0.70, 1);
-    mTranslate(side * (0.06 * wind - 0.08 * hit), 0.22 * wind - 0.24 * hit,
-      0.15 * wind - 0.29 * hit);
-    mRotX(-1.10 * wind + 1.25 * hit);
-    mRotZ(side * (0.22 * wind - 0.30 * hit));
-    mRotY(side * (0.10 * wind - 0.20 * hit));
-    return;
-  }
-  if (style === 3) {                         /* shovel and hoe: a low scoop */
-    wind = vmPhase(sp, 0, 0.28) - vmPhase(sp, 0.28, 0.56);
-    hit = vmPhase(sp, 0.24, 0.58) - vmPhase(sp, 0.68, 1);
-    mTranslate(side * (0.07 * wind - 0.13 * hit), 0.15 * wind - 0.24 * hit,
-      0.07 * wind - 0.28 * hit);
-    mRotX(-0.40 * wind + 1.00 * hit);
-    mRotZ(side * (-0.18 * wind + 0.34 * hit));
-    mRotY(side * (0.08 * wind - 0.14 * hit));
-    return;
-  }
-  /* bare hand, blocks and everything else: the game's own punch arc. The
-     lateral part is damped because at this field of view the full sweep puts
-     the forearm right over the crosshair. */
+  /* bare hand, blocks and everything else: the game's own punch arc, with the
+     lateral part damped so the forearm stays off the crosshair */
   var fSq = Math.sin(sp * sp * Math.PI);
   var fRt = Math.sin(Math.sqrt(sp) * Math.PI);
   mTranslate(side * -0.40 * fRt * 0.38, 0.20 * Math.sin(Math.sqrt(sp) * Math.PI * 2) * 0.55,
@@ -247,6 +259,18 @@ var ITEM_GRIP = { sword: 5.6, pickaxe: 6.2, axe: 6.2, shovel: 6.2, hoe: 6.2, rod
 /* Hand-sized: a sword fills a lot more of the frame than a lump of iron. */
 var ITEM_SCALE = { sword: 0.40, pickaxe: 0.37, axe: 0.37, shovel: 0.37, hoe: 0.37,
   rod: 0.40, bucket: 0.55, ingot: 0.72, gem: 0.72 };
+/* rest pose per tool: [rotY, rotZ, rotX, offsetX, offsetY] */
+var ITEM_REST = {
+  sword: [0.24, 0.34, -0.02, 0.03, 0.03],
+  pickaxe: [0.58, 0.44, 0.06, 0.02, 0.01],
+  axe: [0.12, -0.34, 0.02, 0.05, 0.02],
+  shovel: [0.52, 0.40, 0.04, 0.02, 0.01],
+  hoe: [0.56, 0.42, 0.04, 0.02, 0.01],
+  rod: [0.40, 0.20, 0.04, 0.02, 0.04],
+  bucket: [0.42, 0.06, 0.10, -0.03, 0.10],
+  ingot: [0.42, 0.06, 0.10, -0.03, 0.10],
+  gem: [0.42, 0.06, 0.10, -0.03, 0.10]
+};
 function drawSolidItem(game, kind, colour) {
   var build = ITEM_MODELS[kind];
   if (!build) return false;
@@ -466,15 +490,13 @@ function drawHeldItem(game, name, it) {
   var toolish = it && (it.tool || it.durability);
   var solid = it && ITEM_MODEL_FOR[it.icon];
   if (solid) {
-    /* A built model is gripped, not pinned to a plane: the fist closes around
-       the handle and the head of the tool leans away over the knuckles. */
-    var upright = solid === 'bucket' || solid === 'ingot' || solid === 'gem';
-    /* biased out toward the corner: a long tool swung through the middle of
-       the frame buries the crosshair */
-    mTranslate(upright ? -0.03 : 0.03, upright ? 0.10 : 0.03, -0.17);
-    mRotY(upright ? 0.42 : 0.26);
-    mRotZ(upright ? 0.06 : 0.34);
-    mRotX(upright ? 0.10 : -0.04);
+    /* Each tool hangs in the hand the way it would if you were actually
+       holding it: a pick and a shovel with the head up over the left
+       knuckle, an axe slanted out to the right with the bit facing that way,
+       a sword upright and angled off the crosshair. */
+    var rest = ITEM_REST[solid] || ITEM_REST.sword;
+    mTranslate(rest[3], rest[4], -0.17);
+    mRotY(rest[0]); mRotZ(rest[1]); mRotX(rest[2]);
     var sc = ITEM_SCALE[solid] || 0.5;
     mScale(sc, sc, sc);
     drawSolidItem(game, solid, it.color);

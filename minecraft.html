@@ -422,6 +422,9 @@ img { image-rendering: pixelated; -webkit-user-drag: none; }
   border-top: 2px solid #2a2a2a; padding-top: 8px; }
 .netmanual.hidden { display: none; }
 
+.netbigcode { width: 100%; max-width: 420px; margin: 4px 0 8px;
+  font-family: monospace; font-size: 20px; letter-spacing: 1px; text-align: center; }
+
 </style>
 </head>
 <body>
@@ -19084,12 +19087,18 @@ function updatePlayer(game, dt, input) {
 
   /* --- vertical --- */
   if (p.flying) {
+    /* Rising and sinking are deliberately slower than travelling, so holding
+       space is a controlled climb rather than a rocket. */
     var upv = (input.jump ? 1 : 0) - (input.sneak ? 1 : 0);
-    p.vy += (upv * speed - p.vy) * Math.min(1, 20 * dt);
+    p.vy += (upv * speed * 0.62 - p.vy) * Math.min(1, 18 * dt);
   } else if (p.inWater) {
-    if (input.jump) p.vy = Math.min(p.vy + 22 * dt, 3.4);
-    else p.vy -= 8 * dt;
-    p.vy *= Math.pow(0.30, dt);
+    /* Buoyancy, not a brick: fully under you sink slowly, at the surface the
+       water holds you up, and holding space swims you upward. */
+    if (input.jump) p.vy = Math.min(p.vy + 14 * dt, 1.9);
+    else if (input.sneak) p.vy -= 7 * dt;
+    else p.vy -= (p.submerged ? 3.2 : 0.25) * dt;
+    p.vy *= Math.pow(0.16, dt);
+    if (p.vy < -3.2) p.vy = -3.2;
   } else if (p.inLava) {
     if (input.jump) p.vy = Math.min(p.vy + 16 * dt, 2.0);
     else p.vy -= 6 * dt;
@@ -19101,6 +19110,7 @@ function updatePlayer(game, dt, input) {
       p.exhaustion += p.sprinting ? 0.2 : 0.05;
     }
     p.vy -= 32 * dt;
+    if (p.wasInWater && p.vy > 0 && input.jump) p.vy = Math.max(p.vy, 4.2);
     if (p.effects.slowfall && p.vy < -3) p.vy = -3;
     if (p.vy < -60) p.vy = -60;
   }
@@ -19119,7 +19129,10 @@ function updatePlayer(game, dt, input) {
     if (!groundBelow(world, p)) p.z = oldZ;
   }
   var landed = p.vy < 0 && Math.abs(r.dy - p.vy * dt) > 1e-7;
-  p.onGround = landed || (p.flying && false);
+  p.onGround = landed;
+  /* touching down ends the flight, the way it does in the real game */
+  if (p.flying && landed && !input.jump) { p.flying = false; p.vy = 0; }
+  p.wasInWater = p.inWater;
   if (Math.abs(r.dx - p.vx * dt) > 1e-7) {
     /* auto step-up over a single block, the way the real player walks */
     if (p.onGround && tryStepUp(world, p, p.vx * dt, 0)) { } else p.vx = 0;
@@ -19428,7 +19441,7 @@ function updateViewModel(game, dt) {
   if (p.charging) p.chargeTime = (p.chargeTime || 0) + dt;
 }
 var SWING_STYLE_FOR = { sword: 1, pickaxe: 2, axe: 2, shovel: 3, hoe: 3 };
-var SWING_TIME = [0.28, 0.30, 0.40, 0.34];
+var SWING_TIME = [0.28, 0.28, 0.42, 0.36];
 function startSwing(kind) {
   VM.swing = 0; VM.swingActive = true; VM.swingKind = kind || 0;
   /* Placing or using something is always the short forward poke; only a real
@@ -19456,40 +19469,52 @@ function vmPhase(sp, a, b) {
    without a snap. */
 function applySwingTransform(sp, side) {
   var style = VM.swingStyle || 0;
-  var wind, hit;
-  if (style === 1) {                         /* sword: cocked back, swept across */
+  var wind, hit, settle;
+  /* the little counter-move at the tail: the tool overshoots and comes back,
+     which is what stops a swing reading as a piston stroke */
+  settle = sp > 0.70 ? Math.sin((sp - 0.70) / 0.30 * Math.PI) : 0;
+
+  if (style === 1) {
+    /* SWORD — a sweep across the view. Almost all of the motion is roll and
+       yaw, so the blade travels sideways through the frame rather than
+       pumping toward the camera and back. */
+    wind = vmPhase(sp, 0, 0.20) - vmPhase(sp, 0.20, 0.46);
+    hit = vmPhase(sp, 0.16, 0.50) - vmPhase(sp, 0.64, 1);
+    mTranslate(side * (0.15 * wind - 0.26 * hit), 0.06 * wind - 0.05 * hit,
+      0.02 * wind - 0.08 * hit);
+    mRotZ(side * (-0.48 * wind + 1.38 * hit - 0.10 * settle));
+    mRotY(side * (0.58 * wind - 1.18 * hit));
+    mRotX(-0.20 * wind + 0.22 * hit);
+    return;
+  }
+  if (style === 2) {
+    /* PICKAXE and AXE — the tool is raised behind the shoulder and swung
+       down through an arc. The arc is a pitch about the fist, so the head
+       travels a long way while the hand barely moves. */
+    wind = vmPhase(sp, 0, 0.30) - vmPhase(sp, 0.30, 0.60);
+    hit = vmPhase(sp, 0.26, 0.58) - vmPhase(sp, 0.72, 1);
+    mTranslate(side * (0.02 * wind - 0.05 * hit), 0.17 * wind + 0.03 * hit,
+      0.02 * wind - 0.05 * hit);
+    /* the arc is big but bounded: driving further than this puts the head
+       through the bottom of the frame, where you cannot see it land */
+    mRotX(-0.98 * wind + 0.98 * hit - 0.10 * settle);
+    mRotZ(side * (-0.26 * wind + 0.34 * hit));
+    mRotY(side * (0.12 * wind - 0.14 * hit));
+    return;
+  }
+  if (style === 3) {
+    /* SHOVEL and HOE — driven down into the ground and scooped back out. */
     wind = vmPhase(sp, 0, 0.26) - vmPhase(sp, 0.26, 0.54);
-    hit = vmPhase(sp, 0.22, 0.54) - vmPhase(sp, 0.66, 1);
-    mTranslate(side * (0.15 * wind - 0.22 * hit), 0.11 * wind - 0.12 * hit,
-      0.11 * wind - 0.19 * hit);
-    mRotY(side * (0.58 * wind - 0.80 * hit));
-    mRotZ(side * (0.48 * wind - 1.25 * hit));
-    mRotX(-0.62 * wind + 0.80 * hit);
+    hit = vmPhase(sp, 0.22, 0.56) - vmPhase(sp, 0.70, 1);
+    mTranslate(side * (0.03 * wind - 0.05 * hit), 0.12 * wind - 0.20 * hit,
+      0.02 * wind - 0.06 * hit);
+    mRotX(-0.55 * wind + 1.35 * hit - 0.10 * settle);
+    mRotZ(side * (-0.14 * wind + 0.30 * hit));
+    mRotY(side * (0.08 * wind - 0.12 * hit));
     return;
   }
-  if (style === 2) {                         /* pick and axe: overhead, driven down */
-    wind = vmPhase(sp, 0, 0.30) - vmPhase(sp, 0.30, 0.58);
-    hit = vmPhase(sp, 0.26, 0.56) - vmPhase(sp, 0.70, 1);
-    mTranslate(side * (0.06 * wind - 0.08 * hit), 0.22 * wind - 0.24 * hit,
-      0.15 * wind - 0.29 * hit);
-    mRotX(-1.10 * wind + 1.25 * hit);
-    mRotZ(side * (0.22 * wind - 0.30 * hit));
-    mRotY(side * (0.10 * wind - 0.20 * hit));
-    return;
-  }
-  if (style === 3) {                         /* shovel and hoe: a low scoop */
-    wind = vmPhase(sp, 0, 0.28) - vmPhase(sp, 0.28, 0.56);
-    hit = vmPhase(sp, 0.24, 0.58) - vmPhase(sp, 0.68, 1);
-    mTranslate(side * (0.07 * wind - 0.13 * hit), 0.15 * wind - 0.24 * hit,
-      0.07 * wind - 0.28 * hit);
-    mRotX(-0.40 * wind + 1.00 * hit);
-    mRotZ(side * (-0.18 * wind + 0.34 * hit));
-    mRotY(side * (0.08 * wind - 0.14 * hit));
-    return;
-  }
-  /* bare hand, blocks and everything else: the game's own punch arc. The
-     lateral part is damped because at this field of view the full sweep puts
-     the forearm right over the crosshair. */
+  /* bare hand, blocks and everything else: the game's own punch arc, with the
+     lateral part damped so the forearm stays off the crosshair */
   var fSq = Math.sin(sp * sp * Math.PI);
   var fRt = Math.sin(Math.sqrt(sp) * Math.PI);
   mTranslate(side * -0.40 * fRt * 0.38, 0.20 * Math.sin(Math.sqrt(sp) * Math.PI * 2) * 0.55,
@@ -19587,6 +19612,18 @@ var ITEM_GRIP = { sword: 5.6, pickaxe: 6.2, axe: 6.2, shovel: 6.2, hoe: 6.2, rod
 /* Hand-sized: a sword fills a lot more of the frame than a lump of iron. */
 var ITEM_SCALE = { sword: 0.40, pickaxe: 0.37, axe: 0.37, shovel: 0.37, hoe: 0.37,
   rod: 0.40, bucket: 0.55, ingot: 0.72, gem: 0.72 };
+/* rest pose per tool: [rotY, rotZ, rotX, offsetX, offsetY] */
+var ITEM_REST = {
+  sword: [0.24, 0.34, -0.02, 0.03, 0.03],
+  pickaxe: [0.58, 0.44, 0.06, 0.02, 0.01],
+  axe: [0.12, -0.34, 0.02, 0.05, 0.02],
+  shovel: [0.52, 0.40, 0.04, 0.02, 0.01],
+  hoe: [0.56, 0.42, 0.04, 0.02, 0.01],
+  rod: [0.40, 0.20, 0.04, 0.02, 0.04],
+  bucket: [0.42, 0.06, 0.10, -0.03, 0.10],
+  ingot: [0.42, 0.06, 0.10, -0.03, 0.10],
+  gem: [0.42, 0.06, 0.10, -0.03, 0.10]
+};
 function drawSolidItem(game, kind, colour) {
   var build = ITEM_MODELS[kind];
   if (!build) return false;
@@ -19806,15 +19843,13 @@ function drawHeldItem(game, name, it) {
   var toolish = it && (it.tool || it.durability);
   var solid = it && ITEM_MODEL_FOR[it.icon];
   if (solid) {
-    /* A built model is gripped, not pinned to a plane: the fist closes around
-       the handle and the head of the tool leans away over the knuckles. */
-    var upright = solid === 'bucket' || solid === 'ingot' || solid === 'gem';
-    /* biased out toward the corner: a long tool swung through the middle of
-       the frame buries the crosshair */
-    mTranslate(upright ? -0.03 : 0.03, upright ? 0.10 : 0.03, -0.17);
-    mRotY(upright ? 0.42 : 0.26);
-    mRotZ(upright ? 0.06 : 0.34);
-    mRotX(upright ? 0.10 : -0.04);
+    /* Each tool hangs in the hand the way it would if you were actually
+       holding it: a pick and a shovel with the head up over the left
+       knuckle, an axe slanted out to the right with the bit facing that way,
+       a sword upright and angled off the crosshair. */
+    var rest = ITEM_REST[solid] || ITEM_REST.sword;
+    mTranslate(rest[3], rest[4], -0.17);
+    mRotY(rest[0]); mRotZ(rest[1]); mRotX(rest[2]);
     var sc = ITEM_SCALE[solid] || 0.5;
     mScale(sc, sc, sc);
     drawSolidItem(game, solid, it.color);
@@ -22760,19 +22795,8 @@ function boot4(canvas) {
   var workerSrc = document.getElementById('worker-src').textContent;
   g.world.initWorkers(workerSrc, Math.min(6, Math.max(2, (navigator.hardwareConcurrency || 4) - 1)));
 
-  /* starting kit so the first minute is playable */
+  /* You start with nothing, the way the real game does: punch a tree. */
   var p = g.player;
-  var empty = true;
-  for (var i = 0; i < INV_SIZE; i++) if (p.inv[i]) empty = false;
-  if (empty) {
-    giveItem(g, 'oak_planks', 16);
-    giveItem(g, 'torch', 24);
-    giveItem(g, 'stone_pickaxe', 1);
-    giveItem(g, 'stone_axe', 1);
-    giveItem(g, 'stone_sword', 1);
-    giveItem(g, 'bread', 8);
-    giveItem(g, 'crafting_table', 1);
-  }
 
   g.spawnCol = findSpawnColumn(g);
   p.x = g.spawnCol.x + 0.5; p.z = g.spawnCol.z + 0.5;
@@ -22785,20 +22809,24 @@ function boot4(canvas) {
    column can be found analytically before a single chunk has arrived — no
    more spawning in the middle of an ocean because the search gave up. */
 function findSpawnColumn(g) {
-  for (var r = 0; r < 400; r++) {
-    var steps = Math.max(1, r * 6);
+  /* Spiral out from the origin in small steps and take the first workable
+     column. The standards drop the further out we get, so a seed whose middle
+     is all ocean costs a few hundred blocks rather than a few thousand. */
+  for (var r = 0; r < 90; r++) {
+    var steps = Math.max(1, r * 7);
     for (var a = 0; a < steps; a++) {
       var ang = a / steps * Math.PI * 2 + r * 0.618;
-      var x = Math.round(Math.cos(ang) * r * 12);
-      var z = Math.round(Math.sin(ang) * r * 12);
+      var x = Math.round(Math.cos(ang) * r * 8);
+      var z = Math.round(Math.sin(ang) * r * 8);
       var cl = climateAt(x, z);
       var h = heightFrom(x, z, cl);
-      if (h < SEA + 3 || h > SEA + 90) continue;
+      if (h < SEA + 2 || h > SEA + 90) continue;
       var bio = BIOMES[pickBiome(x, z, h, cl)];
       if (!bio) continue;
       var n = bio.name;
-      if (n.indexOf('ocean') >= 0 || n.indexOf('river') >= 0 || n.indexOf('beach') >= 0) continue;
-      if (n.indexOf('peaks') >= 0 || n.indexOf('badlands') >= 0) continue;
+      if (n.indexOf('ocean') >= 0 || n.indexOf('river') >= 0) continue;
+      if (r < 30 && n.indexOf('beach') >= 0) continue;
+      if (r < 45 && (n.indexOf('peaks') >= 0 || n.indexOf('badlands') >= 0)) continue;
       return { x: x, z: z, biome: n };
     }
   }
@@ -24012,7 +24040,7 @@ function netGatherICE(pc, ms) {
 function netStartHosting(game, room) {
   NET.role = 'host'; NET.active = true; NET.room = room; NET.id = 1;
   netInstallHooks(game);
-  NET.link = netInviteLink(room, game.seed);
+  NET.link = netInviteCode(room, game.seed);
   NET.answers = {};
   netOpenRelay('vxc/' + room, function (msg) {
     if (msg.t !== 'offer' || !msg.from) return;
@@ -24088,6 +24116,20 @@ function netStartJoining(game, room) {
   });
 }
 
+/* The invite is a code, not a URL. A URL would carry the sender's own file
+   path — their drive, their user name — to whoever they send it to, and it
+   only works if the other person keeps the game in the same place. A code
+   carries exactly two things: which room, and which world. */
+function netInviteCode(room, seed) {
+  return 'VXC-' + room + '-' + (seed >>> 0).toString(36);
+}
+function netParseCode(code) {
+  var m = /VXC-([a-z0-9]+)-([0-9a-z]+)/i.exec(String(code || '').trim());
+  if (!m) return null;
+  var seed = parseInt(m[2], 36);
+  if (!isFinite(seed)) return null;
+  return { room: m[1].toLowerCase(), seed: seed >>> 0 };
+}
 function netInviteLink(room, seed) {
   var base = location.href.split('#')[0].split('?')[0];
   return base + '#mp=' + room + '&seed=' + (seed >>> 0);
@@ -24100,11 +24142,10 @@ function netHostNewWorld() {
   location.href = netInviteLink(room, seed) + '&host=1';
   location.reload();
 }
-function netJoinLink(link) {
-  var m = /[#&?]mp=([a-z0-9]+)/i.exec(link || '');
-  var s = /[#&?]seed=(-?\d+)/.exec(link || '');
-  if (!m || !s) throw new Error('That does not look like an invite link.');
-  location.href = netInviteLink(m[1], parseInt(s[1], 10) >>> 0);
+function netJoinCode(code) {
+  var c = netParseCode(code);
+  if (!c) throw new Error('That is not an invite code. It looks like VXC-abc1234-9xk2p.');
+  location.href = netInviteLink(c.room, c.seed);
   location.reload();
 }
 /* Called once the world is up: if the address carries a room, act on it. */
@@ -24206,9 +24247,10 @@ function netHandle(game, slot, m) {
       /* land beside the host rather than wherever this world happened to
          drop us, so the two players actually meet */
       if (m.sx !== undefined) {
-        var p = game.player;
-        p.x = m.sx + 1.5; p.y = m.sy + 1; p.z = m.sz + 1.5;
-        p.vx = p.vy = p.vz = 0; p.camY = p.y + 1.62;
+        /* The chunk we are being sent to almost certainly has not streamed in
+           yet, so remember the target and keep placing ourselves there until
+           there is real ground to stand on. */
+        NET.spawnAt = { x: m.sx + 1.5, y: m.sy, z: m.sz + 1.5 };
       }
       for (q = game.entities.length - 1; q >= 0; q--) {
         var qe = game.entities[q];
@@ -24326,6 +24368,18 @@ function netApplyRemoteHit(game, m) {
 function netTick(game, dt) {
   if (!NET.active) return;
   var p = game.player;
+  if (NET.spawnAt) {
+    var t = NET.spawnAt;
+    p.x = t.x; p.z = t.z; p.vx = p.vz = 0; p.vy = 0;
+    var c = game.world.chunkAt(p.dim, Math.floor(t.x) >> 4, Math.floor(t.z) >> 4);
+    if (c && c.loaded) {
+      var gh = game.world.getHeight(p.dim, Math.floor(t.x), Math.floor(t.z));
+      p.y = Math.max(t.y, gh + 1);
+      p.camY = p.y + 1.62;
+      NET.spawnAt = null;
+      logMessage(game, 'Dropped in next to the host.', '#88ff88');
+    } else { p.y = t.y + 3; p.camY = p.y + 1.62; }
+  }
   if (NET.outBlocks.length) { netBroadcast({ t: 'blk', b: NET.outBlocks }); NET.outBlocks = []; }
   NET.sendT += dt;
   if (NET.sendT >= 1 / 15) {
@@ -24588,16 +24642,16 @@ SCREEN_BUILDERS.multiplayer = function (game, box) {
   });
 
   if (NET.role === 'host' && NET.link) {
-    el('div', 'subtext', box, 'Send this link. Whoever opens it lands in your world.');
-    var out = el('textarea', 'netcode', box);
-    out.readOnly = true; out.rows = 3; out.value = NET.link;
-    var copy = el('button', 'optbtn', box, 'Copy invite link');
+    el('div', 'subtext', box, 'Send this code. Whoever types it in lands in your world.');
+    var out = el('input', 'netinput netbigcode', box);
+    out.readOnly = true; out.value = NET.link;
+    var copy = el('button', 'optbtn', box, 'Copy invite code');
     copy.addEventListener('click', function () {
       out.select();
       try { document.execCommand('copy'); } catch (e) { }
       if (navigator.clipboard) navigator.clipboard.writeText(NET.link)['catch'](function () { });
       copy.textContent = 'Copied!';
-      setTimeout(function () { copy.textContent = 'Copy invite link'; }, 1200);
+      setTimeout(function () { copy.textContent = 'Copy invite code'; }, 1200);
     });
   } else {
     var hostBtn = el('button', 'bigbtn', box, 'Host a new world');
@@ -24605,14 +24659,14 @@ SCREEN_BUILDERS.multiplayer = function (game, box) {
       hostBtn.disabled = true; hostBtn.textContent = 'Generating a fresh world…';
       netHostNewWorld();
     });
-    el('div', 'subtext', box, 'Hosting starts a brand new world and gives you a link to send.');
+    el('div', 'subtext', box, 'Hosting starts a brand new world and gives you a code to send. You do not have to be on the same network.');
 
-    el('div', 'subtext', box, 'Got a link? Paste it here.');
-    var inp2 = el('textarea', 'netcode', box);
-    inp2.rows = 2; inp2.placeholder = 'Paste the invite link…';
-    var joinBtn = el('button', 'bigbtn', box, 'Join with link');
+    el('div', 'subtext', box, 'Got a code? Type it in.');
+    var inp2 = el('input', 'netinput netbigcode', box);
+    inp2.placeholder = 'VXC-abc1234-9xk2p';
+    var joinBtn = el('button', 'bigbtn', box, 'Join world');
     joinBtn.addEventListener('click', function () {
-      try { netSetStatus('Loading the host’s world…'); netJoinLink(inp2.value); }
+      try { netSetStatus('Loading the host’s world…'); netJoinCode(inp2.value); }
       catch (e) { netSetStatus(e.message); }
     });
   }

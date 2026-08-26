@@ -881,19 +881,8 @@ function boot4(canvas) {
   var workerSrc = document.getElementById('worker-src').textContent;
   g.world.initWorkers(workerSrc, Math.min(6, Math.max(2, (navigator.hardwareConcurrency || 4) - 1)));
 
-  /* starting kit so the first minute is playable */
+  /* You start with nothing, the way the real game does: punch a tree. */
   var p = g.player;
-  var empty = true;
-  for (var i = 0; i < INV_SIZE; i++) if (p.inv[i]) empty = false;
-  if (empty) {
-    giveItem(g, 'oak_planks', 16);
-    giveItem(g, 'torch', 24);
-    giveItem(g, 'stone_pickaxe', 1);
-    giveItem(g, 'stone_axe', 1);
-    giveItem(g, 'stone_sword', 1);
-    giveItem(g, 'bread', 8);
-    giveItem(g, 'crafting_table', 1);
-  }
 
   g.spawnCol = findSpawnColumn(g);
   p.x = g.spawnCol.x + 0.5; p.z = g.spawnCol.z + 0.5;
@@ -906,20 +895,24 @@ function boot4(canvas) {
    column can be found analytically before a single chunk has arrived — no
    more spawning in the middle of an ocean because the search gave up. */
 function findSpawnColumn(g) {
-  for (var r = 0; r < 400; r++) {
-    var steps = Math.max(1, r * 6);
+  /* Spiral out from the origin in small steps and take the first workable
+     column. The standards drop the further out we get, so a seed whose middle
+     is all ocean costs a few hundred blocks rather than a few thousand. */
+  for (var r = 0; r < 90; r++) {
+    var steps = Math.max(1, r * 7);
     for (var a = 0; a < steps; a++) {
       var ang = a / steps * Math.PI * 2 + r * 0.618;
-      var x = Math.round(Math.cos(ang) * r * 12);
-      var z = Math.round(Math.sin(ang) * r * 12);
+      var x = Math.round(Math.cos(ang) * r * 8);
+      var z = Math.round(Math.sin(ang) * r * 8);
       var cl = climateAt(x, z);
       var h = heightFrom(x, z, cl);
-      if (h < SEA + 3 || h > SEA + 90) continue;
+      if (h < SEA + 2 || h > SEA + 90) continue;
       var bio = BIOMES[pickBiome(x, z, h, cl)];
       if (!bio) continue;
       var n = bio.name;
-      if (n.indexOf('ocean') >= 0 || n.indexOf('river') >= 0 || n.indexOf('beach') >= 0) continue;
-      if (n.indexOf('peaks') >= 0 || n.indexOf('badlands') >= 0) continue;
+      if (n.indexOf('ocean') >= 0 || n.indexOf('river') >= 0) continue;
+      if (r < 30 && n.indexOf('beach') >= 0) continue;
+      if (r < 45 && (n.indexOf('peaks') >= 0 || n.indexOf('badlands') >= 0)) continue;
       return { x: x, z: z, biome: n };
     }
   }

@@ -157,7 +157,7 @@ function netGatherICE(pc, ms) {
 function netStartHosting(game, room) {
   NET.role = 'host'; NET.active = true; NET.room = room; NET.id = 1;
   netInstallHooks(game);
-  NET.link = netInviteLink(room, game.seed);
+  NET.link = netInviteCode(room, game.seed);
   NET.answers = {};
   netOpenRelay('vxc/' + room, function (msg) {
     if (msg.t !== 'offer' || !msg.from) return;
@@ -233,6 +233,20 @@ function netStartJoining(game, room) {
   });
 }
 
+/* The invite is a code, not a URL. A URL would carry the sender's own file
+   path — their drive, their user name — to whoever they send it to, and it
+   only works if the other person keeps the game in the same place. A code
+   carries exactly two things: which room, and which world. */
+function netInviteCode(room, seed) {
+  return 'VXC-' + room + '-' + (seed >>> 0).toString(36);
+}
+function netParseCode(code) {
+  var m = /VXC-([a-z0-9]+)-([0-9a-z]+)/i.exec(String(code || '').trim());
+  if (!m) return null;
+  var seed = parseInt(m[2], 36);
+  if (!isFinite(seed)) return null;
+  return { room: m[1].toLowerCase(), seed: seed >>> 0 };
+}
 function netInviteLink(room, seed) {
   var base = location.href.split('#')[0].split('?')[0];
   return base + '#mp=' + room + '&seed=' + (seed >>> 0);
@@ -245,11 +259,10 @@ function netHostNewWorld() {
   location.href = netInviteLink(room, seed) + '&host=1';
   location.reload();
 }
-function netJoinLink(link) {
-  var m = /[#&?]mp=([a-z0-9]+)/i.exec(link || '');
-  var s = /[#&?]seed=(-?\d+)/.exec(link || '');
-  if (!m || !s) throw new Error('That does not look like an invite link.');
-  location.href = netInviteLink(m[1], parseInt(s[1], 10) >>> 0);
+function netJoinCode(code) {
+  var c = netParseCode(code);
+  if (!c) throw new Error('That is not an invite code. It looks like VXC-abc1234-9xk2p.');
+  location.href = netInviteLink(c.room, c.seed);
   location.reload();
 }
 /* Called once the world is up: if the address carries a room, act on it. */
@@ -351,9 +364,10 @@ function netHandle(game, slot, m) {
       /* land beside the host rather than wherever this world happened to
          drop us, so the two players actually meet */
       if (m.sx !== undefined) {
-        var p = game.player;
-        p.x = m.sx + 1.5; p.y = m.sy + 1; p.z = m.sz + 1.5;
-        p.vx = p.vy = p.vz = 0; p.camY = p.y + 1.62;
+        /* The chunk we are being sent to almost certainly has not streamed in
+           yet, so remember the target and keep placing ourselves there until
+           there is real ground to stand on. */
+        NET.spawnAt = { x: m.sx + 1.5, y: m.sy, z: m.sz + 1.5 };
       }
       for (q = game.entities.length - 1; q >= 0; q--) {
         var qe = game.entities[q];
@@ -471,6 +485,18 @@ function netApplyRemoteHit(game, m) {
 function netTick(game, dt) {
   if (!NET.active) return;
   var p = game.player;
+  if (NET.spawnAt) {
+    var t = NET.spawnAt;
+    p.x = t.x; p.z = t.z; p.vx = p.vz = 0; p.vy = 0;
+    var c = game.world.chunkAt(p.dim, Math.floor(t.x) >> 4, Math.floor(t.z) >> 4);
+    if (c && c.loaded) {
+      var gh = game.world.getHeight(p.dim, Math.floor(t.x), Math.floor(t.z));
+      p.y = Math.max(t.y, gh + 1);
+      p.camY = p.y + 1.62;
+      NET.spawnAt = null;
+      logMessage(game, 'Dropped in next to the host.', '#88ff88');
+    } else { p.y = t.y + 3; p.camY = p.y + 1.62; }
+  }
   if (NET.outBlocks.length) { netBroadcast({ t: 'blk', b: NET.outBlocks }); NET.outBlocks = []; }
   NET.sendT += dt;
   if (NET.sendT >= 1 / 15) {
@@ -733,16 +759,16 @@ SCREEN_BUILDERS.multiplayer = function (game, box) {
   });
 
   if (NET.role === 'host' && NET.link) {
-    el('div', 'subtext', box, 'Send this link. Whoever opens it lands in your world.');
-    var out = el('textarea', 'netcode', box);
-    out.readOnly = true; out.rows = 3; out.value = NET.link;
-    var copy = el('button', 'optbtn', box, 'Copy invite link');
+    el('div', 'subtext', box, 'Send this code. Whoever types it in lands in your world.');
+    var out = el('input', 'netinput netbigcode', box);
+    out.readOnly = true; out.value = NET.link;
+    var copy = el('button', 'optbtn', box, 'Copy invite code');
     copy.addEventListener('click', function () {
       out.select();
       try { document.execCommand('copy'); } catch (e) { }
       if (navigator.clipboard) navigator.clipboard.writeText(NET.link)['catch'](function () { });
       copy.textContent = 'Copied!';
-      setTimeout(function () { copy.textContent = 'Copy invite link'; }, 1200);
+      setTimeout(function () { copy.textContent = 'Copy invite code'; }, 1200);
     });
   } else {
     var hostBtn = el('button', 'bigbtn', box, 'Host a new world');
@@ -750,14 +776,14 @@ SCREEN_BUILDERS.multiplayer = function (game, box) {
       hostBtn.disabled = true; hostBtn.textContent = 'Generating a fresh world…';
       netHostNewWorld();
     });
-    el('div', 'subtext', box, 'Hosting starts a brand new world and gives you a link to send.');
+    el('div', 'subtext', box, 'Hosting starts a brand new world and gives you a code to send. You do not have to be on the same network.');
 
-    el('div', 'subtext', box, 'Got a link? Paste it here.');
-    var inp2 = el('textarea', 'netcode', box);
-    inp2.rows = 2; inp2.placeholder = 'Paste the invite link…';
-    var joinBtn = el('button', 'bigbtn', box, 'Join with link');
+    el('div', 'subtext', box, 'Got a code? Type it in.');
+    var inp2 = el('input', 'netinput netbigcode', box);
+    inp2.placeholder = 'VXC-abc1234-9xk2p';
+    var joinBtn = el('button', 'bigbtn', box, 'Join world');
     joinBtn.addEventListener('click', function () {
-      try { netSetStatus('Loading the host’s world…'); netJoinLink(inp2.value); }
+      try { netSetStatus('Loading the host’s world…'); netJoinCode(inp2.value); }
       catch (e) { netSetStatus(e.message); }
     });
   }

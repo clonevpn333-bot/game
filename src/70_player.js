@@ -837,12 +837,18 @@ function updatePlayer(game, dt, input) {
 
   /* --- vertical --- */
   if (p.flying) {
+    /* Rising and sinking are deliberately slower than travelling, so holding
+       space is a controlled climb rather than a rocket. */
     var upv = (input.jump ? 1 : 0) - (input.sneak ? 1 : 0);
-    p.vy += (upv * speed - p.vy) * Math.min(1, 20 * dt);
+    p.vy += (upv * speed * 0.62 - p.vy) * Math.min(1, 18 * dt);
   } else if (p.inWater) {
-    if (input.jump) p.vy = Math.min(p.vy + 22 * dt, 3.4);
-    else p.vy -= 8 * dt;
-    p.vy *= Math.pow(0.30, dt);
+    /* Buoyancy, not a brick: fully under you sink slowly, at the surface the
+       water holds you up, and holding space swims you upward. */
+    if (input.jump) p.vy = Math.min(p.vy + 14 * dt, 1.9);
+    else if (input.sneak) p.vy -= 7 * dt;
+    else p.vy -= (p.submerged ? 3.2 : 0.25) * dt;
+    p.vy *= Math.pow(0.16, dt);
+    if (p.vy < -3.2) p.vy = -3.2;
   } else if (p.inLava) {
     if (input.jump) p.vy = Math.min(p.vy + 16 * dt, 2.0);
     else p.vy -= 6 * dt;
@@ -854,6 +860,7 @@ function updatePlayer(game, dt, input) {
       p.exhaustion += p.sprinting ? 0.2 : 0.05;
     }
     p.vy -= 32 * dt;
+    if (p.wasInWater && p.vy > 0 && input.jump) p.vy = Math.max(p.vy, 4.2);
     if (p.effects.slowfall && p.vy < -3) p.vy = -3;
     if (p.vy < -60) p.vy = -60;
   }
@@ -872,7 +879,10 @@ function updatePlayer(game, dt, input) {
     if (!groundBelow(world, p)) p.z = oldZ;
   }
   var landed = p.vy < 0 && Math.abs(r.dy - p.vy * dt) > 1e-7;
-  p.onGround = landed || (p.flying && false);
+  p.onGround = landed;
+  /* touching down ends the flight, the way it does in the real game */
+  if (p.flying && landed && !input.jump) { p.flying = false; p.vy = 0; }
+  p.wasInWater = p.inWater;
   if (Math.abs(r.dx - p.vx * dt) > 1e-7) {
     /* auto step-up over a single block, the way the real player walks */
     if (p.onGround && tryStepUp(world, p, p.vx * dt, 0)) { } else p.vx = 0;
