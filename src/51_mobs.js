@@ -669,13 +669,25 @@ MOBS.cave_spider.model = {
   }), eye: 0.4
 };
 defMob('enderman', {
-  model: bipedModel({ skin: '#0f0f14', headTex: 'face_enderman', headH: 8, headW: 8,
-    bodyY: 26, legH: 26, armH: 26, armW: 2, arm: '#0d0d12', pants: '#0d0d12' }),
-  w: 0.6, h: 2.9, hp: 40, dmg: 7, speed: 0.14, hostile: true, neutral: true, teleports: true, hurtByWater: true,
+  /* 46 units of leg, a short torso and arms that hang almost to the floor */
+  model: bipedModel({ skin: '#0f0f14', headTex: 'face_enderman', headH: 9, headW: 8,
+    bodyY: 27, legH: 27, armH: 30, armW: 2, arm: '#0d0d12', pants: '#0d0d12' }),
+  w: 0.6, h: 2.9, hp: 40, dmg: 7, speed: 0.13, hostile: true, neutral: true,
+  teleports: true, hurtByWater: true, stare: true, passiveUntilProvoked: true,
   anim: function (e, pose, t) {
-    poseWalk(pose, e, e.walkPhase * 1.4, 0.7 * e.walkAmt, 0.7);
+    poseWalk(pose, e, e.walkPhase * 1.2, 0.55 * e.walkAmt, 0.7);
     pose.head = { rx: e.headPitch, ry: e.headYaw };
-    if (e.angry) { pose.armL = { rx: -0.9, rz: 0.2 }; pose.armR = { rx: -0.9, rz: -0.2 }; pose.head.rx = -0.15; }
+    /* it stands very still until provoked, then the arms come up and the
+       whole body shivers */
+    if (!e.angry) {
+      var sway = Math.sin(t * 0.9 + e.seed) * 0.03;
+      pose.armL = { rx: sway, rz: 0.05 }; pose.armR = { rx: -sway, rz: -0.05 };
+    } else {
+      var shake = Math.sin(t * 30 + e.seed) * 0.05;
+      pose.armL = { rx: -1.15 + shake, rz: 0.18 };
+      pose.armR = { rx: -1.15 - shake, rz: -0.18 };
+      pose.head.rx = -0.18; pose.head.rz = shake * 0.6;
+    }
   },
   drops: [{ item: 'ender_pearl', min: 0, max: 1, chance: 0.5 }],
   spawn: { biomes: null, light: 7, group: [1, 2], hostile: true }

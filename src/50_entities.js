@@ -177,8 +177,10 @@ function bipedModel(o) {
   var parts = [
     P('head', [0, bodyY + 12, 0], [-hw / 2, 0, -hw / 2, hw, hh, hw], o.head || skin, { tex: o.headTex, texParams: o.headTexP }),
     P('body', [0, bodyY, 0], [-4, 0, -2, 8, 12, 4], shirt, { tex: o.bodyTex }),
-    P('armL', [4, bodyY + 10, 0], [0, -10, -2, armW, armH, 4], o.arm || shirt),
-    P('armR', [-4, bodyY + 10, 0], [-armW, -10, -2, armW, armH, 4], o.arm || shirt),
+    /* the arm hangs from the shoulder: a long-armed mob used to have its
+       limbs sticking up past its own head */
+    P('armL', [4, bodyY + 10, 0], [0, -(armH - 2), -2, armW, armH, 4], o.arm || shirt),
+    P('armR', [-4, bodyY + 10, 0], [-armW, -(armH - 2), -2, armW, armH, 4], o.arm || shirt),
     P('legL', [2, legH, 0], [-2, -legH, -2, 4, legH, 4], pants),
     P('legR', [-2, legH, 0], [-2, -legH, -2, 4, legH, 4], pants)
   ];

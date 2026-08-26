@@ -88,7 +88,7 @@ function updateViewModel(game, dt) {
   if (p.charging) p.chargeTime = (p.chargeTime || 0) + dt;
 }
 var SWING_STYLE_FOR = { sword: 1, pickaxe: 2, axe: 2, shovel: 3, hoe: 3 };
-var SWING_TIME = [0.28, 0.28, 0.42, 0.36];
+var SWING_TIME = [0.28, 0.28, 0.36, 0.32];
 function startSwing(kind) {
   VM.swing = 0; VM.swingActive = true; VM.swingKind = kind || 0;
   /* Placing or using something is always the short forward poke; only a real
@@ -114,62 +114,38 @@ function vmPhase(sp, a, b) {
 /* A swing is a wind-up that peaks early and unwinds, plus a strike that peaks
    late and settles. Both are zero at each end, so the hand always comes home
    without a snap. */
-function applySwingTransform(sp, side) {
-  var style = VM.swingStyle || 0;
-  var wind, hit, settle;
-  /* the little counter-move at the tail: the tool overshoots and comes back,
-     which is what stops a swing reading as a piston stroke */
-  settle = sp > 0.70 ? Math.sin((sp - 0.70) / 0.30 * Math.PI) : 0;
+/* The real game's swing, kept exactly: two easing curves, one peaking early
+   and one late, driving a translate and three rotations.
 
-  if (style === 1) {
-    /* SWORD — a sweep across the view. Almost all of the motion is roll and
-       yaw, so the blade travels sideways through the frame rather than
-       pumping toward the camera and back. */
-    wind = vmPhase(sp, 0, 0.20) - vmPhase(sp, 0.20, 0.46);
-    hit = vmPhase(sp, 0.16, 0.50) - vmPhase(sp, 0.64, 1);
-    mTranslate(side * (0.15 * wind - 0.26 * hit), 0.06 * wind - 0.05 * hit,
-      0.02 * wind - 0.08 * hit);
-    mRotZ(side * (-0.48 * wind + 1.38 * hit - 0.10 * settle));
-    mRotY(side * (0.58 * wind - 1.18 * hit));
-    mRotX(-0.20 * wind + 0.22 * hit);
-    return;
-  }
-  if (style === 2) {
-    /* PICKAXE and AXE — the tool is raised behind the shoulder and swung
-       down through an arc. The arc is a pitch about the fist, so the head
-       travels a long way while the hand barely moves. */
-    wind = vmPhase(sp, 0, 0.30) - vmPhase(sp, 0.30, 0.60);
-    hit = vmPhase(sp, 0.26, 0.58) - vmPhase(sp, 0.72, 1);
-    mTranslate(side * (0.02 * wind - 0.05 * hit), 0.17 * wind + 0.03 * hit,
-      0.02 * wind - 0.05 * hit);
-    /* the arc is big but bounded: driving further than this puts the head
-       through the bottom of the frame, where you cannot see it land */
-    mRotX(-0.98 * wind + 0.98 * hit - 0.10 * settle);
-    mRotZ(side * (-0.26 * wind + 0.34 * hit));
-    mRotY(side * (0.12 * wind - 0.14 * hit));
-    return;
-  }
-  if (style === 3) {
-    /* SHOVEL and HOE — driven down into the ground and scooped back out. */
-    wind = vmPhase(sp, 0, 0.26) - vmPhase(sp, 0.26, 0.54);
-    hit = vmPhase(sp, 0.22, 0.56) - vmPhase(sp, 0.70, 1);
-    mTranslate(side * (0.03 * wind - 0.05 * hit), 0.12 * wind - 0.20 * hit,
-      0.02 * wind - 0.06 * hit);
-    mRotX(-0.55 * wind + 1.35 * hit - 0.10 * settle);
-    mRotZ(side * (-0.14 * wind + 0.30 * hit));
-    mRotY(side * (0.08 * wind - 0.12 * hit));
-    return;
-  }
-  /* bare hand, blocks and everything else: the game's own punch arc, with the
-     lateral part damped so the forearm stays off the crosshair */
-  var fSq = Math.sin(sp * sp * Math.PI);
-  var fRt = Math.sin(Math.sqrt(sp) * Math.PI);
-  mTranslate(side * -0.40 * fRt * 0.38, 0.20 * Math.sin(Math.sqrt(sp) * Math.PI * 2) * 0.55,
-    -0.20 * Math.sin(sp * Math.PI));
-  mRotY(side * (45 + fSq * -20) * DEG);
-  mRotZ(side * fRt * -20 * DEG);
-  mRotX(fRt * -80 * DEG);
-  mRotY(side * -45 * DEG);
+     f  = sin(sp^2 * PI)     peaks late  — the yaw part of the follow-through
+     f1 = sin(sqrt(sp) * PI) peaks early — the drop and the roll
+
+   translate(-0.40*f1, 0.20*sin(sqrt(sp)*2PI), -0.20*sin(sp*PI))
+   rotateY(f * -20)  rotateZ(f1 * -20)  rotateX(f1 * -80)
+
+   Those constants are what makes a Minecraft swing read as a Minecraft swing;
+   inventing an arc instead is how the last version ended up looking like a
+   piston. Punchy's contribution is not a different arc — it is weight: the
+   same arc with per-tool gain on each term, and the hand carrying real
+   inertia from the springs above. So each tool scales the vanilla terms
+   rather than replacing them. */
+var SWING_GAIN = [
+  /* tx    ty    tz    ry    rz    rx */
+  [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],   /* 0 fist and blocks — pure vanilla */
+  [0.85, 0.85, 1.00, 2.60, 2.40, 0.60],   /* 1 sword  — sweeps across the view */
+  [0.45, 1.50, 1.70, 0.50, 0.70, 1.55],   /* 2 pick and axe — overhead and down */
+  [0.50, 1.20, 1.60, 0.50, 0.60, 1.35]    /* 3 shovel and hoe — driven and scooped */
+];
+function applySwingTransform(sp, side) {
+  var g = SWING_GAIN[VM.swingStyle || 0];
+  var f = Math.sin(sp * sp * Math.PI);
+  var f1 = Math.sin(Math.sqrt(sp) * Math.PI);
+  mTranslate(side * -0.40 * f1 * g[0],
+    0.20 * Math.sin(Math.sqrt(sp) * Math.PI * 2) * g[1],
+    -0.20 * Math.sin(sp * Math.PI) * g[2]);
+  mRotY(side * f * -20 * DEG * g[3]);
+  mRotZ(side * f1 * -20 * DEG * g[4]);
+  mRotX(f1 * -80 * DEG * g[5]);
 }
 
 
@@ -320,13 +296,13 @@ function drawViewModel(game) {
      so the swing arc moves hand and item together the way a real arm does. */
   mIdent();
   mTranslate(
-    0.40 + VM.swayX * 0.075 + VM.bobX - VM.sprintT * 0.02,
-    -0.34 + VM.swayY * 0.070 + VM.bobY + VM.dropY - eqDrop - VM.sneakT * 0.075 - VM.useProg * 0.05,
+    0.40 + VM.swayX * 0.105 + VM.bobX - VM.sprintT * 0.02,
+    -0.34 + VM.swayY * 0.098 + VM.bobY + VM.dropY - eqDrop - VM.sneakT * 0.075 - VM.useProg * 0.05,
     -0.66 + VM.sprintT * 0.07 + lift * 0.28
   );
   mRotZ(VM.rollZ + VM.bobRot * 0.5 + eq * 0.5);
-  mRotY(-VM.swayX * 0.18 - VM.sprintT * 0.22);
-  mRotX(VM.swayY * 0.16 + VM.bobRot * 0.4 + VM.sprintT * 0.34);
+  mRotY(-VM.swayX * 0.26 - VM.sprintT * 0.22);
+  mRotX(VM.swayY * 0.23 + VM.bobRot * 0.4 + VM.sprintT * 0.34);
   if (VM.swingActive) applySwingTransform(t, 1);
 
   if (p.eating) {

@@ -303,9 +303,12 @@ function postProcess(game, camX, camY, camZ, underwater, biome) {
     Math.abs(pp.pitch - (R.lastPitch === undefined ? pp.pitch : R.lastPitch));
   var mbMove = Math.hypot(pp.vx, pp.vz) * 0.012;
   R.lastYaw = pp.yaw; R.lastPitch = pp.pitch;
-  var mb = R.settings.motionBlur ? Math.min(0.42, mbTurn * 1.9 + mbMove) : 0;
+  /* A per-frame yaw delta is a few hundredths of a radian even when spinning
+     hard, so the old gain blended two percent of the last frame — nothing.
+     This is scaled so a fast turn actually smears. */
+  var mb = R.settings.motionBlur ? Math.min(0.58, mbTurn * 12 + mbMove * 2.6) : 0;
   gl.uniform1f(comp.u.uBlurAmt, mb);
-  var dofAmt = R.settings.dof ? (underwater ? 1.35 : 0.60) : 0;
+  var dofAmt = R.settings.dof ? (underwater ? 1.9 : 0.78) : 0;
   gl.uniform4f(comp.u.uDof, 0, dofAmt, R.zNear || 0.05, R.zFar || 256);
   gl.uniform2f(comp.u.uCTexel, 1 / W, 1 / H);
   gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, R.sceneFBO.depth);

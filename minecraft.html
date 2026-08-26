@@ -1977,11 +1977,11 @@ var CHEESE_T = 0.170, SPAG_T = 0.074, NOODLE_T = 0.054;
 function caveField(x, y, z, surfaceH) {
   if (y < 4) return -1;
   var depth = surfaceH - y;
-  if (depth < 2) return -1;
+  if (depth < 1) return -1;
   /* Caves may break the surface — that is where entrances come from — but the
      roof is stiffened steeply with depth so openings stay occasional rather
      than turning the ground into lace. */
-  var bias = depth < 22 ? (22 - depth) * 0.052 : 0;
+  var bias = depth < 22 ? (22 - depth) * 0.040 : 0;
 
   var c1 = WG.cheese.get3(x, y * 1.45, z);
   var cheese = (c1 - CHEESE_T - bias * 0.5) * 6.0;
@@ -1997,7 +1997,25 @@ function caveField(x, y, z, surfaceH) {
     var n2 = WG.noodle.get3(x - 9000, y * 1.15, z + 9000);
     nd = Math.min(NOODLE_T - Math.abs(n1), NOODLE_T - Math.abs(n2)) * 40;
   }
-  return Math.max(cheese, sp, nd);
+  /* Ravines: a winding line in plan view, opened into a slot that is thin
+     across and very tall, pinched shut at the top and bottom so it reads as a
+     gash in the ground rather than a shaft. */
+  var rv = -1;
+  if (y > 12 && y < surfaceH - 2) {
+    var mask = WG.cheese.get3(x * 0.055, 2600, z * 0.055);
+    if (mask > 0.26) {
+      var strength = Math.min(1, (mask - 0.26) * 4.0);
+      var top = surfaceH - 3, bot = 16;
+      if (top > bot + 12) {
+        var mid = (top + bot) * 0.5, span = (top - bot) * 0.5;
+        var vy = Math.min(1, Math.abs(y - mid) / span);
+        var halfW = 0.052 * strength * (1 - vy * vy * vy);
+        var path = WG.spag1.get3(x * 0.34, 900, z * 0.34);
+        rv = (halfW - Math.abs(path)) * 34;
+      }
+    }
+  }
+  return Math.max(Math.max(cheese, sp), Math.max(nd, rv));
 }
 
 /* ============================== TERRAIN ================================= */
@@ -5969,11 +5987,11 @@ var CHEESE_T = 0.170, SPAG_T = 0.074, NOODLE_T = 0.054;
 function caveField(x, y, z, surfaceH) {
   if (y < 4) return -1;
   var depth = surfaceH - y;
-  if (depth < 2) return -1;
+  if (depth < 1) return -1;
   /* Caves may break the surface — that is where entrances come from — but the
      roof is stiffened steeply with depth so openings stay occasional rather
      than turning the ground into lace. */
-  var bias = depth < 22 ? (22 - depth) * 0.052 : 0;
+  var bias = depth < 22 ? (22 - depth) * 0.040 : 0;
 
   var c1 = WG.cheese.get3(x, y * 1.45, z);
   var cheese = (c1 - CHEESE_T - bias * 0.5) * 6.0;
@@ -5989,7 +6007,25 @@ function caveField(x, y, z, surfaceH) {
     var n2 = WG.noodle.get3(x - 9000, y * 1.15, z + 9000);
     nd = Math.min(NOODLE_T - Math.abs(n1), NOODLE_T - Math.abs(n2)) * 40;
   }
-  return Math.max(cheese, sp, nd);
+  /* Ravines: a winding line in plan view, opened into a slot that is thin
+     across and very tall, pinched shut at the top and bottom so it reads as a
+     gash in the ground rather than a shaft. */
+  var rv = -1;
+  if (y > 12 && y < surfaceH - 2) {
+    var mask = WG.cheese.get3(x * 0.055, 2600, z * 0.055);
+    if (mask > 0.26) {
+      var strength = Math.min(1, (mask - 0.26) * 4.0);
+      var top = surfaceH - 3, bot = 16;
+      if (top > bot + 12) {
+        var mid = (top + bot) * 0.5, span = (top - bot) * 0.5;
+        var vy = Math.min(1, Math.abs(y - mid) / span);
+        var halfW = 0.052 * strength * (1 - vy * vy * vy);
+        var path = WG.spag1.get3(x * 0.34, 900, z * 0.34);
+        rv = (halfW - Math.abs(path)) * 34;
+      }
+    }
+  }
+  return Math.max(Math.max(cheese, sp), Math.max(nd, rv));
 }
 
 /* ============================== TERRAIN ================================= */
@@ -13263,18 +13299,28 @@ void main(){
   if (uDof.y > 0.001) {
     float focus = clamp(linearDepth(texture(uDofDepth, vec2(0.5)).r), 5.0, 90.0);
     float lin = linearDepth(texture(uDofDepth, vUV).r);
-    float coc = clamp(abs(lin - focus) / max(lin, focus) * uDof.y, 0.0, 1.0);
+    float diff = lin - focus;
+    /* Far goes soft faster than near, the way a real lens behaves, and the
+       first metre is never touched — that is the player's own hand, drawn in
+       its own projection, and blurring it looks like a smeared lens. */
+    float coc = (diff > 0.0 ? diff : -diff * 0.5) / max(lin, focus) * uDof.y;
+    coc = clamp(coc, 0.0, 1.0);
     coc *= coc;
-    if (coc > 0.02) {
-      vec2 r = uCTexel * (1.0 + coc * 6.0);
+    if (lin < 1.3) coc = 0.0;
+    if (coc > 0.015) {
+      /* Radius as a fraction of the screen, not a couple of texels — a
+         six-texel offset is invisible at any real resolution. Two rings of
+         six so the blur is round rather than a plus sign. */
+      float rad = coc * 0.016;
+      vec2 r = vec2(rad * (uCTexel.x / max(uCTexel.y, 1e-6)), rad);
       vec3 acc = col;
-      acc += texture(uScene, vUV + vec2( r.x, 0.0)).rgb;
-      acc += texture(uScene, vUV + vec2(-r.x, 0.0)).rgb;
-      acc += texture(uScene, vUV + vec2( 0.0, r.y)).rgb;
-      acc += texture(uScene, vUV + vec2( 0.0, -r.y)).rgb;
-      acc += texture(uScene, vUV + r * 0.72).rgb;
-      acc += texture(uScene, vUV - r * 0.72).rgb;
-      col = mix(col, acc / 7.0, min(1.0, coc * 1.6));
+      for (int i = 0; i < 6; i++) {
+        float a = float(i) * 1.0471976;
+        vec2 o = vec2(cos(a), sin(a)) * r;
+        acc += texture(uScene, vUV + o).rgb;
+        acc += texture(uScene, vUV + o * 0.55 + vec2(-o.y, o.x) * 0.22).rgb;
+      }
+      col = mix(col, acc / 13.0, min(0.80, coc * 1.35));
     }
   }
   col += texture(uBloom, vUV).rgb * uBloomAmt;
@@ -13924,9 +13970,12 @@ function postProcess(game, camX, camY, camZ, underwater, biome) {
     Math.abs(pp.pitch - (R.lastPitch === undefined ? pp.pitch : R.lastPitch));
   var mbMove = Math.hypot(pp.vx, pp.vz) * 0.012;
   R.lastYaw = pp.yaw; R.lastPitch = pp.pitch;
-  var mb = R.settings.motionBlur ? Math.min(0.42, mbTurn * 1.9 + mbMove) : 0;
+  /* A per-frame yaw delta is a few hundredths of a radian even when spinning
+     hard, so the old gain blended two percent of the last frame — nothing.
+     This is scaled so a fast turn actually smears. */
+  var mb = R.settings.motionBlur ? Math.min(0.58, mbTurn * 12 + mbMove * 2.6) : 0;
   gl.uniform1f(comp.u.uBlurAmt, mb);
-  var dofAmt = R.settings.dof ? (underwater ? 1.35 : 0.60) : 0;
+  var dofAmt = R.settings.dof ? (underwater ? 1.9 : 0.78) : 0;
   gl.uniform4f(comp.u.uDof, 0, dofAmt, R.zNear || 0.05, R.zFar || 256);
   gl.uniform2f(comp.u.uCTexel, 1 / W, 1 / H);
   gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, R.sceneFBO.depth);
@@ -14223,8 +14272,10 @@ function bipedModel(o) {
   var parts = [
     P('head', [0, bodyY + 12, 0], [-hw / 2, 0, -hw / 2, hw, hh, hw], o.head || skin, { tex: o.headTex, texParams: o.headTexP }),
     P('body', [0, bodyY, 0], [-4, 0, -2, 8, 12, 4], shirt, { tex: o.bodyTex }),
-    P('armL', [4, bodyY + 10, 0], [0, -10, -2, armW, armH, 4], o.arm || shirt),
-    P('armR', [-4, bodyY + 10, 0], [-armW, -10, -2, armW, armH, 4], o.arm || shirt),
+    /* the arm hangs from the shoulder: a long-armed mob used to have its
+       limbs sticking up past its own head */
+    P('armL', [4, bodyY + 10, 0], [0, -(armH - 2), -2, armW, armH, 4], o.arm || shirt),
+    P('armR', [-4, bodyY + 10, 0], [-armW, -(armH - 2), -2, armW, armH, 4], o.arm || shirt),
     P('legL', [2, legH, 0], [-2, -legH, -2, 4, legH, 4], pants),
     P('legR', [-2, legH, 0], [-2, -legH, -2, 4, legH, 4], pants)
   ];
@@ -15198,13 +15249,25 @@ MOBS.cave_spider.model = {
   }), eye: 0.4
 };
 defMob('enderman', {
-  model: bipedModel({ skin: '#0f0f14', headTex: 'face_enderman', headH: 8, headW: 8,
-    bodyY: 26, legH: 26, armH: 26, armW: 2, arm: '#0d0d12', pants: '#0d0d12' }),
-  w: 0.6, h: 2.9, hp: 40, dmg: 7, speed: 0.14, hostile: true, neutral: true, teleports: true, hurtByWater: true,
+  /* 46 units of leg, a short torso and arms that hang almost to the floor */
+  model: bipedModel({ skin: '#0f0f14', headTex: 'face_enderman', headH: 9, headW: 8,
+    bodyY: 27, legH: 27, armH: 30, armW: 2, arm: '#0d0d12', pants: '#0d0d12' }),
+  w: 0.6, h: 2.9, hp: 40, dmg: 7, speed: 0.13, hostile: true, neutral: true,
+  teleports: true, hurtByWater: true, stare: true, passiveUntilProvoked: true,
   anim: function (e, pose, t) {
-    poseWalk(pose, e, e.walkPhase * 1.4, 0.7 * e.walkAmt, 0.7);
+    poseWalk(pose, e, e.walkPhase * 1.2, 0.55 * e.walkAmt, 0.7);
     pose.head = { rx: e.headPitch, ry: e.headYaw };
-    if (e.angry) { pose.armL = { rx: -0.9, rz: 0.2 }; pose.armR = { rx: -0.9, rz: -0.2 }; pose.head.rx = -0.15; }
+    /* it stands very still until provoked, then the arms come up and the
+       whole body shivers */
+    if (!e.angry) {
+      var sway = Math.sin(t * 0.9 + e.seed) * 0.03;
+      pose.armL = { rx: sway, rz: 0.05 }; pose.armR = { rx: -sway, rz: -0.05 };
+    } else {
+      var shake = Math.sin(t * 30 + e.seed) * 0.05;
+      pose.armL = { rx: -1.15 + shake, rz: 0.18 };
+      pose.armR = { rx: -1.15 - shake, rz: -0.18 };
+      pose.head.rx = -0.18; pose.head.rz = shake * 0.6;
+    }
   },
   drops: [{ item: 'ender_pearl', min: 0, max: 1, chance: 0.5 }],
   spawn: { biomes: null, light: 7, group: [1, 2], hostile: true }
@@ -15730,12 +15793,23 @@ function updateEntity(game, e, dt) {
     !(def.neutralInLight && game.world.getLight(e.dim, Math.floor(e.x), Math.floor(e.y), Math.floor(e.z)) >> 4 > 8 && !e.angry);
   if (def.defender && !e.angry) wantsTarget = false;
   if (def.blind) wantsTarget = false;   /* the warden hunts by sound, set above */
-  if (wantsTarget && toP && distP < aggro) {
-    if (def.type === 'enderman' && !e.angry) {
-      /* the stare mechanic: only aggravated when the player looks at it */
-      if (playerLookingAt(p, e) && distP < 24) { e.angry = true; e.screamT = 0.6; }
-    } else e.target = p;
-  } else if (!wantsTarget) e.target = null;
+  /* The stare has to be checked before the usual target test, not inside it:
+     a calm neutral mob never gets that far, which is why looking one in the
+     eye did nothing. */
+  if (def.stare && !e.angry && toP && distP < 34 && distP > 1.5 &&
+      playerLookingAt(p, e) && hasLineOfSight(game.world, e, p)) {
+    e.angry = true; e.screamT = 0.7; e.target = p;
+    playSound(game, 'enderman', e.x, e.y, e.z, 1);
+  }
+  if (wantsTarget && toP && distP < aggro) e.target = p;
+  else if (!wantsTarget) e.target = null;
+  /* provoked and then left alone long enough, it loses interest again */
+  if (def.stare && e.angry) {
+    if (!toP || distP > 26 || !hasLineOfSight(game.world, e, p)) {
+      e.calmT = (e.calmT || 0) + 0.05;
+      if (e.calmT > 6) { e.angry = false; e.target = null; e.calmT = 0; }
+    } else e.calmT = 0;
+  }
   if (e.angry && toP && distP < 40) e.target = p;
   if (e.target && (distP > aggro * 2.2 || p.dead)) { e.target = null; if (def.neutral) e.angry = false; }
 
@@ -19441,7 +19515,7 @@ function updateViewModel(game, dt) {
   if (p.charging) p.chargeTime = (p.chargeTime || 0) + dt;
 }
 var SWING_STYLE_FOR = { sword: 1, pickaxe: 2, axe: 2, shovel: 3, hoe: 3 };
-var SWING_TIME = [0.28, 0.28, 0.42, 0.36];
+var SWING_TIME = [0.28, 0.28, 0.36, 0.32];
 function startSwing(kind) {
   VM.swing = 0; VM.swingActive = true; VM.swingKind = kind || 0;
   /* Placing or using something is always the short forward poke; only a real
@@ -19467,62 +19541,38 @@ function vmPhase(sp, a, b) {
 /* A swing is a wind-up that peaks early and unwinds, plus a strike that peaks
    late and settles. Both are zero at each end, so the hand always comes home
    without a snap. */
-function applySwingTransform(sp, side) {
-  var style = VM.swingStyle || 0;
-  var wind, hit, settle;
-  /* the little counter-move at the tail: the tool overshoots and comes back,
-     which is what stops a swing reading as a piston stroke */
-  settle = sp > 0.70 ? Math.sin((sp - 0.70) / 0.30 * Math.PI) : 0;
+/* The real game's swing, kept exactly: two easing curves, one peaking early
+   and one late, driving a translate and three rotations.
 
-  if (style === 1) {
-    /* SWORD — a sweep across the view. Almost all of the motion is roll and
-       yaw, so the blade travels sideways through the frame rather than
-       pumping toward the camera and back. */
-    wind = vmPhase(sp, 0, 0.20) - vmPhase(sp, 0.20, 0.46);
-    hit = vmPhase(sp, 0.16, 0.50) - vmPhase(sp, 0.64, 1);
-    mTranslate(side * (0.15 * wind - 0.26 * hit), 0.06 * wind - 0.05 * hit,
-      0.02 * wind - 0.08 * hit);
-    mRotZ(side * (-0.48 * wind + 1.38 * hit - 0.10 * settle));
-    mRotY(side * (0.58 * wind - 1.18 * hit));
-    mRotX(-0.20 * wind + 0.22 * hit);
-    return;
-  }
-  if (style === 2) {
-    /* PICKAXE and AXE — the tool is raised behind the shoulder and swung
-       down through an arc. The arc is a pitch about the fist, so the head
-       travels a long way while the hand barely moves. */
-    wind = vmPhase(sp, 0, 0.30) - vmPhase(sp, 0.30, 0.60);
-    hit = vmPhase(sp, 0.26, 0.58) - vmPhase(sp, 0.72, 1);
-    mTranslate(side * (0.02 * wind - 0.05 * hit), 0.17 * wind + 0.03 * hit,
-      0.02 * wind - 0.05 * hit);
-    /* the arc is big but bounded: driving further than this puts the head
-       through the bottom of the frame, where you cannot see it land */
-    mRotX(-0.98 * wind + 0.98 * hit - 0.10 * settle);
-    mRotZ(side * (-0.26 * wind + 0.34 * hit));
-    mRotY(side * (0.12 * wind - 0.14 * hit));
-    return;
-  }
-  if (style === 3) {
-    /* SHOVEL and HOE — driven down into the ground and scooped back out. */
-    wind = vmPhase(sp, 0, 0.26) - vmPhase(sp, 0.26, 0.54);
-    hit = vmPhase(sp, 0.22, 0.56) - vmPhase(sp, 0.70, 1);
-    mTranslate(side * (0.03 * wind - 0.05 * hit), 0.12 * wind - 0.20 * hit,
-      0.02 * wind - 0.06 * hit);
-    mRotX(-0.55 * wind + 1.35 * hit - 0.10 * settle);
-    mRotZ(side * (-0.14 * wind + 0.30 * hit));
-    mRotY(side * (0.08 * wind - 0.12 * hit));
-    return;
-  }
-  /* bare hand, blocks and everything else: the game's own punch arc, with the
-     lateral part damped so the forearm stays off the crosshair */
-  var fSq = Math.sin(sp * sp * Math.PI);
-  var fRt = Math.sin(Math.sqrt(sp) * Math.PI);
-  mTranslate(side * -0.40 * fRt * 0.38, 0.20 * Math.sin(Math.sqrt(sp) * Math.PI * 2) * 0.55,
-    -0.20 * Math.sin(sp * Math.PI));
-  mRotY(side * (45 + fSq * -20) * DEG);
-  mRotZ(side * fRt * -20 * DEG);
-  mRotX(fRt * -80 * DEG);
-  mRotY(side * -45 * DEG);
+     f  = sin(sp^2 * PI)     peaks late  — the yaw part of the follow-through
+     f1 = sin(sqrt(sp) * PI) peaks early — the drop and the roll
+
+   translate(-0.40*f1, 0.20*sin(sqrt(sp)*2PI), -0.20*sin(sp*PI))
+   rotateY(f * -20)  rotateZ(f1 * -20)  rotateX(f1 * -80)
+
+   Those constants are what makes a Minecraft swing read as a Minecraft swing;
+   inventing an arc instead is how the last version ended up looking like a
+   piston. Punchy's contribution is not a different arc — it is weight: the
+   same arc with per-tool gain on each term, and the hand carrying real
+   inertia from the springs above. So each tool scales the vanilla terms
+   rather than replacing them. */
+var SWING_GAIN = [
+  /* tx    ty    tz    ry    rz    rx */
+  [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],   /* 0 fist and blocks — pure vanilla */
+  [0.85, 0.85, 1.00, 2.60, 2.40, 0.60],   /* 1 sword  — sweeps across the view */
+  [0.45, 1.50, 1.70, 0.50, 0.70, 1.55],   /* 2 pick and axe — overhead and down */
+  [0.50, 1.20, 1.60, 0.50, 0.60, 1.35]    /* 3 shovel and hoe — driven and scooped */
+];
+function applySwingTransform(sp, side) {
+  var g = SWING_GAIN[VM.swingStyle || 0];
+  var f = Math.sin(sp * sp * Math.PI);
+  var f1 = Math.sin(Math.sqrt(sp) * Math.PI);
+  mTranslate(side * -0.40 * f1 * g[0],
+    0.20 * Math.sin(Math.sqrt(sp) * Math.PI * 2) * g[1],
+    -0.20 * Math.sin(sp * Math.PI) * g[2]);
+  mRotY(side * f * -20 * DEG * g[3]);
+  mRotZ(side * f1 * -20 * DEG * g[4]);
+  mRotX(f1 * -80 * DEG * g[5]);
 }
 
 
@@ -19673,13 +19723,13 @@ function drawViewModel(game) {
      so the swing arc moves hand and item together the way a real arm does. */
   mIdent();
   mTranslate(
-    0.40 + VM.swayX * 0.075 + VM.bobX - VM.sprintT * 0.02,
-    -0.34 + VM.swayY * 0.070 + VM.bobY + VM.dropY - eqDrop - VM.sneakT * 0.075 - VM.useProg * 0.05,
+    0.40 + VM.swayX * 0.105 + VM.bobX - VM.sprintT * 0.02,
+    -0.34 + VM.swayY * 0.098 + VM.bobY + VM.dropY - eqDrop - VM.sneakT * 0.075 - VM.useProg * 0.05,
     -0.66 + VM.sprintT * 0.07 + lift * 0.28
   );
   mRotZ(VM.rollZ + VM.bobRot * 0.5 + eq * 0.5);
-  mRotY(-VM.swayX * 0.18 - VM.sprintT * 0.22);
-  mRotX(VM.swayY * 0.16 + VM.bobRot * 0.4 + VM.sprintT * 0.34);
+  mRotY(-VM.swayX * 0.26 - VM.sprintT * 0.22);
+  mRotX(VM.swayY * 0.23 + VM.bobRot * 0.4 + VM.sprintT * 0.34);
   if (VM.swingActive) applySwingTransform(t, 1);
 
   if (p.eating) {

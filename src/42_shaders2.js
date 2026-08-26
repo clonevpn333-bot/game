@@ -299,18 +299,28 @@ void main(){
   if (uDof.y > 0.001) {
     float focus = clamp(linearDepth(texture(uDofDepth, vec2(0.5)).r), 5.0, 90.0);
     float lin = linearDepth(texture(uDofDepth, vUV).r);
-    float coc = clamp(abs(lin - focus) / max(lin, focus) * uDof.y, 0.0, 1.0);
+    float diff = lin - focus;
+    /* Far goes soft faster than near, the way a real lens behaves, and the
+       first metre is never touched — that is the player's own hand, drawn in
+       its own projection, and blurring it looks like a smeared lens. */
+    float coc = (diff > 0.0 ? diff : -diff * 0.5) / max(lin, focus) * uDof.y;
+    coc = clamp(coc, 0.0, 1.0);
     coc *= coc;
-    if (coc > 0.02) {
-      vec2 r = uCTexel * (1.0 + coc * 6.0);
+    if (lin < 1.3) coc = 0.0;
+    if (coc > 0.015) {
+      /* Radius as a fraction of the screen, not a couple of texels — a
+         six-texel offset is invisible at any real resolution. Two rings of
+         six so the blur is round rather than a plus sign. */
+      float rad = coc * 0.016;
+      vec2 r = vec2(rad * (uCTexel.x / max(uCTexel.y, 1e-6)), rad);
       vec3 acc = col;
-      acc += texture(uScene, vUV + vec2( r.x, 0.0)).rgb;
-      acc += texture(uScene, vUV + vec2(-r.x, 0.0)).rgb;
-      acc += texture(uScene, vUV + vec2( 0.0, r.y)).rgb;
-      acc += texture(uScene, vUV + vec2( 0.0, -r.y)).rgb;
-      acc += texture(uScene, vUV + r * 0.72).rgb;
-      acc += texture(uScene, vUV - r * 0.72).rgb;
-      col = mix(col, acc / 7.0, min(1.0, coc * 1.6));
+      for (int i = 0; i < 6; i++) {
+        float a = float(i) * 1.0471976;
+        vec2 o = vec2(cos(a), sin(a)) * r;
+        acc += texture(uScene, vUV + o).rgb;
+        acc += texture(uScene, vUV + o * 0.55 + vec2(-o.y, o.x) * 0.22).rgb;
+      }
+      col = mix(col, acc / 13.0, min(0.80, coc * 1.35));
     }
   }
   col += texture(uBloom, vUV).rgb * uBloomAmt;

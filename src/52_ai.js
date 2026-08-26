@@ -144,12 +144,23 @@ function updateEntity(game, e, dt) {
     !(def.neutralInLight && game.world.getLight(e.dim, Math.floor(e.x), Math.floor(e.y), Math.floor(e.z)) >> 4 > 8 && !e.angry);
   if (def.defender && !e.angry) wantsTarget = false;
   if (def.blind) wantsTarget = false;   /* the warden hunts by sound, set above */
-  if (wantsTarget && toP && distP < aggro) {
-    if (def.type === 'enderman' && !e.angry) {
-      /* the stare mechanic: only aggravated when the player looks at it */
-      if (playerLookingAt(p, e) && distP < 24) { e.angry = true; e.screamT = 0.6; }
-    } else e.target = p;
-  } else if (!wantsTarget) e.target = null;
+  /* The stare has to be checked before the usual target test, not inside it:
+     a calm neutral mob never gets that far, which is why looking one in the
+     eye did nothing. */
+  if (def.stare && !e.angry && toP && distP < 34 && distP > 1.5 &&
+      playerLookingAt(p, e) && hasLineOfSight(game.world, e, p)) {
+    e.angry = true; e.screamT = 0.7; e.target = p;
+    playSound(game, 'enderman', e.x, e.y, e.z, 1);
+  }
+  if (wantsTarget && toP && distP < aggro) e.target = p;
+  else if (!wantsTarget) e.target = null;
+  /* provoked and then left alone long enough, it loses interest again */
+  if (def.stare && e.angry) {
+    if (!toP || distP > 26 || !hasLineOfSight(game.world, e, p)) {
+      e.calmT = (e.calmT || 0) + 0.05;
+      if (e.calmT > 6) { e.angry = false; e.target = null; e.calmT = 0; }
+    } else e.calmT = 0;
+  }
   if (e.angry && toP && distP < 40) e.target = p;
   if (e.target && (distP > aggro * 2.2 || p.dead)) { e.target = null; if (def.neutral) e.angry = false; }
 

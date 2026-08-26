@@ -9,7 +9,7 @@ slice, edit it, then `node tools/build.js` to regenerate `minecraft.html`.
 | `src/00_s_core.js` | 181 | maths, RNG, noise, small shared helpers |
 | `src/01_s_blocks.js` | 825 | the block registry — every block id and its properties |
 | `src/02_s_biomes.js` | 325 | biome table and climate lookup |
-| `src/03_s_worldgen.js` | 750 | terrain density, caves, ore placement |
+| `src/03_s_worldgen.js` | 768 | terrain density, caves, ore placement |
 | `src/04_s_features.js` | 758 | trees, plants, decorations placed per chunk |
 | `src/05_s_structures.js` | 1125 | villages, mineshafts, strongholds, temples, monuments |
 | `src/10_tex_core.js` | 641 | the pixel-art painting DSL and colour helpers |
@@ -22,19 +22,19 @@ slice, edit it, then `node tools/build.js` to regenerate `minecraft.html`.
 | `src/30_world.js` | 408 | chunk storage, lighting, the worker bridge |
 | `src/40_gl.js` | 198 | GL context, framebuffers, texture arrays |
 | `src/41_shaders.js` | 442 | terrain and entity shaders |
-| `src/42_shaders2.js` | 392 | post-processing shaders — composite, bloom, DOF, FXAA |
+| `src/42_shaders2.js` | 402 | post-processing shaders — composite, bloom, DOF, FXAA |
 | `src/43_render.js` | 261 | renderer state, settings, resize |
-| `src/44_frame.js` | 423 | the per-frame render order and post pass |
-| `src/50_entities.js` | 481 | entity draw buffer, the box emitter, body plans |
-| `src/51_mobs.js` | 1055 | every mob definition and its animation |
-| `src/52_ai.js` | 537 | entity physics, pathing, aggro, damage |
+| `src/44_frame.js` | 426 | the per-frame render order and post pass |
+| `src/50_entities.js` | 483 | entity draw buffer, the box emitter, body plans |
+| `src/51_mobs.js` | 1067 | every mob definition and its animation |
+| `src/52_ai.js` | 548 | entity physics, pathing, aggro, damage |
 | `src/53_effects.js` | 393 | particles and weather |
 | `src/60_items.js` | 341 | the item registry |
 | `src/62_itemtex.js` | 674 | item icon painting |
 | `src/63_recipes.js` | 608 | crafting, smelting, brewing recipes |
 | `src/64_loot.js` | 99 | drop tables and chest loot |
 | `src/70_player.js` | 1101 | the player controller — movement, mining, placing, damage |
-| `src/71_viewmodel.js` | 591 | first-person arms, held item models, swing animation |
+| `src/71_viewmodel.js` | 567 | first-person arms, held item models, swing animation |
 | `src/80_ui_icons.js` | 113 | HUD icon painting |
 | `src/81_ui_core.js` | 476 | HUD layout, slots, inventory click handling |
 | `src/82_ui_screens.js` | 903 | every full-screen UI |
@@ -159,40 +159,40 @@ heightAt  03_s_worldgen.js:82
 pickBiome  03_s_worldgen.js:87
 CHEESE_T  03_s_worldgen.js:191
 caveField  03_s_worldgen.js:193
-GX  03_s_worldgen.js:223
-NGX  03_s_worldgen.js:224
-CG  03_s_worldgen.js:225
-NCX  03_s_worldgen.js:226
-_dbuf  03_s_worldgen.js:227
-_cbuf  03_s_worldgen.js:228
-_cbufTop  03_s_worldgen.js:229
-_hCol  03_s_worldgen.js:230
-_eroCol  03_s_worldgen.js:231
-_bioCol  03_s_worldgen.js:232
-_latH  03_s_worldgen.js:233
-_latE  03_s_worldgen.js:234
-_cc  03_s_worldgen.js:235
-gidx  03_s_worldgen.js:237
-cidx  03_s_worldgen.js:238
-coarseClimate  03_s_worldgen.js:241
-heightFrom  03_s_worldgen.js:251
-buildDensity  03_s_worldgen.js:273
-bilinLat  03_s_worldgen.js:345
-sampleDensity  03_s_worldgen.js:352
-densityAt  03_s_worldgen.js:372
-sampleCave  03_s_worldgen.js:376
-Col  03_s_worldgen.js:396
-setBlockRaw  03_s_worldgen.js:397
-getBlockRaw  03_s_worldgen.js:407
-genOverworld  03_s_worldgen.js:416
-surfacePass  03_s_worldgen.js:490
-badlandsBlock  03_s_worldgen.js:553
-ORE_TABLE  03_s_worldgen.js:570
-orePass  03_s_worldgen.js:581
-placeOreVein  03_s_worldgen.js:613
-placeBlob  03_s_worldgen.js:653
-geode  03_s_worldgen.js:664
-caveBiomePass  03_s_worldgen.js:680
+GX  03_s_worldgen.js:241
+NGX  03_s_worldgen.js:242
+CG  03_s_worldgen.js:243
+NCX  03_s_worldgen.js:244
+_dbuf  03_s_worldgen.js:245
+_cbuf  03_s_worldgen.js:246
+_cbufTop  03_s_worldgen.js:247
+_hCol  03_s_worldgen.js:248
+_eroCol  03_s_worldgen.js:249
+_bioCol  03_s_worldgen.js:250
+_latH  03_s_worldgen.js:251
+_latE  03_s_worldgen.js:252
+_cc  03_s_worldgen.js:253
+gidx  03_s_worldgen.js:255
+cidx  03_s_worldgen.js:256
+coarseClimate  03_s_worldgen.js:259
+heightFrom  03_s_worldgen.js:269
+buildDensity  03_s_worldgen.js:291
+bilinLat  03_s_worldgen.js:363
+sampleDensity  03_s_worldgen.js:370
+densityAt  03_s_worldgen.js:390
+sampleCave  03_s_worldgen.js:394
+Col  03_s_worldgen.js:414
+setBlockRaw  03_s_worldgen.js:415
+getBlockRaw  03_s_worldgen.js:425
+genOverworld  03_s_worldgen.js:434
+surfacePass  03_s_worldgen.js:508
+badlandsBlock  03_s_worldgen.js:571
+ORE_TABLE  03_s_worldgen.js:588
+orePass  03_s_worldgen.js:599
+placeOreVein  03_s_worldgen.js:631
+placeBlob  03_s_worldgen.js:671
+geode  03_s_worldgen.js:682
+caveBiomePass  03_s_worldgen.js:698
 ```
 
 ### 04_s_features.js
@@ -557,9 +557,9 @@ _shadowCull  44_frame.js:34
 drawChunkPass  44_frame.js:35
 renderFrame  44_frame.js:68
 postProcess  44_frame.js:232
-_selVAO  44_frame.js:337
-initSelection  44_frame.js:338
-drawSelection  44_frame.js:362
+_selVAO  44_frame.js:340
+initSelection  44_frame.js:341
+drawSelection  44_frame.js:365
 ```
 
 ### 50_entities.js
@@ -587,23 +587,23 @@ partTile  50_entities.js:121
 customTile  50_entities.js:129
 renderParts  50_entities.js:140
 bipedModel  50_entities.js:171
-quadModel  50_entities.js:189
-poseWalk  50_entities.js:208
-poseQuadWalk  50_entities.js:216
-_pose  50_entities.js:223
-drawEntities  50_entities.js:224
-buildEntityMesh  50_entities.js:265
-buildDroppedItem  50_entities.js:298
-buf0  50_entities.js:340
-buildXpOrb  50_entities.js:343
-PV  50_entities.js:356
-PART  50_entities.js:357
-initParticleBuffers  50_entities.js:358
-CORNERS  50_entities.js:372
-drawParticles  50_entities.js:373
-WEA  50_entities.js:419
-initWeatherBuffers  50_entities.js:420
-drawWeather  50_entities.js:432
+quadModel  50_entities.js:191
+poseWalk  50_entities.js:210
+poseQuadWalk  50_entities.js:218
+_pose  50_entities.js:225
+drawEntities  50_entities.js:226
+buildEntityMesh  50_entities.js:267
+buildDroppedItem  50_entities.js:300
+buf0  50_entities.js:342
+buildXpOrb  50_entities.js:345
+PV  50_entities.js:358
+PART  50_entities.js:359
+initParticleBuffers  50_entities.js:360
+CORNERS  50_entities.js:374
+drawParticles  50_entities.js:375
+WEA  50_entities.js:421
+initWeatherBuffers  50_entities.js:422
+drawWeather  50_entities.js:434
 ```
 
 ### 51_mobs.js
@@ -618,8 +618,8 @@ animFloat  51_mobs.js:52
 cattleModel  51_mobs.js:57
 fishModel  51_mobs.js:361
 villagerModel  51_mobs.js:447
-illagerModel  51_mobs.js:866
-prebakeEntityTiles  51_mobs.js:1008
+illagerModel  51_mobs.js:878
+prebakeEntityTiles  51_mobs.js:1020
 ```
 
 ### 52_ai.js
@@ -632,15 +632,15 @@ FULLBOX1  52_ai.js:44
 collideAxis  52_ai.js:47
 liquidAt  52_ai.js:101
 updateEntity  52_ai.js:108
-sideClearance  52_ai.js:328
-blockedAhead  52_ai.js:341
-isSolidAt  52_ai.js:352
-playerLookingAt  52_ai.js:356
-hasLineOfSight  52_ai.js:362
-applyPhysics  52_ai.js:378
-damageEntity  52_ai.js:413
-killEntity  52_ai.js:438
-trySpawnMobs  52_ai.js:462
+sideClearance  52_ai.js:339
+blockedAhead  52_ai.js:352
+isSolidAt  52_ai.js:363
+playerLookingAt  52_ai.js:367
+hasLineOfSight  52_ai.js:373
+applyPhysics  52_ai.js:389
+damageEntity  52_ai.js:424
+killEntity  52_ai.js:449
+trySpawnMobs  52_ai.js:473
 ```
 
 ### 53_effects.js
@@ -807,26 +807,27 @@ SWING_TIME  71_viewmodel.js:91
 startSwing  71_viewmodel.js:92
 DEG  71_viewmodel.js:105
 vmPhase  71_viewmodel.js:108
-applySwingTransform  71_viewmodel.js:117
-ITEM_MODELS  71_viewmodel.js:180
-ITEM_MODEL_FOR  71_viewmodel.js:251
-ITEM_GRIP  71_viewmodel.js:257
-ITEM_SCALE  71_viewmodel.js:260
-ITEM_REST  71_viewmodel.js:263
-drawSolidItem  71_viewmodel.js:274
-_vmProj  71_viewmodel.js:287
-drawViewModel  71_viewmodel.js:289
-heldEmissive  71_viewmodel.js:398
-SKIN  71_viewmodel.js:408
-drawArm  71_viewmodel.js:413
-drawHeldBlock  71_viewmodel.js:437
-drawHeldItem  71_viewmodel.js:480
-_extrudeCache  71_viewmodel.js:516
-drawExtrudedSprite  71_viewmodel.js:517
-_sv  71_viewmodel.js:544
-pushSpriteVert  71_viewmodel.js:545
-spriteFace  71_viewmodel.js:558
-rimQuad  71_viewmodel.js:575
+SWING_GAIN  71_viewmodel.js:132
+applySwingTransform  71_viewmodel.js:139
+ITEM_MODELS  71_viewmodel.js:156
+ITEM_MODEL_FOR  71_viewmodel.js:227
+ITEM_GRIP  71_viewmodel.js:233
+ITEM_SCALE  71_viewmodel.js:236
+ITEM_REST  71_viewmodel.js:239
+drawSolidItem  71_viewmodel.js:250
+_vmProj  71_viewmodel.js:263
+drawViewModel  71_viewmodel.js:265
+heldEmissive  71_viewmodel.js:374
+SKIN  71_viewmodel.js:384
+drawArm  71_viewmodel.js:389
+drawHeldBlock  71_viewmodel.js:413
+drawHeldItem  71_viewmodel.js:456
+_extrudeCache  71_viewmodel.js:492
+drawExtrudedSprite  71_viewmodel.js:493
+_sv  71_viewmodel.js:520
+pushSpriteVert  71_viewmodel.js:521
+spriteFace  71_viewmodel.js:534
+rimQuad  71_viewmodel.js:551
 ```
 
 ### 80_ui_icons.js

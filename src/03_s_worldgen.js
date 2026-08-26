@@ -193,11 +193,11 @@ var CHEESE_T = 0.170, SPAG_T = 0.074, NOODLE_T = 0.054;
 function caveField(x, y, z, surfaceH) {
   if (y < 4) return -1;
   var depth = surfaceH - y;
-  if (depth < 2) return -1;
+  if (depth < 1) return -1;
   /* Caves may break the surface — that is where entrances come from — but the
      roof is stiffened steeply with depth so openings stay occasional rather
      than turning the ground into lace. */
-  var bias = depth < 22 ? (22 - depth) * 0.052 : 0;
+  var bias = depth < 22 ? (22 - depth) * 0.040 : 0;
 
   var c1 = WG.cheese.get3(x, y * 1.45, z);
   var cheese = (c1 - CHEESE_T - bias * 0.5) * 6.0;
@@ -213,7 +213,25 @@ function caveField(x, y, z, surfaceH) {
     var n2 = WG.noodle.get3(x - 9000, y * 1.15, z + 9000);
     nd = Math.min(NOODLE_T - Math.abs(n1), NOODLE_T - Math.abs(n2)) * 40;
   }
-  return Math.max(cheese, sp, nd);
+  /* Ravines: a winding line in plan view, opened into a slot that is thin
+     across and very tall, pinched shut at the top and bottom so it reads as a
+     gash in the ground rather than a shaft. */
+  var rv = -1;
+  if (y > 12 && y < surfaceH - 2) {
+    var mask = WG.cheese.get3(x * 0.055, 2600, z * 0.055);
+    if (mask > 0.26) {
+      var strength = Math.min(1, (mask - 0.26) * 4.0);
+      var top = surfaceH - 3, bot = 16;
+      if (top > bot + 12) {
+        var mid = (top + bot) * 0.5, span = (top - bot) * 0.5;
+        var vy = Math.min(1, Math.abs(y - mid) / span);
+        var halfW = 0.052 * strength * (1 - vy * vy * vy);
+        var path = WG.spag1.get3(x * 0.34, 900, z * 0.34);
+        rv = (halfW - Math.abs(path)) * 34;
+      }
+    }
+  }
+  return Math.max(Math.max(cheese, sp), Math.max(nd, rv));
 }
 
 /* ============================== TERRAIN ================================= */
