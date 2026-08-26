@@ -357,6 +357,7 @@ function pumpChunks(game, budgetMs) {
     var cx2 = pcx + sp[j][0], cz2 = pcz + sp[j][1];
     var c = world.chunkAt(dim, cx2, cz2);
     if (!c || !c.loaded || c.lit) continue;
+    applyPendingEdits(game, dim, cx2, cz2);
     world.initChunkLight(c);
     lit++;
   }
@@ -568,6 +569,59 @@ function growTree(game, dim, x, y, z, kind) {
   playSound(game, 'place', x, y, z, 0.7);
 }
 
+/* -------------------------------------------------------------- edits -- */
+/* A world is a seed plus everything that has been changed since. Terrain is
+   regenerated from the seed on every load, so the changes are the only thing
+   worth storing — and they are exactly what a joining player needs too, which
+   is why one log serves both saving and multiplayer. */
+function recordEdit(game, dim, x, y, z, v) {
+  var k = dim + ':' + x + ',' + y + ',' + z, at = game.editIdx[k];
+  if (at === undefined) {
+    if (game.editLog.length >= 60000) return;
+    game.editIdx[k] = game.editLog.length;
+    game.editLog.push([dim, x, y, z, v]);
+  } else game.editLog[at][4] = v;
+}
+function installEditRecorder(game) {
+  var orig = game.world.setBlock.bind(game.world);
+  game.world.setBlock = function (dim, x, y, z, v, noLight) {
+    var watch = !game.replaying;
+    var before = watch ? this.getRaw(dim, x, y, z) : 0;
+    var r = orig(dim, x, y, z, v, noLight);
+    if (watch && before !== v) {
+      recordEdit(game, dim, x, y, z, v);
+      if (typeof NET !== 'undefined' && NET.active && !NET.suppress) {
+        NET.outBlocks.push([dim, x, y, z, v]);
+      }
+    }
+    return r;
+  };
+}
+/* Replayed per chunk as it arrives, just before its light is computed, so a
+   loaded world lights itself correctly instead of glowing through your walls. */
+function queueEdits(game, list) {
+  game.pendingEdits = {};
+  game.editLog = []; game.editIdx = {};
+  for (var i = 0; i < list.length; i++) {
+    var e = list[i];
+    recordEdit(game, e[0], e[1], e[2], e[3], e[4]);
+    var k = e[0] + ':' + (e[1] >> 4) + ',' + (e[3] >> 4);
+    (game.pendingEdits[k] || (game.pendingEdits[k] = [])).push(e);
+  }
+}
+function applyPendingEdits(game, dim, cx, cz) {
+  var pend = game.pendingEdits;
+  if (!pend) return;
+  var k = dim + ':' + cx + ',' + cz, list = pend[k];
+  if (!list) return;
+  delete pend[k];
+  game.replaying = true;
+  for (var i = 0; i < list.length; i++) {
+    game.world.setBlock(list[i][0], list[i][1], list[i][2], list[i][3], list[i][4], true);
+  }
+  game.replaying = false;
+}
+
 /* ------------------------------------------------------------- worlds -- */
 /* Every world is its own save under its own key, the way the real game keeps
    them: a name you chose, the seed it grew from, the mode you played it in
@@ -611,10 +665,16 @@ function seedFromText(txt) {
 }
 /* Opening a world is a reload into it: same path every time, no special case
    for a world that is already running. */
-function openWorld(id, name, seed, creative) {
+function openWorld(id, name, seed, creative, host) {
   var base = location.href.split('#')[0].split('?')[0];
+  var room = '';
+  if (host) {
+    var cs = 'abcdefghjkmnpqrstuvwxyz23456789';
+    for (var i = 0; i < 7; i++) room += cs.charAt((Math.random() * cs.length) | 0);
+    room = '&mp=' + room + '&host=1';
+  }
   location.href = base + '#world=' + encodeURIComponent(id) + '&seed=' + (seed >>> 0) +
-    '&name=' + encodeURIComponent(name) + (creative ? '&mode=creative' : '');
+    '&name=' + encodeURIComponent(name) + (creative ? '&mode=creative' : '') + room;
   location.reload();
 }
 function worldFromURL() {
@@ -638,7 +698,7 @@ function saveGame(game) {
         inv: p.inv, armor: p.armor, offhand: p.offhand,
         spawnX: p.spawnX, spawnY: p.spawnY, spawnZ: p.spawnZ
       },
-      edits: game.edits, ach: game.ach || {}, cheated: !!game.cheated, cheatReason: game.cheatReason || ''
+      edits: game.editLog, ach: game.ach || {}, cheated: !!game.cheated, cheatReason: game.cheatReason || ''
     };
     data.name = game.worldName || 'World';
     data.mode = game.player.creative ? 'creative' : 'survival';
@@ -657,7 +717,7 @@ function loadGame(game) {
     game.worldName = d.name || game.worldName || 'World';
     game.seed = d.seed;
     game.dayTime = d.dayTime;
-    game.edits = d.edits || {};
+    queueEdits(game, d.edits && d.edits.length ? d.edits : []);
     game.ach = d.ach || {};
     game.cheated = !!d.cheated;
     game.cheatReason = d.cheatReason || '';
@@ -889,6 +949,8 @@ function boot4(canvas) {
   var wi = worldFromURL();
   var g = createGame(canvas, seed);
   g.worldId = wi.id; g.worldName = wi.name;
+  g.editLog = []; g.editIdx = {}; g.pendingEdits = null;
+  installEditRecorder(g);
   if (wi.creative) { g.player.creative = true; }
   Game = g;
   window.game = g;

@@ -346,8 +346,10 @@ function netSendWorldTo(game, slot) {
   netSend(slot, { t: 'welcome', id: slot.id, seed: game.seed, dayTime: game.dayTime,
     rain: game.weather.rain, thunder: game.weather.thunder,
     sx: game.player.x, sy: game.player.y, sz: game.player.z });
-  var log = NET.editLog;
-  for (var i = 0; i < log.length; i += 800) netSend(slot, { t: 'blk', b: log.slice(i, i + 800) });
+  /* everything ever changed in this world goes out, saved or not, so hosting
+     the world you have been building sends the buildings with it */
+  var log = game.editLog || [];
+  for (var i = 0; i < log.length; i += 600) netSend(slot, { t: 'blk', b: log.slice(i, i + 600) });
   netSend(slot, { t: 'synced', n: log.length });
 }
 function netHandle(game, slot, m) {
@@ -382,7 +384,6 @@ function netHandle(game, slot, m) {
       for (i = 0; i < m.b.length; i++) {
         var b = m.b[i];
         game.world.setBlock(b[0], b[1], b[2], b[3], b[4]);
-        if (NET.role === 'host') netRecordEdit(b[0], b[1], b[2], b[3], b[4]);
       }
       NET.suppress = false;
       if (NET.role === 'host') netBroadcast(m, slot);
@@ -541,16 +542,8 @@ var _netHooked = false;
 function netInstallHooks(game) {
   if (_netHooked) return;
   _netHooked = true;
-  var origSet = game.world.setBlock.bind(game.world);
-  game.world.setBlock = function (dim, x, y, z, v, noLight) {
-    var before = NET.active && !NET.suppress ? this.getRaw(dim, x, y, z) : 0;
-    var r = origSet(dim, x, y, z, v, noLight);
-    if (NET.active && !NET.suppress && before !== v) {
-      NET.outBlocks.push([dim, x, y, z, v]);
-      if (NET.role === 'host') netRecordEdit(dim, x, y, z, v);
-    }
-    return r;
-  };
+  /* block changes are recorded and forwarded by the game's own edit recorder:
+     one log serves the save file and the wire alike */
   var prevDamage = damageEntity;
   damageEntity = function (g, target, amount, source, noKnock) {
     if (netIsGuest() && target && target.net && target.netId) {
@@ -771,12 +764,20 @@ SCREEN_BUILDERS.multiplayer = function (game, box) {
       setTimeout(function () { copy.textContent = 'Copy invite code'; }, 1200);
     });
   } else {
-    var hostBtn = el('button', 'bigbtn', box, 'Host a new world');
+    var hereBtn = el('button', 'bigbtn', box, 'Host this world (' + (game.worldName || 'My World') + ')');
+    hereBtn.addEventListener('click', function () {
+      hereBtn.disabled = true; hereBtn.textContent = 'Opening…';
+      /* no reload — this world is already loaded, and everything built in it
+         goes out to whoever joins */
+      netStartHosting(game, netRoomId());
+      showScreen(game, 'multiplayer');
+    });
+    var hostBtn = el('button', 'bigbtn', box, 'Host a brand new world');
     hostBtn.addEventListener('click', function () {
-      hostBtn.disabled = true; hostBtn.textContent = 'Generating a fresh world…';
+      hostBtn.disabled = true; hostBtn.textContent = 'Generating…';
       netHostNewWorld();
     });
-    el('div', 'subtext', box, 'Hosting starts a brand new world and gives you a code to send. You do not have to be on the same network.');
+    el('div', 'subtext', box, 'Host the world you are in and everything you have built comes with it. Either way you get a code to send — you do not have to be on the same network.');
 
     el('div', 'subtext', box, 'Got a code? Type it in.');
     var inp2 = el('input', 'netinput netbigcode', box);

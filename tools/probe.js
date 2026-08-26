@@ -117,6 +117,44 @@ const PROBES = [
           ' seed=' + g.seed + ' name=' + g.worldName + ' deleted=' + gone;
     } },
 
+  { name: 'edits-persist', fn: () => {
+      const g = window.game, p = g.player, w = g.world;
+      const x = Math.floor(p.x) + 5, y = Math.floor(p.y) + 2, z = Math.floor(p.z) + 5;
+      const before = g.editLog.length;
+      w.setBlock(p.dim, x, y, z, BID.gold_block);
+      w.setBlock(p.dim, x, y + 1, z, BID.diamond_block);
+      w.setBlock(p.dim, x, y, z, BID.stone);          /* overwrite, not append */
+      const grew = g.editLog.length - before;
+      g.worldId = 'probe-edits'; g.worldName = 'Edit World';
+      if (!saveGame(g)) return 'FAIL save refused';
+      const raw = JSON.parse(localStorage.getItem(worldKey('probe-edits')));
+      const stored = (raw.edits || []).length;
+      /* reload path: queue them and replay the chunk they live in */
+      w.setBlock(p.dim, x, y, z, 0); w.setBlock(p.dim, x, y + 1, z, 0);
+      queueEdits(g, raw.edits);
+      applyPendingEdits(g, p.dim, x >> 4, z >> 4);
+      const a1 = BLOCKS[w.getId(p.dim, x, y, z)].name;
+      const b1 = BLOCKS[w.getId(p.dim, x, y + 1, z)].name;
+      deleteWorld('probe-edits');
+      return (grew === 2 && stored >= 2 && a1 === 'stone' && b1 === 'diamond_block')
+        ? grew + ' edits logged (overwrite in place), ' + stored + ' saved, replayed back as ' +
+          a1 + '/' + b1
+        : 'FAIL grew=' + grew + ' stored=' + stored + ' got ' + a1 + '/' + b1;
+    } },
+
+  { name: 'host-carries-world', fn: () => {
+      const g = window.game;
+      if (!g.editLog.length) return 'FAIL nothing to send';
+      const sent = [];
+      const slot = { id: 0, ch: { readyState: 'open', send: (j) => sent.push(JSON.parse(j)) } };
+      netSendWorldTo(g, slot);
+      const blk = sent.filter(m => m.t === 'blk').reduce((n, m) => n + m.b.length, 0);
+      const wel = sent.find(m => m.t === 'welcome');
+      return (wel && blk === g.editLog.length)
+        ? 'joining player receives welcome + all ' + blk + ' block changes of the loaded world'
+        : 'FAIL welcome=' + !!wel + ' blocks=' + blk + '/' + g.editLog.length;
+    } },
+
   { name: 'enderman', fn: () => {
       const m = MOBS.enderman, arm = m.model.parts.find(p => p.n === 'armL');
       const a0 = arm.piv[1] + arm.box[1], a1 = a0 + arm.box[4];

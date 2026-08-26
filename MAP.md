@@ -37,14 +37,14 @@ slice, edit it, then `node tools/build.js` to regenerate `minecraft.html`.
 | `src/71_viewmodel.js` | 567 | first-person arms, held item models, swing animation |
 | `src/80_ui_icons.js` | 113 | HUD icon painting |
 | `src/81_ui_core.js` | 476 | HUD layout, slots, inventory click handling |
-| `src/82_ui_screens.js` | 965 | every full-screen UI |
+| `src/82_ui_screens.js` | 969 | every full-screen UI |
 | `src/90_blockentities.js` | 468 | furnaces, chests, fluids, random ticks |
-| `src/91_game.js` | 1115 | boot, the main loop, input, save and load, spawn |
+| `src/91_game.js` | 1177 | boot, the main loop, input, save and load, spawn |
 | `src/92_redstone.js` | 443 | redstone simulation |
 | `src/93_bosses.js` | 197 | dragon and wither fights |
 | `src/94_achievements.js` | 183 | achievements and the credits |
 | `src/94b_player.js` | 106 | player character models and skins |
-| `src/95_net.js` | 847 | multiplayer — relay, handshake, sync, chat, nameplates |
+| `src/95_net.js` | 848 | multiplayer — relay, handshake, sync, chat, nameplates |
 
 ## Definitions
 
@@ -987,41 +987,45 @@ handleActions  91_game.js:223
 interactEntity  91_game.js:275
 ensureTrades  91_game.js:312
 pumpChunks  91_game.js:323
-meshChunk  91_game.js:422
-remeshAll  91_game.js:438
-updateWorldTime  91_game.js:450
-travelDimension  91_game.js:481
-finishDimSwitch  91_game.js:500
-safeYAt  91_game.js:514
-buildPortalFrame  91_game.js:525
-buildEndPlatform  91_game.js:544
-growTree  91_game.js:555
-worldKey  91_game.js:575
-worldSlug  91_game.js:576
-listWorlds  91_game.js:581
-deleteWorld  91_game.js:603
-seedFromText  91_game.js:604
-openWorld  91_game.js:614
-worldFromURL  91_game.js:620
-saveGame  91_game.js:629
-loadGame  91_game.js:651
-gameTick  91_game.js:676
-drainPendingMobs  91_game.js:741
-paintHUD  91_game.js:762
-_nearCache  91_game.js:821
-nearestStructureLine  91_game.js:822
-facingName  91_game.js:838
-boot  91_game.js:844
-setLoading  91_game.js:853
-boot2  91_game.js:861
-boot3  91_game.js:870
-seedFromURL  91_game.js:878
-boot4  91_game.js:887
-findSpawnColumn  91_game.js:963
-findSpawnPoint  91_game.js:990
-waitForSpawn  91_game.js:1025
-frame  91_game.js:1059
-DIAG  91_game.js:1088
+meshChunk  91_game.js:423
+remeshAll  91_game.js:439
+updateWorldTime  91_game.js:451
+travelDimension  91_game.js:482
+finishDimSwitch  91_game.js:501
+safeYAt  91_game.js:515
+buildPortalFrame  91_game.js:526
+buildEndPlatform  91_game.js:545
+growTree  91_game.js:556
+recordEdit  91_game.js:577
+installEditRecorder  91_game.js:585
+queueEdits  91_game.js:602
+applyPendingEdits  91_game.js:612
+worldKey  91_game.js:629
+worldSlug  91_game.js:630
+listWorlds  91_game.js:635
+deleteWorld  91_game.js:657
+seedFromText  91_game.js:658
+openWorld  91_game.js:668
+worldFromURL  91_game.js:680
+saveGame  91_game.js:689
+loadGame  91_game.js:711
+gameTick  91_game.js:736
+drainPendingMobs  91_game.js:801
+paintHUD  91_game.js:822
+_nearCache  91_game.js:881
+nearestStructureLine  91_game.js:882
+facingName  91_game.js:898
+boot  91_game.js:904
+setLoading  91_game.js:913
+boot2  91_game.js:921
+boot3  91_game.js:930
+seedFromURL  91_game.js:938
+boot4  91_game.js:947
+findSpawnColumn  91_game.js:1025
+findSpawnPoint  91_game.js:1052
+waitForSpawn  91_game.js:1087
+frame  91_game.js:1121
+DIAG  91_game.js:1150
 ```
 
 ### 92_redstone.js
@@ -1121,42 +1125,42 @@ netEditKey  95_net.js:334
 netRecordEdit  95_net.js:335
 _netIds  95_net.js:343
 netSendWorldTo  95_net.js:344
-netHandle  95_net.js:353
-netPlayerEntity  95_net.js:408
-netRemovePlayer  95_net.js:418
-netApplyMove  95_net.js:423
-netInterp  95_net.js:438
-netApplyEntities  95_net.js:450
-netApplyRemoteHit  95_net.js:477
-netTick  95_net.js:485
-netSendEntities  95_net.js:519
-netIsGuest  95_net.js:537
-_netHooked  95_net.js:540
-netInstallHooks  95_net.js:541
-_origUpdateEntity  95_net.js:564
-updateEntity  95_net.js:565
-_origGameTick  95_net.js:569
-gameTick  95_net.js:570
-_origTrySpawnMobs  95_net.js:571
-trySpawnMobs  95_net.js:572
-_origRandomTicks  95_net.js:573
-randomTicks  95_net.js:574
-_origTickFluids  95_net.js:575
-tickFluids  95_net.js:576
-_plates  95_net.js:579
-netClearPlate  95_net.js:580
-netUpdateNameplates  95_net.js:585
-_origPaintHUD  95_net.js:612
-paintHUD  95_net.js:613
-netOpenChat  95_net.js:616
-netB64  95_net.js:648
-netUnB64  95_net.js:653
-netZip  95_net.js:660
-netPack  95_net.js:671
-netUnpack  95_net.js:678
-netManualOffer  95_net.js:692
-netManualAnswer  95_net.js:709
-netManualAccept  95_net.js:725
-SCREEN_BUILDERS.multiplayer  95_net.js:736
+netHandle  95_net.js:355
+netPlayerEntity  95_net.js:409
+netRemovePlayer  95_net.js:419
+netApplyMove  95_net.js:424
+netInterp  95_net.js:439
+netApplyEntities  95_net.js:451
+netApplyRemoteHit  95_net.js:478
+netTick  95_net.js:486
+netSendEntities  95_net.js:520
+netIsGuest  95_net.js:538
+_netHooked  95_net.js:541
+netInstallHooks  95_net.js:542
+_origUpdateEntity  95_net.js:557
+updateEntity  95_net.js:558
+_origGameTick  95_net.js:562
+gameTick  95_net.js:563
+_origTrySpawnMobs  95_net.js:564
+trySpawnMobs  95_net.js:565
+_origRandomTicks  95_net.js:566
+randomTicks  95_net.js:567
+_origTickFluids  95_net.js:568
+tickFluids  95_net.js:569
+_plates  95_net.js:572
+netClearPlate  95_net.js:573
+netUpdateNameplates  95_net.js:578
+_origPaintHUD  95_net.js:605
+paintHUD  95_net.js:606
+netOpenChat  95_net.js:609
+netB64  95_net.js:641
+netUnB64  95_net.js:646
+netZip  95_net.js:653
+netPack  95_net.js:664
+netUnpack  95_net.js:671
+netManualOffer  95_net.js:685
+netManualAnswer  95_net.js:702
+netManualAccept  95_net.js:718
+SCREEN_BUILDERS.multiplayer  95_net.js:729
 ```
 

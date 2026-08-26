@@ -925,6 +925,10 @@ SCREEN_BUILDERS.worlds = function (game, box) {
       else play.addEventListener('click', function () {
         openWorld(w.id, w.name, w.seed, w.mode === 'creative');
       });
+      var host = el('button', 'optbtn', row, 'Host');
+      host.addEventListener('click', function () {
+        openWorld(w.id, w.name, w.seed, w.mode === 'creative', true);
+      });
       var del = el('button', 'optbtn worlddel', row, 'Delete');
       del.addEventListener('click', function () {
         if (del.textContent !== 'Sure?') { del.textContent = 'Sure?'; return; }
