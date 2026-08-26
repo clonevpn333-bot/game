@@ -253,11 +253,8 @@ function selfBodyEntity(game) {
   self.dim = p.dim; self.x = p.x; self.y = p.y; self.z = p.z;
   self.pitch = p.pitch; self.headPitch = p.pitch;
   self.dead = false; self.hurtTime = 0;
-  /* At true size the chest is a tenth of a block under the eye and becomes a
-     wall the moment you look down. The first-person copy is scaled about the
-     feet instead — they stay planted, the head stays where the camera is, and
-     the torso reads as a torso. Every other viewer sees the full-size one. */
-  self.sizeMul = game.cameraMode === 0 ? 0.78 : 1;
+  /* Full size, always. Only what is drawn differs between the two views. */
+  self.sizeMul = 1;
 
   var spd = Math.hypot(p.vx, p.vz);
   if (game.cameraMode === 0) {
@@ -301,13 +298,17 @@ function drawEntities(game, fogStart, fogEnd, underwater, uwv, shadowOn) {
   if (self) {
     var sp = MOBS[self.type].model.parts;
     var first = game.cameraMode === 0;
-    /* Skip the head, which the camera is inside, and the one arm the view
-       model already draws — that is the arm on the same side of the screen,
-       so leaving both in would give you two right arms. Everything else is
-       there: the other arm at your side, the torso, both legs. */
-    if (first) { sp[0].hidden = true; sp[2].hidden = true; }
+    /* First person draws the legs and nothing else.
+       The eye sits a tenth of a block above the shoulders, so a torso drawn
+       there is not a torso from the inside — it is a wall of shirt across the
+       whole screen the moment you tip your head down, and no amount of
+       scaling or nudging changes that, because that is simply where your
+       chest is relative to your eyes. The arms are the view model's job
+       already. Legs and feet are the part you can actually look at, so that
+       is the part that gets drawn. Everyone else still sees all of you. */
+    if (first) { sp[0].hidden = true; sp[1].hidden = true; sp[2].hidden = true; sp[3].hidden = true; }
     buildEntityMesh(game, self);
-    if (first) { sp[0].hidden = false; sp[2].hidden = false; }
+    if (first) { sp[0].hidden = false; sp[1].hidden = false; sp[2].hidden = false; sp[3].hidden = false; }
     drew++;
   }
   if (EBUF.n === 0) return;

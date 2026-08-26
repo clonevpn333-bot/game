@@ -104,7 +104,7 @@ const PROBES = [
       if (!e) return 'FAIL no body entity';
       const parts = MOBS[e.type].model.parts.map(p => p.n).join(',');
       return 'type=' + e.type + ' parts=' + parts +
-        ' (head+arms hidden in first person)';
+        ' size=' + e.sizeMul + ' (first person draws legL,legR only)';
     } },
 
   { name: 'body-no-spin', fn: () => {

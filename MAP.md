@@ -25,7 +25,7 @@ slice, edit it, then `node tools/build.js` to regenerate `minecraft.html`.
 | `src/42_shaders2.js` | 405 | post-processing shaders — composite, bloom, DOF, FXAA |
 | `src/43_render.js` | 261 | renderer state, settings, resize |
 | `src/44_frame.js` | 426 | the per-frame render order and post pass |
-| `src/50_entities.js` | 552 | entity draw buffer, the box emitter, body plans |
+| `src/50_entities.js` | 553 | entity draw buffer, the box emitter, body plans |
 | `src/51_mobs.js` | 1067 | every mob definition and its animation |
 | `src/52_ai.js` | 548 | entity physics, pathing, aggro, damage |
 | `src/53_effects.js` | 393 | particles and weather |
@@ -592,19 +592,19 @@ poseWalk  50_entities.js:210
 poseQuadWalk  50_entities.js:218
 _pose  50_entities.js:225
 selfBodyEntity  50_entities.js:243
-drawEntities  50_entities.js:282
-buildEntityMesh  50_entities.js:336
-buildDroppedItem  50_entities.js:369
-buf0  50_entities.js:411
-buildXpOrb  50_entities.js:414
-PV  50_entities.js:427
-PART  50_entities.js:428
-initParticleBuffers  50_entities.js:429
-CORNERS  50_entities.js:443
-drawParticles  50_entities.js:444
-WEA  50_entities.js:490
-initWeatherBuffers  50_entities.js:491
-drawWeather  50_entities.js:503
+drawEntities  50_entities.js:279
+buildEntityMesh  50_entities.js:337
+buildDroppedItem  50_entities.js:370
+buf0  50_entities.js:412
+buildXpOrb  50_entities.js:415
+PV  50_entities.js:428
+PART  50_entities.js:429
+initParticleBuffers  50_entities.js:430
+CORNERS  50_entities.js:444
+drawParticles  50_entities.js:445
+WEA  50_entities.js:491
+initWeatherBuffers  50_entities.js:492
+drawWeather  50_entities.js:504
 ```
 
 ### 51_mobs.js
