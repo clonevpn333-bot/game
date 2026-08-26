@@ -223,10 +223,23 @@ function poseQuadWalk(pose, swing, amp) {
 
 /* ================================ DRAW ================================= */
 var _pose = {};
-/* The player's own body. Looking down should show a torso and two legs, not
-   an empty void, so the same character model everyone else is drawn with is
-   drawn for you too — minus the head and arms in first person, because the
-   head is inside the camera and the arms are already the view model. */
+/* The player's own body.
+ *
+ * The camera is the model's head. Everything below it is drawn for real, at
+ * the real height, so the torso, arms and legs hang off the view exactly
+ * where a person's would and run off the bottom of the screen the way they
+ * should. Only the head itself is skipped in first person, because the
+ * camera is inside it — and from anybody else's point of view the head is
+ * there and correct.
+ *
+ * The body yaw is the thing that has to be handled differently in first
+ * person. Everywhere else a body lags the head and snaps around once the
+ * twist gets too big, which is right when you are watching someone from
+ * outside. Seen from inside the chest that same lag sweeps the whole torso
+ * across the screen every time you turn, which reads as the body spinning
+ * around you. So in first person the body simply tracks the head: turn, and
+ * the torso stays put in the frame where it belongs.
+ */
 function selfBodyEntity(game) {
   var p = game.player;
   if (p.spectator || !R.settings.selfBody) return null;
@@ -235,29 +248,34 @@ function selfBodyEntity(game) {
   var self = game.selfEnt;
   if (!self || self.type !== want) {
     self = game.selfEnt = makeEntity(want, p.dim, p.x, p.y, p.z, { persist: true });
-    self.bodyYaw = p.yaw;
+    self.yaw = self.bodyYaw = p.yaw;
   }
-  /* The eye sits only a tenth of a block above the chest, so a body drawn
-     exactly on the player fills the screen the moment you glance down. In
-     first person it is dropped a little under the real hitbox, which puts the
-     chest, legs and feet in proportion when you look at them. Nobody else
-     sees this copy, so the cheat costs nothing. */
-  self.dim = p.dim; self.x = p.x; self.z = p.z;
-  self.y = p.y - (game.cameraMode === 0 ? 0.42 : 0);
+  self.dim = p.dim; self.x = p.x; self.y = p.y; self.z = p.z;
   self.pitch = p.pitch; self.headPitch = p.pitch;
   self.dead = false; self.hurtTime = 0;
-  /* the legs point where you are going; the head leads and the body follows,
-     and the twist between them is capped the way the real one is */
+  /* At true size the chest is a tenth of a block under the eye and becomes a
+     wall the moment you look down. The first-person copy is scaled about the
+     feet instead — they stay planted, the head stays where the camera is, and
+     the torso reads as a torso. Every other viewer sees the full-size one. */
+  self.sizeMul = game.cameraMode === 0 ? 0.78 : 1;
+
   var spd = Math.hypot(p.vx, p.vz);
-  if (spd > 0.5) self.bodyYaw = Math.atan2(p.vx, -p.vz);
-  var twist = angleDiff(p.yaw, self.bodyYaw);
-  if (Math.abs(twist) > 0.85) self.bodyYaw = p.yaw - (twist > 0 ? 0.85 : -0.85);
-  self.yaw += angleDiff(self.bodyYaw, self.yaw) * 0.30;
-  self.headYaw = angleDiff(p.yaw, self.yaw);
+  if (game.cameraMode === 0) {
+    self.yaw = p.yaw;                 /* locked to the head: no sweep, no spin */
+    self.headYaw = 0;
+  } else {
+    /* third person: the legs point where you are going, the head leads, and
+       the twist between them is capped the way the real one is */
+    if (spd > 0.5) self.bodyYaw = Math.atan2(p.vx, -p.vz);
+    var twist = angleDiff(p.yaw, self.bodyYaw);
+    if (Math.abs(twist) > 0.85) self.bodyYaw = p.yaw - (twist > 0 ? 0.85 : -0.85);
+    self.yaw += angleDiff(self.bodyYaw, self.yaw) * 0.30;
+    self.headYaw = angleDiff(p.yaw, self.yaw);
+  }
   self.walkAmt = approach(self.walkAmt, Math.min(1, spd / 4.3), 0.25);
   self.walkPhase = p.bobPhase;
   self.sneaking = p.sneaking; self.onGround = p.onGround;
-  if (game.sleeping) { self.walkAmt = 0; }
+  if (game.sleeping) self.walkAmt = 0;
   return self;
 }
 
@@ -283,9 +301,13 @@ function drawEntities(game, fogStart, fogEnd, underwater, uwv, shadowOn) {
   if (self) {
     var sp = MOBS[self.type].model.parts;
     var first = game.cameraMode === 0;
-    if (first) { sp[0].hidden = true; sp[2].hidden = true; sp[3].hidden = true; }
+    /* Skip the head, which the camera is inside, and the one arm the view
+       model already draws — that is the arm on the same side of the screen,
+       so leaving both in would give you two right arms. Everything else is
+       there: the other arm at your side, the torso, both legs. */
+    if (first) { sp[0].hidden = true; sp[2].hidden = true; }
     buildEntityMesh(game, self);
-    if (first) { sp[0].hidden = false; sp[2].hidden = false; sp[3].hidden = false; }
+    if (first) { sp[0].hidden = false; sp[2].hidden = false; }
     drew++;
   }
   if (EBUF.n === 0) return;

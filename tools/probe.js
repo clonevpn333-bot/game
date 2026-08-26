@@ -107,6 +107,22 @@ const PROBES = [
         ' (head+arms hidden in first person)';
     } },
 
+  { name: 'body-no-spin', fn: () => {
+      const g = window.game, p = g.player;
+      g.cameraMode = 0; p.vx = p.vz = 0;
+      let worst = 0, drift = 0;
+      for (let i = 0; i < 60; i++) {
+        p.yaw += 0.09;                      /* stand still and spin the view */
+        const e = selfBodyEntity(g);
+        worst = Math.max(worst, Math.abs(angleDiff(p.yaw, e.yaw)));
+        drift = Math.abs(e.y - p.y);
+      }
+      return (worst < 1e-6 && drift < 1e-6)
+        ? 'body locked to the head while turning (max offset ' + worst.toFixed(6)
+          + ' rad), drawn at the true height'
+        : 'FAIL yaw offset ' + worst.toFixed(3) + ' rad, height drift ' + drift.toFixed(3);
+    } },
+
   { name: 'enderman', fn: () => {
       const m = MOBS.enderman, arm = m.model.parts.find(p => p.n === 'armL');
       const a0 = arm.piv[1] + arm.box[1], a1 = a0 + arm.box[4];
@@ -204,7 +220,7 @@ const PROBES = [
       const y = g.world.getHeight(p.dim, x, z);
       g.world.setBlock(p.dim, x, y, z, BID.white_bed);
       window.__bed = { x: x, y: y, z: z };
-      p.pitch = -1.30; p.vx = p.vy = p.vz = 0;   /* a natural glance down */
+      p.pitch = -1.10; p.vx = p.vy = p.vz = 0;   /* a natural glance down */
     });
     await page.waitForTimeout(2500);
     await page.evaluate(() => { window.game.frozen = true; });
