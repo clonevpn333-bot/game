@@ -654,6 +654,7 @@ function gameTick(game, dt) {
   if (p.portalTime > 0.05) { tr = 0.72; tg = 0.36; tb = 0.92; ta = Math.max(ta, clamp(p.portalTime / 1.4, 0, 1) * 0.5); }
   if (game.lightningFlash > 0) ex += game.lightningFlash * 0.9;
   if (game.totemFlash > 0) { tr = 1.0; tg = 0.85; tb = 0.35; ta = Math.max(ta, game.totemFlash * 0.7); }
+  if (game.sleeping) { tr = tg = tb = 0; ta = Math.max(ta, game.sleepFade || 0); ex = 1; }
   game.screenTint[0] = tr; game.screenTint[1] = tg; game.screenTint[2] = tb;
   game.screenTintAmt = approach(game.screenTintAmt, ta, dt * 6);
   game.exposure = approach(game.exposure, ex * (0.92 + game.weather.rain * -0.08), dt * 2.5);

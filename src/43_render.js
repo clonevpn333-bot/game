@@ -11,7 +11,7 @@ var R = {
   shadowFBO: null, shadowSize: 2048,
   width: 0, height: 0, scale: 1,
   settings: {
-    renderDistance: 8, shadows: true, bloom: true, godRays: true, fxaa: false, dof: true,
+    renderDistance: 8, shadows: true, bloom: true, godRays: true, fxaa: false, dof: true, selfBody: true,
     smoothLight: true, fancyWater: true, fov: 74, renderScale: 1.0, maxFps: 0, viewBob: true,
     viewModel: true, particles: true, entityShadows: true, clouds: true, waveGrass: true,
     sharpTextures: true, xray: false, fullbright: false, veinMiner: true,

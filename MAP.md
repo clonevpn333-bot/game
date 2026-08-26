@@ -17,15 +17,15 @@ slice, edit it, then `node tools/build.js` to regenerate `minecraft.html`.
 | `src/12_tex_custom.js` | 1279 | hand-painted block tiles |
 | `src/13_tex_mobs.js` | 377 | mob faces and hides |
 | `src/20_glmath.js` | 157 | matrix and vector maths (column-major) |
-| `src/21_models.js` | 313 | block model boxes for non-cube blocks |
+| `src/21_models.js` | 325 | block model boxes for non-cube blocks |
 | `src/22_mesher.js` | 511 | chunk meshing — the three render passes |
 | `src/30_world.js` | 408 | chunk storage, lighting, the worker bridge |
 | `src/40_gl.js` | 198 | GL context, framebuffers, texture arrays |
 | `src/41_shaders.js` | 442 | terrain and entity shaders |
-| `src/42_shaders2.js` | 402 | post-processing shaders — composite, bloom, DOF, FXAA |
+| `src/42_shaders2.js` | 405 | post-processing shaders — composite, bloom, DOF, FXAA |
 | `src/43_render.js` | 261 | renderer state, settings, resize |
 | `src/44_frame.js` | 426 | the per-frame render order and post pass |
-| `src/50_entities.js` | 483 | entity draw buffer, the box emitter, body plans |
+| `src/50_entities.js` | 530 | entity draw buffer, the box emitter, body plans |
 | `src/51_mobs.js` | 1067 | every mob definition and its animation |
 | `src/52_ai.js` | 548 | entity physics, pathing, aggro, damage |
 | `src/53_effects.js` | 393 | particles and weather |
@@ -33,15 +33,15 @@ slice, edit it, then `node tools/build.js` to regenerate `minecraft.html`.
 | `src/62_itemtex.js` | 674 | item icon painting |
 | `src/63_recipes.js` | 608 | crafting, smelting, brewing recipes |
 | `src/64_loot.js` | 99 | drop tables and chest loot |
-| `src/70_player.js` | 1101 | the player controller — movement, mining, placing, damage |
+| `src/70_player.js` | 1102 | the player controller — movement, mining, placing, damage |
 | `src/71_viewmodel.js` | 567 | first-person arms, held item models, swing animation |
 | `src/80_ui_icons.js` | 113 | HUD icon painting |
 | `src/81_ui_core.js` | 476 | HUD layout, slots, inventory click handling |
-| `src/82_ui_screens.js` | 903 | every full-screen UI |
+| `src/82_ui_screens.js` | 904 | every full-screen UI |
 | `src/90_blockentities.js` | 468 | furnaces, chests, fluids, random ticks |
-| `src/91_game.js` | 1049 | boot, the main loop, input, save and load, spawn |
+| `src/91_game.js` | 1050 | boot, the main loop, input, save and load, spawn |
 | `src/92_redstone.js` | 443 | redstone simulation |
-| `src/93_bosses.js` | 178 | dragon and wither fights |
+| `src/93_bosses.js` | 197 | dragon and wither fights |
 | `src/94_achievements.js` | 183 | achievements and the credits |
 | `src/94b_player.js` | 106 | player character models and skins |
 | `src/95_net.js` | 847 | multiplayer — relay, handshake, sync, chat, nameplates |
@@ -416,12 +416,12 @@ _modelCache  21_models.js:30
 cubeLayers  21_models.js:31
 modelFor  21_models.js:55
 buildModel  21_models.js:64
-fenceModel  21_models.js:225
-wallModel  21_models.js:240
-paneModel  21_models.js:251
-gateModel  21_models.js:262
-stairsModel  21_models.js:281
-quadrantFor  21_models.js:304
+fenceModel  21_models.js:237
+wallModel  21_models.js:252
+paneModel  21_models.js:263
+gateModel  21_models.js:274
+stairsModel  21_models.js:293
+quadrantFor  21_models.js:316
 ```
 
 ### 22_mesher.js
@@ -591,19 +591,20 @@ quadModel  50_entities.js:191
 poseWalk  50_entities.js:210
 poseQuadWalk  50_entities.js:218
 _pose  50_entities.js:225
-drawEntities  50_entities.js:226
-buildEntityMesh  50_entities.js:267
-buildDroppedItem  50_entities.js:300
-buf0  50_entities.js:342
-buildXpOrb  50_entities.js:345
-PV  50_entities.js:358
-PART  50_entities.js:359
-initParticleBuffers  50_entities.js:360
-CORNERS  50_entities.js:374
-drawParticles  50_entities.js:375
-WEA  50_entities.js:421
-initWeatherBuffers  50_entities.js:422
-drawWeather  50_entities.js:434
+selfBodyEntity  50_entities.js:230
+drawEntities  50_entities.js:264
+buildEntityMesh  50_entities.js:314
+buildDroppedItem  50_entities.js:347
+buf0  50_entities.js:389
+buildXpOrb  50_entities.js:392
+PV  50_entities.js:405
+PART  50_entities.js:406
+initParticleBuffers  50_entities.js:407
+CORNERS  50_entities.js:421
+drawParticles  50_entities.js:422
+WEA  50_entities.js:468
+initWeatherBuffers  50_entities.js:469
+drawWeather  50_entities.js:481
 ```
 
 ### 51_mobs.js
@@ -780,20 +781,20 @@ veinOf  70_player.js:341
 breakBlock  70_player.js:361
 supportCheck  70_player.js:405
 placeBlock  70_player.js:424
-placementState  70_player.js:464
-playerIntersects  70_player.js:489
-interactBlock  70_player.js:502
-applyBoneMeal  70_player.js:574
-useSpecialItem  70_player.js:601
-tryLightPortal  70_player.js:650
-startEating  70_player.js:690
-finishEating  70_player.js:702
-applyItemEffect  70_player.js:722
-playerAttack  70_player.js:747
-updatePlayer  70_player.js:781
-groundBelow  70_player.js:1020
-tryStepUp  70_player.js:1027
-updateCamera  70_player.js:1045
+placementState  70_player.js:465
+playerIntersects  70_player.js:490
+interactBlock  70_player.js:503
+applyBoneMeal  70_player.js:575
+useSpecialItem  70_player.js:602
+tryLightPortal  70_player.js:651
+startEating  70_player.js:691
+finishEating  70_player.js:703
+applyItemEffect  70_player.js:723
+playerAttack  70_player.js:748
+updatePlayer  70_player.js:782
+groundBelow  70_player.js:1021
+tryStepUp  70_player.js:1028
+updateCamera  70_player.js:1046
 ```
 
 ### 71_viewmodel.js
@@ -941,12 +942,12 @@ SCREEN_REFRESH.creative  82_ui_screens.js:738
 SCREEN_BUILDERS.death  82_ui_screens.js:741
 SCREEN_BUILDERS.pause  82_ui_screens.js:750
 SCREEN_BUILDERS.options  82_ui_screens.js:771
-SCREEN_REFRESH.death  82_ui_screens.js:826
-SCREEN_REFRESH.pause  82_ui_screens.js:827
-SCREEN_REFRESH.options  82_ui_screens.js:828
-drawPlayerDoll  82_ui_screens.js:831
-SCREEN_BUILDERS.help  82_ui_screens.js:879
-SCREEN_REFRESH.help  82_ui_screens.js:902
+SCREEN_REFRESH.death  82_ui_screens.js:827
+SCREEN_REFRESH.pause  82_ui_screens.js:828
+SCREEN_REFRESH.options  82_ui_screens.js:829
+drawPlayerDoll  82_ui_screens.js:832
+SCREEN_BUILDERS.help  82_ui_screens.js:880
+SCREEN_REFRESH.help  82_ui_screens.js:903
 ```
 
 ### 90_blockentities.js
@@ -998,22 +999,22 @@ growTree  91_game.js:555
 saveGame  91_game.js:572
 loadGame  91_game.js:590
 gameTick  91_game.js:614
-drainPendingMobs  91_game.js:678
-paintHUD  91_game.js:699
-_nearCache  91_game.js:758
-nearestStructureLine  91_game.js:759
-facingName  91_game.js:775
-boot  91_game.js:781
-setLoading  91_game.js:790
-boot2  91_game.js:798
-boot3  91_game.js:807
-seedFromURL  91_game.js:815
-boot4  91_game.js:824
-findSpawnColumn  91_game.js:897
-findSpawnPoint  91_game.js:924
-waitForSpawn  91_game.js:959
-frame  91_game.js:993
-DIAG  91_game.js:1022
+drainPendingMobs  91_game.js:679
+paintHUD  91_game.js:700
+_nearCache  91_game.js:759
+nearestStructureLine  91_game.js:760
+facingName  91_game.js:776
+boot  91_game.js:782
+setLoading  91_game.js:791
+boot2  91_game.js:799
+boot3  91_game.js:808
+seedFromURL  91_game.js:816
+boot4  91_game.js:825
+findSpawnColumn  91_game.js:898
+findSpawnPoint  91_game.js:925
+waitForSpawn  91_game.js:960
+frame  91_game.js:994
+DIAG  91_game.js:1023
 ```
 
 ### 92_redstone.js
@@ -1048,7 +1049,7 @@ checkWitherSummon  93_bosses.js:76
 updateWither  93_bosses.js:106
 wardenSense  93_bosses.js:124
 trySleepInBed  93_bosses.js:141
-updateSleep  93_bosses.js:164
+updateSleep  93_bosses.js:167
 ```
 
 ### 94_achievements.js

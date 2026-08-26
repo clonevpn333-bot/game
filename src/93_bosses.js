@@ -156,18 +156,37 @@ function trySleepInBed(game, hit) {
     return false;
   }
   p.spawnX = hit.x; p.spawnY = hit.y + 1; p.spawnZ = hit.z; p.spawnDim = p.dim;
-  game.sleeping = 1.6;
+  game.sleepPos = { x: hit.x, y: hit.y, z: hit.z };
+  game.sleepTotal = 3.2;
+  game.sleeping = game.sleepTotal;
+  game.sleepFrom = { pitch: p.pitch, yaw: p.yaw };
   logMessage(game, 'Respawn point set.', '#aaffaa');
   unlockAch(game, 'bed');
   return true;
 }
 function updateSleep(game, dt) {
   if (!game.sleeping) return;
+  var p = game.player, sp = game.sleepPos;
   game.sleeping -= dt;
+  var total = game.sleepTotal || 3.2;
+  var k = Math.max(0, Math.min(1, 1 - game.sleeping / total));
+  /* lie back on the pillow: the camera settles onto the bed and tips up to
+     the ceiling while the screen fades out and back in */
+  if (sp) {
+    p.x = sp.x + 0.5; p.z = sp.z + 0.5;
+    p.vx = p.vy = p.vz = 0;
+    var ease = k < 0.30 ? k / 0.30 : 1;
+    ease = ease * ease * (3 - 2 * ease);
+    p.y = sp.y + 0.62;
+    p.camY = p.y + 0.35 * (1 - ease);
+    p.pitch = (game.sleepFrom ? game.sleepFrom.pitch : 0) * (1 - ease) - 0.95 * ease;
+  }
+  game.sleepFade = k < 0.30 ? k / 0.30 : (k > 0.78 ? Math.max(0, (1 - k) / 0.22) : 1);
   /* run the clock forward fast, and clear the weather on waking */
   game.dayTime = (game.dayTime + dt * 9000) % 24000;
   if (game.sleeping <= 0) {
     game.sleeping = 0;
+    game.sleepFade = 0; game.sleepPos = null;
     game.dayTime = 100;
     game.weather.targetRain = 0;
     game.weather.rain = 0;

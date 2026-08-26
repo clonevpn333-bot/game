@@ -11302,8 +11302,20 @@ function buildModel(id, state) {
     case 'flat': return [mkBox(0, 0.4, 0, 16, 0.6, 16, L, { flat: 1 })];
     case 'sign': return [mkBox(0, 0, 7, 16, 12, 9, L)];
     case 'bed': {
+      /* mattress on four short legs, a turned-down blanket and a pillow at
+         the head end — a bed, not a slab floating three units off the floor */
       var bv = FACING_VEC[state & 3];
-      return [mkBox(0, 3, 0, 16, 9, 16, L)];
+      var out = [
+        mkBox(0, 3, 0, 16, 9, 16, L),
+        mkBox(0, 9, 0, 16, 10, 16, L),
+        mkBox(0, 0, 0, 3, 3, 3, L), mkBox(13, 0, 0, 16, 3, 3, L),
+        mkBox(0, 0, 13, 3, 3, 16, L), mkBox(13, 0, 13, 16, 3, 16, L)
+      ];
+      var px0 = 2, pz0 = 2, px1 = 14, pz1 = 14;
+      if (bv[0] > 0) px0 = 11; else if (bv[0] < 0) px1 = 5;
+      else if (bv[2] > 0) pz0 = 11; else pz1 = 5;
+      out.push(mkBox(px0, 10, pz0, px1, 13, pz1, L));
+      return out;
     }
     case 'candle': return [mkBox(7, 0, 7, 9, 6, 9, L, { noCull: true })];
     case 'shrieker': return [mkBox(0, 0, 0, 16, 8, 16, L)];
@@ -13344,6 +13356,9 @@ void main(){
   // a hint of dither breaks up banding in the sky gradient
   float dth = fract(sin(dot(vUV*vec2(1024.0,768.0), vec2(12.9898,78.233)))*43758.5453);
   col += (dth-0.5)/255.0;
+  // Motion blur: carry some of the previous frame. This has to be the very
+  // last thing, after the grade, so both frames are in the same space.
+  if (uBlurAmt > 0.002) col = mix(col, texture(uPrev, vUV).rgb, uBlurAmt);
   // The palette is hand-painted in display space, so the pipeline stays there
   // too: no extra gamma encode, which is what keeps the colours from washing
   // out into pastel.
@@ -13415,7 +13430,7 @@ var R = {
   shadowFBO: null, shadowSize: 2048,
   width: 0, height: 0, scale: 1,
   settings: {
-    renderDistance: 8, shadows: true, bloom: true, godRays: true, fxaa: false, dof: true,
+    renderDistance: 8, shadows: true, bloom: true, godRays: true, fxaa: false, dof: true, selfBody: true,
     smoothLight: true, fancyWater: true, fov: 74, renderScale: 1.0, maxFps: 0, viewBob: true,
     viewModel: true, particles: true, entityShadows: true, clouds: true, waveGrass: true,
     sharpTextures: true, xray: false, fullbright: false, veinMiner: true,
@@ -14318,6 +14333,44 @@ function poseQuadWalk(pose, swing, amp) {
 
 /* ================================ DRAW ================================= */
 var _pose = {};
+/* The player's own body. Looking down should show a torso and two legs, not
+   an empty void, so the same character model everyone else is drawn with is
+   drawn for you too — minus the head and arms in first person, because the
+   head is inside the camera and the arms are already the view model. */
+function selfBodyEntity(game) {
+  var p = game.player;
+  if (p.spectator || !R.settings.selfBody) return null;
+  var skin = (typeof NET !== 'undefined' ? (NET.skin || 0) : 0) % PLAYER_SKINS.length;
+  var want = 'player' + skin;
+  var self = game.selfEnt;
+  if (!self || self.type !== want) {
+    self = game.selfEnt = makeEntity(want, p.dim, p.x, p.y, p.z, { persist: true });
+    self.bodyYaw = p.yaw;
+  }
+  /* The eye sits only a tenth of a block above the chest, so a body drawn
+     exactly on the player fills the screen the moment you glance down. In
+     first person it is dropped a little under the real hitbox, which puts the
+     chest, legs and feet in proportion when you look at them. Nobody else
+     sees this copy, so the cheat costs nothing. */
+  self.dim = p.dim; self.x = p.x; self.z = p.z;
+  self.y = p.y - (game.cameraMode === 0 ? 0.42 : 0);
+  self.pitch = p.pitch; self.headPitch = p.pitch;
+  self.dead = false; self.hurtTime = 0;
+  /* the legs point where you are going; the head leads and the body follows,
+     and the twist between them is capped the way the real one is */
+  var spd = Math.hypot(p.vx, p.vz);
+  if (spd > 0.5) self.bodyYaw = Math.atan2(p.vx, -p.vz);
+  var twist = angleDiff(p.yaw, self.bodyYaw);
+  if (Math.abs(twist) > 0.85) self.bodyYaw = p.yaw - (twist > 0 ? 0.85 : -0.85);
+  self.yaw += angleDiff(self.bodyYaw, self.yaw) * 0.30;
+  self.headYaw = angleDiff(p.yaw, self.yaw);
+  self.walkAmt = approach(self.walkAmt, Math.min(1, spd / 4.3), 0.25);
+  self.walkPhase = p.bobPhase;
+  self.sneaking = p.sneaking; self.onGround = p.onGround;
+  if (game.sleeping) { self.walkAmt = 0; }
+  return self;
+}
+
 function drawEntities(game, fogStart, fogEnd, underwater, uwv, shadowOn) {
   var world = game.world, p = game.player, dim = p.dim;
   var list = game.entities;
@@ -14334,6 +14387,15 @@ function drawEntities(game, fogStart, fogEnd, underwater, uwv, shadowOn) {
     if (d2 > maxD2) continue;
     if (!R.frustum.boxIn(e.x - 2, e.y - 1, e.z - 2, e.x + 2, e.y + e.h + 2, e.z + 2)) continue;
     buildEntityMesh(game, e);
+    drew++;
+  }
+  var self = selfBodyEntity(game);
+  if (self) {
+    var sp = MOBS[self.type].model.parts;
+    var first = game.cameraMode === 0;
+    if (first) { sp[0].hidden = true; sp[2].hidden = true; sp[3].hidden = true; }
+    buildEntityMesh(game, self);
+    if (first) { sp[0].hidden = false; sp[2].hidden = false; sp[3].hidden = false; }
     drew++;
   }
   if (EBUF.n === 0) return;
@@ -18747,12 +18809,13 @@ function supportCheck(game, x, y, z) {
 }
 function placeBlock(game, hit) {
   var p = game.player, world = game.world;
+  /* Right-click interactions come first and do not care what you are
+     holding — an empty hand still opens a chest, a furnace or a door. */
+  if (hit && interactBlock(game, hit)) return true;
   var s = heldStack(p);
   if (!s) return false;
   var it = ITEMS[s.item];
   if (!it) return false;
-  /* right-click interactions win over placement */
-  if (hit && interactBlock(game, hit)) return true;
   if (it.spawnMob) {
     if (!hit) return false;
     var sv = FACING_VEC[0];
@@ -20836,7 +20899,7 @@ function pickFromTag(game, t) {
 SCREEN_BUILDERS.chest = function (game, box) {
   var be = UI.container;
   guiTitle(box, be && be.name ? be.name : 'Chest');
-  var items = be.items;
+  var items = (be && be.items) || [];
   var slots = [];
   for (var i = 0; i < items.length; i++) slots.push(arraySlot(items, i));
   buildSlotGrid(game, box, slots, 9, 'chestgrid');
@@ -21397,6 +21460,7 @@ SCREEN_BUILDERS.options = function (game, box) {
   toggle('Sharp Textures', 'sharpTextures', function () { applyAtlasFilter(); });
   toggle('Motion Blur', 'motionBlur');
   toggle('Depth of Field', 'dof');
+  toggle('Show Own Body', 'selfBody');
   toggle('X-Ray (X)', 'xray', function () { game.setXray(R.settings.xray); });
   toggle('Fullbright (B)', 'fullbright');
   toggle('Vein Miner', 'veinMiner');
@@ -22618,6 +22682,7 @@ function gameTick(game, dt) {
   if (p.portalTime > 0.05) { tr = 0.72; tg = 0.36; tb = 0.92; ta = Math.max(ta, clamp(p.portalTime / 1.4, 0, 1) * 0.5); }
   if (game.lightningFlash > 0) ex += game.lightningFlash * 0.9;
   if (game.totemFlash > 0) { tr = 1.0; tg = 0.85; tb = 0.35; ta = Math.max(ta, game.totemFlash * 0.7); }
+  if (game.sleeping) { tr = tg = tb = 0; ta = Math.max(ta, game.sleepFade || 0); ex = 1; }
   game.screenTint[0] = tr; game.screenTint[1] = tg; game.screenTint[2] = tb;
   game.screenTintAmt = approach(game.screenTintAmt, ta, dt * 6);
   game.exposure = approach(game.exposure, ex * (0.92 + game.weather.rain * -0.08), dt * 2.5);
@@ -23616,18 +23681,37 @@ function trySleepInBed(game, hit) {
     return false;
   }
   p.spawnX = hit.x; p.spawnY = hit.y + 1; p.spawnZ = hit.z; p.spawnDim = p.dim;
-  game.sleeping = 1.6;
+  game.sleepPos = { x: hit.x, y: hit.y, z: hit.z };
+  game.sleepTotal = 3.2;
+  game.sleeping = game.sleepTotal;
+  game.sleepFrom = { pitch: p.pitch, yaw: p.yaw };
   logMessage(game, 'Respawn point set.', '#aaffaa');
   unlockAch(game, 'bed');
   return true;
 }
 function updateSleep(game, dt) {
   if (!game.sleeping) return;
+  var p = game.player, sp = game.sleepPos;
   game.sleeping -= dt;
+  var total = game.sleepTotal || 3.2;
+  var k = Math.max(0, Math.min(1, 1 - game.sleeping / total));
+  /* lie back on the pillow: the camera settles onto the bed and tips up to
+     the ceiling while the screen fades out and back in */
+  if (sp) {
+    p.x = sp.x + 0.5; p.z = sp.z + 0.5;
+    p.vx = p.vy = p.vz = 0;
+    var ease = k < 0.30 ? k / 0.30 : 1;
+    ease = ease * ease * (3 - 2 * ease);
+    p.y = sp.y + 0.62;
+    p.camY = p.y + 0.35 * (1 - ease);
+    p.pitch = (game.sleepFrom ? game.sleepFrom.pitch : 0) * (1 - ease) - 0.95 * ease;
+  }
+  game.sleepFade = k < 0.30 ? k / 0.30 : (k > 0.78 ? Math.max(0, (1 - k) / 0.22) : 1);
   /* run the clock forward fast, and clear the weather on waking */
   game.dayTime = (game.dayTime + dt * 9000) % 24000;
   if (game.sleeping <= 0) {
     game.sleeping = 0;
+    game.sleepFade = 0; game.sleepPos = null;
     game.dayTime = 100;
     game.weather.targetRain = 0;
     game.weather.rain = 0;

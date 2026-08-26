@@ -423,12 +423,13 @@ function supportCheck(game, x, y, z) {
 }
 function placeBlock(game, hit) {
   var p = game.player, world = game.world;
+  /* Right-click interactions come first and do not care what you are
+     holding — an empty hand still opens a chest, a furnace or a door. */
+  if (hit && interactBlock(game, hit)) return true;
   var s = heldStack(p);
   if (!s) return false;
   var it = ITEMS[s.item];
   if (!it) return false;
-  /* right-click interactions win over placement */
-  if (hit && interactBlock(game, hit)) return true;
   if (it.spawnMob) {
     if (!hit) return false;
     var sv = FACING_VEC[0];

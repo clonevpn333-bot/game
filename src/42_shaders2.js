@@ -344,6 +344,9 @@ void main(){
   // a hint of dither breaks up banding in the sky gradient
   float dth = fract(sin(dot(vUV*vec2(1024.0,768.0), vec2(12.9898,78.233)))*43758.5453);
   col += (dth-0.5)/255.0;
+  // Motion blur: carry some of the previous frame. This has to be the very
+  // last thing, after the grade, so both frames are in the same space.
+  if (uBlurAmt > 0.002) col = mix(col, texture(uPrev, vUV).rgb, uBlurAmt);
   // The palette is hand-painted in display space, so the pipeline stays there
   // too: no extra gamma encode, which is what keeps the colours from washing
   // out into pastel.

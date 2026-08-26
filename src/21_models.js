@@ -184,8 +184,20 @@ function buildModel(id, state) {
     case 'flat': return [mkBox(0, 0.4, 0, 16, 0.6, 16, L, { flat: 1 })];
     case 'sign': return [mkBox(0, 0, 7, 16, 12, 9, L)];
     case 'bed': {
+      /* mattress on four short legs, a turned-down blanket and a pillow at
+         the head end — a bed, not a slab floating three units off the floor */
       var bv = FACING_VEC[state & 3];
-      return [mkBox(0, 3, 0, 16, 9, 16, L)];
+      var out = [
+        mkBox(0, 3, 0, 16, 9, 16, L),
+        mkBox(0, 9, 0, 16, 10, 16, L),
+        mkBox(0, 0, 0, 3, 3, 3, L), mkBox(13, 0, 0, 16, 3, 3, L),
+        mkBox(0, 0, 13, 3, 3, 16, L), mkBox(13, 0, 13, 16, 3, 16, L)
+      ];
+      var px0 = 2, pz0 = 2, px1 = 14, pz1 = 14;
+      if (bv[0] > 0) px0 = 11; else if (bv[0] < 0) px1 = 5;
+      else if (bv[2] > 0) pz0 = 11; else pz1 = 5;
+      out.push(mkBox(px0, 10, pz0, px1, 13, pz1, L));
+      return out;
     }
     case 'candle': return [mkBox(7, 0, 7, 9, 6, 9, L, { noCull: true })];
     case 'shrieker': return [mkBox(0, 0, 0, 16, 8, 16, L)];

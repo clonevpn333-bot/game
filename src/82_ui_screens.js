@@ -247,7 +247,7 @@ function pickFromTag(game, t) {
 SCREEN_BUILDERS.chest = function (game, box) {
   var be = UI.container;
   guiTitle(box, be && be.name ? be.name : 'Chest');
-  var items = be.items;
+  var items = (be && be.items) || [];
   var slots = [];
   for (var i = 0; i < items.length; i++) slots.push(arraySlot(items, i));
   buildSlotGrid(game, box, slots, 9, 'chestgrid');
@@ -808,6 +808,7 @@ SCREEN_BUILDERS.options = function (game, box) {
   toggle('Sharp Textures', 'sharpTextures', function () { applyAtlasFilter(); });
   toggle('Motion Blur', 'motionBlur');
   toggle('Depth of Field', 'dof');
+  toggle('Show Own Body', 'selfBody');
   toggle('X-Ray (X)', 'xray', function () { game.setXray(R.settings.xray); });
   toggle('Fullbright (B)', 'fullbright');
   toggle('Vein Miner', 'veinMiner');

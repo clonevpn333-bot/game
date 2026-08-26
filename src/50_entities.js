@@ -223,6 +223,44 @@ function poseQuadWalk(pose, swing, amp) {
 
 /* ================================ DRAW ================================= */
 var _pose = {};
+/* The player's own body. Looking down should show a torso and two legs, not
+   an empty void, so the same character model everyone else is drawn with is
+   drawn for you too — minus the head and arms in first person, because the
+   head is inside the camera and the arms are already the view model. */
+function selfBodyEntity(game) {
+  var p = game.player;
+  if (p.spectator || !R.settings.selfBody) return null;
+  var skin = (typeof NET !== 'undefined' ? (NET.skin || 0) : 0) % PLAYER_SKINS.length;
+  var want = 'player' + skin;
+  var self = game.selfEnt;
+  if (!self || self.type !== want) {
+    self = game.selfEnt = makeEntity(want, p.dim, p.x, p.y, p.z, { persist: true });
+    self.bodyYaw = p.yaw;
+  }
+  /* The eye sits only a tenth of a block above the chest, so a body drawn
+     exactly on the player fills the screen the moment you glance down. In
+     first person it is dropped a little under the real hitbox, which puts the
+     chest, legs and feet in proportion when you look at them. Nobody else
+     sees this copy, so the cheat costs nothing. */
+  self.dim = p.dim; self.x = p.x; self.z = p.z;
+  self.y = p.y - (game.cameraMode === 0 ? 0.42 : 0);
+  self.pitch = p.pitch; self.headPitch = p.pitch;
+  self.dead = false; self.hurtTime = 0;
+  /* the legs point where you are going; the head leads and the body follows,
+     and the twist between them is capped the way the real one is */
+  var spd = Math.hypot(p.vx, p.vz);
+  if (spd > 0.5) self.bodyYaw = Math.atan2(p.vx, -p.vz);
+  var twist = angleDiff(p.yaw, self.bodyYaw);
+  if (Math.abs(twist) > 0.85) self.bodyYaw = p.yaw - (twist > 0 ? 0.85 : -0.85);
+  self.yaw += angleDiff(self.bodyYaw, self.yaw) * 0.30;
+  self.headYaw = angleDiff(p.yaw, self.yaw);
+  self.walkAmt = approach(self.walkAmt, Math.min(1, spd / 4.3), 0.25);
+  self.walkPhase = p.bobPhase;
+  self.sneaking = p.sneaking; self.onGround = p.onGround;
+  if (game.sleeping) { self.walkAmt = 0; }
+  return self;
+}
+
 function drawEntities(game, fogStart, fogEnd, underwater, uwv, shadowOn) {
   var world = game.world, p = game.player, dim = p.dim;
   var list = game.entities;
@@ -239,6 +277,15 @@ function drawEntities(game, fogStart, fogEnd, underwater, uwv, shadowOn) {
     if (d2 > maxD2) continue;
     if (!R.frustum.boxIn(e.x - 2, e.y - 1, e.z - 2, e.x + 2, e.y + e.h + 2, e.z + 2)) continue;
     buildEntityMesh(game, e);
+    drew++;
+  }
+  var self = selfBodyEntity(game);
+  if (self) {
+    var sp = MOBS[self.type].model.parts;
+    var first = game.cameraMode === 0;
+    if (first) { sp[0].hidden = true; sp[2].hidden = true; sp[3].hidden = true; }
+    buildEntityMesh(game, self);
+    if (first) { sp[0].hidden = false; sp[2].hidden = false; sp[3].hidden = false; }
     drew++;
   }
   if (EBUF.n === 0) return;
