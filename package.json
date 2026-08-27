@@ -1,0 +1,21 @@
+{
+  "name": "nova-arcade",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Nova Arcade game hub + Summit co-op climbing game (client + authoritative server)",
+  "scripts": {
+    "server": "node server/index.js",
+    "start": "node server/index.js",
+    "site": "node tools/devserver.js",
+    "dev": "node tools/dev.js",
+    "check": "node tools/check.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.55.0",
+    "three": "^0.185.1"
+  }
+}
