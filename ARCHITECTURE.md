@@ -45,3 +45,32 @@ Rule: no file over ~400 lines. If one grows past it, split it.
 | `site/games/games.json` | **the manifest** — add a game by dropping a folder in `site/games/` + one entry here |
 | `site/games/<id>/` | each game, self-contained |
 | `site/vendor/three/` | vendored three.js module build (no CDN at runtime) |
+
+## site/games/summit/shared/ — imported verbatim by BOTH server and client
+| file | what lives here |
+|---|---|
+| `shared/rng.js` | seeded PRNG, string→seed hash, Perlin `Noise` with `fbm`/`ridged`, math helpers |
+| `shared/constants.js` | every tunable: tick rates, biome bands, stamina/survival/status tables, flight, room codes |
+| `shared/mountain.js` | `createWorld(seed)` → height/normal/slope, guaranteed climbing route, campfires, beach, loot spots |
+| `shared/locomotion.js` | `step()` — the one movement function (walk, climb, slide, swim, ghost, freefall/canopy) |
+| `shared/survival.js` | vitals: hunger, temperature, statuses, damage, downed/bleed-out, consumables, campfire rest |
+| `shared/items.js` | item catalogue with real weights, pack sizes, per-biome loot tables |
+| `shared/protocol.js` | message-type constants, `enc`/`dec`, snapshot packing, player flag bits |
+
+## server/ — Summit authoritative server (Node + ws)
+| file | what lives here |
+|---|---|
+| `server/index.js` | HTTP + WebSocket bootstrap, message routing, fixed-step loop, `/health`, also serves `site/` |
+| `server/rooms.js` | room registry: code generation, lookup, token→room, reaping empty rooms |
+| `server/room.js` | one room: join/leave/reconnect, phase machine (lobby→flight→dive→climb→extract→results), snapshots, badges |
+| `server/simulate.js` | per-tick authoritative simulation: input draining, modifiers, grapple/zipline/carry, survival, fall damage |
+| `server/actions.js` | every player verb (pickup, use, give, rope, piton, grapple, zipline, boost, revive, carry, ping, horn, camp, board) |
+| `server/loot.js` | world item spawning, containers, inventory add/remove with weight + slot limits |
+| `server/shared.js` | single re-export point for the shared modules above |
+
+## tools/
+| file | what lives here |
+|---|---|
+| `tools/nettest.js` | headless 2-client integration test: full run through every phase, actions, reconnect, drop-out |
+| `tools/climbsim.js` | proves a seed's route is climbable using the real movement code (`node tools/climbsim.js SEED`) |
+| `tools/srv.sh` | start/stop the game server via pidfile |
