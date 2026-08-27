@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Summit — render dev scene</title>
+<style>html,body{margin:0;height:100%;background:#05070b;overflow:hidden}canvas{display:block;width:100vw;height:100vh}
+#hud{position:fixed;left:12px;top:12px;font:12px ui-monospace,monospace;color:#9fb;text-shadow:0 1px 3px #000;white-space:pre}</style>
+</head><body>
+<canvas id="c"></canvas><div id="hud"></div>
+<script type="module">
+import * as THREE from '../../vendor/three/three.module.js';
+import { Stage } from './client/gfx/scene.js';
+import { Terrain } from './client/world/terrain.js';
+import { createWorld } from './shared/mountain.js';
+const q = new URLSearchParams(location.search);
+const world = createWorld(q.get('seed') || 'DEV-1');
+const stage = new Stage(document.getElementById('c'), q.get('q') || 'high');
+if (q.get('shadows') === '0') stage.renderer.shadowMap.enabled = false;
+if (q.get('clouds') === '0') stage.clouds.meshes.forEach(m => m.visible = false);
+const terrain = new Terrain(world, stage.scene, 6);
+const view = q.get('view') || 'beach';
+const day = Number(q.get('day') ?? 0.30);
+let pos;
+if (view === 'beach') pos = new THREE.Vector3(world.beach.x, world.beach.y + 18, world.beach.z);
+else if (view === 'mid') { const n = world.route[70]; pos = new THREE.Vector3(n.x, n.y + 26, n.z); }
+else if (view === 'summit') pos = new THREE.Vector3(30, world.height(30, 30) + 40, 30);
+else if (view === 'air') pos = new THREE.Vector3(world.beach.x * 1.3, 900, world.beach.z * 1.3);
+else pos = new THREE.Vector3(0, 400, 2000);
+stage.camera.position.copy(pos);
+stage.camera.lookAt(view === 'summit' ? new THREE.Vector3(0, world.height(0, 0) - 60, 0)
+  : view === 'air' ? new THREE.Vector3(0, 700, 0) : new THREE.Vector3(0, 300, 0));
+terrain.prime(pos.x, pos.z);
+window.__terrain = terrain; window.__stage = stage; window.__world = world;
+let frames = 0, t = performance.now();
+function loop() {
+  const now = performance.now(); const dt = Math.min(0.05, (now - t) / 1000); t = now;
+  terrain.update(pos.x, pos.z);
+  stage.update(dt, pos, day);
+  stage.render();
+  frames++;
+  if (frames === 40) window.__ready = true;
+  document.getElementById('hud').textContent =
+    `frames ${frames}\nchunks ${terrain.chunks.size}\ncam y ${pos.y.toFixed(0)}\nsun ${stage.sky.sunDir.y.toFixed(2)}`;
+  requestAnimationFrame(loop);
+}
+loop();
+window.__err = [];
+addEventListener('error', (e) => window.__err.push(String(e.message)));
+</script></body></html>

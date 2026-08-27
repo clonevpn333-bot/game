@@ -30,11 +30,19 @@ export function createWorld(seedInput) {
     const wx = x + nWarp.n2(x * 0.00042, z * 0.00042) * 260;
     const wz = z + nWarp.n2(x * 0.00042 + 41.3, z * 0.00042 - 17.7) * 260;
     const cone = SUMMIT * Math.pow(u, 1.42);
-    const ridgeAmp = SUMMIT * 0.30 * smoothstep(0.02, 0.55, u) * (1 - u * 0.42);
+    const ridgeAmp = SUMMIT * 0.36 * smoothstep(0.008, 0.30, u) * (1 - u * 0.34);
     const ridge = (nRidge.ridged(wx * 0.00078, wz * 0.00078, 6) - 0.42) * ridgeAmp;
-    const cliffs = nCliff.fbm(wx * 0.0031, wz * 0.0031, 4) * 22 * smoothstep(0.05, 0.4, u);
+    const cliffs = nCliff.fbm(wx * 0.0031, wz * 0.0031, 4) * 34 * smoothstep(0.02, 0.32, u);
     const detail = nDetail.fbm(wx * 0.011, wz * 0.011, 4) * 3.4;
     let h = cone + ridge + cliffs + detail;
+    // terraced cliff bands: shelves with steep risers, strongest across the rock face
+    const terrace = smoothstep(230, 430, h) * (1 - smoothstep(840, 1090, h)) *
+      (0.30 + 0.50 * (nCliff.n2(wx * 0.0009, wz * 0.0009) * 0.5 + 0.5));
+    if (terrace > 0.01) {
+      const T = 27;
+      const f = h / T, fi = Math.floor(f), fr = f - fi;
+      h = lerp(h, (fi + smoothstep(0.42, 0.78, fr)) * T, terrace * 0.8);
+    }
     // shoreline: a wide flat apron of sand, then a shelf into the water
     if (r > 2100) {
       const sand = smoothstep(2100, 2430, r);

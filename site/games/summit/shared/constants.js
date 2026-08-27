@@ -14,11 +14,11 @@ export const WORLD = {
 
 /** Biome bands by altitude. `grip` scales climb speed, `warmth` shifts body temp. */
 export const BIOMES = [
-  { id: 'shore',   name: 'Shoreline',   from: -20,  to: 90,   grip: 1.00, warmth:  0.55, fog: 0.00016, tint: [0.62, 0.72, 0.68] },
-  { id: 'jungle',  name: 'Deep Jungle', from: 90,   to: 340,  grip: 0.94, warmth:  0.42, fog: 0.00030, tint: [0.40, 0.60, 0.36] },
-  { id: 'rock',    name: 'The Face',    from: 340,  to: 720,  grip: 1.06, warmth:  0.02, fog: 0.00016, tint: [0.54, 0.50, 0.47] },
-  { id: 'alpine',  name: 'Alpine Snow', from: 720,  to: 1100, grip: 0.74, warmth: -0.62, fog: 0.00042, tint: [0.86, 0.90, 0.98] },
-  { id: 'caldera', name: 'The Caldera', from: 1100, to: 2000, grip: 0.88, warmth:  0.95, fog: 0.00034, tint: [0.36, 0.24, 0.24] },
+  { id: 'shore',   name: 'Shoreline',   from: -20,  to: 90,   grip: 1.00, warmth:  0.55, fog: 0.000055, tint: [0.62, 0.72, 0.68] },
+  { id: 'jungle',  name: 'Deep Jungle', from: 90,   to: 340,  grip: 0.94, warmth:  0.42, fog: 0.000105, tint: [0.40, 0.60, 0.36] },
+  { id: 'rock',    name: 'The Face',    from: 340,  to: 720,  grip: 1.06, warmth:  0.02, fog: 0.000060, tint: [0.54, 0.50, 0.47] },
+  { id: 'alpine',  name: 'Alpine Snow', from: 720,  to: 1100, grip: 0.74, warmth: -0.62, fog: 0.000130, tint: [0.86, 0.90, 0.98] },
+  { id: 'caldera', name: 'The Caldera', from: 1100, to: 2000, grip: 0.88, warmth:  0.95, fog: 0.000115, tint: [0.36, 0.24, 0.24] },
 ];
 export const biomeAt = (y) => BIOMES.find((b) => y >= b.from && y < b.to) || BIOMES[BIOMES.length - 1];
 export const biomeIndexAt = (y) => Math.max(0, BIOMES.findIndex((b) => y >= b.from && y < b.to));
