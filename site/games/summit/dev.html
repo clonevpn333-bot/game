@@ -8,6 +8,8 @@
 import * as THREE from '../../vendor/three/three.module.js';
 import { Stage } from './client/gfx/scene.js';
 import { Terrain } from './client/world/terrain.js';
+import { Scatter } from './client/world/scatter.js';
+import { Water } from './client/world/water.js';
 import { createWorld } from './shared/mountain.js';
 const q = new URLSearchParams(location.search);
 const world = createWorld(q.get('seed') || 'DEV-1');
@@ -15,6 +17,8 @@ const stage = new Stage(document.getElementById('c'), q.get('q') || 'high');
 if (q.get('shadows') === '0') stage.renderer.shadowMap.enabled = false;
 if (q.get('clouds') === '0') stage.clouds.meshes.forEach(m => m.visible = false);
 const terrain = new Terrain(world, stage.scene, 6);
+const scatter = new Scatter(world, stage.scene);
+const water = new Water(stage.scene);
 const view = q.get('view') || 'beach';
 const day = Number(q.get('day') ?? 0.30);
 let pos;
@@ -27,11 +31,14 @@ stage.camera.position.copy(pos);
 stage.camera.lookAt(view === 'summit' ? new THREE.Vector3(0, world.height(0, 0) - 60, 0)
   : view === 'air' ? new THREE.Vector3(0, 700, 0) : new THREE.Vector3(0, 300, 0));
 terrain.prime(pos.x, pos.z);
-window.__terrain = terrain; window.__stage = stage; window.__world = world;
+scatter.primeAll(pos.x, pos.z);
+window.__terrain = terrain; window.__scatter = scatter; window.__stage = stage; window.__world = world;
 let frames = 0, t = performance.now();
 function loop() {
   const now = performance.now(); const dt = Math.min(0.05, (now - t) / 1000); t = now;
   terrain.update(pos.x, pos.z);
+  scatter.update(pos.x, pos.z);
+  water.update(pos.x, pos.z);
   stage.update(dt, pos, day);
   stage.render();
   frames++;

@@ -258,14 +258,14 @@ export function leafCard(seed = 1, hue = 0.28, size = 128) {
   const { c, x } = surface(size);
   const r = rng(seed);
   x.clearRect(0, 0, size, size);
-  const blades = 7;
+  const blades = 13;
   for (let i = 0; i < blades; i++) {
     const t = i / (blades - 1);
     const cx = size * 0.5, base = size * 0.98;
     const tipX = size * (0.5 + (t - 0.5) * 1.5);
     const tipY = size * (0.06 + Math.abs(t - 0.5) * 0.5);
-    const w = size * (0.055 + r() * 0.03);
-    const l = hsl(hue + (r() - 0.5) * 0.03, 0.5, 0.20 + r() * 0.16);
+    const w = size * (0.085 + r() * 0.05);
+    const l = hsl(hue + (r() - 0.5) * 0.04, 0.62, 0.13 + r() * 0.13);
     x.fillStyle = `rgb(${(l[0] * 255) | 0},${(l[1] * 255) | 0},${(l[2] * 255) | 0})`;
     x.beginPath();
     x.moveTo(cx, base);

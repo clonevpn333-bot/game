@@ -67,30 +67,33 @@ function buildChunk(world, cx, cz, lod) {
   const idx = [];
   const ox = cx * CS, oz = cz * CS;
   const c4 = [0, 0, 0, 0];
-  const nrm = { x: 0, y: 1, z: 0 };
+
+  // One extended height grid with a one-vertex border. Normals and curvature AO
+  // both come from it, so chunk edges match their neighbours exactly and the
+  // expensive height() function is called once per sample instead of five times.
+  const gn = n + 2;
+  const hg = new Float32Array(gn * gn);
+  for (let j = 0; j < gn; j++) {
+    const z = oz + (j - 1) * step;
+    for (let i = 0; i < gn; i++) hg[j * gn + i] = world.height(ox + (i - 1) * step, z);
+  }
+  const H = (i, j) => hg[(j + 1) * gn + (i + 1)];
 
   for (let j = 0; j < n; j++) {
     for (let i = 0; i < n; i++) {
       const k = j * n + i;
       const x = ox + i * step, z = oz + j * step;
-      const y = world.height(x, z);
-      world.normal(x, z, nrm);
+      const y = H(i, j);
+      let nx = H(i - 1, j) - H(i + 1, j), ny = 2 * step, nz = H(i, j - 1) - H(i, j + 1);
+      const inv = 1 / Math.hypot(nx, ny, nz);
+      nx *= inv; ny *= inv; nz *= inv;
       pos[k * 3] = x - ox; pos[k * 3 + 1] = y; pos[k * 3 + 2] = z - oz;
-      nor[k * 3] = nrm.x; nor[k * 3 + 1] = nrm.y; nor[k * 3 + 2] = nrm.z;
-      paint(world, x, y, z, nrm.y, c4);
-      col[k * 4] = c4[0]; col[k * 4 + 1] = c4[1]; col[k * 4 + 2] = c4[2]; col[k * 4 + 3] = c4[3];
-    }
-  }
-  // curvature ambient occlusion: gullies darken, ridges catch light. Free — it
-  // reads the heights this chunk already computed.
-  const aoK = 0.9 / Math.max(2, step);
-  for (let j = 1; j < n - 1; j++) {
-    for (let i = 1; i < n - 1; i++) {
-      const k = j * n + i;
-      const h = pos[k * 3 + 1];
-      const avg = (pos[(k - 1) * 3 + 1] + pos[(k + 1) * 3 + 1] + pos[(k - n) * 3 + 1] + pos[(k + n) * 3 + 1]) * 0.25;
-      const ao = clamp(0.74 + (h - avg) * aoK, 0.42, 1.15);
-      col[k * 4] *= ao; col[k * 4 + 1] *= ao; col[k * 4 + 2] *= ao;
+      nor[k * 3] = nx; nor[k * 3 + 1] = ny; nor[k * 3 + 2] = nz;
+      paint(world, x, y, z, ny, c4);
+      // curvature ambient occlusion: gullies darken, ridges catch the light
+      const avg = (H(i - 1, j) + H(i + 1, j) + H(i, j - 1) + H(i, j + 1)) * 0.25;
+      const ao = clamp(0.78 + (y - avg) * (1.1 / Math.max(2, step)), 0.44, 1.14);
+      col[k * 4] = c4[0] * ao; col[k * 4 + 1] = c4[1] * ao; col[k * 4 + 2] = c4[2] * ao; col[k * 4 + 3] = c4[3];
     }
   }
   for (let j = 0; j < seg; j++) {

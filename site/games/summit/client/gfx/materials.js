@@ -46,7 +46,12 @@ export function heightFog(mat, extra, key = 'fog') {
     Object.assign(shader.uniforms, ATMO);
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', FOG_VERT)
-      .replace('#include <project_vertex>', '#include <project_vertex>\n  vWorldP = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      .replace('#include <project_vertex>', `#include <project_vertex>
+        #ifdef USE_INSTANCING
+          vWorldP = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
+        #else
+          vWorldP = (modelMatrix * vec4(transformed, 1.0)).xyz;
+        #endif`);
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', FOG_FRAG)
       .replace('#include <fog_fragment>', FOG_BODY);
