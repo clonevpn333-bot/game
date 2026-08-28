@@ -65,8 +65,16 @@ export const BASE = location.pathname.replace(/[^/]*$/, '');
 /* Routing lives in the hash so the whole site is a plain folder of files: no
  * server rewrites, no host-specific config. Works on GitHub Pages, Netlify,
  * Vercel, a USB stick — anywhere. */
-export const hubURL = (key, sub = '') =>
-  `${location.origin}${BASE}#/h/${key}${sub ? '/' + String(sub).replace(/^\/+/, '') : ''}`;
+/** Navigation form. Relative to the current document, so it is legal on
+ *  https, on a plain folder, and on file:// where there is no real origin. */
+export const hubHash = (key, sub = '') =>
+  `#/h/${key}${sub ? '/' + String(sub).replace(/^\/+/, '') : ''}`;
+
+/** Shareable form. Falls back to the hash when the page has no shareable origin. */
+export function hubURL(key, sub = '') {
+  const hash = hubHash(key, sub);
+  return /^https?:$/.test(location.protocol) ? location.href.split('#')[0] + hash : hash;
+}
 
 /** Parses #/h/<key>/<rest...> into { key, parts }. */
 export function parsePath(hash = location.hash) {

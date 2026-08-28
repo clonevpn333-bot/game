@@ -1,6 +1,6 @@
 import { h, icon } from './dom.js';
 import { toast } from './toast.js';
-import { hubURL, regenerateKey, currentKey } from '../session.js';
+import { hubURL, hubHash, regenerateKey, currentKey } from '../session.js';
 
 /* "Your private link" sheet — copy, open, regenerate. */
 export function openLinkSheet() {
@@ -25,7 +25,7 @@ export function openLinkSheet() {
             const next = regenerateKey();
             box.textContent = hubURL(next);
             toast('New link minted — old one retired');
-            history.replaceState({}, '', hubURL(next));
+            try { history.replaceState({}, '', hubHash(next)); } catch { location.hash = hubHash(next); }
             document.dispatchEvent(new CustomEvent('nova:keychange', { detail: next }));
           },
         }, icon('refresh'), 'Regenerate'),

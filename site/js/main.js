@@ -3,7 +3,7 @@ import { installSafeStorage } from './safestore.js';
 installSafeStorage();
 
 import { h, icon } from './ui/dom.js';
-import { parsePath, currentKey, adoptKey, isRetired, restoreKey, hubURL } from './session.js';
+import { parsePath, currentKey, adoptKey, isRetired, restoreKey, hubURL, hubHash } from './session.js';
 import { initStore } from './store.js';
 import { loadManifest } from './manifest.js';
 import { createRouter } from './router.js';
@@ -21,7 +21,7 @@ function retiredScreen(key) {
     h('h2', { class: 'serif' }, 'This link no longer opens the arcade'),
     h('p', {}, 'It was regenerated on this device. Open your current link, or restore this one.'),
     h('div', { class: 'sheet__row', style: { justifyContent: 'center' } },
-      h('a', { class: 'btn btn--primary', href: hubURL(currentKey()) }, 'Go to my arcade'),
+      h('a', { class: 'btn btn--primary', href: hubHash(currentKey()), onclick: () => setTimeout(() => location.reload(), 30) }, 'Go to my arcade'),
       h('button', { class: 'btn btn--ghost', onclick: () => { restoreKey(key); location.reload(); } }, 'Restore this link'))));
 }
 
@@ -29,7 +29,7 @@ async function boot() {
   let { key } = parsePath();
   if (!key) {
     key = currentKey();
-    history.replaceState({}, '', hubURL(key));
+    try { history.replaceState({}, '', hubHash(key)); } catch { location.hash = hubHash(key); }
   }
   if (isRetired(key)) { retiredScreen(key); return; }
   adoptKey(key);
@@ -51,7 +51,7 @@ async function boot() {
       h('span', { class: 'brand__sub' }, 'private')),
     h('nav', { class: 'navlinks' },
       h('a', { class: 'navlink', href: '#', onclick: (e) => { e.preventDefault(); router.to(''); } }, 'Library'),
-      h('a', { class: 'navlink', href: '#', onclick: (e) => { e.preventDefault(); history.pushState({}, '', `?cat=coop#/h/${router.key}`); router.paint(); } }, 'Co-op'),
+      h('a', { class: 'navlink', href: '#', onclick: (e) => { e.preventDefault(); router.to(''); document.querySelector('.chip[data-cat="coop"]')?.click(); } }, 'Co-op'),
       h('a', { class: 'navlink', href: '#', onclick: (e) => { e.preventDefault(); openLinkSheet(); } }, 'My link')),
     h('span', { class: 'chrome__spacer' }),
     h('label', { class: 'field' }, icon('search'), searchInput),

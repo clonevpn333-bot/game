@@ -2,20 +2,22 @@
  *   ''            library
  *   g/<id>        game detail
  *   play/<id>     immersive player  */
-import { parsePath, hubURL, BASE } from './session.js';
+import { parsePath, hubURL, hubHash } from './session.js';
 
 export function createRouter({ key, mount, render }) {
   const go = {
     key,
-    href: (sub) => `${BASE}#/h/${go.key}${sub ? '/' + sub : ''}`,
-    url: (sub) => location.origin + go.href(sub),
+    href: (sub) => hubHash(go.key, sub),
+    url: (sub) => hubURL(go.key, sub),
     to(sub, { replace = false } = {}) {
-      const url = go.href(sub) + (location.search && sub === '' ? location.search : '');
-      if (replace) history.replaceState({ sub }, '', url);
-      else history.pushState({ sub }, '', url);
+      const url = go.href(sub);
+      try {
+        if (replace) history.replaceState({ sub }, '', url);
+        else history.pushState({ sub }, '', url);
+      } catch { location.hash = url; }
       go.paint();
     },
-    rekey(next) { go.key = next; history.replaceState({}, '', hubURL(next)); },
+    rekey(next) { go.key = next; try { history.replaceState({}, '', hubHash(next)); } catch { location.hash = hubHash(next); } },
     paint() {
       const { parts } = parsePath();
       const sub = parts.join('/');
@@ -45,7 +47,9 @@ export function createRouter({ key, mount, render }) {
     const q = new URLSearchParams(location.search);
     for (const [k, v] of Object.entries(patch)) { if (v == null) q.delete(k); else q.set(k, v); }
     const s = q.toString();
-    history.replaceState({}, '', location.pathname + (s ? '?' + s : '') + location.hash);
+    // query strings need a real origin; on file:// keep the filter in memory only
+    if (!/^https?:$/.test(location.protocol)) return;
+    try { history.replaceState({}, '', location.pathname + (s ? '?' + s : '') + location.hash); } catch {}
   }
 
   addEventListener('popstate', () => go.paint());
