@@ -1,7 +1,7 @@
 /* Headless multiplayer integration test. Drives a full run through every phase
  * and exercises actions, reconnect and drop-out. Run the server first. */
 import WebSocket from 'ws';
-import { C2S, S2C, ACT, dec, enc } from '../server/shared.js';
+import { C2S, S2C, ACT, dec, enc } from '../site/games/summit/sim/shared.js';
 
 const URL = process.env.WS || 'ws://localhost:8787/ws';
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));

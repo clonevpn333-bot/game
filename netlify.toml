@@ -17,7 +17,7 @@
 # Private hub links: /h/<key> and any sub-route are served by the hub shell.
 [[redirects]]
   from = "/h/*"
-  to = "/hub.html"
+  to = "/index.html"
   status = 200
 
 [[redirects]]

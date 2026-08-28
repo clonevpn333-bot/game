@@ -59,12 +59,18 @@ export function restoreKey(k) {
   return true;
 }
 
-export const hubURL = (key, sub = '') =>
-  `${location.origin}/h/${key}${sub ? '/' + sub.replace(/^\/+/, '') : ''}`;
+/** Directory the site is served from — works at a domain root or in a subfolder. */
+export const BASE = location.pathname.replace(/[^/]*$/, '');
 
-/** Parses /h/<key>/<rest...> into { key, parts }. */
-export function parsePath(pathname = location.pathname) {
-  const seg = pathname.split('/').filter(Boolean);
+/* Routing lives in the hash so the whole site is a plain folder of files: no
+ * server rewrites, no host-specific config. Works on GitHub Pages, Netlify,
+ * Vercel, a USB stick — anywhere. */
+export const hubURL = (key, sub = '') =>
+  `${location.origin}${BASE}#/h/${key}${sub ? '/' + String(sub).replace(/^\/+/, '') : ''}`;
+
+/** Parses #/h/<key>/<rest...> into { key, parts }. */
+export function parsePath(hash = location.hash) {
+  const seg = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
   if (seg[0] !== 'h' || !isKey(seg[1])) return { key: null, parts: [] };
   return { key: seg[1], parts: seg.slice(2) };
 }

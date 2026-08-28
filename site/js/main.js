@@ -24,7 +24,10 @@ function retiredScreen(key) {
 
 async function boot() {
   let { key } = parsePath();
-  if (!key) { location.replace(hubURL(currentKey())); return; }
+  if (!key) {
+    key = currentKey();
+    history.replaceState({}, '', hubURL(key));
+  }
   if (isRetired(key)) { retiredScreen(key); return; }
   adoptKey(key);
   initStore(key);
@@ -45,7 +48,7 @@ async function boot() {
       h('span', { class: 'brand__sub' }, 'private')),
     h('nav', { class: 'navlinks' },
       h('a', { class: 'navlink', href: '#', onclick: (e) => { e.preventDefault(); router.to(''); } }, 'Library'),
-      h('a', { class: 'navlink', href: '#', onclick: (e) => { e.preventDefault(); history.pushState({}, '', `/h/${router.key}?cat=coop`); router.paint(); } }, 'Co-op'),
+      h('a', { class: 'navlink', href: '#', onclick: (e) => { e.preventDefault(); history.pushState({}, '', `?cat=coop#/h/${router.key}`); router.paint(); } }, 'Co-op'),
       h('a', { class: 'navlink', href: '#', onclick: (e) => { e.preventDefault(); openLinkSheet(); } }, 'My link')),
     h('span', { class: 'chrome__spacer' }),
     h('label', { class: 'field' }, icon('search'), searchInput),

@@ -1,7 +1,7 @@
 /* In-process system test of the authoritative room: every co-op verb, the
  * survival systems, campfires, ghosts and the extraction. Runs in a second. */
-import { Room } from '../server/room.js';
-import { ACT, PHASE, SURVIVAL, STAMINA, ITEMS } from '../server/shared.js';
+import { Room } from '../site/games/summit/sim/room.js';
+import { ACT, PHASE, SURVIVAL, STAMINA, ITEMS } from '../site/games/summit/sim/shared.js';
 
 let fails = 0;
 const check = (label, ok, extra = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${label} ${extra}`); if (!ok) fails++; };

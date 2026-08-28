@@ -1,6 +1,7 @@
 /* Room registry: codes, creation, lookup, reaping. */
 import { Room } from './room.js';
 import { ROOM, MAX_PLAYERS } from './shared.js';
+export { makeCode };
 
 const rooms = new Map();
 
@@ -14,8 +15,8 @@ function makeCode() {
   return c;
 }
 
-export function createRoom(seed) {
-  const code = makeCode();
+export function createRoom(seed, wantedCode) {
+  const code = (wantedCode && !rooms.has(wantedCode)) ? wantedCode : makeCode();
   const room = new Room(code, seed ?? (Math.random() * 0xffffffff) >>> 0);
   rooms.set(code, room);
   return room;

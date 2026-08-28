@@ -25,7 +25,7 @@ export function openLinkSheet() {
             const next = regenerateKey();
             box.textContent = hubURL(next);
             toast('New link minted — old one retired');
-            history.replaceState({}, '', hubURL(next).replace(location.origin, ''));
+            history.replaceState({}, '', hubURL(next));
             document.dispatchEvent(new CustomEvent('nova:keychange', { detail: next }));
           },
         }, icon('refresh'), 'Regenerate'),

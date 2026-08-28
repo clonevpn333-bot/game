@@ -10,8 +10,10 @@ import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
-import { dec, enc, C2S, S2C, TICK_HZ, NET, MAX_PLAYERS } from './shared.js';
-import { createRoom, getRoom, canJoin, findRoomByToken, reap, allRooms, roomCount } from './rooms.js';
+import { dec, enc, S2C } from '../site/games/summit/shared/protocol.js';
+import { TICK_HZ, NET, MAX_PLAYERS } from '../site/games/summit/shared/constants.js';
+import { reap, allRooms, roomCount } from '../site/games/summit/sim/rooms.js';
+import { route, newCtx, dropConnection } from '../site/games/summit/sim/router.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'site');
 const PORT = Number(process.env.PORT || 8787);
@@ -37,104 +39,18 @@ const server = http.createServer(async (req, res) => {
 });
 
 const wss = new WebSocketServer({ server, path: '/ws' });
-let idSeq = 1;
 
 wss.on('connection', (ws) => {
-  const ctx = { room: null, player: null, alive: true };
+  const ctx = newCtx();
+  const link = { send: (t, d) => { if (ws.readyState === 1) { try { ws.send(enc(t, d)); } catch {} } }, close: () => ws.close() };
   ws.on('message', (raw) => {
     const msg = dec(String(raw));
     if (!msg) return;
-    try { route(ws, ctx, msg); } catch (err) { console.error('msg error', msg.t, err.message); }
+    try { route(ctx, msg, link); } catch (err) { console.error('msg error', msg.t, err.message); }
   });
-  ws.on('close', () => { if (ctx.room && ctx.player) ctx.room.dropPlayer(ctx.player); });
-  ws.on('pong', () => { ctx.alive = true; });
+  ws.on('close', () => dropConnection(ctx));
   ws.send(enc(S2C.WELCOME, { server: 'summit', v: 1, max: MAX_PLAYERS, tick: TICK_HZ }));
 });
-
-function route(ws, ctx, { t, d }) {
-  if (t === C2S.PING) { ws.send(enc(S2C.PONG, { t: d.t, s: Date.now() })); return; }
-
-  if (t === C2S.HELLO) {
-    // Reconnect straight back into whatever run this token was in.
-    const found = d.token && findRoomByToken(d.token);
-    if (found) {
-      ctx.room = found.room;
-      ctx.player = found.room.reconnect(ws, d.token);
-      if (ctx.player) {
-        ctx.player.name = (d.name || ctx.player.name).slice(0, 16);
-        if (d.cosmetics) ctx.player.cosmetics = d.cosmetics;
-        ws.send(enc(S2C.WELCOME, { id: ctx.player.id, token: d.token, room: ctx.room.roomState(), seed: ctx.room.seed, resumed: true }));
-        return;
-      }
-    }
-    ws.send(enc(S2C.WELCOME, { server: 'summit', v: 1, max: MAX_PLAYERS, tick: TICK_HZ }));
-    return;
-  }
-
-  if (t === C2S.CREATE) {
-    const room = createRoom(d.seed);
-    join(ws, ctx, room, d);
-    return;
-  }
-
-  if (t === C2S.JOIN) {
-    const room = getRoom(d.code);
-    if (!room) { ws.send(enc(S2C.ERROR, { msg: 'No room with that code' })); return; }
-    if (!canJoin(room)) { ws.send(enc(S2C.ERROR, { msg: 'That room is full' })); return; }
-    join(ws, ctx, room, d);
-    return;
-  }
-
-  const { room, player } = ctx;
-  if (!room || !player) return;
-  player.lastSeen = Date.now();
-
-  switch (t) {
-    case C2S.INPUT:
-      if (player.inputs.length < 24) player.inputs.push(d);
-      break;
-    case C2S.READY:
-      player.ready = !!d.v;
-      room.broadcast(S2C.ROOM, room.roomState());
-      break;
-    case C2S.START:
-      room.startRun();
-      break;
-    case C2S.ACT:
-      room.action(player, d);
-      break;
-    case C2S.CHAT:
-      room.broadcast(S2C.CHAT, { id: player.id, name: player.name, text: String(d.text || '').slice(0, 160) });
-      break;
-    case C2S.EMOTE:
-      room.event('emote', { id: player.id, k: String(d.k || '').slice(0, 12) });
-      break;
-    case C2S.COSMETIC:
-      player.cosmetics = d.c || {};
-      player.pack = d.pack || player.pack;
-      room.broadcast(S2C.ROOM, room.roomState());
-      break;
-    case C2S.NAME:
-      player.name = String(d.name || 'Climber').slice(0, 16);
-      room.broadcast(S2C.ROOM, room.roomState());
-      break;
-    case C2S.LEAVE:
-      room.removePlayer(player);
-      ctx.room = null; ctx.player = null;
-      break;
-  }
-}
-
-function join(ws, ctx, room, d) {
-  const token = d.token || `t${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-  const id = 'p' + (idSeq++);
-  const p = room.addPlayer(ws, { id, token, name: d.name, cosmetics: d.cosmetics });
-  if (!p) { ws.send(enc(S2C.ERROR, { msg: 'That room is full' })); return; }
-  if (d.pack) p.pack = d.pack;
-  ctx.room = room; ctx.player = p;
-  ws.send(enc(S2C.WELCOME, { id, token, room: room.roomState(), seed: room.seed, resumed: false }));
-  room.broadcast(S2C.ROOM, room.roomState());
-}
 
 /* ---- fixed-step loop ---- */
 const STEP = 1000 / TICK_HZ;

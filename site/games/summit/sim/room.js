@@ -1,6 +1,6 @@
 /* A room: up to four climbers, one seed, one authoritative simulation. */
 import {
-  createWorld, newMoveState, newVitals, packPlayer, enc, S2C, PHASE, MAX_PLAYERS,
+  createWorld, newMoveState, newVitals, packPlayer, S2C, PHASE, MAX_PLAYERS,
   TICK_HZ, SNAPSHOT_HZ, FLIGHT, WORLD, SURVIVAL, rng, RECONNECT_GRACE_MS, PACKS,
 } from './shared.js';
 import { spawnLoot, packItems } from './loot.js';
@@ -43,11 +43,11 @@ export class Room {
   }
 
   /* ---------------- players ---------------- */
-  addPlayer(ws, { id, token, name, cosmetics }) {
+  addPlayer(link, { id, token, name, cosmetics }) {
     if (this.players.size >= MAX_PLAYERS) return null;
     const spawn = lobbySpawn(this.players.size);
     const p = {
-      id, token, ws, name: (name || 'Climber').slice(0, 16), cosmetics: cosmetics || {},
+      id, token, link, name: (name || 'Climber').slice(0, 16), cosmetics: cosmetics || {},
       connected: true, lastSeen: Date.now(), ready: false, slot: this.slots.shift() ?? 0,
       move: Object.assign(newMoveState(spawn.x, spawn.y, spawn.z), { yaw: spawn.yaw }),
       vitals: newVitals(), inputs: [], ack: 0, lastBtn: 0,
@@ -62,11 +62,11 @@ export class Room {
     return p;
   }
 
-  reconnect(ws, token) {
+  reconnect(link, token) {
     for (const p of this.players.values()) {
       if (p.token === token) {
-        try { p.ws?.close(); } catch {}
-        p.ws = ws; p.connected = true; p.lastSeen = Date.now();
+        try { p.link?.close?.(); } catch {}
+        p.link = link; p.connected = true; p.lastSeen = Date.now();
         this.broadcast(S2C.ROOM, this.roomState());
         return p;
       }
@@ -75,7 +75,7 @@ export class Room {
   }
 
   dropPlayer(p) {
-    p.connected = false; p.lastSeen = Date.now(); p.ws = null;
+    p.connected = false; p.lastSeen = Date.now(); p.link = null;
     if (p.carrying) { const t = this.players.get(p.carrying); if (t) t.carriedBy = null; p.carrying = null; }
     this.broadcast(S2C.ROOM, this.roomState());
   }
@@ -88,7 +88,7 @@ export class Room {
   }
 
   /* ---------------- messaging ---------------- */
-  send(p, type, data) { if (p.ws && p.ws.readyState === 1) { try { p.ws.send(enc(type, data)); } catch {} } }
+  send(p, type, data) { try { p.link?.send(type, data); } catch {} }
   tell(p, kind, data) { this.send(p, S2C.EVENT, { e: kind, ...data }); }
   broadcast(type, data) { for (const p of this.players.values()) this.send(p, type, data); }
   event(kind, data = {}) { this.pending.push({ e: kind, ...data }); }

@@ -1,10 +1,12 @@
 /* Loads games.json. Add a game by dropping its folder into site/games/ and
  * adding one entry to that file — nothing else in the hub needs to change. */
+import { BASE } from './session.js';
+
 let data = null;
 
 export async function loadManifest() {
   if (data) return data;
-  const res = await fetch('/games/games.json', { cache: 'no-cache' });
+  const res = await fetch(BASE + 'games/games.json', { cache: 'no-cache' });
   if (!res.ok) throw new Error(`manifest ${res.status}`);
   data = await res.json();
   data.games = data.games.map((g, i) => ({

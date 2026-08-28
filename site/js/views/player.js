@@ -1,6 +1,7 @@
 import { h, icon } from '../ui/dom.js';
 import { gameById } from '../manifest.js';
 import { markPlayed } from '../store.js';
+import { BASE } from '../session.js';
 import { toast } from '../ui/toast.js';
 
 /* Immersive player. The game runs in a sandboxed iframe: it gets scripts,
@@ -13,7 +14,7 @@ export function playerView(ctx, id) {
   markPlayed(g.id);
 
   const frame = h('iframe', {
-    src: '/' + g.entry.replace(/^\//, ''),
+    src: BASE + g.entry.replace(/^\//, ''),
     title: g.title,
     allow: 'fullscreen; autoplay; gamepad; pointer-lock; cross-origin-isolated',
     sandbox: 'allow-scripts allow-same-origin allow-pointer-lock allow-forms allow-modals allow-popups',
