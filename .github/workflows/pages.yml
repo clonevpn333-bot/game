@@ -23,8 +23,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-      - name: Disable Jekyll processing
-        run: touch site/.nojekyll
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Build the single-file version
+        run: |
+          npm ci --omit=optional || npm install
+          node tools/bundle.js
+          cp dist/nova-arcade.html site/nova-arcade.html
+          touch site/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

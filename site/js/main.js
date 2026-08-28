@@ -1,4 +1,7 @@
 /* Hub bootstrap: validate the private key in the URL, build the chrome, route. */
+import { installSafeStorage } from './safestore.js';
+installSafeStorage();
+
 import { h, icon } from './ui/dom.js';
 import { parsePath, currentKey, adoptKey, isRetired, restoreKey, hubURL } from './session.js';
 import { initStore } from './store.js';

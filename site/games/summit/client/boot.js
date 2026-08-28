@@ -1,5 +1,8 @@
 /* Summit — application shell. Owns the renderer, the connection, the screens
  * and the frame loop, and hands each frame to whichever scene is active. */
+import { installSafeStorage } from './safestore.js';
+installSafeStorage();
+
 import * as THREE from '../../../vendor/three/three.module.js';
 import { Stage } from './gfx/scene.js';
 import { Input } from './play/input.js';

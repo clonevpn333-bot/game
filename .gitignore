@@ -1,4 +1,5 @@
 node_modules/
+!dist/nova-arcade.html
 .DS_Store
 *.log
 .netlify/

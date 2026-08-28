@@ -91,37 +91,38 @@ function buildParts(rest, look) {
   const torsoPts = [
     P('hips').add(V(0, -0.06, 0)), P('hips'), P('spine1'), P('spine2'), P('chest'), P('neck').add(V(0, -0.01, 0)),
   ];
+  // a rounded barrel, widest across the middle — reads as a stubby cartoon body
   const torsoProfile = (t) => {
-    const waist = 0.155 + 0.02 * Math.sin(t * 3.1);
-    const chest = 0.222;
-    const rx = THREE.MathUtils.lerp(0.175, chest, smooth(Math.min(1, t * 1.35))) * bulk;
-    const rz = rx * THREE.MathUtils.lerp(0.66, 0.62, t);
-    return { rx: t < 0.35 ? waist * bulk * 1.05 : rx, rz };
+    const round = Math.sin(Math.min(1, t * 0.92 + 0.16) * Math.PI);
+    const rx = (0.155 + round * 0.10) * bulk;
+    return { rx, rz: rx * 0.82 };
   };
   parts.push({ geo: tube(torsoPts, torsoProfile, 16, false, false), mat: 'jacket' });
 
   // collar
-  const collar = tube(spline(P('neck').add(V(0, -0.02, 0)), P('neck').add(V(0, 0.08, 0)), 4), () => ({ rx: 0.105, rz: 0.085 }), 14, false, false);
+  const collar = tube(spline(P('neck').add(V(0, -0.05, 0)), P('neck').add(V(0, 0.05, 0)), 4), () => ({ rx: 0.145, rz: 0.125 }), 16, false, false);
   parts.push({ geo: collar, mat: 'jacket' });
 
   /* ---- head and neck ---- */
-  parts.push({ geo: tube(spline(P('neck'), P('head').add(V(0, -0.02, 0)), 3), () => ({ rx: 0.075, rz: 0.070 }), 10, false, false), mat: 'skin' });
+  parts.push({ geo: tube(spline(P('neck'), P('head').add(V(0, -0.02, 0)), 3), () => ({ rx: 0.095, rz: 0.090 }), 10, false, false), mat: 'skin' });
   parts.push({ geo: head(P('head'), look), mat: 'skin' });
+  parts.push({ geo: face(P('head')), mat: 'eye' });
+  parts.push({ geo: topknot(P('head')), mat: 'hair' });
 
   /* ---- arms ---- */
   for (const side of ['L', 'R']) {
     const sh = P('clavicle' + side), arm = P('arm' + side), fore = P('fore' + side), hand = P('hand' + side), fin = P('finger' + side);
-    parts.push({ geo: tube(spline(sh, arm, 4), (t) => ({ rx: (0.137 - t * 0.048) * bulk, rz: (0.125 - t * 0.044) * bulk }), 12, true, false), mat: 'jacket' });
-    parts.push({ geo: tube(spline(arm, fore, 5), (t) => ({ rx: (0.082 - t * 0.010) * bulk, rz: (0.079 - t * 0.010) * bulk }), 11, false, false), mat: 'jacket' });
-    parts.push({ geo: tube(spline(fore, hand, 5), (t) => ({ rx: 0.072 - t * 0.006, rz: 0.069 - t * 0.006 }), 11, false, false), mat: 'sleeve' });
-    parts.push({ geo: tube(spline(hand, fin, 3), (t) => ({ rx: 0.082 - t * 0.020, rz: 0.062 - t * 0.014 }), 10), mat: 'glove' });
+    parts.push({ geo: tube(spline(sh, arm, 4), (t) => ({ rx: (0.145 - t * 0.036) * bulk, rz: (0.138 - t * 0.034) * bulk }), 12, true, false), mat: 'jacket' });
+    parts.push({ geo: tube(spline(arm, fore, 5), (t) => ({ rx: (0.098 - t * 0.008) * bulk, rz: (0.094 - t * 0.008) * bulk }), 11, false, false), mat: 'jacket' });
+    parts.push({ geo: tube(spline(fore, hand, 5), (t) => ({ rx: 0.090 - t * 0.004, rz: 0.086 - t * 0.004 }), 11, false, false), mat: 'sleeve' });
+    parts.push({ geo: tube(spline(hand, fin, 4), (t) => ({ rx: 0.098 - Math.pow(t, 2.2) * 0.030, rz: 0.078 - Math.pow(t, 2.2) * 0.024 }), 12), mat: 'glove' });
   }
 
   /* ---- legs ---- */
   for (const side of ['L', 'R']) {
     const hip = P('thigh' + side), knee = P('shin' + side), ankle = P('foot' + side), toe = P('toe' + side);
-    parts.push({ geo: tube(spline(hip.clone().add(V(0, 0.05, 0)), knee, 6), (t) => ({ rx: (0.104 - t * 0.024) * bulk, rz: (0.100 - t * 0.022) * bulk }), 12, false, false), mat: 'trousers' });
-    parts.push({ geo: tube(spline(knee, ankle, 6), (t) => ({ rx: (0.090 - t * 0.016) * bulk, rz: (0.087 - t * 0.016) * bulk }), 11, false, false), mat: 'trousers' });
+    parts.push({ geo: tube(spline(hip.clone().add(V(0, 0.05, 0)), knee, 6), (t) => ({ rx: (0.122 - t * 0.014) * bulk, rz: (0.118 - t * 0.013) * bulk }), 12, false, false), mat: 'trousers' });
+    parts.push({ geo: tube(spline(knee, ankle, 6), (t) => ({ rx: (0.106 - t * 0.010) * bulk, rz: (0.102 - t * 0.010) * bulk }), 11, false, false), mat: 'trousers' });
     parts.push({ geo: boot(ankle, toe), mat: 'boot' });
   }
 
@@ -137,25 +138,48 @@ function buildParts(rest, look) {
 }
 
 function head(center, look) {
-  const geo = new THREE.SphereGeometry(0.152, 20, 16);
+  const geo = new THREE.SphereGeometry(0.255, 24, 18);
   const pos = geo.attributes.position;
   const v = new THREE.Vector3();
   for (let i = 0; i < pos.count; i++) {
     v.fromBufferAttribute(pos, i);
-    v.z *= 1.06;
-    v.y *= 1.16;
-    if (v.y < 0) { v.z += Math.max(0, -v.y) * 0.34; v.x *= 1 - Math.max(0, -v.y) * 0.7; } // jaw
-    if (v.y > 0.05 && v.z > 0) v.z += 0.012;                                              // brow
+    v.z *= 0.94;
+    v.y *= 0.98;
+    if (v.y < -0.10) v.y = -0.10 + (v.y + 0.10) * 0.66;   // flatten under the chin
     pos.setXYZ(i, v.x, v.y, v.z);
   }
   geo.computeVertexNormals();
-  geo.translate(center.x, center.y + 0.105, center.z);
+  geo.translate(center.x, center.y + 0.185, center.z);
   return geo;
 }
 
+/** Two big eyes and a little mouth, straight onto the front of the skull. */
+function face(center) {
+  const parts = [];
+  for (const sx of [1, -1]) {
+    const eye = new THREE.SphereGeometry(0.052, 14, 10);
+    eye.scale(0.86, 1.15, 0.6);
+    eye.translate(center.x + 0.088 * sx, center.y + 0.205, center.z + 0.215);
+    parts.push(eye);
+  }
+  const mouth = new THREE.SphereGeometry(0.036, 12, 8);
+  mouth.scale(1.5, 0.6, 0.45);
+  mouth.translate(center.x, center.y + 0.115, center.z + 0.228);
+  parts.push(mouth);
+  return mergeGeometries(parts);
+}
+
+function topknot(center) {
+  const knot = new THREE.SphereGeometry(0.062, 12, 10);
+  knot.translate(center.x, center.y + 0.44, center.z - 0.01);
+  const stalk = new THREE.CylinderGeometry(0.022, 0.03, 0.09, 8);
+  stalk.translate(center.x, center.y + 0.395, center.z - 0.01);
+  return mergeGeometries([knot, stalk]);
+}
+
 function boot(ankle, toe) {
-  const shaft = tube(spline(ankle.clone().add(V(0, 0.14, 0)), ankle.clone().add(V(0, -0.02, 0)), 4), (t) => ({ rx: 0.082 + t * 0.008, rz: 0.079 + t * 0.008 }), 11, false, false);
-  const foot = new THREE.BoxGeometry(0.105, 0.075, 0.27, 2, 2, 4);
+  const shaft = tube(spline(ankle.clone().add(V(0, 0.14, 0)), ankle.clone().add(V(0, -0.02, 0)), 4), (t) => ({ rx: 0.105 + t * 0.010, rz: 0.101 + t * 0.010 }), 12, false, false);
+  const foot = new THREE.BoxGeometry(0.145, 0.105, 0.26, 2, 2, 4);
   const pos = foot.attributes.position;
   const v = new THREE.Vector3();
   for (let i = 0; i < pos.count; i++) {

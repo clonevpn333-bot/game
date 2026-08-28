@@ -13,8 +13,9 @@ export function playerView(ctx, id) {
 
   markPlayed(g.id);
 
+  const inline = window.__NOVA_GAMES && window.__NOVA_GAMES[g.id];
   const frame = h('iframe', {
-    src: BASE + g.entry.replace(/^\//, ''),
+    ...(inline ? { srcdoc: inline } : { src: BASE + g.entry.replace(/^\//, '') }),
     title: g.title,
     allow: 'fullscreen; autoplay; gamepad; pointer-lock; cross-origin-isolated',
     sandbox: 'allow-scripts allow-same-origin allow-pointer-lock allow-forms allow-modals allow-popups',

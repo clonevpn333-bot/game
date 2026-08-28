@@ -46,6 +46,7 @@ export function makeMaterials(look) {
   const skinMaps = materialMaps('skin', 73, look.tone ?? 1, 1);
   const mk = (maps, color, rough, metal = 0) => heightFog(new THREE.MeshStandardMaterial({
     map: maps.map, normalMap: maps.normalMap, color, roughness: rough, metalness: metal,
+    normalScale: new THREE.Vector2(0.35, 0.35),
   }), null, 'std');
   const mats = {
     skin: mk(skinMaps, 0xffffff, 0.74),
@@ -55,7 +56,8 @@ export function makeMaterials(look) {
     trousers: mk(fabric, o.trousers, 0.9),
     boot: mk(leather, 0x2b2420, 0.62),
     gear: mk(leather, o.accent, 0.55),
-    hair: mk(skinMaps, 0x2a2018, 0.9),
+    hair: mk(skinMaps, 0x35271c, 0.9),
+    eye: heightFog(new THREE.MeshStandardMaterial({ color: 0x14161c, roughness: 0.35, metalness: 0 }), null, 'std'),
   };
   cache.set(key, mats);
   return mats;

@@ -15,6 +15,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "playwright": "^1.55.0",
     "three": "^0.185.1"
   }

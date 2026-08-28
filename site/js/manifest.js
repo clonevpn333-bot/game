@@ -6,9 +6,14 @@ let data = null;
 
 export async function loadManifest() {
   if (data) return data;
-  const res = await fetch(BASE + 'games/games.json', { cache: 'no-cache' });
-  if (!res.ok) throw new Error(`manifest ${res.status}`);
-  data = await res.json();
+  // single-file builds carry the manifest inline; the folder build fetches it
+  const inline = document.getElementById('nova-manifest');
+  if (inline) data = JSON.parse(inline.textContent);
+  else {
+    const res = await fetch(BASE + 'games/games.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error(`manifest ${res.status}`);
+    data = await res.json();
+  }
   data.games = data.games.map((g, i) => ({
     order: i,
     tags: [],
