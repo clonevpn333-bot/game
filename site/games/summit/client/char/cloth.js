@@ -101,15 +101,14 @@ export class ClothStrip {
 
 const ZERO = new THREE.Vector3();
 
-/** Scarf + a coil of rope on the harness. Added to the scene, not the skeleton. */
+/** The scarf hanging off the harness. Added to the scene, not the skeleton. */
 export function makeClothSet(rig, mats) {
+  // a flat ribbon needs both faces, and its own material so the gear stays crisp
+  const mat = mats.gear.clone();
+  mat.side = THREE.DoubleSide;
   const scarf = new ClothStrip(rig.byName.get('neck'), {
-    count: 7, spacing: 0.075, width: 0.115, material: mats.gear,
-    offset: new THREE.Vector3(0, 0.02, -0.055), gravity: -7.5,
+    count: 7, spacing: 0.082, width: 0.17, material: mat,
+    offset: new THREE.Vector3(0, 0.01, -0.06), gravity: -8.5,
   });
-  const tail = new ClothStrip(rig.byName.get('hips'), {
-    count: 6, spacing: 0.055, width: 0.045, material: mats.gear,
-    offset: new THREE.Vector3(0.16, 0.02, 0.02), gravity: -11, drag: 0.97,
-  });
-  return [scarf, tail];
+  return [scarf];
 }

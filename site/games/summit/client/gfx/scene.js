@@ -78,7 +78,7 @@ export class Stage {
     const inCloud = this.cloudInside;
     updateAtmosphere({
       fogColor: this.sky.fogColor,
-      density: biome.fog * (1 + inCloud * 9) + inCloud * 0.0032,
+      density: biome.fog * 0.55 * (1 + inCloud * 9) + inCloud * 0.0030,
       height: 60 + focus.y * 0.25,
       falloff: 0.0011,
       sunDir: this.sky.sunDir,

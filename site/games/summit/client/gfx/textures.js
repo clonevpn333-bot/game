@@ -68,9 +68,9 @@ const GEN = {
     const height = fieldCanvas(SIZE, (u, v) => 0.5 + t(u, v) * 0.42 + t2(u, v) * 0.16);
     const albedo = fieldCanvas(SIZE, (u, v) => {
       const h = 0.5 + t(u, v) * 0.5, d = t2(u, v);
-      const base = 0.30 + h * 0.24 + d * 0.07;
-      const warm = 0.020 * Math.sin(h * 9);
-      return [base + warm, base * 0.965, base * 0.90 - warm * 0.4];
+      const base = 0.52 + h * 0.26 + d * 0.07;
+      const warm = 0.055 * Math.sin(h * 9);
+      return [base + warm, base * 0.80, base * 0.74 - warm * 0.3];
     });
     return { albedo, height, rough: 0.94, metal: 0.0 };
   },
@@ -100,7 +100,7 @@ const GEN = {
     const height = fieldCanvas(SIZE, (u, v) => 0.5 + t(u, v) * 0.34 + t2(u, v) * 0.22);
     const albedo = fieldCanvas(SIZE, (u, v) => {
       const a = 0.5 + t(u, v) * 0.5, b = 0.5 + t2(u, v) * 0.5;
-      return [0.10 + a * 0.13 + b * 0.04, 0.19 + a * 0.24 + b * 0.06, 0.07 + a * 0.09];
+      return [0.22 + a * 0.18 + b * 0.05, 0.46 + a * 0.30 + b * 0.08, 0.16 + a * 0.12];
     });
     return { albedo, height, rough: 0.92, metal: 0.0 };
   },
@@ -265,7 +265,7 @@ export function leafCard(seed = 1, hue = 0.28, size = 128) {
     const tipX = size * (0.5 + (t - 0.5) * 1.5);
     const tipY = size * (0.06 + Math.abs(t - 0.5) * 0.5);
     const w = size * (0.085 + r() * 0.05);
-    const l = hsl(hue + (r() - 0.5) * 0.04, 0.62, 0.13 + r() * 0.13);
+    const l = hsl(hue + (r() - 0.5) * 0.04, 0.66, 0.28 + r() * 0.16);
     x.fillStyle = `rgb(${(l[0] * 255) | 0},${(l[1] * 255) | 0},${(l[2] * 255) | 0})`;
     x.beginPath();
     x.moveTo(cx, base);

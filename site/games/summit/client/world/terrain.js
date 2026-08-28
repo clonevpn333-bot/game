@@ -11,16 +11,17 @@ const RES = [56, 28, 14, 7];          // segments per chunk by LOD
 const RING = [1, 2, 4, 7];            // chunk radius per LOD
 const SKIRT = 9;
 
+/* Stylised palette: saturated, warm, readable at a glance. */
 const C = {
-  sand:   [0.72, 0.62, 0.46],
-  jungle: [0.13, 0.29, 0.09],
-  jungle2:[0.22, 0.40, 0.13],
-  rock:   [0.34, 0.33, 0.32],
-  rockHi: [0.46, 0.44, 0.41],
-  snow:   [0.92, 0.94, 0.98],
-  ash:    [0.19, 0.16, 0.16],
-  ember:  [0.42, 0.16, 0.09],
-  path:   [0.44, 0.38, 0.30],
+  sand:   [0.94, 0.80, 0.52],
+  jungle: [0.26, 0.62, 0.24],
+  jungle2:[0.42, 0.78, 0.30],
+  rock:   [0.74, 0.42, 0.40],
+  rockHi: [0.90, 0.60, 0.52],
+  snow:   [0.97, 0.97, 1.00],
+  ash:    [0.36, 0.20, 0.28],
+  ember:  [1.00, 0.42, 0.18],
+  path:   [0.86, 0.66, 0.44],
 };
 const mixc = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
 
@@ -44,7 +45,7 @@ function paint(world, x, y, z, ny, out) {
   const wear = world.routeInfluence(x, z);
   if (wear > 0.01) col = mixc(col, C.path, wear * 0.42 * (1 - steep));
 
-  const shade = 0.86 + fine * 0.2 + v * 0.08;
+  const shade = 0.94 + fine * 0.12 + v * 0.05;
   out[0] = clamp(col[0] * shade, 0, 1);
   out[1] = clamp(col[1] * shade, 0, 1);
   out[2] = clamp(col[2] * shade, 0, 1);
@@ -92,7 +93,7 @@ function buildChunk(world, cx, cz, lod) {
       paint(world, x, y, z, ny, c4);
       // curvature ambient occlusion: gullies darken, ridges catch the light
       const avg = (H(i - 1, j) + H(i + 1, j) + H(i, j - 1) + H(i, j + 1)) * 0.25;
-      const ao = clamp(0.78 + (y - avg) * (1.1 / Math.max(2, step)), 0.44, 1.14);
+      const ao = clamp(0.88 + (y - avg) * (0.8 / Math.max(2, step)), 0.66, 1.10);
       col[k * 4] = c4[0] * ao; col[k * 4 + 1] = c4[1] * ao; col[k * 4 + 2] = c4[2] * ao; col[k * 4 + 3] = c4[3];
     }
   }

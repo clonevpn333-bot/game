@@ -77,7 +77,7 @@ export function materials() {
     metalWarm: std({ ...materialMaps('metal', 47, 0.09, 2) }),
     bark: std({ ...materialMaps('bark', 53, null, 1) }),
     canvasBag: std({ ...materialMaps('fabric', 61, 0.11, 2) }),
-    rockProp: std({ ...rock, map: rock.map.clone(), color: 0x8f8a84, roughness: 0.96 }),
+    rockProp: std({ ...rock, map: rock.map.clone(), color: 0xd08c7e, roughness: 0.96 }),
     sandProp: std({ ...materialMaps('sand', 67, null, 3) }),
     glass: heightFog(new THREE.MeshStandardMaterial({ color: 0x88a4c0, roughness: 0.08, metalness: 0.1, transparent: true, opacity: 0.45 })),
   };

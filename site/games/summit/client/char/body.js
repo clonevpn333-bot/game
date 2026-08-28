@@ -85,7 +85,7 @@ const smooth = (t) => t * t * (3 - 2 * t);
 function buildParts(rest, look) {
   const P = (n) => rest.get(n).clone();
   const parts = [];   // { geo, mat }
-  const bulk = look.bulk ?? 1;
+  const bulk = (look.bulk ?? 1) * 1.22;
 
   /* ---- torso: shirt / jacket shell ---- */
   const torsoPts = [
@@ -105,23 +105,23 @@ function buildParts(rest, look) {
   parts.push({ geo: collar, mat: 'jacket' });
 
   /* ---- head and neck ---- */
-  parts.push({ geo: tube(spline(P('neck'), P('head').add(V(0, -0.02, 0)), 3), () => ({ rx: 0.062, rz: 0.058 }), 10, false, false), mat: 'skin' });
+  parts.push({ geo: tube(spline(P('neck'), P('head').add(V(0, -0.02, 0)), 3), () => ({ rx: 0.075, rz: 0.070 }), 10, false, false), mat: 'skin' });
   parts.push({ geo: head(P('head'), look), mat: 'skin' });
 
   /* ---- arms ---- */
   for (const side of ['L', 'R']) {
     const sh = P('clavicle' + side), arm = P('arm' + side), fore = P('fore' + side), hand = P('hand' + side), fin = P('finger' + side);
     parts.push({ geo: tube(spline(sh, arm, 4), (t) => ({ rx: (0.137 - t * 0.048) * bulk, rz: (0.125 - t * 0.044) * bulk }), 12, true, false), mat: 'jacket' });
-    parts.push({ geo: tube(spline(arm, fore, 5), (t) => ({ rx: (0.073 - t * 0.012) * bulk, rz: (0.070 - t * 0.012) * bulk }), 11, false, false), mat: 'jacket' });
-    parts.push({ geo: tube(spline(fore, hand, 5), (t) => ({ rx: 0.062 - t * 0.008, rz: 0.059 - t * 0.008 }), 11, false, false), mat: 'sleeve' });
-    parts.push({ geo: tube(spline(hand, fin, 3), (t) => ({ rx: 0.070 - t * 0.020, rz: 0.048 - t * 0.012 }), 10), mat: 'glove' });
+    parts.push({ geo: tube(spline(arm, fore, 5), (t) => ({ rx: (0.082 - t * 0.010) * bulk, rz: (0.079 - t * 0.010) * bulk }), 11, false, false), mat: 'jacket' });
+    parts.push({ geo: tube(spline(fore, hand, 5), (t) => ({ rx: 0.072 - t * 0.006, rz: 0.069 - t * 0.006 }), 11, false, false), mat: 'sleeve' });
+    parts.push({ geo: tube(spline(hand, fin, 3), (t) => ({ rx: 0.082 - t * 0.020, rz: 0.062 - t * 0.014 }), 10), mat: 'glove' });
   }
 
   /* ---- legs ---- */
   for (const side of ['L', 'R']) {
     const hip = P('thigh' + side), knee = P('shin' + side), ankle = P('foot' + side), toe = P('toe' + side);
     parts.push({ geo: tube(spline(hip.clone().add(V(0, 0.05, 0)), knee, 6), (t) => ({ rx: (0.104 - t * 0.024) * bulk, rz: (0.100 - t * 0.022) * bulk }), 12, false, false), mat: 'trousers' });
-    parts.push({ geo: tube(spline(knee, ankle, 6), (t) => ({ rx: 0.079 - t * 0.020, rz: 0.076 - t * 0.020 }), 11, false, false), mat: 'trousers' });
+    parts.push({ geo: tube(spline(knee, ankle, 6), (t) => ({ rx: (0.090 - t * 0.016) * bulk, rz: (0.087 - t * 0.016) * bulk }), 11, false, false), mat: 'trousers' });
     parts.push({ geo: boot(ankle, toe), mat: 'boot' });
   }
 
@@ -137,7 +137,7 @@ function buildParts(rest, look) {
 }
 
 function head(center, look) {
-  const geo = new THREE.SphereGeometry(0.108, 18, 14);
+  const geo = new THREE.SphereGeometry(0.152, 20, 16);
   const pos = geo.attributes.position;
   const v = new THREE.Vector3();
   for (let i = 0; i < pos.count; i++) {
@@ -149,7 +149,7 @@ function head(center, look) {
     pos.setXYZ(i, v.x, v.y, v.z);
   }
   geo.computeVertexNormals();
-  geo.translate(center.x, center.y + 0.075, center.z);
+  geo.translate(center.x, center.y + 0.105, center.z);
   return geo;
 }
 

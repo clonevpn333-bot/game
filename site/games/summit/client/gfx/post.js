@@ -68,6 +68,7 @@ uniform float uGrain;
 uniform float uTime;
 uniform vec3 uSunTint;
 uniform float uExposure;
+uniform float uSat;
 float hash(vec2 p){ return fract(sin(dot(p, vec2(41.0, 289.0))) * 43758.5453); }
 vec3 ACES(vec3 x) {
   const float a = 2.51, b = 0.03, c = 2.43, d = 0.59, e = 0.14;
@@ -83,7 +84,9 @@ void main() {
   col += texture2D(tShafts, vUv).rgb * uSunTint;
   float v = 1.0 - uVignette * pow(length(vUv - 0.5) * 1.42, 2.4);
   col *= clamp(v, 0.0, 1.0);
-  col = toSRGB(ACES(max(col, vec3(0.0)) * uExposure));
+  col = ACES(max(col, vec3(0.0)) * uExposure);
+  col = mix(vec3(dot(col, vec3(0.2126, 0.7152, 0.0722))), col, uSat);
+  col = toSRGB(clamp(col, 0.0, 1.0));
   col += (hash(vUv * 1024.0 + uTime) - 0.5) * uGrain;
   gl_FragColor = vec4(col, 1.0);
 }`;
@@ -121,8 +124,8 @@ export class Post {
     });
     this.mComposite = pass(COMPOSITE, {
       tScene: { value: null }, tBloom: { value: null }, tShafts: { value: null },
-      uBloom: { value: 0.42 }, uVignette: { value: 0.34 }, uGrain: { value: 0.014 },
-      uExposure: { value: 1.0 },
+      uBloom: { value: 0.42 }, uVignette: { value: 0.22 }, uGrain: { value: 0.014 },
+      uExposure: { value: 1.0 }, uSat: { value: 1.28 },
       uTime: { value: 0 }, uSunTint: { value: new THREE.Color(1, 0.86, 0.66) },
     });
     this.setSize(width, height);

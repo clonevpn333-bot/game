@@ -17,6 +17,7 @@ uniform float uTurbidity;
 uniform float uExposure;
 uniform float uNight;
 uniform float uStars;
+uniform vec3 uTint;
 
 const vec3 betaR = vec3(5.5e-6, 13.0e-6, 22.4e-6);
 const vec3 betaM = vec3(21e-6);
@@ -53,14 +54,14 @@ void main() {
 
   // ground haze under the horizon so the world does not end in a hard line
   float below = smoothstep(0.02, -0.14, dir.y);
-  sky = mix(sky, mix(sky, vec3(0.30, 0.32, 0.34), 0.72), below);
+  sky = mix(sky, mix(sky, vec3(0.68, 0.45, 0.58), 0.55), below);
 
   // night sky
   float st = step(0.9975, hash(floor(dir * 620.0))) * uStars;
   vec3 night = vec3(0.012, 0.021, 0.05) + vec3(st) * 0.9;
   sky = mix(sky, night + sky * 0.25, uNight);
 
-  gl_FragColor = vec4(sky * uExposure, 1.0);
+  gl_FragColor = vec4(sky * uExposure * uTint, 1.0);
 }`;
 
 export class Sky {
@@ -71,6 +72,7 @@ export class Sky {
       uExposure: { value: 1.35 },
       uNight: { value: 0 },
       uStars: { value: 0 },
+      uTint: { value: new THREE.Vector3(1.14, 0.86, 1.24) },
     };
     const geo = new THREE.SphereGeometry(1, 40, 24);
     const mat = new THREE.ShaderMaterial({
@@ -95,6 +97,9 @@ export class Sky {
     scene.add(this.hemi);
     this.bounce = new THREE.DirectionalLight(0x8fb0d8, 0.35);
     scene.add(this.bounce);
+    // a floor of light so a slope facing away from the sun is still readable
+    this.fill = new THREE.AmbientLight(0x9fb2cc, 0.42);
+    scene.add(this.fill);
 
     this.sunColor = new THREE.Color(1, 1, 1);
     this.fogColor = new THREE.Color(0.6, 0.7, 0.82);
@@ -109,7 +114,7 @@ export class Sky {
     const azi = t * Math.PI * 2 * 0.35 + 0.7;
     const dir = new THREE.Vector3(Math.cos(azi) * Math.cos(a * 0.0 + 0.0) * 0.9, elev, Math.sin(azi) * 0.9).normalize();
     this.uniforms.uSunDir.value.copy(dir);
-    this.uniforms.uTurbidity.value = 2.2 + Math.max(0, 1 - Math.abs(elev)) * 3.4;
+    this.uniforms.uTurbidity.value = 3.0 + Math.max(0, 1 - Math.abs(elev)) * 3.2;
 
     const night = THREE.MathUtils.smoothstep(-elev, 0.02, 0.24);
     this.uniforms.uNight.value = night;
@@ -119,19 +124,21 @@ export class Sky {
     const warm = Math.pow(Math.max(0, 1 - Math.max(elev, 0)), 2.2);
     this.sunColor.setRGB(1.0, 0.94 - warm * 0.30, 0.86 - warm * 0.56);
     this.sun.color.copy(this.sunColor);
-    this.sun.intensity = Math.max(0, elev + 0.06) * 4.8;
+    this.sun.intensity = Math.max(0, elev + 0.06) * 3.4;
     this.sun.position.copy(dir).multiplyScalar(180);
 
-    this.hemi.intensity = 0.78 + Math.max(0, elev) * 1.05;
+    this.hemi.intensity = 1.35 + Math.max(0, elev) * 1.15;
     this.hemi.color.setRGB(0.62 + warm * 0.28, 0.72 - warm * 0.06, 0.95 - warm * 0.2);
-    this.hemi.groundColor.setRGB(0.28, 0.22, 0.18);
+    this.hemi.groundColor.setRGB(0.34, 0.28, 0.23);
+    this.fill.intensity = 0.62 + Math.max(0, elev) * 0.30;
+    this.fill.color.copy(this.fogColor).lerp(new THREE.Color(1, 1, 1), 0.4);
     this.bounce.position.set(-dir.x, 0.25, -dir.z).multiplyScalar(100);
     this.bounce.intensity = 0.34 + Math.max(0, elev) * 0.5;
 
     this.fogColor.setRGB(
-      0.50 + warm * 0.34 - night * 0.44,
-      0.60 + warm * 0.10 - night * 0.52,
-      0.74 - warm * 0.16 - night * 0.60,
+      0.78 + warm * 0.18 - night * 0.62,
+      0.62 + warm * 0.10 - night * 0.54,
+      0.88 - warm * 0.06 - night * 0.66,
     );
     this.fogColor.r = Math.max(0.02, this.fogColor.r);
     this.fogColor.g = Math.max(0.03, this.fogColor.g);
