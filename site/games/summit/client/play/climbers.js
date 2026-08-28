@@ -133,7 +133,8 @@ export class Climber {
     this.pos.set(s.x, s.y, s.z);
     if (dt > 0) this.vel.copy(this.pos).sub(this.prevPos).divideScalar(dt);
     this.group.position.copy(this.pos);
-    this.group.rotation.y = s.yaw ?? s.a ?? 0;
+    // the mesh looks down +Z, movement looks down -Z, so it needs half a turn
+    this.group.rotation.y = (s.yaw ?? s.a ?? 0) + Math.PI;
     this.pitch = s.pitch ?? s.b ?? 0;
 
     const flags = s.f ?? 0;

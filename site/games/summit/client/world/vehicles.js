@@ -21,9 +21,39 @@ export function makePlane() {
   tailCone.rotateX(-Math.PI / 2);
   tailCone.translate(0, 0.35, -9.6);
   const body = mergeGeometries([fuse, nose, tailCone]);
-  const bodyMesh = new THREE.Mesh(body, M.metal);
+  const hull = M.metal.clone();
+  hull.side = THREE.DoubleSide;          // the cabin has to be visible from inside
+  const bodyMesh = new THREE.Mesh(body, hull);
   bodyMesh.castShadow = true;
   g.add(bodyMesh);
+
+  // cabin: deck, side benches and ribs, so the jump is from somewhere real
+  const interior = [];
+  const deck = new THREE.BoxGeometry(2.5, 0.14, 12.5);
+  deck.translate(0, -0.95, -1);
+  interior.push(deck);
+  for (const x of [-1.28, 1.28]) {
+    const bench = new THREE.BoxGeometry(0.62, 0.14, 9.5);
+    bench.translate(x, -0.42, -1.5);
+    interior.push(bench);
+    const backRest = new THREE.BoxGeometry(0.12, 0.7, 9.5);
+    backRest.translate(x + 0.30 * Math.sign(x), -0.05, -1.5);
+    interior.push(backRest);
+  }
+  for (let i = -4; i <= 3; i++) {
+    const rib = new THREE.TorusGeometry(1.46, 0.055, 6, 18, Math.PI * 1.35);
+    rib.rotateZ(Math.PI * 0.82);
+    rib.rotateY(Math.PI / 2);
+    rib.translate(0, 0, i * 1.7 - 1);
+    interior.push(rib);
+  }
+  const cabin = new THREE.Mesh(mergeGeometries(interior), M.metalWarm);
+  cabin.receiveShadow = true;
+  g.add(cabin);
+
+  const cabinLight = new THREE.PointLight(0xffd9a8, 8, 14, 2);
+  cabinLight.position.set(0, 0.9, -2);
+  g.add(cabinLight);
 
   const wing = new THREE.BoxGeometry(21, 0.42, 3.2, 4, 1, 2);
   taper(wing, 21, 0.34);

@@ -50,8 +50,9 @@
   <p class="lead">
     The whole arcade is one file. Once the repository is public it is served by several
     independent content delivery networks — different companies, different domains, same file.
-    If a school filter blocks one, another almost certainly gets through.
-    Press <b>Test from this device</b> and use whichever comes back green.
+    Press <b>Test from this device</b>. <b>Green</b> means it loads as a real page — use that one.
+    <b>Amber</b> means the domain is reachable but that CDN hands back the source code instead of
+    running it (jsDelivr and Statically do this to every .html on purpose). <b>Red</b> is blocked.
   </p>
 
   <div class="toolbar">
@@ -91,15 +92,14 @@ for (const k of Object.keys(CONFIG)) if (q.get(k)) CONFIG[k] = q.get(k);
 
 const { owner, repo, branch, file } = CONFIG;
 const MIRRORS = [
-  { host: 'jsDelivr', note: 'Global CDN, very widely used', url: `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${branch}/${file}` },
-  { host: 'jsDelivr (Fastly)', note: 'Same file, different edge network', url: `https://fastly.jsdelivr.net/gh/${owner}/${repo}@${branch}/${file}` },
-  { host: 'jsDelivr (Gcore)', note: 'Same file, third edge network', url: `https://gcore.jsdelivr.net/gh/${owner}/${repo}@${branch}/${file}` },
-  { host: 'jsDelivr (Cloudflare)', note: 'Same file, fourth edge network', url: `https://testingcf.jsdelivr.net/gh/${owner}/${repo}@${branch}/${file}` },
-  { host: 'Statically', note: 'Independent CDN, different company', url: `https://cdn.statically.io/gh/${owner}/${repo}/${branch}/${file}` },
-  { host: 'raw.githack', note: 'Independent proxy', url: `https://raw.githack.com/${owner}/${repo}/${branch}/${file}` },
-  { host: 'rawcdn.githack', note: 'Cached edge of the same proxy', url: `https://rawcdn.githack.com/${owner}/${repo}/${branch}/${file}` },
-  { host: 'GitHub Pages (single file)', note: 'Needs Pages switched on', url: `https://${owner}.github.io/${repo}/nova-arcade.html` },
-  { host: 'GitHub Pages (full site)', note: 'Needs Pages switched on', url: `https://${owner}.github.io/${repo}/` },
+  { host: 'raw.githack', renders: true, note: 'Serves the page as a page — try this first', url: `https://raw.githack.com/${owner}/${repo}/${branch}/${file}` },
+  { host: 'rawcdn.githack', renders: true, note: 'Cached edge of the same service, faster', url: `https://rawcdn.githack.com/${owner}/${repo}/${branch}/${file}` },
+  { host: 'GitHub Pages', renders: true, note: 'Needs Pages switched on — best address if github.io is allowed', url: `https://${owner}.github.io/${repo}/` },
+  { host: 'GitHub Pages (single file)', renders: true, note: 'Same, pointing straight at the one file', url: `https://${owner}.github.io/${repo}/nova-arcade.html` },
+  { host: 'jsDelivr', renders: false, note: 'Reaches almost everywhere, but serves HTML as text', url: `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${branch}/${file}` },
+  { host: 'jsDelivr (Fastly)', renders: false, note: 'Same file, different edge network', url: `https://fastly.jsdelivr.net/gh/${owner}/${repo}@${branch}/${file}` },
+  { host: 'jsDelivr (Gcore)', renders: false, note: 'Same file, third edge network', url: `https://gcore.jsdelivr.net/gh/${owner}/${repo}@${branch}/${file}` },
+  { host: 'Statically', renders: false, note: 'Independent CDN, also serves HTML as text', url: `https://cdn.statically.io/gh/${owner}/${repo}/${branch}/${file}` },
 ];
 
 const host = document.getElementById('mirrors');
@@ -130,7 +130,8 @@ async function probe(url) {
   try {
     const r = await fetch(url, { cache: 'no-store', signal: ctl.signal });
     clearTimeout(t);
-    return r.ok;
+    const type = (r.headers.get('content-type') || '').toLowerCase();
+    return { ok: r.ok, renders: type.includes('text/html'), type };
   } catch {
     clearTimeout(t);
     try {
@@ -138,8 +139,8 @@ async function probe(url) {
       const t2 = setTimeout(() => c2.abort(), 9000);
       await fetch(url, { mode: 'no-cors', cache: 'no-store', signal: c2.signal });
       clearTimeout(t2);
-      return true;
-    } catch { return false; }
+      return { ok: true, renders: null };
+    } catch { return { ok: false, renders: false }; }
   }
 }
 
@@ -149,14 +150,19 @@ document.getElementById('test').onclick = async (e) => {
   summary.textContent = 'Testing…';
   for (const r of rows) r.dot.className = 'dot wait';
   const results = await Promise.all(rows.map(async (r) => {
-    const ok = await probe(r.url);
-    r.dot.className = 'dot ' + (ok ? 'ok' : 'bad');
-    return ok;
+    const res = await probe(r.url);
+    // green only when it both answers and hands back a real page
+    const usable = res.ok && res.renders !== false && r.renders !== false;
+    r.dot.className = 'dot ' + (res.ok ? (usable ? 'ok' : 'wait') : 'bad');
+    r.dot.title = !res.ok ? 'blocked or unreachable'
+      : usable ? 'reachable and renders as a page'
+      : 'reachable, but hands back source text rather than the page';
+    return usable;
   }));
   const good = results.filter(Boolean).length;
   summary.textContent = good
-    ? `${good} of ${rows.length} reachable from here — use any green one.`
-    : 'None reachable. The repository may still be private, or this network blocks all of them.';
+    ? `${good} of ${rows.length} usable from here — use a green one.`
+    : 'Nothing green. Amber means reachable but it shows source code instead of the page.';
   e.target.disabled = false;
 };
 

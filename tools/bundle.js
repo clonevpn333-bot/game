@@ -57,7 +57,7 @@ const manifest = JSON.parse(await read('games/games.json'));
 
 console.log('bundling games…');
 games.summit = await summitHtml();
-for (const id of ['neon-drift', 'vector-siege', 'lumen', 'schedule-one']) {
+for (const id of ['neon-drift', 'vector-siege', 'lumen', 'schedule-one', 'voxel-sandbox', 'bonecrown', 'night-city']) {
   games[id] = await inlineGame(id);
   console.log('  ', id, (games[id].length / 1024 | 0) + ' KB');
 }

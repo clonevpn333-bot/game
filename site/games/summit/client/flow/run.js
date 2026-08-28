@@ -80,7 +80,12 @@ export class RunScene {
 
     /* ---- the local climber ---- */
     const meState = net.meState();
+    const seated = phase === PHASE.FLIGHT && meState?.e === 'plane';
     const inPlane = phase === PHASE.FLIGHT;
+    // riding the plane is a first-person seat; put the view back afterwards
+    if (seated && !this.wasSeated) { this.viewBefore = app.cam.first; app.cam.first = true; }
+    if (!seated && this.wasSeated) { app.cam.first = this.viewBefore ?? false; }
+    this.wasSeated = seated;
     const meId = net.id;
     let mePos;
     if (inPlane && meState) mePos = _v.set(meState.x, meState.y, meState.z);
@@ -140,13 +145,24 @@ export class RunScene {
       this.interact.helicopter = { state: snap.he.s, position: this.heli.position };
     } else { this.heli.visible = false; this.interact.helicopter = null; }
 
+    /* ---- the flight: how far out, and when the door opens ---- */
+    if (seated) {
+      const t = snap?.pl?.t ?? 0;
+      const km = (Math.hypot(mePos.x - this.world.beach.x, mePos.z - this.world.beach.z) / 1000).toFixed(1);
+      app.hud.setPrompt(t < 0.23
+        ? { label: `Drop zone ${km} km — the door opens shortly`, kind: 'flight' }
+        : { label: `SPACE — jump   ·   drop zone ${km} km`, kind: 'flight' });
+      if (t >= 0.23 && !this.doorCalled) { this.doorCalled = true; app.hud.showBanner('Door open', 'Space to jump'); }
+      if (t >= 0.44 && !this.lastCall) { this.lastCall = true; app.hud.showBanner('Go, go, go', 'Last chance'); }
+    } else if (phase !== PHASE.FLIGHT) { this.doorCalled = false; this.lastCall = false; }
+
     /* ---- interaction ---- */
-    if (!app.uiBlocking()) {
+    if (!seated && !app.uiBlocking()) {
       const nearest = nearestMate(others, mePos);
       const prompt = this.interact.resolve(mePos, others, phase);
       this.interact.update(dt, app.input, { camera: app.stage.camera, nearestMateId: nearest?.i });
       app.hud.setPrompt(prompt, this.interact.reviveHold / 1.2);
-    } else app.hud.setPrompt(null);
+    } else if (!seated) app.hud.setPrompt(null);
 
     /* ---- HUD ---- */
     app.hud.setVitals(meState, pred);

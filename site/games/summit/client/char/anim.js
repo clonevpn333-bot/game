@@ -87,7 +87,7 @@ export class Animator {
     }
     // Foot planting only earns its keep on uneven ground; on a flat apron it just
     // fights the pose, so it stays off unless the ground under a foot differs.
-    if (ctx.footIK && this.world && ctx.position && (this.state === 'idle' || this.state === 'tired' || this.state === 'walk')) {
+    if (false && ctx.footIK && this.world && ctx.position && (this.state === 'idle' || this.state === 'tired' || this.state === 'walk')) {
       const baseY = this.world.height(ctx.position.x, ctx.position.z);
       for (const side of ['L', 'R']) {
         const foot = b.get('foot' + side);
