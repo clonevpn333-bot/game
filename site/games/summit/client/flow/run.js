@@ -83,7 +83,13 @@ export class RunScene {
     const seated = phase === PHASE.FLIGHT && meState?.e === 'plane';
     const inPlane = phase === PHASE.FLIGHT;
     // riding the plane is a first-person seat; put the view back afterwards
-    if (seated && !this.wasSeated) { this.viewBefore = app.cam.first; app.cam.first = true; }
+    if (seated && !this.wasSeated) {
+      this.viewBefore = app.cam.first;
+      app.cam.first = true;
+      // face down the cabin toward the open ramp — that is where you jump from
+      app.cam.yaw = (snap?.pl?.yaw ?? 0) + Math.PI;
+      app.cam.pitch = -0.04;
+    }
     if (!seated && this.wasSeated) { app.cam.first = this.viewBefore ?? false; }
     this.wasSeated = seated;
     const meId = net.id;
@@ -134,7 +140,7 @@ export class RunScene {
     if (snap?.pl) {
       this.plane.visible = true;
       this.plane.position.set(snap.pl.x, snap.pl.y, snap.pl.z);
-      this.plane.rotation.y = snap.pl.yaw;
+      this.plane.rotation.y = snap.pl.yaw + Math.PI;   // nose along travel, not against it
       this.plane.userData.update?.(dt);
     } else this.plane.visible = false;
     if (snap?.he) {

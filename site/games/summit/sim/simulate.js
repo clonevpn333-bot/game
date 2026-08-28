@@ -174,9 +174,14 @@ function dragged(room, p, dt) {
 
 function rideThePlane(room, p, dt) {
   const pl = room.plane;
-  p.move.x = pl.x + (p.slot - 1.5) * 1.6;
-  p.move.y = pl.y - 0.6;
-  p.move.z = pl.z + (p.slot % 2 ? 1.4 : -1.4);
+  // seats are laid out in the cabin's own axes, then turned to match its heading
+  const lx = p.slot < 2 ? 0.62 : -0.62;
+  const lz = 2.6 - (p.slot % 2) * 2.2;
+  const c = Math.cos(pl.yaw), sn = Math.sin(pl.yaw);
+  p.move.x = pl.x + lx * c + lz * sn;
+  // eye height is added on top, so sit low enough that the view lands in the cabin
+  p.move.y = pl.y - 1.29;
+  p.move.z = pl.z - lx * sn + lz * c;
   p.move.vx = p.move.vy = p.move.vz = 0;
   p.anim = 'plane';
   // The door is open once the plane is over the water; jump to leave it.
