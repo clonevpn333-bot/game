@@ -126,6 +126,19 @@ export function makeExtras(look, rest) {
     default: break;
   }
 
+  // hair, where the headwear leaves room for it
+  if (look.hat === 'none' || look.hat === 'brim' || look.hat === 'crown') {
+    const cap = new THREE.SphereGeometry(0.116, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.62);
+    cap.scale(1.02, 1.08, 1.06);
+    cap.translate(head.x, head.y + 0.062, head.z - 0.004);
+    const back = new THREE.SphereGeometry(0.108, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.9);
+    back.scale(1.0, 1.0, 0.62);
+    back.translate(head.x, head.y + 0.052, head.z - 0.055);
+    const brow = new THREE.BoxGeometry(0.13, 0.016, 0.02);
+    brow.translate(head.x, head.y + 0.098, head.z + 0.098);
+    out.push({ geo: mergeGeometries([cap, back, brow]), mat: 'hair' });
+  }
+
   const packSize = look.pack === 'large' ? 1.22 : look.pack === 'none' ? 0 : 1;
   if (packSize > 0) {
     const w = 0.31 * packSize, h = 0.42 * packSize, d = 0.19 * packSize;

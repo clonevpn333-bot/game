@@ -39,6 +39,16 @@ export class ClothStrip {
     this.bone.updateWorldMatrix(true, false);
     const root = this._a.copy(this.offset).applyMatrix4(this.bone.matrixWorld);
 
+    // Snap the whole strip to the anchor on the first frame, and after any jump
+    // (respawn, teleport) — otherwise it stretches back to where it used to be.
+    if (!this.inited || this.pts[0].distanceToSquared(root) > 4) {
+      for (let i = 0; i < this.count; i++) {
+        this.pts[i].set(root.x, root.y - i * this.spacing, root.z);
+        this.prev[i].copy(this.pts[i]);
+      }
+      this.inited = true;
+    }
+
     this._w.copy(wind || ZERO);
     this._w.x += Math.sin(this.time * 2.3) * 1.4;
     this._w.z += Math.cos(this.time * 1.7) * 1.1;
@@ -94,7 +104,7 @@ const ZERO = new THREE.Vector3();
 /** Scarf + a coil of rope on the harness. Added to the scene, not the skeleton. */
 export function makeClothSet(rig, mats) {
   const scarf = new ClothStrip(rig.byName.get('neck'), {
-    count: 9, spacing: 0.085, width: 0.115, material: mats.gear,
+    count: 7, spacing: 0.075, width: 0.115, material: mats.gear,
     offset: new THREE.Vector3(0, 0.02, -0.055), gravity: -7.5,
   });
   const tail = new ClothStrip(rig.byName.get('hips'), {

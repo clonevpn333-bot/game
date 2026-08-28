@@ -112,6 +112,11 @@ export class Room {
 
   startRun() {
     if (this.phase !== PHASE.LOBBY) return;
+    // A fresh seed per run: the mountain is never the same twice.
+    this.seed = ((Math.random() * 0xffffffff) >>> 0);
+    this.world = createWorld(this.seed);
+    this.camps = this.world.campfires.map(() => false);
+    this.rand = rng(this.seed ^ 0x7f4a7c15);
     // Out over the water, across the beach, on toward the peak. The jump window
     // is the stretch where a canopy can still reach the sand.
     const b = this.world.beach;
@@ -131,7 +136,7 @@ export class Room {
       p.stats = { falls: 0, deaths: 0, revives: 0, boosts: 0, assists: 0, items: 0, carried: 0, peak: 0 };
       p.ready = false;
     }
-    this.items = spawnLoot(this.world, this.seed ^ (Date.now() & 0xffff));
+    this.items = spawnLoot(this.world, this.seed);
     this.anchors = []; this.ziplines = []; this.marks = []; this.flares = [];
     this.camps = this.world.campfires.map(() => false);
     this.itemsDirty = true;

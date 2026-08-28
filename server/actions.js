@@ -23,6 +23,12 @@ const HANDLERS = {
     const pack = PACKS[p.pack] || PACKS.none;
     if (!it.open) {
       it.open = true;
+      // Deep caches sometimes hold something that does not want to be found.
+      if (it.kind === 'cache' && room.rand() < 0.14) {
+        addStatus(p.vitals, 'curse');
+        room.event('cursed', { id: p.id });
+        room.tell(p, 'note', { text: 'Something in that cache took a liking to you' });
+      }
       room.event('open', { id: it.id, by: p.id, kind: it.kind });
       return;
     }
