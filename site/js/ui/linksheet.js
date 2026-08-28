@@ -29,6 +29,7 @@ export function openLinkSheet() {
             document.dispatchEvent(new CustomEvent('nova:keychange', { detail: next }));
           },
         }, icon('refresh'), 'Regenerate'),
+        h('a', { class: 'btn btn--ghost', href: 'links.html', target: '_blank', rel: 'noopener' }, 'Share the arcade'),
         h('button', { class: 'btn btn--ghost', onclick: close }, 'Done')),
     ));
   overlay.addEventListener('click', close);

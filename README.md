@@ -51,6 +51,22 @@ Nothing else changes. Cover art is generated from the `art` block — motifs are
 Games run in a sandboxed iframe (`allow-scripts allow-same-origin allow-pointer-lock`) with
 fullscreen and pointer lock allowed, and no access to the hub's DOM.
 
+### Getting a link that is not blocked
+
+Open **`links.html`** on the device you want to play from and press *Test from this device*.
+It probes the same file across roughly nine unrelated domains — four jsDelivr edge networks,
+Statically, both githack proxies and GitHub Pages — and marks the ones that answer. Use any
+green one. A filter can block a domain; it cannot easily block nine belonging to different
+companies.
+
+Those CDN links need the repository to be **public** (Settings → Danger Zone → Change
+visibility). Nothing else: no deploy, no account, no build. The `live` branch always carries
+the newest build and is what the CDN links point at:
+
+```
+git push -f origin HEAD:live
+```
+
 ### Putting it on the internet
 
 The whole site is a folder of static files with hash routing (`#/h/<key>`), so it works on any

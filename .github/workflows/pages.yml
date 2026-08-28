@@ -2,7 +2,7 @@ name: Deploy Nova Arcade to GitHub Pages
 
 on:
   push:
-    branches: ["claude/nova-arcade-hub-ngu35n", "main"]
+    branches: ["claude/nova-arcade-hub-ngu35n", "live", "main"]
   workflow_dispatch:
 
 permissions:
