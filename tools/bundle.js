@@ -62,6 +62,7 @@ for (const id of ['neon-drift', 'vector-siege', 'lumen', 'schedule-one', 'voxel-
   console.log('  ', id, (games[id].length / 1024 | 0) + ' KB');
 }
 
+const share = await read('links.html');
 console.log('bundling the hub…');
 const hubCss = (await Promise.all(['css/tokens.css', 'css/base.css', 'css/ui.css', 'css/hub.css'].map(read))).join('\n');
 const hubJs = await js('js/main.js');
@@ -83,6 +84,7 @@ const out = `<!doctype html>
 <main id="app"></main>
 <script id="nova-manifest" type="application/json">${safeJson(manifest)}</script>
 <script>window.__NOVA_GAMES = ${safeJson(games)};</script>
+<script>window.__NOVA_SHARE = ${safeJson(share)};</script>
 <script>${hubJs}</script>
 </body>
 </html>

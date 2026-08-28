@@ -1,6 +1,7 @@
 import { h, icon } from './dom.js';
 import { toast } from './toast.js';
 import { hubURL, hubHash, regenerateKey, currentKey } from '../session.js';
+import { openMirrorFinder } from './mirrors.js';
 
 /* "Your private link" sheet — copy, open, regenerate. */
 export function openLinkSheet() {
@@ -29,7 +30,7 @@ export function openLinkSheet() {
             document.dispatchEvent(new CustomEvent('nova:keychange', { detail: next }));
           },
         }, icon('refresh'), 'Regenerate'),
-        h('a', { class: 'btn btn--ghost', href: 'links.html', target: '_blank', rel: 'noopener' }, 'Share the arcade'),
+        h('button', { class: 'btn btn--ghost', onclick: () => { close(); openMirrorFinder(); } }, 'Find a link that works'),
         h('button', { class: 'btn btn--ghost', onclick: close }, 'Done')),
     ));
   overlay.addEventListener('click', close);
