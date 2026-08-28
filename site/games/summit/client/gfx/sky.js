@@ -122,11 +122,11 @@ export class Sky {
     this.sun.intensity = Math.max(0, elev + 0.06) * 4.8;
     this.sun.position.copy(dir).multiplyScalar(180);
 
-    this.hemi.intensity = 0.52 + Math.max(0, elev) * 0.92;
+    this.hemi.intensity = 0.78 + Math.max(0, elev) * 1.05;
     this.hemi.color.setRGB(0.62 + warm * 0.28, 0.72 - warm * 0.06, 0.95 - warm * 0.2);
     this.hemi.groundColor.setRGB(0.28, 0.22, 0.18);
     this.bounce.position.set(-dir.x, 0.25, -dir.z).multiplyScalar(100);
-    this.bounce.intensity = 0.26 + Math.max(0, elev) * 0.45;
+    this.bounce.intensity = 0.34 + Math.max(0, elev) * 0.5;
 
     this.fogColor.setRGB(
       0.50 + warm * 0.34 - night * 0.44,

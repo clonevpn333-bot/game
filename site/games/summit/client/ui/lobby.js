@@ -4,8 +4,8 @@ import { FLAG } from '../../shared/protocol.js';
 import { BIOMES } from '../../shared/constants.js';
 
 export class LobbyPanel {
-  constructor(root, { onReady, onShop, onLeave, onCopy }) {
-    this.h = { onReady, onShop, onLeave, onCopy };
+  constructor(root, { onReady, onShop, onLeave, onCopy, onWalk }) {
+    this.h = { onReady, onShop, onLeave, onCopy, onWalk };
     this.ready = false;
     this.codeEl = h('div', { class: 'code' }, '-----');
     this.roster = h('div', { class: 'list' });
@@ -39,9 +39,11 @@ export class LobbyPanel {
               h('b', {}, b.name),
               h('span', { class: 'rowitem__tag' }, `${Math.max(0, b.from)}–${b.to} m`)))))),
       h('div', { class: 'sep' }),
+      h('p', { style: { fontSize: '12.5px' } }, 'Tab brings this board back while you are walking around.'),
       this.countdown,
       h('div', { class: 'row' },
         this.readyBtn,
+        h('button', { class: 'btn', onclick: () => this.h.onWalk?.() }, 'Walk the field'),
         h('button', { class: 'btn btn--ghost', onclick: () => this.h.onShop?.() }, 'Cosmetics'),
         h('span', { style: { flex: '1' } }),
         h('button', { class: 'btn btn--ghost', onclick: () => this.h.onLeave?.() }, 'Leave'))));

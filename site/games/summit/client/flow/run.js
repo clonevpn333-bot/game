@@ -173,7 +173,7 @@ export class RunScene {
 
     /* ---- day cycle: dawn at the beach, dusk near the summit ---- */
     const runT = snap ? Math.min(1, (Date.now() - (app.runStart || Date.now())) / (45 * 60 * 1000)) : 0;
-    app.stage.dayT = 0.26 + runT * 0.5 + (mePos.y / WORLD.summit) * 0.08;
+    app.stage.dayT = 0.335 + runT * 0.40 + (mePos.y / WORLD.summit) * 0.055;
 
     return mePos;
   }

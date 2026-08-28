@@ -74,3 +74,61 @@ Rule: no file over ~400 lines. If one grows past it, split it.
 | `tools/nettest.js` | headless 2-client integration test: full run through every phase, actions, reconnect, drop-out |
 | `tools/climbsim.js` | proves a seed's route is climbable using the real movement code (`node tools/climbsim.js SEED`) |
 | `tools/srv.sh` | start/stop the game server via pidfile |
+
+## site/games/summit/client/ — the game client
+| file | what lives here |
+|---|---|
+| `client/boot.js` | app shell: renderer, connection, screens, phase switching, frame loop |
+| `client/net.js` | websocket client: prediction + reconciliation for you, interpolation for teammates |
+| `client/audio.js` | synthesised sound: wind by altitude, footsteps, horn, impacts, fire |
+| **gfx/** | |
+| `gfx/textures.js` | every texture, generated: rock/snow/sand/jungle/ash/bark/fabric/leather/metal/wood/skin, leaves, clouds, water normals |
+| `gfx/materials.js` | material library, shared height-fog block, terrain/water/foliage/cloud shaders |
+| `gfx/sky.js` | analytic scattering sky, sun, day cycle, and the lights the scene uses |
+| `gfx/clouds.js` | instanced cloud decks you climb through + the cloud sea below |
+| `gfx/post.js` | bloom, depth-masked light shafts, ACES tone mapping, sRGB encode |
+| `gfx/scene.js` | Stage: renderer settings, resize, quality levels, per-frame atmosphere |
+| **world/** | |
+| `world/terrain.js` | chunked LOD terrain + the static far mesh of the whole mountain |
+| `world/flora.js` | procedural trunks, canopies, boulders, grass — geometry only |
+| `world/scatter.js` | deterministic instanced placement of that flora by biome and cell |
+| `world/water.js` | ocean ring and the shallow lagoon |
+| `world/props.js` | campfires, crates, luggage, caches, pitons, anchors, fire particles, ping markers |
+| `world/vehicles.js` | jump plane, extraction helicopter, hangar |
+| `world/worldobjects.js` | mirrors the server's loot/anchors/ziplines/marks/flares/campfires into the scene |
+| **char/** | |
+| `char/rig.js` | the 25-bone skeleton and the segments used for skin weighting |
+| `char/body.js` | builds the skinned climber: tubes, caps, head, boots, gear, per-part materials |
+| `char/cosmetics.js` | outfits, hats, packs, skin tones, and the materials/extras they imply |
+| `char/anim.js` | procedural pose library, blending, head look, emotes |
+| `char/ik.js` | two-bone IK for hands on rock and feet on ground |
+| `char/cloth.js` | verlet scarf and harness gear |
+| **play/** | |
+| `play/input.js` | pointer lock, keymap, trackpad-friendly look |
+| `play/camera.js` | third/first person rig with terrain collision and shake |
+| `play/climbers.js` | one visual climber per player: animation, cloth, ragdoll, parachute, name tag |
+| `play/ragdoll.js` | verlet ragdoll that hands control back to the animator once it settles |
+| `play/interact.js` | picks the interaction target, renders its prompt, dispatches actions |
+| **ui/** | |
+| `ui/game.css` | the game's whole visual language |
+| `ui/kit.js` | `h()` helper + the local profile (coins, unlocks, look) |
+| `ui/hud.js` | vitals, altitude ladder, team, prompt, belt, feed, banners, net readout |
+| `ui/screens.js` | loading, main menu, settings, pause, control reference |
+| `ui/lobby.js` | the hangar board: room code, roster, ready-up |
+| `ui/shop.js` | cosmetics shop and post-run coin award |
+| `ui/results.js` | stats table and badges |
+| `ui/social.js` | chat line and emote wheel |
+| **flow/** | |
+| `flow/airfield.js` | the hangar, apron, waiting plane, crates, campfire |
+| `flow/lobbyscene.js` | pre-flight scene + the flat world the lobby simulates against |
+| `flow/run.js` | the run: streaming, climbers, camera, interaction, HUD, audio, day cycle |
+| **dev pages** | `dev.html` (terrain), `char.html` (climbers), `textures.html` (texture sheet) |
+
+## tools/ (additions)
+| file | what lives here |
+|---|---|
+| `tools/playtest.js` | drives the real client through a whole run in a headless browser |
+| `tools/duotest.js` | two real browsers in one room: roster, movement sync, reconnect |
+| `tools/peek.js` | screenshots the 3D scene with the UI panels hidden |
+| `tools/probe.js`, `tools/probe2.js` | evaluate an expression inside the running page (shader/state debugging) |
+| `tools/shot3d.js` | screenshots a WebGL page once it sets `window.__ready` |

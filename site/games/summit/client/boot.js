@@ -60,7 +60,10 @@ class App {
       onResults: (r) => this.onResults(r),
     });
 
-    this.input.onUnlock = () => { if (this.mode === 'run') this.openPause(); };
+    this.input.onUnlock = () => {
+      if (this.mode === 'run') this.openPause();
+      else if (this.mode === 'lobby') this.panels.lobby?.show();
+    };
     addEventListener('keydown', (e) => this.onKey(e));
     addEventListener('keyup', (e) => { if (e.code === 'KeyC' && this.social.wheelOpen) this.social.closeWheel(); });
 
@@ -141,6 +144,7 @@ class App {
         onReady: (v) => this.net.setReady(v),
         onShop: () => this.openShop(),
         onLeave: () => location.reload(),
+        onWalk: () => { this.panels.lobby.hide(); this.input.requestLock(); this.audio.start(); },
         onCopy: () => {
           const text = `Join my Summit run — server ${this.net.url}, room code ${this.net.room?.code}`;
           navigator.clipboard?.writeText(text);
@@ -239,10 +243,17 @@ class App {
     if (this.social.chatting) return;
     if (e.code === 'KeyT' && this.mode !== 'menu') { e.preventDefault(); this.social.openChat(this.input); return; }
     if (e.code === 'KeyV') this.cam.toggleView();
+    if (e.code === 'Tab' && this.mode === 'lobby' && this.panels.lobby) {
+      e.preventDefault();
+      const hidden = this.panels.lobby.el.classList.contains('hide');
+      if (hidden) { this.panels.lobby.show(); this.input.releaseLock(); }
+      else { this.panels.lobby.hide(); this.input.requestLock(); }
+    }
     if (e.code === 'KeyC' && !this.social.wheelOpen && this.mode !== 'menu') this.social.openWheel();
     if (e.code === 'Escape') {
       if (this.social.wheelOpen) this.social.closeWheel();
       else if (this.mode === 'run' && this.input.locked) this.input.releaseLock();
+      else if (this.mode === 'lobby' && this.panels.lobby?.el.classList.contains('hide')) { this.panels.lobby.show(); this.input.releaseLock(); }
     }
   }
 

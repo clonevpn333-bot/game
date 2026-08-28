@@ -121,7 +121,7 @@ export class Post {
     });
     this.mComposite = pass(COMPOSITE, {
       tScene: { value: null }, tBloom: { value: null }, tShafts: { value: null },
-      uBloom: { value: 0.42 }, uVignette: { value: 0.42 }, uGrain: { value: 0.014 },
+      uBloom: { value: 0.42 }, uVignette: { value: 0.34 }, uGrain: { value: 0.014 },
       uExposure: { value: 1.0 },
       uTime: { value: 0 }, uSunTint: { value: new THREE.Color(1, 0.86, 0.66) },
     });
