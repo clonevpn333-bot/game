@@ -17,6 +17,8 @@ import { Social } from './ui/social.js';
 import { RunScene } from './flow/run.js';
 import { LobbyScene, makeFlatWorld } from './flow/lobbyscene.js';
 import { loadProfile, saveProfile } from './ui/kit.js';
+import { Host } from './host.js';
+import { LocalTransport, PeerTransport, WsTransport } from './transport.js';
 import { ITEMS } from '../shared/items.js';
 
 class App {
@@ -50,8 +52,8 @@ class App {
     this.panels = {};
     this.runStart = 0;
 
+    this.host = null;
     this.net = new Net({
-      url: 'ws://localhost:8787/ws',
       onWelcome: (d) => this.onWelcome(d),
       onRoom: (r) => this.onRoom(r),
       onPhase: (p) => this.onPhase(p),
@@ -98,24 +100,51 @@ class App {
     });
   }
 
-  connect(v, code) {
+  /** Three ways in: host from this tab, dial a friend's code, or a dedicated server. */
+  async connect(v, code) {
     this.name = v.name;
     this.audio.start();
-    this.net.url = v.server;
     this.net.name = v.name;
     this.net.cos = this.look;
     this.net.wantsReconnect = true;
-    this.net.connect();
-    const go = () => {
-      if (this.net.status !== 'online') { setTimeout(go, 120); return; }
+    this.net.onOpen = () => {
+      if (this.net.id) return;
       if (code) this.net.joinRoom(code, v.name, this.look, this.look.pack);
-      else this.net.createRoom(v.name, this.look, this.look.pack);
+      else if (!this.host) this.net.createRoom(v.name, this.look, this.look.pack);
     };
-    go();
-    this.menu.setError('Connecting…');
+
+    try {
+      if (v.server) {
+        this.net.attach(new WsTransport(v.server));
+      } else if (code) {
+        this.net.attach(new PeerTransport(code));
+      } else {
+        this.host = new Host();
+        const res = await this.host.open();
+        const local = new LocalTransport(this.host);
+        local.ctx = this.host.localCtx();
+        this.net.attach(local);
+        this.net.createRoom(v.name, this.look, this.look.pack, res.code);
+        this.hostOnline = res.online;
+        if (!res.online) {
+          this.hud.pushFeed(`<b>Solo</b> — ${res.reason} You can still climb; friends cannot dial in from here.`);
+        }
+      }
+    } catch (err) {
+      this.menu.setError(String(err.message || err));
+      this.host?.stop();
+      this.host = null;
+      return;
+    }
+
+    clearTimeout(this.connectTimeout);
     this.connectTimeout = setTimeout(() => {
-      if (!this.net.id) this.menu.setError('No answer from ' + v.server + ' — is the server running?');
-    }, 6000);
+      if (!this.net.id) {
+        this.menu.setError(code
+          ? 'No answer from room ' + code + '. Check the code, and make sure the host still has the tab open.'
+          : 'Could not reach the matchmaking broker from this network.');
+      }
+    }, 12000);
   }
 
   onWelcome(d) {
@@ -146,7 +175,7 @@ class App {
         onLeave: () => location.reload(),
         onWalk: () => { this.panels.lobby.hide(); this.input.requestLock(); this.audio.start(); },
         onCopy: () => {
-          const text = `Join my Summit run — server ${this.net.url}, room code ${this.net.room?.code}`;
+          const text = `Climb with me in Summit — open ${location.href.split('#')[0]} and join room ${this.net.room?.code}`;
           navigator.clipboard?.writeText(text);
           this.social.push('System', 'Invite copied to the clipboard', '#e9c68c');
         },

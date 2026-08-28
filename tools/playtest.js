@@ -23,7 +23,7 @@ async function waitPhase(p, ms) {
 
 await page.goto(URL, { waitUntil: 'load', timeout: 40000 });
 await page.waitForTimeout(11000);
-await page.evaluate(`(() => { const a = window.__summit; a.menu.nameInput.value='Ada'; a.menu.serverInput.value='ws://localhost:8787/ws'; a.menu.host(); })()`);
+await page.evaluate(`(() => { const a = window.__summit; a.menu.nameInput.value='Ada'; a.menu.serverInput.value=''; a.menu.host(); })()`);
 await page.waitForTimeout(4000);
 log('room:', await page.evaluate('window.__summit.net.room?.code'), '| mode:', await page.evaluate('window.__summit.mode'));
 

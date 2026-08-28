@@ -1,6 +1,6 @@
 /* Network client: room join, input send, server reconciliation for the local
  * climber, and snapshot interpolation for everyone else. */
-import { C2S, S2C, dec, enc } from '../shared/protocol.js';
+import { C2S, S2C } from '../shared/protocol.js';
 import { step, newMoveState, newModifiers } from '../shared/locomotion.js';
 import { NET, PHASE, BIOMES, biomeIndexAt, STATUS } from '../shared/constants.js';
 import { inventoryWeight, PACKS } from '../shared/items.js';
@@ -9,11 +9,10 @@ const BTN = { JUMP: 1, SPRINT: 2, GRAB: 4, USE: 8 };
 export { BTN };
 
 export class Net {
-  constructor({ url, onEvent, onPhase, onRoom, onResults, onChat, onWelcome }) {
-    this.url = url;
+  constructor({ onEvent, onPhase, onRoom, onResults, onChat, onWelcome }) {
     this.on = { event: onEvent, phase: onPhase, room: onRoom, results: onResults, chat: onChat, welcome: onWelcome };
-    this.ws = null;
-    this.status = 'idle';
+    this.transport = null;
+    this.rejoinOnOpen = false;
     this.id = null;
     this.token = localStorage.getItem('summit.token') || null;
     this.room = null;
@@ -39,29 +38,42 @@ export class Net {
     this.wantsReconnect = true;
   }
 
-  connect() {
-    if (this.ws && (this.ws.readyState === 0 || this.ws.readyState === 1)) return;
-    this.status = 'connecting';
-    try { this.ws = new WebSocket(this.url); } catch { this.status = 'error'; return; }
-    this.ws.onopen = () => {
-      this.status = 'online';
-      if (this.token) this.send(C2S.HELLO, { token: this.token, name: this.name, cosmetics: this.cos });
-      if (this.pendingJoin) { this.send(this.pendingJoin.t, this.pendingJoin.d); this.pendingJoin = null; }
-      this.pingTimer = setInterval(() => this.send(C2S.PING, { t: performance.now() }), 2000);
-    };
-    this.ws.onclose = () => {
-      this.status = 'offline';
+  /** Point the client at a transport (local host, peer, or dedicated server). */
+  attach(transport) {
+    this.transport?.close?.();
+    this.transport = transport;
+    transport.onMessage = (msg) => this.handle(msg);
+    transport.onOpen = () => {
       clearInterval(this.pingTimer);
-      if (this.wantsReconnect) this.reconnectTimer = setTimeout(() => this.connect(), 1600);
+      this.pingTimer = setInterval(() => this.send(C2S.PING, { t: performance.now() }), 2000);
+      if (this.token && this.rejoinOnOpen) this.send(C2S.HELLO, { token: this.token, name: this.name, cosmetics: this.cos });
+      this.onOpen?.();
     };
-    this.ws.onerror = () => { this.status = 'error'; };
-    this.ws.onmessage = (ev) => this.handle(dec(ev.data));
+    transport.onClose = () => {
+      clearInterval(this.pingTimer);
+      if (this.wantsReconnect) {
+        this.rejoinOnOpen = true;
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = setTimeout(() => transport.connect(), 1800);
+      }
+    };
+    transport.onError = (msg) => this.on.event?.({ e: 'error', text: msg });
+    transport.connect();
+    return transport;
   }
 
-  disconnect() { this.wantsReconnect = false; clearTimeout(this.reconnectTimer); this.ws?.close(); }
-  send(t, d = {}) { if (this.ws?.readyState === 1) this.ws.send(enc(t, d)); else this.pendingJoin = { t, d }; }
+  get status() { return this.transport?.status || 'idle'; }
 
-  createRoom(name, cos, pack) { this.name = name; this.cos = cos; this.send(C2S.CREATE, { name, cosmetics: cos, pack, token: this.token }); }
+  disconnect() {
+    this.wantsReconnect = false;
+    clearTimeout(this.reconnectTimer);
+    clearInterval(this.pingTimer);
+    this.transport?.close();
+  }
+
+  send(t, d = {}) { this.transport?.send(t, d); }
+
+  createRoom(name, cos, pack, code) { this.name = name; this.cos = cos; this.send(C2S.CREATE, { name, cosmetics: cos, pack, code, token: this.token }); }
   joinRoom(code, name, cos, pack) { this.name = name; this.cos = cos; this.send(C2S.JOIN, { code, name, cosmetics: cos, pack, token: this.token }); }
   setReady(v) { this.send(C2S.READY, { v }); }
   startRun() { this.send(C2S.START, {}); }

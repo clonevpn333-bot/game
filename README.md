@@ -51,51 +51,52 @@ Nothing else changes. Cover art is generated from the `art` block — motifs are
 Games run in a sandboxed iframe (`allow-scripts allow-same-origin allow-pointer-lock`) with
 fullscreen and pointer lock allowed, and no access to the hub's DOM.
 
-### Deploying to Netlify
+### Putting it on the internet
 
-`netlify.toml` is already set up: publish directory `site`, no build step, and a rewrite so
-`/h/*` serves the hub shell.
+The whole site is a folder of static files with hash routing (`#/h/<key>`), so it works on any
+static host with no configuration.
 
-```
-netlify deploy --prod          # or connect the repo in the Netlify UI
-```
+**GitHub Pages (already wired up):** `.github/workflows/pages.yml` publishes `site/` on every
+push. Enable it once at **Settings → Pages → Source → GitHub Actions**. Your link is then
+`https://<user>.github.io/<repo>/`.
+
+**Netlify:** `netlify deploy --prod` (or connect the repo). `netlify.toml` sets publish `site`.
+
+**Anything else:** upload the contents of `site/` — Vercel, Cloudflare Pages, a school web
+folder, a USB stick. There is nothing to configure.
 
 ---
 
 ## Summit
 
-### Running the server
+### Playing with friends — no server, no downloads
+
+Summit hosts itself. One of you presses **Host a run** and the game claims a five-letter
+room code on a free public matchmaking broker (`wss://0.peerjs.com`, plain HTTPS on port 443).
+Everyone else types that code and presses **Join**. The host's tab runs the authoritative
+simulation — the exact same code the Node server runs — and everyone connects to it directly
+over WebRTC, with a TCP/443 relay as fallback so locked-down networks still get through.
+
+1. Open the site. Type a name.
+2. **Host a run** → read out the five-letter code.
+3. Friends type the code → **Join**.
+4. Ready up in the hangar. Four climbers per room.
+
+The host has to keep the tab open — it is the server. If the broker is unreachable from your
+network the run still starts; you just climb alone until someone can dial in.
+
+### Optional: a dedicated server
+
+If you would rather run one (it survives the host closing their tab, and joins are instant):
 
 ```
 npm run server                 # ws://localhost:8787/ws
-PORT=9000 npm run server       # any port you like
+PORT=9000 npm run server
 ```
 
-`GET /health` returns `{ ok, rooms, players, up }`. The same process also serves `site/`, so
-`http://localhost:8787/games/summit/` works without the static server running.
-
-### How your friends connect
-
-1. Start the server on your machine.
-2. Make it reachable:
-   - **Same wifi:** they use `ws://<your-lan-ip>:8787/ws` (e.g. `ws://192.168.1.24:8787/ws`).
-   - **Over the internet, quick:** `ngrok http 8787` and hand them
-     `wss://<subdomain>.ngrok-free.app/ws`.
-   - **Over the internet, permanent:** deploy `server/` to Render / Fly / Railway
-     (`node server/index.js`, one web service, no database), then use
-     `wss://<your-app>.onrender.com/ws`.
-3. Everyone opens Summit (from the arcade, or `site/games/summit/index.html`), pastes the
-   **server address** into the field on the menu, and types a name.
-4. One of you presses **Host a run** and reads out the five-character **room code**.
-   The others type it in and press **Join**. Four climbers per room.
-5. Ready up in the hangar. When everyone is ready the plane takes off.
-
-The client remembers your name and the server address. If your connection drops, it reconnects
-with your token and you resume the same climber — the run keeps going while you are away, and
-your teammates see you greyed out until you are back.
-
-> A page served over **https** can only open a **wss://** socket. Over http (localhost, LAN)
-> plain `ws://` is fine. If you deploy the hub to Netlify, use a `wss://` server address.
+`GET /health` returns `{ ok, rooms, players, up }`. Put the address in **Advanced → Dedicated
+server** on the menu. Over `https` the address must be `wss://`. Deploy `server/index.js` to
+Render / Fly / Railway as a single web service if you want it permanent.
 
 ### Controls (built for a MacBook trackpad — no scroll wheel, no right-drag)
 

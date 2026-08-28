@@ -28,7 +28,15 @@ export class MainMenu {
     this.error = h('p', { style: { color: 'var(--bad)' } }, '');
     this.nameInput = h('input', { value: this.profile.name || '', placeholder: 'Your name', maxlength: '16' });
     this.codeInput = h('input', { placeholder: 'Room code', maxlength: '6', style: { textTransform: 'uppercase' } });
-    this.serverInput = h('input', { value: this.profile.server || defaultServer(), placeholder: 'ws://localhost:8787/ws' });
+    this.serverInput = h('input', { value: this.profile.server || '', placeholder: 'wss://your-server/ws — leave empty' });
+
+    this.advanced = h('div', { class: 'hide' },
+      h('div', { class: 'sep' }),
+      h('div', { class: 'eyebrow' }, 'Dedicated server (optional)'),
+      h('p', { style: { marginTop: '6px', fontSize: '12.5px' } },
+        'Leave this empty to host from your own tab. Fill it in only if someone is running ',
+        h('code', { class: 'mono' }, 'npm run server'), '.'),
+      h('div', { class: 'field', style: { marginTop: '8px' } }, this.serverInput));
 
     this.el = h('div', { class: 'screen' }, h('div', { class: 'card', style: { width: 'min(620px, calc(100vw - 44px))' } },
       h('div', { class: 'eyebrow' }, 'Four climbers · one mountain'),
@@ -43,18 +51,17 @@ export class MainMenu {
           h('div', { class: 'field', style: { flex: '1' } }, this.codeInput),
           h('button', { class: 'btn', onclick: () => this.join() }, 'Join')),
         this.error),
+      h('p', { style: { marginTop: '12px', fontSize: '12.5px' } },
+        'Hosting gives you a five-letter code. Send it to your friends — they type it in and press Join. ',
+        'Nothing to install and no server to run: the mountain lives in your tab.'),
       h('div', { class: 'sep' }),
       h('div', { class: 'row' },
         h('button', { class: 'btn btn--ghost', onclick: () => this.h.onShop?.() }, 'Cosmetics'),
         h('button', { class: 'btn btn--ghost', onclick: () => this.h.onSettings?.() }, 'Settings'),
+        h('button', { class: 'btn btn--ghost', onclick: () => this.advanced.classList.toggle('hide') }, 'Advanced'),
         h('span', { style: { flex: '1' } }),
         h('span', { class: 'wallet' }, this.profile.coins + ' coins')),
-      h('div', { class: 'sep' }),
-      h('div', { class: 'eyebrow' }, 'Server'),
-      h('div', { class: 'field', style: { marginTop: '8px' } }, this.serverInput),
-      h('p', { style: { marginTop: '8px', fontSize: '12px' } },
-        'Run ', h('code', { class: 'mono' }, 'npm run server'), ' and share your address with friends. ',
-        'They paste it here, you give them the room code.')));
+      this.advanced));
     root.append(this.el);
   }
 
@@ -62,7 +69,7 @@ export class MainMenu {
     return {
       name: (this.nameInput.value || 'Climber').slice(0, 16),
       code: (this.codeInput.value || '').toUpperCase().trim(),
-      server: (this.serverInput.value || '').trim() || defaultServer(),
+      server: (this.serverInput.value || '').trim(),
     };
   }
   remember() {
@@ -72,10 +79,11 @@ export class MainMenu {
     saveProfile(this.profile);
     return v;
   }
-  host() { const v = this.remember(); this.h.onHost?.(v); }
+  host() { const v = this.remember(); this.setError('Opening a room…'); this.h.onHost?.(v); }
   join() {
     const v = this.remember();
     if (!v.code) { this.setError('Enter the room code your friend sent you.'); return; }
+    this.setError('Looking for that room…');
     this.h.onJoin?.(v);
   }
   setError(msg) { this.error.textContent = msg || ''; }
@@ -84,15 +92,8 @@ export class MainMenu {
   remove() { this.el.remove(); }
 }
 
-export function defaultServer() {
-  const saved = loadProfile().server;
-  if (saved) return saved;
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  if (location.hostname && location.hostname !== 'localhost' && location.port !== '4321') {
-    return `${proto}//${location.hostname}:8787/ws`;
-  }
-  return 'ws://localhost:8787/ws';
-}
+/** Only used when someone deliberately points at a dedicated server. */
+export function defaultServer() { return loadProfile().server || ''; }
 
 export class Settings {
   constructor(root, { input, stage, onClose }) {
