@@ -138,13 +138,14 @@ export class Sky {
     this.fogColor.b = Math.max(0.06, this.fogColor.b);
   }
 
-  /** Keeps the shadow frustum wrapped tightly around the player. */
-  follow(target) {
+  /** Keeps the shadow frustum wrapped tightly around the player.
+   *  `eye` is the camera position — the sky dome rides with it. */
+  follow(target, eye) {
     const d = this.uniforms.uSunDir.value;
     this.sun.position.set(target.x + d.x * 320, target.y + d.y * 320, target.z + d.z * 320);
     this.sun.target.position.copy(target);
     this.sun.target.updateMatrixWorld();
-    this.mesh.position.copy(target);
+    this.mesh.position.copy(eye || target);
   }
 
   get sunDir() { return this.uniforms.uSunDir.value; }

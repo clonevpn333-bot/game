@@ -71,7 +71,7 @@ export class Stage {
     this.time += dt;
     if (dayT !== undefined) this.dayT = dayT;
     this.sky.setTime(this.dayT);
-    this.sky.follow(focus);
+    this.sky.follow(focus, this.camera.getWorldPosition(this._v));
     this.cloudInside = this.clouds.update(dt, focus.y, this.sky);
 
     const biome = BIOMES[biomeIndexAt(focus.y)];
