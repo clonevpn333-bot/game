@@ -109,9 +109,9 @@
     },
     {
       "id": "night-city",
-      "title": "Ghostline",
-      "tagline": "Neon, rain, and a city that owes you nothing.",
-      "description": "An open cyberpunk city: drive it, walk it, shoot your way through it. Traffic, crowds, a day cycle and a story thread to pull on.",
+      "title": "Neon Bay",
+      "tagline": "An open city, a fast car, and no particular plan.",
+      "description": "Drive it, get out and walk it, cause trouble. An open sandbox city with traffic, crowds and a day cycle — built to mess about in.",
       "category": "action",
       "tags": [
         "open world",
@@ -123,7 +123,7 @@
       "entry": "games/night-city/index.html",
       "added": "2026-08-28",
       "duration": "Endless",
-      "controls": "WASD · Mouse look · Shift sprint · F vehicle · Click to fire",
+      "controls": "WASD move · Shift sprint · Mouse look · Click shoot · F enter/exit car",
       "art": {
         "motif": "metro",
         "hue": 286,

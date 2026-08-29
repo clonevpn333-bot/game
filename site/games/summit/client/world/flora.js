@@ -111,15 +111,66 @@ export function boulder(radius, seed, detail = 2) {
   return geo;
 }
 
+/** A rounded low-poly blob — the cartoon canopy building block. */
+function blob(r, seed, squash = 1, detail = 1) {
+  const g = new THREE.IcosahedronGeometry(r, detail);
+  const n = new Noise(seed);
+  const pos = g.attributes.position;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    v.multiplyScalar(1 + n.fbm(v.x * 0.9 + seed, v.z * 0.9 - v.y * 0.6, 2) * 0.22);
+    v.y *= squash;
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+/** Stacks blobs into a canopy. */
+function canopy(spec, seed) {
+  const r = rng(seed);
+  const parts = [];
+  for (const [x, y, z, rad, sq] of spec) {
+    const b = blob(rad * (0.88 + r() * 0.26), seed + parts.length * 13, sq ?? 0.82, 1);
+    b.translate(x, y, z);
+    parts.push(b);
+  }
+  return mergeGeometries(parts);
+}
+
+/** Solid tapered frond for palms — a wedge, not a picture of a leaf. */
+function frond(len, wide, seed) {
+  const g = new THREE.ConeGeometry(wide, len, 4, 3);
+  const pos = g.attributes.position;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    const t = (v.y + len / 2) / len;
+    v.z *= 0.28;
+    v.y -= Math.pow(t, 2) * len * 0.30;      // droop
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  g.computeVertexNormals();
+  g.rotateX(Math.PI / 2);
+  g.translate(0, 0, len * 0.42);
+  void seed;
+  return g;
+}
+
 let LIB = null;
 /** All prop meshes, keyed by name: { geo, mat, shadow } */
 export function flora() {
   if (LIB) return LIB;
   const M = materials();
-  const leafJungle = foliageMaterial(101, 0.30);
-  const leafPalm = foliageMaterial(202, 0.24);
-  const leafPine = foliageMaterial(303, 0.38);
-  const leafDry = foliageMaterial(404, 0.11);
+  // flat-shaded solids: reads as cartoon and costs less than alpha cards
+  const leaf = (hex) => heightFog(new THREE.MeshStandardMaterial({
+    color: hex, roughness: 0.85, metalness: 0, flatShading: true,
+  }), null, 'leaf');
+  const leafJungle = leaf(0x4fc45a);
+  const leafPalm = leaf(0x63d06b);
+  const leafPine = leaf(0x2f9d5a);
+  const leafDry = leaf(0xb08a4a);
   const grassLow = grassMaterial(505, 0.24);
   const grassAlp = grassMaterial(606, 0.16);
 
@@ -127,40 +178,59 @@ export function flora() {
     palm: {
       parts: [
         { geo: trunk(8.2, 0.24, 0.14, 0.16, 0.5, 11), mat: M.bark },
-        { geo: cards(13, { w: 5.6, h: 5.4, y: 7.9, pitch: -0.75, spread: 0.3, yJitter: 0.35 }, 12), mat: leafPalm },
+        { geo: (() => {
+          const parts = [];
+          for (let i = 0; i < 9; i++) {
+            const f = frond(4.4, 0.85, 12 + i);
+            f.rotateX(-0.55 - (i % 3) * 0.18);
+            f.rotateY((i / 9) * Math.PI * 2);
+            f.translate(0, 8.0, 0);
+            parts.push(f);
+          }
+          parts.push(blob(0.55, 99, 0.8, 1).translate(0, 8.05, 0));
+          return mergeGeometries(parts);
+        })(), mat: leafPalm },
       ],
       radius: 3.2,
     },
     jungleTree: {
       parts: [
         { geo: trunk(13.5, 0.42, 0.2, 0.06, 0.3, 21), mat: M.bark },
-        { geo: cards(18, { w: 8.6, h: 6.6, y: 10.0, pitch: -0.30, spread: 2.1, yJitter: 2.2 }, 22), mat: leafJungle },
+        { geo: canopy([[0, 10.6, 0, 3.4], [-2.1, 9.6, 1.0, 2.5], [2.0, 9.9, -1.2, 2.4], [0.4, 12.0, 0.3, 2.0]], 22), mat: leafJungle },
       ],
       radius: 4.6,
     },
     smallTree: {
       parts: [
         { geo: trunk(6.4, 0.2, 0.1, 0.2, 0.6, 31), mat: M.bark },
-        { geo: cards(11, { w: 4.6, h: 3.8, y: 4.8, pitch: -0.35, spread: 1.0, yJitter: 1.1 }, 32), mat: leafJungle },
+        { geo: canopy([[0, 5.4, 0, 2.0], [-1.2, 4.8, 0.6, 1.5], [1.1, 5.0, -0.5, 1.4]], 32), mat: leafJungle },
       ],
       radius: 2.4,
     },
     pine: {
       parts: [
         { geo: trunk(11.0, 0.30, 0.08, 0.03, 0.12, 41), mat: M.bark },
-        { geo: cards(17, { w: 4.4, h: 3.8, y: 4.2, pitch: -0.12, spread: 1.4, yJitter: 3.6 }, 42), mat: leafPine },
+        { geo: (() => {
+          const parts = [];
+          for (let i = 0; i < 4; i++) {
+            const c = new THREE.ConeGeometry(2.7 - i * 0.52, 3.4, 7);
+            c.translate(0, 4.4 + i * 1.9, 0);
+            parts.push(c);
+          }
+          return mergeGeometries(parts);
+        })(), mat: leafPine },
       ],
       radius: 3.0,
     },
     deadTree: {
       parts: [
         { geo: trunk(7.5, 0.26, 0.05, 0.34, 1.0, 51), mat: M.bark },
-        { geo: cards(4, { w: 1.6, h: 1.4, y: 5.2, pitch: 0.2, spread: 0.6, yJitter: 1.4 }, 52), mat: leafDry },
+        { geo: canopy([[0.5, 5.6, 0.2, 0.5], [-0.6, 6.2, -0.3, 0.4]], 52), mat: leafDry },
       ],
       radius: 2.0,
     },
     fern: {
-      parts: [{ geo: cards(6, { w: 2.1, h: 1.8, y: 0.15, pitch: -0.7, spread: 0.18, yJitter: 0.12 }, 61), mat: leafJungle }],
+      parts: [{ geo: canopy([[0, 0.55, 0, 0.75, 0.5], [0.4, 0.4, 0.3, 0.5, 0.5], [-0.4, 0.45, -0.2, 0.5, 0.5]], 61), mat: leafJungle }],
       radius: 1.1, noShadow: true,
     },
     grass: {

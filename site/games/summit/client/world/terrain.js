@@ -7,7 +7,7 @@ import { BIOMES, WORLD } from '../../shared/constants.js';
 import { clamp, smoothstep, lerp } from '../../shared/rng.js';
 
 const CS = 160;                       // chunk size (m)
-const RES = [56, 28, 14, 7];          // segments per chunk by LOD
+const RES = [32, 20, 12, 6];          // segments per chunk by LOD — chunky on purpose
 const RING = [1, 2, 4, 7];            // chunk radius per LOD
 const SKIRT = 9;
 

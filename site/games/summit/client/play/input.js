@@ -16,6 +16,7 @@ export class Input {
     this.pressed = new Set();
     this.mouse = { dx: 0, dy: 0, left: false, leftPressed: false };
     this.locked = false;
+    this.cursor = { x: 0, y: 0, seen: false };
     this.sensitivity = Number(localStorage.getItem('summit.sens') || 1);
     this.invertY = localStorage.getItem('summit.invertY') === '1';
     this.enabled = true;
@@ -36,14 +37,20 @@ export class Input {
 
     canvas.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
-      if (!this.locked) { this.requestLock(); return; }
+      // still try for pointer lock, but never make gripping wait on it
+      if (!this.locked) this.requestLock();
       this.mouse.left = true; this.mouse.leftPressed = true;
     });
     addEventListener('mouseup', (e) => { if (e.button === 0) this.mouse.left = false; });
     addEventListener('mousemove', (e) => {
-      if (!this.locked || !this.enabled) return;
-      this.mouse.dx += e.movementX * 0.0022 * this.sensitivity;
-      this.mouse.dy += e.movementY * 0.0022 * this.sensitivity * (this.invertY ? -1 : 1);
+      if (!this.enabled) return;
+      if (this.locked) {
+        this.mouse.dx += e.movementX * 0.0022 * this.sensitivity;
+        this.mouse.dy += e.movementY * 0.0022 * this.sensitivity * (this.invertY ? -1 : 1);
+      } else {
+        // pointer lock is refused in some embeds; steer from the cursor instead
+        this.cursor.x = e.clientX; this.cursor.y = e.clientY; this.cursor.seen = true;
+      }
     });
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === canvas;
@@ -70,7 +77,15 @@ export class Input {
     return { x, y };
   }
 
-  takeLook() {
+  takeLook(dt = 1 / 60) {
+    if (!this.locked && this.cursor.seen) {
+      // dead zone in the middle, then turn faster the further out the cursor is
+      const cx = innerWidth / 2, cy = innerHeight / 2;
+      const nx = (this.cursor.x - cx) / cx, ny = (this.cursor.y - cy) / cy;
+      const dead = (v) => (Math.abs(v) < 0.16 ? 0 : (v - Math.sign(v) * 0.16) / 0.84);
+      this.mouse.dx += dead(nx) * 2.1 * dt * this.sensitivity;
+      this.mouse.dy += dead(ny) * 1.5 * dt * this.sensitivity * (this.invertY ? -1 : 1);
+    }
     const d = { dx: this.mouse.dx, dy: this.mouse.dy };
     this.mouse.dx = 0; this.mouse.dy = 0;
     return d;

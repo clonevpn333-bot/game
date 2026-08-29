@@ -322,8 +322,7 @@ class App {
 
   uiBlocking() {
     return !!(this.panels.pause || this.panels.settings || this.panels.shop || this.panels.results ||
-      this.social.chatting || this.social.wheelOpen || (this.panels.lobby && !this.panels.lobby.el.classList.contains('hide')) ||
-      !this.input.locked);
+      this.social.chatting || this.social.wheelOpen || (this.panels.lobby && !this.panels.lobby.el.classList.contains('hide')));
   }
 
   loop() {

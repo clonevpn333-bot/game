@@ -90,8 +90,8 @@ export function terrainMaterial() {
   const rock = materialMaps('rock', 11, null, 1);
   const snow = materialMaps('snow', 23, null, 1);
   const mat = new THREE.MeshStandardMaterial({
-    map: rock.map, normalMap: rock.normalMap, roughness: 0.97, metalness: 0.0,
-    vertexColors: true, normalScale: new THREE.Vector2(0.9, 0.9),
+    map: rock.map, normalMap: rock.normalMap, roughness: 0.95, metalness: 0.0,
+    vertexColors: true, normalScale: new THREE.Vector2(0.22, 0.22), flatShading: true,
   });
   mat.userData.snowMap = { value: snow.map };
   mat.userData.snowNormal = { value: snow.normalMap };

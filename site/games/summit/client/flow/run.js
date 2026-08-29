@@ -66,7 +66,7 @@ export class RunScene {
     const phase = net.phase;
 
     /* ---- local intent ---- */
-    const look = app.input.takeLook();
+    const look = app.input.takeLook(dt);
     if (!app.uiBlocking()) app.cam.addLook(look.dx, look.dy);
     const mv = app.uiBlocking() ? { x: 0, y: 0 } : app.input.moveVector();
     const intent = {
@@ -122,10 +122,12 @@ export class RunScene {
     /* ---- camera ---- */
     const speed = Math.hypot(pred.vx, pred.vz);
     app.cam.update(dt, mePos, { speed: pred.chute || !pred.onGround ? speed * 0.5 : speed, dist: pred.climbing ? 2.7 : 3.4 });
-    if (pred.impact > 6) {
-      app.cam.kick(Math.min(1.1, pred.impact * 0.055));
+    // count real air time, so walking over bumps never reads as a fall
+    this.airT = pred.onGround ? 0 : (this.airT || 0) + dt;
+    if (pred.impact > 9) {
+      app.cam.kick(Math.min(1.1, pred.impact * 0.045));
       app.audio.land(pred.impact);
-      if (pred.impact > 13 && me) me.startRagdoll(new THREE.Vector3(pred.vx, -pred.impact, pred.vz));
+      if (pred.impact > 19 && this.airT > 0.75 && me) me.startRagdoll(new THREE.Vector3(pred.vx, -pred.impact, pred.vz));
     }
 
     /* ---- world streaming ---- */

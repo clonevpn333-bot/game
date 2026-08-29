@@ -27,7 +27,7 @@ export class LobbyScene {
   update(dt) {
     const app = this.app;
     const net = app.net;
-    const look = app.input.takeLook();
+    const look = app.input.takeLook(dt);
     if (!app.uiBlocking()) app.cam.addLook(look.dx, look.dy);
     const mv = app.uiBlocking() ? { x: 0, y: 0 } : app.input.moveVector();
     const pred = net.tick(dt, {
