@@ -1,0 +1,256 @@
+/* Geometry for everything that grows or sits on the mountain. Built once at
+ * load, instanced everywhere. No models, no imports — just maths and materials. */
+import * as THREE from '../../../../vendor/three/three.module.js';
+import { materials, foliageMaterial, grassMaterial, heightFog } from '../gfx/materials.js';
+import { materialMaps } from '../gfx/textures.js';
+import { rng, Noise } from '../../shared/rng.js';
+
+/** Lathe-style tapered trunk that leans and bends. */
+function trunk(height, r0, r1, lean, bend, seed, segs = 7, radial = 7) {
+  const r = rng(seed);
+  const pts = [];
+  for (let i = 0; i <= segs; i++) {
+    const t = i / segs;
+    pts.push(new THREE.Vector3(
+      Math.sin(t * bend + lean) * height * 0.16 * t + (r() - 0.5) * 0.06,
+      t * height,
+      Math.cos(t * bend * 0.6) * height * 0.06 * t * t,
+    ));
+  }
+  const curve = new THREE.CatmullRomCurve3(pts);
+  const geo = new THREE.TubeGeometry(curve, segs * 2, r0, radial, false);
+  // taper: squeeze the radius toward the top
+  const pos = geo.attributes.position;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    const t = THREE.MathUtils.clamp(v.y / height, 0, 1);
+    const c = curve.getPoint(t);
+    const k = THREE.MathUtils.lerp(1, r1 / r0, Math.pow(t, 0.8));
+    v.x = c.x + (v.x - c.x) * k;
+    v.z = c.z + (v.z - c.z) * k;
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function cards(count, spec, seed) {
+  const r = rng(seed);
+  const geos = [];
+  for (let i = 0; i < count; i++) {
+    const g = new THREE.PlaneGeometry(spec.w * (0.7 + r() * 0.6), spec.h * (0.7 + r() * 0.6), 1, spec.segs || 2);
+    g.translate(0, spec.h * 0.42, 0);
+    const m = new THREE.Matrix4();
+    const e = new THREE.Euler(
+      (spec.pitch ?? -0.5) + (r() - 0.5) * 0.7,
+      (i / count) * Math.PI * 2 + r() * 0.5,
+      (r() - 0.5) * 0.5,
+    );
+    m.makeRotationFromEuler(e);
+    m.setPosition(
+      Math.cos((i / count) * Math.PI * 2) * (spec.spread ?? 0),
+      (spec.y ?? 0) + (r() - 0.5) * (spec.yJitter ?? 0),
+      Math.sin((i / count) * Math.PI * 2) * (spec.spread ?? 0),
+    );
+    g.applyMatrix4(m);
+    // canopy lighting: bend the card normals toward the sky so foliage reads soft
+    const nAttr = g.attributes.normal, pAttr = g.attributes.position;
+    const nv = new THREE.Vector3(), pv = new THREE.Vector3();
+    for (let k = 0; k < nAttr.count; k++) {
+      nv.fromBufferAttribute(nAttr, k);
+      pv.fromBufferAttribute(pAttr, k);
+      nv.lerp(new THREE.Vector3(pv.x * 0.25, 1, pv.z * 0.25).normalize(), 0.72).normalize();
+      nAttr.setXYZ(k, nv.x, nv.y, nv.z);
+    }
+    geos.push(g);
+  }
+  return mergeGeometries(geos);
+}
+
+/** Minimal geometry merge (position/normal/uv only) so we avoid an extra import. */
+export function mergeGeometries(list) {
+  let vCount = 0, iCount = 0;
+  for (const g of list) { vCount += g.attributes.position.count; iCount += g.index ? g.index.count : 0; }
+  const pos = new Float32Array(vCount * 3), nor = new Float32Array(vCount * 3), uv = new Float32Array(vCount * 2);
+  const idx = new Uint32Array(iCount);
+  let vo = 0, io = 0;
+  for (const g of list) {
+    const p = g.attributes.position, n = g.attributes.normal, t = g.attributes.uv;
+    pos.set(p.array, vo * 3);
+    if (n) nor.set(n.array, vo * 3);
+    if (t) uv.set(t.array, vo * 2);
+    if (g.index) for (let i = 0; i < g.index.count; i++) idx[io + i] = g.index.array[i] + vo;
+    vo += p.count; io += g.index ? g.index.count : 0;
+    g.dispose();
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  out.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  out.setIndex(new THREE.BufferAttribute(idx, 1));
+  out.computeBoundingSphere();
+  return out;
+}
+
+/** Irregular boulder: subdivided icosahedron pushed around by noise. */
+export function boulder(radius, seed, detail = 2) {
+  const geo = new THREE.IcosahedronGeometry(radius, detail);
+  const n = new Noise(seed);
+  const pos = geo.attributes.position;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    const d = n.fbm(v.x * 0.6 + seed, v.z * 0.6 - v.y * 0.4, 4);
+    v.multiplyScalar(1 + d * 0.36);
+    v.y *= 0.72 + Math.abs(d) * 0.3;
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  geo.computeVertexNormals();
+  geo.translate(0, radius * 0.38, 0);
+  return geo;
+}
+
+/** A rounded low-poly blob — the cartoon canopy building block. */
+function blob(r, seed, squash = 1, detail = 1) {
+  const g = new THREE.IcosahedronGeometry(r, detail);
+  const n = new Noise(seed);
+  const pos = g.attributes.position;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    v.multiplyScalar(1 + n.fbm(v.x * 0.9 + seed, v.z * 0.9 - v.y * 0.6, 2) * 0.22);
+    v.y *= squash;
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+/** Stacks blobs into a canopy. */
+function canopy(spec, seed) {
+  const r = rng(seed);
+  const parts = [];
+  for (const [x, y, z, rad, sq] of spec) {
+    const b = blob(rad * (0.88 + r() * 0.26), seed + parts.length * 13, sq ?? 0.82, 1);
+    b.translate(x, y, z);
+    parts.push(b);
+  }
+  return mergeGeometries(parts);
+}
+
+/** Solid tapered frond for palms — a wedge, not a picture of a leaf. */
+function frond(len, wide, seed) {
+  const g = new THREE.ConeGeometry(wide, len, 4, 3);
+  const pos = g.attributes.position;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i);
+    const t = (v.y + len / 2) / len;
+    v.z *= 0.28;
+    v.y -= Math.pow(t, 2) * len * 0.30;      // droop
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  g.computeVertexNormals();
+  g.rotateX(Math.PI / 2);
+  g.translate(0, 0, len * 0.42);
+  void seed;
+  return g;
+}
+
+let LIB = null;
+/** All prop meshes, keyed by name: { geo, mat, shadow } */
+export function flora() {
+  if (LIB) return LIB;
+  const M = materials();
+  // flat-shaded solids: reads as cartoon and costs less than alpha cards
+  const leaf = (hex) => heightFog(new THREE.MeshStandardMaterial({
+    color: hex, roughness: 0.85, metalness: 0, flatShading: true,
+  }), null, 'leaf');
+  const leafJungle = leaf(0x4fc45a);
+  const leafPalm = leaf(0x63d06b);
+  const leafPine = leaf(0x2f9d5a);
+  const leafDry = leaf(0xb08a4a);
+  const grassLow = grassMaterial(505, 0.24);
+  const grassAlp = grassMaterial(606, 0.16);
+
+  LIB = {
+    palm: {
+      parts: [
+        { geo: trunk(8.2, 0.24, 0.14, 0.16, 0.5, 11), mat: M.bark },
+        { geo: (() => {
+          const parts = [];
+          for (let i = 0; i < 9; i++) {
+            const f = frond(4.4, 0.85, 12 + i);
+            f.rotateX(-0.55 - (i % 3) * 0.18);
+            f.rotateY((i / 9) * Math.PI * 2);
+            f.translate(0, 8.0, 0);
+            parts.push(f);
+          }
+          parts.push(blob(0.55, 99, 0.8, 1).translate(0, 8.05, 0));
+          return mergeGeometries(parts);
+        })(), mat: leafPalm },
+      ],
+      radius: 3.2,
+    },
+    jungleTree: {
+      parts: [
+        { geo: trunk(13.5, 0.42, 0.2, 0.06, 0.3, 21), mat: M.bark },
+        { geo: canopy([[0, 10.6, 0, 3.4], [-2.1, 9.6, 1.0, 2.5], [2.0, 9.9, -1.2, 2.4], [0.4, 12.0, 0.3, 2.0]], 22), mat: leafJungle },
+      ],
+      radius: 4.6,
+    },
+    smallTree: {
+      parts: [
+        { geo: trunk(6.4, 0.2, 0.1, 0.2, 0.6, 31), mat: M.bark },
+        { geo: canopy([[0, 5.4, 0, 2.0], [-1.2, 4.8, 0.6, 1.5], [1.1, 5.0, -0.5, 1.4]], 32), mat: leafJungle },
+      ],
+      radius: 2.4,
+    },
+    pine: {
+      parts: [
+        { geo: trunk(11.0, 0.30, 0.08, 0.03, 0.12, 41), mat: M.bark },
+        { geo: (() => {
+          const parts = [];
+          for (let i = 0; i < 4; i++) {
+            const c = new THREE.ConeGeometry(2.7 - i * 0.52, 3.4, 7);
+            c.translate(0, 4.4 + i * 1.9, 0);
+            parts.push(c);
+          }
+          return mergeGeometries(parts);
+        })(), mat: leafPine },
+      ],
+      radius: 3.0,
+    },
+    deadTree: {
+      parts: [
+        { geo: trunk(7.5, 0.26, 0.05, 0.34, 1.0, 51), mat: M.bark },
+        { geo: canopy([[0.5, 5.6, 0.2, 0.5], [-0.6, 6.2, -0.3, 0.4]], 52), mat: leafDry },
+      ],
+      radius: 2.0,
+    },
+    fern: {
+      parts: [{ geo: canopy([[0, 0.55, 0, 0.75, 0.5], [0.4, 0.4, 0.3, 0.5, 0.5], [-0.4, 0.45, -0.2, 0.5, 0.5]], 61), mat: leafJungle }],
+      radius: 1.1, noShadow: true,
+    },
+    grass: {
+      parts: [{ geo: cards(4, { w: 1.5, h: 1.1, y: 0.05, pitch: -0.12, spread: 0.1 }, 71), mat: grassLow }],
+      radius: 0.8, noShadow: true,
+    },
+    tussock: {
+      parts: [{ geo: cards(4, { w: 1.2, h: 0.8, y: 0.04, pitch: -0.1, spread: 0.09 }, 81), mat: grassAlp }],
+      radius: 0.7, noShadow: true,
+    },
+    boulderL: { parts: [{ geo: boulder(2.4, 91, 2), mat: M.rockProp }], radius: 2.4 },
+    boulderM: { parts: [{ geo: boulder(1.2, 92, 2), mat: M.rockProp }], radius: 1.2 },
+    boulderS: { parts: [{ geo: boulder(0.55, 93, 1), mat: M.rockProp }], radius: 0.6 },
+    obsidian: { parts: [{ geo: boulder(1.6, 94, 1), mat: obsidianMat() }], radius: 1.6 },
+    driftwood: { parts: [{ geo: trunk(3.4, 0.22, 0.12, 1.45, 0.5, 95, 5, 6), mat: M.bark }], radius: 1.8 },
+  };
+  return LIB;
+}
+
+function obsidianMat() {
+  const maps = materialMaps('ash', 77, null, 2);
+  return heightFog(new THREE.MeshStandardMaterial({ ...maps, roughness: 0.28, metalness: 0.12, color: 0x5a4a48 }), null, 'std');
+}

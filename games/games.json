@@ -1,0 +1,239 @@
+{
+  "version": 3,
+  "updated": "2026-08-28",
+  "categories": [
+    {
+      "id": "all",
+      "label": "All games"
+    },
+    {
+      "id": "action",
+      "label": "Action"
+    },
+    {
+      "id": "coop",
+      "label": "Co-op"
+    },
+    {
+      "id": "arcade",
+      "label": "Arcade"
+    },
+    {
+      "id": "puzzle",
+      "label": "Puzzle"
+    },
+    {
+      "id": "sim",
+      "label": "Simulation"
+    }
+  ],
+  "games": [
+    {
+      "id": "summit",
+      "title": "Summit",
+      "tagline": "Four friends. One mountain. No way down but up.",
+      "description": "A four-player co-op climb from a jungle shoreline to a volcanic caldera. Stamina is everything: every hold you take drains it, every ledge you haul a friend over costs you both. Weather turns, hunger bites, and the route is generated fresh from a seed every run. Rope up, ration the food, and get everyone to the extraction helicopter at the peak.",
+      "category": "coop",
+      "tags": [
+        "4 players",
+        "online co-op",
+        "survival",
+        "3D"
+      ],
+      "players": "1–4 online",
+      "entry": "games/summit/index.html",
+      "featured": true,
+      "spotlight": true,
+      "added": "2026-08-27",
+      "duration": "35–60 min",
+      "controls": "WASD · Mouse look · Space · Shift · Trackpad friendly",
+      "art": {
+        "motif": "summit",
+        "hue": 214,
+        "seed": 91,
+        "sat": 44,
+        "dark": 15,
+        "deep": 5
+      }
+    },
+    {
+      "id": "voxel-sandbox",
+      "title": "Voxel",
+      "tagline": "Break it, stack it, build the thing in your head.",
+      "description": "An open voxel sandbox: procedurally generated biomes, caves and structures, mineable blocks, crafting and mobs. Build until the sun goes down, then keep building.",
+      "category": "sim",
+      "tags": [
+        "sandbox",
+        "building",
+        "survival",
+        "3D"
+      ],
+      "players": "1 player",
+      "entry": "games/voxel-sandbox/index.html",
+      "added": "2026-08-28",
+      "duration": "Endless",
+      "controls": "WASD · Mouse look · Left click break · Right click place · E inventory",
+      "art": {
+        "motif": "prism",
+        "hue": 112,
+        "seed": 29,
+        "sat": 42,
+        "dark": 13,
+        "deep": 5
+      }
+    },
+    {
+      "id": "bonecrown",
+      "title": "Bonecrown",
+      "tagline": "Take the crown. Keep it if you can.",
+      "description": "A dark action crawl through bone halls. Fight, loot, and push deeper — the crown makes you stronger and everything in the dark angrier.",
+      "category": "action",
+      "tags": [
+        "action",
+        "roguelike",
+        "3D"
+      ],
+      "players": "1 player",
+      "entry": "games/bonecrown/index.html",
+      "added": "2026-08-28",
+      "duration": "15–40 min",
+      "controls": "WASD · Mouse to aim · Click to attack",
+      "art": {
+        "motif": "vector",
+        "hue": 330,
+        "seed": 77,
+        "sat": 54,
+        "dark": 10,
+        "deep": 4
+      }
+    },
+    {
+      "id": "night-city",
+      "title": "Neon Bay",
+      "tagline": "An open city, a fast car, and no particular plan.",
+      "description": "Drive it, get out and walk it, cause trouble. An open sandbox city with traffic, crowds and a day cycle — built to mess about in.",
+      "category": "action",
+      "tags": [
+        "open world",
+        "driving",
+        "sandbox",
+        "3D"
+      ],
+      "players": "1 player",
+      "entry": "games/night-city/index.html",
+      "added": "2026-08-28",
+      "duration": "Endless",
+      "controls": "WASD move · Shift sprint · Mouse look · Click shoot · F enter/exit car",
+      "art": {
+        "motif": "metro",
+        "hue": 286,
+        "seed": 13,
+        "sat": 58,
+        "dark": 11,
+        "deep": 4
+      }
+    },
+    {
+      "id": "neon-drift",
+      "title": "Neon Drift",
+      "tagline": "Outrun the horizon at 400 km/h.",
+      "description": "A synth-lit endless descent. Weave the barriers, bank the corners, and chain near-misses to keep your boost meter alive. Speed climbs forever; the track never repeats.",
+      "category": "arcade",
+      "tags": [
+        "endless",
+        "reflex",
+        "score attack"
+      ],
+      "players": "1 player",
+      "entry": "games/neon-drift/index.html",
+      "featured": true,
+      "added": "2026-08-20",
+      "duration": "3–8 min",
+      "controls": "A/D or ←/→ · Space to boost",
+      "art": {
+        "motif": "neon",
+        "hue": 292,
+        "seed": 17,
+        "sat": 62,
+        "dark": 12,
+        "deep": 4
+      }
+    },
+    {
+      "id": "vector-siege",
+      "title": "Vector Siege",
+      "tagline": "Hold the line against the geometry.",
+      "description": "Twin-stick wave defence rendered in pure vectors. Waves escalate, weapons stack, and the arena tightens. Survive twenty waves without losing the core.",
+      "category": "action",
+      "tags": [
+        "twin-stick",
+        "waves",
+        "bullet hell"
+      ],
+      "players": "1 player",
+      "entry": "games/vector-siege/index.html",
+      "featured": true,
+      "added": "2026-08-14",
+      "duration": "8–15 min",
+      "controls": "WASD to move · Mouse to aim · Click to fire",
+      "art": {
+        "motif": "vector",
+        "hue": 186,
+        "seed": 43,
+        "sat": 50,
+        "dark": 11,
+        "deep": 4
+      }
+    },
+    {
+      "id": "lumen",
+      "title": "Lumen",
+      "tagline": "Stack the light. Clear the dark.",
+      "description": "A falling-block puzzle about colour and patience. Match three shades to fuse them into light, chain fusions for cascades, and hold the board back as the drop speed tightens.",
+      "category": "puzzle",
+      "tags": [
+        "falling blocks",
+        "chain",
+        "endless"
+      ],
+      "players": "1 player",
+      "entry": "games/lumen/index.html",
+      "added": "2026-08-09",
+      "duration": "5–20 min",
+      "controls": "←/→ to move · ↓ to drop · Z/X to rotate",
+      "art": {
+        "motif": "prism",
+        "hue": 258,
+        "seed": 5,
+        "sat": 48,
+        "dark": 13,
+        "deep": 5
+      }
+    },
+    {
+      "id": "schedule-one",
+      "title": "Schedule I",
+      "tagline": "Build the operation. Don't get caught.",
+      "description": "A top-down business sim of routes, risk and reputation. Manage supply, keep the phone quiet, expand the territory, and read the heat before it reads you.",
+      "category": "sim",
+      "tags": [
+        "management",
+        "top-down",
+        "risk"
+      ],
+      "players": "1 player",
+      "entry": "games/schedule-one/index.html",
+      "added": "2026-07-30",
+      "duration": "20–45 min",
+      "controls": "WASD to move · E to interact · Tab for phone",
+      "art": {
+        "motif": "metro",
+        "hue": 156,
+        "seed": 61,
+        "sat": 38,
+        "dark": 12,
+        "deep": 4
+      }
+    }
+  ]
+}
