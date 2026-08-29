@@ -1,4 +1,8 @@
-name: Deploy Nova Arcade to GitHub Pages
+name: Publish Nova Arcade
+
+# The Pages API refuses to let a workflow token create the site
+# ("Resource not accessible by integration"), but pushing to a branch named
+# gh-pages makes GitHub build and publish it. So that is what this does.
 
 on:
   push:
@@ -6,35 +10,31 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
+  group: publish
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  publish:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
+
       - name: Build the single-file version
         run: |
-          npm ci --omit=optional || npm install
+          npm install --no-audit --no-fund
           node tools/bundle.js
           cp dist/nova-arcade.html site/nova-arcade.html
           touch site/.nojekyll
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-      - id: deploy
-        uses: actions/deploy-pages@v4
+
+      - name: Publish site/ to gh-pages
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f site
+          git commit -m "build $GITHUB_SHA" || echo "nothing new to commit"
+          git push -f origin "$(git subtree split --prefix=site)":refs/heads/gh-pages
