@@ -1,0 +1,8 @@
+{
+  "name": "nova-arcade-play",
+  "version": "1.0.0",
+  "description": "Nova Arcade — a browser game hub with eight games including Summit, a co-op mountain climb.",
+  "files": ["index.html"],
+  "license": "MIT",
+  "keywords": ["game", "arcade", "browser"]
+}
