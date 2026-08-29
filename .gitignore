@@ -3,3 +3,7 @@ node_modules/
 .DS_Store
 *.log
 .netlify/
+
+# never commit a publish token
+dist/npm/.npmrc
+.npmrc
