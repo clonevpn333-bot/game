@@ -128,9 +128,13 @@ export class Room {
       sx: b.x * 1.38, sz: b.z * 1.38, ex: b.x * 0.588, ez: b.z * 0.588,
       dur: 30,
     };
-    for (const p of this.players.values()) {
-      p.inPlane = true; p.boarded = false;
-      p.move = Object.assign(newMoveState(this.plane.x, this.plane.y, this.plane.z), { yaw: this.plane.yaw });
+    // The run begins on the sand. No flight, no jump — you land and you climb.
+    const b2 = this.world.beach;
+    for (const [i, p] of [...this.players.values()].entries()) {
+      p.inPlane = false; p.boarded = false;
+      const a = (i / 4) * Math.PI * 2;
+      const sx = b2.x + Math.cos(a) * 3.5, sz = b2.z + Math.sin(a) * 3.5;
+      p.move = Object.assign(newMoveState(sx, this.world.height(sx, sz), sz), { yaw: Math.atan2(sx, sz) });
       p.vitals = newVitals();
       p.inv = [{ id: 'bandage', n: 2 }, { id: 'berry', n: 2 }];
       p.stats = { falls: 0, deaths: 0, revives: 0, boosts: 0, assists: 0, items: 0, carried: 0, peak: 0 };
@@ -141,7 +145,7 @@ export class Room {
     this.camps = this.world.campfires.map(() => false);
     this.itemsDirty = true;
     this.peak = 0; this.startedAt = Date.now(); this.heli = null; this.results = null;
-    this.setPhase(PHASE.FLIGHT);
+    this.setPhase(PHASE.CLIMB);
   }
 
   updatePhase(dt) {

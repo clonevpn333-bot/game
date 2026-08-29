@@ -195,10 +195,12 @@ class App {
   onPhase(p) {
     const phase = p.phase;
     if (p.seed != null) this.ensureWorld(p.seed);
-    if (phase === PHASE.FLIGHT) {
-      this.runStart = Date.now();
-      this.panels.lobby?.hide();
-      this.startRun();
+    if (phase === PHASE.FLIGHT || phase === PHASE.CLIMB) {
+      if (this.mode !== 'run') {
+        this.runStart = Date.now();
+        this.panels.lobby?.hide();
+        this.startRun();
+      }
     }
     if (phase === PHASE.LOBBY) {
       this.mode = 'lobby';
@@ -210,7 +212,7 @@ class App {
       this.panels.lobby.readyBtn.textContent = 'Ready up';
       this.panels.lobby.readyBtn.className = 'btn btn--primary';
     }
-    if (phase === PHASE.CLIMB) this.hud.showBanner('The beach', 'Start climbing');
+    if (phase === PHASE.CLIMB) this.hud.showBanner('The beach', 'Get to the top');
     if (phase === PHASE.EXTRACT) { this.hud.showBanner('Helicopter inbound', 'Get to the summit'); this.audio.heli(); }
   }
 

@@ -27,6 +27,16 @@ async function inlineGame(dir, file = 'index.html') {
     const css = await read(path.posix.join(base, m[1])).catch(() => '');
     html = html.replace(m[0], `<style>${css}</style>`);
   }
+  // an inline ES module cannot resolve relative imports once the game is inlined,
+  // so bundle it against its own folder first
+  for (const m of [...html.matchAll(/<script type="module">([\s\S]*?)<\/script>/g)]) {
+    const r = await build({
+      stdin: { contents: m[1], resolveDir: path.join(SITE, base), loader: 'js' },
+      bundle: true, format: 'iife', write: false, minify: true,
+      target: 'es2020', legalComments: 'none', logLevel: 'error',
+    });
+    html = html.replace(m[0], `<script>${r.outputFiles[0].text}</script>`);
+  }
   for (const m of [...html.matchAll(/<script[^>]*src="([^"]+)"[^>]*><\/script>/g)]) {
     const src = m[1];
     if (/^https?:/.test(src)) continue;
