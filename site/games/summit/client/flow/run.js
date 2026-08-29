@@ -71,12 +71,12 @@ export class RunScene {
     const mv = app.uiBlocking() ? { x: 0, y: 0 } : app.input.moveVector();
     const intent = {
       mv, yaw: app.cam.yaw, pitch: app.cam.pitch,
-      jump: !app.uiBlocking() && app.input.down('jump'),
+      jump: !app.uiBlocking() && app.input.downOrTapped('jump'),
       sprint: !app.uiBlocking() && app.input.down('sprint'),
-      grab: !app.uiBlocking() && app.input.mouse.left,
+      grab: !app.uiBlocking() && app.input.gripping(),
       use: false,
     };
-    const pred = net.tick(dt, intent);
+    const pred = net.advance(app.rawDt ?? dt, intent);
 
     /* ---- the local climber ---- */
     const meState = net.meState();

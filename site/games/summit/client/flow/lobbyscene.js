@@ -30,9 +30,9 @@ export class LobbyScene {
     const look = app.input.takeLook(dt);
     if (!app.uiBlocking()) app.cam.addLook(look.dx, look.dy);
     const mv = app.uiBlocking() ? { x: 0, y: 0 } : app.input.moveVector();
-    const pred = net.tick(dt, {
+    const pred = net.advance(app.rawDt ?? dt, {
       mv, yaw: app.cam.yaw, pitch: app.cam.pitch,
-      jump: !app.uiBlocking() && app.input.down('jump'),
+      jump: !app.uiBlocking() && app.input.downOrTapped('jump'),
       sprint: !app.uiBlocking() && app.input.down('sprint'),
       grab: false, use: false,
     });

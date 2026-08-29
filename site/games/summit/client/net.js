@@ -176,7 +176,21 @@ export class Net {
     return m;
   }
 
-  /** Advances the local prediction by one frame and ships the input. */
+  /** Steps at a fixed rate regardless of how fast the page renders, so a slow
+   *  machine walks at the same speed as a fast one and no tap is dropped. */
+  advance(dt, intent) {
+    const STEP = 1 / 30;
+    this.acc = Math.min((this.acc || 0) + dt, 0.8);
+    let steps = 0;
+    while (this.acc >= STEP && steps < 24) { this.acc -= STEP; this.tick(STEP, intent); steps++; }
+    if (steps === 0) {
+      const decay = Math.pow(0.0025, dt);
+      this.corr.x *= decay; this.corr.y *= decay; this.corr.z *= decay;
+    }
+    return this.pred;
+  }
+
+  /** Advances the local prediction by one step and ships the input. */
   tick(dt, intent) {
     const input = {
       mv: intent.mv, yaw: intent.yaw, pitch: intent.pitch,

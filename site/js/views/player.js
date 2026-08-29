@@ -17,23 +17,36 @@ export function playerView(ctx, id) {
   const frame = h('iframe', {
     ...(inline ? { srcdoc: inline } : { src: BASE + g.entry.replace(/^\//, '') }),
     title: g.title,
-    allow: 'fullscreen; autoplay; gamepad; pointer-lock; cross-origin-isolated',
-    sandbox: 'allow-scripts allow-same-origin allow-pointer-lock allow-forms allow-modals allow-popups',
+    allow: 'fullscreen *; autoplay *; gamepad *; pointer-lock *; keyboard-map *; xr-spatial-tracking *',
+    allowfullscreen: 'true',
+    sandbox: 'allow-scripts allow-same-origin allow-pointer-lock allow-forms allow-modals allow-popups allow-orientation-lock',
     loading: 'eager',
   });
 
   const loader = h('div', { class: 'player__load' },
     h('div', { class: 'spinner' }),
     h('div', { class: 'eyebrow' }, 'Loading ' + g.title));
-  frame.addEventListener('load', () => loader.classList.add('is-done'));
+  frame.addEventListener('load', () => {
+    loader.classList.add('is-done');
+    // a game deserves the whole screen, and the pointer, without being asked twice
+    goFullscreen();
+    setTimeout(() => { try { frame.contentWindow?.focus(); } catch {} frame.focus(); }, 60);
+  });
 
   const stage = h('div', { class: 'player__stage' }, frame, loader);
 
+  function goFullscreen() {
+    const el = document.documentElement;
+    if (document.fullscreenElement) return;
+    (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el, { navigationUI: 'hide' })
+      ?.catch?.(() => {});
+  }
+
   const exit = () => ctx.go.to(`g/${g.id}`);
   const full = () => {
-    const el = stage;
     if (document.fullscreenElement) document.exitFullscreen();
-    else el.requestFullscreen?.().catch(() => toast('Fullscreen blocked by the browser'));
+    else document.documentElement.requestFullscreen?.({ navigationUI: 'hide' })
+      .catch(() => toast('Fullscreen blocked by the browser'));
   };
 
   const root = h('div', { class: 'player' },

@@ -14,6 +14,7 @@ export class Input {
     this.canvas = canvas;
     this.keys = new Set();
     this.pressed = new Set();
+    this.latched = new Set();   // taps that happened between input sends
     this.mouse = { dx: 0, dy: 0, left: false, leftPressed: false };
     this.locked = false;
     this.cursor = { x: 0, y: 0, seen: false };
@@ -28,6 +29,7 @@ export class Input {
       if (this.blockKeys) return;
       this.keys.add(e.code);
       this.pressed.add(e.code);
+      this.latched.add(e.code);
       const n = e.code.match(/^Digit([1-9])$/);
       if (n) this.slotPressed = Number(n[1]) - 1;
       if (e.code === 'Space') e.preventDefault();
@@ -39,7 +41,7 @@ export class Input {
       if (e.button !== 0) return;
       // still try for pointer lock, but never make gripping wait on it
       if (!this.locked) this.requestLock();
-      this.mouse.left = true; this.mouse.leftPressed = true;
+      this.mouse.left = true; this.mouse.leftPressed = true; this.mouse.tapped = true;
     });
     addEventListener('mouseup', (e) => { if (e.button === 0) this.mouse.left = false; });
     addEventListener('mousemove', (e) => {
@@ -62,6 +64,12 @@ export class Input {
   releaseLock() { document.exitPointerLock?.(); }
 
   down(action) { return KEYMAP[action].some((k) => this.keys.has(k)); }
+  /** True if the action is held now, or was tapped since the last check. */
+  downOrTapped(action) {
+    if (this.down(action)) return true;
+    for (const k of KEYMAP[action]) if (this.latched.has(k)) { this.latched.delete(k); return true; }
+    return false;
+  }
   hit(action) {
     for (const k of KEYMAP[action]) if (this.pressed.has(k)) return true;
     return false;
@@ -92,6 +100,12 @@ export class Input {
   }
 
   endFrame() { this.pressed.clear(); this.mouse.leftPressed = false; }
+  /** Left button held now, or clicked since the last check. */
+  gripping() {
+    if (this.mouse.left) return true;
+    if (this.mouse.tapped) { this.mouse.tapped = false; return true; }
+    return false;
+  }
   setSensitivity(v) { this.sensitivity = v; localStorage.setItem('summit.sens', String(v)); }
   setInvert(v) { this.invertY = v; localStorage.setItem('summit.invertY', v ? '1' : '0'); }
 }

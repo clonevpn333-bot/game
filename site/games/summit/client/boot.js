@@ -328,7 +328,10 @@ class App {
   loop() {
     let last = performance.now();
     const frameFn = (now) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
+      // real elapsed time drives the simulation; a clamped copy drives animation
+      const raw = Math.min(0.5, (now - last) / 1000);
+      const dt = Math.min(0.05, raw);
+      this.rawDt = raw;
       last = now;
       this.net.world = (this.net.phase === PHASE.LOBBY || this.net.phase === PHASE.RESULTS) ? this.flatWorld : this.world;
       this.cam.world = this.net.world;   // camera collision must use the same ground the sim does
