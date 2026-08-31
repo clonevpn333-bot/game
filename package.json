@@ -12,6 +12,7 @@
     "thumbs": "node tools/gen-thumbs.mjs",
     "icons": "node tools/gen-icons.mjs",
     "test": "node tests/e2e.mjs",
+    "pwa": "node tools/pwa-check.mjs",
     "bench": "node tools/bench.mjs",
     "soak": "node tools/soak.mjs --minutes=30"
   },

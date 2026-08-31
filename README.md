@@ -37,6 +37,14 @@ node tools/serve.mjs          # http://127.0.0.1:8765
 | Warm launch → interactive | < 500 ms | > 1.2 s | **218 ms** (voxel-drift) |
 | Sustained frame rate | ≥ 30 (60 target) | < 30 | **37.4 fps** worst (voxel-drift, software GL) |
 | Heap after exit vs baseline | ±10 % | monotonic growth | **+5 %** worst |
+| Lighthouse performance | ≥ 90 | < 75 | **100** (also 100 accessibility / best-practices / SEO) |
+
+`node tools/pwa-check.mjs` verifies installability. The spec asks for a
+Lighthouse PWA score, but Lighthouse removed that category in v12 and the
+installability audits with it, so there is no such score to report; the same
+criteria are checked directly instead — manifest parsed by the browser, icon
+sizes including a maskable one, standalone display, service-worker scope, and a
+reload with the network disabled. All 11 pass.
 
 `node tools/soak.mjs` cycles the whole library, the deliberately leaky bundle
 included. A representative run: 11 launches, 0 crashes, heap trend

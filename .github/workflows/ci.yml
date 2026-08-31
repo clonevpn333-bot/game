@@ -38,6 +38,9 @@ jobs:
       - name: Acceptance tests
         run: node tests/e2e.mjs
 
+      - name: Installability
+        run: node tools/pwa-check.mjs
+
       - name: Benchmarks against the §4 thresholds
         run: node tools/bench.mjs
 
