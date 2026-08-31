@@ -38,6 +38,12 @@ node tools/serve.mjs          # http://127.0.0.1:8765
 | Sustained frame rate | ≥ 30 (60 target) | < 30 | **37.4 fps** worst (voxel-drift, software GL) |
 | Heap after exit vs baseline | ±10 % | monotonic growth | **+5 %** worst |
 
+`node tools/soak.mjs` cycles the whole library, the deliberately leaky bundle
+included. A representative run: 11 launches, 0 crashes, heap trend
+0.015 MB/cycle and 0.3 DOM nodes/cycle after the first cycle — flat, not
+creeping. The 30-minute acceptance run is `npm run soak`; CI runs five minutes
+on every push.
+
 `node tests/e2e.mjs` covers the acceptance criteria directly — save round-trip
 through `postMessage`, deterministic teardown, tier refusal, offline play,
 pointer lock inside the sandbox, per-bundle cache invalidation, and surviving a

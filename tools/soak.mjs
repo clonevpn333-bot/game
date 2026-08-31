@@ -105,21 +105,35 @@ while (Date.now() < deadline && !crashed) {
 
 await browser.close();
 
-// Least-squares slope of heap over cycles: the leak signal is a positive
-// trend, not any single high reading.
+// The first cycle is warm-up, not leakage: launching any game once populates
+// caches, compiles code and builds the player view. Growth is judged from the
+// first sample onward, with the baseline step reported separately.
 const n = samples.length;
-const meanX = (n - 1) / 2;
-const meanY = samples.reduce((a, s) => a + s.heapMB, 0) / n;
-let num = 0, den = 0;
-samples.forEach((s, i) => { num += (i - meanX) * (s.heapMB - meanY); den += (i - meanX) ** 2; });
-const slope = den ? num / den : 0;
-const growth = samples.length ? samples[samples.length - 1].heapMB - baseline.heapMB : 0;
-const growthPct = (growth / Math.max(0.1, baseline.heapMB)) * 100;
-const nodeGrowth = samples.length ? samples[samples.length - 1].nodes - baseline.nodes : 0;
+const warm = samples.slice(1);
+const first = samples[0];
+const last = samples[n - 1];
+
+// Least-squares slope over the warm samples: the leak signal is a positive
+// trend, not any single high reading.
+let slope = 0;
+if (warm.length > 1) {
+  const meanX = (warm.length - 1) / 2;
+  const meanY = warm.reduce((a, s) => a + s.heapMB, 0) / warm.length;
+  let num = 0, den = 0;
+  warm.forEach((s, i) => { num += (i - meanX) * (s.heapMB - meanY); den += (i - meanX) ** 2; });
+  slope = den ? num / den : 0;
+}
+const growth = last.heapMB - first.heapMB;
+const growthPct = (growth / Math.max(0.1, first.heapMB)) * 100;
+const nodeGrowth = last.nodes - first.nodes;
+const nodesPerCycle = warm.length ? nodeGrowth / warm.length : 0;
+const warmupHeap = first.heapMB - baseline.heapMB;
+const warmupNodes = first.nodes - baseline.nodes;
 
 console.log(`\ncycles ${cycle} · launches ${launches} (${failedLaunches} failed) · crashes ${crashed ? 1 : 0}`);
-console.log(`heap ${baseline.heapMB} → ${samples[samples.length - 1]?.heapMB} MB (${growthPct.toFixed(1)}%), trend ${slope.toFixed(3)} MB/cycle`);
-console.log(`DOM nodes ${baseline.nodes} → ${samples[samples.length - 1]?.nodes} (${nodeGrowth >= 0 ? '+' : ''}${nodeGrowth}, ${(nodeGrowth / Math.max(1, samples.length)).toFixed(1)}/cycle)`);
+console.log(`warm-up (baseline → cycle 1): heap +${warmupHeap.toFixed(2)} MB, nodes +${warmupNodes}`);
+console.log(`heap  cycle 1 → ${n}: ${first.heapMB} → ${last.heapMB} MB (${growthPct >= 0 ? '+' : ''}${growthPct.toFixed(1)}%), trend ${slope.toFixed(3)} MB/cycle`);
+console.log(`nodes cycle 1 → ${n}: ${first.nodes} → ${last.nodes} (${nodeGrowth >= 0 ? '+' : ''}${nodeGrowth}, ${nodesPerCycle.toFixed(1)}/cycle)`);
 if (errors.length) {
   console.log(`\n${errors.length} page error(s):`);
   for (const e of [...new Set(errors)].slice(0, 10)) console.log('  ' + e);
@@ -128,10 +142,9 @@ if (errors.length) {
 const problems = [];
 if (crashed) problems.push('the tab crashed');
 if (failedLaunches) problems.push(`${failedLaunches} launch(es) failed`);
-if (slope > 0.5) problems.push(`heap trends up ${slope.toFixed(2)} MB per cycle`);
-if (growthPct > 25) problems.push(`heap grew ${growthPct.toFixed(1)}% over the run`);
+if (slope > 0.5) problems.push(`heap trends up ${slope.toFixed(2)} MB per cycle after warm-up`);
+if (growthPct > 25) problems.push(`heap grew ${growthPct.toFixed(1)}% after the first cycle`);
 // Judged as a rate, not a total: a long run should not fail merely for being long.
-const nodesPerCycle = samples.length ? nodeGrowth / samples.length : 0;
 if (nodesPerCycle > 12) problems.push(`DOM nodes grew ${nodesPerCycle.toFixed(1)} per cycle (${nodeGrowth} total)`);
 
 if (problems.length) {
