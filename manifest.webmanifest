@@ -1,0 +1,23 @@
+{
+  "name": "Lowspec Arcade",
+  "short_name": "Arcade",
+  "description": "A zero-dependency HTML5 game portal built to hold a stable frame rate on ChromeOS and low-end laptops.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "/lowspec-arcade",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
+  "orientation": "any",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "portal/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "portal/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "portal/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "portal/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Diagnostics", "url": "./index.html#/diagnostics", "description": "Renderer tier, memory headroom and cache state" }
+  ]
+}

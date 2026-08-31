@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pointer Lock Probe</title>
+<style>
+html,body{margin:0;height:100%;background:#11161d;color:#e6edf3;overflow:hidden;
+  font:13px ui-monospace,SFMono-Regular,Menlo,monospace;display:grid;place-items:center}
+#stage{position:absolute;inset:0;cursor:crosshair}
+#dot{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;
+  background:#58d0a0;box-shadow:0 0 12px rgba(88,208,160,.6)}
+#msg{position:relative;text-align:center;padding:0 20px;pointer-events:none;line-height:1.7}
+.ok{color:#58d0a0}.bad{color:#f0736a}
+</style>
+</head>
+<body>
+<div id="stage"><div id="dot"></div></div>
+<div id="msg">Click anywhere in this box to request pointer lock.</div>
+
+<script src="../../engine/teardown.js"></script>
+<script src="../../engine/bridge.js"></script>
+<script>
+'use strict';
+/**
+ * Pointer-lock probe (§2.2).
+ *
+ * Sandbox tokens can block pointer lock silently: the request resolves, no
+ * error fires, and mouse-look simply never moves. This bundle proves the real
+ * thing works inside a frame configured exactly like a game launch — it locks,
+ * counts movement deltas, and reports both to the portal.
+ */
+(function () {
+    const Bridge = PE.Bridge, Teardown = PE.Teardown;
+    const stage = document.getElementById('stage');
+    const dot = document.getElementById('dot');
+    const msg = document.getElementById('msg');
+    let x = 0, y = 0, moves = 0, locked = false;
+
+    function place() {
+        dot.style.left = (stage.clientWidth / 2 + x) + 'px';
+        dot.style.top = (stage.clientHeight / 2 + y) + 'px';
+    }
+
+    function report(text, cls) {
+        msg.innerHTML = '';
+        const span = document.createElement('span');
+        span.className = cls || '';
+        span.textContent = text;
+        msg.append(span);
+    }
+
+    Teardown.on(stage, 'click', function () {
+        if (locked) return;
+        const p = stage.requestPointerLock();
+        if (p && p.catch) p.catch(function (e) { report('Pointer lock rejected: ' + e.message, 'bad'); });
+    });
+
+    Teardown.on(document, 'pointerlockchange', function () {
+        locked = document.pointerLockElement === stage;
+        Bridge.pointerLock(locked);
+        if (locked) report('Locked. Move the mouse — the dot should follow. Esc releases.', 'ok');
+        else report('Released after ' + moves + ' movement events. ' +
+            (moves > 0 ? 'Pointer lock works here.' : 'No movement was delivered — pointer lock is blocked.'),
+            moves > 0 ? 'ok' : 'bad');
+    });
+
+    Teardown.on(document, 'pointerlockerror', function () {
+        report('Pointer lock request failed (pointerlockerror).', 'bad');
+        Bridge.post('game:error', { message: 'pointerlockerror inside sandboxed frame', stack: '' });
+    });
+
+    Teardown.on(document, 'mousemove', function (e) {
+        if (!locked) return;
+        moves++;
+        x = Math.max(-stage.clientWidth / 2, Math.min(stage.clientWidth / 2, x + e.movementX));
+        y = Math.max(-stage.clientHeight / 2, Math.min(stage.clientHeight / 2, y + e.movementY));
+        place();
+        if (moves === 1) Bridge.stats({ fps: 0, pointerLockMoves: 1 });
+    });
+
+    Teardown.on(window, 'resize', place);
+
+    Bridge.connect({
+        id: 'pointer-lock-probe',
+        onHello: function () { place(); Bridge.ready({ tier: 'canvas2d', pointerLock: true }); },
+        onShutdown: function () { Teardown.destroyAll(); },
+    });
+})();
+</script>
+</body>
+</html>

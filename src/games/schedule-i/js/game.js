@@ -4,6 +4,10 @@ const Game = {
     canvas: null,
     ctx:    null,
     last:   0,
+    paused: false,
+    _fps:   0,
+    _fpsAcc: 0,
+    _fpsFrames: 0,
     camX:   0,
     camY:   0,
     started: false,
@@ -26,23 +30,32 @@ const Game = {
         Player.y = 8  * CFG.TS;
 
         // Unlock first customer after short delay
-        setTimeout(() => NPCManager.unlockCustomer('benji'), CFG.MSG_DELAY_MS);
+        PE.Teardown.timeout(() => NPCManager.unlockCustomer('benji'), CFG.MSG_DELAY_MS);
 
         // Canvas click handler
-        this.canvas.addEventListener('click', e => this._handleClick(e));
+        PE.Teardown.on(this.canvas, 'click', e => this._handleClick(e));
 
         // Keyboard shortcuts that close panels
-        window.addEventListener('keydown', e => {
+        PE.Teardown.on(window, 'keydown', e => {
             if (e.code === 'Escape') this._handleEsc();
         });
 
+        // Bound once: allocating a closure per frame is exactly the GC pressure
+        // the portal's allocation rules exist to avoid.
+        this._boundLoop = ts => this._loop(ts);
+
         this.started = true;
-        requestAnimationFrame(ts => this._loop(ts));
+        PE.Teardown.raf(this._boundLoop);
     },
 
     _loop(ts) {
+        if (PE.Teardown.destroyed) return;
         const dt = Math.min((ts - this.last) / 1000, 0.05);
         this.last = ts;
+        if (this.paused) {
+            PE.Teardown.raf(this._boundLoop);
+            return;
+        }
         if (this.screen === 'title') {
             this._drawTitle();
         } else {
@@ -50,7 +63,16 @@ const Game = {
             this._render();
         }
         Input.flush();
-        requestAnimationFrame(ts2 => this._loop(ts2));
+
+        this._fpsAcc += dt;
+        this._fpsFrames++;
+        if (this._fpsAcc >= 1) {
+            this._fps = this._fpsFrames / this._fpsAcc;
+            this._fpsAcc = 0;
+            this._fpsFrames = 0;
+        }
+
+        PE.Teardown.raf(this._boundLoop);
     },
 
     _update(dt) {
@@ -470,4 +492,6 @@ const Game = {
 };
 
 // ── Entry point ────────────────────────────────────────────────────────────
-window.addEventListener('load', () => Game.init());
+// The portal starts the game once the save has been handed over; standalone
+// play falls back to auto-start on load.
+window.addEventListener('load', () => { if (!window.PORTAL_DEFER) Game.init(); });

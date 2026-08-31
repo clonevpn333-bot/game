@@ -1,0 +1,27 @@
+# Netlify/Cloudflare Pages header rules. Mirrors netlify.toml so either host
+# applies the same caching policy. GitHub Pages ignores this file — see
+# deploy/README.md for what that costs.
+
+/games/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/portal/thumbs/*
+  Cache-Control: public, max-age=604800
+
+/portal/icons/*
+  Cache-Control: public, max-age=604800
+
+/games.json
+  Cache-Control: public, max-age=60, stale-while-revalidate=600
+
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+  Service-Worker-Allowed: /
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()

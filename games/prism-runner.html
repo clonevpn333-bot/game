@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prism Runner</title>
+<style>
+html,body{margin:0;height:100%;background:#12172a;overflow:hidden;color:#e6edf3;
+  font:13px ui-monospace,SFMono-Regular,Menlo,monospace}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block}
+#hud{position:absolute;left:12px;top:10px;padding:4px 9px;border-radius:6px;
+  background:rgba(6,9,18,.55);font-variant-numeric:tabular-nums}
+#title{position:absolute;inset:0;display:flex;flex-direction:column;gap:12px;
+  align-items:center;justify-content:center;background:rgba(6,9,18,.66);text-align:center}
+#title b{font-size:34px;letter-spacing:.16em;color:#58d0a0}
+#boot{position:absolute;inset:0;display:grid;place-items:center;background:#12172a;
+  color:#58d0a0;letter-spacing:.2em}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="hud"></div>
+<div id="title"><b>PRISM RUNNER</b><span>A/D lanes · SPACE jump — press ENTER</span></div>
+<div id="boot">STARTING</div>
+
+<script>
+/* inlined from ../../engine/teardown.js */
+'use strict';
+/**
+ * Teardown registry — §1.1 "Deterministic teardown on game exit".
+ *
+ * Nothing in a game should call addEventListener / requestAnimationFrame /
+ * setTimeout / createObjectURL directly. Route them through here and a single
+ * destroyAll() reclaims the lot. The portal also destroys the whole iframe
+ * (§2.2), but manual teardown is what makes standalone play and the
+ * heap-returns-to-baseline benchmark (§4) hold.
+ */
+(function (global) {
+    const PE = (global.PE = global.PE || {});
+
+    const listeners = [];   // [target, type, fn, opts]
+    const rafs      = [];   // raf handles
+    const timers    = [];   // setTimeout handles
+    const intervals = [];   // setInterval handles
+    const contexts  = [];   // WebGL contexts
+    const urls      = [];   // object URLs
+    const audios    = [];   // AudioContexts
+    const closers   = [];   // arbitrary cleanup fns
+    let destroyed   = false;
+
+    const Teardown = {
+        get destroyed() { return destroyed; },
+
+        on(target, type, fn, opts) {
+            if (destroyed) return fn;
+            target.addEventListener(type, fn, opts);
+            listeners.push([target, type, fn, opts]);
+            return fn;
+        },
+
+        off(target, type, fn, opts) {
+            target.removeEventListener(type, fn, opts);
+            for (let i = listeners.length - 1; i >= 0; i--) {
+                const l = listeners[i];
+                if (l[0] === target && l[1] === type && l[2] === fn) listeners.splice(i, 1);
+            }
+        },
+
+        raf(fn) {
+            if (destroyed) return 0;
+            const h = requestAnimationFrame(fn);
+            rafs.push(h);
+            // Keep the handle list bounded: a long-running loop would otherwise
+            // push one entry per frame forever (a leak in the leak-preventer).
+            if (rafs.length > 8) rafs.splice(0, rafs.length - 8);
+            return h;
+        },
+
+        timeout(fn, ms) {
+            if (destroyed) return 0;
+            const h = setTimeout(function () {
+                const i = timers.indexOf(h);
+                if (i >= 0) timers.splice(i, 1);
+                fn();
+            }, ms);
+            timers.push(h);
+            return h;
+        },
+
+        interval(fn, ms) {
+            if (destroyed) return 0;
+            const h = setInterval(fn, ms);
+            intervals.push(h);
+            return h;
+        },
+
+        trackContext(gl)      { if (gl) contexts.push(gl); return gl; },
+        trackAudio(ac)        { if (ac) audios.push(ac); return ac; },
+        trackObjectURL(url)   { if (url) urls.push(url); return url; },
+        onDestroy(fn)         { if (fn) closers.push(fn); return fn; },
+
+        /** Idempotent. Safe to call from unload, from the portal, or both. */
+        destroyAll() {
+            if (destroyed) return;
+            destroyed = true;
+
+            for (let i = 0; i < rafs.length; i++) cancelAnimationFrame(rafs[i]);
+            for (let i = 0; i < timers.length; i++) clearTimeout(timers[i]);
+            for (let i = 0; i < intervals.length; i++) clearInterval(intervals[i]);
+            for (let i = 0; i < listeners.length; i++) {
+                const l = listeners[i];
+                try { l[0].removeEventListener(l[1], l[2], l[3]); } catch (e) { /* detached */ }
+            }
+            for (let i = 0; i < closers.length; i++) {
+                try { closers[i](); } catch (e) { /* keep tearing down */ }
+            }
+            for (let i = 0; i < contexts.length; i++) {
+                try {
+                    const ext = contexts[i].getExtension('WEBGL_lose_context');
+                    if (ext) ext.loseContext();
+                } catch (e) { /* context already gone */ }
+            }
+            for (let i = 0; i < audios.length; i++) {
+                try { audios[i].close(); } catch (e) { /* already closed */ }
+            }
+            for (let i = 0; i < urls.length; i++) {
+                try { URL.revokeObjectURL(urls[i]); } catch (e) { /* already revoked */ }
+            }
+
+            listeners.length = 0; rafs.length = 0; timers.length = 0;
+            intervals.length = 0; contexts.length = 0; urls.length = 0;
+            audios.length = 0; closers.length = 0;
+
+            if (document.pointerLockElement) {
+                try { document.exitPointerLock(); } catch (e) { /* not locked */ }
+            }
+        },
+    };
+
+    PE.Teardown = Teardown;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* inlined from ../../engine/pool.js */
+'use strict';
+/**
+ * Fixed-capacity object pool — §1.1 "Pools are sized at load and never grow
+ * during play". Growing a pool mid-frame is exactly the allocation spike the
+ * target hardware cannot absorb, so exhaustion recycles the oldest live object
+ * instead (or drops, if the pool is configured to).
+ */
+(function (global) {
+    const PE = (global.PE = global.PE || {});
+
+    function Pool(capacity, factory, reset, opts) {
+        this.capacity = capacity | 0;
+        this._reset   = reset || null;
+        this._items   = new Array(this.capacity);
+        this._live    = new Array(this.capacity);   // dense list of active items
+        this.size     = 0;                          // active count
+        this._free    = this.capacity;
+        this._cursor  = 0;                          // round-robin recycle cursor
+        this.recycleOldest = !opts || opts.recycleOldest !== false;
+        this.exhausted = 0;                         // diagnostic counter
+
+        for (let i = 0; i < this.capacity; i++) this._items[i] = factory(i);
+        // Free list as a stack of indices into _items.
+        this._stack = new Int32Array(this.capacity);
+        for (let i = 0; i < this.capacity; i++) this._stack[i] = this.capacity - 1 - i;
+    }
+
+    Pool.prototype.acquire = function () {
+        if (this._free > 0) {
+            const idx = this._stack[--this._free];
+            const obj = this._items[idx];
+            obj.__poolIndex = idx;
+            obj.__poolSlot  = this.size;
+            this._live[this.size++] = obj;
+            if (this._reset) this._reset(obj);
+            return obj;
+        }
+        this.exhausted++;
+        if (!this.recycleOldest || this.size === 0) return null;
+        // Recycle round-robin so one long-lived entity can't monopolise the pool.
+        const victim = this._live[this._cursor % this.size];
+        this._cursor++;
+        if (this._reset) this._reset(victim);
+        return victim;
+    };
+
+    /** O(1) release via swap-with-last; iteration order is not stable. */
+    Pool.prototype.release = function (obj) {
+        const slot = obj.__poolSlot;
+        if (slot === undefined || slot < 0 || slot >= this.size || this._live[slot] !== obj) return false;
+        const last = this._live[--this.size];
+        this._live[slot] = last;
+        last.__poolSlot  = slot;
+        this._live[this.size] = null;
+        obj.__poolSlot = -1;
+        this._stack[this._free++] = obj.__poolIndex;
+        return true;
+    };
+
+    Pool.prototype.at = function (i) { return this._live[i]; };
+
+    Pool.prototype.releaseAll = function () {
+        for (let i = 0; i < this.size; i++) {
+            const o = this._live[i];
+            o.__poolSlot = -1;
+            this._stack[this._free++] = o.__poolIndex;
+            this._live[i] = null;
+        }
+        this.size = 0;
+    };
+
+    /**
+     * Allocation-free sweep. `fn(obj, dt)` returns false to release the object.
+     * Iterates backwards so swap-removal never skips an entry.
+     */
+    Pool.prototype.update = function (fn, dt) {
+        for (let i = this.size - 1; i >= 0; i--) {
+            const o = this._live[i];
+            if (fn(o, dt) === false) this.release(o);
+        }
+    };
+
+    PE.Pool = Pool;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* inlined from ../../engine/loop.js */
+'use strict';
+/**
+ * Fixed-timestep simulation decoupled from render, with interpolation — §1.3.
+ *
+ * The whole loop is allocation-free: no closures created per frame, no object
+ * literals, no array literals. The frame callback signature is
+ * (alpha, dtRender) and the step callback is (fixedDt).
+ */
+(function (global) {
+    const PE = (global.PE = global.PE || {});
+    const Teardown = PE.Teardown;
+
+    function Loop(opts) {
+        this.step        = opts.step;                       // (dt) => void, fixed
+        this.render      = opts.render;                     // (alpha, dt) => void
+        this.hz          = opts.hz || 60;
+        this.fixedDt     = 1 / this.hz;
+        this.maxSteps    = opts.maxSteps || 5;              // spiral-of-death clamp
+        this.onStats     = opts.onStats || null;            // (stats) => void, ~1Hz
+
+        this._acc        = 0;
+        this._last       = 0;
+        this._running    = false;
+        this._paused     = false;
+        this._handle     = 0;
+
+        // Stats, mutated in place and handed to onStats — never reallocated.
+        this.stats = { fps: 0, frameMs: 0, stepMs: 0, renderMs: 0, steps: 0, dropped: 0 };
+        this._frames     = 0;
+        this._statAcc    = 0;
+        this._frameMsAcc = 0;
+        this._stepMsAcc  = 0;
+        this._rendMsAcc  = 0;
+
+        // Bound once so requestAnimationFrame never allocates a closure.
+        const self = this;
+        this._tick = function (ts) { self._onFrame(ts); };
+    }
+
+    Loop.prototype.start = function () {
+        if (this._running) return;
+        this._running = true;
+        this._last = performance.now();
+        this._acc = 0;
+        this._schedule();
+    };
+
+    Loop.prototype.stop = function () {
+        this._running = false;
+        if (this._handle) cancelAnimationFrame(this._handle);
+        this._handle = 0;
+    };
+
+    /** Pause keeps the loop scheduled but skips simulation, so a resumed game
+     *  does not eat a multi-second catch-up burst. */
+    Loop.prototype.pause = function () {
+        this._paused = true;
+        this._acc = 0;
+    };
+
+    Loop.prototype.resume = function () {
+        if (!this._paused) return;
+        this._paused = false;
+        this._last = performance.now();
+        this._acc = 0;
+    };
+
+    Loop.prototype._schedule = function () {
+        this._handle = Teardown ? Teardown.raf(this._tick) : requestAnimationFrame(this._tick);
+    };
+
+    Loop.prototype._onFrame = function (ts) {
+        if (!this._running) return;
+
+        let dt = (ts - this._last) / 1000;
+        this._last = ts;
+        // A backgrounded tab or a GC pause can hand us a huge dt. Clamp rather
+        // than simulate it: catching up 3 seconds at 60Hz is 180 steps.
+        if (dt > 0.25) dt = 0.25;
+        if (dt < 0) dt = 0;
+
+        if (this._paused) { this._schedule(); return; }
+
+        const t0 = performance.now();
+        this._acc += dt;
+
+        let steps = 0;
+        const fixed = this.fixedDt;
+        const tStep = performance.now();
+        while (this._acc >= fixed && steps < this.maxSteps) {
+            this.step(fixed);
+            this._acc -= fixed;
+            steps++;
+        }
+        const stepMs = performance.now() - tStep;
+
+        if (steps === this.maxSteps && this._acc >= fixed) {
+            // We are behind budget; discard the backlog instead of compounding it.
+            this.stats.dropped += Math.floor(this._acc / fixed);
+            this._acc = 0;
+        }
+
+        const alpha = this._acc / fixed;
+        const tRend = performance.now();
+        this.render(alpha, dt);
+        const rendMs = performance.now() - tRend;
+
+        const frameMs = performance.now() - t0;
+        this._frames++;
+        this._statAcc    += dt;
+        this._frameMsAcc += frameMs;
+        this._stepMsAcc  += stepMs;
+        this._rendMsAcc  += rendMs;
+        this.stats.steps = steps;
+
+        if (this._statAcc >= 1) {
+            const s = this.stats;
+            s.fps      = this._frames / this._statAcc;
+            s.frameMs  = this._frameMsAcc / this._frames;
+            s.stepMs   = this._stepMsAcc / this._frames;
+            s.renderMs = this._rendMsAcc / this._frames;
+            this._frames = 0; this._statAcc = 0;
+            this._frameMsAcc = 0; this._stepMsAcc = 0; this._rendMsAcc = 0;
+            if (this.onStats) this.onStats(s);
+        }
+
+        this._schedule();
+    };
+
+    PE.Loop = Loop;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* inlined from ../../engine/resscale.js */
+'use strict';
+/**
+ * Backing-resolution control + dynamic resolution scaling — §1.2 / §1.3.
+ *
+ * Two jobs:
+ *   1. Clamp devicePixelRatio and render the backing store at 0.75x-1.0x of CSS
+ *      size, then let CSS upscale. Full retina rendering is banned on the
+ *      target profile: it is a pure fill-rate multiplier for no gameplay value.
+ *   2. When frame time blows the budget, drop backing resolution *before*
+ *      dropping frame rate, with hysteresis strong enough that the renderer
+ *      never oscillates between two scales (the "never jitters between 60 and
+ *      45" criterion).
+ */
+(function (global) {
+    const PE = (global.PE = global.PE || {});
+
+    const STEPS = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5];
+
+    function ResolutionScaler(canvas, opts) {
+        opts = opts || {};
+        this.canvas      = canvas;
+        this.targetFps   = opts.targetFps || 60;
+        this.floorFps    = opts.floorFps || 30;
+        this.maxDpr      = opts.maxDpr || 1.0;       // never exceed 1 backing px per CSS px
+        this.minScale    = opts.minScale || 0.5;
+        this.maxScale    = opts.maxScale || 1.0;
+        this.auto        = opts.auto !== false;
+        // A game with a fixed logical resolution (most 2D titles) scales its
+        // backing store against that, not against CSS size or DPR.
+        this.logicalW    = opts.logicalWidth || 0;
+        this.logicalH    = opts.logicalHeight || 0;
+        this.onResize    = opts.onResize || null;    // (w, h, scale) => void
+
+        this._stepIndex  = STEPS.indexOf(clampStep(opts.initialScale || 1.0));
+        if (this._stepIndex < 0) this._stepIndex = 0;
+        this._budgetMs   = 1000 / this.targetFps;
+        this._overCount  = 0;
+        this._underCount = 0;
+        this._cooldown   = 0;
+        // Steps that produced an immediate relapse are not retried this session.
+        this._blocked    = new Uint8Array(STEPS.length);
+        this._lastUpAt   = -1e9;
+        this.width = 0; this.height = 0;
+
+        this.applyResize();
+    }
+
+    function clampStep(v) {
+        let best = STEPS[0], bd = Infinity;
+        for (let i = 0; i < STEPS.length; i++) {
+            const d = Math.abs(STEPS[i] - v);
+            if (d < bd) { bd = d; best = STEPS[i]; }
+        }
+        return best;
+    }
+
+    ResolutionScaler.prototype.scale = function () { return STEPS[this._stepIndex]; };
+
+    ResolutionScaler.prototype.dpr = function () {
+        return Math.min(global.devicePixelRatio || 1, this.maxDpr);
+    };
+
+    /** Resize the backing store to CSS size x scale x clamped DPR. */
+    ResolutionScaler.prototype.applyResize = function () {
+        let cssW, cssH, f;
+        if (this.logicalW) {
+            cssW = this.logicalW; cssH = this.logicalH; f = this.scale();
+        } else {
+            const rect = this.canvas.getBoundingClientRect();
+            cssW = Math.max(1, rect.width  || this.canvas.clientWidth  || 640);
+            cssH = Math.max(1, rect.height || this.canvas.clientHeight || 360);
+            f = this.scale() * this.dpr();
+        }
+        const w = Math.max(1, Math.round(cssW * f));
+        const h = Math.max(1, Math.round(cssH * f));
+        if (w === this.width && h === this.height) return false;
+        this.width = w; this.height = h;
+        this.canvas.width = w;
+        this.canvas.height = h;
+        if (this.onResize) this.onResize(w, h, this.scale());
+        return true;
+    };
+
+    /** Manual override — §1.2 requires scaling be reversible at runtime. */
+    ResolutionScaler.prototype.setScale = function (v) {
+        const idx = STEPS.indexOf(clampStep(v));
+        if (idx < 0 || idx === this._stepIndex) return false;
+        this._stepIndex = idx;
+        this._overCount = 0; this._underCount = 0;
+        this.applyResize();
+        return true;
+    };
+
+    ResolutionScaler.prototype.setAuto = function (on) {
+        this.auto = !!on;
+        this._overCount = 0; this._underCount = 0;
+    };
+
+    /**
+     * Feed one frame time (ms). Called from the render callback; allocation-free.
+     */
+    ResolutionScaler.prototype.sample = function (frameMs, nowMs) {
+        if (!this.auto) return;
+        if (nowMs < this._cooldown) return;
+
+        // Over budget by >15% counts as pressure; under 70% counts as headroom.
+        if (frameMs > this._budgetMs * 1.15) { this._overCount++; this._underCount = 0; }
+        else if (frameMs < this._budgetMs * 0.70) { this._underCount++; this._overCount = 0; }
+        else { this._overCount = 0; this._underCount = 0; }
+
+        if (this._overCount >= 12 && this._stepIndex < STEPS.length - 1 &&
+            STEPS[this._stepIndex + 1] >= this.minScale) {
+            // A downgrade right after an upgrade means that step is not
+            // sustainable on this device: block it for the rest of the session.
+            if (nowMs - this._lastUpAt < 4000) this._blocked[this._stepIndex] = 1;
+            this._stepIndex++;
+            this._overCount = 0; this._underCount = 0;
+            this._cooldown = nowMs + 1500;
+            this.applyResize();
+            return;
+        }
+
+        // Upscale is deliberately reluctant: 4s of clear headroom, and never
+        // into a step that already relapsed.
+        if (this._underCount >= 240 && this._stepIndex > 0 &&
+            !this._blocked[this._stepIndex - 1] && STEPS[this._stepIndex - 1] <= this.maxScale) {
+            this._stepIndex--;
+            this._overCount = 0; this._underCount = 0;
+            this._cooldown = nowMs + 3000;
+            this._lastUpAt = nowMs;
+            this.applyResize();
+        }
+    };
+
+    /**
+     * Pick a starting scale from what the device advertises. Cheap heuristic;
+     * the adaptive loop corrects it within a couple of seconds either way.
+     */
+    ResolutionScaler.suggestInitialScale = function () {
+        const mem   = global.navigator && navigator.deviceMemory || 4;
+        const cores = global.navigator && navigator.hardwareConcurrency || 2;
+        const px    = (global.innerWidth || 1280) * (global.innerHeight || 720);
+        if (mem <= 2 || cores <= 2) return 0.75;
+        if (mem <= 4 && px > 1280 * 800) return 0.8;
+        if (mem <= 4) return 0.9;
+        return 1.0;
+    };
+
+    ResolutionScaler.STEPS = STEPS;
+    PE.ResolutionScaler = ResolutionScaler;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* inlined from ../../engine/bridge.js */
+'use strict';
+/**
+ * Game-side half of the portal <-> game postMessage bridge (§2.2).
+ *
+ * Protocol (v1), all messages { type, token, ... }:
+ *
+ *   game   -> portal : game:hello      first contact, no token yet
+ *   portal -> game   : portal:hello    { token, tier, caps, save, settings }
+ *   game   -> portal : game:ready      { needs: { tier, pointerLock } }
+ *   game   -> portal : game:save       { data }        persisted via IndexedDB
+ *   game   -> portal : game:score      { score, label }
+ *   game   -> portal : game:stats      { fps, frameMs, heapMB, scale, entities }
+ *   game   -> portal : game:exit       user chose to quit
+ *   game   -> portal : game:error      { message, stack }
+ *   game   -> portal : game:pointerlock{ locked }
+ *   portal -> game   : portal:pause | portal:resume | portal:shutdown
+ *   portal -> game   : portal:lowmem   release what you can, you are near budget
+ *   portal -> game   : portal:settings { resolutionScale, audio, auto }
+ *
+ * The game never touches portal storage directly: save state round-trips
+ * through this bridge, which is what §2.2's acceptance criterion asks for.
+ * Standalone (opened outside the portal) degrades to a local IndexedDB store
+ * so a bundle stays playable as a plain file.
+ */
+(function (global) {
+    const PE = (global.PE = global.PE || {});
+    const PROTOCOL = 1;
+
+    const Bridge = {
+        connected:  false,
+        standalone: false,
+        token:      null,
+        id:         null,
+        tier:       null,
+        caps:       null,
+        settings:   null,
+        _handlers:  null,
+        _saveTimer: 0,
+        _pendingSave: null,
+        _origin:    null,
+        _onMessage: null,
+        _helloTimer: 0,
+
+        connect(opts) {
+            this._handlers = opts || {};
+            this.id = opts.id || 'unknown';
+            const parent = global.parent;
+            const embedded = parent && parent !== global;
+
+            // location.origin is "null" for an opaque-origin sandbox; postMessage
+            // then has to target '*' because there is no origin to name.
+            this._origin = (location.origin && location.origin !== 'null') ? location.origin : '*';
+
+            const self = this;
+            this._onMessage = function (e) { self._handle(e); };
+            global.addEventListener('message', this._onMessage);
+
+            // Report uncaught errors to the portal so a broken title surfaces
+            // in the launcher instead of dying silently inside the frame.
+            global.addEventListener('error', function (e) {
+                self.post('game:error', { message: String(e.message || e), stack: e.error && e.error.stack || '' });
+            });
+            global.addEventListener('unhandledrejection', function (e) {
+                self.post('game:error', { message: 'unhandled rejection: ' + String(e.reason), stack: '' });
+            });
+
+            if (!embedded) { this._goStandalone(); return this; }
+
+            parent.postMessage({ type: 'game:hello', protocol: PROTOCOL, id: this.id }, this._origin);
+            this._helloTimer = setTimeout(function () {
+                if (!self.connected) self._goStandalone();
+            }, 1500);
+            return this;
+        },
+
+        _goStandalone() {
+            this.standalone = true;
+            this.connected  = false;
+            const self = this;
+            localLoad(this.id).then(function (save) {
+                self._fire('onHello', { tier: null, caps: null, save: save, settings: null, standalone: true });
+            });
+        },
+
+        _handle(e) {
+            const d = e.data;
+            if (!d || typeof d !== 'object' || typeof d.type !== 'string') return;
+            if (d.type.slice(0, 7) !== 'portal:') return;
+            // After the handshake every message must carry our token; a frame
+            // that can post to us is not automatically the portal.
+            if (this.token && d.token !== this.token) return;
+
+            switch (d.type) {
+                case 'portal:hello':
+                    if (this.connected) return;
+                    clearTimeout(this._helloTimer);
+                    this.connected = true;
+                    this.token     = d.token;
+                    this.tier      = d.tier;
+                    this.caps      = d.caps || null;
+                    this.settings  = d.settings || null;
+                    this._fire('onHello', { tier: d.tier, caps: d.caps, save: d.save, settings: d.settings, standalone: false });
+                    break;
+                case 'portal:pause':    this._fire('onPause'); break;
+                case 'portal:resume':   this._fire('onResume'); break;
+                case 'portal:lowmem':   this._fire('onLowMemory', d.level || 1); break;
+                case 'portal:settings':
+                    this.settings = d.settings || null;
+                    this._fire('onSettings', d.settings);
+                    break;
+                case 'portal:shutdown':
+                    this.flush();
+                    this._fire('onShutdown');
+                    this.post('game:shutdown-ack', null);
+                    this.dispose();
+                    break;
+            }
+        },
+
+        _fire(name, arg) {
+            const fn = this._handlers && this._handlers[name];
+            if (typeof fn === 'function') {
+                try { fn(arg); } catch (err) { this.post('game:error', { message: String(err), stack: err && err.stack || '' }); }
+            }
+        },
+
+        post(type, payload) {
+            if (this.standalone || !global.parent || global.parent === global) return false;
+            const msg = payload ? Object.assign({ type: type, token: this.token }, payload)
+                                : { type: type, token: this.token };
+            try { global.parent.postMessage(msg, this._origin); } catch (e) { return false; }
+            return true;
+        },
+
+        /** Declare what the game needs; the portal has already gated on this,
+         *  but a standalone-opened bundle can warn for itself. */
+        ready(needs) { this.post('game:ready', { needs: needs || null }); },
+
+        progress(v) { this.post('game:progress', { value: v }); },
+
+        score(score, label) { this.post('game:score', { score: score, label: label || '' }); },
+
+        /** Debounced save — games call this freely; it coalesces to <=1 write/2s. */
+        save(data) {
+            this._pendingSave = data;
+            if (this._saveTimer) return;
+            const self = this;
+            this._saveTimer = setTimeout(function () { self.flush(); }, 2000);
+        },
+
+        flush() {
+            if (this._saveTimer) { clearTimeout(this._saveTimer); this._saveTimer = 0; }
+            if (this._pendingSave == null) return;
+            const data = this._pendingSave;
+            this._pendingSave = null;
+            if (this.standalone) localSave(this.id, data);
+            else this.post('game:save', { data: data });
+        },
+
+        stats(s) { this.post('game:stats', s); },
+
+        pointerLock(locked) { this.post('game:pointerlock', { locked: !!locked }); },
+
+        exit() { this.flush(); this.post('game:exit', null); },
+
+        dispose() {
+            if (this._onMessage) global.removeEventListener('message', this._onMessage);
+            this._onMessage = null;
+            this._handlers  = null;
+            this.connected  = false;
+        },
+    };
+
+    // --- standalone-only local persistence (never localStorage, per §1.4) ---
+    function idb() {
+        return new Promise(function (resolve, reject) {
+            const req = indexedDB.open('pe-standalone', 1);
+            req.onupgradeneeded = function () { req.result.createObjectStore('saves'); };
+            req.onsuccess = function () { resolve(req.result); };
+            req.onerror   = function () { reject(req.error); };
+        });
+    }
+    function localSave(id, data) {
+        return idb().then(function (db) {
+            const tx = db.transaction('saves', 'readwrite');
+            tx.objectStore('saves').put({ data: data, at: Date.now() }, id);
+            return new Promise(function (res) { tx.oncomplete = function () { db.close(); res(); }; });
+        }).catch(function () { /* private mode / quota — play on without saves */ });
+    }
+    function localLoad(id) {
+        return idb().then(function (db) {
+            const tx = db.transaction('saves', 'readonly');
+            const rq = tx.objectStore('saves').get(id);
+            return new Promise(function (res) {
+                rq.onsuccess = function () { db.close(); res(rq.result ? rq.result.data : null); };
+                rq.onerror   = function () { db.close(); res(null); };
+            });
+        }).catch(function () { return null; });
+    }
+
+    PE.Bridge = Bridge;
+    PE.PROTOCOL = PROTOCOL;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* inlined from js/main.js */
+'use strict';
+/**
+ * Prism Runner — WebGL1 endless runner.
+ *
+ * Exists to keep the middle rung of the renderer ladder honest (§1.3): it runs
+ * on WebGL1, uses ANGLE_instanced_arrays when the device has it and falls back
+ * to per-object draw calls when it does not, so the fallback path is exercised
+ * by a shipping title rather than only by a test.
+ */
+(function () {
+    const Bridge = PE.Bridge, Teardown = PE.Teardown, Pool = PE.Pool;
+    const LANES = [-2.2, 0, 2.2];
+    const MAX_INSTANCES = 96;
+
+    const state = {
+        mode: 'title', dist: 0, best: 0, gems: 0, speed: 14, lane: 1,
+        y: 0, vy: 0, grounded: true, spawnZ: 40, shake: 0, dead: 0,
+    };
+
+    const obstacles = new Pool(48, () => ({ x: 0, y: 0, z: 0, w: 1, h: 1, gem: false }));
+
+    let canvas, gl, prog, scaler, loop, ext = null, instanced = false;
+    let cubeVbo, cubeIbo, instBuf;
+    let uViewProj, uTint, aPos, aNorm, aOff, aScale, aColor, uOffset, uScale, uColor;
+    const instData = new Float32Array(MAX_INSTANCES * 9);   // offset3, scale3, color3
+
+    // ------------------------------------------------------------------ math
+    const proj = new Float32Array(16), view = new Float32Array(16), vp = new Float32Array(16);
+
+    function perspective(m, fovy, aspect, near, far) {
+        const f = 1 / Math.tan(fovy / 2);
+        m.fill(0);
+        m[0] = f / aspect; m[5] = f; m[11] = -1;
+        m[10] = (far + near) / (near - far);
+        m[14] = (2 * far * near) / (near - far);
+    }
+
+    /** Camera sits behind and above the runner, looking down +Z. */
+    function lookForward(m, ex, ey, ez, pitch) {
+        const cp = Math.cos(pitch), sp = Math.sin(pitch);
+        const rx = -1, ry = 0, rz = 0;
+        const ux = 0, uy = cp, uz = sp;
+        const fx = 0, fy = -sp, fz = cp;
+        m[0] = rx; m[4] = ry; m[8] = rz; m[12] = -(rx * ex + ry * ey + rz * ez);
+        m[1] = ux; m[5] = uy; m[9] = uz; m[13] = -(ux * ex + uy * ey + uz * ez);
+        m[2] = -fx; m[6] = -fy; m[10] = -fz; m[14] = (fx * ex + fy * ey + fz * ez);
+        m[3] = 0; m[7] = 0; m[11] = 0; m[15] = 1;
+    }
+
+    function multiply(out, a, b) {
+        for (let c = 0; c < 4; c++) {
+            const b0 = b[c * 4], b1 = b[c * 4 + 1], b2 = b[c * 4 + 2], b3 = b[c * 4 + 3];
+            out[c * 4]     = a[0] * b0 + a[4] * b1 + a[8]  * b2 + a[12] * b3;
+            out[c * 4 + 1] = a[1] * b0 + a[5] * b1 + a[9]  * b2 + a[13] * b3;
+            out[c * 4 + 2] = a[2] * b0 + a[6] * b1 + a[10] * b2 + a[14] * b3;
+            out[c * 4 + 3] = a[3] * b0 + a[7] * b1 + a[11] * b2 + a[15] * b3;
+        }
+    }
+
+    // ---------------------------------------------------------------- shaders
+    function source(useInstancing) {
+        const vs =
+            'precision mediump float;\n' +
+            'attribute vec3 aPos;\n attribute vec3 aNorm;\n' +
+            (useInstancing
+                ? 'attribute vec3 aOff;\n attribute vec3 aScale;\n attribute vec3 aColor;\n'
+                : 'uniform vec3 uOffset;\n uniform vec3 uScaleV;\n uniform vec3 uColorV;\n') +
+            'uniform mat4 uViewProj;\n varying vec3 vColor;\n varying float vFog;\n' +
+            'void main() {\n' +
+            (useInstancing ? '  vec3 off = aOff; vec3 scl = aScale; vec3 col = aColor;\n'
+                           : '  vec3 off = uOffset; vec3 scl = uScaleV; vec3 col = uColorV;\n') +
+            '  vec3 world = aPos * scl + off;\n' +
+            '  vec4 clip = uViewProj * vec4(world, 1.0);\n' +
+            '  gl_Position = clip;\n' +
+            // Cheap directional shade; no lights, no normals matrix.
+            '  float lambert = 0.55 + 0.45 * max(dot(normalize(aNorm), normalize(vec3(0.4, 0.9, -0.3))), 0.0);\n' +
+            '  vColor = col * lambert;\n' +
+            '  vFog = clamp((clip.w - 34.0) / 26.0, 0.0, 1.0);\n' +
+            '}';
+        const fs =
+            'precision mediump float;\n varying vec3 vColor;\n varying float vFog;\n uniform vec3 uTint;\n' +
+            'void main() { gl_FragColor = vec4(mix(vColor * uTint, vec3(0.07, 0.09, 0.16), vFog), 1.0); }';
+        return { vs, fs };
+    }
+
+    function build(useInstancing) {
+        const src = source(useInstancing);
+        const v = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(v, src.vs); gl.compileShader(v);
+        if (!gl.getShaderParameter(v, gl.COMPILE_STATUS)) throw new Error('vs: ' + gl.getShaderInfoLog(v));
+        const f = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(f, src.fs); gl.compileShader(f);
+        if (!gl.getShaderParameter(f, gl.COMPILE_STATUS)) throw new Error('fs: ' + gl.getShaderInfoLog(f));
+        const p = gl.createProgram();
+        gl.attachShader(p, v); gl.attachShader(p, f); gl.linkProgram(p);
+        gl.deleteShader(v); gl.deleteShader(f);
+        if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error('link: ' + gl.getProgramInfoLog(p));
+        return p;
+    }
+
+    // ------------------------------------------------------------------ mesh
+    function cube() {
+        // 24 vertices so each face gets its own normal.
+        const p = [], n = [], idx = [];
+        const faces = [
+            [[0, 0, 1], [-1, -1, 1, 1, -1, 1, 1, 1, 1, -1, 1, 1]],
+            [[0, 0, -1], [1, -1, -1, -1, -1, -1, -1, 1, -1, 1, 1, -1]],
+            [[1, 0, 0], [1, -1, 1, 1, -1, -1, 1, 1, -1, 1, 1, 1]],
+            [[-1, 0, 0], [-1, -1, -1, -1, -1, 1, -1, 1, 1, -1, 1, -1]],
+            [[0, 1, 0], [-1, 1, 1, 1, 1, 1, 1, 1, -1, -1, 1, -1]],
+            [[0, -1, 0], [-1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1]],
+        ];
+        let base = 0;
+        for (const [normal, verts] of faces) {
+            for (let i = 0; i < 4; i++) {
+                p.push(verts[i * 3] * 0.5, verts[i * 3 + 1] * 0.5, verts[i * 3 + 2] * 0.5);
+                n.push(normal[0], normal[1], normal[2]);
+            }
+            idx.push(base, base + 1, base + 2, base, base + 2, base + 3);
+            base += 4;
+        }
+        const interleaved = new Float32Array(p.length * 2);
+        for (let i = 0; i < p.length / 3; i++) {
+            interleaved[i * 6] = p[i * 3]; interleaved[i * 6 + 1] = p[i * 3 + 1]; interleaved[i * 6 + 2] = p[i * 3 + 2];
+            interleaved[i * 6 + 3] = n[i * 3]; interleaved[i * 6 + 4] = n[i * 3 + 1]; interleaved[i * 6 + 5] = n[i * 3 + 2];
+        }
+        return { verts: interleaved, indices: new Uint16Array(idx) };
+    }
+
+    // ------------------------------------------------------------------ game
+    const keys = Object.create(null);
+
+    function reset() {
+        obstacles.releaseAll();
+        state.dist = 0; state.gems = 0; state.speed = 14; state.lane = 1;
+        state.y = 0; state.vy = 0; state.grounded = true; state.spawnZ = 40; state.dead = 0;
+        state.mode = 'playing';
+    }
+
+    function spawnRow(z) {
+        const gap = (Math.random() * 3) | 0;
+        for (let i = 0; i < 3; i++) {
+            if (i === gap) {
+                if (Math.random() < 0.35) {
+                    const g = obstacles.acquire();
+                    if (g) { g.x = LANES[i]; g.y = 0.9; g.z = z; g.w = 0.5; g.h = 0.5; g.gem = true; }
+                }
+                continue;
+            }
+            if (Math.random() < 0.72) {
+                const o = obstacles.acquire();
+                if (o) { o.x = LANES[i]; o.y = 0.6; o.z = z; o.w = 1.6; o.h = 1.2; o.gem = false; }
+            }
+        }
+    }
+
+    function step(dt) {
+        if (state.mode !== 'playing') { state.shake *= 0.9; return; }
+
+        state.speed = Math.min(34, state.speed + dt * 0.55);
+        state.dist += state.speed * dt;
+        state.shake *= 0.88;
+
+        if (keys.KeyA && !keys._a) { state.lane = Math.max(0, state.lane - 1); }
+        if (keys.KeyD && !keys._d) { state.lane = Math.min(2, state.lane + 1); }
+        keys._a = keys.KeyA; keys._d = keys.KeyD;
+
+        if ((keys.Space || keys.KeyW) && state.grounded) { state.vy = 7.4; state.grounded = false; }
+        state.vy -= 22 * dt;
+        state.y += state.vy * dt;
+        if (state.y <= 0) { state.y = 0; state.vy = 0; state.grounded = true; }
+
+        while (state.spawnZ < state.dist + 90) {
+            spawnRow(state.spawnZ);
+            state.spawnZ += 7 + Math.random() * 4;
+        }
+
+        const px = LANES[state.lane];
+        obstacles.update(function (o) {
+            const rel = o.z - state.dist;
+            if (rel < -6) return false;
+            if (rel > -1.2 && rel < 1.2 && Math.abs(o.x - px) < 1.1) {
+                if (o.gem) {
+                    if (Math.abs(state.y + 0.5 - o.y) < 1.1) { state.gems++; return false; }
+                } else if (state.y < o.h) {
+                    hit();
+                    return false;
+                }
+            }
+            return true;
+        }, dt);
+    }
+
+    function hit() {
+        state.shake = 1;
+        state.mode = 'dead';
+        state.dead = performance.now();
+        const score = Math.floor(state.dist) + state.gems * 50;
+        if (score > state.best) state.best = score;
+        Bridge.score(score, 'run');
+        Bridge.save({ v: 1, best: state.best });
+    }
+
+    // ---------------------------------------------------------------- render
+    function render(alpha, dt) {
+        const w = canvas.width, h = canvas.height;
+        gl.viewport(0, 0, w, h);
+        gl.clearColor(0.07, 0.09, 0.16, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        const shakeX = state.shake * (Math.random() - 0.5) * 0.5;
+        perspective(proj, 1.15, w / Math.max(1, h), 0.1, 60);
+        lookForward(view, LANES[state.lane] * 0.35 + shakeX, 3.4 + state.y * 0.3, -6.8, 0.235);
+        multiply(vp, proj, view);
+
+        gl.useProgram(prog);
+        gl.uniformMatrix4fv(uViewProj, false, vp);
+        gl.uniform3f(uTint, 1, 1, 1);
+
+        let n = 0;
+        // Ground: a run of slabs recycled around the player, so the track is
+        // "infinite" without ever allocating.
+        const seg = Math.floor(state.dist / 6);
+        for (let i = -1; i < 9 && n < MAX_INSTANCES; i++, n++) {
+            const z = (seg + i) * 6 - state.dist;
+            push(n, 0, -0.62, z, 8.4, 0.5, 5.6, (seg + i) % 2 ? 0.22 : 0.29, 0.26, 0.40);
+        }
+        for (let i = 0; i < obstacles.size && n < MAX_INSTANCES; i++, n++) {
+            const o = obstacles.at(i);
+            const z = o.z - state.dist;
+            if (o.gem) push(n, o.x, o.y + Math.sin(state.dist * 2 + o.z) * 0.12, z, o.w, o.w, o.w, 0.35, 0.82, 0.63);
+            else push(n, o.x, o.y, z, o.w, o.h, o.w, 0.85, 0.35, 0.33);
+        }
+        if (n < MAX_INSTANCES) {
+            push(n, LANES[state.lane], state.y + 0.45, 0, 0.8, 0.9, 0.8, 0.95, 0.85, 0.4);
+            n++;
+        }
+
+        drawInstances(n);
+        scaler.sample(dt * 1000, performance.now());
+        drawHud();
+    }
+
+    function push(i, x, y, z, sx, sy, sz, r, g, b) {
+        const o = i * 9;
+        instData[o] = x; instData[o + 1] = y; instData[o + 2] = z;
+        instData[o + 3] = sx; instData[o + 4] = sy; instData[o + 5] = sz;
+        instData[o + 6] = r; instData[o + 7] = g; instData[o + 8] = b;
+    }
+
+    function drawInstances(count) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVbo);
+        gl.enableVertexAttribArray(aPos);
+        gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 24, 0);
+        gl.enableVertexAttribArray(aNorm);
+        gl.vertexAttribPointer(aNorm, 3, gl.FLOAT, false, 24, 12);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeIbo);
+
+        if (instanced) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
+            gl.bufferSubData(gl.ARRAY_BUFFER, 0, instData.subarray(0, count * 9));
+            bindInstanceAttrib(aOff, 3, 0);
+            bindInstanceAttrib(aScale, 3, 12);
+            bindInstanceAttrib(aColor, 3, 24);
+            ext.drawElementsInstancedANGLE(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0, count);
+            disableInstanceAttrib(aOff); disableInstanceAttrib(aScale); disableInstanceAttrib(aColor);
+        } else {
+            // Fallback: one draw call per object. Bounded by MAX_INSTANCES, so
+            // the worst case is ~96 calls — fine even on a weak driver.
+            for (let i = 0; i < count; i++) {
+                const o = i * 9;
+                gl.uniform3f(uOffset, instData[o], instData[o + 1], instData[o + 2]);
+                gl.uniform3f(uScale, instData[o + 3], instData[o + 4], instData[o + 5]);
+                gl.uniform3f(uColor, instData[o + 6], instData[o + 7], instData[o + 8]);
+                gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0);
+            }
+        }
+    }
+
+    function bindInstanceAttrib(loc, size, offset) {
+        gl.enableVertexAttribArray(loc);
+        gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 36, offset);
+        ext.vertexAttribDivisorANGLE(loc, 1);
+    }
+    function disableInstanceAttrib(loc) {
+        ext.vertexAttribDivisorANGLE(loc, 0);
+        gl.disableVertexAttribArray(loc);
+    }
+
+    // ------------------------------------------------------------------- hud
+    let hudEl, titleEl;
+    function drawHud() {
+        hudEl.textContent = `${Math.floor(state.dist)} m · ${state.gems} ◆ · best ${state.best}` +
+            (instanced ? '' : ' · instancing off');
+        titleEl.style.display = state.mode === 'playing' ? 'none' : 'flex';
+        if (state.mode !== 'playing') {
+            titleEl.firstElementChild.textContent = state.mode === 'dead' ? 'WRECKED' : 'PRISM RUNNER';
+            titleEl.lastElementChild.textContent = state.mode === 'dead'
+                ? `${Math.floor(state.dist)} m · ${state.gems} gems — press ENTER`
+                : 'A/D lanes · SPACE jump — press ENTER';
+        }
+    }
+
+    // ------------------------------------------------------------------ boot
+    function boot(hello) {
+        canvas = document.getElementById('gl');
+        hudEl = document.getElementById('hud');
+        titleEl = document.getElementById('title');
+        const bootEl = document.getElementById('boot');
+
+        const attrs = { alpha: false, antialias: false, depth: true, powerPreference: 'low-power' };
+        gl = canvas.getContext('webgl', attrs) || canvas.getContext('experimental-webgl', attrs);
+        if (!gl) {
+            bootEl.textContent = 'WebGL unavailable on this device.';
+            Bridge.post('game:error', { message: 'WebGL1 unavailable', stack: '' });
+            return;
+        }
+        Teardown.trackContext(gl);
+        bootEl.remove();
+
+        ext = gl.getExtension('ANGLE_instanced_arrays');
+        instanced = !!ext;
+        prog = build(instanced);
+
+        aPos = gl.getAttribLocation(prog, 'aPos');
+        aNorm = gl.getAttribLocation(prog, 'aNorm');
+        uViewProj = gl.getUniformLocation(prog, 'uViewProj');
+        uTint = gl.getUniformLocation(prog, 'uTint');
+        if (instanced) {
+            aOff = gl.getAttribLocation(prog, 'aOff');
+            aScale = gl.getAttribLocation(prog, 'aScale');
+            aColor = gl.getAttribLocation(prog, 'aColor');
+        } else {
+            uOffset = gl.getUniformLocation(prog, 'uOffset');
+            uScale = gl.getUniformLocation(prog, 'uScaleV');
+            uColor = gl.getUniformLocation(prog, 'uColorV');
+        }
+
+        const geo = cube();
+        cubeVbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVbo);
+        gl.bufferData(gl.ARRAY_BUFFER, geo.verts, gl.STATIC_DRAW);
+        cubeIbo = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeIbo);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, geo.indices, gl.STATIC_DRAW);
+        if (instanced) {
+            instBuf = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, instBuf);
+            gl.bufferData(gl.ARRAY_BUFFER, instData.byteLength, gl.DYNAMIC_DRAW);
+        }
+        Teardown.onDestroy(function () {
+            gl.deleteBuffer(cubeVbo); gl.deleteBuffer(cubeIbo);
+            if (instBuf) gl.deleteBuffer(instBuf);
+            gl.deleteProgram(prog);
+        });
+
+        gl.enable(gl.DEPTH_TEST);
+        gl.enable(gl.CULL_FACE);
+
+        if (hello && hello.save && hello.save.v === 1) state.best = hello.save.best | 0;
+
+        scaler = new PE.ResolutionScaler(canvas, {
+            targetFps: 60, maxDpr: 1,
+            initialScale: PE.ResolutionScaler.suggestInitialScale(),
+        });
+        Teardown.on(window, 'resize', () => scaler.applyResize());
+
+        Teardown.on(window, 'keydown', (e) => {
+            keys[e.code] = true;
+            if (e.code === 'Enter' && state.mode !== 'playing') reset();
+            if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+        });
+        Teardown.on(window, 'keyup', (e) => { keys[e.code] = false; });
+        Teardown.on(canvas, 'pointerdown', () => { if (state.mode !== 'playing') reset(); });
+
+        loop = new PE.Loop({
+            hz: 60, step, render,
+            onStats: (s) => Bridge.stats({
+                fps: s.fps, frameMs: s.frameMs, scale: scaler.scale(),
+                heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : 0,
+                entities: obstacles.size,
+            }),
+        });
+        Teardown.onDestroy(() => loop.stop());
+        loop.start();
+        Bridge.ready({ tier: 'webgl1', pointerLock: false });
+    }
+
+    Bridge.connect({
+        id: 'prism-runner',
+        onHello: boot,
+        onPause: () => loop && loop.pause(),
+        onResume: () => loop && loop.resume(),
+        onLowMemory: () => Bridge.flush(),
+        onSettings: (s) => {
+            if (!scaler) return;
+            if (s && typeof s.resolutionScale === 'number') { scaler.setAuto(false); scaler.setScale(s.resolutionScale); }
+            else scaler.setAuto(true);
+        },
+        onShutdown: () => { Bridge.save({ v: 1, best: state.best }); Bridge.flush(); Teardown.destroyAll(); },
+    });
+})();
+</script>
+</body>
+</html>

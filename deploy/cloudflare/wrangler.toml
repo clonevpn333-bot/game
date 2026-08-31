@@ -1,0 +1,30 @@
+# Cloudflare Pages + Worker deployment for Lowspec Arcade.
+#
+#   wrangler pages deploy . --project-name lowspec-arcade
+#
+# The Worker is only needed for the routing gateway (/play/<id>) and optional
+# token gating. Plain static hosting works without it.
+
+name = "lowspec-arcade"
+main = "deploy/cloudflare/worker.js"
+compatibility_date = "2026-01-15"
+
+[assets]
+directory = "."
+binding = "ASSETS"
+
+[vars]
+# Leave REQUIRE_TOKEN unset for an open library (the v1 default — see
+# deploy/README.md). Set it to "1" only when there is a real gating requirement.
+# REQUIRE_TOKEN = "1"
+# REQUIRE_AUDIENCE = "1"
+ORIGIN = "https://lowspec-arcade.pages.dev"
+
+# JWT_SECRET is a secret, never a var:
+#   wrangler secret put JWT_SECRET
+
+# Routing table for /play/<id> -> versioned bundle. Optional; the Worker falls
+# back to games.json when the namespace is absent.
+# [[kv_namespaces]]
+# binding = "ROUTES"
+# id = "<namespace-id>"

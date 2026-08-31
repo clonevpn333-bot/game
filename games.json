@@ -1,0 +1,277 @@
+{
+  "schemaVersion": 1,
+  "protocol": 1,
+  "generatedBy": "tools/build.mjs",
+  "games": [
+    {
+      "id": "leak-test",
+      "title": "Leak Test Harness",
+      "tagline": "Deliberately misbehaves",
+      "description": "Diagnostic bundle. Leaks buffers, stray listeners, rAF chains and GL contexts on purpose, and can be told to hang, throw, or ignore shutdown — used to prove the portal survives a bad title and reclaims its heap on close.",
+      "entry": "games/leak-test.html",
+      "version": "1.0.0",
+      "hash": "abbc8c6041",
+      "bytes": 17890,
+      "gzipBytes": 5648,
+      "minRendererTier": "canvas2d",
+      "estMemoryMB": 320,
+      "pointerLock": false,
+      "thumbnail": "portal/thumbs/leak-test.jpg",
+      "controls": [
+        {
+          "keys": "L",
+          "action": "Leak faster"
+        },
+        {
+          "keys": "G",
+          "action": "Spam GL contexts"
+        },
+        {
+          "keys": "C",
+          "action": "Throw errors"
+        },
+        {
+          "keys": "H",
+          "action": "Hang the frame"
+        },
+        {
+          "keys": "S",
+          "action": "Ignore shutdown"
+        }
+      ],
+      "tags": [
+        "diagnostic"
+      ],
+      "hidden": true,
+      "saves": false,
+      "budgetKB": 24
+    },
+    {
+      "id": "orbital-salvage",
+      "title": "Orbital Salvage",
+      "tagline": "Break rocks, tow the pieces home",
+      "description": "A wave-based asteroid field with salvage crates worth grabbing. Built as the reference 2D title: fixed-timestep physics with render interpolation, fixed-size pools for rocks, shots, particles and crates, and a static starfield layer that is never cleared.",
+      "entry": "games/orbital-salvage.html",
+      "version": "1.0.0",
+      "hash": "e2928cb179",
+      "bytes": 48402,
+      "gzipBytes": 13752,
+      "minRendererTier": "canvas2d",
+      "estMemoryMB": 45,
+      "pointerLock": false,
+      "thumbnail": "portal/thumbs/orbital-salvage.jpg",
+      "controls": [
+        {
+          "keys": "W / ↑",
+          "action": "Thrust"
+        },
+        {
+          "keys": "A D / ← →",
+          "action": "Turn"
+        },
+        {
+          "keys": "Space",
+          "action": "Fire"
+        },
+        {
+          "keys": "P",
+          "action": "Pause"
+        },
+        {
+          "keys": "Enter",
+          "action": "Start / restart"
+        }
+      ],
+      "tags": [
+        "arcade",
+        "2d",
+        "action"
+      ],
+      "hidden": false,
+      "saves": true,
+      "budgetKB": 80
+    },
+    {
+      "id": "pointer-lock-probe",
+      "title": "Pointer Lock Probe",
+      "tagline": "Verifies pointer lock inside the sandbox",
+      "description": "Diagnostic bundle. Requests pointer lock from inside a frame configured exactly like a game launch and reports whether the lock engages and whether movement deltas are delivered.",
+      "entry": "games/pointer-lock-probe.html",
+      "version": "1.0.0",
+      "hash": "fa11c76864",
+      "bytes": 16874,
+      "gzipBytes": 5176,
+      "minRendererTier": "canvas2d",
+      "estMemoryMB": 8,
+      "pointerLock": true,
+      "thumbnail": "portal/thumbs/pointer-lock-probe.jpg",
+      "controls": [
+        {
+          "keys": "Click",
+          "action": "Request pointer lock"
+        },
+        {
+          "keys": "Esc",
+          "action": "Release"
+        }
+      ],
+      "tags": [
+        "diagnostic"
+      ],
+      "hidden": true,
+      "saves": false,
+      "budgetKB": 24
+    },
+    {
+      "id": "prism-runner",
+      "title": "Prism Runner",
+      "tagline": "Three lanes, no brakes",
+      "description": "An endless runner on the WebGL1 rung of the ladder. Uses ANGLE_instanced_arrays for a single instanced draw call where the device has it, and falls back to per-object draws where it does not — so the fallback path ships rather than only being tested.",
+      "entry": "games/prism-runner.html",
+      "version": "1.0.0",
+      "hash": "d57c116a5d",
+      "bytes": 46659,
+      "gzipBytes": 13578,
+      "minRendererTier": "webgl1",
+      "estMemoryMB": 60,
+      "pointerLock": false,
+      "thumbnail": "portal/thumbs/prism-runner.jpg",
+      "controls": [
+        {
+          "keys": "A D",
+          "action": "Change lane"
+        },
+        {
+          "keys": "Space / W",
+          "action": "Jump"
+        },
+        {
+          "keys": "Enter",
+          "action": "Start / restart"
+        }
+      ],
+      "tags": [
+        "arcade",
+        "3d",
+        "action"
+      ],
+      "hidden": false,
+      "saves": true,
+      "budgetKB": 70
+    },
+    {
+      "id": "schedule-i",
+      "title": "Schedule I",
+      "tagline": "Top-down hustle sim",
+      "description": "Grow, mix, package and move product across a small town while a heat meter and a patrolling PD make every public deal a gamble. Phone, inventory, dealers, laundering and a nine-rank progression.",
+      "entry": "games/schedule-i.html",
+      "version": "1.1.0",
+      "hash": "31c39664f9",
+      "bytes": 163353,
+      "gzipBytes": 40513,
+      "minRendererTier": "canvas2d",
+      "estMemoryMB": 120,
+      "pointerLock": false,
+      "thumbnail": "portal/thumbs/schedule-i.jpg",
+      "controls": [
+        {
+          "keys": "WASD / Arrows",
+          "action": "Move"
+        },
+        {
+          "keys": "Shift",
+          "action": "Sprint"
+        },
+        {
+          "keys": "E",
+          "action": "Interact"
+        },
+        {
+          "keys": "F",
+          "action": "Phone"
+        },
+        {
+          "keys": "I",
+          "action": "Inventory"
+        },
+        {
+          "keys": "M",
+          "action": "Map"
+        },
+        {
+          "keys": "Esc",
+          "action": "Close panel"
+        }
+      ],
+      "tags": [
+        "sim",
+        "2d",
+        "sandbox"
+      ],
+      "hidden": false,
+      "saves": true,
+      "budgetKB": 400
+    },
+    {
+      "id": "voxel-drift",
+      "title": "Voxel Drift",
+      "tagline": "First-person voxel sandbox",
+      "description": "Streaming voxel terrain you can dig into and build on. The portal's stress case: WebGL2 with a single texture atlas, per-chunk vertex arrays, frustum culling, chunk meshing on a worker, pointer-lock mouse-look, and a hard LRU byte budget on resident geometry.",
+      "entry": "games/voxel-drift.html",
+      "version": "1.0.0",
+      "hash": "111866fcdf",
+      "bytes": 77539,
+      "gzipBytes": 22705,
+      "minRendererTier": "webgl2",
+      "estMemoryMB": 320,
+      "pointerLock": true,
+      "thumbnail": "portal/thumbs/voxel-drift.jpg",
+      "controls": [
+        {
+          "keys": "Click",
+          "action": "Capture mouse (pointer lock)"
+        },
+        {
+          "keys": "WASD",
+          "action": "Move"
+        },
+        {
+          "keys": "Shift",
+          "action": "Sprint"
+        },
+        {
+          "keys": "Space",
+          "action": "Jump / rise"
+        },
+        {
+          "keys": "F",
+          "action": "Toggle flight"
+        },
+        {
+          "keys": "Left click",
+          "action": "Break block"
+        },
+        {
+          "keys": "Right click",
+          "action": "Place block"
+        },
+        {
+          "keys": "1 – 6",
+          "action": "Select block"
+        },
+        {
+          "keys": "Esc",
+          "action": "Release mouse"
+        }
+      ],
+      "tags": [
+        "sandbox",
+        "3d",
+        "voxel"
+      ],
+      "hidden": false,
+      "saves": true,
+      "budgetKB": 120
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "pointer-lock-probe",
+  "title": "Pointer Lock Probe",
+  "tagline": "Verifies pointer lock inside the sandbox",
+  "description": "Diagnostic bundle. Requests pointer lock from inside a frame configured exactly like a game launch and reports whether the lock engages and whether movement deltas are delivered.",
+  "version": "1.0.0",
+  "minRendererTier": "canvas2d",
+  "estMemoryMB": 8,
+  "pointerLock": true,
+  "hidden": true,
+  "saves": false,
+  "tags": ["diagnostic"],
+  "budgetKB": 24,
+  "controls": [
+    { "keys": "Click", "action": "Request pointer lock" },
+    { "keys": "Esc", "action": "Release" }
+  ]
+}

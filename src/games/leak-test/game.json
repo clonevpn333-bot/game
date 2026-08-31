@@ -1,0 +1,21 @@
+{
+  "id": "leak-test",
+  "title": "Leak Test Harness",
+  "tagline": "Deliberately misbehaves",
+  "description": "Diagnostic bundle. Leaks buffers, stray listeners, rAF chains and GL contexts on purpose, and can be told to hang, throw, or ignore shutdown — used to prove the portal survives a bad title and reclaims its heap on close.",
+  "version": "1.0.0",
+  "minRendererTier": "canvas2d",
+  "estMemoryMB": 320,
+  "pointerLock": false,
+  "hidden": true,
+  "saves": false,
+  "tags": ["diagnostic"],
+  "budgetKB": 24,
+  "controls": [
+    { "keys": "L", "action": "Leak faster" },
+    { "keys": "G", "action": "Spam GL contexts" },
+    { "keys": "C", "action": "Throw errors" },
+    { "keys": "H", "action": "Hang the frame" },
+    { "keys": "S", "action": "Ignore shutdown" }
+  ]
+}

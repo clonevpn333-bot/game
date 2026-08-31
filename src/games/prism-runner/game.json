@@ -1,0 +1,17 @@
+{
+  "id": "prism-runner",
+  "title": "Prism Runner",
+  "tagline": "Three lanes, no brakes",
+  "description": "An endless runner on the WebGL1 rung of the ladder. Uses ANGLE_instanced_arrays for a single instanced draw call where the device has it, and falls back to per-object draws where it does not — so the fallback path ships rather than only being tested.",
+  "version": "1.0.0",
+  "minRendererTier": "webgl1",
+  "estMemoryMB": 60,
+  "pointerLock": false,
+  "tags": ["arcade", "3d", "action"],
+  "budgetKB": 70,
+  "controls": [
+    { "keys": "A D", "action": "Change lane" },
+    { "keys": "Space / W", "action": "Jump" },
+    { "keys": "Enter", "action": "Start / restart" }
+  ]
+}

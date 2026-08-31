@@ -1,0 +1,23 @@
+{
+  "id": "voxel-drift",
+  "title": "Voxel Drift",
+  "tagline": "First-person voxel sandbox",
+  "description": "Streaming voxel terrain you can dig into and build on. The portal's stress case: WebGL2 with a single texture atlas, per-chunk vertex arrays, frustum culling, chunk meshing on a worker, pointer-lock mouse-look, and a hard LRU byte budget on resident geometry.",
+  "version": "1.0.0",
+  "minRendererTier": "webgl2",
+  "estMemoryMB": 320,
+  "pointerLock": true,
+  "tags": ["sandbox", "3d", "voxel"],
+  "budgetKB": 120,
+  "controls": [
+    { "keys": "Click", "action": "Capture mouse (pointer lock)" },
+    { "keys": "WASD", "action": "Move" },
+    { "keys": "Shift", "action": "Sprint" },
+    { "keys": "Space", "action": "Jump / rise" },
+    { "keys": "F", "action": "Toggle flight" },
+    { "keys": "Left click", "action": "Break block" },
+    { "keys": "Right click", "action": "Place block" },
+    { "keys": "1 – 6", "action": "Select block" },
+    { "keys": "Esc", "action": "Release mouse" }
+  ]
+}

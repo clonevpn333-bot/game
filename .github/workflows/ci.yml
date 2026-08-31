@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  verify:
+    name: Build, budgets and acceptance tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The shipped portal has no runtime dependencies; Playwright is test-only.
+      - name: Install test dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Bundles and manifest are in sync with sources
+        run: node tools/build.mjs --check
+
+      - name: Size budgets
+        run: node tools/check-budgets.mjs
+
+      - name: Start static server
+        run: |
+          node tools/serve.mjs 8765 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8765/games.json >/dev/null && break; sleep 1; done
+
+      - name: Acceptance tests
+        run: node tests/e2e.mjs
+
+      - name: Benchmarks against the §4 thresholds
+        run: node tools/bench.mjs
+
+      # The 30-minute acceptance soak is run before a release; CI runs a short
+      # one on every push so a leak shows up the day it lands.
+      - name: Memory soak (short)
+        run: node tools/soak.mjs --minutes=5 --per-game=25

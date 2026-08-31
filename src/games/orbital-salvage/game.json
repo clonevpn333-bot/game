@@ -1,0 +1,19 @@
+{
+  "id": "orbital-salvage",
+  "title": "Orbital Salvage",
+  "tagline": "Break rocks, tow the pieces home",
+  "description": "A wave-based asteroid field with salvage crates worth grabbing. Built as the reference 2D title: fixed-timestep physics with render interpolation, fixed-size pools for rocks, shots, particles and crates, and a static starfield layer that is never cleared.",
+  "version": "1.0.0",
+  "minRendererTier": "canvas2d",
+  "estMemoryMB": 45,
+  "pointerLock": false,
+  "tags": ["arcade", "2d", "action"],
+  "budgetKB": 80,
+  "controls": [
+    { "keys": "W / ↑", "action": "Thrust" },
+    { "keys": "A D / ← →", "action": "Turn" },
+    { "keys": "Space", "action": "Fire" },
+    { "keys": "P", "action": "Pause" },
+    { "keys": "Enter", "action": "Start / restart" }
+  ]
+}

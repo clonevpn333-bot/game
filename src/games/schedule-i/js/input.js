@@ -6,23 +6,23 @@ const Input = {
     mouse: { x: 0, y: 0, down: false, _jd: false, _ju: false },
 
     init(canvas) {
-        window.addEventListener('keydown', e => {
+        PE.Teardown.on(window, 'keydown', e => {
             if (!this.keys[e.code]) this._justPressed[e.code] = true;
             this.keys[e.code] = true;
             if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))
                 e.preventDefault();
         });
-        window.addEventListener('keyup', e => { this.keys[e.code] = false; });
+        PE.Teardown.on(window, 'keyup', e => { this.keys[e.code] = false; });
 
-        canvas.addEventListener('mousemove', e => {
+        PE.Teardown.on(canvas, 'mousemove', e => {
             const r = canvas.getBoundingClientRect();
             const sx = CFG.W / r.width;
             const sy = CFG.H / r.height;
             this.mouse.x = (e.clientX - r.left) * sx;
             this.mouse.y = (e.clientY - r.top)  * sy;
         });
-        canvas.addEventListener('mousedown', () => { this.mouse.down = true; this.mouse._jd = true; });
-        canvas.addEventListener('mouseup',   () => { this.mouse.down = false; this.mouse._ju = true; });
+        PE.Teardown.on(canvas, 'mousedown', () => { this.mouse.down = true; this.mouse._jd = true; });
+        PE.Teardown.on(canvas, 'mouseup',   () => { this.mouse.down = false; this.mouse._ju = true; });
     },
 
     flush() {

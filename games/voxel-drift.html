@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voxel Drift</title>
+<style>
+html,body{margin:0;height:100%;background:#8db4e0;overflow:hidden;
+  font:13px ui-monospace,SFMono-Regular,Menlo,monospace;color:#fff}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#cross{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;
+  pointer-events:none;opacity:.85}
+#cross::before,#cross::after{content:"";position:absolute;background:#fff;
+  box-shadow:0 0 2px rgba(0,0,0,.6)}
+#cross::before{left:6px;top:0;width:2px;height:14px}
+#cross::after{left:0;top:6px;width:14px;height:2px}
+#hud{position:absolute;left:10px;top:8px;padding:4px 8px;border-radius:6px;
+  background:rgba(8,12,18,.55);text-shadow:0 1px 2px rgba(0,0,0,.5)}
+#hint{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);
+  padding:7px 14px;border-radius:8px;background:rgba(8,12,18,.62);white-space:nowrap}
+#keys{position:absolute;right:10px;top:8px;padding:4px 8px;border-radius:6px;
+  background:rgba(8,12,18,.55);text-align:right;line-height:1.6;opacity:.9}
+#boot{position:absolute;inset:0;display:grid;place-items:center;background:#0d1117;
+  color:#58d0a0;letter-spacing:.2em;padding:24px;text-align:center}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="cross"></div>
+<div id="hud"></div>
+<div id="keys">WASD move · SPACE jump · F fly<br>LMB break · RMB place · 1-6 block</div>
+<div id="hint"></div>
+<div id="boot">GENERATING TERRAIN</div>
+
+<script>
+/* inlined from ../../engine/teardown.js */
+'use strict';
+/**
+ * Teardown registry — §1.1 "Deterministic teardown on game exit".
+ *
+ * Nothing in a game should call addEventListener / requestAnimationFrame /
+ * setTimeout / createObjectURL directly. Route them through here and a single
+ * destroyAll() reclaims the lot. The portal also destroys the whole iframe
+ * (§2.2), but manual teardown is what makes standalone play and the
+ * heap-returns-to-baseline benchmark (§4) hold.
+ */
+(function (global) {
+    const PE = (global.PE = global.PE || {});
+
+    const listeners = [];   // [target, type, fn, opts]
+    const rafs      = [];   // raf handles
+    const timers    = [];   // setTimeout handles
+    const intervals = [];   // setInterval handles
+    const contexts  = [];   // WebGL contexts
+    const urls      = [];   // object URLs
+    const audios    = [];   // AudioContexts
+    const closers   = [];   // arbitrary cleanup fns
+    let destroyed   = false;
+
+    const Teardown = {
+        get destroyed() { return destroyed; },
+
+        on(target, type, fn, opts) {
+            if (destroyed) return fn;
+            target.addEventListener(type, fn, opts);
+            listeners.push([target, type, fn, opts]);
+            return fn;
+        },
+
+        off(target, type, fn, opts) {
+            target.removeEventListener(type, fn, opts);
+            for (let i = listeners.length - 1; i >= 0; i--) {
+                const l = listeners[i];
+                if (l[0] === target && l[1] === type && l[2] === fn) listeners.splice(i, 1);
+            }
+        },
+
+        raf(fn) {
+            if (destroyed) return 0;
+            const h = requestAnimationFrame(fn);
+            rafs.push(h);
+            // Keep the handle list bounded: a long-running loop would otherwise
+            // push one entry per frame forever (a leak in the leak-preventer).
+            if (rafs.length > 8) rafs.splice(0, rafs.length - 8);
+            return h;
+        },
+
+        timeout(fn, ms) {
+            if (destroyed) return 0;
+            const h = setTimeout(function () {
+                const i = timers.indexOf(h);
+                if (i >= 0) timers.splice(i, 1);
+                fn();
+            }, ms);
+            timers.push(h);
+            return h;
+        },
+
+        interval(fn, ms) {
+            if (destroyed) return 0;
+            const h = setInterval(fn, ms);
+            intervals.push(h);
+            return h;
+        },
+
+        trackContext(gl)      { if (gl) contexts.push(gl); return gl; },
+        trackAudio(ac)        { if (ac) audios.push(ac); return ac; },
+        trackObjectURL(url)   { if (url) urls.push(url); return url; },
+        onDestroy(fn)         { if (fn) closers.push(fn); return fn; },
+
+        /** Idempotent. Safe to call from unload, from the portal, or both. */
+        destroyAll() {
+            if (destroyed) return;
+            destroyed = true;
+
+            for (let i = 0; i < rafs.length; i++) cancelAnimationFrame(rafs[i]);
+            for (let i = 0; i < timers.length; i++) clearTimeout(timers[i]);
+            for (let i = 0; i < intervals.length; i++) clearInterval(intervals[i]);
+            for (let i = 0; i < listeners.length; i++) {
+                const l = listeners[i];
+                try { l[0].removeEventListener(l[1], l[2], l[3]); } catch (e) { /* detached */ }
+            }
+            for (let i = 0; i < closers.length; i++) {
+                try { closers[i](); } catch (e) { /* keep tearing down */ }
+            }
+            for (let i = 0; i < contexts.length; i++) {
+                try {
+                    const ext = contexts[i].getExtension('WEBGL_lose_context');
+                    if (ext) ext.loseContext();
+                } catch (e) { /* context already gone */ }
+            }
+            for (let i = 0; i < audios.length; i++) {
+                try { audios[i].close(); } catch (e) { /* already closed */ }
+            }
+            for (let i = 0; i < urls.length; i++) {
+                try { URL.revokeObjectURL(urls[i]); } catch (e) { /* already revoked */ }
+            }
+
+            listeners.length = 0; rafs.length = 0; timers.length = 0;
+            intervals.length = 0; contexts.length = 0; urls.length = 0;
+            audios.length = 0; closers.length = 0;
+
+            if (document.pointerLockElement) {
+                try { document.exitPointerLock(); } catch (e) { /* not locked */ }
+            }
+        },
+    };
+
+    PE.Teardown = Teardown;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* inlined from ../../engine/pool.js */
+'use strict';
+/**
+ * Fixed-capacity object pool — §1.1 "Pools are sized at load and never grow
+ * during play". Growing a pool mid-frame is exactly the allocation spike the
+ * target hardware cannot absorb, so exhaustion recycles the oldest live object
+ * instead (or drops, if the pool is configured to).
+ */
+(function (global) {
+    const PE = (global.PE = global.PE || {});
+
+    function Pool(capacity, factory, reset, opts) {
+        this.capacity = capacity | 0;
+        this._reset   = reset || null;
+        this._items   = new Array(this.capacity);
+        this._live    = new Array(this.capacity);   // dense list of active items
+        this.size     = 0;                          // active count
+        this._free    = this.capacity;
+        this._cursor  = 0;                          // round-robin recycle cursor
+        this.recycleOldest = !opts || opts.recycleOldest !== false;
+        this.exhausted = 0;                         // diagnostic counter
+
+        for (let i = 0; i < this.capacity; i++) this._items[i] = factory(i);
+        // Free list as a stack of indices into _items.
+        this._stack = new Int32Array(this.capacity);
+        for (let i = 0; i < this.capacity; i++) this._stack[i] = this.capacity - 1 - i;
+    }
+
+    Pool.prototype.acquire = function () {
+        if (this._free > 0) {
+            const idx = this._stack[--this._free];
+            const obj = this._items[idx];
+            obj.__poolIndex = idx;
+            obj.__poolSlot  = this.size;
+            this._live[this.size++] = obj;
+            if (this._reset) this._reset(obj);
+            return obj;
+        }
+        this.exhausted++;
+        if (!this.recycleOldest || this.size === 0) return null;
+        // Recycle round-robin so one long-lived entity can't monopolise the pool.
+        const victim = this._live[this._cursor % this.size];
+        this._cursor++;
+        if (this._reset) this._reset(victim);
+        return victim;
+    };
+
+    /** O(1) release via swap-with-last; iteration order is not stable. */
+    Pool.prototype.release = function (obj) {
+        const slot = obj.__poolSlot;
+        if (slot === undefined || slot < 0 || slot >= this.size || this._live[slot] !== obj) return false;
+        const last = this._live[--this.size];
+        this._live[slot] = last;
+        last.__poolSlot  = slot;
+        this._live[this.size] = null;
+        obj.__poolSlot = -1;
+        this._stack[this._free++] = obj.__poolIndex;
+        return true;
+    };
+
+    Pool.prototype.at = function (i) { return this._live[i]; };
+
+    Pool.prototype.releaseAll = function () {
+        for (let i = 0; i < this.size; i++) {
+            const o = this._live[i];
+            o.__poolSlot = -1;
+            this._stack[this._free++] = o.__poolIndex;
+            this._live[i] = null;
+        }
+        this.size = 0;
+    };
+
+    /**
+     * Allocation-free sweep. `fn(obj, dt)` returns false to release the object.
+     * Iterates backwards so swap-removal never skips an entry.
+     */
+    Pool.prototype.update = function (fn, dt) {
+        for (let i = this.size - 1; i >= 0; i--) {
+            const o = this._live[i];
+            if (fn(o, dt) === false) this.release(o);
+        }
+    };
+
+    PE.Pool = Pool;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* inlined from ../../engine/loop.js */
+'use strict';
+/**
+ * Fixed-timestep simulation decoupled from render, with interpolation — §1.3.
+ *
+ * The whole loop is allocation-free: no closures created per frame, no object
+ * literals, no array literals. The frame callback signature is
+ * (alpha, dtRender) and the step callback is (fixedDt).
+ */
+(function (global) {
+    const PE = (global.PE = global.PE || {});
+    const Teardown = PE.Teardown;
+
+    function Loop(opts) {
+        this.step        = opts.step;                       // (dt) => void, fixed
+        this.render      = opts.render;                     // (alpha, dt) => void
+        this.hz          = opts.hz || 60;
+        this.fixedDt     = 1 / this.hz;
+        this.maxSteps    = opts.maxSteps || 5;              // spiral-of-death clamp
+        this.onStats     = opts.onStats || null;            // (stats) => void, ~1Hz
+
+        this._acc        = 0;
+        this._last       = 0;
+        this._running    = false;
+        this._paused     = false;
+        this._handle     = 0;
+
+        // Stats, mutated in place and handed to onStats — never reallocated.
+        this.stats = { fps: 0, frameMs: 0, stepMs: 0, renderMs: 0, steps: 0, dropped: 0 };
+        this._frames     = 0;
+        this._statAcc    = 0;
+        this._frameMsAcc = 0;
+        this._stepMsAcc  = 0;
+        this._rendMsAcc  = 0;
+
+        // Bound once so requestAnimationFrame never allocates a closure.
+        const self = this;
+        this._tick = function (ts) { self._onFrame(ts); };
+    }
+
+    Loop.prototype.start = function () {
+        if (this._running) return;
+        this._running = true;
+        this._last = performance.now();
+        this._acc = 0;
+        this._schedule();
+    };
+
+    Loop.prototype.stop = function () {
+        this._running = false;
+        if (this._handle) cancelAnimationFrame(this._handle);
+        this._handle = 0;
+    };
+
+    /** Pause keeps the loop scheduled but skips simulation, so a resumed game
+     *  does not eat a multi-second catch-up burst. */
+    Loop.prototype.pause = function () {
+        this._paused = true;
+        this._acc = 0;
+    };
+
+    Loop.prototype.resume = function () {
+        if (!this._paused) return;
+        this._paused = false;
+        this._last = performance.now();
+        this._acc = 0;
+    };
+
+    Loop.prototype._schedule = function () {
+        this._handle = Teardown ? Teardown.raf(this._tick) : requestAnimationFrame(this._tick);
+    };
+
+    Loop.prototype._onFrame = function (ts) {
+        if (!this._running) return;
+
+        let dt = (ts - this._last) / 1000;
+        this._last = ts;
+        // A backgrounded tab or a GC pause can hand us a huge dt. Clamp rather
+        // than simulate it: catching up 3 seconds at 60Hz is 180 steps.
+        if (dt > 0.25) dt = 0.25;
+        if (dt < 0) dt = 0;
+
+        if (this._paused) { this._schedule(); return; }
+
+        const t0 = performance.now();
+        this._acc += dt;
+
+        let steps = 0;
+        const fixed = this.fixedDt;
+        const tStep = performance.now();
+        while (this._acc >= fixed && steps < this.maxSteps) {
+            this.step(fixed);
+            this._acc -= fixed;
+            steps++;
+        }
+        const stepMs = performance.now() - tStep;
+
+        if (steps === this.maxSteps && this._acc >= fixed) {
+            // We are behind budget; discard the backlog instead of compounding it.
+            this.stats.dropped += Math.floor(this._acc / fixed);
+            this._acc = 0;
+        }
+
+        const alpha = this._acc / fixed;
+        const tRend = performance.now();
+        this.render(alpha, dt);
+        const rendMs = performance.now() - tRend;
+
+        const frameMs = performance.now() - t0;
+        this._frames++;
+        this._statAcc    += dt;
+        this._frameMsAcc += frameMs;
+        this._stepMsAcc  += stepMs;
+        this._rendMsAcc  += rendMs;
+        this.stats.steps = steps;
+
+        if (this._statAcc >= 1) {
+            const s = this.stats;
+            s.fps      = this._frames / this._statAcc;
+            s.frameMs  = this._frameMsAcc / this._frames;
+            s.stepMs   = this._stepMsAcc / this._frames;
+            s.renderMs = this._rendMsAcc / this._frames;
+            this._frames = 0; this._statAcc = 0;
+            this._frameMsAcc = 0; this._stepMsAcc = 0; this._rendMsAcc = 0;
+            if (this.onStats) this.onStats(s);
+        }
+
+        this._schedule();
+    };
+
+    PE.Loop = Loop;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* inlined from ../../engine/resscale.js */
+'use strict';
+/**
+ * Backing-resolution control + dynamic resolution scaling — §1.2 / §1.3.
+ *
+ * Two jobs:
+ *   1. Clamp devicePixelRatio and render the backing store at 0.75x-1.0x of CSS
+ *      size, then let CSS upscale. Full retina rendering is banned on the
+ *      target profile: it is a pure fill-rate multiplier for no gameplay value.
+ *   2. When frame time blows the budget, drop backing resolution *before*
+ *      dropping frame rate, with hysteresis strong enough that the renderer
+ *      never oscillates between two scales (the "never jitters between 60 and
+ *      45" criterion).
+ */
+(function (global) {
+    const PE = (global.PE = global.PE || {});
+
+    const STEPS = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5];
+
+    function ResolutionScaler(canvas, opts) {
+        opts = opts || {};
+        this.canvas      = canvas;
+        this.targetFps   = opts.targetFps || 60;
+        this.floorFps    = opts.floorFps || 30;
+        this.maxDpr      = opts.maxDpr || 1.0;       // never exceed 1 backing px per CSS px
+        this.minScale    = opts.minScale || 0.5;
+        this.maxScale    = opts.maxScale || 1.0;
+        this.auto        = opts.auto !== false;
+        // A game with a fixed logical resolution (most 2D titles) scales its
+        // backing store against that, not against CSS size or DPR.
+        this.logicalW    = opts.logicalWidth || 0;
+        this.logicalH    = opts.logicalHeight || 0;
+        this.onResize    = opts.onResize || null;    // (w, h, scale) => void
+
+        this._stepIndex  = STEPS.indexOf(clampStep(opts.initialScale || 1.0));
+        if (this._stepIndex < 0) this._stepIndex = 0;
+        this._budgetMs   = 1000 / this.targetFps;
+        this._overCount  = 0;
+        this._underCount = 0;
+        this._cooldown   = 0;
+        // Steps that produced an immediate relapse are not retried this session.
+        this._blocked    = new Uint8Array(STEPS.length);
+        this._lastUpAt   = -1e9;
+        this.width = 0; this.height = 0;
+
+        this.applyResize();
+    }
+
+    function clampStep(v) {
+        let best = STEPS[0], bd = Infinity;
+        for (let i = 0; i < STEPS.length; i++) {
+            const d = Math.abs(STEPS[i] - v);
+            if (d < bd) { bd = d; best = STEPS[i]; }
+        }
+        return best;
+    }
+
+    ResolutionScaler.prototype.scale = function () { return STEPS[this._stepIndex]; };
+
+    ResolutionScaler.prototype.dpr = function () {
+        return Math.min(global.devicePixelRatio || 1, this.maxDpr);
+    };
+
+    /** Resize the backing store to CSS size x scale x clamped DPR. */
+    ResolutionScaler.prototype.applyResize = function () {
+        let cssW, cssH, f;
+        if (this.logicalW) {
+            cssW = this.logicalW; cssH = this.logicalH; f = this.scale();
+        } else {
+            const rect = this.canvas.getBoundingClientRect();
+            cssW = Math.max(1, rect.width  || this.canvas.clientWidth  || 640);
+            cssH = Math.max(1, rect.height || this.canvas.clientHeight || 360);
+            f = this.scale() * this.dpr();
+        }
+        const w = Math.max(1, Math.round(cssW * f));
+        const h = Math.max(1, Math.round(cssH * f));
+        if (w === this.width && h === this.height) return false;
+        this.width = w; this.height = h;
+        this.canvas.width = w;
+        this.canvas.height = h;
+        if (this.onResize) this.onResize(w, h, this.scale());
+        return true;
+    };
+
+    /** Manual override — §1.2 requires scaling be reversible at runtime. */
+    ResolutionScaler.prototype.setScale = function (v) {
+        const idx = STEPS.indexOf(clampStep(v));
+        if (idx < 0 || idx === this._stepIndex) return false;
+        this._stepIndex = idx;
+        this._overCount = 0; this._underCount = 0;
+        this.applyResize();
+        return true;
+    };
+
+    ResolutionScaler.prototype.setAuto = function (on) {
+        this.auto = !!on;
+        this._overCount = 0; this._underCount = 0;
+    };
+
+    /**
+     * Feed one frame time (ms). Called from the render callback; allocation-free.
+     */
+    ResolutionScaler.prototype.sample = function (frameMs, nowMs) {
+        if (!this.auto) return;
+        if (nowMs < this._cooldown) return;
+
+        // Over budget by >15% counts as pressure; under 70% counts as headroom.
+        if (frameMs > this._budgetMs * 1.15) { this._overCount++; this._underCount = 0; }
+        else if (frameMs < this._budgetMs * 0.70) { this._underCount++; this._overCount = 0; }
+        else { this._overCount = 0; this._underCount = 0; }
+
+        if (this._overCount >= 12 && this._stepIndex < STEPS.length - 1 &&
+            STEPS[this._stepIndex + 1] >= this.minScale) {
+            // A downgrade right after an upgrade means that step is not
+            // sustainable on this device: block it for the rest of the session.
+            if (nowMs - this._lastUpAt < 4000) this._blocked[this._stepIndex] = 1;
+            this._stepIndex++;
+            this._overCount = 0; this._underCount = 0;
+            this._cooldown = nowMs + 1500;
+            this.applyResize();
+            return;
+        }
+
+        // Upscale is deliberately reluctant: 4s of clear headroom, and never
+        // into a step that already relapsed.
+        if (this._underCount >= 240 && this._stepIndex > 0 &&
+            !this._blocked[this._stepIndex - 1] && STEPS[this._stepIndex - 1] <= this.maxScale) {
+            this._stepIndex--;
+            this._overCount = 0; this._underCount = 0;
+            this._cooldown = nowMs + 3000;
+            this._lastUpAt = nowMs;
+            this.applyResize();
+        }
+    };
+
+    /**
+     * Pick a starting scale from what the device advertises. Cheap heuristic;
+     * the adaptive loop corrects it within a couple of seconds either way.
+     */
+    ResolutionScaler.suggestInitialScale = function () {
+        const mem   = global.navigator && navigator.deviceMemory || 4;
+        const cores = global.navigator && navigator.hardwareConcurrency || 2;
+        const px    = (global.innerWidth || 1280) * (global.innerHeight || 720);
+        if (mem <= 2 || cores <= 2) return 0.75;
+        if (mem <= 4 && px > 1280 * 800) return 0.8;
+        if (mem <= 4) return 0.9;
+        return 1.0;
+    };
+
+    ResolutionScaler.STEPS = STEPS;
+    PE.ResolutionScaler = ResolutionScaler;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* inlined from ../../engine/bridge.js */
+'use strict';
+/**
+ * Game-side half of the portal <-> game postMessage bridge (§2.2).
+ *
+ * Protocol (v1), all messages { type, token, ... }:
+ *
+ *   game   -> portal : game:hello      first contact, no token yet
+ *   portal -> game   : portal:hello    { token, tier, caps, save, settings }
+ *   game   -> portal : game:ready      { needs: { tier, pointerLock } }
+ *   game   -> portal : game:save       { data }        persisted via IndexedDB
+ *   game   -> portal : game:score      { score, label }
+ *   game   -> portal : game:stats      { fps, frameMs, heapMB, scale, entities }
+ *   game   -> portal : game:exit       user chose to quit
+ *   game   -> portal : game:error      { message, stack }
+ *   game   -> portal : game:pointerlock{ locked }
+ *   portal -> game   : portal:pause | portal:resume | portal:shutdown
+ *   portal -> game   : portal:lowmem   release what you can, you are near budget
+ *   portal -> game   : portal:settings { resolutionScale, audio, auto }
+ *
+ * The game never touches portal storage directly: save state round-trips
+ * through this bridge, which is what §2.2's acceptance criterion asks for.
+ * Standalone (opened outside the portal) degrades to a local IndexedDB store
+ * so a bundle stays playable as a plain file.
+ */
+(function (global) {
+    const PE = (global.PE = global.PE || {});
+    const PROTOCOL = 1;
+
+    const Bridge = {
+        connected:  false,
+        standalone: false,
+        token:      null,
+        id:         null,
+        tier:       null,
+        caps:       null,
+        settings:   null,
+        _handlers:  null,
+        _saveTimer: 0,
+        _pendingSave: null,
+        _origin:    null,
+        _onMessage: null,
+        _helloTimer: 0,
+
+        connect(opts) {
+            this._handlers = opts || {};
+            this.id = opts.id || 'unknown';
+            const parent = global.parent;
+            const embedded = parent && parent !== global;
+
+            // location.origin is "null" for an opaque-origin sandbox; postMessage
+            // then has to target '*' because there is no origin to name.
+            this._origin = (location.origin && location.origin !== 'null') ? location.origin : '*';
+
+            const self = this;
+            this._onMessage = function (e) { self._handle(e); };
+            global.addEventListener('message', this._onMessage);
+
+            // Report uncaught errors to the portal so a broken title surfaces
+            // in the launcher instead of dying silently inside the frame.
+            global.addEventListener('error', function (e) {
+                self.post('game:error', { message: String(e.message || e), stack: e.error && e.error.stack || '' });
+            });
+            global.addEventListener('unhandledrejection', function (e) {
+                self.post('game:error', { message: 'unhandled rejection: ' + String(e.reason), stack: '' });
+            });
+
+            if (!embedded) { this._goStandalone(); return this; }
+
+            parent.postMessage({ type: 'game:hello', protocol: PROTOCOL, id: this.id }, this._origin);
+            this._helloTimer = setTimeout(function () {
+                if (!self.connected) self._goStandalone();
+            }, 1500);
+            return this;
+        },
+
+        _goStandalone() {
+            this.standalone = true;
+            this.connected  = false;
+            const self = this;
+            localLoad(this.id).then(function (save) {
+                self._fire('onHello', { tier: null, caps: null, save: save, settings: null, standalone: true });
+            });
+        },
+
+        _handle(e) {
+            const d = e.data;
+            if (!d || typeof d !== 'object' || typeof d.type !== 'string') return;
+            if (d.type.slice(0, 7) !== 'portal:') return;
+            // After the handshake every message must carry our token; a frame
+            // that can post to us is not automatically the portal.
+            if (this.token && d.token !== this.token) return;
+
+            switch (d.type) {
+                case 'portal:hello':
+                    if (this.connected) return;
+                    clearTimeout(this._helloTimer);
+                    this.connected = true;
+                    this.token     = d.token;
+                    this.tier      = d.tier;
+                    this.caps      = d.caps || null;
+                    this.settings  = d.settings || null;
+                    this._fire('onHello', { tier: d.tier, caps: d.caps, save: d.save, settings: d.settings, standalone: false });
+                    break;
+                case 'portal:pause':    this._fire('onPause'); break;
+                case 'portal:resume':   this._fire('onResume'); break;
+                case 'portal:lowmem':   this._fire('onLowMemory', d.level || 1); break;
+                case 'portal:settings':
+                    this.settings = d.settings || null;
+                    this._fire('onSettings', d.settings);
+                    break;
+                case 'portal:shutdown':
+                    this.flush();
+                    this._fire('onShutdown');
+                    this.post('game:shutdown-ack', null);
+                    this.dispose();
+                    break;
+            }
+        },
+
+        _fire(name, arg) {
+            const fn = this._handlers && this._handlers[name];
+            if (typeof fn === 'function') {
+                try { fn(arg); } catch (err) { this.post('game:error', { message: String(err), stack: err && err.stack || '' }); }
+            }
+        },
+
+        post(type, payload) {
+            if (this.standalone || !global.parent || global.parent === global) return false;
+            const msg = payload ? Object.assign({ type: type, token: this.token }, payload)
+                                : { type: type, token: this.token };
+            try { global.parent.postMessage(msg, this._origin); } catch (e) { return false; }
+            return true;
+        },
+
+        /** Declare what the game needs; the portal has already gated on this,
+         *  but a standalone-opened bundle can warn for itself. */
+        ready(needs) { this.post('game:ready', { needs: needs || null }); },
+
+        progress(v) { this.post('game:progress', { value: v }); },
+
+        score(score, label) { this.post('game:score', { score: score, label: label || '' }); },
+
+        /** Debounced save — games call this freely; it coalesces to <=1 write/2s. */
+        save(data) {
+            this._pendingSave = data;
+            if (this._saveTimer) return;
+            const self = this;
+            this._saveTimer = setTimeout(function () { self.flush(); }, 2000);
+        },
+
+        flush() {
+            if (this._saveTimer) { clearTimeout(this._saveTimer); this._saveTimer = 0; }
+            if (this._pendingSave == null) return;
+            const data = this._pendingSave;
+            this._pendingSave = null;
+            if (this.standalone) localSave(this.id, data);
+            else this.post('game:save', { data: data });
+        },
+
+        stats(s) { this.post('game:stats', s); },
+
+        pointerLock(locked) { this.post('game:pointerlock', { locked: !!locked }); },
+
+        exit() { this.flush(); this.post('game:exit', null); },
+
+        dispose() {
+            if (this._onMessage) global.removeEventListener('message', this._onMessage);
+            this._onMessage = null;
+            this._handlers  = null;
+            this.connected  = false;
+        },
+    };
+
+    // --- standalone-only local persistence (never localStorage, per §1.4) ---
+    function idb() {
+        return new Promise(function (resolve, reject) {
+            const req = indexedDB.open('pe-standalone', 1);
+            req.onupgradeneeded = function () { req.result.createObjectStore('saves'); };
+            req.onsuccess = function () { resolve(req.result); };
+            req.onerror   = function () { reject(req.error); };
+        });
+    }
+    function localSave(id, data) {
+        return idb().then(function (db) {
+            const tx = db.transaction('saves', 'readwrite');
+            tx.objectStore('saves').put({ data: data, at: Date.now() }, id);
+            return new Promise(function (res) { tx.oncomplete = function () { db.close(); res(); }; });
+        }).catch(function () { /* private mode / quota — play on without saves */ });
+    }
+    function localLoad(id) {
+        return idb().then(function (db) {
+            const tx = db.transaction('saves', 'readonly');
+            const rq = tx.objectStore('saves').get(id);
+            return new Promise(function (res) {
+                rq.onsuccess = function () { db.close(); res(rq.result ? rq.result.data : null); };
+                rq.onerror   = function () { db.close(); res(null); };
+            });
+        }).catch(function () { return null; });
+    }
+
+    PE.Bridge = Bridge;
+    PE.PROTOCOL = PROTOCOL;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* inlined from js/mesher.js */
+'use strict';
+/**
+ * Voxel Drift — terrain generation and chunk meshing.
+ *
+ * Written as a factory so the exact same source runs on the main thread and,
+ * via Function.prototype.toString into a Blob, inside a worker — a single-file
+ * bundle has no second file to point a Worker at (§1.4).
+ *
+ * Everything here is typed-array work with no per-call allocation beyond the
+ * output buffers, which are transferred rather than copied.
+ */
+self.MESHER_FACTORY = function (scope) {
+    const CX = 16, CY = 64, CZ = 16;
+    const IDX = (x, y, z) => x + z * CX + y * CX * CZ;
+
+    // Padded copy (18 x CY x 18) so border faces cull against real neighbours
+    // instead of guessing.
+    const PX = CX + 2, PZ = CZ + 2;
+    const PIDX = (x, y, z) => (x + 1) + (z + 1) * PX + y * PX * PZ;
+
+    const AIR = 0, STONE = 1, DIRT = 2, GRASS = 3, SAND = 4, WOOD = 5, LEAF = 6;
+    const SEA = 26;
+
+    // --- deterministic value noise ---------------------------------------
+    function hash2(x, z, seed) {
+        let h = (x * 374761393 + z * 668265263 + seed * 1442695040) | 0;
+        h = (h ^ (h >>> 13)) * 1274126177;
+        return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+    }
+    const smooth = (t) => t * t * (3 - 2 * t);
+
+    function noise2(x, z, seed) {
+        const xi = Math.floor(x), zi = Math.floor(z);
+        const xf = smooth(x - xi), zf = smooth(z - zi);
+        const a = hash2(xi, zi, seed), b = hash2(xi + 1, zi, seed);
+        const c = hash2(xi, zi + 1, seed), d = hash2(xi + 1, zi + 1, seed);
+        return (a + (b - a) * xf) * (1 - zf) + (c + (d - c) * xf) * zf;
+    }
+
+    function fbm(x, z, seed, octaves) {
+        let sum = 0, amp = 1, freq = 1, norm = 0;
+        for (let o = 0; o < (octaves || 4); o++) {
+            sum += noise2(x * freq, z * freq, seed + o) * amp;
+            norm += amp;
+            amp *= 0.5; freq *= 2.07;
+        }
+        return sum / norm;
+    }
+
+    /**
+     * Height field. Deliberately smooth: high-frequency detail on a heightmap
+     * turns the world into single-column spikes, which is both ugly and a
+     * face-count multiplier — every spike is four extra side faces to mesh,
+     * upload and shade.
+     */
+    function heightAt(wx, wz, seed) {
+        const continent = fbm(wx / 220, wz / 220, seed, 3);
+        const hills = fbm(wx / 74, wz / 74, seed + 91, 4);
+        const detail = fbm(wx / 26, wz / 26, seed + 17, 2) - 0.5;
+        const h = 16 + continent * 22 + hills * 14 + detail * 3;
+        return Math.floor(h);
+    }
+
+    /** Fill a padded voxel array for one chunk, applying player edits. */
+    function generate(cx, cz, seed, edits) {
+        const pad = new Uint8Array(PX * PZ * CY);
+        for (let z = -1; z <= CZ; z++) {
+            for (let x = -1; x <= CX; x++) {
+                const wx = cx * CX + x, wz = cz * CZ + z;
+                const h = Math.min(CY - 2, heightAt(wx, wz, seed));
+                const beach = h <= SEA + 1;
+                for (let y = 0; y <= h; y++) {
+                    let id;
+                    if (y === h) id = beach ? SAND : GRASS;
+                    else if (y > h - 4) id = beach ? SAND : DIRT;
+                    else id = STONE;
+                    pad[PIDX(x, y, z)] = id;
+                }
+                // Trees: deterministic per column so neighbours agree.
+                if (!beach && h > SEA + 2 && hash2(wx, wz, seed + 313) > 0.988) {
+                    const th = 4 + ((hash2(wx, wz, seed + 5) * 3) | 0);
+                    for (let t = 1; t <= th && h + t < CY - 1; t++) pad[PIDX(x, h + t, z)] = WOOD;
+                    for (let ly = -1; ly <= 1; ly++) {
+                        for (let lx = -1; lx <= 1; lx++) {
+                            for (let lz = -1; lz <= 1; lz++) {
+                                const px = x + lx, py = h + th + ly, pz = z + lz;
+                                if (px < -1 || px > CX || pz < -1 || pz > CZ || py >= CY) continue;
+                                if (pad[PIDX(px, py, pz)] === AIR) pad[PIDX(px, py, pz)] = LEAF;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (edits) {
+            for (const key in edits) {
+                const parts = key.split(',');
+                const wx = +parts[0], wy = +parts[1], wz = +parts[2];
+                const lx = wx - cx * CX, lz = wz - cz * CZ;
+                if (lx < -1 || lx > CX || lz < -1 || lz > CZ || wy < 0 || wy >= CY) continue;
+                pad[PIDX(lx, wy, lz)] = edits[key];
+            }
+        }
+        return pad;
+    }
+
+    // --- face tables ------------------------------------------------------
+    // dir: 0 +X, 1 -X, 2 +Y, 3 -Y, 4 +Z, 5 -Z
+    const NORMALS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+    const FACE_VERTS = [
+        [[1, 0, 1], [1, 0, 0], [1, 1, 0], [1, 1, 1]],   // +X
+        [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]],   // -X
+        [[0, 1, 1], [1, 1, 1], [1, 1, 0], [0, 1, 0]],   // +Y
+        [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]],   // -Y
+        [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]],   // +Z
+        [[1, 0, 0], [0, 0, 0], [0, 1, 0], [1, 1, 0]],   // -Z
+    ];
+    // Tangent axes used for ambient occlusion sampling, per face direction.
+    const AO_AXES = [
+        [[0, 1, 0], [0, 0, 1]], [[0, 1, 0], [0, 0, 1]],
+        [[1, 0, 0], [0, 0, 1]], [[1, 0, 0], [0, 0, 1]],
+        [[1, 0, 0], [0, 1, 0]], [[1, 0, 0], [0, 1, 0]],
+    ];
+    const FACE_SHADE = [0.78, 0.72, 1.0, 0.55, 0.86, 0.66];
+
+    // Atlas tile per block id and face: [top, side, bottom]
+    const TILES = {
+        1: [0, 0, 0],       // stone
+        2: [1, 1, 1],       // dirt
+        3: [2, 3, 1],       // grass
+        4: [4, 4, 4],       // sand
+        5: [6, 5, 6],       // wood
+        6: [7, 7, 7],       // leaves
+    };
+    const ATLAS_COLS = 4;
+
+    function tileFor(id, dir) {
+        const t = TILES[id];
+        if (!t) return 0;
+        return dir === 2 ? t[0] : dir === 3 ? t[2] : t[1];
+    }
+
+    const solid = (v) => v !== AIR;
+
+    /**
+     * Build one chunk mesh. Only faces adjacent to air are emitted, which is
+     * the single biggest overdraw and draw-call saving available in a voxel
+     * scene (§1.3).
+     */
+    function mesh(pad) {
+        // Two passes: count faces, then fill exact-size buffers. One extra
+        // scan is cheaper than growing arrays and re-copying.
+        let faces = 0;
+        for (let y = 0; y < CY; y++) {
+            for (let z = 0; z < CZ; z++) {
+                for (let x = 0; x < CX; x++) {
+                    if (!solid(pad[PIDX(x, y, z)])) continue;
+                    for (let d = 0; d < 6; d++) {
+                        const n = NORMALS[d];
+                        const ny = y + n[1];
+                        if (ny < 0 || ny >= CY) { if (n[1] < 0) continue; }
+                        if (!solid(neighbour(pad, x + n[0], ny, z + n[2]))) faces++;
+                    }
+                }
+            }
+        }
+
+        const verts = new Float32Array(faces * 4 * 6);   // x,y,z,u,v,light
+        const indices = new Uint32Array(faces * 6);
+        let vi = 0, ii = 0, vertBase = 0;
+
+        for (let y = 0; y < CY; y++) {
+            for (let z = 0; z < CZ; z++) {
+                for (let x = 0; x < CX; x++) {
+                    const id = pad[PIDX(x, y, z)];
+                    if (!solid(id)) continue;
+                    for (let d = 0; d < 6; d++) {
+                        const n = NORMALS[d];
+                        const nx = x + n[0], ny = y + n[1], nz = z + n[2];
+                        if (ny < 0 && n[1] < 0) continue;
+                        if (solid(neighbour(pad, nx, ny, nz))) continue;
+
+                        const tile = tileFor(id, d);
+                        const tu = (tile % ATLAS_COLS) / ATLAS_COLS;
+                        const tv = ((tile / ATLAS_COLS) | 0) / ATLAS_COLS;
+                        const ts = 1 / ATLAS_COLS;
+                        const shade = FACE_SHADE[d];
+                        const corners = FACE_VERTS[d];
+                        const axes = AO_AXES[d];
+
+                        let ao0 = 0, ao2 = 0;
+                        for (let c = 0; c < 4; c++) {
+                            const cv = corners[c];
+                            // Corner sign along each tangent axis: -1 or +1.
+                            const s1 = sign(cv, axes[0]), s2 = sign(cv, axes[1]);
+                            const side1 = solid(neighbour(pad,
+                                nx + axes[0][0] * s1, ny + axes[0][1] * s1, nz + axes[0][2] * s1));
+                            const side2 = solid(neighbour(pad,
+                                nx + axes[1][0] * s2, ny + axes[1][1] * s2, nz + axes[1][2] * s2));
+                            const corner = solid(neighbour(pad,
+                                nx + axes[0][0] * s1 + axes[1][0] * s2,
+                                ny + axes[0][1] * s1 + axes[1][1] * s2,
+                                nz + axes[0][2] * s1 + axes[1][2] * s2));
+                            const ao = (side1 && side2) ? 0 : 3 - ((side1 ? 1 : 0) + (side2 ? 1 : 0) + (corner ? 1 : 0));
+                            const light = shade * (0.55 + 0.15 * ao);
+                            if (c === 0) ao0 = ao; if (c === 2) ao2 = ao;
+
+                            verts[vi++] = x + cv[0];
+                            verts[vi++] = y + cv[1];
+                            verts[vi++] = z + cv[2];
+                            verts[vi++] = tu + (c === 1 || c === 2 ? ts : 0);
+                            verts[vi++] = tv + (c >= 2 ? 0 : ts);
+                            verts[vi++] = light;
+                        }
+
+                        // Flip the quad's split so the AO gradient does not
+                        // produce the classic diagonal seam.
+                        if (ao0 > ao2) {
+                            indices[ii++] = vertBase; indices[ii++] = vertBase + 1; indices[ii++] = vertBase + 2;
+                            indices[ii++] = vertBase; indices[ii++] = vertBase + 2; indices[ii++] = vertBase + 3;
+                        } else {
+                            indices[ii++] = vertBase + 1; indices[ii++] = vertBase + 2; indices[ii++] = vertBase + 3;
+                            indices[ii++] = vertBase + 1; indices[ii++] = vertBase + 3; indices[ii++] = vertBase;
+                        }
+                        vertBase += 4;
+                    }
+                }
+            }
+        }
+        return { verts, indices, faces };
+    }
+
+    function sign(corner, axis) {
+        const c = axis[0] ? corner[0] : axis[1] ? corner[1] : corner[2];
+        return c === 0 ? -1 : 1;
+    }
+
+    function neighbour(pad, x, y, z) {
+        if (y < 0 || y >= CY) return AIR;
+        if (x < -1 || x > CX || z < -1 || z > CZ) return AIR;
+        return pad[PIDX(x, y, z)];
+    }
+
+    /** Strip the padding so the main thread stores only the chunk proper. */
+    function core(pad) {
+        const out = new Uint8Array(CX * CY * CZ);
+        for (let y = 0; y < CY; y++)
+            for (let z = 0; z < CZ; z++)
+                for (let x = 0; x < CX; x++) out[IDX(x, y, z)] = pad[PIDX(x, y, z)];
+        return out;
+    }
+
+    function build(cx, cz, seed, edits) {
+        const pad = generate(cx, cz, seed, edits);
+        const m = mesh(pad);
+        return { cx, cz, voxels: core(pad), verts: m.verts, indices: m.indices, faces: m.faces };
+    }
+
+    scope.Mesher = {
+        CX, CY, CZ, IDX, AIR, STONE, DIRT, GRASS, SAND, WOOD, LEAF, SEA,
+        ATLAS_COLS, TILES, build, heightAt, hash2,
+    };
+    return scope.Mesher;
+};
+self.MESHER_FACTORY(self);
+</script>
+<script>
+/* inlined from js/gfx.js */
+'use strict';
+/**
+ * Voxel Drift — WebGL2 renderer.
+ *
+ * Draw-call discipline (§1.3): one texture atlas bound once, one VAO per
+ * chunk, chunks frustum-culled against their AABB, and a hard byte budget on
+ * resident chunk meshes with LRU eviction (§1.1) so GPU memory on an
+ * integrated part with shared system RAM cannot creep.
+ */
+(function (global) {
+    const Gfx = {};
+
+    // ---------------------------------------------------------------- math
+    const mat4 = {
+        create: () => new Float32Array(16),
+        identity(m) {
+            m.fill(0); m[0] = m[5] = m[10] = m[15] = 1; return m;
+        },
+        perspective(m, fovy, aspect, near, far) {
+            const f = 1 / Math.tan(fovy / 2);
+            m.fill(0);
+            m[0] = f / aspect; m[5] = f; m[11] = -1;
+            m[10] = (far + near) / (near - far);
+            m[14] = (2 * far * near) / (near - far);
+            return m;
+        },
+        /** View matrix straight from yaw/pitch/eye — no lookAt, no temporaries. */
+        view(m, x, y, z, yaw, pitch) {
+            const cy = Math.cos(yaw), sy = Math.sin(yaw);
+            const cp = Math.cos(pitch), sp = Math.sin(pitch);
+            // Right-handed basis for a yaw-then-pitch camera:
+            //   forward = (sin y cos p, -sin p, cos y cos p)
+            //   right   = normalize(cross(forward, worldUp)) = (-cos y, 0, sin y)
+            // Getting right's sign wrong mirrors the world, which silently
+            // inverts every triangle's winding and turns back-face culling
+            // into front-face culling.
+            const rx = -cy, ry = 0, rz = sy;
+            const ux = sy * sp, uy = cp, uz = cy * sp;
+            const fx = sy * cp, fy = -sp, fz = cy * cp;
+            m[0] = rx; m[4] = ry; m[8] = rz; m[12] = -(rx * x + ry * y + rz * z);
+            m[1] = ux; m[5] = uy; m[9] = uz; m[13] = -(ux * x + uy * y + uz * z);
+            m[2] = -fx; m[6] = -fy; m[10] = -fz; m[14] = (fx * x + fy * y + fz * z);
+            m[3] = 0; m[7] = 0; m[11] = 0; m[15] = 1;
+            return m;
+        },
+        multiply(out, a, b) {
+            for (let c = 0; c < 4; c++) {
+                const b0 = b[c * 4], b1 = b[c * 4 + 1], b2 = b[c * 4 + 2], b3 = b[c * 4 + 3];
+                out[c * 4]     = a[0] * b0 + a[4] * b1 + a[8]  * b2 + a[12] * b3;
+                out[c * 4 + 1] = a[1] * b0 + a[5] * b1 + a[9]  * b2 + a[13] * b3;
+                out[c * 4 + 2] = a[2] * b0 + a[6] * b1 + a[10] * b2 + a[14] * b3;
+                out[c * 4 + 3] = a[3] * b0 + a[7] * b1 + a[11] * b2 + a[15] * b3;
+            }
+            return out;
+        },
+    };
+    Gfx.mat4 = mat4;
+
+    // Frustum planes, extracted in place from a view-projection matrix.
+    const planes = new Float32Array(24);
+    function extractFrustum(vp) {
+        for (let i = 0; i < 3; i++) {
+            const s = i * 2;
+            for (let j = 0; j < 4; j++) {
+                planes[s * 4 + j]       = vp[j * 4 + 3] + vp[j * 4 + i];
+                planes[(s + 1) * 4 + j] = vp[j * 4 + 3] - vp[j * 4 + i];
+            }
+        }
+        for (let p = 0; p < 6; p++) {
+            const o = p * 4;
+            const len = Math.hypot(planes[o], planes[o + 1], planes[o + 2]) || 1;
+            planes[o] /= len; planes[o + 1] /= len; planes[o + 2] /= len; planes[o + 3] /= len;
+        }
+    }
+
+    function aabbVisible(minX, minY, minZ, maxX, maxY, maxZ) {
+        for (let p = 0; p < 6; p++) {
+            const o = p * 4, a = planes[o], b = planes[o + 1], c = planes[o + 2], d = planes[o + 3];
+            // Farthest corner along the plane normal; if it is behind, cull.
+            const x = a > 0 ? maxX : minX, y = b > 0 ? maxY : minY, z = c > 0 ? maxZ : minZ;
+            if (a * x + b * y + c * z + d < 0) return false;
+        }
+        return true;
+    }
+
+    // -------------------------------------------------------------- shaders
+    const VERT = `#version 300 es
+precision highp float;
+layout(location=0) in vec3 aPos;
+layout(location=1) in vec2 aUv;
+layout(location=2) in float aLight;
+uniform mat4 uViewProj;
+uniform vec3 uChunk;
+out vec2 vUv;
+out float vLight;
+out float vDist;
+void main() {
+  vec3 world = aPos + uChunk;
+  vec4 clip = uViewProj * vec4(world, 1.0);
+  gl_Position = clip;
+  vUv = aUv;
+  vLight = aLight;
+  vDist = clip.w;
+}`;
+
+    const FRAG = `#version 300 es
+precision mediump float;
+in vec2 vUv;
+in float vLight;
+in float vDist;
+uniform sampler2D uAtlas;
+uniform vec3 uFogColor;
+uniform vec2 uFogRange;
+out vec4 outColor;
+void main() {
+  vec4 tex = texture(uAtlas, vUv);
+  vec3 lit = tex.rgb * vLight;
+  // Linear fog hides the render-distance edge without a second pass.
+  float fog = clamp((vDist - uFogRange.x) / (uFogRange.y - uFogRange.x), 0.0, 1.0);
+  outColor = vec4(mix(lit, uFogColor, fog), 1.0);
+}`;
+
+    function compile(gl, type, src, label) {
+        const sh = gl.createShader(type);
+        gl.shaderSource(sh, src);
+        gl.compileShader(sh);
+        if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+            const log = gl.getShaderInfoLog(sh);
+            gl.deleteShader(sh);
+            throw new Error(`${label} shader: ${log}`);
+        }
+        return sh;
+    }
+
+    function program(gl) {
+        const vs = compile(gl, gl.VERTEX_SHADER, VERT, 'vertex');
+        const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG, 'fragment');
+        const p = gl.createProgram();
+        gl.attachShader(p, vs); gl.attachShader(p, fs);
+        gl.linkProgram(p);
+        gl.deleteShader(vs); gl.deleteShader(fs);
+        if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+            const log = gl.getProgramInfoLog(p);
+            gl.deleteProgram(p);
+            throw new Error('link: ' + log);
+        }
+        return p;
+    }
+
+    // ---------------------------------------------------------------- atlas
+    /** 4x4 tiles of 16px, generated procedurally: no image asset, no decode. */
+    function buildAtlas(gl, cols, tilePx) {
+        const size = cols * tilePx;
+        const px = new Uint8Array(size * size * 4);
+        const palette = [
+            [126, 126, 132], [122, 88, 58], [96, 154, 74], [122, 88, 58],
+            [216, 202, 152], [122, 92, 52], [96, 74, 44], [74, 128, 62],
+        ];
+        let seed = 0x9e3779b9;
+        const rnd = () => {
+            seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; seed |= 0;
+            return (seed >>> 0) / 4294967296;
+        };
+        for (let tile = 0; tile < cols * cols; tile++) {
+            const base = palette[tile % palette.length];
+            const tx = (tile % cols) * tilePx, ty = ((tile / cols) | 0) * tilePx;
+            for (let y = 0; y < tilePx; y++) {
+                for (let x = 0; x < tilePx; x++) {
+                    const n = 0.82 + rnd() * 0.36;
+                    // Grass side tile (3) gets a dirt body with a green cap.
+                    const grassSide = tile === 3 && y < 4;
+                    const c = grassSide ? palette[2] : base;
+                    const i = ((ty + y) * size + tx + x) * 4;
+                    px[i]     = Math.min(255, c[0] * n);
+                    px[i + 1] = Math.min(255, c[1] * n);
+                    px[i + 2] = Math.min(255, c[2] * n);
+                    px[i + 3] = 255;
+                }
+            }
+        }
+        const tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        // NEAREST magnification keeps the pixel look; mipmaps kill the shimmer
+        // that costs the most fill rate at distance.
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        return { tex, bytes: size * size * 4 * 1.34 | 0 };
+    }
+
+    // -------------------------------------------------------------- renderer
+    Gfx.Renderer = function (canvas, opts) {
+        const attrs = {
+            alpha: false, antialias: false, depth: true, stencil: false,
+            desynchronized: true, powerPreference: 'low-power',
+            preserveDrawingBuffer: false, failIfMajorPerformanceCaveat: false,
+        };
+        const gl = canvas.getContext('webgl2', attrs);
+        if (!gl) throw new Error('WebGL2 unavailable');
+        PE.Teardown.trackContext(gl);
+
+        this.gl = gl;
+        this.canvas = canvas;
+        this.budgetBytes = (opts && opts.budgetMB || 96) * 1048576;
+        this.meshBytes = 0;
+        this.chunks = new Map();      // key -> { vao, vbo, ibo, count, bytes, lastUsed, cx, cz }
+        this.drawn = 0;
+        this.culled = 0;
+        this.evictions = 0;
+
+        this.prog = program(gl);
+        this.uViewProj = gl.getUniformLocation(this.prog, 'uViewProj');
+        this.uChunk = gl.getUniformLocation(this.prog, 'uChunk');
+        this.uAtlas = gl.getUniformLocation(this.prog, 'uAtlas');
+        this.uFogColor = gl.getUniformLocation(this.prog, 'uFogColor');
+        this.uFogRange = gl.getUniformLocation(this.prog, 'uFogRange');
+
+        const atlas = buildAtlas(gl, 4, 16);
+        this.atlas = atlas.tex;
+        this.atlasBytes = atlas.bytes;
+
+        this.proj = mat4.create();
+        this.viewM = mat4.create();
+        this.viewProj = mat4.create();
+
+        gl.enable(gl.DEPTH_TEST);
+        gl.enable(gl.CULL_FACE);
+        gl.cullFace(gl.BACK);
+        gl.frontFace(gl.CCW);
+        gl.clearColor(0.55, 0.70, 0.88, 1);
+
+        PE.Teardown.onDestroy(() => this.dispose());
+    };
+
+    Gfx.Renderer.prototype.upload = function (key, cx, cz, verts, indices) {
+        const gl = this.gl;
+        this.remove(key);
+        if (!indices.length) {
+            this.chunks.set(key, { vao: null, count: 0, bytes: 0, lastUsed: performance.now(), cx, cz });
+            return;
+        }
+        const vao = gl.createVertexArray();
+        gl.bindVertexArray(vao);
+        const vbo = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+        gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
+        const stride = 6 * 4;
+        gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, stride, 0);
+        gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, stride, 12);
+        gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, stride, 20);
+        const ibo = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+        gl.bindVertexArray(null);
+
+        const bytes = verts.byteLength + indices.byteLength;
+        this.chunks.set(key, { vao, vbo, ibo, count: indices.length, bytes, lastUsed: performance.now(), cx, cz });
+        this.meshBytes += bytes;
+        this.enforceBudget();
+    };
+
+    Gfx.Renderer.prototype.remove = function (key) {
+        const c = this.chunks.get(key);
+        if (!c) return false;
+        const gl = this.gl;
+        if (c.vao) { gl.deleteVertexArray(c.vao); gl.deleteBuffer(c.vbo); gl.deleteBuffer(c.ibo); }
+        this.meshBytes -= c.bytes;
+        this.chunks.delete(key);
+        return true;
+    };
+
+    /** LRU eviction against a hard byte budget — never grows during play. */
+    Gfx.Renderer.prototype.enforceBudget = function (protect) {
+        if (this.meshBytes <= this.budgetBytes) return 0;
+        const entries = [...this.chunks.entries()].sort((a, b) => a[1].lastUsed - b[1].lastUsed);
+        let freed = 0;
+        for (const [key] of entries) {
+            if (this.meshBytes <= this.budgetBytes * 0.85) break;
+            if (protect && protect.has(key)) continue;
+            this.remove(key);
+            this.evictions++;
+            freed++;
+        }
+        return freed;
+    };
+
+    Gfx.Renderer.prototype.has = function (key) { return this.chunks.has(key); };
+
+    Gfx.Renderer.prototype.resize = function (w, h) {
+        this.gl.viewport(0, 0, w, h);
+    };
+
+    Gfx.Renderer.prototype.draw = function (cam, cfg) {
+        const gl = this.gl;
+        const w = this.canvas.width, h = this.canvas.height;
+        const far = cfg.far;
+
+        mat4.perspective(this.proj, cfg.fov, w / Math.max(1, h), 0.1, far);
+        mat4.view(this.viewM, cam.x, cam.y, cam.z, cam.yaw, cam.pitch);
+        mat4.multiply(this.viewProj, this.proj, this.viewM);
+        extractFrustum(this.viewProj);
+
+        gl.viewport(0, 0, w, h);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.useProgram(this.prog);
+        gl.uniformMatrix4fv(this.uViewProj, false, this.viewProj);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, this.atlas);
+        gl.uniform1i(this.uAtlas, 0);
+        gl.uniform3f(this.uFogColor, 0.55, 0.70, 0.88);
+        // Fully fogged one chunk before the far plane, so the streamed world's
+        // edge never appears as a horizon of clear colour.
+        gl.uniform2f(this.uFogRange, far * 0.72, far * 0.98);
+
+        const CX = 16, CY = 64, CZ = 16;
+        const now = performance.now();
+        this.drawn = 0; this.culled = 0;
+        let tris = 0;
+
+        for (const [, c] of this.chunks) {
+            if (!c.count) continue;
+            const ox = c.cx * CX, oz = c.cz * CZ;
+            if (!aabbVisible(ox, 0, oz, ox + CX, CY, oz + CZ)) { this.culled++; continue; }
+            c.lastUsed = now;
+            gl.uniform3f(this.uChunk, ox, 0, oz);
+            gl.bindVertexArray(c.vao);
+            gl.drawElements(gl.TRIANGLES, c.count, gl.UNSIGNED_INT, 0);
+            this.drawn++;
+            tris += c.count / 3;
+        }
+        gl.bindVertexArray(null);
+        this.triangles = tris;
+    };
+
+    Gfx.Renderer.prototype.dispose = function () {
+        const gl = this.gl;
+        for (const key of [...this.chunks.keys()]) this.remove(key);
+        if (this.atlas) gl.deleteTexture(this.atlas);
+        if (this.prog) gl.deleteProgram(this.prog);
+        this.atlas = null; this.prog = null;
+        this.meshBytes = 0;
+    };
+
+    global.Gfx = Gfx;
+})(self);
+</script>
+<script>
+/* inlined from js/main.js */
+'use strict';
+/**
+ * Voxel Drift — first-person voxel sandbox.
+ *
+ * The portal's stress case: WebGL2, pointer-lock mouse-look, streaming chunk
+ * meshes off the main thread, and a hard memory budget on resident geometry.
+ */
+(function () {
+    const Bridge = PE.Bridge, Teardown = PE.Teardown;
+    const M = self.Mesher;
+    const CX = M.CX, CY = M.CY, CZ = M.CZ;
+    const SEED = 20260831;
+
+    // Numeric chunk keys: 16 bits per axis, so no string allocation per lookup.
+    const key = (cx, cz) => ((cx & 0xffff) << 16) | (cz & 0xffff);
+
+    const cfg = {
+        renderDistance: 6,          // in chunks, adapted at runtime
+        maxRenderDistance: 9,
+        minRenderDistance: 4,
+        fov: Math.PI / 2.35,
+        uploadsPerFrame: 1,         // one VBO upload per frame: no hitch spikes
+        meshBudgetMB: 96,
+    };
+
+    const player = {
+        x: 8, y: 46, z: 8, px: 8, py: 46, pz: 8,
+        vx: 0, vy: 0, vz: 0,
+        yaw: 0, pitch: 0,
+        onGround: false, flying: false,
+        reach: 6, block: M.STONE,
+    };
+
+    const state = {
+        edits: Object.create(null),
+        locked: false,
+        placed: 0, broken: 0,
+        loading: 0,
+    };
+
+    const chunks = new Map();      // key -> { cx, cz, voxels, pending }
+    const queue = [];              // pending mesh requests, nearest-first
+    const uploads = [];            // completed meshes waiting for a GL upload
+
+    let canvas, renderer, scaler, loop, workers = [], inFlight = 0, useWorker = true, spawned = false;
+    let hud, hint;
+
+    // -------------------------------------------------------------- workers
+    function startWorkers(count) {
+        const src =
+            '(' + self.MESHER_FACTORY.toString() + ')(self);\n' +
+            'self.onmessage = function (e) {\n' +
+            '  var d = e.data;\n' +
+            '  var r = self.Mesher.build(d.cx, d.cz, d.seed, d.edits);\n' +
+            '  self.postMessage({ key: d.key, cx: d.cx, cz: d.cz, voxels: r.voxels, verts: r.verts, indices: r.indices },\n' +
+            '    [r.voxels.buffer, r.verts.buffer, r.indices.buffer]);\n' +
+            '};';
+        let url;
+        try {
+            url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+            Teardown.trackObjectURL(url);
+            for (let i = 0; i < count; i++) {
+                const w = new Worker(url);
+                w.onmessage = onMeshed;
+                w.onerror = () => { useWorker = false; };
+                workers.push(w);
+            }
+            Teardown.onDestroy(() => { for (const w of workers) w.terminate(); workers.length = 0; });
+        } catch {
+            // No Worker or no blob: URL (rare, but some managed profiles block
+            // it). Meshing then runs inline, which costs frame time but works.
+            useWorker = false;
+        }
+    }
+
+    function editsNear(cx, cz) {
+        const out = Object.create(null);
+        const x0 = cx * CX - 1, x1 = cx * CX + CX, z0 = cz * CZ - 1, z1 = cz * CZ + CZ;
+        for (const k in state.edits) {
+            const p = k.split(',');
+            const x = +p[0], z = +p[2];
+            if (x >= x0 && x <= x1 && z >= z0 && z <= z1) out[k] = state.edits[k];
+        }
+        return out;
+    }
+
+    function requestChunk(cx, cz) {
+        const k = key(cx, cz);
+        const existing = chunks.get(k);
+        if (existing && existing.pending) return;
+        chunks.set(k, { cx, cz, voxels: existing ? existing.voxels : null, pending: true });
+        queue.push(k, cx, cz);
+        state.loading++;
+    }
+
+    function pumpQueue() {
+        const limit = useWorker ? workers.length : 1;
+        while (queue.length && inFlight < limit) {
+            const k = queue.shift(), cx = queue.shift(), cz = queue.shift();
+            const msg = { key: k, cx, cz, seed: SEED, edits: editsNear(cx, cz) };
+            inFlight++;
+            if (useWorker && workers.length) {
+                workers[inFlight % workers.length].postMessage(msg);
+            } else {
+                const r = M.build(cx, cz, SEED, msg.edits);
+                onMeshed({ data: { key: k, cx, cz, voxels: r.voxels, verts: r.verts, indices: r.indices } });
+            }
+        }
+    }
+
+    function onMeshed(e) {
+        inFlight = Math.max(0, inFlight - 1);
+        const d = e.data;
+        const rec = chunks.get(d.key);
+        if (!rec) return;                     // unloaded while in flight
+        rec.voxels = d.voxels;
+        rec.pending = false;
+        state.loading = Math.max(0, state.loading - 1);
+        uploads.push(d);
+    }
+
+    // ------------------------------------------------------------ streaming
+    function streamChunks() {
+        const pcx = Math.floor(player.x / CX), pcz = Math.floor(player.z / CZ);
+        const r = cfg.renderDistance;
+
+        for (let dz = -r; dz <= r; dz++) {
+            for (let dx = -r; dx <= r; dx++) {
+                if (dx * dx + dz * dz > r * r + r) continue;   // round, not square
+                const cx = pcx + dx, cz = pcz + dz;
+                const k = key(cx, cz);
+                const rec = chunks.get(k);
+                if (!rec) requestChunk(cx, cz);
+                else if (!rec.pending && !renderer.has(k)) requestChunk(cx, cz);
+            }
+        }
+
+        // Drop anything well outside the ring; the renderer's LRU handles the
+        // rest if memory is still tight.
+        const drop = (r + 2) * (r + 2);
+        for (const [k, rec] of chunks) {
+            const dx = rec.cx - pcx, dz = rec.cz - pcz;
+            if (dx * dx + dz * dz > drop) {
+                chunks.delete(k);
+                renderer.remove(k);
+            }
+        }
+        pumpQueue();
+    }
+
+    function flushUploads() {
+        for (let i = 0; i < cfg.uploadsPerFrame && uploads.length; i++) {
+            const u = uploads.shift();
+            if (!chunks.has(u.key)) continue;
+            renderer.upload(u.key, u.cx, u.cz, u.verts, u.indices);
+        }
+    }
+
+    // -------------------------------------------------------------- voxels
+    function blockAt(wx, wy, wz) {
+        if (wy < 0 || wy >= CY) return M.AIR;
+        const cx = Math.floor(wx / CX), cz = Math.floor(wz / CZ);
+        const rec = chunks.get(key(cx, cz));
+        if (!rec || !rec.voxels) return M.AIR;
+        const lx = wx - cx * CX, lz = wz - cz * CZ;
+        return rec.voxels[M.IDX(lx, wy, lz)];
+    }
+
+    const solid = (id) => id !== M.AIR;
+
+    function setBlock(wx, wy, wz, id) {
+        if (wy < 1 || wy >= CY - 1) return;
+        state.edits[wx + ',' + wy + ',' + wz] = id;
+        const cx = Math.floor(wx / CX), cz = Math.floor(wz / CZ);
+        const rec = chunks.get(key(cx, cz));
+        if (rec && rec.voxels) rec.voxels[M.IDX(wx - cx * CX, wy, wz - cz * CZ)] = id;
+        requestChunk(cx, cz);
+        // A face on the seam changes the neighbour's mesh too.
+        const lx = wx - cx * CX, lz = wz - cz * CZ;
+        if (lx === 0) requestChunk(cx - 1, cz);
+        if (lx === CX - 1) requestChunk(cx + 1, cz);
+        if (lz === 0) requestChunk(cx, cz - 1);
+        if (lz === CZ - 1) requestChunk(cx, cz + 1);
+        persistSoon();
+    }
+
+    // DDA voxel raycast; hit and the face-adjacent empty cell are written into
+    // this preallocated record rather than returned as a new object.
+    const hit = { found: false, x: 0, y: 0, z: 0, nx: 0, ny: 0, nz: 0 };
+    function raycast(maxDist) {
+        const dx = Math.sin(player.yaw) * Math.cos(player.pitch);
+        const dy = -Math.sin(player.pitch);
+        const dz = Math.cos(player.yaw) * Math.cos(player.pitch);
+        let x = Math.floor(player.x), y = Math.floor(player.y + 1.62), z = Math.floor(player.z);
+        const stepX = dx > 0 ? 1 : -1, stepY = dy > 0 ? 1 : -1, stepZ = dz > 0 ? 1 : -1;
+        const EPS = 1e-6;
+        const tDx = Math.abs(dx) < EPS ? Infinity : Math.abs(1 / dx);
+        const tDy = Math.abs(dy) < EPS ? Infinity : Math.abs(1 / dy);
+        const tDz = Math.abs(dz) < EPS ? Infinity : Math.abs(1 / dz);
+        const ox = player.x, oy = player.y + 1.62, oz = player.z;
+        // An axis with no direction component must never be the next step;
+        // with a finite tMax it would drag the ray one cell sideways.
+        let tMaxX = tDx === Infinity ? Infinity : (dx > 0 ? x + 1 - ox : ox - x) * tDx;
+        let tMaxY = tDy === Infinity ? Infinity : (dy > 0 ? y + 1 - oy : oy - y) * tDy;
+        let tMaxZ = tDz === Infinity ? Infinity : (dz > 0 ? z + 1 - oz : oz - z) * tDz;
+        let fx = 0, fy = 0, fz = 0, t = 0;
+
+        hit.found = false;
+        while (t <= maxDist) {
+            if (solid(blockAt(x, y, z))) {
+                hit.found = true;
+                hit.x = x; hit.y = y; hit.z = z;
+                hit.nx = fx; hit.ny = fy; hit.nz = fz;
+                return hit;
+            }
+            if (tMaxX < tMaxY && tMaxX < tMaxZ) { x += stepX; t = tMaxX; tMaxX += tDx; fx = -stepX; fy = 0; fz = 0; }
+            else if (tMaxY < tMaxZ) { y += stepY; t = tMaxY; tMaxY += tDy; fx = 0; fy = -stepY; fz = 0; }
+            else { z += stepZ; t = tMaxZ; tMaxZ += tDz; fx = 0; fy = 0; fz = -stepZ; }
+        }
+        return hit;
+    }
+
+    // -------------------------------------------------------------- physics
+    const keys = Object.create(null);
+    const HALF = 0.3, HEIGHT = 1.8;
+
+    function collides(x, y, z) {
+        const x0 = Math.floor(x - HALF), x1 = Math.floor(x + HALF);
+        const y0 = Math.floor(y), y1 = Math.floor(y + HEIGHT - 0.02);
+        const z0 = Math.floor(z - HALF), z1 = Math.floor(z + HALF);
+        for (let yy = y0; yy <= y1; yy++)
+            for (let zz = z0; zz <= z1; zz++)
+                for (let xx = x0; xx <= x1; xx++)
+                    if (solid(blockAt(xx, yy, zz))) return true;
+        return false;
+    }
+
+    /** True once the chunk the player stands in has voxel data to collide with. */
+    function groundReady() {
+        const rec = chunks.get(key(Math.floor(player.x / CX), Math.floor(player.z / CZ)));
+        return !!(rec && rec.voxels);
+    }
+
+    /** Lift the player out of anything solid they ended up inside. */
+    function unstick() {
+        let guard = 0;
+        while (collides(player.x, player.y, player.z) && player.y < CY && guard++ < CY) player.y += 1;
+        player.py = player.y;
+        player.vy = 0;
+    }
+
+    function step(dt) {
+        // Physics must not run before the world exists: gravity against an
+        // empty chunk drops the player straight through the terrain that is
+        // still being meshed, and they wake up sealed inside a hill.
+        if (!groundReady()) { player.vy = 0; return; }
+        if (!spawned) { spawned = true; unstick(); }
+
+        player.px = player.x; player.py = player.y; player.pz = player.z;
+
+        const fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
+        const strafe = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+        const speed = (keys.ShiftLeft || keys.ShiftRight ? 8.6 : 4.9) * (player.flying ? 1.8 : 1);
+
+        const sy = Math.sin(player.yaw), cy = Math.cos(player.yaw);
+        // forward = (sin yaw, cos yaw), right = (-cos yaw, sin yaw)
+        let mx = (sy * fwd - cy * strafe);
+        let mz = (cy * fwd + sy * strafe);
+        const len = Math.hypot(mx, mz);
+        if (len > 0) { mx = mx / len * speed; mz = mz / len * speed; }
+
+        if (player.flying) {
+            player.vy = ((keys.Space ? 1 : 0) - (keys.ControlLeft ? 1 : 0)) * 7;
+        } else {
+            player.vy -= 26 * dt;
+            if (player.vy < -55) player.vy = -55;
+            if (keys.Space && player.onGround) { player.vy = 8.4; player.onGround = false; }
+        }
+
+        // Axis-separated sweep: cheap, stable, and no tunnelling at these speeds.
+        const nx = player.x + mx * dt;
+        if (!collides(nx, player.y, player.z)) player.x = nx;
+        const nz = player.z + mz * dt;
+        if (!collides(player.x, player.y, nz)) player.z = nz;
+
+        const ny = player.y + player.vy * dt;
+        if (!collides(player.x, ny, player.z)) {
+            player.y = ny;
+            player.onGround = false;
+        } else {
+            if (player.vy < 0) player.onGround = true;
+            player.vy = 0;
+        }
+
+        if (player.y < -20) {                                   // fell out of the world
+            player.y = CY - 8; player.vy = 0;
+            unstick();
+        }
+    }
+
+    // -------------------------------------------------------------- render
+    const cam = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0 };
+    const drawCfg = { fov: 0, far: 0 };
+    const lerp = (a, b, t) => a + (b - a) * t;
+
+    function render(alpha, dt) {
+        cam.x = lerp(player.px, player.x, alpha);
+        cam.y = lerp(player.py, player.y, alpha) + 1.62;
+        cam.z = lerp(player.pz, player.z, alpha);
+        cam.yaw = player.yaw; cam.pitch = player.pitch;
+        drawCfg.fov = cfg.fov;
+
+        streamChunks();
+        flushUploads();
+        // Fog has to finish *inside* the loaded radius, otherwise the player
+        // sees the edge of the streamed world as a hard horizon of sky.
+        drawCfg.far = cfg.renderDistance * CX;
+        renderer.draw(cam, drawCfg);
+        scaler.sample(dt * 1000, performance.now());
+    }
+
+    // ---------------------------------------------------------------- input
+    function bindInput() {
+        Teardown.on(window, 'keydown', (e) => {
+            keys[e.code] = true;
+            if (e.code === 'KeyF') player.flying = !player.flying;
+            if (e.code.startsWith('Digit')) {
+                const n = +e.code.slice(5);
+                const list = [M.STONE, M.DIRT, M.GRASS, M.SAND, M.WOOD, M.LEAF];
+                if (n >= 1 && n <= list.length) player.block = list[n - 1];
+                updateHud();
+            }
+            if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+        });
+        Teardown.on(window, 'keyup', (e) => { keys[e.code] = false; });
+        Teardown.on(window, 'blur', () => { for (const k in keys) keys[k] = false; });
+
+        Teardown.on(canvas, 'click', () => {
+            if (!state.locked) {
+                // Pointer lock inside a sandboxed frame needs allow-pointer-lock
+                // on the iframe; the portal sets it and this is where it pays off.
+                const p = canvas.requestPointerLock();
+                if (p && p.catch) p.catch(() => showHint('Pointer lock was refused by the browser.'));
+            }
+        });
+
+        Teardown.on(document, 'pointerlockchange', () => {
+            state.locked = document.pointerLockElement === canvas;
+            Bridge.pointerLock(state.locked);
+            showHint(state.locked ? '' : 'Click to look around · Esc releases the cursor');
+        });
+        Teardown.on(document, 'pointerlockerror', () => showHint('Pointer lock failed on this device.'));
+
+        Teardown.on(document, 'mousemove', (e) => {
+            if (!state.locked) return;
+            player.yaw -= e.movementX * 0.0023;
+            player.pitch -= e.movementY * 0.0023;
+            const lim = Math.PI / 2 - 0.01;
+            if (player.pitch > lim) player.pitch = lim;
+            if (player.pitch < -lim) player.pitch = -lim;
+        });
+
+        Teardown.on(canvas, 'mousedown', (e) => {
+            if (!state.locked) return;
+            e.preventDefault();
+            const r = raycast(player.reach);
+            if (!r.found) return;
+            if (e.button === 0) {
+                setBlock(r.x, r.y, r.z, M.AIR);
+                state.broken++;
+            } else if (e.button === 2) {
+                const tx = r.x + r.nx, ty = r.y + r.ny, tz = r.z + r.nz;
+                // Refuse to seal the player inside a block.
+                if (!(Math.floor(player.x) === tx && Math.floor(player.z) === tz &&
+                      (Math.floor(player.y) === ty || Math.floor(player.y + 1) === ty))) {
+                    setBlock(tx, ty, tz, player.block);
+                    state.placed++;
+                }
+            }
+            updateHud();
+        });
+        Teardown.on(canvas, 'contextmenu', (e) => e.preventDefault());
+    }
+
+    // ------------------------------------------------------------------ hud
+    const BLOCK_NAMES = { 1: 'stone', 2: 'dirt', 3: 'grass', 4: 'sand', 5: 'wood', 6: 'leaves' };
+    function updateHud() {
+        if (!hud) return;
+        hud.textContent =
+            `xyz ${player.x.toFixed(1)} ${player.y.toFixed(1)} ${player.z.toFixed(1)} · ` +
+            `${BLOCK_NAMES[player.block]} · ${renderer.drawn} chunks (${renderer.culled} culled) · ` +
+            `${(renderer.meshBytes / 1048576).toFixed(1)}/${cfg.meshBudgetMB} MB mesh · dist ${cfg.renderDistance}`;
+    }
+    function showHint(text) {
+        if (!hint) return;
+        hint.textContent = text;
+        hint.style.display = text ? 'block' : 'none';
+    }
+
+    // -------------------------------------------------------------- persist
+    let saveTimer = 0;
+    function persistSoon() {
+        clearTimeout(saveTimer);
+        saveTimer = Teardown.timeout(persist, 3000);
+    }
+    function persist() {
+        Bridge.save({
+            v: 1,
+            x: player.x, y: player.y, z: player.z, yaw: player.yaw, pitch: player.pitch,
+            flying: player.flying, edits: state.edits,
+            broken: state.broken, placed: state.placed,
+        });
+    }
+
+    // ----------------------------------------------------------------- boot
+    function boot(hello) {
+        canvas = document.getElementById('gl');
+        hud = document.getElementById('hud');
+        hint = document.getElementById('hint');
+        const boot = document.getElementById('boot');
+
+        try {
+            renderer = new Gfx.Renderer(canvas, { budgetMB: cfg.meshBudgetMB });
+        } catch (err) {
+            if (boot) boot.textContent = 'WebGL2 unavailable: ' + err.message;
+            Bridge.post('game:error', { message: 'WebGL2 unavailable: ' + err.message, stack: '' });
+            return;
+        }
+        if (boot) boot.remove();
+
+        const caps = hello && hello.caps;
+        // Start conservative on weak devices; the frame-time controller opens
+        // it back up if there is headroom.
+        if (caps) {
+            if (caps.software) cfg.renderDistance = 4;
+            else if ((caps.deviceMemory && caps.deviceMemory <= 4) || (caps.cores && caps.cores <= 2)) cfg.renderDistance = 5;
+            if (caps.deviceMemory && caps.deviceMemory <= 4) { cfg.meshBudgetMB = 64; renderer.budgetBytes = 64 * 1048576; }
+        }
+
+        if (hello && hello.save && hello.save.v === 1) {
+            const s = hello.save;
+            player.x = player.px = s.x; player.y = player.py = s.y; player.z = player.pz = s.z;
+            player.yaw = s.yaw; player.pitch = s.pitch; player.flying = !!s.flying;
+            state.edits = s.edits || Object.create(null);
+            state.broken = s.broken | 0; state.placed = s.placed | 0;
+        } else {
+            // Drop the player onto the surface rather than inside it.
+            player.y = player.py = M.heightAt(Math.floor(player.x), Math.floor(player.z), SEED) + 2;
+        }
+
+        scaler = new PE.ResolutionScaler(canvas, {
+            targetFps: 60,
+            maxDpr: 1,
+            initialScale: PE.ResolutionScaler.suggestInitialScale(),
+            onResize: (w, h) => renderer.resize(w, h),
+        });
+        Teardown.on(window, 'resize', () => scaler.applyResize());
+
+        startWorkers(Math.max(1, Math.min(2, (navigator.hardwareConcurrency || 2) - 1)));
+        bindInput();
+        showHint('Click to look around · Esc releases the cursor');
+
+        loop = new PE.Loop({
+            hz: 60,
+            step,
+            render,
+            onStats: (s) => {
+                adaptRenderDistance(s.frameMs);
+                updateHud();
+                Bridge.stats({
+                    fps: s.fps, frameMs: s.frameMs, scale: scaler.scale(),
+                    heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : 0,
+                    entities: renderer.drawn, triangles: renderer.triangles | 0,
+                });
+            },
+        });
+        Teardown.onDestroy(() => loop.stop());
+        loop.start();
+
+        // Test handle: the soak and benchmark harnesses read chunk and memory
+        // counters from here. Read-only by convention; nothing depends on it.
+        window.__game = { player, state, cfg, chunks, renderer, scaler, loop, raycast, blockAt, setBlock };
+
+        Bridge.ready({ tier: 'webgl2', pointerLock: true });
+    }
+
+    /**
+     * Second-stage degradation. Resolution drops first (ResolutionScaler);
+     * render distance only moves once resolution is already at its floor, and
+     * moves in single steps with a long cooldown so the view never pulses.
+     */
+    let lastDistChange = 0;
+    function adaptRenderDistance(frameMs) {
+        const now = performance.now();
+        if (now - lastDistChange < 6000) return;
+        if (frameMs > 22 && scaler.scale() <= 0.75 && cfg.renderDistance > cfg.minRenderDistance) {
+            cfg.renderDistance--;
+            lastDistChange = now;
+        } else if (frameMs < 11 && scaler.scale() >= 1 && cfg.renderDistance < cfg.maxRenderDistance) {
+            cfg.renderDistance++;
+            lastDistChange = now;
+        }
+    }
+
+    Bridge.connect({
+        id: 'voxel-drift',
+        onHello: boot,
+        onPause: () => {
+            if (loop) loop.pause();
+            if (document.pointerLockElement) document.exitPointerLock();
+            persist(); Bridge.flush();
+        },
+        onResume: () => loop && loop.resume(),
+        onLowMemory: () => {
+            // Shed the outer ring: geometry is by far the largest thing here.
+            cfg.renderDistance = Math.max(cfg.minRenderDistance, cfg.renderDistance - 1);
+            renderer.budgetBytes = Math.max(32 * 1048576, renderer.budgetBytes * 0.7) | 0;
+            renderer.enforceBudget();
+            persist(); Bridge.flush();
+        },
+        onSettings: (s) => {
+            if (!scaler) return;
+            if (s && typeof s.resolutionScale === 'number') { scaler.setAuto(false); scaler.setScale(s.resolutionScale); }
+            else scaler.setAuto(true);
+        },
+        onShutdown: () => { persist(); Bridge.flush(); Teardown.destroyAll(); },
+    });
+})();
+</script>
+</body>
+</html>

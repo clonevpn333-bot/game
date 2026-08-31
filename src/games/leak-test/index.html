@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Leak Test</title>
+<style>
+html,body{margin:0;height:100%;background:#1b1116;color:#f0d6d6;overflow:hidden;
+  font:13px ui-monospace,SFMono-Regular,Menlo,monospace}
+#wrap{position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;
+  align-items:center;justify-content:center;text-align:center;padding:24px}
+h1{font-size:16px;margin:0;color:#f0736a;letter-spacing:.14em}
+#stats{font-variant-numeric:tabular-nums;line-height:1.8}
+kbd{background:#2a1c22;border:1px solid #4a3038;border-radius:4px;padding:1px 6px}
+#keys{opacity:.75;line-height:1.9}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h1>LEAK TEST HARNESS</h1>
+  <div id="stats">starting…</div>
+  <div id="keys">
+    <kbd>L</kbd> leak faster ·
+    <kbd>G</kbd> spam GL contexts ·
+    <kbd>C</kbd> throw errors<br>
+    <kbd>H</kbd> hang the frame 8s ·
+    <kbd>S</kbd> ignore shutdown
+  </div>
+</div>
+
+<script src="../../engine/teardown.js"></script>
+<script src="../../engine/bridge.js"></script>
+<script>
+'use strict';
+/**
+ * Deliberately badly-behaved title (§2.2 acceptance criteria).
+ *
+ * It leaks steadily, can be told to hang, throw, or refuse to shut down, and
+ * exists so the portal can prove that a misbehaving game cannot take the
+ * dashboard with it and that closing the frame reclaims the heap wholesale.
+ *
+ * Nothing here routes through PE.Teardown on purpose — the point is that the
+ * iframe teardown works even when the game's own cleanup does not.
+ */
+(function () {
+    const Bridge = PE.Bridge;
+    const stats = document.getElementById('stats');
+    const leaked = [];              // never released
+    const contexts = [];            // never lost
+    let bytes = 0, rafs = 0, listeners = 0, thrown = 0;
+    let chunkKb = 512;
+    let ignoreShutdown = false;
+    const CAP = 320 * 1024 * 1024;  // stop before the tab dies for real
+
+    function leakOnce() {
+        if (bytes < CAP) {
+            const buf = new Uint8Array(chunkKb * 1024);
+            buf[0] = 1; buf[buf.length - 1] = 2;   // touch it so it is really resident
+            leaked.push(buf);
+            bytes += buf.byteLength;
+        }
+        // A listener per tick, never removed: the classic portal-killer.
+        window.addEventListener('resize', function stray() { return leaked.length; });
+        listeners++;
+    }
+
+    // An unbounded chain of rAF callbacks, each allocating a closure.
+    function spin() {
+        rafs++;
+        leakOnce();
+        render();
+        requestAnimationFrame(function () { spin(); });
+    }
+
+    function render() {
+        const mb = (bytes / 1048576).toFixed(1);
+        const heap = performance.memory ? (performance.memory.usedJSHeapSize / 1048576).toFixed(0) : '?';
+        stats.textContent =
+            'leaked ' + mb + ' MB in ' + leaked.length + ' buffers · heap ' + heap + ' MB\n' +
+            'rAF chain ' + rafs + ' · stray listeners ' + listeners + ' · GL contexts ' + contexts.length +
+            ' · errors ' + thrown;
+        stats.style.whiteSpace = 'pre';
+        if (rafs % 60 === 0) {
+            Bridge.stats({ fps: 60, heapMB: performance.memory ? Math.round(performance.memory.usedJSHeapSize / 1048576) : 0, leakedMB: +mb });
+        }
+    }
+
+    window.addEventListener('keydown', function (e) {
+        if (e.code === 'KeyL') chunkKb = Math.min(8192, chunkKb * 2);
+        if (e.code === 'KeyG') {
+            for (let i = 0; i < 4; i++) {
+                const c = document.createElement('canvas');
+                c.width = c.height = 256;
+                const gl = c.getContext('webgl');
+                if (gl) contexts.push(gl);          // deliberately never lost
+            }
+        }
+        if (e.code === 'KeyC') {
+            thrown++;
+            setTimeout(function () { throw new Error('deliberate failure #' + thrown); }, 0);
+        }
+        if (e.code === 'KeyH') {
+            const until = Date.now() + 8000;
+            while (Date.now() < until) { /* wedge the frame's main thread */ }
+        }
+        if (e.code === 'KeyS') ignoreShutdown = !ignoreShutdown;
+    });
+
+    Bridge.connect({
+        id: 'leak-test',
+        onHello: function () { Bridge.ready({ tier: 'canvas2d', pointerLock: false }); spin(); },
+        onShutdown: function () {
+            // Deliberately does nothing when armed: the portal must reclaim the
+            // frame anyway, on its own timeout.
+            if (ignoreShutdown) return;
+        },
+    });
+})();
+</script>
+</body>
+</html>

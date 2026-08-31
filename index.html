@@ -1,36 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schedule I</title>
-    <link rel="stylesheet" href="css/style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lowspec Arcade</title>
+<meta name="description" content="A zero-dependency HTML5 game portal built to hold a stable frame rate on ChromeOS and low-end laptops.">
+<meta name="theme-color" content="#0d1117">
+<meta name="color-scheme" content="dark light">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="portal/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="portal/icons/icon-192.png">
+<!-- Critical shell styles are inlined so first paint needs zero round trips. -->
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--surface-2:#1c2430;--line:#2a3441;--text:#e6edf3;--muted:#9aa7b4;--accent:#58d0a0;--accent-ink:#05231a;--warn:#e3b341;--danger:#f0736a;--radius:10px;--bar:56px}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+.topbar{display:flex;align-items:center;gap:12px;height:var(--bar);padding:0 16px;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:10}
+.brand{display:flex;align-items:center;gap:8px;font-weight:650;letter-spacing:.01em;color:var(--text);text-decoration:none;white-space:nowrap}
+.brand-mark{width:22px;height:22px;flex:none}
+.search{flex:1;max-width:340px;height:34px;padding:0 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--bg);color:var(--text);font:inherit}
+.search::placeholder{color:var(--muted)}
+.spacer{flex:1}
+.skeleton{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;padding:24px 20px;max-width:1200px;margin:0 auto}
+.skeleton div{height:214px;border-radius:var(--radius);background:linear-gradient(100deg,var(--surface) 30%,var(--surface-2) 50%,var(--surface) 70%);background-size:220% 100%;animation:sheen 1.4s linear infinite}
+@keyframes sheen{to{background-position:-120% 0}}
+@media (prefers-reduced-motion:reduce){.skeleton div{animation:none}}
+</style>
+<link rel="stylesheet" href="portal/css/shell.css">
 </head>
-<body>
+<body data-route="library">
 
-<div id="loading">
-    <h1>SCHEDULE I</h1>
-    <p>Loading…</p>
-</div>
+<header class="topbar">
+  <a class="brand" href="#/" aria-label="Lowspec Arcade home">
+    <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="5.5" width="21" height="13" rx="4" fill="none" stroke="#58d0a0" stroke-width="1.6"/><path d="M6 12h4M8 10v4" stroke="#58d0a0" stroke-width="1.6" stroke-linecap="round"/><circle cx="16" cy="11" r="1.3" fill="#58d0a0"/><circle cx="18.4" cy="13.4" r="1.3" fill="#58d0a0"/></svg>
+    <span>Lowspec Arcade</span>
+  </a>
+  <input id="search" class="search" type="search" placeholder="Search games  ( / )" aria-label="Search games" autocomplete="off" spellcheck="false">
+  <span class="spacer"></span>
+  <span id="net-badge" class="net-badge" role="status" hidden></span>
+  <button id="install" class="btn btn--quiet btn--sm" hidden>Install</button>
+  <a class="btn btn--quiet btn--sm" href="#/diagnostics">Diagnostics</a>
+</header>
 
-<canvas id="gc"></canvas>
+<main id="view">
+  <!-- Painted immediately; replaced when the catalog hydrates. -->
+  <div class="skeleton" aria-hidden="true"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+</main>
 
-<!-- Scripts loaded in dependency order -->
-<script src="js/config.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/input.js"></script>
-<script src="js/items.js"></script>
-<script src="js/world.js"></script>
-<script src="js/entities.js"></script>
-<script src="js/systems.js"></script>
-<script src="js/phone.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/game.js"></script>
+<noscript>
+  <p style="padding:24px;max-width:60ch">This portal launches games in sandboxed frames and needs JavaScript. The individual game bundles under <code>games/</code> are self-contained and can be opened directly.</p>
+</noscript>
 
-<script>
-    // Hide loading screen once everything is parsed
-    document.getElementById('loading').style.display = 'none';
-</script>
-
+<script type="module" src="portal/js/shell.js"></script>
 </body>
 </html>

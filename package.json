@@ -1,0 +1,21 @@
+{
+  "name": "lowspec-arcade",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A zero-dependency HTML5 game portal built to hold a stable frame rate on ChromeOS and low-end laptops.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "check": "node tools/build.mjs --check && node tools/check-budgets.mjs",
+    "serve": "node tools/serve.mjs",
+    "thumbs": "node tools/gen-thumbs.mjs",
+    "icons": "node tools/gen-icons.mjs",
+    "test": "node tests/e2e.mjs",
+    "bench": "node tools/bench.mjs",
+    "soak": "node tools/soak.mjs --minutes=30"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  }
+}
