@@ -49,9 +49,9 @@ console.log('\n— catalog —————————————————�
 {
   const { ctx, page, errors } = await fresh();
   await page.goto(`${BASE}/index.html`, { waitUntil: 'load' });
-  await page.waitForSelector('.tile');
+  await page.waitForSelector('.card');
   // Titles appear in more than one rail, so compare the set, not the list.
-  const ids = [...new Set(await page.$$eval('.tile', (n) => n.map((c) => c.dataset.id)))].sort();
+  const ids = [...new Set(await page.$$eval('.card', (n) => n.map((c) => c.dataset.id)))].sort();
   const expected = manifest.games.filter((g) => !g.hidden).map((g) => g.id).sort();
   check('rails cover every visible manifest entry', ids.join() === expected.join(), ids.join(', '));
   check('spotlight hero is rendered', !!(await page.$('.hero-title')));
@@ -59,7 +59,7 @@ console.log('\n— catalog —————————————————�
   check('no page errors on boot', errors.length === 0, errors[0] || '');
 
   // Keyboard navigation: arrow keys move the roving focus between cards.
-  await page.focus('.tile');
+  await page.focus('.card');
   const firstFocus = await page.evaluate(() => document.activeElement?.dataset?.id || null);
   await page.keyboard.press('ArrowRight');
   const focused = await page.evaluate(() => document.activeElement?.dataset?.id || null);
@@ -70,8 +70,8 @@ console.log('\n— catalog —————————————————�
 console.log('\n— save round-trip through postMessage ——————————————————');
 {
   const { ctx, page } = await fresh();
-  await page.goto(`${BASE}/index.html#/play/schedule-i`, { waitUntil: 'load' });
-  await waitReady(page, 'schedule-i');
+  await page.goto(`${BASE}/index.html#/play/snake`, { waitUntil: 'load' });
+  await waitReady(page, 'snake');
   const f = gameFrame(page);
   await page.waitForTimeout(1200);
   // Write a save from inside the game, then force a flush.
@@ -81,7 +81,7 @@ console.log('\n— save round-trip through postMessage ————————�
   const stored = await page.evaluate(async () => {
     const db = await new Promise((res) => { const r = indexedDB.open('gameportal', 1); r.onsuccess = () => res(r.result); });
     return await new Promise((res) => {
-      const rq = db.transaction('saves', 'readonly').objectStore('saves').get('schedule-i');
+      const rq = db.transaction('saves', 'readonly').objectStore('saves').get('snake');
       rq.onsuccess = () => res(rq.result);
     });
   });
@@ -91,15 +91,15 @@ console.log('\n— save round-trip through postMessage ————————�
   // Relaunch: the frame is rebuilt from scratch and the save survives it.
   await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' });
   await page.waitForTimeout(400);
-  await page.goto(`${BASE}/index.html#/play/schedule-i`, { waitUntil: 'load' });
-  await waitReady(page, 'schedule-i');
+  await page.goto(`${BASE}/index.html#/play/snake`, { waitUntil: 'load' });
+  await waitReady(page, 'snake');
   const frame = gameFrame(page);
   check('relaunch rebuilds the frame cleanly', !!frame, frame ? frame.url().split('/').pop() : 'no frame');
 
   const stillThere = await page.evaluate(async () => {
     const db = await new Promise((res) => { const r = indexedDB.open('gameportal', 1); r.onsuccess = () => res(r.result); });
     return await new Promise((res) => {
-      const rq = db.transaction('saves', 'readonly').objectStore('saves').get('schedule-i');
+      const rq = db.transaction('saves', 'readonly').objectStore('saves').get('snake');
       rq.onsuccess = () => res(rq.result?.data?.best ?? null);
     });
   });
@@ -116,7 +116,7 @@ console.log('\n— teardown —————————————————�
   const cdp = await ctx.newCDPSession(page);
   await cdp.send('Performance.enable');
   await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' });
-  await page.waitForSelector('.tile');
+  await page.waitForSelector('.card');
   await page.waitForTimeout(1500);
   const before = await heap(cdp);
 
@@ -189,10 +189,10 @@ console.log('\n— service worker, offline and cache versioning —————�
 {
   const { ctx, page } = await fresh();
   await page.goto(`${BASE}/index.html`, { waitUntil: 'load' });
-  await page.waitForSelector('.tile');
+  await page.waitForSelector('.card');
   await page.evaluate(() => navigator.serviceWorker.ready);
-  await page.goto(`${BASE}/index.html#/play/schedule-i`, { waitUntil: 'load' });
-  await waitReady(page, 'schedule-i');
+  await page.goto(`${BASE}/index.html#/play/snake`, { waitUntil: 'load' });
+  await waitReady(page, 'snake');
   await page.waitForTimeout(1500);
   await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' });
   await page.waitForTimeout(1000);
@@ -202,30 +202,30 @@ console.log('\n— service worker, offline and cache versioning —————�
     const bundles = await caches.open('bundles-v1');
     return { names, urls: (await bundles.keys()).map((r) => r.url) };
   });
-  check('bundle cached on first launch', cached.urls.some((u) => u.includes('schedule-i')), cached.urls.join(' '));
+  check('bundle cached on first launch', cached.urls.some((u) => u.includes('snake')), cached.urls.join(' '));
   check('shell cache is version-stamped', cached.names.some((n) => /^shell-[0-9a-f]{10}$/.test(n)), cached.names.join(' '));
 
   // A version bump must evict only that bundle's old entry.
   const bumped = await page.evaluate(async () => {
     const c = await caches.open('bundles-v1');
     const before = (await c.keys()).length;
-    await fetch('games/schedule-i.html?v=deadbeef99');
+    await fetch('games/snake.html?v=deadbeef99');
     const after = (await c.keys()).map((r) => r.url);
     return { before, after };
   });
   check('new bundle version replaces only its own entry',
-    bumped.after.filter((u) => u.includes('schedule-i')).length === 1 &&
+    bumped.after.filter((u) => u.includes('snake')).length === 1 &&
     bumped.after.some((u) => u.includes('deadbeef99')),
-    bumped.after.filter((u) => u.includes('schedule-i')).join(' '));
+    bumped.after.filter((u) => u.includes('snake')).join(' '));
 
   await ctx.setOffline(true);
   await page.goto(`${BASE}/index.html`, { waitUntil: 'load' });
-  await page.waitForSelector('.tile', { timeout: 15000 });
-  const offlineCards = await page.$$eval('.tile', (n) => n.length);
+  await page.waitForSelector('.card', { timeout: 15000 });
+  const offlineCards = await page.$$eval('.card', (n) => n.length);
   check('shell opens with the network disabled', offlineCards > 0, `${offlineCards} cards`);
 
-  await page.goto(`${BASE}/index.html#/play/schedule-i`, { waitUntil: 'load' });
-  await waitReady(page, 'schedule-i');
+  await page.goto(`${BASE}/index.html#/play/snake`, { waitUntil: 'load' });
+  await waitReady(page, 'snake');
   check('previously played game runs offline', true);
   await ctx.setOffline(false);
   await ctx.close();
@@ -272,7 +272,7 @@ console.log('\n— a leaky title cannot take the portal down ——————�
   const cdp = await ctx.newCDPSession(page);
   await cdp.send('Performance.enable');
   await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' });
-  await page.waitForSelector('.tile');
+  await page.waitForSelector('.card');
   await page.waitForTimeout(1000);
   const before = await heap(cdp);
 
@@ -285,12 +285,12 @@ console.log('\n— a leaky title cannot take the portal down ——————�
   const during = await heap(cdp, false);
 
   await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' });
-  await page.waitForSelector('.tile', { timeout: 10000 });
+  await page.waitForSelector('.card', { timeout: 10000 });
   await page.waitForTimeout(3000);
   const after = await heap(cdp);
 
   check('portal survives a leaking, throwing, shutdown-ignoring title', true);
-  check('dashboard still interactive afterwards', (await page.$$('.tile')).length > 0);
+  check('dashboard still interactive afterwards', (await page.$$('.card')).length > 0);
   check('leaked heap is reclaimed when the frame dies',
     after.js < before.js + Math.max(8, before.js * 0.25),
     `${before.js.toFixed(1)} → ${during.js.toFixed(1)} → ${after.js.toFixed(1)} MB`);

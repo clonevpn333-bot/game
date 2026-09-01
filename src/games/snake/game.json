@@ -1,0 +1,25 @@
+{
+  "id": "snake",
+  "title": "Snake",
+  "tagline": "Eat, grow, do not turn into yourself.",
+  "description": "The classic, with interpolated movement so it reads as motion rather than a slideshow. Speed climbs with your score.",
+  "version": "1.0.0",
+  "minRendererTier": "canvas2d",
+  "estMemoryMB": 24,
+  "pointerLock": false,
+  "category": "arcade",
+  "players": "1 player",
+  "duration": "2\u201310 min",
+  "featured": false,
+  "spotlight": false,
+  "art": {
+    "motif": "custom",
+    "hue": 96,
+    "seed": 11,
+    "sat": 54,
+    "dark": 14,
+    "deep": 5
+  },
+  "controls": "Arrows or WASD \u00b7 ENTER start",
+  "budgetKB": 90
+}

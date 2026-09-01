@@ -294,7 +294,7 @@ ${debris}
 };
 
 // --------------------------------------------------------------- Fall Guys
-art['fall-guys-mini'] = () => {
+art['fall-guys'] = () => {
   const bean = (x, y, c, rot, eyeX) => `<g transform="translate(${x} ${y}) rotate(${rot})">
 <ellipse cx="0" cy="52" rx="34" ry="10" fill="#000" opacity=".28"/>
 <rect x="-30" y="-46" width="60" height="94" rx="30" fill="${c}"/>
@@ -395,42 +395,6 @@ ${[[92, 74], [560, 60], [128, 306], [590, 300], [420, 44]].map(([x, y], i) =>
       `<circle cx="${x}" cy="${y}" r="${2 + (i % 3)}" fill="#CFE6FF" opacity="${(0.3 + (i % 4) * 0.15).toFixed(2)}"/>`).join('')}`);
 };
 
-// --------------------------------------------------------------- Schedule I
-art['schedule-i'] = () => {
-  const r = prng(5);
-  let blocks = '';
-  for (let gy = 0; gy < 4; gy++) {
-    for (let gx = 0; gx < 6; gx++) {
-      const x = 24 + gx * 102, y = 40 + gy * 82;
-      blocks += `<rect x="${x}" y="${y}" width="82" height="62" rx="4" fill="${['#2C4A34', '#35543C', '#294430'][(gx + gy) % 3]}"/>`;
-      if (r() > 0.45) blocks += `<rect x="${x + 12}" y="${y + 12}" width="${(24 + r() * 30).toFixed(0)}" height="${(20 + r() * 22).toFixed(0)}" rx="3" fill="${['#8C5A3A', '#5A6E86', '#7A4A5C'][(gx * 3 + gy) % 3]}"/>`;
-      if (r() > 0.6) blocks += `<circle cx="${(x + 60).toFixed(0)}" cy="${(y + 44).toFixed(0)}" r="8" fill="#3F6B45"/>`;
-    }
-  }
-  return svg(
-    `<linearGradient id="s1Veil" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0B1410" stop-opacity=".1"/><stop offset="1" stop-color="#0B1410" stop-opacity=".72"/></linearGradient>`,
-    `<rect width="${W}" height="${H}" fill="#1B2C21"/>
-${blocks}
-<g fill="#232B2E">
-  <rect x="0" y="112" width="${W}" height="26"/><rect x="0" y="276" width="${W}" height="26"/>
-  <rect x="196" y="0" width="26" height="${H}"/><rect x="420" y="0" width="26" height="${H}"/></g>
-<g fill="#C7D14A" opacity=".85">
-  ${[20, 80, 140, 260, 320, 380, 500, 560].map((x) => `<rect x="${x}" y="123" width="26" height="4"/>`).join('')}
-  ${[40, 100, 160, 280, 340, 400, 520, 580].map((x) => `<rect x="${x}" y="287" width="26" height="4"/>`).join('')}
-</g>
-<!-- player car and a waiting contact -->
-<g transform="translate(300 125)"><rect x="-9" y="-16" width="18" height="32" rx="5" fill="#E4453F"/><rect x="-7" y="-9" width="14" height="11" rx="3" fill="#2A2F33"/></g>
-<circle cx="470" cy="288" r="9" fill="#F2C14E"/><circle cx="470" cy="288" r="16" fill="#F2C14E" opacity=".22"/>
-<rect width="${W}" height="${H}" fill="url(#s1Veil)"/>
-<g transform="translate(452 178)">
-  <rect x="-56" y="-26" width="112" height="52" rx="7" fill="#12100E" opacity=".9"/>
-  <rect x="-50" y="-20" width="100" height="40" rx="4" fill="none" stroke="#FF5C7A" stroke-width="2.4"/>
-  <text x="0" y="7" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="19" font-weight="700" fill="#FF7A93">OPEN</text>
-</g>`);
-};
-
-
 // ---------------------------------------------------------------- Continuum
 // A hero mid-dash, with the rewind arc trailing the seconds they undid.
 art['continuum'] = () => svg(
@@ -517,46 +481,6 @@ ${windows}
 ${rain}`);
 };
 
-// ---------------------------------------------------------------- Volthaven
-// Cold vertical city: towers, a skybridge, and a lit transit line.
-art['volthaven'] = () => {
-  const r = prng(23);
-  let towers = '';
-  for (let i = 0; i < 16; i++) {
-    const x = -10 + i * 42 + r() * 12, w = 26 + r() * 24;
-    const h = 120 + r() * 210, top = 320 - h;
-    towers += `<rect x="${x.toFixed(0)}" y="${top.toFixed(0)}" width="${w.toFixed(0)}" height="${h.toFixed(0)}" fill="${['#0E1B2E', '#132539', '#0A1524'][i % 3]}"/>`;
-    towers += `<rect x="${(x + w / 2 - 1).toFixed(0)}" y="${(top - 16).toFixed(0)}" width="2" height="16" fill="#1B3450"/>`;
-    if (r() > 0.4) towers += `<circle cx="${(x + w / 2).toFixed(0)}" cy="${(top - 18).toFixed(0)}" r="2.4" fill="#FF5A5A" opacity=".9"/>`;
-    for (let wy = top + 12; wy < 314; wy += 14) {
-      for (let wx = x + 4; wx < x + w - 5; wx += 9) {
-        if (r() > 0.66) towers += `<rect x="${wx.toFixed(0)}" y="${wy.toFixed(0)}" width="3.6" height="6" fill="#63D6FF" opacity="${(0.35 + r() * 0.55).toFixed(2)}"/>`;
-      }
-    }
-  }
-  return svg(
-    `<linearGradient id="vhSky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#050B16"/><stop offset="0.55" stop-color="#0B1B33"/>
-      <stop offset="1" stop-color="#173352"/></linearGradient>
-     <linearGradient id="vhBeam" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#63D6FF" stop-opacity="0"/><stop offset="0.5" stop-color="#63D6FF" stop-opacity=".9"/>
-      <stop offset="1" stop-color="#63D6FF" stop-opacity="0"/></linearGradient>`,
-    `<rect width="${W}" height="${H}" fill="url(#vhSky)"/>
-<circle cx="120" cy="66" r="34" fill="#9FD8FF" opacity=".16"/>
-<circle cx="120" cy="66" r="20" fill="#CFE9FF" opacity=".5"/>
-${towers}
-<rect x="0" y="196" width="${W}" height="7" fill="#1B3450"/>
-<rect x="0" y="198" width="${W}" height="3" fill="url(#vhBeam)"/>
-<g transform="translate(392 186)">
-  <rect x="-54" y="-13" width="108" height="24" rx="11" fill="#0F2740"/>
-  <rect x="-46" y="-8" width="92" height="9" rx="4" fill="#63D6FF" opacity=".8"/>
-  <rect x="54" y="-6" width="10" height="10" rx="3" fill="#FFD166"/>
-</g>
-<rect x="0" y="320" width="${W}" height="40" fill="#050B16"/>
-<rect x="0" y="320" width="${W}" height="3" fill="#63D6FF" opacity=".35"/>
-${[60, 190, 330, 470, 590].map((x, i) => `<rect x="${x}" y="${326 + (i % 2) * 6}" width="${18 + i * 5}" height="2.5" fill="#63D6FF" opacity=".3"/>`).join('')}`);
-};
-
 // -------------------------------------------------------------- Hollow Tide
 // A very small figure, a very large room, water coming up.
 art['hollow-tide'] = () => svg(
@@ -588,35 +512,139 @@ ${[110, 230, 400, 520].map((x, i) => `<rect x="${x}" y="${180 + (i % 2) * 26}" w
 ${[0, 1, 2, 3, 4, 5, 6].map((i) => `<rect x="${i * 96}" y="${278 + (i % 3) * 5}" width="${52 + i * 6}" height="2.5" rx="1" fill="#8FCBD1" opacity="${(0.16 + (i % 3) * 0.1).toFixed(2)}"/>`).join('')}
 <path d="M0 272 Q80 266 160 272 T320 272 T480 272 T640 272 L640 280 L0 280 Z" fill="#4E848C" opacity=".55"/>`);
 
-// ------------------------------------------------------------ Measurehouse
-// A doorway into a corridor whose geometry does not agree with itself.
-art['measurehouse'] = () => svg(
-  `<linearGradient id="mhBg" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#0B0B0D"/><stop offset="1" stop-color="#16161A"/></linearGradient>
-   <linearGradient id="mhDoor" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#D9C48C"/><stop offset="1" stop-color="#6B5A31"/></linearGradient>
-   <radialGradient id="mhSpill" cx="50%" cy="46%" r="52%">
-    <stop offset="0" stop-color="#F3E0A8" stop-opacity=".55"/><stop offset="1" stop-color="#F3E0A8" stop-opacity="0"/></radialGradient>`,
-  `<rect width="${W}" height="${H}" fill="url(#mhBg)"/>
-${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => `<line x1="0" y1="${i * 32}" x2="${W}" y2="${i * 32}" stroke="#22222A" stroke-width="1"/>`).join('')}
-${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].map((i) => `<line x1="${i * 34}" y1="0" x2="${i * 34}" y2="${H}" stroke="#22222A" stroke-width="1"/>`).join('')}
-<circle cx="320" cy="166" r="150" fill="url(#mhSpill)"/>
-${[0, 1, 2, 3, 4].map((i) => {
-    const s = 1 - i * 0.17, w = 300 * s, h = 300 * s, cx = 320 + i * 14, cy = 190 - i * 6;
-    return `<rect x="${(cx - w / 2).toFixed(0)}" y="${(cy - h / 2).toFixed(0)}" width="${w.toFixed(0)}" height="${h.toFixed(0)}"
-      fill="none" stroke="#3B3B46" stroke-width="${(3 - i * 0.4).toFixed(1)}" transform="rotate(${(i * 2.4).toFixed(1)} ${cx} ${cy})"/>`;
-  }).join('')}
-<g transform="translate(304 196)">
-  <rect x="-52" y="-96" width="104" height="192" rx="3" fill="#100F12"/>
-  <rect x="-46" y="-90" width="92" height="180" rx="2" fill="url(#mhDoor)" opacity=".92"/>
-  <rect x="-38" y="-80" width="76" height="160" fill="#F7ECC8" opacity=".22"/>
-  <circle cx="32" cy="6" r="5" fill="#3A3227"/>
-</g>
-<g stroke="#C9A227" stroke-width="2" opacity=".85">
-  <line x1="120" y1="300" x2="520" y2="300"/>
-  ${[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => `<line x1="${120 + i * 50}" y1="294" x2="${120 + i * 50}" y2="${i % 2 ? 306 : 312}"/>`).join('')}
-</g>
-<text x="320" y="336" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="13" letter-spacing="4" fill="#8A8270">4.11 m / 3.86 m</text>`);
+
+// -------------------------------------------------------------------- Snake
+// The board seen in isometric, with the snake extruded off it.
+art['snake'] = () => {
+  const U = 30, cx = 320, cy = 150;
+  const iso = (gx, gz, h) => [cx + (gx - gz) * U, cy + (gx + gz) * U * 0.5 - h * U * 0.55];
+  const slab = (gx, gz, h, top, left, right) => {
+    const [x, y] = iso(gx, gz, h);
+    return `<path d="M${x} ${y - U * 0.55} l${U} ${U * 0.5} l${-U} ${U * 0.5} l${-U} ${-U * 0.5} Z" fill="${top}"/>
+<path d="M${x - U} ${y - U * 0.05} l${U} ${U * 0.5} v${U * 0.55} l${-U} ${-U * 0.5} Z" fill="${left}"/>
+<path d="M${x + U} ${y - U * 0.05} l${-U} ${U * 0.5} v${U * 0.55} l${U} ${-U * 0.5} Z" fill="${right}"/>`;
+  };
+  let floor = '';
+  for (let gx = -3; gx <= 3; gx++) {
+    for (let gz = -3; gz <= 3; gz++) {
+      const alt = (gx + gz) % 2 === 0;
+      floor += slab(gx, gz, 0, alt ? '#211D2E' : '#1A1725', '#141220', '#181524');
+    }
+  }
+  const path = [[-2, 2], [-1, 2], [0, 2], [1, 2], [1, 1], [1, 0], [0, 0], [-1, 0], [-1, -1]];
+  let body = '';
+  path.forEach(([gx, gz], i) => {
+    const k = i / (path.length - 1);
+    body += slab(gx, gz, 1,
+      i === path.length - 1 ? '#FFD37A' : `hsl(40 100% ${52 + k * 12}%)`,
+      `hsl(40 90% ${28 + k * 8}%)`, `hsl(40 95% ${38 + k * 8}%)`);
+  });
+  const [fx, fy] = iso(2, -2, 1.15);
+  return svg(
+    `<linearGradient id="snBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12101A"/><stop offset="1" stop-color="#08070C"/></linearGradient>
+     <radialGradient id="snGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#FF4D3D" stop-opacity=".55"/><stop offset="1" stop-color="#FF4D3D" stop-opacity="0"/></radialGradient>`,
+    `<rect width="${W}" height="${H}" fill="url(#snBg)"/>
+${floor}
+${body}
+<circle cx="${fx}" cy="${fy}" r="34" fill="url(#snGlow)"/>
+<circle cx="${fx}" cy="${fy}" r="11" fill="#FF4D3D"/>
+<circle cx="${(fx - 3).toFixed(0)}" cy="${(fy - 4).toFixed(0)}" r="3.4" fill="#FFB0A6"/>`);
+};
+
+// --------------------------------------------------------------------- 2048
+// Tiles stacked with real thickness, the 2048 tile lit on top.
+art['twenty48'] = () => {
+  const U = 46, cx = 322, cy = 132;
+  const iso = (gx, gz, h) => [cx + (gx - gz) * U, cy + (gx + gz) * U * 0.5 - h * U * 0.5];
+  const tile = (gx, gz, h, label, top, left, right, ink) => {
+    const [x, y] = iso(gx, gz, h);
+    return `<g><path d="M${x} ${y - U * 0.5} l${U} ${U * 0.5} l${-U} ${U * 0.5} l${-U} ${-U * 0.5} Z" fill="${top}"/>
+<path d="M${x - U} ${y} l${U} ${U * 0.5} v${U * 0.42} l${-U} ${-U * 0.5} Z" fill="${left}"/>
+<path d="M${x + U} ${y} l${-U} ${U * 0.5} v${U * 0.42} l${U} ${-U * 0.5} Z" fill="${right}"/>
+<text x="${x}" y="${(y + 6).toFixed(0)}" text-anchor="middle" font-family="Archivo,system-ui,sans-serif"
+  font-size="${label.length > 3 ? 15 : 19}" font-weight="700" fill="${ink}">${label}</text></g>`;
+  };
+  const P = {
+    2:   ['#3A3450', '#241F36', '#2E2842', '#C6C0D2'],
+    4:   ['#4A4166', '#2C2547', '#3A3155', '#E4DFF0'],
+    8:   ['#B06A18', '#7A4610', '#94590F', '#FFE9C7'],
+    64:  ['#D6621E', '#8E3C10', '#B04D16', '#FFF1E6'],
+    512: ['#E0B412', '#96770A', '#BE960E', '#FFFBEA'],
+    2048:['#FFB020', '#B4780D', '#DC9614', '#1A1206'],
+  };
+  const layout = [
+    [-1, -1, 0, '2'], [0, -1, 0, '8'], [1, -1, 0, '2'],
+    [-1, 0, 0, '4'], [0, 0, 0, '64'], [1, 0, 0, '4'],
+    [-1, 1, 0, '512'], [0, 1, 0, '8'], [1, 1, 0, '2'],
+  ];
+  let body = '';
+  for (const [gx, gz, h, v] of layout.sort((a, b) => (a[0] + a[1]) - (b[0] + b[1]))) {
+    const c = P[v] || P[2];
+    body += tile(gx, gz, h, v, c[0], c[1], c[2], c[3]);
+  }
+  const c = P[2048];
+  body += tile(0, 0, 1.05, '2048', c[0], c[1], c[2], c[3]);
+  return svg(
+    `<linearGradient id="tfBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#191426"/><stop offset="1" stop-color="#0A0810"/></linearGradient>
+     <radialGradient id="tfGlow" cx="50%" cy="42%" r="46%">
+      <stop offset="0" stop-color="#FFB020" stop-opacity=".28"/><stop offset="1" stop-color="#FFB020" stop-opacity="0"/></radialGradient>`,
+    `<rect width="${W}" height="${H}" fill="url(#tfBg)"/>
+<rect width="${W}" height="${H}" fill="url(#tfGlow)"/>
+${body}`);
+};
+
+// ---------------------------------------------------------------- Blockfall
+// A well seen at an angle, with tetrominoes falling into it.
+art['blockfall'] = () => {
+  const cube = (x, y, s, top, left, right) =>
+    `<g><path d="M${x} ${y} l${s} ${s * 0.5} l${-s} ${s * 0.5} l${-s} ${-s * 0.5} Z" fill="${top}"/>
+<path d="M${x - s} ${y + s * 0.5} l${s} ${s * 0.5} v${s * 0.62} l${-s} ${-s * 0.5} Z" fill="${left}"/>
+<path d="M${x + s} ${y + s * 0.5} l${-s} ${s * 0.5} v${s * 0.62} l${s} ${-s * 0.5} Z" fill="${right}"/></g>`;
+  const S = 21;
+  const iso = (gx, gy, gz) => [320 + (gx - gz) * S, 96 + (gx + gz) * S * 0.5 + gy * S * 0.9];
+  let stack = '';
+  // A settled floor of mixed pieces.
+  const settled = [
+    [0, 5, 0, '#6E8BFF'], [1, 5, 0, '#6E8BFF'], [2, 5, 0, '#6E8BFF'], [2, 4, 0, '#6E8BFF'],
+    [0, 5, 1, '#5FD79B'], [1, 5, 1, '#5FD79B'], [1, 4, 1, '#5FD79B'], [2, 4, 1, '#5FD79B'],
+    [0, 4, 2, '#FF6B6B'], [1, 4, 2, '#FF6B6B'], [0, 5, 2, '#FF6B6B'], [-1, 5, 2, '#FF6B6B'],
+    [-1, 5, 0, '#FFD24D'], [-1, 5, 1, '#FFD24D'], [-1, 4, 0, '#FFD24D'], [-1, 4, 1, '#FFD24D'],
+  ];
+  for (const [gx, gy, gz, c] of settled.sort((a, b) => (a[0] + a[2] + a[1] * 0.01) - (b[0] + b[2] + b[1] * 0.01))) {
+    const [x, y] = iso(gx, gy, gz);
+    stack += cube(x, y, S, c, shade(c, -32), shade(c, -16));
+  }
+  // The active piece, still in the air.
+  let falling = '';
+  for (const [gx, gy, gz] of [[0, 1, 0], [0, 1, 1], [0, 1, 2], [1, 1, 2]]) {
+    const [x, y] = iso(gx, gy, gz);
+    falling += cube(x, y, S, '#5BE0E0', shade('#5BE0E0', -34), shade('#5BE0E0', -17));
+  }
+  return svg(
+    `<linearGradient id="bfBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#141222"/><stop offset="1" stop-color="#08070E"/></linearGradient>`,
+    `<rect width="${W}" height="${H}" fill="url(#bfBg)"/>
+<path d="M320 62 L${320 + 3 * S} ${62 + 1.5 * S} L${320 + 3 * S} ${62 + 1.5 * S + 150}
+  L320 ${62 + 3 * S + 150} L${320 - 3 * S} ${62 + 1.5 * S + 150} L${320 - 3 * S} ${62 + 1.5 * S} Z"
+  fill="#0E0C18" stroke="#2A2639" stroke-width="2"/>
+${stack}
+${falling}
+<g opacity=".5">
+  ${[0, 1, 2].map((i) => `<path d="M${320 - 3 * S} ${100 + i * 26} L320 ${113 + i * 26} L${320 + 3 * S} ${100 + i * 26}"
+    fill="none" stroke="#FFB020" stroke-width="1" opacity="${(0.3 - i * 0.08).toFixed(2)}"/>`).join('')}
+</g>`);
+};
+
+/** Shift an #rrggbb toward black by `amt` per channel — cheap face shading. */
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+    .map((v) => Math.max(0, Math.min(255, v + amt)));
+  return `rgb(${ch[0]},${ch[1]},${ch[2]})`;
+}
 
 // ------------------------------------------------------------- diagnostics
 art['leak-test'] = () => svg(

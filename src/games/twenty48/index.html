@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2048</title>
+<style>
+html,body{margin:0;height:100%;background:#0B0A0F;overflow:hidden}
+#stage{position:absolute;inset:0;display:grid;place-items:center;padding:12px}
+#c{max-width:100%;max-height:100%;display:block}
+#boot{position:absolute;inset:0;display:grid;place-items:center;color:#FFB020;
+  font:600 12px ui-monospace,Menlo,monospace;letter-spacing:.24em}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c"></canvas><div id="boot">LOADING</div></div>
+<script src="../../engine/teardown.js"></script>
+<script src="../../engine/pool.js"></script>
+<script src="../../engine/loop.js"></script>
+<script src="../../engine/resscale.js"></script>
+<script src="../../engine/bridge.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

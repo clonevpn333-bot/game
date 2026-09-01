@@ -4,6 +4,41 @@
   "generatedBy": "tools/build.mjs",
   "games": [
     {
+      "id": "blockfall",
+      "title": "Blockfall",
+      "tagline": "Seven-bag stacker with a hold slot.",
+      "description": "A tetromino stacker with a ghost piece, hold, a four-deep next queue and lock delay — the details that make the difference between a toy and a game.",
+      "entry": "games/blockfall.html",
+      "version": "1.0.0",
+      "hash": "ca9f552cde",
+      "bytes": 42212,
+      "gzipBytes": 11941,
+      "minRendererTier": "canvas2d",
+      "estMemoryMB": 26,
+      "pointerLock": false,
+      "thumbnail": "portal/thumbs/blockfall.svg",
+      "controls": "← → move · ↑ rotate · SPACE drop · C hold",
+      "tags": [],
+      "hidden": false,
+      "saves": true,
+      "category": "puzzle",
+      "players": "1 player",
+      "duration": "2–10 min",
+      "added": "",
+      "featured": false,
+      "spotlight": false,
+      "art": {
+        "motif": "custom",
+        "hue": 188,
+        "seed": 19,
+        "sat": 54,
+        "dark": 14,
+        "deep": 5
+      },
+      "prebuilt": false,
+      "budgetKB": 90
+    },
+    {
       "id": "bonecrown",
       "title": "Bonecrown",
       "tagline": "Take the crown. Keep it if you can.",
@@ -109,43 +144,39 @@
       "budgetKB": 783
     },
     {
-      "id": "fall-guys-mini",
-      "title": "Fall Guys",
-      "tagline": "Eight beans, one gauntlet, no dignity.",
-      "description": "A top-down obstacle race against seven rivals. Spinning beams, swinging wrecking balls, sliding blocks and holes that drop you back down the course. Dive to cut corners, and try to be the first bean through the finish tape.",
-      "entry": "games/fall-guys-mini.html",
+      "id": "fall-guys",
+      "title": "Bean Royale",
+      "tagline": "Twenty beans. Four rounds. One crown.",
+      "description": "The full 3D show: procedurally modelled jelly-bean characters with real animation, lit obstacle courses, a chase camera, AI rivals, cosmetics and trophies. Twenty beans enter, the field shrinks every round, and one bean grabs the crown.",
+      "entry": "games/fall-guys.html",
       "version": "1.0.0",
-      "hash": "34aa0e37c9",
-      "bytes": 53309,
-      "gzipBytes": 14713,
-      "minRendererTier": "canvas2d",
-      "estMemoryMB": 50,
+      "hash": "d282fb8691",
+      "bytes": 2273928,
+      "gzipBytes": 571400,
+      "minRendererTier": "webgl1",
+      "estMemoryMB": 320,
       "pointerLock": false,
-      "thumbnail": "portal/thumbs/fall-guys-mini.svg",
-      "controls": "WASD move · SPACE dive · ENTER start",
-      "tags": [
-        "party",
-        "race",
-        "obstacle course"
-      ],
+      "thumbnail": "portal/thumbs/fall-guys.svg",
+      "controls": "WASD move · SPACE jump · SHIFT dive · E grab",
+      "tags": [],
       "hidden": false,
       "saves": true,
       "category": "arcade",
-      "players": "1 player vs 7 AI",
-      "duration": "2–4 min",
+      "players": "1 player vs 19 AI",
+      "duration": "8–15 min",
       "added": "",
       "featured": true,
       "spotlight": false,
       "art": {
-        "motif": "prism",
+        "motif": "custom",
         "hue": 332,
         "seed": 61,
         "sat": 58,
         "dark": 16,
         "deep": 6
       },
-      "prebuilt": false,
-      "budgetKB": 90
+      "prebuilt": true,
+      "budgetKB": 2600
     },
     {
       "id": "hollow-tide",
@@ -271,41 +302,6 @@
       },
       "prebuilt": true,
       "budgetKB": 73
-    },
-    {
-      "id": "measurehouse",
-      "title": "The Measurehouse",
-      "tagline": "Every room is measured. None of them match.",
-      "description": "A first-person horror adventure in a house whose geometry is wrong on purpose. Explore it and work out what it is measuring.",
-      "entry": "games/measurehouse.html",
-      "version": "1.0.0",
-      "hash": "ab7a4b40e7",
-      "bytes": 135912,
-      "gzipBytes": 39807,
-      "minRendererTier": "webgl1",
-      "estMemoryMB": 240,
-      "pointerLock": true,
-      "thumbnail": "portal/thumbs/measurehouse.svg",
-      "controls": "WASD move · Mouse look · E interact · F torch",
-      "tags": [],
-      "hidden": false,
-      "saves": true,
-      "category": "puzzle",
-      "players": "1 player",
-      "duration": "20–40 min",
-      "added": "",
-      "featured": false,
-      "spotlight": false,
-      "art": {
-        "motif": "custom",
-        "hue": 28,
-        "seed": 83,
-        "sat": 52,
-        "dark": 13,
-        "deep": 5
-      },
-      "prebuilt": true,
-      "budgetKB": 214
     },
     {
       "id": "minecraft",
@@ -496,65 +492,74 @@
       "budgetKB": 1275
     },
     {
-      "id": "schedule-i",
-      "title": "Schedule I",
-      "tagline": "Top-down hustle sim",
-      "description": "Grow, mix, package and move product across a small town while a heat meter and a patrolling PD make every public deal a gamble. Phone, inventory, dealers, laundering and a nine-rank progression.",
-      "entry": "games/schedule-i.html",
-      "version": "1.1.0",
-      "hash": "31c39664f9",
-      "bytes": 163353,
-      "gzipBytes": 40513,
+      "id": "snake",
+      "title": "Snake",
+      "tagline": "Eat, grow, do not turn into yourself.",
+      "description": "The classic, with interpolated movement so it reads as motion rather than a slideshow. Speed climbs with your score.",
+      "entry": "games/snake.html",
+      "version": "1.0.0",
+      "hash": "ffbf308d54",
+      "bytes": 37695,
+      "gzipBytes": 10988,
       "minRendererTier": "canvas2d",
-      "estMemoryMB": 120,
+      "estMemoryMB": 24,
       "pointerLock": false,
-      "thumbnail": "portal/thumbs/schedule-i.jpg",
-      "controls": [
-        {
-          "keys": "WASD / Arrows",
-          "action": "Move"
-        },
-        {
-          "keys": "Shift",
-          "action": "Sprint"
-        },
-        {
-          "keys": "E",
-          "action": "Interact"
-        },
-        {
-          "keys": "F",
-          "action": "Phone"
-        },
-        {
-          "keys": "I",
-          "action": "Inventory"
-        },
-        {
-          "keys": "M",
-          "action": "Map"
-        },
-        {
-          "keys": "Esc",
-          "action": "Close panel"
-        }
-      ],
-      "tags": [
-        "sim",
-        "2d",
-        "sandbox"
-      ],
+      "thumbnail": "portal/thumbs/snake.svg",
+      "controls": "Arrows or WASD · ENTER start",
+      "tags": [],
       "hidden": false,
       "saves": true,
-      "category": "action",
+      "category": "arcade",
       "players": "1 player",
-      "duration": "",
+      "duration": "2–10 min",
       "added": "",
       "featured": false,
       "spotlight": false,
-      "art": null,
+      "art": {
+        "motif": "custom",
+        "hue": 96,
+        "seed": 11,
+        "sat": 54,
+        "dark": 14,
+        "deep": 5
+      },
       "prebuilt": false,
-      "budgetKB": 400
+      "budgetKB": 90
+    },
+    {
+      "id": "twenty48",
+      "title": "2048",
+      "tagline": "Slide, merge, repeat until it clicks.",
+      "description": "Slide the board and merge matching tiles. Every move animates from the old board to the new one, so you can actually see what happened.",
+      "entry": "games/twenty48.html",
+      "version": "1.0.0",
+      "hash": "1421d50f83",
+      "bytes": 38154,
+      "gzipBytes": 11103,
+      "minRendererTier": "canvas2d",
+      "estMemoryMB": 22,
+      "pointerLock": false,
+      "thumbnail": "portal/thumbs/twenty48.svg",
+      "controls": "Arrows or WASD to slide · ENTER start",
+      "tags": [],
+      "hidden": false,
+      "saves": true,
+      "category": "puzzle",
+      "players": "1 player",
+      "duration": "2–10 min",
+      "added": "",
+      "featured": false,
+      "spotlight": false,
+      "art": {
+        "motif": "custom",
+        "hue": 44,
+        "seed": 37,
+        "sat": 54,
+        "dark": 14,
+        "deep": 5
+      },
+      "prebuilt": false,
+      "budgetKB": 90
     },
     {
       "id": "vector-siege",
@@ -594,41 +599,6 @@
       },
       "prebuilt": true,
       "budgetKB": 75
-    },
-    {
-      "id": "volthaven",
-      "title": "Volthaven",
-      "tagline": "A city with the lights on and nobody home.",
-      "description": "A cyberpunk cityscape you move through on foot — rain, reflections, and a skyline that keeps going.",
-      "entry": "games/volthaven.html",
-      "version": "1.0.0",
-      "hash": "cb9240948f",
-      "bytes": 884888,
-      "gzipBytes": 228865,
-      "minRendererTier": "webgl1",
-      "estMemoryMB": 320,
-      "pointerLock": true,
-      "thumbnail": "portal/thumbs/volthaven.svg",
-      "controls": "WASD move · Mouse look · Shift sprint · Space jump",
-      "tags": [],
-      "hidden": false,
-      "saves": true,
-      "category": "action",
-      "players": "1 player",
-      "duration": "10–30 min",
-      "added": "",
-      "featured": false,
-      "spotlight": false,
-      "art": {
-        "motif": "custom",
-        "hue": 214,
-        "seed": 23,
-        "sat": 52,
-        "dark": 13,
-        "deep": 5
-      },
-      "prebuilt": true,
-      "budgetKB": 1018
     }
   ]
 }

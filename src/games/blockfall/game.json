@@ -1,0 +1,25 @@
+{
+  "id": "blockfall",
+  "title": "Blockfall",
+  "tagline": "Seven-bag stacker with a hold slot.",
+  "description": "A tetromino stacker with a ghost piece, hold, a four-deep next queue and lock delay \u2014 the details that make the difference between a toy and a game.",
+  "version": "1.0.0",
+  "minRendererTier": "canvas2d",
+  "estMemoryMB": 26,
+  "pointerLock": false,
+  "category": "puzzle",
+  "players": "1 player",
+  "duration": "2\u201310 min",
+  "featured": false,
+  "spotlight": false,
+  "art": {
+    "motif": "custom",
+    "hue": 188,
+    "seed": 19,
+    "sat": 54,
+    "dark": 14,
+    "deep": 5
+  },
+  "controls": "\u2190 \u2192 move \u00b7 \u2191 rotate \u00b7 SPACE drop \u00b7 C hold",
+  "budgetKB": 90
+}

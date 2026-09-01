@@ -15,6 +15,88 @@ const DB_NAME = 'gameportal';
 const DB_VERSION = 1;
 let dbPromise = null;
 
+/**
+ * Fallback store for contexts where IndexedDB is unavailable or partitioned —
+ * most importantly inside a blank-window launcher, where the top document has
+ * no origin of its own and a browser may refuse the frame persistent storage.
+ *
+ * window.name survives navigation within the same tab and is not partitioned,
+ * which makes it the one place a save can live in that situation. It is capped
+ * hard: this is a lifeboat for a few kilobytes of save data, not a database.
+ */
+const NAME_KEY = '__overclock_store__';
+const NAME_CAP = 64 * 1024;
+
+const nameStore = {
+  available: false,
+  target: null,
+
+  probe() {
+    // Prefer the top window so the store survives the portal's own navigation.
+    for (const w of [safeTop(), window]) {
+      if (!w) continue;
+      try {
+        const before = w.name;
+        w.name = before;                       // throws cross-origin
+        this.target = w;
+        this.available = true;
+        return true;
+      } catch { /* not reachable; try the next */ }
+    }
+    return false;
+  },
+
+  read() {
+    if (!this.target) return {};
+    const raw = this.target.name || '';
+    const at = raw.indexOf(NAME_KEY);
+    if (at < 0) return {};
+    try { return JSON.parse(raw.slice(at + NAME_KEY.length)) || {}; } catch { return {}; }
+  },
+
+  write(data) {
+    if (!this.target) return false;
+    let json = JSON.stringify(data);
+    if (json.length > NAME_CAP) {
+      // Drop the least recently written entries until it fits.
+      const entries = Object.entries(data).sort((a, b) => (a[1]?.updatedAt || 0) - (b[1]?.updatedAt || 0));
+      while (entries.length && json.length > NAME_CAP) {
+        delete data[entries.shift()[0]];
+        json = JSON.stringify(data);
+      }
+    }
+    const raw = this.target.name || '';
+    const at = raw.indexOf(NAME_KEY);
+    const prefix = at < 0 ? raw : raw.slice(0, at);
+    try { this.target.name = prefix + NAME_KEY + json; return true; } catch { return false; }
+  },
+
+  get(store, key) { return (this.read()[store] || {})[key]; },
+  put(store, key, value) {
+    const all = this.read();
+    (all[store] = all[store] || {})[key] = value;
+    return this.write(all);
+  },
+  del(store, key) {
+    const all = this.read();
+    if (all[store]) delete all[store][key];
+    return this.write(all);
+  },
+  all(store) { return this.read()[store] || {}; },
+};
+
+function safeTop() {
+  try {
+    // Touching a cross-origin top throws; that is the signal it is unusable.
+    const t = window.top;
+    void t.location.href;
+    return t;
+  } catch { return null; }
+}
+
+/** True once IndexedDB has been shown not to work here. */
+let useName = false;
+
 function open() {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
@@ -53,48 +135,69 @@ function tx(db, store, mode, fn) {
 const wrap = (req) => ({ __req: req });
 
 async function withDb(fallback, fn) {
+  if (useName) return fallback;
   const db = await open();
-  if (!db) return fallback;
+  if (!db) { useName = nameStore.probe(); return fallback; }
   try { return await fn(db); } catch (e) {
     console.warn('[storage]', e?.message || e);
+    useName = nameStore.probe();
     return fallback;
   }
 }
 
+/** Where saves are actually going, for the diagnostics page. */
+export function backend() {
+  return useName ? (nameStore.available ? 'window.name (fallback)' : 'none') : 'IndexedDB';
+}
+
 // ---- saves ---------------------------------------------------------------
 
-export function getSave(gameId) {
-  return withDb(null, (db) => tx(db, 'saves', 'readonly', (s) => wrap(s.get(gameId))));
+export async function getSave(gameId) {
+  const v = await withDb(null, (db) => tx(db, 'saves', 'readonly', (s) => wrap(s.get(gameId))));
+  if (v) return v;
+  return useName ? (nameStore.get('saves', gameId) || null) : null;
 }
 
-export function putSave(gameId, data, version = 1) {
+export async function putSave(gameId, data, version = 1) {
   const rec = { data, version, updatedAt: Date.now(), bytes: estimateBytes(data) };
-  return withDb(false, (db) => tx(db, 'saves', 'readwrite', (s) => { s.put(rec, gameId); return true; }));
+  const ok = await withDb(false, (db) => tx(db, 'saves', 'readwrite', (s) => { s.put(rec, gameId); return true; }));
+  if (ok) return true;
+  return useName ? nameStore.put('saves', gameId, rec) : false;
 }
 
-export function deleteSave(gameId) {
-  return withDb(false, (db) => tx(db, 'saves', 'readwrite', (s) => { s.delete(gameId); return true; }));
+export async function deleteSave(gameId) {
+  const ok = await withDb(false, (db) => tx(db, 'saves', 'readwrite', (s) => { s.delete(gameId); return true; }));
+  if (ok) return true;
+  return useName ? nameStore.del('saves', gameId) : false;
 }
 
-export function listSaves() {
-  return withDb([], async (db) => {
+export async function listSaves() {
+  const rows = await withDb(null, async (db) => {
     const keys = await tx(db, 'saves', 'readonly', (s) => wrap(s.getAllKeys()));
     const vals = await tx(db, 'saves', 'readonly', (s) => wrap(s.getAll()));
     return keys.map((k, i) => ({ gameId: k, updatedAt: vals[i]?.updatedAt || 0, bytes: vals[i]?.bytes || 0 }));
   });
+  if (rows) return rows;
+  return Object.entries(useName ? nameStore.all('saves') : {})
+    .map(([gameId, r]) => ({ gameId, updatedAt: r?.updatedAt || 0, bytes: r?.bytes || 0 }));
 }
 
 // ---- meta ----------------------------------------------------------------
 
-export function getMeta(key, fallback = null) {
-  return withDb(fallback, async (db) => {
-    const v = await tx(db, 'meta', 'readonly', (s) => wrap(s.get(key)));
-    return v === undefined ? fallback : v;
+export async function getMeta(key, fallback = null) {
+  const v = await withDb(undefined, async (db) => {
+    const got = await tx(db, 'meta', 'readonly', (s) => wrap(s.get(key)));
+    return got === undefined ? null : got;
   });
+  if (v !== undefined) return v === null ? fallback : v;
+  const n = useName ? nameStore.get('meta', key) : undefined;
+  return n === undefined ? fallback : n;
 }
 
-export function setMeta(key, value) {
-  return withDb(false, (db) => tx(db, 'meta', 'readwrite', (s) => { s.put(value, key); return true; }));
+export async function setMeta(key, value) {
+  const ok = await withDb(false, (db) => tx(db, 'meta', 'readwrite', (s) => { s.put(value, key); return true; }));
+  if (ok) return true;
+  return useName ? nameStore.put('meta', key, value) : false;
 }
 
 // ---- bundle LRU ----------------------------------------------------------

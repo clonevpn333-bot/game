@@ -115,8 +115,21 @@ export async function renderLibrary(q = query) {
   const grid = el('div', { class: 'grid', role: 'list' });
   for (const g of list) grid.append(card(g, caps));
 
-  const node = el('div', {},
+  // Recently played, most recent first — the row a launcher is judged on.
+  const resume = all.filter((g) => saves.has(g.id))
+    .sort((a, b) => saves.get(b.id).updatedAt - saves.get(a.id).updatedAt)
+    .slice(0, 6);
+  const resumeGrid = el('div', { class: 'grid', role: 'list' });
+  for (const g of resume) resumeGrid.append(card(g, caps));
+
+  const node = el('div', { class: 'stage' },
     !query && spotlight ? heroFor(spotlight, caps, 'Spotlight') : null,
+    !query && activeFilter === 'all' && resume.length ? el('section', { class: 'sheet', style: 'padding-bottom:0' },
+      el('div', { class: 'sheet-head' },
+        el('h2', { text: 'Continue playing' }),
+        el('span', { text: `${resume.length} in progress` })),
+      resumeGrid,
+    ) : null,
     el('section', { class: 'sheet' },
       el('div', { class: 'sheet-head' },
         el('h2', { text: query ? `“${query.trim()}”` : activeFilter === 'all' ? 'All games' : label(activeFilter) }),
@@ -142,8 +155,9 @@ function card(game, caps) {
   },
     el('div', { class: 'card-art' },
       !supported ? el('span', { class: 'card-flag card-flag--warn', text: `Needs ${TIER_LABEL[game.minRendererTier]}` })
-        : save ? el('span', { class: 'card-flag', text: 'Saved' }) : null,
+        : save ? el('span', { class: 'card-flag', text: 'Continue' }) : null,
       el('img', { src: game.thumbnail, alt: '', loading: 'lazy', decoding: 'async', width: 320, height: 180 }),
+      el('span', { class: 'card-play', 'aria-hidden': 'true' }, playIcon()),
     ),
     el('div', { class: 'card-body' },
       el('h3', { class: 'card-title', text: game.title }),
@@ -452,6 +466,8 @@ export async function renderLinks() {
   const embedField = el('textarea', { class: 'field', readonly: true, rows: 3, 'aria-label': 'Embed code' });
   const allField = el('textarea', { class: 'field', readonly: true, rows: 8, 'aria-label': 'Every link' });
   const titleField = el('input', { class: 'field', value: 'New Tab', 'aria-label': 'Window title' });
+  const launcherField = el('input', { class: 'field', readonly: true, 'aria-label': 'Launcher link' });
+  const b64 = (v) => btoa(unescape(encodeURIComponent(v))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
   const normalise = (v) => {
     let b = (v || '').trim() || here;
@@ -470,10 +486,13 @@ export async function renderLinks() {
       `<iframe src="${direct}"\n        width="960" height="540"\n        style="border:0;border-radius:12px"\n` +
       `        allow="fullscreen; pointer-lock; autoplay; gamepad"\n        title="${title}"></iframe>`;
     allField.value = games.map((g) => `${g.title.padEnd(20)} ${base}#/play/${g.id}`).join('\n');
+    const cloakBase = base.replace(/(index\.html)?$/, 'cloak.html');
+    launcherField.value = `${cloakBase}#u=${b64(direct)}&t=${b64(titleField.value || 'New Tab')}&go=1`;
     storage.setMeta('linkBase', base);
   }
   baseField.addEventListener('input', refresh);
   gameSelect.addEventListener('change', refresh);
+  titleField.addEventListener('input', refresh);
 
   /**
    * Opens the site inside a blank window: a new tab is created, and the page
@@ -518,8 +537,9 @@ export async function renderLinks() {
         text: 'Opens a new tab that stays on about:blank and frames the site inside it. Set the window title first.' }),
       el('div', { class: 'row' }, titleField,
         el('button', { class: 'btn btn--sm btn--play', type: 'button', text: 'Open blank window', onclick: openBlank })),
+      el('div', { class: 'row' }, launcherField, copyBtn(launcherField, 'Copy launcher link')),
       el('p', { class: 'muted', style: 'margin:8px 0 0;font-size:12px',
-        text: 'A standalone copy of this launcher is deployed with the site at /cloak.html.' }),
+        text: 'The launcher link opens the blank window on arrival. /cloak.html ships with the site as a standalone copy.' }),
 
       el('h3', { class: 'sub', style: 'margin-top:28px', text: 'Embed code' }),
       el('p', { class: 'muted', style: 'margin:0 0 8px;font-size:12.5px',
@@ -557,6 +577,7 @@ export async function renderDiagnostics() {
     ['JS heap limit', head.limitMB ? `${head.limitMB} MB (using ${head.usedMB} MB)` : 'not exposed'],
     ['Service worker', navigator.serviceWorker?.controller ? 'controlling' : 'registered, not controlling'],
     ['Storage', store ? `${fmtBytes(store.usage)} of ${fmtBytes(store.quota)}` : 'not reported'],
+    ['Saves are stored in', storage.backend()],
     ['Network', navigator.onLine ? 'online' : 'offline'],
   ];
 

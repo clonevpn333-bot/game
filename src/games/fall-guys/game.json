@@ -1,0 +1,30 @@
+{
+  "id": "fall-guys",
+  "title": "Bean Royale",
+  "tagline": "Twenty beans. Four rounds. One crown.",
+  "description": "The full 3D show: procedurally modelled jelly-bean characters with real animation, lit obstacle courses, a chase camera, AI rivals, cosmetics and trophies. Twenty beans enter, the field shrinks every round, and one bean grabs the crown.",
+  "version": "1.0.0",
+  "minRendererTier": "webgl1",
+  "estMemoryMB": 320,
+  "pointerLock": false,
+  "prebuilt": true,
+  "shim": true,
+  "category": "arcade",
+  "players": "1 player vs 19 AI",
+  "duration": "8\u201315 min",
+  "featured": true,
+  "spotlight": false,
+  "art": {
+    "motif": "custom",
+    "hue": 332,
+    "seed": 61,
+    "sat": 58,
+    "dark": 16,
+    "deep": 6
+  },
+  "controls": "WASD move \u00b7 SPACE jump \u00b7 SHIFT dive \u00b7 E grab",
+  "budgetKB": 2600,
+  "inlineImportMap": {
+    "three": "src/vendor/three.module.js"
+  }
+}

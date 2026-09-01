@@ -25,6 +25,11 @@ h1{margin:0 0 6px;font:800 26px/1.15 "Syne",system-ui,sans-serif;letter-spacing:
 p.lede{margin:0 0 26px;color:var(--muted);font-size:14px}
 label{display:block;font:700 10.5px/1 inherit;letter-spacing:.17em;text-transform:uppercase;
   color:#5F586F;margin:20px 0 8px}
+label .hint{letter-spacing:0;text-transform:none;font-weight:500;color:#4A4458}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.chip{padding:6px 11px;border-radius:999px;border:1px solid var(--line-2);background:transparent;
+  color:var(--muted);font:600 12px inherit;cursor:pointer}
+.chip:hover{background:var(--panel-2);color:var(--text)}
 input{width:100%;height:40px;padding:0 13px;border-radius:10px;border:1px solid var(--line-2);
   background:#0F0E14;color:var(--text);font:500 13px var(--mono)}
 input:focus{outline:2px solid var(--amber);outline-offset:2px;border-color:transparent}
@@ -54,9 +59,14 @@ button.go:hover{background:#FFC24D}
 
   <label for="title">Window title</label>
   <input id="title" type="text" value="New Tab" spellcheck="false">
+  <div class="chips" id="presets"></div>
+
+  <label for="link">Launcher link <span class="hint">— opens this window directly</span></label>
+  <input id="link" type="text" readonly>
 
   <div class="row">
     <button class="go" id="go" type="button">Open blank window</button>
+    <button id="copy" type="button">Copy launcher link</button>
     <button id="save" type="button">Remember</button>
   </div>
   <p class="err" id="err" role="status"></p>
@@ -73,12 +83,44 @@ button.go:hover{background:#FFC24D}
   const $ = (id) => document.getElementById(id);
   const err = $('err');
 
-  // Default to this site unless a previous address was remembered.
-  try {
-    const saved = JSON.parse(localStorage.getItem('overclock.cloak') || 'null');
-    if (saved) { $('url').value = saved.url || ''; $('title').value = saved.title || 'New Tab'; }
-  } catch (e) { /* private mode */ }
+  const b64 = {
+    enc: (v) => btoa(unescape(encodeURIComponent(v))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
+    dec: (v) => decodeURIComponent(escape(atob(v.replace(/-/g, '+').replace(/_/g, '/')))),
+  };
+
+  // Config can arrive three ways, in priority order: the link's own hash, a
+  // remembered setting, then this site's address as a sensible default.
+  const hash = new URLSearchParams(location.hash.slice(1));
+  let auto = false;
+  if (hash.get('u')) {
+    try { $('url').value = b64.dec(hash.get('u')); } catch (e) { /* malformed */ }
+    try { if (hash.get('t')) $('title').value = b64.dec(hash.get('t')); } catch (e) { /* malformed */ }
+    auto = hash.get('go') === '1';
+  } else {
+    try {
+      const saved = JSON.parse(localStorage.getItem('overclock.cloak') || 'null');
+      if (saved) { $('url').value = saved.url || ''; $('title').value = saved.title || 'New Tab'; }
+    } catch (e) { /* private mode */ }
+  }
   if (!$('url').value) $('url').value = location.origin + location.pathname.replace(/cloak\.html$/, '');
+
+  // Neutral titles only. Passing off the window as a specific real service is
+  // a different thing from a blank tab, and not something this ships with.
+  const PRESETS = ['New Tab', 'Home', 'Documents', 'Untitled', 'Dashboard'];
+  PRESETS.forEach(function (t) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = t;
+    b.addEventListener('click', function () { $('title').value = t; refresh(); });
+    $('presets').appendChild(b);
+  });
+
+  function refresh() {
+    const base = location.origin + location.pathname;
+    $('link').value = base + '#u=' + b64.enc(normalise($('url').value)) +
+      '&t=' + b64.enc($('title').value || 'New Tab') + '&go=1';
+  }
+  $('url').addEventListener('input', refresh);
+  $('title').addEventListener('input', refresh);
 
   function normalise(v) {
     let u = (v || '').trim();
@@ -107,6 +149,16 @@ button.go:hover{background:#FFC24D}
     win.document.close();
   });
 
+  $('copy').addEventListener('click', function () {
+    const field = $('link');
+    (navigator.clipboard ? navigator.clipboard.writeText(field.value) : Promise.reject())
+      .catch(function () { field.select(); document.execCommand('copy'); })
+      .then(function () {
+        $('copy').textContent = 'Copied';
+        setTimeout(function () { $('copy').textContent = 'Copy launcher link'; }, 1500);
+      });
+  });
+
   $('save').addEventListener('click', function () {
     try {
       localStorage.setItem('overclock.cloak', JSON.stringify({ url: $('url').value, title: $('title').value }));
@@ -115,6 +167,18 @@ button.go:hover{background:#FFC24D}
       setTimeout(function () { err.textContent = ''; err.style.color = ''; }, 1800);
     } catch (e) { err.textContent = 'This browser will not let the page store settings.'; }
   });
+  refresh();
+  // A launcher link with go=1 opens on arrival, after one click anywhere —
+  // browsers will not open a window without a user gesture.
+  if (auto) {
+    err.textContent = 'Click anywhere to open.';
+    const once = function () {
+      document.removeEventListener('click', once);
+      err.textContent = '';
+      $('go').click();
+    };
+    document.addEventListener('click', once);
+  }
 })();
 </script>
 </body>

@@ -1,0 +1,25 @@
+{
+  "id": "twenty48",
+  "title": "2048",
+  "tagline": "Slide, merge, repeat until it clicks.",
+  "description": "Slide the board and merge matching tiles. Every move animates from the old board to the new one, so you can actually see what happened.",
+  "version": "1.0.0",
+  "minRendererTier": "canvas2d",
+  "estMemoryMB": 22,
+  "pointerLock": false,
+  "category": "puzzle",
+  "players": "1 player",
+  "duration": "2\u201310 min",
+  "featured": false,
+  "spotlight": false,
+  "art": {
+    "motif": "custom",
+    "hue": 44,
+    "seed": 37,
+    "sat": 54,
+    "dark": 14,
+    "deep": 5
+  },
+  "controls": "Arrows or WASD to slide \u00b7 ENTER start",
+  "budgetKB": 90
+}

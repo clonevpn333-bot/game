@@ -18,8 +18,14 @@
 }
 .rail-link:hover { background: var(--panel); color: var(--text); }
 .rail-link[aria-current="page"], .rail-link[aria-pressed="true"] {
-  background: var(--panel-2); color: var(--text); border-color: var(--line-2);
+  background: linear-gradient(90deg, rgba(255, 176, 32, .14), rgba(255, 176, 32, 0) 70%);
+  color: var(--text); border-color: rgba(255, 176, 32, .28);
 }
+.rail-link[aria-current="page"]::before {
+  content: ""; position: absolute; left: 0; width: 3px; height: 20px; border-radius: 0 3px 3px 0;
+  background: var(--amber); margin-left: -12px;
+}
+.rail-link { position: relative; }
 .rail-link[aria-pressed="true"] .dotmark { background: var(--amber); }
 .dotmark { width: 6px; height: 6px; border-radius: 50%; background: var(--faint); flex: none; }
 .rail-count { margin-left: auto; font: 500 12px var(--f-mono); color: var(--faint); }
@@ -69,9 +75,24 @@
 
 /* --------------------------------------------------------------- hero --- */
 
+/* A soft field of light behind the hero so the panel sits in depth rather than
+   flat on the ground. Pure gradient — no blur filter, which integrated GPUs
+   charge fill rate for. */
+.stage { position: relative; }
+.stage::before {
+  content: ""; position: absolute; inset: -80px -40px auto -40px; height: 420px; pointer-events: none;
+  background: radial-gradient(60% 70% at 50% 0%, rgba(255, 176, 32, .11), transparent 70%);
+}
+
 .hero {
   position: relative; margin: var(--gut) var(--gut) 0; border-radius: 18px; overflow: hidden;
-  min-height: min(46vh, 380px); display: grid; align-items: end; border: 1px solid var(--line);
+  min-height: min(52vh, 440px); display: grid; align-items: end; border: 1px solid var(--line-2);
+  box-shadow: 0 24px 60px -30px rgba(0, 0, 0, .9);
+}
+/* One-pixel amber edge along the top: the detail that reads as "product". */
+.hero::after {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 1px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 176, 32, .55) 30%, rgba(255, 176, 32, .55) 70%, transparent);
 }
 .hero-art { position: absolute; inset: 0; }
 /* Copy sits on the left, so bias the crop toward the art's right side. */
@@ -106,6 +127,10 @@
   display: flex; align-items: baseline; gap: 12px; padding: 34px 0 16px; flex-wrap: wrap;
 }
 .sheet-head h2 { margin: 0; font: 800 20px/1 var(--f-display); letter-spacing: -.01em; }
+.sheet-head h2::before {
+  content: ""; display: inline-block; width: 3px; height: 17px; margin-right: 11px;
+  vertical-align: -2px; border-radius: 2px; background: var(--amber);
+}
 .sheet-head span { color: var(--faint); font: 500 13px var(--f-mono); }
 .sheet-head .search { max-width: 260px; margin-left: auto; }
 
@@ -113,14 +138,35 @@
 
 .card {
   display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r);
-  background: var(--panel); color: inherit; text-decoration: none; overflow: hidden;
-  transition: transform .16s ease, border-color .16s ease;
+  background: linear-gradient(180deg, var(--panel-2) 0%, var(--panel) 46%);
+  color: inherit; text-decoration: none; overflow: hidden; position: relative;
+  transition: transform .18s cubic-bezier(.2, .7, .3, 1), border-color .18s ease, box-shadow .18s ease;
 }
-.card:hover { transform: translateY(-3px); border-color: rgba(255, 176, 32, .45); }
+.card:hover, .card:focus-visible {
+  transform: translateY(-4px); border-color: rgba(255, 176, 32, .5);
+  box-shadow: 0 18px 34px -22px rgba(0, 0, 0, .95), 0 0 0 1px rgba(255, 176, 32, .12);
+}
 @media (prefers-reduced-motion: reduce) { .card, .card:hover { transition: none; transform: none; } }
 
-.card-art { position: relative; aspect-ratio: 16 / 9; background: var(--panel-2); }
-.card-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card-art { position: relative; aspect-ratio: 16 / 9; background: var(--panel-2); overflow: hidden; }
+.card-art img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform .35s cubic-bezier(.2, .7, .3, 1);
+}
+.card:hover .card-art img, .card:focus-visible .card-art img { transform: scale(1.06); }
+@media (prefers-reduced-motion: reduce) { .card-art img, .card:hover .card-art img { transition: none; transform: none; } }
+
+/* Play affordance, revealed on hover — what makes a tile feel launchable. */
+.card-play {
+  position: absolute; z-index: 2; right: 10px; bottom: 10px;
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--amber); color: var(--ink-on-amber);
+  display: grid; place-items: center; opacity: 0; transform: translateY(6px) scale(.9);
+  transition: opacity .18s ease, transform .18s cubic-bezier(.2, .7, .3, 1);
+}
+.card:hover .card-play, .card:focus-visible .card-play { opacity: 1; transform: none; }
+.card--locked .card-play { display: none; }
+@media (prefers-reduced-motion: reduce) { .card-play { transition: none; } }
 .card-art::after {
   content: ""; position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(11, 10, 15, 0) 58%, rgba(11, 10, 15, .6) 100%);

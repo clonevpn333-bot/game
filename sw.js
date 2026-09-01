@@ -13,7 +13,7 @@
  * online and still opens offline.
  */
 
-const SHELL_VERSION = '9697357f6b';                     // stamped by tools/build.mjs
+const SHELL_VERSION = '4b5afa7a9b';                     // stamped by tools/build.mjs
 const SHELL_CACHE   = `shell-${SHELL_VERSION}`;
 const BUNDLE_CACHE  = 'bundles-v1';
 const RUNTIME_CACHE = 'runtime-v1';
@@ -75,7 +75,15 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;   // never proxy third parties
+  if (url.origin !== self.location.origin) {
+    // One exception to same-origin-only: the CDN copy of three.js that a
+    // single imported title loads through an import map. Caching it is what
+    // makes that game work offline after its first launch.
+    if (/^https:\/\/(cdnjs\.cloudflare\.com|unpkg\.com|cdn\.jsdelivr\.net)\//.test(req.url)) {
+      event.respondWith(runtimeHandler(req));
+    }
+    return;
+  }
 
   const path = url.pathname;
 

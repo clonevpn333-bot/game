@@ -84,6 +84,30 @@ function injectShim(html, sources) {
     return payload + html;
 }
 
+/**
+ * Replace an import map's remote entries with inlined data: modules.
+ *
+ * A single-file bundle that still fetches its engine from a CDN is not really
+ * self-contained: it breaks offline, and it breaks anywhere that CDN is
+ * blocked. Data-URL modules are resolved by the browser's own module loader,
+ * so the game's `import * as THREE from 'three'` keeps working untouched.
+ */
+function inlineImportMap(html, mapping, sources) {
+    return html.replace(/<script type="importmap"[^>]*>([\s\S]*?)<\/script>/i, (tag, body) => {
+        let map;
+        try { map = JSON.parse(body); } catch { fail('unparseable importmap'); return tag; }
+        for (const [spec, file] of Object.entries(mapping)) {
+            const abs = join(ROOT, file);
+            if (!existsSync(abs)) { fail(`importmap vendor file missing: ${file}`); continue; }
+            sources.push(file);
+            const b64 = readFileSync(abs).toString('base64');
+            map.imports = map.imports || {};
+            map.imports[spec] = `data:text/javascript;base64,${b64}`;
+        }
+        return `<script type="importmap">${JSON.stringify(map)}</script>`;
+    });
+}
+
 function buildGame(id) {
     const dir = join(SRC_GAMES, id);
     const metaPath = join(dir, 'game.json');
@@ -102,6 +126,7 @@ function buildGame(id) {
     if (meta.prebuilt) {
         html = readFileSync(htmlPath, 'utf8');
         seen = [`src/games/${id}/bundle.html`];
+        if (meta.inlineImportMap) html = inlineImportMap(html, meta.inlineImportMap, seen);
         if (meta.shim !== false) html = injectShim(html, seen);
     } else {
         ({ html, seen } = inline(readFileSync(htmlPath, 'utf8'), dir));
