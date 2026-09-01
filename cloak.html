@@ -41,6 +41,9 @@ button.go{background:var(--amber);border-color:var(--amber);color:var(--ink-ambe
 button.go:hover{background:#FFC24D}
 .note{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);color:#5F586F;font-size:12.5px}
 .err{margin-top:14px;color:#FF7A6C;font-size:13px;min-height:1.2em}
+.warn{margin-top:20px;padding:13px 15px;border-radius:11px;border:1px solid rgba(255,176,32,.32);
+  background:rgba(255,176,32,.08);color:var(--text);font-size:13px;line-height:1.55}
+.warn b{color:var(--amber)}
 </style>
 </head>
 <body>
@@ -71,6 +74,13 @@ button.go:hover{background:#FFC24D}
   </div>
   <p class="err" id="err" role="status"></p>
 
+  <p class="warn" id="warn" hidden>
+    <b>This page is open from your computer, not from a website.</b>
+    A blank window can only frame a page served over http or https, so put the site
+    online first (drag the folder to <b>netlify.com/drop</b>) and paste that address above.
+    To play offline right now, open <b>portal.html</b> directly — it needs nothing else.
+  </p>
+
   <p class="note">
     If nothing opens, the browser blocked the pop-up — allow pop-ups for this page and try again.
     Settings are stored in this browser only.
@@ -82,6 +92,8 @@ button.go:hover{background:#FFC24D}
   'use strict';
   const $ = (id) => document.getElementById(id);
   const err = $('err');
+  // Declared up here on purpose: it is read during setup, below.
+  const isFileUrl = location.protocol === 'file:';
 
   const b64 = {
     enc: (v) => btoa(unescape(encodeURIComponent(v))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
@@ -102,7 +114,15 @@ button.go:hover{background:#FFC24D}
       if (saved) { $('url').value = saved.url || ''; $('title').value = saved.title || 'New Tab'; }
     } catch (e) { /* private mode */ }
   }
-  if (!$('url').value) $('url').value = location.origin + location.pathname.replace(/cloak\.html$/, '');
+  // Only prefill from a real origin. On file:// there is no origin to use —
+  // location.origin is the string "null" — so the field stays empty.
+  if (!$('url').value && /^https?:$/.test(location.protocol)) {
+    $('url').value = location.origin + location.pathname.replace(/cloak\.html$/, '');
+  }
+  if (isFileUrl) {
+    $('warn').hidden = false;
+    $('go').textContent = 'Open blank window';
+  }
 
   // Neutral titles only. Passing off the window as a specific real service is
   // a different thing from a blank tab, and not something this ships with.
@@ -115,24 +135,51 @@ button.go:hover{background:#FFC24D}
   });
 
   function refresh() {
+    const target = normalise($('url').value);
+    if (!target || isFileUrl) {
+      // A launcher link is only shareable from a hosted copy of this page.
+      $('link').value = target && isFileUrl
+        ? 'Host this page to generate a shareable launcher link'
+        : '';
+      return;
+    }
     const base = location.origin + location.pathname;
-    $('link').value = base + '#u=' + b64.enc(normalise($('url').value)) +
+    $('link').value = base + '#u=' + b64.enc(target) +
       '&t=' + b64.enc($('title').value || 'New Tab') + '&go=1';
   }
   $('url').addEventListener('input', refresh);
   $('title').addEventListener('input', refresh);
 
+  /**
+   * Returns a usable absolute URL, or null. Prefixing https:// onto whatever
+   * is in the box is how this page ended up asking the browser to resolve a
+   * host literally named "null" — so the result is parsed and checked.
+   */
   function normalise(v) {
     let u = (v || '').trim();
-    if (!u) return '';
-    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
-    return u;
+    if (!u) return null;
+    if (!/^[a-z]+:\/\//i.test(u)) u = 'https://' + u;
+    let parsed;
+    try { parsed = new URL(u); } catch (e) { return null; }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+    const host = parsed.hostname;
+    if (!host || host === 'null' || host === 'undefined') return null;
+    // A bare word with no dot is only a real host for localhost.
+    if (!host.includes('.') && host !== 'localhost' && !/^\d+$/.test(host.replace(/\./g, ''))) return null;
+    return parsed.href;
   }
 
   $('go').addEventListener('click', function () {
     err.textContent = '';
-    const url = normalise($('url').value);
-    if (!url) { err.textContent = 'Enter an address first.'; return; }
+    err.style.color = '';
+    const raw = ($('url').value || '').trim();
+    const url = normalise(raw);
+    if (!raw) { err.textContent = 'Enter the address of your deployed site first.'; return; }
+    if (!url) {
+      err.textContent = '“' + raw + '” is not a web address. It needs to look like ' +
+        'https://your-site.netlify.app/ — a local file path will not work here.';
+      return;
+    }
     // Strip angle brackets so the title cannot close the tag it sits in.
     const title = ($('title').value || 'New Tab').replace(/[<>]/g, '');
 
