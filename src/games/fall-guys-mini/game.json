@@ -1,0 +1,30 @@
+{
+  "id": "fall-guys-mini",
+  "title": "Fall Guys",
+  "tagline": "Eight beans, one gauntlet, no dignity.",
+  "description": "A top-down obstacle race against seven rivals. Spinning beams, swinging wrecking balls, sliding blocks and holes that drop you back down the course. Dive to cut corners, and try to be the first bean through the finish tape.",
+  "version": "1.0.0",
+  "minRendererTier": "canvas2d",
+  "estMemoryMB": 50,
+  "pointerLock": false,
+  "category": "arcade",
+  "tags": [
+    "party",
+    "race",
+    "obstacle course"
+  ],
+  "players": "1 player vs 7 AI",
+  "duration": "2\u20134 min",
+  "featured": true,
+  "spotlight": false,
+  "art": {
+    "motif": "prism",
+    "hue": 332,
+    "seed": 61,
+    "sat": 58,
+    "dark": 16,
+    "deep": 6
+  },
+  "controls": "WASD move \u00b7 SPACE dive \u00b7 ENTER start",
+  "budgetKB": 90
+}

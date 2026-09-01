@@ -19,7 +19,7 @@
   "players": "1 player",
   "duration": "Endless",
   "added": "2026-08-28",
-  "featured": false,
+  "featured": true,
   "spotlight": false,
   "art": {
     "motif": "metro",

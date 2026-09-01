@@ -426,6 +426,114 @@ export async function teardownPlayer() {
   await launcher.closeActive();
 }
 
+// -------------------------------------------------------- link generator --
+
+/**
+ * Link generator.
+ *
+ * Produces the three things you actually need to hand a game to someone: a
+ * direct URL that opens straight into it, an iframe embed snippet, and a
+ * launcher that opens it in its own window. The base URL is editable and
+ * remembered, so you can generate the real links for your deployed domain
+ * before the deploy is even finished.
+ */
+export async function renderLinks() {
+  const games = catalog.visible();
+  const stored = await storage.getMeta('linkBase', null);
+  const here = `${location.origin}${location.pathname}`;
+  let base = stored || (location.protocol === 'file:' ? 'https://your-site.netlify.app/' : here);
+
+  const baseInput = el('input', {
+    class: 'share-url', value: base, spellcheck: 'false',
+    'aria-label': 'Base URL of your deployed site',
+  });
+  const gameSelect = el('select', { class: 'res-select', style: 'height:38px;width:100%;max-width:340px', 'aria-label': 'Game' },
+    ...games.map((g) => el('option', { value: g.id, text: g.title })));
+
+  const directOut = el('input', { class: 'share-url', readonly: true, 'aria-label': 'Direct link' });
+  const embedOut = el('textarea', {
+    class: 'share-url', readonly: true, rows: 3,
+    style: 'height:auto;padding:10px 11px;line-height:1.5;resize:vertical', 'aria-label': 'Embed code',
+  });
+  const listOut = el('textarea', {
+    class: 'share-url', readonly: true, rows: 8,
+    style: 'height:auto;padding:10px 11px;line-height:1.6;resize:vertical', 'aria-label': 'Every game link',
+  });
+
+  function normalise(v) {
+    let b = v.trim();
+    if (!b) b = here;
+    if (!/^https?:\/\//i.test(b) && !b.startsWith('file:')) b = 'https://' + b;
+    // A trailing index.html is fine; a bare domain needs the slash.
+    if (!/\.html$/i.test(b) && !b.endsWith('/')) b += '/';
+    return b;
+  }
+
+  function refresh() {
+    base = normalise(baseInput.value);
+    const id = gameSelect.value;
+    const direct = `${base}#/play/${id}`;
+    directOut.value = direct;
+    embedOut.value =
+      `<iframe src="${direct}"\n        width="960" height="540"\n        style="border:0;border-radius:12px"\n        allow="fullscreen; pointer-lock; autoplay; gamepad"\n        title="${games.find((g) => g.id === id)?.title || id}"></iframe>`;
+    listOut.value = games.map((g) => `${g.title.padEnd(22)} ${base}#/play/${g.id}`).join('\n');
+    storage.setMeta('linkBase', base);
+  }
+
+  baseInput.addEventListener('input', refresh);
+  gameSelect.addEventListener('change', refresh);
+
+  const copier = (field, labelText) => {
+    const b = el('button', {
+      class: 'btn btn--sm', type: 'button', text: labelText,
+      onclick: async () => {
+        try { await navigator.clipboard.writeText(field.value); }
+        catch { field.select(); document.execCommand('copy'); }
+        b.textContent = 'Copied';
+        setTimeout(() => { b.textContent = labelText; }, 1500);
+      },
+    });
+    return b;
+  };
+
+  const node = mount(el('div', { class: 'detail-body', style: 'grid-template-columns:1fr;padding-top:34px;max-width:900px' },
+    el('div', {},
+      el('a', { class: 'back-link', href: '#/', text: '← All games' }),
+      el('h1', { class: 'hero-title', style: 'font-size:clamp(30px,4vw,46px);margin:14px 0 6px', text: 'Link generator' }),
+      el('p', { class: 'muted', style: 'margin:0 0 26px;max-width:60ch',
+        text: 'Set the address your site is deployed to, pick a game, and copy the link. These open straight into the game, skipping the library.' }),
+
+      el('h3', { text: 'Your site address' }),
+      el('div', { class: 'share-row' }, baseInput),
+      el('p', { class: 'muted', style: 'margin:6px 0 26px;font-size:12.5px',
+        text: 'For example https://nova-arcade.netlify.app/ — whatever your host gives you after deploying.' }),
+
+      el('h3', { text: 'Game' }),
+      el('div', { class: 'share-row' }, gameSelect),
+
+      el('h3', { style: 'margin-top:26px', text: 'Direct link' }),
+      el('div', { class: 'share-row' }, directOut, copier(directOut, 'Copy'),
+        el('button', {
+          class: 'btn btn--sm btn--ghost', type: 'button', text: 'Open',
+          onclick: () => window.open(directOut.value, '_blank', 'noopener'),
+        })),
+
+      el('h3', { style: 'margin-top:26px', text: 'Embed code' }),
+      el('p', { class: 'muted', style: 'margin:0 0 8px;font-size:12.5px',
+        text: 'Drop this into any page. The allow list is what lets mouse-look work inside the frame.' }),
+      el('div', { class: 'share-row' }, embedOut),
+      el('div', { class: 'share-row' }, copier(embedOut, 'Copy embed code')),
+
+      el('h3', { style: 'margin-top:26px', text: 'Every game' }),
+      el('div', { class: 'share-row' }, listOut),
+      el('div', { class: 'share-row' }, copier(listOut, 'Copy all links')),
+    ),
+  ));
+
+  refresh();
+  return node;
+}
+
 // ---------------------------------------------------------- diagnostics --
 
 export async function renderDiagnostics() {

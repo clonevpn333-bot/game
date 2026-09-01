@@ -54,6 +54,7 @@ async function main() {
     await views.teardownPlayer();
     await views.renderPlayer(id, { fresh: query.fresh === '1' });
   });
+  router.route('/links', async () => { await views.teardownPlayer(); await views.renderLinks(); });
   router.route('/diagnostics', async () => { await views.teardownPlayer(); await views.renderDiagnostics(); });
   router.route('*', async () => { await views.teardownPlayer(); views.renderNotFound(); });
 

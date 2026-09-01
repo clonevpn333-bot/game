@@ -88,9 +88,11 @@ export class GameSession {
     // allow-pointer-lock is mandatory: mouse-look titles are unplayable
     // without it, and some sandbox token sets block it silently (§2.2).
     iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-pointer-lock');
-    // Pointer lock is gated by the sandbox token above, not by Permissions
-    // Policy — listing it in `allow` only earns a console warning.
-    iframe.setAttribute('allow', 'fullscreen; autoplay; gamepad');
+    // Both gates have to be open: the sandbox token above, and the
+    // Permissions-Policy delegation here. Without `pointer-lock` in `allow`,
+    // a nested frame's requestPointerLock() is refused with no error in some
+    // Chrome builds — which is exactly how mouse-look silently died.
+    iframe.setAttribute('allow', 'fullscreen; pointer-lock; autoplay; gamepad');
     iframe.setAttribute('referrerpolicy', 'no-referrer');
     iframe.tabIndex = 0;
 

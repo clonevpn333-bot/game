@@ -132,7 +132,10 @@ function buildGame(id) {
         minRendererTier: meta.minRendererTier,
         estMemoryMB: meta.estMemoryMB,
         pointerLock: !!meta.pointerLock,
-        thumbnail: meta.thumbnail || `portal/thumbs/${id}.jpg`,
+        // Games carrying an `art` record get a generated SVG poster; the rest
+        // use a captured screenshot. Guessing wrong here is what shipped a
+        // library of broken images, so the file is verified below.
+        thumbnail: meta.thumbnail || `portal/thumbs/${id}.${meta.art ? 'svg' : 'jpg'}`,
         controls: meta.controls || [],
         tags: meta.tags || [],
         hidden: !!meta.hidden,
@@ -146,6 +149,10 @@ function buildGame(id) {
         art: meta.art || null,
         prebuilt: !!meta.prebuilt,
     };
+    if (!existsSync(join(ROOT, entry.thumbnail))) {
+        fail(`${id}: thumbnail missing at ${entry.thumbnail} — run "node tools/gen-art.mjs"` +
+             ` (generated art) or "node tools/gen-thumbs.mjs ${id}" (screenshot)`);
+    }
     if (meta.budgetKB) {
         entry.budgetKB = meta.budgetKB;
         if (buf.length / 1024 > meta.budgetKB) {

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fall Guys Mini</title>
+<style>
+html,body{margin:0;height:100%;background:#0A0E1A;overflow:hidden}
+#stage{position:absolute;inset:0;display:grid;place-items:center}
+#c{width:min(100vw,177.78vh);aspect-ratio:16/9;display:block;image-rendering:auto}
+#boot{position:absolute;inset:0;display:grid;place-items:center;color:#E9C68C;
+  font:600 13px ui-monospace,Menlo,monospace;letter-spacing:.22em}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c"></canvas><div id="boot">LOADING</div></div>
+
+<script src="../../engine/teardown.js"></script>
+<script src="../../engine/pool.js"></script>
+<script src="../../engine/loop.js"></script>
+<script src="../../engine/resscale.js"></script>
+<script src="../../engine/bridge.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

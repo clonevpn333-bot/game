@@ -10,7 +10,7 @@
  *
  *   node tools/gen-art.mjs
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from 'node:fs';
 
 const OUT = 'portal/thumbs';
 mkdirSync(OUT, { recursive: true });
@@ -168,9 +168,14 @@ function neon(art, r) {
 
 const MOTIFS = { summit, prism, vector, metro, neon };
 
-const manifest = JSON.parse(readFileSync('games.json', 'utf8'));
+// Sources, not the manifest: the manifest cannot be generated until every
+// thumbnail exists, so art generation has to come first.
+const games = readdirSync('src/games')
+  .filter((id) => existsSync(`src/games/${id}/game.json`))
+  .map((id) => JSON.parse(readFileSync(`src/games/${id}/game.json`, 'utf8')));
+
 let made = 0;
-for (const g of manifest.games) {
+for (const g of games) {
   if (!g.art || !MOTIFS[g.art.motif]) continue;
   const r = rng(g.art.seed || 1);
   const svg = frame(g.art, MOTIFS[g.art.motif](g.art, r));

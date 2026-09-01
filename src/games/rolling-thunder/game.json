@@ -1,0 +1,19 @@
+{
+  "id": "rolling-thunder",
+  "title": "Rolling Thunder",
+  "tagline": "A runaway boulder and a mountain in a storm.",
+  "description": "You are a boulder that has stopped asking permission. Steer down a storm-lit mountain road that never stops steepening, jump the barriers, hit the boost pads, and see how far the mountain lets you go before it takes it back.",
+  "version": "1.0.0",
+  "minRendererTier": "canvas2d",
+  "estMemoryMB": 55,
+  "pointerLock": false,
+  "category": "arcade",
+  "tags": ["arcade", "racing", "endless"],
+  "players": "1 player",
+  "duration": "3–8 min",
+  "featured": true,
+  "spotlight": false,
+  "art": { "motif": "neon", "hue": 268, "seed": 53, "sat": 56, "dark": 12, "deep": 5 },
+  "controls": "A / D steer · SPACE jump · S brake · ENTER start",
+  "budgetKB": 90
+}

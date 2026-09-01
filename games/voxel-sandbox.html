@@ -470,6 +470,88 @@
         });
     }
 
+    // --- pointer lock -----------------------------------------------------
+    /**
+     * Pointer lock fails in more ways than any game bothers to handle, and all
+     * of them look identical from the player's side: you click, nothing
+     * captures. The three that actually bite:
+     *
+     *   - Chrome imposes a ~1s cooldown after the user presses Esc. A request
+     *     inside that window is rejected outright, so it is retried once.
+     *   - Chrome 111+ returns a promise; older versions return undefined. An
+     *     unhandled rejection on the new API is a console error and no lock.
+     *   - `unadjustedMovement` throws on browsers that do not know the option,
+     *     taking the whole request down with it.
+     *
+     * Patching the prototype fixes every game at once, including the imported
+     * ones that were written before any of this mattered.
+     */
+    const nativeRequestLock = global.Element && global.Element.prototype.requestPointerLock;
+    let lockTarget = null, lockRetry = 0;
+
+    if (nativeRequestLock) {
+        global.Element.prototype.requestPointerLock = function (options) {
+            const element = this;
+            lockTarget = element;
+
+            // A request from an unfocused document is refused; clicking the
+            // frame usually focuses it, but a programmatic call may not have.
+            try { global.focus(); } catch (e) { /* cross-origin parent */ }
+
+            const attempt = (opts) => {
+                let result;
+                try {
+                    result = opts === undefined
+                        ? nativeRequestLock.call(element)
+                        : nativeRequestLock.call(element, opts);
+                } catch (err) {
+                    // Most often an unknown option object; retry without it.
+                    if (opts !== undefined) return attempt(undefined);
+                    reportLockFailure(err && err.message || String(err));
+                    return undefined;
+                }
+                if (result && typeof result.catch === 'function') {
+                    return result.catch((err) => {
+                        if (opts !== undefined) return attempt(undefined);
+                        scheduleRetry(element, err && err.message || String(err));
+                    });
+                }
+                return result;
+            };
+
+            return attempt(options);
+        };
+    }
+
+    function scheduleRetry(element, message) {
+        // The one failure worth retrying is the Esc cooldown, and it clears in
+        // about a second. Anything still failing after that is real.
+        if (lockRetry) { reportLockFailure(message); return; }
+        lockRetry = setTimeout(function () {
+            lockRetry = 0;
+            if (doc.pointerLockElement) return;
+            try {
+                const r = nativeRequestLock.call(element);
+                if (r && typeof r.catch === 'function') r.catch((e) => reportLockFailure(e && e.message || String(e)));
+            } catch (e) { reportLockFailure(e && e.message || String(e)); }
+        }, 1250);
+    }
+
+    function reportLockFailure(message) {
+        if (Bridge) Bridge.post('game:pointerlock', { locked: false, error: message || 'pointer lock was refused' });
+    }
+
+    if (doc) {
+        doc.addEventListener('pointerlockchange', function () {
+            const locked = doc.pointerLockElement === lockTarget && !!doc.pointerLockElement;
+            if (Bridge) Bridge.pointerLock(locked);
+        });
+        doc.addEventListener('pointerlockerror', function () {
+            // The error event carries no reason, so name the usual cause.
+            reportLockFailure('the browser refused pointer lock (needs a fresh click, or Esc was pressed moments ago)');
+        });
+    }
+
     // --- portal lifecycle -------------------------------------------------
     if (Bridge) {
         Bridge.connect({

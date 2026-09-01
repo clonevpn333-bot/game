@@ -1,7 +1,7 @@
 {
   "id": "voxel-sandbox",
-  "title": "Voxel",
-  "tagline": "Break it, stack it, build the thing in your head.",
+  "title": "Minecraft Clone",
+  "tagline": "Mine it, stack it, build the thing in your head.",
   "description": "An open voxel sandbox: procedurally generated biomes, caves and structures, mineable blocks, crafting and mobs. Build until the sun goes down, then keep building.",
   "version": "1.0.0",
   "minRendererTier": "webgl1",
@@ -19,8 +19,8 @@
   "players": "1 player",
   "duration": "Endless",
   "added": "2026-08-28",
-  "featured": false,
-  "spotlight": false,
+  "featured": true,
+  "spotlight": true,
   "art": {
     "motif": "prism",
     "hue": 112,

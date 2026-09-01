@@ -70,7 +70,15 @@ const modules = MODULE_ORDER.map((name) => {
 
 // --- catalog, thumbnails and bundles -------------------------------------
 const manifest = JSON.parse(readFileSync('games.json', 'utf8'));
-const dataUri = (file, mime) => `data:${mime};base64,${readFileSync(file).toString('base64')}`;
+const MIME = { '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
+const dataUri = (file) => {
+  const ext = file.slice(file.lastIndexOf('.')).toLowerCase();
+  const mime = MIME[ext];
+  // Guessing here is what broke every card art in the last build: SVG posters
+  // were served as image/jpeg data URIs, which no browser will decode.
+  if (!mime) throw new Error(`no MIME type known for ${file}`);
+  return `data:${mime};base64,${readFileSync(file).toString('base64')}`;
+};
 
 const bundleTags = [];
 let bundleBytes = 0;
@@ -80,7 +88,8 @@ const games = manifest.games.map((g) => {
   bundleTags.push(
     `<script type="text/plain" id="bundle-${g.id}">${html.toString('base64')}</script>`
   );
-  const thumb = existsSync(g.thumbnail) ? dataUri(g.thumbnail, 'image/jpeg') : g.thumbnail;
+  if (!existsSync(g.thumbnail)) throw new Error(`${g.id}: thumbnail missing at ${g.thumbnail}`);
+  const thumb = dataUri(g.thumbnail);
   return { ...g, thumbnail: thumb };
 });
 
