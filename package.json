@@ -9,6 +9,7 @@
     "build": "node tools/build.mjs",
     "check": "node tools/build.mjs --check && node tools/check-budgets.mjs",
     "serve": "node tools/serve.mjs",
+    "single": "node tools/build-single.mjs",
     "thumbs": "node tools/gen-thumbs.mjs",
     "icons": "node tools/gen-icons.mjs",
     "test": "node tests/e2e.mjs",

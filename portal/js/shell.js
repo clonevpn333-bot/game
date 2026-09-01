@@ -110,6 +110,9 @@ function wireChrome() {
 
 function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
+  // A single-file build has no sw.js to point at, and nothing to precache that
+  // is not already in the page.
+  if (document.getElementById('catalog-data')) return;
   // Registration after load: it must never compete with first paint.
   addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js', { scope: './' }).then((reg) => {

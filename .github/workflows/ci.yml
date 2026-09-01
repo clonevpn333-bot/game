@@ -30,6 +30,11 @@ jobs:
       - name: Size budgets
         run: node tools/check-budgets.mjs
 
+      # The packer refuses import/export forms it cannot handle, so this also
+      # catches a shell module drifting out of what a single file can carry.
+      - name: Single-file distribution build
+        run: node tools/build-single.mjs
+
       - name: Start static server
         run: |
           node tools/serve.mjs 8765 &

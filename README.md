@@ -92,6 +92,24 @@ game id.
 `minRendererTier` (`canvas2d` | `webgl1` | `webgl2`), `estMemoryMB`,
 `pointerLock`, `budgetKB`, `controls[]`, `tags[]`, `hidden`.
 
+## One file, whole arcade
+
+```
+node tools/build-single.mjs      # dist/portal.html
+```
+
+Packs the shell, the catalog, the thumbnails and every game bundle into one
+~660 KB HTML file that runs from `file://`, an email attachment, or any host
+that can serve a single page. The launcher fills its iframe from `srcdoc`
+instead of a URL; sandbox flags, the handshake, saves and teardown are the same
+code path as the hosted portal. It gives up the service worker, which has
+nothing left to cache — the library is already in the page.
+
+Verified under `default-src 'none'` with only `script-src 'unsafe-inline'`: the
+grid, both 2D titles and the WebGL2 voxel sandbox all run with zero CSP
+violations. With blob workers blocked too, Voxel Drift falls back to meshing on
+the main thread and the resolution scaler absorbs the cost.
+
 ## Commands
 
 ```
@@ -99,6 +117,7 @@ node tools/build.mjs            # bundle games, hash them, write games.json, sta
 node tools/build.mjs --check    # CI: fail if anything committed is stale
 node tools/check-budgets.mjs    # shell + bundle size budgets, manifest-driven check
 node tools/serve.mjs [port]     # static server matching production cache headers
+node tools/build-single.mjs     # pack the whole portal into dist/portal.html
 node tests/e2e.mjs              # acceptance tests
 node tools/bench.mjs            # the §4 benchmark table
 node tools/soak.mjs --minutes=30    # multi-game leak soak

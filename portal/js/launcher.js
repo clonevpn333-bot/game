@@ -31,6 +31,19 @@ function randomToken() {
 
 export function activeSession() { return active; }
 
+/** Bundle embedded by tools/build-single.mjs, base64 in a script tag. */
+function embeddedBundle(id) {
+  const el = document.getElementById(`bundle-${id}`);
+  if (!el) return null;
+  try {
+    const bytes = Uint8Array.from(atob(el.textContent.trim()), (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch (err) {
+    console.warn('[launcher] embedded bundle failed to decode', id, err);
+    return null;
+  }
+}
+
 export class GameSession {
   constructor(game, mount, hooks = {}) {
     this.game = game;
@@ -49,6 +62,10 @@ export class GameSession {
     this._onVisibility = null;
     this._readyTimer = 0;
     this._settings = { resolutionScale: null };
+    // Learned from the frame's own hello. A srcdoc frame loaded from file://
+    // has an opaque origin, so replying to location.origin silently drops
+    // every message; replying to the origin it actually announced does not.
+    this._replyOrigin = null;
   }
 
   async start() {
@@ -89,9 +106,18 @@ export class GameSession {
 
     this.iframe = iframe;
     this.mount.appendChild(iframe);
-    // Content-hashed URL: a version bump changes the URL, so the service
-    // worker can serve it cache-first forever (§2.3).
-    iframe.src = `${game.entry}?v=${game.hash}`;
+
+    const embedded = embeddedBundle(game.id);
+    if (embedded) {
+      // Single-file distribution: the bundle travels inside the page, so the
+      // frame is populated from srcdoc rather than fetched. Everything else —
+      // sandbox, handshake, teardown — is unchanged.
+      iframe.srcdoc = embedded;
+    } else {
+      // Content-hashed URL: a version bump changes the URL, so the service
+      // worker can serve it cache-first forever (§2.3).
+      iframe.src = `${game.entry}?v=${game.hash}`;
+    }
 
     this._readyTimer = setTimeout(() => {
       if (!this.ready && !this.destroyed) {
@@ -121,7 +147,10 @@ export class GameSession {
     if (d.type !== 'game:hello' && d.token !== this.token) return;
 
     switch (d.type) {
-      case 'game:hello': this._sendHello(d); break;
+      case 'game:hello':
+        this._replyOrigin = e.origin === 'null' ? '*' : e.origin;
+        this._sendHello(d);
+        break;
 
       case 'game:ready':
         this.ready = true;
@@ -186,9 +215,7 @@ export class GameSession {
     if (this.destroyed || !this.iframe?.contentWindow) return false;
     const msg = payload ? { type, token: this.token, ...payload } : { type, token: this.token };
     try {
-      // The frame is same-origin by sandbox policy; '*' is the fallback for an
-      // opaque origin, where there is no origin string to target.
-      this.iframe.contentWindow.postMessage(msg, location.origin === 'null' ? '*' : location.origin);
+      this.iframe.contentWindow.postMessage(msg, this._replyOrigin || location.origin);
       return true;
     } catch { return false; }
   }

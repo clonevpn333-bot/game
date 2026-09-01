@@ -1,3 +1,6 @@
 node_modules/
 .DS_Store
 *.log
+
+# Single-file distribution build; regenerate with `npm run single`.
+dist/

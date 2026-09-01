@@ -23,8 +23,23 @@ function validate(manifest) {
   });
 }
 
+/**
+ * A single-file distribution build (tools/build-single.mjs) embeds the catalog
+ * in the page instead of shipping games.json alongside it. Same shape, same
+ * validation — only the source differs.
+ */
+function embedded() {
+  const el = document.getElementById('catalog-data');
+  if (!el) return null;
+  try { return JSON.parse(el.textContent); } catch { return null; }
+}
+
 export async function load({ force = false } = {}) {
   if (cache && !force) return cache;
+
+  const inline = embedded();
+  if (inline) { cache = { ...inline, games: validate(inline) }; return cache; }
+
   let manifest = null;
   try {
     const res = await fetch(MANIFEST_URL, { cache: force ? 'reload' : 'default' });

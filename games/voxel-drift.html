@@ -1393,6 +1393,7 @@ void main() {
 
     const chunks = new Map();      // key -> { cx, cz, voxels, pending }
     const queue = [];              // pending mesh requests, nearest-first
+    const inflight = new Map();    // key -> [cx, cz], so a dead worker can be recovered from
     const uploads = [];            // completed meshes waiting for a GL upload
 
     let canvas, renderer, scaler, loop, workers = [], inFlight = 0, useWorker = true, spawned = false;
@@ -1415,15 +1416,34 @@ void main() {
             for (let i = 0; i < count; i++) {
                 const w = new Worker(url);
                 w.onmessage = onMeshed;
-                w.onerror = () => { useWorker = false; };
+                // A blocked worker fails asynchronously — Content-Security-Policy
+                // rejections arrive as an error event, not a constructor throw —
+                // so the fallback has to be able to take over mid-flight.
+                w.onerror = dropWorkers;
                 workers.push(w);
             }
             Teardown.onDestroy(() => { for (const w of workers) w.terminate(); workers.length = 0; });
         } catch {
             // No Worker or no blob: URL (rare, but some managed profiles block
             // it). Meshing then runs inline, which costs frame time but works.
-            useWorker = false;
+            dropWorkers();
         }
+    }
+
+    /**
+     * Give up on workers and put everything that was in flight back on the
+     * queue. Without the requeue, the chunks handed to a worker that never
+     * answers stay pending forever and the world stops streaming.
+     */
+    function dropWorkers() {
+        if (!useWorker && !workers.length) return;
+        useWorker = false;
+        for (const w of workers) { try { w.terminate(); } catch (e) { /* already dead */ } }
+        workers.length = 0;
+        inFlight = 0;
+        for (const [k, pos] of inflight) queue.push(k, pos[0], pos[1]);
+        inflight.clear();
+        pumpQueue();
     }
 
     function editsNear(cx, cz) {
@@ -1453,6 +1473,7 @@ void main() {
             const msg = { key: k, cx, cz, seed: SEED, edits: editsNear(cx, cz) };
             inFlight++;
             if (useWorker && workers.length) {
+                inflight.set(k, [cx, cz]);
                 workers[inFlight % workers.length].postMessage(msg);
             } else {
                 const r = M.build(cx, cz, SEED, msg.edits);
@@ -1464,6 +1485,7 @@ void main() {
     function onMeshed(e) {
         inFlight = Math.max(0, inFlight - 1);
         const d = e.data;
+        inflight.delete(d.key);
         const rec = chunks.get(d.key);
         if (!rec) return;                     // unloaded while in flight
         rec.voxels = d.voxels;
