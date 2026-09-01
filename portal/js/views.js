@@ -494,23 +494,64 @@ export async function renderLinks() {
   gameSelect.addEventListener('change', refresh);
   titleField.addEventListener('input', refresh);
 
+  // A single-file build carries the whole arcade in the page, which is what
+  // makes the offline path below possible.
+  const isSingleFile = !!document.getElementById('catalog-data');
+
   /**
-   * Opens the site inside a blank window: a new tab is created, and the page
-   * writes a bare document into it that frames the site. The address bar shows
-   * about:blank because nothing was ever navigated to.
+   * Opens the arcade in a window that stays on about:blank.
+   *
+   * Two ways in, because one of them does not work everywhere:
+   *
+   *   src    — the frame points at the deployed URL. Cheapest, keeps the
+   *            service worker and storage, and is what every cloaker does. It
+   *            needs the site served over http(s): a blank window cannot frame
+   *            a file:// URL, and Chrome hands you an empty frame if you try.
+   *   srcdoc — the frame is given the page's own HTML. There is no URL to
+   *            block, so it works straight off the filesystem with no server.
+   *            Only possible for a single-file build, where nothing is external.
    */
   function openBlank() {
-    const url = directField.value;
     const title = (titleField.value || 'New Tab').replace(/[<>]/g, '');
+    const local = location.protocol === 'file:';
+
+    if (local && !isSingleFile) {
+      alert('This copy loads its files separately, so a blank window has nothing to '
+          + 'point at offline.\n\nEither host the site, or open portal.html — the '
+          + 'single-file build does this with no server.');
+      return;
+    }
+
     const win = window.open('', '_blank');
-    if (!win) { alert('Your browser blocked the pop-up. Allow pop-ups for this site and try again.'); return; }
-    win.document.write(
-      `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>` +
-      `<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23dfe3e8'/%3E%3C/svg%3E">` +
-      `<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}iframe{border:0;display:block;width:100%;height:100%}</style>` +
-      `</head><body><iframe src="${url}" allow="fullscreen; pointer-lock; autoplay; gamepad"></iframe></body></html>`
-    );
-    win.document.close();
+    if (!win) {
+      alert('Your browser blocked the pop-up. Allow pop-ups for this site and try again.');
+      return;
+    }
+
+    const doc = win.document;
+    doc.title = title;
+    const icon = doc.createElement('link');
+    icon.rel = 'icon';
+    icon.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23dfe3e8'/%3E%3C/svg%3E";
+    doc.head.appendChild(icon);
+    doc.documentElement.style.height = '100%';
+    doc.body.style.cssText = 'margin:0;height:100vh;background:#000;overflow:hidden';
+
+    const frame = doc.createElement('iframe');
+    frame.setAttribute('allow', 'fullscreen; pointer-lock; autoplay; gamepad');
+    frame.style.cssText = 'border:0;display:block;width:100%;height:100%';
+
+    if (local || isSingleFile) {
+      // Serialise this page minus whatever is rendered into it; the copy boots
+      // itself and renders fresh.
+      const clone = document.documentElement.cloneNode(true);
+      const view = clone.querySelector('#view');
+      if (view) view.innerHTML = '';
+      frame.srcdoc = '<!DOCTYPE html>' + clone.outerHTML;
+    } else {
+      frame.src = directField.value;
+    }
+    doc.body.appendChild(frame);
   }
 
   const node = mount(el('div', { class: 'detail-body', style: 'grid-template-columns:1fr;padding-top:34px;max-width:860px' },
@@ -534,7 +575,9 @@ export async function renderLinks() {
 
       el('h3', { class: 'sub', style: 'margin-top:28px', text: 'Blank-window launcher' }),
       el('p', { class: 'muted', style: 'margin:0 0 10px;font-size:12.5px',
-        text: 'Opens a new tab that stays on about:blank and frames the site inside it. Set the window title first.' }),
+        text: isSingleFile
+          ? 'Opens a new tab that stays on about:blank with the whole arcade inside it. This build carries every game in the page, so it works with no server and no connection.'
+          : 'Opens a new tab that stays on about:blank and frames the site inside it. Set the window title first.' }),
       el('div', { class: 'row' }, titleField,
         el('button', { class: 'btn btn--sm btn--play', type: 'button', text: 'Open blank window', onclick: openBlank })),
       el('div', { class: 'row' }, launcherField, copyBtn(launcherField, 'Copy launcher link')),
