@@ -96,7 +96,9 @@ const bodyInner = /<body[^>]*>([\s\S]*?)<\/body>/.exec(shellHtml)[1]
   .replace(/\s*<script type="module"[^>]*><\/script>/, '')
   .trim();
 
-const head = `<title>Lowspec Arcade</title>
+// The title comes from the shell, not a copy here that can drift out of sync.
+const pageTitle = (/<title>([^<]*)<\/title>/i.exec(shellHtml) || [, 'Nova Arcade'])[1];
+const head = `<title>${pageTitle}</title>
 <style>
 ${criticalCss.trim()}
 ${shellCss.trim()}

@@ -15,8 +15,23 @@ import { detect } from './capabilities.js';
 const boot = performance.now();
 let deferredInstall = null;
 
+/**
+ * Webfonts are an enhancement, never a gate. Loading the stylesheet from the
+ * shell means a slow or blocked font host costs nothing at first paint, and the
+ * fallback stack carries the page until the faces arrive.
+ */
+function loadFonts() {
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap';
+  link.media = 'print';
+  link.addEventListener('load', () => { link.media = 'all'; }, { once: true });
+  document.head.append(link);
+}
+
 async function main() {
   detect();                       // one probe, cached for the session
+  loadFonts();
   wireChrome();
   registerServiceWorker();
 

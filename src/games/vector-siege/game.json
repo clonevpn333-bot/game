@@ -1,0 +1,34 @@
+{
+  "id": "vector-siege",
+  "title": "Vector Siege",
+  "tagline": "Hold the line against the geometry.",
+  "description": "Twin-stick wave defence rendered in pure vectors. Waves escalate, weapons stack, and the arena tightens. Survive twenty waves without losing the core.",
+  "version": "1.0.0",
+  "minRendererTier": "canvas2d",
+  "estMemoryMB": 60,
+  "pointerLock": false,
+  "prebuilt": true,
+  "shim": true,
+  "category": "action",
+  "tags": [
+    "twin-stick",
+    "waves",
+    "bullet hell"
+  ],
+  "players": "1 player",
+  "duration": "8\u201315 min",
+  "added": "2026-08-14",
+  "featured": true,
+  "spotlight": false,
+  "art": {
+    "motif": "vector",
+    "hue": 186,
+    "seed": 43,
+    "sat": 50,
+    "dark": 11,
+    "deep": 4
+  },
+  "controls": "WASD to move \u00b7 Mouse to aim \u00b7 Click to fire",
+  "budgetKB": 75,
+  "thumbnail": "portal/thumbs/vector-siege.svg"
+}

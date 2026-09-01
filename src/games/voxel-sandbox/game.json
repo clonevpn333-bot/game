@@ -1,0 +1,35 @@
+{
+  "id": "voxel-sandbox",
+  "title": "Voxel",
+  "tagline": "Break it, stack it, build the thing in your head.",
+  "description": "An open voxel sandbox: procedurally generated biomes, caves and structures, mineable blocks, crafting and mobs. Build until the sun goes down, then keep building.",
+  "version": "1.0.0",
+  "minRendererTier": "webgl1",
+  "estMemoryMB": 380,
+  "pointerLock": true,
+  "prebuilt": true,
+  "shim": true,
+  "category": "sim",
+  "tags": [
+    "sandbox",
+    "building",
+    "survival",
+    "3D"
+  ],
+  "players": "1 player",
+  "duration": "Endless",
+  "added": "2026-08-28",
+  "featured": false,
+  "spotlight": false,
+  "art": {
+    "motif": "prism",
+    "hue": 112,
+    "seed": 29,
+    "sat": 42,
+    "dark": 13,
+    "deep": 5
+  },
+  "controls": "WASD \u00b7 Mouse look \u00b7 Left click break \u00b7 Right click place \u00b7 E inventory",
+  "budgetKB": 1389,
+  "thumbnail": "portal/thumbs/voxel-sandbox.svg"
+}

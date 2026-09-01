@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="hsl(214 52% 45%)"/>
+<stop offset="0.58" stop-color="hsl(202 44% 21%)"/>
+<stop offset="1" stop-color="hsl(196 36% 11%)"/>
+</linearGradient>
+
+</defs>
+<rect width="640" height="360" fill="url(#sky)"/>
+<circle cx="327" cy="86" r="46" fill="hsl(248 78% 82% / 0.3)"/><path d="M0 360 L0 295.6 L33 258 L67 305 L136 285 L206 305 L280 273 L355 305 L402 264 L450 305 L524 289 L598 305 L643 286 L687 305 L640 360 Z" fill="hsl(214 44% 15%)"/><path d="M0 360 L0 296 L62 255 L123 304 L171 273 L219 304 L291 260 L364 304 L412 290 L460 304 L520 270 L579 304 L613 281 L647 304 L640 360 Z" fill="hsl(210 38% 24%)"/><path d="M0 360 L0 296.4 L47 262 L94 303 L148 264 L203 303 L236 286 L270 303 L320 290 L369 303 L424 273 L479 303 L523 290 L566 303 L607 270 L649 303 L640 360 Z" fill="hsl(206 32% 33%)"/><path d="M0 360 L0 296.8 L51 269 L103 302 L158 288 L214 302 L274 276 L334 302 L378 289 L421 302 L477 275 L533 302 L571 290 L610 302 L677 276 L744 302 L640 360 Z" fill="hsl(202 26% 42%)"/>
+<rect width="640" height="360" fill="none"/>
+</svg>

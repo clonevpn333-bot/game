@@ -1,0 +1,34 @@
+{
+  "id": "neon-drift",
+  "title": "Neon Drift",
+  "tagline": "Outrun the horizon at 400 km/h.",
+  "description": "A synth-lit endless descent. Weave the barriers, bank the corners, and chain near-misses to keep your boost meter alive. Speed climbs forever; the track never repeats.",
+  "version": "1.0.0",
+  "minRendererTier": "webgl1",
+  "estMemoryMB": 220,
+  "pointerLock": false,
+  "prebuilt": true,
+  "shim": true,
+  "category": "arcade",
+  "tags": [
+    "endless",
+    "reflex",
+    "score attack"
+  ],
+  "players": "1 player",
+  "duration": "3\u20138 min",
+  "added": "2026-08-20",
+  "featured": true,
+  "spotlight": false,
+  "art": {
+    "motif": "neon",
+    "hue": 292,
+    "seed": 17,
+    "sat": 62,
+    "dark": 12,
+    "deep": 4
+  },
+  "controls": "A/D or \u2190/\u2192 \u00b7 Space to boost",
+  "budgetKB": 668,
+  "thumbnail": "portal/thumbs/neon-drift.svg"
+}

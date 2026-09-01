@@ -4,6 +4,45 @@
   "generatedBy": "tools/build.mjs",
   "games": [
     {
+      "id": "bonecrown",
+      "title": "Bonecrown",
+      "tagline": "Take the crown. Keep it if you can.",
+      "description": "A dark action crawl through bone halls. Fight, loot, and push deeper — the crown makes you stronger and everything in the dark angrier.",
+      "entry": "games/bonecrown.html",
+      "version": "1.0.0",
+      "hash": "1a2c4ef131",
+      "bytes": 1080051,
+      "gzipBytes": 275852,
+      "minRendererTier": "webgl1",
+      "estMemoryMB": 320,
+      "pointerLock": false,
+      "thumbnail": "portal/thumbs/bonecrown.svg",
+      "controls": "WASD · Mouse to aim · Click to attack",
+      "tags": [
+        "action",
+        "roguelike",
+        "3D"
+      ],
+      "hidden": false,
+      "saves": true,
+      "category": "action",
+      "players": "1 player",
+      "duration": "15–40 min",
+      "added": "2026-08-28",
+      "featured": false,
+      "spotlight": false,
+      "art": {
+        "motif": "vector",
+        "hue": 330,
+        "seed": 77,
+        "sat": 54,
+        "dark": 10,
+        "deep": 4
+      },
+      "prebuilt": true,
+      "budgetKB": 1252
+    },
+    {
       "id": "leak-test",
       "title": "Leak Test Harness",
       "tagline": "Deliberately misbehaves",
@@ -44,52 +83,133 @@
       ],
       "hidden": true,
       "saves": false,
+      "category": "action",
+      "players": "1 player",
+      "duration": "",
+      "added": "",
+      "featured": false,
+      "spotlight": false,
+      "art": null,
+      "prebuilt": false,
       "budgetKB": 24
     },
     {
-      "id": "orbital-salvage",
-      "title": "Orbital Salvage",
-      "tagline": "Break rocks, tow the pieces home",
-      "description": "A wave-based asteroid field with salvage crates worth grabbing. Built as the reference 2D title: fixed-timestep physics with render interpolation, fixed-size pools for rocks, shots, particles and crates, and a static starfield layer that is never cleared.",
-      "entry": "games/orbital-salvage.html",
+      "id": "lumen",
+      "title": "Lumen",
+      "tagline": "Stack the light. Clear the dark.",
+      "description": "A falling-block puzzle about colour and patience. Match three shades to fuse them into light, chain fusions for cascades, and hold the board back as the drop speed tightens.",
+      "entry": "games/lumen.html",
       "version": "1.0.0",
-      "hash": "e2928cb179",
-      "bytes": 48402,
-      "gzipBytes": 13752,
+      "hash": "2001d1963b",
+      "bytes": 30770,
+      "gzipBytes": 9762,
       "minRendererTier": "canvas2d",
       "estMemoryMB": 45,
       "pointerLock": false,
-      "thumbnail": "portal/thumbs/orbital-salvage.jpg",
-      "controls": [
-        {
-          "keys": "W / ↑",
-          "action": "Thrust"
-        },
-        {
-          "keys": "A D / ← →",
-          "action": "Turn"
-        },
-        {
-          "keys": "Space",
-          "action": "Fire"
-        },
-        {
-          "keys": "P",
-          "action": "Pause"
-        },
-        {
-          "keys": "Enter",
-          "action": "Start / restart"
-        }
-      ],
+      "thumbnail": "portal/thumbs/lumen.svg",
+      "controls": "←/→ to move · ↓ to drop · Z/X to rotate",
       "tags": [
-        "arcade",
-        "2d",
-        "action"
+        "falling blocks",
+        "chain",
+        "endless"
       ],
       "hidden": false,
       "saves": true,
-      "budgetKB": 80
+      "category": "puzzle",
+      "players": "1 player",
+      "duration": "5–20 min",
+      "added": "2026-08-09",
+      "featured": false,
+      "spotlight": false,
+      "art": {
+        "motif": "prism",
+        "hue": 258,
+        "seed": 5,
+        "sat": 48,
+        "dark": 13,
+        "deep": 5
+      },
+      "prebuilt": true,
+      "budgetKB": 73
+    },
+    {
+      "id": "neon-drift",
+      "title": "Neon Drift",
+      "tagline": "Outrun the horizon at 400 km/h.",
+      "description": "A synth-lit endless descent. Weave the barriers, bank the corners, and chain near-misses to keep your boost meter alive. Speed climbs forever; the track never repeats.",
+      "entry": "games/neon-drift.html",
+      "version": "1.0.0",
+      "hash": "1c6c6b9dd7",
+      "bytes": 560230,
+      "gzipBytes": 143656,
+      "minRendererTier": "webgl1",
+      "estMemoryMB": 220,
+      "pointerLock": false,
+      "thumbnail": "portal/thumbs/neon-drift.svg",
+      "controls": "A/D or ←/→ · Space to boost",
+      "tags": [
+        "endless",
+        "reflex",
+        "score attack"
+      ],
+      "hidden": false,
+      "saves": true,
+      "category": "arcade",
+      "players": "1 player",
+      "duration": "3–8 min",
+      "added": "2026-08-20",
+      "featured": true,
+      "spotlight": false,
+      "art": {
+        "motif": "neon",
+        "hue": 292,
+        "seed": 17,
+        "sat": 62,
+        "dark": 12,
+        "deep": 4
+      },
+      "prebuilt": true,
+      "budgetKB": 668
+    },
+    {
+      "id": "night-city",
+      "title": "Neon Bay",
+      "tagline": "An open city, a fast car, and no particular plan.",
+      "description": "Drive it, get out and walk it, cause trouble. An open sandbox city with traffic, crowds and a day cycle — built to mess about in.",
+      "entry": "games/night-city.html",
+      "version": "1.0.0",
+      "hash": "83a756c82e",
+      "bytes": 2117678,
+      "gzipBytes": 540562,
+      "minRendererTier": "webgl1",
+      "estMemoryMB": 420,
+      "pointerLock": true,
+      "thumbnail": "portal/thumbs/night-city.svg",
+      "controls": "WASD move · Shift sprint · Mouse look · Click shoot · F enter/exit car",
+      "tags": [
+        "open world",
+        "driving",
+        "sandbox",
+        "3D"
+      ],
+      "hidden": false,
+      "saves": true,
+      "category": "action",
+      "players": "1 player",
+      "duration": "Endless",
+      "added": "2026-08-28",
+      "featured": false,
+      "spotlight": false,
+      "art": {
+        "motif": "metro",
+        "hue": 286,
+        "seed": 13,
+        "sat": 58,
+        "dark": 11,
+        "deep": 4
+      },
+      "prebuilt": true,
+      "budgetKB": 2417
     },
     {
       "id": "pointer-lock-probe",
@@ -120,44 +240,15 @@
       ],
       "hidden": true,
       "saves": false,
+      "category": "action",
+      "players": "1 player",
+      "duration": "",
+      "added": "",
+      "featured": false,
+      "spotlight": false,
+      "art": null,
+      "prebuilt": false,
       "budgetKB": 24
-    },
-    {
-      "id": "prism-runner",
-      "title": "Prism Runner",
-      "tagline": "Three lanes, no brakes",
-      "description": "An endless runner on the WebGL1 rung of the ladder. Uses ANGLE_instanced_arrays for a single instanced draw call where the device has it, and falls back to per-object draws where it does not — so the fallback path ships rather than only being tested.",
-      "entry": "games/prism-runner.html",
-      "version": "1.0.0",
-      "hash": "d57c116a5d",
-      "bytes": 46659,
-      "gzipBytes": 13578,
-      "minRendererTier": "webgl1",
-      "estMemoryMB": 60,
-      "pointerLock": false,
-      "thumbnail": "portal/thumbs/prism-runner.jpg",
-      "controls": [
-        {
-          "keys": "A D",
-          "action": "Change lane"
-        },
-        {
-          "keys": "Space / W",
-          "action": "Jump"
-        },
-        {
-          "keys": "Enter",
-          "action": "Start / restart"
-        }
-      ],
-      "tags": [
-        "arcade",
-        "3d",
-        "action"
-      ],
-      "hidden": false,
-      "saves": true,
-      "budgetKB": 70
     },
     {
       "id": "schedule-i",
@@ -210,68 +301,134 @@
       ],
       "hidden": false,
       "saves": true,
+      "category": "action",
+      "players": "1 player",
+      "duration": "",
+      "added": "",
+      "featured": false,
+      "spotlight": false,
+      "art": null,
+      "prebuilt": false,
       "budgetKB": 400
     },
     {
-      "id": "voxel-drift",
-      "title": "Voxel Drift",
-      "tagline": "First-person voxel sandbox",
-      "description": "Streaming voxel terrain you can dig into and build on. The portal's stress case: WebGL2 with a single texture atlas, per-chunk vertex arrays, frustum culling, chunk meshing on a worker, pointer-lock mouse-look, and a hard LRU byte budget on resident geometry.",
-      "entry": "games/voxel-drift.html",
+      "id": "summit",
+      "title": "Summit",
+      "tagline": "Four friends. One mountain. No way down but up.",
+      "description": "A four-player co-op climb from a jungle shoreline to a volcanic caldera. Stamina is everything: every hold you take drains it, every ledge you haul a friend over costs you both. Weather turns, hunger bites, and the route is generated fresh from a seed every run. Rope up, ration the food, and get everyone to the extraction helicopter at the peak.",
+      "entry": "games/summit.html",
       "version": "1.0.0",
-      "hash": "406c4669b3",
-      "bytes": 78542,
-      "gzipBytes": 23022,
-      "minRendererTier": "webgl2",
-      "estMemoryMB": 320,
+      "hash": "f274d8183a",
+      "bytes": 886342,
+      "gzipBytes": 245743,
+      "minRendererTier": "webgl1",
+      "estMemoryMB": 300,
       "pointerLock": true,
-      "thumbnail": "portal/thumbs/voxel-drift.jpg",
-      "controls": [
-        {
-          "keys": "Click",
-          "action": "Capture mouse (pointer lock)"
-        },
-        {
-          "keys": "WASD",
-          "action": "Move"
-        },
-        {
-          "keys": "Shift",
-          "action": "Sprint"
-        },
-        {
-          "keys": "Space",
-          "action": "Jump / rise"
-        },
-        {
-          "keys": "F",
-          "action": "Toggle flight"
-        },
-        {
-          "keys": "Left click",
-          "action": "Break block"
-        },
-        {
-          "keys": "Right click",
-          "action": "Place block"
-        },
-        {
-          "keys": "1 – 6",
-          "action": "Select block"
-        },
-        {
-          "keys": "Esc",
-          "action": "Release mouse"
-        }
-      ],
+      "thumbnail": "portal/thumbs/summit.svg",
+      "controls": "WASD · Mouse look · Space · Shift · Trackpad friendly",
       "tags": [
-        "sandbox",
-        "3d",
-        "voxel"
+        "4 players",
+        "online co-op",
+        "survival",
+        "3D"
       ],
       "hidden": false,
       "saves": true,
-      "budgetKB": 120
+      "category": "coop",
+      "players": "1–4 online",
+      "duration": "35–60 min",
+      "added": "2026-08-27",
+      "featured": true,
+      "spotlight": true,
+      "art": {
+        "motif": "summit",
+        "hue": 214,
+        "seed": 91,
+        "sat": 44,
+        "dark": 15,
+        "deep": 5
+      },
+      "prebuilt": true,
+      "budgetKB": 1034
+    },
+    {
+      "id": "vector-siege",
+      "title": "Vector Siege",
+      "tagline": "Hold the line against the geometry.",
+      "description": "Twin-stick wave defence rendered in pure vectors. Waves escalate, weapons stack, and the arena tightens. Survive twenty waves without losing the core.",
+      "entry": "games/vector-siege.html",
+      "version": "1.0.0",
+      "hash": "90d911487b",
+      "bytes": 32401,
+      "gzipBytes": 10494,
+      "minRendererTier": "canvas2d",
+      "estMemoryMB": 60,
+      "pointerLock": false,
+      "thumbnail": "portal/thumbs/vector-siege.svg",
+      "controls": "WASD to move · Mouse to aim · Click to fire",
+      "tags": [
+        "twin-stick",
+        "waves",
+        "bullet hell"
+      ],
+      "hidden": false,
+      "saves": true,
+      "category": "action",
+      "players": "1 player",
+      "duration": "8–15 min",
+      "added": "2026-08-14",
+      "featured": true,
+      "spotlight": false,
+      "art": {
+        "motif": "vector",
+        "hue": 186,
+        "seed": 43,
+        "sat": 50,
+        "dark": 11,
+        "deep": 4
+      },
+      "prebuilt": true,
+      "budgetKB": 75
+    },
+    {
+      "id": "voxel-sandbox",
+      "title": "Voxel",
+      "tagline": "Break it, stack it, build the thing in your head.",
+      "description": "An open voxel sandbox: procedurally generated biomes, caves and structures, mineable blocks, crafting and mobs. Build until the sun goes down, then keep building.",
+      "entry": "games/voxel-sandbox.html",
+      "version": "1.0.0",
+      "hash": "7b7b448f02",
+      "bytes": 1202368,
+      "gzipBytes": 301682,
+      "minRendererTier": "webgl1",
+      "estMemoryMB": 380,
+      "pointerLock": true,
+      "thumbnail": "portal/thumbs/voxel-sandbox.svg",
+      "controls": "WASD · Mouse look · Left click break · Right click place · E inventory",
+      "tags": [
+        "sandbox",
+        "building",
+        "survival",
+        "3D"
+      ],
+      "hidden": false,
+      "saves": true,
+      "category": "sim",
+      "players": "1 player",
+      "duration": "Endless",
+      "added": "2026-08-28",
+      "featured": false,
+      "spotlight": false,
+      "art": {
+        "motif": "prism",
+        "hue": 112,
+        "seed": 29,
+        "sat": 42,
+        "dark": 13,
+        "deep": 5
+      },
+      "prebuilt": true,
+      "budgetKB": 1389
     }
   ]
 }

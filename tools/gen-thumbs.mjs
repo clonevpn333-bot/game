@@ -21,9 +21,15 @@ const games = manifest.games.filter((g) => !only.length || only.includes(g.id));
 // Per-game warm-up: keys to press and how long to let the game run first.
 const WARMUP = {
   'schedule-i': { keys: ['Enter'], wait: 3500 },
-  'orbital-salvage': { keys: ['Enter'], wait: 4000 },
-  'prism-runner': { keys: ['Enter'], wait: 2200 },
-  'voxel-drift': { keys: [], wait: 7000 },
+  // The imported titles decode an embedded Three.js build before they draw
+  // anything, and do it on a software rasteriser here, so they need real time.
+  'summit': { keys: [], wait: 11000 },
+  'voxel-sandbox': { keys: [], wait: 12000 },
+  'bonecrown': { keys: [], wait: 11000 },
+  'night-city': { keys: [], wait: 14000 },
+  'neon-drift': { keys: [], wait: 10000 },
+  'vector-siege': { keys: ['Enter'], wait: 4000 },
+  'lumen': { keys: ['Enter'], wait: 4000 },
   'leak-test': { keys: [], wait: 2500 },
   'pointer-lock-probe': { keys: [], wait: 1500 },
 };

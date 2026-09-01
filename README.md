@@ -1,146 +1,131 @@
-# Lowspec Arcade
+# Nova Arcade
 
-A zero-dependency HTML5 game portal built for ChromeOS and low-end laptops:
-dual-core CPUs, ~4 GB of RAM, integrated GPUs, no fan. Every design decision
-answers to that hardware first — a title that cannot hold a stable frame rate
-there is treated as a defect, not a trade-off.
-
-No framework. No bundler. No runtime dependencies. The shell is `index.html`
-plus seven small ES modules; each game is one self-contained HTML file.
+A game library that launches instantly and holds frame rate on a Chromebook.
+Zero dependencies, no framework, no build step for the shell — one `index.html`,
+seven small ES modules, and one self-contained HTML file per game.
 
 ```
 node tools/serve.mjs          # http://127.0.0.1:8765
 ```
 
-## What is here
+## The library
 
-| | |
-|---|---|
-| **Portal shell** | `index.html`, `portal/css/shell.css`, `portal/js/*.js` — hash router, catalog grid, iframe launcher, IndexedDB saves, diagnostics |
-| **Games** | `games/*.html`, built from `src/games/<id>/` — one file each, inlined and content-hashed |
-| **Catalog** | `games.json` — generated; the portal hardcodes no game knowledge |
-| **Offline** | `sw.js` — app-shell precache, per-bundle versioned caching, quota-aware LRU eviction |
-| **Engine** | `src/engine/*.js` — fixed-timestep loop, object pools, dynamic resolution, teardown registry, the portal↔game bridge |
-| **Harnesses** | `tests/e2e.mjs`, `tools/bench.mjs`, `tools/soak.mjs`, `tools/check-budgets.mjs` |
+Eight titles, imported from the hub and wrapped so they behave on low-end
+hardware:
 
-## Measured, not asserted
-
-`node tools/bench.mjs` runs the benchmark table on a simulated low-end profile
-(4× CPU throttle, DPR 1, 1366×768, software GL). Latest run in this repo:
-
-| Metric | Target | Fail at | Measured |
+| Title | Category | Renderer | Est. memory |
 |---|---|---|---|
-| Shell transfer (gzipped) | < 150 KB | > 250 KB | **23.2 KB** |
-| Shell first contentful paint | < 1.0 s | > 1.8 s | **0.08 s** |
-| Shell time to interactive | < 2.0 s | > 3.5 s | **0.22 s** |
-| Cold launch → interactive | < 3.0 s | > 6.0 s | **412 ms** (voxel-drift) |
-| Warm launch → interactive | < 500 ms | > 1.2 s | **218 ms** (voxel-drift) |
-| Sustained frame rate | ≥ 30 (60 target) | < 30 | **37.4 fps** worst (voxel-drift, software GL) |
-| Heap after exit vs baseline | ±10 % | monotonic growth | **+5 %** worst |
-| Lighthouse performance | ≥ 90 | < 75 | **100** (also 100 accessibility / best-practices / SEO) |
+| **Summit** | Co-op | WebGL 1 | ~300 MB |
+| **Voxel** | Sandbox | WebGL 1 | ~380 MB |
+| **Bonecrown** | Action | WebGL 1 | ~320 MB |
+| **Neon Bay** | Action | WebGL 1 | ~420 MB |
+| **Neon Drift** | Arcade | WebGL 1 | ~220 MB |
+| **Vector Siege** | Action | 2D Canvas | ~60 MB |
+| **Lumen** | Puzzle | 2D Canvas | ~45 MB |
+| **Schedule I** | Action | 2D Canvas | ~120 MB |
 
-`node tools/pwa-check.mjs` verifies installability. The spec asks for a
-Lighthouse PWA score, but Lighthouse removed that category in v12 and the
-installability audits with it, so there is no such score to report; the same
-criteria are checked directly instead — manifest parsed by the browser, icon
-sizes including a maskable one, standalone display, service-worker scope, and a
-reload with the network disabled. All 11 pass.
+Two hidden diagnostic bundles ship alongside them: a pointer-lock probe and a
+deliberately leaky harness used to prove a bad title can't take the site down.
 
-`node tools/soak.mjs` cycles the whole library, the deliberately leaky bundle
-included. A representative run: 11 launches, 0 crashes, heap trend
-0.015 MB/cycle and 0.3 DOM nodes/cycle after the first cycle — flat, not
-creeping. The 30-minute acceptance run is `npm run soak`; CI runs five minutes
-on every push.
+## What the portal adds to a game
 
-`node tests/e2e.mjs` covers the acceptance criteria directly — save round-trip
-through `postMessage`, deterministic teardown, tier refusal, offline play,
-pointer lock inside the sandbox, per-bundle cache invalidation, and surviving a
-deliberately leaky title. 27/27 pass.
+The imported titles were written standalone and know nothing about any of this.
+`src/engine/shim.js` is injected into each bundle at build time and wraps them
+from the outside — no edits to their code:
 
-Frame rates above are on a **software rasteriser**, which is the pessimistic
-case; real integrated GPUs do considerably better. The heap figures are JS heap
-via CDP — see `docs/ARCHITECTURE.md` for what that does and does not include.
+- **Resolution scaling.** It owns `window.devicePixelRatio`, so every engine
+  that sizes its drawing buffer from it starts clamped and drops further when
+  frames run long. The quality selector in the player bar is authoritative:
+  most engines cache their pixel ratio at construction, so a change relaunches
+  the frame with the new value in the handshake. Measured on Bonecrown: 1280×714
+  CSS → 768×428 buffer on auto, 640×357 on Performance+.
+- **Real pause.** Every `requestAnimationFrame` goes through the shim, so a
+  backgrounded game genuinely stops — and the paused interval is hidden from the
+  game's own clock, so nothing teleports on resume.
+- **Teardown.** Exiting cancels the loop and drops every WebGL context the game
+  created, then the iframe itself is destroyed, which reclaims the rest.
+
+Games written against the bridge directly (`PE.Bridge`) also get save
+round-tripping through IndexedDB, per-title resume, and low-memory hints.
+
+## Measured
+
+`node tests/e2e.mjs` — 29/29. Save round-trip through `postMessage`, teardown
+across repeated launches, tier refusal, offline play, pointer lock inside the
+sandbox, per-bundle cache invalidation, and surviving the leak harness.
+
+`node tools/bench.mjs` — the performance table on a simulated low-end profile
+(4× CPU throttle, DPR 1, 1366×768). `node tools/soak.mjs --minutes=30` cycles
+the whole library looking for leaks.
+
+Heap figures are JS heap via CDP and exclude GPU memory. Frame rates measured
+in this repo come from a **software rasteriser**, which is far slower than the
+integrated GPU in a real Chromebook — treat them as a floor, not a forecast.
+
+## Deploying
+
+The repo root is the site. No build output directory, no server.
+
+**Netlify** (recommended — it applies the caching rules):
+
+```
+npx netlify-cli deploy --prod --dir .
+```
+
+or connect the repo in the Netlify UI; `netlify.toml` and `_headers` are already
+in place. Content-hashed bundles get a one-year immutable TTL, the shell and
+catalog stay short-lived.
+
+**GitHub Pages**: enable Pages (Settings → Pages → GitHub Actions) and merge to
+`main`; `.github/workflows/pages.yml` does the rest. Pages ignores `_headers`,
+so bundles get its own ~10-minute TTL — the service worker makes that mostly
+moot, since a played game is served from cache and never revalidated.
+
+Every game page carries a **direct link** (`/#/play/<id>`) with a copy button,
+so you can hand someone a URL that opens straight into one title.
 
 ## Adding a game
 
-One HTML file and one manifest entry, with zero portal changes — enforced by
-`tools/check-budgets.mjs`, which fails the build if any portal module mentions a
-game id.
+Two kinds of entry:
 
-1. `mkdir src/games/my-game` with an `index.html` and a `game.json`.
-2. Reference the shared engine with ordinary tags — the builder inlines them:
-   ```html
-   <script src="../../engine/teardown.js"></script>
-   <script src="../../engine/loop.js"></script>
-   <script src="../../engine/bridge.js"></script>
-   ```
-3. Connect to the portal:
-   ```js
-   PE.Bridge.connect({
-     id: 'my-game',
-     onHello:    (ctx) => start(ctx.save, ctx.caps),  // ctx.tier is already gated
-     onPause:    () => loop.pause(),
-     onResume:   () => loop.resume(),
-     onShutdown: () => { PE.Bridge.flush(); PE.Teardown.destroyAll(); },
-   });
-   PE.Bridge.save(state);   // debounced; lands in the portal's IndexedDB
-   ```
-4. `node tools/build.mjs` writes `games/my-game.html`, hashes it, and updates
-   `games.json`. `node tools/gen-thumbs.mjs my-game` captures the card image.
-
-`game.json` fields: `id`, `title`, `tagline`, `description`, `version`,
-`minRendererTier` (`canvas2d` | `webgl1` | `webgl2`), `estMemoryMB`,
-`pointerLock`, `budgetKB`, `controls[]`, `tags[]`, `hidden`.
-
-## One file, whole arcade
+**Prebuilt** — a game that is already one self-contained HTML file:
 
 ```
-node tools/build-single.mjs      # dist/portal.html
+src/games/my-game/bundle.html
+src/games/my-game/game.json     { "prebuilt": true, "shim": true, ... }
 ```
 
-Packs the shell, the catalog, the thumbnails and every game bundle into one
-~660 KB HTML file that runs from `file://`, an email attachment, or any host
-that can serve a single page. The launcher fills its iframe from `srcdoc`
-instead of a URL; sandbox flags, the handshake, saves and teardown are the same
-code path as the hosted portal. It gives up the service worker, which has
-nothing left to cache — the library is already in the page.
+**From source** — assembled by the builder, with the engine available:
 
-Verified under `default-src 'none'` with only `script-src 'unsafe-inline'`: the
-grid, both 2D titles and the WebGL2 voxel sandbox all run with zero CSP
-violations. With blob workers blocked too, Voxel Drift falls back to meshing on
-the main thread and the resolution scaler absorbs the cost.
+```
+src/games/my-game/index.html    <script src="../../engine/bridge.js"></script>
+src/games/my-game/js/*.js
+```
+
+Either way `node tools/build.mjs` writes `games/my-game.html`, hashes it and
+updates `games.json`. Adding a game needs **zero portal changes** —
+`tools/check-budgets.mjs` fails the build if any portal module mentions a game
+id.
 
 ## Commands
 
 ```
-node tools/build.mjs            # bundle games, hash them, write games.json, stamp sw.js
+node tools/build.mjs            # bundle, hash, write games.json, stamp sw.js
 node tools/build.mjs --check    # CI: fail if anything committed is stale
-node tools/check-budgets.mjs    # shell + bundle size budgets, manifest-driven check
-node tools/serve.mjs [port]     # static server matching production cache headers
-node tools/build-single.mjs     # pack the whole portal into dist/portal.html
+node tools/check-budgets.mjs    # size budgets + manifest-driven check
+node tools/build-single.mjs     # pack the whole arcade into dist/portal.html
+node tools/gen-art.mjs          # regenerate key art from each game's art record
+node tools/serve.mjs [port]     # static server matching production headers
 node tests/e2e.mjs              # acceptance tests
-node tools/bench.mjs            # the §4 benchmark table
-node tools/soak.mjs --minutes=30    # multi-game leak soak
-node tools/gen-thumbs.mjs [id]  # capture card thumbnails from real gameplay
-node tools/gen-icons.mjs        # regenerate PWA icons
+node tools/bench.mjs            # performance table
+node tools/pwa-check.mjs        # installability
+node tools/soak.mjs --minutes=30
 ```
 
-Everything except the harnesses runs with plain Node and no dependencies; the
-harnesses drive Chromium through Playwright.
+Everything but the harnesses runs on plain Node with no dependencies.
 
-## The library
+## Docs
 
-| Title | Tier | Est. memory | What it exercises |
-|---|---|---|---|
-| **Schedule I** | 2D Canvas | ~120 MB | The pre-existing title, ported: saves, pause, teardown, resolution scaling |
-| **Orbital Salvage** | 2D Canvas | ~45 MB | Fixed-timestep + interpolation, fixed-size pools, layered canvases |
-| **Prism Runner** | WebGL 1 | ~60 MB | The middle rung: instancing where available, per-object draws where not |
-| **Voxel Drift** | WebGL 2 | ~320 MB | Streaming chunk meshes on a worker, frustum culling, pointer lock, LRU geometry budget |
-| *Pointer Lock Probe* | 2D Canvas | ~8 MB | Diagnostic: proves pointer lock works inside the sandbox |
-| *Leak Test Harness* | 2D Canvas | ~320 MB | Diagnostic: leaks, hangs, throws, and refuses to shut down on purpose |
-
-## Documentation
-
-- `docs/ARCHITECTURE.md` — how each requirement is met, the bridge protocol, the
-  decisions taken on the open questions, and the honest caveats.
-- `deploy/README.md` — hosts, failover, the edge gateway, and access control.
+- `docs/ARCHITECTURE.md` — how each piece works, the bridge protocol, decisions
+  and honest limits.
+- `deploy/README.md` — hosts, failover, edge routing, access control.

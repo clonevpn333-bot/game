@@ -64,20 +64,49 @@ function inline(html, baseDir) {
     return { html, seen };
 }
 
+/**
+ * Scripts injected into a prebuilt bundle, in order. They go at the very top of
+ * <head> so the shim's patches (devicePixelRatio, requestAnimationFrame,
+ * getContext) are in place before any game code runs.
+ */
+const SHIM_SCRIPTS = ['teardown.js', 'bridge.js', 'shim.js'];
+
+function injectShim(html, sources) {
+    let payload = '';
+    for (const name of SHIM_SCRIPTS) {
+        const file = join(ROOT, 'src', 'engine', name);
+        sources.push(`src/engine/${name}`);
+        const js = readFileSync(file, 'utf8').replace(/<\/script/gi, '<\\/script');
+        payload += `<script>\n/* portal shim: ${name} */\n${js.trim()}\n</script>\n`;
+    }
+    if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (m) => m + '\n' + payload);
+    if (/<html[^>]*>/i.test(html)) return html.replace(/<html[^>]*>/i, (m) => m + '\n<head>' + payload + '</head>');
+    return payload + html;
+}
+
 function buildGame(id) {
     const dir = join(SRC_GAMES, id);
     const metaPath = join(dir, 'game.json');
-    const htmlPath = join(dir, 'index.html');
     if (!existsSync(metaPath)) { fail(`${id}: no game.json`); return null; }
-    if (!existsSync(htmlPath)) { fail(`${id}: no index.html`); return null; }
-
     const meta = JSON.parse(readFileSync(metaPath, 'utf8'));
+
+    // A prebuilt bundle arrives already self-contained (imported from the hub);
+    // it is copied through verbatim rather than assembled from parts.
+    const htmlPath = join(dir, meta.prebuilt ? 'bundle.html' : 'index.html');
+    if (!existsSync(htmlPath)) { fail(`${id}: no ${meta.prebuilt ? 'bundle.html' : 'index.html'}`); return null; }
     for (const k of REQUIRED) if (meta[k] === undefined) fail(`${id}: game.json missing "${k}"`);
     if (meta.id !== id) fail(`${id}: game.json id "${meta.id}" does not match directory name`);
     if (!TIERS.includes(meta.minRendererTier)) fail(`${id}: minRendererTier must be one of ${TIERS.join(', ')}`);
 
-    const { html, seen } = inline(readFileSync(htmlPath, 'utf8'), dir);
-    const out = html.replace(/\n{3,}/g, '\n\n');
+    let html, seen;
+    if (meta.prebuilt) {
+        html = readFileSync(htmlPath, 'utf8');
+        seen = [`src/games/${id}/bundle.html`];
+        if (meta.shim !== false) html = injectShim(html, seen);
+    } else {
+        ({ html, seen } = inline(readFileSync(htmlPath, 'utf8'), dir));
+    }
+    const out = meta.prebuilt ? html : html.replace(/\n{3,}/g, '\n\n');
     const buf = Buffer.from(out, 'utf8');
     const hash = createHash('sha256').update(buf).digest('hex').slice(0, 10);
     const gzip = gzipSync(buf, { level: 9 }).length;
@@ -108,6 +137,14 @@ function buildGame(id) {
         tags: meta.tags || [],
         hidden: !!meta.hidden,
         saves: meta.saves !== false,
+        category: meta.category || 'action',
+        players: meta.players || '1 player',
+        duration: meta.duration || '',
+        added: meta.added || '',
+        featured: !!meta.featured,
+        spotlight: !!meta.spotlight,
+        art: meta.art || null,
+        prebuilt: !!meta.prebuilt,
     };
     if (meta.budgetKB) {
         entry.budgetKB = meta.budgetKB;

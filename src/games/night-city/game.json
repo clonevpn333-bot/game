@@ -1,0 +1,35 @@
+{
+  "id": "night-city",
+  "title": "Neon Bay",
+  "tagline": "An open city, a fast car, and no particular plan.",
+  "description": "Drive it, get out and walk it, cause trouble. An open sandbox city with traffic, crowds and a day cycle \u2014 built to mess about in.",
+  "version": "1.0.0",
+  "minRendererTier": "webgl1",
+  "estMemoryMB": 420,
+  "pointerLock": true,
+  "prebuilt": true,
+  "shim": true,
+  "category": "action",
+  "tags": [
+    "open world",
+    "driving",
+    "sandbox",
+    "3D"
+  ],
+  "players": "1 player",
+  "duration": "Endless",
+  "added": "2026-08-28",
+  "featured": false,
+  "spotlight": false,
+  "art": {
+    "motif": "metro",
+    "hue": 286,
+    "seed": 13,
+    "sat": 58,
+    "dark": 11,
+    "deep": 4
+  },
+  "controls": "WASD move \u00b7 Shift sprint \u00b7 Mouse look \u00b7 Click shoot \u00b7 F enter/exit car",
+  "budgetKB": 2417,
+  "thumbnail": "portal/thumbs/night-city.svg"
+}

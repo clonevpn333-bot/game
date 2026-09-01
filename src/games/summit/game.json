@@ -1,0 +1,35 @@
+{
+  "id": "summit",
+  "title": "Summit",
+  "tagline": "Four friends. One mountain. No way down but up.",
+  "description": "A four-player co-op climb from a jungle shoreline to a volcanic caldera. Stamina is everything: every hold you take drains it, every ledge you haul a friend over costs you both. Weather turns, hunger bites, and the route is generated fresh from a seed every run. Rope up, ration the food, and get everyone to the extraction helicopter at the peak.",
+  "version": "1.0.0",
+  "minRendererTier": "webgl1",
+  "estMemoryMB": 300,
+  "pointerLock": true,
+  "prebuilt": true,
+  "shim": true,
+  "category": "coop",
+  "tags": [
+    "4 players",
+    "online co-op",
+    "survival",
+    "3D"
+  ],
+  "players": "1\u20134 online",
+  "duration": "35\u201360 min",
+  "added": "2026-08-27",
+  "featured": true,
+  "spotlight": true,
+  "art": {
+    "motif": "summit",
+    "hue": 214,
+    "seed": 91,
+    "sat": 44,
+    "dark": 15,
+    "deep": 5
+  },
+  "controls": "WASD \u00b7 Mouse look \u00b7 Space \u00b7 Shift \u00b7 Trackpad friendly",
+  "budgetKB": 1034,
+  "thumbnail": "portal/thumbs/summit.svg"
+}

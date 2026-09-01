@@ -45,7 +45,7 @@ function embeddedBundle(id) {
 }
 
 export class GameSession {
-  constructor(game, mount, hooks = {}) {
+  constructor(game, mount, hooks = {}, initialSettings = null) {
     this.game = game;
     this.mount = mount;
     this.hooks = hooks;
@@ -61,7 +61,10 @@ export class GameSession {
     this._onMessage = null;
     this._onVisibility = null;
     this._readyTimer = 0;
-    this._settings = { resolutionScale: null };
+    // Seeded before the handshake: engines that cache their pixel ratio at
+    // construction only ever see the value handed over in portal:hello, so a
+    // quality choice has to be in place before the game boots.
+    this._settings = { resolutionScale: null, ...(initialSettings || {}) };
     // Learned from the frame's own hello. A srcdoc frame loaded from file://
     // has an opaque origin, so replying to location.origin silently drops
     // every message; replying to the origin it actually announced does not.
@@ -291,9 +294,9 @@ export class UnsupportedError extends Error {
   }
 }
 
-export async function launch(game, mount, hooks) {
+export async function launch(game, mount, hooks, initialSettings) {
   if (active) await active.destroy();
-  const session = new GameSession(game, mount, hooks);
+  const session = new GameSession(game, mount, hooks, initialSettings);
   await session.start();
   return session;
 }
