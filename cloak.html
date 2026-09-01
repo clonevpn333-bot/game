@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Launcher</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="portal/icons/icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --ink:#0B0A0F;--panel:#15131C;--panel-2:#1E1B29;--line:rgba(255,255,255,.09);
+  --line-2:rgba(255,255,255,.16);--text:#F4F1EC;--muted:#918AA3;--amber:#FFB020;--ink-amber:#1A1206;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--ink);color:var(--text);
+  font:15px/1.6 "Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif;
+  display:grid;place-items:center;padding:32px}
+.card{width:100%;max-width:560px;background:var(--panel);border:1px solid var(--line);
+  border-radius:18px;padding:30px}
+.mark{display:flex;align-items:center;gap:11px;margin-bottom:22px}
+.mark svg{width:30px;height:30px;border-radius:9px}
+.mark b{font:800 18px/1 "Syne",system-ui,sans-serif;letter-spacing:.055em;text-transform:uppercase}
+h1{margin:0 0 6px;font:800 26px/1.15 "Syne",system-ui,sans-serif;letter-spacing:-.01em}
+p.lede{margin:0 0 26px;color:var(--muted);font-size:14px}
+label{display:block;font:700 10.5px/1 inherit;letter-spacing:.17em;text-transform:uppercase;
+  color:#5F586F;margin:20px 0 8px}
+label .hint{letter-spacing:0;text-transform:none;font-weight:500;color:#4A4458}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.chip{padding:6px 11px;border-radius:999px;border:1px solid var(--line-2);background:transparent;
+  color:var(--muted);font:600 12px inherit;cursor:pointer}
+.chip:hover{background:var(--panel-2);color:var(--text)}
+input{width:100%;height:40px;padding:0 13px;border-radius:10px;border:1px solid var(--line-2);
+  background:#0F0E14;color:var(--text);font:500 13px var(--mono)}
+input[type=file]{padding:8px 12px;height:auto;cursor:pointer}
+input[type=file]::file-selector-button{margin-right:12px;padding:7px 13px;border-radius:8px;
+  border:1px solid var(--line-2);background:var(--panel-2);color:var(--text);font:600 12px inherit;cursor:pointer}
+input:focus{outline:2px solid var(--amber);outline-offset:2px;border-color:transparent}
+.row{display:flex;gap:9px;margin-top:22px;flex-wrap:wrap}
+button{height:42px;padding:0 20px;border-radius:10px;border:1px solid var(--line-2);
+  background:var(--panel-2);color:var(--text);font:600 14px inherit;cursor:pointer}
+button:hover{background:#2A2639}
+button.go{background:var(--amber);border-color:var(--amber);color:var(--ink-amber);flex:1;min-width:180px}
+button.go:hover{background:#FFC24D}
+.note{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);color:#5F586F;font-size:12.5px}
+.err{margin-top:14px;color:#FF7A6C;font-size:13px;min-height:1.2em}
+.warn{margin-top:20px;padding:13px 15px;border-radius:11px;border:1px solid rgba(255,176,32,.32);
+  background:rgba(255,176,32,.08);color:var(--text);font-size:13px;line-height:1.55}
+.warn b{color:var(--amber)}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="mark">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#FFB020"/>
+      <path d="M17.6 4 L8 17.4h5.4L11.8 28 22 14.2h-5.6z" fill="#1A1206"/></svg>
+    <b>Overclock</b>
+  </div>
+
+  <h1>Blank-window launcher</h1>
+  <p class="lede">Opens a new tab that stays on <code>about:blank</code> and loads the page inside it.</p>
+
+  <label for="url">Address to open</label>
+  <input id="url" type="url" spellcheck="false" placeholder="https://your-site.netlify.app/">
+
+  <label for="title">Window title</label>
+  <input id="title" type="text" value="New Tab" spellcheck="false">
+  <div class="chips" id="presets"></div>
+
+  <label for="link">Launcher link <span class="hint">— opens this window directly</span></label>
+  <input id="link" type="text" readonly>
+
+  <div class="row">
+    <button class="go" id="go" type="button">Open blank window</button>
+    <button id="copy" type="button">Copy launcher link</button>
+    <button id="save" type="button">Remember</button>
+  </div>
+  <p class="err" id="err" role="status"></p>
+
+  <p class="warn" id="warn" hidden>
+    <b>This page is open from your computer, not from a website.</b>
+    A blank window cannot frame a <code>file://</code> address — the browser blocks it.
+    Use the local file option below, which loads the page's own HTML instead of pointing
+    at a URL, or put the site online and paste that address above.
+  </p>
+
+  <label for="file">Or open a local file <span class="hint">— works with no server</span></label>
+  <input id="file" type="file" accept=".html,text/html">
+  <p class="note" style="margin-top:9px;padding-top:0;border:0">
+    Pick <b>portal.html</b>. Its HTML is handed straight to the window, so there is no
+    address for the browser to refuse.
+  </p>
+
+  <p class="note">
+    If nothing opens, the browser blocked the pop-up — allow pop-ups for this page and try again.
+    Settings are stored in this browser only.
+  </p>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const err = $('err');
+  const isFileUrl = location.protocol === 'file:';
+
+  const b64 = {
+    enc: (v) => btoa(unescape(encodeURIComponent(v))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
+    dec: (v) => decodeURIComponent(escape(atob(v.replace(/-/g, '+').replace(/_/g, '/')))),
+  };
+
+  /**
+   * Returns a usable absolute http(s) URL, or null. Prefixing https:// onto
+   * whatever is in the box is how this page once asked the browser to resolve a
+   * host literally named "null", so the result is parsed and checked.
+   */
+  function normalise(v) {
+    let u = (v || '').trim();
+    if (!u) return null;
+    if (!/^[a-z]+:\/\//i.test(u)) u = 'https://' + u;
+    let parsed;
+    try { parsed = new URL(u); } catch (e) { return null; }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+    const host = parsed.hostname;
+    if (!host || host === 'null' || host === 'undefined') return null;
+    if (!host.includes('.') && host !== 'localhost') return null;
+    return parsed.href;
+  }
+
+  // --- window plumbing ----------------------------------------------------
+
+  /**
+   * Must run straight out of a click. A window opened from an async callback —
+   * after a FileReader, say — has lost the user activation and is blocked as a
+   * pop-up, which is why the file below is read first and opened second.
+   */
+  function openBlankWindow() {
+    const win = window.open('', '_blank');
+    if (!win) {
+      err.style.color = '';
+      err.textContent = 'The browser blocked the pop-up. Allow pop-ups for this page, then try again.';
+      return null;
+    }
+    return win;
+  }
+
+  /**
+   * Fills a blank window with the target.
+   *
+   *   source.url   points the frame at an address. Needs http(s): a blank
+   *                window cannot frame a file:// URL — the browser refuses and
+   *                you get an empty frame.
+   *   source.html  hands the frame the page's own markup via srcdoc. There is
+   *                no address to refuse, so this works with no server at all.
+   */
+  function fillWindow(win, source) {
+    const title = ($('title').value || 'New Tab').replace(/[<>]/g, '');
+    const doc = win.document;
+    doc.title = title;
+
+    const icon = doc.createElement('link');
+    icon.rel = 'icon';
+    icon.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23dfe3e8'/%3E%3C/svg%3E";
+    doc.head.appendChild(icon);
+    doc.documentElement.style.height = '100%';
+    doc.body.style.cssText = 'margin:0;height:100vh;background:#000;overflow:hidden';
+
+    const frame = doc.createElement('iframe');
+    frame.setAttribute('allow', 'fullscreen; pointer-lock; autoplay; gamepad');
+    frame.style.cssText = 'border:0;display:block;width:100%;height:100%';
+    if (source.html) frame.srcdoc = source.html;
+    else frame.src = source.url;
+    doc.body.appendChild(frame);
+  }
+
+  // --- config -------------------------------------------------------------
+
+  const hash = new URLSearchParams(location.hash.slice(1));
+  let auto = false;
+  if (hash.get('u')) {
+    try { $('url').value = b64.dec(hash.get('u')); } catch (e) { /* malformed */ }
+    try { if (hash.get('t')) $('title').value = b64.dec(hash.get('t')); } catch (e) { /* malformed */ }
+    auto = hash.get('go') === '1';
+  } else {
+    try {
+      const saved = JSON.parse(localStorage.getItem('overclock.cloak') || 'null');
+      if (saved) { $('url').value = saved.url || ''; $('title').value = saved.title || 'New Tab'; }
+    } catch (e) { /* private mode */ }
+  }
+  // Only prefill from a real origin: on file:// location.origin is the string
+  // "null", which is what produced https://null/... and a dead window.
+  if (!$('url').value && /^https?:$/.test(location.protocol)) {
+    $('url').value = location.origin + location.pathname.replace(/cloak\.html$/, '');
+  }
+  if (isFileUrl) $('warn').hidden = false;
+
+  // Neutral titles only. Passing the window off as a specific real service is a
+  // different thing from a blank tab, and not something this ships with.
+  ['New Tab', 'Home', 'Documents', 'Untitled', 'Dashboard'].forEach(function (t) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = t;
+    b.addEventListener('click', function () { $('title').value = t; refresh(); });
+    $('presets').appendChild(b);
+  });
+
+  function refresh() {
+    const target = normalise($('url').value);
+    if (!target || isFileUrl) {
+      $('link').value = isFileUrl ? 'Host this page to generate a shareable launcher link' : '';
+      return;
+    }
+    const base = location.origin + location.pathname;
+    $('link').value = base + '#u=' + b64.enc(target) +
+      '&t=' + b64.enc($('title').value || 'New Tab') + '&go=1';
+  }
+  $('url').addEventListener('input', refresh);
+  $('title').addEventListener('input', refresh);
+
+  // --- actions ------------------------------------------------------------
+
+  // A chosen file is held here until the button is pressed.
+  let loaded = null;
+
+  $('go').addEventListener('click', function () {
+    err.textContent = '';
+    err.style.color = '';
+
+    if (loaded) {
+      const win = openBlankWindow();
+      if (win) fillWindow(win, { html: loaded.html });
+      return;
+    }
+
+    const raw = ($('url').value || '').trim();
+    const url = normalise(raw);
+    if (!raw) {
+      err.textContent = isFileUrl
+        ? 'Enter a hosted address, or choose a local file below.'
+        : 'Enter the address of your deployed site first.';
+      return;
+    }
+    if (!url) {
+      err.textContent = '“' + raw + '” is not a web address. It needs to look like ' +
+        'https://your-site.netlify.app/ — a local file path will not work here.';
+      return;
+    }
+    const win = openBlankWindow();
+    if (win) fillWindow(win, { url: url });
+  });
+
+  $('file').addEventListener('change', function (e) {
+    err.textContent = '';
+    err.style.color = '';
+    const file = e.target.files && e.target.files[0];
+    if (!file) {
+      loaded = null;
+      $('go').textContent = 'Open blank window';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function () {
+      loaded = { name: file.name, html: String(reader.result) };
+      $('go').textContent = 'Open ' + file.name + ' in a blank window';
+      err.style.color = '#5FD79B';
+      err.textContent = file.name + ' loaded — press the button above.';
+    };
+    reader.onerror = function () {
+      loaded = null;
+      err.textContent = 'Could not read that file.';
+    };
+    reader.readAsText(file);
+  });
+
+  $('copy').addEventListener('click', function () {
+    const field = $('link');
+    (navigator.clipboard ? navigator.clipboard.writeText(field.value) : Promise.reject())
+      .catch(function () { field.select(); document.execCommand('copy'); })
+      .then(function () {
+        $('copy').textContent = 'Copied';
+        setTimeout(function () { $('copy').textContent = 'Copy launcher link'; }, 1500);
+      });
+  });
+
+  $('save').addEventListener('click', function () {
+    try {
+      localStorage.setItem('overclock.cloak', JSON.stringify({ url: $('url').value, title: $('title').value }));
+      err.style.color = '#5FD79B';
+      err.textContent = 'Saved in this browser.';
+      setTimeout(function () { err.textContent = ''; err.style.color = ''; }, 1800);
+    } catch (e) { err.textContent = 'This browser will not let the page store settings.'; }
+  });
+
+  refresh();
+
+  // A launcher link with go=1 opens on arrival, after one click anywhere —
+  // browsers will not open a window without a user gesture.
+  if (auto) {
+    err.textContent = 'Click anywhere to open.';
+    const once = function () {
+      document.removeEventListener('click', once);
+      err.textContent = '';
+      $('go').click();
+    };
+    document.addEventListener('click', once);
+  }
+})();
+</script>
+</body>
+</html>

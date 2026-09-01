@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pointer Lock Probe</title>
+<style>
+html,body{margin:0;height:100%;background:#11161d;color:#e6edf3;overflow:hidden;
+  font:13px ui-monospace,SFMono-Regular,Menlo,monospace;display:grid;place-items:center}
+#stage{position:absolute;inset:0;cursor:crosshair}
+#dot{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;
+  background:#58d0a0;box-shadow:0 0 12px rgba(88,208,160,.6)}
+#msg{position:relative;text-align:center;padding:0 20px;pointer-events:none;line-height:1.7}
+.ok{color:#58d0a0}.bad{color:#f0736a}
+</style>
+</head>
+<body>
+<div id="stage"><div id="dot"></div></div>
+<div id="msg">Click anywhere in this box to request pointer lock.</div>
+
+<script>
+/* inlined from ../../engine/teardown.js */
+'use strict';
+/**
+ * Teardown registry — §1.1 "Deterministic teardown on game exit".
+ *
+ * Nothing in a game should call addEventListener / requestAnimationFrame /
+ * setTimeout / createObjectURL directly. Route them through here and a single
+ * destroyAll() reclaims the lot. The portal also destroys the whole iframe
+ * (§2.2), but manual teardown is what makes standalone play and the
+ * heap-returns-to-baseline benchmark (§4) hold.
+ */
+(function (global) {
+    const PE = (global.PE = global.PE || {});
+
+    const listeners = [];   // [target, type, fn, opts]
+    const rafs      = [];   // raf handles
+    const timers    = [];   // setTimeout handles
+    const intervals = [];   // setInterval handles
+    const contexts  = [];   // WebGL contexts
+    const urls      = [];   // object URLs
+    const audios    = [];   // AudioContexts
+    const closers   = [];   // arbitrary cleanup fns
+    let destroyed   = false;
+
+    const Teardown = {
+        get destroyed() { return destroyed; },
+
+        on(target, type, fn, opts) {
+            if (destroyed) return fn;
+            target.addEventListener(type, fn, opts);
+            listeners.push([target, type, fn, opts]);
+            return fn;
+        },
+
+        off(target, type, fn, opts) {
+            target.removeEventListener(type, fn, opts);
+            for (let i = listeners.length - 1; i >= 0; i--) {
+                const l = listeners[i];
+                if (l[0] === target && l[1] === type && l[2] === fn) listeners.splice(i, 1);
+            }
+        },
+
+        raf(fn) {
+            if (destroyed) return 0;
+            const h = requestAnimationFrame(fn);
+            rafs.push(h);
+            // Keep the handle list bounded: a long-running loop would otherwise
+            // push one entry per frame forever (a leak in the leak-preventer).
+            if (rafs.length > 8) rafs.splice(0, rafs.length - 8);
+            return h;
+        },
+
+        timeout(fn, ms) {
+            if (destroyed) return 0;
+            const h = setTimeout(function () {
+                const i = timers.indexOf(h);
+                if (i >= 0) timers.splice(i, 1);
+                fn();
+            }, ms);
+            timers.push(h);
+            return h;
+        },
+
+        interval(fn, ms) {
+            if (destroyed) return 0;
+            const h = setInterval(fn, ms);
+            intervals.push(h);
+            return h;
+        },
+
+        trackContext(gl)      { if (gl) contexts.push(gl); return gl; },
+        trackAudio(ac)        { if (ac) audios.push(ac); return ac; },
+        trackObjectURL(url)   { if (url) urls.push(url); return url; },
+        onDestroy(fn)         { if (fn) closers.push(fn); return fn; },
+
+        /** Idempotent. Safe to call from unload, from the portal, or both. */
+        destroyAll() {
+            if (destroyed) return;
+            destroyed = true;
+
+            for (let i = 0; i < rafs.length; i++) cancelAnimationFrame(rafs[i]);
+            for (let i = 0; i < timers.length; i++) clearTimeout(timers[i]);
+            for (let i = 0; i < intervals.length; i++) clearInterval(intervals[i]);
+            for (let i = 0; i < listeners.length; i++) {
+                const l = listeners[i];
+                try { l[0].removeEventListener(l[1], l[2], l[3]); } catch (e) { /* detached */ }
+            }
+            for (let i = 0; i < closers.length; i++) {
+                try { closers[i](); } catch (e) { /* keep tearing down */ }
+            }
+            for (let i = 0; i < contexts.length; i++) {
+                try {
+                    const ext = contexts[i].getExtension('WEBGL_lose_context');
+                    if (ext) ext.loseContext();
+                } catch (e) { /* context already gone */ }
+            }
+            for (let i = 0; i < audios.length; i++) {
+                try { audios[i].close(); } catch (e) { /* already closed */ }
+            }
+            for (let i = 0; i < urls.length; i++) {
+                try { URL.revokeObjectURL(urls[i]); } catch (e) { /* already revoked */ }
+            }
+
+            listeners.length = 0; rafs.length = 0; timers.length = 0;
+            intervals.length = 0; contexts.length = 0; urls.length = 0;
+            audios.length = 0; closers.length = 0;
+
+            if (document.pointerLockElement) {
+                try { document.exitPointerLock(); } catch (e) { /* not locked */ }
+            }
+        },
+    };
+
+    PE.Teardown = Teardown;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* inlined from ../../engine/bridge.js */
+'use strict';
+/**
+ * Game-side half of the portal <-> game postMessage bridge (§2.2).
+ *
+ * Protocol (v1), all messages { type, token, ... }:
+ *
+ *   game   -> portal : game:hello      first contact, no token yet
+ *   portal -> game   : portal:hello    { token, tier, caps, save, settings }
+ *   game   -> portal : game:ready      { needs: { tier, pointerLock } }
+ *   game   -> portal : game:save       { data }        persisted via IndexedDB
+ *   game   -> portal : game:score      { score, label }
+ *   game   -> portal : game:stats      { fps, frameMs, heapMB, scale, entities }
+ *   game   -> portal : game:exit       user chose to quit
+ *   game   -> portal : game:error      { message, stack }
+ *   game   -> portal : game:pointerlock{ locked }
+ *   portal -> game   : portal:pause | portal:resume | portal:shutdown
+ *   portal -> game   : portal:lowmem   release what you can, you are near budget
+ *   portal -> game   : portal:settings { resolutionScale, audio, auto }
+ *
+ * The game never touches portal storage directly: save state round-trips
+ * through this bridge, which is what §2.2's acceptance criterion asks for.
+ * Standalone (opened outside the portal) degrades to a local IndexedDB store
+ * so a bundle stays playable as a plain file.
+ */
+(function (global) {
+    const PE = (global.PE = global.PE || {});
+    const PROTOCOL = 1;
+
+    const Bridge = {
+        connected:  false,
+        standalone: false,
+        token:      null,
+        id:         null,
+        tier:       null,
+        caps:       null,
+        settings:   null,
+        _handlers:  null,
+        _saveTimer: 0,
+        _pendingSave: null,
+        _origin:    null,
+        _onMessage: null,
+        _helloTimer: 0,
+
+        connect(opts) {
+            this._handlers = opts || {};
+            this.id = opts.id || 'unknown';
+            const parent = global.parent;
+            const embedded = parent && parent !== global;
+
+            // location.origin is "null" for an opaque-origin sandbox; postMessage
+            // then has to target '*' because there is no origin to name.
+            this._origin = (location.origin && location.origin !== 'null') ? location.origin : '*';
+
+            const self = this;
+            this._onMessage = function (e) { self._handle(e); };
+            global.addEventListener('message', this._onMessage);
+
+            // Report uncaught errors to the portal so a broken title surfaces
+            // in the launcher instead of dying silently inside the frame.
+            global.addEventListener('error', function (e) {
+                self.post('game:error', { message: String(e.message || e), stack: e.error && e.error.stack || '' });
+            });
+            global.addEventListener('unhandledrejection', function (e) {
+                self.post('game:error', { message: 'unhandled rejection: ' + String(e.reason), stack: '' });
+            });
+
+            if (!embedded) { this._goStandalone(); return this; }
+
+            parent.postMessage({ type: 'game:hello', protocol: PROTOCOL, id: this.id }, this._origin);
+            this._helloTimer = setTimeout(function () {
+                if (!self.connected) self._goStandalone();
+            }, 1500);
+            return this;
+        },
+
+        _goStandalone() {
+            this.standalone = true;
+            this.connected  = false;
+            const self = this;
+            localLoad(this.id).then(function (save) {
+                self._fire('onHello', { tier: null, caps: null, save: save, settings: null, standalone: true });
+            });
+        },
+
+        _handle(e) {
+            const d = e.data;
+            if (!d || typeof d !== 'object' || typeof d.type !== 'string') return;
+            if (d.type.slice(0, 7) !== 'portal:') return;
+            // After the handshake every message must carry our token; a frame
+            // that can post to us is not automatically the portal.
+            if (this.token && d.token !== this.token) return;
+
+            switch (d.type) {
+                case 'portal:hello':
+                    if (this.connected) return;
+                    clearTimeout(this._helloTimer);
+                    this.connected = true;
+                    this.token     = d.token;
+                    this.tier      = d.tier;
+                    this.caps      = d.caps || null;
+                    this.settings  = d.settings || null;
+                    this._fire('onHello', { tier: d.tier, caps: d.caps, save: d.save, settings: d.settings, standalone: false });
+                    break;
+                case 'portal:pause':    this._fire('onPause'); break;
+                case 'portal:resume':   this._fire('onResume'); break;
+                case 'portal:lowmem':   this._fire('onLowMemory', d.level || 1); break;
+                case 'portal:settings':
+                    this.settings = d.settings || null;
+                    this._fire('onSettings', d.settings);
+                    break;
+                case 'portal:shutdown':
+                    this.flush();
+                    this._fire('onShutdown');
+                    this.post('game:shutdown-ack', null);
+                    this.dispose();
+                    break;
+            }
+        },
+
+        _fire(name, arg) {
+            const fn = this._handlers && this._handlers[name];
+            if (typeof fn === 'function') {
+                try { fn(arg); } catch (err) { this.post('game:error', { message: String(err), stack: err && err.stack || '' }); }
+            }
+        },
+
+        post(type, payload) {
+            if (this.standalone || !global.parent || global.parent === global) return false;
+            const msg = payload ? Object.assign({ type: type, token: this.token }, payload)
+                                : { type: type, token: this.token };
+            try { global.parent.postMessage(msg, this._origin); } catch (e) { return false; }
+            return true;
+        },
+
+        /** Declare what the game needs; the portal has already gated on this,
+         *  but a standalone-opened bundle can warn for itself. */
+        ready(needs) { this.post('game:ready', { needs: needs || null }); },
+
+        progress(v) { this.post('game:progress', { value: v }); },
+
+        score(score, label) { this.post('game:score', { score: score, label: label || '' }); },
+
+        /** Debounced save — games call this freely; it coalesces to <=1 write/2s. */
+        save(data) {
+            this._pendingSave = data;
+            if (this._saveTimer) return;
+            const self = this;
+            this._saveTimer = setTimeout(function () { self.flush(); }, 2000);
+        },
+
+        flush() {
+            if (this._saveTimer) { clearTimeout(this._saveTimer); this._saveTimer = 0; }
+            if (this._pendingSave == null) return;
+            const data = this._pendingSave;
+            this._pendingSave = null;
+            if (this.standalone) localSave(this.id, data);
+            else this.post('game:save', { data: data });
+        },
+
+        stats(s) { this.post('game:stats', s); },
+
+        pointerLock(locked) { this.post('game:pointerlock', { locked: !!locked }); },
+
+        exit() { this.flush(); this.post('game:exit', null); },
+
+        dispose() {
+            if (this._onMessage) global.removeEventListener('message', this._onMessage);
+            this._onMessage = null;
+            this._handlers  = null;
+            this.connected  = false;
+        },
+    };
+
+    // --- standalone-only local persistence (never localStorage, per §1.4) ---
+    function idb() {
+        return new Promise(function (resolve, reject) {
+            const req = indexedDB.open('pe-standalone', 1);
+            req.onupgradeneeded = function () { req.result.createObjectStore('saves'); };
+            req.onsuccess = function () { resolve(req.result); };
+            req.onerror   = function () { reject(req.error); };
+        });
+    }
+    function localSave(id, data) {
+        return idb().then(function (db) {
+            const tx = db.transaction('saves', 'readwrite');
+            tx.objectStore('saves').put({ data: data, at: Date.now() }, id);
+            return new Promise(function (res) { tx.oncomplete = function () { db.close(); res(); }; });
+        }).catch(function () { /* private mode / quota — play on without saves */ });
+    }
+    function localLoad(id) {
+        return idb().then(function (db) {
+            const tx = db.transaction('saves', 'readonly');
+            const rq = tx.objectStore('saves').get(id);
+            return new Promise(function (res) {
+                rq.onsuccess = function () { db.close(); res(rq.result ? rq.result.data : null); };
+                rq.onerror   = function () { db.close(); res(null); };
+            });
+        }).catch(function () { return null; });
+    }
+
+    PE.Bridge = Bridge;
+    PE.PROTOCOL = PROTOCOL;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+'use strict';
+/**
+ * Pointer-lock probe (§2.2).
+ *
+ * Sandbox tokens can block pointer lock silently: the request resolves, no
+ * error fires, and mouse-look simply never moves. This bundle proves the real
+ * thing works inside a frame configured exactly like a game launch — it locks,
+ * counts movement deltas, and reports both to the portal.
+ */
+(function () {
+    const Bridge = PE.Bridge, Teardown = PE.Teardown;
+    const stage = document.getElementById('stage');
+    const dot = document.getElementById('dot');
+    const msg = document.getElementById('msg');
+    let x = 0, y = 0, moves = 0, locked = false;
+
+    function place() {
+        dot.style.left = (stage.clientWidth / 2 + x) + 'px';
+        dot.style.top = (stage.clientHeight / 2 + y) + 'px';
+    }
+
+    function report(text, cls) {
+        msg.innerHTML = '';
+        const span = document.createElement('span');
+        span.className = cls || '';
+        span.textContent = text;
+        msg.append(span);
+    }
+
+    Teardown.on(stage, 'click', function () {
+        if (locked) return;
+        const p = stage.requestPointerLock();
+        if (p && p.catch) p.catch(function (e) { report('Pointer lock rejected: ' + e.message, 'bad'); });
+    });
+
+    Teardown.on(document, 'pointerlockchange', function () {
+        locked = document.pointerLockElement === stage;
+        Bridge.pointerLock(locked);
+        if (locked) report('Locked. Move the mouse — the dot should follow. Esc releases.', 'ok');
+        else report('Released after ' + moves + ' movement events. ' +
+            (moves > 0 ? 'Pointer lock works here.' : 'No movement was delivered — pointer lock is blocked.'),
+            moves > 0 ? 'ok' : 'bad');
+    });
+
+    Teardown.on(document, 'pointerlockerror', function () {
+        report('Pointer lock request failed (pointerlockerror).', 'bad');
+        Bridge.post('game:error', { message: 'pointerlockerror inside sandboxed frame', stack: '' });
+    });
+
+    Teardown.on(document, 'mousemove', function (e) {
+        if (!locked) return;
+        moves++;
+        x = Math.max(-stage.clientWidth / 2, Math.min(stage.clientWidth / 2, x + e.movementX));
+        y = Math.max(-stage.clientHeight / 2, Math.min(stage.clientHeight / 2, y + e.movementY));
+        place();
+        if (moves === 1) Bridge.stats({ fps: 0, pointerLockMoves: 1 });
+    });
+
+    Teardown.on(window, 'resize', place);
+
+    Bridge.connect({
+        id: 'pointer-lock-probe',
+        onHello: function () { place(); Bridge.ready({ tier: 'canvas2d', pointerLock: true }); },
+        onShutdown: function () { Teardown.destroyAll(); },
+    });
+})();
+</script>
+</body>
+</html>

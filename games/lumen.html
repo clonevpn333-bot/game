@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en"><head>
+<script>
+/* portal shim: teardown.js */
+'use strict';
+/**
+ * Teardown registry — §1.1 "Deterministic teardown on game exit".
+ *
+ * Nothing in a game should call addEventListener / requestAnimationFrame /
+ * setTimeout / createObjectURL directly. Route them through here and a single
+ * destroyAll() reclaims the lot. The portal also destroys the whole iframe
+ * (§2.2), but manual teardown is what makes standalone play and the
+ * heap-returns-to-baseline benchmark (§4) hold.
+ */
+(function (global) {
+    const PE = (global.PE = global.PE || {});
+
+    const listeners = [];   // [target, type, fn, opts]
+    const rafs      = [];   // raf handles
+    const timers    = [];   // setTimeout handles
+    const intervals = [];   // setInterval handles
+    const contexts  = [];   // WebGL contexts
+    const urls      = [];   // object URLs
+    const audios    = [];   // AudioContexts
+    const closers   = [];   // arbitrary cleanup fns
+    let destroyed   = false;
+
+    const Teardown = {
+        get destroyed() { return destroyed; },
+
+        on(target, type, fn, opts) {
+            if (destroyed) return fn;
+            target.addEventListener(type, fn, opts);
+            listeners.push([target, type, fn, opts]);
+            return fn;
+        },
+
+        off(target, type, fn, opts) {
+            target.removeEventListener(type, fn, opts);
+            for (let i = listeners.length - 1; i >= 0; i--) {
+                const l = listeners[i];
+                if (l[0] === target && l[1] === type && l[2] === fn) listeners.splice(i, 1);
+            }
+        },
+
+        raf(fn) {
+            if (destroyed) return 0;
+            const h = requestAnimationFrame(fn);
+            rafs.push(h);
+            // Keep the handle list bounded: a long-running loop would otherwise
+            // push one entry per frame forever (a leak in the leak-preventer).
+            if (rafs.length > 8) rafs.splice(0, rafs.length - 8);
+            return h;
+        },
+
+        timeout(fn, ms) {
+            if (destroyed) return 0;
+            const h = setTimeout(function () {
+                const i = timers.indexOf(h);
+                if (i >= 0) timers.splice(i, 1);
+                fn();
+            }, ms);
+            timers.push(h);
+            return h;
+        },
+
+        interval(fn, ms) {
+            if (destroyed) return 0;
+            const h = setInterval(fn, ms);
+            intervals.push(h);
+            return h;
+        },
+
+        trackContext(gl)      { if (gl) contexts.push(gl); return gl; },
+        trackAudio(ac)        { if (ac) audios.push(ac); return ac; },
+        trackObjectURL(url)   { if (url) urls.push(url); return url; },
+        onDestroy(fn)         { if (fn) closers.push(fn); return fn; },
+
+        /** Idempotent. Safe to call from unload, from the portal, or both. */
+        destroyAll() {
+            if (destroyed) return;
+            destroyed = true;
+
+            for (let i = 0; i < rafs.length; i++) cancelAnimationFrame(rafs[i]);
+            for (let i = 0; i < timers.length; i++) clearTimeout(timers[i]);
+            for (let i = 0; i < intervals.length; i++) clearInterval(intervals[i]);
+            for (let i = 0; i < listeners.length; i++) {
+                const l = listeners[i];
+                try { l[0].removeEventListener(l[1], l[2], l[3]); } catch (e) { /* detached */ }
+            }
+            for (let i = 0; i < closers.length; i++) {
+                try { closers[i](); } catch (e) { /* keep tearing down */ }
+            }
+            for (let i = 0; i < contexts.length; i++) {
+                try {
+                    const ext = contexts[i].getExtension('WEBGL_lose_context');
+                    if (ext) ext.loseContext();
+                } catch (e) { /* context already gone */ }
+            }
+            for (let i = 0; i < audios.length; i++) {
+                try { audios[i].close(); } catch (e) { /* already closed */ }
+            }
+            for (let i = 0; i < urls.length; i++) {
+                try { URL.revokeObjectURL(urls[i]); } catch (e) { /* already revoked */ }
+            }
+
+            listeners.length = 0; rafs.length = 0; timers.length = 0;
+            intervals.length = 0; contexts.length = 0; urls.length = 0;
+            audios.length = 0; closers.length = 0;
+
+            if (document.pointerLockElement) {
+                try { document.exitPointerLock(); } catch (e) { /* not locked */ }
+            }
+        },
+    };
+
+    PE.Teardown = Teardown;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* portal shim: bridge.js */
+'use strict';
+/**
+ * Game-side half of the portal <-> game postMessage bridge (§2.2).
+ *
+ * Protocol (v1), all messages { type, token, ... }:
+ *
+ *   game   -> portal : game:hello      first contact, no token yet
+ *   portal -> game   : portal:hello    { token, tier, caps, save, settings }
+ *   game   -> portal : game:ready      { needs: { tier, pointerLock } }
+ *   game   -> portal : game:save       { data }        persisted via IndexedDB
+ *   game   -> portal : game:score      { score, label }
+ *   game   -> portal : game:stats      { fps, frameMs, heapMB, scale, entities }
+ *   game   -> portal : game:exit       user chose to quit
+ *   game   -> portal : game:error      { message, stack }
+ *   game   -> portal : game:pointerlock{ locked }
+ *   portal -> game   : portal:pause | portal:resume | portal:shutdown
+ *   portal -> game   : portal:lowmem   release what you can, you are near budget
+ *   portal -> game   : portal:settings { resolutionScale, audio, auto }
+ *
+ * The game never touches portal storage directly: save state round-trips
+ * through this bridge, which is what §2.2's acceptance criterion asks for.
+ * Standalone (opened outside the portal) degrades to a local IndexedDB store
+ * so a bundle stays playable as a plain file.
+ */
+(function (global) {
+    const PE = (global.PE = global.PE || {});
+    const PROTOCOL = 1;
+
+    const Bridge = {
+        connected:  false,
+        standalone: false,
+        token:      null,
+        id:         null,
+        tier:       null,
+        caps:       null,
+        settings:   null,
+        _handlers:  null,
+        _saveTimer: 0,
+        _pendingSave: null,
+        _origin:    null,
+        _onMessage: null,
+        _helloTimer: 0,
+
+        connect(opts) {
+            this._handlers = opts || {};
+            this.id = opts.id || 'unknown';
+            const parent = global.parent;
+            const embedded = parent && parent !== global;
+
+            // location.origin is "null" for an opaque-origin sandbox; postMessage
+            // then has to target '*' because there is no origin to name.
+            this._origin = (location.origin && location.origin !== 'null') ? location.origin : '*';
+
+            const self = this;
+            this._onMessage = function (e) { self._handle(e); };
+            global.addEventListener('message', this._onMessage);
+
+            // Report uncaught errors to the portal so a broken title surfaces
+            // in the launcher instead of dying silently inside the frame.
+            global.addEventListener('error', function (e) {
+                self.post('game:error', { message: String(e.message || e), stack: e.error && e.error.stack || '' });
+            });
+            global.addEventListener('unhandledrejection', function (e) {
+                self.post('game:error', { message: 'unhandled rejection: ' + String(e.reason), stack: '' });
+            });
+
+            if (!embedded) { this._goStandalone(); return this; }
+
+            parent.postMessage({ type: 'game:hello', protocol: PROTOCOL, id: this.id }, this._origin);
+            this._helloTimer = setTimeout(function () {
+                if (!self.connected) self._goStandalone();
+            }, 1500);
+            return this;
+        },
+
+        _goStandalone() {
+            this.standalone = true;
+            this.connected  = false;
+            const self = this;
+            localLoad(this.id).then(function (save) {
+                self._fire('onHello', { tier: null, caps: null, save: save, settings: null, standalone: true });
+            });
+        },
+
+        _handle(e) {
+            const d = e.data;
+            if (!d || typeof d !== 'object' || typeof d.type !== 'string') return;
+            if (d.type.slice(0, 7) !== 'portal:') return;
+            // After the handshake every message must carry our token; a frame
+            // that can post to us is not automatically the portal.
+            if (this.token && d.token !== this.token) return;
+
+            switch (d.type) {
+                case 'portal:hello':
+                    if (this.connected) return;
+                    clearTimeout(this._helloTimer);
+                    this.connected = true;
+                    this.token     = d.token;
+                    this.tier      = d.tier;
+                    this.caps      = d.caps || null;
+                    this.settings  = d.settings || null;
+                    this._fire('onHello', { tier: d.tier, caps: d.caps, save: d.save, settings: d.settings, standalone: false });
+                    break;
+                case 'portal:pause':    this._fire('onPause'); break;
+                case 'portal:resume':   this._fire('onResume'); break;
+                case 'portal:lowmem':   this._fire('onLowMemory', d.level || 1); break;
+                case 'portal:settings':
+                    this.settings = d.settings || null;
+                    this._fire('onSettings', d.settings);
+                    break;
+                case 'portal:shutdown':
+                    this.flush();
+                    this._fire('onShutdown');
+                    this.post('game:shutdown-ack', null);
+                    this.dispose();
+                    break;
+            }
+        },
+
+        _fire(name, arg) {
+            const fn = this._handlers && this._handlers[name];
+            if (typeof fn === 'function') {
+                try { fn(arg); } catch (err) { this.post('game:error', { message: String(err), stack: err && err.stack || '' }); }
+            }
+        },
+
+        post(type, payload) {
+            if (this.standalone || !global.parent || global.parent === global) return false;
+            const msg = payload ? Object.assign({ type: type, token: this.token }, payload)
+                                : { type: type, token: this.token };
+            try { global.parent.postMessage(msg, this._origin); } catch (e) { return false; }
+            return true;
+        },
+
+        /** Declare what the game needs; the portal has already gated on this,
+         *  but a standalone-opened bundle can warn for itself. */
+        ready(needs) { this.post('game:ready', { needs: needs || null }); },
+
+        progress(v) { this.post('game:progress', { value: v }); },
+
+        score(score, label) { this.post('game:score', { score: score, label: label || '' }); },
+
+        /** Debounced save — games call this freely; it coalesces to <=1 write/2s. */
+        save(data) {
+            this._pendingSave = data;
+            if (this._saveTimer) return;
+            const self = this;
+            this._saveTimer = setTimeout(function () { self.flush(); }, 2000);
+        },
+
+        flush() {
+            if (this._saveTimer) { clearTimeout(this._saveTimer); this._saveTimer = 0; }
+            if (this._pendingSave == null) return;
+            const data = this._pendingSave;
+            this._pendingSave = null;
+            if (this.standalone) localSave(this.id, data);
+            else this.post('game:save', { data: data });
+        },
+
+        stats(s) { this.post('game:stats', s); },
+
+        pointerLock(locked) { this.post('game:pointerlock', { locked: !!locked }); },
+
+        exit() { this.flush(); this.post('game:exit', null); },
+
+        dispose() {
+            if (this._onMessage) global.removeEventListener('message', this._onMessage);
+            this._onMessage = null;
+            this._handlers  = null;
+            this.connected  = false;
+        },
+    };
+
+    // --- standalone-only local persistence (never localStorage, per §1.4) ---
+    function idb() {
+        return new Promise(function (resolve, reject) {
+            const req = indexedDB.open('pe-standalone', 1);
+            req.onupgradeneeded = function () { req.result.createObjectStore('saves'); };
+            req.onsuccess = function () { resolve(req.result); };
+            req.onerror   = function () { reject(req.error); };
+        });
+    }
+    function localSave(id, data) {
+        return idb().then(function (db) {
+            const tx = db.transaction('saves', 'readwrite');
+            tx.objectStore('saves').put({ data: data, at: Date.now() }, id);
+            return new Promise(function (res) { tx.oncomplete = function () { db.close(); res(); }; });
+        }).catch(function () { /* private mode / quota — play on without saves */ });
+    }
+    function localLoad(id) {
+        return idb().then(function (db) {
+            const tx = db.transaction('saves', 'readonly');
+            const rq = tx.objectStore('saves').get(id);
+            return new Promise(function (res) {
+                rq.onsuccess = function () { db.close(); res(rq.result ? rq.result.data : null); };
+                rq.onerror   = function () { db.close(); res(null); };
+            });
+        }).catch(function () { return null; });
+    }
+
+    PE.Bridge = Bridge;
+    PE.PROTOCOL = PROTOCOL;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* portal shim: shim.js */
+'use strict';
+/**
+ * Compatibility shim for prebuilt bundles.
+ *
+ * The games imported from the hub were written standalone: they know nothing
+ * about the portal, and they were built for a machine with a fan. This wraps
+ * them from the outside — no edits to their code — and gives them the three
+ * things that decide whether they are playable on a Chromebook:
+ *
+ *   1. A device-pixel-ratio governor. Nearly every Three.js title sizes its
+ *      drawing buffer from window.devicePixelRatio, so owning that value owns
+ *      the fill rate. It starts clamped and drops further when frames run long,
+ *      then dispatches resize so the game re-applies it.
+ *   2. A frame governor. Every requestAnimationFrame goes through here, so the
+ *      portal can genuinely pause a backgrounded game (and hide the pause from
+ *      its clock, so nothing teleports on resume) and stop it dead on exit.
+ *   3. Lifecycle. Reports ready, streams frame stats, and on shutdown cancels
+ *      the loop and drops every WebGL context it saw created.
+ *
+ * It only ever lowers resolution below 1x. A game that hardcodes its pixel
+ * ratio opts out of step 1 by construction; steps 2 and 3 still apply.
+ */
+(function (global) {
+    const Bridge = global.PE && global.PE.Bridge;
+    const doc = global.document;
+
+    // --- device pixel ratio governor -------------------------------------
+    const STEPS = [1, 0.85, 0.72, 0.6, 0.5];
+    let stepIndex = 0;
+    let nativeDpr = global.devicePixelRatio || 1;
+
+    function currentScale() {
+        // Never upscale past 1: retina rendering is banned on this hardware.
+        return Math.min(nativeDpr, STEPS[stepIndex]);
+    }
+
+    try {
+        Object.defineProperty(global, 'devicePixelRatio', {
+            get: currentScale,
+            configurable: true,
+        });
+    } catch (e) { /* locked down; the frame governor still applies */ }
+
+    let manual = false;
+    function setStep(i, why) {
+        i = Math.max(0, Math.min(STEPS.length - 1, i));
+        if (i === stepIndex) return false;
+        stepIndex = i;
+        // Most titles only resize their renderer on a resize event; without
+        // this the new ratio would not take effect until the window changed.
+        try { global.dispatchEvent(new Event('resize')); } catch (e) { /* ignore */ }
+        return true;
+    }
+
+    // --- frame governor ---------------------------------------------------
+    const nativeRaf = global.requestAnimationFrame && global.requestAnimationFrame.bind(global);
+    const nativeCaf = global.cancelAnimationFrame && global.cancelAnimationFrame.bind(global);
+    const liveHandles = new Set();
+    let paused = false, dead = false;
+    let pauseStart = 0, pauseOffset = 0;
+
+    // Frame-time tracking, with the same hysteresis as the engine's scaler:
+    // slow to drop, much slower to recover, and a step that relapsed is not
+    // retried — that is what stops the resolution pulsing.
+    let last = 0, over = 0, under = 0, cooldown = 0, lastUpAt = -1e9;
+    const blocked = [0, 0, 0, 0, 0];
+    let frames = 0, acc = 0, fps = 0;
+    const BUDGET = 1000 / 60;
+
+    function sample(ts) {
+        if (!last) { last = ts; return; }
+        const dt = ts - last;
+        last = ts;
+        if (dt <= 0 || dt > 500) return;          // tab was hidden; not a real frame
+
+        frames++; acc += dt;
+        if (acc >= 1000) { fps = (frames * 1000) / acc; frames = 0; acc = 0; report(); }
+
+        if (manual || ts < cooldown) return;
+
+        if (dt > BUDGET * 1.15) { over++; under = 0; } 
+        else if (dt < BUDGET * 0.70) { under++; over = 0; } 
+        else { over = 0; under = 0; }
+
+        if (over >= 12 && stepIndex < STEPS.length - 1) {
+            if (ts - lastUpAt < 4000) blocked[stepIndex] = 1;
+            setStep(stepIndex + 1);
+            over = under = 0; cooldown = ts + 1500;
+        } else if (under >= 240 && stepIndex > 0 && !blocked[stepIndex - 1]) {
+            setStep(stepIndex - 1);
+            over = under = 0; cooldown = ts + 3000; lastUpAt = ts;
+        }
+    }
+
+    if (nativeRaf) {
+        global.requestAnimationFrame = function (cb) {
+            if (dead) return 0;
+            return nativeRaf(function tick(ts) {
+                if (dead) return;
+                if (paused) { liveHandles.add(nativeRaf(tick)); return; }
+                sample(ts);
+                // Hide the paused interval from the game's own clock.
+                cb(ts - pauseOffset);
+            });
+        };
+        global.cancelAnimationFrame = function (h) { liveHandles.delete(h); return nativeCaf(h); };
+    }
+
+    // --- WebGL context tracking ------------------------------------------
+    const contexts = [];
+    const nativeGetContext = global.HTMLCanvasElement && global.HTMLCanvasElement.prototype.getContext;
+    if (nativeGetContext) {
+        global.HTMLCanvasElement.prototype.getContext = function (type) {
+            const ctx = nativeGetContext.apply(this, arguments);
+            if (ctx && /webgl/i.test(String(type))) contexts.push(ctx);
+            return ctx;
+        };
+    }
+
+    function teardown() {
+        dead = true;
+        for (const h of liveHandles) { try { nativeCaf(h); } catch (e) { /* gone */ } }
+        liveHandles.clear();
+        for (const gl of contexts) {
+            try {
+                const ext = gl.getExtension('WEBGL_lose_context');
+                if (ext) ext.loseContext();
+            } catch (e) { /* already lost */ }
+        }
+        contexts.length = 0;
+        if (doc && doc.pointerLockElement) { try { doc.exitPointerLock(); } catch (e) { /* not locked */ } }
+    }
+
+    function report() {
+        if (!Bridge) return;
+        Bridge.stats({
+            fps: fps,
+            frameMs: fps ? 1000 / fps : 0,
+            scale: currentScale(),
+            heapMB: global.performance && performance.memory
+                ? Math.round(performance.memory.usedJSHeapSize / 1048576) : 0,
+        });
+    }
+
+    // --- pointer lock -----------------------------------------------------
+    /**
+     * Pointer lock fails in more ways than any game bothers to handle, and all
+     * of them look identical from the player's side: you click, nothing
+     * captures. The three that actually bite:
+     *
+     *   - Chrome imposes a ~1s cooldown after the user presses Esc. A request
+     *     inside that window is rejected outright, so it is retried once.
+     *   - Chrome 111+ returns a promise; older versions return undefined. An
+     *     unhandled rejection on the new API is a console error and no lock.
+     *   - `unadjustedMovement` throws on browsers that do not know the option,
+     *     taking the whole request down with it.
+     *
+     * Patching the prototype fixes every game at once, including the imported
+     * ones that were written before any of this mattered.
+     */
+    const nativeRequestLock = global.Element && global.Element.prototype.requestPointerLock;
+    let lockTarget = null, lockRetry = 0;
+
+    if (nativeRequestLock) {
+        global.Element.prototype.requestPointerLock = function (options) {
+            const element = this;
+            lockTarget = element;
+
+            // A request from an unfocused document is refused; clicking the
+            // frame usually focuses it, but a programmatic call may not have.
+            try { global.focus(); } catch (e) { /* cross-origin parent */ }
+
+            const attempt = (opts) => {
+                let result;
+                try {
+                    result = opts === undefined
+                        ? nativeRequestLock.call(element)
+                        : nativeRequestLock.call(element, opts);
+                } catch (err) {
+                    // Most often an unknown option object; retry without it.
+                    if (opts !== undefined) return attempt(undefined);
+                    reportLockFailure(err && err.message || String(err));
+                    return undefined;
+                }
+                if (result && typeof result.catch === 'function') {
+                    return result.catch((err) => {
+                        if (opts !== undefined) return attempt(undefined);
+                        scheduleRetry(element, err && err.message || String(err));
+                    });
+                }
+                return result;
+            };
+
+            return attempt(options);
+        };
+    }
+
+    function scheduleRetry(element, message) {
+        // The one failure worth retrying is the Esc cooldown, and it clears in
+        // about a second. Anything still failing after that is real.
+        if (lockRetry) { reportLockFailure(message); return; }
+        lockRetry = setTimeout(function () {
+            lockRetry = 0;
+            if (doc.pointerLockElement) return;
+            try {
+                const r = nativeRequestLock.call(element);
+                if (r && typeof r.catch === 'function') r.catch((e) => reportLockFailure(e && e.message || String(e)));
+            } catch (e) { reportLockFailure(e && e.message || String(e)); }
+        }, 1250);
+    }
+
+    function reportLockFailure(message) {
+        if (Bridge) Bridge.post('game:pointerlock', { locked: false, error: message || 'pointer lock was refused' });
+    }
+
+    if (doc) {
+        doc.addEventListener('pointerlockchange', function () {
+            const locked = doc.pointerLockElement === lockTarget && !!doc.pointerLockElement;
+            if (Bridge) Bridge.pointerLock(locked);
+        });
+        doc.addEventListener('pointerlockerror', function () {
+            // The error event carries no reason, so name the usual cause.
+            reportLockFailure('the browser refused pointer lock (needs a fresh click, or Esc was pressed moments ago)');
+        });
+    }
+
+    // --- portal lifecycle -------------------------------------------------
+    if (Bridge) {
+        Bridge.connect({
+            id: (doc && doc.title || 'prebuilt').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            onHello: function (ctx) {
+                const pref = ctx && ctx.settings && ctx.settings.resolutionScale;
+                if (typeof pref === 'number') {
+                    manual = true;
+                    let best = 0;
+                    for (let i = 0; i < STEPS.length; i++) {
+                        if (Math.abs(STEPS[i] - pref) < Math.abs(STEPS[best] - pref)) best = i;
+                    }
+                    stepIndex = best;
+                } else if (ctx && ctx.caps) {
+                    // A software rasteriser cannot hold 60 fps on these scenes;
+                    // start low rather than spending four seconds discovering it.
+                    if (ctx.caps.software) stepIndex = 3;
+                    else if (ctx.caps.deviceMemory && ctx.caps.deviceMemory <= 4) stepIndex = 1;
+                }
+                Bridge.ready({ tier: null, pointerLock: true });
+            },
+            onPause: function () {
+                if (paused) return;
+                paused = true;
+                pauseStart = global.performance ? performance.now() : Date.now();
+            },
+            onResume: function () {
+                if (!paused) return;
+                paused = false;
+                const now = global.performance ? performance.now() : Date.now();
+                pauseOffset += now - pauseStart;
+                last = 0;
+            },
+            onLowMemory: function () { setStep(stepIndex + 1); },
+            onSettings: function (s) {
+                if (!s) return;
+                if (typeof s.resolutionScale === 'number') {
+                    manual = true;
+                    let best = 0;
+                    for (let i = 0; i < STEPS.length; i++) {
+                        if (Math.abs(STEPS[i] - s.resolutionScale) < Math.abs(STEPS[best] - s.resolutionScale)) best = i;
+                    }
+                    setStep(best);
+                } else {
+                    manual = false;
+                }
+            },
+            onShutdown: teardown,
+        });
+    }
+
+    global.__shim = {
+        scale: currentScale,
+        setStep: setStep,
+        stats: function () { return { fps: fps, scale: currentScale(), paused: paused, contexts: contexts.length }; },
+    };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lumen</title>
+<style>
+  html,body{height:100%;margin:0;background:#06060c;overflow:hidden;color:#eceaf6;font-family:ui-sans-serif,-apple-system,"Segoe UI",sans-serif}
+  .wrap{position:fixed;inset:0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:min(6vw,70px)}
+  canvas{display:block;height:min(88vh,900px);width:auto;border-radius:16px;box-shadow:0 40px 90px -30px #000,0 0 0 1px rgba(255,255,255,.07)}
+  .side{max-width:230px}
+  .side.l{justify-self:end;text-align:right}
+  .side.r{justify-self:start}
+  .stat{margin-bottom:26px}
+  .stat span{font-size:10px;letter-spacing:.2em;text-transform:uppercase;opacity:.45;display:block}
+  .stat b{font-size:30px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .keys{font-size:12.5px;line-height:2;opacity:.55}
+  .keys kbd{background:rgba(255,255,255,.08);border-radius:5px;padding:2px 7px;font-family:ui-monospace,monospace;font-size:11px}
+  .next{width:104px;height:104px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);margin-top:6px}
+  .msg{position:fixed;inset:0;display:grid;place-items:center;text-align:center;background:rgba(6,6,12,.9);backdrop-filter:blur(12px)}
+  .msg.hide{display:none}
+  .msg h1{font-size:min(11vw,64px);margin:0;letter-spacing:-.03em}
+  .msg p{opacity:.6;margin:12px 0 24px;font-size:14px}
+  .msg button{padding:13px 30px;border:0;border-radius:99px;background:#eceaf6;color:#0b0a14;font-weight:700;cursor:pointer}
+  @media(max-width:900px){.side{display:none}.wrap{grid-template-columns:1fr}}
+</style></head><body>
+<div class="wrap">
+  <div class="side l">
+    <div class="stat"><span>Score</span><b id="score">0</b></div>
+    <div class="stat"><span>Chains</span><b id="chain">0</b></div>
+    <div class="stat"><span>Level</span><b id="level">1</b></div>
+  </div>
+  <canvas id="c"></canvas>
+  <div class="side r">
+    <div class="stat"><span>Next</span><canvas class="next" id="n" width="104" height="104"></canvas></div>
+    <div class="keys">
+      <div><kbd>←</kbd> <kbd>→</kbd> move</div>
+      <div><kbd>↓</kbd> soft drop · <kbd>Space</kbd> hard drop</div>
+      <div><kbd>Z</kbd> <kbd>X</kbd> cycle colours</div>
+    </div>
+  </div>
+</div>
+<div class="msg" id="msg"><div>
+  <h1 id="title">LUMEN</h1>
+  <p id="sub">Stack three of a shade in a row, column or diagonal to fuse them into light.</p>
+  <button id="go">Start</button>
+</div></div>
+<script>
+const COLS=7,ROWS=14,HUES=[268,196,44,330,150];
+const c=document.getElementById('c'),x=c.getContext('2d');
+const nc=document.getElementById('n'),nx=nc.getContext('2d');
+let CELL=54;
+function resize(){const h=Math.min(innerHeight*.88,900);CELL=Math.floor(h/ROWS);
+  c.height=CELL*ROWS;c.width=CELL*COLS;c.style.height=c.height+'px';c.style.width=c.width+'px';}
+addEventListener('resize',resize);resize();
+let grid,piece,next,score,chains,level,drop,acc,alive=false,anim=[],lockT=0;
+const empty=()=>Array.from({length:ROWS},()=>Array(COLS).fill(-1));
+const rndPiece=()=>({cells:[rc(),rc(),rc()],x:Math.floor(COLS/2),y:0});
+const rc=()=>Math.floor(Math.random()*HUES.length);
+function start(){grid=empty();score=0;chains=0;level=1;drop=.82;acc=0;alive=true;anim=[];
+  next=rndPiece();spawn();document.getElementById('msg').classList.add('hide');paintNext();}
+document.getElementById('go').onclick=start;
+function spawn(){piece=next;piece.x=Math.floor(COLS/2);piece.y=0;next=rndPiece();paintNext();
+  if(grid[0][piece.x]>=0||grid[1][piece.x]>=0)over();}
+function over(){alive=false;const m=document.getElementById('msg');m.classList.remove('hide');
+  document.getElementById('title').textContent=score.toLocaleString();
+  document.getElementById('sub').textContent=`Level ${level} · ${chains} chains`;
+  document.getElementById('go').textContent='Again';}
+function collides(px,py){
+  for(let i=0;i<3;i++){const yy=py-i;if(yy<0)continue;
+    if(yy>=ROWS||px<0||px>=COLS||grid[yy][px]>=0)return true;}
+  return false;
+}
+function lock(){
+  for(let i=0;i<3;i++){const yy=piece.y-i;if(yy>=0&&yy<ROWS)grid[yy][piece.x]=piece.cells[i];}
+  resolve(1);
+}
+function resolve(depth){
+  const marks=findMatches();
+  if(!marks.size){spawn();return;}
+  chains++;score+=marks.size*30*depth+ (depth>1?120*depth:0);
+  for(const key of marks){const[r,cc]=key.split(',').map(Number);
+    anim.push({r,c:cc,hue:HUES[grid[r][cc]],t:0});grid[r][cc]=-1;}
+  // gravity
+  setTimeout(()=>{
+    for(let col=0;col<COLS;col++){
+      let write=ROWS-1;
+      for(let r=ROWS-1;r>=0;r--){if(grid[r][col]>=0){grid[write][col]=grid[r][col];if(write!==r)grid[r][col]=-1;write--;}}
+    }
+    level=1+Math.floor(score/2200);drop=Math.max(.14,.82-(level-1)*.06);
+    resolve(depth+1);
+  },140);
+}
+function findMatches(){
+  const marks=new Set();
+  const dirs=[[0,1],[1,0],[1,1],[1,-1]];
+  for(let r=0;r<ROWS;r++)for(let col=0;col<COLS;col++){
+    const v=grid[r][col];if(v<0)continue;
+    for(const[dr,dc]of dirs){
+      let n=1;
+      while(true){const rr=r+dr*n,cc=col+dc*n;
+        if(rr<0||rr>=ROWS||cc<0||cc>=COLS||grid[rr][cc]!==v)break;n++;}
+      if(n>=3)for(let k=0;k<n;k++)marks.add(`${r+dr*k},${col+dc*k}`);
+    }
+  }
+  return marks;
+}
+addEventListener('keydown',e=>{
+  if(!alive){if(e.code==='Space'||e.code==='Enter')start();return;}
+  if(['ArrowLeft','ArrowRight','ArrowDown','Space','ArrowUp'].includes(e.code))e.preventDefault();
+  if(e.code==='ArrowLeft'&&!collides(piece.x-1,piece.y))piece.x--;
+  if(e.code==='ArrowRight'&&!collides(piece.x+1,piece.y))piece.x++;
+  if(e.code==='ArrowDown'){if(!collides(piece.x,piece.y+1)){piece.y++;score+=1;}else lock();}
+  if(e.code==='Space'){while(!collides(piece.x,piece.y+1)){piece.y++;score+=2;}lock();}
+  if(e.code==='KeyZ')piece.cells.unshift(piece.cells.pop());
+  if(e.code==='KeyX')piece.cells.push(piece.cells.shift());
+});
+addEventListener('pointerdown',e=>{
+  if(!alive)return;const rect=c.getBoundingClientRect();
+  if(e.clientY>rect.bottom-60){while(!collides(piece.x,piece.y+1))piece.y++;lock();return;}
+  const col=Math.floor((e.clientX-rect.left)/CELL);
+  if(col<piece.x&&!collides(piece.x-1,piece.y))piece.x--;
+  else if(col>piece.x&&!collides(piece.x+1,piece.y))piece.x++;
+  else piece.cells.unshift(piece.cells.pop());
+});
+function cellFill(ctx,px,py,size,hue,glow){
+  const g=ctx.createLinearGradient(px,py,px+size,py+size);
+  g.addColorStop(0,`hsl(${hue},72%,${glow?72:58}%)`);
+  g.addColorStop(1,`hsl(${hue-16},64%,${glow?46:30}%)`);
+  ctx.fillStyle=g;
+  const r=size*.19,p=size*.055;
+  ctx.beginPath();ctx.roundRect(px+p,py+p,size-p*2,size-p*2,r);ctx.fill();
+  ctx.strokeStyle=`hsla(${hue},90%,86%,.42)`;ctx.lineWidth=1.2;ctx.stroke();
+  ctx.fillStyle=`hsla(${hue},90%,92%,.30)`;
+  ctx.beginPath();ctx.roundRect(px+size*.17,py+size*.15,size*.66,size*.17,size*.09);ctx.fill();
+}
+function paintNext(){
+  nx.clearRect(0,0,104,104);
+  for(let i=0;i<3;i++)cellFill(nx,34,8+i*30,30,HUES[next.cells[2-i]],false);
+}
+let last=performance.now();
+function loop(now){
+  const dt=(now-last)/1000;last=now;
+  if(alive){
+    acc+=dt;
+    if(acc>=drop){acc=0;if(!collides(piece.x,piece.y+1))piece.y++;else{lockT+=1;lock();}}
+  }
+  render(dt);requestAnimationFrame(loop);
+}
+function render(dt){
+  x.clearRect(0,0,c.width,c.height);
+  const bg=x.createLinearGradient(0,0,0,c.height);
+  bg.addColorStop(0,'#0d0c18');bg.addColorStop(1,'#07060e');
+  x.fillStyle=bg;x.fillRect(0,0,c.width,c.height);
+  x.strokeStyle='rgba(255,255,255,.035)';x.lineWidth=1;
+  for(let i=1;i<COLS;i++){x.beginPath();x.moveTo(i*CELL,0);x.lineTo(i*CELL,c.height);x.stroke();}
+  for(let i=1;i<ROWS;i++){x.beginPath();x.moveTo(0,i*CELL);x.lineTo(c.width,i*CELL);x.stroke();}
+  if(!alive)return;
+  for(let r=0;r<ROWS;r++)for(let col=0;col<COLS;col++)
+    if(grid[r][col]>=0)cellFill(x,col*CELL,r*CELL,CELL,HUES[grid[r][col]],false);
+  // ghost
+  let gy=piece.y;while(!collides(piece.x,gy+1))gy++;
+  x.globalAlpha=.18;
+  for(let i=0;i<3;i++){const yy=gy-i;if(yy>=0)cellFill(x,piece.x*CELL,yy*CELL,CELL,HUES[piece.cells[i]],false);}
+  x.globalAlpha=1;
+  for(let i=0;i<3;i++){const yy=piece.y-i;if(yy>=0)cellFill(x,piece.x*CELL,yy*CELL,CELL,HUES[piece.cells[i]],true);}
+  x.globalCompositeOperation='lighter';
+  anim=anim.filter(a=>{a.t+=dt*2.6;
+    if(a.t>1)return false;
+    const s=CELL*(1+a.t*1.5),o=(1-a.t);
+    x.globalAlpha=o*.85;x.fillStyle=`hsl(${a.hue},90%,72%)`;
+    x.beginPath();x.arc(a.c*CELL+CELL/2,a.r*CELL+CELL/2,s*.5,0,7);x.fill();
+    return true;});
+  x.globalAlpha=1;x.globalCompositeOperation='source-over';
+  document.getElementById('score').textContent=score.toLocaleString();
+  document.getElementById('chain').textContent=chains;
+  document.getElementById('level').textContent=level;
+}
+requestAnimationFrame(loop);
+</script></body></html>

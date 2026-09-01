@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img">
+<defs><linearGradient id="fgSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5AC8FF"/><stop offset="1" stop-color="#B4E4FF"/></linearGradient>
+     <linearGradient id="fgFloor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF9BD2"/><stop offset="1" stop-color="#FF6FB8"/></linearGradient></defs>
+<rect width="640" height="360" fill="url(#fgSky)"/>
+<g fill="#FFFFFF" opacity=".8">
+  <ellipse cx="96" cy="60" rx="48" ry="24"/><ellipse cx="138" cy="52" rx="34" ry="20"/>
+  <ellipse cx="520" cy="86" rx="54" ry="26"/><ellipse cx="474" cy="80" rx="34" ry="18"/></g>
+<path d="M0 214 L640 194 L640 360 L0 360 Z" fill="url(#fgFloor)"/>
+<path d="M0 360 L42 200 L66 199 L30 360 Z" fill="#FFFFFF" opacity=".1"/><path d="M90 360 L132 200 L156 199 L120 360 Z" fill="#FFFFFF" opacity=".1"/><path d="M180 360 L222 200 L246 199 L210 360 Z" fill="#FFFFFF" opacity=".1"/><path d="M270 360 L312 200 L336 199 L300 360 Z" fill="#FFFFFF" opacity=".1"/><path d="M360 360 L402 200 L426 199 L390 360 Z" fill="#FFFFFF" opacity=".1"/><path d="M450 360 L492 200 L516 199 L480 360 Z" fill="#FFFFFF" opacity=".1"/><path d="M540 360 L582 200 L606 199 L570 360 Z" fill="#FFFFFF" opacity=".1"/><path d="M630 360 L672 200 L696 199 L660 360 Z" fill="#FFFFFF" opacity=".1"/>
+<rect x="0" y="196" width="640" height="12" fill="#7B4BD8"/>
+<!-- spinning beam -->
+<g transform="translate(420 250)">
+  <rect x="-160" y="-9" width="320" height="18" rx="9" fill="#7B4BD8" transform="rotate(-16)"/>
+  <rect x="-160" y="-14" width="320" height="8" rx="4" fill="#9C74EE" transform="rotate(-16)"/>
+  <circle cx="0" cy="0" r="20" fill="#5B31B0"/><circle cx="0" cy="0" r="9" fill="#B79BF5"/>
+</g>
+<!-- wrecking ball -->
+<line x1="120" y1="0" x2="150" y2="128" stroke="#5B31B0" stroke-width="6"/>
+<circle cx="150" cy="146" r="30" fill="#FFC64D"/><circle cx="141" cy="136" r="10" fill="#FFE09A"/>
+<g transform="translate(232 262) rotate(-8)">
+<ellipse cx="0" cy="52" rx="34" ry="10" fill="#000" opacity=".28"/>
+<rect x="-30" y="-46" width="60" height="94" rx="30" fill="#FF6FA8"/>
+<rect x="-19" y="-30" width="38" height="58" rx="19" fill="#FFFFFF" opacity=".22"/>
+<circle cx="-9" cy="-22" r="5.4" fill="#181428"/><circle cx="13" cy="-22" r="5.4" fill="#181428"/>
+<circle cx="-7" cy="-24" r="1.9" fill="#FFF"/><circle cx="15" cy="-24" r="1.9" fill="#FFF"/>
+<rect x="-32" y="12" width="12" height="26" rx="6" fill="#FF6FA8"/><rect x="20" y="12" width="12" height="26" rx="6" fill="#FF6FA8"/></g>
+<g transform="translate(330 244) rotate(12)">
+<ellipse cx="0" cy="52" rx="34" ry="10" fill="#000" opacity=".28"/>
+<rect x="-30" y="-46" width="60" height="94" rx="30" fill="#5BE0C6"/>
+<rect x="-19" y="-30" width="38" height="58" rx="19" fill="#FFFFFF" opacity=".22"/>
+<circle cx="-13" cy="-22" r="5.4" fill="#181428"/><circle cx="9" cy="-22" r="5.4" fill="#181428"/>
+<circle cx="-11" cy="-24" r="1.9" fill="#FFF"/><circle cx="11" cy="-24" r="1.9" fill="#FFF"/>
+<rect x="-32" y="12" width="12" height="26" rx="6" fill="#5BE0C6"/><rect x="20" y="12" width="12" height="26" rx="6" fill="#5BE0C6"/></g>
+<g transform="translate(150 236) rotate(-26)">
+<ellipse cx="0" cy="52" rx="34" ry="10" fill="#000" opacity=".28"/>
+<rect x="-30" y="-46" width="60" height="94" rx="30" fill="#FFD166"/>
+<rect x="-19" y="-30" width="38" height="58" rx="19" fill="#FFFFFF" opacity=".22"/>
+<circle cx="-8" cy="-22" r="5.4" fill="#181428"/><circle cx="14" cy="-22" r="5.4" fill="#181428"/>
+<circle cx="-6" cy="-24" r="1.9" fill="#FFF"/><circle cx="16" cy="-24" r="1.9" fill="#FFF"/>
+<rect x="-32" y="12" width="12" height="26" rx="6" fill="#FFD166"/><rect x="20" y="12" width="12" height="26" rx="6" fill="#FFD166"/></g>
+<g transform="translate(508 268) rotate(6)">
+<ellipse cx="0" cy="52" rx="34" ry="10" fill="#000" opacity=".28"/>
+<rect x="-30" y="-46" width="60" height="94" rx="30" fill="#8FA8FF"/>
+<rect x="-19" y="-30" width="38" height="58" rx="19" fill="#FFFFFF" opacity=".22"/>
+<circle cx="-14" cy="-22" r="5.4" fill="#181428"/><circle cx="8" cy="-22" r="5.4" fill="#181428"/>
+<circle cx="-12" cy="-24" r="1.9" fill="#FFF"/><circle cx="10" cy="-24" r="1.9" fill="#FFF"/>
+<rect x="-32" y="12" width="12" height="26" rx="6" fill="#8FA8FF"/><rect x="20" y="12" width="12" height="26" rx="6" fill="#8FA8FF"/></g>
+</svg>
