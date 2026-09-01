@@ -1,0 +1,27 @@
+{
+  "id": "minecraft",
+  "title": "Minecraft Clone",
+  "tagline": "Mine it, craft it, build the thing in your head.",
+  "description": "A full voxel sandbox: procedurally generated biomes, caves and structures, mineable blocks, crafting, inventory and mobs. Build until the sun goes down, then keep building.",
+  "version": "1.0.0",
+  "minRendererTier": "webgl1",
+  "estMemoryMB": 400,
+  "pointerLock": true,
+  "prebuilt": true,
+  "shim": true,
+  "category": "sim",
+  "players": "1 player",
+  "duration": "Endless",
+  "featured": true,
+  "spotlight": false,
+  "art": {
+    "motif": "custom",
+    "hue": 112,
+    "seed": 29,
+    "sat": 52,
+    "dark": 13,
+    "deep": 5
+  },
+  "controls": "WASD move \u00b7 Mouse look \u00b7 Left click break \u00b7 Right click place \u00b7 E inventory \u00b7 Space jump",
+  "budgetKB": 1364
+}

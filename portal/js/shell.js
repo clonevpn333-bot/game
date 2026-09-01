@@ -60,8 +60,6 @@ async function main() {
 
   await router.start((path) => {
     document.body.dataset.route = path.split('/')[1] || 'library';
-    const search = document.getElementById('search');
-    if (search) search.hidden = !(path === '/');
   });
 
   // Persistent storage keeps saves and cached bundles from being the first
@@ -74,26 +72,15 @@ async function main() {
 }
 
 function wireChrome() {
-  const search = document.getElementById('search');
-  let debounce = 0;
-  search?.addEventListener('input', () => {
-    clearTimeout(debounce);
-    debounce = setTimeout(() => {
-      if (router.currentPath() === '/') views.renderLibrary(search.value);
-    }, 120);
-  });
-
   document.addEventListener('keydown', (e) => {
-    if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && document.body.dataset.route === 'library') {
+    const search = document.querySelector('.sheet-head .search');
+    if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && search) {
       e.preventDefault();
-      search?.focus();
-      search?.select();
+      search.focus();
+      search.select();
     }
-    if (e.key === 'Escape' && document.activeElement === search && search.value) {
-      search.value = '';
-      views.renderLibrary('');
-    }
-    // Backspace out of a game only when nothing has focus inside the frame.
+    // Leaving a game with Escape only when the mouse is not captured — Escape
+    // is what releases pointer lock, and that should not also exit the game.
     if (e.key === 'Escape' && document.body.dataset.route === 'play' && !document.pointerLockElement) {
       router.navigate('/');
     }

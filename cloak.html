@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Launcher</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="portal/icons/icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --ink:#0B0A0F;--panel:#15131C;--panel-2:#1E1B29;--line:rgba(255,255,255,.09);
+  --line-2:rgba(255,255,255,.16);--text:#F4F1EC;--muted:#918AA3;--amber:#FFB020;--ink-amber:#1A1206;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--ink);color:var(--text);
+  font:15px/1.6 "Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif;
+  display:grid;place-items:center;padding:32px}
+.card{width:100%;max-width:560px;background:var(--panel);border:1px solid var(--line);
+  border-radius:18px;padding:30px}
+.mark{display:flex;align-items:center;gap:11px;margin-bottom:22px}
+.mark svg{width:30px;height:30px;border-radius:9px}
+.mark b{font:800 18px/1 "Syne",system-ui,sans-serif;letter-spacing:.055em;text-transform:uppercase}
+h1{margin:0 0 6px;font:800 26px/1.15 "Syne",system-ui,sans-serif;letter-spacing:-.01em}
+p.lede{margin:0 0 26px;color:var(--muted);font-size:14px}
+label{display:block;font:700 10.5px/1 inherit;letter-spacing:.17em;text-transform:uppercase;
+  color:#5F586F;margin:20px 0 8px}
+input{width:100%;height:40px;padding:0 13px;border-radius:10px;border:1px solid var(--line-2);
+  background:#0F0E14;color:var(--text);font:500 13px var(--mono)}
+input:focus{outline:2px solid var(--amber);outline-offset:2px;border-color:transparent}
+.row{display:flex;gap:9px;margin-top:22px;flex-wrap:wrap}
+button{height:42px;padding:0 20px;border-radius:10px;border:1px solid var(--line-2);
+  background:var(--panel-2);color:var(--text);font:600 14px inherit;cursor:pointer}
+button:hover{background:#2A2639}
+button.go{background:var(--amber);border-color:var(--amber);color:var(--ink-amber);flex:1;min-width:180px}
+button.go:hover{background:#FFC24D}
+.note{margin-top:22px;padding-top:18px;border-top:1px solid var(--line);color:#5F586F;font-size:12.5px}
+.err{margin-top:14px;color:#FF7A6C;font-size:13px;min-height:1.2em}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="mark">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#FFB020"/>
+      <path d="M17.6 4 L8 17.4h5.4L11.8 28 22 14.2h-5.6z" fill="#1A1206"/></svg>
+    <b>Overclock</b>
+  </div>
+
+  <h1>Blank-window launcher</h1>
+  <p class="lede">Opens a new tab that stays on <code>about:blank</code> and loads the page inside it.</p>
+
+  <label for="url">Address to open</label>
+  <input id="url" type="url" spellcheck="false" placeholder="https://your-site.netlify.app/">
+
+  <label for="title">Window title</label>
+  <input id="title" type="text" value="New Tab" spellcheck="false">
+
+  <div class="row">
+    <button class="go" id="go" type="button">Open blank window</button>
+    <button id="save" type="button">Remember</button>
+  </div>
+  <p class="err" id="err" role="status"></p>
+
+  <p class="note">
+    If nothing opens, the browser blocked the pop-up — allow pop-ups for this page and try again.
+    Settings are stored in this browser only.
+  </p>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const err = $('err');
+
+  // Default to this site unless a previous address was remembered.
+  try {
+    const saved = JSON.parse(localStorage.getItem('overclock.cloak') || 'null');
+    if (saved) { $('url').value = saved.url || ''; $('title').value = saved.title || 'New Tab'; }
+  } catch (e) { /* private mode */ }
+  if (!$('url').value) $('url').value = location.origin + location.pathname.replace(/cloak\.html$/, '');
+
+  function normalise(v) {
+    let u = (v || '').trim();
+    if (!u) return '';
+    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    return u;
+  }
+
+  $('go').addEventListener('click', function () {
+    err.textContent = '';
+    const url = normalise($('url').value);
+    if (!url) { err.textContent = 'Enter an address first.'; return; }
+    // Strip angle brackets so the title cannot close the tag it sits in.
+    const title = ($('title').value || 'New Tab').replace(/[<>]/g, '');
+
+    const win = window.open('', '_blank');
+    if (!win) { err.textContent = 'The browser blocked the pop-up. Allow pop-ups for this page, then try again.'; return; }
+    win.document.write(
+      '<!doctype html><html><head><meta charset="utf-8"><title>' + title + '</title>' +
+      '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 16 16\'%3E%3Crect width=\'16\' height=\'16\' rx=\'3\' fill=\'%23dfe3e8\'/%3E%3C/svg%3E">' +
+      '<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}' +
+      'iframe{border:0;display:block;width:100%;height:100%}</style></head><body>' +
+      '<iframe src="' + url.replace(/"/g, '&quot;') + '" allow="fullscreen; pointer-lock; autoplay; gamepad"></iframe>' +
+      '</body></html>'
+    );
+    win.document.close();
+  });
+
+  $('save').addEventListener('click', function () {
+    try {
+      localStorage.setItem('overclock.cloak', JSON.stringify({ url: $('url').value, title: $('title').value }));
+      err.style.color = '#5FD79B';
+      err.textContent = 'Saved in this browser.';
+      setTimeout(function () { err.textContent = ''; err.style.color = ''; }, 1800);
+    } catch (e) { err.textContent = 'This browser will not let the page store settings.'; }
+  });
+})();
+</script>
+</body>
+</html>

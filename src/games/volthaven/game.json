@@ -1,0 +1,27 @@
+{
+  "id": "volthaven",
+  "title": "Volthaven",
+  "tagline": "A city with the lights on and nobody home.",
+  "description": "A cyberpunk cityscape you move through on foot \u2014 rain, reflections, and a skyline that keeps going.",
+  "version": "1.0.0",
+  "minRendererTier": "webgl1",
+  "estMemoryMB": 320,
+  "pointerLock": true,
+  "prebuilt": true,
+  "shim": true,
+  "category": "action",
+  "players": "1 player",
+  "duration": "10\u201330 min",
+  "featured": false,
+  "spotlight": false,
+  "art": {
+    "motif": "custom",
+    "hue": 214,
+    "seed": 23,
+    "sat": 52,
+    "dark": 13,
+    "deep": 5
+  },
+  "controls": "WASD move \u00b7 Mouse look \u00b7 Shift sprint \u00b7 Space jump",
+  "budgetKB": 1018
+}

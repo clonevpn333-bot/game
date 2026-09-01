@@ -1,0 +1,27 @@
+{
+  "id": "cyberpunk",
+  "title": "Ghostline",
+  "tagline": "Night City runs on other people\u2019s secrets.",
+  "description": "A cyberpunk open-world slice: neon streets, traffic, crowds, driving and a story thread to pull. Built to wander around in.",
+  "version": "1.0.0",
+  "minRendererTier": "webgl1",
+  "estMemoryMB": 420,
+  "pointerLock": true,
+  "prebuilt": true,
+  "shim": true,
+  "category": "action",
+  "players": "1 player",
+  "duration": "20\u201345 min",
+  "featured": true,
+  "spotlight": false,
+  "art": {
+    "motif": "custom",
+    "hue": 292,
+    "seed": 13,
+    "sat": 52,
+    "dark": 13,
+    "deep": 5
+  },
+  "controls": "WASD move \u00b7 Mouse look \u00b7 F enter vehicle \u00b7 Shift sprint",
+  "budgetKB": 783
+}

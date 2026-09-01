@@ -180,7 +180,7 @@ export class GameSession {
 
       case 'game:pointerlock':
         this.pointerLocked = !!d.locked;
-        this.hooks.onPointerLock?.(this.pointerLocked);
+        this.hooks.onPointerLock?.(this.pointerLocked, d.error || null);
         break;
 
       case 'game:error':

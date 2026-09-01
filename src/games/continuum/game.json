@@ -1,0 +1,27 @@
+{
+  "id": "continuum",
+  "title": "Continuum",
+  "tagline": "Rewind the fight you already lost.",
+  "description": "A hero shooter with abilities on cooldown and a time mechanic that lets you undo the last few seconds \u2014 once.",
+  "version": "1.0.0",
+  "minRendererTier": "webgl1",
+  "estMemoryMB": 260,
+  "pointerLock": true,
+  "prebuilt": true,
+  "shim": true,
+  "category": "action",
+  "players": "1 player",
+  "duration": "10\u201325 min",
+  "featured": false,
+  "spotlight": false,
+  "art": {
+    "motif": "custom",
+    "hue": 190,
+    "seed": 41,
+    "sat": 52,
+    "dark": 13,
+    "deep": 5
+  },
+  "controls": "WASD move \u00b7 Mouse aim \u00b7 Click fire \u00b7 Q E abilities \u00b7 Shift dash",
+  "budgetKB": 874
+}

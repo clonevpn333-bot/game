@@ -14,8 +14,8 @@ import { fileURLToPath } from 'node:url';
 const OUT = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'portal', 'icons');
 mkdirSync(OUT, { recursive: true });
 
-const BG = [13, 17, 23];
-const FG = [88, 208, 160];
+const BG = [255, 176, 32];
+const FG = [26, 18, 6];
 
 // --- tiny PNG encoder (RGBA8, no interlace) ------------------------------
 const CRC_TABLE = (() => {
@@ -70,25 +70,41 @@ const roundRect = (px, py, cx, cy, hw, hh, r) => {
 const circle = (px, py, cx, cy, r) => Math.hypot(px - cx, py - cy) - r;
 const box = (px, py, cx, cy, hw, hh) => Math.max(Math.abs(px - cx) - hw, Math.abs(py - cy) - hh);
 
-/** Console silhouette centred in the middle 60% so maskable crops stay safe. */
-function iconSdf(x, y, size) {
-  const u = 24 / size;                 // work in a 24-unit design grid
-  const px = x * u, py = y * u;
-  const bodyOutline = Math.abs(roundRect(px, py, 12, 12, 10.5, 6.5, 3.6)) - 0.85;
-  const dpad = Math.min(box(px, py, 8, 12, 2.1, 0.75), box(px, py, 8, 12, 0.75, 2.1));
-  const btnA = circle(px, py, 15.6, 10.6, 1.35);
-  const btnB = circle(px, py, 18.1, 13.1, 1.35);
-  return Math.min(bodyOutline, dpad, btnA, btnB);
+/**
+ * The bolt, as the exact polygon from the shell's logo, on a 32-unit grid.
+ * A point-in-polygon test beats an SDF approximation here: the mark has sharp
+ * corners and a notch, and an approximated bolt reads as two loose slabs.
+ */
+const BOLT = [
+  [17.6, 4], [8, 17.4], [13.4, 17.4], [11.8, 28], [22, 14.2], [16.4, 14.2],
+];
+
+function inPolygon(px, py, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if ((yi > py) !== (yj > py) && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+/** Coverage at a pixel, supersampled 3x3 so the diagonals stay clean. */
+function coverage(x, y, size) {
+  const u = 32 / size;
+  let hits = 0;
+  for (let sy = 0; sy < 3; sy++) {
+    for (let sx = 0; sx < 3; sx++) {
+      if (inPolygon((x + (sx + 0.5) / 3) * u, (y + (sy + 0.5) / 3) * u, BOLT)) hits++;
+    }
+  }
+  return hits / 9;
 }
 
 function render(size) {
   const rgba = Buffer.alloc(size * size * 4);
-  const aa = 24 / size;                // one design unit per pixel at 24px
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const d = iconSdf(x + 0.5, y + 0.5, size);
-      // Smooth the edge over one pixel width for a clean icon at 192 and 512.
-      const cov = Math.min(1, Math.max(0, 0.5 - d / aa));
+      const cov = coverage(x, y, size);
       const i = (y * size + x) * 4;
       rgba[i]     = Math.round(BG[0] + (FG[0] - BG[0]) * cov);
       rgba[i + 1] = Math.round(BG[1] + (FG[1] - BG[1]) * cov);

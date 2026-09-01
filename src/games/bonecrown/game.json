@@ -2,33 +2,26 @@
   "id": "bonecrown",
   "title": "Bonecrown",
   "tagline": "Take the crown. Keep it if you can.",
-  "description": "A dark action crawl through bone halls. Fight, loot, and push deeper \u2014 the crown makes you stronger and everything in the dark angrier.",
+  "description": "A dark action crawl through bone halls. Fight, loot and push deeper \u2014 the crown makes you stronger and everything in the dark angrier.",
   "version": "1.0.0",
   "minRendererTier": "webgl1",
-  "estMemoryMB": 320,
-  "pointerLock": false,
+  "estMemoryMB": 340,
+  "pointerLock": true,
   "prebuilt": true,
   "shim": true,
   "category": "action",
-  "tags": [
-    "action",
-    "roguelike",
-    "3D"
-  ],
   "players": "1 player",
   "duration": "15\u201340 min",
-  "added": "2026-08-28",
   "featured": true,
   "spotlight": false,
   "art": {
-    "motif": "vector",
+    "motif": "custom",
     "hue": 330,
     "seed": 77,
-    "sat": 54,
-    "dark": 10,
-    "deep": 4
+    "sat": 52,
+    "dark": 13,
+    "deep": 5
   },
-  "controls": "WASD \u00b7 Mouse to aim \u00b7 Click to attack",
-  "budgetKB": 1252,
-  "thumbnail": "portal/thumbs/bonecrown.svg"
+  "controls": "WASD move \u00b7 Mouse aim \u00b7 Click attack \u00b7 Shift dodge",
+  "budgetKB": 1232
 }

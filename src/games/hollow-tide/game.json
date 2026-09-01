@@ -1,0 +1,27 @@
+{
+  "id": "hollow-tide",
+  "title": "Hollow Tide",
+  "tagline": "Small child, enormous house, rising water.",
+  "description": "An atmospheric side-on puzzle-platformer. Climb, hide and solve your way out of somewhere that would rather you stayed.",
+  "version": "1.0.0",
+  "minRendererTier": "webgl1",
+  "estMemoryMB": 280,
+  "pointerLock": false,
+  "prebuilt": true,
+  "shim": true,
+  "category": "puzzle",
+  "players": "1 player",
+  "duration": "15\u201335 min",
+  "featured": false,
+  "spotlight": false,
+  "art": {
+    "motif": "custom",
+    "hue": 196,
+    "seed": 67,
+    "sat": 52,
+    "dark": 13,
+    "deep": 5
+  },
+  "controls": "WASD / Arrows move \u00b7 Space jump \u00b7 E interact",
+  "budgetKB": 371
+}

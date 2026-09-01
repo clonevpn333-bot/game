@@ -1,16 +1,16 @@
 /**
- * Nova Arcade views — hand-rolled DOM, no framework, no build step.
+ * Overclock views — hand-rolled DOM, no framework, no build step.
  *
- * Shaped like a streaming service because that is what it is: a spotlight for
- * one title, then rails you scan sideways. Everything stays keyboard operable —
- * the target machine is a Chromebook with a trackpad.
+ * Layout is a fixed left rail plus one scrolling sheet: a spotlight panel and a
+ * single responsive grid, filtered from the rail. Everything stays keyboard
+ * operable — the target machine is a Chromebook with a trackpad.
  */
 
 import * as catalog from './catalog.js';
 import * as launcher from './launcher.js';
 import * as storage from './storage.js';
 import { detect, meetsTier, TIER_LABEL, memoryHeadroom, storageInfo } from './capabilities.js';
-import { navigate } from './router.js';
+import { navigate, currentPath } from './router.js';
 
 const view = () => document.getElementById('view');
 
@@ -34,11 +34,8 @@ export function el(tag, attrs = {}, ...children) {
 const clear = (n) => { while (n.firstChild) n.removeChild(n.firstChild); };
 const mount = (node) => { const v = view(); clear(v); v.append(node); return node; };
 
-const CATEGORY_LABEL = {
-  action: 'Action', coop: 'Co-op', arcade: 'Arcade', puzzle: 'Puzzle',
-  sim: 'Sandbox', racing: 'Racing', strategy: 'Strategy',
-};
-const label = (c) => CATEGORY_LABEL[c] || (c ? c[0].toUpperCase() + c.slice(1) : 'Games');
+const CATEGORY = { action: 'Action', arcade: 'Arcade', puzzle: 'Puzzle', sim: 'Sandbox', coop: 'Co-op', racing: 'Racing' };
+const label = (c) => CATEGORY[c] || (c ? c[0].toUpperCase() + c.slice(1) : 'Games');
 
 const fmtAgo = (t) => {
   const s = (Date.now() - t) / 1000;
@@ -49,7 +46,6 @@ const fmtAgo = (t) => {
 };
 const fmtBytes = (n) => (n > 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
-/** `controls` arrives as a string from the hub and an array from repo sources. */
 function controlKeys(game) {
   if (Array.isArray(game.controls)) return game.controls.map((c) => `${c.keys} — ${c.action}`);
   if (typeof game.controls === 'string' && game.controls) return game.controls.split('·').map((s) => s.trim()).filter(Boolean);
@@ -58,136 +54,128 @@ function controlKeys(game) {
 
 let saves = new Map();
 let activeFilter = 'all';
+let query = '';
 
-// ---------------------------------------------------------------- library --
+// ------------------------------------------------------------------ rail --
 
-export async function renderLibrary(query = '') {
+export function paintRail() {
+  const nav = document.getElementById('rail-nav');
+  if (!nav) return;
+  clear(nav);
+  const path = currentPath() || '/';
+  const games = catalog.visible();
+  const cats = [...new Set(games.map((g) => g.category || 'action'))];
+
+  const link = (href, text, current) => el('a', {
+    class: 'rail-link', href, text, 'aria-current': current ? 'page' : null,
+  });
+
+  nav.append(
+    link('#/', 'All games', path === '/' && activeFilter === 'all'),
+    link('#/links', 'Share links', path === '/links'),
+    link('#/diagnostics', 'This device', path === '/diagnostics'),
+    el('p', { class: 'rail-group', text: 'Categories' }),
+  );
+
+  for (const c of cats) {
+    const n = games.filter((g) => (g.category || 'action') === c).length;
+    nav.append(el('button', {
+      class: 'rail-link', type: 'button', 'aria-pressed': String(path === '/' && activeFilter === c),
+      onclick: () => { activeFilter = c; query = ''; navigate('/'); renderLibrary(); },
+    },
+      el('span', { class: 'dotmark' }),
+      label(c),
+      el('span', { class: 'rail-count', text: String(n) }),
+    ));
+  }
+}
+
+// --------------------------------------------------------------- library --
+
+export async function renderLibrary(q = query) {
+  query = q;
   const caps = detect();
   saves = new Map((await storage.listSaves()).map((s) => [s.gameId, s]));
   const all = catalog.visible();
 
-  if (query.trim()) return mount(searchView(query, all, caps));
-
+  const pool = activeFilter === 'all' ? all : all.filter((g) => (g.category || 'action') === activeFilter);
+  const list = catalog.search(query, pool);
   const spotlight = all.find((g) => g.spotlight) || all.find((g) => g.featured) || all[0];
-  const cats = [...new Set(all.map((g) => g.category || 'action'))];
+
+  const search = el('input', {
+    class: 'search', type: 'search', placeholder: 'Search games', value: query,
+    'aria-label': 'Search games', autocomplete: 'off', spellcheck: 'false',
+  });
+  let debounce = 0;
+  search.addEventListener('input', () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => renderLibrary(search.value), 130);
+  });
+
+  const grid = el('div', { class: 'grid', role: 'list' });
+  for (const g of list) grid.append(card(g, caps));
 
   const node = el('div', {},
-    spotlight ? heroFor(spotlight, caps, 'Spotlight') : null,
-    filterBar(cats),
-    el('div', { class: 'rails', id: 'rails' }),
+    !query && spotlight ? heroFor(spotlight, caps, 'Spotlight') : null,
+    el('section', { class: 'sheet' },
+      el('div', { class: 'sheet-head' },
+        el('h2', { text: query ? `“${query.trim()}”` : activeFilter === 'all' ? 'All games' : label(activeFilter) }),
+        el('span', { text: `${list.length} title${list.length === 1 ? '' : 's'}` }),
+        search,
+      ),
+      list.length ? grid : el('p', { class: 'empty', text: 'Nothing matches that.' }),
+    ),
   );
   mount(node);
-  paintRails(all, caps);
+  paintRail();
+  wireGridKeys(grid);
   return node;
 }
 
-function filterBar(cats) {
-  const bar = el('nav', { class: 'filters', 'aria-label': 'Filter by category' });
-  const make = (id, text) => el('button', {
-    class: 'chip', type: 'button', 'aria-pressed': String(activeFilter === id),
-    onclick: () => {
-      activeFilter = id;
-      for (const c of bar.querySelectorAll('.chip')) c.setAttribute('aria-pressed', String(c.dataset.cat === id));
-      paintRails(catalog.visible(), detect());
-    },
-    dataset: { cat: id },
-    text,
-  });
-  bar.append(make('all', 'All games'), ...cats.map((c) => make(c, label(c))));
-  return bar;
-}
-
-function paintRails(all, caps) {
-  const rails = document.getElementById('rails');
-  if (!rails) return;
-  clear(rails);
-
-  const pool = activeFilter === 'all' ? all : all.filter((g) => (g.category || 'action') === activeFilter);
-
-  if (activeFilter === 'all') {
-    const resume = all.filter((g) => saves.has(g.id))
-      .sort((a, b) => saves.get(b.id).updatedAt - saves.get(a.id).updatedAt);
-    if (resume.length) rails.append(rail('Continue playing', resume, caps, 'Picks up where you left off'));
-
-    const featured = all.filter((g) => g.featured);
-    if (featured.length) rails.append(rail('Featured', featured, caps));
-
-    for (const cat of [...new Set(all.map((g) => g.category || 'action'))]) {
-      const list = all.filter((g) => (g.category || 'action') === cat);
-      if (list.length) rails.append(rail(label(cat), list, caps));
-    }
-  } else {
-    rails.append(rail(label(activeFilter), pool, caps));
-  }
-
-  if (!rails.children.length) {
-    rails.append(el('p', { class: 'empty', text: 'Nothing in this category yet.' }));
-  }
-}
-
-function rail(title, games, caps, note) {
-  const track = el('div', { class: 'rail-track', role: 'list' });
-  for (const g of games) track.append(tile(g, caps));
-  wireRailKeys(track);
-  return el('section', { class: 'rail' },
-    el('div', { class: 'rail-head' },
-      el('h2', { text: title }),
-      el('span', { text: note || `${games.length} title${games.length === 1 ? '' : 's'}` })),
-    track,
-  );
-}
-
-function tile(game, caps) {
+function card(game, caps) {
   const supported = meetsTier(caps.tier, game.minRendererTier);
   const save = saves.get(game.id);
   return el('a', {
-    class: `tile${supported ? '' : ' tile--locked'}`,
-    href: `#/game/${game.id}`, role: 'listitem',
+    class: `card${supported ? '' : ' card--locked'}`,
+    href: `#/game/${game.id}`, role: 'listitem', dataset: { id: game.id },
     'aria-label': `${game.title}. ${game.tagline || ''}${supported ? '' : ' Not supported on this device.'}`,
-    dataset: { id: game.id },
   },
-    el('div', { class: 'tile-art' },
-      !supported ? el('span', { class: 'tile-flag tile-flag--warn', text: `Needs ${TIER_LABEL[game.minRendererTier]}` })
-        : save ? el('span', { class: 'tile-flag', text: 'Saved' }) : null,
+    el('div', { class: 'card-art' },
+      !supported ? el('span', { class: 'card-flag card-flag--warn', text: `Needs ${TIER_LABEL[game.minRendererTier]}` })
+        : save ? el('span', { class: 'card-flag', text: 'Saved' }) : null,
       el('img', { src: game.thumbnail, alt: '', loading: 'lazy', decoding: 'async', width: 320, height: 180 }),
     ),
-    el('div', { class: 'tile-body' },
-      el('h3', { class: 'tile-title', text: game.title }),
-      el('p', { class: 'tile-sub', text: game.tagline || '' }),
-      el('div', { class: 'tile-meta' },
-        el('span', { text: game.players || '1 player' }),
+    el('div', { class: 'card-body' },
+      el('h3', { class: 'card-title', text: game.title }),
+      el('p', { class: 'card-sub', text: game.tagline || '' }),
+      el('div', { class: 'card-meta' },
+        el('span', { text: label(game.category) }),
         el('span', { class: 'dot' }),
-        el('span', { text: `~${game.estMemoryMB} MB` }),
+        el('span', { text: `${game.estMemoryMB} MB` }),
       ),
     ),
   );
 }
 
-/** Arrow keys walk a rail; the browser scrolls the focused tile into view. */
-function wireRailKeys(track) {
-  track.addEventListener('keydown', (e) => {
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-    const tiles = [...track.querySelectorAll('.tile')];
-    const i = tiles.indexOf(e.target.closest('.tile'));
+function wireGridKeys(grid) {
+  const cards = [...grid.querySelectorAll('.card')];
+  if (!cards.length) return;
+  const cols = () => {
+    const top = cards[0].offsetTop;
+    let n = 0;
+    while (n < cards.length && cards[n].offsetTop === top) n++;
+    return Math.max(1, n);
+  };
+  grid.addEventListener('keydown', (e) => {
+    const i = cards.indexOf(e.target.closest('.card'));
     if (i < 0) return;
-    const next = tiles[i + (e.key === 'ArrowRight' ? 1 : -1)];
-    if (next) { next.focus(); e.preventDefault(); }
+    const c = cols();
+    const to = { ArrowRight: i + 1, ArrowLeft: i - 1, ArrowDown: i + c, ArrowUp: i - c, Home: 0, End: cards.length - 1 }[e.key];
+    if (to === undefined) return;
+    e.preventDefault();
+    cards[Math.max(0, Math.min(cards.length - 1, to))].focus();
   });
 }
-
-function searchView(query, all, caps) {
-  const hits = catalog.search(query, all);
-  const grid = el('div', { class: 'grid', role: 'list' });
-  for (const g of hits) grid.append(tile(g, caps));
-  return el('div', {},
-    el('div', { class: 'rail-head', style: 'padding-top:26px' },
-      el('h2', { text: `Results for “${query.trim()}”` }),
-      el('span', { text: `${hits.length} title${hits.length === 1 ? '' : 's'}` })),
-    hits.length ? grid : el('p', { class: 'empty', text: 'No games match that.' }),
-  );
-}
-
-// ----------------------------------------------------------------- hero --
 
 function heroFor(game, caps, eyebrow) {
   const supported = meetsTier(caps.tier, game.minRendererTier);
@@ -200,10 +188,11 @@ function heroFor(game, caps, eyebrow) {
       el('h1', { class: 'hero-title', text: game.title }),
       el('p', { class: 'hero-tagline', text: game.tagline || '' }),
       el('div', { class: 'hero-meta' },
-        el('span', {}, el('b', { text: label(game.category) })),
-        el('span', { text: game.players || '1 player' }),
-        game.duration ? el('span', { text: game.duration }) : null,
-        el('span', { text: `${TIER_LABEL[game.minRendererTier]} · ~${game.estMemoryMB} MB` }),
+        el('span', { class: 'pill pill--amber', text: label(game.category) }),
+        el('span', { class: 'pill', text: game.players || '1 player' }),
+        game.duration ? el('span', { class: 'pill', text: game.duration }) : null,
+        el('span', { class: 'pill', text: `${TIER_LABEL[game.minRendererTier]} · ${game.estMemoryMB} MB` }),
+        game.pointerLock ? el('span', { class: 'pill', text: 'Mouse look' }) : null,
       ),
       el('div', { class: 'hero-actions' },
         supported
@@ -218,8 +207,7 @@ function heroFor(game, caps, eyebrow) {
 function playIcon() {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 16 16');
-  svg.setAttribute('width', '13'); svg.setAttribute('height', '13');
-  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('width', '13'); svg.setAttribute('height', '13'); svg.setAttribute('aria-hidden', 'true');
   const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
   path.setAttribute('d', 'M3 1.8v12.4L14 8z');
   path.setAttribute('fill', 'currentColor');
@@ -227,7 +215,7 @@ function playIcon() {
   return svg;
 }
 
-// --------------------------------------------------------------- detail --
+// ---------------------------------------------------------------- detail --
 
 export async function renderDetails(id) {
   const game = catalog.byId(id);
@@ -237,22 +225,13 @@ export async function renderDetails(id) {
   const supported = meetsTier(caps.tier, game.minRendererTier);
   const headroom = memoryHeadroom(game.estMemoryMB);
   const save = await storage.getSave(game.id);
-  saves = new Map(save ? [[game.id, { gameId: game.id, updatedAt: save.updatedAt, bytes: save.bytes }]] : []);
+  saves = new Map(save ? [[game.id, { gameId: game.id, updatedAt: save.updatedAt }]] : []);
 
   const shareUrl = `${location.origin}${location.pathname}#/play/${game.id}`;
-  const shareInput = el('input', { class: 'share-url', readonly: true, value: shareUrl, 'aria-label': 'Direct link to this game' });
-  const copyBtn = el('button', {
-    class: 'btn btn--sm', type: 'button', text: 'Copy link',
-    onclick: async () => {
-      try { await navigator.clipboard.writeText(shareUrl); } catch { shareInput.select(); document.execCommand('copy'); }
-      copyBtn.textContent = 'Copied';
-      setTimeout(() => { copyBtn.textContent = 'Copy link'; }, 1600);
-    },
-  });
-
+  const field = el('input', { class: 'field', readonly: true, value: shareUrl, 'aria-label': 'Direct link' });
   const keys = controlKeys(game);
 
-  const node = el('div', { class: 'detail-wrap' },
+  const node = el('div', { class: 'detail' },
     heroFor(game, caps, label(game.category)),
     el('div', { class: 'detail-body' },
       el('div', {},
@@ -265,7 +244,7 @@ export async function renderDetails(id) {
 
         supported && caps.software ? el('div', { class: 'notice', style: 'margin-top:18px' },
           el('strong', { text: 'Software rendering' }),
-          el('p', { text: 'Hardware acceleration looks disabled, so 3D titles will run slowly. The resolution scaler will drop quality to compensate.' }),
+          el('p', { text: 'Hardware acceleration looks disabled, so 3D titles will run slowly. Set quality to Performance in the player bar.' }),
         ) : null,
 
         supported && headroom.tight ? el('div', { class: 'notice', style: 'margin-top:18px' },
@@ -273,33 +252,33 @@ export async function renderDetails(id) {
           el('p', { text: `${game.title} expects about ${game.estMemoryMB} MB and this tab has roughly ${headroom.freeMB} MB free. Close other tabs if it stutters.` }),
         ) : null,
 
-        el('p', { class: 'detail-desc', style: 'margin-top:18px', text: game.description || '' }),
+        el('p', { class: 'detail-desc', text: game.description || '' }),
 
-        keys.length ? el('div', { style: 'margin-bottom:26px' },
-          el('h3', { text: 'Controls' }),
+        keys.length ? el('div', { style: 'margin-bottom:28px' },
+          el('h3', { class: 'sub', text: 'Controls' }),
           el('div', { class: 'keys' }, ...keys.map((k) => el('span', { class: 'key', text: k }))),
         ) : null,
 
         el('div', {},
-          el('h3', { text: 'Direct link' }),
-          el('p', { class: 'muted', style: 'margin:0;font-size:13.5px', text: 'Opens straight into this game. Works on any device the site is deployed to.' }),
-          el('div', { class: 'share-row' }, shareInput, copyBtn),
+          el('h3', { class: 'sub', text: 'Direct link' }),
+          el('div', { class: 'row' }, field, copyBtn(field, 'Copy'),
+            el('a', { class: 'btn btn--sm btn--ghost', href: '#/links', text: 'More options' })),
         ),
       ),
 
       el('div', {},
-        el('h3', { text: 'Details' }),
-        el('dl', { class: 'spec-list' },
+        el('h3', { class: 'sub', text: 'Details' }),
+        el('dl', { class: 'spec' },
           spec('Category', label(game.category)),
           spec('Players', game.players || '1 player'),
           game.duration ? spec('Session', game.duration) : null,
           spec('Renderer', TIER_LABEL[game.minRendererTier]),
-          spec('Memory', `~${game.estMemoryMB} MB`),
+          spec('Memory', `${game.estMemoryMB} MB`),
           spec('Download', fmtBytes(game.bytes)),
-          spec('Version', `${game.version}`),
+          spec('Mouse look', game.pointerLock ? 'Yes' : 'No'),
           save ? spec('Save', fmtAgo(save.updatedAt)) : spec('Save', 'None yet'),
         ),
-        save ? el('div', { class: 'share-row' },
+        save ? el('div', { class: 'row' },
           el('a', { class: 'btn btn--sm', href: `#/play/${game.id}?fresh=1`, text: 'Start fresh' }),
           el('button', {
             class: 'btn btn--sm btn--ghost', type: 'button', text: 'Delete save',
@@ -314,12 +293,26 @@ export async function renderDetails(id) {
     ),
   );
   mount(node);
+  paintRail();
   return node;
 }
 
-function spec(dt, dd) { return el('div', {}, el('dt', { text: dt }), el('dd', { text: dd })); }
+const spec = (dt, dd) => el('div', {}, el('dt', { text: dt }), el('dd', { text: dd }));
 
-// --------------------------------------------------------------- player --
+function copyBtn(field, text) {
+  const b = el('button', {
+    class: 'btn btn--sm', type: 'button', text,
+    onclick: async () => {
+      try { await navigator.clipboard.writeText(field.value); }
+      catch { field.select(); document.execCommand('copy'); }
+      b.textContent = 'Copied';
+      setTimeout(() => { b.textContent = text; }, 1500);
+    },
+  });
+  return b;
+}
+
+// ---------------------------------------------------------------- player --
 
 let session = null;
 
@@ -330,30 +323,34 @@ export async function renderPlayer(id, opts = {}) {
 
   const hud = el('span', { class: 'hud' });
   const saveDot = el('span', { class: 'save-dot', title: 'Save status' });
-  // Quality is stored per game and applied at launch: most engines read their
-  // pixel ratio once, at construction, so changing it live is a request the
-  // game may ignore. Restarting the frame is the version that always works.
   const pref = await storage.getMeta(`res:${game.id}`, null);
+
+  // Quality applies at launch: these engines read their pixel ratio once, at
+  // construction, so changing it live is a request the game may ignore.
   const resSelect = el('select', {
-    class: 'res-select', 'aria-label': 'Resolution',
+    class: 'res-select', 'aria-label': 'Quality',
     onchange: async (e) => {
       const v = e.target.value === 'auto' ? null : parseFloat(e.target.value);
       await storage.setMeta(`res:${game.id}`, v);
-      session?.setResolutionScale(v);          // free if the game honours it live
-      renderPlayer(id);                        // and guaranteed after a relaunch
+      session?.setResolutionScale(v);
+      renderPlayer(id);
     },
   },
     el('option', { value: 'auto', text: 'Quality auto' }),
-    ...[['1', 'Quality max'], ['0.85', 'Quality high'], ['0.72', 'Quality balanced'],
-        ['0.6', 'Performance'], ['0.5', 'Performance+']].map(([v, t]) =>
-      el('option', { value: v, text: t, selected: pref != null && Math.abs(pref - parseFloat(v)) < 0.01 })),
+    ...[['1', 'Max'], ['0.85', 'High'], ['0.72', 'Balanced'], ['0.6', 'Performance'], ['0.5', 'Performance+']]
+      .map(([v, t]) => el('option', { value: v, text: t, selected: pref != null && Math.abs(pref - parseFloat(v)) < 0.01 })),
   );
 
   const mountEl = el('div', { class: 'frame-mount' });
   const overlay = el('div', { class: 'frame-overlay' },
     el('div', { class: 'spinner' }),
-    el('p', { class: 'overlay-note', text: `Loading ${game.title}… ${fmtBytes(game.bytes)}` }),
+    el('p', { class: 'overlay-note', text: `Loading ${game.title} · ${fmtBytes(game.bytes)}` }),
   );
+  // Pointer lock needs a real click inside the frame; say so rather than
+  // leaving the player wondering why mouse-look is dead.
+  const lockHint = game.pointerLock
+    ? el('div', { class: 'lock-hint' }, 'Click the game to capture the mouse · ', el('b', { text: 'Esc' }), ' releases it')
+    : null;
 
   const node = mount(el('div', { class: 'player' },
     el('div', { class: 'player-bar' },
@@ -369,7 +366,7 @@ export async function renderPlayer(id, opts = {}) {
         },
       }),
     ),
-    el('div', { class: 'frame-wrap' }, mountEl, overlay),
+    el('div', { class: 'frame-wrap' }, mountEl, overlay, lockHint),
   ));
 
   const setOverlay = (content) => {
@@ -394,6 +391,15 @@ export async function renderPlayer(id, opts = {}) {
         if (s.heapMB) bits.push(`${Math.round(s.heapMB)} MB`);
         hud.textContent = bits.join('  ');
         if (memoryHeadroom(game.estMemoryMB).freeMB < 120) session?.lowMemory(2);
+      },
+      onPointerLock: (locked, error) => {
+        if (!lockHint) return;
+        if (locked) { lockHint.style.display = 'none'; return; }
+        lockHint.style.display = '';
+        if (error) {
+          clear(lockHint);
+          lockHint.append('Mouse capture failed — click the game again');
+        }
       },
       onSaved: () => {
         saveDot.textContent = '●';
@@ -426,115 +432,112 @@ export async function teardownPlayer() {
   await launcher.closeActive();
 }
 
-// -------------------------------------------------------- link generator --
+// ----------------------------------------------------------------- links --
 
 /**
- * Link generator.
- *
- * Produces the three things you actually need to hand a game to someone: a
- * direct URL that opens straight into it, an iframe embed snippet, and a
- * launcher that opens it in its own window. The base URL is editable and
- * remembered, so you can generate the real links for your deployed domain
- * before the deploy is even finished.
+ * Link tools. Three things you actually need to hand a game to someone: a
+ * direct URL, an iframe embed with the right permission list, and a launcher
+ * that opens the site in a blank window.
  */
 export async function renderLinks() {
   const games = catalog.visible();
-  const stored = await storage.getMeta('linkBase', null);
   const here = `${location.origin}${location.pathname}`;
+  const stored = await storage.getMeta('linkBase', null);
   let base = stored || (location.protocol === 'file:' ? 'https://your-site.netlify.app/' : here);
 
-  const baseInput = el('input', {
-    class: 'share-url', value: base, spellcheck: 'false',
-    'aria-label': 'Base URL of your deployed site',
-  });
-  const gameSelect = el('select', { class: 'res-select', style: 'height:38px;width:100%;max-width:340px', 'aria-label': 'Game' },
+  const baseField = el('input', { class: 'field', value: base, spellcheck: 'false', 'aria-label': 'Your site address' });
+  const gameSelect = el('select', { class: 'res-select', style: 'height:38px;min-width:220px', 'aria-label': 'Game' },
     ...games.map((g) => el('option', { value: g.id, text: g.title })));
+  const directField = el('input', { class: 'field', readonly: true, 'aria-label': 'Direct link' });
+  const embedField = el('textarea', { class: 'field', readonly: true, rows: 3, 'aria-label': 'Embed code' });
+  const allField = el('textarea', { class: 'field', readonly: true, rows: 8, 'aria-label': 'Every link' });
+  const titleField = el('input', { class: 'field', value: 'New Tab', 'aria-label': 'Window title' });
 
-  const directOut = el('input', { class: 'share-url', readonly: true, 'aria-label': 'Direct link' });
-  const embedOut = el('textarea', {
-    class: 'share-url', readonly: true, rows: 3,
-    style: 'height:auto;padding:10px 11px;line-height:1.5;resize:vertical', 'aria-label': 'Embed code',
-  });
-  const listOut = el('textarea', {
-    class: 'share-url', readonly: true, rows: 8,
-    style: 'height:auto;padding:10px 11px;line-height:1.6;resize:vertical', 'aria-label': 'Every game link',
-  });
-
-  function normalise(v) {
-    let b = v.trim();
-    if (!b) b = here;
+  const normalise = (v) => {
+    let b = (v || '').trim() || here;
     if (!/^https?:\/\//i.test(b) && !b.startsWith('file:')) b = 'https://' + b;
-    // A trailing index.html is fine; a bare domain needs the slash.
     if (!/\.html$/i.test(b) && !b.endsWith('/')) b += '/';
-    return b;
-  }
-
-  function refresh() {
-    base = normalise(baseInput.value);
-    const id = gameSelect.value;
-    const direct = `${base}#/play/${id}`;
-    directOut.value = direct;
-    embedOut.value =
-      `<iframe src="${direct}"\n        width="960" height="540"\n        style="border:0;border-radius:12px"\n        allow="fullscreen; pointer-lock; autoplay; gamepad"\n        title="${games.find((g) => g.id === id)?.title || id}"></iframe>`;
-    listOut.value = games.map((g) => `${g.title.padEnd(22)} ${base}#/play/${g.id}`).join('\n');
-    storage.setMeta('linkBase', base);
-  }
-
-  baseInput.addEventListener('input', refresh);
-  gameSelect.addEventListener('change', refresh);
-
-  const copier = (field, labelText) => {
-    const b = el('button', {
-      class: 'btn btn--sm', type: 'button', text: labelText,
-      onclick: async () => {
-        try { await navigator.clipboard.writeText(field.value); }
-        catch { field.select(); document.execCommand('copy'); }
-        b.textContent = 'Copied';
-        setTimeout(() => { b.textContent = labelText; }, 1500);
-      },
-    });
     return b;
   };
 
-  const node = mount(el('div', { class: 'detail-body', style: 'grid-template-columns:1fr;padding-top:34px;max-width:900px' },
+  function refresh() {
+    base = normalise(baseField.value);
+    const id = gameSelect.value;
+    const direct = `${base}#/play/${id}`;
+    const title = games.find((g) => g.id === id)?.title || id;
+    directField.value = direct;
+    embedField.value =
+      `<iframe src="${direct}"\n        width="960" height="540"\n        style="border:0;border-radius:12px"\n` +
+      `        allow="fullscreen; pointer-lock; autoplay; gamepad"\n        title="${title}"></iframe>`;
+    allField.value = games.map((g) => `${g.title.padEnd(20)} ${base}#/play/${g.id}`).join('\n');
+    storage.setMeta('linkBase', base);
+  }
+  baseField.addEventListener('input', refresh);
+  gameSelect.addEventListener('change', refresh);
+
+  /**
+   * Opens the site inside a blank window: a new tab is created, and the page
+   * writes a bare document into it that frames the site. The address bar shows
+   * about:blank because nothing was ever navigated to.
+   */
+  function openBlank() {
+    const url = directField.value;
+    const title = (titleField.value || 'New Tab').replace(/[<>]/g, '');
+    const win = window.open('', '_blank');
+    if (!win) { alert('Your browser blocked the pop-up. Allow pop-ups for this site and try again.'); return; }
+    win.document.write(
+      `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>` +
+      `<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23dfe3e8'/%3E%3C/svg%3E">` +
+      `<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}iframe{border:0;display:block;width:100%;height:100%}</style>` +
+      `</head><body><iframe src="${url}" allow="fullscreen; pointer-lock; autoplay; gamepad"></iframe></body></html>`
+    );
+    win.document.close();
+  }
+
+  const node = mount(el('div', { class: 'detail-body', style: 'grid-template-columns:1fr;padding-top:34px;max-width:860px' },
     el('div', {},
       el('a', { class: 'back-link', href: '#/', text: '← All games' }),
-      el('h1', { class: 'hero-title', style: 'font-size:clamp(30px,4vw,46px);margin:14px 0 6px', text: 'Link generator' }),
-      el('p', { class: 'muted', style: 'margin:0 0 26px;max-width:60ch',
-        text: 'Set the address your site is deployed to, pick a game, and copy the link. These open straight into the game, skipping the library.' }),
+      el('h1', { class: 'hero-title', style: 'font-size:clamp(28px,3.4vw,42px);margin:14px 0 6px', text: 'Share links' }),
+      el('p', { class: 'muted', style: 'margin:0 0 30px;max-width:60ch',
+        text: 'Set the address your site is deployed to, pick a game, and copy a link. These open straight into the game and skip the library.' }),
 
-      el('h3', { text: 'Your site address' }),
-      el('div', { class: 'share-row' }, baseInput),
-      el('p', { class: 'muted', style: 'margin:6px 0 26px;font-size:12.5px',
-        text: 'For example https://nova-arcade.netlify.app/ — whatever your host gives you after deploying.' }),
+      el('h3', { class: 'sub', text: 'Your site address' }),
+      el('div', { class: 'row' }, baseField),
+      el('p', { class: 'muted', style: 'margin:6px 0 28px;font-size:12.5px',
+        text: 'For example https://overclock.netlify.app/ — whatever your host gives you after deploying.' }),
 
-      el('h3', { text: 'Game' }),
-      el('div', { class: 'share-row' }, gameSelect),
+      el('h3', { class: 'sub', text: 'Game' }),
+      el('div', { class: 'row' }, gameSelect),
 
-      el('h3', { style: 'margin-top:26px', text: 'Direct link' }),
-      el('div', { class: 'share-row' }, directOut, copier(directOut, 'Copy'),
-        el('button', {
-          class: 'btn btn--sm btn--ghost', type: 'button', text: 'Open',
-          onclick: () => window.open(directOut.value, '_blank', 'noopener'),
-        })),
+      el('h3', { class: 'sub', style: 'margin-top:28px', text: 'Direct link' }),
+      el('div', { class: 'row' }, directField, copyBtn(directField, 'Copy'),
+        el('button', { class: 'btn btn--sm btn--ghost', type: 'button', text: 'Open', onclick: () => window.open(directField.value, '_blank', 'noopener') })),
 
-      el('h3', { style: 'margin-top:26px', text: 'Embed code' }),
+      el('h3', { class: 'sub', style: 'margin-top:28px', text: 'Blank-window launcher' }),
+      el('p', { class: 'muted', style: 'margin:0 0 10px;font-size:12.5px',
+        text: 'Opens a new tab that stays on about:blank and frames the site inside it. Set the window title first.' }),
+      el('div', { class: 'row' }, titleField,
+        el('button', { class: 'btn btn--sm btn--play', type: 'button', text: 'Open blank window', onclick: openBlank })),
+      el('p', { class: 'muted', style: 'margin:8px 0 0;font-size:12px',
+        text: 'A standalone copy of this launcher is deployed with the site at /cloak.html.' }),
+
+      el('h3', { class: 'sub', style: 'margin-top:28px', text: 'Embed code' }),
       el('p', { class: 'muted', style: 'margin:0 0 8px;font-size:12.5px',
-        text: 'Drop this into any page. The allow list is what lets mouse-look work inside the frame.' }),
-      el('div', { class: 'share-row' }, embedOut),
-      el('div', { class: 'share-row' }, copier(embedOut, 'Copy embed code')),
+        text: 'Paste into any page. The allow list is what makes mouse-look work inside the frame.' }),
+      el('div', { class: 'row' }, embedField),
+      el('div', { class: 'row' }, copyBtn(embedField, 'Copy embed code')),
 
-      el('h3', { style: 'margin-top:26px', text: 'Every game' }),
-      el('div', { class: 'share-row' }, listOut),
-      el('div', { class: 'share-row' }, copier(listOut, 'Copy all links')),
+      el('h3', { class: 'sub', style: 'margin-top:28px', text: 'Every game' }),
+      el('div', { class: 'row' }, allField),
+      el('div', { class: 'row' }, copyBtn(allField, 'Copy all links')),
     ),
   ));
-
   refresh();
+  paintRail();
   return node;
 }
 
-// ---------------------------------------------------------- diagnostics --
+// ----------------------------------------------------------- diagnostics --
 
 export async function renderDiagnostics() {
   const caps = detect({ force: true });
@@ -547,7 +550,6 @@ export async function renderDiagnostics() {
     ['Software rasteriser', caps.software ? 'yes — 3D will crawl' : 'no'],
     ['Max texture size', caps.maxTextureSize || '—'],
     ['Instancing', caps.instancing ? 'yes' : 'no'],
-    ['OffscreenCanvas', caps.offscreenCanvas ? 'yes' : 'no'],
     ['Pointer lock', caps.pointerLock ? 'present' : 'missing'],
     ['Device memory', caps.deviceMemory ? `${caps.deviceMemory} GB` : 'not reported'],
     ['CPU cores', caps.cores ?? 'not reported'],
@@ -561,23 +563,23 @@ export async function renderDiagnostics() {
   const plResult = el('p', { class: 'muted', style: 'font-size:13.5px', text: 'Not run yet.' });
   const cached = el('tbody');
 
-  const node = mount(el('div', { class: 'detail-body', style: 'grid-template-columns:1fr;padding-top:34px' },
+  const node = mount(el('div', { class: 'detail-body', style: 'grid-template-columns:1fr;padding-top:34px;max-width:760px' },
     el('div', {},
       el('a', { class: 'back-link', href: '#/', text: '← All games' }),
-      el('h1', { class: 'hero-title', style: 'font-size:clamp(32px,4vw,48px);margin:14px 0 24px', text: 'This device' }),
-      el('table', { class: 'diag-table' }, el('tbody', {},
+      el('h1', { class: 'hero-title', style: 'font-size:clamp(28px,3.4vw,42px);margin:14px 0 24px', text: 'This device' }),
+      el('table', { class: 'table' }, el('tbody', {},
         ...rows.map(([k, v]) => el('tr', {}, el('th', { scope: 'row', text: k }), el('td', { text: String(v) }))))),
 
-      el('h3', { style: 'margin-top:34px', text: 'Pointer lock' }),
-      el('p', { class: 'muted', style: 'font-size:13.5px;max-width:60ch', text: 'Sandboxed frames can refuse pointer lock silently, which breaks mouse-look. This runs the real check in a frame configured exactly like a game launch.' }),
+      el('h3', { class: 'sub', style: 'margin-top:34px', text: 'Pointer lock' }),
+      el('p', { class: 'muted', style: 'font-size:13.5px;max-width:60ch',
+        text: 'Sandboxed frames can refuse pointer lock silently, which kills mouse-look. This runs the real check in a frame configured exactly like a game launch.' }),
       el('button', { class: 'btn btn--sm', style: 'margin-top:10px', onclick: () => runPointerLockCheck(plResult), text: 'Run check' }),
       plResult,
 
-      el('h3', { style: 'margin-top:34px', text: 'Cached games' }),
-      el('table', { class: 'diag-table' }, cached),
-      el('div', { class: 'share-row' },
-        el('button', { class: 'btn btn--sm btn--ghost', onclick: async () => { await clearCaches(); renderDiagnostics(); }, text: 'Clear cache' }),
-      ),
+      el('h3', { class: 'sub', style: 'margin-top:34px', text: 'Cached games' }),
+      el('table', { class: 'table' }, cached),
+      el('div', { class: 'row' },
+        el('button', { class: 'btn btn--sm btn--ghost', onclick: async () => { await clearCaches(); renderDiagnostics(); }, text: 'Clear cache' })),
     ),
   ));
 
@@ -585,6 +587,7 @@ export async function renderDiagnostics() {
     cached.append(el('tr', {}, el('th', { scope: 'row', text: b.gameId }), el('td', { text: fmtAgo(b.lastUsed) })));
   }
   if (!cached.children.length) cached.append(el('tr', {}, el('th', { text: 'Nothing cached yet' }), el('td', {})));
+  paintRail();
   return node;
 }
 
@@ -596,7 +599,10 @@ function runPointerLockCheck(target) {
   const line = el('p', { class: 'muted', style: 'font-size:13.5px', text: 'Click inside the box, then move the mouse.' });
   target.append(line, mountEl);
   launcher.launch(probe, mountEl, {
-    onPointerLock: (locked) => { if (locked) line.textContent = '✓ Pointer lock works in the sandbox.'; },
+    onPointerLock: (locked, error) => {
+      if (locked) line.textContent = '✓ Pointer lock works in the sandbox.';
+      else if (error) line.textContent = '⚠ ' + error;
+    },
     onError: ({ message }) => { line.textContent = '⚠ ' + message; },
   });
 }
@@ -609,6 +615,7 @@ async function clearCaches() {
 }
 
 export function renderNotFound(message = 'That page doesn’t exist.') {
+  paintRail();
   return mount(el('div', { class: 'detail-body', style: 'grid-template-columns:1fr;padding-top:60px' },
     el('div', {},
       el('div', { class: 'overlay-title', text: 'Not found' }),
