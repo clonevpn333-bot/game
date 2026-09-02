@@ -8,15 +8,17 @@ Files that get served: `index.html`, `games.json`, `sw.js`,
 
 ---
 
-## Before you deploy (30 seconds)
+## Before you deploy
+
+Only if you have changed something under `src/`:
 
 ```bash
-node tools/build.mjs        # rebuild bundles + games.json, stamp the service worker
+node tools/build.mjs           # rebuild bundles + games.json, stamp the service worker
 node tools/check-budgets.mjs   # fails if any art or bundle is missing/oversized
 ```
 
-If both print clean, you are ready. Skip this only if you have not touched
-anything in `src/`.
+These run on your machine, not on the host. Deploying runs no build at all —
+what you upload is what gets served.
 
 ---
 
@@ -51,7 +53,9 @@ a name. It prints the live URL when it finishes.
 2. In Netlify: **Add new site → Import an existing project → GitHub**.
 3. Pick the repo, then set:
    - **Branch to deploy:** `claude/html5-game-portal-arch-opll9h` (or `main`)
-   - **Build command:** `node tools/build.mjs --check`
+   - **Build command:** leave it **empty** — the repo root is already the
+     finished site, and a command here fails on a drag-and-drop deploy because
+     that folder has the site but not the tooling
    - **Publish directory:** `.`  ← a single dot
 4. **Deploy site.** Every push now redeploys automatically.
 

@@ -1,10 +1,9 @@
 # Netlify deployment. No build step: the repo root is the site.
+# The repository root is already the finished site — there is nothing to build
+# at deploy time. A build command here breaks a drag-and-drop deploy, because
+# the folder you drop contains the site but not the repo's tooling.
 [build]
   publish = "."
-  command = "node tools/build.mjs --check && node tools/check-budgets.mjs"
-
-[build.environment]
-  NODE_VERSION = "22"
 
 # Content-hashed bundles are immutable for a year; a version bump changes the
 # URL, so nothing stale is ever served (§2.3 / §3.1).
