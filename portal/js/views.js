@@ -72,6 +72,11 @@ export function paintRail() {
 
   nav.append(
     link('#/', 'All games', path === '/' && activeFilter === 'all'),
+    el('button', {
+      class: 'rail-link rail-link--go', type: 'button',
+      title: 'Open the arcade in a window that stays on about:blank',
+      onclick: () => openBlank(),
+    }, el('span', { class: 'dotmark' }), 'Blank window'),
     link('#/links', 'Share links', path === '/links'),
     link('#/diagnostics', 'This device', path === '/diagnostics'),
     el('p', { class: 'rail-group', text: 'Categories' }),
@@ -446,6 +451,79 @@ export async function teardownPlayer() {
   await launcher.closeActive();
 }
 
+// -------------------------------------------------------- blank window --
+
+// The title the blank window takes. Editable on the links page.
+let blankTitle = 'New Tab';
+export const setBlankTitle = (v) => { blankTitle = v || 'New Tab'; };
+
+// Where the frame points when this copy is served over http(s).
+const blankTarget = () => `${location.origin}${location.pathname}${location.hash || '#/'}`;
+
+// A single-file build carries the whole arcade in the page, which is what
+// makes the offline path below possible.
+const isSingleFile = !!document.getElementById('catalog-data');
+
+/**
+ * Opens the arcade in a window that stays on about:blank.
+ *
+ * Two ways in, because one of them does not work everywhere:
+ *
+ *   src    — the frame points at the deployed URL. Cheapest, keeps the
+ *            service worker and storage, and is what every cloaker does. It
+ *            needs the site served over http(s): a blank window cannot frame
+ *            a file:// URL, and Chrome hands you an empty frame if you try.
+ *   srcdoc — the frame is given the page's own HTML. There is no URL to
+ *            block, so it works straight off the filesystem with no server.
+ *            Only possible for a single-file build, where nothing is external.
+ */
+function openBlank() {
+  const title = (blankTitle || 'New Tab').replace(/[<>]/g, '');
+  const local = location.protocol === 'file:';
+
+  if (local && !isSingleFile) {
+    alert('This copy loads its files separately, so a blank window has nothing to '
+        + 'point at offline.\n\nEither host the site, or open portal.html — the '
+        + 'single-file build does this with no server.');
+    return;
+  }
+
+  const win = window.open('', '_blank');
+  if (!win) {
+    alert('Your browser blocked the pop-up. Allow pop-ups for this site and try again.');
+    return;
+  }
+
+  const doc = win.document;
+  doc.title = title;
+  const icon = doc.createElement('link');
+  icon.rel = 'icon';
+  icon.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23dfe3e8'/%3E%3C/svg%3E";
+  doc.head.appendChild(icon);
+  doc.documentElement.style.height = '100%';
+  doc.body.style.cssText = 'margin:0;height:100vh;background:#000;overflow:hidden';
+
+  const frame = doc.createElement('iframe');
+  frame.setAttribute('allow', 'fullscreen; pointer-lock; autoplay; gamepad');
+  frame.style.cssText = 'border:0;display:block;width:100%;height:100%';
+
+  if (local || isSingleFile) {
+    // Serialise this page minus whatever is rendered into it; the copy boots
+    // itself and renders fresh.
+    const clone = document.documentElement.cloneNode(true);
+    const view = clone.querySelector('#view');
+    if (view) view.innerHTML = '';
+    frame.srcdoc = '<!DOCTYPE html>' + clone.outerHTML;
+  } else {
+    frame.src = blankTarget();
+  }
+  doc.body.appendChild(frame);
+}
+
+
+
+export { openBlank };
+
 // ----------------------------------------------------------------- links --
 
 /**
@@ -494,66 +572,6 @@ export async function renderLinks() {
   gameSelect.addEventListener('change', refresh);
   titleField.addEventListener('input', refresh);
 
-  // A single-file build carries the whole arcade in the page, which is what
-  // makes the offline path below possible.
-  const isSingleFile = !!document.getElementById('catalog-data');
-
-  /**
-   * Opens the arcade in a window that stays on about:blank.
-   *
-   * Two ways in, because one of them does not work everywhere:
-   *
-   *   src    — the frame points at the deployed URL. Cheapest, keeps the
-   *            service worker and storage, and is what every cloaker does. It
-   *            needs the site served over http(s): a blank window cannot frame
-   *            a file:// URL, and Chrome hands you an empty frame if you try.
-   *   srcdoc — the frame is given the page's own HTML. There is no URL to
-   *            block, so it works straight off the filesystem with no server.
-   *            Only possible for a single-file build, where nothing is external.
-   */
-  function openBlank() {
-    const title = (titleField.value || 'New Tab').replace(/[<>]/g, '');
-    const local = location.protocol === 'file:';
-
-    if (local && !isSingleFile) {
-      alert('This copy loads its files separately, so a blank window has nothing to '
-          + 'point at offline.\n\nEither host the site, or open portal.html — the '
-          + 'single-file build does this with no server.');
-      return;
-    }
-
-    const win = window.open('', '_blank');
-    if (!win) {
-      alert('Your browser blocked the pop-up. Allow pop-ups for this site and try again.');
-      return;
-    }
-
-    const doc = win.document;
-    doc.title = title;
-    const icon = doc.createElement('link');
-    icon.rel = 'icon';
-    icon.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23dfe3e8'/%3E%3C/svg%3E";
-    doc.head.appendChild(icon);
-    doc.documentElement.style.height = '100%';
-    doc.body.style.cssText = 'margin:0;height:100vh;background:#000;overflow:hidden';
-
-    const frame = doc.createElement('iframe');
-    frame.setAttribute('allow', 'fullscreen; pointer-lock; autoplay; gamepad');
-    frame.style.cssText = 'border:0;display:block;width:100%;height:100%';
-
-    if (local || isSingleFile) {
-      // Serialise this page minus whatever is rendered into it; the copy boots
-      // itself and renders fresh.
-      const clone = document.documentElement.cloneNode(true);
-      const view = clone.querySelector('#view');
-      if (view) view.innerHTML = '';
-      frame.srcdoc = '<!DOCTYPE html>' + clone.outerHTML;
-    } else {
-      frame.src = directField.value;
-    }
-    doc.body.appendChild(frame);
-  }
-
   const node = mount(el('div', { class: 'detail-body', style: 'grid-template-columns:1fr;padding-top:34px;max-width:860px' },
     el('div', {},
       el('a', { class: 'back-link', href: '#/', text: '← All games' }),
@@ -579,7 +597,10 @@ export async function renderLinks() {
           ? 'Opens a new tab that stays on about:blank with the whole arcade inside it. This build carries every game in the page, so it works with no server and no connection.'
           : 'Opens a new tab that stays on about:blank and frames the site inside it. Set the window title first.' }),
       el('div', { class: 'row' }, titleField,
-        el('button', { class: 'btn btn--sm btn--play', type: 'button', text: 'Open blank window', onclick: openBlank })),
+        el('button', {
+          class: 'btn btn--sm btn--play', type: 'button', text: 'Open blank window',
+          onclick: () => { setBlankTitle(titleField.value); openBlank(); },
+        })),
       el('div', { class: 'row' }, launcherField, copyBtn(launcherField, 'Copy launcher link')),
       el('p', { class: 'muted', style: 'margin:8px 0 0;font-size:12px',
         text: 'The launcher link opens the blank window on arrival. /cloak.html ships with the site as a standalone copy.' }),

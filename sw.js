@@ -13,7 +13,7 @@
  * online and still opens offline.
  */
 
-const SHELL_VERSION = 'a9bb1d2203';                     // stamped by tools/build.mjs
+const SHELL_VERSION = '4ad495a686';                     // stamped by tools/build.mjs
 const SHELL_CACHE   = `shell-${SHELL_VERSION}`;
 const BUNDLE_CACHE  = 'bundles-v1';
 const RUNTIME_CACHE = 'runtime-v1';
