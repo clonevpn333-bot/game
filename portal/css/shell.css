@@ -28,6 +28,9 @@
 .rail-link { position: relative; }
 .rail-link[aria-pressed="true"] .dotmark { background: var(--amber); }
 .dotmark { width: 6px; height: 6px; border-radius: 50%; background: var(--faint); flex: none; }
+.rail-link--go { color: var(--amber); font-weight: 700; }
+.rail-link--go .dotmark { background: var(--amber); }
+.rail-link--go:hover { background: rgba(255, 176, 32, .12); color: var(--amber); }
 .rail-count { margin-left: auto; font: 500 12px var(--f-mono); color: var(--faint); }
 .rail-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding: 0 6px; }
 .rail-note { margin: 0; font-size: 11.5px; line-height: 1.5; color: var(--faint); }
