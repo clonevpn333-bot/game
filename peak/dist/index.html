@@ -1,0 +1,4395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>CRUX — four friends, one mountain</title>
+<style>:root{
+  --p0:#ff8a3d; --p1:#31c6c0; --p2:#ffd646; --p3:#a274ff;
+  --ink:#f2efe6; --dim:#a8a39a; --bg:#10131a;
+  --hp:#ff5b52; --st:#8fe04a; --hu:#ffb454; --tp:#7fd4ff;
+  --ui:"Trebuchet MS","Segoe UI",system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--ui);color:var(--ink)}
+body{-webkit-user-select:none;user-select:none;cursor:default}
+canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none!important}
+
+/* ---------- world tags ---------- */
+#tags{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.tag3{position:absolute;transform:translate(-50%,-50%);font-size:12px;font-weight:700;letter-spacing:.04em;
+  text-shadow:0 2px 4px rgba(0,0,0,.75);white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tag3 .d{font-size:10px;font-weight:600;opacity:.7}
+.tag3 .pin{width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 2px rgba(0,0,0,.45)}
+.tag3.pingt{font-size:11px}
+.tag3.down{animation:blip .9s infinite}
+@keyframes blip{50%{opacity:.35}}
+
+/* ---------- HUD ---------- */
+#hud{position:fixed;inset:0;pointer-events:none}
+#crosshair{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+#crosshair i{display:block;width:5px;height:5px;border-radius:50%;background:#fff;opacity:.62;
+  box-shadow:0 0 0 1.5px rgba(0,0,0,.5)}
+
+#vitals{position:absolute;left:22px;bottom:22px;display:flex;flex-direction:column;gap:7px;width:206px}
+.vit{display:flex;align-items:center;gap:8px}
+.vit .ic{width:16px;text-align:center;font-size:13px;opacity:.85;text-shadow:0 1px 3px #000}
+.vit .bar{position:relative;flex:1;height:11px;border-radius:6px;background:rgba(8,10,14,.62);
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.13)}
+.vit b{position:absolute;inset:1.5px;width:50%;border-radius:5px;transition:width .12s linear}
+.vit u{position:absolute;top:-2px;bottom:-2px;width:2px;background:#fff;opacity:.55;border-radius:2px}
+[data-k=hp] b{background:linear-gradient(90deg,#c0342c,var(--hp))}
+[data-k=st] b{background:linear-gradient(90deg,#5aa32a,var(--st))}
+[data-k=hu] b{background:linear-gradient(90deg,#c07a24,var(--hu))}
+[data-k=tp] b{background:linear-gradient(90deg,#3f8fc0,var(--tp))}
+#hud.low-st [data-k=st] b{animation:pulse .5s infinite}
+#hud.low-hp [data-k=hp] b{animation:pulse .5s infinite}
+@keyframes pulse{50%{filter:brightness(1.9)}}
+
+#belt{position:absolute;right:22px;bottom:22px;display:flex;gap:7px}
+.slot{width:46px;height:46px;border-radius:9px;background:rgba(8,10,14,.6);
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.13);position:relative;display:flex;
+  align-items:center;justify-content:center;font-size:19px}
+.slot.on{box-shadow:inset 0 0 0 2px var(--ink),0 0 12px rgba(255,255,255,.16);background:rgba(30,34,44,.75)}
+.slot .n{position:absolute;top:2px;left:5px;font-size:9px;opacity:.4;font-weight:700}
+.slot .q{position:absolute;bottom:2px;right:5px;font-size:10px;font-weight:700;opacity:.85}
+.slot.eq::after{content:'';position:absolute;top:4px;right:4px;width:5px;height:5px;border-radius:50%;background:var(--st)}
+
+#mates{position:absolute;left:22px;top:20px;display:flex;flex-direction:column;gap:6px}
+.mate{display:flex;align-items:center;gap:7px;background:rgba(8,10,14,.5);border-radius:8px;
+  padding:5px 9px 5px 6px;min-width:150px}
+.mate .chip{width:9px;height:22px;border-radius:3px;flex:none}
+.mate .nm{font-size:11px;font-weight:700;letter-spacing:.03em}
+.mate .st{font-size:9px;opacity:.6;font-weight:600}
+.mate .bars{display:flex;flex-direction:column;gap:2px;flex:1}
+.mate .mb{height:3px;border-radius:2px;background:rgba(255,255,255,.13);overflow:hidden}
+.mate .mb i{display:block;height:100%;border-radius:2px}
+.mate.dn{box-shadow:inset 0 0 0 1.5px var(--hp)}
+.mate.off{opacity:.4}
+
+#alt{position:absolute;right:22px;top:20px;text-align:right;display:flex;align-items:center;gap:9px}
+#alt b{font-size:23px;font-weight:800;letter-spacing:-.02em;text-shadow:0 2px 5px rgba(0,0,0,.6)}
+#alt span{font-size:11px;opacity:.55;margin-left:-4px}
+#alt-track{position:relative;width:5px;height:120px;border-radius:3px;background:rgba(8,10,14,.55);
+  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.12)}
+#alt-you{position:absolute;left:-3px;width:11px;height:3px;border-radius:2px;background:var(--ink);bottom:0;transition:bottom .15s}
+#alt-goal{position:absolute;left:-2px;top:-1px;width:9px;height:9px;border-radius:50%;background:var(--p2);
+  box-shadow:0 0 8px var(--p2)}
+
+#prompt{position:absolute;left:50%;top:58%;transform:translateX(-50%);font-size:13px;font-weight:600;
+  text-shadow:0 2px 5px rgba(0,0,0,.8);opacity:0;transition:opacity .12s;text-align:center}
+#prompt.on{opacity:.94}
+#prompt em{font-style:normal;background:rgba(255,255,255,.16);border-radius:4px;padding:1px 6px;margin:0 2px}
+
+#ring{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:74px;height:74px}
+#ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+#ring circle{fill:none;stroke:rgba(0,0,0,.45);stroke-width:3}
+#ring #ring-p{stroke:var(--st);stroke-dasharray:106.8;stroke-dashoffset:106.8;stroke-linecap:round}
+#ring span{position:absolute;left:50%;top:112%;transform:translateX(-50%);font-size:11px;font-weight:700;
+  white-space:nowrap;text-shadow:0 2px 4px #000}
+
+#status{position:absolute;left:50%;bottom:78px;transform:translateX(-50%);display:flex;gap:7px}
+.badge{font-size:10px;font-weight:800;letter-spacing:.07em;padding:4px 9px;border-radius:20px;
+  background:rgba(8,10,14,.62);box-shadow:inset 0 0 0 1.5px currentColor}
+.badge.warn{color:var(--hu)}.badge.bad{color:var(--hp)}.badge.cold{color:var(--tp)}.badge.ok{color:var(--st)}
+
+#toasts{position:absolute;left:50%;top:74px;transform:translateX(-50%);display:flex;flex-direction:column;
+  align-items:center;gap:5px}
+.toast{font-size:12px;font-weight:600;padding:5px 13px;border-radius:16px;background:rgba(8,10,14,.66);
+  animation:tin .3s ease-out;text-shadow:0 1px 3px #000;white-space:nowrap}
+@keyframes tin{from{opacity:0;transform:translateY(-9px)}}
+
+#hurt,#cold{position:absolute;inset:0;opacity:0;transition:opacity .35s}
+#hurt{box-shadow:inset 0 0 130px 30px rgba(190,32,24,.85)}
+#cold{box-shadow:inset 0 0 150px 40px rgba(96,176,232,.6)}
+#room-chip{position:absolute;right:22px;bottom:80px;font-size:10px;font-weight:800;letter-spacing:.16em;
+  opacity:.5;text-shadow:0 1px 3px #000}
+
+/* ---------- menus ---------- */
+#menu,#pause,#over{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(120% 90% at 50% 0%,#243044 0%,#10131a 62%);z-index:20}
+#pause,#over{background:rgba(9,11,16,.82);backdrop-filter:blur(7px)}
+.panel{width:min(520px,92vw);background:rgba(16,19,26,.92);border-radius:18px;padding:26px 28px 22px;
+  box-shadow:0 26px 70px rgba(0,0,0,.6),inset 0 0 0 1.5px rgba(255,255,255,.08)}
+.panel.sm{width:min(390px,92vw);text-align:center}
+h1{font-size:56px;letter-spacing:.2em;font-weight:900;line-height:1;
+  background:linear-gradient(180deg,#fff,#ffb35c);-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{font-size:26px;letter-spacing:.16em;font-weight:900;margin-bottom:4px}
+.tag{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;opacity:.5;margin:7px 0 18px}
+.row{display:flex;align-items:center;gap:10px;margin:9px 0;font-size:12.5px}
+.row label{width:104px;opacity:.65;font-weight:600}
+input[type=text],input:not([type]),select{flex:1;background:rgba(0,0,0,.35);border:1.5px solid rgba(255,255,255,.12);
+  color:var(--ink);border-radius:8px;padding:8px 11px;font-family:var(--ui);font-size:13px;outline:none}
+input:focus{border-color:var(--p1)}
+input[type=range]{flex:1;accent-color:var(--p0)}
+input[type=checkbox]{accent-color:var(--p0);width:16px;height:16px}
+.row b{width:34px;text-align:right;font-size:12px;opacity:.7}
+button{font-family:var(--ui);cursor:pointer;border:none;outline:none}
+.big{display:block;width:100%;margin-top:9px;padding:13px;border-radius:11px;font-size:14px;font-weight:800;
+  letter-spacing:.09em;text-transform:uppercase;background:rgba(255,255,255,.09);color:var(--ink);
+  transition:transform .08s,background .15s}
+.big:hover{background:rgba(255,255,255,.17)}
+.big:active{transform:scale(.985)}
+.big.pri{background:linear-gradient(180deg,#ff9d4d,#f2701f);color:#20140a;
+  box-shadow:0 7px 20px rgba(242,112,31,.32)}
+.big.pri:hover{filter:brightness(1.09)}
+.lnk{background:none;color:var(--dim);font-size:11.5px;margin-top:12px;text-decoration:underline;
+  letter-spacing:.05em;display:block;width:100%}
+.join{margin-top:9px}
+.join input{text-transform:uppercase;letter-spacing:.28em;font-weight:800;text-align:center}
+.join button{padding:9px 20px;border-radius:9px;background:rgba(255,255,255,.09);color:var(--ink);
+  font-weight:800;font-size:12px;letter-spacing:.09em;text-transform:uppercase}
+.join button:hover{background:rgba(255,255,255,.17)}
+#net-state{font-size:12.5px;opacity:.75;text-align:center;margin:6px 0 12px;min-height:16px}
+#net-state.err{color:var(--hp);opacity:1}
+#net-code{text-align:center;margin:14px 0}
+#net-code span{display:block;font-size:10px;letter-spacing:.2em;text-transform:uppercase;opacity:.45}
+#net-code b{display:block;font-size:44px;letter-spacing:.24em;font-weight:900;color:var(--p2);
+  text-shadow:0 0 26px rgba(255,214,70,.32);margin:2px 0 3px}
+#net-code small{font-size:10.5px;opacity:.45}
+#net-roster{display:flex;flex-direction:column;gap:5px;margin:12px 0}
+.rost{display:flex;align-items:center;gap:9px;font-size:12px;font-weight:600;
+  background:rgba(255,255,255,.05);border-radius:8px;padding:7px 11px}
+.rost i{width:10px;height:10px;border-radius:3px;flex:none}
+.rost small{margin-left:auto;opacity:.42;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+#opts{margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:11px}
+summary{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.45;cursor:pointer;outline:none}
+summary:hover{opacity:.75}
+.keys{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin:12px 0 4px;font-size:11px;opacity:.62}
+.keys span{display:flex;gap:6px;align-items:center}
+kbd{background:rgba(255,255,255,.12);border-radius:4px;padding:1px 5px;font-family:var(--ui);
+  font-size:10px;font-weight:800;min-width:20px;text-align:center}
+#over-stats{display:flex;flex-direction:column;gap:6px;margin:16px 0 6px}
+.stat{display:flex;justify-content:space-between;font-size:12.5px;background:rgba(255,255,255,.05);
+  border-radius:7px;padding:7px 12px}
+.stat b{font-weight:800;color:var(--p2)}
+
+#boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;background:var(--bg);z-index:40;font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;opacity:.75}
+.spin{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.13);
+  border-top-color:var(--p0);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<canvas id="view"></canvas>
+
+<!-- ============ world-space overlays (projected) ============ -->
+<div id="tags"></div>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hidden">
+  <div id="crosshair"><i></i></div>
+
+  <div id="vitals">
+    <div class="vit" data-k="hp"><span class="ic">&#9829;</span><div class="bar"><b id="b-hp"></b></div></div>
+    <div class="vit" data-k="st"><span class="ic">&#9889;</span><div class="bar"><b id="b-st"></b><u id="b-stcap"></u></div></div>
+    <div class="vit" data-k="hu"><span class="ic">&#127830;</span><div class="bar"><b id="b-hu"></b></div></div>
+    <div class="vit" data-k="tp"><span class="ic">&#10052;</span><div class="bar"><b id="b-tp"></b></div></div>
+  </div>
+
+  <div id="mates"></div>
+
+  <div id="alt"><b id="alt-n">0</b><span>m</span><div id="alt-track"><i id="alt-you"></i><i id="alt-goal"></i></div></div>
+
+  <div id="belt"></div>
+
+  <div id="prompt"></div>
+  <div id="ring" class="hidden"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle cx="20" cy="20" r="17" id="ring-p"/></svg><span id="ring-t"></span></div>
+  <div id="status"></div>
+  <div id="toasts"></div>
+  <div id="hurt"></div>
+  <div id="cold"></div>
+  <div id="room-chip"></div>
+</div>
+
+<!-- ============ menus ============ -->
+<div id="menu">
+  <div class="panel">
+    <h1>CRUX</h1>
+    <p class="tag">four friends &middot; one mountain &middot; no gear</p>
+
+    <div class="row"><label>Name</label><input id="in-name" maxlength="12" value="climber"></div>
+
+    <div id="menu-main">
+      <button class="big" id="btn-solo">Climb alone</button>
+      <button class="big pri" id="btn-host">Host a run</button>
+      <div class="row join"><input id="in-code" maxlength="5" placeholder="CODE" autocomplete="off"><button id="btn-join">Join</button></div>
+    </div>
+
+    <div id="menu-net" class="hidden">
+      <div id="net-state">connecting&hellip;</div>
+      <div id="net-code" class="hidden"><span>room code</span><b></b><small>share it &mdash; friends join from anywhere</small></div>
+      <div id="net-roster"></div>
+      <button class="big pri hidden" id="btn-start">Start the climb</button>
+      <button class="lnk" id="btn-back">back</button>
+    </div>
+
+    <details id="opts">
+      <summary>controls &amp; options</summary>
+      <div class="keys">
+        <span><kbd>WASD</kbd> move</span><span><kbd>Space</kbd> jump / leap off wall</span>
+        <span><kbd>Shift</kbd> sprint</span><span><kbd>Mouse</kbd> look (pointer lock)</span>
+        <span><kbd>LMB</kbd> hold to grip</span><span><kbd>E</kbd> interact / hold to revive</span>
+        <span><kbd>C</kbd> use item</span><span><kbd>1-4</kbd> select slot</span>
+        <span><kbd>R</kbd> plant rope anchor</span><span><kbd>F</kbd> brace (boost a mate)</span>
+        <span><kbd>G</kbd> pass item</span><span><kbd>Q</kbd> ping (hold = danger)</span>
+        <span><kbd>V</kbd> first / third person</span><span><kbd>Tab</kbd> roster</span>
+      </div>
+      <div class="row"><label>Sensitivity</label><input type="range" id="in-sens" min="4" max="40" value="14"><b id="sens-v">1.4</b></div>
+      <div class="row"><label>Field of view</label><input type="range" id="in-fov" min="60" max="105" value="76"><b id="fov-v">76</b></div>
+      <div class="row"><label>Invert Y</label><input type="checkbox" id="in-inv"></div>
+      <div class="row"><label>Detail</label><select id="in-detail"><option value="1">high</option><option value="0">low (faster)</option></select></div>
+    </details>
+  </div>
+</div>
+
+<div id="pause" class="hidden"><div class="panel sm">
+  <h2>paused</h2><p class="tag">pointer lock released</p>
+  <button class="big pri" id="btn-resume">Click to climb</button>
+  <button class="lnk" id="btn-quit">leave the mountain</button>
+</div></div>
+
+<div id="over" class="hidden"><div class="panel sm">
+  <h2 id="over-h">SUMMIT</h2>
+  <div id="over-stats"></div>
+  <button class="big pri" id="btn-again">Back to base camp</button>
+</div></div>
+
+<div id="boot"><div class="spin"></div><span>carving the mountain&hellip;</span></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script>(function(){'use strict';
+
+/* ==== 01-core.js ==== */
+// ---------------------------------------------------------------- constants
+var K = {
+  GRID: 268,            // heightfield cells per side
+  CELL: 1.9,            // world units per cell
+  SUMMIT_H: 302,        // summit altitude
+  BASE_R: 215,          // radius where the mountain meets the plain
+
+  BAND_ROCK: 56,        // grass -> rock
+  BAND_ALP: 152,        // rock -> alpine
+  BAND_TOP: 244,        // alpine -> volcanic summit
+
+  GRAV: 26,
+  WALK: 5.15, SPRINT: 8.5, CROUCH: 2.4,
+  ACC_G: 46, ACC_A: 11, FRIC: 13.5,
+  JUMP_V: 8.35,
+  WALK_COS: 0.667,      // cos(48deg): steeper than this must be climbed
+  SLIDE_COS: 0.54,      // steeper than this and you slide while standing
+
+  CLIMB_UP: 2.15, CLIMB_SIDE: 2.6, CLIMB_DOWN: 3.1,
+  GRAB_DIST: 0.95,      // how far ahead a wall can be and still be grabbed
+  WALL_OFF: 0.42,       // how far the body floats off the wall face
+
+  ST_MAX: 100,
+  ST_CLIMB: 7.1,        // per second, base
+  ST_SPRINT: 8.4,
+  ST_JUMP: 11, ST_LEAP: 26,
+  ST_REGEN_FLAT: 17.5, ST_REGEN_LEDGE: 9.5,
+
+  HP_MAX: 100,
+  FALL_SAFE: 4.6,       // metres of free fall that cost nothing
+  FALL_DMG: 4.25,       // hp per metre beyond that
+  INJ_DMG: 17,          // damage in one hit that leaves an injury
+
+  HU_MAX: 100, HU_RATE: 0.30, HU_CHOKE: 36,
+  TP_MAX: 100, TP_FREEZE: 22,
+
+  ROPE_LEN: 15.5,
+  REVIVE_T: 4.0,
+  DOWN_T: 34,           // seconds downed before respawning at the last fire
+  CARRY_MUL: 0.56,
+
+  EYE: 1.44,            // eye height above feet
+  R_BODY: 0.42,
+  H_BODY: 1.72,
+
+  NET_HZ: 15,
+  MAX_SLOT: 4,
+};
+
+var SLOT_COL = [0xff8a3d, 0x31c6c0, 0xffd646, 0xa274ff];
+var SLOT_HEX = ['#ff8a3d', '#31c6c0', '#ffd646', '#a274ff'];
+var SLOT_NAME = ['orange', 'teal', 'yellow', 'purple'];
+
+// surface kinds written into the terrain grid
+var SF = { ROCK: 0, ICE: 1, LOOSE: 2, VINE: 3, SNOW: 4, GRASS: 5, DIRT: 6, EMBER: 7 };
+
+// player states
+var ST = { GROUND: 0, AIR: 1, CLIMB: 2, DOWN: 3, CARRIED: 4 };
+
+// ---------------------------------------------------------------- math bits
+function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+function smooth(t) { return t * t * (3 - 2 * t); }
+function smoother(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+function invl(a, b, v) { return b === a ? 0 : clamp((v - a) / (b - a), 0, 1); }
+function step01(e0, e1, x) { return smooth(invl(e0, e1, x)); }
+function damp(cur, tgt, rate, dt) { return lerp(cur, tgt, 1 - Math.exp(-rate * dt)); }
+function angWrap(a) { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; }
+function angLerp(a, b, t) { return a + angWrap(b - a) * t; }
+function sign(v) { return v < 0 ? -1 : v > 0 ? 1 : 0; }
+
+// ---------------------------------------------------------------- rng
+function makeRng(seed) {
+  var s = seed >>> 0 || 1;
+  return function () {
+    s ^= s << 13; s >>>= 0;
+    s ^= s >>> 17;
+    s ^= s << 5; s >>>= 0;
+    return s / 4294967296;
+  };
+}
+function rngRange(r, a, b) { return a + r() * (b - a); }
+function rngPick(r, arr) { return arr[(r() * arr.length) | 0]; }
+
+// short shareable room codes, no ambiguous glyphs
+var CODE_ABC = 'ACDEFGHJKLMNPQRTUVWXY34679';
+function makeCode() {
+  var s = '';
+  for (var i = 0; i < 4; i++) s += CODE_ABC[(Math.random() * CODE_ABC.length) | 0];
+  return s;
+}
+function codeToSeed(code) {
+  var h = 2166136261;
+  for (var i = 0; i < code.length; i++) { h ^= code.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+
+// ---------------------------------------------------------------- colours
+function mixHex(a, b, t) {
+  var ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255;
+  var br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255;
+  return (((ar + (br - ar) * t) | 0) << 16) | (((ag + (bg - ag) * t) | 0) << 8) | ((ab + (bb - ab) * t) | 0);
+}
+function shadeHex(c, m) {
+  var r = clamp(((c >> 16) & 255) * m, 0, 255) | 0;
+  var g = clamp(((c >> 8) & 255) * m, 0, 255) | 0;
+  var b = clamp((c & 255) * m, 0, 255) | 0;
+  return (r << 16) | (g << 8) | b;
+}
+
+// ---------------------------------------------------------------- misc
+function fmtTime(s) {
+  var m = (s / 60) | 0;
+  return m + ':' + String((s % 60) | 0).padStart(2, '0');
+}
+function now() { return performance.now() / 1000; }
+
+/* ==== 02-noise.js ==== */
+// Seeded 2D gradient noise + fbm.  Deterministic across machines so every
+// peer generates the exact same mountain from the room seed.
+function Noise(seed) {
+  var p = new Uint8Array(512), r = makeRng(seed), i, j, t;
+  for (i = 0; i < 256; i++) p[i] = i;
+  for (i = 255; i > 0; i--) { j = (r() * (i + 1)) | 0; t = p[i]; p[i] = p[j]; p[j] = t; }
+  for (i = 0; i < 256; i++) p[i + 256] = p[i];
+  this.p = p;
+}
+Noise.GX = [1, -1, 1, -1, 0.7071, -0.7071, 0.7071, -0.7071];
+Noise.GY = [1, 1, -1, -1, 0.7071, 0.7071, -0.7071, -0.7071];
+
+Noise.prototype.n2 = function (x, y) {
+  var X = Math.floor(x), Y = Math.floor(y);
+  var fx = x - X, fy = y - Y;
+  X &= 255; Y &= 255;
+  var u = smoother(fx), v = smoother(fy), p = this.p;
+  var aa = p[p[X] + Y] & 7, ba = p[p[X + 1] + Y] & 7;
+  var ab = p[p[X] + Y + 1] & 7, bb = p[p[X + 1] + Y + 1] & 7;
+  var gx = Noise.GX, gy = Noise.GY;
+  var n00 = gx[aa] * fx + gy[aa] * fy;
+  var n10 = gx[ba] * (fx - 1) + gy[ba] * fy;
+  var n01 = gx[ab] * fx + gy[ab] * (fy - 1);
+  var n11 = gx[bb] * (fx - 1) + gy[bb] * (fy - 1);
+  return lerp(lerp(n00, n10, u), lerp(n01, n11, u), v);
+};
+
+// Fractal sum.  Raw gradient noise only reaches about +/-0.35 in practice,
+// so the sum is scaled to span roughly -1..1 - every threshold in the
+// generator is written against that range.
+Noise.prototype.fbm = function (x, y, oct, lac, gain) {
+  oct = oct || 4; lac = lac || 2.03; gain = gain || 0.5;
+  var a = 1, f = 1, sum = 0, norm = 0;
+  for (var i = 0; i < oct; i++) {
+    sum += a * this.n2(x * f, y * f);
+    norm += a; a *= gain; f *= lac;
+  }
+  return clamp(sum / norm * 2.6, -1, 1);
+};
+
+// ridged: sharp crests, good for spurs and aretes
+Noise.prototype.ridge = function (x, y, oct) {
+  oct = oct || 4;
+  var a = 1, f = 1, sum = 0, norm = 0, n;
+  for (var i = 0; i < oct; i++) {
+    n = 1 - Math.abs(this.n2(x * f, y * f));
+    n *= n;
+    sum += a * n; norm += a; a *= 0.52; f *= 2.11;
+  }
+  return sum / norm;
+};
+
+// 0..1 blue-ish scatter used to place props without clumping too hard
+Noise.prototype.cell = function (x, y) {
+  var X = Math.floor(x) & 255, Y = Math.floor(y) & 255, p = this.p;
+  return (p[p[X] + Y] ^ (p[p[X + 1] + Y + 1] << 1)) / 511;
+};
+
+/* ==== 03-terrain.js ==== */
+// ============================================================ TERRAIN
+// A heightfield mountain.  Terracing turns a smooth cone into stacked
+// ledges and near-vertical risers, which is what makes it climbable
+// instead of just steep.
+var T = {
+  N: K.GRID, CS: K.CELL,
+  half: K.GRID * K.CELL * 0.5,
+  H: null,          // (N+1)^2 vertex heights
+  SURF: null,       // N^2 cell surface kinds
+  BROKEN: null,     // N^2 crumble flags
+  route: [],        // waypoint spine from base camp to summit
+  camps: [],        // {x,y,z,band}
+  seed: 1,
+  noise: null,
+};
+
+T.ix = function (i, j) { return j * (T.N + 1) + i; };
+T.wx = function (i) { return i * T.CS - T.half; };
+T.wi = function (x) { return (x + T.half) / T.CS; };
+
+// ---- smooth radial profile -------------------------------------------
+var PROF_T = [1.00, 0.92, 0.84, 0.74, 0.64, 0.54, 0.44, 0.34, 0.24, 0.14, 0.06, 0.00];
+var PROF_H = [0, 7, 20, 46, 78, 114, 152, 192, 230, 264, 290, 302];
+function profile(t) {
+  if (t >= 1) return 0;
+  if (t <= 0) return K.SUMMIT_H;
+  for (var i = 0; i < PROF_T.length - 1; i++) {
+    if (t <= PROF_T[i] && t >= PROF_T[i + 1]) {
+      var u = (PROF_T[i] - t) / (PROF_T[i] - PROF_T[i + 1]);
+      return lerp(PROF_H[i], PROF_H[i + 1], smooth(u));
+    }
+  }
+  return 0;
+}
+
+// ---- route spine ------------------------------------------------------
+// A wandering line from the apron to the summit.  The seed rotates and
+// bends it, so every run climbs a different face.
+T.buildRoute = function (rng) {
+  var a = rng() * Math.PI * 2, pts = [], i, t, r, y;
+  var swirl = rngRange(rng, -1.15, 1.15);
+  for (i = 0; i <= 22; i++) {
+    t = 1 - i / 22;                       // 1 at base -> 0 at summit
+    a += swirl * 0.085 + (rng() - 0.5) * 0.22;
+    r = t * K.BASE_R * 0.985;
+    y = profile(t);
+    pts.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, y: y, t: t });
+  }
+  return pts;
+};
+
+// squared distance from (x,z) to the route polyline, in world units
+T.routeDist = function (x, z) {
+  var best = 1e9, p = T.route, i, ax, az, bx, bz, dx, dz, u, cx, cz, d;
+  for (i = 0; i < p.length - 1; i++) {
+    ax = p[i].x; az = p[i].z; bx = p[i + 1].x; bz = p[i + 1].z;
+    dx = bx - ax; dz = bz - az;
+    u = clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1), 0, 1);
+    cx = ax + dx * u - x; cz = az + dz * u - z;
+    d = cx * cx + cz * cz;
+    if (d < best) best = d;
+  }
+  return Math.sqrt(best);
+};
+
+// ---- the height field -------------------------------------------------
+T.rawHeight = function (x, z) {
+  var n = T.noise;
+  // domain warp so the terraces wander instead of ringing the cone
+  var wx = x + n.fbm(x * 0.0041, z * 0.0041, 2) * 14;
+  var wz = z + n.fbm(x * 0.0041 + 41.7, z * 0.0041 - 18.3, 2) * 14;
+  var r = Math.sqrt(wx * wx + wz * wz);
+  var ang = Math.atan2(wz, wx);
+
+  // spurs and gullies: ridged noise sampled around a circle stays seamless
+  var spur = n.ridge(Math.cos(ang) * 2.25 + 13.1, Math.sin(ang) * 2.25 - 6.7, 4);
+  var rEff = r * (1 - 0.155 * spur + 0.075 * n.fbm(wx * 0.0062, wz * 0.0062, 3));
+  var t = clamp(rEff / K.BASE_R, 0, 1);
+  var h = profile(t);
+  if (t >= 1) {
+    // the plain: nearly flat with soft dunes so the horizon is not a disc
+    return Math.max(0, n.fbm(x * 0.012, z * 0.012, 3) * 2.4 + 1.2);
+  }
+
+  var band = 1 - t;                      // 0 at the bottom, 1 at the top
+  // Detail noise stays long-wavelength on purpose.  Anything finer adds
+  // more slope than the mountain itself has, which crushes every terrace
+  // shelf below the width of one grid cell and leaves a featureless ramp.
+  h += n.fbm(wx * 0.0072, wz * 0.0072, 2) * (5 + 9 * band);
+  h += (n.ridge(wx * 0.0068, wz * 0.0068, 2) - 0.5) * (4 + 10 * band);
+
+  // Terracing turns the smooth cone into shelf / riser / shelf.  A period
+  // is one step of height: the first LEDGE fraction of it is nearly flat
+  // (somewhere to stand and breathe), the rest is the wall you climb.
+  // Along the route the shelves get wider and the risers shorter, so the
+  // seed always leaves a line that a tired group can actually follow.
+  var rd = T.routeDist(x, z);
+  var near = step01(10, 44, rd);        // 0 on the line, 1 far off it
+  var strength;
+  if (h < K.BAND_ROCK) strength = 0.55;
+  else if (h < K.BAND_ALP) strength = 0.88;
+  else if (h < K.BAND_TOP) strength = 0.80;
+  else strength = 0.84;
+  strength = lerp(0.93, strength, near);
+  strength *= 0.86 + 0.14 * (n.fbm(wx * 0.0088 + 7, wz * 0.0088 + 3, 2) * 0.5 + 0.5);
+
+  var stp = (12 + 8 * (n.fbm(wx * 0.0105 - 22, wz * 0.0105 + 15, 2) * 0.5 + 0.5)) * lerp(0.86, 1, near);
+  var ledge = lerp(0.62, 0.46, near);   // fraction of the step spent flat
+  var f = h / stp - Math.floor(h / stp);
+  var s = smoother(clamp((f - ledge) / (0.86 - ledge), 0, 1));
+  // Written as a bounded offset rather than (floor(k)+g)*step: with step
+  // varying across the mountain the floor(k)*step form shears the whole
+  // surface steeper, which quietly turned every shelf into more wall.
+  h += (lerp(f, s, strength) - f) * stp;
+
+  // a last shallow ripple so shelves are not glassy and riser lines wander
+  h += n.fbm(wx * 0.038, wz * 0.038, 2) * 0.45;
+  return h;
+};
+
+T.build = function (seed) {
+  T.seed = seed >>> 0;
+  T.noise = new Noise(T.seed);
+  var rng = makeRng(T.seed ^ 0x9e3779b9);
+  T.route = T.buildRoute(rng);
+
+  // camps sit on the route at fixed altitude bands, flattened into shelves
+  var wantY = [4, 62, 140, 214, 276];
+  T.camps = [];
+  var i, c;
+  for (c = 0; c < wantY.length; c++) {
+    var bestI = 0, bestD = 1e9;
+    for (i = 0; i < T.route.length; i++) {
+      var d = Math.abs(T.route[i].y - wantY[c]);
+      if (d < bestD) { bestD = d; bestI = i; }
+    }
+    var p = T.route[bestI];
+    T.camps.push({ x: p.x, z: p.z, y: 0, idx: c, lit: c === 0, ri: bestI });
+  }
+
+  var N = T.N, np = N + 1;
+  var H = T.H = new Float32Array(np * np);
+  var x, z, j;
+  for (j = 0; j < np; j++) {
+    z = T.wx(j);
+    for (i = 0; i < np; i++) {
+      x = T.wx(i);
+      H[j * np + i] = T.rawHeight(x, z);
+    }
+  }
+
+  // flatten a shelf under every camp so the group has somewhere to stand
+  for (c = 0; c < T.camps.length; c++) {
+    var cp = T.camps[c], rad = c === 0 ? 20 : 12.5;
+    var ci = T.wi(cp.x), cj = T.wi(cp.z);
+    var lo = Math.max(0, Math.floor(ci - rad / T.CS) - 2), hi = Math.min(N, Math.ceil(ci + rad / T.CS) + 2);
+    var lo2 = Math.max(0, Math.floor(cj - rad / T.CS) - 2), hi2 = Math.min(N, Math.ceil(cj + rad / T.CS) + 2);
+    var sum = 0, cnt = 0;
+    for (j = lo2; j <= hi2; j++) for (i = lo; i <= hi; i++) {
+      var dx = T.wx(i) - cp.x, dz = T.wx(j) - cp.z;
+      if (dx * dx + dz * dz < rad * rad * 0.36) { sum += H[j * np + i]; cnt++; }
+    }
+    var target = cnt ? sum / cnt : cp.y;
+    for (j = lo2; j <= hi2; j++) for (i = lo; i <= hi; i++) {
+      dx = T.wx(i) - cp.x; dz = T.wx(j) - cp.z;
+      var dd = Math.sqrt(dx * dx + dz * dz);
+      var w = 1 - step01(rad * 0.5, rad, dd);
+      if (w > 0) H[j * np + i] = lerp(H[j * np + i], target, w);
+    }
+    cp.y = target;
+  }
+
+  // summit dome: a clean crown, no terrace steps on the very top
+  for (j = 0; j < np; j++) for (i = 0; i < np; i++) {
+    x = T.wx(i); z = T.wx(j);
+    var rr = Math.sqrt(x * x + z * z);
+    if (rr < 26) {
+      var w2 = 1 - step01(14, 26, rr);
+      H[j * np + i] = lerp(H[j * np + i], K.SUMMIT_H - rr * 0.34, w2 * 0.85);
+    }
+  }
+
+  T.classify(rng);
+};
+
+/* ==== 04-tquery.js ==== */
+// ---- surface classification ------------------------------------------
+T.classify = function (rng) {
+  var N = T.N, n = T.noise;
+  var S = T.SURF = new Uint8Array(N * N);
+  T.BROKEN = new Uint8Array(N * N);
+  T.rests = [];
+  var restGrid = {}, i, j;
+
+  for (j = 0; j < N; j++) {
+    for (i = 0; i < N; i++) {
+      var x = T.wx(i) + T.CS * 0.5, z = T.wx(j) + T.CS * 0.5;
+      var h = T.hAt(x, z), ny = T.normAt(x, z).y;
+      var flat = ny > 0.72, steep = ny < 0.5;
+      var rd = T.routeDist(x, z);
+      var v = n.fbm(x * 0.035, z * 0.035, 3);
+      var w = n.fbm(x * 0.017 + 60, z * 0.017 - 30, 2);
+      var s;
+
+      if (h >= K.BAND_TOP - 8) {
+        s = SF.ROCK;
+        if (steep && v > 0.34) s = SF.EMBER;
+      } else if (h >= K.BAND_ALP - 6) {
+        s = flat ? SF.SNOW : SF.ROCK;
+        if (steep && w > -0.1) s = SF.ICE;
+        else if (!flat && v > 0.42) s = SF.ICE;
+      } else if (h >= K.BAND_ROCK - 4) {
+        s = flat ? SF.ROCK : SF.ROCK;
+        if (steep && v < -0.36 && rd > 16) s = SF.LOOSE;
+        else if (steep && h < K.BAND_ROCK + 46 && w > 0.30) s = SF.VINE;
+      } else {
+        s = flat ? SF.GRASS : SF.DIRT;
+        if (steep && v > 0.06) s = SF.VINE;
+      }
+      S[j * N + i] = s;
+
+      // Rest points: pitons hammered into steep rock near the line.  The
+      // spacing grid is three-dimensional, so a tall wall gets a place to
+      // hang every dozen metres of height rather than one for the whole face.
+      if (steep && h > 26 && rd < 32 && n.cell(i * 1.9, j * 1.9) > 0.42) {
+        var key = Math.round(x / 13) + ':' + Math.round(h / 13) + ':' + Math.round(z / 13);
+        if (!restGrid[key]) {
+          restGrid[key] = 1;
+          T.rests.push({ x: x, y: h, z: z });
+        }
+      }
+    }
+  }
+};
+
+// ---- queries ----------------------------------------------------------
+var _nrm = { x: 0, y: 1, z: 0 };
+T.VOID = -600;
+
+T.hAt = function (x, z) {
+  var fi = (x + T.half) / T.CS, fj = (z + T.half) / T.CS;
+  if (fi < 0 || fj < 0 || fi >= T.N || fj >= T.N) return T.VOID;
+  var i = fi | 0, j = fj | 0, u = fi - i, v = fj - j, np = T.N + 1, H = T.H;
+  var h00 = H[j * np + i], h10 = H[j * np + i + 1], h01 = H[(j + 1) * np + i], h11 = H[(j + 1) * np + i + 1];
+  if (u + v < 1) return h00 + (h10 - h00) * u + (h01 - h00) * v;
+  return h11 + (h10 - h11) * (1 - v) + (h01 - h11) * (1 - u);
+};
+
+// exact facet normal, matching the triangle you can see
+T.normAt = function (x, z) {
+  var fi = (x + T.half) / T.CS, fj = (z + T.half) / T.CS;
+  if (fi < 0 || fj < 0 || fi >= T.N || fj >= T.N) { _nrm.x = 0; _nrm.y = 1; _nrm.z = 0; return _nrm; }
+  var i = fi | 0, j = fj | 0, u = fi - i, v = fj - j, np = T.N + 1, H = T.H;
+  var h00 = H[j * np + i], h10 = H[j * np + i + 1], h01 = H[(j + 1) * np + i], h11 = H[(j + 1) * np + i + 1];
+  var dx, dz;
+  if (u + v < 1) { dx = (h10 - h00) / T.CS; dz = (h01 - h00) / T.CS; }
+  else { dx = (h11 - h01) / T.CS; dz = (h11 - h10) / T.CS; }
+  var l = Math.sqrt(dx * dx + dz * dz + 1);
+  _nrm.x = -dx / l; _nrm.y = 1 / l; _nrm.z = -dz / l;
+  return _nrm;
+};
+
+// averaged normal over a wider stencil: stable enough to drive movement
+var _snrm = { x: 0, y: 1, z: 0 };
+T.normSmooth = function (x, z, rad) {
+  var d = rad || 1.15;
+  var hl = T.hAt(x - d, z), hr = T.hAt(x + d, z);
+  var hb = T.hAt(x, z - d), hf = T.hAt(x, z + d);
+  if (hl <= T.VOID || hr <= T.VOID || hb <= T.VOID || hf <= T.VOID) { _snrm.x = 0; _snrm.y = 1; _snrm.z = 0; return _snrm; }
+  var dx = (hr - hl) / (2 * d), dz = (hf - hb) / (2 * d);
+  var l = Math.sqrt(dx * dx + dz * dz + 1);
+  _snrm.x = -dx / l; _snrm.y = 1 / l; _snrm.z = -dz / l;
+  return _snrm;
+};
+
+T.surfAt = function (x, z) {
+  var i = ((x + T.half) / T.CS) | 0, j = ((z + T.half) / T.CS) | 0;
+  if (i < 0 || j < 0 || i >= T.N || j >= T.N) return SF.ROCK;
+  if (T.BROKEN[j * T.N + i]) return SF.ROCK;
+  return T.SURF[j * T.N + i];
+};
+
+T.cellOf = function (x, z) {
+  var i = ((x + T.half) / T.CS) | 0, j = ((z + T.half) / T.CS) | 0;
+  if (i < 0 || j < 0 || i >= T.N || j >= T.N) return -1;
+  return j * T.N + i;
+};
+
+// march a ray against the field; used for pings and camera pull-in
+T.ray = function (ox, oy, oz, dx, dy, dz, maxD, step, out) {
+  var t = 0.4, s = step || 0.7, px, py, pz, h, pt = 0, ph = 0;
+  while (t < maxD) {
+    px = ox + dx * t; py = oy + dy * t; pz = oz + dz * t;
+    h = T.hAt(px, pz);
+    if (h > T.VOID && py <= h) {
+      // bisect between the last miss and this hit
+      var a = pt, b = t, m;
+      for (var k = 0; k < 12; k++) {
+        m = (a + b) * 0.5;
+        if (oy + dy * m <= T.hAt(ox + dx * m, oz + dz * m)) b = m; else a = m;
+      }
+      out.x = ox + dx * a; out.y = oy + dy * a; out.z = oz + dz * a; out.d = a; out.hit = true;
+      return out;
+    }
+    pt = t; ph = h;
+    t += s + Math.max(0, (py - h) * 0.35);
+  }
+  out.hit = false; out.d = maxD;
+  out.x = ox + dx * maxD; out.y = oy + dy * maxD; out.z = oz + dz * maxD;
+  return out;
+};
+
+// horizontal direction pointing away from the slope (out of the wall)
+T.outward = function (x, z, out, rad) {
+  var n = T.normSmooth(x, z, rad || 1.6);
+  var l = Math.sqrt(n.x * n.x + n.z * n.z);
+  if (l < 1e-4) { out.x = 0; out.z = 1; return false; }
+  out.x = n.x / l; out.z = n.z / l;
+  return true;
+};
+
+// is this spot somewhere a body can rest and breathe?
+T.isRestable = function (x, z) { return T.normSmooth(x, z).y > 0.80; };
+
+/* ==== 05-tmesh.js ==== */
+// ============================================================ TERRAIN MESH
+// Flat-shaded facets, coloured per triangle.  Three draw groups so ice can
+// catch a highlight and the summit vents can glow without a shader.
+function s2l(c) { return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+var _lut = new Float32Array(256);
+for (var _i = 0; _i < 256; _i++) _lut[_i] = s2l(_i / 255);
+function hexLin(hex, out, o, mul) {
+  var r = _lut[(hex >> 16) & 255] * mul, g = _lut[(hex >> 8) & 255] * mul, b = _lut[hex & 255] * mul;
+  out[o] = r; out[o + 1] = g; out[o + 2] = b;
+}
+
+var PAL = {
+  grassTop: 0x74ac3e, grassTop2: 0x8cbe4c, grassCliff: 0x7b5b39, dirt: 0x8a6640,
+  rockTop: 0x8e8b93, rockCliff: 0x76737d, rust: 0xa2653a, loose: 0xb07a45, vine: 0x4f8f38,
+  snowTop: 0xe9f1f8, snowCliff: 0xbcc9d6, ice: 0xa4dcef, alpRock: 0x7b8593,
+  volTop: 0x413b48, volCliff: 0x322d38, ember: 0xff5a1e, emberHot: 0xffa23c,
+};
+
+function faceKind(h, ny, surf) {
+  // 0 matte, 1 icy, 2 glowing
+  if (surf === SF.EMBER) return 2;
+  if (surf === SF.ICE) return 1;
+  if (surf === SF.SNOW && ny > 0.72) return 1;
+  return 0;
+}
+
+function faceColor(h, ny, surf, hash) {
+  var top, cliff, c;
+  if (h < K.BAND_ROCK) {
+    top = (hash & 3) ? PAL.grassTop : PAL.grassTop2; cliff = PAL.grassCliff;
+  } else if (h < K.BAND_ALP) {
+    top = PAL.rockTop; cliff = (hash & 7) < 3 ? PAL.rust : PAL.rockCliff;
+  } else if (h < K.BAND_TOP) {
+    top = PAL.snowTop; cliff = (hash & 7) < 5 ? PAL.snowCliff : PAL.alpRock;
+  } else {
+    top = PAL.volTop; cliff = PAL.volCliff;
+  }
+  // band cross-fades so the biomes bleed into each other
+  if (h > K.BAND_ROCK - 12 && h < K.BAND_ROCK + 12) {
+    var t1 = step01(K.BAND_ROCK - 12, K.BAND_ROCK + 12, h);
+    top = mixHex(PAL.grassTop, PAL.rockTop, t1);
+    cliff = mixHex(PAL.grassCliff, PAL.rockCliff, t1);
+  } else if (h > K.BAND_ALP - 16 && h < K.BAND_ALP + 16) {
+    var t2 = step01(K.BAND_ALP - 16, K.BAND_ALP + 16, h);
+    top = mixHex(PAL.rockTop, PAL.snowTop, t2);
+    cliff = mixHex(PAL.rockCliff, PAL.snowCliff, t2);
+  } else if (h > K.BAND_TOP - 14 && h < K.BAND_TOP + 14) {
+    var t3 = step01(K.BAND_TOP - 14, K.BAND_TOP + 14, h);
+    top = mixHex(PAL.snowTop, PAL.volTop, t3);
+    cliff = mixHex(PAL.snowCliff, PAL.volCliff, t3);
+  }
+  c = mixHex(cliff, top, step01(0.44, 0.80, ny));
+
+  switch (surf) {
+    case SF.GRASS: c = mixHex(c, PAL.grassTop, 0.55); break;
+    case SF.DIRT: c = mixHex(c, PAL.dirt, 0.5); break;
+    case SF.VINE: c = mixHex(c, PAL.vine, 0.62); break;
+    case SF.LOOSE: c = mixHex(c, PAL.loose, 0.6); break;
+    case SF.ICE: c = mixHex(c, PAL.ice, 0.66); break;
+    case SF.SNOW: c = mixHex(c, PAL.snowTop, 0.6); break;
+    case SF.EMBER: c = mixHex(PAL.ember, PAL.emberHot, (hash & 15) / 15); break;
+  }
+  return c;
+}
+
+T.buildMesh = function () {
+  var N = T.N, np = N + 1, H = T.H, CS = T.CS, S = T.SURF;
+  var nf = N * N * 2;
+  var kinds = new Uint8Array(nf), cnt = [0, 0, 0];
+  var i, j, f = 0, tri, h, ny, surf;
+  var ax, ay, az, bx, by, bz, cx, cy, cz, ux, uy, uz, vx, vy, vz, nx, nyy, nz, ln;
+
+  var hgt = new Float32Array(nf), nyA = new Float32Array(nf), sfA = new Uint8Array(nf);
+
+  for (j = 0; j < N; j++) {
+    for (i = 0; i < N; i++) {
+      var h00 = H[j * np + i], h10 = H[j * np + i + 1], h01 = H[(j + 1) * np + i], h11 = H[(j + 1) * np + i + 1];
+      surf = S[j * N + i];
+      // triangle A (00,10,01)  triangle B (10,11,01)
+      for (tri = 0; tri < 2; tri++) {
+        if (tri === 0) { h = (h00 + h10 + h01) / 3; ny = 1 / Math.sqrt(Math.pow((h10 - h00) / CS, 2) + Math.pow((h01 - h00) / CS, 2) + 1); }
+        else { h = (h10 + h11 + h01) / 3; ny = 1 / Math.sqrt(Math.pow((h11 - h01) / CS, 2) + Math.pow((h11 - h10) / CS, 2) + 1); }
+        hgt[f] = h; nyA[f] = ny; sfA[f] = surf;
+        var kd = faceKind(h, ny, surf);
+        kinds[f] = kd; cnt[kd]++; f++;
+      }
+    }
+  }
+
+  var off = [0, cnt[0] * 3, (cnt[0] + cnt[1]) * 3];
+  var cur = [off[0], off[1], off[2]];
+  var total = nf * 3;
+  var pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), col = new Float32Array(total * 3);
+
+  f = 0;
+  for (j = 0; j < N; j++) {
+    for (i = 0; i < N; i++) {
+      var x0 = i * CS - T.half, z0 = j * CS - T.half, x1 = x0 + CS, z1 = z0 + CS;
+      var y00 = H[j * np + i], y10 = H[j * np + i + 1], y01 = H[(j + 1) * np + i], y11 = H[(j + 1) * np + i + 1];
+      for (tri = 0; tri < 2; tri++) {
+        if (tri === 0) { ax = x0; ay = y00; az = z0; bx = x1; by = y10; bz = z0; cx = x0; cy = y01; cz = z1; }
+        else { ax = x1; ay = y10; az = z0; bx = x1; by = y11; bz = z1; cx = x0; cy = y01; cz = z1; }
+        ux = bx - ax; uy = by - ay; uz = bz - az;
+        vx = cx - ax; vy = cy - ay; vz = cz - az;
+        nx = uy * vz - uz * vy; nyy = uz * vx - ux * vz; nz = ux * vy - uy * vx;
+        // This winding is the one the renderer treats as front facing here,
+        // and its cross product comes out pointing into the ground, so the
+        // stored normal is flipped to face the sky.  Without this the whole
+        // mountain is lit from underneath.
+        ln = -(Math.sqrt(nx * nx + nyy * nyy + nz * nz) || 1);
+        nx /= ln; nyy /= ln; nz /= ln;
+
+        // one hash per 2x2 block of cells so rust and grass read as patches
+        // rather than one-triangle-wide stripes
+        var hash = (((i >> 1) * 73856093) ^ ((j >> 1) * 19349663)) >>> 0;
+        var jhash = ((i * 73856093) ^ (j * 19349663) ^ (tri * 83492791)) >>> 0;
+        var c = faceColor(hgt[f], nyA[f], sfA[f], hash);
+        // facet jitter plus a cheap concavity shade keeps big walls readable
+        var jit = 0.955 + ((jhash >>> 5) & 63) / 63 * 0.09;
+        var conc = clamp((hgt[f] - (T.hAt(ax + 3, az + 3) + T.hAt(ax - 3, az - 3)) * 0.5) / 7, -1, 1);
+        var mul = jit * (1 + conc * 0.10);
+
+        var o = cur[kinds[f]]; cur[kinds[f]] += 3;
+        var p = o * 3;
+        pos[p] = ax; pos[p + 1] = ay; pos[p + 2] = az;
+        pos[p + 3] = bx; pos[p + 4] = by; pos[p + 5] = bz;
+        pos[p + 6] = cx; pos[p + 7] = cy; pos[p + 8] = cz;
+        for (var q = 0; q < 3; q++) {
+          nor[p + q * 3] = nx; nor[p + q * 3 + 1] = nyy; nor[p + q * 3 + 2] = nz;
+          hexLin(c, col, p + q * 3, mul);
+        }
+        f++;
+      }
+    }
+  }
+
+  var g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.addGroup(0, cnt[0] * 3, 0);
+  g.addGroup(cnt[0] * 3, cnt[1] * 3, 1);
+  g.addGroup((cnt[0] + cnt[1]) * 3, cnt[2] * 3, 2);
+  g.computeBoundingSphere();
+
+  var mats = [
+    new THREE.MeshLambertMaterial({ vertexColors: true }),
+    new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 42, specular: 0x6f8898 }),
+    new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 12, specular: 0x442211, emissive: 0x5a1c00 }),
+  ];
+  var mesh = new THREE.Mesh(g, mats);
+  mesh.receiveShadow = true;
+  mesh.matrixAutoUpdate = false;
+  T.mesh = mesh;
+  T.colAttr = g.attributes.color;
+  // remember where each cell's two triangles ended up so crumbling can
+  // repaint them later
+  T.faceSlot = new Int32Array(nf);
+  cur = [off[0], off[1], off[2]];
+  for (f = 0; f < nf; f++) { T.faceSlot[f] = cur[kinds[f]]; cur[kinds[f]] += 3; }
+  return mesh;
+};
+
+// scar the rock where a hold has just torn away
+T.paintBroken = function (cell) {
+  if (cell < 0 || !T.faceSlot) return;
+  var arr = T.colAttr.array, f, o, q;
+  for (var tri = 0; tri < 2; tri++) {
+    f = cell * 2 + tri;
+    o = T.faceSlot[f] * 3;
+    for (q = 0; q < 3; q++) hexLin(0x50372a, arr, o + q * 3, 0.9);
+  }
+  T.colAttr.needsUpdate = true;
+};
+
+/* ==== 06-geo.js ==== */
+// ============================================================ GEOMETRY KIT
+// Everything in the world is built from a handful of chunky primitives
+// merged into single flat-shaded meshes, so a whole pine tree or a whole
+// campfire is one draw call.
+function bakeColor(geo, hex) {
+  var n = geo.attributes.position.count, arr = new Float32Array(n * 3), i;
+  for (i = 0; i < n; i++) hexLin(hex, arr, i * 3, 1);
+  geo.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+  return geo;
+}
+
+var _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler();
+var _v3 = new THREE.Vector3(), _v3b = new THREE.Vector3();
+
+// parts: [{g, c, p:[x,y,z], r:[rx,ry,rz], s:[sx,sy,sz]|number}]
+function mergeParts(parts) {
+  var geos = [], total = 0, i, pt, g;
+  for (i = 0; i < parts.length; i++) {
+    pt = parts[i];
+    g = pt.g.index ? pt.g.toNonIndexed() : pt.g.clone();
+    var s = pt.s === undefined ? 1 : pt.s;
+    if (typeof s === 'number') s = [s, s, s];
+    var p = pt.p || [0, 0, 0], r = pt.r || [0, 0, 0];
+    _e.set(r[0], r[1], r[2]);
+    _m4.compose(_v3.set(p[0], p[1], p[2]), _q.setFromEuler(_e), _v3b.set(s[0], s[1], s[2]));
+    g.applyMatrix4(_m4);
+    if (!g.attributes.normal) g.computeVertexNormals();
+    bakeColor(g, pt.c === undefined ? 0xffffff : pt.c);
+    geos.push(g);
+    total += g.attributes.position.count;
+  }
+  var pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), col = new Float32Array(total * 3);
+  var o = 0;
+  for (i = 0; i < geos.length; i++) {
+    g = geos[i];
+    pos.set(g.attributes.position.array, o * 3);
+    nor.set(g.attributes.normal.array, o * 3);
+    col.set(g.attributes.color.array, o * 3);
+    o += g.attributes.position.count;
+    g.dispose();
+  }
+  var out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  out.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  out.computeBoundingSphere();
+  return out;
+}
+
+// a lumpy low-poly rock: icosahedron with the vertices kicked around
+function rockGeo(rng, r, detail) {
+  var g = new THREE.IcosahedronGeometry(r, detail === undefined ? 0 : detail).toNonIndexed();
+  var p = g.attributes.position.array, i, k = {};
+  for (i = 0; i < p.length; i += 3) {
+    var key = (p[i] * 12 | 0) + '_' + (p[i + 1] * 12 | 0) + '_' + (p[i + 2] * 12 | 0);
+    if (!k[key]) k[key] = [rngRange(rng, 0.68, 1.3), rngRange(rng, 0.6, 1.15), rngRange(rng, 0.68, 1.3)];
+    p[i] *= k[key][0]; p[i + 1] *= k[key][1]; p[i + 2] *= k[key][2];
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
+var MAT = {};
+function initMaterials() {
+  MAT.solid = new THREE.MeshLambertMaterial({ vertexColors: true });
+  MAT.solidS = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  MAT.shiny = new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 60, specular: 0x777777 });
+  MAT.glow = new THREE.MeshBasicMaterial({ vertexColors: true });
+  MAT.flame = new THREE.MeshBasicMaterial({ color: 0xffb03a, transparent: true, opacity: 0.92 });
+  MAT.flame2 = new THREE.MeshBasicMaterial({ color: 0xff5c1c, transparent: true, opacity: 0.75 });
+}
+
+// Scatter helper.  Instances are split into spatial buckets, each with its
+// own bounding sphere, so the renderer can cull whole thickets of trees
+// instead of pushing every instance on the mountain through the pipeline
+// each frame.  The buckets share one set of GPU buffers.
+function shareGeo(src, sphere) {
+  var g = new THREE.BufferGeometry(), k;
+  for (k in src.attributes) g.setAttribute(k, src.attributes[k]);
+  if (src.index) g.setIndex(src.index);
+  g.boundingSphere = sphere;
+  return g;
+}
+
+var SCATTER_CELL = 84;
+function scatter(geo, mat, list, tintFn, opts) {
+  opts = opts || {};
+  var group = new THREE.Group();
+  if (!list.length) return group;
+  if (!geo.boundingSphere) geo.computeBoundingSphere();
+  // every shared material draws with vertexColors, and an absent colour
+  // attribute reads as zero - i.e. a solid black prop
+  if (!geo.attributes.color) bakeColor(geo, 0xffffff);
+  var baseR = geo.boundingSphere.radius;
+
+  var cells = {}, i, it, key;
+  for (i = 0; i < list.length; i++) {
+    it = list[i];
+    key = Math.floor(it.x / SCATTER_CELL) + ',' + Math.floor(it.z / SCATTER_CELL);
+    (cells[key] || (cells[key] = [])).push(it);
+  }
+
+  var m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+  var col = new THREE.Color();
+  for (key in cells) {
+    var items = cells[key];
+    var cx = 0, cy = 0, cz = 0, maxS = 1;
+    for (i = 0; i < items.length; i++) { cx += items[i].x; cy += items[i].y; cz += items[i].z; }
+    cx /= items.length; cy /= items.length; cz /= items.length;
+    var rad = 0;
+    for (i = 0; i < items.length; i++) {
+      it = items[i];
+      var sc = it.sy || it.s || 1;
+      if (sc > maxS) maxS = sc;
+      var d = Math.sqrt(Math.pow(it.x - cx, 2) + Math.pow(it.y - cy, 2) + Math.pow(it.z - cz, 2));
+      if (d > rad) rad = d;
+    }
+    var sphere = new THREE.Sphere(new THREE.Vector3(cx, cy, cz), rad + baseR * maxS * 1.6);
+    var im = new THREE.InstancedMesh(shareGeo(geo, sphere), mat, items.length);
+    for (i = 0; i < items.length; i++) {
+      it = items[i];
+      e.set(it.rx || 0, it.ry || 0, it.rz || 0);
+      m.compose(_v3.set(it.x, it.y, it.z), q.setFromEuler(e),
+        _v3b.set(it.sx || it.s || 1, it.sy || it.s || 1, it.sz || it.s || 1));
+      im.setMatrixAt(i, m);
+      // Always write an instance colour, even when it is plain white.  A
+      // material shared between instanced meshes that do and do not carry
+      // one makes the renderer bind a colour buffer that is not there.
+      if (tintFn) col.setRGB.apply(col, tintFn(it, i)); else col.setRGB(1, 1, 1);
+      im.setColorAt(i, col);
+    }
+    im.instanceMatrix.needsUpdate = true;
+    im.instanceColor.needsUpdate = true;
+    im.castShadow = !!opts.shadow;
+    im.receiveShadow = !!opts.receive;
+    group.add(im);
+  }
+  return group;
+}
+
+/* ==== 07-scenery.js ==== */
+// ============================================================ SCENERY
+var Props = { group: null, spheres: [], hash: {}, HCELL: 8 };
+
+function pineGeo(rng) {
+  return mergeParts([
+    { g: new THREE.CylinderGeometry(0.13, 0.21, 1.5, 5), c: 0x5b4128, p: [0, 0.75, 0] },
+    { g: new THREE.ConeGeometry(1.18, 2.0, 6), c: 0x2f6b33, p: [0, 2.05, 0] },
+    { g: new THREE.ConeGeometry(0.92, 1.8, 6), c: 0x357638, p: [0, 3.05, 0] },
+    { g: new THREE.ConeGeometry(0.6, 1.5, 6), c: 0x3d8340, p: [0, 4.0, 0] },
+  ]);
+}
+function vineGeo() {
+  return mergeParts([
+    { g: new THREE.BoxGeometry(0.09, 2.4, 0.09), c: 0x4c7f2e, p: [0, -1.2, 0] },
+    { g: new THREE.BoxGeometry(0.07, 1.6, 0.07), c: 0x578f36, p: [0.16, -0.8, 0.1], r: [0, 0, 0.2] },
+    { g: new THREE.IcosahedronGeometry(0.3, 0), c: 0x5f9a38, p: [0.05, -0.35, 0], s: [1, 0.5, 1] },
+    { g: new THREE.IcosahedronGeometry(0.26, 0), c: 0x51893a, p: [-0.1, -1.7, 0.05], s: [1, 0.55, 1] },
+  ]);
+}
+function icicleGeo() {
+  return mergeParts([
+    { g: new THREE.ConeGeometry(0.16, 1.5, 4), c: 0xbfe8f6, p: [0, -0.75, 0], r: [Math.PI, 0, 0] },
+    { g: new THREE.ConeGeometry(0.1, 0.9, 4), c: 0xd6f1fa, p: [0.22, -0.45, 0.08], r: [Math.PI, 0, 0] },
+  ]);
+}
+function pitonGeo() {
+  return mergeParts([
+    { g: new THREE.CylinderGeometry(0.05, 0.035, 0.62, 5), c: 0xb9c0c8, p: [0, 0, 0.16], r: [Math.PI / 2, 0, 0] },
+    { g: new THREE.TorusGeometry(0.15, 0.042, 4, 8), c: 0xe0a53c, p: [0, -0.02, 0.42] },
+    { g: new THREE.BoxGeometry(0.34, 0.1, 0.1), c: 0xd8452f, p: [0, 0.16, 0.3] },
+  ]);
+}
+function screeGeo(rng) {
+  return mergeParts([
+    { g: rockGeo(rng, 0.34, 0), c: 0x9b9089, p: [0, 0, 0], s: [1, 0.55, 1] },
+    { g: rockGeo(rng, 0.26, 0), c: 0x87807a, p: [0.42, -0.04, 0.18], s: [1, 0.5, 1] },
+    { g: rockGeo(rng, 0.2, 0), c: 0xa2968c, p: [-0.3, -0.05, 0.3], s: [1, 0.5, 1] },
+  ]);
+}
+
+Props.build = function (seed, detail) {
+  var rng = makeRng(seed ^ 0x5bf03635);
+  var g = Props.group = new THREE.Group();
+  var pines = [], rocks = [], vines = [], ices = [], screes = [], pit = [];
+  var tries = detail ? 24000 : 13000, i;
+  Props.spheres = []; Props.hash = {};
+
+  for (i = 0; i < tries; i++) {
+    var x = rngRange(rng, -T.half + 4, T.half - 4);
+    var z = rngRange(rng, -T.half + 4, T.half - 4);
+    var h = T.hAt(x, z);
+    if (h <= T.VOID) continue;
+    var n = T.normSmooth(x, z), ny = n.y;
+    var surf = T.surfAt(x, z);
+    var camp = Props.nearCamp(x, z, 13);
+
+    if (h < K.BAND_ROCK - 6 && ny > 0.82 && !camp && rng() < 0.42) {
+      if (h > 2.0 || rng() < 0.35) {
+        pines.push({ x: x, y: h - 0.25, z: z, ry: rng() * 6.28, s: rngRange(rng, 0.72, 1.55) });
+      }
+    } else if (ny > 0.62 && !camp && rng() < 0.24) {
+      var rs = rngRange(rng, 0.55, 1.75);
+      rocks.push({ x: x, y: h - rs * 0.35, z: z, ry: rng() * 6.28, rx: rngRange(rng, -0.2, 0.2), s: rs, band: h });
+      Props.addSphere(x, h + rs * 0.28, z, rs * 0.92);
+    } else if (surf === SF.VINE && ny < 0.46 && rng() < 0.26) {
+      vines.push({ x: x, y: h + 0.5, z: z, ry: Math.atan2(n.x, n.z) + rngRange(rng, -0.3, 0.3), s: rngRange(rng, 0.8, 1.5) });
+    } else if (surf === SF.ICE && ny < 0.40 && rng() < 0.05) {
+      ices.push({ x: x, y: h + 0.2, z: z, ry: rng() * 6.28, s: rngRange(rng, 0.55, 1.15) });
+    } else if (ny > 0.78 && (surf === SF.LOOSE || h > K.BAND_ROCK) && rng() < 0.06) {
+      screes.push({ x: x, y: h + 0.05, z: z, ry: rng() * 6.28, s: rngRange(rng, 0.7, 1.5) });
+    }
+  }
+
+  for (i = 0; i < T.rests.length; i++) {
+    var r = T.rests[i];
+    var nn = T.normSmooth(r.x, r.z);
+    var yaw = Math.atan2(nn.x, nn.z);
+    pit.push({ x: r.x + nn.x * 0.34, y: r.y + 0.16, z: r.z + nn.z * 0.34, ry: yaw, s: 0.92 });
+  }
+
+  var pg = pineGeo(rng);
+  var rg = rockGeo(rng, 1, 0);
+  var mkPine = scatter(pg, MAT.solid, pines, function (it) {
+    return [0.86 + Math.random() * 0.3, 0.9 + Math.random() * 0.22, 0.86 + Math.random() * 0.2];
+  }, { shadow: true });
+  var mkRock = scatter(rg, MAT.solid, rocks, function (it) {
+    var c = it.band > K.BAND_TOP ? 0x413b48 : it.band > K.BAND_ALP ? 0xa9b6c2 : it.band > K.BAND_ROCK ? 0x8d8891 : 0x8a7d6c;
+    var o = [0, 0, 0]; hexLin(c, o, 0, 0.85 + Math.random() * 0.3); return o;
+  }, { shadow: true, receive: true });
+  var mkVine = scatter(vineGeo(), MAT.solidS, vines, null);
+  var mkIce = scatter(icicleGeo(), MAT.shiny, ices, null);
+  var mkScree = scatter(screeGeo(rng), MAT.solid, screes, null);
+  var mkPit = scatter(pitonGeo(), MAT.solid, pit, null);
+
+  g.add(mkPine, mkRock, mkVine, mkIce, mkScree, mkPit);
+  Props.counts = { pines: pines.length, rocks: rocks.length, vines: vines.length, ice: ices.length, scree: screes.length, pitons: pit.length };
+  return g;
+};
+
+Props.nearCamp = function (x, z, r) {
+  for (var i = 0; i < T.camps.length; i++) {
+    var c = T.camps[i], dx = c.x - x, dz = c.z - z;
+    if (dx * dx + dz * dz < r * r) return true;
+  }
+  return false;
+};
+
+// ---- boulder collision: the field height is max(terrain, boulder cap) ----
+Props.addSphere = function (x, y, z, r) {
+  var s = { x: x, y: y, z: z, r: r };
+  Props.spheres.push(s);
+  var key = Math.floor(x / Props.HCELL) + ',' + Math.floor(z / Props.HCELL);
+  (Props.hash[key] || (Props.hash[key] = [])).push(s);
+};
+Props.near = function (x, z, out) {
+  out.length = 0;
+  var cx = Math.floor(x / Props.HCELL), cz = Math.floor(z / Props.HCELL), i, j, a;
+  for (j = -1; j <= 1; j++) for (i = -1; i <= 1; i++) {
+    a = Props.hash[(cx + i) + ',' + (cz + j)];
+    if (a) for (var k = 0; k < a.length; k++) out.push(a[k]);
+  }
+  return out;
+};
+var _pn = [];
+// height of the walkable surface including boulders
+Props.capHeight = function (x, z, base) {
+  var list = Props.near(x, z, _pn), best = base;
+  for (var i = 0; i < list.length; i++) {
+    var s = list[i], dx = x - s.x, dz = z - s.z, d2 = dx * dx + dz * dz;
+    if (d2 < s.r * s.r) {
+      var top = s.y + Math.sqrt(s.r * s.r - d2);
+      if (top > best) best = top;
+    }
+  }
+  return best;
+};
+
+/* ==== 08-items.js ==== */
+// ============================================================ ITEMS
+var ITEM = {
+  berries: { nm: 'berries', ic: '🍒', kind: 'food', food: 24, max: 3, col: 0xd8425e },
+  jerky: { nm: 'jerky', ic: '🥩', kind: 'food', food: 46, max: 2, col: 0x8c4a2a },
+  bar: { nm: 'energy bar', ic: '🍫', kind: 'food', food: 30, stam: 40, max: 2, col: 0x6b4326 },
+  bandage: { nm: 'bandage', ic: '🩹', kind: 'heal', hp: 30, cure: true, max: 2, col: 0xf0f0e4 },
+  rope: { nm: 'rope', ic: '🧶', kind: 'rope', max: 1, col: 0xd9b06a },
+  torch: { nm: 'torch', ic: '🔥', kind: 'torch', max: 1, col: 0xff8a2a },
+  piton: { nm: 'piton', ic: '⚙️', kind: 'piton', max: 4, col: 0xc9d2da },
+  parka: { nm: 'parka', ic: '🧥', kind: 'wear', max: 1, col: 0x3f7fd0 },
+};
+var ITEM_KEYS = Object.keys(ITEM);
+
+function itemGeo(id) {
+  switch (id) {
+    case 'berries': return mergeParts([
+      { g: new THREE.IcosahedronGeometry(0.15, 0), c: 0xd8425e, p: [0.1, 0, 0] },
+      { g: new THREE.IcosahedronGeometry(0.13, 0), c: 0xb8324e, p: [-0.09, 0.04, 0.06] },
+      { g: new THREE.IcosahedronGeometry(0.12, 0), c: 0xe0566e, p: [0, -0.02, -0.11] },
+      { g: new THREE.BoxGeometry(0.04, 0.16, 0.04), c: 0x4c7f2e, p: [0.1, 0.16, 0] }]);
+    case 'jerky': return mergeParts([
+      { g: new THREE.BoxGeometry(0.34, 0.09, 0.2), c: 0x8c4a2a },
+      { g: new THREE.BoxGeometry(0.3, 0.05, 0.16), c: 0xa8603a, p: [0, 0.06, 0] }]);
+    case 'bar': return mergeParts([
+      { g: new THREE.BoxGeometry(0.4, 0.1, 0.16), c: 0x6b4326 },
+      { g: new THREE.BoxGeometry(0.42, 0.04, 0.18), c: 0xe8c14a, p: [0, 0.02, 0] }]);
+    case 'bandage': return mergeParts([
+      { g: new THREE.CylinderGeometry(0.14, 0.14, 0.16, 8), c: 0xf0f0e4, r: [Math.PI / 2, 0, 0] },
+      { g: new THREE.BoxGeometry(0.3, 0.06, 0.06), c: 0xd8452f },
+      { g: new THREE.BoxGeometry(0.06, 0.06, 0.3), c: 0xd8452f }]);
+    case 'rope': return mergeParts([
+      { g: new THREE.TorusGeometry(0.2, 0.055, 5, 10), c: 0xd9b06a, r: [Math.PI / 2, 0, 0] },
+      { g: new THREE.TorusGeometry(0.16, 0.05, 5, 10), c: 0xc59a56, r: [Math.PI / 2, 0.4, 0], p: [0, 0.07, 0] }]);
+    case 'torch': return mergeParts([
+      { g: new THREE.CylinderGeometry(0.05, 0.06, 0.55, 6), c: 0x6b4a2a },
+      { g: new THREE.BoxGeometry(0.14, 0.14, 0.14), c: 0x3a2a1a, p: [0, 0.3, 0] },
+      { g: new THREE.ConeGeometry(0.11, 0.26, 6), c: 0xff8a2a, p: [0, 0.46, 0] }]);
+    case 'piton': return mergeParts([
+      { g: new THREE.CylinderGeometry(0.04, 0.02, 0.42, 5), c: 0xc9d2da, r: [0, 0, Math.PI / 2] },
+      { g: new THREE.TorusGeometry(0.09, 0.03, 4, 8), c: 0xe0a53c, p: [-0.2, 0, 0], r: [0, Math.PI / 2, 0] }]);
+    case 'parka': return mergeParts([
+      { g: new THREE.BoxGeometry(0.34, 0.3, 0.18), c: 0x3f7fd0 },
+      { g: new THREE.BoxGeometry(0.36, 0.08, 0.2), c: 0xf0f0e4, p: [0, 0.14, 0] },
+      { g: new THREE.BoxGeometry(0.1, 0.2, 0.16), c: 0x2f63a8, p: [0.2, -0.02, 0], r: [0, 0, 0.3] },
+      { g: new THREE.BoxGeometry(0.1, 0.2, 0.16), c: 0x2f63a8, p: [-0.2, -0.02, 0], r: [0, 0, -0.3] }]);
+  }
+  return new THREE.BoxGeometry(0.2, 0.2, 0.2);
+}
+
+var WI = { list: [], group: null, geos: {}, ringGeo: null, thrown: [] };
+
+WI.init = function () {
+  WI.group = new THREE.Group();
+  for (var i = 0; i < ITEM_KEYS.length; i++) WI.geos[ITEM_KEYS[i]] = itemGeo(ITEM_KEYS[i]);
+  WI.ringGeo = new THREE.RingGeometry(0.34, 0.44, 14);
+  return WI.group;
+};
+
+// deterministic scatter: the same seed puts the same tin of jerky on the
+// same ledge for every player in the room
+WI.spawnAll = function (seed) {
+  var rng = makeRng(seed ^ 0x2f9c1d77), id = 0, i, tries = 0;
+  var wanted = 62, placed = [];
+  while (placed.length < wanted && tries < 9000) {
+    tries++;
+    var pick = rng();
+    var x, z, y;
+    if (pick < 0.45 && T.rests.length) {
+      var rp = T.rests[(rng() * T.rests.length) | 0];
+      var nn = T.normSmooth(rp.x, rp.z);
+      x = rp.x + nn.x * 1.1; z = rp.z + nn.z * 1.1;
+      y = T.hAt(x, z);
+      if (y <= T.VOID) continue;
+      if (T.normSmooth(x, z).y < 0.7) continue;
+    } else {
+      var seg = T.route[(rng() * (T.route.length - 1)) | 0];
+      var a = rng() * 6.283, d = rngRange(rng, 4, 34);
+      x = seg.x + Math.cos(a) * d; z = seg.z + Math.sin(a) * d;
+      y = T.hAt(x, z);
+      if (y <= T.VOID) continue;
+      if (T.normSmooth(x, z).y < 0.74) continue;
+    }
+    var ok = true;
+    for (i = 0; i < placed.length; i++) {
+      var dx = placed[i].x - x, dz = placed[i].z - z, dy = placed[i].y - y;
+      if (dx * dx + dz * dz + dy * dy < 110) { ok = false; break; }
+    }
+    if (!ok) continue;
+
+    // what you find depends on how high it is
+    var kind;
+    var r = rng();
+    if (y > K.BAND_ALP) kind = r < 0.32 ? 'jerky' : r < 0.48 ? 'bar' : r < 0.63 ? 'bandage' : r < 0.76 ? 'rope' : r < 0.88 ? 'piton' : 'parka';
+    else if (y > K.BAND_ROCK) kind = r < 0.24 ? 'berries' : r < 0.42 ? 'jerky' : r < 0.55 ? 'bar' : r < 0.7 ? 'bandage' : r < 0.84 ? 'rope' : r < 0.93 ? 'piton' : 'torch';
+    else kind = r < 0.4 ? 'berries' : r < 0.55 ? 'bar' : r < 0.7 ? 'rope' : r < 0.84 ? 'bandage' : r < 0.94 ? 'torch' : 'parka';
+    placed.push({ x: x, y: y, z: z, k: kind, id: id++ });
+  }
+  for (i = 0; i < placed.length; i++) WI.add(placed[i]);
+};
+
+WI.add = function (p) {
+  var mesh = new THREE.Mesh(WI.geos[p.k], MAT.solid);
+  mesh.position.set(p.x, p.y + 0.42, p.z);
+  mesh.castShadow = true;
+  var ring = new THREE.Mesh(WI.ringGeo, new THREE.MeshBasicMaterial({
+    color: ITEM[p.k].col, transparent: true, opacity: 0.34, side: THREE.DoubleSide, depthWrite: false,
+  }));
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(p.x, p.y + 0.06, p.z);
+  WI.group.add(mesh, ring);
+  WI.list.push({ id: p.id, k: p.k, x: p.x, y: p.y, z: p.z, mesh: mesh, ring: ring, taken: false, ph: Math.random() * 6.28 });
+};
+
+WI.take = function (id) {
+  for (var i = 0; i < WI.list.length; i++) {
+    var it = WI.list[i];
+    if (it.id === id && !it.taken) {
+      it.taken = true;
+      WI.group.remove(it.mesh); WI.group.remove(it.ring);
+      it.ring.material.dispose();
+      return it;
+    }
+  }
+  return null;
+};
+
+WI.nearest = function (x, y, z, rad) {
+  var best = null, bd = rad * rad;
+  for (var i = 0; i < WI.list.length; i++) {
+    var it = WI.list[i];
+    if (it.taken) continue;
+    var dx = it.x - x, dy = it.y + 0.4 - y, dz = it.z - z, d = dx * dx + dy * dy + dz * dz;
+    if (d < bd) { bd = d; best = it; }
+  }
+  return best;
+};
+
+WI.dropAt = function (kind, x, y, z) {
+  var id = 100000 + ((Math.random() * 800000) | 0);
+  WI.add({ x: x, y: y, z: z, k: kind, id: id });
+  return id;
+};
+
+WI.tick = function (dt, t) {
+  for (var i = 0; i < WI.list.length; i++) {
+    var it = WI.list[i];
+    if (it.taken) continue;
+    it.mesh.position.y = it.y + 0.42 + Math.sin(t * 1.9 + it.ph) * 0.09;
+    it.mesh.rotation.y += dt * 0.9;
+    it.ring.material.opacity = 0.24 + Math.sin(t * 2.2 + it.ph) * 0.1;
+  }
+  // items in flight between climbers
+  for (i = WI.thrown.length - 1; i >= 0; i--) {
+    var th = WI.thrown[i];
+    th.t += dt;
+    th.vy -= 19 * dt;
+    th.mesh.position.x += th.vx * dt;
+    th.mesh.position.y += th.vy * dt;
+    th.mesh.position.z += th.vz * dt;
+    th.mesh.rotation.x += dt * 7; th.mesh.rotation.z += dt * 5;
+    if (th.t > th.life) {
+      WI.group.remove(th.mesh);
+      WI.thrown.splice(i, 1);
+      if (th.onLand) th.onLand(th);
+    }
+  }
+};
+
+WI.toss = function (kind, from, to, onLand) {
+  var mesh = new THREE.Mesh(WI.geos[kind], MAT.solid);
+  mesh.position.copy(from);
+  WI.group.add(mesh);
+  var dx = to.x - from.x, dy = to.y - from.y, dz = to.z - from.z;
+  var dist = Math.sqrt(dx * dx + dz * dz);
+  var life = clamp(dist / 9, 0.42, 1.25);
+  WI.thrown.push({
+    mesh: mesh, t: 0, life: life, onLand: onLand,
+    vx: dx / life, vz: dz / life, vy: dy / life + 0.5 * 19 * life,
+  });
+};
+
+/* ==== 09-landmarks.js ==== */
+// ============================================================ LANDMARKS
+var Camps = { list: [], group: null };
+
+function fireGeo() {
+  var rng = makeRng(77);
+  var parts = [], i;
+  for (i = 0; i < 7; i++) {
+    var a = i / 7 * 6.283;
+    parts.push({ g: rockGeo(rng, 0.3, 0), c: i % 2 ? 0x7d7972 : 0x67635e, p: [Math.cos(a) * 1.05, 0.06, Math.sin(a) * 1.05], s: [1, 0.75, 1] });
+  }
+  parts.push({ g: new THREE.CylinderGeometry(0.11, 0.13, 1.5, 5), c: 0x63472c, p: [0, 0.2, 0], r: [0, 0.4, 1.35] });
+  parts.push({ g: new THREE.CylinderGeometry(0.1, 0.12, 1.4, 5), c: 0x74553a, p: [0, 0.22, 0], r: [0.5, 1.9, 1.3] });
+  parts.push({ g: new THREE.CylinderGeometry(0.1, 0.12, 1.3, 5), c: 0x543a24, p: [0, 0.18, 0], r: [1.2, 0.6, 1.4] });
+  return mergeParts(parts);
+}
+function tentGeo(col) {
+  return mergeParts([
+    { g: new THREE.ConeGeometry(1.5, 1.9, 4), c: col, p: [0, 0.95, 0], r: [0, Math.PI / 4, 0] },
+    { g: new THREE.BoxGeometry(0.09, 0.09, 3.0), c: 0x4a3a28, p: [0, 1.86, 0] },
+    { g: new THREE.ConeGeometry(0.55, 1.0, 3), c: 0x24282e, p: [0, 0.5, 1.0], r: [0, Math.PI / 4, 0] },
+  ]);
+}
+function crateGeo() {
+  return mergeParts([
+    { g: new THREE.BoxGeometry(0.9, 0.8, 0.9), c: 0x8a6136 },
+    { g: new THREE.BoxGeometry(0.94, 0.1, 0.94), c: 0x6d4a28, p: [0, 0.28, 0] },
+    { g: new THREE.BoxGeometry(0.94, 0.1, 0.94), c: 0x6d4a28, p: [0, -0.28, 0] },
+  ]);
+}
+function cairnGeo(rng, n, scale) {
+  var parts = [], y = 0;
+  for (var i = 0; i < n; i++) {
+    var r = scale * (0.55 - i * 0.055);
+    parts.push({ g: rockGeo(rng, r, 0), c: i % 2 ? 0x8d8891 : 0x6f6a72, p: [rngRange(rng, -0.06, 0.06), y + r * 0.5, rngRange(rng, -0.06, 0.06)], s: [1, 0.7, 1] });
+    y += r * 0.8;
+  }
+  return mergeParts(parts);
+}
+
+Camps.build = function () {
+  var g = Camps.group = new THREE.Group();
+  var fg = fireGeo(), tg = tentGeo(0xd8763a), tg2 = tentGeo(0x3a8fa8), cg = crateGeo();
+  var rng = makeRng(4242);
+  Camps.list = [];
+
+  for (var i = 0; i < T.camps.length; i++) {
+    var c = T.camps[i];
+    var node = new THREE.Group();
+    node.position.set(c.x, T.hAt(c.x, c.z), c.z);
+
+    var fire = new THREE.Mesh(fg, MAT.solid);
+    fire.castShadow = true;
+    node.add(fire);
+
+    var f1 = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.5, 6), MAT.flame2);
+    f1.position.y = 0.82;
+    var f2 = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.95, 5), MAT.flame);
+    f2.position.y = 0.62;
+    node.add(f1, f2);
+
+    var light = new THREE.PointLight(0xff9a3c, 0, 26, 2);
+    light.position.y = 1.3;
+    node.add(light);
+
+    // a marker pole so the camp reads from a long way off
+    var pole = mergeParts([
+      { g: new THREE.CylinderGeometry(0.07, 0.09, 4.4, 5), c: 0x5a4630, p: [0, 2.2, 0] },
+      { g: new THREE.BoxGeometry(1.5, 0.9, 0.06), c: i === 0 ? 0xff8a3d : 0xffd646, p: [0.78, 3.85, 0] },
+    ]);
+    var pm = new THREE.Mesh(pole, MAT.solid);
+    pm.position.set(2.3, 0, -1.4);
+    pm.castShadow = true;
+    node.add(pm);
+
+    if (i === 0) {
+      var t1 = new THREE.Mesh(tg, MAT.solid); t1.position.set(-4.2, 0, 2.6); t1.rotation.y = 0.5; t1.castShadow = true;
+      var t2 = new THREE.Mesh(tg2, MAT.solid); t2.position.set(4.6, 0, 3.4); t2.rotation.y = -0.8; t2.castShadow = true;
+      var c1 = new THREE.Mesh(cg, MAT.solid); c1.position.set(-2.6, 0.4, -3.2); c1.rotation.y = 0.3; c1.castShadow = true;
+      var c2 = new THREE.Mesh(cg, MAT.solid); c2.position.set(-1.7, 0.4, -4.0); c2.rotation.y = -0.6; c2.castShadow = true;
+      var c3 = new THREE.Mesh(cg, MAT.solid); c3.position.set(-2.2, 1.2, -3.5); c3.rotation.y = 0.9; c3.castShadow = true;
+      node.add(t1, t2, c1, c2, c3);
+      // ground the tents on the actual shelf
+      [t1, t2, c1, c2, c3].forEach(function (o) {
+        o.position.y += T.hAt(c.x + o.position.x, c.z + o.position.z) - node.position.y;
+      });
+    }
+    g.add(node);
+    Camps.list.push({ x: c.x, y: node.position.y, z: c.z, idx: i, lit: i === 0, node: node, f1: f1, f2: f2, light: light });
+  }
+
+  // small trail cairns: a quiet hint at the line without a minimap
+  var cg2 = cairnGeo(rng, 4, 0.85);
+  var cairns = [];
+  for (i = 1; i < T.route.length - 1; i++) {
+    var p = T.route[i];
+    for (var k = 0; k < 2; k++) {
+      var a = rng() * 6.283, d = rngRange(rng, 3, 11);
+      var x = p.x + Math.cos(a) * d, z = p.z + Math.sin(a) * d;
+      var y = T.hAt(x, z);
+      if (y > T.VOID && T.normSmooth(x, z).y > 0.83) cairns.push({ x: x, y: y, z: z, ry: rng() * 6.28, s: rngRange(rng, 0.8, 1.2) });
+    }
+  }
+  g.add(scatter(cg2, MAT.solid, cairns, null));
+
+  Camps.setLit(0, true);
+  return g;
+};
+
+Camps.setLit = function (i, lit) {
+  var c = Camps.list[i];
+  if (!c) return;
+  c.lit = lit;
+  c.f1.visible = lit; c.f2.visible = lit;
+  c.light.intensity = lit ? 2.4 : 0;
+};
+
+Camps.tick = function (dt, t) {
+  for (var i = 0; i < Camps.list.length; i++) {
+    var c = Camps.list[i];
+    if (!c.lit) continue;
+    var f = 0.82 + Math.sin(t * 11 + i) * 0.1 + Math.sin(t * 6.3 + i * 2) * 0.09;
+    c.f1.scale.set(f, f * 1.15, f);
+    c.f2.scale.set(f * 1.1, f * 0.9, f * 1.1);
+    c.f1.rotation.y += dt * 2.2;
+    c.light.intensity = 2.1 + f * 0.8;
+  }
+};
+
+Camps.nearest = function (x, y, z, rad) {
+  var best = null, bd = rad * rad;
+  for (var i = 0; i < Camps.list.length; i++) {
+    var c = Camps.list[i], dx = c.x - x, dy = c.y - y, dz = c.z - z;
+    var d = dx * dx + dy * dy + dz * dz;
+    if (d < bd) { bd = d; best = c; }
+  }
+  return best;
+};
+
+// ---- the summit -------------------------------------------------------
+var Summit = { pos: null, group: null, flag: null, light: null };
+Summit.build = function () {
+  var g = Summit.group = new THREE.Group();
+  var rng = makeRng(9091);
+  var y = T.hAt(0, 0);
+  Summit.pos = new THREE.Vector3(0, y, 0);
+  g.position.set(0, y, 0);
+
+  var cairn = new THREE.Mesh(cairnGeo(rng, 7, 1.5), MAT.solid);
+  cairn.castShadow = true; cairn.receiveShadow = true;
+  g.add(cairn);
+
+  var pole = new THREE.Mesh(mergeParts([
+    { g: new THREE.CylinderGeometry(0.09, 0.12, 7.5, 6), c: 0x9aa2ab, p: [0, 3.75, 0] },
+  ]), MAT.solid);
+  pole.position.y = 3.0;
+  pole.castShadow = true;
+  g.add(pole);
+
+  var flag = new THREE.Mesh(mergeParts([
+    { g: new THREE.PlaneGeometry(2.6, 1.6), c: 0xff8a3d, p: [1.3, 0, 0] },
+  ]), MAT.solidS);
+  flag.position.set(0, 9.4, 0);
+  Summit.flag = flag;
+  g.add(flag);
+
+  var brazier = new THREE.Mesh(mergeParts([
+    { g: new THREE.CylinderGeometry(0.7, 0.45, 0.7, 7), c: 0x4a444e, p: [0, 0.35, 0] },
+    { g: new THREE.CylinderGeometry(0.62, 0.62, 0.2, 7), c: 0xff5a1e, p: [0, 0.72, 0] },
+  ]), MAT.solid);
+  brazier.position.set(2.6, 0, 1.8);
+  brazier.position.y = T.hAt(2.6, 1.8) - y;
+  g.add(brazier);
+
+  var l = new THREE.PointLight(0xff7a2a, 3.2, 40, 2);
+  l.position.set(2.6, brazier.position.y + 1.4, 1.8);
+  Summit.light = l;
+  g.add(l);
+  return g;
+};
+Summit.tick = function (dt, t) {
+  if (Summit.flag) {
+    Summit.flag.rotation.y = Math.sin(t * 0.7) * 0.5 + 1.2;
+    Summit.flag.scale.x = 1 + Math.sin(t * 3.1) * 0.06;
+  }
+  if (Summit.light) Summit.light.intensity = 2.9 + Math.sin(t * 9) * 0.5;
+};
+
+/* ==== 10-figure.js ==== */
+// ============================================================ CLIMBERS
+// Stubby, faceless, big mittens.  Everything is posed by hand each frame -
+// no skinning, no animation clips, just joints and sine waves.
+function Figure(slot) {
+  var gear = SLOT_COL[slot % SLOT_COL.length];
+  var dark = shadeHex(gear, 0.62), pants = 0x39404a, boot = 0x24282e, skin = 0xe8c49c;
+  this.slot = slot;
+  var G = THREE.Group;
+
+  this.root = new G();
+  this.body = new G(); this.root.add(this.body);
+  this.hips = new G(); this.hips.position.y = 0.66; this.body.add(this.hips);
+
+  var torso = new THREE.Mesh(mergeParts([
+    { g: new THREE.BoxGeometry(0.6, 0.66, 0.42), c: gear, p: [0, 0.33, 0] },
+    { g: new THREE.BoxGeometry(0.62, 0.16, 0.44), c: dark, p: [0, 0.1, 0] },
+    { g: new THREE.BoxGeometry(0.44, 0.42, 0.24), c: shadeHex(gear, 0.45), p: [0, 0.38, -0.31] },
+    { g: new THREE.BoxGeometry(0.3, 0.1, 0.1), c: 0xd9b06a, p: [0, 0.5, -0.44] },
+  ]), MAT.solid);
+  torso.castShadow = true;
+  this.hips.add(torso);
+
+  this.neck = new G(); this.neck.position.y = 0.68; this.hips.add(this.neck);
+  var head = new THREE.Mesh(mergeParts([
+    { g: new THREE.BoxGeometry(0.4, 0.36, 0.36), c: skin, p: [0, 0.18, 0] },
+    { g: new THREE.BoxGeometry(0.44, 0.2, 0.4), c: gear, p: [0, 0.34, 0] },
+    { g: new THREE.BoxGeometry(0.46, 0.08, 0.42), c: dark, p: [0, 0.22, 0] },
+    { g: new THREE.SphereGeometry(0.07, 5, 4), c: gear, p: [0, 0.47, 0] },
+    { g: new THREE.BoxGeometry(0.42, 0.14, 0.38), c: 0xb04a2e, p: [0, 0.03, 0] },
+  ]), MAT.solid);
+  head.castShadow = true;
+  this.neck.add(head);
+  this.headY = 1.55;
+
+  function arm(side) {
+    var sh = new G();
+    sh.position.set(side * 0.36, 0.55, 0);
+    var up = new THREE.Mesh(mergeParts([
+      { g: new THREE.BoxGeometry(0.19, 0.34, 0.19), c: gear, p: [0, -0.17, 0] },
+    ]), MAT.solid);
+    up.castShadow = true;
+    sh.add(up);
+    var el = new G(); el.position.y = -0.34; sh.add(el);
+    var fo = new THREE.Mesh(mergeParts([
+      { g: new THREE.BoxGeometry(0.17, 0.3, 0.17), c: dark, p: [0, -0.15, 0] },
+      { g: new THREE.IcosahedronGeometry(0.17, 0), c: gear, p: [0, -0.36, 0.01] },
+    ]), MAT.solid);
+    fo.castShadow = true;
+    el.add(fo);
+    return { sh: sh, el: el };
+  }
+  this.aL = arm(1); this.aR = arm(-1);
+  this.hips.add(this.aL.sh, this.aR.sh);
+
+  function leg(side) {
+    var hp = new G();
+    hp.position.set(side * 0.16, 0.02, 0);
+    var th = new THREE.Mesh(mergeParts([
+      { g: new THREE.BoxGeometry(0.22, 0.36, 0.22), c: pants, p: [0, -0.18, 0] },
+    ]), MAT.solid);
+    th.castShadow = true;
+    hp.add(th);
+    var kn = new G(); kn.position.y = -0.36; hp.add(kn);
+    var sh2 = new THREE.Mesh(mergeParts([
+      { g: new THREE.BoxGeometry(0.2, 0.3, 0.2), c: shadeHex(pants, 0.85), p: [0, -0.15, 0] },
+      { g: new THREE.BoxGeometry(0.24, 0.14, 0.32), c: boot, p: [0, -0.34, 0.04] },
+    ]), MAT.solid);
+    sh2.castShadow = true;
+    kn.add(sh2);
+    return { hp: hp, kn: kn };
+  }
+  this.lL = leg(1); this.lR = leg(-1);
+  this.hips.add(this.lL.hp, this.lR.hp);
+
+  this.torchLight = null;
+  this.held = null;
+  this.phase = 0;
+}
+
+Figure.prototype.setHeld = function (kind) {
+  if (this.heldKind === kind) return;
+  this.heldKind = kind;
+  if (this.held) { this.aR.el.remove(this.held); this.held = null; }
+  if (this.torchLight) { this.root.remove(this.torchLight); this.torchLight = null; }
+  if (!kind) return;
+  var m = new THREE.Mesh(WI.geos[kind], MAT.solid);
+  m.position.set(0, -0.44, 0.12);
+  m.scale.setScalar(0.9);
+  this.aR.el.add(m);
+  this.held = m;
+  if (kind === 'torch') {
+    this.torchLight = new THREE.PointLight(0xff9a4a, 1.7, 15, 2);
+    this.torchLight.position.set(0, 1.1, 0.4);
+    this.root.add(this.torchLight);
+  }
+};
+
+Figure.prototype.setParka = function (on) {
+  if (this.parkaOn === on) return;
+  this.parkaOn = on;
+  if (!this.parka) {
+    this.parka = new THREE.Mesh(mergeParts([
+      { g: new THREE.BoxGeometry(0.7, 0.72, 0.52), c: 0x3f7fd0, p: [0, 0.34, 0] },
+      { g: new THREE.BoxGeometry(0.74, 0.14, 0.56), c: 0xf0f0e4, p: [0, 0.66, 0] },
+    ]), MAT.solid);
+    this.parka.castShadow = true;
+  }
+  if (on) this.hips.add(this.parka); else this.hips.remove(this.parka);
+};
+
+// state: 0 ground 1 air 2 climb 3 down 4 carried; extra flags in o
+Figure.prototype.pose = function (dt, o) {
+  var t = o.t, sp = o.speed || 0, s = o.state;
+  var aL = this.aL, aR = this.aR, lL = this.lL, lR = this.lR;
+  var b = this.body, hp = this.hips, nk = this.neck;
+  var k;
+
+  if (s === ST.DOWN) {
+    b.rotation.set(-Math.PI / 2 + 0.12, 0, 0);
+    b.position.set(0, 0.28, 0);
+    hp.rotation.set(0, 0, 0);
+    aL.sh.rotation.set(0.2, 0, 1.5); aR.sh.rotation.set(0.2, 0, -1.5);
+    aL.el.rotation.set(-0.5, 0, 0); aR.el.rotation.set(-0.5, 0, 0);
+    lL.hp.rotation.set(0.35, 0, 0.1); lR.hp.rotation.set(0.15, 0, -0.1);
+    lL.kn.rotation.set(-0.4, 0, 0); lR.kn.rotation.set(-0.2, 0, 0);
+    nk.rotation.set(0.5 + Math.sin(t * 1.3) * 0.06, 0, 0);
+    return;
+  }
+
+  b.position.set(0, o.crouch ? -0.3 : 0, 0);
+  b.rotation.set(0, 0, 0);
+
+  if (s === ST.CLIMB) {
+    this.phase += dt * (o.climbing ? 3.1 : 0.5);
+    k = this.phase;
+    var sw = Math.sin(k), cw = Math.cos(k * 1.0);
+    b.rotation.x = -0.16;
+    hp.rotation.set(0.1, 0, 0);
+    // reach: one mitten high, the other low, legs mirrored
+    aL.sh.rotation.set(-2.5 - sw * 0.55, 0, 0.18);
+    aR.sh.rotation.set(-2.5 + sw * 0.55, 0, -0.18);
+    aL.el.rotation.set(-0.28 + sw * 0.2, 0, 0);
+    aR.el.rotation.set(-0.28 - sw * 0.2, 0, 0);
+    lL.hp.rotation.set(-0.55 + cw * 0.4, 0, 0.16);
+    lR.hp.rotation.set(-0.55 - cw * 0.4, 0, -0.16);
+    lL.kn.rotation.set(0.75 - cw * 0.3, 0, 0);
+    lR.kn.rotation.set(0.75 + cw * 0.3, 0, 0);
+    nk.rotation.set(-0.32, 0, 0);
+    if (o.tired) { aL.sh.rotation.x += Math.sin(t * 22) * 0.05; aR.sh.rotation.x += Math.sin(t * 22 + 1) * 0.05; }
+    return;
+  }
+
+  if (s === ST.AIR) {
+    var fall = clamp(-(o.vy || 0) / 14, 0, 1);
+    b.rotation.x = 0.1 - fall * 0.28;
+    aL.sh.rotation.set(-1.5 - fall * 1.2, 0, 0.7 + Math.sin(t * 13) * 0.16);
+    aR.sh.rotation.set(-1.5 - fall * 1.2, 0, -0.7 - Math.sin(t * 13 + 1) * 0.16);
+    aL.el.rotation.set(-0.6, 0, 0); aR.el.rotation.set(-0.6, 0, 0);
+    lL.hp.rotation.set(-0.35 + Math.sin(t * 11) * 0.3, 0, 0.1);
+    lR.hp.rotation.set(0.25 - Math.sin(t * 11) * 0.3, 0, -0.1);
+    lL.kn.rotation.set(0.7, 0, 0); lR.kn.rotation.set(0.35, 0, 0);
+    nk.rotation.set(0.12, 0, 0);
+    return;
+  }
+
+  // on foot
+  if (o.brace) {
+    b.position.y = -0.42;
+    hp.rotation.set(0.22, 0, 0);
+    aL.sh.rotation.set(-2.75, 0, 0.32); aR.sh.rotation.set(-2.75, 0, -0.32);
+    aL.el.rotation.set(-0.15, 0, 0); aR.el.rotation.set(-0.15, 0, 0);
+    lL.hp.rotation.set(-1.15, 0, 0.22); lR.hp.rotation.set(-1.15, 0, -0.22);
+    lL.kn.rotation.set(1.6, 0, 0); lR.kn.rotation.set(1.6, 0, 0);
+    nk.rotation.set(-0.2, 0, 0);
+    return;
+  }
+
+  var run = clamp(sp / K.SPRINT, 0, 1.25);
+  this.phase += dt * (2.6 + run * 7.4) * (sp > 0.25 ? 1 : 0);
+  k = this.phase;
+  var stride = clamp(sp / K.WALK, 0, 1.5);
+  var s1 = Math.sin(k) * stride, c1 = Math.cos(k) * stride;
+  var bob = Math.abs(Math.sin(k)) * 0.055 * stride;
+
+  b.position.y += bob + (o.crouch ? 0 : 0);
+  b.rotation.x = run * 0.2 + (o.carrying ? 0.14 : 0);
+  hp.rotation.set(0, 0, 0);
+  hp.position.y = 0.66;
+
+  lL.hp.rotation.set(s1 * 0.85, 0, 0.05);
+  lR.hp.rotation.set(-s1 * 0.85, 0, -0.05);
+  lL.kn.rotation.set(clamp(-s1 * 0.7 + 0.35, 0, 1.5), 0, 0);
+  lR.kn.rotation.set(clamp(s1 * 0.7 + 0.35, 0, 1.5), 0, 0);
+
+  if (o.carrying) {
+    aL.sh.rotation.set(-2.6, 0, 0.4); aR.sh.rotation.set(-2.6, 0, -0.4);
+    aL.el.rotation.set(-0.3, 0, 0); aR.el.rotation.set(-0.3, 0, 0);
+  } else {
+    var idle = Math.sin(t * 1.7) * 0.05 * (1 - stride);
+    aL.sh.rotation.set(-s1 * 0.62 + idle, 0, 0.14 + (1 - stride) * 0.06);
+    aR.sh.rotation.set(s1 * 0.62 + idle, 0, -0.14 - (1 - stride) * 0.06);
+    aL.el.rotation.set(-0.3 - Math.max(0, s1) * 0.4, 0, 0);
+    aR.el.rotation.set(-0.3 - Math.max(0, -s1) * 0.4, 0, 0);
+  }
+  nk.rotation.set(-run * 0.12 + Math.sin(t * 1.1) * 0.03, 0, 0);
+  if (o.cold) { b.rotation.z = Math.sin(t * 19) * 0.018; nk.rotation.x -= 0.12; }
+  else b.rotation.z = 0;
+};
+
+/* ==== 11-input.js ==== */
+// ============================================================ INPUT
+var IN = {
+  keys: {}, hit: {}, mx: 0, my: 0, mb: [false, false, false], mbHit: [false, false, false],
+  locked: false, sens: 0.0014, invert: false, el: null, onLockChange: null,
+};
+
+IN.init = function (el) {
+  IN.el = el;
+  window.addEventListener('keydown', function (e) {
+    if (e.repeat) { IN.keys[e.code] = true; return; }
+    if (!IN.keys[e.code]) IN.hit[e.code] = true;
+    IN.keys[e.code] = true;
+    if (IN.locked && (e.code === 'Tab' || e.code.indexOf('Arrow') === 0 || e.code === 'Space' || e.code === 'Slash')) e.preventDefault();
+  });
+  window.addEventListener('keyup', function (e) { IN.keys[e.code] = false; });
+  window.addEventListener('blur', function () { IN.keys = {}; IN.mb = [false, false, false]; });
+
+  document.addEventListener('mousemove', function (e) {
+    if (!IN.locked) return;
+    IN.mx += e.movementX || 0;
+    IN.my += e.movementY || 0;
+  });
+  document.addEventListener('mousedown', function (e) {
+    if (!IN.locked) return;
+    if (!IN.mb[e.button]) IN.mbHit[e.button] = true;
+    IN.mb[e.button] = true;
+    e.preventDefault();
+  });
+  document.addEventListener('mouseup', function (e) { IN.mb[e.button] = false; });
+  document.addEventListener('contextmenu', function (e) { if (IN.locked) e.preventDefault(); });
+
+  document.addEventListener('pointerlockchange', function () {
+    IN.locked = document.pointerLockElement === IN.el;
+    if (!IN.locked) { IN.mb = [false, false, false]; IN.keys = {}; }
+    if (IN.onLockChange) IN.onLockChange(IN.locked);
+  });
+  document.addEventListener('pointerlockerror', function () {
+    IN.locked = false;
+    if (IN.onLockChange) IN.onLockChange(false);
+  });
+};
+
+IN.lock = function () {
+  if (IN.locked || !IN.el) return;
+  var p = IN.el.requestPointerLock({ unadjustedMovement: true });
+  if (p && p.catch) p.catch(function () { try { IN.el.requestPointerLock(); } catch (e) { } });
+};
+IN.unlock = function () { if (document.pointerLockElement) document.exitPointerLock(); };
+
+IN.down = function (c) { return !!IN.keys[c]; };
+IN.press = function (c) { return !!IN.hit[c]; };
+IN.mdown = function (b) { return IN.mb[b]; };
+IN.mpress = function (b) { return IN.mbHit[b]; };
+IN.axis = function (neg, pos) { return (IN.keys[neg] ? -1 : 0) + (IN.keys[pos] ? 1 : 0); };
+IN.flush = function () { IN.hit = {}; IN.mbHit = [false, false, false]; IN.mx = 0; IN.my = 0; };
+
+// named bindings, so remapping later is a one-line change
+IN.moveX = function () { return IN.axis('KeyA', 'KeyD'); };
+IN.moveZ = function () { return IN.axis('KeyS', 'KeyW'); };
+IN.sprint = function () { return IN.down('ShiftLeft') || IN.down('ShiftRight'); };
+IN.jump = function () { return IN.press('Space'); };
+IN.jumpHeld = function () { return IN.down('Space'); };
+IN.grip = function () { return IN.mdown(0); };   // hold to hang on
+IN.use = function () { return IN.press('KeyC'); };
+IN.interactHeld = function () { return IN.down('KeyE'); };
+IN.interact = function () { return IN.press('KeyE'); };
+IN.rope = function () { return IN.press('KeyR'); };
+IN.brace = function () { return IN.press('KeyF'); };
+IN.pass = function () { return IN.press('KeyG'); };
+IN.pingHeld = function () { return IN.down('KeyQ'); };
+IN.pingHit = function () { return IN.press('KeyQ'); };
+IN.view = function () { return IN.press('KeyV'); };
+IN.roster = function () { return IN.down('Tab'); };
+
+/* ==== 12-camera.js ==== */
+// ============================================================ CAMERA
+// Third person by default.  The camera never steers itself - the mouse owns
+// the aim.  All it does on a wall is slide outwards so rock never fills the
+// screen, and pull in when something is behind it.
+var CAM = {
+  yaw: 0, pitch: -0.12, dist: 4.7, want: 4.7, first: false,
+  pos: new THREE.Vector3(), look: new THREE.Vector3(),
+  smoothTgt: new THREE.Vector3(), lift: 0, side: 0, shake: 0, shakeT: 0,
+  fovBase: 76, fov: 76, wallBias: 0,
+};
+var _hit = { x: 0, y: 0, z: 0, d: 0, hit: false };
+var _cdir = new THREE.Vector3(), _ctgt = new THREE.Vector3();
+
+CAM.applyMouse = function (dx, dy) {
+  CAM.yaw -= dx * IN.sens;
+  CAM.pitch -= dy * IN.sens * (IN.invert ? -1 : 1);
+  CAM.pitch = clamp(CAM.pitch, -1.42, 1.36);
+  if (CAM.yaw > Math.PI) CAM.yaw -= Math.PI * 2;
+  if (CAM.yaw < -Math.PI) CAM.yaw += Math.PI * 2;
+};
+
+CAM.kick = function (amt) { CAM.shake = Math.min(1.4, CAM.shake + amt); };
+
+CAM.update = function (cam, P, dt) {
+  var cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
+  _cdir.set(Math.sin(CAM.yaw) * cp, sp, Math.cos(CAM.yaw) * cp).normalize();
+
+  // aim point: the head, nudged away from whatever the body is against
+  var tx = P.pos.x, ty = P.pos.y + K.EYE, tz = P.pos.z;
+  var wantBias = (P.state === ST.CLIMB) ? 1.0 : 0;
+  CAM.wallBias = damp(CAM.wallBias, wantBias, 5, dt);
+  if (P.wall.has) {
+    tx += P.wall.nx * CAM.wallBias * 0.85;
+    tz += P.wall.nz * CAM.wallBias * 0.85;
+    ty += CAM.wallBias * 0.16;
+  }
+  _ctgt.set(tx, ty, tz);
+  CAM.smoothTgt.lerp(_ctgt, 1 - Math.exp(-22 * dt));
+
+  var fovT = CAM.fovBase + (P.sprinting ? 6 : 0) + clamp(-P.vel.y * 0.55, 0, 13);
+  CAM.fov = damp(CAM.fov, fovT, 6, dt);
+  if (Math.abs(cam.fov - CAM.fov) > 0.05) { cam.fov = CAM.fov; cam.updateProjectionMatrix(); }
+
+  if (CAM.first) {
+    CAM.pos.copy(CAM.smoothTgt);
+    CAM.pos.x -= _cdir.x * 0.05; CAM.pos.z -= _cdir.z * 0.05;
+  } else {
+    var want = CAM.want + (P.state === ST.CLIMB ? 0.8 : 0) + (P.carrying ? 0.5 : 0);
+    // shoulder offset keeps the body out of the middle of the screen
+    var rx = Math.cos(CAM.yaw), rz = -Math.sin(CAM.yaw);
+    var ox = rx * 0.55, oz = rz * 0.55;
+    var bx = CAM.smoothTgt.x + ox, by = CAM.smoothTgt.y + 0.18, bz = CAM.smoothTgt.z + oz;
+    var dx = -_cdir.x, dy = -_cdir.y, dz = -_cdir.z;
+
+    // If the boom is blocked - which on a mountain means almost any time
+    // you look downhill - lift it over the obstruction before shortening
+    // it.  Rising above the slope reads far better than a lens pressed
+    // into the climber's backpack.
+    var best = -1, bd2 = -1, lift = 0, tp, tcp, tdx, tdy, tdz;
+    for (var a = 0; a < 4; a++) {
+      tp = clamp(CAM.pitch + a * 0.19, -1.45, 1.4);
+      tcp = Math.cos(tp);
+      tdx = -Math.sin(CAM.yaw) * tcp; tdy = -Math.sin(tp); tdz = -Math.cos(CAM.yaw) * tcp;
+      T.ray(bx, by, bz, tdx, tdy, tdz, want + 0.6, 0.35, _hit);
+      var got = _hit.hit ? _hit.d - 0.5 : want;
+      if (got > bd2) { bd2 = got; best = a; }
+      if (got >= want * 0.92) break;
+    }
+    lift = best * 0.19;
+    CAM.lift = damp(CAM.lift, lift, 7, dt);
+    var pp = clamp(CAM.pitch + CAM.lift, -1.45, 1.4), pcp = Math.cos(pp);
+    dx = -Math.sin(CAM.yaw) * pcp; dy = -Math.sin(pp); dz = -Math.cos(CAM.yaw) * pcp;
+    T.ray(bx, by, bz, dx, dy, dz, want + 0.6, 0.35, _hit);
+    var d = _hit.hit ? Math.max(1.15, _hit.d - 0.5) : want;
+    // pull in fast, ease out slowly so it does not pump on broken ground
+    CAM.dist = d < CAM.dist ? d : damp(CAM.dist, d, 5.5, dt);
+    CAM.pos.set(bx + dx * CAM.dist, by + dy * CAM.dist, bz + dz * CAM.dist);
+
+    // The ray can still leave the lens inside a wall when the boom sweeps
+    // across broken rock, so walk it back in until it is out in the open.
+    for (var it = 0; it < 5; it++) {
+      var g = T.hAt(CAM.pos.x, CAM.pos.z);
+      if (g <= T.VOID) break;
+      g = Props.capHeight(CAM.pos.x, CAM.pos.z, g);
+      if (CAM.pos.y > g + 0.42) break;
+      if (CAM.dist > 1.0) {
+        CAM.dist *= 0.68;
+        CAM.pos.set(bx + dx * CAM.dist, by + dy * CAM.dist, bz + dz * CAM.dist);
+      } else { CAM.pos.y = g + 0.42; break; }
+    }
+
+    // when the boom is jammed short, lift the eye and let the body fade out
+    // rather than filling the screen with a backpack
+    var tight = invl(2.6, 1.15, CAM.dist);
+    CAM.pos.y += tight * 0.34;
+  }
+  CAM.hideBody = CAM.first || CAM.dist < 1.55;
+
+  if (CAM.shake > 0.002) {
+    CAM.shakeT += dt * 34;
+    var s = CAM.shake * 0.16;
+    CAM.pos.x += Math.sin(CAM.shakeT * 1.7) * s;
+    CAM.pos.y += Math.sin(CAM.shakeT * 2.3 + 1.1) * s;
+    CAM.pos.z += Math.cos(CAM.shakeT * 1.9) * s;
+    CAM.shake = damp(CAM.shake, 0, 6, dt);
+  }
+
+  cam.position.copy(CAM.pos);
+  CAM.look.set(CAM.pos.x + _cdir.x, CAM.pos.y + _cdir.y, CAM.pos.z + _cdir.z);
+  cam.lookAt(CAM.look);
+};
+
+CAM.forward = function (out) {
+  var cp = Math.cos(CAM.pitch);
+  out.set(Math.sin(CAM.yaw) * cp, Math.sin(CAM.pitch), Math.cos(CAM.yaw) * cp).normalize();
+  return out;
+};
+CAM.flatForward = function (out) { out.set(Math.sin(CAM.yaw), 0, Math.cos(CAM.yaw)).normalize(); return out; };
+CAM.flatRight = function (out) { out.set(Math.cos(CAM.yaw), 0, -Math.sin(CAM.yaw)).normalize(); return out; };
+
+/* ==== 13-player.js ==== */
+// ============================================================ LOCAL PLAYER
+var P = {
+  id: '', name: 'climber', slot: 0,
+  pos: new THREE.Vector3(), vel: new THREE.Vector3(), yaw: 0,
+  state: ST.AIR, grounded: false, groundNy: 1, surf: SF.ROCK,
+  wall: { has: false, nx: 0, nz: 1, d: 0, ny: 0.4, surf: SF.ROCK, cell: -1 },
+  st: K.ST_MAX, stMax: K.ST_MAX, hp: K.HP_MAX, hunger: K.HU_MAX, temp: K.TP_MAX,
+  fallFrom: 0, airT: 0, sprinting: false, crouch: false, brace: false,
+  climbing: false, gripLost: 0, looseT: 0, looseCell: -1,
+  inj: { leg: 0, arm: 0 }, parka: false,
+  inv: [null, null, null, null], sel: 0,
+  carrying: null, carriedBy: null, downT: 0, reviveT: 0, reviveTgt: null,
+  tether: null, atRest: false, exposure: 0,
+  fig: null, alive: true, summited: false, stats: null,
+  lastCamp: 0, noGrabT: 0, mantleT: 0, landT: 0,
+};
+
+var _tmpA = new THREE.Vector3(), _tmpB = new THREE.Vector3(), _tmpC = new THREE.Vector3();
+
+function groundH(x, z) {
+  var h = T.hAt(x, z);
+  if (h <= T.VOID) return T.VOID;
+  return Props.capHeight(x, z, h);
+}
+
+// terrain plus anything a teammate is offering to stand on
+function supportH(x, z, y) {
+  var g = groundH(x, z);
+  var list = Remote.list, i;
+  for (i = 0; i < list.length; i++) {
+    var a = list[i];
+    if (!a.brace || a.state === ST.DOWN) continue;
+    var dx = a.pos.x - x, dz = a.pos.z - z;
+    if (dx * dx + dz * dz > 0.42) continue;
+    var top = a.pos.y + 1.22;
+    if (top > g && top < y + 0.45) { g = top; P.onMate = a; }
+  }
+  return g;
+}
+
+P.init = function (slot, name) {
+  P.slot = slot; P.name = name;
+  P.fig = new Figure(slot);
+  P.stats = { start: now(), climbed: 0, falls: 0, revives: 0, best: 0 };
+  return P.fig.root;
+};
+
+P.spawnAt = function (x, y, z) {
+  P.pos.set(x, y + 0.2, z);
+  P.vel.set(0, 0, 0);
+  P.state = ST.AIR; P.fallFrom = P.pos.y;
+  P.noGrabT = 0.25;
+  P.tether = null; P.ropeCaught = false;
+  P.wall.has = false; P.climbing = false; P.brace = false;
+  P.looseCell = -1; P.looseT = 0;
+};
+
+// ---------------------------------------------------------------- wall probe
+// Walk inward along -n looking for the point where the ground rises through
+// the climber's chest.  That crossing is the face being held.
+var _wp = { found: false, d: 0, nx: 0, nz: 0, ny: 1, x: 0, z: 0, cell: -1, surf: 0 };
+function probeWall(x, y, z, nx, nz, maxD) {
+  var ix = -nx, iz = -nz, d, prev = -1, gh, lo, hi, m;
+  var need = 0.42;
+  for (d = -0.55; d <= maxD; d += 0.13) {
+    gh = groundH(x + ix * d, z + iz * d);
+    if (gh > T.VOID && gh >= y + need) {
+      lo = Math.max(-0.55, d - 0.13); hi = d;
+      for (var k = 0; k < 9; k++) {
+        m = (lo + hi) * 0.5;
+        gh = groundH(x + ix * m, z + iz * m);
+        if (gh > T.VOID && gh >= y + need) hi = m; else lo = m;
+      }
+      var px = x + ix * hi, pz = z + iz * hi;
+      var n = T.normSmooth(px, pz, 1.5);
+      var hl = Math.sqrt(n.x * n.x + n.z * n.z);
+      _wp.found = true; _wp.d = hi; _wp.x = px; _wp.z = pz; _wp.ny = n.y;
+      if (hl > 1e-3) { _wp.nx = n.x / hl; _wp.nz = n.z / hl; }
+      else { _wp.nx = nx; _wp.nz = nz; }
+      _wp.cell = T.cellOf(px, pz);
+      _wp.surf = T.surfAt(px, pz);
+      return _wp;
+    }
+    prev = d;
+  }
+  _wp.found = false;
+  return _wp;
+}
+
+// ---------------------------------------------------------------- ground
+function moveGround(dt, wishX, wishZ, wantSprint) {
+  var sp = K.WALK;
+  if (wantSprint && P.st > 1 && !P.carrying) sp = K.SPRINT;
+  if (P.crouch || P.brace) sp = K.CROUCH;
+  if (P.carrying) sp *= K.CARRY_MUL;
+  if (P.inj.leg) sp *= 0.78;
+  if (P.hunger < K.HU_CHOKE) sp *= lerp(0.84, 1, P.hunger / K.HU_CHOKE);
+  P.sprinting = sp === K.SPRINT && (wishX || wishZ);
+
+  var slip = (P.surf === SF.ICE) ? 0.28 : (P.surf === SF.SNOW ? 0.8 : 1);
+  var acc = K.ACC_G * slip, fri = K.FRIC * slip;
+  var tvx = wishX * sp, tvz = wishZ * sp;
+
+  // no purchase on anything steeper than boots can hold
+  if (P.groundNy < K.WALK_COS) {
+    var g = 1 - invl(K.SLIDE_COS, K.WALK_COS, P.groundNy);
+    acc *= (1 - g) * 0.6; fri *= (1 - g) * 0.5;
+    var n = T.normSmooth(P.pos.x, P.pos.z);
+    var sl = Math.sqrt(n.x * n.x + n.z * n.z) || 1;
+    P.vel.x += (n.x / sl) * g * 17 * dt;
+    P.vel.z += (n.z / sl) * g * 17 * dt;
+  }
+
+  P.vel.x = damp(P.vel.x, tvx, (wishX || wishZ) ? acc / Math.max(1, sp) * 2.6 : fri, dt);
+  P.vel.z = damp(P.vel.z, tvz, (wishX || wishZ) ? acc / Math.max(1, sp) * 2.6 : fri, dt);
+  if (P.sprinting && (wishX || wishZ)) P.st = Math.max(0, P.st - K.ST_SPRINT * dt);
+}
+
+var STEP_UP = 0.62;
+function resolveXZ(dt) {
+  var nx = P.pos.x + P.vel.x * dt, nz = P.pos.z + P.vel.z * dt;
+  var y = P.pos.y;
+  var gh = supportH(nx, nz, y);
+  if (gh <= T.VOID) { P.pos.x = nx; P.pos.z = nz; return; }
+  if (gh - y <= STEP_UP) { P.pos.x = nx; P.pos.z = nz; if (P.grounded && gh > y) P.pos.y = gh; return; }
+  // blocked: try each axis so we slide along the face instead of sticking
+  var g1 = supportH(nx, P.pos.z, y);
+  if (g1 > T.VOID && g1 - y <= STEP_UP) { P.pos.x = nx; if (P.grounded && g1 > y) P.pos.y = g1; }
+  else P.vel.x *= 0.2;
+  var g2 = supportH(P.pos.x, nz, y);
+  if (g2 > T.VOID && g2 - y <= STEP_UP) { P.pos.z = nz; if (P.grounded && g2 > y) P.pos.y = g2; }
+  else P.vel.z *= 0.2;
+}
+
+// ---------------------------------------------------------------- climbing
+function tryGrab(dirX, dirZ) {
+  if (P.noGrabT > 0 || P.st < 3) return false;
+  var l = Math.hypot(dirX, dirZ);
+  if (l < 0.01) return false;
+  dirX /= l; dirZ /= l;
+  var w = probeWall(P.pos.x, P.pos.y, P.pos.z, -dirX, -dirZ, K.GRAB_DIST);
+  if (!w.found || w.ny > K.WALK_COS) return false;
+  P.wall.has = true; P.wall.nx = w.nx; P.wall.nz = w.nz;
+  P.wall.ny = w.ny; P.wall.surf = w.surf; P.wall.cell = w.cell; P.wall.d = w.d;
+  P.pos.x = w.x + w.nx * K.WALL_OFF;
+  P.pos.z = w.z + w.nz * K.WALL_OFF;
+  P.state = ST.CLIMB;
+  P.vel.set(0, 0, 0);
+  P.looseT = 0; P.looseCell = -1;
+  P.mantleT = 0;
+  FX.puff(P.pos.x, P.pos.y + 0.9, P.pos.z, 4, 0xbbbbbb);
+  return true;
+}
+
+function releaseWall(kick) {
+  P.state = ST.AIR;
+  P.wall.has = false;
+  P.fallFrom = Math.max(P.fallFrom, P.pos.y);
+  P.noGrabT = kick ? 0.32 : 0.12;
+  if (kick) {
+    P.vel.x += P.wall.nx * 1.4; P.vel.z += P.wall.nz * 1.4;
+  }
+}
+
+function moveClimb(dt, mx, mz) {
+  var w = P.wall;
+  var rx = -w.nz, rz = w.nx;             // right, along the face
+  var up = mz, side = mx;
+  var moving = Math.abs(up) > 0.05 || Math.abs(side) > 0.05;
+  P.climbing = moving;
+
+  var spUp = K.CLIMB_UP, spSide = K.CLIMB_SIDE;
+  if (P.inj.arm) { spUp *= 0.72; spSide *= 0.78; }
+  if (P.carrying) { spUp *= 0.6; spSide *= 0.65; }
+  if (w.surf === SF.ICE) { spUp *= 0.85; spSide *= 0.9; }
+  if (P.hunger < K.HU_CHOKE) spUp *= lerp(0.85, 1, P.hunger / K.HU_CHOKE);
+
+  var dy = up >= 0 ? up * spUp * dt : up * K.CLIMB_DOWN * dt;
+  P.pos.y += dy;
+  P.pos.x += rx * side * spSide * dt;
+  P.pos.z += rz * side * spSide * dt;
+  if (dy > 0) P.stats.climbed += dy;
+
+  // wind shoves you along the face on exposed ground
+  var gust = Wind.at(P.pos.y, P.exposure);
+  P.pos.x += Wind.dx * gust * dt * 1.5;
+  P.pos.z += Wind.dz * gust * dt * 1.5;
+
+  // re-seat on the rock
+  var pw = probeWall(P.pos.x, P.pos.y, P.pos.z, w.nx, w.nz, K.GRAB_DIST + 0.5);
+  if (!pw.found) {
+    // the face ran out: top out if there is a lip, otherwise let go
+    var ix = -w.nx, iz = -w.nz;
+    var mx2 = P.pos.x + ix * 1.05, mz2 = P.pos.z + iz * 1.05;
+    var gh = groundH(mx2, mz2);
+    if (gh > T.VOID && gh <= P.pos.y + 0.55 && gh >= P.pos.y - 1.9 && T.normSmooth(mx2, mz2).y > K.WALK_COS && up >= -0.05) {
+      P.pos.x = mx2; P.pos.z = mz2; P.pos.y = gh + 0.05;
+      P.state = ST.GROUND; P.grounded = true; P.wall.has = false;
+      P.vel.set(0, 0, 0); P.noGrabT = 0.28; P.mantleT = 0.4;
+      P.fallFrom = P.pos.y;
+      FX.puff(P.pos.x, P.pos.y + 0.2, P.pos.z, 7, 0xd8d0c0);
+      return;
+    }
+    // reached the bottom of the face?
+    var below = groundH(P.pos.x, P.pos.z);
+    if (below > T.VOID && P.pos.y - below < 0.5) {
+      P.pos.y = below; P.state = ST.GROUND; P.wall.has = false;
+      P.vel.set(0, 0, 0); P.fallFrom = P.pos.y; P.noGrabT = 0.2;
+      return;
+    }
+    releaseWall(false);
+    return;
+  }
+
+  w.nx = w.nx * 0.6 + pw.nx * 0.4; w.nz = w.nz * 0.6 + pw.nz * 0.4;
+  var l = Math.hypot(w.nx, w.nz) || 1; w.nx /= l; w.nz /= l;
+  w.ny = pw.ny; w.surf = pw.surf; w.cell = pw.cell;
+  P.pos.x = pw.x + w.nx * K.WALL_OFF;
+  P.pos.z = pw.z + w.nz * K.WALL_OFF;
+
+  // No purchase left on a slab that is barely steep - step off onto it.
+  // The ground has to be within reach of the feet in both directions:
+  // without the upper bound a climber gets flung up the whole face.
+  if (pw.ny > K.WALK_COS + 0.06) {
+    var g3 = groundH(P.pos.x, P.pos.z);
+    if (g3 > T.VOID && g3 <= P.pos.y + 0.45 && P.pos.y - g3 < 1.2) {
+      P.pos.y = g3; P.state = ST.GROUND; P.wall.has = false; P.fallFrom = P.pos.y; return;
+    }
+  }
+
+  P.yaw = Math.atan2(-w.nx, -w.nz);
+  P.surf = w.surf;
+
+  // crumbling holds: you get about a second before the rock goes
+  if (w.surf === SF.LOOSE) {
+    if (w.cell !== P.looseCell) { P.looseCell = w.cell; P.looseT = 0; }
+    P.looseT += dt;
+    if (P.looseT > 1.05) {
+      T.BROKEN[w.cell] = 1;
+      T.paintBroken(w.cell);
+      FX.debris(pw.x, P.pos.y + 0.5, pw.z, w.nx, w.nz);
+      Net.send({ t: 'brk', c: w.cell });
+      HUD.toast('the hold tears out', '#ff8a3d');
+      releaseWall(true);
+      return;
+    }
+  } else { P.looseCell = -1; P.looseT = 0; }
+}
+
+// leap off the wall - the only way across a gap, and it costs plenty
+function wallLeap() {
+  var w = P.wall, cost = K.ST_LEAP, mul = 1;
+  if (P.st < cost) { mul = clamp(P.st / cost, 0.25, 1); }
+  P.st = Math.max(0, P.st - cost);
+  var f = _tmpA; CAM.flatForward(f);
+  var away = (f.x * w.nx + f.z * w.nz);
+  var outx = w.nx, outz = w.nz;
+  if (away > 0.15) { outx = f.x; outz = f.z; }   // leap where you are looking
+  P.vel.set(outx * 6.9 * mul, 7.7 * mul, outz * 6.9 * mul);
+  P.state = ST.AIR; P.wall.has = false;
+  P.noGrabT = 0.26;
+  P.fallFrom = P.pos.y;
+  CAM.kick(0.25);
+  FX.puff(P.pos.x, P.pos.y + 0.8, P.pos.z, 6, 0xcfc8bb);
+}
+
+// ---------------------------------------------------------------- main step
+P.update = function (dt) {
+  if (P.summited) return;
+  P.noGrabT = Math.max(0, P.noGrabT - dt);
+  P.mantleT = Math.max(0, P.mantleT - dt);
+  P.landT = Math.max(0, P.landT - dt);
+  P.onMate = null;
+
+  var mx = 0, mz = 0;
+  if (P.state !== ST.DOWN && P.state !== ST.CARRIED && !HUD.blocked) { mx = IN.moveX(); mz = IN.moveZ(); }
+  var ml = Math.hypot(mx, mz);
+  if (ml > 1) { mx /= ml; mz /= ml; }
+
+  var fwd = CAM.flatForward(_tmpA), rgt = CAM.flatRight(_tmpB);
+  var wishX = fwd.x * mz + rgt.x * mx, wishZ = fwd.z * mz + rgt.z * mx;
+
+  P.exposure = clamp((P.pos.y - 48) / 150, 0, 1);
+
+  if (P.state === ST.CARRIED) { P.vel.set(0, 0, 0); return; }
+
+  if (P.state === ST.DOWN) {
+    P.vel.y -= K.GRAV * dt;
+    P.pos.y += P.vel.y * dt;
+    var ghd = supportH(P.pos.x, P.pos.z, P.pos.y);
+    if (ghd > T.VOID && P.pos.y <= ghd) { P.pos.y = ghd; P.vel.y = 0; }
+    if (P.pos.y < -50) Survive.respawn();
+    P.downT -= dt;
+    if (P.downT <= 0) Survive.respawn();
+    return;
+  }
+
+  if (P.state === ST.CLIMB) {
+    if (!IN.grip() && ml < 0.05 && P.gripLost <= 0) { /* still hanging: holds by default */ }
+    if (IN.jump() && !HUD.blocked) { wallLeap(); }
+    else {
+      moveClimb(dt, mx, mz);
+      if (IN.down('KeyS') && P.state === ST.CLIMB && P.pos.y - groundH(P.pos.x, P.pos.z) < 0.35) {
+        P.state = ST.GROUND; P.wall.has = false; P.fallFrom = P.pos.y;
+      }
+    }
+  }
+
+  if (P.state === ST.GROUND || P.state === ST.AIR) {
+    if (P.state === ST.GROUND) {
+      moveGround(dt, wishX, wishZ, IN.sprint() && !HUD.blocked);
+      if (IN.jump() && !HUD.blocked && P.st > 4 && !P.brace && P.mantleT <= 0) {
+        P.vel.y = K.JUMP_V * (P.carrying ? 0.72 : 1) * (P.inj.leg ? 0.84 : 1);
+        P.st = Math.max(0, P.st - K.ST_JUMP);
+        P.state = ST.AIR; P.grounded = false;
+        P.fallFrom = P.pos.y;
+        if (P.onMate) { P.vel.y += 2.6; P.onMate.boosted = 1; Net.send({ t: 'bst', to: P.onMate.id }); }
+        FX.puff(P.pos.x, P.pos.y + 0.05, P.pos.z, 5, 0xcfc8bb);
+      }
+    } else {
+      // air control, deliberately weak - momentum should matter
+      P.vel.x = damp(P.vel.x, wishX * K.WALK * 1.15, K.ACC_A * 0.5, dt);
+      P.vel.z = damp(P.vel.z, wishZ * K.WALK * 1.15, K.ACC_A * 0.5, dt);
+    }
+
+    P.vel.y -= K.GRAV * dt;
+    if (P.vel.y < -46) P.vel.y = -46;
+    P.pos.y += P.vel.y * dt;
+    resolveXZ(dt);
+
+    // wind on exposed ground
+    var g2 = Wind.at(P.pos.y, P.exposure);
+    if (g2 > 0.05) { P.vel.x += Wind.dx * g2 * dt * 3.4; P.vel.z += Wind.dz * g2 * dt * 3.4; }
+
+    var gh = supportH(P.pos.x, P.pos.z, P.pos.y);
+    if (gh <= T.VOID) {
+      if (P.pos.y < -60) { Survive.hurt(60, 'the void'); Survive.respawn(); }
+      P.state = ST.AIR; P.grounded = false;
+    } else if (P.pos.y <= gh + 0.001) {
+      var wasAir = !P.grounded, drop = P.fallFrom - gh;
+      P.pos.y = gh;
+      P.vel.y = 0;
+      P.grounded = true;
+      P.state = ST.GROUND;
+      P.fallFrom = P.pos.y;
+      // land last: a hard enough landing puts you on the floor, and that
+      // state must survive this block
+      if (wasAir) Survive.land(drop);
+    } else {
+      P.grounded = false;
+      if (P.pos.y > P.fallFrom) P.fallFrom = P.pos.y;
+      if (gh < P.pos.y - 0.14) P.state = ST.AIR;
+    }
+
+    var n = T.normSmooth(P.pos.x, P.pos.z);
+    P.groundNy = n.y;
+    P.surf = T.surfAt(P.pos.x, P.pos.z);
+
+    // grabbing on: push into a wall, or hold the grip button near one
+    if (P.state === ST.AIR || (P.state === ST.GROUND && P.groundNy < K.WALK_COS)) {
+      if (ml > 0.1 && tryGrab(wishX, wishZ)) { /* on the wall */ }
+      else if (IN.grip()) {
+        var f2 = CAM.flatForward(_tmpC);
+        tryGrab(f2.x, f2.z);
+      }
+    } else if (P.state === ST.GROUND && ml > 0.1 && IN.grip()) {
+      tryGrab(wishX, wishZ);
+    }
+  }
+
+  if (P.state !== ST.CLIMB) P.climbing = false;
+  if (P.state === ST.GROUND || P.state === ST.AIR) {
+    if (ml > 0.02) P.yaw = angLerp(P.yaw, Math.atan2(wishX, wishZ), 1 - Math.exp(-16 * dt));
+  }
+};
+
+/* ==== 14-survival.js ==== */
+// ============================================================ SURVIVAL
+var Survive = { eHold: 0, eDown: false, camp: null, atFire: false, restPt: null };
+
+Survive.maxStam = function () {
+  var m = K.ST_MAX;
+  if (P.hunger < K.HU_CHOKE) m *= lerp(0.45, 1, P.hunger / K.HU_CHOKE);
+  return m;
+};
+
+Survive.restNear = function () {
+  var i, r, dx, dy, dz;
+  for (i = 0; i < T.rests.length; i++) {
+    r = T.rests[i];
+    dx = r.x - P.pos.x; dy = r.y - P.pos.y; dz = r.z - P.pos.z;
+    if (dx * dx + dy * dy + dz * dz < 2.2) return r;
+  }
+  for (i = 0; i < Coop.pitons.length; i++) {
+    r = Coop.pitons[i];
+    dx = r.x - P.pos.x; dy = r.y - P.pos.y; dz = r.z - P.pos.z;
+    if (dx * dx + dy * dy + dz * dz < 2.6) return r;
+  }
+  return null;
+};
+
+Survive.tick = function (dt) {
+  P.stMax = Survive.maxStam();
+  if (P.st > P.stMax) P.st = P.stMax;
+
+  var fire = Camps.nearest(P.pos.x, P.pos.y, P.pos.z, 7.5);
+  Survive.atFire = !!(fire && fire.lit);
+  Survive.camp = fire;
+
+  // light a checkpoint just by reaching it
+  if (fire && !fire.lit && Math.abs(fire.y - P.pos.y) < 4) {
+    Camps.setLit(fire.idx, true);
+    Net.send({ t: 'camp', i: fire.idx });
+    HUD.toast('camp ' + (fire.idx + 1) + ' lit — the group respawns here now', '#ffd646');
+    P.lastCamp = Math.max(P.lastCamp, fire.idx);
+  }
+  if (Survive.atFire) P.lastCamp = Math.max(P.lastCamp, fire.idx);
+
+  // ---- stamina
+  Survive.restPt = null;
+  if (P.state === ST.CLIMB) {
+    var m = P.climbing ? 1 : 0.46;
+    var s = P.wall.surf;
+    var free = (s === SF.VINE);
+    var rest = Survive.restNear();
+    if (rest) { Survive.restPt = rest; free = true; }
+    if (s === SF.ICE) m *= 1.85;
+    if (s === SF.LOOSE) m *= 1.15;
+    if (P.wall.ny < 0.17) m *= 2.0;          // overhanging
+    if (P.inj.arm) m *= 1.35;
+    if (P.carrying) m *= 1.9;
+    m += Wind.at(P.pos.y, P.exposure) * 0.55;
+    if (free) {
+      if (rest) P.st = Math.min(P.stMax, P.st + K.ST_REGEN_LEDGE * dt);
+    } else {
+      P.st -= K.ST_CLIMB * m * dt;
+    }
+    if (P.st <= 0) {
+      P.st = 0;
+      HUD.toast('your fingers open', '#ff5b52');
+      P.state = ST.AIR; P.wall.has = false; P.fallFrom = P.pos.y;
+      P.noGrabT = 0.8; P.gripLost = 1.2;
+      CAM.kick(0.35);
+    }
+  } else if (P.state === ST.GROUND && !P.sprinting) {
+    var flatness = invl(K.WALK_COS, 0.90, P.groundNy);
+    var r = K.ST_REGEN_FLAT * flatness;
+    if (P.carrying) r *= 0.5;
+    if (Survive.atFire) r *= 1.6;
+    P.st = Math.min(P.stMax, P.st + r * dt);
+  }
+  P.gripLost = Math.max(0, P.gripLost - dt);
+
+  // ---- hunger
+  var hr = K.HU_RATE * (P.state === ST.CLIMB ? 1.5 : P.sprinting ? 1.35 : 1);
+  P.hunger = Math.max(0, P.hunger - hr * dt);
+
+  // ---- cold
+  var coldLine = K.BAND_ALP - 34;
+  if (P.pos.y > coldLine) {
+    var rate = (P.pos.y - coldLine) / 190 * 4.6 + Wind.at(P.pos.y, P.exposure) * 2.4 + 0.4;
+    if (P.parka) rate *= 0.40;
+    if (P.torchOn) rate *= 0.74;
+    if (Survive.atFire) rate = -34;
+    P.temp = clamp(P.temp - rate * dt, 0, K.TP_MAX);
+  } else {
+    P.temp = clamp(P.temp + (Survive.atFire ? 34 : 9) * dt, 0, K.TP_MAX);
+  }
+  if (P.temp < K.TP_FREEZE) {
+    Survive.hurt((1 - P.temp / K.TP_FREEZE) * 2.7 * dt, 'the cold');
+  }
+
+  // ---- warmth and food at a fire
+  if (Survive.atFire && P.hp < K.HP_MAX) P.hp = Math.min(K.HP_MAX, P.hp + 2.6 * dt);
+  if (P.hunger <= 0) Survive.hurt(0.9 * dt, 'hunger');
+
+  if (P.summited) return;
+  Survive.interact(dt);
+  Survive.checkSummit();
+};
+
+Survive.checkSummit = function () {
+  if (!Summit.pos) return;
+  var dx = P.pos.x, dz = P.pos.z, dy = P.pos.y - Summit.pos.y;
+  if (dx * dx + dz * dz < 90 && dy > -6) {
+    P.summited = true;
+    Net.send({ t: 'top', n: P.name });
+    HUD.summit();
+  }
+};
+
+// ---------------------------------------------------------------- damage
+Survive.hurt = function (d, cause) {
+  if (P.state === ST.DOWN || P.summited) return;
+  P.hp -= d;
+  if (d > 2) { HUD.flashHurt(clamp(d / 40, 0.2, 1)); CAM.kick(clamp(d / 55, 0.05, 0.8)); }
+  if (P.hp <= 0) {
+    P.hp = 0;
+    P.state = ST.DOWN; P.wall.has = false; P.downT = K.DOWN_T;
+    P.st = 0;
+    if (P.carrying) Coop.dropCarried();
+    HUD.toast('you are down — ' + (cause || 'broken') + ' · a mate can carry or revive you', '#ff5b52');
+    Net.send({ t: 'down' });
+  }
+};
+
+Survive.land = function (dist) {
+  P.landT = 0.22;
+  if (dist < 1.2) return;
+  var vy = Math.abs(P.vel.y);
+  FX.puff(P.pos.x, P.pos.y + 0.05, P.pos.z, Math.min(14, 3 + dist | 0), 0xd8d0c0);
+  CAM.kick(clamp(dist / 26, 0.02, 0.55));
+  if (dist <= K.FALL_SAFE) return;
+  var dmg = (dist - K.FALL_SAFE) * K.FALL_DMG;
+  if (P.surf === SF.SNOW) dmg *= 0.7;
+  P.stats.falls++;
+  Survive.hurt(dmg, 'a ' + Math.round(dist) + ' m fall');
+  P.st = Math.max(0, P.st - dmg * 0.5);
+  if (dmg >= K.INJ_DMG && P.hp > 0) {
+    var arm = Math.random() < 0.5;
+    if (arm && !P.inj.arm) { P.inj.arm = 1; HUD.toast('wrenched shoulder — climbing hurts now', '#ffb454'); }
+    else if (!P.inj.leg) { P.inj.leg = 1; HUD.toast('twisted ankle — you are slower now', '#ffb454'); }
+    else if (!P.inj.arm) { P.inj.arm = 1; HUD.toast('wrenched shoulder — climbing hurts now', '#ffb454'); }
+  }
+};
+
+Survive.respawn = function () {
+  var idx = 0, i;
+  for (i = 0; i < Camps.list.length; i++) if (Camps.list[i].lit) idx = Math.max(idx, i);
+  var c = Camps.list[idx];
+  P.state = ST.AIR; P.hp = 58; P.st = P.stMax; P.temp = K.TP_MAX;
+  P.inj.leg = 0; P.inj.arm = 0;
+  P.downT = 0; P.carriedBy = null;
+  P.spawnAt(c.x + 2.2, c.y + 1.0, c.z + 1.4);
+  HUD.toast('you wake up at camp ' + (idx + 1), '#31c6c0');
+  Net.send({ t: 'up', x: P.pos.x, y: P.pos.y, z: P.pos.z });
+};
+
+// ---------------------------------------------------------------- inventory
+Survive.add = function (kind) {
+  var i, def = ITEM[kind];
+  for (i = 0; i < 4; i++) if (P.inv[i] && P.inv[i].k === kind && P.inv[i].n < def.max) { P.inv[i].n++; return true; }
+  for (i = 0; i < 4; i++) if (!P.inv[i]) { P.inv[i] = { k: kind, n: 1 }; return true; }
+  return false;
+};
+Survive.remove = function (slot) {
+  var s = P.inv[slot];
+  if (!s) return null;
+  var k = s.k;
+  s.n--;
+  if (s.n <= 0) P.inv[slot] = null;
+  return k;
+};
+Survive.count = function (kind) {
+  var n = 0;
+  for (var i = 0; i < 4; i++) if (P.inv[i] && P.inv[i].k === kind) n += P.inv[i].n;
+  return n;
+};
+Survive.findSlot = function (kind) {
+  for (var i = 0; i < 4; i++) if (P.inv[i] && P.inv[i].k === kind) return i;
+  return -1;
+};
+
+Survive.use = function (slot) {
+  var s = P.inv[slot];
+  if (!s) return;
+  var def = ITEM[s.k];
+  switch (def.kind) {
+    case 'food': {
+      var mul = Survive.atFire ? 1.4 : 1;
+      P.hunger = Math.min(K.HU_MAX, P.hunger + def.food * mul);
+      if (def.stam) P.st = Math.min(P.stMax, P.st + def.stam);
+      HUD.toast(Survive.atFire ? 'cooked ' + def.nm : 'ate ' + def.nm, '#ffb454');
+      Survive.remove(slot);
+      break;
+    }
+    case 'heal':
+      P.hp = Math.min(K.HP_MAX, P.hp + def.hp);
+      if (P.inj.leg || P.inj.arm) HUD.toast('strapped up — injuries treated', '#8fe04a');
+      else HUD.toast('patched up', '#8fe04a');
+      P.inj.leg = 0; P.inj.arm = 0;
+      Survive.remove(slot);
+      break;
+    case 'wear':
+      P.parka = !P.parka;
+      P.fig.setParka(P.parka);
+      HUD.toast(P.parka ? 'parka on — the cold bites less' : 'parka off', '#7fd4ff');
+      break;
+    case 'torch':
+      P.torchOn = !P.torchOn;
+      HUD.toast(P.torchOn ? 'torch lit' : 'torch out', '#ff8a3d');
+      break;
+    case 'piton':
+      if (P.state !== ST.CLIMB) { HUD.toast('hammer a piton while on a wall', '#a8a39a'); break; }
+      Coop.placePiton(P.pos.x - P.wall.nx * 0.3, P.pos.y + 0.3, P.pos.z - P.wall.nz * 0.3, P.wall.nx, P.wall.nz);
+      Survive.remove(slot);
+      HUD.toast('piton set — a place to breathe', '#8fe04a');
+      break;
+    case 'rope':
+      HUD.toast('press R to anchor the rope', '#a8a39a');
+      break;
+  }
+};
+
+// ---------------------------------------------------------------- E button
+Survive.interact = function (dt) {
+  var held = IN.interactHeld() && !HUD.blocked;
+  var downMate = Coop.nearestDown(2.6);
+
+  if (held) {
+    Survive.eHold += dt;
+    if (downMate && !P.carrying && P.state !== ST.CLIMB) {
+      P.reviveT += dt;
+      P.reviveTgt = downMate.id;
+      if (P.reviveT >= K.REVIVE_T) {
+        Coop.revive(downMate);
+        P.reviveT = 0; P.reviveTgt = null;
+        Survive.eHold = -1;
+      }
+    } else { P.reviveT = 0; P.reviveTgt = null; }
+  } else {
+    if (Survive.eHold > 0 && Survive.eHold < 0.3) {
+      // a tap: pick up gear, shoulder a mate, or set one down
+      if (P.carrying) Coop.dropCarried();
+      else if (downMate && P.state !== ST.CLIMB) Coop.pickUp(downMate);
+      else {
+        var it = WI.nearest(P.pos.x, P.pos.y + 0.6, P.pos.z, 2.7);
+        if (it) {
+          if (Survive.add(it.k)) {
+            WI.take(it.id);
+            Net.send({ t: 'pick', i: it.id });
+            HUD.toast('picked up ' + ITEM[it.k].nm, '#8fe04a');
+          } else HUD.toast('your pack is full', '#ffb454');
+        }
+      }
+    }
+    Survive.eHold = 0;
+    P.reviveT = Math.max(0, P.reviveT - dt * 2.4);
+    if (P.reviveT <= 0) P.reviveTgt = null;
+  }
+
+  // slot select, use, drop, pass
+  for (var i = 0; i < 4; i++) if (IN.press('Digit' + (i + 1))) P.sel = i;
+  if (IN.use() && !HUD.blocked) Survive.use(P.sel);
+  if (IN.press('KeyX') && !HUD.blocked && P.inv[P.sel]) {
+    var k = Survive.remove(P.sel);
+    var id = WI.dropAt(k, P.pos.x + Math.sin(P.yaw) * 0.9, groundH(P.pos.x + Math.sin(P.yaw) * 0.9, P.pos.z + Math.cos(P.yaw) * 0.9), P.pos.z + Math.cos(P.yaw) * 0.9);
+    Net.send({ t: 'drop', k: k, id: id, x: P.pos.x + Math.sin(P.yaw) * 0.9, y: P.pos.y, z: P.pos.z + Math.cos(P.yaw) * 0.9 });
+  }
+  if (IN.pass() && !HUD.blocked) Coop.passItem();
+};
+
+/* ==== 15-coop.js ==== */
+// ============================================================ CO-OP
+var Coop = {
+  pitons: [], anchors: [], pings: [], group: null,
+  ropeLines: [], pitonGeo: null, chevGeo: null, dangerGeo: null,
+  pingHold: 0,
+};
+
+Coop.init = function () {
+  Coop.group = new THREE.Group();
+  Coop.pitonGeo = mergeParts([
+    { g: new THREE.CylinderGeometry(0.055, 0.03, 0.6, 5), c: 0xc9d2da, p: [0, 0, 0.18], r: [Math.PI / 2, 0, 0] },
+    { g: new THREE.TorusGeometry(0.14, 0.04, 4, 8), c: 0xffd646, p: [0, 0, 0.44] },
+  ]);
+  Coop.chevGeo = mergeParts([
+    { g: new THREE.ConeGeometry(0.42, 0.7, 4), c: 0xffffff, p: [0, 0.5, 0], r: [Math.PI, 0, 0] },
+    { g: new THREE.TorusGeometry(0.5, 0.06, 4, 12), c: 0xffffff, p: [0, 0.06, 0], r: [Math.PI / 2, 0, 0] },
+  ]);
+  Coop.dangerGeo = mergeParts([
+    { g: new THREE.BoxGeometry(0.9, 0.14, 0.14), c: 0xffffff, p: [0, 0.6, 0], r: [0, 0, 0.78] },
+    { g: new THREE.BoxGeometry(0.9, 0.14, 0.14), c: 0xffffff, p: [0, 0.6, 0], r: [0, 0, -0.78] },
+    { g: new THREE.TorusGeometry(0.5, 0.06, 4, 12), c: 0xffffff, p: [0, 0.06, 0], r: [Math.PI / 2, 0, 0] },
+  ]);
+  Coop.anchorGeo = mergeParts([
+    { g: new THREE.CylinderGeometry(0.09, 0.13, 0.7, 6), c: 0xb9c0c8, p: [0, 0.35, 0] },
+    { g: new THREE.TorusGeometry(0.19, 0.05, 5, 10), c: 0xd9b06a, p: [0, 0.72, 0], r: [Math.PI / 2, 0, 0] },
+  ]);
+  return Coop.group;
+};
+
+// ---- pitons: a hammered-in place to breathe ---------------------------
+Coop.placePiton = function (x, y, z, nx, nz, quiet) {
+  var m = new THREE.Mesh(Coop.pitonGeo, MAT.solid);
+  m.position.set(x, y, z);
+  m.rotation.y = Math.atan2(nx, nz);
+  Coop.group.add(m);
+  Coop.pitons.push({ x: x, y: y, z: z, mesh: m });
+  if (!quiet) Net.send({ t: 'pit', x: x, y: y, z: z, nx: nx, nz: nz });
+};
+
+// ---- rope -------------------------------------------------------------
+Coop.plantAnchor = function () {
+  if (P.state === ST.AIR) { HUD.toast('you need a foot on something', '#a8a39a'); return; }
+  var slot = Survive.findSlot('rope');
+  if (slot < 0) {
+    // picking your own anchor back up
+    var a = Coop.anchorNear(P.pos.x, P.pos.y, P.pos.z, 2.6);
+    if (a && a.owner === P.id) {
+      Coop.removeAnchor(a.id);
+      Net.send({ t: 'unrope', id: a.id });
+      Survive.add('rope');
+      HUD.toast('rope coiled back up', '#8fe04a');
+    } else HUD.toast('no rope in your pack', '#a8a39a');
+    return;
+  }
+  Survive.remove(slot);
+  var id = P.id + ':' + ((Math.random() * 1e6) | 0);
+  Coop.addAnchor({ id: id, owner: P.id, x: P.pos.x, y: P.pos.y, z: P.pos.z, slot: P.slot });
+  Net.send({ t: 'rope', id: id, x: P.pos.x, y: P.pos.y, z: P.pos.z, slot: P.slot, owner: P.id });
+  HUD.toast('rope anchored — it catches anyone within ' + Math.round(K.ROPE_LEN) + ' m', '#8fe04a');
+};
+
+Coop.addAnchor = function (a) {
+  var m = new THREE.Mesh(Coop.anchorGeo, MAT.solid);
+  m.position.set(a.x, a.y, a.z);
+  Coop.group.add(m);
+  a.mesh = m;
+  a.line = Coop.makeLine(SLOT_COL[a.slot % 4]);
+  Coop.group.add(a.line);
+  Coop.anchors.push(a);
+};
+Coop.removeAnchor = function (id) {
+  for (var i = 0; i < Coop.anchors.length; i++) {
+    if (Coop.anchors[i].id === id) {
+      if (P.tether === Coop.anchors[i]) P.tether = null;
+      Coop.group.remove(Coop.anchors[i].mesh);
+      Coop.group.remove(Coop.anchors[i].line);
+      Coop.anchors.splice(i, 1);
+      return;
+    }
+  }
+};
+Coop.anchorNear = function (x, y, z, r) {
+  for (var i = 0; i < Coop.anchors.length; i++) {
+    var a = Coop.anchors[i], dx = a.x - x, dy = a.y - y, dz = a.z - z;
+    if (dx * dx + dy * dy + dz * dz < r * r) return a;
+  }
+  return null;
+};
+
+Coop.makeLine = function (col) {
+  var g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * 13), 3));
+  return new THREE.Line(g, new THREE.LineBasicMaterial({ color: col }));
+};
+
+// find the anchor this player is roped to: nearest one within reach
+Coop.tetherFor = function (x, y, z) {
+  var best = null, bd = K.ROPE_LEN * K.ROPE_LEN;
+  for (var i = 0; i < Coop.anchors.length; i++) {
+    var a = Coop.anchors[i], dx = a.x - x, dy = a.y - y, dz = a.z - z;
+    var d = dx * dx + dy * dy + dz * dz;
+    if (d < bd) { bd = d; best = a; }
+  }
+  return best;
+};
+
+Coop.ropeTick = function (dt) {
+  var a = P.tether;
+  // Let go of an anchor that is no longer plausibly on the same rope - after
+  // a respawn or a long fall past the end of it - or the line will haul the
+  // climber back across the mountain.
+  if (a) {
+    var ax = P.pos.x - a.x, ay = P.pos.y - a.y, az = P.pos.z - a.z;
+    if (ax * ax + ay * ay + az * az > K.ROPE_LEN * K.ROPE_LEN * 2.2) a = P.tether = null;
+  }
+  // stay roped once caught, otherwise re-evaluate while on the wall/ground
+  if (!a || P.state !== ST.AIR) P.tether = Coop.tetherFor(P.pos.x, P.pos.y, P.pos.z);
+  a = P.tether;
+  if (a && P.state === ST.AIR) {
+    var dx = P.pos.x - a.x, dy = P.pos.y - a.y, dz = P.pos.z - a.z;
+    var d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (d > K.ROPE_LEN) {
+      var k = K.ROPE_LEN / d;
+      P.pos.x = a.x + dx * k; P.pos.y = a.y + dy * k; P.pos.z = a.z + dz * k;
+      // kill the outward component, keep some swing
+      var nx = dx / d, ny = dy / d, nz = dz / d;
+      var vn = P.vel.x * nx + P.vel.y * ny + P.vel.z * nz;
+      if (vn > 0) {
+        P.vel.x -= nx * vn; P.vel.y -= ny * vn; P.vel.z -= nz * vn;
+        P.vel.multiplyScalar(0.55);
+        if (!P.ropeCaught) {
+          P.ropeCaught = true;
+          HUD.toast('the rope catches you', '#31c6c0');
+          CAM.kick(0.4);
+          P.fallFrom = P.pos.y + 2.4;   // the rope ate the rest of the drop
+          Survive.hurt(6, 'the rope');
+        }
+      }
+    }
+  } else P.ropeCaught = false;
+
+  // draw every rope with a bit of sag
+  for (var i = 0; i < Coop.anchors.length; i++) {
+    var an = Coop.anchors[i];
+    var tgt = null;
+    if (an.owner === P.id && P.tether === an) tgt = P.pos;
+    else {
+      for (var j = 0; j < Remote.list.length; j++) {
+        var rp = Remote.list[j];
+        if (rp.id === an.owner) {
+          var ddx = rp.pos.x - an.x, ddy = rp.pos.y - an.y, ddz = rp.pos.z - an.z;
+          if (ddx * ddx + ddy * ddy + ddz * ddz < K.ROPE_LEN * K.ROPE_LEN * 1.1) tgt = rp.pos;
+          break;
+        }
+      }
+      if (!tgt && an.owner === P.id) tgt = P.pos;
+    }
+    an.line.visible = !!tgt;
+    if (!tgt) continue;
+    var arr = an.line.geometry.attributes.position.array;
+    var len = Math.sqrt(Math.pow(tgt.x - an.x, 2) + Math.pow(tgt.y - an.y, 2) + Math.pow(tgt.z - an.z, 2));
+    var sag = clamp((K.ROPE_LEN - len) * 0.18, 0, 1.6);
+    for (var s = 0; s <= 12; s++) {
+      var u = s / 12;
+      arr[s * 3] = lerp(an.x, tgt.x, u);
+      arr[s * 3 + 1] = lerp(an.y + 0.7, tgt.y + 1.0, u) - Math.sin(u * Math.PI) * sag;
+      arr[s * 3 + 2] = lerp(an.z, tgt.z, u);
+    }
+    an.line.geometry.attributes.position.needsUpdate = true;
+    an.line.geometry.computeBoundingSphere();
+  }
+};
+
+// ---- carrying and reviving -------------------------------------------
+Coop.nearestDown = function (r) {
+  var best = null, bd = r * r;
+  for (var i = 0; i < Remote.list.length; i++) {
+    var a = Remote.list[i];
+    if (a.state !== ST.DOWN || a.carriedBy) continue;
+    var dx = a.pos.x - P.pos.x, dy = a.pos.y - P.pos.y, dz = a.pos.z - P.pos.z;
+    var d = dx * dx + dy * dy + dz * dz;
+    if (d < bd) { bd = d; best = a; }
+  }
+  return best;
+};
+
+Coop.pickUp = function (mate) {
+  P.carrying = mate.id;
+  mate.carriedBy = P.id;
+  Net.send({ t: 'carry', id: mate.id });
+  HUD.toast('you shoulder ' + mate.name + ' — heavy going now', '#ffd646');
+};
+Coop.dropCarried = function () {
+  if (!P.carrying) return;
+  var a = Remote.byId(P.carrying);
+  if (a) a.carriedBy = null;
+  Net.send({ t: 'carry', id: null });
+  P.carrying = null;
+};
+Coop.revive = function (mate) {
+  Net.send({ t: 'rev', id: mate.id });
+  P.stats.revives++;
+  HUD.toast('you get ' + mate.name + ' back on their feet', '#8fe04a');
+  if (mate.carriedBy === P.id) { P.carrying = null; mate.carriedBy = null; }
+};
+
+// ---- passing gear -----------------------------------------------------
+Coop.passItem = function () {
+  var s = P.inv[P.sel];
+  if (!s) { HUD.toast('nothing selected', '#a8a39a'); return; }
+  var best = null, bd = 100;
+  for (var i = 0; i < Remote.list.length; i++) {
+    var a = Remote.list[i];
+    var dx = a.pos.x - P.pos.x, dy = a.pos.y - P.pos.y, dz = a.pos.z - P.pos.z;
+    var d = dx * dx + dy * dy + dz * dz;
+    if (d < bd) { bd = d; best = a; }
+  }
+  if (!best) { HUD.toast('nobody close enough', '#a8a39a'); return; }
+  var kind = Survive.remove(P.sel);
+  var from = new THREE.Vector3(P.pos.x, P.pos.y + 1.2, P.pos.z);
+  var to = new THREE.Vector3(best.pos.x, best.pos.y + 1.2, best.pos.z);
+  WI.toss(kind, from, to, null);
+  Net.send({ t: 'give', k: kind, to: best.id, fx: from.x, fy: from.y, fz: from.z });
+  HUD.toast('tossed ' + ITEM[kind].nm + ' to ' + best.name, '#8fe04a');
+};
+
+// ---- pings ------------------------------------------------------------
+Coop.ping = function (danger) {
+  var d = CAM.forward(new THREE.Vector3());
+  var o = CAM.first ? CAM.pos : new THREE.Vector3(P.pos.x, P.pos.y + K.EYE, P.pos.z);
+  var hit = { x: 0, y: 0, z: 0, d: 0, hit: false };
+  T.ray(o.x, o.y, o.z, d.x, d.y, d.z, 240, 1.1, hit);
+  Coop.addPing(hit.x, hit.y, hit.z, P.slot, danger, P.name);
+  Net.send({ t: 'ping', x: hit.x, y: hit.y, z: hit.z, s: P.slot, d: danger ? 1 : 0, n: P.name });
+};
+
+Coop.addPing = function (x, y, z, slot, danger, who) {
+  var m = new THREE.Mesh(danger ? Coop.dangerGeo : Coop.chevGeo,
+    new THREE.MeshBasicMaterial({ color: danger ? 0xff4f43 : SLOT_COL[slot % 4], transparent: true, depthTest: false }));
+  m.position.set(x, y + 0.4, z);
+  m.renderOrder = 5;
+  Coop.group.add(m);
+  Coop.pings.push({ mesh: m, t: 0, life: 15, x: x, y: y, z: z, danger: danger, who: who, slot: slot });
+};
+
+Coop.tick = function (dt, t) {
+  Coop.ropeTick(dt);
+  for (var i = Coop.pings.length - 1; i >= 0; i--) {
+    var p = Coop.pings[i];
+    p.t += dt;
+    p.mesh.position.y = p.y + 0.55 + Math.sin(t * 3.4) * 0.16;
+    p.mesh.rotation.y += dt * 1.3;
+    p.mesh.material.opacity = clamp((p.life - p.t) / 2.4, 0, 1) * 0.92;
+    if (p.t > p.life) {
+      Coop.group.remove(p.mesh);
+      p.mesh.material.dispose();
+      Coop.pings.splice(i, 1);
+    }
+  }
+  if (!HUD.blocked) {
+    if (IN.pingHeld()) Coop.pingHold += dt;
+    else if (Coop.pingHold > 0) { Coop.ping(Coop.pingHold > 0.42); Coop.pingHold = 0; }
+  } else Coop.pingHold = 0;
+  if (IN.rope() && !HUD.blocked) Coop.plantAnchor();
+  if (IN.brace() && !HUD.blocked && P.state === ST.GROUND) {
+    P.brace = !P.brace;
+    if (P.brace) HUD.toast('braced — a mate can climb your shoulders', '#31c6c0');
+  }
+  if (P.brace && P.state !== ST.GROUND) P.brace = false;
+};
+
+/* ==== 16-remote.js ==== */
+// ============================================================ REMOTE PLAYERS
+// One entry per other climber in the room.  Positions arrive at 15 Hz and
+// are replayed ~120 ms in the past so movement stays smooth.
+var Remote = { list: [], map: {}, group: null, DELAY: 0.13 };
+
+Remote.init = function () { Remote.group = new THREE.Group(); return Remote.group; };
+
+Remote.add = function (id, name, slot) {
+  if (Remote.map[id]) return Remote.map[id];
+  var fig = new Figure(slot % SLOT_COL.length);
+  var a = {
+    id: id, name: name || 'climber', slot: slot, fig: fig,
+    pos: new THREE.Vector3(), vel: new THREE.Vector3(), yaw: 0,
+    state: ST.GROUND, hp: K.HP_MAX, st: K.ST_MAX, hunger: 100, temp: 100,
+    brace: false, climbing: false, carrying: null, carriedBy: null,
+    held: null, parka: false, buf: [], last: now(), speed: 0, boosted: 0,
+    summited: false, online: true,
+  };
+  Remote.group.add(fig.root);
+  Remote.list.push(a);
+  Remote.map[id] = a;
+  return a;
+};
+
+Remote.remove = function (id) {
+  var a = Remote.map[id];
+  if (!a) return;
+  Remote.group.remove(a.fig.root);
+  Remote.list.splice(Remote.list.indexOf(a), 1);
+  delete Remote.map[id];
+  if (P.carrying === id) P.carrying = null;
+};
+
+Remote.clear = function () {
+  while (Remote.list.length) Remote.remove(Remote.list[0].id);
+};
+
+Remote.byId = function (id) { return Remote.map[id] || null; };
+
+// a state packet from the wire
+Remote.feed = function (id, s) {
+  var a = Remote.map[id];
+  if (!a) return;
+  a.buf.push({ t: now(), x: s.x, y: s.y, z: s.z, yaw: s.yaw });
+  if (a.buf.length > 22) a.buf.shift();
+  a.state = s.st;
+  a.hp = s.hp; a.st = s.sm; a.hunger = s.hu; a.temp = s.tp;
+  a.brace = !!s.br; a.climbing = !!s.cl;
+  a.carrying = s.ca || null;
+  a.held = s.hd || null;
+  a.parka = !!s.pk;
+  a.last = now();
+  a.online = true;
+};
+
+Remote.update = function (dt, t) {
+  var tt = now() - Remote.DELAY;
+  for (var i = 0; i < Remote.list.length; i++) {
+    var a = Remote.list[i];
+    var b = a.buf, n = b.length;
+    if (n >= 2) {
+      var lo = 0;
+      for (var k = 0; k < n - 1; k++) if (b[k + 1].t <= tt) lo = k + 1;
+      var A = b[lo], B = b[Math.min(lo + 1, n - 1)];
+      var span = B.t - A.t;
+      var u = span > 1e-4 ? clamp((tt - A.t) / span, 0, 1.6) : 1;
+      var nx = lerp(A.x, B.x, u), ny = lerp(A.y, B.y, u), nz = lerp(A.z, B.z, u);
+      a.speed = Math.hypot(nx - a.pos.x, nz - a.pos.z) / Math.max(dt, 1e-3);
+      a.pos.set(nx, ny, nz);
+      a.yaw = angLerp(A.yaw, B.yaw, u);
+      while (b.length > 2 && b[1].t < tt - 1.2) b.shift();
+    } else if (n === 1) {
+      a.pos.set(b[0].x, b[0].y, b[0].z);
+      a.yaw = b[0].yaw;
+    }
+
+    // a climber being hauled rides on the carrier's shoulders
+    if (a.carriedBy === P.id) {
+      a.pos.set(P.pos.x - Math.sin(P.yaw) * 0.16, P.pos.y + 1.25, P.pos.z - Math.cos(P.yaw) * 0.16);
+      a.yaw = P.yaw + Math.PI * 0.5;
+    }
+
+    a.fig.root.position.copy(a.pos);
+    a.fig.root.rotation.y = a.yaw;
+    a.fig.setHeld(a.held);
+    a.fig.setParka(a.parka);
+    a.fig.pose(dt, {
+      t: t, speed: a.carriedBy ? 0 : a.speed, state: a.state,
+      climbing: a.climbing, brace: a.brace, carrying: !!a.carrying,
+      cold: a.temp < 45, tired: a.st < 22, vy: 0,
+    });
+    if (a.boosted > 0) a.boosted -= dt;
+    if (now() - a.last > 6) a.online = false;
+  }
+};
+
+/* ==== 17-net.js ==== */
+// ============================================================ NETWORK
+// Real peer-to-peer over the internet.  The host owns the room code and the
+// world seed; everyone else dials that code and the host relays traffic
+// between them, so four people on four continents share one mountain.
+var Net = {
+  peer: null, conns: [], byId: {}, isHost: false, solo: true,
+  code: '', selfId: '', seed: 1, started: false,
+  roster: {},            // id -> {name, slot, host}
+  acc: 0, status: 'idle',
+  onRoster: null, onState: null, onError: null, onStart: null,
+};
+
+var PEER_PREFIX = 'crux-mtn-v1-';
+var PEER_OPTS = {
+  debug: 0,
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:global.stun.twilio.com:3478' },
+    ],
+  },
+};
+
+Net.reset = function () {
+  try { if (Net.peer) Net.peer.destroy(); } catch (e) { }
+  Net.peer = null; Net.conns = []; Net.byId = {};
+  Net.isHost = false; Net.solo = true; Net.started = false;
+  Net.roster = {}; Net.code = '';
+};
+
+Net.freeSlot = function () {
+  var used = {}, id;
+  for (id in Net.roster) used[Net.roster[id].slot] = 1;
+  for (var i = 0; i < 8; i++) if (!used[i]) return i;
+  return 0;
+};
+
+// ---------------------------------------------------------------- host
+Net.host = function (name, cb) {
+  Net.reset();
+  Net.isHost = true; Net.solo = false;
+  var attempts = 0;
+  function tryOpen() {
+    Net.code = makeCode();
+    Net.seed = codeToSeed(Net.code);
+    var p;
+    try { p = new Peer(PEER_PREFIX + Net.code, PEER_OPTS); }
+    catch (e) { Net.status = 'error'; cb('peer-to-peer is unavailable in this browser'); return; }
+    Net.peer = p;
+    p.on('open', function (id) {
+      Net.selfId = id;
+      Net.status = 'hosting';
+      Net.roster[id] = { name: name, slot: 0, host: true };
+      P.id = id; P.slot = 0;
+      if (Net.onRoster) Net.onRoster();
+      cb(null, Net.code);
+    });
+    p.on('connection', function (c) { Net.attach(c); });
+    p.on('error', function (e) {
+      if (e && e.type === 'unavailable-id' && attempts < 6) { attempts++; try { p.destroy(); } catch (x) { } tryOpen(); return; }
+      Net.status = 'error';
+      cb(Net.explain(e));
+    });
+    p.on('disconnected', function () { try { p.reconnect(); } catch (e) { } });
+  }
+  tryOpen();
+};
+
+// ---------------------------------------------------------------- join
+Net.join = function (code, name, cb) {
+  Net.reset();
+  Net.isHost = false; Net.solo = false;
+  Net.code = code.toUpperCase();
+  var p;
+  try { p = new Peer(PEER_OPTS); }
+  catch (e) { Net.status = 'error'; cb('peer-to-peer is unavailable in this browser'); return; }
+  Net.peer = p;
+  var done = false;
+  p.on('open', function (id) {
+    Net.selfId = id; P.id = id;
+    var c = p.connect(PEER_PREFIX + Net.code, { reliable: true, serialization: 'json' });
+    var timer = setTimeout(function () {
+      if (!done) { done = true; cb('no room answered on ' + Net.code + ' — check the code'); }
+    }, 12000);
+    c.on('open', function () {
+      Net.attach(c);
+      c.send({ t: 'join', n: name });
+    });
+    c.on('data', function (m) {
+      if (m && m.t === 'welcome' && !done) { done = true; clearTimeout(timer); Net.welcome(m); cb(null, Net.code); }
+    });
+    c.on('error', function (e) { if (!done) { done = true; clearTimeout(timer); cb(Net.explain(e)); } });
+    c.on('close', function () {
+      if (!done) { done = true; clearTimeout(timer); cb('the host closed the door'); }
+      else { HUD.toast('the host left — the mountain is yours alone', '#ffb454'); Net.solo = true; }
+    });
+  });
+  p.on('error', function (e) {
+    if (!done) { done = true; cb(Net.explain(e)); }
+  });
+  p.on('disconnected', function () { try { p.reconnect(); } catch (e) { } });
+};
+
+Net.explain = function (e) {
+  var t = e && e.type ? e.type : '';
+  if (t === 'peer-unavailable') return 'no room with that code is open';
+  if (t === 'network' || t === 'server-error') return 'could not reach the matchmaking server';
+  if (t === 'browser-incompatible') return 'this browser cannot do peer-to-peer';
+  if (t === 'unavailable-id') return 'that room code is taken';
+  return (e && e.message) ? e.message : 'connection failed';
+};
+
+Net.attach = function (c) {
+  Net.conns.push(c);
+  c.on('data', function (m) { Net.recv(c, m); });
+  c.on('close', function () { Net.detach(c); });
+  c.on('error', function () { Net.detach(c); });
+};
+
+Net.detach = function (c) {
+  var i = Net.conns.indexOf(c);
+  if (i >= 0) Net.conns.splice(i, 1);
+  if (c.pid) {
+    delete Net.roster[c.pid];
+    delete Net.byId[c.pid];
+    Remote.remove(c.pid);
+    if (Net.isHost) Net.broadcast({ t: 'left', id: c.pid });
+    if (Net.onRoster) Net.onRoster();
+  }
+};
+
+// ---------------------------------------------------------------- traffic
+Net.broadcast = function (m, except) {
+  for (var i = 0; i < Net.conns.length; i++) {
+    var c = Net.conns[i];
+    if (c === except || !c.open) continue;
+    try { c.send(m); } catch (e) { }
+  }
+};
+
+Net.send = function (m) {
+  if (Net.solo || !Net.started) return;
+  m.f = Net.selfId;
+  if (Net.isHost) Net.broadcast(m);
+  else if (Net.conns[0] && Net.conns[0].open) { try { Net.conns[0].send(m); } catch (e) { } }
+};
+
+Net.recv = function (c, m) {
+  if (!m || !m.t) return;
+
+  if (m.t === 'join' && Net.isHost) {
+    var pid = c.peer;
+    c.pid = pid;
+    var slot = Net.freeSlot();
+    Net.roster[pid] = { name: (m.n || 'climber').slice(0, 12), slot: slot };
+    Net.byId[pid] = c;
+    c.send({ t: 'welcome', seed: Net.seed, id: pid, slot: slot, roster: Net.roster, snap: Net.snapshot(), started: Net.started });
+    Net.broadcast({ t: 'peer', id: pid, n: Net.roster[pid].name, s: slot }, c);
+    Remote.add(pid, Net.roster[pid].name, slot);
+    if (Net.onRoster) Net.onRoster();
+    HUD.toast(Net.roster[pid].name + ' joined the rope', '#31c6c0');
+    return;
+  }
+
+  // the host is a switchboard: pass everything else along
+  if (Net.isHost && m.f && m.f !== Net.selfId) Net.broadcast(m, c);
+  Net.apply(m);
+};
+
+Net.welcome = function (m) {
+  Net.seed = m.seed;
+  P.id = m.id; P.slot = m.slot;
+  Net.roster = m.roster || {};
+  Net.roster[m.id] = { name: P.name, slot: m.slot };
+  Net.pendingSnap = m.snap;
+  Net.status = 'joined';
+  if (Net.onRoster) Net.onRoster();
+  if (Net.onStart) Net.onStart(m);
+};
+
+Net.snapshot = function () {
+  var lit = [], i;
+  for (i = 0; i < Camps.list.length; i++) lit.push(Camps.list[i].lit ? 1 : 0);
+  var taken = [];
+  for (i = 0; i < WI.list.length; i++) if (WI.list[i].taken) taken.push(WI.list[i].id);
+  var broke = [];
+  if (T.BROKEN) for (i = 0; i < T.BROKEN.length; i++) if (T.BROKEN[i]) broke.push(i);
+  var anch = [];
+  for (i = 0; i < Coop.anchors.length; i++) {
+    var a = Coop.anchors[i];
+    anch.push({ id: a.id, owner: a.owner, x: a.x, y: a.y, z: a.z, slot: a.slot });
+  }
+  var pit = [];
+  for (i = 0; i < Coop.pitons.length; i++) pit.push({ x: Coop.pitons[i].x, y: Coop.pitons[i].y, z: Coop.pitons[i].z });
+  return { lit: lit, taken: taken, broke: broke, anch: anch, pit: pit, t: Game.runT };
+};
+
+Net.applySnapshot = function (s) {
+  if (!s) return;
+  var i;
+  for (i = 0; i < s.lit.length; i++) if (s.lit[i]) Camps.setLit(i, true);
+  for (i = 0; i < s.taken.length; i++) WI.take(s.taken[i]);
+  for (i = 0; i < s.broke.length; i++) { T.BROKEN[s.broke[i]] = 1; T.paintBroken(s.broke[i]); }
+  for (i = 0; i < s.anch.length; i++) Coop.addAnchor(s.anch[i]);
+  for (i = 0; i < s.pit.length; i++) Coop.placePiton(s.pit[i].x, s.pit[i].y, s.pit[i].z, 0, 1, true);
+  if (s.t) Game.runT = s.t;
+  // late joiners start the climb at the group's highest lit fire
+  var idx = 0;
+  for (i = 0; i < Camps.list.length; i++) if (Camps.list[i].lit) idx = Math.max(idx, i);
+  Net.spawnCamp = idx;
+};
+
+// ---------------------------------------------------------------- events
+Net.apply = function (m) {
+  var a;
+  switch (m.t) {
+    case 'peer':
+      Net.roster[m.id] = { name: m.n, slot: m.s };
+      Remote.add(m.id, m.n, m.s);
+      if (Net.onRoster) Net.onRoster();
+      HUD.toast(m.n + ' joined the rope', '#31c6c0');
+      break;
+    case 'left':
+      Remote.remove(m.id);
+      delete Net.roster[m.id];
+      if (Net.onRoster) Net.onRoster();
+      break;
+    case 'go':
+      if (Net.onStart) Net.onStart(m);
+      break;
+    case 's':
+      if (!Remote.map[m.f] && Net.roster[m.f]) Remote.add(m.f, Net.roster[m.f].name, Net.roster[m.f].slot);
+      Remote.feed(m.f, m);
+      break;
+    case 'pick': WI.take(m.i); break;
+    case 'drop': WI.add({ id: m.id, k: m.k, x: m.x, y: T.hAt(m.x, m.z), z: m.z }); break;
+    case 'give':
+      if (m.to === P.id) {
+        WI.toss(m.k, new THREE.Vector3(m.fx, m.fy, m.fz), new THREE.Vector3(P.pos.x, P.pos.y + 1.2, P.pos.z), function () {
+          if (Survive.add(m.k)) HUD.toast('caught ' + ITEM[m.k].nm, '#8fe04a');
+          else {
+            var id = WI.dropAt(m.k, P.pos.x, groundH(P.pos.x, P.pos.z), P.pos.z);
+            Net.send({ t: 'drop', k: m.k, id: id, x: P.pos.x, y: P.pos.y, z: P.pos.z });
+            HUD.toast('pack full — it lands at your feet', '#ffb454');
+          }
+        });
+      } else {
+        a = Remote.byId(m.to);
+        if (a) WI.toss(m.k, new THREE.Vector3(m.fx, m.fy, m.fz), new THREE.Vector3(a.pos.x, a.pos.y + 1.2, a.pos.z), null);
+      }
+      break;
+    case 'rope': Coop.addAnchor({ id: m.id, owner: m.owner, x: m.x, y: m.y, z: m.z, slot: m.slot }); break;
+    case 'unrope': Coop.removeAnchor(m.id); break;
+    case 'pit': Coop.placePiton(m.x, m.y, m.z, m.nx, m.nz, true); break;
+    case 'ping':
+      Coop.addPing(m.x, m.y, m.z, m.s, !!m.d, m.n);
+      HUD.toast(m.n + (m.d ? ' marks danger' : ' marks a route'), m.d ? '#ff5b52' : SLOT_HEX[m.s % 4]);
+      break;
+    case 'camp':
+      if (!Camps.list[m.i].lit) { Camps.setLit(m.i, true); HUD.toast('camp ' + (m.i + 1) + ' lit', '#ffd646'); }
+      break;
+    case 'brk':
+      if (!T.BROKEN[m.c]) { T.BROKEN[m.c] = 1; T.paintBroken(m.c); }
+      break;
+    case 'down':
+      a = Remote.byId(m.f);
+      if (a) { a.state = ST.DOWN; HUD.toast(a.name + ' is down', '#ff5b52'); }
+      break;
+    case 'carry':
+      a = Remote.byId(m.f);
+      if (m.id === null) {
+        for (var i = 0; i < Remote.list.length; i++) if (Remote.list[i].carriedBy === m.f) Remote.list[i].carriedBy = null;
+        if (P.carriedBy === m.f) { P.carriedBy = null; P.state = ST.DOWN; }
+      } else if (m.id === P.id) { P.carriedBy = m.f; P.state = ST.CARRIED; }
+      else { var b = Remote.byId(m.id); if (b) b.carriedBy = m.f; }
+      break;
+    case 'rev':
+      if (m.id === P.id) {
+        P.state = ST.AIR; P.hp = 42; P.st = P.stMax * 0.6; P.downT = 0; P.carriedBy = null;
+        HUD.toast('back on your feet', '#8fe04a');
+      } else {
+        a = Remote.byId(m.id);
+        if (a) { a.state = ST.GROUND; a.carriedBy = null; }
+      }
+      break;
+    case 'up':
+      a = Remote.byId(m.f);
+      if (a) a.state = ST.GROUND;
+      break;
+    case 'bst':
+      if (m.to === P.id) { P.brace = false; HUD.toast('boosted!', '#ffd646'); }
+      break;
+    case 'top':
+      HUD.toast(m.n + ' reached the summit', '#ffd646');
+      a = Remote.byId(m.f);
+      if (a) a.summited = true;
+      break;
+  }
+};
+
+// ---------------------------------------------------------------- outgoing
+Net.tick = function (dt) {
+  if (Net.solo || !Net.started) return;
+  Net.acc += dt;
+  var period = 1 / K.NET_HZ;
+  if (Net.acc < period) return;
+  Net.acc = 0;
+  Net.send({
+    t: 's',
+    x: Math.round(P.pos.x * 100) / 100, y: Math.round(P.pos.y * 100) / 100, z: Math.round(P.pos.z * 100) / 100,
+    yaw: Math.round(P.yaw * 100) / 100,
+    st: P.state, hp: P.hp | 0, sm: P.st | 0, hu: P.hunger | 0, tp: P.temp | 0,
+    br: P.brace ? 1 : 0, cl: P.climbing ? 1 : 0,
+    ca: P.carrying, hd: P.inv[P.sel] ? P.inv[P.sel].k : null, pk: P.parka ? 1 : 0,
+  });
+};
+
+/* ==== 18-fx.js ==== */
+// ============================================================ WIND
+var Wind = {
+  t: 0, dx: 1, dz: 0, gust: 0, ang: 0, noise: null,
+  init: function (seed) { Wind.noise = new Noise(seed ^ 0x77aa33); Wind.ang = Math.random() * 6.283; },
+  tick: function (dt) {
+    if (!Wind.noise) Wind.init(1);
+    Wind.t += dt;
+    Wind.ang += dt * 0.055;
+    Wind.dx = Math.cos(Wind.ang); Wind.dz = Math.sin(Wind.ang);
+    var n = clamp(Wind.noise.n2(Wind.t * 0.14, 3.7) * 1.8 + 0.5, 0, 1);
+    var burst = Math.pow(clamp(Wind.noise.n2(Wind.t * 0.42 + 11, 8.2) * 1.8 + 0.5, 0, 1), 3.0);
+    Wind.gust = clamp(n * 0.55 + burst * 1.5, 0, 1.6);
+  },
+  // how hard it is pushing at this altitude on exposed ground
+  at: function (y, exposure) {
+    if (y < 40) return 0;
+    return Wind.gust * clamp((y - 40) / 170, 0, 1) * (0.35 + 0.65 * exposure);
+  },
+};
+
+// ============================================================ PARTICLES
+var FX = { burst: null, snow: null, snowN: 0, group: null };
+
+var PART_VS = [
+  'attribute float aSize; attribute float aAlpha; attribute vec3 aCol;',
+  'varying vec3 vC; varying float vA;',
+  'void main(){ vC = aCol; vA = aAlpha;',
+  ' vec4 mv = modelViewMatrix * vec4(position,1.0);',
+  ' gl_PointSize = aSize * (260.0 / max(0.1,-mv.z));',
+  ' gl_Position = projectionMatrix * mv; }',
+].join('\n');
+
+var PART_FS = [
+  'varying vec3 vC; varying float vA;',
+  'void main(){ vec2 d = gl_PointCoord - vec2(0.5); float r = dot(d,d);',
+  ' if (r > 0.25) discard;',
+  ' float a = smoothstep(0.25, 0.04, r) * vA;',
+  ' if (a < 0.01) discard;',
+  ' gl_FragColor = vec4(vC, a);',
+  ' #include <encodings_fragment>',
+  '}',
+].join('\n');
+
+function partMaterial() {
+  return new THREE.ShaderMaterial({
+    vertexShader: PART_VS, fragmentShader: PART_FS,
+    transparent: true, depthWrite: false,
+  });
+}
+
+function ParticlePool(n) {
+  this.n = n; this.head = 0;
+  var g = new THREE.BufferGeometry();
+  this.pos = new Float32Array(n * 3);
+  this.col = new Float32Array(n * 3);
+  this.size = new Float32Array(n);
+  this.alpha = new Float32Array(n);
+  this.vel = new Float32Array(n * 3);
+  this.life = new Float32Array(n);
+  this.maxLife = new Float32Array(n);
+  this.grav = new Float32Array(n);
+  this.drag = new Float32Array(n);
+  for (var i = 0; i < n; i++) { this.pos[i * 3 + 1] = -9999; this.alpha[i] = 0; this.size[i] = 1; }
+  g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3));
+  g.setAttribute('aCol', new THREE.BufferAttribute(this.col, 3));
+  g.setAttribute('aSize', new THREE.BufferAttribute(this.size, 1));
+  g.setAttribute('aAlpha', new THREE.BufferAttribute(this.alpha, 1));
+  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e5);
+  this.geo = g;
+  this.points = new THREE.Points(g, partMaterial());
+  this.points.frustumCulled = false;
+}
+
+ParticlePool.prototype.spawn = function (x, y, z, vx, vy, vz, col, size, life, grav, drag) {
+  var i = this.head; this.head = (this.head + 1) % this.n;
+  this.pos[i * 3] = x; this.pos[i * 3 + 1] = y; this.pos[i * 3 + 2] = z;
+  this.vel[i * 3] = vx; this.vel[i * 3 + 1] = vy; this.vel[i * 3 + 2] = vz;
+  hexLin(col, this.col, i * 3, 1);
+  this.size[i] = size; this.life[i] = life; this.maxLife[i] = life;
+  this.grav[i] = grav === undefined ? 12 : grav;
+  this.drag[i] = drag === undefined ? 1.4 : drag;
+  this.alpha[i] = 1;
+};
+
+ParticlePool.prototype.tick = function (dt) {
+  var p = this.pos, v = this.vel, l = this.life, a = this.alpha, i, k;
+  for (i = 0; i < this.n; i++) {
+    if (l[i] <= 0) { if (a[i] !== 0) { a[i] = 0; p[i * 3 + 1] = -9999; } continue; }
+    l[i] -= dt;
+    k = i * 3;
+    var dr = Math.exp(-this.drag[i] * dt);
+    v[k] *= dr; v[k + 2] *= dr;
+    v[k + 1] = v[k + 1] * dr - this.grav[i] * dt;
+    p[k] += v[k] * dt; p[k + 1] += v[k + 1] * dt; p[k + 2] += v[k + 2] * dt;
+    a[i] = clamp(l[i] / this.maxLife[i], 0, 1);
+  }
+  this.geo.attributes.position.needsUpdate = true;
+  this.geo.attributes.aAlpha.needsUpdate = true;
+  this.geo.attributes.aCol.needsUpdate = true;
+  this.geo.attributes.aSize.needsUpdate = true;
+};
+
+FX.init = function (detail) {
+  FX.group = new THREE.Group();
+  FX.burst = new ParticlePool(detail ? 700 : 340);
+  FX.group.add(FX.burst.points);
+
+  // weather: a slab of flakes that follows the camera and wraps around it
+  var n = FX.snowN = detail ? 1100 : 480;
+  var g = new THREE.BufferGeometry();
+  FX.sPos = new Float32Array(n * 3);
+  FX.sCol = new Float32Array(n * 3);
+  FX.sSize = new Float32Array(n);
+  FX.sAlpha = new Float32Array(n);
+  FX.sSpeed = new Float32Array(n);
+  for (var i = 0; i < n; i++) {
+    FX.sPos[i * 3] = (Math.random() - 0.5) * 60;
+    FX.sPos[i * 3 + 1] = (Math.random() - 0.5) * 40;
+    FX.sPos[i * 3 + 2] = (Math.random() - 0.5) * 60;
+    hexLin(0xffffff, FX.sCol, i * 3, 1);
+    FX.sSize[i] = 0.05 + Math.random() * 0.09;
+    FX.sAlpha[i] = 0;
+    FX.sSpeed[i] = 0.7 + Math.random() * 1.3;
+  }
+  g.setAttribute('position', new THREE.BufferAttribute(FX.sPos, 3));
+  g.setAttribute('aCol', new THREE.BufferAttribute(FX.sCol, 3));
+  g.setAttribute('aSize', new THREE.BufferAttribute(FX.sSize, 1));
+  g.setAttribute('aAlpha', new THREE.BufferAttribute(FX.sAlpha, 1));
+  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e5);
+  FX.snowGeo = g;
+  FX.snow = new THREE.Points(g, partMaterial());
+  FX.snow.frustumCulled = false;
+  FX.group.add(FX.snow);
+  return FX.group;
+};
+
+FX.puff = function (x, y, z, n, col) {
+  for (var i = 0; i < n; i++) {
+    var a = Math.random() * 6.283, s = 0.7 + Math.random() * 2.1;
+    FX.burst.spawn(x, y, z, Math.cos(a) * s, 0.6 + Math.random() * 1.4, Math.sin(a) * s,
+      col, 0.18 + Math.random() * 0.16, 0.5 + Math.random() * 0.5, 5, 2.6);
+  }
+};
+
+FX.debris = function (x, y, z, nx, nz) {
+  for (var i = 0; i < 16; i++) {
+    FX.burst.spawn(x, y - Math.random() * 0.6, z,
+      nx * (1 + Math.random() * 2.4) + (Math.random() - 0.5) * 2,
+      Math.random() * 1.8 - 0.6,
+      nz * (1 + Math.random() * 2.4) + (Math.random() - 0.5) * 2,
+      Math.random() < 0.5 ? 0x8a7360 : 0x6d5b4a, 0.11 + Math.random() * 0.16,
+      1.1 + Math.random() * 0.9, 17, 0.4);
+  }
+};
+
+FX.breath = function (x, y, z, dx, dz) {
+  FX.burst.spawn(x, y, z, dx * 0.8 + (Math.random() - 0.5) * 0.3, 0.5, dz * 0.8 + (Math.random() - 0.5) * 0.3,
+    0xdfeaf5, 0.14, 0.85, -0.6, 1.9);
+};
+
+FX.ember = function (x, y, z) {
+  FX.burst.spawn(x + (Math.random() - 0.5) * 0.7, y, z + (Math.random() - 0.5) * 0.7,
+    (Math.random() - 0.5) * 0.7, 1.4 + Math.random() * 1.7, (Math.random() - 0.5) * 0.7,
+    Math.random() < 0.4 ? 0xffd646 : 0xff6a2a, 0.08 + Math.random() * 0.07,
+    1.1 + Math.random(), -1.4, 0.9);
+};
+
+var _snowT = 0, _breathT = 0, _emberT = 0;
+FX.tick = function (dt, cam, py) {
+  FX.burst.tick(dt);
+
+  // snow above the alpine line, blowing sideways with the gusts
+  var dens = clamp((py - 118) / 90, 0, 1);
+  var wind = 2.5 + Wind.gust * 13;
+  var n = FX.snowN, p = FX.sPos, al = FX.sAlpha;
+  var cx = cam.x, cy = cam.y, cz = cam.z;
+  for (var i = 0; i < n; i++) {
+    var k = i * 3;
+    p[k] += (Wind.dx * wind * FX.sSpeed[i]) * dt;
+    p[k + 2] += (Wind.dz * wind * FX.sSpeed[i]) * dt;
+    p[k + 1] -= (2.2 + FX.sSpeed[i]) * dt;
+    var rx = p[k] - cx, ry = p[k + 1] - cy, rz = p[k + 2] - cz;
+    if (rx > 30) p[k] -= 60; else if (rx < -30) p[k] += 60;
+    if (rz > 30) p[k + 2] -= 60; else if (rz < -30) p[k + 2] += 60;
+    if (ry < -20) p[k + 1] += 40; else if (ry > 20) p[k + 1] -= 40;
+    al[i] = dens * 0.85;
+  }
+  FX.snowGeo.attributes.position.needsUpdate = true;
+  FX.snowGeo.attributes.aAlpha.needsUpdate = true;
+
+  // embers drifting off the summit vents
+  _emberT += dt;
+  if (py > K.BAND_TOP - 40 && _emberT > 0.05) {
+    _emberT = 0;
+    var a = Math.random() * 6.283, r = 6 + Math.random() * 34;
+    var ex = cam.x + Math.cos(a) * r, ez = cam.z + Math.sin(a) * r;
+    var eh = T.hAt(ex, ez);
+    if (eh > K.BAND_TOP - 26 && T.surfAt(ex, ez) === SF.EMBER) FX.ember(ex, eh + 0.3, ez);
+  }
+  for (var c = 0; c < Camps.list.length; c++) {
+    var cm = Camps.list[c];
+    if (!cm.lit) continue;
+    var ddx = cm.x - cam.x, ddz = cm.z - cam.z;
+    if (ddx * ddx + ddz * ddz < 3600 && Math.random() < dt * 22) FX.ember(cm.x, cm.y + 1.1, cm.z);
+  }
+};
+
+/* ==== 19-sky.js ==== */
+// ============================================================ SKY & LIGHT
+// The sky is a gradient dome whose colours, the sun angle and the fog all
+// slide as you gain altitude - the mountain reveals itself in layers.
+var Sky = {
+  mesh: null, mat: null, sun: null, hemi: null, fill: null, cloud: null,
+  sunDir: new THREE.Vector3(), tint: new THREE.Color(),
+};
+
+var SKY_VS = 'varying vec3 vW; void main(){ vW = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }';
+var SKY_FS = [
+  'uniform vec3 cLow; uniform vec3 cMid; uniform vec3 cHigh; uniform vec3 cSun;',
+  'uniform vec3 sunDir; uniform float haze;',
+  'varying vec3 vW;',
+  'void main(){',
+  '  float h = clamp(vW.y * 0.5 + 0.5, 0.0, 1.0);',
+  '  vec3 c = mix(cLow, cMid, smoothstep(0.44, 0.56, h));',
+  '  c = mix(c, cHigh, smoothstep(0.56, 0.92, h));',
+  '  float d = max(0.0, dot(normalize(vW), normalize(sunDir)));',
+  '  c += cSun * pow(d, 22.0) * 1.5;',
+  '  c += cSun * pow(d, 4.0) * 0.20;',
+  '  c = mix(c, cLow, haze * pow(1.0 - abs(vW.y), 5.0));',
+  '  gl_FragColor = vec4(c, 1.0);',
+  '  #include <encodings_fragment>',
+  '}',
+].join('\n');
+
+function linCol(hex) {
+  var c = new THREE.Color();
+  c.setRGB(_lut[(hex >> 16) & 255], _lut[(hex >> 8) & 255], _lut[hex & 255]);
+  return c;
+}
+
+// four altitude keyframes: base, rock, alpine, summit
+var SKY_KEYS = [
+  { y: 0, low: 0xf0c69a, mid: 0x9fc8e8, high: 0x5b95d6, sun: 0xffd9a0, fog: 0xe6d6bd, dens: 0.0044, el: 0.22, amb: 0.86, sunI: 1.05 },
+  { y: 90, low: 0xe8cfae, mid: 0x8fbde6, high: 0x4a84cf, sun: 0xffe0b0, fog: 0xdcd8cc, dens: 0.0034, el: 0.33, amb: 0.88, sunI: 1.18 },
+  { y: 190, low: 0xdfe9f2, mid: 0x8fc0e8, high: 0x2f6ec2, sun: 0xfff0d8, fog: 0xd6e2f0, dens: 0.0024, el: 0.47, amb: 0.94, sunI: 1.30 },
+  { y: 302, low: 0xffb473, mid: 0x6aa8e0, high: 0x1b4a9c, sun: 0xffd08a, fog: 0xc4cfe2, dens: 0.0017, el: 0.60, amb: 0.80, sunI: 1.45 },
+];
+
+function keyAt(y) {
+  var i = 0;
+  for (i = 0; i < SKY_KEYS.length - 1; i++) if (y < SKY_KEYS[i + 1].y) break;
+  var a = SKY_KEYS[Math.min(i, SKY_KEYS.length - 1)], b = SKY_KEYS[Math.min(i + 1, SKY_KEYS.length - 1)];
+  var u = a === b ? 0 : smooth(invl(a.y, b.y, y));
+  return {
+    low: mixHex(a.low, b.low, u), mid: mixHex(a.mid, b.mid, u), high: mixHex(a.high, b.high, u),
+    sun: mixHex(a.sun, b.sun, u), fog: mixHex(a.fog, b.fog, u),
+    dens: lerp(a.dens, b.dens, u), el: lerp(a.el, b.el, u),
+    amb: lerp(a.amb, b.amb, u), sunI: lerp(a.sunI, b.sunI, u),
+  };
+}
+
+function cloudTexture() {
+  var S = 256, cv = document.createElement('canvas');
+  cv.width = cv.height = S;
+  var ctx = cv.getContext('2d'), img = ctx.createImageData(S, S);
+  var n = new Noise(20260902), i, j;
+  for (j = 0; j < S; j++) for (i = 0; i < S; i++) {
+    var u = i / S * 7, v = j / S * 7;
+    var f = n.fbm(u, v, 5, 2.1, 0.55) * 0.5 + 0.5;
+    var dx = (i / S - 0.5) * 2, dy = (j / S - 0.5) * 2;
+    var r = Math.sqrt(dx * dx + dy * dy);
+    // thin right under the viewer, thickest in the middle distance, gone
+    // at the rim, so the layer reads as depth instead of a lid
+    var a = clamp((f * 0.5 + 0.5 - 0.30) * 1.9, 0, 1);
+    a *= smooth(clamp((r - 0.06) / 0.16, 0, 1)) * (1 - smooth(clamp((r - 0.30) / 0.62, 0, 1)));
+    a *= a;
+    var o = (j * S + i) * 4;
+    img.data[o] = 255; img.data[o + 1] = 254; img.data[o + 2] = 250;
+    img.data[o + 3] = (a * 205) | 0;
+  }
+  ctx.putImageData(img, 0, 0);
+  var tex = new THREE.CanvasTexture(cv);
+  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+  return tex;
+}
+
+Sky.build = function (scene) {
+  var k = keyAt(0);
+  Sky.mat = new THREE.ShaderMaterial({
+    vertexShader: SKY_VS, fragmentShader: SKY_FS, side: THREE.BackSide, depthWrite: false,
+    uniforms: {
+      cLow: { value: linCol(k.low) }, cMid: { value: linCol(k.mid) },
+      cHigh: { value: linCol(k.high) }, cSun: { value: linCol(k.sun) },
+      sunDir: { value: new THREE.Vector3(0.4, 0.3, 0.85) }, haze: { value: 0.5 },
+    },
+  });
+  Sky.mesh = new THREE.Mesh(new THREE.SphereGeometry(1200, 24, 16), Sky.mat);
+  Sky.mesh.frustumCulled = false;
+  Sky.mesh.renderOrder = -10;
+  scene.add(Sky.mesh);
+
+  Sky.hemi = new THREE.HemisphereLight(0xbcd7f2, 0x8e8474, 0.9);
+  scene.add(Sky.hemi);
+
+  Sky.sun = new THREE.DirectionalLight(0xfff0d8, 1.2);
+  Sky.sun.castShadow = true;
+  var s = Sky.sun.shadow;
+  s.mapSize.width = s.mapSize.height = 2048;
+  s.camera.near = 1; s.camera.far = 190;
+  s.camera.left = -46; s.camera.right = 46; s.camera.top = 46; s.camera.bottom = -46;
+  s.bias = -0.0016; s.normalBias = 0.6;
+  scene.add(Sky.sun);
+  scene.add(Sky.sun.target);
+
+  Sky.fill = new THREE.DirectionalLight(0x9ec4e8, 0.42);
+  Sky.fill.position.set(-0.6, 0.4, -0.7);
+  scene.add(Sky.fill);
+
+  // a sea of cloud that the climb eventually breaks through
+  var tex = cloudTexture();
+  var cm = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.0, side: THREE.DoubleSide });
+  Sky.cloud = new THREE.Mesh(new THREE.PlaneGeometry(1300, 1300, 28, 28), cm);
+  Sky.cloud.rotation.x = -Math.PI / 2;
+  Sky.cloud.position.y = 74;
+  Sky.cloud.renderOrder = -5;
+  scene.add(Sky.cloud);
+
+  scene.fog = new THREE.FogExp2(linCol(k.fog).getHex(), k.dens);
+  return Sky;
+};
+
+Sky.setQuality = function (detail) {
+  if (!Sky.sun) return;
+  Sky.sun.shadow.mapSize.width = Sky.sun.shadow.mapSize.height = detail ? 2048 : 1024;
+};
+
+Sky.update = function (dt, t, py, camPos) {
+  var k = keyAt(py);
+  var u = Sky.mat.uniforms;
+  u.cLow.value.lerp(linCol(k.low), 1 - Math.exp(-2.5 * dt));
+  u.cMid.value.lerp(linCol(k.mid), 1 - Math.exp(-2.5 * dt));
+  u.cHigh.value.lerp(linCol(k.high), 1 - Math.exp(-2.5 * dt));
+  u.cSun.value.lerp(linCol(k.sun), 1 - Math.exp(-2.5 * dt));
+  u.haze.value = damp(u.haze.value, clamp(0.75 - py / 420, 0.12, 0.8), 2, dt);
+
+  // sun climbs and swings round as you gain height
+  var az = 0.9 + py * 0.0034;
+  var el = k.el;
+  Sky.sunDir.set(Math.cos(az) * Math.cos(el), Math.sin(el), Math.sin(az) * Math.cos(el)).normalize();
+  u.sunDir.value.copy(Sky.sunDir);
+
+  Sky.sun.color.copy(linCol(k.sun));
+  Sky.sun.intensity = damp(Sky.sun.intensity, k.sunI, 2, dt);
+  Sky.hemi.intensity = damp(Sky.hemi.intensity, k.amb, 2, dt);
+  Sky.hemi.color.copy(linCol(k.mid));
+  Sky.fill.position.set(-Sky.sunDir.x, 0.55, -Sky.sunDir.z);
+
+  Sky.sun.target.position.set(camPos.x, camPos.y, camPos.z);
+  Sky.sun.position.set(camPos.x + Sky.sunDir.x * 90, camPos.y + Sky.sunDir.y * 90, camPos.z + Sky.sunDir.z * 90);
+
+  Sky.mesh.position.copy(camPos);
+
+  var fog = Game.scene.fog;
+  fog.color.lerp(linCol(k.fog), 1 - Math.exp(-2.5 * dt));
+  fog.density = damp(fog.density, k.dens, 2, dt);
+
+  // the cloud sea only shows when you are near or above it
+  // the cloud sea fades in once you are above it and thins out again near
+  // the top, so it reads as a layer you broke through rather than a lid
+  var band = clamp((py - 88) / 40, 0, 1) * clamp(1 - (py - 190) / 110, 0, 1);
+  Sky.cloud.material.opacity = damp(Sky.cloud.material.opacity, band * 0.34, 2.5, dt);
+  Sky.cloud.visible = Sky.cloud.material.opacity > 0.01;
+  Sky.cloud.position.x = camPos.x + Math.sin(t * 0.01) * 30;
+  Sky.cloud.position.z = camPos.z + Math.cos(t * 0.008) * 30;
+  Sky.cloud.rotation.z = t * 0.004;
+};
+
+/* ==== 20-hud.js ==== */
+// ============================================================ HUD
+var HUD = {
+  blocked: true, el: {}, toasts: [], tagPool: [], tagUsed: 0,
+  hurtT: 0, lastAlt: 0,
+};
+
+HUD.init = function () {
+  var g = function (id) { return document.getElementById(id); };
+  HUD.el = {
+    hud: g('hud'), hp: g('b-hp'), st: g('b-st'), stcap: g('b-stcap'), hu: g('b-hu'), tp: g('b-tp'),
+    mates: g('mates'), belt: g('belt'), alt: g('alt-n'), altYou: g('alt-you'),
+    prompt: g('prompt'), ring: g('ring'), ringP: g('ring-p'), ringT: g('ring-t'),
+    status: g('status'), toasts: g('toasts'), hurt: g('hurt'), cold: g('cold'),
+    tags: g('tags'), room: g('room-chip'),
+  };
+  for (var i = 0; i < 4; i++) {
+    var s = document.createElement('div');
+    s.className = 'slot';
+    s.innerHTML = '<span class="n">' + (i + 1) + '</span><span class="ic"></span><span class="q"></span>';
+    HUD.el.belt.appendChild(s);
+  }
+  HUD.beltSlots = HUD.el.belt.children;
+};
+
+HUD.show = function (on) { HUD.el.hud.classList.toggle('hidden', !on); };
+
+HUD.toast = function (text, col) {
+  var d = document.createElement('div');
+  d.className = 'toast';
+  d.textContent = text;
+  d.style.color = col || '#f2efe6';
+  HUD.el.toasts.appendChild(d);
+  HUD.toasts.push({ el: d, t: 0 });
+  while (HUD.toasts.length > 4) {
+    var old = HUD.toasts.shift();
+    if (old.el.parentNode) old.el.parentNode.removeChild(old.el);
+  }
+};
+
+HUD.flashHurt = function (a) { HUD.hurtT = Math.max(HUD.hurtT, clamp(a, 0.15, 1)); };
+
+// ---------------------------------------------------------------- per frame
+var _pv = new THREE.Vector3();
+HUD.tick = function (dt, cam) {
+  var e = HUD.el;
+
+  e.hp.style.width = clamp(P.hp / K.HP_MAX * 100, 0, 100) + '%';
+  e.st.style.width = clamp(P.st / K.ST_MAX * 100, 0, 100) + '%';
+  e.stcap.style.left = clamp(P.stMax / K.ST_MAX * 100, 0, 100) + '%';
+  e.stcap.style.display = P.stMax < K.ST_MAX - 0.5 ? 'block' : 'none';
+  e.hu.style.width = clamp(P.hunger / K.HU_MAX * 100, 0, 100) + '%';
+  e.tp.style.width = clamp(P.temp / K.TP_MAX * 100, 0, 100) + '%';
+  e.hud.classList.toggle('low-st', P.st < 22);
+  e.hud.classList.toggle('low-hp', P.hp < 30);
+
+  var alt = Math.max(0, Math.round(P.pos.y));
+  e.alt.textContent = alt;
+  e.altYou.style.bottom = clamp(P.pos.y / K.SUMMIT_H * 100, 0, 100) + '%';
+
+  // vignettes
+  HUD.hurtT = Math.max(0, HUD.hurtT - dt * 1.5);
+  e.hurt.style.opacity = HUD.hurtT * 0.85;
+  e.cold.style.opacity = clamp(1 - P.temp / 45, 0, 1) * 0.75;
+
+  HUD.belt();
+  HUD.mates();
+  HUD.status();
+  HUD.prompt();
+  HUD.tags(cam);
+
+  for (var i = HUD.toasts.length - 1; i >= 0; i--) {
+    var t = HUD.toasts[i];
+    t.t += dt;
+    if (t.t > 4.2) {
+      if (t.el.parentNode) t.el.parentNode.removeChild(t.el);
+      HUD.toasts.splice(i, 1);
+    } else if (t.t > 3.4) t.el.style.opacity = (4.2 - t.t) / 0.8;
+  }
+};
+
+HUD.belt = function () {
+  for (var i = 0; i < 4; i++) {
+    var el = HUD.beltSlots[i], s = P.inv[i];
+    el.classList.toggle('on', i === P.sel);
+    var ic = el.children[1], q = el.children[2];
+    if (s) {
+      ic.textContent = ITEM[s.k].ic;
+      q.textContent = s.n > 1 ? s.n : '';
+      el.classList.toggle('eq', (s.k === 'parka' && P.parka) || (s.k === 'torch' && P.torchOn));
+    } else { ic.textContent = ''; q.textContent = ''; el.classList.remove('eq'); }
+  }
+};
+
+HUD.mates = function () {
+  var list = Remote.list, box = HUD.el.mates;
+  while (box.children.length > list.length) box.removeChild(box.lastChild);
+  while (box.children.length < list.length) {
+    var d = document.createElement('div');
+    d.className = 'mate';
+    d.innerHTML = '<i class="chip"></i><div class="bars"><span class="nm"></span>' +
+      '<div class="mb"><i></i></div><div class="mb"><i></i></div></div><span class="st"></span>';
+    box.appendChild(d);
+  }
+  for (var i = 0; i < list.length; i++) {
+    var a = list[i], el = box.children[i];
+    el.children[0].style.background = SLOT_HEX[a.slot % 4];
+    var bars = el.children[1];
+    bars.children[0].textContent = a.name;
+    bars.children[1].children[0].style.width = clamp(a.hp, 0, 100) + '%';
+    bars.children[1].children[0].style.background = 'var(--hp)';
+    bars.children[2].children[0].style.width = clamp(a.st, 0, 100) + '%';
+    bars.children[2].children[0].style.background = 'var(--st)';
+    var d = Math.round(Math.sqrt(Math.pow(a.pos.x - P.pos.x, 2) + Math.pow(a.pos.y - P.pos.y, 2) + Math.pow(a.pos.z - P.pos.z, 2)));
+    el.children[2].textContent = a.state === ST.DOWN ? 'DOWN' : d + 'm';
+    el.classList.toggle('dn', a.state === ST.DOWN);
+    el.classList.toggle('off', !a.online);
+  }
+};
+
+var _badges = [];
+HUD.status = function () {
+  var b = [];
+  if (P.inj.leg) b.push(['ANKLE', 'warn']);
+  if (P.inj.arm) b.push(['SHOULDER', 'warn']);
+  if (P.temp < 45) b.push(['FREEZING', 'cold']);
+  if (P.hunger < K.HU_CHOKE) b.push(['STARVING', 'warn']);
+  if (P.carrying) b.push(['CARRYING', 'ok']);
+  if (P.brace) b.push(['BRACED', 'ok']);
+  if (P.tether) b.push(['ROPED', 'ok']);
+  if (P.state === ST.DOWN) b.push(['DOWN ' + Math.ceil(P.downT) + 's', 'bad']);
+  var key = b.map(function (x) { return x[0]; }).join('|');
+  if (key === HUD._badgeKey) return;
+  HUD._badgeKey = key;
+  var box = HUD.el.status;
+  box.innerHTML = '';
+  for (var i = 0; i < b.length; i++) {
+    var d = document.createElement('div');
+    d.className = 'badge ' + b[i][1];
+    d.textContent = b[i][0];
+    box.appendChild(d);
+  }
+};
+
+HUD.prompt = function () {
+  var txt = '', ring = 0, ringTxt = '';
+  var mate = Coop.nearestDown(2.6);
+  if (P.state === ST.DOWN) {
+    txt = 'you are down — hold on, someone can reach you';
+  } else if (P.carrying) {
+    var c = Remote.byId(P.carrying);
+    txt = '<em>E</em> set ' + (c ? c.name : 'them') + ' down';
+  } else if (mate) {
+    txt = '<em>E</em> shoulder ' + mate.name + '  ·  <em>hold E</em> revive';
+    if (P.reviveT > 0.05) { ring = P.reviveT / K.REVIVE_T; ringTxt = 'reviving ' + mate.name; }
+  } else {
+    var it = WI.nearest(P.pos.x, P.pos.y + 0.6, P.pos.z, 2.7);
+    if (it) txt = '<em>E</em> take ' + ITEM[it.k].nm;
+    else if (Survive.atFire) txt = 'camp ' + (Survive.camp.idx + 1) + ' — warm, and you respawn here';
+    else if (Survive.restPt && P.state === ST.CLIMB) txt = 'resting on the piton';
+    else if (P.state === ST.CLIMB && P.wall.surf === SF.VINE) txt = 'roots hold you for free';
+    else if (P.state === ST.CLIMB && P.wall.surf === SF.LOOSE) txt = 'this rock is going — keep moving';
+    else if (P.state === ST.CLIMB && P.wall.ny < 0.17) txt = 'overhang — double the burn';
+  }
+  var e = HUD.el.prompt;
+  if (txt !== HUD._prompt) { e.innerHTML = txt; HUD._prompt = txt; }
+  e.classList.toggle('on', !!txt);
+
+  HUD.el.ring.classList.toggle('hidden', ring <= 0);
+  if (ring > 0) {
+    HUD.el.ringP.style.strokeDashoffset = (106.8 * (1 - clamp(ring, 0, 1))).toFixed(1);
+    HUD.el.ringT.textContent = ringTxt;
+  }
+};
+
+// ---- projected world tags --------------------------------------------
+HUD.getTag = function () {
+  var t;
+  if (HUD.tagUsed < HUD.tagPool.length) t = HUD.tagPool[HUD.tagUsed];
+  else {
+    t = document.createElement('div');
+    t.className = 'tag3';
+    t.innerHTML = '<span class="pin"></span><span class="lb"></span><span class="d"></span>';
+    HUD.el.tags.appendChild(t);
+    HUD.tagPool.push(t);
+  }
+  HUD.tagUsed++;
+  return t;
+};
+
+HUD.place = function (t, x, y, z, cam, label, dist, col, cls) {
+  _pv.set(x, y, z).project(cam);
+  if (_pv.z > 1 || _pv.z < -1) { t.style.display = 'none'; return false; }
+  var w = window.innerWidth, h = window.innerHeight;
+  var sx = (_pv.x * 0.5 + 0.5) * w, sy = (-_pv.y * 0.5 + 0.5) * h;
+  var m = 26;
+  var off = sx < m || sx > w - m || sy < m || sy > h - m;
+  t.style.display = 'block';
+  t.style.left = clamp(sx, m, w - m) + 'px';
+  t.style.top = clamp(sy, m, h - m) + 'px';
+  t.style.color = col;
+  t.style.opacity = off ? 0.55 : 1;
+  t.className = 'tag3' + (cls ? ' ' + cls : '');
+  t.children[0].style.background = col;
+  t.children[1].textContent = label;
+  t.children[2].textContent = dist;
+  return true;
+};
+
+HUD.tags = function (cam) {
+  HUD.tagUsed = 0;
+  var i, a, d;
+  for (i = 0; i < Remote.list.length; i++) {
+    a = Remote.list[i];
+    d = Math.sqrt(Math.pow(a.pos.x - P.pos.x, 2) + Math.pow(a.pos.y - P.pos.y, 2) + Math.pow(a.pos.z - P.pos.z, 2));
+    HUD.place(HUD.getTag(), a.pos.x, a.pos.y + 2.15, a.pos.z, cam,
+      a.name, d > 6 ? Math.round(d) + 'm' : '', SLOT_HEX[a.slot % 4],
+      a.state === ST.DOWN ? 'down' : '');
+  }
+  for (i = 0; i < Coop.pings.length; i++) {
+    var p = Coop.pings[i];
+    d = Math.sqrt(Math.pow(p.x - P.pos.x, 2) + Math.pow(p.y - P.pos.y, 2) + Math.pow(p.z - P.pos.z, 2));
+    HUD.place(HUD.getTag(), p.x, p.y + 1.6, p.z, cam,
+      p.danger ? 'danger' : p.who, Math.round(d) + 'm',
+      p.danger ? '#ff5b52' : SLOT_HEX[p.slot % 4], 'pingt');
+  }
+  // the summit itself, once it is in view
+  if (Summit.pos && P.pos.y > 40) {
+    d = Math.sqrt(Math.pow(Summit.pos.x - P.pos.x, 2) + Math.pow(Summit.pos.z - P.pos.z, 2) + Math.pow(Summit.pos.y - P.pos.y, 2));
+    HUD.place(HUD.getTag(), Summit.pos.x, Summit.pos.y + 11, Summit.pos.z, cam, 'SUMMIT', Math.round(d) + 'm', '#ffd646', 'pingt');
+  }
+  for (i = HUD.tagUsed; i < HUD.tagPool.length; i++) HUD.tagPool[i].style.display = 'none';
+};
+
+// ---- end of run -------------------------------------------------------
+HUD.summit = function () {
+  var t = Game.runT;
+  var box = document.getElementById('over-stats');
+  var rows = [
+    ['time on the mountain', fmtTime(t)],
+    ['metres climbed', Math.round(P.stats.climbed) + ' m'],
+    ['falls survived', P.stats.falls],
+    ['mates put back together', P.stats.revives],
+    ['climbers on the summit', 1 + Remote.list.filter(function (a) { return a.summited; }).length],
+  ];
+  box.innerHTML = '';
+  for (var i = 0; i < rows.length; i++) {
+    var d = document.createElement('div');
+    d.className = 'stat';
+    d.innerHTML = '<span>' + rows[i][0] + '</span><b>' + rows[i][1] + '</b>';
+    box.appendChild(d);
+  }
+  document.getElementById('over-h').textContent = 'SUMMIT';
+  document.getElementById('over').classList.remove('hidden');
+  HUD.blocked = true;
+  IN.unlock();
+};
+
+/* ==== 21-game.js ==== */
+// ============================================================ GAME
+var Game = {
+  renderer: null, scene: null, cam: null, world: null,
+  last: 0, runT: 0, t: 0, mode: 'menu', detail: 1, built: false,
+  acc: 0, fps: 60, frames: 0, fpsT: 0, fpsLast: 0,
+};
+
+Game.init = function () {
+  var canvas = document.getElementById('view');
+  Game.renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: 'high-performance' });
+  Game.renderer.setSize(window.innerWidth, window.innerHeight, false);
+  Game.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  Game.renderer.outputEncoding = THREE.sRGBEncoding;
+  Game.renderer.shadowMap.enabled = true;
+  Game.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  Game.renderer.setClearColor(0x10131a);
+
+  Game.scene = new THREE.Scene();
+  Game.cam = new THREE.PerspectiveCamera(76, window.innerWidth / window.innerHeight, 0.14, 1600);
+
+  initMaterials();
+  IN.init(canvas);
+  HUD.init();
+  Menu.init();
+
+  IN.onLockChange = function (on) {
+    if (Game.mode !== 'play') return;
+    HUD.blocked = !on;
+    document.getElementById('pause').classList.toggle('hidden', on);
+  };
+
+  window.addEventListener('resize', Game.resize);
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden && Game.mode === 'play') IN.unlock();
+  });
+
+  // a handle for tinkering from the console (and for the test harness)
+  window.CRUX = {
+    Game: Game, P: P, T: T, K: K, CAM: CAM, IN: IN, HUD: HUD, Net: Net, Coop: Coop,
+    Survive: Survive, Remote: Remote, WI: WI, Camps: Camps, Summit: Summit,
+    FX: FX, Sky: Sky, Props: Props, Wind: Wind, Menu: Menu, groundH: groundH,
+  };
+
+  document.getElementById('boot').classList.add('hidden');
+  requestAnimationFrame(Game.loop);
+};
+
+Game.resize = function () {
+  var w = window.innerWidth, h = window.innerHeight;
+  Game.renderer.setSize(w, h, false);
+  Game.cam.aspect = w / h;
+  Game.cam.updateProjectionMatrix();
+};
+
+// ---------------------------------------------------------------- world
+Game.buildWorld = function (seed, detail, done) {
+  Game.detail = detail;
+  Game.renderer.setPixelRatio(detail ? Math.min(window.devicePixelRatio || 1, 2) : 1);
+  document.getElementById('boot').classList.remove('hidden');
+
+  setTimeout(function () {
+    if (Game.world) Game.teardown();
+    var g = Game.world = new THREE.Group();
+
+    T.build(seed);
+    Wind.init(seed);
+    g.add(T.buildMesh());
+    g.add(Props.build(seed, detail));
+    g.add(Camps.build());
+    g.add(Summit.build());
+    g.add(WI.init());
+    WI.spawnAll(seed);
+    g.add(Coop.init());
+    g.add(Remote.init());
+    g.add(FX.init(detail));
+
+    Sky.build(Game.scene);
+    Sky.setQuality(detail);
+
+    var figRoot = P.init(P.slot, P.name);
+    g.add(figRoot);
+
+    Game.scene.add(g);
+    Game.built = true;
+    document.getElementById('boot').classList.add('hidden');
+    if (done) done();
+  }, 60);
+};
+
+Game.teardown = function () {
+  Game.scene.remove(Game.world);
+  var shared = [];
+  for (var k in MAT) shared.push(MAT[k]);
+  Game.world.traverse(function (o) {
+    if (o.geometry) o.geometry.dispose();
+    if (!o.material) return;
+    var list = Array.isArray(o.material) ? o.material : [o.material];
+    for (var i = 0; i < list.length; i++) {
+      // the shared palette outlives the world it built
+      if (shared.indexOf(list[i]) < 0) list[i].dispose();
+    }
+  });
+  if (Sky.mesh) { Game.scene.remove(Sky.mesh); Game.scene.remove(Sky.cloud); Game.scene.remove(Sky.sun); Game.scene.remove(Sky.sun.target); Game.scene.remove(Sky.hemi); Game.scene.remove(Sky.fill); }
+  Game.world = null; Game.built = false;
+  WI.list = []; WI.thrown = [];
+  Coop.pitons = []; Coop.anchors = []; Coop.pings = [];
+  Remote.list = []; Remote.map = {};
+};
+
+Game.begin = function (campIdx) {
+  var c = Camps.list[campIdx || 0];
+  P.spawnAt(c.x + rngRange(Math.random, -2, 2), c.y + 1.2, c.z + 2.6);
+  P.hp = K.HP_MAX; P.st = K.ST_MAX; P.hunger = K.HU_MAX; P.temp = K.TP_MAX;
+  P.inv = [{ k: 'bar', n: 1 }, { k: 'rope', n: 1 }, null, null];
+  P.sel = 0; P.summited = false; P.inj.leg = 0; P.inj.arm = 0;
+  P.stats = { start: now(), climbed: 0, falls: 0, revives: 0 };
+  Game.runT = Game.runT || 0;
+  CAM.yaw = Math.atan2(-c.x, -c.z);
+  CAM.pitch = -0.05;
+  CAM.smoothTgt.set(P.pos.x, P.pos.y + K.EYE, P.pos.z);
+  Game.mode = 'play';
+  Net.started = true;
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('over').classList.add('hidden');
+  HUD.show(true);
+  HUD.blocked = true;
+  document.getElementById('pause').classList.remove('hidden');
+  HUD.el.room.textContent = Net.solo ? '' : 'ROOM ' + Net.code;
+  HUD.toast('reach the summit. look after each other.', '#ffd646');
+};
+
+Game.quit = function () {
+  Game.mode = 'menu';
+  Net.reset();
+  Remote.clear();
+  HUD.show(false);
+  IN.unlock();
+  document.getElementById('pause').classList.add('hidden');
+  document.getElementById('over').classList.add('hidden');
+  document.getElementById('menu').classList.remove('hidden');
+  Menu.reset();
+};
+
+// ---------------------------------------------------------------- loop
+var _bT = 0, _figOpt = {};
+Game.loop = function (ts) {
+  requestAnimationFrame(Game.loop);
+  var dt = Math.min(0.05, (ts - Game.last) / 1000);
+  if (!(dt > 0)) dt = 0.016;
+  Game.last = ts;
+  Game.t += dt;
+
+  Game.frames++;
+  Game.fpsT += Math.min(0.5, (ts - Game.fpsLast) / 1000);
+  Game.fpsLast = ts;
+  if (Game.fpsT > 0.5) { Game.fps = Game.frames / Game.fpsT; Game.frames = 0; Game.fpsT = 0; }
+
+  Wind.tick(dt);
+
+  if (Game.mode === 'play' && Game.built) {
+    if (!HUD.blocked) {
+      Game.runT += dt;
+      CAM.applyMouse(IN.mx, IN.my);
+      if (IN.view()) CAM.first = !CAM.first;
+      P.update(dt);
+      Coop.tick(dt, Game.t);
+      Survive.tick(dt);
+    }
+    Remote.update(dt, Game.t);
+    Net.tick(dt);
+    WI.tick(dt, Game.t);
+    Camps.tick(dt, Game.t);
+    Summit.tick(dt, Game.t);
+
+    CAM.update(Game.cam, P, dt);
+
+    // pose the local climber
+    P.fig.root.position.copy(P.pos);
+    P.fig.root.rotation.y = P.yaw;
+    P.fig.root.visible = !CAM.hideBody;
+    P.fig.setHeld(P.inv[P.sel] ? P.inv[P.sel].k : null);
+    P.fig.setParka(P.parka);
+    _figOpt.t = Game.t;
+    _figOpt.speed = Math.hypot(P.vel.x, P.vel.z);
+    _figOpt.state = P.state;
+    _figOpt.climbing = P.climbing;
+    _figOpt.brace = P.brace;
+    _figOpt.carrying = !!P.carrying;
+    _figOpt.cold = P.temp < 45;
+    _figOpt.tired = P.st < 22;
+    _figOpt.vy = P.vel.y;
+    P.fig.pose(dt, _figOpt);
+    if (P.fig.torchLight) P.fig.torchLight.visible = !!P.torchOn;
+
+    // breath in the cold, or when the lungs are gone
+    _bT += dt;
+    if (_bT > 0.55 && (P.temp < 62 || P.st < 26)) {
+      _bT = 0;
+      var f = CAM.flatForward(_tmpA);
+      FX.breath(P.pos.x + f.x * 0.3, P.pos.y + 1.5, P.pos.z + f.z * 0.3, f.x, f.z);
+    }
+
+    FX.tick(dt, Game.cam.position, P.pos.y);
+    Sky.update(dt, Game.t, P.pos.y, Game.cam.position);
+    HUD.tick(dt, Game.cam);
+  } else if (Game.built) {
+    // slow drift around the peak behind the menus
+    Game.menuCam(dt);
+    Sky.update(dt, Game.t, 150, Game.cam.position);
+  }
+
+  IN.flush();
+  Game.renderer.render(Game.scene, Game.cam);
+};
+
+var _mcT = 0;
+Game.menuCam = function (dt) {
+  _mcT += dt * 0.055;
+  var r = 210, y = 170;
+  Game.cam.position.set(Math.cos(_mcT) * r, y + Math.sin(_mcT * 0.7) * 30, Math.sin(_mcT) * r);
+  Game.cam.lookAt(0, 150, 0);
+};
+
+/* ==== 22-menu.js ==== */
+// ============================================================ MENUS
+var Menu = { el: {}, state: 'main' };
+
+function $(id) { return document.getElementById(id); }
+
+Menu.init = function () {
+  var e = Menu.el = {
+    menu: $('menu'), main: $('menu-main'), net: $('menu-net'), state: $('net-state'),
+    code: $('net-code'), roster: $('net-roster'), start: $('btn-start'),
+    name: $('in-name'), joinCode: $('in-code'),
+  };
+
+  try {
+    var saved = localStorage.getItem('crux.name');
+    if (saved) e.name.value = saved;
+    var s = localStorage.getItem('crux.sens'); if (s) $('in-sens').value = s;
+    var f = localStorage.getItem('crux.fov'); if (f) $('in-fov').value = f;
+    var iv = localStorage.getItem('crux.inv'); if (iv === '1') $('in-inv').checked = true;
+    var dt = localStorage.getItem('crux.detail'); if (dt !== null) $('in-detail').value = dt;
+  } catch (err) { }
+
+  function readOpts() {
+    IN.sens = parseFloat($('in-sens').value) / 10000;
+    IN.invert = $('in-inv').checked;
+    CAM.fovBase = parseFloat($('in-fov').value);
+    $('sens-v').textContent = (parseFloat($('in-sens').value) / 10).toFixed(1);
+    $('fov-v').textContent = $('in-fov').value;
+    try {
+      localStorage.setItem('crux.sens', $('in-sens').value);
+      localStorage.setItem('crux.fov', $('in-fov').value);
+      localStorage.setItem('crux.inv', $('in-inv').checked ? '1' : '0');
+      localStorage.setItem('crux.detail', $('in-detail').value);
+    } catch (err) { }
+  }
+  ['in-sens', 'in-fov', 'in-inv', 'in-detail'].forEach(function (id) {
+    $(id).addEventListener('input', readOpts);
+    $(id).addEventListener('change', readOpts);
+  });
+  readOpts();
+
+  e.name.addEventListener('change', function () {
+    try { localStorage.setItem('crux.name', e.name.value); } catch (err) { }
+  });
+  e.joinCode.addEventListener('input', function () {
+    e.joinCode.value = e.joinCode.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+  });
+  e.joinCode.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') Menu.join(); });
+
+  $('btn-solo').addEventListener('click', Menu.solo);
+  $('btn-host').addEventListener('click', Menu.host);
+  $('btn-join').addEventListener('click', Menu.join);
+  $('btn-start').addEventListener('click', Menu.start);
+  $('btn-back').addEventListener('click', function () { Net.reset(); Menu.reset(); });
+  $('btn-resume').addEventListener('click', function () { IN.lock(); });
+  $('btn-quit').addEventListener('click', function () { Game.quit(); });
+  $('btn-again').addEventListener('click', function () { Game.quit(); });
+
+  Net.onRoster = Menu.drawRoster;
+  Net.onStart = Menu.onGo;
+};
+
+Menu.name = function () { return (Menu.el.name.value || 'climber').slice(0, 12) || 'climber'; };
+Menu.detail = function () { return $('in-detail').value === '1' ? 1 : 0; };
+
+Menu.reset = function () {
+  Menu.state = 'main';
+  Menu.el.main.classList.remove('hidden');
+  Menu.el.net.classList.add('hidden');
+  Menu.el.code.classList.add('hidden');
+  Menu.el.start.classList.add('hidden');
+  Menu.el.state.classList.remove('err');
+  Menu.el.state.textContent = '';
+};
+
+Menu.toNet = function (msg) {
+  Menu.state = 'net';
+  Menu.el.main.classList.add('hidden');
+  Menu.el.net.classList.remove('hidden');
+  Menu.el.state.textContent = msg;
+  Menu.el.state.classList.remove('err');
+  Menu.el.roster.innerHTML = '';
+};
+
+Menu.err = function (msg) {
+  Menu.el.state.textContent = msg;
+  Menu.el.state.classList.add('err');
+  Menu.el.code.classList.add('hidden');
+  Menu.el.start.classList.add('hidden');
+};
+
+Menu.solo = function () {
+  P.name = Menu.name();
+  P.slot = 0; P.id = 'solo';
+  Net.reset(); Net.solo = true; Net.code = '';
+  Game.runT = 0;
+  Game.buildWorld((Math.random() * 4294967295) >>> 0, Menu.detail(), function () { Game.begin(0); });
+};
+
+Menu.host = function () {
+  P.name = Menu.name();
+  Menu.toNet('opening a room…');
+  Net.host(P.name, function (err, code) {
+    if (err) { Menu.err(err); return; }
+    Menu.el.state.textContent = 'room open — carving the mountain…';
+    Menu.el.code.classList.remove('hidden');
+    Menu.el.code.querySelector('b').textContent = code;
+    Game.runT = 0;
+    Game.buildWorld(Net.seed, Menu.detail(), function () {
+      Menu.el.state.textContent = 'waiting for friends — you can start whenever';
+      Menu.el.start.classList.remove('hidden');
+      Menu.drawRoster();
+    });
+  });
+};
+
+Menu.join = function () {
+  var code = Menu.el.joinCode.value.toUpperCase();
+  if (code.length < 4) { Menu.el.joinCode.focus(); return; }
+  P.name = Menu.name();
+  Menu.toNet('dialling ' + code + '…');
+  Net.join(code, P.name, function (err) {
+    if (err) { Menu.err(err); return; }
+    Menu.el.state.textContent = 'connected — carving the mountain…';
+  });
+};
+
+Menu.onGo = function (m) {
+  // host said go, or our welcome arrived
+  if (Net.isHost) return;
+  if (!Game.built) {
+    Game.buildWorld(Net.seed, Menu.detail(), function () {
+      Net.applySnapshot(Net.pendingSnap);
+      Menu.drawRoster();
+      if (m && m.started) Game.begin(Net.spawnCamp || 0);
+      else Menu.el.state.textContent = 'in the room — waiting for the host to start';
+    });
+  } else {
+    Game.begin(Net.spawnCamp || 0);
+  }
+};
+
+Menu.start = function () {
+  Net.started = true;
+  Net.broadcast({ t: 'go', started: 1 });
+  Game.begin(0);
+};
+
+Menu.drawRoster = function () {
+  var box = Menu.el.roster;
+  if (!box) return;
+  box.innerHTML = '';
+  var ids = Object.keys(Net.roster);
+  if (!ids.length && Net.solo) return;
+  for (var i = 0; i < ids.length; i++) {
+    var r = Net.roster[ids[i]];
+    var d = document.createElement('div');
+    d.className = 'rost';
+    d.innerHTML = '<i style="background:' + SLOT_HEX[r.slot % 4] + '"></i><span>' + r.name + '</span>' +
+      '<small>' + (ids[i] === Net.selfId ? 'you' : SLOT_NAME[r.slot % 4]) + '</small>';
+    box.appendChild(d);
+  }
+};
+
+/* ==== 23-boot.js ==== */
+// ============================================================ BOOT
+(function () {
+  function fail(msg) {
+    var b = document.getElementById('boot');
+    b.classList.remove('hidden');
+    b.innerHTML = '<span style="max-width:420px;text-align:center;line-height:1.7;letter-spacing:.04em">' + msg + '</span>';
+  }
+  function start() {
+    if (typeof THREE === 'undefined') {
+      fail('three.js did not load. this build pulls r128 from cdnjs — check the connection and reload.');
+      return;
+    }
+    if (typeof Peer === 'undefined') {
+      // networking is optional: a solo climb still works
+      window.Peer = function () { throw new Error('peerjs unavailable'); };
+    }
+    try {
+      Game.init();
+    } catch (e) {
+      fail('the mountain would not load: ' + (e && e.message ? e.message : e));
+      throw e;
+    }
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(start, 0);
+  else window.addEventListener('DOMContentLoaded', start);
+})();
+
+})();</script>
+</body>
+</html>
