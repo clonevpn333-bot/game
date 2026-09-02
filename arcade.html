@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Overclock</title>
+<meta name="description" content="Thirteen games that launch in under a second and hold frame rate on a Chromebook.">
+<meta name="theme-color" content="#0B0A0F">
+<meta name="color-scheme" content="dark">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="portal/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="portal/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<style>
+:root{
+  --ink:#0B0A0F; --deep:#07060A; --panel:#15131C; --panel-2:#1E1B29; --panel-3:#2A2639;
+  --line:rgba(255,255,255,.07); --line-2:rgba(255,255,255,.14);
+  --text:#F4F1EC; --text-2:#C6C0D2; --muted:#918AA3; --faint:#5F586F;
+  --amber:#FFB020; --amber-deep:#C87F0C; --ink-on-amber:#1A1206;
+  --flare:#FF4D3D; --ice:#6EC8FF; --good:#5FD79B;
+  --rail:236px; --r:14px; --gut:clamp(18px,3.2vw,44px);
+  --f-display:"Syne",ui-sans-serif,system-ui,sans-serif;
+  --f-ui:"Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--ink);color:var(--text);font:15px/1.55 var(--f-ui);
+  -webkit-font-smoothing:antialiased;min-height:100vh}
+.app{display:grid;grid-template-columns:var(--rail) minmax(0,1fr);min-height:100vh}
+.rail{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:22px;
+  padding:22px 16px;background:var(--deep);border-right:1px solid var(--line);overflow-y:auto}
+.mark{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--text);padding:0 6px}
+.mark svg{width:30px;height:30px;flex:none;border-radius:9px}
+.mark b{font:800 19px/1 var(--f-display);letter-spacing:.055em;text-transform:uppercase}
+.skel{padding:26px var(--gut)}
+.skel .h{height:min(48vh,380px);border-radius:var(--r);
+  background:linear-gradient(100deg,#15131C 30%,#221E30 50%,#15131C 70%);background-size:220% 100%;
+  animation:sh 1.5s linear infinite}
+.skel .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-top:26px}
+.skel .g i{height:190px;border-radius:var(--r);
+  background:linear-gradient(100deg,#15131C 30%,#221E30 50%,#15131C 70%);background-size:220% 100%;
+  animation:sh 1.5s linear infinite}
+@keyframes sh{to{background-position:-120% 0}}
+@media (prefers-reduced-motion:reduce){.skel .h,.skel .g i{animation:none}}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr}
+  .rail{position:static;height:auto;flex-direction:row;align-items:center;overflow-x:auto;
+    border-right:0;border-bottom:1px solid var(--line);padding:12px var(--gut)}
+}
+</style>
+<link rel="stylesheet" href="portal/css/shell.css">
+</head>
+<body data-route="library">
+
+<div class="app">
+  <aside class="rail">
+    <a class="mark" href="#/" aria-label="Overclock home">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="9" fill="#FFB020"/>
+        <path d="M17.6 4 L8 17.4h5.4L11.8 28 22 14.2h-5.6z" fill="#1A1206"/>
+      </svg>
+      <b>Overclock</b>
+    </a>
+    <nav class="rail-nav" id="rail-nav" aria-label="Main"></nav>
+    <div class="rail-foot">
+      <span id="net-badge" class="net-badge" role="status" hidden></span>
+      <button id="install" class="btn btn--ghost btn--sm" hidden>Install app</button>
+      <p class="rail-note">Runs offline once a game has been opened.</p>
+    </div>
+  </aside>
+
+  <main id="view">
+    <div class="skel" aria-hidden="true">
+      <div class="h"></div>
+      <div class="g"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+  </main>
+</div>
+
+<noscript>
+  <p style="padding:24px;max-width:60ch">Overclock launches games in sandboxed frames and needs JavaScript. The bundles in <code>games/</code> are self-contained and open on their own.</p>
+</noscript>
+
+<script type="module" src="portal/js/shell.js"></script>
+</body>
+</html>
