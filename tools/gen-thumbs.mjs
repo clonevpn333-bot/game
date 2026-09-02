@@ -40,7 +40,7 @@ for (const game of games) {
   // Sized so the game frame lands on exactly 640x360 after the two chrome bars.
   const page = await browser.newPage({ viewport: { width: 640, height: 360 + 56 + 44 }, deviceScaleFactor: 1 });
   try {
-    await page.goto(`${BASE}/index.html#/play/${game.id}`, { waitUntil: 'load' });
+    await page.goto(`${BASE}/arcade.html#/play/${game.id}`, { waitUntil: 'load' });
     await page.waitForSelector('iframe.game-frame', { timeout: 15000 });
     const w = WARMUP[game.id] || { keys: [], wait: 3000 };
     await page.waitForTimeout(1200);

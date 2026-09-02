@@ -48,7 +48,7 @@ async function heap(cdp, gc = true) {
 console.log('\n— catalog ——————————————————————————————————————————');
 {
   const { ctx, page, errors } = await fresh();
-  await page.goto(`${BASE}/index.html`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html`, { waitUntil: 'load' });
   await page.waitForSelector('.card');
   // Titles appear in more than one rail, so compare the set, not the list.
   const ids = [...new Set(await page.$$eval('.card', (n) => n.map((c) => c.dataset.id)))].sort();
@@ -70,7 +70,7 @@ console.log('\n— catalog —————————————————�
 console.log('\n— save round-trip through postMessage ——————————————————');
 {
   const { ctx, page } = await fresh();
-  await page.goto(`${BASE}/index.html#/play/snake`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/play/snake`, { waitUntil: 'load' });
   await waitReady(page, 'snake');
   const f = gameFrame(page);
   await page.waitForTimeout(1200);
@@ -89,9 +89,9 @@ console.log('\n— save round-trip through postMessage ————————�
   check('save record is versioned', !!stored?.version && !!stored?.updatedAt);
 
   // Relaunch: the frame is rebuilt from scratch and the save survives it.
-  await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/`, { waitUntil: 'load' });
   await page.waitForTimeout(400);
-  await page.goto(`${BASE}/index.html#/play/snake`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/play/snake`, { waitUntil: 'load' });
   await waitReady(page, 'snake');
   const frame = gameFrame(page);
   check('relaunch rebuilds the frame cleanly', !!frame, frame ? frame.url().split('/').pop() : 'no frame');
@@ -115,7 +115,7 @@ console.log('\n— teardown —————————————————�
   const { ctx, page } = await fresh();
   const cdp = await ctx.newCDPSession(page);
   await cdp.send('Performance.enable');
-  await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/`, { waitUntil: 'load' });
   await page.waitForSelector('.card');
   await page.waitForTimeout(1500);
   const before = await heap(cdp);
@@ -123,11 +123,11 @@ console.log('\n— teardown —————————————————�
   // Two launch/exit cycles: the leak signal is what the *second* one leaves
   // behind, since the first also pulls in art and code the shell keeps.
   async function cycle() {
-    await page.goto(`${BASE}/index.html#/play/bonecrown`, { waitUntil: 'load' });
+    await page.goto(`${BASE}/arcade.html#/play/bonecrown`, { waitUntil: 'load' });
     await waitReady(page, 'bonecrown');
     await page.waitForTimeout(5000);
     const peak = (await heap(cdp, false)).js;
-    await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' });
+    await page.goto(`${BASE}/arcade.html#/`, { waitUntil: 'load' });
     await page.waitForTimeout(3000);
     const settled = await heap(cdp);
     return { peak, rest: settled.js, docs: settled.documents };
@@ -167,19 +167,19 @@ console.log('\n— renderer tier gating —————————————�
       return orig.call(this, type, ...rest);
     };
   });
-  await page.goto(`${BASE}/index.html#/game/bonecrown`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/game/bonecrown`, { waitUntil: 'load' });
   await page.waitForSelector('.detail-body');
   const blocked = await page.$('.notice--block');
   const hasPlay = await page.$('a.btn--play[href*="play"]');
   check('unsupported title shows a friendly refusal', !!blocked);
   check('unsupported title offers no play button', !hasPlay);
 
-  await page.goto(`${BASE}/index.html#/play/bonecrown`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/play/bonecrown`, { waitUntil: 'load' });
   await page.waitForTimeout(1200);
   const overlayError = await page.textContent('.overlay-error').catch(() => null);
   check('direct launch of an unsupported title is refused, not crashed', !!overlayError, (overlayError || '').slice(0, 60));
 
-  await page.goto(`${BASE}/index.html#/game/vector-siege`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/game/vector-siege`, { waitUntil: 'load' });
   await page.waitForSelector('.detail-body');
   check('2D title still launchable without WebGL', !!(await page.$('a.btn--play[href*="play"]')));
   await ctx.close();
@@ -188,13 +188,13 @@ console.log('\n— renderer tier gating —————————————�
 console.log('\n— service worker, offline and cache versioning —————————');
 {
   const { ctx, page } = await fresh();
-  await page.goto(`${BASE}/index.html`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html`, { waitUntil: 'load' });
   await page.waitForSelector('.card');
   await page.evaluate(() => navigator.serviceWorker.ready);
-  await page.goto(`${BASE}/index.html#/play/snake`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/play/snake`, { waitUntil: 'load' });
   await waitReady(page, 'snake');
   await page.waitForTimeout(1500);
-  await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/`, { waitUntil: 'load' });
   await page.waitForTimeout(1000);
 
   const cached = await page.evaluate(async () => {
@@ -219,12 +219,12 @@ console.log('\n— service worker, offline and cache versioning —————�
     bumped.after.filter((u) => u.includes('snake')).join(' '));
 
   await ctx.setOffline(true);
-  await page.goto(`${BASE}/index.html`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html`, { waitUntil: 'load' });
   await page.waitForSelector('.card', { timeout: 15000 });
   const offlineCards = await page.$$eval('.card', (n) => n.length);
   check('shell opens with the network disabled', offlineCards > 0, `${offlineCards} cards`);
 
-  await page.goto(`${BASE}/index.html#/play/snake`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/play/snake`, { waitUntil: 'load' });
   await waitReady(page, 'snake');
   check('previously played game runs offline', true);
   await ctx.setOffline(false);
@@ -234,7 +234,7 @@ console.log('\n— service worker, offline and cache versioning —————�
 console.log('\n— pointer lock inside the sandbox ——————————————————————');
 {
   const { ctx, page } = await fresh();
-  await page.goto(`${BASE}/index.html#/play/pointer-lock-probe`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/play/pointer-lock-probe`, { waitUntil: 'load' });
   await waitReady(page, 'pointer-lock-probe');
   await page.mouse.move(600, 500);
   await page.mouse.click(600, 500);
@@ -248,13 +248,13 @@ console.log('\n— pointer lock inside the sandbox —————————�
   // Leaving the game while still locked must not strand the cursor: the frame
   // goes and the lock goes with it. (Escape is browser UI and is not delivered
   // to headless pages, so the paths that are ours are the ones checked.)
-  await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/`, { waitUntil: 'load' });
   await page.waitForTimeout(600);
   check('leaving the game drops the lock with the frame',
     page.frames().length === 1 && !(await page.evaluate(() => !!document.pointerLockElement)),
     `${page.frames().length} frame(s)`);
 
-  await page.goto(`${BASE}/index.html#/play/pointer-lock-probe`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/play/pointer-lock-probe`, { waitUntil: 'load' });
   await waitReady(page, 'pointer-lock-probe');
   await page.mouse.move(600, 500);
   await page.mouse.click(600, 500);
@@ -271,12 +271,12 @@ console.log('\n— a leaky title cannot take the portal down ——————�
   const { ctx, page } = await fresh();
   const cdp = await ctx.newCDPSession(page);
   await cdp.send('Performance.enable');
-  await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/`, { waitUntil: 'load' });
   await page.waitForSelector('.card');
   await page.waitForTimeout(1000);
   const before = await heap(cdp);
 
-  await page.goto(`${BASE}/index.html#/play/leak-test`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/play/leak-test`, { waitUntil: 'load' });
   await waitReady(page, 'leak-test');
   await page.keyboard.press('KeyG');            // spam GL contexts
   await page.keyboard.press('KeyC');            // throw errors
@@ -284,7 +284,7 @@ console.log('\n— a leaky title cannot take the portal down ——————�
   await page.waitForTimeout(6000);
   const during = await heap(cdp, false);
 
-  await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/`, { waitUntil: 'load' });
   await page.waitForSelector('.card', { timeout: 10000 });
   await page.waitForTimeout(3000);
   const after = await heap(cdp);

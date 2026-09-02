@@ -11,7 +11,7 @@ import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 
 const SHELL_FILES = [
-  'index.html', 'portal/css/shell.css', 'manifest.webmanifest', 'games.json',
+  'index.html', 'arcade.html', 'portal/css/shell.css', 'manifest.webmanifest', 'games.json',
   ...readdirSync('portal/js').filter((f) => f.endsWith('.js')).map((f) => join('portal/js', f)),
 ];
 const SHELL_TARGET_KB = 150;

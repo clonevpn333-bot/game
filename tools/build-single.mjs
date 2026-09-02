@@ -98,7 +98,7 @@ const catalogJson = JSON.stringify({ ...manifest, games })
   .replace(/<\/script/gi, '<\\/script');
 
 // --- assemble -------------------------------------------------------------
-const shellHtml = readFileSync('index.html', 'utf8');
+const shellHtml = readFileSync('arcade.html', 'utf8');
 const criticalCss = /<style>([\s\S]*?)<\/style>/.exec(shellHtml)[1];
 const shellCss = readFileSync('portal/css/shell.css', 'utf8');
 const bodyInner = /<body[^>]*>([\s\S]*?)<\/body>/.exec(shellHtml)[1]

@@ -24,7 +24,7 @@ const ctx = await browser.newContext({ viewport: { width: 412, height: 823 }, de
 const page = await ctx.newPage();
 const cdp = await ctx.newCDPSession(page);
 
-await page.goto(`${BASE}/index.html`, { waitUntil: 'load' });
+await page.goto(`${BASE}/arcade.html`, { waitUntil: 'load' });
 await page.waitForSelector('.card', { timeout: 20000 });
 await page.evaluate(() => navigator.serviceWorker.ready);
 

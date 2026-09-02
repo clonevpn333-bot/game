@@ -52,7 +52,7 @@ async function sample(gc = true) {
   };
 }
 
-await page.goto(`${BASE}/index.html`, { waitUntil: 'load' });
+await page.goto(`${BASE}/arcade.html`, { waitUntil: 'load' });
 await page.waitForSelector('.card', { timeout: 30000 });
 await page.evaluate(() => navigator.serviceWorker.ready);
 await page.waitForTimeout(2000);
@@ -70,7 +70,7 @@ while (Date.now() < deadline && !crashed) {
   const game = games[cycle % games.length];
   cycle++;
   try {
-    await page.goto(`${BASE}/index.html#/play/${game.id}`, { waitUntil: 'load' });
+    await page.goto(`${BASE}/arcade.html#/play/${game.id}`, { waitUntil: 'load' });
     // Dispose the handle: a retained ElementHandle keeps its node (and its
     // ancestors) alive in the renderer and shows up as a fake DOM leak.
     const handle = await page.waitForSelector('iframe.game-frame', { timeout: 20000 });
@@ -88,7 +88,7 @@ while (Date.now() < deadline && !crashed) {
   }
 
   const stats = await page.evaluate(() => window.__portal?.lastStats || null).catch(() => null);
-  await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' }).catch(() => {});
+  await page.goto(`${BASE}/arcade.html#/`, { waitUntil: 'load' }).catch(() => {});
   await page.waitForTimeout(2500);
   const s = await sample();
   s.game = game.id;

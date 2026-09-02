@@ -564,7 +564,7 @@ export async function renderLinks() {
       `<iframe src="${direct}"\n        width="960" height="540"\n        style="border:0;border-radius:12px"\n` +
       `        allow="fullscreen; pointer-lock; autoplay; gamepad"\n        title="${title}"></iframe>`;
     allField.value = games.map((g) => `${g.title.padEnd(20)} ${base}#/play/${g.id}`).join('\n');
-    const cloakBase = base.replace(/(index\.html)?$/, 'cloak.html');
+    const cloakBase = base.replace(/(arcade\.html|index\.html)?$/, 'index.html');
     launcherField.value = `${cloakBase}#u=${b64(direct)}&t=${b64(titleField.value || 'New Tab')}&go=1`;
     storage.setMeta('linkBase', base);
   }
@@ -603,7 +603,7 @@ export async function renderLinks() {
         })),
       el('div', { class: 'row' }, launcherField, copyBtn(launcherField, 'Copy launcher link')),
       el('p', { class: 'muted', style: 'margin:8px 0 0;font-size:12px',
-        text: 'The launcher link opens the blank window on arrival. /cloak.html ships with the site as a standalone copy.' }),
+        text: 'The launcher link opens the blank window on arrival. The site front page is that launcher.' }),
 
       el('h3', { class: 'sub', style: 'margin-top:28px', text: 'Embed code' }),
       el('p', { class: 'muted', style: 'margin:0 0 8px;font-size:12.5px',

@@ -21,6 +21,9 @@
 /index.html
   Cache-Control: public, max-age=0, must-revalidate
 
+/arcade.html
+  Cache-Control: public, max-age=0, must-revalidate
+
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer

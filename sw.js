@@ -13,7 +13,7 @@
  * online and still opens offline.
  */
 
-const SHELL_VERSION = '4ad495a686';                     // stamped by tools/build.mjs
+const SHELL_VERSION = '8f72357177';                     // stamped by tools/build.mjs
 const SHELL_CACHE   = `shell-${SHELL_VERSION}`;
 const BUNDLE_CACHE  = 'bundles-v1';
 const RUNTIME_CACHE = 'runtime-v1';
@@ -22,6 +22,7 @@ const MANIFEST_URL  = 'games.json';
 const SHELL_ASSETS = [
   './',
   'index.html',
+  'arcade.html',
   'manifest.webmanifest',
   'portal/css/shell.css',
   'portal/js/shell.js',
@@ -100,7 +101,12 @@ self.addEventListener('fetch', (event) => {
 /** App shell: cached copy paints instantly, network only fills gaps. */
 async function navigationHandler(req) {
   const cache = await caches.open(SHELL_CACHE);
-  const cached = (await cache.match('index.html')) || (await cache.match('./'));
+  // Two documents live at the top level: the launcher at / and the arcade at
+  // /arcade.html. Serve whichever was asked for rather than always the root.
+  const wantsArcade = new URL(req.url).pathname.endsWith('arcade.html');
+  const cached = wantsArcade
+    ? await cache.match('arcade.html')
+    : (await cache.match('index.html')) || (await cache.match('./'));
   if (cached) return cached;
   try { return await fetch(req); }
   catch { return new Response(offlineHtml(), { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } }); }

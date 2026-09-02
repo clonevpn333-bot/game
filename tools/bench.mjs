@@ -16,7 +16,7 @@ const THROTTLE = !process.argv.includes('--no-throttle') ? 4 : 1;
 const gamesArg = (process.argv.find((a) => a.startsWith('--games=')) || '').split('=')[1];
 
 const SHELL_FILES = [
-  'index.html', 'portal/css/shell.css', 'portal/js/shell.js', 'portal/js/router.js',
+  'arcade.html', 'portal/css/shell.css', 'portal/js/shell.js', 'portal/js/router.js',
   'portal/js/catalog.js', 'portal/js/views.js', 'portal/js/launcher.js',
   'portal/js/storage.js', 'portal/js/capabilities.js', 'manifest.webmanifest', 'games.json',
 ];
@@ -64,7 +64,7 @@ async function heapMB(cdp, { gc = true } = {}) {
 {
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 1 });
   const { page } = await newPage(ctx);
-  await page.goto(`${BASE}/index.html`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html`, { waitUntil: 'load' });
   await page.waitForSelector('.card', { timeout: 30000 });
   const paint = await page.evaluate(() => {
     const fcp = performance.getEntriesByName('first-contentful-paint')[0];
@@ -89,16 +89,16 @@ for (const game of games) {
   const { page, cdp } = await newPage(ctx);
 
   // Cold: fresh profile, nothing cached.
-  await page.goto(`${BASE}/index.html#/play/${game.id}`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/play/${game.id}`, { waitUntil: 'load' });
   const cold = await launchMs(page);
 
   // Back to the library, settle, and take the baseline the exit is judged
   // against. The service worker now holds the bundle, so the next launch is warm.
-  await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/`, { waitUntil: 'load' });
   await page.waitForTimeout(2000);
   const baseline = await heapMB(cdp);
 
-  await page.goto(`${BASE}/index.html#/play/${game.id}`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/play/${game.id}`, { waitUntil: 'load' });
   const warm = await launchMs(page);
 
   // Sustained frame rate over 12 s of running.
@@ -108,7 +108,7 @@ for (const game of games) {
 
   // Exit and let the heap settle: the frame is gone, so this is the portal's
   // own footprint again.
-  await page.goto(`${BASE}/index.html#/`, { waitUntil: 'load' });
+  await page.goto(`${BASE}/arcade.html#/`, { waitUntil: 'load' });
   await page.waitForTimeout(3000);
   const heapAfter = await heapMB(cdp);
 
