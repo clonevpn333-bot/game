@@ -3,7 +3,7 @@
 // world seed; everyone else dials that code and the host relays traffic
 // between them, so four people on four continents share one mountain.
 var Net = {
-  peer: null, conns: [], byId: {}, isHost: false, solo: true,
+  peer: null, conns: [], byId: {}, isHost: false, solo: true, loot: 1,
   code: '', selfId: '', seed: 1, started: false,
   roster: {},            // id -> {name, slot, host}
   acc: 0, status: 'idle',
@@ -43,7 +43,8 @@ Net.host = function (name, cb) {
   var attempts = 0;
   function tryOpen() {
     Net.code = makeCode();
-    Net.seed = codeToSeed(Net.code);
+    Net.seed = dailySeed();                 // same island for everyone today
+    Net.loot = codeToSeed(Net.code) ^ ((Math.random() * 4294967295) >>> 0);
     var p;
     try { p = new Peer(PEER_PREFIX + Net.code, PEER_OPTS); }
     catch (e) { Net.status = 'error'; cb('peer-to-peer is unavailable in this browser'); return; }
@@ -155,7 +156,7 @@ Net.recv = function (c, m) {
     var slot = Net.freeSlot();
     Net.roster[pid] = { name: (m.n || 'climber').slice(0, 12), slot: slot };
     Net.byId[pid] = c;
-    c.send({ t: 'welcome', seed: Net.seed, id: pid, slot: slot, roster: Net.roster, snap: Net.snapshot(), started: Net.started });
+    c.send({ t: 'welcome', seed: Net.seed, loot: Net.loot, id: pid, slot: slot, roster: Net.roster, snap: Net.snapshot(), started: Net.started });
     Net.broadcast({ t: 'peer', id: pid, n: Net.roster[pid].name, s: slot }, c);
     Remote.add(pid, Net.roster[pid].name, slot);
     if (Net.onRoster) Net.onRoster();
@@ -170,6 +171,7 @@ Net.recv = function (c, m) {
 
 Net.welcome = function (m) {
   Net.seed = m.seed;
+  Net.loot = m.loot;
   P.id = m.id; P.slot = m.slot;
   Net.roster = m.roster || {};
   Net.roster[m.id] = { name: P.name, slot: m.slot };
@@ -182,29 +184,29 @@ Net.welcome = function (m) {
 Net.snapshot = function () {
   var lit = [], i;
   for (i = 0; i < Camps.list.length; i++) lit.push(Camps.list[i].lit ? 1 : 0);
-  var taken = [];
+  var taken = [], opened = [];
   for (i = 0; i < WI.list.length; i++) if (WI.list[i].taken) taken.push(WI.list[i].id);
-  var broke = [];
-  if (T.BROKEN) for (i = 0; i < T.BROKEN.length; i++) if (T.BROKEN[i]) broke.push(i);
-  var anch = [];
-  for (i = 0; i < Coop.anchors.length; i++) {
-    var a = Coop.anchors[i];
-    anch.push({ id: a.id, owner: a.owner, x: a.x, y: a.y, z: a.z, slot: a.slot });
+  for (i = 0; i < WI.cases.length; i++) if (WI.cases[i].open) opened.push(WI.cases[i].id);
+  var ropes = [];
+  for (i = 0; i < Coop.ropes.length; i++) {
+    var r = Coop.ropes[i];
+    ropes.push({ x: r.x, y: r.top, z: r.z, l: r.top - r.bot });
   }
   var pit = [];
   for (i = 0; i < Coop.pitons.length; i++) pit.push({ x: Coop.pitons[i].x, y: Coop.pitons[i].y, z: Coop.pitons[i].z });
-  return { lit: lit, taken: taken, broke: broke, anch: anch, pit: pit, t: Game.runT };
+  return { lit: lit, taken: taken, opened: opened, ropes: ropes, pit: pit, t: Game.runT, fog: Fog.level };
 };
 
 Net.applySnapshot = function (s) {
   if (!s) return;
   var i;
   for (i = 0; i < s.lit.length; i++) if (s.lit[i]) Camps.setLit(i, true);
+  for (i = 0; i < s.opened.length; i++) WI.openCase(s.opened[i], true);
   for (i = 0; i < s.taken.length; i++) WI.take(s.taken[i]);
-  for (i = 0; i < s.broke.length; i++) { T.BROKEN[s.broke[i]] = 1; T.paintBroken(s.broke[i]); }
-  for (i = 0; i < s.anch.length; i++) Coop.addAnchor(s.anch[i]);
+  for (i = 0; i < s.ropes.length; i++) Coop.addRope(s.ropes[i].x, s.ropes[i].y, s.ropes[i].z, s.ropes[i].l);
   for (i = 0; i < s.pit.length; i++) Coop.placePiton(s.pit[i].x, s.pit[i].y, s.pit[i].z, 0, 1, true);
   if (s.t) Game.runT = s.t;
+  if (s.fog) Fog.level = s.fog;
   // late joiners start the climb at the group's highest lit fire
   var idx = 0;
   for (i = 0; i < Camps.list.length; i++) if (Camps.list[i].lit) idx = Math.max(idx, i);
@@ -234,62 +236,54 @@ Net.apply = function (m) {
       Remote.feed(m.f, m);
       break;
     case 'pick': WI.take(m.i); break;
+    case 'case': WI.openCase(m.i, true); break;
     case 'drop': WI.add({ id: m.id, k: m.k, x: m.x, y: T.hAt(m.x, m.z), z: m.z }); break;
-    case 'give':
-      if (m.to === P.id) {
-        WI.toss(m.k, new THREE.Vector3(m.fx, m.fy, m.fz), new THREE.Vector3(P.pos.x, P.pos.y + 1.2, P.pos.z), function () {
-          if (Survive.add(m.k)) HUD.toast('caught ' + ITEM[m.k].nm, '#8fe04a');
-          else {
-            var id = WI.dropAt(m.k, P.pos.x, groundH(P.pos.x, P.pos.z), P.pos.z);
-            Net.send({ t: 'drop', k: m.k, id: id, x: P.pos.x, y: P.pos.y, z: P.pos.z });
-            HUD.toast('pack full — it lands at your feet', '#ffb454');
-          }
-        });
-      } else {
-        a = Remote.byId(m.to);
-        if (a) WI.toss(m.k, new THREE.Vector3(m.fx, m.fy, m.fz), new THREE.Vector3(a.pos.x, a.pos.y + 1.2, a.pos.z), null);
-      }
-      break;
-    case 'rope': Coop.addAnchor({ id: m.id, owner: m.owner, x: m.x, y: m.y, z: m.z, slot: m.slot }); break;
-    case 'unrope': Coop.removeAnchor(m.id); break;
+    case 'rope': Coop.addRope(m.x, m.y, m.z, m.l); break;
     case 'pit': Coop.placePiton(m.x, m.y, m.z, m.nx, m.nz, true); break;
     case 'ping':
       Coop.addPing(m.x, m.y, m.z, m.s, !!m.d, m.n);
       HUD.toast(m.n + (m.d ? ' marks danger' : ' marks a route'), m.d ? '#ff5b52' : SLOT_HEX[m.s % 4]);
       break;
     case 'camp':
-      if (!Camps.list[m.i].lit) { Camps.setLit(m.i, true); HUD.toast('camp ' + (m.i + 1) + ' lit', '#ffd646'); }
-      break;
-    case 'brk':
-      if (!T.BROKEN[m.c]) { T.BROKEN[m.c] = 1; T.paintBroken(m.c); }
+      if (Camps.list[m.i] && !Camps.list[m.i].lit) { Camps.setLit(m.i, true); HUD.toast('a fire goes up ahead', '#ffd646'); }
       break;
     case 'down':
       a = Remote.byId(m.f);
-      if (a) { a.state = ST.DOWN; HUD.toast(a.name + ' is down', '#ff5b52'); }
+      if (a) { a.state = ST.OUT; HUD.toast(a.name + ' is down', '#ff5b52'); }
       break;
     case 'carry':
-      a = Remote.byId(m.f);
       if (m.id === null) {
-        for (var i = 0; i < Remote.list.length; i++) if (Remote.list[i].carriedBy === m.f) Remote.list[i].carriedBy = null;
-        if (P.carriedBy === m.f) { P.carriedBy = null; P.state = ST.DOWN; }
+        for (var ci = 0; ci < Remote.list.length; ci++) if (Remote.list[ci].carriedBy === m.f) Remote.list[ci].carriedBy = null;
+        if (P.carriedBy === m.f) { P.carriedBy = null; P.state = ST.OUT; }
       } else if (m.id === P.id) { P.carriedBy = m.f; P.state = ST.CARRIED; }
-      else { var b = Remote.byId(m.id); if (b) b.carriedBy = m.f; }
+      else { var b2 = Remote.byId(m.id); if (b2) b2.carriedBy = m.f; }
       break;
     case 'rev':
       if (m.id === P.id) {
-        P.state = ST.AIR; P.hp = 42; P.st = P.stMax * 0.6; P.downT = 0; P.carriedBy = null;
+        P.state = ST.AIR; P.hp = 55; P.outT = 0; P.carriedBy = null;
+        Survive.recalcMax(); P.st = P.stMax * 0.5;
         HUD.toast('back on your feet', '#8fe04a');
       } else {
         a = Remote.byId(m.id);
         if (a) { a.state = ST.GROUND; a.carriedBy = null; }
       }
       break;
+    case 'pull':
+      // somebody has a hand on you: get dragged toward them
+      if (m.id === P.id && P.state !== ST.CARRIED) {
+        var px = m.x - P.pos.x, py = m.y - P.pos.y, pz = m.z - P.pos.z;
+        var pd = Math.sqrt(px * px + py * py + pz * pz) || 1;
+        if (pd > 1.2) {
+          var k2 = Math.min(1, 7 / pd * 0.02);
+          P.pos.x += px * k2 * 6; P.pos.y += py * k2 * 6; P.pos.z += pz * k2 * 6;
+          if (P.state === ST.OUT) P.outT = Math.max(P.outT, 3);
+          P.vel.y = Math.max(P.vel.y, 0);
+        }
+      }
+      break;
     case 'up':
       a = Remote.byId(m.f);
       if (a) a.state = ST.GROUND;
-      break;
-    case 'bst':
-      if (m.to === P.id) { P.brace = false; HUD.toast('boosted!', '#ffd646'); }
       break;
     case 'top':
       HUD.toast(m.n + ' reached the summit', '#ffd646');
@@ -310,8 +304,8 @@ Net.tick = function (dt) {
     t: 's',
     x: Math.round(P.pos.x * 100) / 100, y: Math.round(P.pos.y * 100) / 100, z: Math.round(P.pos.z * 100) / 100,
     yaw: Math.round(P.yaw * 100) / 100,
-    st: P.state, hp: P.hp | 0, sm: P.st | 0, hu: P.hunger | 0, tp: P.temp | 0,
-    br: P.brace ? 1 : 0, cl: P.climbing ? 1 : 0,
-    ca: P.carrying, hd: P.inv[P.sel] ? P.inv[P.sel].k : null, pk: P.parka ? 1 : 0,
+    st: P.state, hp: P.hp | 0, sm: P.st | 0, mx: P.stMax | 0, ex: P.extra | 0,
+    cl: P.climbing ? 1 : 0, hn: P.handOutT > 0.4 ? 1 : 0,
+    ca: P.carrying, hd: P.inv[P.sel] ? P.inv[P.sel].k : null,
   });
 };

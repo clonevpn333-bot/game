@@ -1,49 +1,61 @@
-// ============================================================ CLIMBERS
-// Stubby, faceless, big mittens.  Everything is posed by hand each frame -
-// no skinning, no animation clips, just joints and sine waves.
-function Figure(slot) {
+// ============================================================ SCOUTS
+// Big round head, two flat shapes for a face, oversized mittens so you can
+// always see the grip, a scarf in the slot colour.  Everything is posed by
+// hand each frame - no skinning, no clips.
+var SKIN = [0xf0c9a0, 0xd9a173, 0xb07a4e, 0x8a5a38];
+
+function Figure(slot, tone) {
   var gear = SLOT_COL[slot % SLOT_COL.length];
-  var dark = shadeHex(gear, 0.62), pants = 0x39404a, boot = 0x24282e, skin = 0xe8c49c;
+  var dark = shadeHex(gear, 0.6), pants = 0x3c4350, boot = 0x24282e;
+  var skin = SKIN[(tone === undefined ? slot : tone) % SKIN.length];
   this.slot = slot;
   var G = THREE.Group;
 
   this.root = new G();
   this.body = new G(); this.root.add(this.body);
-  this.hips = new G(); this.hips.position.y = 0.66; this.body.add(this.hips);
+  this.hips = new G(); this.hips.position.y = 0.62; this.body.add(this.hips);
 
   var torso = new THREE.Mesh(mergeParts([
-    { g: new THREE.BoxGeometry(0.6, 0.66, 0.42), c: gear, p: [0, 0.33, 0] },
-    { g: new THREE.BoxGeometry(0.62, 0.16, 0.44), c: dark, p: [0, 0.1, 0] },
-    { g: new THREE.BoxGeometry(0.44, 0.42, 0.24), c: shadeHex(gear, 0.45), p: [0, 0.38, -0.31] },
-    { g: new THREE.BoxGeometry(0.3, 0.1, 0.1), c: 0xd9b06a, p: [0, 0.5, -0.44] },
+    { g: new THREE.BoxGeometry(0.56, 0.6, 0.38), c: gear, p: [0, 0.3, 0] },
+    { g: new THREE.BoxGeometry(0.58, 0.14, 0.4), c: dark, p: [0, 0.1, 0] },
+    { g: new THREE.BoxGeometry(0.42, 0.4, 0.24), c: shadeHex(gear, 0.42), p: [0, 0.36, -0.29] },
+    { g: new THREE.BoxGeometry(0.3, 0.1, 0.1), c: 0xd9b06a, p: [0, 0.48, -0.42] },
   ]), MAT.solid);
   torso.castShadow = true;
   this.hips.add(torso);
 
-  this.neck = new G(); this.neck.position.y = 0.68; this.hips.add(this.neck);
+  this.neck = new G(); this.neck.position.y = 0.64; this.hips.add(this.neck);
   var head = new THREE.Mesh(mergeParts([
-    { g: new THREE.BoxGeometry(0.4, 0.36, 0.36), c: skin, p: [0, 0.18, 0] },
-    { g: new THREE.BoxGeometry(0.44, 0.2, 0.4), c: gear, p: [0, 0.34, 0] },
-    { g: new THREE.BoxGeometry(0.46, 0.08, 0.42), c: dark, p: [0, 0.22, 0] },
-    { g: new THREE.SphereGeometry(0.07, 5, 4), c: gear, p: [0, 0.47, 0] },
-    { g: new THREE.BoxGeometry(0.42, 0.14, 0.38), c: 0xb04a2e, p: [0, 0.03, 0] },
+    { g: new THREE.IcosahedronGeometry(0.36, 1), c: skin, p: [0, 0.3, 0] },
+    { g: new THREE.TorusGeometry(0.25, 0.09, 5, 10), c: gear, p: [0, 0.03, 0], r: [1.57, 0, 0] },
+    { g: new THREE.BoxGeometry(0.16, 0.32, 0.1), c: gear, p: [0.12, -0.05, -0.22], r: [0.3, 0, 0.2] },
+    { g: new THREE.SphereGeometry(0.29, 8, 5, 0, 6.283, 0, 1.1), c: dark, p: [0, 0.36, 0] },
   ]), MAT.solid);
   head.castShadow = true;
-  this.neck.add(head);
-  this.headY = 1.55;
+  // a couple of flat shapes is the whole face
+  var eyes = new THREE.Mesh(mergeParts([
+    { g: new THREE.CircleGeometry(0.062, 8), c: 0x231f26, p: [0.13, 0.32, 0.335] },
+    { g: new THREE.CircleGeometry(0.062, 8), c: 0x231f26, p: [-0.13, 0.32, 0.335] },
+    { g: new THREE.CircleGeometry(0.035, 7), c: 0x231f26, p: [0, 0.19, 0.345], s: [1.6, 0.5, 1] },
+  ]), MAT.solidS);
+  this.neck.add(head, eyes);
+  this.eyes = eyes;
+  this.headY = 1.6;
 
+  var UP = 0.32, LO = 0.3;
+  this.L1 = UP; this.L2 = LO + 0.1;
   function arm(side) {
     var sh = new G();
-    sh.position.set(side * 0.36, 0.55, 0);
+    sh.position.set(side * 0.34, 0.52, 0);
     var up = new THREE.Mesh(mergeParts([
-      { g: new THREE.BoxGeometry(0.19, 0.34, 0.19), c: gear, p: [0, -0.17, 0] },
+      { g: new THREE.BoxGeometry(0.17, UP, 0.17), c: gear, p: [0, -UP / 2, 0] },
     ]), MAT.solid);
     up.castShadow = true;
     sh.add(up);
-    var el = new G(); el.position.y = -0.34; sh.add(el);
+    var el = new G(); el.position.y = -UP; sh.add(el);
     var fo = new THREE.Mesh(mergeParts([
-      { g: new THREE.BoxGeometry(0.17, 0.3, 0.17), c: dark, p: [0, -0.15, 0] },
-      { g: new THREE.IcosahedronGeometry(0.17, 0), c: gear, p: [0, -0.36, 0.01] },
+      { g: new THREE.BoxGeometry(0.15, LO, 0.15), c: dark, p: [0, -LO / 2, 0] },
+      { g: new THREE.IcosahedronGeometry(0.21, 0), c: gear, p: [0, -LO - 0.12, 0.02] },
     ]), MAT.solid);
     fo.castShadow = true;
     el.add(fo);
@@ -54,16 +66,14 @@ function Figure(slot) {
 
   function leg(side) {
     var hp = new G();
-    hp.position.set(side * 0.16, 0.02, 0);
-    var th = new THREE.Mesh(mergeParts([
-      { g: new THREE.BoxGeometry(0.22, 0.36, 0.22), c: pants, p: [0, -0.18, 0] },
-    ]), MAT.solid);
+    hp.position.set(side * 0.15, 0.02, 0);
+    var th = new THREE.Mesh(mergeParts([{ g: new THREE.BoxGeometry(0.21, 0.32, 0.21), c: pants, p: [0, -0.16, 0] }]), MAT.solid);
     th.castShadow = true;
     hp.add(th);
-    var kn = new G(); kn.position.y = -0.36; hp.add(kn);
+    var kn = new G(); kn.position.y = -0.32; hp.add(kn);
     var sh2 = new THREE.Mesh(mergeParts([
-      { g: new THREE.BoxGeometry(0.2, 0.3, 0.2), c: shadeHex(pants, 0.85), p: [0, -0.15, 0] },
-      { g: new THREE.BoxGeometry(0.24, 0.14, 0.32), c: boot, p: [0, -0.34, 0.04] },
+      { g: new THREE.BoxGeometry(0.19, 0.28, 0.19), c: shadeHex(pants, 0.85), p: [0, -0.14, 0] },
+      { g: new THREE.BoxGeometry(0.23, 0.14, 0.3), c: boot, p: [0, -0.32, 0.04] },
     ]), MAT.solid);
     sh2.castShadow = true;
     kn.add(sh2);
@@ -75,6 +85,7 @@ function Figure(slot) {
   this.torchLight = null;
   this.held = null;
   this.phase = 0;
+  this.reach = 0;
 }
 
 Figure.prototype.setHeld = function (kind) {
@@ -84,41 +95,49 @@ Figure.prototype.setHeld = function (kind) {
   if (this.torchLight) { this.root.remove(this.torchLight); this.torchLight = null; }
   if (!kind) return;
   var m = new THREE.Mesh(WI.geos[kind], MAT.solid);
-  m.position.set(0, -0.44, 0.12);
-  m.scale.setScalar(0.9);
+  m.position.set(0, -0.46, 0.12);
+  m.scale.setScalar(0.95);
   this.aR.el.add(m);
   this.held = m;
   if (kind === 'torch') {
-    this.torchLight = new THREE.PointLight(0xff9a4a, 1.7, 15, 2);
-    this.torchLight.position.set(0, 1.1, 0.4);
+    this.torchLight = new THREE.PointLight(0xff9a4a, 1.8, 18, 2);
+    this.torchLight.position.set(0, 1.15, 0.4);
     this.root.add(this.torchLight);
   }
 };
 
-Figure.prototype.setParka = function (on) {
-  if (this.parkaOn === on) return;
-  this.parkaOn = on;
-  if (!this.parka) {
-    this.parka = new THREE.Mesh(mergeParts([
-      { g: new THREE.BoxGeometry(0.7, 0.72, 0.52), c: 0x3f7fd0, p: [0, 0.34, 0] },
-      { g: new THREE.BoxGeometry(0.74, 0.14, 0.56), c: 0xf0f0e4, p: [0, 0.66, 0] },
-    ]), MAT.solid);
-    this.parka.castShadow = true;
-  }
-  if (on) this.hips.add(this.parka); else this.hips.remove(this.parka);
+// ---- two-bone reach so a mitten lands where it is told -----------------
+var _ikV = new THREE.Vector3(), _ikQ = new THREE.Quaternion(), _ikDown = new THREE.Vector3(0, -1, 0);
+Figure.prototype.aimArm = function (arm, worldTarget) {
+  this.hips.updateMatrixWorld();
+  _ikV.copy(worldTarget);
+  this.hips.worldToLocal(_ikV);
+  _ikV.sub(arm.sh.position);
+  var d = _ikV.length();
+  var L1 = this.L1, L2 = this.L2, reach = L1 + L2;
+  if (d < 1e-4) return;
+  var dc = clamp(d, Math.abs(L1 - L2) + 0.02, reach * 0.985);
+  _ikV.normalize();
+  _ikQ.setFromUnitVectors(_ikDown, _ikV);
+  arm.sh.quaternion.copy(_ikQ);
+  var cosA = clamp((L1 * L1 + dc * dc - L2 * L2) / (2 * L1 * dc), -1, 1);
+  var cosB = clamp((L1 * L1 + L2 * L2 - dc * dc) / (2 * L1 * L2), -1, 1);
+  arm.sh.rotateX(-Math.acos(cosA));
+  arm.el.rotation.set(Math.PI - Math.acos(cosB), 0, 0);
 };
 
-// state: 0 ground 1 air 2 climb 3 down 4 carried; extra flags in o
+// state: ST.*; o carries the extras
 Figure.prototype.pose = function (dt, o) {
   var t = o.t, sp = o.speed || 0, s = o.state;
   var aL = this.aL, aR = this.aR, lL = this.lL, lR = this.lR;
   var b = this.body, hp = this.hips, nk = this.neck;
   var k;
 
-  if (s === ST.DOWN) {
+  if (s === ST.OUT) {
     b.rotation.set(-Math.PI / 2 + 0.12, 0, 0);
-    b.position.set(0, 0.28, 0);
+    b.position.set(0, 0.3, 0);
     hp.rotation.set(0, 0, 0);
+    aL.sh.quaternion.identity(); aR.sh.quaternion.identity();
     aL.sh.rotation.set(0.2, 0, 1.5); aR.sh.rotation.set(0.2, 0, -1.5);
     aL.el.rotation.set(-0.5, 0, 0); aR.el.rotation.set(-0.5, 0, 0);
     lL.hp.rotation.set(0.35, 0, 0.1); lR.hp.rotation.set(0.15, 0, -0.1);
@@ -127,32 +146,43 @@ Figure.prototype.pose = function (dt, o) {
     return;
   }
 
-  b.position.set(0, o.crouch ? -0.3 : 0, 0);
+  b.position.set(0, 0, 0);
   b.rotation.set(0, 0, 0);
 
-  if (s === ST.CLIMB) {
-    this.phase += dt * (o.climbing ? 3.1 : 0.5);
+  if (s === ST.CLIMB || s === ST.SLIP) {
+    // The body hangs off two planted hands and the feet paw at the rock.
+    this.phase += dt * (o.climbing ? 3.0 : 0.7);
     k = this.phase;
-    var sw = Math.sin(k), cw = Math.cos(k * 1.0);
-    b.rotation.x = -0.16;
-    hp.rotation.set(0.1, 0, 0);
-    // reach: one mitten high, the other low, legs mirrored
-    aL.sh.rotation.set(-2.5 - sw * 0.55, 0, 0.18);
-    aR.sh.rotation.set(-2.5 + sw * 0.55, 0, -0.18);
-    aL.el.rotation.set(-0.28 + sw * 0.2, 0, 0);
-    aR.el.rotation.set(-0.28 - sw * 0.2, 0, 0);
-    lL.hp.rotation.set(-0.55 + cw * 0.4, 0, 0.16);
-    lR.hp.rotation.set(-0.55 - cw * 0.4, 0, -0.16);
-    lL.kn.rotation.set(0.75 - cw * 0.3, 0, 0);
-    lR.kn.rotation.set(0.75 + cw * 0.3, 0, 0);
-    nk.rotation.set(-0.32, 0, 0);
-    if (o.tired) { aL.sh.rotation.x += Math.sin(t * 22) * 0.05; aR.sh.rotation.x += Math.sin(t * 22 + 1) * 0.05; }
+    var sw = Math.sin(k);
+    b.rotation.x = -0.14;
+    hp.rotation.set(0.08, 0, 0);
+    hp.position.y = 0.62 - 0.05 + Math.sin(k * 2) * 0.03;
+
+    if (o.handL && o.handR) {
+      this.aimArm(aL, o.handL);
+      this.aimArm(aR, o.handR);
+    } else {
+      aL.sh.quaternion.identity(); aR.sh.quaternion.identity();
+      aL.sh.rotation.set(-2.5 - sw * 0.5, 0, 0.18);
+      aR.sh.rotation.set(-2.5 + sw * 0.5, 0, -0.18);
+      aL.el.rotation.set(-0.28, 0, 0); aR.el.rotation.set(-0.28, 0, 0);
+    }
+    var cw = Math.cos(k);
+    lL.hp.rotation.set(-0.5 + cw * 0.36, 0, 0.16);
+    lR.hp.rotation.set(-0.5 - cw * 0.36, 0, -0.16);
+    lL.kn.rotation.set(0.7 - cw * 0.28, 0, 0);
+    lR.kn.rotation.set(0.7 + cw * 0.28, 0, 0);
+    nk.rotation.set(-0.26, 0, 0);
+    if (s === ST.SLIP) { b.rotation.x = 0.1; nk.rotation.x = 0.2; }
+    if (o.tired) { hp.position.y += Math.sin(t * 21) * 0.012; }
     return;
   }
 
+  aL.sh.quaternion.identity(); aR.sh.quaternion.identity();
+
   if (s === ST.AIR) {
     var fall = clamp(-(o.vy || 0) / 14, 0, 1);
-    b.rotation.x = 0.1 - fall * 0.28;
+    b.rotation.x = 0.1 - fall * 0.26;
     aL.sh.rotation.set(-1.5 - fall * 1.2, 0, 0.7 + Math.sin(t * 13) * 0.16);
     aR.sh.rotation.set(-1.5 - fall * 1.2, 0, -0.7 - Math.sin(t * 13 + 1) * 0.16);
     aL.el.rotation.set(-0.6, 0, 0); aR.el.rotation.set(-0.6, 0, 0);
@@ -163,15 +193,15 @@ Figure.prototype.pose = function (dt, o) {
     return;
   }
 
-  // on foot
-  if (o.brace) {
-    b.position.y = -0.42;
-    hp.rotation.set(0.22, 0, 0);
-    aL.sh.rotation.set(-2.75, 0, 0.32); aR.sh.rotation.set(-2.75, 0, -0.32);
-    aL.el.rotation.set(-0.15, 0, 0); aR.el.rotation.set(-0.15, 0, 0);
-    lL.hp.rotation.set(-1.15, 0, 0.22); lR.hp.rotation.set(-1.15, 0, -0.22);
-    lL.kn.rotation.set(1.6, 0, 0); lR.kn.rotation.set(1.6, 0, 0);
-    nk.rotation.set(-0.2, 0, 0);
+  if (o.hand) {                      // reaching out to a mate
+    hp.rotation.set(0, 0, 0);
+    hp.position.y = 0.62;
+    aR.sh.rotation.set(-1.62, 0, -0.12);
+    aR.el.rotation.set(-0.12, 0, 0);
+    aL.sh.rotation.set(0.2, 0, 0.3); aL.el.rotation.set(-0.5, 0, 0);
+    lL.hp.rotation.set(0, 0, 0.05); lR.hp.rotation.set(0, 0, -0.05);
+    lL.kn.rotation.set(0.1, 0, 0); lR.kn.rotation.set(0.1, 0, 0);
+    nk.rotation.set(0, 0, 0);
     return;
   }
 
@@ -179,30 +209,28 @@ Figure.prototype.pose = function (dt, o) {
   this.phase += dt * (2.6 + run * 7.4) * (sp > 0.25 ? 1 : 0);
   k = this.phase;
   var stride = clamp(sp / K.WALK, 0, 1.5);
-  var s1 = Math.sin(k) * stride, c1 = Math.cos(k) * stride;
-  var bob = Math.abs(Math.sin(k)) * 0.055 * stride;
+  var s1 = Math.sin(k) * stride;
+  var bob = Math.abs(Math.sin(k)) * 0.05 * stride;
 
-  b.position.y += bob + (o.crouch ? 0 : 0);
-  b.rotation.x = run * 0.2 + (o.carrying ? 0.14 : 0);
+  hp.position.y = 0.62 + bob - (o.crouch ? 0.26 : 0);
+  b.rotation.x = run * 0.18 + (o.carrying ? 0.14 : 0);
   hp.rotation.set(0, 0, 0);
-  hp.position.y = 0.66;
 
-  lL.hp.rotation.set(s1 * 0.85, 0, 0.05);
-  lR.hp.rotation.set(-s1 * 0.85, 0, -0.05);
-  lL.kn.rotation.set(clamp(-s1 * 0.7 + 0.35, 0, 1.5), 0, 0);
-  lR.kn.rotation.set(clamp(s1 * 0.7 + 0.35, 0, 1.5), 0, 0);
+  lL.hp.rotation.set(s1 * 0.82, 0, 0.05);
+  lR.hp.rotation.set(-s1 * 0.82, 0, -0.05);
+  lL.kn.rotation.set(clamp(-s1 * 0.7 + 0.3, 0, 1.5), 0, 0);
+  lR.kn.rotation.set(clamp(s1 * 0.7 + 0.3, 0, 1.5), 0, 0);
 
   if (o.carrying) {
     aL.sh.rotation.set(-2.6, 0, 0.4); aR.sh.rotation.set(-2.6, 0, -0.4);
     aL.el.rotation.set(-0.3, 0, 0); aR.el.rotation.set(-0.3, 0, 0);
   } else {
     var idle = Math.sin(t * 1.7) * 0.05 * (1 - stride);
-    aL.sh.rotation.set(-s1 * 0.62 + idle, 0, 0.14 + (1 - stride) * 0.06);
-    aR.sh.rotation.set(s1 * 0.62 + idle, 0, -0.14 - (1 - stride) * 0.06);
-    aL.el.rotation.set(-0.3 - Math.max(0, s1) * 0.4, 0, 0);
-    aR.el.rotation.set(-0.3 - Math.max(0, -s1) * 0.4, 0, 0);
+    aL.sh.rotation.set(-s1 * 0.6 + idle, 0, 0.16 + (1 - stride) * 0.06);
+    aR.sh.rotation.set(s1 * 0.6 + idle, 0, -0.16 - (1 - stride) * 0.06);
+    aL.el.rotation.set(-0.28 - Math.max(0, s1) * 0.4, 0, 0);
+    aR.el.rotation.set(-0.28 - Math.max(0, -s1) * 0.4, 0, 0);
   }
-  nk.rotation.set(-run * 0.12 + Math.sin(t * 1.1) * 0.03, 0, 0);
-  if (o.cold) { b.rotation.z = Math.sin(t * 19) * 0.018; nk.rotation.x -= 0.12; }
-  else b.rotation.z = 0;
+  nk.rotation.set(-run * 0.1 + Math.sin(t * 1.1) * 0.03, 0, 0);
+  b.rotation.z = o.cold ? Math.sin(t * 19) * 0.02 : 0;
 };

@@ -1,112 +1,137 @@
-// ============================================================ SURVIVAL
-var Survive = { eHold: 0, eDown: false, camp: null, atFire: false, restPt: null };
+// ============================================================ STAMINA & LIFE
+// One bar. Statuses eat into it from the right, so the green you have left
+// is the whole story of how far you can still climb.
+var Survive = { atFire: false, camp: null, holdF: 0, deaths: 0 };
 
-Survive.maxStam = function () {
-  var m = K.ST_MAX;
-  if (P.hunger < K.HU_CHOKE) m *= lerp(0.45, 1, P.hunger / K.HU_CHOKE);
-  return m;
+Survive.statusSum = function () {
+  var s = 0;
+  for (var i = 0; i < STATUS.length; i++) s += P.status[STATUS[i].k];
+  return s;
 };
 
-Survive.restNear = function () {
-  var i, r, dx, dy, dz;
-  for (i = 0; i < T.rests.length; i++) {
-    r = T.rests[i];
-    dx = r.x - P.pos.x; dy = r.y - P.pos.y; dz = r.z - P.pos.z;
-    if (dx * dx + dy * dy + dz * dz < 2.2) return r;
+Survive.recalcMax = function () {
+  var wt = 0;
+  for (var i = 0; i < 3; i++) if (P.inv[i]) wt += ITEM[P.inv[i].k].wt * P.inv[i].n;
+  if (P.carrying) wt += 26;
+  P.status.weight = clamp(wt, 0, 55);
+  var sum = Survive.statusSum();
+  P.stMax = Math.max(0, K.ST_MAX - clamp(sum, 0, K.ST_MAX));
+  if (P.st > P.stMax) P.st = P.stMax;
+};
+
+Survive.addStatus = function (k, n) {
+  P.status[k] = clamp(P.status[k] + n, 0, 100);
+};
+
+// Take from the green first; on a wall, fall back to bonus stamina, which
+// never comes back on its own.
+Survive.spend = function (n) {
+  if (P.lolliT > 0) return n;
+  var got = 0;
+  var take = Math.min(P.st, n);
+  P.st -= take; got += take; n -= take;
+  if (n > 0 && (P.state === ST.CLIMB)) {
+    var t2 = Math.min(P.extra, n);
+    P.extra -= t2; got += t2;
   }
-  for (i = 0; i < Coop.pitons.length; i++) {
-    r = Coop.pitons[i];
-    dx = r.x - P.pos.x; dy = r.y - P.pos.y; dz = r.z - P.pos.z;
-    if (dx * dx + dy * dy + dz * dz < 2.6) return r;
-  }
-  return null;
+  return got;
 };
 
 Survive.tick = function (dt) {
-  P.stMax = Survive.maxStam();
-  if (P.st > P.stMax) P.st = P.stMax;
+  Survive.recalcMax();
 
-  var fire = Camps.nearest(P.pos.x, P.pos.y, P.pos.z, 7.5);
+  var fire = Camps.nearest(P.pos.x, P.pos.y, P.pos.z, 8);
   Survive.atFire = !!(fire && fire.lit);
   Survive.camp = fire;
 
-  // light a checkpoint just by reaching it
-  if (fire && !fire.lit && Math.abs(fire.y - P.pos.y) < 4) {
+  if (fire && !fire.lit && Math.abs(fire.y - P.pos.y) < 4.5) {
     Camps.setLit(fire.idx, true);
     Net.send({ t: 'camp', i: fire.idx });
-    HUD.toast('camp ' + (fire.idx + 1) + ' lit — the group respawns here now', '#ffd646');
-    P.lastCamp = Math.max(P.lastCamp, fire.idx);
+    HUD.toast('campfire lit', '#ffd646');
   }
-  if (Survive.atFire) P.lastCamp = Math.max(P.lastCamp, fire.idx);
 
   // ---- stamina
-  Survive.restPt = null;
+  P.lolliT = Math.max(0, P.lolliT - dt);
+  P.milkT = Math.max(0, P.milkT - dt);
+  if (P.lolliT > 0) {
+    P.st = P.stMax;
+    if (P.lolliT < dt * 2) { Survive.addStatus('drowsy', 34); HUD.toast('the sugar wears off', '#8a8fb0'); }
+  }
+
   if (P.state === ST.CLIMB) {
-    var m = P.climbing ? 1 : 0.46;
-    var s = P.wall.surf;
-    var free = (s === SF.VINE);
-    var rest = Survive.restNear();
-    if (rest) { Survive.restPt = rest; free = true; }
-    if (s === SF.ICE) m *= 1.85;
-    if (s === SF.LOOSE) m *= 1.15;
-    if (P.wall.ny < 0.17) m *= 2.0;          // overhanging
-    if (P.inj.arm) m *= 1.35;
-    if (P.carrying) m *= 1.9;
-    m += Wind.at(P.pos.y, P.exposure) * 0.55;
-    if (free) {
-      if (rest) P.st = Math.min(P.stMax, P.st + K.ST_REGEN_LEDGE * dt);
+    var drain = (P.climbing ? K.ST_CLIMB : K.ST_HANG);
+    drain += Wind.at(P.pos.y, 1) * 1.6;       // gusts make everything harder
+    if (P.rope) drain *= 0.3;                 // a rope is most of the work done
+    else if (P.wall.surf === SF.ICE) drain *= 1.35;
+    if (P.carrying) drain *= 1.8;
+    if (P.onPiton) {
+      // the one place you can get your breath back off the ground
+      P.st = Math.min(P.stMax, P.st + K.ST_REGEN_PITON * dt);
     } else {
-      P.st -= K.ST_CLIMB * m * dt;
+      var want = drain * dt;
+      var paid = Survive.spend(want);
+      if (paid < want - 1e-6 && P.st <= 0 && P.extra <= 0) {
+        P.state = ST.SLIP;
+        P.vel.y = -1.2;
+        HUD.toast('your grip goes', '#ff5b52');
+        CAM.kick(0.4);
+      }
     }
-    if (P.st <= 0) {
-      P.st = 0;
-      HUD.toast('your fingers open', '#ff5b52');
-      P.state = ST.AIR; P.wall.has = false; P.fallFrom = P.pos.y;
-      P.noGrabT = 0.8; P.gripLost = 1.2;
-      CAM.kick(0.35);
-    }
-  } else if (P.state === ST.GROUND && !P.sprinting) {
-    var flatness = invl(K.WALK_COS, 0.90, P.groundNy);
-    var r = K.ST_REGEN_FLAT * flatness;
-    if (P.carrying) r *= 0.5;
-    if (Survive.atFire) r *= 1.6;
-    P.st = Math.min(P.stMax, P.st + r * dt);
+  } else if (P.state === ST.SLIP) {
+    if (P.st > 0.5) { P.state = ST.CLIMB; }
+  } else if (P.state === ST.GROUND && P.groundT >= K.ST_REGEN_DELAY && !P.sprinting) {
+    P.st = Math.min(P.stMax, P.st + K.ST_REGEN * dt * (Survive.atFire ? 1.5 : 1));
   }
-  P.gripLost = Math.max(0, P.gripLost - dt);
 
-  // ---- hunger
-  var hr = K.HU_RATE * (P.state === ST.CLIMB ? 1.5 : P.sprinting ? 1.35 : 1);
-  P.hunger = Math.max(0, P.hunger - hr * dt);
+  // ---- hunger creeps up the whole run
+  Survive.addStatus('hunger', K.HUNGER_RATE * dt * (P.state === ST.CLIMB ? 1.5 : 1));
 
-  // ---- cold
-  var coldLine = K.BAND_ALP - 34;
-  if (P.pos.y > coldLine) {
-    var rate = (P.pos.y - coldLine) / 190 * 4.6 + Wind.at(P.pos.y, P.exposure) * 2.4 + 0.4;
-    if (P.parka) rate *= 0.40;
-    if (P.torchOn) rate *= 0.74;
-    if (Survive.atFire) rate = -34;
-    P.temp = clamp(P.temp - rate * dt, 0, K.TP_MAX);
+  // ---- what the zone does to you
+  var zn = zoneAt(P.pos.y);
+  var surf = P.surf;
+  if (Survive.atFire) {
+    P.status.cold = Math.max(0, P.status.cold - 34 * dt);
+    P.status.heat = Math.max(0, P.status.heat - 22 * dt);
+    P.status.poison = Math.max(0, P.status.poison - 10 * dt);
+    if (P.hp < K.HP_MAX) P.hp = Math.min(K.HP_MAX, P.hp + 5 * dt);
   } else {
-    P.temp = clamp(P.temp + (Survive.atFire ? 34 : 9) * dt, 0, K.TP_MAX);
+    if (zn === Z.SNOW) {
+      Survive.addStatus('cold', (2.6 + Wind.gust * 4.5) * dt);
+    } else if (zn === Z.VOLCANIC || zn === Z.INTERIOR) {
+      Survive.addStatus('heat', (2.2 + (zn === Z.INTERIOR ? 1.6 : 0)) * dt);
+    } else {
+      P.status.cold = Math.max(0, P.status.cold - 4 * dt);
+      P.status.heat = Math.max(0, P.status.heat - 4 * dt);
+    }
+    if (zn === Z.JUNGLE && Wind.rain > 0.4) Survive.addStatus('poison', 0.7 * dt);
+    if (zn === Z.INTERIOR) Survive.addStatus('curse', 0.9 * dt);
   }
-  if (P.temp < K.TP_FREEZE) {
-    Survive.hurt((1 - P.temp / K.TP_FREEZE) * 2.7 * dt, 'the cold');
+  if (surf === SF.THORN && P.state !== ST.CLIMB) Survive.addStatus('thorns', 9 * dt);
+  if (surf === SF.EMBER) { Survive.addStatus('heat', 12 * dt); Survive.hurt(4 * dt, 'the hot rock'); }
+  if (P.status.cold > 70) Survive.hurt((P.status.cold - 70) / 30 * 3.2 * dt, 'the cold');
+  if (P.status.heat > 70) Survive.hurt((P.status.heat - 70) / 30 * 3.2 * dt, 'the heat');
+  if (P.status.poison > 40) Survive.hurt(1.6 * dt, 'poison');
+  if (P.status.hunger > 88) Survive.hurt(1.2 * dt, 'hunger');
+
+  // ---- the rising fog: it comes for everyone
+  if (P.pos.y < Fog.level) Survive.hurt(16 * dt, 'the fog');
+
+  // ---- no room left on the bar and you are out
+  if (P.stMax <= 0.5 && P.state !== ST.OUT) Survive.knockOut('the mountain');
+  if (P.state === ST.OUT) {
+    P.outT -= dt;
+    if (P.outT <= 0) { Survive.deaths++; Survive.respawn(); }
   }
 
-  // ---- warmth and food at a fire
-  if (Survive.atFire && P.hp < K.HP_MAX) P.hp = Math.min(K.HP_MAX, P.hp + 2.6 * dt);
-  if (P.hunger <= 0) Survive.hurt(0.9 * dt, 'hunger');
-
-  if (P.summited) return;
   Survive.interact(dt);
   Survive.checkSummit();
 };
 
 Survive.checkSummit = function () {
-  if (!Summit.pos) return;
+  if (!Summit.pos || P.summited) return;
   var dx = P.pos.x, dz = P.pos.z, dy = P.pos.y - Summit.pos.y;
-  if (dx * dx + dz * dz < 90 && dy > -6) {
-    P.summited = true;
+  if (dx * dx + dz * dz < 70 && dy > -5) {
+    P.summited = true; Summit.fired = true;
     Net.send({ t: 'top', n: P.name });
     HUD.summit();
   }
@@ -114,161 +139,164 @@ Survive.checkSummit = function () {
 
 // ---------------------------------------------------------------- damage
 Survive.hurt = function (d, cause) {
-  if (P.state === ST.DOWN || P.summited) return;
+  if (P.state === ST.OUT || P.summited || d <= 0) return;
+  if (P.milkT > 0) return;
   P.hp -= d;
   if (d > 2) { HUD.flashHurt(clamp(d / 40, 0.2, 1)); CAM.kick(clamp(d / 55, 0.05, 0.8)); }
-  if (P.hp <= 0) {
-    P.hp = 0;
-    P.state = ST.DOWN; P.wall.has = false; P.downT = K.DOWN_T;
-    P.st = 0;
-    if (P.carrying) Coop.dropCarried();
-    HUD.toast('you are down — ' + (cause || 'broken') + ' · a mate can carry or revive you', '#ff5b52');
-    Net.send({ t: 'down' });
-  }
+  if (P.hp <= 0) { P.hp = 0; Survive.knockOut(cause); }
 };
 
-Survive.land = function (dist) {
-  P.landT = 0.22;
-  if (dist < 1.2) return;
-  var vy = Math.abs(P.vel.y);
-  FX.puff(P.pos.x, P.pos.y + 0.05, P.pos.z, Math.min(14, 3 + dist | 0), 0xd8d0c0);
-  CAM.kick(clamp(dist / 26, 0.02, 0.55));
-  if (dist <= K.FALL_SAFE) return;
-  var dmg = (dist - K.FALL_SAFE) * K.FALL_DMG;
-  if (P.surf === SF.SNOW) dmg *= 0.7;
+Survive.knockOut = function (cause) {
+  if (P.state === ST.OUT) return;
+  P.state = ST.OUT;
+  P.wall.has = false; P.handOn = false;
+  P.st = 0; P.extra = 0;
+  P.outT = Remote.list.length > 0 ? K.OUT_T_TEAM : K.OUT_T_SOLO;
+  if (P.carrying) Coop.dropCarried();
+  HUD.toast('you go down — ' + (cause || 'spent') + '', '#ff5b52');
+  Net.send({ t: 'down' });
+};
+
+Survive.land = function (drop) {
+  if (drop < 1.2) return;
+  FX.puff(P.pos.x, P.pos.y + 0.05, P.pos.z, Math.min(14, 3 + drop | 0), 0xd8d0c0);
+  CAM.kick(clamp(drop / 26, 0.02, 0.55));
+  if (drop <= K.FALL_SAFE) return;
+  var dmg = (drop - K.FALL_SAFE) * K.FALL_DMG;
+  if (P.surf === SF.SNOW || P.surf === SF.SAND) dmg *= 0.7;
   P.stats.falls++;
-  Survive.hurt(dmg, 'a ' + Math.round(dist) + ' m fall');
-  P.st = Math.max(0, P.st - dmg * 0.5);
-  if (dmg >= K.INJ_DMG && P.hp > 0) {
-    var arm = Math.random() < 0.5;
-    if (arm && !P.inj.arm) { P.inj.arm = 1; HUD.toast('wrenched shoulder — climbing hurts now', '#ffb454'); }
-    else if (!P.inj.leg) { P.inj.leg = 1; HUD.toast('twisted ankle — you are slower now', '#ffb454'); }
-    else if (!P.inj.arm) { P.inj.arm = 1; HUD.toast('wrenched shoulder — climbing hurts now', '#ffb454'); }
-  }
+  Survive.hurt(dmg, 'a ' + Math.round(drop) + ' m fall');
+  Survive.spend(dmg * 0.4);
+  if (dmg >= K.INJ_DMG) Survive.addStatus('injury', clamp(dmg * 0.5, 8, 34));
 };
 
 Survive.respawn = function () {
   var idx = 0, i;
   for (i = 0; i < Camps.list.length; i++) if (Camps.list[i].lit) idx = Math.max(idx, i);
   var c = Camps.list[idx];
-  P.state = ST.AIR; P.hp = 58; P.st = P.stMax; P.temp = K.TP_MAX;
-  P.inj.leg = 0; P.inj.arm = 0;
-  P.downT = 0; P.carriedBy = null;
-  P.spawnAt(c.x + 2.2, c.y + 1.0, c.z + 1.4);
-  HUD.toast('you wake up at camp ' + (idx + 1), '#31c6c0');
+  P.state = ST.AIR; P.hp = K.HP_MAX; P.outT = 0; P.carriedBy = null;
+  for (i = 0; i < STATUS.length; i++) P.status[STATUS[i].k] = 0;
+  P.extra = 0;
+  Survive.recalcMax();
+  P.st = P.stMax;
+  P.spawnAt(c.x + 2.4, c.z + 1.6, c.y);
+  HUD.toast('you wake up at the fire', '#31c6c0');
   Net.send({ t: 'up', x: P.pos.x, y: P.pos.y, z: P.pos.z });
 };
 
-// ---------------------------------------------------------------- inventory
+// ---------------------------------------------------------------- pack
 Survive.add = function (kind) {
-  var i, def = ITEM[kind];
-  for (i = 0; i < 4; i++) if (P.inv[i] && P.inv[i].k === kind && P.inv[i].n < def.max) { P.inv[i].n++; return true; }
-  for (i = 0; i < 4; i++) if (!P.inv[i]) { P.inv[i] = { k: kind, n: 1 }; return true; }
+  var i;
+  for (i = 0; i < 3; i++) if (!P.inv[i]) { P.inv[i] = { k: kind, n: 1 }; Survive.recalcMax(); return true; }
   return false;
 };
 Survive.remove = function (slot) {
   var s = P.inv[slot];
   if (!s) return null;
   var k = s.k;
-  s.n--;
-  if (s.n <= 0) P.inv[slot] = null;
+  P.inv[slot] = null;
+  Survive.recalcMax();
   return k;
 };
-Survive.count = function (kind) {
-  var n = 0;
-  for (var i = 0; i < 4; i++) if (P.inv[i] && P.inv[i].k === kind) n += P.inv[i].n;
-  return n;
-};
 Survive.findSlot = function (kind) {
-  for (var i = 0; i < 4; i++) if (P.inv[i] && P.inv[i].k === kind) return i;
+  for (var i = 0; i < 3; i++) if (P.inv[i] && P.inv[i].k === kind) return i;
   return -1;
 };
 
 Survive.use = function (slot) {
   var s = P.inv[slot];
   if (!s) return;
-  var def = ITEM[s.k];
-  switch (def.kind) {
-    case 'food': {
-      var mul = Survive.atFire ? 1.4 : 1;
-      P.hunger = Math.min(K.HU_MAX, P.hunger + def.food * mul);
-      if (def.stam) P.st = Math.min(P.stMax, P.st + def.stam);
-      HUD.toast(Survive.atFire ? 'cooked ' + def.nm : 'ate ' + def.nm, '#ffb454');
+  var d = ITEM[s.k];
+  switch (d.kind) {
+    case 'eat': {
+      var cook = Survive.atFire ? 1.5 : 1;
+      if (d.hunger) P.status.hunger = Math.max(0, P.status.hunger - d.hunger * cook);
+      if (d.extra) P.extra = Math.min(K.EXTRA_MAX, P.extra + d.extra * cook);
+      if (d.drowsy) Survive.addStatus('drowsy', d.drowsy);
+      HUD.toast((Survive.atFire ? 'cooked ' : 'ate ') + d.nm, '#ffb454');
       Survive.remove(slot);
       break;
     }
-    case 'heal':
-      P.hp = Math.min(K.HP_MAX, P.hp + def.hp);
-      if (P.inj.leg || P.inj.arm) HUD.toast('strapped up — injuries treated', '#8fe04a');
-      else HUD.toast('patched up', '#8fe04a');
-      P.inj.leg = 0; P.inj.arm = 0;
+    case 'lolly':
+      P.lolliT = 12;
+      HUD.toast('everything feels possible', '#f05a9a');
       Survive.remove(slot);
       break;
-    case 'wear':
-      P.parka = !P.parka;
-      P.fig.setParka(P.parka);
-      HUD.toast(P.parka ? 'parka on — the cold bites less' : 'parka off', '#7fd4ff');
+    case 'milk':
+      P.milkT = 10;
+      HUD.toast('nothing can touch you for a moment', '#dfe6f0');
+      Survive.remove(slot);
+      break;
+    case 'cure':
+      P.status[d.clears] = 0;
+      if (d.hp) P.hp = Math.min(K.HP_MAX, P.hp + d.hp);
+      HUD.toast('used ' + d.nm, '#8fe04a');
+      Survive.remove(slot);
+      break;
+    case 'piton':
+      if (P.state !== ST.CLIMB && P.state !== ST.SLIP) { HUD.toast('hammer a piton while on a wall', '#a8a39a'); break; }
+      Coop.placePiton(P.wall.cx, P.pos.y + 0.3, P.wall.cz, P.wall.nx, P.wall.nz);
+      Survive.remove(slot);
+      break;
+    case 'spool':
+      if (Coop.dropSpool()) Survive.remove(slot);
+      break;
+    case 'cannon':
+      if (Coop.fireCannon()) Survive.remove(slot);
       break;
     case 'torch':
       P.torchOn = !P.torchOn;
       HUD.toast(P.torchOn ? 'torch lit' : 'torch out', '#ff8a3d');
       break;
-    case 'piton':
-      if (P.state !== ST.CLIMB) { HUD.toast('hammer a piton while on a wall', '#a8a39a'); break; }
-      Coop.placePiton(P.pos.x - P.wall.nx * 0.3, P.pos.y + 0.3, P.pos.z - P.wall.nz * 0.3, P.wall.nx, P.wall.nz);
-      Survive.remove(slot);
-      HUD.toast('piton set — a place to breathe', '#8fe04a');
-      break;
-    case 'rope':
-      HUD.toast('press R to anchor the rope', '#a8a39a');
-      break;
   }
 };
 
-// ---------------------------------------------------------------- E button
+// ---------------------------------------------------------------- F button
 Survive.interact = function (dt) {
-  var held = IN.interactHeld() && !HUD.blocked;
-  var downMate = Coop.nearestDown(2.6);
+  var held = IN.interactHeld() && !HUD.blocked && P.state !== ST.OUT;
+  var downMate = Coop.nearestDown(2.8);
 
   if (held) {
-    Survive.eHold += dt;
-    if (downMate && !P.carrying && P.state !== ST.CLIMB) {
-      P.reviveT += dt;
-      P.reviveTgt = downMate.id;
+    Survive.holdF += dt;
+    if (downMate && !P.carrying) {
+      P.reviveT += dt; P.reviveTgt = downMate.id;
       if (P.reviveT >= K.REVIVE_T) {
         Coop.revive(downMate);
-        P.reviveT = 0; P.reviveTgt = null;
-        Survive.eHold = -1;
+        P.reviveT = 0; P.reviveTgt = null; Survive.holdF = -1;
       }
     } else { P.reviveT = 0; P.reviveTgt = null; }
   } else {
-    if (Survive.eHold > 0 && Survive.eHold < 0.3) {
-      // a tap: pick up gear, shoulder a mate, or set one down
+    if (Survive.holdF > 0 && Survive.holdF < 0.32) {
       if (P.carrying) Coop.dropCarried();
-      else if (downMate && P.state !== ST.CLIMB) Coop.pickUp(downMate);
+      else if (downMate) Coop.pickUp(downMate);
       else {
-        var it = WI.nearest(P.pos.x, P.pos.y + 0.6, P.pos.z, 2.7);
-        if (it) {
+        var box = WI.nearestCase(P.pos.x, P.pos.y + 0.4, P.pos.z, 2.6);
+        var it = WI.nearest(P.pos.x, P.pos.y + 0.6, P.pos.z, 2.6);
+        if (box && (!it || Math.abs(box.y - P.pos.y) < 3)) {
+          WI.openCase(box.id);
+          Net.send({ t: 'case', i: box.id });
+          HUD.toast('suitcase open', '#ffd646');
+        } else if (it) {
           if (Survive.add(it.k)) {
             WI.take(it.id);
             Net.send({ t: 'pick', i: it.id });
             HUD.toast('picked up ' + ITEM[it.k].nm, '#8fe04a');
-          } else HUD.toast('your pack is full', '#ffb454');
+          } else HUD.toast('your hands are full', '#ffb454');
         }
       }
     }
-    Survive.eHold = 0;
+    Survive.holdF = 0;
     P.reviveT = Math.max(0, P.reviveT - dt * 2.4);
     if (P.reviveT <= 0) P.reviveTgt = null;
   }
 
-  // slot select, use, drop, pass
-  for (var i = 0; i < 4; i++) if (IN.press('Digit' + (i + 1))) P.sel = i;
-  if (IN.use() && !HUD.blocked) Survive.use(P.sel);
-  if (IN.press('KeyX') && !HUD.blocked && P.inv[P.sel]) {
+  if (HUD.blocked || P.state === ST.OUT) return;
+  for (var i = 0; i < 3; i++) if (IN.press('Digit' + (i + 1))) P.sel = i;
+  if (IN.use()) Survive.use(P.sel);
+  if (IN.drop() && P.inv[P.sel]) {
     var k = Survive.remove(P.sel);
-    var id = WI.dropAt(k, P.pos.x + Math.sin(P.yaw) * 0.9, groundH(P.pos.x + Math.sin(P.yaw) * 0.9, P.pos.z + Math.cos(P.yaw) * 0.9), P.pos.z + Math.cos(P.yaw) * 0.9);
-    Net.send({ t: 'drop', k: k, id: id, x: P.pos.x + Math.sin(P.yaw) * 0.9, y: P.pos.y, z: P.pos.z + Math.cos(P.yaw) * 0.9 });
+    var f = CAM.flatForward(_tmpC);
+    var id = WI.dropAt(k, P.pos.x + f.x * 1.1, P.pos.y, P.pos.z + f.z * 1.1);
+    Net.send({ t: 'drop', k: k, id: id, x: P.pos.x + f.x * 1.1, z: P.pos.z + f.z * 1.1 });
   }
-  if (IN.pass() && !HUD.blocked) Coop.passItem();
 };

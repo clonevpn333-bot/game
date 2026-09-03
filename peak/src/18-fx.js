@@ -1,6 +1,6 @@
 // ============================================================ WIND
 var Wind = {
-  t: 0, dx: 1, dz: 0, gust: 0, ang: 0, noise: null,
+  t: 0, dx: 1, dz: 0, gust: 0, ang: 0, noise: null, rain: 0,
   init: function (seed) { Wind.noise = new Noise(seed ^ 0x77aa33); Wind.ang = Math.random() * 6.283; },
   tick: function (dt) {
     if (!Wind.noise) Wind.init(1);
@@ -10,6 +10,7 @@ var Wind = {
     var n = clamp(Wind.noise.n2(Wind.t * 0.14, 3.7) * 1.8 + 0.5, 0, 1);
     var burst = Math.pow(clamp(Wind.noise.n2(Wind.t * 0.42 + 11, 8.2) * 1.8 + 0.5, 0, 1), 3.0);
     Wind.gust = clamp(n * 0.55 + burst * 1.5, 0, 1.6);
+    Wind.rain = clamp(Wind.noise.n2(Wind.t * 0.05 + 31, 2.1) * 2.2 + 0.35, 0, 1);
   },
   // how hard it is pushing at this altitude on exposed ground
   at: function (y, exposure) {
@@ -165,20 +166,29 @@ FX.ember = function (x, y, z) {
     1.1 + Math.random(), -1.4, 0.9);
 };
 
-var _snowT = 0, _breathT = 0, _emberT = 0;
+var _emberT = 0;
 FX.tick = function (dt, cam, py) {
   FX.burst.tick(dt);
 
-  // snow above the alpine line, blowing sideways with the gusts
-  var dens = clamp((py - 118) / 90, 0, 1);
-  var wind = 2.5 + Wind.gust * 13;
-  var n = FX.snowN, p = FX.sPos, al = FX.sAlpha;
+  // each zone gets its own weather, falling through the same particle slab
+  var zn = zoneAt(py), dens = 0, wind = 2.5 + Wind.gust * 13, fallV = 2.2, col = 0xffffff, sz = 1;
+  if (zn === Z.JUNGLE) { dens = Wind.rain * 0.9; fallV = 17; wind = 1.5; col = 0x9fc8e8; sz = 0.55; }
+  else if (zn === Z.SNOW) { dens = 0.55 + Wind.gust * 0.45; fallV = 2.6; col = 0xffffff; sz = 1.1; }
+  else if (zn === Z.VOLCANIC || zn === Z.INTERIOR) { dens = 0.5; fallV = 1.1; wind = 1.2 + Wind.gust * 3; col = 0x6a5f58; sz = 0.75; }
+  else if (zn === Z.PEAK) { dens = 0.5 + Wind.gust * 0.4; fallV = 2.4; col = 0xffffff; sz = 1.0; }
+  var n = FX.snowN, p = FX.sPos, al = FX.sAlpha, sc = FX.sCol, ss = FX.sSize;
   var cx = cam.x, cy = cam.y, cz = cam.z;
+  if (FX.lastZone !== zn) {
+    FX.lastZone = zn;
+    for (var q = 0; q < n; q++) { hexLin(col, sc, q * 3, 1); ss[q] = (0.05 + Math.random() * 0.09) * sz * (zn === Z.JUNGLE ? 2.6 : 1); }
+    FX.snowGeo.attributes.aCol.needsUpdate = true;
+    FX.snowGeo.attributes.aSize.needsUpdate = true;
+  }
   for (var i = 0; i < n; i++) {
     var k = i * 3;
     p[k] += (Wind.dx * wind * FX.sSpeed[i]) * dt;
     p[k + 2] += (Wind.dz * wind * FX.sSpeed[i]) * dt;
-    p[k + 1] -= (2.2 + FX.sSpeed[i]) * dt;
+    p[k + 1] -= (fallV + FX.sSpeed[i]) * dt;
     var rx = p[k] - cx, ry = p[k + 1] - cy, rz = p[k + 2] - cz;
     if (rx > 30) p[k] -= 60; else if (rx < -30) p[k] += 60;
     if (rz > 30) p[k + 2] -= 60; else if (rz < -30) p[k + 2] += 60;
@@ -188,14 +198,14 @@ FX.tick = function (dt, cam, py) {
   FX.snowGeo.attributes.position.needsUpdate = true;
   FX.snowGeo.attributes.aAlpha.needsUpdate = true;
 
-  // embers drifting off the summit vents
+  // embers lifting off hot rock
   _emberT += dt;
-  if (py > K.BAND_TOP - 40 && _emberT > 0.05) {
+  if ((zn === Z.VOLCANIC || zn === Z.INTERIOR) && _emberT > 0.04) {
     _emberT = 0;
-    var a = Math.random() * 6.283, r = 6 + Math.random() * 34;
+    var a = Math.random() * 6.283, r = 4 + Math.random() * 30;
     var ex = cam.x + Math.cos(a) * r, ez = cam.z + Math.sin(a) * r;
     var eh = T.hAt(ex, ez);
-    if (eh > K.BAND_TOP - 26 && T.surfAt(ex, ez) === SF.EMBER) FX.ember(ex, eh + 0.3, ez);
+    if (eh > T.VOID && T.surfAt(ex, ez) === SF.EMBER) FX.ember(ex, eh + 0.3, ez);
   }
   for (var c = 0; c < Camps.list.length; c++) {
     var cm = Camps.list[c];
@@ -203,4 +213,30 @@ FX.tick = function (dt, cam, py) {
     var ddx = cm.x - cam.x, ddz = cm.z - cam.z;
     if (ddx * ddx + ddz * ddz < 3600 && Math.random() < dt * 22) FX.ember(cm.x, cm.y + 1.1, cm.z);
   }
+};
+
+// ============================================================ RISING FOG
+// The run has a clock, and this is it.  It starts at the sea and comes up.
+var Fog = { level: -30, group: null, mesh: null, mat: null, t: 0 };
+
+Fog.build = function () {
+  Fog.group = new THREE.Group();
+  Fog.level = -30; Fog.t = 0;
+  Fog.mat = new THREE.MeshBasicMaterial({
+    color: 0xb9c2cc, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false,
+  });
+  Fog.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400, 16, 16), Fog.mat);
+  Fog.mesh.rotation.x = -Math.PI / 2;
+  Fog.mesh.renderOrder = 2;
+  Fog.group.add(Fog.mesh);
+  return Fog.group;
+};
+
+Fog.tick = function (dt, runT, camPos) {
+  Fog.t = runT;
+  var over = runT - K.FOG_RISE_START;
+  Fog.level = over > 0 ? -30 + over * K.FOG_RISE_RATE : -30;
+  if (!Fog.mesh) return;
+  Fog.mesh.position.set(camPos.x, Fog.level, camPos.z);
+  Fog.mesh.visible = Fog.level > -12;
 };

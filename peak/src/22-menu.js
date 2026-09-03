@@ -32,6 +32,22 @@ Menu.init = function () {
       localStorage.setItem('crux.detail', $('in-detail').value);
     } catch (err) { }
   }
+  var bindBtn = $('btn-grab');
+  function showBind() {
+    bindBtn.textContent = IN.keyLabel(IN.grabKey);
+    $('k-grab').textContent = IN.keyLabel(IN.grabKey);
+  }
+  showBind();
+  bindBtn.addEventListener('click', function () {
+    bindBtn.classList.add('arm');
+    bindBtn.textContent = 'press a key';
+    IN.capture = function (code) {
+      IN.setGrabKey(code);
+      bindBtn.classList.remove('arm');
+      showBind();
+    };
+  });
+
   ['in-sens', 'in-fov', 'in-inv', 'in-detail'].forEach(function (id) {
     $(id).addEventListener('input', readOpts);
     $(id).addEventListener('change', readOpts);
@@ -93,7 +109,8 @@ Menu.solo = function () {
   P.slot = 0; P.id = 'solo';
   Net.reset(); Net.solo = true; Net.code = '';
   Game.runT = 0;
-  Game.buildWorld((Math.random() * 4294967295) >>> 0, Menu.detail(), function () { Game.begin(0); });
+  // the island is the same for everyone today; the loot is not
+  Game.buildWorld(dailySeed(), (Math.random() * 4294967295) >>> 0, Menu.detail(), function () { Game.begin(0); });
 };
 
 Menu.host = function () {
@@ -105,7 +122,7 @@ Menu.host = function () {
     Menu.el.code.classList.remove('hidden');
     Menu.el.code.querySelector('b').textContent = code;
     Game.runT = 0;
-    Game.buildWorld(Net.seed, Menu.detail(), function () {
+    Game.buildWorld(Net.seed, Net.loot, Menu.detail(), function () {
       Menu.el.state.textContent = 'waiting for friends — you can start whenever';
       Menu.el.start.classList.remove('hidden');
       Menu.drawRoster();
@@ -128,7 +145,7 @@ Menu.onGo = function (m) {
   // host said go, or our welcome arrived
   if (Net.isHost) return;
   if (!Game.built) {
-    Game.buildWorld(Net.seed, Menu.detail(), function () {
+    Game.buildWorld(Net.seed, Net.loot, Menu.detail(), function () {
       Net.applySnapshot(Net.pendingSnap);
       Menu.drawRoster();
       if (m && m.started) Game.begin(Net.spawnCamp || 0);

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-/* Grabs a set of framed screenshots at different altitudes. */
-const fs = require('fs'), path = require('path');
+/* Framed screenshots at chosen spots. */
+const path = require('path');
 const { chromium } = require('playwright');
 const ROOT = path.join(__dirname, '..');
 
@@ -10,7 +10,6 @@ const ROOT = path.join(__dirname, '..');
   page.on('pageerror', e => console.log('PAGEERROR', e.message));
   await page.goto('file://' + path.join(ROOT, 'dist', 'test.html'));
   await page.waitForFunction(() => !!window.CRUX, null, { timeout: 30000 });
-
   await page.screenshot({ path: path.join(ROOT, 'dist', 'shot-0-menu.png') });
 
   await page.click('#btn-solo');
@@ -18,46 +17,48 @@ const ROOT = path.join(__dirname, '..');
   await page.evaluate(() => {
     document.getElementById('pause').classList.add('hidden');
     window.CRUX.HUD.blocked = false;
+    window.CRUX.Walls.list.forEach(w => { w.open = true; });   // see the whole island
   });
 
-  const views = JSON.parse(process.argv[2] || '[]');
-  for (const v of views) {
+  for (const v of JSON.parse(process.argv[2] || '[]')) {
     await page.evaluate((v) => {
       const C = window.CRUX, P = C.P;
-      const c = v.camp !== undefined ? C.Camps.list[v.camp] : null;
-      const x = c ? c.x + (v.dx || 0) : v.x, z = c ? c.z + (v.dz || 0) : v.z;
-      const y = C.groundH(x, z);
-      P.pos.set(x, y + 0.05, z);
-      P.vel.set(0, 0, 0); P.state = 0; P.grounded = true; P.fallFrom = y + 0.05;
-      P.hp = v.hp === undefined ? 100 : v.hp;
-      P.st = v.st === undefined ? 100 : v.st;
-      P.hunger = v.hu === undefined ? 82 : v.hu;
-      P.temp = v.tp === undefined ? 100 : v.tp;
+      let x, z, y;
+      if (v.camp !== undefined) {
+        const c = C.Camps.list[v.camp];
+        x = c.x + (v.dx || 0); z = c.z + (v.dz || 0);
+      } else { x = v.x; z = v.z; }
+      P.spawnAt(x, z, v.hint || 10);
+      P.hp = 100;
+      for (const k in P.status) P.status[k] = 0;
+      if (v.status) for (const k in v.status) P.status[k] = v.status[k];
+      C.Survive.recalcMax();
+      P.st = v.st === undefined ? P.stMax : v.st;
+      P.extra = v.extra || 0;
       if (v.inv) P.inv = v.inv.map(k => k ? { k: k, n: 1 } : null);
-      C.CAM.yaw = v.yaw === undefined ? Math.atan2(-x, -z) : v.yaw;
+      C.CAM.yaw = v.yaw === undefined ? Math.atan2(-P.pos.x, -P.pos.z) : v.yaw;
       C.CAM.pitch = v.pitch || 0;
-      C.CAM.lift = 0;
-      C.CAM.first = !!v.first;
-      C.CAM.dist = 4.7;
+      C.CAM.lift = 0; C.CAM.dist = C.CAM.want; C.CAM.first = !!v.first;
       C.CAM.smoothTgt.set(P.pos.x, P.pos.y + C.K.EYE, P.pos.z);
-      if (v.climb) { P.state = 2; }
+      if (v.grab) { C.IN.keys[C.IN.grabKey] = true; C.IN.keys['KeyW'] = true; }
+      else { C.IN.keys[C.IN.grabKey] = false; C.IN.keys['KeyW'] = false; }
       if (v.mates) {
         for (let i = 0; i < v.mates; i++) {
           const a = C.Remote.add('m' + i, ['bo', 'wren', 'pike'][i] || ('m' + i), i + 1);
-          const ang = C.CAM.yaw + (i - 1) * 0.5;
-          const mx = P.pos.x + Math.sin(ang) * (4 + i * 2.5), mz = P.pos.z + Math.cos(ang) * (4 + i * 2.5);
-          a.pos.set(mx, C.groundH(mx, mz), mz);
-          a.yaw = ang + Math.PI; a.hp = 100 - i * 22; a.st = 90 - i * 30;
+          const ang = C.CAM.yaw + (i - 1) * 0.55;
+          const mx = P.pos.x + Math.sin(ang) * (3.5 + i * 2), mz = P.pos.z + Math.cos(ang) * (3.5 + i * 2);
+          const g = C.T.findGround(mx, mz, 4, 0.5) || { x: mx, y: P.pos.y, z: mz };
+          a.pos.set(g.x, g.y, g.z);
+          a.yaw = ang + Math.PI; a.st = 90 - i * 30; a.stMax = 100 - i * 12;
           a.buf = [{ t: 0, x: a.pos.x, y: a.pos.y, z: a.pos.z, yaw: a.yaw }];
-          a.state = i === 2 ? 3 : 0;
+          a.state = i === 2 ? C.ST.OUT : 0;
         }
       }
-      if (v.ping) { const px = P.pos.x + Math.sin(C.CAM.yaw) * 26, pz = P.pos.z + Math.cos(C.CAM.yaw) * 26; C.Coop.addPing(px, C.groundH(px, pz) + 1, pz, 1, false, 'wren'); }
     }, v);
-    await page.waitForTimeout(v.wait || 2600);
+    await page.waitForTimeout(v.wait || 2800);
     await page.screenshot({ path: path.join(ROOT, 'dist', 'shot-' + v.name + '.png') });
     console.log('shot ' + v.name);
-    if (v.mates) await page.evaluate(() => window.CRUX.Remote.clear());
+    await page.evaluate(() => { window.CRUX.Remote.clear(); window.CRUX.IN.keys = {}; });
   }
   await browser.close();
 })();

@@ -57,7 +57,7 @@ CAM.update = function (cam, P, dt) {
     // it.  Rising above the slope reads far better than a lens pressed
     // into the climber's backpack.
     var best = -1, bd2 = -1, lift = 0, tp, tcp, tdx, tdy, tdz;
-    for (var a = 0; a < 4; a++) {
+    for (var a = 0; a < 6; a++) {
       tp = clamp(CAM.pitch + a * 0.19, -1.45, 1.4);
       tcp = Math.cos(tp);
       tdx = -Math.sin(CAM.yaw) * tcp; tdy = -Math.sin(tp); tdz = -Math.cos(CAM.yaw) * tcp;
@@ -94,7 +94,9 @@ CAM.update = function (cam, P, dt) {
     var tight = invl(2.6, 1.15, CAM.dist);
     CAM.pos.y += tight * 0.34;
   }
-  CAM.hideBody = CAM.first || CAM.dist < 1.55;
+  // once the boom is this short you are effectively in first person, and
+  // showing the body just fills the screen with a backpack
+  CAM.hideBody = CAM.first || CAM.dist < 2.0;
 
   if (CAM.shake > 0.002) {
     CAM.shakeT += dt * 34;

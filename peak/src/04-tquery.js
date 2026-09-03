@@ -1,48 +1,37 @@
 // ---- surface classification ------------------------------------------
-T.classify = function (rng) {
+// Cosmetic and hazard only.  Nothing here decides whether you can climb -
+// every face on the mountain is climbable.
+T.classify = function () {
   var N = T.N, n = T.noise;
   var S = T.SURF = new Uint8Array(N * N);
-  T.BROKEN = new Uint8Array(N * N);
-  T.rests = [];
-  var restGrid = {}, i, j;
-
+  var i, j;
   for (j = 0; j < N; j++) {
     for (i = 0; i < N; i++) {
       var x = T.wx(i) + T.CS * 0.5, z = T.wx(j) + T.CS * 0.5;
       var h = T.hAt(x, z), ny = T.normAt(x, z).y;
-      var flat = ny > 0.72, steep = ny < 0.5;
-      var rd = T.routeDist(x, z);
+      var flat = ny > 0.70, steep = ny < 0.46;
       var v = n.fbm(x * 0.035, z * 0.035, 3);
       var w = n.fbm(x * 0.017 + 60, z * 0.017 - 30, 2);
-      var s;
+      var s, zn = zoneAt(h);
 
-      if (h >= K.BAND_TOP - 8) {
-        s = SF.ROCK;
-        if (steep && v > 0.34) s = SF.EMBER;
-      } else if (h >= K.BAND_ALP - 6) {
+      if (zn === Z.SHORE) {
+        s = flat ? (h < 6 ? SF.SAND : (v > 0.05 ? SF.GRASS : SF.SAND)) : SF.ROCK;
+      } else if (zn === Z.JUNGLE) {
+        s = flat ? (v > -0.1 ? SF.GRASS : SF.LEAF) : SF.MUD;
+        if (w > 0.42) s = SF.THORN;
+      } else if (zn === Z.SNOW) {
         s = flat ? SF.SNOW : SF.ROCK;
-        if (steep && w > -0.1) s = SF.ICE;
-        else if (!flat && v > 0.42) s = SF.ICE;
-      } else if (h >= K.BAND_ROCK - 4) {
-        s = flat ? SF.ROCK : SF.ROCK;
-        if (steep && v < -0.36 && rd > 16) s = SF.LOOSE;
-        else if (steep && h < K.BAND_ROCK + 46 && w > 0.30) s = SF.VINE;
+        if (steep && w > 0.05) s = SF.ICE;
+      } else if (zn === Z.VOLCANIC) {
+        s = SF.BASALT;
+        if (v > 0.36) s = SF.EMBER;
+      } else if (zn === Z.INTERIOR) {
+        s = SF.BASALT;
+        if (v > 0.34) s = SF.EMBER;      // veins of lava, not a field of it
       } else {
-        s = flat ? SF.GRASS : SF.DIRT;
-        if (steep && v > 0.06) s = SF.VINE;
+        s = flat ? SF.SNOW : SF.ROCK;
       }
       S[j * N + i] = s;
-
-      // Rest points: pitons hammered into steep rock near the line.  The
-      // spacing grid is three-dimensional, so a tall wall gets a place to
-      // hang every dozen metres of height rather than one for the whole face.
-      if (steep && h > 26 && rd < 32 && n.cell(i * 1.9, j * 1.9) > 0.42) {
-        var key = Math.round(x / 13) + ':' + Math.round(h / 13) + ':' + Math.round(z / 13);
-        if (!restGrid[key]) {
-          restGrid[key] = 1;
-          T.rests.push({ x: x, y: h, z: z });
-        }
-      }
     }
   }
 };
@@ -60,7 +49,6 @@ T.hAt = function (x, z) {
   return h11 + (h10 - h11) * (1 - v) + (h01 - h11) * (1 - u);
 };
 
-// exact facet normal, matching the triangle you can see
 T.normAt = function (x, z) {
   var fi = (x + T.half) / T.CS, fj = (z + T.half) / T.CS;
   if (fi < 0 || fj < 0 || fi >= T.N || fj >= T.N) { _nrm.x = 0; _nrm.y = 1; _nrm.z = 0; return _nrm; }
@@ -74,7 +62,6 @@ T.normAt = function (x, z) {
   return _nrm;
 };
 
-// averaged normal over a wider stencil: stable enough to drive movement
 var _snrm = { x: 0, y: 1, z: 0 };
 T.normSmooth = function (x, z, rad) {
   var d = rad || 1.15;
@@ -90,7 +77,6 @@ T.normSmooth = function (x, z, rad) {
 T.surfAt = function (x, z) {
   var i = ((x + T.half) / T.CS) | 0, j = ((z + T.half) / T.CS) | 0;
   if (i < 0 || j < 0 || i >= T.N || j >= T.N) return SF.ROCK;
-  if (T.BROKEN[j * T.N + i]) return SF.ROCK;
   return T.SURF[j * T.N + i];
 };
 
@@ -100,14 +86,12 @@ T.cellOf = function (x, z) {
   return j * T.N + i;
 };
 
-// march a ray against the field; used for pings and camera pull-in
 T.ray = function (ox, oy, oz, dx, dy, dz, maxD, step, out) {
-  var t = 0.4, s = step || 0.7, px, py, pz, h, pt = 0, ph = 0;
+  var t = 0.35, s = step || 0.7, px, py, pz, h, pt = 0;
   while (t < maxD) {
     px = ox + dx * t; py = oy + dy * t; pz = oz + dz * t;
     h = T.hAt(px, pz);
     if (h > T.VOID && py <= h) {
-      // bisect between the last miss and this hit
       var a = pt, b = t, m;
       for (var k = 0; k < 12; k++) {
         m = (a + b) * 0.5;
@@ -116,7 +100,7 @@ T.ray = function (ox, oy, oz, dx, dy, dz, maxD, step, out) {
       out.x = ox + dx * a; out.y = oy + dy * a; out.z = oz + dz * a; out.d = a; out.hit = true;
       return out;
     }
-    pt = t; ph = h;
+    pt = t;
     t += s + Math.max(0, (py - h) * 0.35);
   }
   out.hit = false; out.d = maxD;
@@ -124,14 +108,32 @@ T.ray = function (ox, oy, oz, dx, dy, dz, maxD, step, out) {
   return out;
 };
 
-// horizontal direction pointing away from the slope (out of the wall)
-T.outward = function (x, z, out, rad) {
-  var n = T.normSmooth(x, z, rad || 1.6);
-  var l = Math.sqrt(n.x * n.x + n.z * n.z);
-  if (l < 1e-4) { out.x = 0; out.z = 1; return false; }
-  out.x = n.x / l; out.z = n.z / l;
-  return true;
+// ---- spawn and placement safety --------------------------------------
+// Nothing is ever dropped into the world at a guessed height.  Every spawn
+// point, item and prop resolves its own ground first and is rejected if the
+// ground is not somewhere a body could actually stand.
+T.standable = function (x, z, minY) {
+  var h = T.hAt(x, z);
+  if (h <= T.VOID) return null;
+  if (h < (minY === undefined ? 0.6 : minY)) return null;      // in the sea
+  if (T.normSmooth(x, z, 1.0).y < K.WALK_COS + 0.06) return null;
+  // a boulder sits here, so the collision surface is not the terrain height:
+  // anything dropped at h would end up buried in the rock
+  if (typeof Props !== 'undefined' && Props.hash && Props.capHeight(x, z, h) - h > 0.3) return null;
+  return h;
 };
 
-// is this spot somewhere a body can rest and breathe?
-T.isRestable = function (x, z) { return T.normSmooth(x, z).y > 0.80; };
+// find solid, walkable ground near (x,z); returns {x,y,z} or null
+T.findGround = function (x, z, rad, minY) {
+  var h = T.standable(x, z, minY);
+  if (h !== null) return { x: x, y: h, z: z };
+  var rings = [rad * 0.35, rad * 0.7, rad];
+  for (var ri = 0; ri < rings.length; ri++) {
+    for (var k = 0; k < 12; k++) {
+      var a = k / 12 * 6.283, px = x + Math.cos(a) * rings[ri], pz = z + Math.sin(a) * rings[ri];
+      h = T.standable(px, pz, minY);
+      if (h !== null) return { x: px, y: h, z: pz };
+    }
+  }
+  return null;
+};

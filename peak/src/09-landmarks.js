@@ -2,8 +2,7 @@
 var Camps = { list: [], group: null };
 
 function fireGeo() {
-  var rng = makeRng(77);
-  var parts = [], i;
+  var rng = makeRng(77), parts = [], i;
   for (i = 0; i < 7; i++) {
     var a = i / 7 * 6.283;
     parts.push({ g: rockGeo(rng, 0.3, 0), c: i % 2 ? 0x7d7972 : 0x67635e, p: [Math.cos(a) * 1.05, 0.06, Math.sin(a) * 1.05], s: [1, 0.75, 1] });
@@ -13,6 +12,16 @@ function fireGeo() {
   parts.push({ g: new THREE.CylinderGeometry(0.1, 0.12, 1.3, 5), c: 0x543a24, p: [0, 0.18, 0], r: [1.2, 0.6, 1.4] });
   return mergeParts(parts);
 }
+function wreckGeo() {
+  return mergeParts([
+    { g: new THREE.CylinderGeometry(1.5, 1.3, 7.5, 8), c: 0xdfe4ea, p: [0, 1.5, 0], r: [0.1, 0, 1.45] },
+    { g: new THREE.CylinderGeometry(1.3, 0.5, 2.4, 8), c: 0xc8ced6, p: [4.4, 1.2, 0.3], r: [0.1, 0, 1.5] },
+    { g: new THREE.BoxGeometry(6.5, 0.22, 1.7), c: 0xdfe4ea, p: [-0.6, 1.3, 2.3], r: [0.1, 0.15, -0.12] },
+    { g: new THREE.BoxGeometry(4.5, 0.22, 1.5), c: 0xc8ced6, p: [-1.2, 0.9, -2.6], r: [-0.2, -0.2, 0.16] },
+    { g: new THREE.BoxGeometry(0.25, 2.2, 1.6), c: 0xe86a3a, p: [-3.6, 2.4, 0], r: [0, 0, -0.2] },
+    { g: new THREE.CylinderGeometry(0.55, 0.55, 0.3, 9), c: 0x3a3f47, p: [1.2, 2.9, 1.2], r: [1.57, 0, 0] },
+  ]);
+}
 function tentGeo(col) {
   return mergeParts([
     { g: new THREE.ConeGeometry(1.5, 1.9, 4), c: col, p: [0, 0.95, 0], r: [0, Math.PI / 4, 0] },
@@ -20,88 +29,56 @@ function tentGeo(col) {
     { g: new THREE.ConeGeometry(0.55, 1.0, 3), c: 0x24282e, p: [0, 0.5, 1.0], r: [0, Math.PI / 4, 0] },
   ]);
 }
-function crateGeo() {
-  return mergeParts([
-    { g: new THREE.BoxGeometry(0.9, 0.8, 0.9), c: 0x8a6136 },
-    { g: new THREE.BoxGeometry(0.94, 0.1, 0.94), c: 0x6d4a28, p: [0, 0.28, 0] },
-    { g: new THREE.BoxGeometry(0.94, 0.1, 0.94), c: 0x6d4a28, p: [0, -0.28, 0] },
-  ]);
-}
-function cairnGeo(rng, n, scale) {
-  var parts = [], y = 0;
-  for (var i = 0; i < n; i++) {
-    var r = scale * (0.55 - i * 0.055);
-    parts.push({ g: rockGeo(rng, r, 0), c: i % 2 ? 0x8d8891 : 0x6f6a72, p: [rngRange(rng, -0.06, 0.06), y + r * 0.5, rngRange(rng, -0.06, 0.06)], s: [1, 0.7, 1] });
-    y += r * 0.8;
-  }
-  return mergeParts(parts);
-}
 
 Camps.build = function () {
   var g = Camps.group = new THREE.Group();
-  var fg = fireGeo(), tg = tentGeo(0xd8763a), tg2 = tentGeo(0x3a8fa8), cg = crateGeo();
-  var rng = makeRng(4242);
+  var fg = fireGeo(), wg = wreckGeo(), tg = tentGeo(0xd8763a), tg2 = tentGeo(0x3a8fa8);
   Camps.list = [];
 
   for (var i = 0; i < T.camps.length; i++) {
     var c = T.camps[i];
+    var ground = T.hAt(c.x, c.z);
     var node = new THREE.Group();
-    node.position.set(c.x, T.hAt(c.x, c.z), c.z);
+    node.position.set(c.x, ground, c.z);
 
     var fire = new THREE.Mesh(fg, MAT.solid);
     fire.castShadow = true;
     node.add(fire);
 
-    var f1 = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.5, 6), MAT.flame2);
-    f1.position.y = 0.82;
-    var f2 = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.95, 5), MAT.flame);
-    f2.position.y = 0.62;
+    var f1 = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.5, 6), MAT.flame2); f1.position.y = 0.82;
+    var f2 = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.95, 5), MAT.flame); f2.position.y = 0.62;
     node.add(f1, f2);
 
-    var light = new THREE.PointLight(0xff9a3c, 0, 26, 2);
-    light.position.y = 1.3;
+    var light = new THREE.PointLight(0xff9a3c, 0, 30, 2);
+    light.position.y = 1.4;
     node.add(light);
 
-    // a marker pole so the camp reads from a long way off
-    var pole = mergeParts([
-      { g: new THREE.CylinderGeometry(0.07, 0.09, 4.4, 5), c: 0x5a4630, p: [0, 2.2, 0] },
-      { g: new THREE.BoxGeometry(1.5, 0.9, 0.06), c: i === 0 ? 0xff8a3d : 0xffd646, p: [0.78, 3.85, 0] },
-    ]);
-    var pm = new THREE.Mesh(pole, MAT.solid);
-    pm.position.set(2.3, 0, -1.4);
-    pm.castShadow = true;
-    node.add(pm);
+    // something tall so the camp reads from a long way down the mountain
+    var pole = new THREE.Mesh(mergeParts([
+      { g: new THREE.CylinderGeometry(0.07, 0.09, 4.6, 5), c: 0x5a4630, p: [0, 2.3, 0] },
+      { g: new THREE.BoxGeometry(1.5, 0.9, 0.06), c: i === 0 ? 0xff8a3d : 0xffd646, p: [0.78, 3.95, 0] },
+    ]), MAT.solid);
+    // every offset piece resolves its own ground; a marker pole hanging in
+    // the air is exactly the sloppiness this is here to stop
+    var pgY = T.hAt(c.x + 2.4, c.z - 1.5);
+    pole.position.set(2.4, (pgY > T.VOID ? pgY : ground) - ground, -1.5);
+    pole.castShadow = true;
+    node.add(pole);
 
     if (i === 0) {
-      var t1 = new THREE.Mesh(tg, MAT.solid); t1.position.set(-4.2, 0, 2.6); t1.rotation.y = 0.5; t1.castShadow = true;
-      var t2 = new THREE.Mesh(tg2, MAT.solid); t2.position.set(4.6, 0, 3.4); t2.rotation.y = -0.8; t2.castShadow = true;
-      var c1 = new THREE.Mesh(cg, MAT.solid); c1.position.set(-2.6, 0.4, -3.2); c1.rotation.y = 0.3; c1.castShadow = true;
-      var c2 = new THREE.Mesh(cg, MAT.solid); c2.position.set(-1.7, 0.4, -4.0); c2.rotation.y = -0.6; c2.castShadow = true;
-      var c3 = new THREE.Mesh(cg, MAT.solid); c3.position.set(-2.2, 1.2, -3.5); c3.rotation.y = 0.9; c3.castShadow = true;
-      node.add(t1, t2, c1, c2, c3);
-      // ground the tents on the actual shelf
-      [t1, t2, c1, c2, c3].forEach(function (o) {
-        o.position.y += T.hAt(c.x + o.position.x, c.z + o.position.z) - node.position.y;
+      var w = new THREE.Mesh(wg, MAT.solid);
+      w.position.set(-5.5, 0.6, 1.5); w.rotation.y = 0.7; w.castShadow = true;
+      var t1 = new THREE.Mesh(tg, MAT.solid); t1.position.set(4.4, 0, 3.0); t1.rotation.y = 0.5; t1.castShadow = true;
+      var t2 = new THREE.Mesh(tg2, MAT.solid); t2.position.set(-1.5, 0, 4.6); t2.rotation.y = -0.8; t2.castShadow = true;
+      node.add(w, t1, t2);
+      [w, t1, t2].forEach(function (o) {
+        var gy = T.hAt(c.x + o.position.x, c.z + o.position.z);
+        o.position.y += (gy > T.VOID ? gy : ground) - ground;
       });
     }
     g.add(node);
-    Camps.list.push({ x: c.x, y: node.position.y, z: c.z, idx: i, lit: i === 0, node: node, f1: f1, f2: f2, light: light });
+    Camps.list.push({ x: c.x, y: ground, z: c.z, idx: i, lit: i === 0, node: node, f1: f1, f2: f2, light: light });
   }
-
-  // small trail cairns: a quiet hint at the line without a minimap
-  var cg2 = cairnGeo(rng, 4, 0.85);
-  var cairns = [];
-  for (i = 1; i < T.route.length - 1; i++) {
-    var p = T.route[i];
-    for (var k = 0; k < 2; k++) {
-      var a = rng() * 6.283, d = rngRange(rng, 3, 11);
-      var x = p.x + Math.cos(a) * d, z = p.z + Math.sin(a) * d;
-      var y = T.hAt(x, z);
-      if (y > T.VOID && T.normSmooth(x, z).y > 0.83) cairns.push({ x: x, y: y, z: z, ry: rng() * 6.28, s: rngRange(rng, 0.8, 1.2) });
-    }
-  }
-  g.add(scatter(cg2, MAT.solid, cairns, null));
-
   Camps.setLit(0, true);
   return g;
 };
@@ -111,7 +88,8 @@ Camps.setLit = function (i, lit) {
   if (!c) return;
   c.lit = lit;
   c.f1.visible = lit; c.f2.visible = lit;
-  c.light.intensity = lit ? 2.4 : 0;
+  c.light.intensity = lit ? 2.6 : 0;
+  if (lit && i > 0) Walls.open(i - 1);
 };
 
 Camps.tick = function (dt, t) {
@@ -122,7 +100,7 @@ Camps.tick = function (dt, t) {
     c.f1.scale.set(f, f * 1.15, f);
     c.f2.scale.set(f * 1.1, f * 0.9, f * 1.1);
     c.f1.rotation.y += dt * 2.2;
-    c.light.intensity = 2.1 + f * 0.8;
+    c.light.intensity = 2.3 + f * 0.9;
   }
 };
 
@@ -136,51 +114,140 @@ Camps.nearest = function (x, y, z, rad) {
   return best;
 };
 
+// ============================================================ FOG WALLS
+// One above each zone.  Light that zone's fire and it lifts.
+var Walls = { list: [], group: null, mat: null };
+
+function ringRadiusAt(y) {
+  var lo = 0, hi = 1;
+  for (var k = 0; k < 24; k++) {
+    var m = (lo + hi) * 0.5;
+    if (profile(m) > y) lo = m; else hi = m;
+  }
+  return ((lo + hi) * 0.5) * K.BASE_R;
+}
+
+// The wall above zone i is opened by the fire at the top of that zone, so it
+// has to sit above that fire and below the next one.  Deriving it from where
+// the camps actually landed - rather than the nominal zone altitude - is what
+// keeps it from cutting through the ground somebody is standing on.
+Walls.altitudes = function () {
+  var ys = [], i;
+  for (i = 0; i < 5; i++) {
+    var below = Camps.list[i + 1] ? Camps.list[i + 1].y : ZONES[i].fire;
+    var above = Camps.list[i + 2] ? Camps.list[i + 2].y : ZONES[i].top + 40;
+    var y = Math.max(ZONES[i].top, below + 8);
+    if (y > above - 8) y = (below + above) * 0.5;
+    ys.push(y);
+  }
+  for (i = 1; i < 5; i++) if (ys[i] < ys[i - 1] + 10) ys[i] = ys[i - 1] + 10;
+  return ys;
+};
+
+// a soft vertical gradient so the barrier reads as weather rather than a tube
+function fogTexture() {
+  var H = 64, cv = document.createElement('canvas');
+  cv.width = 4; cv.height = H;
+  var ctx = cv.getContext('2d'), img = ctx.createImageData(4, H);
+  for (var j = 0; j < H; j++) {
+    var t = j / (H - 1);
+    var a = Math.sin(t * Math.PI);
+    a = Math.pow(clamp(a, 0, 1), 0.7);
+    for (var i = 0; i < 4; i++) {
+      var o = (j * 4 + i) * 4;
+      img.data[o] = 236; img.data[o + 1] = 240; img.data[o + 2] = 246;
+      img.data[o + 3] = (a * 255) | 0;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  var tex = new THREE.CanvasTexture(cv);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  return tex;
+}
+
+Walls.build = function () {
+  var g = Walls.group = new THREE.Group();
+  Walls.list = [];
+  Walls.tex = fogTexture();
+  var ys = Walls.altitudes();
+  for (var i = 0; i < 5; i++) {
+    var y = ys[i];
+    var r = Math.max(24, ringRadiusAt(y) + 12);
+    var mat = new THREE.MeshBasicMaterial({
+      map: Walls.tex, color: 0xdfe6ee, transparent: true, opacity: 0.55,
+      side: THREE.DoubleSide, depthWrite: false,
+    });
+    var m = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.10, 26, 44, 1, true), mat);
+    m.position.y = y + 8;
+    m.renderOrder = 3;
+    g.add(m);
+    Walls.list.push({ i: i, y: y, mesh: m, mat: mat, open: false, r: r });
+  }
+  return g;
+};
+
+Walls.open = function (i) {
+  var w = Walls.list[i];
+  if (!w || w.open) return;
+  w.open = true;
+  HUD.toast('the fog lifts — ' + ZONES[i + 1].name + ' is open', '#ffd646');
+};
+
+// the lowest wall still up; you cannot climb past it
+Walls.ceiling = function () {
+  for (var i = 0; i < Walls.list.length; i++) if (!Walls.list[i].open) return Walls.list[i];
+  return null;
+};
+
+Walls.tick = function (dt, t) {
+  for (var i = 0; i < Walls.list.length; i++) {
+    var w = Walls.list[i];
+    var want = w.open ? 0 : 0.55;
+    w.mat.opacity = damp(w.mat.opacity, want, 1.6, dt);
+    w.mesh.visible = w.mat.opacity > 0.02;
+    w.mesh.rotation.y += dt * 0.03;
+    w.mat.map.offset.x = t * 0.012;
+    w.mesh.position.y = w.y + 8 + Math.sin(t * 0.5 + i) * 1.1;
+  }
+};
+
 // ---- the summit -------------------------------------------------------
-var Summit = { pos: null, group: null, flag: null, light: null };
+var Summit = { pos: null, group: null, flare: null, light: null, fired: false };
 Summit.build = function () {
   var g = Summit.group = new THREE.Group();
   var rng = makeRng(9091);
   var y = T.hAt(0, 0);
   Summit.pos = new THREE.Vector3(0, y, 0);
   g.position.set(0, y, 0);
+  Summit.fired = false;
 
-  var cairn = new THREE.Mesh(cairnGeo(rng, 7, 1.5), MAT.solid);
+  var parts = [], yy = 0;
+  for (var i = 0; i < 7; i++) {
+    var r = 1.5 * (0.55 - i * 0.055);
+    parts.push({ g: rockGeo(rng, r, 0), c: i % 2 ? 0x8d8891 : 0x6f6a72, p: [rngRange(rng, -0.06, 0.06), yy + r * 0.5, rngRange(rng, -0.06, 0.06)], s: [1, 0.7, 1] });
+    yy += r * 0.8;
+  }
+  var cairn = new THREE.Mesh(mergeParts(parts), MAT.solid);
   cairn.castShadow = true; cairn.receiveShadow = true;
   g.add(cairn);
 
-  var pole = new THREE.Mesh(mergeParts([
-    { g: new THREE.CylinderGeometry(0.09, 0.12, 7.5, 6), c: 0x9aa2ab, p: [0, 3.75, 0] },
+  // the flare stand: reach it, fire it, go home
+  var stand = new THREE.Mesh(mergeParts([
+    { g: new THREE.CylinderGeometry(0.11, 0.15, 2.6, 6), c: 0x9aa2ab, p: [0, 1.3, 0] },
+    { g: new THREE.BoxGeometry(0.5, 0.5, 0.5), c: 0xe8452f, p: [0, 2.75, 0] },
+    { g: new THREE.ConeGeometry(0.2, 0.5, 6), c: 0xffd646, p: [0, 3.2, 0] },
   ]), MAT.solid);
-  pole.position.y = 3.0;
-  pole.castShadow = true;
-  g.add(pole);
+  stand.position.y = 2.2;
+  stand.castShadow = true;
+  g.add(stand);
 
-  var flag = new THREE.Mesh(mergeParts([
-    { g: new THREE.PlaneGeometry(2.6, 1.6), c: 0xff8a3d, p: [1.3, 0, 0] },
-  ]), MAT.solidS);
-  flag.position.set(0, 9.4, 0);
-  Summit.flag = flag;
-  g.add(flag);
-
-  var brazier = new THREE.Mesh(mergeParts([
-    { g: new THREE.CylinderGeometry(0.7, 0.45, 0.7, 7), c: 0x4a444e, p: [0, 0.35, 0] },
-    { g: new THREE.CylinderGeometry(0.62, 0.62, 0.2, 7), c: 0xff5a1e, p: [0, 0.72, 0] },
-  ]), MAT.solid);
-  brazier.position.set(2.6, 0, 1.8);
-  brazier.position.y = T.hAt(2.6, 1.8) - y;
-  g.add(brazier);
-
-  var l = new THREE.PointLight(0xff7a2a, 3.2, 40, 2);
-  l.position.set(2.6, brazier.position.y + 1.4, 1.8);
+  var l = new THREE.PointLight(0xff5a3a, 0, 60, 2);
+  l.position.set(0, 6, 0);
   Summit.light = l;
   g.add(l);
   return g;
 };
 Summit.tick = function (dt, t) {
-  if (Summit.flag) {
-    Summit.flag.rotation.y = Math.sin(t * 0.7) * 0.5 + 1.2;
-    Summit.flag.scale.x = 1 + Math.sin(t * 3.1) * 0.06;
-  }
-  if (Summit.light) Summit.light.intensity = 2.9 + Math.sin(t * 9) * 0.5;
+  if (Summit.light) Summit.light.intensity = Summit.fired ? 6 + Math.sin(t * 12) * 2.5 : 0;
 };

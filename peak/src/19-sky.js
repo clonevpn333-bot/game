@@ -30,14 +30,15 @@ function linCol(hex) {
   return c;
 }
 
-// four altitude keyframes: base, rock, alpine, summit
+// one keyframe per zone: shore, jungle, snow, volcanic, caldera, peak
 var SKY_KEYS = [
-  { y: 0, low: 0xf0c69a, mid: 0x9fc8e8, high: 0x5b95d6, sun: 0xffd9a0, fog: 0xe6d6bd, dens: 0.0044, el: 0.22, amb: 0.86, sunI: 1.05 },
-  { y: 90, low: 0xe8cfae, mid: 0x8fbde6, high: 0x4a84cf, sun: 0xffe0b0, fog: 0xdcd8cc, dens: 0.0034, el: 0.33, amb: 0.88, sunI: 1.18 },
-  { y: 190, low: 0xdfe9f2, mid: 0x8fc0e8, high: 0x2f6ec2, sun: 0xfff0d8, fog: 0xd6e2f0, dens: 0.0024, el: 0.47, amb: 0.94, sunI: 1.30 },
-  { y: 302, low: 0xffb473, mid: 0x6aa8e0, high: 0x1b4a9c, sun: 0xffd08a, fog: 0xc4cfe2, dens: 0.0017, el: 0.60, amb: 0.80, sunI: 1.45 },
+  { y: 0,   low: 0xffe0b0, mid: 0x8fc8ee, high: 0x3f86d8, sun: 0xfff0c8, fog: 0xf0dcb8, dens: 0.0036, el: 0.20, amb: 0.92, sunI: 1.10 },
+  { y: 62,  low: 0xdfd9a8, mid: 0x86bfe2, high: 0x3f7fcc, sun: 0xfff0cc, fog: 0xd8dcb8, dens: 0.0042, el: 0.28, amb: 0.95, sunI: 1.05 },
+  { y: 132, low: 0xe6eef6, mid: 0x93c4ea, high: 0x2f6ec2, sun: 0xfff4e2, fog: 0xdae6f2, dens: 0.0030, el: 0.44, amb: 0.96, sunI: 1.30 },
+  { y: 200, low: 0xffab68, mid: 0x7a9fc8, high: 0x2a4f96, sun: 0xffc07a, fog: 0xc9b2a4, dens: 0.0028, el: 0.34, amb: 0.72, sunI: 1.15 },
+  { y: 256, low: 0x8a3a18, mid: 0x3f3a4c, high: 0x1a1826, sun: 0xff8a3a, fog: 0x2e2630, dens: 0.0036, el: 0.22, amb: 0.50, sunI: 0.75 },
+  { y: 302, low: 0xffc78a, mid: 0x63a6e4, high: 0x123a86, sun: 0xfff0d0, fog: 0xc6d6e8, dens: 0.0016, el: 0.62, amb: 0.92, sunI: 1.55 },
 ];
-
 function keyAt(y) {
   var i = 0;
   for (i = 0; i < SKY_KEYS.length - 1; i++) if (y < SKY_KEYS[i + 1].y) break;
@@ -113,7 +114,7 @@ Sky.build = function (scene) {
   var cm = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.0, side: THREE.DoubleSide });
   Sky.cloud = new THREE.Mesh(new THREE.PlaneGeometry(1300, 1300, 28, 28), cm);
   Sky.cloud.rotation.x = -Math.PI / 2;
-  Sky.cloud.position.y = 74;
+  Sky.cloud.position.y = 84;
   Sky.cloud.renderOrder = -5;
   scene.add(Sky.cloud);
 
@@ -156,10 +157,9 @@ Sky.update = function (dt, t, py, camPos) {
   fog.color.lerp(linCol(k.fog), 1 - Math.exp(-2.5 * dt));
   fog.density = damp(fog.density, k.dens, 2, dt);
 
-  // the cloud sea only shows when you are near or above it
   // the cloud sea fades in once you are above it and thins out again near
   // the top, so it reads as a layer you broke through rather than a lid
-  var band = clamp((py - 88) / 40, 0, 1) * clamp(1 - (py - 190) / 110, 0, 1);
+  var band = clamp((py - 96) / 42, 0, 1) * clamp(1 - (py - 200) / 90, 0, 1);
   Sky.cloud.material.opacity = damp(Sky.cloud.material.opacity, band * 0.34, 2.5, dt);
   Sky.cloud.visible = Sky.cloud.material.opacity > 0.01;
   Sky.cloud.position.x = camPos.x + Math.sin(t * 0.01) * 30;

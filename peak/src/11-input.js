@@ -2,11 +2,33 @@
 var IN = {
   keys: {}, hit: {}, mx: 0, my: 0, mb: [false, false, false], mbHit: [false, false, false],
   locked: false, sens: 0.0014, invert: false, el: null, onLockChange: null,
+  grabKey: 'KeyE',        // held, rebindable; left mouse always works too
+  capture: null,          // set to a callback while rebinding
+};
+
+IN.keyLabel = function (code) {
+  if (!code) return '—';
+  if (code.indexOf('Key') === 0) return code.slice(3);
+  if (code.indexOf('Digit') === 0) return code.slice(5);
+  if (code === 'Space') return 'Space';
+  if (code.indexOf('Arrow') === 0) return code.slice(5);
+  return code.replace(/^(Control|Shift|Alt|Meta)(Left|Right)$/, '$1');
 };
 
 IN.init = function (el) {
   IN.el = el;
+  try {
+    var g = localStorage.getItem('crux.grab');
+    if (g) IN.grabKey = g;
+  } catch (e) { }
+
   window.addEventListener('keydown', function (e) {
+    if (IN.capture) {
+      e.preventDefault();
+      var cb = IN.capture; IN.capture = null;
+      if (e.code !== 'Escape') cb(e.code);
+      return;
+    }
     if (e.repeat) { IN.keys[e.code] = true; return; }
     if (!IN.keys[e.code]) IN.hit[e.code] = true;
     IN.keys[e.code] = true;
@@ -40,6 +62,11 @@ IN.init = function (el) {
   });
 };
 
+IN.setGrabKey = function (code) {
+  IN.grabKey = code;
+  try { localStorage.setItem('crux.grab', code); } catch (e) { }
+};
+
 IN.lock = function () {
   if (IN.locked || !IN.el) return;
   var p = IN.el.requestPointerLock({ unadjustedMovement: true });
@@ -54,20 +81,18 @@ IN.mpress = function (b) { return IN.mbHit[b]; };
 IN.axis = function (neg, pos) { return (IN.keys[neg] ? -1 : 0) + (IN.keys[pos] ? 1 : 0); };
 IN.flush = function () { IN.hit = {}; IN.mbHit = [false, false, false]; IN.mx = 0; IN.my = 0; };
 
-// named bindings, so remapping later is a one-line change
 IN.moveX = function () { return IN.axis('KeyA', 'KeyD'); };
 IN.moveZ = function () { return IN.axis('KeyS', 'KeyW'); };
-IN.sprint = function () { return IN.down('ShiftLeft') || IN.down('ShiftRight'); };
+IN.shift = function () { return IN.down('ShiftLeft') || IN.down('ShiftRight'); };
+IN.shiftHit = function () { return IN.press('ShiftLeft') || IN.press('ShiftRight'); };
 IN.jump = function () { return IN.press('Space'); };
-IN.jumpHeld = function () { return IN.down('Space'); };
-IN.grip = function () { return IN.mdown(0); };   // hold to hang on
+// The only way onto a wall.  Held, never automatic.
+IN.grab = function () { return IN.down(IN.grabKey) || IN.mdown(0); };
+IN.hand = function () { return IN.mdown(2); };
 IN.use = function () { return IN.press('KeyC'); };
-IN.interactHeld = function () { return IN.down('KeyE'); };
-IN.interact = function () { return IN.press('KeyE'); };
-IN.rope = function () { return IN.press('KeyR'); };
-IN.brace = function () { return IN.press('KeyF'); };
-IN.pass = function () { return IN.press('KeyG'); };
+IN.interact = function () { return IN.press('KeyF'); };
+IN.interactHeld = function () { return IN.down('KeyF'); };
+IN.drop = function () { return IN.press('KeyX'); };
 IN.pingHeld = function () { return IN.down('KeyQ'); };
-IN.pingHit = function () { return IN.press('KeyQ'); };
 IN.view = function () { return IN.press('KeyV'); };
 IN.roster = function () { return IN.down('Tab'); };
