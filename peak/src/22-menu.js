@@ -10,28 +10,55 @@ Menu.init = function () {
     name: $('in-name'), joinCode: $('in-code'),
   };
 
+  // One options panel, borrowed by whichever screen is up.
+  var opts = $('opts');
+  $('opts-host').appendChild(opts);
+  Menu.optsToMenu = function () { $('opts-host').appendChild(opts); opts.open = false; };
+  Menu.optsToPause = function () { $('pause-opts').appendChild(opts); opts.open = false; };
+
+  var SET = [
+    ['sens', 'in-sens'], ['sensy', 'in-sensy'], ['fov', 'in-fov'], ['cfov', 'in-cfov'],
+    ['invx', 'in-invx'], ['invy', 'in-invy'], ['bob', 'in-bob'], ['photo', 'in-photo'],
+    ['detail', 'in-detail'],
+  ];
   try {
     var saved = localStorage.getItem('crux.name');
     if (saved) e.name.value = saved;
-    var s = localStorage.getItem('crux.sens'); if (s) $('in-sens').value = s;
-    var f = localStorage.getItem('crux.fov'); if (f) $('in-fov').value = f;
-    var iv = localStorage.getItem('crux.inv'); if (iv === '1') $('in-inv').checked = true;
-    var dt = localStorage.getItem('crux.detail'); if (dt !== null) $('in-detail').value = dt;
+    SET.forEach(function (row) {
+      var v = localStorage.getItem('crux.' + row[0]);
+      if (v === null) return;
+      var el = $(row[1]);
+      if (el.type === 'checkbox') el.checked = v === '1'; else el.value = v;
+    });
   } catch (err) { }
 
   function readOpts() {
-    IN.sens = parseFloat($('in-sens').value) / 10000;
-    IN.invert = $('in-inv').checked;
+    // Sensitivity is radians of turn per pixel of mouse travel.  The base is
+    // deliberately low so one trackpad flick is not a full spin; the slider
+    // scales it, and the vertical gets its own multiplier on top.
+    var sx = parseFloat($('in-sens').value) / 100;
+    var sy = parseFloat($('in-sensy').value) / 100;
+    IN.sensX = 0.0022 * sx;
+    IN.sensY = 0.0022 * sx * sy;
+    IN.invX = $('in-invx').checked;
+    IN.invY = $('in-invy').checked;
     CAM.fovBase = parseFloat($('in-fov').value);
-    $('sens-v').textContent = (parseFloat($('in-sens').value) / 10).toFixed(1);
+    CAM.fovClimb = parseFloat($('in-cfov').value);
+    CAM.bobAmt = $('in-bob').checked ? 0 : 1;
+    CAM.shakeScale = $('in-photo').checked ? 0.15 : 1;
+    $('sens-v').textContent = sx.toFixed(2);
+    $('sensy-v').textContent = sy.toFixed(2);
     $('fov-v').textContent = $('in-fov').value;
+    $('cfov-v').textContent = $('in-cfov').value;
     try {
-      localStorage.setItem('crux.sens', $('in-sens').value);
-      localStorage.setItem('crux.fov', $('in-fov').value);
-      localStorage.setItem('crux.inv', $('in-inv').checked ? '1' : '0');
-      localStorage.setItem('crux.detail', $('in-detail').value);
+      SET.forEach(function (row) {
+        var el = $(row[1]);
+        localStorage.setItem('crux.' + row[0], el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value);
+      });
     } catch (err) { }
   }
+  Menu.readOpts = readOpts;
+
   var bindBtn = $('btn-grab');
   function showBind() {
     bindBtn.textContent = IN.keyLabel(IN.grabKey);
@@ -48,9 +75,9 @@ Menu.init = function () {
     };
   });
 
-  ['in-sens', 'in-fov', 'in-inv', 'in-detail'].forEach(function (id) {
-    $(id).addEventListener('input', readOpts);
-    $(id).addEventListener('change', readOpts);
+  SET.forEach(function (row) {
+    $(row[1]).addEventListener('input', readOpts);
+    $(row[1]).addEventListener('change', readOpts);
   });
   readOpts();
 

@@ -131,6 +131,100 @@ function check(name, ok, detail) {
   check('you land standing on it, undamaged', settle.state === 0 && Math.abs(settle.clear) < 0.2 && settle.hp === 100,
     JSON.stringify(settle));
 
+  // ---- 2b. WASD moves the way the camera is pointing --------------------
+  const wasd = await page.evaluate(async () => {
+    const C = window.CRUX, P = C.P, T = C.T;
+    let g = null;
+    for (let i = 0; i < 120000 && !g; i++) {
+      const a = Math.random() * 6.283, r = 30 + Math.random() * 140;
+      const q = T.findGround(Math.cos(a) * r, Math.sin(a) * r, 3, 3);
+      if (q && T.normSmooth(q.x, q.z).y > 0.97) g = q;
+    }
+    async function step(keys, yaw) {
+      P.spawnAt(g.x, g.z, g.y);
+      C.CAM.yaw = yaw; C.CAM.pitch = 0; P.st = P.stMax;
+      await window.__sim(0.2);
+      const x0 = P.pos.x, z0 = P.pos.z;
+      await window.__hold(keys, 1.0);
+      return { dx: P.pos.x - x0, dz: P.pos.z - z0 };
+    }
+    // three.js's own idea of the camera's right, for the same look direction
+    function basis(yaw) {
+      const f = C.CAM.flatForward(new THREE.Vector3());
+      const cam = new THREE.PerspectiveCamera();
+      cam.position.set(0, 0, 0); cam.lookAt(f.x, 0, f.z);
+      const r = new THREE.Vector3(1, 0, 0).applyQuaternion(cam.quaternion);
+      return { f: f.clone(), r: r };
+    }
+    const out = {};
+    for (const yaw of [0, 1.9, -2.4]) {
+      C.CAM.yaw = yaw;
+      const b = basis(yaw);
+      const w = await step(['KeyW'], yaw), d = await step(['KeyD'], yaw);
+      const a2 = await step(['KeyA'], yaw), s2 = await step(['KeyS'], yaw);
+      out['y' + yaw.toFixed(1)] = {
+        fwd: +(w.dx * b.f.x + w.dz * b.f.z).toFixed(2),
+        back: +(s2.dx * b.f.x + s2.dz * b.f.z).toFixed(2),
+        right: +(d.dx * b.r.x + d.dz * b.r.z).toFixed(2),
+        left: +(a2.dx * b.r.x + a2.dz * b.r.z).toFixed(2),
+      };
+    }
+    return out;
+  });
+  const wk = Object.keys(wasd);
+  check('W goes where the camera looks', wk.every(k => wasd[k].fwd > 2 && wasd[k].back < -2),
+    JSON.stringify(wasd));
+  check('D strafes right and A strafes left', wk.every(k => wasd[k].right > 2 && wasd[k].left < -2),
+    JSON.stringify(wasd));
+
+  // ---- 2c. the look settings actually do something ----------------------
+  const sens = await page.evaluate(() => {
+    const C = window.CRUX, out = {};
+    function turn(dx, dy) {
+      C.CAM.yaw = 0; C.CAM.pitch = 0;
+      C.CAM.applyMouse(dx, dy);
+      return { yaw: +C.CAM.yaw.toFixed(4), pitch: +C.CAM.pitch.toFixed(4) };
+    }
+    const sx = C.IN.sensX, sy = C.IN.sensY, ix = C.IN.invX, iy = C.IN.invY;
+    const base = turn(100, 100);
+    C.IN.sensX = sx * 2;
+    out.doubled = turn(100, 100).yaw / base.yaw;
+    C.IN.sensX = sx;
+    C.IN.invX = true; C.IN.invY = true;
+    const inv = turn(100, 100);
+    out.invX = Math.sign(inv.yaw) !== Math.sign(base.yaw);
+    out.invY = Math.sign(inv.pitch) !== Math.sign(base.pitch);
+    C.IN.invX = ix; C.IN.invY = iy;
+    // vertical multiplier is independent of horizontal
+    C.IN.sensY = sy * 0.5;
+    out.vert = Math.abs(turn(0, 100).pitch) / Math.abs(base.pitch);
+    C.IN.sensY = sy;
+    // and the climbing FOV opens the view on the wall
+    out.fovBase = C.CAM.fovBase; out.fovClimb = C.CAM.fovClimb;
+    return out;
+  });
+  check('sensitivity scales the turn', Math.abs(sens.doubled - 2) < 0.01, 'x2 gave ' + sens.doubled.toFixed(3));
+  check('invert X and Y work independently', sens.invX && sens.invY, JSON.stringify(sens));
+  check('vertical sensitivity is its own multiplier', Math.abs(sens.vert - 0.5) < 0.01, 'half gave ' + sens.vert.toFixed(3));
+  check('climbing opens the field of view', sens.fovClimb > 0, 'fov ' + sens.fovBase + ' +' + sens.fovClimb);
+
+  // ---- 2d. the island rolls its variant biomes --------------------------
+  const biomes = await page.evaluate(() => {
+    const C = window.CRUX, seen = {}, picks = [];
+    for (let i = 0; i < 200; i++) {
+      const p = C.Run.roll((i * 2654435761) >>> 0);
+      picks.push(p.join(','));
+      p.forEach(b => { seen[b] = (seen[b] || 0) + 1; });
+    }
+    C.Run.roll(C.T.seed);
+    return { kinds: Object.keys(seen).length, distinct: new Set(picks).size, seen: seen,
+             total: Object.keys(C.BIOMES).length, slots: C.Run.pick.length };
+  });
+  check('all ten biomes exist and every one gets used', biomes.total === 10 && biomes.kinds === 10,
+    JSON.stringify({ total: biomes.total, used: biomes.kinds }));
+  check('a run is six slots with the middle four rolled',
+    biomes.slots === 6 && biomes.distinct >= 8, 'distinct routes seen: ' + biomes.distinct);
+
   // ---- 3. the fog wall holds you until its fire is lit ------------------
   const fogw = await page.evaluate(async () => {
     const C = window.CRUX, P = C.P, T = C.T;

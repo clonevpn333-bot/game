@@ -212,6 +212,38 @@ Walls.tick = function (dt, t) {
   }
 };
 
+// ---- the citadel: a tower standing in the slot it was rolled into ------
+var Tower = { group: null };
+Tower.build = function () {
+  var g = Tower.group = new THREE.Group();
+  if (Run.pick[Z.INNER] !== 'citadel') return g;
+  var c = Camps.list[Z.INNER + 1];
+  if (!c) return g;
+  var rng = makeRng(0x71c1de1);
+  var base = T.hAt(c.x, c.z);
+  g.position.set(c.x, base, c.z);
+
+  var parts = [], i, a;
+  for (i = 0; i < 5; i++) {                       // stacked drums, tapering
+    var r = 7.5 - i * 1.0, hgt = 7;
+    parts.push({ g: new THREE.CylinderGeometry(r, r + 0.5, hgt, 12, 1, true), c: i % 2 ? 0x9a9488 : 0x827c72, p: [0, 3 + i * hgt, 0] });
+    parts.push({ g: new THREE.CylinderGeometry(r + 0.7, r + 0.7, 0.6, 12), c: 0x6e685e, p: [0, 3 + i * hgt + hgt / 2, 0] });
+  }
+  for (i = 0; i < 8; i++) {                       // crenellations on the crown
+    a = i / 8 * 6.283;
+    parts.push({ g: new THREE.BoxGeometry(1.1, 1.4, 0.8), c: 0xb0a894, p: [Math.cos(a) * 2.8, 39, Math.sin(a) * 2.8], r: [0, -a, 0] });
+  }
+  parts.push({ g: new THREE.BoxGeometry(3.0, 4.4, 0.6), c: 0x4a4438, p: [0, 5.2, 7.6] });
+  var tower = new THREE.Mesh(mergeParts(parts), MAT.solidS);
+  tower.castShadow = true; tower.receiveShadow = true;
+  g.add(tower);
+
+  var l = new THREE.PointLight(0xffd08a, 2.2, 44, 2);
+  l.position.set(0, 40, 0);
+  g.add(l);
+  return g;
+};
+
 // ---- the summit -------------------------------------------------------
 var Summit = { pos: null, group: null, flare: null, light: null, fired: false };
 Summit.build = function () {

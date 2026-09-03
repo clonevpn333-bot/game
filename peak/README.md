@@ -67,18 +67,26 @@ can follow, fire a rope cannon at a wall you cannot reach, and ping a line with
 
 ## The island
 
-Six zones in fixed order, each asking something different:
+**Ten biomes, six per run.** The slots are fixed — shore, then a lower, a
+middle, an upper and an inner band, then the peak — but which biome fills the
+middle four is rolled from the day's seed, the way PEAK swaps its variants in
+and out. The height field underneath is the same either way; everything on top
+of it changes.
 
-| zone | what it is | what it does to you |
-|---|---|---|
-| shore | warm sand, palms, the wreck | nothing yet |
-| jungle | deep wet green, ferns, thorns | rain and poison, thorns underfoot |
-| snow face | pale blue-white, ice, dead pines | cold, and gusts that make it worse |
-| volcanic | black basalt, ember cracks | heat, and hot rock that burns |
-| caldera | a dark moat under the summit | heat, darkness, and a creeping curse |
-| peak | the flare stand | the way home |
+| slot | biome | what it is | what it does to you |
+|---|---|---|---|
+| 1 | **shore** | warm sand, palms, the wreck | nothing yet |
+| 2 | **tropics** | deep wet green, ferns, thorns | rain brings poison; thorns underfoot |
+| 2 | **roots** | purple rock, giant caps, root arches | spore mist: drowsy everywhere, poison in the drifts. The caps are springy — land on one and it throws you |
+| 3 | **alpine** | pale blue-white, ice, dead pines | cold, and gusts that make it worse |
+| 3 | **mesa** | red rock, saguaro, tumbleweed | a blistering sun; the only relief is the faces turned away from it |
+| 4 | **caldera** | black basalt, ember cracks | heat, and hot rock that burns |
+| 4 | **gloom** | a haunted purple murk, huge dark trees, hanging bells | the fog puts you to sleep, and once you are drowsy enough the cold sets in |
+| 5 | **the kiln** | the volcano's inside, near-black | heat, a creeping curse, and rock that costs 40% more to climb |
+| 5 | **the citadel** | a stone tower, pillars and ruins | wind and exposure |
+| 6 | **the peak** | the flare stand | the way home |
 
-A **campfire** sits at the top of each zone. Lighting it lifts the **fog wall**
+A **campfire** sits at the top of each slot. Lighting it lifts the **fog wall**
 above it, and until you do, that fog is a ceiling you cannot climb past. Fires
 also warm you, mend you, cook your food for extra value, and are where everyone
 wakes up.
@@ -88,7 +96,8 @@ of minutes in and does not stop. Get caught below it and it takes you apart.
 That is the clock.
 
 The island regenerates on a daily schedule, so everyone climbing on the same day
-gets the same rock. Loose food and suitcase contents reroll every run.
+gets the same rock and the same four middle biomes. Loose food and suitcase
+contents reroll every run.
 
 ## Controls
 
@@ -111,6 +120,28 @@ Pointer lock is always on — click once and the mouse is yours.
 The grab key defaults to a **held keyboard key** rather than a held mouse
 button, because holding left click while steering a camera on a trackpad is
 miserable. Rebind it in the options panel.
+
+## Look and camera settings
+
+The options panel opens from the title screen **and from the pause screen**, so
+you can tune the feel without leaving a run. Everything persists.
+
+| setting | range | default |
+|---|---|---|
+| Sensitivity | 0.20 – 4.00 | 1.00 |
+| Vertical | 0.40 – 1.60 of the horizontal | 1.00 |
+| Invert X · Invert Y | independent | off |
+| Field of view | 60 – 100 | 70 |
+| Climbing FOV | 0 – 50 extra, eased in on the wall | 40 |
+| Reduce bobbing | on / off | off |
+| Photosensitivity | cuts screen shake to 15% | off |
+
+Sensitivity is radians of turn per pixel of mouse travel, based at 0.0022 and
+scaled by the slider, so one trackpad flick is a look and not a spin. The
+vertical axis is a multiplier on top of the horizontal rather than a separate
+number, which keeps the two in step when you change the main slider. The FOV
+pair matches PEAK's: a base field of view and a separate amount it opens by
+while you are on a wall.
 
 ## Multiplayer
 
@@ -156,6 +187,11 @@ It loads the game, spawns in, and drives it:
 - stamina comes back on the ground
 - running the bar dry on a wall puts you into a slide
 - a short drop is free; a fall from height hurts
+- **W goes where the camera looks, D strafes right and A strafes left**, checked
+  at three different yaws against three.js's own camera basis
+- sensitivity scales the turn, the two inverts work independently, the vertical
+  multiplier is its own, and the field of view opens on the wall
+- all ten biomes exist, every one gets rolled, and a run is six slots
 - the camera never ends up inside the rock, over 42 random placements
 - no loot or suitcase is floating in the air or sunk in the rock
 - no console or page errors throughout
@@ -202,9 +238,11 @@ grid cell and leaves a featureless ramp with nowhere to stand.
 Near the axis a **crown** overrides the cone: a rim, a moat dropped behind it,
 and the summit spire rising out of the middle. That moat is the caldera.
 
-Two rules the generator holds to, because breaking either produced real bugs:
-triangles are wound counter-clockwise seen from above (get it backwards and the
-renderer culls the ground out from under the player), and nothing — camp, spawn,
-suitcase, prop or marker pole — is ever placed at a guessed height. Everything
+Three rules the generator holds to, because breaking any of them produced real
+bugs: triangles are wound counter-clockwise seen from above (get it backwards
+and the renderer culls the ground out from under the player); nothing — camp,
+spawn, suitcase, prop or marker pole — is ever placed at a guessed height, but
 resolves real ground first and is rejected if that ground is underwater, too
-steep to stand on, or already occupied by a boulder.
+steep to stand on, or already occupied by a boulder; and the camera's basis
+vectors are checked against the quaternion three.js builds for the same look
+direction, because a flipped `right` mirrors strafe and D walks you left.

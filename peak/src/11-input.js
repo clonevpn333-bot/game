@@ -1,7 +1,10 @@
 // ============================================================ INPUT
 var IN = {
   keys: {}, hit: {}, mx: 0, my: 0, mb: [false, false, false], mbHit: [false, false, false],
-  locked: false, sens: 0.0014, invert: false, el: null, onLockChange: null,
+  locked: false, el: null, onLockChange: null,
+  // look sensitivity is stored per axis so the vertical can be tuned down
+  // separately, and each axis inverts on its own
+  sensX: 0.0022, sensY: 0.0022, invX: false, invY: false,
   grabKey: 'KeyE',        // held, rebindable; left mouse always works too
   capture: null,          // set to a callback while rebinding
 };

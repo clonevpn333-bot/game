@@ -139,7 +139,10 @@ button{font-family:var(--ui);cursor:pointer;border:none;outline:none}
   background:rgba(255,255,255,.05);border-radius:8px;padding:7px 11px}
 .rost i{width:10px;height:10px;border-radius:3px;flex:none}
 .rost small{margin-left:auto;opacity:.42;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
-#opts{margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:11px}
+#opts{margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:11px;text-align:left}
+#opts h4{font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.42;margin:14px 0 4px;font-weight:800}
+#pause-opts{margin-top:10px}
+#pause-opts #opts{border-top:none}
 summary{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.45;cursor:pointer;outline:none}
 summary:hover{opacity:.75}
 .keys{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin:12px 0 4px;font-size:11px;opacity:.62}

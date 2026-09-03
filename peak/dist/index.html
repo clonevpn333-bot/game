@@ -145,7 +145,10 @@ button{font-family:var(--ui);cursor:pointer;border:none;outline:none}
   background:rgba(255,255,255,.05);border-radius:8px;padding:7px 11px}
 .rost i{width:10px;height:10px;border-radius:3px;flex:none}
 .rost small{margin-left:auto;opacity:.42;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
-#opts{margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:11px}
+#opts{margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:11px;text-align:left}
+#opts h4{font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.42;margin:14px 0 4px;font-weight:800}
+#pause-opts{margin-top:10px}
+#pause-opts #opts{border-top:none}
 summary{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.45;cursor:pointer;outline:none}
 summary:hover{opacity:.75}
 .keys{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin:12px 0 4px;font-size:11px;opacity:.62}
@@ -213,30 +216,41 @@ kbd{background:rgba(255,255,255,.12);border-radius:4px;padding:1px 5px;font-fami
       <button class="lnk" id="btn-back">back</button>
     </div>
 
-    <details id="opts">
-      <summary>controls &amp; options</summary>
-      <div class="keys">
-        <span><kbd>WASD</kbd> move</span><span><kbd>Space</kbd> jump</span>
-        <span><kbd id="k-grab">E</kbd> <b>hold to grab</b></span><span><kbd>LMB</kbd> grab (alternate)</span>
-        <span><kbd>Shift</kbd> sprint / lunge</span><span><kbd>RMB</kbd> helping hand</span>
-        <span><kbd>F</kbd> take · hold to revive</span><span><kbd>C</kbd> use item</span>
-        <span><kbd>1-3</kbd> pack slot</span><span><kbd>X</kbd> drop</span>
-        <span><kbd>Q</kbd> ping (hold = danger)</span><span><kbd>V</kbd> first / third person</span>
-      </div>
-      <div class="row"><label>Grab key</label><button id="btn-grab" class="bind">E</button><small class="hint">click, then press a key</small></div>
-      <div class="row"><label>Sensitivity</label><input type="range" id="in-sens" min="4" max="40" value="14"><b id="sens-v">1.4</b></div>
-      <div class="row"><label>Field of view</label><input type="range" id="in-fov" min="60" max="105" value="78"><b id="fov-v">78</b></div>
-      <div class="row"><label>Invert Y</label><input type="checkbox" id="in-inv"></div>
-      <div class="row"><label>Detail</label><select id="in-detail"><option value="1">high</option><option value="0">low (faster)</option></select></div>
-    </details>
+    <div id="opts-host"></div>
   </div>
 </div>
 
 <div id="pause" class="hidden"><div class="panel sm">
   <h2>paused</h2><p class="tag">pointer lock released</p>
   <button class="big pri" id="btn-resume">Click to climb</button>
+  <div id="pause-opts"></div>
   <button class="lnk" id="btn-quit">leave the island</button>
 </div></div>
+
+<!-- one options panel, moved between the menu and the pause screen -->
+<details id="opts">
+  <summary>controls &amp; options</summary>
+  <div class="keys">
+    <span><kbd>WASD</kbd> move</span><span><kbd>Space</kbd> jump</span>
+    <span><kbd id="k-grab">E</kbd> <b>hold to grab</b></span><span><kbd>LMB</kbd> grab (alternate)</span>
+    <span><kbd>Shift</kbd> sprint / lunge</span><span><kbd>RMB</kbd> helping hand</span>
+    <span><kbd>F</kbd> take · hold to revive</span><span><kbd>C</kbd> use item</span>
+    <span><kbd>1-3</kbd> pack slot</span><span><kbd>X</kbd> drop</span>
+    <span><kbd>Q</kbd> ping (hold = danger)</span><span><kbd>V</kbd> first / third person</span>
+  </div>
+  <div class="row"><label>Grab key</label><button id="btn-grab" class="bind">E</button><small class="hint">click, then press a key</small></div>
+  <h4>look</h4>
+  <div class="row"><label>Sensitivity</label><input type="range" id="in-sens" min="20" max="400" value="100"><b id="sens-v">1.00</b></div>
+  <div class="row"><label>Vertical</label><input type="range" id="in-sensy" min="40" max="160" value="100"><b id="sensy-v">1.00</b></div>
+  <div class="row"><label>Invert X</label><input type="checkbox" id="in-invx"></div>
+  <div class="row"><label>Invert Y</label><input type="checkbox" id="in-invy"></div>
+  <h4>camera</h4>
+  <div class="row"><label>Field of view</label><input type="range" id="in-fov" min="60" max="100" value="70"><b id="fov-v">70</b></div>
+  <div class="row"><label>Climbing FOV</label><input type="range" id="in-cfov" min="0" max="50" value="40"><b id="cfov-v">40</b></div>
+  <div class="row"><label>Reduce bobbing</label><input type="checkbox" id="in-bob"></div>
+  <div class="row"><label>Photosensitivity</label><input type="checkbox" id="in-photo"><small class="hint">less screen shake</small></div>
+  <div class="row"><label>Detail</label><select id="in-detail"><option value="1">high</option><option value="0">low (faster)</option></select></div>
+</details>
 
 <div id="over" class="hidden"><div class="panel sm">
   <h2 id="over-h">RESCUED</h2>
@@ -309,24 +323,102 @@ var SLOT_HEX = ['#ff8a3d', '#31c6c0', '#ffd646', '#a274ff'];
 var SLOT_NAME = ['orange', 'teal', 'yellow', 'purple'];
 
 // ---------------------------------------------------------------- zones
-// Six slots, bottom to top, in fixed order.  Each one asks something
-// different of you and looks nothing like its neighbours.
-var Z = { SHORE: 0, JUNGLE: 1, SNOW: 2, VOLCANIC: 3, INTERIOR: 4, PEAK: 5 };
+// Six slots, bottom to top, in fixed order.  Which biome fills the middle
+// four is rolled per island, the way PEAK swaps its variant biomes in and
+// out - so the shape of a run is constant but the places are not.
+var Z = { SHORE: 0, LOWER: 1, MIDDLE: 2, UPPER: 3, INNER: 4, PEAK: 5 };
 var ZONES = [
-  { id: 0, name: 'the shore', top: 27, fire: 20 },
-  { id: 1, name: 'the jungle', top: 96, fire: 89 },
-  { id: 2, name: 'the snow face', top: 166, fire: 159 },
-  { id: 3, name: 'the volcanic rock', top: 229, fire: 222 },
-  { id: 4, name: 'the caldera', top: 278, fire: 271 },
-  { id: 5, name: 'the peak', top: 9999, fire: -1 },
+  { id: 0, top: 27, fire: 20 },
+  { id: 1, top: 96, fire: 89 },
+  { id: 2, top: 166, fire: 159 },
+  { id: 3, top: 229, fire: 222 },
+  { id: 4, top: 278, fire: 271 },
+  { id: 5, top: 9999, fire: -1 },
 ];
 function zoneAt(y) {
   for (var i = 0; i < ZONES.length; i++) if (y < ZONES[i].top) return i;
   return ZONES.length - 1;
 }
 
+// Ten biomes.  Each carries its own palette, sky, weather and hazard; the
+// terrain underneath is the same height field either way.
+var BIOMES = {
+  shore: {
+    nm: 'the shore', props: 'shore', weather: 'clear', haz: 'none',
+    pal: { top: 0xe8d49a, top2: 0x8cc456, cliff: 0xb2a081, alt: 0xd6c08c },
+    sky: { low: 0xffe0b0, mid: 0x8fc8ee, high: 0x3f86d8, sun: 0xfff0c8, fog: 0xf0dcb8, dens: 0.0036, el: 0.20, amb: 0.92, sunI: 1.10 },
+  },
+  tropics: {
+    nm: 'the tropics', props: 'tropics', weather: 'rain', haz: 'poison',
+    pal: { top: 0x3b8a38, top2: 0x27612e, cliff: 0x4a3826, alt: 0x54a03e },
+    sky: { low: 0xdfd9a8, mid: 0x86bfe2, high: 0x3f7fcc, sun: 0xfff0cc, fog: 0xd8dcb8, dens: 0.0042, el: 0.28, amb: 0.95, sunI: 1.05 },
+  },
+  roots: {
+    nm: 'the roots', props: 'roots', weather: 'spore', haz: 'spore',
+    pal: { top: 0x5c4a7a, top2: 0x3f3358, cliff: 0x3a2c22, alt: 0x7a5aa0 },
+    sky: { low: 0xc8a8e0, mid: 0x6a5a96, high: 0x2a2246, sun: 0xe8c8ff, fog: 0x6a5a86, dens: 0.0060, el: 0.24, amb: 0.78, sunI: 0.85 },
+  },
+  alpine: {
+    nm: 'the alpine', props: 'alpine', weather: 'snow', haz: 'cold',
+    pal: { top: 0xeef4fa, top2: 0xdbe6f2, cliff: 0x79828f, alt: 0xa8dcef },
+    sky: { low: 0xe6eef6, mid: 0x93c4ea, high: 0x2f6ec2, sun: 0xfff4e2, fog: 0xdae6f2, dens: 0.0030, el: 0.44, amb: 0.96, sunI: 1.30 },
+  },
+  mesa: {
+    nm: 'the mesa', props: 'mesa', weather: 'dust', haz: 'sun',
+    pal: { top: 0xd88f4a, top2: 0xc4763a, cliff: 0x8f4e2c, alt: 0xe8b06a },
+    sky: { low: 0xffd08a, mid: 0x8fc0e0, high: 0x3f7fbc, sun: 0xfff2c0, fog: 0xe8c095, dens: 0.0040, el: 0.52, amb: 1.02, sunI: 1.45 },
+  },
+  caldera: {
+    nm: 'the caldera', props: 'caldera', weather: 'ash', haz: 'heat',
+    pal: { top: 0x4a3f48, top2: 0x3a3038, cliff: 0x2f2830, alt: 0x5c4a44 },
+    sky: { low: 0xffab68, mid: 0x7a9fc8, high: 0x2a4f96, sun: 0xffc07a, fog: 0xc9b2a4, dens: 0.0028, el: 0.34, amb: 0.72, sunI: 1.15 },
+  },
+  gloom: {
+    nm: 'the gloom', props: 'gloom', weather: 'murk', haz: 'drowsy',
+    pal: { top: 0x3a2f4e, top2: 0x2a2138, cliff: 0x241d2e, alt: 0x4a3a62 },
+    sky: { low: 0x6a4a8a, mid: 0x3a2f52, high: 0x160f24, sun: 0x9a7ac0, fog: 0x4a3868, dens: 0.0090, el: 0.18, amb: 0.55, sunI: 0.45 },
+  },
+  kiln: {
+    nm: 'the kiln', props: 'kiln', weather: 'ash', haz: 'kiln',
+    pal: { top: 0x2c2430, top2: 0x241d26, cliff: 0x1d1721, alt: 0x3a2c2e },
+    sky: { low: 0x8a3a18, mid: 0x3f3a4c, high: 0x1a1826, sun: 0xff8a3a, fog: 0x2e2630, dens: 0.0036, el: 0.22, amb: 0.50, sunI: 0.75 },
+  },
+  citadel: {
+    nm: 'the citadel', props: 'citadel', weather: 'wind', haz: 'wind',
+    pal: { top: 0x9a9488, top2: 0x827c72, cliff: 0x5e594f, alt: 0xb0a894 },
+    sky: { low: 0xd8c8b0, mid: 0x6a7f9e, high: 0x223250, sun: 0xffe0b0, fog: 0x8a8a96, dens: 0.0050, el: 0.30, amb: 0.72, sunI: 0.95 },
+  },
+  peak: {
+    nm: 'the peak', props: 'peak', weather: 'snow', haz: 'cold',
+    pal: { top: 0xf2f7fc, top2: 0xe2ecf6, cliff: 0x8b93a0, alt: 0xb9c6d4 },
+    sky: { low: 0xffc78a, mid: 0x63a6e4, high: 0x123a86, sun: 0xfff0d0, fog: 0xc6d6e8, dens: 0.0016, el: 0.62, amb: 0.92, sunI: 1.55 },
+  },
+};
+
+// which biomes can fill each slot
+var SLOT_POOL = [
+  ['shore'],
+  ['tropics', 'roots'],
+  ['alpine', 'mesa'],
+  ['caldera', 'gloom'],
+  ['kiln', 'citadel'],
+  ['peak'],
+];
+
+// the island as rolled for this run
+var Run = { pick: ['shore', 'tropics', 'alpine', 'caldera', 'kiln', 'peak'] };
+Run.roll = function (seed) {
+  var r = makeRng(seed ^ 0x1a2b3c4d);
+  Run.pick = SLOT_POOL.map(function (pool) { return pool[(r() * pool.length) | 0]; });
+  return Run.pick;
+};
+Run.at = function (slot) { return BIOMES[Run.pick[slot]]; };
+function biomeAt(y) { return Run.at(zoneAt(y)); }
+function biomeIs(y, id) { return Run.pick[zoneAt(y)] === id; }
+
 // surface kinds - cosmetic and hazard only.  Every one of them is climbable.
-var SF = { ROCK: 0, SAND: 1, GRASS: 2, LEAF: 3, MUD: 4, SNOW: 5, ICE: 6, BASALT: 7, EMBER: 8, THORN: 9 };
+var SF = { ROCK: 0, SAND: 1, GRASS: 2, LEAF: 3, MUD: 4, SNOW: 5, ICE: 6, BASALT: 7, EMBER: 8, THORN: 9,
+           SPORE: 10, CLAY: 11, MURK: 12, BRICK: 13, SHADE: 14 };
 
 // player states
 var ST = { GROUND: 0, AIR: 1, CLIMB: 2, SLIP: 3, OUT: 4, CARRIED: 5 };
@@ -651,26 +743,40 @@ T.classify = function () {
   for (j = 0; j < N; j++) {
     for (i = 0; i < N; i++) {
       var x = T.wx(i) + T.CS * 0.5, z = T.wx(j) + T.CS * 0.5;
-      var h = T.hAt(x, z), ny = T.normAt(x, z).y;
+      var n2 = T.normAt(x, z);
+      var h = T.hAt(x, z), ny = n2.y;
       var flat = ny > 0.70, steep = ny < 0.46;
       var v = n.fbm(x * 0.035, z * 0.035, 3);
       var w = n.fbm(x * 0.017 + 60, z * 0.017 - 30, 2);
-      var s, zn = zoneAt(h);
+      var s, id = Run.pick[zoneAt(h)];
 
-      if (zn === Z.SHORE) {
+      if (id === 'shore') {
         s = flat ? (h < 6 ? SF.SAND : (v > 0.05 ? SF.GRASS : SF.SAND)) : SF.ROCK;
-      } else if (zn === Z.JUNGLE) {
+      } else if (id === 'tropics') {
         s = flat ? (v > -0.1 ? SF.GRASS : SF.LEAF) : SF.MUD;
         if (w > 0.42) s = SF.THORN;
-      } else if (zn === Z.SNOW) {
+      } else if (id === 'roots') {
+        s = flat ? SF.GRASS : SF.MUD;
+        if (v > 0.22) s = SF.SPORE;                    // spore mist pools here
+      } else if (id === 'alpine') {
         s = flat ? SF.SNOW : SF.ROCK;
         if (steep && w > 0.05) s = SF.ICE;
-      } else if (zn === Z.VOLCANIC) {
+      } else if (id === 'mesa') {
+        s = flat ? (v > 0.1 ? SF.SAND : SF.CLAY) : SF.CLAY;
+        // the sun only misses the faces turned away from it
+        if (n2.x < -0.25 || ny < 0.3) s = SF.SHADE;
+      } else if (id === 'caldera') {
         s = SF.BASALT;
         if (v > 0.36) s = SF.EMBER;
-      } else if (zn === Z.INTERIOR) {
+      } else if (id === 'gloom') {
+        s = flat ? SF.MURK : SF.MUD;
+        if (steep && w > 0.3) s = SF.ROCK;
+      } else if (id === 'kiln') {
         s = SF.BASALT;
-        if (v > 0.34) s = SF.EMBER;      // veins of lava, not a field of it
+        if (v > 0.34) s = SF.EMBER;
+      } else if (id === 'citadel') {
+        s = flat ? SF.BRICK : SF.ROCK;
+        if (w > 0.35) s = SF.BRICK;
       } else {
         s = flat ? SF.SNOW : SF.ROCK;
       }
@@ -794,20 +900,14 @@ function hexLin(hex, out, o, mul) {
   out[o + 2] = _lut[hex & 255] * mul;
 }
 
-var PAL = [
-  { top: 0xe8d49a, top2: 0x8cc456, cliff: 0xb2a081, alt: 0xd6c08c },   // shore
-  { top: 0x3b8a38, top2: 0x27612e, cliff: 0x4a3826, alt: 0x54a03e },   // jungle
-  { top: 0xeef4fa, top2: 0xdbe6f2, cliff: 0x79828f, alt: 0xa8dcef },   // snow
-  { top: 0x4a3f48, top2: 0x3a3038, cliff: 0x2f2830, alt: 0x5c4a44 },   // volcanic
-  { top: 0x2c2430, top2: 0x241d26, cliff: 0x1d1721, alt: 0x3a2c2e },   // caldera
-  { top: 0xf2f7fc, top2: 0xe2ecf6, cliff: 0x8b93a0, alt: 0xb9c6d4 },   // peak
-];
 var SURF_TINT = {};
 SURF_TINT[SF.SAND] = 0xe8d49a; SURF_TINT[SF.GRASS] = 0x6fae42;
 SURF_TINT[SF.LEAF] = 0x2a6e30; SURF_TINT[SF.MUD] = 0x4a3622;
 SURF_TINT[SF.SNOW] = 0xf0f6fb; SURF_TINT[SF.ICE] = 0xa8dcef;
 SURF_TINT[SF.BASALT] = 0x2f2830; SURF_TINT[SF.EMBER] = 0xff5a1e;
-SURF_TINT[SF.THORN] = 0x6f4a86;
+SURF_TINT[SF.THORN] = 0x6f4a86; SURF_TINT[SF.SPORE] = 0xb06ad8;
+SURF_TINT[SF.CLAY] = 0xd8834a; SURF_TINT[SF.MURK] = 0x2a2440;
+SURF_TINT[SF.BRICK] = 0xa89c88; SURF_TINT[SF.SHADE] = 0x8a6242;
 
 function faceKind(surf) {
   if (surf === SF.EMBER) return 2;
@@ -816,13 +916,13 @@ function faceKind(surf) {
 }
 
 function faceColor(h, ny, surf, hash) {
-  var zn = zoneAt(h), p = PAL[zn], c;
+  var zn = zoneAt(h), p = Run.at(zn).pal, c;
   var top = (hash & 3) ? p.top : p.top2;
   var cliff = (hash & 7) < 3 ? p.alt : p.cliff;
-  // bleed each band into the next so the zones are not hard rings
+  // bleed each band into the one below so the biomes are not hard rings
   var below = zn > 0 ? ZONES[zn - 1].top : -1;
   if (below > 0 && h < below + 13) {
-    var q = PAL[zn - 1], u = step01(below - 3, below + 13, h);
+    var q = Run.at(zn - 1).pal, u = step01(below - 3, below + 13, h);
     top = mixHex((hash & 3) ? q.top : q.top2, top, u);
     cliff = mixHex((hash & 7) < 3 ? q.alt : q.cliff, cliff, u);
   }
@@ -1060,9 +1160,12 @@ function scatter(geo, mat, list, tintFn, opts) {
 
 /* ==== 07-scenery.js ==== */
 // ============================================================ SCENERY
-var Props = { group: null, spheres: [], hash: {}, HCELL: 8, counts: {} };
+// Every biome brings its own furniture.  Which ones get built depends on
+// what the run rolled into each slot.
+var Props = { group: null, spheres: [], hash: {}, HCELL: 8, counts: {}, bounce: [] };
 
-function palmGeo(rng) {
+// ---- shore -----------------------------------------------------------
+function palmGeo() {
   var parts = [{ g: new THREE.CylinderGeometry(0.16, 0.26, 5.2, 5), c: 0x8a6a44, p: [0.5, 2.6, 0], r: [0, 0, -0.16] }];
   for (var i = 0; i < 6; i++) {
     var a = i / 6 * 6.283;
@@ -1074,7 +1177,15 @@ function palmGeo(rng) {
   parts.push({ g: new THREE.IcosahedronGeometry(0.28, 0), c: 0x8a6a44, p: [0.95, 5.0, 0] });
   return mergeParts(parts);
 }
-function jungleTreeGeo(rng) {
+function driftGeo(rng) {
+  return mergeParts([
+    { g: new THREE.CylinderGeometry(0.22, 0.28, 2.6, 5), c: 0xc4b49a, r: [0, 0.3, 1.52], p: [0, 0.2, 0] },
+    { g: new THREE.CylinderGeometry(0.14, 0.16, 1.2, 5), c: 0xb2a288, r: [0.4, 1.1, 1.3], p: [0.5, 0.3, 0.3] },
+  ]);
+}
+
+// ---- tropics ---------------------------------------------------------
+function jungleTreeGeo() {
   return mergeParts([
     { g: new THREE.CylinderGeometry(0.28, 0.44, 6.2, 6), c: 0x4a3a28, p: [0, 3.1, 0] },
     { g: new THREE.IcosahedronGeometry(2.5, 0), c: 0x2f6b33, p: [0, 6.9, 0], s: [1, 0.62, 1] },
@@ -1098,6 +1209,31 @@ function thornGeo() {
   }
   return mergeParts(parts);
 }
+
+// ---- roots -----------------------------------------------------------
+function shroomGeo() {                       // the springy kind
+  return mergeParts([
+    { g: new THREE.CylinderGeometry(0.32, 0.46, 1.7, 7), c: 0xe4dcc8, p: [0, 0.85, 0] },
+    { g: new THREE.SphereGeometry(1.5, 10, 6, 0, 6.283, 0, 1.45), c: 0xc44a8a, p: [0, 1.6, 0], s: [1, 0.66, 1] },
+    { g: new THREE.SphereGeometry(1.2, 9, 5, 0, 6.283, 0, 1.45), c: 0xe06aa8, p: [0, 1.75, 0], s: [1, 0.5, 1] },
+  ]);
+}
+function rootArchGeo() {
+  return mergeParts([
+    { g: new THREE.TorusGeometry(2.2, 0.34, 5, 9, 3.14), c: 0x4a3a26, p: [0, 0, 0] },
+    { g: new THREE.CylinderGeometry(0.3, 0.42, 1.6, 5), c: 0x3e3020, p: [-2.2, -0.7, 0] },
+    { g: new THREE.CylinderGeometry(0.3, 0.42, 1.6, 5), c: 0x3e3020, p: [2.2, -0.7, 0] },
+    { g: new THREE.IcosahedronGeometry(0.5, 0), c: 0x6a5a3a, p: [0.7, 2.0, 0.3], s: [1, 0.6, 1] },
+  ]);
+}
+function sporeVentGeo() {
+  return mergeParts([
+    { g: new THREE.CylinderGeometry(0.5, 0.8, 0.9, 7), c: 0x5a4a70, p: [0, 0.45, 0] },
+    { g: new THREE.CylinderGeometry(0.42, 0.42, 0.14, 7), c: 0xb06ad8, p: [0, 0.92, 0] },
+  ]);
+}
+
+// ---- alpine ----------------------------------------------------------
 function deadPineGeo() {
   return mergeParts([
     { g: new THREE.CylinderGeometry(0.12, 0.22, 4.4, 5), c: 0x5c5148, p: [0, 2.2, 0] },
@@ -1105,6 +1241,44 @@ function deadPineGeo() {
     { g: new THREE.BoxGeometry(1.2, 0.1, 0.1), c: 0x6a5e53, p: [-0.35, 2.4, 0.1], r: [0, -0.8, -0.3] },
   ]);
 }
+function iceShardGeo() {
+  return mergeParts([
+    { g: new THREE.ConeGeometry(0.34, 2.2, 5), c: 0xbfe8f6, p: [0, 1.1, 0] },
+    { g: new THREE.ConeGeometry(0.2, 1.3, 5), c: 0xd6f1fa, p: [0.4, 0.65, 0.2] },
+  ]);
+}
+
+// ---- mesa ------------------------------------------------------------
+function cactusGeo() {
+  return mergeParts([
+    { g: new THREE.CylinderGeometry(0.42, 0.5, 4.4, 8), c: 0x4a8a4a, p: [0, 2.2, 0] },
+    { g: new THREE.SphereGeometry(0.42, 8, 6), c: 0x4a8a4a, p: [0, 4.4, 0] },
+    { g: new THREE.CylinderGeometry(0.26, 0.3, 1.7, 7), c: 0x3f7d42, p: [0.85, 3.1, 0], r: [0, 0, -1.2] },
+    { g: new THREE.CylinderGeometry(0.26, 0.26, 1.5, 7), c: 0x3f7d42, p: [1.25, 3.7, 0] },
+    { g: new THREE.CylinderGeometry(0.24, 0.28, 1.4, 7), c: 0x448246, p: [-0.8, 2.4, 0], r: [0, 0, 1.2] },
+    { g: new THREE.CylinderGeometry(0.24, 0.24, 1.2, 7), c: 0x448246, p: [-1.15, 2.95, 0] },
+  ]);
+}
+function brushGeo(rng) {
+  var parts = [];
+  for (var i = 0; i < 6; i++) {
+    var a = rngRange(rng, 0, 6.283);
+    parts.push({ g: new THREE.CylinderGeometry(0.03, 0.05, 0.9, 3), c: i % 2 ? 0x8a7a4a : 0x6f6238, p: [Math.cos(a) * 0.2, 0.45, Math.sin(a) * 0.2], r: [Math.cos(a) * 0.5, a, Math.sin(a) * 0.5] });
+  }
+  return mergeParts(parts);
+}
+function tumbleGeo(rng) {
+  var parts = [];
+  for (var i = 0; i < 8; i++) {
+    parts.push({
+      g: new THREE.TorusGeometry(rngRange(rng, 0.3, 0.55), 0.04, 3, 7), c: 0x9a8450,
+      r: [rngRange(rng, 0, 3), rngRange(rng, 0, 3), rngRange(rng, 0, 3)],
+    });
+  }
+  return mergeParts(parts);
+}
+
+// ---- caldera / kiln --------------------------------------------------
 function basaltGeo(rng) {
   var parts = [];
   for (var i = 0; i < 4; i++) {
@@ -1117,81 +1291,190 @@ function basaltGeo(rng) {
   }
   return mergeParts(parts);
 }
-function obsidianGeo(rng) {
+function obsidianGeo() {
   return mergeParts([
     { g: new THREE.ConeGeometry(0.5, 2.4, 4), c: 0x1a141e, p: [0, 1.2, 0] },
     { g: new THREE.ConeGeometry(0.3, 1.4, 4), c: 0x241c28, p: [0.5, 0.7, 0.3], r: [0.2, 0.6, 0.2] },
   ]);
 }
-function driftGeo(rng) {
+function ventGeo() {
   return mergeParts([
-    { g: new THREE.CylinderGeometry(0.22, 0.28, 2.6, 5), c: 0xc4b49a, r: [0, 0.3, 1.52], p: [0, 0.2, 0] },
-    { g: new THREE.CylinderGeometry(0.14, 0.16, 1.2, 5), c: 0xb2a288, r: [0.4, 1.1, 1.3], p: [0.5, 0.3, 0.3] },
+    { g: new THREE.CylinderGeometry(0.75, 1.1, 1.0, 7), c: 0x241c26, p: [0, 0.5, 0] },
+    { g: new THREE.CylinderGeometry(0.62, 0.62, 0.16, 7), c: 0xff5a1e, p: [0, 1.0, 0] },
   ]);
+}
+
+// ---- gloom -----------------------------------------------------------
+function gloomTreeGeo() {
+  return mergeParts([
+    { g: new THREE.CylinderGeometry(0.7, 1.5, 11, 7), c: 0x241d2e, p: [0, 5.5, 0] },
+    { g: new THREE.CylinderGeometry(0.2, 0.34, 4.0, 5), c: 0x2c2438, p: [1.6, 8.6, 0], r: [0, 0, -0.9] },
+    { g: new THREE.CylinderGeometry(0.2, 0.34, 3.4, 5), c: 0x2c2438, p: [-1.5, 9.4, 0.4], r: [0, 0, 0.95] },
+    { g: new THREE.IcosahedronGeometry(2.4, 0), c: 0x1e1a2e, p: [0, 11.6, 0], s: [1, 0.5, 1] },
+  ]);
+}
+function bellGeo() {
+  return mergeParts([
+    { g: new THREE.CylinderGeometry(0.03, 0.03, 2.6, 4), c: 0x3a3348, p: [0, 1.3, 0] },
+    { g: new THREE.CylinderGeometry(0.22, 0.44, 0.7, 8, 1, true), c: 0xa89a5a, p: [0, -0.3, 0] },
+    { g: new THREE.SphereGeometry(0.12, 6, 5), c: 0xc8b86a, p: [0, -0.6, 0] },
+  ]);
+}
+function wispGeo() {
+  return mergeParts([
+    { g: new THREE.IcosahedronGeometry(0.34, 0), c: 0xa8d8f0, p: [0, 0, 0] },
+    { g: new THREE.IcosahedronGeometry(0.18, 0), c: 0xd8f0ff, p: [0.2, 0.3, 0.1] },
+  ]);
+}
+
+// ---- citadel ---------------------------------------------------------
+function pillarGeo() {
+  return mergeParts([
+    { g: new THREE.BoxGeometry(1.3, 0.4, 1.3), c: 0x7d7668, p: [0, 0.2, 0] },
+    { g: new THREE.CylinderGeometry(0.46, 0.52, 5.2, 9), c: 0x9a9488, p: [0, 2.9, 0] },
+    { g: new THREE.BoxGeometry(1.2, 0.4, 1.2), c: 0x7d7668, p: [0, 5.7, 0] },
+  ]);
+}
+function ruinGeo(rng) {
+  var parts = [], y = 0;
+  for (var i = 0; i < 5; i++) {
+    var w = rngRange(rng, 1.4, 2.6);
+    parts.push({ g: new THREE.BoxGeometry(w, 0.7, 1.0), c: i % 2 ? 0x8e887c : 0x6e685e, p: [rngRange(rng, -0.4, 0.4), y + 0.35, rngRange(rng, -0.2, 0.2)], r: [0, rngRange(rng, -0.2, 0.2), 0] });
+    y += 0.7;
+  }
+  return mergeParts(parts);
+}
+function bannerGeo() {
+  return mergeParts([
+    { g: new THREE.CylinderGeometry(0.07, 0.07, 4.6, 5), c: 0x4a4438, p: [0, 2.3, 0] },
+    { g: new THREE.PlaneGeometry(1.2, 2.6), c: 0x9a3a4a, p: [0.6, 3.1, 0] },
+  ]);
+}
+
+// ---- peak ------------------------------------------------------------
+function cairnGeo(rng) {
+  var parts = [], y = 0;
+  for (var i = 0; i < 5; i++) {
+    var r = 0.55 - i * 0.07;
+    parts.push({ g: rockGeo(rng, r, 0), c: i % 2 ? 0x8d8891 : 0x6f6a72, p: [rngRange(rng, -0.05, 0.05), y + r * 0.5, rngRange(rng, -0.05, 0.05)], s: [1, 0.7, 1] });
+    y += r * 0.8;
+  }
+  return mergeParts(parts);
 }
 
 Props.build = function (seed, detail) {
   var rng = makeRng(seed ^ 0x5bf03635);
   var g = Props.group = new THREE.Group();
-  var palms = [], trees = [], ferns = [], thorns = [], pines = [], rocks = [], basalts = [], obs = [], drift = [];
+  var L = {};                                  // one bucket list per prop kind
+  function put(k, o) { (L[k] || (L[k] = [])).push(o); }
   var tries = detail ? 34000 : 17000, i;
-  Props.spheres = []; Props.hash = {};
+  Props.spheres = []; Props.hash = {}; Props.bounce = [];
+
+  function pushRock(arr, x, h, z, col) {
+    var rs = rngRange(rng, 0.55, 1.7);
+    put(arr, { x: x, y: h - rs * 0.35, z: z, ry: rng() * 6.28, rx: rngRange(rng, -0.2, 0.2), s: rs, col: col });
+    Props.addSphere(x, h + rs * 0.26, z, rs * 0.9);
+  }
 
   for (i = 0; i < tries; i++) {
     var x = rngRange(rng, -T.half + 4, T.half - 4);
     var z = rngRange(rng, -T.half + 4, T.half - 4);
     var h = T.hAt(x, z);
-    if (h <= T.VOID || h < 0.9) continue;                 // nothing floats on the sea
+    if (h <= T.VOID || h < 0.9) continue;
     var n = T.normSmooth(x, z), ny = n.y;
-    var zn = zoneAt(h), surf = T.surfAt(x, z);
+    var id = Run.pick[zoneAt(h)], surf = T.surfAt(x, z);
     if (Props.nearCamp(x, z, 13)) continue;
+    var ry = rng() * 6.28;
 
-    if (zn === Z.SHORE) {
-      if (ny > 0.86 && rng() < 0.10) palms.push({ x: x, y: h, z: z, ry: rng() * 6.28, s: rngRange(rng, 0.8, 1.3) });
-      else if (ny > 0.9 && rng() < 0.1) drift.push({ x: x, y: h + 0.1, z: z, ry: rng() * 6.28, s: rngRange(rng, 0.7, 1.2) });
-      else if (ny > 0.6 && rng() < 0.1) pushRock(rng, rocks, x, h, z, 0x9a8f7e);
-    } else if (zn === Z.JUNGLE) {
-      if (ny > 0.82 && rng() < 0.62) trees.push({ x: x, y: h - 0.2, z: z, ry: rng() * 6.28, s: rngRange(rng, 0.75, 1.35) });
-      else if (ny > 0.74 && rng() < 0.5) ferns.push({ x: x, y: h, z: z, ry: rng() * 6.28, s: rngRange(rng, 0.7, 1.4) });
-      else if (surf === SF.THORN && ny > 0.6 && rng() < 0.5) thorns.push({ x: x, y: h + 0.15, z: z, ry: rng() * 6.28, s: rngRange(rng, 0.8, 1.5) });
-      else if (ny > 0.6 && rng() < 0.1) pushRock(rng, rocks, x, h, z, 0x4a4030);
-    } else if (zn === Z.SNOW) {
-      if (ny > 0.82 && rng() < 0.42) pines.push({ x: x, y: h, z: z, ry: rng() * 6.28, s: rngRange(rng, 0.8, 1.4) });
-      else if (ny > 0.6 && rng() < 0.2) pushRock(rng, rocks, x, h, z, 0xa9b6c2);
-    } else if (zn === Z.VOLCANIC) {
-      if (ny > 0.70 && rng() < 0.55) basalts.push({ x: x, y: h - 0.4, z: z, ry: rng() * 6.28, s: rngRange(rng, 0.7, 1.4) });
-      else if (ny > 0.6 && rng() < 0.14) pushRock(rng, rocks, x, h, z, 0x3a3038);
-    } else if (zn === Z.INTERIOR) {
-      if (ny > 0.68 && rng() < 0.42) obs.push({ x: x, y: h, z: z, ry: rng() * 6.28, s: rngRange(rng, 0.7, 1.6) });
-      else if (ny > 0.6 && rng() < 0.12) pushRock(rng, rocks, x, h, z, 0x241d26);
+    if (id === 'shore') {
+      if (ny > 0.86 && rng() < 0.10) put('palm', { x: x, y: h, z: z, ry: ry, s: rngRange(rng, 0.8, 1.3) });
+      else if (ny > 0.9 && rng() < 0.1) put('drift', { x: x, y: h + 0.1, z: z, ry: ry, s: rngRange(rng, 0.7, 1.2) });
+      else if (ny > 0.6 && rng() < 0.1) pushRock('rock', x, h, z, 0x9a8f7e);
+    } else if (id === 'tropics') {
+      if (ny > 0.82 && rng() < 0.62) put('tree', { x: x, y: h - 0.2, z: z, ry: ry, s: rngRange(rng, 0.75, 1.35) });
+      else if (ny > 0.74 && rng() < 0.5) put('fern', { x: x, y: h, z: z, ry: ry, s: rngRange(rng, 0.7, 1.4) });
+      else if (surf === SF.THORN && ny > 0.6 && rng() < 0.5) put('thorn', { x: x, y: h + 0.15, z: z, ry: ry, s: rngRange(rng, 0.8, 1.5) });
+      else if (ny > 0.6 && rng() < 0.1) pushRock('rock', x, h, z, 0x4a4030);
+    } else if (id === 'roots') {
+      if (ny > 0.8 && rng() < 0.30) {
+        var ms = rngRange(rng, 0.8, 1.7);
+        put('shroom', { x: x, y: h, z: z, ry: ry, s: ms });
+        // the caps are springy: land on one and it throws you
+        Props.bounce.push({ x: x, y: h + 1.35 * ms, z: z, r: 1.4 * ms });
+      } else if (ny > 0.7 && rng() < 0.22) put('arch', { x: x, y: h + 1.4, z: z, ry: ry, s: rngRange(rng, 0.8, 1.6) });
+      else if (surf === SF.SPORE && ny > 0.7 && rng() < 0.4) put('vent', { x: x, y: h, z: z, ry: ry, s: rngRange(rng, 0.7, 1.4) });
+      else if (ny > 0.6 && rng() < 0.14) pushRock('rock', x, h, z, 0x3a2f4a);
+    } else if (id === 'alpine') {
+      if (ny > 0.82 && rng() < 0.42) put('pine', { x: x, y: h, z: z, ry: ry, s: rngRange(rng, 0.8, 1.4) });
+      else if (surf === SF.ICE && ny < 0.5 && rng() < 0.14) put('shard', { x: x, y: h + 0.2, z: z, ry: ry, s: rngRange(rng, 0.6, 1.3) });
+      else if (ny > 0.6 && rng() < 0.2) pushRock('rock', x, h, z, 0xa9b6c2);
+    } else if (id === 'mesa') {
+      if (ny > 0.86 && rng() < 0.20) put('cactus', { x: x, y: h, z: z, ry: ry, s: rngRange(rng, 0.7, 1.4) });
+      else if (ny > 0.8 && rng() < 0.34) put('brush', { x: x, y: h, z: z, ry: ry, s: rngRange(rng, 0.7, 1.5) });
+      else if (ny > 0.9 && rng() < 0.06) put('tumble', { x: x, y: h + 0.5, z: z, ry: ry, s: rngRange(rng, 0.8, 1.3) });
+      else if (ny > 0.6 && rng() < 0.2) pushRock('rock', x, h, z, 0xb0703a);
+    } else if (id === 'caldera') {
+      if (ny > 0.70 && rng() < 0.55) put('basalt', { x: x, y: h - 0.4, z: z, ry: ry, s: rngRange(rng, 0.7, 1.4) });
+      else if (ny > 0.6 && rng() < 0.14) pushRock('rock', x, h, z, 0x3a3038);
+    } else if (id === 'gloom') {
+      if (ny > 0.8 && rng() < 0.20) put('gtree', { x: x, y: h - 0.3, z: z, ry: ry, s: rngRange(rng, 0.8, 1.5) });
+      else if (ny > 0.7 && rng() < 0.10) put('bell', { x: x, y: h + 3.4, z: z, ry: ry, s: rngRange(rng, 0.8, 1.4) });
+      else if (ny > 0.75 && rng() < 0.10) put('wisp', { x: x, y: h + 1.3, z: z, ry: ry, s: rngRange(rng, 0.7, 1.4) });
+      else if (ny > 0.6 && rng() < 0.14) pushRock('rock', x, h, z, 0x2a2440);
+    } else if (id === 'kiln') {
+      if (ny > 0.68 && rng() < 0.42) put('obs', { x: x, y: h, z: z, ry: ry, s: rngRange(rng, 0.7, 1.6) });
+      else if (surf === SF.EMBER && ny > 0.7 && rng() < 0.24) put('vent2', { x: x, y: h, z: z, ry: ry, s: rngRange(rng, 0.7, 1.5) });
+      else if (ny > 0.6 && rng() < 0.12) pushRock('rock', x, h, z, 0x241d26);
+    } else if (id === 'citadel') {
+      if (ny > 0.86 && rng() < 0.16) put('pillar', { x: x, y: h, z: z, ry: ry, s: rngRange(rng, 0.8, 1.5) });
+      else if (ny > 0.78 && rng() < 0.24) put('ruin', { x: x, y: h, z: z, ry: ry, s: rngRange(rng, 0.7, 1.4) });
+      else if (ny > 0.86 && rng() < 0.05) put('banner', { x: x, y: h, z: z, ry: ry, s: rngRange(rng, 0.9, 1.3) });
+      else if (ny > 0.6 && rng() < 0.14) pushRock('rock', x, h, z, 0x8a8478);
     } else {
-      if (ny > 0.6 && rng() < 0.14) pushRock(rng, rocks, x, h, z, 0xb9c6d4);
+      if (ny > 0.84 && rng() < 0.4) put('cairn', { x: x, y: h, z: z, ry: ry, s: rngRange(rng, 0.8, 1.3) });
+      else if (ny > 0.6 && rng() < 0.14) pushRock('rock', x, h, z, 0xb9c6d4);
     }
   }
 
-  function pushRock(rng2, arr, x, h, z, col) {
-    var rs = rngRange(rng2, 0.55, 1.7);
-    arr.push({ x: x, y: h - rs * 0.35, z: z, ry: rng2() * 6.28, rx: rngRange(rng2, -0.2, 0.2), s: rs, col: col });
-    Props.addSphere(x, h + rs * 0.26, z, rs * 0.9);
-  }
-
-  var rg = rockGeo(rng, 1, 0);
-  g.add(scatter(palmGeo(rng), MAT.solid, palms, null, { shadow: true }));
-  g.add(scatter(jungleTreeGeo(rng), MAT.solid, trees, null, { shadow: true }));
-  g.add(scatter(fernGeo(), MAT.solidS, ferns, null));
-  g.add(scatter(thornGeo(), MAT.solid, thorns, null));
-  g.add(scatter(deadPineGeo(), MAT.solid, pines, null, { shadow: true }));
-  g.add(scatter(basaltGeo(rng), MAT.solid, basalts, null, { shadow: true }));
-  g.add(scatter(obsidianGeo(rng), MAT.shiny, obs, null));
-  g.add(scatter(driftGeo(rng), MAT.solid, drift, null));
-  g.add(scatter(rg, MAT.solid, rocks, function (it) {
-    var o = [0, 0, 0]; hexLin(it.col, o, 0, 0.85 + Math.random() * 0.3); return o;
-  }, { shadow: true, receive: true }));
-
-  Props.counts = {
-    palms: palms.length, trees: trees.length, ferns: ferns.length, thorns: thorns.length,
-    pines: pines.length, rocks: rocks.length, basalt: basalts.length, obsidian: obs.length,
+  // only build the geometry for kinds this island actually needs
+  var MAKE = {
+    palm: [palmGeo, MAT.solid, { shadow: true }],
+    drift: [function () { return driftGeo(rng); }, MAT.solid, {}],
+    tree: [jungleTreeGeo, MAT.solid, { shadow: true }],
+    fern: [fernGeo, MAT.solidS, {}],
+    thorn: [thornGeo, MAT.solid, {}],
+    shroom: [shroomGeo, MAT.solid, { shadow: true }],
+    arch: [rootArchGeo, MAT.solid, { shadow: true }],
+    vent: [sporeVentGeo, MAT.solid, {}],
+    pine: [deadPineGeo, MAT.solid, { shadow: true }],
+    shard: [iceShardGeo, MAT.shiny, {}],
+    cactus: [cactusGeo, MAT.solid, { shadow: true }],
+    brush: [function () { return brushGeo(rng); }, MAT.solidS, {}],
+    tumble: [function () { return tumbleGeo(rng); }, MAT.solidS, {}],
+    basalt: [function () { return basaltGeo(rng); }, MAT.solid, { shadow: true }],
+    obs: [obsidianGeo, MAT.shiny, {}],
+    vent2: [ventGeo, MAT.solid, {}],
+    gtree: [gloomTreeGeo, MAT.solid, { shadow: true }],
+    bell: [bellGeo, MAT.solid, {}],
+    wisp: [wispGeo, MAT.glow, {}],
+    pillar: [pillarGeo, MAT.solid, { shadow: true }],
+    ruin: [function () { return ruinGeo(rng); }, MAT.solid, { shadow: true }],
+    banner: [bannerGeo, MAT.solidS, {}],
+    cairn: [function () { return cairnGeo(rng); }, MAT.solid, { shadow: true }],
   };
+  Props.counts = {};
+  for (var k in L) {
+    if (!MAKE[k] || !L[k].length) continue;
+    var m = MAKE[k];
+    g.add(scatter(m[0](), m[1], L[k], null, m[2]));
+    Props.counts[k] = L[k].length;
+  }
+  if (L.rock && L.rock.length) {
+    g.add(scatter(rockGeo(rng, 1, 0), MAT.solid, L.rock, function (it) {
+      var o = [0, 0, 0]; hexLin(it.col, o, 0, 0.85 + Math.random() * 0.3); return o;
+    }, { shadow: true, receive: true }));
+    Props.counts.rock = L.rock.length;
+  }
   return g;
 };
 
@@ -1230,6 +1513,17 @@ Props.capHeight = function (x, z, base) {
     }
   }
   return best;
+};
+
+// a mushroom cap you have just landed on, if any
+Props.bounceAt = function (x, y, z) {
+  for (var i = 0; i < Props.bounce.length; i++) {
+    var b = Props.bounce[i];
+    if (Math.abs(b.y - y) > 1.4) continue;
+    var dx = x - b.x, dz = z - b.z;
+    if (dx * dx + dz * dz < b.r * b.r) return b;
+  }
+  return null;
 };
 
 /* ==== 08-items.js ==== */
@@ -1705,6 +1999,38 @@ Walls.tick = function (dt, t) {
   }
 };
 
+// ---- the citadel: a tower standing in the slot it was rolled into ------
+var Tower = { group: null };
+Tower.build = function () {
+  var g = Tower.group = new THREE.Group();
+  if (Run.pick[Z.INNER] !== 'citadel') return g;
+  var c = Camps.list[Z.INNER + 1];
+  if (!c) return g;
+  var rng = makeRng(0x71c1de1);
+  var base = T.hAt(c.x, c.z);
+  g.position.set(c.x, base, c.z);
+
+  var parts = [], i, a;
+  for (i = 0; i < 5; i++) {                       // stacked drums, tapering
+    var r = 7.5 - i * 1.0, hgt = 7;
+    parts.push({ g: new THREE.CylinderGeometry(r, r + 0.5, hgt, 12, 1, true), c: i % 2 ? 0x9a9488 : 0x827c72, p: [0, 3 + i * hgt, 0] });
+    parts.push({ g: new THREE.CylinderGeometry(r + 0.7, r + 0.7, 0.6, 12), c: 0x6e685e, p: [0, 3 + i * hgt + hgt / 2, 0] });
+  }
+  for (i = 0; i < 8; i++) {                       // crenellations on the crown
+    a = i / 8 * 6.283;
+    parts.push({ g: new THREE.BoxGeometry(1.1, 1.4, 0.8), c: 0xb0a894, p: [Math.cos(a) * 2.8, 39, Math.sin(a) * 2.8], r: [0, -a, 0] });
+  }
+  parts.push({ g: new THREE.BoxGeometry(3.0, 4.4, 0.6), c: 0x4a4438, p: [0, 5.2, 7.6] });
+  var tower = new THREE.Mesh(mergeParts(parts), MAT.solidS);
+  tower.castShadow = true; tower.receiveShadow = true;
+  g.add(tower);
+
+  var l = new THREE.PointLight(0xffd08a, 2.2, 44, 2);
+  l.position.set(0, 40, 0);
+  g.add(l);
+  return g;
+};
+
 // ---- the summit -------------------------------------------------------
 var Summit = { pos: null, group: null, flare: null, light: null, fired: false };
 Summit.build = function () {
@@ -1987,7 +2313,10 @@ Figure.prototype.pose = function (dt, o) {
 // ============================================================ INPUT
 var IN = {
   keys: {}, hit: {}, mx: 0, my: 0, mb: [false, false, false], mbHit: [false, false, false],
-  locked: false, sens: 0.0014, invert: false, el: null, onLockChange: null,
+  locked: false, el: null, onLockChange: null,
+  // look sensitivity is stored per axis so the vertical can be tuned down
+  // separately, and each axis inverts on its own
+  sensX: 0.0022, sensY: 0.0022, invX: false, invY: false,
   grabKey: 'KeyE',        // held, rebindable; left mouse always works too
   capture: null,          // set to a callback while rebinding
 };
@@ -2092,20 +2421,21 @@ var CAM = {
   yaw: 0, pitch: -0.12, dist: 4.7, want: 4.7, first: false,
   pos: new THREE.Vector3(), look: new THREE.Vector3(),
   smoothTgt: new THREE.Vector3(), lift: 0, side: 0, shake: 0, shakeT: 0,
-  fovBase: 76, fov: 76, wallBias: 0,
+  fovBase: 70, fovClimb: 40, fov: 70, wallBias: 0,
+  bobAmt: 1, bobT: 0, shakeScale: 1, climbFov: 0,
 };
 var _hit = { x: 0, y: 0, z: 0, d: 0, hit: false };
 var _cdir = new THREE.Vector3(), _ctgt = new THREE.Vector3();
 
 CAM.applyMouse = function (dx, dy) {
-  CAM.yaw -= dx * IN.sens;
-  CAM.pitch -= dy * IN.sens * (IN.invert ? -1 : 1);
+  CAM.yaw -= dx * IN.sensX * (IN.invX ? -1 : 1);
+  CAM.pitch -= dy * IN.sensY * (IN.invY ? -1 : 1);
   CAM.pitch = clamp(CAM.pitch, -1.42, 1.36);
   if (CAM.yaw > Math.PI) CAM.yaw -= Math.PI * 2;
   if (CAM.yaw < -Math.PI) CAM.yaw += Math.PI * 2;
 };
 
-CAM.kick = function (amt) { CAM.shake = Math.min(1.4, CAM.shake + amt); };
+CAM.kick = function (amt) { CAM.shake = Math.min(1.4, CAM.shake + amt * CAM.shakeScale); };
 
 CAM.update = function (cam, P, dt) {
   var cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
@@ -2123,7 +2453,11 @@ CAM.update = function (cam, P, dt) {
   _ctgt.set(tx, ty, tz);
   CAM.smoothTgt.lerp(_ctgt, 1 - Math.exp(-22 * dt));
 
-  var fovT = CAM.fovBase + (P.sprinting ? 6 : 0) + clamp(-P.vel.y * 0.55, 0, 13);
+  // the view opens up on the wall, the way PEAK's climbing FOV does
+  var onWall = (P.state === ST.CLIMB || P.state === ST.SLIP) ? 1 : 0;
+  CAM.climbFov = damp(CAM.climbFov, onWall, 3.5, dt);
+  var fovT = CAM.fovBase + CAM.fovClimb * CAM.climbFov
+    + (P.sprinting ? 5 : 0) + clamp(-P.vel.y * 0.5, 0, 12) * CAM.shakeScale;
   CAM.fov = damp(CAM.fov, fovT, 6, dt);
   if (Math.abs(cam.fov - CAM.fov) > 0.05) { cam.fov = CAM.fov; cam.updateProjectionMatrix(); }
 
@@ -2133,7 +2467,7 @@ CAM.update = function (cam, P, dt) {
   } else {
     var want = CAM.want + (P.state === ST.CLIMB ? 0.8 : 0) + (P.carrying ? 0.5 : 0);
     // shoulder offset keeps the body out of the middle of the screen
-    var rx = Math.cos(CAM.yaw), rz = -Math.sin(CAM.yaw);
+    var rx = -Math.cos(CAM.yaw), rz = Math.sin(CAM.yaw);
     var ox = rx * 0.55, oz = rz * 0.55;
     var bx = CAM.smoothTgt.x + ox, by = CAM.smoothTgt.y + 0.18, bz = CAM.smoothTgt.z + oz;
     var dx = -_cdir.x, dy = -_cdir.y, dz = -_cdir.z;
@@ -2184,6 +2518,16 @@ CAM.update = function (cam, P, dt) {
   // showing the body just fills the screen with a backpack
   CAM.hideBody = CAM.first || CAM.dist < 2.0;
 
+  // head bob, and a switch to take it away for anyone it bothers
+  if (CAM.bobAmt > 0.01 && P.state === ST.GROUND) {
+    var spd = Math.hypot(P.vel.x, P.vel.z);
+    CAM.bobT += dt * (3.0 + spd * 1.5);
+    var amp = clamp(spd / K.SPRINT, 0, 1) * 0.06 * CAM.bobAmt;
+    CAM.pos.y += Math.sin(CAM.bobT * 2) * amp;
+    CAM.pos.x += -Math.cos(CAM.yaw) * Math.sin(CAM.bobT) * amp * 0.6;
+    CAM.pos.z += Math.sin(CAM.yaw) * Math.sin(CAM.bobT) * amp * 0.6;
+  }
+
   if (CAM.shake > 0.002) {
     CAM.shakeT += dt * 34;
     var s = CAM.shake * 0.16;
@@ -2204,7 +2548,10 @@ CAM.forward = function (out) {
   return out;
 };
 CAM.flatForward = function (out) { out.set(Math.sin(CAM.yaw), 0, Math.cos(CAM.yaw)).normalize(); return out; };
-CAM.flatRight = function (out) { out.set(Math.cos(CAM.yaw), 0, -Math.sin(CAM.yaw)).normalize(); return out; };
+// right = forward x up.  This had the sign flipped, which mirrored strafe:
+// D walked left.  Verified against the quaternion three.js builds for the
+// same look direction.
+CAM.flatRight = function (out) { out.set(-Math.cos(CAM.yaw), 0, Math.sin(CAM.yaw)).normalize(); return out; };
 
 /* ==== 13-player.js ==== */
 // ============================================================ LOCAL PLAYER
@@ -2409,7 +2756,7 @@ function placeHands() {
     P.handOn = true;
     return;
   }
-  var rx = -w.nz, rz = w.nx;
+  var rx = w.nz, rz = -w.nx;
   var ph = P.fig ? P.fig.phase : 0;
   var sw = Math.sin(ph) * 0.26;
   var ox = w.cx + w.nx * 0.1, oz = w.cz + w.nz * 0.1;
@@ -2427,7 +2774,9 @@ function moveClimb(dt, mx, mz) {
     if (mz > 0) P.stats.climbed += mz * rs * dt;
     return;
   }
-  var rx = -w.nz, rz = w.nx;
+  // the climber faces into the wall (-n), so their right along the face is
+  // (n.z, -n.x); the mirrored version of this made D climb left
+  var rx = w.nz, rz = -w.nx;
   var moving = Math.abs(mz) > 0.05 || Math.abs(mx) > 0.05;
   P.climbing = moving;
 
@@ -2579,11 +2928,21 @@ P.update = function (dt) {
     } else if (P.pos.y <= gh + 0.001) {
       var wasAir = !P.grounded, drop = P.fallFrom - gh;
       P.pos.y = gh;
-      P.vel.y = 0;
-      P.grounded = true;
-      P.state = ST.GROUND;
-      P.fallFrom = P.pos.y;
-      if (wasAir) Survive.land(drop);
+      var cap = wasAir && drop > 1.5 ? Props.bounceAt(P.pos.x, gh, P.pos.z) : null;
+      if (cap) {
+        // a springy cap takes the whole landing and gives it back
+        P.vel.y = clamp(6 + drop * 0.55, 6, 17);
+        P.state = ST.AIR; P.grounded = false;
+        P.fallFrom = P.pos.y;
+        FX.puff(P.pos.x, gh + 0.2, P.pos.z, 8, 0xe06aa8);
+        CAM.kick(0.2);
+      } else {
+        P.vel.y = 0;
+        P.grounded = true;
+        P.state = ST.GROUND;
+        P.fallFrom = P.pos.y;
+        if (wasAir) Survive.land(drop);
+      }
     } else {
       P.grounded = false;
       if (P.pos.y > P.fallFrom) P.fallFrom = P.pos.y;
@@ -2689,6 +3048,7 @@ Survive.tick = function (dt) {
     drain += Wind.at(P.pos.y, 1) * 1.6;       // gusts make everything harder
     if (P.rope) drain *= 0.3;                 // a rope is most of the work done
     else if (P.wall.surf === SF.ICE) drain *= 1.35;
+    else if (biomeIs(P.pos.y, 'kiln')) drain *= 1.4;   // molten rock costs extra
     if (P.carrying) drain *= 1.8;
     if (P.onPiton) {
       // the one place you can get your breath back off the ground
@@ -2712,25 +3072,44 @@ Survive.tick = function (dt) {
   // ---- hunger creeps up the whole run
   Survive.addStatus('hunger', K.HUNGER_RATE * dt * (P.state === ST.CLIMB ? 1.5 : 1));
 
-  // ---- what the zone does to you
-  var zn = zoneAt(P.pos.y);
-  var surf = P.surf;
+  // ---- what the biome you are standing in does to you
+  var bi = biomeAt(P.pos.y), haz = bi.haz, surf = P.surf;
   if (Survive.atFire) {
     P.status.cold = Math.max(0, P.status.cold - 34 * dt);
     P.status.heat = Math.max(0, P.status.heat - 22 * dt);
     P.status.poison = Math.max(0, P.status.poison - 10 * dt);
+    P.status.drowsy = Math.max(0, P.status.drowsy - 14 * dt);
     if (P.hp < K.HP_MAX) P.hp = Math.min(K.HP_MAX, P.hp + 5 * dt);
   } else {
-    if (zn === Z.SNOW) {
+    if (haz === 'cold') {
       Survive.addStatus('cold', (2.6 + Wind.gust * 4.5) * dt);
-    } else if (zn === Z.VOLCANIC || zn === Z.INTERIOR) {
-      Survive.addStatus('heat', (2.2 + (zn === Z.INTERIOR ? 1.6 : 0)) * dt);
+    } else if (haz === 'heat') {
+      Survive.addStatus('heat', 2.2 * dt);
+    } else if (haz === 'kiln') {
+      // the kiln is the last push and it is pure attrition
+      Survive.addStatus('heat', 3.4 * dt);
+      Survive.addStatus('curse', 0.6 * dt);
+    } else if (haz === 'poison') {
+      if (Wind.rain > 0.4) Survive.addStatus('poison', 1.1 * dt);
+    } else if (haz === 'spore') {
+      // spore mist: poison in the drifts, drowsy everywhere
+      Survive.addStatus('drowsy', 0.7 * dt);
+      if (surf === SF.SPORE) Survive.addStatus('poison', 5.5 * dt);
+    } else if (haz === 'sun') {
+      // the mesa sun only lets up in the shade
+      if (surf === SF.SHADE) P.status.heat = Math.max(0, P.status.heat - 7 * dt);
+      else Survive.addStatus('heat', 4.4 * dt);
+    } else if (haz === 'drowsy') {
+      // the gloom's fog puts you to sleep, and the long dark chills you
+      Survive.addStatus('drowsy', 0.95 * dt);
+      if (surf === SF.MURK) Survive.addStatus('drowsy', 1.6 * dt);
+      if (P.status.drowsy > 55) Survive.addStatus('cold', 2.2 * dt);
+    } else if (haz === 'wind') {
+      Survive.addStatus('cold', 1.6 * dt);
     } else {
       P.status.cold = Math.max(0, P.status.cold - 4 * dt);
       P.status.heat = Math.max(0, P.status.heat - 4 * dt);
     }
-    if (zn === Z.JUNGLE && Wind.rain > 0.4) Survive.addStatus('poison', 0.7 * dt);
-    if (zn === Z.INTERIOR) Survive.addStatus('curse', 0.9 * dt);
   }
   if (surf === SF.THORN && P.state !== ST.CLIMB) Survive.addStatus('thorns', 9 * dt);
   if (surf === SF.EMBER) { Survive.addStatus('heat', 12 * dt); Survive.hurt(4 * dt, 'the hot rock'); }
@@ -3704,17 +4083,21 @@ var _emberT = 0;
 FX.tick = function (dt, cam, py) {
   FX.burst.tick(dt);
 
-  // each zone gets its own weather, falling through the same particle slab
-  var zn = zoneAt(py), dens = 0, wind = 2.5 + Wind.gust * 13, fallV = 2.2, col = 0xffffff, sz = 1;
-  if (zn === Z.JUNGLE) { dens = Wind.rain * 0.9; fallV = 17; wind = 1.5; col = 0x9fc8e8; sz = 0.55; }
-  else if (zn === Z.SNOW) { dens = 0.55 + Wind.gust * 0.45; fallV = 2.6; col = 0xffffff; sz = 1.1; }
-  else if (zn === Z.VOLCANIC || zn === Z.INTERIOR) { dens = 0.5; fallV = 1.1; wind = 1.2 + Wind.gust * 3; col = 0x6a5f58; sz = 0.75; }
-  else if (zn === Z.PEAK) { dens = 0.5 + Wind.gust * 0.4; fallV = 2.4; col = 0xffffff; sz = 1.0; }
+  // weather is whatever the biome in this slot brings with it
+  var wx = biomeAt(py).weather, dens = 0, wind = 2.5 + Wind.gust * 13, fallV = 2.2, col = 0xffffff, sz = 1;
+  var zn = zoneAt(py);
+  if (wx === 'rain') { dens = 0.35 + Wind.rain * 0.75; fallV = 17; wind = 1.5; col = 0x9fc8e8; sz = 0.55; }
+  else if (wx === 'spore') { dens = 0.7; fallV = -0.5; wind = 2.2; col = 0xc98ae8; sz = 1.5; }
+  else if (wx === 'snow') { dens = 0.55 + Wind.gust * 0.45; fallV = 2.6; col = 0xffffff; sz = 1.1; }
+  else if (wx === 'dust') { dens = 0.5 + Wind.gust * 0.5; fallV = 0.4; wind = 6 + Wind.gust * 12; col = 0xe0b482; sz = 0.9; }
+  else if (wx === 'ash') { dens = 0.5; fallV = 1.1; wind = 1.2 + Wind.gust * 3; col = 0x6a5f58; sz = 0.75; }
+  else if (wx === 'murk') { dens = 0.85; fallV = -0.35; wind = 0.8; col = 0x7a5ea8; sz = 2.0; }
+  else if (wx === 'wind') { dens = 0.4 + Wind.gust * 0.5; fallV = 1.2; wind = 8 + Wind.gust * 16; col = 0xd8d0c0; sz = 0.7; }
   var n = FX.snowN, p = FX.sPos, al = FX.sAlpha, sc = FX.sCol, ss = FX.sSize;
   var cx = cam.x, cy = cam.y, cz = cam.z;
-  if (FX.lastZone !== zn) {
-    FX.lastZone = zn;
-    for (var q = 0; q < n; q++) { hexLin(col, sc, q * 3, 1); ss[q] = (0.05 + Math.random() * 0.09) * sz * (zn === Z.JUNGLE ? 2.6 : 1); }
+  if (FX.lastWx !== wx) {
+    FX.lastWx = wx;
+    for (var q = 0; q < n; q++) { hexLin(col, sc, q * 3, 1); ss[q] = (0.05 + Math.random() * 0.09) * sz * (wx === 'rain' ? 2.6 : 1); }
     FX.snowGeo.attributes.aCol.needsUpdate = true;
     FX.snowGeo.attributes.aSize.needsUpdate = true;
   }
@@ -3734,7 +4117,7 @@ FX.tick = function (dt, cam, py) {
 
   // embers lifting off hot rock
   _emberT += dt;
-  if ((zn === Z.VOLCANIC || zn === Z.INTERIOR) && _emberT > 0.04) {
+  if (wx === 'ash' && _emberT > 0.04) {
     _emberT = 0;
     var a = Math.random() * 6.283, r = 4 + Math.random() * 30;
     var ex = cam.x + Math.cos(a) * r, ez = cam.z + Math.sin(a) * r;
@@ -3808,19 +4191,29 @@ function linCol(hex) {
   return c;
 }
 
-// one keyframe per zone: shore, jungle, snow, volcanic, caldera, peak
-var SKY_KEYS = [
-  { y: 0,   low: 0xffe0b0, mid: 0x8fc8ee, high: 0x3f86d8, sun: 0xfff0c8, fog: 0xf0dcb8, dens: 0.0036, el: 0.20, amb: 0.92, sunI: 1.10 },
-  { y: 62,  low: 0xdfd9a8, mid: 0x86bfe2, high: 0x3f7fcc, sun: 0xfff0cc, fog: 0xd8dcb8, dens: 0.0042, el: 0.28, amb: 0.95, sunI: 1.05 },
-  { y: 132, low: 0xe6eef6, mid: 0x93c4ea, high: 0x2f6ec2, sun: 0xfff4e2, fog: 0xdae6f2, dens: 0.0030, el: 0.44, amb: 0.96, sunI: 1.30 },
-  { y: 200, low: 0xffab68, mid: 0x7a9fc8, high: 0x2a4f96, sun: 0xffc07a, fog: 0xc9b2a4, dens: 0.0028, el: 0.34, amb: 0.72, sunI: 1.15 },
-  { y: 256, low: 0x8a3a18, mid: 0x3f3a4c, high: 0x1a1826, sun: 0xff8a3a, fog: 0x2e2630, dens: 0.0036, el: 0.22, amb: 0.50, sunI: 0.75 },
-  { y: 302, low: 0xffc78a, mid: 0x63a6e4, high: 0x123a86, sun: 0xfff0d0, fog: 0xc6d6e8, dens: 0.0016, el: 0.62, amb: 0.92, sunI: 1.55 },
-];
+// One keyframe per slot, taken from the biome that was rolled into it and
+// anchored at the middle of that slot's altitude band.
+Sky.keys = [];
+Sky.rebuildKeys = function () {
+  Sky.keys = [];
+  for (var i = 0; i < ZONES.length; i++) {
+    var lo = i === 0 ? 0 : ZONES[i - 1].top;
+    var hi = Math.min(ZONES[i].top, K.SUMMIT_H);
+    var k = Run.at(i).sky;
+    Sky.keys.push({
+      y: i === 0 ? 0 : (lo + hi) * 0.5,
+      low: k.low, mid: k.mid, high: k.high, sun: k.sun, fog: k.fog,
+      dens: k.dens, el: k.el, amb: k.amb, sunI: k.sunI,
+    });
+  }
+};
+
 function keyAt(y) {
-  var i = 0;
-  for (i = 0; i < SKY_KEYS.length - 1; i++) if (y < SKY_KEYS[i + 1].y) break;
-  var a = SKY_KEYS[Math.min(i, SKY_KEYS.length - 1)], b = SKY_KEYS[Math.min(i + 1, SKY_KEYS.length - 1)];
+  var K2 = Sky.keys, i = 0;
+  if (!K2.length) Sky.rebuildKeys();
+  K2 = Sky.keys;
+  for (i = 0; i < K2.length - 1; i++) if (y < K2[i + 1].y) break;
+  var a = K2[Math.min(i, K2.length - 1)], b = K2[Math.min(i + 1, K2.length - 1)];
   var u = a === b ? 0 : smooth(invl(a.y, b.y, y));
   return {
     low: mixHex(a.low, b.low, u), mid: mixHex(a.mid, b.mid, u), high: mixHex(a.high, b.high, u),
@@ -3856,6 +4249,7 @@ function cloudTexture() {
 }
 
 Sky.build = function (scene) {
+  Sky.rebuildKeys();
   var k = keyAt(0);
   Sky.mat = new THREE.ShaderMaterial({
     vertexShader: SKY_VS, fragmentShader: SKY_FS, side: THREE.BackSide, depthWrite: false,
@@ -4224,7 +4618,7 @@ Game.init = function () {
   });
 
   window.CRUX = {
-    Game: Game, P: P, T: T, K: K, CAM: CAM, IN: IN, HUD: HUD, Net: Net, Coop: Coop,
+    Game: Game, P: P, T: T, K: K, CAM: CAM, IN: IN, HUD: HUD, Net: Net, Coop: Coop, Run: Run, BIOMES: BIOMES,
     Survive: Survive, Remote: Remote, WI: WI, Camps: Camps, Walls: Walls, Summit: Summit,
     FX: FX, Fog: Fog, Sky: Sky, Props: Props, Wind: Wind, Menu: Menu, groundH: groundH,
     ZONES: ZONES, Z: Z, STATUS: STATUS, ST: ST,
@@ -4250,12 +4644,14 @@ Game.buildWorld = function (seed, lootSeed, detail, done) {
     if (Game.world) Game.teardown();
     var g = Game.world = new THREE.Group();
 
+    Run.roll(seed);                    // which biomes fill the middle slots
     T.build(seed);
     Wind.init(seed);
     g.add(T.buildMesh());
     g.add(Props.build(seed, detail));
     g.add(Camps.build());
     g.add(Walls.build());
+    g.add(Tower.build());
     g.add(Summit.build());
     g.add(WI.init());
     WI.spawnAll(lootSeed);
@@ -4318,6 +4714,7 @@ Game.begin = function (campIdx) {
   document.getElementById('pause').classList.remove('hidden');
   HUD.el.room.textContent = Net.solo ? '' : 'ROOM ' + Net.code;
   HUD.toast('hold ' + IN.keyLabel(IN.grabKey) + ' to grab the rock. get to the top.', '#ffd646');
+  HUD.toast('today: ' + Run.pick.slice(1, 5).map(function (b) { return BIOMES[b].nm; }).join(' \u2192 '), '#31c6c0');
 };
 
 Game.quit = function () {
@@ -4417,28 +4814,55 @@ Menu.init = function () {
     name: $('in-name'), joinCode: $('in-code'),
   };
 
+  // One options panel, borrowed by whichever screen is up.
+  var opts = $('opts');
+  $('opts-host').appendChild(opts);
+  Menu.optsToMenu = function () { $('opts-host').appendChild(opts); opts.open = false; };
+  Menu.optsToPause = function () { $('pause-opts').appendChild(opts); opts.open = false; };
+
+  var SET = [
+    ['sens', 'in-sens'], ['sensy', 'in-sensy'], ['fov', 'in-fov'], ['cfov', 'in-cfov'],
+    ['invx', 'in-invx'], ['invy', 'in-invy'], ['bob', 'in-bob'], ['photo', 'in-photo'],
+    ['detail', 'in-detail'],
+  ];
   try {
     var saved = localStorage.getItem('crux.name');
     if (saved) e.name.value = saved;
-    var s = localStorage.getItem('crux.sens'); if (s) $('in-sens').value = s;
-    var f = localStorage.getItem('crux.fov'); if (f) $('in-fov').value = f;
-    var iv = localStorage.getItem('crux.inv'); if (iv === '1') $('in-inv').checked = true;
-    var dt = localStorage.getItem('crux.detail'); if (dt !== null) $('in-detail').value = dt;
+    SET.forEach(function (row) {
+      var v = localStorage.getItem('crux.' + row[0]);
+      if (v === null) return;
+      var el = $(row[1]);
+      if (el.type === 'checkbox') el.checked = v === '1'; else el.value = v;
+    });
   } catch (err) { }
 
   function readOpts() {
-    IN.sens = parseFloat($('in-sens').value) / 10000;
-    IN.invert = $('in-inv').checked;
+    // Sensitivity is radians of turn per pixel of mouse travel.  The base is
+    // deliberately low so one trackpad flick is not a full spin; the slider
+    // scales it, and the vertical gets its own multiplier on top.
+    var sx = parseFloat($('in-sens').value) / 100;
+    var sy = parseFloat($('in-sensy').value) / 100;
+    IN.sensX = 0.0022 * sx;
+    IN.sensY = 0.0022 * sx * sy;
+    IN.invX = $('in-invx').checked;
+    IN.invY = $('in-invy').checked;
     CAM.fovBase = parseFloat($('in-fov').value);
-    $('sens-v').textContent = (parseFloat($('in-sens').value) / 10).toFixed(1);
+    CAM.fovClimb = parseFloat($('in-cfov').value);
+    CAM.bobAmt = $('in-bob').checked ? 0 : 1;
+    CAM.shakeScale = $('in-photo').checked ? 0.15 : 1;
+    $('sens-v').textContent = sx.toFixed(2);
+    $('sensy-v').textContent = sy.toFixed(2);
     $('fov-v').textContent = $('in-fov').value;
+    $('cfov-v').textContent = $('in-cfov').value;
     try {
-      localStorage.setItem('crux.sens', $('in-sens').value);
-      localStorage.setItem('crux.fov', $('in-fov').value);
-      localStorage.setItem('crux.inv', $('in-inv').checked ? '1' : '0');
-      localStorage.setItem('crux.detail', $('in-detail').value);
+      SET.forEach(function (row) {
+        var el = $(row[1]);
+        localStorage.setItem('crux.' + row[0], el.type === 'checkbox' ? (el.checked ? '1' : '0') : el.value);
+      });
     } catch (err) { }
   }
+  Menu.readOpts = readOpts;
+
   var bindBtn = $('btn-grab');
   function showBind() {
     bindBtn.textContent = IN.keyLabel(IN.grabKey);
@@ -4455,9 +4879,9 @@ Menu.init = function () {
     };
   });
 
-  ['in-sens', 'in-fov', 'in-inv', 'in-detail'].forEach(function (id) {
-    $(id).addEventListener('input', readOpts);
-    $(id).addEventListener('change', readOpts);
+  SET.forEach(function (row) {
+    $(row[1]).addEventListener('input', readOpts);
+    $(row[1]).addEventListener('change', readOpts);
   });
   readOpts();
 

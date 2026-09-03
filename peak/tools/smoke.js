@@ -34,6 +34,7 @@ function check(name, ok, detail) {
     walls: window.CRUX.Walls.list.map(w => Math.round(w.y)),
     items: window.CRUX.WI.list.length, cases: window.CRUX.WI.cases.length,
     props: window.CRUX.Props.counts,
+    pick: window.CRUX.Run.pick,
     summitY: Math.round(window.CRUX.Summit.pos.y),
   }));
   const campsSorted = gen.camps.every((v, i) => i === 0 || v > gen.camps[i - 1]);
@@ -42,9 +43,15 @@ function check(name, ok, detail) {
     JSON.stringify({ tris: gen.tris, items: gen.items, cases: gen.cases, summitY: gen.summitY }));
   check('camps and fog walls climb in order', campsSorted && wallsSorted,
     'camps ' + gen.camps.join(',') + ' walls ' + gen.walls.join(','));
-  check('every zone has its own scenery',
-    gen.props.palms > 100 && gen.props.trees > 400 && gen.props.pines > 100 &&
-    gen.props.basalt > 80 && gen.props.obsidian > 80, JSON.stringify(gen.props));
+  // whichever biomes this island rolled, each has to have put something out
+  const SIGNATURE = {
+    shore: ['palm', 'drift'], tropics: ['tree', 'fern'], roots: ['shroom', 'arch'],
+    alpine: ['pine'], mesa: ['cactus', 'brush'], caldera: ['basalt'],
+    gloom: ['gtree', 'bell'], kiln: ['obs'], citadel: ['pillar', 'ruin'], peak: ['cairn'],
+  };
+  const bare = gen.pick.filter(b => !(SIGNATURE[b] || []).some(k => (gen.props[k] || 0) > 5));
+  check('every biome this island rolled built its own scenery', bare.length === 0,
+    gen.pick.join(' > ') + '  ' + JSON.stringify(gen.props));
 
   const rstat = await page.evaluate(() => {
     const r = window.CRUX.Game.renderer.info.render;

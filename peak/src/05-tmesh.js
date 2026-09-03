@@ -10,20 +10,14 @@ function hexLin(hex, out, o, mul) {
   out[o + 2] = _lut[hex & 255] * mul;
 }
 
-var PAL = [
-  { top: 0xe8d49a, top2: 0x8cc456, cliff: 0xb2a081, alt: 0xd6c08c },   // shore
-  { top: 0x3b8a38, top2: 0x27612e, cliff: 0x4a3826, alt: 0x54a03e },   // jungle
-  { top: 0xeef4fa, top2: 0xdbe6f2, cliff: 0x79828f, alt: 0xa8dcef },   // snow
-  { top: 0x4a3f48, top2: 0x3a3038, cliff: 0x2f2830, alt: 0x5c4a44 },   // volcanic
-  { top: 0x2c2430, top2: 0x241d26, cliff: 0x1d1721, alt: 0x3a2c2e },   // caldera
-  { top: 0xf2f7fc, top2: 0xe2ecf6, cliff: 0x8b93a0, alt: 0xb9c6d4 },   // peak
-];
 var SURF_TINT = {};
 SURF_TINT[SF.SAND] = 0xe8d49a; SURF_TINT[SF.GRASS] = 0x6fae42;
 SURF_TINT[SF.LEAF] = 0x2a6e30; SURF_TINT[SF.MUD] = 0x4a3622;
 SURF_TINT[SF.SNOW] = 0xf0f6fb; SURF_TINT[SF.ICE] = 0xa8dcef;
 SURF_TINT[SF.BASALT] = 0x2f2830; SURF_TINT[SF.EMBER] = 0xff5a1e;
-SURF_TINT[SF.THORN] = 0x6f4a86;
+SURF_TINT[SF.THORN] = 0x6f4a86; SURF_TINT[SF.SPORE] = 0xb06ad8;
+SURF_TINT[SF.CLAY] = 0xd8834a; SURF_TINT[SF.MURK] = 0x2a2440;
+SURF_TINT[SF.BRICK] = 0xa89c88; SURF_TINT[SF.SHADE] = 0x8a6242;
 
 function faceKind(surf) {
   if (surf === SF.EMBER) return 2;
@@ -32,13 +26,13 @@ function faceKind(surf) {
 }
 
 function faceColor(h, ny, surf, hash) {
-  var zn = zoneAt(h), p = PAL[zn], c;
+  var zn = zoneAt(h), p = Run.at(zn).pal, c;
   var top = (hash & 3) ? p.top : p.top2;
   var cliff = (hash & 7) < 3 ? p.alt : p.cliff;
-  // bleed each band into the next so the zones are not hard rings
+  // bleed each band into the one below so the biomes are not hard rings
   var below = zn > 0 ? ZONES[zn - 1].top : -1;
   if (below > 0 && h < below + 13) {
-    var q = PAL[zn - 1], u = step01(below - 3, below + 13, h);
+    var q = Run.at(zn - 1).pal, u = step01(below - 3, below + 13, h);
     top = mixHex((hash & 3) ? q.top : q.top2, top, u);
     cliff = mixHex((hash & 7) < 3 ? q.alt : q.cliff, cliff, u);
   }

@@ -55,30 +55,41 @@
       <button class="lnk" id="btn-back">back</button>
     </div>
 
-    <details id="opts">
-      <summary>controls &amp; options</summary>
-      <div class="keys">
-        <span><kbd>WASD</kbd> move</span><span><kbd>Space</kbd> jump</span>
-        <span><kbd id="k-grab">E</kbd> <b>hold to grab</b></span><span><kbd>LMB</kbd> grab (alternate)</span>
-        <span><kbd>Shift</kbd> sprint / lunge</span><span><kbd>RMB</kbd> helping hand</span>
-        <span><kbd>F</kbd> take · hold to revive</span><span><kbd>C</kbd> use item</span>
-        <span><kbd>1-3</kbd> pack slot</span><span><kbd>X</kbd> drop</span>
-        <span><kbd>Q</kbd> ping (hold = danger)</span><span><kbd>V</kbd> first / third person</span>
-      </div>
-      <div class="row"><label>Grab key</label><button id="btn-grab" class="bind">E</button><small class="hint">click, then press a key</small></div>
-      <div class="row"><label>Sensitivity</label><input type="range" id="in-sens" min="4" max="40" value="14"><b id="sens-v">1.4</b></div>
-      <div class="row"><label>Field of view</label><input type="range" id="in-fov" min="60" max="105" value="78"><b id="fov-v">78</b></div>
-      <div class="row"><label>Invert Y</label><input type="checkbox" id="in-inv"></div>
-      <div class="row"><label>Detail</label><select id="in-detail"><option value="1">high</option><option value="0">low (faster)</option></select></div>
-    </details>
+    <div id="opts-host"></div>
   </div>
 </div>
 
 <div id="pause" class="hidden"><div class="panel sm">
   <h2>paused</h2><p class="tag">pointer lock released</p>
   <button class="big pri" id="btn-resume">Click to climb</button>
+  <div id="pause-opts"></div>
   <button class="lnk" id="btn-quit">leave the island</button>
 </div></div>
+
+<!-- one options panel, moved between the menu and the pause screen -->
+<details id="opts">
+  <summary>controls &amp; options</summary>
+  <div class="keys">
+    <span><kbd>WASD</kbd> move</span><span><kbd>Space</kbd> jump</span>
+    <span><kbd id="k-grab">E</kbd> <b>hold to grab</b></span><span><kbd>LMB</kbd> grab (alternate)</span>
+    <span><kbd>Shift</kbd> sprint / lunge</span><span><kbd>RMB</kbd> helping hand</span>
+    <span><kbd>F</kbd> take · hold to revive</span><span><kbd>C</kbd> use item</span>
+    <span><kbd>1-3</kbd> pack slot</span><span><kbd>X</kbd> drop</span>
+    <span><kbd>Q</kbd> ping (hold = danger)</span><span><kbd>V</kbd> first / third person</span>
+  </div>
+  <div class="row"><label>Grab key</label><button id="btn-grab" class="bind">E</button><small class="hint">click, then press a key</small></div>
+  <h4>look</h4>
+  <div class="row"><label>Sensitivity</label><input type="range" id="in-sens" min="20" max="400" value="100"><b id="sens-v">1.00</b></div>
+  <div class="row"><label>Vertical</label><input type="range" id="in-sensy" min="40" max="160" value="100"><b id="sensy-v">1.00</b></div>
+  <div class="row"><label>Invert X</label><input type="checkbox" id="in-invx"></div>
+  <div class="row"><label>Invert Y</label><input type="checkbox" id="in-invy"></div>
+  <h4>camera</h4>
+  <div class="row"><label>Field of view</label><input type="range" id="in-fov" min="60" max="100" value="70"><b id="fov-v">70</b></div>
+  <div class="row"><label>Climbing FOV</label><input type="range" id="in-cfov" min="0" max="50" value="40"><b id="cfov-v">40</b></div>
+  <div class="row"><label>Reduce bobbing</label><input type="checkbox" id="in-bob"></div>
+  <div class="row"><label>Photosensitivity</label><input type="checkbox" id="in-photo"><small class="hint">less screen shake</small></div>
+  <div class="row"><label>Detail</label><select id="in-detail"><option value="1">high</option><option value="0">low (faster)</option></select></div>
+</details>
 
 <div id="over" class="hidden"><div class="panel sm">
   <h2 id="over-h">RESCUED</h2>

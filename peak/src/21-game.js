@@ -35,7 +35,7 @@ Game.init = function () {
   });
 
   window.CRUX = {
-    Game: Game, P: P, T: T, K: K, CAM: CAM, IN: IN, HUD: HUD, Net: Net, Coop: Coop,
+    Game: Game, P: P, T: T, K: K, CAM: CAM, IN: IN, HUD: HUD, Net: Net, Coop: Coop, Run: Run, BIOMES: BIOMES,
     Survive: Survive, Remote: Remote, WI: WI, Camps: Camps, Walls: Walls, Summit: Summit,
     FX: FX, Fog: Fog, Sky: Sky, Props: Props, Wind: Wind, Menu: Menu, groundH: groundH,
     ZONES: ZONES, Z: Z, STATUS: STATUS, ST: ST,
@@ -61,12 +61,14 @@ Game.buildWorld = function (seed, lootSeed, detail, done) {
     if (Game.world) Game.teardown();
     var g = Game.world = new THREE.Group();
 
+    Run.roll(seed);                    // which biomes fill the middle slots
     T.build(seed);
     Wind.init(seed);
     g.add(T.buildMesh());
     g.add(Props.build(seed, detail));
     g.add(Camps.build());
     g.add(Walls.build());
+    g.add(Tower.build());
     g.add(Summit.build());
     g.add(WI.init());
     WI.spawnAll(lootSeed);
@@ -129,6 +131,7 @@ Game.begin = function (campIdx) {
   document.getElementById('pause').classList.remove('hidden');
   HUD.el.room.textContent = Net.solo ? '' : 'ROOM ' + Net.code;
   HUD.toast('hold ' + IN.keyLabel(IN.grabKey) + ' to grab the rock. get to the top.', '#ffd646');
+  HUD.toast('today: ' + Run.pick.slice(1, 5).map(function (b) { return BIOMES[b].nm; }).join(' \u2192 '), '#31c6c0');
 };
 
 Game.quit = function () {

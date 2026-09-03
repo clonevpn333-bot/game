@@ -56,24 +56,102 @@ var SLOT_HEX = ['#ff8a3d', '#31c6c0', '#ffd646', '#a274ff'];
 var SLOT_NAME = ['orange', 'teal', 'yellow', 'purple'];
 
 // ---------------------------------------------------------------- zones
-// Six slots, bottom to top, in fixed order.  Each one asks something
-// different of you and looks nothing like its neighbours.
-var Z = { SHORE: 0, JUNGLE: 1, SNOW: 2, VOLCANIC: 3, INTERIOR: 4, PEAK: 5 };
+// Six slots, bottom to top, in fixed order.  Which biome fills the middle
+// four is rolled per island, the way PEAK swaps its variant biomes in and
+// out - so the shape of a run is constant but the places are not.
+var Z = { SHORE: 0, LOWER: 1, MIDDLE: 2, UPPER: 3, INNER: 4, PEAK: 5 };
 var ZONES = [
-  { id: 0, name: 'the shore', top: 27, fire: 20 },
-  { id: 1, name: 'the jungle', top: 96, fire: 89 },
-  { id: 2, name: 'the snow face', top: 166, fire: 159 },
-  { id: 3, name: 'the volcanic rock', top: 229, fire: 222 },
-  { id: 4, name: 'the caldera', top: 278, fire: 271 },
-  { id: 5, name: 'the peak', top: 9999, fire: -1 },
+  { id: 0, top: 27, fire: 20 },
+  { id: 1, top: 96, fire: 89 },
+  { id: 2, top: 166, fire: 159 },
+  { id: 3, top: 229, fire: 222 },
+  { id: 4, top: 278, fire: 271 },
+  { id: 5, top: 9999, fire: -1 },
 ];
 function zoneAt(y) {
   for (var i = 0; i < ZONES.length; i++) if (y < ZONES[i].top) return i;
   return ZONES.length - 1;
 }
 
+// Ten biomes.  Each carries its own palette, sky, weather and hazard; the
+// terrain underneath is the same height field either way.
+var BIOMES = {
+  shore: {
+    nm: 'the shore', props: 'shore', weather: 'clear', haz: 'none',
+    pal: { top: 0xe8d49a, top2: 0x8cc456, cliff: 0xb2a081, alt: 0xd6c08c },
+    sky: { low: 0xffe0b0, mid: 0x8fc8ee, high: 0x3f86d8, sun: 0xfff0c8, fog: 0xf0dcb8, dens: 0.0036, el: 0.20, amb: 0.92, sunI: 1.10 },
+  },
+  tropics: {
+    nm: 'the tropics', props: 'tropics', weather: 'rain', haz: 'poison',
+    pal: { top: 0x3b8a38, top2: 0x27612e, cliff: 0x4a3826, alt: 0x54a03e },
+    sky: { low: 0xdfd9a8, mid: 0x86bfe2, high: 0x3f7fcc, sun: 0xfff0cc, fog: 0xd8dcb8, dens: 0.0042, el: 0.28, amb: 0.95, sunI: 1.05 },
+  },
+  roots: {
+    nm: 'the roots', props: 'roots', weather: 'spore', haz: 'spore',
+    pal: { top: 0x5c4a7a, top2: 0x3f3358, cliff: 0x3a2c22, alt: 0x7a5aa0 },
+    sky: { low: 0xc8a8e0, mid: 0x6a5a96, high: 0x2a2246, sun: 0xe8c8ff, fog: 0x6a5a86, dens: 0.0060, el: 0.24, amb: 0.78, sunI: 0.85 },
+  },
+  alpine: {
+    nm: 'the alpine', props: 'alpine', weather: 'snow', haz: 'cold',
+    pal: { top: 0xeef4fa, top2: 0xdbe6f2, cliff: 0x79828f, alt: 0xa8dcef },
+    sky: { low: 0xe6eef6, mid: 0x93c4ea, high: 0x2f6ec2, sun: 0xfff4e2, fog: 0xdae6f2, dens: 0.0030, el: 0.44, amb: 0.96, sunI: 1.30 },
+  },
+  mesa: {
+    nm: 'the mesa', props: 'mesa', weather: 'dust', haz: 'sun',
+    pal: { top: 0xd88f4a, top2: 0xc4763a, cliff: 0x8f4e2c, alt: 0xe8b06a },
+    sky: { low: 0xffd08a, mid: 0x8fc0e0, high: 0x3f7fbc, sun: 0xfff2c0, fog: 0xe8c095, dens: 0.0040, el: 0.52, amb: 1.02, sunI: 1.45 },
+  },
+  caldera: {
+    nm: 'the caldera', props: 'caldera', weather: 'ash', haz: 'heat',
+    pal: { top: 0x4a3f48, top2: 0x3a3038, cliff: 0x2f2830, alt: 0x5c4a44 },
+    sky: { low: 0xffab68, mid: 0x7a9fc8, high: 0x2a4f96, sun: 0xffc07a, fog: 0xc9b2a4, dens: 0.0028, el: 0.34, amb: 0.72, sunI: 1.15 },
+  },
+  gloom: {
+    nm: 'the gloom', props: 'gloom', weather: 'murk', haz: 'drowsy',
+    pal: { top: 0x3a2f4e, top2: 0x2a2138, cliff: 0x241d2e, alt: 0x4a3a62 },
+    sky: { low: 0x6a4a8a, mid: 0x3a2f52, high: 0x160f24, sun: 0x9a7ac0, fog: 0x4a3868, dens: 0.0090, el: 0.18, amb: 0.55, sunI: 0.45 },
+  },
+  kiln: {
+    nm: 'the kiln', props: 'kiln', weather: 'ash', haz: 'kiln',
+    pal: { top: 0x2c2430, top2: 0x241d26, cliff: 0x1d1721, alt: 0x3a2c2e },
+    sky: { low: 0x8a3a18, mid: 0x3f3a4c, high: 0x1a1826, sun: 0xff8a3a, fog: 0x2e2630, dens: 0.0036, el: 0.22, amb: 0.50, sunI: 0.75 },
+  },
+  citadel: {
+    nm: 'the citadel', props: 'citadel', weather: 'wind', haz: 'wind',
+    pal: { top: 0x9a9488, top2: 0x827c72, cliff: 0x5e594f, alt: 0xb0a894 },
+    sky: { low: 0xd8c8b0, mid: 0x6a7f9e, high: 0x223250, sun: 0xffe0b0, fog: 0x8a8a96, dens: 0.0050, el: 0.30, amb: 0.72, sunI: 0.95 },
+  },
+  peak: {
+    nm: 'the peak', props: 'peak', weather: 'snow', haz: 'cold',
+    pal: { top: 0xf2f7fc, top2: 0xe2ecf6, cliff: 0x8b93a0, alt: 0xb9c6d4 },
+    sky: { low: 0xffc78a, mid: 0x63a6e4, high: 0x123a86, sun: 0xfff0d0, fog: 0xc6d6e8, dens: 0.0016, el: 0.62, amb: 0.92, sunI: 1.55 },
+  },
+};
+
+// which biomes can fill each slot
+var SLOT_POOL = [
+  ['shore'],
+  ['tropics', 'roots'],
+  ['alpine', 'mesa'],
+  ['caldera', 'gloom'],
+  ['kiln', 'citadel'],
+  ['peak'],
+];
+
+// the island as rolled for this run
+var Run = { pick: ['shore', 'tropics', 'alpine', 'caldera', 'kiln', 'peak'] };
+Run.roll = function (seed) {
+  var r = makeRng(seed ^ 0x1a2b3c4d);
+  Run.pick = SLOT_POOL.map(function (pool) { return pool[(r() * pool.length) | 0]; });
+  return Run.pick;
+};
+Run.at = function (slot) { return BIOMES[Run.pick[slot]]; };
+function biomeAt(y) { return Run.at(zoneAt(y)); }
+function biomeIs(y, id) { return Run.pick[zoneAt(y)] === id; }
+
 // surface kinds - cosmetic and hazard only.  Every one of them is climbable.
-var SF = { ROCK: 0, SAND: 1, GRASS: 2, LEAF: 3, MUD: 4, SNOW: 5, ICE: 6, BASALT: 7, EMBER: 8, THORN: 9 };
+var SF = { ROCK: 0, SAND: 1, GRASS: 2, LEAF: 3, MUD: 4, SNOW: 5, ICE: 6, BASALT: 7, EMBER: 8, THORN: 9,
+           SPORE: 10, CLAY: 11, MURK: 12, BRICK: 13, SHADE: 14 };
 
 // player states
 var ST = { GROUND: 0, AIR: 1, CLIMB: 2, SLIP: 3, OUT: 4, CARRIED: 5 };

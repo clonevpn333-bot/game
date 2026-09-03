@@ -30,19 +30,29 @@ function linCol(hex) {
   return c;
 }
 
-// one keyframe per zone: shore, jungle, snow, volcanic, caldera, peak
-var SKY_KEYS = [
-  { y: 0,   low: 0xffe0b0, mid: 0x8fc8ee, high: 0x3f86d8, sun: 0xfff0c8, fog: 0xf0dcb8, dens: 0.0036, el: 0.20, amb: 0.92, sunI: 1.10 },
-  { y: 62,  low: 0xdfd9a8, mid: 0x86bfe2, high: 0x3f7fcc, sun: 0xfff0cc, fog: 0xd8dcb8, dens: 0.0042, el: 0.28, amb: 0.95, sunI: 1.05 },
-  { y: 132, low: 0xe6eef6, mid: 0x93c4ea, high: 0x2f6ec2, sun: 0xfff4e2, fog: 0xdae6f2, dens: 0.0030, el: 0.44, amb: 0.96, sunI: 1.30 },
-  { y: 200, low: 0xffab68, mid: 0x7a9fc8, high: 0x2a4f96, sun: 0xffc07a, fog: 0xc9b2a4, dens: 0.0028, el: 0.34, amb: 0.72, sunI: 1.15 },
-  { y: 256, low: 0x8a3a18, mid: 0x3f3a4c, high: 0x1a1826, sun: 0xff8a3a, fog: 0x2e2630, dens: 0.0036, el: 0.22, amb: 0.50, sunI: 0.75 },
-  { y: 302, low: 0xffc78a, mid: 0x63a6e4, high: 0x123a86, sun: 0xfff0d0, fog: 0xc6d6e8, dens: 0.0016, el: 0.62, amb: 0.92, sunI: 1.55 },
-];
+// One keyframe per slot, taken from the biome that was rolled into it and
+// anchored at the middle of that slot's altitude band.
+Sky.keys = [];
+Sky.rebuildKeys = function () {
+  Sky.keys = [];
+  for (var i = 0; i < ZONES.length; i++) {
+    var lo = i === 0 ? 0 : ZONES[i - 1].top;
+    var hi = Math.min(ZONES[i].top, K.SUMMIT_H);
+    var k = Run.at(i).sky;
+    Sky.keys.push({
+      y: i === 0 ? 0 : (lo + hi) * 0.5,
+      low: k.low, mid: k.mid, high: k.high, sun: k.sun, fog: k.fog,
+      dens: k.dens, el: k.el, amb: k.amb, sunI: k.sunI,
+    });
+  }
+};
+
 function keyAt(y) {
-  var i = 0;
-  for (i = 0; i < SKY_KEYS.length - 1; i++) if (y < SKY_KEYS[i + 1].y) break;
-  var a = SKY_KEYS[Math.min(i, SKY_KEYS.length - 1)], b = SKY_KEYS[Math.min(i + 1, SKY_KEYS.length - 1)];
+  var K2 = Sky.keys, i = 0;
+  if (!K2.length) Sky.rebuildKeys();
+  K2 = Sky.keys;
+  for (i = 0; i < K2.length - 1; i++) if (y < K2[i + 1].y) break;
+  var a = K2[Math.min(i, K2.length - 1)], b = K2[Math.min(i + 1, K2.length - 1)];
   var u = a === b ? 0 : smooth(invl(a.y, b.y, y));
   return {
     low: mixHex(a.low, b.low, u), mid: mixHex(a.mid, b.mid, u), high: mixHex(a.high, b.high, u),
@@ -78,6 +88,7 @@ function cloudTexture() {
 }
 
 Sky.build = function (scene) {
+  Sky.rebuildKeys();
   var k = keyAt(0);
   Sky.mat = new THREE.ShaderMaterial({
     vertexShader: SKY_VS, fragmentShader: SKY_FS, side: THREE.BackSide, depthWrite: false,

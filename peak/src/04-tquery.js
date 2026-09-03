@@ -8,26 +8,40 @@ T.classify = function () {
   for (j = 0; j < N; j++) {
     for (i = 0; i < N; i++) {
       var x = T.wx(i) + T.CS * 0.5, z = T.wx(j) + T.CS * 0.5;
-      var h = T.hAt(x, z), ny = T.normAt(x, z).y;
+      var n2 = T.normAt(x, z);
+      var h = T.hAt(x, z), ny = n2.y;
       var flat = ny > 0.70, steep = ny < 0.46;
       var v = n.fbm(x * 0.035, z * 0.035, 3);
       var w = n.fbm(x * 0.017 + 60, z * 0.017 - 30, 2);
-      var s, zn = zoneAt(h);
+      var s, id = Run.pick[zoneAt(h)];
 
-      if (zn === Z.SHORE) {
+      if (id === 'shore') {
         s = flat ? (h < 6 ? SF.SAND : (v > 0.05 ? SF.GRASS : SF.SAND)) : SF.ROCK;
-      } else if (zn === Z.JUNGLE) {
+      } else if (id === 'tropics') {
         s = flat ? (v > -0.1 ? SF.GRASS : SF.LEAF) : SF.MUD;
         if (w > 0.42) s = SF.THORN;
-      } else if (zn === Z.SNOW) {
+      } else if (id === 'roots') {
+        s = flat ? SF.GRASS : SF.MUD;
+        if (v > 0.22) s = SF.SPORE;                    // spore mist pools here
+      } else if (id === 'alpine') {
         s = flat ? SF.SNOW : SF.ROCK;
         if (steep && w > 0.05) s = SF.ICE;
-      } else if (zn === Z.VOLCANIC) {
+      } else if (id === 'mesa') {
+        s = flat ? (v > 0.1 ? SF.SAND : SF.CLAY) : SF.CLAY;
+        // the sun only misses the faces turned away from it
+        if (n2.x < -0.25 || ny < 0.3) s = SF.SHADE;
+      } else if (id === 'caldera') {
         s = SF.BASALT;
         if (v > 0.36) s = SF.EMBER;
-      } else if (zn === Z.INTERIOR) {
+      } else if (id === 'gloom') {
+        s = flat ? SF.MURK : SF.MUD;
+        if (steep && w > 0.3) s = SF.ROCK;
+      } else if (id === 'kiln') {
         s = SF.BASALT;
-        if (v > 0.34) s = SF.EMBER;      // veins of lava, not a field of it
+        if (v > 0.34) s = SF.EMBER;
+      } else if (id === 'citadel') {
+        s = flat ? SF.BRICK : SF.ROCK;
+        if (w > 0.35) s = SF.BRICK;
       } else {
         s = flat ? SF.SNOW : SF.ROCK;
       }

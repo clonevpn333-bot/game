@@ -170,17 +170,21 @@ var _emberT = 0;
 FX.tick = function (dt, cam, py) {
   FX.burst.tick(dt);
 
-  // each zone gets its own weather, falling through the same particle slab
-  var zn = zoneAt(py), dens = 0, wind = 2.5 + Wind.gust * 13, fallV = 2.2, col = 0xffffff, sz = 1;
-  if (zn === Z.JUNGLE) { dens = Wind.rain * 0.9; fallV = 17; wind = 1.5; col = 0x9fc8e8; sz = 0.55; }
-  else if (zn === Z.SNOW) { dens = 0.55 + Wind.gust * 0.45; fallV = 2.6; col = 0xffffff; sz = 1.1; }
-  else if (zn === Z.VOLCANIC || zn === Z.INTERIOR) { dens = 0.5; fallV = 1.1; wind = 1.2 + Wind.gust * 3; col = 0x6a5f58; sz = 0.75; }
-  else if (zn === Z.PEAK) { dens = 0.5 + Wind.gust * 0.4; fallV = 2.4; col = 0xffffff; sz = 1.0; }
+  // weather is whatever the biome in this slot brings with it
+  var wx = biomeAt(py).weather, dens = 0, wind = 2.5 + Wind.gust * 13, fallV = 2.2, col = 0xffffff, sz = 1;
+  var zn = zoneAt(py);
+  if (wx === 'rain') { dens = 0.35 + Wind.rain * 0.75; fallV = 17; wind = 1.5; col = 0x9fc8e8; sz = 0.55; }
+  else if (wx === 'spore') { dens = 0.7; fallV = -0.5; wind = 2.2; col = 0xc98ae8; sz = 1.5; }
+  else if (wx === 'snow') { dens = 0.55 + Wind.gust * 0.45; fallV = 2.6; col = 0xffffff; sz = 1.1; }
+  else if (wx === 'dust') { dens = 0.5 + Wind.gust * 0.5; fallV = 0.4; wind = 6 + Wind.gust * 12; col = 0xe0b482; sz = 0.9; }
+  else if (wx === 'ash') { dens = 0.5; fallV = 1.1; wind = 1.2 + Wind.gust * 3; col = 0x6a5f58; sz = 0.75; }
+  else if (wx === 'murk') { dens = 0.85; fallV = -0.35; wind = 0.8; col = 0x7a5ea8; sz = 2.0; }
+  else if (wx === 'wind') { dens = 0.4 + Wind.gust * 0.5; fallV = 1.2; wind = 8 + Wind.gust * 16; col = 0xd8d0c0; sz = 0.7; }
   var n = FX.snowN, p = FX.sPos, al = FX.sAlpha, sc = FX.sCol, ss = FX.sSize;
   var cx = cam.x, cy = cam.y, cz = cam.z;
-  if (FX.lastZone !== zn) {
-    FX.lastZone = zn;
-    for (var q = 0; q < n; q++) { hexLin(col, sc, q * 3, 1); ss[q] = (0.05 + Math.random() * 0.09) * sz * (zn === Z.JUNGLE ? 2.6 : 1); }
+  if (FX.lastWx !== wx) {
+    FX.lastWx = wx;
+    for (var q = 0; q < n; q++) { hexLin(col, sc, q * 3, 1); ss[q] = (0.05 + Math.random() * 0.09) * sz * (wx === 'rain' ? 2.6 : 1); }
     FX.snowGeo.attributes.aCol.needsUpdate = true;
     FX.snowGeo.attributes.aSize.needsUpdate = true;
   }
@@ -200,7 +204,7 @@ FX.tick = function (dt, cam, py) {
 
   // embers lifting off hot rock
   _emberT += dt;
-  if ((zn === Z.VOLCANIC || zn === Z.INTERIOR) && _emberT > 0.04) {
+  if (wx === 'ash' && _emberT > 0.04) {
     _emberT = 0;
     var a = Math.random() * 6.283, r = 4 + Math.random() * 30;
     var ex = cam.x + Math.cos(a) * r, ez = cam.z + Math.sin(a) * r;

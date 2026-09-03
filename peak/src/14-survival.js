@@ -63,6 +63,7 @@ Survive.tick = function (dt) {
     drain += Wind.at(P.pos.y, 1) * 1.6;       // gusts make everything harder
     if (P.rope) drain *= 0.3;                 // a rope is most of the work done
     else if (P.wall.surf === SF.ICE) drain *= 1.35;
+    else if (biomeIs(P.pos.y, 'kiln')) drain *= 1.4;   // molten rock costs extra
     if (P.carrying) drain *= 1.8;
     if (P.onPiton) {
       // the one place you can get your breath back off the ground
@@ -86,25 +87,44 @@ Survive.tick = function (dt) {
   // ---- hunger creeps up the whole run
   Survive.addStatus('hunger', K.HUNGER_RATE * dt * (P.state === ST.CLIMB ? 1.5 : 1));
 
-  // ---- what the zone does to you
-  var zn = zoneAt(P.pos.y);
-  var surf = P.surf;
+  // ---- what the biome you are standing in does to you
+  var bi = biomeAt(P.pos.y), haz = bi.haz, surf = P.surf;
   if (Survive.atFire) {
     P.status.cold = Math.max(0, P.status.cold - 34 * dt);
     P.status.heat = Math.max(0, P.status.heat - 22 * dt);
     P.status.poison = Math.max(0, P.status.poison - 10 * dt);
+    P.status.drowsy = Math.max(0, P.status.drowsy - 14 * dt);
     if (P.hp < K.HP_MAX) P.hp = Math.min(K.HP_MAX, P.hp + 5 * dt);
   } else {
-    if (zn === Z.SNOW) {
+    if (haz === 'cold') {
       Survive.addStatus('cold', (2.6 + Wind.gust * 4.5) * dt);
-    } else if (zn === Z.VOLCANIC || zn === Z.INTERIOR) {
-      Survive.addStatus('heat', (2.2 + (zn === Z.INTERIOR ? 1.6 : 0)) * dt);
+    } else if (haz === 'heat') {
+      Survive.addStatus('heat', 2.2 * dt);
+    } else if (haz === 'kiln') {
+      // the kiln is the last push and it is pure attrition
+      Survive.addStatus('heat', 3.4 * dt);
+      Survive.addStatus('curse', 0.6 * dt);
+    } else if (haz === 'poison') {
+      if (Wind.rain > 0.4) Survive.addStatus('poison', 1.1 * dt);
+    } else if (haz === 'spore') {
+      // spore mist: poison in the drifts, drowsy everywhere
+      Survive.addStatus('drowsy', 0.7 * dt);
+      if (surf === SF.SPORE) Survive.addStatus('poison', 5.5 * dt);
+    } else if (haz === 'sun') {
+      // the mesa sun only lets up in the shade
+      if (surf === SF.SHADE) P.status.heat = Math.max(0, P.status.heat - 7 * dt);
+      else Survive.addStatus('heat', 4.4 * dt);
+    } else if (haz === 'drowsy') {
+      // the gloom's fog puts you to sleep, and the long dark chills you
+      Survive.addStatus('drowsy', 0.95 * dt);
+      if (surf === SF.MURK) Survive.addStatus('drowsy', 1.6 * dt);
+      if (P.status.drowsy > 55) Survive.addStatus('cold', 2.2 * dt);
+    } else if (haz === 'wind') {
+      Survive.addStatus('cold', 1.6 * dt);
     } else {
       P.status.cold = Math.max(0, P.status.cold - 4 * dt);
       P.status.heat = Math.max(0, P.status.heat - 4 * dt);
     }
-    if (zn === Z.JUNGLE && Wind.rain > 0.4) Survive.addStatus('poison', 0.7 * dt);
-    if (zn === Z.INTERIOR) Survive.addStatus('curse', 0.9 * dt);
   }
   if (surf === SF.THORN && P.state !== ST.CLIMB) Survive.addStatus('thorns', 9 * dt);
   if (surf === SF.EMBER) { Survive.addStatus('heat', 12 * dt); Survive.hurt(4 * dt, 'the hot rock'); }

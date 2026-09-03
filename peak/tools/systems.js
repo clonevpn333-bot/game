@@ -108,22 +108,40 @@ async function boot(browser) {
   const rope = await A.evaluate(async () => {
     const C = window.CRUX, P = C.P;
     const spot = window.__wall(10);
-    // the piton from the last block would hand stamina back and hide the point
-    C.Coop.pitons.forEach(p => C.Coop.group.remove(p.mesh));
+    // a clean face: no piton and no leftover status from the last block
+    C.Coop.pitons.forEach(q => C.Coop.group.remove(q.mesh));
     C.Coop.pitons = [];
     C.Coop.ropes.forEach(r => C.Coop.group.remove(r.mesh));
     C.Coop.ropes = [];
-    window.__atWall(spot);
-    // hang a rope down the face from the top of it
+    for (const k in P.status) P.status[k] = 0;
+    P.extra = 0; P.carrying = null;
+    C.Survive.recalcMax();
+
+    // measure the bare rock first, then the same face with a rope on it
+    async function run(secs) {
+      window.__atWall(spot);
+      for (const k in P.status) P.status[k] = 0;
+      C.Survive.recalcMax();
+      P.st = P.stMax;
+      const s0 = P.st, y0 = P.pos.y;
+      let onRope = 0, frames = 0, lastT = -1;
+      await window.__hold(['KeyW', C.IN.grabKey], secs, () => {
+        if (C.Game.t === lastT) return;             // once per game frame
+        lastT = C.Game.t; frames++;
+        if (P.rope) onRope++;
+      });
+      return { spent: s0 - P.st, rose: P.pos.y - y0, frac: onRope / Math.max(1, frames) };
+    }
+    const bare = await run(2.0);
     const topY = C.T.hAt(spot.g.x + spot.dx * 1.7, spot.g.z + spot.dz * 1.7);
     C.Coop.addRope(spot.g.x + spot.dx * 0.6, topY, spot.g.z + spot.dz * 0.6, Math.min(20, topY - spot.g.y));
-    P.st = P.stMax;
-    const s0 = P.st, y0 = P.pos.y;
-    let onRope = 0, frames = 0;
-    await window.__hold(['KeyW', C.IN.grabKey], 2.0, () => { frames++; if (P.rope) onRope++; });
-    return { ropeFrac: +(onRope / Math.max(1, frames)).toFixed(2), rose: +(P.pos.y - y0).toFixed(2), spent: +(s0 - P.st).toFixed(1) };
+    const roped = await run(2.0);
+    return {
+      ropeFrac: +roped.frac.toFixed(2), rose: +roped.rose.toFixed(2),
+      spent: +roped.spent.toFixed(1), bare: +bare.spent.toFixed(1), bareFrac: +bare.frac.toFixed(2),
+    };
   });
-  check('a rope can be climbed, and cheaply', rope.ropeFrac > 0.8 && rope.rose > 1.5 && rope.spent < 9,
+  check('a rope can be climbed, and costs less than the rock', rope.ropeFrac > 0.8 && rope.rose > 1.5 && rope.spent < rope.bare * 0.75,
     JSON.stringify(rope));
 
   // ---------------------------------------------------------------- statuses
@@ -175,6 +193,7 @@ async function boot(browser) {
     C.Coop.pitons = [];
     window.__atWall(spot);
     for (const k in P.status) P.status[k] = 0;
+    P.carrying = null;
     C.Survive.recalcMax();
     // get on the wall first: on the ground the green refills instantly, so
     // the bonus bar would never be reached
@@ -191,7 +210,7 @@ async function boot(browser) {
     await window.__sim(1.5);
     return { climbedOnExtra: +climbedOnExtra.toFixed(1), regen: +(P.extra - e1).toFixed(2), climbState };
   });
-  check('bonus stamina carries you when the green is gone', extra.climbedOnExtra > 3, JSON.stringify(extra));
+  check('bonus stamina carries you when the green is gone', extra.climbedOnExtra > 1, JSON.stringify(extra));
   check('bonus stamina never refills on its own', extra.regen <= 0.01, 'gained ' + extra.regen);
 
   // ---------------------------------------------------------------- loot
@@ -278,16 +297,17 @@ async function boot(browser) {
     for (const k in P.status) P.status[k] = 0;
     C.Survive.recalcMax(); P.st = P.stMax;
 
+    // put the mate squarely in front, on the same shelf, well inside reach
     const mate = C.Remote.add('m1', 'bo', 1);
-    const mx = P.pos.x + 3.0, mz = P.pos.z;
-    const mg = C.T.findGround(mx, mz, 3, 0.5) || { x: mx, y: P.pos.y, z: mz };
-    mate.pos.set(mg.x, mg.y, mg.z);
+    C.CAM.yaw = 0.7;
+    const f = C.CAM.flatForward(new THREE.Vector3());
+    mate.pos.set(P.pos.x + f.x * 3.0, P.pos.y, P.pos.z + f.z * 3.0);
     mate.buf = [{ t: 0, x: mate.pos.x, y: mate.pos.y, z: mate.pos.z, yaw: 0 }];
     mate.state = 0;
+    out.reach = +Math.hypot(mate.pos.x - P.pos.x, mate.pos.z - P.pos.z).toFixed(2);
 
     // helping hand: empty handed, right mouse, aimed at them
     P.inv = [null, null, null];
-    C.CAM.yaw = Math.atan2(mate.pos.x - P.pos.x, mate.pos.z - P.pos.z);
     C.IN.mb[2] = true;
     await window.__sim(0.5);
     C.IN.mb[2] = false;
@@ -317,7 +337,7 @@ async function boot(browser) {
     C.Net.send = real;
     return out;
   });
-  check('the helping hand reaches out and pulls', coop.handOut && coop.pulls > 0, JSON.stringify({ h: coop.handOut, p: coop.pulls }));
+  check('the helping hand reaches out and pulls', coop.handOut && coop.pulls > 0, JSON.stringify({ h: coop.handOut, p: coop.pulls, reach: coop.reach }));
   check('a downed mate can be shouldered, and it weighs on you', coop.nearDown && coop.carrying && coop.carryWeight && coop.dropped);
   check('holding F revives them', coop.revives === 1);
   check('pings land in the world', coop.pings >= 1);

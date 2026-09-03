@@ -6,20 +6,21 @@ var CAM = {
   yaw: 0, pitch: -0.12, dist: 4.7, want: 4.7, first: false,
   pos: new THREE.Vector3(), look: new THREE.Vector3(),
   smoothTgt: new THREE.Vector3(), lift: 0, side: 0, shake: 0, shakeT: 0,
-  fovBase: 76, fov: 76, wallBias: 0,
+  fovBase: 70, fovClimb: 40, fov: 70, wallBias: 0,
+  bobAmt: 1, bobT: 0, shakeScale: 1, climbFov: 0,
 };
 var _hit = { x: 0, y: 0, z: 0, d: 0, hit: false };
 var _cdir = new THREE.Vector3(), _ctgt = new THREE.Vector3();
 
 CAM.applyMouse = function (dx, dy) {
-  CAM.yaw -= dx * IN.sens;
-  CAM.pitch -= dy * IN.sens * (IN.invert ? -1 : 1);
+  CAM.yaw -= dx * IN.sensX * (IN.invX ? -1 : 1);
+  CAM.pitch -= dy * IN.sensY * (IN.invY ? -1 : 1);
   CAM.pitch = clamp(CAM.pitch, -1.42, 1.36);
   if (CAM.yaw > Math.PI) CAM.yaw -= Math.PI * 2;
   if (CAM.yaw < -Math.PI) CAM.yaw += Math.PI * 2;
 };
 
-CAM.kick = function (amt) { CAM.shake = Math.min(1.4, CAM.shake + amt); };
+CAM.kick = function (amt) { CAM.shake = Math.min(1.4, CAM.shake + amt * CAM.shakeScale); };
 
 CAM.update = function (cam, P, dt) {
   var cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
@@ -37,7 +38,11 @@ CAM.update = function (cam, P, dt) {
   _ctgt.set(tx, ty, tz);
   CAM.smoothTgt.lerp(_ctgt, 1 - Math.exp(-22 * dt));
 
-  var fovT = CAM.fovBase + (P.sprinting ? 6 : 0) + clamp(-P.vel.y * 0.55, 0, 13);
+  // the view opens up on the wall, the way PEAK's climbing FOV does
+  var onWall = (P.state === ST.CLIMB || P.state === ST.SLIP) ? 1 : 0;
+  CAM.climbFov = damp(CAM.climbFov, onWall, 3.5, dt);
+  var fovT = CAM.fovBase + CAM.fovClimb * CAM.climbFov
+    + (P.sprinting ? 5 : 0) + clamp(-P.vel.y * 0.5, 0, 12) * CAM.shakeScale;
   CAM.fov = damp(CAM.fov, fovT, 6, dt);
   if (Math.abs(cam.fov - CAM.fov) > 0.05) { cam.fov = CAM.fov; cam.updateProjectionMatrix(); }
 
@@ -47,7 +52,7 @@ CAM.update = function (cam, P, dt) {
   } else {
     var want = CAM.want + (P.state === ST.CLIMB ? 0.8 : 0) + (P.carrying ? 0.5 : 0);
     // shoulder offset keeps the body out of the middle of the screen
-    var rx = Math.cos(CAM.yaw), rz = -Math.sin(CAM.yaw);
+    var rx = -Math.cos(CAM.yaw), rz = Math.sin(CAM.yaw);
     var ox = rx * 0.55, oz = rz * 0.55;
     var bx = CAM.smoothTgt.x + ox, by = CAM.smoothTgt.y + 0.18, bz = CAM.smoothTgt.z + oz;
     var dx = -_cdir.x, dy = -_cdir.y, dz = -_cdir.z;
@@ -98,6 +103,16 @@ CAM.update = function (cam, P, dt) {
   // showing the body just fills the screen with a backpack
   CAM.hideBody = CAM.first || CAM.dist < 2.0;
 
+  // head bob, and a switch to take it away for anyone it bothers
+  if (CAM.bobAmt > 0.01 && P.state === ST.GROUND) {
+    var spd = Math.hypot(P.vel.x, P.vel.z);
+    CAM.bobT += dt * (3.0 + spd * 1.5);
+    var amp = clamp(spd / K.SPRINT, 0, 1) * 0.06 * CAM.bobAmt;
+    CAM.pos.y += Math.sin(CAM.bobT * 2) * amp;
+    CAM.pos.x += -Math.cos(CAM.yaw) * Math.sin(CAM.bobT) * amp * 0.6;
+    CAM.pos.z += Math.sin(CAM.yaw) * Math.sin(CAM.bobT) * amp * 0.6;
+  }
+
   if (CAM.shake > 0.002) {
     CAM.shakeT += dt * 34;
     var s = CAM.shake * 0.16;
@@ -118,4 +133,7 @@ CAM.forward = function (out) {
   return out;
 };
 CAM.flatForward = function (out) { out.set(Math.sin(CAM.yaw), 0, Math.cos(CAM.yaw)).normalize(); return out; };
-CAM.flatRight = function (out) { out.set(Math.cos(CAM.yaw), 0, -Math.sin(CAM.yaw)).normalize(); return out; };
+// right = forward x up.  This had the sign flipped, which mirrored strafe:
+// D walked left.  Verified against the quaternion three.js builds for the
+// same look direction.
+CAM.flatRight = function (out) { out.set(-Math.cos(CAM.yaw), 0, Math.sin(CAM.yaw)).normalize(); return out; };

@@ -200,7 +200,7 @@ function placeHands() {
     P.handOn = true;
     return;
   }
-  var rx = -w.nz, rz = w.nx;
+  var rx = w.nz, rz = -w.nx;
   var ph = P.fig ? P.fig.phase : 0;
   var sw = Math.sin(ph) * 0.26;
   var ox = w.cx + w.nx * 0.1, oz = w.cz + w.nz * 0.1;
@@ -218,7 +218,9 @@ function moveClimb(dt, mx, mz) {
     if (mz > 0) P.stats.climbed += mz * rs * dt;
     return;
   }
-  var rx = -w.nz, rz = w.nx;
+  // the climber faces into the wall (-n), so their right along the face is
+  // (n.z, -n.x); the mirrored version of this made D climb left
+  var rx = w.nz, rz = -w.nx;
   var moving = Math.abs(mz) > 0.05 || Math.abs(mx) > 0.05;
   P.climbing = moving;
 
@@ -370,11 +372,21 @@ P.update = function (dt) {
     } else if (P.pos.y <= gh + 0.001) {
       var wasAir = !P.grounded, drop = P.fallFrom - gh;
       P.pos.y = gh;
-      P.vel.y = 0;
-      P.grounded = true;
-      P.state = ST.GROUND;
-      P.fallFrom = P.pos.y;
-      if (wasAir) Survive.land(drop);
+      var cap = wasAir && drop > 1.5 ? Props.bounceAt(P.pos.x, gh, P.pos.z) : null;
+      if (cap) {
+        // a springy cap takes the whole landing and gives it back
+        P.vel.y = clamp(6 + drop * 0.55, 6, 17);
+        P.state = ST.AIR; P.grounded = false;
+        P.fallFrom = P.pos.y;
+        FX.puff(P.pos.x, gh + 0.2, P.pos.z, 8, 0xe06aa8);
+        CAM.kick(0.2);
+      } else {
+        P.vel.y = 0;
+        P.grounded = true;
+        P.state = ST.GROUND;
+        P.fallFrom = P.pos.y;
+        if (wasAir) Survive.land(drop);
+      }
     } else {
       P.grounded = false;
       if (P.pos.y > P.fallFrom) P.fallFrom = P.pos.y;
