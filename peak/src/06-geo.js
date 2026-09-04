@@ -13,6 +13,30 @@ var _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler
 var _v3 = new THREE.Vector3(), _v3b = new THREE.Vector3();
 
 // parts: [{g, c, p:[x,y,z], r:[rx,ry,rz], s:[sx,sy,sz]|number}]
+// A box with its edges taken off.  Every hard-edged prop and every limb on a
+// scout is built from these: a chamfer is three extra strips of triangles and
+// it is the difference between a shape that reads as a solid object and one
+// that reads as a cube.  The bevel catches the sun along every edge, which is
+// most of what makes flat-shaded geometry look built rather than blocked out.
+function roundBox(w, h, d, bev, seg) {
+  var b = Math.min(bev === undefined ? 0.05 : bev, w * 0.49, h * 0.49, d * 0.49);
+  var g = new THREE.BoxGeometry(w, h, d, seg || 2, seg || 2, seg || 2).toNonIndexed();
+  var p = g.attributes.position.array;
+  var hx = w / 2 - b, hy = h / 2 - b, hz = d / 2 - b;
+  // Pull every vertex back onto the inner box, then push it out by the bevel
+  // radius.  Faces that share an edge hold coincident vertices, and the same
+  // map sends both copies to the same place, so the shell stays closed.
+  for (var i = 0; i < p.length; i += 3) {
+    var cx = clamp(p[i], -hx, hx), cy = clamp(p[i + 1], -hy, hy), cz = clamp(p[i + 2], -hz, hz);
+    var dx = p[i] - cx, dy = p[i + 1] - cy, dz = p[i + 2] - cz;
+    var l = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (l < 1e-6) continue;
+    p[i] = cx + dx / l * b; p[i + 1] = cy + dy / l * b; p[i + 2] = cz + dz / l * b;
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
 function mergeParts(parts) {
   var geos = [], total = 0, i, pt, g;
   for (i = 0; i < parts.length; i++) {

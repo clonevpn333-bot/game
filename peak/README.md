@@ -124,7 +124,9 @@ miserable. Rebind it in the options panel.
 ## Look and camera settings
 
 The options panel opens from the title screen **and from the pause screen**, so
-you can tune the feel without leaving a run. Everything persists.
+you can tune the feel without leaving a run. It starts expanded — the
+sensitivity slider is the first thing under the controls list, not behind a
+click. Everything persists.
 
 | setting | range | default |
 |---|---|---|
@@ -142,6 +144,52 @@ vertical axis is a multiplier on top of the horizontal rather than a separate
 number, which keeps the two in step when you change the main slider. The FOV
 pair matches PEAK's: a base field of view and a separate amount it opens by
 while you are on a wall.
+
+## How it looks
+
+The art is low-poly and flat-shaded on purpose, but low-poly is not the same as
+bare. Four things carry it:
+
+**Occlusion.** Every vertex of the terrain asks how much sky it can actually
+see — eight directions, six distances each — and that answer is baked into its
+colour. Gullies and the undersides of overhangs go dark, ridges stay bright.
+Without it a field of flat facets reads as flat paper no matter how many
+facets you give it.
+
+**Grain.** A tiling noise map is projected down all three world axes and
+blended by the face normal, so a vertical cliff gets the same density of
+detail as the shelf above it instead of a smeared streak. It is sampled at two
+scales: one for the shape of the rock, one for the bite up close.
+
+**Beds.** Rock is laid down in layers, so the shading is banded by height —
+warped, so the beds are not dead level, and strongest on steep faces where a
+real bed would be exposed. Underneath that, a broad drift of light and shade
+picks the second palette tone in coherent patches. That one matters on flat
+ground, where the beds are edge-on and show nothing.
+
+**Ratio.** The sky used to light the island nearly as hard as the sun, which
+is the surest way to make a scene look flat: with no ratio between them,
+nothing has a lit side and a dark side. The sun now runs about three and a
+half times the ambient, through filmic tone mapping so the highlights roll off
+instead of clipping.
+
+The render mesh is subdivided finer than the height field it stands on, with a
+high-frequency wobble the collision field never sees — gameplay reads the
+coarse field, so the detail can never narrow a shelf you have to stand on.
+Detail: low drops the subdivision and halves the shadow map.
+
+Scouts are built from bevelled boxes rather than plain ones; the chamfer costs
+a few triangles per limb and catches the sun along every edge. They walk with
+a twist through the waist and their weight rolling onto the planted foot, they
+absorb a landing through the knees, their heads hold their own line while the
+body works underneath, and the scarf is a chain of three damped springs, so it
+keeps moving after they stop.
+
+**Hands grip.** A climbing hand holds one world position while the body climbs
+past it, then lets go and arcs to a new hold, with the two hands half a cycle
+apart so there is always one on the rock. The body leans onto whichever hand
+is bearing weight, and lies down against a slab or stands off a vertical face
+depending on what it is actually on.
 
 ## Multiplayer
 
@@ -192,6 +240,12 @@ It loads the game, spawns in, and drives it:
 - sensitivity scales the turn, the two inverts work independently, the vertical
   multiplier is its own, and the field of view opens on the wall
 - all ten biomes exist, every one gets rolled, and a run is six slots
+- the render mesh is subdivided past the height field, occlusion gives the rock
+  a real tonal range, the grain map carries contrast, and the triplanar shader
+  patch actually found its anchors (a silent miss falls back to sampling a uv
+  attribute that is not there, and flat-tints the whole island)
+- the sun out-lights the sky it works against
+- a climbing hand grips its hold instead of sliding, and the camp flag moves
 - the camera never ends up inside the rock, over 42 random placements
 - no loot or suitcase is floating in the air or sunk in the rock
 - no console or page errors throughout
@@ -204,12 +258,12 @@ It loads the game, spawns in, and drives it:
 | `02-noise` | seeded gradient noise, fbm, ridged noise |
 | `03-terrain` | height field: radial profile, domain warp, terracing, the caldera crown, camp placement |
 | `04-tquery` | height / normal / surface queries, ray marching, and the placement rules everything spawns through |
-| `05-tmesh` | flat-shaded terrain in three draw groups (matte, icy, glowing) |
-| `06-geo` | primitive merging, lumpy rocks, spatially bucketed instancing |
+| `05-tmesh` | terrain mesh: subdivision, baked occlusion, strata, and the triplanar grain shader |
+| `06-geo` | primitive merging, bevelled boxes, lumpy rocks, spatially bucketed instancing |
 | `07-scenery` | per-zone props and boulder collision |
 | `08-items` | the item table with weights, suitcases, loose loot |
 | `09-landmarks` | crash site, campfires, fog walls, the flare stand |
-| `10-figure` | the scouts: round heads, flat-shape faces, two-bone reach so mittens land on the rock |
+| `10-figure` | the scouts: round heads, flat-shape faces, two-bone reach, spring scarf, walk and climb cycles |
 | `11-input` | keyboard, mouse, pointer lock, the rebindable grab key |
 | `12-camera` | third/first person rig that lifts over obstructions instead of clipping |
 | `13-player` | walking, falling, and the grab-only climbing system |

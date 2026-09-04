@@ -178,6 +178,7 @@ Survive.knockOut = function (cause) {
 };
 
 Survive.land = function (drop) {
+  if (P.fig) P.fig.land(clamp((drop - 0.8) / 7, 0, 1));
   if (drop < 1.2) return;
   FX.puff(P.pos.x, P.pos.y + 0.05, P.pos.z, Math.min(14, 3 + drop | 0), 0xd8d0c0);
   CAM.kick(clamp(drop / 26, 0.02, 0.55));

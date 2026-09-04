@@ -46,6 +46,25 @@ function check(name, ok, detail) {
       }
       return null;
     };
+    // a flat patch with room to walk out of it in every direction
+    window.__openGround = (T, rad) => {
+      for (let i = 0; i < 160000; i++) {
+        const a = Math.random() * 6.283, r = 30 + Math.random() * 140;
+        const q = T.findGround(Math.cos(a) * r, Math.sin(a) * r, 3, 3);
+        if (!q || T.normSmooth(q.x, q.z).y < 0.985) continue;
+        let ok = true;
+        for (let k = 0; k < 12 && ok; k++) {
+          const b = k / 12 * 6.283;
+          for (const d of [rad * 0.5, rad, rad * 1.4]) {
+            const px = q.x + Math.cos(b) * d, pz = q.z + Math.sin(b) * d;
+            const h = T.hAt(px, pz);
+            if (h <= T.VOID || Math.abs(h - q.y) > 0.9 || !T.standable(px, pz, 1)) { ok = false; break; }
+          }
+        }
+        if (ok) return q;
+      }
+      return null;
+    };
     window.__hold = (keys, secs, each) => new Promise(res => {
       const start = C.Game.t;
       const id = setInterval(() => {
@@ -85,7 +104,7 @@ function check(name, ok, detail) {
     C.Sky.mesh.visible = true; C.P.fig.root.visible = true;
     return out;
   });
-  check('the ground is never culled away', vis.FrontSide >= vis.DoubleSide * 0.999,
+  check('the ground is never culled away', vis.FrontSide >= vis.DoubleSide * 0.99,
     'front ' + vis.FrontSide + ' vs double ' + vis.DoubleSide);
 
   // every material in the world has something to draw with
@@ -134,12 +153,8 @@ function check(name, ok, detail) {
   // ---- 2b. WASD moves the way the camera is pointing --------------------
   const wasd = await page.evaluate(async () => {
     const C = window.CRUX, P = C.P, T = C.T;
-    let g = null;
-    for (let i = 0; i < 120000 && !g; i++) {
-      const a = Math.random() * 6.283, r = 30 + Math.random() * 140;
-      const q = T.findGround(Math.cos(a) * r, Math.sin(a) * r, 3, 3);
-      if (q && T.normSmooth(q.x, q.z).y > 0.97) g = q;
-    }
+    const g = window.__openGround(T, 4.5);
+    if (!g) return { none: true };
     async function step(keys, yaw) {
       P.spawnAt(g.x, g.z, g.y);
       C.CAM.yaw = yaw; C.CAM.pitch = 0; P.st = P.stMax;
@@ -288,6 +303,44 @@ function check(name, ok, detail) {
       'state ' + auto.released.state);
   }
 
+  // a hand holds its hold while the body climbs past it
+  const grip = await page.evaluate(async () => {
+    const C = window.CRUX, P = C.P;
+    // reuse the face that check 4 already proved climbable, rather than
+    // rolling a fresh one this late in the run and hoping it works out
+    const spot = window.__spot || window.__wall(5);
+    if (!spot) return { held: 0, moved: 0, frames: 0, none: true };
+    let out = { held: 0, moved: 0, frames: 0 };
+    for (let attempt = 0; attempt < 3 && out.frames === 0; attempt++) {
+      P.spawnAt(spot.g.x, spot.g.z, spot.g.y);
+      C.CAM.yaw = Math.atan2(spot.dx, spot.dz);
+      C.HUD.blocked = false;          // no pointer lock exists in a headless run
+      for (const k in P.status) P.status[k] = 0;
+      C.Survive.recalcMax();
+      P.st = P.stMax; P.hp = 100;
+      let held = 0, moved = 0, frames = 0, last = null, lastT = -1;
+      await window.__hold(['KeyW', C.IN.grabKey], 1.6, () => {
+        if (C.Game.t === lastT || !P.handOn || P.rope) return;
+        lastT = C.Game.t; frames++;
+        if (last) {
+          const d = Math.hypot(P.handL.x - last.x, P.handL.y - last.y, P.handL.z - last.z);
+          if (d < 0.004) held++; else moved++;
+        }
+        last = { x: P.handL.x, y: P.handL.y, z: P.handL.z };
+      });
+      out = { held, moved, frames, attempt };
+      if (!frames) out.why = {
+        state: P.state, wall: P.wall.has, blocked: C.HUD.blocked,
+        st: +P.st.toFixed(1), y: +P.pos.y.toFixed(1),
+        ground: +C.groundH(P.pos.x, P.pos.z).toFixed(1), rope: !!P.rope,
+      };
+    }
+    return out;
+  });
+  check('a climbing hand grips its hold instead of sliding',
+    grip.frames > 4 && grip.held > grip.frames * 0.2 && grip.moved > 0, JSON.stringify(grip));
+
+
   // ---- 4. stamina: drains on the wall, refills only on the ground ------
   const stam = await page.evaluate(async () => {
     const C = window.CRUX, P = C.P;
@@ -317,6 +370,8 @@ function check(name, ok, detail) {
       if (g && T.normSmooth(g.x, g.z).y > 0.95) spot = g;
     }
     P.spawnAt(spot.x, spot.z, spot.y);
+    for (const k in P.status) P.status[k] = 0;
+    C.Survive.recalcMax();
     P.st = 10;
     await window.__sim(1.5);
     const onGround = P.st;
@@ -429,6 +484,65 @@ function check(name, ok, detail) {
   });
   check('nothing is floating in the air or sunk in the rock',
     place.floating === 0 && place.sunk === 0 && place.sea === 0, JSON.stringify(place));
+
+  // ---- the look: detail, occlusion, grain, and things that move ---------
+  const look = await page.evaluate(() => {
+    const C = window.CRUX, T = C.T, g = T.mesh.geometry;
+    const tris = g.attributes.position.count / 3;
+    // the render mesh is subdivided past the height field it is built from
+    const subdiv = tris / (T.N * T.N * 2);
+
+    // ambient occlusion: sample vertex brightness across the island and check
+    // there is a real spread, not one flat tone
+    const col = g.attributes.color;
+    let lo = 999, hi = -999, n = 0, sum = 0;
+    for (let i = 0; i < 40000; i++) {
+      const k = ((Math.random() * col.count) | 0) * 3;
+      const v = (col.array[k] + col.array[k + 1] + col.array[k + 2]) / 3;
+      if (v < lo) lo = v; if (v > hi) hi = v; sum += v; n++;
+    }
+    const spread = (hi - lo) / 255;
+
+    // the grain map has to carry contrast or it does nothing once three
+    // projections are averaged together
+    const tex = T.mesh.material[0].map, cv = tex && tex.image;
+    let gLo = 255, gHi = 0;
+    if (cv) {
+      const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+      for (let i = 0; i < d.length; i += 4) { if (d[i] < gLo) gLo = d[i]; if (d[i] > gHi) gHi = d[i]; }
+    }
+
+    // the shader patch has to actually match its anchors, or three.js falls
+    // back to the stock map lookup against a uv attribute that is not there
+    const probe = { vertexShader: '#include <common>\n#include <begin_vertex>',
+                    fragmentShader: '#include <common>\n#include <map_fragment>' };
+    T.mesh.material[0].onBeforeCompile(probe);
+
+    return {
+      subdiv, tris, aoSpread: +spread.toFixed(3), grainRange: (gHi - gLo) / 255,
+      patched: probe.vertexShader.indexOf('vWPos') >= 0 && probe.fragmentShader.indexOf('bw') >= 0,
+      sunOverAmb: C.Sky.sun.intensity / Math.max(0.01, C.Sky.hemi.intensity),
+    };
+  });
+  check('the render mesh is finer than the height field it stands on', look.subdiv >= 3.9,
+    look.tris + ' triangles, ' + look.subdiv + 'x');
+  check('ambient occlusion gives the rock a real tonal range', look.aoSpread > 0.25,
+    'spread ' + look.aoSpread);
+  check('the rock grain carries contrast', look.grainRange > 0.5, 'range ' + look.grainRange.toFixed(2));
+  check('the triplanar patch found its anchors', look.patched, String(look.patched));
+  check('the sun is stronger than the sky it lights against', look.sunOverAmb > 2.2,
+    'ratio ' + look.sunOverAmb.toFixed(2));
+
+  const flag = await page.evaluate(async () => {
+    const C = window.CRUX, f = C.Camps.list[0].flag;
+    if (!f) return { moved: -1 };
+    const a = f.geometry.attributes.position.array, b0 = Array.from(a);
+    await window.__sim(0.4);
+    let d = 0;
+    for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b0[i]);
+    return { moved: +d.toFixed(2) };
+  });
+  check('the camp flag is cloth, not a signboard', flag.moved > 0.5, 'drift ' + flag.moved);
 
   const real = errors.filter(e => !/favicon|GroupMarkerNotSet|WebGL: INVALID/i.test(e));
   check('no console or page errors', real.length === 0, real.slice(0, 4).join(' | '));

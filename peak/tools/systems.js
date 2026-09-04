@@ -325,7 +325,13 @@ async function boot(browser) {
     C.Coop.dropCarried();
     out.dropped = P.carrying === null;
 
+    // stand back over them and face them: this check is about what holding F
+    // does, not about where dropCarried happens to leave someone on a slope
+    mate.state = 4;
+    P.pos.set(mate.pos.x - 1.0, mate.pos.y, mate.pos.z);
+    C.CAM.yaw = Math.atan2(mate.pos.x - P.pos.x, mate.pos.z - P.pos.z);
     P.reviveT = 0; C.Survive.holdF = 0;
+    out.downNear = !!C.Coop.nearestDown(3.4);
     await window.__hold(['KeyF'], C.K.REVIVE_T + 0.6);
     out.revives = sent.filter(m => m.t === 'rev').length;
 
@@ -339,7 +345,7 @@ async function boot(browser) {
   });
   check('the helping hand reaches out and pulls', coop.handOut && coop.pulls > 0, JSON.stringify({ h: coop.handOut, p: coop.pulls, reach: coop.reach }));
   check('a downed mate can be shouldered, and it weighs on you', coop.nearDown && coop.carrying && coop.carryWeight && coop.dropped);
-  check('holding F revives them', coop.revives === 1);
+  check('holding F revives them', coop.revives === 1, JSON.stringify({ revives: coop.revives, near: coop.downNear }));
   check('pings land in the world', coop.pings >= 1);
 
   // ---------------------------------------------------------------- camps

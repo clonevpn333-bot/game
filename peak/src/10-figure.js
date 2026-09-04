@@ -16,10 +16,10 @@ function Figure(slot, tone) {
   this.hips = new G(); this.hips.position.y = 0.62; this.body.add(this.hips);
 
   var torso = new THREE.Mesh(mergeParts([
-    { g: new THREE.BoxGeometry(0.56, 0.6, 0.38), c: gear, p: [0, 0.3, 0] },
-    { g: new THREE.BoxGeometry(0.58, 0.14, 0.4), c: dark, p: [0, 0.1, 0] },
-    { g: new THREE.BoxGeometry(0.42, 0.4, 0.24), c: shadeHex(gear, 0.42), p: [0, 0.36, -0.29] },
-    { g: new THREE.BoxGeometry(0.3, 0.1, 0.1), c: 0xd9b06a, p: [0, 0.48, -0.42] },
+    { g: roundBox(0.56, 0.6, 0.38), c: gear, p: [0, 0.3, 0] },
+    { g: roundBox(0.58, 0.14, 0.4), c: dark, p: [0, 0.1, 0] },
+    { g: roundBox(0.42, 0.4, 0.24), c: shadeHex(gear, 0.42), p: [0, 0.36, -0.29] },
+    { g: roundBox(0.3, 0.1, 0.1), c: 0xd9b06a, p: [0, 0.48, -0.42] },
   ]), MAT.solid);
   torso.castShadow = true;
   this.hips.add(torso);
@@ -28,7 +28,7 @@ function Figure(slot, tone) {
   var head = new THREE.Mesh(mergeParts([
     { g: new THREE.IcosahedronGeometry(0.36, 1), c: skin, p: [0, 0.3, 0] },
     { g: new THREE.TorusGeometry(0.25, 0.09, 5, 10), c: gear, p: [0, 0.03, 0], r: [1.57, 0, 0] },
-    { g: new THREE.BoxGeometry(0.16, 0.32, 0.1), c: gear, p: [0.12, -0.05, -0.22], r: [0.3, 0, 0.2] },
+    { g: roundBox(0.16, 0.32, 0.1), c: gear, p: [0.12, -0.05, -0.22], r: [0.3, 0, 0.2] },
     { g: new THREE.SphereGeometry(0.29, 8, 5, 0, 6.283, 0, 1.1), c: dark, p: [0, 0.36, 0] },
   ]), MAT.solid);
   head.castShadow = true;
@@ -48,13 +48,13 @@ function Figure(slot, tone) {
     var sh = new G();
     sh.position.set(side * 0.34, 0.52, 0);
     var up = new THREE.Mesh(mergeParts([
-      { g: new THREE.BoxGeometry(0.17, UP, 0.17), c: gear, p: [0, -UP / 2, 0] },
+      { g: roundBox(0.17, UP, 0.17), c: gear, p: [0, -UP / 2, 0] },
     ]), MAT.solid);
     up.castShadow = true;
     sh.add(up);
     var el = new G(); el.position.y = -UP; sh.add(el);
     var fo = new THREE.Mesh(mergeParts([
-      { g: new THREE.BoxGeometry(0.15, LO, 0.15), c: dark, p: [0, -LO / 2, 0] },
+      { g: roundBox(0.15, LO, 0.15), c: dark, p: [0, -LO / 2, 0] },
       { g: new THREE.IcosahedronGeometry(0.21, 0), c: gear, p: [0, -LO - 0.12, 0.02] },
     ]), MAT.solid);
     fo.castShadow = true;
@@ -67,13 +67,13 @@ function Figure(slot, tone) {
   function leg(side) {
     var hp = new G();
     hp.position.set(side * 0.15, 0.02, 0);
-    var th = new THREE.Mesh(mergeParts([{ g: new THREE.BoxGeometry(0.21, 0.32, 0.21), c: pants, p: [0, -0.16, 0] }]), MAT.solid);
+    var th = new THREE.Mesh(mergeParts([{ g: roundBox(0.21, 0.32, 0.21), c: pants, p: [0, -0.16, 0] }]), MAT.solid);
     th.castShadow = true;
     hp.add(th);
     var kn = new G(); kn.position.y = -0.32; hp.add(kn);
     var sh2 = new THREE.Mesh(mergeParts([
-      { g: new THREE.BoxGeometry(0.19, 0.28, 0.19), c: shadeHex(pants, 0.85), p: [0, -0.14, 0] },
-      { g: new THREE.BoxGeometry(0.23, 0.14, 0.3), c: boot, p: [0, -0.32, 0.04] },
+      { g: roundBox(0.19, 0.28, 0.19), c: shadeHex(pants, 0.85), p: [0, -0.14, 0] },
+      { g: roundBox(0.23, 0.14, 0.3), c: boot, p: [0, -0.32, 0.04] },
     ]), MAT.solid);
     sh2.castShadow = true;
     kn.add(sh2);
@@ -82,11 +82,39 @@ function Figure(slot, tone) {
   this.lL = leg(1); this.lR = leg(-1);
   this.hips.add(this.lL.hp, this.lR.hp);
 
+  // A scarf in the slot colour, three segments long, each lagging the one
+  // above it.  It costs almost nothing and it is the only thing on a scout
+  // that keeps moving after they stop, which is what sells the weight.
+  this.scarf = [];
+  var par = this.neck, len = [0.26, 0.23, 0.19], wd = [0.19, 0.165, 0.13];
+  for (var si = 0; si < 3; si++) {
+    var seg = new G();
+    seg.position.set(0, si === 0 ? 0.02 : -len[si - 1], si === 0 ? -0.16 : 0);
+    var m = new THREE.Mesh(mergeParts([
+      { g: roundBox(wd[si], len[si], 0.075, 0.03), c: si & 1 ? dark : gear, p: [0, -len[si] / 2, 0] },
+    ]), MAT.solid);
+    m.castShadow = true;
+    seg.add(m);
+    par.add(seg);
+    par = seg;
+    this.scarf.push(seg);
+  }
+  this.scarfV = [0, 0, 0];
+  this.scarfA = [0, 0, 0];
+
   this.torchLight = null;
   this.held = null;
   this.phase = 0;
   this.reach = 0;
+  this.squash = 0;
+  this.lean = 0;
 }
+
+// Called when the scout hits the ground.  Knees and torso absorb it over the
+// next few tenths of a second instead of the body snapping to standing.
+Figure.prototype.land = function (force) {
+  this.squash = Math.max(this.squash, clamp(force, 0, 1));
+};
 
 Figure.prototype.setHeld = function (kind) {
   if (this.heldKind === kind) return;
@@ -129,6 +157,30 @@ Figure.prototype.aimArm = function (arm, worldTarget) {
 // state: ST.*; o carries the extras
 Figure.prototype.pose = function (dt, o) {
   var t = o.t, sp = o.speed || 0, s = o.state;
+  this.squash = Math.max(0, this.squash - dt * 3.4);
+  this.poseCore(dt, o);
+  this.poseScarf(dt, o);
+};
+
+// The scarf is a chain of three damped springs.  Each segment is pulled by
+// how fast the one above it turned, so a change of direction runs down the
+// scarf instead of the whole thing rotating as one board.
+Figure.prototype.poseScarf = function (dt, o) {
+  var sp = o.speed || 0, gust = Math.sin(o.t * 2.3) * 0.09 + Math.sin(o.t * 5.1) * 0.04;
+  var drive = clamp(sp / K.WALK, 0, 1.6) * 0.42 + gust + (o.state === ST.AIR ? 0.5 : 0);
+  var h = Math.min(dt, 0.05);
+  for (var i = 0; i < 3; i++) {
+    var tgt = drive * (0.5 + i * 0.28) + (i === 0 ? 0.22 : 0.1);
+    this.scarfA[i] += (tgt - this.scarfV[i]) * 44 * h;
+    this.scarfA[i] *= Math.exp(-9 * h);
+    this.scarfV[i] += this.scarfA[i] * h;
+    this.scarf[i].rotation.x = clamp(this.scarfV[i], -1.1, 1.3);
+    this.scarf[i].rotation.z = Math.sin(o.t * (1.7 + i * 0.5) + i) * 0.13 * (0.4 + drive);
+  }
+};
+
+Figure.prototype.poseCore = function (dt, o) {
+  var t = o.t, sp = o.speed || 0, s = o.state;
   var aL = this.aL, aR = this.aR, lL = this.lL, lR = this.lR;
   var b = this.body, hp = this.hips, nk = this.neck;
   var k;
@@ -154,9 +206,10 @@ Figure.prototype.pose = function (dt, o) {
     this.phase += dt * (o.climbing ? 3.0 : 0.7);
     k = this.phase;
     var sw = Math.sin(k);
-    b.rotation.x = -0.14;
+    var slab = clamp((o.wallNy || 0) / 0.82, 0, 1);
+    b.rotation.x = -0.14 - slab * 0.62;
     hp.rotation.set(0.08, 0, 0);
-    hp.position.y = 0.62 - 0.05 + Math.sin(k * 2) * 0.03;
+    hp.position.y = 0.62 - 0.05 + Math.sin(k * 2) * 0.03 - slab * 0.1;
 
     if (o.handL && o.handR) {
       this.aimArm(aL, o.handL);
@@ -168,11 +221,17 @@ Figure.prototype.pose = function (dt, o) {
       aL.el.rotation.set(-0.28, 0, 0); aR.el.rotation.set(-0.28, 0, 0);
     }
     var cw = Math.cos(k);
-    lL.hp.rotation.set(-0.5 + cw * 0.36, 0, 0.16);
-    lR.hp.rotation.set(-0.5 - cw * 0.36, 0, -0.16);
-    lL.kn.rotation.set(0.7 - cw * 0.28, 0, 0);
-    lR.kn.rotation.set(0.7 + cw * 0.28, 0, 0);
-    nk.rotation.set(-0.26, 0, 0);
+    // the body hangs off whichever hand is planted and swings to the other
+    this.lean = damp(this.lean, (o.grip || 0) * 0.5, 7, dt);
+    b.rotation.z = this.lean * 0.17;
+    hp.rotation.y = this.lean * 0.2;
+    hp.position.x = this.lean * 0.07;
+    // feet push in opposition to the hands, and the loaded leg straightens
+    lL.hp.rotation.set(-0.5 + cw * 0.42, 0, 0.16 + this.lean * 0.06);
+    lR.hp.rotation.set(-0.5 - cw * 0.42, 0, -0.16 + this.lean * 0.06);
+    lL.kn.rotation.set(clamp(0.72 - cw * 0.42, 0.05, 1.5), 0, 0);
+    lR.kn.rotation.set(clamp(0.72 + cw * 0.42, 0.05, 1.5), 0, 0);
+    nk.rotation.set(-0.26 + Math.sin(k * 2) * 0.05, this.lean * -0.22, 0);
     if (s === ST.SLIP) { b.rotation.x = 0.1; nk.rotation.x = 0.2; }
     if (o.tired) { hp.position.y += Math.sin(t * 21) * 0.012; }
     return;
@@ -212,14 +271,20 @@ Figure.prototype.pose = function (dt, o) {
   var s1 = Math.sin(k) * stride;
   var bob = Math.abs(Math.sin(k)) * 0.05 * stride;
 
-  hp.position.y = 0.62 + bob - (o.crouch ? 0.26 : 0);
-  b.rotation.x = run * 0.18 + (o.carrying ? 0.14 : 0);
-  hp.rotation.set(0, 0, 0);
+  var sq = this.squash * this.squash;
+  hp.position.y = 0.62 + bob - (o.crouch ? 0.26 : 0) - sq * 0.34;
+  b.rotation.x = run * 0.18 + (o.carrying ? 0.14 : 0) + sq * 0.3;
+  // a walk is a twist, not a slide: the hips lead, the shoulders answer, and
+  // the weight rolls onto whichever foot is down
+  var tw = Math.sin(k) * stride;
+  hp.rotation.set(0, tw * 0.17, Math.cos(k) * stride * 0.05);
+  hp.position.x = -Math.cos(k) * stride * 0.035;
+  b.rotation.y = -tw * 0.09;
 
-  lL.hp.rotation.set(s1 * 0.82, 0, 0.05);
-  lR.hp.rotation.set(-s1 * 0.82, 0, -0.05);
-  lL.kn.rotation.set(clamp(-s1 * 0.7 + 0.3, 0, 1.5), 0, 0);
-  lR.kn.rotation.set(clamp(s1 * 0.7 + 0.3, 0, 1.5), 0, 0);
+  lL.hp.rotation.set(s1 * 0.86, 0, 0.05);
+  lR.hp.rotation.set(-s1 * 0.86, 0, -0.05);
+  lL.kn.rotation.set(clamp(-s1 * 0.8 + 0.28 + sq * 1.1, 0, 1.6), 0, 0);
+  lR.kn.rotation.set(clamp(s1 * 0.8 + 0.28 + sq * 1.1, 0, 1.6), 0, 0);
 
   if (o.carrying) {
     aL.sh.rotation.set(-2.6, 0, 0.4); aR.sh.rotation.set(-2.6, 0, -0.4);
@@ -231,6 +296,8 @@ Figure.prototype.pose = function (dt, o) {
     aL.el.rotation.set(-0.28 - Math.max(0, s1) * 0.4, 0, 0);
     aR.el.rotation.set(-0.28 - Math.max(0, -s1) * 0.4, 0, 0);
   }
-  nk.rotation.set(-run * 0.1 + Math.sin(t * 1.1) * 0.03, 0, 0);
+  // the head holds its own line while the body works underneath it
+  nk.rotation.set(-run * 0.1 - b.rotation.x * 0.55 + Math.sin(t * 1.1) * 0.03,
+                  -b.rotation.y * 0.6, -hp.rotation.z * 0.5);
   b.rotation.z = o.cold ? Math.sin(t * 19) * 0.02 : 0;
 };

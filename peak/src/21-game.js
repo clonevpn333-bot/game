@@ -11,6 +11,8 @@ Game.init = function () {
   Game.renderer.setSize(window.innerWidth, window.innerHeight, false);
   Game.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   Game.renderer.outputEncoding = THREE.sRGBEncoding;
+  Game.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  Game.renderer.toneMappingExposure = 0.98;
   Game.renderer.shadowMap.enabled = true;
   Game.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   Game.renderer.setClearColor(0x10131a);
@@ -64,7 +66,7 @@ Game.buildWorld = function (seed, lootSeed, detail, done) {
     Run.roll(seed);                    // which biomes fill the middle slots
     T.build(seed);
     Wind.init(seed);
-    g.add(T.buildMesh());
+    g.add(T.buildMesh(detail));
     g.add(Props.build(seed, detail));
     g.add(Camps.build());
     g.add(Walls.build());
@@ -195,6 +197,8 @@ Game.loop = function (ts) {
     _figOpt.hand = P.handOutT > 0.4;
     _figOpt.handL = P.handOn ? P.handL : null;
     _figOpt.handR = P.handOn ? P.handR : null;
+    _figOpt.grip = P.handGrip;
+    _figOpt.wallNy = P.wall.has ? P.wall.ny : 0;
     P.fig.pose(dt, _figOpt);
     if (P.fig.torchLight) P.fig.torchLight.visible = !!P.torchOn;
 

@@ -78,7 +78,7 @@ Remote.update = function (dt, t) {
     a.fig.pose(dt, {
       t: t, speed: a.carriedBy ? 0 : a.speed, state: a.state,
       climbing: a.climbing, carrying: !!a.carrying, hand: a.hand,
-      cold: false, tired: a.st < 18, vy: 0,
+      cold: false, tired: a.st < 18, vy: 0, wallNy: 0, grip: Math.sin(t * 3 + a.slot) > 0 ? 1 : -1,
     });
     if (now() - a.last > 6) a.online = false;
   }

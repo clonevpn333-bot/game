@@ -87,7 +87,7 @@ canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
   opacity:.5;text-shadow:0 1px 3px #000}
 
 /* ---------- menus ---------- */
-#menu,#pause,#over{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+#menu,#pause,#over{position:fixed;inset:0;display:flex;align-items:safe center;justify-content:center;overflow-y:auto;padding:18px 0;
   background:radial-gradient(120% 90% at 50% 0%,#243044 0%,#10131a 62%);z-index:20}
 #pause,#over{background:rgba(9,11,16,.82);backdrop-filter:blur(7px)}
 .panel{width:min(520px,92vw);background:rgba(16,19,26,.92);border-radius:18px;padding:26px 28px 22px;
@@ -139,7 +139,7 @@ button{font-family:var(--ui);cursor:pointer;border:none;outline:none}
   background:rgba(255,255,255,.05);border-radius:8px;padding:7px 11px}
 .rost i{width:10px;height:10px;border-radius:3px;flex:none}
 .rost small{margin-left:auto;opacity:.42;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
-#opts{margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:11px;text-align:left}
+#opts{margin-top:16px;max-height:none;border-top:1px solid rgba(255,255,255,.08);padding-top:11px;text-align:left}
 #opts h4{font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.42;margin:14px 0 4px;font-weight:800}
 #pause-opts{margin-top:10px}
 #pause-opts #opts{border-top:none}

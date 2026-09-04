@@ -103,7 +103,7 @@ Sky.build = function (scene) {
   Sky.mesh.renderOrder = -10;
   scene.add(Sky.mesh);
 
-  Sky.hemi = new THREE.HemisphereLight(0xbcd7f2, 0x8e8474, 0.9);
+  Sky.hemi = new THREE.HemisphereLight(0xbcd7f2, 0x6a6152, 0.4);
   scene.add(Sky.hemi);
 
   Sky.sun = new THREE.DirectionalLight(0xfff0d8, 1.2);
@@ -111,12 +111,12 @@ Sky.build = function (scene) {
   var s = Sky.sun.shadow;
   s.mapSize.width = s.mapSize.height = 2048;
   s.camera.near = 1; s.camera.far = 190;
-  s.camera.left = -46; s.camera.right = 46; s.camera.top = 46; s.camera.bottom = -46;
-  s.bias = -0.0016; s.normalBias = 0.6;
+  s.camera.left = -34; s.camera.right = 34; s.camera.top = 34; s.camera.bottom = -34;
+  s.bias = -0.0009; s.normalBias = 0.35;
   scene.add(Sky.sun);
   scene.add(Sky.sun.target);
 
-  Sky.fill = new THREE.DirectionalLight(0x9ec4e8, 0.42);
+  Sky.fill = new THREE.DirectionalLight(0x9ec4e8, 0.17);
   Sky.fill.position.set(-0.6, 0.4, -0.7);
   scene.add(Sky.fill);
 
@@ -154,8 +154,8 @@ Sky.update = function (dt, t, py, camPos) {
   u.sunDir.value.copy(Sky.sunDir);
 
   Sky.sun.color.copy(linCol(k.sun));
-  Sky.sun.intensity = damp(Sky.sun.intensity, k.sunI, 2, dt);
-  Sky.hemi.intensity = damp(Sky.hemi.intensity, k.amb, 2, dt);
+  Sky.sun.intensity = damp(Sky.sun.intensity, k.sunI * 1.62, 2, dt);
+  Sky.hemi.intensity = damp(Sky.hemi.intensity, k.amb * 0.55, 2, dt);
   Sky.hemi.color.copy(linCol(k.mid));
   Sky.fill.position.set(-Sky.sunDir.x, 0.55, -Sky.sunDir.z);
 

@@ -54,7 +54,7 @@ P.spawnAt = function (x, z, hintY) {
   P.vel.set(0, 0, 0);
   P.state = ST.GROUND; P.grounded = true; P.fallFrom = P.pos.y;
   P.noGrabT = 0.2; P.slipT = 0; P.groundT = 0;
-  P.tether = null; P.wall.has = false; P.climbing = false; P.handOn = false;
+  P.tether = null; P.wall.has = false; P.climbing = false; P.handOn = false; P.dropHands();
   return g;
 };
 
@@ -118,7 +118,7 @@ function tryGrab() {
 function letGo(push) {
   if (P.state !== ST.CLIMB && P.state !== ST.SLIP) return;
   P.state = ST.AIR;
-  P.wall.has = false; P.handOn = false; P.climbing = false; P.rope = null;
+  P.wall.has = false; P.handOn = false; P.dropHands(); P.climbing = false; P.rope = null;
   P.fallFrom = Math.max(P.fallFrom, P.pos.y);
   P.noGrabT = 0.12;
   if (push) { P.vel.x += P.wall.nx * push; P.vel.z += P.wall.nz * push; }
@@ -130,14 +130,14 @@ function ropeContact() {
     var gh = groundH(r.x, r.z);
     if (gh > T.VOID && Math.abs(gh - r.top) < 1.6 && T.normSmooth(r.x, r.z).y > K.WALK_COS) {
       P.pos.y = gh + 0.04; P.state = ST.GROUND; P.grounded = true; P.rope = null;
-      P.handOn = false; P.vel.set(0, 0, 0); P.noGrabT = 0.22; P.mantleT = 0.3; P.fallFrom = P.pos.y;
+      P.handOn = false; P.dropHands(); P.vel.set(0, 0, 0); P.noGrabT = 0.22; P.mantleT = 0.3; P.fallFrom = P.pos.y;
       return false;
     }
     P.pos.y = r.top;
   }
   if (P.pos.y < r.bot) {
     var gb = groundH(P.pos.x, P.pos.z);
-    if (gb > T.VOID && P.pos.y - gb < 0.6) { P.pos.y = gb; P.state = ST.GROUND; P.rope = null; P.handOn = false; P.fallFrom = P.pos.y; return false; }
+    if (gb > T.VOID && P.pos.y - gb < 0.6) { P.pos.y = gb; P.state = ST.GROUND; P.rope = null; P.handOn = false; P.dropHands(); P.fallFrom = P.pos.y; return false; }
     letGo(0); return false;
   }
   P.pos.x = r.x; P.pos.z = r.z;
@@ -156,14 +156,14 @@ function wallContact(dt) {
     var gh = groundH(mx2, mz2);
     if (gh > T.VOID && gh <= P.pos.y + 0.5 && gh >= P.pos.y - 1.8 && T.normSmooth(mx2, mz2).y > K.WALK_COS) {
       P.pos.x = mx2; P.pos.z = mz2; P.pos.y = gh + 0.04;
-      P.state = ST.GROUND; P.grounded = true; P.wall.has = false; P.handOn = false;
+      P.state = ST.GROUND; P.grounded = true; P.wall.has = false; P.handOn = false; P.dropHands();
       P.vel.set(0, 0, 0); P.noGrabT = 0.22; P.mantleT = 0.35; P.fallFrom = P.pos.y;
       FX.puff(P.pos.x, P.pos.y + 0.2, P.pos.z, 6, 0xd8d0c0);
       return false;
     }
     var below = groundH(P.pos.x, P.pos.z);
     if (below > T.VOID && P.pos.y - below < 0.45) {
-      P.pos.y = below; P.state = ST.GROUND; P.wall.has = false; P.handOn = false;
+      P.pos.y = below; P.state = ST.GROUND; P.wall.has = false; P.handOn = false; P.dropHands();
       P.vel.set(0, 0, 0); P.fallFrom = P.pos.y; P.noGrabT = 0.15;
       return false;
     }
@@ -183,7 +183,7 @@ function wallContact(dt) {
   if (pw.ny > K.WALK_COS + 0.05) {
     var g3 = groundH(P.pos.x, P.pos.z);
     if (g3 > T.VOID && g3 <= P.pos.y + 0.4 && P.pos.y - g3 < 1.1) {
-      P.pos.y = g3; P.state = ST.GROUND; P.wall.has = false; P.handOn = false;
+      P.pos.y = g3; P.state = ST.GROUND; P.wall.has = false; P.handOn = false; P.dropHands();
       P.fallFrom = P.pos.y; return false;
     }
   }
@@ -191,21 +191,74 @@ function wallContact(dt) {
 }
 
 // where the mittens are planted this frame
+// ---- hands that actually grip -------------------------------------------
+// A hand holds one world position while the body climbs past it, then lets
+// go and swings to a new hold above.  The two hands run half a cycle apart,
+// so there is always one on the rock.  Sliding both hands up with the body
+// is what made the old climb look like the scout was greased.
+function Hand(off) {
+  this.off = off;
+  this.at = new THREE.Vector3();
+  this.from = new THREE.Vector3();
+  this.to = new THREE.Vector3();
+  this.n = -999;
+  this.u = 1;
+}
+var TAU = Math.PI * 2, REACH_U = 0.34;
+Hand.prototype.step = function (ph, ax, ay, az, nx, nz) {
+  var a = ph + this.off, n = Math.floor(a / TAU);
+  this.u = a / TAU - n;
+  if (n !== this.n) {
+    this.n = n;
+    this.from.copy(this.at.lengthSq() ? this.at : new THREE.Vector3(ax, ay, az));
+    this.to.set(ax, ay, az);
+  } else if (this.u >= REACH_U) {
+    // planted: keep the hold where it is, but never let the arm stretch past
+    // what the body can actually reach
+    var dx = this.to.x - ax, dy = this.to.y - ay, dz = this.to.z - az;
+    if (dx * dx + dy * dy + dz * dz > 1.25) this.to.set(ax, ay, az);
+  }
+  if (this.u < REACH_U) {
+    var t = this.u / REACH_U, e = t * t * (3 - 2 * t);
+    this.at.lerpVectors(this.from, this.to, e);
+    var lift = Math.sin(t * Math.PI);
+    this.at.y += lift * 0.09;                       // the hand arcs up
+    this.at.x += nx * lift * 0.16;                  // and off the rock
+    this.at.z += nz * lift * 0.16;
+  } else {
+    this.at.copy(this.to);
+  }
+  return this.at;
+};
+P.hL = new Hand(0);
+P.hR = new Hand(Math.PI);
+P.handGrip = 0;
+// coming off the rock forgets the holds, or the next grab swings the hands
+// in from wherever they were left
+P.dropHands = function () {
+  P.hL.at.set(0, 0, 0); P.hL.n = -999;
+  P.hR.at.set(0, 0, 0); P.hR.n = -999;
+  P.handGrip = 0;
+};
+
 function placeHands() {
   var w = P.wall;
+  var ph = P.fig ? P.fig.phase : 0;
   if (P.rope) {
-    var ph0 = P.fig ? P.fig.phase : 0, sw0 = Math.sin(ph0) * 0.22;
-    P.handL.set(w.cx, P.pos.y + 1.24 + sw0, w.cz);
-    P.handR.set(w.cx, P.pos.y + 1.04 - sw0, w.cz);
+    var sw0 = Math.sin(ph) * 0.22;
+    P.handL.set(w.cx, P.pos.y + 1.26 + sw0, w.cz);
+    P.handR.set(w.cx, P.pos.y + 1.02 - sw0, w.cz);
     P.handOn = true;
+    P.handGrip = 0;
     return;
   }
   var rx = w.nz, rz = -w.nx;
-  var ph = P.fig ? P.fig.phase : 0;
-  var sw = Math.sin(ph) * 0.26;
-  var ox = w.cx + w.nx * 0.1, oz = w.cz + w.nz * 0.1;
-  P.handL.set(ox + rx * 0.36, P.pos.y + 1.16 + sw, oz + rz * 0.36);
-  P.handR.set(ox - rx * 0.36, P.pos.y + 1.16 - sw, oz - rz * 0.36);
+  var ox = w.cx + w.nx * 0.08, oz = w.cz + w.nz * 0.08;
+  var hy = P.pos.y + 1.32;
+  P.handL.copy(P.hL.step(ph, ox + rx * 0.34, hy, oz + rz * 0.34, w.nx, w.nz));
+  P.handR.copy(P.hR.step(ph, ox - rx * 0.34, hy, oz - rz * 0.34, w.nx, w.nz));
+  // which hand is bearing weight, for the body to lean onto
+  P.handGrip = (P.hL.u >= REACH_U ? -1 : 0) + (P.hR.u >= REACH_U ? 1 : 0);
   P.handOn = true;
 }
 
@@ -321,7 +374,7 @@ P.update = function (dt) {
     var ghd = supportH(P.pos.x, P.pos.z, P.pos.y);
     if (ghd > T.VOID && P.pos.y <= ghd) { P.pos.y = ghd; P.vel.y = 0; }
     if (P.pos.y < -40) Survive.respawn();
-    P.handOn = false;
+    P.handOn = false; P.dropHands();
     return;
   }
 
@@ -343,7 +396,7 @@ P.update = function (dt) {
 
   // ---- on foot or in the air
   if (P.state === ST.GROUND || P.state === ST.AIR) {
-    P.handOn = false;
+    P.handOn = false; P.dropHands();
     if (P.state === ST.GROUND) {
       moveGround(dt, wishX, wishZ, free && IN.shift());
       if (free && IN.jump() && P.st > 3 && P.mantleT <= 0) {

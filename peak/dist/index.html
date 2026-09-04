@@ -93,7 +93,7 @@ canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
   opacity:.5;text-shadow:0 1px 3px #000}
 
 /* ---------- menus ---------- */
-#menu,#pause,#over{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+#menu,#pause,#over{position:fixed;inset:0;display:flex;align-items:safe center;justify-content:center;overflow-y:auto;padding:18px 0;
   background:radial-gradient(120% 90% at 50% 0%,#243044 0%,#10131a 62%);z-index:20}
 #pause,#over{background:rgba(9,11,16,.82);backdrop-filter:blur(7px)}
 .panel{width:min(520px,92vw);background:rgba(16,19,26,.92);border-radius:18px;padding:26px 28px 22px;
@@ -145,7 +145,7 @@ button{font-family:var(--ui);cursor:pointer;border:none;outline:none}
   background:rgba(255,255,255,.05);border-radius:8px;padding:7px 11px}
 .rost i{width:10px;height:10px;border-radius:3px;flex:none}
 .rost small{margin-left:auto;opacity:.42;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
-#opts{margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:11px;text-align:left}
+#opts{margin-top:16px;max-height:none;border-top:1px solid rgba(255,255,255,.08);padding-top:11px;text-align:left}
 #opts h4{font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.42;margin:14px 0 4px;font-weight:800}
 #pause-opts{margin-top:10px}
 #pause-opts #opts{border-top:none}
@@ -228,8 +228,8 @@ kbd{background:rgba(255,255,255,.12);border-radius:4px;padding:1px 5px;font-fami
 </div></div>
 
 <!-- one options panel, moved between the menu and the pause screen -->
-<details id="opts">
-  <summary>controls &amp; options</summary>
+<details id="opts" open>
+  <summary>controls, sensitivity &amp; camera</summary>
   <div class="keys">
     <span><kbd>WASD</kbd> move</span><span><kbd>Space</kbd> jump</span>
     <span><kbd id="k-grab">E</kbd> <b>hold to grab</b></span><span><kbd>LMB</kbd> grab (alternate)</span>
@@ -900,6 +900,88 @@ function hexLin(hex, out, o, mul) {
   out[o + 2] = _lut[hex & 255] * mul;
 }
 
+function hexLinB(hex, out, o, mul) {
+  out[o] = clamp(_lut[(hex >> 16) & 255] * mul, 0, 1) * 255;
+  out[o + 1] = clamp(_lut[(hex >> 8) & 255] * mul, 0, 1) * 255;
+  out[o + 2] = clamp(_lut[hex & 255] * mul, 0, 1) * 255;
+}
+
+// ---- procedural rock grain ------------------------------------------------
+// A tiling detail map, drawn once and shared.  Without it every facet is one
+// flat colour and the island reads as paper; with it the rock has a surface.
+// The noise wraps by construction (the lattice hash is taken modulo the
+// period) so there is no seam where the tile repeats.
+var _rockTex = null;
+function rockTexture() {
+  if (_rockTex) return _rockTex;
+  var S = 256, cv = document.createElement('canvas');
+  cv.width = cv.height = S;
+  var ctx = cv.getContext('2d'), img = ctx.createImageData(S, S), d = img.data;
+  function h2(ix, iy, per) {
+    ix = ((ix % per) + per) % per; iy = ((iy % per) + per) % per;
+    var v = (ix * 374761393 + iy * 668265263) >>> 0;
+    v = (v ^ (v >>> 13)) * 1274126177 >>> 0;
+    return ((v ^ (v >>> 16)) >>> 0) / 4294967295;
+  }
+  function val(x, y, per) {
+    var ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy;
+    var ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+    return lerp(lerp(h2(ix, iy, per), h2(ix + 1, iy, per), ux),
+                lerp(h2(ix, iy + 1, per), h2(ix + 1, iy + 1, per), ux), uy);
+  }
+  for (var y = 0; y < S; y++) {
+    for (var x = 0; x < S; x++) {
+      var u = x / S, v = y / S, g = 0, amp = 0.5, per = 4;
+      for (var o = 0; o < 5; o++) { g += val(u * per, v * per, per) * amp; amp *= 0.52; per *= 2; }
+      // a faint bedding direction, so the grain has a lie to it
+      var band = val(u * 3 + v * 11, v * 3, 8);
+      g = g * 0.80 + band * 0.20;
+      var c = clamp(0.5 + (g - 0.5) * 1.75, 0.02, 1) * 255;
+      var i4 = (y * S + x) * 4;
+      d[i4] = d[i4 + 1] = d[i4 + 2] = c; d[i4 + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  var t = new THREE.CanvasTexture(cv);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.encoding = THREE.LinearEncoding;      // a multiplier, not a colour
+  t.anisotropy = 4;
+  _rockTex = t;
+  return t;
+}
+
+// Project the grain down all three axes and blend by the face normal, so a
+// vertical cliff gets the same grain density as the shelf above it instead
+// of a smeared streak.  Two scales: coarse for the shape, fine for the bite.
+function triplanar(mat) {
+  mat.onBeforeCompile = function (sh) {
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nvarying vec3 vTriW;')
+      .replace('#include <begin_vertex>',
+        '#include <begin_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvTriW = abs(normal);');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nvarying vec3 vTriW;')
+      .replace('#include <map_fragment>', [
+        '#ifdef USE_MAP',
+        '  vec3 bw = vTriW * vTriW; bw *= bw;',
+        '  bw /= max(bw.x + bw.y + bw.z, 1e-4);',
+        '  vec3 gp = vWPos * 0.085;',
+        '  float g = texture2D(map, gp.zy).r * bw.x',
+        '          + texture2D(map, gp.xz).r * bw.y',
+        '          + texture2D(map, gp.xy).r * bw.z;',
+        '  vec3 fp = vWPos * 0.44;',
+        '  float g2 = texture2D(map, fp.zy).r * bw.x',
+        '           + texture2D(map, fp.xz).r * bw.y',
+        '           + texture2D(map, fp.xy).r * bw.z;',
+        '  float grain = mix(g, g2, 0.38);',
+        '  diffuseColor.rgb *= 0.64 + grain * 0.62;',
+        '#endif',
+      ].join('\n'));
+  };
+  // a distinct key or three.js shares one program across the three materials
+  mat.customProgramCacheKey = function () { return 'crux-tri'; };
+}
+
 var SURF_TINT = {};
 SURF_TINT[SF.SAND] = 0xe8d49a; SURF_TINT[SF.GRASS] = 0x6fae42;
 SURF_TINT[SF.LEAF] = 0x2a6e30; SURF_TINT[SF.MUD] = 0x4a3622;
@@ -915,16 +997,19 @@ function faceKind(surf) {
   return 0;
 }
 
-function faceColor(h, ny, surf, hash) {
+function faceColor(h, ny, surf, hash, mot) {
   var zn = zoneAt(h), p = Run.at(zn).pal, c;
-  var top = (hash & 3) ? p.top : p.top2;
-  var cliff = (hash & 7) < 3 ? p.alt : p.cliff;
+  // Patches, not static.  Choosing the second tone off a smooth field instead
+  // of a per-face hash gives the ground drifts and beds you can read at a
+  // distance, where white noise just averages back to one flat colour.
+  var top = mot > 0.34 ? p.top : p.top2;
+  var cliff = mot > 0.56 ? p.alt : p.cliff;
   // bleed each band into the one below so the biomes are not hard rings
   var below = zn > 0 ? ZONES[zn - 1].top : -1;
-  if (below > 0 && h < below + 13) {
-    var q = Run.at(zn - 1).pal, u = step01(below - 3, below + 13, h);
-    top = mixHex((hash & 3) ? q.top : q.top2, top, u);
-    cliff = mixHex((hash & 7) < 3 ? q.alt : q.cliff, cliff, u);
+  if (below > 0 && h < below + 34) {
+    var q = Run.at(zn - 1).pal, u = step01(below - 8, below + 34, h);
+    top = mixHex(mot > 0.34 ? q.top : q.top2, top, u);
+    cliff = mixHex(mot > 0.56 ? q.alt : q.cliff, cliff, u);
   }
   c = mixHex(cliff, top, step01(0.42, 0.78, ny));
   var tint = SURF_TINT[surf];
@@ -932,22 +1017,86 @@ function faceColor(h, ny, surf, hash) {
   return c;
 }
 
-T.buildMesh = function () {
-  var N = T.N, np = N + 1, H = T.H, CS = T.CS, S = T.SURF;
-  var nf = N * N * 2;
-  var kinds = new Uint8Array(nf), cnt = [0, 0, 0];
-  var i, j, f = 0, tri;
-  var hgt = new Float32Array(nf), nyA = new Float32Array(nf), sfA = new Uint8Array(nf);
+// Ambient occlusion, sampled off the height field.  For each mesh vertex we
+// ask how much of the sky a point just above the ground can actually see:
+// rings of samples at growing radius, each one asking whether the terrain
+// out there rises above the horizon.  Creases go dark, ridges stay bright.
+// This is what stops a field of flat facets reading as flat.
+var AO_DIR = 8, AO_STEP = [1.6, 3.4, 6.5, 11.5, 19, 30];
+var _aoC = new Float32Array(AO_DIR), _aoS = new Float32Array(AO_DIR);
+for (var _d = 0; _d < AO_DIR; _d++) {
+  var _a = _d / AO_DIR * Math.PI * 2 + 0.31;
+  _aoC[_d] = Math.cos(_a); _aoS[_d] = Math.sin(_a);
+}
+function aoAt(x, z, y) {
+  var occ = 0, w = 0;
+  for (var d = 0; d < AO_DIR; d++) {
+    var cx = _aoC[d], cz = _aoS[d], best = 0;
+    for (var r = 0; r < AO_STEP.length; r++) {
+      var rr = AO_STEP[r];
+      var t = (T.hAt(x + cx * rr, z + cz * rr) - y) / rr;   // tangent of rise
+      if (t > best) best = t;
+    }
+    // a 45-degree wall alongside you blocks about half your sky
+    occ += best > 0 ? best / (best + 1) : 0;
+    w++;
+  }
+  return 1 - occ / w;
+}
 
-  for (j = 0; j < N; j++) {
-    for (i = 0; i < N; i++) {
-      var h00 = H[j * np + i], h10 = H[j * np + i + 1], h01 = H[(j + 1) * np + i], h11 = H[(j + 1) * np + i + 1];
-      var surf = S[j * N + i];
+// A high-frequency wobble the collision field never sees.  Gameplay reads
+// T.H, so this can add all the surface detail it likes without narrowing a
+// single shelf: it is scenery on top of the truth, never the truth.
+function micro(x, z, n) {
+  return n.n2(x * 0.21, z * 0.21) * 0.42
+       + n.n2(x * 0.63, z * 0.63) * 0.16
+       + n.n2(x * 1.55, z * 1.55) * 0.055;
+}
+
+T.buildMesh = function (detail) {
+  var N = T.N, np = N + 1, H = T.H, CS = T.CS, S = T.SURF, n = T.noise;
+  var SUB = detail ? 2 : 1;                 // render-only subdivision
+  var sc = CS / SUB;                        // sub-cell size
+  var M = N * SUB, mp = M + 1;              // sub-grid
+  var nf = M * M * 2;
+
+  // ---- sub-grid heights: bilinear from the real field, plus micro relief
+  var SH = new Float32Array(mp * mp), AO = new Float32Array(mp * mp);
+  var i, j, f = 0, tri;
+  for (j = 0; j < mp; j++) {
+    for (i = 0; i < mp; i++) {
+      var gi = i / SUB, gj = j / SUB;
+      var i0 = Math.min(N, gi | 0), j0 = Math.min(N, gj | 0);
+      var fx = gi - i0, fz = gj - j0;
+      var i1 = Math.min(N, i0 + 1), j1 = Math.min(N, j0 + 1);
+      var a = H[j0 * np + i0], b = H[j0 * np + i1], c2 = H[j1 * np + i0], d2 = H[j1 * np + i1];
+      var h = lerp(lerp(a, b, fx), lerp(c2, d2, fx), fz);
+      var wx = i * sc - T.half, wz = j * sc - T.half;
+      if (SUB > 1 && h > K.SEA - 1) {
+        // fade the wobble out on near-flat ground so shelves stay flat, and
+        // out at the shoreline so the waterline does not get the shakes
+        var slope = Math.abs(b - a) + Math.abs(c2 - a);
+        h += micro(wx, wz, n) * clamp(0.62 - slope * 0.08, 0.3, 0.62) * clamp((h - K.SEA) * 0.5, 0, 1);
+      }
+      SH[j * mp + i] = h;
+    }
+  }
+  for (j = 0; j < mp; j++)
+    for (i = 0; i < mp; i++)
+      AO[j * mp + i] = aoAt(i * sc - T.half, j * sc - T.half, SH[j * mp + i] + 0.35);
+
+  var kinds = new Uint8Array(nf), cnt = [0, 0, 0];
+  var hgt = new Float32Array(nf), nyA = new Float32Array(nf), sfA = new Uint8Array(nf);
+  for (j = 0; j < M; j++) {
+    for (i = 0; i < M; i++) {
+      var h00 = SH[j * mp + i], h10 = SH[j * mp + i + 1];
+      var h01 = SH[(j + 1) * mp + i], h11 = SH[(j + 1) * mp + i + 1];
+      var surf = S[Math.min(N - 1, (j / SUB) | 0) * N + Math.min(N - 1, (i / SUB) | 0)];
       for (tri = 0; tri < 2; tri++) {
-        var h, ny;
-        if (tri === 0) { h = (h00 + h10 + h01) / 3; ny = 1 / Math.sqrt(Math.pow((h10 - h00) / CS, 2) + Math.pow((h01 - h00) / CS, 2) + 1); }
-        else { h = (h10 + h11 + h01) / 3; ny = 1 / Math.sqrt(Math.pow((h11 - h01) / CS, 2) + Math.pow((h11 - h10) / CS, 2) + 1); }
-        hgt[f] = h; nyA[f] = ny; sfA[f] = surf;
+        var hh, ny;
+        if (tri === 0) { hh = (h00 + h10 + h01) / 3; ny = 1 / Math.sqrt(Math.pow((h10 - h00) / sc, 2) + Math.pow((h01 - h00) / sc, 2) + 1); }
+        else { hh = (h10 + h11 + h01) / 3; ny = 1 / Math.sqrt(Math.pow((h11 - h01) / sc, 2) + Math.pow((h11 - h10) / sc, 2) + 1); }
+        hgt[f] = hh; nyA[f] = ny; sfA[f] = surf;
         var kd = faceKind(surf);
         kinds[f] = kd; cnt[kd]++; f++;
       }
@@ -957,40 +1106,60 @@ T.buildMesh = function () {
   var off = [0, cnt[0] * 3, (cnt[0] + cnt[1]) * 3];
   var cur = [off[0], off[1], off[2]];
   var total = nf * 3;
-  var pos = new Float32Array(total * 3), nor = new Float32Array(total * 3), col = new Float32Array(total * 3);
+  var pos = new Float32Array(total * 3), nor = new Int16Array(total * 3);
+  var col = new Uint8Array(total * 3);
   var ax, ay, az, bx, by, bz, cx, cy, cz, ux, uy, uz, vx, vy, vz, nx, nyy, nz, ln;
+  var aa, ab, ac;
 
   f = 0;
-  for (j = 0; j < N; j++) {
-    for (i = 0; i < N; i++) {
-      var x0 = i * CS - T.half, z0 = j * CS - T.half, x1 = x0 + CS, z1 = z0 + CS;
-      var y00 = H[j * np + i], y10 = H[j * np + i + 1], y01 = H[(j + 1) * np + i], y11 = H[(j + 1) * np + i + 1];
+  for (j = 0; j < M; j++) {
+    for (i = 0; i < M; i++) {
+      var x0 = i * sc - T.half, z0 = j * sc - T.half, x1 = x0 + sc, z1 = z0 + sc;
+      var y00 = SH[j * mp + i], y10 = SH[j * mp + i + 1];
+      var y01 = SH[(j + 1) * mp + i], y11 = SH[(j + 1) * mp + i + 1];
+      var a00 = AO[j * mp + i], a10 = AO[j * mp + i + 1];
+      var a01 = AO[(j + 1) * mp + i], a11 = AO[(j + 1) * mp + i + 1];
       for (tri = 0; tri < 2; tri++) {
         // Counter-clockwise seen from above.  Get this backwards and the
         // renderer culls the ground out from under the player.
-        if (tri === 0) { ax = x0; ay = y00; az = z0; bx = x0; by = y01; bz = z1; cx = x1; cy = y10; cz = z0; }
-        else { ax = x1; ay = y10; az = z0; bx = x0; by = y01; bz = z1; cx = x1; cy = y11; cz = z1; }
+        if (tri === 0) {
+          ax = x0; ay = y00; az = z0; bx = x0; by = y01; bz = z1; cx = x1; cy = y10; cz = z0;
+          aa = a00; ab = a01; ac = a10;
+        } else {
+          ax = x1; ay = y10; az = z0; bx = x0; by = y01; bz = z1; cx = x1; cy = y11; cz = z1;
+          aa = a10; ab = a01; ac = a11;
+        }
         ux = bx - ax; uy = by - ay; uz = bz - az;
         vx = cx - ax; vy = cy - ay; vz = cz - az;
         nx = uy * vz - uz * vy; nyy = uz * vx - ux * vz; nz = ux * vy - uy * vx;
         ln = Math.sqrt(nx * nx + nyy * nyy + nz * nz) || 1;
         nx /= ln; nyy /= ln; nz /= ln;
 
-        var hash = (((i >> 1) * 73856093) ^ ((j >> 1) * 19349663)) >>> 0;
+        var ci = (i / SUB) | 0, cj = (j / SUB) | 0;
+        var hash = (((ci >> 1) * 73856093) ^ ((cj >> 1) * 19349663)) >>> 0;
         var jhash = ((i * 73856093) ^ (j * 19349663) ^ (tri * 83492791)) >>> 0;
-        var c = faceColor(hgt[f], nyA[f], sfA[f], hash);
-        var jit = 0.955 + ((jhash >>> 5) & 63) / 63 * 0.09;
-        var conc = clamp((hgt[f] - (T.hAt(ax + 3, az + 3) + T.hAt(ax - 3, az - 3)) * 0.5) / 7, -1, 1);
-        var mul = jit * (1 + conc * 0.10);
+        var mot = n.n2(ax * 0.026, az * 0.026) * 0.34 + n.n2(ax * 0.075, az * 0.075) * 0.15 + 0.5;
+        var c = faceColor(hgt[f], nyA[f], sfA[f], hash, mot);
+        var jit = 0.918 + ((jhash >>> 5) & 63) / 63 * 0.165;
+        var warp = n.n2(ax * 0.011, az * 0.011) * 4.2 + n.n2(ax * 0.045, az * 0.045) * 1.1;
+        var bh = hgt[f] + warp, steep = 1 - nyA[f];
+        jit *= 1 + (Math.sin(bh * 0.58) * 0.085 + Math.sin(bh * 1.93 + 1.3) * 0.042
+                    + Math.sin(bh * 5.1) * 0.02) * steep;
+        // and a broad drift of light and shade that works on flat ground too,
+        // where the bedding planes are edge-on and show nothing
+        jit *= 1 + (mot - 0.5) * 0.30 + n.n2(ax * 0.19, az * 0.19) * 0.05;
 
         var o = cur[kinds[f]]; cur[kinds[f]] += 3;
         var pp = o * 3;
         pos[pp] = ax; pos[pp + 1] = ay; pos[pp + 2] = az;
         pos[pp + 3] = bx; pos[pp + 4] = by; pos[pp + 5] = bz;
         pos[pp + 6] = cx; pos[pp + 7] = cy; pos[pp + 8] = cz;
+        var aoV = [aa, ab, ac];
         for (var q = 0; q < 3; q++) {
-          nor[pp + q * 3] = nx; nor[pp + q * 3 + 1] = nyy; nor[pp + q * 3 + 2] = nz;
-          hexLin(c, col, pp + q * 3, mul);
+          nor[pp + q * 3] = nx * 32767; nor[pp + q * 3 + 1] = nyy * 32767; nor[pp + q * 3 + 2] = nz * 32767;
+          // AO is squeezed into a range that darkens without going muddy
+          var mul = jit * (0.34 + 0.66 * Math.pow(clamp(aoV[q], 0, 1), 1.35));
+          hexLinB(c, col, pp + q * 3, mul);
         }
         f++;
       }
@@ -999,18 +1168,20 @@ T.buildMesh = function () {
 
   var g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
-  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(nor, 3, true));
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3, true));
   g.addGroup(0, cnt[0] * 3, 0);
   g.addGroup(cnt[0] * 3, cnt[1] * 3, 1);
   g.addGroup((cnt[0] + cnt[1]) * 3, cnt[2] * 3, 2);
   g.computeBoundingSphere();
 
+  var tex = rockTexture();
   var mats = [
-    new THREE.MeshLambertMaterial({ vertexColors: true }),
-    new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 42, specular: 0x6f8898 }),
-    new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 12, specular: 0x442211, emissive: 0x3a0d00 }),
+    new THREE.MeshLambertMaterial({ vertexColors: true, map: tex }),
+    new THREE.MeshPhongMaterial({ vertexColors: true, map: tex, shininess: 42, specular: 0x6f8898 }),
+    new THREE.MeshPhongMaterial({ vertexColors: true, map: tex, shininess: 12, specular: 0x442211, emissive: 0x3a0d00 }),
   ];
+  for (var m = 0; m < mats.length; m++) triplanar(mats[m]);
   var mesh = new THREE.Mesh(g, mats);
   mesh.receiveShadow = true;
   T.mesh = mesh;
@@ -1033,6 +1204,30 @@ var _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler
 var _v3 = new THREE.Vector3(), _v3b = new THREE.Vector3();
 
 // parts: [{g, c, p:[x,y,z], r:[rx,ry,rz], s:[sx,sy,sz]|number}]
+// A box with its edges taken off.  Every hard-edged prop and every limb on a
+// scout is built from these: a chamfer is three extra strips of triangles and
+// it is the difference between a shape that reads as a solid object and one
+// that reads as a cube.  The bevel catches the sun along every edge, which is
+// most of what makes flat-shaded geometry look built rather than blocked out.
+function roundBox(w, h, d, bev, seg) {
+  var b = Math.min(bev === undefined ? 0.05 : bev, w * 0.49, h * 0.49, d * 0.49);
+  var g = new THREE.BoxGeometry(w, h, d, seg || 2, seg || 2, seg || 2).toNonIndexed();
+  var p = g.attributes.position.array;
+  var hx = w / 2 - b, hy = h / 2 - b, hz = d / 2 - b;
+  // Pull every vertex back onto the inner box, then push it out by the bevel
+  // radius.  Faces that share an edge hold coincident vertices, and the same
+  // map sends both copies to the same place, so the shell stays closed.
+  for (var i = 0; i < p.length; i += 3) {
+    var cx = clamp(p[i], -hx, hx), cy = clamp(p[i + 1], -hy, hy), cz = clamp(p[i + 2], -hz, hz);
+    var dx = p[i] - cx, dy = p[i + 1] - cy, dz = p[i + 2] - cz;
+    var l = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (l < 1e-6) continue;
+    p[i] = cx + dx / l * b; p[i + 1] = cy + dy / l * b; p[i + 2] = cz + dz / l * b;
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
 function mergeParts(parts) {
   var geos = [], total = 0, i, pt, g;
   for (i = 0; i < parts.length; i++) {
@@ -1817,6 +2012,31 @@ function tentGeo(col) {
   ]);
 }
 
+// A flag is the one thing on the mountain that is always moving, so a flat
+// quad reads as dead from any distance.  This is a pinned strip driven by two
+// travelling waves, and it costs 48 triangles.
+function makeFlag(col) {
+  var g = new THREE.PlaneGeometry(1.5, 0.86, 10, 3).toNonIndexed();
+  bakeColor(g, col);
+  var m = new THREE.Mesh(g, MAT.solidS);
+  m.castShadow = true;
+  var pa = g.attributes.position;
+  m.userData.base = new Float32Array(pa.array);
+  m.userData.wave = function (t) {
+    var a = pa.array, b = m.userData.base;
+    for (var i = 0; i < a.length; i += 3) {
+      var u = (b[i] + 0.75) / 1.5;                  // 0 at the mast, 1 at the fly
+      var amp = u * u * 0.46;
+      a[i + 2] = Math.sin(u * 7.4 - t * 5.2) * amp + Math.sin(u * 3.1 - t * 2.7) * amp * 0.5;
+      a[i + 1] = b[i + 1] + Math.sin(u * 4.2 - t * 4.1) * amp * 0.24;
+      a[i] = b[i] - u * amp * amp * 0.5;            // the cloth shortens as it curls
+    }
+    pa.needsUpdate = true;
+    g.computeVertexNormals();
+  };
+  return m;
+}
+
 Camps.build = function () {
   var g = Camps.group = new THREE.Group();
   var fg = fireGeo(), wg = wreckGeo(), tg = tentGeo(0xd8763a), tg2 = tentGeo(0x3a8fa8);
@@ -1843,8 +2063,12 @@ Camps.build = function () {
     // something tall so the camp reads from a long way down the mountain
     var pole = new THREE.Mesh(mergeParts([
       { g: new THREE.CylinderGeometry(0.07, 0.09, 4.6, 5), c: 0x5a4630, p: [0, 2.3, 0] },
-      { g: new THREE.BoxGeometry(1.5, 0.9, 0.06), c: i === 0 ? 0xff8a3d : 0xffd646, p: [0.78, 3.95, 0] },
     ]), MAT.solid);
+    // cloth, not a signboard: a strip that ripples away from the pole, pinned
+    // at the mast edge so the wave grows toward the fly
+    var flag = makeFlag(i === 0 ? 0xff8a3d : 0xffd646);
+    flag.position.set(0.04, 3.95, 0);
+    pole.add(flag);
     // every offset piece resolves its own ground; a marker pole hanging in
     // the air is exactly the sloppiness this is here to stop
     var pgY = T.hAt(c.x + 2.4, c.z - 1.5);
@@ -1864,7 +2088,7 @@ Camps.build = function () {
       });
     }
     g.add(node);
-    Camps.list.push({ x: c.x, y: ground, z: c.z, idx: i, lit: i === 0, node: node, f1: f1, f2: f2, light: light });
+    Camps.list.push({ x: c.x, y: ground, z: c.z, idx: i, lit: i === 0, node: node, f1: f1, f2: f2, light: light, flag: flag });
   }
   Camps.setLit(0, true);
   return g;
@@ -1882,6 +2106,7 @@ Camps.setLit = function (i, lit) {
 Camps.tick = function (dt, t) {
   for (var i = 0; i < Camps.list.length; i++) {
     var c = Camps.list[i];
+    if (c.flag) c.flag.userData.wave(t + i * 1.7);
     if (!c.lit) continue;
     var f = 0.82 + Math.sin(t * 11 + i) * 0.1 + Math.sin(t * 6.3 + i * 2) * 0.09;
     c.f1.scale.set(f, f * 1.15, f);
@@ -2090,10 +2315,10 @@ function Figure(slot, tone) {
   this.hips = new G(); this.hips.position.y = 0.62; this.body.add(this.hips);
 
   var torso = new THREE.Mesh(mergeParts([
-    { g: new THREE.BoxGeometry(0.56, 0.6, 0.38), c: gear, p: [0, 0.3, 0] },
-    { g: new THREE.BoxGeometry(0.58, 0.14, 0.4), c: dark, p: [0, 0.1, 0] },
-    { g: new THREE.BoxGeometry(0.42, 0.4, 0.24), c: shadeHex(gear, 0.42), p: [0, 0.36, -0.29] },
-    { g: new THREE.BoxGeometry(0.3, 0.1, 0.1), c: 0xd9b06a, p: [0, 0.48, -0.42] },
+    { g: roundBox(0.56, 0.6, 0.38), c: gear, p: [0, 0.3, 0] },
+    { g: roundBox(0.58, 0.14, 0.4), c: dark, p: [0, 0.1, 0] },
+    { g: roundBox(0.42, 0.4, 0.24), c: shadeHex(gear, 0.42), p: [0, 0.36, -0.29] },
+    { g: roundBox(0.3, 0.1, 0.1), c: 0xd9b06a, p: [0, 0.48, -0.42] },
   ]), MAT.solid);
   torso.castShadow = true;
   this.hips.add(torso);
@@ -2102,7 +2327,7 @@ function Figure(slot, tone) {
   var head = new THREE.Mesh(mergeParts([
     { g: new THREE.IcosahedronGeometry(0.36, 1), c: skin, p: [0, 0.3, 0] },
     { g: new THREE.TorusGeometry(0.25, 0.09, 5, 10), c: gear, p: [0, 0.03, 0], r: [1.57, 0, 0] },
-    { g: new THREE.BoxGeometry(0.16, 0.32, 0.1), c: gear, p: [0.12, -0.05, -0.22], r: [0.3, 0, 0.2] },
+    { g: roundBox(0.16, 0.32, 0.1), c: gear, p: [0.12, -0.05, -0.22], r: [0.3, 0, 0.2] },
     { g: new THREE.SphereGeometry(0.29, 8, 5, 0, 6.283, 0, 1.1), c: dark, p: [0, 0.36, 0] },
   ]), MAT.solid);
   head.castShadow = true;
@@ -2122,13 +2347,13 @@ function Figure(slot, tone) {
     var sh = new G();
     sh.position.set(side * 0.34, 0.52, 0);
     var up = new THREE.Mesh(mergeParts([
-      { g: new THREE.BoxGeometry(0.17, UP, 0.17), c: gear, p: [0, -UP / 2, 0] },
+      { g: roundBox(0.17, UP, 0.17), c: gear, p: [0, -UP / 2, 0] },
     ]), MAT.solid);
     up.castShadow = true;
     sh.add(up);
     var el = new G(); el.position.y = -UP; sh.add(el);
     var fo = new THREE.Mesh(mergeParts([
-      { g: new THREE.BoxGeometry(0.15, LO, 0.15), c: dark, p: [0, -LO / 2, 0] },
+      { g: roundBox(0.15, LO, 0.15), c: dark, p: [0, -LO / 2, 0] },
       { g: new THREE.IcosahedronGeometry(0.21, 0), c: gear, p: [0, -LO - 0.12, 0.02] },
     ]), MAT.solid);
     fo.castShadow = true;
@@ -2141,13 +2366,13 @@ function Figure(slot, tone) {
   function leg(side) {
     var hp = new G();
     hp.position.set(side * 0.15, 0.02, 0);
-    var th = new THREE.Mesh(mergeParts([{ g: new THREE.BoxGeometry(0.21, 0.32, 0.21), c: pants, p: [0, -0.16, 0] }]), MAT.solid);
+    var th = new THREE.Mesh(mergeParts([{ g: roundBox(0.21, 0.32, 0.21), c: pants, p: [0, -0.16, 0] }]), MAT.solid);
     th.castShadow = true;
     hp.add(th);
     var kn = new G(); kn.position.y = -0.32; hp.add(kn);
     var sh2 = new THREE.Mesh(mergeParts([
-      { g: new THREE.BoxGeometry(0.19, 0.28, 0.19), c: shadeHex(pants, 0.85), p: [0, -0.14, 0] },
-      { g: new THREE.BoxGeometry(0.23, 0.14, 0.3), c: boot, p: [0, -0.32, 0.04] },
+      { g: roundBox(0.19, 0.28, 0.19), c: shadeHex(pants, 0.85), p: [0, -0.14, 0] },
+      { g: roundBox(0.23, 0.14, 0.3), c: boot, p: [0, -0.32, 0.04] },
     ]), MAT.solid);
     sh2.castShadow = true;
     kn.add(sh2);
@@ -2156,11 +2381,39 @@ function Figure(slot, tone) {
   this.lL = leg(1); this.lR = leg(-1);
   this.hips.add(this.lL.hp, this.lR.hp);
 
+  // A scarf in the slot colour, three segments long, each lagging the one
+  // above it.  It costs almost nothing and it is the only thing on a scout
+  // that keeps moving after they stop, which is what sells the weight.
+  this.scarf = [];
+  var par = this.neck, len = [0.26, 0.23, 0.19], wd = [0.19, 0.165, 0.13];
+  for (var si = 0; si < 3; si++) {
+    var seg = new G();
+    seg.position.set(0, si === 0 ? 0.02 : -len[si - 1], si === 0 ? -0.16 : 0);
+    var m = new THREE.Mesh(mergeParts([
+      { g: roundBox(wd[si], len[si], 0.075, 0.03), c: si & 1 ? dark : gear, p: [0, -len[si] / 2, 0] },
+    ]), MAT.solid);
+    m.castShadow = true;
+    seg.add(m);
+    par.add(seg);
+    par = seg;
+    this.scarf.push(seg);
+  }
+  this.scarfV = [0, 0, 0];
+  this.scarfA = [0, 0, 0];
+
   this.torchLight = null;
   this.held = null;
   this.phase = 0;
   this.reach = 0;
+  this.squash = 0;
+  this.lean = 0;
 }
+
+// Called when the scout hits the ground.  Knees and torso absorb it over the
+// next few tenths of a second instead of the body snapping to standing.
+Figure.prototype.land = function (force) {
+  this.squash = Math.max(this.squash, clamp(force, 0, 1));
+};
 
 Figure.prototype.setHeld = function (kind) {
   if (this.heldKind === kind) return;
@@ -2203,6 +2456,30 @@ Figure.prototype.aimArm = function (arm, worldTarget) {
 // state: ST.*; o carries the extras
 Figure.prototype.pose = function (dt, o) {
   var t = o.t, sp = o.speed || 0, s = o.state;
+  this.squash = Math.max(0, this.squash - dt * 3.4);
+  this.poseCore(dt, o);
+  this.poseScarf(dt, o);
+};
+
+// The scarf is a chain of three damped springs.  Each segment is pulled by
+// how fast the one above it turned, so a change of direction runs down the
+// scarf instead of the whole thing rotating as one board.
+Figure.prototype.poseScarf = function (dt, o) {
+  var sp = o.speed || 0, gust = Math.sin(o.t * 2.3) * 0.09 + Math.sin(o.t * 5.1) * 0.04;
+  var drive = clamp(sp / K.WALK, 0, 1.6) * 0.42 + gust + (o.state === ST.AIR ? 0.5 : 0);
+  var h = Math.min(dt, 0.05);
+  for (var i = 0; i < 3; i++) {
+    var tgt = drive * (0.5 + i * 0.28) + (i === 0 ? 0.22 : 0.1);
+    this.scarfA[i] += (tgt - this.scarfV[i]) * 44 * h;
+    this.scarfA[i] *= Math.exp(-9 * h);
+    this.scarfV[i] += this.scarfA[i] * h;
+    this.scarf[i].rotation.x = clamp(this.scarfV[i], -1.1, 1.3);
+    this.scarf[i].rotation.z = Math.sin(o.t * (1.7 + i * 0.5) + i) * 0.13 * (0.4 + drive);
+  }
+};
+
+Figure.prototype.poseCore = function (dt, o) {
+  var t = o.t, sp = o.speed || 0, s = o.state;
   var aL = this.aL, aR = this.aR, lL = this.lL, lR = this.lR;
   var b = this.body, hp = this.hips, nk = this.neck;
   var k;
@@ -2228,9 +2505,10 @@ Figure.prototype.pose = function (dt, o) {
     this.phase += dt * (o.climbing ? 3.0 : 0.7);
     k = this.phase;
     var sw = Math.sin(k);
-    b.rotation.x = -0.14;
+    var slab = clamp((o.wallNy || 0) / 0.82, 0, 1);
+    b.rotation.x = -0.14 - slab * 0.62;
     hp.rotation.set(0.08, 0, 0);
-    hp.position.y = 0.62 - 0.05 + Math.sin(k * 2) * 0.03;
+    hp.position.y = 0.62 - 0.05 + Math.sin(k * 2) * 0.03 - slab * 0.1;
 
     if (o.handL && o.handR) {
       this.aimArm(aL, o.handL);
@@ -2242,11 +2520,17 @@ Figure.prototype.pose = function (dt, o) {
       aL.el.rotation.set(-0.28, 0, 0); aR.el.rotation.set(-0.28, 0, 0);
     }
     var cw = Math.cos(k);
-    lL.hp.rotation.set(-0.5 + cw * 0.36, 0, 0.16);
-    lR.hp.rotation.set(-0.5 - cw * 0.36, 0, -0.16);
-    lL.kn.rotation.set(0.7 - cw * 0.28, 0, 0);
-    lR.kn.rotation.set(0.7 + cw * 0.28, 0, 0);
-    nk.rotation.set(-0.26, 0, 0);
+    // the body hangs off whichever hand is planted and swings to the other
+    this.lean = damp(this.lean, (o.grip || 0) * 0.5, 7, dt);
+    b.rotation.z = this.lean * 0.17;
+    hp.rotation.y = this.lean * 0.2;
+    hp.position.x = this.lean * 0.07;
+    // feet push in opposition to the hands, and the loaded leg straightens
+    lL.hp.rotation.set(-0.5 + cw * 0.42, 0, 0.16 + this.lean * 0.06);
+    lR.hp.rotation.set(-0.5 - cw * 0.42, 0, -0.16 + this.lean * 0.06);
+    lL.kn.rotation.set(clamp(0.72 - cw * 0.42, 0.05, 1.5), 0, 0);
+    lR.kn.rotation.set(clamp(0.72 + cw * 0.42, 0.05, 1.5), 0, 0);
+    nk.rotation.set(-0.26 + Math.sin(k * 2) * 0.05, this.lean * -0.22, 0);
     if (s === ST.SLIP) { b.rotation.x = 0.1; nk.rotation.x = 0.2; }
     if (o.tired) { hp.position.y += Math.sin(t * 21) * 0.012; }
     return;
@@ -2286,14 +2570,20 @@ Figure.prototype.pose = function (dt, o) {
   var s1 = Math.sin(k) * stride;
   var bob = Math.abs(Math.sin(k)) * 0.05 * stride;
 
-  hp.position.y = 0.62 + bob - (o.crouch ? 0.26 : 0);
-  b.rotation.x = run * 0.18 + (o.carrying ? 0.14 : 0);
-  hp.rotation.set(0, 0, 0);
+  var sq = this.squash * this.squash;
+  hp.position.y = 0.62 + bob - (o.crouch ? 0.26 : 0) - sq * 0.34;
+  b.rotation.x = run * 0.18 + (o.carrying ? 0.14 : 0) + sq * 0.3;
+  // a walk is a twist, not a slide: the hips lead, the shoulders answer, and
+  // the weight rolls onto whichever foot is down
+  var tw = Math.sin(k) * stride;
+  hp.rotation.set(0, tw * 0.17, Math.cos(k) * stride * 0.05);
+  hp.position.x = -Math.cos(k) * stride * 0.035;
+  b.rotation.y = -tw * 0.09;
 
-  lL.hp.rotation.set(s1 * 0.82, 0, 0.05);
-  lR.hp.rotation.set(-s1 * 0.82, 0, -0.05);
-  lL.kn.rotation.set(clamp(-s1 * 0.7 + 0.3, 0, 1.5), 0, 0);
-  lR.kn.rotation.set(clamp(s1 * 0.7 + 0.3, 0, 1.5), 0, 0);
+  lL.hp.rotation.set(s1 * 0.86, 0, 0.05);
+  lR.hp.rotation.set(-s1 * 0.86, 0, -0.05);
+  lL.kn.rotation.set(clamp(-s1 * 0.8 + 0.28 + sq * 1.1, 0, 1.6), 0, 0);
+  lR.kn.rotation.set(clamp(s1 * 0.8 + 0.28 + sq * 1.1, 0, 1.6), 0, 0);
 
   if (o.carrying) {
     aL.sh.rotation.set(-2.6, 0, 0.4); aR.sh.rotation.set(-2.6, 0, -0.4);
@@ -2305,7 +2595,9 @@ Figure.prototype.pose = function (dt, o) {
     aL.el.rotation.set(-0.28 - Math.max(0, s1) * 0.4, 0, 0);
     aR.el.rotation.set(-0.28 - Math.max(0, -s1) * 0.4, 0, 0);
   }
-  nk.rotation.set(-run * 0.1 + Math.sin(t * 1.1) * 0.03, 0, 0);
+  // the head holds its own line while the body works underneath it
+  nk.rotation.set(-run * 0.1 - b.rotation.x * 0.55 + Math.sin(t * 1.1) * 0.03,
+                  -b.rotation.y * 0.6, -hp.rotation.z * 0.5);
   b.rotation.z = o.cold ? Math.sin(t * 19) * 0.02 : 0;
 };
 
@@ -2610,7 +2902,7 @@ P.spawnAt = function (x, z, hintY) {
   P.vel.set(0, 0, 0);
   P.state = ST.GROUND; P.grounded = true; P.fallFrom = P.pos.y;
   P.noGrabT = 0.2; P.slipT = 0; P.groundT = 0;
-  P.tether = null; P.wall.has = false; P.climbing = false; P.handOn = false;
+  P.tether = null; P.wall.has = false; P.climbing = false; P.handOn = false; P.dropHands();
   return g;
 };
 
@@ -2674,7 +2966,7 @@ function tryGrab() {
 function letGo(push) {
   if (P.state !== ST.CLIMB && P.state !== ST.SLIP) return;
   P.state = ST.AIR;
-  P.wall.has = false; P.handOn = false; P.climbing = false; P.rope = null;
+  P.wall.has = false; P.handOn = false; P.dropHands(); P.climbing = false; P.rope = null;
   P.fallFrom = Math.max(P.fallFrom, P.pos.y);
   P.noGrabT = 0.12;
   if (push) { P.vel.x += P.wall.nx * push; P.vel.z += P.wall.nz * push; }
@@ -2686,14 +2978,14 @@ function ropeContact() {
     var gh = groundH(r.x, r.z);
     if (gh > T.VOID && Math.abs(gh - r.top) < 1.6 && T.normSmooth(r.x, r.z).y > K.WALK_COS) {
       P.pos.y = gh + 0.04; P.state = ST.GROUND; P.grounded = true; P.rope = null;
-      P.handOn = false; P.vel.set(0, 0, 0); P.noGrabT = 0.22; P.mantleT = 0.3; P.fallFrom = P.pos.y;
+      P.handOn = false; P.dropHands(); P.vel.set(0, 0, 0); P.noGrabT = 0.22; P.mantleT = 0.3; P.fallFrom = P.pos.y;
       return false;
     }
     P.pos.y = r.top;
   }
   if (P.pos.y < r.bot) {
     var gb = groundH(P.pos.x, P.pos.z);
-    if (gb > T.VOID && P.pos.y - gb < 0.6) { P.pos.y = gb; P.state = ST.GROUND; P.rope = null; P.handOn = false; P.fallFrom = P.pos.y; return false; }
+    if (gb > T.VOID && P.pos.y - gb < 0.6) { P.pos.y = gb; P.state = ST.GROUND; P.rope = null; P.handOn = false; P.dropHands(); P.fallFrom = P.pos.y; return false; }
     letGo(0); return false;
   }
   P.pos.x = r.x; P.pos.z = r.z;
@@ -2712,14 +3004,14 @@ function wallContact(dt) {
     var gh = groundH(mx2, mz2);
     if (gh > T.VOID && gh <= P.pos.y + 0.5 && gh >= P.pos.y - 1.8 && T.normSmooth(mx2, mz2).y > K.WALK_COS) {
       P.pos.x = mx2; P.pos.z = mz2; P.pos.y = gh + 0.04;
-      P.state = ST.GROUND; P.grounded = true; P.wall.has = false; P.handOn = false;
+      P.state = ST.GROUND; P.grounded = true; P.wall.has = false; P.handOn = false; P.dropHands();
       P.vel.set(0, 0, 0); P.noGrabT = 0.22; P.mantleT = 0.35; P.fallFrom = P.pos.y;
       FX.puff(P.pos.x, P.pos.y + 0.2, P.pos.z, 6, 0xd8d0c0);
       return false;
     }
     var below = groundH(P.pos.x, P.pos.z);
     if (below > T.VOID && P.pos.y - below < 0.45) {
-      P.pos.y = below; P.state = ST.GROUND; P.wall.has = false; P.handOn = false;
+      P.pos.y = below; P.state = ST.GROUND; P.wall.has = false; P.handOn = false; P.dropHands();
       P.vel.set(0, 0, 0); P.fallFrom = P.pos.y; P.noGrabT = 0.15;
       return false;
     }
@@ -2739,7 +3031,7 @@ function wallContact(dt) {
   if (pw.ny > K.WALK_COS + 0.05) {
     var g3 = groundH(P.pos.x, P.pos.z);
     if (g3 > T.VOID && g3 <= P.pos.y + 0.4 && P.pos.y - g3 < 1.1) {
-      P.pos.y = g3; P.state = ST.GROUND; P.wall.has = false; P.handOn = false;
+      P.pos.y = g3; P.state = ST.GROUND; P.wall.has = false; P.handOn = false; P.dropHands();
       P.fallFrom = P.pos.y; return false;
     }
   }
@@ -2747,21 +3039,74 @@ function wallContact(dt) {
 }
 
 // where the mittens are planted this frame
+// ---- hands that actually grip -------------------------------------------
+// A hand holds one world position while the body climbs past it, then lets
+// go and swings to a new hold above.  The two hands run half a cycle apart,
+// so there is always one on the rock.  Sliding both hands up with the body
+// is what made the old climb look like the scout was greased.
+function Hand(off) {
+  this.off = off;
+  this.at = new THREE.Vector3();
+  this.from = new THREE.Vector3();
+  this.to = new THREE.Vector3();
+  this.n = -999;
+  this.u = 1;
+}
+var TAU = Math.PI * 2, REACH_U = 0.34;
+Hand.prototype.step = function (ph, ax, ay, az, nx, nz) {
+  var a = ph + this.off, n = Math.floor(a / TAU);
+  this.u = a / TAU - n;
+  if (n !== this.n) {
+    this.n = n;
+    this.from.copy(this.at.lengthSq() ? this.at : new THREE.Vector3(ax, ay, az));
+    this.to.set(ax, ay, az);
+  } else if (this.u >= REACH_U) {
+    // planted: keep the hold where it is, but never let the arm stretch past
+    // what the body can actually reach
+    var dx = this.to.x - ax, dy = this.to.y - ay, dz = this.to.z - az;
+    if (dx * dx + dy * dy + dz * dz > 1.25) this.to.set(ax, ay, az);
+  }
+  if (this.u < REACH_U) {
+    var t = this.u / REACH_U, e = t * t * (3 - 2 * t);
+    this.at.lerpVectors(this.from, this.to, e);
+    var lift = Math.sin(t * Math.PI);
+    this.at.y += lift * 0.09;                       // the hand arcs up
+    this.at.x += nx * lift * 0.16;                  // and off the rock
+    this.at.z += nz * lift * 0.16;
+  } else {
+    this.at.copy(this.to);
+  }
+  return this.at;
+};
+P.hL = new Hand(0);
+P.hR = new Hand(Math.PI);
+P.handGrip = 0;
+// coming off the rock forgets the holds, or the next grab swings the hands
+// in from wherever they were left
+P.dropHands = function () {
+  P.hL.at.set(0, 0, 0); P.hL.n = -999;
+  P.hR.at.set(0, 0, 0); P.hR.n = -999;
+  P.handGrip = 0;
+};
+
 function placeHands() {
   var w = P.wall;
+  var ph = P.fig ? P.fig.phase : 0;
   if (P.rope) {
-    var ph0 = P.fig ? P.fig.phase : 0, sw0 = Math.sin(ph0) * 0.22;
-    P.handL.set(w.cx, P.pos.y + 1.24 + sw0, w.cz);
-    P.handR.set(w.cx, P.pos.y + 1.04 - sw0, w.cz);
+    var sw0 = Math.sin(ph) * 0.22;
+    P.handL.set(w.cx, P.pos.y + 1.26 + sw0, w.cz);
+    P.handR.set(w.cx, P.pos.y + 1.02 - sw0, w.cz);
     P.handOn = true;
+    P.handGrip = 0;
     return;
   }
   var rx = w.nz, rz = -w.nx;
-  var ph = P.fig ? P.fig.phase : 0;
-  var sw = Math.sin(ph) * 0.26;
-  var ox = w.cx + w.nx * 0.1, oz = w.cz + w.nz * 0.1;
-  P.handL.set(ox + rx * 0.36, P.pos.y + 1.16 + sw, oz + rz * 0.36);
-  P.handR.set(ox - rx * 0.36, P.pos.y + 1.16 - sw, oz - rz * 0.36);
+  var ox = w.cx + w.nx * 0.08, oz = w.cz + w.nz * 0.08;
+  var hy = P.pos.y + 1.32;
+  P.handL.copy(P.hL.step(ph, ox + rx * 0.34, hy, oz + rz * 0.34, w.nx, w.nz));
+  P.handR.copy(P.hR.step(ph, ox - rx * 0.34, hy, oz - rz * 0.34, w.nx, w.nz));
+  // which hand is bearing weight, for the body to lean onto
+  P.handGrip = (P.hL.u >= REACH_U ? -1 : 0) + (P.hR.u >= REACH_U ? 1 : 0);
   P.handOn = true;
 }
 
@@ -2877,7 +3222,7 @@ P.update = function (dt) {
     var ghd = supportH(P.pos.x, P.pos.z, P.pos.y);
     if (ghd > T.VOID && P.pos.y <= ghd) { P.pos.y = ghd; P.vel.y = 0; }
     if (P.pos.y < -40) Survive.respawn();
-    P.handOn = false;
+    P.handOn = false; P.dropHands();
     return;
   }
 
@@ -2899,7 +3244,7 @@ P.update = function (dt) {
 
   // ---- on foot or in the air
   if (P.state === ST.GROUND || P.state === ST.AIR) {
-    P.handOn = false;
+    P.handOn = false; P.dropHands();
     if (P.state === ST.GROUND) {
       moveGround(dt, wishX, wishZ, free && IN.shift());
       if (free && IN.jump() && P.st > 3 && P.mantleT <= 0) {
@@ -3163,6 +3508,7 @@ Survive.knockOut = function (cause) {
 };
 
 Survive.land = function (drop) {
+  if (P.fig) P.fig.land(clamp((drop - 0.8) / 7, 0, 1));
   if (drop < 1.2) return;
   FX.puff(P.pos.x, P.pos.y + 0.05, P.pos.z, Math.min(14, 3 + drop | 0), 0xd8d0c0);
   CAM.kick(clamp(drop / 26, 0.02, 0.55));
@@ -3591,7 +3937,7 @@ Remote.update = function (dt, t) {
     a.fig.pose(dt, {
       t: t, speed: a.carriedBy ? 0 : a.speed, state: a.state,
       climbing: a.climbing, carrying: !!a.carrying, hand: a.hand,
-      cold: false, tired: a.st < 18, vy: 0,
+      cold: false, tired: a.st < 18, vy: 0, wallNy: 0, grip: Math.sin(t * 3 + a.slot) > 0 ? 1 : -1,
     });
     if (now() - a.last > 6) a.online = false;
   }
@@ -4264,7 +4610,7 @@ Sky.build = function (scene) {
   Sky.mesh.renderOrder = -10;
   scene.add(Sky.mesh);
 
-  Sky.hemi = new THREE.HemisphereLight(0xbcd7f2, 0x8e8474, 0.9);
+  Sky.hemi = new THREE.HemisphereLight(0xbcd7f2, 0x6a6152, 0.4);
   scene.add(Sky.hemi);
 
   Sky.sun = new THREE.DirectionalLight(0xfff0d8, 1.2);
@@ -4272,12 +4618,12 @@ Sky.build = function (scene) {
   var s = Sky.sun.shadow;
   s.mapSize.width = s.mapSize.height = 2048;
   s.camera.near = 1; s.camera.far = 190;
-  s.camera.left = -46; s.camera.right = 46; s.camera.top = 46; s.camera.bottom = -46;
-  s.bias = -0.0016; s.normalBias = 0.6;
+  s.camera.left = -34; s.camera.right = 34; s.camera.top = 34; s.camera.bottom = -34;
+  s.bias = -0.0009; s.normalBias = 0.35;
   scene.add(Sky.sun);
   scene.add(Sky.sun.target);
 
-  Sky.fill = new THREE.DirectionalLight(0x9ec4e8, 0.42);
+  Sky.fill = new THREE.DirectionalLight(0x9ec4e8, 0.17);
   Sky.fill.position.set(-0.6, 0.4, -0.7);
   scene.add(Sky.fill);
 
@@ -4315,8 +4661,8 @@ Sky.update = function (dt, t, py, camPos) {
   u.sunDir.value.copy(Sky.sunDir);
 
   Sky.sun.color.copy(linCol(k.sun));
-  Sky.sun.intensity = damp(Sky.sun.intensity, k.sunI, 2, dt);
-  Sky.hemi.intensity = damp(Sky.hemi.intensity, k.amb, 2, dt);
+  Sky.sun.intensity = damp(Sky.sun.intensity, k.sunI * 1.62, 2, dt);
+  Sky.hemi.intensity = damp(Sky.hemi.intensity, k.amb * 0.55, 2, dt);
   Sky.hemi.color.copy(linCol(k.mid));
   Sky.fill.position.set(-Sky.sunDir.x, 0.55, -Sky.sunDir.z);
 
@@ -4594,6 +4940,8 @@ Game.init = function () {
   Game.renderer.setSize(window.innerWidth, window.innerHeight, false);
   Game.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   Game.renderer.outputEncoding = THREE.sRGBEncoding;
+  Game.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  Game.renderer.toneMappingExposure = 0.98;
   Game.renderer.shadowMap.enabled = true;
   Game.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   Game.renderer.setClearColor(0x10131a);
@@ -4647,7 +4995,7 @@ Game.buildWorld = function (seed, lootSeed, detail, done) {
     Run.roll(seed);                    // which biomes fill the middle slots
     T.build(seed);
     Wind.init(seed);
-    g.add(T.buildMesh());
+    g.add(T.buildMesh(detail));
     g.add(Props.build(seed, detail));
     g.add(Camps.build());
     g.add(Walls.build());
@@ -4778,6 +5126,8 @@ Game.loop = function (ts) {
     _figOpt.hand = P.handOutT > 0.4;
     _figOpt.handL = P.handOn ? P.handL : null;
     _figOpt.handR = P.handOn ? P.handR : null;
+    _figOpt.grip = P.handGrip;
+    _figOpt.wallNy = P.wall.has ? P.wall.ny : 0;
     P.fig.pose(dt, _figOpt);
     if (P.fig.torchLight) P.fig.torchLight.visible = !!P.torchOn;
 

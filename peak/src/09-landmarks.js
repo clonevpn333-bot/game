@@ -30,6 +30,31 @@ function tentGeo(col) {
   ]);
 }
 
+// A flag is the one thing on the mountain that is always moving, so a flat
+// quad reads as dead from any distance.  This is a pinned strip driven by two
+// travelling waves, and it costs 48 triangles.
+function makeFlag(col) {
+  var g = new THREE.PlaneGeometry(1.5, 0.86, 10, 3).toNonIndexed();
+  bakeColor(g, col);
+  var m = new THREE.Mesh(g, MAT.solidS);
+  m.castShadow = true;
+  var pa = g.attributes.position;
+  m.userData.base = new Float32Array(pa.array);
+  m.userData.wave = function (t) {
+    var a = pa.array, b = m.userData.base;
+    for (var i = 0; i < a.length; i += 3) {
+      var u = (b[i] + 0.75) / 1.5;                  // 0 at the mast, 1 at the fly
+      var amp = u * u * 0.46;
+      a[i + 2] = Math.sin(u * 7.4 - t * 5.2) * amp + Math.sin(u * 3.1 - t * 2.7) * amp * 0.5;
+      a[i + 1] = b[i + 1] + Math.sin(u * 4.2 - t * 4.1) * amp * 0.24;
+      a[i] = b[i] - u * amp * amp * 0.5;            // the cloth shortens as it curls
+    }
+    pa.needsUpdate = true;
+    g.computeVertexNormals();
+  };
+  return m;
+}
+
 Camps.build = function () {
   var g = Camps.group = new THREE.Group();
   var fg = fireGeo(), wg = wreckGeo(), tg = tentGeo(0xd8763a), tg2 = tentGeo(0x3a8fa8);
@@ -56,8 +81,12 @@ Camps.build = function () {
     // something tall so the camp reads from a long way down the mountain
     var pole = new THREE.Mesh(mergeParts([
       { g: new THREE.CylinderGeometry(0.07, 0.09, 4.6, 5), c: 0x5a4630, p: [0, 2.3, 0] },
-      { g: new THREE.BoxGeometry(1.5, 0.9, 0.06), c: i === 0 ? 0xff8a3d : 0xffd646, p: [0.78, 3.95, 0] },
     ]), MAT.solid);
+    // cloth, not a signboard: a strip that ripples away from the pole, pinned
+    // at the mast edge so the wave grows toward the fly
+    var flag = makeFlag(i === 0 ? 0xff8a3d : 0xffd646);
+    flag.position.set(0.04, 3.95, 0);
+    pole.add(flag);
     // every offset piece resolves its own ground; a marker pole hanging in
     // the air is exactly the sloppiness this is here to stop
     var pgY = T.hAt(c.x + 2.4, c.z - 1.5);
@@ -77,7 +106,7 @@ Camps.build = function () {
       });
     }
     g.add(node);
-    Camps.list.push({ x: c.x, y: ground, z: c.z, idx: i, lit: i === 0, node: node, f1: f1, f2: f2, light: light });
+    Camps.list.push({ x: c.x, y: ground, z: c.z, idx: i, lit: i === 0, node: node, f1: f1, f2: f2, light: light, flag: flag });
   }
   Camps.setLit(0, true);
   return g;
@@ -95,6 +124,7 @@ Camps.setLit = function (i, lit) {
 Camps.tick = function (dt, t) {
   for (var i = 0; i < Camps.list.length; i++) {
     var c = Camps.list[i];
+    if (c.flag) c.flag.userData.wave(t + i * 1.7);
     if (!c.lit) continue;
     var f = 0.82 + Math.sin(t * 11 + i) * 0.1 + Math.sin(t * 6.3 + i * 2) * 0.09;
     c.f1.scale.set(f, f * 1.15, f);
