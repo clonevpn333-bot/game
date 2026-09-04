@@ -466,6 +466,77 @@ async function boot(browser) {
   check('late joiners inherit the world and start at the highest fire',
     late.spawnCamp === late.want && late.want > 0, JSON.stringify(late));
 
+  // ---- the bar tells you what it is doing, and gives you a moment ---------
+  const grip = await A.evaluate(async () => {
+    const C = window.CRUX, P = C.P, K = C.K;
+    const spot = window.__wall(16) || window.__wall(10) || window.__wall(6);
+    window.__atWall(spot);
+    for (const k in P.status) P.status[k] = 0;
+    P.inv = [null, null, null]; P.carrying = null;
+    C.Survive.recalcMax();
+    P.st = P.stMax; P.extra = 0;
+
+    // how much wall a full bar actually buys, with statuses held out of it
+    let rate = 0, warnAt = null, lastT = -1, t0 = C.Game.t, y0 = P.pos.y;
+    await window.__hold(['KeyW', C.IN.grabKey], 2.2, () => {
+      if (C.Game.t === lastT) return;
+      lastT = C.Game.t;
+      for (const k in P.status) P.status[k] = 0;
+      C.Survive.recalcMax();
+      if (C.Survive.drain > rate) rate = C.Survive.drain;
+      if (!warnAt && document.getElementById('bar').classList.contains('warn')) warnAt = C.Game.t - t0;
+    });
+    const climbedPerSec = (P.pos.y - y0) / 2.2;
+    const secsOnFull = P.stMax / Math.max(0.01, rate);
+    const readout = document.getElementById('drain-t').textContent;
+    const shown = !document.getElementById('drain').classList.contains('hidden');
+
+    // now empty the bar on the wall and time the scrabble before the drop
+    P.st = 0; P.extra = 0;
+    let graceT = null, tE = C.Game.t;
+    lastT = -1;
+    await window.__hold(['KeyW', C.IN.grabKey], K.GRIP_GRACE + 1.2, () => {
+      if (C.Game.t === lastT) return;
+      lastT = C.Game.t;
+      for (const k in P.status) P.status[k] = 0;
+      C.Survive.recalcMax();
+      P.st = 0; P.extra = 0;                       // keep it empty
+      if (graceT === null && P.state === C.ST.SLIP) graceT = C.Game.t - tE;
+    });
+    return {
+      rate: +rate.toFixed(2), secsOnFull: +secsOnFull.toFixed(1),
+      metres: +(climbedPerSec * secsOnFull).toFixed(0), warnAt: warnAt && +warnAt.toFixed(1),
+      readout, shown, graceT: graceT && +graceT.toFixed(2), want: K.GRIP_GRACE,
+    };
+  });
+  check('a full bar buys a real stretch of wall', grip.secsOnFull > 11 && grip.metres > 20,
+    JSON.stringify({ secs: grip.secsOnFull, metres: grip.metres, rate: grip.rate }));
+  check('the wall tells you how long you have left', grip.shown && /^\d+s|60s\+|HOLD ON|resting/.test(grip.readout),
+    'reads "' + grip.readout + '"');
+  check('an empty bar scrabbles before it drops you', grip.graceT !== null && grip.graceT >= grip.want * 0.8,
+    JSON.stringify({ grace: grip.graceT, want: grip.want }));
+
+  // ---- the drain readout names what is costing you ------------------------
+  const why = await A.evaluate(async () => {
+    const C = window.CRUX, P = C.P;
+    window.__atWall(window.__wall(8));
+    P.st = P.stMax;
+    C.Survive.add('spool'); C.Survive.add('cannon');
+    let saw = null, wt = 0, lastT = -1;
+    await window.__hold(['KeyW', C.IN.grabKey], 1.2, () => {
+      if (C.Game.t === lastT) return;
+      lastT = C.Game.t;
+      if (C.Survive.drain > 0) saw = document.getElementById('drain-why').textContent;
+    });
+    wt = P.status.weight;
+    const slots = document.getElementById('pack').children;
+    const named = [];
+    for (let i = 0; i < 3; i++) if (slots[i].classList.contains('has')) named.push(slots[i].children[2].textContent);
+    return { why: saw, weight: +wt.toFixed(0), named, wtShown: document.getElementById('pack-wt').children[1].textContent };
+  });
+  check('the pack is on screen with what you are carrying', why.named.length === 2 && +why.wtShown > 20,
+    JSON.stringify({ slots: why.named, weight: why.wtShown }));
+
   await browser.close();
   console.log('');
   if (fails.length) { console.log('FAILED ' + fails.length + ':\n - ' + fails.join('\n - ')); process.exit(1); }

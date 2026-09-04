@@ -46,11 +46,6 @@ canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
 #out{position:absolute;left:50%;top:-30px;transform:translateX(-50%);font-size:19px;font-weight:900;
   color:#ff5b52;text-shadow:0 2px 6px #000;animation:blip .8s infinite}
 
-#item{position:absolute;right:24px;bottom:30px;display:flex;align-items:center;gap:9px;
-  background:rgba(10,12,16,.6);border-radius:11px;padding:8px 13px 8px 10px;
-  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14)}
-#item-ic{font-size:22px}
-#item-nm{font-size:11.5px;font-weight:700;letter-spacing:.05em;opacity:.85}
 
 #mates{position:absolute;left:22px;top:20px;display:flex;flex-direction:column;gap:5px}
 .mate{display:flex;align-items:center;gap:7px;background:rgba(10,12,16,.5);border-radius:8px;
@@ -159,3 +154,35 @@ kbd{background:rgba(255,255,255,.12);border-radius:4px;padding:1px 5px;font-fami
 .spin{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.13);
   border-top-color:var(--p0);animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---- the pack: three slots, always on screen.  A held item you cannot see
+   is an item you forget you have, and there was no inventory at all before. */
+#pack{position:absolute;right:22px;bottom:26px;display:flex;align-items:flex-end;gap:7px;
+  font-family:inherit;pointer-events:none}
+#pack .slot{position:relative;width:62px;height:62px;border-radius:12px;
+  background:rgba(16,19,26,.62);border:1.5px solid rgba(255,255,255,.13);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  transition:border-color .12s,background .12s,transform .12s}
+#pack .slot.on{border-color:#a6f04e;background:rgba(28,40,20,.8);transform:translateY(-5px)}
+#pack .slot.has .nm{opacity:.9}
+#pack .slot kbd{position:absolute;top:3px;left:5px;font-size:9px;opacity:.5;
+  font-family:inherit;font-weight:800;background:none;border:none;padding:0}
+#pack .slot .ic{font-size:21px;line-height:1;filter:saturate(.92)}
+#pack .slot .nm{font-size:8.5px;font-weight:700;letter-spacing:.03em;opacity:.32;
+  max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+#pack-wt{display:flex;align-items:center;gap:3px;font-size:10px;font-weight:800;
+  opacity:.5;padding-bottom:6px}
+#pack-wt.heavy{opacity:.95;color:#ffb45a}
+
+/* ---- how long the wall is going to let you hold on, and what is costing you */
+#drain{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);
+  display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;
+  letter-spacing:.04em;text-shadow:0 1px 3px rgba(0,0,0,.75);transition:opacity .18s}
+#drain.hidden{opacity:0}
+#drain b{font-size:14px;color:#a6f04e}
+#drain.warn b{color:#ffc447}
+#drain.crit b{color:#ff5b52;animation:pulse .38s infinite}
+#drain span{opacity:.72;font-weight:700}
+#bar.warn #bar-fill{animation:pulse .78s infinite}
+#bar.crit{box-shadow:inset 0 0 0 2px rgba(255,91,82,.9),0 0 22px rgba(255,60,50,.55)}
+#bar.crit #bar-fill{animation:pulse .26s infinite}

@@ -233,6 +233,7 @@ Hand.prototype.step = function (ph, ax, ay, az, nx, nz) {
 P.hL = new Hand(0);
 P.hR = new Hand(Math.PI);
 P.handGrip = 0;
+P.gripT = 0;                    // how long the bar has been empty on the wall
 // coming off the rock forgets the holds, or the next grab swings the hands
 // in from wherever they were left
 P.dropHands = function () {

@@ -9,8 +9,10 @@ HUD.init = function () {
   var g = function (id) { return document.getElementById(id); };
   HUD.el = {
     hud: g('hud'), bar: g('bar'), fill: g('bar-fill'), extra: g('bar-extra'),
+    drain: g('drain'), drainT: g('drain-t'), drainWhy: g('drain-why'),
+    pack: g('pack'), packWt: g('pack-wt'),
     segs: g('bar-segs'), icons: g('bar-icons'), hp: g('bar-hp'),
-    mates: g('mates'), item: g('item'), itemIc: g('item-ic'), itemNm: g('item-nm'),
+    mates: g('mates'),
     prompt: g('prompt'), ring: g('ring'), ringP: g('ring-p'), ringT: g('ring-t'),
     toasts: g('toasts'), hurt: g('hurt'), vig: g('vig'),
     tags: g('tags'), room: g('room-chip'), out: g('out'),
@@ -69,8 +71,13 @@ HUD.tick = function (dt, cam) {
     seg.icon.style.right = (right + w / 2) + '%';
     right += w;
   }
-  e.bar.classList.toggle('low', P.st < 18 && P.state === ST.CLIMB);
+  var onWall = P.state === ST.CLIMB || P.state === ST.SLIP;
+  var rate = Survive.drain, left = rate > 0.05 ? (P.st + P.extra) / rate : 99;
+  e.bar.classList.toggle('warn', onWall && left < 6 && left >= 2.5);
+  e.bar.classList.toggle('crit', onWall && (left < 2.5 || P.gripT > 0));
+  e.bar.classList.toggle('low', onWall && left < 6);
   e.bar.classList.toggle('gone', P.stMax < 22);
+  HUD.drainRead(onWall, rate, left);
 
   HUD.hurtT = Math.max(0, HUD.hurtT - dt * 1.5);
   e.hurt.style.opacity = HUD.hurtT * 0.85;
@@ -82,7 +89,7 @@ HUD.tick = function (dt, cam) {
   e.out.classList.toggle('hidden', P.state !== ST.OUT);
   if (P.state === ST.OUT) e.out.textContent = Math.ceil(P.outT) + '';
 
-  HUD.item();
+  HUD.pack();
   HUD.mates();
   HUD.prompt();
   HUD.tags(cam);
@@ -97,14 +104,50 @@ HUD.tick = function (dt, cam) {
   }
 };
 
-HUD.item = function () {
-  var s = P.inv[P.sel];
-  HUD.el.item.classList.toggle('hidden', !s);
-  if (!s) { HUD._item = null; return; }
-  if (HUD._item === s.k) return;
-  HUD._item = s.k;
-  HUD.el.itemIc.textContent = ITEM[s.k].ic;
-  HUD.el.itemNm.textContent = ITEM[s.k].nm;
+// Seconds of wall left at the rate you are actually paying, plus the reason
+// it is that rate.  Before this the only signal was the bar turning red with
+// two seconds to go, which is not a warning, it is a notification.
+var WHY_TXT = {
+  wind: 'wind', ice: 'ice', kiln: 'hot rock', carrying: 'carrying',
+  rope: 'on rope', piton: 'resting',
+};
+HUD.drainRead = function (onWall, rate, left) {
+  var e = HUD.el;
+  e.drain.classList.toggle('hidden', !onWall);
+  if (!onWall) return;
+  if (P.gripT > 0) {
+    e.drainT.textContent = 'HOLD ON';
+  } else {
+    e.drainT.textContent = rate <= 0 ? 'resting' : (left > 60 ? '60s+' : Math.ceil(left) + 's');
+  }
+  var why = [];
+  for (var i = 0; i < Survive.why.length; i++) why.push(WHY_TXT[Survive.why[i]] || Survive.why[i]);
+  var txt = why.join(' · ');
+  if (e._why !== txt) { e.drainWhy.textContent = txt; e._why = txt; }
+  e.drain.classList.toggle('warn', left < 6 && left >= 2.5 && P.gripT <= 0);
+  e.drain.classList.toggle('crit', left < 2.5 || P.gripT > 0);
+};
+
+// The pack, always on screen: three slots, what is in them, and what it all
+// weighs, because weight is the one status you choose to carry.
+HUD.pack = function () {
+  var slots = HUD.el.pack.children, wt = 0;
+  for (var i = 0; i < 3; i++) {
+    var el = slots[i], s = P.inv[i], it = s ? ITEM[s.k] : null;
+    if (it) wt += it.wt * s.n;
+    var key = (s ? s.k : '-') + (i === P.sel ? '*' : '');
+    el.classList.toggle('on', i === P.sel);
+    el.classList.toggle('has', !!s);
+    if (el._key === key) continue;
+    el._key = key;
+    el.children[1].textContent = it ? it.ic : '';
+    el.children[2].textContent = it ? (it.nm + (s.n > 1 ? ' x' + s.n : '')) : 'empty';
+  }
+  if (HUD._wt !== wt) {
+    HUD._wt = wt;
+    HUD.el.packWt.children[1].textContent = wt;
+    HUD.el.packWt.classList.toggle('heavy', wt >= 18);
+  }
 };
 
 HUD.mates = function () {

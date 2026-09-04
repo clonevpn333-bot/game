@@ -19,13 +19,14 @@ var K = {
   SLIP_MAX: 13,
 
   ST_MAX: 100,          // the bar is always 100 wide; statuses eat into it
-  ST_CLIMB: 8.6,        // per second on the wall
-  ST_HANG: 3.4,         // per second just holding on
+  ST_CLIMB: 6.4,        // per second on the wall: a full bar is ~15s of climbing
+  ST_HANG: 2.2,         // per second just holding on - cheap enough to stop and look
   ST_SPRINT: 9.0,
   ST_JUMP: 9, ST_LUNGE: 17,
   ST_REGEN: 26,         // on the ground, once you have stood still a moment
   ST_REGEN_PITON: 14,
   ST_REGEN_DELAY: 0.45,
+  GRIP_GRACE: 1.1,      // seconds of scrabbling before the grip actually goes
   EXTRA_MAX: 100,       // bonus stamina: climb-only, never regenerates
 
   HP_MAX: 100,

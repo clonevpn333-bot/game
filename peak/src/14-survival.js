@@ -1,7 +1,9 @@
 // ============================================================ STAMINA & LIFE
 // One bar. Statuses eat into it from the right, so the green you have left
 // is the whole story of how far you can still climb.
-var Survive = { atFire: false, camp: null, holdF: 0, deaths: 0 };
+var Survive = {
+  drain: 0, why: [],      // current cost of holding the wall, and what is making it that
+ atFire: false, camp: null, holdF: 0, deaths: 0 };
 
 Survive.statusSum = function () {
   var s = 0;
@@ -59,28 +61,49 @@ Survive.tick = function (dt) {
   }
 
   if (P.state === ST.CLIMB) {
+    // Everything that makes the wall cost more is named here, so the HUD can
+    // say WHY the bar is going down fast instead of leaving you to guess.
     var drain = (P.climbing ? K.ST_CLIMB : K.ST_HANG);
-    drain += Wind.at(P.pos.y, 1) * 1.6;       // gusts make everything harder
-    if (P.rope) drain *= 0.3;                 // a rope is most of the work done
-    else if (P.wall.surf === SF.ICE) drain *= 1.35;
-    else if (biomeIs(P.pos.y, 'kiln')) drain *= 1.4;   // molten rock costs extra
-    if (P.carrying) drain *= 1.8;
+    Survive.why.length = 0;
+    var gust = Math.min(Wind.at(P.pos.y, 1) * 0.9, 3.2);   // capped: a gust used to double the cost
+    if (gust > 0.5) { drain += gust; Survive.why.push('wind'); }
+    if (P.rope) { drain *= 0.3; Survive.why.push('rope'); }
+    else if (P.wall.surf === SF.ICE) { drain *= 1.35; Survive.why.push('ice'); }
+    else if (biomeIs(P.pos.y, 'kiln')) { drain *= 1.4; Survive.why.push('kiln'); }
+    if (P.carrying) { drain *= 1.5; Survive.why.push('carrying'); }
+    Survive.drain = drain;
     if (P.onPiton) {
+      Survive.drain = -K.ST_REGEN_PITON;
+      Survive.why.length = 0; Survive.why.push('piton');
       // the one place you can get your breath back off the ground
       P.st = Math.min(P.stMax, P.st + K.ST_REGEN_PITON * dt);
+      P.gripT = 0;
     } else {
       var want = drain * dt;
       var paid = Survive.spend(want);
       if (paid < want - 1e-6 && P.st <= 0 && P.extra <= 0) {
-        P.state = ST.SLIP;
-        P.vel.y = -1.2;
-        HUD.toast('your grip goes', '#ff5b52');
-        CAM.kick(0.4);
-      }
+        // You do not drop the instant the bar empties.  You scrabble first,
+        // loudly, for about a second - that is the warning.  Reach a piton,
+        // a rope or a ledge inside it and you keep the wall.
+        P.gripT += dt;
+        if (P.gripT >= K.GRIP_GRACE) {
+          P.state = ST.SLIP;
+          P.vel.y = -1.2;
+          HUD.toast('your grip goes', '#ff5b52');
+          CAM.kick(0.4);
+        } else if (P.gripT < dt * 2) {
+          HUD.toast('losing your grip!', '#ff5b52');
+          CAM.kick(0.22);
+        }
+      } else P.gripT = 0;
     }
   } else if (P.state === ST.SLIP) {
+    Survive.drain = 0; Survive.why.length = 0;
     if (P.st > 0.5) { P.state = ST.CLIMB; }
-  } else if (P.state === ST.GROUND && P.groundT >= K.ST_REGEN_DELAY && !P.sprinting) {
+  } else {
+    Survive.drain = 0; Survive.why.length = 0; P.gripT = 0;
+  }
+  if (P.state === ST.GROUND && P.groundT >= K.ST_REGEN_DELAY && !P.sprinting) {
     P.st = Math.min(P.stMax, P.st + K.ST_REGEN * dt * (Survive.atFire ? 1.5 : 1));
   }
 

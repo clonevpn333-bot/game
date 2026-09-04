@@ -15,9 +15,21 @@ and nothing that grabs on for you.
 
 Climbing costs stamina every second you are on the rock, and it costs some just
 to hang there. It never comes back while you are holding on. Let go of the grab
-key and you drop, immediately, from wherever you are. Run the bar dry mid-climb
-and your grip goes: you slide down the face, faster and faster, and whatever you
-hit at the bottom is going to hurt.
+key and you drop, immediately, from wherever you are.
+
+A full bar is about **15 seconds and 34 metres** of climbing. While you are on
+the wall a readout above the bar counts down **how many seconds you have left at
+the rate you are actually paying**, and names what is costing you — wind, ice,
+hot rock, what you are carrying. That matters because the rate is not fixed: a
+gale, an icy face, the Kiln's rock, or a mate on your shoulders all add to it,
+and none of that used to be visible.
+
+The bar warns twice: it pulses amber around six seconds out, and goes red and
+fast under three. And when it finally empties you do not drop instantly — you
+scrabble for about a second, loudly, and if you can reach a piton, a rope or a
+ledge in that moment you keep the wall. Miss it and your grip goes: you slide
+down the face, faster and faster, and whatever you hit at the bottom is going
+to hurt.
 
 That is the entire tension of the game. Everything else is arithmetic on the bar.
 
@@ -27,6 +39,14 @@ That is the entire tension of the game. Everything else is arithmetic on the bar
 - A **piton** hammered into the rock is the one place off the ground where you
   can get your breath back.
 - A **rope** is most of the work already done — climbing one is cheap.
+
+## Your pack
+
+Three slots, always on screen in the bottom right, with what is in each one and
+what the lot weighs. `1`–`3` picks a slot, `F` fills it from whatever is at your
+feet, `C` uses what is in it, `X` drops it. Weight is the one status you choose
+to carry: it eats into the right-hand end of the stamina bar, and the counter
+turns amber once you are hauling enough for it to matter.
 
 ## The stamina bar
 
@@ -112,7 +132,7 @@ Pointer lock is always on — click once and the mouse is yours.
 | `RMB` | helping hand (empty hands only) |
 | `F` | take gear / open a suitcase · hold to revive · tap to carry |
 | `C` | use the held item |
-| `1`–`3` | pack slot |
+| `1`–`3` | pack slot (the tray, bottom right) |
 | `X` | drop |
 | `Q` | ping (hold for danger) |
 | `V` | first / third person |
@@ -246,6 +266,8 @@ It loads the game, spawns in, and drives it:
   attribute that is not there, and flat-tints the whole island)
 - the sun out-lights the sky it works against
 - a climbing hand grips its hold instead of sliding, and the camp flag moves
+- a full bar buys over 20 m of wall, the countdown reads out while you climb,
+  an empty bar scrabbles before it drops you, and the pack shows what you carry
 - the camera never ends up inside the rock, over 42 random placements
 - no loot or suitcase is floating in the air or sunk in the rock
 - no console or page errors throughout

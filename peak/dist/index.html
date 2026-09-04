@@ -52,11 +52,6 @@ canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
 #out{position:absolute;left:50%;top:-30px;transform:translateX(-50%);font-size:19px;font-weight:900;
   color:#ff5b52;text-shadow:0 2px 6px #000;animation:blip .8s infinite}
 
-#item{position:absolute;right:24px;bottom:30px;display:flex;align-items:center;gap:9px;
-  background:rgba(10,12,16,.6);border-radius:11px;padding:8px 13px 8px 10px;
-  box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14)}
-#item-ic{font-size:22px}
-#item-nm{font-size:11.5px;font-weight:700;letter-spacing:.05em;opacity:.85}
 
 #mates{position:absolute;left:22px;top:20px;display:flex;flex-direction:column;gap:5px}
 .mate{display:flex;align-items:center;gap:7px;background:rgba(10,12,16,.5);border-radius:8px;
@@ -165,6 +160,38 @@ kbd{background:rgba(255,255,255,.12);border-radius:4px;padding:1px 5px;font-fami
 .spin{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.13);
   border-top-color:var(--p0);animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
+
+/* ---- the pack: three slots, always on screen.  A held item you cannot see
+   is an item you forget you have, and there was no inventory at all before. */
+#pack{position:absolute;right:22px;bottom:26px;display:flex;align-items:flex-end;gap:7px;
+  font-family:inherit;pointer-events:none}
+#pack .slot{position:relative;width:62px;height:62px;border-radius:12px;
+  background:rgba(16,19,26,.62);border:1.5px solid rgba(255,255,255,.13);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  transition:border-color .12s,background .12s,transform .12s}
+#pack .slot.on{border-color:#a6f04e;background:rgba(28,40,20,.8);transform:translateY(-5px)}
+#pack .slot.has .nm{opacity:.9}
+#pack .slot kbd{position:absolute;top:3px;left:5px;font-size:9px;opacity:.5;
+  font-family:inherit;font-weight:800;background:none;border:none;padding:0}
+#pack .slot .ic{font-size:21px;line-height:1;filter:saturate(.92)}
+#pack .slot .nm{font-size:8.5px;font-weight:700;letter-spacing:.03em;opacity:.32;
+  max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+#pack-wt{display:flex;align-items:center;gap:3px;font-size:10px;font-weight:800;
+  opacity:.5;padding-bottom:6px}
+#pack-wt.heavy{opacity:.95;color:#ffb45a}
+
+/* ---- how long the wall is going to let you hold on, and what is costing you */
+#drain{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);
+  display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;
+  letter-spacing:.04em;text-shadow:0 1px 3px rgba(0,0,0,.75);transition:opacity .18s}
+#drain.hidden{opacity:0}
+#drain b{font-size:14px;color:#a6f04e}
+#drain.warn b{color:#ffc447}
+#drain.crit b{color:#ff5b52;animation:pulse .38s infinite}
+#drain span{opacity:.72;font-weight:700}
+#bar.warn #bar-fill{animation:pulse .78s infinite}
+#bar.crit{box-shadow:inset 0 0 0 2px rgba(255,91,82,.9),0 0 22px rgba(255,60,50,.55)}
+#bar.crit #bar-fill{animation:pulse .26s infinite}
 </style>
 </head>
 <body>
@@ -185,7 +212,13 @@ kbd{background:rgba(255,255,255,.12);border-radius:4px;padding:1px 5px;font-fami
     <div id="out" class="hidden"></div>
   </div>
 
-  <div id="item" class="hidden"><span id="item-ic"></span><span id="item-nm"></span></div>
+  <div id="drain" class="hidden"><b id="drain-t">15s</b><span id="drain-why"></span></div>
+  <div id="pack">
+    <div class="slot" data-k="1"><kbd>1</kbd><span class="ic"></span><span class="nm">empty</span></div>
+    <div class="slot" data-k="2"><kbd>2</kbd><span class="ic"></span><span class="nm">empty</span></div>
+    <div class="slot" data-k="3"><kbd>3</kbd><span class="ic"></span><span class="nm">empty</span></div>
+    <div id="pack-wt"><span>⚖</span><b>0</b></div>
+  </div>
 
   <div id="prompt"></div>
   <div id="ring" class="hidden"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><circle cx="20" cy="20" r="17" id="ring-p"/></svg><span id="ring-t"></span></div>
@@ -235,7 +268,7 @@ kbd{background:rgba(255,255,255,.12);border-radius:4px;padding:1px 5px;font-fami
     <span><kbd id="k-grab">E</kbd> <b>hold to grab</b></span><span><kbd>LMB</kbd> grab (alternate)</span>
     <span><kbd>Shift</kbd> sprint / lunge</span><span><kbd>RMB</kbd> helping hand</span>
     <span><kbd>F</kbd> take · hold to revive</span><span><kbd>C</kbd> use item</span>
-    <span><kbd>1-3</kbd> pack slot</span><span><kbd>X</kbd> drop</span>
+    <span><kbd>1-3</kbd> pack slot (bottom right)</span><span><kbd>X</kbd> drop</span>
     <span><kbd>Q</kbd> ping (hold = danger)</span><span><kbd>V</kbd> first / third person</span>
   </div>
   <div class="row"><label>Grab key</label><button id="btn-grab" class="bind">E</button><small class="hint">click, then press a key</small></div>
@@ -286,13 +319,14 @@ var K = {
   SLIP_MAX: 13,
 
   ST_MAX: 100,          // the bar is always 100 wide; statuses eat into it
-  ST_CLIMB: 8.6,        // per second on the wall
-  ST_HANG: 3.4,         // per second just holding on
+  ST_CLIMB: 6.4,        // per second on the wall: a full bar is ~15s of climbing
+  ST_HANG: 2.2,         // per second just holding on - cheap enough to stop and look
   ST_SPRINT: 9.0,
   ST_JUMP: 9, ST_LUNGE: 17,
   ST_REGEN: 26,         // on the ground, once you have stood still a moment
   ST_REGEN_PITON: 14,
   ST_REGEN_DELAY: 0.45,
+  GRIP_GRACE: 1.1,      // seconds of scrabbling before the grip actually goes
   EXTRA_MAX: 100,       // bonus stamina: climb-only, never regenerates
 
   HP_MAX: 100,
@@ -3081,6 +3115,7 @@ Hand.prototype.step = function (ph, ax, ay, az, nx, nz) {
 P.hL = new Hand(0);
 P.hR = new Hand(Math.PI);
 P.handGrip = 0;
+P.gripT = 0;                    // how long the bar has been empty on the wall
 // coming off the rock forgets the holds, or the next grab swings the hands
 // in from wherever they were left
 P.dropHands = function () {
@@ -3331,7 +3366,9 @@ P.update = function (dt) {
 // ============================================================ STAMINA & LIFE
 // One bar. Statuses eat into it from the right, so the green you have left
 // is the whole story of how far you can still climb.
-var Survive = { atFire: false, camp: null, holdF: 0, deaths: 0 };
+var Survive = {
+  drain: 0, why: [],      // current cost of holding the wall, and what is making it that
+ atFire: false, camp: null, holdF: 0, deaths: 0 };
 
 Survive.statusSum = function () {
   var s = 0;
@@ -3389,28 +3426,49 @@ Survive.tick = function (dt) {
   }
 
   if (P.state === ST.CLIMB) {
+    // Everything that makes the wall cost more is named here, so the HUD can
+    // say WHY the bar is going down fast instead of leaving you to guess.
     var drain = (P.climbing ? K.ST_CLIMB : K.ST_HANG);
-    drain += Wind.at(P.pos.y, 1) * 1.6;       // gusts make everything harder
-    if (P.rope) drain *= 0.3;                 // a rope is most of the work done
-    else if (P.wall.surf === SF.ICE) drain *= 1.35;
-    else if (biomeIs(P.pos.y, 'kiln')) drain *= 1.4;   // molten rock costs extra
-    if (P.carrying) drain *= 1.8;
+    Survive.why.length = 0;
+    var gust = Math.min(Wind.at(P.pos.y, 1) * 0.9, 3.2);   // capped: a gust used to double the cost
+    if (gust > 0.5) { drain += gust; Survive.why.push('wind'); }
+    if (P.rope) { drain *= 0.3; Survive.why.push('rope'); }
+    else if (P.wall.surf === SF.ICE) { drain *= 1.35; Survive.why.push('ice'); }
+    else if (biomeIs(P.pos.y, 'kiln')) { drain *= 1.4; Survive.why.push('kiln'); }
+    if (P.carrying) { drain *= 1.5; Survive.why.push('carrying'); }
+    Survive.drain = drain;
     if (P.onPiton) {
+      Survive.drain = -K.ST_REGEN_PITON;
+      Survive.why.length = 0; Survive.why.push('piton');
       // the one place you can get your breath back off the ground
       P.st = Math.min(P.stMax, P.st + K.ST_REGEN_PITON * dt);
+      P.gripT = 0;
     } else {
       var want = drain * dt;
       var paid = Survive.spend(want);
       if (paid < want - 1e-6 && P.st <= 0 && P.extra <= 0) {
-        P.state = ST.SLIP;
-        P.vel.y = -1.2;
-        HUD.toast('your grip goes', '#ff5b52');
-        CAM.kick(0.4);
-      }
+        // You do not drop the instant the bar empties.  You scrabble first,
+        // loudly, for about a second - that is the warning.  Reach a piton,
+        // a rope or a ledge inside it and you keep the wall.
+        P.gripT += dt;
+        if (P.gripT >= K.GRIP_GRACE) {
+          P.state = ST.SLIP;
+          P.vel.y = -1.2;
+          HUD.toast('your grip goes', '#ff5b52');
+          CAM.kick(0.4);
+        } else if (P.gripT < dt * 2) {
+          HUD.toast('losing your grip!', '#ff5b52');
+          CAM.kick(0.22);
+        }
+      } else P.gripT = 0;
     }
   } else if (P.state === ST.SLIP) {
+    Survive.drain = 0; Survive.why.length = 0;
     if (P.st > 0.5) { P.state = ST.CLIMB; }
-  } else if (P.state === ST.GROUND && P.groundT >= K.ST_REGEN_DELAY && !P.sprinting) {
+  } else {
+    Survive.drain = 0; Survive.why.length = 0; P.gripT = 0;
+  }
+  if (P.state === ST.GROUND && P.groundT >= K.ST_REGEN_DELAY && !P.sprinting) {
     P.st = Math.min(P.stMax, P.st + K.ST_REGEN * dt * (Survive.atFire ? 1.5 : 1));
   }
 
@@ -4697,8 +4755,10 @@ HUD.init = function () {
   var g = function (id) { return document.getElementById(id); };
   HUD.el = {
     hud: g('hud'), bar: g('bar'), fill: g('bar-fill'), extra: g('bar-extra'),
+    drain: g('drain'), drainT: g('drain-t'), drainWhy: g('drain-why'),
+    pack: g('pack'), packWt: g('pack-wt'),
     segs: g('bar-segs'), icons: g('bar-icons'), hp: g('bar-hp'),
-    mates: g('mates'), item: g('item'), itemIc: g('item-ic'), itemNm: g('item-nm'),
+    mates: g('mates'),
     prompt: g('prompt'), ring: g('ring'), ringP: g('ring-p'), ringT: g('ring-t'),
     toasts: g('toasts'), hurt: g('hurt'), vig: g('vig'),
     tags: g('tags'), room: g('room-chip'), out: g('out'),
@@ -4757,8 +4817,13 @@ HUD.tick = function (dt, cam) {
     seg.icon.style.right = (right + w / 2) + '%';
     right += w;
   }
-  e.bar.classList.toggle('low', P.st < 18 && P.state === ST.CLIMB);
+  var onWall = P.state === ST.CLIMB || P.state === ST.SLIP;
+  var rate = Survive.drain, left = rate > 0.05 ? (P.st + P.extra) / rate : 99;
+  e.bar.classList.toggle('warn', onWall && left < 6 && left >= 2.5);
+  e.bar.classList.toggle('crit', onWall && (left < 2.5 || P.gripT > 0));
+  e.bar.classList.toggle('low', onWall && left < 6);
   e.bar.classList.toggle('gone', P.stMax < 22);
+  HUD.drainRead(onWall, rate, left);
 
   HUD.hurtT = Math.max(0, HUD.hurtT - dt * 1.5);
   e.hurt.style.opacity = HUD.hurtT * 0.85;
@@ -4770,7 +4835,7 @@ HUD.tick = function (dt, cam) {
   e.out.classList.toggle('hidden', P.state !== ST.OUT);
   if (P.state === ST.OUT) e.out.textContent = Math.ceil(P.outT) + '';
 
-  HUD.item();
+  HUD.pack();
   HUD.mates();
   HUD.prompt();
   HUD.tags(cam);
@@ -4785,14 +4850,50 @@ HUD.tick = function (dt, cam) {
   }
 };
 
-HUD.item = function () {
-  var s = P.inv[P.sel];
-  HUD.el.item.classList.toggle('hidden', !s);
-  if (!s) { HUD._item = null; return; }
-  if (HUD._item === s.k) return;
-  HUD._item = s.k;
-  HUD.el.itemIc.textContent = ITEM[s.k].ic;
-  HUD.el.itemNm.textContent = ITEM[s.k].nm;
+// Seconds of wall left at the rate you are actually paying, plus the reason
+// it is that rate.  Before this the only signal was the bar turning red with
+// two seconds to go, which is not a warning, it is a notification.
+var WHY_TXT = {
+  wind: 'wind', ice: 'ice', kiln: 'hot rock', carrying: 'carrying',
+  rope: 'on rope', piton: 'resting',
+};
+HUD.drainRead = function (onWall, rate, left) {
+  var e = HUD.el;
+  e.drain.classList.toggle('hidden', !onWall);
+  if (!onWall) return;
+  if (P.gripT > 0) {
+    e.drainT.textContent = 'HOLD ON';
+  } else {
+    e.drainT.textContent = rate <= 0 ? 'resting' : (left > 60 ? '60s+' : Math.ceil(left) + 's');
+  }
+  var why = [];
+  for (var i = 0; i < Survive.why.length; i++) why.push(WHY_TXT[Survive.why[i]] || Survive.why[i]);
+  var txt = why.join(' · ');
+  if (e._why !== txt) { e.drainWhy.textContent = txt; e._why = txt; }
+  e.drain.classList.toggle('warn', left < 6 && left >= 2.5 && P.gripT <= 0);
+  e.drain.classList.toggle('crit', left < 2.5 || P.gripT > 0);
+};
+
+// The pack, always on screen: three slots, what is in them, and what it all
+// weighs, because weight is the one status you choose to carry.
+HUD.pack = function () {
+  var slots = HUD.el.pack.children, wt = 0;
+  for (var i = 0; i < 3; i++) {
+    var el = slots[i], s = P.inv[i], it = s ? ITEM[s.k] : null;
+    if (it) wt += it.wt * s.n;
+    var key = (s ? s.k : '-') + (i === P.sel ? '*' : '');
+    el.classList.toggle('on', i === P.sel);
+    el.classList.toggle('has', !!s);
+    if (el._key === key) continue;
+    el._key = key;
+    el.children[1].textContent = it ? it.ic : '';
+    el.children[2].textContent = it ? (it.nm + (s.n > 1 ? ' x' + s.n : '')) : 'empty';
+  }
+  if (HUD._wt !== wt) {
+    HUD._wt = wt;
+    HUD.el.packWt.children[1].textContent = wt;
+    HUD.el.packWt.classList.toggle('heavy', wt >= 18);
+  }
 };
 
 HUD.mates = function () {
