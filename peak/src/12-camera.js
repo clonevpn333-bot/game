@@ -12,8 +12,12 @@ var CAM = {
 var _hit = { x: 0, y: 0, z: 0, d: 0, hit: false };
 var _cdir = new THREE.Vector3(), _ctgt = new THREE.Vector3();
 
+CAM.yawRate = 0;
 CAM.applyMouse = function (dx, dy) {
-  CAM.yaw -= dx * IN.sensX * (IN.invX ? -1 : 1);
+  var dyaw = dx * IN.sensX * (IN.invX ? -1 : 1);
+  CAM.yaw -= dyaw;
+  // how hard you are swinging the view, for the body to bank into
+  CAM.yawRate = clamp(CAM.yawRate * 0.82 - dyaw * 9, -1, 1);
   CAM.pitch -= dy * IN.sensY * (IN.invY ? -1 : 1);
   CAM.pitch = clamp(CAM.pitch, -1.42, 1.36);
   if (CAM.yaw > Math.PI) CAM.yaw -= Math.PI * 2;

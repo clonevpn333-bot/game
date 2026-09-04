@@ -198,10 +198,12 @@ Game.loop = function (ts) {
     _figOpt.handL = P.handOn ? P.handL : null;
     _figOpt.handR = P.handOn ? P.handR : null;
     _figOpt.grip = P.handGrip;
+    _figOpt.turn = CAM.yawRate || 0;
     _figOpt.wallNy = P.wall.has ? P.wall.ny : 0;
     P.fig.pose(dt, _figOpt);
     if (P.fig.torchLight) P.fig.torchLight.visible = !!P.torchOn;
 
+    Props.cull(Game.cam.position);
     FX.tick(dt, Game.cam.position, P.pos.y);
     Sky.update(dt, Game.t, P.pos.y, Game.cam.position);
     HUD.tick(dt, Game.cam);

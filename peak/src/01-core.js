@@ -14,6 +14,8 @@ var K = {
   // Climbing: you hold on, you move, and it costs you the whole time.
   CLIMB_UP: 2.25, CLIMB_SIDE: 2.7, CLIMB_DOWN: 3.2,
   GRAB_REACH: 1.15,     // how far in front a wall can be and still be grabbed
+  MANTLE_UP: 1.45,      // how far above your feet a lip can be and still be hauled over
+  MANTLE_IN: 2.0,       // how far in from the face to look for something to stand on
   WALL_OFF: 0.44,       // how far the body hangs off the face
   SLIP_ACC: 11,         // downward acceleration once the grip fails
   SLIP_MAX: 13,
@@ -22,7 +24,7 @@ var K = {
   ST_CLIMB: 6.4,        // per second on the wall: a full bar is ~15s of climbing
   ST_HANG: 2.2,         // per second just holding on - cheap enough to stop and look
   ST_SPRINT: 9.0,
-  ST_JUMP: 9, ST_LUNGE: 17,
+  ST_JUMP: 9, ST_LUNGE: 17, ST_MANTLE: 6,
   ST_REGEN: 26,         // on the ground, once you have stood still a moment
   ST_REGEN_PITON: 14,
   ST_REGEN_DELAY: 0.45,

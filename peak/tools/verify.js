@@ -403,15 +403,21 @@ function check(name, ok, detail) {
     if (!spot) return { found: false };
     P.spawnAt(spot.g.x, spot.g.z, spot.g.y);
     C.CAM.yaw = Math.atan2(spot.dx, spot.dz);
-    P.st = 14;                                     // nearly spent already
-    let sawClimb = false, sawSlip = false;
-    await window.__hold(['KeyW', C.IN.grabKey], 5.0, () => {
+    for (const k in P.status) P.status[k] = 0;
+    C.Survive.recalcMax();
+    P.st = 14; P.extra = 0;                        // nearly spent, and no reserve
+    let sawClimb = false, sawSlip = false, sawGrace = false;
+    // an empty bar scrabbles for GRIP_GRACE before the slide starts, so this
+    // has to outlast that as well as the climb itself
+    await window.__hold(['KeyW', C.IN.grabKey], 7.0, () => {
+      P.extra = 0;
       if (P.state === 2) sawClimb = true;
       if (P.state === 3) sawSlip = true;
+      if (P.gripT > 0) sawGrace = true;
     });
-    return { found: true, sawClimb, sawSlip, st: +P.st.toFixed(1) };
+    return { found: true, sawClimb, sawSlip, sawGrace, st: +P.st.toFixed(1) };
   });
-  check('running the bar dry on a wall makes you slide', !slip.found || (slip.sawClimb && slip.sawSlip),
+  check('running the bar dry on a wall makes you slide', !slip.found || (slip.sawClimb && slip.sawSlip && slip.sawGrace),
     JSON.stringify(slip));
 
   // ---- 6. falls hurt ---------------------------------------------------

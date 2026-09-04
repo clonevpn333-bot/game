@@ -90,7 +90,11 @@ function probeWall(x, y, z, nx, nz, maxD) {
 // is held - there is no assist and nothing snaps.
 var GRAB_NY = 0.82;             // anything steeper than ~35 degrees takes a hand
 function tryGrab() {
-  if (P.noGrabT > 0 || P.st <= 0) return false;
+  // Bonus stamina is the reserve you climb on once the green is gone, so it
+  // has to let you take hold in the first place.  Refusing the grab on an
+  // empty green meant a full bonus bar could not be spent at all after any
+  // moment off the wall - which is the entire point of it.
+  if (P.noGrabT > 0 || (P.st <= 0 && P.extra <= 0)) return false;
   // a deployed rope is the easiest thing on the mountain to hold
   var rp = Coop.ropeNear(P.pos.x, P.pos.y, P.pos.z);
   if (rp) {
@@ -145,30 +149,82 @@ function ropeContact() {
   return true;
 }
 
+// The move that gets you over the lip.  Look for anything walkable within
+// arm's reach inward, from a little below the feet to a good chest above
+// them, and make sure there is headroom to stand up in once you are there.
+function findLedge() {
+  var ix = -P.wall.nx, iz = -P.wall.nz;
+  for (var d = 0.5; d <= K.MANTLE_IN; d += 0.22) {
+    var mx = P.pos.x + ix * d, mz = P.pos.z + iz * d;
+    var gh = groundH(mx, mz);
+    if (gh <= T.VOID) continue;
+    if (gh > P.pos.y + K.MANTLE_UP || gh < P.pos.y - 1.7) continue;
+    if (T.normSmooth(mx, mz, 0.9).y <= K.WALK_COS) continue;
+    // and it has to be a shelf you could actually stand on: not the foot of
+    // the next wall, and not a blade with nothing behind it.  Hauling onto a
+    // knife edge just drops you off the far side, which looks exactly like
+    // the bug this is here to fix.
+    var beyond = groundH(mx + ix * 0.55, mz + iz * 0.55);
+    if (beyond > gh + 1.3 || beyond < gh - 1.2) continue;
+    var side = groundH(mx + iz * 0.5, mz - ix * 0.5);
+    if (side < gh - 1.6) continue;
+    return { x: mx, y: gh, z: mz, d: d };
+  }
+  return null;
+}
+
+// Haul yourself over it.  This is a real hop rather than a teleport - an
+// upward and inward impulse through the ordinary physics - so it reads as
+// pulling up onto the shelf, and fallFrom is set to the lip so the landing
+// on the other side never counts as a drop.
+function doMantle(L) {
+  var ix = -P.wall.nx, iz = -P.wall.nz;
+  var rise = Math.max(0.2, L.y - P.pos.y);
+  P.state = ST.AIR;
+  P.wall.has = false; P.handOn = false; P.dropHands(); P.climbing = false; P.rope = null;
+  P.vel.y = Math.sqrt(2 * K.GRAV * (rise + 0.42));
+  P.vel.x = ix * (1.25 + L.d * 0.42);
+  P.vel.z = iz * (1.25 + L.d * 0.42);
+  P.noGrabT = 0.26; P.mantleT = 0.42;
+  P.fallFrom = L.y + 0.4;
+  Survive.spend(K.ST_MANTLE);
+  FX.puff(P.pos.x, P.pos.y + 0.2, P.pos.z, 5, 0xd8d0c0);
+}
+
 function wallContact(dt) {
   if (P.rope) return ropeContact();
   var w = P.wall;
   var pw = probeWall(P.pos.x, P.pos.y, P.pos.z, w.nx, w.nz, K.GRAB_REACH + 0.5);
   if (!pw.found) {
-    // topped out?
-    var ix = -w.nx, iz = -w.nz;
-    var mx2 = P.pos.x + ix * 1.0, mz2 = P.pos.z + iz * 1.0;
-    var gh = groundH(mx2, mz2);
-    if (gh > T.VOID && gh <= P.pos.y + 0.5 && gh >= P.pos.y - 1.8 && T.normSmooth(mx2, mz2).y > K.WALK_COS) {
-      P.pos.x = mx2; P.pos.z = mz2; P.pos.y = gh + 0.04;
-      P.state = ST.GROUND; P.grounded = true; P.wall.has = false; P.handOn = false; P.dropHands();
-      P.vel.set(0, 0, 0); P.noGrabT = 0.22; P.mantleT = 0.35; P.fallFrom = P.pos.y;
-      FX.puff(P.pos.x, P.pos.y + 0.2, P.pos.z, 6, 0xd8d0c0);
-      return false;
-    }
-    var below = groundH(P.pos.x, P.pos.z);
-    if (below > T.VOID && P.pos.y - below < 0.45) {
-      P.pos.y = below; P.state = ST.GROUND; P.wall.has = false; P.handOn = false; P.dropHands();
+    // Topping out.  This used to be one sample exactly a metre in, which had
+    // to be almost level and no more than half a metre up - so on any lip
+    // that was a shade too high or a shade too steep you got shoved off the
+    // wall at the very top of the climb.  Now it sweeps inward for anywhere
+    // to stand, and if it truly cannot find one it re-grips lower down
+    // instead of throwing you off the mountain.
+    var L = findLedge();
+    if (L) { doMantle(L); return false; }
+
+    var below0 = groundH(P.pos.x, P.pos.z);
+    if (below0 > T.VOID && P.pos.y - below0 < 0.45) {
+      P.pos.y = below0; P.state = ST.GROUND; P.wall.has = false; P.handOn = false; P.dropHands();
       P.vel.set(0, 0, 0); P.fallFrom = P.pos.y; P.noGrabT = 0.15;
       return false;
     }
-    letGo(0.9);
-    return false;
+    // slide down and take hold again rather than let go
+    for (var back = 0.35; back <= 2.6; back += 0.35) {
+      var lower = probeWall(P.pos.x, P.pos.y - back, P.pos.z, w.nx, w.nz, K.GRAB_REACH + 0.5);
+      if (lower.found) { P.pos.y -= back; pw = lower; break; }
+    }
+    if (!pw.found) {
+      // Nothing left to hold anywhere near.  Drop straight down the line of
+      // the face with no push and no grab lockout, so the next frame can
+      // catch the rock a little lower.  Shoving the climber off the wall
+      // here is what turned a lost handhold into a two-hundred-metre fall.
+      letGo(0);
+      P.noGrabT = 0;
+      return false;
+    }
   }
   w.nx = w.nx * 0.55 + pw.nx * 0.45; w.nz = w.nz * 0.55 + pw.nz * 0.45;
   var l = Math.hypot(w.nx, w.nz) || 1; w.nx /= l; w.nz /= l;
@@ -178,6 +234,14 @@ function wallContact(dt) {
   P.pos.z = pw.z + w.nz * K.WALL_OFF;
   P.yaw = Math.atan2(-w.nx, -w.nz);
   P.surf = w.surf;
+
+  // Climbing into a lip you could stand on tops you out even while there is
+  // still rock in front of your chest - which is what actually happens when
+  // you pull over a shelf, and stops you grinding upward against a ceiling.
+  if (P.climbing && P.mantleT <= 0) {
+    var L2 = findLedge();
+    if (L2 && L2.y > P.pos.y - 0.25) { doMantle(L2); return false; }
+  }
 
   // step off onto anything shallow enough to stand on
   if (pw.ny > K.WALK_COS + 0.05) {

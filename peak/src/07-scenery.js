@@ -201,6 +201,41 @@ function cairnGeo(rng) {
   return mergeParts(parts);
 }
 
+// ---- ground clutter ------------------------------------------------------
+// There was nothing at all between the big props and the bare rock, which is
+// most of why the island read as empty: you walk over hundreds of square
+// metres of untouched triangle.  These are tiny, have no collision, and there
+// are tens of thousands of them.
+function tuftGeo() {
+  var parts = [], i;
+  for (i = 0; i < 3; i++) {
+    var a = i / 3 * 6.283 + 0.4, lean = 0.22 + (i % 3) * 0.12;
+    parts.push({
+      g: new THREE.CylinderGeometry(0.0, 0.045, 0.44 + (i % 2) * 0.18, 3, 1, true),
+      c: 0xffffff, p: [Math.cos(a) * 0.05, 0.2, Math.sin(a) * 0.05],
+      r: [Math.cos(a) * lean, a, Math.sin(a) * lean],
+    });
+  }
+  return mergeParts(parts);
+}
+function pebbleGeo(rng) {
+  return mergeParts([
+    { g: new THREE.IcosahedronGeometry(0.135, 0), c: 0xffffff, p: [0, 0.05, 0], s: [1, 0.62, 1.1] },
+  ]);
+}
+function sedgeGeo() {
+  var parts = [], i;
+  for (i = 0; i < 3; i++) {
+    var a = i * 2.1;
+    parts.push({
+      g: new THREE.CylinderGeometry(0.0, 0.06, 0.95, 3, 1, true), c: 0xffffff,
+      p: [Math.cos(a) * 0.07, 0.47, Math.sin(a) * 0.07],
+      r: [Math.cos(a) * 0.16, a, Math.sin(a) * 0.16],
+    });
+  }
+  return mergeParts(parts);
+}
+
 Props.build = function (seed, detail) {
   var rng = makeRng(seed ^ 0x5bf03635);
   var g = Props.group = new THREE.Group();
@@ -276,7 +311,47 @@ Props.build = function (seed, detail) {
   }
 
   // only build the geometry for kinds this island actually needs
+  // ---- the clutter pass: small, dense, no collision ----------------------
+  var CLUT = {
+    shore:    { tuft: 0xc9c07a, sedge: 0xb9c46a, peb: 0xd8c8a0 },
+    tropics:  { tuft: 0x4e8f34, sedge: 0x3d7a2a, peb: 0x6a6a52 },
+    roots:    { tuft: 0x8f5ab0, sedge: 0xa070c8, peb: 0x6a4a80 },
+    alpine:   { tuft: 0x9fb0a8, sedge: 0xd8e6ee, peb: 0x8a95a0 },
+    mesa:     { tuft: 0xb09050, sedge: 0xc0a260, peb: 0xa86a44 },
+    caldera:  { tuft: 0x6a4a3a, sedge: 0x7a5040, peb: 0x3a3038 },
+    gloom:    { tuft: 0x4a3a6a, sedge: 0x5a4a80, peb: 0x2e2842 },
+    kiln:     { tuft: 0x6a3a28, sedge: 0x7a4028, peb: 0x2a2228 },
+    citadel:  { tuft: 0x8a8470, sedge: 0x9a9480, peb: 0x8e8878 },
+    peak:     { tuft: 0xcfdae4, sedge: 0xe6eef6, peb: 0x9aa6b2 },
+  };
+  var clutTries = detail ? 150000 : 45000;
+  for (i = 0; i < clutTries; i++) {
+    var cx2 = rngRange(rng, -T.half + 4, T.half - 4);
+    var cz2 = rngRange(rng, -T.half + 4, T.half - 4);
+    var ch = T.hAt(cx2, cz2);
+    if (ch <= T.VOID || ch < 0.8) continue;
+    var cn = T.normSmooth(cx2, cz2).y;
+    if (cn < 0.70) continue;                       // clutter does not cling to walls
+    var pal = CLUT[Run.pick[zoneAt(ch)]] || CLUT.alpine;
+    var cs = T.surfAt(cx2, cz2), r2 = rng();
+    var soft = cs === SF.GRASS || cs === SF.LEAF || cs === SF.SAND || cs === SF.MUD
+            || cs === SF.SPORE || cs === SF.SNOW;
+    if (soft && r2 < 0.52) {
+      put('tuft', { x: cx2, y: ch - 0.03, z: cz2, ry: rng() * 6.28,
+                    s: rngRange(rng, 0.7, 1.8), col: pal.tuft });
+    } else if (soft && r2 < 0.62 && cn > 0.9) {
+      put('sedge', { x: cx2, y: ch - 0.05, z: cz2, ry: rng() * 6.28,
+                     s: rngRange(rng, 0.5, 1.2), col: pal.sedge });
+    } else if (r2 < 0.80) {
+      put('peb', { x: cx2, y: ch, z: cz2, ry: rng() * 6.28,
+                   rx: rngRange(rng, -0.4, 0.4), s: rngRange(rng, 0.5, 1.25), col: pal.peb });
+    }
+  }
+
   var MAKE = {
+    tuft: [tuftGeo, MAT.solid, { tint: true, fade: 78 }],
+    sedge: [sedgeGeo, MAT.solidS, { tint: true, fade: 88 }],
+    peb: [function () { return pebbleGeo(rng); }, MAT.solid, { tint: true, fade: 62 }],
     palm: [palmGeo, MAT.solid, { shadow: true }],
     drift: [function () { return driftGeo(rng); }, MAT.solid, {}],
     tree: [jungleTreeGeo, MAT.solid, { shadow: true }],
@@ -305,7 +380,12 @@ Props.build = function (seed, detail) {
   for (var k in L) {
     if (!MAKE[k] || !L[k].length) continue;
     var m = MAKE[k];
-    g.add(scatter(m[0](), m[1], L[k], null, m[2]));
+    var tintFn = m[2].tint ? function (it) {
+      var o = [0, 0, 0];
+      hexLin(it.col, o, 0, 0.82 + Math.random() * 0.36);
+      return o;
+    } : null;
+    g.add(scatter(m[0](), m[1], L[k], tintFn, m[2]));
     Props.counts[k] = L[k].length;
   }
   if (L.rock && L.rock.length) {
@@ -315,6 +395,24 @@ Props.build = function (seed, detail) {
     Props.counts.rock = L.rock.length;
   }
   return g;
+};
+
+// Hide the clutter buckets you cannot make out anyway.  The buckets already
+// exist for frustum culling, so this is one distance test each and it takes
+// the scene from four million triangles a frame to well under one.
+Props.cull = function (camPos) {
+  var g = Props.group;
+  if (!g) return;
+  for (var i = 0; i < g.children.length; i++) {
+    var grp = g.children[i];
+    for (var j = 0; j < grp.children.length; j++) {
+      var m = grp.children[j], u = m.userData;
+      if (!u || !u.fade) continue;
+      var dx = u.cx - camPos.x, dy = u.cy - camPos.y, dz = u.cz - camPos.z;
+      var lim = u.fade + u.rad;
+      m.visible = dx * dx + dy * dy + dz * dz < lim * lim;
+    }
+  }
 };
 
 Props.nearCamp = function (x, z, r) {

@@ -314,6 +314,8 @@ var K = {
   // Climbing: you hold on, you move, and it costs you the whole time.
   CLIMB_UP: 2.25, CLIMB_SIDE: 2.7, CLIMB_DOWN: 3.2,
   GRAB_REACH: 1.15,     // how far in front a wall can be and still be grabbed
+  MANTLE_UP: 1.45,      // how far above your feet a lip can be and still be hauled over
+  MANTLE_IN: 2.0,       // how far in from the face to look for something to stand on
   WALL_OFF: 0.44,       // how far the body hangs off the face
   SLIP_ACC: 11,         // downward acceleration once the grip fails
   SLIP_MAX: 13,
@@ -322,7 +324,7 @@ var K = {
   ST_CLIMB: 6.4,        // per second on the wall: a full bar is ~15s of climbing
   ST_HANG: 2.2,         // per second just holding on - cheap enough to stop and look
   ST_SPRINT: 9.0,
-  ST_JUMP: 9, ST_LUNGE: 17,
+  ST_JUMP: 9, ST_LUNGE: 17, ST_MANTLE: 6,
   ST_REGEN: 26,         // on the ground, once you have stood still a moment
   ST_REGEN_PITON: 14,
   ST_REGEN_DELAY: 0.45,
@@ -1366,6 +1368,8 @@ function scatter(geo, mat, list, tintFn, opts) {
     }
     var sphere = new THREE.Sphere(new THREE.Vector3(cx, cy, cz), rad + baseR * maxS * 1.6);
     var im = new THREE.InstancedMesh(shareGeo(geo, sphere), mat, items.length);
+    im.userData.cx = cx; im.userData.cy = cy; im.userData.cz = cz; im.userData.rad = sphere.radius;
+    if (opts.fade) im.userData.fade = opts.fade;
     for (i = 0; i < items.length; i++) {
       it = items[i];
       e.set(it.rx || 0, it.ry || 0, it.rz || 0);
@@ -1591,6 +1595,41 @@ function cairnGeo(rng) {
   return mergeParts(parts);
 }
 
+// ---- ground clutter ------------------------------------------------------
+// There was nothing at all between the big props and the bare rock, which is
+// most of why the island read as empty: you walk over hundreds of square
+// metres of untouched triangle.  These are tiny, have no collision, and there
+// are tens of thousands of them.
+function tuftGeo() {
+  var parts = [], i;
+  for (i = 0; i < 3; i++) {
+    var a = i / 3 * 6.283 + 0.4, lean = 0.22 + (i % 3) * 0.12;
+    parts.push({
+      g: new THREE.CylinderGeometry(0.0, 0.045, 0.44 + (i % 2) * 0.18, 3, 1, true),
+      c: 0xffffff, p: [Math.cos(a) * 0.05, 0.2, Math.sin(a) * 0.05],
+      r: [Math.cos(a) * lean, a, Math.sin(a) * lean],
+    });
+  }
+  return mergeParts(parts);
+}
+function pebbleGeo(rng) {
+  return mergeParts([
+    { g: new THREE.IcosahedronGeometry(0.135, 0), c: 0xffffff, p: [0, 0.05, 0], s: [1, 0.62, 1.1] },
+  ]);
+}
+function sedgeGeo() {
+  var parts = [], i;
+  for (i = 0; i < 3; i++) {
+    var a = i * 2.1;
+    parts.push({
+      g: new THREE.CylinderGeometry(0.0, 0.06, 0.95, 3, 1, true), c: 0xffffff,
+      p: [Math.cos(a) * 0.07, 0.47, Math.sin(a) * 0.07],
+      r: [Math.cos(a) * 0.16, a, Math.sin(a) * 0.16],
+    });
+  }
+  return mergeParts(parts);
+}
+
 Props.build = function (seed, detail) {
   var rng = makeRng(seed ^ 0x5bf03635);
   var g = Props.group = new THREE.Group();
@@ -1666,7 +1705,47 @@ Props.build = function (seed, detail) {
   }
 
   // only build the geometry for kinds this island actually needs
+  // ---- the clutter pass: small, dense, no collision ----------------------
+  var CLUT = {
+    shore:    { tuft: 0xc9c07a, sedge: 0xb9c46a, peb: 0xd8c8a0 },
+    tropics:  { tuft: 0x4e8f34, sedge: 0x3d7a2a, peb: 0x6a6a52 },
+    roots:    { tuft: 0x8f5ab0, sedge: 0xa070c8, peb: 0x6a4a80 },
+    alpine:   { tuft: 0x9fb0a8, sedge: 0xd8e6ee, peb: 0x8a95a0 },
+    mesa:     { tuft: 0xb09050, sedge: 0xc0a260, peb: 0xa86a44 },
+    caldera:  { tuft: 0x6a4a3a, sedge: 0x7a5040, peb: 0x3a3038 },
+    gloom:    { tuft: 0x4a3a6a, sedge: 0x5a4a80, peb: 0x2e2842 },
+    kiln:     { tuft: 0x6a3a28, sedge: 0x7a4028, peb: 0x2a2228 },
+    citadel:  { tuft: 0x8a8470, sedge: 0x9a9480, peb: 0x8e8878 },
+    peak:     { tuft: 0xcfdae4, sedge: 0xe6eef6, peb: 0x9aa6b2 },
+  };
+  var clutTries = detail ? 150000 : 45000;
+  for (i = 0; i < clutTries; i++) {
+    var cx2 = rngRange(rng, -T.half + 4, T.half - 4);
+    var cz2 = rngRange(rng, -T.half + 4, T.half - 4);
+    var ch = T.hAt(cx2, cz2);
+    if (ch <= T.VOID || ch < 0.8) continue;
+    var cn = T.normSmooth(cx2, cz2).y;
+    if (cn < 0.70) continue;                       // clutter does not cling to walls
+    var pal = CLUT[Run.pick[zoneAt(ch)]] || CLUT.alpine;
+    var cs = T.surfAt(cx2, cz2), r2 = rng();
+    var soft = cs === SF.GRASS || cs === SF.LEAF || cs === SF.SAND || cs === SF.MUD
+            || cs === SF.SPORE || cs === SF.SNOW;
+    if (soft && r2 < 0.52) {
+      put('tuft', { x: cx2, y: ch - 0.03, z: cz2, ry: rng() * 6.28,
+                    s: rngRange(rng, 0.7, 1.8), col: pal.tuft });
+    } else if (soft && r2 < 0.62 && cn > 0.9) {
+      put('sedge', { x: cx2, y: ch - 0.05, z: cz2, ry: rng() * 6.28,
+                     s: rngRange(rng, 0.5, 1.2), col: pal.sedge });
+    } else if (r2 < 0.80) {
+      put('peb', { x: cx2, y: ch, z: cz2, ry: rng() * 6.28,
+                   rx: rngRange(rng, -0.4, 0.4), s: rngRange(rng, 0.5, 1.25), col: pal.peb });
+    }
+  }
+
   var MAKE = {
+    tuft: [tuftGeo, MAT.solid, { tint: true, fade: 78 }],
+    sedge: [sedgeGeo, MAT.solidS, { tint: true, fade: 88 }],
+    peb: [function () { return pebbleGeo(rng); }, MAT.solid, { tint: true, fade: 62 }],
     palm: [palmGeo, MAT.solid, { shadow: true }],
     drift: [function () { return driftGeo(rng); }, MAT.solid, {}],
     tree: [jungleTreeGeo, MAT.solid, { shadow: true }],
@@ -1695,7 +1774,12 @@ Props.build = function (seed, detail) {
   for (var k in L) {
     if (!MAKE[k] || !L[k].length) continue;
     var m = MAKE[k];
-    g.add(scatter(m[0](), m[1], L[k], null, m[2]));
+    var tintFn = m[2].tint ? function (it) {
+      var o = [0, 0, 0];
+      hexLin(it.col, o, 0, 0.82 + Math.random() * 0.36);
+      return o;
+    } : null;
+    g.add(scatter(m[0](), m[1], L[k], tintFn, m[2]));
     Props.counts[k] = L[k].length;
   }
   if (L.rock && L.rock.length) {
@@ -1705,6 +1789,24 @@ Props.build = function (seed, detail) {
     Props.counts.rock = L.rock.length;
   }
   return g;
+};
+
+// Hide the clutter buckets you cannot make out anyway.  The buckets already
+// exist for frustum culling, so this is one distance test each and it takes
+// the scene from four million triangles a frame to well under one.
+Props.cull = function (camPos) {
+  var g = Props.group;
+  if (!g) return;
+  for (var i = 0; i < g.children.length; i++) {
+    var grp = g.children[i];
+    for (var j = 0; j < grp.children.length; j++) {
+      var m = grp.children[j], u = m.userData;
+      if (!u || !u.fade) continue;
+      var dx = u.cx - camPos.x, dy = u.cy - camPos.y, dz = u.cz - camPos.z;
+      var lim = u.fade + u.rad;
+      m.visible = dx * dx + dy * dy + dz * dz < lim * lim;
+    }
+  }
 };
 
 Props.nearCamp = function (x, z, r) {
@@ -2435,6 +2537,29 @@ function Figure(slot, tone) {
   this.scarfV = [0, 0, 0];
   this.scarfA = [0, 0, 0];
 
+  // Every joint the pose writes to, so the spring pass can pick them up.
+  // PEAK's scouts are active ragdolls - Landfall drive their characters with
+  // physics forces rather than keyframes, which is why the limbs lag, wobble
+  // and settle instead of snapping between poses.  There is no physics engine
+  // here, so each joint gets an angular spring toward the pose the animation
+  // asks for.  Same result: nothing arrives instantly, and everything
+  // overshoots a little and settles.
+  this.joints = [];
+  var self = this;
+  function spring(o, k) {
+    self.joints.push({ o: o, k: k, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, init: false });
+  }
+  spring(this.body, 150); spring(this.hips, 190); spring(this.neck, 120);
+  spring(this.lL.hp, 240); spring(this.lR.hp, 240);
+  spring(this.lL.kn, 260); spring(this.lR.kn, 260);
+  this.armQ = [
+    { o: this.aL.sh, q: new THREE.Quaternion(), rate: 17 },
+    { o: this.aR.sh, q: new THREE.Quaternion(), rate: 17 },
+    { o: this.aL.el, q: new THREE.Quaternion(), rate: 20 },
+    { o: this.aR.el, q: new THREE.Quaternion(), rate: 20 },
+  ];
+  this.hipY = 0.62; this.hipVY = 0;
+
   this.torchLight = null;
   this.held = null;
   this.phase = 0;
@@ -2492,7 +2617,44 @@ Figure.prototype.pose = function (dt, o) {
   var t = o.t, sp = o.speed || 0, s = o.state;
   this.squash = Math.max(0, this.squash - dt * 3.4);
   this.poseCore(dt, o);
+  this.settle(dt, o);
   this.poseScarf(dt, o);
+};
+
+// The animation writes where each joint WANTS to be; this drags the joint
+// there over time.  Slightly under-damped, so a limb swings a touch past its
+// mark and comes back - the single biggest difference between a pose that
+// reads as animated and one that reads as physical.
+Figure.prototype.settle = function (dt, o) {
+  var h = Math.min(dt, 1 / 45), J = this.joints, i, j, d;
+  for (i = 0; i < J.length; i++) {
+    j = J[i];
+    var tx = j.o.rotation.x, ty = j.o.rotation.y, tz = j.o.rotation.z;
+    if (!j.init) { j.init = true; j.x = tx; j.y = ty; j.z = tz; }
+    d = 2 * Math.sqrt(j.k) * 0.62;                 // under-damped on purpose
+    j.vx += ((tx - j.x) * j.k - j.vx * d) * h;
+    j.vy += ((ty - j.y) * j.k - j.vy * d) * h;
+    j.vz += ((tz - j.z) * j.k - j.vz * d) * h;
+    j.x += j.vx * h; j.y += j.vy * h; j.z += j.vz * h;
+    j.o.rotation.set(j.x, j.y, j.z);
+  }
+  // arms carry IK targets, so they follow by slerp rather than by spring:
+  // overshooting a hand that is supposed to be ON a hold looks broken
+  for (i = 0; i < this.armQ.length; i++) {
+    var a = this.armQ[i], t = 1 - Math.exp(-a.rate * h);
+    a.q.slerp(a.o.quaternion, t);
+    a.o.quaternion.copy(a.q);
+  }
+  // the hips ride their own spring so a landing compresses and rebounds
+  var ty2 = this.hips.position.y;
+  this.hipVY += ((ty2 - this.hipY) * 300 - this.hipVY * 2 * Math.sqrt(300) * 0.58) * h;
+  this.hipY += this.hipVY * h;
+  this.hips.position.y = this.hipY;
+  // and the whole body leans into what it is doing, the way a balance script
+  // pulls a ragdoll's torso around
+  var sp = o.speed || 0;
+  this.leanZ = damp(this.leanZ || 0, clamp((o.turn || 0) * 0.5, -0.3, 0.3), 6, dt);
+  this.body.rotation.z += this.leanZ * (0.4 + clamp(sp / K.WALK, 0, 1) * 0.6);
 };
 
 // The scarf is a chain of three damped springs.  Each segment is pulled by
@@ -2753,8 +2915,12 @@ var CAM = {
 var _hit = { x: 0, y: 0, z: 0, d: 0, hit: false };
 var _cdir = new THREE.Vector3(), _ctgt = new THREE.Vector3();
 
+CAM.yawRate = 0;
 CAM.applyMouse = function (dx, dy) {
-  CAM.yaw -= dx * IN.sensX * (IN.invX ? -1 : 1);
+  var dyaw = dx * IN.sensX * (IN.invX ? -1 : 1);
+  CAM.yaw -= dyaw;
+  // how hard you are swinging the view, for the body to bank into
+  CAM.yawRate = clamp(CAM.yawRate * 0.82 - dyaw * 9, -1, 1);
   CAM.pitch -= dy * IN.sensY * (IN.invY ? -1 : 1);
   CAM.pitch = clamp(CAM.pitch, -1.42, 1.36);
   if (CAM.yaw > Math.PI) CAM.yaw -= Math.PI * 2;
@@ -2972,7 +3138,11 @@ function probeWall(x, y, z, nx, nz, maxD) {
 // is held - there is no assist and nothing snaps.
 var GRAB_NY = 0.82;             // anything steeper than ~35 degrees takes a hand
 function tryGrab() {
-  if (P.noGrabT > 0 || P.st <= 0) return false;
+  // Bonus stamina is the reserve you climb on once the green is gone, so it
+  // has to let you take hold in the first place.  Refusing the grab on an
+  // empty green meant a full bonus bar could not be spent at all after any
+  // moment off the wall - which is the entire point of it.
+  if (P.noGrabT > 0 || (P.st <= 0 && P.extra <= 0)) return false;
   // a deployed rope is the easiest thing on the mountain to hold
   var rp = Coop.ropeNear(P.pos.x, P.pos.y, P.pos.z);
   if (rp) {
@@ -3027,30 +3197,82 @@ function ropeContact() {
   return true;
 }
 
+// The move that gets you over the lip.  Look for anything walkable within
+// arm's reach inward, from a little below the feet to a good chest above
+// them, and make sure there is headroom to stand up in once you are there.
+function findLedge() {
+  var ix = -P.wall.nx, iz = -P.wall.nz;
+  for (var d = 0.5; d <= K.MANTLE_IN; d += 0.22) {
+    var mx = P.pos.x + ix * d, mz = P.pos.z + iz * d;
+    var gh = groundH(mx, mz);
+    if (gh <= T.VOID) continue;
+    if (gh > P.pos.y + K.MANTLE_UP || gh < P.pos.y - 1.7) continue;
+    if (T.normSmooth(mx, mz, 0.9).y <= K.WALK_COS) continue;
+    // and it has to be a shelf you could actually stand on: not the foot of
+    // the next wall, and not a blade with nothing behind it.  Hauling onto a
+    // knife edge just drops you off the far side, which looks exactly like
+    // the bug this is here to fix.
+    var beyond = groundH(mx + ix * 0.55, mz + iz * 0.55);
+    if (beyond > gh + 1.3 || beyond < gh - 1.2) continue;
+    var side = groundH(mx + iz * 0.5, mz - ix * 0.5);
+    if (side < gh - 1.6) continue;
+    return { x: mx, y: gh, z: mz, d: d };
+  }
+  return null;
+}
+
+// Haul yourself over it.  This is a real hop rather than a teleport - an
+// upward and inward impulse through the ordinary physics - so it reads as
+// pulling up onto the shelf, and fallFrom is set to the lip so the landing
+// on the other side never counts as a drop.
+function doMantle(L) {
+  var ix = -P.wall.nx, iz = -P.wall.nz;
+  var rise = Math.max(0.2, L.y - P.pos.y);
+  P.state = ST.AIR;
+  P.wall.has = false; P.handOn = false; P.dropHands(); P.climbing = false; P.rope = null;
+  P.vel.y = Math.sqrt(2 * K.GRAV * (rise + 0.42));
+  P.vel.x = ix * (1.25 + L.d * 0.42);
+  P.vel.z = iz * (1.25 + L.d * 0.42);
+  P.noGrabT = 0.26; P.mantleT = 0.42;
+  P.fallFrom = L.y + 0.4;
+  Survive.spend(K.ST_MANTLE);
+  FX.puff(P.pos.x, P.pos.y + 0.2, P.pos.z, 5, 0xd8d0c0);
+}
+
 function wallContact(dt) {
   if (P.rope) return ropeContact();
   var w = P.wall;
   var pw = probeWall(P.pos.x, P.pos.y, P.pos.z, w.nx, w.nz, K.GRAB_REACH + 0.5);
   if (!pw.found) {
-    // topped out?
-    var ix = -w.nx, iz = -w.nz;
-    var mx2 = P.pos.x + ix * 1.0, mz2 = P.pos.z + iz * 1.0;
-    var gh = groundH(mx2, mz2);
-    if (gh > T.VOID && gh <= P.pos.y + 0.5 && gh >= P.pos.y - 1.8 && T.normSmooth(mx2, mz2).y > K.WALK_COS) {
-      P.pos.x = mx2; P.pos.z = mz2; P.pos.y = gh + 0.04;
-      P.state = ST.GROUND; P.grounded = true; P.wall.has = false; P.handOn = false; P.dropHands();
-      P.vel.set(0, 0, 0); P.noGrabT = 0.22; P.mantleT = 0.35; P.fallFrom = P.pos.y;
-      FX.puff(P.pos.x, P.pos.y + 0.2, P.pos.z, 6, 0xd8d0c0);
-      return false;
-    }
-    var below = groundH(P.pos.x, P.pos.z);
-    if (below > T.VOID && P.pos.y - below < 0.45) {
-      P.pos.y = below; P.state = ST.GROUND; P.wall.has = false; P.handOn = false; P.dropHands();
+    // Topping out.  This used to be one sample exactly a metre in, which had
+    // to be almost level and no more than half a metre up - so on any lip
+    // that was a shade too high or a shade too steep you got shoved off the
+    // wall at the very top of the climb.  Now it sweeps inward for anywhere
+    // to stand, and if it truly cannot find one it re-grips lower down
+    // instead of throwing you off the mountain.
+    var L = findLedge();
+    if (L) { doMantle(L); return false; }
+
+    var below0 = groundH(P.pos.x, P.pos.z);
+    if (below0 > T.VOID && P.pos.y - below0 < 0.45) {
+      P.pos.y = below0; P.state = ST.GROUND; P.wall.has = false; P.handOn = false; P.dropHands();
       P.vel.set(0, 0, 0); P.fallFrom = P.pos.y; P.noGrabT = 0.15;
       return false;
     }
-    letGo(0.9);
-    return false;
+    // slide down and take hold again rather than let go
+    for (var back = 0.35; back <= 2.6; back += 0.35) {
+      var lower = probeWall(P.pos.x, P.pos.y - back, P.pos.z, w.nx, w.nz, K.GRAB_REACH + 0.5);
+      if (lower.found) { P.pos.y -= back; pw = lower; break; }
+    }
+    if (!pw.found) {
+      // Nothing left to hold anywhere near.  Drop straight down the line of
+      // the face with no push and no grab lockout, so the next frame can
+      // catch the rock a little lower.  Shoving the climber off the wall
+      // here is what turned a lost handhold into a two-hundred-metre fall.
+      letGo(0);
+      P.noGrabT = 0;
+      return false;
+    }
   }
   w.nx = w.nx * 0.55 + pw.nx * 0.45; w.nz = w.nz * 0.55 + pw.nz * 0.45;
   var l = Math.hypot(w.nx, w.nz) || 1; w.nx /= l; w.nz /= l;
@@ -3060,6 +3282,14 @@ function wallContact(dt) {
   P.pos.z = pw.z + w.nz * K.WALL_OFF;
   P.yaw = Math.atan2(-w.nx, -w.nz);
   P.surf = w.surf;
+
+  // Climbing into a lip you could stand on tops you out even while there is
+  // still rock in front of your chest - which is what actually happens when
+  // you pull over a shelf, and stops you grinding upward against a ceiling.
+  if (P.climbing && P.mantleT <= 0) {
+    var L2 = findLedge();
+    if (L2 && L2.y > P.pos.y - 0.25) { doMantle(L2); return false; }
+  }
 
   // step off onto anything shallow enough to stand on
   if (pw.ny > K.WALK_COS + 0.05) {
@@ -5228,10 +5458,12 @@ Game.loop = function (ts) {
     _figOpt.handL = P.handOn ? P.handL : null;
     _figOpt.handR = P.handOn ? P.handR : null;
     _figOpt.grip = P.handGrip;
+    _figOpt.turn = CAM.yawRate || 0;
     _figOpt.wallNy = P.wall.has ? P.wall.ny : 0;
     P.fig.pose(dt, _figOpt);
     if (P.fig.torchLight) P.fig.torchLight.visible = !!P.torchOn;
 
+    Props.cull(Game.cam.position);
     FX.tick(dt, Game.cam.position, P.pos.y);
     Sky.update(dt, Game.t, P.pos.y, Game.cam.position);
     HUD.tick(dt, Game.cam);

@@ -102,6 +102,29 @@ function Figure(slot, tone) {
   this.scarfV = [0, 0, 0];
   this.scarfA = [0, 0, 0];
 
+  // Every joint the pose writes to, so the spring pass can pick them up.
+  // PEAK's scouts are active ragdolls - Landfall drive their characters with
+  // physics forces rather than keyframes, which is why the limbs lag, wobble
+  // and settle instead of snapping between poses.  There is no physics engine
+  // here, so each joint gets an angular spring toward the pose the animation
+  // asks for.  Same result: nothing arrives instantly, and everything
+  // overshoots a little and settles.
+  this.joints = [];
+  var self = this;
+  function spring(o, k) {
+    self.joints.push({ o: o, k: k, x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, init: false });
+  }
+  spring(this.body, 150); spring(this.hips, 190); spring(this.neck, 120);
+  spring(this.lL.hp, 240); spring(this.lR.hp, 240);
+  spring(this.lL.kn, 260); spring(this.lR.kn, 260);
+  this.armQ = [
+    { o: this.aL.sh, q: new THREE.Quaternion(), rate: 17 },
+    { o: this.aR.sh, q: new THREE.Quaternion(), rate: 17 },
+    { o: this.aL.el, q: new THREE.Quaternion(), rate: 20 },
+    { o: this.aR.el, q: new THREE.Quaternion(), rate: 20 },
+  ];
+  this.hipY = 0.62; this.hipVY = 0;
+
   this.torchLight = null;
   this.held = null;
   this.phase = 0;
@@ -159,7 +182,44 @@ Figure.prototype.pose = function (dt, o) {
   var t = o.t, sp = o.speed || 0, s = o.state;
   this.squash = Math.max(0, this.squash - dt * 3.4);
   this.poseCore(dt, o);
+  this.settle(dt, o);
   this.poseScarf(dt, o);
+};
+
+// The animation writes where each joint WANTS to be; this drags the joint
+// there over time.  Slightly under-damped, so a limb swings a touch past its
+// mark and comes back - the single biggest difference between a pose that
+// reads as animated and one that reads as physical.
+Figure.prototype.settle = function (dt, o) {
+  var h = Math.min(dt, 1 / 45), J = this.joints, i, j, d;
+  for (i = 0; i < J.length; i++) {
+    j = J[i];
+    var tx = j.o.rotation.x, ty = j.o.rotation.y, tz = j.o.rotation.z;
+    if (!j.init) { j.init = true; j.x = tx; j.y = ty; j.z = tz; }
+    d = 2 * Math.sqrt(j.k) * 0.62;                 // under-damped on purpose
+    j.vx += ((tx - j.x) * j.k - j.vx * d) * h;
+    j.vy += ((ty - j.y) * j.k - j.vy * d) * h;
+    j.vz += ((tz - j.z) * j.k - j.vz * d) * h;
+    j.x += j.vx * h; j.y += j.vy * h; j.z += j.vz * h;
+    j.o.rotation.set(j.x, j.y, j.z);
+  }
+  // arms carry IK targets, so they follow by slerp rather than by spring:
+  // overshooting a hand that is supposed to be ON a hold looks broken
+  for (i = 0; i < this.armQ.length; i++) {
+    var a = this.armQ[i], t = 1 - Math.exp(-a.rate * h);
+    a.q.slerp(a.o.quaternion, t);
+    a.o.quaternion.copy(a.q);
+  }
+  // the hips ride their own spring so a landing compresses and rebounds
+  var ty2 = this.hips.position.y;
+  this.hipVY += ((ty2 - this.hipY) * 300 - this.hipVY * 2 * Math.sqrt(300) * 0.58) * h;
+  this.hipY += this.hipVY * h;
+  this.hips.position.y = this.hipY;
+  // and the whole body leans into what it is doing, the way a balance script
+  // pulls a ragdoll's torso around
+  var sp = o.speed || 0;
+  this.leanZ = damp(this.leanZ || 0, clamp((o.turn || 0) * 0.5, -0.3, 0.3), 6, dt);
+  this.body.rotation.z += this.leanZ * (0.4 + clamp(sp / K.WALK, 0, 1) * 0.6);
 };
 
 // The scarf is a chain of three damped springs.  Each segment is pulled by

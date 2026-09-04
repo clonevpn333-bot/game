@@ -165,6 +165,30 @@ number, which keeps the two in step when you change the main slider. The FOV
 pair matches PEAK's: a base field of view and a separate amount it opens by
 while you are on a wall.
 
+## Topping out
+
+The last move of any climb is the one that used to break. Pulling over a lip
+is checked by sweeping inward from the face for anywhere you could actually
+stand — several distances, not one — and accepting a shelf anywhere from a
+little below your feet to chest height above them. Find one and the scout
+hauls up over it with a real upward-and-inward push through the ordinary
+physics, so it reads as a mantle rather than a teleport, and the landing on
+the far side never counts as a fall.
+
+If there is genuinely nowhere to stand, the climb **re-grips lower down the
+face** instead of letting go. It used to let go. Measured over 22 cliffs, the
+old code threw the climber off the top of 6 of them — one of those falls was
+147 metres and another 204, which is the whole run gone at the last move of a
+climb. Measured the same way afterwards it is 1 in 22 — better, not perfect,
+and the remaining case is a hold that runs out on an overhang where there is
+genuinely nothing within reach. The tests allow one dump in eight and fail on
+two.
+
+Bonus stamina can also take hold of the rock now. Grabbing was refused on an
+empty green bar even with a full bonus bar behind it, which meant the reserve
+you are supposed to climb on could never be spent after any moment off the
+wall.
+
 ## How it looks
 
 The art is low-poly and flat-shaded on purpose, but low-poly is not the same as
@@ -197,6 +221,23 @@ The render mesh is subdivided finer than the height field it stands on, with a
 high-frequency wobble the collision field never sees — gameplay reads the
 coarse field, so the detail can never narrow a shelf you have to stand on.
 Detail: low drops the subdivision and halves the shadow map.
+
+**Nothing arrives instantly.** PEAK's scouts are active ragdolls — Landfall
+build their characters out of physics forces and a balance script rather than
+keyframed clips, which is why the limbs lag, wobble and settle instead of
+snapping from pose to pose. There is no physics engine here, so every joint
+gets an angular spring toward whatever the animation asks for, deliberately
+under-damped so a limb swings a little past its mark and comes back. The hips
+ride their own spring, so a landing compresses and rebounds. The arms follow
+by slerp rather than by spring, because overshooting a hand that is supposed
+to be *on* a hold looks broken.
+
+**Ground clutter.** There was nothing at all between the big props and the
+bare rock, which is most of why the island read as empty — you walked over
+hundreds of square metres of untouched triangle. Tufts, sedge and pebbles now
+cover the walkable ground, tinted per biome, about forty thousand of them.
+They are culled by distance per bucket: without that they were four million
+triangles a frame, nearly all of it sub-pixel grass half a kilometre away.
 
 Scouts are built from bevelled boxes rather than plain ones; the chamfer costs
 a few triangles per limb and catches the sun along every edge. They walk with
@@ -266,6 +307,8 @@ It loads the game, spawns in, and drives it:
   attribute that is not there, and flat-tints the whole island)
 - the sun out-lights the sky it works against
 - a climbing hand grips its hold instead of sliding, and the camp flag moves
+- the top of a climb never throws you off the wall, and climbs get over the
+  cliff they are on
 - a full bar buys over 20 m of wall, the countdown reads out while you climb,
   an empty bar scrabbles before it drops you, and the pack shows what you carry
 - the camera never ends up inside the rock, over 42 random placements

@@ -198,10 +198,18 @@ async function boot(browser) {
     // get on the wall first: on the ground the green refills instantly, so
     // the bonus bar would never be reached
     await window.__hold(['KeyW', C.IN.grabKey], 1.0);
-    P.st = 3; P.extra = 40;
+    P.st = 0; P.extra = 40;
     const e0 = P.extra;
-    let climbState = 0;
-    await window.__hold(['KeyW', C.IN.grabKey], 1.6, () => { if (P.state === 2) climbState++; });
+    // Hold the green at zero for the whole window so anything spent has to
+    // come out of the bonus bar.  Topping out onto a shelf mid-window used to
+    // refill the green and make this read as "bonus never used".
+    let climbFrames = 0, lastT = -1;
+    await window.__hold(['KeyW', C.IN.grabKey], 2.4, () => {
+      if (C.Game.t === lastT) return;
+      lastT = C.Game.t;
+      if (P.state === C.ST.CLIMB) { climbFrames++; P.st = 0; }
+    });
+    const climbState = climbFrames;
     const climbedOnExtra = e0 - P.extra;
     // on the ground it must not come back
     const g = window.__flat();
@@ -328,11 +336,16 @@ async function boot(browser) {
     // stand back over them and face them: this check is about what holding F
     // does, not about where dropCarried happens to leave someone on a slope
     mate.state = 4;
-    P.pos.set(mate.pos.x - 1.0, mate.pos.y, mate.pos.z);
-    C.CAM.yaw = Math.atan2(mate.pos.x - P.pos.x, mate.pos.z - P.pos.z);
+    P.carrying = null;
     P.reviveT = 0; C.Survive.holdF = 0;
-    out.downNear = !!C.Coop.nearestDown(3.4);
-    await window.__hold(['KeyF'], C.K.REVIVE_T + 0.6);
+    // stand over them for the whole hold: gravity and a slope will otherwise
+    // walk you out of the 2.8 m the revive actually needs
+    await window.__hold(['KeyF'], C.K.REVIVE_T + 0.8, () => {
+      P.pos.set(mate.pos.x - 0.9, mate.pos.y, mate.pos.z);
+      C.CAM.yaw = Math.atan2(mate.pos.x - P.pos.x, mate.pos.z - P.pos.z);
+    });
+    out.downNear = !!C.Coop.nearestDown(2.8);
+    out.dist = +Math.hypot(mate.pos.x - P.pos.x, mate.pos.y - P.pos.y, mate.pos.z - P.pos.z).toFixed(2);
     out.revives = sent.filter(m => m.t === 'rev').length;
 
     // ping
@@ -345,7 +358,7 @@ async function boot(browser) {
   });
   check('the helping hand reaches out and pulls', coop.handOut && coop.pulls > 0, JSON.stringify({ h: coop.handOut, p: coop.pulls, reach: coop.reach }));
   check('a downed mate can be shouldered, and it weighs on you', coop.nearDown && coop.carrying && coop.carryWeight && coop.dropped);
-  check('holding F revives them', coop.revives === 1, JSON.stringify({ revives: coop.revives, near: coop.downNear }));
+  check('holding F revives them', coop.revives === 1, JSON.stringify({ revives: coop.revives, near: coop.downNear, dist: coop.dist }));
   check('pings land in the world', coop.pings >= 1);
 
   // ---------------------------------------------------------------- camps
@@ -465,6 +478,46 @@ async function boot(browser) {
   }, snap);
   check('late joiners inherit the world and start at the highest fire',
     late.spawnCamp === late.want && late.want > 0, JSON.stringify(late));
+
+  // ---- you can actually get over the top of a cliff ----------------------
+  // The old top-out took one sample exactly a metre inward that had to be
+  // nearly level and no more than half a metre up.  Any lip steeper or higher
+  // than that shoved you off the wall at the top of the climb, which is the
+  // single worst thing this game could do to you.
+  const tops = await A.evaluate(async () => {
+    const C = window.CRUX, P = C.P;
+    let topped = 0, dumped = 0, tried = 0;
+    for (let n = 0; n < 8; n++) {
+      const spot = window.__wall(6);
+      if (!spot) continue;
+      tried++;
+      window.__atWall(spot);
+      for (const k in P.status) P.status[k] = 0;
+      C.Survive.recalcMax();
+      const y0 = P.pos.y;
+      let peak = y0, wasOn = false, done = false, lastT = -1;
+      await window.__hold(['KeyW', C.IN.grabKey], 55, () => {
+        if (C.Game.t === lastT || done) return;
+        lastT = C.Game.t;
+        P.st = P.stMax;                       // this check is about geometry, not stamina
+        if (P.state === C.ST.CLIMB) wasOn = true;
+        if (P.pos.y > peak) peak = P.pos.y;
+        if (wasOn && P.state === C.ST.GROUND && P.pos.y - y0 > 2.5) { done = true; topped++; }
+        else if (wasOn && P.state === C.ST.GROUND && peak - y0 > 3 && P.pos.y - y0 < 1) { done = true; dumped++; }
+      });
+    }
+    return { tried, topped, dumped };
+  });
+  // The property that matters is that the top of a climb never throws you off
+  // the wall.  A climb still running when the window closes is a tall cliff,
+  // not a failure - but a single dump is the old bug back.
+  // Measured over 22 cliffs: the old top-out dumped the climber off 6 of
+  // them, this one dumps 1.  Eight samples cannot resolve a 5% rate, so the
+  // check allows a single dump and the real number lives in the README.
+  check('the top of a climb hardly ever throws you off the wall',
+    tops.tried > 0 && tops.dumped <= 1, JSON.stringify(tops));
+  check('climbs get over the top of the cliff they are on',
+    tops.topped >= Math.ceil(tops.tried * 0.6), JSON.stringify(tops));
 
   // ---- the bar tells you what it is doing, and gives you a moment ---------
   const grip = await A.evaluate(async () => {

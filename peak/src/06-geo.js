@@ -141,6 +141,8 @@ function scatter(geo, mat, list, tintFn, opts) {
     }
     var sphere = new THREE.Sphere(new THREE.Vector3(cx, cy, cz), rad + baseR * maxS * 1.6);
     var im = new THREE.InstancedMesh(shareGeo(geo, sphere), mat, items.length);
+    im.userData.cx = cx; im.userData.cy = cy; im.userData.cz = cz; im.userData.rad = sphere.radius;
+    if (opts.fade) im.userData.fade = opts.fade;
     for (i = 0; i < items.length; i++) {
       it = items[i];
       e.set(it.rx || 0, it.ry || 0, it.rz || 0);
