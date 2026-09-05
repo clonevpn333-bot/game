@@ -55,6 +55,7 @@ Game.resize = function () {
 };
 
 Game.buildWorld = function (seed, lootSeed, detail, done) {
+  HUD.coachDone = {}; HUD.coachHold = 0; Survive.seen = {};
   Game.detail = detail;
   Game.renderer.setPixelRatio(detail ? Math.min(window.devicePixelRatio || 1, 2) : 1);
   document.getElementById('boot').classList.remove('hidden');
@@ -182,8 +183,9 @@ Game.loop = function (ts) {
 
     CAM.update(Game.cam, P, dt);
 
-    P.fig.root.position.copy(P.pos);
-    P.fig.root.rotation.y = P.yaw;
+    var limp = P.fig.rag && P.fig.rag.on;
+    if (!limp) { P.fig.root.position.copy(P.pos); P.fig.root.rotation.y = P.yaw; }
+    if (limp && P.state !== ST.OUT) P.fig.standUp();
     P.fig.root.visible = !CAM.hideBody;
     P.fig.setHeld(P.inv[P.sel] ? P.inv[P.sel].k : null);
     _figOpt.t = Game.t;
@@ -203,6 +205,17 @@ Game.loop = function (ts) {
     P.fig.pose(dt, _figOpt);
     if (P.fig.torchLight) P.fig.torchLight.visible = !!P.torchOn;
 
+    // the effects that only make sense against the player's own motion
+    Game.fxT = (Game.fxT || 0) + dt;
+    if (P.state === ST.CLIMB && P.climbing && Game.fxT > 0.09) {
+      Game.fxT = 0;
+      FX.grit(P.pos.x, P.pos.y + 0.1, P.pos.z, P.wall.nx, P.wall.nz);
+    } else if (P.state === ST.AIR && P.vel.y < -13) {
+      FX.rush(Game.cam.position, -P.vel.y);
+    } else if (P.state === ST.GROUND && Game.fxT > 0.17) {
+      var spd = Math.hypot(P.vel.x, P.vel.z);
+      if (spd > 3.2) { Game.fxT = 0; FX.step(P.pos.x, P.pos.y, P.pos.z); }
+    }
     Props.cull(Game.cam.position);
     FX.tick(dt, Game.cam.position, P.pos.y);
     Sky.update(dt, Game.t, P.pos.y, Game.cam.position);

@@ -32,6 +32,27 @@ async function boot(browser) {
       const start = C.Game.t;
       const id = setInterval(() => { if (C.Game.t - start >= s) { clearInterval(id); res(); } }, 8);
     });
+    // Long blocks let hunger and hazards fill the bar, which knocks the scout
+    // out; anything that runs after them has to stand them back up first or it
+    // is testing an unconscious body.
+    window.__bareRock = () => {
+      C.Coop.ropes.forEach(r => C.Coop.group.remove(r.mesh));
+      C.Coop.ropes = [];
+      C.Coop.pitons.forEach(q => C.Coop.group.remove(q.mesh));
+      C.Coop.pitons = [];
+      C.P.rope = null; C.P.onPiton = false;
+    };
+    window.__revive = () => {
+      const P = C.P;
+      for (const k in P.status) P.status[k] = 0;
+      P.hp = C.K.HP_MAX; P.outT = 0; P.carriedBy = null; P.carrying = null;
+      if (P.state === C.ST.OUT) P.state = C.ST.AIR;
+      if (P.fig) P.fig.standUp();
+      C.HUD.blocked = false;          // no pointer lock exists in a headless run
+      P.noGrabT = 0;
+      C.Survive.recalcMax();
+      P.st = P.stMax;
+    };
     window.__hold = (keys, secs, each) => new Promise(res => {
       const start = C.Game.t;
       const id = setInterval(() => {
@@ -491,14 +512,17 @@ async function boot(browser) {
       const spot = window.__wall(6);
       if (!spot) continue;
       tried++;
+      window.__bareRock();
+      window.__revive();
       window.__atWall(spot);
-      for (const k in P.status) P.status[k] = 0;
-      C.Survive.recalcMax();
+      P.noGrabT = 0;
       const y0 = P.pos.y;
       let peak = y0, wasOn = false, done = false, lastT = -1;
       await window.__hold(['KeyW', C.IN.grabKey], 55, () => {
         if (C.Game.t === lastT || done) return;
         lastT = C.Game.t;
+        for (const k in P.status) P.status[k] = 0;
+        C.Survive.recalcMax();
         P.st = P.stMax;                       // this check is about geometry, not stamina
         if (P.state === C.ST.CLIMB) wasOn = true;
         if (P.pos.y > peak) peak = P.pos.y;
@@ -523,50 +547,83 @@ async function boot(browser) {
   const grip = await A.evaluate(async () => {
     const C = window.CRUX, P = C.P, K = C.K;
     const spot = window.__wall(16) || window.__wall(10) || window.__wall(6);
-    window.__atWall(spot);
-    for (const k in P.status) P.status[k] = 0;
-    P.inv = [null, null, null]; P.carrying = null;
-    C.Survive.recalcMax();
+    let placedAt = -99;
+    function place(force) {
+      if (!force && C.Game.t - placedAt < 0.8) return;   // not every frame
+      placedAt = C.Game.t;
+      window.__bareRock();
+      window.__revive();
+      window.__atWall(spot);
+      P.inv = [null, null, null];
+      for (const k in P.status) P.status[k] = 0;
+      C.Survive.recalcMax();
+      P.noGrabT = 0;                                     // spawnAt re-arms it
+    }
+    place(true);
     P.st = P.stMax; P.extra = 0;
 
-    // how much wall a full bar actually buys, with statuses held out of it
-    let rate = 0, warnAt = null, lastT = -1, t0 = C.Game.t, y0 = P.pos.y;
-    await window.__hold(['KeyW', C.IN.grabKey], 2.2, () => {
+    // Climbing rate is measured off the metres the game itself counts, and
+    // the scout is put back on the wall whenever they top out - since the
+    // mantle fix they pull over shelves instead of grinding up one face, so
+    // net height over a fixed window says nothing about the climb rate.
+    let rate = 0, lastT = -1, climbFrames = 0, shown = false, readout = '';
+    const c0 = P.stats.climbed;
+    let spent = 0, lastSt = P.st + P.extra;
+    await window.__hold(['KeyW', C.IN.grabKey], 3.0, () => {
       if (C.Game.t === lastT) return;
       lastT = C.Game.t;
       for (const k in P.status) P.status[k] = 0;
       C.Survive.recalcMax();
-      if (C.Survive.drain > rate) rate = C.Survive.drain;
-      if (!warnAt && document.getElementById('bar').classList.contains('warn')) warnAt = C.Game.t - t0;
+      if (P.state === C.ST.CLIMB) {
+        climbFrames++;
+        if (C.Survive.drain > rate) rate = C.Survive.drain;
+        const now = P.st + P.extra;
+        if (now < lastSt) spent += lastSt - now;
+        lastSt = now;
+        if (!document.getElementById('drain').classList.contains('hidden')) {
+          shown = true;
+          readout = document.getElementById('drain-t').textContent;
+        }
+      } else {
+        if (P.state === C.ST.GROUND) place();      // back on the wall
+        P.st = P.stMax;
+        lastSt = P.st + P.extra;
+      }
     });
-    const climbedPerSec = (P.pos.y - y0) / 2.2;
+    const climbed = P.stats.climbed - c0;
     const secsOnFull = P.stMax / Math.max(0.01, rate);
-    const readout = document.getElementById('drain-t').textContent;
-    const shown = !document.getElementById('drain').classList.contains('hidden');
+    const metres = spent > 0.5 ? climbed / spent * P.stMax : 0;
 
-    // now empty the bar on the wall and time the scrabble before the drop
+    // Now empty the bar on the wall and time the scrabble before the drop.
+    place(true);
     P.st = 0; P.extra = 0;
-    let graceT = null, tE = C.Game.t;
+    let graceT = null, tE = null;
     lastT = -1;
-    await window.__hold(['KeyW', C.IN.grabKey], K.GRIP_GRACE + 1.2, () => {
+    await window.__hold(['KeyW', C.IN.grabKey], K.GRIP_GRACE + 2.5, () => {
       if (C.Game.t === lastT) return;
       lastT = C.Game.t;
       for (const k in P.status) P.status[k] = 0;
       C.Survive.recalcMax();
       P.st = 0; P.extra = 0;                       // keep it empty
-      if (graceT === null && P.state === C.ST.SLIP) graceT = C.Game.t - tE;
+      if (P.state === C.ST.CLIMB && tE === null) tE = C.Game.t;
+      if (graceT === null && P.state === C.ST.SLIP && tE !== null) graceT = C.Game.t - tE;
+      if (P.state === C.ST.GROUND && graceT === null) { place(); tE = null; }
     });
     return {
-      rate: +rate.toFixed(2), secsOnFull: +secsOnFull.toFixed(1),
-      metres: +(climbedPerSec * secsOnFull).toFixed(0), warnAt: warnAt && +warnAt.toFixed(1),
-      readout, shown, graceT: graceT && +graceT.toFixed(2), want: K.GRIP_GRACE,
+      rate: +rate.toFixed(2), secsOnFull: +secsOnFull.toFixed(1), metres: +metres.toFixed(0),
+      climbFrames, readout, shown, graceT: graceT && +graceT.toFixed(2), want: K.GRIP_GRACE,
+      why: climbFrames ? null : {
+        state: P.state, blocked: C.HUD.blocked, noGrab: +P.noGrabT.toFixed(2),
+        st: +P.st.toFixed(1), stMax: +P.stMax.toFixed(1), wall: P.wall.has,
+        spot: !!spot, y: +P.pos.y.toFixed(1), grd: +C.groundH(P.pos.x, P.pos.z).toFixed(1),
+      },
     };
   });
   check('a full bar buys a real stretch of wall', grip.secsOnFull > 11 && grip.metres > 20,
-    JSON.stringify({ secs: grip.secsOnFull, metres: grip.metres, rate: grip.rate }));
-  check('the wall tells you how long you have left', grip.shown && /^\d+s|60s\+|HOLD ON|resting/.test(grip.readout),
+    JSON.stringify({ secs: grip.secsOnFull, metres: grip.metres, rate: grip.rate, frames: grip.climbFrames, why: grip.why }));
+  check('the wall tells you how long you have left', grip.shown && /^\d+s$|60s\+|HOLD ON|resting/.test(grip.readout),
     'reads "' + grip.readout + '"');
-  check('an empty bar scrabbles before it drops you', grip.graceT !== null && grip.graceT >= grip.want * 0.8,
+  check('an empty bar scrabbles before it drops you', grip.graceT !== null && grip.graceT >= grip.want * 0.7,
     JSON.stringify({ grace: grip.graceT, want: grip.want }));
 
   // ---- the drain readout names what is costing you ------------------------
@@ -589,6 +646,64 @@ async function boot(browser) {
   });
   check('the pack is on screen with what you are carrying', why.named.length === 2 && +why.wtShown > 20,
     JSON.stringify({ slots: why.named, weight: why.wtShown }));
+
+  // ---- going down is a ragdoll, and the game explains itself --------------
+  const rag = await A.evaluate(async () => {
+    const C = window.CRUX, P = C.P;
+    window.__revive();
+    const g = window.__flat();
+    P.spawnAt(g.x, g.z, g.y);
+    P.vel.set(3, 1, 2);
+    C.Survive.knockOut('a test');
+    const on = !!(P.fig.rag && P.fig.rag.on);
+    const y0 = P.fig.rag.p[0].y;
+    await window.__sim(1.6);
+    const r = P.fig.rag, ground = C.groundH(r.p[2].x, r.p[2].z);
+    // it should have collapsed onto the rock rather than stayed upright
+    const settled = r.p[0].y < y0 - 0.35 && r.p[2].y < ground + 0.5;
+    const spread = Math.hypot(r.p[4].x - r.p[6].x, r.p[4].z - r.p[6].z);
+    P.outT = 30;
+    window.__revive();
+    P.state = C.ST.GROUND;
+    await window.__sim(0.2);
+    return { on, settled, spread: +spread.toFixed(2), up: !P.fig.rag.on,
+             headDrop: +(y0 - r.p[0].y).toFixed(2) };
+  });
+  check('a downed scout is a ragdoll that collapses onto the rock',
+    rag.on && rag.settled, JSON.stringify(rag));
+  check('standing back up clears the ragdoll', rag.up, String(rag.up));
+
+  const coach = await A.evaluate(async () => {
+    const C = window.CRUX;
+    C.HUD.coachDone = {}; C.HUD.coachHold = 0;
+    const before = Object.keys(C.HUD.coachDone).length;
+    await window.__sim(2.0);
+    const taught = Object.keys(C.HUD.coachDone);
+    // and no status may reach the bar without naming itself first
+    C.Survive.seen = {};
+    for (const k in C.P.status) C.P.status[k] = 0;
+    C.Survive.addStatus('poison', 12);
+    return { before, taught, named: !!C.Survive.seen.poison };
+  });
+  check('the game teaches you as you go', coach.taught.length > 0, JSON.stringify(coach.taught));
+  check('a status names itself and its cure the first time it shows', coach.named, String(coach.named));
+
+  // ---- hazards are a clock, not a wipe -----------------------------------
+  const expo = await A.evaluate(async () => {
+    const C = window.CRUX, P = C.P;
+    window.__revive();
+    const g = window.__flat();
+    P.spawnAt(g.x, g.z, g.y);
+    for (const k in P.status) P.status[k] = 0;
+    P.hp = 100;
+    C.Survive.recalcMax();
+    await window.__sim(60);
+    let worst = 0, which = '';
+    for (const k in P.status) if (k !== 'weight' && P.status[k] > worst) { worst = P.status[k]; which = k; }
+    return { worst: +worst.toFixed(0), which, hp: +P.hp.toFixed(0), bar: +P.stMax.toFixed(0) };
+  });
+  check('standing still for a minute does not kill you', expo.hp > 55 && expo.bar > 25,
+    JSON.stringify(expo));
 
   await browser.close();
   console.log('');

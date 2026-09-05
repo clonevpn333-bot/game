@@ -48,6 +48,31 @@ feet, `C` uses what is in it, `X` drops it. Weight is the one status you choose
 to carry: it eats into the right-hand end of the stamina bar, and the counter
 turns amber once you are hauling enough for it to matter.
 
+## Being taught, and being told
+
+The game teaches itself now, one line at a time, each fired by what you are
+actually doing rather than dumped on you at the start: the first wall you
+stand next to, the first time your grip drops below half on a face, the first
+ledge you haul over, the first fire, the first fog wall, the first thing in
+your pack, the moment the sea fog starts climbing. One at a time, never
+stacked, each shown once.
+
+Statuses introduce themselves too. The first time one appears it names itself
+and says what fixes it — "☠ poison — an antidote, or a fire" — because a
+purple wedge eating your bar with no explanation is not difficulty, it is a
+missing string.
+
+And the hazards used to be brutal on a scale nobody could read. Standing on
+spore ground cost **5.5 poison a second**, which fills a hundred-wide bar in
+eighteen seconds; the mesa sun was 4.4 a second, the kiln 3.4, thorns 9. They
+run at roughly a third to a quarter of that now, and — except for the things
+you choose to carry — each one **plateaus** rather than taking the whole bar.
+Exposure is meant to be a clock you plan around, not a wipe you cannot outrun.
+
+(There was also a fog-wall prompt that read "light the campfire below to open
+**undefined**", because the zone table it looked the name up in has no name
+column. It says which biome now.)
+
 ## The stamina bar
 
 One bar, and everything eats into it. The green is what you have left. Statuses
@@ -222,6 +247,12 @@ high-frequency wobble the collision field never sees — gameplay reads the
 coarse field, so the detail can never narrow a shelf you have to stand on.
 Detail: low drops the subdivision and halves the shadow map.
 
+**They go limp when they go down.** A knocked-out scout is a real ragdoll —
+eleven points, sticks between them, gravity, friction against the rock —
+and it drives the actual model rather than swapping in capsules, so the
+scout crumples over whatever they landed on instead of lying in a T-pose.
+The fall carries into the tumble. Standing back up clears it.
+
 **Nothing arrives instantly.** PEAK's scouts are active ragdolls — Landfall
 build their characters out of physics forces and a balance script rather than
 keyframed clips, which is why the limbs lag, wobble and settle instead of
@@ -232,6 +263,13 @@ ride their own spring, so a landing compresses and rebounds. The arms follow
 by slerp rather than by spring, because overshooting a hand that is supposed
 to be *on* a hold looks broken.
 
+**Effects that fire on what you are doing.** Chalk off the mittens every time
+a hand takes a new hold — it lands on the beat of the climb, which is the
+animation you stare at for minutes. Grit knocked out from under the boots and
+falling down the face behind you. The air streaking past on a long drop. A
+ring of dust punched sideways when you hit the deck, scaled to how far you
+fell. Dust off your feet at a run.
+
 **Ground clutter.** There was nothing at all between the big props and the
 bare rock, which is most of why the island read as empty — you walked over
 hundreds of square metres of untouched triangle. Tufts, sedge and pebbles now
@@ -239,7 +277,12 @@ cover the walkable ground, tinted per biome, about forty thousand of them.
 They are culled by distance per bucket: without that they were four million
 triangles a frame, nearly all of it sub-pixel grass half a kilometre away.
 
-Scouts are built from bevelled boxes rather than plain ones; the chamfer costs
+Scouts are built out of layers rather than blocks: a jacket with a collar, a
+zip, a belt and shoulder pads, a pack with straps and a buckle, a beanie with
+a brim and a bobble over a properly round head, a face of eyes, brows, a mouth
+and cheeks, mittens with thumbs, and boots with soles and toes. Every joint —
+shoulder, elbow, hip, knee — has a ball in it, so nothing pulls apart when the
+springs swing a limb. They are built from bevelled boxes rather than plain ones; the chamfer costs
 a few triangles per limb and catches the sun along every edge. They walk with
 a twist through the waist and their weight rolling onto the planted foot, they
 absorb a landing through the knees, their heads hold their own line while the

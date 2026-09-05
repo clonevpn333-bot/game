@@ -154,6 +154,7 @@ Coop.dropCarried = function () {
   Survive.recalcMax();
 };
 Coop.revive = function (mate) {
+  if (P.fig && P.state !== ST.OUT) P.fig.standUp();
   Net.send({ t: 'rev', id: mate.id });
   P.stats.saves++;
   HUD.toast(mate.name + ' is back up', '#8fe04a');

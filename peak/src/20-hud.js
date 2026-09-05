@@ -90,6 +90,7 @@ HUD.tick = function (dt, cam) {
   if (P.state === ST.OUT) e.out.textContent = Math.ceil(P.outT) + '';
 
   HUD.pack();
+  HUD.coach(dt);
   HUD.mates();
   HUD.prompt();
   HUD.tags(cam);
@@ -150,6 +151,53 @@ HUD.pack = function () {
   }
 };
 
+// ---------------------------------------------------------------- coaching
+// One line at a time, each shown once, fired by what you are actually doing.
+// There was nothing here at all: the game explained the grab key and then let
+// you work out stamina, ledges, fires and fog walls by dying.
+var COACH = [
+  { id: 'move', col: '#dfe9f4', txt: 'WASD to move · mouse to look · Shift to run',
+    when: function () { return true; } },
+  { id: 'wall', col: '#a6f04e', txt: 'almost every rock face is climbable — hold the grab key and keep moving',
+    when: function () { return P.state === ST.GROUND && P.wall.has; } },
+  { id: 'climb', col: '#a6f04e', txt: 'the bar at the bottom is your grip — the number above it is seconds left',
+    when: function () { return P.state === ST.CLIMB; } },
+  { id: 'rest', col: '#ffc447', txt: 'grip only comes back on the ground — pull onto a ledge, or hammer a piton in',
+    when: function () { return P.state === ST.CLIMB && P.st < P.stMax * 0.45; } },
+  { id: 'top', col: '#a6f04e', txt: 'climb into a lip and the scout hauls over it — you do not need to jump',
+    when: function () { return P.state === ST.GROUND && P.stats.climbed > 8; } },
+  { id: 'fall', col: '#ff5b52', txt: 'a long drop hurts — let go low, or slide down rather than fall',
+    when: function () { return P.status.injury > 4; } },
+  { id: 'fire', col: '#ffd646', txt: 'fires are checkpoints: they warm you, mend you, cook food, and you wake up here',
+    when: function () { return Survive.atFire; } },
+  { id: 'fog', col: '#8fbfe0', txt: 'the fog is a ceiling until you light the fire below it',
+    when: function () { return HUD.wallHint >= 0; } },
+  { id: 'pack', col: '#c9a06a', txt: '1-3 picks a pack slot, C uses it, X drops it — everything you carry costs grip',
+    when: function () { return !!(P.inv[0] || P.inv[1] || P.inv[2]); } },
+  { id: 'rise', col: '#b06ad0', txt: 'the fog is rising from the sea now — do not be under it',
+    when: function () { return Fog.level > 4; } },
+];
+HUD.coachDone = {};
+HUD.coachT = 0;
+HUD.coachHold = 0;
+HUD.coach = function (dt) {
+  HUD.coachT += dt;
+  HUD.coachHold -= dt;
+  if (HUD.coachT < 0.4 || HUD.coachHold > 0) return;
+  HUD.coachT = 0;
+  for (var i = 0; i < COACH.length; i++) {
+    var c = COACH[i];
+    if (HUD.coachDone[c.id]) continue;
+    var ok = false;
+    try { ok = c.when(); } catch (e) { ok = false; }
+    if (!ok) continue;
+    HUD.coachDone[c.id] = 1;
+    HUD.toast(c.txt, c.col);
+    HUD.coachHold = 4.2;                 // never stack two lessons at once
+    return;
+  }
+};
+
 HUD.mates = function () {
   var list = Remote.list, box = HUD.el.mates;
   while (box.children.length > list.length) box.removeChild(box.lastChild);
@@ -175,7 +223,7 @@ HUD.prompt = function () {
   if (P.state === ST.OUT) {
     txt = 'you are down — hold on';
   } else if (HUD.wallHint >= 0) {
-    txt = 'fog — light the campfire below to open ' + ZONES[HUD.wallHint + 1].name;
+    txt = 'fog — light the campfire below to climb into ' + Run.at(HUD.wallHint + 1).nm;
   } else if (P.carrying) {
     var c = Remote.byId(P.carrying);
     txt = '<em>F</em> set ' + (c ? c.name : 'them') + ' down';

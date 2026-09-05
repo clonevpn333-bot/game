@@ -167,6 +167,51 @@ FX.ember = function (x, y, z) {
 };
 
 var _emberT = 0;
+// Chalk off the mittens every time a hand takes a new hold.  It is small,
+// but it fires on the beat of the climb, which is the only animation you look
+// at for minutes at a time.
+FX.chalk = function (x, y, z, nx, nz) {
+  for (var i = 0; i < 5; i++) {
+    FX.burst.spawn(x + (Math.random() - 0.5) * 0.12, y + (Math.random() - 0.5) * 0.12, z + (Math.random() - 0.5) * 0.12,
+      nx * (0.5 + Math.random()) + (Math.random() - 0.5) * 0.5, 0.2 + Math.random() * 0.5,
+      nz * (0.5 + Math.random()) + (Math.random() - 0.5) * 0.5,
+      0xf2eee6, 0.05 + Math.random() * 0.05, 0.55, -0.5, 1.5);
+  }
+};
+
+// Grit knocked loose under the boots, falling down the face behind you.
+FX.grit = function (x, y, z, nx, nz) {
+  FX.burst.spawn(x + nx * 0.2 + (Math.random() - 0.5) * 0.4, y, z + nz * 0.2 + (Math.random() - 0.5) * 0.4,
+    (Math.random() - 0.5) * 0.6, -0.4 - Math.random(), (Math.random() - 0.5) * 0.6,
+    0x8a7f70, 0.045 + Math.random() * 0.05, 1.5, 9, 2.4);
+};
+
+// The air going past you on a long fall.  Streaks rather than dots, spawned
+// around the camera so they read as speed instead of scenery.
+FX.rush = function (cam, sp) {
+  for (var i = 0; i < 3; i++) {
+    var a = Math.random() * 6.283, r = 1.2 + Math.random() * 3;
+    FX.burst.spawn(cam.x + Math.cos(a) * r, cam.y + 2 + Math.random() * 4, cam.z + Math.sin(a) * r,
+      0, sp * 0.55, 0, 0xdfe9f4, 0.05, 0.32, 0, 3.2);
+  }
+};
+
+// A ring of dust punched out sideways when you hit the deck hard.
+FX.slam = function (x, y, z, force) {
+  var n = 8 + (force * 16) | 0;
+  for (var i = 0; i < n; i++) {
+    var a = i / n * 6.283 + Math.random() * 0.3, s = 2.5 + force * 7 + Math.random() * 2;
+    FX.burst.spawn(x, y + 0.06, z, Math.cos(a) * s, 0.5 + Math.random() * 1.2, Math.sin(a) * s,
+      0xcfc6b6, 0.10 + Math.random() * 0.12, 0.9 + force * 0.5, 2.2, 2.6);
+  }
+};
+
+FX.step = function (x, y, z, col) {
+  FX.burst.spawn(x + (Math.random() - 0.5) * 0.2, y + 0.04, z + (Math.random() - 0.5) * 0.2,
+    (Math.random() - 0.5) * 0.7, 0.35 + Math.random() * 0.4, (Math.random() - 0.5) * 0.7,
+    col || 0xcfc6b6, 0.07 + Math.random() * 0.06, 0.45, 1.1, 2.0);
+};
+
 FX.tick = function (dt, cam, py) {
   FX.burst.tick(dt);
 

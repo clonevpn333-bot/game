@@ -21,8 +21,24 @@ Survive.recalcMax = function () {
   if (P.st > P.stMax) P.st = P.stMax;
 };
 
-Survive.addStatus = function (k, n) {
-  P.status[k] = clamp(P.status[k] + n, 0, 100);
+// Hazards plateau instead of taking the whole bar: exposure should be a clock
+// you plan around, not a wipe you cannot outrun.  Only the things you choose
+// to carry - weight, injury, hunger - can fill it all the way.
+Survive.seen = {};
+Survive.addStatus = function (k, n, cap) {
+  var was = P.status[k];
+  if (n > 0 && cap !== undefined && was >= cap) return;
+  var top = (n > 0 && cap !== undefined) ? Math.min(100, cap) : 100;
+  P.status[k] = clamp(was + n, 0, Math.max(was, top));
+  // and say what it is the first time it shows up, with the cure
+  if (n > 0 && was < 7 && P.status[k] >= 7 && !Survive.seen[k]) {
+    Survive.seen[k] = 1;
+    for (var i = 0; i < STATUS.length; i++) {
+      if (STATUS[i].k !== k) continue;
+      HUD.toast(STATUS[i].ic + '  ' + STATUS[i].nm + ' — ' + STATUS[i].fix, STATUS[i].col);
+      break;
+    }
+  }
 };
 
 // Take from the green first; on a wall, fall back to bonus stamina, which
@@ -120,41 +136,48 @@ Survive.tick = function (dt) {
     if (P.hp < K.HP_MAX) P.hp = Math.min(K.HP_MAX, P.hp + 5 * dt);
   } else {
     if (haz === 'cold') {
-      Survive.addStatus('cold', (2.6 + Wind.gust * 4.5) * dt);
+      Survive.addStatus('cold', (0.6 + Wind.gust * 1.1) * dt, 38);
     } else if (haz === 'heat') {
-      Survive.addStatus('heat', 2.2 * dt);
+      Survive.addStatus('heat', 0.55 * dt, 34);
     } else if (haz === 'kiln') {
       // the kiln is the last push and it is pure attrition
-      Survive.addStatus('heat', 3.4 * dt);
-      Survive.addStatus('curse', 0.6 * dt);
+      Survive.addStatus('heat', 0.8 * dt, 44);
+      Survive.addStatus('curse', 0.16 * dt, 26);
     } else if (haz === 'poison') {
-      if (Wind.rain > 0.4) Survive.addStatus('poison', 1.1 * dt);
+      if (Wind.rain > 0.4) Survive.addStatus('poison', 0.3 * dt, 32);
     } else if (haz === 'spore') {
       // spore mist: poison in the drifts, drowsy everywhere
-      Survive.addStatus('drowsy', 0.7 * dt);
-      if (surf === SF.SPORE) Survive.addStatus('poison', 5.5 * dt);
+      Survive.addStatus('drowsy', 0.2 * dt, 32);
+      if (surf === SF.SPORE) Survive.addStatus('poison', 0.9 * dt, 40);
     } else if (haz === 'sun') {
       // the mesa sun only lets up in the shade
       if (surf === SF.SHADE) P.status.heat = Math.max(0, P.status.heat - 7 * dt);
-      else Survive.addStatus('heat', 4.4 * dt);
+      else Survive.addStatus('heat', 0.85 * dt, 40);
     } else if (haz === 'drowsy') {
       // the gloom's fog puts you to sleep, and the long dark chills you
-      Survive.addStatus('drowsy', 0.95 * dt);
-      if (surf === SF.MURK) Survive.addStatus('drowsy', 1.6 * dt);
-      if (P.status.drowsy > 55) Survive.addStatus('cold', 2.2 * dt);
+      Survive.addStatus('drowsy', 0.25 * dt, 36);
+      if (surf === SF.MURK) Survive.addStatus('drowsy', 0.45 * dt, 46);
+      if (P.status.drowsy > 42) Survive.addStatus('cold', 0.5 * dt, 36);
     } else if (haz === 'wind') {
-      Survive.addStatus('cold', 1.6 * dt);
+      Survive.addStatus('cold', 0.42 * dt, 34);
     } else {
       P.status.cold = Math.max(0, P.status.cold - 4 * dt);
       P.status.heat = Math.max(0, P.status.heat - 4 * dt);
     }
   }
-  if (surf === SF.THORN && P.state !== ST.CLIMB) Survive.addStatus('thorns', 9 * dt);
-  if (surf === SF.EMBER) { Survive.addStatus('heat', 12 * dt); Survive.hurt(4 * dt, 'the hot rock'); }
-  if (P.status.cold > 70) Survive.hurt((P.status.cold - 70) / 30 * 3.2 * dt, 'the cold');
-  if (P.status.heat > 70) Survive.hurt((P.status.heat - 70) / 30 * 3.2 * dt, 'the heat');
-  if (P.status.poison > 40) Survive.hurt(1.6 * dt, 'poison');
+  if (surf === SF.THORN && P.state !== ST.CLIMB) Survive.addStatus('thorns', 2.4 * dt, 30);
+  if (surf === SF.EMBER) { Survive.addStatus('heat', 3.0 * dt, 62); Survive.hurt(0.85 * dt, 'the hot rock'); }
+  if (P.status.cold > 76) Survive.hurt((P.status.cold - 76) / 24 * 2.4 * dt, 'the cold');
+  if (P.status.heat > 76) Survive.hurt((P.status.heat - 76) / 24 * 2.4 * dt, 'the heat');
+  if (P.status.poison > 52) Survive.hurt(0.9 * dt, 'poison');
   if (P.status.hunger > 88) Survive.hurt(1.2 * dt, 'hunger');
+
+  // Away from a hazard, the scout gets their breath and their skin back very
+  // slowly.  Without this a single bad landing follows you the whole run and
+  // every mistake is permanent until you find a fire.
+  if (!Survive.atFire && P.hp < K.HP_MAX && P.status.poison < 20 && P.status.heat < 45 && P.status.cold < 45) {
+    P.hp = Math.min(K.HP_MAX, P.hp + 0.8 * dt);
+  }
 
   // ---- the rising fog: it comes for everyone
   if (P.pos.y < Fog.level) Survive.hurt(16 * dt, 'the fog');
@@ -196,6 +219,8 @@ Survive.knockOut = function (cause) {
   P.st = 0; P.extra = 0;
   P.outT = Remote.list.length > 0 ? K.OUT_T_TEAM : K.OUT_T_SOLO;
   if (P.carrying) Coop.dropCarried();
+  // go limp from exactly where the body was, carrying the fall into the tumble
+  if (P.fig) P.fig.limp(P.pos.x, P.pos.y, P.pos.z, P.vel.x, P.vel.y, P.vel.z, P.yaw);
   HUD.toast('you go down — ' + (cause || 'spent') + '', '#ff5b52');
   Net.send({ t: 'down' });
 };
@@ -203,7 +228,7 @@ Survive.knockOut = function (cause) {
 Survive.land = function (drop) {
   if (P.fig) P.fig.land(clamp((drop - 0.8) / 7, 0, 1));
   if (drop < 1.2) return;
-  FX.puff(P.pos.x, P.pos.y + 0.05, P.pos.z, Math.min(14, 3 + drop | 0), 0xd8d0c0);
+  FX.slam(P.pos.x, P.pos.y, P.pos.z, clamp((drop - 1.2) / 16, 0.1, 1));
   CAM.kick(clamp(drop / 26, 0.02, 0.55));
   if (drop <= K.FALL_SAFE) return;
   var dmg = (drop - K.FALL_SAFE) * K.FALL_DMG;
@@ -219,6 +244,7 @@ Survive.respawn = function () {
   for (i = 0; i < Camps.list.length; i++) if (Camps.list[i].lit) idx = Math.max(idx, i);
   var c = Camps.list[idx];
   P.state = ST.AIR; P.hp = K.HP_MAX; P.outT = 0; P.carriedBy = null;
+  if (P.fig) P.fig.standUp();
   for (i = 0; i < STATUS.length; i++) P.status[STATUS[i].k] = 0;
   P.extra = 0;
   Survive.recalcMax();

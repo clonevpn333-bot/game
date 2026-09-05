@@ -36,7 +36,7 @@ var K = {
   FALL_DMG: 4.4,
   INJ_DMG: 18,
 
-  HUNGER_RATE: 0.42,    // hunger status creeps up over a run
+  HUNGER_RATE: 0.16,    // hunger status creeps up over a run
   OUT_T_SOLO: 22,       // seconds unconscious before you die, alone
   OUT_T_TEAM: 75,       // much longer with mates around to help
 
@@ -162,15 +162,15 @@ var ST = { GROUND: 0, AIR: 1, CLIMB: 2, SLIP: 3, OUT: 4, CARRIED: 5 };
 // ---------------------------------------------------------------- statuses
 // Each one eats a slice off the right-hand end of the stamina bar.
 var STATUS = [
-  { k: 'weight', nm: 'weight', col: '#c9a06a', ic: '⚖' },
-  { k: 'hunger', nm: 'hunger', col: '#e0873a', ic: '◔' },
-  { k: 'injury', nm: 'injury', col: '#d94a3d', ic: '✚' },
-  { k: 'poison', nm: 'poison', col: '#7fc23a', ic: '☠' },
-  { k: 'cold', nm: 'cold', col: '#6fc4ee', ic: '❄' },
-  { k: 'heat', nm: 'heat', col: '#ff7a2a', ic: '▲' },
-  { k: 'thorns', nm: 'thorns', col: '#b06ad0', ic: '✦' },
-  { k: 'drowsy', nm: 'drowsy', col: '#8a8fb0', ic: '☾' },
-  { k: 'curse', nm: 'curse', col: '#6a3f8f', ic: '✧' },
+  { k: 'weight', nm: 'weight', col: '#c9a06a', ic: '⚖', fix: 'drop something with X' },
+  { k: 'hunger', nm: 'hunger', col: '#e0873a', ic: '◔', fix: 'eat — food is in suitcases' },
+  { k: 'injury', nm: 'injury', col: '#d94a3d', ic: '✚', fix: 'a bandage, or rest at a fire' },
+  { k: 'poison', nm: 'poison', col: '#7fc23a', ic: '☠', fix: 'an antidote, or a fire' },
+  { k: 'cold', nm: 'cold', col: '#6fc4ee', ic: '❄', fix: 'get to a fire' },
+  { k: 'heat', nm: 'heat', col: '#ff7a2a', ic: '▲', fix: 'get off the hot rock' },
+  { k: 'thorns', nm: 'thorns', col: '#b06ad0', ic: '✦', fix: 'stay out of the bushes' },
+  { k: 'drowsy', nm: 'drowsy', col: '#8a8fb0', ic: '☾', fix: 'a fire wakes you up' },
+  { k: 'curse', nm: 'curse', col: '#6a3f8f', ic: '✧', fix: 'climb out of here' },
 ];
 
 // ---------------------------------------------------------------- math bits

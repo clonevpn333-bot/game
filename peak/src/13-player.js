@@ -273,9 +273,11 @@ Hand.prototype.step = function (ph, ax, ay, az, nx, nz) {
   var a = ph + this.off, n = Math.floor(a / TAU);
   this.u = a / TAU - n;
   if (n !== this.n) {
+    var first = this.n === -999;
     this.n = n;
     this.from.copy(this.at.lengthSq() ? this.at : new THREE.Vector3(ax, ay, az));
     this.to.set(ax, ay, az);
+    if (!first) FX.chalk(this.to.x, this.to.y, this.to.z, nx, nz);
   } else if (this.u >= REACH_U) {
     // planted: keep the hold where it is, but never let the arm stretch past
     // what the body can actually reach
