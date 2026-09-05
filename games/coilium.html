@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>COILIUM</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#05060c;color:#eef2ff;
+  font:15px/1.4 "Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif;
+  user-select:none;-webkit-user-select:none;touch-action:none}
+canvas{display:block;width:100%;height:100%;cursor:crosshair}
+#hud{position:fixed;inset:0;pointer-events:none}
+.score{position:absolute;left:20px;bottom:18px;font:800 15px/1.2 "Syne",system-ui,sans-serif}
+.score b{display:block;font-size:34px;color:#5ce8b6;letter-spacing:-.02em}
+.score span{font:700 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.18em;color:#6b7699}
+.board{position:absolute;right:20px;top:18px;min-width:190px;padding:13px 15px;border-radius:13px;
+  background:rgba(11,13,26,.72);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(9px)}
+.board h3{margin:0 0 9px;font:700 9.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.2em;color:#6b7699}
+.board ol{margin:0;padding:0;list-style:none;font:600 12.5px/1.9 var(--f,inherit)}
+.board li{display:flex;justify-content:space-between;gap:12px;color:#aeb8d6}
+.board li.me{color:#5ce8b6}
+.board li i{font-style:normal;color:#59627f;font-family:ui-monospace,Menlo,monospace;font-size:11px}
+.mini{position:absolute;right:20px;bottom:18px;width:132px;height:132px;border-radius:50%;
+  background:rgba(11,13,26,.7);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(9px)}
+.boost{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);
+  font:700 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.18em;color:#4d566f}
+#title,#over{position:fixed;inset:0;display:grid;place-content:center;text-align:center;gap:12px;z-index:5;
+  background:radial-gradient(120% 90% at 50% 40%,rgba(92,232,182,.10),transparent 62%),rgba(5,6,12,.93);
+  backdrop-filter:blur(4px)}
+h1{margin:0;font:900 clamp(46px,11vw,108px)/.9 "Syne",system-ui,sans-serif;letter-spacing:-.04em;
+  background:linear-gradient(100deg,#5ce8b6,#48c8ff 50%,#a98bff);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+p{margin:0;color:#8b95b4;font-size:15px}
+.key{display:inline-block;padding:4px 9px;border-radius:7px;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.16);font:600 12px ui-monospace,Menlo,monospace;margin:0 2px}
+.go{margin-top:8px;font:800 13px/1 inherit;letter-spacing:.22em;text-transform:uppercase;color:#5ce8b6;
+  animation:blink 1.5s ease-in-out infinite}
+@keyframes blink{50%{opacity:.35}}
+.hidden{display:none!important}
+#over h2{margin:0;font:900 clamp(30px,6vw,58px)/1 "Syne",system-ui,sans-serif;color:#ff7a8f}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="score"><span>LENGTH</span><b id="len">10</b></div>
+  <div class="board"><h3>LEADERBOARD</h3><ol id="lb"></ol></div>
+  <canvas class="mini" id="mini" width="132" height="132"></canvas>
+  <div class="boost">HOLD CLICK / SPACE TO BOOST</div>
+</div>
+<div id="title">
+  <h1>COILIUM</h1>
+  <p>Move with the <span class="key">MOUSE</span> &middot; hold <span class="key">CLICK</span> or
+     <span class="key">SPACE</span> to boost</p>
+  <p style="color:#5f6a8a;font-size:13px">Eat the orbs. Make others crash into you. Never touch another coil.</p>
+  <div class="go">Click to play</div>
+</div>
+<div id="over" class="hidden">
+  <h2>YOU CRASHED</h2>
+  <p id="overStat">&nbsp;</p>
+  <div class="go">Click to respawn</div>
+</div>
+
+<script>
+'use strict';
+/* ===========================================================================
+   COILIUM — an arena snake brawl.
+   Every coil (player and AI) is a chain of points; only the head moves under
+   its own steering and each following point eases toward the one ahead. Death
+   happens when a head enters another coil's body, and a dead coil is scattered
+   back into the arena as food.
+   =========================================================================== */
+
+const cvs = document.getElementById('c');
+const ctx = cvs.getContext('2d', { alpha: false });
+const mini = document.getElementById('mini');
+const mctx = mini.getContext('2d');
+const $ = (id) => document.getElementById(id);
+
+let W = 0, H = 0, DPR = 1;
+function resize() {
+  DPR = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cvs.width = Math.floor(W * DPR); cvs.height = Math.floor(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+addEventListener('resize', resize); resize();
+
+/* ---- world ------------------------------------------------------------ */
+const R = 1700;                 // arena radius
+const SEG = 5.2;                // spacing between body points
+const BASE_SPEED = 148;
+const BOOST_SPEED = 268;
+const NAMES = ['Vyper','Nyx','Quill','Orbit','Mako','Zephyr','Cobalt','Iris','Rook','Sable','Wisp','Torque'];
+const HUES  = [ 168, 200, 262, 320, 38, 96, 220, 286, 12, 180, 140, 300 ];
+
+let coils = [], food = [], player = null, started = false, dead = false, t = 0;
+const cam = { x: 0, y: 0, z: 1 };
+const mouse = { x: 0, y: 0 };
+let boosting = false;
+
+function rand(a, b) { return a + Math.random() * (b - a); }
+function inArena(x, y) { return Math.hypot(x, y) < R; }
+function spawnPoint() {
+  const a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * R * .82;
+  return { x: Math.cos(a) * d, y: Math.sin(a) * d };
+}
+
+function makeCoil(isPlayer, name, hue) {
+  const p = spawnPoint();
+  const c = {
+    isPlayer, name, hue,
+    pts: [], len: 10, ang: Math.random() * Math.PI * 2,
+    speed: BASE_SPEED, boost: false, dead: false,
+    target: null, wander: Math.random() * Math.PI * 2, think: 0,
+  };
+  for (let i = 0; i < 30; i++) c.pts.push({ x: p.x - i * SEG, y: p.y });
+  return c;
+}
+
+function radiusOf(c) { return 6.5 + Math.min(15, c.len * .055); }
+function bodyCount(c) { return Math.floor(18 + c.len * 1.35); }
+
+function spawnFood(n, at, hue) {
+  for (let i = 0; i < n; i++) {
+    const p = at ? { x: at.x + rand(-26, 26), y: at.y + rand(-26, 26) } : spawnPoint();
+    if (!inArena(p.x, p.y)) continue;
+    food.push({ x: p.x, y: p.y, r: at ? rand(4.5, 7.5) : rand(3.4, 6),
+                hue: hue !== undefined ? hue : Math.floor(rand(0, 360)),
+                v: at ? rand(2, 5) : 0, ph: Math.random() * 7 });
+  }
+}
+
+function reset() {
+  coils = []; food = [];
+  player = makeCoil(true, 'You', 158);
+  coils.push(player);
+  for (let i = 0; i < 9; i++) coils.push(makeCoil(false, NAMES[i % NAMES.length], HUES[i % HUES.length]));
+  spawnFood(560);
+  dead = false;
+  $('over').classList.add('hidden');
+  cam.x = player.pts[0].x; cam.y = player.pts[0].y;
+}
+reset();
+
+/* ---- input ------------------------------------------------------------ */
+addEventListener('pointermove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  if (!started) { started = true; $('title').classList.add('hidden'); return; }
+  if (dead) { reset(); return; }
+  boosting = true;
+}, { passive: false });
+addEventListener('pointerup', () => boosting = false);
+addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (!started) { started = true; $('title').classList.add('hidden'); return; }
+    if (dead) { reset(); return; }
+    boosting = true;
+  }
+});
+addEventListener('keyup', (e) => { if (e.code === 'Space') boosting = false; });
+
+/* ---- steering --------------------------------------------------------- */
+function steer(c, wantAng, dt) {
+  let d = wantAng - c.ang;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  const maxTurn = (c.boost ? 3.1 : 4.2) * dt;
+  c.ang += Math.max(-maxTurn, Math.min(maxTurn, d));
+}
+
+function aiThink(c, dt) {
+  c.think -= dt;
+  const head = c.pts[0];
+
+  // find nearest food in a radius
+  if (c.think <= 0) {
+    c.think = .25;
+    let best = null, bd = 1e9;
+    for (const f of food) {
+      const d = (f.x - head.x) ** 2 + (f.y - head.y) ** 2;
+      if (d < bd && d < 620 ** 2) { bd = d; best = f; }
+    }
+    c.target = best;
+  }
+
+  let want = c.target ? Math.atan2(c.target.y - head.y, c.target.x - head.x)
+                      : (c.wander += rand(-.4, .4), c.wander);
+
+  // steer away from the wall
+  const dist = Math.hypot(head.x, head.y);
+  if (dist > R * .84) want = Math.atan2(-head.y, -head.x) + rand(-.3, .3);
+
+  // avoid other coils' bodies in front of us
+  for (const o of coils) {
+    if (o === c || o.dead) continue;
+    const step = 4;
+    for (let i = 0; i < o.pts.length; i += step) {
+      const p = o.pts[i];
+      const dx = p.x - head.x, dy = p.y - head.y;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < 150 ** 2) {
+        const away = Math.atan2(-dy, -dx);
+        want = away + rand(-.25, .25);
+        i = o.pts.length;
+      }
+    }
+  }
+  c.boost = c.len > 24 && Math.random() < .004;
+  steer(c, want, dt);
+}
+
+/* ---- simulation -------------------------------------------------------- */
+function update(dt) {
+  t += dt;
+  if (!started || dead) return;
+
+  // player steering toward the cursor
+  {
+    const head = player.pts[0];
+    const wx = cam.x + (mouse.x - W / 2) / cam.z;
+    const wy = cam.y + (mouse.y - H / 2) / cam.z;
+    steer(player, Math.atan2(wy - head.y, wx - head.x), dt);
+    player.boost = boosting && player.len > 12;
+  }
+
+  for (const c of coils) {
+    if (c.dead) continue;
+    if (!c.isPlayer) aiThink(c, dt);
+
+    c.speed = c.boost ? BOOST_SPEED : BASE_SPEED;
+    if (c.boost) {
+      // boosting burns length and drops it back as food
+      c.len -= 5.5 * dt;
+      if (Math.random() < dt * 14) {
+        const tail = c.pts[c.pts.length - 1];
+        spawnFood(1, tail, c.hue);
+      }
+      if (c.len <= 10) { c.len = 10; c.boost = false; }
+    }
+
+    const head = c.pts[0];
+    const nx = head.x + Math.cos(c.ang) * c.speed * dt;
+    const ny = head.y + Math.sin(c.ang) * c.speed * dt;
+    c.pts.unshift({ x: nx, y: ny });
+
+    // keep the chain the right length, at fixed spacing
+    const want = bodyCount(c);
+    while (c.pts.length > want) c.pts.pop();
+
+    // wall kill
+    if (!inArena(nx, ny)) kill(c);
+  }
+
+  // eating
+  for (const c of coils) {
+    if (c.dead) continue;
+    const head = c.pts[0], rr = radiusOf(c) + 13;
+    for (let i = food.length - 1; i >= 0; i--) {
+      const f = food[i];
+      const dx = f.x - head.x, dy = f.y - head.y;
+      if (dx * dx + dy * dy < rr * rr) {
+        c.len += f.r * .34;
+        food.splice(i, 1);
+      }
+    }
+  }
+
+  // head-to-body collisions
+  for (const c of coils) {
+    if (c.dead) continue;
+    const head = c.pts[0], hr = radiusOf(c);
+    for (const o of coils) {
+      if (o === c || o.dead) continue;
+      const or = radiusOf(o);
+      for (let i = 6; i < o.pts.length; i += 2) {
+        const p = o.pts[i];
+        const dx = p.x - head.x, dy = p.y - head.y;
+        if (dx * dx + dy * dy < (hr + or) ** 2) { kill(c); break; }
+      }
+      if (c.dead) break;
+    }
+  }
+
+  // keep the arena stocked
+  if (food.length < 520) spawnFood(24);
+
+  // respawn dead AI
+  for (let i = coils.length - 1; i >= 0; i--) {
+    const c = coils[i];
+    if (c.dead && !c.isPlayer) {
+      coils[i] = makeCoil(false, NAMES[Math.floor(rand(0, NAMES.length))], HUES[Math.floor(rand(0, HUES.length))]);
+    }
+  }
+
+  // camera: follow the head, zoom out as you grow
+  const head = player.pts[0];
+  cam.x += (head.x - cam.x) * Math.min(1, dt * 6);
+  cam.y += (head.y - cam.y) * Math.min(1, dt * 6);
+  const wantZ = Math.max(.52, .95 - player.len * .0016);
+  cam.z += (wantZ - cam.z) * Math.min(1, dt * 2);
+
+  $('len').textContent = Math.floor(player.len);
+  updateBoard();
+}
+
+function kill(c) {
+  if (c.dead) return;
+  c.dead = true;
+  for (let i = 0; i < c.pts.length; i += 2) {
+    if (Math.random() < .8) spawnFood(1, c.pts[i], c.hue);
+  }
+  if (c.isPlayer) {
+    dead = true;
+    $('overStat').textContent = 'Length ' + Math.floor(c.len) + ' · you were #' + rankOf(c) + ' of ' + coils.length;
+    $('over').classList.remove('hidden');
+  }
+}
+
+function rankOf(c) {
+  return [...coils].sort((a, b) => b.len - a.len).indexOf(c) + 1;
+}
+
+function updateBoard() {
+  const top = [...coils].filter(c => !c.dead).sort((a, b) => b.len - a.len).slice(0, 6);
+  $('lb').innerHTML = top.map((c, i) =>
+    '<li class="' + (c.isPlayer ? 'me' : '') + '"><span>' + (i + 1) + '. ' + c.name + '</span><i>' +
+    Math.floor(c.len) + '</i></li>').join('');
+}
+
+/* ---- rendering --------------------------------------------------------- */
+function toScreenX(x) { return (x - cam.x) * cam.z + W / 2; }
+function toScreenY(y) { return (y - cam.y) * cam.z + H / 2; }
+
+function drawGrid() {
+  const g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.max(W, H) * .8);
+  g.addColorStop(0, '#0b1020'); g.addColorStop(1, '#05060c');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  const step = 90 * cam.z;
+  const ox = (W / 2 - cam.x * cam.z) % step, oy = (H / 2 - cam.y * cam.z) % step;
+  ctx.strokeStyle = 'rgba(90,120,200,.10)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = ox; x < W; x += step) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+  for (let y = oy; y < H; y += step) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  ctx.stroke();
+
+  // arena boundary
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,90,120,.55)'; ctx.lineWidth = 4;
+  ctx.shadowColor = 'rgba(255,90,120,.8)'; ctx.shadowBlur = 22;
+  ctx.beginPath();
+  ctx.arc(toScreenX(0), toScreenY(0), R * cam.z, 0, 7);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawFood() {
+  for (const f of food) {
+    const sx = toScreenX(f.x), sy = toScreenY(f.y);
+    if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) continue;
+    const pulse = 1 + Math.sin(t * 3 + f.ph) * .16;
+    const r = f.r * cam.z * pulse;
+    ctx.save();
+    ctx.shadowColor = 'hsl(' + f.hue + ' 90% 62%)'; ctx.shadowBlur = 12 * cam.z;
+    ctx.fillStyle = 'hsl(' + f.hue + ' 92% 66%)';
+    ctx.beginPath(); ctx.arc(sx, sy, r, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawCoil(c) {
+  if (c.dead) return;
+  const rad = radiusOf(c) * cam.z;
+  const light = c.boost ? 72 : 58;
+
+  // body as a single stroked path — cheaper and smoother than circles
+  ctx.save();
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (c.boost) { ctx.shadowColor = 'hsl(' + c.hue + ' 95% 65%)'; ctx.shadowBlur = 26; }
+
+  ctx.strokeStyle = 'hsl(' + c.hue + ' 70% ' + (light - 26) + '%)';
+  ctx.lineWidth = rad * 2.15;
+  ctx.beginPath();
+  for (let i = 0; i < c.pts.length; i++) {
+    const p = c.pts[i];
+    const sx = toScreenX(p.x), sy = toScreenY(p.y);
+    i === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
+  }
+  ctx.stroke();
+
+  ctx.strokeStyle = 'hsl(' + c.hue + ' 88% ' + light + '%)';
+  ctx.lineWidth = rad * 1.7;
+  ctx.stroke();
+  ctx.restore();
+
+  // segment highlights
+  ctx.fillStyle = 'hsl(' + c.hue + ' 95% ' + (light + 16) + '%)';
+  for (let i = 2; i < c.pts.length; i += 7) {
+    const p = c.pts[i];
+    ctx.beginPath(); ctx.arc(toScreenX(p.x), toScreenY(p.y), rad * .38, 0, 7); ctx.fill();
+  }
+
+  // head + eyes
+  const h = c.pts[0];
+  const hx = toScreenX(h.x), hy = toScreenY(h.y);
+  ctx.save();
+  ctx.shadowColor = 'hsl(' + c.hue + ' 95% 60%)'; ctx.shadowBlur = 16;
+  ctx.fillStyle = 'hsl(' + c.hue + ' 92% ' + (light + 8) + '%)';
+  ctx.beginPath(); ctx.arc(hx, hy, rad * 1.12, 0, 7); ctx.fill();
+  ctx.restore();
+  for (const s of [-1, 1]) {
+    const ex = hx + Math.cos(c.ang + s * .62) * rad * .62;
+    const ey = hy + Math.sin(c.ang + s * .62) * rad * .62;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(ex, ey, rad * .34, 0, 7); ctx.fill();
+    ctx.fillStyle = '#0a0c16';
+    ctx.beginPath();
+    ctx.arc(ex + Math.cos(c.ang) * rad * .13, ey + Math.sin(c.ang) * rad * .13, rad * .17, 0, 7);
+    ctx.fill();
+  }
+
+  // name tag for rivals
+  if (!c.isPlayer && cam.z > .6) {
+    ctx.fillStyle = 'rgba(220,230,255,.5)';
+    ctx.font = '600 ' + Math.round(11 * cam.z + 3) + 'px "Archivo",system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(c.name, hx, hy - rad * 2);
+  }
+}
+
+function drawMinimap() {
+  mctx.clearRect(0, 0, 132, 132);
+  mctx.fillStyle = 'rgba(6,8,18,.6)';
+  mctx.beginPath(); mctx.arc(66, 66, 62, 0, 7); mctx.fill();
+  mctx.strokeStyle = 'rgba(255,90,120,.5)'; mctx.lineWidth = 1.5;
+  mctx.beginPath(); mctx.arc(66, 66, 62, 0, 7); mctx.stroke();
+  const s = 62 / R;
+  for (const c of coils) {
+    if (c.dead) continue;
+    const h = c.pts[0];
+    mctx.fillStyle = c.isPlayer ? '#5ce8b6' : 'hsl(' + c.hue + ' 80% 60%)';
+    mctx.beginPath();
+    mctx.arc(66 + h.x * s, 66 + h.y * s, c.isPlayer ? 3.4 : 2.1, 0, 7);
+    mctx.fill();
+  }
+}
+
+function render() {
+  drawGrid();
+  drawFood();
+  for (const c of coils) if (!c.isPlayer) drawCoil(c);
+  drawCoil(player);
+  drawMinimap();
+}
+
+/* ---- loop --------------------------------------------------------------- */
+let last = performance.now(), acc = 0;
+const STEP = 1 / 60;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, .1); last = now;
+  acc += dt;
+  let guard = 0;
+  while (acc >= STEP && guard++ < 5) { update(STEP); acc -= STEP; }
+  render();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+updateBoard();
+</script>
+</body>
+</html>

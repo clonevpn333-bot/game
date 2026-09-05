@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PRISM DASH</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#07060d;
+  font:15px/1.4 "Archivo",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif;color:#f4f1ec;
+  user-select:none;-webkit-user-select:none;touch-action:none}
+canvas{display:block;width:100%;height:100%}
+#hud{position:fixed;inset:0;pointer-events:none}
+.bar{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:min(520px,62vw);
+  height:16px;border-radius:999px;background:rgba(255,255,255,.09);
+  border:1px solid rgba(255,255,255,.18);overflow:hidden;backdrop-filter:blur(6px)}
+.bar i{display:block;height:100%;width:0;border-radius:999px;
+  background:linear-gradient(90deg,#37e0c8,#5ad0ff 55%,#b98cff);transition:width .08s linear}
+.pct{position:absolute;top:40px;left:50%;transform:translateX(-50%);
+  font:700 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;color:#9aa6c4}
+.att{position:absolute;top:18px;left:22px;font:700 12px/1 ui-monospace,Menlo,monospace;
+  letter-spacing:.14em;color:#7b86a6}
+.best{position:absolute;top:38px;left:22px;font:700 12px/1 ui-monospace,Menlo,monospace;
+  letter-spacing:.14em;color:#4f5872}
+#title{position:fixed;inset:0;display:grid;place-content:center;text-align:center;gap:14px;
+  background:radial-gradient(120% 90% at 50% 40%,rgba(90,208,255,.10),transparent 60%),rgba(7,6,13,.92);
+  backdrop-filter:blur(3px);z-index:5}
+#title h1{margin:0;font:900 clamp(46px,11vw,110px)/.9 "Syne",system-ui,sans-serif;letter-spacing:-.04em;
+  background:linear-gradient(100deg,#37e0c8,#5ad0ff 45%,#b98cff);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+#title p{margin:0;color:#8b95b4;font-size:15px}
+#title .key{display:inline-block;padding:4px 9px;border-radius:7px;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.16);font:600 12px ui-monospace,Menlo,monospace;margin:0 2px}
+#title .go{margin-top:6px;font:800 13px/1 inherit;letter-spacing:.22em;text-transform:uppercase;
+  color:#5ad0ff;animation:blink 1.5s ease-in-out infinite}
+@keyframes blink{50%{opacity:.35}}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="att" id="att">ATTEMPT 1</div>
+  <div class="best" id="best">BEST 0%</div>
+  <div class="bar"><i id="fill"></i></div>
+  <div class="pct" id="pct">0%</div>
+</div>
+<div id="title">
+  <h1>PRISM DASH</h1>
+  <p><span class="key">SPACE</span> / <span class="key">CLICK</span> to jump &middot; hold to keep jumping</p>
+  <p style="color:#5f6a8a;font-size:13px">Orange orbs give you a mid-air jump. Purple portals flip gravity.</p>
+  <div class="go">Click to start</div>
+</div>
+
+<script>
+'use strict';
+/* ===========================================================================
+   PRISM DASH — a rhythm auto-runner.
+   The world scrolls at a constant speed; the only input is jump. Everything
+   is authored as a list of obstacles in world units, so the level is
+   deterministic and every attempt is identical.
+   =========================================================================== */
+
+const cvs = document.getElementById('c');
+const ctx = cvs.getContext('2d', { alpha: false });
+const $ = (id) => document.getElementById(id);
+
+/* ---- display -------------------------------------------------------- */
+let W = 0, H = 0, DPR = 1;
+function resize() {
+  DPR = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cvs.width = Math.floor(W * DPR); cvs.height = Math.floor(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+addEventListener('resize', resize); resize();
+
+/* ---- constants ------------------------------------------------------- */
+const UNIT = 46;            // one grid cell in px
+const SPEED = 8.6 * UNIT;   // world units per second
+const GRAV = 92 * UNIT;
+const JUMP = 20.4 * UNIT;
+const GROUND_H = 0.26;      // fraction of screen used by ground
+
+/* ---- level ----------------------------------------------------------- */
+/* Each entry: {x, y, t}. x/y in cells from the start, y measured up from the
+   floor. Types: spike, block, saw, orb (mid-air jump), portal (flip gravity). */
+function buildLevel() {
+  const L = [];
+  const spike = (x, y = 0) => L.push({ x, y, t: 'spike' });
+  const block = (x, y = 0, w = 1) => { for (let i = 0; i < w; i++) L.push({ x: x + i, y, t: 'block' }); };
+  const saw   = (x, y = 0) => L.push({ x, y, t: 'saw' });
+  const orb   = (x, y) => L.push({ x, y, t: 'orb' });
+  const portal= (x, dir) => L.push({ x, y: 0, t: 'portal', dir });
+
+  let x = 14;
+  // -- warm up: single spikes
+  spike(x); x += 6; spike(x); x += 7; spike(x); spike(x + 1); x += 8;
+  // -- stairs
+  block(x, 0); block(x + 1, 1); block(x + 2, 2); spike(x + 3, 3); x += 9;
+  // -- triple spike + platform landing
+  spike(x); spike(x + 1); spike(x + 2); x += 6;
+  block(x, 2, 3); spike(x + 1, 3); x += 8;
+  // -- saw run
+  saw(x, 1); x += 5; saw(x, 1); spike(x + 2); x += 7; saw(x, 2); x += 6;
+  // -- orb section (mid-air jump required)
+  spike(x); spike(x + 1); spike(x + 2); spike(x + 3); orb(x + 1, 3); x += 9;
+  // -- corridor
+  block(x, 3, 6); spike(x + 2); spike(x + 4); x += 10;
+  // -- gravity flip
+  portal(x, -1); x += 3;
+  spike(x, 0); x += 5; spike(x, 0); spike(x + 1, 0); x += 7;
+  portal(x, 1); x += 4;
+  // -- finale: dense mixed
+  spike(x); x += 4; block(x, 0, 2); spike(x + 2); x += 6;
+  saw(x, 1); spike(x + 3); x += 7;
+  spike(x); spike(x + 1); orb(x + 2, 3); spike(x + 4); spike(x + 5); x += 10;
+  block(x, 1, 4); spike(x + 1, 2); spike(x + 3, 2); x += 9;
+  spike(x); spike(x + 1); spike(x + 2); x += 10;
+  return { obs: L, end: x + 6 };
+}
+const LEVEL = buildLevel();
+
+/* ---- state ----------------------------------------------------------- */
+let px, py, vy, grounded, rot, rotV, grav, dead, won, started;
+let attempts = 1, best = 0, camX, t = 0, shakeT = 0, deadT = 0;
+const parts = [];   // particles
+const trail = [];   // afterimages
+
+function reset() {
+  px = 0; py = 0; vy = 0; grounded = true; rot = 0; rotV = 0; grav = 1;
+  dead = false; won = false; camX = 0; parts.length = 0; trail.length = 0; deadT = 0;
+  $('fill').style.width = '0%'; $('pct').textContent = '0%';
+  $('att').textContent = 'ATTEMPT ' + attempts;
+  $('best').textContent = 'BEST ' + best + '%';
+}
+reset();
+
+/* ---- input ----------------------------------------------------------- */
+let held = false;
+function press() {
+  if (!started) { started = true; $('title').classList.add('hidden'); return; }
+  if (dead) { if (deadT > .45) { attempts++; reset(); } return; }
+  held = true;
+  jump();
+}
+function jump() {
+  // orb in reach? that grants a mid-air jump.
+  for (const o of LEVEL.obs) {
+    if (o.t !== 'orb' || o.used) continue;
+    const ox = o.x * UNIT, oy = o.y * UNIT;
+    if (Math.abs(ox - px) < UNIT * .9 && Math.abs(oy - py) < UNIT * 1.1) {
+      vy = JUMP * 1.05 * grav; rotV = 7.2 * grav; o.used = true;
+      burst(ox, oy, '#ffb020', 16);
+      return;
+    }
+  }
+  if (grounded) { vy = JUMP * grav; grounded = false; rotV = 7.2 * grav; }
+}
+addEventListener('pointerdown', (e) => { e.preventDefault(); press(); }, { passive: false });
+addEventListener('pointerup', () => held = false);
+addEventListener('keydown', (e) => {
+  if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') { e.preventDefault(); if (!held) press(); held = true; }
+});
+addEventListener('keyup', (e) => { if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') held = false; });
+
+/* ---- particles -------------------------------------------------------- */
+function burst(x, y, color, n) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, s = 60 + Math.random() * 260;
+    parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: .5 + Math.random() * .5, max: 1, c: color, r: 2 + Math.random() * 3 });
+  }
+}
+
+/* ---- collision helpers ------------------------------------------------ */
+const PS = UNIT * .78;               // player size
+function playerBox() { return { x: px - PS / 2, y: py, w: PS, h: PS }; }
+function hit(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
+
+function die() {
+  if (dead) return;
+  dead = true; deadT = 0; shakeT = .42;
+  burst(px, py + PS / 2, '#ff5f6c', 46);
+  const pct = Math.min(100, Math.round((px / UNIT) / LEVEL.end * 100));
+  if (pct > best) { best = pct; $('best').textContent = 'BEST ' + best + '%'; }
+}
+
+/* ---- update ----------------------------------------------------------- */
+function update(dt) {
+  t += dt;
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    p.life -= dt; if (p.life <= 0) { parts.splice(i, 1); continue; }
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 300 * dt; p.vx *= .97;
+  }
+  if (shakeT > 0) shakeT -= dt;
+  if (!started) return;
+  if (dead) { deadT += dt; return; }
+  if (won) return;
+
+  px += SPEED * dt;
+  vy -= GRAV * dt * grav * grav;      // grav is ±1; squared keeps magnitude
+  vy -= 0;
+  py += vy * dt;
+
+  // rotation while airborne, snap when landed
+  if (!grounded) { rot += rotV * dt; }
+  else { const q = Math.PI / 2; rot = Math.round(rot / q) * q; }
+
+  // floor / ceiling
+  const floorY = 0, ceilY = UNIT * 7.2;
+  if (grav === 1) {
+    if (py <= floorY) { py = floorY; if (!grounded) burst(px, py, '#5ad0ff', 6); vy = 0; grounded = true; }
+    else grounded = false;
+  } else {
+    if (py >= ceilY) { py = ceilY; if (!grounded) burst(px, py, '#5ad0ff', 6); vy = 0; grounded = true; }
+    else grounded = false;
+  }
+
+  // obstacles
+  const P = playerBox();
+  for (const o of LEVEL.obs) {
+    const ox = o.x * UNIT, oy = o.y * UNIT;
+    if (ox < px - UNIT * 3 || ox > px + UNIT * 4) continue;
+    if (o.t === 'spike') {
+      // forgiving hitbox: the middle of the triangle only
+      const b = { x: ox - UNIT * .26, y: oy + UNIT * .06, w: UNIT * .52, h: UNIT * .62 };
+      if (hit(P, b)) { die(); return; }
+    } else if (o.t === 'saw') {
+      const dx = ox - px, dy = oy + UNIT * .5 - (py + PS / 2);
+      if (Math.hypot(dx, dy) < UNIT * .62) { die(); return; }
+    } else if (o.t === 'block') {
+      const b = { x: ox - UNIT / 2, y: oy, w: UNIT, h: UNIT };
+      if (hit(P, b)) {
+        const prevBottom = py - vy * (1 / 60);
+        const landing = grav === 1 ? (prevBottom >= b.y + b.h - 6 && vy <= 0)
+                                   : (py + PS <= b.y + 6 && vy >= 0);
+        if (landing) {
+          if (grav === 1) { py = b.y + b.h; } else { py = b.y - PS; }
+          vy = 0; grounded = true;
+        } else { die(); return; }
+      }
+    } else if (o.t === 'portal') {
+      if (Math.abs(ox - px) < UNIT * .4 && grav !== o.dir) {
+        grav = o.dir; vy = 0; grounded = false;
+        burst(ox, py + PS / 2, '#b98cff', 22);
+      }
+    }
+  }
+
+  // trail
+  trail.push({ x: px, y: py, r: rot, a: 1 });
+  if (trail.length > 16) trail.shift();
+  for (const s of trail) s.a -= dt * 2.4;
+
+  // progress
+  const pct = Math.min(100, Math.round((px / UNIT) / LEVEL.end * 100));
+  $('fill').style.width = pct + '%';
+  $('pct').textContent = pct + '%';
+  if (px / UNIT >= LEVEL.end) {
+    won = true;
+    best = 100; $('best').textContent = 'BEST 100%';
+    for (let i = 0; i < 5; i++) setTimeout(() => burst(px + (Math.random() - .5) * 200, py + Math.random() * 200, '#37e0c8', 26), i * 110);
+  }
+  camX = px - W * .32;
+}
+
+/* ---- drawing ---------------------------------------------------------- */
+function groundY() { return H * (1 - GROUND_H); }
+function wx(x) { return x - camX; }                 // world -> screen x
+function wy(y) { return groundY() - y; }            // world -> screen y (y up)
+
+function drawBackdrop() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#0b0a18'); g.addColorStop(.55, '#0d1226'); g.addColorStop(1, '#0a0f20');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  // pulsing horizon glow, on a slow beat
+  const beat = (Math.sin(t * 3.4) * .5 + .5);
+  const r = ctx.createRadialGradient(W * .5, groundY(), 0, W * .5, groundY(), W * .75);
+  r.addColorStop(0, 'rgba(90,208,255,' + (.16 + beat * .08).toFixed(3) + ')');
+  r.addColorStop(1, 'rgba(90,208,255,0)');
+  ctx.fillStyle = r; ctx.fillRect(0, 0, W, H);
+
+  // parallax chevrons
+  ctx.save();
+  ctx.globalAlpha = .16;
+  for (let layer = 0; layer < 2; layer++) {
+    const sp = layer === 0 ? .22 : .42, size = layer === 0 ? 150 : 92;
+    ctx.strokeStyle = layer === 0 ? '#2b3a6b' : '#37507f';
+    ctx.lineWidth = 2;
+    const off = (-camX * sp) % (size * 2);
+    for (let x = off - size * 2; x < W + size * 2; x += size * 2) {
+      ctx.beginPath();
+      ctx.moveTo(x, groundY() - size * 1.5);
+      ctx.lineTo(x + size, groundY() - size * 2.3);
+      ctx.lineTo(x + size * 2, groundY() - size * 1.5);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawGround() {
+  const gy = groundY();
+  ctx.fillStyle = '#0a0d1c';
+  ctx.fillRect(0, gy, W, H - gy);
+  // top edge glow
+  ctx.fillStyle = '#5ad0ff'; ctx.fillRect(0, gy - 2, W, 3);
+  ctx.save(); ctx.globalAlpha = .35; ctx.shadowColor = '#5ad0ff'; ctx.shadowBlur = 22;
+  ctx.fillRect(0, gy - 2, W, 3); ctx.restore();
+  // moving grid
+  ctx.save(); ctx.globalAlpha = .3; ctx.strokeStyle = '#1d2b52'; ctx.lineWidth = 1;
+  const off = (-camX) % UNIT;
+  for (let x = off; x < W; x += UNIT) { ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = gy + UNIT; y < H; y += UNIT) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  ctx.restore();
+
+  // ceiling when gravity is flipped
+  if (grav === -1) {
+    const cy = wy(UNIT * 7.2 + PS);
+    ctx.fillStyle = '#b98cff'; ctx.fillRect(0, cy, W, 3);
+  }
+}
+
+function neon(color, blur, fn) {
+  ctx.save(); ctx.shadowColor = color; ctx.shadowBlur = blur; fn(); ctx.restore();
+}
+
+function drawObstacles() {
+  for (const o of LEVEL.obs) {
+    const sx = wx(o.x * UNIT), sy = wy(o.y * UNIT);
+    if (sx < -120 || sx > W + 120) continue;
+    if (o.t === 'spike') {
+      ctx.fillStyle = '#e9f4ff';
+      neon('#5ad0ff', 16, () => {
+        ctx.beginPath();
+        ctx.moveTo(sx - UNIT * .46, sy);
+        ctx.lineTo(sx, sy - UNIT * .92);
+        ctx.lineTo(sx + UNIT * .46, sy);
+        ctx.closePath(); ctx.fill();
+      });
+      ctx.strokeStyle = 'rgba(90,208,255,.85)'; ctx.lineWidth = 2; ctx.stroke();
+    } else if (o.t === 'block') {
+      const g = ctx.createLinearGradient(0, sy - UNIT, 0, sy);
+      g.addColorStop(0, '#243a72'); g.addColorStop(1, '#131d3c');
+      ctx.fillStyle = g;
+      ctx.fillRect(sx - UNIT / 2, sy - UNIT, UNIT, UNIT);
+      ctx.strokeStyle = '#5ad0ff'; ctx.lineWidth = 2;
+      ctx.strokeRect(sx - UNIT / 2 + 1, sy - UNIT + 1, UNIT - 2, UNIT - 2);
+    } else if (o.t === 'saw') {
+      const cx = sx, cy = sy - UNIT * .5, R = UNIT * .62;
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * 7);
+      neon('#ff5f6c', 18, () => {
+        ctx.fillStyle = '#ff8a94'; ctx.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const a1 = (i / 10) * Math.PI * 2, a2 = ((i + .5) / 10) * Math.PI * 2;
+          ctx.lineTo(Math.cos(a1) * R, Math.sin(a1) * R);
+          ctx.lineTo(Math.cos(a2) * R * .62, Math.sin(a2) * R * .62);
+        }
+        ctx.closePath(); ctx.fill();
+      });
+      ctx.fillStyle = '#2b1220'; ctx.beginPath(); ctx.arc(0, 0, R * .3, 0, 7); ctx.fill();
+      ctx.restore();
+    } else if (o.t === 'orb') {
+      if (o.used) continue;
+      const pulse = 1 + Math.sin(t * 6 + o.x) * .12;
+      neon('#ffb020', 20, () => {
+        ctx.strokeStyle = '#ffb020'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(sx, sy, UNIT * .34 * pulse, 0, 7); ctx.stroke();
+      });
+      ctx.fillStyle = 'rgba(255,176,32,.28)';
+      ctx.beginPath(); ctx.arc(sx, sy, UNIT * .34 * pulse, 0, 7); ctx.fill();
+    } else if (o.t === 'portal') {
+      const h = UNIT * 3.4;
+      neon('#b98cff', 22, () => {
+        ctx.strokeStyle = '#b98cff'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.ellipse(sx, sy - h / 2, UNIT * .34, h / 2, 0, 0, 7); ctx.stroke();
+      });
+      ctx.fillStyle = 'rgba(185,140,255,.15)';
+      ctx.beginPath(); ctx.ellipse(sx, sy - h / 2, UNIT * .34, h / 2, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = '#e6dcff'; ctx.font = '700 13px ui-monospace,monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(o.dir === -1 ? '▲' : '▼', sx, sy - h / 2 + 5);
+    }
+  }
+}
+
+function drawPlayer() {
+  if (dead) return;
+  // trail
+  for (const s of trail) {
+    if (s.a <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = s.a * .3;
+    ctx.translate(wx(s.x), wy(s.y) - PS / 2);
+    ctx.rotate(s.r);
+    ctx.fillStyle = '#5ad0ff';
+    ctx.fillRect(-PS / 2, -PS / 2, PS, PS);
+    ctx.restore();
+  }
+  ctx.save();
+  ctx.translate(wx(px), wy(py) - PS / 2);
+  ctx.rotate(rot);
+  const g = ctx.createLinearGradient(-PS / 2, -PS / 2, PS / 2, PS / 2);
+  g.addColorStop(0, '#7ef0e0'); g.addColorStop(.5, '#5ad0ff'); g.addColorStop(1, '#b98cff');
+  neon('#5ad0ff', 26, () => { ctx.fillStyle = g; ctx.fillRect(-PS / 2, -PS / 2, PS, PS); });
+  ctx.fillStyle = 'rgba(7,6,13,.85)';
+  ctx.fillRect(-PS * .22, -PS * .22, PS * .44, PS * .44);
+  ctx.restore();
+}
+
+function drawParticles() {
+  for (const p of parts) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, p.life / p.max);
+    ctx.fillStyle = p.c;
+    ctx.beginPath(); ctx.arc(wx(p.x), wy(p.y), p.r, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawOverlay() {
+  if (dead && deadT > .3) {
+    ctx.fillStyle = 'rgba(7,6,13,.55)'; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ff8a94';
+    ctx.font = '900 clamp(34px,7vw,68px) "Syne",system-ui,sans-serif';
+    ctx.fillText('WIPED OUT', W / 2, H / 2 - 8);
+    ctx.fillStyle = '#8b95b4'; ctx.font = '600 15px "Archivo",system-ui,sans-serif';
+    ctx.fillText('Click or press Space to try again', W / 2, H / 2 + 28);
+  }
+  if (won) {
+    ctx.fillStyle = 'rgba(7,6,13,.6)'; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#37e0c8';
+    ctx.font = '900 clamp(34px,7vw,72px) "Syne",system-ui,sans-serif';
+    ctx.fillText('LEVEL COMPLETE', W / 2, H / 2);
+    ctx.fillStyle = '#8b95b4'; ctx.font = '600 15px "Archivo",system-ui,sans-serif';
+    ctx.fillText('Attempts: ' + attempts, W / 2, H / 2 + 34);
+  }
+}
+
+function render() {
+  ctx.save();
+  if (shakeT > 0) {
+    const s = shakeT * 26;
+    ctx.translate((Math.random() - .5) * s, (Math.random() - .5) * s);
+  }
+  drawBackdrop();
+  drawObstacles();
+  drawPlayer();
+  drawParticles();
+  drawGround();
+  ctx.restore();
+  drawOverlay();
+}
+
+/* ---- loop ------------------------------------------------------------- */
+let last = performance.now(), acc = 0;
+const STEP = 1 / 120;
+function frame(now) {
+  let dt = Math.min((now - last) / 1000, .1); last = now;
+  acc += dt;
+  while (acc >= STEP) { update(STEP); acc -= STEP; }
+  // holding the button keeps you jumping the instant you land
+  if (held && started && !dead && grounded) jump();
+  render();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
