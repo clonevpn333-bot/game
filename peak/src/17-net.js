@@ -194,7 +194,7 @@ Net.snapshot = function () {
   }
   var pit = [];
   for (i = 0; i < Coop.pitons.length; i++) pit.push({ x: Coop.pitons[i].x, y: Coop.pitons[i].y, z: Coop.pitons[i].z });
-  return { lit: lit, taken: taken, opened: opened, ropes: ropes, pit: pit, t: Game.runT, fog: Fog.level };
+  return { lit: lit, taken: taken, opened: opened, ropes: ropes, pit: pit, t: Game.runT };
 };
 
 Net.applySnapshot = function (s) {
@@ -206,7 +206,6 @@ Net.applySnapshot = function (s) {
   for (i = 0; i < s.ropes.length; i++) Coop.addRope(s.ropes[i].x, s.ropes[i].y, s.ropes[i].z, s.ropes[i].l);
   for (i = 0; i < s.pit.length; i++) Coop.placePiton(s.pit[i].x, s.pit[i].y, s.pit[i].z, 0, 1, true);
   if (s.t) Game.runT = s.t;
-  if (s.fog) Fog.level = s.fog;
   // late joiners start the climb at the group's highest lit fire
   var idx = 0;
   for (i = 0; i < Camps.list.length; i++) if (Camps.list[i].lit) idx = Math.max(idx, i);

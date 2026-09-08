@@ -23,26 +23,26 @@ function check(name, ok, detail) {
   page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
 
   await page.goto('file://' + path.join(ROOT, 'dist', 'test.html'));
-  await page.waitForFunction(() => !!window.CRUX, null, { timeout: 30000 });
+  await page.waitForFunction(() => !!window.CRUX, null, { timeout: 30000, polling: 250 });
   check('boots and exposes the game', true);
 
   await page.click('#btn-solo');
-  await page.waitForFunction(() => window.CRUX.Game.built && window.CRUX.Game.mode === 'play', null, { timeout: 90000 });
+  await page.waitForFunction(() => window.CRUX.Game.built && window.CRUX.Game.mode === 'play', null, { timeout: 90000, polling: 250 });
   const gen = await page.evaluate(() => ({
-    tris: window.CRUX.T.mesh.geometry.attributes.position.count / 3,
+    tris: window.CRUX.T.chunks.reduce((n, c) => n + c.geometry.attributes.position.count / 3, 0),
+    chunks: window.CRUX.T.chunks.length,
     camps: window.CRUX.Camps.list.map(c => Math.round(c.y)),
-    walls: window.CRUX.Walls.list.map(w => Math.round(w.y)),
     items: window.CRUX.WI.list.length, cases: window.CRUX.WI.cases.length,
     props: window.CRUX.Props.counts,
     pick: window.CRUX.Run.pick,
     summitY: Math.round(window.CRUX.Summit.pos.y),
   }));
   const campsSorted = gen.camps.every((v, i) => i === 0 || v > gen.camps[i - 1]);
-  const wallsSorted = gen.walls.every((v, i) => i === 0 || v > gen.walls[i - 1]);
   check('world generated', gen.tris > 100000 && gen.items > 20 && gen.cases > 15 && gen.camps.length === 6,
     JSON.stringify({ tris: gen.tris, items: gen.items, cases: gen.cases, summitY: gen.summitY }));
-  check('camps and fog walls climb in order', campsSorted && wallsSorted,
-    'camps ' + gen.camps.join(',') + ' walls ' + gen.walls.join(','));
+  check('camps climb in order', campsSorted, 'camps ' + gen.camps.join(','));
+  check('the island is big enough to take a while to cross',
+    gen.chunks > 100 && gen.summitY > 450, JSON.stringify({ chunks: gen.chunks, summitY: gen.summitY }));
   // whichever biomes this island rolled, each has to have put something out
   const SIGNATURE = {
     shore: ['palm', 'drift'], tropics: ['tree', 'fern'], roots: ['shroom', 'arch'],
@@ -113,7 +113,7 @@ function check(name, ok, detail) {
   check('leaving the island returns to the menu',
     await page.evaluate(() => window.CRUX.Game.mode === 'menu' && !document.getElementById('menu').classList.contains('hidden')));
   await page.click('#btn-solo');
-  await page.waitForFunction(() => window.CRUX.Game.built && window.CRUX.Game.mode === 'play', null, { timeout: 90000 });
+  await page.waitForFunction(() => window.CRUX.Game.built && window.CRUX.Game.mode === 'play', null, { timeout: 90000, polling: 250 });
   await page.waitForTimeout(1200);
   const second = await page.evaluate(() => ({
     calls: window.CRUX.Game.renderer.info.render.calls,

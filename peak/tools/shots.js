@@ -9,15 +9,14 @@ const ROOT = path.join(__dirname, '..');
   const page = await browser.newPage({ viewport: { width: 1180, height: 700 } });
   page.on('pageerror', e => console.log('PAGEERROR', e.message));
   await page.goto('file://' + path.join(ROOT, 'dist', 'test.html'));
-  await page.waitForFunction(() => !!window.CRUX, null, { timeout: 30000 });
+  await page.waitForFunction(() => !!window.CRUX, null, { timeout: 30000, polling: 250 });
   await page.screenshot({ path: path.join(ROOT, 'dist', 'shot-0-menu.png') });
 
   await page.click('#btn-solo');
-  await page.waitForFunction(() => window.CRUX.Game.built && window.CRUX.Game.mode === 'play', null, { timeout: 90000 });
+  await page.waitForFunction(() => window.CRUX.Game.built && window.CRUX.Game.mode === 'play', null, { timeout: 90000, polling: 250 });
   await page.evaluate(() => {
     document.getElementById('pause').classList.add('hidden');
     window.CRUX.HUD.blocked = false;
-    window.CRUX.Walls.list.forEach(w => { w.open = true; });   // see the whole island
   });
 
   for (const v of JSON.parse(process.argv[2] || '[]')) {

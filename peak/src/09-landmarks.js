@@ -118,7 +118,6 @@ Camps.setLit = function (i, lit) {
   c.lit = lit;
   c.f1.visible = lit; c.f2.visible = lit;
   c.light.intensity = lit ? 2.6 : 0;
-  if (lit && i > 0) Walls.open(i - 1);
 };
 
 Camps.tick = function (dt, t) {
@@ -146,103 +145,6 @@ Camps.nearest = function (x, y, z, rad) {
 
 // ============================================================ FOG WALLS
 // One above each zone.  Light that zone's fire and it lifts.
-var Walls = { list: [], group: null, mat: null };
-
-function ringRadiusAt(y) {
-  var lo = 0, hi = 1;
-  for (var k = 0; k < 24; k++) {
-    var m = (lo + hi) * 0.5;
-    if (profile(m) > y) lo = m; else hi = m;
-  }
-  return ((lo + hi) * 0.5) * K.BASE_R;
-}
-
-// The wall above zone i is opened by the fire at the top of that zone, so it
-// has to sit above that fire and below the next one.  Deriving it from where
-// the camps actually landed - rather than the nominal zone altitude - is what
-// keeps it from cutting through the ground somebody is standing on.
-Walls.altitudes = function () {
-  var ys = [], i;
-  for (i = 0; i < 5; i++) {
-    var below = Camps.list[i + 1] ? Camps.list[i + 1].y : ZONES[i].fire;
-    var above = Camps.list[i + 2] ? Camps.list[i + 2].y : ZONES[i].top + 40;
-    var y = Math.max(ZONES[i].top, below + 8);
-    if (y > above - 8) y = (below + above) * 0.5;
-    ys.push(y);
-  }
-  for (i = 1; i < 5; i++) if (ys[i] < ys[i - 1] + 10) ys[i] = ys[i - 1] + 10;
-  return ys;
-};
-
-// a soft vertical gradient so the barrier reads as weather rather than a tube
-function fogTexture() {
-  var H = 64, cv = document.createElement('canvas');
-  cv.width = 4; cv.height = H;
-  var ctx = cv.getContext('2d'), img = ctx.createImageData(4, H);
-  for (var j = 0; j < H; j++) {
-    var t = j / (H - 1);
-    var a = Math.sin(t * Math.PI);
-    a = Math.pow(clamp(a, 0, 1), 0.7);
-    for (var i = 0; i < 4; i++) {
-      var o = (j * 4 + i) * 4;
-      img.data[o] = 236; img.data[o + 1] = 240; img.data[o + 2] = 246;
-      img.data[o + 3] = (a * 255) | 0;
-    }
-  }
-  ctx.putImageData(img, 0, 0);
-  var tex = new THREE.CanvasTexture(cv);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.ClampToEdgeWrapping;
-  return tex;
-}
-
-Walls.build = function () {
-  var g = Walls.group = new THREE.Group();
-  Walls.list = [];
-  Walls.tex = fogTexture();
-  var ys = Walls.altitudes();
-  for (var i = 0; i < 5; i++) {
-    var y = ys[i];
-    var r = Math.max(24, ringRadiusAt(y) + 12);
-    var mat = new THREE.MeshBasicMaterial({
-      map: Walls.tex, color: 0xdfe6ee, transparent: true, opacity: 0.55,
-      side: THREE.DoubleSide, depthWrite: false,
-    });
-    var m = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.10, 26, 44, 1, true), mat);
-    m.position.y = y + 8;
-    m.renderOrder = 3;
-    g.add(m);
-    Walls.list.push({ i: i, y: y, mesh: m, mat: mat, open: false, r: r });
-  }
-  return g;
-};
-
-Walls.open = function (i) {
-  var w = Walls.list[i];
-  if (!w || w.open) return;
-  w.open = true;
-  HUD.toast('the fog lifts — ' + ZONES[i + 1].name + ' is open', '#ffd646');
-};
-
-// the lowest wall still up; you cannot climb past it
-Walls.ceiling = function () {
-  for (var i = 0; i < Walls.list.length; i++) if (!Walls.list[i].open) return Walls.list[i];
-  return null;
-};
-
-Walls.tick = function (dt, t) {
-  for (var i = 0; i < Walls.list.length; i++) {
-    var w = Walls.list[i];
-    var want = w.open ? 0 : 0.55;
-    w.mat.opacity = damp(w.mat.opacity, want, 1.6, dt);
-    w.mesh.visible = w.mat.opacity > 0.02;
-    w.mesh.rotation.y += dt * 0.03;
-    w.mat.map.offset.x = t * 0.012;
-    w.mesh.position.y = w.y + 8 + Math.sin(t * 0.5 + i) * 1.1;
-  }
-};
-
-// ---- the citadel: a tower standing in the slot it was rolled into ------
 var Tower = { group: null };
 Tower.build = function () {
   var g = Tower.group = new THREE.Group();
@@ -275,6 +177,7 @@ Tower.build = function () {
 };
 
 // ---- the summit -------------------------------------------------------
+
 var Summit = { pos: null, group: null, flare: null, light: null, fired: false };
 Summit.build = function () {
   var g = Summit.group = new THREE.Group();

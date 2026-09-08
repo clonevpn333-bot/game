@@ -38,8 +38,8 @@ Game.init = function () {
 
   window.CRUX = {
     Game: Game, P: P, T: T, K: K, CAM: CAM, IN: IN, HUD: HUD, Net: Net, Coop: Coop, Run: Run, BIOMES: BIOMES,
-    Survive: Survive, Remote: Remote, WI: WI, Camps: Camps, Walls: Walls, Summit: Summit,
-    FX: FX, Fog: Fog, Sky: Sky, Props: Props, Wind: Wind, Menu: Menu, groundH: groundH,
+    Survive: Survive, Remote: Remote, WI: WI, Camps: Camps, Summit: Summit,
+    FX: FX, Sky: Sky, Props: Props, Wind: Wind, Menu: Menu, groundH: groundH,
     ZONES: ZONES, Z: Z, STATUS: STATUS, ST: ST,
   };
 
@@ -70,7 +70,6 @@ Game.buildWorld = function (seed, lootSeed, detail, done) {
     g.add(T.buildMesh(detail));
     g.add(Props.build(seed, detail));
     g.add(Camps.build());
-    g.add(Walls.build());
     g.add(Tower.build());
     g.add(Summit.build());
     g.add(WI.init());
@@ -78,7 +77,6 @@ Game.buildWorld = function (seed, lootSeed, detail, done) {
     g.add(Coop.init());
     g.add(Remote.init());
     g.add(FX.init(detail));
-    g.add(Fog.build());
 
     Sky.build(Game.scene);
     Sky.setQuality(detail);
@@ -86,6 +84,8 @@ Game.buildWorld = function (seed, lootSeed, detail, done) {
     g.add(P.init(P.slot, P.name));
 
     Game.scene.add(g);
+    T.cull(Game.cam.position);
+    Props.cull(Game.cam.position);
     Game.built = true;
     document.getElementById('boot').classList.add('hidden');
     if (done) done();
@@ -177,9 +177,7 @@ Game.loop = function (ts) {
     Net.tick(dt);
     WI.tick(dt, Game.t);
     Camps.tick(dt, Game.t);
-    Walls.tick(dt, Game.t);
     Summit.tick(dt, Game.t);
-    Fog.tick(dt, Game.runT, Game.cam.position);
 
     CAM.update(Game.cam, P, dt);
 
@@ -217,6 +215,7 @@ Game.loop = function (ts) {
       if (spd > 3.2) { Game.fxT = 0; FX.step(P.pos.x, P.pos.y, P.pos.z); }
     }
     Props.cull(Game.cam.position);
+    T.cull(Game.cam.position);
     FX.tick(dt, Game.cam.position, P.pos.y);
     Sky.update(dt, Game.t, P.pos.y, Game.cam.position);
     HUD.tick(dt, Game.cam);

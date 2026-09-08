@@ -17,8 +17,10 @@ T.wx = function (i) { return i * T.CS - T.half; };
 T.wi = function (x) { return (x + T.half) / T.CS; };
 
 // ---- smooth radial profile -------------------------------------------
+// Flatter than it is tall: 490 m of rise spread over 636 m of radius, so the
+// terracing has room to make shelves you walk along instead of a ramp.
 var PROF_T = [1.00, 0.94, 0.88, 0.80, 0.70, 0.60, 0.50, 0.40, 0.30, 0.22, 0.14];
-var PROF_H = [0, 5, 14, 34, 72, 112, 152, 192, 226, 250, 262];
+var PROF_H = [0, 9, 26, 64, 132, 199, 265, 331, 396, 448, 490];
 function profile(t) {
   if (t >= 1) return 0;
   if (t <= PROF_T[PROF_T.length - 1]) return PROF_H[PROF_H.length - 1];
@@ -32,8 +34,10 @@ function profile(t) {
 }
 
 // The crown: a rim, a moat you drop into, and the spire you climb out on.
-var CROWN_R = [0, 15, 23, 30, 40, 47, 55, 64, 74];
-var CROWN_H = [302, 289, 264, 241, 236, 246, 262, 258, 250];
+// A wide crown: the moat behind the rim is a long horizontal crossing, the
+// way PEAK's caldera is traversed sideways rather than climbed.
+var CROWN_R = [0, 46, 74, 104, 142, 172, 200, 232, 262];
+var CROWN_H = [540, 522, 486, 452, 444, 462, 486, 480, 466];
 function crown(r) {
   if (r >= CROWN_R[CROWN_R.length - 1]) return null;
   for (var i = 0; i < CROWN_R.length - 1; i++) {
@@ -48,11 +52,15 @@ function crown(r) {
 // ---- camp spine -------------------------------------------------------
 T.buildSpine = function (rng) {
   var a = rng() * Math.PI * 2, pts = [], i, t, r;
-  var swirl = rngRange(rng, -1.0, 1.0);
+  // Two and a half turns around the mountain rather than a straight line up
+  // it.  The height was never the problem - the route was, and a spiral is
+  // what turns 600 m of radius into several kilometres of walking.
+  var dir = rng() < 0.5 ? -1 : 1;
+  var swirl = dir * rngRange(rng, 0.52, 0.78);
   for (i = 0; i <= 24; i++) {
     t = 1 - i / 24;
-    a += swirl * 0.08 + (rng() - 0.5) * 0.18;
-    r = Math.max(30, t * K.BASE_R * 0.97);
+    a += swirl + (rng() - 0.5) * 0.12;
+    r = Math.max(90, t * K.BASE_R * 0.97);
     pts.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, y: profile(t), t: t });
   }
   return pts;
@@ -84,21 +92,24 @@ T.rawHeight = function (x, z) {
   // Terracing: most of each step of height is spent on a near-flat shelf,
   // the rest on a short riser.  Uniform across the mountain - there is no
   // marked line, every face is fair game.
-  var strength = h < 24 ? 0.42 : 0.86;
-  strength *= 0.86 + 0.14 * (n.fbm(wx * 0.0088 + 7, wz * 0.0088 + 3, 2) * 0.5 + 0.5);
-  var stp = 8.5 + 8.5 * (n.fbm(wx * 0.0105 - 22, wz * 0.0105 + 15, 2) * 0.5 + 0.5);
-  var ledge = 0.55;
+  var strength = h < 40 ? 0.45 : 0.90;
+  strength *= 0.88 + 0.12 * (n.fbm(wx * 0.0052 + 7, wz * 0.0052 + 3, 2) * 0.5 + 0.5);
+  // 14-30 m of rise per step, and 72% of it spent on the flat: one riser is
+  // one pitch, well inside a full bar, and the shelf between is somewhere to
+  // walk and get your breath back
+  var stp = 14 + 16 * (n.fbm(wx * 0.0062 - 22, wz * 0.0062 + 15, 2) * 0.5 + 0.5);
+  var ledge = 0.72;
   var f = h / stp - Math.floor(h / stp);
-  var s = smoother(clamp((f - ledge) / (0.86 - ledge), 0, 1));
+  var s = smoother(clamp((f - ledge) / (0.94 - ledge), 0, 1));
   h += (lerp(f, s, strength) - f) * stp;
-  h += n.fbm(wx * 0.038, wz * 0.038, 2) * 0.45;
+  h += n.fbm(wx * 0.022, wz * 0.022, 2) * 0.5;
 
   // the crown overrides the cone near the axis
   var cr = Math.sqrt(x * x + z * z);
   var cw = crown(cr);
   if (cw !== null) {
-    var blend = 1 - step01(56, 74, cr);
-    var wob = n.fbm(x * 0.028, z * 0.028, 2) * 2.6;
+    var blend = 1 - step01(196, 262, cr);
+    var wob = n.fbm(x * 0.016, z * 0.016, 2) * 3.4;
     h = lerp(h, cw + wob, blend);
   }
   return h;

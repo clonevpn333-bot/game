@@ -180,7 +180,6 @@ Survive.tick = function (dt) {
   }
 
   // ---- the rising fog: it comes for everyone
-  if (P.pos.y < Fog.level) Survive.hurt(16 * dt, 'the fog');
 
   // ---- no room left on the bar and you are out
   if (P.stMax <= 0.5 && P.state !== ST.OUT) Survive.knockOut('the mountain');

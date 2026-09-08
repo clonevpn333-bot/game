@@ -2,7 +2,7 @@
 // The stamina bar, who is with you, and what is in your hand.  Nothing else.
 var HUD = {
   blocked: true, el: {}, toasts: [], tagPool: [], tagUsed: 0,
-  hurtT: 0, wallHint: -1, segs: [],
+  hurtT: 0, segs: [],
 };
 
 HUD.init = function () {
@@ -170,12 +170,8 @@ var COACH = [
     when: function () { return P.status.injury > 4; } },
   { id: 'fire', col: '#ffd646', txt: 'fires are checkpoints: they warm you, mend you, cook food, and you wake up here',
     when: function () { return Survive.atFire; } },
-  { id: 'fog', col: '#8fbfe0', txt: 'the fog is a ceiling until you light the fire below it',
-    when: function () { return HUD.wallHint >= 0; } },
   { id: 'pack', col: '#c9a06a', txt: '1-3 picks a pack slot, C uses it, X drops it — everything you carry costs grip',
     when: function () { return !!(P.inv[0] || P.inv[1] || P.inv[2]); } },
-  { id: 'rise', col: '#b06ad0', txt: 'the fog is rising from the sea now — do not be under it',
-    when: function () { return Fog.level > 4; } },
 ];
 HUD.coachDone = {};
 HUD.coachT = 0;
@@ -222,8 +218,6 @@ HUD.prompt = function () {
   var mate = Coop.nearestDown(2.8);
   if (P.state === ST.OUT) {
     txt = 'you are down — hold on';
-  } else if (HUD.wallHint >= 0) {
-    txt = 'fog — light the campfire below to climb into ' + Run.at(HUD.wallHint + 1).nm;
   } else if (P.carrying) {
     var c = Remote.byId(P.carrying);
     txt = '<em>F</em> set ' + (c ? c.name : 'them') + ' down';
@@ -243,7 +237,6 @@ HUD.prompt = function () {
     else if (it) txt = '<em>F</em> take ' + ITEM[it.k].nm;
     else if (Survive.atFire) txt = 'a fire — rest, cook, and wake up here';
   }
-  HUD.wallHint = -1;
   var e = HUD.el.prompt;
   if (txt !== HUD._prompt) { e.innerHTML = txt; HUD._prompt = txt; }
   e.classList.toggle('on', !!txt);

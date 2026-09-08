@@ -16,9 +16,9 @@ async function boot(browser) {
   const page = await browser.newPage({ viewport: { width: 400, height: 260 } });
   page.on('pageerror', e => { console.log('  PAGEERROR ' + e.message); fails.push('pageerror: ' + e.message); });
   await page.goto(URL);
-  await page.waitForFunction(() => !!window.CRUX, null, { timeout: 30000 });
+  await page.waitForFunction(() => !!window.CRUX, null, { timeout: 30000, polling: 250 });
   await page.evaluate(() => window.CRUX.Menu.solo());
-  await page.waitForFunction(() => window.CRUX.Game.built && window.CRUX.Game.mode === 'play', null, { timeout: 90000 });
+  await page.waitForFunction(() => window.CRUX.Game.built && window.CRUX.Game.mode === 'play', null, { timeout: 90000, polling: 250 });
   await page.evaluate(() => {
     const C = window.CRUX;
     C.Game.renderer.shadowMap.enabled = false;
@@ -26,7 +26,6 @@ async function boot(browser) {
     C.Game.world.visible = false;
     C.Sky.mesh.visible = false;
     C.HUD.blocked = false;
-    C.Walls.list.forEach(w => { w.open = true; });
     document.getElementById('pause').classList.add('hidden');
     window.__sim = (s) => new Promise(res => {
       const start = C.Game.t;
@@ -70,7 +69,7 @@ async function boot(browser) {
     window.__wallAt = (minH) => {
       const T = C.T;
       for (let i = 0; i < 160000; i++) {
-        const a = Math.random() * 6.283, r = 40 + Math.random() * 150;
+        const a = Math.random() * 6.283, r = 80 + Math.random() * 560;
         const g = T.findGround(Math.cos(a) * r, Math.sin(a) * r, 3, 3);
         if (!g) continue;
         for (let k = 0; k < 10; k++) {
@@ -296,24 +295,6 @@ async function boot(browser) {
   check('the volcanic rock makes you hot', !haz.volc || haz.volc.heat > 3, JSON.stringify(haz.volc));
 
   // ---------------------------------------------------------------- rising fog
-  const fog = await A.evaluate(async () => {
-    const C = window.CRUX, P = C.P;
-    const g = window.__flat();
-    P.spawnAt(g.x, g.z, g.y);
-    P.hp = 100;
-    for (const k in P.status) P.status[k] = 0;
-    C.Survive.recalcMax();
-    // wind the run clock forward until the fog has genuinely risen past you
-    const wasT = C.Game.runT;
-    C.Game.runT = C.K.FOG_RISE_START + (P.pos.y + 35) / C.K.FOG_RISE_RATE;
-    await window.__sim(1.0);
-    const hurt = 100 - P.hp;
-    const caught = C.Fog.level > P.pos.y;
-    C.Game.runT = wasT;
-    return { hurt: +hurt.toFixed(1), caught, level: Math.round(C.Fog.level) };
-  });
-  check('being caught in the rising fog hurts', fog.caught && fog.hurt > 8, JSON.stringify(fog));
-
   // ---------------------------------------------------------------- co-op
   const coop = await A.evaluate(async () => {
     const C = window.CRUX, P = C.P, out = {};

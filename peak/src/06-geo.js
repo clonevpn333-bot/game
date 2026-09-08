@@ -106,7 +106,7 @@ function shareGeo(src, sphere) {
   return g;
 }
 
-var SCATTER_CELL = 84;
+var SCATTER_CELL = 190;
 function scatter(geo, mat, list, tintFn, opts) {
   opts = opts || {};
   var group = new THREE.Group();

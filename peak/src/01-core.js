@@ -1,9 +1,16 @@
 // ---------------------------------------------------------------- constants
 var K = {
-  GRID: 268,            // heightfield cells per side
-  CELL: 1.9,            // world units per cell
-  SUMMIT_H: 302,        // summit altitude
-  BASE_R: 215,          // radius where the mountain meets the sea
+  // PEAK's base terrain is a huge, MOSTLY FLAT STAIRCASE 1920 in-game metres
+  // tall - the climbing comes from what is layered on top of it, and one
+  // biome does not ascend at all, you cross it sideways.  This was a 302 m
+  // cone 509 m wide, where the terrain itself was the wall, and a run took
+  // two minutes.  It is now three times as wide and nearly twice as tall,
+  // with an average slope of 0.75 rather than 1.42 - shelves you walk along,
+  // risers you climb.
+  GRID: 440,            // heightfield cells per side
+  CELL: 3.5,            // world units per cell  (island 1540 m across)
+  SUMMIT_H: 540,        // summit altitude
+  BASE_R: 740,          // radius where the mountain meets the sea
 
   GRAV: 26,
   WALK: 5.0, SPRINT: 8.4, CROUCH: 2.3,
@@ -50,8 +57,6 @@ var K = {
   H_BODY: 1.78,
 
   NET_HZ: 15,
-  FOG_RISE_START: 150,  // seconds of grace before the fog starts climbing
-  FOG_RISE_RATE: 0.55,  // metres per second after that
 };
 
 var SLOT_COL = [0xff8a3d, 0x31c6c0, 0xffd646, 0xa274ff];
@@ -64,11 +69,11 @@ var SLOT_NAME = ['orange', 'teal', 'yellow', 'purple'];
 // out - so the shape of a run is constant but the places are not.
 var Z = { SHORE: 0, LOWER: 1, MIDDLE: 2, UPPER: 3, INNER: 4, PEAK: 5 };
 var ZONES = [
-  { id: 0, top: 27, fire: 20 },
-  { id: 1, top: 96, fire: 89 },
-  { id: 2, top: 166, fire: 159 },
-  { id: 3, top: 229, fire: 222 },
-  { id: 4, top: 278, fire: 271 },
+  { id: 0, top: 48, fire: 36 },
+  { id: 1, top: 172, fire: 160 },
+  { id: 2, top: 297, fire: 285 },
+  { id: 3, top: 410, fire: 398 },
+  { id: 4, top: 497, fire: 485 },
   { id: 5, top: 9999, fire: -1 },
 ];
 function zoneAt(y) {

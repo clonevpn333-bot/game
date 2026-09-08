@@ -17,7 +17,7 @@ const SETS = [
   const page = await browser.newPage({ viewport: { width: 1120, height: 660 } });
   page.on('pageerror', e => console.log('PAGEERROR', e.message));
   await page.goto('file://' + path.join(ROOT, 'dist', 'test.html'));
-  await page.waitForFunction(() => !!window.CRUX, null, { timeout: 30000 });
+  await page.waitForFunction(() => !!window.CRUX, null, { timeout: 30000, polling: 250 });
 
   for (const set of SETS) {
     await page.evaluate((pick) => {
@@ -30,12 +30,11 @@ const SETS = [
       window.__ready = false;
       C.Game.buildWorld(20260903, 7, 1, function () { C.Game.begin(0); window.__ready = true; });
     }, set.pick);
-    await page.waitForFunction(() => window.__ready === true, null, { timeout: 120000 });
+    await page.waitForFunction(() => window.__ready === true, null, { timeout: 120000, polling: 250 });
     await page.evaluate((set) => {
       const C = window.CRUX, P = C.P;
       document.getElementById('pause').classList.add('hidden');
       C.HUD.blocked = false;
-      C.Walls.list.forEach(w => { w.open = true; });
       const c = C.Camps.list[set.slot + 1] || C.Camps.list[C.Camps.list.length - 1];
       const g = P.spawnAt(c.x + 9, c.z + 9, c.y);
       window.__dbg = { camps: C.Camps.list.map(q => Math.round(q.y)), want: Math.round(c.y),
@@ -52,7 +51,6 @@ const SETS = [
     const info = await page.evaluate(() => ({
       y: Math.round(window.CRUX.P.pos.y), dbg: window.__dbg,
       hp: Math.round(window.CRUX.P.hp), state: window.CRUX.P.state,
-      deaths: window.CRUX.Survive.deaths, fog: Math.round(window.CRUX.Fog.level),
       runT: Math.round(window.CRUX.Game.runT),
       stMax: Math.round(window.CRUX.P.stMax),
       props: Object.keys(window.CRUX.Props.counts).length,

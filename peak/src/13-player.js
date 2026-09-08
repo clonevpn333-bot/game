@@ -523,21 +523,6 @@ P.update = function (dt) {
     if (free && IN.grab()) tryGrab();
   }
 
-  // The fog above will not let you past until its fire is lit.  It only ever
-  // holds you down to the wall's own height - never below whatever you are
-  // standing on, or it would bury you.
-  var ceil = Walls.ceiling();
-  if (ceil && P.pos.y > ceil.y) {
-    var floor = groundH(P.pos.x, P.pos.z);
-    var cap = floor > T.VOID ? Math.max(ceil.y, floor) : ceil.y;
-    if (P.pos.y > cap) {
-      P.pos.y = cap;
-      if (P.vel.y > 0) P.vel.y = 0;
-      if (P.state === ST.CLIMB) P.climbing = false;
-      HUD.wallHint = ceil.i;
-    }
-  }
-
   if (P.state === ST.GROUND) { P.groundT += dt; if (ml > 0.02 || P.sprinting) P.groundT = Math.min(P.groundT, K.ST_REGEN_DELAY); }
   else P.groundT = 0;
 

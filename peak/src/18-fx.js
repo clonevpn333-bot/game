@@ -266,26 +266,3 @@ FX.tick = function (dt, cam, py) {
 
 // ============================================================ RISING FOG
 // The run has a clock, and this is it.  It starts at the sea and comes up.
-var Fog = { level: -30, group: null, mesh: null, mat: null, t: 0 };
-
-Fog.build = function () {
-  Fog.group = new THREE.Group();
-  Fog.level = -30; Fog.t = 0;
-  Fog.mat = new THREE.MeshBasicMaterial({
-    color: 0xb9c2cc, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false,
-  });
-  Fog.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400, 16, 16), Fog.mat);
-  Fog.mesh.rotation.x = -Math.PI / 2;
-  Fog.mesh.renderOrder = 2;
-  Fog.group.add(Fog.mesh);
-  return Fog.group;
-};
-
-Fog.tick = function (dt, runT, camPos) {
-  Fog.t = runT;
-  var over = runT - K.FOG_RISE_START;
-  Fog.level = over > 0 ? -30 + over * K.FOG_RISE_RATE : -30;
-  if (!Fog.mesh) return;
-  Fog.mesh.position.set(camPos.x, Fog.level, camPos.z);
-  Fog.mesh.visible = Fog.level > -12;
-};

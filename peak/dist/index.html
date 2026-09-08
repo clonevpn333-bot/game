@@ -300,10 +300,17 @@ kbd{background:rgba(255,255,255,.12);border-radius:4px;padding:1px 5px;font-fami
 /* ==== 01-core.js ==== */
 // ---------------------------------------------------------------- constants
 var K = {
-  GRID: 268,            // heightfield cells per side
-  CELL: 1.9,            // world units per cell
-  SUMMIT_H: 302,        // summit altitude
-  BASE_R: 215,          // radius where the mountain meets the sea
+  // PEAK's base terrain is a huge, MOSTLY FLAT STAIRCASE 1920 in-game metres
+  // tall - the climbing comes from what is layered on top of it, and one
+  // biome does not ascend at all, you cross it sideways.  This was a 302 m
+  // cone 509 m wide, where the terrain itself was the wall, and a run took
+  // two minutes.  It is now three times as wide and nearly twice as tall,
+  // with an average slope of 0.75 rather than 1.42 - shelves you walk along,
+  // risers you climb.
+  GRID: 440,            // heightfield cells per side
+  CELL: 3.5,            // world units per cell  (island 1540 m across)
+  SUMMIT_H: 540,        // summit altitude
+  BASE_R: 740,          // radius where the mountain meets the sea
 
   GRAV: 26,
   WALK: 5.0, SPRINT: 8.4, CROUCH: 2.3,
@@ -350,8 +357,6 @@ var K = {
   H_BODY: 1.78,
 
   NET_HZ: 15,
-  FOG_RISE_START: 150,  // seconds of grace before the fog starts climbing
-  FOG_RISE_RATE: 0.55,  // metres per second after that
 };
 
 var SLOT_COL = [0xff8a3d, 0x31c6c0, 0xffd646, 0xa274ff];
@@ -364,11 +369,11 @@ var SLOT_NAME = ['orange', 'teal', 'yellow', 'purple'];
 // out - so the shape of a run is constant but the places are not.
 var Z = { SHORE: 0, LOWER: 1, MIDDLE: 2, UPPER: 3, INNER: 4, PEAK: 5 };
 var ZONES = [
-  { id: 0, top: 27, fire: 20 },
-  { id: 1, top: 96, fire: 89 },
-  { id: 2, top: 166, fire: 159 },
-  { id: 3, top: 229, fire: 222 },
-  { id: 4, top: 278, fire: 271 },
+  { id: 0, top: 48, fire: 36 },
+  { id: 1, top: 172, fire: 160 },
+  { id: 2, top: 297, fire: 285 },
+  { id: 3, top: 410, fire: 398 },
+  { id: 4, top: 497, fire: 485 },
   { id: 5, top: 9999, fire: -1 },
 ];
 function zoneAt(y) {
@@ -612,8 +617,10 @@ T.wx = function (i) { return i * T.CS - T.half; };
 T.wi = function (x) { return (x + T.half) / T.CS; };
 
 // ---- smooth radial profile -------------------------------------------
+// Flatter than it is tall: 490 m of rise spread over 636 m of radius, so the
+// terracing has room to make shelves you walk along instead of a ramp.
 var PROF_T = [1.00, 0.94, 0.88, 0.80, 0.70, 0.60, 0.50, 0.40, 0.30, 0.22, 0.14];
-var PROF_H = [0, 5, 14, 34, 72, 112, 152, 192, 226, 250, 262];
+var PROF_H = [0, 9, 26, 64, 132, 199, 265, 331, 396, 448, 490];
 function profile(t) {
   if (t >= 1) return 0;
   if (t <= PROF_T[PROF_T.length - 1]) return PROF_H[PROF_H.length - 1];
@@ -627,8 +634,10 @@ function profile(t) {
 }
 
 // The crown: a rim, a moat you drop into, and the spire you climb out on.
-var CROWN_R = [0, 15, 23, 30, 40, 47, 55, 64, 74];
-var CROWN_H = [302, 289, 264, 241, 236, 246, 262, 258, 250];
+// A wide crown: the moat behind the rim is a long horizontal crossing, the
+// way PEAK's caldera is traversed sideways rather than climbed.
+var CROWN_R = [0, 46, 74, 104, 142, 172, 200, 232, 262];
+var CROWN_H = [540, 522, 486, 452, 444, 462, 486, 480, 466];
 function crown(r) {
   if (r >= CROWN_R[CROWN_R.length - 1]) return null;
   for (var i = 0; i < CROWN_R.length - 1; i++) {
@@ -643,11 +652,15 @@ function crown(r) {
 // ---- camp spine -------------------------------------------------------
 T.buildSpine = function (rng) {
   var a = rng() * Math.PI * 2, pts = [], i, t, r;
-  var swirl = rngRange(rng, -1.0, 1.0);
+  // Two and a half turns around the mountain rather than a straight line up
+  // it.  The height was never the problem - the route was, and a spiral is
+  // what turns 600 m of radius into several kilometres of walking.
+  var dir = rng() < 0.5 ? -1 : 1;
+  var swirl = dir * rngRange(rng, 0.52, 0.78);
   for (i = 0; i <= 24; i++) {
     t = 1 - i / 24;
-    a += swirl * 0.08 + (rng() - 0.5) * 0.18;
-    r = Math.max(30, t * K.BASE_R * 0.97);
+    a += swirl + (rng() - 0.5) * 0.12;
+    r = Math.max(90, t * K.BASE_R * 0.97);
     pts.push({ x: Math.cos(a) * r, z: Math.sin(a) * r, y: profile(t), t: t });
   }
   return pts;
@@ -679,21 +692,24 @@ T.rawHeight = function (x, z) {
   // Terracing: most of each step of height is spent on a near-flat shelf,
   // the rest on a short riser.  Uniform across the mountain - there is no
   // marked line, every face is fair game.
-  var strength = h < 24 ? 0.42 : 0.86;
-  strength *= 0.86 + 0.14 * (n.fbm(wx * 0.0088 + 7, wz * 0.0088 + 3, 2) * 0.5 + 0.5);
-  var stp = 8.5 + 8.5 * (n.fbm(wx * 0.0105 - 22, wz * 0.0105 + 15, 2) * 0.5 + 0.5);
-  var ledge = 0.55;
+  var strength = h < 40 ? 0.45 : 0.90;
+  strength *= 0.88 + 0.12 * (n.fbm(wx * 0.0052 + 7, wz * 0.0052 + 3, 2) * 0.5 + 0.5);
+  // 14-30 m of rise per step, and 72% of it spent on the flat: one riser is
+  // one pitch, well inside a full bar, and the shelf between is somewhere to
+  // walk and get your breath back
+  var stp = 14 + 16 * (n.fbm(wx * 0.0062 - 22, wz * 0.0062 + 15, 2) * 0.5 + 0.5);
+  var ledge = 0.72;
   var f = h / stp - Math.floor(h / stp);
-  var s = smoother(clamp((f - ledge) / (0.86 - ledge), 0, 1));
+  var s = smoother(clamp((f - ledge) / (0.94 - ledge), 0, 1));
   h += (lerp(f, s, strength) - f) * stp;
-  h += n.fbm(wx * 0.038, wz * 0.038, 2) * 0.45;
+  h += n.fbm(wx * 0.022, wz * 0.022, 2) * 0.5;
 
   // the crown overrides the cone near the axis
   var cr = Math.sqrt(x * x + z * z);
   var cw = crown(cr);
   if (cw !== null) {
-    var blend = 1 - step01(56, 74, cr);
-    var wob = n.fbm(x * 0.028, z * 0.028, 2) * 2.6;
+    var blend = 1 - step01(196, 262, cr);
+    var wob = n.fbm(x * 0.016, z * 0.016, 2) * 3.4;
     h = lerp(h, cw + wob, blend);
   }
   return h;
@@ -1139,89 +1155,131 @@ T.buildMesh = function (detail) {
     }
   }
 
-  var off = [0, cnt[0] * 3, (cnt[0] + cnt[1]) * 3];
-  var cur = [off[0], off[1], off[2]];
-  var total = nf * 3;
-  var pos = new Float32Array(total * 3), nor = new Int16Array(total * 3);
-  var col = new Uint8Array(total * 3);
-  var ax, ay, az, bx, by, bz, cx, cy, cz, ux, uy, uz, vx, vy, vz, nx, nyy, nz, ln;
-  var aa, ab, ac;
-
-  f = 0;
-  for (j = 0; j < M; j++) {
-    for (i = 0; i < M; i++) {
-      var x0 = i * sc - T.half, z0 = j * sc - T.half, x1 = x0 + sc, z1 = z0 + sc;
-      var y00 = SH[j * mp + i], y10 = SH[j * mp + i + 1];
-      var y01 = SH[(j + 1) * mp + i], y11 = SH[(j + 1) * mp + i + 1];
-      var a00 = AO[j * mp + i], a10 = AO[j * mp + i + 1];
-      var a01 = AO[(j + 1) * mp + i], a11 = AO[(j + 1) * mp + i + 1];
-      for (tri = 0; tri < 2; tri++) {
-        // Counter-clockwise seen from above.  Get this backwards and the
-        // renderer culls the ground out from under the player.
-        if (tri === 0) {
-          ax = x0; ay = y00; az = z0; bx = x0; by = y01; bz = z1; cx = x1; cy = y10; cz = z0;
-          aa = a00; ab = a01; ac = a10;
-        } else {
-          ax = x1; ay = y10; az = z0; bx = x0; by = y01; bz = z1; cx = x1; cy = y11; cz = z1;
-          aa = a10; ab = a01; ac = a11;
-        }
-        ux = bx - ax; uy = by - ay; uz = bz - az;
-        vx = cx - ax; vy = cy - ay; vz = cz - az;
-        nx = uy * vz - uz * vy; nyy = uz * vx - ux * vz; nz = ux * vy - uy * vx;
-        ln = Math.sqrt(nx * nx + nyy * nyy + nz * nz) || 1;
-        nx /= ln; nyy /= ln; nz /= ln;
-
-        var ci = (i / SUB) | 0, cj = (j / SUB) | 0;
-        var hash = (((ci >> 1) * 73856093) ^ ((cj >> 1) * 19349663)) >>> 0;
-        var jhash = ((i * 73856093) ^ (j * 19349663) ^ (tri * 83492791)) >>> 0;
-        var mot = n.n2(ax * 0.026, az * 0.026) * 0.34 + n.n2(ax * 0.075, az * 0.075) * 0.15 + 0.5;
-        var c = faceColor(hgt[f], nyA[f], sfA[f], hash, mot);
-        var jit = 0.918 + ((jhash >>> 5) & 63) / 63 * 0.165;
-        var warp = n.n2(ax * 0.011, az * 0.011) * 4.2 + n.n2(ax * 0.045, az * 0.045) * 1.1;
-        var bh = hgt[f] + warp, steep = 1 - nyA[f];
-        jit *= 1 + (Math.sin(bh * 0.58) * 0.085 + Math.sin(bh * 1.93 + 1.3) * 0.042
-                    + Math.sin(bh * 5.1) * 0.02) * steep;
-        // and a broad drift of light and shade that works on flat ground too,
-        // where the bedding planes are edge-on and show nothing
-        jit *= 1 + (mot - 0.5) * 0.30 + n.n2(ax * 0.19, az * 0.19) * 0.05;
-
-        var o = cur[kinds[f]]; cur[kinds[f]] += 3;
-        var pp = o * 3;
-        pos[pp] = ax; pos[pp + 1] = ay; pos[pp + 2] = az;
-        pos[pp + 3] = bx; pos[pp + 4] = by; pos[pp + 5] = bz;
-        pos[pp + 6] = cx; pos[pp + 7] = cy; pos[pp + 8] = cz;
-        var aoV = [aa, ab, ac];
-        for (var q = 0; q < 3; q++) {
-          nor[pp + q * 3] = nx * 32767; nor[pp + q * 3 + 1] = nyy * 32767; nor[pp + q * 3 + 2] = nz * 32767;
-          // AO is squeezed into a range that darkens without going muddy
-          var mul = jit * (0.34 + 0.66 * Math.pow(clamp(aoV[q], 0, 1), 1.35));
-          hexLinB(c, col, pp + q * 3, mul);
-        }
-        f++;
-      }
-    }
-  }
-
-  var g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  g.setAttribute('normal', new THREE.BufferAttribute(nor, 3, true));
-  g.setAttribute('color', new THREE.BufferAttribute(col, 3, true));
-  g.addGroup(0, cnt[0] * 3, 0);
-  g.addGroup(cnt[0] * 3, cnt[1] * 3, 1);
-  g.addGroup((cnt[0] + cnt[1]) * 3, cnt[2] * 3, 2);
-  g.computeBoundingSphere();
-
+  // ---- emit as chunks --------------------------------------------------
+  // One mesh for a 1.5 km island is 1.5 million triangles with no way to cull
+  // any of it: a single bounding sphere is either in the frustum or not.  Cut
+  // into a grid instead and the far side of the mountain costs nothing.
+  var CH = 12, per = Math.ceil(M / CH);
+  var group = new THREE.Group();
   var tex = rockTexture();
   var mats = [
     new THREE.MeshLambertMaterial({ vertexColors: true, map: tex }),
     new THREE.MeshPhongMaterial({ vertexColors: true, map: tex, shininess: 42, specular: 0x6f8898 }),
     new THREE.MeshPhongMaterial({ vertexColors: true, map: tex, shininess: 12, specular: 0x442211, emissive: 0x3a0d00 }),
   ];
-  for (var m = 0; m < mats.length; m++) triplanar(mats[m]);
-  var mesh = new THREE.Mesh(g, mats);
-  mesh.receiveShadow = true;
-  T.mesh = mesh;
-  return mesh;
+  for (var mi = 0; mi < mats.length; mi++) triplanar(mats[mi]);
+  T.mats = mats;
+  T.chunks = [];
+
+  var ax, ay, az, bx, by, bz, cx, cy, cz2, ux, uy, uz, vx, vy, vz, nx, nyy, nz, ln;
+  var aa, ab, ac;
+  for (var cz = 0; cz < CH; cz++) {
+    for (var cxk = 0; cxk < CH; cxk++) {
+      var i0 = cxk * per, i1 = Math.min(M, i0 + per);
+      var j0 = cz * per, j1 = Math.min(M, j0 + per);
+      if (i0 >= i1 || j0 >= j1) continue;
+
+      // how many faces of each kind live in this chunk
+      var ck = [0, 0, 0];
+      for (j = j0; j < j1; j++) for (i = i0; i < i1; i++) {
+        f = (j * M + i) * 2;
+        ck[kinds[f]]++; ck[kinds[f + 1]]++;
+      }
+      var nfc = ck[0] + ck[1] + ck[2];
+      if (!nfc) continue;
+      var cur2 = [0, ck[0] * 3, (ck[0] + ck[1]) * 3];
+      var tot = nfc * 3;
+      var pos = new Float32Array(tot * 3), nor = new Int16Array(tot * 3);
+      var col = new Uint8Array(tot * 3);
+      var minY = 1e9, maxY = -1e9;
+
+      for (j = j0; j < j1; j++) {
+        for (i = i0; i < i1; i++) {
+          var x0 = i * sc - T.half, z0 = j * sc - T.half, x1 = x0 + sc, z1 = z0 + sc;
+          var y00 = SH[j * mp + i], y10 = SH[j * mp + i + 1];
+          var y01 = SH[(j + 1) * mp + i], y11 = SH[(j + 1) * mp + i + 1];
+          var a00 = AO[j * mp + i], a10 = AO[j * mp + i + 1];
+          var a01 = AO[(j + 1) * mp + i], a11 = AO[(j + 1) * mp + i + 1];
+          for (tri = 0; tri < 2; tri++) {
+            f = (j * M + i) * 2 + tri;
+            // Counter-clockwise seen from above.  Get this backwards and the
+            // renderer culls the ground out from under the player.
+            if (tri === 0) {
+              ax = x0; ay = y00; az = z0; bx = x0; by = y01; bz = z1; cx = x1; cy = y10; cz2 = z0;
+              aa = a00; ab = a01; ac = a10;
+            } else {
+              ax = x1; ay = y10; az = z0; bx = x0; by = y01; bz = z1; cx = x1; cy = y11; cz2 = z1;
+              aa = a10; ab = a01; ac = a11;
+            }
+            ux = bx - ax; uy = by - ay; uz = bz - az;
+            vx = cx - ax; vy = cy - ay; vz = cz2 - az;
+            nx = uy * vz - uz * vy; nyy = uz * vx - ux * vz; nz = ux * vy - uy * vx;
+            ln = Math.sqrt(nx * nx + nyy * nyy + nz * nz) || 1;
+            nx /= ln; nyy /= ln; nz /= ln;
+
+            var ci = (i / SUB) | 0, cj = (j / SUB) | 0;
+            var hash = (((ci >> 1) * 73856093) ^ ((cj >> 1) * 19349663)) >>> 0;
+            var jhash = ((i * 73856093) ^ (j * 19349663) ^ (tri * 83492791)) >>> 0;
+            var mot = n.n2(ax * 0.026, az * 0.026) * 0.34 + n.n2(ax * 0.075, az * 0.075) * 0.15 + 0.5;
+            var c = faceColor(hgt[f], nyA[f], sfA[f], hash, mot);
+            var jit = 0.918 + ((jhash >>> 5) & 63) / 63 * 0.165;
+            var warp = n.n2(ax * 0.011, az * 0.011) * 4.2 + n.n2(ax * 0.045, az * 0.045) * 1.1;
+            var bh = hgt[f] + warp, steep = 1 - nyA[f];
+            jit *= 1 + (Math.sin(bh * 0.58) * 0.085 + Math.sin(bh * 1.93 + 1.3) * 0.042
+                        + Math.sin(bh * 5.1) * 0.02) * steep;
+            jit *= 1 + (mot - 0.5) * 0.30 + n.n2(ax * 0.19, az * 0.19) * 0.05;
+
+            var o = cur2[kinds[f]]; cur2[kinds[f]] += 3;
+            var pp = o * 3;
+            pos[pp] = ax; pos[pp + 1] = ay; pos[pp + 2] = az;
+            pos[pp + 3] = bx; pos[pp + 4] = by; pos[pp + 5] = bz;
+            pos[pp + 6] = cx; pos[pp + 7] = cy; pos[pp + 8] = cz2;
+            if (ay < minY) minY = ay; if (ay > maxY) maxY = ay;
+            if (by < minY) minY = by; if (by > maxY) maxY = by;
+            if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
+            var aoV = [aa, ab, ac];
+            for (var q = 0; q < 3; q++) {
+              nor[pp + q * 3] = nx * 32767; nor[pp + q * 3 + 1] = nyy * 32767; nor[pp + q * 3 + 2] = nz * 32767;
+              var mul = jit * (0.34 + 0.66 * Math.pow(clamp(aoV[q], 0, 1), 1.35));
+              hexLinB(c, col, pp + q * 3, mul);
+            }
+          }
+        }
+      }
+
+      var g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      g.setAttribute('normal', new THREE.BufferAttribute(nor, 3, true));
+      g.setAttribute('color', new THREE.BufferAttribute(col, 3, true));
+      g.addGroup(0, ck[0] * 3, 0);
+      g.addGroup(ck[0] * 3, ck[1] * 3, 1);
+      g.addGroup((ck[0] + ck[1]) * 3, ck[2] * 3, 2);
+      g.computeBoundingSphere();
+      var chunk = new THREE.Mesh(g, mats);
+      chunk.receiveShadow = true;
+      chunk.userData.cx = (i0 + i1) * 0.5 * sc - T.half;
+      chunk.userData.cz = (j0 + j1) * 0.5 * sc - T.half;
+      chunk.userData.cy = (minY + maxY) * 0.5;
+      chunk.userData.rad = g.boundingSphere.radius;
+      group.add(chunk);
+      T.chunks.push(chunk);
+    }
+  }
+  T.mesh = group;
+  return group;
+};
+
+// Chunks past the horizon of interest cost nothing to skip, and on a 1.5 km
+// island that is most of them.
+T.cull = function (camPos) {
+  if (!T.chunks) return;
+  var lim = 680;
+  for (var i = 0; i < T.chunks.length; i++) {
+    var m = T.chunks[i], u = m.userData;
+    var dx = u.cx - camPos.x, dz = u.cz - camPos.z, dy = u.cy - camPos.y;
+    var r = lim + u.rad;
+    m.visible = dx * dx + dy * dy + dz * dz < r * r;
+  }
 };
 
 /* ==== 06-geo.js ==== */
@@ -1333,7 +1391,7 @@ function shareGeo(src, sphere) {
   return g;
 }
 
-var SCATTER_CELL = 84;
+var SCATTER_CELL = 190;
 function scatter(geo, mat, list, tintFn, opts) {
   opts = opts || {};
   var group = new THREE.Group();
@@ -2236,7 +2294,6 @@ Camps.setLit = function (i, lit) {
   c.lit = lit;
   c.f1.visible = lit; c.f2.visible = lit;
   c.light.intensity = lit ? 2.6 : 0;
-  if (lit && i > 0) Walls.open(i - 1);
 };
 
 Camps.tick = function (dt, t) {
@@ -2264,103 +2321,6 @@ Camps.nearest = function (x, y, z, rad) {
 
 // ============================================================ FOG WALLS
 // One above each zone.  Light that zone's fire and it lifts.
-var Walls = { list: [], group: null, mat: null };
-
-function ringRadiusAt(y) {
-  var lo = 0, hi = 1;
-  for (var k = 0; k < 24; k++) {
-    var m = (lo + hi) * 0.5;
-    if (profile(m) > y) lo = m; else hi = m;
-  }
-  return ((lo + hi) * 0.5) * K.BASE_R;
-}
-
-// The wall above zone i is opened by the fire at the top of that zone, so it
-// has to sit above that fire and below the next one.  Deriving it from where
-// the camps actually landed - rather than the nominal zone altitude - is what
-// keeps it from cutting through the ground somebody is standing on.
-Walls.altitudes = function () {
-  var ys = [], i;
-  for (i = 0; i < 5; i++) {
-    var below = Camps.list[i + 1] ? Camps.list[i + 1].y : ZONES[i].fire;
-    var above = Camps.list[i + 2] ? Camps.list[i + 2].y : ZONES[i].top + 40;
-    var y = Math.max(ZONES[i].top, below + 8);
-    if (y > above - 8) y = (below + above) * 0.5;
-    ys.push(y);
-  }
-  for (i = 1; i < 5; i++) if (ys[i] < ys[i - 1] + 10) ys[i] = ys[i - 1] + 10;
-  return ys;
-};
-
-// a soft vertical gradient so the barrier reads as weather rather than a tube
-function fogTexture() {
-  var H = 64, cv = document.createElement('canvas');
-  cv.width = 4; cv.height = H;
-  var ctx = cv.getContext('2d'), img = ctx.createImageData(4, H);
-  for (var j = 0; j < H; j++) {
-    var t = j / (H - 1);
-    var a = Math.sin(t * Math.PI);
-    a = Math.pow(clamp(a, 0, 1), 0.7);
-    for (var i = 0; i < 4; i++) {
-      var o = (j * 4 + i) * 4;
-      img.data[o] = 236; img.data[o + 1] = 240; img.data[o + 2] = 246;
-      img.data[o + 3] = (a * 255) | 0;
-    }
-  }
-  ctx.putImageData(img, 0, 0);
-  var tex = new THREE.CanvasTexture(cv);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.ClampToEdgeWrapping;
-  return tex;
-}
-
-Walls.build = function () {
-  var g = Walls.group = new THREE.Group();
-  Walls.list = [];
-  Walls.tex = fogTexture();
-  var ys = Walls.altitudes();
-  for (var i = 0; i < 5; i++) {
-    var y = ys[i];
-    var r = Math.max(24, ringRadiusAt(y) + 12);
-    var mat = new THREE.MeshBasicMaterial({
-      map: Walls.tex, color: 0xdfe6ee, transparent: true, opacity: 0.55,
-      side: THREE.DoubleSide, depthWrite: false,
-    });
-    var m = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.10, 26, 44, 1, true), mat);
-    m.position.y = y + 8;
-    m.renderOrder = 3;
-    g.add(m);
-    Walls.list.push({ i: i, y: y, mesh: m, mat: mat, open: false, r: r });
-  }
-  return g;
-};
-
-Walls.open = function (i) {
-  var w = Walls.list[i];
-  if (!w || w.open) return;
-  w.open = true;
-  HUD.toast('the fog lifts — ' + ZONES[i + 1].name + ' is open', '#ffd646');
-};
-
-// the lowest wall still up; you cannot climb past it
-Walls.ceiling = function () {
-  for (var i = 0; i < Walls.list.length; i++) if (!Walls.list[i].open) return Walls.list[i];
-  return null;
-};
-
-Walls.tick = function (dt, t) {
-  for (var i = 0; i < Walls.list.length; i++) {
-    var w = Walls.list[i];
-    var want = w.open ? 0 : 0.55;
-    w.mat.opacity = damp(w.mat.opacity, want, 1.6, dt);
-    w.mesh.visible = w.mat.opacity > 0.02;
-    w.mesh.rotation.y += dt * 0.03;
-    w.mat.map.offset.x = t * 0.012;
-    w.mesh.position.y = w.y + 8 + Math.sin(t * 0.5 + i) * 1.1;
-  }
-};
-
-// ---- the citadel: a tower standing in the slot it was rolled into ------
 var Tower = { group: null };
 Tower.build = function () {
   var g = Tower.group = new THREE.Group();
@@ -2393,6 +2353,7 @@ Tower.build = function () {
 };
 
 // ---- the summit -------------------------------------------------------
+
 var Summit = { pos: null, group: null, flare: null, light: null, fired: false };
 Summit.build = function () {
   var g = Summit.group = new THREE.Group();
@@ -3737,21 +3698,6 @@ P.update = function (dt) {
     if (free && IN.grab()) tryGrab();
   }
 
-  // The fog above will not let you past until its fire is lit.  It only ever
-  // holds you down to the wall's own height - never below whatever you are
-  // standing on, or it would bury you.
-  var ceil = Walls.ceiling();
-  if (ceil && P.pos.y > ceil.y) {
-    var floor = groundH(P.pos.x, P.pos.z);
-    var cap = floor > T.VOID ? Math.max(ceil.y, floor) : ceil.y;
-    if (P.pos.y > cap) {
-      P.pos.y = cap;
-      if (P.vel.y > 0) P.vel.y = 0;
-      if (P.state === ST.CLIMB) P.climbing = false;
-      HUD.wallHint = ceil.i;
-    }
-  }
-
   if (P.state === ST.GROUND) { P.groundT += dt; if (ml > 0.02 || P.sprinting) P.groundT = Math.min(P.groundT, K.ST_REGEN_DELAY); }
   else P.groundT = 0;
 
@@ -3943,7 +3889,6 @@ Survive.tick = function (dt) {
   }
 
   // ---- the rising fog: it comes for everyone
-  if (P.pos.y < Fog.level) Survive.hurt(16 * dt, 'the fog');
 
   // ---- no room left on the bar and you are out
   if (P.stMax <= 0.5 && P.state !== ST.OUT) Survive.knockOut('the mountain');
@@ -4623,7 +4568,7 @@ Net.snapshot = function () {
   }
   var pit = [];
   for (i = 0; i < Coop.pitons.length; i++) pit.push({ x: Coop.pitons[i].x, y: Coop.pitons[i].y, z: Coop.pitons[i].z });
-  return { lit: lit, taken: taken, opened: opened, ropes: ropes, pit: pit, t: Game.runT, fog: Fog.level };
+  return { lit: lit, taken: taken, opened: opened, ropes: ropes, pit: pit, t: Game.runT };
 };
 
 Net.applySnapshot = function (s) {
@@ -4635,7 +4580,6 @@ Net.applySnapshot = function (s) {
   for (i = 0; i < s.ropes.length; i++) Coop.addRope(s.ropes[i].x, s.ropes[i].y, s.ropes[i].z, s.ropes[i].l);
   for (i = 0; i < s.pit.length; i++) Coop.placePiton(s.pit[i].x, s.pit[i].y, s.pit[i].z, 0, 1, true);
   if (s.t) Game.runT = s.t;
-  if (s.fog) Fog.level = s.fog;
   // late joiners start the climb at the group's highest lit fire
   var idx = 0;
   for (i = 0; i < Camps.list.length; i++) if (Camps.list[i].lit) idx = Math.max(idx, i);
@@ -5008,29 +4952,6 @@ FX.tick = function (dt, cam, py) {
 
 // ============================================================ RISING FOG
 // The run has a clock, and this is it.  It starts at the sea and comes up.
-var Fog = { level: -30, group: null, mesh: null, mat: null, t: 0 };
-
-Fog.build = function () {
-  Fog.group = new THREE.Group();
-  Fog.level = -30; Fog.t = 0;
-  Fog.mat = new THREE.MeshBasicMaterial({
-    color: 0xb9c2cc, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false,
-  });
-  Fog.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400, 16, 16), Fog.mat);
-  Fog.mesh.rotation.x = -Math.PI / 2;
-  Fog.mesh.renderOrder = 2;
-  Fog.group.add(Fog.mesh);
-  return Fog.group;
-};
-
-Fog.tick = function (dt, runT, camPos) {
-  Fog.t = runT;
-  var over = runT - K.FOG_RISE_START;
-  Fog.level = over > 0 ? -30 + over * K.FOG_RISE_RATE : -30;
-  if (!Fog.mesh) return;
-  Fog.mesh.position.set(camPos.x, Fog.level, camPos.z);
-  Fog.mesh.visible = Fog.level > -12;
-};
 
 /* ==== 19-sky.js ==== */
 // ============================================================ SKY & LIGHT
@@ -5218,7 +5139,7 @@ Sky.update = function (dt, t, py, camPos) {
 // The stamina bar, who is with you, and what is in your hand.  Nothing else.
 var HUD = {
   blocked: true, el: {}, toasts: [], tagPool: [], tagUsed: 0,
-  hurtT: 0, wallHint: -1, segs: [],
+  hurtT: 0, segs: [],
 };
 
 HUD.init = function () {
@@ -5386,12 +5307,8 @@ var COACH = [
     when: function () { return P.status.injury > 4; } },
   { id: 'fire', col: '#ffd646', txt: 'fires are checkpoints: they warm you, mend you, cook food, and you wake up here',
     when: function () { return Survive.atFire; } },
-  { id: 'fog', col: '#8fbfe0', txt: 'the fog is a ceiling until you light the fire below it',
-    when: function () { return HUD.wallHint >= 0; } },
   { id: 'pack', col: '#c9a06a', txt: '1-3 picks a pack slot, C uses it, X drops it — everything you carry costs grip',
     when: function () { return !!(P.inv[0] || P.inv[1] || P.inv[2]); } },
-  { id: 'rise', col: '#b06ad0', txt: 'the fog is rising from the sea now — do not be under it',
-    when: function () { return Fog.level > 4; } },
 ];
 HUD.coachDone = {};
 HUD.coachT = 0;
@@ -5438,8 +5355,6 @@ HUD.prompt = function () {
   var mate = Coop.nearestDown(2.8);
   if (P.state === ST.OUT) {
     txt = 'you are down — hold on';
-  } else if (HUD.wallHint >= 0) {
-    txt = 'fog — light the campfire below to climb into ' + Run.at(HUD.wallHint + 1).nm;
   } else if (P.carrying) {
     var c = Remote.byId(P.carrying);
     txt = '<em>F</em> set ' + (c ? c.name : 'them') + ' down';
@@ -5459,7 +5374,6 @@ HUD.prompt = function () {
     else if (it) txt = '<em>F</em> take ' + ITEM[it.k].nm;
     else if (Survive.atFire) txt = 'a fire — rest, cook, and wake up here';
   }
-  HUD.wallHint = -1;
   var e = HUD.el.prompt;
   if (txt !== HUD._prompt) { e.innerHTML = txt; HUD._prompt = txt; }
   e.classList.toggle('on', !!txt);
@@ -5586,8 +5500,8 @@ Game.init = function () {
 
   window.CRUX = {
     Game: Game, P: P, T: T, K: K, CAM: CAM, IN: IN, HUD: HUD, Net: Net, Coop: Coop, Run: Run, BIOMES: BIOMES,
-    Survive: Survive, Remote: Remote, WI: WI, Camps: Camps, Walls: Walls, Summit: Summit,
-    FX: FX, Fog: Fog, Sky: Sky, Props: Props, Wind: Wind, Menu: Menu, groundH: groundH,
+    Survive: Survive, Remote: Remote, WI: WI, Camps: Camps, Summit: Summit,
+    FX: FX, Sky: Sky, Props: Props, Wind: Wind, Menu: Menu, groundH: groundH,
     ZONES: ZONES, Z: Z, STATUS: STATUS, ST: ST,
   };
 
@@ -5618,7 +5532,6 @@ Game.buildWorld = function (seed, lootSeed, detail, done) {
     g.add(T.buildMesh(detail));
     g.add(Props.build(seed, detail));
     g.add(Camps.build());
-    g.add(Walls.build());
     g.add(Tower.build());
     g.add(Summit.build());
     g.add(WI.init());
@@ -5626,7 +5539,6 @@ Game.buildWorld = function (seed, lootSeed, detail, done) {
     g.add(Coop.init());
     g.add(Remote.init());
     g.add(FX.init(detail));
-    g.add(Fog.build());
 
     Sky.build(Game.scene);
     Sky.setQuality(detail);
@@ -5634,6 +5546,8 @@ Game.buildWorld = function (seed, lootSeed, detail, done) {
     g.add(P.init(P.slot, P.name));
 
     Game.scene.add(g);
+    T.cull(Game.cam.position);
+    Props.cull(Game.cam.position);
     Game.built = true;
     document.getElementById('boot').classList.add('hidden');
     if (done) done();
@@ -5725,9 +5639,7 @@ Game.loop = function (ts) {
     Net.tick(dt);
     WI.tick(dt, Game.t);
     Camps.tick(dt, Game.t);
-    Walls.tick(dt, Game.t);
     Summit.tick(dt, Game.t);
-    Fog.tick(dt, Game.runT, Game.cam.position);
 
     CAM.update(Game.cam, P, dt);
 
@@ -5765,6 +5677,7 @@ Game.loop = function (ts) {
       if (spd > 3.2) { Game.fxT = 0; FX.step(P.pos.x, P.pos.y, P.pos.z); }
     }
     Props.cull(Game.cam.position);
+    T.cull(Game.cam.position);
     FX.tick(dt, Game.cam.position, P.pos.y);
     Sky.update(dt, Game.t, P.pos.y, Game.cam.position);
     HUD.tick(dt, Game.cam);

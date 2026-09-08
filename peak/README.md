@@ -53,9 +53,8 @@ turns amber once you are hauling enough for it to matter.
 The game teaches itself now, one line at a time, each fired by what you are
 actually doing rather than dumped on you at the start: the first wall you
 stand next to, the first time your grip drops below half on a face, the first
-ledge you haul over, the first fire, the first fog wall, the first thing in
-your pack, the moment the sea fog starts climbing. One at a time, never
-stacked, each shown once.
+ledge you haul over, the first fire, the first thing in your pack. One at a
+time, never stacked, each shown once.
 
 Statuses introduce themselves too. The first time one appears it names itself
 and says what fixes it — "☠ poison — an antidote, or a fire" — because a
@@ -110,6 +109,46 @@ hold **F** to revive them, deploy a rope spool from high ground so the others
 can follow, fire a rope cannon at a wall you cannot reach, and ping a line with
 **Q**.
 
+## The size of it
+
+PEAK's base terrain is **a huge, mostly flat staircase, 1920 in-game metres
+tall**. The climbing does not come from the ground being vertical — it comes
+from what gets layered on top of it, biggest rocks first — and one biome, the
+Caldera, does not ascend at all: you cross it sideways.
+
+This was the opposite: a 302 m cone, 509 m across, where the terrain itself
+was the wall. Average slope 1.42. A run took **under three minutes**.
+
+The island is now **1540 m across and 540 m tall**, with an average slope of
+**0.75** — shelves you walk along, risers you climb, one riser to a pitch
+(14–30 m of rise per step, 72% of it spent flat). The crown is wide enough
+that the caldera behind the rim is a long horizontal crossing rather than
+another climb. And the route **spirals two and a half times around the
+mountain** instead of running straight up it, because the height was never
+what made a run short — the route was.
+
+Measured on the generated island:
+
+| | before | now |
+|---|---|---|
+| island across | 509 m | **1540 m** |
+| summit | 302 m | **540 m** |
+| the route: walking | ~185 m | **4720 m** |
+| the route: climbing | 302 m | 516 m |
+| a run along the route | ~2.9 min | **19.6 min** |
+| a perfect beeline | ~2.9 min | 6.5 min |
+
+At 1.5 km the terrain can no longer be one mesh — a single bounding sphere is
+either in the frustum or it isn't — so it is cut into 144 chunks and culled by
+distance at 680 m, which is past where the scene fog hides everything anyway.
+That is 1.07M triangles drawn out of 1.55M, and 563 draw calls.
+
+**There is no fog timer and there are no fog walls.** Neither is in PEAK, and
+both were mine: a wall of fog that clamped you to an altitude until you lit a
+fire, and a rising sea fog that damaged you on a countdown. The mountain is
+open — you can climb ahead of the route if you can survive it, and campfires
+are checkpoints rather than gates.
+
 ## The island
 
 **Ten biomes, six per run.** The slots are fixed — shore, then a lower, a
@@ -131,14 +170,10 @@ of it changes.
 | 5 | **the citadel** | a stone tower, pillars and ruins | wind and exposure |
 | 6 | **the peak** | the flare stand | the way home |
 
-A **campfire** sits at the top of each slot. Lighting it lifts the **fog wall**
-above it, and until you do, that fog is a ceiling you cannot climb past. Fires
-also warm you, mend you, cook your food for extra value, and are where everyone
+A **campfire** sits at the top of each slot. Lighting one makes it your
+checkpoint. Fires also warm you, mend you, cook your food for extra value, and are where everyone
 wakes up.
 
-And the whole time, **fog is rising from the sea**. It starts climbing a couple
-of minutes in and does not stop. Get caught below it and it takes you apart.
-That is the clock.
 
 The island regenerates on a daily schedule, so everyone climbing on the same day
 gets the same rock and the same four middle biomes. Loose food and suitcase
@@ -366,11 +401,11 @@ It loads the game, spawns in, and drives it:
 | `02-noise` | seeded gradient noise, fbm, ridged noise |
 | `03-terrain` | height field: radial profile, domain warp, terracing, the caldera crown, camp placement |
 | `04-tquery` | height / normal / surface queries, ray marching, and the placement rules everything spawns through |
-| `05-tmesh` | terrain mesh: subdivision, baked occlusion, strata, and the triplanar grain shader |
+| `05-tmesh` | terrain mesh: chunking, subdivision, baked occlusion, strata, and the triplanar grain shader |
 | `06-geo` | primitive merging, bevelled boxes, lumpy rocks, spatially bucketed instancing |
 | `07-scenery` | per-zone props and boulder collision |
 | `08-items` | the item table with weights, suitcases, loose loot |
-| `09-landmarks` | crash site, campfires, fog walls, the flare stand |
+| `09-landmarks` | crash site, campfires, the citadel tower, the flare stand |
 | `10-figure` | the scouts: round heads, flat-shape faces, two-bone reach, spring scarf, walk and climb cycles |
 | `11-input` | keyboard, mouse, pointer lock, the rebindable grab key |
 | `12-camera` | third/first person rig that lifts over obstructions instead of clipping |
@@ -379,7 +414,7 @@ It loads the game, spawns in, and drives it:
 | `15-coop` | helping hand, pitons, ropes, carrying, reviving, pings |
 | `16-remote` | other scouts, interpolated ~120 ms behind |
 | `17-net` | PeerJS transport, room codes, snapshots, event protocol |
-| `18-fx` | wind, per-zone weather, embers, and the rising fog |
+| `18-fx` | wind, per-zone weather, embers, and the climbing effects |
 | `19-sky` | gradient sky, zone-driven sun and fog, the cloud sea |
 | `20-hud` | the bar, who is with you, what is in your hand |
 | `21-game` | renderer, world build/teardown, main loop |

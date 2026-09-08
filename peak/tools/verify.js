@@ -18,9 +18,9 @@ function check(name, ok, detail) {
   page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
 
   await page.goto('file://' + path.join(ROOT, 'dist', 'test.html'));
-  await page.waitForFunction(() => !!window.CRUX, null, { timeout: 30000 });
+  await page.waitForFunction(() => !!window.CRUX, null, { timeout: 30000, polling: 250 });
   await page.click('#btn-solo');
-  await page.waitForFunction(() => window.CRUX.Game.built && window.CRUX.Game.mode === 'play', null, { timeout: 90000 });
+  await page.waitForFunction(() => window.CRUX.Game.built && window.CRUX.Game.mode === 'play', null, { timeout: 90000, polling: 250 });
   await page.evaluate(() => {
     const C = window.CRUX;
     C.Game.renderer.shadowMap.enabled = false;
@@ -35,7 +35,7 @@ function check(name, ok, detail) {
     window.__wall = (minH) => {
       const T = C.T;
       for (let i = 0; i < 240000; i++) {
-        const a = Math.random() * 6.283, r = 40 + Math.random() * 150;
+        const a = Math.random() * 6.283, r = 80 + Math.random() * 560;
         const g = T.findGround(Math.cos(a) * r, Math.sin(a) * r, 3, 2);
         if (!g) continue;
         for (let k = 0; k < 10; k++) {
@@ -49,7 +49,7 @@ function check(name, ok, detail) {
     // a flat patch with room to walk out of it in every direction
     window.__openGround = (T, rad) => {
       for (let i = 0; i < 160000; i++) {
-        const a = Math.random() * 6.283, r = 30 + Math.random() * 140;
+        const a = Math.random() * 6.283, r = 70 + Math.random() * 560;
         const q = T.findGround(Math.cos(a) * r, Math.sin(a) * r, 3, 3);
         if (!q || T.normSmooth(q.x, q.z).y < 0.985) continue;
         let ok = true;
@@ -78,29 +78,35 @@ function check(name, ok, detail) {
   // ---- 1. no invisible ground -----------------------------------------
   const vis = await page.evaluate(() => {
     const C = window.CRUX, T3 = THREE, r = C.Game.renderer, T = C.T;
-    ['Props', 'Camps', 'Walls', 'Summit', 'WI', 'Coop', 'FX', 'Fog'].forEach(k => { if (C[k] && C[k].group) C[k].group.visible = false; });
+    ['Props', 'Camps', 'Summit', 'WI', 'Coop', 'FX'].forEach(k => { if (C[k] && C[k].group) C[k].group.visible = false; });
     C.Sky.mesh.visible = false; C.Sky.cloud.visible = false; C.P.fig.root.visible = false;
-    const cam = new T3.PerspectiveCamera(70, 1, 0.2, 1200);
+    const cam = new T3.PerspectiveCamera(70, 1, 0.5, 4000);
     const out = {};
     const rt = new T3.WebGLRenderTarget(96, 96), buf = new Uint8Array(96 * 96 * 4);
     const oldFog = C.Game.scene.fog; C.Game.scene.fog = null;
-    // several vantage points around the island, so a one-off angle cannot hide it
-    const views = [[1.3, 45], [-1.1, 60], [2.6, 80], [0.2, 120]];
+    const oldMode = C.Game.mode; C.Game.mode = 'paused';   // stops the per-frame cull
+    // Several vantage points around the island, so a one-off angle cannot hide
+    // it - and OUTSIDE it: these were tuned for an island a third the size,
+    // and at radius 240 the camera is now buried inside the mountain, which
+    // shows nothing front-facing and the inner surface double-sided.
+    const R = C.K.BASE_R * 1.3, H = C.K.SUMMIT_H;
+    const views = [[1.3, H * 0.35], [-1.1, H * 0.6], [2.6, H * 0.95], [0.2, H * 1.5]];
+    T.chunks.forEach(c => { c.visible = true; });
     for (const mode of ['FrontSide', 'DoubleSide']) {
-      T.mesh.material.forEach(m => { m.side = T3[mode]; m.needsUpdate = true; });
+      T.mats.forEach(m => { m.side = T3[mode]; m.needsUpdate = true; });
       let lit = 0;
       for (const [a, up] of views) {
-        cam.position.set(Math.cos(a) * 240, up, Math.sin(a) * 240);
-        cam.lookAt(0, C.K.SUMMIT_H * 0.45, 0);
+        cam.position.set(Math.cos(a) * R, up, Math.sin(a) * R);
+        cam.lookAt(0, H * 0.45, 0);
         r.setRenderTarget(rt); r.setClearColor(0x000000, 1); r.clear(); r.render(C.Game.scene, cam);
         r.readRenderTargetPixels(rt, 0, 0, 96, 96, buf);
         for (let i = 0; i < buf.length; i += 4) if (buf[i] + buf[i + 1] + buf[i + 2] > 24) lit++;
       }
       out[mode] = lit;
     }
-    T.mesh.material.forEach(m => { m.side = T3.FrontSide; m.needsUpdate = true; });
-    r.setRenderTarget(null); C.Game.scene.fog = oldFog;
-    ['Props', 'Camps', 'Walls', 'Summit', 'WI', 'Coop', 'FX', 'Fog'].forEach(k => { if (C[k] && C[k].group) C[k].group.visible = true; });
+    T.mats.forEach(m => { m.side = T3.FrontSide; m.needsUpdate = true; });
+    r.setRenderTarget(null); C.Game.scene.fog = oldFog; C.Game.mode = oldMode;
+    ['Props', 'Camps', 'Summit', 'WI', 'Coop', 'FX'].forEach(k => { if (C[k] && C[k].group) C[k].group.visible = true; });
     C.Sky.mesh.visible = true; C.P.fig.root.visible = true;
     return out;
   });
@@ -241,31 +247,7 @@ function check(name, ok, detail) {
     biomes.slots === 6 && biomes.distinct >= 8, 'distinct routes seen: ' + biomes.distinct);
 
   // ---- 3. the fog wall holds you until its fire is lit ------------------
-  const fogw = await page.evaluate(async () => {
-    const C = window.CRUX, P = C.P, T = C.T;
-    const w = C.Walls.ceiling();
-    if (!w) return { none: true };
-    // stand just under it on climbable ground and try to climb straight up
-    let spot = null;
-    for (let i = 0; i < 160000 && !spot; i++) {
-      const a = Math.random() * 6.283, r = 40 + Math.random() * 150;
-      const g = T.findGround(Math.cos(a) * r, Math.sin(a) * r, 3, w.y - 12);
-      if (g && g.y < w.y - 1) spot = g;
-    }
-    if (!spot) return { none: true };
-    P.spawnAt(spot.x, spot.z, spot.y);
-    P.st = P.stMax;
-    const y0 = P.pos.y;
-    await window.__hold(['KeyW', C.IN.grabKey], 3.0);
-    const blocked = P.pos.y;
-    C.Camps.setLit(w.i + 1, true);                 // light the fire below it
-    await window.__hold(['KeyW', C.IN.grabKey], 2.0);
-    return { wallY: +w.y.toFixed(1), start: +y0.toFixed(1), blocked: +blocked.toFixed(1), after: +P.pos.y.toFixed(1) };
-  });
-  check('fog holds you below its wall until the fire is lit',
-    fogw.none || fogw.blocked <= fogw.wallY + 0.3, JSON.stringify(fogw));
 
-  await page.evaluate(() => { window.CRUX.Walls.list.forEach(w => { w.open = true; }); });
 
   // ---- 4. no auto-climb ------------------------------------------------
   const auto = await page.evaluate(async () => {
@@ -365,7 +347,7 @@ function check(name, ok, detail) {
     const C = window.CRUX, P = C.P, T = C.T;
     let spot = null;
     for (let i = 0; i < 90000 && !spot; i++) {
-      const a = Math.random() * 6.283, r = 40 + Math.random() * 140;
+      const a = Math.random() * 6.283, r = 80 + Math.random() * 560;
       const g = T.findGround(Math.cos(a) * r, Math.sin(a) * r, 3, 3);
       if (g && T.normSmooth(g.x, g.z).y > 0.95) spot = g;
     }
@@ -493,8 +475,8 @@ function check(name, ok, detail) {
 
   // ---- the look: detail, occlusion, grain, and things that move ---------
   const look = await page.evaluate(() => {
-    const C = window.CRUX, T = C.T, g = T.mesh.geometry;
-    const tris = g.attributes.position.count / 3;
+    const C = window.CRUX, T = C.T, g = T.chunks[0].geometry;
+    const tris = T.chunks.reduce((n, c) => n + c.geometry.attributes.position.count / 3, 0);
     // the render mesh is subdivided past the height field it is built from
     const subdiv = tris / (T.N * T.N * 2);
 
@@ -511,7 +493,7 @@ function check(name, ok, detail) {
 
     // the grain map has to carry contrast or it does nothing once three
     // projections are averaged together
-    const tex = T.mesh.material[0].map, cv = tex && tex.image;
+    const tex = T.mats[0].map, cv = tex && tex.image;
     let gLo = 255, gHi = 0;
     if (cv) {
       const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
@@ -522,7 +504,7 @@ function check(name, ok, detail) {
     // back to the stock map lookup against a uv attribute that is not there
     const probe = { vertexShader: '#include <common>\n#include <begin_vertex>',
                     fragmentShader: '#include <common>\n#include <map_fragment>' };
-    T.mesh.material[0].onBeforeCompile(probe);
+    T.mats[0].onBeforeCompile(probe);
 
     return {
       subdiv, tris, aoSpread: +spread.toFixed(3), grainRange: (gHi - gLo) / 255,

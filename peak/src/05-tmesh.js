@@ -213,87 +213,129 @@ T.buildMesh = function (detail) {
     }
   }
 
-  var off = [0, cnt[0] * 3, (cnt[0] + cnt[1]) * 3];
-  var cur = [off[0], off[1], off[2]];
-  var total = nf * 3;
-  var pos = new Float32Array(total * 3), nor = new Int16Array(total * 3);
-  var col = new Uint8Array(total * 3);
-  var ax, ay, az, bx, by, bz, cx, cy, cz, ux, uy, uz, vx, vy, vz, nx, nyy, nz, ln;
-  var aa, ab, ac;
-
-  f = 0;
-  for (j = 0; j < M; j++) {
-    for (i = 0; i < M; i++) {
-      var x0 = i * sc - T.half, z0 = j * sc - T.half, x1 = x0 + sc, z1 = z0 + sc;
-      var y00 = SH[j * mp + i], y10 = SH[j * mp + i + 1];
-      var y01 = SH[(j + 1) * mp + i], y11 = SH[(j + 1) * mp + i + 1];
-      var a00 = AO[j * mp + i], a10 = AO[j * mp + i + 1];
-      var a01 = AO[(j + 1) * mp + i], a11 = AO[(j + 1) * mp + i + 1];
-      for (tri = 0; tri < 2; tri++) {
-        // Counter-clockwise seen from above.  Get this backwards and the
-        // renderer culls the ground out from under the player.
-        if (tri === 0) {
-          ax = x0; ay = y00; az = z0; bx = x0; by = y01; bz = z1; cx = x1; cy = y10; cz = z0;
-          aa = a00; ab = a01; ac = a10;
-        } else {
-          ax = x1; ay = y10; az = z0; bx = x0; by = y01; bz = z1; cx = x1; cy = y11; cz = z1;
-          aa = a10; ab = a01; ac = a11;
-        }
-        ux = bx - ax; uy = by - ay; uz = bz - az;
-        vx = cx - ax; vy = cy - ay; vz = cz - az;
-        nx = uy * vz - uz * vy; nyy = uz * vx - ux * vz; nz = ux * vy - uy * vx;
-        ln = Math.sqrt(nx * nx + nyy * nyy + nz * nz) || 1;
-        nx /= ln; nyy /= ln; nz /= ln;
-
-        var ci = (i / SUB) | 0, cj = (j / SUB) | 0;
-        var hash = (((ci >> 1) * 73856093) ^ ((cj >> 1) * 19349663)) >>> 0;
-        var jhash = ((i * 73856093) ^ (j * 19349663) ^ (tri * 83492791)) >>> 0;
-        var mot = n.n2(ax * 0.026, az * 0.026) * 0.34 + n.n2(ax * 0.075, az * 0.075) * 0.15 + 0.5;
-        var c = faceColor(hgt[f], nyA[f], sfA[f], hash, mot);
-        var jit = 0.918 + ((jhash >>> 5) & 63) / 63 * 0.165;
-        var warp = n.n2(ax * 0.011, az * 0.011) * 4.2 + n.n2(ax * 0.045, az * 0.045) * 1.1;
-        var bh = hgt[f] + warp, steep = 1 - nyA[f];
-        jit *= 1 + (Math.sin(bh * 0.58) * 0.085 + Math.sin(bh * 1.93 + 1.3) * 0.042
-                    + Math.sin(bh * 5.1) * 0.02) * steep;
-        // and a broad drift of light and shade that works on flat ground too,
-        // where the bedding planes are edge-on and show nothing
-        jit *= 1 + (mot - 0.5) * 0.30 + n.n2(ax * 0.19, az * 0.19) * 0.05;
-
-        var o = cur[kinds[f]]; cur[kinds[f]] += 3;
-        var pp = o * 3;
-        pos[pp] = ax; pos[pp + 1] = ay; pos[pp + 2] = az;
-        pos[pp + 3] = bx; pos[pp + 4] = by; pos[pp + 5] = bz;
-        pos[pp + 6] = cx; pos[pp + 7] = cy; pos[pp + 8] = cz;
-        var aoV = [aa, ab, ac];
-        for (var q = 0; q < 3; q++) {
-          nor[pp + q * 3] = nx * 32767; nor[pp + q * 3 + 1] = nyy * 32767; nor[pp + q * 3 + 2] = nz * 32767;
-          // AO is squeezed into a range that darkens without going muddy
-          var mul = jit * (0.34 + 0.66 * Math.pow(clamp(aoV[q], 0, 1), 1.35));
-          hexLinB(c, col, pp + q * 3, mul);
-        }
-        f++;
-      }
-    }
-  }
-
-  var g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  g.setAttribute('normal', new THREE.BufferAttribute(nor, 3, true));
-  g.setAttribute('color', new THREE.BufferAttribute(col, 3, true));
-  g.addGroup(0, cnt[0] * 3, 0);
-  g.addGroup(cnt[0] * 3, cnt[1] * 3, 1);
-  g.addGroup((cnt[0] + cnt[1]) * 3, cnt[2] * 3, 2);
-  g.computeBoundingSphere();
-
+  // ---- emit as chunks --------------------------------------------------
+  // One mesh for a 1.5 km island is 1.5 million triangles with no way to cull
+  // any of it: a single bounding sphere is either in the frustum or not.  Cut
+  // into a grid instead and the far side of the mountain costs nothing.
+  var CH = 12, per = Math.ceil(M / CH);
+  var group = new THREE.Group();
   var tex = rockTexture();
   var mats = [
     new THREE.MeshLambertMaterial({ vertexColors: true, map: tex }),
     new THREE.MeshPhongMaterial({ vertexColors: true, map: tex, shininess: 42, specular: 0x6f8898 }),
     new THREE.MeshPhongMaterial({ vertexColors: true, map: tex, shininess: 12, specular: 0x442211, emissive: 0x3a0d00 }),
   ];
-  for (var m = 0; m < mats.length; m++) triplanar(mats[m]);
-  var mesh = new THREE.Mesh(g, mats);
-  mesh.receiveShadow = true;
-  T.mesh = mesh;
-  return mesh;
+  for (var mi = 0; mi < mats.length; mi++) triplanar(mats[mi]);
+  T.mats = mats;
+  T.chunks = [];
+
+  var ax, ay, az, bx, by, bz, cx, cy, cz2, ux, uy, uz, vx, vy, vz, nx, nyy, nz, ln;
+  var aa, ab, ac;
+  for (var cz = 0; cz < CH; cz++) {
+    for (var cxk = 0; cxk < CH; cxk++) {
+      var i0 = cxk * per, i1 = Math.min(M, i0 + per);
+      var j0 = cz * per, j1 = Math.min(M, j0 + per);
+      if (i0 >= i1 || j0 >= j1) continue;
+
+      // how many faces of each kind live in this chunk
+      var ck = [0, 0, 0];
+      for (j = j0; j < j1; j++) for (i = i0; i < i1; i++) {
+        f = (j * M + i) * 2;
+        ck[kinds[f]]++; ck[kinds[f + 1]]++;
+      }
+      var nfc = ck[0] + ck[1] + ck[2];
+      if (!nfc) continue;
+      var cur2 = [0, ck[0] * 3, (ck[0] + ck[1]) * 3];
+      var tot = nfc * 3;
+      var pos = new Float32Array(tot * 3), nor = new Int16Array(tot * 3);
+      var col = new Uint8Array(tot * 3);
+      var minY = 1e9, maxY = -1e9;
+
+      for (j = j0; j < j1; j++) {
+        for (i = i0; i < i1; i++) {
+          var x0 = i * sc - T.half, z0 = j * sc - T.half, x1 = x0 + sc, z1 = z0 + sc;
+          var y00 = SH[j * mp + i], y10 = SH[j * mp + i + 1];
+          var y01 = SH[(j + 1) * mp + i], y11 = SH[(j + 1) * mp + i + 1];
+          var a00 = AO[j * mp + i], a10 = AO[j * mp + i + 1];
+          var a01 = AO[(j + 1) * mp + i], a11 = AO[(j + 1) * mp + i + 1];
+          for (tri = 0; tri < 2; tri++) {
+            f = (j * M + i) * 2 + tri;
+            // Counter-clockwise seen from above.  Get this backwards and the
+            // renderer culls the ground out from under the player.
+            if (tri === 0) {
+              ax = x0; ay = y00; az = z0; bx = x0; by = y01; bz = z1; cx = x1; cy = y10; cz2 = z0;
+              aa = a00; ab = a01; ac = a10;
+            } else {
+              ax = x1; ay = y10; az = z0; bx = x0; by = y01; bz = z1; cx = x1; cy = y11; cz2 = z1;
+              aa = a10; ab = a01; ac = a11;
+            }
+            ux = bx - ax; uy = by - ay; uz = bz - az;
+            vx = cx - ax; vy = cy - ay; vz = cz2 - az;
+            nx = uy * vz - uz * vy; nyy = uz * vx - ux * vz; nz = ux * vy - uy * vx;
+            ln = Math.sqrt(nx * nx + nyy * nyy + nz * nz) || 1;
+            nx /= ln; nyy /= ln; nz /= ln;
+
+            var ci = (i / SUB) | 0, cj = (j / SUB) | 0;
+            var hash = (((ci >> 1) * 73856093) ^ ((cj >> 1) * 19349663)) >>> 0;
+            var jhash = ((i * 73856093) ^ (j * 19349663) ^ (tri * 83492791)) >>> 0;
+            var mot = n.n2(ax * 0.026, az * 0.026) * 0.34 + n.n2(ax * 0.075, az * 0.075) * 0.15 + 0.5;
+            var c = faceColor(hgt[f], nyA[f], sfA[f], hash, mot);
+            var jit = 0.918 + ((jhash >>> 5) & 63) / 63 * 0.165;
+            var warp = n.n2(ax * 0.011, az * 0.011) * 4.2 + n.n2(ax * 0.045, az * 0.045) * 1.1;
+            var bh = hgt[f] + warp, steep = 1 - nyA[f];
+            jit *= 1 + (Math.sin(bh * 0.58) * 0.085 + Math.sin(bh * 1.93 + 1.3) * 0.042
+                        + Math.sin(bh * 5.1) * 0.02) * steep;
+            jit *= 1 + (mot - 0.5) * 0.30 + n.n2(ax * 0.19, az * 0.19) * 0.05;
+
+            var o = cur2[kinds[f]]; cur2[kinds[f]] += 3;
+            var pp = o * 3;
+            pos[pp] = ax; pos[pp + 1] = ay; pos[pp + 2] = az;
+            pos[pp + 3] = bx; pos[pp + 4] = by; pos[pp + 5] = bz;
+            pos[pp + 6] = cx; pos[pp + 7] = cy; pos[pp + 8] = cz2;
+            if (ay < minY) minY = ay; if (ay > maxY) maxY = ay;
+            if (by < minY) minY = by; if (by > maxY) maxY = by;
+            if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
+            var aoV = [aa, ab, ac];
+            for (var q = 0; q < 3; q++) {
+              nor[pp + q * 3] = nx * 32767; nor[pp + q * 3 + 1] = nyy * 32767; nor[pp + q * 3 + 2] = nz * 32767;
+              var mul = jit * (0.34 + 0.66 * Math.pow(clamp(aoV[q], 0, 1), 1.35));
+              hexLinB(c, col, pp + q * 3, mul);
+            }
+          }
+        }
+      }
+
+      var g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      g.setAttribute('normal', new THREE.BufferAttribute(nor, 3, true));
+      g.setAttribute('color', new THREE.BufferAttribute(col, 3, true));
+      g.addGroup(0, ck[0] * 3, 0);
+      g.addGroup(ck[0] * 3, ck[1] * 3, 1);
+      g.addGroup((ck[0] + ck[1]) * 3, ck[2] * 3, 2);
+      g.computeBoundingSphere();
+      var chunk = new THREE.Mesh(g, mats);
+      chunk.receiveShadow = true;
+      chunk.userData.cx = (i0 + i1) * 0.5 * sc - T.half;
+      chunk.userData.cz = (j0 + j1) * 0.5 * sc - T.half;
+      chunk.userData.cy = (minY + maxY) * 0.5;
+      chunk.userData.rad = g.boundingSphere.radius;
+      group.add(chunk);
+      T.chunks.push(chunk);
+    }
+  }
+  T.mesh = group;
+  return group;
+};
+
+// Chunks past the horizon of interest cost nothing to skip, and on a 1.5 km
+// island that is most of them.
+T.cull = function (camPos) {
+  if (!T.chunks) return;
+  var lim = 680;
+  for (var i = 0; i < T.chunks.length; i++) {
+    var m = T.chunks[i], u = m.userData;
+    var dx = u.cx - camPos.x, dz = u.cz - camPos.z, dy = u.cy - camPos.y;
+    var r = lim + u.rad;
+    m.visible = dx * dx + dy * dy + dz * dz < r * r;
+  }
 };
