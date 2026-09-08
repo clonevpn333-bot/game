@@ -43,7 +43,7 @@ var K = {
   FALL_DMG: 4.4,
   INJ_DMG: 18,
 
-  HUNGER_RATE: 0.16,    // hunger status creeps up over a run
+  HUNGER_RATE: 0.045,   // hunger status creeps up over a run
   OUT_T_SOLO: 22,       // seconds unconscious before you die, alone
   OUT_T_TEAM: 75,       // much longer with mates around to help
 

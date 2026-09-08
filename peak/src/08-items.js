@@ -103,7 +103,7 @@ WI.init = function () {
 // but what is on it is not.  Every one resolves real ground before landing.
 WI.spawnAll = function (seed) {
   var rng = makeRng(seed ^ 0x2f9c1d77), tries = 0, placed = [];
-  var wantCases = 26, wantLoose = 34;
+  var wantCases = 44, wantLoose = 60;
   function far(x, z, y) {
     for (var i = 0; i < placed.length; i++) {
       var dx = placed[i].x - x, dz = placed[i].z - z, dy = placed[i].y - y;
@@ -115,18 +115,18 @@ WI.spawnAll = function (seed) {
     for (var k = 0; k < 60; k++) {
       tries++;
       var seg = T.spine[(rng() * T.spine.length) | 0];
-      var a = rng() * 6.283, d = rngRange(rng, 5, 40);
+      var a = rng() * 6.283, d = rngRange(rng, 5, 55);
       var g = T.findGround(seg.x + Math.cos(a) * d, seg.z + Math.sin(a) * d, 5, 1.2);
       if (g && far(g.x, g.z, g.y)) { placed.push(g); return g; }
     }
     return null;
   }
   var i, g;
-  for (i = 0; i < wantCases && tries < 9000; i++) {
+  for (i = 0; i < wantCases && tries < 16000; i++) {
     g = findSpot();
     if (g) WI.addCase(g.x, g.y, g.z, zoneAt(g.y), rng);
   }
-  for (i = 0; i < wantLoose && tries < 14000; i++) {
+  for (i = 0; i < wantLoose && tries < 26000; i++) {
     g = findSpot();
     if (!g) continue;
     var pool = LOOT[zoneAt(g.y)];
