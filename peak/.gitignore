@@ -1,3 +1,4 @@
 vendor/
 dist/test.html
+dist/crux-offline.html
 dist/*.png

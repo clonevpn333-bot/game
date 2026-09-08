@@ -350,6 +350,7 @@ into one HTML file.
 
 ```
 node tools/build.js dist/index.html   # build
+node tools/offline.js                 # the same file with three.js inlined
 node tools/verify.js                  # the acceptance list, below
 node tools/smoke.js                   # boot, generation, render, restart
 node tools/systems.js                 # climbing detail, statuses, co-op, protocol
@@ -357,7 +358,9 @@ node tools/shots.js '[{"name":"a","camp":2}]'
 ```
 
 `tools/fetch-vendor.sh` populates `vendor/` with local copies of the two CDN
-libraries so the tests can run offline. The shipped file always points at cdnjs.
+libraries so the tests can run offline. The shipped file points at cdnjs;
+`tools/offline.js` inlines those two libraries instead, for anywhere there is
+no network to reach — embedded in another page, or on a laptop with no wifi.
 
 ### What `verify.js` actually checks
 

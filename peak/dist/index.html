@@ -5511,6 +5511,7 @@ Game.init = function () {
 
 Game.resize = function () {
   var w = window.innerWidth, h = window.innerHeight;
+  if (Game.detail) Game.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   Game.renderer.setSize(w, h, false);
   Game.cam.aspect = w / h;
   Game.cam.updateProjectionMatrix();
