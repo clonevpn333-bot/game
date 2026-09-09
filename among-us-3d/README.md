@@ -33,9 +33,27 @@ Pages / Netlify) and shares the link.
 
 ## What's in it
 
+### Role reveal
+Every round opens on the full cinematic: a starfield, your crew lined up with you front and
+centre, and the big word — **CREWMATE** in blue or **IMPOSTOR** in glowing red — followed by
+"There is 1 Impostor among us". Specialists get a card naming the role, what it does and the
+key that fires its ability, and Impostors get their fellow Impostors in the line-up plus
+"Shhh… no more talking now." A badge under the task bar then says what you are for the whole
+round, and updates if you die or are promoted to Guardian Angel.
+
+### Always-on minimap
+The map sits in the corner the entire round, showing the deck, your position and a facing
+wedge, your next task markers, closed doors, live sabotages, vents (if you can use them),
+your tracked player, and — once you are a ghost — everybody. The room you are standing in is
+named underneath. Press the ⤢ button to switch between the whole deck and a zoomed view.
+
 ### Maps
 All five official maps, laid out room-for-room with corridors, vents, sealable doors and
-map-specific systems:
+map-specific systems. Interiors are built out rather than boxed in: panelled walls with ribs
+and conduit runs, framed doorways with status lamps, ceiling pipes and light strips down
+every corridor, windows wherever a wall backs onto open sky, corner posts, hazard banding at
+room thresholds, and per-room set dressing (reactor cores, medbay beds, cargo crates, vault
+doors, kitchen counters, shower stalls, camera banks).
 
 | Map | Rooms | Notable |
 |---|---|---|
@@ -47,6 +65,14 @@ map-specific systems:
 
 Corridors are generated from each map's adjacency list, so every room is guaranteed
 reachable, and walls, ceilings, doors and vents are built from the resulting floor plan.
+
+### Models and animation
+Crewmates are built procedurally — bean body, curved visor with a rounded-rect patch that
+hugs the head, backpack, stub legs with shoes, and mitten arms — toon-shaded with a black
+outline shell. They walk with a real cycle: legs swing, arms counter-swing, the body bobs and
+squashes on each footfall, the hat lags a beat behind, and pets trot along hopping in time.
+Venting scales you down into the floor, kills throw a lunge and a camera shake, ghosts drift
+and sway, bodies settle onto the deck, and Viper kills dissolve.
 
 ### Roles
 Every role currently in the game, with the real cooldowns and lobby options:

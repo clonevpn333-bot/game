@@ -110,6 +110,25 @@ function bandGeometry(y0, y1, inflate) {
   return g;
 }
 
+/* Little mitten arms — the crewmates in the promo art have them, and they
+   give the walk cycle something to swing. */
+var armGeo = null, handGeo = null;
+function armGeometry() {
+  if (armGeo) return armGeo;
+  var pts = [
+    new T.Vector2(0.000, 0.00), new T.Vector2(0.072, 0.012), new T.Vector2(0.104, 0.040),
+    new T.Vector2(0.114, 0.090), new T.Vector2(0.116, 0.300), new T.Vector2(0.110, 0.375),
+    new T.Vector2(0.078, 0.415), new T.Vector2(0.000, 0.430)
+  ];
+  armGeo = new T.LatheGeometry(pts, 12);
+  return armGeo;
+}
+function handGeometry() {
+  if (handGeo) return handGeo;
+  handGeo = new T.SphereGeometry(0.135, 14, 11);
+  return handGeo;
+}
+
 function legGeometry() {
   var pts = [
     new T.Vector2(0.000, 0.000), new T.Vector2(0.070, 0.005), new T.Vector2(0.120, 0.022),
@@ -565,8 +584,8 @@ var SKIN_BUILDERS = {
   },
   wallguard: function (g) {
     addBand(g, 0.04, 0.60, 0x6B7280, 0.012);
-    var plate = new T.Mesh(roundedBoxGeo(0.5, 0.42, 0.08, 0.06), toon(0x9AA5B4));
-    plate.position.set(0, BODY_Y + BODY_H * 0.5, 0.3); g.add(plate);
+    var plate = new T.Mesh(roundedBoxGeo(0.42, 0.30, 0.05, 0.05), toon(0x9AA5B4));
+    plate.position.set(0, BODY_Y + BODY_H * 0.42, 0.36); g.add(plate);
     return g;
   },
   diver: function (g) {
@@ -740,14 +759,49 @@ function buildCrewmate(look, opts) {
 
   if (!legGeo) legGeo = legGeometry();
   var legs = new T.Group();
+  var shoeMat = toon(shade(col.hex, -0.14), { unique: true });
   [-1, 1].forEach(function (s) {
+    var leg = new T.Group();
     var l = new T.Mesh(legGeo, bodyMat);
-    l.position.set(s * 0.21, 0, 0);
-    l.userData.side = s;
-    legs.add(l);
-    if (outline) { var lo = outlineOf(l, 1.08); lo.position.copy(l.position); lo.userData.side = s; legs.add(lo); }
+    leg.add(l);
+    if (outline) leg.add(outlineOf(l, 1.08));
+    var shoe = new T.Mesh(roundedBoxGeo(0.30, 0.11, 0.40, 0.05), shoeMat);
+    shoe.position.set(0, 0.055, 0.045);
+    leg.add(shoe);
+    if (outline) { var so = outlineOf(shoe, 1.09); so.position.copy(shoe.position); leg.add(so); }
+    leg.position.set(s * 0.21, 0, 0);
+    leg.userData.side = s;
+    legs.add(leg);
   });
   root.add(legs);
+
+  /* arms with mitten hands */
+  var arms = new T.Group();
+  [-1, 1].forEach(function (side) {
+    var arm = new T.Group();
+    var upper = new T.Mesh(armGeometry(), bodyMat);
+    upper.position.y = -0.43;
+    arm.add(upper);
+    var hand = new T.Mesh(handGeometry(), bodyMat);
+    hand.scale.set(1.02, 0.90, 0.94);
+    hand.position.set(0, -0.47, 0.015);
+    arm.add(hand);
+    if (outline) {
+      var uo = outlineOf(upper, 1.10);
+      uo.position.copy(upper.position);
+      arm.add(uo);
+      var ho = outlineOf(hand, 1.10);
+      ho.scale.multiply(hand.scale); ho.position.copy(hand.position);
+      arm.add(ho);
+    }
+    arm.position.set(side * 0.42, BODY_Y + BODY_H * 0.545, 0.03);
+    arm.rotation.z = side * 0.56;
+    arm.userData.side = side;
+    arm.userData.restZ = side * 0.56;
+    arms.add(arm);
+  });
+  root.add(arms);
+  root.userData.arms = arms;
 
   /* backpack */
   var packMat = toon(col.shadow, { unique: true });
@@ -834,6 +888,12 @@ function buildGhost(look) {
     }
   });
   if (g.userData.legs) g.remove(g.userData.legs);
+  if (g.userData.arms) {
+    g.userData.arms.children.forEach(function (a) {
+      a.position.y -= 0.12;
+      a.rotation.x = -0.35;
+    });
+  }
   var tail = new T.Mesh(new T.ConeGeometry(0.4, 0.5, 14),
     toon(AU.colorById(look.color).hex, { transparent: true, opacity: 0.22, unique: true }));
   tail.position.y = 0.18; tail.rotation.x = Math.PI;
@@ -855,6 +915,14 @@ function buildDeadBody(look) {
   base.position.y = 0.11; root.add(base);
   var pack = new T.Mesh(roundedBoxGeo(0.3, 0.2, 0.34, 0.08), toon(col.shadow, { unique: true }));
   pack.position.set(0, 0.16, -0.34); root.add(pack);
+  var limp = new T.Mesh(armGeometry(), mat);
+  limp.rotation.set(Math.PI / 2, 0, 0.5);
+  limp.position.set(-0.42, 0.09, 0.10);
+  root.add(limp);
+  var limpHand = new T.Mesh(handGeometry(), mat);
+  limpHand.scale.set(1, 0.86, 0.9);
+  limpHand.position.set(-0.60, 0.09, 0.34);
+  root.add(limpHand);
   var bone = new T.Mesh(new T.CylinderGeometry(0.045, 0.045, 0.34, 8), toon(0xF2F5FA));
   bone.rotation.z = Math.PI / 2; bone.position.set(0.1, 0.42, 0.12); root.add(bone);
   [-1, 1].forEach(function (s) {

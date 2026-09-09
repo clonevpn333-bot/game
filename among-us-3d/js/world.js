@@ -54,29 +54,35 @@ function extractWalls(grid) {
     if (i < 0 || j < 0 || i >= w || j >= h) return 0;
     return grid.cells[j * w + i];
   }
-  /* walls running along Z (vertical boundaries at constant x) */
+  /* walls running along Z (a boundary at constant x) */
   for (var i = 0; i <= w; i++) {
-    var run = -1;
+    var run = -1, runDir = 0;
     for (var j = 0; j <= h; j++) {
-      var edge = (j < h) && (walk(i - 1, j) !== walk(i, j));
-      if (edge && run < 0) run = j;
-      else if (!edge && run >= 0) {
-        segs.push({ axis: 'z', x: grid.minX + i * C,
+      var a = walk(i - 1, j), b = walk(i, j);
+      var edge = (j < h) && (a !== b);
+      var dir = edge ? (b ? 1 : -1) : 0;
+      if (edge && run < 0) { run = j; runDir = dir; }
+      else if (run >= 0 && (!edge || dir !== runDir)) {
+        segs.push({ axis: 'z', x: grid.minX + i * C, dir: runDir,
                     z0: grid.minZ + run * C, z1: grid.minZ + j * C });
-        run = -1;
+        run = edge ? j : -1;
+        runDir = dir;
       }
     }
   }
-  /* walls running along X (horizontal boundaries at constant z) */
+  /* walls running along X (a boundary at constant z) */
   for (var jj = 0; jj <= h; jj++) {
-    var run2 = -1;
+    var run2 = -1, runDir2 = 0;
     for (var ii = 0; ii <= w; ii++) {
-      var edge2 = (ii < w) && (walk(ii, jj - 1) !== walk(ii, jj));
-      if (edge2 && run2 < 0) run2 = ii;
-      else if (!edge2 && run2 >= 0) {
-        segs.push({ axis: 'x', z: grid.minZ + jj * C,
+      var a2 = walk(ii, jj - 1), b2 = walk(ii, jj);
+      var edge2 = (ii < w) && (a2 !== b2);
+      var dir2 = edge2 ? (b2 ? 1 : -1) : 0;
+      if (edge2 && run2 < 0) { run2 = ii; runDir2 = dir2; }
+      else if (run2 >= 0 && (!edge2 || dir2 !== runDir2)) {
+        segs.push({ axis: 'x', z: grid.minZ + jj * C, dir: runDir2,
                     x0: grid.minX + run2 * C, x1: grid.minX + ii * C });
-        run2 = -1;
+        run2 = edge2 ? ii : -1;
+        runDir2 = dir2;
       }
     }
   }
@@ -85,16 +91,16 @@ function extractWalls(grid) {
 
 /* ---------------- themes ---------------- */
 var THEMES = {
-  ship:   { floor:0x3d4757, floor2:0x333c4a, wall:0x5d6a7d, trim:0x8fa2ba, ceil:0x39424f,
-            amb:0x8fa8c8, sky:0x06070f, accent:0x38FEDC },
-  hq:     { floor:0x4a4a52, floor2:0x3e3e46, wall:0x6f6f7d, trim:0xb0b0c0, ceil:0x3f3f4a,
-            amb:0xd8c9a8, sky:0x1a1410, accent:0xF5C842 },
-  ice:    { floor:0x54606e, floor2:0x47525f, wall:0x66748a, trim:0x9fb6cf, ceil:0x424b58,
-            amb:0x9fc4ff, sky:0x0a1020, accent:0x7FE8FF },
-  sky:    { floor:0x6b563c, floor2:0x5c4a34, wall:0x7a6a55, trim:0xc0a878, ceil:0x4a3d2c,
-            amb:0xffd9a8, sky:0x1b2b4a, accent:0xE2B10C },
-  jungle: { floor:0x4b5a3a, floor2:0x3f4c31, wall:0x63705a, trim:0x9fc47a, ceil:0x3d4834,
-            amb:0xc8ffb0, sky:0x123020, accent:0x50EF39 }
+  ship:   { floor:0x4a5666, floor2:0x3e4857, wall:0x5d6a7d, trim:0x8fa2ba, ceil:0x2c333f,
+            amb:0x8fa8c8, sky:0x06070f, accent:0x38FEDC, window:0x1b2f5e },
+  hq:     { floor:0x57575f, floor2:0x494951, wall:0x6f6f7d, trim:0xb0b0c0, ceil:0x33333c,
+            amb:0xd8c9a8, sky:0x1a1410, accent:0xF5C842, window:0x3a2f22 },
+  ice:    { floor:0x5f6d7d, floor2:0x515d6b, wall:0x66748a, trim:0x9fb6cf, ceil:0x333b47,
+            amb:0x9fc4ff, sky:0x0a1020, accent:0x7FE8FF, window:0x9fc4e8 },
+  sky:    { floor:0x7d6547, floor2:0x6b573d, wall:0x7a6a55, trim:0xc0a878, ceil:0x372e21,
+            amb:0xffd9a8, sky:0x1b2b4a, accent:0xE2B10C, window:0x8fc4e8 },
+  jungle: { floor:0x57683f, floor2:0x4a5936, wall:0x63705a, trim:0x9fc47a, ceil:0x2f3828,
+            amb:0xc8ffb0, sky:0x123020, accent:0x50EF39, window:0x8fd88f }
 };
 
 /* ---------------- text sprite ---------------- */
@@ -141,6 +147,8 @@ World.prototype.build = function () {
   this.buildWalls();
   this.buildCeilings();
   this.buildDoors();
+  this.buildDoorFrames();
+  this.buildFittings();
   this.buildVents();
   this.buildSigns();
   this.buildProps();
@@ -185,32 +193,180 @@ World.prototype.buildFloors = function () {
   }
 };
 
-/* ---- walls ---- */
+/* ---- walls, with panelling, ribs, conduit and fittings ---- */
 World.prototype.buildWalls = function () {
   var segs = extractWalls(this.layout.grid);
-  var geos = [], trims = [];
+  var th = this.theme;
+  var hull = [], trims = [], panels = [], ribs = [], conduit = [], glass = [], fittings = [];
+  var self = this;
+  var rnd = mulberry(0xA17C0F);
+
+  /* Is the far side of this wall open space? Those get windows. */
+  function exterior(cx, cz, nx, nz) {
+    for (var d = 1.2; d < 7; d += 1.2) {
+      if (self.layout.walkable(cx - nx * d, cz - nz * d)) return false;
+    }
+    return true;
+  }
+
   for (var i = 0; i < segs.length; i++) {
     var S = segs[i];
-    if (S.axis === 'z') {
-      var len = S.z1 - S.z0;
-      geos.push(boxAt(WALL_T, WALL_H, len, S.x, WALL_H / 2, (S.z0 + S.z1) / 2));
-      trims.push(boxAt(WALL_T * 1.25, 0.22, len, S.x, WALL_H - 0.16, (S.z0 + S.z1) / 2));
-      trims.push(boxAt(WALL_T * 1.25, 0.18, len, S.x, 0.1, (S.z0 + S.z1) / 2));
+    var horiz = S.axis === 'x';
+    var len = horiz ? (S.x1 - S.x0) : (S.z1 - S.z0);
+    if (len < 0.4) continue;
+    var cx = horiz ? (S.x0 + S.x1) / 2 : S.x;
+    var cz = horiz ? S.z : (S.z0 + S.z1) / 2;
+    /* unit normal pointing into the room */
+    var nx = horiz ? 0 : S.dir, nz = horiz ? S.dir : 0;
+    var face = WALL_T / 2 + 0.02;
+
+    if (horiz) {
+      hull.push(boxAt(len, WALL_H, WALL_T, cx, WALL_H / 2, cz));
+      trims.push(boxAt(len, 0.24, WALL_T * 1.3, cx, WALL_H - 0.16, cz));
+      trims.push(boxAt(len, 0.20, WALL_T * 1.3, cx, 0.11, cz));
     } else {
-      var len2 = S.x1 - S.x0;
-      geos.push(boxAt(len2, WALL_H, WALL_T, (S.x0 + S.x1) / 2, WALL_H / 2, S.z));
-      trims.push(boxAt(len2, 0.22, WALL_T * 1.25, (S.x0 + S.x1) / 2, WALL_H - 0.16, S.z));
-      trims.push(boxAt(len2, 0.18, WALL_T * 1.25, (S.x0 + S.x1) / 2, 0.1, S.z));
+      hull.push(boxAt(WALL_T, WALL_H, len, cx, WALL_H / 2, cz));
+      trims.push(boxAt(WALL_T * 1.3, 0.24, len, cx, WALL_H - 0.16, cz));
+      trims.push(boxAt(WALL_T * 1.3, 0.20, len, cx, 0.11, cz));
+    }
+    if (!S.dir) continue;
+
+    /* a continuous conduit run at shoulder height */
+    var cy = 2.18;
+    if (horiz) conduit.push(boxAt(len - 0.1, 0.14, 0.16, cx, cy, cz + nz * face));
+    else       conduit.push(boxAt(0.16, 0.14, len - 0.1, cx + nx * face, cy, cz));
+
+    /* recessed panels with a rib between each */
+    var step = 2.7;
+    var count = Math.max(1, Math.round(len / step));
+    var pw = len / count;
+    for (var k = 0; k < count; k++) {
+      var t = -len / 2 + pw * (k + 0.5);
+      var px = horiz ? cx + t : cx + nx * (face + 0.015);
+      var pz = horiz ? cz + nz * (face + 0.015) : cz + t;
+      var panelW = Math.max(0.4, pw - 0.42);
+      if (horiz) panels.push(boxAt(panelW, 1.45, 0.06, px, 1.22, pz));
+      else       panels.push(boxAt(0.06, 1.45, panelW, px, 1.22, pz));
+      if (k > 0) {
+        var rt = -len / 2 + pw * k;
+        if (horiz) ribs.push(boxAt(0.14, WALL_H - 0.5, 0.11, cx + rt, (WALL_H - 0.5) / 2 + 0.2, cz + nz * face));
+        else       ribs.push(boxAt(0.11, WALL_H - 0.5, 0.14, cx + nx * face, (WALL_H - 0.5) / 2 + 0.2, cz + rt));
+      }
+
+      /* the odd fitting: a screen, a wall vent or a hazard plate */
+      var roll = rnd();
+      if (roll > 0.90 && panelW > 1.1) {
+        var sw = Math.min(1.0, panelW - 0.3);
+        if (horiz) fittings.push(boxAt(sw, 0.6, 0.05, px, 1.85, pz + nz * 0.03));
+        else       fittings.push(boxAt(0.05, 0.6, sw, px + nx * 0.03, 1.85, pz));
+      } else if (roll > 0.82 && panelW > 0.9) {
+        for (var g2 = 0; g2 < 3; g2++) {
+          if (horiz) fittings.push(boxAt(0.7, 0.06, 0.05, px, 0.62 + g2 * 0.13, pz + nz * 0.03));
+          else       fittings.push(boxAt(0.05, 0.06, 0.7, px + nx * 0.03, 0.62 + g2 * 0.13, pz));
+        }
+      }
+
+      /* windows where there is nothing but sky behind the wall */
+      if (panelW > 1.4 && exterior(px, pz, nx, nz) && rnd() > 0.34) {
+        var gw = Math.min(1.7, panelW - 0.2);
+        if (horiz) glass.push(boxAt(gw, 1.1, 0.05, px, 2.0, pz + nz * 0.02));
+        else       glass.push(boxAt(0.05, 1.1, gw, px + nx * 0.02, 2.0, pz));
+      }
     }
   }
-  if (geos.length) {
-    var wm = new T.Mesh(mergeGeometries(geos), AU.toonMat(this.theme.wall));
-    wm.castShadow = false; wm.receiveShadow = true;
+
+  if (hull.length) {
+    var wm = new T.Mesh(mergeGeometries(hull), AU.toonMat(th.wall));
+    wm.receiveShadow = true;
     this.group.add(wm);
     this.wallMesh = wm;
   }
-  if (trims.length) {
-    this.group.add(new T.Mesh(mergeGeometries(trims), AU.toonMat(this.theme.trim)));
+  if (trims.length)   this.group.add(new T.Mesh(mergeGeometries(trims), AU.toonMat(th.trim)));
+  if (panels.length)  this.group.add(new T.Mesh(mergeGeometries(panels), AU.toonMat(AU.shadeHex(th.wall, -0.07))));
+  if (ribs.length)    this.group.add(new T.Mesh(mergeGeometries(ribs), AU.toonMat(AU.shadeHex(th.wall, 0.08))));
+  if (conduit.length) this.group.add(new T.Mesh(mergeGeometries(conduit), AU.toonMat(AU.shadeHex(th.trim, -0.12))));
+  if (fittings.length)this.group.add(new T.Mesh(mergeGeometries(fittings), AU.toonMat(0x2b3140)));
+  if (glass.length) {
+    this.windowMat = new T.MeshBasicMaterial({ color: th.window || 0x6ea8d8 });
+    this.group.add(new T.Mesh(mergeGeometries(glass), this.windowMat));
+  }
+};
+
+/* ---- corridor fittings: ceiling pipes, light strips, floor hazard bands ---- */
+World.prototype.buildFittings = function () {
+  var th = this.theme;
+  var pipes = [], strips = [], hazard = [], posts = [];
+  for (var h = 0; h < this.layout.halls.length; h++) {
+    var H = this.layout.halls[h];
+    var w = H.x1 - H.x0, d = H.z1 - H.z0;
+    var cx = (H.x0 + H.x1) / 2, cz = (H.z0 + H.z1) / 2;
+    var vertical = w < d;
+    var len = vertical ? d : w;
+    if (len < 2) continue;
+
+    /* two pipes hugging the ceiling */
+    for (var s = -1; s <= 1; s += 2) {
+      var off = (vertical ? w : d) * 0.30 * s;
+      var g = new T.CylinderGeometry(0.13, 0.13, len, 8);
+      if (vertical) { g.rotateX(Math.PI / 2); g.translate(cx + off, WALL_H - 0.45, cz); }
+      else          { g.rotateZ(Math.PI / 2); g.translate(cx, WALL_H - 0.45, cz + off); }
+      pipes.push(g);
+    }
+    /* a light strip down the middle of the ceiling */
+    var lg = vertical ? new T.BoxGeometry(0.36, 0.05, len - 0.4)
+                      : new T.BoxGeometry(len - 0.4, 0.05, 0.36);
+    lg.translate(cx, WALL_H - 0.09, cz);
+    strips.push(lg);
+
+    /* hazard bands where the corridor meets a room */
+    var ends = vertical ? [[cx, H.z0 + 0.5], [cx, H.z1 - 0.5]] : [[H.x0 + 0.5, cz], [H.x1 - 0.5, cz]];
+    ends.forEach(function (e) {
+      var hg = vertical ? new T.BoxGeometry(w - 0.3, 0.03, 0.5) : new T.BoxGeometry(0.5, 0.03, d - 0.3);
+      hg.translate(e[0], 0.02, e[1]);
+      hazard.push(hg);
+    });
+  }
+  /* corner posts on every room, so rooms read as built rather than carved */
+  for (var r = 0; r < this.map.rooms.length; r++) {
+    var R = this.map.rooms[r];
+    if (R.open) continue;
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (c) {
+      posts.push(boxAt(0.42, WALL_H, 0.42,
+        R.x + c[0] * (R.w / 2 - 0.2), WALL_H / 2, R.z + c[1] * (R.d / 2 - 0.2)));
+    });
+  }
+  if (pipes.length)  this.group.add(new T.Mesh(mergeGeometries(pipes), AU.toonMat(AU.shadeHex(th.trim, -0.18))));
+  if (posts.length)  this.group.add(new T.Mesh(mergeGeometries(posts), AU.toonMat(AU.shadeHex(th.wall, 0.06))));
+  if (hazard.length) this.group.add(new T.Mesh(mergeGeometries(hazard),
+    new T.MeshBasicMaterial({ color: 0xC9A227, transparent: true, opacity: 0.5 })));
+  if (strips.length) {
+    this.stripMat = new T.MeshBasicMaterial({ color: 0xd8e4f2 });
+    this.group.add(new T.Mesh(mergeGeometries(strips), this.stripMat));
+  }
+};
+
+/* ---- a frame around every doorway ---- */
+World.prototype.buildDoorFrames = function () {
+  var frames = [], lamps = [];
+  for (var i = 0; i < this.doors.length; i++) {
+    var D = this.doors[i];
+    var span = D.span;
+    if (D.vertical) {
+      frames.push(boxAt(0.3, WALL_H, 0.5, D.x - span / 2 - 0.1, WALL_H / 2, D.z));
+      frames.push(boxAt(0.3, WALL_H, 0.5, D.x + span / 2 + 0.1, WALL_H / 2, D.z));
+      frames.push(boxAt(span + 0.6, 0.34, 0.5, D.x, WALL_H - 0.2, D.z));
+      lamps.push(boxAt(span * 0.6, 0.08, 0.12, D.x, WALL_H - 0.42, D.z));
+    } else {
+      frames.push(boxAt(0.5, WALL_H, 0.3, D.x, WALL_H / 2, D.z - span / 2 - 0.1));
+      frames.push(boxAt(0.5, WALL_H, 0.3, D.x, WALL_H / 2, D.z + span / 2 + 0.1));
+      frames.push(boxAt(0.5, 0.34, span + 0.6, D.x, WALL_H - 0.2, D.z));
+      lamps.push(boxAt(0.12, 0.08, span * 0.6, D.x, WALL_H - 0.42, D.z));
+    }
+  }
+  if (frames.length) this.group.add(new T.Mesh(mergeGeometries(frames), AU.toonMat(this.theme.trim)));
+  if (lamps.length) {
+    this.doorLampMat = new T.MeshBasicMaterial({ color: 0x7fd8a0 });
+    this.group.add(new T.Mesh(mergeGeometries(lamps), this.doorLampMat));
   }
 };
 
@@ -389,9 +545,9 @@ World.prototype.updateVents = function (dt, openIds) {
 World.prototype.buildSigns = function () {
   for (var i = 0; i < this.map.rooms.length; i++) {
     var R = this.map.rooms[i];
-    var s = textSprite(R.name.toUpperCase(), '#cfe0ff', Math.min(4.4, R.w * 0.3));
-    s.material.opacity = 0.85;
-    s.position.set(R.x, WALL_H - 0.55, R.z);
+    var s = textSprite(R.name.toUpperCase(), '#cfe0ff', Math.min(2.9, R.w * 0.2));
+    s.material.opacity = 0.8;
+    s.position.set(R.x, WALL_H - 0.45, R.z);
     s.userData.roomSign = true;
     this.group.add(s);
   }
@@ -650,7 +806,9 @@ World.prototype.setLightsSabotaged = function (on) {
   this.hemi.intensity = on ? 0.12 : 1.0;
   this.dir.intensity  = on ? 0.05 : 0.55;
   this.ambient.intensity = on ? 0.05 : 0.34;
-  if (this.lightPanelMat) this.lightPanelMat.color.setHex(on ? 0x3a2626 : 0xc9d2de);
+  if (this.lightPanelMat) this.lightPanelMat.color.setHex(on ? 0x3a2626 : 0xb4c0d0);
+  if (this.stripMat) this.stripMat.color.setHex(on ? 0x3d2a2a : 0xd8e4f2);
+  if (this.doorLampMat) this.doorLampMat.color.setHex(on ? 0x6b2020 : 0x7fd8a0);
 };
 
 /* A beam + expanding rings, visible to everyone in the room. Used for the

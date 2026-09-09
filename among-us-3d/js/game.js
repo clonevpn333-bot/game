@@ -212,7 +212,7 @@ function buildRound(playerDefs) {
   G.scene.add(G.avatarGroup);
   /* a soft lamp carried by the player, so nearby surfaces read clearly and
      everything past your vision radius falls into the dark */
-  G.playerLight = new T.PointLight(0xfff2dd, 0.62, AU.VISION_BASE, 2.0);
+  G.playerLight = new T.PointLight(0xfff2dd, 0.55, AU.VISION_BASE, 1.35);
   G.scene.add(G.playerLight);
 
   var spawnRooms = G.map.spawnRooms || [G.map.features.spawn];
@@ -291,11 +291,14 @@ function buildAvatars() {
   G.players.forEach(function (p) {
     if (p.mesh) G.avatarGroup.remove(p.mesh);
     p.mesh = AU.Models.buildCrewmate(p.look, {});
+    p.mesh.position.set(p.x, 0, p.z);
+    p.mesh.rotation.y = p.facing;
     var pet = AU.Models.buildPet(p.look);
+    if (pet) pet.position.set(p.x, 0, p.z);
     if (pet) { p.petMesh = pet; G.avatarGroup.add(pet); }
     G.avatarGroup.add(p.mesh);
-    p.tag = AU.textSprite(p.name, '#ffffff', 3.4);
-    p.tag.position.y = AU.Models.HEIGHT + 0.55;
+    p.tag = AU.textSprite(p.name, '#ffffff', 1.65);
+    p.tag.position.y = AU.Models.HEIGHT + 0.42;
     p.mesh.add(p.tag);
     p.ghostMesh = null;
   });
@@ -304,16 +307,21 @@ function refreshAvatar(p) {
   if (p.mesh) G.avatarGroup.remove(p.mesh);
   var look = p.shifted || p.look;
   p.mesh = AU.Models.buildCrewmate(look, {});
+  p.mesh.position.set(p.x, 0, p.z);
+  p.mesh.rotation.y = p.facing;
   G.avatarGroup.add(p.mesh);
-  p.tag = AU.textSprite(p.shifted ? p.shiftedName : p.name, '#ffffff', 3.4);
-  p.tag.position.y = AU.Models.HEIGHT + 0.55;
+  p.tag = AU.textSprite(p.shifted ? p.shiftedName : p.name, '#ffffff', 1.65);
+  p.tag.position.y = AU.Models.HEIGHT + 0.42;
   p.mesh.add(p.tag);
 }
 function makeGhost(p) {
   if (p.mesh) { G.avatarGroup.remove(p.mesh); p.mesh = null; }
   if (p.petMesh) { G.avatarGroup.remove(p.petMesh); p.petMesh = null; }
   p.ghostMesh = AU.Models.buildGhost(p.look);
+  p.ghostMesh.position.set(p.x, 0.7, p.z);
+  p.ghostMesh.rotation.y = p.facing;
   G.avatarGroup.add(p.ghostMesh);
+  animOf(p).spawn = 0;
 }
 
 /* ============================================================
@@ -606,6 +614,7 @@ function movePlayer(p, dt) {
 function updateCamera(dt) {
   var me = G.me();
   if (!me) return;
+  G.shake = Math.max(0, (G.shake || 0) - dt * 2.6);
   var third = AU.Save.p.client.thirdPerson;
   var bob = 0;
   if (AU.Save.p.client.headBob && me.moving && me.alive) {
@@ -614,90 +623,186 @@ function updateCamera(dt) {
   }
   var eye = AU.EYE_HEIGHT + bob + (me.alive ? 0 : 0.35);
   if (me.venting) eye = 0.35;
+  var sh = G.shake || 0;
+  var shx = (Math.random() - 0.5) * sh * 0.5;
+  var shy = (Math.random() - 0.5) * sh * 0.5;
   if (third) {
     var back = 4.2, up = 2.4;
     var cx = me.x - Math.sin(G.yaw) * back;
     var cz = me.z - Math.cos(G.yaw) * back;
-    G.camera.position.set(cx, eye + up, cz);
+    G.camera.position.set(cx + shx, eye + up + shy, cz);
     G.camera.lookAt(me.x, eye + 0.4, me.z);
   } else {
-    G.camera.position.set(me.x, eye, me.z);
+    G.camera.position.set(me.x + shx, eye + shy, me.z);
     var dir = new T.Vector3(Math.sin(G.yaw) * Math.cos(G.pitch), Math.sin(G.pitch), Math.cos(G.yaw) * Math.cos(G.pitch));
     G.camera.lookAt(G.camera.position.x + dir.x, G.camera.position.y + dir.y, G.camera.position.z + dir.z);
+    /* roll must be composed onto the look-at orientation — assigning
+       rotation.z directly flips the camera when the Euler is degenerate */
+    var roll = Math.sin(G.time * 13) * sh * 0.02 +
+      (AU.Save.p.client.headBob && me.moving && me.alive ? Math.sin((G.bobT || 0) * 0.5) * 0.012 : 0);
+    if (roll) G.camera.rotateZ(roll);
   }
 }
 
-/* ---------------- avatars ---------------- */
+/* ---------------- avatars & animation ---------------- */
+function animOf(p) {
+  if (!p.anim) p.anim = { phase: 0, speed: 0, bob: 0, lean: 0, vent: 0, kill: 0,
+                          shift: 0, task: 0, lastX: p.x, lastZ: p.z, spawn: 0 };
+  return p.anim;
+}
+
 function updateAvatars(dt) {
   var me = G.me();
   var third = AU.Save.p.client.thirdPerson;
+
   G.players.forEach(function (p) {
+    var a = animOf(p);
+
+    /* measured speed drives the whole walk cycle */
+    var moved = Math.hypot(p.x - a.lastX, p.z - a.lastZ);
+    a.lastX = p.x; a.lastZ = p.z;
+    var inst = dt > 0 ? moved / dt : 0;
+    a.speed += (Math.min(inst, 12) - a.speed) * Math.min(1, dt * 10);
+    var walk = Math.min(1, a.speed / (AU.BASE_SPEED * (G.settings.playerSpeed || 1)));
+
+    /* transitions */
+    a.vent += ((p.venting ? 1 : 0) - a.vent) * Math.min(1, dt * 11);
+    a.task += ((p.doingTask && p.alive ? 1 : 0) - a.task) * Math.min(1, dt * 7);
+    a.kill = Math.max(0, a.kill - dt * 3.2);
+    a.shift = Math.max(0, a.shift - dt * 2.2);
+    a.spawn = Math.min(1, a.spawn + dt * 2.5);
+    a.phase += dt * (4.2 + walk * 7.4);
+
     var mesh = p.alive ? p.mesh : p.ghostMesh;
     if (!mesh) return;
-    mesh.position.x += (p.x - mesh.position.x) * Math.min(1, dt * 14);
-    mesh.position.z += (p.z - mesh.position.z) * Math.min(1, dt * 14);
-    mesh.position.y = p.alive ? 0 : 0.55 + Math.sin(G.time * 2 + p.x) * 0.08;
-    var target = p.facing;
-    var cur = mesh.rotation.y;
-    var diff = ((target - cur + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
-    mesh.rotation.y = cur + diff * Math.min(1, dt * 10);
 
-    /* leg waddle */
-    if (p.alive && mesh.userData.legs) {
-      var t = p.moving ? Math.sin(G.time * 11 + p.x) * 0.32 : 0;
-      mesh.userData.legs.children.forEach(function (l) {
-        l.rotation.x = t * (l.userData.side || 1);
-      });
-      mesh.rotation.z = p.moving ? Math.sin(G.time * 11 + p.x) * 0.035 : 0;
+    /* position: snap for big jumps (vents, meetings), otherwise ease */
+    var far = Math.hypot(p.x - mesh.position.x, p.z - mesh.position.z) > 6;
+    var k = far ? 1 : Math.min(1, dt * 14);
+    mesh.position.x += (p.x - mesh.position.x) * k;
+    mesh.position.z += (p.z - mesh.position.z) * k;
+
+    /* facing, shortest way round */
+    var diff = ((p.facing - mesh.rotation.y + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    mesh.rotation.y += diff * Math.min(1, dt * (p.alive ? 11 : 5));
+
+    if (p.alive) {
+      var bob = Math.sin(a.phase * 2) * 0.055 * walk;
+      var breathe = Math.sin(a.phase * 0.45) * 0.012 * (1 - walk);
+      var lunge = Math.sin(a.kill * Math.PI) * 0.35;
+      var sink = a.vent * 1.05;
+
+      mesh.position.y = bob + (1 - a.spawn) * 1.4 - sink;
+      mesh.rotation.z = Math.sin(a.phase) * 0.055 * walk;
+      mesh.rotation.x = walk * 0.05 + a.task * 0.22 + lunge * 0.5;
+
+      /* squash and stretch: on each footfall, and hard while venting */
+      var squash = 1 + Math.sin(a.phase * 2 + Math.PI / 2) * 0.035 * walk + breathe;
+      var ventScale = 1 - a.vent;
+      var shiftPulse = 1 + Math.sin(a.shift * Math.PI * 3) * 0.18 * a.shift;
+      mesh.scale.set(ventScale * (2 - squash) * shiftPulse * a.spawn,
+                     ventScale * squash * shiftPulse * a.spawn,
+                     ventScale * (2 - squash) * shiftPulse * a.spawn);
+
+      /* stub legs swing, and plant when standing still */
+      if (mesh.userData.legs) {
+        var swing = Math.sin(a.phase) * (0.14 + walk * 0.42);
+        mesh.userData.legs.children.forEach(function (l) {
+          var side = l.userData.side || 1;
+          l.rotation.x = swing * side;
+          l.position.y = Math.max(0, Math.sin(a.phase + (side > 0 ? 0 : Math.PI))) * 0.07 * walk;
+        });
+      }
+      /* arms swing opposite the legs, and swing wider the faster you go */
+      if (mesh.userData.arms) {
+        var aswing = Math.sin(a.phase + Math.PI) * (0.10 + walk * 0.55);
+        mesh.userData.arms.children.forEach(function (arm) {
+          var side = arm.userData.side || 1;
+          arm.rotation.x = aswing * side + a.task * -1.05 + lunge * 1.5;
+          arm.rotation.z = (arm.userData.restZ || 0) + side * (walk * 0.14 - a.task * 0.30);
+        });
+      }
+      /* the hat lags a beat behind the body — reads as weight */
+      if (mesh.userData.hat) {
+        mesh.userData.hat.rotation.z = -Math.sin(a.phase) * 0.09 * walk;
+        mesh.userData.hat.rotation.x = -walk * 0.06 - lunge * 0.3;
+      }
+    } else {
+      /* ghosts drift, sway and bob */
+      mesh.position.y = 0.72 + Math.sin(G.time * 1.7 + p.x * 0.4) * 0.16;
+      mesh.rotation.z = Math.sin(G.time * 1.1 + p.z * 0.3) * 0.09;
+      mesh.rotation.x = Math.sin(G.time * 0.9) * 0.05;
+      var gs = 1 + Math.sin(G.time * 1.4 + p.x) * 0.02;
+      mesh.scale.set(gs, 1 / gs, gs);
     }
 
     /* visibility */
     var visible = true;
     if (p === me && !third) visible = false;
-    if (p.venting) visible = false;
+    if (p.venting && a.vent > 0.92) visible = false;
     if (p.invisible && !(me.team === 'impostor' || !me.alive)) visible = false;
-    if (!p.alive && me.alive) visible = false;                      /* the living can't see ghosts */
-    if (p.doingTask && p.alive) { /* subtle lean while working */ }
+    if (!p.alive && me.alive) visible = false;              /* the living can't see ghosts */
     mesh.visible = visible;
 
-    /* nametags only within vision & line of sight, like the real game */
+    /* nametags only within vision and line of sight */
     if (p.tag) {
       var d = Math.hypot(p.x - me.x, p.z - me.z);
       p.tag.visible = visible && p !== me && d < visionRange() * 0.85 &&
         G.layout.lineClear(me.x, me.z, p.x, p.z);
+      p.tag.position.y = AU.Models.HEIGHT + 0.42 + Math.sin(G.time * 2 + p.x) * 0.03;
     }
+
+    /* pets trot along behind, hopping in time */
     if (p.petMesh) {
-      var bx = p.x - Math.sin(p.facing) * 1.1, bz = p.z - Math.cos(p.facing) * 1.1;
-      p.petMesh.position.x += (bx - p.petMesh.position.x) * Math.min(1, dt * 6);
-      p.petMesh.position.z += (bz - p.petMesh.position.z) * Math.min(1, dt * 6);
-      p.petMesh.position.y = p.petMesh.userData.float ? 0.5 + Math.sin(G.time * 3) * 0.08 : 0;
-      p.petMesh.rotation.y = p.facing;
-      p.petMesh.visible = visible && p.alive;
+      var bx = p.x - Math.sin(p.facing) * 1.15, bz = p.z - Math.cos(p.facing) * 1.15;
+      var pd = Math.hypot(bx - p.petMesh.position.x, bz - p.petMesh.position.z);
+      p.petMesh.position.x += (bx - p.petMesh.position.x) * Math.min(1, dt * 5.5);
+      p.petMesh.position.z += (bz - p.petMesh.position.z) * Math.min(1, dt * 5.5);
+      var hop = p.petMesh.userData.float
+        ? 0.5 + Math.sin(G.time * 3) * 0.09
+        : Math.abs(Math.sin(a.phase * 1.6)) * 0.13 * Math.min(1, pd);
+      p.petMesh.position.y = hop;
+      var pdiff = ((p.facing - p.petMesh.rotation.y + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+      p.petMesh.rotation.y += pdiff * Math.min(1, dt * 6);
+      p.petMesh.rotation.z = Math.sin(a.phase * 1.6) * 0.07;
+      p.petMesh.visible = visible && p.alive && a.vent < 0.5;
     }
+
     /* guardian shield */
     if (p.protectedUntil > G.time) {
       if (!p.shieldMesh) {
-        p.shieldMesh = new T.Mesh(new T.SphereGeometry(1.1, 16, 12),
+        p.shieldMesh = new T.Mesh(new T.SphereGeometry(1.1, 18, 14),
           new T.MeshBasicMaterial({ color: 0x7FE8FF, transparent: true, opacity: 0.22, side: T.DoubleSide }));
         G.avatarGroup.add(p.shieldMesh);
       }
       p.shieldMesh.position.set(p.x, 0.95, p.z);
+      var pulse = 1 + Math.sin(G.time * 3.4) * 0.05;
+      p.shieldMesh.scale.setScalar(pulse);
+      p.shieldMesh.material.opacity = 0.16 + Math.sin(G.time * 3.4) * 0.07;
       p.shieldMesh.visible = true;
     } else if (p.shieldMesh) p.shieldMesh.visible = false;
   });
 
-  /* bodies */
+  /* bodies settle onto the floor, and Viper kills melt away */
   G.bodies.forEach(function (b) {
     if (!b.mesh) {
       b.mesh = AU.Models.buildDeadBody(b.look);
-      b.mesh.position.set(b.x, 0, b.z);
+      b.mesh.position.set(b.x, 0.9, b.z);
       b.mesh.rotation.y = b.facing || 0;
+      b.settle = 0;
       G.scene.add(b.mesh);
+    }
+    if (b.settle < 1) {
+      b.settle = Math.min(1, b.settle + dt * 4);
+      var e = 1 - Math.pow(1 - b.settle, 3);
+      b.mesh.position.y = 0.9 * (1 - e);
+      b.mesh.scale.set(1 + (1 - e) * 0.2, 1 - (1 - e) * 0.35, 1 + (1 - e) * 0.2);
     }
     b.mesh.visible = !b.reported && !b.dissolved;
     if (b.dissolving) {
       b.mesh.scale.setScalar(Math.max(0.02, b.dissolveT));
       b.mesh.position.y = -(1 - b.dissolveT) * 0.4;
+      b.mesh.rotation.y += dt * 0.4;
     }
   });
 }
@@ -716,10 +821,10 @@ function applyVision() {
   G.scene.fog.near = Math.max(1, r * 0.25);
   var me = G.me();
   if (G.playerLight && me) {
-    G.playerLight.position.set(me.x, 2.1, me.z);
+    G.playerLight.position.set(me.x, 1.45, me.z);
     G.playerLight.distance = r * 0.95;
     G.playerLight.intensity = (G.sabotage && G.sabotage.def.id === 'lights' &&
-      me.team !== 'impostor') ? 0.35 : 0.62;
+      me.team !== 'impostor') ? 0.30 : 0.55;
   }
 }
 
@@ -925,6 +1030,8 @@ function doKill(killer, victim) {
   victim.killedBy = killer.id;
   killer.killCd = G.settings.killCooldown;
   killer.x = victim.x; killer.z = victim.z;
+  animOf(killer).kill = 1;
+  if (killer.id === G.selfId || victim.id === G.selfId) G.shake = 1.4;
   AU.Audio.play(killer.role === 'viper' ? 'acid' : 'kill');
 
   var body = {
@@ -982,6 +1089,7 @@ G.reportBody = function (reporter, body) {
   if (body.reported) return;
   body.reported = true;
   AU.Audio.play('report');
+  G.shake = 0.9;
   if (G.online && !G.isHost) { AU.Net.toHost({ t: 'report', body: body.id }); return; }
   startMeeting({ reporterId: reporter.id, bodyId: body.id, isEmergency: false,
     killTime: body.time, selfReport: body.killer === reporter.id });
@@ -1111,6 +1219,7 @@ function doProtect(ghost, target) {
   if (G.isHost) broadcastEvent({ t: 'protect', id: target.id, until: target.protectedUntil });
 }
 G.shapeshift = function (p, target) {
+  animOf(p).shift = 1;
   p.shifted = target.look;
   p.shiftedName = target.name;
   p.shiftUntil = G.time + (p.roleOpts.duration || 30);
@@ -1177,6 +1286,7 @@ function applySabotage(id) {
                  codeA: false, codeB: false };
   G.sabotageCd = 25;
   AU.Audio.play('sabotage');
+  G.shake = 0.8;
   if (def.doors) {
     /* close every door of a random room */
     var room = pick(G.map.doorRooms);

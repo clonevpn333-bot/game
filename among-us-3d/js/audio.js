@@ -101,7 +101,23 @@ var SFX = {
   noise:    function () { for (var i = 0; i < 4; i++)
                             tone({ type:'square', f0:1400, f1:900, dur:0.16, vol:0.25, delay:i * 0.22 }); },
   scan:     function () { tone({ type:'sine', f0:300, f1:900, dur:0.8, vol:0.12 }); },
-  ghost:    function () { tone({ type:'sine', f0:300, f1:900, dur:0.5, vol:0.1 }); }
+  ghost:    function () { tone({ type:'sine', f0:300, f1:900, dur:0.5, vol:0.1 }); },
+  /* the two reveal stings: a bright rising chord, or a low dread swell */
+  crewReveal: function () {
+    [392, 523, 659, 784].forEach(function (f, i) {
+      tone({ type:'triangle', f0:f, dur:0.9, vol:0.13, delay:0.55 + i * 0.09 });
+    });
+    tone({ type:'sine', f0:120, f1:240, dur:1.2, vol:0.12 });
+  },
+  impostorReveal: function () {
+    tone({ type:'sawtooth', f0:110, f1:55, dur:1.8, vol:0.2 });
+    tone({ type:'sawtooth', f0:116, f1:58, dur:1.8, vol:0.16, delay:0.02 });
+    noise({ dur:1.6, freq:260, vol:0.14 });
+    [233, 220].forEach(function (f, i) {
+      tone({ type:'square', f0:f, dur:0.7, vol:0.14, delay:0.7 + i * 0.35 });
+    });
+  },
+  step2:    function () { noise({ dur:0.06, freq:420, vol:0.045 }); }
 };
 
 AU.Audio = {

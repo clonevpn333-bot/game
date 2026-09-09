@@ -10,7 +10,6 @@
 
 <!-- ============ 3D VIEWPORT ============ -->
 <div id="viewport"></div>
-<canvas id="minimap-canvas" hidden></canvas>
 
 <!-- ============ BOOT / LOADING ============ -->
 <div id="boot" class="screen active">
@@ -199,8 +198,15 @@
     <div class="taskbar"><div id="taskbar-fill"></div></div>
   </div>
 
+  <div id="role-badge" class="role-badge"></div>
+
+  <div id="minimap" class="minimap">
+    <canvas id="minimap-cv" width="300" height="220"></canvas>
+    <div id="minimap-room" class="minimap-room"></div>
+    <button id="minimap-zoom" class="minimap-zoom" title="Toggle minimap zoom">⤢</button>
+  </div>
+
   <div id="task-list" class="task-list"></div>
-  <div id="role-banner" class="role-banner"></div>
   <div id="alert-banner" class="alert-banner"></div>
   <div id="hud-toast" class="hud-toast"></div>
 
@@ -228,6 +234,7 @@
 <div id="overlay-task" class="overlay"></div>
 <div id="overlay-sabotage" class="overlay"></div>
 <div id="overlay-meeting" class="overlay"></div>
+<div id="overlay-intro" class="overlay"></div>
 <div id="overlay-eject" class="overlay"></div>
 <div id="overlay-end" class="overlay"></div>
 <div id="overlay-pause" class="overlay"></div>
@@ -249,6 +256,7 @@
 <script src="js/net.js"></script>
 <script src="js/meeting.js"></script>
 <script src="js/hud.js"></script>
+<script src="js/intro.js"></script>
 <script src="js/shop.js"></script>
 <script src="js/menu.js"></script>
 <script src="js/game.js"></script>

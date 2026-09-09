@@ -207,11 +207,6 @@ input:focus,textarea:focus{border-color:var(--ui-accent);}
 .task-list .th{color:#F5C842;letter-spacing:2px;font-size:11px;}
 .task-list .ti{color:#fff;} .task-list .ti.done{color:#7dffb0;text-decoration:line-through;opacity:.75;}
 .task-list .ti.near{color:#F5C842;}
-.role-banner{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);text-align:center;opacity:0;
-  transition:opacity .4s;pointer-events:none;}
-.role-banner.show{opacity:1;}
-.role-banner .rn{font-size:56px;letter-spacing:6px;-webkit-text-stroke:5px #000;paint-order:stroke fill;}
-.role-banner .rd{font-size:15px;color:#dbe6ff;letter-spacing:2px;margin-top:6px;text-shadow:0 2px 4px #000;}
 .alert-banner{position:absolute;left:50%;top:26%;transform:translateX(-50%);font-size:30px;letter-spacing:4px;
   color:#ff4d4d;-webkit-text-stroke:4px #000;paint-order:stroke fill;display:none;text-align:center;}
 .alert-banner.on{display:block;animation:pulse .8s infinite alternate;}
@@ -322,3 +317,64 @@ input:focus,textarea:focus{border-color:var(--ui-accent);}
   #touch-knob{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.35);}
   .round-btn{width:78px;height:78px;font-size:11px;}
 }
+
+
+/* ================= ROLE REVEAL ================= */
+#overlay-intro{background:#03050c;}
+.intro-stars{position:absolute;inset:0;width:100%;height:100%;}
+.intro-wrap{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;height:100%;width:100%;text-align:center;padding:16px;}
+.intro-lineup{display:flex;align-items:flex-end;justify-content:center;gap:6px;margin-bottom:6px;}
+.intro-fig{opacity:0;animation:introPop .5s cubic-bezier(.2,1.4,.4,1) forwards;}
+.intro-fig.side{transform-origin:bottom center;filter:brightness(.62) saturate(.85);}
+.intro-fig.side img{width:104px;height:120px;}
+.intro-fig.me{animation-delay:80ms;z-index:2;}
+.intro-fig.me img{width:172px;height:200px;filter:drop-shadow(0 0 26px rgba(120,190,255,.45));}
+.intro-fig.me.imp img{filter:drop-shadow(0 0 32px rgba(255,60,60,.65));}
+.intro-nm{font-size:11px;letter-spacing:2px;color:#8fa4c6;margin-top:2px;}
+.intro-nm.you{font-size:14px;color:#fff;}
+@keyframes introPop{from{opacity:0;transform:translateY(26px) scale(.86);}
+  to{opacity:1;transform:translateY(0) scale(1);}}
+.intro-title{font-size:clamp(44px,9vw,104px);letter-spacing:10px;line-height:1;margin-top:4px;
+  -webkit-text-stroke:6px #000;paint-order:stroke fill;opacity:0;
+  animation:introTitle .7s ease-out .55s forwards;}
+.intro-title.imp{color:#FF2E2E;text-shadow:0 0 34px rgba(255,40,40,.85),0 0 70px rgba(255,0,0,.45);}
+.intro-title.crew{color:#8FE3FF;text-shadow:0 0 30px rgba(120,220,255,.7);}
+@keyframes introTitle{from{opacity:0;transform:scale(1.5);letter-spacing:34px;}
+  to{opacity:1;transform:scale(1);letter-spacing:10px;}}
+.intro-count{font-size:clamp(14px,2.2vw,20px);letter-spacing:2px;color:#cfe0ff;margin-top:10px;
+  opacity:0;animation:introFade .6s ease-out 1.15s forwards;}
+.intro-count b{color:#FF6B6B;}
+.intro-role{margin-top:16px;background:rgba(12,20,40,.72);border:3px solid #2b3a5c;border-radius:14px;
+  padding:12px 22px;max-width:min(640px,90vw);opacity:0;animation:introFade .6s ease-out 1.5s forwards;}
+.ir-name{font-size:24px;letter-spacing:5px;}
+.ir-desc{font-size:14px;color:#cfe0ff;font-weight:600;margin-top:4px;line-height:1.45;}
+.ir-key{font-size:12px;color:#8fa4c6;font-weight:600;margin-top:8px;}
+.ir-key kbd,.intro-role kbd{background:#22304d;border:2px solid #3d4f74;border-radius:5px;
+  padding:1px 6px;font-size:11px;color:#fff;}
+.intro-shh{margin-top:12px;font-size:16px;letter-spacing:4px;color:#ff9d9d;font-style:italic;
+  opacity:0;animation:introFade .8s ease-out 2.1s forwards;}
+.intro-skip{position:absolute;bottom:18px;font-size:11px;letter-spacing:3px;color:#5c6e92;
+  opacity:0;animation:introFade .6s ease-out 2.4s forwards;}
+@keyframes introFade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+/* ================= PERSISTENT ROLE BADGE ================= */
+.role-badge{position:absolute;top:66px;left:50%;transform:translateX(-50%);display:none;
+  align-items:center;gap:9px;background:rgba(8,14,28,.82);border:3px solid #2b3a5c;
+  border-radius:22px;padding:5px 16px 5px 8px;}
+.role-badge.on{display:flex;}
+.role-badge .rb-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:14px;flex:0 0 26px;}
+.role-badge .rb-txt{font-size:13px;letter-spacing:2px;line-height:1.15;}
+.role-badge .rb-sub{font-size:10px;letter-spacing:1px;color:#8fa4c6;font-weight:600;}
+
+/* ================= ALWAYS-ON MINIMAP ================= */
+.minimap{position:absolute;top:12px;right:12px;width:300px;background:rgba(6,11,24,.78);
+  border:3px solid #2b3a5c;border-radius:14px;padding:6px 6px 4px;display:none;}
+.minimap.on{display:block;}
+.minimap canvas{display:block;width:100%;height:auto;border-radius:8px;}
+.minimap-room{text-align:center;font-size:11px;letter-spacing:2px;color:#9fd0ff;padding-top:3px;}
+.minimap-zoom{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:7px;
+  background:rgba(20,32,58,.9);border:2px solid #3d4f74;color:#9fb4d8;font-size:12px;cursor:pointer;
+  line-height:1;padding:0;}
+@media(max-width:820px){.minimap{width:190px;} .role-badge{top:58px;}}

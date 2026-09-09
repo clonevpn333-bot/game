@@ -38,6 +38,15 @@ HUD.init = function (G) {
   $('btn-vent').onclick = function () { G.tryVent(); };
   $('btn-sabotage').onclick = function () { HUD.toggleMap('sabotage'); };
   $('btn-ability').onclick = function () { G.tryAbility(); };
+  HUD.miniZoom = HUD.miniZoom || 'fit';
+  $('minimap-zoom').onclick = function () {
+    HUD.miniZoom = HUD.miniZoom === 'fit' ? 'near' : 'fit';
+    AU.Audio.play('click');
+  };
+  $('minimap').classList.add('on');
+  $('role-badge').classList.add('on');
+  HUD.renderRoleBadge();
+
   var gi = $('ghost-chat-input');
   gi.onkeydown = function (e) {
     e.stopPropagation();
@@ -47,7 +56,32 @@ HUD.init = function (G) {
 
 HUD.hide = function () {
   $('hud').classList.remove('on');
+  $('minimap').classList.remove('on');
+  $('role-badge').classList.remove('on');
   HUD.closeMap();
+};
+
+/* ---- the badge that always says what you are ---- */
+var ROLE_ICON = {
+  crewmate: '🧑‍🚀', engineer: '🔧', scientist: '🔬', noisemaker: '🔔', tracker: '📍',
+  detective: '🔎', guardian: '👼', judge: '⚖️', impostor: '🔪', shapeshifter: '🎭',
+  phantom: '👻', viper: '🧪'
+};
+HUD.renderRoleBadge = function () {
+  var G = HUD.G, me = G && G.me();
+  if (!me) return;
+  var roleId = (!me.alive && me.ghostRole) ? me.ghostRole : me.role;
+  var d = AU.Roles.def(roleId);
+  var isImp = d.team === 'impostor';
+  var sub = isImp ? 'IMPOSTOR' : 'CREWMATE';
+  if (!me.alive) sub = 'GHOST · ' + sub;
+  var badge = $('role-badge');
+  badge.innerHTML =
+    '<div class="rb-dot" style="background:' + (isImp ? '#5c1414' : '#123a52') + '">' +
+      (ROLE_ICON[roleId] || '🧑‍🚀') + '</div>' +
+    '<div class="rb-txt" style="color:' + d.color + '">' + d.name.toUpperCase() +
+      '<div class="rb-sub">' + sub + '</div></div>';
+  badge.style.borderColor = isImp ? '#7a2020' : '#2b3a5c';
 };
 
 /* ============================================================
@@ -115,6 +149,10 @@ HUD.update = function (dt) {
   /* mic button */
   $('btn-mic').classList.toggle('off', !AU.Net.micEnabled);
 
+  /* the role badge only changes on death / promotion */
+  var badgeKey = me.role + '|' + (me.ghostRole || '') + '|' + (me.alive ? 1 : 0);
+  if (HUD.badgeKey !== badgeKey) { HUD.badgeKey = badgeKey; HUD.renderRoleBadge(); }
+
   /* ghost chat visibility */
   $('ghost-chat').classList.toggle('on', !me.alive && !AU.Meeting.open);
 
@@ -155,6 +193,8 @@ HUD.update = function (dt) {
     if (b2.dataset.vent) { b2.dataset.vent = ''; b2.innerHTML = ''; }
   }
 
+  HUD.drawMinimap();
+
   if (HUD.mapOpen && (HUD.mapMode === 'normal' || HUD.mapMode === 'admin' ||
       HUD.mapMode === 'sabotage' || HUD.mapMode === 'vitals')) HUD.drawMap();
 
@@ -181,22 +221,162 @@ HUD.update = function (dt) {
 };
 
 /* ============================================================
+   ALWAYS-ON MINIMAP
+   Fit mode shows the whole deck; near mode zooms to your room.
+   ============================================================ */
+HUD.drawMinimap = function () {
+  var G = HUD.G, me = G && G.me();
+  var cv = $('minimap-cv');
+  if (!cv || !me || !G.layout) return;
+  var g = cv.getContext('2d');
+  var grid = G.layout.grid;
+  var W = cv.width, H = cv.height;
+
+  /* view window in world units */
+  var vx0, vx1, vz0, vz1;
+  if (HUD.miniZoom === 'near') {
+    var half = 26;
+    var aspect = W / H;
+    vx0 = me.x - half * aspect / 2; vx1 = me.x + half * aspect / 2;
+    vz0 = me.z - half / 2;          vz1 = me.z + half / 2;
+  } else {
+    vx0 = grid.minX; vx1 = grid.maxX; vz0 = grid.minZ; vz1 = grid.maxZ;
+    /* letterbox so the map keeps its proportions */
+    var wantAspect = W / H, haveAspect = (vx1 - vx0) / (vz1 - vz0);
+    if (haveAspect < wantAspect) {
+      var need = (vz1 - vz0) * wantAspect, pad = (need - (vx1 - vx0)) / 2;
+      vx0 -= pad; vx1 += pad;
+    } else {
+      var need2 = (vx1 - vx0) / wantAspect, pad2 = (need2 - (vz1 - vz0)) / 2;
+      vz0 -= pad2; vz1 += pad2;
+    }
+  }
+  var sx = W / (vx1 - vx0), sz = H / (vz1 - vz0);
+  function px(x) { return (x - vx0) * sx; }
+  function pz(z) { return (z - vz0) * sz; }
+
+  g.clearRect(0, 0, W, H);
+  g.fillStyle = '#060d1c'; g.fillRect(0, 0, W, H);
+
+  var dark = G.sabotage && G.sabotage.def.id === 'lights' && me.team !== 'impostor' && me.alive;
+
+  G.layout.rects.forEach(function (R) {
+    g.fillStyle = R.kind === 'hall' ? '#14263b' : (dark ? '#152436' : '#1c3a57');
+    g.fillRect(px(R.x0), pz(R.z0), (R.x1 - R.x0) * sx, (R.z1 - R.z0) * sz);
+  });
+  g.strokeStyle = '#3a76b0'; g.lineWidth = 1;
+  G.layout.rects.forEach(function (R) {
+    if (R.kind !== 'room') return;
+    g.strokeRect(px(R.x0), pz(R.z0), (R.x1 - R.x0) * sx, (R.z1 - R.z0) * sz);
+  });
+
+  if (HUD.miniZoom === 'near') {
+    g.fillStyle = '#79b6e8';
+    g.font = 'bold 9px Arial'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    G.layout.roomRects.forEach(function (R) {
+      if (R.room.x < vx0 - 6 || R.room.x > vx1 + 6) return;
+      g.fillText(R.room.name.toUpperCase(), px(R.room.x), pz(R.room.z));
+    });
+  }
+
+  /* closed doors */
+  G.world.doors.forEach(function (D) {
+    if (!D.closed) return;
+    g.fillStyle = '#ff5252';
+    g.fillRect(px(D.x) - 2, pz(D.z) - 2, 4, 4);
+  });
+
+  /* your task markers */
+  me.tasks.forEach(function (t) {
+    if (t.progress >= t.steps.length) return;
+    var c = G.world.consoles[t.steps[t.progress].key];
+    if (!c) return;
+    var bob = 2.2 + Math.sin(performance.now() / 260) * 0.7;
+    g.beginPath(); g.arc(px(c.x), pz(c.z), bob + 1.6, 0, 7);
+    g.fillStyle = 'rgba(245,200,66,.35)'; g.fill();
+    g.beginPath(); g.arc(px(c.x), pz(c.z), bob, 0, 7);
+    g.fillStyle = '#F5C842'; g.fill();
+  });
+
+  /* sabotage markers */
+  if (G.sabotage) {
+    (G.sabotage.def.rooms || []).forEach(function (rid) {
+      var R = AU.roomOf(G.map, rid);
+      if (!R) return;
+      var fixed = G.sabotage.fixedRooms && G.sabotage.fixedRooms[rid];
+      g.strokeStyle = fixed ? '#50EF39' : (Math.floor(performance.now() / 350) % 2 ? '#ff3b3b' : '#8a1414');
+      g.lineWidth = 2;
+      g.strokeRect(px(R.x - R.w / 2), pz(R.z - R.d / 2), R.w * sx, R.d * sz);
+    });
+  }
+
+  /* vents, for those who can use them */
+  if (AU.Roles.canVent(me)) {
+    g.fillStyle = '#7fd0ff';
+    G.world.vents.forEach(function (v) {
+      g.beginPath(); g.arc(px(v.x), pz(v.z), 1.9, 0, 7); g.fill();
+    });
+  }
+
+  /* the tracked player */
+  if (me.trackTargetId && me.trackTimer > 0) {
+    var tp = G.byId(me.trackTargetId);
+    if (tp) {
+      g.fillStyle = '#50EF39';
+      g.beginPath(); g.arc(px(tp.lastKnownX != null ? tp.lastKnownX : tp.x),
+        pz(tp.lastKnownZ != null ? tp.lastKnownZ : tp.z), 3.4, 0, 7); g.fill();
+    }
+  }
+
+  /* ghosts see the whole crew */
+  if (!me.alive) {
+    G.players.forEach(function (p) {
+      if (p === me || !p.alive) return;
+      g.globalAlpha = 0.7;
+      g.fillStyle = '#' + AU.colorById(p.look.color).hex.toString(16).padStart(6, '0');
+      g.beginPath(); g.arc(px(p.x), pz(p.z), 2.8, 0, 7); g.fill();
+      g.globalAlpha = 1;
+    });
+  }
+
+  /* unreported bodies you have already seen */
+  G.bodies.forEach(function (b) {
+    if (b.reported || b.dissolved || b.skinOnly) return;
+    if (me.alive && Math.hypot(b.x - me.x, b.z - me.z) > 9) return;
+    g.fillStyle = '#ff4d4d'; g.font = 'bold 10px Arial'; g.textAlign = 'center';
+    g.fillText('✖', px(b.x), pz(b.z) + 3);
+  });
+
+  /* you: a dot with a facing wedge */
+  var mx = px(me.x), my = pz(me.z);
+  var col = '#' + AU.colorById(me.look.color).hex.toString(16).padStart(6, '0');
+  g.save();
+  g.translate(mx, my);
+  g.rotate(-G.yaw);
+  g.beginPath();
+  g.moveTo(0, -3);
+  g.arc(0, 0, 13, -Math.PI / 2 - 0.5, -Math.PI / 2 + 0.5);
+  g.closePath();
+  var wedge = g.createRadialGradient(0, 0, 2, 0, 0, 13);
+  wedge.addColorStop(0, 'rgba(255,255,255,.45)');
+  wedge.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = wedge; g.fill();
+  g.restore();
+  g.beginPath(); g.arc(mx, my, 4.6, 0, 7);
+  g.fillStyle = col; g.fill();
+  g.lineWidth = 1.6; g.strokeStyle = '#fff'; g.stroke();
+
+  /* the room you are standing in */
+  var rm = G.layout.roomAt(me.x, me.z);
+  $('minimap-room').textContent = rm ? rm.name.toUpperCase() : 'HALLWAY';
+};
+
+/* ============================================================
    BANNERS
    ============================================================ */
 HUD.showRole = function (player, cb) {
-  var d = AU.Roles.reveal(player);
-  var b = $('role-banner');
-  var imps = HUD.G.players.filter(function (p) { return p.team === 'impostor'; });
-  var extra = '';
-  if (player.team === 'impostor' && imps.length > 1) {
-    extra = '<div class="rd" style="color:#ff9d9d">Your fellow Impostor' + (imps.length > 2 ? 's' : '') + ': ' +
-      imps.filter(function (p) { return p !== player; }).map(function (p) { return esc(p.name); }).join(', ') + '</div>';
-  }
-  b.innerHTML = '<div class="rn" style="color:' + d.color + '">' + d.name.toUpperCase() + '</div>' +
-    '<div class="rd">' + d.desc + '</div>' + extra;
-  b.classList.add('show');
-  AU.Audio.play(player.team === 'impostor' ? 'sabotage' : 'allTasks');
-  setTimeout(function () { b.classList.remove('show'); if (cb) cb(); }, 4200);
+  HUD.renderRoleBadge();
+  AU.Intro.show(HUD.G, player, cb);
 };
 
 HUD.toast = function (text, dur) {
