@@ -1652,6 +1652,13 @@ function handleNet(from, msg) {
     AU.Net.callPeers();
     return;
   }
+  if (msg.t === 'peers') { AU.Net.callIds(msg.ids); return; }
+  if (msg.t === 'mesh-dial') { AU.Net.meshDial(msg.to); return; }
+  if (msg.t === 'mesh-sig') {
+    if (AU.Net.mode === 'host') AU.Net.meshRelay(from, msg);   /* relay between guests */
+    else AU.Net.meshSignal(msg);
+    return;
+  }
   if (msg.t === 'hello' && AU.Net.mode === 'host') {
     if (!M.lobby) return;
     var taken = M.lobby.players.map(function (p) { return p.look.color; });
@@ -1663,6 +1670,7 @@ function handleNet(from, msg) {
     M.lobby.players.push({ id: 'p_' + from, name: msg.name, look: look, isBot: false,
       isHost: false, netId: from });
     AU.Net.conns[from].name = msg.name;
+    AU.Net.meshAnnounce(from);
     M.broadcastLobby();
     M.renderLobby();
     return;

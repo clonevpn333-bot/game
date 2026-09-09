@@ -7,6 +7,28 @@ looking down on it.
 Open `index.html` in any modern browser. There is no build step, no install and no server:
 Three.js and PeerJS are vendored in `vendor/`, so it works from `file://` or any static host.
 
+## Download & play
+
+**Grab the files**
+
+* Download the ZIP from GitHub: the branch page → **Code ▾ → Download ZIP**, or
+  `git clone -b claude/3d-among-us-game-xhh2w3 https://github.com/clonevpn333-bot/game.git`
+* Unzip it, open the `among-us-3d` folder, and double-click **`index.html`**.
+
+That's it — Freeplay against AI bots runs straight from your hard drive with no internet.
+
+**Playing online (up to 15 players; six is a great size)**
+
+1. One person clicks **ONLINE → CREATE ROOM** and reads out the six-character code.
+2. Everyone else types their name and the code, then clicks **JOIN ROOM**.
+3. Allow the microphone prompt if you want voice chat.
+4. The host presses **START**. Any empty slots fill with AI bots, so six humans plus
+   four bots plays like a full ten-player lobby.
+
+For online play everyone needs the same copy of the files — either all download it, or the
+host serves it (`python3 -m http.server` in the `among-us-3d` folder, or drop it on GitHub
+Pages / Netlify) and shares the link.
+
 ---
 
 ## What's in it
@@ -67,12 +89,16 @@ Online play is pure peer-to-peer WebRTC. **There is no game server.**
 
 * **Room codes** — one player hosts and gets a six-character code; everyone else joins with
   it. Signalling goes through the public PeerJS broker; no account, no backend of yours.
-* **Direct Connect** — if you'd rather not touch a broker at all, the host creates an offer
-  blob, the guest pastes it back an answer blob, and the connection is established with
-  nothing in between.
-* **Voice chat** — a WebRTC audio mesh. Proximity by default (volume falls off with distance
-  and through walls), everyone hears everyone in meetings, ghosts hear only ghosts. Modes:
-  Off / Proximity / Meetings Only / Always On, plus push-to-talk.
+* **Direct Connect** — if you'd rather not touch a broker at all, the host presses
+  **CREATE OFFER** once per guest, sends each blob to a different player, and pastes their
+  answer back. Five guests, five offers: a full six-player room with no infrastructure
+  whatsoever. The host relays the guests' handshakes to each other, so voice still meshes
+  fully rather than routing through the host.
+* **Voice chat** — a full WebRTC audio mesh: every player holds a direct audio link to
+  every other player, on both the room-code and Direct Connect paths. Proximity by default
+  (volume falls off with distance and is muffled through walls), everyone hears everyone in
+  meetings, ghosts hear only ghosts. Modes: Off / Proximity / Meetings Only / Always On,
+  plus push-to-talk.
 * **Text chat** — lobby chat, meeting chat with quick-chat presets, and separate ghost chat.
 * **AI bots** — empty slots fill with bots, so a two-player room still plays like a full one.
 

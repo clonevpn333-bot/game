@@ -302,7 +302,8 @@ function setupOnline() {
       $('host-code').textContent = code;
       $('host-code-box').hidden = false;
       Menu.lobby = {
-        players: [{ id: 'host', name: AU.Save.p.name, look: Menu.myLook(), isBot: false, isHost: true }],
+        players: [{ id: 'host', name: AU.Save.p.name, look: Menu.myLook(), isBot: false,
+                    isHost: true, netId: AU.Net.hostKey() }],
         selfId: 'host', isHost: true, code: code, online: true, max: max,
         fillBots: $('host-bots').checked
       };
@@ -347,16 +348,21 @@ function setupOnline() {
     e.className = 'netstatus' + (k ? ' ' + k : '');
   }
 
-  /* manual, broker-free connect */
+  /* manual, broker-free connect — one offer per guest, so a direct room fills up */
   $('btn-manual-offer').onclick = function () {
     AU.Net.requestMic(function () {
-      AU.Net.manualOffer(function (blob) {
-        $('manual-blob').value = blob;
-        Menu.flash('Offer created — send this blob to your friend');
+      if (!Menu.lobby || !Menu.lobby.isHost) {
         Menu.lobby = {
-          players: [{ id: 'host', name: AU.Save.p.name, look: Menu.myLook(), isBot: false, isHost: true }],
+          players: [{ id: 'host', name: AU.Save.p.name, look: Menu.myLook(), isBot: false,
+                      isHost: true, netId: 'host' }],
           selfId: 'host', isHost: true, code: 'DIRECT', online: true, max: 10, fillBots: true
         };
+      }
+      AU.Net.manualOffer(function (blob, slot) {
+        $('manual-blob').value = blob;
+        $('manual-blob').select();
+        Menu.flash('Offer for ' + slot.toUpperCase() + ' created — send this blob to that player.' +
+          ' Press CREATE OFFER again for the next one.');
       });
     });
   };
@@ -365,16 +371,21 @@ function setupOnline() {
     if (!blob) { Menu.flash('Paste the host\'s offer blob first'); return; }
     AU.Net.requestMic(function () {
       AU.Net.manualAnswer(blob, function (ans) {
+        if (!ans) { Menu.flash('That offer blob was not valid'); return; }
         $('manual-blob').value = ans;
+        $('manual-blob').select();
         Menu.flash('Answer created — send it back to the host');
-        Menu.lobby = { players: [], selfId: 'peer1', isHost: false, code: 'DIRECT', online: true };
+        Menu.lobby = { players: [], selfId: AU.Net.selfId, isHost: false, code: 'DIRECT', online: true };
       });
     });
   };
   $('btn-manual-accept').onclick = function () {
-    AU.Net.manualAccept($('manual-blob').value.trim(), function (okv) {
-      Menu.flash(okv ? 'Connected!' : 'That answer was not valid');
-      if (okv) { Menu.go('lobby'); Menu.renderLobby(); }
+    AU.Net.manualAccept($('manual-blob').value.trim(), function (okv, slot) {
+      if (!okv) { Menu.flash('That answer was not valid'); return; }
+      Menu.flash(slot.toUpperCase() + ' connected!');
+      $('manual-blob').value = '';
+      Menu.go('lobby');
+      Menu.renderLobby();
     });
   };
 }
