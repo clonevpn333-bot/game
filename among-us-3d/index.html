@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Among Us 3D — Definitive Edition</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============ 3D VIEWPORT ============ -->
+<div id="viewport"></div>
+<canvas id="minimap-canvas" hidden></canvas>
+
+<!-- ============ BOOT / LOADING ============ -->
+<div id="boot" class="screen active">
+  <div class="boot-inner">
+    <div class="logo">
+      <span class="logo-among">AMONG US</span>
+      <span class="logo-3d">3D</span>
+      <span class="logo-sub">DEFINITIVE EDITION</span>
+    </div>
+    <div class="boot-bar"><div id="boot-fill"></div></div>
+    <div id="boot-msg">Loading…</div>
+  </div>
+</div>
+
+<!-- ============ MAIN MENU ============ -->
+<div id="menu" class="screen">
+  <div class="stars-bg"></div>
+  <div class="menu-logo">
+    <span class="logo-among">AMONG US</span>
+    <span class="logo-3d">3D</span>
+  </div>
+  <div id="menu-crew"></div>
+  <div class="menu-buttons">
+    <button class="au-btn big green" data-go="local">FREEPLAY <small>vs AI Bots</small></button>
+    <button class="au-btn big blue" data-go="online">ONLINE <small>Serverless P2P</small></button>
+    <button class="au-btn big purple" data-go="customize">CUSTOMIZE</button>
+    <button class="au-btn big yellow" data-go="shop">SHOP</button>
+    <button class="au-btn big grey" data-go="settings">SETTINGS</button>
+    <button class="au-btn big grey" data-go="howto">HOW TO PLAY</button>
+  </div>
+  <div class="menu-wallet" id="menu-wallet"></div>
+  <div class="menu-account" id="menu-account"></div>
+  <div class="menu-version">v1.0.0 · offline-capable · no server required</div>
+</div>
+
+<!-- ============ ONLINE MENU ============ -->
+<div id="online" class="screen">
+  <div class="stars-bg"></div>
+  <div class="panel wide">
+    <h2>ONLINE — SERVERLESS MULTIPLAYER</h2>
+    <p class="hint">Peer-to-peer over WebRTC. No game server, no accounts. One player hosts; the rest join with the room code. Voice &amp; text chat included.</p>
+    <div class="row2">
+      <div class="card">
+        <h3>HOST A GAME</h3>
+        <label>Your Name <input id="host-name" maxlength="10" placeholder="PLAYER"></label>
+        <label>Max Players <input id="host-max" type="number" min="4" max="15" value="10"></label>
+        <label class="chk"><input type="checkbox" id="host-bots" checked> Fill empty slots with AI bots</label>
+        <button class="au-btn green" id="btn-host">CREATE ROOM</button>
+        <div class="roomcode-box" id="host-code-box" hidden>
+          <div class="label">ROOM CODE</div>
+          <div class="roomcode" id="host-code">------</div>
+          <button class="au-btn small grey" id="btn-copy-code">COPY</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>JOIN A GAME</h3>
+        <label>Your Name <input id="join-name" maxlength="10" placeholder="PLAYER"></label>
+        <label>Room Code <input id="join-code" maxlength="6" placeholder="ABCDEF" class="code-in"></label>
+        <button class="au-btn blue" id="btn-join">JOIN ROOM</button>
+        <div id="join-status" class="netstatus"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>DIRECT CONNECT <small>(no broker at all)</small></h3>
+      <p class="hint">If the public broker is unreachable, paste connection blobs by hand — pure WebRTC, zero infrastructure.</p>
+      <div class="row2">
+        <div>
+          <button class="au-btn small green" id="btn-manual-offer">CREATE OFFER</button>
+          <button class="au-btn small blue" id="btn-manual-answer">PASTE OFFER &amp; ANSWER</button>
+        </div>
+        <textarea id="manual-blob" placeholder="Connection blob appears here / paste here" rows="4"></textarea>
+      </div>
+      <button class="au-btn small purple" id="btn-manual-accept">ACCEPT ANSWER</button>
+    </div>
+    <button class="au-btn grey" data-go="menu">BACK</button>
+  </div>
+</div>
+
+<!-- ============ LOBBY ============ -->
+<div id="lobby" class="screen">
+  <div class="lobby-room"></div>
+  <div class="lobby-top">
+    <button class="au-btn small red" id="btn-leave-lobby">LEAVE</button>
+    <div class="lobby-code" id="lobby-code"></div>
+    <div class="lobby-count" id="lobby-count"></div>
+  </div>
+  <div id="lobby-players" class="lobby-players"></div>
+  <div class="lobby-bottom">
+    <button class="au-btn purple" id="btn-lobby-customize">CUSTOMIZE</button>
+    <button class="au-btn blue" id="btn-lobby-settings">GAME SETTINGS</button>
+    <button class="au-btn green big" id="btn-start">START</button>
+  </div>
+  <div class="lobby-chat">
+    <div id="lobby-chat-log" class="chat-log"></div>
+    <div class="chat-in"><input id="lobby-chat-input" maxlength="120" placeholder="Chat…"><button id="lobby-chat-send" class="au-btn small blue">SEND</button></div>
+  </div>
+  <div class="voice-bar" id="voice-bar"></div>
+</div>
+
+<!-- ============ GAME SETTINGS ============ -->
+<div id="settings" class="screen">
+  <div class="stars-bg"></div>
+  <div class="panel wide">
+    <h2 id="settings-title">GAME SETTINGS</h2>
+    <div class="tabs" id="settings-tabs">
+      <button class="tab active" data-tab="game">GAME</button>
+      <button class="tab" data-tab="roles">ROLES</button>
+      <button class="tab" data-tab="client">MY SETTINGS</button>
+    </div>
+    <div id="settings-body" class="settings-body"></div>
+    <button class="au-btn grey" id="btn-settings-back">BACK</button>
+  </div>
+</div>
+
+<!-- ============ CUSTOMIZE ============ -->
+<div id="customize" class="screen">
+  <div class="stars-bg"></div>
+  <div class="cz-wrap">
+    <div class="cz-preview"><div id="cz-canvas"></div>
+      <input id="cz-name" maxlength="10" placeholder="NAME">
+    </div>
+    <div class="cz-panel">
+      <div class="tabs" id="cz-tabs">
+        <button class="tab active" data-cz="color">COLOR</button>
+        <button class="tab" data-cz="hat">HATS</button>
+        <button class="tab" data-cz="visor">VISORS</button>
+        <button class="tab" data-cz="skin">SKINS</button>
+        <button class="tab" data-cz="pet">PETS</button>
+        <button class="tab" data-cz="nameplate">NAMEPLATES</button>
+      </div>
+      <div id="cz-grid" class="cz-grid"></div>
+    </div>
+  </div>
+  <button class="au-btn grey" id="btn-cz-back">BACK</button>
+</div>
+
+<!-- ============ SHOP ============ -->
+<div id="shop" class="screen">
+  <div class="stars-bg"></div>
+  <div class="shop-top">
+    <h2>SHOP</h2>
+    <div class="wallet" id="shop-wallet"></div>
+  </div>
+  <div class="tabs" id="shop-tabs">
+    <button class="tab active" data-shop="featured">FEATURED</button>
+    <button class="tab" data-shop="cosmicubes">COSMICUBES</button>
+    <button class="tab" data-shop="hat">HATS</button>
+    <button class="tab" data-shop="visor">VISORS</button>
+    <button class="tab" data-shop="skin">SKINS</button>
+    <button class="tab" data-shop="pet">PETS</button>
+    <button class="tab" data-shop="nameplate">NAMEPLATES</button>
+    <button class="tab" data-shop="bundles">BEANS &amp; STARS</button>
+  </div>
+  <div id="shop-body" class="shop-body"></div>
+  <button class="au-btn grey" id="btn-shop-back">BACK</button>
+</div>
+
+<!-- Cosmicube detail -->
+<div id="cube-view" class="screen">
+  <div class="stars-bg"></div>
+  <div class="cube-top"><h2 id="cube-title">COSMICUBE</h2><div class="wallet" id="cube-wallet"></div></div>
+  <div id="cube-tree" class="cube-tree"></div>
+  <button class="au-btn grey" id="btn-cube-back">BACK</button>
+</div>
+
+<!-- ============ HOW TO PLAY ============ -->
+<div id="howto" class="screen">
+  <div class="stars-bg"></div>
+  <div class="panel wide scrolly" id="howto-body"></div>
+  <button class="au-btn grey" data-go="menu">BACK</button>
+</div>
+
+<!-- ============ IN-GAME HUD ============ -->
+<div id="hud" class="hud">
+  <div id="crosshair"></div>
+  <div class="visor-overlay"></div>
+
+  <div class="hud-top-left">
+    <button class="icon-btn" id="btn-map" title="Map (Tab)">🗺</button>
+    <button class="icon-btn" id="btn-menu-ig" title="Menu (Esc)">☰</button>
+    <button class="icon-btn" id="btn-mic" title="Toggle mic (V)">🎙</button>
+  </div>
+
+  <div class="taskbar-wrap">
+    <div class="taskbar-label">TOTAL TASKS COMPLETED</div>
+    <div class="taskbar"><div id="taskbar-fill"></div></div>
+  </div>
+
+  <div id="task-list" class="task-list"></div>
+  <div id="role-banner" class="role-banner"></div>
+  <div id="alert-banner" class="alert-banner"></div>
+  <div id="hud-toast" class="hud-toast"></div>
+
+  <div class="hud-bottom-right">
+    <button class="round-btn kill" id="btn-kill"><span>KILL</span><b id="kill-cd"></b></button>
+    <button class="round-btn use" id="btn-use"><span>USE</span></button>
+    <button class="round-btn report" id="btn-report"><span>REPORT</span></button>
+  </div>
+  <div class="hud-bottom-left">
+    <button class="round-btn sabotage" id="btn-sabotage"><span>SABOTAGE</span></button>
+    <button class="round-btn vent" id="btn-vent"><span>VENT</span></button>
+    <button class="round-btn ability" id="btn-ability"><span>ABILITY</span><b id="ability-cd"></b></button>
+  </div>
+
+  <div id="vent-arrows" class="vent-arrows"></div>
+  <div id="proximity-list" class="proximity-list"></div>
+  <div id="ghost-chat" class="ghost-chat">
+    <div id="ghost-chat-log" class="chat-log"></div>
+    <div class="chat-in"><input id="ghost-chat-input" maxlength="120" placeholder="Ghost chat…"></div>
+  </div>
+</div>
+
+<!-- ============ OVERLAYS ============ -->
+<div id="overlay-map" class="overlay"></div>
+<div id="overlay-task" class="overlay"></div>
+<div id="overlay-sabotage" class="overlay"></div>
+<div id="overlay-meeting" class="overlay"></div>
+<div id="overlay-eject" class="overlay"></div>
+<div id="overlay-end" class="overlay"></div>
+<div id="overlay-pause" class="overlay"></div>
+<div id="overlay-generic" class="overlay"></div>
+<div id="voice-audio"></div>
+
+<script src="vendor/three.min.js"></script>
+<script src="vendor/peerjs.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/save.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/models.js"></script>
+<script src="js/maps.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/world.js"></script>
+<script src="js/tasks.js"></script>
+<script src="js/roles.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/net.js"></script>
+<script src="js/meeting.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/shop.js"></script>
+<script src="js/menu.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
