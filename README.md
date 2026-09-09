@@ -15,4 +15,8 @@ git clone -b claude/3d-among-us-game-xhh2w3 https://github.com/clonevpn333-bot/g
 ```
 
 Unzip, then open `among-us-3d/index.html` in a browser. No install, no build, no server.
+
+Single-file builds live alongside it: `among-us-3d/among-us-3d-single.html` is the whole game
+in one file, and `among-us-3d/overclock-ii.html` is the second site — the Overclock launcher
+carrying this game and nothing else.
 | **Schedule I** | [`index.html`](index.html) | The original top-down browser game in this repo. |

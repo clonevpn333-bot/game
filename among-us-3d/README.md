@@ -160,6 +160,14 @@ Touch devices get an on-screen stick plus drag-to-look automatically.
 
 ---
 
+## Two ways to ship it
+
+* `index.html` — the normal multi-file game.
+* `among-us-3d-single.html` — the whole game bundled into one self-contained HTML file
+  (rebuild it any time with `python3 build-single.py`).
+* `overclock-ii.html` — **the second site**: the Overclock launcher rebranded, carrying this
+  game and nothing else.
+
 ## Layout
 
 ```
@@ -181,7 +189,11 @@ js/meeting.js       meetings, voting, ejection
 js/hud.js           HUD, map, Admin, Cameras, Vitals, Door Log
 js/shop.js          shop, Cosmicubes, customization
 js/menu.js          menus, lobby, settings
+js/memory.js        what each bot witnessed: proof, alibis, bias, hearsay
+js/chat.js          local chat parser and grounded bot replies
+js/intro.js         the role reveal cinematic
 js/game.js          round flow, movement, kills, sabotage, sync
+build-single.py     bundles everything into one HTML file
 ```
 
 ## Notes

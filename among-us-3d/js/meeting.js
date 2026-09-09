@@ -190,7 +190,8 @@ function render() {
   row.appendChild(input); row.appendChild(send);
   chat.appendChild(row);
   var qc = el('div', 'quickchat');
-  AU.QUICKCHAT.forEach(function (q) {
+  var opts = (AU.Chat && AU.Chat.quickOptions) ? AU.Chat.quickOptions(G, M.info) : AU.QUICKCHAT;
+  opts.forEach(function (q) {
     var b = el('button', null, q);
     b.onclick = function () { M.sendChat(q); };
     qc.appendChild(b);

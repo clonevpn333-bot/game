@@ -244,7 +244,11 @@ function buildRound(playerDefs) {
     }
     G.players.push(p);
   });
-  G.players.forEach(function (p) { if (p.isBot) AU.AI.init(p); });
+  G.players.forEach(function (p) {
+    if (p.isBot) { AU.AI.init(p); AU.Memory.resetRound(p); }
+    p.lastKillAt = 0;
+  });
+  G.lastMeetingAt = 0;
   buildAvatars();
 }
 
@@ -1058,14 +1062,9 @@ function doKill(killer, victim) {
   /* Guardian Angel promotion */
   AU.Roles.onCrewDeath(victim, G.roleSettings);
 
-  /* witnesses raise suspicion */
-  G.players.forEach(function (o) {
-    if (!o.isBot || !o.alive || o === killer) return;
-    if (Math.hypot(o.x - victim.x, o.z - victim.z) < 12 &&
-        G.layout.lineClear(o.x, o.z, victim.x, victim.z)) {
-      AU.AI.noteSighting(o, killer, 'kill');
-    }
-  });
+  /* only players who genuinely had it in view become witnesses */
+  AU.Memory.broadcastSighting(G, 'kill', killer,
+    { victim: victim.id, x: victim.x, z: victim.z });
 
   if (victim.id === G.selfId) {
     AU.HUD.toast('You were ' + (killer.role === 'viper' ? 'dissolved' : 'killed') +
@@ -1122,12 +1121,8 @@ G.enterVent = function (p, vent) {
   setTimeout(function () { delete G.ventOpen[vent.id]; }, 600);
   AU.Audio.play('vent');
   if (p.role === 'engineer') p.ventTimer = p.roleOpts.maxTime || 15;
-  /* anyone watching learns something */
-  G.players.forEach(function (o) {
-    if (!o.isBot || !o.alive || o === p) return;
-    if (Math.hypot(o.x - p.x, o.z - p.z) < 12 && G.layout.lineClear(o.x, o.z, p.x, p.z))
-      AU.AI.noteSighting(o, p, 'vent');
-  });
+  /* anyone with eyes on the vent has hard proof now */
+  AU.Memory.broadcastSighting(G, 'vent', p, { x: p.x, z: p.z });
   if (p.id === G.selfId && p.role === 'engineer')
     AU.HUD.toast('You can stay in the vents for ' + (p.roleOpts.maxTime || 15) + 's', 2.5);
 };
@@ -1140,6 +1135,7 @@ G.moveThroughVent = function (p, ventId) {
 };
 G.exitVent = function (p) {
   var v = G.world.ventById(p.ventId);
+  AU.Memory.broadcastSighting(G, 'vent', p, { x: p.x, z: p.z });
   p.venting = false;
   G.ventOpen[p.ventId] = true;
   setTimeout(function () { if (v) delete G.ventOpen[v.id]; }, 600);
@@ -1427,12 +1423,21 @@ function startMeeting(info) {
   G.bodies.forEach(function (b) { b.reported = true; });
   G.botVoteTimers = {};
   G.botChatTimers = {};
+  G.pendingReplies = [];
   G.players.forEach(function (p) {
     if (!p.isBot || !p.alive) return;
     G.botVoteTimers[p.id] = 4 + Math.random() * Math.max(4, G.settings.discussionTime);
-    G.botChatTimers[p.id] = 1 + Math.random() * 8;
+    /* a bot that watched it happen opens its mouth first */
+    G.botChatTimers[p.id] = AU.Chat.hasProof(p, G, info)
+      ? 1.2 + Math.random() * 2.5
+      : 3 + Math.random() * 9;
   });
 
+  G.lastMeetingAt = G.time;
+  if (info.bodyId) {
+    var bd = G.bodies.filter(function (b) { return b.id === info.bodyId; })[0];
+    if (bd) info.bodyRoom = (AU.roomOf(G.map, bd.room) || {}).name || null;
+  }
   AU.Meeting.start(G, info);
   AU.Meeting.onVote = function (voterId, targetId) {
     if (G.online && !G.isHost) AU.Net.toHost({ t: 'vote', target: targetId });
@@ -1443,6 +1448,7 @@ function startMeeting(info) {
       if (G.isHost) AU.Net.broadcast({ t: 'chat', payload: payload });
       else AU.Net.toHost({ t: 'chat', payload: payload });
     }
+    if (G.isHost) queueBotReplies(payload, G.me());
   };
   AU.Meeting.onOverrule = function (judgeId, targetId) {
     if (G.online && !G.isHost) { AU.Net.toHost({ t: 'overrule', target: targetId }); return; }
@@ -1463,7 +1469,103 @@ function registerVote(voterId, targetId) {
   }
 }
 
+/* When somebody speaks, the bots that have something to say answer —
+   staggered, so it reads like a room rather than a broadcast. */
+function queueBotReplies(payload, speaker, depth) {
+  if (!speaker) return;
+  depth = depth || 0;
+  if (depth > 2) return;                       /* keep threads from running away */
+  G.pendingReplies = G.pendingReplies || [];
+  if (G.pendingReplies.length > 6) return;
+  var q = AU.Chat.parse(payload.text, G, speaker);
+
+  /* a claim in chat is hearsay to everyone else, weighted by who said it */
+  if (q.target && (q.intent === 'accuse' || q.intent === 'clear' || q.intent === 'vote')) {
+    var kind = q.intent === 'clear' ? 'clear'
+             : /vent/.test(payload.text.toLowerCase()) ? 'vent'
+             : /kill/.test(payload.text.toLowerCase()) ? 'kill' : 'sus';
+    G.players.forEach(function (b) {
+      if (!b.isBot || !b.alive || b.id === speaker.id) return;
+      AU.Memory.addHearsay(b, speaker.id, q.target.id, kind, q.room ? q.room.name : null, G);
+    });
+    if (q.intent !== 'clear') AU.Meeting.info.accusedId = q.target.id;
+  }
+
+  var responders = G.players.filter(function (b) {
+    return b.isBot && b.alive === speaker.alive && b.id !== speaker.id;
+  });
+  /* whoever was addressed by name always answers */
+  var addressed = q.names.map(function (n) { return n.p; })
+    .filter(function (b) { return b && b.isBot && b.alive === speaker.alive; });
+
+  var used = {}, delay = 0.6 + Math.random() * 0.7, added = 0;
+  /* replies to a bot are rarer than replies to a person, so the room does not
+     turn into bots monologuing at each other */
+  var base = depth === 0 ? 0.30 : 0.16 - depth * 0.05;
+  var cap = depth === 0 ? 3 : 2;
+  addressed.concat(shuffle(responders)).forEach(function (b) {
+    if (used[b.id] || added >= cap) return;
+    used[b.id] = 1;
+    var isAddressed = addressed.indexOf(b) >= 0;
+    var certain = AU.Chat.hasProof(b, G, AU.Meeting.info);
+    var line = AU.Chat.respond(b, q, G, AU.Meeting.info);
+    /* being named is a direct question — never leave it hanging */
+    if (!line && isAddressed) line = AU.Chat.fallback(b, q, G, AU.Meeting.info);
+    if (!line) return;
+    /* anyone addressed answers, and anyone holding hard proof speaks up;
+       the rest only chime in sometimes */
+    if (!isAddressed && !certain && Math.random() > base + b.ai.personality.chatty * 0.25) return;
+    /* say who they are answering, so the thread is readable */
+    if ((isAddressed || Math.random() < 0.45) && speaker.name && !new RegExp(speaker.name, 'i').test(line))
+      line = speaker.name.toLowerCase() + ', ' + line;
+    added++;
+    var d = delay;
+    delay += 1.0 + Math.random() * 1.5;
+    G.pendingReplies.push({ bot: b, text: line, at: d, depth: depth });
+  });
+}
+
+function flushBotReplies(dt) {
+  if (!G.pendingReplies || !G.pendingReplies.length) return;
+  for (var i = G.pendingReplies.length - 1; i >= 0; i--) {
+    var r = G.pendingReplies[i];
+    r.at -= dt;
+    if (r.at > 0) continue;
+    G.pendingReplies.splice(i, 1);
+    if (!AU.Meeting.open) continue;
+    sayInMeeting(r.bot, r.text, (r.depth || 0) + 1);
+  }
+}
+
+function sayInMeeting(bot, text, depth) {
+  var payload = { name: bot.name, text: text,
+    color: AU.colorById(bot.look.color).hex, ghost: !bot.alive };
+  AU.Meeting.addChat(payload.name, payload.text,
+    '#' + payload.color.toString(16).padStart(6, '0'), false, payload.ghost);
+  if (G.online) AU.Net.broadcast({ t: 'chat', payload: payload });
+
+  /* bots listen to each other: an accusation sticks, and somebody answers back */
+  var q = AU.Chat.parse(text, G, bot);
+  if (q.target && (q.intent === 'accuse' || q.intent === 'vote')) {
+    AU.Meeting.info.accusedId = q.target.id;
+    G.players.forEach(function (o) {
+      if (!o.isBot || !o.alive || o.id === bot.id) return;
+      AU.Memory.addHearsay(o, bot.id, q.target.id,
+        /vent/.test(text) ? 'vent' : /kill/.test(text) ? 'kill' : 'sus',
+        q.room ? q.room.name : null, G);
+    });
+  }
+  if (q.target && q.intent === 'clear') {
+    G.players.forEach(function (o) {
+      if (!o.isBot || !o.alive || o.id === bot.id) return;
+      AU.Memory.addHearsay(o, bot.id, q.target.id, 'clear', null, G);
+    });
+  }
+  queueBotReplies(payload, bot, depth || 1);
+}
+
 function tickBotVotes(dt) {
+  flushBotReplies(dt);
   if (!G.isHost || !AU.Meeting.open) return;
   for (var id in G.botChatTimers) {
     G.botChatTimers[id] -= dt;
@@ -1472,20 +1574,7 @@ function tickBotVotes(dt) {
       var p = G.byId(id);
       if (p && p.alive && Math.random() < (p.ai ? p.ai.personality.chatty : 0.5)) {
         var line = AU.AI.meetingChat(p, G, AU.Meeting.info);
-        if (line) {
-          var payload = { name: p.name, text: line,
-            color: AU.colorById(p.look.color).hex, ghost: false };
-          AU.Meeting.addChat(payload.name, payload.text,
-            '#' + payload.color.toString(16).padStart(6, '0'));
-          if (G.online) AU.Net.broadcast({ t: 'chat', payload: payload });
-          /* bots accuse each other; the accusation sways later votes */
-          var m = line.match(/([A-Z0-9]{2,10}) is sus|saw ([A-Z0-9]{2,10}) vent/i);
-          if (m) {
-            var nm = (m[1] || m[2] || '').toUpperCase();
-            var tp = G.players.filter(function (q) { return q.name.toUpperCase() === nm; })[0];
-            if (tp) AU.Meeting.info.accusedId = tp.id;
-          }
-        }
+        if (line) sayInMeeting(p, line);
       }
     }
   }
