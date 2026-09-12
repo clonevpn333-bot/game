@@ -507,7 +507,7 @@
              'Distance for a 360° turn scales with this and your FOV.') +
       slider('zoomSensRatio', 'Scoped sensitivity ratio', 0.2, 2, 0.05, s.zoomSensRatio) +
       toggle('invertY', 'Invert vertical look', s.invertY) +
-      slider('fov', 'Field of view', 70, 120, 1, s.fov, 'Horizontal FOV. Higher shows more, makes targets smaller.') +
+      slider('fov', 'Field of view', 70, 120, 1, s.fov, '90 is about 106 degrees across on a widescreen monitor. Higher shows more but shrinks targets.') +
       slider('viewmodelFov', 'Viewmodel FOV', 54, 90, 1, s.viewmodelFov) +
       picker('viewmodelSide', 'Weapon hand', [[1, 'Right'], [-1, 'Left']], s.viewmodelSide) +
       toggle('viewmodelBob', 'Weapon bob', s.viewmodelBob) +

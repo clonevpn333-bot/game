@@ -28,13 +28,13 @@
     { name: 'pelvis', parent: -1, off: [0, 0.93, 0] },
     { name: 'spine',  parent: 0,  off: [0, 0.14, 0] },
     { name: 'head',   parent: 1,  off: [0, 0.44, 0] },
-    { name: 'armLU',  parent: 1,  off: [0, 0.34, -0.23] },
+    { name: 'armLU',  parent: 1,  off: [0, 0.325, -0.248] },
     { name: 'armLL',  parent: 3,  off: [0, -0.27, 0] },
-    { name: 'armRU',  parent: 1,  off: [0, 0.34, 0.23] },
+    { name: 'armRU',  parent: 1,  off: [0, 0.325, 0.248] },
     { name: 'armRL',  parent: 5,  off: [0, -0.27, 0] },
-    { name: 'legLU',  parent: 0,  off: [0, -0.02, -0.11] },
+    { name: 'legLU',  parent: 0,  off: [0, -0.02, -0.098] },
     { name: 'legLL',  parent: 7,  off: [0, -0.44, 0] },
-    { name: 'legRU',  parent: 0,  off: [0, -0.02, 0.11] },
+    { name: 'legRU',  parent: 0,  off: [0, -0.02, 0.098] },
     { name: 'legRL',  parent: 9,  off: [0, -0.44, 0] },
     { name: 'weapon', parent: 6,  off: [0.10, -0.24, 0.02] }
   ];
@@ -43,14 +43,14 @@
    * Cosmetics (all free — nothing here changes damage or handling)
    * ------------------------------------------------------------- */
   Geo.CHARACTERS = {
-    syn_default: { team: 1, name: 'Syndicate Regular', shirt: [0.44, 0.36, 0.26], pants: [0.30, 0.27, 0.22], vest: [0.35, 0.29, 0.20], skin: [0.72, 0.55, 0.42], head: [0.30, 0.26, 0.20] },
-    syn_desert:  { team: 1, name: 'Desert Raider',     shirt: [0.66, 0.56, 0.36], pants: [0.52, 0.45, 0.32], vest: [0.42, 0.36, 0.24], skin: [0.66, 0.48, 0.36], head: [0.58, 0.50, 0.34] },
-    syn_urban:   { team: 1, name: 'Street Operator',   shirt: [0.30, 0.30, 0.32], pants: [0.22, 0.22, 0.24], vest: [0.40, 0.26, 0.16], skin: [0.78, 0.62, 0.48], head: [0.18, 0.18, 0.20] },
-    syn_veteran: { team: 1, name: 'Old Hand',          shirt: [0.36, 0.32, 0.22], pants: [0.28, 0.26, 0.20], vest: [0.48, 0.40, 0.22], skin: [0.70, 0.52, 0.40], head: [0.44, 0.40, 0.30] },
-    van_default: { team: 2, name: 'Vanguard Trooper',  shirt: [0.22, 0.28, 0.38], pants: [0.18, 0.22, 0.30], vest: [0.20, 0.26, 0.36], skin: [0.74, 0.58, 0.45], head: [0.16, 0.20, 0.28] },
-    van_swat:    { team: 2, name: 'Breach Unit',       shirt: [0.16, 0.18, 0.22], pants: [0.14, 0.16, 0.20], vest: [0.12, 0.14, 0.18], skin: [0.70, 0.54, 0.42], head: [0.10, 0.12, 0.16] },
-    van_arctic:  { team: 2, name: 'Arctic Team',       shirt: [0.72, 0.76, 0.82], pants: [0.60, 0.64, 0.70], vest: [0.50, 0.56, 0.64], skin: [0.80, 0.64, 0.50], head: [0.62, 0.68, 0.76] },
-    van_marine:  { team: 2, name: 'Coastal Marine',    shirt: [0.28, 0.34, 0.30], pants: [0.24, 0.28, 0.26], vest: [0.30, 0.38, 0.34], skin: [0.66, 0.50, 0.38], head: [0.24, 0.30, 0.26] }
+    syn_default: { team: 1, name: 'Syndicate Regular', shirt: [0.40, 0.35, 0.28], pants: [0.27, 0.25, 0.21], vest: [0.33, 0.28, 0.21], skin: [0.70, 0.53, 0.40], head: [0.24, 0.22, 0.19] },
+    syn_desert:  { team: 1, name: 'Desert Raider',     shirt: [0.58, 0.50, 0.36], pants: [0.46, 0.40, 0.30], vest: [0.40, 0.34, 0.24], skin: [0.64, 0.47, 0.35], head: [0.50, 0.44, 0.32] },
+    syn_urban:   { team: 1, name: 'Street Operator',   shirt: [0.28, 0.27, 0.26], pants: [0.21, 0.20, 0.20], vest: [0.33, 0.24, 0.17], skin: [0.76, 0.60, 0.46], head: [0.17, 0.16, 0.16] },
+    syn_veteran: { team: 1, name: 'Old Hand',          shirt: [0.35, 0.33, 0.25], pants: [0.26, 0.25, 0.20], vest: [0.42, 0.36, 0.23], skin: [0.68, 0.50, 0.38], head: [0.38, 0.35, 0.27] },
+    van_default: { team: 2, name: 'Vanguard Trooper',  shirt: [0.26, 0.28, 0.31], pants: [0.21, 0.22, 0.25], vest: [0.23, 0.25, 0.29], skin: [0.72, 0.56, 0.43], head: [0.17, 0.18, 0.21] },
+    van_swat:    { team: 2, name: 'Breach Unit',       shirt: [0.17, 0.18, 0.20], pants: [0.15, 0.16, 0.18], vest: [0.13, 0.14, 0.16], skin: [0.68, 0.52, 0.40], head: [0.11, 0.12, 0.14] },
+    van_arctic:  { team: 2, name: 'Arctic Team',       shirt: [0.66, 0.68, 0.71], pants: [0.55, 0.57, 0.60], vest: [0.46, 0.49, 0.54], skin: [0.78, 0.62, 0.48], head: [0.58, 0.61, 0.65] },
+    van_marine:  { team: 2, name: 'Coastal Marine',    shirt: [0.28, 0.32, 0.29], pants: [0.23, 0.26, 0.24], vest: [0.29, 0.34, 0.31], skin: [0.64, 0.48, 0.36], head: [0.22, 0.26, 0.24] }
   };
 
   Geo.GLOVES = {
@@ -85,88 +85,104 @@
     var gl = Geo.GLOVES[gloveId] || Geo.GLOVES.default;
     var B = new Geo.Builder('skin');
     var teamCol = C.TEAM_INFO[ch.team] ? Geo.hexToRgb(C.TEAM_INFO[ch.team].color) : [1, 1, 1];
-    var dark = function (c, k) { return [c[0] * k, c[1] * k, c[2] * k]; };
-    var strap = dark(ch.vest, 0.62);
-    var rubber = [0.11, 0.11, 0.12];
-    var accent = mixCol(ch.vest, teamCol, 0.75);
-    var kit = dark(ch.pants, 0.78);
+    function tone(c, k) { return [c[0] * k, c[1] * k, c[2] * k]; }
+    var vest = ch.vest, shirt = ch.shirt, pants = ch.pants, skin = ch.skin;
+    var strap = tone(vest, 0.60);
+    var rubber = [0.13, 0.135, 0.145];
+    var accent = mixCol(vest, teamCol, 0.80);
+    var webbing = tone(pants, 0.80);
+    var buckle = [0.38, 0.39, 0.42];
 
-    /* ---- pelvis: hips, belt, thigh rig ---- */
-    B.box(-0.105, 0.105, -0.10, 0.09, -0.165, 0.165, ch.pants, BONE.PELVIS);
-    B.box(-0.115, 0.115, 0.055, 0.105, -0.175, 0.175, strap, BONE.PELVIS);          // belt
-    B.box(-0.045, 0.045, 0.06, 0.10, -0.055, 0.055, dark(strap, 0.7), BONE.PELVIS); // buckle
-    B.box(-0.075, 0.075, -0.09, -0.01, 0.155, 0.205, kit, BONE.PELVIS);             // hip pouch
-    B.box(-0.07, 0.07, -0.10, -0.02, -0.205, -0.155, kit, BONE.PELVIS);             // holster
+    /* ============ PELVIS ============ */
+    B.taper(0, 0, 0, 0.118, 0.150, 0.108, 0.132, -0.10, 0.075, pants, BONE.PELVIS);
+    B.bevel(-0.126, 0.126, 0.045, 0.088, -0.164, 0.164, 0.018, strap, BONE.PELVIS);      // belt
+    B.bevel(-0.042, 0.042, 0.048, 0.086, -0.062, 0.062, 0.012, buckle, BONE.PELVIS);     // buckle
+    B.bevel(-0.072, 0.072, -0.085, -0.005, 0.150, 0.198, 0.014, webbing, BONE.PELVIS);   // dump pouch
+    B.bevel(-0.062, 0.062, -0.105, -0.015, -0.196, -0.150, 0.014, webbing, BONE.PELVIS); // holster
+    B.blob(0, -0.06, -0.172, 0.05, 0.038, 0.022, tone(webbing, 0.85), BONE.PELVIS, 3, 7);
 
-    /* ---- torso: chest, back, plate carrier, pouches ---- */
-    B.box(-0.105, 0.105, -0.02, 0.40, -0.185, 0.185, ch.shirt, BONE.SPINE);
-    B.box(-0.125, 0.125, 0.06, 0.34, -0.155, 0.155, ch.vest, BONE.SPINE);           // carrier body
-    B.box(-0.145, -0.095, 0.10, 0.32, -0.135, 0.135, dark(ch.vest, 1.12), BONE.SPINE); // front plate
-    B.box(0.095, 0.145, 0.10, 0.32, -0.135, 0.135, dark(ch.vest, 0.80), BONE.SPINE);   // back plate
-    // magazine pouches across the chest
+    /* ============ TORSO ============ */
+    // ribcage tapers out to the chest, in at the waist
+    B.taper(0, 0, 0, 0.104, 0.148, 0.124, 0.196, -0.02, 0.20, shirt, BONE.SPINE);
+    B.taper(0, 0, 0, 0.124, 0.196, 0.112, 0.186, 0.20, 0.385, shirt, BONE.SPINE);
+    // plate carrier, bevelled so the edge catches light
+    B.bevel(-0.140, 0.140, 0.040, 0.330, -0.176, 0.176, 0.022, vest, BONE.SPINE);
+    B.bevel(-0.162, -0.110, 0.086, 0.312, -0.150, 0.150, 0.018, tone(vest, 1.16), BONE.SPINE);
+    B.bevel(0.110, 0.162, 0.086, 0.312, -0.150, 0.150, 0.018, tone(vest, 0.76), BONE.SPINE);
+    // magazine pouches
     for (var mp = 0; mp < 3; mp++) {
-      var mz = -0.10 + mp * 0.10;
-      B.box(-0.175, -0.142, 0.11, 0.21, mz - 0.038, mz + 0.038, kit, BONE.SPINE);
-      B.box(-0.178, -0.168, 0.195, 0.215, mz - 0.040, mz + 0.040, dark(kit, 0.7), BONE.SPINE);
+      var mz = -0.098 + mp * 0.098;
+      B.bevel(-0.196, -0.154, 0.100, 0.208, mz - 0.040, mz + 0.040, 0.012, webbing, BONE.SPINE);
+      B.bevel(-0.200, -0.180, 0.192, 0.216, mz - 0.042, mz + 0.042, 0.008, tone(webbing, 0.70), BONE.SPINE);
     }
-    // shoulder straps and team-coloured pads
-    B.box(-0.13, -0.06, 0.30, 0.365, -0.135, -0.055, strap, BONE.SPINE);
-    B.box(-0.13, -0.06, 0.30, 0.365, 0.055, 0.135, strap, BONE.SPINE);
-    B.box(-0.095, 0.095, 0.285, 0.355, -0.245, -0.145, accent, BONE.SPINE);
-    B.box(-0.095, 0.095, 0.285, 0.355, 0.145, 0.245, accent, BONE.SPINE);
-    // radio on the left shoulder
-    B.box(-0.10, -0.045, 0.30, 0.355, -0.215, -0.165, rubber, BONE.SPINE);
-    B.box(-0.075, -0.065, 0.355, 0.445, -0.20, -0.19, rubber, BONE.SPINE);
-    // small of the back pack
-    B.box(0.115, 0.185, 0.05, 0.26, -0.12, 0.12, kit, BONE.SPINE);
+    // shoulder straps over the trapezius
+    B.taper(0, 0, -0.104, 0.058, 0.044, 0.052, 0.040, 0.290, 0.358, strap, BONE.SPINE);
+    B.taper(0, 0, 0.104, 0.058, 0.044, 0.052, 0.040, 0.290, 0.358, strap, BONE.SPINE);
+    // rounded deltoid caps in the team colour — the silhouette read at range
+    B.blob(0, 0.330, -0.214, 0.090, 0.070, 0.082, accent, BONE.SPINE, 4, 9);
+    B.blob(0, 0.330, 0.214, 0.090, 0.070, 0.082, accent, BONE.SPINE, 4, 9);
+    B.bevel(-0.146, -0.126, 0.150, 0.300, -0.040, 0.040, 0.008, accent, BONE.SPINE);   // chest stripe
+    // radio and antenna
+    B.bevel(-0.104, -0.052, 0.288, 0.352, -0.212, -0.166, 0.010, rubber, BONE.SPINE);
+    B.lathe(-0.078, 0.352, -0.190, [[0.006, 0], [0.005, 0.085], [0.003, 0.095]], 5, rubber, BONE.SPINE, true);
+    // rear pack
+    B.taper(0.148, 0, 0, 0.040, 0.108, 0.032, 0.092, 0.040, 0.265, webbing, BONE.SPINE);
     // neck
-    B.box(-0.048, 0.048, 0.385, 0.455, -0.055, 0.055, dark(ch.skin, 0.86), BONE.SPINE);
+    B.lathe(0, 0.365, 0, [[0.050, 0], [0.047, 0.055], [0.045, 0.092]], 8, tone(skin, 0.84), BONE.SPINE, true);
 
-    /* ---- head ---- */
-    B.box(-0.085, 0.088, -0.095, 0.085, -0.082, 0.082, ch.skin, BONE.HEAD);         // skull
-    B.box(-0.055, 0.098, -0.105, -0.045, -0.062, 0.062, dark(ch.skin, 0.92), BONE.HEAD); // jaw
-    B.box(-0.095, 0.030, -0.075, 0.095, -0.090, 0.090, ch.head, BONE.HEAD);         // hood / balaclava
-    B.box(-0.098, 0.012, -0.100, -0.030, -0.072, 0.072, dark(ch.head, 0.85), BONE.HEAD);
-    // eye band + goggles
-    B.box(0.078, 0.108, -0.010, 0.050, -0.078, 0.078, [0.10, 0.11, 0.14], BONE.HEAD);
-    B.box(0.084, 0.112, 0.000, 0.040, -0.070, -0.020, [0.20, 0.34, 0.42], BONE.HEAD);
-    B.box(0.084, 0.112, 0.000, 0.040, 0.020, 0.070, [0.20, 0.34, 0.42], BONE.HEAD);
-    B.box(-0.100, 0.090, 0.045, 0.062, -0.088, 0.088, dark(ch.head, 0.7), BONE.HEAD); // strap
+    /* ============ HEAD ============ */
+    // skull as a squashed sphere, then brow, nose and jaw on top of it
+    B.blob(0.004, 0.005, 0, 0.094, 0.104, 0.089, skin, BONE.HEAD, 6, 11);
+    B.taper(0.024, 0, 0, 0.062, 0.070, 0.044, 0.052, -0.098, -0.030, tone(skin, 0.94), BONE.HEAD); // jaw
+    B.blob(0.052, -0.052, 0, 0.046, 0.034, 0.052, tone(skin, 0.97), BONE.HEAD, 3, 8);              // chin
+    B.blob(0.082, 0.008, 0, 0.020, 0.026, 0.016, tone(skin, 1.02), BONE.HEAD, 3, 7);               // nose
+    // hood / balaclava covering the crown and nape
+    B.blob(-0.006, 0.012, 0, 0.100, 0.106, 0.095, ch.head, BONE.HEAD, 6, 11);
+    B.taper(-0.030, 0, 0, 0.070, 0.082, 0.056, 0.066, -0.090, 0.010, ch.head, BONE.HEAD);
+    // eye band and lenses
+    B.bevel(0.062, 0.100, -0.010, 0.048, -0.080, 0.080, 0.010, [0.11, 0.12, 0.15], BONE.HEAD);
+    B.blob(0.094, 0.020, -0.044, 0.016, 0.019, 0.026, [0.26, 0.44, 0.52], BONE.HEAD, 3, 7);
+    B.blob(0.094, 0.020, 0.044, 0.016, 0.019, 0.026, [0.26, 0.44, 0.52], BONE.HEAD, 3, 7);
+    B.bevel(-0.098, 0.086, 0.044, 0.060, -0.086, 0.086, 0.008, tone(ch.head, 0.72), BONE.HEAD);
     if (hasHelmet) {
-      var hel = mixCol(ch.head, [0.30, 0.31, 0.33], 0.55);
-      B.box(-0.108, 0.072, 0.045, 0.150, -0.105, 0.105, hel, BONE.HEAD);
-      B.box(0.058, 0.130, 0.030, 0.105, -0.092, 0.092, dark(hel, 0.92), BONE.HEAD);   // brow
-      B.box(-0.118, -0.070, 0.020, 0.130, -0.098, 0.098, dark(hel, 0.86), BONE.HEAD); // rear shell
-      B.box(-0.020, 0.030, 0.150, 0.178, -0.030, 0.030, rubber, BONE.HEAD);           // mount
-      B.box(-0.100, -0.082, 0.000, 0.070, -0.112, -0.088, rubber, BONE.HEAD);         // ear cup
-      B.box(-0.100, -0.082, 0.000, 0.070, 0.088, 0.112, rubber, BONE.HEAD);
+      var hel = mixCol(ch.head, [0.30, 0.31, 0.34], 0.58);
+      // shell: a hemisphere flattened at the back, with a brim
+      B.lathe(-0.004, 0.030, 0, [
+        [0.104, 0], [0.112, 0.024], [0.108, 0.070], [0.092, 0.108], [0.058, 0.136], [0.016, 0.150]
+      ], 12, hel, BONE.HEAD, true, 0.94);
+      B.taper(0.062, 0, 0, 0.048, 0.090, 0.030, 0.076, 0.020, 0.068, tone(hel, 0.94), BONE.HEAD);  // brim
+      B.bevel(-0.026, 0.030, 0.148, 0.180, -0.030, 0.030, 0.008, rubber, BONE.HEAD);               // NVG mount
+      B.blob(-0.092, 0.030, -0.100, 0.030, 0.040, 0.020, rubber, BONE.HEAD, 3, 7);                 // ear cups
+      B.blob(-0.092, 0.030, 0.100, 0.030, 0.040, 0.020, rubber, BONE.HEAD, 3, 7);
+      B.bevel(-0.108, 0.068, 0.006, 0.026, -0.108, 0.108, 0.006, tone(hel, 0.70), BONE.HEAD);      // chin strap
     }
 
-    /* ---- arms: tapered upper, elbow pad, forearm, glove ---- */
-    function arm(up, lo, side) {
-      B.box(-0.058, 0.058, -0.10, 0.045, -0.062, 0.062, ch.shirt, up);               // deltoid
-      B.box(-0.050, 0.050, -0.285, -0.09, -0.054, 0.054, ch.shirt, up);              // bicep
-      B.box(-0.056, 0.056, -0.300, -0.245, -0.058, 0.058, dark(ch.shirt, 0.82), up); // elbow pad
-      B.box(-0.046, 0.046, -0.215, 0.015, -0.050, 0.050, ch.shirt, lo);              // forearm
-      B.box(-0.050, 0.050, -0.245, -0.200, -0.052, 0.052, dark(ch.shirt, 0.9), lo);  // cuff
-      B.box(-0.050, 0.056, -0.310, -0.240, -0.055, 0.055, gl.col, lo);               // hand
-      B.box(-0.052, 0.058, -0.330, -0.300, -0.050, 0.050, dark(gl.col, 0.85), lo);   // fingers
-      B.box(-0.032, 0.038, -0.268, -0.248, -0.058, 0.058, dark(gl.col, 1.15), lo);   // knuckle guard
+    /* ============ ARMS ============ */
+    function arm(up, lo) {
+      B.blob(0, 0.012, 0, 0.072, 0.066, 0.072, shirt, up, 4, 9);                        // shoulder ball
+      B.limb(0, 0, 0, -0.020, -0.245, 0.068, 0.054, shirt, up, 9);                       // upper arm
+      B.blob(0, -0.268, 0, 0.060, 0.054, 0.058, tone(shirt, 0.86), up, 4, 9);            // elbow pad
+      B.limb(0, 0, 0, 0.010, -0.190, 0.055, 0.046, shirt, lo, 9);                        // forearm
+      B.lathe(0, -0.208, 0, [[0.052, 0], [0.057, 0.014], [0.054, 0.034]], 9, tone(shirt, 0.92), lo, true); // cuff
+      B.blob(0, -0.272, 0, 0.055, 0.052, 0.048, gl.col, lo, 4, 9);                       // fist
+      B.bevel(-0.050, 0.050, -0.326, -0.280, -0.044, 0.044, 0.012, tone(gl.col, 0.90), lo); // fingers
+      B.bevel(-0.034, 0.038, -0.270, -0.246, -0.054, 0.054, 0.008, tone(gl.col, 1.20), lo); // knuckle plate
     }
-    arm(BONE.ARM_LU, BONE.ARM_LL, -1);
-    arm(BONE.ARM_RU, BONE.ARM_RL, 1);
-    // watch on the left wrist
-    B.box(-0.050, 0.050, -0.250, -0.225, -0.055, -0.045, [0.12, 0.13, 0.15], BONE.ARM_LL);
+    arm(BONE.ARM_LU, BONE.ARM_LL);
+    arm(BONE.ARM_RU, BONE.ARM_RL);
+    B.bevel(-0.046, 0.046, -0.238, -0.214, -0.052, -0.040, 0.006, [0.14, 0.15, 0.17], BONE.ARM_LL);
 
-    /* ---- legs: thigh, knee pad, shin, boot ---- */
+    /* ============ LEGS ============ */
     function leg(up, lo) {
-      B.box(-0.078, 0.078, -0.40, 0.035, -0.088, 0.088, ch.pants, up);
-      B.box(-0.070, 0.070, -0.465, -0.395, -0.082, 0.082, dark(ch.pants, 0.88), up); // thigh taper
-      B.box(-0.084, 0.070, -0.480, -0.410, -0.086, 0.086, dark(ch.pants, 0.72), up); // knee pad
-      B.box(-0.064, 0.064, -0.385, 0.020, -0.076, 0.076, ch.pants, lo);              // shin
-      B.box(-0.070, 0.070, -0.415, -0.375, -0.080, 0.080, dark(ch.pants, 0.9), lo);  // cuff
-      B.box(-0.078, 0.112, -0.475, -0.410, -0.082, 0.082, rubber, lo);               // boot upper
-      B.box(-0.086, 0.124, -0.500, -0.468, -0.086, 0.086, dark(rubber, 0.72), lo);   // sole
+      B.limb(0, 0, 0, 0.025, -0.400, 0.100, 0.074, pants, up, 9);                        // thigh
+      B.blob(-0.012, -0.434, 0, 0.086, 0.066, 0.082, tone(pants, 0.80), up, 4, 9);        // knee pad
+      B.limb(0, 0, 0, -0.010, -0.355, 0.076, 0.056, pants, lo, 9);                        // calf
+      B.lathe(0, -0.384, 0, [[0.066, 0], [0.072, 0.014], [0.068, 0.034]], 9, tone(pants, 0.90), lo, true);
+      // boot: ankle, upper and a chunky sole
+      B.blob(0.004, -0.422, 0, 0.068, 0.046, 0.066, rubber, lo, 4, 9);
+      B.taper(0.016, 0, 0, 0.078, 0.078, 0.094, 0.082, -0.470, -0.422, rubber, lo, 0.022, 0);
+      B.bevel(-0.086, 0.134, -0.500, -0.464, -0.088, 0.088, 0.012, tone(rubber, 0.72), lo);
+      B.bevel(-0.078, 0.122, -0.508, -0.496, -0.080, 0.080, 0.006, tone(rubber, 1.35), lo);
     }
     leg(BONE.LEG_LU, BONE.LEG_LL);
     leg(BONE.LEG_RU, BONE.LEG_RL);
@@ -212,241 +228,404 @@
   Geo.buildWeapon = function (weaponId, skinId) {
     var w = W.get(weaponId);
     var B = new Geo.Builder('skin');
-    if (!w) { B.box(-0.1, 0.1, -0.03, 0.03, -0.02, 0.02, GUNMETAL, 0); return B.result(); }
+    if (!w) { B.bevel(-0.1, 0.1, -0.03, 0.03, -0.02, 0.02, 0.01, GUNMETAL, 0); return B.result(); }
     var cols = skinColors(w, skinId);
     var m = cols.metal, body = cols.body;
-    var dark = [0.22, 0.225, 0.245];
-    var steel = [0.56, 0.58, 0.63];
-    var bright = [0.74, 0.77, 0.82];
+    var dark = [0.20, 0.205, 0.225];
+    var steel = [0.58, 0.60, 0.65];
+    var bright = [0.76, 0.79, 0.84];
+    var blued = [0.26, 0.27, 0.30];
 
-    /* Ribbed surface — reads as serrations, vents or grip checkering. */
-    function ribs(x0, x1, y0, y1, z0, z1, n, col, depth) {
+    /* A barrel is a tube lying along X, so lathe it and rotate the profile in. */
+    function tube(x0, x1, r0, r1, col, sides) {
+      var len = x1 - x0, steps = 1;
+      // build along Y then map: emit directly as a ring strip along X
+      var seg = sides || 10;
+      for (var i = 0; i < seg; i++) {
+        var a0 = (i / seg) * Math.PI * 2, a1 = ((i + 1) / seg) * Math.PI * 2;
+        var c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+        var p0 = [x0, c0 * r0, s0 * r0], p1 = [x0, c1 * r0, s1 * r0];
+        var p2 = [x1, c1 * r1, s1 * r1], p3 = [x1, c0 * r1, s0 * r1];
+        var sh0 = Geo.faceShade(0, c0, s0), sh1 = Geo.faceShade(0, c1, s1);
+        var base = B.nv;
+        B.vert(p0[0], p0[1], p0[2], 0, c0, s0, col[0] * sh0, col[1] * sh0, col[2] * sh0, 0, 0);
+        B.vert(p1[0], p1[1], p1[2], 0, c1, s1, col[0] * sh1, col[1] * sh1, col[2] * sh1, 0, 0);
+        B.vert(p2[0], p2[1], p2[2], 0, c1, s1, col[0] * sh1, col[1] * sh1, col[2] * sh1, 0, 0);
+        B.vert(p3[0], p3[1], p3[2], 0, c0, s0, col[0] * sh0, col[1] * sh0, col[2] * sh0, 0, 0);
+        B.quad(base, base + 1, base + 2, base + 3);
+      }
+      void len; void steps;
+    }
+    function capX(x, r, col, dir, sides) {
+      var seg = sides || 10;
+      var sh = Geo.faceShade(dir, 0, 0);
+      var c = [col[0] * sh, col[1] * sh, col[2] * sh];
+      var centre = B.nv;
+      B.vert(x, 0, 0, dir, 0, 0, c[0], c[1], c[2], 0, 0);
+      for (var i = 0; i <= seg; i++) {
+        var a = (i / seg) * Math.PI * 2 * dir;
+        B.vert(x, Math.cos(a) * r, Math.sin(a) * r, dir, 0, 0, c[0], c[1], c[2], 0, 0);
+      }
+      for (var k = 0; k < seg; k++) B.i.push(centre, centre + 1 + k, centre + 2 + k);
+    }
+    /* Ribbed strip — serrations, vents, checkering. */
+    function ribs(x0, x1, y0, y1, z0, z1, n, col, d) {
       var step = (x1 - x0) / n;
       for (var i = 0; i < n; i++) {
         var a = x0 + step * i;
-        B.box(a, a + step * 0.55, y0, y1, z0 - (depth || 0.002), z1 + (depth || 0.002), col, 0);
+        B.bevel(a, a + step * 0.56, y0, y1, z0 - (d || 0.002), z1 + (d || 0.002), 0.0025, col, 0);
       }
     }
-    function sights(xr, xf, y, z) {
-      B.box(xr, xr + 0.030, y, y + 0.026, -0.014, 0.014, dark, 0);      // rear aperture
-      B.box(xr + 0.008, xr + 0.022, y + 0.012, y + 0.030, -0.006, 0.006, dark, 0);
-      B.box(xf, xf + 0.014, y, y + 0.034, -0.008, 0.008, dark, 0);      // front post
-      B.box(xf - 0.004, xf + 0.018, y + 0.026, y + 0.032, -0.013, 0.013, dark, 0);
+    /* Magazine curved by stacking short tapered slabs along an arc. */
+    function curvedMag(x, y, len, w0, w1, thick, curve, col) {
+      var n = 5;
+      for (var i = 0; i < n; i++) {
+        var t0 = i / n, t1 = (i + 1) / n;
+        var y0 = y - len * t0, y1 = y - len * t1;
+        var x0 = x + curve * t0 * t0, x1b = x + curve * t1 * t1;
+        var r0 = w0 + (w1 - w0) * t0, r1 = w0 + (w1 - w0) * t1;
+        B.segXY(x0, y0, x1b, y1, 0, thick, thick * 0.96, r0, r1,
+                i === n - 1 ? [col[0] * 0.7, col[1] * 0.7, col[2] * 0.7] : col, 0);
+      }
+    }
+    function ironSights(xr, xf, y) {
+      B.bevel(xr, xr + 0.030, y, y + 0.022, -0.015, 0.015, 0.005, dark, 0);
+      B.bevel(xr + 0.007, xr + 0.013, y + 0.014, y + 0.034, -0.011, -0.005, 0.002, dark, 0);
+      B.bevel(xr + 0.018, xr + 0.024, y + 0.014, y + 0.034, 0.005, 0.011, 0.002, dark, 0);
+      B.bevel(xf - 0.006, xf + 0.020, y - 0.004, y + 0.010, -0.014, 0.014, 0.004, dark, 0);
+      B.bevel(xf + 0.004, xf + 0.012, y + 0.008, y + 0.034, -0.005, 0.005, 0.002, dark, 0);
     }
 
     switch (w.cls) {
-      case 'knife':
-        B.box(-0.115, 0.010, -0.019, 0.019, -0.016, 0.016, [0.13, 0.13, 0.14], 0);     // handle
-        ribs(-0.105, -0.005, -0.021, 0.021, -0.017, 0.017, 7, [0.08, 0.08, 0.09], 0.001);
-        B.box(-0.130, -0.112, -0.024, 0.024, -0.018, 0.018, m, 0);                     // pommel
-        B.box(0.010, 0.042, -0.026, 0.026, -0.020, 0.020, m, 0);                       // guard
-        B.box(0.042, 0.230, -0.024, 0.010, -0.0055, 0.0055, [0.74, 0.77, 0.82], 0);    // blade
-        B.box(0.042, 0.230, -0.026, -0.018, -0.0035, 0.0035, [0.88, 0.91, 0.95], 0);   // edge bevel
-        ribs(0.060, 0.150, 0.004, 0.012, -0.006, 0.006, 6, [0.55, 0.57, 0.62], 0.0005); // serrations
-        B.box(0.230, 0.272, -0.018, 0.006, -0.005, 0.005, [0.86, 0.89, 0.94], 0);      // point
+      case 'knife': {
+        // handle
+        B.bevel(-0.112, 0.008, -0.019, 0.019, -0.017, 0.017, 0.007, [0.16, 0.16, 0.17], 0);
+        ribs(-0.104, -0.008, -0.022, 0.022, -0.019, 0.019, 6, [0.09, 0.09, 0.10], 0.0015);
+        B.blob(-0.122, 0, 0, 0.016, 0.023, 0.019, m, 0, 4, 8);                            // pommel
+        B.bevel(0.008, 0.036, -0.028, 0.028, -0.022, 0.022, 0.008, m, 0);                 // guard
+        // blade: a flat wedge running along +X, ground to an edge on the underside
+        var bl0 = 0.036, bl1 = 0.238, tip = 0.284;
+        var spine = 0.016, belly = -0.022, th = 0.0055;
+        var edge = [0.92, 0.94, 0.98], flat = [0.72, 0.75, 0.81];
+        // two flats
+        B.quadFace([bl0, belly, th], [bl1, belly + 0.004, th], [bl1, spine, th], [bl0, spine, th], flat, 0);
+        B.quadFace([bl0, spine, -th], [bl1, spine, -th], [bl1, belly + 0.004, -th], [bl0, belly, -th], flat, 0);
+        // spine
+        B.quadFace([bl0, spine, -th], [bl0, spine, th], [bl1, spine, th], [bl1, spine, -th], flat, 0);
+        // ground edge, two bevels meeting at a line just under the belly
+        B.quadFace([bl0, belly, th], [bl0, belly - 0.005, 0], [bl1, belly - 0.001, 0], [bl1, belly + 0.004, th], edge, 0);
+        B.quadFace([bl0, belly - 0.005, 0], [bl0, belly, -th], [bl1, belly + 0.004, -th], [bl1, belly - 0.001, 0], edge, 0);
+        // clip point
+        B.triFace([bl1, spine, th], [bl1, belly + 0.004, th], [tip, -0.004, 0], flat, 0);
+        B.triFace([bl1, belly + 0.004, -th], [bl1, spine, -th], [tip, -0.004, 0], flat, 0);
+        B.triFace([bl1, spine, -th], [bl1, spine, th], [tip, -0.004, 0], edge, 0);
+        // serrations along the spine
+        ribs(0.062, 0.150, 0.014, 0.024, -0.0055, 0.0055, 6, [0.58, 0.60, 0.66], 0.0006);
         break;
+      }
 
       case 'pistol': {
-        var sl = w.akimbo ? 0.150 : 0.165;
-        bodySegments(B, -0.062, sl, 0.004, 0.050, -0.019, 0.019, cols, 0, 5);          // slide
-        ribs(-0.058, 0.004, 0.006, 0.048, -0.021, 0.021, 6, dark, 0.001);              // serrations
-        B.box(-0.052, sl - 0.020, -0.020, 0.006, -0.017, 0.017, m, 0);                 // frame
-        B.box(sl - 0.010, sl + 0.022, 0.012, 0.040, -0.012, 0.012, steel, 0);          // muzzle
-        B.box(sl - 0.012, sl + 0.020, 0.018, 0.034, -0.006, 0.006, dark, 0);           // bore
-        B.boxRotZ(-0.030, -0.088, 0, 0.024, 0.072, 0.019, 0.26, body, 0);              // grip
-        ribs(-0.052, -0.010, -0.150, -0.030, -0.021, 0.021, 5, dark, 0.001);
-        B.box(-0.040, -0.028, -0.160, -0.140, -0.018, 0.018, m, 0);                    // mag base
-        B.box(-0.006, 0.030, -0.058, -0.030, -0.009, 0.009, m, 0);                     // trigger guard
-        B.box(0.024, 0.032, -0.050, -0.026, -0.011, 0.011, m, 0);
-        B.box(-0.012, 0.004, -0.038, -0.018, -0.006, 0.006, steel, 0);                 // trigger
-        B.box(-0.056, -0.040, 0.050, 0.062, -0.010, 0.010, dark, 0);                   // rear sight
-        B.box(sl - 0.026, sl - 0.014, 0.050, 0.062, -0.005, 0.005, dark, 0);           // front sight
+        var sl = 0.168;
+        // slide with a bevelled top and a rounded rear
+        B.bevel(-0.062, sl, 0.004, 0.050, -0.019, 0.019, 0.006, cols.body === POLYMER ? blued : body, 0);
+        ribs(-0.058, 0.000, 0.008, 0.046, -0.021, 0.021, 6, dark, 0.0015);
+        B.blob(-0.062, 0.027, 0, 0.014, 0.023, 0.019, blued, 0, 4, 8);
+        B.bevel(-0.050, sl - 0.022, -0.020, 0.006, -0.017, 0.017, 0.005, m, 0);          // frame
+        tube(sl - 0.006, sl + 0.020, 0.012, 0.012, steel, 8);
+        capX(sl + 0.020, 0.012, dark, 1, 8);
+        B.boxRotZ(-0.030, -0.088, 0, 0.023, 0.070, 0.019, 0.26, body, 0);                // grip
+        ribs(-0.052, -0.010, -0.148, -0.034, -0.021, 0.021, 5, dark, 0.0015);
+        B.bevel(-0.042, -0.024, -0.162, -0.140, -0.019, 0.019, 0.005, m, 0);             // mag floorplate
+        B.bevel(-0.006, 0.032, -0.058, -0.030, -0.009, 0.009, 0.004, m, 0);              // trigger guard
+        B.bevel(0.024, 0.033, -0.052, -0.024, -0.011, 0.011, 0.004, m, 0);
+        B.segXY(-0.010, -0.030, -0.004, -0.050, 0, 0.007, 0.007, 0.006, 0.005, steel, 0); // trigger
+        B.bevel(-0.056, -0.040, 0.050, 0.062, -0.012, 0.012, 0.004, dark, 0);
+        B.bevel(sl - 0.026, sl - 0.016, 0.050, 0.062, -0.005, 0.005, 0.003, dark, 0);
         if (w.silenced) {
-          B.cylinder(sl + 0.005, 0.010, 0, 0.021, 0.145, 10, [0.11, 0.115, 0.125], 0);
-          ribs(sl + 0.020, sl + 0.130, 0.008, 0.046, -0.023, 0.023, 7, [0.08, 0.08, 0.09], 0.001);
+          tube(sl + 0.005, sl + 0.150, 0.022, 0.022, [0.14, 0.145, 0.155], 12);
+          capX(sl + 0.150, 0.022, [0.10, 0.10, 0.11], 1, 12);
+          ribs(sl + 0.020, sl + 0.132, -0.024, 0.024, -0.024, 0.024, 8, [0.10, 0.10, 0.11], 0.0008);
         }
         if (w.akimbo) {
-          bodySegments(B, -0.062, sl, 0.004, 0.050, 0.062, 0.100, cols, 0, 5);
-          B.boxRotZ(-0.030, -0.088, 0.081, 0.024, 0.072, 0.019, 0.26, body, 0);
-          B.box(sl - 0.010, sl + 0.022, 0.012, 0.040, 0.069, 0.093, steel, 0);
+          B.bevel(-0.062, sl, 0.004, 0.050, 0.062, 0.100, 0.006, body, 0);
+          B.boxRotZ(-0.030, -0.088, 0.081, 0.023, 0.070, 0.019, 0.26, body, 0);
+          tube(sl - 0.006, sl + 0.020, 0.012, 0.012, steel, 8);
         }
         break;
       }
 
       case 'smg':
-        bodySegments(B, -0.130, 0.215, -0.004, 0.056, -0.025, 0.025, cols, 0, 6);      // receiver
-        B.box(-0.135, 0.220, 0.052, 0.064, -0.020, 0.020, m, 0);                       // top rail
-        ribs(-0.120, 0.200, 0.056, 0.068, -0.021, 0.021, 14, dark, 0.001);
-        B.box(0.170, 0.300, 0.008, 0.042, -0.017, 0.017, m, 0);                        // shroud
-        ribs(0.180, 0.290, 0.010, 0.040, -0.019, 0.019, 6, dark, 0.0015);              // vents
-        B.box(0.296, 0.340, 0.016, 0.036, -0.011, 0.011, steel, 0);                    // barrel
-        B.boxRotZ(-0.015, -0.115, 0, 0.026, 0.070, 0.021, 0.18, body, 0);              // grip
-        ribs(-0.038, 0.004, -0.175, -0.060, -0.023, 0.023, 5, dark, 0.001);
-        B.boxRotZ(0.075, -0.115, 0, 0.024, 0.078, 0.017, -0.10, m, 0);                 // magazine
-        B.box(0.052, 0.100, -0.200, -0.180, -0.016, 0.016, dark, 0);
-        B.box(-0.260, -0.126, 0.006, 0.034, -0.013, 0.013, m, 0);                      // folding stock
-        B.box(-0.285, -0.255, -0.024, 0.048, -0.020, 0.020, body, 0);
-        B.box(0.026, 0.060, -0.042, -0.016, -0.010, 0.010, m, 0);                      // trigger guard
-        sights(-0.110, 0.240, 0.064, 0);
+        B.bevel(-0.130, 0.215, -0.004, 0.056, -0.025, 0.025, 0.008, body, 0);
+        B.bevel(-0.136, 0.150, 0.052, 0.066, -0.020, 0.020, 0.005, m, 0);                // rail
+        ribs(-0.126, 0.140, 0.058, 0.070, -0.021, 0.021, 12, dark, 0.0012);
+        tube(0.170, 0.302, 0.019, 0.018, m, 10);                                          // shroud
+        ribs(0.182, 0.292, -0.021, 0.021, -0.021, 0.021, 6, dark, 0.0018);                // vent slots
+        tube(0.300, 0.344, 0.011, 0.010, steel, 8); capX(0.344, 0.010, dark, 1, 8);
+        B.boxRotZ(-0.014, -0.112, 0, 0.025, 0.068, 0.021, 0.18, body, 0);
+        ribs(-0.036, 0.006, -0.172, -0.062, -0.023, 0.023, 5, dark, 0.0015);
+        curvedMag(0.076, -0.048, 0.150, 0.022, 0.019, 0.017, -0.028, m);
+        B.bevel(-0.262, -0.126, 0.006, 0.032, -0.013, 0.013, 0.005, m, 0);                // stock struts
+        B.bevel(-0.290, -0.256, -0.024, 0.048, -0.020, 0.020, 0.008, body, 0);
+        B.bevel(0.024, 0.062, -0.042, -0.016, -0.010, 0.010, 0.004, m, 0);
+        ironSights(-0.112, 0.238, 0.064);
         break;
 
       case 'rifle': {
         var wood = /kr47|nomadAR/.test(w.id);
-        bodySegments(B, -0.175, 0.255, -0.010, 0.062, -0.026, 0.026, cols, 0, 7);      // receiver
-        B.box(-0.180, 0.150, 0.058, 0.072, -0.021, 0.021, m, 0);                       // dust cover / rail
-        ribs(-0.170, 0.140, 0.062, 0.076, -0.022, 0.022, 13, dark, 0.001);
-        B.box(0.100, 0.130, 0.060, 0.092, -0.012, 0.012, m, 0);                        // gas block
-        B.box(0.240, 0.470, 0.010, 0.048, -0.020, 0.020, wood ? WOODGRIP : m, 0);      // handguard
-        if (wood) { ribs(0.255, 0.455, 0.012, 0.046, -0.022, 0.022, 5, [0.30, 0.18, 0.09], 0.0012); }
-        else { ribs(0.250, 0.460, 0.012, 0.046, -0.022, 0.022, 9, dark, 0.0015); }
-        B.box(0.300, 0.560, 0.046, 0.062, -0.013, 0.013, m, 0);                        // gas tube
-        B.box(0.460, 0.600, 0.020, 0.042, -0.012, 0.012, steel, 0);                    // barrel
-        B.box(0.596, 0.646, 0.016, 0.046, -0.017, 0.017, m, 0);                        // muzzle brake
-        ribs(0.600, 0.642, 0.018, 0.044, -0.019, 0.019, 3, dark, 0.001);
-        B.box(0.600, 0.650, 0.026, 0.036, -0.007, 0.007, dark, 0);                     // bore
-        B.boxRotZ(-0.050, -0.135, 0, 0.030, 0.080, 0.023, 0.22, body, 0);              // pistol grip
-        ribs(-0.078, -0.026, -0.210, -0.070, -0.025, 0.025, 6, dark, 0.001);
-        B.boxRotZ(0.090, -0.150, 0, 0.036, 0.105, 0.019, -0.16, m, 0);                 // magazine
-        B.box(0.052, 0.128, -0.258, -0.236, -0.018, 0.018, dark, 0);
-        B.box(0.030, 0.070, -0.056, -0.020, -0.011, 0.011, m, 0);                      // trigger guard
-        B.box(0.040, 0.056, -0.042, -0.022, -0.007, 0.007, steel, 0);                  // trigger
-        B.box(0.150, 0.190, 0.030, 0.058, 0.026, 0.034, bright, 0);                    // charging handle
-        B.box(0.060, 0.120, 0.032, 0.056, 0.026, 0.030, dark, 0);                      // ejection port
+        var furn = wood ? WOODGRIP : body;
+        B.bevel(-0.175, 0.255, -0.010, 0.062, -0.026, 0.026, 0.009, body, 0);             // receiver
+        B.bevel(-0.180, 0.140, 0.058, 0.072, -0.021, 0.021, 0.005, m, 0);                 // dust cover
+        ribs(-0.170, 0.132, 0.062, 0.076, -0.022, 0.022, 12, dark, 0.0012);
+        B.bevel(0.098, 0.132, 0.058, 0.094, -0.013, 0.013, 0.006, m, 0);                  // gas block
+        B.taper(0.355, 0, 0, 0.021, 0.021, 0.018, 0.018, -0.018, 0.048, furn, 0);         // handguard
+        B.bevel(0.240, 0.470, 0.008, 0.048, -0.022, 0.022, 0.010, furn, 0);
+        if (wood) ribs(0.256, 0.454, 0.010, 0.046, -0.024, 0.024, 5, [0.34, 0.20, 0.10], 0.0015);
+        else ribs(0.250, 0.460, 0.010, 0.046, -0.024, 0.024, 9, dark, 0.0018);
+        tube(0.300, 0.560, 0.011, 0.011, m, 8);                                           // gas tube
+        tube(0.462, 0.600, 0.013, 0.012, steel, 10);                                      // barrel
+        tube(0.598, 0.648, 0.019, 0.018, m, 10);                                          // muzzle brake
+        ribs(0.604, 0.644, -0.020, 0.020, -0.020, 0.020, 3, dark, 0.001);
+        capX(0.648, 0.018, dark, 1, 10);
+        B.boxRotZ(-0.050, -0.132, 0, 0.029, 0.078, 0.023, 0.22, body, 0);                 // pistol grip
+        ribs(-0.078, -0.026, -0.204, -0.072, -0.025, 0.025, 6, dark, 0.0015);
+        curvedMag(0.098, -0.052, 0.196, 0.035, 0.029, 0.019, -0.048, m);                  // curved mag
+        B.bevel(0.028, 0.072, -0.056, -0.020, -0.011, 0.011, 0.004, m, 0);                // trigger guard
+        B.segXY(0.044, -0.024, 0.050, -0.046, 0, 0.007, 0.007, 0.006, 0.005, steel, 0);
+        B.bevel(0.150, 0.192, 0.030, 0.056, 0.026, 0.036, 0.005, bright, 0);              // charging handle
+        B.bevel(0.058, 0.122, 0.032, 0.056, 0.025, 0.030, 0.004, dark, 0);                // ejection port
         if (wood) {
-          B.box(-0.430, -0.170, -0.026, 0.052, -0.022, 0.022, WOODGRIP, 0);            // wooden stock
-          B.box(-0.445, -0.415, -0.034, 0.056, -0.024, 0.024, dark, 0);                // butt plate
+          B.taper(-0.300, 0, 0, 0.024, 0.023, 0.030, 0.025, -0.130, 0.050, WOODGRIP, 0);
+          B.bevel(-0.432, -0.168, -0.028, 0.052, -0.023, 0.023, 0.010, WOODGRIP, 0);
+          B.bevel(-0.448, -0.418, -0.036, 0.058, -0.026, 0.026, 0.006, dark, 0);
         } else {
-          B.box(-0.400, -0.180, 0.004, 0.042, -0.016, 0.016, m, 0);                    // buffer tube
-          B.box(-0.395, -0.250, -0.028, 0.054, -0.024, 0.024, body, 0);                // stock body
-          B.box(-0.410, -0.385, -0.036, 0.058, -0.026, 0.026, dark, 0);                // butt pad
-          B.box(-0.330, -0.250, 0.050, 0.068, -0.018, 0.018, body, 0);                 // cheek riser
+          tube(-0.400, -0.180, 0.017, 0.017, m, 8);
+          B.bevel(-0.398, -0.248, -0.030, 0.054, -0.024, 0.024, 0.010, body, 0);
+          B.bevel(-0.412, -0.386, -0.038, 0.058, -0.027, 0.027, 0.006, dark, 0);
+          B.bevel(-0.334, -0.250, 0.048, 0.070, -0.019, 0.019, 0.008, body, 0);
         }
         if (w.scope) {
-          B.cylinder(0.020, 0.074, 0, 0.028, 0.215, 10, [0.19, 0.20, 0.22], 0);
-          B.box(0.000, 0.250, 0.066, 0.080, -0.016, 0.016, [0.11, 0.12, 0.14], 0);     // mount
-          B.box(0.226, 0.246, 0.078, 0.118, -0.024, 0.024, [0.12, 0.18, 0.24], 0);     // objective
-          B.box(0.020, 0.036, 0.078, 0.116, -0.022, 0.022, [0.30, 0.56, 0.70], 0);     // eyepiece glass
-        } else sights(-0.150, 0.430, 0.072, 0);
+          tube(-0.055, 0.250, 0.028, 0.028, [0.20, 0.21, 0.23], 12);
+          B.bevel(-0.060, 0.255, 0.046, 0.060, -0.017, 0.017, 0.005, [0.12, 0.13, 0.15], 0);
+          tube(0.238, 0.268, 0.038, 0.040, [0.15, 0.16, 0.18], 12);
+          capX(0.268, 0.040, [0.14, 0.22, 0.30], 1, 12);
+          capX(-0.055, 0.028, [0.32, 0.58, 0.72], -1, 12);
+          // lift the scope onto rings above the receiver
+          B.bevel(-0.020, 0.020, 0.062, 0.080, -0.016, 0.016, 0.005, dark, 0);
+          B.bevel(0.150, 0.190, 0.062, 0.080, -0.016, 0.016, 0.005, dark, 0);
+        } else ironSights(-0.150, 0.428, 0.072);
         break;
       }
 
       case 'sniper':
-        bodySegments(B, -0.215, 0.245, -0.006, 0.058, -0.024, 0.024, cols, 0, 7);
-        B.box(0.230, 0.780, 0.014, 0.046, -0.016, 0.016, m, 0);                        // heavy barrel
-        ribs(0.420, 0.700, 0.016, 0.044, -0.018, 0.018, 8, dark, 0.0012);              // flutes
-        B.box(0.778, 0.846, 0.012, 0.048, -0.020, 0.020, steel, 0);                    // brake
-        B.box(0.780, 0.850, 0.024, 0.036, -0.008, 0.008, dark, 0);
-        B.boxRotZ(-0.056, -0.130, 0, 0.030, 0.076, 0.022, 0.20, body, 0);              // grip
-        B.boxRotZ(0.070, -0.120, 0, 0.030, 0.072, 0.018, -0.08, m, 0);                 // magazine
-        B.box(-0.470, -0.200, -0.052, 0.052, -0.024, 0.024, body, 0);                  // stock
-        B.box(-0.330, -0.170, 0.050, 0.090, -0.022, 0.022, body, 0);                   // cheek riser
-        B.box(-0.490, -0.462, -0.062, 0.056, -0.026, 0.026, dark, 0);                  // recoil pad
-        B.box(-0.220, -0.120, -0.090, -0.050, -0.020, 0.020, body, 0);                 // thumbhole spine
-        B.cylinder(-0.020, 0.062, 0, 0.032, 0.330, 12, [0.20, 0.21, 0.23], 0);         // scope tube
-        B.box(-0.050, 0.310, 0.056, 0.070, -0.018, 0.018, [0.10, 0.11, 0.13], 0);      // rings
-        B.box(0.300, 0.322, 0.070, 0.120, -0.026, 0.026, [0.13, 0.19, 0.26], 0);       // objective bell
-        B.box(-0.036, -0.020, 0.072, 0.114, -0.024, 0.024, [0.30, 0.56, 0.70], 0);     // eyepiece
-        B.box(0.140, 0.186, 0.034, 0.054, 0.024, 0.040, bright, 0);                    // bolt handle
-        B.box(0.176, 0.196, 0.030, 0.050, 0.036, 0.062, bright, 0);
-        B.box(0.360, 0.420, -0.110, -0.016, -0.010, 0.010, dark, 0);                   // bipod legs
-        B.box(0.360, 0.420, -0.110, -0.016, 0.030, 0.050, dark, 0);
+        B.bevel(-0.215, 0.245, -0.006, 0.058, -0.024, 0.024, 0.009, body, 0);
+        tube(0.232, 0.782, 0.016, 0.014, m, 12);                                          // heavy barrel
+        ribs(0.420, 0.700, -0.018, 0.018, -0.018, 0.018, 8, dark, 0.0012);                // flutes
+        tube(0.780, 0.848, 0.021, 0.020, steel, 12); capX(0.848, 0.020, dark, 1, 12);
+        B.boxRotZ(-0.056, -0.128, 0, 0.029, 0.074, 0.022, 0.20, body, 0);
+        ribs(-0.082, -0.030, -0.198, -0.068, -0.024, 0.024, 5, dark, 0.0015);
+        curvedMag(0.072, -0.042, 0.130, 0.028, 0.026, 0.018, -0.022, m);
+        B.taper(-0.330, 0, 0, 0.026, 0.024, 0.044, 0.024, -0.058, 0.052, body, 0);        // stock comb
+        B.bevel(-0.472, -0.200, -0.052, 0.050, -0.024, 0.024, 0.012, body, 0);
+        B.bevel(-0.336, -0.170, 0.046, 0.090, -0.023, 0.023, 0.010, body, 0);             // cheek riser
+        B.bevel(-0.492, -0.462, -0.062, 0.056, -0.027, 0.027, 0.008, dark, 0);            // recoil pad
+        B.bevel(-0.226, -0.118, -0.092, -0.048, -0.021, 0.021, 0.010, body, 0);           // thumbhole spine
+        tube(-0.060, 0.300, 0.032, 0.032, [0.21, 0.22, 0.24], 14);                        // scope
+        tube(0.296, 0.330, 0.044, 0.046, [0.16, 0.17, 0.19], 14);
+        capX(0.330, 0.046, [0.14, 0.22, 0.30], 1, 14);
+        capX(-0.060, 0.032, [0.32, 0.58, 0.72], -1, 14);
+        B.bevel(-0.050, 0.006, 0.046, 0.066, -0.020, 0.020, 0.005, dark, 0);              // rings
+        B.bevel(0.176, 0.232, 0.046, 0.066, -0.020, 0.020, 0.005, dark, 0);
+        B.segXY(0.150, 0.034, 0.194, 0.048, 0.030, 0.009, 0.009, 0.009, 0.008, bright, 0);// bolt
+        B.blob(0.198, 0.052, 0.046, 0.013, 0.013, 0.013, bright, 0, 3, 7);
+        B.segXY(0.400, -0.024, 0.362, -0.112, -0.018, 0.007, 0.006, 0.007, 0.005, dark, 0); // bipod
+        B.segXY(0.400, -0.024, 0.362, -0.112, 0.040, 0.007, 0.006, 0.007, 0.005, dark, 0);
         break;
 
       case 'shotgun':
-        bodySegments(B, -0.200, 0.190, -0.002, 0.052, -0.026, 0.026, cols, 0, 6);
-        B.box(0.180, 0.660, 0.016, 0.050, -0.019, 0.019, m, 0);                        // barrel
-        B.box(0.200, 0.600, -0.022, 0.010, -0.017, 0.017, m, 0);                       // magazine tube
-        B.box(0.280, 0.430, -0.038, -0.006, -0.027, 0.027, WOODGRIP, 0);               // pump
-        ribs(0.290, 0.420, -0.040, -0.004, -0.029, 0.029, 7, [0.28, 0.17, 0.08], 0.0012);
-        B.box(0.640, 0.664, 0.020, 0.046, -0.013, 0.013, steel, 0);
-        B.box(0.600, 0.616, 0.050, 0.062, -0.005, 0.005, bright, 0);                   // bead sight
-        B.box(-0.430, -0.190, -0.030, 0.050, -0.024, 0.024, WOODGRIP, 0);              // stock
-        B.box(-0.448, -0.420, -0.038, 0.054, -0.026, 0.026, dark, 0);
-        B.box(0.020, 0.068, -0.046, -0.014, -0.011, 0.011, m, 0);                      // trigger guard
-        B.box(-0.010, 0.070, 0.048, 0.062, -0.020, 0.020, m, 0);                       // receiver top
+        B.bevel(-0.200, 0.190, -0.002, 0.052, -0.026, 0.026, 0.009, body, 0);
+        tube(0.182, 0.662, 0.018, 0.017, m, 12);                                          // barrel
+        tube(0.198, 0.600, 0.014, 0.013, m, 10);                                          // mag tube (below)
+        B.bevel(0.198, 0.600, -0.026, -0.004, -0.014, 0.014, 0.005, m, 0);
+        B.taper(0.356, 0, 0, 0.028, 0.028, 0.026, 0.026, -0.042, -0.002, WOODGRIP, 0);    // pump
+        ribs(0.292, 0.420, -0.044, -0.002, -0.030, 0.030, 7, [0.30, 0.18, 0.09], 0.0015);
+        capX(0.662, 0.017, dark, 1, 12);
+        B.blob(0.608, 0.058, 0, 0.006, 0.007, 0.006, bright, 0, 3, 6);                    // bead
+        B.taper(-0.300, 0, 0, 0.024, 0.023, 0.030, 0.025, -0.120, 0.048, WOODGRIP, 0);
+        B.bevel(-0.436, -0.186, -0.032, 0.050, -0.024, 0.024, 0.012, WOODGRIP, 0);
+        B.bevel(-0.452, -0.422, -0.040, 0.054, -0.027, 0.027, 0.007, dark, 0);
+        B.bevel(0.016, 0.070, -0.048, -0.014, -0.011, 0.011, 0.004, m, 0);
         break;
 
       case 'heavy':
-        bodySegments(B, -0.235, 0.310, -0.014, 0.070, -0.032, 0.032, cols, 0, 8);
-        B.box(-0.150, 0.120, 0.066, 0.086, -0.024, 0.024, m, 0);                       // carry handle
-        B.box(-0.150, -0.120, 0.058, 0.072, -0.020, 0.020, m, 0);
-        B.box(0.090, 0.120, 0.058, 0.072, -0.020, 0.020, m, 0);
-        B.box(0.300, 0.760, 0.018, 0.052, -0.020, 0.020, m, 0);                        // barrel
-        ribs(0.340, 0.640, 0.020, 0.050, -0.022, 0.022, 10, dark, 0.0015);
-        B.box(0.756, 0.816, 0.014, 0.056, -0.024, 0.024, steel, 0);                    // flash hider
-        B.box(0.020, 0.230, -0.205, -0.014, -0.058, 0.058, m, 0);                      // ammo box
-        ribs(0.035, 0.215, -0.190, -0.030, -0.060, 0.060, 5, dark, 0.0015);
-        B.box(0.225, 0.250, -0.120, -0.060, -0.030, 0.030, bright, 0);                 // belt feed
-        B.boxRotZ(-0.060, -0.140, 0, 0.032, 0.082, 0.024, 0.20, body, 0);
-        B.box(-0.470, -0.210, -0.030, 0.058, -0.026, 0.026, body, 0);                  // stock
-        B.box(-0.486, -0.458, -0.038, 0.062, -0.028, 0.028, dark, 0);
-        B.box(0.380, 0.560, -0.150, -0.024, -0.012, 0.012, dark, 0);                   // bipod
-        B.box(0.380, 0.560, -0.150, -0.024, 0.034, 0.058, dark, 0);
-        sights(-0.190, 0.290, 0.086, 0);
+        B.bevel(-0.235, 0.310, -0.014, 0.070, -0.032, 0.032, 0.011, body, 0);
+        B.bevel(-0.152, 0.122, 0.066, 0.084, -0.024, 0.024, 0.006, m, 0);                 // carry handle
+        B.bevel(-0.152, -0.122, 0.056, 0.070, -0.020, 0.020, 0.005, m, 0);
+        B.bevel(0.092, 0.122, 0.056, 0.070, -0.020, 0.020, 0.005, m, 0);
+        tube(0.302, 0.762, 0.019, 0.017, m, 12);
+        ribs(0.340, 0.640, -0.021, 0.021, -0.021, 0.021, 10, dark, 0.0015);
+        tube(0.758, 0.818, 0.025, 0.024, steel, 12); capX(0.818, 0.024, dark, 1, 12);
+        B.bevel(0.018, 0.232, -0.206, -0.014, -0.058, 0.058, 0.014, m, 0);                // ammo box
+        ribs(0.036, 0.214, -0.192, -0.030, -0.060, 0.060, 5, dark, 0.0018);
+        B.bevel(0.224, 0.252, -0.122, -0.058, -0.030, 0.030, 0.008, bright, 0);           // belt
+        B.boxRotZ(-0.060, -0.138, 0, 0.031, 0.080, 0.024, 0.20, body, 0);
+        B.bevel(-0.472, -0.208, -0.032, 0.058, -0.026, 0.026, 0.012, body, 0);
+        B.bevel(-0.488, -0.458, -0.040, 0.062, -0.029, 0.029, 0.008, dark, 0);
+        B.segXY(0.560, -0.024, 0.382, -0.150, -0.020, 0.008, 0.007, 0.008, 0.006, dark, 0);
+        B.segXY(0.560, -0.024, 0.382, -0.150, 0.046, 0.008, 0.007, 0.008, 0.006, dark, 0);
+        ironSights(-0.190, 0.288, 0.084);
         break;
 
       case 'grenade': {
-        var gc = w.gtype === 'smoke' ? [0.32, 0.40, 0.33] :
-                 w.gtype === 'flash' ? [0.52, 0.53, 0.56] :
-                 w.gtype === 'fire' ? [0.52, 0.30, 0.14] : [0.22, 0.29, 0.20];
+        var gc = w.gtype === 'smoke' ? [0.34, 0.42, 0.35] :
+                 w.gtype === 'flash' ? [0.54, 0.55, 0.58] :
+                 w.gtype === 'fire' ? [0.54, 0.32, 0.15] : [0.24, 0.31, 0.22];
         if (w.gtype === 'fire') {
-          B.cylinder(0, -0.075, 0, 0.044, 0.150, 10, [0.60, 0.40, 0.16], 0);          // bottle
-          B.cylinder(0, 0.075, 0, 0.020, 0.035, 8, [0.50, 0.33, 0.13], 0);            // neck
-          B.box(-0.013, 0.013, 0.105, 0.150, -0.013, 0.013, [0.86, 0.84, 0.78], 0);   // rag
-          B.box(-0.030, 0.030, -0.040, 0.040, -0.030, 0.030, [0.72, 0.48, 0.16], 0);  // label band
+          B.lathe(0, -0.080, 0, [[0.020, 0], [0.042, 0.018], [0.046, 0.100], [0.030, 0.135],
+                                 [0.019, 0.150], [0.018, 0.185]], 12, [0.60, 0.42, 0.18], 0, true);
+          B.lathe(0, 0.105, 0, [[0.019, 0], [0.022, 0.012], [0.020, 0.026]], 10, [0.50, 0.34, 0.14], 0, true);
+          B.taper(0, 0.135, 0, 0.013, 0.013, 0.009, 0.009, 0, 0.048, [0.88, 0.86, 0.80], 0);
+          B.lathe(0, -0.040, 0, [[0.047, 0], [0.048, 0.045], [0.047, 0.050]], 12, [0.74, 0.50, 0.18], 0, true);
         } else {
-          B.cylinder(0, -0.055, 0, 0.040, 0.110, 10, gc, 0);                          // body
-          B.box(-0.042, 0.042, -0.012, 0.012, -0.042, 0.042, mixCol(gc, [0, 0, 0], 0.25), 0);
-          B.cylinder(0, 0.055, 0, 0.022, 0.030, 8, [0.28, 0.29, 0.31], 0);            // fuse
-          B.box(-0.020, 0.020, 0.085, 0.098, -0.020, 0.020, [0.42, 0.43, 0.46], 0);   // pull ring seat
-          B.box(-0.006, 0.034, 0.062, 0.074, -0.046, -0.030, [0.58, 0.59, 0.62], 0);  // spoon
-          B.box(-0.006, 0.034, 0.048, 0.062, -0.048, -0.040, [0.58, 0.59, 0.62], 0);
-          B.box(0.010, 0.030, 0.086, 0.094, -0.052, -0.026, [0.70, 0.71, 0.74], 0);   // pin ring
+          // ovoid body with a ribbed waist and a proper spoon
+          B.lathe(0, -0.058, 0, [[0.016, 0], [0.034, 0.014], [0.041, 0.048], [0.041, 0.072],
+                                 [0.033, 0.104], [0.018, 0.116]], 12, gc, 0, true);
+          B.lathe(0, -0.014, 0, [[0.042, 0], [0.043, 0.010], [0.042, 0.020]], 12, mixCol(gc, [0, 0, 0], 0.30), 0, true);
+          B.lathe(0, 0.058, 0, [[0.019, 0], [0.021, 0.020], [0.017, 0.032]], 10, [0.30, 0.31, 0.33], 0, true);
+          B.segXY(0.004, 0.076, 0.004, 0.044, -0.040, 0.009, 0.009, 0.011, 0.010, [0.60, 0.61, 0.64], 0);
+          B.segXY(0.004, 0.044, 0.014, 0.020, -0.040, 0.009, 0.008, 0.010, 0.008, [0.60, 0.61, 0.64], 0);
+          B.lathe(0.020, 0.086, -0.030, [[0.010, 0], [0.012, 0.004], [0.010, 0.008]], 8, [0.72, 0.73, 0.76], 0, true);
         }
         break;
       }
 
       default:
-        B.box(-0.1, 0.2, -0.02, 0.04, -0.02, 0.02, m, 0);
+        B.bevel(-0.1, 0.2, -0.02, 0.04, -0.02, 0.02, 0.008, m, 0);
     }
     return B.result();
   };
 
-  /* First-person hands. Built around the origin so the viewmodel rig can
-   * place them relative to the weapon grip. */
-  Geo.buildHands = function (gloveId, skinTone) {
+  /* ---------------------------------------------------------------
+   * Hands
+   *
+   * Built per weapon from that weapon's grip anchors, so the hands sit on
+   * the gun instead of floating near it. Each hand is a palm, four curled
+   * fingers, a thumb and a forearm running back toward the camera.
+   * ------------------------------------------------------------- */
+
+  /* Where each weapon is actually held, in model space (+X = muzzle). */
+  var GRIPS = {
+    rifle:   { right: [-0.055, -0.128, 0], left: [0.345, 0.012, 0], leftStyle: 'guard' },
+    smg:     { right: [-0.020, -0.118, 0], left: [0.240, 0.018, 0], leftStyle: 'guard' },
+    sniper:  { right: [-0.060, -0.126, 0], left: [0.300, 0.024, 0], leftStyle: 'guard' },
+    shotgun: { right: [0.020, -0.108, 0],  left: [0.355, -0.028, 0], leftStyle: 'guard' },
+    heavy:   { right: [-0.062, -0.136, 0], left: [0.150, -0.108, 0], leftStyle: 'guard' },
+    pistol:  { right: [-0.030, -0.088, 0], left: [-0.030, -0.092, -0.052], leftStyle: 'support' },
+    knife:   { right: [-0.055, -0.002, 0], left: null },
+    grenade: { right: [0, -0.020, 0], left: null, wrap: true }
+  };
+  var GRIP_OVERRIDE = {
+    talon50: { right: [-0.032, -0.086, 0], left: [-0.032, -0.090, -0.052], leftStyle: 'support' },
+    judgeR8: { right: [-0.034, -0.090, 0], left: [-0.034, -0.094, -0.052], leftStyle: 'support' },
+    twinElites: { right: [-0.030, -0.088, 0], left: [-0.030, -0.088, 0.081], leftStyle: 'mirror' },
+    breaker12: { right: [0.020, -0.108, 0], left: [0.355, -0.030, 0], leftStyle: 'guard' },
+    nemesis: { right: [-0.062, -0.136, 0], left: [0.330, -0.020, 0], leftStyle: 'guard' },
+    hailstorm: { right: [-0.062, -0.136, 0], left: [0.150, -0.110, 0], leftStyle: 'guard' }
+  };
+
+  /* One finger: three curling joints. */
+  function finger(B, x, y, z, hz, len, ang, curl, r, col, bone) {
+    var frac = [0.42, 0.34, 0.24];
+    for (var s = 0; s < 3; s++) {
+      var l = len * frac[s];
+      var nx = x + Math.cos(ang) * l, ny = y + Math.sin(ang) * l;
+      var rr = r * (1 - s * 0.18);
+      B.segXY(x, y, nx, ny, z, hz * (1 - s * 0.14), hz * (1 - (s + 1) * 0.14),
+              rr, rr * 0.88, s === 2 ? [col[0] * 1.08, col[1] * 1.08, col[2] * 1.08] : col, bone);
+      x = nx; y = ny; ang += curl;
+    }
+  }
+
+  /* A hand. `style`: 'grip' wraps a vertical pistol grip, 'guard' clamps a
+   * horizontal handguard, 'support' cups the base of a pistol grip.
+   * `k` compensates for the weapon's viewmodel scale so hands stay the same
+   * real-world size whichever gun is held. */
+  function hand(B, o) {
+    var gcol = o.glove, skin = o.skin, bone = o.bone || 0;
+    var pal = [gcol[0] * 0.94, gcol[1] * 0.94, gcol[2] * 0.94];
+    var cuff = [gcol[0] * 0.72, gcol[1] * 0.72, gcol[2] * 0.72];
+    var x = o.x, y = o.y, z = o.z, side = o.side === undefined ? 1 : o.side;
+    var k = o.k || 1;
+    function X(d) { return x + d * k; }
+    function Y(d) { return y + d * k; }
+    function Z(d) { return z + d * k; }
+    var hz = 0.030 * k;
+
+    if (o.style === 'guard') {
+      B.bevel(X(-0.062), X(0.062), Y(-0.068), Y(0.020),
+              Z(-0.030 - 0.018 * side), Z(0.030 - 0.018 * side), 0.014 * k, pal, bone);
+      for (var i = 0; i < 4; i++) {
+        finger(B, X(-0.046 + i * 0.031), Y(-0.052), Z((0.024 - i * 0.004) * side), 0.013 * k,
+               0.082 * k, 1.30, 0.52, 0.013 * k, gcol, bone);
+      }
+      finger(B, X(0.020), Y(-0.018), Z(-0.036 * side), 0.014 * k, 0.062 * k, 2.55, 0.34, 0.015 * k, gcol, bone);
+      B.segXY(X(-0.050), Y(-0.060), X(-0.190), Y(-0.128), Z(-0.020 * side),
+              0.034 * k, 0.036 * k, 0.040 * k, 0.044 * k, cuff, bone);
+      B.segXY(X(-0.180), Y(-0.122), X(-0.330), Y(-0.196), Z(-0.020 * side),
+              0.036 * k, 0.034 * k, 0.044 * k, 0.040 * k, skin, bone);
+    } else if (o.style === 'support') {
+      B.bevel(X(-0.050), X(0.046), Y(-0.060), Y(0.026), Z(-0.030), Z(0.030), 0.014 * k, pal, bone);
+      for (var c2 = 0; c2 < 4; c2++) {
+        finger(B, X(0.030), Y(-0.008 - c2 * 0.026), Z((0.006 - c2 * 0.002) * side), 0.012 * k,
+               0.062 * k, 0.42, 0.60, 0.012 * k, gcol, bone);
+      }
+      finger(B, X(0.014), Y(0.016), Z(0.030 * side), 0.013 * k, 0.050 * k, 1.15, 0.30, 0.013 * k, gcol, bone);
+      B.segXY(X(-0.040), Y(-0.044), X(-0.176), Y(-0.134), z, 0.034 * k, 0.036 * k, 0.040 * k, 0.044 * k, cuff, bone);
+      B.segXY(X(-0.166), Y(-0.128), X(-0.316), Y(-0.206), z, 0.036 * k, 0.034 * k, 0.044 * k, 0.040 * k, skin, bone);
+    } else {
+      B.bevel(X(-0.052), X(0.022), Y(-0.086), Y(0.038), Z(-0.034), Z(0.034), 0.014 * k, pal, bone);
+      for (var f = 0; f < 4; f++) {
+        finger(B, X(0.012), Y(0.018 - f * 0.030), Z((0.020 - f * 0.013) * side), 0.013 * k,
+               0.070 * k, 0.10, 0.62, 0.013 * k, gcol, bone);
+      }
+      finger(B, X(-0.006), Y(0.030), Z(-0.034 * side), 0.014 * k, 0.060 * k, -0.35, -0.40, 0.015 * k, gcol, bone);
+      B.bevel(X(-0.048), X(0.020), Y(-0.008), Y(0.030), Z(-0.040), Z(0.040), 0.008 * k,
+              [gcol[0] * 1.22, gcol[1] * 1.22, gcol[2] * 1.22], bone);
+      B.segXY(X(-0.036), Y(-0.062), X(-0.180), Y(-0.128), z, 0.036 * k, 0.038 * k, 0.042 * k, 0.046 * k, cuff, bone);
+      B.segXY(X(-0.170), Y(-0.122), X(-0.330), Y(-0.200), z, 0.038 * k, 0.036 * k, 0.046 * k, 0.042 * k, skin, bone);
+    }
+    void hz;
+  }
+
+  /* Hands posed for a specific weapon. */
+  /* Viewmodel scale per class, mirrored from the game's viewmodel rig, so the
+   * hand can be pre-scaled to cancel it out. */
+  var VM_SCALE = { rifle: 0.50, pistol: 0.62, knife: 0.60, sniper: 0.45,
+                   shotgun: 0.49, heavy: 0.46, smg: 0.50, grenade: 0.84 };
+
+  Geo.buildHands = function (weaponId, gloveId, skinTone) {
     var gl = Geo.GLOVES[gloveId] || Geo.GLOVES.default;
     var skin = skinTone || [0.78, 0.62, 0.48];
-    var pad = [gl.col[0] * 0.72, gl.col[1] * 0.72, gl.col[2] * 0.72];
-    var seam = [gl.col[0] * 1.25, gl.col[1] * 1.25, gl.col[2] * 1.25];
     var B = new Geo.Builder('skin');
+    var w = W.get(weaponId);
+    var cls = w ? w.cls : 'rifle';
+    var grip = GRIP_OVERRIDE[weaponId] || GRIPS[cls] || GRIPS.rifle;
+    var k = 0.50 / (VM_SCALE[cls] || 0.50);
 
-    /* --- right hand: wrapped around the pistol grip --- */
-    B.box(-0.090, 0.048, -0.180, -0.040, -0.072, 0.048, gl.col, 0);        // palm
-    B.box(-0.092, 0.050, -0.190, -0.170, -0.074, 0.050, pad, 0);           // heel
-    for (var f = 0; f < 4; f++) {                                          // fingers over the grip
-      var fz = -0.066 + f * 0.030;
-      B.box(-0.060 + f * 0.012, 0.052, -0.132 + f * 0.006, -0.104 + f * 0.006, fz, fz + 0.024, gl.col, 0);
-      B.box(0.040, 0.066, -0.136 + f * 0.006, -0.106 + f * 0.006, fz + 0.002, fz + 0.022, seam, 0);
+    if (grip.wrap) {
+      hand(B, { x: -0.030, y: -0.055, z: 0, glove: gl.col, skin: skin, style: 'grip', side: 1, k: k });
+      return B.result();
     }
-    B.box(-0.048, 0.030, -0.120, -0.086, 0.046, 0.070, gl.col, 0);         // thumb
-    B.box(-0.086, 0.046, -0.176, -0.150, -0.076, 0.052, seam, 0);          // knuckle guard
-    B.box(-0.168, -0.082, -0.196, -0.146, -0.070, 0.046, gl.col, 0);       // wrist
-    B.box(-0.186, -0.160, -0.202, -0.140, -0.074, 0.050, pad, 0);          // cuff
-    B.box(-0.290, -0.182, -0.196, -0.146, -0.066, 0.042, skin, 0);         // forearm
-
-    /* --- left hand: supporting the handguard --- */
-    B.box(0.210, 0.350, -0.096, 0.014, -0.084, 0.036, gl.col, 0);          // palm
-    for (var g2 = 0; g2 < 4; g2++) {
-      var gz = -0.080 + g2 * 0.028;
-      B.box(0.216 + g2 * 0.006, 0.344, -0.118, -0.088, gz, gz + 0.022, gl.col, 0);
-      B.box(0.220 + g2 * 0.006, 0.340, -0.124, -0.112, gz + 0.002, gz + 0.020, seam, 0);
+    hand(B, { x: grip.right[0], y: grip.right[1], z: grip.right[2], glove: gl.col, skin: skin,
+              style: 'grip', side: 1, k: k });
+    if (grip.left) {
+      hand(B, {
+        x: grip.left[0], y: grip.left[1], z: grip.left[2], glove: gl.col, skin: skin,
+        style: grip.leftStyle === 'mirror' ? 'grip' : grip.leftStyle, side: -1, k: k
+      });
     }
-    B.box(0.238, 0.318, -0.080, -0.046, 0.032, 0.058, gl.col, 0);          // thumb over the top
-    B.box(0.206, 0.232, -0.106, 0.010, -0.088, 0.032, pad, 0);             // cuff
-    B.box(0.140, 0.212, -0.100, -0.020, -0.080, 0.026, skin, 0);           // forearm
     return B.result();
   };
+  Geo.GRIPS = GRIPS;
 
   Geo.buildBomb = function () {
     var B = new Geo.Builder('skin');

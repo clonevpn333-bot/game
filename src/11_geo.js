@@ -94,6 +94,217 @@
     return this;
   };
 
+  /* ---------------------------------------------------------------
+   * Shape primitives
+   *
+   * Axis-aligned boxes alone read as Minecraft. Bevelled edges catch a
+   * highlight, tapers give limbs and receivers real form, and lathed
+   * profiles with radial normals make heads, barrels and optics round.
+   * ------------------------------------------------------------- */
+
+  /* Arbitrary quad, winding p0->p1->p2->p3, normal from the cross product. */
+  Builder.prototype.quadFace = function (p0, p1, p2, p3, col, bone, nOverride) {
+    var ax = p1[0] - p0[0], ay = p1[1] - p0[1], az = p1[2] - p0[2];
+    var bx = p2[0] - p0[0], by = p2[1] - p0[1], bz = p2[2] - p0[2];
+    var nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx;
+    var l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+    nx /= l; ny /= l; nz /= l;
+    if (nOverride) { nx = nOverride[0]; ny = nOverride[1]; nz = nOverride[2]; }
+    var shade = faceShade(nx, ny, nz);
+    var r = col[0] * shade, g = col[1] * shade, b = col[2] * shade;
+    var base = this.nv;
+    this.vert(p0[0], p0[1], p0[2], nx, ny, nz, r, g, b, bone, 0);
+    this.vert(p1[0], p1[1], p1[2], nx, ny, nz, r, g, b, bone, 0);
+    this.vert(p2[0], p2[1], p2[2], nx, ny, nz, r, g, b, bone, 0);
+    this.vert(p3[0], p3[1], p3[2], nx, ny, nz, r, g, b, bone, 0);
+    this.quad(base, base + 1, base + 2, base + 3);
+    return this;
+  };
+
+  Builder.prototype.triFace = function (p0, p1, p2, col, bone) {
+    var ax = p1[0] - p0[0], ay = p1[1] - p0[1], az = p1[2] - p0[2];
+    var bx = p2[0] - p0[0], by = p2[1] - p0[1], bz = p2[2] - p0[2];
+    var nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx;
+    var l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+    nx /= l; ny /= l; nz /= l;
+    var shade = faceShade(nx, ny, nz);
+    var r = col[0] * shade, g = col[1] * shade, b = col[2] * shade;
+    var base = this.nv;
+    this.vert(p0[0], p0[1], p0[2], nx, ny, nz, r, g, b, bone, 0);
+    this.vert(p1[0], p1[1], p1[2], nx, ny, nz, r, g, b, bone, 0);
+    this.vert(p2[0], p2[1], p2[2], nx, ny, nz, r, g, b, bone, 0);
+    this.i.push(base, base + 1, base + 2);
+    return this;
+  };
+
+  /* Directional tint so untextured geometry still reads as three-dimensional. */
+  function faceShade(nx, ny, nz) {
+    var up = ny * 0.5 + 0.5;
+    var side = Math.abs(nz) * 0.10 - Math.abs(nx) * 0.07;
+    return 0.74 + up * 0.26 + side;
+  }
+  Geo.faceShade = faceShade;
+
+  /* Hexahedron from 8 corners: [b0,b1,b2,b3, t0,t1,t2,t3] wound CCW seen
+   * from above. Handles any taper, shear or twist. */
+  Builder.prototype.hex = function (c, col, bone) {
+    this.quadFace(c[4], c[5], c[6], c[7], col, bone);               // top
+    this.quadFace(c[3], c[2], c[1], c[0], col, bone);               // bottom
+    this.quadFace(c[0], c[1], c[5], c[4], col, bone);
+    this.quadFace(c[1], c[2], c[6], c[5], col, bone);
+    this.quadFace(c[2], c[3], c[7], c[6], col, bone);
+    this.quadFace(c[3], c[0], c[4], c[7], col, bone);
+    return this;
+  };
+
+  /* Box that tapers along Y — limbs, torsos, magazines, stocks. */
+  Builder.prototype.taper = function (cx, cy, cz, hx0, hz0, hx1, hz1, y0, y1, col, bone, shiftX, shiftZ) {
+    shiftX = shiftX || 0; shiftZ = shiftZ || 0;
+    var c = [
+      [cx - hx0, cy + y0, cz - hz0], [cx + hx0, cy + y0, cz - hz0],
+      [cx + hx0, cy + y0, cz + hz0], [cx - hx0, cy + y0, cz + hz0],
+      [cx - hx1 + shiftX, cy + y1, cz - hz1 + shiftZ], [cx + hx1 + shiftX, cy + y1, cz - hz1 + shiftZ],
+      [cx + hx1 + shiftX, cy + y1, cz + hz1 + shiftZ], [cx - hx1 + shiftX, cy + y1, cz + hz1 + shiftZ]
+    ];
+    return this.hex(c, col, bone);
+  };
+
+  /* Chamfered box. The bevel strips are what make edges catch light. */
+  Builder.prototype.bevel = function (x0, x1, y0, y1, z0, z1, b, col, bone) {
+    var bx = Math.min(b, (x1 - x0) * 0.42), by = Math.min(b, (y1 - y0) * 0.42), bz = Math.min(b, (z1 - z0) * 0.42);
+    var X = [x0, x0 + bx, x1 - bx, x1];
+    var Y = [y0, y0 + by, y1 - by, y1];
+    var Z = [z0, z0 + bz, z1 - bz, z1];
+    var self = this;
+    function P(i, j, k) { return [X[i], Y[j], Z[k]]; }
+
+    // six inset faces
+    self.quadFace(P(1, 3, 1), P(1, 3, 2), P(2, 3, 2), P(2, 3, 1), col, bone);   // +Y
+    self.quadFace(P(1, 0, 2), P(1, 0, 1), P(2, 0, 1), P(2, 0, 2), col, bone);   // -Y
+    self.quadFace(P(3, 1, 1), P(3, 1, 2), P(3, 2, 2), P(3, 2, 1), col, bone);   // +X
+    self.quadFace(P(0, 1, 2), P(0, 1, 1), P(0, 2, 1), P(0, 2, 2), col, bone);   // -X
+    self.quadFace(P(1, 1, 3), P(2, 1, 3), P(2, 2, 3), P(1, 2, 3), col, bone);   // +Z
+    self.quadFace(P(2, 1, 0), P(1, 1, 0), P(1, 2, 0), P(2, 2, 0), col, bone);   // -Z
+
+    // twelve edge chamfers
+    var E = [
+      [[1,3,1],[2,3,1],[2,2,0],[1,2,0]], [[2,3,2],[1,3,2],[1,2,3],[2,2,3]],
+      [[1,0,0],[2,0,0],[2,1,1],[1,1,1]], [[2,0,3],[1,0,3],[1,1,2],[2,1,2]],
+      [[3,3,1],[3,3,2],[2,3,2],[2,3,1]], [[0,3,2],[0,3,1],[1,3,1],[1,3,2]],
+      [[2,0,1],[2,0,2],[3,0,2],[3,0,1]], [[1,0,2],[1,0,1],[0,0,1],[0,0,2]],
+      [[3,1,2],[3,1,1],[3,0,1],[3,0,2]].map(function(v){return v;}),
+      [[3,2,1],[3,2,2],[3,3,2],[3,3,1]],
+      [[0,1,1],[0,1,2],[0,0,2],[0,0,1]],
+      [[0,2,2],[0,2,1],[0,3,1],[0,3,2]]
+    ];
+    // the four vertical edges
+    self.quadFace(P(3,1,2), P(3,1,1), P(2,1,0), P(2,2,0), col, bone);
+    for (var e = 0; e < E.length; e++) {
+      self.quadFace(P.apply(null, E[e][0]), P.apply(null, E[e][1]),
+                    P.apply(null, E[e][2]), P.apply(null, E[e][3]), col, bone);
+    }
+    // vertical corner chamfers
+    var V = [[3,2],[2,3],[0,1],[1,0]];
+    var corner = [[3,3],[0,3],[0,0],[3,0]];
+    for (var v = 0; v < 4; v++) {
+      var a = corner[v], nx = corner[(v + 1) % 4];
+      void a; void nx;
+    }
+    self.quadFace(P(2,1,3), P(3,1,2), P(3,2,2), P(2,2,3), col, bone);
+    self.quadFace(P(3,1,1), P(2,1,0), P(2,2,0), P(3,2,1), col, bone);
+    self.quadFace(P(1,1,0), P(0,1,1), P(0,2,1), P(1,2,0), col, bone);
+    self.quadFace(P(0,1,2), P(1,1,3), P(1,2,3), P(0,2,2), col, bone);
+    return this;
+  };
+
+  /* Revolve a profile of [radius, y] pairs around the Y axis.
+   * `smooth` gives radial normals, so the surface reads as curved. */
+  Builder.prototype.lathe = function (cx, cy, cz, profile, segments, col, bone, smooth, squashZ) {
+    segments = segments || 10;
+    squashZ = squashZ === undefined ? 1 : squashZ;
+    var i, k;
+    for (k = 0; k < profile.length - 1; k++) {
+      var r0 = profile[k][0], y0 = profile[k][1];
+      var r1 = profile[k + 1][0], y1 = profile[k + 1][1];
+      for (i = 0; i < segments; i++) {
+        var a0 = (i / segments) * Math.PI * 2, a1 = ((i + 1) / segments) * Math.PI * 2;
+        var c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+        var p0 = [cx + c0 * r0, cy + y0, cz + s0 * r0 * squashZ];
+        var p1 = [cx + c1 * r0, cy + y0, cz + s1 * r0 * squashZ];
+        var p2 = [cx + c1 * r1, cy + y1, cz + s1 * r1 * squashZ];
+        var p3 = [cx + c0 * r1, cy + y1, cz + s0 * r1 * squashZ];
+        if (r0 < 1e-5 && r1 < 1e-5) continue;
+        if (smooth) {
+          // slope-aware radial normal, averaged per ring so bands blend
+          var dr = r1 - r0, dy = y1 - y0;
+          var nl = Math.sqrt(dr * dr + dy * dy) || 1;
+          var ny = dr / nl, nr = dy / nl;
+          var base = this.nv;
+          var shade0 = faceShade(c0 * nr, ny, s0 * nr), shade1 = faceShade(c1 * nr, ny, s1 * nr);
+          this.vert(p0[0], p0[1], p0[2], c0 * nr, ny, s0 * nr, col[0] * shade0, col[1] * shade0, col[2] * shade0, bone, 0);
+          this.vert(p1[0], p1[1], p1[2], c1 * nr, ny, s1 * nr, col[0] * shade1, col[1] * shade1, col[2] * shade1, bone, 0);
+          this.vert(p2[0], p2[1], p2[2], c1 * nr, ny, s1 * nr, col[0] * shade1, col[1] * shade1, col[2] * shade1, bone, 0);
+          this.vert(p3[0], p3[1], p3[2], c0 * nr, ny, s0 * nr, col[0] * shade0, col[1] * shade0, col[2] * shade0, bone, 0);
+          this.quad(base, base + 1, base + 2, base + 3);
+        } else {
+          this.quadFace(p0, p1, p2, p3, col, bone);
+        }
+      }
+    }
+    // caps
+    var first = profile[0], last = profile[profile.length - 1];
+    if (first[0] > 1e-5) this.fan(cx, cy + first[1], cz, first[0], segments, col, bone, -1, squashZ);
+    if (last[0] > 1e-5) this.fan(cx, cy + last[1], cz, last[0], segments, col, bone, 1, squashZ);
+    return this;
+  };
+
+  Builder.prototype.fan = function (cx, cy, cz, r, segments, col, bone, dir, squashZ) {
+    squashZ = squashZ === undefined ? 1 : squashZ;
+    var shade = faceShade(0, dir, 0);
+    var c = [col[0] * shade, col[1] * shade, col[2] * shade];
+    var centre = this.nv;
+    this.vert(cx, cy, cz, 0, dir, 0, c[0], c[1], c[2], bone, 0);
+    for (var i = 0; i <= segments; i++) {
+      var a = (i / segments) * Math.PI * 2 * dir;
+      this.vert(cx + Math.cos(a) * r, cy, cz + Math.sin(a) * r * squashZ, 0, dir, 0, c[0], c[1], c[2], bone, 0);
+    }
+    for (var k = 0; k < segments; k++) this.i.push(centre, centre + 1 + k, centre + 2 + k);
+    return this;
+  };
+
+  /* A capsule-ish limb between two radii, oriented along Y. */
+  Builder.prototype.limb = function (cx, cy, cz, y0, y1, r0, r1, col, bone, sides, squashZ) {
+    return this.lathe(cx, cy, cz, [[r0 * 0.72, y0 - (r0 * 0.28)], [r0, y0], [r1, y1], [r1 * 0.72, y1 + r1 * 0.28]],
+                      sides || 8, col, bone, true, squashZ);
+  };
+
+  /* Rounded blob (head, shoulder, knuckle) — a squashed sphere. */
+  Builder.prototype.blob = function (cx, cy, cz, rx, ry, rz, col, bone, rings, segments) {
+    rings = rings || 5; segments = segments || 9;
+    var profile = [];
+    for (var i = 0; i <= rings; i++) {
+      var t = i / rings;
+      var ang = (t - 0.5) * Math.PI;
+      profile.push([Math.cos(ang) * rx, Math.sin(ang) * ry]);
+    }
+    return this.lathe(cx, cy, cz, profile, segments, col, bone, true, rz / rx);
+  };
+
+  /* Tapered segment between two points in the XY plane, with Z thickness.
+   * Used for finger joints, which all curl in one plane. */
+  Builder.prototype.segXY = function (x0, y0, x1, y1, z, hz0, hz1, r0, r1, col, bone) {
+    var dx = x1 - x0, dy = y1 - y0;
+    var l = Math.sqrt(dx * dx + dy * dy) || 1;
+    var px = -dy / l, py = dx / l;          // perpendicular in-plane
+    var c = [
+      [x0 - px * r0, y0 - py * r0, z - hz0], [x0 + px * r0, y0 + py * r0, z - hz0],
+      [x0 + px * r0, y0 + py * r0, z + hz0], [x0 - px * r0, y0 - py * r0, z + hz0],
+      [x1 - px * r1, y1 - py * r1, z - hz1], [x1 + px * r1, y1 + py * r1, z - hz1],
+      [x1 + px * r1, y1 + py * r1, z + hz1], [x1 - px * r1, y1 - py * r1, z + hz1]
+    ];
+    return this.hex(c, col, bone);
+  };
+
   /* Box with a Y rotation applied about (cx, cz) — for angled props. */
   Builder.prototype.boxRot = function (cx, cy, cz, hx, hy, hz, ry, col, bone) {
     var cr = Math.cos(ry), sr = Math.sin(ry);

@@ -78,7 +78,7 @@
     '  vec3 col = vColor * lit;',
     '  vec3 v = normalize(-vView);',
     '  vec3 h = normalize(uSunDir + v);',
-    '  float spec = pow(max(dot(n, h), 0.0), 26.0) * 0.30;',
+    '  float spec = pow(max(dot(n, h), 0.0), 48.0) * 0.14;',
     '  col += uSunCol * spec;',
     '  float rim = pow(1.0 - max(dot(n, v), 0.0), 2.5);',
     '  col += uTint.rgb * (rim * uRim);',
@@ -449,10 +449,13 @@
     var aspect = this.width / this.height;
     var q = C.QUALITY_PRESETS[this.quality] || C.QUALITY_PRESETS.high;
 
-    var hFov = (this.settings.fov || 90) * M.DEG;
+    // Hor+ like every competitive shooter: the FOV number is the 4:3 vertical
+    // field, and a wider monitor shows more to the sides rather than zooming in.
+    // 90 here is ~106 degrees horizontal on 16:9, which is what CS feels like.
+    var fov = M.clamp(this.settings.fov || 90, 60, 130) * M.DEG;
     var zoom = cam.zoom || 1;
-    var vFov = 2 * Math.atan(Math.tan(hFov / 2) / Math.max(0.3, aspect)) / zoom;
-    vFov = M.clamp(vFov, 0.08, 2.6);
+    var vFov = 2 * Math.atan(Math.tan(fov / 2) * 0.75) / zoom;
+    vFov = M.clamp(vFov, 0.05, 2.6);
 
     Mat4.perspective(this.proj, vFov, aspect, 0.03, q.viewDistance + 60);
     Mat4.fpsView(this.view, cam.x, cam.y, cam.z, cam.yaw, cam.pitch, cam.roll || 0);
@@ -585,7 +588,7 @@
       var ti = C.TEAM_INFO[p.team];
       var rc = ti ? Geo.hexToRgb(ti.color) : [1, 1, 1];
       var tint = [rc[0], rc[1], rc[2], p.hitFlash ? Math.min(0.55, p.hitFlash) : 0];
-      this.drawSkinned(mesh, model, bones, tint, enemy ? 0.5 : 0.22);
+      this.drawSkinned(mesh, model, bones, tint, enemy ? 0.30 : 0.12);
 
       // held weapon
       var wid = p.netWeapon || (P.curSlot(p) ? P.curWeapon(p).id : null);
@@ -796,8 +799,10 @@
       var mesh = this.weaponMesh(vm.weaponId, vm.skin || 'factory');
       this.drawSkinned(mesh, model, this.identityBones, vm.tint || null, 0.25);
       if (!vm.noHands) {
-        this.drawSkinned(this.simpleMesh('hands_' + (vm.glove || 'default'), function () {
-          return Geo.buildHands(vm.glove || 'default');
+        var hkey = 'hands_' + vm.weaponId + '_' + (vm.glove || 'default');
+        var wid = vm.weaponId, glove = vm.glove || 'default';
+        this.drawSkinned(this.simpleMesh(hkey, function () {
+          return Geo.buildHands(wid, glove);
         }), model, this.identityBones, null, 0.2);
       }
     }

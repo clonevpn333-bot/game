@@ -564,15 +564,15 @@
     var speed = P.speed2D(p);
     var moveFrac = M.clamp(speed / C.MAX_SPEED, 0, 1);
     this.bobT = (this.bobT || 0) + dt * speed * 1.5;
-    var bobY = p.onGround ? Math.abs(Math.sin(this.bobT)) * 0.022 * moveFrac : 0;
-    var bobX = p.onGround ? Math.sin(this.bobT * 0.5) * 0.016 * moveFrac : 0;
+    var bobY = p.onGround ? Math.abs(Math.sin(this.bobT)) * 0.034 * moveFrac : 0;
+    var bobX = p.onGround ? Math.sin(this.bobT * 0.5) * 0.026 * moveFrac : 0;
 
     var rightDot = 0;
     if (speed > 0.2) {
       var rx = Math.sin(p.yaw), rz = Math.cos(p.yaw);
       rightDot = (p.vel.x * rx + p.vel.z * rz) / C.MAX_SPEED;
     }
-    this.rollTarget = M.clamp(-rightDot * 0.028, -0.03, 0.03);
+    this.rollTarget = M.clamp(-rightDot * 0.042, -0.045, 0.045);
     cam.roll = M.damp(cam.roll || 0, this.rollTarget, 0.002, dt);
 
     cam.x = p.pos.x + bobX * 0.4;
@@ -665,12 +665,12 @@
     // base pose, tuned per weapon class so silhouettes differ
     // A small inward yaw and roll keeps the weapon from reading as a flat slab.
     var base = { x: 0.168, y: -0.112, z: -0.50, scale: 0.50, yaw: -0.085, roll: 0.075 };
-    if (w.cls === 'pistol') { base.x = 0.140; base.y = -0.104; base.z = -0.40; base.scale = 0.62; base.yaw = -0.105; base.roll = 0.10; }
-    else if (w.cls === 'knife') { base.x = 0.170; base.y = -0.126; base.z = -0.35; base.scale = 0.76; base.yaw = -0.22; base.roll = 0.30; }
+    if (w.cls === 'pistol') { base.x = 0.142; base.y = -0.106; base.z = -0.40; base.scale = 0.62; base.yaw = -0.105; base.roll = 0.10; }
+    else if (w.cls === 'knife') { base.x = 0.168; base.y = -0.124; base.z = -0.38; base.scale = 0.60; base.yaw = -0.22; base.roll = 0.30; }
     else if (w.cls === 'sniper') { base.x = 0.160; base.y = -0.100; base.z = -0.54; base.scale = 0.45; base.yaw = -0.070; base.roll = 0.06; }
     else if (w.cls === 'shotgun') { base.x = 0.168; base.y = -0.116; base.z = -0.50; base.scale = 0.49; base.yaw = -0.080; base.roll = 0.07; }
     else if (w.cls === 'heavy') { base.x = 0.180; base.y = -0.124; base.z = -0.54; base.scale = 0.46; base.yaw = -0.075; base.roll = 0.06; }
-    else if (w.cls === 'grenade') { base.x = 0.178; base.y = -0.150; base.z = -0.38; base.scale = 0.84; base.yaw = -0.30; base.roll = 0.14; }
+    else if (w.cls === 'grenade') { base.x = 0.176; base.y = -0.148; base.z = -0.38; base.scale = 0.84; base.yaw = -0.30; base.roll = 0.14; }
 
     var ax = 0, ay = 0, az = 0, apitch = 0, ayaw = 0, aroll = 0;
     var t = vm.animT;
@@ -722,9 +722,8 @@
     var cone = P.inaccuracy(p);
     // convert the cone angle to pixels at the current FOV
     var h = this.renderer.canvas.clientHeight || 720;
-    var hFov = (this.settings.fov || 90) * M.DEG;
-    var aspect = (this.renderer.canvas.clientWidth || 1280) / h;
-    var vFov = 2 * Math.atan(Math.tan(hFov / 2) / Math.max(0.3, aspect)) / (this.camera.zoom || 1);
+    var fov = M.clamp(this.settings.fov || 90, 60, 130) * M.DEG;
+    var vFov = 2 * Math.atan(Math.tan(fov / 2) * 0.75) / (this.camera.zoom || 1);
     var px = Math.tan(cone) / Math.tan(vFov / 2) * (h / 2);
     return M.clamp(px, 0, 90);
   };
