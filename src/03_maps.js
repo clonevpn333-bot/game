@@ -175,18 +175,18 @@
     ],
     spawns: {
       1: [ // attackers, south
-        { x: -6, y: 0.1, z: 31, yaw: Math.PI / 2 }, { x: -3, y: 0.1, z: 32.5, yaw: Math.PI / 2 },
-        { x: 0, y: 0.1, z: 31, yaw: Math.PI / 2 }, { x: 3, y: 0.1, z: 32.5, yaw: Math.PI / 2 },
-        { x: 6, y: 0.1, z: 31, yaw: Math.PI / 2 }, { x: -8, y: 0.1, z: 33.5, yaw: Math.PI / 2 },
-        { x: 8, y: 0.1, z: 33.5, yaw: Math.PI / 2 }, { x: 0, y: 0.1, z: 34.5, yaw: Math.PI / 2 },
-        { x: -4, y: 0.1, z: 35.5, yaw: Math.PI / 2 }, { x: 4, y: 0.1, z: 35.5, yaw: Math.PI / 2 }
+        { x: -3.5, y: 0.1, z: 31, yaw: Math.PI / 2 }, { x: 0, y: 0.1, z: 31, yaw: Math.PI / 2 },
+        { x: 3.5, y: 0.1, z: 31, yaw: Math.PI / 2 }, { x: -8.5, y: 0.1, z: 32.5, yaw: Math.PI / 2 },
+        { x: 8.5, y: 0.1, z: 32.5, yaw: Math.PI / 2 }, { x: -3.5, y: 0.1, z: 34, yaw: Math.PI / 2 },
+        { x: 0, y: 0.1, z: 34, yaw: Math.PI / 2 }, { x: 3.5, y: 0.1, z: 34, yaw: Math.PI / 2 },
+        { x: -8.5, y: 0.1, z: 35.5, yaw: Math.PI / 2 }, { x: 8.5, y: 0.1, z: 35.5, yaw: Math.PI / 2 }
       ],
       2: [ // defenders, north
-        { x: -6, y: 0.1, z: -31, yaw: -Math.PI / 2 }, { x: -3, y: 0.1, z: -32.5, yaw: -Math.PI / 2 },
-        { x: 0, y: 0.1, z: -31, yaw: -Math.PI / 2 }, { x: 3, y: 0.1, z: -32.5, yaw: -Math.PI / 2 },
-        { x: 6, y: 0.1, z: -31, yaw: -Math.PI / 2 }, { x: -8, y: 0.1, z: -34, yaw: -Math.PI / 2 },
-        { x: 8, y: 0.1, z: -34, yaw: -Math.PI / 2 }, { x: 0, y: 0.1, z: -35, yaw: -Math.PI / 2 },
-        { x: -4, y: 0.1, z: -36, yaw: -Math.PI / 2 }, { x: 4, y: 0.1, z: -36, yaw: -Math.PI / 2 }
+        { x: -3.5, y: 0.1, z: -31, yaw: -Math.PI / 2 }, { x: 0, y: 0.1, z: -31, yaw: -Math.PI / 2 },
+        { x: 3.5, y: 0.1, z: -31, yaw: -Math.PI / 2 }, { x: -8.5, y: 0.1, z: -32.5, yaw: -Math.PI / 2 },
+        { x: 8.5, y: 0.1, z: -32.5, yaw: -Math.PI / 2 }, { x: -3.5, y: 0.1, z: -34, yaw: -Math.PI / 2 },
+        { x: 0, y: 0.1, z: -34, yaw: -Math.PI / 2 }, { x: 3.5, y: 0.1, z: -34, yaw: -Math.PI / 2 },
+        { x: -8.5, y: 0.1, z: -35.5, yaw: -Math.PI / 2 }, { x: 8.5, y: 0.1, z: -35.5, yaw: -Math.PI / 2 }
       ]
     },
     buyZones: [
@@ -227,7 +227,7 @@
     b.wallZ(6, -24, 24, [[-6, -1, 3.0]], 0, H, 0.6, ST);       // connector to A
     b.wallZ(-6, -24, 24, [[-4, 1, 3.0]], 0, H, 0.6, ST);       // window to B
     // mid doors — a waist-height choke you can smoke off
-    b.wallX(0, -6, 6, [[-1.8, 1.8, 2.6]], 0, H, 0.5, W, { pen: 'wood' });
+    b.wallX(0, -6, 6, [[-1.8, 1.8, 2.6]], 0, H, 0.24, W, { pen: 'wood' });   // shootable panel
     b.crate(-3.4, 8, 1.6, 1.6, 0, 1.1, 'crate');
     b.crate(3.4, 12, 1.6, 1.6, 0, 1.1, 'crate');
     b.crate(0, -8, 2.6, 2.6, 0, 2.3, 'crate');   // breaks the spawn-to-spawn sightline
@@ -392,11 +392,11 @@
     b.prop('pipe', 0, 4.2, 0, 0, 2.2);
 
     /* mid lanes either side of the silo */
-    b.wallZ(11, -25, 25, [[-16, -9, 3.2], [9, 16, 3.2]], 0, H, 0.6, CO);
-    b.wallZ(-11, -25, 25, [[-16, -9, 3.2], [9, 16, 3.2]], 0, H, 0.6, CO);
-    // thin sheeting sections you can shoot through
-    b.box(10.6, 11.4, 0, 2.6, -6, 0, SH, { pen: 'wood', thin: true });
-    b.box(-11.4, -10.6, 0, 2.6, 0, 6, SH, { pen: 'wood', thin: true });
+    b.wallZ(11, -25, 25, [[-16, -9, 3.2], [-6, 0], [9, 16, 3.2]], 0, H, 0.6, CO);
+    b.wallZ(-11, -25, 25, [[-16, -9, 3.2], [0, 6], [9, 16, 3.2]], 0, H, 0.6, CO);
+    // sheet-metal infills: opaque, but a rifle round goes straight through
+    b.box(10.88, 11.12, 0, 2.6, -6, 0, SH, { pen: 'wood', thin: true });
+    b.box(-11.12, -10.88, 0, 2.6, 0, 6, SH, { pen: 'wood', thin: true });
 
     /* ---- A SIDE: raised platform site, reached by a long ramp ---- */
     b.box(14, 32, 2.2, 2.6, -12, 8, MT);                       // the platform deck
@@ -562,8 +562,8 @@
 
     /* ---- CELLAR — a low, dark flank from attacker side to B ---- */
     b.box(-16, -10, 2.15, 2.45, 8, 19, WD);                     // low cellar ceiling
-    b.wallZ(-10, 8, 19, [[10, 15, 2.05]], 0, 2.45, 0.4, WD, { pen: 'wood' });
-    b.wallZ(-16, 8, 19, [[9, 14, 2.05]], 0, 2.45, 0.4, WD, { pen: 'wood' });
+    b.wallZ(-10, 8, 19, [[10, 15, 2.05]], 0, 2.45, 0.26, WD, { pen: 'wood' });
+    b.wallZ(-16, 8, 19, [[9, 14, 2.05]], 0, 2.45, 0.26, WD, { pen: 'wood' });
     b.wallX(19, -16, -10, [[-15, -11, 2.05]], 0, 2.45, 0.4, WD);
 
     b.prop('planter', 11, 0, 14, 0, 1);

@@ -146,7 +146,7 @@
       var p = this.players[i];
       if (p.team !== C.TEAM.ATT && p.team !== C.TEAM.DEF) { p.alive = false; continue; }
       var list = this.map.spawns[p.team];
-      var spot = list[used[p.team] % list.length];
+      var spot = this.safeSpawn(list[used[p.team] % list.length]);
       used[p.team]++;
       P.spawn(p, spot, false);
 
@@ -166,6 +166,16 @@
       }
       this.emit({ t: 'spawn', id: p.id, x: p.pos.x, y: p.pos.y, z: p.pos.z });
     }
+  };
+
+  /* A spawn point that has ended up inside geometry (after a map edit, say)
+   * would trap a player, so snap it to the nearest walkable spot. */
+  Match.prototype.safeSpawn = function (spot) {
+    if (!this.world.overlaps(spot.x, spot.y + 0.02, spot.z, C.PLAYER_RADIUS, C.STAND_HEIGHT)) return spot;
+    var id = this.world.nearestNode(spot.x, spot.y, spot.z);
+    if (id < 0) return spot;
+    var nv = this.world.nav;
+    return { x: nv.x[id], y: nv.y[id] + 0.05, z: nv.z[id], yaw: spot.yaw };
   };
 
   Match.prototype.giveDefaultLoadout = function (p, full) {

@@ -29,11 +29,11 @@
   var FS_WORLD = [
     'precision mediump float;',
     'uniform sampler2D uDetail; uniform vec3 uFogColor; uniform vec2 uFogRange;',
-    'uniform float uContrast;',
+    'uniform float uContrast; uniform float uFlat;',
     'varying vec3 vColor; varying vec2 vUV; varying float vDist; varying vec3 vNormal;',
     'void main(){',
-    '  float d = texture2D(uDetail, vUV).r;',
-    '  vec3 col = vColor * (0.80 + 0.42 * d);',
+    '  vec3 albedo = mix(texture2D(uDetail, vUV).rgb, vec3(0.62), uFlat);',
+    '  vec3 col = albedo * vColor;',
     '  col = (col - 0.5) * uContrast + 0.5;',
     '  float f = clamp((vDist - uFogRange.x) / (uFogRange.y - uFogRange.x), 0.0, 1.0);',
     '  col = mix(col, uFogColor, f * f);',
@@ -77,6 +77,9 @@
     '  vec3 lit = uAmbient * (0.55 + 0.45 * wrap) + uSunCol * ndl;',
     '  vec3 col = vColor * lit;',
     '  vec3 v = normalize(-vView);',
+    '  vec3 h = normalize(uSunDir + v);',
+    '  float spec = pow(max(dot(n, h), 0.0), 26.0) * 0.30;',
+    '  col += uSunCol * spec;',
     '  float rim = pow(1.0 - max(dot(n, v), 0.0), 2.5);',
     '  col += uTint.rgb * (rim * uRim);',
     '  col = mix(col, uTint.rgb, uTint.a);',
@@ -117,14 +120,29 @@
     'precision mediump float;',
     'uniform vec3 uTop; uniform vec3 uBottom; uniform vec3 uSunDir; uniform vec3 uSunCol;',
     'varying vec3 vRay;',
+    'float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
+    'float vnoise(vec2 p){',
+    '  vec2 i = floor(p), f = fract(p);',
+    '  f = f * f * (3.0 - 2.0 * f);',
+    '  float a = hash(i), b = hash(i + vec2(1.0, 0.0));',
+    '  float c = hash(i + vec2(0.0, 1.0)), d2 = hash(i + vec2(1.0, 1.0));',
+    '  return mix(mix(a, b, f.x), mix(c, d2, f.x), f.y);',
+    '}',
     'void main(){',
     '  vec3 d = normalize(vRay);',
     '  float t = clamp(d.y * 0.5 + 0.5, 0.0, 1.0);',
     '  vec3 col = mix(uBottom, uTop, pow(t, 0.85));',
-    '  float sun = pow(max(dot(d, uSunDir), 0.0), 64.0);',
-    '  col += uSunCol * sun * 0.7;',
-    '  float halo = pow(max(dot(d, uSunDir), 0.0), 6.0);',
-    '  col += uSunCol * halo * 0.12;',
+    // cloud band, projected onto the dome so it thins toward the horizon
+    '  float up = max(d.y, 0.03);',
+    '  vec2 cp = d.xz / up * 0.55;',
+    '  float n = vnoise(cp * 1.3) * 0.55 + vnoise(cp * 3.1) * 0.30 + vnoise(cp * 7.0) * 0.15;',
+    '  float cloud = smoothstep(0.52, 0.82, n) * smoothstep(0.02, 0.30, d.y);',
+    '  col = mix(col, mix(vec3(1.0), uSunCol, 0.35), cloud * 0.55);',
+    '  float sun = pow(max(dot(d, uSunDir), 0.0), 220.0);',
+    '  col += uSunCol * sun * 1.2;',
+    '  float halo = pow(max(dot(d, uSunDir), 0.0), 7.0);',
+    '  col += uSunCol * halo * 0.14;',
+    '  col = mix(col, uBottom, pow(1.0 - clamp(d.y * 3.0, 0.0, 1.0), 3.0) * 0.45);',
     '  gl_FragColor = vec4(col, 1.0);',
     '}'
   ].join('\n');
@@ -145,7 +163,11 @@
     this.progSprite = GL.program(gl, VS_SPRITE, FS_SPRITE, 'sprite');
     this.progSky = GL.program(gl, VS_SKY, FS_SKY, 'sky');
 
-    this.detailTex = GL.makeTexture(gl, makeDetail(), { aniso: q.anisotropy });
+    this.matTex = {};
+    var canvases = CS.Tex.buildAll();
+    for (var mname in canvases) {
+      this.matTex[mname] = GL.makeTexture(gl, canvases[mname], { aniso: q.anisotropy });
+    }
     this.atlasTex = GL.makeTexture(gl, FX.makeAtlas(), { clamp: true, nomip: true });
 
     this.worldLayout = [
@@ -157,7 +179,7 @@
       { name: 'aColor', size: 3 }, { name: 'aBone', size: 1 }
     ];
 
-    this.mapMesh = null;
+    this.mapGroups = [];
     this.propMesh = null;
     this.charMeshes = {};
     this.weaponMeshes = {};
@@ -204,7 +226,7 @@
     gl.clearColor(0.05, 0.06, 0.08, 1);
   }
 
-  /* Procedural detail texture: fine grain plus a few scratches. */
+  /* Kept for reference; materials now come from CS.Tex. */
   function makeDetail() {
     var S = 256, cv = GL.makeCanvas(S), g = cv.getContext('2d');
     var img = g.createImageData(S, S);
@@ -258,11 +280,18 @@
    * ------------------------------------------------------------- */
   Renderer.prototype.loadMap = function (world, map) {
     var gl = this.gl;
-    if (this.mapMesh) this.mapMesh.dispose();
+    for (var d = 0; d < this.mapGroups.length; d++) this.mapGroups[d].mesh.dispose();
+    this.mapGroups.length = 0;
     if (this.propMesh) this.propMesh.dispose();
 
     var built = Geo.buildMap(world, map, this.quality);
-    this.mapMesh = new GL.Mesh(gl, this.worldLayout).upload(built.verts, built.indices, false);
+    for (var g = 0; g < built.groups.length; g++) {
+      var grp = built.groups[g];
+      this.mapGroups.push({
+        mat: grp.mat,
+        mesh: new GL.Mesh(gl, this.worldLayout).upload(grp.verts, grp.indices, false)
+      });
+    }
     this.mapStats = built.stats;
 
     var props = Geo.buildProps(map);
@@ -482,12 +511,22 @@
     gl.uniform3f(this.progWorld.u.uCam, cam.x, cam.y, cam.z);
     gl.uniform3fv(this.progWorld.u.uFogColor, this.fogColor);
     gl.uniform2f(this.progWorld.u.uFogRange, this.env.fogNear, this.env.fogFar * q.fogDensity);
-    gl.uniform1f(this.progWorld.u.uContrast, 1.06);
+    gl.uniform1f(this.progWorld.u.uContrast, 1.04);
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.detailTex);
     gl.uniform1i(this.progWorld.u.uDetail, 0);
-    if (this.mapMesh) { this.mapMesh.draw(this.progWorld); this.drawCalls++; }
-    if (this.propMesh) { this.propMesh.draw(this.progWorld); this.drawCalls++; }
+    for (var i = 0; i < this.mapGroups.length; i++) {
+      var grp = this.mapGroups[i];
+      gl.bindTexture(gl.TEXTURE_2D, this.matTex[grp.mat] || this.matTex.concrete);
+      grp.mesh.draw(this.progWorld);
+      this.drawCalls++;
+    }
+    if (this.propMesh) {
+      gl.bindTexture(gl.TEXTURE_2D, this.matTex.concrete);
+      gl.uniform1f(this.progWorld.u.uFlat, 1);
+      this.propMesh.draw(this.progWorld);
+      gl.uniform1f(this.progWorld.u.uFlat, 0);
+      this.drawCalls++;
+    }
   };
 
   Renderer.prototype.beginSkin = function (cam) {
@@ -726,8 +765,9 @@
     var cam = scene.camera;
     if (vm.hidden) return;
 
-    var vmFov = (this.settings.viewmodelFov || 68) * M.DEG;
-    var vFov = 2 * Math.atan(Math.tan(vmFov / 2) / Math.max(0.3, aspect));
+    // viewmodel_fov is vertical, independent of the world FOV — that is what
+    // keeps the weapon the same size when a player changes their world FOV.
+    var vFov = M.clamp((this.settings.viewmodelFov || 68) * M.DEG, 0.5, 1.8);
     // Viewmodel lives in plain camera space: -Z forward, +X right, +Y up.
     Mat4.perspective(this.viewProj, vFov, aspect, 0.01, 12);
 
@@ -735,10 +775,10 @@
     this.beginSkin({ x: 0, y: 0, z: 0 });
     gl.uniformMatrix4fv(this.progSkin.u.uViewProj, false, this.viewProj);
     // viewmodel lighting is view-relative so it never goes flat black indoors
-    gl.uniform3f(this.progSkin.u.uSunDir, 0.42, 0.68, 0.60);
-    gl.uniform3f(this.progSkin.u.uSunCol, this.sunCol[0] * 0.85, this.sunCol[1] * 0.85, this.sunCol[2] * 0.85);
-    gl.uniform3f(this.progSkin.u.uAmbient, this.ambient[0] * (this.ambI + 0.35),
-                 this.ambient[1] * (this.ambI + 0.35), this.ambient[2] * (this.ambI + 0.35));
+    gl.uniform3f(this.progSkin.u.uSunDir, -0.34, 0.60, 0.72);
+    gl.uniform3f(this.progSkin.u.uSunCol, this.sunCol[0] * 0.95, this.sunCol[1] * 0.93, this.sunCol[2] * 0.90);
+    gl.uniform3f(this.progSkin.u.uAmbient, this.ambient[0] * (this.ambI + 0.62) + 0.10,
+                 this.ambient[1] * (this.ambI + 0.62) + 0.10, this.ambient[2] * (this.ambI + 0.62) + 0.11);
     gl.uniform2f(this.progSkin.u.uFogRange, 900, 1000);
 
     var side = this.settings.viewmodelSide === undefined ? 1 : this.settings.viewmodelSide;
@@ -769,8 +809,8 @@
       var b = this.sprites;
       b.begin();
       var fpos = vm.flashPos || [0.55, -0.05, -0.9];
-      b.add(fpos[0] * side, fpos[1], fpos[2], 0.34 + vm.flash * 0.5, FX.T.FLASH,
-            1, 0.92, 0.66, Math.min(1, vm.flash * 1.6), vm.flashRot || 0,
+      b.add(fpos[0] * side, fpos[1], fpos[2], (0.11 + vm.flash * 0.10) * (vm.flashScale || 1), FX.T.FLASH,
+            1, 0.93, 0.70, Math.min(1, vm.flash * 1.5), vm.flashRot || 0,
             1, 0, 0, 0, 1, 0);
       gl.useProgram(this.progSprite.p);
       gl.uniformMatrix4fv(this.progSprite.u.uViewProj, false, this.viewProj);

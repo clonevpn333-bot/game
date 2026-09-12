@@ -77,10 +77,10 @@
       var F = FACE_DEF[f];
       var shade = 1.0;
       // cheap directional shading so untextured boxes still read as 3D
-      if (F.n[1] > 0) shade = 1.08;
-      else if (F.n[1] < 0) shade = 0.55;
-      else if (F.n[0] !== 0) shade = 0.86;
-      else shade = 0.72;
+      if (F.n[1] > 0) shade = 1.10;
+      else if (F.n[1] < 0) shade = 0.58;
+      else if (F.n[0] !== 0) shade = 0.80;    // muzzle / butt faces
+      else shade = 0.94;                      // flanks — the faces you actually see
       if (shadeTop !== undefined && F.n[1] > 0) shade *= shadeTop;
       var r = col[0] * shade, g = col[1] * shade, b = col[2] * shade;
       var base = this.nv;
@@ -99,7 +99,7 @@
     var cr = Math.cos(ry), sr = Math.sin(ry);
     for (var f = 0; f < 6; f++) {
       var F = FACE_DEF[f];
-      var shade = F.n[1] > 0 ? 1.08 : (F.n[1] < 0 ? 0.55 : (F.n[0] !== 0 ? 0.86 : 0.72));
+      var shade = F.n[1] > 0 ? 1.08 : (F.n[1] < 0 ? 0.58 : (F.n[0] !== 0 ? 0.84 : 0.92));
       var r = col[0] * shade, g = col[1] * shade, b = col[2] * shade;
       var nx = F.n[0] * cr + F.n[2] * sr, nz = -F.n[0] * sr + F.n[2] * cr;
       var base = this.nv;
@@ -108,6 +108,26 @@
         var lx = (p[0] * 2 - 1) * hx, ly = (p[1] * 2 - 1) * hy, lz = (p[2] * 2 - 1) * hz;
         var wx = lx * cr + lz * sr, wz = -lx * sr + lz * cr;
         this.vert(cx + wx, cy + ly, cz + wz, nx, F.n[1], nz, r, g, b, bone, 0);
+      }
+      this.quad(base, base + 1, base + 2, base + 3);
+    }
+    return this;
+  };
+
+  /* Box rotated about the model's right axis (Z) — grips, magazines, stocks. */
+  Builder.prototype.boxRotZ = function (cx, cy, cz, hx, hy, hz, rz, col, bone) {
+    var cr = Math.cos(rz), sr = Math.sin(rz);
+    for (var f = 0; f < 6; f++) {
+      var F = FACE_DEF[f];
+      var shade = F.n[1] > 0 ? 1.10 : (F.n[1] < 0 ? 0.56 : (F.n[0] !== 0 ? 0.82 : 0.94));
+      var r = col[0] * shade, g = col[1] * shade, b = col[2] * shade;
+      var nx = F.n[0] * cr - F.n[1] * sr, ny = F.n[0] * sr + F.n[1] * cr;
+      var base = this.nv;
+      for (var k = 0; k < 4; k++) {
+        var p = F.v[k];
+        var lx = (p[0] * 2 - 1) * hx, ly = (p[1] * 2 - 1) * hy, lz = (p[2] * 2 - 1) * hz;
+        var wx = lx * cr - ly * sr, wy = lx * sr + ly * cr;
+        this.vert(cx + wx, cy + wy, cz + lz, nx, ny, F.n[2], r, g, b, bone, 0);
       }
       this.quad(base, base + 1, base + 2, base + 3);
     }
@@ -242,7 +262,11 @@
       aoRange: 2.4
     };
 
-    var B = new Builder('world');
+    var groups = {};                 // material -> Builder
+    function builderFor(name) {
+      if (!groups[name]) groups[name] = new Builder('world');
+      return groups[name];
+    }
     var cache = {};   // shared-vertex light cache so corners are computed once
     var t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
     var rays = 0;
@@ -261,7 +285,9 @@
     for (var bi = 0; bi < map.boxes.length; bi++) {
       var box = map.boxes[bi];
       if (box.noRender) continue;
+      var matName = Geo.MATERIALS[box.mat] ? box.mat : 'concrete';
       var mat = matOf(box.mat);
+      var B = builderFor(matName);
       var sx = box.max.x - box.min.x, sy = box.max.y - box.min.y, sz = box.max.z - box.min.z;
       if (sx < 1e-4 || sy < 1e-4 || sz < 1e-4) continue;
 
@@ -305,9 +331,9 @@
               var sky = 0.5 + 0.5 * F.n[1];
               var amb = ambI * (0.52 + 0.58 * sky);
               var bounce = groundBounce * (1 - sky) * 0.5;
-              var rr = (ambCol[0] * amb + groundCol[0] * bounce + sunCol[0] * sunI * L.lit) * mat.col[0] * shade;
-              var gg = (ambCol[1] * amb + groundCol[1] * bounce + sunCol[1] * sunI * L.lit) * mat.col[1] * shade;
-              var bb = (ambCol[2] * amb + groundCol[2] * bounce + sunCol[2] * sunI * L.lit) * mat.col[2] * shade;
+              var rr = (ambCol[0] * amb + groundCol[0] * bounce + sunCol[0] * sunI * L.lit) * shade;
+              var gg = (ambCol[1] * amb + groundCol[1] * bounce + sunCol[1] * sunI * L.lit) * shade;
+              var bb = (ambCol[2] * amb + groundCol[2] * bounce + sunCol[2] * sunI * L.lit) * shade;
               // world-projected UV keeps texture scale consistent across the map
               var tu, tv;
               if (Math.abs(F.n[1]) > 0.5) { tu = px * us; tv = pz * us; }
@@ -322,12 +348,21 @@
       }
     }
 
-    var res = B.result();
-    res.stats = {
-      ms: Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0),
-      verts: res.vertexCount, tris: res.count / 3, rays: rays
+    var out = [], verts = 0, tris = 0;
+    for (var key in groups) {
+      var r = groups[key].result();
+      if (!r.count) continue;
+      r.mat = key;
+      verts += r.vertexCount; tris += r.count / 3;
+      out.push(r);
+    }
+    return {
+      groups: out,
+      stats: {
+        ms: Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0),
+        verts: verts, tris: tris, rays: rays, groups: out.length
+      }
     };
-    return res;
   };
 
   function hexToRgb(hex) {

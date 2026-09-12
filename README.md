@@ -90,7 +90,9 @@ ADR and headshot percentage, spectating, team switching, team balancing, AFK
 handover to a bot, optional friendly fire, and host-configurable rules.
 
 **Presentation.** A custom WebGL renderer with baked sun shadows and ambient
-occlusion, procedural characters and weapon models, first-person viewmodel
+occlusion, a tiling procedural texture per surface type — concrete with form
+seams and cracks, rippled sand, planked wood, riveted panel metal, diamond
+plate, grouted tile — procedural characters and weapon models, first-person viewmodel
 animation (deploy, reload, inspect, fire kick, sway and bob), bullet-hole and
 blood decals, shell casings, tracers, muzzle flashes, ragdolled corpses, and a
 rotating radar. Weapon finishes, gloves and character models are all free and
@@ -164,6 +166,7 @@ Source layout, in load order:
 | `06_grenades.js` | grenade physics, smoke, fire, flash |
 | `07_match.js` | the authoritative rules engine |
 | `08_bots.js` | bot perception, combat and navigation |
+| `09_textures.js` | tiling procedural material textures |
 | `10_gl.js` | matrices, shaders, buffers, textures |
 | `11_geo.js` | map geometry and the lighting bake |
 | `12_models.js` | characters, weapon models, cosmetics |

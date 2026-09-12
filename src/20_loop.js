@@ -86,7 +86,9 @@
     if (this.online) {
       if (now - this.lastPingTime > 1000) { this.net.pingAll(); this.lastPingTime = now; }
       if (this.isHost && now - this.lastSnapSent > 1000 / C.SNAPSHOT_RATE) {
-        this.sendSnapshot();
+        var withMeta = now - this.lastMetaSent > 200;
+        if (withMeta) this.lastMetaSent = now;
+        this.sendSnapshot(withMeta);
         this.flushEventsToClients();
         this.lastSnapSent = now;
       }
@@ -251,6 +253,8 @@
       for (var k = 0; k < m.events.length; k++) {
         if (NET_EVENTS[m.events[k].t]) this.eventQueue.push(this.stripEvent(m.events[k]));
       }
+      // a stalled link must not let the queue grow unbounded
+      if (this.eventQueue.length > 240) this.eventQueue.splice(0, this.eventQueue.length - 240);
     }
     m.events.length = 0;
   };
@@ -659,13 +663,14 @@
     vm.flash = Math.max(0, vm.flash - dt * 22);
 
     // base pose, tuned per weapon class so silhouettes differ
-    var base = { x: 0.135, y: -0.125, z: -0.50, scale: 0.60 };
-    if (w.cls === 'pistol') { base.x = 0.115; base.y = -0.115; base.z = -0.40; base.scale = 0.72; }
-    else if (w.cls === 'knife') { base.x = 0.145; base.y = -0.13; base.z = -0.36; base.scale = 0.85; }
-    else if (w.cls === 'sniper') { base.x = 0.130; base.y = -0.115; base.z = -0.54; base.scale = 0.55; }
-    else if (w.cls === 'shotgun') { base.x = 0.135; base.y = -0.13; base.z = -0.50; base.scale = 0.58; }
-    else if (w.cls === 'heavy') { base.x = 0.150; base.y = -0.14; base.z = -0.54; base.scale = 0.55; }
-    else if (w.cls === 'grenade') { base.x = 0.155; base.y = -0.165; base.z = -0.38; base.scale = 0.95; }
+    // A small inward yaw and roll keeps the weapon from reading as a flat slab.
+    var base = { x: 0.168, y: -0.112, z: -0.50, scale: 0.50, yaw: -0.085, roll: 0.075 };
+    if (w.cls === 'pistol') { base.x = 0.140; base.y = -0.104; base.z = -0.40; base.scale = 0.62; base.yaw = -0.105; base.roll = 0.10; }
+    else if (w.cls === 'knife') { base.x = 0.170; base.y = -0.126; base.z = -0.35; base.scale = 0.76; base.yaw = -0.22; base.roll = 0.30; }
+    else if (w.cls === 'sniper') { base.x = 0.160; base.y = -0.100; base.z = -0.54; base.scale = 0.45; base.yaw = -0.070; base.roll = 0.06; }
+    else if (w.cls === 'shotgun') { base.x = 0.168; base.y = -0.116; base.z = -0.50; base.scale = 0.49; base.yaw = -0.080; base.roll = 0.07; }
+    else if (w.cls === 'heavy') { base.x = 0.180; base.y = -0.124; base.z = -0.54; base.scale = 0.46; base.yaw = -0.075; base.roll = 0.06; }
+    else if (w.cls === 'grenade') { base.x = 0.178; base.y = -0.150; base.z = -0.38; base.scale = 0.84; base.yaw = -0.30; base.roll = 0.14; }
 
     var ax = 0, ay = 0, az = 0, apitch = 0, ayaw = 0, aroll = 0;
     var t = vm.animT;
@@ -701,11 +706,13 @@
     vm.y = base.y + by - vm.swayY * 0.22 + ay;
     vm.z = base.z + az;
     vm.scale = base.scale;
-    vm.yaw = -vm.swayX * 0.45 + ayaw * 0.28;
+    vm.yaw = base.yaw - vm.swayX * 0.45 + ayaw * 0.28;
     vm.pitch = vm.swayY * 0.4 + apitch * 0.22;
-    vm.roll = aroll;
-    var muzzle = (w.cls === 'sniper' ? 0.88 : w.cls === 'pistol' ? 0.20 : w.cls === 'knife' ? 0.0 : 0.60);
-    vm.flashPos = [vm.x, vm.y + 0.03, vm.z - muzzle * base.scale];
+    vm.roll = base.roll + aroll;
+    var muzzle = (w.cls === 'sniper' ? 0.86 : w.cls === 'pistol' ? (w.silenced ? 0.32 : 0.19) :
+                  w.cls === 'shotgun' ? 0.64 : w.cls === 'heavy' ? 0.72 : w.cls === 'smg' ? 0.34 : 0.60);
+    vm.flashPos = [vm.x, vm.y + 0.028 * base.scale / 0.46, vm.z - muzzle * base.scale];
+    vm.flashScale = w.cls === 'shotgun' || w.cls === 'sniper' ? 1.35 : (w.silenced ? 0.5 : 1);
     vm.tint = null;
   };
 
@@ -772,7 +779,7 @@
 
     var st = this.ui.n.pttstate;
     if (st) {
-      if (!this.settings.voiceEnabled) st.textContent = '';
+      if (!this.settings.voiceEnabled || !this.online) st.textContent = '';
       else if (!this.voice.enabled) st.textContent = 'Mic off';
       else { st.textContent = talk ? 'TRANSMITTING' : ('Hold ' + CS.keyLabel(this.settings.keys.voice)); }
       st.className = talk ? 'on' : '';

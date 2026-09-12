@@ -63,6 +63,8 @@
     this.clockOffset = 0;
     this.lastSnapSent = 0;
     this.lastCmdSent = 0;
+    this.lastPingTime = 0;
+    this.lastMetaSent = 0;
     this.predictError = { x: 0, y: 0, z: 0 };
     this.remote = {};           // peerId -> playerId
     this.peerOf = {};           // playerId -> peerId
@@ -768,12 +770,10 @@
   /* ---------------------------------------------------------------
    * Snapshots
    * ------------------------------------------------------------- */
-  Game.prototype.sendSnapshot = function () {
-    if (!this.isHost || !this.match || !this.online) return;
-    var m = this.match;
-    var players = [];
-    for (var i = 0; i < m.players.length; i++) players.push(P.snapshot(m.players[i]));
-    var meta = [];
+  /* Positions go out at the snapshot rate; money, stats and inventory change
+   * rarely and would otherwise triple the bandwidth for no benefit. */
+  Game.prototype.buildMeta = function () {
+    var m = this.match, meta = [];
     for (var k = 0; k < m.players.length; k++) {
       var p = m.players[k];
       meta.push([p.id, p.money, p.kills, p.deaths, p.assists, p.score, p.mvps,
@@ -783,8 +783,16 @@
                  p.grenades.map(function (g) { return g.id + ':' + g.count; }).join(','),
                  p.kit ? 1 : 0, p.cur]);
     }
+    return meta;
+  };
+
+  Game.prototype.sendSnapshot = function (withMeta) {
+    if (!this.isHost || !this.match || !this.online) return;
+    var m = this.match;
+    var players = [];
+    for (var i = 0; i < m.players.length; i++) players.push(P.snapshot(m.players[i]));
     this.net.broadcast({
-      t: 'snap', tm: m.time, p: players, m: meta, s: m.stateSnapshot(),
+      t: 'snap', tm: m.time, p: players, m: withMeta ? this.buildMeta() : null, s: m.stateSnapshot(),
       d: m.droppedWeapons.map(function (d) { return [d.id, d.wid, d.x, d.y, d.z, d.yaw]; }),
       g: m.nades.smokes.map(function (s) { return [s.id, s.pos.x, s.pos.y, s.pos.z, s.radius, s.opacity]; }),
       f: m.nades.fires.map(function (f) { return [f.id, f.pos.x, f.pos.y, f.pos.z, f.radius, f.grow]; }),
@@ -828,7 +836,7 @@
       if (!seen[m.players[k].id]) m.removePlayer(m.players[k].id);
     }
 
-    for (var q = 0; q < msg.m.length; q++) {
+    for (var q = 0; msg.m && q < msg.m.length; q++) {
       var md = msg.m[q];
       var pp = m.byId[md[0]];
       if (!pp) continue;
