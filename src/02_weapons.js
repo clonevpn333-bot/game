@@ -453,7 +453,7 @@
     /* =========================== GRENADES =========================== */
     he: def({
       id: 'he', name: 'Frag Grenade', cls: 'grenade', gtype: 'he', slot: 4, price: 300, killAward: 300,
-      max: 1, dmg: 98, radius: 5.2, fuse: 1.65, throwSpeed: 20.5, deploy: 0.4, speed: 6.35,
+      max: 1, dmg: 98, radius: 7.0, fuse: 1.65, throwSpeed: 20.5, deploy: 0.4, speed: 6.35,
       teams: [1, 2], desc: 'Up to 98 damage in a five-metre bubble. Softens a hold instantly.'
     }),
     flash: def({

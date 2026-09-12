@@ -175,18 +175,18 @@
     ],
     spawns: {
       1: [ // attackers, south
-        { x: -6, y: 0.1, z: 31, yaw: -Math.PI / 2 }, { x: -3, y: 0.1, z: 32.5, yaw: -Math.PI / 2 },
-        { x: 0, y: 0.1, z: 31, yaw: -Math.PI / 2 }, { x: 3, y: 0.1, z: 32.5, yaw: -Math.PI / 2 },
-        { x: 6, y: 0.1, z: 31, yaw: -Math.PI / 2 }, { x: -8, y: 0.1, z: 33.5, yaw: -Math.PI / 2 },
-        { x: 8, y: 0.1, z: 33.5, yaw: -Math.PI / 2 }, { x: 0, y: 0.1, z: 34.5, yaw: -Math.PI / 2 },
-        { x: -4, y: 0.1, z: 35.5, yaw: -Math.PI / 2 }, { x: 4, y: 0.1, z: 35.5, yaw: -Math.PI / 2 }
+        { x: -6, y: 0.1, z: 31, yaw: Math.PI / 2 }, { x: -3, y: 0.1, z: 32.5, yaw: Math.PI / 2 },
+        { x: 0, y: 0.1, z: 31, yaw: Math.PI / 2 }, { x: 3, y: 0.1, z: 32.5, yaw: Math.PI / 2 },
+        { x: 6, y: 0.1, z: 31, yaw: Math.PI / 2 }, { x: -8, y: 0.1, z: 33.5, yaw: Math.PI / 2 },
+        { x: 8, y: 0.1, z: 33.5, yaw: Math.PI / 2 }, { x: 0, y: 0.1, z: 34.5, yaw: Math.PI / 2 },
+        { x: -4, y: 0.1, z: 35.5, yaw: Math.PI / 2 }, { x: 4, y: 0.1, z: 35.5, yaw: Math.PI / 2 }
       ],
       2: [ // defenders, north
-        { x: -6, y: 0.1, z: -31, yaw: Math.PI / 2 }, { x: -3, y: 0.1, z: -32.5, yaw: Math.PI / 2 },
-        { x: 0, y: 0.1, z: -31, yaw: Math.PI / 2 }, { x: 3, y: 0.1, z: -32.5, yaw: Math.PI / 2 },
-        { x: 6, y: 0.1, z: -31, yaw: Math.PI / 2 }, { x: -8, y: 0.1, z: -34, yaw: Math.PI / 2 },
-        { x: 8, y: 0.1, z: -34, yaw: Math.PI / 2 }, { x: 0, y: 0.1, z: -35, yaw: Math.PI / 2 },
-        { x: -4, y: 0.1, z: -36, yaw: Math.PI / 2 }, { x: 4, y: 0.1, z: -36, yaw: Math.PI / 2 }
+        { x: -6, y: 0.1, z: -31, yaw: -Math.PI / 2 }, { x: -3, y: 0.1, z: -32.5, yaw: -Math.PI / 2 },
+        { x: 0, y: 0.1, z: -31, yaw: -Math.PI / 2 }, { x: 3, y: 0.1, z: -32.5, yaw: -Math.PI / 2 },
+        { x: 6, y: 0.1, z: -31, yaw: -Math.PI / 2 }, { x: -8, y: 0.1, z: -34, yaw: -Math.PI / 2 },
+        { x: 8, y: 0.1, z: -34, yaw: -Math.PI / 2 }, { x: 0, y: 0.1, z: -35, yaw: -Math.PI / 2 },
+        { x: -4, y: 0.1, z: -36, yaw: -Math.PI / 2 }, { x: 4, y: 0.1, z: -36, yaw: -Math.PI / 2 }
       ]
     },
     buyZones: [
@@ -347,18 +347,18 @@
     ],
     spawns: {
       1: [
-        { x: -5, y: 0.1, z: 31, yaw: -Math.PI / 2 }, { x: -2, y: 0.1, z: 32.5, yaw: -Math.PI / 2 },
-        { x: 1, y: 0.1, z: 31, yaw: -Math.PI / 2 }, { x: 4, y: 0.1, z: 32.5, yaw: -Math.PI / 2 },
-        { x: 7, y: 0.1, z: 31, yaw: -Math.PI / 2 }, { x: -8, y: 0.1, z: 33.5, yaw: -Math.PI / 2 },
-        { x: 10, y: 0.1, z: 33.5, yaw: -Math.PI / 2 }, { x: 1, y: 0.1, z: 34.5, yaw: -Math.PI / 2 },
-        { x: -4, y: 0.1, z: 35.5, yaw: -Math.PI / 2 }, { x: 6, y: 0.1, z: 35.5, yaw: -Math.PI / 2 }
+        { x: -5, y: 0.1, z: 31, yaw: Math.PI / 2 }, { x: -2, y: 0.1, z: 32.5, yaw: Math.PI / 2 },
+        { x: 1, y: 0.1, z: 31, yaw: Math.PI / 2 }, { x: 4, y: 0.1, z: 32.5, yaw: Math.PI / 2 },
+        { x: 7, y: 0.1, z: 31, yaw: Math.PI / 2 }, { x: -8, y: 0.1, z: 33.5, yaw: Math.PI / 2 },
+        { x: 10, y: 0.1, z: 33.5, yaw: Math.PI / 2 }, { x: 1, y: 0.1, z: 34.5, yaw: Math.PI / 2 },
+        { x: -4, y: 0.1, z: 35.5, yaw: Math.PI / 2 }, { x: 6, y: 0.1, z: 35.5, yaw: Math.PI / 2 }
       ],
       2: [
-        { x: -5, y: 0.1, z: -31, yaw: Math.PI / 2 }, { x: -2, y: 0.1, z: -32.5, yaw: Math.PI / 2 },
-        { x: 1, y: 0.1, z: -31, yaw: Math.PI / 2 }, { x: 4, y: 0.1, z: -32.5, yaw: Math.PI / 2 },
-        { x: 7, y: 0.1, z: -31, yaw: Math.PI / 2 }, { x: -8, y: 0.1, z: -34, yaw: Math.PI / 2 },
-        { x: 10, y: 0.1, z: -34, yaw: Math.PI / 2 }, { x: 1, y: 0.1, z: -35, yaw: Math.PI / 2 },
-        { x: -4, y: 0.1, z: -36, yaw: Math.PI / 2 }, { x: 6, y: 0.1, z: -36, yaw: Math.PI / 2 }
+        { x: -5, y: 0.1, z: -31, yaw: -Math.PI / 2 }, { x: -2, y: 0.1, z: -32.5, yaw: -Math.PI / 2 },
+        { x: 1, y: 0.1, z: -31, yaw: -Math.PI / 2 }, { x: 4, y: 0.1, z: -32.5, yaw: -Math.PI / 2 },
+        { x: 7, y: 0.1, z: -31, yaw: -Math.PI / 2 }, { x: -8, y: 0.1, z: -34, yaw: -Math.PI / 2 },
+        { x: 10, y: 0.1, z: -34, yaw: -Math.PI / 2 }, { x: 1, y: 0.1, z: -35, yaw: -Math.PI / 2 },
+        { x: -4, y: 0.1, z: -36, yaw: -Math.PI / 2 }, { x: 6, y: 0.1, z: -36, yaw: -Math.PI / 2 }
       ]
     },
     buyZones: [
@@ -482,18 +482,18 @@
     ],
     spawns: {
       1: [
-        { x: -5, y: 0.1, z: 27, yaw: -Math.PI / 2 }, { x: -2, y: 0.1, z: 28.5, yaw: -Math.PI / 2 },
-        { x: 1, y: 0.1, z: 27, yaw: -Math.PI / 2 }, { x: 4, y: 0.1, z: 28.5, yaw: -Math.PI / 2 },
-        { x: 7, y: 0.1, z: 27, yaw: -Math.PI / 2 }, { x: -8, y: 0.1, z: 29.5, yaw: -Math.PI / 2 },
-        { x: 10, y: 0.1, z: 29.5, yaw: -Math.PI / 2 }, { x: 1, y: 0.1, z: 30.5, yaw: -Math.PI / 2 },
-        { x: -4, y: 0.1, z: 31.5, yaw: -Math.PI / 2 }, { x: 6, y: 0.1, z: 31.5, yaw: -Math.PI / 2 }
+        { x: -5, y: 0.1, z: 27, yaw: Math.PI / 2 }, { x: -2, y: 0.1, z: 28.5, yaw: Math.PI / 2 },
+        { x: 1, y: 0.1, z: 27, yaw: Math.PI / 2 }, { x: 4, y: 0.1, z: 28.5, yaw: Math.PI / 2 },
+        { x: 7, y: 0.1, z: 27, yaw: Math.PI / 2 }, { x: -8, y: 0.1, z: 29.5, yaw: Math.PI / 2 },
+        { x: 10, y: 0.1, z: 29.5, yaw: Math.PI / 2 }, { x: 1, y: 0.1, z: 30.5, yaw: Math.PI / 2 },
+        { x: -4, y: 0.1, z: 31.5, yaw: Math.PI / 2 }, { x: 6, y: 0.1, z: 31.5, yaw: Math.PI / 2 }
       ],
       2: [
-        { x: -5, y: 0.1, z: -27, yaw: Math.PI / 2 }, { x: -2, y: 0.1, z: -28.5, yaw: Math.PI / 2 },
-        { x: 1, y: 0.1, z: -27, yaw: Math.PI / 2 }, { x: 4, y: 0.1, z: -28.5, yaw: Math.PI / 2 },
-        { x: 7, y: 0.1, z: -27, yaw: Math.PI / 2 }, { x: -8, y: 0.1, z: -29.5, yaw: Math.PI / 2 },
-        { x: 10, y: 0.1, z: -29.5, yaw: Math.PI / 2 }, { x: 1, y: 0.1, z: -30.5, yaw: Math.PI / 2 },
-        { x: -4, y: 0.1, z: -31.5, yaw: Math.PI / 2 }, { x: 6, y: 0.1, z: -31.5, yaw: Math.PI / 2 }
+        { x: -5, y: 0.1, z: -27, yaw: -Math.PI / 2 }, { x: -2, y: 0.1, z: -28.5, yaw: -Math.PI / 2 },
+        { x: 1, y: 0.1, z: -27, yaw: -Math.PI / 2 }, { x: 4, y: 0.1, z: -28.5, yaw: -Math.PI / 2 },
+        { x: 7, y: 0.1, z: -27, yaw: -Math.PI / 2 }, { x: -8, y: 0.1, z: -29.5, yaw: -Math.PI / 2 },
+        { x: 10, y: 0.1, z: -29.5, yaw: -Math.PI / 2 }, { x: 1, y: 0.1, z: -30.5, yaw: -Math.PI / 2 },
+        { x: -4, y: 0.1, z: -31.5, yaw: -Math.PI / 2 }, { x: 6, y: 0.1, z: -31.5, yaw: -Math.PI / 2 }
       ]
     },
     buyZones: [
@@ -601,12 +601,12 @@
     },
     sites: [],
     spawns: {
-      1: [{ x: 0, y: 0.1, z: 18, yaw: -Math.PI / 2 }, { x: -6, y: 0.1, z: 18, yaw: -Math.PI / 2 },
-          { x: 6, y: 0.1, z: 18, yaw: -Math.PI / 2 }, { x: -12, y: 0.1, z: 16, yaw: -Math.PI / 2 },
-          { x: 12, y: 0.1, z: 16, yaw: -Math.PI / 2 }],
-      2: [{ x: 0, y: 0.1, z: -18, yaw: Math.PI / 2 }, { x: -6, y: 0.1, z: -18, yaw: Math.PI / 2 },
-          { x: 6, y: 0.1, z: -18, yaw: Math.PI / 2 }, { x: -12, y: 0.1, z: -16, yaw: Math.PI / 2 },
-          { x: 12, y: 0.1, z: -16, yaw: Math.PI / 2 }]
+      1: [{ x: 0, y: 0.1, z: 18, yaw: Math.PI / 2 }, { x: -6, y: 0.1, z: 18, yaw: Math.PI / 2 },
+          { x: 6, y: 0.1, z: 18, yaw: Math.PI / 2 }, { x: -12, y: 0.1, z: 16, yaw: Math.PI / 2 },
+          { x: 12, y: 0.1, z: 16, yaw: Math.PI / 2 }],
+      2: [{ x: 0, y: 0.1, z: -18, yaw: -Math.PI / 2 }, { x: -6, y: 0.1, z: -18, yaw: -Math.PI / 2 },
+          { x: 6, y: 0.1, z: -18, yaw: -Math.PI / 2 }, { x: -12, y: 0.1, z: -16, yaw: -Math.PI / 2 },
+          { x: 12, y: 0.1, z: -16, yaw: -Math.PI / 2 }]
     },
     buyZones: [
       { team: 1, min: { x: -24, y: -2, z: -24 }, max: { x: 24, y: 10, z: 24 } },
