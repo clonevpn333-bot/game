@@ -267,6 +267,14 @@
     return false;
   };
 
+  /* Clients receive smoke and fire state from the host; they only need to
+   * keep thrown grenades moving smoothly between snapshots. */
+  G.stepProjectilesOnly = function (state, world, dt, now) {
+    for (var i = 0; i < state.proj.length; i++) {
+      G.stepProjectile(state.proj[i], world, dt, now);
+    }
+  };
+
   G.clear = function (state) {
     state.proj.length = 0; state.smokes.length = 0;
     state.fires.length = 0; state.flashes.length = 0;

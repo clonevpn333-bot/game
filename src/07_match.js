@@ -148,7 +148,6 @@
       var list = this.map.spawns[p.team];
       var spot = list[used[p.team] % list.length];
       used[p.team]++;
-      var keep = this.rules.mode === 'deathmatch' || this.rules.mode === 'aim';
       P.spawn(p, spot, false);
 
       if (this.rules.mode === 'deathmatch' || this.rules.mode === 'aim' || warmup) {
@@ -338,7 +337,8 @@
     if (r.mode === 'deathmatch' || r.mode === 'aim') return false;
     var need = r.winRounds;
     if (this.overtimeRound > 0) {
-      need = Math.ceil(r.maxRounds / 2) + Math.ceil(r.otMaxRounds / 2) * this.overtimeRound;
+      // regulation is a draw at maxRounds/2 each; every OT adds otMaxRounds/2 + 1
+      need = Math.floor(r.maxRounds / 2) + (Math.floor(r.otMaxRounds / 2) + 1) * this.overtimeRound;
     }
     if (this.score[1] >= need || this.score[2] >= need) {
       this.finishMatch(this.score[1] > this.score[2] ? C.TEAM.ATT : C.TEAM.DEF);
@@ -661,11 +661,13 @@
     var impacts = [];
     var hitAny = false, hitGroups = [];
     var maxDist = 140;
+    if (this.aimStats) this.aimStats.shots += shot.pellets;
 
     for (var pel = 0; pel < shot.pellets; pel++) {
       W.spreadDir(_dir, _fwd, shot.cone, shot.seed, pel);
+      if (this.targets.length && this.hitTarget(_eye, _dir, shooter)) { hitAny = true; continue; }
       var r = this.world.traceBullet(_eye.x, _eye.y, _eye.z, _dir.x, _dir.y, _dir.z,
-                                     maxDist, w, this.players, shooter.id, shooter.team);
+                                     maxDist, w, this.players, shooter.id);
       for (var i = 0; i < r.impacts.length; i++) {
         if (!r.impacts[i].exit) impacts.push(r.impacts[i]);
       }
@@ -696,6 +698,40 @@
       silenced: !!w.silenced, hit: hitAny, impacts: impacts,
       groups: hitGroups
     });
+  };
+
+  /* Pop-up targets for the training range. */
+  Match.prototype.hitTarget = function (eye, dir, shooter) {
+    var best = null, bestT = 140;
+    for (var i = 0; i < this.targets.length; i++) {
+      var t = this.targets[i];
+      if (!t.alive) continue;
+      var h = this.world.rayPlayer(eye.x, eye.y, eye.z, dir.x, dir.y, dir.z, bestT,
+                                   t.x, t.y, t.z, t.height);
+      if (h) { bestT = h.t; best = { t: t, group: h.group }; }
+    }
+    if (!best) return false;
+    var wall = this.world.rayWorld(eye.x, eye.y, eye.z, dir.x, dir.y, dir.z, bestT);
+    if (wall) return false;
+    var head = best.group === C.HITGROUP.HEAD;
+    best.t.hp -= head ? 100 : 34;
+    if (this.aimStats) {
+      this.aimStats.hits++;
+      var react = this.time - best.t.born;
+      this.aimStats.reactSum += react; this.aimStats.reactN++;
+    }
+    this.emit({
+      t: 'hurt', v: 'target' + best.t.id, a: shooter.id, dmg: head ? 100 : 34,
+      group: best.group, hp: Math.max(0, best.t.hp), armor: 0, target: true,
+      x: best.t.x, y: best.t.y + best.t.height * 0.6, z: best.t.z
+    });
+    if (best.t.hp <= 0) {
+      best.t.alive = false;
+      if (this.aimStats) this.aimStats.kills++;
+      shooter.kills++;
+      this.emit({ t: 'targetDown', x: best.t.x, y: best.t.y, z: best.t.z, head: head });
+    }
+    return true;
   };
 
   Match.prototype.resolveMelee = function (shooter, shot) {
@@ -846,9 +882,11 @@
         var shot2 = P.tryFire(p, true);
         if (shot2) this.resolveShot(p, shot2, cmd.lagTime);
       }
-      if (cmd.attack2 && wdef.burst && !p.attack2Held) {
+      if (cmd.attack2 && wdef.burst && !p.attack2Held) p.burstLeft = wdef.burst;
+      if (p.burstLeft > 0 && wdef.burst) {
         var shot3 = P.tryFire(p, true);
-        if (shot3) this.resolveShot(p, shot3, cmd.lagTime);
+        if (shot3 && !shot3.dryFire) { p.burstLeft--; this.resolveShot(p, shot3, cmd.lagTime); }
+        else if (shot3) p.burstLeft = 0;
       }
     }
     p.attack2Held = !!cmd.attack2;
@@ -889,13 +927,29 @@
     for (var i = 0; i < 5; i++) this.spawnTarget();
   };
 
+  /* Targets only spawn where a shooter can actually see them — no pop-ups
+   * hidden behind a crate, which would just feel unfair. */
   Match.prototype.spawnTarget = function () {
-    var spot = this.world.randomWalkable();
-    var a = Math.random() * Math.PI * 2, r = 8 + Math.random() * 12;
-    var x = M.clamp(Math.cos(a) * r, -20, 20), z = M.clamp(Math.sin(a) * r, -20, 20);
-    var y = this.world.dropToFloor(x, 8, z, 12);
+    var shooters = this.players.filter(function (p) { return p.alive; });
+    var from = shooters.length ? shooters[(Math.random() * shooters.length) | 0] : null;
+    var eye = from ? { x: from.pos.x, y: from.pos.y + from.eye, z: from.pos.z } : { x: 0, y: 1.6, z: 0 };
+    var best = null;
+    for (var attempt = 0; attempt < 24; attempt++) {
+      var a = Math.random() * Math.PI * 2, r = 7 + Math.random() * 13;
+      var x = M.clamp(eye.x + Math.cos(a) * r, -20, 20);
+      var z = M.clamp(eye.z + Math.sin(a) * r, -20, 20);
+      var y = this.world.dropToFloor(x, 9, z, 14);
+      if (!this.world.standClear(x, y, z, C.PLAYER_RADIUS, C.STAND_HEIGHT)) continue;
+      if (!this.world.losWorld(eye.x, eye.y, eye.z, x, y + 1.25, z)) continue;
+      best = { x: x, y: y, z: z };
+      break;
+    }
+    if (!best) {
+      var w = this.world.randomWalkable();
+      best = { x: w.x, y: w.y, z: w.z };
+    }
     this.targets.push({
-      id: this.nextDropId++, x: x, y: y, z: z, height: 1.83,
+      id: this.nextDropId++, x: best.x, y: best.y, z: best.z, height: 1.83,
       born: this.time, alive: true, hp: 100, bob: Math.random() * 6.28
     });
   };

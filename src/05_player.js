@@ -470,15 +470,12 @@
       return { dryFire: true, weapon: w };
     }
 
-    // semi-auto guns need the trigger released between shots
-    if (!w.auto && p.triggerHeld) return null;
-    if (w.burst && secondary) {
-      if (p.burstLeft <= 0) p.burstLeft = w.burst;
-    }
+    // semi-auto guns need the trigger released between shots; a burst is exempt
+    if (!w.auto && p.triggerHeld && !(secondary && p.burstLeft > 0)) return null;
 
     if (s.mag !== undefined) s.mag--;
-    p.fireTimer = w.interval;
-    p.triggerHeld = true;
+    p.fireTimer = (secondary && w.burst && p.burstLeft > 1) ? w.interval * 0.62 : w.interval;
+    if (!secondary) p.triggerHeld = true;
 
     var aim = P.aimAngles(p);
     var cone = P.inaccuracy(p);

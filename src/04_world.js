@@ -218,8 +218,8 @@
    * Returns { impacts:[{x,y,z,nx,ny,nz,mat,box}], hits:[{player,group,dist,power}], end:{x,y,z} }
    * ------------------------------------------------------------- */
   var MAX_PEN = 3;
-  World.prototype.traceBullet = function (ox, oy, oz, dx, dy, dz, maxDist, weapon, players, shooterId, allowTeam) {
-    var res = { impacts: [], hits: [], end: { x: 0, y: 0, z: 0 }, traced: 0 };
+  World.prototype.traceBullet = function (ox, oy, oz, dx, dy, dz, maxDist, weapon, players, shooterId) {
+    var res = { impacts: [], hits: [], end: { x: 0, y: 0, z: 0 }, traced: 0, ended: false };
     var power = 1.0;
     var pens = 0;
     var travelled = 0;
@@ -238,7 +238,6 @@
           var p = players[i];
           if (!p || !p.alive || p.id === shooterId) continue;
           if (hitIds[p.id]) continue;
-          if (!allowTeam && p.team === allowTeam) continue;
           var ph = this.rayPlayer(cx, cy, cz, dx, dy, dz, wallT, p.pos.x, p.pos.y, p.pos.z, p.height);
           if (ph && (!nearest || ph.t < nearest.t)) nearest = { t: ph.t, group: ph.group, player: p };
         }
@@ -262,7 +261,7 @@
 
       if (!wh) {
         res.end.x = cx + dx * remaining; res.end.y = cy + dy * remaining; res.end.z = cz + dz * remaining;
-        break;
+        res.ended = true; break;
       }
 
       // world impact
@@ -275,13 +274,13 @@
 
       if (pens >= MAX_PEN || !weapon || !weapon.pen) {
         res.end.x = wh.x; res.end.y = wh.y; res.end.z = wh.z;
-        break;
+        res.ended = true; break;
       }
       var thickness = rayExit(wh.x - dx * 0.001, wh.y - dy * 0.001, wh.z - dz * 0.001, dx, dy, dz, wh.box);
       var maxThick = weapon.pen * surf.pen * 0.62;   // metres of material this round defeats
       if (thickness > maxThick || thickness <= 0) {
         res.end.x = wh.x; res.end.y = wh.y; res.end.z = wh.z;
-        break;
+        res.ended = true; break;
       }
       // passes through: lose damage proportional to how much of the budget was used
       power *= (0.42 + 0.38 * (1 - thickness / maxThick)) * (0.75 + 0.25 * weapon.pen);
@@ -293,9 +292,9 @@
         x: cx, y: cy, z: cz, nx: -dx, ny: -dy, nz: -dz,
         mat: wh.box.mat, box: wh.box, dist: travelled, power: power, exit: true
       });
-      if (power < 0.1) { res.end.x = cx; res.end.y = cy; res.end.z = cz; break; }
+      if (power < 0.1) { res.end.x = cx; res.end.y = cy; res.end.z = cz; res.ended = true; break; }
     }
-    if (res.end.x === 0 && res.end.y === 0 && res.end.z === 0) {
+    if (!res.ended) {
       res.end.x = cx + dx * Math.max(0, remaining);
       res.end.y = cy + dy * Math.max(0, remaining);
       res.end.z = cz + dz * Math.max(0, remaining);
