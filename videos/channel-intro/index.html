@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Channel Trailer</title>
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script src="assets/timing.js"></script>
+    <script type="importmap">
+      { "imports": { "three": "./assets/vendor/three.module.min.js" } }
+    </script>
+    <style>
+      @font-face {
+        font-family: "Luckiest Guy";
+        src: url("assets/fonts/luckiest-guy-latin-400-normal.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Fredoka";
+        src: url("assets/fonts/fredoka-latin-700-normal.woff2") format("woff2");
+        font-weight: 700;
+      }
+      @font-face {
+        font-family: "Permanent Marker";
+        src: url("assets/fonts/permanent-marker-latin-400-normal.woff2") format("woff2");
+      }
+      :root {
+        --ink: #1b1033;
+        --v: #c9a2ff;
+        --y: #ffd23f;
+        --p: #ff5aa0;
+        --c: #7fe9ff;
+        --r: #ff4d5e;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #07040f;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "Fredoka", sans-serif;
+      }
+      .clip,
+      .layer {
+        position: absolute;
+        inset: 0;
+      }
+      #gl {
+        position: absolute;
+        inset: 0;
+        width: 1080px;
+        height: 1920px;
+        display: block;
+      }
+      .row {
+        position: absolute;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 18px;
+      }
+      .k {
+        font-family: "Luckiest Guy", sans-serif;
+        color: #fff;
+        -webkit-text-stroke: 16px var(--ink);
+        paint-order: stroke fill;
+        text-shadow: 0 10px 0 var(--ink);
+        line-height: 1;
+        display: inline-block;
+        white-space: nowrap;
+      }
+      .ch {
+        display: inline-block;
+      }
+      .ghost {
+        color: transparent;
+        -webkit-text-stroke: 5px var(--v);
+        text-shadow: none;
+        position: absolute;
+      }
+      .glitch-wrap {
+        position: relative;
+        display: inline-block;
+      }
+      .glitch-wrap .gl {
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+      .banner {
+        position: absolute;
+        left: -60px;
+        right: -60px;
+        height: 150px;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        background: var(--y);
+        border-top: 10px solid var(--ink);
+        border-bottom: 10px solid var(--ink);
+      }
+      .banner .track {
+        display: flex;
+        gap: 60px;
+        white-space: nowrap;
+        font-family: "Luckiest Guy", sans-serif;
+        font-size: 92px;
+        color: var(--ink);
+        padding-top: 18px;
+      }
+      .marker {
+        font-family: "Permanent Marker", cursive;
+        color: #fff;
+        -webkit-text-stroke: 9px var(--ink);
+        paint-order: stroke fill;
+        white-space: nowrap;
+      }
+      #captions {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 1270px;
+        height: 240px;
+      }
+      .cap {
+        position: absolute;
+        left: 40px;
+        right: 40px;
+        top: 0;
+        text-align: center;
+        font-weight: 700;
+        font-size: 84px;
+        line-height: 1.08;
+        text-transform: uppercase;
+        color: #fff;
+        -webkit-text-stroke: 16px var(--ink);
+        paint-order: stroke fill;
+        text-shadow: 0 8px 0 var(--ink);
+        opacity: 0;
+      }
+      .cap .cw {
+        display: inline-block;
+        margin: 0 9px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="22.58" data-width="1080" data-height="1920">
+      <canvas id="gl" width="1080" height="1920"></canvas>
+
+      <div id="ov-type" class="clip" data-start="0" data-duration="22.58" data-track-index="2">
+        <!-- S1 -->
+        <div id="t-ever" class="row" style="top: 210px"><span class="k split" style="font-size: 96px; color: var(--c)">EVER WONDERED</span></div>
+        <!-- S2 -->
+        <div id="t-onion" class="row" style="top: 200px">
+          <span class="k ghost" style="font-size: 190px; transform: translate(-22px, -22px)">ONIONS</span>
+          <span class="k ghost" style="font-size: 190px; transform: translate(-11px, -11px); -webkit-text-stroke-color: var(--p)">ONIONS</span>
+          <span class="k" style="font-size: 190px; color: var(--p)">ONIONS</span>
+        </div>
+        <div id="t-cry" class="row" style="top: 1080px"><span class="k" style="font-size: 170px; color: var(--c)">CRY</span></div>
+        <!-- S4 -->
+        <div id="t-who" class="row" style="top: 230px">
+          <span class="glitch-wrap">
+            <span class="k" style="font-size: 150px; color: var(--y)">WHODUNIT?</span>
+            <span class="k gl gl1" style="font-size: 150px; color: var(--c); clip-path: inset(18% 0 58% 0)">WHODUNIT?</span>
+            <span class="k gl gl2" style="font-size: 150px; color: var(--p); clip-path: inset(62% 0 12% 0)">WHODUNIT?</span>
+          </span>
+        </div>
+        <!-- S5 -->
+        <div id="t-bridges" class="row" style="top: 240px"><span class="k split" style="font-size: 170px; color: #ffb02e">BRIDGES</span></div>
+        <!-- S6 -->
+        <div id="t-thisis" class="row" style="top: 330px"><span class="marker" style="font-size: 74px">this is...</span></div>
+        <!-- S7 -->
+        <div id="t-banner" class="banner" style="top: 1040px"><div class="track" id="track">EVERY WEEK ★ ONE WEIRD QUESTION ★ EVERY WEEK ★ ONE WEIRD QUESTION ★ EVERY WEEK ★ ONE WEIRD QUESTION ★</div></div>
+        <!-- S8 -->
+        <div id="t-blow" class="row" style="top: 180px"><span class="k" style="font-size: 200px; color: var(--p)">BLOW IT</span></div>
+        <div id="t-open" class="row" style="top: 400px"><span class="k" style="font-size: 160px; color: var(--y)">WIDE OPEN</span></div>
+        <!-- S9 -->
+        <div id="t-sci" class="row" style="top: 190px"><span class="k" style="font-size: 140px; color: var(--p)">SCIENCE</span></div>
+        <div id="t-spa" class="row" style="top: 350px"><span class="k" style="font-size: 140px; color: var(--c)">SPACE</span></div>
+        <div id="t-mys" class="row" style="top: 510px"><span class="k" style="font-size: 130px; color: var(--y)">MYSTERIES</span></div>
+        <div id="t-dis" class="row" style="top: 660px"><span class="k" style="font-size: 130px; color: #ffb02e">DISASTERS</span></div>
+        <!-- S10 -->
+        <div id="t-stay" class="row" style="top: 200px; flex-direction: column; gap: 6px">
+          <span class="k split" style="font-size: 150px">STAY</span>
+          <span class="k split" style="font-size: 160px; color: var(--v)">CURIOUS</span>
+        </div>
+      </div>
+
+      <div id="captions"></div>
+
+      <audio id="vo" src="assets/audio/vo.wav" data-start="0" data-duration="22.58" data-track-index="10" data-volume="1"></audio>
+      <audio id="music" src="assets/audio/music.wav" data-start="0" data-duration="22.58" data-track-index="11" data-volume="0.45"></audio>
+      <audio id="sfx" src="assets/audio/sfx.wav" data-start="0" data-duration="22.58" data-track-index="12" data-volume="0.8"></audio>
+    </div>
+
+    <script type="module" src="assets/scene.js"></script>
+    <script src="assets/captions.js"></script>
+    <script>
+      (function () {
+        const tl = gsap.timeline({ paused: true });
+        window.buildCaptions(tl, { highlight: "#c9a2ff", skip: [9, 10] });
+        // split .split words into per-letter spans
+        document.querySelectorAll(".split").forEach((el, n) => {
+          const txt = el.textContent;
+          el.textContent = "";
+          [...txt].forEach((c, i) => {
+            const s = document.createElement("span");
+            s.className = "ch";
+            s.textContent = c === " " ? " " : c;
+            el.appendChild(s);
+          });
+        });
+        const hide = (sel, at) => tl.to(sel, { opacity: 0, duration: 0.12 }, at);
+        const slam = (sel, at, rot = -4) =>
+          tl.fromTo(sel, { scale: 3, rotation: rot * 3, opacity: 0 }, { scale: 1, rotation: rot, opacity: 1, duration: 0.18, ease: "power4.in" }, at);
+        // everything starts hidden
+        tl.set(["#t-ever", "#t-onion", "#t-cry", "#t-who", "#t-bridges", "#t-thisis", "#t-banner", "#t-blow", "#t-open", "#t-sci", "#t-spa", "#t-mys", "#t-dis", "#t-stay"], { opacity: 0 }, 0);
+
+        // S1: letters flip down one by one, then shatter upward
+        tl.set("#t-ever", { opacity: 1 }, 0.4);
+        tl.fromTo("#t-ever .ch", { rotationX: -100, y: -60, opacity: 0, transformPerspective: 600 }, { rotationX: 0, y: 0, opacity: 1, duration: 0.35, stagger: 0.03, ease: "back.out(2.5)" }, 0.4);
+        tl.to("#t-ever .ch", { y: (i) => -200 - (i % 3) * 80, rotation: (i) => (i % 2 ? 40 : -40), opacity: 0, duration: 0.3, stagger: 0.015, ease: "power2.in" }, 2.85);
+        // S2: ONIONS slides in with echo trails, CRY shakes
+        tl.set("#t-onion", { opacity: 1 }, 3.25);
+        tl.fromTo("#t-onion", { x: -1200, skewX: 30 }, { x: 0, skewX: -8, duration: 0.3, ease: "power4.out" }, 3.25);
+        tl.to("#t-onion", { x: 40, skewX: -4, duration: 1.2, ease: "none" }, 3.55);
+        slam("#t-cry", 4.39, 6);
+        tl.to("#t-cry", { x: 14, duration: 0.04, yoyo: true, repeat: 7, ease: "none" }, 4.57);
+        hide(["#t-onion", "#t-cry"], 4.8);
+        // S4: glitch slices
+        tl.set("#t-who", { opacity: 1 }, 7.0);
+        tl.fromTo("#t-who", { scaleY: 0.05, scaleX: 2 }, { scaleY: 1, scaleX: 1, duration: 0.16, ease: "power4.out" }, 7.0);
+        for (let i = 0; i < 9; i++) {
+          tl.set("#t-who .gl1", { x: ((i * 37) % 60) - 30 }, 7.05 + i * 0.12);
+          tl.set("#t-who .gl2", { x: ((i * 53) % 70) - 35 }, 7.05 + i * 0.12);
+        }
+        hide("#t-who", 8.1);
+        // S5: BRIDGES letters drop with gravity on "fall"
+        tl.set("#t-bridges", { opacity: 1 }, 8.3);
+        tl.fromTo("#t-bridges .ch", { y: -300, opacity: 0 }, { y: 0, opacity: 1, duration: 0.25, stagger: 0.035, ease: "bounce.out" }, 8.3);
+        tl.to("#t-bridges .ch", { y: (i) => 1500 + i * 60, rotation: (i) => (i % 2 ? 70 : -60), duration: 0.65, stagger: 0.03, ease: "power2.in" }, 9.27);
+        hide("#t-bridges", 9.95);
+        // S6
+        tl.set("#t-thisis", { opacity: 1 }, 9.98);
+        tl.fromTo("#t-thisis", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.25, ease: "power2.out" }, 9.98);
+        hide("#t-thisis", 11.1);
+        // S7: ticker banner
+        tl.set("#t-banner", { opacity: 1 }, 11.3);
+        tl.fromTo("#t-banner", { rotation: -6, scaleY: 0 }, { rotation: -6, scaleY: 1, duration: 0.2, ease: "back.out(2)" }, 11.3);
+        tl.fromTo("#track", { x: 0 }, { x: -1100, duration: 2.9, ease: "none" }, 11.3);
+        tl.to("#t-banner", { scaleY: 0, duration: 0.15 }, 14.15);
+        // S8: words zoom out of the camera
+        tl.set("#t-blow", { opacity: 1 }, 13.78);
+        tl.fromTo("#t-blow", { scale: 6, opacity: 0, filter: "blur(10px)" }, { scale: 1, opacity: 1, filter: "blur(0px)", rotation: -5, duration: 0.2, ease: "power4.out" }, 13.78);
+        tl.set("#t-open", { opacity: 1 }, 14.2);
+        tl.fromTo("#t-open", { scale: 6, opacity: 0, filter: "blur(10px)" }, { scale: 1, opacity: 1, filter: "blur(0px)", rotation: 4, duration: 0.2, ease: "power4.out" }, 14.2);
+        tl.to(["#t-blow", "#t-open"], { scale: 1.4, opacity: 0, duration: 0.25, ease: "power2.in" }, 15.0);
+        // S9: topic slams, alternating sides
+        [["#t-sci", 15.25, -1], ["#t-spa", 15.54, 1], ["#t-mys", 15.84, -1], ["#t-dis", 16.56, 1]].forEach(([id, at, s]) => {
+          tl.set(id, { opacity: 1 }, at);
+          tl.fromTo(id, { x: s * 900, rotation: s * 20, scale: 1.6 }, { x: 0, rotation: s * -4, scale: 1, duration: 0.18, ease: "power4.out" }, at);
+        });
+        tl.to(["#t-sci", "#t-spa", "#t-mys", "#t-dis"], { x: (i) => (i % 2 ? 1300 : -1300), duration: 0.3, stagger: 0.04, ease: "power3.in" }, 17.35);
+        // S10: STAY CURIOUS
+        tl.set("#t-stay", { opacity: 1 }, 18.55);
+        tl.fromTo("#t-stay .ch", { y: 120, scale: 0, rotation: -30 }, { y: 0, scale: 1, rotation: 0, duration: 0.35, stagger: 0.05, ease: "back.out(3)" }, 18.55);
+        tl.to("#t-stay .ch", { y: -14, duration: 0.3, yoyo: true, repeat: 5, stagger: 0.04, ease: "sine.inOut" }, 19.4);
+
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>

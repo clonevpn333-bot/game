@@ -490,8 +490,8 @@ const postMat = new THREE.ShaderMaterial({
       return uC + s;
     }
     vec3 samp(vec2 uv){
-      vec2 m = abs(fract(uv*0.5)*2.0 - 1.0); // mirror-wrap instead of clamping streaks
-      return texture2D(uTex, vec2(m.x, 1.0 - m.y)).rgb; // framebuffer copy arrives top-down
+      vec2 m = 1.0 - abs(fract(uv*0.5)*2.0 - 1.0); // identity inside [0,1], mirror-wrap past the edges
+      return texture2D(uTex, m).rgb;
     }
     void main(){
       vec2 uv = vUv + uShake;
