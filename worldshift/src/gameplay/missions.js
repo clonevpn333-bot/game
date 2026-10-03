@@ -6,6 +6,8 @@ import { blockRect, LANDMARKS, landmarkCenter, BRIDGES } from '../world/layout.j
 import { seedLotRect, spireRect, SPIRE } from '../world/landmarks.js';
 
 const ERA_KEY = ['1', '2', '3'];
+// keeps a story character cowering in place (no wandering off mid-mission)
+const HOLD = { update(n) { n.speed = 0; n.state = 'cower'; }, pose() {} };
 const sayQ = [];
 
 function say(who, text, dur) {
@@ -308,7 +310,7 @@ export class Missions {
       onStart: () => {
         const a = pts().arcade;
         M.data.kid = G.crowd.spawn(a.x + 2, a.z - 1, 0, { persistent: true, noRing: true, state: 'cower', name: 'Tommy' });
-        if (M.data.kid) { M.data.kid.scale = 0.66; M.data.kid.width = 0.9; M.data.kid.health = 9999; }
+        if (M.data.kid) { M.data.kid.scale = 0.66; M.data.kid.width = 0.9; M.data.kid.health = 9999; M.data.kid.ai = HOLD; }
         M.data.thugs = [];
         for (let i = 0; i < 3; i++) {
           const n = G.combat.spawnEnemy(a.x - 3 + i * 3, a.z - 5, 0, i === 2 ? 'gunman' : 'thug', { persistent: true, aware: false, colors: { top: new THREE.Color('#8a1010'), sleeve: new THREE.Color('#8a1010') } });
@@ -340,7 +342,7 @@ export class Missions {
                 { era: 2, text: 'Tom uploaded what was left of himself into a terminal: TOM.exe', at: pts().arcade },
               ],
             });
-            if (M.data.kid) { M.data.kid.persistent = false; M.data.kid.state = 'walk'; M.data.kid.ring = null; }
+            if (M.data.kid) { M.data.kid.persistent = false; M.data.kid.ai = null; M.data.kid.state = 'walk'; M.data.kid.ring = null; }
           },
         },
       ],
@@ -442,7 +444,7 @@ export class Missions {
       onStart: () => {
         const q = pts().pier;
         M.data.mara = G.crowd.spawn(q.x - 4, q.z + 2, 0, { persistent: true, noRing: true, state: 'cower', name: 'Mara', colors: { top: new THREE.Color('#d8e0e8'), sleeve: new THREE.Color('#d8e0e8'), legs: new THREE.Color('#2a3a5a') } });
-        if (M.data.mara) { M.data.mara.health = 9999; M.data.maraHP = 100; }
+        if (M.data.mara) { M.data.mara.health = 9999; M.data.maraHP = 100; M.data.mara.ai = HOLD; }
         M.data.gunmen = [];
         for (let i = 0; i < 4; i++) {
           const n = G.combat.spawnEnemy(q.x + 18 + i * 2, q.z - 14 + i * 4, 0, i % 2 ? 'gunman' : 'thug', { persistent: true, aware: true, colors: { top: new THREE.Color('#8a1010'), sleeve: new THREE.Color('#8a1010') } });
@@ -484,7 +486,7 @@ export class Missions {
                 { era: 2, text: 'Haven, a settlement founded by the Quinn line, thrives on Pier 9', at: pts().pier },
               ],
             });
-            if (M.data.mara) M.data.mara.persistent = false;
+            if (M.data.mara) { M.data.mara.persistent = false; M.data.mara.ai = null; }
           },
         },
       ],

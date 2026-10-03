@@ -29,8 +29,22 @@ export class Authority {
   level(era) { return Math.ceil(this.heat[era] - 0.05); }
   seen(era) { return G.time - this.seenAt[era] < 1.5; }
 
+  // fighting back against people who attacked you first isn't reported
+  selfDefense(pos) {
+    if (G.level) return true;
+    if (this.fight && G.time - this.fight.t < 40 && this.fight.pos.distanceTo(pos) < 70) return true;
+    for (const n of G.crowd.npcs) {
+      if (n.alive && n.state !== 'dead' && n.ai && n.ai.hostile && !n.ai.onlyWhenWanted && (n.ai.state === 'combat' || n.ai.aware) && n.pos.distanceTo(pos) < 45) {
+        this.fight = { t: G.time, pos: pos.clone() };
+        return true;
+      }
+    }
+    return false;
+  }
+
   onCrime(c) {
     const era = G.era;
+    if (c.kind !== 'murder' && this.selfDefense(c.pos)) return;
     this.lastCrime[era] = G.time;
     // officers / drones that see it react instantly
     for (const u of this.units) {
@@ -47,6 +61,7 @@ export class Authority {
   // civilian witness phoned it in
   report(pos, kind, witness) {
     const era = witness ? witness.era : G.era;
+    if (kind !== 'murder' && this.selfDefense(pos)) return;
     if (era === 2 && kind !== 'murder' && kind !== 'explosion') return; // the ruins don't care much
     const h = CRIME_HEAT[kind] || 0.4;
     this.raise(era, h + 0.3, pos);

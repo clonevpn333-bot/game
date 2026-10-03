@@ -46,13 +46,15 @@ export class Game {
           G.player.revive(w.x, w.y + 0.3, w.z);
           return;
         }
-        const home = landmarkCenter('home');
         const p = G.player;
-        p.revive(home.x - 2, 0.3, home.z - 40);
+        // respawn close by and keep mission progress
+        const s = G.lastSafe || landmarkCenter('home');
+        p.revive(s.x, (s.y || 0) + 0.3, s.z);
         G.authority.clear(G.era);
         const lost = Math.floor(G.inventory.cash[G.era] * 0.2);
         G.inventory.cash[G.era] -= lost;
-        if (G.missions.active && G.missions.active !== 'seed') G.missions.fail('You died.');
+        for (const n of G.crowd.npcs) if (n.alive && n.ai && n.ai.hostile && n.pos.distanceTo(p.pos) < 25 && !n.persistent) n.alive = false;
+        G.hud.toast('Back on your feet — mission progress kept.', 'info', 3);
       }, 4000);
     });
     G.events.on('shift', (from, to) => {
