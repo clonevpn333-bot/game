@@ -417,33 +417,41 @@
  },
  {
   "text": " This",
-  "startMs": 21940,
-  "endMs": 22261,
-  "timestampMs": 22100,
+  "startMs": 21950,
+  "endMs": 22241,
+  "timestampMs": 22096,
   "confidence": 1,
   "line": 8
  },
  {
   "text": " is",
-  "startMs": 22261,
-  "endMs": 22583,
-  "timestampMs": 22422,
+  "startMs": 22241,
+  "endMs": 22532,
+  "timestampMs": 22386,
   "confidence": 1,
   "line": 8
  },
  {
-  "text": " Homo",
-  "startMs": 22583,
-  "endMs": 23142,
-  "timestampMs": 22862,
+  "text": " Why",
+  "startMs": 22532,
+  "endMs": 22823,
+  "timestampMs": 22678,
   "confidence": 1,
   "line": 8
  },
  {
-  "text": " Curiosus.",
-  "startMs": 23142,
-  "endMs": 23940,
-  "timestampMs": 23541,
+  "text": " We",
+  "startMs": 22823,
+  "endMs": 23114,
+  "timestampMs": 22968,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " Wonder.",
+  "startMs": 23114,
+  "endMs": 23620,
+  "timestampMs": 23367,
   "confidence": 1,
   "line": 8
  },

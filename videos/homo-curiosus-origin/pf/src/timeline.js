@@ -6,7 +6,7 @@
   const FILM = window.FILM;
 
   FILM.TIMELINE = {
-    title: 'HOMO CURIOSUS — origin',
+    title: 'WHY WE WONDER — origin',
     bpm: 120,
     duration: 28,
     fps: 24,
@@ -29,7 +29,7 @@
         brief: '3D (Three.js in Remotion): enormous scale change. The flight path keeps rising; the camera pulls back through the atmosphere to an ink-textured Earth and the curiosity line traces a free-return figure-8 to a hatched Moon, which lands on the G6 circle at T 18.25.' },
       { id: 'bigger-question', file: '08-bigger-question.js', start: 18.75, end: 21.75, mode: 'illustrated', title: 'Every answer, a bigger question', transitionIn: { kind: 'cut', dur: 0 },
         brief: 'A continuous Droste zoom on ivory engraving: the Moon (G6) is the dot of a "?" whose hook encloses an eye; the pupil is a cell; the nucleus coils into DNA; the DNA rung is a galaxy arm; the galaxy core is the next "?" dot. Each answer opens into a bigger question, zooming on the beat. Ends on a single line heading left at G7.' },
-      { id: 'homo-curiosus', file: '09-homo-curiosus.js', start: 21.75, end: 24.25, mode: 'schematic', title: 'HOMO CURIOSUS', transitionIn: { kind: 'cut', dur: 0 },
+      { id: 'homo-curiosus', file: '09-homo-curiosus.js', start: 21.75, end: 24.25, mode: 'schematic', title: 'WHY WE WONDER', transitionIn: { kind: 'cut', dur: 0 },
         brief: 'Midnight navy. The curiosity line writes the wordmark in one continuous stroke of light (construction geometry, ruled baselines, compass arcs), HOMO at T 22.5 and CURIOSUS at T 23.125; small engraved vignettes from every earlier shot (hand, star, gear, flyer, Moon) orbit the word on the curiosity line.' },
       { id: 'stay-curious', file: '10-stay-curious.js', start: 24.25, end: 28, mode: 'illustrated', title: 'Stay curious', transitionIn: { kind: 'cut', dur: 0 },
         brief: 'Back on the torch-lit cave wall: the ochre stencil on G1, now carrying the HOMO CURIOSUS mark. The line circles the hand once, writes "stay curious." in hand-ink beside it, then slips off frame toward the dark: the film loops to shot 1.' },

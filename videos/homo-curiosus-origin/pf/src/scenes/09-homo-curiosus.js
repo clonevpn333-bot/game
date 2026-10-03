@@ -6,7 +6,7 @@
 (function () {
   'use strict';
   const ID = 'homo-curiosus';
-  const T0 = 21.75, HOMO = 22.5, CUR = 23.125, COLLAPSE = 23.95;
+  const T0 = 21.75, HOMO = 23.05, CUR = 23.62, COLLAPSE = 23.95; // line 1 lands on "We", line 2 on "Wonder"
   const TAU = Math.PI * 2;
   const arc = (cx, cy, rx, ry, a0, a1, n = 28) => Array.from({ length: n + 1 }, (_, i) => { const a = a0 + ((a1 - a0) * i) / n; return [cx + Math.cos(a) * rx, cy + Math.sin(a) * ry]; });
   // monoline capitals, unit cap height (y down, 0 = cap line, 1 = baseline)
@@ -18,6 +18,12 @@
     U: { w: 0.74, s: [[[0, 0], [0, 0.6]].concat(arc(0.37, 0.6, 0.37, 0.4, Math.PI, 0, 24)).concat([[0.74, 0]])] },
     R: { w: 0.72, s: [[[0, 1], [0, 0], [0.4, 0]].concat(arc(0.4, 0.26, 0.28, 0.26, -Math.PI / 2, Math.PI / 2, 18)).concat([[0, 0.52]]), [[0.32, 0.52], [0.72, 1]]] },
     I: { w: 0.24, s: [[[0, 0], [0.24, 0]], [[0.12, 0], [0.12, 1]], [[0, 1], [0.24, 1]]] },
+    W: { w: 1.0, s: [[[0, 0], [0.22, 1], [0.5, 0.22], [0.78, 1], [1.0, 0]]] },
+    Y: { w: 0.74, s: [[[0, 0], [0.37, 0.5]], [[0.74, 0], [0.37, 0.5], [0.37, 1]]] },
+    E: { w: 0.62, s: [[[0.62, 0], [0, 0], [0, 1], [0.62, 1]], [[0, 0.5], [0.5, 0.5]]] },
+    N: { w: 0.74, s: [[[0, 1], [0, 0], [0.74, 1], [0.74, 0]]] },
+    D: { w: 0.78, s: [[[0, 1], [0, 0], [0.3, 0]].concat(arc(0.3, 0.5, 0.48, 0.5, -Math.PI / 2, Math.PI / 2, 26)).concat([[0, 1]])] },
+    ' ': { w: 0.3, s: [] },
     S: { w: 0.72, s: [arc(0.37, 0.25, 0.33, 0.25, -0.15 * Math.PI, -1.5 * Math.PI, 22).concat(arc(0.37, 0.75, 0.35, 0.25, -0.5 * Math.PI, 0.82 * Math.PI, 26))] },
   };
   function layout(word, cap, baseY, gap) {
@@ -36,8 +42,8 @@
   let PLAN = null;
   function plan() {
     if (PLAN) return PLAN;
-    const homo = layout('HOMO', 200, 860, 38);
-    const cur = layout('CURIOSUS', 120, 1080, 26);
+    const homo = layout('WHY WE', 160, 860, 30);
+    const cur = layout('WONDER', 150, 1080, 28);
     const strokes = [];
     const len = (p) => p.reduce((a, q, i) => (i ? a + Math.hypot(q[0] - p[i - 1][0], q[1] - p[i - 1][1]) : 0), 0);
     homo.forEach((l, li) => l.strokes.forEach((s, si) => strokes.push({ pts: FILM.hc.resample(s, 3), word: 0, letter: li, last: si === l.strokes.length - 1 })));
@@ -107,7 +113,7 @@
         ctx.save();
         ctx.strokeStyle = L.rgba(P.lavender, 0.3 * cg);
         ctx.lineWidth = 1.2;
-        [[660, 0.3], [860, 0.45], [760, 0.15], [960, 0.3], [1080, 0.45], [1020, 0.15]].forEach(([y, al]) => {
+        [[700, 0.3], [860, 0.45], [780, 0.15], [930, 0.3], [1080, 0.45], [1005, 0.15]].forEach(([y, al]) => {
           ctx.strokeStyle = L.rgba(P.lavender, al * cg);
           ctx.beginPath();
           ctx.moveTo(L.lerp(540, 60, cg), y);
@@ -123,9 +129,9 @@
         ctx.setLineDash([]);
         ctx.restore();
         pl.homo.concat(pl.cur).forEach((l) => {
-          if (l.ch === 'O' || l.ch === 'C' || l.ch === 'S') {
+          if (l.ch === 'O' || l.ch === 'D') {
             const big = pl.homo.includes(l);
-            L.guideCircle(ctx, (l.x0 + l.x1) / 2, big ? 760 : 1020, (big ? 100 : 60) + 14, { alpha: 0.2 * cg, width: 1, cross: 8, p: cg });
+            L.guideCircle(ctx, (l.x0 + l.x1) / 2, big ? 780 : 1005, (big ? 80 : 75) + 14, { alpha: 0.2 * cg, width: 1, cross: 8, p: cg });
           }
         });
         L.ticks(ctx, 118, 1150, { kind: 'linear', length: 844, angle: 0, n: 60, major: 5, p: cg, color: P.lineWhite, alpha: 0.4 });
