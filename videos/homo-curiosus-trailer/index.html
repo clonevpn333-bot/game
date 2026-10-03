@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Homo Curiosus</title>
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script src="assets/timing.js"></script>
+    <script type="importmap">
+      { "imports": { "three": "./assets/vendor/three.module.min.js" } }
+    </script>
+    <style>
+      @font-face { font-family: "Cinzel"; src: url("assets/fonts/cinzel-latin-700-normal.woff2") format("woff2"); font-weight: 700; }
+      @font-face { font-family: "Press Start 2P"; src: url("assets/fonts/press-start-2p-latin-400-normal.woff2") format("woff2"); }
+      @font-face { font-family: "IM Fell English"; src: url("assets/fonts/im-fell-english-latin-400-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Monoton"; src: url("assets/fonts/monoton-latin-400-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Kalam"; src: url("assets/fonts/kalam-latin-700-normal.woff2") format("woff2"); font-weight: 700; }
+      @font-face { font-family: "Luckiest Guy"; src: url("assets/fonts/luckiest-guy-latin-400-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Fredoka"; src: url("assets/fonts/fredoka-latin-700-normal.woff2") format("woff2"); font-weight: 700; }
+      @font-face { font-family: "Fredoka"; src: url("assets/fonts/fredoka-latin-500-normal.woff2") format("woff2"); font-weight: 500; }
+      @font-face { font-family: "Permanent Marker"; src: url("assets/fonts/permanent-marker-latin-400-normal.woff2") format("woff2"); }
+      :root { --ink: #1b1033; --gold: #e8b84a; --ochre: #d4572a; --bone: #f1e6cf; --neon: #ff6ad5; --pix: #ffec27; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: #05030c; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: "Fredoka", sans-serif; }
+      .clip, .layer { position: absolute; inset: 0; }
+      canvas.full { position: absolute; inset: 0; width: 1080px; height: 1920px; display: block; }
+      #fontwarm { position: absolute; left: -9999px; top: 0; font-size: 20px; }
+      .row { position: absolute; left: 0; right: 0; display: flex; justify-content: center; align-items: center; }
+      /* era stamp, top-left */
+      .stamp { position: absolute; left: 64px; top: 120px; padding: 10px 22px; font-size: 34px; letter-spacing: 0.08em; opacity: 0; white-space: nowrap; }
+      .st-cave { font-family: "Permanent Marker"; color: var(--bone); border: 4px solid rgba(241,230,207,0.7); border-radius: 40px 10px 34px 12px; }
+      .st-star { font-family: "Cinzel"; color: #4a2a0c; border-top: 3px solid #4a2a0c; border-bottom: 3px solid #4a2a0c; }
+      .st-ink { font-family: "Kalam"; color: #4a2a12; transform: rotate(-4deg); }
+      .st-film { font-family: "IM Fell English"; color: #eee; background: #111; border: 3px double #ccc; }
+      .st-pix { font-family: "Press Start 2P"; font-size: 26px; color: var(--pix); background: #1d2b53; border: 6px solid #fff1e8; }
+      .st-3d { font-family: "Luckiest Guy"; color: #fff; background: var(--ink); border-radius: 18px; padding-top: 16px; }
+      /* captions */
+      #captions { position: absolute; left: 0; right: 0; top: 250px; height: 220px; }
+      .cap { position: absolute; left: 50px; right: 50px; top: 0; text-align: center; opacity: 0; line-height: 1.12; }
+      .cap .cw { display: inline-block; margin: 0 4px; }
+      .c0 { font-family: "Permanent Marker"; font-size: 80px; color: var(--bone); text-shadow: 0 0 30px rgba(0,0,0,0.9), 0 6px 0 rgba(40,15,5,0.9); }
+      .c0 .on { color: #ff8a4c; }
+      .c1 { font-family: "Cinzel"; font-weight: 700; font-size: 82px; color: #4a2a0c; letter-spacing: 0.04em; }
+      .c1 .on { color: #b9811c; }
+      .c2 { font-family: "Kalam"; font-weight: 700; font-size: 86px; color: #4a2a12; }
+      .c2 .on { color: #a33b1a; }
+      .c3 { font-family: "IM Fell English"; font-size: 84px; color: #f4efe2; text-shadow: 0 4px 18px #000; }
+      .c3 .on { color: #fff; text-decoration: underline; text-decoration-thickness: 4px; text-underline-offset: 10px; }
+      .c4 { font-family: "Press Start 2P"; font-size: 50px; line-height: 1.5; color: #fff1e8; text-shadow: 6px 6px 0 #000; }
+      .c4 .on { color: var(--pix); }
+      .c5, .c7, .c8 { font-family: "Fredoka"; font-weight: 700; font-size: 84px; text-transform: uppercase; color: #fff; -webkit-text-stroke: 15px var(--ink); paint-order: stroke fill; text-shadow: 0 8px 0 var(--ink); }
+      .c5 .on { color: #7fe9ff; }
+      .c7 .on, .c8 .on { color: #ffc46b; }
+      /* questions */
+      .q { position: absolute; left: 0; right: 0; text-align: center; opacity: 0; white-space: nowrap; line-height: 1; }
+      #q-why { top: 380px; font-family: "Permanent Marker"; font-size: 300px; color: var(--ochre); text-shadow: 0 0 40px rgba(0,0,0,0.6), 8px 10px 0 #2a1608; }
+      #q-how { top: 760px; font-family: "Cinzel"; font-weight: 700; font-size: 230px; color: var(--gold); text-shadow: 0 2px 0 #fff3c4, 0 8px 0 #6b4512, 0 18px 30px rgba(0,0,0,0.6); }
+      #q-what { top: 1110px; left: 60px; right: auto; text-align: left; font-family: "Press Start 2P"; font-size: 120px; color: var(--pix); text-shadow: 12px 12px 0 #000; }
+      #q-if { top: 1260px; left: auto; right: 70px; text-align: right; font-family: "Monoton"; font-size: 240px; color: #ffd6f4; text-shadow: 0 0 10px var(--neon), 0 0 30px var(--neon), 0 0 70px #c43cff; }
+      /* title */
+      #title { position: absolute; left: 0; right: 0; top: 520px; }
+      .tline { display: flex; justify-content: center; align-items: baseline; gap: 6px; height: 260px; }
+      .tline.l2 { height: 200px; gap: 2px; }
+      .tl { display: inline-block; text-align: center; line-height: 1; will-change: transform; }
+      #sheen { position: absolute; left: 0; right: 0; top: 500px; height: 520px; opacity: 0; mix-blend-mode: screen; pointer-events: none;
+        background: linear-gradient(105deg, rgba(255,255,255,0) 40%, rgba(255,240,210,0.55) 50%, rgba(255,255,255,0) 60%); background-size: 300% 100%; }
+      #rule { position: absolute; left: 190px; right: 190px; top: 1000px; height: 3px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+      #sub { position: absolute; left: 0; right: 0; top: 1030px; text-align: center; font-family: "Cinzel"; font-weight: 700; font-size: 30px; letter-spacing: 0.16em; white-space: nowrap; color: #e9dcc0; opacity: 0; }
+      #stay { position: absolute; left: 0; right: 0; top: 1110px; text-align: center; font-family: "Kalam"; font-weight: 700; font-size: 110px; color: #ffc46b; text-shadow: 0 0 30px rgba(255,170,60,0.55); clip-path: inset(0 100% 0 0); }
+      #subscribe { position: absolute; left: 50%; top: 1440px; width: 520px; height: 130px; margin-left: -260px; border-radius: 70px; background: #ff3b30; color: #fff;
+        display: flex; align-items: center; justify-content: center; gap: 22px; font-family: "Fredoka"; font-weight: 700; font-size: 58px; letter-spacing: 0.04em;
+        box-shadow: 0 0 0 8px var(--ink), 0 16px 0 8px var(--ink), 0 0 60px rgba(255,80,60,0.5); opacity: 0; }
+      #subscribe .bell { font-size: 54px; }
+      #cursor { position: absolute; left: 700px; top: 1560px; width: 64px; height: 64px; opacity: 0; image-rendering: pixelated; }
+      /* global finishing: soft vignette + letterbox bars that breathe on hard cuts */
+      #grade { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 48%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.45) 100%); }
+      .bar { position: absolute; left: 0; right: 0; height: 0; background: #000; }
+      #barT { top: 0; } #barB { bottom: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="28.37" data-width="1080" data-height="1920">
+      <canvas id="c2d" class="full" width="1080" height="1920"></canvas>
+      <canvas id="gl" class="full" width="1080" height="1920"></canvas>
+      <div id="fontwarm">
+        <span style="font-family: Cinzel; font-weight: 700">a</span><span style="font-family: 'Press Start 2P'">a</span><span style="font-family: 'IM Fell English'">a</span>
+        <span style="font-family: Monoton">a</span><span style="font-family: Kalam; font-weight: 700">a</span><span style="font-family: 'Luckiest Guy'">a</span>
+        <span style="font-family: Fredoka; font-weight: 700">a</span><span style="font-family: 'Permanent Marker'">a</span>
+      </div>
+
+      <div id="ov" class="clip" data-start="0" data-duration="28.37" data-track-index="2">
+        <div id="s0" class="stamp st-cave">≈ 40,000 BC</div>
+        <div id="s1" class="stamp st-star">MMM · BC</div>
+        <div id="s2" class="stamp st-ink">anno 1488</div>
+        <div id="s3" class="stamp st-film">— 1903 —</div>
+        <div id="s4" class="stamp st-pix">1969</div>
+        <div id="s5" class="stamp st-3d">TODAY</div>
+
+        <div id="q-why" class="q">WHY?</div>
+        <div id="q-how" class="q">HOW?</div>
+        <div id="q-what" class="q">WHAT</div>
+        <div id="q-if" class="q">IF?</div>
+
+        <div id="title">
+          <div class="tline l1" id="tl1"></div>
+          <div class="tline l2" id="tl2"></div>
+        </div>
+        <div id="sheen"></div>
+        <div id="rule"></div>
+        <div id="sub">EVERYTHING HUMANS HAVE EVER WONDERED</div>
+        <div id="stay">stay curious.</div>
+        <div id="subscribe"><span class="bell">🔔</span><span id="sb1">SUBSCRIBE</span><span id="sb2" style="display:none">SUBSCRIBED</span></div>
+        <svg id="cursor" viewBox="0 0 16 16"><path d="M1 1 L1 13 L4 10 L6 15 L8 14 L6 9 L10 9 Z" fill="#fff" stroke="#1b1033" stroke-width="1.2" stroke-linejoin="round" /></svg>
+      </div>
+
+      <div id="captions"></div>
+      <div id="grade"></div>
+      <div id="barT" class="bar"></div>
+      <div id="barB" class="bar"></div>
+
+      <audio id="vo" src="assets/audio/vo.wav" data-start="0" data-duration="28.37" data-track-index="10" data-volume="1"></audio>
+      <audio id="music" src="assets/audio/music.wav" data-start="0" data-duration="28.37" data-track-index="11" data-volume="0.42"></audio>
+      <audio id="sfx" src="assets/audio/sfx.wav" data-start="0" data-duration="28.37" data-track-index="12" data-volume="0.75"></audio>
+    </div>
+
+    <script type="module" src="assets/scene.js"></script>
+    <script>
+      (function () {
+        const tl = gsap.timeline({ paused: true });
+        const L = window.TIMING.lines;
+
+        // ---------- era-styled captions (chunks of ≤3 words, active word lit)
+        const capBox = document.getElementById("captions");
+        const ERA_CLASS = ["c0", "c1", "c2", "c3", "c4", "c5", null, "c7", "c8", null];
+        L.forEach((line, li) => {
+          const cls = ERA_CLASS[li];
+          if (!cls) return;
+          const words = line.words;
+          const chunks = [];
+          for (let i = 0; i < words.length; ) {
+            const n = words.length - i === 4 ? 2 : Math.min(3, words.length - i);
+            chunks.push(words.slice(i, i + n));
+            i += n;
+          }
+          chunks.forEach((ch, ci) => {
+            const el = document.createElement("div");
+            el.className = "cap " + cls;
+            ch.forEach((w) => {
+              const s = document.createElement("span");
+              s.className = "cw";
+              s.textContent = w.w;
+              if (el.children.length) el.appendChild(document.createTextNode(" "));
+              el.appendChild(s);
+            });
+            capBox.appendChild(el);
+            const a = ch[0].s - 0.05;
+            const b = ci < chunks.length - 1 ? chunks[ci + 1][0].s - 0.05 : line.speechEnd + 0.25;
+            tl.set(el, { opacity: 0 }, 0);
+            tl.fromTo(el, { opacity: 0, y: 26, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.14, ease: "power3.out" }, a);
+            tl.set(el, { opacity: 0 }, b);
+            [...el.children].forEach((sp, k) => {
+              tl.set(sp, { attr: { class: "cw" } }, 0);
+              tl.set(sp, { attr: { class: "cw on" } }, ch[k].s);
+              tl.fromTo(sp, { scale: 1.14 }, { scale: 1, duration: 0.18, ease: "power2.out" }, ch[k].s);
+              if (k < ch.length - 1) tl.set(sp, { attr: { class: "cw" } }, ch[k + 1].s);
+            });
+          });
+        });
+
+        // ---------- era stamps
+        const ST = [[0.3, 5.0], [5.2, 6.85], [7.0, 9.5], [10.05, 11.15], [11.5, 12.95], [13.05, 15.4]];
+        ST.forEach(([a, b], i) => {
+          tl.set("#s" + i, { opacity: 0 }, 0);
+          tl.fromTo("#s" + i, { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.25, ease: "power3.out" }, a);
+          tl.to("#s" + i, { opacity: 0, duration: 0.1 }, b);
+        });
+
+        // ---------- the questions, each in its own medium; they stack, then blow away
+        tl.set(".q", { opacity: 0 }, 0);
+        tl.set("#q-why", { opacity: 1, clipPath: "inset(0 100% 0 0)" }, 15.6);
+        tl.to("#q-why", { clipPath: "inset(0 0% 0 0)", duration: 0.16, ease: "power2.out" }, 15.6);
+        tl.fromTo("#q-why", { rotation: -12, scale: 1.25 }, { rotation: -6, scale: 1, duration: 0.3, ease: "back.out(3)" }, 15.6);
+        tl.fromTo("#q-how", { opacity: 0, scaleX: 1.6, scale: 1.3 }, { opacity: 1, scaleX: 1, scale: 1, duration: 0.25, ease: "expo.out" }, 15.96);
+        // WHAT types on like an old terminal
+        tl.set("#q-what", { opacity: 1, clipPath: "inset(0 100% 0 0)" }, 16.33);
+        for (let k = 1; k <= 4; k++) tl.set("#q-what", { clipPath: `inset(0 ${100 - k * 25}% 0 0)` }, 16.33 + k * 0.05);
+        // IF? neon flickers on
+        [[16.69, 1], [16.72, 0.2], [16.76, 1], [16.8, 0.4], [16.83, 1]].forEach(([at, o]) => tl.set("#q-if", { opacity: o }, at));
+        tl.to("#q-why", { x: -1300, rotation: -30, duration: 0.3, ease: "power3.in" }, 17.2);
+        tl.to("#q-how", { x: 1300, duration: 0.3, ease: "power3.in" }, 17.23);
+        tl.to("#q-what", { x: -1300, duration: 0.3, ease: "power3.in" }, 17.26);
+        tl.to("#q-if", { x: 1300, duration: 0.3, ease: "power3.in" }, 17.29);
+        // gentle drift while they sit
+        tl.to("#q-how", { y: -10, duration: 1.2, ease: "sine.inOut" }, 16.0);
+
+        // ---------- HOMO CURIOSUS: every letter shuffles through the eras, then lands in its own
+        const FONTS = [
+          ["Permanent Marker", 1, "#e86a3a", ""],
+          ["Cinzel", 0.95, "#e8b84a", "700"],
+          ["Press Start 2P", 0.62, "#ffec27", ""],
+          ["Monoton", 0.85, "#ffd6f4", ""],
+          ["IM Fell English", 1.05, "#f1e6cf", ""],
+          ["Luckiest Guy", 1.0, "#7fe9ff", ""],
+          ["Kalam", 1.0, "#ffc46b", "700"],
+          ["Fredoka", 1.0, "#c9a2ff", "700"],
+        ];
+        const GLOW = { Monoton: "0 0 12px #ff6ad5, 0 0 40px #c43cff", "Press Start 2P": "8px 8px 0 #000", "Luckiest Guy": "0 8px 0 #1b1033", Fredoka: "0 8px 0 #1b1033", "Permanent Marker": "0 6px 0 #4a1c08", Cinzel: "0 3px 0 #fff3c4, 0 9px 0 #6b4512", "IM Fell English": "0 0 20px rgba(0,0,0,0.8)", Kalam: "0 0 24px rgba(255,170,60,0.5)" };
+        const FINAL1 = [0, 1, 2, 3];
+        const FINAL2 = [4, 5, 6, 1, 2, 3, 0, 7];
+        const applyFont = (el, fi, base) => {
+          const [f, sc, col, wt] = FONTS[fi];
+          return { fontFamily: `"${f}"`, fontSize: Math.round(base * sc) + "px", color: col, fontWeight: wt || "400", textShadow: GLOW[f] };
+        };
+        const build = (box, text, finals, base, t0) => {
+          [...text].forEach((ch, i) => {
+            const el = document.createElement("span");
+            el.className = "tl";
+            el.textContent = ch;
+            box.appendChild(el);
+            const land = t0 + 0.35 + i * 0.06;
+            tl.set(el, { opacity: 0 }, 0);
+            tl.set(el, { opacity: 1 }, t0 + i * 0.03);
+            tl.fromTo(el, { y: -140, scale: 0.4, rotation: (i % 2 ? 1 : -1) * 25 }, { y: 0, scale: 1, rotation: 0, duration: 0.45, ease: "back.out(2.6)" }, t0 + i * 0.03);
+            // slot-machine font shuffle
+            for (let k = 0, at = t0 + i * 0.03; at < land; k++, at += 0.05) tl.set(el, applyFont(el, (i * 3 + k) % FONTS.length, base), at);
+            tl.set(el, applyFont(el, finals[i], base), land);
+            tl.fromTo(el, { scale: 1.25 }, { scale: 1, duration: 0.25, ease: "power2.out" }, land);
+            // after landing: a living breath, each letter on its own phase
+            tl.to(el, { y: -10, duration: 0.9, yoyo: true, repeat: 4, ease: "sine.inOut" }, land + 0.3 + i * 0.07);
+          });
+        };
+        build(document.getElementById("tl1"), "HOMO", FINAL1, 210, 23.1);
+        build(document.getElementById("tl2"), "CURIOSUS", FINAL2, 150, 23.6);
+        tl.fromTo("#title", { scale: 1.08 }, { scale: 1, duration: 5, ease: "power1.out" }, 23.1);
+        tl.set("#sheen", { opacity: 1 }, 24.3);
+        tl.fromTo("#sheen", { backgroundPosition: "120% 0" }, { backgroundPosition: "-20% 0", duration: 0.9, ease: "power2.inOut" }, 24.3);
+        tl.set("#sheen", { opacity: 0 }, 25.2);
+        tl.fromTo("#rule", { scaleX: 0 }, { scaleX: 1, duration: 0.6, ease: "expo.out" }, 24.2);
+        tl.fromTo("#sub", { opacity: 0, scaleX: 1.25 }, { opacity: 1, scaleX: 1, duration: 0.8, ease: "expo.out" }, 24.3);
+        tl.to("#stay", { clipPath: "inset(0 0% 0 0)", duration: 0.7, ease: "power2.inOut" }, 24.8);
+        tl.fromTo("#subscribe", { opacity: 0, scale: 0.5, y: 60 }, { opacity: 1, scale: 1, y: 0, duration: 0.45, ease: "back.out(2.5)" }, 25.6);
+        tl.fromTo("#cursor", { opacity: 0, x: 220, y: 200 }, { opacity: 1, x: 0, y: 0, duration: 0.5, ease: "power3.out" }, 25.7);
+        tl.to("#subscribe", { scale: 0.92, duration: 0.07 }, 26.2);
+        tl.to("#subscribe", { scale: 1, background: "#2a2438", duration: 0.25, ease: "back.out(3)" }, 26.27);
+        tl.set("#sb1", { display: "inline" }, 0);
+        tl.set("#sb2", { display: "none" }, 0);
+        tl.set("#sb1", { display: "none" }, 26.27);
+        tl.set("#sb2", { display: "inline" }, 26.27);
+        tl.to("#cursor", { scale: 0.85, duration: 0.07, yoyo: true, repeat: 1 }, 26.2);
+        tl.to(["#title", "#sheen", "#rule", "#sub", "#stay", "#subscribe", "#cursor"], { opacity: 0, duration: 0.6 }, 27.6);
+
+        // ---------- cinematic letterbox that snaps in on the big moments
+        [[13.0, 15.45], [17.5, 20.2]].forEach(([a, b]) => {
+          tl.to(".bar", { height: 110, duration: 0.25, ease: "power3.out" }, a);
+          tl.to(".bar", { height: 0, duration: 0.25, ease: "power3.in" }, b - 0.25);
+        });
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>
