@@ -4,6 +4,8 @@ A 3D open-world game set in one city that exists in three eras at once — **199
 and the player can shift between them instantly, staying in the same physical place.
 
 ## Run
+Easiest: open `WORLDSHIFT.html` (single self-contained file) directly in Chrome/Edge — no server needed.
+
 ```
 cd worldshift
 npx http-server . -p 8080      # or: python3 -m http.server 8080
