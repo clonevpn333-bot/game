@@ -53,6 +53,7 @@ export class SignAtlas {
     SIGN_SETS.special.forEach((t, i) => add('s:' + t, t, i % 2 ? 'box' : 'neon', NEON_COLORS[(i * 3) % NEON_COLORS.length]));
     // Faded 2047 signage seen in the ruins
     SIGN_SETS.holo47.slice(0, 10).forEach((t) => add('f:' + t, t, 'faded', '#8a9a9a'));
+    add('t:ASH', 'ASH', 'graffiti', '#ff3ac8');
     this.canvas = c;
     this.texture = new THREE.CanvasTexture(c);
     this.texture.colorSpace = THREE.SRGBColorSpace;
@@ -128,6 +129,21 @@ export class SignAtlas {
       g.fillText(text, cx + rng.range(-3, 3), cy);
       // drips
       for (let i = 0; i < 6; i++) g.fillRect(x + rng.range(30, CW - 30), cy + 10, 2, rng.range(4, 14));
+    } else if (style === 'graffiti') {
+      g.save();
+      g.translate(cx, cy);
+      g.rotate(-0.08);
+      g.font = 'italic 900 50px Impact, "Arial Black", sans-serif';
+      g.lineJoin = 'round';
+      g.lineWidth = 10; g.strokeStyle = '#101010'; g.strokeText('ASH', 0, 0);
+      g.lineWidth = 5; g.strokeStyle = '#ffe040'; g.strokeText('ASH', 0, 0);
+      const grd = g.createLinearGradient(0, -25, 0, 25);
+      grd.addColorStop(0, '#ff3ac8'); grd.addColorStop(1, '#3cf2ff');
+      g.fillStyle = grd; g.fillText('ASH', 0, 0);
+      g.fillStyle = '#ffe040';
+      g.beginPath(); g.moveTo(70, -20); g.lineTo(100, -6); g.lineTo(72, 6); g.fill();
+      g.fillRect(-100, 22, 30, 4);
+      g.restore();
     } else if (style === 'faded') {
       g.fillStyle = 'rgba(30,34,36,0.9)';
       g.fillRect(x + 2, y + 2, CW - 4, CH - 4);

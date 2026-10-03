@@ -20,6 +20,15 @@ import { Player } from './actors/player.js';
 import { ThirdPersonCamera } from './actors/camera.js';
 import { HUD } from './ui/hud.js';
 import { Game } from './gameplay/game.js';
+import { FX } from './gameplay/fx.js';
+import { Combat } from './gameplay/combat.js';
+import { Crowd } from './actors/crowd.js';
+import { Vehicles } from './actors/vehicles.js';
+import { Authority } from './gameplay/authority.js';
+import { Interaction, Inventory, Progress } from './gameplay/interact.js';
+import { Missions } from './gameplay/missions.js';
+import { WorldEvents, Weather } from './gameplay/events.js';
+import { Menus } from './ui/menus.js';
 
 const params = new URLSearchParams(location.search);
 G.debug = params.has('debug');
@@ -71,6 +80,20 @@ async function boot() {
   G.cam = new ThirdPersonCamera(G.camera);
   G.hud = new HUD();
   G.game = new Game();
+  G.fx = new FX(G.scene);
+  G.inventory = new Inventory();
+  G.progress = new Progress();
+  G.crowd = new Crowd(G.scene);
+  G.vehicles = new Vehicles(G.scene);
+  G.combat = new Combat();
+  G.authority = new Authority();
+  G.interact = new Interaction();
+  G.missions = new Missions();
+  G.worldEvents = new WorldEvents();
+  G.weather = new Weather(G.scene);
+  G.menus = new Menus();
+  G.ui = G.menus;
+  for (const s of [G.vehicles, G.crowd, G.combat, G.authority, G.interact, G.missions, G.worldEvents, G.weather, G.fx]) G.game.register(s);
 
   setLoad(0.8, 'Building your street…');
   await tick();

@@ -14,6 +14,7 @@ import { placeProp, PROPS } from './props.js';
 import { emitLot, emitLotFar } from './buildings.js';
 import { GU } from './materials.js';
 import { buildLandmark, landmarkFar } from './landmarks.js';
+import { emitPlayerMarks } from '../gameplay/interact.js';
 
 const C = (hex) => { const c = new THREE.Color(hex); return [c.r, c.g, c.b]; };
 
@@ -299,6 +300,11 @@ export class ChunkManager {
 // Content
 // ---------------------------------------------------------------------------
 function buildChunkContent(ctx, c, era) {
+  buildChunkBase(ctx, c, era);
+  emitPlayerMarks(ctx, c, era);
+}
+
+function buildChunkBase(ctx, c, era) {
   const d = c.district;
   const lm = landmarkAt(c.ci, c.cj);
   if (d === 'R' || d === '~') {

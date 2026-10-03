@@ -1,5 +1,6 @@
 // Game orchestration: per-frame system updates, pause, save/load.
 import { G } from '../core/state.js';
+import * as THREE from 'three';
 import { landmarkCenter } from '../world/layout.js';
 
 const SAVE_KEY = 'worldshift.save.v1';
@@ -14,11 +15,12 @@ export class Game {
   register(sys) { this.systems.push(sys); return sys; }
 
   init(params) {
+    this.setupHooks();
     const home = landmarkCenter('home');
     G.era = params.has('era') ? +params.get('era') : 0;
     G.dayTime = params.has('t') ? +params.get('t') : 17.6;
     const x = params.has('x') ? +params.get('x') : home.x - 2;
-    const z = params.has('z') ? +params.get('z') : home.z - 40;
+    const z = params.has('z') ? +params.get('z') : home.z - 45;
     G.player.teleport(x, 0.2, z, Math.PI / 2);
     G.cam.yaw = Math.PI / 2 + 0.3;
     G.cam.pitch = 0.12;
@@ -29,6 +31,26 @@ export class Game {
 
   newGame() {
     G.events.emit('game:new');
+    G.missions.start('seed');
+  }
+
+  setupHooks() {
+    G.events.on('player:died', () => {
+      G.hud.showBanner('FLATLINED', 'The harness pulls you back…', 4, '#ff4040');
+      setTimeout(() => {
+        const home = landmarkCenter('home');
+        const p = G.player;
+        p.revive(home.x - 2, 0.3, home.z - 40);
+        G.authority.clear(G.era);
+        const lost = Math.floor(G.inventory.cash[G.era] * 0.2);
+        G.inventory.cash[G.era] -= lost;
+        if (G.missions.active && G.missions.active !== 'seed') G.missions.fail('You died.');
+      }, 4000);
+    });
+    G.events.on('shift', (from, to) => {
+      const p = G.player;
+      G.fx.shiftMotes(p.pos.clone().setY(p.pos.y + 1), G.sky ? new THREE.Color(1, 1, 1) : null);
+    });
   }
 
   hasSave() {
@@ -93,6 +115,8 @@ export class Game {
   update(dt, input) {
     if (input.keyPressed('Escape') || (input.keyPressed('KeyP'))) { this.pause(true); return; }
     if (input.keyPressed('F3') || input.keyPressed('Backquote')) G.debug = !G.debug;
+    if (input.keyPressed('KeyJ')) { this.pause(true); G.menus.journal(); return; }
+    if (input.keyPressed('KeyM')) { this.pause(true); G.menus.map(); return; }
     const p = G.player;
     G.shift.update(dt, input);
     for (const s of this.systems) if (s.preUpdate) s.preUpdate(dt, input);
