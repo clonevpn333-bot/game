@@ -141,7 +141,7 @@ export class HUD {
     });
     this.chargeFill.style.width = `${sh.charge * 100}%`;
     this.chargeBar.classList.toggle('low', sh.charge < sh.cost);
-    const loc = `${DISTRICT_NAMES[districtAt(p.pos.x, p.pos.z)] || ''} · ${nearestStreetName(p.pos.x, p.pos.z)}`;
+    const loc = G.level ? G.level.def.name + ' · ' + (G.level.def.sub || '') : `${DISTRICT_NAMES[districtAt(p.pos.x, p.pos.z)] || ''} · ${nearestStreetName(p.pos.x, p.pos.z)}`;
     if (loc !== this._loc) { this._loc = loc; this.location.textContent = loc; }
     this.hpBar.firstChild.style.width = `${(p.health / p.maxHealth) * 100}%`;
     this.armBar.firstChild.style.width = `${p.armor}%`;

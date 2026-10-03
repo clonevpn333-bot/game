@@ -108,3 +108,16 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-f
 .panel .entry { padding: 10px 14px; margin: 8px 0; background: rgba(255,255,255,0.05); border-left: 3px solid var(--accent); }
 .panel .entry .yr { font-family: var(--mono); color: var(--accent); margin-right: 10px; }
 .tabs { display: flex; gap: 10px; margin-bottom: 16px; } .tabs button { padding: 8px 16px; font-size: 13px; }
+.cine { position: fixed; left: 50%; bottom: 13%; transform: translateX(-50%); max-width: 900px; width: 80vw; text-align: center; z-index: 30;
+  font-size: 21px; line-height: 1.45; opacity: 0; transition: opacity 0.25s; text-shadow: 0 2px 6px #000; pointer-events: none; }
+.cine.on { opacity: 1; }
+.cine .who { display: block; font-size: 13px; letter-spacing: 5px; color: var(--accent); text-transform: uppercase; margin-bottom: 4px; font-weight: 800; }
+.cine-skip { position: fixed; right: 24px; bottom: 16px; z-index: 30; font-family: var(--mono); font-size: 11px; opacity: 0; letter-spacing: 2px; }
+.cine-skip.on { opacity: 0.55; }
+.bossbar { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); width: min(640px, 70vw); z-index: 12; opacity: 0; transition: opacity 0.4s; text-align: center; pointer-events: none; }
+.bossbar.on { opacity: 1; }
+.bossbar .bn { font-size: 13px; letter-spacing: 5px; font-weight: 800; margin-bottom: 5px; text-shadow: 0 1px 4px #000; }
+.bossbar .bb { height: 9px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.3); }
+.bossbar .bf { height: 100%; width: 100%; background: linear-gradient(90deg, #ff3030, #ff9040); transition: width 0.15s; }
+.bossbar.shield .bf { background: linear-gradient(90deg, #30a0ff, #80e0ff); }
+.bossbar .bs { font-size: 12px; margin-top: 5px; opacity: 0.85; letter-spacing: 1px; text-shadow: 0 1px 4px #000; }

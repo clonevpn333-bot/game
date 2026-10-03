@@ -2,8 +2,10 @@
 import { G } from '../core/state.js';
 import * as THREE from 'three';
 import { landmarkCenter } from '../world/layout.js';
+import { STORY, playPrologue } from '../story/story.js';
 
 const SAVE_KEY = 'worldshift.save.v1';
+const NOINPUT = { axis: () => 0, key: () => false, keyPressed: () => false, keyReleased: () => false, btn: () => false, btnPressed: () => false, btnReleased: () => false, wheel: 0, mouseDX: 0, mouseDY: 0, locked: false };
 
 export class Game {
   constructor() {
@@ -31,13 +33,19 @@ export class Game {
 
   newGame() {
     G.events.emit('game:new');
-    G.missions.start('seed');
+    playPrologue(() => G.missions.start('seed'));
   }
 
   setupHooks() {
     G.events.on('player:died', () => {
       G.hud.showBanner('FLATLINED', 'The harness pulls you back…', 4, '#ff4040');
       setTimeout(() => {
+        if (G.level) {
+          const L = G.level, s = L.def.checkpoint || L.def.spawn;
+          const w = L.W(s[0], s[1], s[2]);
+          G.player.revive(w.x, w.y + 0.3, w.z);
+          return;
+        }
         const home = landmarkCenter('home');
         const p = G.player;
         p.revive(home.x - 2, 0.3, home.z - 40);
@@ -113,6 +121,23 @@ export class Game {
   }
 
   update(dt, input) {
+    if (G.cutscene) {
+      const was = G.cutscene.playing;
+      G.cutscene.update(dt, input);
+      if (was || G.cutscene.playing) {
+        const p = G.player;
+        p.update(dt, NOINPUT, G.cam.yaw);
+        for (const s of this.systems) if (s !== G.interact && s !== G.combat && s !== G.missions) s.update(dt, NOINPUT);
+        G.combat._updateDrones(dt);
+        G.chunks.update(p.pos.x, p.pos.z, G.era);
+        G.world.update(dt);
+        G.hud.update(dt);
+        G.audio.update(dt);
+        G.audio.updateListener(G.camera, G.cam.yaw);
+        G.shift.update(dt, NOINPUT);
+        return;
+      }
+    }
     if (input.keyPressed('Escape') || (input.keyPressed('KeyP'))) { this.pause(true); return; }
     if (input.keyPressed('F3') || input.keyPressed('Backquote')) G.debug = !G.debug;
     if (input.keyPressed('KeyJ')) { this.pause(true); G.menus.journal(); return; }

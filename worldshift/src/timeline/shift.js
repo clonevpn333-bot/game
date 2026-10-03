@@ -182,7 +182,7 @@ export class ShiftSystem {
     G.chunks.setVisibleEras([this.to]);
     G.world.setEraVisible([this.to]);
     G.sky.setEra(this.to);
-    G.hud && G.hud.eraArrived(this.to);
+    if (this.t < 50) G.hud && G.hud.eraArrived(this.to);
     const found = G.chronicle.revealFor(this.to);
     if (found.length && G.hud) G.hud.consequences(found);
     G.events && G.events.emit('shiftDone', this.from, this.to);

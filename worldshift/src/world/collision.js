@@ -124,6 +124,7 @@ export class CollisionWorld {
   }
 
   terrainAt(era, x, z, y) {
+    if (x > 1400 || x < -1400 || z > 1400 || z < -1400) return -1e9;
     const holes = this.eras[era].holes;
     for (let i = 0; i < holes.length; i++) {
       const h = holes[i];
@@ -153,7 +154,7 @@ export class CollisionWorld {
     res.collider = bestC;
     res.surf = bestC ? bestC.surf : SURF.grass;
     const wy = WATER_Y[era];
-    res.water = best < wy;
+    res.water = !bestC && best > -1e8 && best < wy;
     res.waterY = wy;
     return res;
   }

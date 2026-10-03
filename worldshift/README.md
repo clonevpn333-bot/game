@@ -50,3 +50,11 @@ E interact · F vehicle · LMB attack · RMB aim/block · R reload · J chronicl
 - **Combat**: per-era weapons (bat, pistol, shotgun, SMG · mono-blade, smart pistol, pulse rifle ·
   rebar club, scrap rifle, arc thrower, Chrono-Displacer), melee combos, block, dodge roll, enemy cover,
   flanking, hearing/vision, drones.
+
+## Story (v2)
+A full chaptered story with letterboxed, skippable cutscenes (Space = next line, Esc = skip):
+Prologue (2189) → 1 The Seed → 2 Game Over → **3 Red Sevens** (contained level: The Cannery, boss Dutch
+Kowalski) → 4 Dead Drop → **5 The Undercroft** (level, boss WARDEN-7: cut its pylons' 1996 power trunks) →
+6 Pier 9 → **7 The Deep Archive** (level: three era memory locks, the A. reveal, boss The Hollow which slips
+between eras) → 8 Foundation → **9 The Apex** (final boss Victor Halvorsen / the Continuum across all three
+eras) → ending. Side chapters: Common Ground, Burn the Bridge.

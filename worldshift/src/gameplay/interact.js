@@ -137,6 +137,7 @@ export class Interaction {
     for (const it of this._candidates()) {
       const d = Math.hypot(it.x - p.pos.x, it.z - p.pos.z);
       if (d > it.r || Math.abs((it.y ?? p.pos.y) - (p.pos.y + 1)) > 2.6) continue;
+      if (it.levelCond && !it.levelCond()) continue;
       if (it.cond && this.conds[it.cond] && !this.conds[it.cond](it)) continue;
       if (it.cond && !this.conds[it.cond]) continue;
       if (d < bd) { bd = d; best = it; }

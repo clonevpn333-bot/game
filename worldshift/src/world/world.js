@@ -117,7 +117,7 @@ export class World {
   }
 
   setEraVisible(list) {
-    this.eraGroups.forEach((g, i) => { g.visible = list.includes(i); });
+    this.eraGroups.forEach((g, i) => { g.visible = !this.hidden && list.includes(i); });
   }
 
   onFactChanged(id, era) {

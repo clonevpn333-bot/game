@@ -245,8 +245,10 @@ export class Player {
     if (this.state === 'ground' && hasInput && iz > 0.5) this._tryClimbStart(dx, dz, false);
 
     // world bounds
-    this.pos.x = clamp(this.pos.x, -1330, 1330);
-    this.pos.z = clamp(this.pos.z, -1330, 1330);
+    if (!G.level) {
+      this.pos.x = clamp(this.pos.x, -1330, 1330);
+      this.pos.z = clamp(this.pos.z, -1330, 1330);
+    }
     if (this.pos.y < -60) this.respawnSafe();
 
     this.moveSpeed = Math.hypot(this.vel.x, this.vel.z);

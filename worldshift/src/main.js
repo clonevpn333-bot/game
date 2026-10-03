@@ -29,6 +29,7 @@ import { Interaction, Inventory, Progress } from './gameplay/interact.js';
 import { Missions } from './gameplay/missions.js';
 import { WorldEvents, Weather } from './gameplay/events.js';
 import { Menus } from './ui/menus.js';
+import { STORY } from './story/story.js';
 
 const params = new URLSearchParams(location.search);
 G.debug = params.has('debug');
@@ -93,7 +94,9 @@ async function boot() {
   G.weather = new Weather(G.scene);
   G.menus = new Menus();
   G.ui = G.menus;
-  for (const s of [G.vehicles, G.crowd, G.combat, G.authority, G.interact, G.missions, G.worldEvents, G.weather, G.fx]) G.game.register(s);
+  STORY.init();
+  window.STORY = STORY;
+  for (const s of [STORY, G.vehicles, G.crowd, G.combat, G.authority, G.interact, G.missions, G.worldEvents, G.weather, G.fx]) G.game.register(s);
 
   setLoad(0.8, 'Building your street…');
   await tick();
