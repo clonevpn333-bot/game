@@ -82,7 +82,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #000; font-f
 .banner.on { opacity: 1; }
 .banner .t { font-family: var(--mono); font-size: 84px; font-weight: 700; letter-spacing: 18px; color: var(--c); text-shadow: 0 0 30px var(--c); }
 .banner .s { font-size: 16px; letter-spacing: 10px; margin-top: 4px; }
-.reveal { position: absolute; left: 50%; top: 46%; transform: translateX(-50%); width: 760px; text-align: center; opacity: 0; transition: opacity 0.8s; }
+.reveal { position: absolute; left: 50%; top: 55%; transform: translateX(-50%); width: 760px; text-align: center; opacity: 0; transition: opacity 0.8s; }
 .reveal.on { opacity: 1; }
 .reveal .rt { font-family: var(--mono); letter-spacing: 8px; font-size: 14px; color: var(--accent); margin-bottom: 10px; }
 .reveal .c { font-size: 17px; margin: 6px 0; padding: 8px 14px; background: rgba(0,0,0,0.5); }
