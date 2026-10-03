@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>8 Seconds Before Collapse</title>
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script src="assets/timing.js"></script>
+    <script type="importmap">
+      { "imports": { "three": "./assets/vendor/three.module.min.js" } }
+    </script>
+    <style>
+      @font-face {
+        font-family: "Luckiest Guy";
+        src: url("assets/fonts/luckiest-guy-latin-400-normal.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Fredoka";
+        src: url("assets/fonts/fredoka-latin-700-normal.woff2") format("woff2");
+        font-weight: 700;
+      }
+      @font-face {
+        font-family: "Permanent Marker";
+        src: url("assets/fonts/permanent-marker-latin-400-normal.woff2") format("woff2");
+      }
+      :root {
+        --ink: #1b1033;
+        --hazard: #ffb02e;
+        --red: #ff4d5e;
+        --cyan: #5fe0ff;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #9fd6f5;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "Fredoka", sans-serif;
+      }
+      .clip,
+      .layer {
+        position: absolute;
+        inset: 0;
+      }
+      .sky {
+        background: linear-gradient(180deg, #5fb6ee 0%, #9fd6f5 45%, #ffe6c2 100%);
+      }
+      .mtn {
+        position: absolute;
+        left: -100px;
+        right: -100px;
+        bottom: 760px;
+        height: 520px;
+      }
+      .cloud {
+        position: absolute;
+        width: 300px;
+        height: 90px;
+        border-radius: 60px;
+        background: rgba(255, 255, 255, 0.9);
+        filter: blur(2px);
+      }
+      .bp {
+        background:
+          repeating-linear-gradient(0deg, rgba(95, 224, 255, 0.12) 0 2px, transparent 2px 54px),
+          repeating-linear-gradient(90deg, rgba(95, 224, 255, 0.12) 0 2px, transparent 2px 54px),
+          radial-gradient(80% 60% at 50% 45%, #13386b 0%, #0a1f3f 100%);
+      }
+      #gl {
+        position: absolute;
+        inset: 0;
+        width: 1080px;
+        height: 1920px;
+        display: block;
+      }
+      .anchor {
+        position: absolute;
+        left: 540px;
+        top: 960px;
+        width: 0;
+        height: 0;
+      }
+      .tag {
+        position: absolute;
+        width: 760px;
+        left: -380px;
+        bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      .pill {
+        display: block;
+        font-weight: 700;
+        font-size: 50px;
+        color: var(--ink);
+        padding: 14px 30px 10px;
+        border-radius: 999px;
+        border: 6px solid var(--ink);
+        box-shadow: 0 8px 0 var(--ink);
+        white-space: nowrap;
+        background: var(--hazard);
+      }
+      .marker {
+        font-family: "Permanent Marker", cursive;
+        font-size: 46px;
+        color: #fff;
+        -webkit-text-stroke: 10px var(--ink);
+        paint-order: stroke fill;
+        white-space: nowrap;
+        text-align: center;
+        display: block;
+      }
+      .display {
+        font-family: "Luckiest Guy", sans-serif;
+        color: #fff;
+        -webkit-text-stroke: 16px var(--ink);
+        paint-order: stroke fill;
+        text-shadow: 0 10px 0 var(--ink);
+        line-height: 1.02;
+        text-align: center;
+        display: block;
+      }
+      .sticker {
+        position: absolute;
+        left: 0;
+        right: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #hud {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 70px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #hud-box {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        padding: 18px 40px 6px;
+        border-radius: 26px;
+        border: 8px solid var(--ink);
+        background: rgba(20, 10, 40, 0.82);
+        box-shadow: 0 10px 0 var(--ink);
+      }
+      #hud-label {
+        font-family: "Luckiest Guy", sans-serif;
+        font-size: 54px;
+        color: var(--hazard);
+      }
+      #hud-sec {
+        font-family: "Luckiest Guy", sans-serif;
+        font-size: 150px;
+        color: #fff;
+        line-height: 1;
+      }
+      #hud-ms {
+        font-family: "Luckiest Guy", sans-serif;
+        font-size: 64px;
+        color: #ffd9a0;
+      }
+      #hud-slow {
+        margin-top: 14px;
+      }
+      .stamp {
+        position: absolute;
+        left: 90px;
+        right: 90px;
+        padding: 26px 20px 12px;
+        border: 12px solid var(--ink);
+        border-radius: 22px;
+        text-align: center;
+        font-family: "Luckiest Guy", sans-serif;
+        font-size: 96px;
+        color: #fff;
+        -webkit-text-stroke: 6px var(--ink);
+        paint-order: stroke fill;
+        background: repeating-linear-gradient(-45deg, var(--hazard) 0 40px, #ffcf6b 40px 80px);
+        box-shadow: 0 14px 0 var(--ink);
+      }
+      #big-one {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 560px;
+        text-align: center;
+      }
+      #big-one .display {
+        font-size: 380px;
+        color: var(--red);
+      }
+      .diagram {
+        position: absolute;
+        left: 60px;
+        right: 60px;
+        top: 230px;
+        padding: 24px;
+        border-radius: 30px;
+        border: 8px solid var(--ink);
+        background: rgba(10, 31, 63, 0.92);
+        box-shadow: 0 12px 0 var(--ink);
+      }
+      #captions {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 1240px;
+        height: 260px;
+      }
+      .cap {
+        position: absolute;
+        left: 40px;
+        right: 40px;
+        top: 0;
+        text-align: center;
+        font-weight: 700;
+        font-size: 92px;
+        line-height: 1.08;
+        text-transform: uppercase;
+        color: #fff;
+        -webkit-text-stroke: 18px var(--ink);
+        paint-order: stroke fill;
+        text-shadow: 0 9px 0 var(--ink);
+        opacity: 0;
+      }
+      .cap .cw {
+        display: inline-block;
+        margin: 0 10px;
+      }
+      #vignette {
+        background: radial-gradient(130% 80% at 50% 45%, rgba(0, 0, 0, 0) 55%, rgba(10, 4, 20, 0.45) 100%);
+      }
+      #red-pulse {
+        background: radial-gradient(90% 60% at 50% 50%, rgba(255, 40, 40, 0) 45%, rgba(255, 40, 40, 0.6) 100%);
+        opacity: 0;
+      }
+      #flash {
+        background: #fff;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="51.23" data-width="1080" data-height="1920">
+      <div id="bg-sky" class="clip sky" data-start="0" data-duration="51.23" data-track-index="0">
+        <svg class="mtn" viewBox="0 0 1280 520" preserveAspectRatio="none">
+          <path d="M0 520 L0 300 L160 160 L300 280 L470 90 L640 260 L800 140 L980 290 L1120 180 L1280 280 L1280 520 Z" fill="#8fb6d9" />
+          <path d="M0 520 L0 380 L200 260 L380 360 L560 230 L760 360 L940 250 L1120 370 L1280 300 L1280 520 Z" fill="#6f9cc6" />
+        </svg>
+        <div class="cloud" style="left: 80px; top: 260px"></div>
+        <div class="cloud" style="left: 640px; top: 180px; width: 360px"></div>
+        <div class="cloud" style="left: 420px; top: 420px; width: 220px; height: 70px"></div>
+      </div>
+      <div id="bg-bp1" class="clip bp" data-start="9.3" data-duration="7.6" data-track-index="1"></div>
+      <div id="bg-bp2" class="clip bp" data-start="20.1" data-duration="13.3" data-track-index="1"></div>
+      <canvas id="gl" width="1080" height="1920"></canvas>
+
+      <!-- countdown HUD (the recurring gimmick) -->
+      <div id="ov-hud" class="clip" data-start="0" data-duration="34.2" data-track-index="2">
+        <div id="hud">
+          <div id="hud-box"><span id="hud-label">T-MINUS</span><span id="hud-sec">8</span><span id="hud-ms">.00</span></div>
+          <span id="hud-slow" class="pill" style="font-size: 38px; background: #ffffff">⏱ SLOWED DOWN ×6</span>
+        </div>
+      </div>
+      <div id="ov-intro" class="clip" data-start="0" data-duration="4.7" data-track-index="3">
+        <div id="normal" class="sticker" style="top: 420px"><span class="display" style="font-size: 104px">EVERYTHING</span><span class="display" style="font-size: 104px; color: #b8ff8a">LOOKED NORMAL.</span></div>
+      </div>
+      <div id="ov-bolt" class="clip" data-start="4.6" data-duration="4.7" data-track-index="3">
+        <div id="bolt-anchor" class="anchor">
+          <div id="mm" class="tag" style="bottom: 90px">
+            <span class="pill" style="font-size: 64px; background: #fff">2 mm</span>
+            <svg viewBox="0 0 300 80" style="width: 300px; height: 80px; display: block">
+              <rect x="10" y="20" width="280" height="44" rx="8" fill="#ffd23f" stroke="#1b1033" stroke-width="7" />
+              <g stroke="#1b1033" stroke-width="5"><line x1="40" y1="20" x2="40" y2="44" /><line x1="80" y1="20" x2="80" y2="36" /><line x1="120" y1="20" x2="120" y2="44" /><line x1="160" y1="20" x2="160" y2="36" /><line x1="200" y1="20" x2="200" y2="44" /><line x1="240" y1="20" x2="240" y2="36" /></g>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div id="ov-xray1" class="clip" data-start="9.3" data-duration="7.6" data-track-index="3">
+        <div id="xray-tag" class="sticker" style="top: 420px"><span class="pill" style="background: var(--cyan)">X-RAY VIEW · LOAD</span></div>
+        <div id="focal-anchor" class="anchor">
+          <div id="cant" class="tag" style="bottom: 120px"><span class="pill" style="background: var(--red); color: #fff">THIS BOLT: ✗</span></div>
+          <div id="moves" class="tag" style="bottom: auto; top: 140px"><span class="marker" style="color: var(--hazard)">the load moves →</span></div>
+        </div>
+      </div>
+      <div id="ov-outside" class="clip" data-start="16.9" data-duration="3.2" data-track-index="3">
+        <div id="fine" class="sticker" style="top: 440px"><span class="pill" style="background: #b8ff8a; font-size: 60px">OUTSIDE: TOTALLY FINE</span><span class="marker" style="margin-top: 14px">*birds chirping*</span></div>
+      </div>
+      <div id="ov-crack" class="clip" data-start="20.1" data-duration="13.3" data-track-index="3">
+        <div id="crack-tag" class="sticker" style="top: 440px"><span class="pill" style="background: var(--red); color: #fff">CRACK: 1,000+ MPH</span></div>
+        <div id="overload" class="stamp" style="top: 420px">OVERLOADED!</div>
+        <div id="progressive" class="stamp" style="top: 420px; font-size: 76px">PROGRESSIVE COLLAPSE</div>
+        <div id="red-pulse" class="layer"></div>
+      </div>
+      <div id="ov-one" class="clip" data-start="33.4" data-duration="1.4" data-track-index="3">
+        <div id="big-one"><span class="display">1.</span></div>
+      </div>
+      <div id="ov-after" class="clip" data-start="38.0" data-duration="13.23" data-track-index="3">
+        <div id="diagram" class="diagram">
+          <svg viewBox="0 0 900 360" style="width: 100%; height: 340px; display: block">
+            <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M40 300 L860 300" stroke="#5fe0ff" stroke-width="14" />
+              <path d="M40 300 L140 140 L240 300 L340 140 L440 300 L540 140 L640 300 L740 140 L840 300 M140 140 L740 140" stroke="#5fe0ff" stroke-width="12" />
+              <path id="dia-broken" d="M340 140 L440 300" stroke="#ff4d5e" stroke-width="16" stroke-dasharray="20 18" />
+              <path class="dia-flow" d="M300 210 C330 120 420 100 470 150 C520 200 580 220 640 300" stroke="#ffb02e" stroke-width="10" />
+              <path class="dia-flow" d="M380 300 C420 330 500 330 540 300" stroke="#ffb02e" stroke-width="10" />
+            </g>
+          </svg>
+          <span class="marker" style="font-size: 44px; margin-top: 6px">one part fails → the others share the load</span>
+        </div>
+        <div id="years" class="sticker" style="top: 260px">
+          <span class="pill" style="background: #c98a5a; font-size: 56px">RUSTY BOLT</span>
+          <span id="years-n" class="display" style="font-size: 130px; margin-top: 14px">2014</span>
+          <span class="marker">...ignored for years</span>
+        </div>
+        <div id="check" class="sticker" style="top: 300px"><span class="display" style="font-size: 110px">CHECK YOUR</span><span class="display" style="font-size: 130px; color: var(--hazard)">BOLTS ✓</span></div>
+        <div id="eng-anchor" class="anchor"></div>
+      </div>
+
+      <div id="captions"></div>
+      <div id="vignette" class="layer"></div>
+      <div id="flash" class="layer"></div>
+
+      <audio id="vo" src="assets/audio/vo.wav" data-start="0" data-duration="51.23" data-track-index="10" data-volume="1"></audio>
+      <audio id="music" src="assets/audio/music.wav" data-start="0" data-duration="51.23" data-track-index="11" data-volume="0.38"></audio>
+      <audio id="sfx" src="assets/audio/sfx.wav" data-start="0" data-duration="51.23" data-track-index="12" data-volume="0.85"></audio>
+    </div>
+
+    <script type="module" src="assets/scene.js"></script>
+    <script src="assets/captions.js"></script>
+    <script>
+      (function () {
+        const tl = gsap.timeline({ paused: true });
+        window.buildCaptions(tl, { highlight: "#ffb02e", skip: [9] });
+        const pop = (sel, at, o = {}) =>
+          tl.fromTo(sel, { scale: 0, rotation: o.r0 ?? -12, opacity: 0 }, { scale: 1, rotation: o.r ?? 0, opacity: 1, duration: o.d ?? 0.42, ease: "back.out(2.6)" }, at);
+        const out = (sel, at, d = 0.2) => tl.to(sel, { scale: 0.6, opacity: 0, duration: d, ease: "power2.in" }, at);
+        const slam = (sel, at, rot = -6) =>
+          tl.fromTo(sel, { scale: 2.6, rotation: rot * 2.5, opacity: 0 }, { scale: 1, rotation: rot, opacity: 1, duration: 0.2, ease: "power4.in" }, at);
+
+        // countdown: the VO says each number; the HUD runs slow-motion hundredths between them
+        const beats = [
+          [4.81, 8],
+          [9.42, 7],
+          [13.28, 6],
+          [17.16, 5],
+          [20.36, 4],
+          [24.43, 3],
+          [28.56, 2],
+          [33.56, 1],
+        ];
+        const hudSec = document.getElementById("hud-sec");
+        const hudMs = document.getElementById("hud-ms");
+        const st = { v: 0 };
+        tl.fromTo(
+          st,
+          { v: 0 },
+          {
+            v: 1,
+            duration: 34.2,
+            ease: "none",
+            onUpdate: () => {
+              const t = st.v * 34.2;
+              let sec = 8;
+              let frac = 0;
+              for (let i = 0; i < beats.length; i++) {
+                if (t >= beats[i][0]) {
+                  sec = beats[i][1];
+                  const nxt = beats[i + 1] ? beats[i + 1][0] : beats[i][0] + 1.0;
+                  frac = Math.min(0.99, (t - beats[i][0]) / (nxt - beats[i][0]));
+                }
+              }
+              if (t >= 34.0) {
+                hudSec.textContent = "0";
+                hudMs.textContent = ".00";
+                return;
+              }
+              const remain = sec - frac;
+              hudSec.textContent = Math.floor(remain);
+              hudMs.textContent = "." + String(Math.floor((remain % 1) * 100)).padStart(2, "0");
+              hudSec.style.color = remain < 3 ? "#ff4d5e" : "#ffffff";
+            },
+          },
+          0,
+        );
+        beats.forEach(([at]) => tl.fromTo("#hud-box", { scale: 1.25 }, { scale: 1, duration: 0.3, ease: "back.out(3)" }, at));
+        tl.fromTo("#hud", { y: -300 }, { y: 0, duration: 0.4, ease: "back.out(2)" }, 4.7);
+        tl.fromTo("#hud-slow", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 5.4);
+        tl.to("#hud", { y: -400, duration: 0.3, ease: "power2.in" }, 33.95);
+
+        pop("#normal", 0.3, { r0: -8, r: -2 });
+        tl.to("#normal", { opacity: 0, y: -60, duration: 0.3 }, 4.3);
+        pop("#mm", 7.85, { r0: -10, r: -3 });
+        out("#mm", 9.1);
+        pop("#xray-tag", 9.5, { r0: -8, r: -2 });
+        out("#xray-tag", 11.6);
+        pop("#cant", 12.45, { r0: 8, r: 3 });
+        out("#cant", 13.2);
+        pop("#moves", 14.3, { r0: -6, r: -2 });
+        tl.to("#moves", { x: 40, duration: 0.4, yoyo: true, repeat: 3, ease: "sine.inOut" }, 14.6);
+        out("#moves", 16.6);
+        pop("#fine", 18.4, { r0: -8, r: -2 });
+        pop("#crack-tag", 21.4, { r0: -8, r: -2 });
+        out("#crack-tag", 23.9);
+        slam("#overload", 25.6, -5);
+        tl.to("#overload", { x: 12, duration: 0.05, yoyo: true, repeat: 7, ease: "none" }, 25.8);
+        out("#overload", 28.2);
+        slam("#progressive", 30.1, 4);
+        out("#progressive", 33.2);
+        tl.fromTo("#red-pulse", { opacity: 0 }, { opacity: 1, duration: 0.25, yoyo: true, repeat: 15, ease: "sine.inOut" }, 25.6);
+        slam("#big-one", 33.5, 0);
+        tl.to("#big-one", { scale: 1.6, opacity: 0, duration: 0.3, ease: "power2.in" }, 34.3);
+        tl.to("#flash", { opacity: 0.85, duration: 0.05 }, COLLAPSE_T());
+        tl.to("#flash", { opacity: 0, duration: 0.5 }, COLLAPSE_T() + 0.06);
+        function COLLAPSE_T() {
+          return 34.15;
+        }
+        // aftermath
+        pop("#diagram", 38.6, { r0: -4, r: 0 });
+        document.querySelectorAll(".dia-flow").forEach((p, i) => {
+          const L = p.getTotalLength();
+          p.setAttribute("stroke-dasharray", L);
+          tl.fromTo(p, { attr: { "stroke-dashoffset": L } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.9, ease: "power2.inOut" }, 40.2 + i * 0.3);
+        });
+        out("#diagram", 42.2);
+        pop("#years", 42.5, { r0: -6, r: -2 });
+        const yr = { v: 0 };
+        tl.fromTo(yr, { v: 2014 }, { v: 2026, duration: 2.0, ease: "power1.in", onUpdate: () => (document.getElementById("years-n").textContent = Math.floor(yr.v)) }, 44.6);
+        out("#years", 46.9);
+        pop("#check", 47.8, { r0: -10, r: -3 });
+        tl.to("#check", { y: -12, duration: 0.4, yoyo: true, repeat: 3, ease: "sine.inOut" }, 48.4);
+
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>

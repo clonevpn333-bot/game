@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Falling Into a Black Hole</title>
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script src="assets/timing.js"></script>
+    <script type="importmap">
+      { "imports": { "three": "./assets/vendor/three.module.min.js" } }
+    </script>
+    <style>
+      @font-face {
+        font-family: "Luckiest Guy";
+        src: url("assets/fonts/luckiest-guy-latin-400-normal.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Fredoka";
+        src: url("assets/fonts/fredoka-latin-700-normal.woff2") format("woff2");
+        font-weight: 700;
+      }
+      @font-face {
+        font-family: "Permanent Marker";
+        src: url("assets/fonts/permanent-marker-latin-400-normal.woff2") format("woff2");
+      }
+      :root {
+        --ink: #1b1033;
+        --cyan: #7fe9ff;
+        --violet: #b98bff;
+        --yellow: #ffd23f;
+        --red: #ff4d5e;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #000;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "Fredoka", sans-serif;
+        background: #000;
+      }
+      .clip,
+      .layer {
+        position: absolute;
+        inset: 0;
+      }
+      #gl {
+        position: absolute;
+        inset: 0;
+        width: 1080px;
+        height: 1920px;
+        display: block;
+      }
+      .anchor {
+        position: absolute;
+        left: 540px;
+        top: 960px;
+        width: 0;
+        height: 0;
+      }
+      .tag {
+        position: absolute;
+        width: 700px;
+        left: -350px;
+        bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      .pill {
+        display: block;
+        font-weight: 700;
+        font-size: 50px;
+        color: var(--ink);
+        padding: 14px 30px 10px;
+        border-radius: 999px;
+        border: 6px solid var(--ink);
+        box-shadow: 0 8px 0 var(--ink);
+        white-space: nowrap;
+        background: var(--cyan);
+      }
+      .marker {
+        font-family: "Permanent Marker", cursive;
+        font-size: 48px;
+        color: #fff;
+        -webkit-text-stroke: 10px var(--ink);
+        paint-order: stroke fill;
+        white-space: nowrap;
+        text-align: center;
+        display: block;
+      }
+      .display {
+        font-family: "Luckiest Guy", sans-serif;
+        color: #fff;
+        -webkit-text-stroke: 16px var(--ink);
+        paint-order: stroke fill;
+        text-shadow: 0 10px 0 var(--ink);
+        line-height: 1.02;
+        text-align: center;
+        display: block;
+      }
+      .sticker {
+        position: absolute;
+        left: 0;
+        right: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      #hook {
+        top: 200px;
+      }
+      #hook .display {
+        font-size: 128px;
+      }
+      #year-wrap {
+        top: 150px;
+      }
+      #year {
+        font-family: "Luckiest Guy", sans-serif;
+        font-size: 120px;
+        color: var(--yellow);
+        -webkit-text-stroke: 16px var(--ink);
+        paint-order: stroke fill;
+        text-shadow: 0 10px 0 var(--ink);
+        display: block;
+      }
+      #spag {
+        top: 230px;
+      }
+      #spag .display {
+        font-size: 92px;
+        color: var(--yellow);
+      }
+      #spag .ch {
+        display: inline-block;
+      }
+      .eye-zoom {
+        position: absolute;
+        left: 40px;
+        top: 460px;
+        width: 1000px;
+        height: 1000px;
+      }
+      .tear {
+        position: absolute;
+        top: -20px;
+        width: 700px;
+        height: 1960px;
+        background: #000;
+      }
+      #tear-l {
+        left: -80px;
+        clip-path: polygon(0 0, 92% 0, 78% 8%, 95% 17%, 74% 26%, 90% 36%, 70% 46%, 88% 55%, 72% 64%, 94% 73%, 76% 83%, 91% 92%, 80% 100%, 0 100%);
+      }
+      #tear-r {
+        right: -80px;
+        clip-path: polygon(8% 0, 100% 0, 100% 100%, 20% 100%, 9% 92%, 24% 83%, 6% 73%, 28% 64%, 12% 55%, 30% 46%, 10% 36%, 26% 26%, 5% 17%, 22% 8%);
+      }
+      #tear-glow {
+        background: radial-gradient(40% 60% at 50% 50%, rgba(185, 139, 255, 0.85), rgba(127, 233, 255, 0) 70%);
+        opacity: 0;
+      }
+      .stamp {
+        position: absolute;
+        left: 90px;
+        right: 90px;
+        top: 250px;
+        padding: 20px 20px 10px;
+        border: 10px solid var(--ink);
+        border-radius: 28px;
+        background: var(--violet);
+        box-shadow: 0 14px 0 var(--ink);
+        text-align: center;
+      }
+      .stamp .display {
+        font-size: 76px;
+      }
+      .stamp .marker {
+        font-size: 40px;
+      }
+      #swap {
+        top: 520px;
+        flex-direction: row;
+        justify-content: center;
+        gap: 40px;
+      }
+      #swap .pill {
+        font-size: 64px;
+      }
+      #iris {
+        position: absolute;
+        left: 540px;
+        top: 900px;
+        width: 2400px;
+        height: 2400px;
+        margin-left: -1200px;
+        margin-top: -1200px;
+        border-radius: 50%;
+        box-shadow: 0 0 0 3000px #000;
+      }
+      #last-eye {
+        position: absolute;
+        left: 460px;
+        top: 880px;
+        width: 160px;
+        height: 100px;
+      }
+      #captions {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 1240px;
+        height: 260px;
+      }
+      .cap {
+        position: absolute;
+        left: 40px;
+        right: 40px;
+        top: 0;
+        text-align: center;
+        font-weight: 700;
+        font-size: 92px;
+        line-height: 1.08;
+        text-transform: uppercase;
+        color: #fff;
+        -webkit-text-stroke: 18px var(--ink);
+        paint-order: stroke fill;
+        text-shadow: 0 9px 0 var(--ink);
+        opacity: 0;
+      }
+      .cap .cw {
+        display: inline-block;
+        margin: 0 10px;
+      }
+      #vignette {
+        background: radial-gradient(130% 80% at 50% 45%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.55) 100%);
+      }
+      #flash {
+        background: #fff;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="54.93" data-width="1080" data-height="1920">
+      <canvas id="gl" width="1080" height="1920"></canvas>
+
+      <!-- S1 hook -->
+      <div id="ov-hook" class="clip" data-start="0" data-duration="4.7" data-track-index="2">
+        <div id="hook" class="sticker">
+          <span class="display h1">YOU'D SEE</span>
+          <span class="display h2" style="color: var(--cyan)">THE FUTURE.</span>
+        </div>
+      </div>
+      <!-- S2 lensing -->
+      <div id="ov-lens" class="clip" data-start="4.6" data-duration="6.0" data-track-index="2">
+        <div id="bh-anchor" class="anchor">
+          <svg id="rays" viewBox="-540 -540 1080 1080" style="position: absolute; left: -540px; top: -540px; width: 1080px; height: 1080px; overflow: visible">
+            <g fill="none" stroke-linecap="round">
+              <path class="ray-o" d="M-560 -330 C-200 -330 -150 -120 -150 0 C-150 140 -320 260 -560 300" />
+              <path class="ray-o" d="M560 -330 C200 -330 150 -120 150 0 C150 140 320 260 560 300" />
+              <path class="ray" d="M-560 -330 C-200 -330 -150 -120 -150 0 C-150 140 -320 260 -560 300" />
+              <path class="ray" d="M560 -330 C200 -330 150 -120 150 0 C150 140 320 260 560 300" />
+            </g>
+          </svg>
+          <div id="ring-tag" class="tag" style="bottom: auto; top: -620px"><span class="pill" style="background: var(--yellow)">EINSTEIN RING</span></div>
+        </div>
+      </div>
+      <!-- S3 / S4 clocks -->
+      <div id="ov-clock" class="clip" data-start="10.6" data-duration="14.6" data-track-index="2">
+        <div id="clock-anchor" class="anchor">
+          <div id="clock-tag" class="tag"><span class="pill">YOUR CLOCK</span><span id="clock-sub" class="marker">(normal... to you)</span></div>
+        </div>
+        <div id="portal-anchor" class="anchor">
+          <div id="earth-tag" class="tag" style="bottom: auto; top: 10px">
+            <span class="pill" style="background: #9cf25a">EARTH</span>
+          </div>
+        </div>
+        <div id="year-wrap" class="sticker">
+          <span id="year">YEAR 2026</span>
+          <svg id="earth-dial" viewBox="-80 -80 160 160" style="width: 170px; height: 170px; display: block; margin-top: 10px">
+            <circle r="72" fill="#fff" stroke="#1b1033" stroke-width="10" />
+            <g id="dial-hands" stroke="#1b1033" stroke-linecap="round">
+              <line id="dial-min" x1="0" y1="0" x2="0" y2="-54" stroke-width="9" />
+              <line id="dial-hr" x1="0" y1="0" x2="0" y2="-36" stroke-width="12" />
+            </g>
+            <circle r="8" fill="#ff4d5e" />
+          </svg>
+          <span id="ratio" class="marker" style="margin-top: 10px">1 minute for you = 10+ years</span>
+        </div>
+        <div id="ff-tag" class="sticker" style="top: 520px"><span class="pill" style="background: var(--yellow); font-size: 66px">⏩ FAST FORWARD</span></div>
+      </div>
+      <!-- S6 / S7 the fall -->
+      <div id="ov-fall" class="clip" data-start="25.0" data-duration="8.6" data-track-index="2">
+        <div id="feet-anchor" class="anchor">
+          <svg id="arrow-big" viewBox="-90 -40 180 320" style="position: absolute; left: -90px; top: 20px; width: 180px; height: 320px">
+            <path d="M0 0 V200 M-70 150 L0 250 L70 150" fill="none" stroke="#1b1033" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M0 0 V200 M-70 150 L0 250 L70 150" fill="none" stroke="#ff4d5e" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <div id="pull-tag" class="tag" style="bottom: auto; top: 280px"><span class="pill" style="background: var(--red); color: #fff">STRONG PULL</span></div>
+        </div>
+        <div id="astro-anchor" class="anchor">
+          <svg id="arrow-small" viewBox="-50 -20 100 140" style="position: absolute; left: -50px; top: -160px; width: 100px; height: 140px">
+            <path d="M0 0 V70 M-30 50 L0 90 L30 50" fill="none" stroke="#1b1033" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M0 0 V70 M-30 50 L0 90 L30 50" fill="none" stroke="#ffd23f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+        <div id="spag" class="sticker"><span class="display" id="spag-word"></span></div>
+      </div>
+      <!-- S8 the eye, the tear -->
+      <div id="ov-tear" class="clip" data-start="34.2" data-duration="3.4" data-track-index="3">
+        <svg id="eye-zoom" class="eye-zoom" viewBox="-500 -500 1000 1000">
+          <path d="M-480 0 C-260 -330 260 -330 480 0 C260 330 -260 330 -480 0 Z" fill="#ffffff" stroke="#1b1033" stroke-width="26" />
+          <circle r="230" fill="#2fa38a" stroke="#1b1033" stroke-width="22" />
+          <circle id="pupil" r="110" fill="#000" />
+          <ellipse cx="-70" cy="-90" rx="46" ry="34" fill="#fff" />
+        </svg>
+        <div id="tear-glow" class="layer"></div>
+        <div id="tear-l" class="tear"></div>
+        <div id="tear-r" class="tear"></div>
+        <div id="weird-stamp" class="stamp">
+          <span class="display">REALITY: TOO WEIRD</span>
+          <span class="marker">tearing it open...</span>
+        </div>
+      </div>
+      <!-- S9 / S10 / S11 inside reality -->
+      <div id="ov-inside" class="clip" data-start="35.4" data-duration="16.1" data-track-index="2">
+        <div id="swap" class="sticker">
+          <span id="sw-space" class="pill" style="background: var(--cyan)">SPACE</span>
+          <span id="sw-arrows" class="display" style="font-size: 90px">⇄</span>
+          <span id="sw-time" class="pill" style="background: var(--yellow)">TIME</span>
+        </div>
+        <div id="future-anchor" class="anchor">
+          <div id="future-tag" class="tag"><span class="marker" style="font-size: 56px; color: var(--yellow)">your future</span><span class="display" style="font-size: 90px">↓</span></div>
+        </div>
+        <div id="moment-tag" class="sticker" style="top: 300px"><span class="pill" style="background: var(--violet)">THE CENTER = A MOMENT</span></div>
+        <div id="rewind" class="sticker" style="top: 280px">
+          <svg viewBox="0 0 240 240" style="width: 240px; height: 240px; display: block">
+            <circle cx="120" cy="120" r="108" fill="#fff" stroke="#1b1033" stroke-width="12" />
+            <path d="M118 70 L58 120 L118 170 Z M182 70 L122 120 L182 170 Z" fill="#1b1033" />
+            <path d="M40 40 L200 200" stroke="#ff4d5e" stroke-width="26" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div id="center-anchor" class="anchor">
+          <div id="qmarks" class="tag" style="bottom: 60px; flex-direction: row; justify-content: center; gap: 30px">
+            <span class="display q" style="font-size: 120px; color: var(--violet)">?</span>
+            <span class="display q" style="font-size: 160px">?</span>
+            <span class="display q" style="font-size: 110px; color: var(--cyan)">?</span>
+          </div>
+        </div>
+      </div>
+      <!-- S11 end: iris closes, S12 something blinks back -->
+      <div id="ov-end" class="clip" data-start="50.8" data-duration="4.13" data-track-index="3">
+        <div id="iris"></div>
+        <svg id="last-eye" viewBox="-80 -50 160 100">
+          <g id="last-eye-g">
+            <path d="M-74 0 C-40 -44 40 -44 74 0 C40 44 -40 44 -74 0 Z" fill="#f4f1ff" />
+            <circle r="26" fill="#c23a5e" />
+            <ellipse rx="6" ry="22" fill="#000" />
+          </g>
+        </svg>
+      </div>
+
+      <div id="captions"></div>
+      <div id="vignette" class="layer"></div>
+      <div id="flash" class="layer"></div>
+
+      <audio id="vo" src="assets/audio/vo.wav" data-start="0" data-duration="54.93" data-track-index="10" data-volume="1"></audio>
+      <audio id="music" src="assets/audio/music.wav" data-start="0" data-duration="54.93" data-track-index="11" data-volume="0.4"></audio>
+      <audio id="sfx" src="assets/audio/sfx.wav" data-start="0" data-duration="54.93" data-track-index="12" data-volume="0.8"></audio>
+    </div>
+
+    <script type="module" src="assets/scene.js"></script>
+    <script src="assets/captions.js"></script>
+    <script>
+      (function () {
+        const tl = gsap.timeline({ paused: true });
+        window.buildCaptions(tl, { highlight: "#7fe9ff" });
+        const pop = (sel, at, o = {}) =>
+          tl.fromTo(sel, { scale: 0, rotation: o.r0 ?? -12, opacity: 0 }, { scale: 1, rotation: o.r ?? 0, opacity: 1, duration: o.d ?? 0.42, ease: "back.out(2.6)" }, at);
+        const out = (sel, at, d = 0.2) => tl.to(sel, { scale: 0.6, opacity: 0, duration: d, ease: "power2.in" }, at);
+
+        // S1
+        pop("#hook .h1", 3.05, { r0: -10, r: -3 });
+        pop("#hook .h2", 3.75, { r0: 10, r: 2 });
+        tl.to("#hook", { y: -500, opacity: 0, duration: 0.35, ease: "power2.in" }, 4.45);
+        // S2 rays
+        document.querySelectorAll("#rays path").forEach((p) => {
+          p.setAttribute("stroke-width", p.classList.contains("ray") ? "11" : "26");
+          p.setAttribute("stroke", p.classList.contains("ray") ? "#ffd23f" : "#1b1033");
+          const L = p.getTotalLength();
+          p.setAttribute("stroke-dasharray", L);
+          tl.fromTo(p, { attr: { "stroke-dashoffset": L } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.9, ease: "power2.inOut" }, 6.5);
+        });
+        tl.to("#rays", { opacity: 0, duration: 0.4 }, 9.2);
+        pop("#ring-tag", 9.55, { r0: -8, r: -3 });
+        // S3 clock
+        pop("#clock-tag .pill", 12.85, { r0: -10, r: -3 });
+        tl.fromTo("#clock-sub", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3 }, 14.05);
+        out("#clock-tag", 15.2);
+        // S4 earth
+        pop("#earth-tag", 15.75, { r0: 10, r: 3 });
+        out("#earth-tag", 19.8);
+        pop("#year-wrap", 16.6, { r0: -6, r: -2 });
+        const yr = { v: 0 };
+        tl.fromTo(
+          yr,
+          { v: 0 },
+          {
+            v: 1,
+            duration: 25.0 - 16.6,
+            ease: "none",
+            onUpdate: () => {
+              const t = 16.6 + yr.v * (25.0 - 16.6);
+              const years = Math.pow(Math.max(0, t - 15.6), 1.6) * 18;
+              document.getElementById("year").textContent = "YEAR " + Math.floor(2026 + years);
+              document.getElementById("dial-min").setAttribute("transform", "rotate(" + ((years * 4000) % 360).toFixed(1) + ")");
+              document.getElementById("dial-hr").setAttribute("transform", "rotate(" + ((years * 333) % 360).toFixed(1) + ")");
+            },
+          },
+          16.6,
+        );
+        tl.fromTo("#ratio", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 18.0);
+        tl.to("#year-wrap", { y: -60, scale: 0.85, duration: 0.5, ease: "power2.inOut" }, 19.9);
+        tl.to("#year-wrap", { opacity: 0, duration: 0.3 }, 24.7);
+        pop("#ff-tag", 23.6, { r0: -10, r: -4 });
+        out("#ff-tag", 24.6);
+        // S6 arrows
+        tl.fromTo("#arrow-big", { scaleY: 0, transformOrigin: "50% 0%" }, { scaleY: 1, duration: 0.35, ease: "back.out(2)" }, 27.5);
+        tl.to("#arrow-big", { y: 30, duration: 0.18, yoyo: true, repeat: 5, ease: "sine.inOut" }, 27.9);
+        pop("#pull-tag", 27.6, { r0: 8, r: 3 });
+        tl.fromTo("#arrow-small", { scaleY: 0, transformOrigin: "50% 0%" }, { scaleY: 1, duration: 0.3, ease: "back.out(2)" }, 28.4);
+        tl.to(["#arrow-big", "#pull-tag", "#arrow-small"], { opacity: 0, duration: 0.25 }, 29.3);
+        // S7 spaghettification
+        const word = "SPAGHETTIFICATION";
+        const wEl = document.getElementById("spag-word");
+        word.split("").forEach((ch, i) => {
+          const s = document.createElement("span");
+          s.className = "ch";
+          s.id = "ch" + i;
+          s.textContent = ch;
+          wEl.appendChild(s);
+        });
+        word.split("").forEach((ch, i) => {
+          tl.fromTo("#ch" + i, { scaleY: 0, y: 40 }, { scaleY: 1, y: 0, duration: 0.3, ease: "back.out(3)", transformOrigin: "50% 100%" }, 31.55 + i * 0.03);
+          tl.to("#ch" + i, { scaleY: 2.4, y: 60 + Math.sin(i * 0.8) * 30, duration: 1.2, ease: "power2.in", transformOrigin: "50% 0%" }, 32.1 + i * 0.015);
+        });
+        tl.to("#spag", { opacity: 0, duration: 0.25 }, 33.4);
+        // S8 eye zoom + tear
+        tl.fromTo("#eye-zoom", { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: "back.out(2)" }, 34.25);
+        tl.to("#eye-zoom", { scale: 9, duration: 0.55, ease: "power3.in", transformOrigin: "50% 50%" }, 34.55);
+        tl.to("#pupil", { attr: { r: 260 }, duration: 0.45, ease: "power2.in" }, 34.6);
+        tl.set("#eye-zoom", { opacity: 0 }, 35.12);
+        tl.fromTo(["#tear-l", "#tear-r"], { x: 0 }, { x: (i) => (i ? 760 : -760), duration: 0.55, ease: "power3.inOut" }, 35.1);
+        tl.fromTo("#tear-glow", { opacity: 0 }, { opacity: 1, duration: 0.12, yoyo: true, repeat: 1 }, 35.1);
+        tl.fromTo(["#tear-l", "#tear-r"], { opacity: 0 }, { opacity: 1, duration: 0.02 }, 34.95);
+        pop("#weird-stamp", 35.3, { r0: -14, r: -4, d: 0.32 });
+        tl.to("#weird-stamp", { opacity: 0, y: -60, duration: 0.3 }, 37.2);
+        // S8 swap
+        pop("#swap", 35.75, { r0: 0, r: 0 });
+        tl.to("#sw-space", { x: 470, duration: 0.5, ease: "power3.inOut" }, 36.45);
+        tl.to("#sw-time", { x: -470, duration: 0.5, ease: "power3.inOut" }, 36.45);
+        tl.to("#sw-arrows", { rotation: 360, duration: 0.5, ease: "power3.inOut" }, 36.45);
+        out("#swap", 37.7);
+        // S9 the moment
+        pop("#moment-tag", 40.4, { r0: -8, r: -3 });
+        out("#moment-tag", 43.0);
+        pop("#future-tag", 41.1, { r0: 10, r: 3 });
+        tl.to("#future-tag", { y: 16, duration: 0.3, yoyo: true, repeat: 3, ease: "sine.inOut" }, 41.6);
+        out("#future-tag", 43.2);
+        // S10 no rewind
+        pop("#rewind", 44.1, { r0: -20, r: 0 });
+        out("#rewind", 46.4);
+        // S11 nobody knows
+        document.querySelectorAll("#qmarks .q").forEach((q, i) => {
+          tl.fromTo(q, { scale: 0, rotation: -30 }, { scale: 1, rotation: i % 2 ? 8 : -8, duration: 0.35, ease: "back.out(3)" }, 49.2 + i * 0.12);
+        });
+        tl.to("#qmarks", { opacity: 0, duration: 0.3 }, 50.7);
+        // iris close on "stops"
+        tl.fromTo("#iris", { scale: 1 }, { scale: 0, duration: 0.5, ease: "power3.in" }, 50.9);
+        tl.fromTo("#last-eye-g", { scaleY: 0, transformOrigin: "50% 50%" }, { scaleY: 1, duration: 0.25, ease: "power2.out" }, 52.6);
+        tl.to("#last-eye-g", { scaleY: 0.05, duration: 0.08, yoyo: true, repeat: 1, ease: "none", transformOrigin: "50% 50%" }, 53.5);
+        tl.to("#last-eye-g", { x: 18, duration: 0.25, ease: "power2.inOut" }, 53.9);
+        tl.to("#last-eye-g", { scaleY: 0, duration: 0.2, ease: "power2.in", transformOrigin: "50% 50%" }, 54.45);
+        tl.fromTo("#last-eye", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 52.55);
+
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>The Room That Lied</title>
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script src="assets/timing.js"></script>
+    <script type="importmap">
+      { "imports": { "three": "./assets/vendor/three.module.min.js" } }
+    </script>
+    <style>
+      @font-face {
+        font-family: "Luckiest Guy";
+        src: url("assets/fonts/luckiest-guy-latin-400-normal.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Fredoka";
+        src: url("assets/fonts/fredoka-latin-700-normal.woff2") format("woff2");
+        font-weight: 700;
+      }
+      @font-face {
+        font-family: "Permanent Marker";
+        src: url("assets/fonts/permanent-marker-latin-400-normal.woff2") format("woff2");
+      }
+      :root {
+        --ink: #1b1033;
+        --gold: #f2c14e;
+        --red: #ff4d5e;
+        --ice: #bfeaff;
+        --paper: #f6ecd2;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #120a24;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "Fredoka", sans-serif;
+      }
+      .clip,
+      .layer {
+        position: absolute;
+        inset: 0;
+      }
+      .bg-night {
+        background:
+          radial-gradient(80% 50% at 50% 40%, #3a2a5e 0%, rgba(58, 42, 94, 0) 70%),
+          linear-gradient(180deg, #120a24 0%, #24163f 60%, #0d0718 100%);
+      }
+      #gl {
+        position: absolute;
+        inset: 0;
+        width: 1080px;
+        height: 1920px;
+        display: block;
+      }
+      .anchor {
+        position: absolute;
+        left: 540px;
+        top: 960px;
+        width: 0;
+        height: 0;
+      }
+      .tag {
+        position: absolute;
+        width: 760px;
+        left: -380px;
+        bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+      .pill {
+        display: block;
+        font-weight: 700;
+        font-size: 50px;
+        color: var(--ink);
+        padding: 14px 30px 10px;
+        border-radius: 999px;
+        border: 6px solid var(--ink);
+        box-shadow: 0 8px 0 var(--ink);
+        white-space: nowrap;
+        background: var(--gold);
+      }
+      .card {
+        display: block;
+        font-family: "Luckiest Guy", sans-serif;
+        font-size: 56px;
+        color: var(--ink);
+        background: var(--paper);
+        padding: 16px 28px 6px;
+        border: 6px solid var(--ink);
+        box-shadow: 0 8px 0 var(--ink);
+        border-radius: 12px;
+        white-space: nowrap;
+      }
+      .marker {
+        font-family: "Permanent Marker", cursive;
+        font-size: 46px;
+        color: #fff;
+        -webkit-text-stroke: 10px var(--ink);
+        paint-order: stroke fill;
+        white-space: nowrap;
+        text-align: center;
+        display: block;
+      }
+      .display {
+        font-family: "Luckiest Guy", sans-serif;
+        color: #fff;
+        -webkit-text-stroke: 16px var(--ink);
+        paint-order: stroke fill;
+        text-shadow: 0 10px 0 var(--ink);
+        line-height: 1.02;
+        text-align: center;
+        display: block;
+      }
+      .sticker {
+        position: absolute;
+        left: 0;
+        right: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .stamp {
+        position: absolute;
+        left: 110px;
+        right: 110px;
+        padding: 26px 20px 12px;
+        border: 12px solid var(--red);
+        border-radius: 20px;
+        text-align: center;
+        font-family: "Luckiest Guy", sans-serif;
+        font-size: 104px;
+        color: var(--red);
+        -webkit-text-stroke: 4px var(--ink);
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 14px 0 var(--ink);
+      }
+      #cctv {
+        border: 0;
+      }
+      .cctv-frame {
+        position: absolute;
+        inset: 60px 50px 520px 50px;
+        border: 6px solid rgba(255, 255, 255, 0.8);
+        border-radius: 18px;
+      }
+      .cctv-txt {
+        position: absolute;
+        font-family: "Fredoka", monospace;
+        font-weight: 700;
+        font-size: 44px;
+        color: #fff;
+        text-shadow: 0 3px 0 #000;
+        letter-spacing: 2px;
+      }
+      .scan {
+        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 3px, transparent 3px 7px);
+      }
+      #frost {
+        background: radial-gradient(90% 70% at 50% 45%, rgba(170, 225, 255, 0) 45%, rgba(170, 225, 255, 0.55) 100%);
+        mix-blend-mode: screen;
+      }
+      #freeze-tint {
+        background: rgba(100, 180, 255, 0.14);
+      }
+      #freeze-stamp {
+        top: 260px;
+        border-color: #7fd3ff;
+        color: #e9f8ff;
+        background: rgba(30, 80, 140, 0.88);
+        -webkit-text-stroke: 6px var(--ink);
+        font-size: 98px;
+      }
+      .ring {
+        position: absolute;
+        left: -170px;
+        top: -170px;
+        width: 340px;
+        height: 340px;
+      }
+      #sepia-tint {
+        background: radial-gradient(90% 60% at 50% 45%, rgba(120, 70, 20, 0) 50%, rgba(60, 30, 5, 0.7) 100%);
+      }
+      #captions {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 1240px;
+        height: 260px;
+      }
+      .cap {
+        position: absolute;
+        left: 40px;
+        right: 40px;
+        top: 0;
+        text-align: center;
+        font-weight: 700;
+        font-size: 92px;
+        line-height: 1.08;
+        text-transform: uppercase;
+        color: #fff;
+        -webkit-text-stroke: 18px var(--ink);
+        paint-order: stroke fill;
+        text-shadow: 0 9px 0 var(--ink);
+        opacity: 0;
+      }
+      .cap .cw {
+        display: inline-block;
+        margin: 0 10px;
+      }
+      #vignette {
+        background: radial-gradient(120% 75% at 50% 45%, rgba(0, 0, 0, 0) 50%, rgba(5, 2, 12, 0.6) 100%);
+      }
+      #flash {
+        background: #fff;
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="68.25" data-width="1080" data-height="1920">
+      <div id="bg" class="clip bg-night" data-start="0" data-duration="68.25" data-track-index="0"></div>
+      <canvas id="gl" width="1080" height="1920"></canvas>
+
+      <!-- S1 title -->
+      <div id="ov-title" class="clip" data-start="0" data-duration="5.6" data-track-index="2">
+        <div id="title" class="sticker" style="top: 150px">
+          <span class="pill t1" style="font-size: 44px">CASE #1</span>
+          <span class="display t2" style="font-size: 112px; margin-top: 16px">THE ROOM</span>
+          <span class="display t3" style="font-size: 112px; color: var(--gold)">THAT LIED</span>
+        </div>
+      </div>
+      <!-- S2 nine p.m. -->
+      <div id="ov-nine" class="clip" data-start="5.5" data-duration="6.1" data-track-index="2">
+        <div id="date-stamp" class="sticker" style="top: 170px"><span class="card" id="date-txt">SUITE 404 · 9:00 PM</span></div>
+        <div id="ash-anchor" class="anchor"><div id="tag-ash" class="tag"><span class="pill" style="background: #c9d3e6">MR. ASHFORD</span></div></div>
+        <div id="clara-anchor" class="anchor"><div id="tag-clara" class="tag"><span class="pill" style="background: #ffb3d1">CLARA · PARTNER</span></div></div>
+        <div id="milo-anchor" class="anchor"><div id="tag-milo" class="tag"><span class="pill" style="background: #ff9a90">MILO · BELLHOP</span></div></div>
+      </div>
+      <!-- S3 CCTV -->
+      <div id="ov-cctv" class="clip" data-start="11.6" data-duration="4.5" data-track-index="2">
+        <div class="layer scan"></div>
+        <div class="cctv-frame"></div>
+        <div class="cctv-txt" style="left: 90px; top: 95px"><span id="rec-dot" style="color: #ff3a4a">●</span> REC</div>
+        <div class="cctv-txt" style="right: 90px; top: 95px">CAM 04</div>
+        <div id="cctv-time" class="cctv-txt" style="left: 90px; top: 1300px">22:00:00</div>
+        <div id="locked" class="sticker" style="top: 560px"><span class="pill" style="background: var(--red); color: #fff; font-size: 64px">🔒 LOCKED</span></div>
+      </div>
+      <!-- S4 / S5 found + impossible -->
+      <div id="ov-found" class="clip" data-start="16.1" data-duration="10.85" data-track-index="2">
+        <div id="eleven" class="sticker" style="top: 170px"><span class="card">11:00 PM</span></div>
+        <div id="clock-anchor" class="anchor"><div id="tag-1047" class="tag" style="bottom: 150px"><span class="display" style="font-size: 150px; color: var(--red)">10:47</span><span class="marker">(smashed)</span></div></div>
+        <div id="nobody" class="sticker" style="top: 240px"><span class="card">INSIDE AT 10:47: NOBODY</span></div>
+        <div id="impossible" class="stamp" style="top: 440px">IMPOSSIBLE</div>
+      </div>
+      <!-- S5 / S6 FREEZE THE ROOM + clues -->
+      <div id="ov-freeze" class="clip" data-start="26.6" data-duration="7.4" data-track-index="2">
+        <div id="freeze-tint" class="layer" style="opacity: 0"></div>
+        <div id="frost" class="layer" style="opacity: 0"></div>
+        <svg id="cracks" class="layer" viewBox="0 0 1080 1920" style="width: 1080px; height: 1920px">
+          <g fill="none" stroke="#e9f8ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity="0.85">
+            <path class="ck" d="M0 0 L120 140 L90 260 L210 380 L180 520" />
+            <path class="ck" d="M120 140 L260 160 L330 300" />
+            <path class="ck" d="M1080 0 L960 160 L1000 300 L880 420" />
+            <path class="ck" d="M960 160 L820 150 L760 280" />
+            <path class="ck" d="M0 1920 L140 1760 L110 1620 L240 1500" />
+            <path class="ck" d="M1080 1920 L940 1780 L980 1640 L860 1540" />
+          </g>
+        </svg>
+        <div id="freeze-stamp" class="stamp">FREEZE THE ROOM</div>
+        <div id="det-anchor" class="anchor"><div id="tag-det" class="tag"><span class="pill" style="background: #a9b5ff">THE DETECTIVE</span></div></div>
+        <div id="clue1" class="sticker" style="top: 300px"><span class="pill">CLUE 1 · STOPPED CLOCK</span></div>
+        <div id="heel-anchor" class="anchor"><div id="clue2" class="tag" style="bottom: 260px"><span class="pill" style="background: var(--ice)">CLUE 2 · WET HEEL PRINT</span></div></div>
+        <div id="glass-anchor" class="anchor">
+          <div id="clue3" class="tag" style="bottom: 230px"><span class="pill" style="background: #ffe2a8">CLUE 3 · BROKEN GLASS</span><span id="noice" class="marker" style="color: var(--red)">...and NO ICE</span></div>
+        </div>
+      </div>
+      <!-- S7 timelines -->
+      <div id="ov-tl" class="clip" data-start="34.0" data-duration="11.4" data-track-index="2">
+        <div id="tl-anchor-0" class="anchor"><div id="tl0" class="tag"><span class="card" style="font-size: 44px">TIMELINE A · CLARA RETURNS</span><span id="x0" class="pill" style="background: var(--red); color: #fff">✗ DOOR LOG: NO</span></div></div>
+        <div id="tl-anchor-1" class="anchor"><div id="tl1" class="tag"><span class="card" style="font-size: 44px">TIMELINE B · MASTER KEY</span><span id="x1" class="pill" style="background: var(--red); color: #fff">✗ NEVER SWIPED</span></div></div>
+        <div id="tl-anchor-2" class="anchor"><div id="tl2" class="tag"><span class="card" style="font-size: 44px">TIMELINE C · HE WAS ALONE</span><span id="x2" class="pill" style="background: var(--red); color: #fff">✗ THEN WHOSE PRINT?</span></div></div>
+      </div>
+      <!-- S8 the ice -->
+      <div id="ov-ice" class="clip" data-start="45.4" data-duration="6.6" data-track-index="2">
+        <div id="melt-anchor" class="anchor">
+          <svg id="ring" class="ring" viewBox="-170 -170 340 340">
+            <circle r="140" fill="rgba(255,255,255,0.9)" stroke="#1b1033" stroke-width="12" />
+            <circle id="ring-arc" r="118" fill="none" stroke="#7fd3ff" stroke-width="34" transform="rotate(-90)" />
+            <text id="ring-txt" y="22" text-anchor="middle" font-family="Luckiest Guy" font-size="74" fill="#1b1033">0 MIN</text>
+          </svg>
+        </div>
+        <div id="ice-gone" class="sticker" style="top: 250px"><span class="card">AT 11:00 · ICE GONE</span></div>
+        <div id="rewind-anchor" class="anchor"><div id="before10" class="tag" style="bottom: 60px"><span class="pill" style="background: var(--red); color: #fff; font-size: 60px">DIED BEFORE 10:00</span></div></div>
+      </div>
+      <!-- S9 heel + rain + Clara -->
+      <div id="ov-heel" class="clip" data-start="52.0" data-duration="7.0" data-track-index="2">
+        <div id="high-heel" class="sticker" style="top: 240px"><span class="pill" style="background: var(--ice); font-size: 60px">WET · HIGH HEEL</span></div>
+        <div id="rain-stop" class="sticker" style="top: 240px"><span class="card">RAIN STOPPED · 9:40 PM</span></div>
+        <div id="only-clara" class="sticker" style="top: 400px"><span class="pill" style="background: #ffb3d1; font-size: 62px">ONLY CLARA WENT OUT</span></div>
+      </div>
+      <!-- S10 the truth -->
+      <div id="ov-truth" class="clip" data-start="59.0" data-duration="4.6" data-track-index="2">
+        <div id="sepia-tint" class="layer"></div>
+        <div id="truth" class="sticker" style="top: 220px"><span class="card" style="font-size: 62px">9:35 PM · WHAT REALLY HAPPENED</span></div>
+      </div>
+      <!-- S11 case closed -->
+      <div id="ov-closed" class="clip" data-start="63.6" data-duration="4.65" data-track-index="2">
+        <div id="clock-lied" class="sticker" style="top: 220px">
+          <span class="display" style="font-size: 110px">THE CLOCK</span>
+          <span class="display" style="font-size: 130px; color: var(--red)">LIED.</span>
+        </div>
+        <div id="closed" class="stamp" style="top: 640px">CASE CLOSED</div>
+      </div>
+
+      <div id="captions"></div>
+      <div id="vignette" class="layer"></div>
+      <div id="flash" class="layer"></div>
+
+      <audio id="vo" src="assets/audio/vo.wav" data-start="0" data-duration="68.25" data-track-index="10" data-volume="1"></audio>
+      <audio id="music" src="assets/audio/music.wav" data-start="0" data-duration="68.25" data-track-index="11" data-volume="0.38"></audio>
+      <audio id="sfx" src="assets/audio/sfx.wav" data-start="0" data-duration="68.25" data-track-index="12" data-volume="0.8"></audio>
+    </div>
+
+    <script type="module" src="assets/scene.js"></script>
+    <script src="assets/captions.js"></script>
+    <script>
+      (function () {
+        const tl = gsap.timeline({ paused: true });
+        window.buildCaptions(tl, { highlight: "#ff6b6b" });
+        const pop = (sel, at, o = {}) =>
+          tl.fromTo(sel, { scale: 0, rotation: o.r0 ?? -12, opacity: 0 }, { scale: 1, rotation: o.r ?? 0, opacity: 1, duration: o.d ?? 0.42, ease: "back.out(2.6)" }, at);
+        const out = (sel, at, d = 0.2) => tl.to(sel, { scale: 0.6, opacity: 0, duration: d, ease: "power2.in" }, at);
+        const slam = (sel, at, rot = -6) =>
+          tl.fromTo(sel, { scale: 2.6, rotation: rot * 2.5, opacity: 0 }, { scale: 1, rotation: rot, opacity: 1, duration: 0.2, ease: "power4.in" }, at);
+
+        // S1
+        pop("#title .t1", 0.15, { r0: -10, r: -3 });
+        pop("#title .t2", 0.4, { r0: -8, r: -2 });
+        pop("#title .t3", 0.65, { r0: 8, r: 2 });
+        tl.to("#title", { y: -500, opacity: 0, duration: 0.4, ease: "power2.in" }, 5.0);
+        // S2
+        pop("#date-stamp", 5.65, { r0: -6, r: -2 });
+        out("#date-stamp", 11.2);
+        pop("#tag-ash", 7.9, { r0: -10, r: -3 });
+        pop("#tag-clara", 9.25, { r0: 10, r: 3 });
+        pop("#tag-milo", 10.05, { r0: -10, r: -2 });
+        // S3 CCTV
+        tl.set("#gl", { filter: "grayscale(1) contrast(1.25) brightness(1.15) sepia(0.25) hue-rotate(60deg)" }, 11.6);
+        tl.set("#gl", { filter: "none" }, 16.1);
+        tl.fromTo("#rec-dot", { opacity: 1 }, { opacity: 0.1, duration: 0.3, yoyo: true, repeat: 13, ease: "steps(1)" }, 11.6);
+        const ct = { v: 0 };
+        tl.fromTo(ct, { v: 0 }, { v: 4.5, duration: 4.5, ease: "none", onUpdate: () => (document.getElementById("cctv-time").textContent = "22:00:0" + Math.floor(ct.v)) }, 11.6);
+        slam("#locked", 15.0, -4);
+        // S4 found
+        pop("#eleven", 16.3, { r0: -6, r: -2 });
+        out("#eleven", 19.0);
+        slam("#tag-1047", 21.05, -3);
+        out("#tag-1047", 22.4);
+        pop("#nobody", 23.9, { r0: -6, r: -2 });
+        out("#nobody", 25.3);
+        slam("#impossible", 25.55, -8);
+        tl.to("#impossible", { opacity: 0, duration: 0.2 }, 26.6);
+        // S5 FREEZE
+        tl.fromTo("#flash", { opacity: 0 }, { opacity: 0.9, duration: 0.06 }, 26.68);
+        tl.to("#flash", { opacity: 0, duration: 0.4 }, 26.76);
+        tl.fromTo(["#freeze-tint", "#frost"], { opacity: 0 }, { opacity: 1, duration: 0.3 }, 26.7);
+        document.querySelectorAll("#cracks .ck").forEach((p) => {
+          const L = p.getTotalLength();
+          p.setAttribute("stroke-dasharray", L);
+          tl.fromTo(p, { attr: { "stroke-dashoffset": L } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.3, ease: "power2.out" }, 26.72);
+        });
+        slam("#freeze-stamp", 26.7, -3);
+        tl.to("#freeze-stamp", { y: -40, opacity: 0, duration: 0.3 }, 28.5);
+        pop("#tag-det", 27.6, { r0: 8, r: 2 });
+        out("#tag-det", 28.6);
+        pop("#clue1", 29.05, { r0: -8, r: -3 });
+        out("#clue1", 29.85);
+        pop("#clue2", 30.08, { r0: 8, r: 3 });
+        out("#clue2", 30.95);
+        pop("#clue3", 31.15, { r0: -8, r: -3 });
+        tl.fromTo("#noice", { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(3)" }, 32.4);
+        tl.to(["#freeze-tint", "#frost", "#cracks"], { opacity: 0, duration: 0.4 }, 33.6);
+        // S7 timelines
+        [0, 1, 2].forEach((i) => {
+          pop("#tl" + i, 34.3 + i * 0.25, { r0: i % 2 ? 8 : -8, r: i % 2 ? 2 : -2 });
+          tl.set("#x" + i, { opacity: 0 }, 34.0);
+        });
+        [37.9, 41.4, 44.88].forEach((at, i) => {
+          slam("#x" + i, at, -4);
+          tl.to("#tl" + i, { opacity: 0, y: 40, duration: 0.3 }, at + 0.6);
+        });
+        // S8 ice
+        pop("#ring", 46.6, { r0: -10, r: 0 });
+        const arc = document.getElementById("ring-arc");
+        const C = 2 * Math.PI * 118;
+        arc.setAttribute("stroke-dasharray", C);
+        const rm = { v: 0 };
+        tl.fromTo(
+          rm,
+          { v: 0 },
+          {
+            v: 1,
+            duration: 2.6,
+            ease: "power1.inOut",
+            onUpdate: () => {
+              arc.setAttribute("stroke-dashoffset", (C * (1 - rm.v)).toFixed(1));
+              document.getElementById("ring-txt").textContent = Math.round(rm.v * 60) + " MIN";
+            },
+          },
+          46.8,
+        );
+        out("#ring", 49.9);
+        pop("#ice-gone", 49.0, { r0: -6, r: -2 });
+        out("#ice-gone", 50.3);
+        slam("#before10", 50.65, -4);
+        // S9
+        pop("#high-heel", 53.4, { r0: -8, r: -3 });
+        out("#high-heel", 54.6);
+        pop("#rain-stop", 55.4, { r0: 6, r: 2 });
+        out("#rain-stop", 56.6);
+        pop("#only-clara", 56.75, { r0: -8, r: -3 });
+        out("#only-clara", 58.8);
+        // S10 truth
+        tl.set("#gl", { filter: "sepia(0.85) contrast(1.15) brightness(0.95)" }, 61.3);
+        tl.set("#gl", { filter: "none" }, 63.6);
+        tl.fromTo("#sepia-tint", { opacity: 0 }, { opacity: 1, duration: 0.01 }, 61.3);
+        tl.fromTo("#flash", { opacity: 0 }, { opacity: 1, duration: 0.05 }, 61.25);
+        tl.to("#flash", { opacity: 0, duration: 0.35 }, 61.3);
+        pop("#truth", 61.45, { r0: -6, r: -2 });
+        // S11
+        pop("#clock-lied", 65.25, { r0: -8, r: -2 });
+        slam("#closed", 66.2, -10);
+        tl.fromTo("#flash", { opacity: 0 }, { opacity: 0.7, duration: 0.05 }, 64.75);
+        tl.to("#flash", { opacity: 0, duration: 0.3 }, 64.8);
+
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>
