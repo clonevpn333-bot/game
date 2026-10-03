@@ -11,6 +11,6 @@ export const RemotionRoot: React.FC = () => (
     fps={FPS}
     width={1080}
     height={1920}
-    defaultProps={{ score: false }}
+    defaultProps={{ score: true }}
   />
 );

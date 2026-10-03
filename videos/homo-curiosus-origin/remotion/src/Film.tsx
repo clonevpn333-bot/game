@@ -33,6 +33,6 @@ export const Film: React.FC<{ score: boolean }> = ({ score }) => (
     <Sequence {...S("stay-curious")}><Shot10 /></Sequence>
     <Sequence name="captions"><Captions /></Sequence>
     <Audio src={staticFile("vo.wav")} name="narration" />
-    {score ? <Audio src={staticFile("score.wav")} name="score" volume={0.9} /> : null}
+    {score ? <Audio src={staticFile("score.wav")} name="score" volume={0.42} /> : null}
   </AbsoluteFill>
 );
