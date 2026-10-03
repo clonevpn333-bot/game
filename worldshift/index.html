@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WORLD//SHIFT</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="title">
+  <div class="logo"><span class="w">WORLD</span><span class="sl">//</span><span class="s">SHIFT</span></div>
+  <div class="tag">One city. Three eras. Every choice echoes.</div>
+  <div class="years"><span>1996</span><span>2047</span><span>2189</span></div>
+  <div id="loadbar"><div id="loadfill"></div></div>
+  <div id="loadtext">Generating the city…</div>
+  <div id="startbtns" style="display:none">
+    <button id="btn-new">NEW GAME</button>
+    <button id="btn-continue" style="display:none">CONTINUE</button>
+  </div>
+  <div class="controls">
+    <b>WASD</b> move · <b>Mouse</b> look · <b>Shift</b> sprint · <b>Space</b> jump/vault/mantle · <b>C</b> crouch/slide ·
+    <b>1 2 3</b> shift to 1996 / 2047 / 2189 · <b>Q</b> (hold) peek through time · <b>E</b> interact · <b>F</b> enter/exit vehicle ·
+    <b>LMB</b> attack/fire · <b>RMB</b> aim/block · <b>Space while aiming</b> dodge · <b>R</b> reload · <b>Wheel</b> weapon ·
+    <b>J</b> chronicle · <b>M</b> map · <b>Esc</b> pause
+  </div>
+</div>
+<div id="pause" class="hidden"></div>
+<script src="dist/worldshift.js"></script>
+</body>
+</html>
