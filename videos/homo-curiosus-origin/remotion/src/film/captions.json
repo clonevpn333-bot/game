@@ -1,0 +1,466 @@
+[
+ {
+  "text": " Nearly",
+  "startMs": 520,
+  "endMs": 992,
+  "timestampMs": 756,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " sixty-eight",
+  "startMs": 992,
+  "endMs": 1464,
+  "timestampMs": 1228,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " thousand",
+  "startMs": 1464,
+  "endMs": 1937,
+  "timestampMs": 1700,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " years",
+  "startMs": 1937,
+  "endMs": 2208,
+  "timestampMs": 2073,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " ago,",
+  "startMs": 2208,
+  "endMs": 2680,
+  "timestampMs": 2444,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " someone",
+  "startMs": 3040,
+  "endMs": 3524,
+  "timestampMs": 3282,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " blew",
+  "startMs": 3524,
+  "endMs": 3803,
+  "timestampMs": 3664,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " red",
+  "startMs": 3803,
+  "endMs": 4081,
+  "timestampMs": 3942,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " ochre",
+  "startMs": 4081,
+  "endMs": 4359,
+  "timestampMs": 4220,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " around",
+  "startMs": 4359,
+  "endMs": 4843,
+  "timestampMs": 4601,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " their",
+  "startMs": 4843,
+  "endMs": 5122,
+  "timestampMs": 4982,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " hand.",
+  "startMs": 5122,
+  "endMs": 5400,
+  "timestampMs": 5261,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " It",
+  "startMs": 5770,
+  "endMs": 5970,
+  "timestampMs": 5870,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " was",
+  "startMs": 5970,
+  "endMs": 6171,
+  "timestampMs": 6070,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " a",
+  "startMs": 6171,
+  "endMs": 6371,
+  "timestampMs": 6271,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " question,",
+  "startMs": 6371,
+  "endMs": 6720,
+  "timestampMs": 6546,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " left",
+  "startMs": 6950,
+  "endMs": 7222,
+  "timestampMs": 7086,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " on",
+  "startMs": 7222,
+  "endMs": 7495,
+  "timestampMs": 7358,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " a",
+  "startMs": 7495,
+  "endMs": 7768,
+  "timestampMs": 7632,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " wall.",
+  "startMs": 7768,
+  "endMs": 8040,
+  "timestampMs": 7904,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " We",
+  "startMs": 8520,
+  "endMs": 8810,
+  "timestampMs": 8665,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " drew",
+  "startMs": 8810,
+  "endMs": 9100,
+  "timestampMs": 8955,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " lines",
+  "startMs": 9100,
+  "endMs": 9605,
+  "timestampMs": 9352,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " between",
+  "startMs": 9605,
+  "endMs": 10110,
+  "timestampMs": 9858,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " the",
+  "startMs": 10110,
+  "endMs": 10400,
+  "timestampMs": 10255,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " stars.",
+  "startMs": 10400,
+  "endMs": 10690,
+  "timestampMs": 10545,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " We",
+  "startMs": 11070,
+  "endMs": 11352,
+  "timestampMs": 11211,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " built",
+  "startMs": 11352,
+  "endMs": 11634,
+  "timestampMs": 11493,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " a",
+  "startMs": 11634,
+  "endMs": 11915,
+  "timestampMs": 11774,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " computer",
+  "startMs": 11915,
+  "endMs": 12615,
+  "timestampMs": 12265,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " out",
+  "startMs": 12615,
+  "endMs": 12896,
+  "timestampMs": 12756,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " of",
+  "startMs": 12896,
+  "endMs": 13178,
+  "timestampMs": 13037,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " bronze.",
+  "startMs": 13178,
+  "endMs": 13460,
+  "timestampMs": 13319,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " For",
+  "startMs": 13860,
+  "endMs": 14138,
+  "timestampMs": 13999,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " twelve",
+  "startMs": 14138,
+  "endMs": 14416,
+  "timestampMs": 14277,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " seconds,",
+  "startMs": 14416,
+  "endMs": 14900,
+  "timestampMs": 14658,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " we",
+  "startMs": 15120,
+  "endMs": 15435,
+  "timestampMs": 15278,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " flew.",
+  "startMs": 15435,
+  "endMs": 15750,
+  "timestampMs": 15593,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " Then",
+  "startMs": 16130,
+  "endMs": 16375,
+  "timestampMs": 16252,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " we",
+  "startMs": 16375,
+  "endMs": 16619,
+  "timestampMs": 16497,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " followed",
+  "startMs": 16619,
+  "endMs": 17227,
+  "timestampMs": 16923,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " the",
+  "startMs": 17227,
+  "endMs": 17471,
+  "timestampMs": 17349,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " line",
+  "startMs": 17471,
+  "endMs": 17716,
+  "timestampMs": 17594,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " to",
+  "startMs": 17716,
+  "endMs": 17961,
+  "timestampMs": 17838,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " the",
+  "startMs": 17961,
+  "endMs": 18205,
+  "timestampMs": 18083,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " Moon.",
+  "startMs": 18205,
+  "endMs": 18450,
+  "timestampMs": 18328,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " Every",
+  "startMs": 18880,
+  "endMs": 19444,
+  "timestampMs": 19162,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " answer",
+  "startMs": 19444,
+  "endMs": 19839,
+  "timestampMs": 19642,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " opened",
+  "startMs": 19839,
+  "endMs": 20402,
+  "timestampMs": 20120,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " a",
+  "startMs": 20402,
+  "endMs": 20629,
+  "timestampMs": 20516,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " bigger",
+  "startMs": 20629,
+  "endMs": 21025,
+  "timestampMs": 20827,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " question.",
+  "startMs": 21025,
+  "endMs": 21420,
+  "timestampMs": 21222,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " This",
+  "startMs": 21940,
+  "endMs": 22261,
+  "timestampMs": 22100,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " is",
+  "startMs": 22261,
+  "endMs": 22583,
+  "timestampMs": 22422,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " Homo",
+  "startMs": 22583,
+  "endMs": 23142,
+  "timestampMs": 22862,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " Curiosus.",
+  "startMs": 23142,
+  "endMs": 23940,
+  "timestampMs": 23541,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " Stay",
+  "startMs": 24330,
+  "endMs": 24728,
+  "timestampMs": 24529,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " curious.",
+  "startMs": 24728,
+  "endMs": 25420,
+  "timestampMs": 25074,
+  "confidence": 1,
+  "line": 9
+ }
+]
