@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Why Onions Make You Cry</title>
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script src="assets/timing.js"></script>
+    <script type="importmap">
+      { "imports": { "three": "./assets/vendor/three.module.min.js" } }
+    </script>
+    <style>
+      @font-face {
+        font-family: "Luckiest Guy";
+        src: url("assets/fonts/luckiest-guy-latin-400-normal.woff2") format("woff2");
+        font-weight: 400;
+      }
+      @font-face {
+        font-family: "Fredoka";
+        src: url("assets/fonts/fredoka-latin-500-normal.woff2") format("woff2");
+        font-weight: 500;
+      }
+      @font-face {
+        font-family: "Fredoka";
+        src: url("assets/fonts/fredoka-latin-700-normal.woff2") format("woff2");
+        font-weight: 700;
+      }
+      @font-face {
+        font-family: "Permanent Marker";
+        src: url("assets/fonts/permanent-marker-latin-400-normal.woff2") format("woff2");
+        font-weight: 400;
+      }
+      :root {
+        --ink: #1b1033;
+        --cream: #fff4e0;
+        --yellow: #ffd23f;
+        --violet: #8a6bff;
+        --green: #9cf25a;
+        --red: #ff4d5e;
+        --blue: #6fcaff;
+        --mint: #34cfa9;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: #1b1033;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "Fredoka", sans-serif;
+        color: var(--cream);
+      }
+      .clip {
+        position: absolute;
+        inset: 0;
+      }
+      .layer {
+        position: absolute;
+        inset: 0;
+      }
+      /* ---------- painted 2D backgrounds (behind the 3D canvas) ---------- */
+      .bg-kitchen {
+        background:
+          radial-gradient(120% 60% at 20% 8%, #fff6dc 0%, rgba(255, 246, 220, 0) 60%),
+          linear-gradient(180deg, #ffd9a8 0%, #f6b383 45%, #e48f6a 100%);
+      }
+      .bokeh {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+      .bokeh .b {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(14px);
+      }
+      .bg-kitchen .window {
+        position: absolute;
+        left: 90px;
+        top: 150px;
+        width: 520px;
+        height: 640px;
+        border-radius: 40px;
+        background: linear-gradient(160deg, rgba(255, 255, 240, 0.85), rgba(255, 236, 200, 0.35));
+        filter: blur(22px);
+      }
+      .bg-kitchen .shelf {
+        position: absolute;
+        right: 60px;
+        top: 520px;
+        width: 380px;
+        height: 26px;
+        border-radius: 13px;
+        background: rgba(150, 80, 50, 0.35);
+        filter: blur(6px);
+      }
+      .bg-cells {
+        background:
+          radial-gradient(70% 45% at 50% 40%, #a8327f 0%, rgba(168, 50, 127, 0) 70%),
+          linear-gradient(180deg, #3a0f45 0%, #5e1756 55%, #2b0b36 100%);
+      }
+      .bg-gas {
+        background:
+          radial-gradient(80% 50% at 50% 30%, rgba(120, 220, 70, 0.55) 0%, rgba(120, 220, 70, 0) 70%),
+          linear-gradient(180deg, #1f3b1a 0%, #3a1747 60%, #22102e 100%);
+      }
+      .bg-eye {
+        background:
+          radial-gradient(70% 40% at 50% 44%, #3d4f8f 0%, rgba(61, 79, 143, 0) 75%),
+          linear-gradient(180deg, #141a3a 0%, #1f2552 50%, #120f2a 100%);
+      }
+      .bg-brain {
+        background:
+          radial-gradient(70% 45% at 50% 48%, #7a1a3c 0%, rgba(122, 26, 60, 0) 75%),
+          linear-gradient(180deg, #2a0b22 0%, #3e0f2a 50%, #1c0816 100%);
+      }
+      .bg-ice {
+        background:
+          radial-gradient(90% 50% at 50% 30%, #f2fdff 0%, rgba(242, 253, 255, 0) 70%),
+          linear-gradient(180deg, #bfeaff 0%, #7cc8f2 55%, #4a96d6 100%);
+      }
+      .bg-lab {
+        background:
+          repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06) 0 2px, transparent 2px 60px),
+          repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 2px, transparent 2px 60px),
+          linear-gradient(180deg, #2b1a4f 0%, #3e1f5c 50%, #22143f 100%);
+      }
+      #gl {
+        position: absolute;
+        inset: 0;
+        width: 1080px;
+        height: 1920px;
+        display: block;
+      }
+      /* ---------- 2D doodles over the 3D ---------- */
+      .anchor {
+        position: absolute;
+        left: 540px;
+        top: 960px;
+        width: 0;
+        height: 0;
+      }
+      .tag {
+        position: absolute;
+        width: 640px;
+        left: -320px;
+        bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .pill {
+        display: block;
+        font-family: "Fredoka", sans-serif;
+        font-weight: 700;
+        font-size: 50px;
+        letter-spacing: 1px;
+        color: var(--ink);
+        padding: 14px 30px 10px;
+        border-radius: 999px;
+        border: 6px solid var(--ink);
+        box-shadow: 0 8px 0 var(--ink);
+        white-space: nowrap;
+      }
+      .marker {
+        font-family: "Permanent Marker", cursive;
+        font-size: 50px;
+        color: #ffffff;
+        -webkit-text-stroke: 10px var(--ink);
+        paint-order: stroke fill;
+        white-space: nowrap;
+        line-height: 1.1;
+        text-align: center;
+      }
+      .arrow-down {
+        display: block;
+        width: 70px;
+        height: 90px;
+      }
+      .sticker {
+        position: absolute;
+        left: 0;
+        right: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .display {
+        font-family: "Luckiest Guy", sans-serif;
+        color: #ffffff;
+        -webkit-text-stroke: 16px var(--ink);
+        paint-order: stroke fill;
+        text-shadow: 0 10px 0 var(--ink);
+        line-height: 1.02;
+        text-align: center;
+        display: block;
+      }
+      #hook-title {
+        top: 170px;
+      }
+      #hook-title .display {
+        font-size: 104px;
+      }
+      #hook-title .l2 {
+        color: var(--yellow);
+      }
+      .stamp {
+        position: absolute;
+        left: 140px;
+        top: 360px;
+        width: 800px;
+        padding: 28px 20px 18px;
+        border-radius: 34px;
+        border: 10px solid var(--ink);
+        background: repeating-linear-gradient(-45deg, var(--yellow) 0 34px, var(--ink) 34px 68px);
+        box-shadow: 0 14px 0 var(--ink);
+        display: flex;
+        justify-content: center;
+      }
+      .stamp span {
+        display: block;
+        font-family: "Luckiest Guy", sans-serif;
+        font-size: 92px;
+        color: #ffffff;
+        -webkit-text-stroke: 14px var(--ink);
+        paint-order: stroke fill;
+        background: var(--red);
+        border: 8px solid var(--ink);
+        border-radius: 20px;
+        padding: 12px 26px 2px;
+      }
+      .burst {
+        position: absolute;
+        width: 460px;
+        height: 460px;
+      }
+      .burst svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .burst span {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Luckiest Guy", sans-serif;
+        font-size: 120px;
+        color: #ffffff;
+        -webkit-text-stroke: 16px var(--ink);
+        paint-order: stroke fill;
+        padding-top: 18px;
+      }
+      #counter-wrap {
+        top: 210px;
+      }
+      #counter {
+        font-family: "Luckiest Guy", sans-serif;
+        font-size: 150px;
+        color: var(--yellow);
+        -webkit-text-stroke: 18px var(--ink);
+        paint-order: stroke fill;
+        text-shadow: 0 12px 0 var(--ink);
+        display: block;
+      }
+      #counter-sub {
+        font-size: 60px;
+      }
+      .scope {
+        background: radial-gradient(circle at 50% 46%, rgba(0, 0, 0, 0) 0 470px, rgba(20, 5, 25, 0.85) 560px, rgba(20, 5, 25, 0.95) 100%);
+      }
+      .scope-ring {
+        position: absolute;
+        left: 30px;
+        top: 333px;
+        width: 1020px;
+        height: 1020px;
+        border-radius: 50%;
+        border: 14px solid rgba(255, 220, 245, 0.55);
+      }
+      .slash {
+        position: absolute;
+        inset: 0;
+        width: 1080px;
+        height: 1920px;
+      }
+      #flash {
+        background: #ffffff;
+        opacity: 0;
+      }
+      #vignette {
+        background: radial-gradient(130% 80% at 50% 45%, rgba(0, 0, 0, 0) 55%, rgba(10, 4, 20, 0.45) 100%);
+      }
+      .alarm-vig {
+        background: radial-gradient(90% 60% at 50% 50%, rgba(255, 30, 50, 0) 40%, rgba(255, 30, 50, 0.75) 100%);
+      }
+      .banner {
+        position: absolute;
+        left: -40px;
+        right: -40px;
+        top: 300px;
+        height: 190px;
+        background: var(--red);
+        border-top: 12px solid var(--ink);
+        border-bottom: 12px solid var(--ink);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .banner span {
+        font-family: "Luckiest Guy", sans-serif;
+        font-size: 108px;
+        color: #ffffff;
+        -webkit-text-stroke: 14px var(--ink);
+        paint-order: stroke fill;
+        padding-top: 14px;
+        display: block;
+      }
+      .wave {
+        position: absolute;
+        left: 0;
+        top: 960px;
+        width: 2400px;
+        height: 700px;
+      }
+      .doodle {
+        position: absolute;
+        display: block;
+      }
+      .title-out .display {
+        font-size: 150px;
+      }
+      #outro-title {
+        top: 230px;
+      }
+      #outro-title .w {
+        display: inline-block;
+      }
+      #outro-sub {
+        margin-top: 26px;
+      }
+      .verdict {
+        position: absolute;
+        left: 70px;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+      }
+      .verdict .pill {
+        font-size: 62px;
+      }
+      .mark {
+        width: 120px;
+        height: 120px;
+        display: block;
+      }
+      .divider {
+        position: absolute;
+        left: 60px;
+        right: 60px;
+        top: 954px;
+        height: 12px;
+        border-radius: 6px;
+        background: repeating-linear-gradient(90deg, #fff4e0 0 40px, transparent 40px 70px);
+        opacity: 0.8;
+      }
+      /* ---------- captions ---------- */
+      #captions {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 1190px;
+        height: 260px;
+      }
+      .cap {
+        position: absolute;
+        left: 40px;
+        right: 40px;
+        top: 0;
+        text-align: center;
+        font-family: "Fredoka", sans-serif;
+        font-weight: 700;
+        font-size: 96px;
+        line-height: 1.08;
+        text-transform: uppercase;
+        color: #ffffff;
+        -webkit-text-stroke: 18px var(--ink);
+        paint-order: stroke fill;
+        text-shadow: 0 9px 0 var(--ink);
+        opacity: 0;
+      }
+      .cap .cw {
+        display: inline-block;
+        margin: 0 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="39.61" data-width="1080" data-height="1920">
+      <!-- ============ backgrounds ============ -->
+      <div id="bg-k1" class="clip bg-kitchen" data-start="0" data-duration="6.2" data-track-index="0">
+        <div class="window"></div>
+        <div class="shelf"></div>
+        <div class="bokeh" data-seed="3"></div>
+      </div>
+      <div id="bg-cells" class="clip bg-cells" data-start="6.2" data-duration="11.45" data-track-index="0">
+        <div class="bokeh" data-seed="5" data-tone="cell"></div>
+      </div>
+      <div id="bg-gas" class="clip bg-gas" data-start="17.65" data-duration="3.1" data-track-index="0">
+        <div class="bokeh" data-seed="8" data-tone="gas"></div>
+      </div>
+      <div id="bg-eye" class="clip bg-eye" data-start="20.75" data-duration="3.2" data-track-index="0">
+        <div class="bokeh" data-seed="9" data-tone="cool"></div>
+      </div>
+      <div id="bg-brain" class="clip bg-brain" data-start="23.95" data-duration="1.9" data-track-index="0">
+        <div class="bokeh" data-seed="10" data-tone="red"></div>
+      </div>
+      <div id="bg-k2" class="clip bg-kitchen" data-start="25.85" data-duration="6.9" data-track-index="0">
+        <div class="window"></div>
+        <div class="shelf"></div>
+        <div class="bokeh" data-seed="3"></div>
+      </div>
+      <div id="bg-ice" class="clip" data-start="30.0" data-duration="2.75" data-track-index="1">
+        <div id="bg-ice-fill" class="layer bg-ice"><div class="bokeh" data-seed="12" data-tone="ice"></div></div>
+      </div>
+      <div id="bg-cold" class="clip bg-ice" data-start="32.75" data-duration="1.65" data-track-index="0">
+        <div class="bokeh" data-seed="13" data-tone="ice"></div>
+      </div>
+      <div id="bg-lab" class="clip bg-lab" data-start="34.4" data-duration="2.45" data-track-index="0"></div>
+      <div id="bg-k3" class="clip bg-kitchen" data-start="36.85" data-duration="2.76" data-track-index="0">
+        <div class="window"></div>
+        <div class="shelf"></div>
+        <div class="bokeh" data-seed="3"></div>
+      </div>
+
+      <!-- ============ the 3D layer ============ -->
+      <canvas id="gl" width="1080" height="1920"></canvas>
+
+      <!-- ============ 2D overlays ============ -->
+      <!-- SH1: hook -->
+      <div id="ov-hook" class="clip" data-start="0" data-duration="3.6" data-track-index="2">
+        <div id="hook-title" class="sticker">
+          <span class="display l1">WHY DO ONIONS</span>
+          <span class="display l2">MAKE YOU CRY?</span>
+        </div>
+        <div id="pip-anchor-1" class="anchor">
+          <div class="tag" style="bottom: 30px">
+            <span id="qmark" class="display" style="font-size: 150px; color: var(--blue)">?</span>
+          </div>
+        </div>
+      </div>
+      <!-- SH2: chemical attack + dive -->
+      <div id="ov-attack" class="clip" data-start="3.6" data-duration="2.6" data-track-index="2">
+        <div id="stamp" class="stamp"><span>CHEMICAL ATTACK!</span></div>
+        <svg id="zoom-lines" class="slash" viewBox="0 0 1080 1920"></svg>
+      </div>
+      <!-- SH3: millions of cells -->
+      <div id="ov-cells" class="clip" data-start="6.2" data-duration="3.05" data-track-index="2">
+        <div id="scope" class="layer scope" style="opacity: 0"></div>
+        <div id="scope-ring" class="scope-ring"></div>
+        <div id="counter-wrap" class="sticker">
+          <span id="counter">0</span>
+          <span id="counter-sub" class="marker">TINY CELLS</span>
+        </div>
+        <div id="cell-anchor" class="anchor">
+          <div id="cell-tag" class="tag">
+            <span class="marker">1 onion cell</span>
+            <svg class="arrow-down" viewBox="0 0 70 90"><path d="M35 6 C30 30 40 50 35 74 M18 58 L35 80 L54 56" fill="none" stroke="#1b1033" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" /><path d="M35 6 C30 30 40 50 35 74 M18 58 L35 80 L54 56" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </div>
+        </div>
+      </div>
+      <!-- SH4: two chemicals locked apart -->
+      <div id="ov-cell" class="clip" data-start="9.25" data-duration="4.0" data-track-index="2">
+        <div id="sulfur-anchor" class="anchor">
+          <div id="sulfur-tag" class="tag" style="bottom: 40px"><span class="pill" style="background: var(--yellow)">SULFUR COMPOUNDS</span></div>
+        </div>
+        <div id="enzyme-anchor" class="anchor">
+          <div id="enzyme-tag" class="tag" style="bottom: 40px"><span class="pill" style="background: #b9a6ff">ENZYME</span></div>
+        </div>
+        <div id="lock-anchor" class="anchor">
+          <div id="lock" class="tag" style="bottom: 10px">
+            <svg viewBox="0 0 160 190" style="width: 170px; height: 200px; display: block">
+              <path d="M40 86 V58 a40 40 0 0 1 80 0 V86" fill="none" stroke="#1b1033" stroke-width="30" stroke-linecap="round" />
+              <path d="M40 86 V58 a40 40 0 0 1 80 0 V86" fill="none" stroke="#c9ccd6" stroke-width="14" stroke-linecap="round" />
+              <rect x="14" y="80" width="132" height="100" rx="22" fill="#ffd23f" stroke="#1b1033" stroke-width="10" />
+              <circle cx="80" cy="122" r="14" fill="#1b1033" />
+              <rect x="73" y="124" width="14" height="32" rx="6" fill="#1b1033" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <!-- SH5: slice, pop, bam -->
+      <div id="ov-slice" class="clip" data-start="13.25" data-duration="4.4" data-track-index="2">
+        <svg class="slash" viewBox="0 0 1080 1920">
+          <path id="slash-path" d="M980 260 C760 620 560 980 330 1500" fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round" />
+        </svg>
+        <div id="pop" class="burst" style="left: 40px; top: 300px"><svg viewBox="0 0 460 460"><path class="burst-path" fill="#ffd23f" stroke="#1b1033" stroke-width="12" stroke-linejoin="round" /></svg><span>POP!</span></div>
+        <div id="bam" class="burst" style="left: 310px; top: 250px; width: 520px; height: 520px"><svg viewBox="0 0 460 460"><path class="burst-path" fill="#9cf25a" stroke="#1b1033" stroke-width="12" stroke-linejoin="round" /></svg><span style="font-size: 140px">BAM!</span></div>
+      </div>
+      <!-- SH6: the gas -->
+      <div id="ov-gas" class="clip" data-start="17.65" data-duration="3.1" data-track-index="2">
+        <div id="gas-anchor" class="anchor">
+          <div id="gas-tag" class="tag" style="bottom: 30px; left: -120px">
+            <span class="marker" style="font-size: 54px">syn-propanethial-</span>
+            <span class="marker" style="font-size: 54px">S-oxide</span>
+            <span class="marker" style="font-size: 36px; color: var(--green)">(yes, that's its real name)</span>
+            <svg class="arrow-down" viewBox="0 0 70 90"><path d="M35 6 C30 30 40 50 35 74 M18 58 L35 80 L54 56" fill="none" stroke="#1b1033" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" /><path d="M35 6 C30 30 40 50 35 74 M18 58 L35 80 L54 56" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </div>
+        </div>
+      </div>
+      <!-- SH7: nerves fire -->
+      <div id="ov-eye" class="clip" data-start="20.75" data-duration="3.2" data-track-index="2">
+        <div id="eye-anchor" class="anchor">
+          <svg id="nerves" viewBox="-540 -1000 1080 1000" style="position: absolute; left: -540px; top: -1000px; width: 1080px; height: 1000px; overflow: visible">
+            <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path class="nerve-o" d="M-250 -260 L-300 -420 L-220 -520 L-330 -700 L-260 -820 L-360 -1000" />
+              <path class="nerve-o" d="M0 -330 L-40 -480 L40 -600 L-20 -760 L50 -880 L0 -1000" />
+              <path class="nerve-o" d="M250 -260 L310 -430 L230 -540 L340 -700 L270 -830 L380 -1000" />
+              <path class="nerve" d="M-250 -260 L-300 -420 L-220 -520 L-330 -700 L-260 -820 L-360 -1000" />
+              <path class="nerve" d="M0 -330 L-40 -480 L40 -600 L-20 -760 L50 -880 L0 -1000" />
+              <path class="nerve" d="M250 -260 L310 -430 L230 -540 L340 -700 L270 -830 L380 -1000" />
+            </g>
+            <g id="pulses">
+              <circle class="pulse" r="26" fill="#fffbd0" />
+              <circle class="pulse" r="26" fill="#fffbd0" />
+              <circle class="pulse" r="26" fill="#fffbd0" />
+            </g>
+          </svg>
+        </div>
+        <div id="zap-tag" class="sticker" style="top: 200px"><span class="pill" style="background: var(--yellow); font-size: 64px">NERVES: TRIGGERED!</span></div>
+      </div>
+      <!-- SH8: under attack -->
+      <div id="ov-brain" class="clip" data-start="23.95" data-duration="1.9" data-track-index="2">
+        <div id="alarm-vig" class="layer alarm-vig"></div>
+        <div id="banner" class="banner"><span>UNDER ATTACK!</span></div>
+      </div>
+      <!-- SH9: wash it away -->
+      <div id="ov-cry" class="clip" data-start="25.85" data-duration="3.1" data-track-index="2">
+        <svg id="wave" class="wave" viewBox="0 0 2400 700">
+          <path d="M0 260 C150 120 300 120 450 260 S750 400 900 260 S1200 120 1350 260 S1650 400 1800 260 S2100 120 2250 260 L2400 260 L2400 700 L0 700 Z" fill="#6fcaff" stroke="#1b1033" stroke-width="14" />
+          <path d="M60 300 C200 190 330 190 450 300 M960 300 C1100 190 1230 190 1350 300 M1860 300 C2000 190 2130 190 2250 300" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" />
+        </svg>
+        <div id="pip-anchor-2" class="anchor"></div>
+      </div>
+      <!-- SH10: tips -->
+      <div id="ov-tips" class="clip" data-start="28.95" data-duration="3.8" data-track-index="2">
+        <div id="pip-anchor-3" class="anchor">
+          <div id="bulb" class="tag" style="bottom: 40px">
+            <svg viewBox="0 0 220 240" style="width: 220px; height: 240px; display: block">
+              <g stroke="#1b1033" stroke-width="12" stroke-linecap="round">
+                <line x1="110" y1="8" x2="110" y2="34" /><line x1="30" y1="40" x2="48" y2="58" /><line x1="190" y1="40" x2="172" y2="58" /><line x1="6" y1="116" x2="30" y2="116" /><line x1="214" y1="116" x2="190" y2="116" />
+              </g>
+              <path d="M110 52 a62 62 0 0 1 38 111 v20 h-76 v-20 a62 62 0 0 1 38 -111 z" fill="#ffe66b" stroke="#1b1033" stroke-width="11" />
+              <rect x="74" y="186" width="72" height="20" rx="8" fill="#c9ccd6" stroke="#1b1033" stroke-width="9" />
+              <rect x="84" y="208" width="52" height="18" rx="8" fill="#c9ccd6" stroke="#1b1033" stroke-width="9" />
+              <ellipse cx="90" cy="96" rx="12" ry="20" fill="#ffffff" />
+            </svg>
+          </div>
+        </div>
+        <div id="onion-anchor" class="anchor">
+          <div id="chill-tag" class="tag" style="bottom: 300px"><span class="pill" style="background: #bfefff">CHILL IT FIRST</span></div>
+          <svg class="doodle flake" viewBox="-60 -60 120 120" style="left: -330px; top: -260px; width: 120px; height: 120px"><use href="#flake-shape" /></svg>
+          <svg class="doodle flake" viewBox="-60 -60 120 120" style="left: 200px; top: -330px; width: 100px; height: 100px"><use href="#flake-shape" /></svg>
+          <svg class="doodle flake" viewBox="-60 -60 120 120" style="left: 230px; top: 40px; width: 130px; height: 130px"><use href="#flake-shape" /></svg>
+          <svg class="doodle flake" viewBox="-60 -60 120 120" style="left: -360px; top: 60px; width: 90px; height: 90px"><use href="#flake-shape" /></svg>
+        </div>
+        <div id="sharp-tag" class="sticker" style="top: 520px"><span class="pill" style="background: #e9eef5; font-size: 62px">USE A SHARP KNIFE</span></div>
+        <div id="glint-anchor" class="anchor">
+          <svg id="glint" viewBox="-100 -100 200 200" style="position: absolute; left: -110px; top: -110px; width: 220px; height: 220px">
+            <path d="M0 -95 L14 -14 L95 0 L14 14 L0 95 L-14 14 L-95 0 L-14 -14 Z" fill="#ffffff" stroke="#1b1033" stroke-width="8" stroke-linejoin="round" />
+          </svg>
+        </div>
+      </div>
+      <!-- SH11a: cold -->
+      <div id="ov-cold" class="clip" data-start="32.75" data-duration="1.65" data-track-index="2">
+        <svg id="thermo" class="doodle" viewBox="0 0 120 420" style="left: 60px; top: 260px; width: 120px; height: 420px">
+          <rect x="34" y="10" width="52" height="320" rx="26" fill="#ffffff" stroke="#1b1033" stroke-width="10" />
+          <circle cx="60" cy="350" r="52" fill="#ff4d5e" stroke="#1b1033" stroke-width="10" />
+          <rect id="mercury" x="48" y="40" width="24" height="300" rx="12" fill="#ff4d5e" />
+          <g stroke="#1b1033" stroke-width="7" stroke-linecap="round"><line x1="86" y1="80" x2="104" y2="80" /><line x1="86" y1="150" x2="104" y2="150" /><line x1="86" y1="220" x2="104" y2="220" /></g>
+        </svg>
+        <div id="zzz" class="sticker" style="top: 300px; left: 220px">
+          <span class="display" style="font-size: 120px; color: #b9a6ff">z Z z</span>
+        </div>
+        <div id="slow-tag" class="sticker" style="top: 470px; left: 220px"><span class="pill" style="background: #bfefff">ENZYME: SLOWED DOWN</span></div>
+      </div>
+      <!-- SH11b: dull vs sharp -->
+      <div id="ov-compare" class="clip" data-start="34.4" data-duration="2.45" data-track-index="2">
+        <div class="divider"></div>
+        <div id="v-dull" class="verdict" style="top: 120px">
+          <span class="pill" style="background: #c9ccd6">DULL BLADE</span>
+          <svg id="x-mark" class="mark" viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="#ff4d5e" stroke="#1b1033" stroke-width="10" /><path d="M38 38 L82 82 M82 38 L38 82" stroke="#ffffff" stroke-width="16" stroke-linecap="round" /></svg>
+        </div>
+        <div id="v-sharp" class="verdict" style="top: 1010px">
+          <span class="pill" style="background: #e9f7ff">SHARP BLADE</span>
+          <svg id="check-mark" class="mark" viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="#34cfa9" stroke="#1b1033" stroke-width="10" /><path d="M34 62 L52 80 L88 40" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </div>
+      </div>
+      <!-- SH12: outro -->
+      <div id="ov-outro" class="clip" data-start="36.85" data-duration="2.76" data-track-index="2">
+        <div id="outro-title" class="sticker title-out">
+          <span class="display"><span class="w">NO</span> <span class="w">MORE</span></span>
+          <span class="display" style="color: var(--yellow)"><span class="w">TEARS!</span></span>
+          <span id="outro-sub" class="marker" style="font-size: 54px">(well... way fewer)</span>
+        </div>
+      </div>
+
+      <!-- shared symbol -->
+      <svg width="0" height="0" style="position: absolute">
+        <defs>
+          <g id="flake-shape" stroke-linecap="round">
+            <g stroke="#1b1033" stroke-width="20">
+              <line x1="0" y1="-50" x2="0" y2="50" /><line x1="-43" y1="-25" x2="43" y2="25" /><line x1="-43" y1="25" x2="43" y2="-25" />
+            </g>
+            <g stroke="#ffffff" stroke-width="9">
+              <line x1="0" y1="-50" x2="0" y2="50" /><line x1="-43" y1="-25" x2="43" y2="25" /><line x1="-43" y1="25" x2="43" y2="-25" />
+            </g>
+          </g>
+        </defs>
+      </svg>
+
+      <!-- captions + global finish -->
+      <div id="captions"></div>
+      <div id="vignette" class="layer" style="pointer-events: none"></div>
+      <div id="flash" class="layer"></div>
+
+      <audio id="vo" src="assets/audio/vo.wav" data-start="0" data-duration="39.61" data-track-index="10" data-volume="1"></audio>
+      <audio id="music" src="assets/audio/music.wav" data-start="0" data-duration="39.61" data-track-index="11" data-volume="0.32"></audio>
+      <audio id="sfx" src="assets/audio/sfx.wav" data-start="0" data-duration="39.61" data-track-index="12" data-volume="0.8"></audio>
+    </div>
+
+    <script type="module" src="assets/scene.js"></script>
+    <script>
+      (function () {
+        const T = window.TIMING;
+        // ---------- deterministic DOM decoration ----------
+        function rng(seed) {
+          return () => {
+            seed |= 0;
+            seed = (seed + 0x6d2b79f5) | 0;
+            let x = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+            x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+            return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+          };
+        }
+        const TONES = {
+          warm: ["rgba(255,250,230,0.55)", "rgba(255,214,160,0.5)", "rgba(120,220,200,0.35)", "rgba(255,170,140,0.45)"],
+          cell: ["rgba(255,170,230,0.35)", "rgba(200,90,180,0.35)", "rgba(255,220,250,0.25)"],
+          gas: ["rgba(170,255,120,0.35)", "rgba(120,220,90,0.3)", "rgba(220,255,200,0.25)"],
+          cool: ["rgba(140,170,255,0.3)", "rgba(110,220,255,0.25)", "rgba(220,230,255,0.2)"],
+          red: ["rgba(255,90,110,0.35)", "rgba(255,150,170,0.25)"],
+          ice: ["rgba(255,255,255,0.6)", "rgba(200,240,255,0.5)", "rgba(150,210,255,0.4)"],
+        };
+        document.querySelectorAll(".bokeh").forEach((el) => {
+          const r = rng(+el.dataset.seed);
+          const tone = TONES[el.dataset.tone || "warm"];
+          for (let i = 0; i < 16; i++) {
+            const b = document.createElement("div");
+            b.className = "b";
+            const s = 60 + r() * 220;
+            b.style.width = b.style.height = s + "px";
+            b.style.left = r() * 1080 - s / 2 + "px";
+            b.style.top = r() * 1300 - s / 2 + "px";
+            b.style.background = tone[Math.floor(r() * tone.length)];
+            el.appendChild(b);
+          }
+        });
+        // comic burst polygons
+        document.querySelectorAll(".burst-path").forEach((p, k) => {
+          const r = rng(40 + k);
+          let d = "";
+          const n = 18;
+          for (let i = 0; i < n * 2; i++) {
+            const a = (i / (n * 2)) * Math.PI * 2;
+            const rad = i % 2 ? 150 + r() * 20 : 205 + r() * 20;
+            d += (i ? "L" : "M") + (230 + Math.cos(a) * rad).toFixed(1) + " " + (230 + Math.sin(a) * rad).toFixed(1);
+          }
+          p.setAttribute("d", d + "Z");
+        });
+        // dive zoom lines
+        {
+          const svg = document.getElementById("zoom-lines");
+          const r = rng(77);
+          for (let i = 0; i < 40; i++) {
+            const a = (i / 40) * Math.PI * 2 + r() * 0.1;
+            const r0 = 260 + r() * 200;
+            const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            l.setAttribute("x1", (540 + Math.cos(a) * r0).toFixed(1));
+            l.setAttribute("y1", (900 + Math.sin(a) * r0).toFixed(1));
+            l.setAttribute("x2", (540 + Math.cos(a) * 1500).toFixed(1));
+            l.setAttribute("y2", (900 + Math.sin(a) * 1500).toFixed(1));
+            l.setAttribute("stroke", "#ffffff");
+            l.setAttribute("stroke-width", (6 + r() * 14).toFixed(1));
+            l.setAttribute("stroke-linecap", "round");
+            l.setAttribute("class", "zl");
+            svg.appendChild(l);
+          }
+        }
+        document.querySelectorAll(".nerve-o").forEach((p) => {
+          p.setAttribute("stroke", "#1b1033");
+          p.setAttribute("stroke-width", "30");
+        });
+        document.querySelectorAll(".nerve").forEach((p) => {
+          p.setAttribute("stroke", "#fff27a");
+          p.setAttribute("stroke-width", "14");
+        });
+
+        // ---------- captions ----------
+        const capRoot = document.getElementById("captions");
+        const chunks = [];
+        T.lines.forEach((line) => {
+          if (line.i === 11) return; // the outro title says it
+          let cur = [];
+          line.words.forEach((w, k) => {
+            cur.push(w);
+            const punct = /[,?.!]$/.test(w.w);
+            const next = line.words[k + 1];
+            const tooLong = cur.map((x) => x.w).join(" ").length >= 13;
+            if (!next || punct || cur.length >= 3 || (tooLong && next && next.w.length > 2)) {
+              chunks.push({ words: cur, end: line.speechEnd + 0.25 });
+              cur = [];
+            }
+          });
+        });
+        chunks.forEach((c, i) => {
+          c.start = Math.max(0, c.words[0].s - 0.06);
+          const nxt = chunks[i + 1];
+          c.stop = nxt && nxt.words[0].s - 0.06 < c.end + 0.6 ? Math.min(nxt.words[0].s - 0.06, c.end + 0.6) : c.end;
+          const el = document.createElement("div");
+          el.className = "cap";
+          el.id = "cap-" + i;
+          c.words.forEach((w, k) => {
+            const s = document.createElement("span");
+            s.className = "cw";
+            s.id = "cap-" + i + "-" + k;
+            s.textContent = w.w.replace(/[,.]$/, "");
+            el.appendChild(s);
+          });
+          capRoot.appendChild(el);
+          c.el = el;
+        });
+
+        // ---------- the timeline ----------
+        const tl = gsap.timeline({ paused: true });
+        const pop = (sel, at, extra = {}) =>
+          tl.fromTo(sel, { scale: 0, rotation: extra.rot0 ?? -12, opacity: 0 }, { scale: 1, rotation: extra.rot ?? 0, opacity: 1, duration: extra.d ?? 0.42, ease: "back.out(2.6)" }, at);
+        const out = (sel, at, d = 0.18) => tl.to(sel, { scale: 0.6, opacity: 0, duration: d, ease: "power2.in" }, at);
+
+        // captions
+        const YEL = "#ffd23f";
+        chunks.forEach((c, i) => {
+          tl.set(c.el, { opacity: 1 }, c.start);
+          tl.fromTo(c.el, { scale: 0.72, y: 26 }, { scale: 1, y: 0, duration: 0.2, ease: "back.out(3)" }, c.start);
+          tl.set(c.el, { opacity: 0 }, c.stop);
+          c.words.forEach((w, k) => {
+            const sp = document.getElementById("cap-" + i + "-" + k);
+            tl.set(sp, { color: YEL }, Math.max(c.start, w.s - 0.02));
+            const nextW = c.words[k + 1];
+            if (nextW) tl.set(sp, { color: "#ffffff" }, nextW.s - 0.02);
+          });
+        });
+
+        // kitchen bokeh drift
+        tl.fromTo("#bg-k1 .bokeh", { x: 0, y: 0 }, { x: -40, y: 20, duration: 6.2, ease: "none" }, 0);
+        tl.fromTo("#bg-k2 .bokeh", { x: 0, y: 0 }, { x: 40, y: -20, duration: 6.9, ease: "none" }, 25.85);
+        tl.fromTo("#bg-k3 .bokeh", { x: 0, y: 0 }, { x: -30, y: 10, duration: 2.76, ease: "none" }, 36.85);
+        tl.fromTo("#bg-cells .bokeh", { y: 0 }, { y: -160, duration: 11.45, ease: "none" }, 6.2);
+        tl.fromTo("#bg-gas .bokeh", { y: 0 }, { y: -260, duration: 3.1, ease: "none" }, 17.65);
+
+        // SH1 hook
+        tl.fromTo("#hook-title .l1", { scale: 0, rotation: -8 }, { scale: 1, rotation: -3, duration: 0.45, ease: "back.out(2.4)" }, 0.12);
+        tl.fromTo("#hook-title .l2", { scale: 0, rotation: 8 }, { scale: 1, rotation: 2, duration: 0.45, ease: "back.out(2.4)" }, 0.32);
+        tl.to("#hook-title", { y: -14, duration: 0.12, yoyo: true, repeat: 1, ease: "power1.inOut" }, 1.27);
+        tl.to("#hook-title", { y: -400, opacity: 0, duration: 0.35, ease: "power2.in" }, 3.2);
+        pop("#qmark", 3.15, { rot0: -30, rot: 10 });
+        tl.to("#qmark", { y: -20, duration: 0.25, yoyo: true, repeat: 1, ease: "sine.inOut" }, 3.5);
+
+        // SH2 attack
+        tl.fromTo("#stamp", { scale: 2.6, rotation: -16, opacity: 0 }, { scale: 1, rotation: -6, opacity: 1, duration: 0.2, ease: "power4.in" }, 4.88);
+        tl.to("#stamp", { x: 10, duration: 0.05, yoyo: true, repeat: 5, ease: "none" }, 5.08);
+        tl.to("#stamp", { scale: 1.4, opacity: 0, duration: 0.25, ease: "power2.in" }, 5.65);
+        tl.fromTo("#zoom-lines", { opacity: 0, scale: 1.4 }, { opacity: 0.9, scale: 0.6, duration: 0.6, ease: "power2.in", transformOrigin: "50% 47%" }, 5.6);
+        tl.to("#flash", { opacity: 1, duration: 0.08, ease: "none" }, 6.1);
+        tl.to("#flash", { opacity: 0, duration: 0.35, ease: "power2.out" }, 6.2);
+
+        // SH3 cells
+        tl.fromTo("#scope", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 6.25);
+        tl.fromTo("#scope-ring", { scale: 1.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: "power3.out" }, 6.25);
+        tl.to(["#scope", "#scope-ring"], { opacity: 0, duration: 0.6 }, 8.0);
+        pop("#counter-wrap", 7.62, { rot0: -6, rot: -3 });
+        const ctr = { v: 0 };
+        tl.to(
+          ctr,
+          {
+            v: 1000000,
+            duration: 1.0,
+            ease: "power2.out",
+            onUpdate: () => {
+              document.getElementById("counter").textContent = Math.round(ctr.v).toLocaleString("en-US") + (ctr.v > 999999 ? "+" : "");
+            },
+          },
+          7.68,
+        );
+        pop("#cell-tag", 8.3, { rot0: 10, rot: -4 });
+
+        // SH4 cell
+        pop("#sulfur-tag", 9.76, { rot0: -14, rot: -4 });
+        pop("#enzyme-tag", 11.14, { rot0: 14, rot: 4 });
+        tl.fromTo("#lock", { y: -260, opacity: 0, scale: 1.2 }, { y: 0, opacity: 1, scale: 1, duration: 0.22, ease: "power3.in" }, 11.87);
+        tl.to("#lock", { rotation: 10, duration: 0.06, yoyo: true, repeat: 5, ease: "none" }, 12.09);
+
+        // SH5 slice
+        const sp = document.getElementById("slash-path");
+        const L = 1500;
+        sp.setAttribute("stroke-dasharray", L);
+        tl.fromTo(sp, { attr: { "stroke-dashoffset": L }, opacity: 1 }, { attr: { "stroke-dashoffset": 0 }, duration: 0.28, ease: "power3.out" }, 14.45);
+        tl.to(sp, { opacity: 0, duration: 0.3 }, 14.85);
+        pop("#pop", 15.5, { rot0: -30, rot: -8, d: 0.3 });
+        out("#pop", 16.1);
+        pop("#bam", 16.95, { rot0: 20, rot: 4, d: 0.32 });
+        tl.to("#bam", { scale: 1.12, duration: 0.3, yoyo: true, repeat: 1, ease: "sine.inOut" }, 17.27);
+        tl.to("#flash", { opacity: 0.9, duration: 0.05, ease: "none" }, 16.93);
+        tl.to("#flash", { opacity: 0, duration: 0.4, ease: "power2.out" }, 16.98);
+
+        // SH6 gas
+        pop("#gas-tag", 18.95, { rot0: -10, rot: -5 });
+        tl.to("#gas-tag", { y: -12, duration: 0.5, yoyo: true, repeat: 2, ease: "sine.inOut" }, 19.4);
+
+        // SH7 nerves
+        document.querySelectorAll("#nerves .nerve, #nerves .nerve-o").forEach((p) => {
+          const len = p.getTotalLength ? p.getTotalLength() : 900;
+          p.setAttribute("stroke-dasharray", len);
+          tl.fromTo(p, { attr: { "stroke-dashoffset": len } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.35, ease: "power2.out" }, 22.68);
+        });
+        tl.fromTo("#nerves", { opacity: 1 }, { opacity: 0.55, duration: 0.08, yoyo: true, repeat: 9, ease: "none" }, 23.0);
+        const nerveEls = document.querySelectorAll("#nerves .nerve");
+        document.querySelectorAll("#nerves .pulse").forEach((c, i) => {
+          const path = nerveEls[i];
+          const len = path.getTotalLength();
+          const st = { k: 0 };
+          tl.fromTo(
+            st,
+            { k: 0 },
+            {
+              k: 1,
+              duration: 0.55,
+              ease: "power1.in",
+              onUpdate: () => {
+                const pt = path.getPointAtLength(st.k * len);
+                c.setAttribute("cx", pt.x.toFixed(1));
+                c.setAttribute("cy", pt.y.toFixed(1));
+              },
+            },
+            23.15 + i * 0.06,
+          );
+          tl.fromTo(c, { opacity: 0 }, { opacity: 1, duration: 0.05 }, 23.15 + i * 0.06);
+        });
+        pop("#zap-tag", 22.7, { rot0: -10, rot: -3, d: 0.3 });
+
+        // SH8 alarm
+        tl.fromTo("#alarm-vig", { opacity: 0 }, { opacity: 1, duration: 0.2, yoyo: true, repeat: 3, ease: "sine.inOut" }, 24.42);
+        tl.fromTo("#banner", { x: -1200, rotation: -4 }, { x: 0, rotation: -4, duration: 0.22, ease: "power3.out" }, 24.75);
+        tl.to("#banner", { y: 8, duration: 0.05, yoyo: true, repeat: 7, ease: "none" }, 24.97);
+
+        // SH9 wave
+        tl.fromTo("#wave", { x: -1250, y: 900 }, { x: -250, y: 120, duration: 0.55, ease: "power2.out" }, 27.45);
+        tl.to("#wave", { x: 0, y: 1000, duration: 0.5, ease: "power2.in" }, 28.2);
+
+        // SH10 tips
+        pop("#bulb", 29.58, { rot0: -20, rot: 6 });
+        tl.to("#bulb", { scale: 1.08, duration: 0.15, yoyo: true, repeat: 3, ease: "sine.inOut" }, 30.0);
+        out("#bulb", 30.4);
+        tl.fromTo("#bg-ice-fill", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 30.05);
+        pop("#chill-tag", 30.12, { rot0: -12, rot: -4 });
+        document.querySelectorAll("#ov-tips .flake").forEach((f, i) => {
+          tl.fromTo(f, { scale: 0, rotation: -90 }, { scale: 1, rotation: 0, duration: 0.4, ease: "back.out(2.5)" }, 30.2 + i * 0.1);
+          tl.to(f, { rotation: 60, duration: 1.0, ease: "none" }, 30.6 + i * 0.1);
+          tl.to(f, { scale: 0, duration: 0.2 }, 31.3);
+        });
+        out("#chill-tag", 31.3);
+        pop("#sharp-tag", 31.52, { rot0: 10, rot: 3 });
+        tl.fromTo("#glint", { scale: 0, rotation: 0 }, { scale: 1.2, rotation: 90, duration: 0.22, ease: "power2.out" }, 31.95);
+        tl.to("#glint", { scale: 0.7, rotation: 180, duration: 0.18, ease: "power2.in" }, 32.17);
+        tl.to("#glint", { scale: 0, duration: 0.05 }, 32.37);
+
+        // SH11a cold
+        tl.fromTo("#mercury", { attr: { y: 40, height: 300 } }, { attr: { y: 250, height: 90 }, duration: 0.6, ease: "power2.inOut" }, 32.85);
+        pop("#thermo", 32.78, { rot0: -10, rot: -5, d: 0.3 });
+        pop("#zzz", 33.3, { rot0: -10, rot: -6 });
+        tl.to("#zzz", { y: -20, duration: 0.4, yoyo: true, repeat: 1, ease: "sine.inOut" }, 33.6);
+        pop("#slow-tag", 33.1, { rot0: 8, rot: 2 });
+
+        // SH11b compare
+        tl.fromTo("#v-dull", { x: -700 }, { x: 0, duration: 0.3, ease: "power3.out" }, 34.45);
+        tl.fromTo("#v-sharp", { x: -700 }, { x: 0, duration: 0.3, ease: "power3.out" }, 35.2);
+        tl.fromTo("#x-mark", { scale: 0 }, { scale: 1, duration: 0.3, ease: "back.out(3)" }, 36.15);
+        tl.fromTo("#check-mark", { scale: 0 }, { scale: 1, duration: 0.3, ease: "back.out(3)" }, 36.28);
+
+        // SH12 outro
+        document.querySelectorAll("#outro-title .w").forEach((w, i) => {
+          tl.fromTo(w, { scale: 0, rotation: i % 2 ? 14 : -14, y: 60 }, { scale: 1, rotation: i % 2 ? 3 : -3, y: 0, duration: 0.42, ease: "back.out(2.8)" }, 37.0 + i * 0.3);
+          tl.to(w, { y: -14, duration: 0.35, yoyo: true, repeat: 3, ease: "sine.inOut" }, 38.0 + i * 0.1);
+        });
+        tl.fromTo("#outro-sub", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, 38.15);
+
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>
