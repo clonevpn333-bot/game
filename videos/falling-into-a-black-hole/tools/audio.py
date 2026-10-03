@@ -86,6 +86,21 @@ def build_sfx():
     P(boom(), 50.95, 0.9)
     P(squish(), 53.5, 0.35)
     P(squish(), 53.62, 0.25)
+    # JJK impact hits, synced to the impact frames in the scene
+    IMP = [0.0, 3.78, 6.73, 9.6, 17.2, 25.0, 25.55, 26.03, 29.85, 31.6, 31.82, 35.05, 37.07, 40.46, 42.33, 44.19, 51.08]
+    for at in IMP:
+        P(stamp(), at, 0.6)
+        P(boom(), at, 0.35)
+        P(shing(0.5, 3200), at, 0.18)
+        rv = whoosh(0.35, 300, 6000)[::-1]
+        P(rv, max(0, at - 0.35), 0.35)
+    P(riser(1.4), 0.0, 0.0)
+    P(whoosh(1.6, 60, 4000)[::-1], 0.0, 0.5)
+    P(boom(), 1.55, 0.6)
+    for i in range(10):
+        P(zap(0.25), 0.2 + i * 0.13, 0.12)
+    for i in range(24):
+        P(zap(0.2), 25.5 + i * 0.35, 0.1)
     s = reverb(s[:N], 2.2, 0.3)
     return norm(s, 0.9)
 

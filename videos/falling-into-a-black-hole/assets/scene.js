@@ -80,12 +80,14 @@ const bhMat = new THREE.ShaderMaterial({
       vec3 vel = normalize(vec3(-p.z, 0.0, p.x));
       float beam = 1.0 + 0.85*dot(vel, -normalize(v));
       beam = pow(max(beam, 0.05), 2.2);
-      vec3 hot = vec3(1.0, 0.95, 0.85);
-      vec3 mid = vec3(1.0, 0.55, 0.18);
-      vec3 cool = vec3(0.75, 0.12, 0.25);
-      vec3 c = mix(hot, mid, smoothstep(0.0, 0.35, x));
-      c = mix(c, cool, smoothstep(0.35, 1.0, x));
-      return c * I * beam * 1.25;
+      vec3 hot = vec3(1.0, 0.97, 1.0);
+      vec3 mid = vec3(0.45, 0.78, 1.0);
+      vec3 cool = vec3(0.72, 0.22, 1.0);
+      vec3 red = vec3(1.0, 0.12, 0.32);
+      vec3 c = mix(hot, mid, smoothstep(0.0, 0.18, x));
+      c = mix(c, cool, smoothstep(0.18, 0.5, x));
+      c = mix(c, red, smoothstep(0.5, 1.0, x));
+      return c * I * beam * 1.55;
     }
     void main(){
       vec2 ndc = vUv*2.0-1.0;
@@ -445,6 +447,294 @@ function makePortal(rt) {
   return g;
 }
 
+
+// ================================================================== INSANITY LAYER
+// A full-frame post pass: screen-space lensing + swirl around the hole, RGB split, zoom blur toward
+// the centre, shake, grain, and JJK-style impact frames (inverted / duotone strobes).
+const fbTex = new THREE.FramebufferTexture(W, H);
+const postMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uTex: { value: fbTex },
+    uC: { value: new THREE.Vector2(0.5, 0.5) },
+    uAspect: { value: W / H },
+    uE: { value: 0 },
+    uSwirl: { value: 0 },
+    uCA: { value: 0 },
+    uBlur: { value: 0 },
+    uTaps: { value: 1 },
+    uInv: { value: 0 },
+    uDuo: { value: 0 },
+    uDuoCol: { value: new THREE.Color(1, 1, 1) },
+    uShake: { value: new THREE.Vector2() },
+    uTime: { value: 0 },
+    uVig: { value: 0.5 },
+  },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
+  fragmentShader: /* glsl */ `
+    precision highp float;
+    varying vec2 vUv;
+    uniform sampler2D uTex; uniform vec2 uC; uniform float uAspect; uniform float uE; uniform float uSwirl;
+    uniform float uCA; uniform float uBlur; uniform int uTaps; uniform float uInv; uniform float uDuo; uniform vec3 uDuoCol;
+    uniform vec2 uShake; uniform float uTime; uniform float uVig;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233)))*43758.5453); }
+    vec2 warp(vec2 uv){
+      vec2 d = uv - uC; d.x *= uAspect;
+      float r = length(d) + 1e-4;
+      float k = 1.0 - (uE*uE)/(r*r + 0.0003);
+      k = max(k, -2.0);
+      vec2 s = d * k;
+      float ang = uSwirl / (r*7.0 + 0.12);
+      float c = cos(ang), sn = sin(ang);
+      s = vec2(c*s.x - sn*s.y, sn*s.x + c*s.y);
+      s.x /= uAspect;
+      return uC + s;
+    }
+    vec3 samp(vec2 uv){
+      vec2 m = abs(fract(uv*0.5)*2.0 - 1.0); // mirror-wrap instead of clamping streaks
+      return texture2D(uTex, vec2(m.x, 1.0 - m.y)).rgb; // framebuffer copy arrives top-down
+    }
+    void main(){
+      vec2 uv = vUv + uShake;
+      vec2 w = warp(uv);
+      vec3 col = vec3(0.0);
+      float n = 0.0;
+      for (int i = 0; i < 14; i++){
+        if (i >= uTaps) break;
+        float f = uTaps > 1 ? float(i)/float(uTaps-1) : 0.0;
+        vec2 base = mix(w, uC, uBlur * f * f);
+        vec2 dir = base - uC;
+        col.r += samp(uC + dir*(1.0 + uCA)).r;
+        col.g += samp(base).g;
+        col.b += samp(uC + dir*(1.0 - uCA)).b;
+        n += 1.0;
+      }
+      col /= n;
+      float l = dot(col, vec3(0.299,0.587,0.114));
+      col = mix(col, 1.0 - col, uInv);
+      float ll = mix(l, 1.0 - l, uInv);
+      float th = smoothstep(0.30, 0.42, ll);
+      vec3 duo = mix(vec3(0.02,0.0,0.035), uDuoCol, th);
+      col = mix(col, duo, uDuo);
+      vec2 q = vUv - 0.5;
+      col *= 1.0 - uVig * dot(q, q) * 2.4;
+      col += (hash(floor(vUv*vec2(540.0,960.0)) + fract(uTime*7.31)) - 0.5) * 0.07;
+      gl_FragColor = vec4(col, 1.0);
+    }`,
+  depthTest: false,
+  depthWrite: false,
+  toneMapped: false,
+});
+const postScene = new THREE.Scene();
+postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat));
+const IMPACTS = [
+  [0.0, 0.1, "inv"], [0.1, 0.07, "duo"],
+  [3.78, 0.08, "inv"], [3.86, 0.06, "red"],
+  [6.73, 0.07, "duo"],
+  [9.6, 0.06, "inv"],
+  [17.2, 0.06, "red"],
+  [25.0, 0.05, "inv"],
+  [25.55, 0.07, "inv"], [25.62, 0.05, "duo"],
+  [26.03, 0.08, "red"],
+  [29.85, 0.07, "inv"], [29.92, 0.05, "red"],
+  [31.6, 0.06, "inv"], [31.7, 0.05, "duo"], [31.82, 0.06, "inv"], [31.95, 0.05, "red"],
+  [35.05, 0.08, "inv"],
+  [37.07, 0.07, "duo"],
+  [40.46, 0.07, "inv"],
+  [42.33, 0.06, "red"],
+  [44.19, 0.06, "inv"],
+  [51.08, 0.06, "inv"], [51.15, 0.05, "red"], [51.22, 0.06, "inv"],
+];
+window.__IMPACTS = IMPACTS;
+const CUTS = [1.6, 4.6, 10.6, 15.0, 19.85, 25.0, 35.0, 37.07, 40.46, 42.33];
+const K_E = [[0, 0.06], [1.5, 0.01], [4.6, 0.012], [10.6, 0.006], [15, 0.01], [25, 0.012], [28, 0.05], [33.3, 0.15], [35, 0.04], [45, 0.06], [51.4, 0.13]];
+const K_SW = [[0, 1.1], [1.5, 0.08], [4.6, 0.1], [10.6, 0.05], [15, 0.08], [25, 0.15], [28, 0.6], [33.3, 2.4], [35, 3.6], [35.6, 0.5], [45, 0.9], [51.3, 2.8]];
+const K_CA = [[0, 0.035], [1.6, 0.008], [10.6, 0.004], [25, 0.012], [33.3, 0.045], [35, 0.06], [35.6, 0.006], [46, 0.01], [51.3, 0.05]];
+const K_BL = [[0, 0.5], [1.4, 0.05], [4.6, 0.04], [10.6, 0.012], [15, 0.02], [25, 0.06], [30, 0.14], [33.3, 0.32], [35, 0.75], [35.4, 0.025], [46, 0.04], [48.5, 0.14], [51.3, 0.55]];
+const K_SH = [[0, 0.005], [2, 0.0012], [24, 0.0018], [33, 0.012], [35, 0.003], [48, 0.004], [51.3, 0.012]];
+const lin = (k) => k;
+function FX(t) {
+  let E = keys(t, K_E, lin);
+  let sw = keys(t, K_SW, lin) * (1 + 0.18 * Math.sin(t * 3.1));
+  let ca = keys(t, K_CA, lin);
+  let bl = keys(t, K_BL, lin);
+  const sh = keys(t, K_SH, lin);
+  CUTS.forEach((c) => {
+    const g = Math.exp(-Math.pow((t - c) / 0.11, 2));
+    bl += 0.35 * g;
+    ca += 0.03 * g;
+    sw += 0.8 * g;
+  });
+  let inv = 0;
+  let duo = 0;
+  let col = [1, 1, 1];
+  for (const [a, d, kind] of IMPACTS) {
+    if (t >= a && t < a + d) {
+      if (kind === "inv") {
+        inv = 1;
+        duo = 0.85;
+        col = [1, 1, 1];
+      } else if (kind === "duo") {
+        duo = 1;
+        col = [0.78, 0.4, 1.0];
+      } else {
+        duo = 1;
+        col = [1.0, 0.18, 0.25];
+      }
+      bl += 0.12;
+      ca += 0.03;
+    }
+  }
+  return { E, sw, ca, bl, sh, inv, duo, col };
+}
+const _pc = new THREE.Vector3();
+function postFX(r, cam, t, center3) {
+  const fx = FX(t);
+  const U = postMat.uniforms;
+  let vis = 1;
+  if (center3) {
+    _pc.copy(center3).project(cam);
+    if (_pc.z < 1) U.uC.value.set(_pc.x * 0.5 + 0.5, _pc.y * 0.5 + 0.5);
+    else {
+      vis = 0;
+      U.uC.value.set(0.5, 0.5);
+    }
+    const off = Math.max(0, Math.max(Math.abs(U.uC.value.x - 0.5), Math.abs(U.uC.value.y - 0.5)) - 0.5);
+    vis *= clamp(1 - off * 2.5);
+  }
+  U.uE.value = fx.E * vis;
+  U.uSwirl.value = fx.sw * vis;
+  U.uCA.value = fx.ca;
+  U.uBlur.value = fx.bl;
+  U.uTaps.value = fx.bl > 0.02 || fx.ca > 0.006 ? 12 : 1;
+  U.uInv.value = fx.inv;
+  U.uDuo.value = fx.duo;
+  U.uDuoCol.value.setRGB(...fx.col);
+  U.uShake.value.set(Math.sin(t * 91.7) * fx.sh, Math.cos(t * 73.3) * fx.sh * 0.7);
+  U.uTime.value = t;
+  U.uVig.value = 0.45 + 0.35 * seg(t, 25, 33);
+  r.copyFramebufferToTexture(fbTex);
+  r.render(postScene, bhCam);
+}
+
+// ---- rocks + debris spiralling into the hole (BH-local orbits, mapped to world)
+const BH_INV = new THREE.Matrix4().setFromMatrix3(BH.tilt).transpose();
+function rockGeo(seed) {
+  const g = new THREE.IcosahedronGeometry(1, 1);
+  const p = g.attributes.position;
+  const r = rng(seed);
+  const off = Array.from({ length: 8 }, () => [r() * 6, r() * 6, r() * 6]);
+  for (let i = 0; i < p.count; i++) {
+    const v = V3(p.getX(i), p.getY(i), p.getZ(i)).normalize();
+    let d = 1;
+    off.forEach(([a, b, c], k) => (d += 0.12 * Math.sin(v.x * (2 + k) + a) * Math.sin(v.y * (3 + k) + b) * Math.sin(v.z * (2 + k) + c)));
+    v.multiplyScalar(d);
+    v.y *= 0.8;
+    p.setXYZ(i, v.x, v.y, v.z);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+function makeInfall(scene, { rocks = 240, streaks = 520, seed = 1 } = {}) {
+  const rg = rockGeo(seed);
+  const rockMat = new THREE.MeshStandardMaterial({ color: 0x7b6b66, roughness: 0.95, flatShading: true, emissive: 0x2a1040, emissiveIntensity: 0.4 });
+  const rockM = new THREE.InstancedMesh(rg, rockMat, rocks);
+  const inkM = new THREE.InstancedMesh(rg, new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide }), rocks);
+  const stM = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }), streaks);
+  const R = rng(seed + 7);
+  const col = new THREE.Color();
+  const pal = [0xbfe8ff, 0xd9b3ff, 0xff9ad0, 0xffffff, 0x8fd8ff];
+  const rk = Array.from({ length: rocks }, () => ({ R0: R() > 0.5 ? 10 + R() * 7 : 21 + R() * 10, u0: R(), rate: 0.025 + R() * 0.04, a0: R() * 6.28, h: (R() - 0.5), s: 0.25 + Math.pow(R(), 3) * 1.6, spin: V3(R() * 3, R() * 3, R() * 3) }));
+  const sk = Array.from({ length: streaks }, (_, i) => {
+    col.setHex(pal[i % pal.length]);
+    stM.setColorAt(i, col);
+    return { R0: 6 + R() * 30, u0: R(), rate: 0.08 + R() * 0.12, a0: R() * 6.28, h: (R() - 0.5), w: 0.02 + R() * 0.04 };
+  });
+  stM.instanceColor.needsUpdate = true;
+  scene.add(rockM, inkM, stM);
+  const m4 = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const e = new THREE.Euler();
+  const pos = new THREE.Vector3();
+  const vel = new THREE.Vector3();
+  const sc = new THREE.Vector3();
+  const X = new THREE.Vector3(1, 0, 0);
+  function orbit(o, tE, out, outV) {
+    const p = (o.u0 + o.rate * tE) % 1;
+    const r = lerp(o.R0, 2.4, Math.pow(p, 1.5));
+    const a = o.a0 + 2.2 * p + 10 * p * p;
+    const h = o.h * o.R0 * 0.18 * (1 - p);
+    out.set(Math.cos(a) * r, h, Math.sin(a) * r).multiplyScalar(BH.rs).applyMatrix4(BH_INV).add(BH.pos);
+    outV.set(-Math.sin(a), -0.3 * p, Math.cos(a)).applyMatrix4(BH_INV).normalize();
+    return p;
+  }
+  function update(t, power = 1) {
+    // time-warp: everything accelerates as we fall
+    const tE = t + 0.12 * Math.pow(Math.max(0, t - 24), 2);
+    rk.forEach((o, i) => {
+      const p = orbit(o, tE, pos, vel);
+      const str = 1 + 6 * Math.pow(p, 5);
+      const s = p > 0.985 ? 0.0001 : o.s * (1 - 0.3 * p);
+      q.setFromUnitVectors(X, vel);
+      e.set(o.spin.x * t, o.spin.y * t, o.spin.z * t);
+      q.multiply(new THREE.Quaternion().setFromEuler(e));
+      sc.set(s * str, s / Math.sqrt(str), s / Math.sqrt(str));
+      m4.compose(pos, q, sc);
+      rockM.setMatrixAt(i, m4);
+      sc.multiplyScalar(1.12);
+      m4.compose(pos, q, sc);
+      inkM.setMatrixAt(i, m4);
+    });
+    sk.forEach((o, i) => {
+      const p = orbit(o, tE * 1.6, pos, vel);
+      const len = (0.6 + 9 * Math.pow(p, 3)) * (0.6 + 0.8 * power);
+      q.setFromUnitVectors(X, vel);
+      sc.set(len, o.w, o.w);
+      if (p > 0.99) sc.setScalar(0.0001);
+      m4.compose(pos, q, sc);
+      stM.setMatrixAt(i, m4);
+    });
+    rockM.instanceMatrix.needsUpdate = true;
+    inkM.instanceMatrix.needsUpdate = true;
+    stM.instanceMatrix.needsUpdate = true;
+    stM.material.opacity = 0.35 + 0.6 * power;
+  }
+  return { update };
+}
+
+// ---- purple / red lightning arcs crackling around the horizon
+function makeArcs(scene, n = 7) {
+  const mats = [0xb06bff, 0xff3a5a, 0x8fd8ff].map((c) => new THREE.MeshBasicMaterial({ color: c, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+  const arcs = Array.from({ length: n }, (_, i) => {
+    const m = new THREE.Mesh(new THREE.BufferGeometry(), mats[i % 3]);
+    scene.add(m);
+    return m;
+  });
+  function update(t, power) {
+    const frame = Math.floor(t * 15);
+    arcs.forEach((m, i) => {
+      const r = rng(frame * 31 + i * 7);
+      const on = power > 0.05 && r() < 0.35 + 0.6 * power;
+      m.visible = on;
+      if (!on) return;
+      const a0 = r() * Math.PI * 2;
+      const sweep = 0.6 + r() * 1.2;
+      const R0 = 2.7 + r() * 1.2;
+      const pts = [];
+      for (let k = 0; k <= 12; k++) {
+        const a = a0 + (k / 12) * sweep;
+        const rr = R0 + (r() - 0.5) * 0.7;
+        pts.push(V3(Math.cos(a) * rr, (r() - 0.5) * 1.1, Math.sin(a) * rr).multiplyScalar(BH.rs).applyMatrix4(BH_INV).add(BH.pos));
+      }
+      const path = new THREE.CurvePath();
+      for (let k = 0; k < pts.length - 1; k++) path.add(new THREE.LineCurve3(pts[k], pts[k + 1]));
+      m.geometry.dispose();
+      m.geometry = new THREE.TubeGeometry(path, 48, 0.09 + 0.12 * power, 5, false);
+      m.material.opacity = 0.7 + 0.3 * r();
+    });
+  }
+  return { update };
+}
+
 // ================================================================== SPACE shot (S1 – S8): astronaut near the hole
 const SPACE = (() => {
   const st = makeStage(ENV, { key: 2.6, keyColor: 0xffe2c0, keyPos: [-2, 6, -10], rim: 2.4, rimColor: 0x9fd8ff, hemi: 0.55, hemiSky: 0xcfe0ff, hemiGround: 0x2a1a3a, envI: 0.7, shadow: false });
@@ -463,6 +753,14 @@ const SPACE = (() => {
   scene.add(portal);
   const dust = makeSmoke(40, 0xbfd8ff, 14, 0.6, true, glowTex);
   dust.forEach((d) => scene.add(d));
+  const bhLight = new THREE.PointLight(0xb98bff, 2.6, 0, 0);
+  bhLight.position.copy(BH.pos);
+  scene.add(bhLight);
+  const infall = makeInfall(scene, { rocks: 240, streaks: 520, seed: 3 });
+  const arcs = makeArcs(scene, 8);
+  const aura = makeSmoke(16, 0x7a3bff, 61, 0.55, true);
+  const auraDark = makeSmoke(10, 0x1a0628, 62, 0.6, false);
+  aura.concat(auraDark).forEach((a) => scene.add(a));
   // the astronaut's body position along the fall
   function astroPos(t) {
     const fall = ei(seg(t, 25.4, 33.6));
@@ -517,17 +815,38 @@ const SPACE = (() => {
       const years = Math.pow(Math.max(0, t - 15.6), 1.6) * 18;
       EARTH.render(renderer, years);
     }
+    // power: how hard the hole is pulling on everything right now
+    const power = clamp(keys(t, [[0, 0.9], [1.6, 0.35], [4.6, 0.4], [10.6, 0.12], [15, 0.2], [25, 0.45], [33.6, 1.0]], (k) => k));
+    infall.update(t, power);
+    arcs.update(t, t < 1.8 ? 1 : t > 25 ? power : power * 0.5);
+    [...aura, ...auraDark].forEach((a, i) => {
+      const u = a.userData;
+      const on = t > 25.3;
+      a.visible = on;
+      if (!on) return;
+      const life = 0.9;
+      const k = ((t * (1.2 + u.r1) + u.r2 * life) % life) / life;
+      const away = V3(0, 0, 1).applyQuaternion(astro.root.quaternion);
+      a.position.copy(P).add(V3((u.r3 - 0.5) * 1.6, 0.8 + (u.r4 - 0.5) * 1.6 * stretch, 0)).addScaledVector(away, k * 3.5);
+      const sc = (0.8 + k * 2.2) * (0.6 + power);
+      a.scale.set(sc, sc, 1);
+      a.material.opacity = (i < aura.length ? 0.55 : 0.5) * Math.sin(Math.PI * k) * seg(t, 25.3, 26.5);
+      a.material.rotation = u.r1 * 6 + t * 2;
+    });
     // camera rig
     let camPos;
     let look;
     let fov = 40;
     let roll = 0;
     if (t < 4.6) {
-      // hook: swing around the astronaut with the hole behind
-      const a = lerp(-0.5, 0.35, eio(seg(t, 0, 4.6)));
-      camPos = V3(Math.sin(a) * 8.0, 1.4 + Math.sin(t * 0.5) * 0.2, Math.cos(a) * 8.0);
-      look = vlerp(V3(0, 1.6, 0), V3(0, 2.6, -6), 0.3);
-      roll = lerp(-0.12, 0.03, eio(seg(t, 0, 4.6)));
+      // hook: warp-speed rush in from deep space, then whip around the astronaut
+      const a = lerp(-0.5, 0.35, eio(seg(t, 1.6, 4.6)));
+      const orbitPos = V3(Math.sin(a) * 9.6, 1.5 + Math.sin(t * 0.5) * 0.2, Math.cos(a) * 9.6);
+      const rush = eo5(seg(t, 0, 1.6));
+      camPos = vlerp(V3(3, 9, 80), orbitPos, rush);
+      look = vlerp(V3(0, 4, -20), vlerp(V3(0, 1.6, 0), V3(0, 2.6, -6), 0.3), eo(seg(t, 0.4, 1.6)));
+      roll = lerp(1.4, -0.12, eo5(seg(t, 0, 1.7))) + lerp(0, 0.15, eio(seg(t, 1.7, 4.6)));
+      fov = lerp(85, 40, eo5(seg(t, 0, 1.6)));
     } else if (t < 10.6) {
       // pull back: see the whole ring
       const k = eio(seg(t, 4.6, 10.6));
@@ -536,7 +855,7 @@ const SPACE = (() => {
       fov = lerp(40, 46, k);
     } else if (t < 15.0) {
       const k = eio(seg(t, 10.6, 15.0));
-      camPos = vlerp(V3(-1.6, 1.6, 9.0), V3(-0.8, 1.5, 7.8), k);
+      camPos = vlerp(V3(-1.8, 1.7, 10.2), V3(-1.0, 1.6, 9.0), k);
       look = V3(0.6, 1.7, -4);
     } else if (t < 25.0) {
       const k = eio(seg(t, 15.0, 19.9));
@@ -565,6 +884,9 @@ const SPACE = (() => {
         fov = lerp(fov, 30, dk);
       }
     }
+    // whip-roll impulses on every cut + dutch drift
+    [4.6, 10.6, 15.0, 25.0].forEach((c) => (roll += jiggle(t, c, 0.35, 16, 6)));
+    roll += Math.sin(t * 0.9) * 0.05 + (t > 25 ? Math.sin(t * 2.3) * 0.12 * power : 0);
     aim(cam, camPos, look, fov, roll);
     // portal placement (always facing the camera)
     portal.position.copy(P).add(V3(0.45, 3.3, 0.6));
@@ -581,6 +903,7 @@ const SPACE = (() => {
     });
     scene.updateMatrixWorld();
     anchorTo("bh-anchor", BH.pos, cam);
+    anchorTo("sl-anchor", BH.pos, cam);
     anchorTo("astro-anchor", astro.headWorld(1.6), cam);
     anchorTo("feet-anchor", worldOf(astro.body, V3(0, -1.0, 0)), cam);
     anchorTo("clock-anchor", clock.position.clone().add(V3(0, 0.75, 0)), cam);
@@ -589,9 +912,10 @@ const SPACE = (() => {
   function render(r, t) {
     const disk = 1;
     const exposure = 1 + 0.4 * seg(t, 28, 33);
-    drawBlackHole(r, cam, t, { disk, exposure });
+    drawBlackHole(r, cam, t, { disk, exposure: exposure * (1 + 0.25 * Math.sin(t * 5.3) * seg(t, 25, 33)) });
     r.clearDepth();
     r.render(scene, cam);
+    postFX(r, cam, t, BH.pos);
   }
   return { scene, cam, update, render };
 })();
@@ -646,11 +970,24 @@ const GRID = (() => {
         float g = max(lr, la);
         float fade = smoothstep(26.0, 14.0, r) * smoothstep(0.35, 1.6, r);
         vec3 col = mix(vec3(0.25,0.95,1.0), vec3(0.85,0.45,1.0), smoothstep(8.0, 1.0, r));
-        float glow = g*0.9 + 0.06;
+        float glow = g*1.5 + 0.07;
         gl_FragColor = vec4(col*glow*fade, glow*fade);
       }`,
   });
-  scene.add(new THREE.Mesh(geo, gridMat));
+  const funnel = new THREE.Mesh(geo, gridMat);
+  scene.add(funnel);
+  // glowing debris spiralling down the throat
+  const DN = 420;
+  const deb = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }), DN);
+  const dR = rng(77);
+  const dcol = new THREE.Color();
+  const debInfo = Array.from({ length: DN }, (_, i) => {
+    dcol.setHex([0x7fe9ff, 0xc08bff, 0xff7ab0, 0xffffff][i % 4]);
+    deb.setColorAt(i, dcol);
+    return { u0: dR(), rate: 0.06 + dR() * 0.1, a0: dR() * 6.28, R0: 6 + dR() * 20, s: 0.03 + dR() * 0.07 };
+  });
+  deb.instanceColor.needsUpdate = true;
+  scene.add(deb);
   // the abyss at the center
   const abyss = new THREE.Mesh(new THREE.SphereGeometry(0.9, 32, 24), new THREE.MeshBasicMaterial({ color: 0x000000 }));
   abyss.position.y = depth(0.35) - 0.3;
@@ -721,6 +1058,22 @@ const GRID = (() => {
   scene.add(kl);
   function update(t) {
     gridMat.uniforms.uFlow.value = t * 0.9 * seg(t, 38, 42) + t * 0.15;
+    // the whole funnel turns into a vortex, faster and faster
+    funnel.rotation.y = -(t - 35) * 0.35 - 0.06 * Math.pow(Math.max(0, t - 44), 2);
+    {
+      const m4 = new THREE.Matrix4();
+      const q = new THREE.Quaternion();
+      const tE = t + 0.08 * Math.pow(Math.max(0, t - 44), 2);
+      debInfo.forEach((o, i) => {
+        const p = (o.u0 + o.rate * tE) % 1;
+        const r = lerp(o.R0, 0.4, Math.pow(p, 1.3));
+        const a = o.a0 - 2 * p - 9 * p * p;
+        const s = p > 0.97 ? 0.0001 : o.s * (1 + 2 * p);
+        m4.compose(V3(Math.cos(a) * r, depth(r) + 0.15, Math.sin(a) * r), q, V3(s, s, s));
+        deb.setMatrixAt(i, m4);
+      });
+      deb.instanceMatrix.needsUpdate = true;
+    }
     // light cones tip toward the center (x- direction along the line)
     cones.forEach((g) => {
       const { r, i } = g.userData;
@@ -769,12 +1122,14 @@ const GRID = (() => {
     scene.updateMatrixWorld();
     anchorTo("future-anchor", V3(2.2, depth(2.2) + 1.7, 0), cam);
     anchorTo("center-anchor", abyss.position.clone().add(V3(0, 1.4, 0)), cam);
+    anchorTo("sl-anchor", abyss.position, cam);
   }
   function render(r, t) {
     r.setClearColor(0x05030c, 1);
     r.clear();
     r.render(scene, cam);
     r.setClearColor(0x000000, 0);
+    postFX(r, cam, t, abyss.position);
   }
   return { scene, cam, update, render };
 })();
