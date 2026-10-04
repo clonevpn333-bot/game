@@ -144,7 +144,7 @@ function buildSchool(W: World): void {
   wall(W, 15, 14, 15, 40, cream, [], H, 0.2, dado2);
   // lockers along the corridor
   for (let x = -29; x < 29; x += 0.62) {
-    if ((x > -24.5 && x < -21.9) || (x > -5.5 && x < -2.9) || (x > 6.5 && x < 9.1) || (x > 16.5 && x < 19.7) || (x > -6.4 && x < 6.4)) continue;
+    if ((x > -12.7 && x < -10.0) || (x > -24.5 && x < -21.9) || (x > -5.5 && x < -2.9) || (x > 6.5 && x < 9.1) || (x > 16.5 && x < 19.7) || (x > -6.4 && x < 6.4)) continue;
     W.box([x, 0, 10.1], [x + 0.58, 1.9, 10.6], x % 2 < 1 ? blue : yellow, { uv: 1 });
   }
   // corridor + room lights
