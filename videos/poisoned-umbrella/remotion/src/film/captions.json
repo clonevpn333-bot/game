@@ -1,0 +1,762 @@
+[
+ {
+  "text": " A",
+  "startMs": 380,
+  "endMs": 593,
+  "timestampMs": 486,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " man",
+  "startMs": 593,
+  "endMs": 807,
+  "timestampMs": 700,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " was",
+  "startMs": 807,
+  "endMs": 1020,
+  "timestampMs": 914,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " murdered...",
+  "startMs": 1020,
+  "endMs": 1550,
+  "timestampMs": 1285,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " with",
+  "startMs": 1830,
+  "endMs": 2000,
+  "timestampMs": 1915,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " an",
+  "startMs": 2000,
+  "endMs": 2169,
+  "timestampMs": 2085,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " umbrella.",
+  "startMs": 2169,
+  "endMs": 2590,
+  "timestampMs": 2380,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " London,",
+  "startMs": 3030,
+  "endMs": 3733,
+  "timestampMs": 3382,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " 1978.",
+  "startMs": 3733,
+  "endMs": 4137,
+  "timestampMs": 3935,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " An",
+  "startMs": 4137,
+  "endMs": 4540,
+  "timestampMs": 4338,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " exiled",
+  "startMs": 4540,
+  "endMs": 5542,
+  "timestampMs": 5041,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " writer",
+  "startMs": 5542,
+  "endMs": 6245,
+  "timestampMs": 5893,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " waits",
+  "startMs": 6245,
+  "endMs": 6649,
+  "timestampMs": 6447,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " for",
+  "startMs": 6649,
+  "endMs": 7053,
+  "timestampMs": 6851,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " a",
+  "startMs": 7053,
+  "endMs": 7456,
+  "timestampMs": 7254,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " bus.",
+  "startMs": 7456,
+  "endMs": 7860,
+  "timestampMs": 7658,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " A",
+  "startMs": 8190,
+  "endMs": 8447,
+  "timestampMs": 8318,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " sharp",
+  "startMs": 8447,
+  "endMs": 8705,
+  "timestampMs": 8576,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " sting",
+  "startMs": 8705,
+  "endMs": 8962,
+  "timestampMs": 8834,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " in",
+  "startMs": 8962,
+  "endMs": 9219,
+  "timestampMs": 9090,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " his",
+  "startMs": 9219,
+  "endMs": 9477,
+  "timestampMs": 9348,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " thigh.",
+  "startMs": 9477,
+  "endMs": 9734,
+  "timestampMs": 9606,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " A",
+  "startMs": 9734,
+  "endMs": 9991,
+  "timestampMs": 9862,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " stranger",
+  "startMs": 9991,
+  "endMs": 10439,
+  "timestampMs": 10215,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " with",
+  "startMs": 10439,
+  "endMs": 10697,
+  "timestampMs": 10568,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " an",
+  "startMs": 10697,
+  "endMs": 10954,
+  "timestampMs": 10826,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " umbrella...",
+  "startMs": 10954,
+  "endMs": 11593,
+  "timestampMs": 11274,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " gone.",
+  "startMs": 11593,
+  "endMs": 11850,
+  "timestampMs": 11721,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " Four",
+  "startMs": 12190,
+  "endMs": 12447,
+  "timestampMs": 12318,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " days",
+  "startMs": 12447,
+  "endMs": 12703,
+  "timestampMs": 12575,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " later,",
+  "startMs": 12703,
+  "endMs": 13150,
+  "timestampMs": 12926,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " Georgi",
+  "startMs": 13440,
+  "endMs": 13894,
+  "timestampMs": 13667,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " Markov",
+  "startMs": 13894,
+  "endMs": 14348,
+  "timestampMs": 14121,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " was",
+  "startMs": 14348,
+  "endMs": 14609,
+  "timestampMs": 14478,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " dead.",
+  "startMs": 14609,
+  "endMs": 14870,
+  "timestampMs": 14740,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " But",
+  "startMs": 15360,
+  "endMs": 15595,
+  "timestampMs": 15478,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " the",
+  "startMs": 15595,
+  "endMs": 15830,
+  "timestampMs": 15712,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " real",
+  "startMs": 15830,
+  "endMs": 16066,
+  "timestampMs": 15948,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " weapon",
+  "startMs": 16066,
+  "endMs": 16475,
+  "timestampMs": 16270,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " was",
+  "startMs": 16475,
+  "endMs": 16710,
+  "timestampMs": 16592,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " smaller",
+  "startMs": 16710,
+  "endMs": 17120,
+  "timestampMs": 16915,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " than",
+  "startMs": 17120,
+  "endMs": 17355,
+  "timestampMs": 17238,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " a",
+  "startMs": 17355,
+  "endMs": 17590,
+  "timestampMs": 17472,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " pinhead.",
+  "startMs": 17590,
+  "endMs": 18000,
+  "timestampMs": 17795,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " A",
+  "startMs": 18330,
+  "endMs": 18504,
+  "timestampMs": 18417,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " platinum",
+  "startMs": 18504,
+  "endMs": 18937,
+  "timestampMs": 18720,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " pellet,",
+  "startMs": 18937,
+  "endMs": 19240,
+  "timestampMs": 19088,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " drilled",
+  "startMs": 19530,
+  "endMs": 19882,
+  "timestampMs": 19706,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " with",
+  "startMs": 19882,
+  "endMs": 20085,
+  "timestampMs": 19984,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " two",
+  "startMs": 20085,
+  "endMs": 20288,
+  "timestampMs": 20187,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " holes,",
+  "startMs": 20288,
+  "endMs": 20640,
+  "timestampMs": 20464,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " sealed",
+  "startMs": 20900,
+  "endMs": 21251,
+  "timestampMs": 21075,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " to",
+  "startMs": 21251,
+  "endMs": 21453,
+  "timestampMs": 21352,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " melt",
+  "startMs": 21453,
+  "endMs": 21655,
+  "timestampMs": 21554,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " at",
+  "startMs": 21655,
+  "endMs": 21857,
+  "timestampMs": 21756,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " body",
+  "startMs": 21857,
+  "endMs": 22208,
+  "timestampMs": 22032,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " heat.",
+  "startMs": 22208,
+  "endMs": 22410,
+  "timestampMs": 22309,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " Inside:",
+  "startMs": 22730,
+  "endMs": 23305,
+  "timestampMs": 23018,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " ricin.",
+  "startMs": 23305,
+  "endMs": 23880,
+  "timestampMs": 23592,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " A",
+  "startMs": 24250,
+  "endMs": 24522,
+  "timestampMs": 24386,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " castor-bean",
+  "startMs": 24522,
+  "endMs": 25196,
+  "timestampMs": 24859,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " poison",
+  "startMs": 25196,
+  "endMs": 25669,
+  "timestampMs": 25432,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " that",
+  "startMs": 25669,
+  "endMs": 25941,
+  "timestampMs": 25805,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " stops",
+  "startMs": 25941,
+  "endMs": 26212,
+  "timestampMs": 26076,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " cells",
+  "startMs": 26212,
+  "endMs": 26484,
+  "timestampMs": 26348,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " making",
+  "startMs": 26484,
+  "endMs": 26957,
+  "timestampMs": 26720,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " proteins.",
+  "startMs": 26957,
+  "endMs": 27430,
+  "timestampMs": 27194,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " The",
+  "startMs": 27830,
+  "endMs": 28073,
+  "timestampMs": 27952,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " pellet",
+  "startMs": 28073,
+  "endMs": 28497,
+  "timestampMs": 28285,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " was",
+  "startMs": 28497,
+  "endMs": 28741,
+  "timestampMs": 28619,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " found",
+  "startMs": 28741,
+  "endMs": 28984,
+  "timestampMs": 28862,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " in",
+  "startMs": 28984,
+  "endMs": 29227,
+  "timestampMs": 29106,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " his",
+  "startMs": 29227,
+  "endMs": 29471,
+  "timestampMs": 29349,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " thigh.",
+  "startMs": 29471,
+  "endMs": 29714,
+  "timestampMs": 29592,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " Investigators",
+  "startMs": 29714,
+  "endMs": 30679,
+  "timestampMs": 30196,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " believe",
+  "startMs": 30679,
+  "endMs": 31102,
+  "timestampMs": 30890,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " the",
+  "startMs": 31102,
+  "endMs": 31346,
+  "timestampMs": 31224,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " umbrella",
+  "startMs": 31346,
+  "endMs": 31950,
+  "timestampMs": 31648,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " was",
+  "startMs": 31950,
+  "endMs": 32193,
+  "timestampMs": 32072,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " a",
+  "startMs": 32193,
+  "endMs": 32437,
+  "timestampMs": 32315,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " gun.",
+  "startMs": 32437,
+  "endMs": 32680,
+  "timestampMs": 32558,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " No",
+  "startMs": 33070,
+  "endMs": 33332,
+  "timestampMs": 33201,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " one",
+  "startMs": 33332,
+  "endMs": 33595,
+  "timestampMs": 33463,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " was",
+  "startMs": 33595,
+  "endMs": 33857,
+  "timestampMs": 33726,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " ever",
+  "startMs": 33857,
+  "endMs": 34313,
+  "timestampMs": 34085,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " charged.",
+  "startMs": 34313,
+  "endMs": 34770,
+  "timestampMs": 34542,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " The",
+  "startMs": 35300,
+  "endMs": 35548,
+  "timestampMs": 35424,
+  "confidence": 1,
+  "line": 10
+ },
+ {
+  "text": " murder",
+  "startMs": 35548,
+  "endMs": 35981,
+  "timestampMs": 35764,
+  "confidence": 1,
+  "line": 10
+ },
+ {
+  "text": " weapon",
+  "startMs": 35981,
+  "endMs": 36413,
+  "timestampMs": 36197,
+  "confidence": 1,
+  "line": 10
+ },
+ {
+  "text": " was",
+  "startMs": 36413,
+  "endMs": 36662,
+  "timestampMs": 36537,
+  "confidence": 1,
+  "line": 10
+ },
+ {
+  "text": " one",
+  "startMs": 36662,
+  "endMs": 36910,
+  "timestampMs": 36786,
+  "confidence": 1,
+  "line": 10
+ },
+ {
+  "text": " point",
+  "startMs": 36910,
+  "endMs": 37159,
+  "timestampMs": 37034,
+  "confidence": 1,
+  "line": 10
+ },
+ {
+  "text": " seven",
+  "startMs": 37159,
+  "endMs": 37591,
+  "timestampMs": 37375,
+  "confidence": 1,
+  "line": 10
+ },
+ {
+  "text": " millimetres",
+  "startMs": 37591,
+  "endMs": 38392,
+  "timestampMs": 37992,
+  "confidence": 1,
+  "line": 10
+ },
+ {
+  "text": " wide.",
+  "startMs": 38392,
+  "endMs": 38640,
+  "timestampMs": 38516,
+  "confidence": 1,
+  "line": 10
+ }
+]

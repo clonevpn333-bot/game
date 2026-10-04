@@ -1,0 +1,8 @@
+node_modules/
+remotion/out/
+remotion/public/*.wav
+pf/.frames/
+pf/.tmp/
+pf/exports/
+pf/dist/
+*.mp4
