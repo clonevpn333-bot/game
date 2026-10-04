@@ -168,7 +168,8 @@ export const ch8: Chapter = {
     const g = s.g;
     const civic = g.people.get('civic')!;
     const echoes = s.world.named.get('echoes') as Blocky[];
-    s.weapon('none');
+    s.weapon('pistol');
+    g.combat.reserve = Math.max(g.combat.reserve, 36);
     await s.fade(0, 2.5, true);
     await s.card('CHAPTER EIGHT', 'THE TRUTH', 'LEVEL −40 · THE BELLWETHER ARRAY');
     civic.follow(V(1.4, 0, -1.2));
@@ -210,6 +211,23 @@ export const ch8: Chapter = {
       if (n < 2) await s.wait(0.8);
       e.root.visible = n === 2;
       if (n === 0) await s.say('elias', 'That was my mother. My actual mother.', { dur: 2.4 });
+      if (n === 1) {
+        // the Nulls do not want the signal heard
+        audio.whisper(V(C.x, 1.6, C.z), 0.35, 3);
+        await s.say('civic', 'Something is coming up the cables. The Nulls. They do not want this heard.', { dur: 3.2 });
+        g.player.flashlightOn = true;
+        s.objective('THE ARRAY', 'Defend the relays', undefined);
+        await s.fight([
+          { kind: 'null', pos: V(C.x + 14, 0, C.z + 4), yaw: -Math.PI / 2 },
+          { kind: 'null', pos: V(C.x - 14, 0, C.z - 4), yaw: Math.PI / 2, delay: 1 },
+          { kind: 'discarded', pos: V(C.x, 0, C.z + 15), yaw: Math.PI, delay: 2 },
+          { kind: 'null', pos: V(C.x + 10, 0, C.z - 12), yaw: 0, delay: 3 },
+          { kind: 'discarded', pos: V(C.x - 12, 0, C.z + 10), yaw: Math.PI, delay: 2 },
+          { kind: 'null', pos: V(C.x + 2, 0, C.z + 14), yaw: Math.PI, delay: 2 },
+        ]);
+        s.ammo('ammo8', V(C.x - 13.5, 0.3, C.z - 4), 24);
+        await s.say('civic', 'They were the first ones I made. I called them failures. They heard me.', { dur: 3.4 });
+      }
     }
     // ---- the truth
     s.objective('THE ARRAY', 'Go to the edge', V(0, 1.6, C.z - 12.4), 'SIGNAL');

@@ -205,6 +205,9 @@ export class Traffic {
     c.collider.cz = c.obj.position.z;
   }
 
+  /** extra things cars stop for (a Shepherd's planted feet) */
+  obstacles: { p: THREE.Vector3; r: number }[] = [];
+
   update(dt: number, player: THREE.Vector3, onHonk?: (p: THREE.Vector3) => void): void {
     this.time += dt;
     for (const s of this.signals) s.update(this.time);
@@ -232,6 +235,12 @@ export class Traffic {
       const lat = Math.abs(rel.x * dir.z - rel.z * dir.x);
       let pGap = 1e9;
       if (along > 0 && along < 18 && lat < 1.6 && player.y < 2.5) pGap = along - c.len / 2 - 1.2;
+      for (const ob of this.obstacles) {
+        const ro = ob.p.clone().sub(c.obj.position);
+        const al = ro.dot(dir);
+        const la = Math.abs(ro.x * dir.z - ro.z * dir.x);
+        if (al > 0 && al < 30 && la < ob.r + 1.2) pGap = Math.min(pGap, al - c.len / 2 - ob.r - 1);
+      }
       const free = Math.min(gap - 2, stopGap, pGap);
       const want = !this.running ? 0 : free < 0.3 ? 0 : Math.min(c.max, free * 1.1);
       c.v = damp(c.v, want, want < c.v ? 4 : 1.2, dt);

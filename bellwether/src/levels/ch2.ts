@@ -9,6 +9,7 @@ import { PEOPLE, citizen } from '../actors/Cast';
 import { mulberry } from '../actors/Blocky';
 import { Signal, type Lane, CAR_COLORS } from '../game/Traffic';
 import { ENV, V, adScreen, busStop, signalHead, glowSign } from './common';
+import { addGiant, giantTraffic, lanterns } from '../game/Giants';
 
 /*
   Civic Center: a plaza x ∈ [-40, 40], z ∈ [0, 80] ringed by roads and towers with giant screens.
@@ -221,6 +222,11 @@ export const ch2: Chapter = {
     buildPlaza(W, g, screens);
     buildRecords(W);
     traffic(g);
+    // Shepherds working the ring roads, and lantern drones circling the monument
+    addGiant(W, g, { pos: V(-120, 0, 88), yaw: Math.PI / 2, path: [V(-300, 0, 88), V(300, 0, 88), V(-300, 0, 88)], cargo: 'lamps', name: 'SHEPHERD 06' });
+    addGiant(W, g, { pos: V(48, 0, 160), yaw: Math.PI, path: [V(48, 0, 380), V(48, 0, -260), V(48, 0, 380)], cargo: 'tank', name: 'SHEPHERD 03', scale: 1.15 });
+    giantTraffic(W, g);
+    lanterns(W, V(0, 0, 36), 16, 36, '#7ff4ff', 22);
     // residents enjoying the Civic Center
     const r = mulberry(707);
     let seed = 300;

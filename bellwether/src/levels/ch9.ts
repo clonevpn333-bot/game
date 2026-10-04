@@ -11,6 +11,7 @@ import { mulberry, type Look } from '../actors/Blocky';
 import type { Citizen } from '../game/Citizen';
 import { carModel, CAR_COLORS } from '../game/Traffic';
 import { V, adScreen, glowSign } from './common';
+import { addGiant, giantTargets, lanterns, type Giant } from '../game/Giants';
 import * as D from './dress';
 
 /*
@@ -190,6 +191,9 @@ export const ch9: Chapter = {
   weapon: 'pistol',
   build(W: World, g: Game, mode) {
     buildBoulevard(W);
+    lanterns(W, V(0, 0, 80), 36, 30, '#ff9a4a', 26);
+    // a Shepherd stands frozen at the end of the boulevard, its lights flickering between sides
+    addGiant(W, g, { pos: V(-34, 0, 176), yaw: Math.PI / 2, name: 'SHEPHERD 12', scale: 1.4, hull: '#b8b2a4' });
     W.spawn.set(0, 0, -12);
     W.spawnYaw = Math.PI;
     if (mode !== 'title') {
@@ -274,7 +278,36 @@ export const ch9: Chapter = {
     g.hud.hints(null);
     s.ammo('ammo9a', V(-3.5, 1.25, 62), 24);
     s.ammo('ammo9b', V(3.5, 1.25, 62), 24);
-    await s.say('rebel1', 'They\'re falling back! Go! Get to the tower!', { label: 'FREE CITIZEN' });
+    await s.say('rebel1', 'They\'re falling back!', { label: 'FREE CITIZEN', dur: 1.6 });
+    // ---- the Shepherd: CIVIC's loyalists send a giant
+    audio.rumble(3, 0.7);
+    s.shake(0.4);
+    const boss: Giant = addGiant(s.world, g, { pos: V(0, 0, 175), yaw: Math.PI, path: [V(0, 0, 150), V(0, 0, 104)], loop: false, hostile: true, hunt: true, weakKnees: true, name: 'SHEPHERD 01', scale: 1.1, speed: 1.8 });
+    g.combat.extraTargets = () => giantTargets(s.world, g);
+    let down = false;
+    boss.onDown = () => (down = true);
+    await s.wait(1.2);
+    await s.say('rebel2', 'SHEPHERD! It\'s coming for the barricade!', { label: 'FREE CITIZEN' });
+    await s.say('reyes', 'Those orange lights on its knees. That\'s where the actuators are. Shoot the joints!');
+    g.hud.hints([['', 'Shoot the glowing knee actuators'], ['', 'Stay out of its searchlight']]);
+    s.objective('THE BARRICADE', 'Bring down the Shepherd', () => boss.sh.pos.clone().setY(8), 'SHEPHERD');
+    s.checkpoint(V(0, 0, 58), Math.PI);
+    s.ammo('ammo9s1', V(-6, 1.25, 61.6), 24);
+    s.ammo('ammo9s2', V(6, 1.25, 62.4), 24);
+    void s.fight([
+      { kind: 'security', pos: V(-8, 0, 110), yaw: Math.PI, delay: 6 },
+      { kind: 'security', pos: V(8, 0, 116), yaw: Math.PI, delay: 8 },
+    ], { music: false }).catch(() => undefined);
+    await s.until(() => down || g.autopilot, 100, 'shepherd down');
+    if (g.autopilot && !boss.sh.dead) boss.sh.collapse(1);
+    g.hud.hints(null);
+    g.hud.chip(null);
+    s.clearWaypoint();
+    await s.wait(2.4);
+    audio.cheer(0.25, 4);
+    await s.say('rebel0', 'IT\'S DOWN! The Shepherd is DOWN!', { label: 'FREE CITIZEN', dur: 2.2 });
+    await s.say('cole', 'Remind me never to make you angry, Vale.', { dur: 2.2 });
+    await s.say('rebel1', 'Go! Get to the tower! We\'ll hold the street!', { label: 'FREE CITIZEN' });
     s.checkpoint(V(0, 0, 70), Math.PI);
     s.objective('FOUNDERS BOULEVARD', 'Push through', V(0, 2, 120), 'TOWER');
     // ---- the heavy line

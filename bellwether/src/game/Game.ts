@@ -315,6 +315,7 @@ export class Game {
     this.lights.clear();
     this.lights.master = 1;
     this.lights.tintMix = 0;
+    this.combat.extraTargets = null;
     this.fx.clearDecals();
     audio.stopAllLoops(0.6);
     this.cine.active = false;

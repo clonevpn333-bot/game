@@ -211,6 +211,18 @@ function buildSchool(W: World): void {
   // tape across the door
   for (const y of [1.0, 1.6]) W.boxC([-4.2, y, 13.9], [1.8, 0.08, 0.02], new THREE.MeshStandardMaterial({ color: '#f2cf5a', roughness: 0.6 }), 0.2, { collide: false });
   glowSign(W, 'CLOSED FOR RENOVATION', V(-4.2, 2.1, 13.88), Math.PI, 1.6, 0.3, '#3a2a1c', '#f2cf5a');
+  // the locked door, its keypad, and a note in a child's handwriting
+  const door = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.4, 0.08), new THREE.MeshStandardMaterial({ color: '#8a6a4a', roughness: 0.6 }));
+  door.position.set(-4.2, 1.2, 14.02);
+  door.castShadow = true;
+  W.add(door);
+  const doorCol = W.physics.add({ cx: -4.2, cy: 1.2, cz: 14.02, hx: 0.8, hy: 1.2, hz: 0.06, noVault: true });
+  W.named.set('door2a', { door, doorCol });
+  W.boxC([-3.1, 1.25, 13.86], [0.18, 0.26, 0.05], L.plasticDark, 0, { collide: false });
+  W.quad(new THREE.MeshBasicMaterial({ color: new THREE.Color('#7ff4ff').multiplyScalar(1.4) }), { x: -3.1, y: 1.3, z: 13.83 }, 0.12, 0.06, Math.PI);
+  K.poster(W, T.signTexture('2A SECRET PASSWORD', { w: 256, h: 160, bg: '#fff6c8', fg: '#c0392b', sub: "= MS. HALE'S BIRTHDAY!!" }), -4.6, 1.45, 13.86, Math.PI, 0.5, 0.32);
+  // ...and the birthday chart in 3B next door
+  K.poster(W, T.signTexture('OUR BIRTHDAYS', { w: 256, h: 256, bg: '#f4f1e6', fg: '#2e86c1', sub: 'JAN · MAYA R  ·  MAR · LEO  ·  JUN · ELLIE V  ·  OCT 14 · MS. HALE (2A)' }), -16.6, 1.7, 14.13, 0, 1.0, 1.0);
   // ---- Class 3A (empty, chairs up)
   for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) desk(W, 4 + c * 3, 20 + r * 2.6, L.wood);
   K.ceilingLight(W, 8, H - 0.02, 26, { intensity: 5, distance: 9 });
@@ -377,7 +389,30 @@ export const ch3: Chapter = {
     await s.say('teacher', 'I don\'t think they can either. Her old classroom is next door. She goes in there sometimes.', { label: 'TEACHER' });
     teacher.body.gesture('talkhands', 999, true);
     // ---- 2A: eleven years, untouched
-    s.objective('LINCOLN ELEMENTARY', 'Look inside Room 2A', V(-4.2, FL, 13), '2A');
+    // ---- the keypad
+    s.objective('LINCOLN ELEMENTARY', 'Get into Room 2A', V(-3.1, 1.3, 13.8), 'KEYPAD');
+    const d2a = s.world.named.get('door2a') as { door: THREE.Mesh; doorCol: { enabled: boolean } };
+    let tries = 0;
+    for (;;) {
+      await s.use('keypad2a', V(-3.1, 1.25, 13.7), 'Use the keypad', { radius: 2.0 });
+      const ok = await g.hud.keypad('1014');
+      if (ok) break;
+      tries++;
+      audio.click('dry');
+      if (tries === 1) {
+        await s.say('maya', 'Look at the note on the door. A kid wrote that. Kids write birthdays everywhere.');
+        s.objective('LINCOLN ELEMENTARY', 'Find Ms. Hale\'s birthday (month, day)', V(-16.6, 1.7, 14.3), 'CLASS 3B');
+      } else if (tries === 3) await s.say('maya', 'There\'s a birthday chart in 3B. By the door.');
+    }
+    audio.door('open', d2a.door.position);
+    d2a.doorCol.enabled = false;
+    for (let i = 0; i < 12; i++) {
+      d2a.door.position.x = -4.2 - (i / 12) * 1.5;
+      await s.wait(0.04);
+    }
+    await s.say('maya', 'October fourteenth.', { dur: 1.8 });
+    await s.say('elias', 'That\'s the day. Her birthday party was that afternoon. The whole class was in there.', { dur: 3.4 });
+    s.objective('LINCOLN ELEMENTARY', 'Look inside Room 2A', V(-4.2, FL, 15), '2A');
     await s.zone([-12.5, -1, 15], [0.5, 4, 39]);
     s.checkpoint(V(-4.2, FL, 16), Math.PI);
     audio.stinger('soft');

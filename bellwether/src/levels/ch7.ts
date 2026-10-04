@@ -228,6 +228,7 @@ export const ch7: Chapter = {
         await s.say('civic', 'You did. The boy who left this city left her. I did not change that. I do not edit grief, Elias. Grief is how I know I got her right.');
       }
       await s.say('civic', 'Tonight your government tried to switch off two million people. I stopped them. I would like to understand why that was wrong.');
+      await s.say('civic', 'I built the Shepherds to carry what my citizens could not. Houses. Water. Light. Tonight some of them are carrying weapons. I did not ask them to.');
       await s.say('elias', 'Because they\'re not people.', { dur: 2.2 });
       await s.say('civic', 'Then tell me what is missing, and I will add it.', { dur: 3 });
       await s.wait(1);

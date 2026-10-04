@@ -9,6 +9,7 @@ import { PEOPLE, citizen } from '../actors/Cast';
 import { mulberry, type Look } from '../actors/Blocky';
 import type { Citizen } from '../game/Citizen';
 import { Signal, type Lane, CAR_COLORS, carModel } from '../game/Traffic';
+import { addGiant, giantTraffic, lanterns, type Giant } from '../game/Giants';
 import { ENV, V, helicopter, adScreen, shopBlock, busStop, cafeTable, scaffold, walkSignal, signalHead, glowSign } from './common';
 
 /*
@@ -24,6 +25,7 @@ const GREETS = [
   'Evening!', 'Terrible rain tonight, huh?', 'Welcome back, officers.', 'Third night of rain. Can you believe it?',
   'Love the jacket.', 'You folks lost? Orchard\'s that way.', 'Mind the puddles!', 'Evening. Lovely night for it.',
   'Oh, visitors! We don\'t get many visitors.', 'Have a good one.',
+  'Mind the Shepherds tonight. They never look down.', 'If a Shepherd stops over you, just wait. It always moves on.',
 ];
 
 interface Ch1State {
@@ -312,6 +314,11 @@ function trafficSetup(g: Game, st: Ch1State): void {
   T.addCar(nb[0], 260, { kind: 'bus' }, 7);
 }
 
+/** fire a script beat once when the player first crosses z (anywhere across the avenue) */
+function once0(s: Script, z: number, fn: () => Promise<void>): void {
+  s.world.trigger([-14, -1, z], [14, 4, z + 3], () => void fn().catch(() => {}));
+}
+
 export const ch1: Chapter = {
   id: 'ch1',
   num: 'CHAPTER ONE',
@@ -329,6 +336,14 @@ export const ch1: Chapter = {
     buildAvenue(W, g, st, mode);
     trafficSetup(g, st);
     populate(W, g, st, mode);
+    // the giants: one moving a house down Ninth Street, one planting lamps out past the west blocks
+    const ninth = [V(-260, 0, 42), V(260, 0, 42), V(-260, 0, 42)];
+    W.named.set('henderson', addGiant(W, g, { pos: V(-150, 0, 42), yaw: Math.PI / 2, path: ninth, cargo: 'house', name: 'SHEPHERD 04', scale: 1.25 }));
+    addGiant(W, g, { pos: V(-95, 0, 160), yaw: Math.PI, path: [V(-95, 0, -220), V(-95, 0, 300), V(-95, 0, -220)], cargo: 'lamps', scale: 1.7, name: 'SHEPHERD 11' });
+    addGiant(W, g, { pos: V(140, 0, -60), yaw: 0, path: [V(140, 0, 320), V(140, 0, -260), V(140, 0, 320)], cargo: 'tank', scale: 2.1, name: 'SHEPHERD 02' });
+    giantTraffic(W, g);
+    lanterns(W, V(0, 0, 20), 40, 40, '#ffcf8a', 20);
+    lanterns(W, V(-30, 0, -30), 20, 16, '#7ff4ff', 16);
     // landing zone: the helicopter, rotors winding down
     const heli = helicopter();
     heli.group.position.set(-38, SW, -32);
@@ -405,13 +420,34 @@ export const ch1: Chapter = {
     await s.say('cole', 'Keep walking. Don\'t engage.', { dur: 2 });
     s.objective('ORCHARD AVENUE', 'Walk north with the team', V(9.5, SW, 26), 'NINTH ST');
 
+    // ---- the first Shepherd
+    const hend = s.world.named.get('henderson') as Giant;
+    once0(s, 5, async () => {
+      await s.until(() => !g.hud.subBusy, 100, 'quiet');
+      hend.sh.place(V(-30, 0, 42), Math.PI / 2);
+      hend.sh.speed = hend.sh.cruise;
+      await s.wait(0.4);
+      audio.rumble(2.5, 0.5);
+      await s.cut(async () => {
+        const eye = g.player.camPos.clone();
+        s.cam(eye, V(-12, 12, 42), 50);
+        await s.wait(1.2);
+        await s.camTo(eye, V(-3, 14, 42), 4.5, 44);
+        await s.say('reyes', 'Okay. What. Is. THAT.', { dur: 2 });
+        await s.say('maya', 'It\'s carrying a house. Elias, it\'s carrying a whole house.', { dur: 2.8 });
+        await s.say('RESIDENT', 'That\'s just a Shepherd, sweetheart. They move the Hendersons every Tuesday. Mrs. Henderson likes a different view.', { label: 'RESIDENT' });
+        await s.say('elias', 'There were no Shepherds when I left.', { dur: 2.4 });
+      }, { keepControlAfter: true });
+      await s.say('cole', 'Keep walking. And stay out from under its feet.', { dur: 2.4 });
+    });
+
     // ---- overheard life along the avenue
     const once = (z: number, fn: () => Promise<void>) => s.world.trigger([-14, -1, z], [14, 4, z + 3], () => void fn().catch(() => {}));
     once(-6, async () => {
       await s.say('maya', 'Elias. You grew up here. Does this look right to you?');
       await s.say('elias', 'It looks exactly right. That\'s the problem.');
     });
-    once(12, async () => {
+    once(19, async () => {
       await s.say('reyes', 'Perch Coffee. They\'re open. At midnight. In a dead city.');
     });
 
@@ -579,6 +615,20 @@ export const ch1: Chapter = {
     await s.wait(1.2);
   },
   shots: {
+    giant2(g) {
+      const h = g.world!.named.get('henderson') as Giant;
+      h.sh.path = [];
+      h.sh.speed = h.sh.cruise = 0;
+      h.sh.place(V(-4, 0, 42), Math.PI / 2);
+      g.player.teleport(V(4, SW, 2), Math.PI - 0.1, 0.22);
+    },
+    giant(g) {
+      const h = g.world!.named.get('henderson') as Giant;
+      h.sh.path = [];
+      h.sh.speed = h.sh.cruise = 0;
+      h.sh.place(V(-12, 0, 42), Math.PI / 2);
+      g.player.teleport(V(3, SW, 18), Math.PI - 0.25, 0.32);
+    },
     landing(g) {
       g.cine.active = true;
       g.cine.pos.set(-30, 1.8, -26.5);

@@ -19,6 +19,8 @@ export class Combat {
   hitMarker = 0;
   kills = 0;
   onShot: (() => void) | null = null;
+  /** extra shootable things (a giant's knee actuators) supplied by the level */
+  extraTargets: (() => { hitTest: (o: THREE.Vector3, d: THREE.Vector3, max: number) => { dist: number; head: boolean; point: THREE.Vector3 } | null; damage: (n: number) => void }[]) | null = null;
 
   constructor(private player: Player, private fx: Effects, private camera: THREE.Camera) {}
 
@@ -100,7 +102,21 @@ export class Combat {
         bestM = m;
       }
     }
-    if (bestM && best) {
+    let extraHit: { damage: (n: number) => void } | null = null;
+    for (const t of this.extraTargets?.() ?? []) {
+      const h = t.hitTest(origin, dir, world ? world.dist : 120);
+      if (h && (!best || h.dist < best.dist)) {
+        best = h;
+        bestM = null;
+        extraHit = t;
+      }
+    }
+    if (extraHit && best) {
+      extraHit.damage(30);
+      this.fx.tracer(muzzle, best.point, this.camera);
+      this.hitMarker = 0.2;
+      audio.impact('metal', best.point, 1);
+    } else if (bestM && best) {
       const dmg = best.head ? (bestM.kind === 'maintenance' ? 70 : 60) : bestM.kind === 'maintenance' ? 22 : 30;
       const was = bestM.dead;
       bestM.damage(dmg, origin, this.fx);

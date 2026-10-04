@@ -141,6 +141,25 @@ function buildUnder(W: World, g: Game, mode: string): void {
     door.add(s);
   }
   W.named.set('door', { door, doorCol });
+  // the door has no power: two breaker cabinets, one at each end of the patrol corridor
+  const lamps: THREE.MeshBasicMaterial[] = [];
+  for (const sx of [-1, 1]) {
+    const x = sx * 21.55;
+    W.boxC([x, 1.3, 40], [0.5, 1.6, 1.2], new THREE.MeshStandardMaterial({ color: '#5a5040', roughness: 0.6, metalness: 0.5 }), 0, {});
+    const lamp = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff3020').multiplyScalar(2) });
+    const l = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.12), lamp);
+    l.position.set(x - sx * 0.27, 1.95, 40);
+    W.add(l);
+    lamps.push(lamp);
+    glowSign(W, 'BREAKER', V(x - sx * 0.27, 2.35, 40), -sx * Math.PI / 2, 0.8, 0.2, '#2a1a0b', '#e0a526');
+  }
+  W.named.set('breakers', lamps);
+  // door status panel
+  const doorPanel = new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff3020').multiplyScalar(2) });
+  const dp = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.04), doorPanel);
+  dp.position.set(3.5, 1.6, 59.75);
+  W.add(dp);
+  W.named.set('doorPanel', doorPanel);
   // tunnel B down to the hall
   tunnel(W, -3, 60, 3, 90, 4.6, true);
   for (let z = 64; z < 90; z += 8) caged(W, 0, 4.4, z, '#7ff4ff', 3, 0.15);
@@ -270,7 +289,7 @@ export const ch4: Chapter = {
     await s.say('maya', 'The tunnels branch at a junction ahead. Security units patrol it. Lots of them.', { dur: 3 });
     await s.say('cole', 'We split. Reyes and I go around through the drains. Vale, you go straight through. Quietly.');
     for (const p of team) void p.goto(V(0, 0, 0.6), 1.4).then(() => p.dispose());
-    s.objective('TUNNEL A', 'Get through the patrol junction unseen', V(0, 0, 58), 'BLAST DOOR');
+    s.objective('TUNNEL A', 'Get to the blast door', V(0, 1.4, 58), 'BLAST DOOR');
     s.checkpoint(V(0, 0, 4), Math.PI);
     await s.near(V(0, 0, 24), 4);
     g.hud.hints([['C', 'Crouch (quieter, harder to see)'], ['E', 'Disable a unit from behind']]);
@@ -283,15 +302,58 @@ export const ch4: Chapter = {
     g.stealth = true;
     const units = patrols.map((p) => g.spawnMachine(p.kind, p.pos, p.yaw, { patrol: p.patrol }));
     let spotted = false;
-    await s.until(() => {
+    const watchSpotted = () => {
       if (!spotted && g.anyAlert) {
         spotted = true;
         audio.stinger('scare');
         g.hud.chip('DETECTED', 1.6);
         g.hud.hints([['LMB', 'Fire'], ['RMB', 'Aim']]);
       }
-      return g.player.pos.z > 57 || units.every((u) => u.dead);
+    };
+    // reach the door: no power
+    await s.until(() => {
+      watchSpotted();
+      return g.player.pos.z > 52 || units.every((u) => u.dead);
     }, 100, 'junction');
+    s.objective('TUNNEL A', 'Get to the blast door', V(0, 1.4, 58), 'BLAST DOOR');
+    await s.near(V(0, 0, 57), 4);
+    audio.click('dry');
+    g.hud.chip('NO POWER', 1.6);
+    await s.say('elias', 'Dead. There\'ll be breakers somewhere on this level.', { dur: 2.4 });
+    await s.say('maya', 'Two cabinets, one at each end of the patrol corridor. Watch their lights.', { radio: true });
+    // the breakers puzzle: both cabinets, through the patrol
+    const lamps = s.world.named.get('breakers') as THREE.MeshBasicMaterial[];
+    const at = [V(-21, 1.3, 40), V(21, 1.3, 40)];
+    let thrown = 0;
+    at.forEach((p, i) => {
+      const it = s.world.interact({
+        id: `breaker${i}`, pos: p, radius: 2.0, prompt: 'Throw the breaker',
+        onUse: () => {
+          it.enabled = false;
+          thrown++;
+          lamps[i].color.set('#30ff60').multiplyScalar(2);
+          audio.click('switch');
+          audio.rumble(0.8, 0.2);
+          // the clunk carries: the nearest unit comes to look
+          const near = units.filter((u) => !u.dead).sort((a, b) => a.pos.distanceTo(p) - b.pos.distanceTo(p))[0];
+          if (near && near.pos.distanceTo(p) < 18) near.investigate(p.clone());
+          s.objective('JUNCTION 4', `Throw the breakers (${thrown}/2)`, thrown < 2 ? at[1 - i].clone().setY(2.2) : undefined, 'BREAKER');
+        },
+      });
+    });
+    s.objective('JUNCTION 4', 'Throw the breakers (0/2)', at[g.player.pos.x < 0 ? 0 : 1].clone().setY(2.2), 'BREAKER');
+    g.hud.hints([['', 'Throwing a breaker is loud. Move after.']]);
+    await s.until(() => {
+      watchSpotted();
+      return thrown >= 2 || (g.autopilot && units.length > 0);
+    }, 100, 'breakers');
+    g.hud.hints(null);
+    (s.world.named.get('doorPanel') as THREE.MeshBasicMaterial).color.set('#30ff60').multiplyScalar(2);
+    s.objective('TUNNEL A', 'Get through the blast door', V(0, 1.4, 58), 'BLAST DOOR');
+    await s.until(() => {
+      watchSpotted();
+      return g.player.pos.distanceTo(V(0, 0, 57.5)) < 3.5;
+    }, 100, 'door');
     g.hud.hints(null);
     // blast door rolls up, then seals behind you
     const { door, doorCol } = s.world.named.get('door') as { door: THREE.Mesh; doorCol: { enabled: boolean } };

@@ -10,6 +10,7 @@ import { audio } from '../audio/AudioEngine';
 import { PEOPLE, citizen } from '../actors/Cast';
 import type { Citizen } from '../game/Citizen';
 import { V, adScreen, suburbHouse, gableRoof } from './common';
+import { addGiant } from '../game/Giants';
 import * as D from './dress';
 
 /*
@@ -240,6 +241,8 @@ export const ch5: Chapter = {
     buildStreet(W);
     const doors = buildHouse(W);
     W.named.set('doors', doors);
+    // far off over the rooftops: a Shepherd planting lamps along a new road
+    addGiant(W, g, { pos: V(-60, 0, -62), yaw: Math.PI / 2, path: [V(-220, 0, -62), V(220, 0, -62), V(-220, 0, -62)], cargo: 'lamps', name: 'SHEPHERD 15', scale: 1.6, glow: 0.18 });
     // the house TV: CIVIC's evening programme
     const tv = adScreen(W, V(-7.3, 1.35, 16), Math.PI / 2, 1.5, 0.85, [
       { bg: '#0b2a3f', fg: '#7ff4ff', title: 'GOOD EVENING, BELLWETHER', sub: 'TOMORROW: LIGHT RAIN · 11°' },

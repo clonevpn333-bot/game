@@ -3,6 +3,7 @@ import type { Chapter } from './index';
 import type { World } from '../world/World';
 import type { Game, Script } from '../game/Game';
 import { StaticBatcher } from '../render/Batcher';
+import { Shepherd } from '../actors/Shepherd';
 import { M, facadeMaterial, glowMaterial } from '../render/Materials';
 import { SKY } from '../render/Sky';
 import { audio } from '../audio/AudioEngine';
@@ -198,12 +199,25 @@ function panorama(W: World): Pano {
     m.rotation.y = i % 2 ? -0.6 : 0.6;
     group.add(m);
   });
+  // the Shepherds: giant municipal walkers striding along the avenues below
+  const walkers = [
+    new Shepherd({ scale: 2.2, cargo: 'tank', name: 'SHEPHERD 02', glow: 0.3 }).place(new THREE.Vector3(150, 0, 470), 0.3),
+    new Shepherd({ scale: 2.6, cargo: 'house', name: 'SHEPHERD 04', glow: 0.3 }).place(new THREE.Vector3(-110, 0, 420), Math.PI / 2),
+    new Shepherd({ scale: 2.0, cargo: 'lamps', name: 'SHEPHERD 11', glow: 0.3 }).place(new THREE.Vector3(-90, 0, 640), Math.PI),
+    new Shepherd({ scale: 2.4, name: 'SHEPHERD 07', glow: 0.3 }).place(new THREE.Vector3(170, 0, 640), Math.PI * 0.8),
+  ];
+  for (const w of walkers) {
+    w.speed = w.cruise;
+    group.add(w.root);
+    W.disposers.push(() => w.dispose());
+  }
   group.position.y = -ALT;
   W.add(group);
   return {
     group,
     update: (dt, t) => {
       group.position.z -= FLY * dt;
+      for (const w of walkers) w.update(dt);
       for (let i = 0; i < N; i++) {
         const c = cars[i];
         c.s += c.v * dt;
@@ -350,6 +364,9 @@ export const prologue: Chapter = {
       await s.camTo(V(-0.6, 1.25, -0.6), V(-1.0, 1.35, -1.3), 1.4, 46);
       await s.say('cole', '...That\'s not possible.');
       await s.say('reyes', 'Tell that to the ball game.', { dur: 2.2 });
+      await s.say('PILOT', 'Uh... Cole? Something\'s walking down there. Something big.', { radio: true });
+      await s.say('cole', 'Define big.', { dur: 1.6 });
+      await s.say('PILOT', 'Big.', { radio: true, dur: 1.6 });
       // exterior: the helicopter dropping over a city that is very much alive
       heli.group.visible = true;
       heli.spot.intensity = 400;

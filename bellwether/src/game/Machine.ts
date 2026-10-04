@@ -96,6 +96,14 @@ export class Machine {
   }
 
   /** Ray vs. this machine's hit spheres. Returns distance and whether it was the weak spot. */
+  /** a noise somewhere: come and look (does nothing if already hunting) */
+  investigate(p: THREE.Vector3): void {
+    if (this.dead || this.alerted) return;
+    this.awareness = Math.max(this.awareness, 0.62);
+    this.lastSeen.copy(p);
+    this.state = 'suspicious';
+  }
+
   hitTest(o: THREE.Vector3, d: THREE.Vector3, max: number): { dist: number; head: boolean; point: THREE.Vector3 } | null {
     if (this.dead) return null;
     const spheres: [THREE.Vector3, number, boolean][] = this.bot

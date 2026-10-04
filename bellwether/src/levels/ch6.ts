@@ -11,6 +11,7 @@ import { mulberry } from '../actors/Blocky';
 import type { Citizen } from '../game/Citizen';
 import { carModel, CAR_COLORS, type CarKind } from '../game/Traffic';
 import { V, adScreen, shopBlock, glowSign, helicopter } from './common';
+import { addGiant, lanterns, type Giant } from '../game/Giants';
 
 /*
   Harbor Avenue during the blackout. Avenue x ∈ [-7, 7] (sidewalks to ±11), z ∈ [-20, 150],
@@ -184,6 +185,7 @@ export const ch6: Chapter = {
       kid.body.mode = 'cower';
       for (const c of [mom, kid]) c.lookAtPlayer = true;
     }
+    lanterns(W, V(0, 0, 70), 34, 30, '#ff3a2a', 24);
     W.onUpdate((dt) => {
       g.lights.tintMix = Math.min(0.9, g.lights.tintMix + dt);
     });
@@ -276,6 +278,27 @@ export const ch6: Chapter = {
     g.hud.hints(null);
     s.ammo('ammoB', V(-8.6, 0.3, 108), 24);
     s.checkpoint(V(0, 0, 112), Math.PI);
+    // ---- a Shepherd comes down the avenue, hunting
+    const hunter: Giant = addGiant(s.world, g, { pos: V(0, 0, 196), yaw: Math.PI, path: [V(0, 0, 180), V(0, 0, -60)], loop: false, hostile: true, hunt: true, name: 'SHEPHERD 09', speed: 2.0 });
+    audio.rumble(3, 0.5);
+    await s.wait(1);
+    await s.say('maya', 'Elias, something huge is coming down Harbor from the station. One of the walkers. It\'s got a searchlight on the street.', { radio: true });
+    await s.say('reyes', 'Don\'t let that light touch you. Get under something. Or get under IT.', { radio: true });
+    g.hud.hints([['', 'Stay out of the searchlight'], ['C', 'Crouch under awnings and cars']]);
+    s.objective('HARBOR AVENUE', 'Get past the Shepherd', V(0, 1.4, 156), 'STATION');
+    s.checkpoint(V(-8.5, 0.15, 114), Math.PI);
+    g.stealth = true;
+    const escorts = [
+      g.spawnMachine('security', V(-4, 0, 150), Math.PI, { patrol: [V(-4, 0, 150), V(-4, 0, 124)] }),
+      g.spawnMachine('security', V(4, 0, 156), Math.PI, { patrol: [V(4, 0, 156), V(4, 0, 128)] }),
+    ];
+    await s.until(() => g.player.pos.z > 150 || g.autopilot, 100, 'past the shepherd');
+    g.stealth = false;
+    for (const e of escorts) if (!e.dead) e.dispose();
+    g.hud.hints(null);
+    g.hud.chip(null);
+    hunter.hunt = false;
+    hunter.sh.speed = hunter.sh.cruise = 2.6;
     s.objective('UNION STATION', 'Get to the van', V(4, 1.4, 186), 'VAN');
     await s.near(V(0, 0, 160), 9);
     siren?.stop(2);
