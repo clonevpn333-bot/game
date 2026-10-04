@@ -205,3 +205,22 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color:
 .civic .c-sub { font: 400 13px/1.4 var(--font); color: #9fc4cc; margin-top: 4px; }
 /* first-person crosshair dot always visible during play */
 .dot.fp { opacity: 1; width: 4px; height: 4px; margin: -2px; background: rgba(255,255,255,0.75); box-shadow: 0 0 3px #000; }
+
+/* ---- CIVIC intrusion minigame */
+.hack { position: absolute; inset: 0; display: none; place-items: center; z-index: 26; background: radial-gradient(ellipse at center, rgba(4,20,28,0.55), rgba(0,0,0,0.8)); }
+.hack.on { display: grid; }
+.hk { width: min(560px, 88vw); background: #061118; border: 1px solid #1f4a58; box-shadow: 0 0 40px rgba(127,244,255,0.15), 0 20px 60px #000; padding: 20px 22px 16px; font-family: 'Courier New', monospace; color: #9fe8f4; transition: transform 0.08s; }
+.hk.bad { transform: translateX(6px); border-color: #a03030; }
+.hk-t { font: 600 13px/1 var(--title); letter-spacing: 0.35em; color: #7ff4ff; margin-bottom: 12px; }
+.hk-s { display: flex; gap: 8px; margin-bottom: 14px; }
+.hk-s i { width: 26px; height: 6px; background: #12313b; }
+.hk-s i.cur { background: #3a8fa0; animation: wp-pulse 0.8s infinite; }
+.hk-s i.ok { background: #7ff4ff; box-shadow: 0 0 8px #7ff4ff; }
+.hk-bar { position: relative; height: 34px; background: repeating-linear-gradient(90deg, #0b2028 0 3px, #08161c 3px 6px); border: 1px solid #1f4a58; overflow: hidden; }
+.hk-win { position: absolute; top: 0; bottom: 0; background: rgba(127,244,255,0.22); border-left: 2px solid #7ff4ff; border-right: 2px solid #7ff4ff; }
+.hk-win.done { background: rgba(127,255,170,0.4); }
+.hk-mark { position: absolute; top: -2px; bottom: -2px; width: 3px; margin-left: -1px; background: #ffd27a; box-shadow: 0 0 10px #ffb347; }
+.hk-log { min-height: 54px; margin-top: 12px; font-size: 12px; line-height: 1.5; color: #6fc8d6; }
+.hk-go { pointer-events: auto; margin-top: 8px; width: 100%; height: 40px; border: 1px solid #2e6a7a; background: #0c2630; color: #bff6ff; font: 600 14px/1 var(--title); letter-spacing: 0.4em; cursor: pointer; }
+.hk-go:hover { background: #12384a; }
+.hk-hint { margin-top: 10px; text-align: center; font: 11px var(--font); letter-spacing: 0.15em; color: #4a7a86; }

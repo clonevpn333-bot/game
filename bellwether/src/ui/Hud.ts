@@ -59,6 +59,7 @@ export class Hud {
   clock = '11:42 PM';
   private wpEl = el('div', 'waypoint', '<i></i><b></b>');
   private civicEl = el('div', 'civic');
+  private hackEl = el('div', 'hack');
   autopilot = false;
   onKeyCapture: ((fn: ((code: string, key: string) => boolean) | null) => void) | null = null;
   private echoCircle!: SVGCircleElement;
@@ -70,7 +71,7 @@ export class Hud {
     this.echoEl.innerHTML = `<svg viewBox="0 0 62 62"><circle cx="31" cy="31" r="26" fill="none" stroke="rgba(127,227,255,0.15)" stroke-width="3"/><circle class="arc" cx="31" cy="31" r="26" fill="none" stroke="#7fe3ff" stroke-width="3" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="0"/></svg><div class="lbl">ECHO</div>`;
     this.echoCircle = this.echoEl.querySelector('.arc') as SVGCircleElement;
     this.ammoEl.innerHTML = '<div class="wpn">M9 PISTOL</div><span class="mag">12</span><span class="res">/ 24</span>';
-    for (const e of [this.hurtEl, this.barsEl, this.subsEl, this.objEl, this.promptEl, this.reticleEl, this.dotEl, this.clusterEl, this.toastEl, this.chipEl, this.hintEl, this.cardEl, this.fadeEl, this.docEl, this.padEl, this.wpEl, this.civicEl, this.titleEl, this.pauseEl, this.creditsEl, this.loadingEl]) parent.appendChild(e);
+    for (const e of [this.hurtEl, this.barsEl, this.subsEl, this.objEl, this.promptEl, this.reticleEl, this.dotEl, this.clusterEl, this.toastEl, this.chipEl, this.hintEl, this.cardEl, this.fadeEl, this.docEl, this.padEl, this.hackEl, this.wpEl, this.civicEl, this.titleEl, this.pauseEl, this.creditsEl, this.loadingEl]) parent.appendChild(e);
   }
 
   get subBusy(): boolean {
@@ -279,6 +280,92 @@ export class Hud {
   }
 
   // ---------------------------------------------------------------- keypad
+  /**
+   * CIVIC intrusion minigame: stop the sweeping marker inside the highlighted window (E / Space / click)
+   * `stages` times. Misses just reset that stage; Esc gives up.
+   */
+  hack(title: string, stages = 3, onTick?: (ok: boolean) => void): Promise<boolean> {
+    if (this.autopilot) return Promise.resolve(true);
+    const el = this.hackEl;
+    el.innerHTML = `<div class="hk"><div class="hk-t">${title}</div><div class="hk-s"></div><div class="hk-bar"><div class="hk-win"></div><div class="hk-mark"></div></div><div class="hk-log"></div><button class="hk-go">LOCK</button><div class="hk-hint">E · SPACE · CLICK TO LOCK &nbsp;·&nbsp; ESC TO ABORT</div></div>`;
+    el.classList.add('on');
+    const win = el.querySelector('.hk-win') as HTMLElement;
+    const mark = el.querySelector('.hk-mark') as HTMLElement;
+    const log = el.querySelector('.hk-log') as HTMLElement;
+    const stEl = el.querySelector('.hk-s') as HTMLElement;
+    let stage = 0;
+    let pos = 0;
+    let dir = 1;
+    let speed = 0.55;
+    let w0 = 0;
+    let ww = 0.2;
+    let raf = 0;
+    let last = performance.now();
+    let lockout = 0;
+    const lines = ['> handshake: municipal records node', '> bypassing CIVIC trust layer', '> census index decrypted'];
+    const newStage = () => {
+      ww = 0.22 - stage * 0.04;
+      w0 = 0.1 + Math.random() * (0.8 - ww);
+      speed = 0.55 + stage * 0.25;
+      win.style.left = `${w0 * 100}%`;
+      win.style.width = `${ww * 100}%`;
+      stEl.innerHTML = Array.from({ length: stages }, (_, i) => `<i class="${i < stage ? 'ok' : i === stage ? 'cur' : ''}"></i>`).join('');
+    };
+    newStage();
+    return new Promise((res) => {
+      const finish = (ok: boolean) => {
+        cancelAnimationFrame(raf);
+        this.onKeyCapture?.(null);
+        window.setTimeout(() => {
+          el.classList.remove('on');
+          res(ok);
+        }, ok ? 700 : 0);
+      };
+      const lock = () => {
+        if (performance.now() < lockout) return;
+        const ok = pos >= w0 && pos <= w0 + ww;
+        onTick?.(ok);
+        if (ok) {
+          log.innerHTML += `<div>${lines[stage % lines.length]}</div>`;
+          stage++;
+          if (stage >= stages) {
+            stEl.innerHTML = Array.from({ length: stages }, () => '<i class="ok"></i>').join('');
+            win.classList.add('done');
+            finish(true);
+            return;
+          }
+          newStage();
+        } else {
+          el.querySelector('.hk')!.classList.add('bad');
+          lockout = performance.now() + 450;
+          window.setTimeout(() => el.querySelector('.hk')?.classList.remove('bad'), 300);
+        }
+      };
+      const tick = () => {
+        const now = performance.now();
+        const dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        pos += dir * speed * dt;
+        if (pos > 1) {
+          pos = 1;
+          dir = -1;
+        } else if (pos < 0) {
+          pos = 0;
+          dir = 1;
+        }
+        mark.style.left = `${pos * 100}%`;
+        raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+      (el.querySelector('.hk-go') as HTMLElement).addEventListener('click', lock);
+      this.onKeyCapture?.((codeK) => {
+        if (codeK === 'KeyE' || codeK === 'Space' || codeK === 'Enter') lock();
+        else if (codeK === 'Escape') finish(false);
+        return true;
+      });
+    });
+  }
+
   keypad(code: string, onDigit?: (d: string) => void): Promise<boolean> {
     if (this.autopilot) return Promise.resolve(true);
     let entry = '';

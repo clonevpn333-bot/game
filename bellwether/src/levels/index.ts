@@ -3,6 +3,7 @@ import type { Game, Script } from '../game/Game';
 import type { Weapon } from '../game/Player';
 import { prologue } from './prologue';
 import { ch1 } from './ch1';
+import { ch2 } from './ch2';
 
 export interface Chapter {
   id: string;
@@ -20,4 +21,4 @@ export interface Chapter {
   shots?: Record<string, (g: Game) => void>;
 }
 
-export const CHAPTERS: Chapter[] = [prologue, ch1];
+export const CHAPTERS: Chapter[] = [prologue, ch1, ch2];

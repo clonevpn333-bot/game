@@ -384,7 +384,7 @@ export class Player {
       // over the top: towards the ladder's back side
       const fx = -Math.sin(this.ladderYaw);
       const fz = -Math.cos(this.ladderYaw);
-      this.startTraverse('mantle', new THREE.Vector3(this.pos.x + fx * 0.9, this.top, this.pos.z + fz * 0.9), this.top, 0.7);
+      this.startTraverse('mantle', new THREE.Vector3(this.pos.x + fx * 1.3, this.top, this.pos.z + fz * 1.3), this.top, 0.75);
       return;
     }
     if ((mv.y < 0 && this.pos.y <= g.y + 0.02) || input.wasPressed('jump') || input.wasPressed('crouch')) {
