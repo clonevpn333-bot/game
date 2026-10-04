@@ -473,7 +473,8 @@ export class Player {
     const flick = G.uEcho.value > 0.3 ? 0.75 + 0.25 * Math.sin(performance.now() * 0.05) : 1;
     this.flashlight.intensity = damp(this.flashlight.intensity, want * flick, 20, dt);
     // stays visible (toggling would recompile shaders); just stop refreshing its shadow map when dark
-    this.flashlight.shadow.autoUpdate = this.flashlight.intensity > 0.5;
+    // the shadow map must exist (rendered at least once) or every lit material's sampler is invalid
+    this.flashlight.shadow.autoUpdate = this.flashlight.intensity > 0.5 || !this.flashlight.shadow.map;
     const origin = this.pos.clone().add(new THREE.Vector3(0, this.crouching ? 0.95 : 1.38, 0)).addScaledVector(new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw)), 0.25);
     origin.addScaledVector(new THREE.Vector3(Math.cos(this.yaw), 0, -Math.sin(this.yaw)), 0.12);
     this.flashlight.position.copy(origin);
