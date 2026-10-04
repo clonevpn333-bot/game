@@ -155,3 +155,46 @@ export class StaticBatcher {
 export function normalMatrixOf(m: THREE.Matrix4): THREE.Matrix3 {
   return _nm.getNormalMatrix(m);
 }
+
+/**
+ * Bakes a group of static meshes into one mesh per material (transforms relative to the group),
+ * for toggleable sets that can't go through the world batcher.
+ */
+export function mergeGroup(group: THREE.Group): THREE.Group {
+  group.updateMatrixWorld(true);
+  const inv = group.matrixWorld.clone().invert();
+  const byMat = new Map<THREE.Material, { geoms: THREE.BufferGeometry[]; cast: boolean }>();
+  const loose: THREE.Object3D[] = [];
+  group.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || o === group) return;
+    if (Array.isArray(m.material) || m.userData.billboard) {
+      loose.push(o);
+      return;
+    }
+    const g = m.geometry.clone();
+    g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld));
+    let e = byMat.get(m.material);
+    if (!e) byMat.set(m.material, (e = { geoms: [], cast: false }));
+    e.geoms.push(g);
+    e.cast ||= m.castShadow;
+  });
+  const out = new THREE.Group();
+  out.position.copy(group.position);
+  out.quaternion.copy(group.quaternion);
+  out.scale.copy(group.scale);
+  for (const [mat, e] of byMat) {
+    const merged = mergeGeometries(e.geoms, false);
+    for (const g of e.geoms) g.dispose();
+    if (!merged) continue;
+    const mesh = new THREE.Mesh(merged, mat);
+    mesh.castShadow = e.cast;
+    mesh.receiveShadow = true;
+    out.add(mesh);
+  }
+  for (const o of loose) {
+    o.parent!.remove(o);
+    out.add(o);
+  }
+  return out;
+}

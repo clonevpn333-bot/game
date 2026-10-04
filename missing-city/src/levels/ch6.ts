@@ -9,6 +9,7 @@ import type { World } from '../world/World';
 import type { Game, Script } from '../game/Game';
 import { CIVILIANS } from '../actors/Characters';
 import { G } from '../render/Globals';
+import { mergeGroup } from '../render/Batcher';
 
 const FY = 24; // "floor 61"
 const LY = 12; // floor below
@@ -50,7 +51,7 @@ function officeSet(kind: Reality | 'past', y: number): THREE.Group {
     }
   }
   g.traverse((o) => ((o as THREE.Mesh).castShadow = true));
-  return g;
+  return mergeGroup(g);
 }
 
 function buildTower(W: World, g: Game): Tower {
