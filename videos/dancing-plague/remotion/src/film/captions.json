@@ -1,0 +1,698 @@
+[
+ {
+  "text": " In",
+  "startMs": 430,
+  "endMs": 1120,
+  "timestampMs": 775,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " July",
+  "startMs": 1120,
+  "endMs": 2320,
+  "timestampMs": 1720,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " 1518,",
+  "startMs": 2320,
+  "endMs": 3010,
+  "timestampMs": 2665,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " a",
+  "startMs": 3320,
+  "endMs": 3541,
+  "timestampMs": 3430,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " woman",
+  "startMs": 3541,
+  "endMs": 3925,
+  "timestampMs": 3733,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " stepped",
+  "startMs": 3925,
+  "endMs": 4309,
+  "timestampMs": 4117,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " into",
+  "startMs": 4309,
+  "endMs": 4694,
+  "timestampMs": 4502,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " a",
+  "startMs": 4694,
+  "endMs": 4914,
+  "timestampMs": 4804,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " street",
+  "startMs": 4914,
+  "endMs": 5135,
+  "timestampMs": 5024,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " in",
+  "startMs": 5135,
+  "endMs": 5356,
+  "timestampMs": 5246,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " Strasbourg...",
+  "startMs": 5356,
+  "endMs": 5740,
+  "timestampMs": 5548,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " and",
+  "startMs": 6220,
+  "endMs": 6441,
+  "timestampMs": 6330,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " began",
+  "startMs": 6441,
+  "endMs": 6827,
+  "timestampMs": 6634,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " to",
+  "startMs": 6827,
+  "endMs": 7049,
+  "timestampMs": 6938,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " dance.",
+  "startMs": 7049,
+  "endMs": 7270,
+  "timestampMs": 7159,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " No",
+  "startMs": 7650,
+  "endMs": 7894,
+  "timestampMs": 7772,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " music.",
+  "startMs": 7894,
+  "endMs": 8320,
+  "timestampMs": 8107,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " She",
+  "startMs": 8550,
+  "endMs": 8808,
+  "timestampMs": 8679,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " just",
+  "startMs": 8808,
+  "endMs": 9065,
+  "timestampMs": 8936,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " couldn't",
+  "startMs": 9065,
+  "endMs": 9322,
+  "timestampMs": 9194,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " stop.",
+  "startMs": 9322,
+  "endMs": 9580,
+  "timestampMs": 9451,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " Within",
+  "startMs": 9960,
+  "endMs": 10414,
+  "timestampMs": 10187,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " days,",
+  "startMs": 10414,
+  "endMs": 10675,
+  "timestampMs": 10544,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " more",
+  "startMs": 10675,
+  "endMs": 10936,
+  "timestampMs": 10806,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " than",
+  "startMs": 10936,
+  "endMs": 11196,
+  "timestampMs": 11066,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " thirty",
+  "startMs": 11196,
+  "endMs": 11650,
+  "timestampMs": 11423,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " people",
+  "startMs": 11650,
+  "endMs": 12104,
+  "timestampMs": 11877,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " were",
+  "startMs": 12104,
+  "endMs": 12365,
+  "timestampMs": 12234,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " dancing.",
+  "startMs": 12365,
+  "endMs": 12819,
+  "timestampMs": 12592,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " By",
+  "startMs": 12819,
+  "endMs": 13080,
+  "timestampMs": 12950,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " the",
+  "startMs": 13080,
+  "endMs": 13341,
+  "timestampMs": 13210,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " end,",
+  "startMs": 13341,
+  "endMs": 13601,
+  "timestampMs": 13471,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " nearly",
+  "startMs": 13601,
+  "endMs": 14055,
+  "timestampMs": 13828,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " four",
+  "startMs": 14055,
+  "endMs": 14316,
+  "timestampMs": 14186,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " hundred.",
+  "startMs": 14316,
+  "endMs": 14770,
+  "timestampMs": 14543,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " The",
+  "startMs": 15170,
+  "endMs": 15411,
+  "timestampMs": 15290,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " city's",
+  "startMs": 15411,
+  "endMs": 15829,
+  "timestampMs": 15620,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " cure?",
+  "startMs": 15829,
+  "endMs": 16070,
+  "timestampMs": 15950,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " More",
+  "startMs": 16280,
+  "endMs": 16554,
+  "timestampMs": 16417,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " dancing.",
+  "startMs": 16554,
+  "endMs": 17030,
+  "timestampMs": 16792,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " They",
+  "startMs": 17390,
+  "endMs": 17616,
+  "timestampMs": 17503,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " built",
+  "startMs": 17616,
+  "endMs": 17843,
+  "timestampMs": 17730,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " stages",
+  "startMs": 17843,
+  "endMs": 18237,
+  "timestampMs": 18040,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " and",
+  "startMs": 18237,
+  "endMs": 18464,
+  "timestampMs": 18350,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " hired",
+  "startMs": 18464,
+  "endMs": 18858,
+  "timestampMs": 18661,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " musicians.",
+  "startMs": 18858,
+  "endMs": 19420,
+  "timestampMs": 19139,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " It",
+  "startMs": 19750,
+  "endMs": 19973,
+  "timestampMs": 19862,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " only",
+  "startMs": 19973,
+  "endMs": 20361,
+  "timestampMs": 20167,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " made",
+  "startMs": 20361,
+  "endMs": 20584,
+  "timestampMs": 20472,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " it",
+  "startMs": 20584,
+  "endMs": 20807,
+  "timestampMs": 20696,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " worse.",
+  "startMs": 20807,
+  "endMs": 21030,
+  "timestampMs": 20918,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " Was",
+  "startMs": 21460,
+  "endMs": 21745,
+  "timestampMs": 21602,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " it",
+  "startMs": 21745,
+  "endMs": 22029,
+  "timestampMs": 21887,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " poison?",
+  "startMs": 22029,
+  "endMs": 22525,
+  "timestampMs": 22277,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " Ergot,",
+  "startMs": 22525,
+  "endMs": 23020,
+  "timestampMs": 22772,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " a",
+  "startMs": 23020,
+  "endMs": 23305,
+  "timestampMs": 23162,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " fungus",
+  "startMs": 23305,
+  "endMs": 23800,
+  "timestampMs": 23553,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " on",
+  "startMs": 23800,
+  "endMs": 24085,
+  "timestampMs": 23943,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " damp",
+  "startMs": 24085,
+  "endMs": 24369,
+  "timestampMs": 24227,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " rye,",
+  "startMs": 24369,
+  "endMs": 24654,
+  "timestampMs": 24511,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " can",
+  "startMs": 24654,
+  "endMs": 24938,
+  "timestampMs": 24796,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " cause",
+  "startMs": 24938,
+  "endMs": 25223,
+  "timestampMs": 25080,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " spasms",
+  "startMs": 25223,
+  "endMs": 25508,
+  "timestampMs": 25365,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " and",
+  "startMs": 25508,
+  "endMs": 25792,
+  "timestampMs": 25650,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " hallucinations.",
+  "startMs": 25792,
+  "endMs": 26920,
+  "timestampMs": 26356,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " But",
+  "startMs": 27310,
+  "endMs": 27476,
+  "timestampMs": 27393,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " most",
+  "startMs": 27476,
+  "endMs": 27642,
+  "timestampMs": 27559,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " historians",
+  "startMs": 27642,
+  "endMs": 28053,
+  "timestampMs": 27848,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " suspect",
+  "startMs": 28053,
+  "endMs": 28341,
+  "timestampMs": 28197,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " fear:",
+  "startMs": 28341,
+  "endMs": 28507,
+  "timestampMs": 28424,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " a",
+  "startMs": 28507,
+  "endMs": 28673,
+  "timestampMs": 28590,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " city",
+  "startMs": 28673,
+  "endMs": 28961,
+  "timestampMs": 28817,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " starving,",
+  "startMs": 28961,
+  "endMs": 29250,
+  "timestampMs": 29106,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " sick,",
+  "startMs": 29640,
+  "endMs": 30910,
+  "timestampMs": 30275,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " and",
+  "startMs": 31280,
+  "endMs": 31485,
+  "timestampMs": 31382,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " terrified",
+  "startMs": 31485,
+  "endMs": 31994,
+  "timestampMs": 31740,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " of",
+  "startMs": 31994,
+  "endMs": 32200,
+  "timestampMs": 32097,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " a",
+  "startMs": 32200,
+  "endMs": 32405,
+  "timestampMs": 32303,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " curse.",
+  "startMs": 32405,
+  "endMs": 32610,
+  "timestampMs": 32508,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " Fear,",
+  "startMs": 33070,
+  "endMs": 33345,
+  "timestampMs": 33207,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " it",
+  "startMs": 33345,
+  "endMs": 33619,
+  "timestampMs": 33482,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " seems,",
+  "startMs": 33619,
+  "endMs": 33894,
+  "timestampMs": 33756,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " can",
+  "startMs": 33894,
+  "endMs": 34168,
+  "timestampMs": 34031,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " make",
+  "startMs": 34168,
+  "endMs": 34443,
+  "timestampMs": 34305,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " a",
+  "startMs": 34443,
+  "endMs": 34717,
+  "timestampMs": 34580,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " body",
+  "startMs": 34717,
+  "endMs": 35195,
+  "timestampMs": 34956,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " dance.",
+  "startMs": 35195,
+  "endMs": 35470,
+  "timestampMs": 35332,
+  "confidence": 1,
+  "line": 8
+ }
+]
