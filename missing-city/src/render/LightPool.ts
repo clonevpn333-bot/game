@@ -114,9 +114,9 @@ export class LightPool {
     for (let i = 0; i < this.lights.length; i++) {
       const s = this.assigned[i];
       const l = this.lights[i];
+      // never toggle visibility: a change in visible light count recompiles every material
       if (!s) {
         l.intensity = 0;
-        l.visible = false;
         continue;
       }
       const stale = (l.userData as { stale?: boolean }).stale;
@@ -126,7 +126,6 @@ export class LightPool {
         l.intensity = 0;
         continue;
       }
-      l.visible = true;
       l.position.copy(s.pos);
       l.color.copy(s.color);
       l.distance = s.distance;

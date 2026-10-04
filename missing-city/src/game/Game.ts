@@ -68,6 +68,8 @@ export class Game {
   private time = 0;
   private frame = 0;
   private paused4shot = false;
+  /** Wall-clock step for cutscene tweens and scripted world motion. */
+  private sdt = 0.016;
   settings: Settings = { master: 0.9, music: 0.7, sfx: 0.9, sensitivity: 1, invertY: false, quality: 'high', subtitles: true, subSize: 1 };
   save = { chapter: 0, unlocked: 0, started: false };
   private titleT = 0;
@@ -410,7 +412,11 @@ export class Game {
   private loop = (): void => {
     requestAnimationFrame(this.loop);
     const now = performance.now();
-    const dt = Math.min(0.05, (now - this.lastTime) / 1000);
+    const real = (now - this.lastTime) / 1000;
+    // physics wants small steps; cutscenes and scripted motion follow the wall clock so they
+    // keep their timing on slow machines
+    const dt = Math.min(0.05, real);
+    this.sdt = Math.min(0.25, real);
     this.lastTime = now;
     this.frame++;
     this.input.pollGamepad();
@@ -459,7 +465,7 @@ export class Game {
       const camDir = cam.getWorldDirection(new THREE.Vector3());
       for (const e of this.enemies) e.update(dt, this.physics, this.player, { camPos: cam.position, camDir, flashlightOn: this.player.flashlightOn, echo: this.echo.t });
       this.enemies = this.enemies.filter((e) => !e.removed);
-      for (const u of world.updaters) u(dt, this.time);
+      for (const u of world.updaters) u(this.sdt, this.time);
       // reyes covering fire
       const reyes = this.npcs.get('reyes');
       if (reyes?.shooter) this.companionFire(reyes, dt);
@@ -479,7 +485,7 @@ export class Game {
       this.updateInteract(ctl);
     } else this.hud.prompt(null);
     // cinematic camera overrides gameplay camera
-    if (this.cine.active) this.updateCine(dt, cam);
+    if (this.cine.active) this.updateCine(this.sdt, cam);
     if (this.state === 'title') this.updateTitleCam(dt, cam);
     // death
     if (playing && this.player?.state === 'dead' && !this.deathHandling) {

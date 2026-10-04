@@ -147,6 +147,14 @@ export class Engine {
     this.maxDpr = q === 'high' ? Math.min(window.devicePixelRatio || 1, 1.75) : q === 'medium' ? 1.15 : 0.85;
     this.renderer.shadowMap.enabled = q !== 'low';
     this.bloom.enabled = q !== 'low';
+    // multisampling is the costliest part of the post chain on weak GPUs
+    const samples = q === 'low' ? 0 : 4;
+    for (const rt of [this.composer.renderTarget1, this.composer.renderTarget2]) {
+      if (rt.samples !== samples) {
+        rt.samples = samples;
+        rt.dispose();
+      }
+    }
     this.resize(true);
   }
 
