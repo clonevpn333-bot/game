@@ -178,3 +178,13 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color:
   .panel label { margin: 6px 0; font-size: 12px; }
   .panel input[type=range] { width: 110px; }
 }
+
+/* short windows: keep the title and the menu from overlapping */
+@media (max-height: 620px) {
+  .title-screen .brand { top: 5vh; }
+  .title-screen .clock { font-size: 11px; margin-bottom: 6px; }
+  .title-screen h1 { font-size: clamp(26px, 9vh, 60px); }
+  .title-screen .tag { margin-top: 8px; font-size: 11px; }
+  .menu-list { bottom: 5vh; gap: 0; }
+  .menu-list button { font-size: clamp(13px, 3.6vh, 19px); padding: 3px 0 3px 22px; }
+}
