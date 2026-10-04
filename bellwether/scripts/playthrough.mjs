@@ -10,7 +10,8 @@ page.on('pageerror', (e) => errs.push('pageerror: ' + e.message + '\n' + (e.stac
 await page.addInitScript(() => { window.__shot = true; });
 await page.goto(process.env.URL || 'http://127.0.0.1:5190/');
 await page.waitForFunction(() => window.__THREE_GAME_DIAGNOSTICS__?.frame > 5 && !document.getElementById('boot-msg'), null, { timeout: 300000 });
-await page.evaluate((start) => { const g = window.__THREE_GAME_TEST_HOOKS__.game; g.autopilot = true; g.hud.autopilot = true; g.startChapter(start); }, start);
+await page.evaluate((c) => { window.__autoChoice = c; }, process.env.CHOICE || '0');
+await page.evaluate((start) => { const g = window.__THREE_GAME_TEST_HOOKS__.game; g.autopilot = true; g.hud.autopilot = true; g.hud.autoChoice = +(window.__autoChoice || 0); g.startChapter(start); }, start);
 const t0 = Date.now();
 let last = '';
 while (Date.now() - t0 < limitMin * 60000) {

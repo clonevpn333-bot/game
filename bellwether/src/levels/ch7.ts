@@ -18,7 +18,7 @@ const WHITE: EnvSettings = {
   sky: SKY.void, fog: '#aeb9be', fogDensity: 0.0035, rain: 0, envKind: 'interior', exposure: 0.82,
   hemi: ['#e4eef2', '#6a7478', 0.9], reverb: [3.6, 0.35], bloom: 0.6, grade: { sat: 0.9, vignette: 0.6 }, indoorRain: false,
 };
-const C = V(0, 0, 120);
+export const C = V(0, 0, 120);
 const NAMES = ['ELLIE VALE · 8', 'MARGARET VALE · 46', 'THOMAS VALE · 49', 'DANIEL OKAFOR · 34', 'RUTH ABRAMS · 81', 'LEO PARK · 12', 'AMINA HASSAN · 29', 'GRACE LIU · 7', 'SAMUEL REED · 63', 'NOOR SAID · 40', 'OWEN BRIGGS · 17', 'HANNAH KOVAC · 55'];
 
 function buildLobby(W: World): void {
@@ -47,7 +47,7 @@ function buildLobby(W: World): void {
   W.boxC([0, 1.6, 29.85], [2.6, 3.2, 0.1], new THREE.MeshStandardMaterial({ color: '#c7cfd2', roughness: 0.2, metalness: 0.9 }), 0, { collide: false });
 }
 
-function buildCore(W: World, g: Game): void {
+export function buildCore(W: World, g: Game): void {
   const L = M();
   const floor = new THREE.MeshStandardMaterial({ color: '#c4ccd0', roughness: 0.12, metalness: 0.1, envMapIntensity: 1.4 });
   // bridge from the lift

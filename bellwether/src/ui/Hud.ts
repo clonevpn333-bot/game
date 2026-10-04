@@ -263,6 +263,17 @@ export class Hud {
     await wait(1200);
   }
 
+  /** The closing question: lead lines fade in one by one over black, then the question itself. */
+  async question(lead: string[], q: string, hold = 7): Promise<void> {
+    if (this.autopilot) return;
+    this.cardEl.innerHTML = `<div class="in qcard">${lead.map((l, i) => `<div class="qlead" style="animation-delay:${0.6 + i * 1.6}s">${l}</div>`).join('')}<div class="qmain" style="animation-delay:${1.2 + lead.length * 1.6}s">${q}</div></div>`;
+    void this.cardEl.offsetWidth;
+    this.cardEl.classList.add('on');
+    await wait((1.2 + lead.length * 1.6 + hold) * 1000);
+    this.cardEl.classList.remove('on');
+    await wait(1600);
+  }
+
   // ---------------------------------------------------------------- document reader
   doc(title: string, body: string): Promise<void> {
     if (this.autopilot) return Promise.resolve();

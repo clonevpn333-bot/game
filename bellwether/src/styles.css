@@ -241,3 +241,10 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color:
 .ch-s { color: #aab2bc; font-size: 14px; line-height: 1.5; }
 .ch-k { color: #7ff4ff; font-size: 12px; letter-spacing: 0.2em; }
 .ch-h { margin-top: 26px; color: var(--dim); letter-spacing: 0.22em; font-size: 12px; }
+
+/* ---- the closing question */
+.card .qcard { width: min(1000px, 90vw); z-index: 17; }
+.card .qlead, .card .qmain { opacity: 0; animation: qIn 2.2s ease forwards; font-family: var(--title); }
+.card .qlead { font-size: clamp(15px, 2vw, 24px); letter-spacing: 0.22em; color: #c9ccd2; margin: 10px 0; text-transform: uppercase; }
+.card .qmain { margin-top: 42px; font-size: clamp(26px, 4.4vw, 58px); letter-spacing: 0.12em; color: #ffffff; text-transform: uppercase; font-weight: 400; }
+@keyframes qIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
