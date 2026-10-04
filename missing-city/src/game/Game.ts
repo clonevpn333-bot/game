@@ -77,6 +77,9 @@ export class Game {
   private lastTime = performance.now();
   onCutsceneSkip: (() => void) | null = null;
   flashlightAllowed = true;
+  /** test-only: scripts fast-forward and objectives auto-complete */
+  autopilot = false;
+  autoLog: string[] = [];
 
   constructor(canvas: HTMLCanvasElement, uiRoot: HTMLElement) {
     this.engine = new Engine(canvas);
@@ -493,7 +496,13 @@ export class Game {
     this.rain.update(cam, this.indoorK);
     if (world && Math.floor(this.time * 2) !== Math.floor((this.time - dt) * 2)) audio.setRain(world.env.rain * (G.uRainDir.value < 0 ? 0.6 : 1), indoor > 0.5);
     this.lights.update(dt, this.time, this.player?.pos ?? cam.position);
-    for (const b of this.billboards) b.quaternion.copy(cam.quaternion);
+    for (const b of this.billboards) {
+      b.quaternion.copy(cam.quaternion);
+      // glows right at the lens read as blown-out blobs: shrink them away near the camera
+      const base = (b.userData.baseScale as number | undefined) ?? (b.userData.baseScale = b.scale.x);
+      const d = b.position.distanceTo(cam.position);
+      b.scale.setScalar(base * THREE.MathUtils.smoothstep(d, 0.8, 3.5));
+    }
     if (this.moon.intensity > 0) {
       const d = (this.moon.userData.dir as THREE.Vector3) ?? new THREE.Vector3(0.3, 1, 0.2);
       const c = this.player?.pos ?? cam.position;
@@ -708,7 +717,12 @@ export class Script {
     return this.g.player;
   }
 
+  private get ap(): boolean {
+    return this.g.autopilot;
+  }
+
   async wait(sec: number): Promise<void> {
+    if (this.ap) sec *= 0.05;
     const end = performance.now() + sec * 1000;
     while (performance.now() < end) {
       await sleep(Math.min(100, end - performance.now()));
@@ -720,17 +734,28 @@ export class Script {
     }
   }
 
-  async until(pred: () => boolean, poll = 80): Promise<void> {
+  async until(pred: () => boolean, poll = 80, label = 'until'): Promise<void> {
+    const t0 = performance.now();
     while (!pred()) {
       await sleep(poll);
       this.check();
+      if (this.ap) {
+        const g = this.g;
+        g.player.flashlightOn = true;
+        if (g.echo.unlocked && !g.echo.active) g.echo.enter(8, true);
+        for (const e of g.enemies) if (!e.dead) e.damage(999, e.pos);
+        if (performance.now() - t0 > 6000) {
+          g.autoLog.push(`[${g.chapter?.id}] stuck at ${label} → forced`);
+          return;
+        }
+      }
     }
   }
 
   /** Spoken line. who: speaker label; actor names map to NPC talk animation. */
   async say(who: string, text: string, o: { radio?: boolean; dur?: number; actor?: string } = {}): Promise<void> {
     this.check();
-    const dur = o.dur ?? Math.max(1.9, 1.0 + text.length * 0.056);
+    const dur = this.ap ? 0.03 : o.dur ?? Math.max(1.9, 1.0 + text.length * 0.056);
     const key = (o.actor ?? who).toLowerCase();
     const npc = this.g.npcs.get(key);
     const speaker = npc?.actor ?? (key === 'elias' ? this.g.player.actor : null);
@@ -773,11 +798,16 @@ export class Script {
 
   async zone(min: [number, number, number], max: [number, number, number]): Promise<void> {
     const box = new THREE.Box3(new THREE.Vector3(...min), new THREE.Vector3(...max));
-    await this.until(() => box.containsPoint(this.g.player.pos.clone().add(new THREE.Vector3(0, 0.9, 0))));
+    if (this.ap) {
+      const c = box.getCenter(new THREE.Vector3());
+      this.g.player.teleport(new THREE.Vector3(c.x, min[1] + 0.2, c.z), this.g.player.yaw);
+    }
+    await this.until(() => box.containsPoint(this.g.player.pos.clone().add(new THREE.Vector3(0, 0.9, 0))), 80, `zone ${min.join(',')}`);
   }
 
   near(p: THREE.Vector3, r: number): Promise<void> {
-    return this.until(() => this.g.player.pos.distanceTo(p) < r);
+    if (this.ap) this.g.player.teleport(p.clone().add(new THREE.Vector3(0.3, 0, 0.3)), this.g.player.yaw);
+    return this.until(() => this.g.player.pos.distanceTo(p) < r, 80, 'near');
   }
 
   /** Register an interactable and await its use. */
@@ -790,6 +820,7 @@ export class Script {
           res();
         },
       });
+      if (this.ap) window.setTimeout(() => it.enabled && it.onUse(), 150);
       const tk = this.token;
       const poll = window.setInterval(() => {
         if (tk !== this.g.scriptToken) {
@@ -836,6 +867,7 @@ export class Script {
       c.look.copy(this.g.engine.camera.position.clone().add(this.g.engine.camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(5)));
       c.fov = this.g.engine.camera.fov;
     }
+    if (this.ap) dur = 0.05;
     return new Promise<void>((res) => {
       c.tween = { t: 0, dur, p0: c.pos.clone(), p1: pos.clone(), l0: c.look.clone(), l1: look.clone(), f0: c.fov, f1: fov ?? c.fov, ease, done: res };
     }).then(() => this.check());
@@ -847,11 +879,12 @@ export class Script {
   }
 
   async fade(to: number, sec = 1, white = false): Promise<void> {
-    await this.g.hud.fade(to, sec, white);
+    await this.g.hud.fade(to, this.ap ? 0.02 : sec, white);
     this.check();
   }
 
   async card(num: string, title: string, sub = ''): Promise<void> {
+    if (this.ap) return;
     await this.g.hud.chapterCard(num, title, sub);
     this.check();
   }

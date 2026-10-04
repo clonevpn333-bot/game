@@ -56,6 +56,7 @@ export class Hud {
   private chipTimer = 0;
   private objTimer = 0;
   subtitlesOn = true;
+  autopilot = false;
   onKeyCapture: ((fn: ((code: string, key: string) => boolean) | null) => void) | null = null;
   private echoCircle!: SVGCircleElement;
 
@@ -193,6 +194,7 @@ export class Hud {
   }
 
   async fade(to: number, sec = 1, white = false): Promise<void> {
+    if (this.autopilot) sec = 0.02;
     this.fadeEl.classList.toggle('white', white);
     this.fadeEl.style.transition = `opacity ${sec}s`;
     void this.fadeEl.offsetWidth;
@@ -206,6 +208,7 @@ export class Hud {
   }
 
   async chapterCard(num: string, title: string, sub = '', hold = 3.2): Promise<void> {
+    if (this.autopilot) return;
     this.cardEl.innerHTML = `<div class="in"><div class="num">${num}</div><div class="ttl">${title}</div><div class="line"></div>${sub ? `<div class="sub2">${sub}</div>` : ''}</div>`;
     void this.cardEl.offsetWidth;
     this.cardEl.classList.add('on');
@@ -216,6 +219,7 @@ export class Hud {
 
   // ---------------------------------------------------------------- document reader
   doc(title: string, body: string): Promise<void> {
+    if (this.autopilot) return Promise.resolve();
     this.docEl.innerHTML = `<div><div class="paper"><h3>${title}</h3>${body}</div><div class="hint">[E] / [ESC] CLOSE</div></div>`;
     this.docEl.classList.add('on');
     return new Promise((res) => {
@@ -234,6 +238,7 @@ export class Hud {
 
   // ---------------------------------------------------------------- keypad
   keypad(code: string, onDigit?: (d: string) => void): Promise<boolean> {
+    if (this.autopilot) return Promise.resolve(true);
     let entry = '';
     this.padEl.innerHTML = `<div class="pad"><div class="disp">····</div><div class="keys">${'123456789C0E'.split('').map((k) => `<button data-k="${k}">${k === 'C' ? '⌫' : k === 'E' ? '✓' : k}</button>`).join('')}</div><div class="hint">TYPE DIGITS · ENTER · ESC</div></div>`;
     this.padEl.classList.add('on');
@@ -383,6 +388,7 @@ export class Hud {
   }
 
   async credits(lines: [string, string][], sec = 48): Promise<void> {
+    if (this.autopilot) sec = 1;
     this.creditsEl.innerHTML = `<div class="roll"><h2>THE MISSING CITY</h2>${lines.map(([a, b]) => `<p>${a}<b>${b}</b></p>`).join('')}<p style="margin-top:140px">BELLWETHER, 2:17 AM</p><b style="margin-bottom:40vh">— for everyone still waiting for someone to come home —</b></div>`;
     this.creditsEl.classList.add('on');
     const roll = this.creditsEl.querySelector('.roll') as HTMLElement;

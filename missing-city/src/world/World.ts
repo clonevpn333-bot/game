@@ -254,6 +254,14 @@ export class World {
 
   dispose(): void {
     for (const d of this.disposers) d();
+    const seen = new Set<THREE.BufferGeometry>();
+    this.dynamic.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh && !(o as THREE.SkinnedMesh).isSkinnedMesh && m.geometry && !seen.has(m.geometry)) {
+        seen.add(m.geometry);
+        m.geometry.dispose();
+      }
+    });
     this.root.traverse((o) => {
       const m = o as THREE.Mesh;
       if (m.isMesh && this.batcher.meshes.includes(m)) m.geometry.dispose();
