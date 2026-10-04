@@ -18,13 +18,13 @@
     const x = L.lerp(230, 540, walk);
     const dancing = T >= 7.0;
     const tw = L.onTwos(t);
-    W.dancer(ctx, x, 1600, 1.15, dancing ? (info.shot.start + tw - 7.0) * 9 : 0, { still: !dancing });
+    const moving = T > 3.9 && T < 4.8;
+    W.dancer(ctx, x, 1600, 1.15, dancing ? (info.shot.start + tw - 7.0) * 9 : moving ? (info.shot.start + tw) * 7 : 0, { still: !dancing && !moving, walk: moving });
     if (dancing && T < 7.4) {
       // a burst of woodcut motion lines on the first step
       ctx.strokeStyle = P.wcRed; ctx.lineWidth = 5;
       for (let k = 0; k < 10; k++) { const a = (k / 10) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * 340, 1100 + Math.sin(a) * 420); ctx.lineTo(x + Math.cos(a) * 400, 1100 + Math.sin(a) * 490); ctx.stroke(); }
     }
-    W.porthole(ctx, PH[0], PH[1], PH[2]);
     W.frame(ctx);
   } });
   FILM.scene({ id: 'she-dances-fg', draw(ctx) { FILM.wc.porthole(ctx, PH[0], PH[1], PH[2], { ring: true }); } });

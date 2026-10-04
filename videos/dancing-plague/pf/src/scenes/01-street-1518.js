@@ -8,7 +8,8 @@
     const z = 1 + 0.06 * L.ease.inOutSine(t / info.dur);
     ctx.save(); ctx.translate(540, 1100); ctx.scale(z, z); ctx.translate(-540, -1100);
     W.street(ctx, T);
-    W.dancer(ctx, 540, 1500, 0.42, 0, { still: true });
+    const wk = L.clamp(t / 3.25);
+    W.dancer(ctx, L.lerp(470, 540, wk), L.lerp(1360, 1520, wk), L.lerp(0.32, 0.46, wk), L.onTwos(t) * 7, { walk: true });
     ctx.restore();
     // the printed title ribbon
     const a = L.clamp((T - 0.4) / 0.3);
@@ -20,8 +21,6 @@
       ctx.restore();
       L.text(ctx, 'STRASSBURG', 540, 410, { size: 26, family: '"JetBrains Mono", monospace', weight: 600, align: 'center', color: P.wcInk, alpha: a, tracking: '0.6em' });
     }
-    const r = PH[2] * L.ease.outBack(L.clamp((T - 1.1) / 0.35));
-    W.porthole(ctx, PH[0], PH[1], r);
     W.frame(ctx);
   } });
   FILM.scene({ id: 'street-1518-fg', draw(ctx, tIn, info) {

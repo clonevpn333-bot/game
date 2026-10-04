@@ -162,7 +162,6 @@ def build_sfx():
     s = np.zeros(N + 3 * SR)
     P = lambda x, at, g=1.0: place(s, x, at, g)
     P(stamp(), 0.42, 0.4)  # the title block is printed
-    P(pop(600, 0.08), 1.15, 0.35); P(sparkle(0.6, 8, 3), 1.2, 0.2)  # Pip's porthole opens
     for k in range(4):
         P(thud(150), 3.95 + k * 0.22, 0.2)  # footsteps on cobbles
     P(boing(0.4, 180), 7.05, 0.3)  # the first step of the dance
@@ -184,7 +183,7 @@ def build_sfx():
     P(sparkle(0.8, 10, 5), 33.0, 0.2)
     P(boing(0.4, 220), 35.18, 0.3)  # the involuntary hop
     P(sparkle(1.0, 12, 7), 37.6, 0.2)
-    P(pop(800, 0.06), 39.15, 0.35); P(ding(2093, 1.0), 39.2, 0.2)
+    P(ding(2093, 1.0), 39.1, 0.2)
     return reverb(s[:N], 1.3, 0.2)
 
 

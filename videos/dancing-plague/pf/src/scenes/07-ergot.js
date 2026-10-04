@@ -49,7 +49,6 @@
       for (let k = 0; k < 9; k++) { ctx.beginPath(); for (let a = 0; a < Math.PI * 2; a += 0.05) { const rr = 120 + k * 90 + Math.sin(a * 6 + T * 4 + k) * 22; const xx = 540 + Math.cos(a + T * 0.6) * rr, yy = 960 + Math.sin(a + T * 0.6) * rr * 1.3; if (a === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy); } ctx.closePath(); ctx.stroke(); }
       ctx.restore();
     }
-    W.porthole(ctx, PH[0], PH[1], PH[2]);
     W.frame(ctx);
   } });
   FILM.scene({ id: 'ergot-fg', draw(ctx) { FILM.wc.porthole(ctx, PH[0], PH[1], PH[2], { ring: true }); } });

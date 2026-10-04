@@ -14,7 +14,6 @@
     const pos = [];
     for (let i = 0; i < 160; i++) { const k = Math.pow(r(), 0.7); pos.push([540 + (r() - 0.5) * L.lerp(220, 1300, k), L.lerp(760, 1880, k), L.lerp(0.08, 0.5, k), r() * 6, r() > 0.5]); }
     pos.slice(0, shown).sort((a, b) => a[1] - b[1]).forEach(([x, y, s, ph, man]) => W.dancer(ctx, x, y, s, (tw - 7) * 9 + ph, { kind: man ? 'man' : 'woman', flip: ph > 3 }));
-    W.porthole(ctx, PH[0], PH[1], PH[2]);
     // counter PiP
     const pp = L.clamp((T - 10.4) / 0.3);
     M.pip(ctx, { kind: 'rect', x: 80, y: 220, w: 420, h: 240, p: pp, label: 'DANCERS', plate: 'paper' }, (g) => {

@@ -1097,13 +1097,14 @@
   wc.dancer = function dancer(ctx, x, y, s, ph, o = {}) {
     const ink = INK();
     const kind = o.kind || 'woman';
-    const still = !!o.still;
-    const a = still ? 0 : Math.sin(ph), b = still ? 0 : Math.cos(ph * 0.5);
-    const hop = still ? 0 : Math.max(0, Math.sin(ph * 2)) * 26;
+    const walk = !!o.walk;
+    const still = !!o.still && !walk;
+    const a = still ? 0 : Math.sin(ph) * (walk ? 0.55 : 1), b = still ? 0 : Math.cos(ph * 0.5);
+    const hop = still ? 0 : walk ? Math.abs(Math.cos(ph)) * 10 : Math.max(0, Math.sin(ph * 2)) * 26;
     ctx.save();
     ctx.translate(x, y - hop * s);
     ctx.scale(s * (o.flip ? -1 : 1), s);
-    ctx.rotate(still ? 0 : a * 0.12);
+    ctx.rotate(still || walk ? a * 0.02 : a * 0.12);
     ctx.lineJoin = 'miter';
     ctx.lineCap = 'butt';
     const limb = (x0, y0, len, ang, w) => {
@@ -1146,6 +1147,10 @@
       limb(sh[0], sh[1], 110, 2.4 + a * 0.4, 14); limb(sh2[0], sh2[1], 110, -2.4 + a * 0.4, 14);
       ctx.beginPath(); ctx.ellipse(0, -360, 70, 40, 0, 0, TAU); ctx.fillStyle = '#EFE4CA'; ctx.fill(); ctx.strokeStyle = ink; ctx.lineWidth = 5; ctx.stroke();
       ctx.fillStyle = ink; ctx.fillRect(-70, -360, 140, 70);
+    } else if (walk || still) {
+      // walking / standing: arms hang and swing against the stride
+      const e1 = limb(sh[0], sh[1], 100, Math.PI + 0.12 - a * 0.45, 14); limb(e1[0], e1[1], 90, Math.PI + 0.05 - a * 0.6, 12);
+      const e2 = limb(sh2[0], sh2[1], 100, Math.PI - 0.12 - a * 0.45, 14); limb(e2[0], e2[1], 90, Math.PI - 0.05 - a * 0.6, 12);
     } else {
       const e1 = limb(sh[0], sh[1], 100, -0.5 - 1.6 * (0.5 + 0.5 * a), 14); limb(e1[0], e1[1], 90, -0.2 - 2.2 * (0.5 + 0.5 * a), 12);
       const e2 = limb(sh2[0], sh2[1], 100, 0.5 + 1.6 * (0.5 - 0.5 * a), 14); limb(e2[0], e2[1], 90, 0.2 + 2.2 * (0.5 - 0.5 * b), 12);

@@ -51,7 +51,8 @@ draw cartoon faces on humans), `brolly`, `pip()` branded PiP window (rect/circle
 12. **Targeted critique**: one 15-frame tile from the MP4 (`ffmpeg … select … tile=15x1`). Patch-splice only if broken.
 13. **Encode + send** (loudnorm I=-14:TP=-1.5), commit + push source, short summary to the user.
 
-## Pip (the channel's fun 3D blob character) — proven in episode 3
+## Pip (optional 3D blob character) — works, but the USER REMOVED HIM from episode 3
+Default: do NOT put Pip in an episode unless the user asks for him. Keep the tech below for when they do.
 - `remotion/src/three/piplib.js` = `videos/_shared/lib.js` with imports pointed at `three/examples/jsm/...` (+ `// @ts-nocheck`).
 - `remotion/src/three/Pip.tsx` `<PipLayer rig={(T) => PipState} start={shotStart} clip?={[cx, cy, r]} />`: plain three@0.181
   on a transparent canvas (makeRenderer: alpha + preserveDrawingBuffer), rendered in useLayoutEffect per frame — deterministic.
@@ -67,5 +68,5 @@ draw cartoon faces on humans), `brolly`, `pip()` branded PiP window (rect/circle
 
 ## 2D world kits (pf/src/props.js)
 - FILM.mk (episode 2): noir wet street, rain, silhouette man, umbrella, PiP windows, callouts, labels, lit spheres, board.
-- FILM.wc (episode 3): woodcut print — parchment paper, rigid gouge hatching, broadside frame, half-timbered houses,
+- FILM.wc (episode 3): woodcut print (figures support { walk: true } — always give moving people a real walk cycle, never slide them) — parchment paper, rigid gouge hatching, broadside frame, half-timbered houses,
   perspective street to a spire, period dancers/musicians (stiff stamped-puppet poses), Pip porthole.
