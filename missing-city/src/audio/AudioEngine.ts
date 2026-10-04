@@ -1,3 +1,4 @@
+import { safe } from '../core/Report';
 import * as THREE from 'three';
 import type { Surface } from '../core/Physics';
 
@@ -1411,5 +1412,6 @@ export class AudioEngine {
   }
 }
 
-export const audio = new AudioEngine();
+// sound must never take the game down: a failing audio call is logged and skipped
+export const audio = safe(new AudioEngine(), 'audio');
 export { NOTE };

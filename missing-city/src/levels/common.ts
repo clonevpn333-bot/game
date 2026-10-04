@@ -89,8 +89,11 @@ export function cabin(W: World, x: number, y: number, z: number): void {
   }
   for (const dz of [-1.8, 0, 1.8]) {
     W.box([x - 0.08, y + 1.96, z + dz - 0.08], [x + 0.08, y + 2.0, z + dz + 0.08], red, { collide: false, cast: false });
-    W.light({ x, y: y + 1.9, z: z + dz }, '#ff2a14', { intensity: 3, distance: 4, glow: 0.3, pool: false });
+    W.light({ x, y: y + 1.9, z: z + dz }, '#ff3a20', { intensity: 7, distance: 5, glow: 0.3, pool: false });
   }
+  // readable faces: amber instrument glow from the cockpit and cool moonlight through the open door
+  W.light({ x, y: y + 1.3, z: z - 2.3 }, '#ffb070', { intensity: 9, distance: 6, glow: 0, pool: false });
+  W.light({ x: x + 1.6, y: y + 1.4, z }, '#8fb4ff', { intensity: 10, distance: 7, glow: 0, pool: false });
 }
 
 /** CRT/CCTV material showing a render target with scanlines + noise. */

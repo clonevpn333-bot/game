@@ -76,9 +76,18 @@ export class Hud {
     if (text) (this.loadingEl.querySelector('.l-txt') as HTMLElement).textContent = text;
   }
 
+  private loadingTimer = 0;
+
+  showLoading(text: string): void {
+    window.clearTimeout(this.loadingTimer);
+    this.loadingEl.style.display = '';
+    this.loadingEl.style.opacity = '1';
+    this.loading(0.05, text);
+  }
+
   hideLoading(): void {
     this.loadingEl.style.opacity = '0';
-    window.setTimeout(() => (this.loadingEl.style.display = 'none'), 1000);
+    this.loadingTimer = window.setTimeout(() => (this.loadingEl.style.display = 'none'), 1000);
   }
 
   // ---------------------------------------------------------------- dialogue

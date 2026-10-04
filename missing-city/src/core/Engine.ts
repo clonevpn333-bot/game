@@ -5,6 +5,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { G } from '../render/Globals';
+import { reportError } from './Report';
 
 /** Final cinematic pass: grade, echo replay look, damage, grain, vignette, aberration, fade. */
 const FinalShader = {
@@ -129,6 +130,12 @@ export class Engine {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.info.autoReset = false;
+    // shader compile failures differ per GPU/driver and are silent otherwise
+    this.renderer.debug.onShaderError = (gl, program, vs, fs) => {
+      const log = [gl.getProgramInfoLog(program), gl.getShaderInfoLog(vs), gl.getShaderInfoLog(fs)]
+        .filter(Boolean).join(' ').replace(/\s+/g, ' ').slice(0, 300);
+      reportError('shader', new Error(log || 'a shader failed to compile'));
+    };
     this.scene.add(this.camera);
 
     this.composer = new EffectComposer(this.renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }));

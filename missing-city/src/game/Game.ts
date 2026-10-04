@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Engine } from '../core/Engine';
+import { reportError } from '../core/Report';
 import { Input } from '../core/Input';
 import { PhysicsWorld } from '../core/Physics';
 import { audio } from '../audio/AudioEngine';
@@ -225,32 +226,61 @@ export class Game {
 
   // ================================================================ chapters
   async startChapter(i: number): Promise<void> {
-    audio.unlock();
-    this.hud.showTitle(false);
-    this.hud.showPause(false);
-    this.state = 'playing';
     const token = ++this.scriptToken;
-    await this.hud.fade(1, 0.8);
-    const ch = CHAPTERS[i];
-    this.chapterIndex = i;
-    this.save.chapter = i;
-    this.save.started = true;
-    this.save.unlocked = Math.max(this.save.unlocked, i);
-    this.persist();
-    for (const c of ch.chars) await loadCharacter(c);
-    await this.loadWorld(ch);
-    if (token !== this.scriptToken) return;
-    this.input.requestLock();
-    this.state = 'playing';
-    const s = new Script(this, token);
     try {
+      audio.unlock();
+      this.hud.showTitle(false);
+      this.hud.showPause(false);
+      this.state = 'playing';
+      await this.hud.fade(1, 0.8);
+      const ch = CHAPTERS[i];
+      this.chapterIndex = i;
+      this.save.chapter = i;
+      this.save.started = true;
+      this.save.unlocked = Math.max(this.save.unlocked, i);
+      this.persist();
+      // a visible loading screen instead of silent black while the chapter builds
+      this.hud.showLoading(`${ch.num} · ${ch.title}`.toUpperCase());
+      let done = 0;
+      for (const c of ch.chars) {
+        await loadCharacter(c);
+        this.hud.loading(0.05 + (++done / Math.max(1, ch.chars.length)) * 0.5);
+      }
+      await this.loadWorld(ch);
+      this.hud.loading(0.7);
+      await this.precompile();
+      this.hud.loading(1);
+      this.hud.hideLoading();
+      if (token !== this.scriptToken) return;
+      this.input.requestLock();
+      this.state = 'playing';
+      const s = new Script(this, token);
       await ch.run(s);
       if (token === this.scriptToken) {
         if (i + 1 < CHAPTERS.length) await this.startChapter(i + 1);
         else await this.showTitle();
       }
     } catch (e) {
-      if (!(e instanceof Abort)) console.error(e);
+      if (e instanceof Abort) return;
+      reportError(`chapter ${CHAPTERS[i]?.id ?? i}`, e);
+      // never leave the player on a black screen: drop the fade and hand back control
+      if (token === this.scriptToken) {
+        this.cine.active = false;
+        this.cine.tween = null;
+        this.control = true;
+        this.hud.setFade(0);
+      }
+    }
+  }
+
+  /** Compiles the new world's shaders behind the loading screen so the first frame doesn't stall. */
+  private async precompile(): Promise<void> {
+    const r = this.engine.renderer as THREE.WebGLRenderer & { compileAsync?: (s: THREE.Object3D, c: THREE.Camera) => Promise<unknown> };
+    try {
+      if (r.compileAsync) await r.compileAsync(this.engine.scene, this.engine.camera);
+      else r.compile(this.engine.scene, this.engine.camera);
+    } catch (e) {
+      console.warn('precompile skipped', e);
     }
   }
 
@@ -421,8 +451,16 @@ export class Game {
     this.lastTime = now;
     this.frame++;
     this.input.pollGamepad();
-    if (!this.paused4shot) this.update(dt);
-    this.engine.render();
+    try {
+      if (!this.paused4shot) this.update(dt);
+    } catch (e) {
+      reportError('update', e);
+    }
+    try {
+      this.engine.render();
+    } catch (e) {
+      reportError('render', e);
+    }
     this.input.endFrame();
   };
 
