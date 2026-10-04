@@ -630,49 +630,101 @@
     ctx.restore();
   };
 
-  // a coated man, walking on twos. (x, y) = feet, s = height in px / 600
+  // a man in an overcoat and fedora, film-noir silhouette, front view, walking on twos.
+  // (x, y) = feet, s = scale (685 units tall at s 1). Lit only by a rim light; reflection on the wet road.
+  function manShape(g, ph, walk, o) {
+    const sw = walk ? Math.sin(ph) : 0;
+    const lift = walk ? Math.max(0, Math.sin(ph)) : 0, lift2 = walk ? Math.max(0, -Math.sin(ph)) : 0;
+    const bob = walk ? -7 * Math.abs(Math.cos(ph)) : 0;
+    g.beginPath();
+    // legs: tapered trousers with a soft knee, the swinging foot lifting
+    [[-34, lift], [34, lift2]].forEach(([hx, lf]) => {
+      const ky = -175 + lf * 18, ay = -24 - lf * 34;
+      const kx = hx * 1.08, ax = hx * 0.92;
+      g.moveTo(hx - 30, -335 + bob);
+      g.quadraticCurveTo(kx - 26, ky, ax - 15, ay);
+      g.lineTo(ax - 22, ay + 6);
+      g.quadraticCurveTo(ax - 26, ay + 26, ax + 4, ay + 26);
+      g.lineTo(ax + 34, ay + 24);
+      g.quadraticCurveTo(ax + 40, ay + 10, ax + 15, ay);
+      g.quadraticCurveTo(kx + 24, ky, hx + 30, -335 + bob);
+      g.closePath();
+    });
+    // overcoat: sloped shoulders, belted waist, flared hem that sways
+    const hs = sw * 9;
+    g.moveTo(-26, -598 + bob);
+    g.quadraticCurveTo(-70, -600 + bob, -92, -572 + bob);
+    g.quadraticCurveTo(-104, -520 + bob, -96, -440 + bob);
+    g.quadraticCurveTo(-92, -410 + bob, -88, -402 + bob);
+    g.quadraticCurveTo(-112 + hs, -330, -122 + hs, -258);
+    g.quadraticCurveTo(0, -244 + Math.abs(hs), 122 + hs, -258);
+    g.quadraticCurveTo(112 + hs, -330, 88, -402 + bob);
+    g.quadraticCurveTo(92, -410 + bob, 96, -440 + bob);
+    g.quadraticCurveTo(104, -520 + bob, 92, -572 + bob);
+    g.quadraticCurveTo(70, -600 + bob, 26, -598 + bob);
+    g.closePath();
+    // arms: shoulder → elbow → gloved hand, swinging (front view: the forward hand rises and widens)
+    [[-1, sw], [1, -sw]].forEach(([sd, a]) => {
+      const sx = sd * 92, sy = -560 + bob;
+      const ex = sd * 108, ey = -428 + bob + a * 6;
+      const hx = sd * (98 - a * 6), hy = -300 + bob - a * 26;
+      const w0 = 22, w1 = 15 + a * 2;
+      g.moveTo(sx - sd * 0, sy - 6);
+      g.quadraticCurveTo(ex + sd * w0, ey, hx + sd * w1, hy);
+      g.quadraticCurveTo(hx, hy + 22 + a * 4, hx - sd * w1, hy);
+      g.quadraticCurveTo(ex - sd * (w0 - 4), ey, sx - sd * 28, sy + 20);
+      g.closePath();
+    });
+    // neck, head (no features: a silhouette), fedora
+    g.moveTo(-16, -600 + bob); g.lineTo(-14, -628 + bob); g.lineTo(14, -628 + bob); g.lineTo(16, -600 + bob); g.closePath();
+    g.ellipse(0, -654 + bob, 33, 42, 0, 0, Math.PI * 2);
+    g.ellipse(0, -682 + bob, 72, 13, 0, 0, Math.PI * 2);
+    g.moveTo(-44, -684 + bob);
+    g.quadraticCurveTo(-46, -728 + bob, -16, -730 + bob);
+    g.quadraticCurveTo(0, -722 + bob, 16, -730 + bob);
+    g.quadraticCurveTo(46, -728 + bob, 44, -684 + bob);
+    g.closePath();
+  }
   mk.man = function man(ctx, x, y, s, T, o = {}) {
-    const f = o.walk === false ? 0 : Math.floor(T * 12 + 1e-6) % 4;
-    const sw = [0.35, 0.1, -0.35, -0.1][f] * (o.walk === false ? 0 : 1);
-    const ink = o.ink || '#07090F';
+    const walk = o.walk !== false;
+    const Tq = Math.floor(T * 12 + 1e-6) / 12;
+    const ph = (Tq + (o.phase || 0)) * Math.PI * 2 * 0.95;
+    const ink = o.ink || '#05070C';
     const rim = o.rim != null ? o.rim : 1;
     ctx.save();
     ctx.translate(x, y);
-    ctx.scale(s, s);
-    if (o.flip) ctx.scale(-1, 1);
-    // legs
-    [sw, -sw].forEach((a, i) => {
+    ctx.scale(s * (o.flip ? -1 : 1), s);
+    // wet-road reflection
+    if (o.reflect !== false) {
       ctx.save();
-      ctx.translate(i ? 18 : -18, -270);
-      ctx.rotate(a);
-      ctx.fillStyle = i ? '#15161C' : '#0E0F14';
-      ctx.fillRect(-20, 0, 40, 262);
-      ctx.fillStyle = '#050608';
-      ctx.fillRect(-22, 250, 58, 22);
+      ctx.scale(1, -0.55);
+      manShape(ctx, ph, walk, o);
+      ctx.fillStyle = L.rgba(ink, 0.35);
+      ctx.fill('nonzero');
       ctx.restore();
-    });
-    // coat
-    const coat = [[-95, -560], [95, -560], [118, -300], [100, -250], [-100, -250], [-118, -300]];
-    L.tracePath(ctx, coat, true);
-    ctx.fillStyle = P.coat;
-    ctx.fill();
-    L.hatch(ctx, coat, { angle: 1.3, spacing: 9, width: 1.6, color: ink, alpha: 0.6, seed: 900 });
-    // rim light (lamp from screen-right)
-    ctx.strokeStyle = L.rgba(P.lampPale, 0.75 * rim);
-    ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.moveTo(95, -555); ctx.lineTo(118, -300); ctx.lineTo(100, -250); ctx.stroke();
-    // arms
-    ctx.fillStyle = '#1D1E25';
-    ctx.save(); ctx.translate(-95, -540); ctx.rotate(-sw * 0.6 + 0.05); ctx.fillRect(-24, 0, 38, 250); ctx.restore();
-    ctx.save(); ctx.translate(95, -540); ctx.rotate(sw * 0.6 - 0.05); ctx.fillRect(-14, 0, 38, 250); ctx.restore();
-    // head + hat brim
-    ctx.fillStyle = '#C8A38C';
-    ctx.beginPath(); ctx.ellipse(0, -620, 46, 58, 0, 0, TAU); ctx.fill();
+    }
+    // rim light: the silhouette offset toward the lamp, under the body
+    if (rim > 0) {
+      ctx.save();
+      ctx.translate(5, -3);
+      manShape(ctx, ph, walk, o);
+      ctx.fillStyle = L.rgba(o.rimColor || P.lampPale, 0.65 * rim);
+      ctx.fill('nonzero');
+      ctx.restore();
+    }
+    manShape(ctx, ph, walk, o);
     ctx.fillStyle = ink;
-    ctx.beginPath(); ctx.ellipse(0, -655, 52, 30, 0, Math.PI, 0); ctx.fill();
-    ctx.fillStyle = '#7A5A48';
-    ctx.beginPath(); ctx.ellipse(-12, -610, 30, 48, 0, Math.PI * 0.5, Math.PI * 1.5); ctx.fill();
-    L.inkPath(ctx, coat, { closed: true, width: 4, color: ink, seed: 901 });
+    ctx.fill('nonzero');
+    // coat detail, barely lit: belt, centre opening, collar
+    if (rim > 0) {
+      ctx.strokeStyle = L.rgba(P.lampPale, 0.16 * rim);
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(-90, -404); ctx.lineTo(90, -404);
+      ctx.moveTo(6, -590); ctx.lineTo(10, -262);
+      ctx.moveTo(-24, -596); ctx.lineTo(4, -520); ctx.lineTo(30, -596);
+      ctx.stroke();
+    }
     ctx.restore();
   };
 

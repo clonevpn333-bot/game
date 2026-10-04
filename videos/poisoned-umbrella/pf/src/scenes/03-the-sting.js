@@ -8,28 +8,46 @@
   const ID = 'the-sting';
   const STING = 8.71, FREEZE = 8.8, SKETCH = 9.25;
   const HIT = [610, 1010];
+  // the victim from behind, close: overcoat hem with folds, tapered trousers with knee creases, shoes
+  function legPaths(L) {
+    const leg = (x0, x1, kx, ax0, ax1) => L.smoothPts([[x0, 600], [kx - 6, 980], [ax0, 1600], [ax1, 1600], [kx + (x1 - x0) * 0.55, 980], [x1, 600]], true, 6);
+    const coat = L.smoothPts([[300, -40], [880, -40], [905, 300], [930, 640], [800, 668], [640, 652], [520, 672], [380, 650], [262, 640], [282, 300]], true, 6);
+    return { coat, legL: leg(372, 560, 392, 418, 548), legR: leg(566, 762, 590, 600, 724) };
+  }
   function legs(ctx, L, P, sketch) {
-    // the victim from behind: coat hem, both trouser legs, shoes, wet pavement
+    const g = legPaths(L);
     const ink = P.hcInk;
-    const coat = [[330, -40], [860, -40], [900, 640], [300, 640]];
-    const legL = [[380, 620], [560, 620], [545, 1640], [405, 1640]];
-    const legR = [[560, 620], [745, 620], [720, 1640], [585, 1640]];
-    const fill = (pts, col) => { L.tracePath(ctx, pts, true); ctx.fillStyle = col; ctx.fill(); };
+    const fill = (pts, col) => { ctx.beginPath(); L.tracePath(ctx, pts, true); ctx.fillStyle = col; ctx.fill(); };
+    const shoes = (col) => {
+      [[410, 1590, 160], [596, 1590, 150]].forEach(([x, y, w]) => {
+        ctx.beginPath();
+        ctx.moveTo(x - 8, y); ctx.quadraticCurveTo(x - 20, y + 70, x + w * 0.4, y + 74); ctx.quadraticCurveTo(x + w + 10, y + 70, x + w - 4, y); ctx.closePath();
+        ctx.fillStyle = col; ctx.fill();
+      });
+    };
     if (!sketch) {
-      fill(legL, '#121319'); fill(legR, '#16171E'); fill(coat, P.coat);
-      ctx.fillStyle = '#06070A';
-      ctx.fillRect(390, 1610, 170, 70); ctx.fillRect(578, 1610, 160, 70);
-      // rim light on the right leg from a lamp
-      ctx.strokeStyle = L.rgba(P.lampPale, 0.6); ctx.lineWidth = 6;
-      ctx.beginPath(); ctx.moveTo(745, 620); ctx.lineTo(720, 1640); ctx.stroke();
-      L.hatch(ctx, coat, { angle: 1.35, spacing: 10, width: 1.6, color: '#05060A', alpha: 0.6, seed: 300 });
+      fill(g.legL, '#0D0E13'); fill(g.legR, '#101118');
+      // trouser creases + knee folds, lit faintly by the lamp
+      ctx.strokeStyle = L.rgba(P.lampPale, 0.12); ctx.lineWidth = 3;
+      [[466, 600, 482, 1600], [664, 600, 662, 1600]].forEach(([a, b2, c, d]) => { ctx.beginPath(); ctx.moveTo(a, b2); ctx.lineTo(c, d); ctx.stroke(); });
+      [[420, 1000], [610, 990]].forEach(([x, y]) => { for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(x, y + k * 22); ctx.quadraticCurveTo(x + 60, y + k * 22 - 14, x + 120, y + k * 22 + 4); ctx.stroke(); } });
+      shoes('#040508');
+      fill(g.coat, P.coat);
+      L.hatch(ctx, g.coat, { angle: 1.4, spacing: 11, width: 1.6, color: '#05060A', alpha: 0.55, seed: 300 });
+      ctx.strokeStyle = L.rgba('#05060A', 0.8); ctx.lineWidth = 4;
+      [[420, 200, 400, 650], [600, 100, 590, 660], [760, 220, 790, 660]].forEach(([a, b2, c, d]) => { ctx.beginPath(); ctx.moveTo(a, b2); ctx.quadraticCurveTo((a + c) / 2 + 20, (b2 + d) / 2, c, d); ctx.stroke(); });
+      // rim light on the right edges
+      ctx.strokeStyle = L.rgba(P.lampPale, 0.55); ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(762, 600); ctx.quadraticCurveTo(735, 980, 724, 1600); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(880, -40); ctx.lineTo(930, 640); ctx.stroke();
     } else {
-      fill(legL, L.rgba(P.hcIvoryShade, 0.6)); fill(legR, L.rgba(P.hcIvoryShade, 0.6)); fill(coat, L.rgba(P.hcIvoryShade, 0.8));
-      L.hatch(ctx, legL, { angle: 1.4, spacing: 8, width: 1.3, color: ink, alpha: 0.6, seed: 301 });
-      L.hatch(ctx, coat, { angle: 1.35, spacing: 9, width: 1.3, color: ink, alpha: 0.5, seed: 302 });
-      [coat, legL, legR].forEach((p, i) => L.inkPath(ctx, p, { closed: true, width: 4, color: ink, seed: 310 + i }));
-      L.inkPath(ctx, [[390, 1640], [560, 1640], [560, 1680], [390, 1680]], { closed: true, width: 3, color: ink, seed: 320 });
-      L.inkPath(ctx, [[578, 1640], [738, 1640], [738, 1680], [578, 1680]], { closed: true, width: 3, color: ink, seed: 321 });
+      fill(g.legL, L.rgba(P.hcIvoryShade, 0.6)); fill(g.legR, L.rgba(P.hcIvoryShade, 0.6));
+      shoes(L.rgba(P.hcInkSoft, 0.5));
+      fill(g.coat, L.rgba(P.hcIvoryShade, 0.85));
+      L.hatch(ctx, g.legL, { angle: 1.4, spacing: 8, width: 1.3, color: ink, alpha: 0.55, seed: 301 });
+      L.hatch(ctx, g.coat, { angle: 1.35, spacing: 9, width: 1.3, color: ink, alpha: 0.45, seed: 302 });
+      [g.coat, g.legL, g.legR].forEach((p, i) => L.inkPath(ctx, p, { closed: true, width: 4, color: ink, seed: 310 + i }));
+      [[420, 200, 400, 650], [600, 100, 590, 660], [760, 220, 790, 660]].forEach(([a, b2, c, d], i) => L.inkPath(ctx, [[a, b2], [(a + c) / 2 + 20, (b2 + d) / 2], [c, d]], { width: 2, color: ink, seed: 320 + i }));
     }
   }
   FILM.scene({
@@ -129,7 +147,7 @@
         const gone = L.clamp((T - 11.55) / 0.3);
         ctx.save();
         ctx.globalAlpha = 1 - gone * 0.85;
-        FILM.mk.man(ctx, sp[0], sp[1], 0.32, T, { ink: P.hcInk, rim: 0 });
+        FILM.mk.man(ctx, sp[0], sp[1], 0.32, T, { ink: P.hcInk, rim: 0, reflect: false });
         ctx.restore();
         if (gone > 0) {
           const sc = [];
