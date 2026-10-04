@@ -26,7 +26,8 @@ function buildBetween(W: World, g: Game): void {
   for (const [x, y, z, layer] of stones) {
     const mat = layer === 'echo' ? L.concrete : layer === 'present' ? L.asphalt : L.sidewalk;
     W.boxC([x, y - 0.25, z], [3.4, 0.5, 3.4], mat, (x * z) % 1, { layer: layer === 'always' ? 'always' : layer, uv: 2 });
-    if (layer === 'echo') W.light({ x, y: y + 0.4, z }, '#80e8ff', { intensity: 0, noLight: true, glow: 1.0, pool: false, layer: 'echo' });
+    // small corner markers rather than one big glow where the player stands
+    if (layer === 'echo') for (const [cx, cz] of [[-1.6, -1.6], [1.6, 1.6]]) W.light({ x: x + cx, y: y + 0.08, z: z + cz }, '#80e8ff', { intensity: 0, noLight: true, glow: 0.22, pool: false, layer: 'echo' });
   }
   // convergence island where Reyes waits (z 72..100)
   island(W, -14, 72, 14, 100, 4.4, L.concrete, 14);
@@ -93,7 +94,8 @@ export const ch9: Chapter = {
   },
   shots: {
     path(g) {
-      g.player.teleport(V(0, 2.0, 37), Math.PI * 0.05);
+      g.player.teleport(V(-0.5, 2.45, 38.2), Math.PI * 0.05);
+      g.player.camPitch = -0.12;
       g.echo.enter(30, true);
       g.player.snapCamera();
     },

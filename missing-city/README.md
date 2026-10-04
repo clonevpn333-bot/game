@@ -66,5 +66,5 @@ blender -b --python tools/blender/build_cast.py -- public/assets/characters
 ```bash
 node scripts/shot.mjs ch1:street ch3:platform     # named-state screenshots
 node scripts/playthrough.mjs 0                    # autopilot run through the whole script
-npm run inspect:canvas -- --manifest artifacts/evidence.json
+node scripts/perf.mjs 1 5                         # per-chapter fps / draw calls
 ```

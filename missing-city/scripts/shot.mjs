@@ -15,7 +15,8 @@ for (const st of states) {
     await page.waitForTimeout(st === 'title' ? 4000 : 2500);
     await page.screenshot({ path: `/tmp/claude-0/shots/${st.replace(':', '_')}.png` });
     const info = await page.evaluate(() => { const r = window.__THREE_GAME_DIAGNOSTICS__.renderer; return { calls: r.render.calls, tris: r.render.triangles, geo: r.memory.geometries, tex: r.memory.textures }; });
-    console.log(st, JSON.stringify(info), (Date.now() - t0) + 'ms');
+    const fps = await page.evaluate(async () => { const d = window.__THREE_GAME_DIAGNOSTICS__; const f0 = d.frame, t = performance.now(); await new Promise((r) => setTimeout(r, 4000)); return ((d.frame - f0) / ((performance.now() - t) / 1000)).toFixed(1); });
+    console.log(st, JSON.stringify(info), 'fps', fps, (Date.now() - t0) + 'ms');
   } catch (e) { console.log('FAIL', st, e.message); }
 }
 console.log(errors.slice(0, 30).join('\n'));

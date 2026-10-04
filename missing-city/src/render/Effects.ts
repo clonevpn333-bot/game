@@ -107,9 +107,9 @@ export class Effects {
           p = mod(p - uCenter + box, box * 2.0) - box + uCenter;
           vec4 mv = modelViewMatrix * vec4(p, 1.0);
           float d = -mv.z;
-          vA = uAmount * smoothstep(14.0, 3.0, d) * smoothstep(0.3, 1.5, d) * (0.5 + 0.5 * sin(uTime * 2.0 + position.x * 50.0));
-          vA *= 1.0 + uEcho * 2.0;
-          gl_PointSize = (4.0 + uEcho * 5.0) * 60.0 / max(d, 0.1);
+          vA = uAmount * smoothstep(14.0, 3.0, d) * smoothstep(1.2, 3.0, d) * (0.5 + 0.5 * sin(uTime * 2.0 + position.x * 50.0));
+          vA *= 1.0 + uEcho * 0.8;
+          gl_PointSize = min((4.0 + uEcho * 2.0) * 60.0 / max(d, 0.1), 28.0);
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: /* glsl */ `
