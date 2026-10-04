@@ -333,7 +333,9 @@ export const ch9: Chapter = {
     await s.cut(async () => {
       s.cam(V(2, 1.6, 166), ellie.head, 40);
       await s.say('ellie', 'Eli! ELI!', { dur: 1.6 });
-      await ellie.goto(V(-0.6, 0.15, 168.6), 4.2);
+      // she runs to you (never wait forever on a path: wreckage can be in the way)
+      await Promise.race([ellie.goto(V(-0.6, 0.15, 168.6), 4.2), s.wait(4)]);
+      ellie.place(V(-0.6, 0.15, 168.6), Math.PI);
       ellie.hold(Math.PI);
       ellie.body.gesture('hug', 2.5);
       await s.camTo(V(0.8, 1.5, 167.2), ellie.head, 1.2, 44);

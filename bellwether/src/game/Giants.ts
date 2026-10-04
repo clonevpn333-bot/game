@@ -60,7 +60,6 @@ export function addGiant(W: World, g: Game, o: GiantOpts): Giant {
     }
   }
   giants(W).push(giant);
-  let hullCol: Collider | null = null;
   sh.onStep = (p, sc) => {
     const d = p.distanceTo(g.player.pos);
     const k = THREE.MathUtils.clamp(1 - d / (70 * sc), 0, 1);
@@ -80,10 +79,6 @@ export function addGiant(W: World, g: Game, o: GiantOpts): Giant {
       c.cy = l.plant.y + 1.2 * s;
       c.enabled = !sh.dead || sh.fall < 0.3;
     });
-    if (sh.dead && sh.fall >= 1 && !hullCol) {
-      // the fallen hull becomes cover
-      hullCol = W.physics.add({ cx: sh.pos.x, cy: 2.5 * s, cz: sh.pos.z, hx: 5 * s, hy: 2.5 * s, hz: 11 * s, yaw: sh.yaw, noVault: true, tag: 'giant' });
-    }
     if (giant.hunt && !sh.dead) huntUpdate(giant, g, dt);
     else if (!sh.dead) {
       // idle gaze: a slow sweep of the street ahead

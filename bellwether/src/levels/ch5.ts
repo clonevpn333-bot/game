@@ -363,7 +363,8 @@ export const ch5: Chapter = {
       await s.say('ellie', 'Eli?', { dur: 1.8 });
       ellie.body.mode = 'idle';
       ellie.place(V(5.6, 0, 25.6), -Math.PI / 2);
-      await ellie.goto(V(3.05, 0, 23.25), 2.6);
+      await Promise.race([ellie.goto(V(3.05, 0, 23.25), 2.6), s.wait(4)]);
+      ellie.place(V(3.05, 0, 23.25), -Math.PI / 2 - 0.25);
       ellie.hold(-Math.PI / 2 - 0.25);
       ellie.body.gesture('hug', 999, true);
       audio.stinger('soft');
