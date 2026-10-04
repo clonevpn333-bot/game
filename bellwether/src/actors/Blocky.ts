@@ -866,7 +866,7 @@ function mechForearm(P: Prop, x: number, sleeve: string | null, skin: string): {
   const open = new THREE.Group();
   const metal = new THREE.MeshStandardMaterial({ color: '#9aa2ad', roughness: 0.28, metalness: 0.9 });
   const dark = new THREE.MeshStandardMaterial({ color: '#2a2e35', roughness: 0.5, metalness: 0.6 });
-  const glow = new THREE.MeshBasicMaterial({ color: new THREE.Color('#5ff0ff').multiplyScalar(2.5), toneMapped: false });
+  const glow = new THREE.MeshBasicMaterial({ color: new THREE.Color('#5ff0ff').multiplyScalar(1.15), toneMapped: false });
   for (const dx of [-0.018, 0.018]) {
     const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, ll * 0.95, 8), metal);
     rod.position.set(x + dx, y, -0.005);
@@ -875,7 +875,7 @@ function mechForearm(P: Prop, x: number, sleeve: string | null, skin: string): {
   const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, ll * 0.5, 10), dark);
   piston.position.set(x, y + ll * 0.1, 0.018);
   open.add(piston);
-  const core = new THREE.Mesh(new THREE.BoxGeometry(0.02, ll * 0.4, 0.01), glow);
+  const core = new THREE.Mesh(new THREE.BoxGeometry(0.012, ll * 0.3, 0.006), glow);
   core.position.set(x, y, 0.03);
   open.add(core);
   const cableM = new THREE.MeshStandardMaterial({ color: '#c0392b', roughness: 0.6 });
@@ -895,7 +895,7 @@ function mechForearm(P: Prop, x: number, sleeve: string | null, skin: string): {
     flap.rotation.y = sx * 0.6;
     open.add(flap);
   }
-  const pl = new THREE.PointLight('#5ff0ff', 0.6, 0.6, 2);
+  const pl = new THREE.PointLight('#5ff0ff', 0.12, 0.45, 2);
   pl.position.set(x, y, 0.08);
   open.add(pl);
   open.visible = false;

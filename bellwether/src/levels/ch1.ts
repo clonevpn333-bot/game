@@ -543,8 +543,8 @@ export const ch1: Chapter = {
       courier.body.gesture('clutch', 999, true);
       audio.glitchZap(courier.chest, 0.14);
       audio.servo(courier.chest, 0.08, false);
-      const arm = courier.body.bonePos('lowerArmL').add(V(0, -0.1, 0));
-      await s.camTo(V(9.4, 1.05, 107.6), arm, 2.2, 32);
+      const arm = courier.body.bonePos('lowerArmL').add(V(0, -0.08, 0));
+      await s.camTo(arm.clone().add(V(-0.85, 0.32, 0.25)), arm, 2.2, 34);
       audio.stinger('reveal');
       await s.wait(1.6);
       courier.body.lookTarget = arm;
@@ -579,6 +579,36 @@ export const ch1: Chapter = {
     await s.wait(1.2);
   },
   shots: {
+    landing(g) {
+      g.cine.active = true;
+      g.cine.pos.set(-30, 1.8, -26.5);
+      g.cine.look.set(-34, 1.55, -29.6);
+      g.cine.fov = 40;
+      g.people.get('reyes')!.body.gesture('hands_hips', 99, true);
+      g.people.get('maya')!.body.gesture('point', 99, true);
+    },
+    cashier(g) {
+      const c = g.person('cashier', PEOPLE.cashier, V(QS.x0 + 2.6, SW, QS.z1 - 2.5), Math.PI);
+      g.player.teleport(V(QS.x0 + 2.6, SW, QS.z1 - 4.6), Math.PI, 0);
+      c.body.lookTarget = g.player.camPos.clone();
+      c.body.glow = 1;
+      g.cine.active = true;
+      g.cine.pos.copy(g.player.camPos).lerp(c.head, 0.25);
+      g.cine.look.copy(c.head);
+      g.cine.fov = 30;
+    },
+    arm(g) {
+      const c = g.person('courier', PEOPLE.courier, V(10.2, SW, 107.4), -Math.PI / 2);
+      c.body.mode = 'cower';
+      c.body.openArm();
+      c.body.gesture('clutch', 999, true);
+      for (let i = 0; i < 60; i++) c.update(1 / 60, { pos: V(0, 0, 0), camPos: V(0, 0, 0) }, []);
+      g.cine.active = true;
+      const arm = c.body.bonePos('lowerArmL').add(V(0, -0.08, 0));
+      g.cine.pos.copy(arm).add(V(-0.85, 0.32, 0.25));
+      g.cine.look.copy(arm);
+      g.cine.fov = 34;
+    },
     square(g) {
       g.player.teleport(V(-30, SW, -30), -Math.PI / 2 - 0.3, -0.05);
     },
