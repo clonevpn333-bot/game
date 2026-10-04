@@ -23,6 +23,7 @@ export const SKY = {
   other: { top: '#0b0420', horizon: '#3a1d5c', glow: '#b07ad8', cloud: 0.5, cloudColor: '#4a2f6e', stars: 0.8, surreal: 1 } as SkyPreset,
   otherPale: { top: '#c9c3d8', horizon: '#f0e8f2', glow: '#ffffff', cloud: 0.3, cloudColor: '#ffffff', stars: 0, surreal: 0.5 } as SkyPreset,
   sunrise: { top: '#2a3f66', horizon: '#f2a46a', glow: '#ffcf9a', cloud: 0.45, cloudColor: '#d98a6a', sunDir: [0.2, 0.06, -1], sunColor: '#fff0cc', sunSize: 1, stars: 0 } as SkyPreset,
+  morning: { top: '#3f78c0', horizon: '#cfe0ee', glow: '#fff1d6', cloud: 0.32, cloudColor: '#f6f8fb', sunDir: [0.45, 0.55, -0.7], sunColor: '#fff6e2', sunSize: 0.7, stars: 0 } as SkyPreset,
   void: { top: '#000000', horizon: '#05050a', glow: '#120a1c', cloud: 0, cloudColor: '#000', stars: 0.2 } as SkyPreset,
 };
 
