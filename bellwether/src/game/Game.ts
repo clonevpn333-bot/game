@@ -16,6 +16,8 @@ import { Hud, type Settings } from '../ui/Hud';
 import { Player, type Weapon } from './Player';
 import { Citizen, Worker, type CitizenOpts } from './Citizen';
 import { Traffic } from './Traffic';
+import { Machine, type MachineKind } from './Machine';
+import { Combat } from './Combat';
 import type { Look } from '../actors/Blocky';
 import { CHAPTERS, type Chapter } from '../levels';
 
@@ -60,6 +62,11 @@ export class Game {
   crowd: Citizen[] = [];
   workers: Worker[] = [];
   traffic: Traffic | null = null;
+  machines: Machine[] = [];
+  readonly combat: Combat;
+  /** stealth sections: machines start unaware */
+  stealth = false;
+  encounterEpoch = 0;
   chapter: Chapter | null = null;
   chapterIndex = 0;
   readonly hemi = new THREE.HemisphereLight(0x8899aa, 0x111111, 0.3);
@@ -96,6 +103,7 @@ export class Game {
     this.lights = new LightPool(this.lightGroup, 10);
     this.player = new Player(this.engine.camera);
     this.player.onDeath = () => this.onPlayerDeath();
+    this.combat = new Combat(this.player, this.fx, this.engine.camera);
     const s = this.engine.scene;
     s.add(this.lightGroup, this.sky.mesh, this.rain.group, this.fx.group, this.hemi, this.moon, this.moon.target);
     this.moon.castShadow = true;
@@ -284,6 +292,19 @@ export class Game {
     this.workers = [];
     this.traffic?.dispose();
     this.traffic = null;
+    for (const m of this.machines) m.dispose();
+    this.machines = [];
+  }
+
+  spawnMachine(kind: MachineKind, p: THREE.Vector3, yaw = 0, o: { patrol?: THREE.Vector3[]; aware?: boolean; seed?: number } = {}): Machine {
+    const m = new Machine(kind, p, yaw, this.physics, o);
+    this.world!.dynamic.add(m.root);
+    this.machines.push(m);
+    return m;
+  }
+
+  get anyAlert(): boolean {
+    return this.machines.some((m) => !m.dead && m.alerted);
   }
 
   async loadWorld(ch: Chapter, mode: 'play' | 'title' | 'state' = 'play'): Promise<void> {
@@ -292,6 +313,7 @@ export class Game {
     this.clearActors();
     this.physics.clear();
     this.lights.clear();
+    this.lights.master = 1;
     this.fx.clearDecals();
     audio.stopAllLoops(0.6);
     this.cine.active = false;
@@ -439,6 +461,9 @@ export class Game {
     if (this.deathHandling) return;
     this.deathHandling = true;
     await this.hud.fade(1, 0.6);
+    this.encounterEpoch++;
+    this.combat.mag = this.combat.magSize;
+    this.combat.reserve = Math.max(this.combat.reserve, 24);
     this.player.revive();
     this.player.teleport(this.checkpoint.pos, this.checkpoint.yaw);
     await sleep(300);
@@ -487,6 +512,7 @@ export class Game {
     const ctl = playing && this.control && !this.cine.active && !this.input.onKey;
     const world = this.world;
     this.player.update(dt, this.input, this.physics, ctl);
+    this.combat.update(dt, this.input, this.physics, this.machines, ctl);
     if (world) {
       const pl = { pos: this.player.pos, camPos: this.player.camPos, yaw: this.player.yaw };
       const all = [...this.crowd, ...this.people.values()];
@@ -500,6 +526,11 @@ export class Game {
         if (!far || (this.frame + i) % 4 === 0) c.update(far ? dt * 4 : dt, pl, all);
       }
       for (const w of this.workers) w.update(dt, this.player.pos);
+      const mctx = { player: this.player, phys: this.physics, fx: this.fx, camera: cam, stealth: this.stealth, others: this.machines };
+      for (const m of this.machines) m.update(dt, mctx);
+      for (const c of this.people.values()) if (c.shooter) this.companionFire(c, dt);
+      for (const m of this.machines) if (m.dead && m.deadT > 25) m.dispose();
+      this.machines = this.machines.filter((m) => !m.removed);
       this.traffic?.update(dt, this.player.pos);
       for (const u of world.updaters) u(this.sdt, this.time);
     }
@@ -544,9 +575,36 @@ export class Game {
     const hurt = 1 - this.player.health / this.player.maxHealth;
     this.hud.hurt(hurt * 1.1);
     this.engine.post.uDamage.value = damp(this.engine.post.uDamage.value, hurt * 0.9, 5, dt);
-    this.hud.fpDot(playing && !this.cine.active && this.control);
+    const fpUi = playing && !this.cine.active && this.control;
+    this.hud.fpDot(fpUi && this.player.ads < 0.5);
+    this.hud.reticle(fpUi && this.player.ads > 0.5, this.combat.hitMarker > 0);
+    this.hud.cluster(fpUi && this.player.weapon === 'pistol');
+    this.hud.ammo(fpUi && this.player.weapon === 'pistol', this.combat.mag, this.combat.reserve);
     this.updateWaypoint(cam, playing && !this.cine.active);
     audio.updateListener(cam);
+  }
+
+  private companionFire(c: Citizen, dt: number): void {
+    c.shootCd -= dt;
+    if (c.shootCd > 0) return;
+    const live = this.machines.filter((m) => !m.dead && m.alerted && m.pos.distanceTo(c.pos) < 24);
+    if (!live.length) return;
+    live.sort((a, b) => a.pos.distanceTo(c.pos) - b.pos.distanceTo(c.pos));
+    const t = live[0];
+    const from = c.pos.clone().add(new THREE.Vector3(0, 1.45, 0));
+    if (!this.physics.lineOfSight(from, t.chest)) {
+      c.shootCd = 0.5;
+      return;
+    }
+    c.shootCd = 1.1 + Math.random() * 0.9;
+    c.faceYaw = Math.atan2(t.pos.x - c.pos.x, t.pos.z - c.pos.z);
+    c.body.gesture('aim', 0.8);
+    const dir = t.chest.clone().sub(from).normalize();
+    const muzzle = from.clone().addScaledVector(dir, 0.6);
+    this.fx.muzzle(muzzle, dir, this.engine.camera);
+    this.fx.tracer(muzzle, t.chest, this.engine.camera);
+    audio.gunshot(muzzle, 0.7);
+    if (Math.random() < 0.6) t.damage(t.kind === 'maintenance' ? 12 : 20, from, this.fx);
   }
 
   private updateWaypoint(cam: THREE.PerspectiveCamera, on: boolean): void {
@@ -597,6 +655,26 @@ export class Game {
       if (facing > 0.55 && score < bestScore) {
         bestScore = score;
         best = it;
+      }
+    }
+    // stealth takedown: close behind an unaware unit
+    if (ctl) {
+      for (const m of this.machines) {
+        if (m.dead || m.alerted || m.kind === 'maintenance') continue;
+        const to = this.player.pos.clone().sub(m.pos).setY(0);
+        const d = to.length();
+        if (d > 1.8) continue;
+        const behind = to.normalize().dot(new THREE.Vector3(Math.sin(m.yaw), 0, Math.cos(m.yaw))) < -0.2;
+        if (!behind) continue;
+        this.hud.prompt('Disable unit', 'E');
+        if (this.input.wasPressed('interact')) {
+          this.input.consume('interact');
+          this.player.reach();
+          audio.glitchZap(m.head, 0.14);
+          this.fx.burst('sparks', m.head, new THREE.Vector3(0, 1, 0), 24);
+          m.damage(999, this.player.camPos, this.fx);
+        }
+        return;
       }
     }
     if (best && ctl) {
@@ -937,5 +1015,50 @@ export class Script {
 
   weapon(w: Weapon): void {
     this.g.player.weapon = w;
+  }
+
+  /**
+   * Encounter: spawn a wave, wait until every machine is down. If Elias dies the wave is
+   * cleared and restarts from the checkpoint.
+   */
+  async fight(spawns: { kind: MachineKind; pos: THREE.Vector3; yaw?: number; delay?: number; patrol?: THREE.Vector3[]; aware?: boolean }[], o: { music?: boolean; stealth?: boolean } = {}): Promise<void> {
+    const bed = o.music !== false ? audio.tensionBed(0.1) : null;
+    this.g.stealth = !!o.stealth;
+    try {
+      while (true) {
+        const epoch = this.g.encounterEpoch;
+        const mine: Machine[] = [];
+        for (const sp of spawns) {
+          if (sp.delay) await this.wait(sp.delay);
+          if (epoch !== this.g.encounterEpoch) break;
+          mine.push(this.g.spawnMachine(sp.kind, sp.pos, sp.yaw ?? 0, { patrol: sp.patrol, aware: sp.aware ?? !o.stealth }));
+        }
+        if (this.ap) for (const m of mine) m.damage(999, m.pos);
+        await this.until(() => epoch !== this.g.encounterEpoch || mine.every((m) => m.dead), 120, 'fight');
+        if (epoch === this.g.encounterEpoch) break;
+        for (const m of mine) m.dispose();
+        await this.wait(1.2);
+      }
+    } finally {
+      bed?.stop(2);
+      this.g.stealth = false;
+    }
+    await this.wait(0.6);
+  }
+
+  /** Ammo box pickup. */
+  ammo(id: string, pos: THREE.Vector3, amount = 24): void {
+    const box = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.22, 0.26), new THREE.MeshStandardMaterial({ color: '#3a4a2e', roughness: 0.6 }));
+    box.position.copy(pos);
+    this.world.add(box);
+    const it = this.world.interact({
+      id, pos: pos.clone().add(new THREE.Vector3(0, 0.2, 0)), prompt: `Take ammo (+${amount})`, radius: 1.8,
+      onUse: () => {
+        this.g.combat.reserve += amount;
+        audio.pickup();
+        box.visible = false;
+        it.enabled = false;
+      },
+    });
   }
 }

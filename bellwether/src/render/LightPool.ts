@@ -29,6 +29,8 @@ export class LightPool {
   sockets: LightSocket[] = [];
   private timer = 0;
   echo = 0;
+  /** global dimmer for power failures (0..1) */
+  master = 1;
 
   constructor(readonly group: THREE.Group, count = 8) {
     for (let i = 0; i < count; i++) {
@@ -129,7 +131,7 @@ export class LightPool {
       l.position.copy(s.pos);
       l.color.copy(s.color);
       l.distance = s.distance;
-      l.intensity = s.intensity * this.socketValue(s, t) * this.fade[i];
+      l.intensity = s.intensity * this.socketValue(s, t) * this.fade[i] * this.master;
     }
   }
 }

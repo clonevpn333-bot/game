@@ -224,3 +224,5 @@ html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color:
 .hk-go { pointer-events: auto; margin-top: 8px; width: 100%; height: 40px; border: 1px solid #2e6a7a; background: #0c2630; color: #bff6ff; font: 600 14px/1 var(--title); letter-spacing: 0.4em; cursor: pointer; }
 .hk-go:hover { background: #12384a; }
 .hk-hint { margin-top: 10px; text-align: center; font: 11px var(--font); letter-spacing: 0.15em; color: #4a7a86; }
+
+.echoRing { display: none !important; }

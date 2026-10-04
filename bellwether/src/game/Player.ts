@@ -65,14 +65,14 @@ export class Player {
   onDeath: (() => void) | null = null;
 
   constructor(private readonly cam: THREE.PerspectiveCamera) {
-    this.flashlight = new THREE.SpotLight(0xfff1d8, 0, 30, 0.45, 0.5, 1.6);
+    this.flashlight = new THREE.SpotLight(0xfff1d8, 0, 34, 0.38, 0.55, 1.4);
     this.flashlight.castShadow = true;
     this.flashlight.shadow.mapSize.set(1024, 1024);
     this.flashlight.shadow.bias = -0.0004;
     this.flashlight.shadow.camera.near = 0.2;
     this.flashlight.shadow.camera.far = 30;
-    this.flashlight.position.set(0.18, -0.12, 0);
-    this.flashlight.target.position.set(0.05, -0.1, -1);
+    this.flashlight.position.set(0.12, -0.06, -0.55);
+    this.flashlight.target.position.set(0.02, -0.08, -2);
     cam.add(this.flashlight, this.flashlight.target);
     this.arms = this.buildArms();
     this.view.add(this.arms.root);
@@ -212,9 +212,9 @@ export class Player {
       this.flashlightOn = !this.flashlightOn;
       audio.click('switch');
     }
-    this.flashlight.intensity = damp(this.flashlight.intensity, this.flashlightOn ? 60 : 0, 18, dt);
+    this.flashlight.intensity = damp(this.flashlight.intensity, this.flashlightOn ? 520 : 0, 18, dt);
     // the shadow map must exist (rendered at least once) or every lit material's sampler is invalid
-    this.flashlight.shadow.autoUpdate = this.flashlight.intensity > 0.5 || !this.flashlight.shadow.map;
+    this.flashlight.shadow.autoUpdate = this.flashlight.intensity > 2 || !this.flashlight.shadow.map;
 
     switch (this.state) {
       case 'vault':

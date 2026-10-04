@@ -51,6 +51,9 @@ export class Citizen {
   private blockedT = 0;
   private servoT = Math.random() * 3;
   onGreet: ((c: Citizen, line: string) => void) | null = null;
+  /** team members who return fire during encounters */
+  shooter = false;
+  shootCd = 1;
 
   constructor(look: Look, pos: THREE.Vector3, readonly phys: PhysicsWorld, o: CitizenOpts = {}) {
     this.body = new Blocky(look);
@@ -79,7 +82,7 @@ export class Citizen {
       this.pathIdx = (best + 1) % this.path.length;
     }
     if (o.idleGesture) this.body.gesture(o.idleGesture, 999, true);
-    if (o.solid !== false) this.collider = phys.add({ cx: pos.x, cy: pos.y + 0.9, cz: pos.z, hx: 0.24, hy: 0.9, hz: 0.24, noVault: true, tag: 'citizen' });
+    if (o.solid !== false) this.collider = phys.add({ cx: pos.x, cy: pos.y + 0.9, cz: pos.z, hx: 0.24, hy: 0.9, hz: 0.24, noVault: true, noShoot: true, tag: 'citizen' });
     this.sync();
   }
 
@@ -296,7 +299,7 @@ export class Worker {
   constructor(readonly path: THREE.Vector3[], readonly phys: PhysicsWorld, readonly speed = 0.8) {
     this.bot = new Gen1Bot({ gen: 'gen2', shell: '#e0a526' });
     this.pos.copy(path[0]);
-    this.collider = phys.add({ cx: this.pos.x, cy: 0.8, cz: this.pos.z, hx: 0.6, hy: 0.8, hz: 0.6, noVault: true, tag: 'bot' });
+    this.collider = phys.add({ cx: this.pos.x, cy: 0.8, cz: this.pos.z, hx: 0.6, hy: 0.8, hz: 0.6, noVault: true, noShoot: true, tag: 'bot' });
   }
   update(dt: number, player: THREE.Vector3): void {
     this.t += dt;

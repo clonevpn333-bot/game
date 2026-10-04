@@ -5,6 +5,7 @@ import { prologue } from './prologue';
 import { ch1 } from './ch1';
 import { ch2 } from './ch2';
 import { ch3 } from './ch3';
+import { ch4 } from './ch4';
 
 export interface Chapter {
   id: string;
@@ -22,4 +23,4 @@ export interface Chapter {
   shots?: Record<string, (g: Game) => void>;
 }
 
-export const CHAPTERS: Chapter[] = [prologue, ch1, ch2, ch3];
+export const CHAPTERS: Chapter[] = [prologue, ch1, ch2, ch3, ch4];
