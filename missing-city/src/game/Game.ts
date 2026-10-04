@@ -850,10 +850,17 @@ export class Script {
     if (o.keepControlAfter !== false) this.control(true);
   }
 
+  /** A replaced camera move still resolves, so nothing awaiting it can stall. */
+  private endTween(): void {
+    const tw = this.g.cine.tween;
+    this.g.cine.tween = null;
+    tw?.done();
+  }
+
   cam(pos: THREE.Vector3, look: THREE.Vector3, fov = 45): void {
     const c = this.g.cine;
     c.active = true;
-    c.tween = null;
+    this.endTween();
     c.pos.copy(pos);
     c.look.copy(look);
     c.fov = fov;
@@ -868,6 +875,7 @@ export class Script {
       c.fov = this.g.engine.camera.fov;
     }
     if (this.ap) dur = 0.05;
+    this.endTween();
     return new Promise<void>((res) => {
       c.tween = { t: 0, dur, p0: c.pos.clone(), p1: pos.clone(), l0: c.look.clone(), l1: look.clone(), f0: c.fov, f1: fov ?? c.fov, ease, done: res };
     }).then(() => this.check());
