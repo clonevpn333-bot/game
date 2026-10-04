@@ -109,6 +109,10 @@ export class Engine {
   readonly renderPass: RenderPass;
   quality: Quality = 'high';
   private maxDpr = 1.5;
+  /** Dynamic resolution: scales the pixel ratio down when frames run long, back up when there is headroom. */
+  private dynScale = 1;
+  private frameAvg = 16;
+  private dynTimer = 0;
   private lastW = 0;
   private lastH = 0;
 
@@ -164,7 +168,7 @@ export class Engine {
     if (!force && w === this.lastW && h === this.lastH) return;
     this.lastW = w;
     this.lastH = h;
-    const dpr = Math.min(window.devicePixelRatio || 1, this.maxDpr);
+    const dpr = Math.max(0.35, Math.min(window.devicePixelRatio || 1, this.maxDpr) * this.dynScale);
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(w, h, false);
     this.composer.setPixelRatio(dpr);
@@ -174,6 +178,18 @@ export class Engine {
     this.post.uRes.value.set(w * dpr, h * dpr);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+  }
+
+  /** Feed the real frame time (ms); adjusts render resolution every ~1.5 s. */
+  adapt(frameMs: number): void {
+    this.frameAvg += (Math.min(frameMs, 250) - this.frameAvg) * 0.1;
+    this.dynTimer += frameMs;
+    if (this.dynTimer < 1500) return;
+    this.dynTimer = 0;
+    const prev = this.dynScale;
+    if (this.frameAvg > 34) this.dynScale = Math.max(0.5, this.dynScale * 0.85);
+    else if (this.frameAvg < 20) this.dynScale = Math.min(1, this.dynScale * 1.1);
+    if (Math.abs(prev - this.dynScale) > 0.01) this.resize(true);
   }
 
   render(): void {

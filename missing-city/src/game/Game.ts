@@ -417,6 +417,7 @@ export class Game {
     // keep their timing on slow machines
     const dt = Math.min(0.05, real);
     this.sdt = Math.min(0.25, real);
+    if (this.state !== 'loading') this.engine.adapt(real * 1000);
     this.lastTime = now;
     this.frame++;
     this.input.pollGamepad();
