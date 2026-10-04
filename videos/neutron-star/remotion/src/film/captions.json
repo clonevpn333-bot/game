@@ -1,0 +1,746 @@
+[
+ {
+  "text": " One",
+  "startMs": 170,
+  "endMs": 424,
+  "timestampMs": 297,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " teaspoon",
+  "startMs": 424,
+  "endMs": 866,
+  "timestampMs": 645,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " of",
+  "startMs": 866,
+  "endMs": 1121,
+  "timestampMs": 994,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " this",
+  "startMs": 1121,
+  "endMs": 1375,
+  "timestampMs": 1248,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " star",
+  "startMs": 1375,
+  "endMs": 1629,
+  "timestampMs": 1502,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " weighs",
+  "startMs": 1629,
+  "endMs": 1883,
+  "timestampMs": 1756,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " as",
+  "startMs": 1883,
+  "endMs": 2137,
+  "timestampMs": 2010,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " much",
+  "startMs": 2137,
+  "endMs": 2391,
+  "timestampMs": 2264,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " as",
+  "startMs": 2391,
+  "endMs": 2645,
+  "timestampMs": 2518,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " Mount",
+  "startMs": 2645,
+  "endMs": 2899,
+  "timestampMs": 2772,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " Everest.",
+  "startMs": 2899,
+  "endMs": 3530,
+  "timestampMs": 3214,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " It's",
+  "startMs": 3870,
+  "endMs": 4117,
+  "timestampMs": 3994,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " a",
+  "startMs": 4117,
+  "endMs": 4364,
+  "timestampMs": 4240,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " neutron",
+  "startMs": 4364,
+  "endMs": 4793,
+  "timestampMs": 4578,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " star.",
+  "startMs": 4793,
+  "endMs": 5040,
+  "timestampMs": 4916,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " The",
+  "startMs": 5400,
+  "endMs": 5622,
+  "timestampMs": 5511,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " crushed",
+  "startMs": 5622,
+  "endMs": 6008,
+  "timestampMs": 5815,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " core",
+  "startMs": 6008,
+  "endMs": 6230,
+  "timestampMs": 6119,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " of",
+  "startMs": 6230,
+  "endMs": 6452,
+  "timestampMs": 6341,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " a",
+  "startMs": 6452,
+  "endMs": 6674,
+  "timestampMs": 6563,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " giant",
+  "startMs": 6674,
+  "endMs": 6896,
+  "timestampMs": 6785,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " star",
+  "startMs": 6896,
+  "endMs": 7118,
+  "timestampMs": 7007,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " that",
+  "startMs": 7118,
+  "endMs": 7339,
+  "timestampMs": 7228,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " exploded.",
+  "startMs": 7339,
+  "endMs": 7890,
+  "timestampMs": 7614,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " It",
+  "startMs": 8230,
+  "endMs": 8456,
+  "timestampMs": 8343,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " packs",
+  "startMs": 8456,
+  "endMs": 8681,
+  "timestampMs": 8568,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " more",
+  "startMs": 8681,
+  "endMs": 8907,
+  "timestampMs": 8794,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " mass",
+  "startMs": 8907,
+  "endMs": 9133,
+  "timestampMs": 9020,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " than",
+  "startMs": 9133,
+  "endMs": 9359,
+  "timestampMs": 9246,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " our",
+  "startMs": 9359,
+  "endMs": 9584,
+  "timestampMs": 9471,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " Sun",
+  "startMs": 9584,
+  "endMs": 9810,
+  "timestampMs": 9697,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " into",
+  "startMs": 9810,
+  "endMs": 10203,
+  "timestampMs": 10006,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " a",
+  "startMs": 10203,
+  "endMs": 10429,
+  "timestampMs": 10316,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " ball",
+  "startMs": 10429,
+  "endMs": 10654,
+  "timestampMs": 10542,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " the",
+  "startMs": 10654,
+  "endMs": 10880,
+  "timestampMs": 10767,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " size",
+  "startMs": 10880,
+  "endMs": 11106,
+  "timestampMs": 10993,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " of",
+  "startMs": 11106,
+  "endMs": 11331,
+  "timestampMs": 11218,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " a",
+  "startMs": 11331,
+  "endMs": 11557,
+  "timestampMs": 11444,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " city.",
+  "startMs": 11557,
+  "endMs": 11950,
+  "timestampMs": 11753,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " And",
+  "startMs": 12270,
+  "endMs": 12520,
+  "timestampMs": 12395,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " it",
+  "startMs": 12520,
+  "endMs": 12770,
+  "timestampMs": 12645,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " spins.",
+  "startMs": 12770,
+  "endMs": 13020,
+  "timestampMs": 12895,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " The",
+  "startMs": 13400,
+  "endMs": 13608,
+  "timestampMs": 13504,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " fastest",
+  "startMs": 13608,
+  "endMs": 13971,
+  "timestampMs": 13790,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " one",
+  "startMs": 13971,
+  "endMs": 14180,
+  "timestampMs": 14076,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " turns",
+  "startMs": 14180,
+  "endMs": 14388,
+  "timestampMs": 14284,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " over",
+  "startMs": 14388,
+  "endMs": 14751,
+  "timestampMs": 14570,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " seven",
+  "startMs": 14751,
+  "endMs": 15113,
+  "timestampMs": 14932,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " hundred",
+  "startMs": 15113,
+  "endMs": 15476,
+  "timestampMs": 15294,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " times",
+  "startMs": 15476,
+  "endMs": 15839,
+  "timestampMs": 15658,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " a",
+  "startMs": 15839,
+  "endMs": 16047,
+  "timestampMs": 15943,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " second.",
+  "startMs": 16047,
+  "endMs": 16410,
+  "timestampMs": 16228,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " Drop",
+  "startMs": 16760,
+  "endMs": 16983,
+  "timestampMs": 16872,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " a",
+  "startMs": 16983,
+  "endMs": 17205,
+  "timestampMs": 17094,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " pen",
+  "startMs": 17205,
+  "endMs": 17428,
+  "timestampMs": 17316,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " here,",
+  "startMs": 17428,
+  "endMs": 17650,
+  "timestampMs": 17539,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " and",
+  "startMs": 18010,
+  "endMs": 18213,
+  "timestampMs": 18112,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " it",
+  "startMs": 18213,
+  "endMs": 18417,
+  "timestampMs": 18315,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " hits",
+  "startMs": 18417,
+  "endMs": 18620,
+  "timestampMs": 18519,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " the",
+  "startMs": 18620,
+  "endMs": 18823,
+  "timestampMs": 18722,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " ground",
+  "startMs": 18823,
+  "endMs": 19027,
+  "timestampMs": 18925,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " at",
+  "startMs": 19027,
+  "endMs": 19230,
+  "timestampMs": 19129,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " seven",
+  "startMs": 19230,
+  "endMs": 19584,
+  "timestampMs": 19407,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " million",
+  "startMs": 19584,
+  "endMs": 19938,
+  "timestampMs": 19761,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " kilometers",
+  "startMs": 19938,
+  "endMs": 20593,
+  "timestampMs": 20266,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " an",
+  "startMs": 20593,
+  "endMs": 20797,
+  "timestampMs": 20695,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " hour.",
+  "startMs": 20797,
+  "endMs": 21000,
+  "timestampMs": 20898,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " But",
+  "startMs": 21390,
+  "endMs": 21625,
+  "timestampMs": 21508,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " here's",
+  "startMs": 21625,
+  "endMs": 22033,
+  "timestampMs": 21829,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " the",
+  "startMs": 22033,
+  "endMs": 22267,
+  "timestampMs": 22150,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " craziest",
+  "startMs": 22267,
+  "endMs": 22675,
+  "timestampMs": 22471,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " part.",
+  "startMs": 22675,
+  "endMs": 22910,
+  "timestampMs": 22792,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " When",
+  "startMs": 23210,
+  "endMs": 23426,
+  "timestampMs": 23318,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " two",
+  "startMs": 23426,
+  "endMs": 23642,
+  "timestampMs": 23534,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " of",
+  "startMs": 23642,
+  "endMs": 23858,
+  "timestampMs": 23750,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " them",
+  "startMs": 23858,
+  "endMs": 24074,
+  "timestampMs": 23966,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " crash,",
+  "startMs": 24074,
+  "endMs": 24290,
+  "timestampMs": 24182,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " they",
+  "startMs": 24490,
+  "endMs": 24740,
+  "timestampMs": 24615,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " make",
+  "startMs": 24740,
+  "endMs": 24990,
+  "timestampMs": 24865,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " gold.",
+  "startMs": 24990,
+  "endMs": 25240,
+  "timestampMs": 25115,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " The",
+  "startMs": 25590,
+  "endMs": 25831,
+  "timestampMs": 25710,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " gold",
+  "startMs": 25831,
+  "endMs": 26073,
+  "timestampMs": 25952,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " in",
+  "startMs": 26073,
+  "endMs": 26314,
+  "timestampMs": 26194,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " your",
+  "startMs": 26314,
+  "endMs": 26555,
+  "timestampMs": 26434,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " jewelry",
+  "startMs": 26555,
+  "endMs": 27154,
+  "timestampMs": 26854,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " was",
+  "startMs": 27154,
+  "endMs": 27395,
+  "timestampMs": 27274,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " probably",
+  "startMs": 27395,
+  "endMs": 27994,
+  "timestampMs": 27694,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " forged",
+  "startMs": 27994,
+  "endMs": 28414,
+  "timestampMs": 28204,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " in",
+  "startMs": 28414,
+  "endMs": 28655,
+  "timestampMs": 28534,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " a",
+  "startMs": 28655,
+  "endMs": 28896,
+  "timestampMs": 28776,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " crash",
+  "startMs": 28896,
+  "endMs": 29137,
+  "timestampMs": 29016,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " like",
+  "startMs": 29137,
+  "endMs": 29379,
+  "timestampMs": 29258,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " this.",
+  "startMs": 29379,
+  "endMs": 29620,
+  "timestampMs": 29500,
+  "confidence": 1,
+  "line": 7
+ }
+]

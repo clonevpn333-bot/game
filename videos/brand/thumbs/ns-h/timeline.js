@@ -1,0 +1,1 @@
+FILM.TIMELINE = { title: 'thumb', bpm: 120, duration: 1, fps: 24, width: 1280, height: 720, safeBottom: 720, shots: [{ id: 'thumb', file: '01-thumb.js', start: 0, end: 1, mode: 'none', brief: 'ep4 cover' }], cues: [] };
