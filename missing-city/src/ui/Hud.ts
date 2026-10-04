@@ -315,6 +315,13 @@ export class Hud {
       ${this.panels(settings, unlocked, chapters)}`;
     for (const root of [this.titleEl, this.pauseEl]) {
       const show = (id: string | null) => root.querySelectorAll('.panel').forEach((p) => p.classList.toggle('on', p.getAttribute('data-p') === id));
+      root.querySelectorAll('.panel-back').forEach((b) => b.addEventListener('click', () => show(null)));
+      root.addEventListener('keydown', (e) => {
+        if ((e as KeyboardEvent).key === 'Escape' && root.querySelector('.panel.on')) {
+          e.stopPropagation();
+          show(null);
+        }
+      });
       root.querySelectorAll('.menu-list button').forEach((b) => {
         b.addEventListener('click', () => {
           const a = (b as HTMLElement).dataset.a;
@@ -354,7 +361,7 @@ export class Hud {
 
   private panels(s: Settings, unlocked: number, chapters: { num: string; title: string }[]): string {
     return `
-      <div class="panel" data-p="settings"><h4>SETTINGS</h4>
+      <div class="panel" data-p="settings"><button class="panel-back" aria-label="Back">✕</button><h4>SETTINGS</h4>
         <label>Master volume <input type="range" min="0" max="1" step="0.05" value="${s.master}" data-s="master"></label>
         <label>Music <input type="range" min="0" max="1" step="0.05" value="${s.music}" data-s="music"></label>
         <label>Effects &amp; ambience <input type="range" min="0" max="1" step="0.05" value="${s.sfx}" data-s="sfx"></label>
@@ -363,7 +370,7 @@ export class Hud {
         <label>Subtitles <input type="checkbox" ${s.subtitles ? 'checked' : ''} data-s="subtitles"></label>
         <label>Graphics <select data-s="quality"><option value="high" ${s.quality === 'high' ? 'selected' : ''}>High</option><option value="medium" ${s.quality === 'medium' ? 'selected' : ''}>Medium</option><option value="low" ${s.quality === 'low' ? 'selected' : ''}>Low</option></select></label>
       </div>
-      <div class="panel" data-p="controls"><h4>CONTROLS</h4><table>
+      <div class="panel" data-p="controls"><button class="panel-back" aria-label="Back">✕</button><h4>CONTROLS</h4><table>
         <tr><td>Move</td><td>W A S D</td></tr><tr><td>Look</td><td>Mouse</td></tr>
         <tr><td>Sprint</td><td>Shift</td></tr><tr><td>Crouch</td><td>C / Ctrl</td></tr>
         <tr><td>Jump · Vault · Mantle · Climb</td><td>Space</td></tr><tr><td>Interact · Talk</td><td>E</td></tr>
@@ -372,7 +379,7 @@ export class Hud {
         <tr><td>Reload</td><td>R</td></tr><tr><td>Dodge roll</td><td>X / Alt</td></tr>
         <tr><td>Skip line</td><td>Enter</td></tr><tr><td>Pause</td><td>Esc / P</td></tr>
         <tr><td>Gamepad</td><td>Standard layout</td></tr></table></div>
-      <div class="panel chapters" data-p="chapters"><h4>CHAPTERS</h4>
+      <div class="panel chapters" data-p="chapters"><button class="panel-back" aria-label="Back">✕</button><h4>CHAPTERS</h4>
         ${chapters.map((c, i) => `<button data-i="${i}" ${i <= unlocked ? '' : 'disabled'}><small>${c.num}</small>${i <= unlocked ? c.title : '— — —'}</button>`).join('')}
       </div>`;
   }
