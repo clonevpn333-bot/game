@@ -364,6 +364,12 @@ export const ch6: Chapter = {
       g.lights.tintMix = 0.9;
       g.player.teleport(V(3, 0, 72), Math.PI * 0.85, 0.02);
     },
+    hunter(g) {
+      g.lights.tintMix = 0.9;
+      const h = addGiant(g.world!, g, { pos: V(0, 0, 140), yaw: Math.PI, hostile: true, hunt: true, name: 'SHEPHERD 09' });
+      h.sh.look.set(0, 0, 120);
+      g.player.teleport(V(-6, 0.15, 112), Math.PI, 0.3);
+    },
     station(g) {
       g.lights.tintMix = 0.9;
       g.player.teleport(V(0, 0.15, 158), Math.PI, 0.1);

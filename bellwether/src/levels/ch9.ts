@@ -361,6 +361,13 @@ export const ch9: Chapter = {
       g.spawnMachine('security', V(4, 0, 88), Math.PI, { aware: true });
       g.player.teleport(V(1, 0, 57), Math.PI, 0.03);
     },
+    boss(g) {
+      g.player.weapon = 'pistol';
+      const b = addGiant(g.world!, g, { pos: V(0, 0, 100), yaw: Math.PI, hostile: true, hunt: true, weakKnees: true, name: 'SHEPHERD 01', scale: 1.1 });
+      g.world!.named.set('boss', b);
+      g.combat.extraTargets = () => giantTargets(g.world!, g);
+      g.player.teleport(V(1, 0, 66), Math.PI, 0.32);
+    },
     tower(g) {
       g.player.teleport(V(0, 0.15, 150), Math.PI, 0.12);
     },

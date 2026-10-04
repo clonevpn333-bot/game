@@ -56,7 +56,7 @@ export function addGiant(W: World, g: Game, o: GiantOpts): Giant {
       const core = new THREE.Mesh(new THREE.SphereGeometry(0.75 * s, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff7a20').multiplyScalar(2.6), toneMapped: false }));
       l.knee.add(core);
       core.position.set(0, 0, 1.0 * s);
-      giant.knees.push({ hp: 140, core });
+      giant.knees.push({ hp: 180, core });
     }
   }
   giants(W).push(giant);
