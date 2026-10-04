@@ -11,7 +11,27 @@
     <main id="app">
       <canvas id="game-canvas" aria-label="The Missing City"></canvas>
       <div id="ui"></div>
+      <div id="boot-msg" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;background:#05070b;color:#9aa6b8;font:14px/1.6 system-ui,sans-serif;letter-spacing:.2em;z-index:99;white-space:pre-line">LOADING THE MISSING CITY…</div>
     </main>
+    <script>
+      // Visible feedback before and instead of a black screen: removed by the game once it renders.
+      (function () {
+        var box = document.getElementById('boot-msg');
+        function fail(msg) {
+          box.style.letterSpacing = '0';
+          box.style.color = '#e8c0b0';
+          box.textContent = 'THE MISSING CITY could not start.\n\n' + msg +
+            '\n\nOpen the file in desktop Chrome, Edge or Firefox (not a phone or an app preview), with hardware acceleration on.';
+        }
+        var c = document.createElement('canvas');
+        if (!c.getContext('webgl2')) fail('This browser has no WebGL 2 (3D graphics) available.');
+        window.addEventListener('error', function (e) { if (box.isConnected) fail('Error: ' + (e.message || e)); });
+        window.addEventListener('unhandledrejection', function (e) {
+          var r = e.reason;
+          if (box.isConnected) fail('Error: ' + (r && r.message ? r.message : r));
+        });
+      })();
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

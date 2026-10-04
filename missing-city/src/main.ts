@@ -15,4 +15,5 @@ window.addEventListener('unhandledrejection', (e) => {
 });
 
 const game = new Game(canvas, ui);
-void game.boot();
+// a failed boot leaves the overlay up and its error handler explains why
+void game.boot().then(() => document.getElementById('boot-msg')?.remove());
