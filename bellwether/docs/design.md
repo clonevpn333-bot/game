@@ -73,3 +73,26 @@ How each clause is proven:
 | 8 | The Truth | The signal beneath the city, fragments of originals | puzzle, hack |
 | 9 | Civil War | Factions, riots, a battle to the core | combat set pieces |
 | End | Bellwether | The choice, both endings, the question | choice |
+
+## Build status
+
+All chapters are playable from New Game through to the credits. In code: `src/levels/prologue.ts`, `ch1.ts` … `ch9.ts`, `finale.ts`.
+
+- **Ch 5 Ellie:** Maple Street and the Vale house.
+  - Letters, height marks, Ellie's room, dinner.
+  - The strike turns every light red.
+- **Ch 6 The Blackout:** Harbor Avenue in red.
+  - Frozen citizens turn to watch you; stopped traffic.
+  - Roadblock fight, the locked-out mother and son, a maintenance unit.
+  - Standoff at Union Station.
+- **Ch 7 CIVIC:** the tower lobby and the floor 212 core. A calm conversation with two dialogue choices.
+- **Ch 8 The Truth:** the Bellwether Array at level −40.
+  - Three relay hacks, each revealing an echo of an original.
+  - Original-Ellie's voice; the broadcast leak.
+- **Ch 9 Civil War:** Founders Boulevard.
+  - Returners and Remainers argue in the street.
+  - A barricade battle with free citizens firing beside you, then heavy units.
+  - Ellie finds you.
+- **Finale:** the reveal, then the choice (`Hud.choice`).
+  - **Bring them home** or **Let Bellwether live**, each with its own epilogue.
+  - The closing question card (`Hud.question`), then credits.

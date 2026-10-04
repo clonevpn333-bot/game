@@ -42,6 +42,7 @@ function sign(W: World, c: Citizen, text: string, color: string): void {
   x.fillText(words.slice(mid).join(' '), 128, 98);
   const t = new THREE.CanvasTexture(tex);
   t.colorSpace = THREE.SRGBColorSpace;
+  W.disposers.push(() => t.dispose());
   const g = new THREE.Group();
   const board = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.45, 0.03), [M().wood, M().wood, M().wood, M().wood, new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }), new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 })]);
   board.position.y = 2.35;
@@ -51,7 +52,6 @@ function sign(W: World, c: Citizen, text: string, color: string): void {
   c.body.root.add(g);
   g.position.set(0.15, 0, 0.2);
   c.body.gesture('armsUp', 999, true);
-  void W;
 }
 
 function fire(W: World, x: number, z: number, s = 1): void {

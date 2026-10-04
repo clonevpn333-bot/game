@@ -82,6 +82,7 @@ export function adScreen(W: World, pos: THREE.Vector3, yaw: number, w: number, h
   const x = c.getContext('2d')!;
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
+  W.disposers.push(() => tex.dispose());
   let list = slides;
   const draw = (i: number, t: number) => {
     const s = list[i % list.length];
