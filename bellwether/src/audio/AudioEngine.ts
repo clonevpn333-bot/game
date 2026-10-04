@@ -971,6 +971,12 @@ export class AudioEngine {
     this.burst({ pos, dur: 0.3, vol, freq: 400, freqEnd: 2500, type: 'bandpass', q: 1.5, noise: 'pink', reverb: 0.1 });
   }
 
+  /** three knuckle raps on wood */
+  knock(pos?: THREE.Vector3): void {
+    if (!this.ctx) return;
+    for (let i = 0; i < 3; i++) window.setTimeout(() => this.impact('wood', pos, 0.7), i * 190);
+  }
+
   door(kind: 'open' | 'close' | 'creak' | 'metal' | 'locked' | 'slide', pos?: THREE.Vector3): void {
     if (!this.ctx) return;
     const ctx = this.ctx;

@@ -31,6 +31,9 @@ export class LightPool {
   echo = 0;
   /** global dimmer for power failures (0..1) */
   master = 1;
+  /** global colour shift (the city turning red): every light lerps toward tint by tintMix */
+  readonly tint = new THREE.Color('#ff1a0a');
+  tintMix = 0;
 
   constructor(readonly group: THREE.Group, count = 8) {
     for (let i = 0; i < count; i++) {
@@ -79,7 +82,11 @@ export class LightPool {
     for (const s of this.sockets) {
       if (!s.emissives) continue;
       const k = this.socketValue(s, t);
-      s.emissives.forEach((m, i) => m.color.copy(s.baseEmissive![i]).multiplyScalar(Math.max(0.03, k)));
+      s.emissives.forEach((m, i) => {
+        m.color.copy(s.baseEmissive![i]);
+        if (this.tintMix > 0) m.color.lerp(this.tint.clone().multiplyScalar(m.color.r + m.color.g + m.color.b), this.tintMix);
+        m.color.multiplyScalar(Math.max(0.03, k));
+      });
     }
     this.timer -= dt;
     if (this.timer <= 0) {
@@ -130,6 +137,7 @@ export class LightPool {
       }
       l.position.copy(s.pos);
       l.color.copy(s.color);
+      if (this.tintMix > 0) l.color.lerp(this.tint, this.tintMix);
       l.distance = s.distance;
       l.intensity = s.intensity * this.socketValue(s, t) * this.fade[i] * this.master;
     }

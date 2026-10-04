@@ -314,6 +314,7 @@ export class Game {
     this.physics.clear();
     this.lights.clear();
     this.lights.master = 1;
+    this.lights.tintMix = 0;
     this.fx.clearDecals();
     audio.stopAllLoops(0.6);
     this.cine.active = false;

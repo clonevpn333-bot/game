@@ -43,6 +43,9 @@ export class Hud {
   private cardEl = el('div', 'card');
   private fadeEl = el('div', 'fade');
   private docEl = el('div', 'doc');
+  private choiceEl = el('div', 'choice');
+  /** index the autopilot picks in choice() */
+  autoChoice = 0;
   private padEl = el('div', 'keypad');
   private hurtEl = el('div', 'hurt');
   private chipEl = el('div', 'chip');
@@ -71,7 +74,7 @@ export class Hud {
     this.echoEl.innerHTML = `<svg viewBox="0 0 62 62"><circle cx="31" cy="31" r="26" fill="none" stroke="rgba(127,227,255,0.15)" stroke-width="3"/><circle class="arc" cx="31" cy="31" r="26" fill="none" stroke="#7fe3ff" stroke-width="3" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="0"/></svg><div class="lbl">ECHO</div>`;
     this.echoCircle = this.echoEl.querySelector('.arc') as SVGCircleElement;
     this.ammoEl.innerHTML = '<div class="wpn">M9 PISTOL</div><span class="mag">12</span><span class="res">/ 24</span>';
-    for (const e of [this.hurtEl, this.barsEl, this.subsEl, this.objEl, this.promptEl, this.reticleEl, this.dotEl, this.clusterEl, this.toastEl, this.chipEl, this.hintEl, this.cardEl, this.fadeEl, this.docEl, this.padEl, this.hackEl, this.wpEl, this.civicEl, this.titleEl, this.pauseEl, this.creditsEl, this.loadingEl]) parent.appendChild(e);
+    for (const e of [this.hurtEl, this.barsEl, this.subsEl, this.objEl, this.promptEl, this.reticleEl, this.dotEl, this.clusterEl, this.toastEl, this.chipEl, this.hintEl, this.cardEl, this.fadeEl, this.docEl, this.choiceEl, this.padEl, this.hackEl, this.wpEl, this.civicEl, this.titleEl, this.pauseEl, this.creditsEl, this.loadingEl]) parent.appendChild(e);
   }
 
   get subBusy(): boolean {
@@ -274,6 +277,44 @@ export class Hud {
           this.onKeyCapture?.(null);
           res();
         }
+        return true;
+      });
+    });
+  }
+
+  // ---------------------------------------------------------------- choice
+  /** A slow, heavy decision: two (or more) options, picked with 1/2, arrows + E, or a click. */
+  choice(question: string, options: { title: string; sub: string }[], prompt = ''): Promise<number> {
+    if (this.autopilot) return Promise.resolve(this.autoChoice);
+    const el = this.choiceEl;
+    el.innerHTML = `<div class="ch-in"><div class="ch-q">${question}</div>${prompt ? `<div class="ch-p">${prompt}</div>` : ''}<div class="ch-opts">${options.map((o, i) => `<button class="ch-o" data-i="${i}"><span class="ch-k">${i + 1}</span><b>${o.title}</b><span class="ch-s">${o.sub}</span></button>`).join('')}</div><div class="ch-h">1 / 2 · ← → AND E · OR CLICK</div></div>`;
+    void el.offsetWidth;
+    el.classList.add('on');
+    document.exitPointerLock?.();
+    const btns = [...el.querySelectorAll<HTMLButtonElement>('.ch-o')];
+    let sel = -1;
+    const mark = (i: number) => {
+      sel = i;
+      btns.forEach((b, j) => b.classList.toggle('sel', j === i));
+    };
+    return new Promise((res) => {
+      const t0 = performance.now();
+      const done = (i: number) => {
+        if (performance.now() - t0 < 900) return;
+        el.classList.remove('on');
+        this.onKeyCapture?.(null);
+        res(i);
+      };
+      btns.forEach((b, i) => {
+        b.onmouseenter = () => mark(i);
+        b.onclick = () => done(i);
+      });
+      this.onKeyCapture?.((code) => {
+        const n = Number(code.replace('Digit', '').replace('Numpad', '')) - 1;
+        if (n >= 0 && n < options.length) done(n);
+        else if (code === 'ArrowLeft' || code === 'KeyA') mark(Math.max(0, sel - 1));
+        else if (code === 'ArrowRight' || code === 'KeyD') mark(Math.min(options.length - 1, sel + 1));
+        else if ((code === 'KeyE' || code === 'Enter' || code === 'Space') && sel >= 0) done(sel);
         return true;
       });
     });

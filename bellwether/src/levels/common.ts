@@ -261,3 +261,83 @@ export function signalHead(W: World, x: number, z: number, yaw: number, sig: { g
     lamps.forEach((m, i) => (m.material = i === state ? on[i] : off[i]));
   });
 }
+
+// ---------------------------------------------------------------- suburbs
+/**
+ * A two-storey-ish suburban house shell (exterior only, solid): siding, pitched shingle roof with gables,
+ * porch, door and warm lit windows. `front` = +1 faces +z, -1 faces -z.
+ */
+export function suburbHouse(W: World, cx: number, cz: number, w: number, d: number, front: 1 | -1, siding: THREE.Material, seed: number, o: { lit?: boolean; h?: number } = {}): void {
+  const L = M();
+  const h = o.h ?? 3.4;
+  const r = mulberry32(seed);
+  W.box([cx - w / 2, 0, cz - d / 2], [cx + w / 2, h, cz + d / 2], siding, { uv: 2, noVault: true });
+  W.box([cx - w / 2 - 0.05, 0, cz - d / 2 - 0.05], [cx + w / 2 + 0.05, 0.45, cz + d / 2 + 0.05], L.concrete, { collide: false });
+  gableRoof(W, cx, cz, w, d, h, L.shingle, siding);
+  const fz = cz + front * (d / 2);
+  // porch, door, steps
+  W.box([cx - 2, 0, Math.min(fz, fz + front * 1.8)], [cx + 2, 0.3, Math.max(fz, fz + front * 1.8)], L.wood, { uv: 2, collide: false });
+  W.box([cx - 2.1, 2.7, Math.min(fz, fz + front * 2)], [cx + 2.1, 2.85, Math.max(fz, fz + front * 2)], L.woodPaint, { collide: false });
+  for (const sx of [-1.9, 1.9]) W.boxC([cx + sx, 1.4, fz + front * 1.75], [0.14, 2.8, 0.14], L.woodPaint, 0);
+  const door = new THREE.MeshStandardMaterial({ color: ['#7a2a2a', '#1f3a5f', '#2f5a3a', '#e8e2d4'][Math.floor(r() * 4)], roughness: 0.5 });
+  W.quad(door, { x: cx, y: 1.1, z: fz + front * 0.02 }, 1.0, 2.1, front > 0 ? 0 : Math.PI);
+  W.light({ x: cx + 0.9, y: 2.3, z: fz + front * 0.3 }, '#ffcf8a', { intensity: 3, distance: 6, glow: 0.35, pool: false });
+  // windows
+  const lit = litWindow();
+  const dark = L.glassDark;
+  for (const wx of [-w / 2 + 1.8, w / 2 - 1.8]) {
+    W.quad(r() < 0.6 || o.lit ? lit : dark, { x: cx + wx, y: 1.6, z: fz + front * 0.02 }, 1.5, 1.3, front > 0 ? 0 : Math.PI);
+    W.boxC([cx + wx, 0.9, fz + front * 0.08], [1.7, 0.08, 0.16], L.woodPaint, 0, { collide: false });
+    for (const s of [-0.85, 0.85]) W.boxC([cx + wx + s, 1.6, fz + front * 0.06], [0.1, 1.4, 0.06], L.woodPaint, 0, { collide: false });
+  }
+  // path to the sidewalk
+  W.box([cx - 0.7, 0.15, Math.min(fz + front * 1.8, fz + front * 6)], [cx + 0.7, 0.17, Math.max(fz + front * 1.8, fz + front * 6)], L.sidewalk, { collide: false, cast: false });
+}
+
+/** A gabled roof over [cx±w/2]×[cz±d/2] starting at height h; ridge runs along x. */
+export function gableRoof(W: World, cx: number, cz: number, w: number, d: number, h: number, roof: THREE.Material, gable: THREE.Material, pitch = 0.6): void {
+  const rise = (d / 2) * Math.tan(pitch);
+  const slab = Math.hypot(d / 2, rise) + 0.5;
+  for (const s of [-1, 1]) {
+    const g = new THREE.BoxGeometry(w + 0.8, 0.18, slab);
+    W.geo(g, roof, { x: cx, y: h + rise / 2 + 0.05, z: cz + s * (d / 4 + 0.12) }, new THREE.Euler(s * pitch, 0, 0), 1, { uv: 'world', uvScale: 2 });
+  }
+  const tri = new THREE.Shape([new THREE.Vector2(-d / 2, 0), new THREE.Vector2(d / 2, 0), new THREE.Vector2(0, rise)]);
+  const tg = new THREE.ExtrudeGeometry(tri, { depth: w - 0.02, bevelEnabled: false });
+  tg.translate(0, 0, -(w - 0.02) / 2);
+  W.geo(tg, gable, { x: cx, y: h, z: cz }, new THREE.Euler(0, Math.PI / 2, 0), 1, { uv: 'world', uvScale: 2 });
+}
+
+let litWin: THREE.MeshBasicMaterial | null = null;
+/** A warm window with drawn curtains, seen from the street at night. */
+function litWindow(): THREE.MeshBasicMaterial {
+  if (litWin) return litWin;
+  const c = document.createElement('canvas');
+  c.width = 64;
+  c.height = 64;
+  const x = c.getContext('2d')!;
+  const g = x.createRadialGradient(32, 30, 4, 32, 32, 44);
+  g.addColorStop(0, '#ffe2b0');
+  g.addColorStop(1, '#c47a3a');
+  x.fillStyle = g;
+  x.fillRect(0, 0, 64, 64);
+  x.fillStyle = 'rgba(120,40,30,0.55)';
+  x.fillRect(0, 0, 14, 64);
+  x.fillRect(50, 0, 14, 64);
+  x.fillStyle = '#3a2a20';
+  x.fillRect(31, 0, 2, 64);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  litWin = new THREE.MeshBasicMaterial({ map: t, color: new THREE.Color(1.6, 1.4, 1.2) });
+  return litWin;
+}
+
+function mulberry32(a: number): () => number {
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}

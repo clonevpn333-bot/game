@@ -9,6 +9,8 @@ export const PEOPLE = {
   ellie: { gen: 'gen4', child: true, female: true, skin: '#e8b996', hair: 'bob', hairColor: '#4a2c1c', iris: '#5a3a22', top: 'hoodie', topColor: '#e8778f', topAccent: '#ffd36b', pants: '#3d5a8a', shoes: '#d8423b', sole: '#f4efe6', light: '#7ff4ff' },
   cashier: { gen: 'gen4', female: true, skin: '#b9825f', hair: 'pony', hairColor: '#2a1a12', top: 'polo', topColor: '#e9e2d0', jacket: 'apron', jacketColor: '#2f7a4a', pants: '#2b2b33', shoes: '#222', sole: '#ddd', light: '#7ff4ff' },
   courier: { gen: 'gen4', skin: '#d29b74', hair: 'short', hairColor: '#3a2416', hat: 'cap', hatColor: '#e35d1f', top: 'tee', topColor: '#1f2328', jacket: 'bomber', jacketColor: '#e8742a', pants: '#2c3340', legs: 'cargo', shoes: '#2a2a2a', sole: '#e6e0d2', backpack: '#e8742a', revealable: 'L', light: '#7ff4ff' },
+  mom: { gen: 'gen4', female: true, skin: '#e2b391', hair: 'bun', hairColor: '#4a2c1c', iris: '#5a3a22', top: 'sweater', topColor: '#b8574a', jacket: 'apron', jacketColor: '#efe8d8', pants: '#3a3f4c', shoes: '#4a3a30', sole: '#ece4d4', light: '#7ff4ff', height: 1.66 },
+  dad: { gen: 'gen4', skin: '#d39e78', hair: 'side', hairColor: '#5a4a3c', iris: '#3b2a20', glasses: '#3a2a20', beard: 'full', top: 'sweater', topColor: '#3f5f4a', pants: '#4a4036', shoes: '#3b2a20', sole: '#2d2a26', light: '#7ff4ff', height: 1.8, build: 1.1, watch: true },
   officer: { gen: 'security', light: '#ff3b3b' },
   civic: { gen: 'gen2', shell: '#eef0f2', accent: '#3a7bd5', light: '#7ff4ff' },
 } satisfies Record<string, Look>;
