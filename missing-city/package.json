@@ -12,6 +12,8 @@
     "inspect:canvas": "node scripts/inspect-threejs-canvas.mjs"
   },
   "dependencies": {
+    "@fontsource/barlow": "^5.3.0",
+    "@fontsource/barlow-condensed": "^5.3.0",
     "lil-gui": "^0.21.0",
     "three": "^0.184.0"
   },

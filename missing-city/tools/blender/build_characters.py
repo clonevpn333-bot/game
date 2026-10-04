@@ -1783,6 +1783,10 @@ def finalize(s, name, body, extras, arm):
         bpy.ops.object.bake(type='EMIT' if kind != 'NORMAL' else 'NORMAL', use_clear=True, margin=6)
         if saved:
             unroute(saved)
+        if kind in ('ROUGHNESS', 'EMIT'):
+            img.scale(res // 4, res // 4)
+        elif kind == 'NORMAL':
+            img.scale(res // 2, res // 2)
         img.filepath_raw = os.path.join(OUT, f'_{name}_{kind.lower()}.png')
         img.file_format = 'PNG'
         img.save()

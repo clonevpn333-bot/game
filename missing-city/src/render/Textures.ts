@@ -658,7 +658,7 @@ export function documentTex(lines: string[], key: string) {
 }
 
 export function productsTex() {
-  return canvasTexture('products', 512, 256, (c, w, h) => {
+  return canvasTexture('products', 512, 256, (c, w) => {
     const r = rng(42);
     const cols = ['#d33', '#e8a020', '#2a7', '#25c', '#eee', '#a3c', '#f6d33c', '#1aa', '#c62', '#333'];
     for (let x = 0; x < w; x += 16 + Math.floor(r() * 14)) {

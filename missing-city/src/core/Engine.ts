@@ -16,7 +16,7 @@ const FinalShader = {
     uFlash: G.uFlash,
     uRes: { value: new THREE.Vector2(1, 1) },
     uVignette: { value: 0.9 },
-    uGrain: { value: 0.06 },
+    uGrain: { value: 0.032 },
     uAberration: { value: 0.0015 },
     uDamage: { value: 0 },
     uFade: { value: 0 },
@@ -123,7 +123,8 @@ export class Engine {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.renderer.info.autoReset = false;
     this.scene.add(this.camera);
 
     this.composer = new EffectComposer(this.renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: 4 }));
@@ -169,6 +170,7 @@ export class Engine {
 
   render(): void {
     this.resize();
+    this.renderer.info.reset();
     this.composer.render();
   }
 }
