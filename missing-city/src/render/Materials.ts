@@ -64,7 +64,8 @@ export function patchMaterial<M extends THREE.Material>(mat: M, opts: { echo?: E
 const echoCache = new WeakMap<THREE.Material, Map<string, THREE.Material>>();
 /** Get (cached) echo/present/warp variant of a material. */
 export function variant<M extends THREE.Material>(mat: M, echo: EchoMode, warp = false): M {
-  if (!echo && !warp) return mat;
+  // custom shaders have no chunk hooks to patch; they read uEcho themselves
+  if ((!echo && !warp) || (mat as unknown as THREE.ShaderMaterial).isShaderMaterial) return mat;
   let m = echoCache.get(mat);
   if (!m) {
     m = new Map();

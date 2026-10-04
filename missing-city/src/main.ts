@@ -5,9 +5,14 @@ import '@fontsource/barlow/300.css';
 import '@fontsource/barlow/400.css';
 import '@fontsource/barlow/600.css';
 import './styles.css';
-import { Game } from './game/Game';
+import { Abort, Game } from './game/Game';
 
 const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas')!;
 const ui = document.querySelector<HTMLElement>('#ui')!;
+// Abort is how a chapter cancels its own in-flight script steps; it is not an error
+window.addEventListener('unhandledrejection', (e) => {
+  if (e.reason instanceof Abort) e.preventDefault();
+});
+
 const game = new Game(canvas, ui);
 void game.boot();

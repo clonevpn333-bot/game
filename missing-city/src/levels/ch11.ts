@@ -184,7 +184,7 @@ export const ch11: Chapter = {
       { kind: 'rusher', pos: V(-4, 0, 34), yaw: 0, delay: 2 },
       { kind: 'rusher', pos: V(4, 0, 36), yaw: 0, delay: 3 },
       { kind: 'crawler', pos: V(0, 0, 32), yaw: 0, delay: 4 },
-    ], { music: true });
+    ], { music: true }).catch(() => {});
     await s.zone([-2, -1, 88], [2, 4, 96]);
     g.hud.hints(null);
     s.checkpoint(V(0, 0, 96), 0);
