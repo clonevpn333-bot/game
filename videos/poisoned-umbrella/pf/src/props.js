@@ -726,16 +726,21 @@
       FILM.hc.line(ctx, [[tx, ty], [tx + (cx - tx) * k, ty + (cy - ty) * k]], { plate: navy ? 'blueprint' : 'paper', width: 3, head: false, seed: 77 });
       L.glowDot(ctx, tx, ty, 5, { color: P.hcYellow, rays: 6, rayLen: 3, additive: navy });
     }
-    ctx.beginPath();
-    if (o.kind === 'circle') ctx.arc(o.x, o.y, o.r * e, 0, TAU);
-    else {
-      const w = o.w * e, h = o.h * e;
-      ctx.rect(o.x + (o.w - w) / 2, o.y + (o.h - h) / 2, w, h);
-    }
+    const frame = () => {
+      ctx.beginPath();
+      if (o.kind === 'circle') ctx.arc(o.x, o.y, o.r * e, 0, TAU);
+      else {
+        const w = o.w * e, h = o.h * e;
+        ctx.rect(o.x + (o.w - w) / 2, o.y + (o.h - h) / 2, w, h);
+      }
+    };
+    frame();
     ctx.save();
     ctx.clip();
+    ctx.beginPath();
     if (inner) inner(ctx, p);
     ctx.restore();
+    frame();
     // frame: heavy ink + inner ivory hairline + corner ticks
     ctx.strokeStyle = navy ? '#05080F' : P.hcInk;
     ctx.lineWidth = 9;
