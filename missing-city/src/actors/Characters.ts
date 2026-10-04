@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 import { G } from '../render/Globals';
 
@@ -19,7 +20,10 @@ interface Entry {
   lower: Map<string, THREE.AnimationClip>;
 }
 
-const loader = new GLTFLoader();
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+
+/** The single-file build embeds characters as data URLs here. */
+const embedded = (window as unknown as { __GLB?: Record<string, string> }).__GLB;
 const lib = new Map<CharName, Entry>();
 const pending = new Map<CharName, Promise<Entry>>();
 
@@ -28,7 +32,7 @@ export function loadCharacter(name: CharName, base = './assets/characters/'): Pr
   if (hit) return Promise.resolve(hit);
   const p = pending.get(name);
   if (p) return p;
-  const pr = loader.loadAsync(`${base}${name}.glb`).then((gltf) => {
+  const pr = loader.loadAsync(embedded?.[name] ?? `${base}${name}.glb`).then((gltf) => {
     const clips = new Map<string, THREE.AnimationClip>();
     const upper = new Map<string, THREE.AnimationClip>();
     const lower = new Map<string, THREE.AnimationClip>();
