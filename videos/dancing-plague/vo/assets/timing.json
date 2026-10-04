@@ -3,90 +3,109 @@
  "lines": [
   {
    "i": 1,
-   "text": "In July 1518, a woman stepped into a street in Strasbourg... and began to dance.",
-   "start": 0.4,
-   "dur": 6.955,
-   "speechEnd": 7.27,
+   "text": "In 1518, a whole city caught a plague of dancing.",
+   "start": 0.3,
+   "dur": 4.565,
+   "speechEnd": 4.73,
    "words": [
     {
      "w": "In",
-     "s": 0.43,
-     "e": 1.12
-    },
-    {
-     "w": "July",
-     "s": 1.12,
-     "e": 2.32
+     "s": 0.34,
+     "e": 1.335
     },
     {
      "w": "1518,",
-     "s": 2.32,
-     "e": 3.01
+     "s": 1.335,
+     "e": 2.33
     },
     {
      "w": "a",
-     "s": 3.32,
-     "e": 3.541
+     "s": 2.66,
+     "e": 2.862
     },
     {
-     "w": "woman",
-     "s": 3.541,
-     "e": 3.925
+     "w": "whole",
+     "s": 2.862,
+     "e": 3.215
     },
     {
-     "w": "stepped",
-     "s": 3.925,
-     "e": 4.309
+     "w": "city",
+     "s": 3.215,
+     "e": 3.568
     },
     {
-     "w": "into",
-     "s": 4.309,
-     "e": 4.694
+     "w": "caught",
+     "s": 3.568,
+     "e": 3.77
     },
     {
      "w": "a",
-     "s": 4.694,
-     "e": 4.914
+     "s": 3.77,
+     "e": 3.972
     },
     {
-     "w": "street",
-     "s": 4.914,
-     "e": 5.135
+     "w": "plague",
+     "s": 3.972,
+     "e": 4.175
     },
     {
-     "w": "in",
-     "s": 5.135,
-     "e": 5.356
+     "w": "of",
+     "s": 4.175,
+     "e": 4.378
     },
     {
-     "w": "Strasbourg...",
-     "s": 5.356,
-     "e": 5.74
-    },
-    {
-     "w": "and",
-     "s": 6.22,
-     "e": 6.441
-    },
-    {
-     "w": "began",
-     "s": 6.441,
-     "e": 6.827
-    },
-    {
-     "w": "to",
-     "s": 6.827,
-     "e": 7.049
-    },
-    {
-     "w": "dance.",
-     "s": 7.049,
-     "e": 7.27
+     "w": "dancing.",
+     "s": 4.378,
+     "e": 4.73
     }
    ]
   },
   {
    "i": 2,
+   "text": "It began with one woman in Strasbourg.",
+   "start": 5.03,
+   "dur": 2.496,
+   "speechEnd": 7.38,
+   "words": [
+    {
+     "w": "It",
+     "s": 5.07,
+     "e": 5.32
+    },
+    {
+     "w": "began",
+     "s": 5.32,
+     "e": 5.757
+    },
+    {
+     "w": "with",
+     "s": 5.757,
+     "e": 6.007
+    },
+    {
+     "w": "one",
+     "s": 6.007,
+     "e": 6.257
+    },
+    {
+     "w": "woman",
+     "s": 6.257,
+     "e": 6.693
+    },
+    {
+     "w": "in",
+     "s": 6.693,
+     "e": 6.944
+    },
+    {
+     "w": "Strasbourg.",
+     "s": 6.944,
+     "e": 7.38
+    }
+   ]
+  },
+  {
+   "i": 3,
    "text": "No music. She just couldn't stop.",
    "start": 7.62,
    "dur": 2.112,
@@ -125,7 +144,7 @@
    ]
   },
   {
-   "i": 3,
+   "i": 4,
    "text": "Within days, more than thirty people were dancing. By the end, nearly four hundred.",
    "start": 9.93,
    "dur": 4.971,
@@ -204,7 +223,7 @@
    ]
   },
   {
-   "i": 4,
+   "i": 5,
    "text": "The city's cure? More dancing. They built stages and hired musicians.",
    "start": 15.12,
    "dur": 4.416,
@@ -268,7 +287,7 @@
    ]
   },
   {
-   "i": 5,
+   "i": 6,
    "text": "It only made it worse.",
    "start": 19.72,
    "dur": 1.429,
@@ -302,7 +321,7 @@
    ]
   },
   {
-   "i": 6,
+   "i": 7,
    "text": "Was it poison? Ergot, a fungus on damp rye, can cause spasms and hallucinations.",
    "start": 21.43,
    "dur": 5.589,
@@ -381,7 +400,7 @@
    ]
   },
   {
-   "i": 7,
+   "i": 8,
    "text": "But most historians suspect fear: a city starving, sick, and terrified of a curse.",
    "start": 27.27,
    "dur": 5.44,
@@ -460,7 +479,7 @@
    ]
   },
   {
-   "i": 8,
+   "i": 9,
    "text": "Fear, it seems, can make a body dance.",
    "start": 33.01,
    "dur": 2.581,

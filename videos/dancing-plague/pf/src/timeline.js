@@ -5,8 +5,8 @@
   FILM.TIMELINE = {
     title: 'Episode 3', bpm: 120, duration: 40, fps: 24, width: 1080, height: 1920,
     shots: [
-      { id: 'street-1518', file: '01-street-1518.js', start: 0, end: 3.25, mode: 'illustrated', title: 'Strasbourg, 1518', brief: 'Woodcut street; Pip peeks in through a porthole from his 3D world.' },
-      { id: 'she-dances', file: '02-she-dances.js', start: 3.25, end: 7.5, mode: 'illustrated', title: 'She began to dance', brief: 'Woodcut woman steps out and starts to dance on "dance".' },
+      { id: 'street-1518', file: '01-street-1518.js', start: 0, end: 5.0, mode: 'illustrated', title: 'Hook: a city caught a plague of dancing', brief: 'Woodcut street in frenzy; stamped type 1518 / A WHOLE CITY / CAUGHT A PLAGUE / OF DANCING.' },
+      { id: 'she-dances', file: '02-she-dances.js', start: 5.0, end: 7.5, mode: 'illustrated', title: 'It began with one woman', brief: 'Woodcut woman steps out on "woman" and starts to dance at 7.0.' },
       { id: 'no-music', file: '03-no-music.js', start: 7.5, end: 9.75, mode: 'illustrated', title: 'No music', brief: 'Notes crossed out; day counter; Pip in front, gasping.' },
       { id: 'the-crowd', file: '04-the-crowd.js', start: 9.75, end: 15, mode: 'illustrated', title: '30 → 400', brief: 'Stamped dancers multiply; counter PiP 30 → 400.' },
       { id: 'the-cure', file: '05-the-cure.js', start: 15, end: 19.5, mode: 'illustrated', title: 'More dancing', brief: 'Stage + musicians in woodcut; Pip bops along in 3D.' },

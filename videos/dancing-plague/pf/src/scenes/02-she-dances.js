@@ -1,4 +1,4 @@
-// 02 · she-dances · T 3.25–7.5 · woodcut close: she steps out of her doorway (3.92) and begins to dance (7.05)
+// 02 · she-dances · T 5.0–7.5 · woodcut close: she steps out of her doorway (5.8) and begins to dance (7.05)
 (function () {
   'use strict';
   const PH = [860, 330, 140];
@@ -14,11 +14,11 @@
     ctx.fillStyle = '#E2D4B4'; ctx.fillRect(0, 1560, 1080, 360);
     ctx.strokeStyle = P.wcInk; ctx.lineWidth = 2.5;
     for (let j = 0; j < 7; j++) for (let x = -40; x < 1120; x += 60) { ctx.beginPath(); ctx.arc(x + (j % 2) * 30, 1590 + j * 46, 26, Math.PI, 0); ctx.stroke(); }
-    const walk = L.ease.inOutSine(L.clamp((T - 3.9) / 0.9));
+    const walk = L.ease.inOutSine(L.clamp((T - 5.8) / 0.9));
     const x = L.lerp(230, 540, walk);
     const dancing = T >= 7.0;
     const tw = L.onTwos(t);
-    const moving = T > 3.9 && T < 4.8;
+    const moving = T > 5.8 && T < 6.7;
     W.dancer(ctx, x, 1600, 1.15, dancing ? (info.shot.start + tw - 7.0) * 9 : moving ? (info.shot.start + tw) * 7 : 0, { still: !dancing && !moving, walk: moving });
     if (dancing && T < 7.4) {
       // a burst of woodcut motion lines on the first step

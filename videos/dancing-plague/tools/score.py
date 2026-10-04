@@ -154,16 +154,19 @@ def build_music():
             duck[max(0, a):min(N, b)] = 0.5
     k = int(0.06 * SR)
     duck = np.convolve(duck, np.ones(k) / k, mode='same')
-    ride = np.interp(t, [0, 0.4, 19.5, 21.2, 21.4, 39.0, 40.0], [0, 0.8, 1.0, 1.15, 0.9, 1, 0])
+    ride = np.interp(t, [0, 0.06, 19.5, 21.2, 21.4, 39.0, 40.0], [0, 0.8, 1.0, 1.15, 0.9, 1, 0])
     return m * duck * ride
 
 
 def build_sfx():
     s = np.zeros(N + 3 * SR)
     P = lambda x, at, g=1.0: place(s, x, at, g)
-    P(stamp(), 0.42, 0.4)  # the title block is printed
+    for a, g in ((1.33, 0.7), (2.86, 0.5), (3.57, 0.45), (4.38, 0.75)):
+        P(stamp(), a, g); P(boom(), a, 0.12 + 0.1 * (a > 4))  # hook type stamped
+    for k, a in enumerate(np.arange(0.25, 4.4, 0.152)):
+        P(stamp(), a, 0.04 + 0.05 * k / 27)  # crowd stamped in
     for k in range(4):
-        P(thud(150), 3.95 + k * 0.22, 0.2)  # footsteps on cobbles
+        P(thud(150), 5.85 + k * 0.22, 0.2)  # footsteps on cobbles
     P(boing(0.4, 180), 7.05, 0.3)  # the first step of the dance
     P(chop(), 7.86, 0.4); P(chop(), 8.02, 0.4)  # notes struck out
     for k in range(5):

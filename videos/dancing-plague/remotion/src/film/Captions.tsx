@@ -10,7 +10,7 @@ type Cap = Caption & { line: number };
 const CAPS = raw as Cap[];
 
 const BAND: Record<string, number | null> = {
-  "street-1518": 1440, "she-dances": 230, "no-music": 230, "the-crowd": 1500, "the-cure": 230,
+  "street-1518": null, "she-dances": 230, "no-music": 230, "the-crowd": 1500, "the-cure": 230,
   "worse": 230, "ergot": 1500, "fear": 200, "mind-dance": 230, "outro": null,
 };
 
