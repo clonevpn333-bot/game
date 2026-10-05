@@ -10,7 +10,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(ROOT, '..', '_shared', 'tools'))
 from sfxlib import *  # noqa
 
-TOTAL = 39.25
+TOTAL = 37.23
 N = int(TOTAL * SR)
 VO = json.load(open(os.path.join(ROOT, 'vo', 'assets', 'timing.json')))
 R = np.random.default_rng(5)
@@ -134,7 +134,7 @@ def build_music():
     m[:len(beat)] += beat
     P = lambda s, at, g=1.0: place(m, s, at, g)
     # low choir pad (dark-fantasy bed) — D dorian, in the slowed key (≈ B dorian after the drop: keep it consonant)
-    for t0, fs, d in ((0.0, (47, 54, 59, 62), 9.0), (9.0, (52, 55, 59, 64), 7.75), (16.75, (47, 50, 54, 59), 6.25), (23.0, (43, 50, 55, 59), 9.5), (32.5, (47, 54, 59, 62, 66), 6.75)):
+    for t0, fs, d in ((0.0, (47, 54, 59, 62), 7.0), (7.0, (52, 55, 59, 64), 7.75), (14.73, (47, 50, 54, 59), 6.25), (20.98, (43, 50, 55, 59), 9.5), (30.48, (47, 54, 59, 62, 66), 6.75)):
         P(choir([mtof(f) for f in fs], d), t0, 0.22)
     m = m[:N]
     t = np.arange(N) / SR
@@ -146,7 +146,7 @@ def build_music():
     k = int(0.08 * SR)
     duck = np.convolve(duck, np.ones(k) / k, mode='same')
     # drop out for the verdict, slam back for GUILTY; dip for the snuffed candle
-    ride = np.interp(t, [0, 16.85, 17.05, 17.79, 17.81, 26.9, 27.15, 27.9, 28.1, 38.7, 39.25], [1, 1, 0.12, 0.12, 1.1, 1, 0.1, 0.1, 0.95, 1, 0])
+    ride = np.interp(t, [0, 14.83, 15.03, 15.77, 15.79, 24.88, 25.13, 25.88, 26.08, 36.68, 37.23], [1, 1, 0.12, 0.12, 1.1, 1, 0.1, 0.1, 0.95, 1, 0])
     return m * duck * ride
 
 
@@ -174,19 +174,19 @@ def bell(f=110, d=4.0):
 
 def build_sfx():
     s = np.zeros(N + 4 * SR)
-    P = lambda x, at, g=1.0: place(s, x, at, g)
-    for a, g in ((0.0, 0.9), (0.62, 0.5), (3.24, 0.8), (10.36, 0.7), (17.79, 0.9)):
+    # cues written on the v1 clock: anything at or after 9.0 s moves 2.02 s earlier (the tightened setup)
+    P = lambda x, at, g=1.0: place(s, x, at - 2.02 if at >= 9.0 else at, g)
+    for a, g in ((0.0, 0.9), (1.35, 0.7), (3.42, 0.6), (10.36, 0.7), (17.79, 0.9)):
         P(thunder(), a, g)
     P(boom(), 0.0, 0.6); P(sub_drop(1.2), 0.0, 0.5)                       # frame-0 hit
-    for k, a in enumerate((0.12, 1.11, 1.62)): P(whoosh(0.18, 800, 6000), a - 0.02, 0.35); P(thud(70), a, 0.5)   # words ink in
-    P(boom(), 3.26, 0.8); P(whoosh(0.18, 800, 6000), 3.24, 0.4)               # ON TRIAL
-    P(whoosh(0.3, 2000, 200, up=False), 3.3, 0.5)                             # dive into the eye
-    P(stamp(), 17.81, 0.6)                                                    # GUILTY (the one slam)
-    P(bell(98, 4.0), 3.8, 0.35)                                              # Roma
-    P(whoosh(0.6, 200, 3000), 3.5, 0.3)
-    for k in range(9): P(crackle(0.3), 7.16 + k * 0.1, 0.12 + 0.04 * k)    # glass cracking
-    P(crunch(), 8.25, 0.8); P(boom(), 8.25, 0.5)
-    for k in range(14): P(clink(1800 + 300 * (k % 5)), 8.27 + k * 0.035, 0.25)   # shards
+    for a in (0.0, 0.15, 0.38, 2.21, 3.44): P(whoosh(0.16, 800, 6000), max(0, a - 0.02), 0.35); P(thud(70), a, 0.45)   # words ink in
+    P(boom(), 1.37, 0.6)                                                     # "trial"
+    P(whoosh(0.3, 2000, 200, up=False), 4.05, 0.5)                           # dive into the eye
+    P(bell(98, 4.0), 4.3, 0.35)                                              # Rome, the windows
+    P(stamp(), 17.81, 0.6)                                                   # GUILTY (the one slam)
+    for k in range(8): P(crackle(0.3), 5.67 + k * 0.09, 0.12 + 0.04 * k)    # glass cracking
+    P(crunch(), 6.45, 0.8); P(boom(), 6.45, 0.4)
+    for k in range(16): P(clink(1600 + 280 * (k % 5)), 6.47 + k * 0.05, 0.2)    # fragments falling
     for k in range(3): P(thud(90), 9.15 + k * (2 * np.pi / 7.5), 0.5); P(bp(noise(0.25), 300, 2000) * expdec(int(0.25 * SR), 0.06), 9.2 + k * (2 * np.pi / 7.5), 0.25)
     P(crunch(), 10.38, 0.9); P(boom(), 10.38, 0.6)                           # coffin lid bursts
     P(whoosh(0.7, 300, 2500), 11.3, 0.4); P(sparkle(0.9, 10, 3), 11.45, 0.18)   # robes
@@ -196,7 +196,7 @@ def build_sfx():
     P(bp(sweep_sine(180, 90, 0.4, 1) * (1 + noise(0.4) * 0.3), 100, 1200) * expdec(int(0.4 * SR), 0.15), 16.3, 0.4)  # jaw creak
     P(riser(0.75), 17.0, 0.35)
     P(bell(73, 5.0), 17.81, 0.7); P(boom(), 17.81, 0.9); P(sub_drop(1.5), 17.81, 0.7)   # GUILTY
-    for k in range(3): P(ding(1200 + 240 * k, 0.6), 19.55 + k * 0.12, 0.12)     # I II III
+    for k in range(3): P(ding(1200 + 240 * k, 0.7), 19.5 + k * 0.14, 0.22)     # I II III
     P(whoosh(0.25, 2000, 9000), 20.08, 0.6); P(shing(1.0, 3200), 20.2, 0.5)   # blade
     for k in range(7): P(clink(900 + 150 * k), 20.45 + k * 0.09, 0.22)      # bones clatter
     P(whoosh(0.9, 200, 1500, up=False), 21.5, 0.3)

@@ -6,7 +6,6 @@ import "../../../pf/src/props.js";
 import "../../../pf/src/cast.js";
 import "../../../pf/src/timeline.js";
 import "../../../pf/src/scenes/01-hook.js";
-import "../../../pf/src/scenes/02-rome.js";
 import "../../../pf/src/scenes/03-popes.js";
 import "../../../pf/src/scenes/04-exhume.js";
 import "../../../pf/src/scenes/05-nave.js";

@@ -4,7 +4,7 @@
   'use strict';
   FILM.scene({ id: 'uprising', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t + FILM.SHIFT;
     D.sky(ctx, T, { moon: [820, 330], h: 1200 });
     D.moon(ctx, 820, 330, 80, T);
     const r = L.rng(L.hash('crowd'));

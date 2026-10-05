@@ -4,7 +4,7 @@
   'use strict';
   FILM.scene({ id: 'tiber', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t + FILM.SHIFT;
     const HZ = 860, SPL = 22.5;
     D.sky(ctx, T, { moon: [640, 420], h: HZ + 20 });
     D.moon(ctx, 640, 420, 110, T);

@@ -5,7 +5,7 @@
   'use strict';
   FILM.scene({ id: 'nave', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t + FILM.SHIFT;
     const k = L.ease.inOutCubic(L.clamp(t / 1.9));
     const cz = L.lerp(-700, 2500, k), f = 900, cx = 540, cy = 1000, camY = L.lerp(-140, -260, k);
     const P3 = (x, y, z) => { const zz = z - cz; return zz < 40 ? null : [cx + x * f / zz, cy + (y - camY) * f / zz, zz]; };

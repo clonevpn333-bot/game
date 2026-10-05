@@ -52,7 +52,7 @@
   }
   FILM.scene({ id: 'title', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t + FILM.SHIFT;
     D.plate(ctx, { color: '#120A06' });
     const lit = D.lights([{ x: 960, y: 1520, r: 1300, k: 0.55 }], 0.04);
     L.hatch(ctx, null, { bounds: { x: 0, y: 0, w: 1080, h: 1920 }, angle: 0.04, spacing: 5.5, width: 1.1, color: '#B07A48', alpha: 0.75, seed: 3300, density: (x, y) => lit(x, y) * 0.75, length: [60, 200] });

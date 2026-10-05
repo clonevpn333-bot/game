@@ -5,7 +5,7 @@
   'use strict';
   FILM.scene({ id: 'exhume', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C, M = FILM.mk;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t + FILM.SHIFT;
     const fl = D.flash(T, [10.36]);
     let sh = 0; { const d = T - 10.38; if (d >= 0 && d < 0.35) sh = (1 - d / 0.35) * 20; }
     ctx.save(); ctx.translate(sh * Math.sin(T * 91), sh * Math.cos(T * 79));

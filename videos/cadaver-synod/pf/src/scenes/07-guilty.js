@@ -4,7 +4,7 @@
   'use strict';
   FILM.scene({ id: 'guilty', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t + FILM.SHIFT;
     const hit = T >= 17.81, fl = D.flash(T, [17.79]);
     let sh = 0; { const d = T - 17.81; if (d >= 0 && d < 0.4) sh = (1 - d / 0.4) * 28; }
     ctx.save(); ctx.translate(sh * Math.sin(T * 97), sh * Math.cos(T * 83));

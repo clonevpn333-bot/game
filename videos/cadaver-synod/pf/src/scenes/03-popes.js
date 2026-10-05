@@ -1,4 +1,4 @@
-// 03 · popes · T 5.25–9.0 · two stained-glass lancets in an engraved stone wall: STEPHEN VI (crimson) and FORMOSUS
+// 03 · popes · T 4.25–7.0 (Stephen 4.66, hated 5.67, old pope 6.45) · two stained-glass lancets in an engraved stone wall: STEPHEN VI (crimson) and FORMOSUS
 // (blue). "hated" (7.16): the curiosity line becomes the crack, racing through the blue glass; "old one" (8.25): it
 // shatters and the shards fly at the camera in 3D, edges leaded and catching light.
 (function () {
@@ -7,8 +7,8 @@
   FILM.scene({ id: 'popes', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C;
     const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
-    let sh = 0; { const d = T - 8.25; if (d >= 0 && d < 0.4) sh = (1 - d / 0.4) * 24; }
-    const rage = L.clamp((T - 7.1) / 0.3), broken = T >= 8.25;
+    let sh = 0; { const d = T - 6.45; if (d >= 0 && d < 0.4) sh = (1 - d / 0.4) * 24; }
+    const rage = L.clamp((T - 5.6) / 0.3), broken = T >= 6.45;
     ctx.save(); ctx.translate(sh * Math.sin(T * 93), sh * Math.cos(T * 71));
     D.plate(ctx);
     const lit = D.lights([{ x: LW[0], y: 950, r: 700, k: 0.45 + 0.25 * rage }, { x: RW[0], y: 950, r: 700, k: broken ? 0.05 : 0.45 }], 0.04);
@@ -24,7 +24,7 @@
     if (!broken) {
       D.glass(ctx, RW[0], RW[1], RW[2], RW[3], T, { seed: 4, tint: ['#3E62D8', '#7A44C0', '#2A4AA8', '#5A3AA0'], fig: { robe: '#141C5A' } });
       // the crack IS the curiosity line
-      const ck = L.clamp((T - 7.16) / 0.95);
+      const ck = L.clamp((T - 5.67) / 0.72);
       if (ck > 0) {
         const r = L.rng(L.hash('crack'));
         const o0 = [RW[0] + 10, RW[1] - RW[3] * 0.5];
@@ -32,25 +32,27 @@
       }
     } else {
       ctx.save(); D.lancet(ctx, RW[0], RW[1], RW[2], RW[3]); ctx.fillStyle = '#040303'; ctx.fill(); ctx.restore();
-      const d = T - 8.25, r = L.rng(L.hash('shards'));
-      for (let i = 0; i < 64; i++) {
-        const sx = RW[0] + (r() - 0.5) * RW[2], sy = RW[1] - r() * RW[3];
-        const vz = 900 + r() * 1800, vx = (r() - 0.5) * 900, vy = -200 + r() * 300, z = vz * d, k = 900 / Math.max(120, 900 - z);
-        if (k > 8) continue;
-        const x = 540 + (sx - 540 + vx * d) * k, y = 1000 + (sy - 1000 + vy * d + 700 * d * d) * k;
-        const sz = (14 + r() * 26) * k, rot = r() * 6 + d * (4 + r() * 8), sq = Math.max(0.15, Math.abs(Math.cos(d * (6 + r() * 6) + i)));
-        const pts = [[-sz, -sz * 0.4], [sz * 0.8, -sz * 0.7], [sz * 0.3, sz]].map(([a, b]) => { const ca = Math.cos(rot), sa = Math.sin(rot); return [x + a * ca - b * sq * sa, y + a * sa + b * sq * ca]; });
-        ctx.beginPath(); L.tracePath(ctx, pts, true); ctx.fillStyle = ['#3E62D8', '#7A44C0', '#2A4AA8', '#8AA8F8'][i % 4]; ctx.globalAlpha = 0.9; ctx.fill(); ctx.globalAlpha = 1;
-        L.inkPath(ctx, pts, { closed: true, width: 2.4, color: sq > 0.7 ? '#E8F0FF' : '#000', seed: 600 + i, smooth: false, taper: 0 });
+      const d = T - 6.45, r = L.rng(L.hash('shards'));
+      for (let i = 0; i < 90; i++) {
+        const sx = RW[0] + (r() - 0.5) * RW[2] * 0.95, sy = RW[1] - r() * RW[3];
+        const vx = (r() - 0.5) * 260, vy = -80 - r() * 220, x = sx + vx * d, y = sy + vy * d + 1600 * d * d;
+        if (y > 1960) continue;
+        const sz = 9 + r() * 22, rot = r() * 6 + d * (2 + r() * 6) * (i % 2 ? 1 : -1), sq = 0.35 + 0.65 * Math.abs(Math.cos(d * (4 + r() * 5) + i));
+        const pts = [[-sz, -sz * 0.5], [sz * 0.7, -sz * 0.8], [sz, sz * 0.2], [sz * 0.1, sz]].map(([a2, b2]) => { const ca = Math.cos(rot), sa = Math.sin(rot); return [x + a2 * ca - b2 * sq * sa, y + a2 * sa + b2 * sq * ca]; });
+        const tint = ['#2A3E8E', '#4A2A7A', '#1E3070', '#3A4AA0'][i % 4];
+        ctx.beginPath(); L.tracePath(ctx, pts, true); ctx.fillStyle = tint; ctx.fill();
+        L.hatch(ctx, pts, { angle: 0.7 + i, spacing: 3.2, width: 0.9, color: '#C8D4FF', alpha: 0.75, seed: 600 + i, density: sq * 0.8 });
+        L.inkPath(ctx, pts, { closed: true, width: 2.6, color: '#050304', seed: 650 + i, smooth: false, taper: 0 });
       }
-      D.glow(ctx, RW[0], RW[1] - RW[3] / 2, 700, '#9AB0FF', Math.max(0, 1 - d * 4));
+      D.glow(ctx, RW[0], RW[1] - RW[3] / 2, 500, '#8A9AE0', Math.max(0, 0.7 - d * 3));
     }
     D.mist(ctx, T, { y: 1760, h: 360, a: 0.3, speed: 30 });
     ctx.restore();
     D.grain(ctx, T, 1);
     const MONO = '"JetBrains Mono", monospace';
-    L.text(ctx, 'STEPHEN VI', LW[0], 395, { size: 38, family: MONO, weight: 600, align: 'center', color: rage > 0 ? '#FF7A5A' : C.ivory, alpha: L.clamp((T - 5.6) / 0.2), tracking: '0.2em' });
-    L.text(ctx, 'THE NEW POPE', LW[0], 445, { size: 24, family: MONO, weight: 600, align: 'center', color: C.candle, alpha: L.clamp((T - 5.75) / 0.2), tracking: '0.2em' });
-    if (!broken) L.text(ctx, 'FORMOSUS · † 896', RW[0], 395, { size: 32, family: MONO, weight: 600, align: 'center', color: '#B8C8FF', alpha: L.clamp((T - 6.2) / 0.2), tracking: '0.16em' });
+    L.text(ctx, 'STEPHEN VI', LW[0], 395, { size: 38, family: MONO, weight: 600, align: 'center', color: rage > 0 ? '#FF7A5A' : C.ivory, alpha: L.clamp((T - 4.45) / 0.2), tracking: '0.2em' });
+    L.text(ctx, 'THE NEW POPE', LW[0], 445, { size: 24, family: MONO, weight: 600, align: 'center', color: C.candle, alpha: L.clamp((T - 4.6) / 0.2), tracking: '0.2em' });
+    L.text(ctx, 'ROME · 897', 540, 250, { size: 30, family: MONO, weight: 600, align: 'center', color: C.ivory, alpha: L.clamp((T - 4.3) / 0.2) * 0.85, tracking: '0.4em' });
+    L.text(ctx, broken ? 'THE OLD POPE' : 'FORMOSUS · † 896', RW[0], 395, { size: 32, family: MONO, weight: 600, align: 'center', color: '#B8C8FF', alpha: L.clamp((T - 4.9) / 0.2), tracking: '0.16em' });
   } });
 })();

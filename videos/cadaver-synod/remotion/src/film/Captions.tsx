@@ -10,8 +10,8 @@ type Cap = Caption & { line: number };
 const CAPS = raw as Cap[];
 
 const BAND: Record<string, number | null> = {
-  "hook": null, "rome": 1500, "popes": 1500, "exhume": 1500, "nave": 1500, "deacon": 1500, "guilty": null,
-  "fingers": 1500, "tiber": 1500, "uprising": 1500, "prison": 1500, "title": 1600, "outro": null,
+  "hook": null, "popes": 1330, "exhume": 1330, "nave": 1330, "deacon": 1330, "guilty": null,
+  "fingers": 1330, "tiber": 1330, "uprising": 1330, "prison": 1330, "title": 1400, "outro": null,
 };
 
 type Page = { words: Cap[]; startMs: number; endMs: number };

@@ -4,7 +4,7 @@
   'use strict';
   FILM.scene({ id: 'prison', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t + FILM.SHIFT;
     const out = L.clamp((T - 27.1) / 0.12), black = 0.9 * L.clamp((T - 27.55) / 0.4);
     D.plate(ctx, { color: '#0B090B' });
     const inShaft = (x, y) => { const u = (y - 400) / 1300; if (u < 0) return 0; const cx = L.lerp(280, 640, u), hw = L.lerp(100, 200, u); return L.clamp(1 - Math.abs(x - cx) / hw) * 0.75; };

@@ -5,7 +5,7 @@
   'use strict';
   FILM.scene({ id: 'deacon', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C, M = FILM.mk;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t + FILM.SHIFT;
     const scream = T >= 15.15;
     let sh = 0; if (T > 15.55 && T < 16.6) sh = 9 + 6 * Math.sin(T * 9);
     ctx.save(); ctx.translate(sh * Math.sin(T * 97), sh * Math.cos(T * 83));

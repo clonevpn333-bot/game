@@ -1,770 +1,738 @@
 [
  {
-  "text": " This",
-  "startMs": 150,
-  "endMs": 390,
-  "timestampMs": 270,
+  "text": " They",
+  "startMs": 130,
+  "endMs": 377,
+  "timestampMs": 254,
   "confidence": 1,
   "line": 1
  },
  {
-  "text": " pope",
-  "startMs": 390,
-  "endMs": 630,
-  "timestampMs": 510,
+  "text": " put",
+  "startMs": 377,
+  "endMs": 624,
+  "timestampMs": 500,
   "confidence": 1,
   "line": 1
  },
  {
-  "text": " had",
-  "startMs": 630,
-  "endMs": 870,
-  "timestampMs": 750,
-  "confidence": 1,
-  "line": 1
- },
- {
-  "text": " been",
-  "startMs": 870,
-  "endMs": 1110,
-  "timestampMs": 990,
+  "text": " a",
+  "startMs": 624,
+  "endMs": 871,
+  "timestampMs": 748,
   "confidence": 1,
   "line": 1
  },
  {
   "text": " dead",
-  "startMs": 1110,
-  "endMs": 1350,
-  "timestampMs": 1230,
+  "startMs": 871,
+  "endMs": 1119,
+  "timestampMs": 995,
   "confidence": 1,
   "line": 1
  },
  {
-  "text": " for",
-  "startMs": 1350,
-  "endMs": 1590,
-  "timestampMs": 1470,
+  "text": " pope",
+  "startMs": 1119,
+  "endMs": 1366,
+  "timestampMs": 1243,
   "confidence": 1,
   "line": 1
+ },
+ {
+  "text": " on",
+  "startMs": 1366,
+  "endMs": 1613,
+  "timestampMs": 1490,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " trial.",
+  "startMs": 1613,
+  "endMs": 1860,
+  "timestampMs": 1736,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " He'd",
+  "startMs": 2210,
+  "endMs": 2517,
+  "timestampMs": 2364,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " been",
+  "startMs": 2517,
+  "endMs": 2823,
+  "timestampMs": 2670,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " dead",
+  "startMs": 2823,
+  "endMs": 3130,
+  "timestampMs": 2976,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " for",
+  "startMs": 3130,
+  "endMs": 3437,
+  "timestampMs": 3284,
+  "confidence": 1,
+  "line": 2
  },
  {
   "text": " nine",
-  "startMs": 1590,
-  "endMs": 1830,
-  "timestampMs": 1710,
-  "confidence": 1,
-  "line": 1
- },
- {
-  "text": " months...",
-  "startMs": 1830,
-  "endMs": 2070,
-  "timestampMs": 1950,
-  "confidence": 1,
-  "line": 1
- },
- {
-  "text": " when",
-  "startMs": 2370,
-  "endMs": 2592,
-  "timestampMs": 2481,
-  "confidence": 1,
-  "line": 1
- },
- {
-  "text": " he",
-  "startMs": 2592,
-  "endMs": 2814,
-  "timestampMs": 2703,
-  "confidence": 1,
-  "line": 1
- },
- {
-  "text": " went",
-  "startMs": 2814,
-  "endMs": 3036,
-  "timestampMs": 2925,
-  "confidence": 1,
-  "line": 1
- },
- {
-  "text": " on",
-  "startMs": 3036,
-  "endMs": 3258,
-  "timestampMs": 3147,
-  "confidence": 1,
-  "line": 1
- },
- {
-  "text": " trial.",
-  "startMs": 3258,
-  "endMs": 3480,
-  "timestampMs": 3369,
-  "confidence": 1,
-  "line": 1
- },
- {
-  "text": " Rome,",
-  "startMs": 3810,
-  "endMs": 4193,
-  "timestampMs": 4002,
+  "startMs": 3437,
+  "endMs": 3743,
+  "timestampMs": 3590,
   "confidence": 1,
   "line": 2
  },
  {
-  "text": " 897.",
-  "startMs": 4193,
-  "endMs": 4575,
-  "timestampMs": 4384,
+  "text": " months.",
+  "startMs": 3743,
+  "endMs": 4050,
+  "timestampMs": 3896,
   "confidence": 1,
   "line": 2
  },
  {
-  "text": " The",
-  "startMs": 4575,
-  "endMs": 4958,
-  "timestampMs": 4767,
+  "text": " Pope",
+  "startMs": 4390,
+  "endMs": 4660,
+  "timestampMs": 4525,
   "confidence": 1,
-  "line": 2
- },
- {
-  "text": " new",
-  "startMs": 4958,
-  "endMs": 5341,
-  "timestampMs": 5150,
-  "confidence": 1,
-  "line": 2
- },
- {
-  "text": " pope,",
-  "startMs": 5341,
-  "endMs": 5724,
-  "timestampMs": 5533,
-  "confidence": 1,
-  "line": 2
+  "line": 3
  },
  {
   "text": " Stephen",
-  "startMs": 5724,
-  "endMs": 6390,
-  "timestampMs": 6057,
+  "startMs": 4660,
+  "endMs": 5130,
+  "timestampMs": 4895,
   "confidence": 1,
-  "line": 2
+  "line": 3
  },
  {
   "text": " the",
-  "startMs": 6390,
-  "endMs": 6773,
-  "timestampMs": 6582,
+  "startMs": 5130,
+  "endMs": 5400,
+  "timestampMs": 5265,
   "confidence": 1,
-  "line": 2
+  "line": 3
  },
  {
-  "text": " Sixth,",
-  "startMs": 6773,
-  "endMs": 7155,
-  "timestampMs": 6964,
+  "text": " Sixth",
+  "startMs": 5400,
+  "endMs": 5670,
+  "timestampMs": 5535,
   "confidence": 1,
-  "line": 2
+  "line": 3
  },
  {
   "text": " hated",
-  "startMs": 7155,
-  "endMs": 7822,
-  "timestampMs": 7488,
+  "startMs": 5670,
+  "endMs": 6140,
+  "timestampMs": 5905,
   "confidence": 1,
-  "line": 2
+  "line": 3
  },
  {
   "text": " the",
-  "startMs": 7822,
-  "endMs": 8205,
-  "timestampMs": 8014,
+  "startMs": 6140,
+  "endMs": 6410,
+  "timestampMs": 6275,
   "confidence": 1,
-  "line": 2
+  "line": 3
  },
  {
   "text": " old",
-  "startMs": 8205,
-  "endMs": 8587,
-  "timestampMs": 8396,
+  "startMs": 6410,
+  "endMs": 6680,
+  "timestampMs": 6545,
   "confidence": 1,
-  "line": 2
+  "line": 3
  },
  {
-  "text": " one.",
-  "startMs": 8587,
-  "endMs": 8970,
-  "timestampMs": 8779,
+  "text": " pope.",
+  "startMs": 6680,
+  "endMs": 6950,
+  "timestampMs": 6815,
   "confidence": 1,
-  "line": 2
+  "line": 3
  },
  {
   "text": " So",
-  "startMs": 9300,
-  "endMs": 9516,
-  "timestampMs": 9408,
+  "startMs": 7280,
+  "endMs": 7496,
+  "timestampMs": 7388,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " he",
-  "startMs": 9516,
-  "endMs": 9732,
-  "timestampMs": 9624,
+  "startMs": 7496,
+  "endMs": 7712,
+  "timestampMs": 7604,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " dug",
-  "startMs": 9732,
-  "endMs": 9949,
-  "timestampMs": 9840,
+  "startMs": 7712,
+  "endMs": 7929,
+  "timestampMs": 7820,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " up",
-  "startMs": 9949,
-  "endMs": 10165,
-  "timestampMs": 10057,
+  "startMs": 7929,
+  "endMs": 8145,
+  "timestampMs": 8037,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " the",
-  "startMs": 10165,
-  "endMs": 10381,
-  "timestampMs": 10273,
+  "startMs": 8145,
+  "endMs": 8361,
+  "timestampMs": 8253,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " corpse,",
-  "startMs": 10381,
-  "endMs": 10597,
-  "timestampMs": 10489,
+  "startMs": 8361,
+  "endMs": 8577,
+  "timestampMs": 8469,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " dressed",
-  "startMs": 10597,
-  "endMs": 10974,
-  "timestampMs": 10785,
+  "startMs": 8577,
+  "endMs": 8954,
+  "timestampMs": 8766,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " it",
-  "startMs": 10974,
-  "endMs": 11190,
-  "timestampMs": 11082,
+  "startMs": 8954,
+  "endMs": 9170,
+  "timestampMs": 9062,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " in",
-  "startMs": 11190,
-  "endMs": 11406,
-  "timestampMs": 11298,
+  "startMs": 9170,
+  "endMs": 9386,
+  "timestampMs": 9278,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " robes,",
-  "startMs": 11406,
-  "endMs": 11783,
-  "timestampMs": 11594,
+  "startMs": 9386,
+  "endMs": 9763,
+  "timestampMs": 9574,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " and",
-  "startMs": 11783,
-  "endMs": 11999,
-  "timestampMs": 11891,
+  "startMs": 9763,
+  "endMs": 9979,
+  "timestampMs": 9871,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " sat",
-  "startMs": 11999,
-  "endMs": 12215,
-  "timestampMs": 12107,
+  "startMs": 9979,
+  "endMs": 10195,
+  "timestampMs": 10087,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " it",
-  "startMs": 12215,
-  "endMs": 12431,
-  "timestampMs": 12323,
+  "startMs": 10195,
+  "endMs": 10411,
+  "timestampMs": 10303,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " on",
-  "startMs": 12431,
-  "endMs": 12648,
-  "timestampMs": 12540,
+  "startMs": 10411,
+  "endMs": 10628,
+  "timestampMs": 10520,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " a",
-  "startMs": 12648,
-  "endMs": 12864,
-  "timestampMs": 12756,
+  "startMs": 10628,
+  "endMs": 10844,
+  "timestampMs": 10736,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " throne.",
-  "startMs": 12864,
-  "endMs": 13080,
-  "timestampMs": 12972,
+  "startMs": 10844,
+  "endMs": 11060,
+  "timestampMs": 10952,
   "confidence": 1,
-  "line": 3
+  "line": 4
  },
  {
   "text": " A",
-  "startMs": 13410,
-  "endMs": 13614,
-  "timestampMs": 13512,
+  "startMs": 11390,
+  "endMs": 11594,
+  "timestampMs": 11492,
   "confidence": 1,
-  "line": 4
+  "line": 5
  },
  {
   "text": " deacon",
-  "startMs": 13614,
-  "endMs": 13969,
-  "timestampMs": 13792,
+  "startMs": 11594,
+  "endMs": 11949,
+  "timestampMs": 11772,
   "confidence": 1,
-  "line": 4
+  "line": 5
  },
  {
   "text": " spoke",
-  "startMs": 13969,
-  "endMs": 14172,
-  "timestampMs": 14070,
+  "startMs": 11949,
+  "endMs": 12152,
+  "timestampMs": 12050,
   "confidence": 1,
-  "line": 4
+  "line": 5
  },
  {
   "text": " for",
-  "startMs": 14172,
-  "endMs": 14376,
-  "timestampMs": 14274,
+  "startMs": 12152,
+  "endMs": 12356,
+  "timestampMs": 12254,
   "confidence": 1,
-  "line": 4
+  "line": 5
  },
  {
   "text": " it,",
-  "startMs": 14376,
-  "endMs": 14580,
-  "timestampMs": 14478,
+  "startMs": 12356,
+  "endMs": 12560,
+  "timestampMs": 12458,
   "confidence": 1,
-  "line": 4
+  "line": 5
  },
  {
   "text": " while",
-  "startMs": 14860,
-  "endMs": 15218,
-  "timestampMs": 15039,
+  "startMs": 12840,
+  "endMs": 13198,
+  "timestampMs": 13019,
   "confidence": 1,
-  "line": 4
+  "line": 5
  },
  {
   "text": " Stephen",
-  "startMs": 15218,
-  "endMs": 15576,
-  "timestampMs": 15397,
+  "startMs": 13198,
+  "endMs": 13556,
+  "timestampMs": 13377,
   "confidence": 1,
-  "line": 4
+  "line": 5
  },
  {
   "text": " screamed",
-  "startMs": 15576,
-  "endMs": 15933,
-  "timestampMs": 15754,
+  "startMs": 13556,
+  "endMs": 13913,
+  "timestampMs": 13734,
   "confidence": 1,
-  "line": 4
+  "line": 5
  },
  {
   "text": " at",
-  "startMs": 15933,
-  "endMs": 16139,
-  "timestampMs": 16036,
+  "startMs": 13913,
+  "endMs": 14119,
+  "timestampMs": 14016,
   "confidence": 1,
-  "line": 4
+  "line": 5
  },
  {
   "text": " the",
-  "startMs": 16139,
-  "endMs": 16344,
-  "timestampMs": 16242,
+  "startMs": 14119,
+  "endMs": 14324,
+  "timestampMs": 14221,
   "confidence": 1,
-  "line": 4
+  "line": 5
  },
  {
   "text": " corpse.",
-  "startMs": 16344,
-  "endMs": 16550,
-  "timestampMs": 16447,
+  "startMs": 14324,
+  "endMs": 14530,
+  "timestampMs": 14427,
   "confidence": 1,
-  "line": 4
+  "line": 5
  },
  {
   "text": " The",
-  "startMs": 16940,
-  "endMs": 17257,
-  "timestampMs": 17098,
+  "startMs": 14920,
+  "endMs": 15237,
+  "timestampMs": 15078,
   "confidence": 1,
-  "line": 5
+  "line": 6
  },
  {
   "text": " verdict?",
-  "startMs": 17257,
-  "endMs": 17808,
-  "timestampMs": 17532,
+  "startMs": 15237,
+  "endMs": 15788,
+  "timestampMs": 15512,
   "confidence": 1,
-  "line": 5
+  "line": 6
  },
  {
   "text": " Guilty.",
-  "startMs": 17808,
-  "endMs": 18360,
-  "timestampMs": 18084,
+  "startMs": 15788,
+  "endMs": 16340,
+  "timestampMs": 16064,
   "confidence": 1,
-  "line": 5
+  "line": 6
  },
  {
   "text": " They",
-  "startMs": 18750,
-  "endMs": 18954,
-  "timestampMs": 18852,
+  "startMs": 16730,
+  "endMs": 16934,
+  "timestampMs": 16832,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " cut",
-  "startMs": 18954,
-  "endMs": 19158,
-  "timestampMs": 19056,
+  "startMs": 16934,
+  "endMs": 17138,
+  "timestampMs": 17036,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " off",
-  "startMs": 19158,
-  "endMs": 19363,
-  "timestampMs": 19260,
+  "startMs": 17138,
+  "endMs": 17343,
+  "timestampMs": 17240,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " the",
-  "startMs": 19363,
-  "endMs": 19567,
-  "timestampMs": 19465,
+  "startMs": 17343,
+  "endMs": 17547,
+  "timestampMs": 17445,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " three",
-  "startMs": 19567,
-  "endMs": 19771,
-  "timestampMs": 19669,
+  "startMs": 17547,
+  "endMs": 17751,
+  "timestampMs": 17649,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " fingers",
-  "startMs": 19771,
-  "endMs": 20126,
-  "timestampMs": 19949,
+  "startMs": 17751,
+  "endMs": 18106,
+  "timestampMs": 17928,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " he",
-  "startMs": 20126,
-  "endMs": 20330,
-  "timestampMs": 20228,
+  "startMs": 18106,
+  "endMs": 18310,
+  "timestampMs": 18208,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " blessed",
-  "startMs": 20330,
-  "endMs": 20686,
-  "timestampMs": 20508,
+  "startMs": 18310,
+  "endMs": 18666,
+  "timestampMs": 18488,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " with,",
-  "startMs": 20686,
-  "endMs": 20890,
-  "timestampMs": 20788,
+  "startMs": 18666,
+  "endMs": 18870,
+  "timestampMs": 18768,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " and",
-  "startMs": 21250,
-  "endMs": 21441,
-  "timestampMs": 21346,
+  "startMs": 19230,
+  "endMs": 19421,
+  "timestampMs": 19325,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " threw",
-  "startMs": 21441,
-  "endMs": 21632,
-  "timestampMs": 21536,
+  "startMs": 19421,
+  "endMs": 19612,
+  "timestampMs": 19516,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " his",
-  "startMs": 21632,
-  "endMs": 21823,
-  "timestampMs": 21728,
+  "startMs": 19612,
+  "endMs": 19803,
+  "timestampMs": 19708,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " body",
-  "startMs": 21823,
-  "endMs": 22156,
-  "timestampMs": 21990,
+  "startMs": 19803,
+  "endMs": 20136,
+  "timestampMs": 19970,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " in",
-  "startMs": 22156,
-  "endMs": 22347,
-  "timestampMs": 22252,
+  "startMs": 20136,
+  "endMs": 20327,
+  "timestampMs": 20232,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " the",
-  "startMs": 22347,
-  "endMs": 22538,
-  "timestampMs": 22443,
+  "startMs": 20327,
+  "endMs": 20518,
+  "timestampMs": 20422,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " river.",
-  "startMs": 22538,
-  "endMs": 22870,
-  "timestampMs": 22704,
+  "startMs": 20518,
+  "endMs": 20850,
+  "timestampMs": 20684,
   "confidence": 1,
-  "line": 6
+  "line": 7
  },
  {
   "text": " Rome",
-  "startMs": 23190,
-  "endMs": 23476,
-  "timestampMs": 23333,
+  "startMs": 21170,
+  "endMs": 21456,
+  "timestampMs": 21313,
   "confidence": 1,
-  "line": 7
+  "line": 8
  },
  {
   "text": " was",
-  "startMs": 23476,
-  "endMs": 23761,
-  "timestampMs": 23618,
+  "startMs": 21456,
+  "endMs": 21741,
+  "timestampMs": 21598,
   "confidence": 1,
-  "line": 7
+  "line": 8
  },
  {
   "text": " horrified.",
-  "startMs": 23761,
-  "endMs": 24470,
-  "timestampMs": 24115,
+  "startMs": 21741,
+  "endMs": 22450,
+  "timestampMs": 22096,
   "confidence": 1,
-  "line": 7
+  "line": 8
  },
  {
   "text": " Within",
-  "startMs": 24470,
-  "endMs": 24967,
-  "timestampMs": 24718,
+  "startMs": 22450,
+  "endMs": 22947,
+  "timestampMs": 22698,
   "confidence": 1,
-  "line": 7
+  "line": 8
  },
  {
   "text": " months,",
-  "startMs": 24967,
-  "endMs": 25252,
-  "timestampMs": 25109,
+  "startMs": 22947,
+  "endMs": 23232,
+  "timestampMs": 23090,
   "confidence": 1,
-  "line": 7
+  "line": 8
  },
  {
   "text": " Stephen",
-  "startMs": 25252,
-  "endMs": 25749,
-  "timestampMs": 25500,
+  "startMs": 23232,
+  "endMs": 23729,
+  "timestampMs": 23480,
   "confidence": 1,
-  "line": 7
+  "line": 8
  },
  {
   "text": " was",
-  "startMs": 25749,
-  "endMs": 26035,
-  "timestampMs": 25892,
+  "startMs": 23729,
+  "endMs": 24015,
+  "timestampMs": 23872,
   "confidence": 1,
-  "line": 7
+  "line": 8
  },
  {
   "text": " in",
-  "startMs": 26035,
-  "endMs": 26320,
-  "timestampMs": 26178,
+  "startMs": 24015,
+  "endMs": 24300,
+  "timestampMs": 24158,
   "confidence": 1,
-  "line": 7
+  "line": 8
  },
  {
   "text": " prison...",
-  "startMs": 26320,
-  "endMs": 26817,
-  "timestampMs": 26568,
+  "startMs": 24300,
+  "endMs": 24797,
+  "timestampMs": 24548,
   "confidence": 1,
-  "line": 7
+  "line": 8
  },
  {
   "text": " and",
-  "startMs": 26817,
-  "endMs": 27103,
-  "timestampMs": 26960,
+  "startMs": 24797,
+  "endMs": 25083,
+  "timestampMs": 24940,
   "confidence": 1,
-  "line": 7
+  "line": 8
  },
  {
   "text": " strangled.",
-  "startMs": 27103,
-  "endMs": 27600,
-  "timestampMs": 27352,
+  "startMs": 25083,
+  "endMs": 25580,
+  "timestampMs": 25332,
   "confidence": 1,
-  "line": 7
+  "line": 8
  },
  {
   "text": " History",
-  "startMs": 28000,
-  "endMs": 28517,
-  "timestampMs": 28258,
+  "startMs": 25980,
+  "endMs": 26497,
+  "timestampMs": 26239,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " calls",
-  "startMs": 28517,
-  "endMs": 28725,
-  "timestampMs": 28621,
+  "startMs": 26497,
+  "endMs": 26705,
+  "timestampMs": 26601,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " it",
-  "startMs": 28725,
-  "endMs": 28933,
-  "timestampMs": 28829,
+  "startMs": 26705,
+  "endMs": 26913,
+  "timestampMs": 26809,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " the",
-  "startMs": 28933,
-  "endMs": 29141,
-  "timestampMs": 29037,
+  "startMs": 26913,
+  "endMs": 27121,
+  "timestampMs": 27017,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " Cadaver",
-  "startMs": 29141,
-  "endMs": 29658,
-  "timestampMs": 29400,
+  "startMs": 27121,
+  "endMs": 27638,
+  "timestampMs": 27380,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " Synod.",
-  "startMs": 29658,
-  "endMs": 30020,
-  "timestampMs": 29839,
+  "startMs": 27638,
+  "endMs": 28000,
+  "timestampMs": 27819,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " The",
-  "startMs": 30420,
-  "endMs": 30678,
-  "timestampMs": 30549,
+  "startMs": 28400,
+  "endMs": 28658,
+  "timestampMs": 28529,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " day",
-  "startMs": 30678,
-  "endMs": 30935,
-  "timestampMs": 30806,
+  "startMs": 28658,
+  "endMs": 28915,
+  "timestampMs": 28786,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " a",
-  "startMs": 30935,
-  "endMs": 31193,
-  "timestampMs": 31064,
+  "startMs": 28915,
+  "endMs": 29173,
+  "timestampMs": 29044,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " corpse",
-  "startMs": 31193,
-  "endMs": 31450,
-  "timestampMs": 31322,
+  "startMs": 29173,
+  "endMs": 29430,
+  "timestampMs": 29301,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " was",
-  "startMs": 31450,
-  "endMs": 31708,
-  "timestampMs": 31579,
+  "startMs": 29430,
+  "endMs": 29688,
+  "timestampMs": 29559,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " put",
-  "startMs": 31708,
-  "endMs": 31965,
-  "timestampMs": 31836,
+  "startMs": 29688,
+  "endMs": 29945,
+  "timestampMs": 29816,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " on",
-  "startMs": 31965,
-  "endMs": 32223,
-  "timestampMs": 32094,
+  "startMs": 29945,
+  "endMs": 30203,
+  "timestampMs": 30074,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " trial.",
-  "startMs": 32223,
-  "endMs": 32480,
-  "timestampMs": 32352,
+  "startMs": 30203,
+  "endMs": 30460,
+  "timestampMs": 30332,
   "confidence": 1,
-  "line": 8
+  "line": 9
  }
 ]

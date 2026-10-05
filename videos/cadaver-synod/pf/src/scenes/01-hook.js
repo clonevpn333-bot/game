@@ -1,14 +1,14 @@
-// 01 · hook · T 0–3.5 · FRAME 0: lightning on an engraved crypt wall; the 3D engraved skull in its tiara fills the frame,
-// turning toward us. Words ink in on the beats: THIS POPE (0.12) → DEAD (1.11) / 9 MONTHS (1.62) → ON TRIAL (3.26).
-// Exit: the camera dives into the left eye socket (3.3–3.5) and Rome rises out of the dark (shot 02).
+// 01 · hook · T 0–4.25 · FRAME 0: lightning on an engraved crypt wall; the 3D engraved skull in its tiara fills the frame.
+// The whole insane fact is on screen within half a second: THEY PUT A / DEAD POPE / ON TRIAL. Then "He'd been dead for
+// nine months" (2.21): DEAD FOR / 9 MONTHS (3.44). Exit: the camera dives into the left eye socket (4.05–4.25).
 (function () {
   'use strict';
   FILM.scene({ id: 'hook', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C;
     const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
-    const fl = D.flash(T, [0.0, 0.62, 3.24]);
-    let punch = 0; for (const h of [0.0, 1.11, 1.62, 3.26]) { const d = T - h; if (d >= 0 && d < 0.3) punch = Math.max(punch, (1 - d / 0.3)); }
-    const dive = L.ease.inCubic(L.clamp((T - 3.32) / 0.18));
+    const fl = D.flash(T, [0.0, 1.35, 3.42]);
+    let punch = 0; for (const h of [0.0, 0.2, 0.4, 1.37, 2.82, 3.44]) { const d = T - h; if (d >= 0 && d < 0.3) punch = Math.max(punch, (1 - d / 0.3)); }
+    const dive = L.ease.inCubic(L.clamp((T - 4.05) / 0.2));
     const EYE = [446, 1050];
     ctx.save();
     const z = 1 + 0.035 * punch + 6 * dive;
@@ -22,9 +22,9 @@
     }
     D.rain(ctx, T, { n: 150, a: 0.22, seed: 2 });
     D.glow(ctx, 540, 1350, 900, C.candle, 0.3 + 0.3 * fl);
-    const yaw = -0.42 + 0.5 * L.ease.inOutSine(L.clamp(t / 3.5)) + 0.04 * Math.sin(T * 1.7);
-    const jaw = T > 3.2 ? 0.25 + 0.55 * L.clamp((T - 3.2) / 0.12) : 0.15 + 0.12 * Math.max(0, Math.sin(T * 2.2));
-    const em = L.clamp((T - 1.05) / 0.25);
+    const yaw = -0.42 + 0.5 * L.ease.inOutSine(L.clamp(t / 4.25)) + 0.04 * Math.sin(T * 1.7);
+    const jaw = T > 1.3 && T < 1.9 ? 0.6 : T > 3.4 ? 0.25 + 0.5 * L.clamp((T - 3.4) / 0.12) : 0.15 + 0.12 * Math.max(0, Math.sin(T * 2.2));
+    const em = L.clamp((T - 0.85) / 0.25);
     D.skull(ctx, 540, 1000, 800, { yaw, pitch: 0.1, roll: -0.04, jaw, ember: em * (0.85 + 0.15 * Math.sin(T * 13)), key: [-0.62 + 0.4 * fl, -0.32 + 0.6 * fl, 0.6] });
     D.candle(ctx, 880, 1560, 1.35, T, { seed: 3, h: 300 });
     D.rain(ctx, T + 3.1, { n: 70, a: 0.35, seed: 5 });
@@ -32,9 +32,13 @@
     ctx.restore();
     D.grain(ctx, T, 1);
     if (dive > 0) { ctx.fillStyle = `rgba(0,0,0,${dive})`; ctx.fillRect(0, 0, 1080, 1920); }
-    const on = T < 3.26 ? 1 : 0;
-    if (T < 1.11) D.word(ctx, 'THIS POPE', 540, 230, 124, (T - 0.12) / 0.2, { seed: 4 });
-    if (on) { D.word(ctx, 'DEAD', 540, 240, 190, (T - 1.11) / 0.16, { seed: 5 }); D.word(ctx, '9 MONTHS', 540, 400, 96, (T - 1.62) / 0.2, { color: C.candle, seed: 6 }); }
-    D.word(ctx, 'ON TRIAL', 540, 300, 160, (T - 3.26) / 0.14, { color: '#E8443A', seed: 7 });
+    if (T < 2.15) {
+      D.word(ctx, 'THEY PUT A', 540, 150, 76, (T - 0.0) / 0.12, { under: false, seed: 4 });
+      D.word(ctx, 'DEAD POPE', 540, 280, 150, (T - 0.15) / 0.15, { seed: 5 });
+      D.word(ctx, 'ON TRIAL.', 540, 430, 130, (T - 0.38) / 0.15, { color: '#E8443A', seed: 6 });
+    } else {
+      D.word(ctx, 'DEAD FOR', 540, 200, 96, (T - 2.21) / 0.15, { under: false, seed: 7 });
+      D.word(ctx, '9 MONTHS', 540, 350, 170, (T - 3.44) / 0.14, { color: C.candle, seed: 8 });
+    }
   } });
 })();

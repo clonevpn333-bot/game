@@ -9,7 +9,6 @@ import "@fontsource/unifrakturmaguntia/400.css";
 import { fromFrame, lenFrames, shotById } from "./film/pf";
 import { Captions } from "./film/Captions";
 import { Shot01 } from "./scenes/Shot01";
-import { Shot02 } from "./scenes/Shot02";
 import { Shot03 } from "./scenes/Shot03";
 import { Shot04 } from "./scenes/Shot04";
 import { Shot05 } from "./scenes/Shot05";
@@ -29,7 +28,6 @@ const st = (id: string) => shotById(id).start;
 export const Film: React.FC<{ score: boolean }> = ({ score }) => (
   <AbsoluteFill style={{ backgroundColor: "#04060B" }}>
     <Sequence {...S("hook")}><Shot01 start={st("hook")} /></Sequence>
-    <Sequence {...S("rome")}><Shot02 start={st("rome")} /></Sequence>
     <Sequence {...S("popes")}><Shot03 start={st("popes")} /></Sequence>
     <Sequence {...S("exhume")}><Shot04 start={st("exhume")} /></Sequence>
     <Sequence {...S("nave")}><Shot05 start={st("nave")} /></Sequence>

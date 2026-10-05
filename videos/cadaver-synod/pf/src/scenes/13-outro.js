@@ -45,7 +45,7 @@
     draw(ctx, tIn, info) {
       const L = info.lib, P = L.pal, HC = FILM.hc, D = FILM.df;
       const t = L.clamp(tIn, 0, info.dur);
-      const T = info.shot.start + t;
+      const T = info.shot.start + t + FILM.SHIFT;
       ctx.fillStyle = '#04060B';
       ctx.fillRect(0, 0, 1080, 1920);
       const v = ctx.createRadialGradient(540, 700, 20, 540, 700, 900);
