@@ -20,8 +20,35 @@ Outro (always): the pellet/hero object alone in darkness → one big fact line i
 - Deliver ONE file via SendUserFile (display "attach"), ≤ 25 MB (two-pass x264; bitrate ≈ 25 MB·8 / duration − 160k audio).
 - Don't send intermediate videos. Don't bother with GitHub for delivery (commit/push source only, renders are gitignored).
 
+## 2D ART STANDARD (non-negotiable; ep5 broke this and the user called it out)
+The 2D must look HAND-DRAWN, with intricate, obsessive linework. The bar is the origin film
+(`videos/homo-curiosus-origin`). Its scenes use inkPath/inkCircle 57×, hatch 21×, stipple 7×, gradients 4×.
+Ep5 used inkPath 0×, stipple 0× and gradients 37×, which is why it looked like flat vector clip-art.
+- **Ink every form.** Outlines use `L.inkPath` / `L.inkCircle`: tapered, weight-varied, and boiling on twos (lib.T boil).
+  Never draw a figure with bare `fill()` or flat `ctx.stroke()`.
+- **Tone is drawn.** Use `L.hatch` / `L.crossHatch` with `density` functions that follow the form (contour hatching:
+  2–4 layers deepening into shadow), plus `L.stipple` in the deepest darks. **Gradients are only for light**
+  (glow, fog, sky, candle falloff), never to shade an object.
+- **Obsessive detail budget per hero object:** a thick silhouette with thin interior lines; 3+ hatch layers; small marks
+  (cracks, folds, stitches, embroidery, wood grain, mortar). Background objects still get ink and one hatch layer.
+- **Plate.** `L.paper` / `L.blueprint` grain on every 2D shot (or a deliberate ink-on-black plate).
+- **Type.** No `shadowBlur` glows, drop shadows or scale-slam titles on every beat (one slam per film at most).
+  Type enters by stroke reveal, mask, or being written by the curiosity line. Fonts: Fraunces + JetBrains Mono, plus at
+  most ONE period display face for one title moment.
+- **Self-audit before the animatic:** grep the episode's scenes and kit for these counts. If gradients outnumber
+  inkPath, or hatch/stipple are near zero, the shot isn't drawn yet. Fix it before rendering.
+
+## HYBRID COHERENCE (2D × 3D)
+- Never put a 3D object on a flat 2D body (ep5's ray-marched skull on a vector robe). For a hero assembly, either
+  (a) build the whole thing in 3D (skull + robe + throne as one ray-marched or three.js scene), or (b) render the 3D with
+  the engraving-hatch shader and draw the 2D parts in matching ink at the same line density, or (c) make the clash
+  deliberate and readable (freeze-to-sketch, an annotation drawn over the 3D, a PiP opening over it).
+- Use the interaction devices: freeze-to-sketch, annotations on 3D, PiPs over moving shots (2–4 per film), geometry morphs.
+- Weave the curiosity line through the story at least 3 times (not only the outro). Shots should physically become the
+  next one (REMOTION_RULES 8) instead of hard-cutting every beat.
+
 ## Project template
-Copy the latest episode (currently `videos/dancing-plague/` — has Pip + woodcut; `videos/poisoned-umbrella/` for noir/rain): `pf/` (procedural-film engine: core.js, lib.js, props.js
+Copy the latest episode (`videos/cadaver-synod/` has the 3D skull, font loading and dark kit; `videos/neutron-star/` has space; `videos/dancing-plague/` has Pip + woodcut; `videos/poisoned-umbrella/` has noir/rain). For drawing standards, read `videos/homo-curiosus-origin/pf/src/scenes` first: `pf/` (procedural-film engine: core.js, lib.js, props.js
 = FILM.hx + FILM.mk kit, cast.js = FILM.hc, tools/) and `remotion/` (symlink node_modules to
 `videos/homo-curiosus-origin/remotion/node_modules`; ProcCanvas bridge, Captions with per-shot bands, Root/Film).
 Scenes are `pf/src/scenes/NN-id.js` registering `FILM.scene({ id, draw(ctx, t, info) })`; one Remotion `ShotNN.tsx` each.
@@ -43,6 +70,8 @@ draw cartoon faces on humans), `brolly`, `pip()` branded PiP window (rect/circle
    Remember `lib.tracePath` does NOT begin a path — call `ctx.beginPath()` first.
 7. **Animatic**: `node tools/snap.cjs --times <~20 key beats> --scale 0.3 --sheet --cols 10 --out .frames/anim`, Read it.
 8. **One critique** (hook, composition, cut-off subjects, readability, PiP clutter, brand) → patch weak shots → re-snap only those.
+   Also check: is every object inked and hatched (2D ART STANDARD)? Is anything shaded with a gradient? Any 3D/2D
+   mismatch? How many PiPs (2–4)? How many curiosity-line beats (3+)? Are the entrances varied, or all the same slam?
 9. **Gate**: `node tools/check.cjs` must have no FAIL (WARN ok). Text must end above y 1540.
 10. **Score**: copy `tools/score.py` (python numpy + `_shared/tools/sfxlib.py`), cue every story beat, duck under VO;
     Remotion score volume ≈ 0.42 (≈ 8 dB under the voice).
