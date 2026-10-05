@@ -1,51 +1,41 @@
-// 08 · fingers · T 18.5–21.25 · the corpse's right hand raised in blessing, ring on. "three fingers" (19.57) → the
-// three blessing fingers glow I · II · III; a blade flashes across (20.2) and the finger bones tumble away in 3D.
+// 08 · fingers · T 18.5–21.25 · the engraved 3D skeletal hand raised in blessing, ring on. "three fingers" (19.57):
+// I · II · III; the curiosity line draws the cut across the knuckles (19.85); the blade flashes (20.2) and the three
+// fingers break away, tumbling in 3D.
 (function () {
   'use strict';
-  const H = [560, 1180], S = 1.9;
+  const HC = [560, 1200], HH = 1400;
   FILM.scene({ id: 'fingers', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C;
     const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
     const CUT = 20.2, cut = T >= CUT;
-    let sh = 0; { const d = T - CUT; if (d >= 0 && d < 0.35) sh = (1 - d / 0.35) * 24; }
+    let sh = 0; { const d = T - CUT; if (d >= 0 && d < 0.35) sh = (1 - d / 0.35) * 22; }
     ctx.save(); ctx.translate(sh * Math.sin(T * 97), sh * Math.cos(T * 83));
-    D.bg(ctx, { top: '#140A10', bottom: '#040304' });
-    D.glow(ctx, 400, 1100, 900, C.candle, 0.45);
-    D.glow(ctx, 860, 600, 600, '#A11F22', 0.3);
-    const z = 1 + 0.05 * t;
+    D.plate(ctx);
+    const lit = D.lights([{ x: 300, y: 1100, r: 1100, k: 0.42 }], 0.02);
+    L.hatch(ctx, null, { bounds: { x: 0, y: 0, w: 1080, h: 1920 }, angle: -0.2, spacing: 6.5, width: 1, color: '#9A8C80', alpha: 0.75, seed: 51, density: (x, y) => lit(x, y) * 0.65 });
+    D.glow(ctx, 360, 1100, 800, C.candle, 0.3);
+    const z = 1 + 0.04 * t;
     ctx.save(); ctx.translate(540, 1000); ctx.scale(z, z); ctx.translate(-540, -1000);
-    D.hand(ctx, H[0], H[1], S, { cut: cut ? [true, true, true] : [false, false, false], ring: true });
-    // glow on the three fingers
+    const r = D.hand(ctx, HC[0], HC[1], HH, { cut, yaw: 0.25 + 0.05 * Math.sin(T), pitch: 0.05 });
+    const knuck = [[-0.78, -0.12, 0.28], [-0.31, 0.58, 0.02], [0, 0.62, 0.02]].map((p) => r.proj(...p));
+    const tipsP = [[-1.08, 0.62, 0.3], [-0.37, 1.86, 0.05], [0, 2.08, 0.05]].map((p) => r.proj(...p));
     const gl = L.clamp((T - 19.5) / 0.2) * (cut ? 0 : 1);
-    if (gl > 0) D.F_TIPS.forEach((p, i) => { const [x, y] = p[3]; const a = L.clamp((T - 19.55 - i * 0.12) / 0.15); D.glow(ctx, H[0] + x * S, H[1] + y * S, 120, C.gold, a * gl); L.text(ctx, ['I', 'II', 'III'][i], H[0] + x * S, H[1] + (y - 70) * S, { size: 50, family: '"Cinzel", serif', weight: 900, align: 'center', color: C.gold, alpha: a * gl }); });
+    if (gl > 0) tipsP.forEach(([x, y], i) => { const a = L.clamp((T - 19.55 - i * 0.12) / 0.15) * gl; D.glow(ctx, x, y, 110, C.gold, a); L.text(ctx, ['I', 'II', 'III'][i], x, y - 70, { size: 44, family: '"JetBrains Mono", monospace', weight: 600, align: 'center', color: C.yellow, alpha: a }); });
+    // the cut line: the curiosity line across the knuckles
+    const cu = L.clamp((T - 19.85) / 0.3) * (1 - L.clamp((T - 20.35) / 0.2));
+    if (cu > 0) FILM.hc.line(ctx, L.smoothPts([[knuck[0][0] - 120, knuck[0][1] + 40], knuck[0], knuck[1], knuck[2], [knuck[2][0] + 160, knuck[2][1] - 20]], false, 6), { plate: 'blueprint', to: Math.max(0.02, L.clamp((T - 19.85) / 0.3)), width: 5, seed: 61, alpha: cu });
     if (cut) {
       const d = T - CUT;
-      D.F_TIPS.forEach((p, i) => {
-        const mx = (p[1][0] + p[3][0]) / 2, my = (p[1][1] + p[3][1]) / 2;
-        const len = Math.hypot(p[3][0] - p[1][0], p[3][1] - p[1][1]);
-        const ang0 = Math.atan2(p[3][1] - p[1][1], p[3][0] - p[1][0]) + Math.PI / 2;
-        const vx = (i - 1) * 260 + 80, vy = -380 - i * 60;
-        D.bone(ctx, H[0] + mx * S + vx * d, H[1] + my * S + vy * d + 1700 * d * d, S, ang0 + d * (3 + i * 2) * (i % 2 ? -1 : 1), Math.cos(d * (7 + i * 3)), len);
-      });
+      knuck.forEach(([x, y], i) => { const vx = (i - 1) * 300 + 60, vy = -420 - i * 70; D.finger(ctx, x + vx * d, y - 160 + vy * d + 1700 * d * d, 260, { yaw: d * (3 + i), pitch: d * (5 + i * 2), roll: 0.4 * (i - 1) + d * (4 - i) * (i % 2 ? -1 : 1), slot: i }); });
       const rr = L.rng(L.hash('bonedust'));
-      for (let i = 0; i < 40; i++) { const a = -Math.PI * (0.1 + rr() * 0.8), v = 200 + rr() * 500; ctx.fillStyle = `rgba(230,220,200,${Math.max(0, 0.8 - d)})`; ctx.beginPath(); ctx.arc(H[0] - 40 * S + Math.cos(a) * v * d, H[1] - 60 * S + Math.sin(a) * v * d + 600 * d * d, 3 + rr() * 4, 0, Math.PI * 2); ctx.fill(); }
+      for (let i = 0; i < 40; i++) { const a = -Math.PI * (0.1 + rr() * 0.8), v = 200 + rr() * 500; L.inkPath(ctx, [[knuck[1][0] + Math.cos(a) * v * d, knuck[1][1] + Math.sin(a) * v * d + 600 * d * d], [knuck[1][0] + Math.cos(a) * v * d + 5, knuck[1][1] + Math.sin(a) * v * d + 600 * d * d + 3]], { width: 2.4, color: C.bone, alpha: Math.max(0, 0.9 - d), seed: 1700 + i, taper: 1 }); }
     }
     ctx.restore();
-    // the blade: a silver arc sweeping across the knuckles
     const bd = (T - (CUT - 0.08)) / 0.16;
-    if (bd > 0 && bd < 1.6) {
-      ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      const a0 = -0.15, x0 = -100, x1 = 1180, y = H[1] - 110 * S;
-      const head = L.clamp(bd), tail = L.clamp(bd - 0.4);
-      const g = ctx.createLinearGradient(x0, 0, x1, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(255,255,255,1)');
-      ctx.strokeStyle = `rgba(240,245,255,${Math.max(0, 1 - (bd - 1) * 2)})`; ctx.lineWidth = 16; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.moveTo(L.lerp(x0, x1, tail), y + 140 * L.lerp(0, 1, tail) - 70); ctx.lineTo(L.lerp(x0, x1, head), y + 140 * head - 70); ctx.stroke();
-      ctx.lineWidth = 50; ctx.strokeStyle = `rgba(160,190,255,${0.35 * Math.max(0, 1 - (bd - 1) * 2)})`; ctx.stroke();
-      ctx.restore();
-    }
-    D.fog(ctx, T, { y: 1750, h: 500, a: 0.25, speed: 30 });
+    if (bd > 0 && bd < 1.6) { const y = knuck[1][1], a = Math.max(0, 1 - (bd - 1) * 2), head = L.clamp(bd), tail = L.clamp(bd - 0.4); ctx.save(); ctx.globalCompositeOperation = 'lighter'; L.inkPath(ctx, [[L.lerp(-100, 1180, tail), y + 120 * tail - 60], [L.lerp(-100, 1180, head), y + 120 * head - 60]], { width: 14, color: '#F0F4FF', alpha: a, seed: 71, taper: [30, 4] }); ctx.restore(); }
+    D.mist(ctx, T, { y: 1800, h: 300, a: 0.25 });
     ctx.restore();
     D.grain(ctx, T, 1);
-    L.text(ctx, 'THE BLESSING FINGERS', 540, 300, { size: 46, family: '"Cinzel", serif', weight: 700, align: 'center', color: C.gold, alpha: L.clamp((T - 19.55) / 0.2), tracking: '0.12em' });
+    D.word(ctx, 'THE BLESSING FINGERS', 540, 300, 54, (T - 19.55) / 0.3, { color: C.gold, seed: 12 });
   } });
 })();

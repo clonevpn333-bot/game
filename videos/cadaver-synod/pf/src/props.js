@@ -1621,664 +1621,30 @@
   FILM.sp = sp;
 })();
 
+
 /*
- * FILM.df — episode 5 DARK FANTASY kit (Doré-style engraving on near-black; candle gold, crimson, bone; 3D nave).
- *   C                               palette
- *   bg(ctx, o)                      void background { top, bottom }
- *   fog(ctx, T, o)                  drifting fog bands { y, h, a, speed }
- *   grain(ctx, T, a)                film grain + vignette
- *   rain(ctx, T, o)                 slanted rain in depth
- *   flash(T, hits)                  lightning intensity at T for strike times
- *   candle(ctx, x, y, s, T, o)      candle + flickering flame + glow { out: 0..1 snuffed, smoke }
- *   glow(ctx, x, y, r, col, a)      additive glow
- *   skull(ctx, x, y, s, o)          engraved skull { ember 0..1, jaw 0..1, light 'below'|'left' }
- *   tiara(ctx, x, y, s)             papal triregnum
- *   corpse(ctx, x, y, s, T, o)      robed skeletal pope seated on a gothic throne { tilt, hands, cut }
- *   throne(ctx, x, y, s)
- *   figure(ctx, x, y, s, T, o)      robed silhouette { hat 'hood'|'mitre'|'cap', pose 'stand'|'point'|'walk'|'dig'|'torch', ph, rim }
- *   nave(ctx, T, cam, o)            3D perspective nave (columns, arches, floor, candles, end window) → returns project()
- *   glass(ctx, x, y, w, h, o)       stained-glass lancet window { fig: fn, tint, crack 0..1, glow }
- *   shaft(ctx, pts, col, a)         volumetric light shaft polygon
- *   rome(ctx, T, o)                 Rome skyline silhouettes with blood moon { px parallax }
- *   raven(ctx, x, y, s, ph)
- *   hand(ctx, x, y, s, o)           skeletal blessing hand { cut: [bool,bool,bool], ring }
- *   bone(ctx, x, y, s, rot, sq)     a finger bone (3D tumble via squash sq)
- *   water(ctx, T, o)                moonlit river in perspective { horizon, splash: [x, y, t] }
- *   stamp(ctx, str, x, y, size, k, o) Cinzel/Fraktur title slam (overshoot k = time since hit)
+ * FILM.df (v2) — episode 5 "scratchboard illumination" kit. Everything is ENGRAVED: 2D forms are inked outlines + light
+ * built from hatching/cross-hatching/stipple in bone, crimson and gold on a black plate; 3D heroes go through df.r3d, an
+ * engraving renderer whose hatch lines follow the 3D surface at the same line density as the 2D. Gradients = light only.
  */
 (function () {
   'use strict';
   const FILM = window.FILM;
   const L = FILM.lib;
+  const P = L.pal;
   const TAU = Math.PI * 2;
   const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
   const lerp = (a, b, t) => a + (b - a) * t;
-  const cv = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+  const sqrt = Math.sqrt, abs = Math.abs;
   const C = {
-    black: '#07060A', void: '#100C16', crimson: '#A11F22', blood: '#5E0F12', ember: '#FF5A2A', candle: '#F3B04B',
-    gold: '#D9A441', goldD: '#8A5E1A', bone: '#E9DEC4', boneS: '#9C8C70', boneD: '#4A3F30', ink: '#120D0A',
-    stone: '#24202B', stoneL: '#4A4352', moon: '#DCE3F0', sky: '#1A1024', robeR: '#7E1518', robeW: '#D8D0C0',
+    ink: '#050404', plate: '#0D0A0B', bone: '#EEE4CC', boneD: '#A8987A', crimson: '#D8443A', crimsonD: '#7A1418',
+    gold: '#E6B652', candle: '#F3B04B', ember: '#FF5A2A', moon: '#E9A68A', yellow: '#F2C230', ivory: '#F2E8D0',
+    glassB: '#3E62D8', glassV: '#7A44C0', glassR: '#C8322A', glassG: '#D9A441', stone: '#B9AFA2', wax: '#E8DCC0', wood: '#B07A48',
   };
   const df = { C };
-  const rgba = (hex, a) => L.rgba(hex, a);
+  const rgb = (hex) => { const a = L.rgb(hex); return [a[0] / 255, a[1] / 255, a[2] / 255]; };
 
-  df.bg = (ctx, o = {}) => {
-    const g = ctx.createLinearGradient(0, 0, 0, 1920);
-    g.addColorStop(0, o.top || '#120C18'); g.addColorStop(1, o.bottom || '#050407');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, 1080, 1920);
-  };
-  df.glow = (ctx, x, y, r, col, a = 1) => {
-    if (a <= 0 || r <= 0) return;
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, rgba(col, 0.55 * a)); g.addColorStop(0.35, rgba(col, 0.18 * a)); g.addColorStop(1, rgba(col, 0));
-    ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.restore();
-  };
-  // fog: a cached soft-noise strip, scrolled
-  const fogTex = () => L.cached('df-fog-v1', () => {
-    const w = 540, h = 160, c = cv(w, h), g = c.getContext('2d');
-    const img = g.createImageData(w, h), d = img.data;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const u = x / w, cx = Math.cos(u * TAU), sx = Math.sin(u * TAU);
-      const n = L.noise2(cx * 2 + 5, sx * 2 + y * 0.025, 3) * 0.6 + L.noise2(cx * 5, sx * 5 + y * 0.06, 4) * 0.4;
-      const fall = Math.sin((y / h) * Math.PI);
-      const v = clamp((n * 0.5 + 0.5) * fall * 1.4 - 0.25);
-      const i = (y * w + x) * 4; d[i] = 200; d[i + 1] = 195; d[i + 2] = 215; d[i + 3] = 255 * v;
-    }
-    g.putImageData(img, 0, 0); return c;
-  });
-  df.fog = (ctx, T, o = {}) => {
-    const t = fogTex(), y = o.y != null ? o.y : 1300, h = o.h || 500, a = o.a != null ? o.a : 0.35, sp = o.speed || 30;
-    ctx.save(); ctx.globalAlpha = a;
-    if (o.tint) { ctx.globalCompositeOperation = 'lighter'; }
-    const W = 2160, off = ((T * sp) % W + W) % W;
-    for (let k = -1; k <= 1; k++) ctx.drawImage(t, k * W - off, y - h / 2, W, h);
-    ctx.restore();
-  };
-  const grainTex = () => L.cached('df-grain-v1', () => {
-    const c = cv(256, 256), g = c.getContext('2d'), img = g.createImageData(256, 256), d = img.data;
-    const r = L.rng(L.hash('grain'));
-    for (let i = 0; i < d.length; i += 4) { const v = r() * 255; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 26; }
-    g.putImageData(img, 0, 0); return c;
-  });
-  df.grain = (ctx, T, a = 1) => {
-    const f = Math.floor(T * 24);
-    const r = L.rng(f * 7919 + 13);
-    ctx.save(); ctx.globalAlpha = a; ctx.globalCompositeOperation = 'overlay';
-    const ox = Math.floor(r() * 256), oy = Math.floor(r() * 256);
-    ctx.translate(-ox, -oy);
-    for (let y = 0; y < 1920 + 256; y += 256) for (let x = 0; x < 1080 + 256; x += 256) ctx.drawImage(grainTex(), x, y);
-    ctx.restore();
-    const v = ctx.createRadialGradient(540, 900, 500, 540, 900, 1250);
-    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, `rgba(0,0,0,${0.75 * a})`);
-    ctx.fillStyle = v; ctx.fillRect(0, 0, 1080, 1920);
-  };
-  df.rain = (ctx, T, o = {}) => {
-    const r = L.rng(L.hash('df-rain', o.seed || 1));
-    const n = o.n || 260, a = o.a != null ? o.a : 0.35;
-    ctx.save(); ctx.lineCap = 'round';
-    for (let i = 0; i < n; i++) {
-      const z = 0.3 + r() * 0.7, sp = 2600 * z, len = 70 * z;
-      const x0 = r() * 1300 - 100, ph = r();
-      const y = ((ph * 2200 + T * sp) % 2200) - 140;
-      const x = x0 + (y + 140) * 0.18;
-      ctx.strokeStyle = `rgba(190,200,225,${a * z})`; ctx.lineWidth = 1 + 1.6 * z;
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + len * 0.18, y + len); ctx.stroke();
-    }
-    ctx.restore();
-  };
-  df.flash = (T, hits) => {
-    let f = 0;
-    for (const h of hits) {
-      const d = T - h;
-      if (d < 0 || d > 0.6) continue;
-      f = Math.max(f, Math.exp(-d * 9) * (d < 0.05 ? 1 : 0.7) + (d > 0.12 && d < 0.2 ? 0.5 : 0));
-    }
-    return clamp(f);
-  };
-
-  // ------------------------------------------------------------ candle
-  df.candle = (ctx, x, y, s, T, o = {}) => {
-    const out = clamp(o.out || 0), seed = o.seed || 1;
-    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
-    // wax body with drips (3D cylinder shading)
-    const g = ctx.createLinearGradient(-22, 0, 22, 0);
-    g.addColorStop(0, '#6E5E44'); g.addColorStop(0.35, '#EFE3C4'); g.addColorStop(1, '#5A4C38');
-    ctx.fillStyle = g; ctx.fillRect(-22, 0, 44, o.h || 160);
-    ctx.fillStyle = '#EFE3C4';
-    ctx.beginPath(); ctx.ellipse(0, 0, 22, 6, 0, 0, TAU); ctx.fill();
-    const r = L.rng(L.hash('drip', seed));
-    for (let k = 0; k < 3; k++) { const dx = -16 + r() * 32, dl = 20 + r() * 50; ctx.fillStyle = '#E6D8B6'; ctx.beginPath(); ctx.ellipse(dx, dl / 2, 5, dl / 2, 0, 0, TAU); ctx.fill(); }
-    ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -16); ctx.stroke();
-    const fl = 1 + 0.12 * L.noise1(T * 9, seed) + 0.06 * Math.sin(T * 31 + seed);
-    const sway = 4 * L.noise1(T * 3, seed + 5);
-    if (out < 1) {
-      ctx.globalAlpha = 1 - out;
-      df.glow(ctx, 0, -50, 260 * fl, C.candle, 1 - out);
-      const fg = ctx.createRadialGradient(0, -38, 2, 0, -46, 34);
-      fg.addColorStop(0, '#FFFFFF'); fg.addColorStop(0.3, '#FFE6A0'); fg.addColorStop(0.7, '#F39A2B'); fg.addColorStop(1, 'rgba(240,120,30,0)');
-      ctx.fillStyle = fg;
-      ctx.beginPath(); ctx.moveTo(-12, -22);
-      ctx.quadraticCurveTo(-14, -48 * fl, sway, -78 * fl);
-      ctx.quadraticCurveTo(14, -48 * fl, 12, -22);
-      ctx.quadraticCurveTo(0, -10, -12, -22); ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-    if (o.smoke && out > 0) {
-      const st = o.smoke;
-      for (let k = 0; k < 14; k++) {
-        const u = k / 14, yy = -20 - u * 420 * clamp(st * 1.4), xx = Math.sin(u * 9 + T * 2) * 30 * u;
-        ctx.fillStyle = `rgba(200,195,210,${0.18 * (1 - u) * clamp(2 - st)})`;
-        ctx.beginPath(); ctx.arc(xx, yy, 8 + u * 30, 0, TAU); ctx.fill();
-      }
-    }
-    ctx.restore();
-  };
-
-  // ------------------------------------------------------------ the skull (engraved)
-  const SK = (() => {
-    const arc = (cx, cy, rx, ry, a0, a1, n) => Array.from({ length: n + 1 }, (_, i) => { const a = a0 + (a1 - a0) * i / n; return [cx + Math.cos(a) * rx, cy + Math.sin(a) * ry]; });
-    const cran = arc(0, -18, 104, 120, Math.PI * 0.93, Math.PI * 2.07, 40)
-      .concat([[98, 30], [92, 52], [84, 66], [66, 74], [54, 92], [46, 104], [-46, 104], [-54, 92], [-66, 74], [-84, 66], [-92, 52], [-98, 30]]);
-    const jaw = [[-74, 70], [-70, 104], [-60, 132], [-30, 150], [0, 154], [30, 150], [60, 132], [70, 104], [74, 70], [58, 82], [48, 116], [-48, 116], [-58, 82]];
-    const eye = (sx) => [[sx * 14, 2], [sx * 26, -10], [sx * 50, -12], [sx * 66, 0], [sx * 68, 22], [sx * 58, 40], [sx * 36, 44], [sx * 18, 34]];
-    const nose = [[0, 48], [-14, 72], [-10, 84], [0, 80], [10, 84], [14, 72]];
-    return { cran, jaw, eyeL: eye(-1), eyeR: eye(1), nose };
-  })();
-  df.skull = (ctx, x, y, s, o = {}) => {
-    const jaw = (o.jaw || 0) * 26;
-    ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.rotate(o.rot || 0);
-    const lx = o.light === 'left' ? -110 : 50, ly = o.light === 'left' ? -40 : 150;
-    const boneFill = (pts) => {
-      ctx.beginPath(); L.tracePath(ctx, L.smoothPts(pts, true, 3), true);
-      const g = ctx.createRadialGradient(lx, ly, 10, lx * 0.3, ly * 0.3, 270);
-      g.addColorStop(0, '#FFF0CC'); g.addColorStop(0.3, '#D9C7A0'); g.addColorStop(0.62, '#7A6A52'); g.addColorStop(1, '#1E1812');
-      ctx.fillStyle = g; ctx.fill();
-    };
-    const tooth = (k, y0, h, up) => {
-      const hh = h * (0.8 + 0.25 * Math.abs(Math.sin(k * 2.7))), w = 9.5;
-      ctx.beginPath();
-      if (up) { ctx.moveTo(k * 11 + 1, y0); ctx.lineTo(k * 11 + 1 + w, y0); ctx.lineTo(k * 11 + w - 0.5, y0 + hh); ctx.quadraticCurveTo(k * 11 + 1 + w / 2, y0 + hh + 3, k * 11 + 2, y0 + hh); }
-      else { ctx.moveTo(k * 11 + 1, y0 + h); ctx.lineTo(k * 11 + 1 + w, y0 + h); ctx.lineTo(k * 11 + w - 0.5, y0 + h - hh); ctx.quadraticCurveTo(k * 11 + 1 + w / 2, y0 + h - hh - 3, k * 11 + 2, y0 + h - hh); }
-      ctx.closePath();
-      const g = ctx.createLinearGradient(0, y0, 0, y0 + h); g.addColorStop(0, up ? '#CDBE9C' : '#8C7C60'); g.addColorStop(1, up ? '#8C7C60' : '#CDBE9C');
-      ctx.fillStyle = Math.abs(k + 0.5) > 3 ? '#5A4C3A' : g; ctx.fill(); ctx.strokeStyle = '#1A120C'; ctx.lineWidth = 1.6; ctx.stroke();
-    };
-    // jaw (behind)
-    ctx.save(); ctx.translate(0, jaw);
-    boneFill(SK.jaw);
-    L.hatch(ctx, SK.jaw, { angle: -0.6, spacing: 4.5, width: 1.3, color: '#120C08', alpha: 0.6, seed: 61, density: (px, py) => clamp((py - 100) / 50) + clamp((Math.abs(px) - 40) / 40) * 0.6 });
-    ctx.beginPath(); L.tracePath(ctx, L.smoothPts(SK.jaw, true, 3), true); ctx.strokeStyle = C.ink; ctx.lineWidth = 3.5; ctx.stroke();
-    for (let k = -4; k <= 3; k++) tooth(k, 104, 13, false);
-    ctx.restore();
-    if (jaw > 2) { ctx.fillStyle = '#050304'; ctx.fillRect(-46, 104, 92, jaw + 2); }
-    boneFill(SK.cran);
-    ctx.save(); ctx.beginPath(); L.tracePath(ctx, L.smoothPts(SK.cran, true, 3), true); ctx.clip();
-    // hollow cheeks, temples and the brow's shadow
-    const dark = (cx, cy, rx, ry, a) => { const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry)); g.addColorStop(0, `rgba(10,6,4,${a})`); g.addColorStop(1, 'rgba(10,6,4,0)'); ctx.save(); ctx.translate(cx, cy); ctx.scale(rx / Math.max(rx, ry), ry / Math.max(rx, ry)); ctx.translate(-cx, -cy); ctx.fillStyle = g; ctx.fillRect(cx - Math.max(rx, ry), cy - Math.max(rx, ry), 2 * Math.max(rx, ry), 2 * Math.max(rx, ry)); ctx.restore(); };
-    dark(-80, 80, 40, 30, 0.85); dark(80, 80, 40, 30, 0.85); dark(-96, -10, 36, 60, 0.7); dark(96, -10, 36, 60, 0.7);
-    dark(0, -40, 120, 40, 0.35); dark(0, -150, 120, 70, 0.55);
-    L.hatch(ctx, SK.cran, { angle: -0.5, spacing: 4.5, width: 1.4, color: '#120C08', alpha: 0.75, seed: 62, density: (px, py) => clamp((Math.abs(px) - 45) / 55) * 0.9 + clamp((-py - 70) / 60) * 0.7 });
-    L.hatch(ctx, SK.cran, { angle: 0.9, spacing: 6, width: 1.1, color: '#120C08', alpha: 0.5, seed: 63, density: (px, py) => clamp((Math.abs(px) - 65) / 40) + clamp((-py - 110) / 40) * 0.6 });
-    ctx.restore();
-    for (let k = -4; k <= 3; k++) tooth(k, 92, 14, true);
-    // sockets + nose (deep, with a bone rim)
-    for (const e of [SK.eyeL, SK.eyeR, SK.nose]) {
-      ctx.beginPath(); L.tracePath(ctx, L.smoothPts(e, true, 3), true);
-      ctx.fillStyle = '#030202'; ctx.fill(); ctx.strokeStyle = '#2A2016'; ctx.lineWidth = 5; ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,236,200,0.25)'; ctx.lineWidth = 1.5; ctx.stroke();
-    }
-    L.inkPath(ctx, [[-30, -120], [-20, -96], [-34, -80], [-24, -60]], { width: 2.2, color: '#120C08', seed: 64 });
-    L.inkPath(ctx, [[60, -100], [48, -84], [56, -66]], { width: 1.8, color: '#120C08', seed: 65 });
-    ctx.beginPath(); L.tracePath(ctx, L.smoothPts(SK.cran, true, 3), true); ctx.strokeStyle = C.ink; ctx.lineWidth = 4; ctx.stroke();
-    // crimson rim light on the right edge
-    if (o.rim !== false) {
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = 'rgba(200,40,30,0.55)'; ctx.lineWidth = 5;
-      ctx.beginPath(); L.tracePath(ctx, L.smoothPts(SK.cran, true, 3).filter(([px, py]) => px > 30 && py < 70), false); ctx.stroke(); ctx.restore();
-    }
-    const em = o.ember || 0;
-    if (em > 0) for (const sx of [-1, 1]) { df.glow(ctx, sx * 42, 20, 80 * em, C.ember, em); ctx.fillStyle = rgba('#FFD2A0', em); ctx.beginPath(); ctx.arc(sx * 42, 20, 5.5 * em, 0, TAU); ctx.fill(); }
-    ctx.restore();
-  };
-
-  df.tiara = (ctx, x, y, s, o = {}) => {
-    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
-    // beehive body (origin = bottom centre)
-    const body = [[-100, 0], [-112, -60], [-108, -120], [-92, -170], [-60, -208], [0, -226], [60, -208], [92, -170], [108, -120], [112, -60], [100, 0]];
-    ctx.beginPath(); L.tracePath(ctx, L.smoothPts(body, true, 4), true);
-    const g = ctx.createRadialGradient(-25, 10, 10, 0, -40, 290);
-    g.addColorStop(0, '#F2EBDD'); g.addColorStop(0.35, '#A49C90'); g.addColorStop(0.7, '#3E3A38'); g.addColorStop(1, '#121012');
-    ctx.fillStyle = g; ctx.fill();
-    ctx.save(); ctx.clip();
-    // three crowns
-    for (const [cy, w] of [[-14, 114], [-84, 114], [-152, 100]]) {
-      const gg = ctx.createLinearGradient(-w, 0, w, 0);
-      gg.addColorStop(0, C.goldD); gg.addColorStop(0.35, '#FFE08A'); gg.addColorStop(0.7, C.gold); gg.addColorStop(1, '#5A3A0C');
-      ctx.fillStyle = gg; ctx.fillRect(-w, cy - 14, 2 * w, 22);
-      const rowDark = cy < -100 ? 0.62 : cy < -40 ? 0.35 : 0;
-      for (let k = -3; k <= 3; k++) {
-        ctx.beginPath(); ctx.moveTo(k * 26 - 10, cy - 12); ctx.lineTo(k * 26, cy - 34); ctx.lineTo(k * 26 + 10, cy - 12); ctx.fill();
-        ctx.fillStyle = k % 2 ? '#B0202A' : '#2E56C8'; ctx.beginPath(); ctx.arc(k * 26, cy - 2, 4.5, 0, TAU); ctx.fill(); ctx.fillStyle = gg;
-      }
-      if (rowDark) { ctx.fillStyle = `rgba(10,7,9,${rowDark})`; ctx.fillRect(-w, cy - 40, 2 * w, 50); }
-    }
-    const sh = ctx.createLinearGradient(0, 0, 0, -260); sh.addColorStop(0, 'rgba(8,5,8,0)'); sh.addColorStop(0.45, 'rgba(8,5,8,0.5)'); sh.addColorStop(1, `rgba(8,5,8,${o.dark != null ? o.dark : 0.92})`);
-    ctx.fillStyle = sh; ctx.fillRect(-120, -240, 240, 242);
-    L.hatch(ctx, body, { angle: 0.4, spacing: 5, width: 1.2, color: '#000', alpha: 0.45, seed: 66, density: (px) => clamp((Math.abs(px) - 40) / 50) });
-    ctx.restore();
-    ctx.beginPath(); L.tracePath(ctx, L.smoothPts(body, true, 4), true); ctx.strokeStyle = C.ink; ctx.lineWidth = 4; ctx.stroke();
-    // orb + cross
-    ctx.fillStyle = '#6A4A16'; ctx.beginPath(); ctx.arc(0, -236, 13, 0, TAU); ctx.fill(); ctx.stroke();
-    ctx.fillRect(-4, -290, 8, 46); ctx.fillRect(-16, -276, 32, 8);
-    ctx.restore();
-  };
-
-  df.throne = (ctx, x, y, s) => {
-    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
-    const back = [[-210, 40], [-210, -520], [-150, -640], [-80, -700], [0, -780], [80, -700], [150, -640], [210, -520], [210, 40]];
-    ctx.beginPath(); L.tracePath(ctx, back, true);
-    const g = ctx.createLinearGradient(-210, 0, 210, 0); g.addColorStop(0, '#1A0E08'); g.addColorStop(0.5, '#3E2414'); g.addColorStop(1, '#140A06');
-    ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = C.gold; ctx.lineWidth = 6; ctx.stroke();
-    // inner crimson panel
-    const inner = back.map(([px, py]) => [px * 0.78, py * 0.86 - 20]);
-    ctx.beginPath(); L.tracePath(ctx, inner, true); ctx.fillStyle = '#4A0C10'; ctx.fill();
-    L.hatch(ctx, inner, { angle: 0.6, spacing: 8, width: 1.2, color: '#000', alpha: 0.5, seed: 70 });
-    ctx.strokeStyle = rgba(C.gold, 0.7); ctx.lineWidth = 3; ctx.stroke();
-    // finials
-    for (const fx of [-210, 210]) { ctx.fillStyle = C.gold; ctx.beginPath(); ctx.moveTo(fx - 18, -520); ctx.lineTo(fx, -600); ctx.lineTo(fx + 18, -520); ctx.fill(); }
-    // seat + arms
-    ctx.fillStyle = '#2A170C'; ctx.fillRect(-260, 40, 520, 70); ctx.strokeStyle = C.gold; ctx.lineWidth = 4; ctx.strokeRect(-260, 40, 520, 70);
-    for (const ax of [-260, 200]) { ctx.fillStyle = '#2A170C'; ctx.fillRect(ax, -150, 60, 190); ctx.strokeRect(ax, -150, 60, 190); }
-    ctx.restore();
-  };
-
-  df.hand = (ctx, x, y, s, o = {}) => {
-    // skeletal right hand in benediction: thumb, index, middle raised; ring + little folded
-    const cut = o.cut || [false, false, false];
-    ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.rotate(o.rot || 0);
-    ctx.lineCap = 'round';
-    const boneSeg = (pts, w) => {
-      for (let i = 0; i < pts.length - 1; i++) {
-        const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
-        ctx.strokeStyle = C.ink; ctx.lineWidth = w + 7; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
-        const g = ctx.createLinearGradient(ax - w, ay, ax + w, ay); g.addColorStop(0, C.boneS); g.addColorStop(0.4, '#FFF4DA'); g.addColorStop(1, C.boneS);
-        ctx.strokeStyle = g; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
-        ctx.fillStyle = C.bone; ctx.beginPath(); ctx.arc(bx, by, w * 0.62, 0, TAU); ctx.fill(); ctx.strokeStyle = C.ink; ctx.lineWidth = 2.5; ctx.stroke();
-      }
-    };
-    // radius/ulna + carpals
-    boneSeg([[-30, 420], [-18, 150]], 30); boneSeg([[30, 420], [20, 150]], 26);
-    ctx.fillStyle = C.bone; ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
-    for (const [cx, cy] of [[-40, 120], [-10, 112], [20, 116], [48, 124], [-26, 92], [6, 86], [36, 92]]) { ctx.beginPath(); ctx.ellipse(cx, cy, 17, 14, 0.3, 0, TAU); ctx.fill(); ctx.stroke(); }
-    // folded ring + little fingers
-    boneSeg([[48, 80], [70, 10], [62, -26], [40, -10]], 18);
-    boneSeg([[72, 92], [100, 34], [92, 0], [72, 14]], 15);
-    // raised: thumb, index, middle (cut[i] removes the finger above the knuckle)
-    const F = [[[-56, 100], [-110, 30], [-128, -40], [-130, -96]], [[-26, 70], [-36, -60], [-40, -150], [-42, -220]], [[8, 66], [8, -80], [8, -180], [8, -260]]];
-    F.forEach((p, i) => { if (cut[i]) { boneSeg(p.slice(0, 2), 20); ctx.fillStyle = '#3A0A0C'; ctx.beginPath(); ctx.arc(p[1][0], p[1][1], 9, 0, TAU); ctx.fill(); } else boneSeg(p, i === 0 ? 21 : 19); });
-    if (o.ring && !cut[2]) { ctx.strokeStyle = C.gold; ctx.lineWidth = 12; ctx.beginPath(); ctx.ellipse(8, -60, 18, 9, 0, 0, TAU); ctx.stroke(); ctx.fillStyle = '#B0202A'; ctx.beginPath(); ctx.arc(8, -68, 9, 0, TAU); ctx.fill(); }
-    ctx.restore();
-  };
-  df.F_TIPS = [[[-56, 100], [-110, 30], [-128, -40], [-130, -96]], [[-26, 70], [-36, -60], [-40, -150], [-42, -220]], [[8, 66], [8, -80], [8, -180], [8, -260]]];
-  df.bone = (ctx, x, y, s, rot, sq, len = 160) => {
-    ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(s * Math.max(0.15, Math.abs(sq)), s);
-    const g = ctx.createLinearGradient(-20, 0, 20, 0); g.addColorStop(0, C.boneS); g.addColorStop(0.4, '#FFF4DA'); g.addColorStop(1, C.boneD);
-    ctx.fillStyle = g; ctx.strokeStyle = C.ink; ctx.lineWidth = 4;
-    for (let k = 0; k < 3; k++) { const y0 = -len / 2 + k * len / 3; ctx.beginPath(); ctx.ellipse(0, y0 + len / 6, 15, len / 6, 0, 0, TAU); ctx.fill(); ctx.stroke(); }
-    ctx.restore();
-  };
-
-  // ------------------------------------------------------------ robed corpse on the throne
-  df.corpse = (ctx, x, y, s, T, o = {}) => {
-    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
-    df.throne(ctx, 0, 0, 1);
-    const robeK = o.robe != null ? clamp(o.robe) : 1;
-    const tilt = o.tilt != null ? o.tilt : 0.18 + 0.03 * Math.sin(T * 0.8);
-    // neck vertebrae (drawn first, the collar overlaps)
-    for (let k = 0; k < 4; k++) { const vy = -470 + k * 34, vx = Math.sin(tilt) * (3 - k) * 14; ctx.fillStyle = k % 2 ? '#B8A888' : '#D8C8A6'; ctx.beginPath(); ctx.ellipse(vx, vy, 30 - k * 2, 15, 0, 0, TAU); ctx.fill(); ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.stroke(); }
-    if (robeK > 0) {
-      ctx.save(); ctx.globalAlpha = robeK; ctx.translate(0, -120 * (1 - L.ease.outCubic(robeK)));
-      // knees + alb under the cope
-      const alb = [[-150, 20], [-190, 330], [190, 330], [150, 20]];
-      ctx.beginPath(); L.tracePath(ctx, alb, true);
-      { const ag = ctx.createLinearGradient(0, 20, 0, 330); ag.addColorStop(0, '#B8AE9A'); ag.addColorStop(1, '#2A2620'); ctx.fillStyle = ag; } ctx.fill();
-      for (let k = -3; k <= 3; k++) { ctx.strokeStyle = 'rgba(30,26,20,0.55)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(k * 40, 40); ctx.quadraticCurveTo(k * 48 + 10, 180, k * 54, 330); ctx.stroke(); }
-      for (const kx of [-80, 80]) { const kg = ctx.createRadialGradient(kx - 10, 30, 5, kx, 40, 110); kg.addColorStop(0, 'rgba(255,245,225,0.35)'); kg.addColorStop(1, 'rgba(255,245,225,0)'); ctx.fillStyle = kg; ctx.fillRect(kx - 110, -70, 220, 220); }
-      // bony feet below the hem
-      // the cope: a heavy bell from the shoulders, folds catching the candle from the left
-      const cope = [[-70, -430], [-150, -410], [-205, -330], [-235, -120], [-265, 90], [-170, 130], [-70, -10], [0, -40], [70, -10], [170, 130], [265, 90], [235, -120], [205, -330], [150, -410], [70, -430]];
-      const cp = L.smoothPts(cope, true, 4);
-      ctx.beginPath(); L.tracePath(ctx, cp, true);
-      const g = ctx.createLinearGradient(-265, 0, 265, 0);
-      g.addColorStop(0, '#8A1A1C'); g.addColorStop(0.3, '#B82A28'); g.addColorStop(0.55, '#6A1014'); g.addColorStop(1, '#1E0406');
-      ctx.fillStyle = g; ctx.fill();
-      ctx.save(); ctx.clip();
-      for (let k = 0; k < 9; k++) {
-        const fx = -230 + k * 56, sway = Math.sin(k * 1.7) * 20;
-        const fg = ctx.createLinearGradient(fx - 26, 0, fx + 26, 0);
-        fg.addColorStop(0, 'rgba(0,0,0,0)'); fg.addColorStop(0.45, 'rgba(10,0,2,0.55)'); fg.addColorStop(0.6, 'rgba(255,140,110,0.22)'); fg.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = fg; ctx.beginPath(); ctx.moveTo(fx - 26 + sway * 0.3, -420); ctx.quadraticCurveTo(fx + sway, -120, fx - 30 + sway * 1.4, 140); ctx.lineTo(fx + 30 + sway * 1.4, 140); ctx.quadraticCurveTo(fx + 26 + sway, -120, fx + 26 + sway * 0.3, -420); ctx.fill();
-      }
-      L.hatch(ctx, cope, { angle: 1.3, spacing: 6, width: 1.3, color: '#120002', alpha: 0.55, seed: 81, density: (px) => clamp((px + 40) / 220) });
-      ctx.restore();
-      ctx.strokeStyle = '#2A0406'; ctx.lineWidth = 5; ctx.beginPath(); L.tracePath(ctx, cp, true); ctx.stroke();
-      // gold orphreys down the front edges
-      for (const sd of [-1, 1]) {
-        ctx.strokeStyle = C.gold; ctx.lineWidth = 22; ctx.beginPath(); ctx.moveTo(sd * 70, -425); ctx.quadraticCurveTo(sd * 62, -200, sd * 72, -12); ctx.stroke();
-        ctx.strokeStyle = '#6A4410'; ctx.lineWidth = 2; ctx.stroke();
-        for (let k = 0; k < 9; k++) { ctx.fillStyle = k % 2 ? '#A11F22' : '#F2D27A'; ctx.beginPath(); ctx.arc(sd * (68 - k * 0.3), -400 + k * 44, 5, 0, TAU); ctx.fill(); }
-      }
-      // pallium
-      ctx.strokeStyle = '#E6DECE'; ctx.lineWidth = 20;
-      ctx.beginPath(); ctx.moveTo(-130, -390); ctx.quadraticCurveTo(-40, -330, 0, -270); ctx.quadraticCurveTo(40, -330, 130, -390); ctx.moveTo(0, -270); ctx.lineTo(0, -40); ctx.stroke();
-      ctx.fillStyle = '#111';
-      for (const [cx, cy] of [[-80, -350], [80, -350], [0, -180], [0, -80]]) { ctx.fillRect(cx - 3, cy - 9, 6, 18); ctx.fillRect(cx - 8, cy - 3, 16, 6); }
-      ctx.restore();
-    } else {
-      ctx.strokeStyle = C.bone; ctx.lineWidth = 14; ctx.beginPath(); ctx.moveTo(0, -380); ctx.lineTo(0, 40); ctx.stroke();
-      for (let k = 0; k < 6; k++) { ctx.lineWidth = 9; ctx.beginPath(); ctx.ellipse(0, -330 + k * 46, 120 - k * 6, 30, 0, 0.1, Math.PI - 0.1); ctx.stroke(); }
-    }
-    // sleeves to the armrests + skeletal hands
-    for (const sd of [-1, 1]) {
-      ctx.fillStyle = '#5A0C10';
-      ctx.beginPath(); ctx.moveTo(sd * 180, -360); ctx.quadraticCurveTo(sd * 260, -250, sd * 250, -140); ctx.lineTo(sd * 200, -120); ctx.quadraticCurveTo(sd * 200, -260, sd * 150, -330); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = C.gold; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(sd * 250, -140); ctx.lineTo(sd * 200, -120); ctx.stroke();
-    }
-    const hk = o.cut || [false, false, false];
-    df.hand(ctx, -232, -70, 0.3, { rot: 0.25, cut: [false, false, false] });
-    df.hand(ctx, 232, -70, 0.3, { rot: -0.25, cut: hk, ring: true });
-    // the head: ray-marched skull + tiara, slumped
-    df.skull3d(ctx, Math.sin(tilt) * 60, -600, 260, { roll: -tilt, yaw: o.yaw != null ? o.yaw : 0.12 * Math.sin(T * 0.6), pitch: 0.12, jaw: o.jaw || 0.25, ember: o.ember || 0, slot: 7 });
-    ctx.restore();
-  };
-
-  // ------------------------------------------------------------ medieval silhouettes (no faces), rim-lit
-  df.figure = (ctx, x, y, s, T, o = {}) => {
-    const pose = o.pose || 'stand', ph = o.ph != null ? o.ph : T * 7, hat = o.hat || 'hood';
-    const rim = o.rim || C.candle, fill = o.fill || '#0A0709';
-    ctx.save(); ctx.translate(x, y); ctx.scale(s * (o.flip ? -1 : 1), s);
-    const walk = pose === 'walk' || pose === 'torch';
-    const sw = walk ? Math.sin(ph) : 0, bob = walk ? Math.abs(Math.cos(ph)) * 8 : 0;
-    const tremble = o.tremble ? Math.sin(T * 47) * 3 * o.tremble : 0;
-    ctx.translate(tremble, -bob);
-    const lean = pose === 'dig' ? 0.45 + 0.15 * Math.sin(ph) : pose === 'point' ? -0.08 : 0;
-    ctx.rotate(lean * (pose === 'dig' ? 1 : 1));
-    // legs/feet under the hem
-    ctx.fillStyle = fill;
-    if (walk) for (const sd of [-1, 1]) { const k = sd * sw; ctx.beginPath(); ctx.ellipse(k * 34 + sd * 14, 0, 26, 10, 0, 0, TAU); ctx.fill(); }
-    // robe (hem sways with the stride)
-    const hem = 70 + Math.abs(sw) * 16;
-    const robe = [[-hem, -6], [-58 - sw * 10, -220], [-52, -380], [-30, -420], [30, -420], [52, -380], [58 - sw * 10, -220], [hem, -6]];
-    ctx.beginPath(); L.tracePath(ctx, L.smoothPts(robe, true, 3), true); ctx.fill();
-    // head + hat
-    ctx.beginPath();
-    if (hat === 'hood') { ctx.moveTo(-46, -400); ctx.quadraticCurveTo(-50, -520, 0, -540); ctx.quadraticCurveTo(50, -520, 46, -400); ctx.closePath(); }
-    else if (hat === 'mitre') { ctx.arc(0, -455, 36, 0, TAU); ctx.moveTo(-38, -480); ctx.lineTo(-30, -580); ctx.lineTo(0, -620); ctx.lineTo(30, -580); ctx.lineTo(38, -480); ctx.closePath(); }
-    else { ctx.arc(0, -455, 36, 0, TAU); ctx.moveTo(-44, -470); ctx.lineTo(44, -470); ctx.lineTo(30, -500); ctx.lineTo(-30, -500); ctx.closePath(); }
-    ctx.fill();
-    // arms
-    ctx.strokeStyle = fill; ctx.lineCap = 'round'; ctx.lineWidth = 34;
-    const arm = (sx, ex, ey, hx, hy) => { ctx.beginPath(); ctx.moveTo(sx, -380); ctx.quadraticCurveTo(ex, ey, hx, hy); ctx.stroke(); };
-    const tips = {};
-    if (pose === 'point') { arm(40, 150, -420, 260, -470); arm(-40, -70, -260, -50, -180); tips.hand = [260, -470]; }
-    else if (pose === 'torch') { const a = Math.sin(ph) * 10; arm(40, 90, -470, 70 + a, -560); arm(-40, -70 - sw * 20, -260, -60 - sw * 30, -190); tips.torch = [70 + a, -600]; }
-    else if (pose === 'dig') { arm(40, 110, -300, 150, -200); arm(-40, 60, -300, 120, -150); tips.shovel = [150, -200]; }
-    else if (pose === 'pray') { arm(40, 50, -300, 8, -330); arm(-40, -50, -300, -8, -330); }
-    else { arm(40, 70, -260, 52 + sw * 30, -180); arm(-40, -70, -260, -52 - sw * 30, -180); }
-    // rim light along one side
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.strokeStyle = rgba(rim, 0.7 * (o.rimA != null ? o.rimA : 1)); ctx.lineWidth = 3;
-    ctx.beginPath(); L.tracePath(ctx, L.smoothPts(robe, true, 3).filter(([px]) => px > 0), false); ctx.stroke();
-    ctx.restore();
-    // world-space tips
-    const tw = {};
-    const ca = Math.cos(lean), sa = Math.sin(lean), fx = s * (o.flip ? -1 : 1);
-    for (const k in tips) { const [px, py] = tips[k]; tw[k] = [x + tremble * s + (px * ca - py * sa) * fx, y - bob * s + (px * sa + py * ca) * s]; }
-    return tw;
-  };
-  df.torch = (ctx, x, y, s, T, seed) => {
-    df.glow(ctx, x, y - 20 * s, 150 * s, C.candle, 0.55);
-    df.glow(ctx, x, y - 20 * s, 60 * s, C.ember, 0.6);
-    const fl = 1 + 0.2 * L.noise1(T * 11, seed);
-    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
-    const g = ctx.createRadialGradient(0, -30, 4, 0, -40, 70);
-    g.addColorStop(0, '#FFF6D0'); g.addColorStop(0.35, '#FFB040'); g.addColorStop(1, 'rgba(220,60,20,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-26, 0); ctx.quadraticCurveTo(-30, -60 * fl, 6 * Math.sin(T * 7 + seed), -120 * fl); ctx.quadraticCurveTo(30, -60 * fl, 26, 0); ctx.fill();
-    ctx.restore();
-  };
-
-  // ------------------------------------------------------------ 3D nave
-  df.nave = (ctx, T, cam, o = {}) => {
-    const f = cam.f || 900, cx = 540, cy = cam.cy || 980, cz = cam.z || 0, camY = cam.y || 0;
-    const P3 = (x, y, z) => { const zz = z - cz; return zz < 30 ? null : [cx + (x - (cam.x || 0)) * f / zz, cy + (y - camY) * f / zz, zz]; };
-    // back wall + window glow
-    df.bg(ctx, { top: '#0E0A12', bottom: '#060407' });
-    const W = 520, Hc = 1500, Z0 = 400, DZ = 520, N = 9, ZE = Z0 + DZ * N;
-    const ew = P3(0, -700, ZE);
-    if (ew) {
-      df.glow(ctx, ew[0], ew[1], 1200 * f / ew[2] * 1.4, '#6A4AC0', 0.7);
-      ctx.save(); const sc = f / ew[2]; ctx.translate(ew[0], ew[1]); ctx.scale(sc, sc);
-      ctx.fillStyle = '#5A3AA8'; ctx.beginPath(); ctx.moveTo(-160, 300); ctx.lineTo(-160, -200); ctx.quadraticCurveTo(0, -460, 160, -200); ctx.lineTo(160, 300); ctx.fill();
-      ctx.strokeStyle = '#120C18'; ctx.lineWidth = 14; ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, 300); ctx.lineTo(0, -320); ctx.moveTo(-160, 40); ctx.lineTo(160, 40); ctx.stroke();
-      ctx.restore();
-    }
-    // floor tiles
-    for (let k = N * 2; k >= 0; k--) {
-      const z0 = Z0 - 300 + k * DZ / 2, z1 = z0 + DZ / 2;
-      for (let i = -4; i < 4; i++) {
-        const a = P3(i * 130, 300, z0), b = P3((i + 1) * 130, 300, z0), c = P3((i + 1) * 130, 300, z1), d = P3(i * 130, 300, z1);
-        if (!a || !d) continue;
-        const dark = (i + k) % 2 === 0;
-        const fogk = clamp(z0 / ZE);
-        ctx.fillStyle = dark ? `rgb(${18 + 10 * (1 - fogk)},${14 + 8 * (1 - fogk)},${20 + 8 * (1 - fogk)})` : `rgb(${46 - 20 * fogk},${40 - 18 * fogk},${50 - 20 * fogk})`;
-        ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(d[0], d[1]); ctx.fill();
-      }
-    }
-    // columns + arches, far to near
-    for (let k = N; k >= 0; k--) {
-      const z = Z0 + k * DZ;
-      const fogk = clamp((z - cz) / (ZE - cz));
-      for (const side of [-1, 1]) {
-        const base = P3(side * W, 300, z), top = P3(side * W, -Hc + 300, z);
-        if (!base || !top) continue;
-        const r = 70 * f / base[2];
-        const g = ctx.createLinearGradient(base[0] - r, 0, base[0] + r, 0);
-        const lit = side < 0 ? 1 : 0.6;
-        g.addColorStop(0, `rgba(10,8,12,1)`); g.addColorStop(side < 0 ? 0.7 : 0.3, `rgba(${Math.round(110 * lit * (1 - fogk) + 20)},${Math.round(84 * lit * (1 - fogk) + 16)},${Math.round(60 * lit * (1 - fogk) + 22)},1)`); g.addColorStop(1, 'rgba(8,6,10,1)');
-        ctx.fillStyle = g; ctx.fillRect(base[0] - r, top[1], 2 * r, base[1] - top[1]);
-        // arch to the next column
-        const nz = z + DZ, nt = P3(side * W, -Hc + 300, nz);
-        if (nt) {
-          ctx.strokeStyle = `rgba(${60 * (1 - fogk) + 14},${46 * (1 - fogk) + 12},${40 * (1 - fogk) + 16},1)`; ctx.lineWidth = Math.max(2, 40 * f / base[2]);
-          ctx.beginPath(); ctx.moveTo(top[0], top[1]); ctx.quadraticCurveTo((top[0] + nt[0]) / 2, Math.min(top[1], nt[1]) - 160 * f / base[2], nt[0], nt[1]); ctx.stroke();
-        }
-        // candle stand on each column
-        const cpos = P3(side * (W - 110), 120, z - 60);
-        if (cpos && o.candles !== false) df.candle(ctx, cpos[0], cpos[1], 0.9 * f / cpos[2], T, { seed: k * 2 + (side > 0 ? 1 : 0), h: 120 });
-      }
-    }
-    // depth fog
-    const fg = ctx.createLinearGradient(0, cy - 500, 0, cy + 300);
-    fg.addColorStop(0, 'rgba(60,46,80,0)'); fg.addColorStop(0.6, 'rgba(60,46,80,0.18)'); fg.addColorStop(1, 'rgba(20,14,26,0)');
-    ctx.fillStyle = fg; ctx.fillRect(0, 0, 1080, 1920);
-    return P3;
-  };
-
-  // ------------------------------------------------------------ stained glass
-  df.glassCells = (w, h, seed) => L.cached('df-cells-' + seed + '-' + w + 'x' + h, () => {
-    const r = L.rng(L.hash('cells', seed)), pts = [];
-    for (let i = 0; i < 46; i++) pts.push([r() * w - w / 2, r() * h - h]);
-    return pts;
-  });
-  df.lancet = (ctx, x, y, w, h) => {
-    ctx.beginPath(); ctx.moveTo(x - w / 2, y); ctx.lineTo(x - w / 2, y - h + w * 0.55);
-    ctx.quadraticCurveTo(x - w / 2, y - h, x, y - h - w * 0.15); ctx.quadraticCurveTo(x + w / 2, y - h, x + w / 2, y - h + w * 0.55);
-    ctx.lineTo(x + w / 2, y); ctx.closePath();
-  };
-  df.glass = (ctx, x, y, w, h, o = {}) => {
-    const tint = o.tint || ['#2B4BB8', '#5B2A8A', '#1E5A8A', '#3A2A7A'];
-    const glow = o.glow != null ? o.glow : 1;
-    ctx.save();
-    df.glow(ctx, x, y - h / 2, Math.max(w, h) * 0.8, tint[0], 0.5 * glow);
-    df.lancet(ctx, x, y, w, h); ctx.save(); ctx.clip();
-    // cells: nearest-seed colouring via a coarse raster
-    const pts = df.glassCells(w, h, o.seed || 1);
-    const step = 12;
-    for (let yy = -h - w * 0.2; yy < 0; yy += step) for (let xx = -w / 2; xx < w / 2; xx += step) {
-      let bi = 0, bd = 1e9;
-      for (let i = 0; i < pts.length; i++) { const d = (pts[i][0] - xx) ** 2 + (pts[i][1] - yy) ** 2; if (d < bd) { bd = d; bi = i; } }
-      const c = tint[bi % tint.length];
-      const shade = 0.75 + 0.25 * Math.sin(bi * 1.7);
-      ctx.fillStyle = c; ctx.globalAlpha = shade * glow; ctx.fillRect(x + xx, y + yy, step + 1, step + 1);
-    }
-    ctx.globalAlpha = 1;
-    if (o.fig) o.fig(ctx, x, y, w, h);
-    // lead came between cells (approximate: draw voronoi-ish edges by connecting near seeds)
-    ctx.strokeStyle = '#0A0709'; ctx.lineWidth = 6;
-    for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
-      const d = Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]);
-      if (d < w * 0.28) { const mx = (pts[i][0] + pts[j][0]) / 2, my = (pts[i][1] + pts[j][1]) / 2, nx = -(pts[j][1] - pts[i][1]) / d, ny = (pts[j][0] - pts[i][0]) / d; ctx.beginPath(); ctx.moveTo(x + mx - nx * d * 0.35, y + my - ny * d * 0.35); ctx.lineTo(x + mx + nx * d * 0.35, y + my + ny * d * 0.35); ctx.stroke(); }
-    }
-    // cracks
-    const ck = o.crack || 0;
-    if (ck > 0) {
-      const r = L.rng(L.hash('crack', o.seed || 1));
-      ctx.strokeStyle = 'rgba(255,250,240,0.95)'; ctx.lineWidth = 3;
-      const o0 = [o.cx || 0, o.cy || -h * 0.45];
-      for (let b = 0; b < 9; b++) {
-        let px = o0[0], py = o0[1], a = (b / 9) * TAU + r();
-        ctx.beginPath(); ctx.moveTo(x + px, y + py);
-        const n = Math.floor(8 * ck);
-        for (let k = 0; k < n; k++) { a += (r() - 0.5) * 0.8; px += Math.cos(a) * 34; py += Math.sin(a) * 34; ctx.lineTo(x + px, y + py); }
-        ctx.stroke();
-      }
-    }
-    ctx.restore();
-    df.lancet(ctx, x, y, w, h); ctx.strokeStyle = '#1A1418'; ctx.lineWidth = 22; ctx.stroke();
-    ctx.strokeStyle = rgba(C.gold, 0.5); ctx.lineWidth = 3; ctx.stroke();
-    ctx.restore();
-  };
-  df.shaft = (ctx, pts, col, a) => {
-    if (a <= 0) return;
-    ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    const g = ctx.createLinearGradient(pts[0][0], pts[0][1], pts[2][0], pts[2][1]);
-    g.addColorStop(0, rgba(col, 0.35 * a)); g.addColorStop(1, rgba(col, 0));
-    ctx.fillStyle = g; ctx.beginPath(); L.tracePath(ctx, pts, true); ctx.fill();
-    ctx.restore();
-  };
-
-  // ------------------------------------------------------------ Rome skyline, ravens
-  df.rome = (ctx, T, o = {}) => {
-    const px = o.px || 0;
-    const sky = ctx.createLinearGradient(0, 0, 0, 1400);
-    sky.addColorStop(0, '#0B0710'); sky.addColorStop(0.55, '#2A0C14'); sky.addColorStop(1, '#4A1418');
-    ctx.fillStyle = sky; ctx.fillRect(0, 0, 1080, 1920);
-    // blood moon
-    const m = o.moon || [700, 520], mr = o.moonR || 190;
-    df.glow(ctx, m[0], m[1], mr * 3.2, '#C8322A', 0.9);
-    const mg = ctx.createRadialGradient(m[0] - mr * 0.3, m[1] - mr * 0.3, 10, m[0], m[1], mr);
-    mg.addColorStop(0, '#F2A07A'); mg.addColorStop(0.6, '#B8422E'); mg.addColorStop(1, '#5E1612');
-    ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(m[0], m[1], mr, 0, TAU); ctx.fill();
-    L.hatch(ctx, L.ellipsePts(m[0], m[1], mr, mr, 40), { angle: -0.7, spacing: 6, width: 1.2, color: '#3A0A08', alpha: 0.35, seed: 90, density: (x, y) => clamp(((x - m[0]) + (y - m[1])) / mr) });
-    // three skyline layers
-    const layer = (seed, base, hgt, col, par) => {
-      const r = L.rng(L.hash('rome', seed));
-      ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-200, 1920);
-      let x = -200 - ((px * par) % 400);
-      while (x < 1300) {
-        const kind = r(), w = 60 + r() * 120, h = hgt * (0.4 + r() * 0.6);
-        ctx.lineTo(x, base);
-        if (kind < 0.2) { ctx.lineTo(x, base - h); ctx.lineTo(x + w * 0.5, base - h - 50); ctx.lineTo(x + w, base - h); } // gabled
-        else if (kind < 0.33) { ctx.lineTo(x, base - h * 0.6); ctx.quadraticCurveTo(x + w / 2, base - h * 1.25, x + w, base - h * 0.6); } // dome
-        else if (kind < 0.48) { ctx.lineTo(x + w * 0.3, base); ctx.lineTo(x + w * 0.3, base - h * 1.6); ctx.lineTo(x + w * 0.45, base - h * 1.75); ctx.lineTo(x + w * 0.6, base - h * 1.6); ctx.lineTo(x + w * 0.6, base); } // tower
-        else { ctx.lineTo(x, base - h * 0.7); ctx.lineTo(x + w, base - h * 0.7); }
-        ctx.lineTo(x + w, base); x += w;
-      }
-      ctx.lineTo(1300, 1920); ctx.closePath(); ctx.fill();
-      // lit windows
-      const r2 = L.rng(L.hash('win', seed));
-      for (let i = 0; i < 26; i++) { const wx = r2() * 1080, wy = base - r2() * hgt * 0.5; if (r2() < 0.5) continue; ctx.fillStyle = rgba(C.candle, 0.5 + 0.4 * Math.sin(T * 3 + i)); ctx.fillRect(wx, wy, 6, 9); }
-    };
-    layer(1, 1180, 260, '#1A0A10', 0.2);
-    df.fog(ctx, T, { y: 1200, h: 300, a: 0.25, speed: 20 });
-    layer(2, 1400, 330, '#100609', 0.5);
-    layer(3, 1640, 380, '#060305', 1.0);
-  };
-  df.raven = (ctx, x, y, s, ph) => {
-    const f = Math.sin(ph);
-    ctx.save(); ctx.translate(x, y); ctx.scale(s, s); ctx.fillStyle = '#050304';
-    ctx.beginPath(); ctx.ellipse(0, 4, 9, 20, 0, 0, TAU); ctx.fill();
-    ctx.beginPath(); ctx.arc(0, -16, 8, 0, TAU); ctx.fill();
-    for (const sd of [-1, 1]) {
-      ctx.beginPath(); ctx.moveTo(0, -4);
-      ctx.quadraticCurveTo(sd * 40, -30 * f - 18, sd * 86, -50 * f);
-      ctx.lineTo(sd * 70, -38 * f + 10); ctx.lineTo(sd * 54, -26 * f + 14);
-      ctx.quadraticCurveTo(sd * 30, 8, 0, 8); ctx.closePath(); ctx.fill();
-    }
-    ctx.beginPath(); ctx.moveTo(-8, 20); ctx.lineTo(0, 38); ctx.lineTo(8, 20); ctx.fill();
-    ctx.restore();
-  };
-
-  // ------------------------------------------------------------ river
-  df.water = (ctx, T, o = {}) => {
-    const hz = o.horizon || 900;
-    const g = ctx.createLinearGradient(0, hz, 0, 1920);
-    g.addColorStop(0, '#2A1A2A'); g.addColorStop(0.2, '#120C16'); g.addColorStop(1, '#050407');
-    ctx.fillStyle = g; ctx.fillRect(0, hz, 1080, 1920 - hz);
-    // moon path
-    const mx = o.moonX || 640;
-    for (let k = 0; k < 70; k++) {
-      const z = 1 + k * 0.6, y = hz + 900 / z * 0 + (1920 - hz) * (1 - 1 / (1 + k * 0.08));
-      const w = (30 + k * 4) * (0.6 + 0.4 * Math.sin(T * 2.3 + k * 1.7));
-      ctx.fillStyle = `rgba(232,${150 + k},${120 + k},${0.5 * (1 - k / 80)})`;
-      ctx.fillRect(mx - w / 2 + Math.sin(T * 1.7 + k) * 10, y, w, 2 + k * 0.08);
-    }
-    // perspective ripple lines
-    ctx.strokeStyle = 'rgba(200,170,190,0.12)'; ctx.lineWidth = 1.5;
-    for (let k = 1; k < 40; k++) {
-      const y = hz + (1920 - hz) * (1 - 1 / (1 + k * 0.09)) + ((T * 30) % 20) * k * 0.02;
-      ctx.beginPath(); for (let x = 0; x <= 1080; x += 20) ctx.lineTo(x, y + Math.sin(x * 0.02 + T * 2 + k) * (1 + k * 0.1)); ctx.stroke();
-    }
-    if (o.splash) {
-      const [sx, sy, st] = o.splash;
-      if (st > 0 && st < 1.6) {
-        for (let k = 0; k < 4; k++) { const rr = (st - k * 0.18) * 360; if (rr <= 0) continue; ctx.strokeStyle = `rgba(230,220,235,${0.6 * (1 - st / 1.6)})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(sx, sy, rr, rr * 0.18, 0, 0, TAU); ctx.stroke(); }
-        const r = L.rng(L.hash('splash'));
-        for (let i = 0; i < 40; i++) { const a = -Math.PI * (0.15 + r() * 0.7), v = 400 + r() * 700; const px = sx + Math.cos(a) * v * st * 0.6, py = sy + Math.sin(a) * v * st + 1100 * st * st; if (py > sy + 10) continue; ctx.fillStyle = `rgba(230,225,240,${1 - st / 1.2})`; ctx.beginPath(); ctx.arc(px, py, 4 + r() * 4, 0, TAU); ctx.fill(); }
-      }
-    }
-  };
-
-  // ------------------------------------------------------------ title slam
-  df.stamp = (ctx, str, x, y, size, d, o = {}) => {
-    if (d < 0) return;
-    const k = 1 + 0.6 * Math.pow(1 - clamp(d / 0.13), 2);
-    const a = clamp(d / 0.04);
-    ctx.save(); ctx.translate(x, y); ctx.scale(k, k); ctx.rotate(o.rot || 0); ctx.globalAlpha = a * (o.alpha != null ? o.alpha : 1);
-    const fam = o.fraktur ? '"UnifrakturMaguntia", serif' : '"Cinzel", "Fraunces", serif';
-    const wt = o.fraktur ? 400 : (o.weight || 900);
-    ctx.shadowColor = o.glowCol || 'rgba(255,60,30,0.75)'; ctx.shadowBlur = o.blur != null ? o.blur : 34;
-    L.text(ctx, str, 0, 0, { size, family: fam, weight: wt, align: 'center', baseline: 'middle', color: o.color || C.crimson, tracking: o.tracking || '0.06em' });
-    ctx.shadowBlur = 0;
-    if (o.stroke) { ctx.font = `${wt} ${size}px ${fam}`; ctx.lineWidth = 2; ctx.strokeStyle = o.stroke; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.strokeText(str, 0, 0); }
-    ctx.restore();
-  };
-
-  FILM.df = df;
-})();
-
-/*
- * FILM.df.skull3d — a ray-marched 3D skull (+ papal triregnum) with candle key light, crimson rim, ambient occlusion
- * and an engraving-hatch shader (so it sits in the Doré print world). Pure function of its inputs.
- *   skull3d(ctx, cx, cy, H, o) → { proj(x,y,z) → [sx,sy] }   (cx,cy) = screen position of the skull origin,
- *   H = skull height (chin→crown) in px. o: { yaw, pitch, roll, jaw 0..1, tiara (true), res (0.34), ember 0..1,
- *   slot, key (light dir), hatch (true), warm 1 }
- */
-(function () {
-  'use strict';
-  const FILM = window.FILM, L = FILM.lib, df = FILM.df;
-  const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
-  const sqrt = Math.sqrt, abs = Math.abs;
+  // ======================================================================== 3D ENGRAVING RENDERER
   const ell = (x, y, z, rx, ry, rz) => {
     const a = x / rx, b = y / ry, c = z / rz, k0 = sqrt(a * a + b * b + c * c);
     const a2 = a / rx, b2 = b / ry, c2 = c / rz, k1 = sqrt(a2 * a2 + b2 * b2 + c2 * c2) || 1e-6;
@@ -2286,163 +1652,710 @@
   };
   const smin = (a, b, k) => { const h = clamp(0.5 + (0.5 * (b - a)) / k); return b + (a - b) * h - k * h * (1 - h); };
   const ssub = (d1, d2, k) => { const h = clamp(0.5 - (0.5 * (d2 + d1)) / k); return d2 + (-d1 - d2) * h + k * h * (1 - h); };
-  let JA = 0, JC = 1, JS = 0, TI = true; // per-call globals (jaw angle cos/sin, tiara on)
-  let MAT = 0; // 0 bone, 1 tiara, 2 lower jaw
+  const box = (x, y, z, hx, hy, hz, r = 0) => {
+    const qx = abs(x) - hx + r, qy = abs(y) - hy + r, qz = abs(z) - hz + r;
+    const mx = Math.max(qx, 0), my = Math.max(qy, 0), mz = Math.max(qz, 0);
+    return sqrt(mx * mx + my * my + mz * mz) + Math.min(Math.max(qx, qy, qz), 0) - r;
+  };
+  const cap = (x, y, z, ax, ay, az, bx, by, bz, r) => {
+    const pax = x - ax, pay = y - ay, paz = z - az, bax = bx - ax, bay = by - ay, baz = bz - az;
+    const h = clamp((pax * bax + pay * bay + paz * baz) / (bax * bax + bay * bay + baz * baz));
+    const dx = pax - bax * h, dy = pay - bay * h, dz = paz - baz * h;
+    return sqrt(dx * dx + dy * dy + dz * dz) - r;
+  };
+  df.sd = { ell, smin, ssub, box, cap };
+
+  /**
+   * r3d(ctx, V, S) : ray-march an SDF scene and draw it as an engraving.
+   *   V: { cx, cy  screen position of object (0,0,0)'s window anchor; unit px per object unit; win [X0,X1,Y0,Y1];
+   *        yaw, pitch, roll; camD (9); res (0.38) low-res shading buffer scale; spacing (5.5) px between hatch lines;
+   *        key, fill, rim light dirs (world, toward light); warm (light tint rgb); slot; flat (0..1 extra base fill) }
+   *   S: { sdf(x,y,z) → d, mat(x,y,z) → id, col(id) → [r,g,b], uv(id,x,y,z,out) writes out[0]=u, out[1]=u2,
+   *        bound: [cx, cy, cz, r] }
+   * Returns { proj(x,y,z) → [sx, sy] } for anchoring 2D details (embers, labels) onto the 3D object.
+   */
+  df.r3d = function r3d(ctx, V, S) {
+    const [X0, X1, Y0, Y1] = V.win;
+    const unit = V.unit;
+    const mt = ctx.getTransform(), scr = Math.hypot(mt.a, mt.b) || 1;
+    const res = V.res || 0.38;
+    const NW = Math.max(24, Math.round((X1 - X0) * unit * res * scr)), NH = Math.max(24, Math.round((Y1 - Y0) * unit * res * scr));
+    const OW = Math.max(24, Math.round((X1 - X0) * unit * scr)), OH = Math.max(24, Math.round((Y1 - Y0) * unit * scr));
+    const cyw = Math.cos(V.yaw || 0), syw = Math.sin(V.yaw || 0), cp = Math.cos(V.pitch || 0), sp = Math.sin(V.pitch || 0), cr = Math.cos(V.roll || 0), sr = Math.sin(V.roll || 0);
+    const R = [cyw * cr + syw * sp * sr, -cyw * sr + syw * sp * cr, syw * cp, cp * sr, cp * cr, -sp, -syw * cr + cyw * sp * sr, syw * sr + cyw * sp * cr, cyw * cp];
+    const toObj = (x, y, z) => [R[0] * x + R[3] * y + R[6] * z, R[1] * x + R[4] * y + R[7] * z, R[2] * x + R[5] * y + R[8] * z];
+    const toWorld = (x, y, z) => [R[0] * x + R[1] * y + R[2] * z, R[3] * x + R[4] * y + R[5] * z, R[6] * x + R[7] * y + R[8] * z];
+    const D = V.camD || 9, wcx = (X0 + X1) / 2, wcy = (Y0 + Y1) / 2;
+    const ro = toObj(wcx, wcy, D);
+    const nrm = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+    const key = nrm(V.key || [-0.5, 0.3, 0.8]), fil = nrm(V.fill || [0.7, -0.2, 0.6]), rim = nrm(V.rim || [0.7, 0.35, -0.6]);
+    const B = S.bound;
+    const n = NW * NH;
+    const bufs = L.cached('df-r3d-bufs-' + n, () => ({ hit: new Uint8Array(n), mat: new Uint8Array(n), lum: new Float32Array(n), px: new Float32Array(n), py: new Float32Array(n), pz: new Float32Array(n), dep: new Float32Array(n), nx: new Float32Array(n), ny: new Float32Array(n), nz: new Float32Array(n), edge: new Float32Array(n) }));
+    const { hit, mat, lum, px, py, pz, dep, nx, ny, nz, edge } = bufs;
+    hit.fill(0); edge.fill(0);
+    for (let j = 0; j < NH; j++) {
+      const wy = Y1 - ((j + 0.5) / NH) * (Y1 - Y0);
+      for (let i = 0; i < NW; i++) {
+        const wx = X0 + ((i + 0.5) / NW) * (X1 - X0);
+        let dx = wx - wcx, dy = wy - wcy, dz = -D;
+        const dl = Math.hypot(dx, dy, dz); dx /= dl; dy /= dl; dz /= dl;
+        const rd = toObj(dx, dy, dz);
+        const ox = ro[0] - B[0], oy = ro[1] - B[1], oz = ro[2] - B[2];
+        const bb = ox * rd[0] + oy * rd[1] + oz * rd[2], cc = ox * ox + oy * oy + oz * oz - B[3] * B[3], disc = bb * bb - cc;
+        if (disc < 0) continue;
+        let t = Math.max(0, -bb - sqrt(disc)); const tmax = -bb + sqrt(disc);
+        let ok = false, x = 0, y = 0, z = 0;
+        for (let k = 0; k < 96; k++) {
+          x = ro[0] + rd[0] * t; y = ro[1] + rd[1] * t; z = ro[2] + rd[2] * t;
+          const d = S.sdf(x, y, z);
+          if (d < 0.002 * (1 + t * 0.1)) { ok = true; break; }
+          t += d * 0.92;
+          if (t > tmax) break;
+        }
+        if (!ok) continue;
+        const id = j * NW + i;
+        const e = 0.004;
+        const a1 = S.sdf(x + e, y - e, z - e), a2 = S.sdf(x - e, y - e, z + e), a3 = S.sdf(x - e, y + e, z - e), a4 = S.sdf(x + e, y + e, z + e);
+        let gx = a1 - a2 - a3 + a4, gy = -a1 - a2 + a3 + a4, gz = -a1 + a2 - a3 + a4;
+        const gl = Math.hypot(gx, gy, gz) || 1; gx /= gl; gy /= gl; gz /= gl;
+        let ao = 0;
+        for (let s = 1; s <= 3; s++) { const hh = 0.08 * s; ao += (hh - S.sdf(x + gx * hh, y + gy * hh, z + gz * hh)) / (1 << s); }
+        ao = clamp(1 - 3.0 * ao);
+        const W = toWorld(gx, gy, gz);
+        const vd = -(W[0] * dx + W[1] * dy + W[2] * dz);
+        const df_ = Math.max(0, W[0] * key[0] + W[1] * key[1] + W[2] * key[2]);
+        const ff = Math.max(0, W[0] * fil[0] + W[1] * fil[1] + W[2] * fil[2]);
+        const rr = Math.pow(Math.max(0, W[0] * rim[0] + W[1] * rim[1] + W[2] * rim[2]), 2) + Math.pow(1 - clamp(vd), 4) * 0.35;
+        const rx = dx + 2 * vd * W[0], ry = dy + 2 * vd * W[1], rz = dz + 2 * vd * W[2];
+        const spc = Math.pow(Math.max(0, rx * key[0] + ry * key[1] + rz * key[2]), 18);
+        hit[id] = 1; mat[id] = S.mat(x, y, z);
+        lum[id] = (df_ * 1.15 + ff * 0.14) * (0.25 + 0.75 * ao) + rr * 0.5 + spc * 0.55;
+        px[id] = x; py[id] = y; pz[id] = z; dep[id] = t; nx[id] = W[0]; ny[id] = W[1]; nz[id] = W[2];
+      }
+    }
+    // edges: silhouettes, depth breaks, material changes, creases
+    for (let j = 0; j < NH; j++) for (let i = 0; i < NW; i++) {
+      const id = j * NW + i;
+      if (!hit[id]) continue;
+      let e = 0;
+      for (const [di, dj] of [[1, 0], [0, 1], [-1, 0], [0, -1]]) {
+        const ii = i + di, jj = j + dj;
+        if (ii < 0 || jj < 0 || ii >= NW || jj >= NH) { e = 1; continue; }
+        const q = jj * NW + ii;
+        if (!hit[q]) { e = Math.max(e, 0.7); continue; }
+        if (mat[q] !== mat[id]) e = Math.max(e, 0.8);
+        if (abs(dep[q] - dep[id]) > 0.18) e = 1;
+        const dn = nx[q] * nx[id] + ny[q] * ny[id] + nz[q] * nz[id];
+        if (dn < 0.6) e = Math.max(e, 0.6);
+      }
+      edge[id] = e;
+    }
+    // full-resolution engraving pass
+    const out = L.cached('df-r3d-out-' + OW + 'x' + OH + '-' + (V.slot || 0), () => { const c = document.createElement('canvas'); c.width = OW; c.height = OH; return c; });
+    const og = out.getContext('2d');
+    const img = og.createImageData(OW, OH), dd = img.data;
+    const freq = unit / (V.spacing || 5.5);
+    const aa = 1.15 / (V.spacing || 5.5) / scr;
+    const bph = ((L.boil(L.T) * 0.6180339887) % 1) * 0.22;
+    const uvo = [0, 0];
+    const cols = {};
+    const flat = V.flat != null ? V.flat : 0.1;
+    const warm = V.warm || [1, 0.9, 0.78];
+    for (let oy = 0; oy < OH; oy++) {
+      const fy = ((oy + 0.5) / OH) * NH - 0.5;
+      const j0 = Math.max(0, Math.min(NH - 1, Math.floor(fy))), j1 = Math.min(NH - 1, j0 + 1), ay = clamp(fy - j0);
+      for (let ox = 0; ox < OW; ox++) {
+        const fx = ((ox + 0.5) / OW) * NW - 0.5;
+        const i0 = Math.max(0, Math.min(NW - 1, Math.floor(fx))), i1 = Math.min(NW - 1, i0 + 1), ax = clamp(fx - i0);
+        const q00 = j0 * NW + i0, q10 = j0 * NW + i1, q01 = j1 * NW + i0, q11 = j1 * NW + i1;
+        const w00 = (1 - ax) * (1 - ay), w10 = ax * (1 - ay), w01 = (1 - ax) * ay, w11 = ax * ay;
+        const cov = w00 * hit[q00] + w10 * hit[q10] + w01 * hit[q01] + w11 * hit[q11];
+        if (cov < 0.02) continue;
+        const h00 = w00 * hit[q00], h10 = w10 * hit[q10], h01 = w01 * hit[q01], h11 = w11 * hit[q11];
+        const iw = 1 / (h00 + h10 + h01 + h11);
+        const l = (lum[q00] * h00 + lum[q10] * h10 + lum[q01] * h01 + lum[q11] * h11) * iw;
+        const x = (px[q00] * h00 + px[q10] * h10 + px[q01] * h01 + px[q11] * h11) * iw;
+        const y = (py[q00] * h00 + py[q10] * h10 + py[q01] * h01 + py[q11] * h11) * iw;
+        const z = (pz[q00] * h00 + pz[q10] * h10 + pz[q01] * h01 + pz[q11] * h11) * iw;
+        const eg = (edge[q00] * h00 + edge[q10] * h10 + edge[q01] * h01 + edge[q11] * h11) * iw;
+        let best = q00, bw = h00; if (h10 > bw) { best = q10; bw = h10; } if (h01 > bw) { best = q01; bw = h01; } if (h11 > bw) { best = q11; }
+        const m = mat[best];
+        S.uv(m, x, y, z, uvo);
+        const wob = 0.16 * Math.sin(x * 5.3 + z * 4.1 + y * 0.7) + 0.07 * Math.sin(x * 21 + y * 17 + z * 13);
+        const u1 = uvo[0] * freq + wob + bph, u2 = uvo[1] * freq * 1.07 + wob * 0.7 - bph;
+        const d1 = abs((u1 - Math.floor(u1)) - 0.5), d2 = abs((u2 - Math.floor(u2)) - 0.5);
+        const tone = clamp(l * 0.7 - 0.1), hw1 = 0.5 * Math.pow(tone, 1.45), hw2 = 0.3 * clamp((tone - 0.56) * 2.2);
+        let v = clamp((hw1 - d1) / aa + 0.5);
+        if (hw2 > 0) v = Math.max(v, clamp((hw2 - d2) / aa + 0.5));
+        if (l > 1.25) v = Math.max(v, clamp((l - 1.25) * 2));
+        if (eg > 0.55) v *= 1 - clamp((eg - 0.55) * 2.8);
+        let c = cols[m]; if (!c) c = cols[m] = S.col(m);
+        const k = flat * clamp(l) + v * (0.5 + 0.6 * clamp(l, 0, 1.3));
+        const p = (oy * OW + ox) * 4;
+        dd[p] = 255 * Math.min(1, c[0] * k * warm[0]); dd[p + 1] = 255 * Math.min(1, c[1] * k * warm[1]); dd[p + 2] = 255 * Math.min(1, c[2] * k * warm[2]);
+        dd[p + 3] = 255 * Math.min(1, cov * 1.15);
+      }
+    }
+    og.putImageData(img, 0, 0);
+    ctx.drawImage(out, V.cx + X0 * unit, V.cy - Y1 * unit, (X1 - X0) * unit, (Y1 - Y0) * unit);
+    const proj = (x, y, z) => { const w = toWorld(x, y, z); const tt = D / (D - w[2]); return [V.cx + (wcx + (w[0] - wcx) * tt) * unit, V.cy - (wcy + (w[1] - wcy) * tt) * unit]; };
+    return { proj };
+  };
+
+  // ------------------------------------------------------------------ SDF parts: skull + tiara (skull units: chin -1.25 … crown 1.2)
   const BANDS = [0.1, 0.56, 1.0];
-  function tiaraR(h) {
-    const u = clamp(h / 1.55);
-    let r = 0.9 * sqrt(Math.max(0, 1 - Math.pow(u, 2.4))) * (1 - 0.14 * u);
-    for (const b of BANDS) { const d = (h - b) / 0.06; r += 0.03 * Math.exp(-d * d); }
-    return r;
-  }
-  function sdf(x, y, z, wantMat) {
+  const tiaraR = (h) => { const u = clamp(h / 1.55); let r = 0.9 * sqrt(Math.max(0, 1 - Math.pow(u, 2.4))) * (1 - 0.14 * u); for (const b of BANDS) { const d = (h - b) / 0.06; r += 0.03 * Math.exp(-d * d); } return r; };
+  let JC = 1, JS = 0, TI = true;
+  // returns distance; writes material into SKM (0 bone, 1 tiara silk, 2 tiara gold, 3 jewel red, 4 jewel blue)
+  let SKM = 0;
+  function skullSd(x, y, z, wantMat) {
     const ax = abs(x);
-    // cranium, brow, face, cheekbones (zygomatic arches), maxilla
     let d = ell(x, y - 0.36, z + 0.12, 0.84, 0.84, 1.0);
-    d = smin(d, ell(x, y - 0.06, z - 0.5, 0.66, 0.16, 0.3), 0.12);              // brow ridge
-    d = smin(d, ell(x, y + 0.3, z - 0.3, 0.6, 0.5, 0.5), 0.22);                  // mid-face
-    d = smin(d, ell(ax - 0.52, y + 0.3, z - 0.3, 0.2, 0.12, 0.34), 0.1);        // cheekbones
-    d = smin(d, ell(ax - 0.66, y + 0.36, z - 0.0, 0.07, 0.07, 0.36), 0.08);     // arches
-    d = smin(d, ell(x, y + 0.68, z - 0.38, 0.4, 0.24, 0.34), 0.14);             // maxilla
-    d = smin(d, ell(x, y + 0.86, z - 0.38, 0.33, 0.11, 0.3), 0.04);             // upper teeth
-    d = ssub(ell(ax - 0.9, y + 0.08, z - 0.0, 0.2, 0.32, 0.42), d, 0.14);       // temples
-    d = ssub(ell(ax - 0.29, y + 0.16, z - 0.62, 0.22, 0.2, 0.42), d, 0.04);     // sockets (deep)
-    d = ssub(ell(ax - 0.29, y + 0.18, z - 0.3, 0.16, 0.14, 0.3), d, 0.04);      // socket depth
-    d = ssub(ell(x, y + 0.48, z - 0.74, 0.085, 0.15, 0.26), d, 0.03);            // nasal cavity
+    d = smin(d, ell(x, y - 0.06, z - 0.5, 0.66, 0.16, 0.3), 0.12);
+    d = smin(d, ell(x, y + 0.3, z - 0.3, 0.6, 0.5, 0.5), 0.22);
+    d = smin(d, ell(ax - 0.52, y + 0.3, z - 0.3, 0.2, 0.12, 0.34), 0.1);
+    d = smin(d, ell(ax - 0.66, y + 0.36, z, 0.07, 0.07, 0.36), 0.08);
+    d = smin(d, ell(x, y + 0.68, z - 0.38, 0.4, 0.24, 0.34), 0.14);
+    d = smin(d, ell(x, y + 0.86, z - 0.38, 0.33, 0.11, 0.3), 0.04);
+    d = ssub(ell(ax - 0.9, y + 0.08, z, 0.2, 0.32, 0.42), d, 0.14);
+    d = ssub(ell(ax - 0.29, y + 0.16, z - 0.62, 0.22, 0.2, 0.42), d, 0.04);
+    d = ssub(ell(ax - 0.29, y + 0.18, z - 0.3, 0.16, 0.14, 0.3), d, 0.04);
+    d = ssub(ell(x, y + 0.48, z - 0.74, 0.085, 0.15, 0.26), d, 0.03);
     d = ssub(ell(ax - 0.06, y + 0.56, z - 0.74, 0.07, 0.06, 0.2), d, 0.02);
-    let mat = 0;
+    let m = 0;
     if (y < -0.25) {
       const jy = y + 0.52, jz = z + 0.1;
       const qy = jy * JC + jz * JS - 0.52, qz = -jy * JS + jz * JC - 0.1;
-      const aqx = abs(x);
-      let m = ell(x, qy + 1.06, qz - 0.24, 0.4 - 0.0, 0.17, 0.36);
-      m = ssub(ell(x, qy + 0.98, qz - 0.12, 0.3, 0.24, 0.3), m, 0.05);
-      m = smin(m, ell(x, qy + 1.17, qz - 0.48, 0.17, 0.1, 0.12), 0.08);           // chin
-      m = smin(m, ell(aqx - 0.42, qy + 0.8, qz + 0.0, 0.08, 0.3, 0.14), 0.1);     // rami
-      m = smin(m, ell(x, qy + 0.95, qz - 0.36, 0.31, 0.09, 0.28), 0.04);          // lower teeth
-      if (m < d) { d = m; mat = 2; }
+      let jm = ell(x, qy + 1.06, qz - 0.24, 0.4, 0.17, 0.36);
+      jm = ssub(ell(x, qy + 0.98, qz - 0.12, 0.3, 0.24, 0.3), jm, 0.05);
+      jm = smin(jm, ell(x, qy + 1.17, qz - 0.48, 0.17, 0.1, 0.12), 0.08);
+      jm = smin(jm, ell(ax - 0.42, qy + 0.8, qz, 0.08, 0.3, 0.14), 0.1);
+      jm = smin(jm, ell(x, qy + 0.95, qz - 0.36, 0.31, 0.09, 0.28), 0.04);
+      if (jm < d) { d = jm; m = 5; }
     }
     if (TI && y > 0.5) {
       const h = y - 0.66, rho = Math.hypot(x, z + 0.1);
       let t = Math.max((rho - tiaraR(clamp(h, 0, 1.55))) * 0.7, -h, h - 1.55);
       t = Math.min(t, ell(x, y - 2.26, z + 0.1, 0.1, 0.1, 0.1));
-      if (t < d) { d = t; mat = 1; }
+      if (t < d) { d = t; m = 1; }
     }
-    if (wantMat) MAT = mat;
+    if (wantMat) {
+      if (m === 1) {
+        const h = y - 0.66;
+        if (y > 2.12) m = 2;
+        else for (const b of BANDS) if (abs(h - b) < 0.065) {
+          m = 2;
+          const ang = Math.atan2(x, z + 0.1), cell = (ang * 8) / Math.PI, du = ((cell % 1) + 1) % 1 - 0.5, duu = du * (Math.PI / 8) * 0.9, dv = h - b;
+          if (duu * duu + dv * dv < 0.0011) m = Math.floor(cell + 40) % 2 ? 3 : 4;
+        }
+      } else if (m === 0) {
+        // teeth (upper) read as gold-free bone but darker grooves via a separate id
+        if (y < -0.76 && y > -0.98 && z > 0.25) { const ang = Math.atan2(x, z), gv = abs(((ang * 14) / Math.PI % 1 + 1) % 1 - 0.5); if (gv > 0.38) m = 6; }
+      } else if (m === 5) m = 0;
+      SKM = m;
+    }
     return d;
   }
-  df.skull3d = function skull3d(ctx, cx, cy, H, o = {}) {
-    TI = o.tiara !== false;
-    const ja = clamp(o.jaw || 0) * 0.42; JA = ja; JC = Math.cos(ja); JS = Math.sin(ja);
+  df.skullSd = skullSd;
+  df.lastSkullMat = () => SKM;
+  df.setSkull = (jaw, tiara) => { const a = clamp(jaw || 0) * 0.42; JC = Math.cos(a); JS = Math.sin(a); TI = tiara !== false; };
+  const SKCOL = { 0: rgb('#EEE4CC'), 1: rgb('#E6E0D2'), 2: rgb('#E6B652'), 3: rgb('#E0403A'), 4: rgb('#4A72E8'), 6: rgb('#3A3026'), 7: rgb('#D8443A'), 8: rgb('#F0E8D8'), 9: rgb('#B07A48'), 10: rgb('#E6B652'), 11: rgb('#1A1414'), 12: rgb('#EEE4CC') };
+  const skullUV = (m, x, y, z, o) => {
+    if (m === 1 || m === 2) { o[0] = y; o[1] = Math.atan2(x, z + 0.1) * 0.9; }
+    else { o[0] = y * 1.0 + 0.12 * x * x; o[1] = (x + z) * 0.72; }
+  };
+  df.SKULL = {
+    sdf: (x, y, z) => skullSd(x, y, z, false),
+    mat: (x, y, z) => { skullSd(x, y, z, true); return SKM; },
+    col: (m) => SKCOL[m] || SKCOL[0],
+    uv: skullUV,
+    bound: [0, 0.55, 0, 2.2],
+  };
+  /** skull(ctx, cx, cy, H, o) : the engraved 3D skull + tiara. (cx,cy) = screen point of the skull origin, H = skull height px. */
+  df.skull = (ctx, cx, cy, H, o = {}) => {
+    df.setSkull(o.jaw, o.tiara);
     const unit = H / 2.45;
-    const X0 = -1.45, X1 = 1.45, Y0 = -1.55, Y1 = TI ? 2.45 : 1.4;
-    const res = o.res || 0.4;
-    const mt = ctx.getTransform(), scr = Math.hypot(mt.a, mt.b) || 1;
-    const NW = Math.max(40, Math.round((X1 - X0) * unit * res * scr)), NH = Math.max(40, Math.round((Y1 - Y0) * unit * res * scr));
-    const buf = L.cached('df-s3d-' + NW + 'x' + NH + '-' + (o.slot || 0), () => { const c = document.createElement('canvas'); c.width = NW; c.height = NH; return c; });
-    const g = buf.getContext('2d');
-    const img = g.createImageData(NW, NH), dd = img.data;
-    // rotation R = Ry(yaw) · Rx(pitch) · Rz(roll); object = Rᵀ · world
-    const cy_ = Math.cos(o.yaw || 0), sy_ = Math.sin(o.yaw || 0), cp = Math.cos(o.pitch || 0), spp = Math.sin(o.pitch || 0), cr = Math.cos(o.roll || 0), sr = Math.sin(o.roll || 0);
-    // R columns
-    const R = [
-      cy_ * cr + sy_ * spp * sr, -cy_ * sr + sy_ * spp * cr, sy_ * cp,
-      cp * sr, cp * cr, -spp,
-      -sy_ * cr + cy_ * spp * sr, sy_ * sr + cy_ * spp * cr, cy_ * cp,
-    ];
-    const toObj = (x, y, z) => [R[0] * x + R[3] * y + R[6] * z, R[1] * x + R[4] * y + R[7] * z, R[2] * x + R[5] * y + R[8] * z];
-    const toWorld = (x, y, z) => [R[0] * x + R[1] * y + R[2] * z, R[3] * x + R[4] * y + R[5] * z, R[6] * x + R[7] * y + R[8] * z];
-    const CAM = [0, 0.4, 7];
-    const ro = toObj(CAM[0], CAM[1], CAM[2]);
-    const key = o.key || [0.45, -0.6, 0.66]; { const l = Math.hypot(...key); key[0] /= l; key[1] /= l; key[2] /= l; }
-    const fill = [-0.7, 0.35, 0.6], rim = [0.75, 0.25, -0.62];
-    const warm = o.warm != null ? o.warm : 1;
-    const hatch = o.hatch !== false;
-    const BC = [0, 0.55, 0], BR = TI ? 2.15 : 1.75;
-    for (let j = 0; j < NH; j++) {
-      const wy = Y1 - ((j + 0.5) / NH) * (Y1 - Y0);
-      for (let i = 0; i < NW; i++) {
-        const wx = X0 + ((i + 0.5) / NW) * (X1 - X0);
-        let dx = wx - CAM[0], dy = wy - CAM[1], dz = -CAM[2];
-        const dl = Math.hypot(dx, dy, dz); dx /= dl; dy /= dl; dz /= dl;
-        const rd = toObj(dx, dy, dz);
-        // bounding sphere (object space)
-        const ox = ro[0] - BC[0], oy = ro[1] - BC[1], oz = ro[2] - BC[2];
-        const bb = ox * rd[0] + oy * rd[1] + oz * rd[2], cc = ox * ox + oy * oy + oz * oz - BR * BR, disc = bb * bb - cc;
-        if (disc < 0) continue;
-        let t = Math.max(0, -bb - sqrt(disc)); const tmax = -bb + sqrt(disc);
-        let hit = false, px = 0, py = 0, pz = 0;
-        for (let k = 0; k < 80; k++) {
-          px = ro[0] + rd[0] * t; py = ro[1] + rd[1] * t; pz = ro[2] + rd[2] * t;
-          const d = sdf(px, py, pz, false);
-          if (d < 0.0025) { hit = true; break; }
-          t += d * 0.9;
-          if (t > tmax) break;
+    const r = df.r3d(ctx, { cx, cy, unit, win: [-1.45, 1.45, -1.55, o.tiara === false ? 1.45 : 2.45], yaw: o.yaw, pitch: o.pitch, roll: o.roll, res: o.res || 0.36, spacing: o.spacing || 6.5, slot: o.slot || 0, key: o.key || [-0.62, -0.32, 0.6], fill: [0.75, 0.2, 0.5], rim: [0.85, 0.3, -0.45], flat: 0.05, warm: o.warm }, df.SKULL);
+    const em = o.ember || 0;
+    if (em > 0) for (const sx of [-0.29, 0.29]) { const [ex, ey] = r.proj(sx, -0.16, 0.5); df.glow(ctx, ex, ey, unit * 0.2 * em, C.ember, 0.8 * em); df.glow(ctx, ex, ey, unit * 0.06, '#FFC890', em); ctx.fillStyle = L.rgba('#FFE6C0', em); ctx.beginPath(); ctx.arc(ex, ey, unit * 0.018, 0, TAU); ctx.fill(); }
+    if (o.tiara !== false) { const [qx, qy] = r.proj(0, 2.35, -0.1), [q2x, q2y] = r.proj(0, 2.7, -0.1); const s = unit * 0.035; L.inkPath(ctx, [[qx, qy], [q2x, q2y]], { width: s * 2, color: C.gold, seed: 3, taper: 2 }); L.inkPath(ctx, [[qx - s * 4, qy + (q2y - qy) * 0.62], [qx + s * 4, qy + (q2y - qy) * 0.62]], { width: s * 1.8, color: C.gold, seed: 4, taper: 2 }); }
+    return r;
+  };
+
+  df.glow = (ctx, x, y, r, col, a = 1) => {
+    if (a <= 0 || r <= 0) return;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, L.rgba(col, 0.55 * a)); g.addColorStop(0.35, L.rgba(col, 0.18 * a)); g.addColorStop(1, L.rgba(col, 0));
+    ctx.fillStyle = g; ctx.fillRect(x - r, y - r, 2 * r, 2 * r); ctx.restore();
+  };
+
+  FILM.df = df;
+})();
+
+/* FILM.df.CORPSE — the enthroned corpse as ONE 3D assembly: skull + tiara (shared SDF), neck, cope with folds, pallium,
+   gold orphreys, lap and front drape, sleeves, skeletal hands on the armrests, gothic throne with finials and gold trim.
+   Units: skull units (skull height 2.45). Seat top y = 0, floor y = -3.2, head origin at HEAD. */
+(function () {
+  'use strict';
+  const FILM = window.FILM, L = FILM.lib, df = FILM.df, { ell, smin, ssub, box, cap } = df.sd;
+  const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
+  const abs = Math.abs, sqrt = Math.sqrt;
+  let HR = 0.2, HC = Math.cos(0.2), HS = Math.sin(0.2), HX = 0.15, HY = 6.05, HZ = 0.35, CUT = [0, 0, 0];
+  let MAT = 0;
+  const rgb = (hex) => { const a = L.rgb(hex); return [a[0] / 255, a[1] / 255, a[2] / 255]; };
+  // materials: 0 bone, 1 silk, 2 gold, 3 red jewel, 4 blue jewel, 6 tooth gap, 7 crimson cope, 8 white pallium/alb, 9 wood, 10 gold trim, 11 black cross
+  function sdf(x, y, z, want) {
+    let d = 1e9, m = 0;
+    // throne
+    if (z < 0 || abs(x) > 1.9 || y < -0.3) {
+      let th = Math.max(box(x, y - 4.0, z + 0.95, 2.35, 4.7, 0.22, 0.04), y - (8.75 - 0.5 * x * x));
+      th = Math.min(th, box(abs(x) - 2.42, y - 3.2, z + 0.8, 0.22, 5.4, 0.3, 0.05));
+      th = Math.min(th, ell(abs(x) - 2.42, y - 8.75, z + 0.8, 0.24, 0.5, 0.24));
+      th = Math.min(th, box(abs(x) - 2.3, y - 1.35, z - 0.55, 0.28, 0.16, 1.55, 0.06));
+      th = Math.min(th, box(abs(x) - 2.3, y - 0.2, z - 2.0, 0.19, 1.1, 0.19, 0.04));
+      th = Math.min(th, box(x, y + 0.15, z - 0.5, 2.3, 0.25, 1.6, 0.06));
+      th = Math.min(th, box(x, y + 1.85, z - 0.45, 2.55, 1.4, 1.75, 0.05));
+      if (th < d) { d = th; m = 9; }
+    }
+    // body: cope (bell, elliptical section, folds), yoke, lap, drape
+    const ang = Math.atan2(x, z - 0.15);
+    const fold = (0.13 * Math.sin(ang * 9 + y * 0.3) + 0.05 * Math.sin(ang * 23 - y * 0.8)) * clamp((4.5 - y) / 2.2);
+    const ry = clamp((y - 0.2) / 4.2);
+    const rr = 2.4 - 1.15 * ry * (2 - ry) * 0.62 - 0.45 * ry + fold;
+    const rho = sqrt(x * x + ((z - 0.15) / 0.72) * ((z - 0.15) / 0.72));
+    let body = Math.max((rho - rr) * 0.62, 0.15 - y, y - 4.45);
+    body = smin(body, ell(x, y - 4.3, z - 0.1, 1.5, 0.58, 0.95), 0.35);
+    body = smin(body, ell(x, y - 0.3, z - 1.15, 1.72, 0.62, 1.45), 0.3);
+    body = smin(body, box(x, y + 1.55, z - 2.05, 1.5 + 0.05 * Math.sin(y * 3), 1.62, 0.42, 0.2) + 0.05 * Math.sin(x * 7 + y), 0.3);
+    // sleeves
+    const sx = x < 0 ? -1 : 1, axx = abs(x);
+    body = smin(body, cap(axx, y, z, 1.3, 4.05, 0.2, 1.8, 2.2, 0.75, 0.46), 0.2);
+    body = smin(body, cap(axx, y, z, 1.8, 2.2, 0.75, 1.98, 1.42, 1.62, 0.4), 0.15);
+    if (body < d) { d = body; m = 7; }
+    // hands on the armrests (skeletal): palm + four fingers curling over the front edge
+    if (axx > 1.5 && axx < 2.5 && y > 0.3 && y < 1.8 && z > 1.3) {
+      let hnd = ell(axx - 2.02, y - 1.58, z - 1.95, 0.24, 0.08, 0.3);
+      for (let k = 0; k < 4; k++) {
+        const fx = 1.86 + k * 0.1;
+        if (sx > 0 && k >= 1 && k <= 3 && CUT[k - 1] && false) continue;
+        hnd = Math.min(hnd, cap(axx, y, z, fx, 1.56, 2.18, fx, 1.38, 2.36, 0.045), cap(axx, y, z, fx, 1.38, 2.36, fx, 1.12, 2.3, 0.04));
+      }
+      if (hnd < d) { d = hnd; m = 0; }
+    }
+    // neck
+    const nk = cap(x, y, z, 0.05, 4.35, 0.15, HX * 0.6, 5.05, 0.25, 0.17);
+    if (nk < d) { d = nk; m = 0; }
+    // head: skull + tiara (shared SDF), slumped by HR
+    if (y > 4.4) {
+      const qx = x - HX, qy = y - HY, qz = z - HZ;
+      const lx = qx * HC + qy * HS, ly = -qx * HS + qy * HC;
+      const hd = df.skullSd(lx, ly, qz, want);
+      if (hd < d) { d = hd; m = -1; }
+    }
+    if (want) {
+      if (m === -1) m = MATSK();
+      else if (m === 7) {
+        // pallium Y + crosses, gold orphreys, drape = alb (white) below the lap
+        if (y < -0.1 && z > 1.6) m = 8;
+        else if (z > 0.3) {
+          const yArm = y > 3.55 ? abs(axx - (y - 3.55) * 0.95) : axx;
+          if (y > 1.0 && y < 4.6 && yArm < 0.16) {
+            m = 8;
+            for (const [cx, cy] of [[0, 1.7], [0, 2.6], [0.75, 4.25]]) if (abs(axx - cx) < 0.09 && abs(y - cy) < 0.03 || abs(axx - cx) < 0.025 && abs(y - cy) < 0.11) m = 11;
+          } else if (axx > 0.5 && axx < 0.66 && y > 0.3 && y < 4.4) m = 10;
         }
-        if (!hit) continue;
-        sdf(px, py, pz, true); const mat = MAT;
-        // normal (tetrahedron)
-        const e = 0.004;
-        const a1 = sdf(px + e, py - e, pz - e), a2 = sdf(px - e, py - e, pz + e), a3 = sdf(px - e, py + e, pz - e), a4 = sdf(px + e, py + e, pz + e);
-        let nx = a1 - a2 - a3 + a4, ny = -a1 - a2 + a3 + a4, nz = -a1 + a2 - a3 + a4;
-        const nl = Math.hypot(nx, ny, nz) || 1; nx /= nl; ny /= nl; nz /= nl;
-        let ao = 0;
-        for (let s = 1; s <= 3; s++) { const hh = 0.07 * s; ao += (hh - sdf(px + nx * hh, py + ny * hh, pz + nz * hh)) / (1 << s); }
-        ao = clamp(1 - 3.2 * ao);
-        const W = toWorld(nx, ny, nz);
-        const vdot = -(W[0] * dx + W[1] * dy + W[2] * dz);
-        const diff = Math.max(0, W[0] * key[0] + W[1] * key[1] + W[2] * key[2]);
-        const fd = Math.max(0, W[0] * fill[0] + W[1] * fill[1] + W[2] * fill[2]);
-        const rm = Math.pow(Math.max(0, W[0] * rim[0] + W[1] * rim[1] + W[2] * rim[2]), 2) + Math.pow(1 - clamp(vdot), 4) * 0.6;
-        // reflection for spec
-        const rx = dx + 2 * vdot * W[0], ry = dy + 2 * vdot * W[1], rz = dz + 2 * vdot * W[2];
-        const sp = Math.pow(Math.max(0, rx * key[0] + ry * key[1] + rz * key[2]), mat === 1 ? 24 : 10);
-        let ar, ag, ab, spk;
-        if (mat === 1) {
-          const h = py - 0.66;
-          const band = BANDS.some((b) => abs(h - b) < 0.065) || py > 2.12;
-          if (band) {
-            const ang = Math.atan2(px, pz + 0.1), cell = ang * 8 / Math.PI, du = ((cell % 1) + 1) % 1 - 0.5;
-            let jewel = false; for (const bb of BANDS) { const dv = h - bb, duu = du * (Math.PI / 8) * 0.9; if (duu * duu + dv * dv < 0.0011) jewel = true; }
-            if (jewel) { const red = (Math.floor(cell + 40)) % 2; ar = red ? 0.75 : 0.1; ag = red ? 0.05 : 0.22; ab = red ? 0.06 : 0.8; spk = 2.2; }
-            else { ar = 0.95; ag = 0.72; ab = 0.36; spk = 1.5; }
-          } else { ar = 0.8; ag = 0.8; ab = 0.78; spk = 0.45; }
-        } else {
-          const n = 0.9 + 0.1 * Math.sin(px * 13 + Math.sin(py * 9)) * Math.sin(pz * 11 + px * 3);
-          const dirt = 0.82 + 0.18 * Math.sin(px * 7.3 + Math.sin(pz * 5.1) * 2) * Math.sin(py * 6.1 + px * 2.3);
-          ar = 0.8 * n * dirt; ag = 0.74 * n * dirt; ab = 0.62 * n * dirt; spk = 0.2;
-          // teeth grooves
-          const ty = mat === 2 ? null : py;
-          if ((mat !== 2 && py < -0.76 && py > -0.98 && pz > 0.25) || (mat === 2 && pz > 0.2 && py < -0.85 && py > -1.06)) {
-            const ang = Math.atan2(px, pz - 0.0), gv = abs(((ang * 14 / Math.PI) % 1 + 1) % 1 - 0.5);
-            if (gv > 0.38) { ar *= 0.2; ag *= 0.18; ab *= 0.16; }
-          }
-          ar = ar * (0.35 + 0.65 * ao); ag = ag * (0.33 + 0.67 * ao); ab = ab * (0.3 + 0.7 * ao);
-        }
-        let r = ar * (diff * 1.5 * warm * 1.0 + fd * 0.22 * 0.6 + 0.04) * ao + rm * 0.7 * 0.62 + sp * spk * 0.9;
-        let gg = ag * (diff * 1.5 * warm * 0.84 + fd * 0.22 * 0.66 + 0.035) * ao + rm * 0.7 * 0.1 + sp * spk * 0.85;
-        let b = ab * (diff * 1.5 * warm * 0.64 + fd * 0.22 * 0.95 + 0.05) * ao + rm * 0.7 * 0.08 + sp * spk * 0.75;
-        if (hatch) {
-          const lum = 0.3 * r + 0.55 * gg + 0.15 * b;
-          const l1 = ((i * 0.72 + j * 0.69) % 3.2) / 3.2, l2 = ((i * 0.72 - j * 0.69 + 1000) % 3.6) / 3.6;
-          if (lum < 0.45 && l1 < (0.45 - lum) * 1.4) { r *= 0.45; gg *= 0.43; b *= 0.42; }
-          if (lum < 0.2 && l2 < (0.2 - lum) * 2.4) { r *= 0.5; gg *= 0.48; b *= 0.46; }
-        }
-        const p = (j * NW + i) * 4;
-        dd[p] = 255 * Math.min(1, r / (1 + r * 0.25)); dd[p + 1] = 255 * Math.min(1, gg / (1 + gg * 0.25)); dd[p + 2] = 255 * Math.min(1, b / (1 + b * 0.25)); dd[p + 3] = 255;
+      } else if (m === 9) {
+        if (abs(abs(x) - 2.13) < 0.07 && y > 0.5 || y > 8.2 - 0.5 * x * x || (abs(x) > 2.2 && y > 8.2)) m = 10;
+      }
+      MAT = m;
+    }
+    return d;
+  }
+  let skm = 0;
+  const MATSK = () => { df.skullSd.last = 0; return df.lastSkullMat(); };
+  df.CORPSE = {
+    sdf: (x, y, z) => sdf(x, y, z, false),
+    mat: (x, y, z) => { sdf(x, y, z, true); return MAT; },
+    col: (m) => ({ 0: rgb('#EEE4CC'), 1: rgb('#E6E0D2'), 2: rgb('#E6B652'), 3: rgb('#E0403A'), 4: rgb('#4A72E8'), 6: rgb('#3A3026'), 7: rgb('#E0483C'), 8: rgb('#DCD2BE'), 9: rgb('#B07C4E'), 10: rgb('#EDBE5A'), 11: rgb('#141010') }[m] || [1, 1, 1]),
+    uv: (m, x, y, z, o) => {
+      if (m === 7 || m === 8 || m === 10) { o[0] = Math.atan2(x, z - 0.15) * 1.6; o[1] = y; }
+      else if (m === 9) { o[0] = x * 0.9 + 0.08 * Math.sin(y * 3); o[1] = y; }
+      else { o[0] = y + 0.12 * x * x; o[1] = (x + z) * 0.72; }
+    },
+    bound: [0, 2.9, 0.4, 7.4],
+  };
+  /** corpse(ctx, cx, cy, Hpx, o) : (cx,cy) = screen point of the floor centre under the throne; Hpx = throne height px. */
+  df.corpse = (ctx, cx, cy, Hpx, T, o = {}) => {
+    df.setSkull(o.jaw != null ? o.jaw : 0.25, true);
+    HR = o.tilt != null ? o.tilt : 0.2 + 0.03 * Math.sin(T * 0.8); HC = Math.cos(HR); HS = Math.sin(HR);
+    HX = 0.12 + Math.sin(HR) * 0.6;
+    const unit = Hpx / 12.4;
+    const r = df.r3d(ctx, { cx, cy: cy - 3.4 * unit, unit, win: [-3.2, 3.2, -3.4, 9.2], yaw: o.yaw || 0, pitch: o.pitch != null ? o.pitch : 0.06, res: o.res || 0.36, spacing: o.spacing || 6.0, slot: o.slot || 4, warm: o.warm,
+      key: o.key || [-0.85, 0.3, 0.45], fill: [0.7, 0.1, 0.5], rim: [0.85, 0.4, -0.35], flat: 0.05, camD: 26 }, df.CORPSE);
+    const em = o.ember || 0;
+    if (em > 0) for (const sx of [-0.29, 0.29]) {
+      const lx = sx, ly = -0.16, qx = lx * HC - ly * HS + HX, qy = lx * HS + ly * HC + HY;
+      const [ex, ey] = r.proj(qx, qy, HZ + 0.5);
+      df.glow(ctx, ex, ey, unit * 0.22 * em, df.C.ember, 0.8 * em); df.glow(ctx, ex, ey, unit * 0.07, '#FFC890', em);
+    }
+    return r;
+  };
+})();
+
+/* FILM.df — 2D engraving kit + the skeletal HAND (3D). Every 2D object: black ink silhouette, bone rim on its lit side,
+   light built from contour hatching, cross-hatching in the lights and stipple in the brightest highlights. */
+(function () {
+  'use strict';
+  const FILM = window.FILM, L = FILM.lib, df = FILM.df, C = df.C, { ell, smin, cap } = df.sd;
+  const TAU = Math.PI * 2;
+  const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const rgb = (hex) => { const a = L.rgb(hex); return [a[0] / 255, a[1] / 255, a[2] / 255]; };
+
+  // ---------------------------------------------------------------- plate, light, atmosphere
+  df.plate = (ctx, o = {}) => { L.paper(ctx, { color: o.color || '#0F0C0D', seed: o.seed || 5, grain: 1.5, fibres: 0.6, mottle: 1.3, vignette: o.vignette != null ? o.vignette : 0.65 }); };
+  /** lights(list, amb) → fn(x,y) 0..1. list items: { x, y, r, k } point lights, or { dir: [dx,dy], at: [x,y], span, k } ramps. */
+  df.lights = (list, amb = 0.06) => (x, y) => {
+    let v = amb;
+    for (const l of list) {
+      if (l.dir) { const u = ((x - l.at[0]) * l.dir[0] + (y - l.at[1]) * l.dir[1]) / l.span; v += l.k * clamp(1 - u); }
+      else { const d = Math.hypot(x - l.x, y - l.y) / l.r; if (d < 1) v += l.k * Math.pow(1 - d, 1.5); }
+    }
+    return clamp(v);
+  };
+  df.grain = (ctx, T, a = 1) => {
+    const v = ctx.createRadialGradient(540, 900, 420, 540, 900, 1250);
+    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, `rgba(0,0,0,${0.7 * a})`);
+    ctx.fillStyle = v; ctx.fillRect(0, 0, 1080, 1920);
+  };
+  df.flash = (T, hits) => { let f = 0; for (const h of hits) { const d = T - h; if (d < 0 || d > 0.6) continue; f = Math.max(f, Math.exp(-d * 9) * (d < 0.05 ? 1 : 0.7) + (d > 0.12 && d < 0.2 ? 0.45 : 0)); } return clamp(f); };
+  df.rain = (ctx, T, o = {}) => {
+    const r = L.rng(L.hash('df-rain', o.seed || 1)), n = o.n || 200, a = o.a != null ? o.a : 0.3;
+    ctx.save(); ctx.lineCap = 'round';
+    for (let i = 0; i < n; i++) {
+      const z = 0.3 + r() * 0.7, sp = 2600 * z, len = 80 * z, x0 = r() * 1300 - 100, ph = r();
+      const y = ((ph * 2200 + T * sp) % 2200) - 140, x = x0 + (y + 140) * 0.16;
+      ctx.strokeStyle = `rgba(214,206,190,${a * z})`; ctx.lineWidth = 0.8 + 1.4 * z;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + len * 0.16, y + len); ctx.stroke();
+    }
+    ctx.restore();
+  };
+  // fog drawn as drifting engraved horizontal strokes (no blur blobs)
+  df.mist = (ctx, T, o = {}) => {
+    const y0 = o.y != null ? o.y : 1500, h = o.h || 400, a = o.a != null ? o.a : 0.35, sp = o.speed || 25;
+    L.hatch(ctx, null, { bounds: { x: -60, y: y0 - h / 2, w: 1200, h }, angle: 0.02, spacing: 7, width: 1, color: o.color || '#CFC6B8', alpha: a, seed: (o.seed || 31) + (Math.floor(T * 12) % 3), length: [40, 160], gap: [10, 60],
+      density: (x, y) => { const u = (x + T * sp) * 0.004; return clamp((Math.sin(u * 3 + y * 0.01) * 0.5 + 0.5) * Math.sin(clamp((y - (y0 - h / 2)) / h) * Math.PI) * 0.9); } });
+  };
+  df.embers = (ctx, T, o = {}) => {
+    const r = L.rng(L.hash('embers', o.seed || 1));
+    for (let i = 0; i < (o.n || 50); i++) { const x = r() * 1080, sp = 100 + r() * 200, y = (o.y0 || 1900) - ((r() * 1900 + T * sp) % 1900); L.glowDot(ctx, x + Math.sin(T * 2 + i) * 18, y, 1.6 + r() * 1.6, { color: '#FF9A40', core: '#FFE0B0', rays: 0, glow: 7, additive: true }); }
+  };
+
+  // ---------------------------------------------------------------- the 2D workhorse
+  df.engrave = (ctx, ptsIn, o = {}) => {
+    const pts = o.smooth === false ? ptsIn : L.smoothPts(ptsIn, true, o.step || 7);
+    const lit = o.light || (() => 0.5);
+    const col = o.ink || C.bone, seed = o.seed || 1;
+    const sp = o.spacing || 5.5, w = o.width || 1.2, a = o.alpha != null ? o.alpha : 0.92, ang = o.angle != null ? o.angle : -0.95;
+    if (o.base !== 'none') { ctx.beginPath(); L.tracePath(ctx, pts, true); ctx.fillStyle = o.base || '#0B0809'; ctx.fill(); }
+    const g = o.gain || 1.05;
+    L.hatch(ctx, pts, { angle: ang, spacing: sp, width: w, color: col, alpha: a, seed, density: (x, y) => clamp(Math.pow(lit(x, y), 0.72) * g), length: o.len || [20, 90], gap: [1, 5], bend: o.bend || 0, inset: 2, overshoot: 1 });
+    if (o.cross !== false) L.hatch(ctx, pts, { angle: ang + (o.turn != null ? o.turn : 1.2), spacing: sp * 1.3, width: w * 0.85, color: col, alpha: a * 0.8, seed: seed + 5, density: (x, y) => clamp((lit(x, y) * g - 0.55) * 2.2), length: [14, 60], gap: [2, 7], inset: 3 });
+    if (o.stip !== false) L.stipple(ctx, pts, { spacing: 4.6, r: [0.5, 1.2], color: col, alpha: 0.85, seed: seed + 9, density: (x, y) => clamp((lit(x, y) * g - 0.78) * 4) });
+    if (o.outline !== false) {
+      L.inkPath(ctx, pts, { closed: true, width: o.outW || 2.6, color: '#000', seed: seed + 11 });
+      const runs = []; let cur = [];
+      pts.forEach((p) => { if (lit(p[0], p[1]) > (o.rimT != null ? o.rimT : 0.5)) cur.push(p); else { if (cur.length > 3) runs.push(cur); cur = []; } });
+      if (cur.length > 3) runs.push(cur);
+      runs.forEach((r, i) => L.inkPath(ctx, r, { width: o.rimW || 1.5, color: o.rimCol || col, alpha: 0.95, seed: seed + 20 + i, taper: [8, 14] }));
+    }
+  };
+  /** detail lines (folds, mortar, grain) that light up where lit: dark ink + a bone shadow-side line */
+  df.lines = (ctx, list, lit, o = {}) => list.forEach((ln, i) => {
+    const m = ln[Math.floor(ln.length / 2)], l = lit(m[0], m[1]);
+    L.inkPath(ctx, ln, { width: o.w || 2, color: '#000', alpha: 0.95, seed: (o.seed || 40) + i, taper: [10, 20] });
+    if (l > 0.25) L.inkPath(ctx, ln.map(([x, y]) => [x + (o.off || 2.2), y + (o.offY || 0)]), { width: (o.w || 2) * 0.55, color: o.col || C.bone, alpha: clamp(l * 1.2), seed: (o.seed || 40) + 50 + i, taper: [12, 22] });
+  });
+
+  // ---------------------------------------------------------------- candle + flame
+  df.flame = (ctx, x, y, s, T, seed = 1, k = 1) => {
+    if (k <= 0) return;
+    const fl = 1 + 0.12 * L.noise1(T * 9, seed) + 0.05 * Math.sin(T * 31 + seed), sway = 5 * L.noise1(T * 3, seed + 5) * s;
+    df.glow(ctx, x, y - 40 * s, 300 * s * fl, C.candle, 0.85 * k);
+    ctx.save(); ctx.globalAlpha = k;
+    const g = ctx.createRadialGradient(x, y - 30 * s, 2, x, y - 40 * s, 40 * s);
+    g.addColorStop(0, '#FFFFFF'); g.addColorStop(0.3, '#FFE6A0'); g.addColorStop(0.75, '#F39A2B'); g.addColorStop(1, 'rgba(240,120,30,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x - 13 * s, y - 16 * s);
+    ctx.quadraticCurveTo(x - 15 * s, y - 50 * s * fl, x + sway, y - 86 * s * fl); ctx.quadraticCurveTo(x + 15 * s, y - 50 * s * fl, x + 13 * s, y - 16 * s);
+    ctx.quadraticCurveTo(x, y - 4 * s, x - 13 * s, y - 16 * s); ctx.fill();
+    L.inkPath(ctx, [[x - 6 * s, y - 20 * s], [x - 4 * s, y - 50 * s * fl], [x + sway * 0.8, y - 80 * s * fl]], { width: 1.6 * s, color: '#FFF4D0', alpha: 0.8, seed: seed + 3, taper: 6 });
+    ctx.restore();
+  };
+  df.candle = (ctx, x, y, s, T, o = {}) => {
+    const h = (o.h || 160) * s, w = 21 * s, seed = o.seed || 1, out = clamp(o.out || 0);
+    const lit = (px, py) => clamp(0.9 - (py - y) / (h * 1.3) - Math.abs(px - x + w * 0.35) / (w * 2.4)) * (1 - out * 0.85);
+    df.engrave(ctx, [[x - w, y], [x - w, y + h], [x + w, y + h], [x + w, y]], { ink: C.wax, light: lit, angle: 1.57, spacing: 4.2, width: 1.1, seed, outW: 2.2, smooth: false });
+    L.inkPath(ctx, L.ellipsePts(x, y, w, 6 * s, 20), { closed: true, width: 1.6, color: C.wax, alpha: 0.8 * (1 - out), seed: seed + 2 });
+    const r = L.rng(L.hash('drip', seed));
+    for (let k = 0; k < 3; k++) { const dx = x - w * 0.8 + r() * w * 1.6, dl = (16 + r() * 40) * s; L.inkPath(ctx, [[dx, y], [dx + 1, y + dl * 0.6], [dx, y + dl]], { width: 5 * s, color: C.wax, alpha: 0.7 * (1 - out), seed: seed + 5 + k, taper: [2, 6] }); }
+    L.inkPath(ctx, [[x, y], [x + 1, y - 15 * s]], { width: 2.4 * s, color: '#000', seed: seed + 9, taper: 2 });
+    df.flame(ctx, x, y, s, T, seed, 1 - out);
+    if (o.smoke && out > 0) {
+      const st = o.smoke;
+      for (let k = 0; k < 3; k++) {
+        const pts = [];
+        for (let i = 0; i <= 40; i++) { const u = i / 40, yy = y - 16 * s - u * 460 * clamp(st * 1.3) * s; pts.push([x + Math.sin(u * 9 + T * 2 + k * 2) * 30 * u * s + k * 6, yy]); }
+        L.inkPath(ctx, pts, { width: 2.2 * s, color: '#BDB4C4', alpha: 0.55 * clamp(2.2 - st), seed: seed + 30 + k, taper: [4, 40] });
       }
     }
-    g.putImageData(img, 0, 0);
-    const left = cx + X0 * unit, top = cy - Y1 * unit;
-    ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(buf, left, top, (X1 - X0) * unit, (Y1 - Y0) * unit);
-    ctx.restore();
-    const proj = (x, y, z) => { const w = toWorld(x, y, z); const tt = CAM[2] / (CAM[2] - w[2]); return [cx + w[0] * tt * unit, cy - (CAM[1] + (w[1] - CAM[1]) * tt) * unit]; };
-    // ember eyes
-    const em = o.ember || 0;
-    if (em > 0) for (const sx of [-0.29, 0.29]) { const [ex, ey] = proj(sx, -0.16, 0.5); df.glow(ctx, ex, ey, unit * 0.2 * em, df.C.ember, 0.8 * em); df.glow(ctx, ex, ey, unit * 0.06, '#FFC890', em); ctx.fillStyle = L.rgba('#FFE6C0', em); ctx.beginPath(); ctx.arc(ex, ey, unit * 0.018, 0, Math.PI * 2); ctx.fill(); }
-    // tiara cross
-    if (TI) { const [qx, qy] = proj(0, 2.35, -0.1), [q2x, q2y] = proj(0, 2.7, -0.1); const s = unit * 0.035; ctx.strokeStyle = '#C8932E'; ctx.lineWidth = s * 2; ctx.lineCap = 'butt'; ctx.beginPath(); ctx.moveTo(qx, qy); ctx.lineTo(q2x, q2y); ctx.moveTo(qx - s * 4, qy + (q2y - qy) * 0.62); ctx.lineTo(qx + s * 4, qy + (q2y - qy) * 0.62); ctx.stroke(); }
-    return { proj, unit };
+    return lit;
   };
+
+  // ---------------------------------------------------------------- robed figures (engraved, no faces)
+  df.figure = (ctx, X, Y, s, T, o = {}) => {
+    const pose = o.pose || 'stand', ph = o.ph != null ? o.ph : T * 7, hat = o.hat || 'hood';
+    const lightW = o.light || (() => 0.4), ink = o.ink || C.bone, seed = o.seed || 7;
+    const walk = pose === 'walk' || pose === 'torch';
+    const sw = walk ? Math.sin(ph) : 0, bob = walk ? Math.abs(Math.cos(ph)) * 8 : 0;
+    const trem = o.tremble ? Math.sin(T * 47) * 3 * o.tremble : 0;
+    const lean = pose === 'dig' ? 0.38 + 0.14 * Math.sin(ph) : pose === 'point' ? -0.06 : 0;
+    const fl = o.flip ? -1 : 1;
+    const ca = Math.cos(lean), sa = Math.sin(lean);
+    const W = (px, py) => { const qx = px * ca - py * sa, qy = px * sa + py * ca; return [X + (qx * fl + trem) * s, Y + (qy - bob) * s]; };
+    const lit = (px, py) => lightW(px, py);
+    const T_ = (pts) => pts.map(([a, b]) => W(a, b));
+    const hem = 74 + Math.abs(sw) * 16;
+    // feet
+    if (walk) for (const sd of [-1, 1]) { const k = sd * sw; df.engrave(ctx, T_(L.ellipsePts(k * 34 + sd * 14, -2, 26, 11, 14)), { ink, light: lit, base: '#060405', spacing: 4, seed: seed + 60 + sd, outW: 1.8, cross: false, stip: false }); }
+    // robe
+    const robe = [[-hem, -4], [-62 - sw * 10, -200], [-54, -370], [-32, -418], [32, -418], [54, -370], [62 - sw * 10, -200], [hem, -4]];
+    df.engrave(ctx, T_(robe), { ink, light: lit, angle: -1.35 * fl, spacing: 5.2, seed, outW: 2.8 });
+    // folds: from the shoulders to the hem, swaying with the stride
+    const folds = [];
+    for (let k = 0; k < 6; k++) { const u = (k + 0.5) / 6, x0 = lerp(-40, 40, u), x1 = lerp(-hem + 10, hem - 10, u) + sw * 12 * (k % 2 ? 1 : -1); folds.push(T_([[x0, -380], [lerp(x0, x1, 0.5) + Math.sin(k * 2.1) * 8, -200], [x1, -10]])); }
+    df.lines(ctx, folds, lit, { w: 1.8 * Math.min(1.2, s * 1.4), seed: seed + 100, off: 2 * fl });
+    // hood / mitre / cap — the face is always a void
+    let head;
+    if (hat === 'hood') head = [[-50, -390], [-60, -470], [-36, -540], [0, -556], [36, -540], [60, -470], [50, -390]];
+    else if (hat === 'mitre') head = [[-40, -400], [-44, -470], [-34, -590], [0, -640], [34, -590], [44, -470], [40, -400]];
+    else head = [[-44, -400], [-48, -470], [-30, -508], [30, -508], [48, -470], [44, -400]];
+    df.engrave(ctx, T_(head), { ink: hat === 'mitre' ? C.gold : ink, light: lit, angle: 1.2 * fl, spacing: 4.6, seed: seed + 3, outW: 2.6 });
+    if (hat === 'mitre') df.lines(ctx, [T_([[0, -630], [0, -420]]), T_([[-40, -470], [40, -470]])], lit, { w: 2.4, col: C.gold, seed: seed + 140 });
+    ctx.save(); ctx.beginPath(); L.tracePath(ctx, T_(L.ellipsePts(0, -462, 30, 38, 18)), true); ctx.fillStyle = '#000'; ctx.fill(); ctx.restore();
+    // sleeves / arms
+    const tips = {};
+    const sleeve = (sx, ex, ey, hx, hy, k) => {
+      const nx = -(hy - (-380)), ny = hx - sx, nl = Math.hypot(nx, ny) || 1, wv = 26;
+      const pts = [[sx - 18, -392], [ex - 22, ey], [hx - wv * nx / nl, hy - wv * ny / nl], [hx + wv * nx / nl, hy + wv * ny / nl], [ex + 22, ey + 10], [sx + 22, -368]];
+      df.engrave(ctx, T_(pts), { ink, light: lit, angle: -0.5 * fl, spacing: 5, seed: seed + 20 + k, outW: 2.4, cross: false });
+      // bony hand at the cuff
+      df.engrave(ctx, T_(L.ellipsePts(hx, hy, 15, 18, 12)), { ink: C.bone, light: (a, b) => lit(a, b) + 0.2, spacing: 3.6, seed: seed + 30 + k, outW: 1.8, cross: false });
+    };
+    if (pose === 'point') { sleeve(40, 150, -430, 270, -470, 0); sleeve(-40, -70, -260, -52, -190, 1); tips.hand = W(290, -470); }
+    else if (pose === 'torch') { const a = Math.sin(ph) * 10; sleeve(40, 90, -480, 70 + a, -560, 0); sleeve(-40, -70 - sw * 20, -260, -60 - sw * 30, -190, 1); tips.torch = W(70 + a, -600); }
+    else if (pose === 'dig') { sleeve(40, 110, -300, 150, -200, 0); sleeve(-40, 60, -300, 120, -150, 1); tips.shovel = W(150, -200); }
+    else if (pose === 'pray') { sleeve(40, 60, -300, 12, -320, 0); sleeve(-40, -60, -300, -12, -320, 1); }
+    else { sleeve(40, 70, -260, 52 + sw * 30, -180, 0); sleeve(-40, -70, -260, -52 - sw * 30, -180, 1); }
+    return tips;
+  };
+  df.torch = (ctx, x, y, s, T, seed) => {
+    df.glow(ctx, x, y - 20 * s, 220 * s, C.candle, 0.7); df.glow(ctx, x, y - 20 * s, 80 * s, C.ember, 0.6);
+    const fl = 1 + 0.2 * L.noise1(T * 11, seed);
+    ctx.save();
+    const g = ctx.createRadialGradient(x, y - 30 * s, 4, x, y - 40 * s, 70 * s);
+    g.addColorStop(0, '#FFF6D0'); g.addColorStop(0.35, '#FFB040'); g.addColorStop(1, 'rgba(220,60,20,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x - 26 * s, y); ctx.quadraticCurveTo(x - 30 * s, y - 60 * fl * s, x + 6 * Math.sin(T * 7 + seed) * s, y - 120 * fl * s); ctx.quadraticCurveTo(x + 30 * s, y - 60 * fl * s, x + 26 * s, y); ctx.fill();
+    ctx.restore();
+    L.inkPath(ctx, [[x, y], [x - 4 * s, y + 70 * s]], { width: 9 * s, color: '#2A1A10', seed, taper: 3 });
+  };
+
+  // ---------------------------------------------------------------- sky, moon, ravens, skyline
+  df.sky = (ctx, T, o = {}) => {
+    const m = o.moon || [700, 560];
+    const lit = (x, y) => clamp(0.34 + 0.9 * Math.pow(clamp(1 - Math.hypot(x - m[0], (y - m[1]) * 1.4) / 1000), 1.3));
+    ctx.fillStyle = o.base || '#100709'; ctx.fillRect(0, 0, 1080, o.h || 1400);
+    L.hatch(ctx, null, { bounds: { x: -20, y: 0, w: 1120, h: o.h || 1400 }, angle: 0.0, spacing: 6.5, width: 1.05, color: o.ink || '#C8826E', alpha: 0.85, seed: 61, length: [60, 240], gap: [2, 14], density: lit, bow: 0.4 });
+    // engraved cloud bands
+    const r = L.rng(L.hash('clouds'));
+    for (let k = 0; k < 6; k++) {
+      const cy = 160 + r() * 900, cx = r() * 1080, w = 300 + r() * 500, drift = T * (6 + r() * 8);
+      const pts = []; for (let i = 0; i <= 24; i++) { const u = i / 24; pts.push([cx - w / 2 + u * w + drift, cy + Math.sin(u * Math.PI) * -40 - Math.sin(u * 9 + k) * 8]); }
+      for (let i = 24; i >= 0; i--) { const u = i / 24; pts.push([cx - w / 2 + u * w + drift, cy + 14 + Math.sin(u * 6 + k) * 6]); }
+      df.engrave(ctx, pts, { ink: '#B27464', light: (x, y) => lit(x, y) * 0.8, base: '#0B0506', angle: 0.05, spacing: 4.4, seed: 70 + k, outW: 1.6, rimT: 0.35, cross: false });
+    }
+  };
+  df.moon = (ctx, x, y, r, T, o = {}) => {
+    df.glow(ctx, x, y, r * 3, o.glow || '#C8322A', 0.7);
+    const pts = L.ellipsePts(x, y, r, r, 60);
+    const lit = (px, py) => clamp(1.15 - Math.hypot(px - (x - r * 0.35), py - (y - r * 0.35)) / (r * 1.6));
+    df.engrave(ctx, pts, { ink: o.ink || '#F0B094', base: '#3A0C0A', light: lit, angle: -0.6, spacing: 3.6, width: 1.05, seed: 81, outW: 2.2, rimT: 0.2, gain: 1.15 });
+    const rr = L.rng(L.hash('craters'));
+    for (let i = 0; i < 9; i++) { const a = rr() * TAU, d = rr() * r * 0.75, cr = r * (0.06 + rr() * 0.12); L.inkPath(ctx, L.ellipsePts(x + Math.cos(a) * d, y + Math.sin(a) * d, cr, cr * 0.9, 16), { closed: true, width: 1.3, color: '#4A0E0C', alpha: 0.8, seed: 90 + i }); }
+  };
+  df.raven = (ctx, x, y, s, ph, seed = 1) => {
+    const f = Math.sin(ph);
+    const body = [];
+    for (const sd of [-1, 1]) { }
+    const W = (px, py) => [x + px * s, y + py * s];
+    const shape = [[0, -24], [7, -16], [9, 0], [54 + 0, -48 * f + 6], [90, -58 * f], [70, -40 * f + 14], [52, -26 * f + 18], [10, 12], [8, 34], [0, 40], [-8, 34], [-10, 12], [-52, -26 * f + 18], [-70, -40 * f + 14], [-90, -58 * f], [-54, -48 * f + 6], [-9, 0], [-7, -16]];
+    ctx.beginPath(); L.tracePath(ctx, shape.map(([a, b]) => W(a, b)), true); ctx.fillStyle = '#050304'; ctx.fill();
+    for (const sd of [-1, 1]) for (let k = 0; k < 4; k++) { const u = 0.35 + k * 0.17; L.inkPath(ctx, [W(sd * 12, 4), W(sd * 90 * u, -58 * f * u + 10)], { width: 1, color: '#7A6E66', alpha: 0.7, seed: seed + k + (sd > 0 ? 9 : 0), taper: 4 }); }
+  };
+  df.skyline = (ctx, T, o = {}) => {
+    const base = o.base || 1400, seed = o.seed || 1, lit = o.light || (() => 0.3), par = o.par || 0;
+    const r = L.rng(L.hash('skyline', seed));
+    let x = -120 - par;
+    while (x < 1200) {
+      const kind = r(), w = 70 + r() * 150, h = (o.h || 300) * (0.45 + r() * 0.6);
+      let pts;
+      if (kind < 0.2) pts = [[x, base], [x, base - h], [x + w / 2, base - h - 60], [x + w, base - h], [x + w, base]];
+      else if (kind < 0.33) { pts = [[x, base], [x, base - h * 0.6]]; for (let k = 0; k <= 10; k++) { const a = Math.PI + (k / 10) * Math.PI; pts.push([x + w / 2 + Math.cos(a) * w / 2, base - h * 0.6 + Math.sin(a) * h * 0.45]); } pts.push([x + w, base - h * 0.6], [x + w, base]); }
+      else if (kind < 0.48) { const tw = w * 0.42; pts = [[x, base], [x, base - h * 0.5], [x + (w - tw) / 2, base - h * 0.5], [x + (w - tw) / 2, base - h * 1.5], [x + w / 2, base - h * 1.7], [x + (w + tw) / 2, base - h * 1.5], [x + (w + tw) / 2, base - h * 0.5], [x + w, base - h * 0.5], [x + w, base]]; }
+      else pts = [[x, base], [x, base - h * 0.75], [x + w, base - h * 0.75], [x + w, base]];
+      df.engrave(ctx, pts, { ink: o.ink || '#CDB8A8', light: lit, angle: 1.45, spacing: o.spacing || 5, seed: seed * 50 + Math.floor(x), outW: 2.2, smooth: false, rimT: 0.35 });
+      // windows
+      for (let k = 0; k < 3; k++) if (r() < 0.5) { const wx = x + 12 + r() * (w - 24), wy = base - 30 - r() * h * 0.5; ctx.fillStyle = L.rgba(C.candle, 0.55 + 0.35 * Math.sin(T * 3 + wx)); ctx.fillRect(wx, wy, 6, 10); }
+      x += w + 4;
+    }
+  };
+
+  // ---------------------------------------------------------------- stained glass (lead lines, glass, painted figure)
+  df.lancet = (ctx, x, y, w, h) => { ctx.beginPath(); ctx.moveTo(x - w / 2, y); ctx.lineTo(x - w / 2, y - h + w * 0.55); ctx.quadraticCurveTo(x - w / 2, y - h, x, y - h - w * 0.15); ctx.quadraticCurveTo(x + w / 2, y - h, x + w / 2, y - h + w * 0.55); ctx.lineTo(x + w / 2, y); ctx.closePath(); };
+  df.glass = (ctx, x, y, w, h, T, o = {}) => {
+    const tint = o.tint || ['#3E62D8', '#7A44C0', '#2A4AA8', '#5A3AA0'];
+    const glow = o.glow != null ? o.glow : 1, seed = o.seed || 1;
+    df.glow(ctx, x, y - h / 2, Math.max(w, h) * 0.75, tint[0], 0.45 * glow);
+    ctx.save(); df.lancet(ctx, x, y, w, h); ctx.clip();
+    // diamond quarries
+    const q = 46;
+    for (let j = -1; j < (h + w) / q + 1; j++) for (let i = -1; i < w / q + 2; i++) {
+      const cx = x - w / 2 + i * q + (j % 2 ? q / 2 : 0), cy = y - j * q * 0.62;
+      const c = tint[(i * 7 + j * 3 + seed) % tint.length];
+      ctx.fillStyle = c; ctx.globalAlpha = (0.55 + 0.35 * (((i * 13 + j * 7) % 5) / 5)) * glow;
+      ctx.beginPath(); ctx.moveTo(cx, cy - q * 0.62); ctx.lineTo(cx + q / 2, cy); ctx.lineTo(cx, cy + q * 0.62); ctx.lineTo(cx - q / 2, cy); ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // glass texture: fine hatching in darker glass
+    L.hatch(ctx, null, { bounds: { x: x - w / 2, y: y - h - w * 0.2, w, h: h + w * 0.2 }, angle: 0.7, spacing: 5, width: 1, color: '#0A0612', alpha: 0.35, seed: seed + 3 });
+    // painted figure (robe, mitre, halo) as coloured glass pieces
+    if (o.fig) {
+      const fx = x, fb = y - 40, fh = h * 0.62;
+      const robe = [[fx - w * 0.3, fb], [fx - w * 0.2, fb - fh * 0.78], [fx + w * 0.2, fb - fh * 0.78], [fx + w * 0.3, fb]];
+      ctx.beginPath(); L.tracePath(ctx, robe, true); ctx.fillStyle = o.fig.robe; ctx.globalAlpha = 0.95 * glow; ctx.fill(); ctx.globalAlpha = 1;
+      L.hatch(ctx, robe, { angle: 1.5, spacing: 4.5, width: 1.1, color: '#0A0408', alpha: 0.55, seed: seed + 5, density: (px) => clamp(Math.abs(px - fx) / (w * 0.3)) });
+      for (let k = -2; k <= 2; k++) L.inkPath(ctx, [[fx + k * w * 0.05, fb - fh * 0.76], [fx + k * w * 0.1, fb]], { width: 3, color: '#0A0709', seed: seed + 10 + k });
+      ctx.fillStyle = '#E8D8C0'; ctx.globalAlpha = 0.9 * glow; ctx.beginPath(); ctx.ellipse(fx, fb - fh * 0.86, w * 0.09, w * 0.11, 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
+      const mit = [[fx - w * 0.09, fb - fh * 0.9], [fx - w * 0.07, fb - fh * 1.02], [fx, fb - fh * 1.08], [fx + w * 0.07, fb - fh * 1.02], [fx + w * 0.09, fb - fh * 0.9]];
+      ctx.beginPath(); L.tracePath(ctx, mit, true); ctx.fillStyle = C.glassG; ctx.fill();
+      L.inkPath(ctx, L.ellipsePts(fx, fb - fh * 0.9, w * 0.2, w * 0.2, 40).slice(20, 41), { width: 5, color: '#F2D27A', alpha: 0.9 * glow, seed: seed + 20 });
+      L.inkPath(ctx, robe, { closed: true, width: 7, color: '#0A0709', seed: seed + 21 });
+      L.inkPath(ctx, mit, { closed: true, width: 5, color: '#0A0709', seed: seed + 22 });
+      L.inkPath(ctx, L.ellipsePts(fx, fb - fh * 0.86, w * 0.09, w * 0.11, 20), { closed: true, width: 5, color: '#0A0709', seed: seed + 23 });
+    }
+    // lead came lattice
+    for (let j = -1; j < (h + w) / q + 1; j++) for (let i = -1; i < w / q + 2; i++) {
+      const cx = x - w / 2 + i * q + (j % 2 ? q / 2 : 0), cy = y - j * q * 0.62;
+      L.inkPath(ctx, [[cx - q / 2, cy], [cx, cy - q * 0.62], [cx + q / 2, cy]], { width: 3.2, color: '#080507', seed: seed + 100 + i * 31 + j, taper: 0, wobble: 0.8 });
+    }
+    ctx.restore();
+    // stone tracery frame: engraved
+    const frame = []; const n = 40;
+    for (let i = 0; i <= n; i++) { const u = i / n; frame.push([x - w / 2 - 34, y - u * (h - w * 0.55)]); }
+    const outer = [[x - w / 2 - 34, y + 30], [x - w / 2 - 34, y - h + w * 0.55], [x, y - h - w * 0.3], [x + w / 2 + 34, y - h + w * 0.55], [x + w / 2 + 34, y + 30]];
+    return { outer };
+  };
+
+  // ---------------------------------------------------------------- water (engraved)
+  df.water = (ctx, T, o = {}) => {
+    const hz = o.horizon || 900, mx = o.moonX || 640;
+    ctx.fillStyle = '#070405'; ctx.fillRect(0, hz, 1080, 1920 - hz);
+    const lit = (x, y) => { const k = (y - hz) / (1920 - hz); const col = Math.exp(-Math.pow((x - mx) / (80 + k * 300), 2)); return clamp(0.24 + 0.95 * col * (0.6 + 0.4 * Math.sin(T * 3 + y * 0.08 + x * 0.02))); };
+    for (let k = 1; k < 90; k++) {
+      const y = hz + (1920 - hz) * (1 - 1 / (1 + k * 0.045));
+      const sp = 0.5 + k * 0.12;
+      const pts = [];
+      for (let x = -20; x <= 1100; x += 14) pts.push([x, y + Math.sin(x * 0.02 / sp + T * 2 + k) * sp * 1.4]);
+      // break the line where it's dark (engraved water is dashes)
+      let run = [];
+      pts.forEach((p, i) => { const l = lit(p[0], p[1]); if (l > 0.18 + 0.2 * ((i * 7 + k) % 3) / 3) run.push(p); else { if (run.length > 1) L.inkPath(ctx, run, { width: 1.5 + k * 0.03, color: '#F0D2BC', alpha: clamp(lit(run[0][0], y) * 1.5), seed: k * 13 + i, taper: [4, 8], wobble: 0.6 }); run = []; } });
+      if (run.length > 1) L.inkPath(ctx, run, { width: 1.5 + k * 0.03, color: '#F0D2BC', alpha: clamp(lit(run[0][0], y) * 1.5), seed: k * 17, taper: [4, 8], wobble: 0.6 });
+    }
+    if (o.splash) {
+      const [sx, sy, st] = o.splash;
+      if (st > 0 && st < 1.6) {
+        for (let k = 0; k < 4; k++) { const rr = (st - k * 0.18) * 360; if (rr <= 0) continue; L.inkPath(ctx, L.ellipsePts(sx, sy, rr, rr * 0.16, 48), { closed: true, width: 2.2, color: '#EDE0D0', alpha: 0.8 * (1 - st / 1.6), seed: 300 + k }); }
+        const r = L.rng(L.hash('splash'));
+        for (let i = 0; i < 46; i++) { const a = -Math.PI * (0.15 + r() * 0.7), v = 400 + r() * 700; const px = sx + Math.cos(a) * v * st * 0.6, py = sy + Math.sin(a) * v * st + 1100 * st * st; if (py > sy + 10) continue; L.inkPath(ctx, [[px, py], [px - Math.cos(a) * 14, py - Math.sin(a) * 14]], { width: 2.4, color: '#EDE0D0', alpha: 1 - st / 1.2, seed: 400 + i, taper: 3 }); }
+      }
+    }
+  };
+
+  // ---------------------------------------------------------------- word reveal (Fraunces), one slam allowed
+  df.word = (ctx, str, x, y, size, p, o = {}) => {
+    if (p <= 0) return;
+    const fam = o.family || '"Fraunces", Georgia, serif', wt = o.weight || 700;
+    ctx.save(); ctx.font = `${wt} ${size}px ${fam}`;
+    const w = ctx.measureText(str).width * 1.08, x0 = x - w / 2, u = L.ease.outCubic(clamp(p));
+    ctx.beginPath(); ctx.rect(x0 - 20, y - size, (w + 40) * u, size * 1.5); ctx.clip();
+    L.text(ctx, str, x, y, { size, family: fam, weight: wt, align: 'center', baseline: 'middle', color: o.color || C.ivory, tracking: o.tracking || '0.04em', alpha: o.alpha != null ? o.alpha : 1 });
+    ctx.restore();
+    if (u < 1) L.glowDot(ctx, x0 + w * u, y, 6, { color: C.yellow, core: '#FFF6D8', rays: 6, rayLen: 10, glow: 18, additive: true });
+    if (o.under !== false) L.inkPath(ctx, [[x0, y + size * 0.55], [x0 + w * u, y + size * 0.57]], { width: 3, color: o.ucol || C.yellow, alpha: o.alpha != null ? o.alpha : 1, seed: o.seed || 3, taper: [4, 30] });
+  };
+
+  // ---------------------------------------------------------------- the skeletal HAND (3D) + loose finger
+  let CUTF = false;
+  let HM = 0;
+  const F_RAISED = [
+    [[-0.38, -0.55, 0.1], [-0.78, -0.12, 0.28], [-0.98, 0.3, 0.32], [-1.08, 0.62, 0.3]],
+    [[-0.26, -0.45, 0], [-0.31, 0.58, 0.02], [-0.34, 1.18, 0.04], [-0.36, 1.58, 0.05], [-0.37, 1.86, 0.05]],
+    [[-0.02, -0.45, 0], [0, 0.62, 0.02], [0, 1.32, 0.04], [0, 1.78, 0.05], [0, 2.08, 0.05]],
+  ];
+  const F_FOLD = [
+    [[0.2, -0.45, 0], [0.26, 0.52, 0.04], [0.3, 0.86, 0.36], [0.28, 0.62, 0.6]],
+    [[0.4, -0.45, 0], [0.48, 0.38, 0.04], [0.52, 0.66, 0.32], [0.5, 0.46, 0.52]],
+  ];
+  function chain(x, y, z, pts, r0, upto) {
+    let d = 1e9;
+    for (let i = 0; i < Math.min(pts.length - 1, upto); i++) {
+      const a = pts[i], b = pts[i + 1], r = r0 * (1 - i * 0.12);
+      d = Math.min(d, cap(x, y, z, a[0], a[1], a[2], b[0], b[1], b[2], r));
+      d = smin(d, ell(x - b[0], y - b[1], z - b[2], r * 1.35, r * 1.2, r * 1.35), 0.04);
+    }
+    return d;
+  }
+  function handSd(x, y, z, want) {
+    let d = cap(x, y, z, -0.26, -2.7, 0, -0.2, -0.95, 0, 0.13);
+    d = Math.min(d, cap(x, y, z, 0.24, -2.7, -0.05, 0.2, -0.95, 0, 0.11));
+    d = smin(d, ell(x + 0.2, y + 0.92, z, 0.2, 0.14, 0.16), 0.05);
+    d = smin(d, ell(x - 0.2, y + 0.92, z, 0.17, 0.13, 0.14), 0.05);
+    for (const [cx, cy] of [[-0.3, -0.72], [-0.1, -0.7], [0.1, -0.72], [0.3, -0.74], [-0.2, -0.56], [0.0, -0.55], [0.2, -0.56], [0.36, -0.58]]) d = smin(d, ell(x - cx, y - cy, z, 0.1, 0.085, 0.1), 0.03);
+    let m = 0;
+    F_RAISED.forEach((f) => { d = smin(d, chain(x, y, z, f, 0.075, CUTF ? 1 : 9), 0.03); });
+    F_FOLD.forEach((f) => { d = smin(d, chain(x, y, z, f, 0.07, 9), 0.03); });
+    // ring on the middle finger's first phalanx
+    if (!CUTF) {
+      const rx = x, ry = y - 0.95, rz = z - 0.03, q = Math.hypot(rx, rz) - 0.105, tr = Math.hypot(q, ry) - 0.045;
+      if (tr < d) { d = tr; m = 2; }
+      const jw = ell(x, y - 0.95, z - 0.17, 0.06, 0.06, 0.05);
+      if (jw < d) { d = jw; m = 3; }
+    } else {
+      for (const f of F_RAISED) { const b = f[1]; const st = ell(x - b[0], y - b[1], z - b[2], 0.09, 0.05, 0.09); if (st < d) { d = st; m = 11; } }
+    }
+    if (want) HM = m;
+    return d;
+  }
+  df.HAND = {
+    sdf: (x, y, z) => handSd(x, y, z, false), mat: (x, y, z) => { handSd(x, y, z, true); return HM; },
+    col: (m) => ({ 0: rgb('#EEE4CC'), 2: rgb('#E6B652'), 3: rgb('#E0403A'), 11: rgb('#5A1A18') }[m] || [1, 1, 1]),
+    uv: (m, x, y, z, o) => { o[0] = y * 1.0 + 0.3 * Math.sin(x * 3); o[1] = (x - z) * 0.8; },
+    bound: [-0.1, -0.3, 0.1, 2.6],
+  };
+  df.hand = (ctx, cx, cy, H, o = {}) => { CUTF = !!o.cut; return df.r3d(ctx, { cx, cy, unit: H / 4.9, win: [-1.5, 1.2, -2.8, 2.25], yaw: o.yaw || 0, pitch: o.pitch || 0, roll: o.roll || 0, res: o.res || 0.38, spacing: o.spacing || 6, slot: o.slot || 5, key: [-0.6, 0.25, 0.75], fill: [0.7, -0.1, 0.5], rim: [0.75, 0.4, -0.5], flat: 0.05 }, df.HAND); };
+  // a loose finger (3 phalanges) for the tumble
+  const FING = [[0, -0.55, 0], [0, 0.0, 0], [0, 0.42, 0], [0, 0.72, 0]];
+  df.FINGER = { sdf: (x, y, z) => chain(x, y, z, FING, 0.085, 9), mat: () => 0, col: () => rgb('#EEE4CC'), uv: (m, x, y, z, o) => { o[0] = y; o[1] = x + z; }, bound: [0, 0.08, 0, 0.9] };
+  df.finger = (ctx, cx, cy, H, o = {}) => df.r3d(ctx, { cx, cy, unit: H / 1.5, win: [-0.8, 0.8, -0.8, 0.95], yaw: o.yaw || 0, pitch: o.pitch || 0, roll: o.roll || 0, res: 0.45, spacing: 5, slot: 20 + (o.slot || 0), key: [-0.6, 0.3, 0.75], flat: 0.06 }, df.FINGER);
 })();

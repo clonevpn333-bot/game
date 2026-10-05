@@ -4,7 +4,7 @@
   const FILM = window.FILM;
   const S = (id, n, start, end, title, brief) => ({ id, file: `${n}-${id}.js`, start, end, mode: 'schematic', title, brief });
   FILM.TIMELINE = {
-    title: 'Episode 5', bpm: 120, duration: 37, fps: 24, width: 1080, height: 1920,
+    title: 'Episode 5', bpm: 120, duration: 39.25, fps: 24, width: 1080, height: 1920,
     shots: [
       S('hook', '01', 0, 3.5, 'Dead nine months', 'Lightning: a skull in a papal tiara fills the frame; DEAD / 9 MONTHS / ON TRIAL stamped.'),
       S('rome', '02', 3.5, 5.25, 'Rome, 897', 'Flight over a blood-moon Rome skyline, ravens; ROMA · DCCCXCVII.'),
@@ -18,7 +18,7 @@
       S('uprising', '10', 23.0, 25.25, 'Rome was horrified', 'Torch-lit crowd marching toward camera in 3D rows.'),
       S('prison', '11', 25.25, 28.0, 'Prison… strangled', 'Stephen behind bars in a moon shaft; the candle is snuffed.'),
       S('title', '12', 28.0, 32.5, 'The Cadaver Synod', 'Illuminated manuscript page flips in 3D; blackletter title; miniature of the trial.'),
-      S('outro', '13', 32.5, 37.0, 'Outro', 'Skull + tiara in darkness → fact line → WHY WE / WONDER → STAY CURIOUS.'),
+      S('outro', '13', 32.5, 39.25, 'Outro', 'Skull + tiara in darkness → fact line → WHY WE / WONDER → STAY CURIOUS.'),
     ],
     cues: [],
   };

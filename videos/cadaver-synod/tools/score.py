@@ -10,7 +10,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(ROOT, '..', '_shared', 'tools'))
 from sfxlib import *  # noqa
 
-TOTAL = 37.0
+TOTAL = 39.25
 N = int(TOTAL * SR)
 VO = json.load(open(os.path.join(ROOT, 'vo', 'assets', 'timing.json')))
 R = np.random.default_rng(5)
@@ -134,7 +134,7 @@ def build_music():
     m[:len(beat)] += beat
     P = lambda s, at, g=1.0: place(m, s, at, g)
     # low choir pad (dark-fantasy bed) — D dorian, in the slowed key (≈ B dorian after the drop: keep it consonant)
-    for t0, fs, d in ((0.0, (47, 54, 59, 62), 9.0), (9.0, (52, 55, 59, 64), 7.75), (16.75, (47, 50, 54, 59), 6.25), (23.0, (43, 50, 55, 59), 9.5), (32.5, (47, 54, 59, 62, 66), 4.5)):
+    for t0, fs, d in ((0.0, (47, 54, 59, 62), 9.0), (9.0, (52, 55, 59, 64), 7.75), (16.75, (47, 50, 54, 59), 6.25), (23.0, (43, 50, 55, 59), 9.5), (32.5, (47, 54, 59, 62, 66), 6.75)):
         P(choir([mtof(f) for f in fs], d), t0, 0.22)
     m = m[:N]
     t = np.arange(N) / SR
@@ -146,7 +146,7 @@ def build_music():
     k = int(0.08 * SR)
     duck = np.convolve(duck, np.ones(k) / k, mode='same')
     # drop out for the verdict, slam back for GUILTY; dip for the snuffed candle
-    ride = np.interp(t, [0, 16.85, 17.05, 17.79, 17.81, 26.9, 27.15, 27.9, 28.1, 36.5, 37.0], [1, 1, 0.12, 0.12, 1.1, 1, 0.1, 0.1, 0.95, 1, 0])
+    ride = np.interp(t, [0, 16.85, 17.05, 17.79, 17.81, 26.9, 27.15, 27.9, 28.1, 38.7, 39.25], [1, 1, 0.12, 0.12, 1.1, 1, 0.1, 0.1, 0.95, 1, 0])
     return m * duck * ride
 
 
@@ -178,8 +178,10 @@ def build_sfx():
     for a, g in ((0.0, 0.9), (0.62, 0.5), (3.24, 0.8), (10.36, 0.7), (17.79, 0.9)):
         P(thunder(), a, g)
     P(boom(), 0.0, 0.6); P(sub_drop(1.2), 0.0, 0.5)                       # frame-0 hit
-    for k, a in enumerate((0.12, 1.11, 1.62)): P(stamp(), a, 0.45); P(thud(70), a, 0.5)   # THIS POPE / DEAD / 9 MONTHS
-    P(boom(), 3.26, 0.8); P(stamp(), 3.26, 0.6)                              # ON TRIAL
+    for k, a in enumerate((0.12, 1.11, 1.62)): P(whoosh(0.18, 800, 6000), a - 0.02, 0.35); P(thud(70), a, 0.5)   # words ink in
+    P(boom(), 3.26, 0.8); P(whoosh(0.18, 800, 6000), 3.24, 0.4)               # ON TRIAL
+    P(whoosh(0.3, 2000, 200, up=False), 3.3, 0.5)                             # dive into the eye
+    P(stamp(), 17.81, 0.6)                                                    # GUILTY (the one slam)
     P(bell(98, 4.0), 3.8, 0.35)                                              # Roma
     P(whoosh(0.6, 200, 3000), 3.5, 0.3)
     for k in range(9): P(crackle(0.3), 7.16 + k * 0.1, 0.12 + 0.04 * k)    # glass cracking
@@ -206,7 +208,8 @@ def build_sfx():
     P(whoosh(0.35, 800, 5000), 28.0, 0.35)                                     # page flip
     P(bp(noise(0.8), 3000, 8000) * (0.5 + 0.5 * np.sin(np.linspace(0, 60, int(0.8 * SR)))) * 0.4, 29.0, 0.25)   # quill
     P(bell(98, 4.5), 32.5, 0.4)
-    P(sparkle(1.2, 12, 7), 34.6, 0.2)
+    P(sparkle(1.2, 12, 7), 36.35, 0.22)
+    P(ding(1568, 1.2), 38.0, 0.15)
     return reverb(s[:N], 1.8, 0.25)
 
 
