@@ -70,3 +70,16 @@ Default: do NOT put Pip in an episode unless the user asks for him. Keep the tec
 - FILM.mk (episode 2): noir wet street, rain, silhouette man, umbrella, PiP windows, callouts, labels, lit spheres, board.
 - FILM.wc (episode 3): woodcut print (figures support { walk: true } — always give moving people a real walk cycle, never slide them) — parchment paper, rigid gouge hatching, broadside frame, half-timbered houses,
   perspective street to a spire, period dancers/musicians (stiff stamped-puppet poses), Pip porthole.
+
+## Later kits + lessons (ep4 neutron star, ep5 Cadaver Synod)
+- FILM.sp (videos/neutron-star): space plate, emissive per-pixel stars, pulsar beams, dipole field lines, ray-marched gold ring.
+- FILM.df (videos/cadaver-synod): dark-fantasy engraving kit + `df.skull3d` — a ray-marched SDF skull and papal tiara with
+  candle key light, crimson rim, AO and an engraving-hatch shader (~0.5 s/frame). The user prefers real 3D hero objects
+  over flat 2D ones. Silhouette humans only, rim-lit, with real walk cycles.
+- Cached plates must never call time-dependent helpers (glowDot flickers with lib.T), or the determinism gate fails.
+- Canvas webfonts: ProcCanvas waits on document.fonts (delayRender); install the same fonts as TTF into
+  ~/.local/share/fonts so pf snaps match the render (Cinzel, UnifrakturMaguntia, Fraunces, JetBrains Mono).
+- Hooks: words stamped on screen from frame ~0.1 s, motion on frame 0, camera punch, then cuts every 1.5–2 s.
+- Music: never rip copyrighted tracks. Compose an original in the requested style, and ALSO deliver a NO_MUSIC cut
+  (VO + SFX) so the user can add a licensed sound in the Shorts app. score.py writes score.wav, sfx.wav, music_only.wav.
+- Always ship a vertical 1080×1920 cover (videos/brand/thumbs/<ep>-v fixture, rendered with snap --fixtures).
