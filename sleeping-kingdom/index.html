@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#05060c" />
+    <link rel="icon" href="data:," />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=IM+Fell+English:ital@0;1&display=swap"
+      rel="stylesheet"
+    />
+    <title>The Sleeping Kingdom</title>
+  </head>
+  <body>
+    <main id="app">
+      <canvas id="game-canvas" aria-label="The Sleeping Kingdom"></canvas>
+
+      <div id="letterbox" aria-hidden="true"><div class="bar top"></div><div class="bar bottom"></div></div>
+
+      <section id="hud" class="hidden" aria-live="polite">
+        <div id="vitals">
+          <div class="sigil" aria-hidden="true">
+            <svg viewBox="0 0 40 40"><path d="M6 16 Q20 26 34 16" /><path d="M10 19v3M15 21v3M20 22v3M25 21v3M30 19v3" /><path class="bell" d="M14 36 Q14 27 20 26 Q26 27 26 36 Z" /></svg>
+          </div>
+          <div class="bars">
+            <div class="bar-frame hp"><div class="ghost" id="hp-ghost"></div><div class="fill" id="hp-fill"></div><span class="tick"></span></div>
+            <div class="bar-frame st"><div class="fill" id="st-fill"></div></div>
+          </div>
+        </div>
+        <div id="flask" title="Ember Flask (R)">
+          <svg viewBox="0 0 32 44" aria-hidden="true"><path class="glass" d="M12 2h8v8c6 3 9 8 9 15 0 9-6 16-13 16S3 34 3 25c0-7 3-12 9-15z" /><path class="ember" id="flask-ember" d="M5 26c3-2 6 1 11-1s8-1 11 1c0 7-5 13-11 13S5 33 5 26z" /></svg>
+          <span id="flask-count">3</span>
+        </div>
+        <div id="objective"><span class="glyph">◈</span><span id="objective-text"></span></div>
+        <div id="hint"></div>
+        <div id="area-card"><div class="rule"></div><h2 id="area-title"></h2><p id="area-sub"></p><div class="rule"></div></div>
+        <div id="subtitle"><span id="sub-speaker"></span><span id="sub-line"></span></div>
+        <div id="prompt"><kbd id="prompt-key">E</kbd><span id="prompt-text"></span></div>
+        <div id="boss" class="hidden"><div id="boss-name">The Knellwarden</div><div class="boss-frame"><div class="ghost" id="boss-ghost"></div><div class="fill" id="boss-fill"></div></div></div>
+        <div id="reticle" class="hidden" aria-hidden="true"></div>
+        <button id="pause-button" class="icon-btn" type="button" aria-label="Pause">
+          <svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" /><rect x="14" y="5" width="4" height="14" /></svg>
+        </button>
+      </section>
+
+      <div id="touch-controls" class="hidden" aria-hidden="true">
+        <div id="touch-look"></div>
+        <div id="touch-stick"><div id="touch-knob"></div></div>
+        <div id="touch-buttons">
+          <button type="button" class="tbtn attack" data-action="attack">⚔</button>
+          <button type="button" class="tbtn heavy" data-action="heavy">✠</button>
+          <button type="button" class="tbtn roll" data-action="roll">⟲</button>
+          <button type="button" class="tbtn flask" data-action="flask">⚱</button>
+          <button type="button" class="tbtn lock" data-action="lock">◎</button>
+          <button type="button" class="tbtn interact" data-action="interact">✋</button>
+          <button type="button" class="tbtn sprint" data-action="sprint">»</button>
+        </div>
+      </div>
+
+      <section id="title-screen" class="screen">
+        <div class="title-wrap">
+          <p class="pre">A tale of the Founders</p>
+          <h1><span>The</span> Sleeping Kingdom</h1>
+          <div class="rule"></div>
+          <p class="chapter">Chapter I &mdash; The Waking of Velmour</p>
+          <nav class="menu">
+            <button type="button" id="btn-begin" class="menu-btn primary">Begin the Journey</button>
+            <button type="button" id="btn-controls" class="menu-btn">Controls</button>
+            <button type="button" id="btn-sound" class="menu-btn">Sound: On</button>
+          </nav>
+        </div>
+        <p class="epigraph">&ldquo;They told us the mountains were only mountains.&rdquo;</p>
+      </section>
+
+      <section id="controls-screen" class="screen hidden">
+        <div class="panel">
+          <h2>Controls</h2>
+          <div class="controls-grid">
+            <span>Move</span><kbd>W A S D</kbd>
+            <span>Look</span><kbd>Mouse</kbd>
+            <span>Light attack</span><kbd>LMB / J</kbd>
+            <span>Heavy attack</span><kbd>RMB / K</kbd>
+            <span>Roll</span><kbd>Space</kbd>
+            <span>Sprint / Gallop</span><kbd>Shift</kbd>
+            <span>Lock on</span><kbd>Q / Tab / MMB</kbd>
+            <span>Ember Flask</span><kbd>R</kbd>
+            <span>Interact</span><kbd>E</kbd>
+            <span>Pause</span><kbd>Esc / P</kbd>
+          </div>
+          <p class="note">On touch screens, use the left stick to move and drag on the right side to look.</p>
+          <button type="button" id="btn-controls-back" class="menu-btn primary">Back</button>
+        </div>
+      </section>
+
+      <section id="pause-screen" class="screen hidden">
+        <div class="panel">
+          <h2>Paused</h2>
+          <nav class="menu">
+            <button type="button" id="btn-resume" class="menu-btn primary">Resume</button>
+            <button type="button" id="btn-retry" class="menu-btn">Return to last Candle</button>
+            <button type="button" id="btn-pause-controls" class="menu-btn">Controls</button>
+            <button type="button" id="btn-pause-sound" class="menu-btn">Sound: On</button>
+          </nav>
+        </div>
+      </section>
+
+      <section id="death-screen" class="screen hidden"><h2>You Have Fallen</h2><p>The candle remembers you.</p></section>
+
+      <section id="end-screen" class="screen hidden">
+        <div class="end-wrap">
+          <p class="pre">Osseran, the Founder beneath Velmour</p>
+          <h1>Has Woken</h1>
+          <div class="rule"></div>
+          <p class="chapter">End of Chapter I &mdash; The Waking of Velmour</p>
+          <p class="teaser">Next: Chapter II &mdash; The Ribs of Harrowmere</p>
+          <nav class="menu"><button type="button" id="btn-again" class="menu-btn primary">Return to Title</button></nav>
+        </div>
+      </section>
+
+      <div id="fade" aria-hidden="true"></div>
+      <div id="loading" class="screen"><p>Raising the kingdom&hellip;</p></div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
