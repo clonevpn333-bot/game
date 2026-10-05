@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export type HitInfo = { damage: number; poise: number; from: THREE.Vector3; heavy: boolean };
+export type HitInfo = { damage: number; poise: number; from: THREE.Vector3; heavy: boolean; noStagger?: boolean };
 
 export interface Combatant {
   readonly pos: THREE.Vector3;

@@ -71,7 +71,7 @@ export class Chapter {
 
   constructor(private readonly g: Game) {
     const p = g.path;
-    this.sGate = g.city.portcullis.userData.s as number;
+    this.sGate = g.city!.portcullis.userData.s as number;
     this.sStreet = p.zoneStart('street');
     this.sMarket = p.zoneStart('market');
     this.sMarketCenter = this.sMarket + 30;
@@ -85,7 +85,7 @@ export class Chapter {
     this.buildFogGate();
     this.buildPeople();
     this.buildInteractables();
-    for (let i = 0; i < g.city.bells.length; i += 1) this.bellTimers.push(i * 0.37);
+    for (let i = 0; i < g.city!.bells.length; i += 1) this.bellTimers.push(i * 0.37);
   }
 
   // ------------------------------------------------------------------ construction
@@ -285,7 +285,7 @@ export class Chapter {
     g.player.yaw = this.yawAlong(12);
     const a = g.path.at(4);
     g.cam.cinePos.copy(a.pos).addScaledVector(a.right, 5.5).setY(a.pos.y + 2.2);
-    g.cam.cineLook.copy(g.city.cathedralDoor).setY(g.city.cathedralDoor.y + 60);
+    g.cam.cineLook.copy(g.city!.cathedralDoor).setY(g.city!.cathedralDoor.y + 60);
     g.cam.setCinematic(true);
     g.cam.cineWeight = 1;
     g.audio.setMusic('title');
@@ -352,7 +352,7 @@ export class Chapter {
   private openGate(): void {
     if (this.gateOpen) return;
     this.gateOpen = true;
-    this.g.audio.crumble(this.g.city.portcullis.position, 0.5);
+    this.g.audio.crumble(this.g.city!.portcullis.position, 0.5);
     this.g.nav.maxS = this.sMarketCenter + 6;
     this.after(2.5, () => {
       this.g.hud.area('Velmour', 'The Crown of Spires', 5);
@@ -388,7 +388,7 @@ export class Chapter {
     g.hud.area('The Market of Saint Ossery', '', 4);
     this.after(2, () => {
       this.ringBells();
-      g.audio.bell(g.city.bells[0]?.pos, 3.2, 0, 0.9);
+      g.audio.bell(g.city!.bells[0]?.pos, 3.2, 0, 0.9);
       g.audio.setMusic('silence');
       for (const f of g.folk) if (f.behavior === 'talk' || f.behavior === 'pace' || f.behavior === 'idle') f.behavior = 'lookup';
     });
@@ -415,7 +415,7 @@ export class Chapter {
     this.tremorTarget = 0.7;
     this.statueFalling = true;
     g.cam.addTrauma(0.9);
-    g.audio.crumble(g.city.marketCenter, 1.5);
+    g.audio.crumble(g.city!.marketCenter, 1.5);
     g.audio.setMusic('dread');
     g.setPalette('tremor');
     g.weather.emberLevel = 0.7;
@@ -498,7 +498,7 @@ export class Chapter {
     boss.reset();
     if (!boss.group.parent) g.addEnemy(boss);
     else if (!g.enemies.includes(boss)) g.enemies.push(boss);
-    const c = this.g.city.plazaCenter;
+    const c = this.g.city!.plazaCenter;
     boss.place(c.clone(), this.yawAlong(this.sPlaza + 34, true));
     boss.pathIndex = g.nav.resolve(boss.pos, 1.2, -1);
     boss.cape.reset();
@@ -510,9 +510,9 @@ export class Chapter {
     g.cam.cinePos.copy(this.spot(this.sFog + 6, 5)).setY(c.y + 3);
     g.cam.cineLook.copy(c).setY(c.y + 4);
     g.cam.setCinematic(true);
-    g.audio.bell(g.city.bells[0]?.pos, 3.4, 0, 1);
+    g.audio.bell(g.city!.bells[0]?.pos, 3.4, 0, 1);
     this.after(0.8, () => boss.wake());
-    this.after(2.2, () => g.audio.bell(g.city.bells[1]?.pos, 3.4, 0, 1));
+    this.after(2.2, () => g.audio.bell(g.city!.bells[1]?.pos, 3.4, 0, 1));
     this.after(3.5, () => {
       g.hud.area('The Knellwarden', 'Last Keeper of the Still Bell', 4);
       g.audio.setMusic('boss');
@@ -656,13 +656,13 @@ export class Chapter {
     g.tiltWobble = 0;
     g.nav.minS = 0;
     g.nav.maxS = this.sGate - 18;
-    g.city.portcullis.position.y = g.city.portcullis.userData.baseY as number;
-    g.city.statuePivot.rotation.set(0, 0, 0);
-    for (const r of g.city.risers) {
+    g.city!.portcullis.position.y = g.city!.portcullis.userData.baseY as number;
+    g.city!.statuePivot.rotation.set(0, 0, 0);
+    for (const r of g.city!.risers) {
       r.progress = 0;
       r.group.position.y = 0;
     }
-    for (const c of g.city.cracks) (c.material as THREE.MeshBasicMaterial).opacity = 0;
+    for (const c of g.city!.cracks) (c.material as THREE.MeshBasicMaterial).opacity = 0;
     for (const h of this.folkHomes) {
       h.f.place(h.pos, h.yaw);
       h.f.behavior = h.behavior;
@@ -672,7 +672,7 @@ export class Chapter {
     for (const c of this.chatter) c.done = false;
     this.candles.forEach((_, i) => this.setCandleLit(i, false));
     this.fogUniforms.uOpacity.value = 1;
-    g.founder.setOpen(0, true);
+    g.founder!.setOpen(0, true);
     g.setPalette('night', true);
     g.weather.rainLevel = 1;
     g.weather.emberLevel = 0;
@@ -716,7 +716,7 @@ export class Chapter {
     this.parkHorse();
     this.dismounted = true;
     this.gateOpen = true;
-    g.city.portcullis.position.y = (g.city.portcullis.userData.baseY as number) + 9;
+    g.city!.portcullis.position.y = (g.city!.portcullis.userData.baseY as number) + 9;
     g.setPalette('city', true);
     g.weather.rainLevel = 0.45;
     g.fogDensity = 0.0016;
@@ -738,7 +738,7 @@ export class Chapter {
     this.fired.add('chatter');
     this.bellsRinging = true;
     this.statueFall = 1;
-    g.city.statuePivot.rotation.z = -Math.PI / 2 + 0.15;
+    g.city!.statuePivot.rotation.z = -Math.PI / 2 + 0.15;
     g.tiltTarget = 0.032;
     g.tilt = 0.032;
     this.tremor = this.tremorTarget = 0.45;
@@ -827,14 +827,14 @@ export class Chapter {
       this.eyeT = 9.5;
       this.stir = 1;
       this.tremor = this.tremorTarget = 0.9;
-      g.founder.setOpen(1, true);
+      g.founder!.setOpen(1, true);
       g.setPalette('eye', true);
       g.player.controlEnabled = false;
       g.hud.setLetterbox(true);
       g.cam.setCinematic(true);
       g.cam.cineWeight = 1;
-      g.cam.cineLook.copy(g.founder.eyeCenter);
-      g.cam.cinePos.copy(g.city.plazaCenter).add(new THREE.Vector3(-40, -48, 7));
+      g.cam.cineLook.copy(g.founder!.eyeCenter);
+      g.cam.cinePos.copy(g.city!.plazaCenter).add(new THREE.Vector3(-40, -48, 7));
       g.weather.moteLevel = 1;
       g.weather.emberLevel = 1;
       g.fogDensity = 0.0009;
@@ -939,7 +939,7 @@ export class Chapter {
 
   private animateWorld(dt: number, t: number, s: number): void {
     const g = this.g;
-    const city = g.city;
+    const city = g.city!;
     // Portcullis.
     const pc = city.portcullis;
     const base = pc.userData.baseY as number;
@@ -1034,12 +1034,12 @@ export class Chapter {
         g.hud.setLetterbox(true);
         const plaza = city.plazaCenter;
         g.cam.cinePos.copy(plaza).add(new THREE.Vector3(-44, -47, 8));
-        g.cam.cineLook.copy(g.founder.eyeCenter);
+        g.cam.cineLook.copy(g.founder!.eyeCenter);
         g.cam.setCinematic(true);
         g.tiltWobble = 0.05;
       }
       if (cross(9)) {
-        g.founder.setOpen(1);
+        g.founder!.setOpen(1);
         g.audio.stinger('eye');
         g.audio.setMusic('eye');
         g.setPalette('eye');
@@ -1060,7 +1060,7 @@ export class Chapter {
         const k = Math.min(1, (e - 7) / 14);
         const plaza = city.plazaCenter;
         g.cam.cinePos.copy(plaza).add(new THREE.Vector3(-44 + k * 12, -47 - k * 2, 8 - k * 3));
-        g.founder.lookAt(g.camera.position);
+        g.founder!.lookAt(g.camera.position);
       }
     }
   }

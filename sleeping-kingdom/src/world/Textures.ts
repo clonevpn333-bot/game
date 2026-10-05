@@ -125,6 +125,29 @@ export const Tex = {
       }),
     ),
 
+  dirt: () =>
+    cached('dirt', () =>
+      make(256, 256, (ctx, w, h) => {
+        const rng = createSeededRandom(13);
+        pixels(ctx, w, h, (x, y) => {
+          const n = tfbm(x / 24, y / 24, 10, 61, 5);
+          const rut = Math.abs(Math.sin((x / w) * Math.PI * 4)) < 0.12 ? 0.75 : 1;
+          const v = (48 + n * 40) * rut;
+          return [v * 1.0, v * 0.86, v * 0.66];
+        });
+        for (let i = 0; i < 300; i += 1) {
+          ctx.fillStyle = `rgba(${30 + rng() * 40},${60 + rng() * 40},${25},${0.3 + rng() * 0.4})`;
+          ctx.fillRect(rng() * w, rng() * h, 1 + rng() * 4, 1 + rng() * 2);
+        }
+        for (let i = 0; i < 70; i += 1) {
+          ctx.fillStyle = `rgba(110,100,90,${0.3 + rng() * 0.4})`;
+          ctx.beginPath();
+          ctx.ellipse(rng() * w, rng() * h, 1 + rng() * 3, 1 + rng() * 2, rng() * 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }),
+    ),
+
   rock: () =>
     cached('rock', () =>
       make(256, 256, (ctx, w, h) => {

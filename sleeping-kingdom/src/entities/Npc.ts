@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { Animator, buildFolk, idle, latheG, limb, locomotion, mesh, type FolkStyle, type Pose } from './Rig';
+import { Animator, idle, latheG, limb, locomotion, mesh, type FolkStyle, type Pose } from './Rig';
+import { buildTownsfolk } from './Townsfolk';
 import { Mats } from '../world/Materials';
 import type { Nav } from '../game/Nav';
 import { damp, dampAngle } from '../utils/math';
@@ -23,7 +24,7 @@ export class Folk {
   name: string;
 
   constructor(style: FolkStyle, behavior: NpcBehavior, name: string, seed: number) {
-    this.rig = buildFolk(style);
+    this.rig = buildTownsfolk(style);
     this.anim = new Animator(this.rig);
     this.group.add(this.rig.root);
     this.behavior = behavior;

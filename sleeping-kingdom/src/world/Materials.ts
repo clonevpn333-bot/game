@@ -82,6 +82,7 @@ export class MaterialLibrary {
 
   // World.
   readonly cobble = std({ map: Tex.cobble(), roughness: 0.86, color: '#cfd2da' });
+  readonly dirt = std({ map: Tex.dirt(), roughness: 0.95, color: '#8e7c66' });
   readonly rock = std({ map: Tex.rock(), roughness: 0.92, vertexColors: true });
   readonly terrain = std({ map: Tex.rock(), roughness: 0.95, vertexColors: true });
   readonly houses = [0, 1, 2].map((v) =>
@@ -102,6 +103,19 @@ export class MaterialLibrary {
   readonly lancet = std({ color: '#000', emissiveMap: Tex.lancet(), emissive: '#ffffff', emissiveIntensity: 2.2 });
   readonly rose = std({ color: '#000', emissiveMap: Tex.rose(), emissive: '#ffffff', emissiveIntensity: 2.4 });
   readonly water = new THREE.MeshStandardMaterial({ color: '#1a2a3a', metalness: 0.4, roughness: 0.08, transparent: true, opacity: 0.85 });
+  /** Surface relief from each albedo's luminance on every textured world material. */
+  readonly reliefApplied = (() => {
+    const pairs: Array<[THREE.MeshStandardMaterial, number]> = [
+      [this.cobble, 5], [this.dirt, 3], [this.stone, 4], [this.stoneWarm, 4], [this.stoneDark, 4],
+      [this.slate, 3], [this.wood, 2.5], [this.rock, 4], ...this.houses.map((h) => [h, 2.5] as [THREE.MeshStandardMaterial, number]),
+    ];
+    for (const [mat, k] of pairs) {
+      mat.bumpMap = mat.map;
+      mat.bumpScale = k;
+    }
+    return true;
+  })();
+
   readonly crackGlow = new THREE.MeshBasicMaterial({
     map: Tex.crack(),
     color: '#ff7a30',

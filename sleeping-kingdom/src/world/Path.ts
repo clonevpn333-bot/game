@@ -1,16 +1,16 @@
 import * as THREE from 'three';
 import { smoothstep } from '../utils/math';
 
-export type Zone = 'road' | 'bridge' | 'gate' | 'street' | 'market' | 'broken' | 'stair' | 'plaza';
+export type Zone = 'road' | 'bridge' | 'gate' | 'street' | 'market' | 'broken' | 'stair' | 'plaza' | 'wood' | 'hamlet' | 'chapel' | 'ribs';
 
-type Node = [number, number, number, number, Zone];
+export type Node = [number, number, number, number, Zone];
 
 /**
  * The whole chapter is one authored spline corridor. Width varies per node so streets
  * swell into plazas. Movement is clamped to the corridor, which is what keeps the game
  * linear while the scenery around it suggests a kingdom that goes on for miles.
  */
-const NODES: Node[] = [
+export const NODES_CH1: Node[] = [
   [0, 40, 40, 8, 'road'],
   [0, 40, -20, 8, 'road'],
   [-28, 44, -90, 8, 'road'],
@@ -38,6 +38,25 @@ const NODES: Node[] = [
   [0, 132, -1156, 12, 'plaza'],
 ];
 
+/** Chapter II: the Witchwood, down through the stilt hamlet and the chapel ruins to the Ribs of Harrowmere. */
+export const NODES_CH2: Node[] = [
+  [0, 30, 40, 8, 'wood'],
+  [0, 30, -20, 8, 'wood'],
+  [-26, 32, -82, 7, 'wood'],
+  [-12, 34, -142, 8, 'wood'],
+  [22, 36, -190, 10, 'wood'],
+  [32, 37, -232, 24, 'hamlet'],
+  [22, 37, -276, 24, 'hamlet'],
+  [2, 39, -322, 8, 'wood'],
+  [-18, 42, -364, 9, 'chapel'],
+  [-22, 45, -404, 12, 'chapel'],
+  [-10, 48, -440, 8, 'wood'],
+  [0, 50, -466, 14, 'ribs'],
+  [0, 50, -505, 46, 'ribs'],
+  [0, 50, -545, 46, 'ribs'],
+  [0, 50, -572, 16, 'ribs'],
+];
+
 export type PathSample = {
   pos: THREE.Vector3;
   tangent: THREE.Vector3;
@@ -55,7 +74,7 @@ export class Path {
   readonly length: number;
   private readonly zoneStarts = new Map<Zone, number>();
 
-  constructor() {
+  constructor(private readonly NODES: Node[] = NODES_CH1) {
     this.curve = new THREE.CatmullRomCurve3(
       NODES.map((n) => new THREE.Vector3(n[0], n[1], n[2])),
       false,
@@ -72,10 +91,10 @@ export class Path {
       tangent.y = 0;
       tangent.normalize();
       const right = new THREE.Vector3().crossVectors(tangent, up).normalize();
-      const f = t * (NODES.length - 1);
-      const k = Math.min(NODES.length - 2, Math.floor(f));
-      const w = NODES[k][3] + (NODES[k + 1][3] - NODES[k][3]) * smoothstep(0, 1, f - k);
-      const zone = NODES[Math.min(NODES.length - 1, Math.round(f))][4];
+      const f = t * (this.NODES.length - 1);
+      const k = Math.min(this.NODES.length - 2, Math.floor(f));
+      const w = this.NODES[k][3] + (this.NODES[k + 1][3] - this.NODES[k][3]) * smoothstep(0, 1, f - k);
+      const zone = this.NODES[Math.min(this.NODES.length - 1, Math.round(f))][4];
       const sample: PathSample = { pos, tangent, right, width: w, s: u * this.length, zone };
       this.samples.push(sample);
       if (!this.zoneStarts.has(zone)) this.zoneStarts.set(zone, sample.s);

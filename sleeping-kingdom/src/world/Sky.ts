@@ -8,11 +8,13 @@ export type SkyPalette = {
   cloudLit: THREE.ColorRepresentation;
 };
 
-export const SKY_PALETTES: Record<'night' | 'city' | 'tremor' | 'eye', SkyPalette> = {
+export const SKY_PALETTES: Record<'night' | 'city' | 'tremor' | 'eye' | 'wood' | 'drake', SkyPalette> = {
   night: { top: '#03050d', horizon: '#1b2347', glow: '#3a3f7a', cloud: '#0b0d18', cloudLit: '#5c6ba0' },
   city: { top: '#04040c', horizon: '#2a1c3a', glow: '#8a4a3a', cloud: '#0d0b16', cloudLit: '#6d5f94' },
   tremor: { top: '#0b0306', horizon: '#5a1a14', glow: '#d0502a', cloud: '#1a0806', cloudLit: '#b0503a' },
   eye: { top: '#0a0604', horizon: '#5a3a10', glow: '#ffb040', cloud: '#1a1006', cloudLit: '#d09a40' },
+  wood: { top: '#02070a', horizon: '#123a30', glow: '#3a8a6a', cloud: '#06120e', cloudLit: '#5a8a7a' },
+  drake: { top: '#0c0302', horizon: '#5a1a0a', glow: '#ff6a20', cloud: '#1a0604', cloudLit: '#c05a30' },
 };
 
 export class Sky {

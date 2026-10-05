@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Animator, buildPenitent, dome, idle, latheG, limb, locomotion, mesh, skeleton, track, type Pose, type Rig } from './Rig';
+import { Animator, bakeMeshes, buildPenitent, dome, idle, latheG, limb, locomotion, mesh, skeleton, track, type Pose, type Rig } from './Rig';
 import { Cloth } from './Cloth';
 import { Mats } from '../world/Materials';
 import type { Combatant, EventBus, HitInfo } from '../systems/Combat';
@@ -186,6 +186,7 @@ export class Marrowmite extends Enemy {
     this.body.add(head);
     for (const sx of [-1, 1]) {
       const mand = mesh(new THREE.ConeGeometry(0.05, 0.36, 5), m.bone, sx * 0.1, -0.06, 0.6, Math.PI / 2 + 0.2, 0, sx * 0.5);
+      mand.userData.keep = true;
       this.mandibles.push(mand);
       this.body.add(mand);
       this.body.add(mesh(new THREE.SphereGeometry(0.045, 6, 5), this.eyeMat, sx * 0.1, 0.07, 0.53));
@@ -216,6 +217,7 @@ export class Marrowmite extends Enemy {
     const sh = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 2).rotateX(-Math.PI / 2), m.contactShadow);
     sh.position.y = 0.03;
     this.group.add(sh);
+    bakeMeshes(this.body);
   }
 
   /** Burrow up out of the ground. */
@@ -363,6 +365,7 @@ export class Penitent extends Enemy {
   constructor() {
     super('Hushed Penitent', 'penitent', 120, 0.55, 50, 13);
     this.group.add(this.rig.root);
+    bakeMeshes(this.rig.root);
     this.state = 'dormant';
     const sh = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.3).rotateX(-Math.PI / 2), Mats().contactShadow);
     sh.position.y = 0.03;
@@ -597,6 +600,7 @@ export class Knellwarden extends Enemy {
     sh.position.y = 0.03;
     this.group.add(sh);
     this.state = 'dormant';
+    bakeMeshes(rig.root);
     this.anim.snap(this.kneelPose());
   }
 

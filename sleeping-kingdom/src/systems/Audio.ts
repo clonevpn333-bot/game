@@ -544,6 +544,81 @@ export class Audio {
     }
   }
 
+  roar(pos?: THREE.Vector3): void {
+    if (!this.ok) return;
+    const ctx = this.ctx!;
+    const t = ctx.currentTime;
+    const d = this.out(pos, 1.2, 0.8);
+    for (const [f, det] of [[70, 0], [104, 7], [140, -9]] as const) {
+      const o = ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.detune.value = det;
+      o.frequency.setValueAtTime(f * 0.7, t);
+      o.frequency.linearRampToValueAtTime(f * 1.3, t + 0.6);
+      o.frequency.linearRampToValueAtTime(f * 0.6, t + 2.4);
+      const fl = ctx.createBiquadFilter();
+      fl.type = 'lowpass';
+      fl.frequency.setValueAtTime(300, t);
+      fl.frequency.linearRampToValueAtTime(1400, t + 0.6);
+      fl.frequency.linearRampToValueAtTime(400, t + 2.4);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.35, t + 0.25);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 2.6);
+      o.connect(fl).connect(g).connect(d);
+      o.start(t);
+      o.stop(t + 2.7);
+    }
+    this.burst(d, t, 2.4, 'bandpass', 600, 0.8, 0.9, 0.3);
+  }
+
+  flap(pos: THREE.Vector3): void {
+    if (!this.ok) return;
+    const t = this.ctx!.currentTime;
+    this.burst(this.out(pos, 0.9, 0.3), t, 0.45, 'lowpass', 220, 0.7, 1.2, 0.12);
+  }
+
+  fire(pos: THREE.Vector3, seconds: number): void {
+    if (!this.ok) return;
+    const t = this.ctx!.currentTime;
+    const d = this.out(pos, 0.9, 0.4);
+    this.burst(d, t, seconds, 'lowpass', 900, 0.6, 1.0, 0.15);
+    this.burst(d, t, seconds, 'bandpass', 2400, 0.8, 0.35, 0.2);
+  }
+
+  cackle(pos?: THREE.Vector3): void {
+    if (!this.ok) return;
+    const ctx = this.ctx!;
+    const t = ctx.currentTime;
+    const d = this.out(pos, 0.35, 0.7);
+    for (let i = 0; i < 6; i += 1) {
+      const st = t + i * 0.14;
+      const o = ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(700 - i * 30, st);
+      o.frequency.exponentialRampToValueAtTime(420 - i * 20, st + 0.12);
+      const fl = ctx.createBiquadFilter();
+      fl.type = 'bandpass';
+      fl.frequency.value = 1500;
+      fl.Q.value = 4;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, st);
+      g.gain.linearRampToValueAtTime(0.4, st + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, st + 0.13);
+      o.connect(fl).connect(g).connect(d);
+      o.start(st);
+      o.stop(st + 0.15);
+    }
+  }
+
+  zap(pos: THREE.Vector3): void {
+    if (!this.ok) return;
+    const t = this.ctx!.currentTime;
+    const d = this.out(pos, 0.4, 0.5);
+    this.tone(d, t, 'square', 900, 180, 0.35, 0.12, 0.01);
+    this.burst(d, t, 0.3, 'highpass', 3000, 0.7, 0.4);
+  }
+
   ui(): void {
     if (!this.ok) return;
     const t = this.ctx!.currentTime;

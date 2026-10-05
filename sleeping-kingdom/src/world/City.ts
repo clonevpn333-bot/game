@@ -203,6 +203,7 @@ export class City {
     const ridgeAlong = this.rng() < 0.65;
     const roof = ridgeAlong ? gableRoof(w, d, roofH) : gableRoof(d, w, roofH);
     kit.add('slate', place(roof, center.x, y0 + 1.1 + h, center.z, yaw + (ridgeAlong ? 0 : Math.PI / 2)));
+    this.facade(kit, center, yaw, w, d, h, y0 + 1.1, floors, variant, ridgeAlong, roofH, side);
     if (this.rng() < 0.7) {
       const cx = (this.rng() - 0.5) * w * 0.6;
       const local = new THREE.Vector3(cx, 0, (this.rng() - 0.5) * d * 0.4).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
@@ -226,6 +227,73 @@ export class City {
       kit.add('slate', place(spire(1.6, 7, 6), center.x, y0 + 1.1 + h + roofH - 1, center.z));
     }
     return true;
+  }
+
+  /** Architectural detail: posts, girts, sills, hoods, shutters, braces, eaves, dormers. */
+  private facade(kit: Kit, center: THREE.Vector3, yaw: number, w: number, d: number, h: number, wallBase: number, floors: number, variant: number, ridgeAlong: boolean, roofH: number, side: number): void {
+    const up = new THREE.Vector3(0, 1, 0);
+    const L = (lx: number, ly: number, lz: number) => new THREE.Vector3(lx, 0, lz).applyAxisAngle(up, yaw).add(center).setY(ly);
+    const timber = variant !== 1;
+    for (const [cx, cz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      if (timber) {
+        const p = L(cx * (w / 2), wallBase + h / 2, cz * (d / 2));
+        kit.add('wood', place(worldBox(0.36, h, 0.36, 2), p.x, p.y, p.z, yaw));
+      } else {
+        // Quoins: alternating long/short corner stones.
+        for (let q = 0; q < h / 0.8; q += 1) {
+          const long = q % 2 === 0;
+          const p = L(cx * (w / 2 - (long ? 0.35 : 0.2)), wallBase + 0.4 + q * 0.8, cz * (d / 2 + 0.06));
+          kit.add('stoneWarm', place(worldBox(long ? 0.9 : 0.5, 0.72, 0.16, 1), p.x, p.y, p.z, yaw));
+        }
+      }
+    }
+    for (let f = 1; f <= floors; f += 1) {
+      const p = L(0, wallBase + f * 4 - 0.12, 0);
+      kit.add('wood', place(worldBox(w + 0.24, 0.26, d + 0.24, 2), p.x, p.y, p.z, yaw));
+    }
+    const bays = Math.floor(w / 4);
+    for (const fz of [-1, 1]) {
+      for (let b = 0; b < bays; b += 1) {
+        const bx = -w / 2 + 2 + b * 4;
+        for (let f = 0; f < floors; f += 1) {
+          const fy = wallBase + f * 4;
+          const zf = fz * (d / 2 + 0.1);
+          const sill = L(bx, fy + 0.8, zf + fz * 0.05);
+          kit.add('stoneWarm', place(worldBox(1.6, 0.14, 0.34, 1), sill.x, sill.y, sill.z, yaw));
+          const hood = L(bx, fy + 3.14, zf);
+          kit.add(timber ? 'wood' : 'stoneWarm', place(worldBox(1.75, 0.18, 0.26, 1), hood.x, hood.y, hood.z, yaw));
+          if (this.rng() < 0.4) {
+            for (const sx of [-1, 1]) {
+              const sh = L(bx + sx * 1.0, fy + 1.95, zf + fz * 0.1);
+              kit.add('wood', place(worldBox(0.5, 2.1, 0.07, 1), sh.x, sh.y, sh.z, yaw + sx * fz * 0.45));
+            }
+          }
+          if (timber && b < bays - 1 && (b + f) % 2 === 0) {
+            const br = L(bx + 2, fy + 2, zf);
+            kit.add('wood', place(worldBox(0.18, 4.1, 0.12, 1), br.x, br.y, br.z, yaw, 1, 1, 1, 0, (b + f) % 4 === 0 ? 0.62 : -0.62));
+          }
+        }
+      }
+    }
+    // Eave boards and ridge beam.
+    const eaveY = wallBase + h;
+    for (const ez of [-1, 1]) {
+      const p = ridgeAlong ? L(0, eaveY + 0.06, ez * (d / 2 + 0.55)) : L(ez * (w / 2 + 0.55), eaveY + 0.06, 0);
+      kit.add('wood', place(worldBox(ridgeAlong ? w + 1.3 : 0.3, 0.32, ridgeAlong ? 0.3 : d + 1.3, 1), p.x, p.y, p.z, yaw));
+    }
+    const ridge = L(0, eaveY + roofH + 0.05, 0);
+    kit.add('wood', place(worldBox(ridgeAlong ? w + 1.3 : 0.28, 0.28, ridgeAlong ? 0.28 : d + 1.3, 1), ridge.x, ridge.y, ridge.z, yaw));
+    // Dormer on the street-side slope of tall roofs.
+    if (ridgeAlong && roofH > 5.5 && w > 8) {
+      const lz = -side * (d / 4);
+      const dp = L((this.rng() - 0.5) * (w - 4), eaveY + roofH * 0.42, lz);
+      kit.add(`house${variant}` as MatKey, place(worldBox(2, 2.2, 2, 16), dp.x, dp.y, dp.z, yaw));
+      kit.add('slate', place(gableRoof(2, 2, 1.4, 0.3), dp.x, dp.y + 1.1, dp.z, yaw + Math.PI / 2));
+      const facePos = L((dp.x - center.x) * 0 + 0, 0, 0);
+      void facePos;
+      const front = new THREE.Vector3(0, 0, -side).applyAxisAngle(up, yaw);
+      this.addLancetAt(dp.x + front.x * 1.02, dp.y + 0.1, dp.z + front.z * 1.02, yaw + (side > 0 ? Math.PI : 0), 0.9, 1.5);
+    }
   }
 
   private readonly bannerSpots: Array<{ pos: THREE.Vector3; yaw: number; len: number }> = [];

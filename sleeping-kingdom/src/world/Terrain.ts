@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { Path, type Zone } from './Path';
 import { Mats } from './Materials';
+import { roadEdges, roadMask, terrainMaterial } from './TerrainShader';
+import { barkMaterial, broadleafTree, deadTree, firTree, foliageMaterial, forest, leafTex, needleTex } from './Trees';
 import { Tex } from './Textures';
 import { bridgeSpan, merge, place, prep, rockGeo, worldBox } from './geo';
 import { createSeededRandom } from '../utils/random';
@@ -31,6 +33,8 @@ function windSway<T extends THREE.Material>(m: T, amount: number, key: string): 
   return m;
 }
 
+export type Biome = 'mountain' | 'witchwood';
+
 export type TorchSpot = { pos: THREE.Vector3; zone: Zone; s: number };
 
 export class Terrain {
@@ -39,12 +43,17 @@ export class Terrain {
   readonly fogSheets: THREE.Mesh[] = [];
   private readonly fogMat: THREE.MeshBasicMaterial;
 
-  constructor(private readonly path: Path) {
+  constructor(
+    private readonly path: Path,
+    readonly biome: Biome = 'mountain',
+  ) {
     this.group.name = 'terrain';
     this.group.add(this.buildGround());
     this.group.add(this.buildRoad());
-    this.group.add(this.buildBridge());
-    this.buildProps();
+    if (biome === 'mountain') {
+      this.group.add(this.buildBridge());
+      this.buildProps();
+    }
     this.fogMat = new THREE.MeshBasicMaterial({
       map: Tex.fogNoise(),
       color: '#7080a8',
@@ -54,6 +63,34 @@ export class Terrain {
       fog: true,
     });
     this.buildFog();
+  }
+
+  private grid: { x0: number; z0: number; cell: number; nx: number; nz: number; h: Float32Array } | null = null;
+
+  /** Height of the rendered terrain surface (triangle-exact), for placing props without floating. */
+  groundAt(x: number, z: number): number {
+    const g = this.grid;
+    if (!g) return this.height(x, z);
+    const fx0 = (x - g.x0) / g.cell;
+    const fz0 = (z - g.z0) / g.cell;
+    if (fx0 < 0 || fz0 < 0 || fx0 >= g.nx || fz0 >= g.nz) return this.height(x, z);
+    const ix = Math.floor(fx0);
+    const iz = Math.floor(fz0);
+    const fx = fx0 - ix;
+    const fz = fz0 - iz;
+    const w = g.nx + 1;
+    const ha = g.h[iz * w + ix];
+    const hb = g.h[(iz + 1) * w + ix];
+    const hc = g.h[(iz + 1) * w + ix + 1];
+    const hd = g.h[iz * w + ix + 1];
+    if (fx + fz <= 1) return ha + (hd - ha) * fx + (hb - ha) * fz;
+    return hc + (hb - hc) * (1 - fx) + (hd - hc) * (1 - fz);
+  }
+
+  /** Slope magnitude (rise per metre) at a point on the rendered surface. */
+  slopeAt(x: number, z: number): number {
+    const h = this.groundAt(x, z);
+    return Math.hypot(this.groundAt(x + 1, z) - h, this.groundAt(x, z + 1) - h);
   }
 
   /** Ground height used by world generation (not by gameplay, which follows the path). */
@@ -75,6 +112,20 @@ export class Terrain {
         near = roadY - 0.4 - 128 * k + n1 * 10 * k;
       }
       blend = smoothstep(210, 330, d);
+    } else if (s.zone === 'wood' || s.zone === 'chapel') {
+      // Forest floor: gentle banks, roots and hollows, rising into wooded hills.
+      const k = smoothstep(hw + 2, hw + 40, d);
+      near = roadY - 0.35 + k * (5 + 9 * (0.5 + n1)) + ridged(x * 0.02, z * 0.02, 3) * 6 * k;
+      blend = smoothstep(120, 260, d);
+    } else if (s.zone === 'hamlet') {
+      const k = smoothstep(hw + 6, hw + 40, d);
+      near = roadY - 0.35 + k * 10 + n1 * 2 * k;
+      blend = smoothstep(140, 280, d);
+    } else if (s.zone === 'ribs') {
+      // The basin: a flat arena ringed by steep, scorched slopes.
+      const k = smoothstep(hw + 2, hw + 26, d);
+      near = roadY - 0.35 + k * (34 + n1 * 10);
+      blend = smoothstep(150, 300, d);
     } else if (s.zone === 'bridge') {
       near = roadY - 125 + n1 * 14;
       blend = smoothstep(110, 260, d);
@@ -95,10 +146,12 @@ export class Terrain {
   }
 
   private buildGround(): THREE.Mesh {
-    const x0 = -360;
-    const x1 = 400;
-    const z0 = -1500;
-    const z1 = 330;
+    const box = new THREE.Box3().setFromPoints(this.path.samples.map((s) => s.pos));
+    const pad = this.biome === 'mountain' ? 330 : 300;
+    const x0 = Math.floor(box.min.x - pad);
+    const x1 = Math.ceil(box.max.x + pad);
+    const z0 = Math.floor(box.min.z - pad);
+    const z1 = Math.ceil(box.max.z + pad);
     const cell = 5;
     const nx = Math.round((x1 - x0) / cell);
     const nz = Math.round((z1 - z0) / cell);
@@ -115,27 +168,33 @@ export class Terrain {
       uv.setXY(i, x / 14 + y / 30, z / 14 + y / 30);
     }
     geo.computeVertexNormals();
-    const n = geo.attributes.normal as THREE.BufferAttribute;
+    // Exact heightfield for prop placement (matches the rendered triangles).
+    this.grid = { x0, z0, cell, nx, nz, h: new Float32Array(p.count) };
+    for (let i = 0; i < p.count; i += 1) this.grid.h[i] = p.getY(i);
+    // Vertex colour = baked cavity/valley occlusion only; materials come from the terrain shader.
     const colors = new Float32Array(p.count * 3);
-    const moss = new THREE.Color('#4a5e3a');
-    const rock = new THREE.Color('#7a8090');
-    const dark = new THREE.Color('#2a2c34');
-    const snow = new THREE.Color('#c8d0e0');
-    const c = new THREE.Color();
     for (let i = 0; i < p.count; i += 1) {
-      const ny = n.getY(i);
+      const ix = i % (nx + 1);
+      const iz = Math.floor(i / (nx + 1));
       const y = p.getY(i);
-      const x = p.getX(i);
-      const z = p.getZ(i);
-      c.copy(rock).lerp(moss, smoothstep(0.72, 0.9, ny) * (0.7 + 0.3 * fbm(x * 0.05, z * 0.05, 2)));
-      c.lerp(dark, smoothstep(40, -20, y) * 0.6);
-      c.lerp(snow, smoothstep(190, 260, y) * smoothstep(0.55, 0.8, ny));
-      colors[i * 3] = c.r;
-      colors[i * 3 + 1] = c.g;
-      colors[i * 3 + 2] = c.b;
+      let avg = 0;
+      let cnt = 0;
+      for (const [dx, dz] of [[-2, 0], [2, 0], [0, -2], [0, 2], [-2, -2], [2, 2]]) {
+        const jx = Math.min(nx, Math.max(0, ix + dx));
+        const jz = Math.min(nz, Math.max(0, iz + dz));
+        avg += this.grid.h[jz * (nx + 1) + jx];
+        cnt += 1;
+      }
+      const cavity = Math.max(0, Math.min(1, (avg / cnt - y) / 6));
+      const valley = smoothstep(40, -30, y) * 0.35;
+      const ao = 1 - cavity * 0.45 - valley + fbm(p.getX(i) * 0.03, p.getZ(i) * 0.03, 2) * 0.12;
+      colors[i * 3] = ao;
+      colors[i * 3 + 1] = ao;
+      colors[i * 3 + 2] = ao;
     }
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    const mesh = new THREE.Mesh(geo, Mats().terrain);
+    const mask = roadMask(this.path.samples.filter((_, i) => i % 3 === 0).map((s) => ({ x: s.pos.x, z: s.pos.z, w: s.width })), x0, z0, x1, z1);
+    const mesh = new THREE.Mesh(geo, terrainMaterial(this.biome, mask, [x0, z0, x1, z1]));
     mesh.receiveShadow = true;
     mesh.name = 'ground';
     return mesh;
@@ -146,23 +205,29 @@ export class Terrain {
     const samples = this.path.samples;
     const positions: number[] = [];
     const uvs: number[] = [];
+    const edges: number[] = [];
     const curbs: THREE.BufferGeometry[] = [];
+    const cityZone = (z: string) => ['gate', 'street', 'market', 'broken', 'stair', 'plaza'].includes(z);
     const step = 2;
     for (let i = 0; i < samples.length - step; i += step) {
       const a = samples[i];
       const b = samples[Math.min(samples.length - 1, i + step)];
-      const ha = a.width / 2 + 0.6;
-      const hb = b.width / 2 + 0.6;
+      const ha = a.width / 2 + (cityZone(a.zone) ? 0.6 : 1.8);
+      const hb = b.width / 2 + (cityZone(b.zone) ? 0.6 : 1.8);
+      const ea = cityZone(a.zone) ? 0.5 : 1;
+      const eb = cityZone(b.zone) ? 0.5 : 1;
+      edges.push(-ea, ea, -eb, ea, eb, -eb);
       const al = a.pos.clone().addScaledVector(a.right, -ha);
       const ar = a.pos.clone().addScaledVector(a.right, ha);
       const bl = b.pos.clone().addScaledVector(b.right, -hb);
       const br = b.pos.clone().addScaledVector(b.right, hb);
       const y = 0.05;
-      positions.push(al.x, al.y + y, al.z, bl.x, bl.y + y, bl.z, ar.x, ar.y + y, ar.z);
-      positions.push(ar.x, ar.y + y, ar.z, bl.x, bl.y + y, bl.z, br.x, br.y + y, br.z);
+      // Counter-clockwise from above so the ribbon faces up.
+      positions.push(al.x, al.y + y, al.z, ar.x, ar.y + y, ar.z, bl.x, bl.y + y, bl.z);
+      positions.push(ar.x, ar.y + y, ar.z, br.x, br.y + y, br.z, bl.x, bl.y + y, bl.z);
       const va = a.s / 4;
       const vb = b.s / 4;
-      uvs.push(-ha / 4, va, -hb / 4, vb, ha / 4, va, ha / 4, va, -hb / 4, vb, hb / 4, vb);
+      uvs.push(-ha / 4, va, ha / 4, va, -hb / 4, vb, ha / 4, va, hb / 4, vb, -hb / 4, vb);
       // Edge stones on the open mountain road and the stair.
       if ((a.zone === 'road' || a.zone === 'stair') && i % 4 === 0) {
         for (const side of [-1, 1]) {
@@ -175,15 +240,18 @@ export class Terrain {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geo.setAttribute('aEdge', new THREE.Float32BufferAttribute(edges, 1));
     geo.computeVertexNormals();
-    const road = new THREE.Mesh(geo, Mats().cobble);
+    const road = new THREE.Mesh(geo, roadEdges((this.biome === 'witchwood' ? Mats().dirt : Mats().cobble).clone(), this.biome));
     road.receiveShadow = true;
     road.name = 'road';
     g.add(road);
-    const curbMesh = new THREE.Mesh(merge(curbs), Mats().stone);
-    curbMesh.receiveShadow = true;
-    curbMesh.castShadow = true;
-    g.add(curbMesh);
+    if (curbs.length) {
+      const curbMesh = new THREE.Mesh(merge(curbs), Mats().stone);
+      curbMesh.receiveShadow = true;
+      curbMesh.castShadow = true;
+      g.add(curbMesh);
+    }
 
     // Stair steps: visual risers across the stair zone.
     const steps: THREE.BufferGeometry[] = [];
@@ -248,32 +316,18 @@ export class Terrain {
   private buildProps(): void {
     const rng = createSeededRandom(2024);
     const m = Mats();
-    const pineGeo = merge([
-      place(new THREE.CylinderGeometry(0.25, 0.4, 3, 6), 0, 1.5, 0),
-      place(new THREE.ConeGeometry(2.6, 5, 7), 0, 4.5, 0),
-      place(new THREE.ConeGeometry(2.1, 4.4, 7), 0, 7, 0),
-      place(new THREE.ConeGeometry(1.5, 3.8, 7), 0, 9.4, 0),
-      place(new THREE.ConeGeometry(0.9, 3.2, 6), 0, 11.6, 0),
+    const fir = [0, 1, 2].map((i) => firTree(100 + i * 7, 13 + i * 3));
+    const oak = broadleafTree(301, 12);
+    const deadT = [deadTree(401, 9), deadTree(402, 7)];
+    const firLeaves = foliageMaterial(needleTex([34, 62, 44]), '#a8bcae', 'fir');
+    const autumnLeaves = foliageMaterial(leafTex([150, 86, 34], 'autumn'), '#ffffff', 'oak', 0.008);
+    const bark = barkMaterial(false);
+    const barkDead = barkMaterial(true, '#b0aaa0');
+    const trees = forest([
+      ...fir.map((g) => ({ geo: g, wood: bark, leaves: firLeaves, shadow: true })),
+      { geo: oak, wood: bark, leaves: autumnLeaves, shadow: true },
+      ...deadT.map((g) => ({ geo: g, wood: barkDead, leaves: null, shadow: false })),
     ]);
-    const pineMat = windSway(new THREE.MeshStandardMaterial({ color: '#1f3326', roughness: 0.9, flatShading: true }), 0.006, 'pine');
-    const deadGeo = merge([
-      place(new THREE.CylinderGeometry(0.18, 0.42, 7, 5), 0, 3.5, 0, 0, 1, 1, 1, 0.08),
-      place(new THREE.CylinderGeometry(0.06, 0.16, 3.4, 4), 0.9, 5.4, 0, 0, 1, 1, 1, 0, -0.9),
-      place(new THREE.CylinderGeometry(0.05, 0.14, 2.8, 4), -0.8, 4.4, 0.3, 0.5, 1, 1, 1, 0.2, 1.0),
-      place(new THREE.CylinderGeometry(0.04, 0.1, 2.2, 4), 0.2, 6.6, -0.6, 0, 1, 1, 1, -0.8, 0.2),
-    ]);
-    const deadMat = new THREE.MeshStandardMaterial({ color: '#2e2620', roughness: 1, flatShading: true });
-    const autumnGeo = merge([
-      place(new THREE.CylinderGeometry(0.2, 0.4, 5, 6), 0, 2.5, 0),
-      place(new THREE.IcosahedronGeometry(2.4, 0), 0.4, 5.8, 0),
-      place(new THREE.IcosahedronGeometry(1.8, 0), -1.3, 5.0, 0.6),
-      place(new THREE.IcosahedronGeometry(1.6, 0), 1.2, 7.0, -0.4),
-    ]);
-    const autumnMat = windSway(
-      new THREE.MeshStandardMaterial({ color: '#8a5a24', roughness: 0.9, flatShading: true }),
-      0.008,
-      'autumn',
-    );
     const rockG = rockGeo(3, 2);
     const grassGeo = merge([
       place(new THREE.PlaneGeometry(1.1, 0.9), 0, 0.42, 0),
@@ -285,28 +339,33 @@ export class Terrain {
       0.25,
       'grass',
     );
+    const rockMat = m.rock.clone();
+    rockMat.bumpMap = rockMat.map;
+    rockMat.bumpScale = 4;
 
     type Inst = { geo: THREE.BufferGeometry; mat: THREE.Material; mats: THREE.Matrix4[]; shadow: boolean };
     const sets: Record<string, Inst> = {
-      pine: { geo: pineGeo, mat: pineMat, mats: [], shadow: false },
-      dead: { geo: deadGeo, mat: deadMat, mats: [], shadow: true },
-      autumn: { geo: autumnGeo, mat: autumnMat, mats: [], shadow: true },
-      rock: { geo: rockG, mat: m.rock, mats: [], shadow: true },
+      rock: { geo: rockG, mat: rockMat, mats: [], shadow: true },
       grass: { geo: grassGeo, mat: grassMat, mats: [], shadow: false },
     };
-    // Rock vertex colours for the shared rock material.
     const rc = new Float32Array(rockG.attributes.position.count * 3).fill(1.15);
     rockG.setAttribute('color', new THREE.BufferAttribute(rc, 3));
 
     const q = new THREE.Quaternion();
     const e = new THREE.Euler();
-    const add = (key: string, x: number, y: number, z: number, s: number, sy = s, tilt = 0) => {
+    const mtx = (x: number, y: number, z: number, s: number, sy: number, tilt: number) => {
       e.set((rng() - 0.5) * tilt, rng() * Math.PI * 2, (rng() - 0.5) * tilt);
       q.setFromEuler(e);
-      sets[key].mats.push(new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(s, sy, s)));
+      return new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(s, sy, s));
+    };
+    const add = (key: string, x: number, y: number, z: number, s: number, sy = s, tilt = 0) => sets[key].mats.push(mtx(x, y, z, s, sy, tilt));
+    /** Trees are sunk by their slope so the uphill roots never hang in the air. */
+    const tree = (kind: number, x: number, z: number, s: number, sy = s, tilt = 0) => {
+      const y = this.groundAt(x, z) - 0.35 - this.slopeAt(x, z) * 1.1 * s;
+      trees.add(kind, mtx(x, y, z, s, sy, tilt), this.path.distanceXZ(x, z, 8).d < 50);
     };
 
-    for (let i = 0; i < 3400; i += 1) {
+    for (let i = 0; i < 3000; i += 1) {
       const x = -340 + rng() * 720;
       const z = -1480 + rng() * 1790;
       const { d, index } = this.path.distanceXZ(x, z, 6);
@@ -314,24 +373,24 @@ export class Terrain {
       const hw = sample.width / 2;
       if (d < hw + 3.5) continue;
       if (CITY_ZONES.includes(sample.zone) && d < hw + 90) continue;
-      const y = this.height(x, z);
-      const slope = Math.abs(this.height(x + 2, z) - y) + Math.abs(this.height(x, z + 2) - y);
+      const y = this.groundAt(x, z);
+      const slope = this.slopeAt(x, z);
       const r = rng();
-      if (d < 40 && r < 0.55 && slope < 1.5 && sample.zone === 'road') add('grass', x, y, z, 0.8 + rng() * 0.9);
-      else if (slope > 3.5 && r < 0.5) add('rock', x, y - 0.8, z, 1.2 + rng() * 3.5, 1 + rng() * 3, 0.5);
-      else if (slope < 3 && r < 0.8) {
-        if (y < 140) add(rng() < 0.12 ? 'autumn' : 'pine', x, y - 0.3, z, 0.8 + rng() * 0.9, 0.8 + rng() * 1.3);
-        else add('dead', x, y - 0.3, z, 0.8 + rng() * 0.5);
-      } else if (r < 0.9) add('dead', x, y - 0.3, z, 0.7 + rng() * 0.6, 0.7 + rng() * 0.6, 0.3);
+      if (d < 40 && r < 0.55 && slope < 0.6 && sample.zone === 'road') add('grass', x, y - 0.05, z, 0.8 + rng() * 0.9);
+      else if (slope > 1.2 && r < 0.5) add('rock', x, y - 0.5 - slope * 0.6, z, 1.2 + rng() * 3.5, 1 + rng() * 3, 0.5);
+      else if (slope < 1.1 && r < 0.8) {
+        if (y < 140) tree(rng() < 0.1 ? 3 : Math.floor(rng() * 3), x, z, 0.8 + rng() * 0.5, 0.8 + rng() * 0.6);
+        else tree(rng() < 0.6 ? Math.floor(rng() * 3) : 4 + Math.floor(rng() * 2), x, z, 0.8 + rng() * 0.5);
+      } else if (r < 0.86) tree(4 + Math.floor(rng() * 2), x, z, 0.7 + rng() * 0.6, 0.7 + rng() * 0.6, 0.3);
     }
     // Dense roadside grass and boulders along the mountain road.
     for (const s of this.path.samples) {
-      if (s.zone !== 'road' || rng() > 0.55) continue;
+      if (s.zone !== 'road' || rng() > 0.6) continue;
       for (const side of [-1, 1]) {
-        const off = s.width / 2 + 1.8 + rng() * 4;
+        const off = s.width / 2 + 1.5 + rng() * 5;
         const p = s.pos.clone().addScaledVector(s.right, side * off);
-        add('grass', p.x, s.pos.y - 0.3, p.z, 0.7 + rng() * 0.8);
-        if (rng() < 0.05) add('rock', p.x + side, s.pos.y - 0.2, p.z, 0.8 + rng() * 1.2, 0.6 + rng(), 0.4);
+        add('grass', p.x, this.groundAt(p.x, p.z) - 0.05, p.z, 0.7 + rng() * 0.8);
+        if (rng() < 0.05) add('rock', p.x + side, this.groundAt(p.x + side, p.z) - 0.4, p.z, 0.8 + rng() * 1.2, 0.6 + rng(), 0.4);
       }
     }
 
@@ -346,6 +405,7 @@ export class Terrain {
       inst.name = `props-${key}`;
       this.group.add(inst);
     }
+    trees.build(this.group);
 
     // Fence posts and rope along the cliff side of the road.
     const posts: THREE.BufferGeometry[] = [];
@@ -354,7 +414,7 @@ export class Terrain {
       if (s.zone !== 'road') continue;
       const cliffSide = Math.sin(s.s * 0.009 + 0.6) > 0 ? 1 : -1;
       const p = s.pos.clone().addScaledVector(s.right, cliffSide * (s.width / 2 + 2.2));
-      posts.push(place(worldBox(0.3, 1.5, 0.3, 1), p.x, s.pos.y + 0.5, p.z, rng(), 1, 1, 1, (rng() - 0.5) * 0.3));
+      posts.push(place(worldBox(0.3, 1.9, 0.3, 1), p.x, Math.min(s.pos.y, this.groundAt(p.x, p.z)) + 0.55, p.z, rng(), 1, 1, 1, (rng() - 0.5) * 0.3));
       if (i % 21 === 0) posts.push(place(worldBox(0.18, 0.18, 7, 2), p.x, s.pos.y + 0.95, p.z, Math.atan2(s.tangent.x, s.tangent.z)));
     }
     const postMesh = new THREE.Mesh(merge(posts), m.wood);
@@ -370,7 +430,7 @@ export class Terrain {
     const s = this.path.at(175);
     const cliffSide = Math.sin(s.s * 0.009 + 0.6) > 0 ? 1 : -1;
     const base = s.pos.clone().addScaledVector(s.right, cliffSide * 26);
-    base.y = this.height(base.x, base.z) + 2;
+    base.y = this.groundAt(base.x, base.z) + 1;
     const parts: THREE.BufferGeometry[] = [];
     const cranium = prep(new THREE.SphereGeometry(9, 12, 9, 0, Math.PI * 2, 0, Math.PI * 0.62));
     parts.push(place(cranium, 0, 0, 0, 0, 1.3, 0.9, 1));
@@ -416,6 +476,26 @@ export class Terrain {
   }
 
   private buildFog(): void {
+    if (this.biome === 'witchwood') {
+      // Ground mist pooled along the path instead of valley sheets.
+      for (let s = 20; s < this.path.length; s += 55) {
+        const a = this.path.at(s);
+        const mat = this.fogMat.clone();
+        mat.color.set('#6a9a88');
+        mat.opacity = 0.32;
+        mat.map = Tex.fogNoise().clone();
+        mat.map.repeat.set(0.6, 0.6);
+        mat.map.wrapS = mat.map.wrapT = THREE.RepeatWrapping;
+        mat.map.needsUpdate = true;
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(150, 150), mat);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.position.set(a.pos.x, a.pos.y + 0.7, a.pos.z);
+        mesh.renderOrder = 2;
+        this.fogSheets.push(mesh);
+        this.group.add(mesh);
+      }
+      return;
+    }
     const layers: Array<[number, number, number, number, number]> = [
       // [y, cx, cz, size, opacity]
       [24, 0, -500, 2600, 0.32],

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Mats } from '../world/Materials';
 import { Tex } from '../world/Textures';
 import { damp } from '../utils/math';
@@ -326,4 +327,44 @@ export function idle(t: number, opts: { swordHeld?: boolean; hunch?: number } = 
     kneeR: [0.06, 0, 0],
     rootY: b * 0.5,
   };
+}
+
+// ---------------------------------------------------------------- draw-call baking
+
+/**
+ * Merge each node's static mesh children per material (transforms baked), recursively.
+ * Characters drop from dozens of draw calls to a handful. Meshes flagged `userData.keep`
+ * (animated individually) and meshes with children are left untouched.
+ */
+export function bakeMeshes(root: THREE.Object3D): void {
+  const visit = (node: THREE.Object3D) => {
+    for (const c of [...node.children]) if (!(c as THREE.Mesh).isMesh || c.children.length) visit(c);
+    const byMat = new Map<THREE.Material, THREE.Mesh[]>();
+    for (const c of node.children) {
+      const me = c as THREE.Mesh;
+      if (!me.isMesh || me.children.length || me.userData.keep || Array.isArray(me.material)) continue;
+      const list = byMat.get(me.material as THREE.Material) ?? [];
+      list.push(me);
+      byMat.set(me.material as THREE.Material, list);
+    }
+    for (const [mat, list] of byMat) {
+      if (list.length < 2) continue;
+      const geos = list.map((me) => {
+        me.updateMatrix();
+        const g = (me.geometry.index ? me.geometry.toNonIndexed() : me.geometry.clone()).applyMatrix4(me.matrix);
+        for (const n of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(n)) g.deleteAttribute(n);
+        if (!g.attributes.uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+        return g;
+      });
+      const merged = mergeGeometries(geos, false);
+      if (!merged) continue;
+      merged.computeBoundingSphere();
+      const out = new THREE.Mesh(merged, mat);
+      out.castShadow = list.some((m) => m.castShadow);
+      out.receiveShadow = list.some((m) => m.receiveShadow);
+      for (const me of list) node.remove(me);
+      node.add(out);
+    }
+  };
+  visit(root);
 }

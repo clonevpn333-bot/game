@@ -157,6 +157,12 @@ export class Vfx {
     }
   }
 
+  /** One dragonfire particle: big, hot, short-lived. */
+  flame(p: THREE.Vector3, vel: THREE.Vector3): void {
+    this.c.setRGB(1, 0.45 + this.rng() * 0.4, 0.1 + this.rng() * 0.15);
+    this.glow.spawn(p, vel, this.c, 0.9 + this.rng() * 1.1, 0.45 + this.rng() * 0.35, -2, 2.2);
+  }
+
   ichor(p: THREE.Vector3, count: number): void {
     this.c.set('#ff6a20');
     for (let i = 0; i < count; i += 1) {

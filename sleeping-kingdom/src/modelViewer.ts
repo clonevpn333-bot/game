@@ -6,6 +6,8 @@ import { buildKnight } from './entities/Knight';
 import { ATTACKS, HEAVY, ROLL_POSE, HIT_POSE, FLASK_POSE, RIDE_POSE, DEATH_KEYS, guardPose } from './entities/Player';
 import { Cloth } from './entities/Cloth';
 import { Knellwarden, Marrowmite, Penitent } from './entities/Enemies';
+import { AshDrake, Thornwife, dressAsThrall } from './entities/Enemies2';
+import { Folk } from './entities/Npc';
 import { Mats } from './world/Materials';
 
 const q = new URLSearchParams(location.search);
@@ -42,8 +44,8 @@ const char = q.get('char') ?? 'knight';
 const poseName = q.get('pose') ?? 'guard';
 const kParam = q.get('k');
 const yaw = Number(q.get('yaw') ?? 0.5);
-const dist = Number(q.get('dist') ?? (char === 'boss' ? 11 : 4.2));
-const height = Number(q.get('h') ?? (char === 'boss' ? 3 : 1.15));
+const dist = Number(q.get('dist') ?? (char === 'boss' ? 11 : char === 'dragon' ? 22 : 4.2));
+const height = Number(q.get('h') ?? (char === 'boss' ? 3 : char === 'dragon' ? 4 : 1.15));
 const animate = q.has('anim');
 
 let update: (dt: number, t: number) => void = () => undefined;
@@ -97,8 +99,23 @@ if (char === 'knight') {
     scene.updateMatrixWorld();
     cloak.update(dt, t);
   };
+} else if (char === 'folk') {
+  const m = Mats();
+  const styles = [
+    { robe: m.robeBrown, skin: '#c99878', mood: 'calm' as const, hair: true },
+    { robe: m.robeGreen, skin: '#a87458', mood: 'calm' as const, hood: true },
+    { robe: m.robeRed, skin: '#e0b090', mood: 'grim' as const, hair: true, lantern: true },
+    { robe: m.robeGrey, skin: '#d0a888', mood: 'old' as const, hair: true },
+  ];
+  const folks = styles.map((st, i) => {
+    const f = new Folk(st, 'idle', 'f', i);
+    f.place(new THREE.Vector3((i - 1.5) * 0.9, 0, 0), 0);
+    scene.add(f.group);
+    return f;
+  });
+  update = (dt, t) => folks.forEach((f) => f.update(dt, t, { resolve: () => 0 } as never, 0));
 } else {
-  const e = char === 'boss' ? new Knellwarden() : char === 'penitent' ? new Penitent() : new Marrowmite();
+  const e = char === 'boss' ? new Knellwarden() : char === 'penitent' ? new Penitent() : char === 'thrall' ? (() => { const p = new Penitent(); dressAsThrall(p.rig); return p; })() : char === 'witch' ? new Thornwife(scene) : char === 'dragon' ? new AshDrake() : new Marrowmite();
   scene.add(e.group);
   if (e instanceof Knellwarden) {
     e.wake();
@@ -116,7 +133,8 @@ if (char === 'knight') {
     rng: () => 0.5,
     spawnMite: () => undefined,
   } as never;
-  e.state = 'idle';
+  e.state = e instanceof AshDrake ? 'chase' : 'idle';
+  if (e instanceof AshDrake) (fakeCtx as { player: { pos: THREE.Vector3 } }).player.pos.set(0, 0, 8);
   update = (dt, t) => {
     e.update(dt, t, fakeCtx);
     if (e instanceof Knellwarden) {

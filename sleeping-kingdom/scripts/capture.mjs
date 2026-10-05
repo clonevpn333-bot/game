@@ -1,6 +1,7 @@
 // Dev QA capture: loads the game, jumps to story stages via test hooks, saves screenshots + diagnostics.
 import { chromium } from '@playwright/test';
 const url = process.env.URL ?? 'http://127.0.0.1:5188';
+const chapterHash = process.env.CH === '2' ? '#chapter2' : '';
 const stages = (process.argv[2] ?? 'title,ride,gate,market,tremor,combat,stair,boss,ending').split(',');
 const mobile = process.argv.includes('--mobile');
 const out = process.env.OUT ?? 'artifacts/shots';
@@ -9,7 +10,7 @@ const page = await browser.newPage(mobile ? { viewport: { width: 390, height: 84
 const errors = [];
 page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(`${m.type()}: ${m.text()}`); });
 page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
-await page.goto(url);
+await page.goto(url + '/' + chapterHash);
 await page.waitForFunction(() => (window.__THREE_GAME_DIAGNOSTICS__?.frame ?? 0) > 5, null, { timeout: 120000 });
 for (const st of stages) {
   const t0 = Date.now();

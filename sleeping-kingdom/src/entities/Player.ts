@@ -244,13 +244,6 @@ export class Player {
     // Scabbard on the left hip (hilt shows when the sword is sheathed on horseback).
     const m = Mats();
     const hilt = new THREE.Group();
-    hilt.add(new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.03, 0.04), m.gold));
-    const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.02, 0.2, 6), m.leatherDark);
-    grip.position.y = 0.11;
-    hilt.add(grip);
-    hilt.position.set(0.25, 0.06, -0.12);
-    hilt.rotation.set(0.35, 0, 0.12);
-    this.rig.j.hips.add(hilt);
     this.scabbardHilt = hilt;
     this.shadow = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.4).rotateX(-Math.PI / 2), m.contactShadow);
     this.shadow.position.y = 0.03;
@@ -258,6 +251,12 @@ export class Player {
     this.horseShadow = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 3.4).rotateX(-Math.PI / 2), m.contactShadow);
     this.horseShadow.position.y = 0.04;
     this.horse.root.add(this.horseShadow);
+  }
+
+  /** Rig root height that puts the knight's hips on the saddle (root is at the feet). */
+  private saddleRootY(): number {
+    const hip = this.rig.j.hips.position.y * this.rig.root.scale.y;
+    return this.horse.body.position.y + this.horse.seat.position.y + 0.06 - hip;
   }
 
   get mounted(): boolean {
@@ -275,7 +274,7 @@ export class Player {
     this.group.add(this.horse.root);
     this.horse.root.position.set(0, 0, 0);
     this.horse.root.rotation.set(0, 0, 0);
-    this.rig.root.position.y = 1.72;
+    this.rig.root.position.y = this.saddleRootY();
     this.rig.sword.visible = false;
     this.scabbardHilt.visible = true;
     this.anim.snap(RIDE_POSE);
@@ -342,6 +341,7 @@ export class Player {
       this.lockTarget = null;
       return true;
     }
+    if (hit.noStagger) return true;
     // Hyper-armour during the heavy's strike frames.
     if (this.state === 'attack' && this.attack.heavy && this.stateT / this.attack.duration > 0.45 && this.stateT / this.attack.duration < 0.65 && !hit.heavy) return true;
     this.state = 'hit';
@@ -567,7 +567,7 @@ export class Player {
     this.velocity.set(Math.sin(this.yaw) * this.horseSpeed, 0, Math.cos(this.yaw) * this.horseSpeed);
     this.horse.update(dt, this.horseSpeed, time);
     // Rider follows the saddle with a little lag on the bounce.
-    this.rig.root.position.y = damp(this.rig.root.position.y, this.horse.body.position.y + 0.47, 20, dt);
+    this.rig.root.position.y = damp(this.rig.root.position.y, this.saddleRootY(), 20, dt);
     const lean = Math.min(1, this.horseSpeed / 17);
     this.anim.apply({ ...RIDE_POSE, spine: [0.12 + lean * 0.3, 0, 0], head: [-0.2 * lean, 0, 0] }, dt, 10);
     const step = this.horseSpeed * 0.5;

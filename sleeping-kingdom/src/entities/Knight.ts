@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { retro } from '../world/Materials';
 import { HeroTex } from './HeroTextures';
-import { latheG, limb, skeleton, type Rig } from './Rig';
+import { bakeMeshes, latheG, limb, skeleton, type Rig } from './Rig';
 import { damp } from '../utils/math';
 
 /** Shared rim strength so the director can boost the hero rim in dark scenes. */
@@ -396,6 +396,7 @@ export function buildKnight(): Knight {
   };
 
   rig.flashMats.push(mt.plate);
+  bakeMeshes(rig.root);
   return { ...rig, sword, swordTip, gripB, cloakAnchorL, cloakAnchorR, mats: mt, secondary };
 }
 
