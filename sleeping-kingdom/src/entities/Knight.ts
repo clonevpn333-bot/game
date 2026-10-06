@@ -95,12 +95,12 @@ export function buildKnight(opts: { hollow?: boolean } = {}): Knight {
   const { j } = rig;
 
   // ============================================================== pelvis
-  part(j.hips, latheG([[0.17, 0.12], [0.205, 0.02], [0.24, -0.12], [0.272, -0.27], [0.29, -0.37]], 18), mt.mail);
+  part(j.hips, latheG([[0.17, 0.12], [0.205, 0.02], [0.24, -0.12], [0.272, -0.27], [0.29, -0.37]], 8), mt.mail);
   for (let i = 0; i < 3; i += 1) {
     const r = 0.218 + i * 0.014;
-    part(j.hips, latheG([[r - 0.004, 0.1 - i * 0.055], [r + 0.006, 0.055 - i * 0.055], [r + 0.012, 0.02 - i * 0.055]], 18), mt.plate, [0, 0, 0], [0, 0, 0], [1, 1, 0.88]);
+    part(j.hips, latheG([[r - 0.004, 0.1 - i * 0.055], [r + 0.006, 0.055 - i * 0.055], [r + 0.012, 0.02 - i * 0.055]], 8), mt.plate, [0, 0, 0], [0, 0, 0], [1, 1, 0.88]);
   }
-  part(j.hips, new THREE.TorusGeometry(0.218, 0.026, 6, 22), mt.leather, [0, 0.115, 0], [Math.PI / 2, 0, 0], [1, 0.88, 1]);
+  part(j.hips, new THREE.TorusGeometry(0.218, 0.026, 4, 10), mt.leather, [0, 0.115, 0], [Math.PI / 2, 0, 0], [1, 0.88, 1]);
   part(j.hips, new THREE.BoxGeometry(0.07, 0.06, 0.02), mt.trim, [0, 0.115, 0.198]);
   part(j.hips, new THREE.SphereGeometry(0.05, 8, 6), mt.leather, [-0.19, 0.04, 0.09], [0, 0, 0], [0.9, 1.1, 0.7]);
   // Scabbard on the left hip.
@@ -108,9 +108,9 @@ export function buildKnight(opts: { hollow?: boolean } = {}): Knight {
   scab.position.set(0.23, 0.05, -0.05);
   scab.rotation.set(0.45, 0, 0.18);
   j.hips.add(scab);
-  part(scab, new THREE.CylinderGeometry(0.03, 0.022, 0.95, 8), mt.leather, [0, -0.48, 0], [0, 0, 0], [1.4, 1, 0.6]);
-  part(scab, new THREE.ConeGeometry(0.03, 0.08, 8), mt.trim, [0, -0.99, 0], [Math.PI, 0, 0], [1.4, 1, 0.6]);
-  part(scab, new THREE.CylinderGeometry(0.035, 0.035, 0.05, 8), mt.trim, [0, -0.02, 0], [0, 0, 0], [1.4, 1, 0.6]);
+  part(scab, new THREE.CylinderGeometry(0.03, 0.022, 0.95, 7), mt.leather, [0, -0.48, 0], [0, 0, 0], [1.4, 1, 0.6]);
+  part(scab, new THREE.ConeGeometry(0.03, 0.08, 6), mt.trim, [0, -0.99, 0], [Math.PI, 0, 0], [1.4, 1, 0.6]);
+  part(scab, new THREE.CylinderGeometry(0.035, 0.035, 0.05, 7), mt.trim, [0, -0.02, 0], [0, 0, 0], [1.4, 1, 0.6]);
   // Tabard panels on spring pivots.
   const tabardG = new THREE.PlaneGeometry(0.34, 0.66, 1, 5);
   tabardG.translate(0, -0.33, 0);
@@ -125,7 +125,7 @@ export function buildKnight(opts: { hollow?: boolean } = {}): Knight {
   part(tabBack, tabardG.clone(), mt.tabard);
 
   // ============================================================== torso
-  part(j.spine, latheG([[0.2, -0.02], [0.215, 0.1], [0.222, 0.22], [0.21, 0.3]], 16), mt.leather);
+  part(j.spine, latheG([[0.2, -0.02], [0.215, 0.1], [0.222, 0.22], [0.21, 0.3]], 8), mt.leather);
   const breast = shell(0.255, 0, Math.PI, Math.PI * 0.3, Math.PI * 0.62, 20);
   part(j.chest, breast, mt.plate, [0, 0.17, 0.005], [0, 0, 0], [1.05, 1.28, 0.86]);
   part(j.chest, shell(0.255, Math.PI, Math.PI, Math.PI * 0.3, Math.PI * 0.62, 20), mt.plateDark, [0, 0.17, -0.005], [0, 0, 0], [1.05, 1.28, 0.8]);
@@ -137,14 +137,14 @@ export function buildKnight(opts: { hollow?: boolean } = {}): Knight {
   }
   part(j.chest, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(ridgePts), 16, 0.011, 5), mt.plate);
   // Brass neckline trim.
-  part(j.chest, new THREE.TorusGeometry(0.155, 0.013, 5, 20, Math.PI), mt.trim, [0, 0.355, 0.03], [-1.2, 0, 0], [1.2, 1, 1]);
+  part(j.chest, new THREE.TorusGeometry(0.155, 0.013, 4, 10, Math.PI), mt.trim, [0, 0.355, 0.03], [-1.2, 0, 0], [1.2, 1, 1]);
   // Waist plate band where breastplate meets fauld.
-  part(j.chest, latheG([[0.235, -0.06], [0.245, -0.12], [0.24, -0.16]], 18), mt.plate, [0, 0, 0], [0, 0, 0], [1, 1, 0.9]);
+  part(j.chest, latheG([[0.235, -0.06], [0.245, -0.12], [0.24, -0.16]], 8), mt.plate, [0, 0, 0], [0, 0, 0], [1, 1, 0.9]);
   // Gorget.
-  part(j.chest, latheG([[0.18, 0.31], [0.165, 0.36], [0.135, 0.41], [0.115, 0.44]], 16), mt.plate);
-  part(j.chest, new THREE.TorusGeometry(0.115, 0.012, 5, 18), mt.trim, [0, 0.44, 0], [Math.PI / 2, 0, 0]);
+  part(j.chest, latheG([[0.18, 0.31], [0.165, 0.36], [0.135, 0.41], [0.115, 0.44]], 8), mt.plate);
+  part(j.chest, new THREE.TorusGeometry(0.115, 0.012, 4, 10), mt.trim, [0, 0.44, 0], [Math.PI / 2, 0, 0]);
   // Fur collar: heavy, readable silhouette over the shoulders.
-  part(j.chest, new THREE.TorusGeometry(0.19, 0.075, 8, 20), mt.fur, [0, 0.39, -0.03], [Math.PI / 2 + 0.25, 0, 0], [1.25, 1, 0.75]);
+  part(j.chest, new THREE.TorusGeometry(0.19, 0.075, 4, 10), mt.fur, [0, 0.39, -0.03], [Math.PI / 2 + 0.25, 0, 0], [1.25, 1, 0.75]);
   // Belt strap across the chest (baldric) for asymmetry.
   const baldric = new THREE.CatmullRomCurve3([
     new THREE.Vector3(-0.2, 0.36, 0.06),
@@ -153,11 +153,11 @@ export function buildKnight(opts: { hollow?: boolean } = {}): Knight {
     new THREE.Vector3(0.24, -0.12, 0.12),
   ]);
   part(j.chest, new THREE.TubeGeometry(baldric, 16, 0.018, 4), mt.leather, [0, 0, 0], [0, 0, 0], [1, 1, 1]);
-  part(j.chest, new THREE.CylinderGeometry(0.022, 0.022, 0.012, 10), mt.trim, [-0.03, 0.215, 0.24], [Math.PI / 2 - 0.4, 0, 0]);
+  part(j.chest, new THREE.CylinderGeometry(0.022, 0.022, 0.012, 7), mt.trim, [-0.03, 0.215, 0.24], [Math.PI / 2 - 0.4, 0, 0]);
 
   // ============================================================== head
-  part(j.neck, latheG([[0.1, 0.0], [0.1, 0.12]], 12), mt.mail);
-  part(j.head, latheG([[0.12, 0.02], [0.155, -0.05], [0.21, -0.13]], 16), mt.mail);
+  part(j.neck, latheG([[0.1, 0.0], [0.1, 0.12]], 8), mt.mail);
+  part(j.head, latheG([[0.12, 0.02], [0.155, -0.05], [0.21, -0.13]], 8), mt.mail);
   const helmProfile: Array<[number, number]> = [
     [0.0001, 0.385], [0.06, 0.378], [0.11, 0.35], [0.148, 0.295], [0.168, 0.215], [0.174, 0.12], [0.172, 0.03], [0.166, -0.04], [0.158, -0.085],
   ];
@@ -165,8 +165,8 @@ export function buildKnight(opts: { hollow?: boolean } = {}): Knight {
   part(j.head, helm, mt.plate, [0, 0, 0], [0, 0, 0], [1, 1, 1.12]);
   // Brass cross reinforcement on the face and a brow band.
   part(j.head, new THREE.BoxGeometry(0.03, 0.32, 0.02), mt.trim, [0, 0.13, 0.19], [-0.1, 0, 0]);
-  part(j.head, new THREE.TorusGeometry(0.173, 0.011, 4, 26, Math.PI * 1.1), mt.trim, [0, 0.215, 0], [Math.PI / 2, 0, Math.PI * -0.05], [1, 1.12, 1]);
-  part(j.head, new THREE.TorusGeometry(0.162, 0.012, 4, 26), mt.trim, [0, -0.075, 0], [Math.PI / 2, 0, 0], [1, 1.12, 1]);
+  part(j.head, new THREE.TorusGeometry(0.173, 0.011, 4, 10, Math.PI * 1.1), mt.trim, [0, 0.215, 0], [Math.PI / 2, 0, Math.PI * -0.05], [1, 1.12, 1]);
+  part(j.head, new THREE.TorusGeometry(0.162, 0.012, 4, 10), mt.trim, [0, -0.075, 0], [Math.PI / 2, 0, 0], [1, 1.12, 1]);
   // Vision slits either side of the nasal, breaths on the right cheek.
   for (const sx of [-1, 1]) part(j.head, new THREE.BoxGeometry(0.1, 0.018, 0.06), mt.dark, [sx * 0.07, 0.172, 0.172], [0, sx * 0.35, 0]);
   for (let i = 0; i < 6; i += 1) {
@@ -203,31 +203,31 @@ export function buildKnight(opts: { hollow?: boolean } = {}): Knight {
     sh.add(paul);
     // Main cop: a shallow dome with a raised brass-edged rim.
     part(paul, shell(0.16, 0, Math.PI * 2, 0, Math.PI * 0.5, 20), mt.plate, [0, -0.02, 0], [0, 0, 0], [1.25, 0.55, 1.18]);
-    part(paul, new THREE.TorusGeometry(0.16, 0.01, 4, 28), mt.trim, [0, -0.02, 0], [Math.PI / 2, 0, 0], [1.25, 1.18, 1]);
+    part(paul, new THREE.TorusGeometry(0.16, 0.01, 4, 10), mt.trim, [0, -0.02, 0], [Math.PI / 2, 0, 0], [1.25, 1.18, 1]);
     // Raised haute-piece guard standing on the outer edge (classic knightly silhouette).
-    part(paul, new THREE.CylinderGeometry(0.13, 0.15, 0.07, 14, 1, true, -Math.PI * 0.42, Math.PI * 0.84), mt.plate, [-sx * 0.035, 0.035, 0], [0, sx * Math.PI / 2, 0], [1, 1, 0.9]);
+    part(paul, new THREE.CylinderGeometry(0.13, 0.15, 0.07, 7, 1, true, -Math.PI * 0.42, Math.PI * 0.84), mt.plate, [-sx * 0.035, 0.035, 0], [0, sx * Math.PI / 2, 0], [1, 1, 0.9]);
     rivets(paul, mt.trim, 7, 0.19, -0.005, -1.1, 2.2, 0.01);
     // Lames cascading down the upper arm.
     for (let l = 1; l <= 3; l += 1) {
       const r = 0.155 - l * 0.012;
-      part(paul, new THREE.CylinderGeometry(r * 1.02, r * 1.08, 0.055, 18, 1, true), l === 3 ? mt.plateDark : mt.plate, [sx * 0.01 * l, -0.035 - l * 0.045, 0], [0, 0, sx * 0.05 * l], [1.12, 1, 1.05]);
+      part(paul, new THREE.CylinderGeometry(r * 1.02, r * 1.08, 0.055, 7, 1, true), l === 3 ? mt.plateDark : mt.plate, [sx * 0.01 * l, -0.035 - l * 0.045, 0], [0, 0, sx * 0.05 * l], [1.12, 1, 1.05]);
     }
     // Upper arm: mail sleeve + rerebrace.
-    part(sh, limb(0.085, 0.075, 0.28, 12), mt.mail);
-    part(sh, new THREE.CylinderGeometry(0.088, 0.082, 0.14, 12, 1, true), mt.plate, [0, -0.17, 0]);
+    part(sh, limb(0.085, 0.075, 0.28, 7), mt.mail);
+    part(sh, new THREE.CylinderGeometry(0.088, 0.082, 0.14, 7, 1, true), mt.plate, [0, -0.17, 0]);
     // Couter with a fan wing on the outside of the elbow.
-    part(el, new THREE.SphereGeometry(0.07, 12, 8), mt.plate, [0, 0, -0.015]);
-    part(el, new THREE.CylinderGeometry(0.075, 0.075, 0.012, 14, 1, false, 0, Math.PI), mt.plate, [sx * 0.05, 0, -0.02], [0, 0, Math.PI / 2]);
+    part(el, new THREE.SphereGeometry(0.07, 8, 6), mt.plate, [0, 0, -0.015]);
+    part(el, new THREE.CylinderGeometry(0.075, 0.075, 0.012, 7, 1, false, 0, Math.PI), mt.plate, [sx * 0.05, 0, -0.02], [0, 0, Math.PI / 2]);
     part(el, new THREE.SphereGeometry(0.014, 5, 4), mt.trim, [sx * 0.058, 0, -0.02]);
     // Vambrace.
-    part(el, latheG([[0.07, -0.01], [0.077, -0.06], [0.072, -0.17], [0.064, -0.235]], 12), mt.plate);
-    part(el, new THREE.TorusGeometry(0.066, 0.008, 4, 14), mt.trim, [0, -0.235, 0], [Math.PI / 2, 0, 0]);
+    part(el, latheG([[0.07, -0.01], [0.077, -0.06], [0.072, -0.17], [0.064, -0.235]], 8), mt.plate);
+    part(el, new THREE.TorusGeometry(0.066, 0.008, 4, 10), mt.trim, [0, -0.235, 0], [Math.PI / 2, 0, 0]);
     // Gauntlet: flared cuff, back-plate, curled fingers around the grip axis (hand +Z), thumb.
-    part(hd, latheG([[0.06, 0.04], [0.098, -0.005], [0.105, -0.03], [0.07, -0.05]], 12), mt.plate);
-    const palm = new THREE.SphereGeometry(0.058, 10, 8);
+    part(hd, latheG([[0.06, 0.04], [0.098, -0.005], [0.105, -0.03], [0.07, -0.05]], 8), mt.plate);
+    const palm = new THREE.SphereGeometry(0.058, 8, 6);
     part(hd, palm, mt.leather, [0, -0.075, 0], [0, 0, 0], [0.8, 1.15, 1.0]);
     part(hd, shell(0.062, Math.PI * 0.5 - (sx > 0 ? 0 : 0), Math.PI, 0.2, Math.PI * 0.75, 10), mt.plateDark, [0, -0.07, 0], [0, sx > 0 ? -Math.PI / 2 : Math.PI / 2, 0], [0.9, 1.2, 1.05]);
-    const fingers = new THREE.TorusGeometry(0.032, 0.02, 6, 10, Math.PI * 1.35);
+    const fingers = new THREE.TorusGeometry(0.032, 0.02, 4, 10, Math.PI * 1.35);
     part(hd, fingers, mt.plateDark, [0, -0.115, 0.0], [0, 0, sx > 0 ? -0.6 : Math.PI + 0.6]);
     part(hd, new THREE.CapsuleGeometry(0.016, 0.04, 3, 6), mt.plateDark, [-sx * 0.035, -0.08, 0.035], [0.9, 0, 0]);
   }
@@ -237,7 +237,7 @@ export function buildKnight(opts: { hollow?: boolean } = {}): Knight {
     const hp = j[`hip${side}`];
     const kn = j[`knee${side}`];
     const ft = j[`foot${side}`];
-    part(hp, limb(0.128, 0.098, 0.44, 12), mt.leather);
+    part(hp, limb(0.128, 0.098, 0.44, 7), mt.leather);
     // Tasset (two lames) hanging over the thigh front.
     part(hp, arcPlate(0.15, 0.165, 0.13, 2.1, sx * 0.25), mt.plate, [0, 0.0, 0.01], [-0.12, 0, 0]);
     part(hp, arcPlate(0.155, 0.17, 0.11, 2.0, sx * 0.25), mt.plateDark, [0, -0.1, 0.015], [-0.12, 0, 0]);
@@ -245,18 +245,18 @@ export function buildKnight(opts: { hollow?: boolean } = {}): Knight {
     part(hp, arcPlate(0.124, 0.104, 0.26, 2.7, sx * 0.2), mt.plate, [0, -0.27, 0.005]);
     // Poleyn with side wing.
     part(kn, shell(0.082, 0, Math.PI * 2, 0, Math.PI * 0.55, 12), mt.plate, [0, 0.0, 0.055], [Math.PI / 2, 0, 0], [1, 1, 0.8]);
-    part(kn, new THREE.CylinderGeometry(0.06, 0.06, 0.01, 12, 1, false, 0, Math.PI), mt.plate, [sx * 0.075, 0, 0.02], [Math.PI / 2, Math.PI / 2, 0]);
+    part(kn, new THREE.CylinderGeometry(0.06, 0.06, 0.01, 7, 1, false, 0, Math.PI), mt.plate, [sx * 0.075, 0, 0.02], [Math.PI / 2, Math.PI / 2, 0]);
     part(kn, new THREE.SphereGeometry(0.012, 5, 4), mt.trim, [0, 0.0, 0.135]);
     // Greave.
-    part(kn, latheG([[0.09, -0.02], [0.102, -0.09], [0.097, -0.2], [0.082, -0.32], [0.084, -0.38]], 16), mt.plate);
+    part(kn, latheG([[0.09, -0.02], [0.102, -0.09], [0.097, -0.2], [0.082, -0.32], [0.084, -0.38]], 8), mt.plate);
     // Boot cuff of folded leather.
-    part(kn, latheG([[0.085, -0.33], [0.1, -0.37], [0.112, -0.43]], 16), mt.leather);
+    part(kn, latheG([[0.085, -0.33], [0.1, -0.37], [0.112, -0.43]], 8), mt.leather);
     // Sabaton: articulated lames over the foot, pointed toe, dark sole.
     part(ft, shell(0.115, 0, Math.PI * 2, 0, Math.PI * 0.5, 14), mt.leather, [0, -0.09, 0.05], [0, 0, 0], [1, 1.05, 2.0]);
     for (let l = 0; l < 4; l += 1) {
-      part(ft, new THREE.CylinderGeometry(0.105 - l * 0.01, 0.11 - l * 0.01, 0.06, 14, 1, true, -Math.PI / 2, Math.PI), mt.plate, [0, -0.085, 0.03 + l * 0.055], [Math.PI / 2, 0, 0], [1, 1, 0.85 - l * 0.12]);
+      part(ft, new THREE.CylinderGeometry(0.105 - l * 0.01, 0.11 - l * 0.01, 0.06, 7, 1, true, -Math.PI / 2, Math.PI), mt.plate, [0, -0.085, 0.03 + l * 0.055], [Math.PI / 2, 0, 0], [1, 1, 0.85 - l * 0.12]);
     }
-    part(ft, new THREE.ConeGeometry(0.06, 0.14, 12), mt.plate, [0, -0.09, 0.28], [Math.PI / 2, 0, 0], [1, 1, 0.5]);
+    part(ft, new THREE.ConeGeometry(0.06, 0.14, 6), mt.plate, [0, -0.09, 0.28], [Math.PI / 2, 0, 0], [1, 1, 0.5]);
     part(ft, new THREE.BoxGeometry(0.19, 0.03, 0.42), mt.leather, [0, -0.11, 0.07]);
   }
 
@@ -287,13 +287,13 @@ export function buildKnight(opts: { hollow?: boolean } = {}): Knight {
     new THREE.Vector3(0.09, 0.012, 0),
     new THREE.Vector3(0.17, 0.035, 0),
   ]);
-  part(sword, new THREE.TubeGeometry(guardCurve, 16, 0.014, 6), mt.trim);
+  part(sword, new THREE.TubeGeometry(guardCurve, 16, 0.014, 5), mt.trim);
   for (const sx of [-1, 1]) part(sword, new THREE.SphereGeometry(0.022, 8, 6), mt.trim, [sx * 0.17, 0.037, 0]);
   part(sword, new THREE.SphereGeometry(0.03, 8, 6), mt.trim, [0, 0.005, 0], [0, 0, 0], [1, 0.6, 0.8]);
   const gripProfile: Array<[number, number]> = [];
   for (let i = 0; i <= 12; i += 1) gripProfile.push([i % 2 ? 0.0185 : 0.0215, -0.015 - i * 0.018]);
   part(sword, latheG(gripProfile, 8), mt.leather);
-  part(sword, new THREE.CylinderGeometry(0.042, 0.042, 0.026, 14), mt.trim, [0, -0.26, 0], [Math.PI / 2, 0, 0]);
+  part(sword, new THREE.CylinderGeometry(0.042, 0.042, 0.026, 7), mt.trim, [0, -0.26, 0], [Math.PI / 2, 0, 0]);
   part(sword, new THREE.SphereGeometry(0.016, 6, 5), mt.trim, [0, -0.26, 0.016]);
   part(sword, new THREE.SphereGeometry(0.016, 6, 5), mt.trim, [0, -0.26, -0.016]);
   const swordTip = new THREE.Object3D();

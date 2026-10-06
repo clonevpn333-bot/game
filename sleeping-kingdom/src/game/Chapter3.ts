@@ -423,15 +423,28 @@ export class Chapter3 extends ChapterBase {
   protected onRespawnBoss(): void {
     const g = this.g;
     if (this.stage === 'boss' && g.boss.alive) {
-      g.removeEnemies((e) => e === g.boss);
-      g.boss.reset();
-      g.boss.group.removeFromParent();
+      // Oswin kneels at the altar again, waiting. Walk back into the choir to face him.
+      const b = g.boss;
+      g.removeEnemies((e) => e === b);
+      b.reset();
+      b.place(g.marsh!.arenaCenter.clone().addScaledVector(g.path.at(this.sChoir + 20).tangent, 8), this.yawAlong(this.sChoir, true));
+      g.addEnemy(b);
       g.nav.minS = 0;
-      g.nav.maxS = this.finalGate;
+      g.nav.maxS = this.finalGate + 6;
       g.hud.setBoss(null);
       g.audio.setMusic('dread');
-      this.fired.delete('boss-intro');
       this.stage = 'nave';
+      this.rematch = {
+        at: this.sChoir + 4,
+        start: () => {
+          b.wake();
+          this.stage = 'boss';
+          g.nav.minS = this.sChoir - 2;
+          g.nav.maxS = g.path.length;
+          g.audio.setMusic('boss');
+          g.hud.say('Choirmaster Oswin', 'Back again? Then sing.', 2.5);
+        },
+      };
     }
   }
 

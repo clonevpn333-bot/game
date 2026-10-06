@@ -184,6 +184,11 @@ export class Actor {
       }
     }
     this.anim.apply(pose, dt, 9);
+    const face = (this.rig as { face?: { talking: boolean; update: (dt: number) => void } }).face;
+    if (face) {
+      face.talking = this.talkT > 0.15;
+      face.update(dt);
+    }
     this.group.rotation.y = this.yaw;
     if (this.cloak) {
       this.group.updateMatrixWorld(true);
@@ -225,6 +230,10 @@ export type Shot = {
   fadeIn?: number;
   fadeOut?: number;
   card?: [string, string];
+  /** Dip to black into this shot instead of a hard cut. */
+  dip?: boolean;
+  /** Handheld drift amount (0 = locked off). Default 1. */
+  handheld?: number;
 };
 
 const ease = (k: number) => k * k * (3 - 2 * k);
@@ -240,6 +249,7 @@ export class CutscenePlayer {
   readonly actors: Actor[] = [];
   private readonly tmpA = new THREE.Vector3();
   private readonly tmpB = new THREE.Vector3();
+  private readonly tmpC = new THREE.Vector3();
   private savedFov = 55;
 
   constructor(private readonly g: Game) {}
@@ -254,6 +264,11 @@ export class CutscenePlayer {
     return a;
   }
 
+  /** Transition phase: dipping to black before the first shot, or after the last. */
+  private phase: 'in' | 'shots' | 'out' = 'shots';
+  private phaseT = 0;
+  private clock = 0;
+
   play(shots: Shot[], onDone?: () => void): void {
     const g = this.g;
     this.shots = shots;
@@ -261,6 +276,25 @@ export class CutscenePlayer {
     this.applied.clear();
     this.onDone = onDone ?? null;
     this.active = true;
+    g.player.controlEnabled = false;
+    g.player.invulnerable = true;
+    // Dip to black out of gameplay, then cut in on the first shot.
+    this.phase = 'in';
+    this.phaseT = 0;
+    g.hud.fade(1, 0.35);
+  }
+
+  /** Scene changes (storybook narration ↔ live dialogue) dip through black; everything else is a hard cut. */
+  private dipsInto(i: number): boolean {
+    const s = this.shots[i];
+    const p = this.shots[i - 1];
+    if (!s || !p || s.fadeIn) return false;
+    return !!s.dip || !!p.narr !== !!s.narr;
+  }
+
+  private begin(): void {
+    const g = this.g;
+    this.phase = 'shots';
     this.savedFov = g.cam.baseFov;
     g.player.controlEnabled = false;
     g.player.invulnerable = true;
@@ -272,6 +306,7 @@ export class CutscenePlayer {
     g.cam.setCinematic(true);
     g.cam.cineWeight = 1;
     this.next();
+    if (!this.shots[0]?.fadeIn) g.hud.fade(0, 0.7);
   }
 
   private lineSeconds(l: Line): number {
@@ -304,6 +339,8 @@ export class CutscenePlayer {
     if (s.fadeIn) {
       g.hud.fade(1, 0.01);
       window.setTimeout(() => g.hud.fade(0, s.fadeIn), 30);
+    } else if (this.dipsInto(this.i)) {
+      g.hud.fade(0, 0.55);
     }
     if (s.cam?.fov) g.cam.baseFov = s.cam.fov;
     else g.cam.baseFov = this.savedFov;
@@ -323,17 +360,21 @@ export class CutscenePlayer {
     const s = this.shots[this.i];
     if (!s) return;
     const e = ease(Math.min(1, k));
+    // Handheld drift: a slow, breathing wobble so shots never feel like a locked debug camera.
+    const hh = (s.handheld ?? 1) * 0.045;
+    const c = this.clock;
+    const sway = this.tmpC.set(Math.sin(c * 0.71) + Math.sin(c * 1.73) * 0.4, Math.sin(c * 0.93 + 1.3) * 0.7, Math.cos(c * 0.57) + Math.sin(c * 1.31) * 0.3).multiplyScalar(hh);
     if (s.camFn) {
       const r = s.camFn(e);
-      g.cam.cinePos.copy(g.worldRoot.localToWorld(this.tmpA.copy(r.pos)));
-      g.cam.cineLook.copy(g.worldRoot.localToWorld(this.tmpB.copy(r.look)));
+      g.cam.cinePos.copy(g.worldRoot.localToWorld(this.tmpA.copy(r.pos).add(sway)));
+      g.cam.cineLook.copy(g.worldRoot.localToWorld(this.tmpB.copy(r.look).addScaledVector(sway, 0.5)));
     } else if (s.cam) {
       const p = this.tmpA.copy(s.cam.from);
       if (s.cam.to) p.lerp(s.cam.to, e);
       const l = this.tmpB.copy(s.cam.look);
       if (s.cam.lookTo) l.lerp(s.cam.lookTo, e);
-      g.cam.cinePos.copy(g.worldRoot.localToWorld(p));
-      g.cam.cineLook.copy(g.worldRoot.localToWorld(l));
+      g.cam.cinePos.copy(g.worldRoot.localToWorld(p.add(sway)));
+      g.cam.cineLook.copy(g.worldRoot.localToWorld(l.addScaledVector(sway, 0.5)));
     }
   }
 
@@ -341,6 +382,17 @@ export class CutscenePlayer {
     for (const a of this.actors) a.update(dt, time);
     if (!this.active) return;
     const g = this.g;
+    this.clock += dt;
+    if (this.phase === 'in') {
+      this.phaseT += dt;
+      if (this.phaseT > 0.4) this.begin();
+      return;
+    }
+    if (this.phase === 'out') {
+      this.phaseT += dt;
+      if (this.phaseT > 0.4) this.end();
+      return;
+    }
     if (g.input.consume('roll') || g.input.consume('pause')) {
       this.skip();
       return;
@@ -351,6 +403,9 @@ export class CutscenePlayer {
     s.tick?.(Math.min(1, k), dt, time);
     this.place(k);
     if (s.fadeOut && this.t > this.dur - s.fadeOut && this.t - dt <= this.dur - s.fadeOut) g.hud.fade(1, s.fadeOut);
+    // Dip into the next shot: fade out the tail of this one.
+    const nx = this.shots[this.i + 1];
+    if (nx && this.dipsInto(this.i + 1) && !s.fadeOut && this.t > this.dur - 0.4 && this.t - dt <= this.dur - 0.4) g.hud.fade(1, 0.38);
     if (this.t >= this.dur) this.next();
   }
 
@@ -367,18 +422,28 @@ export class CutscenePlayer {
   }
 
   private finish(): void {
+    // Dip to black, then hand the camera back to the player.
+    this.phase = 'out';
+    this.phaseT = 0;
+    this.g.hud.clearSubtitles();
+    this.g.hud.fade(1, 0.35);
+  }
+
+  private end(): void {
     const g = this.g;
     this.active = false;
+    this.phase = 'shots';
     g.cam.baseFov = this.savedFov;
     g.hud.setLetterbox(false);
     g.hud.cinematic(false);
     g.cam.setCinematic(false);
+    g.cam.cineWeight = 0;
     g.player.group.visible = true;
     g.player.cloak.mesh.visible = true;
     g.player.controlEnabled = true;
     g.player.invulnerable = false;
     g.cam.snap(g.worldRoot.localToWorld(g.player.pos.clone()), g.player.yaw);
-    g.hud.fade(0, 0.8);
+    g.hud.fade(0, 0.9);
     const cb = this.onDone;
     this.onDone = null;
     cb?.();

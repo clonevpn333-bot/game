@@ -401,16 +401,29 @@ export class Chapter5 extends ChapterBase {
   protected onRespawnBoss(): void {
     const g = this.g;
     if (this.stage === 'boss' && this.morvane.alive) {
-      g.removeEnemies((e) => e === this.morvane || e.encounter === 'boss');
-      this.morvane.reset();
-      this.morvane.group.removeFromParent();
+      // Morvane returns to his place before the heart, singing. Walk back in to face him.
+      const mv = this.morvane;
+      g.removeEnemies((e) => e === mv || e.encounter === 'boss');
+      mv.reset();
+      mv.place(g.hollow!.arenaCenter.clone().addScaledVector(g.path.at(this.sHeart + 50).tangent, 12), this.yawAlong(this.sHeart, true));
+      g.addEnemy(mv);
       g.nav.minS = 0;
       g.nav.maxS = this.finalGate;
       g.hud.setBoss(null);
       g.audio.setMusic('dread');
       g.setPalette('heart');
-      this.fired.delete('boss-intro');
       this.stage = 'dreams';
+      this.rematch = {
+        at: this.sHeart + 6,
+        start: () => {
+          mv.wake();
+          this.stage = 'boss';
+          g.nav.minS = this.sHeart + 2;
+          g.nav.maxS = g.path.length;
+          g.audio.setMusic('boss');
+          g.hud.say('Archdeacon Morvane', 'Still crawling, knight? Then kneel.', 2.5);
+        },
+      };
     }
   }
 

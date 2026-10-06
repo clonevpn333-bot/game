@@ -373,6 +373,32 @@ export class Game {
         case 'player-dead':
           this.onPlayerDead();
           break;
+        case 'parry':
+          a.hit(e.pos, 'boss', true);
+          a.toll(e.pos, false);
+          this.vfx.sparks(e.pos, 34, '#ffe6a0', 9);
+          this.vfx.impact(e.pos, 1.3, '#fff0c0');
+          this.hitstop(170);
+          this.slowmo(0.45);
+          this.cam.addTrauma(0.35);
+          this.cam.punch(4);
+          if (!this.parryHinted) {
+            this.parryHinted = true;
+            this.hud.hint('<b>Parried!</b> They are reeling: <kbd>LMB</kbd> to riposte', 3.5);
+          }
+          break;
+        case 'block':
+          a.hit(e.pos, 'penitent', e.broken);
+          this.vfx.sparks(e.pos, e.broken ? 26 : 12, '#ffd8a0', e.broken ? 7 : 4);
+          this.cam.addTrauma(e.broken ? 0.45 : 0.15);
+          if (e.broken) this.hud.hint('Guard broken. Your stamina ran out.', 2.5);
+          break;
+        case 'riposte':
+          this.slowmo(0.7);
+          this.cam.addTrauma(0.3);
+          this.cam.punch(6);
+          a.swing(true);
+          break;
         case 'enemy-dead':
           this.chapter.onEnemyDead(e.kind);
           if (e.kind === 'boss' || e.kind === 'ivarr' || e.kind === 'morvane' || e.kind === 'dragon') a.stinger('victory');
@@ -401,6 +427,7 @@ export class Game {
   }
 
   hurtPulse = 0;
+  private parryHinted = false;
 
   // ------------------------------------------------------------------ UI wiring
   private wireUi(): void {

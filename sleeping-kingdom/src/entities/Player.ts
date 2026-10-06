@@ -9,7 +9,7 @@ import { Nav } from '../game/Nav';
 import type { Combatant, EventBus, HitInfo } from '../systems/Combat';
 import { clamp, damp, dampAngle, wrapAngle } from '../utils/math';
 
-type State = 'ride' | 'free' | 'attack' | 'roll' | 'hit' | 'flask' | 'dead' | 'locked';
+type State = 'ride' | 'free' | 'attack' | 'roll' | 'hit' | 'flask' | 'dead' | 'locked' | 'guard';
 
 export type AttackDef = {
   duration: number;
@@ -125,6 +125,29 @@ export const HEAVY: AttackDef = {
     [1, GUARD],
   ],
 };
+
+/** A finishing thrust into a staggered foe: the heavy's form, far more damage. */
+export const RIPOSTE: AttackDef = { ...HEAVY, duration: 0.95, active: [0.42, 0.62], damage: 135, poise: 220, stamina: 8, lunge: 2.8, reach: 3.2, arc: 1.3 };
+
+/** Sword raised flat across the body to catch a blow. */
+function guardHigh(t: number): Pose {
+  const b = Math.sin(t * 2.2) * 0.02;
+  return {
+    ...guardPose(t),
+    shoulderR: [-1.05, 0.35, 0.55],
+    elbowR: [-1.35, 0, 0],
+    handR: [1.25, 0.65, 0.35],
+    shoulderL: [-0.9, 0, 0.1],
+    elbowL: [-1.35, 0, 0],
+    spine: [0.18 + b, -0.25, 0],
+    chest: [0.08, -0.2, 0],
+    hipL: [-0.45, 0, 0.12],
+    hipR: [0.2, 0, -0.1],
+    kneeL: [0.55, 0, 0],
+    kneeR: [0.45, 0, 0],
+    rootY: -0.1,
+  };
+}
 
 export const ROLL_POSE: Pose = {
   spine: [0.9, 0, 0],
@@ -330,6 +353,45 @@ export class Player {
       return false;
     }
     if (this.state === 'ride') return false;
+    if (this.state === 'guard') {
+      const fx = Math.sin(this.yaw);
+      const fz = Math.cos(this.yaw);
+      const dx = hit.from.x - this.pos.x;
+      const dz = hit.from.z - this.pos.z;
+      const facing = (dx * fx + dz * fz) / Math.max(0.01, Math.hypot(dx, dz)) > 0.25;
+      if (facing && this.guardT < 0.22 && hit.source) {
+        // Parry: the blow glances off and the attacker reels.
+        hit.source.parried();
+        this.stamina = Math.min(this.maxStamina, this.stamina + 10);
+        this.bus.emit({ type: 'parry', pos: this.pos.clone().setY(this.pos.y + 1.3).addScaledVector(this.forward, 0.8) });
+        return false;
+      }
+      if (facing) {
+        this.stamina -= hit.damage * 1.4 + 8;
+        this.staminaDelay = 0.8;
+        const broken = this.stamina <= 0;
+        this.hp -= hit.damage * (broken ? 0.6 : 0.15);
+        this.bus.emit({ type: 'block', pos: this.pos.clone().setY(this.pos.y + 1.3).addScaledVector(this.forward, 0.7), broken });
+        if (this.hp <= 0) {
+          this.hp = 0;
+          this.state = 'dead';
+          this.stateT = 0;
+          this.lockTarget = null;
+          return true;
+        }
+        if (broken) {
+          this.stamina = 0;
+          this.hitDir.copy(this.pos).sub(hit.from).setY(0).normalize();
+          this.hitHeavy = true;
+          this.state = 'hit';
+          this.stateT = 0;
+        } else {
+          this.hitDir.copy(this.pos).sub(hit.from).setY(0).normalize();
+          this.velocity.addScaledVector(this.hitDir, hit.heavy ? 4 : 2);
+        }
+        return false;
+      }
+    }
     this.hp -= hit.damage;
     this.hitDir.copy(this.pos).sub(hit.from).setY(0).normalize();
     this.hitHeavy = hit.heavy;
@@ -381,8 +443,18 @@ export class Player {
           this.bus.emit({ type: 'roll', pos: this.pos.clone() });
           break;
         }
+        if (ctl && input.peek('attack') && this.tryRiposte(enemies)) {
+          input.consume('attack');
+          break;
+        }
         if (ctl && input.consume('attack') && this.spend(ATTACKS[0].stamina)) {
           this.startAttack(ATTACKS[0], 0);
+          break;
+        }
+        if (ctl && input.guardHeld() && this.stamina > 4) {
+          this.state = 'guard';
+          this.stateT = 0;
+          this.guardT = 0;
           break;
         }
         if (ctl && input.consume('heavy') && this.spend(HEAVY.stamina)) {
@@ -473,6 +545,53 @@ export class Player {
           }
         }
         if (k >= 1) this.state = 'free';
+        break;
+      }
+      case 'guard': {
+        this.guardT += dt;
+        if (ctl && input.consume('lock')) this.toggleLock(enemies, camYaw);
+        if (!ctl || !input.guardHeld()) {
+          this.state = 'free';
+          break;
+        }
+        if (input.peek('attack') && this.tryRiposte(enemies)) {
+          input.consume('attack');
+          break;
+        }
+        if (input.consume('attack') && this.spend(ATTACKS[0].stamina)) {
+          this.startAttack(ATTACKS[0], 0);
+          break;
+        }
+        if (input.consume('roll') && this.spend(22)) {
+          this.state = 'roll';
+          this.stateT = 0;
+          this.rollDir.copy(wishLen > 0.2 ? wish.normalize() : this.forward);
+          this.yaw = Math.atan2(this.rollDir.x, this.rollDir.z);
+          this.bus.emit({ type: 'roll', pos: this.pos.clone() });
+          break;
+        }
+        // Shuffle while guarding, slowly; stamina recovers slowly behind the guard.
+        this.staminaDelay = Math.max(this.staminaDelay, 0.25);
+        this.stamina = Math.min(this.maxStamina, this.stamina + 12 * dt);
+        const gs = wishLen * 1.7;
+        this.velocity.x = damp(this.velocity.x, wish.x * gs, 10, dt);
+        this.velocity.z = damp(this.velocity.z, wish.z * gs, 10, dt);
+        if (this.lockTarget) {
+          const d = this.lockTarget.pos;
+          this.yaw = dampAngle(this.yaw, Math.atan2(d.x - this.pos.x, d.z - this.pos.z), 12, dt);
+        } else if (wishLen > 0.1) this.yaw = dampAngle(this.yaw, Math.atan2(wish.x, wish.z), 8, dt);
+        const sp = Math.hypot(this.velocity.x, this.velocity.z);
+        this.phase += gaitRate(sp) * dt;
+        const hi = guardHigh(time);
+        if (sp > 0.2) {
+          const loco = locomotion(this.phase, 0.2, { armSwing: 0 });
+          hi.hipL = loco.hipL;
+          hi.hipR = loco.hipR;
+          hi.kneeL = loco.kneeL;
+          hi.kneeR = loco.kneeR;
+        }
+        this.anim.apply(hi, dt, this.guardT < 0.1 ? 30 : 14);
+        this.ikTarget = 1;
         break;
       }
       case 'roll': {
@@ -584,6 +703,29 @@ export class Player {
     }
     this.lastStepPhase = this.phase;
   }
+
+  /** Riposte a staggered foe standing in front of you. */
+  private tryRiposte(enemies: Combatant[]): boolean {
+    const fwd = this.forward;
+    for (const e of enemies) {
+      const st = (e as unknown as { state?: string }).state;
+      if (!e.alive || st !== 'stagger') continue;
+      const dx = e.pos.x - this.pos.x;
+      const dz = e.pos.z - this.pos.z;
+      const d = Math.hypot(dx, dz);
+      if (d > 2.6 + e.radius) continue;
+      if ((dx * fwd.x + dz * fwd.z) / Math.max(0.01, d) < 0.2 && !this.lockTarget) continue;
+      if (this.stamina < 4) return false;
+      this.stamina -= RIPOSTE.stamina;
+      this.yaw = Math.atan2(dx, dz);
+      this.startAttack(RIPOSTE, -1);
+      this.bus.emit({ type: 'riposte', pos: e.pos.clone().setY(e.pos.y + 1.2) });
+      return true;
+    }
+    return false;
+  }
+
+  private guardT = 0;
 
   private startAttack(def: AttackDef, combo: number): void {
     this.state = 'attack';

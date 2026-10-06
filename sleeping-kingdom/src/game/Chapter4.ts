@@ -372,16 +372,28 @@ export class Chapter4 extends ChapterBase {
   protected onRespawnBoss(): void {
     const g = this.g;
     if (this.stage === 'boss' && this.ivarr.alive) {
-      g.removeEnemies((e) => e === this.ivarr);
-      this.ivarr.reset();
-      this.ivarr.group.removeFromParent();
+      // Ivarr kneels on his sword in the courtyard. Walk back in to fight again.
+      const iv = this.ivarr;
+      g.removeEnemies((e) => e === iv);
+      iv.reset();
+      iv.place(this.spot(this.sFort + 33, 0), this.yawAlong(this.sFort + 33, true));
+      g.addEnemy(iv);
       g.nav.minS = 0;
-      g.nav.maxS = this.finalGate;
+      g.nav.maxS = g.path.length;
       g.hud.setBoss(null);
       g.audio.setMusic('dread');
-      // The gate stays open: walk back in to fight again.
-      this.fired.add('rematch-armed');
       this.stage = 'gate';
+      this.rematch = {
+        at: this.sFort + 14,
+        start: () => {
+          iv.wake();
+          this.stage = 'boss';
+          g.nav.minS = this.sFort + 6;
+          g.nav.maxS = g.path.length;
+          g.audio.setMusic('boss');
+          g.hud.say(IVARR, 'Again, brother.', 2.5);
+        },
+      };
     }
   }
 
@@ -428,20 +440,7 @@ export class Chapter4 extends ChapterBase {
       this.gateK += Math.sign(this.gateTarget - this.gateK) * Math.min(Math.abs(this.gateTarget - this.gateK), dt * 0.4);
       g.frost!.setGate(this.gateK);
     }
-    // Rematch: walking back into the courtyard after a death restarts the duel.
-    if (this.fired.has('rematch-armed') && this.enc.gate === 'cleared' && s > this.sFort + 14 && !g.cut.active && this.stage !== 'boss' && this.stage !== 'ending') {
-      this.fired.delete('rematch-armed');
-      const iv = this.ivarr;
-      iv.reset();
-      iv.place(g.frost!.arenaCenter.clone().addScaledVector(g.path.at(this.sFort + 40).tangent, 6), this.yawAlong(this.sFort, true));
-      iv.state = 'chase';
-      g.addEnemy(iv);
-      this.stage = 'boss';
-      g.nav.minS = this.sFort + 6;
-      g.nav.maxS = g.path.length;
-      g.audio.setMusic('boss');
-      g.hud.say(IVARR, 'Again, brother.', 2.5);
-    }
+    void s;
     if (this.endT >= 0) {
       const prev = this.endT;
       this.endT += dt;

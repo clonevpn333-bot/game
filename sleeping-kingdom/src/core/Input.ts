@@ -200,6 +200,13 @@ export class Input {
     return target;
   }
 
+  /** Guard is held, not tapped: C, L or Ctrl. */
+  guardHeld(): boolean {
+    return this.enabled && (this.keys.has('KeyC') || this.keys.has('KeyL') || this.keys.has('ControlLeft') || this.guardTouch);
+  }
+
+  guardTouch = false;
+
   sprintHeld(): boolean {
     return this.enabled && (this.keys.has('ShiftLeft') || this.keys.has('ShiftRight') || this.sprintTouch);
   }

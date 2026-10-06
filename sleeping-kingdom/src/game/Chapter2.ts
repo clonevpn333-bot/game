@@ -355,19 +355,21 @@ export class Chapter2 {
     g.hud.clearSubtitles();
     g.hud.setLetterbox(false);
     g.cam.setCinematic(false);
+    // The fight you died in resets in place: the same enemies come back at full strength.
     for (const id of ['grove', 'hamlet', 'chapel'] as const) {
       if (this.enc[id] === 'active') {
         g.removeEnemies((e) => e.encounter === id);
-        this.enc[id] = 'idle';
-        this.fired.delete(`enc-${id}`);
+        this.startEncounter(id);
       }
     }
     g.removeEnemies((e) => e.encounter === 'dragon');
     if (this.enc.dragon === 'active') {
       this.enc.dragon = 'idle';
       g.removeEnemies((e) => e === this.drake);
-      this.drake.group.removeFromParent();
       this.drake.reset();
+      // Vharoth settles back on the skull, waiting.
+      this.drake.place(g.wood!.perch.clone(), this.yawAlong(this.sEnd, true));
+      if (!this.drake.group.parent) g.worldRoot.add(this.drake.group);
       g.nav.minS = 0;
       g.nav.maxS = this.sRibs - 3;
       g.hud.setBoss(null);

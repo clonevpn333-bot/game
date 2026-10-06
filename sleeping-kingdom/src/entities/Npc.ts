@@ -134,6 +134,11 @@ export class Folk {
       pose.spine = [(pose.spine?.[0] ?? 0), 0, -tilt * 3];
     }
     this.anim.apply(pose, dt, 8);
+    const face = this.rig.face;
+    if (face) {
+      face.talking = this.behavior === 'talk' && Math.sin(t * 0.9) > -0.3;
+      face.update(dt);
+    }
     this.group.rotation.y = this.yaw;
   }
 
@@ -158,10 +163,10 @@ export class Dog {
     const m = Mats();
     this.group.add(this.body);
     this.body.position.y = 0.55;
-    this.body.add(mesh(new THREE.SphereGeometry(0.22, 10, 8).scale(1, 0.9, 2.1), m.fur));
+    this.body.add(mesh(new THREE.SphereGeometry(0.22, 8, 6).scale(1, 0.9, 2.1), m.fur));
     this.head.position.set(0, 0.18, 0.42);
     this.body.add(this.head);
-    this.head.add(mesh(new THREE.SphereGeometry(0.14, 10, 8).scale(0.9, 0.95, 1.1), m.fur));
+    this.head.add(mesh(new THREE.SphereGeometry(0.14, 8, 6).scale(0.9, 0.95, 1.1), m.fur));
     this.head.add(mesh(latheG([[0.07, 0], [0.06, 0.12], [0.03, 0.22], [0, 0.23]], 8).rotateX(Math.PI / 2), m.fur, 0, -0.03, 0.08));
     for (const sx of [-1, 1]) {
       this.head.add(mesh(new THREE.ConeGeometry(0.04, 0.12, 4), m.fur, sx * 0.07, 0.13, -0.02, -0.3, 0, sx * -0.3));

@@ -50,6 +50,8 @@ export abstract class ChapterBase implements ChapterScript {
   /** Where the path opens once every fight is won (usually the boss arena). */
   protected finalGate = 0;
   protected boss: Enemy | null = null;
+  /** After a death in a boss fight, the boss waits in its arena; walking back in restarts the fight. */
+  protected rematch: { at: number; start: () => void } | null = null;
   protected abstract readonly palette: keyof typeof SKY_PALETTES;
   protected abstract readonly music: 'dread' | 'calm';
   protected abstract readonly titleCard: [string, string];
@@ -235,6 +237,7 @@ export abstract class ChapterBase implements ChapterScript {
     this.fired.clear();
     for (const k of Object.keys(this.enc)) this.enc[k] = 'idle';
     this.checkpoint = { s: this.startS, name: 'start' };
+    this.rematch = null;
     g.removeEnemies(() => true);
     g.cut.clearActors();
     this.candles.forEach((_, i) => this.setLit(i, false));
@@ -318,16 +321,19 @@ export abstract class ChapterBase implements ChapterScript {
     g.hud.clearSubtitles();
     g.hud.setLetterbox(false);
     g.cam.setCinematic(false);
+    // The fight you died in resets in place: the same enemies stand up again at full strength.
     for (const def of this.encs) {
       if (this.enc[def.id] === 'active') {
         g.removeEnemies((e) => e.encounter === def.id);
-        this.enc[def.id] = 'idle';
-        this.fired.delete(`enc-${def.id}`);
+        def.spawn();
         g.nav.maxS = def.gate;
       }
     }
     g.removeEnemies((e) => e.encounter === 'boss-adds' || e.encounter === 'boss');
+    this.rematch = null;
     this.onRespawnBoss();
+    this.timeline = [];
+    g.hud.clearSubtitles();
     this.placePlayer(this.checkpoint.s);
     g.player.controlEnabled = true;
     g.hud.reset();
@@ -407,6 +413,11 @@ export abstract class ChapterBase implements ChapterScript {
       this.interact();
     }
     if (this.boss && this.boss.alive && this.boss.group.parent && (this.boss.state as string) !== 'dormant') g.hud.setBoss(this.boss.name, this.boss.hp / this.boss.maxHp);
+    if (this.rematch && s > this.rematch.at && !g.cut.active && g.mode === 'play') {
+      const r = this.rematch;
+      this.rematch = null;
+      r.start();
+    }
     this.onTick(dt, t, s);
   }
 

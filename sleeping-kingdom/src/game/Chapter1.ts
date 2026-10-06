@@ -657,12 +657,14 @@ export class Chapter {
     g.hud.clearSubtitles();
     g.hud.setLetterbox(false);
     g.cam.setCinematic(false);
+    // The fight you died in resets in place: the same enemies come back at full strength.
     for (const key of ['broken', 'stair'] as const) {
       if (this.enc[key] === 'active') {
         g.removeEnemies((e) => e.encounter === key);
-        this.enc[key] = 'idle';
-        this.fired.delete(`enc-${key}`);
-        this.brokenWave = 0;
+        if (key === 'broken') {
+          this.brokenWave = 1;
+          this.spawnBroken(1);
+        } else this.spawnStair();
       }
     }
     g.removeEnemies((e) => e.encounter === 'boss');
@@ -670,7 +672,9 @@ export class Chapter {
       this.enc.boss = 'idle';
       g.removeEnemies((e) => e === g.boss);
       g.boss.reset();
-      g.boss.group.removeFromParent();
+      // The Knellwarden kneels in the plaza again, waiting behind the fog.
+      g.boss.place(g.city!.plazaCenter.clone(), this.yawAlong(this.sPlaza + 34, true));
+      g.addEnemy(g.boss);
       g.nav.minS = 0;
       g.nav.maxS = this.sFog - 0.5;
       this.fogUniforms.uOpacity.value = 1;
@@ -991,6 +995,7 @@ export class Chapter {
       g.hud.area('The Penitents’ Stair', '', 4);
       this.spawnStair();
       this.enc.stair = 'active';
+      this.after(3, () => g.hud.hint('Hold <kbd>C</kbd> to guard. Tap it just as a blow lands to <b>parry</b>, then <kbd>LMB</kbd> to riposte.', 8));
     });
     this.once('stair-mites', s > this.sStair + 8 && this.enc.stair === 'active', () => {
       for (const lat of [-2.4, 2.4]) {

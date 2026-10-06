@@ -20,18 +20,18 @@ export class Horse {
     const m = Mats();
     this.root.add(this.body);
     this.body.position.y = 1.25;
-    const torso = new THREE.SphereGeometry(0.5, 16, 12);
+    const torso = new THREE.SphereGeometry(0.5, 8, 6);
     torso.scale(0.9, 0.95, 1.9);
     this.body.add(mesh(torso, m.horseCoat));
-    const chestG = new THREE.SphereGeometry(0.42, 12, 10);
+    const chestG = new THREE.SphereGeometry(0.42, 8, 6);
     this.body.add(mesh(chestG, m.horseCoat, 0, 0.05, 0.7));
-    this.body.add(mesh(new THREE.SphereGeometry(0.46, 12, 10), m.horseCoat, 0, 0.05, -0.72));
+    this.body.add(mesh(new THREE.SphereGeometry(0.46, 8, 6), m.horseCoat, 0, 0.05, -0.72));
     // Caparison: open cloth skirt around the barrel.
-    const cap = new THREE.CylinderGeometry(0.55, 0.66, 0.85, 18, 1, true);
+    const cap = new THREE.CylinderGeometry(0.55, 0.66, 0.85, 7, 1, true);
     cap.scale(1, 1, 1.85);
     this.body.add(mesh(cap, m.barding, 0, -0.18, 0));
     // Saddle with high cantle.
-    this.body.add(mesh(latheG([[0.3, 0], [0.32, 0.06], [0.0, 0.08]], 12).scale(1, 1, 1.4), m.leather, 0, 0.42, 0.05));
+    this.body.add(mesh(latheG([[0.3, 0], [0.32, 0.06], [0.0, 0.08]], 8).scale(1, 1, 1.4), m.leather, 0, 0.42, 0.05));
     this.body.add(mesh(new THREE.BoxGeometry(0.4, 0.22, 0.06), m.leather, 0, 0.55, -0.3));
     this.seat.position.set(0, 0.5, 0.02);
     this.body.add(this.seat);
@@ -39,7 +39,7 @@ export class Horse {
     this.neck.position.set(0, 0.25, 0.85);
     this.neck.rotation.x = 0.75;
     this.body.add(this.neck);
-    this.neck.add(mesh(limb(0.28, 0.2, 0.9, 10).rotateX(Math.PI), m.horseCoat, 0, 0, 0));
+    this.neck.add(mesh(limb(0.28, 0.2, 0.9, 7).rotateX(Math.PI), m.horseCoat, 0, 0, 0));
     for (let i = 0; i < 6; i += 1) {
       const g = new THREE.PlaneGeometry(0.06, 0.32);
       this.neck.add(mesh(g, m.horseMane, 0, 0.15 + i * 0.13, -0.18, 0.2, Math.PI / 2, 0));
@@ -47,7 +47,7 @@ export class Horse {
     this.head.position.set(0, 0.9, 0);
     this.head.rotation.x = 1.45;
     this.neck.add(this.head);
-    const skull = latheG([[0.0, 0.0], [0.16, 0.05], [0.17, 0.2], [0.13, 0.4], [0.1, 0.55], [0.0, 0.6]], 10);
+    const skull = latheG([[0.0, 0.0], [0.16, 0.05], [0.17, 0.2], [0.13, 0.4], [0.1, 0.55], [0.0, 0.6]], 8);
     skull.scale(0.85, 1, 1.05);
     this.head.add(mesh(skull, m.horseCoat));
     // Chanfron (face armour).
@@ -68,13 +68,13 @@ export class Horse {
         const hip = new THREE.Group();
         hip.position.set(side * 0.24, -0.1, front ? 0.62 : -0.66);
         this.body.add(hip);
-        hip.add(mesh(limb(front ? 0.14 : 0.18, 0.09, 0.62, 9), m.horseCoat, 0, 0, 0));
+        hip.add(mesh(limb(front ? 0.14 : 0.18, 0.09, 0.62, 7), m.horseCoat, 0, 0, 0));
         const knee = new THREE.Group();
         knee.position.y = -0.6;
         hip.add(knee);
-        knee.add(mesh(limb(0.07, 0.06, 0.5, 8), m.horseCoat));
-        knee.add(mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.1, 8), m.ironDark, 0, -0.52, 0));
-        knee.add(mesh(new THREE.CylinderGeometry(0.09, 0.07, 0.12, 8), m.horseMane, 0, -0.4, 0));
+        knee.add(mesh(limb(0.07, 0.06, 0.5, 7), m.horseCoat));
+        knee.add(mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.1, 7), m.ironDark, 0, -0.52, 0));
+        knee.add(mesh(new THREE.CylinderGeometry(0.09, 0.07, 0.12, 7), m.horseMane, 0, -0.4, 0));
         this.legs.push({ hip, knee, front, side });
       }
     }

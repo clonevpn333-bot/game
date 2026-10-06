@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export type HitInfo = { damage: number; poise: number; from: THREE.Vector3; heavy: boolean; noStagger?: boolean };
+export type HitInfo = { damage: number; poise: number; from: THREE.Vector3; heavy: boolean; noStagger?: boolean; source?: { parried(): void } };
 
 export interface Combatant {
   readonly pos: THREE.Vector3;
@@ -27,6 +27,9 @@ export type GameEvent =
   | { type: 'slam'; pos: THREE.Vector3; radius: number }
   | { type: 'toll'; pos: THREE.Vector3 }
   | { type: 'player-dead' }
+  | { type: 'parry'; pos: THREE.Vector3 }
+  | { type: 'block'; pos: THREE.Vector3; broken: boolean }
+  | { type: 'riposte'; pos: THREE.Vector3 }
   | { type: 'enemy-dead'; pos: THREE.Vector3; kind: string };
 
 export class EventBus {

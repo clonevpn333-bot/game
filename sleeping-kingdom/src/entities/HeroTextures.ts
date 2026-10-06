@@ -22,11 +22,11 @@ function paint(key: string, w: number, h: number, draw: Draw, opts: { nearest?: 
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   if (opts.repeat !== false) t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  if (opts.nearest !== false) {
-    t.magFilter = THREE.NearestFilter;
-    t.minFilter = THREE.LinearMipmapLinearFilter;
-  }
-  t.anisotropy = 4;
+  // PS2 look: small textures, bilinear-filtered (soft, not pixelated), no anisotropic sharpening.
+  t.magFilter = THREE.LinearFilter;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.anisotropy = 1;
+  void opts.nearest;
   cache.set(key, t);
   return t;
 }

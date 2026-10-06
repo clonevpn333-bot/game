@@ -37,7 +37,7 @@ export type Rig = {
 // ---------------------------------------------------------------- shape helpers (smooth, stylized)
 
 /** Rounded tapered limb segment hanging down from its joint. */
-export function limb(rTop: number, rBottom: number, len: number, sides = 9, bulge = 1.08): THREE.BufferGeometry {
+export function limb(rTop: number, rBottom: number, len: number, sides = 7, bulge = 1.08): THREE.BufferGeometry {
   const pts: THREE.Vector2[] = [];
   const steps = 6;
   pts.push(new THREE.Vector2(0.0001, 0));
@@ -52,7 +52,7 @@ export function limb(rTop: number, rBottom: number, len: number, sides = 9, bulg
   return g;
 }
 
-export function latheG(profile: Array<[number, number]>, sides = 12): THREE.BufferGeometry {
+export function latheG(profile: Array<[number, number]>, sides = 8): THREE.BufferGeometry {
   return new THREE.LatheGeometry(
     profile.map(([r, y]) => new THREE.Vector2(Math.max(0.0001, r), y)),
     sides,
@@ -61,7 +61,7 @@ export function latheG(profile: Array<[number, number]>, sides = 12): THREE.Buff
 
 /** Dome cap (pauldron, poleyn, couter): a partial sphere. */
 export function dome(r: number, sx = 1, sy = 1, sz = 1, theta = Math.PI * 0.55): THREE.BufferGeometry {
-  const g = new THREE.SphereGeometry(r, 12, 8, 0, Math.PI * 2, 0, theta);
+  const g = new THREE.SphereGeometry(r, 8, 6, 0, Math.PI * 2, 0, theta);
   g.scale(sx, sy, sz);
   return g;
 }
@@ -131,28 +131,28 @@ export function buildFolk(style: FolkStyle): Rig & { lantern?: THREE.Object3D } 
   const { j } = rig;
   const robeProfile: Array<[number, number]> = [[0.2, 0.14], [0.22, 0.0], [0.27, -0.4], [0.33, -0.8], [0.36, -0.94], [0, -0.94]];
   j.hips.add(mesh(latheG(robeProfile, 12), style.robe, 0, 0, 0));
-  j.hips.add(mesh(new THREE.TorusGeometry(0.2, 0.025, 5, 14), m.leatherDark, 0, 0.04, 0, Math.PI / 2));
-  j.spine.add(mesh(limb(0.2, 0.19, 0.3, 10, 1.05), style.robe, 0, 0.3, 0));
-  j.chest.add(mesh(latheG([[0.19, -0.04], [0.23, 0.1], [0.22, 0.25], [0.12, 0.36], [0, 0.37]], 12), style.robe, 0, 0, 0));
+  j.hips.add(mesh(new THREE.TorusGeometry(0.2, 0.025, 4, 10), m.leatherDark, 0, 0.04, 0, Math.PI / 2));
+  j.spine.add(mesh(limb(0.2, 0.19, 0.3, 7, 1.05), style.robe, 0, 0.3, 0));
+  j.chest.add(mesh(latheG([[0.19, -0.04], [0.23, 0.1], [0.22, 0.25], [0.12, 0.36], [0, 0.37]], 8), style.robe, 0, 0, 0));
   if (style.guard) {
-    j.chest.add(mesh(latheG([[0.2, -0.02], [0.245, 0.1], [0.24, 0.24], [0.13, 0.35], [0, 0.36]], 12), m.plateDark, 0, 0, 0.01));
+    j.chest.add(mesh(latheG([[0.2, -0.02], [0.245, 0.1], [0.24, 0.24], [0.13, 0.35], [0, 0.36]], 8), m.plateDark, 0, 0, 0.01));
   }
-  const headG = new THREE.SphereGeometry(0.13, 14, 10);
+  const headG = new THREE.SphereGeometry(0.13, 8, 6);
   headG.scale(0.95, 1.12, 1);
   const faceMat = new THREE.MeshStandardMaterial({ map: Tex.face(style.skin, style.mood), roughness: 0.8 });
   j.head.add(mesh(headG, faceMat, 0, 0.12, 0, 0, -Math.PI / 2));
   j.head.add(mesh(new THREE.SphereGeometry(0.03, 6, 4), new THREE.MeshStandardMaterial({ color: style.skin, roughness: 0.8 }), 0, 0.1, 0.13));
   if (style.hood) {
-    j.head.add(mesh(latheG([[0.0, 0.33], [0.1, 0.3], [0.16, 0.2], [0.17, 0.05], [0.16, -0.06], [0.2, -0.1], [0, -0.1]], 12), style.robe, 0, 0, -0.02));
+    j.head.add(mesh(latheG([[0.0, 0.33], [0.1, 0.3], [0.16, 0.2], [0.17, 0.05], [0.16, -0.06], [0.2, -0.1], [0, -0.1]], 8), style.robe, 0, 0, -0.02));
   } else if (style.hair) {
     j.head.add(mesh(dome(0.14, 1, 1, 1.05, Math.PI * 0.5), m.hair, 0, 0.14, -0.01));
   }
   if (style.guard) {
-    j.head.add(mesh(latheG([[0, 0.31], [0.12, 0.28], [0.17, 0.2], [0.24, 0.14], [0.23, 0.12], [0.15, 0.13], [0, 0.13]], 12), m.plateDark, 0, 0.02, 0));
+    j.head.add(mesh(latheG([[0, 0.31], [0.12, 0.28], [0.17, 0.2], [0.24, 0.14], [0.23, 0.12], [0.15, 0.13], [0, 0.13]], 8), m.plateDark, 0, 0.02, 0));
   }
   for (const [side, sx] of [['L', 1], ['R', -1]] as const) {
     j[`shoulder${side}`].add(mesh(limb(0.075, 0.08, 0.3), style.robe, 0, 0, 0));
-    j[`elbow${side}`].add(mesh(limb(0.08, 0.1, 0.24, 9, 1.0), style.robe, 0, 0, 0));
+    j[`elbow${side}`].add(mesh(limb(0.08, 0.1, 0.24, 7, 1.0), style.robe, 0, 0, 0));
     j[`hand${side}`].add(mesh(new THREE.SphereGeometry(0.05, 8, 6), new THREE.MeshStandardMaterial({ color: style.skin, roughness: 0.8 }), 0, -0.03, 0));
     void sx;
   }
@@ -183,10 +183,10 @@ export function buildPenitent(): Rig & { censer: THREE.Object3D; maskGlow: THREE
   const m = Mats();
   const rig = skeleton({ ...HUMAN, scale: 1.12, shoulderW: 0.24 });
   const { j } = rig;
-  j.hips.add(mesh(latheG([[0.2, 0.14], [0.24, 0], [0.3, -0.45], [0.4, -0.86], [0.44, -0.95], [0, -0.95]], 10), m.robeBlack, 0, 0, 0));
-  j.hips.add(mesh(new THREE.TorusGeometry(0.22, 0.03, 5, 12), m.leather, 0, 0.02, 0, Math.PI / 2));
-  j.spine.add(mesh(limb(0.21, 0.2, 0.3, 10), m.robeBlack, 0, 0.3, 0));
-  j.chest.add(mesh(latheG([[0.2, -0.04], [0.25, 0.1], [0.25, 0.26], [0.13, 0.36], [0, 0.37]], 10), m.robeBlack, 0, 0, 0));
+  j.hips.add(mesh(latheG([[0.2, 0.14], [0.24, 0], [0.3, -0.45], [0.4, -0.86], [0.44, -0.95], [0, -0.95]], 8), m.robeBlack, 0, 0, 0));
+  j.hips.add(mesh(new THREE.TorusGeometry(0.22, 0.03, 4, 10), m.leather, 0, 0.02, 0, Math.PI / 2));
+  j.spine.add(mesh(limb(0.21, 0.2, 0.3, 7), m.robeBlack, 0, 0.3, 0));
+  j.chest.add(mesh(latheG([[0.2, -0.04], [0.25, 0.1], [0.25, 0.26], [0.13, 0.36], [0, 0.37]], 8), m.robeBlack, 0, 0, 0));
   // Tattered scapular strips.
   for (let i = 0; i < 5; i += 1) {
     const g = new THREE.PlaneGeometry(0.08, 0.5 + (i % 2) * 0.2);
@@ -195,12 +195,12 @@ export function buildPenitent(): Rig & { censer: THREE.Object3D; maskGlow: THREE
   }
   // Stone bell mask.
   const maskGlow = new THREE.MeshStandardMaterial({ color: '#100604', emissive: '#ff8a3a', emissiveIntensity: 1.2 });
-  j.head.add(mesh(latheG([[0, 0.42], [0.08, 0.41], [0.15, 0.34], [0.18, 0.15], [0.21, 0.0], [0.25, -0.08], [0.22, -0.08], [0.0, -0.06]], 12), m.stone, 0, 0, 0));
+  j.head.add(mesh(latheG([[0, 0.42], [0.08, 0.41], [0.15, 0.34], [0.18, 0.15], [0.21, 0.0], [0.25, -0.08], [0.22, -0.08], [0.0, -0.06]], 8), m.stone, 0, 0, 0));
   j.head.add(mesh(new THREE.BoxGeometry(0.2, 0.025, 0.05), maskGlow, 0, 0.16, 0.18));
   j.head.add(mesh(new THREE.TorusGeometry(0.05, 0.015, 4, 8), m.ironDark, 0, 0.45, 0));
   for (const side of ['L', 'R'] as const) {
     j[`shoulder${side}`].add(mesh(limb(0.08, 0.085, 0.3), m.robeBlack, 0, 0, 0));
-    j[`elbow${side}`].add(mesh(limb(0.085, 0.11, 0.25, 9, 1.0), m.robeBlack, 0, 0, 0));
+    j[`elbow${side}`].add(mesh(limb(0.085, 0.11, 0.25, 7, 1.0), m.robeBlack, 0, 0, 0));
     j[`hand${side}`].add(mesh(new THREE.SphereGeometry(0.05, 8, 6), m.bone, 0, -0.03, 0));
     j[`foot${side}`].add(mesh(new THREE.SphereGeometry(0.07, 8, 6).scale(1, 0.7, 1.5), m.leatherDark, 0, -0.06, 0.04));
   }
@@ -209,7 +209,7 @@ export function buildPenitent(): Rig & { censer: THREE.Object3D; maskGlow: THREE
   const chain = mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.7, 4), m.ironDark, 0, -0.35, 0);
   const ball = new THREE.Group();
   ball.position.y = -0.75;
-  ball.add(mesh(new THREE.SphereGeometry(0.13, 10, 8), m.ironDark));
+  ball.add(mesh(new THREE.SphereGeometry(0.13, 8, 6), m.ironDark));
   const embers = mesh(new THREE.SphereGeometry(0.1, 8, 6), m.marrowGlow);
   embers.scale.set(1.05, 0.5, 1.05);
   ball.add(embers);

@@ -123,8 +123,8 @@ export class FrostWolf extends Enemy {
     this.body.position.y = 0.78 * sc;
     this.body.scale.setScalar(sc);
     // Deep chest tapering to lean hindquarters.
-    this.body.add(mesh(new THREE.SphereGeometry(0.3, 12, 9).scale(1, 1.05, 1.5), fur, 0, 0.02, 0.22));
-    this.body.add(mesh(new THREE.SphereGeometry(0.24, 12, 9).scale(0.95, 0.9, 1.6), fur, 0, 0.04, -0.3));
+    this.body.add(mesh(new THREE.SphereGeometry(0.3, 8, 6).scale(1, 1.05, 1.5), fur, 0, 0.02, 0.22));
+    this.body.add(mesh(new THREE.SphereGeometry(0.24, 8, 6).scale(0.95, 0.9, 1.6), fur, 0, 0.04, -0.3));
     // Shaggy ruff of fur spikes around the neck and down the back.
     for (let i = 0; i < 14; i += 1) {
       const a = (i / 14) * Math.PI * 2;
@@ -134,12 +134,12 @@ export class FrostWolf extends Enemy {
     for (let i = 0; i < 6; i += 1) this.body.add(mesh(new THREE.OctahedronGeometry(0.07 + (i % 3) * 0.03, 0).scale(0.6, 2.2, 0.6), ice, 0, 0.3 - i * 0.015, 0.3 - i * 0.13, -0.5));
     this.head.position.set(0, 0.2, 0.55);
     this.body.add(this.head);
-    this.head.add(mesh(new THREE.SphereGeometry(0.16, 12, 9).scale(1, 0.95, 1.15), fur));
-    this.head.add(mesh(new THREE.CylinderGeometry(0.06, 0.1, 0.3, 8).rotateX(Math.PI / 2), furLight, 0, -0.03, 0.2));
+    this.head.add(mesh(new THREE.SphereGeometry(0.16, 8, 6).scale(1, 0.95, 1.15), fur));
+    this.head.add(mesh(new THREE.CylinderGeometry(0.06, 0.1, 0.3, 7).rotateX(Math.PI / 2), furLight, 0, -0.03, 0.2));
     this.head.add(mesh(new THREE.SphereGeometry(0.035, 6, 5), Mats().ironDark, 0, -0.0, 0.36));
     this.jaw.position.set(0, -0.08, 0.06);
     this.head.add(this.jaw);
-    this.jaw.add(mesh(new THREE.CylinderGeometry(0.04, 0.07, 0.26, 8).rotateX(Math.PI / 2), furLight, 0, -0.02, 0.14));
+    this.jaw.add(mesh(new THREE.CylinderGeometry(0.04, 0.07, 0.26, 7).rotateX(Math.PI / 2), furLight, 0, -0.02, 0.14));
     for (let i = 0; i < 4; i += 1) this.jaw.add(mesh(new THREE.ConeGeometry(0.012, 0.05, 4), Mats().bone, (i - 1.5) * 0.025, 0.02, 0.24));
     for (const sx of [-1, 1]) {
       this.head.add(mesh(new THREE.ConeGeometry(0.05, 0.16, 4), fur, sx * 0.09, 0.15, -0.03, -0.2, 0, sx * -0.25));
@@ -754,7 +754,7 @@ export class MorvaneBoss extends Enemy {
                 ctx.vfx.sparks(p.p.clone().setY(p.p.y + 0.5), 30, '#ffd080', 10);
                 ctx.vfx.ring(p.p, 0.4, 2.4, 0.5, '#fff0c0', 'shock');
                 ctx.shake(0.15);
-                if (Math.hypot(ctx.player.pos.x - p.p.x, ctx.player.pos.z - p.p.z) < 1.8) this.strikePlayer(ctx, this.phase2 ? 30 : 24, true);
+                if (Math.hypot(ctx.player.pos.x - p.p.x, ctx.player.pos.z - p.p.z) < 1.8) this.strikePlayer(ctx, this.phase2 ? 30 : 24, true, false);
               }
             }
             if (all && this.stateT > 0.4) this.end(ctx, 0.8);
@@ -829,7 +829,7 @@ export class MorvaneBoss extends Enemy {
           break;
       }
     }
-    this.orbs.update(dt, ctx, this, '#ffd890', (dmg) => this.strikePlayer(ctx, dmg, false));
+    this.orbs.update(dt, ctx, this, '#ffd890', (dmg) => this.strikePlayer(ctx, dmg, false, false));
     this.rig.root.scale.setScalar(this.size);
     this.anim.apply(pose, dt, rate);
   }

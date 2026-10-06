@@ -88,12 +88,30 @@ export abstract class Enemy implements Combatant {
       this.setState('dead');
       return;
     }
+    // Every blow lands with weight: a small shove back even when poise holds.
+    if (this.maxPoise < 150 && this.state !== 'stagger') {
+      this.tmp.copy(this.pos).sub(hit.from).setY(0).normalize();
+      this.vel.addScaledVector(this.tmp, hit.heavy ? 2.6 : 1.4);
+    }
     if (this.poise <= 0 && this.state !== 'stagger') {
       this.poise = this.maxPoise;
       this.onStagger();
       this.setState('stagger');
       this.tmp.copy(this.pos).sub(hit.from).setY(0).normalize();
       this.vel.copy(this.tmp).multiplyScalar(hit.heavy ? 5 : 3);
+    }
+  }
+
+  /** A parried blow knocks the attacker off balance, open to a riposte. Big foes only lose poise. */
+  parried(): void {
+    if (!this.alive || this.state === 'dead') return;
+    this.poise -= this.maxPoise * (this.maxPoise >= 150 ? 0.55 : 1.2);
+    this.flash = 1;
+    if (this.poise <= 0) {
+      this.poise = this.maxPoise;
+      this.onStagger();
+      this.setState('stagger');
+      this.vel.set(0, 0, 0);
     }
   }
 
@@ -110,8 +128,8 @@ export abstract class Enemy implements Combatant {
     return ang < arc / 2 || d < this.radius + 0.6;
   }
 
-  protected strikePlayer(ctx: EnemyCtx, damage: number, heavy: boolean): void {
-    const landed = ctx.player.takeHit({ damage, poise: damage, from: this.pos.clone(), heavy });
+  protected strikePlayer(ctx: EnemyCtx, damage: number, heavy: boolean, parryable = true): void {
+    const landed = ctx.player.takeHit({ damage, poise: damage, from: this.pos.clone(), heavy, source: parryable ? this : undefined });
     if (landed) {
       ctx.shake(heavy ? 0.55 : 0.35);
       ctx.hitstop(heavy ? 90 : 60);
@@ -129,7 +147,7 @@ export abstract class Enemy implements Combatant {
         const d = Math.hypot(ctx.player.pos.x - w.center.x, ctx.player.pos.z - w.center.z);
         if (Math.abs(d - w.r) < w.width && Math.abs(ctx.player.pos.y - w.center.y) < 2.5) {
           w.done = true;
-          this.strikePlayer(ctx, w.damage, w.damage > 20);
+          this.strikePlayer(ctx, w.damage, w.damage > 20, false);
         }
       }
     }
@@ -178,15 +196,15 @@ export class Marrowmite extends Enemy {
     this.eyeMat = m.marrowGlow.clone();
     this.group.add(this.body);
     this.body.position.y = 0.48;
-    const abd = new THREE.SphereGeometry(0.42, 12, 9);
+    const abd = new THREE.SphereGeometry(0.42, 8, 6);
     abd.scale(1, 0.75, 1.4);
     this.body.add(mesh(abd, m.bone, 0, 0.05, -0.45));
     // Glowing seams between carapace plates.
     for (let i = 0; i < 3; i += 1) {
-      this.body.add(mesh(new THREE.TorusGeometry(0.33 - i * 0.05, 0.025, 4, 14), this.eyeMat, 0, 0.06, -0.25 - i * 0.22, 0, 0, 0));
+      this.body.add(mesh(new THREE.TorusGeometry(0.33 - i * 0.05, 0.025, 4, 10), this.eyeMat, 0, 0.06, -0.25 - i * 0.22, 0, 0, 0));
     }
-    this.body.add(mesh(new THREE.SphereGeometry(0.3, 10, 8).scale(1, 0.8, 1.1), m.bone, 0, 0.02, 0.05));
-    const head = mesh(new THREE.SphereGeometry(0.22, 10, 8).scale(1.1, 0.8, 1.2), m.bone, 0, 0.0, 0.38);
+    this.body.add(mesh(new THREE.SphereGeometry(0.3, 8, 6).scale(1, 0.8, 1.1), m.bone, 0, 0.02, 0.05));
+    const head = mesh(new THREE.SphereGeometry(0.22, 8, 6).scale(1.1, 0.8, 1.2), m.bone, 0, 0.0, 0.38);
     this.body.add(head);
     for (const sx of [-1, 1]) {
       const mand = mesh(new THREE.ConeGeometry(0.05, 0.36, 5), m.bone, sx * 0.1, -0.06, 0.6, Math.PI / 2 + 0.2, 0, sx * 0.5);
@@ -542,19 +560,19 @@ export class Knellwarden extends Enemy {
     this.rig = rig;
     const { j } = rig;
     // Armoured tasset skirt.
-    j.hips.add(mesh(latheG([[0.24, 0.1], [0.27, 0], [0.33, -0.2], [0.4, -0.42], [0, -0.42]], 10), m.plateDark));
-    j.hips.add(mesh(new THREE.TorusGeometry(0.255, 0.04, 6, 16), m.bronze, 0, 0.05, 0, Math.PI / 2));
-    j.spine.add(mesh(limb(0.25, 0.23, 0.3, 10), m.mail, 0, 0.3, 0));
-    const breast = latheG([[0.24, -0.05], [0.31, 0.1], [0.33, 0.24], [0.3, 0.36], [0.18, 0.42], [0, 0.43]], 12);
+    j.hips.add(mesh(latheG([[0.24, 0.1], [0.27, 0], [0.33, -0.2], [0.4, -0.42], [0, -0.42]], 8), m.plateDark));
+    j.hips.add(mesh(new THREE.TorusGeometry(0.255, 0.04, 4, 10), m.bronze, 0, 0.05, 0, Math.PI / 2));
+    j.spine.add(mesh(limb(0.25, 0.23, 0.3, 7), m.mail, 0, 0.3, 0));
+    const breast = latheG([[0.24, -0.05], [0.31, 0.1], [0.33, 0.24], [0.3, 0.36], [0.18, 0.42], [0, 0.43]], 8);
     breast.scale(1.1, 1, 0.85);
     j.chest.add(mesh(breast, m.plateDark));
-    j.chest.add(mesh(new THREE.TorusGeometry(0.2, 0.03, 4, 12, Math.PI), m.bronze, 0, 0.22, 0.25, 0, 0, Math.PI));
-    j.chest.add(mesh(latheG([[0.19, 0], [0.18, 0.1], [0, 0.12]], 10), m.bronze, 0, 0.37, 0));
+    j.chest.add(mesh(new THREE.TorusGeometry(0.2, 0.03, 4, 10, Math.PI), m.bronze, 0, 0.22, 0.25, 0, 0, Math.PI));
+    j.chest.add(mesh(latheG([[0.19, 0], [0.18, 0.1], [0, 0.12]], 8), m.bronze, 0, 0.37, 0));
     // The bell head: hollow bronze, a molten slit of light where a face would be.
-    j.head.add(mesh(latheG([[0, 0.5], [0.12, 0.49], [0.2, 0.42], [0.22, 0.2], [0.27, 0.0], [0.33, -0.12], [0.3, -0.12], [0.24, -0.02], [0.0, 0.0]], 16), m.bronze, 0, 0.0, 0));
+    j.head.add(mesh(latheG([[0, 0.5], [0.12, 0.49], [0.2, 0.42], [0.22, 0.2], [0.27, 0.0], [0.33, -0.12], [0.3, -0.12], [0.24, -0.02], [0.0, 0.0]], 8), m.bronze, 0, 0.0, 0));
     j.head.add(mesh(new THREE.BoxGeometry(0.03, 0.26, 0.05), this.eyeMat, 0, 0.18, 0.21));
-    j.head.add(mesh(new THREE.SphereGeometry(0.14, 10, 8), this.eyeMat, 0, -0.02, 0));
-    j.head.add(mesh(new THREE.TorusGeometry(0.07, 0.025, 6, 10), m.ironDark, 0, 0.53, 0));
+    j.head.add(mesh(new THREE.SphereGeometry(0.14, 8, 6), this.eyeMat, 0, -0.02, 0));
+    j.head.add(mesh(new THREE.TorusGeometry(0.07, 0.025, 4, 10), m.ironDark, 0, 0.53, 0));
     for (const side of ['L', 'R'] as const) {
       const sx = side === 'L' ? 1 : -1;
       j[`shoulder${side}`].add(mesh(dome(0.22, 1.25, 1, 1.2), m.plateDark, sx * 0.05, 0.05, 0, 0, 0, sx * -0.35));
@@ -563,21 +581,21 @@ export class Knellwarden extends Enemy {
         j[`shoulder${side}`].add(mesh(new THREE.ConeGeometry(0.04, 0.22, 5), m.ironDark, sx * (0.05 + s * 0.06), 0.24 - s * 0.05, -0.05, 0, 0, sx * -0.4));
       }
       j[`shoulder${side}`].add(mesh(limb(0.1, 0.09, 0.3), m.mail));
-      j[`elbow${side}`].add(mesh(limb(0.095, 0.085, 0.25, 9, 1.05), m.plateDark));
-      j[`hand${side}`].add(mesh(new THREE.SphereGeometry(0.1, 10, 8).scale(1, 1.2, 1.1), m.plateDark, 0, -0.06, 0));
+      j[`elbow${side}`].add(mesh(limb(0.095, 0.085, 0.25, 7, 1.05), m.plateDark));
+      j[`hand${side}`].add(mesh(new THREE.SphereGeometry(0.1, 8, 6).scale(1, 1.2, 1.1), m.plateDark, 0, -0.06, 0));
       j[`hip${side}`].add(mesh(limb(0.14, 0.11, 0.44), m.plateDark));
       j[`knee${side}`].add(mesh(dome(0.1, 1, 1, 0.9), m.bronze, 0, 0, 0.06, Math.PI / 2));
-      j[`knee${side}`].add(mesh(limb(0.11, 0.09, 0.4, 9, 1.1), m.plateDark));
-      j[`foot${side}`].add(mesh(new THREE.SphereGeometry(0.12, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.8, 1.8), m.plateDark, 0, -0.09, 0.05));
+      j[`knee${side}`].add(mesh(limb(0.11, 0.09, 0.4, 7, 1.1), m.plateDark));
+      j[`foot${side}`].add(mesh(new THREE.SphereGeometry(0.12, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.8, 1.8), m.plateDark, 0, -0.09, 0.05));
     }
     // The Clapper: a great hammer whose head is a small bell.
     const hammer = new THREE.Group();
-    hammer.add(mesh(new THREE.CylinderGeometry(0.035, 0.04, 1.9, 8), m.wood, 0, 0.55, 0));
+    hammer.add(mesh(new THREE.CylinderGeometry(0.035, 0.04, 1.9, 7), m.wood, 0, 0.55, 0));
     const head = new THREE.Group();
     head.position.y = 1.45;
     head.rotation.z = Math.PI / 2;
-    head.add(mesh(latheG([[0, 0.3], [0.12, 0.28], [0.17, 0.12], [0.2, -0.05], [0.25, -0.15], [0.0, -0.12]], 12), m.bronze));
-    head.add(mesh(new THREE.TorusGeometry(0.2, 0.03, 6, 14), this.glowMat, 0, -0.12, 0, Math.PI / 2));
+    head.add(mesh(latheG([[0, 0.3], [0.12, 0.28], [0.17, 0.12], [0.2, -0.05], [0.25, -0.15], [0.0, -0.12]], 8), m.bronze));
+    head.add(mesh(new THREE.TorusGeometry(0.2, 0.03, 4, 10), this.glowMat, 0, -0.12, 0, Math.PI / 2));
     head.add(this.hammerHead);
     hammer.add(head);
     hammer.add(mesh(new THREE.ConeGeometry(0.05, 0.3, 5), m.ironDark, 0, 1.75, 0));
