@@ -1,3 +1,5 @@
+import { lineDuration } from '../audio/voice';
+
 type Line = { speaker: string; text: string; duration: number; thought: boolean };
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => {
@@ -73,6 +75,8 @@ export class Hud {
     this.comboEl.classList.add('pop');
     this.comboT = 2.4;
   }
+  /** Plays recorded dialogue; set by the game once audio exists. */
+  voice: { speak(speaker: string, text: string): number; stopSpeech(): void } | null = null;
   private narrQueue: string[] = [];
   private narrT = 0;
   private narrGap = 0;
@@ -95,7 +99,11 @@ export class Hud {
     this.narrQueue = [...lines];
     this.narrT = 0;
     this.narrGap = 0.2;
-    if (!lines.length) this.narration.classList.remove('show');
+    if (!lines.length) {
+      this.narration.classList.remove('show');
+      this.narrT = 0;
+      this.voice?.stopSpeech();
+    }
   }
 
   show(on: boolean): void {
@@ -146,12 +154,13 @@ export class Hud {
   }
 
   say(speaker: string, text: string, duration = 0, thought = false): void {
-    const d = duration || Math.max(2.4, text.length * 0.065);
+    const d = Math.max(duration, lineDuration(speaker, text, 2.4, 0.065));
     this.queue.push({ speaker, text, duration: d, thought });
   }
 
   clearSubtitles(): void {
     this.queue.length = 0;
+    if (this.current) this.voice?.stopSpeech();
     this.current = null;
     this.subtitle.classList.remove('show');
   }
@@ -220,7 +229,8 @@ export class Hud {
         const text = this.narrQueue.shift()!;
         this.narration.textContent = text;
         this.narration.classList.add('show');
-        this.narrT = Math.max(3.2, text.length * 0.07);
+        this.narrT = lineDuration('Narrator', text, 3.2, 0.07);
+        this.voice?.speak('Narrator', text);
       }
     }
     if (this.hintT > 0) {
@@ -246,6 +256,7 @@ export class Hud {
         this.subLine.classList.toggle('thought', this.current.thought);
         this.subtitle.classList.add('show');
         this.lineT = this.current.duration;
+        this.voice?.speak(this.current.speaker, this.current.text);
       }
     } else if (this.lineT < 0) {
       this.lineT = Math.min(0, this.lineT + dt);

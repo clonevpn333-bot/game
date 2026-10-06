@@ -15,5 +15,7 @@ export default defineConfig({
   build: {
     sourcemap: true,
     chunkSizeWarningLimit: 900,
+    // The score and the voiced lines ride inside the bundle so the release stays one file.
+    assetsInlineLimit: () => true,
   },
 });

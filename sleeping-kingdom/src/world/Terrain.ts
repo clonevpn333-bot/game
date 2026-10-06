@@ -65,7 +65,8 @@ export class Terrain {
       depthWrite: false,
       fog: true,
     });
-    this.buildFog();
+    // Ground mist is now height fog in the shaders (HeightFog.ts); no more flat fog sheets.
+    void this.buildFog;
   }
 
   private grid: { x0: number; z0: number; cell: number; nx: number; nz: number; h: Float32Array } | null = null;
@@ -156,12 +157,24 @@ export class Terrain {
       return lerp(near, roadY + 90 + n1 * 30, smoothstep(70, 160, d));
     }
     if (CITY_ZONES.includes(s.zone)) {
-      if (s.zone === 'plaza' && side < 0 && d > hw + 1) {
-        near = roadY - 3 - 135 * smoothstep(hw + 1, hw + 14, d) + n1 * 8;
+      // The cathedral stands past the end of the road: its grounds are part of the crown.
+      const last = this.path.samples[this.path.samples.length - 1];
+      const ax = x - last.pos.x;
+      const az = z - last.pos.z;
+      const along = ax * last.tangent.x + az * last.tangent.z;
+      const lat = ax * last.right.x + az * last.right.z;
+      const grounds = along > -14 && along < 150 && Math.abs(lat) < 58;
+      // Rugged rim: the plateau edge wanders, and the cliff below it breaks into ledges.
+      const wobble = fbm(x * 0.011 + 3, z * 0.011 - 7, 3) * 46 - 23;
+      const ledge = (k: number) => ridged(x * 0.035, z * 0.035, 4) * 22 * k * (1 - k) * 2.2 + Math.floor(k * 5) * -1.5 * k;
+      if (s.zone === 'plaza' && side < 0 && d > hw + 1 && !grounds) {
+        // The eye-cliff: the city's sheer western face, where Osseran's eye opens.
+        const k = smoothstep(hw + 1, hw + 18 + wobble * 0.2, d);
+        near = roadY - 3 - 135 * k + n1 * 8 + ledge(k);
       } else {
-        // The city's rock plateau: flat well beyond the outermost towers, then sheer cliffs.
-        const k = smoothstep(hw + 108, hw + 165, d);
-        near = roadY - 0.4 - 128 * k + n1 * 10 * k;
+        const rim = hw + 108 + wobble;
+        const k = grounds ? smoothstep(150, 200, along) : smoothstep(rim, rim + 62, d);
+        near = roadY - 0.4 - 128 * k + n1 * 10 * k + ledge(k);
       }
       blend = smoothstep(240, 360, d);
     } else if (s.zone === 'wood' || s.zone === 'chapel') {
@@ -433,7 +446,10 @@ export class Terrain {
       const slope = this.slopeAt(x, z);
       const r = rng();
       if (d < 40 && r < 0.55 && slope < 0.6 && sample.zone === 'road') add('grass', x, y - 0.05, z, 0.8 + rng() * 0.9);
-      else if (slope > 1.2 && r < 0.5) add('rock', x, y - 0.5 - slope * 0.6, z, 1.2 + rng() * 3.5, 1 + rng() * 3, 0.5);
+      else if (slope > 1.2 && r < 0.5) {
+        const rs = 1.2 + rng() * 3.5;
+        add('rock', x, y - 0.5 - slope * rs * 0.75, z, rs, 1 + rng() * 3, 0.5);
+      }
       else if (slope < 1.1 && r < 0.8) {
         if (y < 140) tree(rng() < 0.1 ? 3 : Math.floor(rng() * 3), x, z, 0.8 + rng() * 0.5, 0.8 + rng() * 0.6);
         else tree(rng() < 0.6 ? Math.floor(rng() * 3) : 4 + Math.floor(rng() * 2), x, z, 0.8 + rng() * 0.5);
@@ -446,7 +462,10 @@ export class Terrain {
         const off = s.width / 2 + 1.5 + rng() * 5;
         const p = s.pos.clone().addScaledVector(s.right, side * off);
         add('grass', p.x, this.groundAt(p.x, p.z) - 0.05, p.z, 0.7 + rng() * 0.8);
-        if (rng() < 0.05) add('rock', p.x + side, this.groundAt(p.x + side, p.z) - 0.4, p.z, 0.8 + rng() * 1.2, 0.6 + rng(), 0.4);
+        if (rng() < 0.05) {
+          const rs = 0.8 + rng() * 1.2;
+          add('rock', p.x + side, this.groundAt(p.x + side, p.z) - 0.3 - this.slopeAt(p.x + side, p.z) * rs * 0.9, p.z, rs, 0.6 + rng(), 0.4);
+        }
       }
     }
 

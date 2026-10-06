@@ -1,0 +1,774 @@
+{
+"Gatewarden|Hold there — a knight of the Order? We heard the whole Ashfront host was lost.": {
+"f": "eafbd4647e37.mp3",
+"d": 4.49
+},
+"Ser Calder|Not all of it. Ser Calder, of the Still Bell. Returning to the chapterhouse.": {
+"f": "b7701544e156.mp3",
+"d": 5.02
+},
+"Gatewarden|Then you’ve come home on a strange night, ser. The Bellkeepers sealed the cathedral at dusk. No reason given.": {
+"f": "3c6ac010fac7.mp3",
+"d": 5.75
+},
+"Gatewarden|Raise the gate! — Mind the streets. Folk are restless. The wells have run warm all week.": {
+"f": "4cfca6ca1a79.mp3",
+"d": 4.81
+},
+"Goodwife Ama|Who is ringing them? The towers are empty — the towers are empty!": {
+"f": "6880ca78a81d.mp3",
+"d": 3.32
+},
+"Ser Calder|The ground — the whole mountain is moving!": {
+"f": "97f6595ea41b.mp3",
+"d": 2.66
+},
+"Ser Calder|No. Not silence — breath.": {
+"f": "dc5150a2009c.mp3",
+"d": 3.06
+},
+"Ser Calder|Marrow-crawlers… they came up out of the stone itself.": {
+"f": "6aaf0d479940.mp3",
+"d": 3.76
+},
+"Ser Calder|Marrowmites? On the pilgrim road?": {
+"f": "3f7666f4e8b9.mp3",
+"d": 2.51
+},
+"Gatewarden|Who rides to Velmour at this hour?": {
+"f": "af3ae0b16c06.mp3",
+"d": 2.43
+},
+"Brother Ives|Ser… here… please…": {
+"f": "53ed266a3802.mp3",
+"d": 1.62
+},
+"Ser Calder|The mountain was never a mountain.": {
+"f": "88eeda6a1cda.mp3",
+"d": 2.22
+},
+"|Seven winters on the Ashfront. Seven winters of mud, and other men’s prayers.": {
+"f": "97e63471ca66.mp3",
+"d": 5.85
+},
+"|And still the road home climbs the same.": {
+"f": "01b2b3ce10d0.mp3",
+"d": 2.9
+},
+"|The bells…": {
+"f": "55b304c634da.mp3",
+"d": 1.18
+},
+"|Nobody is pulling them.": {
+"f": "b23579819baf.mp3",
+"d": 1.75
+},
+"|Rest, brother.": {
+"f": "ecbc4fc7dfd5.mp3",
+"d": 1.2
+},
+"|…Silence.": {
+"f": "6535c101dbd9.mp3",
+"d": 1.07
+},
+"|The cathedral. Whatever this is, the Bellkeepers know.": {
+"f": "2786ef583935.mp3",
+"d": 3.55
+},
+"|There. Velmour — the Crown of Spires.": {
+"f": "e9f00c336651.mp3",
+"d": 2.93
+},
+"|Even from here you can count her towers by the lightning.": {
+"f": "f2bef6520ddf.mp3",
+"d": 3.55
+},
+"|The old bones of the pass. Shepherds call them dragon skulls.": {
+"f": "0437ddcd6501.mp3",
+"d": 4.7
+},
+"|I never asked what a dragon would want with a mountain.": {
+"f": "c7e37586f6c0.mp3",
+"d": 3.53
+},
+"|Velmour’s bells have not rung in four hundred years. Mothers tell their children the bells are only sleeping.": {
+"f": "a6223c0b3873.mp3",
+"d": 7.21
+},
+"|West, past the fog — the Ribs of Harrowmere. Pilgrims say a giant died there. Pilgrims say a great many things.": {
+"f": "8907e43376b7.mp3",
+"d": 8.54
+},
+"Washerwoman|Four hundred years those bells have hung silent, and tonight my teeth ache like they mean to ring.": {
+"f": "a5ebe54fb8fd.mp3",
+"d": 4.83
+},
+"Tanner|Hush. The Bellkeepers hear everything.": {
+"f": "a09299102350.mp3",
+"d": 2.3
+},
+"Old Bram|My grandmother swore the mountain breathes in winter. We laughed at her.": {
+"f": "c6b6c1b1b8c9.mp3",
+"d": 3.47
+},
+"Old Bram|Look at the cistern, ser. Warm as blood.": {
+"f": "a9f6d823104e.mp3",
+"d": 2.19
+},
+"Spice Merchant|Warm wells, dead fish in the cisterns, and the Bellkeepers hiding behind their doors.": {
+"f": "7c360b9b3b5e.mp3",
+"d": 4.57
+},
+"Spice Merchant|Mark me, ser knight. The Church knows something it is not saying.": {
+"f": "7da82ec82c20.mp3",
+"d": 3.21
+},
+"Brother Ives|Ser… you wear the Bell. Then listen. There is no time.": {
+"f": "d3921f5f50a0.mp3",
+"d": 4.05
+},
+"Brother Ives|The bells were never for prayer. The mountain is Osseran, a Founder. Our silence keeps him asleep.": {
+"f": "66448801eb85.mp3",
+"d": 6.45
+},
+"Brother Ives|Tonight someone rang the Knell, the waking peal. It was Archdeacon Morvane. Our own Archdeacon.": {
+"f": "ce3d4da595b2.mp3",
+"d": 6.19
+},
+"Ser Calder|Why would the Archdeacon want to wake it?": {
+"f": "08c28e516f24.mp3",
+"d": 2.59
+},
+"Brother Ives|He believes the Founders are gods. He thinks waking them will make the world new. It will only end it.": {
+"f": "a258aa25c5d7.mp3",
+"d": 6.06
+},
+"Brother Ives|The Knellwarden guards the bell. Get past it and silence the Knell, ser, before the mountain opens its eye.": {
+"f": "d94a756e6fa1.mp3",
+"d": 6.16
+},
+"Archdeacon Morvane|Do you hear him breathing, little knight? Four hundred years, and finally he breathes.": {
+"f": "a539d12cd075.mp3",
+"d": 4.13
+},
+"Archdeacon Morvane|Voice of the Waking Choir": {
+"f": "98b30feeb954.mp3",
+"d": 1.85
+},
+"Ser Calder|Archdeacon… you rang the Knell. Why?": {
+"f": "bbf6fdd60f5d.mp3",
+"d": 2.51
+},
+"Archdeacon Morvane|Because a god should not sleep under our feet like a dog.": {
+"f": "f2d48544f973.mp3",
+"d": 3.11
+},
+"Archdeacon Morvane|Wake, Osseran. Wake, and make the world new.": {
+"f": "0a167e8771c8.mp3",
+"d": 2.69
+},
+"|Gone. And beneath the city, the mountain breathes in again.": {
+"f": "8cec1ae27341.mp3",
+"d": 4.39
+},
+"|If a bell can wake him, maybe a song can put him back to sleep. Ives spoke of the old lullabies. The Thornwives of the Witchwood kept them.": {
+"f": "d4a27001a0b0.mp3",
+"d": 9.74
+},
+"Narrator|Long ago, five giants walked the world.": {
+"f": "f8753b9d628f.mp3",
+"d": 2.61
+},
+"Narrator|When they grew tired, they lay down and slept, and their bodies became the land: mountains, forests and seas.": {
+"f": "70332e5501f8.mp3",
+"d": 6.58
+},
+"Narrator|People call them the Founders. Every kingdom is built on one.": {
+"f": "91317bd5df63.mp3",
+"d": 3.29
+},
+"Narrator|The kingdom of Velmour is built on a Founder named Osseran. The mountain above the capital is his head.": {
+"f": "c037755d733c.mp3",
+"d": 5.54
+},
+"Narrator|To keep him asleep, the Church of the Still Bell rings only one song: the Hymn of Sleeping.": {
+"f": "b8b30243d93a.mp3",
+"d": 5.46
+},
+"Narrator|Every other night, the bells of Velmour must stay silent.": {
+"f": "0058180fec78.mp3",
+"d": 3.76
+},
+"Narrator|Tonight, after seven years at war, a knight of the Bell Guard is riding home.": {
+"f": "bbdeb94c5cb5.mp3",
+"d": 4.47
+},
+"Narrator|His name is Ser Calder. Nobody important. Not yet.": {
+"f": "6abd9a734879.mp3",
+"d": 3.29
+},
+"Ser Calder|Saints… a drake. A true drake, here?": {
+"f": "c1774dd262b8.mp3",
+"d": 3.06
+},
+"Ser Calder|A Thornwife, turned on her own road. What drove them to this?": {
+"f": "74cbdb9ba8a3.mp3",
+"d": 4.57
+},
+"|Their huts are empty. Cold hearths. Whatever called them, they went to it.": {
+"f": "90d78ecab3f0.mp3",
+"d": 5.51
+},
+"|Laughter, in the trees. And cages — hung like lanterns.": {
+"f": "149ea26ade28.mp3",
+"d": 4.31
+},
+"|The Ribs of Harrowmere. So the pilgrims were right — a giant did die here.": {
+"f": "c80fb28aef02.mp3",
+"d": 5.43
+},
+"|And something has made a nest of it.": {
+"f": "f2c07aa3f4b7.mp3",
+"d": 2.56
+},
+"|Brother Ives said the old lullabies were kept out here, past the fog.": {
+"f": "31b4bc41c13d.mp3",
+"d": 4.88
+},
+"|If anyone knows how to sing a mountain back to sleep, it will be them.": {
+"f": "bcccaa3b84af.mp3",
+"d": 4.52
+},
+"Mother Sallow|So. The knight from the waking city. You killed my jailer. Sit, and listen.": {
+"f": "065f454f847f.mp3",
+"d": 5.09
+},
+"Mother Sallow|Eldest of the Thornwives": {
+"f": "54b22412010a.mp3",
+"d": 1.96
+},
+"Mother Sallow|That drake was no beast. It was a nightmare. When a Founder stirs, his bad dreams climb out and take shape.": {
+"f": "74cbd4f49904.mp3",
+"d": 7.05
+},
+"Mother Sallow|Its smoke drove my sisters mad. That is why they fought you.": {
+"f": "701103694ac2.mp3",
+"d": 4.86
+},
+"Ser Calder|How do I put Osseran back to sleep?": {
+"f": "6ab59d563c2d.mp3",
+"d": 2.22
+},
+"Mother Sallow|With the Cradle Bell. Only that bell rings the Hymn of Sleeping loud enough for a Founder to hear.": {
+"f": "69a5cf1b3964.mp3",
+"d": 6.56
+},
+"Mother Sallow|The Church broke it in two, long ago, so no one could misuse it.": {
+"f": "681e6b4422ef.mp3",
+"d": 3.94
+},
+"Mother Sallow|One half sank with the cathedral of Saint Merrow, out on the Mere. The other went north, with the Bell Guard.": {
+"f": "65652c740648.mp3",
+"d": 5.88
+},
+"Mother Sallow|Find both halves. Ring the bell at Osseran’s heart. And hurry, knight. Every night he sleeps a little lighter.": {
+"f": "b0a10f1d3040.mp3",
+"d": 7.31
+},
+"Narrator|The story so far…": {
+"f": "d2e828121818.mp3",
+"d": 1.23
+},
+"Narrator|Archdeacon Morvane rang the Knell over Velmour, and Osseran, the Founder beneath the city, opened his eye.": {
+"f": "832c23103b27.mp3",
+"d": 6.35
+},
+"Narrator|Calder rode west, looking for the Thornwives: witches who still remember the old lullabies.": {
+"f": "9ad3efd5c4b4.mp3",
+"d": 5.67
+},
+"Narrator|The first half of the Cradle Bell lay under Saint Merrow’s Mere. Calder turned south, toward the drowned cathedral.": {
+"f": "7e5162f65b5d.mp3",
+"d": 5.88
+},
+"Ser Calder|Rest now, brothers. Whatever is keeping you here, I will end it.": {
+"f": "a3703c730deb.mp3",
+"d": 4.52
+},
+"Ser Calder|There. The cathedral of Saint Merrow, half sunk, with its rose window still lit.": {
+"f": "f2f038bb0ff9.mp3",
+"d": 5.43
+},
+"Choirmaster Oswin|Back again? Then sing.": {
+"f": "d34a67265292.mp3",
+"d": 1.52
+},
+"|Monks. Drowned monks, walking up out of the water.": {
+"f": "35fba15319a6.mp3",
+"d": 3.79
+},
+"|The water is black and still. Not even frogs. Just that singing, under everything.": {
+"f": "258b63e3f862.mp3",
+"d": 6.24
+},
+"|Rooftops in the water. A bell tower leaning like a drunk. The whole village just… went under.": {
+"f": "31b1548f5a56.mp3",
+"d": 6.69
+},
+"|Somebody is keeping those candles burning.": {
+"f": "7dd0997b194d.mp3",
+"d": 2.93
+},
+"Old Tamsin|Turn back, knight. The monks drowned holding their hymnbooks, and now they walk the causeway and drag the living under.": {
+"f": "20bf95fa5656.mp3",
+"d": 5.83
+},
+"|Someone is kneeling in the road. You can see the water through him.": {
+"f": "dfebd4463614.mp3",
+"d": 4.49
+},
+"Brother Aldo|You can hear it too, ser? The hymn, under the water. He keeps us singing so we can never rest.": {
+"f": "c3c28a10b646.mp3",
+"d": 4.78
+},
+"Ser Calder|Who does?": {
+"f": "b323dc392c41.mp3",
+"d": 0.84
+},
+"Brother Aldo|Choirmaster Oswin. Twenty years ago, Morvane sent men to take the bell. Oswin would not let them.": {
+"f": "470d9d7fe879.mp3",
+"d": 5.93
+},
+"Brother Aldo|He broke the dam and drowned the cathedral, and the village, and all of us in it, to keep the bell hidden.": {
+"f": "f8a1dd0a5020.mp3",
+"d": 5.33
+},
+"Brother Aldo|He thinks everyone who comes is Morvane. Free him, ser. Free all of us.": {
+"f": "b733f865986e.mp3",
+"d": 4.02
+},
+"|A giant in rusted bell-armour kneels before the altar, singing into the water.": {
+"f": "31bc94de65be.mp3",
+"d": 5.33
+},
+"Choirmaster Oswin|Another of Morvane’s hounds, come sniffing for the bell.": {
+"f": "63fc36f80f6a.mp3",
+"d": 3.66
+},
+"Choirmaster Oswin|Lies sound like hymns, down here. Sing with us, then. Sing forever.": {
+"f": "52830ae27c39.mp3",
+"d": 4.65
+},
+"Choirmaster Oswin|Keeper of the Drowned Choir": {
+"f": "7d8f94eea79c.mp3",
+"d": 1.91
+},
+"Choirmaster Oswin|Ser… the singing… it has stopped.": {
+"f": "346de819929d.mp3",
+"d": 2.59
+},
+"Choirmaster Oswin|Forgive an old man. For twenty years, everyone who came was his.": {
+"f": "373dfab78163.mp3",
+"d": 4.0
+},
+"Choirmaster Oswin|Take the bell. It is only half. The other half went north, with the Bell Guard, into the Frostspine.": {
+"f": "22bc816ee471.mp3",
+"d": 5.88
+},
+"Choirmaster Oswin|Their captain carried it. Ser Ivarr.": {
+"f": "3008f7f49e63.mp3",
+"d": 2.53
+},
+"Ser Calder|Ivarr? Ivarr is my sworn brother. We took our vows on the same night.": {
+"f": "21f1ecf850dd.mp3",
+"d": 4.91
+},
+"Choirmaster Oswin|Then pray he is still himself. Morvane hollows out good men, and leaves only the armour.": {
+"f": "9ab9327371d0.mp3",
+"d": 5.41
+},
+"Narrator|Osseran, the Founder that Velmour is built on, is waking up. Its great eye is already open.": {
+"f": "eccdb85ed0fe.mp3",
+"d": 5.75
+},
+"Narrator|Mother Sallow told Calder the only way to sing it back to sleep: ring the Cradle Bell.": {
+"f": "f4adec7362f1.mp3",
+"d": 4.96
+},
+"Narrator|Long ago the Church broke that bell in half, so no one could misuse it.": {
+"f": "a4c4a3253649.mp3",
+"d": 4.26
+},
+"Narrator|One half sank with the cathedral of Saint Merrow, out on the Mere.": {
+"f": "25877eb96ebe.mp3",
+"d": 3.87
+},
+"Narrator|Calder took the first half of the Cradle Bell.": {
+"f": "a36ec38c0543.mp3",
+"d": 2.38
+},
+"Narrator|Far to the north, in the Frostspine, his oldest friend held the other.": {
+"f": "65169f1c89eb.mp3",
+"d": 4.68
+},
+"Ser Calder|Bell Guard armour. Brothers? It is me, Calder!": {
+"f": "82ba54590d56.mp3",
+"d": 3.47
+},
+"Choir Zealot|Another lamb for the Waking! Sing, knight!": {
+"f": "fd628215fc93.mp3",
+"d": 2.43
+},
+"Choir Zealot|The Captain is not receiving visitors!": {
+"f": "d8a0dcbcb854.mp3",
+"d": 1.93
+},
+"Ser Calder|The Hollow Fort. Ivarr, if you are in there… please still be you.": {
+"f": "934b9482debb.mp3",
+"d": 3.92
+},
+"Ivarr’s letter|Cal. If this finds you, I have failed. Morvane’s priests sing at the gate every night.": {
+"f": "9bcc9504c108.mp3",
+"d": 4.99
+},
+"Ivarr’s letter|I hear the song in my head even after they stop. The bell half is with me. I have not given it up. Not yet.": {
+"f": "fb6eba2e759a.mp3",
+"d": 5.56
+},
+"Ivarr’s letter|If I come to you with red eyes, don’t wait for me to remember you. Do what has to be done. — Ivarr": {
+"f": "f56c2cc430b5.mp3",
+"d": 4.88
+},
+"Ser Ivarr|The song… it’s louder… FIGHT ME, CALDER!": {
+"f": "0f1f8db758e5.mp3",
+"d": 2.25
+},
+"Ser Ivarr|Again, brother.": {
+"f": "9412e45f3371.mp3",
+"d": 1.31
+},
+"|Wolves. Too big, and their eyes are lit from inside. Dream-beasts.": {
+"f": "58c273525c11.mp3",
+"d": 5.59
+},
+"|No answer. Only that red light behind the visors.": {
+"f": "682e253165ba.mp3",
+"d": 4.34
+},
+"|Cold enough to crack teeth. And quiet. No birds, no wind in the pines. Just snow.": {
+"f": "e162ea6a5bdc.mp3",
+"d": 7.21
+},
+"|Tents still pitched. Pots still on the fires. They never came back for any of it.": {
+"f": "758a68d5bf62.mp3",
+"d": 6.22
+},
+"|One wrong step and the mountain keeps me. Every cairn here is somebody who took it.": {
+"f": "05129fc42dc6.mp3",
+"d": 5.72
+},
+"|Oh, Ivarr.": {
+"f": "9b7761ff5be1.mp3",
+"d": 1.25
+},
+"Wren|Ser? Ser, you’re Bell Guard… then turn back. Please. The captain let them in.": {
+"f": "c43fb2808833.mp3",
+"d": 5.07
+},
+"Ser Calder|Let who in?": {
+"f": "8a5c931401ad.mp3",
+"d": 0.84
+},
+"Wren|The Choir priests. Morvane’s singers. Ivarr opened the gate for them himself.": {
+"f": "4394e92fca78.mp3",
+"d": 4.39
+},
+"Ser Calder|Ivarr would never.": {
+"f": "dd1938f78171.mp3",
+"d": 1.18
+},
+"Wren|They sang to him for three nights. When he came out his eyes were red, and he didn’t know my name.": {
+"f": "5c9ce0e868a7.mp3",
+"d": 5.41
+},
+"Ser Calder|Go south, Wren. Follow the causeway across the Mere. It’s safe now.": {
+"f": "52ce2bb68291.mp3",
+"d": 4.99
+},
+"Ser Calder|And if Ivarr is up there, I’ll bring him down. One way or the other.": {
+"f": "40319611f1c6.mp3",
+"d": 4.7
+},
+"|The girl stumbles off down the mountain, and doesn’t look back.": {
+"f": "41975b546f12.mp3",
+"d": 4.18
+},
+"|With no hand on them, the gates of the Hollow Fort swing open.": {
+"f": "e596ecf5afb9.mp3",
+"d": 4.34
+},
+"Ser Ivarr|Calder. You came home after all.": {
+"f": "297ea975528c.mp3",
+"d": 1.65
+},
+"Ser Ivarr the Hollow|Captain of the Bell Guard": {
+"f": "d94c71b66af9.mp3",
+"d": 1.52
+},
+"Ser Calder|Ivarr. Give me the bell, and come back with me.": {
+"f": "e68968afe399.mp3",
+"d": 3.24
+},
+"Ser Ivarr|Back to what? A kingdom built on a sleeping corpse? Morvane showed me, brother.": {
+"f": "9e9fd165149f.mp3",
+"d": 4.62
+},
+"Ser Ivarr|When Osseran stands up, everything rotten falls off his back. The lords. The Church. All of it.": {
+"f": "7cb69a827fde.mp3",
+"d": 5.83
+},
+"Ser Calder|Everyone falls off his back, Ivarr. Your mother. My sisters. Everyone.": {
+"f": "3785e3e3c643.mp3",
+"d": 5.69
+},
+"Ser Ivarr|Then let them fall. Draw your sword.": {
+"f": "22f525f15025.mp3",
+"d": 1.88
+},
+"Ser Ivarr|Cal…? It’s quiet. The singing stopped.": {
+"f": "b5abe30235a8.mp3",
+"d": 2.04
+},
+"Ser Ivarr|I opened the gate. I thought I could listen to them and still be me.": {
+"f": "dc85adc038c6.mp3",
+"d": 2.98
+},
+"Ser Ivarr|Take it. The bell. I kept it from him. That much I did.": {
+"f": "5560a9f28911.mp3",
+"d": 3.06
+},
+"Ser Calder|Ivarr, stay with me.": {
+"f": "9091b2651ea2.mp3",
+"d": 1.59
+},
+"Ser Ivarr|Morvane went home, Cal. To Velmour. Down into the mountain, to Osseran’s heart.": {
+"f": "a91fa05c4580.mp3",
+"d": 4.6
+},
+"Ser Ivarr|He means to wake him all the way. Stop him. Ring it… for me.": {
+"f": "f3bff0af31cd.mp3",
+"d": 3.53
+},
+"Narrator|Calder carried the first half of the Cradle Bell out of the drowned cathedral.": {
+"f": "00b25686c6e9.mp3",
+"d": 3.71
+},
+"Narrator|The second half went north, into the Frostspine, with the Bell Guard and its captain: Ser Ivarr, Calder’s sworn brother.": {
+"f": "85f31d2b4613.mp3",
+"d": 7.24
+},
+"Narrator|No word has come down from the mountains in a month.": {
+"f": "60ce1eab4bd3.mp3",
+"d": 2.8
+},
+"Narrator|Ser Ivarr died in the snow, himself again at the end.": {
+"f": "0204ed58cbda.mp3",
+"d": 3.37
+},
+"Narrator|Calder joined the two halves of the Cradle Bell. For the first time in three hundred years, it was whole.": {
+"f": "ba18e8ecd3bb.mp3",
+"d": 5.04
+},
+"Narrator|Now it had to be rung at the heart of Osseran, where Morvane was waiting.": {
+"f": "1b5fc34c0853.mp3",
+"d": 3.6
+},
+"Choir Zealot|He is the knight with the bell! Silence him before the Archdeacon’s hymn is done!": {
+"f": "2d625d33f9ca.mp3",
+"d": 4.86
+},
+"|Three hollow knights kneel across the way, swords planted. Their visors light up as one.": {
+"f": "461b64d2f3a7.mp3",
+"d": 6.01
+},
+"Ser Calder|There. The heart of the mountain. And someone singing in front of it.": {
+"f": "22a98c2a6966.mp3",
+"d": 4.49
+},
+"Archdeacon Morvane|Rise, little dreams! Rise for your father!": {
+"f": "9645c7ffcf97.mp3",
+"d": 2.85
+},
+"Archdeacon Morvane|Still crawling, knight? Then kneel.": {
+"f": "7a122d350e84.mp3",
+"d": 2.25
+},
+"|Thrall, witch, wolf. Every nightmare I’ve fought since Velmour. He’s dreaming them all at once.": {
+"f": "a614c023925b.mp3",
+"d": 6.53
+},
+"|The walls are bone. The roof is bone. I am walking around inside his head.": {
+"f": "1dc767f50767.mp3",
+"d": 5.51
+},
+"|And that sound… a heartbeat. Faster than it should be.": {
+"f": "c7a2c2c14922.mp3",
+"d": 3.76
+},
+"Brother Ives|Ser Calder! You live. And you have it, the bell. Both halves?": {
+"f": "ba4ad4205c5c.mp3",
+"d": 4.73
+},
+"Ser Calder|Both halves. Where is he, Ives?": {
+"f": "d3dcce860fc7.mp3",
+"d": 2.74
+},
+"Brother Ives|Below. The crypts have split open into the Founder himself. Morvane went down with his whole choir.": {
+"f": "55bb9feb877d.mp3",
+"d": 6.22
+},
+"Brother Ives|Listen to me. Ring the bell at the heart, and Osseran will sleep. But it cannot be heard while Morvane sings over it.": {
+"f": "b2ccd651ec21.mp3",
+"d": 6.92
+},
+"Ser Calder|Then I’ll stop him singing.": {
+"f": "55b720ba7cb4.mp3",
+"d": 1.8
+},
+"|Before the burning heart of the mountain, a man in white and gold sings with his arms raised. His choir kneels behind him.": {
+"f": "5db8cc5fcc10.mp3",
+"d": 8.62
+},
+"Archdeacon Morvane|Ser Calder. The little hedge-knight who would not stay little.": {
+"f": "eb81451b9e38.mp3",
+"d": 3.53
+},
+"Ser Calder|It’s over, Morvane. I have the bell.": {
+"f": "8dfb45ec7840.mp3",
+"d": 2.69
+},
+"Archdeacon Morvane|You have a lullaby. I have a god. Do you know what Osseran dreams of, knight?": {
+"f": "511ace2028a6.mp3",
+"d": 4.28
+},
+"Archdeacon Morvane|Of standing up. Of walking under the sun again. For a thousand years we have held him down with a song.": {
+"f": "a9cfaa19560b.mp3",
+"d": 6.24
+},
+"Ser Calder|And if he stands, everyone living on his back dies.": {
+"f": "156464f5e29c.mp3",
+"d": 3.87
+},
+"Archdeacon Morvane|They were always going to die. I am only being honest about it. Come, then. Let the Founder see who deserves his world.": {
+"f": "ea096138eff1.mp3",
+"d": 6.77
+},
+"Archdeacon Morvane|You want to see a god, Calder? Then LOOK!": {
+"f": "0a655dd0883f.mp3",
+"d": 2.85
+},
+"|He drinks the light of the Founder’s heart, and grows.": {
+"f": "5a56d8e6c16e.mp3",
+"d": 3.79
+},
+"Archdeacon Morvane|Listen… he was… so close to waking. He would have been… beautiful.": {
+"f": "5d790256db28.mp3",
+"d": 3.68
+},
+"Ser Calder|He’d have been the end of everyone.": {
+"f": "b73bc364a4c2.mp3",
+"d": 2.12
+},
+"Narrator|Calder came home to Velmour with the Cradle Bell, whole again.": {
+"f": "39f7a545cd7a.mp3",
+"d": 3.81
+},
+"Narrator|The city was empty. Osseran’s eye burned in the mountain, and the ground shook with every heartbeat.": {
+"f": "9a0e836b62f1.mp3",
+"d": 5.04
+},
+"Narrator|Somewhere beneath the cathedral, Morvane was singing the Founder awake.": {
+"f": "0c88639a1853.mp3",
+"d": 4.05
+},
+"Narrator|Calder hung the Cradle Bell before the heart of the Founder, and rang the Hymn of Sleeping.": {
+"f": "08699b9c30bf.mp3",
+"d": 4.55
+},
+"Narrator|The Hymn rang through the mountain, bone and stone and blood.": {
+"f": "7e7598fe3b11.mp3",
+"d": 3.53
+},
+"Narrator|Osseran’s heart slowed. And slowed. And far above, in the sky over Velmour, the great eye closed.": {
+"f": "9c25c8ca7e15.mp3",
+"d": 6.03
+},
+"Narrator|When the sun came up, the people of Velmour came home.": {
+"f": "c6b182fa8cb5.mp3",
+"d": 3.06
+},
+"Narrator|They rebuilt the bell towers, and they kept them quiet.": {
+"f": "5669388faf79.mp3",
+"d": 3.13
+},
+"Narrator|And Ser Calder, the knight nobody remembered, stayed home at last.": {
+"f": "f790f865ed45.mp3",
+"d": 4.13
+},
+"Narrator|The Founders sleep. For now.": {
+"f": "b99cac68a3a3.mp3",
+"d": 1.88
+},
+"Gatewarden|Mind the streets, ser. Folk are jumpy. Three wells ran warm this week.": {
+"f": "ccea924ea9b4.mp3",
+"d": 4.23
+},
+"Washerwoman|The water in the trough was warm as a bath this morning. In autumn!": {
+"f": "2d63aeda5e51.mp3",
+"d": 3.71
+},
+"Washerwoman|My mother said the mountain breathes. I used to laugh at her.": {
+"f": "460798a449bb.mp3",
+"d": 3.06
+},
+"Tanner|Hides won’t cure. Everything sweats in this town lately.": {
+"f": "7d098c490ff7.mp3",
+"d": 3.11
+},
+"Lamplighter|Every lamp on this street, every night, for twenty years. Tonight the flames lean toward the cathedral. All of them.": {
+"f": "36aa928cc997.mp3",
+"d": 6.11
+},
+"Old Bram|When I was a boy, the bells rang only once a year, for the Hymn. Never at night. Never like this.": {
+"f": "e9d80082a212.mp3",
+"d": 5.09
+},
+"Porter|Can’t stop, ser. Merchants want their crates up the hill before the bells start again.": {
+"f": "e76fb0e882ce.mp3",
+"d": 3.87
+},
+"Spice Merchant|Best saffron this side of the Ashfront. No? Then step aside, ser knight.": {
+"f": "dd24a45285b3.mp3",
+"d": 4.44
+},
+"Goodwife Ama|The towers are empty, ser. I sweep the chapel steps. Nobody went up tonight.": {
+"f": "6b4012c1699f.mp3",
+"d": 4.39
+},
+"Pilgrim|I walked forty days to pray at the Still Bell. Now the Bell will not be still.": {
+"f": "249898c70d52.mp3",
+"d": 4.41
+},
+"Watchman|Orders are to keep the market calm. Nobody told us how.": {
+"f": "17bc94bd8bd7.mp3",
+"d": 2.87
+},
+"Boy|Ser! Is it true knights can kill anything? Even a mountain?": {
+"f": "7fe6ee0b847a.mp3",
+"d": 4.1
+},
+"Mendicant|Alms for the waking god, ser knight. He will be hungry.": {
+"f": "f9a907006cac.mp3",
+"d": 3.92
+}
+}

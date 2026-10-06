@@ -1,3 +1,4 @@
+import { lineDuration } from '../audio/voice';
 import * as THREE from 'three';
 import type { Game } from './Game';
 import { Animator, gaitRate, idle, locomotion, track, type Pose, type Rig } from '../entities/Rig';
@@ -250,6 +251,8 @@ export class CutscenePlayer {
   private readonly tmpA = new THREE.Vector3();
   private readonly tmpB = new THREE.Vector3();
   private readonly tmpC = new THREE.Vector3();
+  /** World point kept in focus by the cinematic depth of field (whatever the shot looks at). */
+  private readonly focus = new THREE.Vector3();
   private savedFov = 55;
 
   constructor(private readonly g: Game) {}
@@ -305,12 +308,16 @@ export class CutscenePlayer {
     g.hud.cinematic(true);
     g.cam.setCinematic(true);
     g.cam.cineWeight = 1;
+    g.pipeline.dofPass.enabled = true;
+    g.audio.preloadLines(this.shots.flatMap((sh) => [...(sh.lines ?? []).map((l): [string, string] => [l[0], l[1]]), ...(sh.narr ?? []).map((n): [string, string] => ['Narrator', n])]));
+    g.pipeline.dof.target = this.focus;
     this.next();
     if (!this.shots[0]?.fadeIn) g.hud.fade(0, 0.7);
   }
 
   private lineSeconds(l: Line): number {
-    return l[2] ?? Math.max(2.4, l[1].length * 0.062);
+    const v = lineDuration(l[0], l[1]);
+    return l[2] ? Math.max(l[2], v) : v;
   }
 
   private next(): void {
@@ -323,7 +330,7 @@ export class CutscenePlayer {
     const s = this.shots[this.i];
     this.t = 0;
     const lineTime = (s.lines ?? []).reduce((a, l) => a + this.lineSeconds(l) + 0.35, 0);
-    const narrTime = (s.narr ?? []).reduce((a, n) => a + Math.max(3.2, n.length * 0.07) + 0.4, 0);
+    const narrTime = (s.narr ?? []).reduce((a, n) => a + lineDuration('Narrator', n, 3.2, 0.07) + 0.45, 0);
     this.dur = Math.max(s.dur ?? 2, lineTime + 0.4, narrTime + 0.4);
     if (!this.applied.has(this.i)) {
       this.applied.add(this.i);
@@ -368,6 +375,7 @@ export class CutscenePlayer {
       const r = s.camFn(e);
       g.cam.cinePos.copy(g.worldRoot.localToWorld(this.tmpA.copy(r.pos).add(sway)));
       g.cam.cineLook.copy(g.worldRoot.localToWorld(this.tmpB.copy(r.look).addScaledVector(sway, 0.5)));
+      this.focus.copy(g.cam.cineLook);
     } else if (s.cam) {
       const p = this.tmpA.copy(s.cam.from);
       if (s.cam.to) p.lerp(s.cam.to, e);
@@ -375,6 +383,7 @@ export class CutscenePlayer {
       if (s.cam.lookTo) l.lerp(s.cam.lookTo, e);
       g.cam.cinePos.copy(g.worldRoot.localToWorld(p.add(sway)));
       g.cam.cineLook.copy(g.worldRoot.localToWorld(l.addScaledVector(sway, 0.5)));
+      this.focus.copy(g.cam.cineLook);
     }
   }
 
@@ -382,6 +391,10 @@ export class CutscenePlayer {
     for (const a of this.actors) a.update(dt, time);
     if (!this.active) return;
     const g = this.g;
+    // Depth of field: tight on close dialogue, wide open on landscapes.
+    const fd = g.cam.cinePos.distanceTo(this.focus);
+    g.pipeline.dof.cocMaterial.focusRange = Math.max(2.5, fd * 0.45);
+    g.pipeline.dof.bokehScale = fd > 40 ? 0 : fd > 12 ? 1.5 : 3.2;
     this.clock += dt;
     if (this.phase === 'in') {
       this.phaseT += dt;
@@ -438,6 +451,8 @@ export class CutscenePlayer {
     g.hud.cinematic(false);
     g.cam.setCinematic(false);
     g.cam.cineWeight = 0;
+    g.pipeline.dofPass.enabled = false;
+    g.pipeline.dof.target = null;
     g.player.group.visible = true;
     g.player.cloak.mesh.visible = true;
     g.player.controlEnabled = true;

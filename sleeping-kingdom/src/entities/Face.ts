@@ -184,6 +184,8 @@ export class FaceAnim {
   private mouthT = 0;
   private mouth = 0;
   talking = false;
+  /** Loudness of the line being spoken right now, or -1 when nothing recorded is playing. */
+  static voice = -1;
 
   constructor(skin: string, mood: FaceMood, feminine: boolean, radius: number) {
     const irises = ['#3a2a1a', '#2a3a4a', '#3a4a2a', '#4a3020'];
@@ -214,7 +216,11 @@ export class FaceAnim {
     }
     this.blink = Math.max(0, this.blink - dt);
     const eye = this.blink > 0.1 ? 1 : this.blink > 0 ? 2 : 0;
-    if (this.talking) {
+    if (this.talking && FaceAnim.voice >= 0) {
+      // Lip flap follows the recorded read: closed in the gaps, wide on stressed syllables.
+      const v = FaceAnim.voice;
+      this.mouth = v > 0.42 ? 1 : v > 0.12 ? 2 : 0;
+    } else if (this.talking) {
       this.mouthT -= dt;
       if (this.mouthT <= 0) {
         this.mouthT = 0.07 + Math.random() * 0.09;

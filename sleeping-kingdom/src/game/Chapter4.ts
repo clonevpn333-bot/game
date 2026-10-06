@@ -12,7 +12,7 @@ const IVARR = 'Ser Ivarr';
 /** Chapter IV: The Frostspine. The frozen Bell Guard, the Hollow Fort, and Calder's sworn brother. */
 export class Chapter4 extends ChapterBase {
   protected readonly palette = 'snow' as const;
-  protected readonly music = 'dread' as const;
+  protected readonly music = 'calm' as const;
   protected readonly titleCard: [string, string] = ['The Frostspine', 'Where the Bell Guard made its stand'];
   private readonly ivarr: DuelKnight;
   private endT = -1;
@@ -321,7 +321,7 @@ export class Chapter4 extends ChapterBase {
     g.slowmo(2);
     g.hud.setBoss(null);
     g.player.lockTarget = null;
-    g.audio.setMusic('silence');
+    g.audio.setMusic('sorrow');
     this.stage = 'ending';
     this.endT = 0;
     return true;

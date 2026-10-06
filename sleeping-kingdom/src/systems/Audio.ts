@@ -1,7 +1,19 @@
 import * as THREE from 'three';
 import { createSeededRandom } from '../utils/random';
+import { MUSIC, voiceClip } from '../audio/voice';
 
-type MusicMode = 'silence' | 'calm' | 'dread' | 'boss' | 'eye' | 'title';
+export type MusicMode = 'silence' | 'calm' | 'dread' | 'boss' | 'eye' | 'title' | 'sorrow' | 'dawn';
+
+/** The score: one looping cue per mood (see tools/compose_ost.py). */
+const CUES: Record<Exclude<MusicMode, 'silence'>, { track: string; gain: number }> = {
+  title: { track: 'title', gain: 0.9 },
+  calm: { track: 'explore', gain: 0.75 },
+  dread: { track: 'dread', gain: 0.8 },
+  boss: { track: 'boss', gain: 0.95 },
+  eye: { track: 'eye', gain: 0.9 },
+  sorrow: { track: 'sorrow', gain: 0.85 },
+  dawn: { track: 'dawn', gain: 0.9 },
+};
 
 const BELL_PARTIALS: Array<[number, number, number]> = [
   // ratio, gain, decay seconds (scaled by bell size)
@@ -36,12 +48,17 @@ export class Audio {
   private bedGains: Partial<Record<keyof Audio['levels'], GainNode>> = {};
   private windFilter!: BiquadFilterNode;
   private mode: MusicMode = 'silence';
-  private musicNodes: AudioNode[] = [];
   private musicGain!: GainNode;
-  private chordTimer = 0;
-  private chordIndex = 0;
-  private drumTimer = 0;
-  private voices: Array<{ osc: OscillatorNode[]; gain: GainNode }> = [];
+  private readonly buffers = new Map<string, Promise<AudioBuffer | null>>();
+  private cue: { src: AudioBufferSourceNode; gain: GainNode; track: string } | null = null;
+  private voiceBus!: GainNode;
+  private analyser!: AnalyserNode;
+  private readonly meter = new Float32Array(512);
+  private speech: AudioBufferSourceNode | null = null;
+  private speechToken = 0;
+  /** Loudness of whoever is talking right now (0..1): drives mouths. */
+  voiceLevel = 0;
+  speaking = false;
   muted = false;
   volume = 0.8;
   readonly listener = new THREE.Vector3();
@@ -87,13 +104,19 @@ export class Audio {
     for (let i = 0; i < nd.length; i += 1) nd[i] = this.rng() * 2 - 1;
     this.startBeds();
     this.musicGain = ctx.createGain();
-    this.musicGain.gain.value = 0;
+    this.musicGain.gain.value = 1;
     this.musicGain.connect(this.music);
-    this.musicGain.connect(this.reverbSend);
+    this.voiceBus = ctx.createGain();
+    this.voiceBus.gain.value = 1.1;
+    this.analyser = ctx.createAnalyser();
+    this.analyser.fftSize = 512;
+    this.voiceBus.connect(this.master);
+    this.voiceBus.connect(this.analyser);
     this.setMusic(this.mode, true);
   }
 
   setMuted(m: boolean): void {
+    if (m) this.stopSpeech();
     this.muted = m;
     if (this.ctx) this.master.gain.setTargetAtTime(m ? 0 : this.volume, this.ctx.currentTime, 0.05);
   }
@@ -177,90 +200,115 @@ export class Audio {
   }
 
   // ------------------------------------------------------------------ music
+  private load(url: string): Promise<AudioBuffer | null> {
+    let p = this.buffers.get(url);
+    if (!p) {
+      const ctx = this.ctx!;
+      p = fetch(url)
+        .then((r) => r.arrayBuffer())
+        .then((b) => ctx.decodeAudioData(b))
+        .catch(() => null);
+      this.buffers.set(url, p);
+    }
+    return p;
+  }
+
   setMusic(mode: MusicMode, force = false): void {
     if (mode === this.mode && !force) return;
     this.mode = mode;
     if (!this.ctx) return;
-    const t = this.ctx.currentTime;
-    this.musicGain.gain.cancelScheduledValues(t);
-    this.musicGain.gain.setTargetAtTime(mode === 'silence' ? 0 : mode === 'boss' ? 0.6 : mode === 'title' ? 0.45 : 0.4, t, 1.5);
-    if (!this.voices.length) this.buildVoices();
-    this.chordTimer = 0;
-  }
-
-  private buildVoices(): void {
-    const ctx = this.ctx!;
-    // Choir: per voice two detuned saws through "ah" formants.
-    for (let v = 0; v < 4; v += 1) {
-      const gain = ctx.createGain();
-      gain.gain.value = 0.0;
-      const f1 = ctx.createBiquadFilter();
-      f1.type = 'bandpass';
-      f1.frequency.value = 700;
-      f1.Q.value = 6;
-      const f2 = ctx.createBiquadFilter();
-      f2.type = 'bandpass';
-      f2.frequency.value = 1150;
-      f2.Q.value = 7;
-      const mixG = ctx.createGain();
-      mixG.gain.value = 0.9;
-      f1.connect(mixG);
-      f2.connect(mixG);
-      mixG.connect(gain).connect(this.musicGain);
-      const oscs: OscillatorNode[] = [];
-      for (const det of [-7, 6]) {
-        const o = ctx.createOscillator();
-        o.type = 'sawtooth';
-        o.detune.value = det;
-        o.frequency.value = 110;
-        o.connect(f1);
-        o.connect(f2);
-        o.start();
-        oscs.push(o);
-      }
-      // Slow vibrato.
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 4.5 + v * 0.3;
-      const lfoG = ctx.createGain();
-      lfoG.gain.value = 4;
-      lfo.connect(lfoG);
-      for (const o of oscs) lfoG.connect(o.detune);
-      lfo.start();
-      this.voices.push({ osc: oscs, gain });
-      this.musicNodes.push(gain);
+    const cue = mode === 'silence' ? null : CUES[mode];
+    if (cue && this.cue?.track === cue.track) {
+      this.cue.gain.gain.setTargetAtTime(cue.gain, this.ctx.currentTime, 0.8);
+      return;
     }
-    // Low drone.
-    const drone = ctx.createOscillator();
-    drone.type = 'triangle';
-    drone.frequency.value = 36.7;
-    const dg = ctx.createGain();
-    dg.gain.value = 0.35;
-    drone.connect(dg).connect(this.musicGain);
-    drone.start();
-    this.voices.push({ osc: [drone], gain: dg });
+    this.fadeOutCue(mode === 'boss' ? 0.5 : 2.2);
+    if (!cue) return;
+    const url = MUSIC[`./music/${cue.track}.mp3`];
+    if (!url) return;
+    void this.load(url).then((buf) => {
+      if (!buf || !this.ctx || this.mode !== mode) return;
+      const ctx = this.ctx;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      const gain = ctx.createGain();
+      const t = ctx.currentTime;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(cue.gain, t + (mode === 'boss' ? 0.6 : 3));
+      src.connect(gain).connect(this.musicGain);
+      src.start(t);
+      this.fadeOutCue(1.5);
+      this.cue = { src, gain, track: cue.track };
+    });
   }
 
-  private nextChord(): void {
-    if (!this.ctx) return;
+  private fadeOutCue(seconds: number): void {
+    if (!this.cue || !this.ctx) return;
+    const { src, gain } = this.cue;
     const t = this.ctx.currentTime;
-    // D minor modal progressions; the eye and boss use darker, dissonant voicings.
-    const calm = [[62, 65, 69, 74], [58, 65, 70, 74], [60, 64, 67, 72], [57, 64, 69, 73]];
-    const dread = [[62, 63, 69, 74], [61, 65, 68, 73], [62, 65, 68, 71], [58, 61, 65, 70]];
-    const boss = [[50, 57, 62, 63], [49, 56, 61, 64], [50, 53, 58, 62], [48, 55, 61, 63]];
-    const eye = [[38, 45, 50, 51], [37, 44, 49, 52]];
-    const title = [[50, 57, 62, 65], [46, 53, 58, 62], [48, 55, 60, 64], [45, 52, 57, 61]];
-    const set = this.mode === 'boss' ? boss : this.mode === 'dread' ? dread : this.mode === 'eye' ? eye : this.mode === 'title' ? title : calm;
-    const chord = set[this.chordIndex % set.length];
-    this.chordIndex += 1;
-    chord.forEach((note, i) => {
-      const v = this.voices[i];
-      if (!v) return;
-      const f = 440 * Math.pow(2, (note - 69 - 12) / 12);
-      for (const o of v.osc) o.frequency.setTargetAtTime(f, t, 0.6);
-      v.gain.gain.setTargetAtTime(this.mode === 'silence' ? 0 : 0.11, t, 1.2);
+    gain.gain.cancelScheduledValues(t);
+    gain.gain.setValueAtTime(gain.gain.value, t);
+    gain.gain.linearRampToValueAtTime(0, t + seconds);
+    src.stop(t + seconds + 0.05);
+    this.cue = null;
+  }
+
+  /** Warm the decoder so the first cue of a chapter starts on time. */
+  preloadMusic(modes: MusicMode[]): void {
+    if (!this.ctx) return;
+    for (const m of modes) {
+      if (m === 'silence') continue;
+      const url = MUSIC[`./music/${CUES[m].track}.mp3`];
+      if (url) void this.load(url);
+    }
+  }
+
+  // ------------------------------------------------------------------ voices
+  /** Speak a scripted line if it was recorded. Returns its length in seconds, or 0. */
+  speak(speaker: string, text: string): number {
+    const clip = voiceClip(speaker, text);
+    this.stopSpeech();
+    if (!clip || !this.ctx) return 0;
+    const token = ++this.speechToken;
+    void this.load(clip.url).then((buf) => {
+      if (!buf || !this.ctx || token !== this.speechToken) return;
+      const src = this.ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(this.voiceBus);
+      src.start();
+      src.onended = () => {
+        if (this.speech === src) {
+          this.speech = null;
+          this.speaking = false;
+        }
+      };
+      this.speech = src;
+      this.speaking = true;
     });
-    const droneV = this.voices[4];
-    if (droneV) droneV.osc[0].frequency.setTargetAtTime(440 * Math.pow(2, (chord[0] - 69 - 24) / 12), t, 1);
+    return clip.dur;
+  }
+
+  stopSpeech(): void {
+    this.speechToken += 1;
+    if (this.speech) {
+      try {
+        this.speech.stop();
+      } catch {
+        /* already stopped */
+      }
+      this.speech = null;
+    }
+    this.speaking = false;
+  }
+
+  /** Decode a scene's lines ahead of time. */
+  preloadLines(lines: Array<[string, string]>): void {
+    if (!this.ctx) return;
+    for (const [sp, tx] of lines) {
+      const c = voiceClip(sp, tx);
+      if (c) void this.load(c.url);
+    }
   }
 
   // ------------------------------------------------------------------ spatial helper
@@ -634,21 +682,15 @@ export class Audio {
       if (g) g.gain.setTargetAtTime(this.levels[key] * (key === 'rumble' ? 0.9 : key === 'fire' ? 0.12 : 0.35), t, 0.4);
     }
     this.windFilter.frequency.setTargetAtTime(380 + Math.sin(t * 0.21) * 160 + Math.sin(t * 0.67) * 90, t, 0.5);
-    if (this.mode !== 'silence') {
-      this.chordTimer -= dt;
-      if (this.chordTimer <= 0) {
-        this.chordTimer = this.mode === 'boss' ? 4.2 : 9;
-        this.nextChord();
-      }
+    // Speech: meter the voice for lip sync and sit the score under it.
+    let level = 0;
+    if (this.speaking) {
+      this.analyser.getFloatTimeDomainData(this.meter);
+      let sum = 0;
+      for (let i = 0; i < this.meter.length; i += 1) sum += this.meter[i] * this.meter[i];
+      level = Math.min(1, Math.sqrt(sum / this.meter.length) * 5.5);
     }
-    if (this.mode === 'boss') {
-      this.drumTimer -= dt;
-      if (this.drumTimer <= 0) {
-        this.drumTimer = 60 / 76;
-        const d = this.out(undefined, 0.5, 0.4);
-        this.tone(d, t, 'sine', 90, 38, 0.5, 0.9);
-        if (this.rng() < 0.35) this.tone(d, t + 60 / 76 / 2, 'sine', 80, 40, 0.3, 0.5);
-      }
-    }
+    this.voiceLevel += (level - this.voiceLevel) * Math.min(1, dt * (level > this.voiceLevel ? 30 : 14));
+    this.musicGain.gain.setTargetAtTime(this.speaking ? 0.5 : 1, t, this.speaking ? 0.12 : 0.6);
   }
 }

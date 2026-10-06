@@ -364,7 +364,7 @@ export class Chapter3 extends ChapterBase {
     g.slowmo(1.8);
     g.hud.setBoss(null);
     g.player.lockTarget = null;
-    g.audio.setMusic('silence');
+    g.audio.setMusic('sorrow');
     g.removeEnemies((e) => e.encounter === 'boss-adds');
     this.stage = 'ending';
     this.endT = 0;

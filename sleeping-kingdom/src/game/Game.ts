@@ -1,3 +1,4 @@
+import { FaceAnim } from '../entities/Face';
 import * as THREE from 'three';
 import { Input } from '../core/Input';
 import { Loop } from '../core/Loop';
@@ -20,6 +21,7 @@ import { BannerTime, City } from '../world/City';
 import { FarWorld } from '../world/FarWorld';
 import { Sky, SKY_PALETTES } from '../world/Sky';
 import { Weather } from '../world/Weather';
+import { installHeightFog } from '../world/HeightFog';
 import { Founder } from '../world/Founder';
 import { RetroUniforms } from '../world/Materials';
 import { Player } from '../entities/Player';
@@ -128,6 +130,7 @@ export class Game {
   private readonly fogColor = new THREE.Color('#1b2347');
   fogDensity = 0.0006;
   private fogDensityCur = 0.0006;
+  private fogBase = 0;
   private deathT = 0;
   readonly farTint = new THREE.Color(1, 1, 1);
   private readonly farTintTarget = new THREE.Color(1, 1, 1);
@@ -136,10 +139,13 @@ export class Game {
   constructor(readonly canvas: HTMLCanvasElement) {
     this.pipeline = createPipeline(canvas, this.scene, this.camera);
     this.input = new Input(canvas);
+    this.hud.voice = this.audio;
     this.cam = new CameraRig(this.camera);
     this.scene.add(this.tiltPivot);
     this.tiltPivot.add(this.worldRoot);
-    this.scene.fog = new THREE.FogExp2(this.fogColor, this.fogDensity);
+    installHeightFog();
+    // Height fog (see HeightFog.ts): near = density, far = the height the mist settles at.
+    this.scene.fog = new THREE.Fog(this.fogColor, this.fogDensity, 0);
     this.scene.background = new THREE.Color('#05060c');
 
     let pivot: THREE.Vector3;
@@ -176,7 +182,7 @@ export class Game {
       // Pivot the tilt on the market so the city heels over around the player, not the origin.
       pivot = this.city.marketCenter.clone();
     }
-    this.scene.add(this.sky.mesh, this.far.group, this.weather.group);
+    this.scene.add(this.sky.mesh, this.far.group, this.weather.group, this.pipeline.sun);
     this.tiltPivot.position.copy(pivot);
     this.worldRoot.position.copy(pivot).negate();
 
@@ -743,12 +749,21 @@ export class Game {
 
     // Atmosphere.
     this.fogDensityCur = damp(this.fogDensityCur, this.fogDensity, 0.6, dt);
-    const fog = this.scene.fog as THREE.FogExp2;
-    fog.density = this.fogDensityCur;
+    const fog = this.scene.fog as THREE.Fog;
+    // Chapter densities were authored for plain exp² fog; the height model needs much less.
+    fog.near = this.fogDensityCur * (this.chapterNo === 1 ? 1 : 0.3);
+    // Mist settles a little below wherever the knight is, so valleys fill and summits stay clear.
+    this.fogBase = damp(this.fogBase, this.player.pos.y - 18, 0.4, dt);
+    fog.far = this.fogBase;
     fog.color.copy(this.sky.uniforms.uHorizon.value).multiplyScalar(0.8).lerp(new THREE.Color('#ffffff'), this.weather.lightning * 0.15);
     this.farTint.lerp(this.farTintTarget, 1 - Math.exp(-dt * 0.8));
     this.sky.uniforms.uLightning.value = this.weather.lightning;
     this.sky.update(dt, t, this.camera.position);
+    // The god-ray source sits where the sky draws the moon.
+    const sun = this.pipeline.sun;
+    sun.position.copy(this.camera.position).addScaledVector(this.sky.uniforms.uMoonDir.value, 3000);
+    sun.lookAt(this.camera.position);
+    sun.visible = this.chapterNo !== 5 || this.chapter.stage === 'sanctum';
     this.far.update(this.weather.lightning, this.farTint);
     this.weather.update(dt, t, this.camera.position);
     this.terrain.update(dt, animT);
@@ -804,6 +819,7 @@ export class Game {
     this.audio.listener.copy(this.camera.position);
     this.audio.listenerYaw = this.cam.yaw;
     this.audio.update(dt);
+    FaceAnim.voice = this.audio.speaking ? this.audio.voiceLevel : -1;
     // PS2 look: no PS1 vertex wobble; geometry stays stable.
     RetroUniforms.uWobble.value = 0;
     RetroUniforms.uSnap.value.set(this.canvas.clientWidth / 3.2, this.canvas.clientHeight / 3.2);

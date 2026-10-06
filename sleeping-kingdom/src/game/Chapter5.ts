@@ -366,7 +366,7 @@ export class Chapter5 extends ChapterBase {
           this.sleep = 0;
           g.setPalette('hollow');
           g.weather.emberLevel = 0;
-          g.audio.setMusic('calm');
+          g.audio.setMusic('dawn');
           g.audio.setBeds({ wind: 0.2, rain: 0, crowd: 0, rumble: 0, fire: 0 });
         },
         camFn: (k) => ({ pos: h.heart.clone().add(new THREE.Vector3(0, -6 + k * 3, 0)).addScaledVector(last.tangent, -22 + k * 4).addScaledVector(last.right, -6), look: h.heart }),

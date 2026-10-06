@@ -49,7 +49,7 @@ type PalDef = {
   bright: number;
 };
 const PALS: Record<GroundPalette, PalDef> = {
-  mountain: { rock: [0.86, 0.9, 0.98], lichen: [25, 28, 5], grass: [52, 70, 40], blade: [70, 90, 50, 70, 80, 30, 0.5], dirt: [1.0, 0.88, 0.72], flower: 'warm', snowLine: 200, bright: 1.9 },
+  mountain: { rock: [0.64, 0.66, 0.72], lichen: [25, 28, 5], grass: [52, 70, 40], blade: [70, 90, 50, 70, 80, 30, 0.5], dirt: [1.0, 0.88, 0.72], flower: 'warm', snowLine: 200, bright: 1.9 },
   witchwood: { rock: [0.78, 0.86, 0.78], lichen: [10, 30, 0], grass: [24, 54, 30], blade: [40, 80, 40, 60, 90, 40, 0.55], dirt: [0.9, 0.78, 0.6], flower: 'teal', snowLine: 9999, bright: 1.35 },
   marsh: { rock: [0.62, 0.68, 0.62], lichen: [8, 22, 6], grass: [44, 50, 28], blade: [56, 62, 30, 50, 60, 26, 0.55], dirt: [0.66, 0.58, 0.44], flower: 'pale', snowLine: 9999, bright: 1.55 },
   snow: { rock: [0.8, 0.85, 0.96], lichen: [6, 8, 14], grass: [196, 204, 218], blade: [210, 216, 230, 30, 30, 25, 0.08], dirt: [0.86, 0.84, 0.86], flower: 'none', snowLine: 9999, bright: 1.18 },
@@ -226,7 +226,7 @@ export function terrainMaterial(p: GroundPalette, mask: THREE.Texture, bounds: [
       .replace(
         '#include <normal_fragment_maps>',
         `#include <normal_fragment_maps>
-         normal = tsPerturb(-vViewPosition, normal, vec2(dFdx(tHgt), dFdy(tHgt)) * uBump, faceDirection);`,
+         normal = tsPerturb(-vViewPosition, normal, vec2(dFdx(tHgt), dFdy(tHgt)) * uBump * (1.0 - smoothstep(12.0, 55.0, length(vViewPosition))), faceDirection);`,
       );
   };
   m.customProgramCacheKey = () => `terrain-${p}`;
