@@ -33,6 +33,7 @@
           <svg viewBox="0 0 32 44" aria-hidden="true"><path class="glass" d="M12 2h8v8c6 3 9 8 9 15 0 9-6 16-13 16S3 34 3 25c0-7 3-12 9-15z" /><path class="ember" id="flask-ember" d="M5 26c3-2 6 1 11-1s8-1 11 1c0 7-5 13-11 13S5 33 5 26z" /></svg>
           <span id="flask-count">3</span>
         </div>
+        <div id="embers" title="Embers: spend them at a Wayside Candle"><span class="glyph">◆</span><span id="embers-count">0</span></div>
         <div id="objective"><span class="glyph">◈</span><span id="objective-text"></span></div>
         <div id="hint"></div>
         <div id="area-card"><div class="rule"></div><h2 id="area-title"></h2><p id="area-sub"></p><div class="rule"></div></div>
@@ -133,6 +134,15 @@
             <button type="button" id="btn-pause-controls" class="menu-btn">Controls</button>
             <button type="button" id="btn-pause-sound" class="menu-btn">Sound: On</button>
           </nav>
+        </div>
+      </section>
+
+      <section id="levelup-screen" class="screen hidden">
+        <div class="panel levelup">
+          <h2>Wayside Candle</h2>
+          <p class="chron-sub">Rest. Spend Embers to grow stronger. <span class="emb">◆ <b id="levelup-embers">0</b></span></p>
+          <div id="levelup-list" class="menu"></div>
+          <nav class="menu"><button type="button" class="menu-btn primary" data-close>Rise</button></nav>
         </div>
       </section>
 

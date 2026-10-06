@@ -589,7 +589,10 @@ export class Chapter2 {
     if (g.player.controlEnabled && g.enemies.every((e) => !e.alive || e.state === 'dormant' || e.state === 'idle')) {
       this.candles.forEach((c, i) => {
         if (c.group.position.distanceTo(g.player.pos) < 2.8) {
-          best = { label: c.lit ? 'Rest at the Wayside Candle' : 'Light the Wayside Candle', pos: c.group.position, act: () => this.lightCandle(i) };
+          best = { label: c.lit ? 'Rest at the Wayside Candle' : 'Light the Wayside Candle', pos: c.group.position, act: () => {
+            this.lightCandle(i);
+            g.explore.rest();
+          } };
         }
       });
     }

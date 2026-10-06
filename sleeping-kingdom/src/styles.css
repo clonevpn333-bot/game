@@ -826,3 +826,18 @@ h1 span {
 .chron-entry h3 { margin: 0 0 4px; font-size: 1.02rem; letter-spacing: 0.06em; color: #e8c890; font-weight: 600; }
 .chron-entry p { margin: 0; line-height: 1.5; font-size: 0.95rem; color: #d8d0c4; }
 .chron-entry.locked h3, .chron-entry.locked p { color: #6a6460; font-style: italic; }
+
+/* Embers counter and the candle level-up panel */
+#embers { position: absolute; right: calc(22px + var(--safe-r)); bottom: calc(26px + var(--safe-b)); display: flex; gap: 8px; align-items: center; font-family: var(--caps); font-size: 18px; letter-spacing: 0.08em; color: #f2d8a0; text-shadow: 0 0 10px #000, 0 2px 2px #000; }
+#embers .glyph { color: #ff9a48; filter: drop-shadow(0 0 6px #ff7a20); }
+#embers.pulse { animation: emberPulse 0.6s ease-out; }
+@keyframes emberPulse { 0% { transform: scale(1.35); color: #fff; } 100% { transform: scale(1); } }
+.panel.levelup { max-width: min(520px, calc(100vw - 32px)); }
+.panel.levelup .emb { color: #ffb060; font-style: normal; margin-left: 8px; }
+.level-btn { display: grid !important; grid-template-columns: 1fr auto; grid-template-rows: auto auto; text-align: left; gap: 2px 12px; }
+.level-btn span { font-size: 1rem; }
+.level-btn em { font-style: normal; color: #e8c890; margin-left: 6px; }
+.level-btn small { grid-column: 1; opacity: 0.7; font-size: 0.8rem; letter-spacing: 0.04em; text-transform: none; }
+.level-btn b { grid-row: 1 / span 2; grid-column: 2; align-self: center; color: #ffb060; }
+.level-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+#hud.cinematic #embers { display: none; }

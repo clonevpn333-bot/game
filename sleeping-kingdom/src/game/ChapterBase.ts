@@ -183,7 +183,10 @@ export abstract class ChapterBase implements ChapterScript {
     this.candleSpots.push({ pos: pos.clone().setY(pos.y + 1.2), zone: this.g.path.at(s).zone, s });
     const idx = this.candles.length;
     this.candles.push({ group, flames, lit: false, s: s + 1.5, poolIndex: -1, name });
-    this.addProp(group.position, '', () => this.lightCandle(idx));
+    this.addProp(group.position, '', () => {
+      this.lightCandle(idx);
+      this.g.explore.rest();
+    });
   }
 
   bindCandles(pool: LightPool, offset: number): void {

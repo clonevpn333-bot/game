@@ -39,6 +39,11 @@ export class Folk {
     return this.group.position;
   }
 
+  /** Turn to look at someone (talking to the knight). */
+  face(p: THREE.Vector3): void {
+    this.yaw = Math.atan2(p.x - this.group.position.x, p.z - this.group.position.z);
+  }
+
   place(p: THREE.Vector3, yaw: number): void {
     this.group.position.copy(p);
     this.home.copy(p);

@@ -223,6 +223,8 @@ export class Player {
   maxStamina = 100;
   flasks = 3;
   maxFlasks = 3;
+  /** Strength levels scale sword damage. */
+  damageMul = 1;
   pathIndex = 0;
   lockTarget: Combatant | null = null;
   invulnerable = false;
@@ -352,7 +354,15 @@ export class Player {
       this.bus.emit({ type: 'blocked-roll', pos: this.pos.clone() });
       return false;
     }
-    if (this.state === 'ride') return false;
+    if (this.state === 'ride') {
+      // Mounted: blows land on the rider but cannot unhorse him.
+      this.hp -= hit.damage * 0.7;
+      this.bus.emit({ type: 'hit-player', pos: this.pos.clone().setY(this.pos.y + 2), damage: hit.damage, heavy: false });
+      if (this.hp <= 0) {
+        this.hp = 1;
+      }
+      return true;
+    }
     if (this.state === 'guard') {
       const fx = Math.sin(this.yaw);
       const fz = Math.cos(this.yaw);
@@ -431,7 +441,7 @@ export class Player {
     const ctl = this.controlEnabled;
     switch (this.state) {
       case 'ride':
-        this.updateRide(dt, time, input, wish, wishLen);
+        this.updateRide(dt, time, input, wish, wishLen, enemies);
         break;
       case 'free': {
         if (ctl && input.consume('lock')) this.toggleLock(enemies, camYaw);
@@ -663,7 +673,50 @@ export class Player {
     this.cloak.wind.set(Math.sin(time * 0.3) * 1.2 + 0.8, 0, 0.6);
   }
 
-  private updateRide(dt: number, time: number, input: Input, wish: THREE.Vector3, wishLen: number): void {
+  private rideSwingT = -1;
+  private rideSide = 1;
+  private readonly rideHit = new Set<Combatant>();
+
+  /** A sabre-cut from the saddle at whatever passes on either side. */
+  private rideSwing(dt: number, enemies: Combatant[]): Pose | null {
+    if (this.rideSwingT < 0) return null;
+    this.rideSwingT += dt;
+    const k = this.rideSwingT / 0.55;
+    if (k >= 1) {
+      this.rideSwingT = -1;
+      return null;
+    }
+    const sd = this.rideSide;
+    if (k > 0.3 && k < 0.7) {
+      const fwd = this.forward;
+      const right = new THREE.Vector3(-fwd.z, 0, fwd.x).multiplyScalar(-sd);
+      for (const e of enemies) {
+        if (!e.alive || this.rideHit.has(e)) continue;
+        const dx = e.pos.x - this.pos.x;
+        const dz = e.pos.z - this.pos.z;
+        const d = Math.hypot(dx, dz);
+        if (d > 3.6 + e.radius) continue;
+        const side = (dx * right.x + dz * right.z) / Math.max(0.01, d);
+        if (side < -0.2) continue;
+        this.rideHit.add(e);
+        const speedBonus = 1 + Math.min(1, this.horseSpeed / 17) * 0.8;
+        e.takeHit({ damage: 34 * speedBonus * this.damageMul, poise: 40 * speedBonus, from: this.pos.clone(), heavy: this.horseSpeed > 10 });
+      }
+    }
+    const a = Math.sin(Math.min(1, k) * Math.PI);
+    return sd > 0
+      ? { shoulderR: [-1.6 + k * 1.4, 0.2, -1.2 + k * 1.6], elbowR: [-0.3, 0, 0], handR: [0.4, 0, 0], spine: [0.2, -0.4 * a, 0], chest: [0, -0.5 + k, 0] }
+      : { shoulderR: [-1.4 + k * 1.2, -0.3, 1.4 - k * 1.8], elbowR: [-0.5, 0, 0], handR: [0.4, 0, 0], spine: [0.2, 0.5 * a, 0], chest: [0, 0.6 - k * 1.1, 0] };
+  }
+
+  private updateRide(dt: number, time: number, input: Input, wish: THREE.Vector3, wishLen: number, enemies: Combatant[] = []): void {
+    if (this.controlEnabled && this.rideSwingT < 0 && (input.peek('attack') || input.peek('heavy'))) {
+      this.rideSide = input.consume('attack') ? 1 : -1;
+      if (this.rideSide < 0) input.consume('heavy');
+      this.rideSwingT = 0;
+      this.rideHit.clear();
+      this.bus.emit({ type: 'swing', heavy: false, pos: this.pos.clone() });
+    }
     const gallop = input.sprintHeld();
     const targetSpeed = wishLen > 0.1 ? wishLen * (gallop ? 17 : 8.5) : 0;
     this.horseSpeed = damp(this.horseSpeed, targetSpeed, targetSpeed > this.horseSpeed ? 1.4 : 2.5, dt);
@@ -676,7 +729,7 @@ export class Player {
     // Gentle road assist: lean toward the path tangent near the verges.
     const near = this.nav.path.samples[this.pathIndex];
     const lateral = (this.pos.x - near.pos.x) * near.right.x + (this.pos.z - near.pos.z) * near.right.z;
-    if (Math.abs(lateral) > near.width * 0.3 && this.horseSpeed > 2) {
+    if (Math.abs(lateral) > near.width * 0.3 && Math.abs(lateral) < near.width * 0.5 + 0.5 && this.horseSpeed > 2) {
       const along = Math.atan2(near.tangent.x, near.tangent.z);
       this.yaw = dampAngle(this.yaw, along - Math.sign(lateral) * 0.15, 1.2, dt);
     }
@@ -688,7 +741,8 @@ export class Player {
     // Rider follows the saddle with a little lag on the bounce.
     this.rig.root.position.y = damp(this.rig.root.position.y, this.saddleRootY(), 20, dt);
     const lean = Math.min(1, this.horseSpeed / 17);
-    this.anim.apply({ ...RIDE_POSE, spine: [0.12 + lean * 0.3, 0, 0], head: [-0.2 * lean, 0, 0] }, dt, 10);
+    const swing = this.rideSwing(dt, enemies);
+    this.anim.apply(swing ? { ...RIDE_POSE, ...swing } : { ...RIDE_POSE, spine: [0.12 + lean * 0.3, 0, 0], head: [-0.2 * lean, 0, 0] }, dt, swing ? 22 : 10);
     const step = this.horseSpeed * 0.5;
     this.phase += dt * (1.6 + Math.min(1, this.horseSpeed / 16) * 2.6) * Math.PI * 2 * (this.horseSpeed > 0.3 ? 1 : 0);
     if (Math.floor(this.phase / Math.PI) !== Math.floor(this.lastStepPhase / Math.PI) && step > 0.2) {
@@ -748,7 +802,7 @@ export class Player {
       if (ang > a.arc && d > e.radius + 0.4) continue;
       if (Math.abs(e.pos.y - this.pos.y) > 3) continue;
       this.hitThisSwing.add(e);
-      e.takeHit({ damage: a.damage, poise: a.poise, from: this.pos.clone(), heavy: a.heavy });
+      e.takeHit({ damage: a.damage * this.damageMul, poise: a.poise, from: this.pos.clone(), heavy: a.heavy });
     }
   }
 

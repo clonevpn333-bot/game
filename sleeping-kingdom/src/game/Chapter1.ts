@@ -231,7 +231,10 @@ export class Chapter {
         radius: 2.6,
         label: () => (c.lit ? 'Rest at the Wayside Candle' : 'Light the Wayside Candle'),
         enabled: () => !this.g.player.mounted && this.combatClear(),
-        action: () => this.lightCandle(i),
+        action: () => {
+          this.lightCandle(i);
+          this.g.explore.rest();
+        },
       });
     });
     this.interactables.push({
@@ -377,6 +380,7 @@ export class Chapter {
   private dismount(): void {
     const g = this.g;
     this.dismounted = true;
+    g.removeEnemies((e) => e.encounter === 'ambush');
     const s = g.path.samples[g.player.pathIndex];
     g.player.dismount(g.worldRoot, s.right.clone().multiplyScalar(-1));
     g.player.pathIndex = g.nav.resolve(g.player.pos, 0.45, g.player.pathIndex);
@@ -948,6 +952,19 @@ export class Chapter {
 
   private beats(s: number): void {
     const g = this.g;
+    this.once('explore-hint', s > 40 && this.stage === 'ride', () => g.hud.hint('A lantern by the road marks open ground. Leave the road and explore: there are chests, notes and Embers out there.', 6));
+    // Ambush on the pilgrim road: marrowmites burst from the verges and run the horse down.
+    this.once('road-ambush', s > Math.min(190, this.sBridge - 30) && this.stage === 'ride' && g.player.state === 'ride', () => {
+      g.audio.crumble(this.spot(s + 20, 0), 1);
+      g.cam.addTrauma(0.35);
+      for (let i = 0; i < 6; i += 1) {
+        const m = g.spawnMite(this.spot(s + 14 + i * 5, (i % 2 ? 1 : -1) * (3 + (i % 3))), 'ambush');
+        m.emerge(0.2 + i * 0.25);
+      }
+      for (let i = 0; i < 2; i += 1) g.spawnMite(this.spot(s - 6, (i ? 1 : -1) * 3), 'ambush').emerge(0.6);
+      this.say(CALDER, 'Marrowmites? On the pilgrim road?');
+      this.after(1.2, () => g.hud.hint('From the saddle: <kbd>LMB</kbd> cut right &nbsp; <kbd>RMB</kbd> cut left. Gallop with <kbd>Shift</kbd> for heavier blows, or outrun them.', 7));
+    });
     this.once('reveal', s > 115, () => {
       g.weather.strike();
       this.after(0.3, () => {

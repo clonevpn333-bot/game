@@ -10,6 +10,7 @@ import { Chapter3 } from './Chapter3';
 import { Chapter4 } from './Chapter4';
 import { Chapter5 } from './Chapter5';
 import { CHAPTER_NAMES, LORE, ROMAN } from './Lore';
+import { EMBERS, Explore, NOTES } from './Explore';
 import { Witchwood } from '../world/Witchwood';
 import { Chapter2 } from './Chapter2';
 import { CutscenePlayer } from './Cutscene';
@@ -106,6 +107,7 @@ export class Game {
   readonly chapter: ChapterScript;
   readonly boss = new Knellwarden();
   readonly cut: CutscenePlayer = new CutscenePlayer(this);
+  explore!: Explore;
   mode: GameMode = 'loading';
   rng = createSeededRandom(1);
   tilt = 0;
@@ -191,6 +193,7 @@ export class Game {
     this.lights = new LightPool([...worldTorches, ...this.chapter.candleSpots], this.city?.lanternSpots ?? [], 6, tint);
     this.worldRoot.add(this.lights.group);
     this.chapter.bindCandles(this.lights, worldTorches.length);
+    this.explore = new Explore(this);
 
     // Crows roosting on the market roofs.
     const perches: THREE.Vector3[] = [];
@@ -401,6 +404,7 @@ export class Game {
           break;
         case 'enemy-dead':
           this.chapter.onEnemyDead(e.kind);
+          this.explore.addEmbers(EMBERS[e.kind] ?? 10);
           if (e.kind === 'boss' || e.kind === 'ivarr' || e.kind === 'morvane' || e.kind === 'dragon') a.stinger('victory');
           break;
       }
@@ -489,6 +493,17 @@ export class Game {
         div.append(h, p);
         list.append(div);
       }
+      const found = Object.entries(NOTES).filter(([id]) => this.explore.progress.found.includes(id));
+      for (const [, n] of found) {
+        const div = document.createElement('div');
+        div.className = 'chron-entry note';
+        const h = document.createElement('h3');
+        h.textContent = n.title;
+        const p = document.createElement('p');
+        p.textContent = n.lines.join(' ');
+        div.append(h, p);
+        list.append(div);
+      }
       $('#chronicle-screen').classList.remove('hidden');
     };
     click('#btn-chronicle', chronicle);
@@ -507,6 +522,21 @@ export class Game {
     if (matchMedia('(pointer: coarse)').matches) {
       $('#touch-controls').dataset.touch = '1';
       this.input.usingTouch = true;
+    }
+  }
+
+  /** A menu over live play (the candle's level-up): pauses the world until closed. */
+  openOverlay(el: HTMLElement): void {
+    if (this.mode !== 'play') return;
+    this.mode = 'paused';
+    this.input.releasePointer();
+    const done = el.querySelector<HTMLElement>('[data-close]');
+    if (done) {
+      done.onclick = (e) => {
+        e.stopPropagation();
+        el.classList.add('hidden');
+        this.mode = 'play';
+      };
     }
   }
 
@@ -536,6 +566,7 @@ export class Game {
       this.mode = 'play';
       $('#pause-screen').classList.add('hidden');
       $('#controls-screen').classList.add('hidden');
+      $('#levelup-screen').classList.add('hidden');
     }
   }
 
@@ -612,6 +643,7 @@ export class Game {
     if (this.mode === 'play' || this.mode === 'dead' || this.mode === 'title' || this.mode === 'ending') {
       this.chapter.update(gdt, t);
       this.cut.update(dt, t);
+      this.explore.update();
       if (this.mode === 'play' || this.mode === 'dead') this.player.update(gdt, t, this.input, this.cam.yaw, this.enemies);
       else this.player.update(gdt, t, this.input, this.cam.yaw, []);
       for (const e of this.enemies) e.update(gdt, t, this.ctx);
