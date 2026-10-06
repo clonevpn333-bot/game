@@ -35,10 +35,31 @@ function fill(ctx: CanvasRenderingContext2D, s: number, fn: (x: number, y: numbe
   ctx.putImageData(img, 0, 0);
 }
 
-export type GroundPalette = 'mountain' | 'witchwood';
+export type GroundPalette = 'mountain' | 'witchwood' | 'marsh' | 'snow' | 'hollow';
+
+type PalDef = {
+  rock: [number, number, number];
+  lichen: [number, number, number];
+  grass: [number, number, number];
+  /** Blade strokes: base r,g,b and lit range r,g,b. */
+  blade: [number, number, number, number, number, number, number];
+  dirt: [number, number, number];
+  flower: string;
+  snowLine: number;
+  bright: number;
+};
+const PALS: Record<GroundPalette, PalDef> = {
+  mountain: { rock: [0.86, 0.9, 0.98], lichen: [25, 28, 5], grass: [52, 70, 40], blade: [70, 90, 50, 70, 80, 30, 0.5], dirt: [1.0, 0.88, 0.72], flower: 'warm', snowLine: 200, bright: 1.9 },
+  witchwood: { rock: [0.78, 0.86, 0.78], lichen: [10, 30, 0], grass: [24, 54, 30], blade: [40, 80, 40, 60, 90, 40, 0.55], dirt: [0.9, 0.78, 0.6], flower: 'teal', snowLine: 9999, bright: 1.35 },
+  marsh: { rock: [0.62, 0.68, 0.62], lichen: [8, 22, 6], grass: [44, 50, 28], blade: [56, 62, 30, 50, 60, 26, 0.55], dirt: [0.66, 0.58, 0.44], flower: 'pale', snowLine: 9999, bright: 1.55 },
+  snow: { rock: [0.8, 0.85, 0.96], lichen: [6, 8, 14], grass: [196, 204, 218], blade: [210, 216, 230, 30, 30, 25, 0.08], dirt: [0.86, 0.84, 0.86], flower: 'none', snowLine: 9999, bright: 1.18 },
+  hollow: { rock: [1.08, 0.98, 0.84], lichen: [70, -14, -18], grass: [72, 62, 58], blade: [80, 70, 62, 40, 30, 28, 0.4], dirt: [0.72, 0.62, 0.6], flower: 'ember', snowLine: 9999, bright: 1.5 },
+};
 
 export function groundTextures(p: GroundPalette) {
   const wood = p === 'witchwood';
+  const P = PALS[p];
+  void wood;
   const rock = canvasTex(512, (ctx, s) => {
     fill(ctx, s, (x, y) => {
       const n = tfbm(x / 40, y / 40, 13, 5, 6);
@@ -46,9 +67,7 @@ export function groundTextures(p: GroundPalette) {
       const crack = Math.abs(tfbm(x / 22, y / 70, 23, 9, 3) - 0.5) < 0.025 ? 0.45 : 1;
       const v = (60 + n * 95 + strata * 28) * crack;
       const lichen = tfbm(x / 18, y / 18, 28, 33, 3) > 0.62 ? 1 : 0;
-      return wood
-        ? [v * 0.78 + lichen * 10, v * 0.86 + lichen * 30, v * 0.78]
-        : [v * 0.86 + lichen * 25, v * 0.9 + lichen * 28, v * 0.98 + lichen * 5];
+      return [v * P.rock[0] + lichen * P.lichen[0], v * P.rock[1] + lichen * P.lichen[1], v * P.rock[2] + lichen * P.lichen[2]];
     });
   });
   const grass = canvasTex(512, (ctx, s) => {
@@ -57,7 +76,7 @@ export function groundTextures(p: GroundPalette) {
       const n = tfbm(x / 30, y / 30, 17, 41, 5);
       const fine = tfbm(x / 3, y / 3, 170, 44, 2);
       const v = 0.55 + n * 0.55 + fine * 0.25;
-      return wood ? [24 * v, 54 * v, 30 * v] : [52 * v, 70 * v, 40 * v];
+      return [P.grass[0] * v, P.grass[1] * v, P.grass[2] * v];
     });
     // Blade strokes: thousands of short lit/shaded strokes.
     for (let i = 0; i < 9000; i += 1) {
@@ -65,17 +84,16 @@ export function groundTextures(p: GroundPalette) {
       const y = rng() * s;
       const l = 2 + rng() * 5;
       const lit = rng();
-      ctx.strokeStyle = wood
-        ? `rgba(${40 + lit * 60},${80 + lit * 90},${40 + lit * 40},0.55)`
-        : `rgba(${70 + lit * 70},${90 + lit * 80},${50 + lit * 30},0.5)`;
+      const b = P.blade;
+      ctx.strokeStyle = `rgba(${b[0] + lit * b[3]},${b[1] + lit * b[4]},${b[2] + lit * b[5]},${b[6]})`;
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x + (rng() - 0.5) * 2, y - l);
       ctx.stroke();
     }
     // Small flowers / dry tufts.
-    for (let i = 0; i < 120; i += 1) {
-      ctx.fillStyle = wood ? `rgba(120,200,170,${0.3 + rng() * 0.4})` : `rgba(${180 + rng() * 60},${160 + rng() * 60},${90},0.5)`;
+    for (let i = 0; i < (P.flower === 'none' ? 0 : 120); i += 1) {
+      ctx.fillStyle = P.flower === 'teal' ? `rgba(120,200,170,${0.3 + rng() * 0.4})` : P.flower === 'ember' ? `rgba(255,${80 + rng() * 60},30,0.5)` : P.flower === 'pale' ? `rgba(190,190,150,0.45)` : `rgba(${180 + rng() * 60},${160 + rng() * 60},${90},0.5)`;
       ctx.fillRect(rng() * s, rng() * s, 2, 2);
     }
   });
@@ -84,7 +102,7 @@ export function groundTextures(p: GroundPalette) {
     fill(ctx, s, (x, y) => {
       const n = tfbm(x / 26, y / 26, 20, 61, 5);
       const v = 48 + n * 60;
-      return wood ? [v * 0.9, v * 0.78, v * 0.6] : [v * 1.0, v * 0.88, v * 0.72];
+      return [v * P.dirt[0], v * P.dirt[1], v * P.dirt[2]];
     });
     for (let i = 0; i < 900; i += 1) {
       const r = 1 + rng() * 4;
@@ -165,7 +183,8 @@ export function terrainMaterial(p: GroundPalette, mask: THREE.Texture, bounds: [
     tMacro: { value: tex.macro },
     tMask: { value: mask },
     uBounds: { value: new THREE.Vector4(...bounds) },
-    uSnowLine: { value: p === 'witchwood' ? 9999 : 200 },
+    uSnowLine: { value: PALS[p].snowLine },
+    uBright: { value: PALS[p].bright },
     uBump: { value: 2.2 },
   };
   m.onBeforeCompile = (shader) => {
@@ -178,7 +197,7 @@ export function terrainMaterial(p: GroundPalette, mask: THREE.Texture, bounds: [
         '#include <common>',
         `#include <common>
          varying vec3 vTWP; varying vec3 vTWN;
-         uniform sampler2D tRock, tGrass, tDirt, tMacro, tMask; uniform vec4 uBounds; uniform float uSnowLine, uBump;
+         uniform sampler2D tRock, tGrass, tDirt, tMacro, tMask; uniform vec4 uBounds; uniform float uSnowLine, uBump, uBright;
          ${PERTURB}
          vec3 triplanar(sampler2D t, vec3 p, vec3 w, float s) {
            return texture2D(t, p.zy * s).rgb * w.x + texture2D(t, p.xz * s).rgb * w.y + texture2D(t, p.xy * s).rgb * w.z;
@@ -202,7 +221,7 @@ export function terrainMaterial(p: GroundPalette, mask: THREE.Texture, bounds: [
          float snow = smoothstep(uSnowLine, uSnowLine + 50.0, vTWP.y + mac.r * 30.0) * smoothstep(0.5, 0.8, tn.y);
          col = mix(col, vec3(0.78, 0.82, 0.9), snow);
          float tHgt = dot(col, vec3(0.33));
-         diffuseColor.rgb *= col * (uSnowLine > 9000.0 ? 1.35 : 1.9);`,
+         diffuseColor.rgb *= col * uBright;`,
       )
       .replace(
         '#include <normal_fragment_maps>',

@@ -69,13 +69,36 @@
           <p class="chapter" id="title-chapter">Chapter I &mdash; The Waking of Velmour</p>
           <nav class="menu">
             <button type="button" id="btn-begin" class="menu-btn primary">Begin the Journey</button>
-            <button type="button" id="btn-ch1" class="menu-btn">Chapter I &mdash; The Waking of Velmour</button>
-            <button type="button" id="btn-ch2" class="menu-btn">Chapter II &mdash; The Witchwood</button>
+            <button type="button" id="btn-chapters" class="menu-btn">Select Chapter</button>
+            <button type="button" id="btn-chronicle" class="menu-btn">The Chronicle</button>
             <button type="button" id="btn-controls" class="menu-btn">Controls</button>
             <button type="button" id="btn-sound" class="menu-btn">Sound: On</button>
           </nav>
         </div>
         <p class="epigraph">&ldquo;They told us the mountains were only mountains.&rdquo;</p>
+      </section>
+
+      <section id="chapters-screen" class="screen hidden">
+        <div class="panel">
+          <h2>Chapters</h2>
+          <nav class="menu">
+            <button type="button" id="btn-ch1" class="menu-btn">I &mdash; The Waking of Velmour</button>
+            <button type="button" id="btn-ch2" class="menu-btn">II &mdash; The Witchwood</button>
+            <button type="button" id="btn-ch3" class="menu-btn">III &mdash; The Drowned Choir</button>
+            <button type="button" id="btn-ch4" class="menu-btn">IV &mdash; The Frostspine</button>
+            <button type="button" id="btn-ch5" class="menu-btn">V &mdash; The Heart of Osseran</button>
+            <button type="button" id="btn-chapters-back" class="menu-btn">Back</button>
+          </nav>
+        </div>
+      </section>
+
+      <section id="chronicle-screen" class="screen hidden">
+        <div class="panel chronicle">
+          <h2>The Chronicle</h2>
+          <p class="chron-sub">What Ser Calder knows so far</p>
+          <div id="chronicle-list"></div>
+          <nav class="menu"><button type="button" id="btn-chronicle-back" class="menu-btn">Back</button></nav>
+        </div>
       </section>
 
       <section id="controls-screen" class="screen hidden">
@@ -104,6 +127,7 @@
           <nav class="menu">
             <button type="button" id="btn-resume" class="menu-btn primary">Resume</button>
             <button type="button" id="btn-retry" class="menu-btn">Return to last Candle</button>
+            <button type="button" id="btn-pause-chronicle" class="menu-btn">The Chronicle</button>
             <button type="button" id="btn-pause-controls" class="menu-btn">Controls</button>
             <button type="button" id="btn-pause-sound" class="menu-btn">Sound: On</button>
           </nav>

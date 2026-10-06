@@ -1,7 +1,7 @@
 // Dev QA capture: loads the game, jumps to story stages via test hooks, saves screenshots + diagnostics.
 import { chromium } from '@playwright/test';
 const url = process.env.URL ?? 'http://127.0.0.1:5188';
-const chapterHash = process.env.CH === '2' ? '#chapter2' : '';
+const chapterHash = process.env.CH && process.env.CH !== '1' ? `#chapter${process.env.CH}` : '';
 const stages = (process.argv[2] ?? 'title,ride,gate,market,tremor,combat,stair,boss,ending').split(',');
 const mobile = process.argv.includes('--mobile');
 const out = process.env.OUT ?? 'artifacts/shots';

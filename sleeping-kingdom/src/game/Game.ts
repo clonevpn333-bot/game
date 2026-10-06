@@ -2,7 +2,14 @@ import * as THREE from 'three';
 import { Input } from '../core/Input';
 import { Loop } from '../core/Loop';
 import { createPipeline, type RenderPipeline } from '../core/Renderer';
-import { Path, NODES_CH1, NODES_CH2 } from '../world/Path';
+import { Path, NODES_CH1, NODES_CH2, NODES_CH3, NODES_CH4, NODES_CH5 } from '../world/Path';
+import { Marsh } from '../world/Marsh';
+import { Frostspine } from '../world/Frostspine';
+import { Hollow } from '../world/Hollow';
+import { Chapter3 } from './Chapter3';
+import { Chapter4 } from './Chapter4';
+import { Chapter5 } from './Chapter5';
+import { CHAPTER_NAMES, LORE, ROMAN } from './Lore';
 import { Witchwood } from '../world/Witchwood';
 import { Chapter2 } from './Chapter2';
 import { CutscenePlayer } from './Cutscene';
@@ -46,9 +53,10 @@ export interface ChapterScript {
 /** Chapter from the URL: #chapter2 (artifact-safe anchor) or ?chapter=2. */
 export function detectChapter(): number {
   const h = window.location.hash.replace('#', '');
-  if (/^chapter2$/i.test(h)) return 2;
-  const q = new URLSearchParams(window.location.search).get('chapter');
-  return q === '2' ? 2 : 1;
+  const m = /^chapter([1-5])$/i.exec(h);
+  if (m) return Number(m[1]);
+  const q = Number(new URLSearchParams(window.location.search).get('chapter'));
+  return q >= 1 && q <= 5 ? q : 1;
 }
 
 export type GameMode = 'loading' | 'title' | 'play' | 'paused' | 'dead' | 'ending';
@@ -66,7 +74,7 @@ export class Game {
   readonly input: Input;
   readonly bus = new EventBus();
   readonly chapterNo = detectChapter();
-  readonly path = new Path(this.chapterNo === 2 ? NODES_CH2 : NODES_CH1);
+  readonly path = new Path([NODES_CH1, NODES_CH1, NODES_CH2, NODES_CH3, NODES_CH4, NODES_CH5][this.chapterNo]);
   readonly nav = new Nav(this.path);
   /** Tilt pivot (world) → worldRoot (gameplay space). Tilting the pivot tilts the city, not the sky. */
   readonly tiltPivot = new THREE.Group();
@@ -74,6 +82,10 @@ export class Game {
   readonly terrain: Terrain;
   readonly city: City | null = null;
   readonly wood: Witchwood | null = null;
+  readonly marsh: Marsh | null = null;
+  readonly frost: Frostspine | null = null;
+  readonly hollow: Hollow | null = null;
+  moonBase = 3.4;
   readonly far = new FarWorld();
   readonly sky = new Sky();
   readonly weather = new Weather();
@@ -129,7 +141,21 @@ export class Game {
     this.scene.background = new THREE.Color('#05060c');
 
     let pivot: THREE.Vector3;
-    if (this.chapterNo === 2) {
+    const onPath = (o: { x: number; z: number; r: number }) => {
+      const n = this.path.nearest(o.x, o.z);
+      return Math.abs(n.lateral) < n.sample.width / 2 + o.r;
+    };
+    if (this.chapterNo >= 3) {
+      const biome = this.chapterNo === 3 ? 'marsh' : this.chapterNo === 4 ? 'snow' : 'hollow';
+      this.terrain = new Terrain(this.path, biome);
+      const world = this.chapterNo === 3 ? new Marsh(this.path, this.terrain) : this.chapterNo === 4 ? new Frostspine(this.path, this.terrain) : new Hollow(this.path, this.terrain);
+      if (world instanceof Marsh) this.marsh = world;
+      else if (world instanceof Frostspine) this.frost = world;
+      else this.hollow = world;
+      this.worldRoot.add(this.terrain.group, world.group);
+      this.nav.obstacles.push(...world.obstacles.filter(onPath));
+      pivot = this.path.at(this.path.length / 2).pos.clone();
+    } else if (this.chapterNo === 2) {
       this.terrain = new Terrain(this.path, 'witchwood');
       this.wood = new Witchwood(this.path, this.terrain);
       this.worldRoot.add(this.terrain.group, this.wood.group);
@@ -158,9 +184,11 @@ export class Game {
     this.vfx = new Vfx(this.worldRoot);
     this.worldRoot.add(this.vfx.group);
 
-    this.chapter = this.chapterNo === 2 ? new Chapter2(this) : new Chapter(this);
-    const worldTorches = [...this.terrain.torches, ...(this.city?.torches ?? []), ...(this.wood?.torches ?? [])];
-    this.lights = new LightPool([...worldTorches, ...this.chapter.candleSpots], this.city?.lanternSpots ?? [], 6, this.chapterNo === 2 ? '#6aff8a' : '#ff9a48');
+    const chapters = [Chapter, Chapter, Chapter2, Chapter3, Chapter4, Chapter5];
+    this.chapter = new chapters[this.chapterNo](this);
+    const worldTorches = [...this.terrain.torches, ...(this.city?.torches ?? []), ...(this.wood?.torches ?? []), ...(this.marsh?.torches ?? []), ...(this.frost?.torches ?? []), ...(this.hollow?.torches ?? [])];
+    const tint = ['#ff9a48', '#ff9a48', '#6aff8a', '#ffb070', '#ffa050', '#ff7a40'][this.chapterNo];
+    this.lights = new LightPool([...worldTorches, ...this.chapter.candleSpots], this.city?.lanternSpots ?? [], 6, tint);
     this.worldRoot.add(this.lights.group);
     this.chapter.bindCandles(this.lights, worldTorches.length);
 
@@ -258,6 +286,10 @@ export class Game {
   addEnemy(e: Enemy): void {
     this.worldRoot.add(e.group);
     this.enemies.push(e);
+    if (e.cloth) {
+      this.scene.add(e.cloth.mesh);
+      e.cloth.reset();
+    }
   }
 
   removeEnemies(filter: (e: Enemy) => boolean): void {
@@ -265,7 +297,8 @@ export class Game {
       const e = this.enemies[i];
       if (filter(e)) {
         e.group.removeFromParent();
-        if (e !== this.boss) e.group.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+        e.cloth?.mesh.removeFromParent();
+        if (e !== this.boss && !e.persistent) e.group.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
         this.enemies.splice(i, 1);
       }
     }
@@ -318,6 +351,8 @@ export class Game {
         case 'enemy-telegraph':
           if (e.kind === 'dragon-flap') a.flap(e.pos);
           else if (e.kind === 'witch-cackle' || e.kind === 'witch-blink') a.cackle(e.pos);
+          else if (e.kind === 'wolf-howl') a.scream(e.pos, 0.55);
+          else if (e.kind === 'morvane-call' || e.kind === 'morvane-toll') a.toll(e.pos, true);
           else if (e.kind === 'dragon-breath' || e.kind === 'dragon-flight') a.roar(e.pos);
           else a.telegraph(e.pos, e.kind);
           break;
@@ -326,7 +361,8 @@ export class Game {
           else if (e.kind === 'dragon-breath') a.fire(e.pos, 2.4);
           else if (e.kind === 'dragon-flight') a.fire(e.pos, 4);
           else if (e.kind === 'dragon-bite' || e.kind === 'dragon-tail' || e.kind === 'dragon-buffet') a.swing(true);
-          else if (e.kind.startsWith('witch')) a.zap(e.pos);
+          else if (e.kind.startsWith('witch') || e.kind === 'morvane-orbs' || e.kind === 'morvane-pillars') a.zap(e.pos);
+          else if (e.kind === 'wolf-bite' || e.kind === 'morvane-sweep') a.swing(false);
           break;
         case 'slam':
           a.slam(e.pos);
@@ -339,7 +375,7 @@ export class Game {
           break;
         case 'enemy-dead':
           this.chapter.onEnemyDead(e.kind);
-          if (e.kind === 'boss') a.stinger('victory');
+          if (e.kind === 'boss' || e.kind === 'ivarr' || e.kind === 'morvane' || e.kind === 'dragon') a.stinger('victory');
           break;
       }
     });
@@ -398,14 +434,46 @@ export class Game {
       $('#controls-screen').classList.remove('hidden');
     });
     const goChapter = (n: number) => {
-      window.location.hash = n === 2 ? 'chapter2' : '';
+      window.location.hash = n === 1 ? '' : `chapter${n}`;
       window.location.reload();
     };
     click('#btn-again', () => goChapter(this.chapterNo));
-    click('#btn-next', () => goChapter(2));
-    click('#btn-ch1', () => (this.chapterNo === 1 ? this.beginGame() : goChapter(1)));
-    click('#btn-ch2', () => (this.chapterNo === 2 ? this.beginGame() : goChapter(2)));
-    if (this.chapterNo === 2) $('#title-chapter').innerHTML = 'Chapter II &mdash; The Witchwood';
+    click('#btn-next', () => goChapter(Math.min(5, this.chapterNo + 1)));
+    for (let n = 1; n <= 5; n += 1) {
+      click(`#btn-ch${n}`, () => {
+        $('#chapters-screen').classList.add('hidden');
+        if (this.chapterNo === n) this.beginGame();
+        else goChapter(n);
+      });
+    }
+    click('#btn-chapters', () => this.showScreen('#chapters-screen'));
+    click('#btn-chapters-back', () => $('#chapters-screen').classList.add('hidden'));
+    const chronicle = () => {
+      const list = $('#chronicle-list');
+      list.innerHTML = '';
+      for (const e of LORE) {
+        const div = document.createElement('div');
+        const open = e.ch <= this.chapterNo;
+        div.className = `chron-entry${open ? '' : ' locked'}`;
+        const h = document.createElement('h3');
+        h.textContent = open ? e.title : '???';
+        const p = document.createElement('p');
+        p.textContent = open ? e.text : `Revealed in Chapter ${ROMAN[e.ch]}.`;
+        div.append(h, p);
+        list.append(div);
+      }
+      $('#chronicle-screen').classList.remove('hidden');
+    };
+    click('#btn-chronicle', chronicle);
+    click('#btn-pause-chronicle', () => {
+      $('#pause-screen').classList.add('hidden');
+      chronicle();
+    });
+    click('#btn-chronicle-back', () => {
+      $('#chronicle-screen').classList.add('hidden');
+      if (this.mode === 'paused') $('#pause-screen').classList.remove('hidden');
+    });
+    $('#title-chapter').innerHTML = `Chapter ${ROMAN[this.chapterNo]} &mdash; ${CHAPTER_NAMES[this.chapterNo]}`;
     click('#pause-button', () => this.setPaused(this.mode !== 'paused'));
     window.addEventListener('pointerdown', () => this.audio.unlock(), { once: true });
     window.addEventListener('keydown', () => this.audio.unlock(), { once: true });
@@ -455,11 +523,24 @@ export class Game {
   showEnd(): void {
     this.mode = 'ending';
     this.input.releasePointer();
-    if (this.chapterNo === 2) {
-      $('#end-pre').textContent = 'Vharoth, the Ash-Drake';
-      $('#end-title').textContent = 'Is Slain';
-      $('#end-chapter').innerHTML = 'End of Chapter II &mdash; The Witchwood';
-      $('#end-teaser').innerHTML = 'Next: Chapter III &mdash; The Drowned Choir';
+    const ends: Array<[string, string]> = [
+      ['', ''],
+      ['Osseran, the Founder beneath Velmour', 'Has Woken'],
+      ['Vharoth, the Ash-Drake', 'Is Slain'],
+      ['The first half of the Cradle Bell', 'Is Found'],
+      ['Ser Ivarr of the Bell Guard', 'Is at Rest'],
+      ['Osseran, the Founder beneath Velmour', 'Sleeps'],
+    ];
+    const n = this.chapterNo;
+    $('#end-pre').textContent = ends[n][0];
+    $('#end-title').textContent = ends[n][1];
+    $('#end-chapter').innerHTML = `End of Chapter ${ROMAN[n]} &mdash; ${CHAPTER_NAMES[n]}`;
+    if (n < 5) {
+      $('#end-teaser').innerHTML = `Next: Chapter ${ROMAN[n + 1]} &mdash; ${CHAPTER_NAMES[n + 1]}`;
+      $('#btn-next').textContent = `Continue to Chapter ${ROMAN[n + 1]}`;
+    } else {
+      $('#end-chapter').innerHTML = 'The End';
+      $('#end-teaser').innerHTML = 'Thank you for playing The Sleeping Kingdom';
       $('#btn-next').classList.add('hidden');
     }
     $('#end-screen').classList.remove('hidden');
@@ -566,13 +647,17 @@ export class Game {
     this.weather.update(dt, t, this.camera.position);
     this.terrain.update(dt, animT);
     BannerTime.value = animT;
-    this.moon.intensity = 3.4 + this.weather.lightning * 6;
+    this.moon.intensity = this.moonBase + this.weather.lightning * 6;
     this.vfx.update(gdt);
     this.scene.updateMatrixWorld();
     this.player.cloak.update(Math.max(gdt, 0.0001), t);
     if (this.boss.group.parent) this.boss.cape.update(Math.max(gdt, 0.0001), t);
+    for (const e of this.enemies) e.cloth?.update(Math.max(gdt, 0.0001), t);
     this.founder?.update(dt, t, this.chapter.stir);
     this.wood?.update(t);
+    this.marsh?.update(dt, t);
+    this.frost?.update(t);
+    this.hollow?.update(dt, t);
 
     // Grade.
     this.hurtPulse = Math.max(0, this.hurtPulse - dt * 1.8);
@@ -644,7 +729,7 @@ export class Game {
 
   setPalette(name: keyof typeof SKY_PALETTES, instant = false): void {
     this.sky.setPalette(SKY_PALETTES[name], instant);
-    const tints: Record<string, string> = { night: '#ffffff', city: '#e8d8e8', tremor: '#ffb0a0', eye: '#ffd8a0', wood: '#b0e0c0', drake: '#ffa080' };
+    const tints: Record<string, string> = { night: '#ffffff', city: '#e8d8e8', tremor: '#ffb0a0', eye: '#ffd8a0', wood: '#b0e0c0', drake: '#ffa080', marsh: '#b0c8c0', choir: '#a0c8e0', snow: '#e0e8ff', storm: '#a0b0d0', ruin: '#ffb090', hollow: '#ff8070', heart: '#ff7050', dawn: '#ffe0c0' };
     this.farTintTarget.set(tints[name]);
     if (instant) this.farTint.copy(this.farTintTarget);
     const hemi: Record<string, [string, string, number]> = {
@@ -654,6 +739,14 @@ export class Game {
       eye: ['#7a5a40', '#7a4a10', 1.7],
       wood: ['#4a7a68', '#1a2a14', 1.5],
       drake: ['#7a4030', '#5a1a08', 1.7],
+      marsh: ['#5a7a78', '#2a2a1a', 1.5],
+      choir: ['#4a7aa0', '#1a2a30', 1.6],
+      snow: ['#8a9ac8', '#6a7088', 1.6],
+      storm: ['#5a6a90', '#3a3a48', 1.5],
+      ruin: ['#7a5048', '#4a2010', 1.6],
+      hollow: ['#7a3a30', '#3a1008', 1.7],
+      heart: ['#a04030', '#5a1008', 1.8],
+      dawn: ['#b0b0d0', '#7a5a40', 2.0],
     };
     const [sky, ground, i] = hemi[name];
     this.hemi.color.set(sky);

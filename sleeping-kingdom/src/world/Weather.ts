@@ -78,6 +78,12 @@ export class Weather {
   rainLevel = 1;
   emberLevel = 0;
   ashLevel = 0;
+  /** Ash field doubles as snowfall: white, slower, more of it. */
+  setSnow(on: boolean): void {
+    this.ash.uniforms.uColor.value.set(on ? '#c8d0e0' : '#8a8a96');
+    this.ash.uniforms.uVel.value.set(on ? 1.4 : 0.4, on ? -1.6 : -2.2, on ? 0.6 : 0.3);
+    this.ash.uniforms.uSize.value = on ? 0.5 : 0.36;
+  }
   moteLevel = 0;
   lightningEnabled = true;
   lightning = 0;

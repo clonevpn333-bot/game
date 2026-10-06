@@ -137,6 +137,7 @@ export class Path {
   readonly samples: PathSample[] = [];
   readonly length: number;
   private readonly zoneStarts = new Map<Zone, number>();
+  private readonly zoneEnds = new Map<Zone, number>();
 
   constructor(private readonly NODES: Node[] = NODES_CH1) {
     this.curve = new THREE.CatmullRomCurve3(
@@ -162,7 +163,13 @@ export class Path {
       const sample: PathSample = { pos, tangent, right, width: w, s: u * this.length, zone };
       this.samples.push(sample);
       if (!this.zoneStarts.has(zone)) this.zoneStarts.set(zone, sample.s);
+      this.zoneEnds.set(zone, sample.s);
     }
+  }
+
+  /** Last arc length at which a zone appears. */
+  zoneEnd(zone: Zone): number {
+    return this.zoneEnds.get(zone) ?? 0;
   }
 
   zoneStart(zone: Zone): number {

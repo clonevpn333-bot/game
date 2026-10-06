@@ -8,13 +8,21 @@ export type SkyPalette = {
   cloudLit: THREE.ColorRepresentation;
 };
 
-export const SKY_PALETTES: Record<'night' | 'city' | 'tremor' | 'eye' | 'wood' | 'drake', SkyPalette> = {
+export const SKY_PALETTES: Record<'night' | 'city' | 'tremor' | 'eye' | 'wood' | 'drake' | 'marsh' | 'choir' | 'snow' | 'storm' | 'ruin' | 'hollow' | 'heart' | 'dawn', SkyPalette> = {
   night: { top: '#03050d', horizon: '#1b2347', glow: '#3a3f7a', cloud: '#0b0d18', cloudLit: '#5c6ba0' },
   city: { top: '#04040c', horizon: '#2a1c3a', glow: '#8a4a3a', cloud: '#0d0b16', cloudLit: '#6d5f94' },
   tremor: { top: '#0b0306', horizon: '#5a1a14', glow: '#d0502a', cloud: '#1a0806', cloudLit: '#b0503a' },
   eye: { top: '#0a0604', horizon: '#5a3a10', glow: '#ffb040', cloud: '#1a1006', cloudLit: '#d09a40' },
   wood: { top: '#02070a', horizon: '#123a30', glow: '#3a8a6a', cloud: '#06120e', cloudLit: '#5a8a7a' },
   drake: { top: '#0c0302', horizon: '#5a1a0a', glow: '#ff6a20', cloud: '#1a0604', cloudLit: '#c05a30' },
+  marsh: { top: '#04080a', horizon: '#2a3a38', glow: '#6a8a7a', cloud: '#0c1414', cloudLit: '#7a9088' },
+  choir: { top: '#03060c', horizon: '#1a3048', glow: '#4a9ab0', cloud: '#081018', cloudLit: '#5a8aa0' },
+  snow: { top: '#0a1020', horizon: '#5a6a88', glow: '#a0b8e0', cloud: '#2a3448', cloudLit: '#c0d0f0' },
+  storm: { top: '#04060c', horizon: '#2a3448', glow: '#6a7aa0', cloud: '#10141e', cloudLit: '#7888a8' },
+  ruin: { top: '#080404', horizon: '#3a2018', glow: '#c06a30', cloud: '#140a08', cloudLit: '#a06040' },
+  hollow: { top: '#030101', horizon: '#200806', glow: '#802010', cloud: '#0a0202', cloudLit: '#401008' },
+  heart: { top: '#060102', horizon: '#40080a', glow: '#ff4020', cloud: '#140204', cloudLit: '#a02010' },
+  dawn: { top: '#2a3a6a', horizon: '#e0a070', glow: '#ffd090', cloud: '#5a4a5a', cloudLit: '#ffc890' },
 };
 
 export class Sky {

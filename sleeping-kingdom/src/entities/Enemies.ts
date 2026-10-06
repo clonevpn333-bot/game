@@ -42,6 +42,10 @@ export abstract class Enemy implements Combatant {
   protected flash = 0;
   protected readonly waves: Wave[] = [];
   encounter = '';
+  /** Optional cloth (cloak/cape) simulated by the game after the scene matrices update. */
+  cloth: Cloth | null = null;
+  /** Bosses that are reused across respawns keep their geometry when removed. */
+  persistent = false;
 
   constructor(
     readonly name: string,

@@ -800,7 +800,7 @@ h1 span {
 #narration {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 62%;
   transform: translate(-50%, -50%);
   width: min(86vw, 820px);
   text-align: center;
@@ -816,3 +816,13 @@ h1 span {
 #narration.show {
   opacity: 1;
 }
+
+/* Chronicle (lore codex) */
+.panel.chronicle { max-width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto; text-align: left; }
+.panel.chronicle h2 { text-align: center; }
+.chron-sub { text-align: center; opacity: 0.7; font-style: italic; margin: -4px 0 18px; }
+#chronicle-list { display: grid; gap: 14px; margin-bottom: 18px; }
+.chron-entry { border-left: 2px solid rgba(214, 170, 96, 0.55); padding: 4px 0 4px 14px; }
+.chron-entry h3 { margin: 0 0 4px; font-size: 1.02rem; letter-spacing: 0.06em; color: #e8c890; font-weight: 600; }
+.chron-entry p { margin: 0; line-height: 1.5; font-size: 0.95rem; color: #d8d0c4; }
+.chron-entry.locked h3, .chron-entry.locked p { color: #6a6460; font-style: italic; }

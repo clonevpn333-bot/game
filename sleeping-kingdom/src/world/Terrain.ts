@@ -12,7 +12,7 @@ const CITY_ZONES: Zone[] = ['gate', 'street', 'market', 'broken', 'stair', 'plaz
 
 export const WindUniforms = { uTime: { value: 0 }, uWind: { value: 1 } };
 
-function windSway<T extends THREE.Material>(m: T, amount: number, key: string): T {
+export function windSway<T extends THREE.Material>(m: T, amount: number, key: string): T {
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uTime = WindUniforms.uTime;
     shader.uniforms.uWind = WindUniforms.uWind;
@@ -33,7 +33,10 @@ function windSway<T extends THREE.Material>(m: T, amount: number, key: string): 
   return m;
 }
 
-export type Biome = 'mountain' | 'witchwood';
+export type Biome = 'mountain' | 'witchwood' | 'marsh' | 'snow' | 'hollow';
+
+/** Still water level of the Chapter III marsh. */
+export const MARSH_WATER = 19.3;
 
 export type TorchSpot = { pos: THREE.Vector3; zone: Zone; s: number };
 
@@ -104,6 +107,54 @@ export class Terrain {
       18 + fbm(x * 0.004 + 7, z * 0.004, 4) * 50 + ridged(x * 0.0026 + 3, z * 0.0026, 5) * 330 * smoothstep(120, 430, d) * (0.25 + 0.75 * smoothstep(160, 320, Math.abs(x - 10)));
     let near: number;
     let blend: number;
+    const isl = smoothstep(0.52, 0.72, fbm(x * 0.028 + 3, z * 0.028 - 5, 3));
+    if (this.biome === 'marsh') {
+      // Reed flats and black water: the path is the only reliably dry ground.
+      const fall = s.zone === 'causeway' ? smoothstep(hw + 0.4, hw + 4, d) : s.zone === 'village' ? smoothstep(hw + 3, hw + 22, d) : s.zone === 'shore' ? smoothstep(hw + 1, hw + 16, d) : smoothstep(hw + 2, hw + 9, d);
+      const bed = MARSH_WATER - 1.6 + n1 * 1.6 + isl * 2.6;
+      near = lerp(roadY - 0.35, bed, fall);
+      const farM = 12 + fbm(x * 0.004 + 7, z * 0.004, 4) * 40 + ridged(x * 0.003 + 3, z * 0.003, 5) * 210 * smoothstep(260, 520, d);
+      return lerp(near, farM, smoothstep(170, 420, d));
+    }
+    if (this.biome === 'snow') {
+      let k: number;
+      if (s.zone === 'ridge') {
+        // Knife-edge: the world falls away on both sides.
+        k = smoothstep(hw + 0.8, hw + 34, d);
+        near = roadY - 0.35 - k * (78 + n1 * 26) + ridged(x * 0.04, z * 0.04, 3) * 4 * k;
+      } else if (s.zone === 'camp') {
+        k = smoothstep(hw + 4, hw + 42, d);
+        near = roadY - 0.35 + k * (24 + n1 * 10) + ridged(x * 0.03, z * 0.03, 3) * 8 * k;
+      } else if (s.zone === 'fort') {
+        k = smoothstep(hw + 9, hw + 36, d);
+        near = roadY - 0.35 + k * (34 + n1 * 12);
+      } else {
+        // The pass: a canyon between snow-loaded walls.
+        k = smoothstep(hw + 2, hw + 30, d);
+        near = roadY - 0.35 + k * (30 + n1 * 16) + ridged(x * 0.025, z * 0.025, 4) * 14 * k;
+      }
+      const farS = 20 + fbm(x * 0.004 + 7, z * 0.004, 4) * 60 + ridged(x * 0.0028 + 3, z * 0.0028, 5) * 420 * smoothstep(90, 380, d);
+      return lerp(near, farS, smoothstep(110, 300, d));
+    }
+    if (this.biome === 'hollow') {
+      let k: number;
+      if (s.zone === 'sanctum') {
+        k = smoothstep(hw + 6, hw + 26, d);
+        near = roadY - 0.35 - k * (60 + n1 * 18);
+        return lerp(near, 30 + fbm(x * 0.004, z * 0.004, 4) * 60 + ridged(x * 0.003, z * 0.003, 4) * 260 * smoothstep(200, 450, d), smoothstep(180, 360, d));
+      }
+      if (s.zone === 'crypt') {
+        k = smoothstep(hw + 0.6, hw + 6, d);
+        near = roadY - 0.35 + k * (26 + n1 * 6);
+      } else if (s.zone === 'heart') {
+        k = smoothstep(hw + 2, hw + 26, d);
+        near = roadY - 0.35 + k * (66 + n1 * 16) + ridged(x * 0.03, z * 0.03, 3) * 10 * k;
+      } else {
+        k = smoothstep(hw + 2, hw + 34, d);
+        near = roadY - 0.35 + k * (58 + n1 * 22) + ridged(x * 0.03, z * 0.03, 4) * 16 * k;
+      }
+      return lerp(near, roadY + 90 + n1 * 30, smoothstep(70, 160, d));
+    }
     if (CITY_ZONES.includes(s.zone)) {
       if (s.zone === 'plaza' && side < 0 && d > hw + 1) {
         near = roadY - 3 - 135 * smoothstep(hw + 1, hw + 14, d) + n1 * 8;
@@ -147,7 +198,7 @@ export class Terrain {
 
   private buildGround(): THREE.Mesh {
     const box = new THREE.Box3().setFromPoints(this.path.samples.map((s) => s.pos));
-    const pad = this.biome === 'mountain' ? 330 : 300;
+    const pad = this.biome === 'mountain' ? 330 : this.biome === 'hollow' ? 200 : 300;
     const x0 = Math.floor(box.min.x - pad);
     const x1 = Math.ceil(box.max.x + pad);
     const z0 = Math.floor(box.min.z - pad);
@@ -242,7 +293,11 @@ export class Terrain {
     geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geo.setAttribute('aEdge', new THREE.Float32BufferAttribute(edges, 1));
     geo.computeVertexNormals();
-    const road = new THREE.Mesh(geo, roadEdges((this.biome === 'witchwood' ? Mats().dirt : Mats().cobble).clone(), this.biome));
+    const roadMat = (this.biome === 'mountain' ? Mats().cobble : this.biome === 'hollow' || this.biome === 'marsh' ? Mats().stoneDark : Mats().dirt).clone();
+    if (this.biome === 'snow') roadMat.color.set('#c8c4c0');
+    if (this.biome === 'marsh') roadMat.color.set('#7a8076');
+    if (this.biome === 'hollow') roadMat.color.set('#8a7a70');
+    const road = new THREE.Mesh(geo, roadEdges(roadMat, this.biome));
     road.receiveShadow = true;
     road.name = 'road';
     g.add(road);
@@ -476,13 +531,14 @@ export class Terrain {
   }
 
   private buildFog(): void {
-    if (this.biome === 'witchwood') {
+    if (this.biome !== 'mountain') {
       // Ground mist pooled along the path instead of valley sheets.
+      const tint: Record<string, [string, number]> = { witchwood: ['#6a9a88', 0.32], marsh: ['#4a5a58', 0.14], snow: ['#8a98b0', 0.12], hollow: ['#6a2a24', 0.16] };
       for (let s = 20; s < this.path.length; s += 55) {
         const a = this.path.at(s);
         const mat = this.fogMat.clone();
-        mat.color.set('#6a9a88');
-        mat.opacity = 0.32;
+        mat.color.set(tint[this.biome][0]);
+        mat.opacity = tint[this.biome][1];
         mat.map = Tex.fogNoise().clone();
         mat.map.repeat.set(0.6, 0.6);
         mat.map.wrapS = mat.map.wrapT = THREE.RepeatWrapping;

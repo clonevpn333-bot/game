@@ -98,6 +98,13 @@ const WITCH_THROW: Pose = {
   spine: [0.35, 0, 0], head: [0.1, 0, 0], rootY: 0.05,
 };
 
+type WitchLook = { name: string; glow: string; eye: string; robe: readonly [number, number, number]; skin: string; bolt: readonly [string, string]; thorn: string; spark: string; dust: string };
+const WITCH_LOOKS: Record<'thorn' | 'drowned' | 'hollow', WitchLook> = {
+  thorn: { name: 'Thornwife', glow: '#4aff7a', eye: '#9aff6a', robe: [34, 44, 34], skin: '#8f9c84', bolt: ['rgba(200,255,170,1)', 'rgba(40,255,90,0)'], thorn: '#0a3010', spark: '#7aff8a', dust: '#1a3a24' },
+  drowned: { name: 'Drowned Cantor', glow: '#4ac8ff', eye: '#9ae0ff', robe: [30, 42, 48], skin: '#7a9098', bolt: ['rgba(190,235,255,1)', 'rgba(40,150,255,0)'], thorn: '#0a2030', spark: '#8ad8ff', dust: '#1a2a3a' },
+  hollow: { name: 'Choir Zealot', glow: '#ffc04a', eye: '#ffe08a', robe: [150, 140, 120], skin: '#a89880', bolt: ['rgba(255,240,190,1)', 'rgba(255,160,40,0)'], thorn: '#3a2008', spark: '#ffd080', dust: '#3a2a1a' },
+};
+
 export class Thornwife extends Enemy {
   readonly rig: Rig;
   private readonly anim: Animator;
@@ -111,13 +118,19 @@ export class Thornwife extends Enemy {
   private hover = 0;
   private readonly hairs: THREE.Object3D[] = [];
 
-  constructor(private readonly space: THREE.Object3D) {
-    super('Thornwife', 'witch', 90, 0.55, 35, 22);
+  private readonly c: WitchLook;
+
+  constructor(
+    private readonly space: THREE.Object3D,
+    look: keyof typeof WITCH_LOOKS = 'thorn',
+  ) {
+    super(WITCH_LOOKS[look].name, 'witch', 90, 0.55, 35, 22);
+    this.c = WITCH_LOOKS[look];
     const m = Mats();
-    this.staffGlow = new THREE.MeshStandardMaterial({ color: '#031008', emissive: '#4aff7a', emissiveIntensity: 2.2 });
-    this.eyeGlow = new THREE.MeshStandardMaterial({ color: '#031008', emissive: '#9aff6a', emissiveIntensity: 3 });
-    const robe = retro(new THREE.MeshStandardMaterial({ map: Tex.cloth(34, 44, 34, 'witchRobe'), roughness: 1, side: THREE.DoubleSide }));
-    const skin = retro(new THREE.MeshStandardMaterial({ color: '#8f9c84', roughness: 0.8 }));
+    this.staffGlow = new THREE.MeshStandardMaterial({ color: '#031008', emissive: this.c.glow, emissiveIntensity: 2.2 });
+    this.eyeGlow = new THREE.MeshStandardMaterial({ color: '#031008', emissive: this.c.eye, emissiveIntensity: 3 });
+    const robe = retro(new THREE.MeshStandardMaterial({ map: Tex.cloth(this.c.robe[0], this.c.robe[1], this.c.robe[2], `witchRobe-${look}`), roughness: 1, side: THREE.DoubleSide }));
+    const skin = retro(new THREE.MeshStandardMaterial({ color: this.c.skin, roughness: 0.8 }));
     const rig = skeleton({ scale: 1.1, hipY: 0.98, thigh: 0.46, shin: 0.44, spine: 0.27, chest: 0.34, shoulderW: 0.2 });
     this.rig = rig;
     const { j } = rig;
@@ -190,7 +203,7 @@ export class Thornwife extends Enemy {
   }
 
   private castBolt(ctx: EnemyCtx): void {
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: Tex.radial('rgba(200,255,170,1)', 'rgba(40,255,90,0)', 'wbolt'), blending: THREE.AdditiveBlending, depthWrite: false }));
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: Tex.radial(this.c.bolt[0], this.c.bolt[1], `wbolt-${this.c.name}`), blending: THREE.AdditiveBlending, depthWrite: false }));
     sprite.scale.setScalar(1.1);
     const p = this.pos.clone().setY(this.pos.y + 2.1 + this.hover).addScaledVector(new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw)), 0.6);
     sprite.position.copy(p);
@@ -203,7 +216,7 @@ export class Thornwife extends Enemy {
   private eruptThorns(ctx: EnemyCtx): void {
     const g = new THREE.Group();
     g.position.copy(this.target);
-    const mat = new THREE.MeshStandardMaterial({ color: '#2a1a10', roughness: 0.9, emissive: '#0a3010', emissiveIntensity: 0.6 });
+    const mat = new THREE.MeshStandardMaterial({ color: '#2a1a10', roughness: 0.9, emissive: this.c.thorn, emissiveIntensity: 0.6 });
     for (let i = 0; i < 9; i += 1) {
       const a = (i / 9) * Math.PI * 2 + ctx.rng();
       const r = i === 0 ? 0 : 0.9 + ctx.rng() * 0.8;
@@ -220,14 +233,14 @@ export class Thornwife extends Enemy {
   }
 
   private blink(ctx: EnemyCtx): void {
-    ctx.vfx.dust(this.pos.clone().setY(this.pos.y + 0.8), 18, 0.8, '#1a3a24');
-    ctx.vfx.sparks(this.pos.clone().setY(this.pos.y + 1.2), 14, '#7aff8a', 4);
+    ctx.vfx.dust(this.pos.clone().setY(this.pos.y + 0.8), 18, 0.8, this.c.dust);
+    ctx.vfx.sparks(this.pos.clone().setY(this.pos.y + 1.2), 14, this.c.spark, 4);
     const near = ctx.nav.path.samples[Math.max(0, this.pathIndex)];
     const away = Math.sign((this.pos.x - ctx.player.pos.x) * near.tangent.x + (this.pos.z - ctx.player.pos.z) * near.tangent.z) || 1;
     const dest = near.pos.clone().addScaledVector(near.tangent, away * (7 + ctx.rng() * 4)).addScaledVector(near.right, (ctx.rng() - 0.5) * near.width * 0.7);
     this.pos.copy(dest);
     this.pathIndex = ctx.nav.resolve(this.pos, 0.5, this.pathIndex);
-    ctx.vfx.dust(this.pos.clone().setY(this.pos.y + 0.8), 18, 0.8, '#1a3a24');
+    ctx.vfx.dust(this.pos.clone().setY(this.pos.y + 0.8), 18, 0.8, this.c.dust);
     ctx.bus.emit({ type: 'enemy-telegraph', pos: this.pos.clone(), kind: 'witch-blink' });
     this.blinkCd = 4;
   }
@@ -267,7 +280,7 @@ export class Thornwife extends Enemy {
           this.setState('telegraph');
           if (this.spell === 'thorns') {
             this.target.copy(ctx.player.pos);
-            ctx.vfx.ring(this.target, 2.2, 2.2, 1.1, '#7aff8a', 'tele');
+            ctx.vfx.ring(this.target, 2.2, 2.2, 1.1, this.c.spark, 'tele');
           }
           ctx.bus.emit({ type: 'enemy-telegraph', pos: this.pos.clone(), kind: `witch-${this.spell}` });
         }
@@ -279,7 +292,7 @@ export class Thornwife extends Enemy {
         pose = this.spell === 'claw' ? { ...WITCH_CAST, shoulderL: [-2.2, 0, 0.4] } : WITCH_CAST;
         const dur = this.spell === 'bolt' ? 0.75 : this.spell === 'thorns' ? 1.1 : 0.45;
         if (this.spell === 'bolt' && Math.floor(this.stateT * 20) !== Math.floor((this.stateT - dt) * 20)) {
-          ctx.vfx.sparks(this.focusPoint(new THREE.Vector3()).setY(this.pos.y + 2.2 + this.hover), 2, '#8aff9a', 1.5);
+          ctx.vfx.sparks(this.focusPoint(new THREE.Vector3()).setY(this.pos.y + 2.2 + this.hover), 2, this.c.spark, 1.5);
         }
         if (this.stateT > dur) this.setState('strike');
         break;
@@ -322,8 +335,8 @@ export class Thornwife extends Enemy {
           Math.min(1, this.stateT / 1.2),
         );
         if (this.stateT < dt * 1.5) {
-          ctx.vfx.sparks(this.focusPoint(new THREE.Vector3()), 30, '#7aff8a', 6);
-          ctx.vfx.dust(this.pos, 16, 1, '#1a3a24');
+          ctx.vfx.sparks(this.focusPoint(new THREE.Vector3()), 30, this.c.spark, 6);
+          ctx.vfx.dust(this.pos, 16, 1, this.c.dust);
           ctx.bus.emit({ type: 'enemy-dead', pos: this.pos.clone(), kind: 'witch' });
         }
         if (this.stateT > 2.5) this.group.scale.setScalar(Math.max(0.01, 1 - (this.stateT - 2.5)));
@@ -349,12 +362,12 @@ export class Thornwife extends Enemy {
       b.pos.addScaledVector(b.vel, dt);
       b.mesh.position.copy(b.pos);
       b.mesh.scale.setScalar(1 + Math.sin(b.life * 30) * 0.15);
-      if (Math.floor(b.life * 30) % 2 === 0) ctx.vfx.sparks(b.pos, 1, '#6aff7a', 0.6);
+      if (Math.floor(b.life * 30) % 2 === 0) ctx.vfx.sparks(b.pos, 1, this.c.spark, 0.6);
       const hit = b.pos.distanceTo(new THREE.Vector3(pp.x, pp.y + 1.1, pp.z)) < 0.85;
       const ground = b.pos.y < ctx.nav.path.samples[Math.max(0, ctx.player.pathIndex)].pos.y - 0.5;
       if (hit) this.strikePlayer(ctx, 16, false);
       if (hit || b.life <= 0 || ground) {
-        ctx.vfx.sparks(b.pos, 14, '#8aff8a', 5);
+        ctx.vfx.sparks(b.pos, 14, this.c.spark, 5);
         b.mesh.removeFromParent();
         b.mesh.material.dispose();
         this.bolts.splice(i, 1);
