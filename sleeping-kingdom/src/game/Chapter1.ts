@@ -1012,7 +1012,7 @@ export class Chapter {
       g.hud.area('The Penitents’ Stair', '', 4);
       this.spawnStair();
       this.enc.stair = 'active';
-      this.after(3, () => g.hud.hint('Hold <kbd>C</kbd> to guard. Tap it just as a blow lands to <b>parry</b>, then <kbd>LMB</kbd> to riposte.', 8));
+      this.after(3, () => g.hud.hint('Chain <kbd>LMB</kbd> four times for a spinning finisher. Dodge right as a blow lands for <b>Bell-Time</b>. When the bell meter fills, <kbd>F</kbd> unleashes the <b>Bell Toll</b>.', 9));
     });
     this.once('stair-mites', s > this.sStair + 8 && this.enc.stair === 'active', () => {
       for (const lat of [-2.4, 2.4]) {

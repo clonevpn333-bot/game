@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export type HitInfo = { damage: number; poise: number; from: THREE.Vector3; heavy: boolean; noStagger?: boolean; source?: { parried(): void } };
+export type HitInfo = { damage: number; poise: number; from: THREE.Vector3; heavy: boolean; noStagger?: boolean; source?: { parried(): void }; knock?: number };
 
 export interface Combatant {
   readonly pos: THREE.Vector3;
@@ -17,7 +17,8 @@ export type GameEvent =
   | { type: 'swing'; heavy: boolean; pos: THREE.Vector3 }
   | { type: 'hit-enemy'; pos: THREE.Vector3; heavy: boolean; kind: string; killed: boolean }
   | { type: 'hit-player'; pos: THREE.Vector3; damage: number; heavy: boolean }
-  | { type: 'blocked-roll'; pos: THREE.Vector3 }
+  | { type: 'blocked-roll'; pos: THREE.Vector3; perfect?: boolean }
+  | { type: 'special'; pos: THREE.Vector3 }
   | { type: 'roll'; pos: THREE.Vector3 }
   | { type: 'flask'; pos: THREE.Vector3 }
   | { type: 'footstep'; pos: THREE.Vector3; heavy: boolean }

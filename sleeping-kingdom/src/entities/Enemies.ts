@@ -91,7 +91,7 @@ export abstract class Enemy implements Combatant {
     // Every blow lands with weight: a small shove back even when poise holds.
     if (this.maxPoise < 150 && this.state !== 'stagger') {
       this.tmp.copy(this.pos).sub(hit.from).setY(0).normalize();
-      this.vel.addScaledVector(this.tmp, hit.heavy ? 2.6 : 1.4);
+      this.vel.addScaledVector(this.tmp, hit.knock ?? (hit.heavy ? 2.6 : 1.4));
     }
     if (this.poise <= 0 && this.state !== 'stagger') {
       this.poise = this.maxPoise;

@@ -501,7 +501,7 @@ export class DuelKnight extends Enemy {
         if (k >= 1) {
           this.waveDone = false;
           if (this.comboLeft > 0) {
-            this.begin(ATTACKS[(ATTACKS.indexOf(this.atk) + 1) % ATTACKS.length], ctx, this.isBoss ? 0.08 : 0.2, this.comboLeft - 1);
+            this.begin(ATTACKS[(ATTACKS.indexOf(this.atk) + 1) % 3], ctx, this.isBoss ? 0.08 : 0.2, this.comboLeft - 1);
           } else {
             this.setState('recover');
             this.cooldown = (this.isBoss ? (this.phase2 ? 0.4 : 0.7) : 1.3) + ctx.rng() * 0.8;

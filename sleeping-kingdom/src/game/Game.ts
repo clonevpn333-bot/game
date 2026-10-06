@@ -335,6 +335,14 @@ export class Game {
           this.hurtPulse = 1;
           break;
         case 'blocked-roll':
+          if (e.perfect && this.bellTime <= 0) {
+            // Bell-Time: the world slows to a crawl for a moment; the knight does not.
+            this.bellTime = 2.2;
+            a.toll(e.pos, false);
+            this.vfx.ring(e.pos, 0.5, 6, 0.5, '#bfe0ff', 'shock');
+            this.cam.addTrauma(0.15);
+            this.hud.hint('<b>Bell-Time!</b> Strike while they are slowed.', 2);
+          }
           break;
         case 'roll':
           a.roll();
@@ -376,6 +384,18 @@ export class Game {
         case 'player-dead':
           this.onPlayerDead();
           break;
+        case 'special':
+          a.toll(e.pos, true);
+          a.slam(e.pos);
+          this.vfx.ring(e.pos, 0.6, 9, 0.7, '#ffe0a0', 'shock');
+          this.vfx.ring(e.pos, 0.4, 6, 0.5, '#fff4d0', 'shock');
+          this.vfx.sparks(e.pos.clone().setY(e.pos.y + 0.5), 60, '#ffd890', 12);
+          this.vfx.impact(e.pos.clone().setY(e.pos.y + 1), 2.4, '#ffe8b0');
+          this.vfx.dust(e.pos, 30, 4, '#6a5a50');
+          this.hitstop(140);
+          this.cam.addTrauma(0.7);
+          this.cam.punch(8);
+          break;
         case 'parry':
           a.hit(e.pos, 'boss', true);
           a.toll(e.pos, false);
@@ -404,6 +424,7 @@ export class Game {
           break;
         case 'enemy-dead':
           this.chapter.onEnemyDead(e.kind);
+          this.player.special = Math.min(100, this.player.special + 8);
           this.explore.addEmbers(EMBERS[e.kind] ?? 10);
           if (e.kind === 'boss' || e.kind === 'ivarr' || e.kind === 'morvane' || e.kind === 'dragon') a.stinger('victory');
           break;
@@ -431,6 +452,8 @@ export class Game {
   }
 
   hurtPulse = 0;
+  /** Perfect-dodge slow motion for enemies only. */
+  bellTime = 0;
   private parryHinted = false;
 
   // ------------------------------------------------------------------ UI wiring
@@ -646,7 +669,9 @@ export class Game {
       this.explore.update();
       if (this.mode === 'play' || this.mode === 'dead') this.player.update(gdt, t, this.input, this.cam.yaw, this.enemies);
       else this.player.update(gdt, t, this.input, this.cam.yaw, []);
-      for (const e of this.enemies) e.update(gdt, t, this.ctx);
+      this.bellTime = Math.max(0, this.bellTime - dt);
+      const egdt = this.bellTime > 0 ? gdt * 0.22 : gdt;
+      for (const e of this.enemies) e.update(egdt, t, this.ctx);
       this.separate();
       this.removeEnemies((e) => e.removed);
       for (const f of this.folk) f.update(gdt, t, this.nav, this.tilt);
@@ -725,7 +750,8 @@ export class Game {
     const lowHp = this.player.hp / this.player.maxHp < 0.3 && this.mode === 'play' ? 0.25 + Math.sin(this.elapsed * 4) * 0.08 : 0;
     g.uHurt.value = Math.max(this.hurtPulse * 0.7, lowHp);
     g.uFlash.value = this.weather.lightning * 0.08;
-    g.uChroma.value = this.hurtPulse * 0.01 + (this.hitstopT > 0 ? 0.004 : 0);
+    g.uChroma.value = this.hurtPulse * 0.01 + (this.hitstopT > 0 ? 0.004 : 0) + (this.bellTime > 0 ? 0.006 : 0);
+    g.uSaturation.value = this.bellTime > 0 ? 0.55 : 1.08;
 
     // HUD.
     if (this.mode === 'play') {

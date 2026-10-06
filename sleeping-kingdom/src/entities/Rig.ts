@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Mats } from '../world/Materials';
 import { Tex } from '../world/Textures';
-import { damp } from '../utils/math';
 
 export const JOINTS = [
   'hips',
@@ -222,33 +221,92 @@ export function buildPenitent(): Rig & { censer: THREE.Object3D; maskGlow: THREE
 
 // ---------------------------------------------------------------- animator
 
-const tmpE = new THREE.Euler();
-const tmpQ = new THREE.Quaternion();
 
 export class Animator {
   rate = 14;
-  constructor(private readonly rig: Rig) {}
+  /** Damping ratio: < 1 lets limbs overshoot and settle (follow-through), 1 is critically damped. */
+  zeta = 0.72;
+  private readonly x: Float32Array;
+  private readonly v: Float32Array;
+  private rootY = 0;
+  private rootYv = 0;
+  private pitch = 0;
+  private pitchV = 0;
 
-  /** Damp all joints toward the target pose (missing joints relax to rest). */
+  constructor(private readonly rig: Rig) {
+    this.x = new Float32Array(JOINTS.length * 3);
+    this.v = new Float32Array(JOINTS.length * 3);
+    JOINTS.forEach((name, i) => {
+      const r = rig.j[name].rotation;
+      this.x[i * 3] = r.x;
+      this.x[i * 3 + 1] = r.y;
+      this.x[i * 3 + 2] = r.z;
+    });
+  }
+
+  /**
+   * Drive every joint toward the target pose with a damped spring. Faster rates are stiffer;
+   * the slight under-damping gives anticipation-free poses a natural overshoot and settle.
+   */
   apply(pose: Pose, dt: number, rate = this.rate): void {
-    const k = 1 - Math.exp(-rate * dt);
-    for (const name of JOINTS) {
-      const r = pose[name];
-      tmpE.set(r ? r[0] : 0, r ? r[1] : 0, r ? r[2] : 0);
-      tmpQ.setFromEuler(tmpE);
-      this.rig.j[name].quaternion.slerp(tmpQ, k);
+    if (dt <= 0) return;
+    const w = rate * 1.15;
+    const steps = Math.max(1, Math.ceil((w * dt) / 0.45));
+    const h = dt / steps;
+    const z = this.zeta;
+    const x = this.x;
+    const v = this.v;
+    for (let i = 0; i < JOINTS.length; i += 1) {
+      const r = pose[JOINTS[i]];
+      for (let c = 0; c < 3; c += 1) {
+        const target = r ? r[c] : 0;
+        const k = i * 3 + c;
+        let xi = x[k];
+        let vi = v[k];
+        for (let s = 0; s < steps; s += 1) {
+          vi += (w * w * (target - xi) - 2 * z * w * vi) * h;
+          xi += vi * h;
+        }
+        x[k] = xi;
+        v[k] = vi;
+      }
+      this.rig.j[JOINTS[i]].rotation.set(x[i * 3], x[i * 3 + 1], x[i * 3 + 2]);
     }
-    this.rig.body.position.y = damp(this.rig.body.position.y, pose.rootY ?? 0, rate, dt);
-    this.rig.body.rotation.x = damp(this.rig.body.rotation.x, pose.rootPitch ?? 0, rate, dt);
+    const ty = pose.rootY ?? 0;
+    const tp = pose.rootPitch ?? 0;
+    for (let s = 0; s < steps; s += 1) {
+      this.rootYv += (w * w * (ty - this.rootY) - 2 * w * this.rootYv) * h;
+      this.rootY += this.rootYv * h;
+      this.pitchV += (w * w * (tp - this.pitch) - 2 * z * w * this.pitchV) * h;
+      this.pitch += this.pitchV * h;
+    }
+    this.rig.body.position.y = this.rootY;
+    this.rig.body.rotation.x = this.pitch;
+  }
+
+  /** Kick a joint (impacts, recoil): adds angular velocity that the spring then absorbs. */
+  impulse(name: JointName, vx: number, vy = 0, vz = 0): void {
+    const i = JOINTS.indexOf(name);
+    if (i < 0) return;
+    this.v[i * 3] += vx;
+    this.v[i * 3 + 1] += vy;
+    this.v[i * 3 + 2] += vz;
   }
 
   snap(pose: Pose): void {
-    for (const name of JOINTS) {
+    JOINTS.forEach((name, i) => {
       const r = pose[name];
-      this.rig.j[name].rotation.set(r ? r[0] : 0, r ? r[1] : 0, r ? r[2] : 0);
-    }
-    this.rig.body.position.y = pose.rootY ?? 0;
-    this.rig.body.rotation.x = pose.rootPitch ?? 0;
+      for (let c = 0; c < 3; c += 1) {
+        this.x[i * 3 + c] = r ? r[c] : 0;
+        this.v[i * 3 + c] = 0;
+      }
+      this.rig.j[name].rotation.set(this.x[i * 3], this.x[i * 3 + 1], this.x[i * 3 + 2]);
+    });
+    this.rootY = pose.rootY ?? 0;
+    this.pitch = pose.rootPitch ?? 0;
+    this.rootYv = this.pitchV = 0;
+    this.rig.body.position.y = this.rootY;
+    this.rig.body.rotation.x = this.pitch;
   }
 }
 

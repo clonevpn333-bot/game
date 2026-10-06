@@ -723,6 +723,14 @@ h1 span {
   height: 46px;
   font-size: 20px;
 }
+.tbtn.skill {
+  right: 160px;
+  bottom: 80px;
+  width: 52px;
+  height: 52px;
+  font-size: 22px;
+  color: #ffd890;
+}
 
 @media (max-width: 640px) {
   #objective {

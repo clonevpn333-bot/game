@@ -354,7 +354,7 @@ export class Explore {
     const pr = this.progress;
     p.maxHp = 100 + pr.vigor * 14;
     p.maxStamina = 100 + pr.endurance * 12;
-    p.maxFlasks = 3 + pr.kindle;
+    p.maxFlasks = 4 + pr.kindle;
     p.damageMul = 1 + pr.strength * 0.1;
   }
 

@@ -105,8 +105,9 @@ export function buildKnight(opts: { hollow?: boolean } = {}): Knight {
   part(j.hips, new THREE.SphereGeometry(0.05, 8, 6), mt.leather, [-0.19, 0.04, 0.09], [0, 0, 0], [0.9, 1.1, 0.7]);
   // Scabbard on the left hip.
   const scab = new THREE.Group();
-  scab.position.set(0.23, 0.05, -0.05);
-  scab.rotation.set(0.45, 0, 0.18);
+  // Slung back and out so it trails behind the left leg instead of cutting through it.
+  scab.position.set(0.27, 0.06, -0.1);
+  scab.rotation.set(0.95, 0, 0.32);
   j.hips.add(scab);
   part(scab, new THREE.CylinderGeometry(0.03, 0.022, 0.95, 7), mt.leather, [0, -0.48, 0], [0, 0, 0], [1.4, 1, 0.6]);
   part(scab, new THREE.ConeGeometry(0.03, 0.08, 6), mt.trim, [0, -0.99, 0], [Math.PI, 0, 0], [1.4, 1, 0.6]);

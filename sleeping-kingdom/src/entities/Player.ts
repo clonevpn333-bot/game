@@ -7,9 +7,9 @@ import { Mats } from '../world/Materials';
 import { Input } from '../core/Input';
 import { Nav } from '../game/Nav';
 import type { Combatant, EventBus, HitInfo } from '../systems/Combat';
-import { clamp, damp, dampAngle, wrapAngle } from '../utils/math';
+import { clamp, damp, dampAngle, smoothstep, wrapAngle } from '../utils/math';
 
-type State = 'ride' | 'free' | 'attack' | 'roll' | 'hit' | 'flask' | 'dead' | 'locked' | 'guard';
+type State = 'ride' | 'free' | 'attack' | 'roll' | 'hit' | 'flask' | 'dead' | 'locked' | 'guard' | 'special';
 
 export type AttackDef = {
   duration: number;
@@ -22,6 +22,12 @@ export type AttackDef = {
   lunge: number;
   heavy: boolean;
   keys: Array<[number, Pose]>;
+  /** Where the blade points through the swing (character space: +x left, +y up, +z forward). */
+  blade?: Array<[number, [number, number, number]]>;
+  /** Full-body spin (radians) over the swing. */
+  spin?: number;
+  /** Knockback dealt to enemies. */
+  knock?: number;
 };
 
 /** Two-handed longsword guard: right hand forward of the navel, blade rising across the body. */
@@ -50,69 +56,55 @@ export function guardPose(t: number, breathe = 1): Pose {
 
 const GUARD: Pose = guardPose(0);
 
+const SLASH_R: Array<[number, Pose]> = [
+  [0, GUARD],
+  [0.24, { shoulderR: [-2.2, 0, -1.0], elbowR: [-1.1, 0, 0], handR: [0.3, 0, 0], chest: [0, -0.75, 0], spine: [0.05, -0.3, 0], shoulderL: [-0.5, 0, 0.5], elbowL: [-0.9, 0, 0], hipL: [-0.15, 0, 0.05], hipR: [0.15, 0, -0.05], kneeL: [0.25, 0, 0], kneeR: [0.2, 0, 0], rootY: -0.05 }],
+  [0.44, { shoulderR: [-1.35, 0, 0.75], elbowR: [-0.15, 0, 0], handR: [0.1, 0, 0], chest: [0.2, 0.85, 0], spine: [0.25, 0.3, 0], shoulderL: [-0.1, 0, 0.9], elbowL: [-0.4, 0, 0], hipL: [-0.75, 0, 0.05], kneeL: [0.65, 0, 0], hipR: [0.4, 0, -0.05], kneeR: [0.4, 0, 0], rootY: -0.14 }],
+  [0.68, { shoulderR: [-0.9, 0, 1.05], elbowR: [-0.4, 0, 0], handR: [0.1, 0, 0], chest: [0.12, 0.6, 0], spine: [0.2, 0.25, 0], shoulderL: [-0.2, 0, 0.7], hipL: [-0.5, 0, 0.05], kneeL: [0.5, 0, 0], hipR: [0.3, 0, 0], kneeR: [0.35, 0, 0], rootY: -0.1 }],
+  [1, GUARD],
+];
+const SLASH_L: Array<[number, Pose]> = [
+  [0, { shoulderR: [-0.9, 0, 1.05], elbowR: [-0.4, 0, 0], chest: [0.12, 0.6, 0], spine: [0.2, 0.25, 0] }],
+  [0.22, { shoulderR: [-1.6, 0, 1.15], elbowR: [-1.6, 0, 0], handR: [0.5, 0, 0], chest: [0.05, 0.8, 0], spine: [0, 0.3, 0], shoulderL: [-0.3, 0, 0.3], hipR: [-0.1, 0, 0], kneeR: [0.25, 0, 0], rootY: -0.05 }],
+  [0.44, { shoulderR: [-1.4, 0, -1.2], elbowR: [-0.15, 0, 0], handR: [0.1, 0, 0], chest: [0.2, -0.85, 0], spine: [0.25, -0.3, 0], shoulderL: [-0.2, 0, 0.9], elbowL: [-0.5, 0, 0], hipR: [-0.75, 0, -0.05], kneeR: [0.65, 0, 0], hipL: [0.4, 0, 0.05], kneeL: [0.4, 0, 0], rootY: -0.14 }],
+  [0.68, { shoulderR: [-0.9, 0, -1.3], elbowR: [-0.4, 0, 0], chest: [0.12, -0.6, 0], spine: [0.15, -0.25, 0], hipR: [-0.45, 0, 0], kneeR: [0.45, 0, 0], rootY: -0.1 }],
+  [1, GUARD],
+];
+const OVERHEAD: Array<[number, Pose]> = [
+  [0, GUARD],
+  [0.3, { shoulderR: [-3.0, 0, -0.2], elbowR: [-1.5, 0, 0], handR: [0.6, 0, 0], shoulderL: [-2.7, 0, 0.35], elbowL: [-1.5, 0, 0], spine: [-0.3, 0, 0], chest: [-0.15, 0, 0], hipL: [-0.2, 0, 0.05], kneeL: [0.3, 0, 0], kneeR: [0.25, 0, 0], rootY: 0.04 }],
+  [0.46, { shoulderR: [-1.1, 0, -0.05], elbowR: [-0.05, 0, 0], handR: [-0.1, 0, 0], shoulderL: [-1.05, 0, 0.35], elbowL: [-0.15, 0, 0], spine: [0.6, 0, 0], chest: [0.2, 0, 0], hipL: [-0.85, 0, 0.05], kneeL: [0.8, 0, 0], hipR: [0.5, 0, 0], kneeR: [0.5, 0, 0], rootY: -0.22 }],
+  [0.74, { shoulderR: [-0.65, 0, -0.1], elbowR: [-0.3, 0, 0], shoulderL: [-0.65, 0, 0.3], elbowL: [-0.4, 0, 0], spine: [0.45, 0, 0], hipL: [-0.55, 0, 0], kneeL: [0.55, 0, 0], rootY: -0.14 }],
+  [1, GUARD],
+];
+const SPIN: Array<[number, Pose]> = [
+  [0, GUARD],
+  [0.18, { shoulderR: [-1.5, 0, -1.25], elbowR: [-0.5, 0, 0], handR: [0.2, 0, 0], shoulderL: [-0.6, 0, 1.2], elbowL: [-0.3, 0, 0], chest: [0, -0.7, 0], spine: [0.15, -0.3, 0], hipL: [-0.5, 0, 0.1], kneeL: [0.7, 0, 0], hipR: [-0.3, 0, -0.1], kneeR: [0.6, 0, 0], rootY: -0.22 }],
+  [0.4, { shoulderR: [-1.55, 0, -1.4], elbowR: [-0.05, 0, 0], handR: [0.1, 0, 0], shoulderL: [-0.4, 0, 1.4], chest: [0.05, 0.2, 0], spine: [0.2, 0, 0], hipL: [-0.6, 0, 0.1], kneeL: [0.8, 0, 0], hipR: [-0.4, 0, -0.1], kneeR: [0.7, 0, 0], rootY: -0.26 }],
+  [0.75, { shoulderR: [-1.5, 0, -1.35], elbowR: [-0.1, 0, 0], shoulderL: [-0.4, 0, 1.3], chest: [0.05, 0.4, 0], spine: [0.2, 0.1, 0], hipL: [-0.5, 0, 0.1], kneeL: [0.6, 0, 0], kneeR: [0.5, 0, 0], rootY: -0.2 }],
+  [1, GUARD],
+];
+
+/** The light combo: right cut, backhand, overhead, spinning finisher. Fast, cancelable, no stamina. */
 export const ATTACKS: AttackDef[] = [
-  {
-    duration: 0.66,
-    active: [0.3, 0.52],
-    damage: 22,
-    poise: 22,
-    stamina: 17,
-    reach: 2.5,
-    arc: 1.25,
-    lunge: 2.2,
-    heavy: false,
-    keys: [
-      [0, GUARD],
-      [0.26, { shoulderR: [-2.3, 0, -0.9], elbowR: [-1.2, 0, 0], handR: [0.4, 0, 0], chest: [0, -0.6, 0], spine: [0, -0.2, 0], shoulderL: [-0.6, 0, 0.3], elbowL: [-0.9, 0, 0], hipL: [-0.2, 0, 0.05], hipR: [0.1, 0, -0.05], kneeL: [0.2, 0, 0], kneeR: [0.2, 0, 0], rootY: -0.04 }],
-      [0.44, { shoulderR: [-1.2, 0, 0.7], elbowR: [-0.25, 0, 0], handR: [0.1, 0, 0], chest: [0.15, 0.75, 0], spine: [0.2, 0.25, 0], shoulderL: [-0.2, 0, 0.5], elbowL: [-0.6, 0, 0], hipL: [-0.6, 0, 0.05], kneeL: [0.5, 0, 0], hipR: [0.35, 0, -0.05], kneeR: [0.35, 0, 0], rootY: -0.1 }],
-      [0.7, { shoulderR: [-0.6, 0, 0.9], elbowR: [-0.5, 0, 0], handR: [0.1, 0, 0], chest: [0.1, 0.5, 0], spine: [0.15, 0.2, 0], hipL: [-0.4, 0, 0.05], kneeL: [0.4, 0, 0], hipR: [0.25, 0, 0], kneeR: [0.3, 0, 0], rootY: -0.08 }],
-      [1, GUARD],
-    ],
-  },
-  {
-    duration: 0.66,
-    active: [0.3, 0.52],
-    damage: 22,
-    poise: 22,
-    stamina: 17,
-    reach: 2.5,
-    arc: 1.25,
-    lunge: 2.2,
-    heavy: false,
-    keys: [
-      [0, { shoulderR: [-0.6, 0, 0.9], elbowR: [-0.5, 0, 0], chest: [0.1, 0.5, 0] }],
-      [0.24, { shoulderR: [-1.5, 0, 1.0], elbowR: [-1.5, 0, 0], handR: [0.5, 0, 0], chest: [0.05, 0.7, 0], spine: [0, 0.2, 0], hipR: [-0.1, 0, 0], kneeR: [0.2, 0, 0], rootY: -0.04 }],
-      [0.44, { shoulderR: [-1.35, 0, -1.1], elbowR: [-0.2, 0, 0], handR: [0.1, 0, 0], chest: [0.15, -0.75, 0], spine: [0.2, -0.25, 0], shoulderL: [-0.3, 0, 0.6], hipR: [-0.6, 0, -0.05], kneeR: [0.5, 0, 0], hipL: [0.35, 0, 0.05], kneeL: [0.35, 0, 0], rootY: -0.1 }],
-      [0.7, { shoulderR: [-0.8, 0, -1.2], elbowR: [-0.4, 0, 0], chest: [0.1, -0.5, 0], hipR: [-0.4, 0, 0], kneeR: [0.4, 0, 0], rootY: -0.07 }],
-      [1, GUARD],
-    ],
-  },
-  {
-    duration: 0.86,
-    active: [0.38, 0.56],
-    damage: 34,
-    poise: 40,
-    stamina: 22,
-    reach: 2.8,
-    arc: 0.8,
-    lunge: 2.8,
-    heavy: false,
-    keys: [
-      [0, GUARD],
-      [0.32, { shoulderR: [-3.0, 0, -0.2], elbowR: [-1.5, 0, 0], handR: [0.6, 0, 0], shoulderL: [-2.7, 0, 0.35], elbowL: [-1.5, 0, 0], spine: [-0.25, 0, 0], chest: [-0.1, 0, 0], hipL: [-0.15, 0, 0.05], kneeL: [0.25, 0, 0], kneeR: [0.25, 0, 0], rootY: 0.02 }],
-      [0.48, { shoulderR: [-1.0, 0, -0.05], elbowR: [-0.1, 0, 0], handR: [-0.1, 0, 0], shoulderL: [-1.0, 0, 0.35], elbowL: [-0.2, 0, 0], spine: [0.5, 0, 0], chest: [0.15, 0, 0], hipL: [-0.75, 0, 0.05], kneeL: [0.7, 0, 0], hipR: [0.45, 0, 0], kneeR: [0.45, 0, 0], rootY: -0.18 }],
-      [0.75, { shoulderR: [-0.6, 0, -0.1], elbowR: [-0.3, 0, 0], shoulderL: [-0.6, 0, 0.3], elbowL: [-0.4, 0, 0], spine: [0.4, 0, 0], hipL: [-0.5, 0, 0], kneeL: [0.5, 0, 0], rootY: -0.12 }],
-      [1, GUARD],
-    ],
-  },
+  { duration: 0.44, active: [0.32, 0.56], damage: 20, poise: 18, stamina: 0, reach: 2.7, arc: 1.4, lunge: 3.2, heavy: false, knock: 1.6, keys: SLASH_R,
+    blade: [[0, [-0.2, 0.75, 0.6]], [0.24, [-0.8, 0.4, -0.45]], [0.44, [0.05, 0.05, 1]], [0.58, [0.85, -0.05, 0.5]], [0.8, [0.6, -0.25, 0.7]], [1, [-0.2, 0.75, 0.6]]] },
+  { duration: 0.44, active: [0.32, 0.56], damage: 20, poise: 18, stamina: 0, reach: 2.7, arc: 1.4, lunge: 3.2, heavy: false, knock: 1.6, keys: SLASH_L,
+    blade: [[0, [0.6, -0.25, 0.7]], [0.22, [0.85, 0.4, -0.35]], [0.44, [-0.05, 0.05, 1]], [0.58, [-0.85, -0.05, 0.5]], [0.8, [-0.6, -0.25, 0.7]], [1, [-0.2, 0.75, 0.6]]] },
+  { duration: 0.52, active: [0.36, 0.56], damage: 26, poise: 30, stamina: 0, reach: 2.9, arc: 1.0, lunge: 3.6, heavy: false, knock: 2.4, keys: OVERHEAD,
+    blade: [[0, [-0.2, 0.75, 0.6]], [0.3, [0, 0.8, -0.6]], [0.46, [0, 0.25, 0.97]], [0.6, [0, -0.55, 0.85]], [0.85, [0, -0.5, 0.85]], [1, [-0.2, 0.75, 0.6]]] },
+  { duration: 0.66, active: [0.22, 0.7], damage: 34, poise: 60, stamina: 0, reach: 3.3, arc: Math.PI, lunge: 1.5, heavy: true, knock: 5, spin: Math.PI * 2, keys: SPIN,
+    blade: [[0, [-0.2, 0.75, 0.6]], [0.18, [-0.95, 0.15, 0.25]], [0.75, [-0.95, 0.05, 0.25]], [1, [-0.2, 0.75, 0.6]]] },
 ];
 
 export const HEAVY: AttackDef = {
-  duration: 1.15,
-  active: [0.5, 0.64],
-  damage: 58,
+  duration: 0.9,
+  active: [0.5, 0.66],
+  damage: 52,
   poise: 75,
-  stamina: 32,
+  stamina: 0,
+  knock: 4,
+  blade: [[0, [-0.2, 0.75, 0.6]], [0.4, [0.1, 0.85, -0.5]], [0.56, [0, 0.1, 1]], [0.7, [0, -0.7, 0.7]], [0.9, [0, -0.6, 0.75]], [1, [-0.2, 0.75, 0.6]]],
   reach: 3.0,
   arc: 1.0,
   lunge: 3.6,
@@ -130,7 +122,7 @@ export const HEAVY: AttackDef = {
 export const RIPOSTE: AttackDef = { ...HEAVY, duration: 0.95, active: [0.42, 0.62], damage: 135, poise: 220, stamina: 8, lunge: 2.8, reach: 3.2, arc: 1.3 };
 
 /** Sword raised flat across the body to catch a blow. */
-function guardHigh(t: number): Pose {
+export function guardHigh(t: number): Pose {
   const b = Math.sin(t * 2.2) * 0.02;
   return {
     ...guardPose(t),
@@ -350,10 +342,12 @@ export class Player {
 
   takeHit(hit: HitInfo): boolean {
     if (this.state === 'dead' || this.invulnerable) return false;
-    if (this.state === 'roll' && this.stateT > 0.04 && this.stateT < 0.42) {
-      this.bus.emit({ type: 'blocked-roll', pos: this.pos.clone() });
+    if (this.state === 'roll' && this.stateT < 0.36) {
+      // A dodge timed into the blow (early in the roll) triggers Bell-Time: the world slows, you don't.
+      this.bus.emit({ type: 'blocked-roll', pos: this.pos.clone(), perfect: this.stateT < 0.2 && !!hit.source });
       return false;
     }
+    hit = { ...hit, damage: hit.damage * 0.75 };
     if (this.state === 'ride') {
       // Mounted: blows land on the rider but cannot unhorse him.
       this.hp -= hit.damage * 0.7;
@@ -445,30 +439,21 @@ export class Player {
         break;
       case 'free': {
         if (ctl && input.consume('lock')) this.toggleLock(enemies, camYaw);
-        if (ctl && input.consume('roll') && this.spend(22)) {
-          this.state = 'roll';
-          this.stateT = 0;
-          this.rollDir.copy(wishLen > 0.2 ? wish.normalize() : this.forward);
-          this.yaw = Math.atan2(this.rollDir.x, this.rollDir.z);
-          this.bus.emit({ type: 'roll', pos: this.pos.clone() });
+        if (ctl && input.consume('roll') && this.dodge(wish, wishLen)) break;
+        if (ctl && input.consume('skill') && this.special >= 100) {
+          this.startSpecial();
           break;
         }
         if (ctl && input.peek('attack') && this.tryRiposte(enemies)) {
           input.consume('attack');
           break;
         }
-        if (ctl && input.consume('attack') && this.spend(ATTACKS[0].stamina)) {
-          this.startAttack(ATTACKS[0], 0);
+        if (ctl && input.consume('attack')) {
+          this.startAttack(ATTACKS[0], 0, enemies, wish, wishLen);
           break;
         }
-        if (ctl && input.guardHeld() && this.stamina > 4) {
-          this.state = 'guard';
-          this.stateT = 0;
-          this.guardT = 0;
-          break;
-        }
-        if (ctl && input.consume('heavy') && this.spend(HEAVY.stamina)) {
-          this.startAttack(HEAVY, -1);
+        if (ctl && input.consume('heavy')) {
+          this.startAttack(HEAVY, -1, enemies, wish, wishLen);
           break;
         }
         if (ctl && input.consume('flask') && this.flasks > 0) {
@@ -520,101 +505,97 @@ export class Player {
       case 'attack': {
         const a = this.attack;
         const k = this.stateT / a.duration;
-        // Root-motion lunge during the windup→strike frames.
-        const lungeK = k > 0.15 && k < a.active[1] ? 1 : 0;
         const fwd = this.forward;
-        this.velocity.x = damp(this.velocity.x, fwd.x * a.lunge * lungeK, 14, dt);
-        this.velocity.z = damp(this.velocity.z, fwd.z * a.lunge * lungeK, 14, dt);
-        // Small aim correction in the windup.
-        if (k < 0.3) {
-          if (this.lockTarget) {
-            const d = this.lockTarget.pos;
-            this.yaw = dampAngle(this.yaw, Math.atan2(d.x - this.pos.x, d.z - this.pos.z), 10, dt);
-          } else if (wishLen > 0.2) this.yaw = dampAngle(this.yaw, Math.atan2(wish.x, wish.z), 7, dt);
+        // Close the gap on the target during the wind-up, then a short step into the cut.
+        const tgt = this.aimTarget;
+        if (tgt && tgt.alive && k < a.active[0]) {
+          const dx = tgt.pos.x - this.pos.x;
+          const dz = tgt.pos.z - this.pos.z;
+          this.yaw = dampAngle(this.yaw, Math.atan2(dx, dz), 22, dt);
+        } else if (k < 0.3 && wishLen > 0.2 && !a.spin) this.yaw = dampAngle(this.yaw, Math.atan2(wish.x, wish.z), 9, dt);
+        let lunge = 0;
+        if (k > 0.12 && k < a.active[1]) {
+          lunge = a.lunge;
+          if (tgt && tgt.alive) {
+            const d = Math.hypot(tgt.pos.x - this.pos.x, tgt.pos.z - this.pos.z) - tgt.radius;
+            lunge = d > a.reach * 0.7 ? Math.min(9, (d - a.reach * 0.55) / Math.max(0.05, a.duration * (a.active[1] - 0.12)) + a.lunge * 0.4) : a.lunge * 0.25;
+          }
         }
+        this.velocity.x = damp(this.velocity.x, fwd.x * lunge, 16, dt);
+        this.velocity.z = damp(this.velocity.z, fwd.z * lunge, 16, dt);
+        this.spinOffset = a.spin ? a.spin * smoothstep(0.16, 0.78, k) : 0;
         if (k >= a.active[0] && k <= a.active[1]) this.sweep(enemies, a);
-        this.ikTarget = 1;
-        this.anim.apply(track(a.keys, k), dt, a.heavy ? 18 : 22);
-        // Chain / cancel windows.
-        if (k > 0.6 && ctl) {
-          if (this.combo >= 0 && this.combo < 2 && input.peek('attack')) {
+        this.ikTarget = a === ATTACKS[2] || a === HEAVY || a === RIPOSTE ? 1 : 0;
+        this.anim.apply(track(a.keys, k), dt, a.heavy ? 22 : 28);
+        this.bladeAimFor(a, k);
+        // Chain into the next cut, cancel into a dodge.
+        if (ctl) {
+          if (k > 0.22 && input.peek('roll') && this.stamina > 8) {
+            input.consume('roll');
+            this.spinOffset = 0;
+            if (this.dodge(wish, wishLen)) break;
+          }
+          if (k > 0.42 && this.combo >= 0 && this.combo < ATTACKS.length - 1 && input.peek('attack')) {
             input.consume('attack');
-            if (this.spend(ATTACKS[this.combo + 1].stamina)) {
-              this.startAttack(ATTACKS[this.combo + 1], this.combo + 1);
-              break;
-            }
-          }
-          if (input.peek('roll') && this.stamina > 1) {
-            this.state = 'free';
+            this.startAttack(ATTACKS[this.combo + 1], this.combo + 1, enemies, wish, wishLen);
             break;
           }
-          if (input.peek('heavy') && this.combo >= 0 && this.spend(HEAVY.stamina)) {
+          if (k > 0.5 && input.peek('heavy') && this.combo >= 0) {
             input.consume('heavy');
-            this.startAttack(HEAVY, -1);
+            this.startAttack(HEAVY, -1, enemies, wish, wishLen);
             break;
           }
+          if (k > 0.4 && input.peek('skill') && this.special >= 100) {
+            input.consume('skill');
+            this.startSpecial();
+            break;
+          }
+        }
+        if (k >= 1) {
+          this.spinOffset = 0;
+          this.state = 'free';
+        }
+        break;
+      }
+      case 'special': {
+        // Bell Toll: the sword is raised, then driven into the ground. A shockwave throws everything back.
+        const k = this.stateT / 0.95;
+        this.velocity.multiplyScalar(Math.exp(-10 * dt));
+        this.anim.apply(track(HEAVY.keys, Math.min(1, k * 1.1)), dt, 24);
+        this.ikTarget = 1;
+        this.bladeAimFor(HEAVY, Math.min(1, k * 1.1));
+        if (!this.specialFired && k > 0.55) {
+          this.specialFired = true;
+          for (const e of enemies) {
+            if (!e.alive) continue;
+            const d = Math.hypot(e.pos.x - this.pos.x, e.pos.z - this.pos.z);
+            if (d > 8.5 || Math.abs(e.pos.y - this.pos.y) > 3) continue;
+            e.takeHit({ damage: 90 * this.damageMul * (1 - d / 17), poise: 999, from: this.pos.clone(), heavy: true });
+          }
+          this.bus.emit({ type: 'special', pos: this.pos.clone().addScaledVector(this.forward, 1.6) });
         }
         if (k >= 1) this.state = 'free';
         break;
       }
-      case 'guard': {
-        this.guardT += dt;
-        if (ctl && input.consume('lock')) this.toggleLock(enemies, camYaw);
-        if (!ctl || !input.guardHeld()) {
-          this.state = 'free';
-          break;
-        }
-        if (input.peek('attack') && this.tryRiposte(enemies)) {
-          input.consume('attack');
-          break;
-        }
-        if (input.consume('attack') && this.spend(ATTACKS[0].stamina)) {
-          this.startAttack(ATTACKS[0], 0);
-          break;
-        }
-        if (input.consume('roll') && this.spend(22)) {
-          this.state = 'roll';
-          this.stateT = 0;
-          this.rollDir.copy(wishLen > 0.2 ? wish.normalize() : this.forward);
-          this.yaw = Math.atan2(this.rollDir.x, this.rollDir.z);
-          this.bus.emit({ type: 'roll', pos: this.pos.clone() });
-          break;
-        }
-        // Shuffle while guarding, slowly; stamina recovers slowly behind the guard.
-        this.staminaDelay = Math.max(this.staminaDelay, 0.25);
-        this.stamina = Math.min(this.maxStamina, this.stamina + 12 * dt);
-        const gs = wishLen * 1.7;
-        this.velocity.x = damp(this.velocity.x, wish.x * gs, 10, dt);
-        this.velocity.z = damp(this.velocity.z, wish.z * gs, 10, dt);
-        if (this.lockTarget) {
-          const d = this.lockTarget.pos;
-          this.yaw = dampAngle(this.yaw, Math.atan2(d.x - this.pos.x, d.z - this.pos.z), 12, dt);
-        } else if (wishLen > 0.1) this.yaw = dampAngle(this.yaw, Math.atan2(wish.x, wish.z), 8, dt);
-        const sp = Math.hypot(this.velocity.x, this.velocity.z);
-        this.phase += gaitRate(sp) * dt;
-        const hi = guardHigh(time);
-        if (sp > 0.2) {
-          const loco = locomotion(this.phase, 0.2, { armSwing: 0 });
-          hi.hipL = loco.hipL;
-          hi.hipR = loco.hipR;
-          hi.kneeL = loco.kneeL;
-          hi.kneeR = loco.kneeR;
-        }
-        this.anim.apply(hi, dt, this.guardT < 0.1 ? 30 : 14);
-        this.ikTarget = 1;
-        break;
-      }
       case 'roll': {
         this.ikTarget = 0;
-        const dur = 0.62;
+        const dur = 0.5;
         const k = this.stateT / dur;
-        const sp = k < 0.7 ? 8.2 : 8.2 * (1 - (k - 0.7) / 0.3);
+        const sp = k < 0.65 ? 10 : 10 * (1 - (k - 0.65) / 0.35);
         this.velocity.set(this.rollDir.x * sp, 0, this.rollDir.z * sp);
         this.anim.apply(ROLL_POSE, dt, 30);
-        const theta = clamp(k / 0.85, 0, 1) * Math.PI * 2;
+        const theta = smoothstep(0, 0.85, k) * Math.PI * 2;
         const c = 0.55;
         this.rig.body.rotation.x = theta;
         this.rig.body.position.set(0, c - c * Math.cos(theta), -c * Math.sin(theta));
+        // Recover early into an attack: roll-slash.
+        if (k > 0.62 && ctl && input.peek('attack')) {
+          input.consume('attack');
+          this.rig.body.rotation.x = 0;
+          this.rig.body.position.set(0, 0, 0);
+          this.startAttack(ATTACKS[0], 0, enemies, wish, wishLen);
+          break;
+        }
         if (k >= 1) {
           this.rig.body.rotation.x = 0;
           this.rig.body.position.set(0, 0, 0);
@@ -667,9 +648,12 @@ export class Player {
     }
     if (this.state === 'ride') this.ikTarget = 0;
     this.ikWeight = damp(this.ikWeight, this.ikTarget, this.ikTarget > this.ikWeight ? 10 : 18, dt);
-    this.group.rotation.y = this.yaw;
+    this.group.rotation.y = this.yaw + this.spinOffset;
+    this.leanBody(dt);
     this.group.updateMatrixWorld(true);
+    this.applyBladeAim();
     this.rig.secondary(dt, Math.hypot(this.velocity.x, this.velocity.z), this.ikWeight);
+    if (this.state !== 'attack' && this.state !== 'special') this.bladeW = Math.max(0, this.bladeW - dt * 6);
     this.cloak.wind.set(Math.sin(time * 0.3) * 1.2 + 0.8, 0, 0.6);
   }
 
@@ -781,13 +765,129 @@ export class Player {
 
   private guardT = 0;
 
-  private startAttack(def: AttackDef, combo: number): void {
+  private startAttack(def: AttackDef, combo: number, enemies: Combatant[] = [], wish?: THREE.Vector3, wishLen = 0): void {
     this.state = 'attack';
     this.stateT = 0;
     this.attack = def;
     this.combo = combo;
+    this.spinOffset = 0;
     this.hitThisSwing.clear();
+    // Aim assist: pick the enemy you're facing (or steering toward) within a few strides.
+    const dir = wish && wishLen > 0.2 ? wish.clone().normalize() : this.forward.clone();
+    let best: Combatant | null = this.lockTarget && this.lockTarget.alive ? this.lockTarget : null;
+    if (!best) {
+      let bs = Infinity;
+      for (const e of enemies) {
+        if (!e.alive) continue;
+        const dx = e.pos.x - this.pos.x;
+        const dz = e.pos.z - this.pos.z;
+        const d = Math.hypot(dx, dz);
+        if (d > 6.5 || Math.abs(e.pos.y - this.pos.y) > 3) continue;
+        const dot = (dx * dir.x + dz * dir.z) / Math.max(0.01, d);
+        if (dot < -0.1 && d > 2) continue;
+        const score = d * (1.6 - dot);
+        if (score < bs) {
+          bs = score;
+          best = e;
+        }
+      }
+    }
+    this.aimTarget = best;
     this.bus.emit({ type: 'swing', heavy: def.heavy, pos: this.pos.clone() });
+  }
+
+  private aimTarget: Combatant | null = null;
+  spinOffset = 0;
+  /** Bell Toll special meter, 0-100: filled by landing hits. */
+  special = 0;
+  private specialFired = false;
+
+  private startSpecial(): void {
+    this.special = 0;
+    this.state = 'special';
+    this.stateT = 0;
+    this.specialFired = false;
+    this.bus.emit({ type: 'swing', heavy: true, pos: this.pos.clone() });
+  }
+
+  private dodge(wish: THREE.Vector3, wishLen: number): boolean {
+    if (!this.spend(14)) return false;
+    this.state = 'roll';
+    this.stateT = 0;
+    this.rollDir.copy(wishLen > 0.2 ? wish.clone().normalize() : this.forward.clone().negate());
+    this.yaw = Math.atan2(this.rollDir.x, this.rollDir.z);
+    if (wishLen <= 0.2) this.yaw += Math.PI;
+    this.bus.emit({ type: 'roll', pos: this.pos.clone() });
+    return true;
+  }
+
+  // ------------------------------------------------------------------ procedural layers
+  private bladeW = 0;
+  private readonly bladeDir = new THREE.Vector3();
+  private readonly qA = new THREE.Quaternion();
+  private readonly qB = new THREE.Quaternion();
+  private readonly vA = new THREE.Vector3();
+  private readonly vB = new THREE.Vector3();
+  private lean = 0;
+  private leanFwd = 0;
+  private lastYaw = 0;
+  private lastSpeed = 0;
+
+  /** Sample the attack's blade path (character space) for this frame. */
+  private bladeAimFor(a: AttackDef, k: number): void {
+    const keys = a.blade;
+    if (!keys) {
+      this.bladeW = Math.max(0, this.bladeW - 0.2);
+      return;
+    }
+    let i = 0;
+    while (i < keys.length - 2 && k > keys[i + 1][0]) i += 1;
+    const [t0, d0] = keys[i];
+    const [t1, d1] = keys[i + 1];
+    const u = smoothstep(0, 1, (k - t0) / Math.max(1e-4, t1 - t0));
+    this.vA.set(...d0).normalize();
+    this.vB.set(...d1).normalize();
+    this.bladeDir.copy(this.vA).lerp(this.vB, u).normalize();
+    this.bladeW = Math.min(1, this.bladeW + 0.25) * (1 - smoothstep(0.86, 1, k));
+  }
+
+  /** Turn the sword hand so the blade actually follows the cut, instead of whatever the wrist pose gives. */
+  private applyBladeAim(): void {
+    if (this.bladeW < 0.01) return;
+    const hand = this.rig.j.handR;
+    const tip = this.rig.swordTip.getWorldPosition(this.vA);
+    const base = this.rig.sword.getWorldPosition(this.vB);
+    const cur = tip.sub(base).normalize();
+    const want = this.bladeDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), this.yaw + this.spinOffset);
+    this.qA.setFromUnitVectors(cur, want);
+    const world = hand.getWorldQuaternion(this.qB);
+    const target = this.qA.multiply(world);
+    const parent = hand.parent!.getWorldQuaternion(new THREE.Quaternion()).invert();
+    const local = parent.multiply(target);
+    hand.quaternion.slerp(local, this.bladeW);
+    hand.updateMatrixWorld(true);
+  }
+
+  /** Lean into turns and acceleration; a little body English sells the motion. */
+  private leanBody(dt: number): void {
+    if (this.state === 'ride' || this.state === 'roll' || this.state === 'dead') {
+      this.rig.root.rotation.set(0, 0, 0);
+      this.lastYaw = this.yaw;
+      return;
+    }
+    const sp = Math.hypot(this.velocity.x, this.velocity.z);
+    let dy = this.yaw - this.lastYaw;
+    while (dy > Math.PI) dy -= Math.PI * 2;
+    while (dy < -Math.PI) dy += Math.PI * 2;
+    const turnRate = dy / Math.max(1e-4, dt);
+    const acc = (sp - this.lastSpeed) / Math.max(1e-4, dt);
+    this.lastYaw = this.yaw;
+    this.lastSpeed = sp;
+    const wantLean = clamp(-turnRate * sp * 0.012, -0.22, 0.22);
+    const wantFwd = clamp(acc * 0.012, -0.12, 0.15);
+    this.lean = damp(this.lean, this.state === 'attack' ? 0 : wantLean, 8, dt);
+    this.leanFwd = damp(this.leanFwd, wantFwd, 6, dt);
+    this.rig.root.rotation.set(this.leanFwd, 0, this.lean);
   }
 
   private sweep(enemies: Combatant[], a: AttackDef): void {
@@ -802,7 +902,8 @@ export class Player {
       if (ang > a.arc && d > e.radius + 0.4) continue;
       if (Math.abs(e.pos.y - this.pos.y) > 3) continue;
       this.hitThisSwing.add(e);
-      e.takeHit({ damage: a.damage * this.damageMul, poise: a.poise, from: this.pos.clone(), heavy: a.heavy });
+      e.takeHit({ damage: a.damage * this.damageMul, poise: a.poise, from: this.pos.clone(), heavy: a.heavy, knock: a.knock });
+      this.special = Math.min(100, this.special + (a.heavy ? 9 : 6));
     }
   }
 

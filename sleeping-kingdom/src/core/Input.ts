@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export type Action = 'attack' | 'heavy' | 'roll' | 'lock' | 'interact' | 'flask' | 'pause';
+export type Action = 'attack' | 'heavy' | 'roll' | 'lock' | 'interact' | 'flask' | 'pause' | 'skill';
 
 const KEY_ACTIONS: Record<string, Action> = {
   KeyJ: 'attack',
@@ -9,7 +9,8 @@ const KEY_ACTIONS: Record<string, Action> = {
   KeyQ: 'lock',
   Tab: 'lock',
   KeyE: 'interact',
-  KeyF: 'interact',
+  KeyF: 'skill',
+  KeyX: 'skill',
   KeyR: 'flask',
   Escape: 'pause',
   KeyP: 'pause',
