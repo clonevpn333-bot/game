@@ -449,7 +449,7 @@ export class Chapter2 {
         this.drake.stateT = 3;
         this.enc.dragon = 'cleared';
         this.stage = 'ending';
-        this.endT = 6;
+        this.endT = 2.4;
         this.placePlayer(this.sEnd - 8);
       }
     }

@@ -72,3 +72,12 @@ recovery beats at the candles and the priest.
   roles per district and LOD on far props. Triangles ~550–590k (within budget).
 - Enemies use the older rig style; giving them the same treatment as the hero is the next art pass.
 - Chapter II (The Ribs of Harrowmere) is teased only.
+
+## Phase: full story (Chapters I–V), cutscenes, PS2 finish
+- Five chapters: I The Waking of Velmour, II The Witchwood, III The Drowned Choir, IV The Frostspine, V The Heart of Osseran.
+- Cutscene engine (actors that walk/gesture/kneel, camera shots, subtitles, storybook narration, skip with Space/Esc).
+- Plain-language lore: prologue narration, chapter recaps, The Chronicle codex (pause/title menu), entries unlock per chapter.
+- New enemies: drowned monks, Drowned Cantors, Choir Zealots, frost wolves + Pale Alpha, hollow knights (mirror the player's sword forms).
+- Bosses: Choirmaster Oswin, Ser Ivarr the Hollow (guard/riposte duel, burning phase two), Archdeacon Morvane (orbs, light pillars, tolls, grows to giant size).
+- PS2 finish: 0.8 render scale, Bayer-dithered 6-bit output, soft wide bloom, faint interlace; PS1 vertex wobble removed.
+- Levitation: city walls, towers, houses, skyline and Witchwood stilts/totems are founded on the lowest rendered ground under their footprint.
