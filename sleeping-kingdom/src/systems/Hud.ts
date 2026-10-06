@@ -37,6 +37,42 @@ export class Hud {
   private readonly letterbox = $('#letterbox');
   private readonly touchFlask = document.querySelector<HTMLElement>('.tbtn.flask');
   private readonly narration = $('#narration');
+  private readonly bellRing = $('#bell-ring');
+  private readonly comboEl = $('#combo');
+  private readonly comboN = $('#combo-n');
+  private readonly dmgLayer = $('#dmg-layer');
+  private comboT = 0;
+  private lastBell = -1;
+
+  /** Bell Toll meter around the portrait (0-100). */
+  setBell(v: number): void {
+    const r = Math.round(v);
+    if (r === this.lastBell) return;
+    this.lastBell = r;
+    this.bellRing.style.setProperty('--bell', String(r));
+    this.bellRing.classList.toggle('ready', r >= 100);
+  }
+
+  /** Floating damage number at a screen position. */
+  damage(x: number, y: number, amount: number, big: boolean): void {
+    const el = document.createElement('span');
+    el.className = `dmg${big ? ' big' : ''}`;
+    el.textContent = String(Math.round(amount));
+    el.style.left = `${x + (Math.random() - 0.5) * 30}px`;
+    el.style.top = `${y}px`;
+    this.dmgLayer.append(el);
+    window.setTimeout(() => el.remove(), 900);
+  }
+
+  /** Hit counter: grows while you keep landing blows, fades when you stop. */
+  combo(n: number): void {
+    this.comboN.textContent = String(n);
+    this.comboEl.classList.toggle('show', n >= 2);
+    this.comboEl.classList.remove('pop');
+    void this.comboEl.offsetWidth;
+    this.comboEl.classList.add('pop');
+    this.comboT = 2.4;
+  }
   private narrQueue: string[] = [];
   private narrT = 0;
   private narrGap = 0;
@@ -168,6 +204,10 @@ export class Hud {
   }
 
   update(dt: number): void {
+    if (this.comboT > 0) {
+      this.comboT -= dt;
+      if (this.comboT <= 0) this.comboEl.classList.remove('show');
+    }
     if (this.narrT > 0) {
       this.narrT -= dt;
       if (this.narrT <= 0) {

@@ -21,8 +21,9 @@
 
       <section id="hud" class="hidden" aria-live="polite">
         <div id="vitals">
-          <div class="sigil" aria-hidden="true">
-            <svg viewBox="0 0 40 40"><path d="M6 16 Q20 26 34 16" /><path d="M10 19v3M15 21v3M20 22v3M25 21v3M30 19v3" /><path class="bell" d="M14 36 Q14 27 20 26 Q26 27 26 36 Z" /></svg>
+          <div class="sigil" id="bell-ring" aria-hidden="true" style="--bell: 0">
+            <div class="core"><svg viewBox="0 0 40 40"><path d="M6 16 Q20 26 34 16" /><path d="M10 19v3M15 21v3M20 22v3M25 21v3M30 19v3" /><path class="bell" d="M14 36 Q14 27 20 26 Q26 27 26 36 Z" /></svg></div>
+            <span class="bell-key">F</span>
           </div>
           <div class="bars">
             <div class="bar-frame hp"><div class="ghost" id="hp-ghost"></div><div class="fill" id="hp-fill"></div><span class="tick"></span></div>
@@ -36,12 +37,14 @@
         <div id="embers" title="Embers: spend them at a Wayside Candle"><span class="glyph">◆</span><span id="embers-count">0</span></div>
         <div id="objective"><span class="glyph">◈</span><span id="objective-text"></span></div>
         <div id="hint"></div>
+        <div id="combo"><span id="combo-n">0</span><small>hits</small></div>
+        <div id="dmg-layer"></div>
         <div id="area-card"><div class="rule"></div><h2 id="area-title"></h2><p id="area-sub"></p><div class="rule"></div></div>
         <div id="subtitle"><span id="sub-speaker"></span><span id="sub-line"></span></div>
         <div id="narration"></div>
         <div id="skip-hint"><kbd>Space</kbd> Skip</div>
         <div id="prompt"><kbd id="prompt-key">E</kbd><span id="prompt-text"></span></div>
-        <div id="boss" class="hidden"><div id="boss-name">The Knellwarden</div><div class="boss-frame"><div class="ghost" id="boss-ghost"></div><div class="fill" id="boss-fill"></div></div></div>
+        <div id="boss" class="hidden"><div id="boss-name">The Knellwarden</div><span class="boss-orn l"></span><span class="boss-orn r"></span><div class="boss-frame"><div class="ghost" id="boss-ghost"></div><div class="fill" id="boss-fill"></div></div></div>
         <div id="reticle" class="hidden" aria-hidden="true"></div>
         <button id="pause-button" class="icon-btn" type="button" aria-label="Pause">
           <svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" /><rect x="14" y="5" width="4" height="14" /></svg>
@@ -64,6 +67,7 @@
       </div>
 
       <section id="title-screen" class="screen">
+        <div id="title-embers" aria-hidden="true"></div>
         <div class="title-wrap">
           <p class="pre">A tale of the Founders</p>
           <h1><span>The</span> Sleeping Kingdom</h1>

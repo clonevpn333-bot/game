@@ -133,7 +133,7 @@ export class Game {
   private readonly farTintTarget = new THREE.Color(1, 1, 1);
   readonly ctx: EnemyCtx;
 
-  constructor(private readonly canvas: HTMLCanvasElement) {
+  constructor(readonly canvas: HTMLCanvasElement) {
     this.pipeline = createPipeline(canvas, this.scene, this.camera);
     this.input = new Input(canvas);
     this.cam = new CameraRig(this.camera);
@@ -445,6 +445,13 @@ export class Game {
         game.vfx.impact(p, hit.heavy ? 1.2 : 0.7);
         game.audio.hit(p, this.kind, hit.heavy);
         game.hitstop(hit.heavy ? 95 : 55);
+        // Damage numbers and the hit counter.
+        const sp = game.worldRoot.localToWorld(p.clone()).project(game.camera);
+        if (sp.z < 1) game.hud.damage((sp.x * 0.5 + 0.5) * game.canvas.clientWidth, (-sp.y * 0.5 + 0.5) * game.canvas.clientHeight - 20, before - this.hp, hit.heavy);
+        if (game.comboT > 0) game.comboCount += 1;
+        else game.comboCount = 1;
+        game.comboT = 2.4;
+        game.hud.combo(game.comboCount);
         game.cam.addTrauma(hit.heavy ? 0.35 : 0.18);
         if (wasAlive && !this.alive) game.cam.addTrauma(0.2);
       }
@@ -454,6 +461,8 @@ export class Game {
   hurtPulse = 0;
   /** Perfect-dodge slow motion for enemies only. */
   bellTime = 0;
+  comboCount = 0;
+  comboT = 0;
   private parryHinted = false;
 
   // ------------------------------------------------------------------ UI wiring
@@ -542,6 +551,19 @@ export class Game {
     click('#pause-button', () => this.setPaused(this.mode !== 'paused'));
     window.addEventListener('pointerdown', () => this.audio.unlock(), { once: true });
     window.addEventListener('keydown', () => this.audio.unlock(), { once: true });
+    // Drifting embers behind the title.
+    const embers = document.querySelector('#title-embers');
+    if (embers) {
+      for (let i = 0; i < 46; i += 1) {
+        const e = document.createElement('i');
+        e.style.left = `${Math.random() * 100}%`;
+        e.style.animationDelay = `${-Math.random() * 14}s`;
+        e.style.animationDuration = `${9 + Math.random() * 9}s`;
+        e.style.setProperty('--drift', `${(Math.random() - 0.5) * 120}px`);
+        e.style.setProperty('--sz', `${2 + Math.random() * 3}px`);
+        embers.append(e);
+      }
+    }
     if (matchMedia('(pointer: coarse)').matches) {
       $('#touch-controls').dataset.touch = '1';
       this.input.usingTouch = true;
@@ -756,6 +778,8 @@ export class Game {
     // HUD.
     if (this.mode === 'play') {
       this.hud.setVitals(Math.ceil(this.player.hp), this.player.maxHp, this.player.stamina, this.player.maxStamina, this.player.flasks);
+      this.hud.setBell(this.player.special);
+      this.comboT = Math.max(0, this.comboT - dt);
       if (this.player.lockTarget) {
         const p = this.worldRoot.localToWorld(this.player.lockTarget.focusPoint(new THREE.Vector3())).project(this.camera);
         if (p.z < 1) this.hud.setReticle((p.x * 0.5 + 0.5) * this.canvas.clientWidth, (-p.y * 0.5 + 0.5) * this.canvas.clientHeight);
