@@ -1,0 +1,674 @@
+[
+ {
+  "text": " This",
+  "startMs": 130,
+  "endMs": 397,
+  "timestampMs": 264,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " prisoner's",
+  "startMs": 397,
+  "endMs": 1058,
+  "timestampMs": 728,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " face",
+  "startMs": 1058,
+  "endMs": 1325,
+  "timestampMs": 1192,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " was",
+  "startMs": 1325,
+  "endMs": 1591,
+  "timestampMs": 1458,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " hidden",
+  "startMs": 1591,
+  "endMs": 2055,
+  "timestampMs": 1823,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " for",
+  "startMs": 2055,
+  "endMs": 2322,
+  "timestampMs": 2189,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " thirty-four",
+  "startMs": 2322,
+  "endMs": 2983,
+  "timestampMs": 2652,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " years.",
+  "startMs": 2983,
+  "endMs": 3250,
+  "timestampMs": 3117,
+  "confidence": 1,
+  "line": 1
+ },
+ {
+  "text": " And",
+  "startMs": 3540,
+  "endMs": 3798,
+  "timestampMs": 3669,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " nobody",
+  "startMs": 3798,
+  "endMs": 4438,
+  "timestampMs": 4118,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " knows",
+  "startMs": 4438,
+  "endMs": 4696,
+  "timestampMs": 4567,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " who",
+  "startMs": 4696,
+  "endMs": 4954,
+  "timestampMs": 4825,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " he",
+  "startMs": 4954,
+  "endMs": 5212,
+  "timestampMs": 5083,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " was.",
+  "startMs": 5212,
+  "endMs": 5470,
+  "timestampMs": 5341,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " In",
+  "startMs": 5790,
+  "endMs": 6180,
+  "timestampMs": 5985,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " 1669,",
+  "startMs": 6180,
+  "endMs": 6571,
+  "timestampMs": 6376,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " the",
+  "startMs": 6571,
+  "endMs": 6961,
+  "timestampMs": 6766,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " King",
+  "startMs": 6961,
+  "endMs": 7351,
+  "timestampMs": 7156,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " of",
+  "startMs": 7351,
+  "endMs": 7741,
+  "timestampMs": 7546,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " France",
+  "startMs": 7741,
+  "endMs": 8132,
+  "timestampMs": 7936,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " locked",
+  "startMs": 8132,
+  "endMs": 8811,
+  "timestampMs": 8471,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " him",
+  "startMs": 8811,
+  "endMs": 9201,
+  "timestampMs": 9006,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " away",
+  "startMs": 9201,
+  "endMs": 9880,
+  "timestampMs": 9541,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " in",
+  "startMs": 9880,
+  "endMs": 10271,
+  "timestampMs": 10076,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " secret.",
+  "startMs": 10271,
+  "endMs": 10950,
+  "timestampMs": 10610,
+  "confidence": 1,
+  "line": 3
+ },
+ {
+  "text": " His",
+  "startMs": 11310,
+  "endMs": 11388,
+  "timestampMs": 11349,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " jailer",
+  "startMs": 11388,
+  "endMs": 11522,
+  "timestampMs": 11455,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " was",
+  "startMs": 11522,
+  "endMs": 11600,
+  "timestampMs": 11561,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " told:",
+  "startMs": 11600,
+  "endMs": 11678,
+  "timestampMs": 11639,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " if",
+  "startMs": 11678,
+  "endMs": 11755,
+  "timestampMs": 11716,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " he",
+  "startMs": 11755,
+  "endMs": 11833,
+  "timestampMs": 11794,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " speaks",
+  "startMs": 11833,
+  "endMs": 11910,
+  "timestampMs": 11872,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " about",
+  "startMs": 11910,
+  "endMs": 12045,
+  "timestampMs": 11978,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " anything",
+  "startMs": 12045,
+  "endMs": 12237,
+  "timestampMs": 12141,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " but",
+  "startMs": 12237,
+  "endMs": 12315,
+  "timestampMs": 12276,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " his",
+  "startMs": 12315,
+  "endMs": 12392,
+  "timestampMs": 12354,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " needs,",
+  "startMs": 12392,
+  "endMs": 12470,
+  "timestampMs": 12431,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " kill",
+  "startMs": 12850,
+  "endMs": 14165,
+  "timestampMs": 13508,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " him.",
+  "startMs": 14165,
+  "endMs": 15480,
+  "timestampMs": 14822,
+  "confidence": 1,
+  "line": 4
+ },
+ {
+  "text": " Four",
+  "startMs": 15830,
+  "endMs": 16136,
+  "timestampMs": 15983,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " prisons.",
+  "startMs": 16136,
+  "endMs": 16668,
+  "timestampMs": 16402,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " One",
+  "startMs": 16668,
+  "endMs": 16974,
+  "timestampMs": 16821,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " jailer.",
+  "startMs": 16974,
+  "endMs": 17506,
+  "timestampMs": 17240,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " Always",
+  "startMs": 17506,
+  "endMs": 18038,
+  "timestampMs": 17772,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " masked.",
+  "startMs": 18038,
+  "endMs": 18570,
+  "timestampMs": 18304,
+  "confidence": 1,
+  "line": 5
+ },
+ {
+  "text": " He",
+  "startMs": 18910,
+  "endMs": 19286,
+  "timestampMs": 19098,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " died",
+  "startMs": 19286,
+  "endMs": 19662,
+  "timestampMs": 19474,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " in",
+  "startMs": 19662,
+  "endMs": 20038,
+  "timestampMs": 19850,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " the",
+  "startMs": 20038,
+  "endMs": 20414,
+  "timestampMs": 20226,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " Bastille",
+  "startMs": 20414,
+  "endMs": 21348,
+  "timestampMs": 20881,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " in",
+  "startMs": 21348,
+  "endMs": 21724,
+  "timestampMs": 21536,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " 1703,",
+  "startMs": 21724,
+  "endMs": 22100,
+  "timestampMs": 21912,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " under",
+  "startMs": 22450,
+  "endMs": 22788,
+  "timestampMs": 22619,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " a",
+  "startMs": 22788,
+  "endMs": 22982,
+  "timestampMs": 22885,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " fake",
+  "startMs": 22982,
+  "endMs": 23176,
+  "timestampMs": 23079,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " name.",
+  "startMs": 23176,
+  "endMs": 23370,
+  "timestampMs": 23273,
+  "confidence": 1,
+  "line": 6
+ },
+ {
+  "text": " Then",
+  "startMs": 23600,
+  "endMs": 23812,
+  "timestampMs": 23706,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " they",
+  "startMs": 23812,
+  "endMs": 24025,
+  "timestampMs": 23918,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " burned",
+  "startMs": 24025,
+  "endMs": 24394,
+  "timestampMs": 24210,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " everything",
+  "startMs": 24394,
+  "endMs": 25078,
+  "timestampMs": 24736,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " he",
+  "startMs": 25078,
+  "endMs": 25290,
+  "timestampMs": 25184,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " owned.",
+  "startMs": 25290,
+  "endMs": 25660,
+  "timestampMs": 25475,
+  "confidence": 1,
+  "line": 7
+ },
+ {
+  "text": " Some",
+  "startMs": 26000,
+  "endMs": 26256,
+  "timestampMs": 26128,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " believed",
+  "startMs": 26256,
+  "endMs": 26892,
+  "timestampMs": 26574,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " he",
+  "startMs": 26892,
+  "endMs": 27149,
+  "timestampMs": 27020,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " was",
+  "startMs": 27149,
+  "endMs": 27405,
+  "timestampMs": 27277,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " the",
+  "startMs": 27405,
+  "endMs": 27661,
+  "timestampMs": 27533,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " king's",
+  "startMs": 27661,
+  "endMs": 27918,
+  "timestampMs": 27790,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " secret",
+  "startMs": 27918,
+  "endMs": 28364,
+  "timestampMs": 28141,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " twin.",
+  "startMs": 28364,
+  "endMs": 28620,
+  "timestampMs": 28492,
+  "confidence": 1,
+  "line": 8
+ },
+ {
+  "text": " But",
+  "startMs": 28960,
+  "endMs": 29213,
+  "timestampMs": 29086,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " the",
+  "startMs": 29213,
+  "endMs": 29466,
+  "timestampMs": 29340,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " strangest",
+  "startMs": 29466,
+  "endMs": 29907,
+  "timestampMs": 29687,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " part?",
+  "startMs": 29907,
+  "endMs": 30160,
+  "timestampMs": 30034,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " The",
+  "startMs": 30470,
+  "endMs": 30685,
+  "timestampMs": 30578,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " iron",
+  "startMs": 30685,
+  "endMs": 31060,
+  "timestampMs": 30872,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " mask",
+  "startMs": 31060,
+  "endMs": 31275,
+  "timestampMs": 31167,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " was",
+  "startMs": 31275,
+  "endMs": 31491,
+  "timestampMs": 31383,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " never",
+  "startMs": 31491,
+  "endMs": 31865,
+  "timestampMs": 31678,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " iron.",
+  "startMs": 31865,
+  "endMs": 32240,
+  "timestampMs": 32053,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " It",
+  "startMs": 32490,
+  "endMs": 32695,
+  "timestampMs": 32592,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " was",
+  "startMs": 32695,
+  "endMs": 32899,
+  "timestampMs": 32797,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " black",
+  "startMs": 32899,
+  "endMs": 33104,
+  "timestampMs": 33002,
+  "confidence": 1,
+  "line": 9
+ },
+ {
+  "text": " velvet.",
+  "startMs": 33104,
+  "endMs": 33460,
+  "timestampMs": 33282,
+  "confidence": 1,
+  "line": 9
+ }
+]
