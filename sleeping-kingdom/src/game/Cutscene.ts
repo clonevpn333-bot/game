@@ -103,6 +103,17 @@ export class Actor {
     this.talkT = seconds;
   }
 
+  /** Turn the head (not the body) toward someone; null looks ahead. */
+  gaze: THREE.Vector3 | null = null;
+  private gazeYaw = 0;
+  private gazePitch = 0;
+
+  /** Head position in the actor's parent space. */
+  headPos(out: THREE.Vector3): THREE.Vector3 {
+    this.rig.j.head.getWorldPosition(out);
+    return this.group.parent ? this.group.parent.worldToLocal(out) : out;
+  }
+
   get moving(): boolean {
     return this.target !== null;
   }
@@ -184,6 +195,25 @@ export class Actor {
         }
       }
     }
+    // Listening: the head follows whoever is speaking, within what a neck can do.
+    let gy = 0;
+    let gp = 0;
+    if (this.gaze && !this.target) {
+      const dx = this.gaze.x - this.pos.x;
+      const dz = this.gaze.z - this.pos.z;
+      let d = Math.atan2(dx, dz) - this.yaw;
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      gy = Math.max(-0.85, Math.min(0.85, d));
+      gp = Math.max(-0.3, Math.min(0.3, -(this.gaze.y - (this.pos.y + this.rig.height * 0.92)) / Math.max(1, Math.hypot(dx, dz))));
+    }
+    this.gazeYaw = dampAngle(this.gazeYaw, gy, 5, dt);
+    this.gazePitch += (gp - this.gazePitch) * Math.min(1, dt * 5);
+    if (Math.abs(this.gazeYaw) + Math.abs(this.gazePitch) > 0.01) {
+      const h = pose.head ?? [0, 0, 0];
+      pose.head = [h[0] + this.gazePitch, h[1] + this.gazeYaw * 0.65, h[2]];
+      const n = pose.neck ?? [0, 0, 0];
+      pose.neck = [n[0], n[1] + this.gazeYaw * 0.35, n[2]];
+    }
     this.anim.apply(pose, dt, 9);
     const face = (this.rig as { face?: { talking: boolean; update: (dt: number) => void } }).face;
     if (face) {
@@ -235,7 +265,11 @@ export type Shot = {
   dip?: boolean;
   /** Handheld drift amount (0 = locked off). Default 1. */
   handheld?: number;
+  /** Cut to over-the-shoulder close-ups of each speaker after the opening line. Default on. */
+  coverage?: boolean;
 };
+
+type Cover = { speaker: Actor; listener: Actor; side: number };
 
 const ease = (k: number) => k * k * (3 - 2 * k);
 
@@ -254,6 +288,13 @@ export class CutscenePlayer {
   /** World point kept in focus by the cinematic depth of field (whatever the shot looks at). */
   private readonly focus = new THREE.Vector3();
   private savedFov = 55;
+  /** When each of the current shot's lines starts, and who says it. */
+  private lineTimes: Array<{ at: number; who: string }> = [];
+  private lineIdx = -1;
+  private cover: Cover | null = null;
+  private coverT = 0;
+  private readonly tmpD = new THREE.Vector3();
+  private readonly tmpE = new THREE.Vector3();
 
   constructor(private readonly g: Game) {}
 
@@ -351,14 +392,15 @@ export class CutscenePlayer {
     }
     if (s.cam?.fov) g.cam.baseFov = s.cam.fov;
     else g.cam.baseFov = this.savedFov;
-    // Mouth/gesture timing: whoever speaks first gets the talk gesture.
+    // Line timetable: drives the talk gestures, who listens to whom, and the coverage cuts.
     let at = 0;
-    for (const l of s.lines ?? []) {
-      const a = this.actors.find((x) => x.name === l[0]);
-      const len = this.lineSeconds(l);
-      if (a) window.setTimeout(() => a.talk(len), at * 1000);
-      at += len + 0.35;
-    }
+    this.lineTimes = (s.lines ?? []).map((l) => {
+      const row = { at, who: l[0] };
+      at += this.lineSeconds(l) + 0.35;
+      return row;
+    });
+    this.lineIdx = -1;
+    this.cover = null;
     this.place(0);
   }
 
@@ -371,7 +413,9 @@ export class CutscenePlayer {
     const hh = (s.handheld ?? 1) * 0.045;
     const c = this.clock;
     const sway = this.tmpC.set(Math.sin(c * 0.71) + Math.sin(c * 1.73) * 0.4, Math.sin(c * 0.93 + 1.3) * 0.7, Math.cos(c * 0.57) + Math.sin(c * 1.31) * 0.3).multiplyScalar(hh);
-    if (s.camFn) {
+    if (this.cover) {
+      this.coverCam(sway);
+    } else if (s.camFn) {
       const r = s.camFn(e);
       g.cam.cinePos.copy(g.worldRoot.localToWorld(this.tmpA.copy(r.pos).add(sway)));
       g.cam.cineLook.copy(g.worldRoot.localToWorld(this.tmpB.copy(r.look).addScaledVector(sway, 0.5)));
@@ -385,6 +429,84 @@ export class CutscenePlayer {
       g.cam.cineLook.copy(g.worldRoot.localToWorld(l.addScaledVector(sway, 0.5)));
       this.focus.copy(g.cam.cineLook);
     }
+  }
+
+  private driveLines(s: Shot, dt: number): void {
+    let li = -1;
+    for (let n = 0; n < this.lineTimes.length; n += 1) if (this.t >= this.lineTimes[n].at) li = n;
+    this.coverT += dt;
+    if (li === this.lineIdx) return;
+    this.lineIdx = li;
+    const line = s.lines?.[li];
+    if (!line) return;
+    const speaker = this.actors.find((x) => x.name === line[0] && x.group.parent);
+    if (speaker) speaker.talk(this.lineSeconds(line));
+    // Everyone near turns to the speaker; the speaker looks at the nearest listener.
+    let listener: Actor | null = null;
+    let best = 9;
+    for (const a of this.actors) {
+      if (a === speaker || !a.group.parent) continue;
+      if (speaker) {
+        const d = a.pos.distanceTo(speaker.pos);
+        if (d < 9) a.gaze = speaker.headPos(new THREE.Vector3());
+        if (d < best) {
+          best = d;
+          listener = a;
+        }
+      }
+    }
+    if (speaker && listener) speaker.gaze = listener.headPos(new THREE.Vector3());
+    // Coverage: after the opening line, cut in close on whoever talks (same side of the line).
+    // Far-apart staging (a boss on a balcony) keeps its authored wide shot.
+    const want = s.coverage !== false && (s.lines?.length ?? 0) >= 2 && li >= 1 && !!speaker && !!listener && best < 7;
+    if (!want) {
+      if (this.cover) {
+        this.cover = null;
+        this.g.cam.baseFov = s.cam?.fov ?? this.savedFov;
+      }
+      return;
+    }
+    if (this.cover?.speaker === speaker) return;
+    const side = this.cover ? this.cover.side : this.sideOf(speaker!, listener!);
+    this.cover = { speaker: speaker!, listener: listener!, side };
+    this.coverT = 0;
+    this.g.cam.baseFov = 36;
+  }
+
+  /** Which side of the speaker–listener line the establishing camera sits on (keeps the 180° rule). */
+  private sideOf(a: Actor, b: Actor): number {
+    const cam = this.g.worldRoot.worldToLocal(this.tmpD.copy(this.g.cam.cinePos));
+    const ax = b.pos.x - a.pos.x;
+    const az = b.pos.z - a.pos.z;
+    return Math.sign(ax * (cam.z - a.pos.z) - az * (cam.x - a.pos.x)) || 1;
+  }
+
+  private coverCam(sway: THREE.Vector3): void {
+    const g = this.g;
+    const c = this.cover!;
+    const sh = c.speaker.headPos(this.tmpD);
+    const lh = c.listener.headPos(this.tmpE);
+    const dir = this.tmpA.subVectors(lh, sh).setY(0);
+    const dist = Math.max(0.8, dir.length());
+    dir.divideScalar(dist);
+    // Over the listener's shoulder, never more than a couple of metres from the speaker's face,
+    // with a slow push in while they talk.
+    const perpX = -dir.z * c.side;
+    const perpZ = dir.x * c.side;
+    const push = Math.min(1, this.coverT / 6) * 0.3;
+    const cd = Math.min(dist + 0.9, 2.5) - push;
+    // (sway shares a scratch vector with `look`, so it is applied first.)
+    const pos = this.tmpB.set(sh.x + dir.x * cd + perpX * 0.72, sh.y + 0.12, sh.z + dir.z * cd + perpZ * 0.72).add(sway);
+    const look = this.tmpC.set(sh.x + perpX * 0.16, sh.y - 0.06, sh.z + perpZ * 0.16);
+    const wPos = g.worldRoot.localToWorld(pos);
+    const wLook = g.worldRoot.localToWorld(look);
+    // Keep the lens out of walls and rock between the speaker and the camera.
+    const ray = this.tmpE.subVectors(wPos, wLook);
+    const want = ray.length();
+    const free = g.cam.clearance(wLook, ray.normalize(), want);
+    g.cam.cinePos.copy(wLook).addScaledVector(ray, free);
+    g.cam.cineLook.copy(wLook);
+    this.focus.copy(g.cam.cineLook);
   }
 
   update(dt: number, time: number): void {
@@ -412,6 +534,7 @@ export class CutscenePlayer {
     }
     this.t += dt;
     const s = this.shots[this.i];
+    this.driveLines(s, dt);
     const k = this.t / this.dur;
     s.tick?.(Math.min(1, k), dt, time);
     this.place(k);

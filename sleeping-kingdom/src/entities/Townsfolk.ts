@@ -208,7 +208,7 @@ function face(H: THREE.Object3D, skin: THREE.Color, hair: string, mood: FolkStyl
   const fixed: THREE.BufferGeometry[] = [];
   for (const sx of [-1, 1]) {
     fixed.push(part([0.054, 0.034, 0.008], '#e6e0d4', [sx * 0.054, eyeY, z - 0.001], 0.008));
-    const tilt = mood === 'grim' ? -0.32 : mood === 'fear' ? 0.34 : mood === 'old' ? 0.12 : 0.05;
+    const tilt = mood === 'grim' ? 0.3 : mood === 'fear' ? -0.3 : mood === 'old' ? -0.12 : -0.05;
     fixed.push(part([0.064, female ? 0.012 : 0.017, 0.016], hair, [sx * 0.056, eyeY + 0.036 + (mood === 'fear' ? 0.006 : 0), z + 0.002], 0.005, [0, 0, sx * tilt]));
   }
   fixed.push(part([0.036, 0.062, 0.045], skin.clone().multiplyScalar(0.96), [0, 0.098, z + 0.012], 0.012, [-0.12, 0, 0]));
@@ -275,6 +275,8 @@ export function buildTownsfolk(style: FolkStyle): Rig & { lantern?: THREE.Object
     for (const sx of [-1, 1]) c.block(H, [0.025, 0.1, 0.18], hair, [sx * (hw / 2 + 0.006), 0.2, -0.03], { r: 0.01 });
     if (!bald) c.block(H, [hw + 0.01, 0.04, 0.05], hair, [rng() < 0.5 ? 0.02 : -0.02, 0.25, 0.115], { r: 0.015, rot: [0.3, 0, 0] });
     if (female) {
+      // Long locks framing the face, down to the shoulders.
+      for (const sx of [-1, 1]) c.block(H, [0.04, 0.26, 0.12], hair, [sx * (hw / 2 + 0.014), 0.07, -0.03], { r: 0.016 });
       if (rng() < 0.5) c.block(H, [0.1, 0.09, 0.08], hair, [0, 0.2, -0.16], { r: 0.035 });
       else c.block(H, [0.2, 0.3, 0.05], hair, [0, 0.0, -0.11], { r: 0.02, taper: [0.8, 1] });
     }

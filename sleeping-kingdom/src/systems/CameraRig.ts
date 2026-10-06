@@ -75,7 +75,7 @@ export class CameraRig {
   }
 
   /** How far the boom can extend from `from` along `dir` before it meets scenery. */
-  private clearance(from: THREE.Vector3, dir: THREE.Vector3, want: number): number {
+  clearance(from: THREE.Vector3, dir: THREE.Vector3, want: number): number {
     if (!this.colliders.length) return want;
     let best = want;
     const right = this.tmpR.set(dir.z, 0, -dir.x).normalize();
