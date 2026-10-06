@@ -9,7 +9,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(ROOT, '..', '_shared', 'tools'))
 from sfxlib import *  # noqa
 
-TOTAL = 40.0
+TOTAL = 39.75
 N = int(TOTAL * SR)
 VO = json.load(open(os.path.join(ROOT, 'vo', 'assets', 'timing.json')))
 R = np.random.default_rng(5)
@@ -183,26 +183,34 @@ def bell(f=110, d=4.0):
 
 def build_sfx():
     s = np.zeros(N + 4 * SR)
+    O1, O2 = 0.625, 7 / 24
     P = lambda x, at, g=1.0: place(s, x, at, g)
-    P(boom(), 0.0, 0.6); P(sub_drop(1.2), 0.0, 0.5); P(thunder(), 0.0, 0.5)
-    for a in (0.0, 0.15, 0.38, 3.8, 4.7): P(whoosh(0.16, 800, 6000), max(0, a - 0.02), 0.35); P(thud(70), a, 0.45)
-    P(whoosh(0.35, 2000, 200, up=False), 5.25, 0.5)                          # into the keyhole
-    P(bell(98, 3.5), 5.5, 0.3); P(shing(1.0, 2600), 5.6, 0.3); P(whoosh(0.18, 800, 6000), 6.16, 0.3)   # the King, 1669
-    P(boom(), 8.45, 0.9); P(thud(55), 8.45, 0.9); P(crunch(), 8.47, 0.3)     # door slams
-    P(lock(), 9.2, 0.7)                                                       # key turns
-    P(stamp(), 10.27, 0.8); P(thud(70), 10.27, 0.6)                           # SECRET seal
-    for k in range(12): P(bp(noise(0.06), 3000, 8000) * expdec(int(0.06 * SR), 0.02), 11.3 + k * 0.24, 0.12)   # quill scratches
-    P(shing(1.1, 3400), 14.55, 0.5); P(boom(), 14.75, 0.5)                    # hand to the hilt / KILL HIM
-    for k in range(4): P(pop(500 + 80 * k, 0.1), 15.83 + k * 0.16, 0.3)       # forts 1-4
-    P(whoosh(1.2, 300, 2000), 16.0, 0.25)
-    P(whoosh(0.5, 200, 3000), 18.75, 0.3); P(bell(82, 4.0), 20.4, 0.35)      # the Bastille
-    P(whoosh(0.18, 800, 6000), 21.7, 0.3); P(pop(500, 0.08), 22.4, 0.3); P(stamp(), 23.0, 0.5)   # 1703 / record / FAKE NAME
-    P(lp(noise(2.2), 1800) * adsr(int(2.2 * SR), 0.3, 2.2, 1, 0.4), 23.95, 0.4); P(crackle(2.0), 24.0, 0.45); P(boom(), 24.0, 0.4)   # fire
-    P(shing(1.2, 2200), 26.0, 0.3); P(whoosh(0.18, 800, 6000), 27.9, 0.3)    # the mirror line / TWIN?
-    P(riser(0.8), 29.6, 0.3); P(whoosh(0.2, 800, 6000), 30.65, 0.3); P(crunch(), 31.86, 0.4)   # IRON / struck out
-    P(whoosh(0.8, 400, 6000), 32.45, 0.45); P(sparkle(0.9, 10, 4), 32.9, 0.3)   # velvet sweep
-    P(bell(98, 4.5), 33.5, 0.35)
-    P(sparkle(1.2, 12, 7), 37.35, 0.22); P(ding(1568, 1.2), 38.95, 0.15)
+    Q = lambda x, at, g=1.0: place(s, x, at - O1, g)      # v1 clock, lines 3-4
+    R_ = lambda x, at, g=1.0: place(s, x, at - O2, g)     # v1 clock, lines 6-9
+    P(boom(), 0.0, 0.6); P(sub_drop(1.2), 0.0, 0.5); P(thunder(), 0.0, 0.4)
+    for a in (0.0, 0.12, 0.3): P(whoosh(0.14, 800, 6000), a, 0.35); P(thud(70), a, 0.4)
+    P(boom(), 1.25, 0.9); P(thud(55), 1.25, 0.9); P(crunch(), 1.27, 0.3)       # door slams across the frame
+    P(whoosh(0.3, 300, 3000), 1.9, 0.3)
+    P(whoosh(0.35, 2000, 200, up=False), 2.75, 0.5)                          # into the keyhole
+    P(bell(98, 3.5), 3.0, 0.3); P(shing(1.0, 2600), 3.1, 0.3)                # the King
+    for a in (3.06, 3.92, 5.56): P(whoosh(0.16, 800, 6000), a, 0.3)
+    Q(boom(), 8.45, 0.9); Q(thud(55), 8.45, 0.9); Q(crunch(), 8.47, 0.3)     # door slams
+    Q(lock(), 9.2, 0.7)                                                       # key turns
+    Q(stamp(), 10.27, 0.8); Q(thud(70), 10.27, 0.6)                           # SECRET seal
+    for k in range(12): Q(bp(noise(0.06), 3000, 8000) * expdec(int(0.06 * SR), 0.02), 11.3 + k * 0.24, 0.12)
+    Q(shing(1.1, 3400), 14.55, 0.5); Q(boom(), 14.75, 0.5)                    # hand to the hilt / KILL HIM
+    for k in range(4): P(pop(500 + 80 * k, 0.1), 14.9 + k * 0.07, 0.3)        # forts pop
+    P(whoosh(0.7, 300, 3000), 15.05, 0.3); P(whoosh(0.16, 800, 6000), 15.12, 0.3)
+    P(thud(80), 15.99, 0.5); P(whoosh(0.16, 800, 6000), 15.99, 0.3)           # SAME JAILER
+    P(whoosh(0.16, 800, 6000), 16.83, 0.3); P(whoosh(0.16, 800, 6000), 17.44, 0.3)   # HIS FACE / KEPT HIDDEN
+    R_(whoosh(0.5, 200, 3000), 18.75, 0.3); R_(bell(82, 4.0), 20.4, 0.35)
+    R_(whoosh(0.18, 800, 6000), 21.7, 0.3); R_(pop(500, 0.08), 22.4, 0.3); R_(stamp(), 23.0, 0.5)
+    R_(lp(noise(2.2), 1800) * adsr(int(2.2 * SR), 0.3, 2.2, 1, 0.4), 23.95, 0.4); R_(crackle(2.0), 24.0, 0.45); R_(boom(), 24.0, 0.4)
+    R_(shing(1.2, 2200), 26.0, 0.3); R_(whoosh(0.18, 800, 6000), 27.9, 0.3)
+    R_(riser(0.8), 29.6, 0.3); R_(whoosh(0.2, 800, 6000), 30.65, 0.3); R_(crunch(), 31.86, 0.4)
+    R_(whoosh(0.8, 400, 6000), 32.45, 0.45); R_(sparkle(0.9, 10, 4), 32.9, 0.3)
+    R_(bell(98, 4.5), 33.5, 0.35)
+    R_(sparkle(1.2, 12, 7), 37.35, 0.22); R_(ding(1568, 1.2), 38.95, 0.15)
     return reverb(s[:N], 1.6, 0.22)
 
 

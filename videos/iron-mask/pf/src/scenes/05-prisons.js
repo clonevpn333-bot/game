@@ -1,4 +1,4 @@
-// 05 · prisons · T 15.65–18.75 · an engraved map of France: four forts pop up numbered 1–4 on "Four prisons", the
+// 05 · prisons · T 14.875–15.96 (fast) · an engraved map of France: four forts pop up numbered 1–4 on "Four prisons", the
 // curiosity line threads the route (Pignerol → Exilles → Sainte-Marguerite → the Bastille) with the mask riding it.
 (function () {
   'use strict';
@@ -13,10 +13,10 @@
     L.text(ctx, 'FRANCE', 520, 980, { size: 54, family: '"Fraunces", serif', weight: 700, align: 'center', color: '#2A2A3A', tracking: '0.3em' });
     // route
     const route = L.smoothPts(FORTS.map(([x, y]) => [x, y]), false, 6);
-    const ru = L.ease.inOutCubic(L.clamp((T - 16.0) / 2.2));
+    const ru = L.ease.inOutCubic(L.clamp((T - 15.05) / 0.75));
     if (ru > 0) FILM.hc.line(ctx, route, { plate: 'blueprint', to: Math.max(0.02, ru), width: 5, seed: 43 });
     FORTS.forEach(([x, y, name], i) => {
-      const a = L.ease.outBack(L.clamp((T - 15.83 - i * 0.16) / 0.25));
+      const a = L.ease.outBack(L.clamp((T - 14.9 - i * 0.07) / 0.18));
       if (a <= 0) return;
       ctx.save(); ctx.translate(x, y); ctx.scale(a, a);
       D.engrave(ctx, [[-22, 0], [-22, -50], [-30, -50], [-30, -66], [-14, -66], [-14, -58], [-4, -58], [-4, -66], [12, -66], [12, -58], [22, -58], [22, -66], [30, -66], [30, -50], [22, -50], [22, 0]], { ink: C.bone, light: () => 0.7, spacing: 3, seed: 50 + i, outW: 2, smooth: false, cross: false, stip: false });
@@ -25,11 +25,9 @@
       L.text(ctx, String(i + 1), x - 48, y - 77, { size: 28, family: '"JetBrains Mono", monospace', weight: 700, align: 'center', color: '#0C1430' });
       L.text(ctx, name, x + (i === 3 ? -40 : 0), y + 36, { size: 22, family: '"JetBrains Mono", monospace', weight: 600, align: i === 3 ? 'right' : 'center', color: C.ivory, alpha: a, tracking: '0.1em' });
     });
-    // the mask rides the route on "Always masked"
-    const mu = L.clamp((T - 17.4) / 1.2);
+    const mu = L.clamp((T - 15.05) / 0.75);
     if (mu > 0) { const n = route.length - 1, p = route[Math.min(n, Math.floor(mu * n))]; D.maskIcon(ctx, p[0], p[1] - 40, 1.3, 70); }
     D.grain(ctx, T, 0.9);
-    D.word(ctx, '4 PRISONS', 540, 210, 120, (T - 15.83) / 0.16, { seed: 14 });
-    D.word(ctx, '1 JAILER', 540, 1490, 90, (T - 16.97) / 0.16, { color: C.yellow, under: false, seed: 15 });
+    D.word(ctx, '4 PRISONS', 540, 210, 130, (T - 15.12) / 0.14, { seed: 14 });
   } });
 })();

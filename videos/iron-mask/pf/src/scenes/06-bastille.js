@@ -4,7 +4,7 @@
   'use strict';
   FILM.scene({ id: 'bastille', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C, M = FILM.mk;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t + FILM.OFF2;
     D.plate(ctx, { color: '#0A0E1E' });
     L.hatch(ctx, null, { bounds: { x: 0, y: 0, w: 1080, h: 1500 }, angle: 0.0, spacing: 6.5, width: 1, color: '#7A86B0', alpha: 0.6, seed: 51, length: [60, 240], density: (x, y) => L.clamp(0.45 - y / 2600 + 0.4 * Math.max(0, 1 - Math.hypot(x - 820, y - 330) / 600)) });
     D.moon(ctx, 820, 330, 90, T, { ink: '#E8ECF8', glow: '#9AA8E0' });

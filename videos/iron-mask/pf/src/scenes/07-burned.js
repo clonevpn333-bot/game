@@ -4,7 +4,7 @@
   'use strict';
   FILM.scene({ id: 'burned', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t + FILM.OFF2;
     const f = L.clamp((T - 23.95) / 0.9);
     D.plate(ctx);
     const lit = D.lights([{ x: 540, y: 1250, r: 1100, k: 0.7 + 0.4 * f }, { x: 200, y: 600, r: 900, k: 0.35 }], 0.1);

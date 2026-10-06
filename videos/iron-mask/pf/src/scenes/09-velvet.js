@@ -4,7 +4,7 @@
   'use strict';
   FILM.scene({ id: 'velvet', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t + FILM.OFF2;
     D.plate(ctx);
     const lit = D.lights([{ x: 200, y: 900, r: 1300, k: 0.45 }], 0.03);
     L.hatch(ctx, null, { bounds: { x: 0, y: 0, w: 1080, h: 1920 }, angle: 0.12, spacing: 6.5, width: 1, color: '#A8A0B0', alpha: 0.7, seed: 81, density: (x, y) => lit(x, y) * 0.6 });

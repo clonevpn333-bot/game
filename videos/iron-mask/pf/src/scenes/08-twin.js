@@ -4,7 +4,7 @@
   'use strict';
   FILM.scene({ id: 'twin', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t + FILM.OFF2;
     D.plate(ctx, { color: '#0E1636' });
     D.glow(ctx, 270, 900, 600, C.gold, 0.3);
     D.glow(ctx, 810, 900, 600, '#8A9AE0', 0.25);

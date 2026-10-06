@@ -17,6 +17,8 @@ const SHOTS: { id: string; t?: TransKind }[] = [
   { id: "locked", t: { kind: "iris", x: 540, y: 820 } },
   { id: "order", t: { kind: "iris", x: 540, y: 1500 } },
   { id: "prisons", t: { kind: "diag" } },
+  { id: "jailer", t: { kind: "split" } },
+  { id: "hidden", t: { kind: "iris", x: 540, y: 900 } },
   { id: "bastille", t: { kind: "iris", x: 600, y: 600 } },
   { id: "burned", t: { kind: "rise" } },
   { id: "twin", t: { kind: "split" } },

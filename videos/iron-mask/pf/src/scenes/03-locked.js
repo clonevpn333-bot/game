@@ -4,7 +4,7 @@
   'use strict';
   FILM.scene({ id: 'locked', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t + FILM.OFF1;
     let sh = 0; { const d = T - 8.45; if (d >= 0 && d < 0.35) sh = (1 - d / 0.35) * 22; }
     ctx.save(); ctx.translate(sh * Math.sin(T * 93), sh * Math.cos(T * 71));
     D.plate(ctx);

@@ -10,6 +10,8 @@ import "../../../pf/src/scenes/02-king.js";
 import "../../../pf/src/scenes/03-locked.js";
 import "../../../pf/src/scenes/04-order.js";
 import "../../../pf/src/scenes/05-prisons.js";
+import "../../../pf/src/scenes/05b-jailer.js";
+import "../../../pf/src/scenes/05c-hidden.js";
 import "../../../pf/src/scenes/06-bastille.js";
 import "../../../pf/src/scenes/07-burned.js";
 import "../../../pf/src/scenes/08-twin.js";

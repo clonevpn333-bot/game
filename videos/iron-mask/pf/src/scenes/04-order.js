@@ -4,7 +4,7 @@
   'use strict';
   FILM.scene({ id: 'order', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, C = D.C;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t + FILM.OFF1;
     D.plate(ctx);
     const lit = D.lights([{ x: 300, y: 700, r: 1100, k: 0.55 }, { x: 900, y: 1300, r: 700, k: 0.35 }], 0.05);
     L.hatch(ctx, null, { bounds: { x: 0, y: 0, w: 1080, h: 1920 }, angle: 0.08, spacing: 6.5, width: 1, color: '#9A8C80', alpha: 0.7, seed: 31, density: (x, y) => lit(x, y) * 0.6 });
