@@ -8,6 +8,7 @@ import { Cloth } from './entities/Cloth';
 import { Knellwarden, Marrowmite, Penitent } from './entities/Enemies';
 import { AshDrake, Thornwife, dressAsThrall } from './entities/Enemies2';
 import { Folk } from './entities/Npc';
+import { Horse } from './entities/Horse';
 import { Mats } from './world/Materials';
 
 const q = new URLSearchParams(location.search);
@@ -17,6 +18,8 @@ scene.background = new THREE.Color('#141a2c');
 scene.fog = new THREE.FogExp2('#141a2c', 0.03);
 const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 200);
 const pipe = createPipeline(canvas, scene, camera);
+// The studio has no sky to shaft light through.
+pipe.godRays.blendMode.opacity.value = 0;
 const pmrem = new THREE.PMREMGenerator(pipe.renderer);
 const envScene = new THREE.Scene();
 const sky = new THREE.Mesh(new THREE.SphereGeometry(10, 16, 8), new THREE.MeshBasicMaterial({ color: '#4a5a90', side: THREE.BackSide }));
@@ -99,6 +102,13 @@ if (char === 'knight') {
     scene.updateMatrixWorld();
     cloak.update(dt, t);
   };
+} else if (char === 'horse') {
+  const h = new Horse();
+  scene.add(h.root);
+  const speed = Number(q.get('speed') ?? 0);
+  const pre = Math.round(Number(kParam ?? 0) * 60);
+  for (let i = 0; i < 120 + pre; i += 1) h.update(1 / 60, speed, i / 60);
+  if (animate) update = (dt, t) => void h.update(dt, speed, t);
 } else if (char === 'folk') {
   const m = Mats();
   const styles = [
@@ -108,11 +118,17 @@ if (char === 'knight') {
     { robe: m.robeGrey, skin: '#d0a888', mood: 'old' as const, hair: true },
   ];
   const folks = styles.map((st, i) => {
-    const f = new Folk(st, 'idle', 'f', i);
+    const f = new Folk(st, 'idle', ['Tanner', 'Washerwoman', 'Lamplighter', 'Old Bram'][i], i);
     f.place(new THREE.Vector3((i - 1.5) * 0.9, 0, 0), 0);
     scene.add(f.group);
     return f;
   });
+  if (q.has('knight')) {
+    const k = buildKnight();
+    k.root.position.set(-2.1, 0, 0);
+    scene.add(k.root);
+    new Animator(k).snap(locomotion(0, 0));
+  }
   update = (dt, t) => folks.forEach((f) => f.update(dt, t, { resolve: () => 0 } as never, 0));
 } else {
   const e = char === 'boss' ? new Knellwarden() : char === 'penitent' ? new Penitent() : char === 'thrall' ? (() => { const p = new Penitent(); dressAsThrall(p.rig); return p; })() : char === 'witch' ? new Thornwife(scene) : char === 'dragon' ? new AshDrake() : new Marrowmite();

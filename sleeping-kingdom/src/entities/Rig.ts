@@ -121,6 +121,8 @@ export type FolkStyle = {
   lantern?: boolean;
   guard?: boolean;
   scale?: number;
+  female?: boolean;
+  child?: boolean;
 };
 
 /** Townsfolk / guards / priests: long robes, simple expressive faces. */

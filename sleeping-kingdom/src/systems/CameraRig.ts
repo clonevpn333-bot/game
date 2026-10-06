@@ -1,5 +1,9 @@
 import * as THREE from 'three';
+import { acceleratedRaycast, computeBoundsTree } from 'three-mesh-bvh';
 import { clamp, damp, dampAngle } from '../utils/math';
+
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 function pseudoNoise(t: number, seed: number): number {
   const x = Math.sin(t * 12.9898 + seed * 78.233) * 43758.5453;
@@ -27,8 +31,71 @@ export class CameraRig {
   private readonly tmp = new THREE.Vector3();
   private readonly lookTmp = new THREE.Vector3();
   roll = 0;
+  // Collision: solid scenery the boom pulls in against, so the lens never ends up inside a wall.
+  private readonly pending: THREE.Mesh[] = [];
+  private readonly colliders: THREE.Mesh[] = [];
+  private readonly ray = new THREE.Raycaster();
+  private readonly hits: THREE.Intersection[] = [];
+  private boom = 99;
 
-  constructor(readonly camera: THREE.PerspectiveCamera) {}
+  constructor(readonly camera: THREE.PerspectiveCamera) {
+    (this.ray as THREE.Raycaster & { firstHitOnly?: boolean }).firstHitOnly = true;
+  }
+
+  /** Register static scenery. Bounding trees are built a few meshes per frame to avoid a hitch. */
+  setColliders(roots: THREE.Object3D[]): void {
+    this.pending.length = 0;
+    this.colliders.length = 0;
+    for (const r of roots) {
+      r.traverse((o) => {
+        const me = o as THREE.Mesh;
+        if (!me.isMesh || !me.visible || o.userData.noCam) return;
+        const mat = (Array.isArray(me.material) ? me.material[0] : me.material) as THREE.Material;
+        // Glass, mist, leaves and grass don't stop a camera.
+        if (mat.transparent || mat.alphaTest > 0 || !mat.depthWrite) return;
+        const geo = me.geometry;
+        if (!geo.boundingSphere) geo.computeBoundingSphere();
+        if ((me as THREE.InstancedMesh).isInstancedMesh && (geo.boundingSphere?.radius ?? 0) < 0.8) return;
+        this.pending.push(me);
+      });
+    }
+  }
+
+  private buildSome(): void {
+    let budget = 60000;
+    while (this.pending.length && budget > 0) {
+      const me = this.pending.pop()!;
+      const g = me.geometry as THREE.BufferGeometry & { boundsTree?: unknown };
+      if (!g.boundsTree) {
+        g.computeBoundsTree();
+        budget -= (g.index ? g.index.count : g.attributes.position.count) / 3;
+      }
+      this.colliders.push(me);
+    }
+  }
+
+  /** How far the boom can extend from `from` along `dir` before it meets scenery. */
+  private clearance(from: THREE.Vector3, dir: THREE.Vector3, want: number): number {
+    if (!this.colliders.length) return want;
+    let best = want;
+    const right = this.tmpR.set(dir.z, 0, -dir.x).normalize();
+    const up = this.tmpU.crossVectors(right, dir).normalize();
+    // A plus-shaped bundle of rays approximates a sphere the size of the near plane.
+    for (const [ox, oy] of [[0, 0], [0.22, 0], [-0.22, 0], [0, 0.16], [0, -0.16]]) {
+      this.tmpO.copy(from).addScaledVector(right, ox).addScaledVector(up, oy);
+      this.ray.set(this.tmpO, dir);
+      this.ray.far = best + 0.3;
+      this.hits.length = 0;
+      this.ray.intersectObjects(this.colliders, false, this.hits);
+      if (this.hits.length) best = Math.min(best, Math.max(0.6, this.hits[0].distance - 0.3));
+    }
+    return best;
+  }
+
+  private readonly tmpR = new THREE.Vector3();
+  private readonly tmpU = new THREE.Vector3();
+  private readonly tmpO = new THREE.Vector3();
+  private readonly tmpB = new THREE.Vector3();
 
   addTrauma(a: number): void {
     this.trauma = Math.min(1, this.trauma + a);
@@ -94,7 +161,12 @@ export class CameraRig {
     const rightX = -Math.cos(this.yaw);
     const rightZ = Math.sin(this.yaw);
     const look = this.lookTmp.set(this.focus.x + rightX * shoulder, this.focus.y + lift, this.focus.z + rightZ * shoulder);
-    const pos = new THREE.Vector3().copy(look).addScaledVector(fwd, -this.dist);
+    this.buildSome();
+    const back = this.tmpB.copy(fwd).negate();
+    const free = this.cineWeight > 0.5 ? this.dist : this.clearance(look, back, this.dist);
+    // Pull in at once when something comes between; ease back out once it has passed.
+    this.boom = clamp(instant || free < this.boom ? free : damp(this.boom, free, 3.5, Math.max(0, dt)), 0.6, Math.max(0.6, this.dist));
+    const pos = new THREE.Vector3().copy(look).addScaledVector(fwd, -Math.min(this.dist, this.boom));
     pos.y = Math.max(pos.y, this.groundY + 0.5);
     const lookAt = look.clone().addScaledVector(fwd, 4);
     // Blend with cinematic shot.

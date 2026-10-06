@@ -91,7 +91,7 @@ export type Knight = Rig & {
 
 export function buildKnight(opts: { hollow?: boolean } = {}): Knight {
   const mt = makeMats(!!opts.hollow);
-  const rig = skeleton({ scale: 1.05, hipY: 0.98, thigh: 0.46, shin: 0.44, spine: 0.27, chest: 0.36, shoulderW: 0.27 });
+  const rig = skeleton({ scale: 1.0, hipY: 0.98, thigh: 0.46, shin: 0.44, spine: 0.27, chest: 0.36, shoulderW: 0.27 });
   const { j } = rig;
 
   // ============================================================== pelvis
@@ -183,8 +183,8 @@ export function buildKnight(opts: { hollow?: boolean } = {}): Knight {
     const sg = new THREE.Group();
     sg.position.set(0, 0.01, 0.06 - i * 0.055);
     crest.add(sg);
-    const pg = new THREE.PlaneGeometry(0.11, 0.42 + i * 0.05);
-    pg.translate(0, -(0.21 + i * 0.025), 0);
+    const pg = new THREE.PlaneGeometry(0.09, 0.3 + i * 0.04);
+    pg.translate(0, -(0.15 + i * 0.02), 0);
     const p1 = part(sg, pg, mt.crest, [0, 0, 0], [0, Math.PI / 2, 0]);
     p1.castShadow = false;
     part(sg, pg.clone(), mt.crest, [0, 0, 0], [0, Math.PI / 2 + 0.5, 0]).castShadow = false;

@@ -305,6 +305,7 @@ export class Player {
     this.horse.root.rotation.y = this.yaw;
     this.pos.addScaledVector(side, 1.6);
     this.rig.root.position.y = 0;
+    this.rig.root.rotation.x = 0;
     this.state = 'free';
     this.rig.sword.visible = true;
     this.scabbardHilt.visible = false;
@@ -325,6 +326,7 @@ export class Player {
     this.velocity.set(0, 0, 0);
     this.lockTarget = null;
     this.rig.root.position.y = 0;
+    this.rig.root.rotation.x = 0;
     this.rig.body.rotation.set(0, 0, 0);
     this.rig.body.position.set(0, 0, 0);
     this.anim.snap(GUARD);
@@ -721,18 +723,15 @@ export class Player {
     this.pos.z += Math.cos(this.yaw) * this.horseSpeed * dt;
     this.pathIndex = this.nav.resolve(this.pos, 0.9, this.pathIndex);
     this.velocity.set(Math.sin(this.yaw) * this.horseSpeed, 0, Math.cos(this.yaw) * this.horseSpeed);
-    this.horse.update(dt, this.horseSpeed, time);
+    const falls = this.horse.update(dt, this.horseSpeed, time);
+    for (let i = 0; i < falls; i += 1) this.bus.emit({ type: 'hoof', pos: this.pos.clone() });
     // Rider follows the saddle with a little lag on the bounce.
     this.rig.root.position.y = damp(this.rig.root.position.y, this.saddleRootY(), 20, dt);
     const lean = Math.min(1, this.horseSpeed / 17);
     const swing = this.rideSwing(dt, enemies);
     this.anim.apply(swing ? { ...RIDE_POSE, ...swing } : { ...RIDE_POSE, spine: [0.12 + lean * 0.3, 0, 0], head: [-0.2 * lean, 0, 0] }, dt, swing ? 22 : 10);
-    const step = this.horseSpeed * 0.5;
-    this.phase += dt * (1.6 + Math.min(1, this.horseSpeed / 16) * 2.6) * Math.PI * 2 * (this.horseSpeed > 0.3 ? 1 : 0);
-    if (Math.floor(this.phase / Math.PI) !== Math.floor(this.lastStepPhase / Math.PI) && step > 0.2) {
-      this.bus.emit({ type: 'hoof', pos: this.pos.clone() });
-    }
-    this.lastStepPhase = this.phase;
+    // The rider sits the horse's rock rather than floating level above it.
+    this.rig.root.rotation.x = damp(this.rig.root.rotation.x, this.horse.body.rotation.x * 0.8, 14, dt);
   }
 
   private footsteps(heavy: boolean): void {

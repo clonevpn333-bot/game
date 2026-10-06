@@ -185,6 +185,7 @@ export class Game {
     this.scene.add(this.sky.mesh, this.far.group, this.weather.group, this.pipeline.sun);
     this.tiltPivot.position.copy(pivot);
     this.worldRoot.position.copy(pivot).negate();
+    this.cam.setColliders([...this.worldRoot.children]);
 
     this.player = new Player(this.nav, this.bus);
     this.worldRoot.add(this.player.group);

@@ -4,7 +4,7 @@ import type { Game } from './Game';
 import { Animator, gaitRate, idle, locomotion, track, type Pose, type Rig } from '../entities/Rig';
 import { buildKnight } from '../entities/Knight';
 import { buildMorvane } from '../entities/Morvane';
-import { buildTownsfolk } from '../entities/Townsfolk';
+import { buildTownsfolk, styleFor } from '../entities/Townsfolk';
 import { Cloth } from '../entities/Cloth';
 import { Mats } from '../world/Materials';
 import type { FolkStyle } from '../entities/Rig';
@@ -55,7 +55,7 @@ export class Actor {
     } else if (kind === 'morvane') {
       this.rig = buildMorvane();
     } else {
-      this.rig = buildTownsfolk(style ?? { robe: Mats().robeBrown, skin: '#c99878', mood: 'calm', hair: true });
+      this.rig = buildTownsfolk(styleFor(name, style ?? { robe: Mats().robeBrown, skin: '#c99878', mood: 'calm', hair: true }));
     }
     this.group.add(this.rig.root);
     const sh = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.2).rotateX(-Math.PI / 2), Mats().contactShadow);
