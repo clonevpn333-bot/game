@@ -134,7 +134,10 @@ export class Witchwood {
       const y = s.pos.y;
       for (const [dx, dz] of [[-2, -2], [2, -2], [-2, 2], [2, 2]]) {
         const lp = new THREE.Vector3(dx, 0, dz).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-        parts.wood.push(place(worldBox(0.4, 4.5, 0.4, 2), p.x + lp.x, y + 1.6, p.z + lp.z, yaw, 1, 1, 1, (this.rng() - 0.5) * 0.15));
+        // Stilts reach all the way down to the bank, wherever it falls away.
+        const gb = Math.min(y - 0.65, this.terrain.groundAt(p.x + lp.x, p.z + lp.z) - 0.4);
+        const top = y + 3.85;
+        parts.wood.push(place(worldBox(0.4, top - gb, 0.4, 2), p.x + lp.x, (top + gb) / 2, p.z + lp.z, yaw, 1, 1, 1, (this.rng() - 0.5) * 0.08));
       }
       parts.wood.push(place(worldBox(5.2, 0.4, 5.2, 2), p.x, y + 3.6, p.z, yaw));
       parts.wood.push(place(prep(new THREE.CylinderGeometry(2.4, 2.6, 3.2, 8)), p.x, y + 5.4, p.z, yaw));
@@ -311,6 +314,7 @@ export class Witchwood {
       if (a.zone === 'hamlet') continue;
       const side = this.rng() < 0.5 ? -1 : 1;
       const p = a.pos.clone().addScaledVector(a.right, side * (a.width / 2 + 1.2));
+      p.y = Math.min(p.y, this.terrain.groundAt(p.x, p.z)) - 0.15;
       parts.push(place(prep(new THREE.CylinderGeometry(0.1, 0.14, 3.4, 5)), p.x, p.y + 1.7, p.z, 0, 1, 1, 1, (this.rng() - 0.5) * 0.2));
       parts.push(place(worldBox(1.6, 0.12, 0.12, 1), p.x, p.y + 2.7, p.z, this.rng() * 3));
       boneParts.push(place(prep(new THREE.SphereGeometry(0.26, 8, 6)), p.x, p.y + 3.5, p.z, 0, 1, 1.15, 1.3));

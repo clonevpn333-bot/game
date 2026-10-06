@@ -96,7 +96,10 @@ export class City {
   private readonly static = new Kit();
   private readonly houseFootprints: Array<{ x: number; z: number; r: number }> = [];
 
-  constructor(private readonly path: Path) {
+  constructor(
+    private readonly path: Path,
+    private readonly ground: (x: number, z: number) => number = () => -Infinity,
+  ) {
     this.group.name = 'city';
     this.buildWalls();
     this.buildStreets();
@@ -107,6 +110,18 @@ export class City {
     this.buildCathedral();
     this.group.add(this.static.build('city-static'));
     this.buildBanners();
+  }
+
+  /** Lowest rendered ground under a square footprint of half-size r: foundations reach down to it. */
+  private foot(x: number, z: number, r: number): number {
+    let y = Infinity;
+    for (const [dx, dz] of [[0, 0], [r, r], [-r, r], [r, -r], [-r, -r], [r, 0], [-r, 0], [0, r], [0, -r]]) y = Math.min(y, this.ground(x + dx, z + dz));
+    return y;
+  }
+
+  /** A vertical box/cylinder from `bottom` up to `top`, with its base sunk to the ground beneath. */
+  private footing(x: number, z: number, r: number, bottom: number): number {
+    return Math.min(bottom, this.foot(x, z, r) - 1.5);
   }
 
   // ------------------------------------------------------------------ walls & gate
@@ -123,7 +138,9 @@ export class City {
         const p = gate.pos.clone().addScaledVector(gate.right, off);
         const bend = Math.abs(off) > 60 ? (Math.abs(off) - 60) * 0.35 : 0;
         p.addScaledVector(gate.tangent, bend);
-        k.add('stone', place(worldBox(16.4, wallH + 30, 5, 6), p.x, gate.pos.y + wallH / 2 - 15, p.z, yaw + side * (bend > 0 ? 0.3 : 0)));
+        const wb = this.footing(p.x, p.z, 8.5, gate.pos.y - 30);
+        const wt = gate.pos.y + wallH;
+        k.add('stone', place(worldBox(16.4, wt - wb, 5, 6), p.x, (wt + wb) / 2, p.z, yaw + side * (bend > 0 ? 0.3 : 0)));
         // Crenellations.
         for (let c = -3; c <= 3; c += 2) {
           const cp = p.clone().addScaledVector(gate.right, c * 2);
@@ -132,7 +149,9 @@ export class City {
         if (i % 3 === 2) {
           // Round towers with conical slate caps.
           const tp = p.clone().addScaledVector(gate.tangent, 3);
-          k.add('stone', place(prep(new THREE.CylinderGeometry(6, 6.6, wallH + 40, 10)), tp.x, gate.pos.y + wallH / 2 - 8, tp.z));
+          const tb = this.footing(tp.x, tp.z, 6.6, gate.pos.y - 28);
+          const tt = gate.pos.y + wallH + 12;
+          k.add('stone', place(prep(new THREE.CylinderGeometry(6, 6.6, tt - tb, 10)), tp.x, (tt + tb) / 2, tp.z));
           k.add('slate', place(spire(7, 14, 10), tp.x, gate.pos.y + wallH + 12, tp.z));
           this.addLancet(tp.clone().addScaledVector(gate.tangent, 6.05), yaw, gate.pos.y + wallH, 1.2, 2.4);
         }
@@ -141,7 +160,8 @@ export class City {
     // Gatehouse towers.
     for (const side of [-1, 1]) {
       const p = gate.pos.clone().addScaledVector(gate.right, side * 8.5);
-      k.add('stoneWarm', place(worldBox(9, 40, 12, 6), p.x, gate.pos.y + 14, p.z, yaw));
+      const gb = this.footing(p.x, p.z, 6, gate.pos.y - 6);
+      k.add('stoneWarm', place(worldBox(9, gate.pos.y + 34 - gb, 12, 6), p.x, (gate.pos.y + 34 + gb) / 2, p.z, yaw));
       k.add('slate', place(spire(7.5, 18, 4), p.x, gate.pos.y + 34, p.z, Math.PI / 4 + yaw));
       for (const h of [18, 26]) this.addLancet(p.clone().addScaledVector(gate.tangent, 6.05), yaw, gate.pos.y + h, 1.1, 2.6);
       const tp = p.clone().addScaledVector(gate.tangent, 6.2);
@@ -191,8 +211,10 @@ export class City {
     const y0 = s.pos.y - 0.2;
     const variant = Math.floor(this.rng() * 3);
     const wallKey = (`house${variant}`) as MatKey;
-    // Stone plinth reaching well below the street to hide the plateau edge.
-    kit.add('stoneDark', place(worldBox(w + 0.4, 9, d + 0.4, 4), center.x, y0 - 3.4, center.z, yaw));
+    // Stone plinth reaching down to the lowest ground under the house, so no corner ever hangs in the air.
+    const pb = this.footing(center.x, center.z, Math.max(w, d) / 2 + 0.3, y0 - 7.9);
+    const pt = y0 + 1.1;
+    kit.add('stoneDark', place(worldBox(w + 0.4, pt - pb, d + 0.4, 4), center.x, (pt + pb) / 2, center.z, yaw));
     kit.add(wallKey, place(worldBox(w, h, d, 16), center.x, y0 + 1.1 + h / 2, center.z, yaw));
     // Jettied upper storey on taller houses.
     if (floors >= 3 && this.rng() < 0.6) {
@@ -364,10 +386,13 @@ export class City {
       if (this.intrudes(p.x, p.z, 10) || this.overlapsHouse(p.x, p.z, 7)) continue;
       this.houseFootprints.push({ x: p.x, z: p.z, r: 7 });
       placed += 1;
-      const h = 20 + this.rng() * 40 + Math.max(0, (s - cityStart) * 0.05);
+      let h = 20 + this.rng() * 40 + Math.max(0, (s - cityStart) * 0.05);
       const r = 3 + this.rng() * 3;
       const round = this.rng() < 0.5;
-      const baseY = sample.pos.y - 8;
+      const baseY = this.footing(p.x, p.z, r * 1.1, sample.pos.y - 8);
+      const h0 = h;
+      h += sample.pos.y - 8 - baseY;
+      void h0;
       if (round) {
         k.add('stone', place(prep(new THREE.CylinderGeometry(r, r * 1.08, h, 10)), p.x, baseY + h / 2, p.z));
         k.add('slate', place(spire(r * 1.25, r * 3.2, 10), p.x, baseY + h, p.z));

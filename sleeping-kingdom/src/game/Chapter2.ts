@@ -8,6 +8,7 @@ import { worldBox } from '../world/geo';
 import { latheG } from '../entities/Rig';
 import type { TorchSpot } from '../world/Terrain';
 import type { LightPool } from '../systems/LightPool';
+import { around } from './Cutscene';
 
 type Enc = 'idle' | 'active' | 'cleared';
 const STAGES = ['title', 'wood', 'hamlet', 'chapel', 'dragon', 'ending'] as const;
@@ -188,11 +189,34 @@ export class Chapter2 {
     g.cam.cineWeight = 0;
     g.audio.setMusic('dread');
     g.hud.reset();
-    g.hud.area('The Witchwood', 'Where the Thornwives sing', 6);
-    g.hud.setObjective('Find the Thornwives of Harrowmere');
-    this.after(3, () => {
-      this.think('Brother Ives said the old lullabies were kept by the Thornwives, west past the fog.');
-      this.think('If anyone knows how to sing a mountain back to sleep, it will be them.');
+    const cal = g.cut.actor(CALDER, 'calder', this.spot(2, 0), this.yawAlong(2));
+    const start = this.spot(0, 0);
+    g.cut.play([
+      {
+        dur: 12,
+        fadeIn: 2.5,
+        camFn: (k) => ({ pos: start.clone().add(new THREE.Vector3(30 - k * 20, 34 - k * 18, 40 - k * 30)), look: this.spot(80 + k * 40, 0).setY(start.y + 4) }),
+        narr: [
+          'The story so far…',
+          'Archdeacon Morvane rang the Knell over Velmour, and Osseran, the Founder beneath the city, opened his eye.',
+          'Calder rode west, looking for the Thornwives: witches who still remember the old lullabies.',
+        ],
+        card: ['The Witchwood', 'Where the Thornwives sing'],
+      },
+      {
+        dur: 5,
+        start: () => cal.walkTo(this.spot(9, 0), 1.3),
+        camFn: (k) => ({ pos: this.spot(13 + k, 1.6).setY(start.y + 1.5), look: cal.pos.clone().setY(cal.pos.y + 1.5) }),
+        lines: [
+          ['', 'Brother Ives said the old lullabies were kept out here, past the fog.'],
+          ['', 'If anyone knows how to sing a mountain back to sleep, it will be them.'],
+        ],
+      },
+    ], () => {
+      cal.dispose();
+      g.cut.actors.splice(g.cut.actors.indexOf(cal), 1);
+      this.placePlayer(9);
+      g.hud.setObjective('Find the Thornwives of Harrowmere');
     });
   }
 
@@ -481,21 +505,59 @@ export class Chapter2 {
         g.cam.setCinematic(true);
         g.vfx.holyMotes(wood.skullAltar, 40);
       }
-      if (cross(5.6)) {
-        this.sallow.behavior = 'idle';
-        g.hud.area('Mother Sallow', 'Eldest of the Thornwives', 4);
-        this.say('Mother Sallow', 'So. The Bell-Knight comes down from the waking city.');
-        this.say('Mother Sallow', 'That drake was no beast of this world, ser. It was a dream — Osseran’s dream, given teeth.');
-        this.say('Mother Sallow', 'When a Founder stirs, its nightmares walk. Wyrms. Witch-plagues. Things with no names yet.');
-        this.say('Mother Sallow', 'My sisters breathed its smoke and forgot their songs. Every lullaby we kept is ash… save one.');
-        this.say('Mother Sallow', 'Beneath the Drowned Choir of Saint Merrow, the dead still sing the Hymn of Sleeping. Go, knight. Before the others wake.');
-      }
-      if (cross(34)) g.hud.fade(1, 2.5);
-      if (cross(37)) {
-        g.hud.fade(0, 3);
-        g.showEnd();
-      }
+      if (cross(5.6)) this.sallowScene();
     }
+  }
+
+  /** Mother Sallow, freed from the thorns, explains what must be done. */
+  private sallowScene(): void {
+    const g = this.g;
+    const wood = g.wood!;
+    const sp = this.sallow.group.position.clone();
+    this.sallow.group.visible = false;
+    const t = g.path.at(this.sEnd);
+    const sal = g.cut.actor('Mother Sallow', 'folk', sp, this.yawAlong(this.sEnd, true), { robe: Mats().robeWhite, skin: '#b8a890', mood: 'old', hood: true });
+    sal.setPose('pray');
+    const cal = g.cut.actor(CALDER, 'calder', sp.clone().addScaledVector(t.tangent, -3.2), this.yawAlong(this.sEnd));
+    void wood;
+    g.cut.play([
+      {
+        dur: 4,
+        start: () => sal.setPose('idle').face(cal.pos),
+        camFn: around(sp, 4, 1.3, Math.atan2(-t.tangent.x, -t.tangent.z) - 0.7, Math.atan2(-t.tangent.x, -t.tangent.z) - 0.3, 1.4),
+        lines: [['Mother Sallow', 'So. The knight from the waking city. You killed my jailer. Sit, and listen.']],
+        card: ['Mother Sallow', 'Eldest of the Thornwives'],
+      },
+      {
+        dur: 6,
+        camFn: () => ({ pos: cal.pos.clone().addScaledVector(t.right, 0.9).addScaledVector(t.tangent, -1.2).setY(cal.pos.y + 1.75), look: sal.pos.clone().setY(sal.pos.y + 1.4) }),
+        lines: [
+          ['Mother Sallow', 'That drake was no beast. It was a nightmare. When a Founder stirs, his bad dreams climb out and take shape.'],
+          ['Mother Sallow', 'Its smoke drove my sisters mad. That is why they fought you.'],
+          [CALDER, 'How do I put Osseran back to sleep?'],
+        ],
+      },
+      {
+        dur: 8,
+        camFn: around(sp, 3.2, 1.4, Math.atan2(-t.tangent.x, -t.tangent.z) + 0.4, Math.atan2(-t.tangent.x, -t.tangent.z) + 0.8, 1.5),
+        lines: [
+          ['Mother Sallow', 'With the Cradle Bell. Only that bell rings the Hymn of Sleeping loud enough for a Founder to hear.'],
+          ['Mother Sallow', 'The Church broke it in two, long ago, so no one could misuse it.'],
+          ['Mother Sallow', 'One half sank with the cathedral of Saint Merrow, out on the Mere. The other went north, with the Bell Guard.'],
+          ['Mother Sallow', 'Find both halves. Ring the bell at Osseran’s heart. And hurry, knight. Every night he sleeps a little lighter.'],
+        ],
+      },
+      {
+        dur: 5,
+        fadeOut: 2.5,
+        camFn: (k) => ({ pos: sp.clone().add(new THREE.Vector3(0, 2 + k * 8, 0)).addScaledVector(t.tangent, -6 - k * 10), look: sp.clone().setY(sp.y + 1) }),
+        narr: ['The first half of the Cradle Bell lay under Saint Merrow’s Mere. Calder turned south, toward the drowned cathedral.'],
+      },
+    ], () => {
+      g.cut.clearActors();
+      this.sallow.group.visible = true;
+      g.showEnd();
+    });
   }
 
   private beats(s: number): void {

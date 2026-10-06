@@ -55,11 +55,40 @@ const GradeShader = {
     }`,
 };
 
+/**
+ * The PS2 finish, applied after tone mapping: the frame is rendered a little under native
+ * resolution, then ordered (Bayer) dithering and a 6-bit-per-channel palette give the soft,
+ * slightly grainy colour of a 2000s console framebuffer, without touching texture detail.
+ */
+const Ps2Shader = {
+  uniforms: {
+    tDiffuse: { value: null as THREE.Texture | null },
+    uLevels: { value: 56 },
+    uScan: { value: 0.025 },
+  },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float uLevels, uScan; varying vec2 vUv;
+    float bayer2(vec2 a){ a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
+    float bayer4(vec2 a){ return bayer2(0.5 * a) * 0.25 + bayer2(a); }
+    void main(){
+      vec3 c = texture2D(tDiffuse, vUv).rgb;
+      float b = bayer4(gl_FragCoord.xy) - 0.5;
+      c = floor(c * uLevels + b + 0.5) / uLevels;
+      c *= 1.0 - uScan * step(1.0, mod(gl_FragCoord.y, 2.0));
+      gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
+    }`,
+};
+
+/** Fraction of native resolution the 3D frame is rendered at (the PS2 softness). */
+export const RENDER_SCALE = 0.8;
+
 export type RenderPipeline = {
   renderer: THREE.WebGLRenderer;
   composer: EffectComposer;
   bloom: UnrealBloomPass;
   grade: ShaderPass;
+  ps2: ShaderPass;
   resize: (camera: THREE.PerspectiveCamera, maxDpr: number) => void;
   render: () => void;
 };
@@ -69,7 +98,7 @@ export function createPipeline(
   scene: THREE.Scene,
   camera: THREE.PerspectiveCamera,
 ): RenderPipeline {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.35;
@@ -79,11 +108,14 @@ export function createPipeline(
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  const bloom = new UnrealBloomPass(new THREE.Vector2(512, 512), 0.55, 0.45, 0.82);
+  // A softer, wider glow than a modern bloom: the dreamy halo PS2-era games had around lights.
+  const bloom = new UnrealBloomPass(new THREE.Vector2(512, 512), 0.68, 0.6, 0.76);
   composer.addPass(bloom);
   const grade = new ShaderPass(GradeShader);
   composer.addPass(grade);
   composer.addPass(new OutputPass());
+  const ps2 = new ShaderPass(Ps2Shader);
+  composer.addPass(ps2);
 
   let lastW = 0;
   let lastH = 0;
@@ -92,7 +124,7 @@ export function createPipeline(
     const w = Math.max(1, Math.floor(canvas.clientWidth));
     const h = Math.max(1, Math.floor(canvas.clientHeight));
     const mobile = Math.min(w, h) < 600;
-    const dpr = Math.min(window.devicePixelRatio || 1, mobile ? Math.min(maxDpr, 1.5) : maxDpr);
+    const dpr = Math.min(window.devicePixelRatio || 1, mobile ? Math.min(maxDpr, 1.5) : maxDpr) * RENDER_SCALE;
     if (w === lastW && h === lastH && dpr === lastDpr) return;
     lastW = w;
     lastH = h;
@@ -108,7 +140,7 @@ export function createPipeline(
     cam.updateProjectionMatrix();
   };
 
-  return { renderer, composer, bloom, grade, resize, render: () => {
+  return { renderer, composer, bloom, grade, ps2, resize, render: () => {
     renderer.info.reset();
     composer.render();
   } };

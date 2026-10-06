@@ -166,7 +166,7 @@ export class Game {
       pivot = this.path.at(this.path.length / 2).pos.clone();
     } else {
       this.terrain = new Terrain(this.path);
-      this.city = new City(this.path);
+      this.city = new City(this.path, (x, z) => this.terrain.groundAt(x, z));
       this.city.addCracks(['broken', 'stair']);
       this.founder = new Founder(this.city.plazaCenter);
       this.worldRoot.add(this.terrain.group, this.city.group, this.founder.group);
@@ -695,7 +695,8 @@ export class Game {
     this.audio.listener.copy(this.camera.position);
     this.audio.listenerYaw = this.cam.yaw;
     this.audio.update(dt);
-    RetroUniforms.uWobble.value = this.reducedMotion ? 0 : 1;
+    // PS2 look: no PS1 vertex wobble; geometry stays stable.
+    RetroUniforms.uWobble.value = 0;
     RetroUniforms.uSnap.value.set(this.canvas.clientWidth / 3.2, this.canvas.clientHeight / 3.2);
     this.publishDiagnostics();
   }

@@ -8,6 +8,7 @@ import { worldBox } from '../world/geo';
 import type { TorchSpot } from '../world/Terrain';
 import type { LightPool } from '../systems/LightPool';
 import { damp, smoothstep } from '../utils/math';
+import { around } from './Cutscene';
 
 type EncounterState = 'idle' | 'active' | 'cleared';
 type Interactable = { id: string; pos: THREE.Vector3; radius: number; label: () => string; enabled: () => boolean; action: () => void };
@@ -303,12 +304,50 @@ export class Chapter {
     g.cam.snap(g.player.pos, g.player.yaw);
     g.audio.setMusic('calm');
     g.hud.reset();
-    g.hud.area('The Pilgrim Road', 'Three leagues from Velmour', 6);
-    g.hud.setObjective('Ride to the capital');
-    this.after(2.5, () => g.hud.hint('<kbd>W A S D</kbd> ride &nbsp; <kbd>Shift</kbd> gallop &nbsp; <kbd>Mouse</kbd> look', 7));
-    this.after(4, () => {
-      this.think('Seven winters on the Ashfront. Seven winters of mud, and other men’s prayers.');
-      this.think('And still the road home climbs the same.');
+    this.prologue();
+  }
+
+  /** The prologue: the world in plain words, over the road to Velmour. */
+  private prologue(): void {
+    const g = this.g;
+    const city = g.city!;
+    const eye = g.founder!.eyeCenter;
+    const door = city.cathedralDoor;
+    const road0 = this.spot(0, 0);
+    this.g.cut.play([
+      {
+        dur: 14,
+        fadeIn: 3,
+        camFn: (k) => ({ pos: door.clone().add(new THREE.Vector3(-260 + k * 60, 40 + k * 10, 260 - k * 60)), look: eye.clone().lerp(door, 0.5).setY(door.y + 20 + k * 10) }),
+        narr: [
+          'Long ago, five giants walked the world.',
+          'When they grew tired, they lay down and slept, and their bodies became the land: mountains, forests and seas.',
+          'People call them the Founders. Every kingdom is built on one.',
+        ],
+      },
+      {
+        dur: 13,
+        camFn: (k) => ({ pos: eye.clone().add(new THREE.Vector3(-120 + k * 40, 10 + k * 20, 70 - k * 20)), look: eye.clone().lerp(door, 0.3 + k * 0.5) }),
+        narr: [
+          'The kingdom of Velmour is built on a Founder named Osseran. The mountain above the capital is his head.',
+          'To keep him asleep, the Church of the Still Bell rings only one song: the Hymn of Sleeping.',
+          'Every other night, the bells of Velmour must stay silent.',
+        ],
+      },
+      {
+        dur: 10,
+        fadeOut: 1.4,
+        camFn: (k) => ({ pos: road0.clone().addScaledVector(g.path.at(20).tangent, 10 + k * 30).add(new THREE.Vector3(0, 7 - k * 3, 0)).addScaledVector(g.path.at(20).right, -6), look: this.spot(60 + k * 60, 0).setY(road0.y + 4 + k * 6) }),
+        narr: ['Tonight, after seven years at war, a knight of the Bell Guard is riding home.', 'His name is Ser Calder. Nobody important. Not yet.'],
+      },
+    ], () => {
+      g.hud.area('The Pilgrim Road', 'Three leagues from Velmour', 6);
+      g.hud.setObjective('Ride to the capital');
+      this.after(2.5, () => g.hud.hint('<kbd>W A S D</kbd> ride &nbsp; <kbd>Shift</kbd> gallop &nbsp; <kbd>Mouse</kbd> look', 7));
+      this.after(4, () => {
+        this.think('Seven winters on the Ashfront. Seven winters of mud, and other men’s prayers.');
+        this.think('And still the road home climbs the same.');
+      });
     });
   }
 
@@ -474,12 +513,38 @@ export class Chapter {
     const g = this.g;
     this.priestDone = true;
     g.hud.clearSubtitles();
-    this.say('Brother Ives', 'Ser… you wear the Bell. Then hear me. We never rang them for prayer.');
-    this.say('Brother Ives', 'Four hundred years we kept them still. A lullaby of silence… so that He would not wake.');
-    this.say('Brother Ives', 'Velmour was built upon His brow. The cathedral… upon His skull.');
-    this.say('Brother Ives', 'Tonight someone rang the Knell. And the Warden will not let it be silenced again.');
-    this.say('Brother Ives', 'Silence the Knell, ser… before the mountain opens its eye.');
-    this.after(20, () => {
+    const ives = this.priest.group.position.clone();
+    const cal = g.cut.actor(CALDER, 'calder', g.player.pos.clone(), g.player.yaw);
+    cal.armed(true);
+    const kneel = ives.clone().add(g.player.pos.clone().sub(ives).setY(0).setLength(1.2));
+    const t = g.path.at(this.sPlaza - 4);
+    this.g.cut.play([
+      {
+        dur: 3,
+        start: () => cal.walkTo(kneel, 1.3, () => cal.setPose('kneel').face(ives)),
+        camFn: around(ives, 4.2, 1.5, Math.atan2(t.right.x, t.right.z) - 0.9, Math.atan2(t.right.x, t.right.z) - 0.5, 0.7),
+        lines: [['Brother Ives', 'Ser… you wear the Bell. Then listen. There is no time.']],
+      },
+      {
+        dur: 6,
+        camFn: () => ({ pos: cal.pos.clone().addScaledVector(t.tangent, 1.4).setY(cal.pos.y + 1.2), look: ives.clone().setY(ives.y + 0.6) }),
+        lines: [
+          ['Brother Ives', 'The bells were never for prayer. The mountain is Osseran, a Founder. Our silence keeps him asleep.'],
+          ['Brother Ives', 'Tonight someone rang the Knell, the waking peal. It was Archdeacon Morvane. Our own Archdeacon.'],
+        ],
+      },
+      {
+        dur: 6,
+        camFn: () => ({ pos: ives.clone().addScaledVector(t.tangent, -1.6).addScaledVector(t.right, 0.6).setY(ives.y + 1.1), look: cal.pos.clone().setY(cal.pos.y + 1.1) }),
+        lines: [
+          [CALDER, 'Why would the Archdeacon want to wake it?'],
+          ['Brother Ives', 'He believes the Founders are gods. He thinks waking them will make the world new. It will only end it.'],
+          ['Brother Ives', 'The Knellwarden guards the bell. Get past it and silence the Knell, ser, before the mountain opens its eye.'],
+        ],
+      },
+    ], () => {
+      cal.dispose();
+      g.cut.actors.splice(g.cut.actors.indexOf(cal), 1);
       this.priest.behavior = 'cower';
       this.think('Rest, brother.');
       g.hud.setObjective('Silence the Knell');
@@ -725,7 +790,7 @@ export class Chapter {
     this.checkpoint = { s: this.candles[0].s, lateral: this.candles[0].lateral, mounted: false, name: 'gate' };
     g.hud.setObjective('Report to the Cathedral of the Still Bell');
     if (stage === 'gate') {
-      this.placePlayer(this.sGate + 6, 0, false);
+      this.placePlayer(this.sGate + 14, 0, false);
       return;
     }
     if (stage === 'market') {
@@ -1050,11 +1115,7 @@ export class Chapter {
       }
       if (cross(13)) g.hud.area('Osseran', 'The Founder beneath Velmour', 6);
       if (cross(17)) this.say(CALDER, 'The mountain was never a mountain.');
-      if (cross(22)) g.hud.fade(1, 2.5);
-      if (cross(25)) {
-        g.hud.fade(0, 3);
-        g.showEnd();
-      }
+      if (cross(21)) this.morvaneReveal();
       if (e > 7) {
         // Slow push-in on the eye.
         const k = Math.min(1, (e - 7) / 14);
@@ -1063,6 +1124,63 @@ export class Chapter {
         g.founder!.lookAt(g.camera.position);
       }
     }
+  }
+
+  /** Morvane steps out of the cathedral to watch his god wake. */
+  private morvaneReveal(): void {
+    const g = this.g;
+    const city = g.city!;
+    const door = city.cathedralDoor.clone();
+    const toPlaza = city.plazaCenter.clone().sub(door).setY(0).normalize();
+    const mPos = door.clone().addScaledVector(toPlaza, 5);
+    const calPos = mPos.clone().addScaledVector(toPlaza, 9);
+    const m = g.cut.actor('Archdeacon Morvane', 'morvane', mPos, Math.atan2(toPlaza.x, toPlaza.z));
+    m.setPose('staff');
+    const cal = g.cut.actor(CALDER, 'calder', calPos, Math.atan2(-toPlaza.x, -toPlaza.z));
+    cal.armed(true);
+    const side = new THREE.Vector3(-toPlaza.z, 0, toPlaza.x);
+    this.eyeT = -1;
+    g.cut.play([
+      {
+        dur: 4,
+        start: () => g.vfx.holyMotes(mPos.clone().setY(mPos.y + 1.5), 30),
+        camFn: (k) => ({ pos: mPos.clone().addScaledVector(toPlaza, 4 - k).addScaledVector(side, 1.4).setY(mPos.y + 1.6), look: mPos.clone().setY(mPos.y + 2.1) }),
+        lines: [['Archdeacon Morvane', 'Do you hear him breathing, little knight? Four hundred years, and finally he breathes.']],
+        card: ['Archdeacon Morvane', 'Voice of the Waking Choir'],
+      },
+      {
+        dur: 4,
+        camFn: () => ({ pos: mPos.clone().addScaledVector(toPlaza, 1.6).addScaledVector(side, -0.7).setY(mPos.y + 2), look: cal.pos.clone().setY(cal.pos.y + 1.6) }),
+        lines: [[CALDER, 'Archdeacon… you rang the Knell. Why?']],
+      },
+      {
+        dur: 6,
+        start: () => m.setPose('staffRaise'),
+        camFn: around(mPos, 6, 1.2, Math.atan2(toPlaza.x, toPlaza.z) - 0.6, Math.atan2(toPlaza.x, toPlaza.z) + 0.2, 2.4),
+        lines: [
+          ['Archdeacon Morvane', 'Because a god should not sleep under our feet like a dog.'],
+          ['Archdeacon Morvane', 'Wake, Osseran. Wake, and make the world new.'],
+        ],
+        tick: (k) => {
+          if (k > 0.85 && m.group.visible) {
+            g.vfx.holyMotes(m.pos.clone().setY(m.pos.y + 1.4), 50);
+            m.group.visible = false;
+          }
+        },
+      },
+      {
+        dur: 7,
+        fadeOut: 2.5,
+        camFn: (k) => ({ pos: cal.pos.clone().addScaledVector(toPlaza, 2.6 + k).setY(cal.pos.y + 1.8), look: cal.pos.clone().setY(cal.pos.y + 1.6) }),
+        lines: [
+          ['', 'Gone. And beneath the city, the mountain breathes in again.'],
+          ['', 'If a bell can wake him, maybe a song can put him back to sleep. Ives spoke of the old lullabies. The Thornwives of the Witchwood kept them.'],
+        ],
+      },
+    ], () => {
+      g.cut.clearActors();
+      g.showEnd();
+    });
   }
 
   private updateInteract(): void {
