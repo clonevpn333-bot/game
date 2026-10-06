@@ -281,32 +281,60 @@ export function track(keys: Array<[number, Pose]>, k: number): Pose {
 
 // ---------------------------------------------------------------- shared locomotion
 
+const bump = (phase: number, center: number, sharp = 3): number => Math.pow(Math.max(0, Math.cos(phase - center)), sharp);
+const smooth01 = (a: number, b: number, x: number): number => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+
+/**
+ * Gait cycle (phase 0..2π = one stride = two steps). Left leg is forward at φ=π/2.
+ * Walk: double-support dips, heel strike, toe-off, pelvis yaw/drop, spine counter-rotation.
+ * Run (speed01 > ~0.7): flight phase, high knees, forward lean, pumping bent arms.
+ */
 export function locomotion(phase: number, speed01: number, opts: { armSwing?: number; swordHeld?: boolean; hunch?: number } = {}): Pose {
+  const amt = Math.min(1.2, speed01);
+  const run = smooth01(0.62, 1.0, speed01);
   const s = Math.sin(phase);
   const c = Math.cos(phase);
-  const amt = Math.min(1, speed01);
-  const leg = 0.75 * amt;
-  const arm = (opts.armSwing ?? 0.5) * amt;
+  const hipAmp = (0.42 + 0.38 * run) * Math.min(1, amt * 1.4);
+  const kneeSwing = 0.85 + 1.1 * run;
+  const armAmp = (opts.armSwing ?? 0.5) * (0.6 + 0.9 * run) * Math.min(1, amt * 1.3);
   const hunch = opts.hunch ?? 0;
+  // Per leg: stance knee flex just after heel strike, big flex mid-swing.
+  const kneeL = 0.06 + kneeSwing * Math.pow(Math.max(0, c), 1.4) * amt + 0.18 * bump(phase, Math.PI / 2 + 0.5, 4) * amt;
+  const kneeR = 0.06 + kneeSwing * Math.pow(Math.max(0, -c), 1.4) * amt + 0.18 * bump(phase, -Math.PI / 2 + 0.5, 4) * amt;
+  // Foot: toe up at heel strike, push-off (toe down) as the leg trails, level mid-swing.
+  const footL = (-0.28 * bump(phase, Math.PI / 2) + 0.5 * bump(phase, -Math.PI / 2 + 0.35) - 0.12 * bump(phase, 0)) * amt;
+  const footR = (-0.28 * bump(phase, -Math.PI / 2) + 0.5 * bump(phase, Math.PI / 2 + 0.35) - 0.12 * bump(phase, Math.PI)) * amt;
+  const bob = run > 0.5 ? -0.07 * Math.cos(2 * phase) * amt - 0.04 * run : (0.035 * Math.cos(2 * phase) - 0.035) * amt;
+  const lean = 0.05 * amt + 0.28 * run + hunch;
   const p: Pose = {
-    hipL: [-s * leg, 0, 0.02],
-    hipR: [s * leg, 0, -0.02],
-    kneeL: [Math.max(0, c) * 1.1 * amt + 0.08, 0, 0],
-    kneeR: [Math.max(0, -c) * 1.1 * amt + 0.08, 0, 0],
-    footL: [Math.max(0, -s) * 0.4 * amt - 0.08 * amt, 0, 0],
-    footR: [Math.max(0, s) * 0.4 * amt - 0.08 * amt, 0, 0],
-    spine: [0.12 * amt + hunch, Math.sin(phase) * 0.08 * amt, 0],
-    chest: [0.04 * amt, -Math.sin(phase) * 0.1 * amt, 0],
-    head: [-0.1 * amt - hunch * 0.6, 0, 0],
-    shoulderL: [s * arm, 0, 0.12],
-    elbowL: [-0.35 - Math.max(0, s) * 0.4 * amt, 0, 0],
-    shoulderR: opts.swordHeld ? [-0.35 - s * arm * 0.5, 0, -0.18] : [-s * arm, 0, -0.12],
-    elbowR: opts.swordHeld ? [-0.75, 0, 0] : [-0.35 - Math.max(0, -s) * 0.4 * amt, 0, 0],
+    hips: [0.04 * run, 0.13 * s * amt * (1 - 0.4 * run), 0.05 * c * amt],
+    spine: [lean, -0.08 * s * amt, -0.03 * c * amt],
+    chest: [0.03 * amt, -0.12 * s * amt, 0],
+    neck: [-lean * 0.35, 0.06 * s * amt, 0],
+    head: [-0.12 * amt - hunch * 0.6, 0.06 * s * amt, 0],
+    hipL: [-s * hipAmp - 0.08 * run, 0, 0.03],
+    hipR: [s * hipAmp - 0.08 * run, 0, -0.03],
+    kneeL: [kneeL, 0, 0],
+    kneeR: [kneeR, 0, 0],
+    footL: [footL, 0, 0],
+    footR: [footR, 0, 0],
+    shoulderL: [s * armAmp, 0, 0.1 + 0.05 * run],
+    elbowL: [-(0.22 + 0.35 * Math.max(0, -s) * amt + 1.0 * run), 0, 0],
+    shoulderR: opts.swordHeld ? [-0.35 - s * armAmp * 0.4, 0, -0.18] : [-s * armAmp, 0, -0.1 - 0.05 * run],
+    elbowR: opts.swordHeld ? [-0.75, 0, 0] : [-(0.22 + 0.35 * Math.max(0, s) * amt + 1.0 * run), 0, 0],
     handR: opts.swordHeld ? [0.15, 0, 0] : [0, 0, 0],
-    rootY: -Math.abs(Math.cos(phase)) * 0.06 * amt,
-    rootPitch: 0.05 * amt,
+    rootY: bob,
+    rootPitch: 0.03 * amt + 0.06 * run,
   };
   return p;
+}
+
+/** Phase advance per second for a speed (m/s): stride length grows with speed, so feet don't skate. */
+export function gaitRate(speed: number): number {
+  return (speed / (1.35 + speed * 0.22)) * Math.PI * 2;
 }
 
 export function idle(t: number, opts: { swordHeld?: boolean; hunch?: number } = {}): Pose {

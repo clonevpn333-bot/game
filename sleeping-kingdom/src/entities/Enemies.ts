@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Animator, bakeMeshes, buildPenitent, dome, idle, latheG, limb, locomotion, mesh, skeleton, track, type Pose, type Rig } from './Rig';
+import { Animator, bakeMeshes, buildPenitent, gaitRate, dome, idle, latheG, limb, locomotion, mesh, skeleton, track, type Pose, type Rig } from './Rig';
 import { Cloth } from './Cloth';
 import { Mats } from '../world/Materials';
 import type { Combatant, EventBus, HitInfo } from '../systems/Combat';
@@ -406,7 +406,7 @@ export class Penitent extends Enemy {
         this.yaw = dampAngle(this.yaw, ang, 5, dt);
         const sp = d > 2.2 ? 2.3 : 0;
         this.vel.set(Math.sin(this.yaw) * sp, 0, Math.cos(this.yaw) * sp);
-        this.phase += sp * 2.0 * dt;
+        this.phase += gaitRate(sp * 0.9) * dt;
         pose = sp > 0 ? locomotion(this.phase, sp / 3.5, { hunch: 0.35, armSwing: 0.2 }) : idle(time, { hunch: 0.35 });
         if (d < 2.9 && this.cooldown <= 0 && ctx.player.state !== 'dead') {
           const r = ctx.rng();
@@ -666,11 +666,11 @@ export class Knellwarden extends Enemy {
         this.yaw = dampAngle(this.yaw, ang, 2.6 * spd, dt);
         const sp = d > 4.2 ? 2.7 * spd : 0;
         this.vel.set(Math.sin(this.yaw) * sp, 0, Math.cos(this.yaw) * sp);
-        this.phase += sp * 1.1 * dt;
+        this.phase += gaitRate(sp / 2.45) * dt;
         pose = sp > 0 ? locomotion(this.phase, sp / 5, { armSwing: 0.15 }) : idle(time * 0.7);
         pose.shoulderR = [-0.5, 0, -0.3];
         pose.elbowR = [-0.9, 0, 0];
-        if (sp > 0 && Math.floor(this.phase / Math.PI) !== Math.floor((this.phase - sp * 1.1 * dt) / Math.PI)) {
+        if (sp > 0 && Math.floor(this.phase / Math.PI) !== Math.floor((this.phase - gaitRate(sp / 2.45) * dt) / Math.PI)) {
           ctx.shake(0.08);
           ctx.bus.emit({ type: 'footstep', pos: this.pos.clone(), heavy: true });
         }

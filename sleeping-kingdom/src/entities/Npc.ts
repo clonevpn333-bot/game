@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Animator, idle, latheG, limb, locomotion, mesh, type FolkStyle, type Pose } from './Rig';
+import { Animator, gaitRate, idle, latheG, limb, locomotion, mesh, type FolkStyle, type Pose } from './Rig';
 import { buildTownsfolk } from './Townsfolk';
 import { Mats } from '../world/Materials';
 import type { Nav } from '../game/Nav';
@@ -72,7 +72,7 @@ export class Folk {
           this.yaw += Math.PI;
           this.pos.lerp(this.home, 0.02);
         }
-        this.phase += sp * 2.6 * dt;
+        this.phase += gaitRate(sp) * dt;
         pose = locomotion(this.phase, 0.35, { armSwing: 0.3 });
         break;
       }
@@ -90,7 +90,7 @@ export class Folk {
         this.pos.x += Math.sin(this.yaw) * this.fleeSpeed * dt;
         this.pos.z += Math.cos(this.yaw) * this.fleeSpeed * dt;
         this.pathIndex = nav.resolve(this.pos, 0.4, this.pathIndex);
-        this.phase += this.fleeSpeed * 2.2 * dt;
+        this.phase += gaitRate(this.fleeSpeed) * dt;
         pose = locomotion(this.phase, 1.2, { armSwing: 0.9 });
         pose.shoulderL = [-2.2, 0, 0.5];
         pose.shoulderR = [-2.2, 0, -0.5];

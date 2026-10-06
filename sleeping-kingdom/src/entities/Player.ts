@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Animator, idle, locomotion, mix, track, type Pose } from './Rig';
+import { Animator, gaitRate, idle, locomotion, mix, track, type Pose } from './Rig';
 import { buildKnight } from './Knight';
 import { Cloth } from './Cloth';
 import { Horse } from './Horse';
@@ -412,7 +412,7 @@ export class Player {
           this.yaw = dampAngle(this.yaw, Math.atan2(wish.x, wish.z), 12, dt);
         }
         const sp = Math.hypot(this.velocity.x, this.velocity.z);
-        this.phase += sp * 2.3 * dt;
+        this.phase += gaitRate(sp) * dt;
         this.footsteps(sp > 5.5);
         const guard = guardPose(time);
         let pose: Pose;

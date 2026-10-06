@@ -1,7 +1,12 @@
 import * as THREE from 'three';
 import { smoothstep } from '../utils/math';
 
-export type Zone = 'road' | 'bridge' | 'gate' | 'street' | 'market' | 'broken' | 'stair' | 'plaza' | 'wood' | 'hamlet' | 'chapel' | 'ribs';
+export type Zone =
+  | 'road' | 'bridge' | 'gate' | 'street' | 'market' | 'broken' | 'stair' | 'plaza'
+  | 'wood' | 'hamlet' | 'chapel' | 'ribs'
+  | 'shore' | 'causeway' | 'village' | 'nave' | 'choir'
+  | 'pass' | 'camp' | 'ridge' | 'fort'
+  | 'sanctum' | 'crypt' | 'cavern' | 'heart';
 
 export type Node = [number, number, number, number, Zone];
 
@@ -55,6 +60,65 @@ export const NODES_CH2: Node[] = [
   [0, 50, -505, 46, 'ribs'],
   [0, 50, -545, 46, 'ribs'],
   [0, 50, -572, 16, 'ribs'],
+];
+
+/** Chapter III: the reed marsh, the causeway, the drowned village and the sunken cathedral of Saint Merrow. */
+export const NODES_CH3: Node[] = [
+  [0, 20, 40, 8, 'shore'],
+  [0, 20, -30, 8, 'shore'],
+  [-30, 20.5, -100, 9, 'shore'],
+  [-22, 21, -170, 7, 'causeway'],
+  [8, 21, -250, 7, 'causeway'],
+  [30, 21, -320, 7, 'causeway'],
+  [36, 21.5, -372, 24, 'village'],
+  [22, 22, -424, 24, 'village'],
+  [-4, 22, -474, 9, 'shore'],
+  [-26, 22.5, -532, 7, 'causeway'],
+  [-22, 23, -592, 10, 'nave'],
+  [-6, 23, -652, 10, 'nave'],
+  [0, 23, -700, 12, 'nave'],
+  [0, 23, -738, 42, 'choir'],
+  [0, 23, -778, 42, 'choir'],
+  [0, 23, -804, 14, 'choir'],
+];
+
+/** Chapter IV: the Frostspine pass, the frozen war camp, the ridge of bones and the Hollow Fort. */
+export const NODES_CH4: Node[] = [
+  [0, 60, 40, 8, 'pass'],
+  [0, 62, -30, 8, 'pass'],
+  [-30, 68, -100, 8, 'pass'],
+  [-20, 76, -170, 9, 'pass'],
+  [20, 84, -232, 9, 'pass'],
+  [40, 90, -292, 28, 'camp'],
+  [30, 92, -344, 28, 'camp'],
+  [0, 98, -394, 8, 'pass'],
+  [-25, 108, -454, 7, 'ridge'],
+  [-15, 116, -522, 7, 'ridge'],
+  [10, 122, -582, 7, 'ridge'],
+  [20, 128, -632, 9, 'pass'],
+  [10, 132, -682, 12, 'fort'],
+  [0, 134, -718, 38, 'fort'],
+  [0, 134, -754, 38, 'fort'],
+  [0, 134, -774, 14, 'fort'],
+];
+
+/** Chapter V: the ruined cathedral, the crypts beneath, the bone caverns of Osseran's skull, and the Heart. */
+export const NODES_CH5: Node[] = [
+  [0, 130, 40, 12, 'sanctum'],
+  [0, 130, -30, 14, 'sanctum'],
+  [0, 129.5, -82, 12, 'sanctum'],
+  [10, 122, -124, 6, 'crypt'],
+  [20, 112, -172, 6, 'crypt'],
+  [10, 104, -222, 7, 'crypt'],
+  [-20, 98, -282, 16, 'cavern'],
+  [-30, 94, -352, 20, 'cavern'],
+  [0, 90, -422, 16, 'cavern'],
+  [30, 86, -482, 18, 'cavern'],
+  [20, 82, -542, 10, 'cavern'],
+  [0, 80, -592, 14, 'heart'],
+  [0, 80, -628, 44, 'heart'],
+  [0, 80, -668, 44, 'heart'],
+  [0, 80, -694, 14, 'heart'],
 ];
 
 export type PathSample = {

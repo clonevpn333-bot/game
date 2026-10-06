@@ -5,6 +5,7 @@ import { createPipeline, type RenderPipeline } from '../core/Renderer';
 import { Path, NODES_CH1, NODES_CH2 } from '../world/Path';
 import { Witchwood } from '../world/Witchwood';
 import { Chapter2 } from './Chapter2';
+import { CutscenePlayer } from './Cutscene';
 import type { TorchSpot } from '../world/Terrain';
 import { Terrain } from '../world/Terrain';
 import { BannerTime, City } from '../world/City';
@@ -92,6 +93,7 @@ export class Game {
   readonly fill = new THREE.DirectionalLight('#c8b0a0', 0.9);
   readonly chapter: ChapterScript;
   readonly boss = new Knellwarden();
+  readonly cut: CutscenePlayer = new CutscenePlayer(this);
   mode: GameMode = 'loading';
   rng = createSeededRandom(1);
   tilt = 0;
@@ -476,7 +478,9 @@ export class Game {
     this.elapsed += rawDt;
     const dt = rawDt;
     this.input.update(dt);
-    if (this.input.consume('pause')) {
+    if (this.cut.active) {
+      // Esc / Space skip the cutscene instead of pausing.
+    } else if (this.input.consume('pause')) {
       if (this.mode === 'play') this.setPaused(true);
       else if (this.mode === 'paused') this.setPaused(false);
     }
@@ -499,6 +503,7 @@ export class Game {
 
     if (this.mode === 'play' || this.mode === 'dead' || this.mode === 'title' || this.mode === 'ending') {
       this.chapter.update(gdt, t);
+      this.cut.update(dt, t);
       if (this.mode === 'play' || this.mode === 'dead') this.player.update(gdt, t, this.input, this.cam.yaw, this.enemies);
       else this.player.update(gdt, t, this.input, this.cam.yaw, []);
       for (const e of this.enemies) e.update(gdt, t, this.ctx);

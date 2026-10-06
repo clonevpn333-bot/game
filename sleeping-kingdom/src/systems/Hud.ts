@@ -36,6 +36,10 @@ export class Hud {
   private readonly fadeEl = $('#fade');
   private readonly letterbox = $('#letterbox');
   private readonly touchFlask = document.querySelector<HTMLElement>('.tbtn.flask');
+  private readonly narration = $('#narration');
+  private narrQueue: string[] = [];
+  private narrT = 0;
+  private narrGap = 0;
   private readonly queue: Line[] = [];
   private current: Line | null = null;
   private lineT = 0;
@@ -43,6 +47,20 @@ export class Hud {
   private areaT = 0;
   private lastHp = -1;
   private lastFlasks = -1;
+
+  /** Cinematic mode: hide gameplay HUD, keep subtitles, cards and narration. */
+  cinematic(on: boolean): void {
+    this.root.classList.toggle('cinematic', on);
+    if (on) this.root.classList.remove('hidden');
+  }
+
+  /** Storybook narration lines, shown one at a time in the centre of the screen. */
+  narrate(lines: string[]): void {
+    this.narrQueue = [...lines];
+    this.narrT = 0;
+    this.narrGap = 0.2;
+    if (!lines.length) this.narration.classList.remove('show');
+  }
 
   show(on: boolean): void {
     this.root.classList.toggle('hidden', !on);
@@ -150,6 +168,21 @@ export class Hud {
   }
 
   update(dt: number): void {
+    if (this.narrT > 0) {
+      this.narrT -= dt;
+      if (this.narrT <= 0) {
+        this.narration.classList.remove('show');
+        this.narrGap = 0.45;
+      }
+    } else if (this.narrQueue.length) {
+      this.narrGap -= dt;
+      if (this.narrGap <= 0) {
+        const text = this.narrQueue.shift()!;
+        this.narration.textContent = text;
+        this.narration.classList.add('show');
+        this.narrT = Math.max(3.2, text.length * 0.07);
+      }
+    }
     if (this.hintT > 0) {
       this.hintT -= dt;
       if (this.hintT <= 0) this.hintEl.classList.remove('show');

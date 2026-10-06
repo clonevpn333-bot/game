@@ -30,19 +30,20 @@ function heroMat(params: THREE.MeshStandardMaterialParameters, rim = 0.5, rimCol
 
 export type KnightMats = ReturnType<typeof makeMats>;
 
-function makeMats() {
+function makeMats(hollow = false) {
+  const H = hollow;
   return {
-    plate: heroMat({ map: HeroTex.plate(), color: '#d8dde8', metalness: 0.72, roughness: 0.36 }, 0.42),
+    plate: heroMat({ map: HeroTex.plate(), color: H ? '#5c5a62' : '#d8dde8', metalness: 0.72, roughness: H ? 0.5 : 0.36 }, 0.42, H ? '#ff5a3a' : '#8fa8ff'),
     plateDark: heroMat({ map: HeroTex.plateDark(), color: '#ffffff', metalness: 0.65, roughness: 0.42 }, 0.5),
     trim: heroMat({ map: HeroTex.trim(), color: '#ffffff', metalness: 0.9, roughness: 0.34 }, 0.12, '#ffd28a'),
     mail: heroMat({ map: HeroTex.mail(), color: '#ffffff', metalness: 0.6, roughness: 0.5, side: THREE.DoubleSide }, 0.35),
     leather: heroMat({ map: HeroTex.leather(), color: '#ffffff', roughness: 0.82 }, 0.25),
-    cloak: heroMat({ map: HeroTex.cloak(), color: '#ffffff', roughness: 0.95, side: THREE.DoubleSide, alphaTest: 0.5 }, 0.35, '#ff8a70'),
-    tabard: heroMat({ map: HeroTex.tabard(), color: '#ffffff', roughness: 0.9, side: THREE.DoubleSide, alphaTest: 0.5 }, 0.3),
+    cloak: heroMat({ map: HeroTex.cloak(), color: H ? '#3a3236' : '#ffffff', roughness: 0.95, side: THREE.DoubleSide, alphaTest: 0.5 }, 0.35, '#ff8a70'),
+    tabard: heroMat({ map: HeroTex.tabard(), color: H ? '#6a5a5a' : '#ffffff', roughness: 0.9, side: THREE.DoubleSide, alphaTest: 0.5 }, 0.3),
     fur: heroMat({ map: HeroTex.fur(), color: '#ffffff', roughness: 1 }, 0.4, '#c0b0a0'),
-    crest: heroMat({ map: HeroTex.crest(), color: '#ffffff', roughness: 0.9, side: THREE.DoubleSide, alphaTest: 0.4 }, 0.4, '#ff7050'),
+    crest: heroMat({ map: HeroTex.crest(), color: H ? '#3a3a3a' : '#ffffff', roughness: 0.9, side: THREE.DoubleSide, alphaTest: 0.4 }, 0.4, '#ff7050'),
     blade: heroMat({ map: HeroTex.blade(), color: '#ffffff', metalness: 1, roughness: 0.16, emissive: '#1c2430', emissiveIntensity: 0.35 }, 0.35, '#c8d8ff'),
-    dark: new THREE.MeshStandardMaterial({ color: '#050506', roughness: 1 }),
+    dark: H ? new THREE.MeshStandardMaterial({ color: '#200402', emissive: '#ff3010', emissiveIntensity: 3 }) : new THREE.MeshStandardMaterial({ color: '#050506', roughness: 1 }),
   };
 }
 
@@ -88,8 +89,8 @@ export type Knight = Rig & {
   secondary: (dt: number, speed: number, ikWeight: number) => void;
 };
 
-export function buildKnight(): Knight {
-  const mt = makeMats();
+export function buildKnight(opts: { hollow?: boolean } = {}): Knight {
+  const mt = makeMats(!!opts.hollow);
   const rig = skeleton({ scale: 1.05, hipY: 0.98, thigh: 0.46, shin: 0.44, spine: 0.27, chest: 0.36, shoulderW: 0.27 });
   const { j } = rig;
 
@@ -256,7 +257,7 @@ export function buildKnight(): Knight {
       part(ft, new THREE.CylinderGeometry(0.105 - l * 0.01, 0.11 - l * 0.01, 0.06, 14, 1, true, -Math.PI / 2, Math.PI), mt.plate, [0, -0.085, 0.03 + l * 0.055], [Math.PI / 2, 0, 0], [1, 1, 0.85 - l * 0.12]);
     }
     part(ft, new THREE.ConeGeometry(0.06, 0.14, 12), mt.plate, [0, -0.09, 0.28], [Math.PI / 2, 0, 0], [1, 1, 0.5]);
-    part(ft, new THREE.BoxGeometry(0.19, 0.03, 0.42), mt.dark, [0, -0.11, 0.07]);
+    part(ft, new THREE.BoxGeometry(0.19, 0.03, 0.42), mt.leather, [0, -0.11, 0.07]);
   }
 
   // ============================================================== longsword
