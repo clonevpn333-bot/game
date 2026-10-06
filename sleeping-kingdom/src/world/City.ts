@@ -119,6 +119,11 @@ export class City {
     return y;
   }
 
+  /** True if the whole footprint stands on ground no more than `drop` below `y` (i.e. not past the rim). */
+  private solid(x: number, z: number, r: number, y: number, drop = 4): boolean {
+    return this.foot(x, z, r) > y - drop;
+  }
+
   /** A vertical box/cylinder from `bottom` up to `top`, with its base sunk to the ground beneath. */
   private footing(x: number, z: number, r: number, bottom: number): number {
     return Math.min(bottom, this.foot(x, z, r) - 1.5);
@@ -138,6 +143,8 @@ export class City {
         const p = gate.pos.clone().addScaledVector(gate.right, off);
         const bend = Math.abs(off) > 60 ? (Math.abs(off) - 60) * 0.35 : 0;
         p.addScaledVector(gate.tangent, bend);
+        // The curtain wall ends where the plateau does; nothing hangs over the cliff.
+        if (!this.solid(p.x, p.z, 8.5, gate.pos.y, 14)) break;
         const wb = this.footing(p.x, p.z, 8.5, gate.pos.y - 30);
         const wt = gate.pos.y + wallH;
         k.add('stone', place(worldBox(16.4, wt - wb, 5, 6), p.x, (wt + wb) / 2, p.z, yaw + side * (bend > 0 ? 0.3 : 0)));
@@ -149,6 +156,7 @@ export class City {
         if (i % 3 === 2) {
           // Round towers with conical slate caps.
           const tp = p.clone().addScaledVector(gate.tangent, 3);
+          if (!this.solid(tp.x, tp.z, 6.6, gate.pos.y, 14)) continue;
           const tb = this.footing(tp.x, tp.z, 6.6, gate.pos.y - 28);
           const tt = gate.pos.y + wallH + 12;
           k.add('stone', place(prep(new THREE.CylinderGeometry(6, 6.6, tt - tb, 10)), tp.x, (tt + tb) / 2, tp.z));
@@ -205,6 +213,7 @@ export class City {
     const center = s.pos.clone().addScaledVector(s.right, side * (hw + setback + d / 2));
     const r = Math.hypot(w, d) / 2;
     if (this.intrudes(center.x, center.z, r * 0.8) || this.overlapsHouse(center.x, center.z, r * 0.7)) return false;
+    if (!this.solid(center.x, center.z, r, s.pos.y, 5)) return false;
     this.houseFootprints.push({ x: center.x, z: center.z, r: r * 0.85 });
     const yaw = yawFor(s.tangent);
     const h = floors * 4;
@@ -381,9 +390,10 @@ export class City {
       const sample = this.path.at(s);
       const side = this.rng() < 0.5 ? -1 : 1;
       if (sample.zone === 'plaza' && side < 0) continue;
-      const off = sample.width / 2 + 32 + this.rng() * 70;
+      const off = sample.width / 2 + 30 + this.rng() * 66;
       const p = sample.pos.clone().addScaledVector(sample.right, side * off);
       if (this.intrudes(p.x, p.z, 10) || this.overlapsHouse(p.x, p.z, 7)) continue;
+      if (!this.solid(p.x, p.z, 7, sample.pos.y, 3)) continue;
       this.houseFootprints.push({ x: p.x, z: p.z, r: 7 });
       placed += 1;
       let h = 20 + this.rng() * 40 + Math.max(0, (s - cityStart) * 0.05);

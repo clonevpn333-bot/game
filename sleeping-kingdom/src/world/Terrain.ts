@@ -159,10 +159,11 @@ export class Terrain {
       if (s.zone === 'plaza' && side < 0 && d > hw + 1) {
         near = roadY - 3 - 135 * smoothstep(hw + 1, hw + 14, d) + n1 * 8;
       } else {
-        const k = smoothstep(hw + 70, hw + 135, d);
+        // The city's rock plateau: flat well beyond the outermost towers, then sheer cliffs.
+        const k = smoothstep(hw + 108, hw + 165, d);
         near = roadY - 0.4 - 128 * k + n1 * 10 * k;
       }
-      blend = smoothstep(210, 330, d);
+      blend = smoothstep(240, 360, d);
     } else if (s.zone === 'wood' || s.zone === 'chapel') {
       // Forest floor: gentle banks, roots and hollows, rising into wooded hills.
       const k = smoothstep(hw + 2, hw + 40, d);
