@@ -1,0 +1,1 @@
+FILM.TIMELINE = { title: 'test', bpm: 120, duration: 4, fps: 24, width: 1080, height: 1920, shots: [{ id: 'test', file: '01-test.js', start: 0, end: 4, mode: 'none', brief: 'head test' }], cues: [] };

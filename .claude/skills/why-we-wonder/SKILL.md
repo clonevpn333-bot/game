@@ -138,3 +138,19 @@ visible on frame 1. Canvas scenes draw only in-world text (stamps, plates, reado
 Also (ep7 v2 feedback): make the whole idea land by ~1 s; a location/date beat ≤ 1.3 s; chain beats so one graphic
 physically causes the next; numbers must be self-explanatory (PAIN: 0 → HE FELT NOTHING.); never compare a localized
 dose to a whole-body lethal dose; a half-beat of silence before the reveal line, hit on it; target 33–37 s.
+
+## SECOND-HOOK RULE (user, repeated every episode — non-negotiable)
+Retention drops right after the 3-second mark when the film switches to setup (a map, a date, "who/where"). The 2.5–6 s
+window must ESCALATE: a second, even stranger fact or a new open loop, landing on a music hit at ~2.5–3.0 s
+(ep8: "And she was never supposed to be on that plane." / "Journalists claimed her jet was shot down."). Context (place,
+year, names) is woven in AFTER that, in ≤1.3 s beats, or carried by labels. If the visual's escalating word lands late
+in the line, start the escalating VISUAL early (ep8 p2: the radar crosshair locks from 2.5 s on the beat).
+Check before scripting: what is on screen and said at 3.0 s? If it is setup, rewrite.
+
+## TWO-PART SERIES (ep8+)
+For subscriber growth: Part 1 tells the complete story and ends on a true cliffhanger that genuinely reopens it
+("…that record was a lie"), half a beat of silence, a stinger, then VO "Subscribe for part two." with SUBSCRIBE / FOR PART 2
+kinetic on a red pill + a teaser line. Part 2 opens on Part 1's last image (frame 1), escalates by 3 s, weighs both
+sides honestly (hedge claims: "they claimed"), and ends on a question (WHICH DO YOU BELIEVE? / COMMENT BELOW).
+Each part ships its own cover (PART 1 / PART 2). Projects: videos/vesna-1, videos/vesna-2 (FILM.pb.fem stewardess head,
+FILM.pb.jet DC-9 with breakup, pb.clouds, pb.alt altimeter, FILM.pbCert, FILM.pbMig).
