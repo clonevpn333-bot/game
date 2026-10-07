@@ -202,10 +202,10 @@ export class Particles {
   }
 
   stompDust(at: THREE.Vector3, radius: number): void {
-    for (let i = 0; i < 48; i++) {
-      const a = (i / 48) * Math.PI * 2;
+    for (let i = 0; i < 30; i++) {
+      const a = (i / 30) * Math.PI * 2;
       tmpP.set(Math.cos(a) * radius * 0.6, 0.5, Math.sin(a) * radius * 0.6).add(at);
-      this.emit('dust', tmpP, 1, { color: '#cdb59a', color2: '#7c6c62', size: radius * 0.32, sizeEnd: 2.2, life: 3, speed: radius * 0.6, spread: 0.15, dir: new THREE.Vector3(Math.cos(a), 0.12, Math.sin(a)), drag: 1.0, radius: 0.5, alpha: 0.38 });
+      this.emit('dust', tmpP, 1, { color: '#b89a7a', color2: '#6c5c52', size: radius * 0.26, sizeEnd: 1.8, life: 2.4, speed: radius * 0.6, spread: 0.15, dir: new THREE.Vector3(Math.cos(a), 0.1, Math.sin(a)), drag: 1.2, radius: 0.5, alpha: 0.22 });
     }
   }
 

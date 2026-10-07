@@ -165,7 +165,7 @@ export class LastProcession extends Chapter {
     bm.castShadow = true;
     this.group.add(bm);
     this.group.add(makeMountainRing(2600, 30, 700, '#5a3a4a', 7));
-    this.group.add(fogBank(20, V3(0, 60, 900), V3(3000, 120, 600), 600, '#e08060', 0.3));
+    this.group.add(fogBank(14, V3(0, 140, 1700), V3(3400, 80, 500), 700, '#d07858', 0.16));
     const treePts: THREE.Vector3[] = [];
     for (let i = 0; i < 40; i++) treePts.push(V3((i % 2 ? 1 : -1) * (180 + (i * 37) % 200), 0, (i * 53) % 600));
     treePts.forEach((p) => (p.y = fieldH(p.x, p.z)));

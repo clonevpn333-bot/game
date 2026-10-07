@@ -117,8 +117,8 @@ export function facadeTexture(seed: number): THREE.CanvasTexture {
       for (let x = 0; x < cols; x++) {
         const cx = (x + 0.5) * (s / cols);
         const cy = ry + s / rows * 0.48;
-        const w = 30;
-        const h = 52;
+        const w = 50;
+        const h = 76;
         const lit = r() > 0.6;
         g.fillStyle = 'rgba(70,50,40,0.9)';
         g.fillRect(cx - w / 2 - 4, cy - h / 2 - 4, w + 8, h + 8);
@@ -135,21 +135,21 @@ export function facadeTexture(seed: number): THREE.CanvasTexture {
         // shutters
         const sh = ['#4a6b8a', '#7a8a4a', '#9a4a3a', '#5a7a6a'][Math.floor(r() * 4)];
         g.fillStyle = sh;
-        g.fillRect(cx - w / 2 - 16, cy - h / 2, 12, h);
-        g.fillRect(cx + w / 2 + 4, cy - h / 2, 12, h);
+        g.fillRect(cx - w / 2 - 22, cy - h / 2, 18, h);
+        g.fillRect(cx + w / 2 + 4, cy - h / 2, 18, h);
         g.fillStyle = 'rgba(0,0,0,0.25)';
-        for (let k = 0; k < 6; k++) {
-          g.fillRect(cx - w / 2 - 16, cy - h / 2 + 4 + k * 8, 12, 2);
-          g.fillRect(cx + w / 2 + 4, cy - h / 2 + 4 + k * 8, 12, 2);
+        for (let k = 0; k < 9; k++) {
+          g.fillRect(cx - w / 2 - 22, cy - h / 2 + 4 + k * 8, 18, 2);
+          g.fillRect(cx + w / 2 + 4, cy - h / 2 + 4 + k * 8, 18, 2);
         }
         // flower box
         if (r() > 0.45) {
           g.fillStyle = '#6a4630';
           g.fillRect(cx - w / 2 - 2, cy + h / 2 + 2, w + 4, 8);
-          for (let k = 0; k < 8; k++) {
+          for (let k = 0; k < 12; k++) {
             g.fillStyle = ['#d8473a', '#f0c040', '#e88aa0', '#5a8a3a'][Math.floor(r() * 4)];
             g.beginPath();
-            g.arc(cx - w / 2 + 2 + k * 4.2, cy + h / 2, 3, 0, Math.PI * 2);
+            g.arc(cx - w / 2 + 2 + k * 4.4, cy + h / 2, 3.5, 0, Math.PI * 2);
             g.fill();
           }
         }
