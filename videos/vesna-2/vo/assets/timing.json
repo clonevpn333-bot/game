@@ -3,45 +3,45 @@
  "lines": [
   {
    "i": 1,
-   "text": "Her record fall might never have happened.",
+   "text": "That 33,000-foot fall may never have happened.",
    "start": 0.0,
-   "dur": 2.389,
-   "speechEnd": 2.28,
+   "dur": 2.432,
+   "speechEnd": 2.31,
    "words": [
     {
-     "w": "Her",
-     "s": 0.04,
-     "e": 0.265
+     "w": "That",
+     "s": 0.03,
+     "e": 0.277
     },
     {
-     "w": "record",
-     "s": 0.265,
-     "e": 0.656
+     "w": "33,000-foot",
+     "s": 0.277,
+     "e": 0.524
     },
     {
      "w": "fall",
-     "s": 0.656,
-     "e": 0.881
+     "s": 0.524,
+     "e": 0.772
     },
     {
-     "w": "might",
-     "s": 0.881,
-     "e": 1.106
+     "w": "may",
+     "s": 0.772,
+     "e": 1.019
     },
     {
      "w": "never",
-     "s": 1.106,
-     "e": 1.497
+     "s": 1.019,
+     "e": 1.449
     },
     {
      "w": "have",
-     "s": 1.497,
-     "e": 1.722
+     "s": 1.449,
+     "e": 1.697
     },
     {
      "w": "happened.",
-     "s": 1.722,
-     "e": 2.28
+     "s": 1.697,
+     "e": 2.31
     }
    ]
   },

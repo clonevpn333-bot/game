@@ -154,3 +154,6 @@ kinetic on a red pill + a teaser line. Part 2 opens on Part 1's last image (fram
 sides honestly (hedge claims: "they claimed"), and ends on a question (WHICH DO YOU BELIEVE? / COMMENT BELOW).
 Each part ships its own cover (PART 1 / PART 2). Projects: videos/vesna-1, videos/vesna-2 (FILM.pb.fem stewardess head,
 FILM.pb.jet DC-9 with breakup, pb.clouds, pb.alt altimeter, FILM.pbCert, FILM.pbMig).
+- Part 2 hooks must be SELF-CONTAINED: Shorts serves Part 2 to people who never saw Part 1, so name the thing being
+  questioned in the hook ("THAT 33,000-FOOT FALL MAY NEVER HAVE HAPPENED.", not "HER RECORD FALL…"). The best CTA comes
+  from the story itself (WHICH DO YOU BELIEVE? → comments) rather than a generic ask.

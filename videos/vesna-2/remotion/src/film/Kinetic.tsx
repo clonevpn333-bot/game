@@ -19,9 +19,9 @@ const w = (t: string, at: number, o: Partial<W> = {}): W => ({ t, at, ...o });
 const PHRASES: Phrase[] = [
   // HOOK — frame 1
   { top: 110, out: 2.35, lines: [
-    { size: 94, w: [w("HER", 0, { fx: "hold" }), w("RECORD", 0, { fx: "hold", c: "y" }), w("FALL", 0, { fx: "hold", c: "y" })] },
-    { size: 104, w: [w("MIGHT", 0, { fx: "hold" }), w("NEVER", 0, { fx: "hold", c: "r", em: true })] },
-    { size: 108, w: [w("HAVE", 0, { fx: "hold" }), w("HAPPENED.", 0, { fx: "hold" })] },
+    { size: 90, w: [w("THAT", 0, { fx: "hold" }), w("33,000-FOOT", 0, { fx: "hold", c: "y", em: true })] },
+    { size: 104, w: [w("FALL", 0, { fx: "hold", c: "y" }), w("MAY", 0, { fx: "hold" }), w("NEVER", 0, { fx: "hold", c: "r" })] },
+    { size: 104, w: [w("HAVE", 0, { fx: "hold" }), w("HAPPENED.", 0, { fx: "hold" })] },
   ] },
   // SECOND HOOK on the 2.5 hit
   { top: 120, out: 4.2, lines: [{ size: 100, w: [w("JOURNALISTS", 2.5, { fx: "slam" })] }, { size: 100, w: [w("CLAIMED", 3.13), w("HER", 3.53), w("JET", 3.77)] }] },
