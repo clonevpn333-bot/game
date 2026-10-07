@@ -1,12 +1,15 @@
 import * as THREE from 'three';
+import { toonMat } from '../../world/Compat2';
 import { Chapter } from '../Chapter';
-import { dollyShot, fixedShot, followShot, orbitShot, trackShot } from '../CameraDirector';
-import { Antlered, Carillon } from '../../world/Processional';
-import { fogBank, makeMountainRing, makeTerrain, makeTrees } from '../../world/World';
-import { G, merge, xf } from '../../render/Geo';
-import { metalSet, stoneTexture, toon } from '../../render/Materials';
+import { dollyShot, fixedShot, followShot, orbitShot, trackShot } from '../Camera';
+import { Antlered, Carillon } from '../../world/Colossus';
+import { fogBank } from '../../world/Props';
+import { makeMountainRing, makeTerrain, makeTrees } from '../../world/Compat';
+import { G, merge, xf } from '../../world/Compat';
+import { stoneTexture } from '../../gfx/Materials';
+import { metalSet, toon } from '../../world/Compat';
 import { Warden } from '../../actors/Warden';
-import { clamp, fbm, V3 } from '../../utils/math';
+import { clamp, fbm, V3 } from '../../util/math';
 
 /**
  * The train is simulated in its own moving frame: the cars stay at the origin and
@@ -48,12 +51,14 @@ export class IronPilgrimage extends Chapter {
   private sway = 0;
 
   build(): void {
+    this.addLeviathan(new THREE.Vector3(0, 0, -1400), 1500, 30, 2);
+    this.addSeraph(new THREE.Vector3(0, 0, -900), 260, 3);
     const M = metalSet('iron');
     const bronze = metalSet('bronze');
     const paint = toon('#2a3f6a');
     const paint2 = toon('#7a2a24');
-    const gold = new THREE.MeshStandardMaterial({ color: '#d6a24a', metalness: 0.9, roughness: 0.3 });
-    const windowMat = new THREE.MeshStandardMaterial({ color: '#2a2030', emissive: '#ffcf7a', emissiveIntensity: 0.9 });
+    const gold = toonMat({ color: '#d6a24a', metalness: 0.9, roughness: 0.3 });
+    const windowMat = toonMat({ color: '#2a2030', emissive: '#ffcf7a', emissiveIntensity: 0.9 });
     // ---- the train
     for (let i = 0; i < CARS; i++) {
       const car = new THREE.Group();
@@ -113,7 +118,7 @@ export class IronPilgrimage extends Chapter {
     // track bed + viaduct deck that scrolls
     this.group.add(this.train);
     this.group.add(this.scroll);
-    const deckMat = new THREE.MeshStandardMaterial({ map: stoneTexture('#a49480', 12, 4), roughness: 0.9 });
+    const deckMat = toonMat({ map: stoneTexture('#a49480', 12, 4), roughness: 0.9 });
     const deckLen = 600;
     for (let k = -1; k < 3; k++) {
       const deck = new THREE.Mesh(merge([xf(G.box(deckLen, 1.6, 9), [0, -0.8, 0]), xf(G.box(deckLen, 1.4, 0.6), [0, 0.7, 4.3]), xf(G.box(deckLen, 1.4, 0.6), [0, 0.7, -4.3])]), deckMat);
@@ -149,13 +154,12 @@ export class IronPilgrimage extends Chapter {
       height: (x, z) => -60 + fbm(x * 0.002, z * 0.002, 4) * 26,
       color: (x, z) => new THREE.Color().setHSL(0.6, 0.18, 0.62 + fbm(x * 0.003, z * 0.003, 2) * 0.12),
     });
-    (clouds.material as THREE.MeshStandardMaterial).roughness = 1;
-    this.group.add(clouds);
+    this.group.add(clouds.mesh);
     this.group.add(makeMountainRing(3200, 26, 900, '#8090b0', 4));
     this.group.add(fogBank(18, V3(0, -20, 1400), V3(5000, 30, 1600), 500, '#ffffff', 0.45));
     // a rocky spur the viaduct passes (scale cue near track)
     const spur = makeTerrain({ size: 400, seg: 40, center: new THREE.Vector2(0, -260), height: (x, z) => -40 + Math.max(0, 80 - Math.hypot(x, z + 260) * 0.5) + fbm(x * 0.03, z * 0.03, 3) * 12, color: () => new THREE.Color('#8a8070') });
-    this.group.add(spur);
+    this.group.add(spur.mesh);
     const pines: THREE.Vector3[] = [];
     for (let i = 0; i < 30; i++) pines.push(V3(-120 + i * 8, 0 + Math.sin(i) * 5, -200 - (i % 5) * 12));
     this.group.add(makeTrees(pines, { leaf: '#3a5a40', trunk: '#4a3020' }, 1.8));

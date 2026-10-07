@@ -1,17 +1,17 @@
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { RenderPipeline } from '../core/Renderer';
-import { Input } from '../core/Input';
-import { Audio } from '../core/Audio';
-import { Loop } from '../core/Loop';
-import { Sky } from '../render/Sky';
-import { Particles } from '../render/Particles';
+import { Renderer } from '../engine/Renderer';
+import { Input } from '../engine/Input';
+import { Audio } from '../engine/Audio';
+import { Loop } from '../engine/Loop';
+import { Sky } from '../world/Sky';
+import { Particles } from '../fx/Particles';
 import { UI } from '../ui/UI';
-import { CameraDirector } from './CameraDirector';
+import { CameraDirector } from './Camera';
+import { WORLD_TIME } from '../gfx/Materials';
 import { Aborted, type Chapter } from './Chapter';
 import { hitStop } from '../actors/Warden';
 import { CHAPTERS, TitleReel } from './chapters';
-import { updateFogBanks } from '../world/World';
+import { updateFogBanks } from '../world/Props';
 import { Bot } from './Bot';
 
 const SAVE_KEY = 'last-procession-progress';
@@ -43,7 +43,7 @@ const STATES: Record<string, [number, string]> = {
 export class Game {
   readonly scene = new THREE.Scene();
   readonly cam: CameraDirector;
-  readonly pipeline: RenderPipeline;
+  readonly pipeline: Renderer;
   readonly input: Input;
   readonly audio = new Audio();
   readonly sky: Sky;
@@ -68,11 +68,7 @@ export class Game {
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.cam = new CameraDirector(innerWidth / innerHeight);
-    this.pipeline = new RenderPipeline(canvas, this.scene, this.cam.camera);
-    const pmrem = new THREE.PMREMGenerator(this.pipeline.renderer);
-    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    this.scene.environmentIntensity = 0.55;
-    pmrem.dispose();
+    this.pipeline = new Renderer(canvas, this.scene, this.cam.camera);
     this.input = new Input(canvas, document.querySelector('#touch-controls')!);
     this.sky = new Sky(this.scene);
     this.particles = new Particles(this.scene);
@@ -161,7 +157,11 @@ export class Game {
     if (!p) this.ui.showScreen(this.ui.chapterSelectEl, false);
   }
 
+  cinematic = false;
+  dofEnabled = true;
+
   setCinematic(on: boolean): void {
+    this.cinematic = on;
     this.ui.setLetterbox(on);
     this.ui.hudVisible(!on);
     this.input.enabled = !on;
@@ -204,7 +204,9 @@ export class Game {
     this.timeScale = 1;
     this.chapter = c;
     this.chapterIndex = index;
+    const tm = performance.now();
     c.mount();
+    if (navigator.webdriver) console.warn(`mount ${c.id} ${Math.round(performance.now() - tm)}ms`);
   }
 
   /** Wait on game time (so the QA simulator and pause stay consistent). */
@@ -284,6 +286,7 @@ export class Game {
         dt *= 0.08;
       }
       this.elapsed += dt;
+      WORLD_TIME.value = this.elapsed;
       if (this.gameWaiters.length) {
         const ready = this.gameWaiters.filter((w) => w.end <= this.elapsed);
         this.gameWaiters = this.gameWaiters.filter((w) => w.end > this.elapsed);
@@ -295,14 +298,21 @@ export class Game {
       this.particles.update(dt);
       this.sky.update(dt, this.elapsed, this.cam.camera, this.chapter?.focus ?? new THREE.Vector3());
       this.pipeline.renderer.toneMappingExposure = this.sky.exposure;
+      // shallow depth of field only in cinematic framing
+      if (this.cinematic && this.dofEnabled) this.pipeline.setFocus(this.cam.focusDistance, Math.min(0.004, 0.012 / Math.max(2, this.cam.focusDistance)));
+      else this.pipeline.setFocus(0);
     }
     this.input.endFrame();
     this.publishDiagnostics();
   }
 
+  private slowFrames = 0;
   private render(): void {
     if (this.simulating) return;
+    const t = performance.now();
     this.pipeline.render(this.elapsed);
+    const ms = performance.now() - t;
+    if (navigator.webdriver && ms > 1000 && this.slowFrames++ < 10) console.warn(`slow render ${Math.round(ms)}ms chapter=${this.chapter?.id}`);
   }
 
   // ------------------------------------------------------------------ QA hooks

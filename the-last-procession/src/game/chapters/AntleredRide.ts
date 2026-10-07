@@ -1,14 +1,17 @@
 import * as THREE from 'three';
+import { toonMat } from '../../world/Compat2';
 import { Chapter } from '../Chapter';
-import { dollyShot, fixedShot, followShot, orbitShot, trackShot } from '../CameraDirector';
-import { Antlered, Carillon, Pilgrim } from '../../world/Processional';
+import { dollyShot, fixedShot, followShot, orbitShot, trackShot } from '../Camera';
+import { Antlered, Carillon, Pilgrim } from '../../world/Colossus';
 import { Horse } from '../../actors/Horse';
-import { Character } from '../../actors/Character';
-import { Birds, fogBank, makeGrass, makeMountainRing, makeTerrain, makeTrees, updateGrass } from '../../world/World';
+import { Actor } from '../../actors/Actor';
+import { Birds, fogBank } from '../../world/Props';
+import { makeMountainRing, makeTerrain, makeTrees } from '../../world/Compat';
 import { Shockwaves, Telegraph } from '../Hazards';
-import { G, merge, xf, bellGeo } from '../../render/Geo';
-import { groundTexture, stoneTexture } from '../../render/Materials';
-import { clamp, damp, fbm, V3 } from '../../utils/math';
+import { G, merge, xf, bellGeo } from '../../world/Compat';
+import { stoneTexture } from '../../gfx/Materials';
+import { groundTexture } from '../../world/Compat2';
+import { clamp, damp, fbm, V3 } from '../../util/math';
 
 const RAVINE = [930, 944];
 const RIDGE = 1180;
@@ -25,7 +28,7 @@ interface Obstacle {
 
 interface Rider {
   horse: Horse;
-  char: Character;
+  char: Actor;
   x: number;
   z: number;
   speed: number;
@@ -57,7 +60,6 @@ export class AntleredRide extends Chapter {
   pilgrimFar!: Pilgrim;
   horse!: Horse;
   waves!: Shockwaves;
-  private grassMat!: THREE.Material;
   private obstacles: Obstacle[] = [];
   private riders: Rider[] = [];
   private hoofTele: Telegraph[] = [];
@@ -73,6 +75,8 @@ export class AntleredRide extends Chapter {
   private slowmoDone = false;
 
   build(): void {
+    this.addLeviathan(new THREE.Vector3(0, 0, 700), 1000, 420);
+    this.addSeraph(new THREE.Vector3(300, 0, 900), 520, 1);
     const tex = groundTexture('#a88f5a', '#6c5a36', 21, 260);
     const terrain = makeTerrain({
       size: 3200,
@@ -86,17 +90,11 @@ export class AntleredRide extends Chapter {
         return new THREE.Color().setHSL(0.13 + n * 0.03 + Math.max(0, h) * 0.0012, 0.45, 0.46 + n * 0.08 - Math.max(0, -h) * 0.01);
       },
       map: tex,
+      grass: (x, z) => (Math.abs(x + Math.sin(z * 0.01) * 3) < 6 || (z > RAVINE[0] - 2 && z < RAVINE[1] + 2) ? 0 : 1),
+      grassColor: '#7a7a34',
     });
-    this.group.add(terrain);
-    const grass = makeGrass(16000, (i) => {
-      const z = -60 + ((i * 0.618) % 1) * 1300;
-      const x = (((i * 0.7548) % 1) - 0.5) * 220;
-      if (Math.abs(x) < 6) return null;
-      if (z > RAVINE[0] - 2 && z < RAVINE[1] + 2) return null;
-      return V3(x, terrainH(x, z), z);
-    }, '#6a6a2a', '#d8c070', 1.3);
-    this.grassMat = grass.mat;
-    this.group.add(grass.mesh);
+    this.group.add(terrain.mesh);
+    this.addGrass(terrain, { root: '#5a5a24', tip: '#e6cc7a', patch: '#a8b858', height: 1.1, flowers: ['#ffffff', '#f4c840', '#d86a8a'] });
     const treePts: THREE.Vector3[] = [];
     for (let i = 0; i < 140; i++) {
       const z = -100 + ((i * 0.618) % 1) * 1500;
@@ -108,8 +106,8 @@ export class AntleredRide extends Chapter {
     this.group.add(makeMountainRing(2400, 30, 620, '#6d6a8c', 2));
     this.group.add(fogBank(14, V3(0, 60, 1400), V3(2600, 80, 400), 700, '#ffe2b8', 0.25));
     // standing bell-shrines along the road: human-scale landmarks
-    const stone = new THREE.MeshStandardMaterial({ map: stoneTexture('#c9b896', 4, 5), roughness: 0.9 });
-    const bronze = new THREE.MeshStandardMaterial({ color: '#b88a3a', metalness: 0.85, roughness: 0.35 });
+    const stone = toonMat({ map: stoneTexture('#c9b896', 4, 5), roughness: 0.9 });
+    const bronze = toonMat({ color: '#b88a3a', metalness: 0.85, roughness: 0.35 });
     const shrines: THREE.BufferGeometry[] = [];
     const bells: THREE.BufferGeometry[] = [];
     for (let z = 60; z < 1100; z += 130) {
@@ -127,9 +125,9 @@ export class AntleredRide extends Chapter {
 
     // obstacles: boulders and fallen logs
     const rockGeo = merge([xf(new THREE.DodecahedronGeometry(1.2, 0), [0, 0.6, 0], [0.2, 0.4, 0], [1.2, 0.8, 1])]);
-    const rockMat = new THREE.MeshStandardMaterial({ map: stoneTexture('#9a8e7e', 6, 3), roughness: 0.95, flatShading: true });
+    const rockMat = toonMat({ map: stoneTexture('#9a8e7e', 6, 3), roughness: 0.95, flatShading: true });
     const logGeo = xf(G.cyl(0.55, 0.55, 9, 8), [0, 0.55, 0], [0, 0, Math.PI / 2]);
-    const logMat = new THREE.MeshStandardMaterial({ color: '#5a4030', roughness: 1 });
+    const logMat = toonMat({ color: '#5a4030', roughness: 1 });
     const place = (kind: 'rock' | 'log', x: number, z: number) => {
       const mesh = new THREE.Mesh(kind === 'rock' ? rockGeo : logGeo, kind === 'rock' ? rockMat : logMat);
       mesh.position.set(x, terrainH(x, z), z);
@@ -201,7 +199,6 @@ export class AntleredRide extends Chapter {
     this.pilgrimFar.update(dt, this.time);
     this.horse.update(dt);
     this.birds.update(dt, this.time);
-    updateGrass(this.grassMat, this.time);
     this.waves.update(dt, null);
     this.stag.legs.forEach((_, i) => {
       const pr = this.stag.predictLanding(i);
@@ -233,7 +230,7 @@ export class AntleredRide extends Chapter {
 
   private spawnRider(side: number, behind = 40): void {
     const horse = new Horse('#2e2420', '#111', '#8c1f24');
-    const char = new Character('warden');
+    const char = new Actor('warden');
     char.attachWeapon('halberd');
     char.setMode('ride', 0);
     this.group.add(horse.root, char.root);
@@ -552,7 +549,7 @@ export class AntleredRide extends Chapter {
             this.g.timeScale = 0.45;
             audio.sfx('choir', 0.8);
             audio.sfx('bell', 0.6, 0.6);
-            this.cut(trackShot(() => this.hp, V3(6, 0.8, 8), V3(0, 2, 0), 74, 0.05, () => this.hp.clone().lerp(S.hull.getWorldPosition(new THREE.Vector3()), 0.6)), 0, 'belly');
+            this.cut(trackShot(() => this.hp, V3(6, 0.8, 8), V3(0, 2, 0), 74, 0.05, () => this.hp.clone().lerp(S.spine.getWorldPosition(new THREE.Vector3()), 0.6)), 0, 'belly');
           }
           if (this.slowmo > 0) {
             this.slowmo -= this.g.realDt;

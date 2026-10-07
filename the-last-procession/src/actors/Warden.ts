@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { Character } from './Character';
+import { Actor } from './Actor';
 import type { Hero, WorldQuery } from './Hero';
-import type { Audio } from '../core/Audio';
-import type { Particles } from '../render/Particles';
-import { distXZ } from '../utils/math';
+import type { Audio } from '../engine/Audio';
+import type { Particles } from '../fx/Particles';
+import { distXZ } from '../util/math';
 
 type WState = 'approach' | 'windup' | 'strike' | 'recover' | 'stagger' | 'dead' | 'idle';
 
@@ -13,7 +13,7 @@ type WState = 'approach' | 'windup' | 'strike' | 'recover' | 'stagger' | 'dead' 
  * A shared token limits how many attack at once so fights stay fair.
  */
 export class Warden {
-  readonly char: Character;
+  readonly char: Actor;
   readonly pos = new THREE.Vector3();
   readonly vel = new THREE.Vector3();
   state: WState = 'approach';
@@ -28,8 +28,9 @@ export class Warden {
   active = true;
 
   constructor(private readonly audio: Audio, private readonly particles: Particles, look: 'warden' | 'guard' = 'warden') {
-    this.char = new Character(look);
+    this.char = new Actor(look);
     this.char.attachWeapon('halberd');
+    this.char.turnSpeed = 7;
     this.char.setGlow(1.4);
   }
 
@@ -48,7 +49,7 @@ export class Warden {
     this.hp = 3;
     this.t = Math.random() * 0.5;
     this.removed = false;
-    this.char.body.visible = true;
+    this.char.mesh.visible = true;
     this.char.root.visible = true;
     this.char.setMode('idle', 0);
   }
@@ -82,7 +83,7 @@ export class Warden {
       if (this.hp <= 0) {
         this.state = 'dead';
         this.t = 0;
-        c.setMode('dead', 0.15);
+        c.setMode('dead', 0.12);
         this.vel.addScaledVector(dir, -6);
         this.audio.sfx('clang', 0.6, 0.7);
       } else {
@@ -180,7 +181,6 @@ export class Warden {
     world.collide(this.pos, 0.45);
     const gy = world.ground(this.pos.x, this.pos.z);
     this.pos.y = gy;
-    c.groundY = gy;
     c.speed = Math.hypot(this.vel.x, this.vel.z);
     if (this.state !== 'dead' || this.t < 1.6) c.root.position.copy(this.pos);
   }

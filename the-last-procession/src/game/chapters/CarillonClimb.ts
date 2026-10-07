@@ -1,11 +1,13 @@
 import * as THREE from 'three';
+import { toonMat } from '../../world/Compat2';
 import { Chapter } from '../Chapter';
-import { dollyShot, fixedShot, orbitShot, type CamMode } from '../CameraDirector';
-import { Carillon, Pilgrim } from '../../world/Processional';
-import { fogBank, makeMountainRing, makeTerrain, glowCard } from '../../world/World';
-import { G, merge, xf } from '../../render/Geo';
-import { stoneTexture } from '../../render/Materials';
-import { clamp, damp, fbm, V3, wrapAngle } from '../../utils/math';
+import { dollyShot, fixedShot, orbitShot, type CamMode } from '../Camera';
+import { Carillon, Pilgrim } from '../../world/Colossus';
+import { fogBank, glowCard } from '../../world/Props';
+import { makeMountainRing, makeTerrain } from '../../world/Compat';
+import { G, merge, xf } from '../../world/Compat';
+import { stoneTexture } from '../../gfx/Materials';
+import { clamp, damp, fbm, V3, wrapAngle } from '../../util/math';
 
 interface Vent {
   th: number;
@@ -45,6 +47,7 @@ export class CarillonClimb extends Chapter {
   private camT = 0;
 
   build(): void {
+    this.addSeraph(new THREE.Vector3(-600, 0, -900), 420, 2);
     this.C = new Carillon();
     this.C.root.position.set(0, 0, 0);
     this.C.heading = 0;
@@ -63,9 +66,9 @@ export class CarillonClimb extends Chapter {
       height: (x, z) => fbm(x * 0.003, z * 0.003, 4) * 40 - 10 + Math.max(0, Math.hypot(x, z) - 600) * 0.12,
       color: (x, z, h) => new THREE.Color().setHSL(0.28 - h * 0.0008, 0.22, 0.38 + fbm(x * 0.01, z * 0.01, 2) * 0.08),
     });
-    this.group.add(ground);
+    this.group.add(ground.mesh);
     // the broken viaduct and the stopped train below
-    const stone = new THREE.MeshStandardMaterial({ map: stoneTexture('#a49480', 12, 4), roughness: 0.9 });
+    const stone = toonMat({ map: stoneTexture('#a49480', 12, 4), roughness: 0.9 });
     const via: THREE.BufferGeometry[] = [];
     for (let i = -8; i <= 8; i++) {
       if (i === 1 || i === 2) continue;
@@ -78,7 +81,7 @@ export class CarillonClimb extends Chapter {
     this.group.add(fogBank(30, V3(0, 120, 0), V3(1800, 160, 1800), 260, '#eef2f8', 0.35));
     // steam vents on the leg
     const ventGeo = xf(G.cyl(0.9, 1.3, 1.2, 8), [0, 0, 0.6], [Math.PI / 2, 0, 0]);
-    const ventMat = new THREE.MeshStandardMaterial({ color: '#2a2622', emissive: '#ff7a3a', emissiveIntensity: 0, metalness: 0.7, roughness: 0.4 });
+    const ventMat = toonMat({ color: '#2a2622', emissive: '#ff7a3a', emissiveIntensity: 0, metalness: 0.7, roughness: 0.4 });
     const defs: [number, number][] = [[0.0, 66], [0.9, 82], [-0.7, 98], [0.3, 116], [-0.4, 134], [0.8, 148], [-0.1, 160]];
     defs.forEach(([th, y], i) => {
       const m = new THREE.Mesh(ventGeo, ventMat.clone());

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { clamp, damp, easeInOut, noise2 } from '../utils/math';
+import { clamp, damp, easeInOut, noise2 } from '../util/math';
 
 export interface CamPose {
   pos: THREE.Vector3;
@@ -44,7 +44,7 @@ export class CameraDirector {
   handheld = 0.25;
 
   constructor(aspect: number) {
-    this.camera = new THREE.PerspectiveCamera(50, aspect, 0.25, 9000);
+    this.camera = new THREE.PerspectiveCamera(50, aspect, 0.2, 16000);
     this.camera.position.set(0, 2, 10);
   }
 
@@ -74,6 +74,11 @@ export class CameraDirector {
 
   punch(fovDelta: number): void {
     this.fovPunch += fovDelta;
+  }
+
+  /** Distance to what the shot is looking at (drives depth of field). */
+  get focusDistance(): number {
+    return this.cur.pos.distanceTo(this.cur.look);
   }
 
   /** Yaw of the camera's view direction on the ground plane. */

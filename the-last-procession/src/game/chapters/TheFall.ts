@@ -1,10 +1,13 @@
 import * as THREE from 'three';
+import { toonMat } from '../../world/Compat2';
 import { Chapter } from '../Chapter';
-import { dollyShot, fixedShot, orbitShot, type CamMode } from '../CameraDirector';
-import { G, gearGeo, merge, xf } from '../../render/Geo';
-import { metalSet, panelTexture } from '../../render/Materials';
-import { glowCard } from '../../world/World';
-import { clamp, damp, easeInOut, fbm, V3, wrapAngle } from '../../utils/math';
+import { dollyShot, fixedShot, orbitShot, type CamMode } from '../Camera';
+import { G, gearGeo, merge, xf } from '../../world/Compat';
+import { metalSet } from '../../world/Compat';
+import { colossusMaterial } from '../../gfx/Materials';
+import { Behemoth } from '../../world/Colossus';
+import { glowCard } from '../../world/Props';
+import { clamp, damp, easeInOut, fbm, V3, wrapAngle } from '../../util/math';
 
 const SHAFT_R = 30;
 const FALL_SPEED = 25;
@@ -39,6 +42,7 @@ export class PlanetMachine {
   xray = 0; // planet transparency to show the core
   coreWake = 0.3; // how awake the thing inside is
   complete = 0; // pattern locks together (finale)
+  readonly inner: Behemoth;
 
   constructor() {
     const R = 120;
@@ -73,12 +77,17 @@ export class PlanetMachine {
     g.putImageData(img, 0, 0);
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
-    this.planet = new THREE.Mesh(new THREE.SphereGeometry(R, 64, 40), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, transparent: true }));
+    this.planet = new THREE.Mesh(new THREE.SphereGeometry(R, 64, 40), toonMat({ map: tex, roughness: 0.85, transparent: true }));
     this.group.add(this.planet);
     this.atmo = new THREE.Mesh(new THREE.SphereGeometry(R * 1.06, 48, 32), new THREE.MeshBasicMaterial({ color: '#7fc0ff', transparent: true, opacity: 0.18, side: THREE.BackSide, blending: THREE.AdditiveBlending, depthWrite: false }));
     this.group.add(this.atmo);
     this.core = new THREE.Mesh(new THREE.IcosahedronGeometry(R * 0.42, 3), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff3a2a').multiplyScalar(1.6), wireframe: true, transparent: true, opacity: 0 }));
     this.group.add(this.core);
+    // what sleeps inside the world: a machine of turning bands around one iris
+    this.inner = new Behemoth(R * 0.4);
+    this.inner.setHaze('#000000', 0);
+    this.inner.root.visible = false;
+    this.group.add(this.inner.root);
     // routes: arcs that converge on six nodes in a mandala around the pole
     const nodeDirs: THREE.Vector3[] = [];
     for (let i = 0; i < 6; i++) {
@@ -138,6 +147,11 @@ export class PlanetMachine {
     cm.opacity = this.xray * (0.5 + Math.sin(time * (2 + this.coreWake * 4)) * 0.3 * this.coreWake);
     cm.color.set(this.complete > 0.5 ? '#6a8aff' : '#ff3a2a').multiplyScalar(1.4 + this.coreWake);
     this.core.rotation.y += dt * (0.1 + this.coreWake);
+    this.inner.root.visible = this.xray > 0.05;
+    this.inner.wake = this.coreWake;
+    this.inner.root.rotation.y += dt * 0.05;
+    this.inner.update(dt, time);
+    cm.opacity *= 0.35;
     this.core.scale.setScalar(1 + Math.sin(time * 3) * 0.03 * this.coreWake);
     const lock = this.group.getObjectByName('lockRing') as THREE.Mesh;
     (lock.material as THREE.MeshBasicMaterial).opacity = this.complete;
@@ -170,9 +184,13 @@ export class TheFall extends Chapter {
     const M = metalSet('bronze');
     const iron = metalSet('iron');
     // shaft walls
-    const wallTex = panelTexture('#5a4630', 'rgba(20,12,4,0.7)', 77);
-    wallTex.repeat.set(10, 30);
-    const wall = new THREE.Mesh(new THREE.CylinderGeometry(SHAFT_R + 2, SHAFT_R + 2, 760, 32, 1, true), new THREE.MeshStandardMaterial({ map: wallTex, side: THREE.BackSide, metalness: 0.5, roughness: 0.6 }));
+    const wallMat = colossusMaterial({ panel: 5, glow: new THREE.Color('#ffc46a'), grime: '#3a2a1a', moss: 0 });
+    wallMat.side = THREE.BackSide;
+    const wallGeo = new THREE.CylinderGeometry(SHAFT_R + 2, SHAFT_R + 2, 760, 48, 40, true);
+    const wcol = new Float32Array(wallGeo.attributes.position.count * 3).fill(0);
+    for (let i = 0; i < wcol.length; i += 3) wcol.set([0.62, 0.48, 0.32], i);
+    wallGeo.setAttribute('color', new THREE.BufferAttribute(wcol, 3));
+    const wall = new THREE.Mesh(wallGeo, wallMat);
     wall.position.y = -330;
     this.group.add(wall);
     // rune strips + wall gears for depth cues while falling
@@ -213,7 +231,7 @@ export class TheFall extends Chapter {
           parts.push(xf(G.box(SHAFT_R - 3, 0.8, 0.9), [Math.cos(a) * (SHAFT_R / 2 + 1), 0.5, -Math.sin(a) * (SHAFT_R / 2 + 1)], [0, a, 0]));
         }
       }
-      const discMat = iron.hull.clone();
+      const discMat = iron.hull.clone() as THREE.MeshToonMaterial;
       discMat.side = THREE.DoubleSide;
       discMat.transparent = true;
       discMat.color.set('#8a8078');
@@ -247,7 +265,7 @@ export class TheFall extends Chapter {
     }
     // the core chamber at the bottom
     this.coreGroup.position.y = BOTTOM - 20;
-    const pool = new THREE.Mesh(new THREE.CircleGeometry(SHAFT_R + 2, 48), new THREE.MeshStandardMaterial({ color: '#0a2a30', emissive: '#0a3a40', roughness: 0.05, metalness: 0.6 }));
+    const pool = new THREE.Mesh(new THREE.CircleGeometry(SHAFT_R + 2, 48), toonMat({ color: '#0a2a30', emissive: '#0a3a40', roughness: 0.05, metalness: 0.6 }));
     pool.rotation.x = -Math.PI / 2;
     this.coreGroup.add(pool);
     this.walkway = new THREE.Mesh(merge([xf(G.box(4, 0.6, 26), [0, 0.3, -8]), xf(G.cyl(5, 5.5, 1.4, 20), [0, 0.7, 6])]), M.hull);

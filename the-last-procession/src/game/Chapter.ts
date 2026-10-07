@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import type { Game } from './Game';
-import type { CamMode } from './CameraDirector';
-import { Character } from '../actors/Character';
+import type { CamMode } from './Camera';
+import { Actor } from '../actors/Actor';
 import { Hero, type WorldQuery } from '../actors/Hero';
 import { Warden } from '../actors/Warden';
-import type { Mood } from '../core/Audio';
-import { PALETTES } from '../render/Sky';
-import { clamp, damp, distXZ } from '../utils/math';
+import type { Mood } from '../engine/Audio';
+import { PALETTES } from '../world/Sky';
+import { setPushers, Grass, type Terrain, type GrassOpts } from '../world/Nature';
+import { Behemoth, Leviathan, Seraph, type Colossus } from '../world/Colossus';
+import { clamp, damp, distXZ } from '../util/math';
 
 export class Aborted extends Error {
   constructor() {
@@ -47,7 +49,7 @@ export abstract class Chapter implements WorldQuery {
   abstract readonly checkpoints: string[];
   readonly group = new THREE.Group();
   hero!: Hero;
-  lyra!: Character;
+  lyra!: Actor;
   readonly wardens: Warden[] = [];
   protected waiters: Waiter[] = [];
   aborted = false;
@@ -70,11 +72,76 @@ export abstract class Chapter implements WorldQuery {
   abstract build(): void;
   abstract script(from: string): Promise<void>;
   tick(_dt: number): void {}
+  grass: Grass | null = null;
+  /** flying machines and the moon-machine: drift on their own */
+  readonly skyGiants: Colossus[] = [];
+  behemoth: Behemoth | null = null;
+
+  /** The machine the size of a moon, hung in this chapter's sky. */
+  protected addBehemoth(pos: THREE.Vector3, rotY: number, haze: THREE.ColorRepresentation, hazeAmt = 0.35, radius = 2600): Behemoth {
+    const b = new Behemoth(radius);
+    b.root.position.copy(pos);
+    b.root.rotation.y = rotY;
+    b.setHaze(haze, hazeAmt);
+    this.group.add(b.root);
+    this.behemoth = b;
+    this.skyGiants.push(b);
+    return b;
+  }
+
+  /** A seraph wheeling in a wide circle. */
+  protected addSeraph(center: THREE.Vector3, altitude: number, phase = 0, far = true): Seraph {
+    const s = new Seraph(far);
+    s.root.position.set(center.x + Math.cos(phase) * 700, 0, center.z + Math.sin(phase) * 700);
+    s.altitude = altitude;
+    s.heading = -phase;
+    s.walk = s.walkTarget = 1;
+    s.speed = 12;
+    s.userData = { circle: true };
+    this.group.add(s.root);
+    this.skyGiants.push(s);
+    return s;
+  }
+
+  protected addLeviathan(center: THREE.Vector3, radius: number, altitude: number, phase = 0): Leviathan {
+    const l = new Leviathan(true);
+    l.orbit.center.copy(center);
+    l.orbit.radius = radius;
+    l.orbit.altitude = altitude;
+    l.orbit.phase = phase;
+    this.group.add(l.root);
+    this.skyGiants.push(l);
+    return l;
+  }
+  private grassPrimed = false;
+
+  /** Dense streamed meadow grass on a terrain. */
+  protected addGrass(terrain: Terrain, o: GrassOpts): Grass {
+    this.grass = new Grass(terrain, o);
+    this.group.add(this.grass.group);
+    return this.grass;
+  }
+
+  /** extra grass pushers (horses, wardens) */
+  protected pushers(): { x: number; z: number; r: number }[] {
+    return [];
+  }
+
+  /** Create a supporting actor that stands on this set's ground. */
+  protected actor(id: string, weapon?: 'sword' | 'halberd' | 'hammer' | 'spear'): Actor {
+    const a = new Actor(id);
+    a.ground = (x, z) => this.ground(x, z);
+    if (weapon) a.attachWeapon(weapon);
+    this.group.add(a.root);
+    return a;
+  }
 
   mount(): void {
     this.g.scene.add(this.group);
     this.hero = new Hero(this.g.audio, this.g.particles);
-    this.lyra = new Character('lyra');
+    this.lyra = new Actor('lyra');
+    this.lyra.ground = (x, z) => this.ground(x, z);
+    this.hero.char.ground = (x, z) => this.ground(x, z);
     this.group.add(this.hero.object, this.lyra.root);
     this.hero.object.visible = false;
     this.lyra.root.visible = false;
@@ -84,6 +151,7 @@ export abstract class Chapter implements WorldQuery {
 
   dispose(): void {
     this.abort();
+    this.grass?.dispose();
     for (const w of this.wardens) w.dispose();
     this.group.removeFromParent();
     this.group.traverse((o) => {
@@ -104,10 +172,27 @@ export abstract class Chapter implements WorldQuery {
     this.frame?.(dt);
     if (this.heroActive) this.hero.update(dt, this.g.input, this);
     if (this.lyraFollow) this.followLyra(dt);
-    this.lyra.update(dt, this.time);
-    this.hero.char.update(dt, this.time);
-    for (const w of this.wardens) w.char.update(dt, this.time);
+    this.lyra.update(dt);
+    this.hero.char.update(dt);
+    for (const w of this.wardens) w.char.update(dt);
     this.tick(dt);
+    for (const g of this.skyGiants) {
+      if ((g as Seraph).userData?.circle) g.heading += dt * 0.017;
+      g.update(dt, this.time);
+    }
+    if (this.grass) {
+      const cp = this.g.cam.camera.position;
+      const f = cp.distanceTo(this.focus) < 120 ? cp : this.focus;
+      this.grass.update(f, this.grassPrimed ? 6 : 999);
+      this.grassPrimed = true;
+    }
+    const hp = this.hero.char.root.position;
+    const lp = this.lyra.root.position;
+    setPushers([
+      { x: hp.x, z: hp.z, r: this.hero.char.root.visible ? 0.7 : 0 },
+      { x: lp.x, z: lp.z, r: this.lyra.root.visible ? 0.55 : 0 },
+      ...this.pushers(),
+    ]);
     if (this.heroActive || this.hero.object.visible) this.focus.copy(this.hero.pos);
     // resolve waiters
     if (this.waiters.length) {
@@ -200,7 +285,7 @@ export abstract class Chapter implements WorldQuery {
    * Subtitle line with retro voice babble. Auto-advances after a reading time;
    * the advance input completes typing, then skips.
    */
-  async say(speaker: string, text: string, opts: { actor?: Character | null; hold?: number; wait?: boolean } = {}): Promise<void> {
+  async say(speaker: string, text: string, opts: { actor?: Actor | null; hold?: number; wait?: boolean } = {}): Promise<void> {
     this.check();
     const ui = this.g.ui;
     const input = this.g.input;
@@ -278,7 +363,7 @@ export abstract class Chapter implements WorldQuery {
     return out + '<span style="opacity:0">' + html.replace(/<[^>]+>/g, '').slice(n) + '</span>';
   }
 
-  protected speakerActor(speaker: string): Character | null {
+  protected speakerActor(speaker: string): Actor | null {
     if (speaker === 'KAEL') return this.hero.char;
     if (speaker === 'LYRA') return this.lyra;
     return null;
@@ -395,6 +480,7 @@ export abstract class Chapter implements WorldQuery {
 
   protected spawnWarden(p: THREE.Vector3, yaw = 0, look: 'warden' | 'guard' = 'warden'): Warden {
     const w = new Warden(this.g.audio, this.g.particles, look);
+    w.char.ground = (x, z) => this.ground(x, z);
     w.spawn(p, yaw);
     this.group.add(w.object);
     this.wardens.push(w);
@@ -432,8 +518,7 @@ export abstract class Chapter implements WorldQuery {
     lp.x = p.x;
     lp.z = p.z;
     const gy = this.ground(lp.x, lp.z);
-    lp.y += (gy + Math.max(0, h.pos.y - h.char.groundY) * 0.6 - lp.y) * damp(12, dt);
-    this.lyra.groundY = gy;
+    lp.y += (gy + Math.max(0, h.pos.y - h.groundY) * 0.6 - lp.y) * damp(12, dt);
     this.lyra.speed = speed;
     if (speed > 0.4) {
       this.lyra.targetYaw = Math.atan2(dir.x, dir.z);
@@ -475,7 +560,7 @@ export abstract class Chapter implements WorldQuery {
   }
 
   /** Walk a character to a point over time (cutscene blocking). */
-  async walkTo(c: Character, to: THREE.Vector3, speed = 1.6): Promise<void> {
+  async walkTo(c: Actor, to: THREE.Vector3, speed = 1.6): Promise<void> {
     const from = c.root.position.clone();
     const dist = distXZ(from, to);
     const dir = to.clone().sub(from).setY(0).normalize();

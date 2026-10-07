@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { Chapter } from '../Chapter';
-import { dollyShot, fixedShot, followShot, orbitShot, trackShot } from '../CameraDirector';
-import { buildAurel, type AurelSet } from '../../world/Aurel';
-import { Antlered, Carillon, Pilgrim } from '../../world/Processional';
-import { Character } from '../../actors/Character';
-import { waveBanner, glowCard } from '../../world/World';
-import { easeInOut, easeOut, lerpAngle, V3 } from '../../utils/math';
+import { dollyShot, fixedShot, followShot, orbitShot, trackShot } from '../Camera';
+import { buildAurel, aurelGround, type AurelSet } from '../../world/City';
+import { Antlered, Carillon, Pilgrim, Seraph } from '../../world/Colossus';
+import type { Actor } from '../../actors/Actor';
+import { waveBanner, glowCard } from '../../world/Props';
+import { easeInOut, easeOut, lerpAngle, V3 } from '../../util/math';
 import { Telegraph } from '../Hazards';
 
 /** Shared set dressing + per-frame animation for chapters staged in Aurel. */
@@ -14,10 +14,27 @@ export abstract class AurelChapter extends Chapter {
   pilgrim!: Pilgrim;
   antlered!: Antlered;
   carillon!: Carillon;
+  seraphs: Seraph[] = [];
+
+  ground(x: number, z: number): number {
+    return this.set ? aurelGround(this.set, x, z) : 0;
+  }
 
   protected buildAurelSet(crowd: boolean): void {
     this.set = buildAurel(crowd);
     this.group.add(this.set.root);
+    this.grass = this.set.grass;
+    // seraphs wheel high above the capital
+    for (let i = 0; i < 2; i++) {
+      const s = new Seraph(i > 0);
+      s.root.position.set(i ? 900 : -500, 0, i ? 1400 : 900);
+      s.altitude = i ? 520 : 340;
+      s.heading = i ? 2 : -1;
+      s.walk = s.walkTarget = 1;
+      s.speed = 12;
+      this.group.add(s.root);
+      this.seraphs.push(s);
+    }
     this.pilgrim = new Pilgrim();
     this.group.add(this.pilgrim.root);
     this.antlered = new Antlered(true);
@@ -43,6 +60,10 @@ export abstract class AurelChapter extends Chapter {
     this.antlered.update(dt, this.time);
     this.carillon.update(dt, this.time);
     this.set.crowd.update(dt, this.time);
+    for (const s of this.seraphs) {
+      s.heading += dt * 0.018;
+      s.update(dt, this.time);
+    }
     this.set.birds.update(dt, this.time);
     for (const b of this.set.banners) waveBanner(b, this.time, 1);
   }
@@ -100,10 +121,10 @@ export class Prologue extends AurelChapter {
   readonly title = Prologue.meta.title;
   readonly subtitle = Prologue.meta.subtitle;
   readonly checkpoints = ['intro', 'kneel', 'run', 'catch'];
-  maren!: Character;
-  vesk!: Character;
-  guards: Character[] = [];
-  wardensC: Character[] = [];
+  maren!: Actor;
+  vesk!: Actor;
+  guards: Actor[] = [];
+  wardensC: Actor[] = [];
   private readonly landing = V3(0, 0, 24);
   private floatT = 0;
   private floatDur = 15;
@@ -114,24 +135,18 @@ export class Prologue extends AurelChapter {
 
   build(): void {
     this.buildAurelSet(true);
-    this.maren = new Character('maren');
-    this.maren.attachWeapon('sword');
-    this.vesk = new Character('vesk');
-    this.vesk.attachWeapon('hammer');
-    this.group.add(this.maren.root, this.vesk.root);
+    this.maren = this.actor('maren', 'sword');
+    this.vesk = this.actor('vesk', 'hammer');
     for (let i = 0; i < 2; i++) {
-      const g = new Character('guard');
-      g.attachWeapon('halberd');
+      const g = this.actor('guard', 'halberd');
       g.place(V3(-6 + i * 9, 0, -30), 0);
+      g.setMode('guard', 0);
       this.guards.push(g);
-      this.group.add(g.root);
     }
     for (let i = 0; i < 4; i++) {
-      const w = new Character('warden');
-      w.attachWeapon('halberd');
+      const w = this.actor('warden', 'halberd');
       w.root.visible = false;
       this.wardensC.push(w);
-      this.group.add(w.root);
     }
     this.vesk.root.visible = false;
     this.beam = glowCard('#9ff7ff', 4.5, 0.0);
@@ -144,10 +159,10 @@ export class Prologue extends AurelChapter {
 
   tick(dt: number): void {
     super.tick(dt);
-    this.maren.update(dt, this.time);
-    this.vesk.update(dt, this.time);
-    for (const g of this.guards) g.update(dt, this.time);
-    for (const w of this.wardensC) if (w.root.visible) w.update(dt, this.time);
+    this.maren.update(dt);
+    this.vesk.update(dt);
+    for (const g of this.guards) g.update(dt);
+    for (const w of this.wardensC) if (w.root.visible) w.update(dt);
     if (this.carry) this.holdLyra();
     // Lyra's glow pulses with the Pilgrim's cradle
     this.lyra.setGlow(2 + Math.sin(this.time * 2.4) * 0.6);

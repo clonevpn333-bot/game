@@ -1,14 +1,18 @@
 import * as THREE from 'three';
+import { Crowd } from '../../world/Crowd';
+import { toonMat } from '../../world/Compat2';
 import { Chapter } from '../Chapter';
-import { dollyShot, fixedShot, followShot, orbitShot, trackShot } from '../CameraDirector';
-import { Antlered, Carillon, Pilgrim } from '../../world/Processional';
-import { Character } from '../../actors/Character';
+import { dollyShot, fixedShot, followShot, orbitShot, trackShot } from '../Camera';
+import { Antlered, Carillon, Pilgrim } from '../../world/Colossus';
+import { Actor } from '../../actors/Actor';
 import { Debris, Shockwaves, Telegraph } from '../Hazards';
 import { PlanetMachine } from './TheFall';
-import { Birds, fogBank, makeBanner, makeGrass, makeMountainRing, makeTerrain, makeTrees, updateGrass, waveBanner } from '../../world/World';
-import { G, bellGeo, merge, xf } from '../../render/Geo';
-import { groundTexture, metalSet, toon } from '../../render/Materials';
-import { clamp, damp, distXZ, easeInOut, fbm, V3 } from '../../utils/math';
+import { Birds, fogBank, makeBanner, waveBanner } from '../../world/Props';
+import { makeMountainRing, makeTerrain, makeTrees } from '../../world/Compat';
+import { G, bellGeo, merge, xf } from '../../world/Compat';
+import { metalSet, toon } from '../../world/Compat';
+import { groundTexture } from '../../world/Compat2';
+import { clamp, damp, distXZ, easeInOut, fbm, V3 } from '../../util/math';
 import { hitStop } from '../../actors/Warden';
 
 const GOAL_Z = 425;
@@ -22,43 +26,48 @@ function fieldH(x: number, z: number): number {
   return fbm(x * 0.006, z * 0.006, 3) * 3 + ridge + fbm(x * 0.002, z * 0.002, 3) * ridge * 0.6;
 }
 
-/** Two instanced armies locked in battle across the field. */
+/** An army of sculpted soldiers holding a line, surging and clashing. */
 class Army {
   readonly group = new THREE.Group();
-  private readonly bodies: THREE.InstancedMesh;
+  private readonly crowd: Crowd;
   private readonly spears: THREE.InstancedMesh;
   private readonly base: THREE.Vector3[] = [];
-  private readonly ph: number[] = [];
   private readonly m = new THREE.Matrix4();
   constructor(count: number, color: string, origin: THREE.Vector3, facing: number, spreadX: number, depth: number) {
-    const body = merge([xf(G.cyl(0.24, 0.32, 1.2, 6), [0, 0.6, 0]), xf(G.sph(0.2, 6, 5), [0, 1.45, 0]), xf(G.cone(0.26, 0.3, 6), [0, 1.66, 0])]);
-    this.bodies = new THREE.InstancedMesh(body, toon(color), count);
-    this.spears = new THREE.InstancedMesh(xf(G.box(0.05, 2.6, 0.05), [0.3, 1.4, 0.2], [0.3, 0, 0]), toon('#5a4030'), count);
     for (let i = 0; i < count; i++) {
       const x = origin.x + (((i * 0.6180339) % 1) - 0.5) * spreadX;
       const z = origin.z + (((i * 0.7548776) % 1) - 0.5) * depth;
       this.base.push(V3(x, fieldH(x, z), z));
-      this.ph.push((i * 1.37) % 6.28);
     }
-    this.bodies.castShadow = true;
-    this.group.add(this.bodies, this.spears);
+    const blue = color.toLowerCase().includes('4a80');
+    this.crowd = new Crowd(this.base, { kinds: [blue ? 'soldierBlue' : 'soldierRed'], cloth: [color, color, '#' + new THREE.Color(color).multiplyScalar(0.8).getHexString()], cell: 0.03, seed: blue ? 5 : 9 });
+    this.crowd.guard = 1;
+    this.crowd.yaw.fill(facing);
+    this.spears = new THREE.InstancedMesh(xf(G.box(0.05, 2.6, 0.05), [-0.3, 1.25, 0.25], [0.25, 0, 0]), toon('#5a4030'), count);
+    this.spears.castShadow = true;
+    this.group.add(this.crowd.group, this.spears);
     this.group.userData.facing = facing;
     this.update(0);
   }
-  update(time: number): void {
-    const q = new THREE.Quaternion();
-    const s = new THREE.Vector3(1, 1, 1);
-    const p = new THREE.Vector3();
+  update(time: number, dt = 1 / 60): void {
     const f = this.group.userData.facing as number;
-    this.base.forEach((b, i) => {
-      const surge = Math.sin(time * 0.6 + b.x * 0.02) * 2;
-      p.set(b.x + Math.sin(f) * surge, b.y + Math.abs(Math.sin(time * 6 + this.ph[i])) * 0.25, b.z + Math.cos(f) * surge);
-      q.setFromAxisAngle(V3(0, 1, 0), f + Math.sin(time * 2 + this.ph[i]) * 0.3);
+    // the line surges forward and back; the front ranks charge in waves
+    const surge = Math.sin(time * 0.6);
+    this.crowd.march = Math.max(0, surge) * 0.8;
+    this.crowd.guard = 1 - this.crowd.march;
+    const pts = this.crowd.pts;
+    for (let i = 0; i < pts.length; i++) {
+      const b = this.base[i];
+      const k = Math.sin(time * 0.6 + b.x * 0.02) * 2;
+      pts[i].set(b.x + Math.sin(f) * k, b.y, b.z + Math.cos(f) * k);
+    }
+    this.crowd.update(dt, time);
+    const q = new THREE.Quaternion().setFromAxisAngle(V3(0, 1, 0), f);
+    const s = new THREE.Vector3(1, 1, 1);
+    pts.forEach((p, i) => {
       this.m.compose(p, q, s);
-      this.bodies.setMatrixAt(i, this.m);
       this.spears.setMatrixAt(i, this.m);
     });
-    this.bodies.instanceMatrix.needsUpdate = true;
     this.spears.instanceMatrix.needsUpdate = true;
   }
 }
@@ -78,16 +87,15 @@ export class LastProcession extends Chapter {
   pilgrim!: Pilgrim;
   stag!: Antlered;
   carillon!: Carillon;
-  vesk!: Character;
-  maren!: Character;
-  guards: Character[] = [];
+  vesk!: Actor;
+  maren!: Actor;
+  guards: Actor[] = [];
   debris!: Debris;
   waves!: Shockwaves;
   armies: Army[] = [];
   machine!: PlanetMachine;
   private palm!: THREE.Group;
   private hoofTele: Telegraph[] = [];
-  private grassMat!: THREE.Material;
   private banners: THREE.Mesh[] = [];
   private birds!: Birds;
   private cracks!: THREE.Mesh;
@@ -105,6 +113,9 @@ export class LastProcession extends Chapter {
   private sweepTele!: Telegraph;
 
   build(): void {
+    this.addBehemoth(new THREE.Vector3(0, 2600, 9800), Math.PI, '#e08060', 0.32, 3200);
+    this.addSeraph(new THREE.Vector3(-400, 0, 600), 380, 0.5);
+    this.addSeraph(new THREE.Vector3(500, 0, 900), 460, 2.5);
     const terrain = makeTerrain({
       size: 4200,
       seg: 160,
@@ -115,8 +126,10 @@ export class LastProcession extends Chapter {
         return new THREE.Color().setHSL(0.07 + n * 0.03 + Math.min(0.1, h * 0.0006), 0.38, 0.24 + n * 0.06 - Math.min(0.08, h * 0.0004));
       },
       map: groundTexture('#6a5038', '#3a2618', 31, 220),
+      grass: () => 1,
+      grassColor: '#5a4a2a',
     });
-    this.group.add(terrain);
+    this.group.add(terrain.mesh);
     // glowing fissures: the thing beneath is waking
     const crackParts: THREE.BufferGeometry[] = [];
     for (let i = 0; i < 40; i++) {
@@ -133,13 +146,7 @@ export class LastProcession extends Chapter {
     }
     this.cracks = new THREE.Mesh(merge(crackParts), new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff4a1a').multiplyScalar(2) }));
     this.group.add(this.cracks);
-    const grass = makeGrass(5000, (i) => {
-      const x = (((i * 0.618) % 1) - 0.5) * 400;
-      const z = -40 + ((i * 0.7548) % 1) * 560;
-      return V3(x, fieldH(x, z), z);
-    }, '#5a5030', '#d0a860', 1.0);
-    this.grassMat = grass.mat;
-    this.group.add(grass.mesh);
+    this.addGrass(terrain, { root: '#4a3e24', tip: '#d8b068', patch: '#b88a50', height: 0.95, flowers: ['#f0e0c0', '#e87a50', '#ffffff'] });
     // the Field of Bells: ancient bells on posts across the plain
     const bronze = metalSet('bronze');
     const posts: THREE.BufferGeometry[] = [];
@@ -153,7 +160,7 @@ export class LastProcession extends Chapter {
       bells.push(xf(bellGeo(1), [x, y + 2.9, z]));
       if (i < 50) this.colliders.push({ x, z, r: 2 });
     }
-    this.group.add(new THREE.Mesh(merge(posts), new THREE.MeshStandardMaterial({ color: '#4a3424', roughness: 0.95 })));
+    this.group.add(new THREE.Mesh(merge(posts), toonMat({ color: '#4a3424', roughness: 0.95 })));
     const bm = new THREE.Mesh(merge(bells), bronze.trim);
     bm.castShadow = true;
     this.group.add(bm);
@@ -164,8 +171,8 @@ export class LastProcession extends Chapter {
     treePts.forEach((p) => (p.y = fieldH(p.x, p.z)));
     this.group.add(makeTrees(treePts, { leaf: '#5a4a2a', trunk: '#3a2a1a' }, 1.5));
     // armies
-    this.armies.push(new Army(380, '#2a4a80', V3(-70, 0, 200), Math.PI / 2, 80, 160));
-    this.armies.push(new Army(380, '#8c1f24', V3(70, 0, 200), -Math.PI / 2, 80, 160));
+    this.armies.push(new Army(220, '#2a4a80', V3(-70, 0, 200), Math.PI / 2, 80, 160));
+    this.armies.push(new Army(220, '#8c1f24', V3(70, 0, 200), -Math.PI / 2, 80, 160));
     for (const a of this.armies) this.group.add(a.group);
     for (const [x, z, c] of [[-40, 120, '#2a4f8c'], [-50, 260, '#2a4f8c'], [40, 140, '#8c1f24'], [45, 280, '#8c1f24']] as const) {
       const b = makeBanner(c, 2.2, 6);
@@ -218,15 +225,15 @@ export class LastProcession extends Chapter {
     this.group.add(this.palm);
     this.pilgrim.palmR.visible = false;
 
-    this.vesk = new Character('vesk');
+    this.vesk = new Actor('vesk');
     this.vesk.attachWeapon('hammer');
-    this.maren = new Character('maren');
+    this.maren = new Actor('maren');
     this.maren.attachWeapon('sword');
     this.group.add(this.vesk.root, this.maren.root);
     this.vesk.root.visible = false;
     this.maren.root.visible = false;
     for (let i = 0; i < 5; i++) {
-      const g = new Character('guard');
+      const g = new Actor('guard');
       g.attachWeapon('halberd');
       g.root.visible = false;
       this.guards.push(g);
@@ -256,7 +263,7 @@ export class LastProcession extends Chapter {
     const e = this.epilogue;
     e.position.set(8000, 0, 0);
     const hill = makeTerrain({ size: 1400, seg: 80, center: new THREE.Vector2(0, 0), height: (x, z) => -(Math.hypot(x, z) ** 2) * 0.0014 + fbm(x * 0.03, z * 0.03, 3), color: (x, z) => new THREE.Color().setHSL(0.27, 0.32, 0.36 + fbm(x * 0.02, z * 0.02, 2) * 0.06) });
-    e.add(hill);
+    e.add(hill.mesh);
     const tree = makeTrees([V3(-5, 0, 4)], { leaf: '#3f6040', trunk: '#4a3020' }, 2);
     e.add(tree);
     const ash = new THREE.Mesh(new THREE.CircleGeometry(0.9, 12), new THREE.MeshBasicMaterial({ color: '#2a2220' }));
@@ -292,9 +299,8 @@ export class LastProcession extends Chapter {
     this.stag.update(dt, this.time);
     this.carillon.update(dt, this.time);
     for (const f of this.farGiants) f.update(dt, this.time);
-    for (const a of this.armies) a.update(this.time);
+    for (const a of this.armies) a.update(this.time, dt);
     for (const b of this.banners) waveBanner(b, this.time, 1.4);
-    updateGrass(this.grassMat, this.time);
     this.birds.update(dt, this.time);
     this.vesk.update(dt, this.time);
     this.maren.update(dt, this.time);
@@ -303,6 +309,7 @@ export class LastProcession extends Chapter {
     this.waves.update(dt, this.heroActive ? this.hero : null);
     if (this.machine.group.visible) this.machine.update(dt, this.time);
     (this.cracks.material as THREE.MeshBasicMaterial).color.setRGB(2 + Math.sin(this.time * 2) * 0.6, 0.5, 0.15);
+    if (this.behemoth) this.behemoth.wake = Math.min(1, this.time / 240);
     if (Math.random() < 0.4) this.g.particles.embers(V3((Math.random() - 0.5) * 200, 0.5, this.hero.pos.z + (Math.random() - 0.3) * 120), 1);
     this.stag.legs.forEach((_, i) => {
       const pr = this.stag.predictLanding(i);
@@ -396,7 +403,7 @@ export class LastProcession extends Chapter {
           else ui.prompt(null);
           const L = this.g.cam.label;
           if (L === 'battle' && this.g.cam.modeTime > 8 && h.pos.z > 100) {
-            this.cut(trackShot(() => h.pos, V3(-26, 14, -10), V3(0, 4, 0), 44, 0.2, () => h.pos.clone().lerp(this.stag.hull.getWorldPosition(new THREE.Vector3()), 0.3)), 0, 'battle-wide');
+            this.cut(trackShot(() => h.pos, V3(-26, 14, -10), V3(0, 4, 0), 44, 0.2, () => h.pos.clone().lerp(this.stag.spine.getWorldPosition(new THREE.Vector3()), 0.3)), 0, 'battle-wide');
           } else if (L === 'battle-wide' && this.g.cam.modeTime > 3.4) this.battleCam('battle');
           return h.pos.z > 200 ? 'win' : undefined;
         },

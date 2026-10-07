@@ -163,3 +163,4 @@ button { font: inherit; color: inherit; }
 }
 body.playing #touch-controls { visibility: visible; }
 body:not(.playing) #touch-controls { visibility: hidden; }
+body.lab #title-screen, body.lab #fade, body.lab #pause-button, body.lab #touch-controls { display: none !important; }

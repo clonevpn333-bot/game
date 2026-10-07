@@ -1,12 +1,15 @@
 import * as THREE from 'three';
+import { toonMat } from '../../world/Compat2';
 import { Chapter } from '../Chapter';
-import { dollyShot, fixedShot, followShot } from '../CameraDirector';
-import { Antlered, Carillon, Pilgrim } from '../../world/Processional';
+import { dollyShot, fixedShot, followShot } from '../Camera';
+import { Antlered, Carillon, Pilgrim } from '../../world/Colossus';
 import { Horse } from '../../actors/Horse';
-import { glowCard, makeGrass, makeMountainRing, makeTerrain, makeTrees, updateGrass } from '../../world/World';
-import { G, merge, xf } from '../../render/Geo';
-import { groundTexture, radialTexture, stoneTexture, toon } from '../../render/Materials';
-import { distXZ, fbm, V3 } from '../../utils/math';
+import { glowCard } from '../../world/Props';
+import { makeMountainRing, makeTerrain, makeTrees } from '../../world/Compat';
+import { G, merge, xf } from '../../world/Compat';
+import { radialTexture, stoneTexture } from '../../gfx/Materials';
+import { toon } from '../../world/Compat';
+import { distXZ, fbm, V3 } from '../../util/math';
 
 function hillH(x: number, z: number): number {
   const r = Math.hypot(x, z);
@@ -33,12 +36,13 @@ export class Embers extends Chapter {
   private overlookSeen = false;
   private lanterns!: THREE.Points;
   private giants: (Antlered | Carillon | Pilgrim)[] = [];
-  private grassMat!: THREE.Material;
   private horse!: Horse;
   private overlookGlow!: THREE.Sprite;
   private choiceA = -1;
 
   build(): void {
+    // the moon tonight is not a moon
+    this.addBehemoth(new THREE.Vector3(-1400, 3600, -9000), 0.15, '#1e2b52', 0.55, 1700);
     const terrain = makeTerrain({
       size: 1600,
       seg: 160,
@@ -47,19 +51,11 @@ export class Embers extends Chapter {
         const n = fbm(x * 0.05, z * 0.05, 2);
         return new THREE.Color().setHSL(0.3 - n * 0.03, 0.3, 0.22 + n * 0.05 + h * 0.002);
       },
-      map: groundTexture('#6b7a50', '#3c4a30', 3, 120),
+      grass: (x, z) => (Math.hypot(x, z) < 3.4 ? 0 : 1),
+      grassColor: '#24381e',
     });
-    this.group.add(terrain);
-    const grass = makeGrass(9000, (i) => {
-      const a = i * 2.39996;
-      const r = 3 + Math.sqrt(i / 5000) * 60;
-      const x = Math.cos(a) * r;
-      const z = Math.sin(a) * r;
-      if (Math.hypot(x, z) < 3.2) return null;
-      return V3(x, hillH(x, z), z);
-    }, '#1e3020', '#5a7a4a', 0.8);
-    this.grassMat = grass.mat;
-    this.group.add(grass.mesh);
+    this.group.add(terrain.mesh);
+    this.addGrass(terrain, { root: '#1c2e1c', tip: '#6a8a52', patch: '#7a8a5a', height: 0.8, flowers: ['#e8e8ff', '#c8d0ff', '#ffffff'] });
     // tree ring (north half), leaving the southern view open
     const pts: THREE.Vector3[] = [];
     for (let i = 0; i < 60; i++) {
@@ -74,7 +70,7 @@ export class Embers extends Chapter {
     this.group.add(makeMountainRing(2600, 30, 500, '#141a34', 3));
 
     // camp: fire ring, logs to sit on, bedrolls, the tethered horse
-    const stoneMat = new THREE.MeshStandardMaterial({ map: stoneTexture('#5a544e', 8, 3), roughness: 0.95, flatShading: true });
+    const stoneMat = toonMat({ map: stoneTexture('#5a544e', 8, 3), roughness: 0.95, flatShading: true });
     const ring: THREE.BufferGeometry[] = [];
     for (let i = 0; i < 10; i++) {
       const a = (i / 10) * Math.PI * 2;
@@ -167,7 +163,6 @@ export class Embers extends Chapter {
 
   tick(dt: number): void {
     for (const gi of this.giants) gi.update(dt, this.time);
-    updateGrass(this.grassMat, this.time);
     this.horse.update(dt);
     // lantern river crossing the far valley
     const lp = this.lanterns.geometry.attributes.position as THREE.BufferAttribute;
@@ -392,7 +387,6 @@ export class Embers extends Chapter {
       await this.animate(1.4, (k) => {
         this.lyra.root.position.lerpVectors(lyraSeat, V3(-0.55, lyraSeat.y, 2.12), k);
       });
-      this.lyra.bones.spine.rotation.z = 0.3;
       this.cut(dollyShot(V3(-3.0, kaelSeat.y + 1.2, -0.6), V3(-5.5, kaelSeat.y + 2.0, -3.2), V3(-0.6, kaelSeat.y + 0.9, 2.1), V3(-0.6, kaelSeat.y + 0.9, 2.1), 7, 34, 40), 0, 'fire-pullback');
       await this.wait(3);
     }

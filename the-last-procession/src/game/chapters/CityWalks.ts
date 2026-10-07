@@ -1,10 +1,11 @@
 import * as THREE from 'three';
+import { toonMat } from '../../world/Compat2';
 import { AurelChapter } from './Prologue';
-import { dollyShot, fixedShot, followShot, orbitShot, trackShot } from '../CameraDirector';
-import { AUREL, aurelGround } from '../../world/Aurel';
+import { dollyShot, fixedShot, followShot, orbitShot, trackShot } from '../Camera';
+import { AUREL, aurelGround } from '../../world/City';
 import { Debris, Shockwaves, Telegraph } from '../Hazards';
 import { Horse } from '../../actors/Horse';
-import { clamp, V3 } from '../../utils/math';
+import { clamp, V3 } from '../../util/math';
 
 const EAST = Math.PI / 2;
 
@@ -45,8 +46,8 @@ export class CityWalks extends AurelChapter {
     this.group.add(this.horse.root);
     // barricade of carts + crates across the avenue
     this.barricade = new THREE.Group();
-    const wood = new THREE.MeshStandardMaterial({ color: '#6a4528', roughness: 0.9 });
-    const cloth = new THREE.MeshStandardMaterial({ color: '#8c1f24', roughness: 0.9 });
+    const wood = toonMat({ color: '#6a4528', roughness: 0.9 });
+    const cloth = toonMat({ color: '#8c1f24', roughness: 0.9 });
     for (let z = -7; z <= 7; z += 3.5) {
       const crate = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.6 + Math.abs(z) * 0.08, 2.4), wood);
       crate.position.set(0, 0.8, z);

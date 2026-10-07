@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { radialTexture } from './Materials';
+import { radialTexture } from '../gfx/Materials';
 
 export interface ParticleOpts {
   color?: THREE.ColorRepresentation;

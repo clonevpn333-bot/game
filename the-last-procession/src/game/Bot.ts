@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Game } from './Game';
-import type { Action } from '../core/Input';
+import type { Action } from '../engine/Input';
 
 /**
  * Scripted "player" for automated playtests. It only drives the same input intents a

@@ -13,6 +13,7 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
-    chunkSizeWarningLimit: 900,
+    chunkSizeWarningLimit: 2000,
+    rollupOptions: { output: { codeSplitting: false } },
   },
 });

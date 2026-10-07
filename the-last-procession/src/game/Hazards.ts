@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import type { Hero } from '../actors/Hero';
 import type { Game } from './Game';
-import { G, merge, xf } from '../render/Geo';
-import { metalSet, stoneTexture } from '../render/Materials';
+import { box, merge, xf } from '../world/Kit';
+import { addOutline, toonMaterial } from '../gfx/Toon';
+import { stoneTexture } from '../gfx/Materials';
 
 const ringGeo = new THREE.RingGeometry(0.86, 1, 48);
 const discGeo = new THREE.CircleGeometry(1, 48);
@@ -55,7 +56,7 @@ interface Rock {
 let rockGeo: THREE.BufferGeometry | null = null;
 function getRockGeo(): THREE.BufferGeometry {
   if (rockGeo) return rockGeo;
-  const parts = [xf(new THREE.DodecahedronGeometry(1, 0), [0, 0, 0], [0.3, 0.2, 0], [1, 0.8, 1.1]), xf(new THREE.DodecahedronGeometry(0.6, 0), [0.7, 0.3, 0.2]), xf(G.box(0.8, 0.5, 1.2), [-0.5, -0.2, 0.3], [0.4, 0.3, 0])];
+  const parts = [xf(new THREE.DodecahedronGeometry(1, 0), [0, 0, 0], [0.3, 0.2, 0], [1, 0.8, 1.1]), xf(new THREE.DodecahedronGeometry(0.6, 0), [0.7, 0.3, 0.2]), xf(box(0.8, 0.5, 1.2), [-0.5, -0.2, 0.3], [0.4, 0.3, 0])];
   rockGeo = merge(parts);
   return rockGeo;
 }
@@ -63,9 +64,9 @@ function getRockGeo(): THREE.BufferGeometry {
 /** Falling masonry with telegraphs; landed chunks become temporary obstacles. */
 export class Debris {
   private readonly rocks: Rock[] = [];
-  private readonly mat: THREE.MeshStandardMaterial;
+  private readonly mat: THREE.Material;
   constructor(private readonly g: Game, private readonly parent: THREE.Object3D, stone = '#b9a58a') {
-    this.mat = new THREE.MeshStandardMaterial({ map: stoneTexture(stone, 11, 4), roughness: 0.9, flatShading: true });
+    this.mat = toonMaterial({ map: stoneTexture(stone, 11, 4), brushScale: 0.6 });
   }
 
   drop(target: THREE.Vector3, r = 2.4, fallTime = 1.4): void {
@@ -74,6 +75,7 @@ export class Debris {
     mesh.castShadow = true;
     const tele = new Telegraph();
     this.parent.add(mesh, tele.group);
+    addOutline(mesh, 0.05, 1, undefined, true);
     mesh.visible = false;
     this.rocks.push({ mesh, tele, target: target.clone(), t: 0, fall: fallTime, r, landed: false, life: 6 });
   }
@@ -208,4 +210,3 @@ export class Shockwaves {
   }
 }
 
-export { metalSet };

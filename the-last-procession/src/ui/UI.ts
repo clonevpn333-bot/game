@@ -1,4 +1,4 @@
-import type { Action } from '../core/Input';
+import type { Action } from '../engine/Input';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => {
   const e = document.querySelector<T>(sel);
