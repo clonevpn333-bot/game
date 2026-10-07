@@ -10,3 +10,4 @@ artifacts/**
 !artifacts/shots/*.png
 *.log
 .DS_Store
+*.zip
