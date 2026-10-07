@@ -35,6 +35,7 @@ export class Input {
   private readonly cleanup: Array<() => void> = [];
 
   constructor(private readonly canvas: HTMLCanvasElement) {
+    this.usingTouch = matchMedia('(pointer: coarse)').matches && !matchMedia('(pointer: fine)').matches;
     this.listen(window, 'keydown', (e) => this.onKey(e as KeyboardEvent, true));
     this.listen(window, 'keyup', (e) => this.onKey(e as KeyboardEvent, false));
     this.listen(window, 'blur', () => this.releaseAll());

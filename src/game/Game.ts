@@ -220,11 +220,14 @@ export class Game {
     await this.ui.fade(false);
     const card = this.ui.chapterCard(idx === 9 ? 'Final Chapter' : `Chapter ${idx + 1}`, def.title, def.subtitle);
     if (cp === 0 && lv.intro) {
+      this.scriptLock = true;
+      await card;
+      this.scriptLock = false;
       lv.introRunning = lv.intro().finally(() => (lv.introRunning = null));
     } else if (c.objective) {
       lv.objective(c.objective, c.waypoint ?? null);
+      await card;
     }
-    await card;
   }
 
   async completeChapter(): Promise<void> {
