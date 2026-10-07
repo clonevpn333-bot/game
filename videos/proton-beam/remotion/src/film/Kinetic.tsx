@@ -37,7 +37,7 @@ const PHRASES: Phrase[] = [
     { size: 100, w: [w("HE", 14.42), w("FELT", 14.55), w("NOTHING.", 14.77, { c: "y", em: true })] },
   ] },
   { top: 150, out: 16.7, lines: [{ size: 112, w: [w("THE", 15.53), w("DOSE", 15.75), w("WAS", 15.97)] }, { size: 150, w: [w("ENORMOUS.", 16.19, { c: "y", fx: "pop" })] }] },
-  { top: 150, out: 18.4, lines: [{ size: 108, split: [17.1, 1], w: [w("HALF", 16.98), w("HIS", 17.17), w("FACE", 17.37)] }, { size: 118, w: [w("SWELLED", 17.56, { c: "y" }), w("UP.", 17.9, { c: "y" })] }] },
+  { top: 150, out: 18.4, lines: [{ size: 96, split: [17.1, 1], w: [w("HALF", 16.98), w("HIS", 17.17), w("FACE", 17.37)] }, { size: 118, w: [w("SWELLED", 17.56, { c: "y" }), w("UP.", 17.9, { c: "y" })] }] },
   { top: 150, out: 21.1, lines: [{ size: 104, w: [w("SENT", 18.85), w("TO", 19.22), w("A", 19.4), w("CLINIC", 19.59)] }, { size: 160, w: [w("TO", 20.19, { c: "r" }), w("DIE.", 20.44, { c: "r", fx: "slam" })] }] },
   // RESOLVE
   { top: 170, out: 22.95, lines: [{ size: 176, w: [w("HE", 21.5, { fx: "slam" }), w("DIDN'T.", 21.5, { fx: "slam", c: "y" })] }] },

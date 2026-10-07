@@ -23,7 +23,7 @@
     L.inkPath(ctx, [[80, BASE + 10], [80, BASE - 4200]], { width: 3, color: '#8EA0C8', seed: 790, taper: 0 });
     L.inkPath(ctx, [[60, BASE], [1020, BASE]], { width: 4, color: PB.IV, seed: 791, taper: 0 });
     ctx.globalAlpha = 1;
-    const bx = L.lerp(620, 540, thin), bw = L.lerp(220, 6, thin);
+    const bx = L.lerp(880, 540, thin), bw = L.lerp(150, 6, thin);
     if (grow > 0) {
       const top = BASE - h;
       ctx.globalAlpha = fade;
