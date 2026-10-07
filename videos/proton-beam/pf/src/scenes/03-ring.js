@@ -8,8 +8,8 @@
     const L = info.lib, D = FILM.df, PB = FILM.pb;
     const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
     PB.plate(ctx, { seed: 31, color: '#0A1022' });
-    const tilt = L.ease.inOutCubic(L.clamp((T - 3.25) / 0.6));
-    const phi = L.lerp(Math.PI / 2, 0.68, tilt), psi = 0.3 * (T - 3.25);
+    const tilt = L.ease.inOutCubic(L.clamp((T - 3.75) / 0.5));
+    const phi = L.lerp(Math.PI / 2, 0.68, tilt), psi = 0.3 * (T - 3.75);
     const dive = L.ease.inCubic(L.clamp((T - 5.1) / 0.4));
     const s = L.lerp(400, 500, tilt) * (1 + dive * 5), cx = 540, cy = L.lerp(900, 1010, tilt) + dive * 1500;
     const Dz = 4;
@@ -67,17 +67,17 @@
     ctx.restore();
     PB.burst(ctx, trail[0][0], trail[0][1], 120, 0.8);
     // the yellow ring the pin opened (fades as the 3D ring takes over)
-    const yr = 1 - L.clamp((T - 3.3) / 0.45);
+    const yr = 1 - L.clamp((T - 3.8) / 0.4);
     if (yr > 0) { const ring = []; for (let k = 0; k <= 96; k++) { const a = (k / 96) * Math.PI * 2; ring.push(P(Math.cos(a), 0.09, Math.sin(a))); } L.inkPath(ctx, ring, { width: 6, color: PB.Y, alpha: yr, seed: 95, closed: true }); }
     if (dive > 0) { ctx.fillStyle = `rgba(4,6,14,${dive})`; ctx.fillRect(0, 0, 1080, 1920); }
     const ua = 1;
     ctx.save(); ctx.globalAlpha = ua;
     // callout: U-70, 1.5 km round
     const cp = P(Math.cos(-0.8), 0.1, Math.sin(-0.8));
-    const ca = L.clamp((T - 3.9) / 0.15);
-    if (ca > 0 && dive <= 0) { L.inkPath(ctx, [[cp[0], cp[1]], [cp[0] + 60, cp[1] + 110]], { width: 2, color: PB.Y, seed: 140 }); PB.label(ctx, 'U-70 SYNCHROTRON', cp[0] - 330, cp[1] + 140, ca, { size: 28 }); PB.label(ctx, '1.5 KM AROUND', cp[0] - 330, cp[1] + 196, (T - 4.0) / 0.15, { size: 24, col: PB.IV }); }
+    const ca = L.clamp((T - 4.6) / 0.15);
+    if (ca > 0 && dive <= 0) { L.inkPath(ctx, [[cp[0], cp[1]], [cp[0] + 60, cp[1] + 110]], { width: 2, color: PB.Y, seed: 140 }); PB.label(ctx, 'U-70 SYNCHROTRON', cp[0] - 330, cp[1] + 140, ca, { size: 28 }); PB.label(ctx, '1.5 KM AROUND', cp[0] - 330, cp[1] + 196, (T - 4.7) / 0.15, { size: 24, col: PB.IV }); }
     // PiP medallion: the physicist
-    const pin = L.ease.outBack(L.clamp((T - 4.25) / 0.2)), pout = L.ease.inCubic(L.clamp((T - 5.05) / 0.15));
+    const pin = L.ease.outBack(L.clamp((T - 4.35) / 0.18)), pout = L.ease.inCubic(L.clamp((T - 5.05) / 0.15));
     const pr = 190 * pin * (1 - pout);
     if (pr > 4) {
       const mx = 760, my = 400;
@@ -90,8 +90,8 @@
       L.inkCircle(ctx, mx, my, pr + 12, { width: 2, color: '#E6B652', alpha: 0.7, seed: 152 });
       const q = P(Math.cos(-2.3), 0.1, Math.sin(-2.3));
       if (pout < 1) L.inkPath(ctx, [[mx - pr * 0.7, my + pr * 0.7], [q[0], q[1]]], { width: 2, color: '#E6B652', alpha: 0.7 * (1 - pout), seed: 153 });
-      PB.label(ctx, 'ANATOLI BUGORSKI', 560, my + pr + 60, (T - 4.35) / 0.15 * (1 - pout), { size: 30 });
-      PB.label(ctx, 'PHYSICIST · AGE 36', 560, my + pr + 116, (T - 4.45) / 0.15 * (1 - pout), { size: 24, col: PB.IV });
+      PB.label(ctx, 'ANATOLI BUGORSKI', 560, my + pr + 60, (T - 4.55) / 0.15 * (1 - pout), { size: 30 });
+      PB.label(ctx, 'PHYSICIST · AGE 36', 560, my + pr + 116, (T - 4.55) / 0.15 * (1 - pout), { size: 24, col: PB.IV });
     }
     const tA = 1 - L.clamp((T - 4.1) / 0.15);
     ctx.restore();

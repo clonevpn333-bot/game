@@ -56,26 +56,42 @@
   "line": 1
  },
  {
+  "text": " He",
+  "startMs": 2030,
+  "endMs": 2257,
+  "timestampMs": 2144,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " was",
+  "startMs": 2257,
+  "endMs": 2484,
+  "timestampMs": 2370,
+  "confidence": 1,
+  "line": 2
+ },
+ {
+  "text": " a",
+  "startMs": 2484,
+  "endMs": 2710,
+  "timestampMs": 2597,
+  "confidence": 1,
+  "line": 2
+ },
+ {
   "text": " Soviet",
-  "startMs": 2040,
-  "endMs": 2840,
-  "timestampMs": 2440,
+  "startMs": 2710,
+  "endMs": 3105,
+  "timestampMs": 2907,
   "confidence": 1,
   "line": 2
  },
  {
-  "text": " Union,",
-  "startMs": 2840,
-  "endMs": 3640,
-  "timestampMs": 3240,
-  "confidence": 1,
-  "line": 2
- },
- {
-  "text": " 1978.",
-  "startMs": 3640,
-  "endMs": 4100,
-  "timestampMs": 3870,
+  "text": " scientist.",
+  "startMs": 3105,
+  "endMs": 3500,
+  "timestampMs": 3302,
   "confidence": 1,
   "line": 2
  },

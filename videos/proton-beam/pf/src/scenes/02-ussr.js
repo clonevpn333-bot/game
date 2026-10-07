@@ -28,7 +28,7 @@
     const G = geo(L, PB);
     PB.plate(ctx, { seed: 21 });
     // camera dive into the pin
-    const dive = L.ease.inCubic(L.clamp((T - 2.9) / 0.35));
+    const dive = L.ease.inCubic(L.clamp((T - 3.45) / 0.3));
     const zs = 1 + dive * 3.5, [px, py] = G.pin;
     ctx.save();
     ctx.translate(L.lerp(px, 540, dive), L.lerp(py, 900, dive)); ctx.scale(zs, zs); ctx.translate(-px, -py);
@@ -58,11 +58,11 @@
     if (hot > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineJoin = 'round'; [[50, 0.08], [22, 0.2], [6, 0.95]].forEach(([w, a], i) => { ctx.strokeStyle = i === 2 ? `rgba(255,248,220,${a * hot})` : `rgba(242,194,48,${a * hot})`; ctx.lineWidth = w / zs; ctx.beginPath(); pts.forEach((p, j) => (j ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke(); }); ctx.restore(); }
     if (T > 2.3 && mapA > 0) L.inkPath(ctx, pts, { width: 3.5 / Math.sqrt(zs), color: PB.Y, alpha: 0.9 * mapA, seed: 70 });
     // the pin on Protvino
-    const pinP = L.clamp((T - 2.75) / 0.12);
+    const pinP = L.clamp((T - 3.2) / 0.12);
     if (pinP > 0 && dive < 0.5) {
       const drop = (1 - L.ease.outBounce(pinP)) * 120;
       const pr = 16;
-      for (let k = 0; k < 3; k++) { const ph = ((T - 2.75) * 2.5 + k / 3) % 1; if (T > 2.8) L.inkCircle(ctx, px, py, pr + ph * 70, { width: 2.5 / Math.sqrt(zs), color: PB.Y, alpha: (1 - ph) * 0.8 * (1 - dive), seed: 80 + k }); }
+      for (let k = 0; k < 3; k++) { const ph = ((T - 3.2) * 2.5 + k / 3) % 1; if (T > 3.25) L.inkCircle(ctx, px, py, pr + ph * 70, { width: 2.5 / Math.sqrt(zs), color: PB.Y, alpha: (1 - ph) * 0.8 * (1 - dive), seed: 80 + k }); }
       ctx.fillStyle = PB.RED; ctx.beginPath(); ctx.arc(px, py - drop, pr * 0.6, 0, Math.PI * 2); ctx.fill();
       L.inkCircle(ctx, px, py - drop, pr, { width: 4 / Math.sqrt(zs), color: PB.Y, seed: 90 });
       ctx.fillStyle = '#FFF4D0'; ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
@@ -77,23 +77,37 @@
       ctx.save(); ctx.globalAlpha = ua;
       const lx = px + 60, ly = py + 90;
       L.inkPath(ctx, [[px + 10, py + 10], [lx, ly]], { width: 2, color: PB.Y, seed: 99 });
-      PB.label(ctx, 'PROTVINO', lx - 10, ly + 30, (T - 2.8) / 0.12, { size: 30 });
-      PB.label(ctx, 'NEAR MOSCOW', lx - 10, ly + 86, (T - 2.86) / 0.12, { size: 22, col: PB.IV });
+      PB.label(ctx, 'PROTVINO', lx - 10, ly + 30, (T - 3.25) / 0.12, { size: 30 });
+      PB.label(ctx, 'NEAR MOSCOW', lx - 10, ly + 86, (T - 3.31) / 0.12, { size: 22, col: PB.IV });
       ctx.restore();
+    }
+    // HE: his medallion (the same engraved head, beam scar glowing) pins him to the map
+    const mp = L.ease.outBack(L.clamp((T - 2.08) / 0.22)) * ua;
+    if (mp > 0.02) {
+      const mx = 800, my = 1470, mr = 150 * mp;
+      ctx.save(); ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.clip();
+      ctx.fillStyle = '#121A34'; ctx.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
+      const hr = FILM.pb.head(ctx, mx + mr * 0.05, my + mr * 0.12, mr * 1.6, { yaw: 1.2, key: [-0.3, 0.5, 0.8], res: 0.45, spacing: 5, slot: 17 });
+      const ha = hr.proj(...PB.BEAM_IN), hb = hr.proj(...PB.BEAM_OUT); const [hp, hq] = PB.extend(ha, hb, 400);
+      PB.beam(ctx, hp, hq, { T, w: 3, k: 0.8, dots: false });
+      ctx.restore();
+      L.inkCircle(ctx, mx, my, mr, { width: 6, color: '#E6B652', seed: 171 });
+      const la = L.clamp((T - 2.3) / 0.25) * ua;
+      if (la > 0) L.inkPath(ctx, [[mx - mr * 0.7, my - mr * 0.7], [L.lerp(mx - mr * 0.7, px, la), L.lerp(my - mr * 0.7, py, la)]], { width: 2.5, color: '#E6B652', alpha: 0.85, seed: 172 });
     }
     // titles
     ctx.save(); ctx.globalAlpha = ua;
     // red star stamp
-    const st = L.clamp((T - 2.25) / 0.06);
+    const st = L.clamp((T - 2.71) / 0.06);
     if (st > 0) {
-      const s = 70 * (1 + 0.6 * (1 - L.ease.outCubic(st))), sx = 540, sy = 150;
+      const s = 64 * (1 + 0.6 * (1 - L.ease.outCubic(st))), sx = 640, sy = 700;
       const star = []; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? s * 0.42 : s; star.push([sx + Math.cos(a) * r, sy + Math.sin(a) * r]); }
       D.engrave(ctx, star, { ink: '#FF8A70', base: PB.RED, light: () => 0.55, spacing: 3.5, seed: 120, smooth: false, outW: 3, cross: false, stip: false });
     }
     // 1978: digits roll in on the beat
     const yr = '1978';
     for (let i = 0; i < 4; i++) {
-      const p = L.clamp((T - 2.5 - i * 0.0625) / 0.08);
+      const p = L.clamp((T - 2.95 - i * 0.0625) / 0.08);
       if (p <= 0) continue;
       const x = 540 + (i - 1.5) * 150, y = 1180;
       ctx.save(); ctx.beginPath(); ctx.rect(x - 80, y - 110, 160, 220); ctx.clip();

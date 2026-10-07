@@ -235,9 +235,9 @@ def build_sfx():
     P(whoosh(0.14, 900, 6000), 0.95, 0.28); P(thud(70), 1.0, 0.35)
     P(whoosh(0.4, 3000, 300, up=False), 1.75, 0.35)                     # beam becomes the map line
     # map: star, 1978, pin, dive
-    P(stamp(), 2.25, 0.5)
-    for k in range(4): P(tick(), 2.5 + k * 0.0625, 0.3)
-    P(pop(520, 0.12), 2.75, 0.35); P(whoosh(0.35, 300, 4000), 2.95, 0.3)
+    P(stamp(), 2.71, 0.5)
+    for k in range(4): P(tick(), 2.95 + k * 0.0625, 0.3)
+    P(pop(520, 0.12), 3.2, 0.35); P(whoosh(0.35, 300, 4000), 3.45, 0.3); P(pop(700, 0.1), 2.1, 0.25)
     # accelerator hum, dive into the tunnel
     hd = OFF0 - 3.25
     P(hum(hd, 50) * np.linspace(0.3, 1, int(hd * SR)) ** 2, 3.25, 0.18)

@@ -8,8 +8,8 @@
     title: 'Episode 7', bpm: 120, duration: 33.5, fps: 24, width: 1080, height: 1920,
     shots: [
       S('hook', '01', 0, 2.0, 'Through his head', 'Frame 1: the beam already blasting through his head; A PROTON BEAM / SHOT THROUGH / HIS HEAD. all on screen. 1.0 X-ray; the beam slides onto L0 (→ map).'),
-      S('ussr', '02', 2.0, 3.25, 'USSR 1978', 'The beam line bends into the USSR; SOVIET UNION, star, 1978, pin — 1.25 s; dive into the pin.'),
-      S('ring', '03', 3.25, 5.5, 'The U-70', 'The pin becomes the U-70 ring; PARTICLE ACCELERATOR; Bugorski medallion; dive.'),
+      S('ussr', '02', 2.0, 3.75, 'A Soviet scientist', 'HE WAS A SOVIET SCIENTIST: the beam line bends into the USSR; his medallion pins to Protvino; star, 1978; dive into the pin.'),
+      S('ring', '03', 3.75, 5.5, 'The U-70', 'The pin becomes the U-70 ring; PARTICLE ACCELERATOR; Bugorski medallion; dive.'),
       S('tunnel', '04', 5.5, 8.5, 'A broken part', 'Tunnel dolly; his head leans in; BROKEN PART; the pipe lights up with the beam.'),
       S('safety', '05', 8.5, 12.0, 'The beam was still on', 'The pipe line bends into a gauge needle; it climbs, SLAMS red (9.75), FAILED; the red lamp becomes the beam front racing into his head; freeze.'),
       S('flash', '06', 12.0, 15.5, 'A thousand suns', 'BIG HIT: whiteout, beam through the head; 1,000 suns; PAIN: 0 → HE FELT NOTHING.'),
