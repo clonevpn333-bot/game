@@ -1,36 +1,18 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schedule I</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-
-<div id="loading">
-    <h1>SCHEDULE I</h1>
-    <p>Loading…</p>
-</div>
-
-<canvas id="gc"></canvas>
-
-<!-- Scripts loaded in dependency order -->
-<script src="js/config.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/input.js"></script>
-<script src="js/items.js"></script>
-<script src="js/world.js"></script>
-<script src="js/entities.js"></script>
-<script src="js/systems.js"></script>
-<script src="js/phone.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/game.js"></script>
-
-<script>
-    // Hide loading screen once everything is parsed
-    document.getElementById('loading').style.display = 'none';
-</script>
-
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#2a1f44" />
+    <meta name="description" content="DREAM COURIER — a third-person dream adventure. Deliver sealed dreams across the Route, deeper than anyone was meant to go." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23ffd46b' d='M16 2l3.6 9 9.4.4-7.4 5.9 2.6 9.2L16 21.3 7.8 26.5l2.6-9.2L3 11.4l9.4-.4z'/%3E%3C/svg%3E" />
+    <title>Dream Courier</title>
+  </head>
+  <body>
+    <main id="app">
+      <canvas id="game-canvas" aria-label="Dream Courier game view"></canvas>
+      <div id="ui"></div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>

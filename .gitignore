@@ -1,0 +1,12 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+artifacts/**
+!artifacts/
+!artifacts/*.md
+!artifacts/evidence.json
+!artifacts/shots/
+!artifacts/shots/*.png
+*.log
+.DS_Store
