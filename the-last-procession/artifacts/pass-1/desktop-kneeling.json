@@ -1,0 +1,112 @@
+{
+  "url": "http://127.0.0.1:4188",
+  "mode": "desktop",
+  "state": "kneeling",
+  "requestedState": "kneeling",
+  "appliedState": "kneeling",
+  "runId": "pass-1",
+  "seed": null,
+  "screenshotPath": "artifacts/pass-1/desktop-kneeling.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 720
+    },
+    "drawingBuffer": {
+      "width": 1280,
+      "height": 720
+    },
+    "alphaPixels": 4096,
+    "variance": 255,
+    "colorBuckets": 232,
+    "metrics": {
+      "colorBuckets": 287,
+      "colorEntropyBits": 5.84,
+      "edgeDensity": 0.271,
+      "luminance": {
+        "mean": 113.9,
+        "p5": 0,
+        "p95": 210.1,
+        "contrast": 210.1
+      },
+      "dominantColorShare": 0.211,
+      "nonBackgroundShare": 0.789
+    },
+    "renderBudget": {
+      "tier": "desktop",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": 216,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "triangles",
+          "actual": 120245,
+          "limit": 750000,
+          "ok": true
+        },
+        {
+          "metric": "geometries",
+          "actual": 177,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "textures",
+          "actual": 35,
+          "limit": 60,
+          "ok": true
+        }
+      ],
+      "withinBudget": true
+    },
+    "diagnostics": {
+      "frame": 145,
+      "elapsed": 3.414766666666665,
+      "score": 0,
+      "targetScore": 8,
+      "complete": false,
+      "player": {
+        "position": {
+          "x": 2,
+          "y": 0,
+          "z": -24
+        },
+        "speed": 0
+      },
+      "renderer": {
+        "calls": 216,
+        "triangles": 120245,
+        "geometries": 177,
+        "textures": 35
+      },
+      "canvas": {
+        "clientWidth": 1280,
+        "clientHeight": 720,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      "chapter": "prologue",
+      "checkpoint": "kneel",
+      "camera": "kneel-low",
+      "uptime": 9.928700000000186
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

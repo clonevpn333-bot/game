@@ -1,0 +1,112 @@
+{
+  "url": "http://127.0.0.1:4188",
+  "mode": "mobile",
+  "state": "campfire-talk",
+  "requestedState": "campfire-talk",
+  "appliedState": "campfire-talk",
+  "runId": "pass-1",
+  "seed": null,
+  "screenshotPath": "artifacts/pass-1/mobile-campfire-talk.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 664
+    },
+    "drawingBuffer": {
+      "width": 585,
+      "height": 996
+    },
+    "alphaPixels": 4111,
+    "variance": 255,
+    "colorBuckets": 209,
+    "metrics": {
+      "colorBuckets": 250,
+      "colorEntropyBits": 6.4,
+      "edgeDensity": 0.132,
+      "luminance": {
+        "mean": 130.7,
+        "p5": 0,
+        "p95": 248.8,
+        "contrast": 248.8
+      },
+      "dominantColorShare": 0.126,
+      "nonBackgroundShare": 0.874
+    },
+    "renderBudget": {
+      "tier": "mobile",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": 156,
+          "limit": 150,
+          "ok": false
+        },
+        {
+          "metric": "triangles",
+          "actual": 102970,
+          "limit": 300000,
+          "ok": true
+        },
+        {
+          "metric": "geometries",
+          "actual": 76,
+          "limit": 200,
+          "ok": true
+        },
+        {
+          "metric": "textures",
+          "actual": 29,
+          "limit": 40,
+          "ok": true
+        }
+      ],
+      "withinBudget": false
+    },
+    "diagnostics": {
+      "frame": 145,
+      "elapsed": 3.3891666666667586,
+      "score": 3,
+      "targetScore": 8,
+      "complete": false,
+      "player": {
+        "position": {
+          "x": -1.1,
+          "y": -0.9673348090138189,
+          "z": 2.15
+        },
+        "speed": 0
+      },
+      "renderer": {
+        "calls": 156,
+        "triangles": 102970,
+        "geometries": 76,
+        "textures": 29
+      },
+      "canvas": {
+        "clientWidth": 390,
+        "clientHeight": 664,
+        "width": 585,
+        "height": 996,
+        "dpr": 1.5
+      },
+      "chapter": "embers",
+      "checkpoint": "talk",
+      "camera": "fire-push",
+      "uptime": 10.063799999999814
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

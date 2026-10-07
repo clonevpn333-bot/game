@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#120c14" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 3c-4 0-6 4-6 9v6l-3 5h18l-3-5v-6c0-5-2-9-6-9z' fill='%23e9c97a'/%3E%3Ccircle cx='16' cy='26' r='2.5' fill='%23e9c97a'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&display=swap" rel="stylesheet" />
+    <title>The Last Procession</title>
+  </head>
+  <body>
+    <main id="app">
+      <canvas id="game-canvas" aria-label="The Last Procession"></canvas>
+
+      <div id="letterbox" aria-hidden="true"><div class="bar top"></div><div class="bar bottom"></div></div>
+
+      <section id="hud" aria-live="polite">
+        <div id="objective" class="hidden"><span class="glyph"></span><span class="text"></span></div>
+        <div id="resolve" class="hidden" aria-label="Resolve"></div>
+        <div id="progress" class="hidden"><div class="fill"></div><div class="marker"></div></div>
+      </section>
+
+      <div id="prompt" class="hidden"><span class="key"></span><span class="label"></span></div>
+      <div id="qte" class="hidden"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="44"/><circle class="ring" cx="50" cy="50" r="44"/></svg><span class="key"></span></div>
+
+      <div id="subtitle" class="hidden">
+        <div class="speaker"></div>
+        <div class="line"></div>
+        <div class="next" aria-hidden="true"></div>
+      </div>
+      <div id="choices" class="hidden"></div>
+
+      <div id="chapter-card" class="hidden">
+        <div class="ornament"></div>
+        <div class="num"></div>
+        <div class="name"></div>
+        <div class="sub"></div>
+        <div class="ornament flip"></div>
+      </div>
+      <div id="caption" class="hidden"></div>
+
+      <div id="fade"></div>
+
+      <div id="title-screen" class="screen">
+        <div class="title-wrap">
+          <div class="pre">every three hundred years, they wake</div>
+          <h1><span>The Last</span>Procession</h1>
+          <div class="rule"></div>
+          <nav class="menu">
+            <button id="btn-begin" type="button" class="primary">Begin</button>
+            <button id="btn-chapters" type="button">Chapters</button>
+            <button id="btn-sound" type="button">Sound: On</button>
+          </nav>
+          <div class="controls-hint">
+            <span><b>WASD</b> move</span><span><b>Space</b> jump · advance</span><span><b>J / Click</b> strike</span><span><b>Shift</b> dodge</span><span><b>E</b> interact</span><span><b>Esc</b> pause</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="chapter-select" class="screen hidden">
+        <div class="panel">
+          <h2>Chapters</h2>
+          <ol id="chapter-list"></ol>
+          <button id="btn-chapters-back" type="button">Back</button>
+        </div>
+      </div>
+
+      <div id="pause" class="screen hidden">
+        <div class="panel">
+          <h2>Paused</h2>
+          <nav class="menu">
+            <button id="btn-resume" type="button" class="primary">Resume</button>
+            <button id="btn-retry" type="button">Restart checkpoint</button>
+            <button id="btn-pause-chapters" type="button">Chapters</button>
+            <button id="btn-pause-sound" type="button">Sound: On</button>
+            <button id="btn-quit" type="button">Quit to title</button>
+          </nav>
+        </div>
+      </div>
+
+      <div id="fail" class="screen hidden">
+        <div class="fail-text">
+          <div class="big">The Procession walks on…</div>
+          <div class="small">rising from the last checkpoint</div>
+        </div>
+      </div>
+
+      <div id="credits" class="screen hidden"><div class="roll"></div></div>
+
+      <button id="pause-button" type="button" aria-label="Pause" class="hidden"><span></span><span></span></button>
+
+      <div id="touch-controls" aria-hidden="true">
+        <div id="touch-stick"><div id="touch-knob"></div></div>
+        <div class="touch-buttons">
+          <button type="button" data-action="dodge" class="t-dodge">Dodge</button>
+          <button type="button" data-action="interact" class="t-act">Act</button>
+          <button type="button" data-action="attack" class="t-attack">Strike</button>
+          <button type="button" data-action="jump" class="t-jump">Jump</button>
+        </div>
+      </div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

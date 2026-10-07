@@ -1,0 +1,112 @@
+{
+  "url": "http://127.0.0.1:4188",
+  "mode": "desktop",
+  "state": "city-bridge",
+  "requestedState": "city-bridge",
+  "appliedState": "city-bridge",
+  "runId": "pass-2",
+  "seed": null,
+  "screenshotPath": "artifacts/pass-2/desktop-city-bridge.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 720
+    },
+    "drawingBuffer": {
+      "width": 1280,
+      "height": 720
+    },
+    "alphaPixels": 4096,
+    "variance": 237,
+    "colorBuckets": 132,
+    "metrics": {
+      "colorBuckets": 159,
+      "colorEntropyBits": 5.18,
+      "edgeDensity": 0.365,
+      "luminance": {
+        "mean": 147.1,
+        "p5": 59.4,
+        "p95": 214.8,
+        "contrast": 155.5
+      },
+      "dominantColorShare": 0.114,
+      "nonBackgroundShare": 0.886
+    },
+    "renderBudget": {
+      "tier": "desktop",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": 189,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "triangles",
+          "actual": 82153,
+          "limit": 750000,
+          "ok": true
+        },
+        {
+          "metric": "geometries",
+          "actual": 87,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "textures",
+          "actual": 32,
+          "limit": 60,
+          "ok": true
+        }
+      ],
+      "withinBudget": true
+    },
+    "diagnostics": {
+      "frame": 145,
+      "elapsed": 3.3328666666664795,
+      "score": 1,
+      "targetScore": 8,
+      "complete": false,
+      "player": {
+        "position": {
+          "x": 246,
+          "y": 0,
+          "z": 0
+        },
+        "speed": 0
+      },
+      "renderer": {
+        "calls": 189,
+        "triangles": 82153,
+        "geometries": 87,
+        "textures": 32
+      },
+      "canvas": {
+        "clientWidth": 1280,
+        "clientHeight": 720,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      "chapter": "city",
+      "checkpoint": "bridge",
+      "camera": "bridge-side",
+      "uptime": 11.7615
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

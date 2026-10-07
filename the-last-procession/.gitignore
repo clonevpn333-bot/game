@@ -1,0 +1,7 @@
+node_modules/
+dist/
+test-results/
+artifacts/**/*.png
+artifacts/canvas-inspection/
+*.log
+.DS_Store

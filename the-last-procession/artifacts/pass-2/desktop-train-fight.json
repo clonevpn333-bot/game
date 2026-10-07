@@ -1,0 +1,112 @@
+{
+  "url": "http://127.0.0.1:4188",
+  "mode": "desktop",
+  "state": "train-fight",
+  "requestedState": "train-fight",
+  "appliedState": "train-fight",
+  "runId": "pass-2",
+  "seed": null,
+  "screenshotPath": "artifacts/pass-2/desktop-train-fight.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 720
+    },
+    "drawingBuffer": {
+      "width": 1280,
+      "height": 720
+    },
+    "alphaPixels": 4096,
+    "variance": 255,
+    "colorBuckets": 171,
+    "metrics": {
+      "colorBuckets": 202,
+      "colorEntropyBits": 5.74,
+      "edgeDensity": 0.105,
+      "luminance": {
+        "mean": 170,
+        "p5": 58.9,
+        "p95": 221.5,
+        "contrast": 162.6
+      },
+      "dominantColorShare": 0.103,
+      "nonBackgroundShare": 0.897
+    },
+    "renderBudget": {
+      "tier": "desktop",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": 229,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "triangles",
+          "actual": 45509,
+          "limit": 750000,
+          "ok": true
+        },
+        {
+          "metric": "geometries",
+          "actual": 99,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "textures",
+          "actual": 30,
+          "limit": 60,
+          "ok": true
+        }
+      ],
+      "withinBudget": true
+    },
+    "diagnostics": {
+      "frame": 146,
+      "elapsed": 3.379066666667038,
+      "score": 4,
+      "targetScore": 8,
+      "complete": false,
+      "player": {
+        "position": {
+          "x": -144,
+          "y": 6.28,
+          "z": 0
+        },
+        "speed": 0
+      },
+      "renderer": {
+        "calls": 229,
+        "triangles": 45509,
+        "geometries": 99,
+        "textures": 30
+      },
+      "canvas": {
+        "clientWidth": 1280,
+        "clientHeight": 720,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      "chapter": "train",
+      "checkpoint": "roof",
+      "camera": "roof",
+      "uptime": 10.813799999999814
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

@@ -1,0 +1,112 @@
+{
+  "url": "http://127.0.0.1:4188",
+  "mode": "desktop",
+  "state": "title",
+  "requestedState": "title",
+  "appliedState": "title",
+  "runId": "pass-3",
+  "seed": null,
+  "screenshotPath": "artifacts/pass-3/desktop-title.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 720
+    },
+    "drawingBuffer": {
+      "width": 1280,
+      "height": 720
+    },
+    "alphaPixels": 4096,
+    "variance": 246,
+    "colorBuckets": 121,
+    "metrics": {
+      "colorBuckets": 147,
+      "colorEntropyBits": 5.61,
+      "edgeDensity": 0.153,
+      "luminance": {
+        "mean": 100.8,
+        "p5": 37.8,
+        "p95": 174.1,
+        "contrast": 136.4
+      },
+      "dominantColorShare": 0.081,
+      "nonBackgroundShare": 0.919
+    },
+    "renderBudget": {
+      "tier": "desktop",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": 101,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "triangles",
+          "actual": 156343,
+          "limit": 750000,
+          "ok": true
+        },
+        {
+          "metric": "geometries",
+          "actual": 73,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "textures",
+          "actual": 28,
+          "limit": 60,
+          "ok": true
+        }
+      ],
+      "withinBudget": true
+    },
+    "diagnostics": {
+      "frame": 105,
+      "elapsed": 3.426897333333704,
+      "score": -1,
+      "targetScore": 8,
+      "complete": false,
+      "player": {
+        "position": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "speed": 0
+      },
+      "renderer": {
+        "calls": 101,
+        "triangles": 156343,
+        "geometries": 73,
+        "textures": 28
+      },
+      "canvas": {
+        "clientWidth": 1280,
+        "clientHeight": 720,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      "chapter": "title",
+      "checkpoint": "",
+      "camera": "title",
+      "uptime": 13.540400000000373
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

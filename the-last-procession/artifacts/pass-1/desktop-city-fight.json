@@ -1,0 +1,112 @@
+{
+  "url": "http://127.0.0.1:4188",
+  "mode": "desktop",
+  "state": "city-fight",
+  "requestedState": "city-fight",
+  "appliedState": "city-fight",
+  "runId": "pass-1",
+  "seed": null,
+  "screenshotPath": "artifacts/pass-1/desktop-city-fight.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 720
+    },
+    "drawingBuffer": {
+      "width": 1280,
+      "height": 720
+    },
+    "alphaPixels": 4096,
+    "variance": 239,
+    "colorBuckets": 173,
+    "metrics": {
+      "colorBuckets": 249,
+      "colorEntropyBits": 5.41,
+      "edgeDensity": 0.542,
+      "luminance": {
+        "mean": 134.8,
+        "p5": 46.4,
+        "p95": 194.8,
+        "contrast": 148.4
+      },
+      "dominantColorShare": 0.099,
+      "nonBackgroundShare": 0.901
+    },
+    "renderBudget": {
+      "tier": "desktop",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": 383,
+          "limit": 300,
+          "ok": false
+        },
+        {
+          "metric": "triangles",
+          "actual": 98713,
+          "limit": 750000,
+          "ok": true
+        },
+        {
+          "metric": "geometries",
+          "actual": 221,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "textures",
+          "actual": 35,
+          "limit": 60,
+          "ok": true
+        }
+      ],
+      "withinBudget": false
+    },
+    "diagnostics": {
+      "frame": 146,
+      "elapsed": 3.30616666666648,
+      "score": 1,
+      "targetScore": 8,
+      "complete": false,
+      "player": {
+        "position": {
+          "x": 150,
+          "y": 0,
+          "z": 0
+        },
+        "speed": 0
+      },
+      "renderer": {
+        "calls": 383,
+        "triangles": 98713,
+        "geometries": 221,
+        "textures": 35
+      },
+      "canvas": {
+        "clientWidth": 1280,
+        "clientHeight": 720,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      "chapter": "city",
+      "checkpoint": "alley",
+      "camera": "combat",
+      "uptime": 13.618700000000187
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

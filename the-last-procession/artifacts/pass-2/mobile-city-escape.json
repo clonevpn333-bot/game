@@ -1,0 +1,112 @@
+{
+  "url": "http://127.0.0.1:4188",
+  "mode": "mobile",
+  "state": "city-escape",
+  "requestedState": "city-escape",
+  "appliedState": "city-escape",
+  "runId": "pass-2",
+  "seed": null,
+  "screenshotPath": "artifacts/pass-2/mobile-city-escape.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 664
+    },
+    "drawingBuffer": {
+      "width": 585,
+      "height": 996
+    },
+    "alphaPixels": 4111,
+    "variance": 241,
+    "colorBuckets": 245,
+    "metrics": {
+      "colorBuckets": 318,
+      "colorEntropyBits": 6.79,
+      "edgeDensity": 0.35,
+      "luminance": {
+        "mean": 122.9,
+        "p5": 42.7,
+        "p95": 195.8,
+        "contrast": 153.1
+      },
+      "dominantColorShare": 0.038,
+      "nonBackgroundShare": 0.962
+    },
+    "renderBudget": {
+      "tier": "mobile",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": 236,
+          "limit": 150,
+          "ok": false
+        },
+        {
+          "metric": "triangles",
+          "actual": 94023,
+          "limit": 300000,
+          "ok": true
+        },
+        {
+          "metric": "geometries",
+          "actual": 152,
+          "limit": 200,
+          "ok": true
+        },
+        {
+          "metric": "textures",
+          "actual": 36,
+          "limit": 40,
+          "ok": true
+        }
+      ],
+      "withinBudget": false
+    },
+    "diagnostics": {
+      "frame": 146,
+      "elapsed": 3.4166666666668513,
+      "score": 1,
+      "targetScore": 8,
+      "complete": false,
+      "player": {
+        "position": {
+          "x": 42,
+          "y": 0,
+          "z": 0
+        },
+        "speed": 0
+      },
+      "renderer": {
+        "calls": 236,
+        "triangles": 94023,
+        "geometries": 152,
+        "textures": 36
+      },
+      "canvas": {
+        "clientWidth": 390,
+        "clientHeight": 664,
+        "width": 585,
+        "height": 996,
+        "dpr": 1.5
+      },
+      "chapter": "city",
+      "checkpoint": "escape",
+      "camera": "chase-front",
+      "uptime": 9.190200000000186
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

@@ -1,0 +1,112 @@
+{
+  "url": "http://127.0.0.1:4188",
+  "mode": "desktop",
+  "state": "duel",
+  "requestedState": "duel",
+  "appliedState": "duel",
+  "runId": "pass-3",
+  "seed": null,
+  "screenshotPath": "artifacts/pass-3/desktop-duel.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 720
+    },
+    "drawingBuffer": {
+      "width": 1280,
+      "height": 720
+    },
+    "alphaPixels": 4096,
+    "variance": 255,
+    "colorBuckets": 234,
+    "metrics": {
+      "colorBuckets": 290,
+      "colorEntropyBits": 5.8,
+      "edgeDensity": 0.288,
+      "luminance": {
+        "mean": 85.3,
+        "p5": 0,
+        "p95": 191.3,
+        "contrast": 191.3
+      },
+      "dominantColorShare": 0.21,
+      "nonBackgroundShare": 0.79
+    },
+    "renderBudget": {
+      "tier": "desktop",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": 335,
+          "limit": 300,
+          "ok": false
+        },
+        {
+          "metric": "triangles",
+          "actual": 179485,
+          "limit": 750000,
+          "ok": true
+        },
+        {
+          "metric": "geometries",
+          "actual": 220,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "textures",
+          "actual": 31,
+          "limit": 60,
+          "ok": true
+        }
+      ],
+      "withinBudget": false
+    },
+    "diagnostics": {
+      "frame": 145,
+      "elapsed": 3.131066666666481,
+      "score": 7,
+      "targetScore": 8,
+      "complete": false,
+      "player": {
+        "position": {
+          "x": 0,
+          "y": 2.6,
+          "z": 446
+        },
+        "speed": 0
+      },
+      "renderer": {
+        "calls": 335,
+        "triangles": 179485,
+        "geometries": 220,
+        "textures": 31
+      },
+      "canvas": {
+        "clientWidth": 1280,
+        "clientHeight": 720,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      "chapter": "finale",
+      "checkpoint": "duel",
+      "camera": "palm-wide",
+      "uptime": 12.519699999999254
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

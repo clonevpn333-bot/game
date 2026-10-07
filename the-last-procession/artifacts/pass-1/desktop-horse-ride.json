@@ -1,0 +1,112 @@
+{
+  "url": "http://127.0.0.1:4188",
+  "mode": "desktop",
+  "state": "horse-ride",
+  "requestedState": "horse-ride",
+  "appliedState": "horse-ride",
+  "runId": "pass-1",
+  "seed": null,
+  "screenshotPath": "artifacts/pass-1/desktop-horse-ride.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 720
+    },
+    "drawingBuffer": {
+      "width": 1280,
+      "height": 720
+    },
+    "alphaPixels": 4096,
+    "variance": 251,
+    "colorBuckets": 236,
+    "metrics": {
+      "colorBuckets": 309,
+      "colorEntropyBits": 6.43,
+      "edgeDensity": 0.184,
+      "luminance": {
+        "mean": 136.2,
+        "p5": 31.7,
+        "p95": 194.2,
+        "contrast": 162.5
+      },
+      "dominantColorShare": 0.057,
+      "nonBackgroundShare": 0.943
+    },
+    "renderBudget": {
+      "tier": "desktop",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": 339,
+          "limit": 300,
+          "ok": false
+        },
+        {
+          "metric": "triangles",
+          "actual": 192370,
+          "limit": 750000,
+          "ok": true
+        },
+        {
+          "metric": "geometries",
+          "actual": 178,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "textures",
+          "actual": 34,
+          "limit": 60,
+          "ok": true
+        }
+      ],
+      "withinBudget": false
+    },
+    "diagnostics": {
+      "frame": 145,
+      "elapsed": 4.764336666666753,
+      "score": 2,
+      "targetScore": 8,
+      "complete": false,
+      "player": {
+        "position": {
+          "x": 0,
+          "y": 2.341471764973073,
+          "z": 39.59440390971491
+        },
+        "speed": 0
+      },
+      "renderer": {
+        "calls": 339,
+        "triangles": 192370,
+        "geometries": 178,
+        "textures": 34
+      },
+      "canvas": {
+        "clientWidth": 1280,
+        "clientHeight": 720,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      "chapter": "ride",
+      "checkpoint": "ride",
+      "camera": "ride-chase",
+      "uptime": 12.36630000000028
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

@@ -1,0 +1,112 @@
+{
+  "url": "http://127.0.0.1:4188",
+  "mode": "desktop",
+  "state": "campfire",
+  "requestedState": "campfire",
+  "appliedState": "campfire",
+  "runId": "pass-2",
+  "seed": null,
+  "screenshotPath": "artifacts/pass-2/desktop-campfire.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 720
+    },
+    "drawingBuffer": {
+      "width": 1280,
+      "height": 720
+    },
+    "alphaPixels": 4096,
+    "variance": 237,
+    "colorBuckets": 103,
+    "metrics": {
+      "colorBuckets": 138,
+      "colorEntropyBits": 4.76,
+      "edgeDensity": 0.134,
+      "luminance": {
+        "mean": 56.8,
+        "p5": 8.4,
+        "p95": 96,
+        "contrast": 87.6
+      },
+      "dominantColorShare": 0.147,
+      "nonBackgroundShare": 0.853
+    },
+    "renderBudget": {
+      "tier": "desktop",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": 271,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "triangles",
+          "actual": 124206,
+          "limit": 750000,
+          "ok": true
+        },
+        {
+          "metric": "geometries",
+          "actual": 181,
+          "limit": 300,
+          "ok": true
+        },
+        {
+          "metric": "textures",
+          "actual": 33,
+          "limit": 60,
+          "ok": true
+        }
+      ],
+      "withinBudget": true
+    },
+    "diagnostics": {
+      "frame": 146,
+      "elapsed": 3.3199666666664798,
+      "score": 3,
+      "targetScore": 8,
+      "complete": false,
+      "player": {
+        "position": {
+          "x": -3,
+          "y": -0.6830551837204741,
+          "z": 6
+        },
+        "speed": 0
+      },
+      "renderer": {
+        "calls": 271,
+        "triangles": 124206,
+        "geometries": 181,
+        "textures": 33
+      },
+      "canvas": {
+        "clientWidth": 1280,
+        "clientHeight": 720,
+        "width": 1280,
+        "height": 720,
+        "dpr": 1
+      },
+      "chapter": "embers",
+      "checkpoint": "explore",
+      "camera": "explore",
+      "uptime": 10.989199999999254
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

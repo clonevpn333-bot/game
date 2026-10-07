@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "runId": "pass-2",
+  "captures": [
+    {
+      "mode": "desktop",
+      "state": "title",
+      "report": "artifacts/pass-2/desktop-title.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "kneeling",
+      "report": "artifacts/pass-2/desktop-kneeling.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "catch",
+      "report": "artifacts/pass-2/desktop-catch.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "city-escape",
+      "report": "artifacts/pass-2/desktop-city-escape.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "city-fight",
+      "report": "artifacts/pass-2/desktop-city-fight.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "city-bridge",
+      "report": "artifacts/pass-2/desktop-city-bridge.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "horse-ride",
+      "report": "artifacts/pass-2/desktop-horse-ride.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "campfire",
+      "report": "artifacts/pass-2/desktop-campfire.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "campfire-talk",
+      "report": "artifacts/pass-2/desktop-campfire-talk.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "train-fight",
+      "report": "artifacts/pass-2/desktop-train-fight.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "climb",
+      "report": "artifacts/pass-2/desktop-climb.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "fall",
+      "report": "artifacts/pass-2/desktop-fall.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "reveal",
+      "report": "artifacts/pass-2/desktop-reveal.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "battlefield",
+      "report": "artifacts/pass-2/desktop-battlefield.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "duel",
+      "report": "artifacts/pass-2/desktop-duel.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "finale",
+      "report": "artifacts/pass-2/desktop-finale.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "city-escape",
+      "report": "artifacts/pass-2/mobile-city-escape.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "horse-ride",
+      "report": "artifacts/pass-2/mobile-horse-ride.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "campfire-talk",
+      "report": "artifacts/pass-2/mobile-campfire-talk.json"
+    },
+    {
+      "mode": "mobile",
+      "state": "duel",
+      "report": "artifacts/pass-2/mobile-duel.json"
+    }
+  ]
+}

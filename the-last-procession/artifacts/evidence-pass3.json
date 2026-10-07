@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "runId": "pass-3",
+  "captures": [
+    {
+      "mode": "desktop",
+      "state": "title",
+      "report": "artifacts/pass-3/desktop-title.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "battlefield",
+      "report": "artifacts/pass-3/desktop-battlefield.json"
+    },
+    {
+      "mode": "desktop",
+      "state": "duel",
+      "report": "artifacts/pass-3/desktop-duel.json"
+    }
+  ]
+}
