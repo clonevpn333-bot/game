@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "runId": "pass-1",
+  "captures": [
+    { "mode": "desktop", "state": "title", "report": "artifacts/pass-1/desktop-title.json" },
+    { "mode": "desktop", "state": "ch1", "report": "artifacts/pass-1/desktop-ch1.json" },
+    { "mode": "desktop", "state": "ch3-mid", "report": "artifacts/pass-1/desktop-ch3-mid.json" },
+    { "mode": "desktop", "state": "ch4", "report": "artifacts/pass-1/desktop-ch4.json" },
+    { "mode": "desktop", "state": "ch7", "report": "artifacts/pass-1/desktop-ch7.json" },
+    { "mode": "desktop", "state": "ch8", "report": "artifacts/pass-1/desktop-ch8.json" },
+    { "mode": "desktop", "state": "ch10-mid", "report": "artifacts/pass-1/desktop-ch10-mid.json" },
+    { "mode": "mobile", "state": "ch1", "report": "artifacts/pass-1/mobile-ch1.json" },
+    { "mode": "mobile", "state": "ch8", "report": "artifacts/pass-1/mobile-ch8.json" }
+  ]
+}

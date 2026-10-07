@@ -185,7 +185,7 @@ export const ch08: ChapterDef = {
     lv.stamp('c8-far-corner', cx(NX - 1), 0, cz(0));
 
     // start + exit
-    lv.setStart(0, 0, 1.5, Math.PI);
+    lv.setStart(0, 0, -1.2, Math.PI);
     const exitPos = route[route.length - 1];
     door(b, exitPos.x, 0, exitPos.z - S / 2 + 0.2, 0, { color: '#ffffff', frame: '#ffffff', w: 1.1 });
     const exitGlow = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 2.2), glowMat('#ffffff', 2.5));

@@ -229,7 +229,10 @@ class Ribbon {
 export class Rig {
   readonly root = new THREE.Group();
   readonly body = new THREE.Group();
-  readonly j = {} as Record<JointName, THREE.Group>;
+  readonly j = {} as Record<JointName, THREE.Bone>;
+  /** The single skinned body mesh (all rigid parts, one draw call). */
+  skinned!: THREE.SkinnedMesh;
+  skinnedGlow?: THREE.SkinnedMesh;
   readonly pose: Pose = emptyPose();
   readonly target: Pose = emptyPose();
   hipsBaseY: number;
@@ -269,7 +272,7 @@ export class Rig {
     this.matNormal = charMaterial(s.material);
     this.root.add(this.body);
     for (const name of JOINTS) {
-      const g = new THREE.Group();
+      const g = new THREE.Bone();
       g.name = name;
       this.j[name] = g;
     }
@@ -398,20 +401,50 @@ export class Rig {
       add('handR', { geo: new THREE.SphereGeometry(0.62, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2.4), color: s.umbrella, pos: [0, 0.82, 0] });
     }
 
-    for (const name of JOINTS) {
+    // ---- skin every rigid part to its joint: one SkinnedMesh (+1 for glow parts) ----
+    this.root.updateMatrixWorld(true);
+    const rootInv = this.root.matrixWorld.clone().invert();
+    const normals: THREE.BufferGeometry[] = [];
+    const glows: THREE.BufferGeometry[] = [];
+    const bones = JOINTS.map((n) => this.j[n]);
+    JOINTS.forEach((name, bi) => {
       const list = parts[name];
-      if (!list) continue;
+      if (!list) return;
       const baked = bake(list);
-      if (baked.normal) {
-        const mesh = new THREE.Mesh(baked.normal, this.matNormal);
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        this.j[name].add(mesh);
+      const toRoot = rootInv.clone().multiply(this.j[name].matrixWorld);
+      for (const [g, out] of [[baked.normal, normals], [baked.glow, glows]] as const) {
+        if (!g) continue;
+        g.applyMatrix4(toRoot);
+        const n = g.getAttribute('position').count;
+        const si = new Uint16Array(n * 4);
+        const sw = new Float32Array(n * 4);
+        for (let i = 0; i < n; i++) {
+          si[i * 4] = bi;
+          sw[i * 4] = 1;
+        }
+        g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4));
+        g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
+        out.push(g);
       }
-      if (baked.glow) {
-        const mesh = new THREE.Mesh(baked.glow, glowMat);
-        this.j[name].add(mesh);
-      }
+    });
+    const skeleton = new THREE.Skeleton(bones);
+    const makeSkinned = (geos: THREE.BufferGeometry[], mat: THREE.Material) => {
+      const merged = mergeGeometries(geos)!;
+      const sm = new THREE.SkinnedMesh(merged, mat);
+      this.root.add(sm);
+      sm.bind(skeleton, sm.matrixWorld.clone());
+      sm.castShadow = true;
+      sm.receiveShadow = true;
+      merged.computeBoundingSphere();
+      merged.boundingSphere!.radius *= 1.6;
+      sm.boundingSphere = merged.boundingSphere!.clone();
+      return sm;
+    };
+    this.root.updateMatrixWorld(true);
+    this.skinned = makeSkinned(normals, this.matNormal);
+    if (glows.length) {
+      this.skinnedGlow = makeSkinned(glows, glowMat);
+      this.skinnedGlow.castShadow = false;
     }
 
     if (s.lantern) {

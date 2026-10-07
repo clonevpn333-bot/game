@@ -32,7 +32,7 @@ export function cloudCluster(
       top: o.top ?? '#ffffff',
       ao: 0.45,
       layer: o.layer ?? 'play',
-      shadow: (o.layer ?? 'play') === 'play',
+      shadow: false,
     });
   }
 }
@@ -66,7 +66,7 @@ export function cloudIsland(
     const r = 0.7 + rnd() * 0.7;
     b.add(puffGeo(Math.floor(rnd() * 6), layer === 'play' ? 2 : 1), {
       x: px, y: top - 0.55 - rnd() * 0.3, z: pz, sx: r * 1.2, sy: r * 0.7, sz: r * 1.2, ry: rnd() * 3,
-      mat: b.mats.cloud, color: o.color ?? '#fff3f0', top: '#ffffff', ao: 0.35, layer,
+      mat: b.mats.cloud, color: o.color ?? '#fff3f0', top: '#ffffff', ao: 0.35, layer, shadow: false,
     });
   }
   // soft pillow lumps along the walkable rim (low enough to step over)
@@ -84,7 +84,7 @@ export function cloudIsland(
     const r = 0.45 + rnd() * 0.4;
     b.add(puffGeo(Math.floor(rnd() * 6), layer === 'play' ? 2 : 1), {
       x: px, y: top - 0.12, z: pz, sx: r * 1.3, sy: r * 0.42, sz: r * 1.3, ry: rnd() * 3,
-      mat: b.mats.cloud, color: o.color ?? '#ffeef6', top: '#ffffff', ao: 0.25, layer,
+      mat: b.mats.cloud, color: o.color ?? '#ffeef6', top: '#ffffff', ao: 0.25, layer, shadow: false,
     });
   }
   // belly

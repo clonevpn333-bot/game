@@ -108,7 +108,8 @@ export const ch04: ChapterDef = {
       b.wall(x, y + 0.6, (z0 + z1) / 2, 0.2, 1.2, z1 - z0);
     };
     rail(12.1, F1, -38, Z1);
-    rail(12.1, F1, -92, -40.5);
+    rail(12.1, F1, -42, -40.5);
+    rail(12.1, F1, -92, -46);
     rail(-12.1, F1, -92, Z1);
     // F2 west rail with a gap where the hidden walkway lands
     rail(-12.1, F2, -54.5, Z1);
@@ -234,6 +235,9 @@ export const ch04: ChapterDef = {
     };
     escalator(10, 0, F1, -24, 14);
     b.box({ x: 10.25, y: F1 - 0.35, z: -39.25, w: 3.5, h: 0.7, d: 2.5, mat: tile, color: '#ffffff', surface: 'tile' });
+    rail(8.45, F1, -40.5, -38);
+    b.add(boxGeo(3.5, 1.0, 0.06), { x: 10.25, y: F1 + 0.5, z: -40.5, color: '#d8f0ec', mat: m.glass, shadow: false });
+    b.wall(10.25, F1 + 0.6, -40.5, 3.6, 1.2, 0.2);
     // broken escalator F1 → F2 (west)
     escalator(-16, F1, F2 - 2.5, -24, 10);
     b.wall(-16, F1 + 1, -23, 3.2, 2, 0.4);
@@ -243,7 +247,7 @@ export const ch04: ChapterDef = {
     // =================== hidden walkways (lens parcel) ===================
     const hidden: Array<{ mesh: THREE.Mesh; col: ReturnType<typeof b.physics.addBox> }> = [];
     const hiddenMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.5, 2.2, 1.7), transparent: true, opacity: 0, toneMapped: false, depthWrite: false });
-    const panelDefs: Array<[number, number, number]> = [[6.5, F1 + 0.9, -44], [3, F1 + 1.9, -47], [-0.5, F1 + 2.9, -50], [-4, F1 + 3.9, -53], [-7.5, F1 + 4.9, -56], [-10, F1 + 5.9, -57.5], [5.5, F1 + 2.4, -50.5]];
+    const panelDefs: Array<[number, number, number]> = [[10.0, F1 + 0.6, -44], [6.5, F1 + 1.6, -47], [3, F1 + 2.6, -50], [-0.5, F1 + 3.6, -53], [-4, F1 + 4.6, -56], [-7.5, F1 + 5.6, -57.5], [-10.2, F1 + 6.3, -58], [7.2, F1 + 2.8, -51]];
     for (const [x, top, z] of panelDefs) {
       const mesh = new THREE.Mesh(roundedGeo(2.6, 0.18, 2.6, 0.05, 2), hiddenMat);
       mesh.position.set(x, top - 0.09, z);
@@ -254,7 +258,7 @@ export const ch04: ChapterDef = {
       col.enabled = false;
       hidden.push({ mesh, col });
     }
-    lv.stamp('c4-hidden-panel', 5.5, F1 + 2.4, -50.5);
+    lv.stamp('c4-hidden-panel', 7.2, F1 + 2.8, -51);
     let lensUnlocked = false;
     let reveal = 0;
     lv.onPulse(() => {

@@ -232,6 +232,7 @@ export class Ui {
 
   /** Position barks/eyes each frame via a projector returning screen coords or null. */
   updateWorldLabels(dt: number, project: (id: string) => { x: number; y: number } | null): void {
+    const placed: Array<{ x: number; y: number }> = [];
     for (const [id, b] of this.barks) {
       b.ttl -= dt;
       const p = project(id);
@@ -243,7 +244,10 @@ export class Ui {
         }
         continue;
       }
-      b.el.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -100%)`;
+      let y = p.y;
+      for (const q of placed) if (Math.abs(q.x - p.x) < 240 && Math.abs(q.y - y) < 44) y = q.y - 46;
+      placed.push({ x: p.x, y });
+      b.el.style.transform = `translate(${p.x}px, ${y}px) translate(-50%, -100%)`;
     }
   }
 

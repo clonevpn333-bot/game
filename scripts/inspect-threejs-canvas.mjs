@@ -144,7 +144,9 @@ export async function loadDependency(name, cwd = process.cwd()) {
   );
 }
 
-async function runPreparation(page, { state = null, seed, timeoutMs = 10_000, wait = 0 }, capture) {
+// INSPECT_PREP_TIMEOUT_MS lets CPU-only (SwiftShader) containers, where one frame takes seconds, finish chapter setup.
+const PREP_TIMEOUT_MS = Number(process.env.INSPECT_PREP_TIMEOUT_MS ?? 10_000);
+async function runPreparation(page, { state = null, seed, timeoutMs = PREP_TIMEOUT_MS, wait = 0 }, capture) {
   if (state !== null) validateIdentifier(state, '--state');
   if (seed !== undefined && !Number.isSafeInteger(seed)) throw new Error('--seed must be a safe integer');
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 2_147_483_647) {
@@ -416,7 +418,7 @@ async function captureCanvas(page, mode, screenshotPath) {
     };
   });
   await mkdir(path.dirname(screenshotPath), { recursive: true });
-  const buffer = await page.screenshot({ path: screenshotPath, fullPage: true, scale: 'css' });
+  const buffer = await page.screenshot({ path: screenshotPath, fullPage: true, scale: 'css', timeout: Number(process.env.INSPECT_SHOT_TIMEOUT_MS ?? 30_000) });
   const { rect } = layout;
   if (!rect || rect.width < 32 || rect.height < 32) {
     return { ok: false, reason: 'canvas-too-small', rect };

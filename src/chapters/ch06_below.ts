@@ -10,13 +10,13 @@ import { createSeededRandom } from '../core/rng';
 
 const LOOK = look({
   sky: { top: '#0a1418', mid: '#16262a', sun: '#000000', cloudCover: 0, seaAmount: 0, ceiling: 1, stars: 0 },
-  fog: { color: '#12262a', sun: '#1a3a3a', low: '#060c10', density: 0.022, base: 0, falloff: 0.004, heightMix: 0.2, max: 0.96 },
+  fog: { color: '#16302e', sun: '#2a4a46', low: '#08100f', density: 0.013, base: 0, falloff: 0.004, heightMix: 0.2, max: 0.96 },
   sunDir: [0.2, 1, 0.1],
   sunColor: '#9fe8ff',
   sunIntensity: 0.35,
   hemiSky: '#7ad8e8',
   hemiGround: '#3a2418',
-  hemiIntensity: 0.75,
+  hemiIntensity: 1.15,
   rimColor: '#7ae8ff',
   rimStrength: 0.35,
   envIntensity: 0.4,
@@ -207,10 +207,11 @@ export const ch06: ChapterDef = {
       lv.root.add(g);
       gears.push(g);
     }
-    for (let i = 0; i < 16; i++) {
-      const a = (i / 16) * Math.PI * 2;
-      workLight(SC.x + Math.cos(a) * (R + 0.2), 4 + (i % 3) * 9, SC.z + Math.sin(a) * (R + 0.2));
+    for (let i = 0; i < 32; i++) {
+      const a = (i / 32) * Math.PI * 2;
+      workLight(SC.x + Math.cos(a) * (R + 0.2), -6 + (i % 5) * 7, SC.z + Math.sin(a) * (R + 0.2));
     }
+    for (let i = 0; i < 6; i++) b.add(new THREE.TorusGeometry(R - 0.2, 0.08, 4, 64), { x: SC.x, y: -12 + i * 9, z: SC.z, rx: Math.PI / 2, color: '#ffb070', mat: m.glow, shadow: false, layer: 'near' });
     b.box({ x: catwalks[6].x + 4.0, y: catwalks[6].y + 1.0, z: catwalks[6].z, w: 2, h: 0.4, d: 2, color: '#6a6a6a', mat: grate, surface: 'metal' });
     lv.stamp('c6-shaft-ledge', catwalks[6].x + 4.0, catwalks[6].y + 1.2, catwalks[6].z);
     lv.checkpoint(0, 0, -100, Math.PI, { objective: 'Climb the catwalks around the shaft', waypoint: new THREE.Vector3(0, 12, -156), restore: () => { hasMemory = true; memParcel.visible = false; lv.parcel('#ffb070'); } });
@@ -273,6 +274,7 @@ export const ch06: ChapterDef = {
     }, { enabled: () => hasMemory });
     lv.checkpoint(0, SY, -164, Math.PI, { objective: 'Find Pell — beware the patrols', waypoint: new THREE.Vector3(-6, SY, -222), restore: () => { hasMemory = true; memParcel.visible = false; lv.parcel('#ffb070'); } });
     lv.stamp('c6-sorting-machine', 14, SY + 4, -212);
+    lv.checkpoint(-8, SY, -219, 0, { objective: 'Wake Pell\'s memory — Dream Pulse (Q)', waypoint: new THREE.Vector3(-6, SY, -222), restore: () => { hasMemory = true; memParcel.visible = false; lv.parcel('#ffb070'); }, radius: 2 });
     // cargo lift exit
     b.box({ x: 0, y: SY + 0.1, z: -229, w: 5, h: 0.2, d: 4, color: '#ffd46b', mat: m.satin, collide: false });
     sign(lv, 'CARGO LIFT · UP', 0, SY + 4, -231.7, 3, 0.5, 0, { bg: '#ffd46b', fg: '#1a1a1a', glow: 1 });

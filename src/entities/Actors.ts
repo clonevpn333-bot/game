@@ -284,16 +284,7 @@ export class ParcelHusk extends Walker {
     extra.position.set(0.18, 0.1, -0.12);
     extra.rotation.set(0.3, 0.5, 0.2);
     this.rig.j.chest.add(extra);
-    this.rig.j.chest.children.forEach((c) => {
-      const m = c as THREE.Mesh;
-      if (m.isMesh && m !== extra) m.material = this.mat;
-    });
-    for (const jn of ['spine', 'hips', 'shoulderL', 'shoulderR', 'elbowL', 'elbowR', 'thighL', 'thighR', 'kneeL', 'kneeR'] as const) {
-      this.rig.j[jn].children.forEach((c) => {
-        const m = c as THREE.Mesh;
-        if (m.isMesh) m.material = this.mat;
-      });
-    }
+    this.rig.skinned.material = this.mat;
   }
 
   reset(): void {

@@ -60,7 +60,7 @@ export const ch07: ChapterDef = {
 
     // =================== the sea ===================
     const sea = new THREE.Mesh(new THREE.PlaneGeometry(1400, 1400, 1, 1), m.water);
-    sea.geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(4 * 3).fill(0.62), 3));
+    sea.geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(4 * 3).fill(0.42), 3));
     sea.rotation.x = -Math.PI / 2;
     sea.position.y = level;
     sea.renderOrder = 2;
