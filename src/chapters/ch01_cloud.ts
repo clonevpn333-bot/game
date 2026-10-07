@@ -474,7 +474,7 @@ export const ch01: ChapterDef = {
         bb.position.x += Math.sin(t * 0.05 + i * 2) * 0.01;
       });
       for (const tr of travellers) {
-        tr.userData.u = (tr.userData.u + dt * 0.012) % 1;
+        tr.userData.u = (((tr.userData.u + dt * 0.012) % 1) + 1) % 1;
         const p = curve.getPointAt(tr.userData.u);
         tr.position.set(p.x, p.y * 0.35 + 30 + 0.8, p.z);
       }
