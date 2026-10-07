@@ -5,7 +5,7 @@
 //               (24.5…26.0), then the trace runs flat: SENT TO A CLINIC / TO DIE.
 (function () {
   'use strict';
-  const BEATS = [24.5, 25.0, 25.5, 26.0];
+  const BEATS = [18.5, 19.0, 19.5, 20.0];
   const MON = { x: 90, y: 520, w: 900, h: 470 };
   const ecg = (tau) => {
     let v = 0;
@@ -21,9 +21,9 @@
     const L = info.lib, D = FILM.df, PB = FILM.pb;
     const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
     PB.plate(ctx, { seed: 81 });
-    if (T < 24.5) {
-      const sw = L.ease.inOutSine(L.clamp((T - 23.55) / 0.7));
-      const push = 1 + 0.05 * (T - 23.0);
+    if (T < 18.5) {
+      const sw = L.ease.inOutSine(L.clamp((T - 17.35) / 0.55));
+      const push = 1 + 0.05 * (T - 17.0);
       ctx.save(); ctx.translate(540, 1050); ctx.scale(push, push); ctx.translate(-540, -1050);
       const o = { yaw: 0, key: [-0.35, 0.45, 0.82], res: 0.36, slot: 12, swell: sw };
       FILM.pb.head(ctx, 540, 1060, 900, o);
@@ -36,9 +36,7 @@
       ctx.restore();
       PB.beam(ctx, [540, -200], [540, 2200], { T, w: 5, speed: 2600 });
       if (sw > 0.3) { L.inkPath(ctx, [[700, 1000], [900, 1480]], { width: 2.5, color: '#FF7A5A', alpha: L.clamp((sw - 0.3) * 3), seed: 810 }); PB.label(ctx, 'LEFT SIDE', 760, 1510, (sw - 0.35) * 3, { col: '#FF7A5A', size: 28 }); }
-      const hp = L.clamp((T - 23.02) / 0.1);
-      if (hp > 0) PB.slice(ctx, 'HALF HIS FACE', 540, 230, 104, Math.PI / 2, 6 + 22 * L.ease.outBack(L.clamp((T - 23.1) / 0.25)), { alpha: hp });
-      PB.word(ctx, 'SWELLED UP', 540, 360, 112, (T - 23.75) / 0.12, { color: PB.Y });
+      const hp = L.clamp((T - 17.0) / 0.08);
       return;
     }
     // B: clinic
@@ -58,7 +56,7 @@
     ctx.save(); ctx.beginPath(); ctx.rect(MON.x, MON.y, MON.w, MON.h); ctx.clip();
     PB.grid(ctx, 0.12, 45, MON.x, MON.y);
     // the line tips from vertical to horizontal, then writes the trace
-    const tip = L.ease.inOutCubic(L.clamp((T - 24.5) / 0.22));
+    const tip = L.ease.inOutCubic(L.clamp((T - 18.5) / 0.2));
     const base = MON.y + MON.h * 0.62, right = MON.x + MON.w - 20, sp = 700;
     if (tip < 1) {
       const a = L.lerp(Math.PI / 2, 0, tip), c = [540, base], l = 1400;
@@ -73,10 +71,8 @@
     }
     ctx.restore();
     // readout: heart rate, then dashes as it runs flat
-    const flat = T > 26.35;
+    const flat = T > 20.3;
     L.text(ctx, flat ? '– –' : '♥ ' + (88 + Math.round(6 * Math.sin(T * 3))), MON.x + MON.w - 30, MON.y + 50, { size: 40, family: PB.MONO, weight: 600, align: 'right', baseline: 'middle', color: flat ? '#FF5A40' : PB.Y });
     L.text(ctx, 'MOSCOW CLINIC · 1978', MON.x + 30, MON.y + 50, { size: 24, family: PB.MONO, weight: 600, align: 'left', baseline: 'middle', color: '#7FB89A', tracking: '0.2em' });
-    PB.word(ctx, 'SENT TO A CLINIC', 540, 220, 96, (T - 24.8) / 0.12);
-    PB.word(ctx, 'TO DIE.', 540, 360, 140, (T - 26.18) / 0.14, { color: '#FF5A40' });
   } });
 })();

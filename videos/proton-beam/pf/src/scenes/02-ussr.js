@@ -28,20 +28,20 @@
     const G = geo(L, PB);
     PB.plate(ctx, { seed: 21 });
     // camera dive into the pin
-    const dive = L.ease.inCubic(L.clamp((T - 5.85) / 0.65));
+    const dive = L.ease.inCubic(L.clamp((T - 2.9) / 0.35));
     const zs = 1 + dive * 3.5, [px, py] = G.pin;
     ctx.save();
     ctx.translate(L.lerp(px, 540, dive), L.lerp(py, 900, dive)); ctx.scale(zs, zs); ctx.translate(-px, -py);
     PB.grid(ctx, 0.07, 60);
     // graticule (engraved meridians + parallels in the map's projection)
-    const ga = L.clamp((T - 3.3) / 0.5) * 0.35;
+    const ga = L.clamp((T - 2.1) / 0.3) * 0.35;
     if (ga > 0) {
       for (let lo = 20; lo <= 190; lo += 20) { const ln = []; for (let la = 34; la <= 80; la += 2) ln.push(G.P(lo, la)); L.inkPath(ctx, ln, { width: 1.2, color: '#6E8CC8', alpha: ga, seed: lo }); }
       for (let la = 40; la <= 80; la += 10) { const ln = []; for (let lo = 16; lo <= 194; lo += 3) ln.push(G.P(lo, la)); L.inkPath(ctx, ln, { width: 1.2, color: '#6E8CC8', alpha: ga, seed: 400 + la }); }
     }
     // morph: line → outline
-    const m = L.ease.inOutCubic(L.clamp((T - 3.0) / 0.6));
-    const fillA = L.clamp((T - 3.45) / 0.4);
+    const m = L.ease.inOutCubic(L.clamp((T - 2.0) / 0.3));
+    const fillA = L.clamp((T - 2.15) / 0.25);
     const mapA = 1 - L.clamp(dive * 2.2);
     if (fillA > 0 && mapA > 0) {
       ctx.save(); ctx.globalAlpha = fillA * mapA;
@@ -54,15 +54,15 @@
     }
     const pts = G.ring.map((q, i) => { const u = i / (N - 1); const l = [L.lerp(L0[0][0], L0[1][0], u), L.lerp(L0[0][1], L0[1][1], u)]; return [L.lerp(l[0], q[0], m), L.lerp(l[1], q[1], m)]; });
     // the outline is the beam: hot while it bends, then settles to an inked gold coast
-    const hot = 1 - L.clamp((T - 3.6) / 0.5);
+    const hot = 1 - L.clamp((T - 2.3) / 0.3);
     if (hot > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineJoin = 'round'; [[50, 0.08], [22, 0.2], [6, 0.95]].forEach(([w, a], i) => { ctx.strokeStyle = i === 2 ? `rgba(255,248,220,${a * hot})` : `rgba(242,194,48,${a * hot})`; ctx.lineWidth = w / zs; ctx.beginPath(); pts.forEach((p, j) => (j ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke(); }); ctx.restore(); }
-    if (T > 3.5 && mapA > 0) L.inkPath(ctx, pts, { width: 3.5 / Math.sqrt(zs), color: PB.Y, alpha: 0.9 * mapA, seed: 70 });
+    if (T > 2.3 && mapA > 0) L.inkPath(ctx, pts, { width: 3.5 / Math.sqrt(zs), color: PB.Y, alpha: 0.9 * mapA, seed: 70 });
     // the pin on Protvino
-    const pinP = L.clamp((T - 4.95) / 0.25);
+    const pinP = L.clamp((T - 2.75) / 0.12);
     if (pinP > 0 && dive < 0.5) {
       const drop = (1 - L.ease.outBounce(pinP)) * 120;
       const pr = 16;
-      for (let k = 0; k < 3; k++) { const ph = ((T - 5.0) * 1.4 + k / 3) % 1; if (T > 5.05) L.inkCircle(ctx, px, py, pr + ph * 70, { width: 2.5 / Math.sqrt(zs), color: PB.Y, alpha: (1 - ph) * 0.8 * (1 - dive), seed: 80 + k }); }
+      for (let k = 0; k < 3; k++) { const ph = ((T - 2.75) * 2.5 + k / 3) % 1; if (T > 2.8) L.inkCircle(ctx, px, py, pr + ph * 70, { width: 2.5 / Math.sqrt(zs), color: PB.Y, alpha: (1 - ph) * 0.8 * (1 - dive), seed: 80 + k }); }
       ctx.fillStyle = PB.RED; ctx.beginPath(); ctx.arc(px, py - drop, pr * 0.6, 0, Math.PI * 2); ctx.fill();
       L.inkCircle(ctx, px, py - drop, pr, { width: 4 / Math.sqrt(zs), color: PB.Y, seed: 90 });
       ctx.fillStyle = '#FFF4D0'; ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
@@ -77,15 +77,14 @@
       ctx.save(); ctx.globalAlpha = ua;
       const lx = px + 60, ly = py + 90;
       L.inkPath(ctx, [[px + 10, py + 10], [lx, ly]], { width: 2, color: PB.Y, seed: 99 });
-      PB.label(ctx, 'PROTVINO', lx - 10, ly + 30, (T - 5.1) / 0.2, { size: 30 });
-      PB.label(ctx, 'NEAR MOSCOW', lx - 10, ly + 86, (T - 5.25) / 0.2, { size: 22, col: PB.IV });
+      PB.label(ctx, 'PROTVINO', lx - 10, ly + 30, (T - 2.8) / 0.12, { size: 30 });
+      PB.label(ctx, 'NEAR MOSCOW', lx - 10, ly + 86, (T - 2.86) / 0.12, { size: 22, col: PB.IV });
       ctx.restore();
     }
     // titles
     ctx.save(); ctx.globalAlpha = ua;
-    PB.word(ctx, 'THE SOVIET UNION', 540, 300, 96, (T - 3.22) / 0.14);
     // red star stamp
-    const st = L.clamp((T - 3.5) / 0.08);
+    const st = L.clamp((T - 2.25) / 0.06);
     if (st > 0) {
       const s = 70 * (1 + 0.6 * (1 - L.ease.outCubic(st))), sx = 540, sy = 150;
       const star = []; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? s * 0.42 : s; star.push([sx + Math.cos(a) * r, sy + Math.sin(a) * r]); }
@@ -94,7 +93,7 @@
     // 1978: digits roll in on the beat
     const yr = '1978';
     for (let i = 0; i < 4; i++) {
-      const p = L.clamp((T - 4.3 - i * 0.125) / 0.12);
+      const p = L.clamp((T - 2.5 - i * 0.0625) / 0.08);
       if (p <= 0) continue;
       const x = 540 + (i - 1.5) * 150, y = 1180;
       ctx.save(); ctx.beginPath(); ctx.rect(x - 80, y - 110, 160, 220); ctx.clip();

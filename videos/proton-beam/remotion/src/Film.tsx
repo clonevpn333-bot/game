@@ -5,7 +5,7 @@ import "@fontsource/fraunces/700.css";
 import "@fontsource/jetbrains-mono/500.css";
 import "@fontsource/jetbrains-mono/600.css";
 import { FPS, fromFrame, lenFrames, shotById } from "./film/pf";
-import { Captions } from "./film/Captions";
+import { Kinetic } from "./film/Kinetic";
 import { ProcShot } from "./film/ProcCanvas";
 import { Trans, TransKind } from "./film/Trans";
 
@@ -35,7 +35,7 @@ export const Film: React.FC<{ score: boolean }> = ({ score }) => (
         </Sequence>
       );
     })}
-    <Sequence name="captions"><Captions /></Sequence>
+    <Sequence name="kinetic type"><Kinetic /></Sequence>
     <Audio src={staticFile("vo.wav")} name="narration" />
     {score ? <Audio src={staticFile("score.wav")} name="score" volume={0.42} /> : null}
   </AbsoluteFill>

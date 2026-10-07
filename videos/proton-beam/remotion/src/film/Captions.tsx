@@ -45,7 +45,7 @@ export const Captions: React.FC = () => {
   if (!page) return null;
   const shot = SHOTS.find((s) => page.startMs / 1000 >= s.start && page.startMs / 1000 < s.end);
   // the clinic opens on his face: its first page sits low, the rest under the heart monitor
-  const top = shot ? (shot.id === "clinic" && page.startMs < 24450 ? 1420 : BAND[shot.id]) : null;
+  const top = shot ? (shot.id === "clinic" && page.startMs < 18450 ? 1420 : BAND[shot.id]) : null;
   if (top == null) return null;
   const navy = shot?.mode === "schematic";
   const pageIn = interpolate(ms, [page.startMs - 40, page.startMs + 90], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });

@@ -1,778 +1,690 @@
 [
  {
   "text": " A",
-  "startMs": 30,
-  "endMs": 300,
-  "timestampMs": 165,
+  "startMs": 40,
+  "endMs": 296,
+  "timestampMs": 168,
   "confidence": 1,
   "line": 1
  },
  {
-  "text": " particle",
-  "startMs": 300,
-  "endMs": 970,
-  "timestampMs": 635,
+  "text": " proton",
+  "startMs": 296,
+  "endMs": 741,
+  "timestampMs": 518,
   "confidence": 1,
   "line": 1
  },
  {
   "text": " beam",
-  "startMs": 970,
-  "endMs": 1240,
-  "timestampMs": 1105,
+  "startMs": 741,
+  "endMs": 997,
+  "timestampMs": 869,
   "confidence": 1,
   "line": 1
  },
  {
-  "text": " went",
-  "startMs": 1240,
-  "endMs": 1510,
-  "timestampMs": 1375,
-  "confidence": 1,
-  "line": 1
- },
- {
-  "text": " straight",
-  "startMs": 1510,
-  "endMs": 1780,
-  "timestampMs": 1645,
+  "text": " shot",
+  "startMs": 997,
+  "endMs": 1253,
+  "timestampMs": 1125,
   "confidence": 1,
   "line": 1
  },
  {
   "text": " through",
-  "startMs": 1780,
-  "endMs": 2050,
-  "timestampMs": 1915,
+  "startMs": 1253,
+  "endMs": 1508,
+  "timestampMs": 1380,
   "confidence": 1,
   "line": 1
  },
  {
-  "text": " this",
-  "startMs": 2050,
-  "endMs": 2320,
-  "timestampMs": 2185,
-  "confidence": 1,
-  "line": 1
- },
- {
-  "text": " man's",
-  "startMs": 2320,
-  "endMs": 2590,
-  "timestampMs": 2455,
+  "text": " his",
+  "startMs": 1508,
+  "endMs": 1764,
+  "timestampMs": 1636,
   "confidence": 1,
   "line": 1
  },
  {
   "text": " head.",
-  "startMs": 2590,
-  "endMs": 2860,
-  "timestampMs": 2725,
+  "startMs": 1764,
+  "endMs": 2020,
+  "timestampMs": 1892,
   "confidence": 1,
   "line": 1
  },
  {
-  "text": " The",
-  "startMs": 3030,
-  "endMs": 3253,
-  "timestampMs": 3141,
-  "confidence": 1,
-  "line": 2
- },
- {
   "text": " Soviet",
-  "startMs": 3253,
-  "endMs": 3642,
-  "timestampMs": 3448,
+  "startMs": 2040,
+  "endMs": 2840,
+  "timestampMs": 2440,
   "confidence": 1,
   "line": 2
  },
  {
   "text": " Union,",
-  "startMs": 3642,
-  "endMs": 4030,
-  "timestampMs": 3836,
+  "startMs": 2840,
+  "endMs": 3640,
+  "timestampMs": 3240,
   "confidence": 1,
   "line": 2
  },
  {
   "text": " 1978.",
-  "startMs": 4310,
-  "endMs": 6200,
-  "timestampMs": 5255,
+  "startMs": 3640,
+  "endMs": 4100,
+  "timestampMs": 3870,
   "confidence": 1,
   "line": 2
  },
  {
   "text": " Anatoli",
-  "startMs": 6520,
-  "endMs": 7247,
-  "timestampMs": 6884,
+  "startMs": 4290,
+  "endMs": 5009,
+  "timestampMs": 4650,
   "confidence": 1,
   "line": 3
  },
  {
   "text": " Bugorski",
-  "startMs": 7247,
-  "endMs": 7808,
-  "timestampMs": 7528,
+  "startMs": 5009,
+  "endMs": 5562,
+  "timestampMs": 5286,
   "confidence": 1,
   "line": 3
  },
  {
   "text": " leaned",
-  "startMs": 7808,
-  "endMs": 8201,
-  "timestampMs": 8004,
+  "startMs": 5562,
+  "endMs": 5950,
+  "timestampMs": 5756,
   "confidence": 1,
   "line": 3
  },
  {
   "text": " into",
-  "startMs": 8201,
-  "endMs": 8594,
-  "timestampMs": 8398,
+  "startMs": 5950,
+  "endMs": 6338,
+  "timestampMs": 6144,
   "confidence": 1,
   "line": 3
  },
  {
-  "text": " a",
-  "startMs": 8594,
-  "endMs": 8819,
-  "timestampMs": 8706,
+  "text": " the",
+  "startMs": 6338,
+  "endMs": 6561,
+  "timestampMs": 6450,
   "confidence": 1,
   "line": 3
  },
  {
-  "text": " particle",
-  "startMs": 8819,
-  "endMs": 9379,
-  "timestampMs": 9099,
-  "confidence": 1,
-  "line": 3
- },
- {
-  "text": " accelerator",
-  "startMs": 9379,
-  "endMs": 10274,
-  "timestampMs": 9826,
+  "text": " machine",
+  "startMs": 6561,
+  "endMs": 6950,
+  "timestampMs": 6756,
   "confidence": 1,
   "line": 3
  },
  {
   "text": " to",
-  "startMs": 10274,
-  "endMs": 10500,
-  "timestampMs": 10387,
+  "startMs": 6950,
+  "endMs": 7173,
+  "timestampMs": 7062,
   "confidence": 1,
   "line": 3
  },
  {
   "text": " check",
-  "startMs": 10500,
-  "endMs": 10726,
-  "timestampMs": 10613,
+  "startMs": 7173,
+  "endMs": 7396,
+  "timestampMs": 7284,
   "confidence": 1,
   "line": 3
  },
  {
   "text": " a",
-  "startMs": 10726,
-  "endMs": 10951,
-  "timestampMs": 10838,
+  "startMs": 7396,
+  "endMs": 7619,
+  "timestampMs": 7508,
   "confidence": 1,
   "line": 3
  },
  {
   "text": " broken",
-  "startMs": 10951,
-  "endMs": 11344,
-  "timestampMs": 11148,
+  "startMs": 7619,
+  "endMs": 8007,
+  "timestampMs": 7813,
   "confidence": 1,
   "line": 3
  },
  {
   "text": " part.",
-  "startMs": 11344,
-  "endMs": 11570,
-  "timestampMs": 11457,
+  "startMs": 8007,
+  "endMs": 8230,
+  "timestampMs": 8119,
   "confidence": 1,
   "line": 3
  },
  {
-  "text": " But",
-  "startMs": 12040,
-  "endMs": 12226,
-  "timestampMs": 12133,
-  "confidence": 1,
-  "line": 4
- },
- {
-  "text": " the",
-  "startMs": 12226,
-  "endMs": 12413,
-  "timestampMs": 12320,
+  "text": " The",
+  "startMs": 8530,
+  "endMs": 8726,
+  "timestampMs": 8628,
   "confidence": 1,
   "line": 4
  },
  {
   "text": " safety",
-  "startMs": 12413,
-  "endMs": 12875,
-  "timestampMs": 12644,
+  "startMs": 8726,
+  "endMs": 9212,
+  "timestampMs": 8969,
   "confidence": 1,
   "line": 4
  },
  {
   "text": " system",
-  "startMs": 12875,
-  "endMs": 13199,
-  "timestampMs": 13037,
+  "startMs": 9212,
+  "endMs": 9553,
+  "timestampMs": 9382,
   "confidence": 1,
   "line": 4
  },
  {
   "text": " had",
-  "startMs": 13199,
-  "endMs": 13386,
-  "timestampMs": 13292,
+  "startMs": 9553,
+  "endMs": 9749,
+  "timestampMs": 9651,
   "confidence": 1,
   "line": 4
  },
  {
   "text": " failed.",
-  "startMs": 13386,
-  "endMs": 13710,
-  "timestampMs": 13548,
+  "startMs": 9749,
+  "endMs": 10090,
+  "timestampMs": 9920,
   "confidence": 1,
   "line": 4
  },
  {
   "text": " The",
-  "startMs": 14040,
-  "endMs": 14274,
-  "timestampMs": 14157,
+  "startMs": 10410,
+  "endMs": 10644,
+  "timestampMs": 10527,
   "confidence": 1,
   "line": 4
  },
  {
   "text": " beam",
-  "startMs": 14274,
-  "endMs": 14508,
-  "timestampMs": 14391,
+  "startMs": 10644,
+  "endMs": 10878,
+  "timestampMs": 10761,
   "confidence": 1,
   "line": 4
  },
  {
   "text": " was",
-  "startMs": 14508,
-  "endMs": 14742,
-  "timestampMs": 14625,
+  "startMs": 10878,
+  "endMs": 11112,
+  "timestampMs": 10995,
   "confidence": 1,
   "line": 4
  },
  {
   "text": " still",
-  "startMs": 14742,
-  "endMs": 14976,
-  "timestampMs": 14859,
+  "startMs": 11112,
+  "endMs": 11346,
+  "timestampMs": 11229,
   "confidence": 1,
   "line": 4
  },
  {
   "text": " on.",
-  "startMs": 14976,
-  "endMs": 15210,
-  "timestampMs": 15093,
+  "startMs": 11346,
+  "endMs": 11580,
+  "timestampMs": 11463,
   "confidence": 1,
   "line": 4
  },
  {
   "text": " A",
-  "startMs": 16030,
-  "endMs": 16312,
-  "timestampMs": 16171,
+  "startMs": 12040,
+  "endMs": 12300,
+  "timestampMs": 12170,
   "confidence": 1,
   "line": 5
  },
  {
   "text": " flash,",
-  "startMs": 16312,
-  "endMs": 16594,
-  "timestampMs": 16453,
+  "startMs": 12300,
+  "endMs": 12560,
+  "timestampMs": 12430,
   "confidence": 1,
   "line": 5
  },
  {
   "text": " brighter",
-  "startMs": 16594,
-  "endMs": 17086,
-  "timestampMs": 16840,
+  "startMs": 12560,
+  "endMs": 13013,
+  "timestampMs": 12786,
   "confidence": 1,
   "line": 5
  },
  {
   "text": " than",
-  "startMs": 17086,
-  "endMs": 17368,
-  "timestampMs": 17227,
+  "startMs": 13013,
+  "endMs": 13273,
+  "timestampMs": 13143,
   "confidence": 1,
   "line": 5
  },
  {
   "text": " a",
-  "startMs": 17368,
-  "endMs": 17650,
-  "timestampMs": 17509,
+  "startMs": 13273,
+  "endMs": 13534,
+  "timestampMs": 13404,
   "confidence": 1,
   "line": 5
  },
  {
   "text": " thousand",
-  "startMs": 17650,
-  "endMs": 18141,
-  "timestampMs": 17896,
+  "startMs": 13534,
+  "endMs": 13987,
+  "timestampMs": 13760,
   "confidence": 1,
   "line": 5
  },
  {
   "text": " suns.",
-  "startMs": 18141,
-  "endMs": 18423,
-  "timestampMs": 18282,
+  "startMs": 13987,
+  "endMs": 14247,
+  "timestampMs": 14117,
   "confidence": 1,
   "line": 5
  },
  {
-  "text": " And",
-  "startMs": 18423,
-  "endMs": 18706,
-  "timestampMs": 18564,
+  "text": " He",
+  "startMs": 14247,
+  "endMs": 14507,
+  "timestampMs": 14377,
   "confidence": 1,
   "line": 5
  },
  {
-  "text": " no",
-  "startMs": 18706,
-  "endMs": 18988,
-  "timestampMs": 18847,
+  "text": " felt",
+  "startMs": 14507,
+  "endMs": 14767,
+  "timestampMs": 14637,
   "confidence": 1,
   "line": 5
  },
  {
-  "text": " pain.",
-  "startMs": 18988,
-  "endMs": 19270,
-  "timestampMs": 19129,
+  "text": " nothing.",
+  "startMs": 14767,
+  "endMs": 15220,
+  "timestampMs": 14994,
   "confidence": 1,
   "line": 5
  },
  {
   "text": " The",
-  "startMs": 19530,
-  "endMs": 19775,
-  "timestampMs": 19652,
+  "startMs": 15530,
+  "endMs": 15751,
+  "timestampMs": 15640,
   "confidence": 1,
   "line": 6
  },
  {
   "text": " dose",
-  "startMs": 19775,
-  "endMs": 20021,
-  "timestampMs": 19898,
+  "startMs": 15751,
+  "endMs": 15971,
+  "timestampMs": 15861,
   "confidence": 1,
   "line": 6
  },
  {
   "text": " was",
-  "startMs": 20021,
-  "endMs": 20266,
-  "timestampMs": 20144,
+  "startMs": 15971,
+  "endMs": 16192,
+  "timestampMs": 16081,
   "confidence": 1,
   "line": 6
  },
  {
-  "text": " hundreds",
-  "startMs": 20266,
-  "endMs": 20694,
-  "timestampMs": 20480,
-  "confidence": 1,
-  "line": 6
- },
- {
-  "text": " of",
-  "startMs": 20694,
-  "endMs": 20939,
-  "timestampMs": 20816,
-  "confidence": 1,
-  "line": 6
- },
- {
-  "text": " times",
-  "startMs": 20939,
-  "endMs": 21366,
-  "timestampMs": 21152,
-  "confidence": 1,
-  "line": 6
- },
- {
-  "text": " what",
-  "startMs": 21366,
-  "endMs": 21612,
-  "timestampMs": 21489,
-  "confidence": 1,
-  "line": 6
- },
- {
-  "text": " kills",
-  "startMs": 21612,
-  "endMs": 21857,
-  "timestampMs": 21734,
-  "confidence": 1,
-  "line": 6
- },
- {
-  "text": " a",
-  "startMs": 21857,
-  "endMs": 22103,
-  "timestampMs": 21980,
-  "confidence": 1,
-  "line": 6
- },
- {
-  "text": " human.",
-  "startMs": 22103,
-  "endMs": 22530,
-  "timestampMs": 22316,
+  "text": " enormous.",
+  "startMs": 16192,
+  "endMs": 16740,
+  "timestampMs": 16466,
   "confidence": 1,
   "line": 6
  },
  {
   "text": " Half",
-  "startMs": 23040,
-  "endMs": 23279,
-  "timestampMs": 23160,
+  "startMs": 16980,
+  "endMs": 17173,
+  "timestampMs": 17076,
   "confidence": 1,
-  "line": 7
+  "line": 6
  },
  {
   "text": " his",
-  "startMs": 23279,
-  "endMs": 23518,
-  "timestampMs": 23398,
+  "startMs": 17173,
+  "endMs": 17367,
+  "timestampMs": 17270,
   "confidence": 1,
-  "line": 7
+  "line": 6
  },
  {
   "text": " face",
-  "startMs": 23518,
-  "endMs": 23757,
-  "timestampMs": 23638,
+  "startMs": 17367,
+  "endMs": 17560,
+  "timestampMs": 17464,
   "confidence": 1,
-  "line": 7
+  "line": 6
  },
  {
   "text": " swelled",
-  "startMs": 23757,
-  "endMs": 24174,
-  "timestampMs": 23966,
+  "startMs": 17560,
+  "endMs": 17897,
+  "timestampMs": 17728,
   "confidence": 1,
-  "line": 7
+  "line": 6
  },
  {
   "text": " up.",
-  "startMs": 24174,
-  "endMs": 24413,
-  "timestampMs": 24294,
+  "startMs": 17897,
+  "endMs": 18090,
+  "timestampMs": 17993,
   "confidence": 1,
-  "line": 7
+  "line": 6
  },
  {
   "text": " Doctors",
-  "startMs": 24413,
-  "endMs": 24829,
-  "timestampMs": 24621,
+  "startMs": 18530,
+  "endMs": 18851,
+  "timestampMs": 18690,
   "confidence": 1,
   "line": 7
  },
  {
   "text": " sent",
-  "startMs": 24829,
-  "endMs": 25068,
-  "timestampMs": 24949,
+  "startMs": 18851,
+  "endMs": 19036,
+  "timestampMs": 18944,
   "confidence": 1,
   "line": 7
  },
  {
   "text": " him",
-  "startMs": 25068,
-  "endMs": 25307,
-  "timestampMs": 25188,
+  "startMs": 19036,
+  "endMs": 19220,
+  "timestampMs": 19128,
   "confidence": 1,
   "line": 7
  },
  {
   "text": " to",
-  "startMs": 25307,
-  "endMs": 25546,
-  "timestampMs": 25426,
+  "startMs": 19220,
+  "endMs": 19404,
+  "timestampMs": 19312,
   "confidence": 1,
   "line": 7
  },
  {
   "text": " a",
-  "startMs": 25546,
-  "endMs": 25785,
-  "timestampMs": 25666,
+  "startMs": 19404,
+  "endMs": 19589,
+  "timestampMs": 19496,
   "confidence": 1,
   "line": 7
  },
  {
   "text": " clinic,",
-  "startMs": 25785,
-  "endMs": 26202,
-  "timestampMs": 25994,
+  "startMs": 19589,
+  "endMs": 19910,
+  "timestampMs": 19749,
   "confidence": 1,
   "line": 7
  },
  {
   "text": " to",
-  "startMs": 26202,
-  "endMs": 26441,
-  "timestampMs": 26322,
+  "startMs": 20190,
+  "endMs": 20440,
+  "timestampMs": 20315,
   "confidence": 1,
   "line": 7
  },
  {
   "text": " die.",
-  "startMs": 26441,
-  "endMs": 26680,
-  "timestampMs": 26560,
+  "startMs": 20440,
+  "endMs": 20690,
+  "timestampMs": 20565,
   "confidence": 1,
   "line": 7
  },
  {
   "text": " He",
-  "startMs": 27030,
-  "endMs": 27297,
-  "timestampMs": 27164,
+  "startMs": 21560,
+  "endMs": 21880,
+  "timestampMs": 21720,
   "confidence": 1,
   "line": 8
  },
  {
   "text": " didn't.",
-  "startMs": 27297,
-  "endMs": 27563,
-  "timestampMs": 27430,
+  "startMs": 21880,
+  "endMs": 22200,
+  "timestampMs": 22040,
   "confidence": 1,
   "line": 8
  },
  {
   "text": " He",
-  "startMs": 27563,
-  "endMs": 27830,
-  "timestampMs": 27696,
+  "startMs": 22530,
+  "endMs": 22778,
+  "timestampMs": 22654,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " finished",
-  "startMs": 27830,
-  "endMs": 28491,
-  "timestampMs": 28160,
+  "startMs": 22778,
+  "endMs": 23395,
+  "timestampMs": 23086,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " his",
-  "startMs": 28491,
-  "endMs": 28757,
-  "timestampMs": 28624,
+  "startMs": 23395,
+  "endMs": 23643,
+  "timestampMs": 23519,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " PhD,",
-  "startMs": 28757,
-  "endMs": 29024,
-  "timestampMs": 28891,
+  "startMs": 23643,
+  "endMs": 23891,
+  "timestampMs": 23767,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " and",
-  "startMs": 29024,
-  "endMs": 29290,
-  "timestampMs": 29157,
+  "startMs": 23891,
+  "endMs": 24139,
+  "timestampMs": 24015,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " went",
-  "startMs": 29290,
-  "endMs": 29557,
-  "timestampMs": 29423,
+  "startMs": 24139,
+  "endMs": 24388,
+  "timestampMs": 24264,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " back",
-  "startMs": 29557,
-  "endMs": 29823,
-  "timestampMs": 29690,
+  "startMs": 24388,
+  "endMs": 24636,
+  "timestampMs": 24512,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " to",
-  "startMs": 29823,
-  "endMs": 30090,
-  "timestampMs": 29956,
+  "startMs": 24636,
+  "endMs": 24884,
+  "timestampMs": 24760,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
-  "text": " work.",
-  "startMs": 30090,
-  "endMs": 30357,
-  "timestampMs": 30224,
+  "text": " work,",
+  "startMs": 24884,
+  "endMs": 25133,
+  "timestampMs": 25008,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
-  "text": " At",
-  "startMs": 30357,
-  "endMs": 30623,
-  "timestampMs": 30490,
+  "text": " at",
+  "startMs": 25133,
+  "endMs": 25381,
+  "timestampMs": 25257,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " the",
-  "startMs": 30623,
-  "endMs": 30890,
-  "timestampMs": 30757,
+  "startMs": 25381,
+  "endMs": 25629,
+  "timestampMs": 25505,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " same",
-  "startMs": 30890,
-  "endMs": 31156,
-  "timestampMs": 31023,
+  "startMs": 25629,
+  "endMs": 25878,
+  "timestampMs": 25754,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " machine.",
-  "startMs": 31156,
-  "endMs": 31620,
-  "timestampMs": 31388,
+  "startMs": 25878,
+  "endMs": 26310,
+  "timestampMs": 26094,
   "confidence": 1,
-  "line": 8
+  "line": 9
  },
  {
   "text": " He's",
-  "startMs": 32050,
-  "endMs": 32257,
-  "timestampMs": 32153,
+  "startMs": 27050,
+  "endMs": 27257,
+  "timestampMs": 27154,
   "confidence": 1,
-  "line": 9
+  "line": 10
  },
  {
   "text": " the",
-  "startMs": 32257,
-  "endMs": 32465,
-  "timestampMs": 32361,
+  "startMs": 27257,
+  "endMs": 27465,
+  "timestampMs": 27361,
   "confidence": 1,
-  "line": 9
+  "line": 10
  },
  {
   "text": " only",
-  "startMs": 32465,
-  "endMs": 32826,
-  "timestampMs": 32646,
+  "startMs": 27465,
+  "endMs": 27826,
+  "timestampMs": 27646,
   "confidence": 1,
-  "line": 9
+  "line": 10
  },
  {
   "text": " person",
-  "startMs": 32826,
-  "endMs": 33187,
-  "timestampMs": 33006,
+  "startMs": 27826,
+  "endMs": 28187,
+  "timestampMs": 28007,
   "confidence": 1,
-  "line": 9
+  "line": 10
  },
  {
   "text": " known",
-  "startMs": 33187,
-  "endMs": 33394,
-  "timestampMs": 33290,
+  "startMs": 28187,
+  "endMs": 28394,
+  "timestampMs": 28290,
   "confidence": 1,
-  "line": 9
+  "line": 10
  },
  {
   "text": " to",
-  "startMs": 33394,
-  "endMs": 33601,
-  "timestampMs": 33498,
+  "startMs": 28394,
+  "endMs": 28601,
+  "timestampMs": 28498,
   "confidence": 1,
-  "line": 9
+  "line": 10
  },
  {
   "text": " have",
-  "startMs": 33601,
-  "endMs": 33809,
-  "timestampMs": 33705,
+  "startMs": 28601,
+  "endMs": 28809,
+  "timestampMs": 28705,
   "confidence": 1,
-  "line": 9
+  "line": 10
  },
  {
   "text": " been",
-  "startMs": 33809,
-  "endMs": 34016,
-  "timestampMs": 33912,
+  "startMs": 28809,
+  "endMs": 29016,
+  "timestampMs": 28912,
   "confidence": 1,
-  "line": 9
+  "line": 10
  },
  {
   "text": " hit",
-  "startMs": 34016,
-  "endMs": 34223,
-  "timestampMs": 34120,
+  "startMs": 29016,
+  "endMs": 29223,
+  "timestampMs": 29120,
   "confidence": 1,
-  "line": 9
+  "line": 10
  },
  {
   "text": " by",
-  "startMs": 34223,
-  "endMs": 34431,
-  "timestampMs": 34327,
+  "startMs": 29223,
+  "endMs": 29431,
+  "timestampMs": 29327,
   "confidence": 1,
-  "line": 9
+  "line": 10
  },
  {
   "text": " a",
-  "startMs": 34431,
-  "endMs": 34638,
-  "timestampMs": 34534,
+  "startMs": 29431,
+  "endMs": 29638,
+  "timestampMs": 29534,
   "confidence": 1,
-  "line": 9
+  "line": 10
  },
  {
   "text": " particle",
-  "startMs": 34638,
-  "endMs": 35153,
-  "timestampMs": 34896,
+  "startMs": 29638,
+  "endMs": 30153,
+  "timestampMs": 29896,
   "confidence": 1,
-  "line": 9
+  "line": 10
  },
  {
   "text": " beam.",
-  "startMs": 35153,
-  "endMs": 35360,
-  "timestampMs": 35256,
+  "startMs": 30153,
+  "endMs": 30360,
+  "timestampMs": 30256,
   "confidence": 1,
-  "line": 9
+  "line": 10
  }
 ]

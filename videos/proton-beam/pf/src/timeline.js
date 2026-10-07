@@ -5,18 +5,18 @@
   const FILM = window.FILM;
   const S = (id, n, start, end, title, brief) => ({ id, file: `${n}-${id}.js`, start, end, mode: 'schematic', title, brief });
   FILM.TIMELINE = {
-    title: 'Episode 7', bpm: 120, duration: 40, fps: 24, width: 1080, height: 1920,
+    title: 'Episode 7', bpm: 120, duration: 33.5, fps: 24, width: 1080, height: 1920,
     shots: [
-      S('hook', '01', 0, 3.0, 'Through his head', 'Beat cuts at 1.0/2.0: profile head pierced by the beam; X-ray with THROUGH sliced by it; pull back; the beam straightens.'),
-      S('ussr', '02', 3.0, 6.5, 'USSR 1978', 'The beam line morphs into the USSR outline; THE SOVIET UNION; red star; 1978; pin on Protvino; zoom into the pin.'),
-      S('ring', '03', 6.5, 9.5, 'The U-70', 'The pin becomes the U-70 ring: aerial engraved 3D ring, protons racing; Bugorski medallion PiP; PARTICLE ACCELERATOR rides the ring.'),
-      S('tunnel', '04', 9.5, 12.0, 'A broken part', 'Dive into the tunnel: magnets recede, beam pipe; the open BROKEN PART; his head leans in.'),
-      S('safety', '05', 12.0, 16.0, 'The beam was still on', 'Safety panel — FAILED stamped; the beam races down the pipe toward his head; STILL ON; freeze to black.'),
-      S('flash', '06', 16.0, 19.5, 'A thousand suns', 'DROP: whiteout, the beam through the 3D head; 1,000 suns pop on 16ths; AND NO PAIN.'),
-      S('dose', '07', 19.5, 23.0, 'The dose', 'The beam turns vertical into a bar chart: lethal vs his dose — bar shoots off the top; HUNDREDS OF TIMES.'),
-      S('clinic', '08', 23.0, 27.0, 'Sent to die', 'The bar becomes the line splitting his face; half swells; the line becomes a heart monitor; flatline.'),
-      S('lift', '09', 27.0, 32.0, 'He didn’t', 'The flatline spikes back; the line climbs as his life: PhD, back to work; curls into the same ring.'),
-      S('outro', '10', 32.0, 40.0, 'Outro', 'The head alone in the dark with the beam scar → THE ONLY PERSON KNOWN… → beam writes WHY WE / WONDER → STAY CURIOUS.'),
+      S('hook', '01', 0, 2.0, 'Through his head', 'Frame 1: the beam already blasting through his head; A PROTON BEAM / SHOT THROUGH / HIS HEAD. all on screen. 1.0 X-ray; the beam slides onto L0 (→ map).'),
+      S('ussr', '02', 2.0, 3.25, 'USSR 1978', 'The beam line bends into the USSR; SOVIET UNION, star, 1978, pin — 1.25 s; dive into the pin.'),
+      S('ring', '03', 3.25, 5.5, 'The U-70', 'The pin becomes the U-70 ring; PARTICLE ACCELERATOR; Bugorski medallion; dive.'),
+      S('tunnel', '04', 5.5, 8.5, 'A broken part', 'Tunnel dolly; his head leans in; BROKEN PART; the pipe lights up with the beam.'),
+      S('safety', '05', 8.5, 12.0, 'The beam was still on', 'The pipe line bends into a gauge needle; it climbs, SLAMS red (9.75), FAILED; the red lamp becomes the beam front racing into his head; freeze.'),
+      S('flash', '06', 12.0, 15.5, 'A thousand suns', 'BIG HIT: whiteout, beam through the head; 1,000 suns; PAIN: 0 → HE FELT NOTHING.'),
+      S('dose', '07', 15.5, 17.0, 'The dose', 'The beam stands up into a bar that shoots off the chart: THE DOSE WAS ENORMOUS.; it thins into one vertical line.'),
+      S('clinic', '08', 17.0, 21.5, 'Sent to die', 'The line splits his face; half swells; the line becomes a heart monitor; flatline; silence.'),
+      S('lift', '09', 21.5, 27.0, 'He didn’t', 'HIT: the flatline spikes; the line climbs as his life: PhD, back to work; curls into the same ring.'),
+      S('outro', '10', 27.0, 33.5, 'Outro', 'The head alone with the beam → THE ONLY PERSON KNOWN… → beam writes WHY WE / WONDER → STAY CURIOUS.'),
     ],
     cues: [],
   };

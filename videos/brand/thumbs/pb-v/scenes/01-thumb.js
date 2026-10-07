@@ -12,8 +12,8 @@
     PB.beam(ctx, a, b, { T, w: 5, k: 0.4, dots: false });
     PB.burst(ctx, a[0], a[1], 280, 0.9); PB.burst(ctx, b[0], b[1], 340, 1);
     PB.rays(ctx, b[0], b[1], 30, 260, 20, 0.9, 3, PB.Y, T);
-    PB.word(ctx, 'A PARTICLE BEAM', 540, 170, 90, 1);
-    PB.word(ctx, 'WENT THROUGH', 540, 290, 102, 1, { color: PB.Y });
+    PB.word(ctx, 'A PROTON BEAM', 540, 170, 96, 1);
+    PB.word(ctx, 'SHOT THROUGH', 540, 290, 106, 1, { color: PB.Y });
     PB.word(ctx, 'HIS HEAD', 540, 420, 146, 1, { color: PB.Y });
     const g = ctx.createLinearGradient(0, 1500, 0, 1920); g.addColorStop(0, 'rgba(8,12,28,0)'); g.addColorStop(0.35, 'rgba(8,12,28,0.92)'); g.addColorStop(1, 'rgba(8,12,28,1)'); ctx.fillStyle = g; ctx.fillRect(0, 1500, 1080, 420);
     PB.word(ctx, '…AND HE LIVED', 540, 1710, 104, 1, { color: '#FF6A4A' });

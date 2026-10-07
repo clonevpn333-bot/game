@@ -9,7 +9,7 @@
   FILM.scene({ id: 'tunnel', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, PB = FILM.pb;
     const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
-    const travel = L.ease.outCubic(L.clamp((T - 9.5) / 1.3));
+    const travel = L.ease.outCubic(L.clamp((T - 5.5) / 1.1));
     const cz = L.lerp(-2.5, GAPZ - 2.6, travel);
     const S = (x, y, z) => { const d = Math.max(0.15, z - cz); return [VP[0] + (x / d) * F, VP[1] + (y / d) * F, d]; };
     ctx.fillStyle = '#05070F'; ctx.fillRect(0, 0, 1080, 1920);
@@ -60,15 +60,15 @@
       const pc = S(px, py, za); L.inkCircle(ctx, pc[0], pc[1], 0.07 / d * F, { width: 2, color: '#000', fill: '#1A1A22', seed: 960 + i });
     });
     // BROKEN PART callout
-    const ba = L.clamp((T - 10.9) / 0.15);
+    const ba = L.clamp((T - 7.55) / 0.12);
     if (ba > 0) {
       const gx = (g0[0] + g1[0]) / 2, gy = (g0[1] + g1[1]) / 2;
-      for (let k = 0; k < 2; k++) { const ph = ((T - 10.9) * 1.6 + k / 2) % 1; L.inkCircle(ctx, gx, gy, 30 + ph * 70, { width: 3, color: PB.RED, alpha: (1 - ph) * ba, seed: 980 + k }); }
+      for (let k = 0; k < 2; k++) { const ph = ((T - 7.55) * 1.6 + k / 2) % 1; L.inkCircle(ctx, gx, gy, 30 + ph * 70, { width: 3, color: PB.RED, alpha: (1 - ph) * ba, seed: 980 + k }); }
       L.inkPath(ctx, [[gx, gy - 40], [gx + 30, gy - 230]], { width: 2.5, color: PB.RED, seed: 985 });
       PB.label(ctx, 'BROKEN PART', gx - 190, gy - 260, ba, { col: '#FF7A5A', size: 30 });
     }
     // his head leans in from the left foreground
-    const lean = L.ease.outCubic(L.clamp((T - 10.85) / 0.9));
+    const lean = L.ease.outCubic(L.clamp((T - 5.6) / 0.9));
     if (lean > 0) {
       const hx = L.lerp(-420, 300, lean), hy = 1080 + 40 * (1 - lean);
       ctx.save(); ctx.translate(hx, hy); ctx.rotate(0.12 * lean); ctx.translate(-hx, -hy);
@@ -76,7 +76,7 @@
       ctx.restore();
     }
     D.grain(ctx, T, 0.8);
-    PB.word(ctx, 'TO CHECK', 540, 230, 118, (T - 10.25) / 0.12);
-    PB.word(ctx, 'A BROKEN PART', 540, 360, 104, (T - 10.7) / 0.12, { color: PB.Y });
+    // 8.15+: the pipe lights up with the beam (it becomes the gauge needle next)
+    if (T > 8.15) { const q0 = S(px, py, GAPZ + 0.35), q1 = S(px, py, 22); PB.beam(ctx, [q0[0], q0[1]], [q1[0], q1[1]], { T, w: 5, k: L.clamp((T - 8.15) / 0.2) }); }
   } });
 })();

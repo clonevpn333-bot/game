@@ -126,3 +126,15 @@ beat grid, hits on downbeats, the drop on the story's peak). For copyrighted/pop
 use a provided track only as a lawful timing reference, export the master WITHOUT baked-in copyrighted audio, and the
 official song is added through YouTube Shorts' licensed Add Sound at upload. Otherwise compose an original track first
 (tools/score.py music section), lock its BPM/sections, then animate to it. Always also deliver a NO_MUSIC cut.
+
+## KINETIC TYPE RULE (user, ep7 v2+)
+No subtitle captions. Every on-screen word is kinetic typography in Remotion (`remotion/src/film/Kinetic.tsx`, see
+videos/proton-beam): copy segmented by meaning (Hook → Build → Punch → Resolve), 1–2 emphasis words per phrase; each word
+springs up into a line mask on the frame it is spoken (onsets from timing.json, 2-frame lead); emphasis = yellow + drawn
+underline + pulse on the onset; music hits = SLAM (scale 2.3→1 + phrase shake); splits/cuts where a world line crosses
+(e.g. HALF | HIS FACE around the beam); staggered upward exits that clear before the next phrase. The hook phrase is fully
+visible on frame 1. Canvas scenes draw only in-world text (stamps, plates, readouts, labels). Preview with the DOM-only
+`KineticOnly` composition (renders in seconds) before the full render.
+Also (ep7 v2 feedback): make the whole idea land by ~1 s; a location/date beat ≤ 1.3 s; chain beats so one graphic
+physically causes the next; numbers must be self-explanatory (PAIN: 0 → HE FELT NOTHING.); never compare a localized
+dose to a whole-body lethal dose; a half-beat of silence before the reveal line, hit on it; target 33–37 s.

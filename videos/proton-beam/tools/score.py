@@ -1,13 +1,12 @@
-# WHY WE WONDER ep.7: the man who put his head in a particle accelerator. ORIGINAL score "Cold Beam" — composed FIRST
-# (MUSIC RULE), 120 bpm (beat 0.5 s, bar 2 s), E minor, dark Soviet analog synth. The narration and every shot sit on this grid.
-#   0–2   HOOK     impact + sub on frame 1, arp already running
-#   2–8   A        16th arp, four-on-floor, pulsing sub (Em C Am B)
-#   8–14  B        + claps, open hats, octave arp, pad
-#   14–16 RISE     riser; full drop-out 15.25 → the flash
-#   16–24 DROP     the beam hits: saw bass, heavy kick, lead stabs (Em Em C B)
-#   24–27 BREAK    pad + heart monitor (doctors waited)
-#   27–32 LIFT     "He didn't." — C G D Em, brighter drive
-#   32–40 OUTRO    half-time, bell, arp dissolves under the wordmark
+# WHY WE WONDER ep.7 v2: the man who put his head in a particle accelerator. ORIGINAL score "Cold Beam" v2 — composed FIRST
+# (MUSIC RULE), 120 bpm (beat 0.5 s, bar 2 s), E minor. Story, narration, music and motion designed together:
+#   0–2    HOOK     impact on frame 1, tense low drone + pulse
+#   2–8.5  RISE     low arp creeps in, kick builds to four-on-floor, claps from 6.5
+#   8.5–11.5 ALARM  full beat + alarm; SLAM on FAILED (9.75); riser; drop-out 11.5 → 12.0
+#   12–18.5 DROP    BIG hit on the white flash (12.0): saw bass, heavy kick, lead
+#   18.5–20.75 BREAK heartbeat pad (sent to die) → 20.75–21.5 SILENCE
+#   21.5–27 LIFT    HIT on "He didn't." (21.5); brighter C G D Em; PhD stamp (23.5)
+#   27–33.5 OUTRO   half-time resolve; bell as the line writes WHY WE WONDER (30.6)
 import json, os, sys
 import numpy as np
 import soundfile as sf
@@ -17,7 +16,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(ROOT, '..', '_shared', 'tools'))
 from sfxlib import *  # noqa
 
-TOTAL = 40.0
+TOTAL = 33.5
 N = int(TOTAL * SR)
 VO = json.load(open(os.path.join(ROOT, 'vo', 'assets', 'timing.json')))
 BPM = 120.0
@@ -26,7 +25,9 @@ BAR = 4 * B             # 2 s
 S16 = B / 4
 
 # sections (seconds) — shared with the visuals (pf/src/timeline.js cues)
-HOOK, A, BSEC, RISE, DROP, BREAK, LIFT, OUTRO = 0, 2, 8, 14, 16, 24, 27, 32
+HOOK, A, BSEC, RISE, DROP, BREAK, LIFT, OUTRO = 0, 2, 8.5, 11.5, 12, 18.5, 21.5, 27
+SIL0, SIL1 = 20.75, 21.5
+OFF0, OFF1 = 11.5, 12.0
 
 CH = {
     'Em': [52, 55, 59, 64, 67], 'C': [48, 55, 60, 64, 67], 'Am': [45, 52, 57, 60, 64], 'B': [47, 54, 59, 63, 66],
@@ -35,14 +36,28 @@ CH = {
 ROOT_ = {'Em': 40, 'C': 36, 'Am': 33, 'B': 35, 'G': 31, 'D': 38}
 
 
+def section(t):
+    if t < A: return 'hook'
+    if t < BSEC: return 'rise'
+    if t < OFF0: return 'alarm'
+    if t < OFF1: return 'off'
+    if t < BREAK: return 'drop'
+    if t < SIL0: return 'break'
+    if t < SIL1: return 'sil'
+    if t < OUTRO: return 'lift'
+    return 'outro'
+
+
+SEC_START = {'hook': 0, 'rise': A, 'alarm': BSEC, 'off': OFF0, 'drop': DROP, 'break': BREAK, 'sil': SIL0, 'lift': LIFT, 'outro': OUTRO}
+PROGS = {'hook': ['Em'], 'rise': ['Em', 'C', 'Am', 'B'], 'alarm': ['Em', 'C', 'Am', 'B'], 'off': ['B'], 'drop': ['Em', 'Em', 'C', 'B'],
+         'break': ['Em', 'C'], 'sil': ['Em'], 'lift': ['C', 'G', 'D', 'Em'], 'outro': ['C', 'Em']}
+
+
 def chord_at(t):
-    bi = int(t // BAR)
-    if t < BSEC + 6: prog = ['Em', 'C', 'Am', 'B']
-    elif t < BREAK: prog = ['Em', 'Em', 'C', 'B']
-    elif t < LIFT: prog = ['Em', 'C']
-    elif t < OUTRO: prog = ['C', 'G', 'D', 'Em']
-    else: prog = ['Em', 'C', 'Em', 'Em']
-    return prog[bi % len(prog)]
+    sec = section(t)
+    k = int((t - SEC_START[sec] + 1e-6) // BAR)
+    pr = PROGS[sec]
+    return pr[k % len(pr)]
 
 
 def saw(f, d, det=(0,), cutoff=3000):
@@ -114,89 +129,76 @@ def bell(f=110, d=4.0):
 def build_music():
     m = np.zeros(N + 4 * SR)
     P = lambda s, at, g=1.0: place(m, s, at, g)
-    nb = int(TOTAL / BAR)
-    for bi in range(nb):
-        t0 = bi * BAR
-        ch = chord_at(t0)
-        notes = CH[ch]
-        r = ROOT_[ch]
-        sec_drop = DROP <= t0 < BREAK
-        sec_lift = LIFT - 1 <= t0 < OUTRO
-        # --- arp: 16ths, pattern climbs through the chord, octave up from B on
-        if t0 < BREAK or t0 >= LIFT - 1:
+    nbeats = int(TOTAL / B)
+    for bi in range(nbeats):
+        t0 = bi * B
+        sec = section(t0)
+        if sec in ('off', 'sil'): continue
+        ch = chord_at(t0); notes = CH[ch]; r = ROOT_[ch]
+        kb = int(round((t0 - SEC_START[sec]) / B))           # beat index inside the section
+        # --- arp (16ths): creeps in during the rise, full in the drop, absent in the break
+        if sec not in ('hook', 'break'):
             pat = [0, 2, 3, 1, 2, 4, 3, 2]
-            for k in range(16):
+            for k in range(4):
                 at = t0 + k * S16
-                if at >= TOTAL - 1.5: break
-                if 15.25 <= at < 16.0: continue                    # drop-out before the flash
-                if BREAK <= at < LIFT: continue
-                mm = notes[pat[k % 8] % len(notes)] + (12 if t0 >= BSEC else 0) + (12 if (sec_drop and k % 4 == 3) else 0)
-                bright = 1400 + 2600 * min(1, max(0, (at - A) / 13)) if at < DROP else (4200 if sec_drop else 3200)
-                if at >= OUTRO: bright = max(700, 3000 - (at - OUTRO) * 330)
-                g = 0.17 if (at < A or sec_drop) else 0.12
-                if at >= OUTRO: g *= max(0.0, 1 - (at - OUTRO) / 7.5)
+                if at >= TOTAL - 1.0: break
+                mm = notes[pat[(bi * 4 + k) % 8] % len(notes)] + (12 if sec in ('alarm', 'drop', 'lift') else 0) + (12 if sec == 'drop' and k == 3 else 0)
+                if sec == 'rise': bright, g = 700 + 2200 * (t0 - A) / (BSEC - A), 0.05 + 0.08 * (t0 - A) / (BSEC - A)
+                elif sec == 'alarm': bright, g = 3400, 0.13
+                elif sec == 'drop': bright, g = 4400, 0.17
+                elif sec == 'lift': bright, g = 3600, 0.14
+                else: bright, g = max(700, 3000 - (at - OUTRO) * 420), 0.12 * max(0.0, 1 - (at - OUTRO) / 6.0)
                 P(arp_note(mtof(mm), S16 * 0.95, bright), at, g)
         # --- drums
-        if t0 < BREAK or t0 >= LIFT - 1:
-            for k in range(4):
-                at = t0 + k * B
-                if 15.25 <= at < 16.0 or BREAK <= at < LIFT: continue
-                if at >= OUTRO:  # half time
-                    if k in (0,) and at < TOTAL - 4: P(kick(0.6), at, 0.7)
-                    continue
-                P(kick(), at, 1.0 if sec_drop else (0.8 if t0 < A else 0.55))
-                if (t0 >= BSEC or sec_lift) and k in (1, 3): P(clap(), at, 0.5 if sec_drop else 0.38)
-            for k in range(8):
-                at = t0 + k * B / 2 + B / 4 * 0
-                if 15.25 <= at < 16.0 or BREAK <= at < LIFT or at >= OUTRO: continue
-                if k % 2 == 1: P(hat(open_=(t0 >= BSEC)), at, 0.16)
-                elif sec_drop or sec_lift: P(hat(), at, 0.1)
-            if sec_drop:
-                for k in range(16):
-                    if k % 2: P(hat(), t0 + k * S16, 0.06)
+        if sec == 'hook':
+            if kb in (0, 2): P(kick(0.6), t0, 0.7)
+        elif sec == 'rise':
+            if t0 < 4.25: P(kick(), t0, 0.5) if kb % 2 == 0 else None
+            else: P(kick(), t0, 0.6)
+            if t0 >= 6.5 and kb % 2 == 1: P(clap(), t0, 0.3)
+            if t0 >= 4.25: P(hat(), t0 + B / 2, 0.12)
+        elif sec in ('alarm', 'drop', 'lift'):
+            P(kick(), t0, 1.0 if sec == 'drop' else 0.75)
+            if kb % 2 == 1: P(clap(), t0, 0.5 if sec == 'drop' else 0.38)
+            P(hat(open_=True), t0 + B / 2, 0.15)
+            if sec == 'drop':
+                P(hat(), t0 + S16, 0.06); P(hat(), t0 + 3 * S16, 0.06)
+        elif sec == 'outro':
+            if kb % 4 == 0 and t0 < TOTAL - 3: P(kick(0.6), t0, 0.6)
         # --- bass
-        if t0 < BREAK or t0 >= LIFT - 1:
-            if sec_drop:
-                for k, (o, d) in enumerate(((0, 0.36), (0.75, 0.2), (1.0, 0.36), (1.5, 0.2), (1.75, 0.2))):
-                    P(reese(mtof(r + 12), d), t0 + o * (BAR / 2), 0.42)
-                    P(reese(mtof(r + 12), d), t0 + BAR / 2 + o * (BAR / 2), 0.42)
-            elif t0 < OUTRO:
-                for k in range(8):
-                    at = t0 + k * B / 2
-                    if 15.25 <= at < 16.0: continue
-                    P(sub(mtof(r + 12), B / 2 * 0.9) + 0.25 * saw(mtof(r + 12), B / 2 * 0.9, (0,), 500), at, 0.42 if t0 >= A else 0.6)
-            else:
-                P(sub(mtof(r + 12), BAR * 0.95), t0, 0.4)
-        # --- pads
-        if t0 >= BSEC:
-            cut = 2600 if (sec_drop or sec_lift) else 1500
-            if BREAK - 1 <= t0 < LIFT - 1: cut = 900
-            P(padv([n + 12 for n in notes[1:4]], BAR + 0.3, cut), t0, 0.16)
-        # --- drop lead stabs (the beam motif: E — B — G — F#)
-        if sec_drop:
-            motif = [(0, 76, 0.75), (0.75, 71, 0.25), (1.0, 79, 0.5), (1.5, 78, 0.5)]
-            if bi % 2 == 1: motif = [(0, 76, 0.5), (0.5, 74, 0.5), (1.0, 71, 0.75), (1.75, 71, 0.25)]
-            for o, mm, d in motif: P(lead(mm, d * B * 2 * 0.95), t0 + o * B * 2, 0.11)
-        if sec_lift and t0 >= LIFT:
-            for o, mm, d in [(0, 72, 1.0), (1.0, 74, 0.5), (1.5, 76, 0.5)] if bi % 2 == 0 else [(0, 79, 1.0), (1.0, 78, 1.0)]:
-                P(lead(mm, d * B * 2 * 0.95), t0 + o * B * 2, 0.08)
-    # BREAK: heartbeat + low pad (doctors wait)
-    for k in range(6):
-        at = BREAK + k * B
-        if at >= LIFT - 0.25: break
-        P(kick(0.3), at, 0.5); P(kick(0.25), at + 0.17, 0.3)
-    # rise into the drop: noise riser + snare roll 14–15.25
-    t = tt(1.25)
-    P(bp(noise(1.25), 500, 7000) * (t / 1.25) ** 2, 14.0, 0.35)
-    for k in range(20):
-        at = 14.0 + k * 1.25 / 20
-        P(clap(0.12), at, 0.08 + 0.25 * k / 20)
-    P(lp(noise(0.75), 3000)[::-1] * np.linspace(0, 1, int(0.75 * SR)) ** 3, 15.25, 0.3)   # reverse swell into 16.0
-    # LIFT re-entry: build 26.75 → 27.0
-    P(bp(noise(0.5), 2000, 9000) * np.linspace(0, 1, int(0.5 * SR)) ** 2, 26.5, 0.2)
+        if sec == 'hook':
+            for k in range(2): P(sub(mtof(r + 12), B / 2 * 0.9), t0 + k * B / 2, 0.35)
+        elif sec in ('rise', 'alarm', 'lift'):
+            for k in range(2): P(sub(mtof(r + 12), B / 2 * 0.9) + 0.25 * saw(mtof(r + 12), B / 2 * 0.9, (0,), 500), t0 + k * B / 2, 0.42)
+        elif sec == 'drop':
+            for o, d in ((0, 0.2), (0.375, 0.1)):
+                P(reese(mtof(r + 12), d), t0 + o, 0.45)
+        elif sec == 'outro' and kb % 4 == 0:
+            P(sub(mtof(r + 12), BAR * 0.95), t0, 0.35)
+        # --- pads (one per bar from the alarm on)
+        if kb % 4 == 0 and sec in ('rise', 'alarm', 'drop', 'break', 'lift'):
+            cut = {'rise': 1100, 'alarm': 1700, 'drop': 2600, 'break': 900, 'lift': 2400}[sec]
+            P(padv([n + 12 for n in notes[1:4]], BAR + 0.3, cut), t0, 0.15 if sec != 'rise' else 0.1)
+        # --- drop lead (the beam motif) and lift lead
+        if sec == 'drop' and kb % 4 == 0:
+            motif = [(0, 76, 0.75), (0.75, 71, 0.25), (1.0, 79, 0.5), (1.5, 78, 0.5)] if (kb // 4) % 2 == 0 else [(0, 76, 0.5), (0.5, 74, 0.5), (1.0, 71, 0.75), (1.75, 71, 0.25)]
+            for o, mm, d in motif: P(lead(mm, d * BAR * 0.95), t0 + o * BAR, 0.11)
+        if sec == 'lift' and kb % 4 == 0 and t0 >= 22.5:
+            for o, mm, d in ([(0, 72, 1.0), (1.0, 74, 0.5), (1.5, 76, 0.5)] if (kb // 4) % 2 == 0 else [(0, 79, 1.0), (1.0, 78, 1.0)]):
+                P(lead(mm, d * BAR * 0.95), t0 + o * BAR, 0.08)
+    # HOOK: tense low drone under the impact
+    P(lp(saw(mtof(28), 2.2, (-12, 0, 12), 200), 160) * adsr(int(2.2 * SR), 0.01, 2.2, 1, 0.3), 0.0, 0.5)
+    # ALARM: riser 10.5 → 11.5, then reverse swell through the drop-out into the flash
+    tr = tt(1.0); P(bp(noise(1.0), 500, 7000) * (tr / 1.0) ** 2, 10.5, 0.35)
+    for k in range(16): P(clap(0.12), 10.5 + k / 16, 0.08 + 0.25 * k / 16)
+    P(lp(noise(0.5), 3000)[::-1] * np.linspace(0, 1, int(0.5 * SR)) ** 3, OFF0, 0.3)
+    # BREAK: heartbeat
+    for k in range(4): P(kick(0.3), BREAK + k * B, 0.5); P(kick(0.25), BREAK + k * B + 0.17, 0.3)
+    # silence, then the reverse swell into "He didn't"
+    P(lp(noise(0.35), 4000)[::-1] * np.linspace(0, 1, int(0.35 * SR)) ** 4, SIL1 - 0.35, 0.25)
     # OUTRO bells
-    P(bell(82.4, 6.0), OUTRO, 0.32); P(bell(164.8, 4.0), 35.5, 0.14)
-    P(padv([64, 67, 71, 76], 7.6, 1400), OUTRO, 0.17)
+    P(bell(82.4, 5.0), OUTRO, 0.3); P(bell(164.8, 3.0), 30.6, 0.14)
+    P(padv([64, 67, 71, 76], 6.3, 1400), OUTRO, 0.17)
     m = m[:N]
     m = reverb(m, 1.8, 0.18)
     tm = np.arange(N) / SR
@@ -207,8 +209,10 @@ def build_music():
             duck[max(0, a):min(N, b)] = 0.62
     k = int(0.08 * SR)
     duck = np.convolve(duck, np.ones(k) / k, mode='same')
-    ride = np.interp(tm, [0, 32.0, 34.0, 38.0, 40.0], [1, 1, 0.8, 0.55, 0])
-    return m * duck * ride
+    # hard silences: the drop-out before the flash, the half-beat before "He didn't" (reverb tails cut too)
+    gate = np.interp(tm, [0, OFF0, OFF0 + 0.05, OFF1 - 0.02, OFF1, SIL0, SIL0 + 0.06, SIL1 - 0.36, SIL1, 30.0, 32.5, TOTAL], [1, 1, 0.25, 0.4, 1, 1, 0.0, 0.0, 1, 1, 0.6, 0])
+    energy = np.interp(tm, [0, 0.4, 2.0, 2.01, 8.5, 11.5, 12.0, 18.4, 18.5, 21.5, 26.9, 27.0, TOTAL], [1.0, 0.7, 0.6, 0.45, 0.75, 0.9, 1.35, 1.25, 0.75, 1.1, 1.0, 0.85, 0.8])
+    return m * duck * gate * energy
 
 
 def hum(d, f=50):
@@ -225,44 +229,42 @@ def flatline(d=0.9, f=1000):
 def build_sfx():
     s = np.zeros(N + 4 * SR)
     P = lambda x, at, g=1.0: place(s, x, at, g)
-    # HOOK: beam tears through on frame 1
+    # HOOK: the beam tears through on frame 1
     P(boom(), 0.0, 0.7); P(zap(0.6), 0.0, 0.5); P(whoosh(0.3, 800, 7000), 0.0, 0.4)
     P(hum(2.0, 50) * np.linspace(1, 0, int(2.0 * SR)), 0.0, 0.18)
-    for a in (1.0, 2.0): P(whoosh(0.14, 900, 6000), a - 0.05, 0.28); P(thud(70), a, 0.35)
-    P(whoosh(0.4, 3000, 300, up=False), 2.75, 0.35)
-    # USSR 1978: stamp + teletype
-    P(stamp(), 3.5, 0.6); P(thud(60), 3.5, 0.4)
-    for k in range(4): P(tick(), 4.3 + k * 0.125, 0.3)                 # 1978 digits
-    P(pop(520, 0.12), 4.95, 0.35)                                        # pin drops on Protvino
-    # accelerator: power-up hum under the ring sequence
-    hd = 15.25 - 6.5
-    P(hum(hd, 50) * np.linspace(0.3, 1, int(hd * SR)) ** 2, 6.5, 0.2)
-    P(whoosh(0.5, 300, 4000), 6.0, 0.3)
-    for a in (8.0, 10.0): P(whoosh(0.2, 800, 6000), a - 0.1, 0.25)
-    P(lock(), 10.9, 0.4)                                               # the broken part
-    # safety failure: alarm buzz on the beats 12–15
-    for k in range(6): P(buzz(), 12.0 + k * 0.5, 0.18)
-    P(siren(1.5), 13.5, 0.12)
-    P(stamp(), 13.39, 0.7); P(thud(60), 13.39, 0.5)                    # FAILED
-    # THE FLASH (16.0)
-    P(boom(), 16.0, 1.0); P(sweep_sine(120, 30, 1.6, 0.5) * adsr(int(1.6 * SR), 0.005, 1.6, 1, 0.4), 16.0, 0.6)
-    P(hp(noise(1.2), 2500) * expdec(int(1.2 * SR), 0.35), 16.0, 0.35); P(shing(1.6, 3200), 16.0, 0.35)
-    P(sparkle(1.0, 12, 5), 17.0, 0.18)
-    # dose counter ticks + slam
-    for k in range(14): P(tick(), 19.5 + k * 0.1, 0.12 + 0.01 * k)
-    P(thud(60), 21.0, 0.6); P(stamp(), 21.0, 0.4)
-    # face splits / swells
-    P(whoosh(0.35, 300, 3000), 23.0, 0.3); P(crunch(), 23.6, 0.25)
-    # heart monitor beeps on the beat, flat-line held into "to die", then silence
-    for k in range(4): P(ding(1000, 0.16), 24.52 + k * 0.5, 0.14)
-    P(flatline(0.6), 26.35, 0.1)
-    # "He didn't." — hit
-    P(boom(), 27.0, 0.75); P(whoosh(0.2, 800, 7000), 26.9, 0.3)
-    for a in (28.5, 30.0, 31.0): P(whoosh(0.16, 900, 6000), a - 0.05, 0.25)
-    P(stamp(), 28.75, 0.35)                                            # PhD seal
-    # outro
-    P(whoosh(0.8, 300, 5000), 31.8, 0.3)
-    P(sparkle(1.4, 14, 7), 36.95, 0.22); P(ding(1568, 1.2), 38.4, 0.13)
+    P(whoosh(0.14, 900, 6000), 0.95, 0.28); P(thud(70), 1.0, 0.35)
+    P(whoosh(0.4, 3000, 300, up=False), 1.75, 0.35)                     # beam becomes the map line
+    # map: star, 1978, pin, dive
+    P(stamp(), 2.25, 0.5)
+    for k in range(4): P(tick(), 2.5 + k * 0.0625, 0.3)
+    P(pop(520, 0.12), 2.75, 0.35); P(whoosh(0.35, 300, 4000), 2.95, 0.3)
+    # accelerator hum, dive into the tunnel
+    hd = OFF0 - 3.25
+    P(hum(hd, 50) * np.linspace(0.3, 1, int(hd * SR)) ** 2, 3.25, 0.18)
+    P(whoosh(0.4, 300, 4000), 5.1, 0.3)
+    P(lock(), 7.6, 0.4)                                                  # the broken part
+    # the pipe bends into a gauge needle, needle climbs, SLAMS red: FAILED
+    P(whoosh(0.3, 600, 4000), 8.45, 0.3)
+    for k in range(4): P(buzz(), 8.5 + k * 0.5, 0.15)
+    P(stamp(), 9.75, 0.8); P(thud(55), 9.75, 0.7); P(boom(), 9.75, 0.4)
+    P(siren(1.2), 10.0, 0.12)
+    # THE FLASH (12.0)
+    P(boom(), DROP, 1.0); P(sweep_sine(120, 30, 1.6, 0.5) * adsr(int(1.6 * SR), 0.005, 1.6, 1, 0.4), DROP, 0.6)
+    P(hp(noise(1.2), 2500) * expdec(int(1.2 * SR), 0.35), DROP, 0.35); P(shing(1.6, 3200), DROP, 0.35)
+    P(sparkle(1.0, 12, 5), 13.5, 0.2)
+    P(thud(70), 14.25, 0.4)                                              # PAIN: 0
+    # dose bar shoots up; face swells
+    P(whoosh(0.8, 200, 5000), 15.5, 0.35); P(thud(60), 16.25, 0.5)
+    P(whoosh(0.35, 300, 3000), 17.0, 0.3); P(crunch(), 17.5, 0.25)
+    # heart monitor on the beat, then flat
+    for k in range(4): P(ding(1000, 0.16), BREAK + 0.02 + k * 0.5, 0.14)
+    P(flatline(0.5), 20.25, 0.1)
+    # "He didn't." — HIT
+    P(boom(), SIL1, 0.85); P(sweep_sine(110, 35, 1.0, 0.5) * adsr(int(1.0 * SR), 0.005, 1.0, 1, 0.3), SIL1, 0.5)
+    P(stamp(), 23.5, 0.4)                                                # PhD seal
+    for a in (24.5, 25.0): P(whoosh(0.16, 900, 6000), a - 0.05, 0.25)
+    P(whoosh(0.8, 300, 5000), 26.8, 0.3)
+    P(sparkle(1.3, 14, 7), 30.6, 0.22); P(ding(1568, 1.2), 32.0, 0.13)
     return reverb(s[:N], 1.4, 0.2)
 
 
