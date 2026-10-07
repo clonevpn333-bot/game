@@ -112,3 +112,17 @@ Default: do NOT put Pip in an episode unless the user asks for him. Keep the tec
 - Music: never rip copyrighted tracks. Compose an original in the requested style, and ALSO deliver a NO_MUSIC cut
   (VO + SFX) so the user can add a licensed sound in the Shorts app. score.py writes score.wav, sfx.wav, music_only.wav.
 - Always ship a vertical 1080×1920 cover (videos/brand/thumbs/<ep>-v fixture, rendered with snap --fixtures).
+
+## MOTION DESIGN RULE (user, ep7+)
+Treat every Short as a premium motion-graphics film, not a slideshow of illustrated scenes. Use kinetic typography,
+2.5D/3D depth, continuous camera movement, match cuts, shape morphs, object-to-text transitions, masks, parallax, and
+transitions where elements from one scene physically become the next scene. Important words interact with the world
+(they're struck by, carved into, carried by, or turned into the objects). Prefer visual continuity over cutting to an
+unrelated composition. The whole Short should feel like one evolving visual system.
+
+## MUSIC RULE (user, ep7+)
+Music is selected BEFORE final animation; major visual beats are designed around the song's rhythm and energy (cut on the
+beat grid, hits on downbeats, the drop on the story's peak). For copyrighted/popular music: never scrape or download it;
+use a provided track only as a lawful timing reference, export the master WITHOUT baked-in copyrighted audio, and the
+official song is added through YouTube Shorts' licensed Add Sound at upload. Otherwise compose an original track first
+(tools/score.py music section), lock its BPM/sections, then animate to it. Always also deliver a NO_MUSIC cut.
