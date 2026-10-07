@@ -83,6 +83,13 @@ abstract class Walker extends Actor {
     this.group.visible = true;
   }
 
+  /** Teleport the actor (and its collision body). */
+  placeAt(p: THREE.Vector3): void {
+    this.group.position.copy(p);
+    this.body.pos.copy(p);
+    this.body.vel.set(0, 0, 0);
+  }
+
   /** Move toward a point at speed; returns remaining distance. */
   protected steer(target: THREE.Vector3, speed: number, dt: number, physics: PhysicsWorld): number {
     const p = this.group.position;

@@ -258,7 +258,16 @@ export const Tex = {
     g.fillStyle = opts.bg ?? '#2a1e3a';
     g.fillRect(0, 0, w, h);
     g.fillStyle = opts.fg ?? '#ffe7b8';
-    g.font = opts.font ?? `600 ${Math.floor(h * 0.5)}px "Fredoka Variable", "Nunito", sans-serif`;
+    let size = Math.floor(h * 0.5);
+    const fam = '"Fredoka Variable", "Nunito", sans-serif';
+    g.font = opts.font ?? `600 ${size}px ${fam}`;
+    if (!opts.font) {
+      const tw = g.measureText(text).width;
+      if (tw > w * 0.88) {
+        size = Math.floor((size * w * 0.88) / tw);
+        g.font = `600 ${size}px ${fam}`;
+      }
+    }
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.fillText(text, w / 2, h / 2 + 2);
@@ -279,9 +288,13 @@ export const Tex = {
       g.fillRect(0, 0, s, s);
     }, false);
   },
-  clear(): void {
-    for (const t of cache.values()) t.dispose();
-    cache.clear();
+  /** Free chapter textures (keeps shared ones used by persistent materials). */
+  clear(keep: string[] = ['cardboard', 'softDot']): void {
+    for (const [k, t] of cache) {
+      if (keep.some((p) => k.startsWith(p))) continue;
+      t.dispose();
+      cache.delete(k);
+    }
   },
 };
 

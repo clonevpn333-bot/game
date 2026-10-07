@@ -214,7 +214,7 @@ export function fieldMaterial(base: THREE.MeshStandardMaterial, field: ColorFiel
            float fd = distance(vDreamWorld, uFieldCenter);
            float drained = smoothstep(uFieldRadius - 2.5, uFieldRadius, fd);
            float g = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
-           vec3 grey = mix(vec3(g), vec3(0.78, 0.76, 0.84), 0.35) * 0.92;
+           vec3 grey = mix(vec3(g), vec3(0.62, 0.62, 0.72), 0.3) * 0.82;
            float edge = smoothstep(uFieldRadius - 2.5, uFieldRadius - 1.0, fd) * (1.0 - smoothstep(uFieldRadius - 1.0, uFieldRadius, fd));
            diffuseColor.rgb = mix(diffuseColor.rgb, grey, drained) + vec3(1.0, 0.85, 0.6) * edge * 0.6;
          }`,

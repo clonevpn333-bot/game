@@ -38,6 +38,13 @@ export class CameraRig {
     this.cineBlend = this.cinematic ? 1 : 0;
   }
 
+  /** Shift the camera rig by an offset (seamless world loops). */
+  shift(d: THREE.Vector3): void {
+    this.target.add(d);
+    this.smoothTarget.add(d);
+    this.camera.position.add(d);
+  }
+
   addTrauma(a: number): void {
     this.trauma = Math.min(1, this.trauma + a);
   }

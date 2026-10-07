@@ -9,6 +9,7 @@ import type { ChapterLook } from '../render/Atmosphere';
 import type { Expression } from '../entities/Rig';
 import type { DialogueLine } from '../ui/Ui';
 import { prep, roundedGeo } from '../world/Geo';
+import { Tex } from '../render/Textures';
 import type { Collider } from '../world/Physics';
 
 export interface Checkpoint {
@@ -393,7 +394,16 @@ export class Level {
       if (m.geometry) m.geometry.dispose();
     });
     this.root.removeFromParent();
+    this.root.traverse((o) => {
+      const mm = (o as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+      const list = Array.isArray(mm) ? mm : mm ? [mm] : [];
+      for (const mat of list) {
+        const map = (mat as THREE.MeshBasicMaterial).map;
+        if (map && !(map as THREE.CanvasTexture).isCanvasTexture) map.dispose();
+      }
+    });
     this.mats.dispose();
     this.stampMat.dispose();
+    Tex.clear();
   }
 }

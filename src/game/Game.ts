@@ -282,6 +282,15 @@ export class Game {
     return this.ui.say(lines);
   }
 
+  /** Seamlessly move the player and camera by an offset (looping spaces). */
+  warp(dx: number, dy: number, dz: number): void {
+    const d = new THREE.Vector3(dx, dy, dz);
+    this.player.body.pos.add(d);
+    this.player.rig.root.position.add(d);
+    this.camRig.shift(d);
+    this.player.rig.resetSecondary();
+  }
+
   wait(sec: number): Promise<void> {
     return new Promise((res) => this.waiters.push({ t: sec, res }));
   }
@@ -380,6 +389,16 @@ export class Game {
     this.post.setFlashColor('#ff9ab8');
     this.post.flash = 0.25;
     if (this.lucidity <= 0) this.wake('Your lucidity faded.');
+  }
+
+  /** Lose lucidity without knockback (decay effects). */
+  drainLucidity(amount: number, reason: string): void {
+    if (this.waking) return;
+    this.lucidity = Math.max(0, this.lucidity - amount);
+    this.ui.setLucidity(this.lucidity, this.maxLucidity);
+    this.post.aberrationPulse = 0.6;
+    this.audio.hurt();
+    if (this.lucidity <= 0) this.wake(reason);
   }
 
   private onAttack(origin: THREE.Vector3, dir: THREE.Vector3): void {
