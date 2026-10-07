@@ -12,7 +12,10 @@ npm install
 npm run dev        # http://127.0.0.1:5188
 npm run build      # production build -> dist/
 npm run preview    # serves dist/ at http://127.0.0.1:4188
+npm run build:single  # one self-contained file: the-last-procession.html
 ```
+
+`the-last-procession.html` is the whole game in one file. Double-click it to play offline in a modern desktop browser. The fonts load from Google Fonts when online and fall back to Georgia when offline.
 
 Add `?all` to the URL to unlock every chapter in **Chapters**. Progress is saved in `localStorage`.
 

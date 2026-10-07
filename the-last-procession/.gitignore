@@ -5,3 +5,4 @@ artifacts/**/*.png
 artifacts/canvas-inspection/
 *.log
 .DS_Store
+the-last-procession.html
