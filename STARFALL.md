@@ -17,34 +17,51 @@ Three.js r160 loads from jsDelivr through an import map. Everything else is gene
 
 ## Controls
 
+**On foot (first-person by default; V toggles third-person)**
+
 | Input | Action |
 |---|---|
-| Click | Capture the mouse (ground combat) |
+| Click | Capture the mouse |
 | WASD · Shift · Space | Move · sprint · jump / jet-pack (hold in the air) |
 | LMB · RMB · R | Fire VK-7 Arc Carbine · aim down sights · reload |
 | 1–6 | Orbital directives (throws a beacon): Orbital Lance, Reinforce, Bastion Sentry, Mend Field, Strider Drop (rank 4), Fleet Barrage (rank 5) |
 | F · G · H | Squad: form on me · assault the point you're aiming at · hold position |
 | Q (hold) | **Bond** a weakened creature (below 40% health) or titan (below 25%). It joins your legion. |
 | E | Interact: attune monoliths, offer alliance to the Kith, plant a banner on a nest, open the colony terminal |
-| X (hold) | Call extraction back to orbit |
-| M | Galaxy map (from orbit or warp) · drag to rotate, right-drag to pan, wheel to zoom |
-| Esc | Pause, volume and the soundtrack jukebox |
+| X (hold) | Call extraction back to your ship |
+| Esc | Pause: volume, graphics quality, soundtrack |
+
+**Flying the Ember Wake (in every star system)**
+
+| Input | Action |
+|---|---|
+| Mouse | Pitch / yaw |
+| A · D | Roll |
+| W · S | Throttle up / down |
+| Shift | Afterburner (builds heat) |
+| J | Cruise drive (×30 speed; drops out near planets) |
+| LMB · RMB | Twin cannons (they lead the selected target) · homing missile at the locked target |
+| E | Context: **drop to a planet's surface** (conquer / assault / land / defend), **board** a rival cruiser or dreadnought, **jump** through a hyperlane gate to the next system |
+| V | Chase camera / bridge cockpit |
+| Tab | Command panels: empire, colonies, fleets, doctrine; releases the mouse |
+| M | Galaxy map. Drag to rotate, right-drag to pan, wheel to zoom. Set course for automatic multi-jump travel. |
 
 ## The loop
 
 **10 soldiers → outpost → planet → fleet → solar system → interstellar empire.**
 
-1. **Drop.** Your pod falls from orbit and the squad's pods rain down around you.
-2. **Conquer.** Capture every uplink, and destroy any rival bastion. Each planet type has its own natives, and the way you deal with them becomes a permanent trait of the colony:
+1. **Fly.** Each system is a real space you pilot through: the star, planets with atmospheres, clouds and city lights, orbital stations with traffic, asteroid belts, hyperlane gates to every neighbouring system, and any rival warships parked there. You fight those warships with your escorts; every ship you destroy is removed from the galaxy simulation.
+2. **Drop.** Fly close to a planet and press E. Your pod falls from orbit and the squad's pods rain down around you.
+3. **Conquer.** Capture every uplink, and destroy any rival bastion. Each planet type has its own natives, and the way you deal with them becomes a permanent trait of the colony:
    - **Exterminate**: destroy every nest. *+15% construction.*
    - **Tame**: weaken the apex titan and hold Q to bond it. It fights for you. *Beasts guard the colony.*
    - **Pacify**: attune every Resonance Monolith while their creatures attack you. *+30% population growth.*
    - **Ally**: pass the Kith trial by defending their village for 60 s. *+30 colonists, Kith warriors join your squad.*
    - **Dominate**: kill the apex and plant Dominion banners on the nests. *+30% resources.*
-3. **Govern.** Choose one of three governors (Architect, Warden, Matriarch, Quartermaster, Beastwarden or Shipwright) and decide how many of your colonists settle the world.
-4. **Leave.** The colony keeps building in real time. Structures go through foundation, scaffold, shell and lit-up stages. In order, it builds habitats, hydro domes, foundries, aether refineries, barracks, turrets, two rings of ramparts and watchtowers, a spaceport, an Aegis shield dome, arcologies, a 260 m Citadel Spire, an orbital cannon and monuments. Garrisons grow, resources accumulate and colonists emigrate to your flagship. Rough pacing (it changes with the governor and doctrines): Outpost in about 2 min, Fortified Town about 10 min, City about 20 min, Fortress City about 30 min, Megacity at 45–60 min. Progress continues while the tab is closed (up to 4 h of catch-up) and you get a *While You Were Away* report when you return.
-5. **Expand.** Recruit troops, muster garrisons onto the flagship, commission frigates, cruisers and dreadnoughts at spaceports, detach task forces, auto-invade with fleets, and spend renown on Doctrines.
-6. **Defend.** Rivals raid you, and they come for weak new colonies first. You get *INCOMING* and then *WARNING — THE IRON SYNOD IS INVADING VEGA III* alerts, each with actions: **Return & defend** (drop into a wave defense of your own city, alongside its garrison and turrets), **Send fleet**, **Fortify** (that world and its neighbours), **Counterattack** (hit the attacker's nearest world), or **Abandon**. Fleet engagements let you **board the enemy flagship** and fight on its hull to seize the bridge.
+4. **Govern.** Choose one of three governors (Architect, Warden, Matriarch, Quartermaster, Beastwarden or Shipwright) and decide how many of your colonists settle the world.
+5. **Leave.** The colony keeps building in real time. Structures go through foundation, scaffold, shell and lit-up stages. In order, it builds habitats, hydro domes, foundries, aether refineries, barracks, turrets, two rings of ramparts and watchtowers, a spaceport, an Aegis shield dome, arcologies, a 260 m Citadel Spire, an orbital cannon and monuments. Garrisons grow, resources accumulate and colonists emigrate to your flagship. Rough pacing (it changes with the governor and doctrines): Outpost in about 2 min, Fortified Town about 10 min, City about 20 min, Fortress City about 30 min, Megacity at 45–60 min. Progress continues while the tab is closed (up to 4 h of catch-up) and you get a *While You Were Away* report when you return.
+6. **Expand.** Recruit troops, muster garrisons onto the flagship, commission frigates, cruisers and dreadnoughts at spaceports, detach task forces, auto-invade with fleets, and spend renown on Doctrines.
+7. **Defend.** Rivals raid you, and they come for weak new colonies first. You get *INCOMING* and then *WARNING — THE IRON SYNOD IS INVADING VEGA III* alerts, each with actions: **Return & defend** (drop into a wave defense of your own city, alongside its garrison and turrets), **Send fleet**, **Fortify** (that world and its neighbours), **Counterattack** (hit the attacker's nearest world), or **Abandon**. Fleet engagements let you **board the enemy flagship** and fight on its hull to seize the bridge.
 
 Rank follows the size of your empire: Drop Captain → Outpost Warden → Planetary Marshal → Fleet Admiral → System Sovereign → Star Regent → Interstellar Ascendant. Higher ranks raise the field squad cap from 10 up to 70 and unlock directives.
 
@@ -103,6 +120,7 @@ Saves go to `localStorage` (`starfall.dominion.save.v1`) every 10 s and when the
 ## Known limitations
 
 - Desktop only: mouse and keyboard, no touch controls.
-- All art is procedural (no external asset generation keys were available). Characters are built from authored primitives, not skinned meshes.
-- Performance was measured with software rendering in CI. On the densest city and combat views the renderer reports about 100–150 draw calls and 0.75–0.8 M triangles. Real-GPU frame rates haven't been measured.
+- All art is procedural (no external asset generation keys were available). Characters are jointed procedural rigs (hips, torso, head, arms, thighs, shins) built from rounded armour plates, capsules, lathes and tapered tubes. They aren't sculpted or skinned meshes.
+- Graphics: MSAA, GTAO ambient occlusion, bloom, colour grade, procedural normal maps, sky reflections, a triplanar terrain shader, and wind-animated foliage. The Performance setting in the pause menu turns off ambient occlusion and lowers shadow and render resolution for weaker GPUs.
+- Performance was only measured with software rendering. Dense ground scenes draw about 2–5 M triangles per frame, counting the shadow and ambient-occlusion passes. Real-GPU frame rates haven't been measured, so use the Performance setting if it stutters.
 - Mid-mission ground state isn't saved. If you reload, the drop restarts, but its effects on the galaxy (troop losses, natives killed) are recorded when you extract.
