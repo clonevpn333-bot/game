@@ -1292,7 +1292,7 @@ Sim.step = function (dt) {
       if (!g.warned && g.loyalty < 0.38 && g.ambition > 0.45) { g.warned = true; g.known = true; this.alert({ kind: 'war', title: `WHISPERS OF TREASON — ${g.name.toUpperCase()}`, text: `${g.name}, ruler of ${p.name} (${g.quirk.toLowerCase()}), ${g.contact ? 'has been seen meeting envoys of ' + this.cname(g.contact) : 'is gathering private guards'}. Loyalty ${Math.round(g.loyalty * 100)}%.`, pid: p.id, actions: ['court_gift', 'court_summon', 'court_purge', 'dismiss'] }); }
       if (g.warned && g.loyalty > 0.55) g.warned = false;
       if (g.loyalty <= 0.08 && g.ambition > 0.35) {
-        if (g.aboard) { g.loyalty = 0.2; this.alert({ kind: 'war', title: `MUTINY ABOARD THE ${this.flagship(cid).name.toUpperCase()}`, text: `${g.name} and their household guard have seized the throne deck. Crush them yourself, or lose ${p.name} and a third of your crew.`, pid: p.id, actions: ['mutiny', 'abandon_mutiny'] }); this.ev.emit('mutiny', { p, g }); }
+        if (g.aboard) { if ((g.mutinyT || -1e9) > s.t - 400) continue; g.mutinyT = s.t; g.loyalty = 0.2; this.alert({ kind: 'war', title: `MUTINY ABOARD THE ${this.flagship(cid).name.toUpperCase()}`, text: `${g.name} and their household guard have seized the throne deck. Crush them yourself, or lose ${p.name} and a third of your crew.`, pid: p.id, actions: ['mutiny', 'abandon_mutiny'] }); this.ev.emit('mutiny', { p, g }); }
         else this._defect(p, g.contact || this._rivalFor(cid));
       }
     }
@@ -1957,7 +1957,7 @@ function shipKit(fac, cls) {
   _shipCache[key] = k; return k;
 }
 const SHIP_LEN = { frigate: 60, cruiser: 130, dreadnought: 300, flag: 170 };
-function buildShipMesh(fac, cls) { const g = shipKit(fac, cls).build({ shadow: false, receive: false }); g.scale.setScalar(SHIP_LEN[cls] || 100); return g; }
+function buildShipMesh(fac, cls) { const g = (cls === 'flag' ? sculptFlagship(fac) : shipKit(fac, cls)).build({ shadow: false, receive: false }); g.scale.setScalar(SHIP_LEN[cls] || 100); return g; }
 
 // ---------------- STRUCTURES (settlement) ----------------
 function windowBands(k, P, x, y0, z, w, d, h, rot, every = 3.2) {
@@ -2402,6 +2402,31 @@ const Studio = {
   },
   update(dt) { this.t += dt; const m = new THREE.Matrix4(); for (let i = 0; i < this.sets.length; i++) { const u = this.units[i], s = this.sets[i]; u.t += dt; if (u.walk) { u.ph += dt * 8; u.amp = u.walk; } s.begin(); m.compose(u.pos, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, u.yaw + this.t * this.spin, 0)), new THREE.Vector3(1, 1, 1)); s.push(u, m, false); s.end(); } },
 };
+
+// ---------------------------------------------------------------------
+// FLAGSHIP — sculpted capital-ship hull (normalised: length 1, bow +z)
+// ---------------------------------------------------------------------
+function sculptFlagship(fac) {
+  const P = FAC_PAL[fac] || FAC_PAL.halcyon; const k = new Kit(); const Wc = P.base, Dk = 0x3a3c42, Am = P.accent, E = P.emis;
+  const hull = new Loft([[-0.5, 0.1, 0.045, 0.05, 3.2], [-0.44, 0.118, 0.052, 0.058, 3.4], [-0.3, 0.124, 0.054, 0.062, 3.4], [-0.1, 0.108, 0.046, 0.054, 3.3], [0.1, 0.078, 0.036, 0.044, 3.2], [0.28, 0.048, 0.026, 0.032, 3], [0.42, 0.022, 0.016, 0.02, 2.6], [0.5, 0.003, 0.004, 0.005, 2]], { axis: 'z', seg: 36, sub: 3 });
+  loftOn(k, 'hull', hull, (x, y, z) => colArr(y < -0.02 ? 0x8a8a84 : Wc));
+  // armour panels: rows along the length, three columns per side of the spine; gaps read as panel lines
+  for (let i = 0; i < 14; i++) { const z0 = -0.46 + i * 0.066, z1 = z0 + 0.058; if (z1 > 0.46) break; for (const [a0, a1] of [[-0.2, -0.08], [-0.07, 0.07], [0.08, 0.2]]) plateOn(k, hull, { y: [z0, z1], a: [a0, a1], th: 0.004, off: 0.0005, col: (i + Math.round(a0 * 10)) % 5 === 0 ? 0xd8d0c0 : Wc, role: 'hull', ns: 2, nt: 2, bev: 0.002 }); }
+  for (const sd of [-1, 1]) { plateOn(k, hull, { y: [-0.46, 0.3], a: sd > 0 ? [0.205, 0.235] : [0.765, 0.795], th: 0.004, off: 0.0005, col: Am, role: 'armor', ns: 8, nt: 1, bev: 0.002 }); plateOn(k, hull, { y: [-0.44, 0.2], a: sd > 0 ? [0.25, 0.3] : [0.7, 0.75], th: 0.002, off: -0.002, col: 0x16171a, role: 'metal', ns: 8, nt: 1, bev: 0.001 });
+    for (let i = 0; i < 26; i++) { const z = -0.42 + i * 0.024; const p = hull.pt(z, sd > 0 ? 0.275 : 0.725, 0.0006); k.add('emis', B_(), i % 7 === 3 ? [0.4, 1.2, 2.2] : [2.2, 1.6, 0.8], p.x, p.y + (i % 2 ? 0.004 : -0.004), p.z, 0.002, 0.003, 0.009, 0, 0, 0, 0.8); } }
+  // stepped dorsal superstructure + bridge tower
+  const top = (z) => hull.pt(z, 0, 0).y; for (let i = 0; i < 4; i++) { const z = -0.32 + i * 0.09, w = 0.1 - i * 0.018, h = 0.018; k.add('hull', RB(0.25), i % 2 ? 0xd8d0c0 : Wc, 0, top(z) + h / 2 + i * 0.008, z, w, h + i * 0.016, 0.1); k.add('emis', B_(), E, 0, top(z) + i * 0.008 + h * 0.6, z + 0.0505, w * 0.8, 0.002, 0.001, 0, 0, 0, 0.6); }
+  const bz = -0.37, by = top(bz); k.add('hull', RB(0.3), Wc, 0, by + 0.05, bz, 0.03, 0.09, 0.05); k.add('hull', RB(0.25), Wc, 0, by + 0.1, bz, 0.12, 0.022, 0.05); k.add('glass', B_(), 0x101418, 0, by + 0.1, bz + 0.026, 0.1, 0.006, 0.002); k.add('emis', B_(), [2, 1.6, 1], 0, by + 0.1, bz + 0.0265, 0.09, 0.002, 0.001, 0, 0, 0, 0.6);
+  for (const sd of [-1, 1]) { k.add('hull', S_(), 0xe0dccc, sd * 0.045, by + 0.124, bz, 0.026, 0.026, 0.026); k.add('metal', C_(0.5, 0.5, 8), Dk, sd * 0.045, by + 0.114, bz, 0.006, 0.01, 0.006); }
+  k.add('metal', C_(0.5, 0.5, 5), Dk, 0.01, by + 0.15, bz - 0.01, 0.002, 0.05, 0.002); k.add('emis', DOT(), [3, 0.4, 0.2], 0.01, by + 0.176, bz - 0.01, 0.004, 0.004, 0.004);
+  // dorsal turrets
+  for (let i = 0; i < 6; i++) for (const sd of [-1, 1]) { const z = -0.2 + i * 0.075; const p = hull.pt(z, sd * 0.13, 0.0); k.add('metal', C_(0.5, 0.5, 10), Dk, p.x, p.y + 0.003, p.z, 0.016, 0.006, 0.016); k.add('hull', RB(0.3), 0x8a8a84, p.x, p.y + 0.008, p.z, 0.012, 0.006, 0.014); for (const b of [-1, 1]) k.add('metal', C_(0.5, 0.5, 6), Dk, p.x + b * 0.003, p.y + 0.009, p.z + 0.012, 0.0018, 0.016, 0.0018, Math.PI / 2); }
+  // engines
+  k.add('hull', RB(0.2), Dk, 0, 0, -0.5, 0.17, 0.07, 0.03); for (const x of [-0.05, -0.027, 0, 0.027, 0.05]) { const big = x === 0 ? 1.25 : 1; k.add('metal', C_(0.5, 0.38, 16), 0x5a5c62, x, 0, -0.522, 0.024 * big, 0.03, 0.024 * big, Math.PI / 2); k.add('emis', C_(0.5, 0.5, 16), [0.7, 1.6, 3.2], x, 0, -0.536, 0.019 * big, 0.002, 0.019 * big, Math.PI / 2); }
+  // ventral hangar glow + keel
+  plateOn(k, hull, { y: [-0.2, 0.0], a: [0.46, 0.54], th: 0.002, off: -0.001, col: [2.4, 1.3, 0.5], role: 'emis', ns: 2, nt: 1 }); plateOn(k, hull, { y: [-0.44, 0.4], a: [0.495, 0.505], th: 0.006, off: 0.0005, col: Dk, role: 'metal', ns: 8, nt: 1 });
+  return k;
+}
 
 // =====================================================================
 // CIV — native civilisations on the ground: tiered cities (feudal keeps →
@@ -2986,6 +3011,7 @@ const UDEF = {
   trooper: { arch: 'trooper', hp: 100, spd: 7.6, r: 0.5, h: 1.25, wpn: 'rifle', dmg: 8, rate: 0.24, range: 62, acc: 0.42, renown: 3 },
   civ: { arch: 'civ', hp: 30, spd: 2.2, r: 0.4, h: 1.1 },
   worker: { arch: 'worker', hp: 40, spd: 4.2, r: 0.4, h: 1.1 },
+  hauler: { arch: 'hauler', hp: 40, spd: 4.0, r: 0.4, h: 1.1 },
   kith: { arch: 'kith', hp: 150, spd: 8, r: 0.5, h: 1.8, wpn: 'spear', dmg: 18, rate: 1.5, range: 30, acc: 0.6, tame: true, renown: 4 },
   drone: { arch: 'drone', hp: 95, spd: 6.8, r: 0.6, h: 1.6, wpn: 'plasma', dmg: 11, rate: 1.05, range: 66, acc: 0.5, renown: 6 },
   zealot: { arch: 'zealot', hp: 115, spd: 6.2, r: 0.6, h: 1.7, wpn: 'beam', dmg: 12, rate: 1.25, range: 70, acc: 0.5, renown: 6 },
@@ -3339,7 +3365,7 @@ const Ground = {
   },
   respawn() {
     const p = this.player; const W = this.W; let pt = W.pois.lz; const owned = this.uplinks.filter(u => u.owner === 'P'); if (this.planet.colony && this.planet.owner === Sim.localCid) pt = { x: 70, z: 60 }; else if (owned.length) pt = owned.sort((a, b) => a.pos.distanceTo(p.pos) - b.pos.distanceTo(p.pos))[0].pos;
-    if (this.reserve <= 0 && this.squadAlive() === 0 && !(this.planet.colony && this.planet.owner === Sim.localCid)) { this.toast('NO REINFORCEMENTS', 'The drop is lost — returning to orbit'); const g = this.gen; setTimeout(() => this.gen === g && this.evac(true), 2500); p.respawnT = 999; return; }
+    if (this.reserve <= 0 && this.squadAlive() === 0 && !this.pods.some(pd => pd.squad && !pd.done) && !(this.planet.colony && this.planet.owner === Sim.localCid)) { this.toast('NO REINFORCEMENTS', 'The drop is lost — returning to orbit'); const g = this.gen; setTimeout(() => this.gen === g && this.evac(true), 2500); p.respawnT = 999; return; }
     if (this.reserve > 0) { this.reserve--; this.stats.lost++; }
     p.alive = true; p.hp = p.maxHp; p.sh = p.maxSh; p.ammo = p.mag; p.pos.set(pt.x + 8, W.heightAt(pt.x + 8, pt.z) + 600, pt.z); p.dropping = true; AudioSys.play('pod', null, 1.2); this.feed('Commander redeployed', 'info');
   },
@@ -3847,9 +3873,9 @@ const Flight = {
     s.shT += dt; if (s.shT > 4) s.sh = Math.min(s.maxSh, s.sh + 120 * dt); if (s.hp <= 0) { s.hp = s.maxHp * 0.5; Sim.issue({ t: 'FLAG_CRIPPLED' }); UI.toast('EMBER WAKE CRIPPLED', 'Emergency warp'); }
     // model, engines, camera
     this.model.position.copy(s.pos); this.model.quaternion.copy(s.quat); const thr = Math.max(0.1, s.throttle) * (I.k.ShiftLeft ? 1.8 : 1) * (s.cruise ? 2.5 : 1); for (const e of this.engine) { e.scale.setScalar(8 + thr * 14 + Math.random() * 2); e.material.color.set(s.cruise ? 0xb0d8ff : 0x80c8ff); }
-    const cp = this.cam.cockpit && !this.entry; const off = this.entry ? new THREE.Vector3(this.shipScale * 0.9, this.shipScale * 0.35, -this.shipScale * 1.8) : cp ? new THREE.Vector3(0, 0.155 * 60, -0.33 * 60) : new THREE.Vector3(0, 22, -78 - s.vel.length() * 0.02); const want = s.pos.clone().add(off.applyQuaternion(s.quat));
+    const cp = this.cam.cockpit && !this.entry; const off = this.entry ? new THREE.Vector3(this.shipScale * 0.9, this.shipScale * 0.35, -this.shipScale * 1.8) : cp ? new THREE.Vector3(0, 0.155 * 60, -0.33 * 60) : new THREE.Vector3(0, this.shipScale * 0.5, -this.shipScale * 2.2 - s.vel.length() * 0.02); const want = s.pos.clone().add(off.applyQuaternion(s.quat));
     if (cp) this.cam.pos.copy(want); else this.cam.pos.lerp(want, 1 - Math.exp(-8 * dt)); cam.position.copy(this.cam.pos); cam.near = 2; cam.far = 260000; cam.fov = damp(cam.fov, 62 + (s.cruise ? 18 : I.k.ShiftLeft ? 8 : 0) + (this.entry ? 16 : 0), 4, dt); cam.updateProjectionMatrix();
-    const lookAt = s.pos.clone().addScaledVector(fwd, 200).addScaledVector(up, cp ? 0 : 14); cam.up.copy(up); cam.lookAt(lookAt); FX.applyShake && this.shake > 0 && (cam.position.x += (Math.random() - 0.5) * this.shake, this.shake *= 0.9);
+    const lookAt = s.pos.clone().addScaledVector(fwd, 200).addScaledVector(up, cp ? 0 : -this.shipScale * 0.12); cam.up.copy(up); cam.lookAt(lookAt); FX.applyShake && this.shake > 0 && (cam.position.x += (Math.random() - 0.5) * this.shake, this.shake *= 0.9);
     this.dust.position.copy(s.pos); this.dust.rotation.y += dt * 0.01;
     AudioSys.listener.x = cam.position.x; AudioSys.listener.y = cam.position.y; AudioSys.listener.z = cam.position.z;
     // world motion
@@ -4285,7 +4311,7 @@ const Main = {
   installHooks() {
     const self = this;
     window.__THREE_GAME_DIAGNOSTICS__ = { get renderer() { return R.renderer && R.renderer.info; }, get state() { return { mode: self.state, units: Ground.active ? Ground.units.length : 0, titans: Ground.titans.length, projectiles: Ground.projs.length, simT: Sim.s ? Sim.s.t : 0, planets: Sim.s ? Sim.planetsOf('P').length : 0, errors: self._err || 0 }; } };
-    window.__SF = { Main, Sim, Ground, UI, Input, Space, Music, AudioSys, R, Flight, MAT, TEX, THREE, Studio, Construction };
+    window.__SF = { Main, Sim, Ground, UI, Input, Space, Music, AudioSys, R, Flight, MAT, TEX, THREE, Studio, Construction, mkShip: (f) => buildShipMesh(f, 'flag') };
     window.__THREE_GAME_TEST_HOOKS__ = {
       async seed(n) { await self.readyP; self.seed = n; return { seed: n }; },
       async setPausedForScreenshot(p) { await self.readyP; self.freeze = !!p; return { paused: self.freeze }; },
