@@ -22,8 +22,10 @@ Three.js r160 loads from jsDelivr through an import map. Everything else is gene
 | Input | Action |
 |---|---|
 | Click | Capture the mouse |
-| WASD · Shift · Space | Move · sprint · jump / jet-pack (hold in the air) |
-| LMB · RMB · R | Fire VK-7 Arc Carbine · aim down sights · reload |
+| WASD · Shift · Space | Move · sprint · jump (a crouch, then a heavy launch and a hard landing). Hold Space in the air to fire the jet-pack. |
+| LMB · R | Fire VK-7 Arc Carbine · reload (mag out, fresh mag from the belt, charging handle) |
+| RMB (or two-finger click) | **Toggle aim mode.** Click once to lock into aim (tighter over-the-shoulder camera, steadier and more accurate fire, slower walk); click again to exit. Press and hold for a temporary aim instead. |
+| C · T | Swap the camera shoulder · throw a grenade (4 carried; refilled at your camps) |
 | 1–7 | Orbital directives (throws a beacon): Orbital Lance, Reinforce, Bastion Sentry, Mend Field, Strider Drop (rank 4), **Ordnance** (your flagship's biggest bomb: Kinetic Rod → Thermobaric → Tactical Nuke → Fusion Lance → Sunfire Torpedo → World-Breaker), Fleet Barrage (rank 5) |
 | F · G · H | Squad: form on me · assault the point you're aiming at · hold position |
 | Q (hold) | **Tame**: relaxed, grazing creatures can be tamed outright and go to work for your colony. Hostile ones must be weakened first (below 40% health; titans below 25%), then they fight for you. |
@@ -52,7 +54,7 @@ Three.js r160 loads from jsDelivr through an import map. Everything else is gene
 
 1. **Fly.** Each system is a real space you pilot through: the star, planets with atmospheres, clouds and city lights, orbital stations with traffic, asteroid belts, hyperlane gates to every neighbouring system, and any rival warships parked there. You fight those warships with your escorts; every ship you destroy is removed from the galaxy simulation.
 2. **Drop.** Fly close to a planet and press E. The ship turns and dives through the atmosphere in a plasma sheath. On the surface, your flagship descends through the sky, hovers over the drop zone on retro-jets, kicking up a dust storm, and fires you and your squad down in drop pods before climbing away.
-3. **Conquer.** Capture every uplink, **destroy the hostile nests** (kill the aggressive species), and destroy any rival bastion. Relaxed, grazing herds can be **tamed** with Q, and they'll haul bricks for your colony. Advanced worlds have a **native civilisation** with a city and army; topple its citadel (or bomb it into surrender) and, from Atomic tier up, break its **shield dome** by destroying the pylons. Each planet type has its own natives, and the way you deal with them becomes a permanent trait of the colony:
+3. **Conquer.** Every uplink sits inside a **fortified enemy camp**: palisades and huts on primitive worlds, stone keeps on feudal ones, bunkers, turrets and pylons on industrial and atomic ones. The camp farthest from your landing zone is the **stronghold**, which is bigger, has a double garrison and, on advanced worlds, a heavy walker. Clear the defenders (the banner won't move while any remain), then hold the ring to raise your banner. Each taken camp drops three reinforcements and becomes a **resupply point** that heals you and refills ammo and grenades. Optional **raider outposts** between the main camps give you forward bases. Also **destroy the hostile nests** (kill the aggressive species), and destroy any rival bastion. Relaxed, grazing herds can be **tamed** with Q, and they'll haul bricks for your colony. Advanced worlds have a **native civilisation** with a city and army; topple its citadel (or bomb it into surrender) and, from Atomic tier up, break its **shield dome** by destroying the pylons. Each planet type has its own natives, and the way you deal with them becomes a permanent trait of the colony:
    - **Exterminate**: destroy every nest. *+15% construction.*
    - **Tame**: weaken the apex titan and hold Q to bond it. It fights for you. *Beasts guard the colony.*
    - **Pacify**: attune every Resonance Monolith while their creatures attack you. *+30% population growth.*
@@ -143,10 +145,12 @@ Saves go to `localStorage` (`starfall.dominion.save.v1`) every 10 s and when the
 - All art is procedural (no external asset generation keys were available). Characters are sculpted in code:
   - **Bodies:** lofted from spline cross-sections.
   - **Armour:** plates cut from the body surface, given thickness and chamfered edges.
-  - **Animation:** IK arms on the weapon grips; states for walk, run, aim, fire, reload, flinch, death, hammering and carrying.
+  - **Animation:** IK arms on the weapon grips. The legs keep their feet planted, and the hips drop and jolt on each footfall. The body leans into acceleration and banks into turns. Jumps have an anticipation crouch, a tuck while rising and a heavy landing crouch. Weapon poses include low-ready, hip-fire, a bladed aim stance, sprint and airborne. Recoil kicks back and up and rolls the gun. A full reload is animated (the support hand pulls the mag, stows it, seats a fresh one and racks the charging handle), and so is the grenade throw. Also flinch, death, hammering and carrying.
   - **Rigging:** jointed, not skinned. There is a model studio test state (`studio`, `studio-rivals`, `studio-natives`, `studio-civ`).
 - Graphics:
-  - **Atmosphere:** height fog that pools in valleys, aerial-perspective haze and sun in-scatter on every material, plus sun shafts.
+  - **Atmosphere:** height fog that pools in valleys and rolls across the ground in drifting banks, aerial-perspective haze and sun in-scatter on every material, sun shafts, and drifting light motes.
+  - **Clouds:** cloud shadows sweep across the terrain and every lit surface. Lit billboard cumulus sits on the horizon, a cloud sea hugs the far ranges, low mist pools in the valleys, and the sky has a domain-warped cloud layer.
+  - **Mood:** each planet type has its own colour grade (split-toned shadows and highlights, lifted tinted blacks, wide soft bloom, exposure) and a rim light on characters.
   - **Vegetation:** leaf-card tree canopies with alpha-cut leaves and dappled shadows, and dense colour-varied grass.
   - **Post and materials:** MSAA, GTAO, bloom, colour grade, procedural normal maps, and a triplanar terrain shader. The Performance setting in the pause menu turns off ambient occlusion and lowers shadow and render resolution for weaker GPUs.
 - Performance was only measured with software rendering. Dense ground scenes draw about 4–8 M triangles per frame, counting the shadow and ambient-occlusion passes. The leaf-card forests and dense grass are the main cost; the Performance setting drops terrain resolution, leaf density, grass density, sun shafts, GTAO and shadow resolution. Real-GPU frame rates haven't been measured, so use the Performance setting if it stutters.
