@@ -1,0 +1,447 @@
+{
+  "url": "http://127.0.0.1:5188/index.html",
+  "mode": "desktop",
+  "state": "active-play",
+  "requestedState": "active-play",
+  "appliedState": "active-play",
+  "runId": "pass-1",
+  "seed": 42,
+  "screenshotPath": "artifacts/pass-1/desktop-active-play.png",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "softwareRendered": true
+  },
+  "result": {
+    "ok": true,
+    "reason": "nonblank",
+    "rect": {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 720
+    },
+    "drawingBuffer": {
+      "width": 1280,
+      "height": 720
+    },
+    "alphaPixels": 4096,
+    "variance": 255,
+    "colorBuckets": 226,
+    "metrics": {
+      "colorBuckets": 302,
+      "colorEntropyBits": 5.58,
+      "edgeDensity": 0.493,
+      "luminance": {
+        "mean": 60.7,
+        "p5": 10.7,
+        "p95": 162.2,
+        "contrast": 151.5
+      },
+      "dominantColorShare": 0.121,
+      "nonBackgroundShare": 0.879
+    },
+    "renderBudget": {
+      "tier": "desktop",
+      "note": "starting-point budget; adjust per game and document overrides",
+      "rows": [
+        {
+          "metric": "calls",
+          "actual": null,
+          "limit": 300,
+          "ok": null
+        },
+        {
+          "metric": "triangles",
+          "actual": null,
+          "limit": 750000,
+          "ok": null
+        },
+        {
+          "metric": "geometries",
+          "actual": null,
+          "limit": 300,
+          "ok": null
+        },
+        {
+          "metric": "textures",
+          "actual": null,
+          "limit": 60,
+          "ok": null
+        }
+      ],
+      "withinBudget": true
+    },
+    "diagnostics": {
+      "renderer": {
+        "memory": {
+          "geometries": 106,
+          "textures": 19
+        },
+        "render": {
+          "frame": 96,
+          "calls": 142,
+          "triangles": 747401,
+          "points": 7000,
+          "lines": 2600
+        },
+        "programs": [
+          {
+            "type": "MeshDepthMaterial",
+            "name": "",
+            "id": 0,
+            "cacheKey": "depth,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,3201,7,143872,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshDepthMaterial",
+            "name": "",
+            "id": 1,
+            "cacheKey": "depth,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,3201,15,143872,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "ShaderMaterial",
+            "name": "",
+            "id": 2,
+            "cacheKey": "0,1,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,3,135681,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshStandardMaterial",
+            "name": "",
+            "id": 3,
+            "cacheKey": "physical,STANDARD,,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2063,131587,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 3,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshStandardMaterial",
+            "name": "",
+            "id": 4,
+            "cacheKey": "physical,STANDARD,,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2051,131587,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 5,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshStandardMaterial",
+            "name": "",
+            "id": 5,
+            "cacheKey": "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2063,131587,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshStandardMaterial",
+            "name": "",
+            "id": 6,
+            "cacheKey": "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2051,131587,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 2,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshStandardMaterial",
+            "name": "",
+            "id": 7,
+            "cacheKey": "physical,STANDARD,,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2055,131587,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 2,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshStandardMaterial",
+            "name": "",
+            "id": 8,
+            "cacheKey": "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2051,133635,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshStandardMaterial",
+            "name": "",
+            "id": 9,
+            "cacheKey": "physical,STANDARD,,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2055,133635,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshBasicMaterial",
+            "name": "",
+            "id": 10,
+            "cacheKey": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2063,131587,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshBasicMaterial",
+            "name": "",
+            "id": 11,
+            "cacheKey": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2055,131587,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshBasicMaterial",
+            "name": "",
+            "id": 12,
+            "cacheKey": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,2051,131587,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshBasicMaterial",
+            "name": "",
+            "id": 13,
+            "cacheKey": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,3,131587,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 2,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshStandardMaterial",
+            "name": "",
+            "id": 14,
+            "cacheKey": "physical,STANDARD,,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,3,131587,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshBasicMaterial",
+            "name": "",
+            "id": 15,
+            "cacheKey": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,15,131587,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "LineBasicMaterial",
+            "name": "",
+            "id": 16,
+            "cacheKey": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,3,515,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "ShaderMaterial",
+            "name": "",
+            "id": 17,
+            "cacheKey": "2,3,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,3,513,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 2,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshBasicMaterial",
+            "name": "",
+            "id": 18,
+            "cacheKey": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,3,513,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 2,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshBasicMaterial",
+            "name": "",
+            "id": 19,
+            "cacheKey": "basic,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,15,515,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 2,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "ShaderMaterial",
+            "name": "",
+            "id": 20,
+            "cacheKey": "4,5,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,3,513,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 2,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshBasicMaterial",
+            "name": "",
+            "id": 21,
+            "cacheKey": "basic,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,true,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,0,7,515,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "ShaderMaterial",
+            "name": "",
+            "id": 22,
+            "cacheKey": "6,7,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,3,131072,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "ShaderMaterial",
+            "name": "",
+            "id": 23,
+            "cacheKey": "8,9,KERNEL_RADIUS,3,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,3,131072,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "ShaderMaterial",
+            "name": "",
+            "id": 24,
+            "cacheKey": "8,9,KERNEL_RADIUS,5,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,3,131072,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "ShaderMaterial",
+            "name": "",
+            "id": 25,
+            "cacheKey": "8,9,KERNEL_RADIUS,7,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,3,131072,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "ShaderMaterial",
+            "name": "",
+            "id": 26,
+            "cacheKey": "8,9,KERNEL_RADIUS,9,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,3,131072,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "ShaderMaterial",
+            "name": "",
+            "id": 27,
+            "cacheKey": "8,9,KERNEL_RADIUS,11,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,3,131072,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "ShaderMaterial",
+            "name": "",
+            "id": 28,
+            "cacheKey": "8,10,NUM_MIPS,5,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,3,131072,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "ShaderMaterial",
+            "name": "",
+            "id": 29,
+            "cacheKey": "11,12,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,3,0,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "ShaderMaterial",
+            "name": "unspecified",
+            "id": 30,
+            "cacheKey": "2,13,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,3,131072,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "RawShaderMaterial",
+            "name": "OutputShader",
+            "id": 31,
+            "cacheKey": "14,15,SRGB_TRANSFER,,ACES_FILMIC_TONE_MAPPING,,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshDepthMaterial",
+            "name": "",
+            "id": 32,
+            "cacheKey": "depth,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,3201,7,143872,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          },
+          {
+            "type": "MeshDepthMaterial",
+            "name": "",
+            "id": 33,
+            "cacheKey": "depth,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,2,4,0,0,1,0,1,0,0,0,0,2,0,0,0,3201,15,143872,srgb,onBeforeCompile( /* shaderobject, renderer */ ) {}",
+            "usedTimes": 1,
+            "program": {},
+            "vertexShader": {},
+            "fragmentShader": {}
+          }
+        ],
+        "autoReset": false
+      },
+      "state": {
+        "mode": "ground",
+        "units": 63,
+        "titans": 1,
+        "projectiles": 0,
+        "simT": 0,
+        "planets": 0,
+        "errors": 0
+      }
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "consoleErrorCount": 0,
+  "pageErrorCount": 0
+}

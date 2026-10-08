@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Starfall Dominion</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 1l6 14H2z' fill='%23ffb43c'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 <!--
@@ -131,6 +132,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#05060a;color:var(--
 #alert p{font-size:15px;margin-top:4px;color:#ffd9d2;letter-spacing:.04em}
 #alert .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 #alert .tmr{float:right;font-family:'Chakra Petch';color:var(--amber)}
+body.ground #alert{width:min(520px,60vw);top:calc(60px + var(--safeT))}body.ground #alert h2{font-size:15px}body.ground #alert p{font-size:13px}body.ground #alert .btn{font-size:10px;padding:6px 10px}
 #toast{position:fixed;left:50%;top:26%;transform:translateX(-50%);z-index:15;text-align:center;pointer-events:none}
 #toast h1{font-family:'Chakra Petch';font-size:clamp(28px,5vw,58px);letter-spacing:.3em;color:#fff;text-shadow:0 0 30px rgba(255,180,60,.8);animation:toastIn .6s ease-out}
 #toast p{font-size:18px;letter-spacing:.3em;color:var(--amber);text-transform:uppercase;margin-top:6px}
@@ -1330,7 +1332,7 @@ const ARCH_BUILD = {
       .add(ro, S_(), ac, 0, 0.95 * s, 0.75 * s, 0.46 * s, 0.4 * s, 0.52 * s).add('emis', S_(), gl, 0.13 * s, 1.04 * s, 0.98 * s, 0.09 * s, 0.09 * s, 0.09 * s).add('emis', S_(), gl, -0.13 * s, 1.04 * s, 0.98 * s, 0.09 * s, 0.09 * s, 0.09 * s)
       .add(ro, G('cone', 6), ac, 0.12 * s, 0.82 * s, 1.08 * s, 0.08 * s, 0.4 * s, 0.08 * s, 1.9, 0, -0.3).add(ro, G('cone', 6), ac, -0.12 * s, 0.82 * s, 1.08 * s, 0.08 * s, 0.4 * s, 0.08 * s, 1.9, 0, 0.3);
     for (let i = 0; i < 4; i++) body.add(ro, G('cone', 5), ac, 0, (1.3 + (i % 2) * 0.05) * s, (0.3 - i * 0.35) * s, 0.12 * s, 0.4 * s, 0.12 * s, -0.4);
-    for (let i = 0; i < 3; i++) body.add('emis', S_(), gl, (i - 1) * 0.3 * s, 1.15 * s, -0.95 * s, 0.18 * s, 0.14 * s, 0.18 * s);
+    for (let i = 0; i < 3; i++) body.add('emis', S_(), gl, (i - 1) * 0.3 * s, 1.15 * s, -0.95 * s, 0.14 * s, 0.1 * s, 0.14 * s, 0, 0, 0, 0.45);
     if (opts.tail) body.add(ro, G('cone', 6), ac, 0, 1.25 * s, -1.6 * s, 0.18 * s, 0.9 * s, 0.18 * s, -2.3);
     const leg = (k, side, z) => { const x0 = side * 0.35 * s; k.add(ro, B_(), ac, x0 + side * 0.35 * s, 0.25 * s, z * s, 0.7 * s, 0.09 * s, 0.09 * s, 0, 0, side * -0.6); k.add(ro, B_(), ac, x0 + side * 0.72 * s, -0.25 * s, z * s, 0.08 * s, 0.9 * s, 0.08 * s, 0, 0, side * 0.18); };
     leg(la, -1, 0.5); leg(la, 1, -0.05); leg(la, -1, -0.6); leg(lb, 1, 0.5); leg(lb, -1, -0.05); leg(lb, 1, -0.6);
@@ -1342,7 +1344,7 @@ const ARCH_BUILD = {
       .add(ro, S_(), sk, 0, 1.7, 1.08, 0.36, 0.34, 0.66).add(ro, B_(), ac, 0, 1.56, 1.24, 0.22, 0.08, 0.5, 0.2).add('emis', S_(), gl, 0.12, 1.8, 1.25, 0.07, 0.07, 0.07).add('emis', S_(), gl, -0.12, 1.8, 1.25, 0.07, 0.07, 0.07)
       .add(ro, G('cone', 6), sk, 0, 1.35, -1.35, 0.32, 1.4, 0.32, -Math.PI / 2 - 0.12).add(ro, B_(), ac, 0.2, 1.1, 0.5, 0.06, 0.4, 0.06, 0.6).add(ro, B_(), ac, -0.2, 1.1, 0.5, 0.06, 0.4, 0.06, 0.6);
     for (let i = 0; i < 5; i++) body.add(ro, G('cone', 4), ac, 0, 1.7 - i * 0.02, 0.6 - i * 0.32, 0.08, 0.36 - i * 0.04, 0.2, -0.3);
-    body.add('emis', B_(), gl, 0, 1.66, -0.2, 0.04, 0.04, 1.2);
+    body.add('emis', B_(), gl, 0, 1.66, -0.2, 0.025, 0.025, 1.0, 0, 0, 0, 0.3);
     legDigi(lL, sk, 1.0, ac); legDigi(lR, sk, 1.0, ac);
     return { parts: [{ anim: 'body', pivot: [0, 0, 0], kit: body }, { anim: 'legL', pivot: [-0.28, 1.2, -0.05], kit: lL }, { anim: 'legR', pivot: [0.28, 1.2, -0.05], kit: lR }], h: 1.4, r: 0.8 };
   },
@@ -1709,7 +1711,8 @@ const World = {
     if (planet.colony) this.settlement(W, true);
     return W;
   },
-  addCollider(W, x, z, rad, h = 999) { const k = Math.floor(x / 32) + ',' + Math.floor(z / 32); let a = W.colliders.get(k); if (!a) W.colliders.set(k, a = []); a.push({ x, z, r: rad, h }); },
+  addCollider(W, x, z, rad, h = 999) { const k = Math.floor(x / 32) + ',' + Math.floor(z / 32); let a = W.colliders.get(k); if (!a) W.colliders.set(k, a = []); a.push({ x, z, r: rad, h, y0: W.heightAt ? W.heightAt(x, z) : 0 }); },
+  blocked(W, x, y, z) { const a = W.colliders.get(Math.floor(x / 32) + ',' + Math.floor(z / 32)); if (!a) return false; for (const c of a) if (Math.hypot(x - c.x, z - c.z) < c.r + 0.4 && y < c.y0 + Math.min(c.h, 400)) return true; return false; },
   collide(W, p, rad) { const cx = Math.floor(p.x / 32), cz = Math.floor(p.z / 32); for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const a = W.colliders.get((cx + i) + ',' + (cz + j)); if (!a) continue; for (const c of a) { const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz), m = c.r + rad; if (d < m && d > 0.001) { p.x = c.x + dx / d * m; p.z = c.z + dz / d * m; } } } },
   sky(W, r) {
     const B = W.B; const top = new THREE.Color(B.sky[0]), hor = new THREE.Color(B.sky[1]);
@@ -2191,7 +2194,7 @@ const Ground = {
     // camera
     const dist = p.aiming ? 2.8 : 5.4, sh = p.aiming ? 0.95 : 1.25; const cp = Math.cos(p.camPitch), sp = Math.sin(p.camPitch);
     const look = new THREE.Vector3(-Math.sin(p.camYaw) * cp, sp, -Math.cos(p.camYaw) * cp); const tgt = new THREE.Vector3(p.pos.x, p.pos.y + 1.65, p.pos.z).addScaledVector(right, sh);
-    const want2 = tgt.clone().addScaledVector(look, -dist); const cg = W.heightAt(want2.x, want2.z) + 0.6; if (want2.y < cg) want2.y = cg;
+    let cd = dist; for (let s = 0.8; s <= dist; s += 0.4) { const q = _v.copy(tgt).addScaledVector(look, -s); if (World.blocked(W, q.x, q.y, q.z)) { cd = Math.max(0.9, s - 0.5); break; } } const want2 = tgt.clone().addScaledVector(look, -cd); const cg = W.heightAt(want2.x, want2.z) + 0.6; if (want2.y < cg) want2.y = cg;
     if (!this._camInit) { cam.position.copy(want2); this._camInit = true; } cam.position.lerp(want2, 1 - Math.exp(-22 * dt)); cam.lookAt(tgt.clone().addScaledVector(look, 20));
     const fovT = p.aiming ? 50 : sprint ? 70 : 62; cam.fov = damp(cam.fov, fovT, 10, dt); cam.updateProjectionMatrix(); FX.applyShake(cam, dt);
     AudioSys.listener.x = cam.position.x; AudioSys.listener.y = cam.position.y; AudioSys.listener.z = cam.position.z; AudioSys.listener.yaw = Math.atan2(look.x, look.z);
@@ -2606,7 +2609,7 @@ const Space = {
   },
   sysOwner(sid) { const cnt = {}; for (const pid of Sim.S(sid).planets) { const o = Sim.P(pid).owner; if (o) cnt[o] = (cnt[o] || 0) + 1; } let best = null, b = 0; for (const k in cnt) if (cnt[k] > b) { b = cnt[k]; best = k; } return best; },
   pickSystem(mx, my) { const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(mx / R.w * 2 - 1, -(my / R.h) * 2 + 1), R.camera); const hits = ray.intersectObjects(this.gal.sys.map(s => s.pick)); return hits.length ? hits[0].object.userData.sid : null; },
-  showGalaxy(focusSid) { if (!this.gal) this.buildGalaxy(); this.mode = 'galaxy'; R.scene = this.gal.scene; this.gal.labels.forEach(l => l.style.display = 'block'); if (focusSid !== undefined && focusSid !== null) { const S = Sim.S(focusSid); this.cam.tx = S.x; this.cam.ty = S.y; this.cam.tz = S.z; this.cam.dist = 380; this.sel = focusSid; } },
+  showGalaxy(focusSid) { if (!this.gal) this.buildGalaxy(); this.mode = 'galaxy'; R.scene = this.gal.scene; this.gal.labels.forEach(l => l.style.display = 'block'); if (focusSid !== undefined && focusSid !== null) { const S = Sim.S(focusSid); this.cam.tx = S.x * 0.6; this.cam.ty = S.y; this.cam.tz = S.z * 0.6; this.cam.dist = 640; this.sel = focusSid; } },
   hideLabels() { if (this.gal) this.gal.labels.forEach(l => l.style.display = 'none'); },
   resetGalaxy() { if (this.gal) { this.gal.labels.forEach(l => l.remove()); this.gal = null; } this.orb = null; this.warp = null; },
   // ---------------- ORBIT ----------------
@@ -2706,7 +2709,7 @@ const UI = {
     if (G.core) objs.push({ t: 'Destroy ' + G.core.name, v: G.core.alive ? Math.ceil(G.core.hp / G.core.maxHp * 100) + '%' : '', done: !G.core.alive });
     if (m.type === 'defense') { const left = G.spawnPool + G.units.filter(u => u.alive && u.team === G.invTeam).length; objs.push({ t: 'Repel invaders', v: '' + left, warn: true, done: left === 0 }); }
     if (m.type === 'conquest') { const monos = G.pois.filter(o => o.kind === 'monolith'), nests = G.pois.filter(o => o.kind === 'nest'), vil = G.pois.find(o => o.kind === 'village'), tit = G.titans[0];
-      objs.push({ t: 'Native strategy', v: G.nativeOutcome().toUpperCase(), sub: true });
+      const decided = G.allied || G.apexTamed || G.pacified || G.apexDead || nests.some(n => n.banner || !n.alive); objs.push({ t: 'Native strategy', v: decided ? G.nativeOutcome().toUpperCase() : 'UNDECIDED', sub: true });
       if (monos.length) objs.push({ t: 'Pacify: attune monoliths', v: `${monos.filter(o => o.done).length}/${monos.length}`, done: G.pacified, opt: true });
       if (nests.length) objs.push({ t: 'Exterminate: destroy nests', v: `${nests.filter(n => !n.alive).length}/${nests.length}`, done: nests.every(n => !n.alive), opt: true });
       if (vil) objs.push({ t: 'Ally: pass the Kith trial', v: vil.done ? '✓' : '', done: vil.done, opt: true });
@@ -2920,6 +2923,7 @@ const Input = {
 const Main = {
   state: 'boot', paused: false, modalOpen: false, freeze: false, dest: null, last: 0, stratT: 0, seed: null,
   async boot() {
+    this.readyP = new Promise(r => this._ready = r); this.installHooks();
     const lf = $('lfill'), lm = $('lmsg'); const step = async (pct, msg) => { lf.style.width = pct + '%'; lm.textContent = msg; await new Promise(r => setTimeout(r, 10)); };
     await step(10, 'RENDERER'); initRenderer(); await step(30, 'MATERIALS'); buildTextures(); buildMaterials();
     await step(55, 'INTERFACE'); UI.init(); Input.init(); await step(75, 'TITLE'); this.titleScene();
@@ -2928,7 +2932,7 @@ const Main = {
     const url = new URLSearchParams(location.search); const relay = url.get('relay'); if (relay) { try { Sim.net = new LockstepSocketTransport(Sim, relay, url.get('name') || 'Commander'); } catch (e) { console.warn('relay failed', e); } }
     await step(100, 'READY'); $('loading').classList.add('hidden'); this.state = 'title'; UI.title(Sim.hasSave()); Music.cue('title');
     setInterval(() => { if (Sim.s && this.state !== 'title') Sim.save(); }, 10000); addEventListener('visibilitychange', () => { if (document.hidden && Sim.s && this.state !== 'title') Sim.save(); }); addEventListener('beforeunload', () => { if (Sim.s && this.state !== 'title') Sim.save(); });
-    this.installHooks(); this.last = performance.now(); requestAnimationFrame(t => this.loop(t));
+    this.last = performance.now(); requestAnimationFrame(t => this.loop(t)); this._ready();
   },
   titleScene() {
     const scene = new THREE.Scene(); scene.background = new THREE.Color(0x01020a); scene.add(Space.nebula(9000, [0x3a1440, 0x0a3a5a])); scene.add(Space.starfield(4000, 4000, 8000, 11));
@@ -2951,7 +2955,7 @@ const Main = {
   continueGame() { const rep = Sim.load(); if (!Sim.s) { this.newGame('Commander'); return; } this.enterCampaign(); const fl = Sim.flagship(); if (fl.path.length) this.toWarp(); else this.toOrbit(Sim.S(fl.sys).planets[0]); if (rep) UI.awayModal(rep); },
   enterCampaign() { $('title').classList.add('hidden'); Space.resetGalaxy(); Space.planetTex = {}; UI.sel = null; },
   orbitPid() { const fl = Sim.flagship(); const sp = Space.selPlanet && Sim.P(Space.selPlanet); return sp && sp.sys === fl.sys ? sp.id : Sim.S(fl.sys).planets[0]; },
-  setStratUI(on) { UI.show('strat', on); UI.show('hud', false); },
+  setStratUI(on) { UI.show('strat', on); UI.show('hud', false); document.body.classList.remove('ground'); },
   toOrbit(pid) { if (Sim.flagship().path.length) { this.toWarp(); return; } this.state = 'orbit'; this.setStratUI(true); $('travelHud').classList.add('hidden'); Space.showOrbit(pid); UI.sel = Sim.P(pid).sys; UI.selP = pid; UI.refreshStrat(); Music.cue(Sim.P(pid).owner === Sim.localCid ? 'city' : 'galaxy'); AudioSys.ambience('space'); },
   toGalaxy(sid) { this.state = 'galaxy'; this.setStratUI(true); $('travelHud').classList.add('hidden'); Space.showGalaxy(sid ?? Sim.flagship().sys); if (sid !== undefined && sid !== null) UI.sel = sid; UI.refreshStrat(); Music.cue('galaxy'); },
   toWarp() { this.state = 'warp'; this.setStratUI(true); Space.showWarp(); $('travelHud').classList.remove('hidden'); UI.refreshStrat(); Music.cue('warp'); AudioSys.ambience('space'); },
@@ -2966,7 +2970,7 @@ const Main = {
   drop(pid) { AudioSys.init(); const p = Sim.P(pid); const m = this.mission(pid); this.fadeTo(() => this.startGround(p, m)); },
   board(fid) { const f = Sim.F(fid); if (!f) return; const fac = Sim.cmdr(f.owner).fac; const pseudo = { id: f.id, name: f.name.toUpperCase(), biome: 'hull', seed: hashStr(f.id), danger: 3, uplinks: 3, owner: null, colony: null, sys: f.sys, natives: { str: 0, disp: 'wild', apex: false, apexAlive: false, nests: 0, nestsLeft: 0, village: false, mono: 0, monoDone: 0 } };
     this.fadeTo(() => this.startGround(pseudo, { type: 'boarding', pid: f.id, fleetId: f.id, rivalCid: f.owner, rivalFac: fac })); },
-  startGround(p, m) { $('c').requestPointerLock && $('c').requestPointerLock(); this.state = 'ground'; UI.show('strat', false); UI.show('hud', true); Space.hideLabels(); Ground.start(p, m); UI.hudT = 0; Ground._camInit = false; },
+  startGround(p, m) { $('c').requestPointerLock && $('c').requestPointerLock(); this.state = 'ground'; document.body.classList.add('ground'); UI.show('strat', false); UI.show('hud', true); Space.hideLabels(); Ground.start(p, m); UI.hudT = 0; Ground._camInit = false; },
   leaveGround(rep) { const p = Ground.planet; const real = Sim.P(p.id); const g = Ground.gen; this.fadeTo(() => { if (Ground.gen !== g) return; Ground.dispose(); if (document.pointerLockElement) document.exitPointerLock(); const fl = Sim.flagship(); this.toOrbit(real && real.sys === fl.sys ? real.id : Sim.S(fl.sys).planets[0]); UI.reportModal(rep, rep.result); }); },
   fadeTo(fn) { const f = $('fade'); f.style.opacity = 1; setTimeout(() => { try { fn(); } catch (e) { console.error(e); } setTimeout(() => f.style.opacity = 0, 120); }, 520); },
   // ---------- input routing ----------
@@ -2997,13 +3001,13 @@ const Main = {
   // ---------- test hooks (QA / evidence capture) ----------
   installHooks() {
     const self = this;
-    window.__THREE_GAME_DIAGNOSTICS__ = { renderer: R.renderer.info, get state() { return { mode: self.state, units: Ground.active ? Ground.units.length : 0, titans: Ground.titans.length, projectiles: Ground.projs.length, simT: Sim.s ? Sim.s.t : 0, planets: Sim.s ? Sim.planetsOf('P').length : 0, errors: self._err || 0 }; } };
+    window.__THREE_GAME_DIAGNOSTICS__ = { get renderer() { return R.renderer && R.renderer.info; }, get state() { return { mode: self.state, units: Ground.active ? Ground.units.length : 0, titans: Ground.titans.length, projectiles: Ground.projs.length, simT: Sim.s ? Sim.s.t : 0, planets: Sim.s ? Sim.planetsOf('P').length : 0, errors: self._err || 0 }; } };
     window.__SF = { Main, Sim, Ground, UI, Input, Space, Music, AudioSys, R };
     window.__THREE_GAME_TEST_HOOKS__ = {
-      seed(n) { self.seed = n; return { seed: n }; },
-      setPausedForScreenshot(p) { self.freeze = !!p; return { paused: self.freeze }; },
+      async seed(n) { await self.readyP; self.seed = n; return { seed: n }; },
+      async setPausedForScreenshot(p) { await self.readyP; self.freeze = !!p; return { paused: self.freeze }; },
       hideDebugUi() { return true; },
-      async setState(name) { self.freeze = false; await self.scenario(name); return { state: name }; },
+      async setState(name) { await self.readyP; self.freeze = false; await self.scenario(name); return { state: name }; },
     };
   },
   async scenario(name) {
@@ -3015,7 +3019,7 @@ const Main = {
     const fl = Sim.flagship(); const start = Sim.S(fl.sys).planets[0]; const P0 = Sim.P(start);
     if (name === 'orbit') { this.toOrbit(start); await frames(4); return; }
     if (name === 'galaxy') { Sim.step(240); this.toGalaxy(fl.sys); await frames(4); return; }
-    if (name === 'warp') { this.toWarp(); await frames(4); return; }
+    if (name === 'warp') { Sim.issue({ t: 'TRAVEL', fid: fl.id, to: Sim.s.adj[fl.sys][0] }); this.toWarp(); await frames(4); return; }
     const ground = async (p, m, setup) => { if (Ground.active) Ground.dispose(); this.state = 'ground'; UI.show('strat', false); UI.show('hud', true); Ground.start(p, m); Ground._camInit = false; const pl = Ground.player; pl.dropping = false; pl.pos.y = Ground.W.heightAt(pl.pos.x, pl.pos.z); Ground.pods.forEach(pd => pd.delay = 0); for (let i = 0; i < 12; i++) Ground.update(0.25, { k: {}, pressed: {}, mdx: 0, mdy: 0 }); if (setup) setup(); for (let i = 0; i < 20; i++) Ground.update(1 / 30, { k: {}, pressed: {}, mdx: 0, mdy: 0, lmb: false }); UI.hudT = 0; UI.updateHUD(0.016); await frames(3); };
     if (name === 'ground' || name === 'active-play') { await ground(P0, this.mission(start), () => { const u = Ground.uplinks[0]; const pl = Ground.player; pl.camYaw = Math.atan2(-(u.pos.x - pl.pos.x), -(u.pos.z - pl.pos.z)); pl.camPitch = -0.05; }); return; }
     if (name === 'ground-combat') { await ground(P0, this.mission(start), () => { const n = Ground.pois.find(o => o.kind === 'nest') || Ground.uplinks[0]; const pl = Ground.player; const a = Math.atan2(pl.pos.x - n.pos.x, pl.pos.z - n.pos.z); pl.pos.set(n.pos.x + Math.sin(a) * 60, 0, n.pos.z + Math.cos(a) * 60); pl.pos.y = Ground.W.heightAt(pl.pos.x, pl.pos.z); Ground.units.filter(u => u.squad).forEach((u, i) => { u.pos.set(pl.pos.x + (i % 5 - 2) * 2.5, 0, pl.pos.z + 4 + Math.floor(i / 5) * 2.5); u.pos.y = Ground.W.heightAt(u.pos.x, u.pos.z); }); pl.camYaw = Math.atan2(-(n.pos.x - pl.pos.x), -(n.pos.z - pl.pos.z)); pl.camPitch = -0.02; Ground.units.filter(u => u.team === 'W').slice(0, 14).forEach((u, i) => { u.pos.set(n.pos.x + Math.sin(a) * 30 + (i % 5 - 2) * 5, 0, n.pos.z + Math.cos(a) * 30 + Math.floor(i / 5) * 5); u.pos.y = Ground.W.heightAt(u.pos.x, u.pos.z); u.tgt = pl; }); }); for (let i = 0; i < 30; i++) Ground.update(1 / 30, { k: {}, pressed: {}, mdx: 0, mdy: 0, lmb: i % 2 === 0 }); await frames(2); return; }
