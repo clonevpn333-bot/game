@@ -52,7 +52,7 @@ const Stalker = {
       const beamGeo = new THREE.ConeGeometry(1.6, 9, 20, 1, true); beamGeo.translate(0, -4.5, 0); beamGeo.rotateX(-Math.PI / 2);
       const beam = this.beam = new THREE.Mesh(beamGeo, new THREE.MeshBasicMaterial({ color: 0xfff2d8, transparent: true, opacity: 0.035, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
       beam.position.copy(l.position); npc.root.add(beam);
-      npc.pose = 'flashlight';
+      npc.pose = 'flashlight'; npc.holdLight = true;
       this.flashOn = true;
     }
     this.setNodes(o.nodes || []);
@@ -68,7 +68,7 @@ const Stalker = {
     this.heart = SND.loop('heartbeat', { bus: 'ui', vol: 0, bpm: 70 });
     return npc;
   },
-  setFlashlight(on) { this.flashOn = on; if (this.light) this.light.visible = on; if (this.beam) this.beam.visible = on; },
+  setFlashlight(on) { this.flashOn = on; if (this.npc) this.npc.holdLight = on; if (this.light) this.light.visible = on; if (this.beam) this.beam.visible = on; },
 
   setNodes(list) {
     this.nodes = list.map(p => new THREE.Vector3(p[0], 0, p[1]));

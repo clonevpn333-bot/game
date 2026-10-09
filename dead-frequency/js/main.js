@@ -15,11 +15,14 @@ const Main = {
     Bus.on('lockchange', locked => this.onLock(locked));
     G.renderer.domElement.addEventListener('click', () => { if (G.running && !G.paused) this.requestLock(); });
     $('click-lock').addEventListener('click', () => { $('click-lock').classList.add('hidden'); this.requestLock(); });
-    this.buildTitle();
+    $('title-menu').innerHTML = '<div class="mi disabled">LOADING…</div>';
     requestAnimationFrame(t => this.loop(t));
-    // allow automated testing to skip straight into a segment: ?seg=id
-    const q = new URLSearchParams(location.search);
-    if (q.get('seg')) { this.audio(); this.begin(q.get('seg'), q.get('nocard') === '1'); }
+    Humans.init().then(() => {
+      this.buildTitle();
+      // allow automated testing to skip straight into a segment: ?seg=id
+      const q = new URLSearchParams(location.search);
+      if (q.get('seg')) { this.audio(); this.begin(q.get('seg'), q.get('nocard') === '1'); }
+    });
   },
 
   audio() { SND.init(); SND.resume(); Radio.init(); },
