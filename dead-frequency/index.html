@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEAD FREQUENCY</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Special+Elite&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/df.css">
+</head>
+<body>
+
+<div id="view"></div>
+
+<!-- Camcorder / VHS on-screen display -->
+<div id="osd" class="hidden">
+  <div id="osd-play">PLAY &#9654;</div>
+  <div id="osd-sp">SP</div>
+  <div id="osd-date">OCT.15.2004</div>
+  <div id="osd-time">10:02 PM</div>
+</div>
+
+<div id="crosshair"></div>
+<div id="prompt"></div>
+<div id="hold-ring"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16"/></svg></div>
+<div id="objective"></div>
+<div id="subs"></div>
+<div id="choices"></div>
+<div id="toast"></div>
+<div id="hint"></div>
+<div id="qte"></div>
+<div id="call-ui"></div>
+
+<!-- Flip phone -->
+<div id="phone" class="hidden">
+  <div class="ph-body">
+    <div class="ph-speaker"></div>
+    <div class="ph-screen">
+      <div class="ph-status"><span id="ph-signal"></span><span id="ph-clock"></span><span id="ph-batt"></span></div>
+      <div id="ph-content"></div>
+      <div class="ph-softkeys"><span id="ph-sk-l">Select</span><span id="ph-sk-r">Back</span></div>
+    </div>
+    <div class="ph-brand">KESTREL</div>
+  </div>
+  <div class="ph-help">W/S scroll &middot; E select &middot; Q back &middot; TAB close</div>
+</div>
+
+<!-- Paper / document reader -->
+<div id="doc" class="hidden"><div id="doc-paper"></div><div class="doc-help">E / ESC &mdash; put down</div></div>
+
+<!-- Computer screen overlay -->
+<div id="computer" class="hidden"><div id="pc-frame"><div id="pc-screen"></div></div><div class="doc-help">ESC &mdash; step away</div></div>
+
+<!-- Fades and cards -->
+<div id="fade"></div>
+<div id="card" class="hidden"><div id="card-inner"></div></div>
+<div id="bluescreen" class="hidden"><div class="bs-play">PLAY &#9654;</div><div id="bs-text"></div></div>
+
+<!-- Title -->
+<div id="title" class="screen">
+  <div class="title-noise"></div>
+  <div class="title-inner">
+    <div class="t-logo">DEAD<br>FREQUENCY</div>
+    <div class="t-sub">KTLR 94.1 FM &middot; KESSLER GAP, OREGON &middot; OCTOBER 15, 2004</div>
+    <div class="t-menu" id="title-menu"></div>
+    <div class="t-foot">Headphones recommended &middot; Contains violence, abduction and sustained tension</div>
+  </div>
+</div>
+
+<!-- Pause -->
+<div id="pause" class="screen hidden">
+  <div class="p-inner">
+    <div class="p-title">PAUSED</div>
+    <div class="t-menu" id="pause-menu"></div>
+    <div id="settings"></div>
+    <div class="p-controls">
+      <b>WASD</b> move &nbsp; <b>Mouse</b> look &nbsp; <b>E</b> interact &nbsp; <b>Shift</b> run &nbsp; <b>C</b> crouch<br>
+      <b>F</b> flashlight &nbsp; <b>Tab</b> phone &nbsp; <b>1-4</b> dialogue choices &nbsp; <b>Esc</b> pause<br>
+      Driving: <b>W</b> gas &nbsp; <b>S</b> brake/reverse &nbsp; <b>A/D</b> steer &nbsp; <b>H</b> high beams &nbsp; <b>R</b> tune radio
+    </div>
+  </div>
+</div>
+
+<div id="click-lock" class="hidden">Click to continue</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="js/core/util.js"></script>
+<script src="js/core/input.js"></script>
+<script src="js/core/audio.js"></script>
+<script src="js/core/music.js"></script>
+<script src="js/core/textures.js"></script>
+<script src="js/core/engine.js"></script>
+<script src="js/core/phys.js"></script>
+<script src="js/core/build.js"></script>
+<script src="js/core/props.js"></script>
+<script src="js/core/npc.js"></script>
+<script src="js/core/player.js"></script>
+<script src="js/core/interact.js"></script>
+<script src="js/core/ui.js"></script>
+<script src="js/core/phone.js"></script>
+<script src="js/core/story.js"></script>
+<script src="js/core/stalker.js"></script>
+<script src="js/core/car.js"></script>
+<script src="js/levels/station.js"></script>
+<script src="js/levels/station_int.js"></script>
+<script src="js/levels/gasstation.js"></script>
+<script src="js/levels/road.js"></script>
+<script src="js/levels/tower.js"></script>
+<script src="js/story/common.js"></script>
+<script src="js/story/ch1.js"></script>
+<script src="js/story/ch2.js"></script>
+<script src="js/story/ch3.js"></script>
+<script src="js/story/ch4.js"></script>
+<script src="js/story/ch5.js"></script>
+<script src="js/story/ch6.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
