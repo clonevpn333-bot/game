@@ -151,9 +151,10 @@ const TEX = {
     },
     forestFloor() {
       const c = TEX.canvas(256, 256), x = c.getContext('2d'); const r = U.seeded(121);
-      x.fillStyle = '#3b3024'; x.fillRect(0, 0, 256, 256);
-      for (let k = 0; k < 2500; k++) { const v = r(); x.strokeStyle = v < 0.4 ? 'rgba(120,80,40,.6)' : v < 0.7 ? 'rgba(70,50,30,.7)' : 'rgba(150,110,60,.5)'; x.lineWidth = 1; const px = r() * 256, py = r() * 256, a = r() * 6.28, l = 2 + r() * 6; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a) * l, py + Math.sin(a) * l); x.stroke(); }
-      for (let k = 0; k < 150; k++) { x.fillStyle = `rgba(${90 + r() * 60},${60 + r() * 30},${20},.5)`; x.beginPath(); x.ellipse(r() * 256, r() * 256, 2 + r() * 4, 1 + r() * 2, r() * 3, 0, 7); x.fill(); }
+      x.fillStyle = '#2e2a22'; x.fillRect(0, 0, 256, 256);
+      for (let k = 0; k < 2500; k++) { const v = r(); x.strokeStyle = v < 0.4 ? 'rgba(96,74,48,.6)' : v < 0.7 ? 'rgba(60,50,36,.7)' : 'rgba(118,100,70,.5)'; x.lineWidth = 1; const px = r() * 256, py = r() * 256, a = r() * 6.28, l = 2 + r() * 6; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a) * l, py + Math.sin(a) * l); x.stroke(); }
+      for (let k = 0; k < 150; k++) { x.fillStyle = `rgba(${80 + r() * 40},${66 + r() * 30},${40},.45)`; x.beginPath(); x.ellipse(r() * 256, r() * 256, 2 + r() * 4, 1 + r() * 2, r() * 3, 0, 7); x.fill(); }
+      for (let k = 0; k < 400; k++) { x.fillStyle = `rgba(${40 + r() * 30},${55 + r() * 30},${35},.35)`; x.fillRect(r() * 256, r() * 256, 2 + r() * 3, 1 + r() * 2); }
       TEX.grime(x, 256, 256, 0.14, 122, 2);
       return TEX.make(c);
     },
@@ -372,6 +373,31 @@ const TEX = {
     },
   },
 
+  // derive a tangent-space normal map from a texture's luminance (cached)
+  normals: {},
+  normalFrom(tex, key, strength = 1) {
+    const k = key + strength;
+    if (this.normals[k]) return this.normals[k];
+    const img = tex.image; const w = img.width, h = img.height;
+    const c = this.canvas(w, h), x = c.getContext('2d');
+    const src = img.getContext ? img.getContext('2d').getImageData(0, 0, w, h).data : null;
+    if (!src) return null;
+    const hgt = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) hgt[i] = (src[i * 4] * 0.3 + src[i * 4 + 1] * 0.59 + src[i * 4 + 2] * 0.11) / 255;
+    // light blur so pixel noise doesn't dominate
+    const hb = new Float32Array(w * h);
+    for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) { let sum = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) sum += hgt[((y + dy + h) % h) * w + ((xx + dx + w) % w)]; hb[y * w + xx] = sum / 9; }
+    const out = x.createImageData(w, h), d = out.data;
+    for (let y = 0; y < h; y++) for (let xx = 0; xx < w; xx++) {
+      const L = hb[y * w + (xx - 1 + w) % w], R = hb[y * w + (xx + 1) % w], T = hb[((y - 1 + h) % h) * w + xx], Bt = hb[((y + 1) % h) * w + xx];
+      let nx = (L - R) * strength * 4, ny = (Bt - T) * strength * 4, nz = 1; const l = Math.hypot(nx, ny, nz); nx /= l; ny /= l; nz /= l;
+      const i = (y * w + xx) * 4; d[i] = (nx * 0.5 + 0.5) * 255; d[i + 1] = (ny * 0.5 + 0.5) * 255; d[i + 2] = (nz * 0.5 + 0.5) * 255; d[i + 3] = 255;
+    }
+    x.putImageData(out, 0, 0);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.NoColorSpace; t.wrapS = tex.wrapS; t.wrapT = tex.wrapT; t.anisotropy = this.maxAniso;
+    this.normals[k] = t;
+    return t;
+  },
   // dynamic canvas texture with redraw function
   dynamic(w, h, draw) {
     const c = TEX.canvas(w, h), ctx = c.getContext('2d');

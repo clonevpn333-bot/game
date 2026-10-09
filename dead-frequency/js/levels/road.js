@@ -65,7 +65,7 @@ Levels.road = function (o = {}) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals();
     const m = new THREE.Mesh(g, mat); m.receiveShadow = true; R.add(m); return m;
   };
-  const roadMat = new THREE.MeshLambertMaterial({ map: TEX.get('road'), side: THREE.DoubleSide });
+  const roadMat = new THREE.MeshStandardMaterial({ map: TEX.get('road'), side: THREE.DoubleSide });
   ribbon([-W, W], roadMat, c => c, 8, null);
   const grav = B.mat('gravel', { side: THREE.DoubleSide });
   ribbon([-6, -W], grav, (c, d) => d / 2, 2, (i, d) => d < -5 ? terr(i, d) : 0);
@@ -155,6 +155,12 @@ Levels.road = function (o = {}) {
   }
   // ---- sky, moon ----
   L.skyRig = P.sky(L, { moon: 0.12, hemi: 0.18 });
+  P.clouds(L, { seed: def.seed, opacity: 0.2 });
+  P.mist(L, { size: 150, opacity: M ? 0.14 : 0.1, heights: [0.4, 1.3, 2.6], follow: true });
+  // grass along the shoulders
+  const gr = [], rg = U.seeded(def.seed + 5);
+  for (let i = 3; i < N - 3; i += 1.3) for (const sd of [-1, 1]) { if (rg() < 0.55) { const d = sd * (5.6 + rg() * 5); const si = Math.floor(i); const pp = pts[si].clone().addScaledVector(Rt[si], d); gr.push([pp.x, pp.z, pts[si].y + terr(si, d)]); } }
+  P.grass(L, gr, { seed: def.seed, color: M ? 0x8a8a70 : 0x9a9a7a });
   L.loop('wind', { vol: 0.25 });
   L.spawns.start = [0, 0, 0];
 

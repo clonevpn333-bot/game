@@ -14,7 +14,8 @@ const Interact = {
     const it = Object.assign({ obj, enabled: () => true }, def);
     obj.traverse(o => { if (o.isMesh) o.userData.it = it; });
     this.items.push(it);
-    if (G.level && !G.level.rayTargets.includes(obj)) G.level.rayTargets.push(obj);
+    const L = G.buildLevel || G.level;
+    if (L && !L.rayTargets.includes(obj)) L.rayTargets.push(obj);
     return it;
   },
   remove(it) {

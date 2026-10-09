@@ -280,7 +280,7 @@ Levels.station = function (o = {}) {
   B.box(R, 0.2, 0, 5.4, 0.8, 0.8, 1.9, B.col(0x3a2e24), { collide: true }); B.box(R, 0.2, 0.8, 5.4, 0.9, 0.04, 2.0, B.col(0x2a2a2c));
   B.box(R, 5.8, 0, 5.4, 0.8, 0.8, 1.9, B.col(0x3a2e24), { collide: true }); B.box(R, 5.8, 0.8, 5.4, 0.9, 0.04, 2.0, B.col(0x2a2a2c));
   // mixing board
-  const boardM = new THREE.MeshLambertMaterial({ map: TEX.get('board') });
+  const boardM = new THREE.MeshStandardMaterial({ map: TEX.get('board') });
   const bm = new THREE.Mesh(B.boxGeo(1.6, 0.08, 0.6, 0), [M.dark, M.dark, boardM, M.dark, M.dark, M.dark]);
   bm.position.set(3, 0.87, 6.55); bm.rotation.x = -0.12; R.add(bm); L.named.board = bm;
   // mic on arm
@@ -322,7 +322,7 @@ Levels.station = function (o = {}) {
   // transmitter remote panel on east wall
   const txp = B.group(R, 6.92, 1.25, 4.4, -Math.PI / 2);
   B.box(txp, 0, 0, 0, 0.6, 0.5, 0.1, B.col(0x4a524c));
-  const txMat = new THREE.MeshLambertMaterial({ map: TEX.get('meterPanel', 'REMOTE CONTROL'), emissive: 0x222222, emissiveMap: TEX.get('meterPanel', 'REMOTE CONTROL') });
+  const txMat = new THREE.MeshStandardMaterial({ map: TEX.get('meterPanel', 'REMOTE CONTROL'), emissive: 0x222222, emissiveMap: TEX.get('meterPanel', 'REMOTE CONTROL') });
   const txFace = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.46), txMat); txFace.position.set(0, 0.25, 0.051); txp.add(txFace);
   const txLed = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.01), new THREE.MeshBasicMaterial({ color: 0x22ff44 })); txLed.position.set(0.24, 0.45, 0.06); txp.add(txLed);
   L.named.txPanel = txp; L.setTxLed = on => txLed.material.color.set(on ? 0x22ff44 : 0xff2222);
@@ -409,7 +409,7 @@ Levels.station = function (o = {}) {
   L.named.fridge = fr;
   // vending machine
   const vm = B.group(R, -5.6, 0, -2.0, -Math.PI / 2);
-  const vmMat = new THREE.MeshLambertMaterial({ map: TEX.get('vending'), emissive: 0x333333, emissiveMap: TEX.get('vending') });
+  const vmMat = new THREE.MeshStandardMaterial({ map: TEX.get('vending'), emissive: 0x333333, emissiveMap: TEX.get('vending') });
   const vmBox = new THREE.Mesh(B.boxGeo(0.9, 1.85, 0.8, 0), [B.col(0x1a1a1a), B.col(0x1a1a1a), B.col(0x1a1a1a), B.col(0x1a1a1a), vmMat, B.col(0x1a1a1a)]);
   vmBox.position.y = 0.925; vmBox.castShadow = true; vm.add(vmBox);
   Phys.addC(-5.6, -2.0, 0.8, 0.9, 0, 1.85);
@@ -448,7 +448,7 @@ Levels.station = function (o = {}) {
   // ================= ENGINEERING =================
   for (let i = 0; i < 4; i++) {
     const rg = B.group(R, -2.0 + i * 0.62, 0, -7.55, 0);
-    const front = new THREE.MeshLambertMaterial({ map: TEX.get('rack', 400 + i, ['STL', 'EAS', 'SAT RX', 'LOGGER'][i]), emissive: 0x666666, emissiveMap: TEX.get('rack', 400 + i, ['STL', 'EAS', 'SAT RX', 'LOGGER'][i]) });
+    const front = new THREE.MeshStandardMaterial({ map: TEX.get('rack', 400 + i, ['STL', 'EAS', 'SAT RX', 'LOGGER'][i]), emissive: 0x666666, emissiveMap: TEX.get('rack', 400 + i, ['STL', 'EAS', 'SAT RX', 'LOGGER'][i]) });
     const box = new THREE.Mesh(B.boxGeo(0.6, 2.0, 0.6, 0), [M.dark, M.dark, M.dark, M.dark, front, M.dark]); box.position.y = 1.0; box.castShadow = true; rg.add(box);
   }
   Phys.add(-2.35, -7.9, 0.2, -7.2, 0, 2);
@@ -579,7 +579,7 @@ Levels.stationExterior = function (L, o) {
   // wheel stops
   for (let i = 0; i < 8; i++) B.box(R, -8.4 + i * 3.2, 0, 10.8, 1.6, 0.12, 0.2, B.col(0x9a9890), { cast: false });
   // road (Route 9)
-  const road = B.plane(R, 0, 0.0, 37.5, 300, 7, new THREE.MeshLambertMaterial({ map: (() => { const t = TEX.get('road').clone(); t.needsUpdate = true; t.rotation = Math.PI / 2; t.center.set(0.5, 0.5); t.repeat.set(37.5, 1); return t; })() }), { rx: -Math.PI / 2, uv: 0 });
+  const road = B.plane(R, 0, 0.0, 37.5, 300, 7, new THREE.MeshStandardMaterial({ map: (() => { const t = TEX.get('road').clone(); t.needsUpdate = true; t.rotation = Math.PI / 2; t.center.set(0.5, 0.5); t.repeat.set(37.5, 1); return t; })() }), { rx: -Math.PI / 2, uv: 0 });
   void road;
   L.surface(-150, 34, 150, 41, 'asphalt');
   // station sign by the road
@@ -591,7 +591,7 @@ Levels.stationExterior = function (L, o) {
   // satellite dish + STL pole east side
   const dish = B.group(R, 15.5, 0, -2, -0.8);
   B.box(dish, 0, 0, 0, 0.3, 1.2, 0.3, B.col(0x777777));
-  const dm = new THREE.Mesh(new THREE.SphereGeometry(1.4, 16, 8, 0, Math.PI * 2, 0, 0.9), new THREE.MeshLambertMaterial({ color: 0xcfcfc8, side: THREE.DoubleSide }));
+  const dm = new THREE.Mesh(new THREE.SphereGeometry(1.4, 16, 8, 0, Math.PI * 2, 0, 0.9), new THREE.MeshStandardMaterial({ color: 0xcfcfc8, side: THREE.DoubleSide }));
   dm.position.set(0, 1.9, 0); dm.rotation.x = -1.1; dm.castShadow = true; dish.add(dm);
   Phys.addC(15.5, -2, 1.2, 1.2, 0, 2);
   B.cyl(R, 14.2, 0, 4, 0.08, 0.1, 9, B.col(0x777777), { collide: true });
@@ -619,6 +619,11 @@ Levels.stationExterior = function (L, o) {
   for (let i = 0; i < 9; i++) { const c = new THREE.Mesh(new THREE.ConeGeometry(70 + (i % 3) * 30, 70 + (i % 4) * 25, 6), ridgeMat); const a = -1.2 + i * 0.3; c.position.set(Math.sin(a) * 300, 20, -Math.cos(a) * 300); R.add(c); }
   // night sky
   L.skyRig = P.sky(L);
+  P.clouds(L, { seed: 4 });
+  P.mist(L, { size: 170, opacity: 0.11, heights: [0.3, 1.1, 2.4] });
+  // grass tufts on the verges around the lot and building
+  const gp = P.scatter(-40, -40, 50, 50, 1800, 12, (x, z) => (x > -18.5 && x < 26.5 && z > 8 && z < 34.8) || (x > -13.5 && x < 13.5 && z > -8.5 && z < 8.5) || (x > -18.5 && x < 3.5 && z > -20.5 && z < -8) || (z > 33.5 && z < 41.5), 0.9);
+  P.grass(L, gp, { seed: 3 });
 
   // vehicles
   L.named.evanCar = o.evanCar !== false ? P.car(R, 6.4, 13.2, Math.PI, { color: 0x4d5b4a }) : null;

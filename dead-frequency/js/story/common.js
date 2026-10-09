@@ -342,3 +342,20 @@ Common.qte = function (text, need = 10, time = 3.5, decay = 1.6) {
     G.level.onUpdate(fn);
   });
 };
+
+// developer viewpoint segment: ?seg=view&lvl=station&x=..&z=..&yaw=..&pitch=..&flash=1&npc=dale
+Story.define('view', {
+  checkpoint: false,
+  async setup() {
+    const q = new URLSearchParams(location.search), n = k => Number(q.get(k) || 0);
+    const lvl = q.get('lvl') || 'station';
+    Story.setClock(23, 30);
+    const L = await Common.enter(Levels[lvl], { road: q.get('road') || 'mountain', marcyCar: true, buick: q.get('buick') === '1', backpack: true }, [n('x'), n('z'), n('yaw'), n('pitch')]);
+    if (lvl === 'station') Radio.start();
+    if (q.get('flash')) { Player.hasFlashlight = true; Player.setFlashlight(true, true); }
+    if (q.get('npc')) { const h = NPCs.spawn(q.get('npc'), { x: n('nx'), z: n('nz'), ry: n('nry') }); if (q.get('pose')) h.pose = q.get('pose'); }
+    if (q.get('car') && L.road) { Car.start(L.road, { s: n('s') || 40, v: 0 }); }
+    Player.canMove = !q.get('freeze');
+  },
+  async run() {},
+});

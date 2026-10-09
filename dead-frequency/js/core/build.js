@@ -44,23 +44,35 @@ const B = {
   invisible: new THREE.MeshBasicMaterial({ visible: false }),
 
   // Lambert material with optional texture (world-scale UVs handled by geometry)
+  // surface response per texture: [roughness, metalness, normal strength]
+  SURF: { vct: [0.42, 0, 0.6], carpet: [0.97, 0, 1.4], drywall: [0.86, 0, 0.5], paneling: [0.55, 0, 1.0], acoustic: [0.98, 0, 1.6], ceiling: [0.92, 0, 0.9],
+    concrete: [0.88, 0, 1.3], cinder: [0.92, 0, 1.6], siding: [0.68, 0, 0.9], asphalt: [0.82, 0, 1.4], road: [0.78, 0, 1.0], gravel: [0.96, 0, 2.2], grass: [0.96, 0, 1.4],
+    forestFloor: [0.97, 0, 2.0], dirt: [0.96, 0, 1.6], bark: [0.95, 0, 2.4], pine: [0.9, 0, 1.2], metal: [0.42, 0.55, 0.6], corrugated: [0.55, 0.4, 1.6], woodDoor: [0.58, 0, 0.8],
+    paintedDoor: [0.5, 0, 0.6], plain: [0.75, 0, 0.6], tarp: [0.7, 0, 1.4], chainlink: [0.5, 0.6, 0.4], keyboard: [0.6, 0, 0.6], board: [0.55, 0.1, 0.8], rack: [0.5, 0.3, 0.6] },
   mat(texName, o = {}) {
     const key = texName + JSON.stringify(o);
     if (this.matCache[key] && !o.unique) return this.matCache[key];
     const p = { color: o.color != null ? o.color : 0xffffff };
-    if (texName) { const args = o.texArgs || []; p.map = TEX.get(texName, ...args); }
+    const sf = this.SURF[texName] || [0.72, 0, 0.8];
+    if (texName) {
+      const args = o.texArgs || []; p.map = TEX.get(texName, ...args);
+      if (o.normal !== false && sf[2] > 0) { p.normalMap = TEX.normalFrom(p.map, texName + JSON.stringify(args), sf[2]); }
+    }
     if (o.emissive != null) p.emissive = new THREE.Color(o.emissive);
     if (o.emissiveMap) p.emissiveMap = o.emissiveMap;
     if (o.transparent) { p.transparent = true; p.opacity = o.opacity == null ? 1 : o.opacity; p.depthWrite = o.depthWrite !== undefined ? o.depthWrite : true; }
     if (o.side) p.side = o.side;
     if (o.alphaTest) p.alphaTest = o.alphaTest;
-    const m = o.standard ? new THREE.MeshStandardMaterial(Object.assign(p, { roughness: o.roughness == null ? 0.6 : o.roughness, metalness: o.metalness || 0 })) : new THREE.MeshLambertMaterial(p);
+    p.roughness = o.roughness != null ? o.roughness : sf[0];
+    p.metalness = o.metalness != null ? o.metalness : sf[1];
+    const m = new THREE.MeshStandardMaterial(p);
+    m.envMapIntensity = o.env != null ? o.env : 1;
     if (!o.unique) this.matCache[key] = m;
     return m;
   },
   col(color, o = {}) { return this.mat(null, Object.assign({ color }, o)); },
   glow(color, intensity = 1) { return new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(intensity) }); },
-  texMat(tex, o = {}) { const p = { map: tex, color: o.color != null ? o.color : 0xffffff }; if (o.emissive) { p.emissive = new THREE.Color(o.emissive); p.emissiveMap = tex; } if (o.transparent) { p.transparent = true; p.alphaTest = 0.1; } if (o.side) p.side = o.side; return o.basic ? new THREE.MeshBasicMaterial(p) : new THREE.MeshLambertMaterial(p); },
+  texMat(tex, o = {}) { const p = { map: tex, color: o.color != null ? o.color : 0xffffff }; if (o.emissive) { p.emissive = new THREE.Color(o.emissive); p.emissiveMap = tex; } if (o.transparent) { p.transparent = true; p.alphaTest = 0.1; } if (o.side) p.side = o.side; return o.basic ? new THREE.MeshBasicMaterial(p) : new THREE.MeshStandardMaterial(Object.assign(p, { roughness: 0.7 })); },
 
   // box geometry with UVs in world units / uvScale meters per texture repeat
   boxGeo(w, h, d, uvs = 1) {
@@ -96,31 +108,66 @@ const B = {
   floor(parent, x0, z0, x1, z1, y, material, uv = 1) { return this.plane(parent, (x0 + x1) / 2, y, (z0 + z1) / 2, Math.abs(x1 - x0), Math.abs(z1 - z0), material, { rx: -Math.PI / 2, uv }); },
   ceiling(parent, x0, z0, x1, z1, y, material, uv = 1) { return this.plane(parent, (x0 + x1) / 2, y, (z0 + z1) / 2, Math.abs(x1 - x0), Math.abs(z1 - z0), material, { rx: Math.PI / 2, uv, receive: true }); },
 
+  // soft contact shadow strips where a wall meets the floor (fake ambient occlusion)
+  aoMat(opacity = 0.5) {
+    const k = 'ao' + opacity; if (this.matCache[k]) return this.matCache[k];
+    if (!this._aoTex) { const c = TEX.canvas(4, 64), x = c.getContext('2d'); const g = x.createLinearGradient(0, 0, 0, 64); g.addColorStop(0, '#fff'); g.addColorStop(0.35, '#777'); g.addColorStop(1, '#000'); x.fillStyle = g; x.fillRect(0, 0, 4, 64); this._aoTex = new THREE.CanvasTexture(c); }
+    const m = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity, alphaMap: this._aoTex, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    this.matCache[k] = m; return m;
+  },
+  // axis 'x': wall along x at z; 'z': wall along z at x. t = wall thickness
+  ao(parent, a0, a1, c, axis, t, y = 0, o = {}) {
+    const len = a1 - a0; if (len < 0.2) return;
+    const mid = (a0 + a1) / 2, d = o.depth || 0.42, hh = o.wallH || 0.35;
+    const fm = this.aoMat(o.opacity || 0.42), wm = this.aoMat(o.wallOpacity || 0.3);
+    for (const sd of o.sides || [-1, 1]) {
+      // floor strip: opaque edge against the wall
+      const f = new THREE.Mesh(new THREE.PlaneGeometry(len, d), fm);
+      f.rotation.x = -Math.PI / 2;
+      if (axis === 'x') { f.position.set(mid, y + 0.006, c + sd * (t / 2 + d / 2)); if (sd < 0) f.rotation.z = Math.PI; }
+      else { f.rotation.z = sd > 0 ? Math.PI / 2 : -Math.PI / 2; f.position.set(c + sd * (t / 2 + d / 2), y + 0.006, mid); }
+      f.renderOrder = 1; parent.add(f);
+      // wall-base darkening
+      const w = new THREE.Mesh(new THREE.PlaneGeometry(len, hh), wm);
+      if (axis === 'x') { w.position.set(mid, y + hh / 2, c + sd * (t / 2 + 0.004)); w.rotation.set(0, sd > 0 ? 0 : Math.PI, Math.PI); }
+      else { w.position.set(c + sd * (t / 2 + 0.004), y + hh / 2, mid); w.rotation.set(0, sd > 0 ? Math.PI / 2 : -Math.PI / 2, Math.PI); }
+      w.renderOrder = 1; parent.add(w);
+    }
+  },
+  // soft blob shadow under an object (footprint w x d at x,z)
+  blob(parent, x, z, w, d, y = 0, opacity = 0.5) {
+    if (!this._blobTex) { const c = TEX.canvas(64, 64), g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 4, 32, 32, 32); gr.addColorStop(0, '#fff'); gr.addColorStop(0.55, '#999'); gr.addColorStop(1, '#000'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); this._blobTex = new THREE.CanvasTexture(c); }
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.35, d * 1.35), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity, alphaMap: this._blobTex, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    m.rotation.x = -Math.PI / 2; m.position.set(x, y + 0.008, z); m.renderOrder = 1; parent.add(m); return m;
+  },
+
   // Wall along X (constant z) from x0..x1, with openings [{at, w, h, sill}] (at = center x)
   wallX(parent, x0, x1, z, h, t, mat, openings = [], o = {}) {
     if (x0 > x1) [x0, x1] = [x1, x0];
     const ops = openings.map(op => ({ a: op.at - op.w / 2, b: op.at + op.w / 2, h: op.h || 2.1, sill: op.sill || 0 })).sort((p, q) => p.a - q.a);
     let cur = x0; const y = o.y || 0; const meshes = [];
+    const aoSeg = (a, b) => { if (h <= 3.6 && o.ao !== false) this.ao(parent, a, b, z, 'x', t, y, o.aoOpts || {}); };
     for (const op of ops) {
-      if (op.a > cur) meshes.push(this.box(parent, (cur + op.a) / 2, y, z, op.a - cur, h, t, mat, { collide: true }));
+      if (op.a > cur) { meshes.push(this.box(parent, (cur + op.a) / 2, y, z, op.a - cur, h, t, mat, { collide: true })); aoSeg(cur, op.a); }
       if (op.h < h) meshes.push(this.box(parent, (op.a + op.b) / 2, y + op.h, z, op.b - op.a, h - op.h, t, mat, { collide: false, ray: true }));
       if (op.sill > 0) meshes.push(this.box(parent, (op.a + op.b) / 2, y, z, op.b - op.a, op.sill, t, mat, { collide: true, sight: false }));
       cur = op.b;
     }
-    if (x1 > cur) meshes.push(this.box(parent, (cur + x1) / 2, y, z, x1 - cur, h, t, mat, { collide: true }));
+    if (x1 > cur) { meshes.push(this.box(parent, (cur + x1) / 2, y, z, x1 - cur, h, t, mat, { collide: true })); aoSeg(cur, x1); }
     return meshes;
   },
   wallZ(parent, z0, z1, x, h, t, mat, openings = [], o = {}) {
     if (z0 > z1) [z0, z1] = [z1, z0];
     const ops = openings.map(op => ({ a: op.at - op.w / 2, b: op.at + op.w / 2, h: op.h || 2.1, sill: op.sill || 0 })).sort((p, q) => p.a - q.a);
     let cur = z0; const y = o.y || 0; const meshes = [];
+    const aoSeg = (a, b) => { if (h <= 3.6 && o.ao !== false) this.ao(parent, a, b, x, 'z', t, y, o.aoOpts || {}); };
     for (const op of ops) {
-      if (op.a > cur) meshes.push(this.box(parent, x, y, (cur + op.a) / 2, t, h, op.a - cur, mat, { collide: true }));
+      if (op.a > cur) { meshes.push(this.box(parent, x, y, (cur + op.a) / 2, t, h, op.a - cur, mat, { collide: true })); aoSeg(cur, op.a); }
       if (op.h < h) meshes.push(this.box(parent, x, y + op.h, (op.a + op.b) / 2, t, h - op.h, op.b - op.a, mat, { collide: false, ray: true }));
       if (op.sill > 0) meshes.push(this.box(parent, x, y, (op.a + op.b) / 2, t, op.sill, op.b - op.a, mat, { collide: true, sight: false }));
       cur = op.b;
     }
-    if (z1 > cur) meshes.push(this.box(parent, x, y, (cur + z1) / 2, t, h, z1 - cur, mat, { collide: true }));
+    if (z1 > cur) { meshes.push(this.box(parent, x, y, (cur + z1) / 2, t, h, z1 - cur, mat, { collide: true })); aoSeg(cur, z1); }
     return meshes;
   },
   // glass pane (for windows) - blocks movement, not sight
@@ -180,11 +227,12 @@ const B = {
     return this.lightEntry(L, light, lensMat, new THREE.Color(o.color || 0xffd9a0), o);
   },
   lightEntry(L, light, lensMat, color, o) {
+    const halo = o.halo !== false && light ? P.halo(L.root, light.position.x, light.position.y + (light.isSpotLight ? 0.05 : 0.08), light.position.z, color.getHex(), o.haloSize || (light.isSpotLight ? 1.6 : 0.8), o.haloOpacity || (light.isSpotLight ? 0.32 : 0.2)) : null;
     const e = {
-      light, lensMat, color, circuit: o.circuit || 'main', base: light ? light.intensity : 0, on: o.on !== false, powered: true, flicker: o.flicker || 0, ft: 0, extra: 1,
+      light, lensMat, color, circuit: o.circuit || 'main', halo, base: light ? light.intensity : 0, on: o.on !== false, powered: true, flicker: o.flicker || 0, ft: 0, extra: 1,
       setPower(p) { this.powered = p; this.apply(); },
       setOn(v) { this.on = v; this.apply(); },
-      apply() { const lit = this.on && this.powered; const k = lit ? this.extra : 0; if (this.light) { this.light.intensity = this.base * k; this.light.visible = k > 0.001; } if (this.lensMat) this.lensMat.color.copy(this.color).multiplyScalar(lit ? 0.35 + 0.9 * this.extra : 0.03); },
+      apply() { const lit = this.on && this.powered; const k = lit ? this.extra : 0; if (this.light) { this.light.intensity = this.base * k; this.light.visible = k > 0.001; } if (this.lensMat) this.lensMat.color.copy(this.color).multiplyScalar(lit ? 0.35 + 0.9 * this.extra : 0.03); if (this.halo) { this.halo.visible = k > 0.001; this.halo.material.opacity = (this.halo.userData.op || (this.halo.userData.op = this.halo.material.opacity)) * Math.min(1, k); } },
       update(dt) {
         if (!this.flicker || !this.on || !this.powered) return;
         this.ft -= dt;
@@ -216,7 +264,7 @@ const B = {
   signMesh(parent, text, x, y, z, w, h, o = {}) {
     const tex = TEX.get('sign', text, Object.assign({ w: o.pw || 512, h: o.ph || Math.round(512 * h / w) }, o.tex || {}));
     const lp = { map: tex }; if (o.emissive) { lp.emissive = new THREE.Color(o.emissive); lp.emissiveMap = tex; }
-    const mat = o.glow ? new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color(o.glowColor || 0xffffff) }) : new THREE.MeshLambertMaterial(lp);
+    lp.roughness = 0.6; const mat = o.glow ? new THREE.MeshBasicMaterial({ map: tex, color: new THREE.Color(o.glowColor || 0xffffff) }) : new THREE.MeshStandardMaterial(lp);
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
     m.position.set(x, y, z); m.rotation.y = o.ry || 0;
     parent.add(m);
@@ -225,7 +273,7 @@ const B = {
   texPlane(parent, tex, x, y, z, w, h, o = {}) {
     const lp = { map: tex, transparent: !!o.transparent, alphaTest: o.transparent ? 0.1 : 0, side: o.side || THREE.FrontSide };
     if (o.emissive != null) { lp.emissive = new THREE.Color(o.emissive); lp.emissiveMap = tex; }
-    const mat = o.basic ? new THREE.MeshBasicMaterial({ map: tex, transparent: !!o.transparent, side: o.side || THREE.FrontSide, color: o.color != null ? o.color : 0xffffff }) : new THREE.MeshLambertMaterial(lp);
+    lp.roughness = 0.75; const mat = o.basic ? new THREE.MeshBasicMaterial({ map: tex, transparent: !!o.transparent, side: o.side || THREE.FrontSide, color: o.color != null ? o.color : 0xffffff }) : new THREE.MeshStandardMaterial(lp);
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
     m.position.set(x, y, z); m.rotation.set(o.rx || 0, o.ry || 0, o.rz || 0);
     m.receiveShadow = true;

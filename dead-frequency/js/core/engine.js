@@ -30,8 +30,16 @@ void main(){
   float Yb = dot(blur, vec3(.299,.587,.114));
   col = mix(col, vec3(Y) + (blur - vec3(Yb)), 0.55 * s);
   vec3 glow = vec3(0.);
-  for (int i = 0; i < 8; i++) { float a = float(i) * 0.785 + 0.3; vec2 o = vec2(cos(a), sin(a)) * px * 7.; glow += max(texture2D(tDiffuse, uv + o).rgb - 0.75, 0.); glow += max(texture2D(tDiffuse, uv + o*2.2).rgb - 0.9, 0.) * 0.6; }
-  col += glow * 0.1;
+  float rot = hash(floor(vUv * res)) * 6.2831;
+  for (int i = 0; i < 12; i++) {
+    float fi = float(i);
+    float a = rot + fi * 2.39996;
+    float rr = 2.5 + fi * 1.4;
+    vec2 o = vec2(cos(a), sin(a)) * px * rr;
+    vec3 sm = texture2D(tDiffuse, uv + o).rgb;
+    glow += max(sm - 0.7, 0.) * (1.0 - fi / 14.);
+  }
+  col += glow * 0.075;
   col = aces(col * brightness * 1.15);
   col = pow(col, vec3(1./2.2));
   float L = dot(col, vec3(.299,.587,.114));
@@ -91,13 +99,17 @@ const Engine = {
     this.postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.post));
     window.addEventListener('resize', () => this.resize());
     this.resize();
+    // image-based fill light for PBR materials (dimmed per level)
+    try { const pm = new THREE.PMREMGenerator(r); this.roomEnv = pm.fromScene(new XT.RoomEnvironment(r), 0.04).texture; pm.dispose(); } catch (e) { console.warn(e); }
   },
 
   resize() {
     const w = window.innerWidth, h = window.innerHeight;
     this.renderer.setSize(w, h, false);
     this.renderer.domElement.style.width = w + 'px'; this.renderer.domElement.style.height = h + 'px';
-    const ih = Math.min(h, 540), iw = Math.round(ih * w / h);
+    const q = new URLSearchParams(location.search).get('lq') ? 0 : G.settings.quality;
+    const ih = Math.min(h, [300, 432, 540][q] || 540), iw = Math.round(ih * w / h);
+    this.renderer.shadowMap.enabled = q > 0;
     this.rt.setSize(iw, ih);
     this.post.uniforms.res.value.set(iw, ih);
     this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
@@ -165,6 +177,9 @@ const Engine = {
     this.scene.fog = lvl.fog || null;
     this.scene.background = lvl.background || new THREE.Color(0x000000);
     if (lvl.reverb) { SND.setReverb(lvl.reverb[0], lvl.reverb[1]); SND.setReverbMix(lvl.reverb[2] == null ? 0.25 : lvl.reverb[2]); }
+    this.scene.environment = this.roomEnv || null;
+    const envI = lvl.envIntensity != null ? lvl.envIntensity : 0.035;
+    lvl.root.traverse(o => { if (o.material) { const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const m of ms) if (m.isMeshStandardMaterial) { if (m.userData.envBase == null) m.userData.envBase = m.envMapIntensity == null ? 1 : m.envMapIntensity; m.envMapIntensity = m.userData.envBase * envI; } } });
     if (lvl.onLoad) lvl.onLoad();
     Phys.ready = true;
     return lvl;

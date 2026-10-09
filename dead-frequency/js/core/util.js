@@ -11,7 +11,7 @@ const G = {
   scene: null,
   camera: null,
   renderer: null,
-  settings: { sens: 1.0, volume: 0.8, brightness: 1.0, vhs: 1.0, invertY: false },
+  settings: { sens: 1.0, volume: 0.8, brightness: 1.0, vhs: 1.0, invertY: false, quality: 2 },
 };
 
 const U = {

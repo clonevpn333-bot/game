@@ -599,10 +599,10 @@ class Human {
     paintBody(x, look, r);
     const tex = TEX.make(c, { clamp: true }); tex.flipY = true; tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
     const body = buildBody(look, bi);
-    const bodyMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.82, metalness: 0, side: THREE.DoubleSide });
+    const bodyMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.82, metalness: 0, side: THREE.DoubleSide, envMapIntensity: 0.15 });
     const out = { body, bodyMat };
     const hair = buildHair(look, bi);
-    if (hair) { out.hair = hair; out.hairMat = new THREE.MeshStandardMaterial({ map: hairTexture(look.hair, 7), roughness: 0.6, color: 0xffffff, side: THREE.DoubleSide }); }
+    if (hair) { out.hair = hair; out.hairMat = new THREE.MeshStandardMaterial({ map: hairTexture(look.hair, 7), roughness: 0.6, color: 0xffffff, side: THREE.DoubleSide, envMapIntensity: 0.15 }); }
     if (look.hairStyle === 'cap') { out.cap = buildCap(look, bi); const cc = TEX.canvas(64, 64), cx = cc.getContext('2d'); cx.fillStyle = rgb(look.cap); cx.fillRect(0, 0, 64, 64); for (let i = 0; i < 300; i++) { cx.fillStyle = `rgba(0,0,0,${Math.random() * 0.15})`; cx.fillRect(Math.random() * 64, Math.random() * 64, 2, 2); } cx.fillStyle = 'rgba(230,220,200,.8)'; cx.fillRect(26, 54, 14, 6); out.capMat = new THREE.MeshStandardMaterial({ map: TEX.make(cc), roughness: 0.9, side: THREE.DoubleSide }); }
     return out;
   }

@@ -124,7 +124,7 @@ Levels.stationInteractions = function (L, o) {
   Interact.add(N.filters, {
     prompt: () => L.state.coffee === 'water' && !Player.held ? 'Take a coffee filter' : 'Filters',
     enabled: () => L.state.coffee === 'water' && !Player.held,
-    use: () => { const f = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.04, 0.05, 10, 1, true), new THREE.MeshLambertMaterial({ color: 0xf5f1e6, side: THREE.DoubleSide })); Player.hold(f, 'filter'); SND.sfx('paper', { pos: lookAt(-12.7, 1.6, -5.6) }); },
+    use: () => { const f = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.04, 0.05, 10, 1, true), new THREE.MeshStandardMaterial({ color: 0xf5f1e6, side: THREE.DoubleSide })); Player.hold(f, 'filter'); SND.sfx('paper', { pos: lookAt(-12.7, 1.6, -5.6) }); },
   });
   Interact.add(N.coffeeCan, {
     prompt: () => L.state.coffee === 'filter' ? 'Scoop coffee into the filter' : 'Coffee can — "Mountain Roast"',
@@ -168,7 +168,7 @@ Levels.stationInteractions = function (L, o) {
     enabled: () => N.backpack.visible,
     use: async () => {
       SND.sfx('zipper', { pos: lookAt(-8.8, 0.9, -4.8) });
-      if (!F.lasagnaOut && !Player.held) { F.lasagnaOut = true; const box = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.06, 0.13), new THREE.MeshLambertMaterial({ color: 0xd84a2a, transparent: true, opacity: 0.85 })); Player.hold(box, 'lasagna'); await Story.think('Tupperware. A Post-it on the lid: "EAT A VEGETABLE TOO. love mom."'); }
+      if (!F.lasagnaOut && !Player.held) { F.lasagnaOut = true; const box = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.06, 0.13), new THREE.MeshStandardMaterial({ color: 0xd84a2a, transparent: true, opacity: 0.85 })); Player.hold(box, 'lasagna'); await Story.think('Tupperware. A Post-it on the lid: "EAT A VEGETABLE TOO. love mom."'); }
       else await Story.think('Physics homework I\'m not going to do. Gum. A dead calculator.');
     },
   });

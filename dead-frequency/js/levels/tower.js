@@ -108,15 +108,15 @@ Levels.tower = function (o = {}) {
   });
   L.txTex = txFront;
   const txg = B.group(R, 0.75, 0, -3, Math.PI / 2);
-  const txm = new THREE.MeshLambertMaterial({ map: txFront.tex, emissive: 0x444444, emissiveMap: txFront.tex });
+  const txm = new THREE.MeshStandardMaterial({ map: txFront.tex, emissive: 0x444444, emissiveMap: txFront.tex });
   const txBox = new THREE.Mesh(B.boxGeo(3.6, 2.1, 1.0, 0), [B.col(0x4a524c), B.col(0x4a524c), B.col(0x4a524c), B.col(0x4a524c), B.col(0x4a524c), B.col(0x4a524c)]);
   txBox.position.y = 1.05; txBox.castShadow = true; txg.add(txBox);
-  for (let i = 0; i < 3; i++) { const f = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 2.0), i === 1 ? txm : new THREE.MeshLambertMaterial({ map: TEX.get('rack', 600 + i), emissive: 0x333333, emissiveMap: TEX.get('rack', 600 + i) })); f.position.set(-1.2 + i * 1.2, 1.05, 0.505); txg.add(f); }
+  for (let i = 0; i < 3; i++) { const f = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 2.0), i === 1 ? txm : new THREE.MeshStandardMaterial({ map: TEX.get('rack', 600 + i), emissive: 0x333333, emissiveMap: TEX.get('rack', 600 + i) })); f.position.set(-1.2 + i * 1.2, 1.05, 0.505); txg.add(f); }
   Phys.addC(0.75, -3, 1.0, 3.6, 0, 2.1);
   L.named.tx = txg;
   L.loop('transmitterHum', { pos: new THREE.Vector3(1, 1.2, -3), vol: 0 }); L.txHum = L.loops[L.loops.length - 1];
   // racks on north wall
-  for (let i = 0; i < 3; i++) { const rg = B.group(R, 3.2 + i * 0.65, 0, -5.55, 0); const fm = new THREE.MeshLambertMaterial({ map: TEX.get('rack', 620 + i, ['STL RX', 'PROC', 'REMOTE'][i]), emissive: 0x555555, emissiveMap: TEX.get('rack', 620 + i, ['STL RX', 'PROC', 'REMOTE'][i]) }); const bx = new THREE.Mesh(B.boxGeo(0.6, 2.0, 0.6, 0), [B.col(0x1d1d20), B.col(0x1d1d20), B.col(0x1d1d20), B.col(0x1d1d20), fm, B.col(0x1d1d20)]); bx.position.y = 1; rg.add(bx); }
+  for (let i = 0; i < 3; i++) { const rg = B.group(R, 3.2 + i * 0.65, 0, -5.55, 0); const fm = new THREE.MeshStandardMaterial({ map: TEX.get('rack', 620 + i, ['STL RX', 'PROC', 'REMOTE'][i]), emissive: 0x555555, emissiveMap: TEX.get('rack', 620 + i, ['STL RX', 'PROC', 'REMOTE'][i]) }); const bx = new THREE.Mesh(B.boxGeo(0.6, 2.0, 0.6, 0), [B.col(0x1d1d20), B.col(0x1d1d20), B.col(0x1d1d20), B.col(0x1d1d20), fm, B.col(0x1d1d20)]); bx.position.y = 1; rg.add(bx); }
   Phys.add(2.85, -5.9, 5.2, -5.2, 0, 2);
   L.rackLoop = L.loop('rackFans', { pos: new THREE.Vector3(4, 1, -5.5), vol: 0.8 });
   // workbench + desk with EAS mic (east side)
@@ -159,7 +159,7 @@ Levels.tower = function (o = {}) {
 
   // ---------- generator pen ----------
   const genX = 15, genZ = -3;
-  const fenceMat = new THREE.MeshLambertMaterial({ map: TEX.get('chainlink'), transparent: true, alphaTest: 0.3, side: THREE.DoubleSide });
+  const fenceMat = new THREE.MeshStandardMaterial({ map: TEX.get('chainlink'), transparent: true, alphaTest: 0.3, side: THREE.DoubleSide });
   fenceMat.map.repeat.set(1, 1);
   const fence = (x0, z0, x1, z1) => { const len = Math.hypot(x1 - x0, z1 - z0); const g = new THREE.PlaneGeometry(len, 2.1); const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * len / 0.6, uv.getY(i) * 2.1 / 0.6); const m = new THREE.Mesh(g, fenceMat); m.position.set((x0 + x1) / 2, h((x0 + x1) / 2, (z0 + z1) / 2) + 1.05, (z0 + z1) / 2); m.rotation.y = -Math.atan2(z1 - z0, x1 - x0); R.add(m); Phys.add(Math.min(x0, x1) - 0.05, Math.min(z0, z1) - 0.05, Math.max(x0, x1) + 0.05, Math.max(z0, z1) + 0.05, 0, 2.1, { sight: false }); for (const [px, pz] of [[x0, z0], [x1, z1]]) B.cyl(R, px, h(px, pz), pz, 0.04, 0.04, 2.2, B.col(0x888888)); };
   fence(genX - 2.2, genZ - 2, genX + 2.2, genZ - 2); fence(genX + 2.2, genZ - 2, genX + 2.2, genZ + 2); fence(genX - 2.2, genZ - 2, genX - 2.2, genZ + 2);
@@ -224,7 +224,7 @@ Levels.tower = function (o = {}) {
   D.old = new Door(L, { name: 'old', x: -19, z: 18, w: 0.95, axis: 'z', hinge: -1, swing: 1, y: oY, mat: B.mat('metal', { color: 0x6a5a4a }), locked: true, lockedPrompt: 'Padlocked', creakAmt: 3 });
   L.surface(ob.x0, ob.z0, ob.x1, ob.z1, 'concrete');
   // inside old building
-  for (let i = 0; i < 2; i++) { const cab = B.group(og, -24.4, 0, 16.6 + i * 1.3, Math.PI / 2); const cm = new THREE.MeshLambertMaterial({ map: TEX.get('meterPanel', 'GATES BC-1T'), color: 0x9a9a8a }); const bx = new THREE.Mesh(B.boxGeo(1.2, 2.0, 0.8, 0), [B.col(0x5a5a50), B.col(0x5a5a50), B.col(0x5a5a50), B.col(0x5a5a50), cm, B.col(0x5a5a50)]); bx.position.y = 1; cab.add(bx); }
+  for (let i = 0; i < 2; i++) { const cab = B.group(og, -24.4, 0, 16.6 + i * 1.3, Math.PI / 2); const cm = new THREE.MeshStandardMaterial({ map: TEX.get('meterPanel', 'GATES BC-1T'), color: 0x9a9a8a }); const bx = new THREE.Mesh(B.boxGeo(1.2, 2.0, 0.8, 0), [B.col(0x5a5a50), B.col(0x5a5a50), B.col(0x5a5a50), B.col(0x5a5a50), cm, B.col(0x5a5a50)]); bx.position.y = 1; cab.add(bx); }
   Phys.add(-25, 15.9, -23.9, 19.4, oY, oY + 2);
   const odesk = B.group(og, -21, 0, 20.0, Math.PI);
   B.box(odesk, 0, 0, 0, 1.6, 0.8, 0.6, B.col(0x4a4038)); B.box(odesk, 0, 0.8, 0, 1.7, 0.04, 0.7, B.col(0x5a5048));
@@ -244,7 +244,7 @@ Levels.tower = function (o = {}) {
   L.named.buick = P.car(R, 5, -11.5, Math.PI + 0.15, { color: 0x3a1418, len: 5.0, wid: 1.85 });
   L.named.buick.position.y = h(5, -11.5);
   if (o.tarp !== false) {
-    const tarpM = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 3.6, 6, 6), new THREE.MeshLambertMaterial({ map: TEX.get('tarp'), side: THREE.DoubleSide }));
+    const tarpM = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 3.6, 6, 6), new THREE.MeshStandardMaterial({ map: TEX.get('tarp'), side: THREE.DoubleSide }));
     const tpos = tarpM.geometry.attributes.position; for (let i = 0; i < tpos.count; i++) tpos.setZ(i, Math.sin(tpos.getX(i) * 1.2) * 0.25 - Math.abs(tpos.getY(i)) * 0.15);
     tarpM.rotation.set(-Math.PI / 2 + 0.25, 0, 0.15); tarpM.position.set(5.1, h(5, -11.5) + 1.25, -12.6); R.add(tarpM); L.named.tarp = tarpM;
   }
@@ -273,7 +273,7 @@ Levels.tower = function (o = {}) {
   const log = (x, z, ry, len = 6) => { const m = B.cyl(R, x, h(x, z) + 0.35, z, 0.38, 0.42, len, B.mat('bark'), { rz: Math.PI / 2, seg: 8 }); m.rotation.set(0, ry, Math.PI / 2); m.position.y = h(x, z) + 0.38; const s = Math.abs(Math.cos(ry)) > 0.7; Phys.addC(x, z, s ? len : 0.8, s ? 0.8 : len, h(x, z) - 0.5, h(x, z) + 0.8, { sight: false }); return m; };
   log(-45, -30, 0.3); log(-62, 10, 1.2, 7); log(-28, -42, 2.0, 5); log(-60, 22, 0.1, 8);
   // creek
-  const creek = trailRibbon([[-70, -60], [-64, -40], [-63, -20], [-61, 0], [-62, 20], [-66, 40]], 2.2, new THREE.MeshLambertMaterial({ color: 0x0a1418, emissive: 0x020406 }), 'mud');
+  const creek = trailRibbon([[-70, -60], [-64, -40], [-63, -20], [-61, 0], [-62, 20], [-66, 40]], 2.2, new THREE.MeshStandardMaterial({ color: 0x0a1418, emissive: 0x020406 }), 'mud');
   void creek;
   L.loop('creek', { pos: new THREE.Vector3(-62, h(-62, -10), -10), vol: 0.9, ref: 6, occlude: false });
 
@@ -290,6 +290,10 @@ Levels.tower = function (o = {}) {
   L.loop('wind', { vol: 0.42 });
   L.windHi = L.loop('wind', { pos: new THREE.Vector3(tx, 30, tz), vol: 0.35, ref: 20, occlude: false });
   L.skyRig = P.sky(L, { moon: 0.1, hemi: 0.16 });
+  P.clouds(L, { seed: 11, opacity: 0.18 });
+  P.mist(L, { size: 260, y: -4, opacity: 0.12, heights: [0.6, 1.8, 3.4, 5.0] });
+  const gpts = P.scatter(-80, -80, 50, 50, 3200, 33, (x, z) => rectDist(x, z, { x0: -1, x1: 11, z0: -7, z1: 1 }) < 1.5 || rectDist(x, z, { x0: ob.x0, x1: ob.x1, z0: ob.z0, z1: ob.z1 }) < 1.2 || rectDist(x, z, { x0: -12, x1: 20, z0: -12, z1: 13 }) < 0, 0.8).map(p => [p[0], p[1], h(p[0], p[1])]);
+  P.grass(L, gpts, { seed: 7, color: 0x8a8a70 });
   L.zone('outside', -300, -300, 300, 300);
   L.zone('newb', nb.x0, nb.z0, nb.x1, nb.z1);
   L.zone('closet', 8.6, -6, 10, -4.4);

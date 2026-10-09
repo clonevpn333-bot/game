@@ -18,10 +18,10 @@ Levels.gas = function (o = {}) {
   B.floor(R, -22, -10, 22, 27, -0.005, B.mat('asphalt'), 5);
   B.floor(R, -7, -5, 7, 5, 0.0, vct, 0.6);
   L.surface(-150, -150, 150, 150, 'grass'); L.surface(-22, -10, 22, 27, 'asphalt'); L.surface(-7, -5, 7, 5, 'tile');
-  const road = B.plane(R, 0, 0.0, 30.5, 300, 7, new THREE.MeshLambertMaterial({ map: (() => { const t = TEX.get('road').clone(); t.needsUpdate = true; t.rotation = Math.PI / 2; t.center.set(0.5, 0.5); t.repeat.set(37.5, 1); return t; })() }), { rx: -Math.PI / 2, uv: 0 });
+  const road = B.plane(R, 0, 0.0, 30.5, 300, 7, new THREE.MeshStandardMaterial({ map: (() => { const t = TEX.get('road').clone(); t.needsUpdate = true; t.rotation = Math.PI / 2; t.center.set(0.5, 0.5); t.repeat.set(37.5, 1); return t; })() }), { rx: -Math.PI / 2, uv: 0 });
   void road;
   B.ceiling(R, -7, -5, 7, 5, H, B.mat('ceiling'), 0.6);
-  B.box(R, 0, H, 0, 14.4, 0.6, 10.4, B.mat('siding', { texArgs: ['#b8242a'] }), { uv: 1 }); // fascia
+  B.box(R, 0, H + 0.03, 0, 14.4, 0.6, 10.4, B.mat('siding', { texArgs: ['#b8242a'] }), { uv: 1 }); // fascia
   // walls: front is mostly glass
   B.wallX(R, -7, 7, 5, H, 0.2, wX(dry, brick), [{ at: -1.2, w: 1.2, h: 2.2 }, { at: -4.5, w: 4.2, h: 2.4, sill: 0.6 }, { at: 3.4, w: 6.0, h: 2.4, sill: 0.6 }]);
   B.glass(R, -4.5, 0.6, 5, 4.2, 1.8, 'x'); B.glass(R, 3.4, 0.6, 5, 6.0, 1.8, 'x');
@@ -53,8 +53,8 @@ Levels.gas = function (o = {}) {
   B.box(can, 0, 4.2, -4.52, 18, 0.7, 0.04, B.mat('plain', { texArgs: ['#b8242a'] }));
   for (const sx of [-6, 6]) B.box(can, sx, 0, 0, 0.4, 4.2, 0.4, B.col(0xd8d4cc), { collide: true });
   B.signMesh(can, 'GAS-N-GO', 0, 4.25, 4.56, 3, 0.55, { tex: { bg: '#b8242a', fg: '#fff', w: 512, h: 96 }, emissive: 0x552222 });
-  LT.can1 = B.bulb(L, -4, 3.84, 14, { color: 0xf0f6ff, intensity: 30, dist: 14, spot: true, angle: 1.2 });
-  LT.can2 = B.bulb(L, 4, 3.84, 14, { color: 0xf0f6ff, intensity: 30, dist: 14, spot: true, angle: 1.2, flicker: o.flicker ? 0.12 : 0 });
+  LT.can1 = B.bulb(L, -4, 3.84, 14, { color: 0xf0f6ff, intensity: 30, dist: 14, spot: true, angle: 1.2, haloOpacity: 0.12, haloSize: 1.2 });
+  LT.can2 = B.bulb(L, 4, 3.84, 14, { color: 0xf0f6ff, intensity: 30, dist: 14, spot: true, angle: 1.2, flicker: o.flicker ? 0.12 : 0, haloOpacity: 0.12, haloSize: 1.2 });
   // pump islands
   L.named.pumps = [];
   for (const px of [-3, 3]) {
@@ -96,8 +96,21 @@ Levels.gas = function (o = {}) {
   const regScr = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.06), new THREE.MeshBasicMaterial({ color: 0x55ff88 })); regScr.position.set(0, 0.3, -0.07); reg.add(regScr);
   L.named.register = reg;
   // cigarette rack behind counter
-  B.box(R, 6.75, 1.2, 1.6, 0.4, 1.4, 3.0, B.col(0x3a3a3a));
-  B.texPlane(R, TEX.get('shelfGoods', 77), 6.54, 1.9, 1.6, 2.9, 1.3, { ry: -Math.PI / 2 });
+  B.box(R, 6.75, 1.2, 1.6, 0.4, 1.4, 3.0, B.col(0x2a2a2a));
+  { const cg = B.group(R, 6.54, 0, 1.6, -Math.PI / 2); const packs = [], cr = U.seeded(11); for (let k = 0; k < 9; k++) { B.box(cg, 0, 1.25 + k * 0.145, -0.05, 2.9, 0.012, 0.1, B.col(0x111111), { cast: false }); P.shelfRow(packs, cr, 0, 2.85, 1.26 + k * 0.145, -0.02, 0.1, 'packs'); } P.products(cg, packs); B.signMesh(cg, 'WE CARD — UNDER 18 NO SALE', 0, 2.72, -0.05, 2.0, 0.16, { tex: { bg: '#fff', fg: '#a11' } }); }
+  // counter clutter: lottery case, gum rack, newspapers, cups, tip jar, mat
+  { const lc = B.group(R, 3.0, 1.04, 3.0); B.box(lc, 0, 0, 0, 0.6, 0.18, 0.3, B.col(0x222222)); B.texPlane(lc, TEX.get('poster', 'OREGON LOTTERY', 'Scratch-its $1 $2 $5', 300), 0, 0.12, 0.151, 0.56, 0.14, {}); }
+  { const gr2 = B.group(R, 4.2, 0.3, 3.4); B.box(gr2, 0, 0, 0, 0.9, 0.7, 0.12, B.col(0x2a2a2a)); const gp = [], gr3 = U.seeded(4); for (let k = 0; k < 4; k++) P.shelfRow(gp, gr3, 0, 0.85, 0.05 + k * 0.17, 0.08, 0.1, 'packs'); P.products(gr2, gp); }
+  { const np = B.group(R, 1.6, 0, 4.5, Math.PI); B.box(np, 0, 0, 0, 0.6, 0.55, 0.35, B.col(0x1a3a6a)); const paper = B.texPlane(np, TEX.get('paper', ['HOLLIS COUNTY', 'COURIER', '', 'SEARCH FOR', 'MISSING', 'WAITRESS', 'ENTERS 20TH', 'MONTH'], { w: 128, h: 160, fs: 11, bg: '#e8e6dc' }), 0, 0.56, 0, 0.38, 0.46, { rx: -Math.PI / 2 + 0.3 });
+    Interact.add(paper, { prompt: 'Read the newspaper', use: () => UI.doc('<h2>HOLLIS COUNTY COURIER</h2><b>Friday, October 15, 2004 · 50¢</b>\n\n<h1>Search for missing waitress enters 20th month</h1>Family of Carrie Lindqvist asks public to "keep calling, keep listening"\n\nDeputies say the 2003 disappearance of the Pine Hollow Diner waitress remains an open case. Detective Kay Harlan said investigators are "re-examining older cases in the county for any connection," including the 2001 disappearance of a long-haul trucker on Route 26 and the 1999 case of a Hollis General nurse.\n\n"People out here look after each other," said Lindqvist\'s mother. "Somebody knows something."\n\n<i>Also inside: Harvest Festival schedule · Elk season opens · KTLR celebrates 33 years</i>', 'fax') }); }
+  for (let k = 0; k < 6; k++) B.cyl(R, 5.1, 1.04 + k * 0.012, 3.1, 0.045, 0.035, 0.11, B.col(0xf0eee8), { cast: false });
+  B.cyl(R, 3.6, 1.04, 3.15, 0.06, 0.06, 0.14, new THREE.MeshStandardMaterial({ color: 0xccddee, transparent: true, opacity: 0.35, roughness: 0.05 }), {});
+  B.box(R, -1.2, 0.0, 3.8, 1.6, 0.012, 1.0, B.mat('carpet', { texArgs: ['#2a2a2e'] }), { cast: false });
+  // ceiling fixture rows (only some carry real lights)
+  for (const fx of [-4.5, -1.5, 1.5, 4.5]) for (const fz of [-2.5, 0.5, 3.0]) { const f = B.group(R, fx, H - 0.03, fz); B.box(f, 0, 0, 0, 0.3, 0.04, 1.2, B.col(0xdddddd), { cast: false }); const lens = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 1.16), new THREE.MeshBasicMaterial({ color: 0xf2f6ff })); lens.rotation.x = Math.PI / 2; lens.position.y = -0.005; f.add(lens); }
+  // window stickers / posters (front glass)
+  [['ICE COLD BEER', 'Rainier · Oly · Coors', 10, -5.5], ['MOUNTAIN DEW', 'Code Red — NEW!', 120, -3.4], ['OPEN 24 HRS', '', 0, 1.6], ['PROPANE EXCHANGE', '$19.99', 40, 4.8]].forEach(([t, st, hue, x]) => B.texPlane(R, TEX.get('poster', t, st, hue), x, 1.55, 4.86, 0.55, 0.72, { ry: Math.PI }));
+  B.texPlane(R, TEX.get('sign', 'NO SHIRT\nNO SHOES\nNO SERVICE', { w: 256, h: 192, bg: '#fff', fg: '#222' }), -0.3, 1.9, 4.87, 0.3, 0.22, { ry: Math.PI });
   // radio on counter (plays KTLR)
   const rad = B.group(R, 4.5, 1.04, 2.4, -Math.PI / 2);
   B.box(rad, 0, 0, 0, 0.32, 0.18, 0.12, B.col(0x2a2622)); const rg = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.12), B.col(0x111111)); rg.position.set(-0.07, 0.09, 0.061); rad.add(rg);
@@ -115,26 +128,49 @@ Levels.gas = function (o = {}) {
   const s2 = new THREE.Mesh(new THREE.PlaneGeometry(0.17, 0.25), m2); s2.position.set(0.09, 0.17, 0.006); mon.add(s2);
   L.onUpdate(() => { m1.uniforms.time.value = G.time; m2.uniforms.time.value = G.time; });
   L.named.cctv = { group: mon, cam: cctvCam };
-  // shelves (aisles)
+  // shelves (aisles): gondolas with individually stocked products
+  const pr = U.seeded(314), items = [];
+  const metalW = B.mat('metal', { color: 0xd8d8d4, roughness: 0.5 });
   for (const [x, z] of [[-1.5, 1.2], [-1.5, -1.6], [1.3, -1.6]]) {
     const g = B.group(R, x, 0, z);
-    B.box(g, 0, 0, 0, 2.4, 1.5, 0.7, B.col(0xd8d8d8), {});
-    B.texPlane(g, TEX.get('shelfGoods', Math.floor(x * 10 + z * 7 + 50)), 0, 0.85, 0.36, 2.3, 1.2, {});
-    B.texPlane(g, TEX.get('shelfGoods', Math.floor(x * 13 + z * 3 + 90)), 0, 0.85, -0.36, 2.3, 1.2, { ry: Math.PI });
+    B.box(g, 0, 0, 0, 2.4, 0.12, 0.7, B.col(0x2a2a2a));                       // kick plate
+    B.box(g, 0, 0.12, 0, 2.4, 1.38, 0.06, metalW);                            // pegboard spine
+    B.box(g, -1.19, 0, 0, 0.03, 1.55, 0.72, metalW); B.box(g, 1.19, 0, 0, 0.03, 1.55, 0.72, metalW);
+    for (const side of [1, -1]) for (let k = 0; k < 4; k++) {
+      const y = 0.14 + k * 0.34;
+      B.box(g, 0, y, side * 0.19, 2.36, 0.02, 0.32, metalW, { cast: false });
+      B.box(g, 0, y + 0.02, side * 0.355, 2.36, 0.035, 0.008, B.col(k % 2 ? 0xf0e040 : 0xe8e8e8), { cast: false, uv: 0 }); // price strip
+      const row = []; P.shelfRow(row, pr, 0, 2.3, y + 0.02, 0.3, 0.3, k === 3 ? 'chips' : k === 0 ? 'cans' : 'box');
+      row.forEach(it => { if (side < 0) { it.z = -it.z; it.ry += Math.PI; } items.push(it); });
+    }
+    P.products(g, items.splice(0));
+    B.signMesh(g, ['SNACKS', 'CANDY', 'AUTO / HOME'][Math.abs(Math.round(x + z)) % 3], 0, 1.75, 0, 0.9, 0.22, { tex: { bg: '#b8242a', fg: '#fff' } });
     Phys.addC(x, z, 2.4, 0.7, 0, 1.5);
+    B.blob(R, x, z, 2.4, 0.7, 0, 0.45);
   }
   L.named.chips = new THREE.Vector3(-1.5, 0.9, 1.6);
-  // coolers along back wall
+  // coolers along back wall: framed glass doors, lit interiors, stocked bottles
+  const bottles = [], br = U.seeded(77);
+  const glassM = new THREE.MeshStandardMaterial({ color: 0xaabbcc, transparent: true, opacity: 0.16, roughness: 0.04, metalness: 0.6, envMapIntensity: 2 });
   for (let i = 0; i < 5; i++) {
     const cx = -2.8 + i * 1.3;
     const cg = B.group(R, cx, 0, -4.55);
-    B.box(cg, 0, 0, 0, 1.25, 2.2, 0.7, B.col(0x2a2a2a));
-    const inner = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.9), new THREE.MeshLambertMaterial({ map: TEX.get('cooler', 60 + i), emissive: 0x666666, emissiveMap: TEX.get('cooler', 60 + i) }));
-    inner.position.set(0, 1.1, 0.36); cg.add(inner);
-    const gl = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 2.0), new THREE.MeshStandardMaterial({ color: 0xaabbcc, transparent: true, opacity: 0.12, roughness: 0.05, metalness: 0.8 })); gl.position.set(0, 1.1, 0.37); cg.add(gl);
+    B.box(cg, 0, 0, -0.05, 1.25, 2.2, 0.7, B.col(0x1c1c1e));
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.95), new THREE.MeshStandardMaterial({ color: 0xe8eef2, emissive: 0x8090a0, roughness: 0.6 })); back.position.set(0, 1.12, -0.32); cg.add(back);
+    for (let k = 0; k < 5; k++) {
+      const y = 0.25 + k * 0.38;
+      B.box(cg, 0, y, -0.05, 1.12, 0.015, 0.5, B.col(0x9aa0a6), { cast: false });
+      for (let b = 0; b < 9; b++) for (let d = 0; d < 2; d++) bottles.push({ x: cx - 0.5 + b * 0.125, y: y + 0.015, z: -4.55 - 0.2 + d * 0.14, h: 0.24 + br() * 0.06, color: [0xd8262a, 0x2a5ad8, 0x2a9a3a, 0xf0c020, 0xe86a1a, 0x1a1a1a, 0xc8dce8][Math.floor(br() * 7)] });
+    }
+    const door = new THREE.Mesh(new THREE.PlaneGeometry(1.18, 2.0), glassM); door.position.set(0, 1.1, 0.31); cg.add(door);
+    B.box(cg, -0.6, 0.1, 0.3, 0.05, 2.02, 0.04, B.col(0x2a2a2c)); B.box(cg, 0.6, 0.1, 0.3, 0.05, 2.02, 0.04, B.col(0x2a2a2c));
+    B.box(cg, 0, 2.1, 0.3, 1.25, 0.06, 0.04, B.col(0x2a2a2c)); B.box(cg, 0, 0.08, 0.3, 1.25, 0.06, 0.04, B.col(0x2a2a2c));
+    B.box(cg, 0.48, 0.7, 0.35, 0.03, 0.8, 0.03, B.mat('metal', { color: 0xcccccc }));
     if (i === 0) L.named.dairy = cg;
     if (i === 3) L.named.sodaCooler = cg;
   }
+  { const bg = new THREE.CylinderGeometry(0.032, 0.034, 1, 8); bg.translate(0, 0.5, 0); const bm = new THREE.MeshStandardMaterial({ roughness: 0.25, metalness: 0.1, map: P.labelTex() }); const im = new THREE.InstancedMesh(bg, bm, bottles.length); const m = new THREE.Matrix4(), c = new THREE.Color(); bottles.forEach((b, i) => { m.makeScale(1, b.h, 1); m.setPosition(b.x, b.y, b.z); im.setMatrixAt(i, m); im.setColorAt(i, c.set(b.color)); }); R.add(im); }
+  B.signMesh(R, 'COLD DRINKS', 0, 2.62, -4.2, 2.4, 0.3, { tex: { bg: '#1a3a8a', fg: '#fff' }, emissive: 0x223366 });
   Phys.add(-3.5, -4.9, 3.6, -4.2, 0, 2.2);
   L.loop('fridge', { pos: new THREE.Vector3(0, 1, -4.5), vol: 1.0 });
   // coffee station on west wall
@@ -157,6 +193,9 @@ Levels.gas = function (o = {}) {
   const excl = (x, z) => (x > -26 && x < 26 && z > -14 && z < 36);
   P.forest(L, P.scatter(-110, -110, 110, 110, 650, 17, excl, 3.2), { collide: true, collideIf: (x, z) => Math.abs(x) < 40 && Math.abs(z) < 50 });
   L.skyRig = P.sky(L);
+  P.clouds(L, { seed: 8 });
+  P.mist(L, { size: 160, opacity: 0.1, heights: [0.3, 1.2] });
+  P.grass(L, P.scatter(-40, -30, 40, 50, 1400, 21, (x, z) => (x > -22.5 && x < 22.5 && z > -10.5 && z < 27.5) || (z > 26.5 && z < 34.5), 0.9), { seed: 5 });
   for (let i = -4; i <= 4; i++) B.cyl(R, i * 35, 0, 35.5, 0.14, 0.18, 10, B.mat('bark', { color: 0x9a8a7a }), { seg: 8 });
 
   // evan's car at pump 2

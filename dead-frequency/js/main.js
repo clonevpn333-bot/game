@@ -109,11 +109,12 @@ const Main = {
   },
   settingsUI(el) {
     const S = G.settings;
-    const rows = [['Mouse sensitivity', 'sens', 0.2, 3, 0.05], ['Volume', 'volume', 0, 1, 0.05], ['Brightness', 'brightness', 0.6, 1.8, 0.05], ['VHS effect', 'vhs', 0, 1.5, 0.05]];
+    const rows = [['Mouse sensitivity', 'sens', 0.2, 3, 0.05], ['Volume', 'volume', 0, 1, 0.05], ['Brightness', 'brightness', 0.6, 1.8, 0.05], ['VHS effect', 'vhs', 0, 1.5, 0.05], ['Quality (0 low – 2 high)', 'quality', 0, 2, 1]];
     el.innerHTML = rows.map(r => `<div class="row"><span>${r[0]}</span><input type="range" min="${r[2]}" max="${r[3]}" step="${r[4]}" value="${S[r[1]]}" data-k="${r[1]}"></div>`).join('') + `<div class="row"><span>Invert mouse Y</span><input type="checkbox" data-k="invertY" ${S.invertY ? 'checked' : ''}></div>`;
     el.querySelectorAll('input').forEach(inp => inp.addEventListener('input', () => {
       const k = inp.dataset.k; S[k] = inp.type === 'checkbox' ? inp.checked : parseFloat(inp.value);
       if (k === 'volume') SND.setVolume(G.paused ? S.volume * 0.35 : S.volume);
+      if (k === 'quality') Engine.resize();
       try { localStorage.setItem('df_settings', JSON.stringify(S)); } catch (e) { /* */ }
     }));
   },

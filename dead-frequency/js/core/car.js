@@ -24,11 +24,40 @@ const Car = {
     this.group = g;
     // exterior (seen in mirrors / when others look) — body sides around the driver
     const dash = B.col(0x1c1b1a), plastic = B.col(0x2a2826), cloth = B.mat('carpet', { texArgs: ['#3b3a3c'] });
-    const paint = new THREE.MeshStandardMaterial({ color, roughness: 0.45, metalness: 0.35 });
+    const paint = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0.45 });
     const glassMat = new THREE.MeshStandardMaterial({ color: 0x223040, transparent: true, opacity: 0.12, roughness: 0.05, metalness: 0.9, depthWrite: false });
-    // dashboard
-    B.box(g, 0, 0.75, 1.05, 1.6, 0.28, 0.6, dash, { cast: false });
-    const dtop = B.box(g, 0, 1.0, 0.95, 1.6, 0.05, 0.5, dash, { cast: false }); dtop.rotation.x = -0.15;
+    // dashboard: curved vinyl profile extruded across the cabin
+    const vinyl = B.mat('plain', { texArgs: ['#1e1c1a', 0.08, 41], roughness: 0.78 });
+    const ds = new THREE.Shape();
+    ds.moveTo(0.5, 0.42); ds.lineTo(0.56, 0.78); ds.quadraticCurveTo(0.6, 0.93, 0.74, 0.97); ds.lineTo(1.02, 1.0); ds.lineTo(1.12, 0.96); ds.lineTo(1.12, 0.42); ds.lineTo(0.5, 0.42);
+    const dg = new THREE.ExtrudeGeometry(ds, { depth: 1.56, bevelEnabled: true, bevelThickness: 0.02, bevelSize: 0.02, bevelSegments: 2, curveSegments: 8 });
+    dg.translate(0, 0, -0.78); dg.rotateY(-Math.PI / 2);
+    const dm = new THREE.Mesh(dg, vinyl); g.add(dm);
+    // defroster vent slots + dust on the dash top
+    for (let k = 0; k < 6; k++) B.box(g, -0.5 + k * 0.2, 0.995, 0.98, 0.12, 0.004, 0.02, B.col(0x0a0a0a), { uv: 0, cast: false });
+    // gauge hood
+    const ghs = new THREE.Shape(); ghs.absarc(0, 0, 0.3, 0, Math.PI, false);
+    const gh = new THREE.Mesh(new THREE.ExtrudeGeometry(ghs, { depth: 0.16, bevelEnabled: false, curveSegments: 12 }), vinyl);
+    gh.scale.set(0.85, 0.26, 1); gh.position.set(0.37, 0.96, 0.6); g.add(gh);
+    // windshield smudges (catch the light)
+    const smC = TEX.canvas(256, 128), smx = smC.getContext('2d'); const sr = U.seeded(77);
+    for (let k = 0; k < 40; k++) { smx.strokeStyle = `rgba(255,255,255,${0.05 + sr() * 0.12})`; smx.lineWidth = 1 + sr() * 3; smx.beginPath(); const cx2 = sr() * 256, cy2 = 60 + sr() * 70; smx.arc(cx2, cy2 + 60, 80 + sr() * 40, Math.PI * 1.15, Math.PI * 1.85); smx.stroke(); }
+    for (let k = 0; k < 300; k++) { smx.fillStyle = `rgba(255,255,255,${sr() * 0.25})`; smx.fillRect(sr() * 256, sr() * 128, 1 + sr() * 2, 1 + sr() * 2); }
+    const smudge = new THREE.Mesh(new THREE.PlaneGeometry(1.45, 0.66), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(smC), transparent: true, opacity: 0.07, depthWrite: false, blending: THREE.AdditiveBlending, color: 0x8899aa }));
+    smudge.position.set(0, 1.26, 0.8); smudge.rotation.set(-0.55, 0, 0); smudge.rotation.order = 'YXZ'; smudge.rotation.y = Math.PI; g.add(smudge);
+    // headliner, visors, dome light
+    const liner = B.mat('carpet', { texArgs: ['#4a4640'], roughness: 0.98, env: 0.2 });
+    B.box(g, 0, 1.58, -0.4, 1.5, 0.04, 1.7, liner, { cast: false });
+    for (const sx of [-1, 1]) { const v = B.box(g, sx * 0.36, 1.545, 0.4, 0.46, 0.025, 0.18, liner, { cast: false }); v.rotation.x = 0.05; }
+    B.box(g, 0, 1.56, -0.3, 0.18, 0.02, 0.1, B.col(0x9a948a), { cast: false });
+    // door panels + side window frames
+    const doorM = B.mat('plain', { texArgs: ['#2c2a28', 0.06, 43], roughness: 0.75 });
+    for (const sx of [-1, 1]) {
+      B.box(g, sx * 0.8, 0.3, -0.1, 0.05, 0.68, 1.4, doorM, { cast: false });
+      B.box(g, sx * 0.76, 0.72, -0.05, 0.06, 0.05, 0.7, B.mat('carpet', { texArgs: ['#4a4642'] }), { cast: false }); // armrest
+      B.box(g, sx * 0.77, 0.86, 0.35, 0.02, 0.03, 0.1, B.col(0x8a8a8a), { cast: false }); // handle
+      B.box(g, sx * 0.8, 0.97, -0.1, 0.04, 0.05, 1.4, doorM, { cast: false }); // sill under window
+    }
     // gauge cluster (dynamic)
     this.gaugeTex = TEX.dynamic(512, 160, (c, w, h, mph = 0, rpm = 0, fuel = 0.5, lights = false) => {
       c.drawImage(TEX.get('gauge').image, 0, 0);
@@ -38,35 +67,32 @@ const Car = {
       if (lights) { c.fillStyle = '#4af'; c.font = 'bold 14px Arial'; c.fillText('≡D', 245, 40); }
     });
     const gm = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.16), new THREE.MeshBasicMaterial({ map: this.gaugeTex.tex, color: 0x9aa89a }));
-    gm.position.set(0.37, 1.0, 0.74); g.add(gm); gm.lookAt(0.37, 1.35, -0.12);
-    const hood = B.box(g, 0.37, 1.02, 0.78, 0.56, 0.08, 0.12, dash); hood.rotation.x = -0.4;
-    // steering wheel
-    this.wheel = new THREE.Group(); this.wheel.position.set(0.37, 0.98, 0.52); this.wheel.rotation.x = -0.45; g.add(this.wheel);
-    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.022, 8, 24), B.col(0x151515)); this.wheel.add(rim);
+    gm.position.set(0.37, 0.885, 0.575); g.add(gm); gm.lookAt(0.37, 1.28, -0.12);
+        // steering wheel
+    this.wheel = new THREE.Group(); this.wheel.position.set(0.37, 0.92, 0.42); this.wheel.rotation.x = -0.5; g.add(this.wheel);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.185, 0.019, 10, 32), new THREE.MeshStandardMaterial({ color: 0x141312, roughness: 0.55 })); this.wheel.add(rim);
     const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.05, 10), B.col(0x181818)); hub.rotation.x = Math.PI / 2; this.wheel.add(hub);
     for (const a of [0, 2.1, -2.1]) { const sp = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.025, 0.015), B.col(0x181818)); sp.position.set(Math.cos(a - Math.PI / 2) * 0.09, Math.sin(a - Math.PI / 2) * 0.09, 0); sp.rotation.z = a - Math.PI / 2; this.wheel.add(sp); }
-    const col = B.cyl(g, 0.37, 0.75, 0.68, 0.035, 0.04, 0.35, plastic, { rx: -1.1 }); void col;
+    const col = B.cyl(g, 0.37, 0.72, 0.52, 0.035, 0.045, 0.3, plastic, { rx: -1.05 }); void col;
     // radio (dynamic display)
     this.radioTex = TEX.dynamic(256, 64, (c, w, h, f = 94.1, lit = true) => {
       c.fillStyle = '#0a0705'; c.fillRect(0, 0, 256, 64);
       c.fillStyle = lit ? '#ffae3a' : '#3a2410'; c.font = 'bold 40px "Courier New", monospace'; c.fillText((f).toFixed(1), 70, 46);
       c.font = '14px Arial'; c.fillText('FM', 30, 44); c.fillText('ST', 200, 22);
     });
-    B.box(g, 0.05, 0.78, 0.83, 0.34, 0.2, 0.1, plastic);
+    B.box(g, 0.0, 0.56, 0.5, 0.36, 0.22, 0.08, plastic);
     const rd = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.05), new THREE.MeshBasicMaterial({ map: this.radioTex.tex })); rd.position.set(0.05, 0.92, 0.778); rd.rotation.y = Math.PI; rd.rotation.x = 0.0; g.add(rd);
-    rd.rotation.set(0, 0, 0); rd.position.set(0.05, 0.93, 0.779); rd.lookAt(0.05, 0.93, 0);
-    for (const sx of [-0.07, 0.17]) { const k = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.02, 8), B.col(0x777777)); k.rotation.x = Math.PI / 2; k.position.set(sx, 0.85, 0.775); g.add(k); }
+    rd.rotation.set(0, 0, 0); rd.position.set(0.0, 0.7, 0.458); rd.lookAt(0.0, 0.75, -0.5);
+    for (const sx of [-0.13, 0.13]) { const k = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.02, 8), B.col(0x777777)); k.rotation.x = Math.PI / 2; k.position.set(sx, 0.66, 0.455); g.add(k); }
     // seats + floor + doors
     B.box(g, -0.37, 0.25, -0.05, 0.55, 0.25, 0.55, cloth); B.box(g, -0.37, 0.5, -0.38, 0.55, 0.7, 0.14, cloth);
     B.box(g, 0.37, 0.25, -0.05, 0.55, 0.25, 0.55, cloth); B.box(g, 0.37, 0.5, -0.38, 0.55, 0.7, 0.14, cloth);
     B.box(g, 0, 0.1, 0.1, 1.6, 0.12, 2.6, B.col(0x1a1a1a));
     B.box(g, 0, 0.35, 0.2, 0.22, 0.3, 0.8, plastic); // console
-    for (const sx of [-1, 1]) { B.box(g, sx * 0.82, 0.25, 0, 0.06, 0.7, 2.4, plastic); B.box(g, sx * 0.84, 0.95, 0, 0.04, 0.04, 2.2, plastic); }
     // roof + pillars
-    B.box(g, 0, 1.55, -0.2, 1.62, 0.05, 2.0, B.col(0x5a5650));
-    for (const sx of [-1, 1]) { const ap = B.box(g, sx * 0.78, 0.98, 0.82, 0.07, 0.62, 0.07, plastic); ap.rotation.x = 0.55; const bp = B.box(g, sx * 0.8, 0.95, -0.55, 0.08, 0.6, 0.12, plastic); void bp; }
+    for (const sx of [-1, 1]) { const ap = B.box(g, sx * 0.74, 0.97, 0.8, 0.06, 0.66, 0.06, plastic); ap.rotation.x = 0.6; ap.rotation.z = -sx * 0.06; const bp = B.box(g, sx * 0.79, 0.95, -0.58, 0.07, 0.6, 0.12, plastic); void bp; }
     // hood
-    const hd = B.box(g, 0, 0.82, 2.0, 1.66, 0.08, 1.6, paint); hd.rotation.x = 0.04;
+    const hd = B.box(g, 0, 0.74, 1.95, 1.62, 0.08, 1.75, paint, { uv: 0 }); hd.rotation.x = 0.07; hd.material = paint.clone(); hd.material.envMapIntensity = 0.25;
     B.box(g, 0, 0.2, 2.0, 1.7, 0.6, 1.7, paint);
     B.box(g, 0, 0.3, -1.6, 1.7, 0.7, 1.4, paint);
     // windshield + side glass
