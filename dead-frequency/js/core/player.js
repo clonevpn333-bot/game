@@ -35,18 +35,9 @@ const Player = {
     this.flashFill = new THREE.PointLight(0xfff1d6, 0, 3.5, 2); this.flashFill.position.set(0, 0, -0.5); this.flashRig.add(this.flashFill);
     // hand anchor for held items
     this.hand = new THREE.Group(); this.hand.position.set(0.24, -0.24, -0.45); cam.add(this.hand);
-    // Evan's hand holding the flashlight (visible while it's on)
-    const fh = this.flashModel = new THREE.Group(); fh.position.set(0.2, -0.24, -0.38); fh.rotation.set(0.08, 0.06, 0); this.flashRig.add(fh);
-    const skin = new THREE.MeshStandardMaterial({ color: 0xd8a888, roughness: 0.7 }), hoodie = new THREE.MeshStandardMaterial({ color: 0x2a3446, roughness: 0.95 });
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.019, 0.019, 0.2, 12), new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.4, metalness: 0.5 })); body.rotation.x = Math.PI / 2; fh.add(body);
-    const head = new THREE.Mesh(new THREE.CylinderGeometry(0.027, 0.021, 0.05, 14), body.material); head.rotation.x = Math.PI / 2; head.position.z = -0.12; fh.add(head);
-    const lens = new THREE.Mesh(new THREE.CircleGeometry(0.023, 14), new THREE.MeshBasicMaterial({ color: 0xfff6dd })); lens.position.z = -0.146; lens.rotation.y = Math.PI; fh.add(lens);
-    const fist = new THREE.Mesh(new XT.RoundedBoxGeometry(0.075, 0.065, 0.09, 3, 0.022), skin); fist.position.set(0.004, -0.005, 0.03); fh.add(fist);
-    const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(0.011, 0.035, 3, 6), skin); thumb.rotation.x = Math.PI / 2; thumb.position.set(-0.03, 0.022, 0.0); fh.add(thumb);
-    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.3, 12), hoodie); sleeve.rotation.x = Math.PI / 2 - 0.12; sleeve.position.set(0.02, -0.03, 0.2); fh.add(sleeve);
-    const cuff = new THREE.Mesh(new THREE.TorusGeometry(0.042, 0.01, 6, 14), hoodie); cuff.position.set(0.01, -0.01, 0.06); fh.add(cuff);
-    fh.traverse(o => { o.castShadow = false; });
-    fh.visible = false;
+    // first-person hands (flashlight in the right hand, held items in the left)
+    Hands.init(cam);
+    this.flashModel = null;
   },
 
   place(x, z, yaw = 0, pitch = 0) {
@@ -58,11 +49,10 @@ const Player = {
     if (!this.hasFlashlight && on) return;
     this.flashOn = on;
     this.flash.intensity = on ? 38 : 0; this.flashFill.intensity = on ? 0.6 : 0; this.flash.visible = on;
-    if (this.flashModel) this.flashModel.visible = on && !this.held && G.mode !== 'car';
     if (!silent) SND.sfx('click', { f: 2600, v: 0.8 });
   },
-  hold(obj, name) { this.drop(); if (obj) { this.hand.add(obj); obj.position.set(0, 0, 0); obj.rotation.set(0, 0, 0); } this.held = obj; this.heldName = name || null; if (this.flashModel) this.flashModel.visible = this.flashOn && !obj; },
-  drop() { if (this.held) { this.hand.remove(this.held); } const h = this.held; this.held = null; this.heldName = null; if (this.flashModel) this.flashModel.visible = this.flashOn && G.mode !== 'car'; return h; },
+  hold(obj, name) { this.drop(); if (obj) { const s = Hands.L ? Hands.L.socket : this.hand; s.add(obj); obj.position.set(0, -0.01, 0); obj.rotation.set(0, 0, 0); } this.held = obj; this.heldName = name || null; },
+  drop() { if (this.held && this.held.parent) { this.held.parent.remove(this.held); } const h = this.held; this.held = null; this.heldName = null; return h; },
   holding(name) { return this.heldName === name; },
 
   lookAtPoint(v, dur = 0.8) {
@@ -156,6 +146,13 @@ const Player = {
       }
     }
     this.eyeCur = U.damp(this.eyeCur, this.crouching ? 1.0 : this.eye, 10, dt);
+    const strafe = this.vel.x * Math.cos(this.yaw) - this.vel.z * Math.sin(this.yaw);
+    this.lean = U.damp(this.lean || 0, -strafe * 0.006, 6, dt);
+    if (G.camera && G.camera.isPerspectiveCamera) {
+      if (this.baseFov == null) this.baseFov = G.camera.fov;
+      const f = U.damp(G.camera.fov, this.baseFov * (running && moving ? 1.06 : 1), 5, dt);
+      if (Math.abs(f - G.camera.fov) > 0.01) { G.camera.fov = f; G.camera.updateProjectionMatrix(); }
+    }
     this.syncCamera(dt);
   },
 
@@ -186,7 +183,8 @@ const Player = {
     const sway = Math.cos(this.bobT * Math.PI * 0.5) * 0.025 * this.bobAmt;
     const breath = Math.sin(G.time * (this.breathless > 0 ? 4 : 1.2)) * (this.breathless > 0 ? 0.012 : 0.004);
     const p = new THREE.Vector3(this.pos.x + Math.cos(this.yaw) * sway, this.pos.y + this.eyeCur + bob + breath, this.pos.z - Math.sin(this.yaw) * sway);
-    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(this.pitch, this.yaw, Math.sin(this.bobT * Math.PI * 0.5) * 0.004 * this.bobAmt, 'YXZ'));
+    this.nudge = U.damp(this.nudge || 0, 0, 9, G.dt || 0.016);
+    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(this.pitch - this.nudge, this.yaw, Math.sin(this.bobT * Math.PI * 0.5) * 0.004 * this.bobAmt + (this.lean || 0), 'YXZ'));
     return { p, q };
   },
 };

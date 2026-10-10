@@ -30,6 +30,7 @@ const P = {
     B.box(g, 0, 0.44, 0, 0.44, 0.06, 0.44, c);
     B.box(g, 0, 0.5, -0.2, 0.44, 0.42, 0.05, c);
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) B.box(g, sx * 0.19, 0, sz * 0.19, 0.03, 0.44, 0.03, m);
+    if (!o.fixed) Physics.mark(g, { mass: 5, mat: 'wood' });
     return g;
   },
   officeChair(parent, x, z, ry = 0, o = {}) {
@@ -39,6 +40,7 @@ const P = {
     B.box(g, 0, 0.55, -0.24, 0.48, 0.55, 0.07, c);
     B.cyl(g, 0, 0.1, 0, 0.03, 0.03, 0.35, m);
     for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; B.box(g, Math.cos(a) * 0.17, 0.05, Math.sin(a) * 0.17, 0.3, 0.04, 0.04, m, { rotY: -a }); }
+    if (!o.fixed) Physics.mark(g, { mass: 9, mat: 'metal' });
     return g;
   },
   shelf(parent, x, z, ry = 0, o = {}) {
@@ -91,6 +93,7 @@ const P = {
     const handle = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.008, 5, 8, Math.PI), m); handle.position.set(0.045, 0.05, 0); handle.rotation.z = -Math.PI / 2; g.add(handle);
     const coffee = new THREE.Mesh(new THREE.CircleGeometry(0.037, 10), B.col(0x2a160a)); coffee.rotation.x = -Math.PI / 2; coffee.position.y = 0.085; coffee.visible = !!o.full; g.add(coffee);
     g.userData.coffee = coffee;
+    if (!o.fixed) Physics.mark(g, { mass: 0.35, mat: 'ceramic' });
     return g;
   },
   crt(parent, x, y, z, ry = 0, o = {}) { // CRT monitor; returns {group, screen}
@@ -131,12 +134,13 @@ const P = {
     let last = -1;
     return { group: g, update: (min) => { const m = Math.floor(min); if (m !== last) { last = m; dyn.redraw(m); } } };
   },
-  trash(parent, x, z, o = {}) { const g = B.group(parent, x, 0, z); B.cyl(g, 0, 0, 0, o.r || 0.17, (o.r || 0.17) * 0.85, o.h || 0.4, B.col(o.color || 0x3b4a3b), { open: true }); return g; },
+  trash(parent, x, z, o = {}) { const g = B.group(parent, x, 0, z); B.cyl(g, 0, 0, 0, o.r || 0.17, (o.r || 0.17) * 0.85, o.h || 0.4, B.col(o.color || 0x3b4a3b), { open: true }); Physics.mark(g, { mass: (o.h || 0.4) > 0.5 ? 4 : 1.5, mat: 'metal' }); return g; },
   plant(parent, x, z) {
     const g = B.group(parent, x, 0, z);
     B.cyl(g, 0, 0, 0, 0.18, 0.13, 0.32, B.col(0x7a4a30));
     const lm = B.col(0x2f4a2a);
     for (let i = 0; i < 9; i++) { const l = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.6, 4), lm); const a = i / 9 * Math.PI * 2; l.position.set(Math.cos(a) * 0.08, 0.6, Math.sin(a) * 0.08); l.rotation.set(Math.sin(a) * 0.5, 0, -Math.cos(a) * 0.5); g.add(l); }
+    Physics.mark(g, { mass: 6, mat: 'ceramic' });
     return g;
   },
   speakerBox(parent, x, y, z, ry = 0, s = 1) { const g = B.group(parent, x, y, z, ry); B.box(g, 0, 0, 0, 0.22 * s, 0.32 * s, 0.2 * s, B.col(0x1d1d1f)); const c = new THREE.Mesh(new THREE.CircleGeometry(0.075 * s, 12), B.col(0x0d0d0d)); c.position.set(0, 0.12 * s, 0.101 * s); g.add(c); const t = new THREE.Mesh(new THREE.CircleGeometry(0.025 * s, 8), B.col(0x0d0d0d)); t.position.set(0, 0.25 * s, 0.101 * s); g.add(t); return g; },
@@ -144,8 +148,7 @@ const P = {
   boxes(parent, x, z, n = 3, seed = 1) { // cardboard boxes stack
     const r = U.seeded(seed); const m = B.col(0xa07850); const g = B.group(parent, x, 0, z);
     let y = 0;
-    for (let i = 0; i < n; i++) { const w = 0.4 + r() * 0.25, h = 0.28 + r() * 0.2, d = 0.35 + r() * 0.2; B.box(g, (r() - 0.5) * 0.1, y, (r() - 0.5) * 0.1, w, h, d, m, { rotY: (r() - 0.5) * 0.3 }); y += h; }
-    Phys.addC(x, z, 0.6, 0.55, 0, y);
+    for (let i = 0; i < n; i++) { const w = 0.4 + r() * 0.25, h = 0.28 + r() * 0.2, d = 0.35 + r() * 0.2; const bx = B.box(g, (r() - 0.5) * 0.1, y, (r() - 0.5) * 0.1, w, h, d, m, { rotY: (r() - 0.5) * 0.3 }); Physics.mark(bx, { mass: 3 + r() * 3, mat: 'cardboard' }); y += h; }
     return g;
   },
   bulletin(parent, x, y, z, ry, items = []) { // cork board with papers; items: [{tex, x, y, w, h}]
@@ -550,6 +553,7 @@ P.deskLamp = function (parent, x, y, z, ry = 0) {
 P.cdStack = function (parent, x, y, z, n = 6, seed = 3, ry = 0) {
   const g = B.group(parent, x, y, z, ry); const r = U.seeded(seed);
   for (let i = 0; i < n; i++) { const c = B.box(g, (r() - 0.5) * 0.02, i * 0.011, (r() - 0.5) * 0.02, 0.142, 0.01, 0.125, B.col([0x88aacc, 0x2a2a2a, 0xc84a2a, 0xe8d8a0, 0x3a6a3a][Math.floor(r() * 5)], { roughness: 0.2 }), { cast: false }); c.rotation.y = (r() - 0.5) * 0.3; }
+  Physics.mark(g, { mass: 0.1 * n, mat: 'plastic' });
   return g;
 };
 P.cable = function (parent, pts, color = 0x111111, r = 0.006) {
@@ -563,4 +567,4 @@ P.frame = function (parent, tex, x, y, z, w, h, ry = 0) {
   const gl = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.06, roughness: 0.05, metalness: 0.9 })); gl.position.z = 0.016; g.add(gl);
   return g;
 };
-P.cup = function (parent, x, y, z, color = 0xf0eee6) { return B.cyl(parent, x, y, z, 0.04, 0.032, 0.11, B.col(color, { roughness: 0.5 }), { cast: false }); };
+P.cup = function (parent, x, y, z, color = 0xf0eee6) { const c = B.cyl(parent, x, y, z, 0.04, 0.032, 0.11, B.col(color, { roughness: 0.5 }), { cast: false }); Physics.mark(c, { mass: 0.05, mat: 'paper' }); return c; };

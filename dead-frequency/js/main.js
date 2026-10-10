@@ -132,7 +132,9 @@ const Main = {
       Stalker.update(dt);
       NPCs.update(dt);
       if (G.level) G.level.update(dt);
+      Physics.update(dt);
       Interact.update(dt);
+      Hands.update(dt);
       Phone.update();
       if (Story.hud) Story.hud(dt);
     }

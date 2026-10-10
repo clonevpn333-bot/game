@@ -654,6 +654,12 @@ class Human {
       }
       g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4)); g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
       const mat = src.material.clone(); mat.envMapIntensity = 0.15; mat.roughness = 0.58; mat.metalness = 0;
+      if (mat.map && mat.map.image && !HH.soft) {   // simplify the face: soften fine lines, stubble and wrinkles
+        const im = mat.map.image, c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+        const x = c.getContext('2d'); x.filter = 'blur(2.2px) saturate(0.88) contrast(0.9)'; x.drawImage(im, 0, 0); x.filter = 'none'; x.globalAlpha = 0.35; x.drawImage(im, 0, 0);
+        HH.soft = new THREE.CanvasTexture(c); HH.soft.colorSpace = mat.map.colorSpace; HH.soft.flipY = mat.map.flipY; HH.soft.wrapS = mat.map.wrapS; HH.soft.wrapT = mat.map.wrapT;
+      }
+      if (HH.soft) mat.map = HH.soft;
       const m = new THREE.SkinnedMesh(g, mat);
       if (src.morphTargetDictionary) { m.morphTargetDictionary = src.morphTargetDictionary; m.morphTargetInfluences = new Array(Object.keys(src.morphTargetDictionary).length).fill(0); }
       m.bind(skeleton); m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false;

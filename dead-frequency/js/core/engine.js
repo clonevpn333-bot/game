@@ -177,6 +177,7 @@ const Engine = {
     this.scene.fog = lvl.fog || null;
     this.scene.background = lvl.background || new THREE.Color(0x000000);
     if (lvl.reverb) { SND.setReverb(lvl.reverb[0], lvl.reverb[1]); SND.setReverbMix(lvl.reverb[2] == null ? 0.25 : lvl.reverb[2]); }
+    try { Physics.setup(lvl); } catch (e) { console.warn('physics', e); Physics.clear(); }
     try { this.batchStatic(lvl); } catch (e) { console.warn('batch', e); }
     this.scene.environment = this.roomEnv || null;
     const envI = lvl.envIntensity != null ? lvl.envIntensity : 0.035;
