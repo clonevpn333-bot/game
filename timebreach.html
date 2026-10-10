@@ -346,7 +346,7 @@ function makePBRV(opts = {}, flash = false) {
     sh.fragmentShader = 'varying vec3 vMRE;\n' + (flash ? 'varying float vFl;\n' : '') + sh.fragmentShader
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor=vMRE.x;')
       .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor=vMRE.y;')
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance+=diffuseColor.rgb*vMRE.z*2.2;' + (flash ? 'totalEmissiveRadiance+=vec3(1.,.85,.7)*vFl;' : ''));
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance+=diffuseColor.rgb*vMRE.z*' + (flash ? '1.15' : '2.2') + ';' + (flash ? 'totalEmissiveRadiance+=vec3(1.,.85,.7)*vFl;' : ''));
   };
   m.customProgramCacheKey = () => 'pbrv' + (flash ? 'f' : '');
   return m;
@@ -419,7 +419,7 @@ class GB {
   cyl(rt, rb, h, x, y, z, color, surf, rx, ry, rz, seg = 10) { return this.add(cylG(rt, rb, h, seg), color, surf, this._m(x, y, z, rx, ry, rz, 1, 1, 1)); }
   // cylinder along Z axis (barrels)
   tube(r, len, x, y, z, color, surf, seg = 12, r2) { return this.add(cylG(r2 === undefined ? r : r2, r, len, seg), color, surf, this._m(x, y, z, PI / 2, 0, 0, 1, 1, 1)); }
-  sph(r, x, y, z, color, surf, sx = 1, sy = 1, sz = 1, q = 1, rx, ry, rz) { return this.add(USPH[q], color, surf, this._m(x, y, z, rx, ry, rz, r * sx, r * sy, r * sz)); }
+  sph(r, x, y, z, color, surf, sx = 1, sy = 1, sz = 1, q = 1, rx, ry, rz) { if (GB.low && r < .2) q = Math.max(0, q - 1); return this.add(USPH[q], color, surf, this._m(x, y, z, rx, ry, rz, r * sx, r * sy, r * sz)); }
   ico(r, x, y, z, color, surf, sx = 1, sy = 1, sz = 1, rx, ry, rz) { return this.add(UICO, color, surf, this._m(x, y, z, rx, ry, rz, r * sx, r * sy, r * sz)); }
   oct(r, x, y, z, color, surf, sx = 1, sy = 1, sz = 1, rx, ry, rz) { return this.add(UOCT, color, surf, this._m(x, y, z, rx, ry, rz, r * sx, r * sy, r * sz)); }
   cone(r, h, x, y, z, color, surf, rx, ry, rz, seg = 8) { return this.cyl(0.0001, r, h, x, y, z, color, surf, rx, ry, rz, seg); }
@@ -438,6 +438,7 @@ class GB {
   mesh(mat = MAT, shadow = true) { const m = new THREE.Mesh(this.build(), mat); m.castShadow = shadow; m.receiveShadow = true; return m; }
 }
 
+GB.low = false;
 /* ------------------------------ procedural textures ------------------------------ */
 function canvasTex(w, h, draw, repeat = 1, srgb = true) {
   const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); draw(g, w, h);
@@ -1376,7 +1377,7 @@ const WEAPON_PARTS = {
   claw(b) { for (let i = 0; i < 3; i++) b.cone(.015, .2, (i - 1) * .03, -.05, .1, 0xddd8c8, S.bone, PI / 2 + .3); },
   shield_round(b) { b.cyl(.36, .36, .04, .06, -.05, 0, 0x8a5a2a, S.wood, 0, 0, PI / 2, 16); b.cyl(.1, .1, .07, .08, -.05, 0, 0xaaaaaa, S.steel, 0, 0, PI / 2); b.tor(.36, .02, .06, -.05, 0, 0x777777, S.steel, 0, PI / 2, 0); },
   scutum(b) { b.obox(.05, .95, .58, .07, -.05, .08, 0xa01818, S.cloth); b.obox(.06, .97, .04, .07, -.05, .37, 0xc0a050, S.brass); b.obox(.06, .97, .04, .07, -.05, -.21, 0xc0a050, S.brass); b.obox(.06, .04, .58, .07, .42, .08, 0xc0a050, S.brass); b.obox(.06, .04, .58, .07, -.52, .08, 0xc0a050, S.brass); b.sph(.08, .1, -.05, .08, 0xd0b060, S.brass, .6, 1, 1); for (const s of [-1, 1]) { b.obox(.055, .06, .3, .09, s * .24, .08, 0xe0c060, S.brass, 0, 0, 0); } },
-  kite(b) { b.obox(.05, .7, .45, .07, 0, .05, 0xeeeeee, S.cloth); b.cone(.32, .5, .07, -.6, .05, 0xeeeeee, S.cloth, PI, 0, 0, 3); b.obox(.06, .5, .1, .08, 0, .05, 0xc01818, S.cloth); b.obox(.06, .1, .35, .08, .15, .05, 0xc01818, S.cloth); },
+  kite(b) { b.obox(.05, .42, .5, .07, .1, .05, 0xe8e4dc, S.cloth); for (let i = 0; i < 7; i++) { const w = .5 * Math.pow(1 - (i + 1) / 8, .8); b.box(.05, .085, w, .07, -.15 - i * .08, .05, 0xe8e4dc, S.cloth); } b.box(.062, .95, .08, .078, -.12, .05, 0xc01818, S.cloth); b.box(.062, .08, .44, .078, .16, .05, 0xc01818, S.cloth); b.box(.064, .04, .52, .072, .32, .05, 0x8a8e94, S.steel); b.sph(.05, .1, .05, .05, 0x8a8e94, S.steel, .6, 1, 1); },
   riotshield(b) { b.obox(.04, 1.1, .6, .08, -.1, .1, 0x223344, S.glass); b.obox(.05, 1.12, .03, .08, -.1, .4, 0x111111, S.poly); b.obox(.05, 1.12, .03, .08, -.1, -.2, 0x111111, S.poly); b.obox(.05, .06, .3, .085, .25, .1, 0xffffff, S.poly); },
   keg(b) { b.cyl(.2, .2, .32, 0, -.1, .05, 0x6a4422, S.wood, 0, 0, 0, 10); b.cyl(.21, .21, .03, 0, 0, .05, 0x333333, S.steel); b.sph(.03, 0, .1, .05, 0xffa030, S.glow2); },
 };
@@ -1386,28 +1387,48 @@ const WEAPON_PARTS = {
    ===================================================================== */
 function buildRaptor(o) {
   const P = RIGS.raptor.names.map(() => new GB());
-  const c = o.color ?? 0x5a7a3a, c2 = o.color2 ?? 0x2a3a1a, belly = o.belly ?? 0xb8a878, sk = S.scale;
+  const c = o.color ?? 0x5a7a3a, c2 = o.color2 ?? 0x2a3418, belly = o.belly ?? 0xc8b88a, sk = S.scale, cr = o.crest ?? 0xc04020, q = 1;
+  const stripe = (b, n, z0, z1, y, w) => { for (let i = 0; i < n; i++) b.sph(w, 0, y, lerp(z0, z1, i / (n - 1)), c2, sk, 1.15, .22, .38, 0); };
+  const fcol = new COL(c2).lerp(new COL(cr), .55).getHex(); const feathers = (b, n, z0, z1, y0, len, spread, col) => { for (let i = 0; i < n; i++) { const t = i / (n - 1), z = lerp(z0, z1, t); for (const s of [-1, 0, 1]) b.box(.06, .008, len * (1 - Math.abs(s) * .2), s * spread * 1.4, y0 - Math.abs(s) * .045, z - len * .3, i % 2 ? fcol : varyColor(c2, .15), S.cloth, .22, 0, -s * .55); } };
   const [hips, chest, neck, head, jaw, t1, t2] = P;
-  hips.sph(.3, 0, 0, 0, c, sk, .85, .85, 1.25, 1); hips.sph(.22, 0, -.1, 0, belly, sk, .8, .7, 1.1);
-  chest.sph(.28, 0, 0, .15, c, sk, .85, .9, 1.25, 1); chest.sph(.2, 0, -.12, .18, belly, sk, .8, .7, 1);
-  for (let i = 0; i < 9; i++) { const z = .4 - i * .15; (i < 4 ? chest : hips).cone(.035, .14 + (i % 2) * .05, 0, .26 - Math.abs(i - 4) * .01, (i < 4 ? z - .3 : z + .25), o.crest ?? 0xc04020, S.cloth, -.5); }
-  for (let i = 0; i < 4; i++) chest.obox(.3, .02, .06, 0, .2, .3 - i * .12, c2, sk);
-  neck.cyl(.1, .13, .38, 0, .17, .08, c, sk, .45); neck.sph(.1, 0, .05, .12, belly, sk, .8, 1.2, .6);
-  head.obox(.2, .17, .3, 0, .02, .1, c, sk); head.obox(.15, .1, .25, 0, .0, .32, c, sk); head.obox(.16, .04, .26, 0, .07, .3, c2, sk);
-  for (const s of [-1, 1]) { head.sph(.035, s * .095, .05, .15, o.eye ?? 0xffcc20, S.glow, .6, 1, 1); head.obox(.01, .04, .01, s * .11, .05, .155, 0x000000, S.matte); head.obox(.06, .02, .12, s * .07, .1, .14, c2, sk, 0, s * .2, 0); }
-  for (let i = 0; i < 7; i++) for (const s of [-1, 1]) head.cone(.012, .04, s * .065, -.06, .18 + i * .045, 0xf0ead8, S.bone, PI);
-  jaw.obox(.13, .05, .3, 0, -.03, .22, c, sk); jaw.obox(.12, .03, .26, 0, -.005, .22, 0x8a2020, S.skin);
-  for (let i = 0; i < 6; i++) for (const s of [-1, 1]) jaw.cone(.011, .035, s * .055, .02, .12 + i * .045, 0xf0ead8, S.bone);
-  t1.cyl(.08, .2, .85, 0, 0, -.4, c, sk, PI / 2); for (let i = 0; i < 4; i++) t1.obox(.2 - i * .03, .02, .08, 0, .12 - i * .02, -.15 - i * .18, c2, sk);
-  t2.cyl(.015, .08, .95, 0, 0, -.45, c, sk, PI / 2); if (o.tailFeathers) for (let i = 0; i < 6; i++) t2.obox(.02, .1, .25, (i % 2 ? 1 : -1) * .06, .04, -.6 - i * .06, o.crest ?? 0xc04020, S.cloth, 0, (i % 2 ? 1 : -1) * .4);
-  for (const [th, sh, ft, s] of [[P[7], P[8], P[9], 1], [P[10], P[11], P[12], -1]]) {
-    th.sph(.15, 0, -.15, .03, c, sk, .85, 1.6, 1.1); th.cyl(.08, .06, .42, 0, -.21, 0, c, sk);
-    sh.cyl(.055, .04, .44, 0, -.22, 0, c, sk);
-    ft.cyl(.04, .035, .3, 0, -.15, 0, c2, sk); ft.obox(.1, .04, .2, 0, -.3, .08, c2, sk);
-    for (const x of [-.03, .03]) ft.cone(.012, .07, x, -.31, .2, 0xe8e0d0, S.bone, PI / 2);
-    ft.cone(.02, .14, s * .04, -.24, .12, 0xf0e8d8, S.bone, -.6); // sickle claw
+  // hips: muscular pelvis, tail root, belly
+  hips.sph(.29, 0, .02, -.02, c, sk, .82, .84, 1.35, q); hips.sph(.22, 0, -.1, .08, belly, sk, .78, .62, 1.05, q); hips.sph(.2, 0, .05, -.28, c, sk, .8, .78, 1.2, q);
+  stripe(hips, 5, -.35, .2, .24, .09); feathers(hips, 6, -.38, .2, .27, .16, .07, cr);
+  // chest: ribcage, shoulders, throat
+  chest.sph(.26, 0, .02, .12, c, sk, .78, .88, 1.25, q); chest.sph(.2, 0, -.13, .2, belly, sk, .72, .62, 1.05, q); for (const s of [-1, 1]) chest.sph(.11, s * .14, .02, .32, c, sk, .9, 1.1, 1.3, q);
+  stripe(chest, 4, -.12, .34, .24, .085); feathers(chest, 5, -.1, .32, .26, .2, .08, cr);
+  // neck: S-curve of overlapping ellipsoids
+  for (let i = 0; i < 4; i++) { const t = i / 3; neck.sph(.12 - t * .03, 0, .02 + t * .27, .02 + Math.sin(t * 1.4) * .17, c, sk, .85, 1.05, 1.15, q); neck.sph(.08 - t * .02, 0, -.04 + t * .27, .06 + Math.sin(t * 1.4) * .17, belly, sk, .8, 1, .9, 0); }
+  feathers(neck, 4, -.02, .2, .14, .12, .05, cr);
+  // head: cranium, snout, brow, nostrils, eyes, upper teeth
+  head.sph(.115, 0, .03, .05, c, sk, .85, .78, 1.15, q); head.sph(.085, 0, .0, .22, c, sk, .7, .62, 1.55, q); head.sph(.05, 0, -.01, .36, c, sk, .7, .55, 1.2, q);
+  head.sph(.07, 0, .06, .16, c2, sk, .95, .35, 1.6, 0);
+  for (const s of [-1, 1]) {
+    head.sph(.036, s * .072, .045, .1, 0x1a1408, S.skin, .7, .8, .9, 0); head.sph(.024, s * .085, .048, .105, o.eye ?? 0xd8a020, S.dim, .5, .9, .9, 0); head.box(.004, .022, .008, s * .097, .048, .107, 0x000000, S.matte);
+    head.obox(.05, .02, .09, s * .06, .085, .09, c2, sk, .2, s * .25, s * .2); // brow ridge
+    head.sph(.012, s * .03, .03, .41, 0x1a1408, S.skin, 1, .6, 1, 0); // nostril
+    for (let i = 0; i < 8; i++) head.cone(.009, .035, s * (.05 - i * .003), -.035, .14 + i * .034, 0xf0ead8, S.bone, PI);
+    for (let i = 0; i < 4; i++) head.box(.01, .004, .05, s * .045, .02, .22 + i * .045, c2, sk, 0, s * .1, 0); // lip scales
   }
-  for (const [a, s] of [[P[13], 1], [P[14], -1]]) { a.cyl(.035, .025, .28, 0, -.12, .05, c, sk, -.5); for (let i = 0; i < 3; i++) a.cone(.01, .07, (i - 1) * .02, -.25, .16, 0xe8e0d0, S.bone, -2.2); if (o.armFeathers) a.obox(.01, .12, .2, s * .04, -.08, -.02, o.crest ?? 0xc04020, S.cloth); }
+  // lower jaw with tongue + teeth
+  jaw.sph(.07, 0, -.03, .2, c, sk, .75, .35, 1.9, q); jaw.sph(.05, 0, -.005, .2, 0x8a2030, S.skin, .6, .2, 1.6, 0); jaw.sph(.06, 0, -.05, .1, belly, sk, .8, .4, 1.2, 0);
+  for (let i = 0; i < 7; i++) for (const s of [-1, 1]) jaw.cone(.008, .03, s * (.042 - i * .003), .012, .12 + i * .034, 0xf0ead8, S.bone);
+  // tail: tapering ellipsoid chain with feather tip fan
+  for (let i = 0; i < 9; i++) { const t = i / 8; t1.sph(.17 - t * .07, 0, .02 - t * .02, -.12 - t * .62, c, sk, .85, .85, 1.5, q); }
+  stripe(t1, 5, -.1, -.75, .15, .07);
+  for (let i = 0; i < 11; i++) { const t = i / 10; t2.sph(.085 - t * .06, 0, 0, -.06 - t * .85, c, sk, .85, .85, 1.7, q); if (i % 3 === 1) t2.sph(.06 - t * .04, 0, .03, -.06 - t * .85, c2, sk, 1.1, .3, 1.3, 0); }
+  if (o.tailFeathers) for (let i = 0; i < 9; i++) { const a = (i - 4) * .22; t2.box(.012, .02, .32, Math.sin(a) * .12, .02, -.95 - Math.cos(a) * .12, i % 2 ? cr : varyColor(cr, .2), S.cloth, 0, a, 0); }
+  // legs: big drumstick thigh, lean shin, metatarsus, toes, sickle claw
+  for (const [th, sh, ft, s] of [[P[7], P[8], P[9], 1], [P[10], P[11], P[12], -1]]) {
+    th.sph(.15, 0, -.1, .02, c, sk, .78, 1.55, 1.12, q); th.sph(.09, 0, -.3, .0, c, sk, .7, 1.4, .9, q); stripe(th, 3, -.08, .1, .02, .05);
+    sh.sph(.07, 0, -.06, -.01, c, sk, .8, 1.2, 1, q); sh.cyl(.055, .035, .42, 0, -.22, 0, c, sk); sh.sph(.04, 0, -.42, 0, c2, sk, 1, 1, 1, 0);
+    ft.cyl(.035, .03, .3, 0, -.15, 0, c2, sk); for (let i = 0; i < 6; i++) ft.box(.05, .012, .03, 0, -.03 - i * .045, .02, c, sk);
+    ft.obox(.09, .035, .1, 0, -.3, .05, c2, sk);
+    for (const x of [-.028, .028]) { ft.cyl(.014, .01, .12, x, -.31, .13, c2, sk, PI / 2); ft.cone(.011, .05, x, -.31, .21, 0xe8e0d0, S.bone, PI / 2); }
+    ft.cyl(.016, .012, .07, s * .04, -.26, .08, c2, sk, -.6); ft.tor(.045, .009, s * .045, -.2, .12, 0xf0e8d8, S.bone, 0, PI / 2, PI * .1, PI * .9, 4, 8); // sickle claw
+  }
+  // arms: feathered with three raking claws
+  for (const [a, s] of [[P[13], 1], [P[14], -1]]) { a.sph(.05, 0, -.02, .02, c, sk, .8, 1.4, .9, 0); a.cyl(.03, .022, .26, 0, -.12, .06, c, sk, -.5); for (let i = 0; i < 3; i++) a.cone(.009, .07, (i - 1) * .02, -.25, .17, 0xe8e0d0, S.bone, -2.2); if (o.armFeathers) for (let i = 0; i < 5; i++) a.box(.008, .02 + i * .004, .16 + i * .02, s * .03, -.04 - i * .045, -.03, i % 2 ? cr : c2, S.cloth, .5, 0, 0); }
   return P;
 }
 function buildQuad(o) {
@@ -1582,7 +1603,7 @@ class EType {
     if (def.shield) this.hs = this.hs.concat([[12, [.07, -.05, .1], .42, 'shield']]);
     this.bound = def.rig === 'tank' ? 3.5 * (def.size || 1) : def.rig === 'quad' ? def.quad.len * .6 + .3 : def.hsOverride === 'heli' ? 4.5 : def.rig === 'flyer' ? 1.3 : def.rig === 'raptor' ? 1.8 : def.rig === 'bug' ? 1 : 1.2;
     // variants: build a few geometry variants per part? one is enough; randomise colours via instance tint
-    const parts = def.build();
+    GB.low = (def.cap || 120) >= 150; const parts = def.build(); GB.low = false;
     this.meshes = [];
     for (let i = 0; i < this.np; i++) {
       const gb = parts[i]; if (!gb || gb.empty) { this.meshes.push(null); continue; }
@@ -2343,7 +2364,7 @@ WDEFS.push({
   build(W) {
     const g = W.root, P = W.P;
     addPart(g, 'body', P, b => {
-      b.rbox(.05, .06, .5, 0, .0, -.18, C.bone, S.bone); for (let i = 0; i < 8; i++) b.rbox(.056, .03, .015, 0, .0, -.0 - i * .06, 0xc8bc9c, S.bone);
+      b.rbox(.05, .06, .5, 0, .0, -.18, 0xbfb08e, S.bone); for (let i = 0; i < 8; i++) b.rbox(.056, .03, .015, 0, .0, -.0 - i * .06, 0x9a8a6a, S.bone);
       b.rbox(.042, .12, .05, 0, -.06, .03, C.leather, S.leather, -.25); for (let i = 0; i < 6; i++) b.rbox(.046, .008, .055, 0, -.02 - i * .018, .03 + i * .004, 0x2a1a0e, S.leather, -.25);
       b.rbox(.04, .07, .16, 0, -.0, .14, C.bone, S.bone); b.sph(.04, 0, -.01, .22, 0xd8ccb0, S.bone, .8, 1.1, 1.2);
       b.rbox(.012, .012, .5, 0, .036, -.2, 0x6a5030, S.wood); // rail groove
@@ -2355,9 +2376,11 @@ WDEFS.push({
       for (let i = 0; i < 4; i++) b.cone(.008, .05, .0, -.035, -.1 - i * .07, 0xf0e8d8, S.bone, PI);
       b.rbox(.008, .1, .008, .03, -.06, -.12, 0x8a2a10, S.cloth); b.sph(.012, .03, -.11, -.12, 0x38e8ff, S.glow); // feather fetish w/ rift bead
     });
-    addPart(g, 'limbL', P, b => { for (let i = 0; i < 5; i++) b.rbox(.04, .02, .05, .04 + i * .05, 0, i * i * .006, C.wood2, S.wood, 0, -i * .08); b.cone(.012, .05, .27, 0, .1, C.bone, S.bone, 0, 0, -PI / 2); }, .02, .02, -.4);
-    addPart(g, 'limbR', P, b => { for (let i = 0; i < 5; i++) b.rbox(.04, .02, .05, -.04 - i * .05, 0, i * i * .006, C.wood2, S.wood, 0, i * .08); b.cone(.012, .05, -.27, 0, .1, C.bone, S.bone, 0, 0, PI / 2); }, -.02, .02, -.4);
-    addPart(g, 'string', P, b => { b.rbox(.5, .004, .004, 0, 0, 0, 0xe8dcc0, S.cloth); b.rbox(.02, .012, .012, 0, 0, 0, C.leather, S.leather); }, 0, .03, -.06);
+    const limbFn = s => b => { const pts = [], rr = []; for (let i = 0; i <= 14; i++) { const t = i / 14; pts.push(new V3(s * (.015 + t * .27), Math.sin(t * PI) * .006, t * t * .09 - Math.max(0, t - .82) * .22)); rr.push(lerp(.013, .0045, t)); } tubeInto(b, pts, rr, (t, a) => new COL(t > .85 ? C.bone : C.wood2).multiplyScalar(.75 + Math.pow(Math.abs(Math.sin(a * TAU * 2 + t * 30)), 4) * .35), 8, S.wood, true);
+      for (let k = 0; k < 3; k++) b.tor(.014, .0025, s * (.06 + k * .05), .0, .0 + k * k * .002, 0x5a3a1a, S.leather, 0, PI / 2, 0, TAU, 4, 10); b.cone(.008, .03, s * .285, .0, .05, C.bone, S.bone, PI / 2); };
+    addPart(g, 'limbL', P, limbFn(1), .02, .02, -.4);
+    addPart(g, 'limbR', P, limbFn(-1), -.02, .02, -.4);
+    addPart(g, 'string', P, b => { b.box(.52, .0025, .0025, 0, 0, 0, 0xc8b898, S.cloth); b.rbox(.02, .01, .012, 0, 0, 0, C.leather, S.leather); }, 0, .03, -.06);
     addPart(g, 'spearM', P, b => { b.cyl(.009, .009, .62, 0, 0, -.25, C.wood2, S.wood, PI / 2); b.cone(.022, .12, 0, 0, -.62, 0x14121a, [.15, .3, 0], -PI / 2, 0, 0, 4); b.rbox(.03, .004, .06, 0, 0, -.58, 0x14121a, [.15, .3, 0]); b.cyl(.012, .012, .04, 0, 0, -.54, C.leather, S.leather, PI / 2); for (let i = 0; i < 3; i++) b.rbox(.002, .025, .05, 0, 0, .04, 0xb03010, S.cloth, 0, 0, i * PI / 3); b.rbox(.003, .003, .5, 0, .01, -.25, 0x38e8ff, S.glow); }, 0, .04, -.06);
     W.muzzle.position.set(0, .04, -.7); W.eject.position.set(0, 0, 0);
   },
@@ -3874,7 +3897,7 @@ class TRexBoss extends Boss {
     this.part('neck', neck, [[0, 1.2, 1, 1.6]], { core: .9 });
     this.tail.forEach((t, i) => this.part('tail' + i, t, [[0, 0, -1.5, 2.2 * Math.pow(.72, i)]], { core: .5 }));
     for (const l of this.legs) { this.part('thigh', l.th, [[0, -1.8, .4, 1.7]], { core: .6 }); this.part('shin', l.sh, [[0, -1.6, -.3, .9]], { core: .6 }); }
-    this.pos.set(0, 0, -95); this.yaw = 0; this.gait = 0; this.speed = 5.5; this.introT = 5;
+    this.pos.set(0, 0, -84); this.yaw = 0; this.gait = 0; this.speed = 5.5; this.introT = 5;
     this.footprint = () => this.legs.map(l => { const p = this.wp(l.ft, 0, 0, 1); return { x: p.x, z: p.z, r: 2.4, h: 3 }; });
   }
   intro(dt) { this.walk(dt, 7); if (this.st > 3.6 && !this.roared) { this.roared = true; SFX.roar(this.pos, 1.6); addShake(.8); } this.jaw.rotation.x = this.st > 3.6 ? .7 : 0; }
@@ -3991,7 +4014,7 @@ class SiegeBoss extends Boss {
     this.shutterP = this.part('shutter', this.shutter, [[0, 0, 0, 2.4]], { hp: 1e9, core: .15, armor: .5 });
     this.part('hull', hull, [[0, 3, 0, 6.5], [0, 9, 0, 5.5], [0, 15, -.5, 4.5]], { core: .35, armor: .3 });
     this.part('ram', this.ram, [[0, 0, 7.5, 1.6]], { core: .5 });
-    this.pos.set(0, 0, -90); this.introT = 5; this.speed = 3; this.trebT = 4; this.ballT = 2; this.wheelRot = 0;
+    this.pos.set(0, 0, -82); this.introT = 5; this.speed = 3; this.trebT = 4; this.ballT = 2; this.wheelRot = 0;
     this.footprint = () => [{ x: this.wp(this.hull, 0, 0, 7).x, z: this.wp(this.hull, 0, 0, 7).z, r: 6.5, h: 20 }, { x: this.pos.x, z: this.pos.z, r: 7, h: 20 }, { x: this.wp(this.ram, 0, 0, 8).x, z: this.wp(this.ram, 0, 0, 8).z, r: 2.5, y: 3, h: 3 }];
   }
   roll(dt, sp) { const k = sp * (1 - (this.brokenWheels || 0) * .2); const fwd = _v1.set(Math.sin(this.yaw), 0, Math.cos(this.yaw)); this.pos.addScaledVector(fwd, k * dt); const B = WORLD.bounds; if (this.state !== 'intro') { this.pos.x = clamp(this.pos.x, B.minX + 8, B.maxX - 8); this.pos.z = clamp(this.pos.z, B.minZ + 8, B.maxZ - 8); } this.wheelRot += k * dt / 3; for (const w of this.wheels) if (!w.destroyed) w.obj.rotation.x = this.wheelRot; this.hull.rotation.z = Math.sin(this.t * 2) * .01 + (this.brokenWheels || 0) * .03; this.hull.rotation.x = (this.brokenWheels || 0) * .02; if (Math.random() < dt * 3) { const s = AU.spatial(this.pos, 60); AU.nz({ dur: .3, f: 300, type: 'lowpass', g: .2 * s.g, brown: true }); } }
@@ -5439,7 +5462,7 @@ bindSet('sQ', 'quality', () => applyQuality()); bindSet('sSens', 'sens'); bindSe
 hudEl.fps.style.display = SET.fps ? 'block' : 'none';
 canvas.addEventListener('click', () => { if (!locked && ['fight', 'intro', 'portal', 'transition'].includes(GAME.state) && !GAME.paused) lockPointer(); });
 // debug helpers (console)
-window.TB = { GAME, PLAYER, ENEMIES, startCampaign, loadEra, giveWeapon, spawnEnemy, spawnBoss: () => spawnBoss(), god: () => GAME.god = !GAME.god, skipWave: () => { for (const e of ENEMIES) if (e.alive) killEnemy(e, { kind: 'blast', dir: UP, force: 10 }); DIR.queue = []; }, killBoss: () => BOSS && BOSS.damage(BOSS.parts[0], 1e9, 'pierce'), portal: () => openPortal(), WPN, ETYPES, BOSS: () => BOSS, fire(v) { mouseL = v; if (v) mouseLP = true; }, key(k, v) { KEY[k] = v; if (v) KEYP[k] = true; }, look(dx, dy) { mouseDX += dx; mouseDY += dy; }, aim(v) { mouseR = v; }, startWave, DIR, dbg: () => ({ q: JSON.stringify(DIR.queue), alive: ALIVE, n: ENEMIES.length, st: GAME.state, w: DIR.wave && DIR.wave.title, acc: DIR.spawnAcc, cap: QL.cap, cm: GAME.capMul }), show(id) { const w = giveWeapon(id, true); for (const o of WPN.owned) o.root.visible = false; WPN.cur = w; WPN.next = null; w.root.visible = true; WPN.equipT = 1; WPN.inspectT = -1; onWeaponChanged(); return w.def.name; }, inspect(t) { WPN.inspectT = t; }, FX_clear() { FX.flash = 0; FX.rift = 0; FX.crack = 0; FX.aberr = 0; FX.damage = 0; PA.clear(); PN.clear(); }, fps: () => fpsV, freeze(v) { if (v) slowmo(.0001, 1e6); else { FX.slowmoT = 0; } }, cam(x, y, z, yaw, pitch) { PLAYER.pos.set(x, y, z); PLAYER.vel.set(0, 0, 0); PLAYER.yaw = yaw; PLAYER.pitch = pitch; }, spawn: (t, x, z, o) => { const e = spawnEnemy(t, x, z, Object.assign({ anim: 'run', fx: false }, o || {})); return !!e; } };
+window.TB = { GAME, PLAYER, ENEMIES, startCampaign, loadEra, giveWeapon, spawnEnemy, spawnBoss: () => spawnBoss(), god: () => GAME.god = !GAME.god, skipWave: () => { for (const e of ENEMIES) if (e.alive) killEnemy(e, { kind: 'blast', dir: UP, force: 10 }); DIR.queue = []; }, killBoss: () => BOSS && BOSS.damage(BOSS.parts[0], 1e9, 'pierce'), portal: () => openPortal(), WPN, ETYPES, BOSS: () => BOSS, fire(v) { mouseL = v; if (v) mouseLP = true; }, key(k, v) { KEY[k] = v; if (v) KEYP[k] = true; }, look(dx, dy) { mouseDX += dx; mouseDY += dy; }, aim(v) { mouseR = v; }, startWave, DIR, viewer(id, a = .6, d = 5, h = 1.4, ty = .9, anim = 'run', era = 0) { if (GAME.era !== era || !GAME.eraDef) loadEra(era, false); ERA_G.visible = false; GROUND.visible = true; for (const s of STRUCTS) s.mesh.visible = false; for (const p of PROPS) p.mesh.visible = false; for (const t of TREES) t.pivot.visible = false; clearEnemies(); if (BOSS) BOSS.remove(); hideAll(); showHUD(false); GAME.state = 'viewer'; GAME.view = { x: 0, z: 0, a, d, h, ty, dt: 0 }; if (id) { const e = spawnEnemy(id, 0, 0, { yaw: 0, anim, fx: false }); if (e) { e.spd = anim === 'run' ? e.def.speed : 0; e.gait = 1.2; } } return true; }, view(o) { Object.assign(GAME.view, o); }, sim(sec) { const n = Math.round(sec * 30); for (let i = 0; i < n; i++) { tick(1 / 30, performance.now()); endFrameInput(); } return GAME.state; }, dbg: () => ({ q: JSON.stringify(DIR.queue), alive: ALIVE, n: ENEMIES.length, st: GAME.state, w: DIR.wave && DIR.wave.title, acc: DIR.spawnAcc, cap: QL.cap, cm: GAME.capMul }), show(id) { const w = giveWeapon(id, true); for (const o of WPN.owned) o.root.visible = false; WPN.cur = w; WPN.next = null; w.root.visible = true; WPN.equipT = 1; WPN.inspectT = -1; onWeaponChanged(); return w.def.name; }, inspect(t) { WPN.inspectT = t; }, FX_clear() { FX.flash = 0; FX.rift = 0; FX.crack = 0; FX.aberr = 0; FX.damage = 0; PA.clear(); PN.clear(); }, fps: () => fpsV, freeze(v) { if (v) slowmo(.0001, 1e6); else { FX.slowmoT = 0; } }, cam(x, y, z, yaw, pitch) { PLAYER.pos.set(x, y, z); PLAYER.vel.set(0, 0, 0); PLAYER.yaw = yaw; PLAYER.pitch = pitch; }, spawn: (t, x, z, o) => { const e = spawnEnemy(t, x, z, Object.assign({ anim: 'run', fx: false }, o || {})); return !!e; } };
 
 /* =====================================================================
    MAIN LOOP
@@ -5450,6 +5473,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   let rdt = Math.min(.05, (now - lastT) / 1000); lastT = now;
   fpsAcc += rdt; fpsN++; if (fpsAcc > .5) { fpsV = fpsN / fpsAcc; fpsAcc = 0; fpsN = 0; if (SET.fps) hudEl.fps.textContent = Math.round(fpsV) + ' FPS · ' + ALIVE + ' ALIVE · ' + ENEMIES.length + ' BODIES'; if (GAME.state === 'fight') { if (fpsV < 34) { slowFrames++; if (slowFrames > 3) { GAME.capMul = Math.max(.4, GAME.capMul * .9); slowFrames = 0; } } else if (fpsV > 55) { slowFrames = 0; GAME.capMul = Math.min(1, GAME.capMul * 1.03); } } }
+  if (GAME.state === 'viewer') { VM.rig.visible = false; const V = GAME.view; camera.position.set(V.x + Math.sin(V.a) * V.d, V.h, V.z + Math.cos(V.a) * V.d); camera.lookAt(V.x, V.ty, V.z); camera.fov = 40; camera.updateProjectionMatrix(); updateEnemies(V.dt || 0); if (BOSS) { BOSS.update(V.dt || 0); } sunFollow(camera.position); fxPass.uniforms.uRift.value = 0; fxPass.uniforms.uDamage.value = 0; fxPass.uniforms.uCrack.value = 0; fxPass.uniforms.uFlash.value = 0; composer.render(); endFrameInput(); return; }
   const playing = !GAME.paused && GAME.state !== 'menu';
   if (GAME.state === 'menu' || GAME.paused) {
     if (GAME.state === 'menu') { menuT += rdt; const a = menuT * .05; camera.position.set(Math.cos(a) * 46, 14 + Math.sin(menuT * .2) * 3, Math.sin(a) * 46); camera.lookAt(0, 6, 0); updateSmoke(rdt); for (const a2 of AMBIENT) a2.update(rdt, menuT); PA.update(rdt); PN.update(rdt); ARMY_U.uTime.value += rdt; SKY_U.uTime.value += rdt; WATER_U.uTime.value += rdt; WIND_U.uTime.value += rdt; updateWeather(rdt); VM.rig.visible = false; }
@@ -5457,6 +5481,11 @@ function frame(now) {
     sunFollow(camera.position);
     composer.render(); endFrameInput(); return;
   }
+  tick(rdt, now);
+  composer.render();
+  endFrameInput();
+}
+function tick(rdt, now) {
   VM.rig.visible = PLAYER.alive && GAME.state !== 'transition';
   // time scaling
   let ws = 1;
@@ -5492,8 +5521,6 @@ function frame(now) {
   const lowHp = PLAYER.hp < 35 ? (1 - PLAYER.hp / 35) * (.5 + .5 * Math.sin(now * .008)) * .5 : 0;
   const U = fxPass.uniforms; U.uTime.value = now * .001; U.uDamage.value = Math.min(1, FX.damage + lowHp); U.uRift.value = FX.rift; U.uAberr.value = FX.aberr; U.uSlow.value = FX.slow; U.uFlash.value = FX.flash; U.uCrack.value = FX.crack;
   updateHUD(rdt);
-  composer.render();
-  endFrameInput();
 }
 function sunFollow(p) { const sd = GAME.sunDir || UP; sun.position.set(p.x + sd.x * 160, p.y + sd.y * 160, p.z + sd.z * 160); sun.target.position.copy(p); }
 
