@@ -21,6 +21,8 @@ const Main = {
       this.buildTitle();
       // allow automated testing to skip straight into a segment: ?seg=id
       const q = new URLSearchParams(location.search);
+      if (q.get('speed')) this.speed = +q.get('speed');
+      if (q.get('norender')) this.noRender = true;
       if (q.get('seg')) { this.audio(); this.begin(q.get('seg'), q.get('nocard') === '1'); }
     });
   },
@@ -123,8 +125,9 @@ const Main = {
     const dt = Math.min(0.05, (ts - this.last) / 1000 || 0);
     this.last = ts;
     if (G.running && !G.paused) {
-      G.time += dt; G.dt = dt;
-      Story.update(dt);
+      const sp = this.speed || 1;
+      G.time += dt * sp; G.dt = dt;
+      Story.update(dt * sp);
       if (G.mode === 'car') Car.update(dt); else Player.update(dt);
       Stalker.update(dt);
       NPCs.update(dt);
@@ -136,7 +139,7 @@ const Main = {
     UI.update(dt);
     if (G.camera) SND.setListener(G.camera);
     SND.update(dt);
-    if (G.level) Engine.render(G.paused ? 0 : dt);
+    if (G.level && !this.noRender) Engine.render(G.paused ? 0 : dt);
     // camcorder clock
     if (G.running) { const t = Story.clockStr(); if (t !== this._osdT) { this._osdT = t; $('osd-time').textContent = t; } }
     Input.flush();

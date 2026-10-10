@@ -35,6 +35,18 @@ const Player = {
     this.flashFill = new THREE.PointLight(0xfff1d6, 0, 3.5, 2); this.flashFill.position.set(0, 0, -0.5); this.flashRig.add(this.flashFill);
     // hand anchor for held items
     this.hand = new THREE.Group(); this.hand.position.set(0.24, -0.24, -0.45); cam.add(this.hand);
+    // Evan's hand holding the flashlight (visible while it's on)
+    const fh = this.flashModel = new THREE.Group(); fh.position.set(0.2, -0.24, -0.38); fh.rotation.set(0.08, 0.06, 0); this.flashRig.add(fh);
+    const skin = new THREE.MeshStandardMaterial({ color: 0xd8a888, roughness: 0.7 }), hoodie = new THREE.MeshStandardMaterial({ color: 0x2a3446, roughness: 0.95 });
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.019, 0.019, 0.2, 12), new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.4, metalness: 0.5 })); body.rotation.x = Math.PI / 2; fh.add(body);
+    const head = new THREE.Mesh(new THREE.CylinderGeometry(0.027, 0.021, 0.05, 14), body.material); head.rotation.x = Math.PI / 2; head.position.z = -0.12; fh.add(head);
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(0.023, 14), new THREE.MeshBasicMaterial({ color: 0xfff6dd })); lens.position.z = -0.146; lens.rotation.y = Math.PI; fh.add(lens);
+    const fist = new THREE.Mesh(new XT.RoundedBoxGeometry(0.075, 0.065, 0.09, 3, 0.022), skin); fist.position.set(0.004, -0.005, 0.03); fh.add(fist);
+    const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(0.011, 0.035, 3, 6), skin); thumb.rotation.x = Math.PI / 2; thumb.position.set(-0.03, 0.022, 0.0); fh.add(thumb);
+    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.3, 12), hoodie); sleeve.rotation.x = Math.PI / 2 - 0.12; sleeve.position.set(0.02, -0.03, 0.2); fh.add(sleeve);
+    const cuff = new THREE.Mesh(new THREE.TorusGeometry(0.042, 0.01, 6, 14), hoodie); cuff.position.set(0.01, -0.01, 0.06); fh.add(cuff);
+    fh.traverse(o => { o.castShadow = false; });
+    fh.visible = false;
   },
 
   place(x, z, yaw = 0, pitch = 0) {
@@ -45,11 +57,12 @@ const Player = {
   setFlashlight(on, silent) {
     if (!this.hasFlashlight && on) return;
     this.flashOn = on;
-    this.flash.intensity = on ? 38 : 0; this.flashFill.intensity = on ? 0.6 : 0;
+    this.flash.intensity = on ? 38 : 0; this.flashFill.intensity = on ? 0.6 : 0; this.flash.visible = on;
+    if (this.flashModel) this.flashModel.visible = on && !this.held && G.mode !== 'car';
     if (!silent) SND.sfx('click', { f: 2600, v: 0.8 });
   },
-  hold(obj, name) { this.drop(); if (obj) { this.hand.add(obj); obj.position.set(0, 0, 0); obj.rotation.set(0, 0, 0); } this.held = obj; this.heldName = name || null; },
-  drop() { if (this.held) { this.hand.remove(this.held); } const h = this.held; this.held = null; this.heldName = null; return h; },
+  hold(obj, name) { this.drop(); if (obj) { this.hand.add(obj); obj.position.set(0, 0, 0); obj.rotation.set(0, 0, 0); } this.held = obj; this.heldName = name || null; if (this.flashModel) this.flashModel.visible = this.flashOn && !obj; },
+  drop() { if (this.held) { this.hand.remove(this.held); } const h = this.held; this.held = null; this.heldName = null; if (this.flashModel) this.flashModel.visible = this.flashOn && G.mode !== 'car'; return h; },
   holding(name) { return this.heldName === name; },
 
   lookAtPoint(v, dur = 0.8) {
@@ -94,6 +107,8 @@ const Player = {
         this.pitch = U.clamp(this.pitch, L.pitch - L.pitchR, L.pitch + L.pitchR);
       }
     }
+    // flashlight toggle
+    if (Input.pressed('KeyF') && this.hasFlashlight && (G.mode === 'walk' || G.mode === 'hide' || G.mode === 'locked')) { this.setFlashlight(!this.flashOn); Bus.emit('noise', this.pos.x, this.pos.z, 2, 'click'); }
     // move
     let moving = false, running = false;
     if (this.canMove && G.mode === 'walk' && !this.override && !Phone.open && !UI.blocking()) {

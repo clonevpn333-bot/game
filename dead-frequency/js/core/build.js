@@ -113,6 +113,7 @@ const B = {
     const k = 'ao' + opacity; if (this.matCache[k]) return this.matCache[k];
     if (!this._aoTex) { const c = TEX.canvas(4, 64), x = c.getContext('2d'); const g = x.createLinearGradient(0, 0, 0, 64); g.addColorStop(0, '#fff'); g.addColorStop(0.35, '#777'); g.addColorStop(1, '#000'); x.fillStyle = g; x.fillRect(0, 0, 4, 64); this._aoTex = new THREE.CanvasTexture(c); }
     const m = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity, alphaMap: this._aoTex, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    m.userData.batch = true;
     this.matCache[k] = m; return m;
   },
   // axis 'x': wall along x at z; 'z': wall along z at x. t = wall thickness
@@ -137,7 +138,8 @@ const B = {
   // soft blob shadow under an object (footprint w x d at x,z)
   blob(parent, x, z, w, d, y = 0, opacity = 0.5) {
     if (!this._blobTex) { const c = TEX.canvas(64, 64), g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 4, 32, 32, 32); gr.addColorStop(0, '#fff'); gr.addColorStop(0.55, '#999'); gr.addColorStop(1, '#000'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); this._blobTex = new THREE.CanvasTexture(c); }
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.35, d * 1.35), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity, alphaMap: this._blobTex, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    const bk = 'blob' + opacity; if (!this.matCache[bk]) { this.matCache[bk] = new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity, alphaMap: this._blobTex, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }); this.matCache[bk].userData.batch = true; }
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.35, d * 1.35), this.matCache[bk]);
     m.rotation.x = -Math.PI / 2; m.position.set(x, y + 0.008, z); m.renderOrder = 1; parent.add(m); return m;
   },
 

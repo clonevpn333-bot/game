@@ -289,15 +289,16 @@ P.branchTex = function () {
 P.treeGeometries = function () {
   if (P._treeGeos) return P._treeGeos;
   const out = [];
-  for (let v = 0; v < 3; v++) {
-    const r = U.seeded(900 + v * 77);
+  for (let v = 0; v < 4; v++) {
+    const low = v === 3;
+    const r = U.seeded(900 + (low ? 0 : v) * 77);
     const pos = [], uv = [], nrm = [], idx = [];
     const card = (ox, oy, oz, dir, len, wid, droop, roll) => {
       // branch along dir (unit, horizontal), drooping; cross-cards rotated about branch axis
       const up = new THREE.Vector3(0, 1, 0);
       const d = new THREE.Vector3(dir.x, -droop, dir.z).normalize();
       const side = new THREE.Vector3().crossVectors(d, up).normalize();
-      for (const k of [0, 1]) {
+      for (const k of (low ? [0] : [0, 1])) {
         const ang = roll + k * Math.PI / 2;
         const w = side.clone().multiplyScalar(Math.cos(ang)).add(up.clone().cross(side).multiplyScalar(0).add(new THREE.Vector3().crossVectors(side, d).multiplyScalar(Math.sin(ang)))).normalize();
         const b = pos.length / 3;
@@ -311,16 +312,16 @@ P.treeGeometries = function () {
       }
     };
     const H = 1; // unit height; scaled per instance
-    const whorls = 14 + v * 2;
+    const whorls = low ? 7 : 14 + v * 2;
     for (let i = 0; i < whorls; i++) {
       const t = i / (whorls - 1);
       const y = H * (0.18 + t * 0.8);
       const L = (Math.pow(1 - t, 0.85) * 0.3 + 0.03) * (0.9 + r() * 0.2);
-      const n = 5 + Math.floor(r() * 3);
+      const n = low ? 4 : 5 + Math.floor(r() * 3);
       const off = r() * 6.28;
       for (let k = 0; k < n; k++) {
         const a = off + k / n * Math.PI * 2 + (r() - 0.5) * 0.4;
-        card(0, y + (r() - 0.5) * 0.02, 0, new THREE.Vector3(Math.cos(a), 0, Math.sin(a)), L, L * 0.55 + 0.02, 0.25 + r() * 0.25 + t * 0.1, r() * 0.6);
+        card(0, y + (r() - 0.5) * 0.02, 0, new THREE.Vector3(Math.cos(a), 0, Math.sin(a)), L * (low ? 1.1 : 1), (L * 0.55 + 0.02) * (low ? 1.6 : 1), 0.25 + r() * 0.25 + t * 0.1, low ? 0.4 : r() * 0.6);
       }
     }
     const g = new THREE.BufferGeometry();
@@ -340,8 +341,9 @@ P.forest = function (L, pts, o = {}) {
   const bark = B.mat('bark');
   const fol = new THREE.MeshStandardMaterial({ map: P.branchTex(), alphaTest: 0.42, side: THREE.DoubleSide, roughness: 0.92, color: o.tint || 0xc8d6c0 });
   const coreM = new THREE.MeshStandardMaterial({ color: 0x0c140d, roughness: 1, side: THREE.DoubleSide });
-  const groups = [[], [], []];
-  pts.forEach(pt => groups[Math.floor(r() * 3)].push(pt));
+  const groups = [[], [], [], []];
+  const near = o.near || ((x, z) => Math.hypot(x - (o.cx || 0), z - (o.cz || 0)) < (o.nearR || 60));
+  pts.forEach(pt => { const gi = Math.floor(r() * 3); groups[near(pt[0], pt[1]) ? gi : 3].push(pt); });
   const m = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), p = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0);
   const trunks = new THREE.InstancedMesh(geos.trunk, bark, n), cores = new THREE.InstancedMesh(geos.core, coreM, n);
   let ti = 0;
@@ -470,8 +472,8 @@ P.clouds = function (L, o = {}) {
     const pl = new THREE.Mesh(new THREE.PlaneGeometry(s, s * 0.55), m);
     pl.position.set(Math.cos(a) * d, h, Math.sin(a) * d); pl.lookAt(0, h * 0.4, 0); pl.renderOrder = -1; L.add(pl);
   }
-  const moon = P.halo(L.root || L, -150, 230, -260, 0xdfe8ff, 60, 0.9); moon.material.fog = false;
-  const core = P.halo(L.root || L, -150, 230, -260, 0xffffff, 14, 1); core.material.fog = false;
+  const moon = P.halo(L.root || L, -150, 230, -260, 0xc8d4ff, 34, 0.55); moon.material.fog = false;
+  const core = P.halo(L.root || L, -150, 230, -260, 0xffffff, 9, 0.9); core.material.fog = false;
 };
 // grass tufts (instanced crossed cards)
 P.grass = function (L, pts, o = {}) {
@@ -523,3 +525,42 @@ P.shelfRow = function (items, r, x0, w, y, z, maxH, kind) {
     x += pw + (r() < 0.08 ? 0.08 : 0.004);
   }
 };
+
+// ---------------------------------------------------------------------------
+// Clutter helpers
+P.papers = function (parent, x, y, z, n = 4, seed = 1, spread = 0.25) {
+  const r = U.seeded(seed);
+  for (let i = 0; i < n; i++) {
+    const lines = []; for (let k = 0; k < 9; k++) lines.push('—'.repeat(3 + Math.floor(r() * 8)));
+    const t = TEX.get('paper', lines, { fs: 9, w: 96, h: 128, bg: r() < 0.2 ? '#f6f0a8' : '#efeae0' });
+    B.texPlane(parent, t, x + (r() - 0.5) * spread, y + 0.002 + i * 0.002, z + (r() - 0.5) * spread, 0.21, 0.28, { rx: -Math.PI / 2, rz: (r() - 0.5) * 0.8 });
+  }
+};
+P.binders = function (parent, x, y, z, n, ry = 0, seed = 2) {
+  const g = B.group(parent, x, y, z, ry); const r = U.seeded(seed);
+  let px = 0; for (let i = 0; i < n; i++) { const w = 0.05 + r() * 0.03, h = 0.28 + r() * 0.04; const c = [0x1a3a6a, 0x6a1a1a, 0x1a4a2a, 0x2a2a2a, 0xd8d0b8][Math.floor(r() * 5)]; const b = B.box(g, px + w / 2, 0, 0, w - 0.004, h, 0.22, B.col(c, { roughness: 0.5 }), { cast: false }); b.rotation.z = r() < 0.15 ? 0.2 : 0; px += w; }
+  return g;
+};
+P.deskLamp = function (parent, x, y, z, ry = 0) {
+  const g = B.group(parent, x, y, z, ry); const m = B.col(0x2a2a2a, { roughness: 0.4, metalness: 0.5 });
+  B.cyl(g, 0, 0, 0, 0.07, 0.08, 0.02, m); const a1 = B.cyl(g, 0, 0.02, 0, 0.008, 0.008, 0.32, m); a1.rotation.z = 0.3; a1.position.set(-0.05, 0.17, 0);
+  const sh = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.12, 14, 1, true), new THREE.MeshStandardMaterial({ color: 0x1f3a2a, side: THREE.DoubleSide, roughness: 0.4, metalness: 0.3 })); sh.position.set(0.06, 0.32, 0); sh.rotation.z = 0.9; g.add(sh);
+  return g;
+};
+P.cdStack = function (parent, x, y, z, n = 6, seed = 3, ry = 0) {
+  const g = B.group(parent, x, y, z, ry); const r = U.seeded(seed);
+  for (let i = 0; i < n; i++) { const c = B.box(g, (r() - 0.5) * 0.02, i * 0.011, (r() - 0.5) * 0.02, 0.142, 0.01, 0.125, B.col([0x88aacc, 0x2a2a2a, 0xc84a2a, 0xe8d8a0, 0x3a6a3a][Math.floor(r() * 5)], { roughness: 0.2 }), { cast: false }); c.rotation.y = (r() - 0.5) * 0.3; }
+  return g;
+};
+P.cable = function (parent, pts, color = 0x111111, r = 0.006) {
+  const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p[0], p[1], p[2])));
+  const m = new THREE.Mesh(new THREE.TubeGeometry(curve, 24, r, 5, false), B.col(color, { roughness: 0.6 })); parent.add(m); return m;
+};
+P.frame = function (parent, tex, x, y, z, w, h, ry = 0) {
+  const g = B.group(parent, x, y, z, ry);
+  B.box(g, 0, -h / 2 - 0.03, 0, w + 0.06, h + 0.06, 0.025, B.col(0x2a2018, { roughness: 0.5 }));
+  B.texPlane(g, tex, 0, 0, 0.014, w, h, {});
+  const gl = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.06, roughness: 0.05, metalness: 0.9 })); gl.position.z = 0.016; g.add(gl);
+  return g;
+};
+P.cup = function (parent, x, y, z, color = 0xf0eee6) { return B.cyl(parent, x, y, z, 0.04, 0.032, 0.11, B.col(color, { roughness: 0.5 }), { cast: false }); };

@@ -145,6 +145,17 @@ Levels.tower = function (o = {}) {
   // logbook, coffee can, calendar
   B.texPlane(R, TEX.get('paper', ['RIDGE SITE', 'LOG', '', '10/13 DP', '10/14 DP', '10/15 DP'], { fs: 11 }), 9.0, 0.895, -1.4, 0.2, 0.26, { rx: -Math.PI / 2 });
   L.named.siteLog = new THREE.Vector3(9.0, 0.9, -1.4);
+  // clutter: cable trays, conduit, spare tubes, manuals, coffee can, mop, fire extinguisher, wall phone cord
+  for (let k = 0; k < 3; k++) B.box(R, 1.6 + k * 0.01, 2.62, -3, 0.25, 0.06, 5.6, B.mat('metal', { color: 0x8a8e88 }), { cast: false });
+  P.cable(R, [[1.3, 2.62, -1.5], [1.25, 2.3, -1.6], [1.2, 2.1, -1.7]], 0x1a1a1a, 0.015);
+  for (let k = 0; k < 4; k++) P.cable(R, [[3.2 + k * 0.2, 2.6, -5.5], [3.2 + k * 0.2, 2.62, -4], [1.6, 2.62, -3.5 + k * 0.1]], 0x222222, 0.01);
+  P.binders(R, 9.6, 0.94, -2.4, 6, -Math.PI / 2, 61); P.papers(R, 9.3, 0.895, -1.4, 3, 62, 0.3);
+  P.cup(R, 8.2, 0.895, -1.3, 0x3a5a3a); P.cdStack(R, 9.7, 0.94, -3.9, 3, 63);
+  for (let k = 0; k < 3; k++) { const tube = B.cyl(R, 6.0 + k * 0.3, 0, -5.5, 0.09, 0.09, 0.38, new THREE.MeshStandardMaterial({ color: 0x9aa8b0, transparent: true, opacity: 0.6, roughness: 0.1, metalness: 0.5 })); void tube; }
+  B.cyl(R, 0.3, 0, -0.4, 0.08, 0.08, 0.55, B.col(0xbb1111));
+  B.cyl(R, 7.0, 0, -5.5, 0.2, 0.18, 0.35, B.col(0xd6c020)); // mop bucket
+  P.frame(R, TEX.get('paper', ['FCC', 'TOWER', 'REGISTRATION', '1012447'], { fs: 11, w: 128, h: 96, bg: '#f0ece0' }), 6.0, 1.9, -5.88, 0.4, 0.3, 0);
+  B.texPlane(R, TEX.get('poster', 'DANGER', 'RF — 480 V', 5), 0.24, 1.8, -1.6, 0.4, 0.5, { ry: Math.PI / 2 });
   // lights
   const LT = L.named.lights = {};
   LT.main = B.fluoro(L, 3, HB - 0.04, -3, { w: 0.3, d: 1.2, intensity: 6, dist: 10, color: 0xeef4ff, circuit: 'site' });
@@ -236,6 +247,10 @@ Levels.tower = function (o = {}) {
   B.texPlane(og, TEX.get('paper', ['TALKBACK', '→ RIDGE TX', 'AUX IN', '- D.P.'], { fs: 12 }), -21.6, 1.3, 20.38, 0.18, 0.2, { ry: Math.PI });
   const ochair = P.chair(og, -21.5, 18.3, 0, { color: 0x3a3a3a }); L.named.oldChair = ochair;
   L.named.oldBulb = B.bulb(L, -22, oY + 2.45, 18, { color: 0xffc080, intensity: 1.6, dist: 6, circuit: 'site', on: o.oldBulb !== false });
+  // old gear: dusty tubes, coiled cable, tarp, cobwebs (thin planes), a blanket on the floor
+  P.cable(og, [[-23, 0.05, 16.2], [-22.5, 0.05, 16.0], [-22.2, 0.05, 16.4], [-22.6, 0.05, 16.6], [-23.0, 0.05, 16.3]], 0x3a2a1a, 0.02);
+  B.box(og, -20.0, 0.02, 19.6, 1.0, 0.03, 0.7, B.mat('tarp'), { cast: false });
+  for (let k = 0; k < 3; k++) { const w = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.4), new THREE.MeshBasicMaterial({ color: 0xbbbbbb, transparent: true, opacity: 0.08, side: THREE.DoubleSide })); w.position.set(-24.7, 2.3, 16 + k * 1.8); w.rotation.set(0.6, 0.8, 0); og.add(w); }
   // scraps: rope, tape, water bottle
   B.box(og, -20.0, 0.04, 16.2, 0.4, 0.06, 0.3, B.col(0x7a6a40));
   B.cyl(og, -20.4, 0.04, 16.6, 0.04, 0.04, 0.2, B.col(0xaaccdd));
@@ -264,7 +279,7 @@ Levels.tower = function (o = {}) {
     return false;
   };
   const trees = P.scatter(-140, -140, 140, 140, 1400, 41, exclF, 2.6).map(p => [p[0], p[1], 10 + U.noise2(p[0], p[1], 3) * 14, h(p[0], p[1])]);
-  P.forest(L, trees, { collide: true, collideIf: (x, z) => Math.abs(x + 25) < 70 && Math.abs(z + 10) < 70, seed: 41 });
+  P.forest(L, trees, { collide: true, collideIf: (x, z) => Math.abs(x + 25) < 70 && Math.abs(z + 10) < 70, seed: 41, cx: -25, cz: -10, nearR: 75 });
   L.trees = trees;
   // boulders & logs (cover + hides)
   const rockM = B.mat('concrete', { texArgs: [88] });
@@ -292,8 +307,8 @@ Levels.tower = function (o = {}) {
   L.skyRig = P.sky(L, { moon: 0.1, hemi: 0.16 });
   P.clouds(L, { seed: 11, opacity: 0.18 });
   P.mist(L, { size: 260, y: -4, opacity: 0.12, heights: [0.6, 1.8, 3.4, 5.0] });
-  const gpts = P.scatter(-80, -80, 50, 50, 3200, 33, (x, z) => rectDist(x, z, { x0: -1, x1: 11, z0: -7, z1: 1 }) < 1.5 || rectDist(x, z, { x0: ob.x0, x1: ob.x1, z0: ob.z0, z1: ob.z1 }) < 1.2 || rectDist(x, z, { x0: -12, x1: 20, z0: -12, z1: 13 }) < 0, 0.8).map(p => [p[0], p[1], h(p[0], p[1])]);
-  P.grass(L, gpts, { seed: 7, color: 0x8a8a70 });
+  const gpts = P.scatter(-80, -80, 50, 50, 4200, 33, (x, z) => rectDist(x, z, { x0: -1, x1: 11, z0: -7, z1: 1 }) < 1.5 || rectDist(x, z, { x0: ob.x0, x1: ob.x1, z0: ob.z0, z1: ob.z1 }) < 1.2 || rectDist(x, z, { x0: -12, x1: 20, z0: -12, z1: 13 }) < 0, 0.8).map(p => [p[0], p[1], h(p[0], p[1])]);
+  P.grass(L, gpts, { seed: 7, color: 0xa8a888 });
   L.zone('outside', -300, -300, 300, 300);
   L.zone('newb', nb.x0, nb.z0, nb.x1, nb.z1);
   L.zone('closet', 8.6, -6, 10, -4.4);

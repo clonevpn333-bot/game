@@ -86,11 +86,12 @@ Levels.road = function (o = {}) {
         const p = pts[si].clone().addScaledVector(Rt[si], d);
         // don't place trees on top of a different stretch of road
         let ok = true; for (let j = 0; j <= N; j += 6) { if (Math.abs(j - si) < 30) continue; if (U.dist2(p.x, p.z, pts[j].x, pts[j].z) < 9) { ok = false; break; } }
-        if (ok) tp.push([p.x, p.z, 10 + r() * 12, pts[si].y + terr(si, d)]);
+        if (ok) tp.push([p.x, p.z, 10 + r() * 12, pts[si].y + terr(si, d), Math.abs(d) < 15]);
       }
     }
   }
-  P.forest(L, tp, { seed: def.seed, collide: false });
+  const nearSet = new Set(tp.filter(t => t[4]).map(t => t[0] + ',' + t[1]));
+  P.forest(L, tp, { seed: def.seed, collide: false, near: (x, z) => nearSet.has(x + ',' + z) });
   // ---- guardrails (downhill side on mountain) ----
   if (M) {
     const posts = [], rails = [];

@@ -156,7 +156,7 @@ const UI = {
     // choices keyboard
     const s = this.choiceState;
     if (s) {
-      for (let i = 0; i < s.list.length && i < 4; i++) if (Input.pressed('Digit' + (i + 1))) { this.pickChoice(i); return; }
+      for (let i = 0; i < s.list.length && i < 9; i++) if (Input.pressed('Digit' + (i + 1))) { this.pickChoice(i); return; }
       if (Input.wheel) { s.sel = (s.sel + Input.wheel + s.list.length) % s.list.length; this.renderChoices(); }
       if (Input.pressed('ArrowUp')) { s.sel = (s.sel - 1 + s.list.length) % s.list.length; this.renderChoices(); }
       if (Input.pressed('ArrowDown')) { s.sel = (s.sel + 1) % s.list.length; this.renderChoices(); }

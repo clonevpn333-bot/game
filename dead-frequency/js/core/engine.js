@@ -177,12 +177,63 @@ const Engine = {
     this.scene.fog = lvl.fog || null;
     this.scene.background = lvl.background || new THREE.Color(0x000000);
     if (lvl.reverb) { SND.setReverb(lvl.reverb[0], lvl.reverb[1]); SND.setReverbMix(lvl.reverb[2] == null ? 0.25 : lvl.reverb[2]); }
+    try { this.batchStatic(lvl); } catch (e) { console.warn('batch', e); }
     this.scene.environment = this.roomEnv || null;
     const envI = lvl.envIntensity != null ? lvl.envIntensity : 0.035;
     lvl.root.traverse(o => { if (o.material) { const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const m of ms) if (m.isMeshStandardMaterial) { if (m.userData.envBase == null) m.userData.envBase = m.envMapIntensity == null ? 1 : m.envMapIntensity; m.envMapIntensity = m.userData.envBase * envI; } } });
     if (lvl.onLoad) lvl.onLoad();
     Phys.ready = true;
     return lvl;
+  },
+  // merge static, non-interactive meshes by material to cut draw calls
+  batchStatic(L) {
+    const keep = new Set();
+    const mark = o => o.traverse(c => keep.add(c));
+    const scan = (v, d) => {
+      if (!v || d > 3) return;
+      if (v.isObject3D) { mark(v); return; }
+      if (Array.isArray(v)) { v.forEach(x => scan(x, d + 1)); return; }
+      if (typeof v === 'object') for (const k in v) scan(v[k], d + 1);
+    };
+    scan(L.named, 0);
+    for (const d of L.doors) mark(d.pivot);
+    for (const it of Interact.items) mark(it.obj);
+    for (const o of L.dynamic || []) mark(o);
+    L.root.updateMatrixWorld(true);
+    const groups = new Map();
+    L.root.traverse(o => {
+      if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || keep.has(o) || !o.visible || o.userData.noBatch) return;
+      const m = o.material;
+      if (Array.isArray(m) || !m || (m.transparent && !m.userData.batch) || m.isShaderMaterial || m.visible === false || (o.renderOrder && !m.userData.batch)) return;
+      let p = o.parent, ok = true; while (p && p !== L.root) { if (!p.visible || keep.has(p)) { ok = false; break; } p = p.parent; }
+      if (!ok) return;
+      const key = m.uuid + (o.castShadow ? 's' : '') + (o.receiveShadow ? 'r' : '');
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(o);
+    });
+    let merged = 0;
+    for (const list of groups.values()) {
+      if (list.length < 2) continue;
+      const geos = [];
+      for (const o of list) {
+        let g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+        for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'uv'].includes(k)) g.deleteAttribute(k);
+        if (!g.attributes.uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+        if (!g.attributes.normal) g.computeVertexNormals();
+        g.clearGroups(); g.morphAttributes = {};
+        g.applyMatrix4(o.matrixWorld);
+        geos.push(g);
+      }
+      const mg = XT.mergeGeometries(geos, false);
+      if (!mg) continue;
+      const mesh = new THREE.Mesh(mg, list[0].material); mesh.renderOrder = list[0].renderOrder;
+      mesh.castShadow = list[0].castShadow; mesh.receiveShadow = list[0].receiveShadow;
+      L.root.add(mesh);
+      for (const o of list) { o.parent.remove(o); o.geometry.dispose(); }
+      merged += list.length;
+      geos.forEach(g => g.dispose());
+    }
+    L.batched = merged;
   },
   unloadLevel() {
     const lvl = G.level;

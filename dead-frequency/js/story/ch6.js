@@ -148,6 +148,11 @@ async function stationFinale() {
   Story.objective('Draw him away from Mom — the studio mic');
   // keep him at the storage door until the broadcast
   let rattle = Story.spawn(async () => { while (Stalker.state === 'idle') { await Story.wait(4 + Math.random() * 3); if (Stalker.state !== 'idle') break; SND.sfx('doorLocked', { pos: D.storage.pos }); } });
+  // if Evan walks right up to him, he turns around
+  Story.spawn(async () => {
+    await Story.until(() => Stalker.state !== 'idle' || (U.dist2(Player.pos.x, Player.pos.z, Stalker.npc.pos.x, Stalker.npc.pos.z) < 4.5 && Phys.lineOfSight(Player.pos.x, Player.pos.z, Stalker.npc.pos.x, Stalker.npc.pos.z, 1.5)));
+    if (Stalker.state === 'idle') { F.micHandler = null; F.micPrompt = null; Story.say('DALE', 'Evan.', 1.2); Stalker.state = 'chase'; Stalker.alert = 1; Stalker.startChase(); Story.checkpoint('ch6c'); await stationChase(); }
+  });
   void rattle;
   Stalker.state = 'idle';
   await new Promise(res => {

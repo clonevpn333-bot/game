@@ -146,7 +146,8 @@ Levels.station = function (o = {}) {
   LT.lobby = B.fluoro(L, -9.5, H - 0.04, 4.5, { intensity: 6, dist: 10 });
   LT.office = B.fluoro(L, -3.5, H - 0.04, 4.5, { intensity: 5, dist: 8 });
   LT.studio = B.fluoro(L, 3, H - 0.04, 3.2, { intensity: 3.5, dist: 9, color: 0xf3e7cf, circuit: 'studio' });
-  LT.studioLamp = B.bulb(L, 6.2, 1.15, 6.9, { color: 0xffc070, intensity: 2.2, dist: 5, circuit: 'studio' });
+  LT.studioLamp = B.bulb(L, 6.2, 1.2, 6.9, { color: 0xffc070, intensity: 2.2, dist: 5, circuit: 'studio', haloOpacity: 0.15 });
+  { const lg = B.group(R, 6.2, 0.84, 6.9); B.cyl(lg, 0, 0, 0, 0.06, 0.07, 0.03, B.col(0x2a2a2a)); B.cyl(lg, 0, 0.03, 0, 0.01, 0.01, 0.3, B.col(0x8a7a5a, { metalness: 0.6, roughness: 0.3 })); const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.15, 0.17, 18, 1, true), new THREE.MeshStandardMaterial({ color: 0xe8d8b0, emissive: 0x6a4a20, side: THREE.DoubleSide, roughness: 0.9 })); sh.position.y = 0.38; lg.add(sh); }
   LT.library = B.fluoro(L, 10, H - 0.04, 4.5, { intensity: 5, dist: 9 });
   LT.break = B.fluoro(L, -9, H - 0.04, -4.5, { intensity: 6, dist: 10, flicker: o.breakFlicker ? 0.3 : 0 });
   LT.bath = B.fluoro(L, -3.75, H - 0.04, -4.5, { w: 0.6, d: 0.6, intensity: 3.5, dist: 6 });
@@ -160,7 +161,7 @@ Levels.station = function (o = {}) {
   B.signMesh(R, 'EXIT', -10.5, 2.35, -7.88, 0.32, 0.12, { glow: true, glowColor: 0xff5544, tex: { bg: '#200', fg: '#f43', grime: false } });
 
   // exterior lights
-  LT.pole1 = B.poleLight(L, -8, 21, { dir: 1, circuit: 'ext', shadow: true });
+  LT.pole1 = B.poleLight(L, -8, 21, { dir: 1, circuit: 'ext' });
   LT.pole2 = B.poleLight(L, 15, 21, { dir: -1, circuit: 'ext', intensity: 45, flicker: o.poleFlicker ? 0.15 : 0 });
   LT.backBulb = B.bulb(L, -10.5, 2.55, -8.35, { color: 0xffd7a0, intensity: 6, dist: 9, circuit: 'ext', spot: true, angle: 1.1, tz: -3 });
   LT.frontBulb = B.bulb(L, -9.5, 2.55, 8.35, { color: 0xffd7a0, intensity: 5, dist: 7, circuit: 'ext' });
@@ -521,6 +522,37 @@ Levels.station = function (o = {}) {
   B.texPlane(R, TEX.get('poster', 'GOLD RECORD', 'KTLR 1979', 48), -1.5, 1.6, -1.13, 0.42, 0.55, {});
   B.texPlane(R, TEX.get('sign', 'STUDIO A\n→', { w: 256, h: 128, bg: '#1d2a3a', fg: '#dde' }), -1.0, 1.8, 1.13, 0.4, 0.2, { ry: Math.PI });
 
+  // ================= lived-in clutter =================
+  // studio
+  P.papers(R, 4.6, 0.83, 6.5, 3, 11, 0.3); P.papers(R, 1.9, 0.84, 6.7, 2, 12, 0.2);
+  P.cdStack(R, 4.1, 0.84, 6.75, 7, 13, 0.3); P.cdStack(R, 5.4, 0.84, 5.6, 4, 14, -0.2); P.cdStack(R, 0.4, 0.85, 5.9, 5, 15);
+  P.cup(R, 2.4, 0.84, 6.95, 0xc84a2a); P.cup(R, 5.75, 0.84, 6.0, 0xffffff);
+  P.cable(R, [[3.1, 0.84, 6.95], [3.0, 0.82, 7.25], [2.4, 0.2, 7.3], [1.2, 0.02, 7.2]]);
+  P.cable(R, [[4.3, 0.86, 6.35], [4.6, 0.84, 6.6], [4.9, 0.6, 6.9], [5.2, 0.1, 6.9]], 0x222222, 0.004);
+  B.texPlane(R, TEX.get('paper', ['CALL LETTERS', 'KTLR', 'FCC LICENSE', 'BPH-1971-0612'], { fs: 10, w: 128, h: 96, bg: '#ece6d0' }), -0.92, 1.75, 5.6, 0.36, 0.27, { ry: Math.PI / 2 });
+  for (let k = 0; k < 4; k++) B.texPlane(R, TEX.get('paper', ['!!!', 'call Ray', 'if TX', 'dies'], { fs: 12, w: 64, h: 64, bg: '#f4e868' }), 1.15 + k * 0.06, 1.12 + (k % 2) * 0.06, 6.73, 0.06, 0.06, { ry: Math.PI });
+  // office
+  P.papers(R, -3.1, 0.765, 6.3, 5, 21, 0.4); P.binders(R, -1.18, 1.21, 3.9, 9, -Math.PI / 2, 22); P.binders(R, -1.18, 0.66, 3.95, 7, -Math.PI / 2, 23);
+  P.deskLamp(R, -4.1, 0.76, 6.45, 0.4); P.cup(R, -2.7, 0.765, 5.95);
+  P.frame(R, TEX.get('poster', 'RAY & BARB', 'Crater Lake 1989', 190), -2.55, 0.92, 6.55, 0.14, 0.1, Math.PI + 0.3);
+  B.texPlane(R, TEX.get('paper', ['OCTOBER 2004', ' S  M  T  W  T  F  S', '                1  2', ' 3  4  5  6  7  8  9', '10 11 12 13 14 15 16', '17 18 19 20 21 22 23', '24 25 26 27 28 29 30'], { fs: 9, w: 128, h: 128, title: '', bg: '#f2f0e8' }), -5.93, 1.55, 6.3, 0.4, 0.4, { ry: Math.PI / 2 });
+  const coat = B.group(R, -1.3, 0, 1.6); B.cyl(coat, 0, 0, 0, 0.02, 0.02, 1.75, B.col(0x3a2a1a)); B.cyl(coat, 0, 0, 0, 0.18, 0.2, 0.03, B.col(0x3a2a1a)); B.box(coat, 0.12, 1.2, 0, 0.32, 0.55, 0.12, B.col(0x4a3a2a));
+  // break room
+  P.cup(R, -12.4, 0.94, -3.9); P.cup(R, -8.8, 0.74, -5.3, 0x6a2a2a);
+  B.box(R, -12.55, 0.94, -4.35, 0.25, 0.18, 0.15, B.col(0xbbbbbb, { roughness: 0.3, metalness: 0.6 })); // toaster
+  B.cyl(R, -12.65, 0.94, -2.3, 0.06, 0.06, 0.26, B.col(0xf4f2ec)); // paper towels
+  B.box(R, -12.5, 1.7, -1.95, 0.2, 0.3, 0.08, B.col(0xd8a020)); B.box(R, -12.35, 1.7, -1.9, 0.18, 0.26, 0.07, B.col(0x3a6aa8)); // cereal on fridge
+  B.texPlane(R, TEX.get('paper', ['WHOEVER KEEPS', 'EATING MY', 'YOGURT', 'I KNOW', '- Gwen'], { fs: 12, w: 128, h: 128, bg: '#fff' }), -12.11, 1.3, -1.9, 0.2, 0.2, { ry: Math.PI / 2 });
+  P.papers(R, -9.1, 0.745, -4.8, 2, 31, 0.3);
+  // lobby
+  P.papers(R, -11, 0.42, 4.3, 3, 41, 0.35);
+  const wc = B.group(R, -6.6, 0, 7.4); B.box(wc, 0, 0, 0, 0.32, 1.0, 0.32, B.col(0xe8e8e2)); B.cyl(wc, 0, 1.0, 0, 0.14, 0.14, 0.42, new THREE.MeshStandardMaterial({ color: 0x8ab8e8, transparent: true, opacity: 0.55, roughness: 0.05 }));
+  P.frame(R, TEX.get('poster', 'KTLR 25 YEARS', '1971 – 1996', 30), -12.0, 2.15, 1.29, 0.5, 0.36, 0);
+  // hall
+  P.frame(R, TEX.get('poster', 'COUNTRY MUSIC', 'WEEK 1988', 15), 3.4, 1.85, -1.13, 0.4, 0.55, 0);
+  P.frame(R, TEX.get('poster', 'BEST SMALL', 'MARKET 1993', 60), 8.0, 1.85, -1.13, 0.4, 0.55, 0);
+  B.texPlane(R, TEX.get('sign', '🔥 EXTINGUISHER', { w: 256, h: 64, bg: '#c22', fg: '#fff' }), -12.86, 1.2, 0.8, 0.35, 0.09, { ry: Math.PI / 2 });
+
   // ================= monitor speakers (air signal in every room) =================
   const spk = (x, z, room, v = 0.35) => { P.ceilingSpeaker(R, x, H, z); const s = L.speaker({ kind: 'monitor', pos: new THREE.Vector3(x, H - 0.1, z), vol: v, ref: 1.5, rolloff: 1.4 }); s.room = room; return s; };
   L.named.speakers = [spk(-2, 0, 'hall', 0.3), spk(9, 0, 'hall', 0.3), spk(-10, 3.5, 'lobby'), spk(-3.5, 3, 'office', 0.3), spk(10, 3, 'library'), spk(-10, -3, 'break'), spk(0.5, -3, 'eng', 0.25)];
@@ -588,6 +620,18 @@ Levels.stationExterior = function (L, o) {
   B.box(sg, 0, 1.4, 0, 3.2, 1.3, 0.14, B.col(0x2a2018));
   B.signMesh(sg, 'KTLR 94.1 FM\nTHE TIMBERLINE', 0, 2.05, 0.08, 3.0, 1.15, { tex: { bg: '#1b2a1e', fg: '#efe2b0', w: 512, h: 200 }, emissive: 0x332a18 });
   B.signMesh(sg, 'KTLR 94.1 FM\nTHE TIMBERLINE', 0, 2.05, -0.08, 3.0, 1.15, { ry: Math.PI, tex: { bg: '#1b2a1e', fg: '#efe2b0', w: 512, h: 200 }, emissive: 0x332a18 });
+  // entrance awning, letters, wall packs, roof HVAC, downspouts, bench, ashtray
+  B.box(R, -9.5, 2.5, 8.75, 2.6, 0.08, 1.4, B.col(0x2a3a2a, { roughness: 0.5 }));
+  for (const sx of [-1, 1]) B.box(R, -9.5 + sx * 1.2, 0, 9.35, 0.08, 2.5, 0.08, B.col(0x2a2a2a));
+  B.signMesh(R, 'K T L R', -9.5, 2.85, 8.22, 1.6, 0.35, { tex: { bg: '#2a3a2a', fg: '#e8d8a0', grime: true } });
+  B.box(R, -10.6, 0, 9.0, 0.35, 0.18, 0.6, B.mat('concrete'));
+  for (const [x, z, ry] of [[5, 8.2, 0], [-2, -8.2, Math.PI], [13.2, 2, Math.PI / 2]]) { const wp = B.group(R, x, 2.8, z, ry); B.box(wp, 0, 0, 0.05, 0.3, 0.22, 0.12, B.col(0x3a3a3a)); }
+  for (const [x, z] of [[-6, -3], [6, 2]]) { const ac = B.group(R, x, 3.25, z); B.box(ac, 0, 0, 0, 1.6, 0.9, 1.1, B.mat('metal', { color: 0xb8b8b0 })); for (let k = 0; k < 6; k++) B.box(ac, -0.6 + k * 0.24, 0.3, 0.56, 0.16, 0.5, 0.01, B.col(0x6a6a66)); }
+  for (const [x, z] of [[13.2, 8.2], [-13.2, 8.2], [13.2, -8.2], [-13.2, -8.2]]) B.cyl(R, x, 0, z, 0.05, 0.05, 3.3, B.mat('metal', { color: 0x8a8a84 }));
+  const bench = B.group(R, -6.4, 0, 9.1); B.box(bench, 0, 0.42, 0, 1.6, 0.05, 0.38, B.mat('woodDoor')); for (const sx of [-0.7, 0.7]) B.box(bench, sx, 0, 0, 0.06, 0.42, 0.34, B.col(0x2a2a2a)); B.blob(R, -6.4, 9.1, 1.6, 0.4, 0, 0.5);
+  B.cyl(R, -11.4, 0, 9.4, 0.17, 0.17, 0.8, B.col(0x3a3a3a)); // ashtray bin
+  // puddles (glossy patches on the asphalt)
+  for (const [x, z, w, d] of [[2, 18, 2.4, 1.3], [12, 24, 1.6, 2.2], [-6, 26, 3, 1.2]]) { const pd = new THREE.Mesh(new THREE.CircleGeometry(0.5, 20), new THREE.MeshStandardMaterial({ color: 0x0a0c10, roughness: 0.04, metalness: 0.9, transparent: true, opacity: 0.85, envMapIntensity: 3 })); pd.scale.set(w, d, 1); pd.rotation.x = -Math.PI / 2; pd.position.set(x, 0.003, z); R.add(pd); }
   // satellite dish + STL pole east side
   const dish = B.group(R, 15.5, 0, -2, -0.8);
   B.box(dish, 0, 0, 0, 0.3, 1.2, 0.3, B.col(0x777777));
@@ -611,7 +655,7 @@ Levels.stationExterior = function (L, o) {
   // forest
   const excl = (x, z) => (x > -22 && x < 30 && z > -24 && z < 33) || (z > 33 && z < 44);
   const trees = P.scatter(-120, -120, 120, 120, 900, 5, excl, 3.2);
-  P.forest(L, trees, { collide: true, collideIf: (x, z) => Math.abs(x) < 50 && z > -50 && z < 60, seed: 9 });
+  P.forest(L, trees, { collide: true, collideIf: (x, z) => Math.abs(x) < 50 && z > -50 && z < 60, seed: 9, cx: 4, cz: 6, nearR: 55 });
   // a few closer trees
   P.forest(L, [[-20, -14, 13], [-21, 2, 15], [28, -6, 14], [29, 10, 12], [24, 30, 11], [27, 26, 14], [-20, 24, 12]], { collide: true, seed: 3, shadows: true });
   // distant ridge silhouettes
