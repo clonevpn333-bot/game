@@ -3107,11 +3107,11 @@ function meleeUpdate(w, rdt) {
   // guard / parry
   const wantGuard = mouseR && M.swing < 0;
   if (wantGuard && P.guard <= 0) P.guardStart = performance.now();
-  P.guard = damp(P.guard, wantGuard ? 1 : 0, 18, rdt); if (P.guard < .02) P.guard = 0;
-  // charge (hold) → lunge
-  if (mouseL && M.swing < 0 && P.guard <= 0) { M.charge += rdt; if (M.charge > .35 && !M.charged) { M.charged = true; AU.tn({ type: 'sawtooth', f: 200, f2: 900, dur: .3, g: .08 }); } }
-  if (!mouseL && M.charge > 0) { if (M.charge > .35) lungeSlash(w); else startSwing(); M.charge = 0; M.charged = false; }
-  if (mouseLP && M.swing >= 0) M.queued = true;
+  P.guard = damp(P.guard || 0, wantGuard ? 1 : 0, 18, rdt); if (!(P.guard >= .02)) P.guard = 0;
+  // click → instant slash (queues a combo follow-up mid-swing); keep holding → charged lunge on release
+  if (mouseLP) { if (M.swing >= 0) M.queued = true; else if (P.guard <= .5) { P.guard = 0; startSwing(); } }
+  if (mouseL && M.swing < 0 && P.guard <= 0) { M.charge += rdt; if (M.charge > .3 && !M.charged) { M.charged = true; AU.tn({ type: 'sawtooth', f: 200, f2: 900, dur: .3, g: .08 }); } }
+  if (!mouseL && M.charge > 0) { if (M.charged) lungeSlash(w); M.charge = 0; M.charged = false; }
   if (M.swing >= 0) {
     const pu = M.swing / M.dur; M.swing += rdt; const u = M.swing / M.dur;
     if (!M.hit && pu < .3 && u >= .3) { M.hit = true; meleeHit(M.combo === 2 ? 1.25 : M.combo === 3 ? 1.6 : 1, M.combo); }
@@ -3265,7 +3265,7 @@ function refillAmmo(frac) { for (const w of WPN.owned) w.s.reserve = Math.min(w.
 /* =====================================================================
    PLAYER
    ===================================================================== */
-const PLAYER = {
+const PLAYER = { guard: 0, guardStart: 0,
   pos: new V3(0, 0, 0), vel: new V3(), yaw: 0, pitch: 0, onGround: false, hp: 100, maxHp: 100, shield: 100, maxShield: 100, shieldDelay: 0,
   chrono: 50, slowActive: false, grenades: 3, grenT: 0, dashCharges: 2, dashRe: 0, dashT: 0, dashDir: new V3(), jumps: 1, slideT: 0, sliding: false, slam: false,
   kickT: -1, kickCd: 0, eye: 1.62, eyeCur: 1.62, bob: 0, bobT: 0, landDip: 0, kickPitch: 0, kickYaw: 0, flinch: new V3(), alive: true, burn: 0, invuln: 0, ads: 0, sprint: 0, stepAcc: 0,
@@ -5926,7 +5926,7 @@ function updateHUD(dt) {
   if (w) {
     const s = w.s, d = w.def; setText(hudEl.wn, 'wn', d.name); setText(hudEl.we, 'we', d.era);
     const magV = d.mode === 'flame' ? Math.ceil(s.mag) : s.mag;
-    if (d.mode === 'melee') setText(hudEl.ac, 'ac', '∞<small> HOLD LMB: LUNGE · RMB: PARRY</small>'); else setText(hudEl.ac, 'ac', (s.reloading ? '<span style="font-size:24px">RELOADING</span>' : magV) + '<small>/' + s.reserve + '</small>'); hudEl.ac.className = s.mag <= d.mag * .25 ? 'low' : '';
+    if (d.mode === 'melee') setText(hudEl.ac, 'ac', '∞<small> CLICK: SLASH · HOLD: LUNGE · RMB: PARRY</small>'); else setText(hudEl.ac, 'ac', (s.reloading ? '<span style="font-size:24px">RELOADING</span>' : magV) + '<small>/' + s.reserve + '</small>'); hudEl.ac.className = s.mag <= d.mag * .25 ? 'low' : '';
     const pips = d.mag <= 40 ? d.mag : 40, filled = Math.ceil(s.mag / d.mag * pips); const key = d.id + filled;
     if (hudCache.mag !== key) { hudCache.mag = key; let h = ''; for (let i = 0; i < pips; i++) h += '<i' + (i >= filled ? ' class="e"' : '') + '></i>'; hudEl.mag.innerHTML = h; }
     // crosshair spread
@@ -6015,7 +6015,7 @@ hudEl.fps.style.display = SET.fps ? 'block' : 'none';
 canvas.addEventListener('click', () => { if (!locked && ['fight', 'intro', 'portal', 'transition'].includes(GAME.state) && !GAME.paused) lockPointer(); });
 // debug helpers (console)
 window.TB = { GAME, PLAYER, ENEMIES, startCampaign, loadEra, giveWeapon, spawnEnemy, spawnBoss: () => spawnBoss(), god: () => GAME.god = !GAME.god, skipWave: () => { for (const e of ENEMIES) if (e.alive) killEnemy(e, { kind: 'blast', dir: UP, force: 10 }); DIR.queue = []; }, killBoss: () => BOSS && BOSS.damage(BOSS.parts[0], 1e9, 'pierce'), portal: () => openPortal(), WPN, ETYPES, BOSS: () => BOSS, fire(v) { mouseL = v; if (v) mouseLP = true; }, key(k, v) { KEY[k] = v; if (v) KEYP[k] = true; }, look(dx, dy) { mouseDX += dx; mouseDY += dy; }, aim(v) { mouseR = v; }, startWave, DIR, viewer(id, a = .6, d = 5, h = 1.4, ty = .9, anim = 'run', era = 0) { if (GAME.era !== era || !GAME.eraDef) loadEra(era, false); ERA_G.visible = false; GROUND.visible = true; for (const s of STRUCTS) s.mesh.visible = false; for (const p of PROPS) p.mesh.visible = false; for (const t of TREES) t.pivot.visible = false; clearEnemies(); if (BOSS) BOSS.remove(); hideAll(); showHUD(false); GAME.state = 'viewer'; GAME.view = { x: 0, z: 0, a, d, h, ty, dt: 0 }; if (id) { const e = spawnEnemy(id, 0, 0, { yaw: 0, anim, fx: false }); if (e) { e.spd = anim === 'run' ? e.def.speed : 0; e.gait = 1.2; } } return true; }, view(o) { Object.assign(GAME.view, o); }, sim(sec) { const n = Math.round(sec * 30); for (let i = 0; i < n; i++) { tick(1 / 30, performance.now()); endFrameInput(); } return GAME.state; }, dbg: () => ({ q: JSON.stringify(DIR.queue), alive: ALIVE, n: ENEMIES.length, st: GAME.state, w: DIR.wave && DIR.wave.title, acc: DIR.spawnAcc, cap: QL.cap, cm: GAME.capMul }), show(id) { const w = giveWeapon(id, true); for (const o of WPN.owned) o.root.visible = false; WPN.cur = w; WPN.next = null; w.root.visible = true; WPN.equipT = 1; WPN.inspectT = -1; onWeaponChanged(); return w.def.name; }, inspect(t) { WPN.inspectT = t; }, FX_clear() { FX.flash = 0; FX.rift = 0; FX.crack = 0; FX.aberr = 0; FX.damage = 0; PA.clear(); PN.clear(); }, fps: () => fpsV, freeze(v) { if (v) slowmo(.0001, 1e6); else { FX.slowmoT = 0; } }, cam(x, y, z, yaw, pitch) { PLAYER.pos.set(x, y, z); PLAYER.vel.set(0, 0, 0); PLAYER.yaw = yaw; PLAYER.pitch = pitch; }, spawn: (t, x, z, o) => { const e = spawnEnemy(t, x, z, Object.assign({ anim: 'run', fx: false }, o || {})); return !!e; } };
-Object.assign(window.TB, { AU, MUSIC, SANDE, DODGE, GIBS, PROJ, killEnemy, UP, ED, FACTION, fireEP });
+Object.assign(window.TB, { AU, MUSIC, SANDE, DODGE, GIBS, PROJ, killEnemy, UP, ED, FACTION, fireEP, MELEE, get canFire() { return [!WPN.next, WPN.equipT, WPN.cur && WPN.cur.s.reloading, PLAYER.kickT, PLAYER.alive, GAME.state]; } });
 
 /* =====================================================================
    MAIN LOOP
