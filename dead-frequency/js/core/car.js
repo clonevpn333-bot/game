@@ -261,7 +261,7 @@ const Car = {
     if (this._gT <= 0) { this._gT = 0.1; this.gaugeTex.redraw(Math.abs(this.v) * 2.237, this.rpm, this.fuel == null ? 0.55 : this.fuel, this.high); }
     // events
     for (const e of this.events) if (!e.done && this.s >= e.s) { e.done = true; try { e.fn(); } catch (err) { console.error(err); } }
-    if (!this.ended && this.s >= this.endS) { this.ended = true; if (this.onEnd) this.onEnd(); }
+    if (!this.ended && this.s >= this.endS) { this.ended = true; if (this.onEnd) { try { this.onEnd(); } catch (e) { if (!(e && e.cancelled)) throw e; } } }
     this.place();
   },
   // helpers for scripts

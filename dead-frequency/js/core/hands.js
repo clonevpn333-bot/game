@@ -25,6 +25,10 @@ class FPHand {
     const slv = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.054, 1, 14, 1, true), sleeve); slv.position.y = 0.5; slv.scale.y = 0.999;
     this.sleeveMesh = slv; this.arm.add(slv);
     const cuff = new THREE.Mesh(new THREE.TorusGeometry(0.043, 0.011, 6, 16), sleeve); cuff.rotation.x = Math.PI / 2; this.cuff = cuff; this.arm.add(cuff);
+    this.upper = new THREE.Group(); parent.add(this.upper);
+    const up = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.058, 1, 14, 1, true), sleeve); up.position.y = 0.5; this.upperMesh = up; this.upper.add(up);
+    const elb = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 8), sleeve); this.upper.add(elb);
+    this.shoulder = new THREE.Vector3(side * 0.25, -0.3, 0.3);
     this.fore = fore;
     // hand: built for a right hand (palm down, fingers toward -z, thumb toward -x); mirrored for the left
     const h = this.hand = new THREE.Group(); this.root.add(h);
@@ -65,12 +69,16 @@ class FPHand {
     this.curl = HAND_POSES.relaxed.slice(); this.tCurl = HAND_POSES.relaxed.slice();
     this.elbow = new THREE.Vector3(side * 0.24, -0.42, 0.12);
   }
-  update(dt, stiff = 170, damp = 2 * Math.sqrt(170)) {
+  update(dt, stiff = 170, damp = 2 * Math.sqrt(stiff)) {
     // critically damped spring toward the target position (slight lag = weight)
+    if (this.resting) {   // hanging at the side: follow the body closely, no spring overshoot
+      const k = 1 - Math.exp(-22 * dt); this.pos.lerp(this.tPos, k); this.vel.set(0, 0, 0);
+    } else {
     const ax = (this.tPos.x - this.pos.x) * stiff - this.vel.x * damp, ay = (this.tPos.y - this.pos.y) * stiff - this.vel.y * damp, az = (this.tPos.z - this.pos.z) * stiff - this.vel.z * damp;
     this.vel.x += ax * dt; this.vel.y += ay * dt; this.vel.z += az * dt;
     this.pos.addScaledVector(this.vel, dt);
-    this.q.slerp(this.tQ, 1 - Math.exp(-14 * dt));
+    }
+    this.q.slerp(this.tQ, 1 - Math.exp(-(this.resting ? 22 : 14) * dt));
     for (let i = 0; i < 6; i++) this.curl[i] = U.damp(this.curl[i], this.tCurl[i], 16, dt);
     this.root.position.copy(this.pos); this.root.quaternion.copy(this.q);
     // fingers
@@ -86,6 +94,10 @@ class FPHand {
     this.arm.position.copy(wl); this.arm.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
     this.fore.scale.set(1, len, 1); this.sleeveMesh.position.y = 0.13 + len * 0.5; this.sleeveMesh.scale.set(1, Math.max(0.01, len - 0.1), 1);
     this.cuff.position.y = 0.13;
+    // upper arm: elbow -> shoulder
+    const ud = this.shoulder.clone().sub(this.elbow), ul = ud.length();
+    this.upper.position.copy(this.elbow); this.upper.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ud.normalize());
+    this.upperMesh.scale.set(1, ul, 1);
   }
   pose(name) { const p = HAND_POSES[name] || HAND_POSES.relaxed; for (let i = 0; i < 6; i++) this.tCurl[i] = p[i]; }
   aim(pos, rx = 0, ry = 0, rz = 0) { this.tPos.copy(pos); this.tQ.setFromEuler(new THREE.Euler(rx, ry * this.side, rz * this.side, 'YXZ')); }
@@ -120,6 +132,26 @@ const Hands = {
     for (const z of [-0.09, 0.09]) { const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.027, 0.024, 0.035, 14), m); cup.position.set(0, -0.022, z); g.add(cup); }
     g.traverse(o => { if (o.isMesh) o.renderOrder = 2; }); g.visible = false;
     return g;
+  },
+  // a point / orientation given in body space (x right, y up from the feet, z forward) -> rig space
+  bodyPoint(x, y, z) {
+    const P = Player, c = Math.cos(P.yaw), s = Math.sin(P.yaw);
+    const w = new THREE.Vector3(P.pos.x + c * x - s * z, P.pos.y + y, P.pos.z - s * x - c * z);
+    return this.rig.worldToLocal(w);
+  },
+  bodyQuat(rx, ry, rz) {
+    const wq = new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, Player.yaw + ry, rz, 'YXZ'));
+    return this.rig.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(wq);
+  },
+  // arms hanging at the sides, swinging with each step (seen when looking down)
+  rest(H, swing, b) {
+    const s = H.side, sw = swing * s * -1;
+    H.tPos.copy(this.bodyPoint(s * 0.235, 0.86 + Math.abs(sw) * 0.03 * b, 0.07 + sw * 0.17 * b));
+    H.tQ.copy(this.bodyQuat(-1.42 - sw * 0.35 * b, 0, -1.57 * s));
+    H.pose('relaxed');
+    H.elbow.lerp(this.bodyPoint(s * 0.215, 1.13, -0.01 + sw * 0.07 * b), 0.5);
+    H.shoulder.copy(this.bodyPoint(s * 0.2, 1.43, -0.03));
+    H.resting = true;
   },
   // which hand is free to do something
   free() { if (!Player.held && !(Player.flashOn)) return this.R; if (!Player.held) return this.L; return Player.flashOn ? this.R : this.L; },
@@ -158,12 +190,14 @@ const Hands = {
     const run = Input.held('ShiftLeft') && b > 0.6 ? 1 : 0;
     // ---- resting poses ----
     const R = this.R, L = this.L;
+    const swing = Math.sin(P.bobT * Math.PI * 0.5);
+    for (const H of [R, L]) { H.resting = false; H.elbow.lerp(new THREE.Vector3(H.side * 0.24, -0.42, 0.12), 0.25); H.shoulder.set(H.side * 0.25, -0.3, 0.3); }
     const onPhone = !!(window.StationPhone && StationPhone.inCall);
     // right: flashlight / phone handset / lowered
     if (onPhone) { R.aim(new THREE.Vector3(0.15, -0.07, -0.13).add(bob), -0.2, 1.3, 0.6); R.pose('grip'); this.handset.visible = true; if (this.handset.parent !== R.socket) { R.socket.add(this.handset); this.handset.position.set(0, -0.005, 0.0); this.handset.rotation.set(0.25, 0, 0.15); } }
     else { this.handset.visible = false; if (Phone.open) { R.aim(new THREE.Vector3(0.2, -0.3, -0.34).add(bob), 0.9, 0.2, -0.2); R.pose('grip'); }
     else if (P.flashOn) { R.aim(new THREE.Vector3(0.16, -0.15 - run * 0.05, -0.31).add(bob), 0.1, -0.12, -1.2); R.pose('grip'); }
-    else { R.aim(new THREE.Vector3(0.24, -0.5, -0.24).add(bob), 0.5, 0, 0.1); R.pose('relaxed'); } }
+    else { this.rest(R, swing, b); } }
     this.flashlight.visible = P.hasFlashlight && P.flashOn && !onPhone;
     this.lensMat.color.setHex(P.flashOn ? 0xfff4da : 0x333333);
     // left: held item / lowered
@@ -172,7 +206,7 @@ const Hands = {
       L.aim(new THREE.Vector3(-0.16, -0.14 - run * 0.04, -0.32).add(bob), 0.05, -0.2, -roll); L.pose(P.heldName === 'filter' || P.heldName === 'paper' ? 'pinch' : 'grip');
       L.socket.position.set(0, -0.045, -0.06); L.socket.rotation.set(0, 0, -roll);
     }
-    else { L.aim(new THREE.Vector3(-0.25, -0.52, -0.22).add(bob), 0.5, 0, 0.1); L.pose('relaxed'); L.socket.rotation.set(0, 0, 0); }
+    else { this.rest(L, swing, b); L.socket.rotation.set(0, 0, 0); }
     // ---- gestures override the resting pose ----
     for (const g of this.active.slice()) {
       g.t += dt; const k = g.t / g.dur, H = g.hand;
@@ -204,7 +238,7 @@ const Hands = {
         if (g.kind === 'reach') poseName = k > a * 0.85 ? 'pinch' : 'open';
         if (!g.contacted && k >= a * 0.9) { g.contacted = true; if (g.onContact) g.onContact(); }
       }
-      if (out > 0.05) H.pose(poseName);
+      if (out > 0.05) { H.pose(poseName); H.resting = false; H.elbow.lerp(new THREE.Vector3(H.side * 0.24, -0.42, 0.12), out); H.shoulder.set(H.side * 0.25, -0.3, 0.3); }
       if (k >= 1 && !g.hold) this.active.splice(this.active.indexOf(g), 1);
     }
     R.update(dt); L.update(dt);

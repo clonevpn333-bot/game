@@ -127,21 +127,23 @@ const Main = {
     if (G.running && !G.paused) {
       const sp = this.speed || 1;
       G.time += dt * sp; G.dt = dt;
-      Story.update(dt * sp);
-      if (G.mode === 'car') Car.update(dt); else Player.update(dt);
-      Stalker.update(dt);
-      NPCs.update(dt);
-      if (G.level) G.level.update(dt);
-      Physics.update(dt);
-      Interact.update(dt);
-      Hands.update(dt);
-      Phone.update();
-      if (Story.hud) Story.hud(dt);
+      // each system runs guarded: one bad frame in one system must never freeze the whole game
+      const step = (name, f) => { try { f(); } catch (e) { if (!this._errs) this._errs = {}; if (!this._errs[name]) { this._errs[name] = 1; console.error('[' + name + ']', e && e.stack || e); } } };
+      step('story', () => Story.update(dt * sp));
+      step('move', () => { if (G.mode === 'car') Car.update(dt); else Player.update(dt); });
+      step('stalker', () => Stalker.update(dt));
+      step('npcs', () => NPCs.update(dt));
+      step('level', () => { if (G.level) G.level.update(dt); });
+      step('physics', () => Physics.update(dt));
+      step('interact', () => Interact.update(dt));
+      step('hands', () => Hands.update(dt));
+      step('phone', () => Phone.update());
+      step('hud', () => { if (Story.hud) Story.hud(dt); });
     }
     UI.update(dt);
     if (G.camera) SND.setListener(G.camera);
     SND.update(dt);
-    if (G.level && !this.noRender) Engine.render(G.paused ? 0 : dt);
+    if (G.level && !this.noRender) { try { Engine.render(G.paused ? 0 : dt); } catch (e) { if (!this._rerr) { this._rerr = 1; console.error('[render]', e && e.stack || e); } } }
     // camcorder clock
     if (G.running) { const t = Story.clockStr(); if (t !== this._osdT) { this._osdT = t; $('osd-time').textContent = t; } }
     Input.flush();

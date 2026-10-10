@@ -27,28 +27,6 @@ const Humans = {
   ready: false,
   gltf: null,
   clips: {},
-  heads: {},
-  // hand-modeled heads (tools/models -> assets/heads.js): head_<who>, eye_<who>, hair_<who>, tie_<who>
-  loadHeads() {
-    return new Promise(res => {
-      if (!window.ASSET_HEADS) return res();
-      const bin = atob(window.ASSET_HEADS); const buf = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-      new XT.GLTFLoader().parse(buf.buffer, '', g => {
-        g.scene.updateMatrixWorld(true);
-        g.scene.traverse(o => {
-          if (!o.isMesh) return;
-          const nm = /^(head|eye|hair|tie|cap)_/.test(o.name) ? o.name : (o.parent ? o.parent.name : '');
-          const [kind, who] = nm.split('_'); if (!who) return;
-          const H = this.heads[who] || (this.heads[who] = { parts: {} });
-          (H.parts[kind] || (H.parts[kind] = [])).push(o);
-          if (o.morphTargetDictionary) H.morphs = o.morphTargetDictionary;
-          if (o.userData && o.userData.eye_center) H.eye = { c: o.userData.eye_center, r: o.userData.eye_radius };
-          const ud = o.parent && o.parent.userData; if (ud && ud.eye_center) H.eye = { c: ud.eye_center, r: ud.eye_radius };
-        });
-        res();
-      }, err => { console.error('heads', err); res(); });
-    });
-  },
   init() {
     if (this._p) return this._p;
     this._p = new Promise((res) => {
@@ -63,7 +41,7 @@ const Humans = {
             if (hp) { const v = hp.values, x0 = v[0], z0 = v[2]; for (let i = 0; i < v.length; i += 3) { v[i] -= x0; v[i + 2] -= z0; } }
             this.clips[a.name] = a;
           }
-          this.loadHeads().then(() => { this.ready = true; res(); });
+          this.ready = true; res();
         }, err => { console.error('xbot', err); res(); });
       } catch (e) { console.error(e); res(); }
     });
@@ -367,7 +345,6 @@ function buildBody(L, bi, BP) {
     [1.48, 0.085, 0.062, -0.028, 2.1],
     [1.50, 0.06, 0.056, -0.03, 2],
   ];
-  if (L.handHead) { prof[9] = [1.475, 0.07, 0.056, -0.012, 2.1]; prof[10] = [1.50, 0.056, 0.05, -0.009, 2]; }
   const tRings = [];
   for (let k = 0; k <= 26; k++) {
     const y = 0.80 + k / 26 * 0.70; const [hw, hd, zo, ex] = lerpProfile(prof, y);
@@ -386,12 +363,12 @@ function buildBody(L, bi, BP) {
   G2.loft(tRings, 28, ATLAS.torso, spineW, { capStart: false });
   // coat skirt (long coat / work jacket hem flares over the hips)
   // ---------- neck ----------
-  if (!L.handHead) {
+  {
   const nRings = [];
-  for (let k = 0; k <= 6; k++) { const t = k / 6, y = 1.45 + t * 0.16; nRings.push({ c: new THREE.Vector3(0, y, -0.028 + t * 0.015), a: X, b: Z, ra: (L.female ? 0.05 : 0.06) * (1 + (1 - t) * 0.15), rb: (L.female ? 0.052 : 0.06), ex: 2 }); }
+  for (let k = 0; k <= 6; k++) { const t = k / 6, y = 1.45 + t * 0.16; nRings.push({ c: new THREE.Vector3(0, y, -0.028 + t * 0.015), a: X, b: Z, ra: (L.female ? 0.053 : 0.063) * (1 + (1 - t) * 0.15), rb: (L.female ? 0.055 : 0.063), ex: 2 }); }
   G2.loft(nRings, 16, ATLAS.neck, (t) => w2('mixamorigNeck', 'mixamorigHead', U.smooth(U.clamp((t - 0.4) / 0.6, 0, 1))));
   // ---------- head ----------
-  buildHead(G2, L, bi);
+  if (!L.styHead) buildHead(G2, L, bi);
   }
   // ---------- arms ----------
   for (const side of [1, -1]) {
@@ -587,22 +564,17 @@ class Human {
     const prevParent = this.root.parent; prevParent.remove(this.root);
     this.root.updateMatrixWorld(true);
     const skeleton = new THREE.Skeleton(bones);
-    const HH = Humans.heads[who];
-    if (HH) look.handHead = true;
+    look.styHead = true;
     const key = who + JSON.stringify(o.look || {});
     const cache = Human.cache[key] || (Human.cache[key] = Human.makeAssets(look, bi));
     const mk = (geo, mat) => { const m = new THREE.SkinnedMesh(geo, mat); m.bind(skeleton); m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false; this.body.add(m); return m; };
     this.mesh = mk(cache.body, cache.bodyMat);
-    if (HH) this.attachHead(HH, skeleton, bi);
-    else {
-      if (cache.hair) mk(cache.hair, cache.hairMat);
-      if (cache.cap) mk(cache.cap, cache.capMat);
-    }
+    this.attachStyHead();
     prevParent.add(this.root);
     this.root.position.copy(saveP); this.root.rotation.y = saveR; this.body.scale.setScalar(saveS);
     // accessories on the head bone
     const head = this.bones.mixamorigHead;
-    if (look.glasses && !HH) {
+    if (look.glasses && !look.styHead) {
       const gm = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4, metalness: 0.5 });
       const gg = new THREE.Group();
       for (const s of [-1, 1]) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.017, 0.0022, 6, 14), gm); t.position.set(s * 0.031, 0, 0); gg.add(t); }
@@ -636,67 +608,16 @@ class Human {
     if (look.hairStyle === 'cap') { out.cap = buildCap(look, bi); const cc = TEX.canvas(64, 64), cx = cc.getContext('2d'); cx.fillStyle = rgb(look.cap); cx.fillRect(0, 0, 64, 64); for (let i = 0; i < 300; i++) { cx.fillStyle = `rgba(0,0,0,${Math.random() * 0.15})`; cx.fillRect(Math.random() * 64, Math.random() * 64, 2, 2); } cx.fillStyle = 'rgba(230,220,200,.8)'; cx.fillRect(26, 54, 14, 6); out.capMat = new THREE.MeshStandardMaterial({ map: TEX.make(cc), roughness: 0.9, side: THREE.DoubleSide }); }
     return out;
   }
-  // hand-modeled head: skinned head + neck (blink / jawOpen morphs), eyes, hair and hair tie on the head bone
-  attachHead(HH, skeleton, bi) {
+  // stylized three.js head on the head bone (see styheads.js)
+  attachStyHead() {
     const EYE_Y = 1.661, headBone = this.bones.mixamorigHead;
-    this.headMeshes = [];
-    const Hb = bi('mixamorigHead'), Nb = bi('mixamorigNeck'), Sb = bi('mixamorigSpine2');
-    const sm = t => { t = U.clamp(t, 0, 1); return t * t * (3 - 2 * t); };
-    for (const src of HH.parts.head || []) {
-      const g = src.geometry.clone();
-      g.applyMatrix4(src.matrixWorld); g.translate(0, EYE_Y, 0);
-      if (g.morphAttributes.position) for (const ma of g.morphAttributes.position) { const m3 = new THREE.Matrix4().copy(src.matrixWorld).setPosition(0, 0, 0); ma.applyMatrix4(m3); }
-      const pos = g.attributes.position, n = pos.count, si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
-      for (let i = 0; i < n; i++) {
-        const yc = (pos.getY(i) - EYE_Y) * 100;
-        const wh = sm((yc + 15) / 7), ws = sm((-17 - yc) / 4) * (1 - wh), wn = Math.max(0, 1 - wh - ws);
-        si[i * 4] = Hb; si[i * 4 + 1] = Nb; si[i * 4 + 2] = Sb; sw[i * 4] = wh; sw[i * 4 + 1] = wn; sw[i * 4 + 2] = ws;
-      }
-      g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(si, 4)); g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(sw, 4));
-      const mat = src.material.clone(); mat.envMapIntensity = 0.15; mat.roughness = 0.58; mat.metalness = 0;
-      if (mat.map && mat.map.image && !HH.soft) {   // simplify the face: soften fine lines, stubble and wrinkles
-        const im = mat.map.image, c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
-        const x = c.getContext('2d'); x.filter = 'blur(2.2px) saturate(0.88) contrast(0.9)'; x.drawImage(im, 0, 0); x.filter = 'none'; x.globalAlpha = 0.35; x.drawImage(im, 0, 0);
-        HH.soft = new THREE.CanvasTexture(c); HH.soft.colorSpace = mat.map.colorSpace; HH.soft.flipY = mat.map.flipY; HH.soft.wrapS = mat.map.wrapS; HH.soft.wrapT = mat.map.wrapT;
-      }
-      if (HH.soft) mat.map = HH.soft;
-      const m = new THREE.SkinnedMesh(g, mat);
-      if (src.morphTargetDictionary) { m.morphTargetDictionary = src.morphTargetDictionary; m.morphTargetInfluences = new Array(Object.keys(src.morphTargetDictionary).length).fill(0); }
-      m.bind(skeleton); m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false;
-      this.body.add(m); this.headMeshes.push(m);
-    }
-    // rigid parts live in a group that maps head-model space onto the head bone
     const grp = new THREE.Group(); headBone.add(grp);
     grp.position.copy(headBone.worldToLocal(new THREE.Vector3(0, EYE_Y, 0)));
     grp.quaternion.copy(headBone.getWorldQuaternion(new THREE.Quaternion()).invert());
     grp.scale.setScalar(1 / headBone.getWorldScale(new THREE.Vector3()).x);
-    for (const kind of ['hair', 'tie', 'cap']) for (const src of HH.parts[kind] || []) {
-      const m = new THREE.Mesh(src.geometry, src.material); m.applyMatrix4(src.matrixWorld);
-      if (kind === 'hair') { src.material.alphaTest = 0.45; src.material.transparent = false; src.material.side = THREE.DoubleSide; src.material.envMapIntensity = 0.2; src.material.roughness = 0.5; }
-      m.castShadow = true; m.receiveShadow = true; grp.add(m);
-    }
-    this.eyes = [];
-    const eyeSrc = (HH.parts.eye || [])[0];
-    if (eyeSrc && HH.eye) {
-      const eg = eyeSrc.geometry.clone(); eg.applyMatrix4(eyeSrc.matrixWorld);
-      const em = eyeSrc.material.clone(); em.roughness = 0.12; em.envMapIntensity = 0.7;
-      for (const sx of [1, -1]) {
-        const pv = new THREE.Group(); pv.position.set(sx * HH.eye.c[0] / 100, HH.eye.c[1] / 100, HH.eye.c[2] / 100); grp.add(pv);
-        const e = new THREE.Mesh(eg, em); pv.add(e); this.eyes.push(pv);
-      }
-    }
-    if (this.look.glasses && HH.eye) {   // wire-rim glasses
-      const gm = new THREE.MeshStandardMaterial({ color: 0x2a2724, roughness: 0.35, metalness: 0.6 });
-      const lm = new THREE.MeshStandardMaterial({ color: 0x9fb0bb, transparent: true, opacity: 0.1, roughness: 0.05, metalness: 0.3, depthWrite: false });
-      const c = HH.eye.c.map(v => v / 100), zf = c[2] + 0.021;
-      for (const sx of [1, -1]) {
-        const rim = new THREE.Mesh(new THREE.TorusGeometry(0.0175, 0.0012, 5, 20), gm); rim.scale.y = 0.78; rim.position.set(sx * (c[0] + 0.002), c[1] - 0.002, zf); grp.add(rim);
-        const lens = new THREE.Mesh(new THREE.CircleGeometry(0.0175, 18), lm); lens.scale.y = 0.78; lens.position.copy(rim.position); grp.add(lens);
-        const arm = new THREE.Mesh(new THREE.BoxGeometry(0.0016, 0.0016, 0.098), gm); arm.position.set(sx * 0.071, c[1] + 0.004, zf - 0.05); arm.rotation.y = sx * 0.06; grp.add(arm);
-      }
-      const br = new THREE.Mesh(new THREE.BoxGeometry(0.014, 0.0018, 0.0018), gm); br.position.set(0, c[1] + 0.002, zf + 0.002); grp.add(br);
-    }
-    this.morph = HH.morphs || {};
+    const H = StyHead.build(this.look);
+    grp.add(H.root);
+    this.sty = H; this.eyes = H.eyes;
   }
   get pos() { return this.root.position; }
   get head() { return this.bones.mixamorigHead; }
@@ -768,7 +689,7 @@ class Human {
     rot('Neck', Yv, this.headYaw * 0.4); rot('Head', Yv, this.headYaw * 0.6);
     const right = new THREE.Vector3(Math.cos(this.headYaw), 0, -Math.sin(this.headYaw));
     rot('Head', right, this.headPitch * 0.7 + nod);
-    if (this.headMeshes) this.faceAnim(dt);
+    if (this.sty) this.faceAnim(dt);
   }
   faceAnim(dt) {
     this.blinkT = (this.blinkT == null ? Math.random() * 3 : this.blinkT) - dt;
@@ -779,8 +700,8 @@ class Human {
     let open = 0;
     if (this.talking) { const t = this.t; open = Math.max(0, Math.sin(t * 12.3) * 0.55 + Math.sin(t * 7.1) * 0.45 + Math.sin(t * 2.9) * 0.25) * 0.55; }
     this.jawOpen = U.damp(this.jawOpen || 0, Math.min(1, open), 20, dt);
-    const ib = this.morph.blink, ij = this.morph.jawOpen;
-    for (const m of this.headMeshes) { if (ib != null) m.morphTargetInfluences[ib] = bl; if (ij != null) m.morphTargetInfluences[ij] = this.jawOpen; }
+    for (const l of this.sty.lids) l.rotation.x = -0.62 + bl * 1.8;
+    this.sty.mouth.scale.set(1 - this.jawOpen * 0.15, 1 + this.jawOpen * 2.6, 1);
     // eyes: small saccades, follow the look target
     this._sacT = (this._sacT || 0) - dt;
     if (this._sacT < 0) { this._sacT = 0.5 + Math.random() * 2.5; this._sac = [(Math.random() - 0.5) * 0.14, (Math.random() - 0.5) * 0.07]; }
