@@ -88,7 +88,7 @@ Levels.stationInteractions = function (L, o) {
   Interact.add(cm.group, {
     prompt: () => {
       const s = L.state.coffee;
-      if (s === 'old') return 'Take the coffee pot';
+      if (s === 'old') return Player.held && !Player.holding('mug') ? 'Hands full' : 'Take the coffee pot';
       if (s === 'holdOld') return 'Put the pot back';
       if (s === 'holdWater') return 'Pour water into the reservoir';
       if (s === 'water') return Player.holding('filter') ? 'Put the filter in the basket' : 'Needs a filter';
@@ -100,6 +100,8 @@ Levels.stationInteractions = function (L, o) {
     },
     use: () => {
       const s = L.state.coffee, pos = lookAt(-12.6, 1.1, -5);
+      if (s === 'old' && Player.holding('mug')) { const hm = Player.drop(); const o2 = hm.userData.orig; if (o2) { o2.userData.taken = false; o2.userData.rack.add(o2); } }
+      if (s === 'old' && Player.held) return;
       if (s === 'old') { L.state.coffee = 'holdOld'; setPotVisual('held'); Player.hold(potHeld(), 'pot'); SND.sfx('pickup', { pos }); Bus.emit('coffee', 'took'); }
       else if (s === 'holdOld') { L.state.coffee = 'old'; setPotVisual('old'); Player.drop(); SND.sfx('putdown', { pos }); }
       else if (s === 'holdWater') { L.state.coffee = 'water'; Player.drop(); setPotVisual('empty'); SND.sfx('pour', { pos, dur: 2.2 }); Bus.emit('coffee', 'water'); }
@@ -136,7 +138,7 @@ Levels.stationInteractions = function (L, o) {
     Interact.add(m, {
       prompt: () => i === 0 ? 'Take mug ("WORLD\'S OKAYEST DJ")' : 'Take your mug',
       enabled: () => !Player.held && !m.userData.taken,
-      use: () => { m.userData.taken = true; m.parent.remove(m); const hm = P.mug(new THREE.Group(), 0, 0, 0, { color: i === 0 ? 0x2a4a7a : 0xe8e4da }); hm.userData.mugId = m.userData.mugId; hm.userData.coffee = hm.children[2]; Player.hold(hm, 'mug'); SND.sfx('mugClink', { pos: lookAt(-12.5, 1, -2.7) }); },
+      use: () => { m.userData.taken = true; m.userData.rack = m.parent; m.parent.remove(m); const hm = P.mug(new THREE.Group(), 0, 0, 0, { color: i === 0 ? 0x2a4a7a : 0xe8e4da }); hm.userData.mugId = m.userData.mugId; hm.userData.orig = m; hm.userData.coffee = hm.children[2]; Player.hold(hm, 'mug'); SND.sfx('mugClink', { pos: lookAt(-12.5, 1, -2.7) }); },
     });
   });
 
