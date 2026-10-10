@@ -16,3 +16,7 @@ WASD move · Mouse look · E interact (hold where shown) · Shift walk faster ·
 Driving: W gas · S brake · A/D steer · H high beams · R tune radio
 
 Everything (models, textures, music, sound) is generated in code. Three.js r160 is vendored in `vendor/`.
+
+## Single-file build
+
+`node tools/bundle.js` writes `dist/dead-frequency.html`, one self-contained file you can open directly in a browser (no server needed).
