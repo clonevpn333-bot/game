@@ -2359,48 +2359,99 @@ const GSFX = {
   ok(cost = 1) { const n = performance.now(); if (n - this.last > 45) { this.last = n; this.budget = 0; } if (this.budget >= 7) return false; this.budget += cost; return true; },
   sp(pos, ref = 30) { return pos ? AU.spatial(pos, ref) : { g: 1, pan: 0 }; },
   crunch(s, n = 4, at = 0, g = .3) { for (let i = 0; i < n; i++) { const t = at + rand(0, .07); AU.nz({ dur: rand(.012, .03), f: rand(2200, 5200), type: 'bandpass', q: 7, g: g * s.g * rand(.6, 1), pan: s.pan, at: t, verb: .05 }); } AU.nz({ dur: .06, f: 1400, type: 'bandpass', q: 3, g: g * .6 * s.g, pan: s.pan, at, verb: .05 }); },
-  squelch(s, at = 0, g = .35, f = 700) { const f2 = f * rand(2, 3.4); AU.nz({ dur: rand(.08, .16), f, f2, type: 'bandpass', q: 5, g: g * s.g, pan: s.pan, at, verb: .08 }); AU.nz({ dur: .1, f: f * 1.6, f2: f * .6, type: 'bandpass', q: 6, g: g * .5 * s.g, pan: s.pan, at: at + .03 }); },
-  thud(s, at = 0, g = .5, f = 130) { AU.tn({ f, f2: f * .35, dur: .14, g: g * s.g, pan: s.pan, at }); AU.nz({ dur: .07, f: 600, type: 'lowpass', q: 1.5, g: g * .7 * s.g, pan: s.pan, at, verb: .04 }); },
-  // bullet into meat
+  // bullet into meat: wet smack-squelch
   hit(pos, o = {}) {
     if (!this.ok()) return; const s = this.sp(pos, 26); if (s.g < .03) return; const big = (o.dmg || 20) > 45;
-    AU.nz({ dur: .035, f: rand(1600, 2600), type: 'bandpass', q: 1.4, g: .45 * s.g, pan: s.pan, verb: .03 });
-    this.thud(s, 0, big ? .55 : .35, rand(110, 160)); this.squelch(s, .01, big ? .35 : .22, rand(500, 900));
-    if (o.zone === 'head') { AU.nz({ dur: .025, f: 4200, type: 'bandpass', q: 9, g: .5 * s.g, pan: s.pan }); this.crunch(s, 3, .01, .3); AU.tn({ type: 'triangle', f: 2400, f2: 1900, dur: .05, g: .08 * s.g, pan: s.pan }); }
-    else if (big) this.crunch(s, 2, .02, .22);
+    WETFX.play('hit', pos, big ? 1 : .75, { rate: big ? .9 : 1.05 });
+    if (o.zone === 'head') { AU.nz({ dur: .025, f: 4200, type: 'bandpass', q: 9, g: .45 * s.g, pan: s.pan }); this.crunch(s, 3, .01, .26); WETFX.play('pop', pos, .45, { rate: 1.2 }); }
+    else if (big) this.crunch(s, 2, .02, .18);
   },
-  // katana through a body
+  // katana through a body: steel ring + the blade sinking into wet meat
   slice(pos, kill, heavy) {
-    if (!this.ok(2)) return; const s = this.sp(pos, 20); const k = heavy ? 1.3 : 1;
-    AU.nz({ dur: .14, f: 7000, f2: 2600, type: 'bandpass', q: 2.5, g: .32 * s.g * k, pan: s.pan, verb: .2 });           // steel shing
-    AU.nz({ dur: .2, f: 900, f2: 2800, type: 'bandpass', q: 2.2, g: .5 * s.g * k, pan: s.pan, at: .005, verb: .06 });   // flesh tear
-    this.thud(s, 0, .65 * k, 95); this.squelch(s, .04, .45 * k, rand(400, 650));
-    if (kill) { this.crunch(s, 5, .02, .35 * k); AU.nz({ dur: .5, f: 2600, f2: 900, type: 'bandpass', q: 1.2, g: .16 * s.g, pan: s.pan, at: .08, a: .02 }); } // arterial spray hiss
+    if (!this.ok(2)) return; const s = this.sp(pos, 20);
+    AU.nz({ dur: .09, f: 7500, f2: 3500, type: 'bandpass', q: 3, g: .16 * s.g, pan: s.pan, verb: .15 });
+    WETFX.play('cut', pos, heavy ? 1.15 : 1, { ref: 20, rate: heavy ? .88 : 1 });
+    if (kill) { WETFX.play('sever', pos, .6, { at: .04, ref: 20 }); this.crunch(s, 4, .03, .26); }
   },
-  // limb or head separating
-  dismember(pos) {
-    if (!this.ok(2)) return; const s = this.sp(pos, 24); if (s.g < .03) return;
-    AU.nz({ dur: .03, f: 3200, type: 'bandpass', q: 8, g: .55 * s.g, pan: s.pan }); this.crunch(s, 4, 0, .32);                 // bone snap
-    AU.nz({ dur: .22, f: 350, f2: 1500, type: 'bandpass', q: 3, g: .45 * s.g, pan: s.pan, at: .02 });                         // rip
-    AU.nz({ dur: .7, f: 3500, f2: 1400, type: 'bandpass', q: 1.5, g: .12 * s.g, pan: s.pan, at: .1, a: .03 });                // spurt
-  },
-  headPop(pos) {
-    if (!this.ok(2)) return; const s = this.sp(pos, 30);
-    AU.nz({ dur: .05, f: 900, type: 'lowpass', q: 2, g: .8 * s.g, pan: s.pan }); AU.tn({ f: 220, f2: 60, dur: .1, g: .5 * s.g, pan: s.pan });
-    this.crunch(s, 7, 0, .4); this.squelch(s, .02, .55, 500); this.squelch(s, .07, .35, 800); this.patter(s, .25, 6);
-  },
-  // full-body gib explosion
+  dismember(pos) { if (!this.ok(2)) return; const s = this.sp(pos, 24); if (s.g < .03) return; AU.nz({ dur: .03, f: 3200, type: 'bandpass', q: 8, g: .4 * s.g, pan: s.pan }); this.crunch(s, 3, 0, .24); WETFX.play('sever', pos, .9); },
+  headPop(pos) { if (!this.ok(2)) return; const s = this.sp(pos, 30); WETFX.play('pop', pos, 1.1); this.crunch(s, 6, 0, .34); },
   splat(pos, size = 1) {
     if (!this.ok(3)) return; const s = this.sp(pos, 40); if (s.g < .02) return; const g = Math.min(1.4, size);
-    AU.nz({ dur: .35, f: 1100, f2: 200, type: 'lowpass', q: 2.5, g: .85 * s.g * g, pan: s.pan, verb: .15 });
-    AU.tn({ f: 80, f2: 28, dur: .3, g: .7 * s.g * g, pan: s.pan });
-    this.crunch(s, 9, 0, .38 * g); this.squelch(s, 0, .6 * g, 380); this.squelch(s, .06, .45 * g, 650); this.squelch(s, .13, .35 * g, 900);
-    this.patter(s, .3, 10);
+    WETFX.play('gore', pos, 1.1 * g, { ref: 40, rate: .92 }); WETFX.play('cut', pos, .7 * g, { at: .05, ref: 40, rate: .8 }); WETFX.play('sever', pos, .5 * g, { at: .12, ref: 40 });
+    this.crunch(s, 8, 0, .32 * g); this.patter(s, .35, 8);
   },
-  // meat raining down and slapping the ground
-  patter(s, at, n) { for (let i = 0; i < n; i++) { const t = at + rand(0, .9); AU.nz({ dur: rand(.03, .07), f: rand(500, 1100), type: 'lowpass', q: 2, g: rand(.08, .2) * s.g, pan: s.pan + rand(-.2, .2), at: t }); if (chance(.4)) AU.nz({ dur: .04, f: rand(1200, 2200), type: 'bandpass', q: 5, g: .08 * s.g, pan: s.pan, at: t + .01 }); } },
+  patter(s, at, n) { for (let i = 0; i < n; i++) { const t = at + rand(0, .9); AU.nz({ dur: rand(.03, .07), f: rand(500, 1100), type: 'lowpass', q: 2, g: rand(.06, .15) * s.g, pan: s.pan + rand(-.2, .2), at: t }); } },
   oil(pos, big) { if (!this.ok()) return; const s = this.sp(pos, 30); AU.nz({ dur: big ? .3 : .08, f: 2600, f2: 900, type: 'bandpass', q: 3, g: .35 * s.g, pan: s.pan }); AU.tn({ type: 'square', f: rand(300, 600), f2: 120, dur: .12, g: .08 * s.g, pan: s.pan }); },
 };
+
+/* ---------- WET FOLEY: physically-modelled squelch samples rendered once at audio start ----------
+   blood/flesh sounds = viscous slurp (brown noise through a sliding resonant "vowel" filter, pumped by
+   squish pulses) + Minnaert bubble pops (rising-pitch damped sines) + fibre-tear crackle + meaty smack */
+const WETFX = {
+  buf: {}, ready: false,
+  KINDS: {
+    //        dur  squish pulses  formant start→end  Q   body  bubbles  bubble Hz       crackle  tearDur smack drips sub
+    cut:   { dur: .55, bumps: 5, bw: [.015, .06], f0: 1100, f1: 320, Q: 3.2, body: 1.1, nb: 34, bf: [450, 2600], nc: 70, tear: .16, smack: .7, drips: 7, sub: .6 },
+    hit:   { dur: .26, bumps: 2, bw: [.012, .04], f0: 800, f1: 380, Q: 2.6, body: 1, nb: 12, bf: [500, 2200], nc: 10, tear: .05, smack: 1.1, drips: 2, sub: .8 },
+    sever: { dur: .75, bumps: 6, bw: [.02, .07], f0: 1300, f1: 260, Q: 3.6, body: 1, nb: 40, bf: [400, 2400], nc: 160, tear: .3, smack: .5, drips: 10, sub: .5 },
+    gore:  { dur: 1.1, bumps: 9, bw: [.03, .1], f0: 700, f1: 180, Q: 2.2, body: 1.3, nb: 80, bf: [260, 2000], nc: 90, tear: .25, smack: 1.3, drips: 18, sub: 1.2 },
+    pop:   { dur: .5, bumps: 3, bw: [.01, .04], f0: 1500, f1: 400, Q: 4, body: .9, nb: 40, bf: [600, 3200], nc: 120, tear: .08, smack: 1.4, drips: 9, sub: .9 },
+  },
+  ensure(kind) { // render lazily per kind so nothing hitches
+    if (!AU.ctx) return false; const ks = kind ? [kind] : Object.keys(this.KINDS);
+    for (const k of ks) if (!this.buf[k]) { this.buf[k] = []; for (let v = 0; v < 4; v++) this.buf[k].push(this.render(this.KINDS[k])); }
+    this.ready = Object.keys(this.buf).length === Object.keys(this.KINDS).length; return true;
+  },
+  prewarm() { Object.keys(this.KINDS).forEach((k, i) => setTimeout(() => this.ensure(k), 60 + i * 120)); },
+  render(o) {
+    const C = AU.ctx, sr = C.sampleRate, n = Math.floor(o.dur * sr), y = new Float32Array(n), R = Math.random;
+    // 1 · viscous slurp
+    const bumps = []; for (let i = 0; i < o.bumps; i++) bumps.push([i === 0 ? .005 : R() * o.dur * .55, o.bw[0] + R() * (o.bw[1] - o.bw[0]), .45 + R() * .55]);
+    let br = 0, lo = 0, bd = 0, lo2 = 0, bd2 = 0; const wob = 18 + R() * 30, wobA = 120 + R() * 200, q = 1 / o.Q;
+    for (let i = 0; i < n; i++) {
+      const t = i / sr; br = (br + .02 * (R() * 2 - 1)) / 1.02;
+      let env = 0; for (const b of bumps) { const u = (t - b[0]) / b[1]; if (u > -3 && u < 6) env += b[2] * (u < 0 ? Math.exp(-u * u * 2) : Math.exp(-u * .9)); }
+      const k = t / o.dur, fc = o.f0 + (o.f1 - o.f0) * Math.sqrt(k) + Math.sin(t * wob) * wobA * (1 - k);
+      const f = 2 * Math.sin(Math.PI * Math.min(fc, sr * .2) / sr);
+      const hi = br * 6 - lo - q * bd; bd += f * hi; lo += f * bd;                 // vowel resonance
+      const f2 = 2 * Math.sin(Math.PI * Math.min(fc * 2.3, sr * .2) / sr), hi2 = br * 6 - lo2 - q * 1.4 * bd2; bd2 += f2 * hi2; lo2 += f2 * bd2; // 2nd formant
+      y[i] += (bd + bd2 * .4) * env * o.body * .8;
+    }
+    // 2 · bubbles (Minnaert: damped sine whose pitch rises as it collapses)
+    for (let b = 0; b < o.nb; b++) {
+      const t0 = Math.pow(R(), 1.6) * o.dur * .8, f0 = o.bf[0] + Math.pow(R(), 1.8) * (o.bf[1] - o.bf[0]), d = .003 + R() * .012, a = (.12 + R() * .3) * (1 - t0 / o.dur * .6), rise = .4 + R() * 1.4;
+      const s0 = Math.floor(t0 * sr), len = Math.min(n - s0, Math.floor(d * 4 * sr)); let ph = 0;
+      for (let j = 0; j < len; j++) { const tt = j / sr; ph += 2 * Math.PI * f0 * (1 + rise * Math.min(tt / d, 3) * .08) / sr; y[s0 + j] += Math.sin(ph) * Math.exp(-tt / d) * (1 - Math.exp(-tt * 3000)) * a; }
+    }
+    // 3 · fibre tear: dense crackle of tiny wet clicks, front-loaded
+    for (let c = 0; c < o.nc; c++) {
+      if (R() > .45) continue; const t0 = Math.pow(R(), .8) * o.tear, s0 = Math.floor(t0 * sr), len = Math.floor((.001 + R() * .003) * sr), a = (.06 + R() * .16) * (1 - t0 / (o.tear + .01) * .5);
+      let lp = 0, lp2 = 0; for (let j = 0; j < len && s0 + j < n; j++) { lp += ((R() * 2 - 1) - lp) * .3; lp2 += (lp - lp2) * .45; y[s0 + j] += (lp - lp2 * .6) * a * 2.4 * Math.sin(Math.PI * j / len); }
+    }
+    // 4 · smack: muffled meat impact + sub thump
+    { const len = Math.floor(.07 * sr); let lp = 0; for (let j = 0; j < len && j < n; j++) { lp += ((R() * 2 - 1) - lp) * .12; y[j] += lp * o.smack * 1.6 * Math.exp(-j / sr / .018); }
+      let ph = 0; const sl = Math.floor(.16 * sr); for (let j = 0; j < sl && j < n; j++) { const tt = j / sr; ph += 2 * Math.PI * (95 * Math.exp(-tt * 9) + 38) / sr; y[j] += Math.sin(ph) * o.sub * .55 * Math.exp(-tt / .05) * (1 - Math.exp(-tt * 900)); } }
+    // 5 · drips & spatter tail
+    for (let d = 0; d < o.drips; d++) {
+      const t0 = o.dur * (.3 + R() * .6), s0 = Math.floor(t0 * sr), f0 = 700 + R() * 1500, dd = .003 + R() * .006, a = .05 + R() * .1; let ph = 0;
+      for (let j = 0; j < dd * 4 * sr && s0 + j < n; j++) { const tt = j / sr; ph += 2 * Math.PI * f0 * (1 + Math.min(tt / dd, 3) * .1) / sr; y[s0 + j] += Math.sin(ph) * Math.exp(-tt / dd) * a; }
+      let lp = 0; for (let j = 0; j < .012 * sr && s0 + j < n; j++) { lp += ((R() * 2 - 1) - lp) * .3; y[s0 + j] += lp * a * .8 * (1 - j / (.012 * sr)); }
+    }
+    // soft-clip, fade, normalise
+    let pk = 0; for (let i = 0; i < n; i++) { y[i] = Math.tanh(y[i] * 1.4); pk = Math.max(pk, Math.abs(y[i])); }
+    const fo = Math.floor(.03 * sr), g = .92 / (pk || 1); for (let i = 0; i < n; i++) y[i] *= g * (i > n - fo ? (n - i) / fo : 1);
+    const b = C.createBuffer(1, n, sr); b.getChannelData(0).set(y); return b;
+  },
+  play(kind, pos, g = 1, o = {}) {
+    if (!this.ensure(kind)) return; const list = this.buf[kind]; if (!list) return;
+    const s = pos ? AU.spatial(pos, o.ref || 26) : { g: 1, pan: 0 }; if (s.g * g < .02) return;
+    const C = AU.ctx, src = C.createBufferSource(); src.buffer = list[(Math.random() * list.length) | 0]; src.playbackRate.value = (o.rate || 1) * rand(.86, 1.14);
+    const out = AU.out(s.pan, g * s.g, o.verb ?? .08); let node = src;
+    if (o.muffle) { const f = C.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = o.muffle; src.connect(f); node = f; }
+    node.connect(out); src.start(AU.t + (o.at || 0));
+  },
+};
+{ const _ai = AU.init; AU.init = function () { const fresh = !this.ctx; _ai.call(this); if (fresh) WETFX.prewarm(); }; }
 
 /* =====================================================================
    VIEWMODEL WEAPONS — detailed procedural models with moving parts
@@ -6140,7 +6191,7 @@ hudEl.fps.style.display = SET.fps ? 'block' : 'none';
 canvas.addEventListener('click', () => { if (!locked && ['fight', 'intro', 'portal', 'transition'].includes(GAME.state) && !GAME.paused) lockPointer(); });
 // debug helpers (console)
 window.TB = { GAME, PLAYER, ENEMIES, startCampaign, loadEra, giveWeapon, spawnEnemy, spawnBoss: () => spawnBoss(), god: () => GAME.god = !GAME.god, skipWave: () => { for (const e of ENEMIES) if (e.alive) killEnemy(e, { kind: 'blast', dir: UP, force: 10 }); DIR.queue = []; }, killBoss: () => BOSS && BOSS.damage(BOSS.parts[0], 1e9, 'pierce'), portal: () => openPortal(), WPN, ETYPES, BOSS: () => BOSS, fire(v) { mouseL = v; if (v) mouseLP = true; }, key(k, v) { KEY[k] = v; if (v) KEYP[k] = true; }, look(dx, dy) { mouseDX += dx; mouseDY += dy; }, aim(v) { mouseR = v; }, startWave, DIR, viewer(id, a = .6, d = 5, h = 1.4, ty = .9, anim = 'run', era = 0) { if (GAME.era !== era || !GAME.eraDef) loadEra(era, false); ERA_G.visible = false; GROUND.visible = true; for (const s of STRUCTS) s.mesh.visible = false; for (const p of PROPS) p.mesh.visible = false; for (const t of TREES) t.pivot.visible = false; clearEnemies(); if (BOSS) BOSS.remove(); hideAll(); showHUD(false); GAME.state = 'viewer'; GAME.view = { x: 0, z: 0, a, d, h, ty, dt: 0 }; if (id) { const e = spawnEnemy(id, 0, 0, { yaw: 0, anim, fx: false }); if (e) { e.spd = anim === 'run' ? e.def.speed : 0; e.gait = 1.2; } } return true; }, view(o) { Object.assign(GAME.view, o); }, sim(sec) { const n = Math.round(sec * 30); for (let i = 0; i < n; i++) { tick(1 / 30, performance.now()); endFrameInput(); } return GAME.state; }, dbg: () => ({ q: JSON.stringify(DIR.queue), alive: ALIVE, n: ENEMIES.length, st: GAME.state, w: DIR.wave && DIR.wave.title, acc: DIR.spawnAcc, cap: QL.cap, cm: GAME.capMul }), show(id) { const w = giveWeapon(id, true); for (const o of WPN.owned) o.root.visible = false; WPN.cur = w; WPN.next = null; w.root.visible = true; WPN.equipT = 1; WPN.inspectT = -1; onWeaponChanged(); return w.def.name; }, inspect(t) { WPN.inspectT = t; }, FX_clear() { FX.flash = 0; FX.rift = 0; FX.crack = 0; FX.aberr = 0; FX.damage = 0; PA.clear(); PN.clear(); }, fps: () => fpsV, freeze(v) { if (v) slowmo(.0001, 1e6); else { FX.slowmoT = 0; } }, cam(x, y, z, yaw, pitch) { PLAYER.pos.set(x, y, z); PLAYER.vel.set(0, 0, 0); PLAYER.yaw = yaw; PLAYER.pitch = pitch; }, spawn: (t, x, z, o) => { const e = spawnEnemy(t, x, z, Object.assign({ anim: 'run', fx: false }, o || {})); return !!e; } };
-Object.assign(window.TB, { AU, MUSIC, SANDE, DODGE, GIBS, PROJ, killEnemy, UP, ED, FACTION, fireEP, MELEE, WORLD, skipWave, skipEra, recallEnemy, GSFX, get canFire() { return [!WPN.next, WPN.equipT, WPN.cur && WPN.cur.s.reloading, PLAYER.kickT, PLAYER.alive, GAME.state]; } });
+Object.assign(window.TB, { AU, MUSIC, SANDE, DODGE, GIBS, PROJ, killEnemy, UP, ED, FACTION, fireEP, MELEE, WORLD, skipWave, skipEra, recallEnemy, GSFX, WETFX, get canFire() { return [!WPN.next, WPN.equipT, WPN.cur && WPN.cur.s.reloading, PLAYER.kickT, PLAYER.alive, GAME.state]; } });
 
 /* =====================================================================
    MAIN LOOP
