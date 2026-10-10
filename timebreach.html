@@ -367,7 +367,7 @@ const VM_DETAIL_BODY = `
   } }`;
 function makeVMMat() {
   const m = makePBRV(); const base = m.onBeforeCompile;
-  m.onBeforeCompile = sh => { base(sh); sh.vertexShader = 'varying vec3 vOP;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvOP=transformed;'); sh.fragmentShader = 'varying vec3 vOP;\n' + VM_DETAIL_FN + sh.fragmentShader.replace('metalnessFactor=vMRE.y;', 'metalnessFactor=vMRE.y;' + VM_DETAIL_BODY); };
+  m.onBeforeCompile = sh => { base(sh); sh.vertexShader = 'varying vec3 vOP;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvOP=transformed;'); sh.fragmentShader = 'varying vec3 vOP;\n' + VM_DETAIL_FN + sh.fragmentShader.replace('metalnessFactor=vMRE.y;', 'metalnessFactor=vMRE.y;' + VM_DETAIL_BODY).replace('totalEmissiveRadiance+=diffuseColor.rgb*vMRE.z*2.2;', 'totalEmissiveRadiance+=diffuseColor.rgb*vMRE.z*1.1;'); };
   m.customProgramCacheKey = () => 'pbrvvm'; return m;
 }
 const MAT_VM = makeVMMat(); // viewmodel
@@ -404,6 +404,12 @@ class GB {
   }
   _m(x, y, z, rx, ry, rz, sx, sy, sz) { return _m2.compose(_v1.set(x, y, z), _q2.setFromEuler(_e1.set(rx || 0, ry || 0, rz || 0)), _v2.set(sx, sy, sz)); }
   box(w, h, d, x, y, z, color, surf, rx, ry, rz) { return this.add(UBOX, color, surf, this._m(x, y, z, rx, ry, rz, w, h, d)); }
+  // organic bevelled box for characters/creatures (cheap: only large pieces get rounded)
+  obox(w, h, d, x, y, z, color, surf, rx, ry, rz) {
+    const s = [w, h, d].sort((a, b) => a - b); if (s[1] < .085) return this.box(w, h, d, x, y, z, color, surf, rx, ry, rz);
+    const rr = Math.min(s[0] * .34, .09); const k = 'ob' + w.toFixed(3) + h.toFixed(3) + d.toFixed(3); let g = _gcache.get(k); if (!g) { g = new RoundedBoxGeometry(w, h, d, 1, rr); if (g.index) g = g.toNonIndexed(); _gcache.set(k, g); }
+    return this.add(g, color, surf, this._m(x, y, z, rx, ry, rz, 1, 1, 1));
+  }
   // chamfered/rounded box: edges catch specular highlights (used for viewmodels)
   rbox(w, h, d, x, y, z, color, surf, rx, ry, rz, r) {
     const rr = r ?? Math.min(.0045, Math.min(w, h, d) * .24); if (rr < .0006) return this.box(w, h, d, x, y, z, color, surf, rx, ry, rz);
@@ -1224,87 +1230,87 @@ function limb(b, r1, r2, len, color, surf, seg = 8) { b.cyl(r1, r2, len, 0, -len
 // Build a fully dressed biped from options. Returns array of GB per part index.
 function buildBiped(o) {
   const P = RIGS.biped.names.map(() => new GB());
-  const skin = o.skin ?? 0xc89070, bulk = o.bulk || 1, bx = bulk;
+  const skin = o.skin ?? 0xc89070, bulk = (o.bulk || 1) * 1.18, bx = bulk;
   const shirt = o.shirt ?? 0x556644, pants = o.pants ?? 0x3a3a30, boots = o.boots ?? 0x2a1d12, belt = o.belt ?? 0x3a2414;
   const sf = o.shirtSurf || S.cloth, pf = o.pantsSurf || S.cloth;
   // ---- pelvis
   const pe = P[0];
-  pe.box(.34 * bx, .2, .22 * bx, 0, -.02, 0, pants, pf);
-  if (belt !== null) { pe.box(.36 * bx, .06, .24 * bx, 0, .07, 0, belt, S.leather); pe.box(.07, .05, .02, 0, .07, .125 * bx, o.buckle ?? 0xb8a060, S.brass); }
-  if (o.pouches) for (const x of [-.12, .12, .17]) pe.box(.07, .08, .05, x * bx, .04, .13 * bx, o.pouches, S.cloth);
-  if (o.kilt) { for (let i = 0; i < 9; i++) { const a = -PI * .85 + i / 8 * PI * 1.7; pe.box(.075, .24, .02, Math.sin(a) * .18 * bx, -.14, Math.cos(a) * .13 * bx, o.kilt, o.kiltSurf || S.leather, 0, a, 0); } }
-  if (o.loin) { pe.box(.16, .26, .02, 0, -.15, .12, o.loin, S.leather); pe.box(.16, .22, .02, 0, -.14, -.12, o.loin, S.leather); }
-  if (o.tasset) for (const s of [-1, 1]) pe.box(.15, .16, .04, s * .12 * bx, -.12, .1 * bx, o.tasset, S.steel, -.15, 0, s * .1);
-  if (o.coatTail) { pe.box(.36 * bx, .4, .03, 0, -.25, -.12 * bx, o.coatTail, S.cloth, .12); pe.box(.16, .4, .03, .12 * bx, -.25, .12 * bx, o.coatTail, S.cloth, -.08); pe.box(.16, .4, .03, -.12 * bx, -.25, .12 * bx, o.coatTail, S.cloth, -.08); }
+  pe.obox(.34 * bx, .2, .22 * bx, 0, -.02, 0, pants, pf);
+  if (belt !== null) { pe.obox(.36 * bx, .06, .24 * bx, 0, .07, 0, belt, S.leather); pe.obox(.07, .05, .02, 0, .07, .125 * bx, o.buckle ?? 0xb8a060, S.brass); }
+  if (o.pouches) for (const x of [-.12, .12, .17]) pe.obox(.07, .08, .05, x * bx, .04, .13 * bx, o.pouches, S.cloth);
+  if (o.kilt) { for (let i = 0; i < 9; i++) { const a = -PI * .85 + i / 8 * PI * 1.7; pe.obox(.075, .24, .02, Math.sin(a) * .18 * bx, -.14, Math.cos(a) * .13 * bx, o.kilt, o.kiltSurf || S.leather, 0, a, 0); } }
+  if (o.loin) { pe.obox(.16, .26, .02, 0, -.15, .12, o.loin, S.leather); pe.obox(.16, .22, .02, 0, -.14, -.12, o.loin, S.leather); }
+  if (o.tasset) for (const s of [-1, 1]) pe.obox(.15, .16, .04, s * .12 * bx, -.12, .1 * bx, o.tasset, S.steel, -.15, 0, s * .1);
+  if (o.coatTail) { pe.obox(.36 * bx, .4, .03, 0, -.25, -.12 * bx, o.coatTail, S.cloth, .12); pe.obox(.16, .4, .03, .12 * bx, -.25, .12 * bx, o.coatTail, S.cloth, -.08); pe.obox(.16, .4, .03, -.12 * bx, -.25, .12 * bx, o.coatTail, S.cloth, -.08); }
   // ---- torso
   const t = P[1];
-  t.box(.3 * bx, .24, .19 * bx, 0, .1, 0, o.belly ?? shirt, sf);
-  t.box(.42 * bx, .3, .25 * bx, 0, .33, 0, shirt, sf);
+  t.obox(.3 * bx, .24, .19 * bx, 0, .1, 0, o.belly ?? shirt, sf);
+  t.obox(.42 * bx, .3, .25 * bx, 0, .33, 0, shirt, sf);
   t.sph(.1, .2 * bx, .43, 0, o.shoulderC ?? shirt, sf, 1, .9, 1.1);
   t.sph(.1, -.2 * bx, .43, 0, o.shoulderC ?? shirt, sf, 1, .9, 1.1);
   t.cyl(.06, .07, .1, 0, .5, 0, skin, S.skin);
-  if (o.chestArmor) { const c = o.chestArmor; t.box(.45 * bx, .32, .06, 0, .33, .12 * bx, c, o.armorSurf || S.steel); t.box(.45 * bx, .32, .05, 0, .33, -.12 * bx, c, o.armorSurf || S.steel); t.box(.34 * bx, .22, .05, 0, .1, .1 * bx, c, o.armorSurf || S.steel); }
-  if (o.lorica) { for (let i = 0; i < 5; i++) t.box((.44 - i * .015) * bx, .065, .27 * bx, 0, .44 - i * .075, 0, i % 2 ? o.lorica : 0x9a9a92, S.steel); t.box(.05, .3, .01, 0, .3, .14 * bx, 0xb89a40, S.brass); }
-  if (o.mail) { t.box(.44 * bx, .34, .27 * bx, 0, .3, 0, o.mail, [.5, .8, 0]); for (let i = 0; i < 6; i++) t.box(.445 * bx, .01, .275 * bx, 0, .16 + i * .05, 0, 0x555555, S.dark); }
-  if (o.tabard) { t.box(.3 * bx, .55, .02, 0, .15, .14 * bx, o.tabard, S.cloth); t.box(.3 * bx, .55, .02, 0, .15, -.14 * bx, o.tabard, S.cloth); if (o.emblem) { t.box(.08, .2, .01, 0, .3, .152 * bx, o.emblem, S.cloth); t.box(.16, .06, .01, 0, .33, .152 * bx, o.emblem, S.cloth); } }
-  if (o.vest) { t.box(.44 * bx, .36, .27 * bx, 0, .3, 0, o.vest, S.cloth); for (const x of [-.1, 0, .1]) t.box(.08, .09, .05, x * bx, .22, .15 * bx, o.vestPouch ?? o.vest, S.cloth); t.box(.12, .06, .04, .12 * bx, .4, .15 * bx, 0x222222, S.poly); }
-  if (o.coat) { t.box(.44 * bx, .36, .27 * bx, 0, .29, 0, o.coat, S.cloth); t.box(.1, .3, .02, .07, .32, .14 * bx, o.lapel ?? o.coat, S.cloth, 0, 0, -.2); t.box(.1, .3, .02, -.07, .32, .14 * bx, o.lapel ?? o.coat, S.cloth, 0, 0, .2); for (let i = 0; i < 4; i++) { t.sph(.012, .05, .2 + i * .07, .145 * bx, 0xd0b050, S.brass); t.sph(.012, -.05, .2 + i * .07, .145 * bx, 0xd0b050, S.brass); } }
-  if (o.sash) t.box(.08, .6, .28 * bx, 0, .25, 0, o.sash, S.cloth, 0, 0, .7);
-  if (o.straps) { t.box(.05, .5, .01, .08, .3, .13 * bx, o.straps, S.leather, 0, 0, -.35); t.box(.05, .5, .01, -.08, .3, .13 * bx, o.straps, S.leather, 0, 0, .35); }
-  if (o.bandolier) { t.box(.06, .62, .27 * bx, 0, .28, 0, o.bandolier, S.leather, 0, 0, -.75); for (let i = 0; i < 7; i++) t.box(.02, .05, .02, -.16 + i * .05, .08 + i * .055, .145 * bx, 0xc8a040, S.brass); }
-  if (o.pecs) { t.sph(.09, .09, .38, .1, skin, S.skin, 1.2, .8, .6); t.sph(.09, -.09, .38, .1, skin, S.skin, 1.2, .8, .6); for (let i = 0; i < 3; i++) { t.box(.06, .05, .03, .04, .22 - i * .06, .1, skin, S.skin); t.box(.06, .05, .03, -.04, .22 - i * .06, .1, skin, S.skin); } }
+  if (o.chestArmor) { const c = o.chestArmor; t.obox(.45 * bx, .32, .06, 0, .33, .12 * bx, c, o.armorSurf || S.steel); t.obox(.45 * bx, .32, .05, 0, .33, -.12 * bx, c, o.armorSurf || S.steel); t.obox(.34 * bx, .22, .05, 0, .1, .1 * bx, c, o.armorSurf || S.steel); }
+  if (o.lorica) { for (let i = 0; i < 5; i++) t.obox((.44 - i * .015) * bx, .065, .27 * bx, 0, .44 - i * .075, 0, i % 2 ? o.lorica : 0x9a9a92, S.steel); t.obox(.05, .3, .01, 0, .3, .14 * bx, 0xb89a40, S.brass); }
+  if (o.mail) { t.obox(.44 * bx, .34, .27 * bx, 0, .3, 0, o.mail, [.5, .8, 0]); for (let i = 0; i < 6; i++) t.obox(.445 * bx, .01, .275 * bx, 0, .16 + i * .05, 0, 0x555555, S.dark); }
+  if (o.tabard) { t.obox(.3 * bx, .55, .02, 0, .15, .14 * bx, o.tabard, S.cloth); t.obox(.3 * bx, .55, .02, 0, .15, -.14 * bx, o.tabard, S.cloth); if (o.emblem) { t.obox(.08, .2, .01, 0, .3, .152 * bx, o.emblem, S.cloth); t.obox(.16, .06, .01, 0, .33, .152 * bx, o.emblem, S.cloth); } }
+  if (o.vest) { t.obox(.44 * bx, .36, .27 * bx, 0, .3, 0, o.vest, S.cloth); for (const x of [-.1, 0, .1]) t.obox(.08, .09, .05, x * bx, .22, .15 * bx, o.vestPouch ?? o.vest, S.cloth); t.obox(.12, .06, .04, .12 * bx, .4, .15 * bx, 0x222222, S.poly); }
+  if (o.coat) { t.obox(.44 * bx, .36, .27 * bx, 0, .29, 0, o.coat, S.cloth); t.obox(.1, .3, .02, .07, .32, .14 * bx, o.lapel ?? o.coat, S.cloth, 0, 0, -.2); t.obox(.1, .3, .02, -.07, .32, .14 * bx, o.lapel ?? o.coat, S.cloth, 0, 0, .2); for (let i = 0; i < 4; i++) { t.sph(.012, .05, .2 + i * .07, .145 * bx, 0xd0b050, S.brass); t.sph(.012, -.05, .2 + i * .07, .145 * bx, 0xd0b050, S.brass); } }
+  if (o.sash) t.obox(.08, .6, .28 * bx, 0, .25, 0, o.sash, S.cloth, 0, 0, .7);
+  if (o.straps) { t.obox(.05, .5, .01, .08, .3, .13 * bx, o.straps, S.leather, 0, 0, -.35); t.obox(.05, .5, .01, -.08, .3, .13 * bx, o.straps, S.leather, 0, 0, .35); }
+  if (o.bandolier) { t.obox(.06, .62, .27 * bx, 0, .28, 0, o.bandolier, S.leather, 0, 0, -.75); for (let i = 0; i < 7; i++) t.obox(.02, .05, .02, -.16 + i * .05, .08 + i * .055, .145 * bx, 0xc8a040, S.brass); }
+  if (o.pecs) { t.sph(.09, .09, .38, .1, skin, S.skin, 1.2, .8, .6); t.sph(.09, -.09, .38, .1, skin, S.skin, 1.2, .8, .6); for (let i = 0; i < 3; i++) { t.obox(.06, .05, .03, .04, .22 - i * .06, .1, skin, S.skin); t.obox(.06, .05, .03, -.04, .22 - i * .06, .1, skin, S.skin); } }
   if (o.fur) { for (let i = 0; i < 10; i++) t.ico(.09, rand(-.2, .2) * bx, .3 + rand(-.1, .18), rand(-.12, .12), o.fur, S.cloth, 1.3, .7, 1); t.ico(.12, .17, .45, 0, o.fur, S.cloth, 1.2, .6, 1.2); }
   if (o.pauldron) for (const s of [-1, 1]) { t.sph(.13, s * .24 * bx, .46, 0, o.pauldron, o.armorSurf || S.steel, 1, .55, 1.1, 1, 0, 0, s * .4); t.sph(.11, s * .26 * bx, .4, 0, o.pauldron, o.armorSurf || S.steel, 1, .4, 1, 1, 0, 0, s * .6); }
   if (o.collar) t.cyl(.12, .14, .06, 0, .49, 0, o.collar, S.cloth);
-  if (o.backpack) { t.box(.32 * bx, .38, .16, 0, .3, -.21 * bx, o.backpack, S.cloth); t.box(.3 * bx, .12, .12, 0, .53, -.2 * bx, o.bedroll ?? 0x4a5a3a, S.cloth); t.box(.1, .14, .06, .12, .2, -.3 * bx, o.backpack, S.cloth); if (o.antenna) t.cyl(.006, .006, .7, -.1, .75, -.22 * bx, 0x111111, S.dark); }
+  if (o.backpack) { t.obox(.32 * bx, .38, .16, 0, .3, -.21 * bx, o.backpack, S.cloth); t.obox(.3 * bx, .12, .12, 0, .53, -.2 * bx, o.bedroll ?? 0x4a5a3a, S.cloth); t.obox(.1, .14, .06, .12, .2, -.3 * bx, o.backpack, S.cloth); if (o.antenna) t.cyl(.006, .006, .7, -.1, .75, -.22 * bx, 0x111111, S.dark); }
   if (o.tank) { t.cyl(.07, .07, .45, .08, .3, -.2, o.tank, S.gun); t.cyl(.07, .07, .45, -.08, .3, -.2, o.tank, S.gun); t.tube(.015, .3, 0, .1, -.2, 0x222222, S.rubber); }
   if (o.quiver) { t.cyl(.06, .05, .5, .1, .35, -.16, 0x5a3418, S.leather, .3, 0, -.4); for (let i = 0; i < 5; i++) t.cyl(.005, .005, .2, .15 + i * .015, .65, -.24 + i * .01, 0xeeeeee, S.cloth, .3, 0, -.4); }
-  if (o.cape) { t.box(.46 * bx, .9, .03, 0, .02, -.16 * bx, o.cape, S.cloth, .12); t.box(.5 * bx, .08, .1, 0, .46, -.13 * bx, o.cape, S.cloth); }
+  if (o.cape) { t.obox(.46 * bx, .9, .03, 0, .02, -.16 * bx, o.cape, S.cloth, .12); t.obox(.5 * bx, .08, .1, 0, .46, -.13 * bx, o.cape, S.cloth); }
   if (o.glowCore) { t.cyl(.06, .06, .03, 0, .33, .135 * bx, o.glowCore, S.glow2, PI / 2); t.tor(.07, .012, 0, .33, .135 * bx, 0x444a50, S.steel); }
-  if (o.cyberLines) { for (const s of [-1, 1]) { t.box(.01, .26, .01, s * .14 * bx, .33, .13 * bx, o.cyberLines, S.glow2); t.box(.12, .01, .01, s * .08 * bx, .2, .13 * bx, o.cyberLines, S.glow2); } }
+  if (o.cyberLines) { for (const s of [-1, 1]) { t.obox(.01, .26, .01, s * .14 * bx, .33, .13 * bx, o.cyberLines, S.glow2); t.obox(.12, .01, .01, s * .08 * bx, .2, .13 * bx, o.cyberLines, S.glow2); } }
   if (o.grenades) for (const x of [-.14, .14]) { t.sph(.035, x * bx, .25, .15 * bx, 0x3a4a2a, S.gun); t.cyl(.01, .01, .02, x * bx, .29, .15 * bx, 0x888888, S.steel); }
   // ---- head
   const h = P[2];
   const hs = o.headScale || 1;
   h.cyl(.055, .06, .08, 0, .02, 0, skin, S.skin);
   if (o.headType === 'skull') {
-    h.sph(.115, 0, .15, 0, 0xddd6c4, S.bone, 1, 1.05, 1.1); h.box(.1, .05, .09, 0, .06, .04, 0xddd6c4, S.bone); h.box(.03, .035, .02, .045, .15, .105, 0x000000, S.matte); h.box(.03, .035, .02, -.045, .15, .105, 0x000000, S.matte); h.sph(.012, .045, .15, .1, o.eyes ?? 0xff3a20, S.glow2); h.sph(.012, -.045, .15, .1, o.eyes ?? 0xff3a20, S.glow2);
+    h.sph(.115, 0, .15, 0, 0xddd6c4, S.bone, 1, 1.05, 1.1); h.obox(.1, .05, .09, 0, .06, .04, 0xddd6c4, S.bone); h.obox(.03, .035, .02, .045, .15, .105, 0x000000, S.matte); h.obox(.03, .035, .02, -.045, .15, .105, 0x000000, S.matte); h.sph(.012, .045, .15, .1, o.eyes ?? 0xff3a20, S.glow2); h.sph(.012, -.045, .15, .1, o.eyes ?? 0xff3a20, S.glow2);
   } else if (o.headType === 'robot') {
-    h.box(.2, .2, .22, 0, .14, 0, o.headC ?? 0x2a2e34, S.gun); h.box(.18, .05, .02, 0, .16, .115, o.eyes ?? 0xff2020, S.glow2); h.box(.12, .06, .06, 0, .05, .09, 0x1a1c20, S.dark); for (const s of [-1, 1]) h.cyl(.03, .03, .04, s * .11, .14, 0, 0x555a60, S.steel, 0, 0, PI / 2); h.cyl(.005, .005, .14, .07, .3, -.05, 0x222222, S.dark);
+    h.obox(.2, .2, .22, 0, .14, 0, o.headC ?? 0x2a2e34, S.gun); h.obox(.18, .05, .02, 0, .16, .115, o.eyes ?? 0xff2020, S.glow2); h.obox(.12, .06, .06, 0, .05, .09, 0x1a1c20, S.dark); for (const s of [-1, 1]) h.cyl(.03, .03, .04, s * .11, .14, 0, 0x555a60, S.steel, 0, 0, PI / 2); h.cyl(.005, .005, .14, .07, .3, -.05, 0x222222, S.dark);
   } else if (o.headType === 'alien') {
     h.sph(.13, 0, .17, .02, skin, S.skin, .9, 1.25, 1.2); h.sph(.03, .05, .18, .11, o.eyes ?? 0x00ff80, S.glow2, 1.4, .8, .5); h.sph(.03, -.05, .18, .11, o.eyes ?? 0x00ff80, S.glow2, 1.4, .8, .5); for (const s of [-1, 1]) h.cone(.025, .14, s * .06, .3, -.04, skin, S.skin, -.5, 0, s * .4);
   } else {
     h.sph(.11, 0, .15, 0, skin, S.skin, .92 * hs, 1.1 * hs, 1 * hs, 1);
-    h.box(.15, .07, .12, 0, .08, .025, skin, S.skin); // jaw
-    h.box(.13, .025, .03, 0, .19, .095, o.brow ?? skin, S.skin); // brow
-    h.box(.03, .05, .04, 0, .14, .115, skin, S.skin, -.3); // nose
-    h.box(.028, .018, .01, .042, .16, .1, 0xf0f0f0, S.skin); h.box(.028, .018, .01, -.042, .16, .1, 0xf0f0f0, S.skin);
-    h.box(.014, .016, .012, .042, .16, .105, o.eyes ?? 0x201810, o.eyesGlow ? S.glow2 : S.skin); h.box(.014, .016, .012, -.042, .16, .105, o.eyes ?? 0x201810, o.eyesGlow ? S.glow2 : S.skin);
-    h.box(.06, .012, .01, 0, .08, .088, 0x6a3a30, S.skin); // mouth
-    h.box(.02, .045, .03, .105, .14, 0, skin, S.skin); h.box(.02, .045, .03, -.105, .14, 0, skin, S.skin); // ears
-    if (o.hair) { h.sph(.115, 0, .19, -.015, o.hair, S.cloth, .95, .8, 1); if (o.longHair) h.box(.2, .2, .06, 0, .1, -.09, o.hair, S.cloth); }
-    if (o.beard) { h.box(.15, .1, .06, 0, .06, .07, o.beard, S.cloth); h.box(.1, .06, .05, 0, .01, .08, o.beard, S.cloth); }
-    if (o.stache) h.box(.08, .02, .02, 0, .1, .11, o.stache, S.cloth);
-    if (o.warpaint) { h.box(.17, .025, .01, 0, .16, .108, o.warpaint, S.cloth); }
-    if (o.eyepatch) { h.box(.04, .035, .015, .042, .16, .11, 0x111111, S.leather); h.box(.2, .012, .2, 0, .19, 0, 0x111111, S.leather, 0, 0, .35); }
-    if (o.goggles) { h.cyl(.03, .03, .03, .045, .165, .1, o.goggles, S.glass, PI / 2); h.cyl(.03, .03, .03, -.045, .165, .1, o.goggles, S.glass, PI / 2); h.box(.24, .02, .2, 0, .165, 0, 0x222222, S.rubber); }
-    if (o.mask) { h.box(.15, .08, .05, 0, .08, .085, o.mask, S.cloth); }
-    if (o.gasmask) { h.box(.17, .14, .06, 0, .12, .09, 0x3a3e32, S.rubber); h.cyl(.035, .03, .08, 0, .06, .14, 0x2a2a26, S.rubber, PI / 2.5); h.cyl(.025, .025, .02, .045, .16, .125, 0x88aa99, S.glass, PI / 2); h.cyl(.025, .025, .02, -.045, .16, .125, 0x88aa99, S.glass, PI / 2); }
-    if (o.visorGlow) { h.box(.19, .045, .03, 0, .165, .1, o.visorGlow, S.glow2); }
+    h.obox(.15, .07, .12, 0, .08, .025, skin, S.skin); // jaw
+    h.obox(.13, .025, .03, 0, .19, .095, o.brow ?? skin, S.skin); // brow
+    h.obox(.03, .05, .04, 0, .14, .115, skin, S.skin, -.3); // nose
+    h.obox(.028, .018, .01, .042, .16, .1, 0xf0f0f0, S.skin); h.obox(.028, .018, .01, -.042, .16, .1, 0xf0f0f0, S.skin);
+    h.obox(.014, .016, .012, .042, .16, .105, o.eyes ?? 0x201810, o.eyesGlow ? S.glow2 : S.skin); h.obox(.014, .016, .012, -.042, .16, .105, o.eyes ?? 0x201810, o.eyesGlow ? S.glow2 : S.skin);
+    h.obox(.06, .012, .01, 0, .08, .088, 0x6a3a30, S.skin); // mouth
+    h.obox(.02, .045, .03, .105, .14, 0, skin, S.skin); h.obox(.02, .045, .03, -.105, .14, 0, skin, S.skin); // ears
+    if (o.hair) { h.sph(.115, 0, .19, -.015, o.hair, S.cloth, .95, .8, 1); if (o.longHair) h.obox(.2, .2, .06, 0, .1, -.09, o.hair, S.cloth); }
+    if (o.beard) { h.obox(.15, .1, .06, 0, .06, .07, o.beard, S.cloth); h.obox(.1, .06, .05, 0, .01, .08, o.beard, S.cloth); }
+    if (o.stache) h.obox(.08, .02, .02, 0, .1, .11, o.stache, S.cloth);
+    if (o.warpaint) { h.obox(.17, .025, .01, 0, .16, .108, o.warpaint, S.cloth); }
+    if (o.eyepatch) { h.obox(.04, .035, .015, .042, .16, .11, 0x111111, S.leather); h.obox(.2, .012, .2, 0, .19, 0, 0x111111, S.leather, 0, 0, .35); }
+    if (o.goggles) { h.cyl(.03, .03, .03, .045, .165, .1, o.goggles, S.glass, PI / 2); h.cyl(.03, .03, .03, -.045, .165, .1, o.goggles, S.glass, PI / 2); h.obox(.24, .02, .2, 0, .165, 0, 0x222222, S.rubber); }
+    if (o.mask) { h.obox(.15, .08, .05, 0, .08, .085, o.mask, S.cloth); }
+    if (o.gasmask) { h.obox(.17, .14, .06, 0, .12, .09, 0x3a3e32, S.rubber); h.cyl(.035, .03, .08, 0, .06, .14, 0x2a2a26, S.rubber, PI / 2.5); h.cyl(.025, .025, .02, .045, .16, .125, 0x88aa99, S.glass, PI / 2); h.cyl(.025, .025, .02, -.045, .16, .125, 0x88aa99, S.glass, PI / 2); }
+    if (o.visorGlow) { h.obox(.19, .045, .03, 0, .165, .1, o.visorGlow, S.glow2); }
   }
   // ---- helmet (separate detachable part)
   const hm = P[13];
   switch (o.helmet) {
-    case 'roman': hm.sph(.13, 0, .18, 0, 0xc0a050, S.brass, 1, .85, 1.05, 1); hm.box(.27, .03, .2, 0, .14, -.01, 0xb09040, S.brass); hm.box(.03, .14, .1, .11, .08, .04, 0xb09040, S.brass); hm.box(.03, .14, .1, -.11, .08, .04, 0xb09040, S.brass); hm.box(.22, .04, .08, 0, .12, -.12, 0xb09040, S.brass, -.4); if (o.crest) { hm.box(.04, .12, .3, 0, .34, -.01, o.crest, S.cloth); hm.box(.03, .1, .02, 0, .28, .12, 0xb09040, S.brass); } break;
-    case 'knight': hm.cyl(.13, .13, .26, 0, .15, 0, 0x9aa0a8, S.steel, 0, 0, 0, 12); hm.sph(.13, 0, .28, 0, 0x9aa0a8, S.steel, 1, .5, 1); hm.box(.2, .015, .02, 0, .17, .132, 0x111111, S.matte); hm.box(.012, .1, .015, 0, .11, .132, 0x111111, S.matte); for (let i = 0; i < 4; i++) hm.box(.01, .01, .01, .04 + i * .015, .08, .13, 0x111111, S.matte); if (o.plume) { hm.cone(.05, .3, 0, .48, -.02, o.plume, S.cloth, -.3); } if (o.horns) for (const s of [-1, 1]) hm.cone(.035, .2, s * .15, .32, 0, 0xe8e0c8, S.bone, 0, 0, -s * 1); break;
-    case 'tricorn': hm.cyl(.15, .16, .03, 0, .23, 0, o.hatC ?? 0x1a1814, S.cloth, 0, 0, 0, 3); hm.cyl(.11, .12, .1, 0, .28, 0, o.hatC ?? 0x1a1814, S.cloth); hm.box(.26, .015, .015, 0, .245, .08, 0xd0b050, S.brass, 0, .5); if (o.skullBadge) hm.sph(.025, 0, .29, .115, 0xeeeeee, S.bone); break;
-    case 'bandana': hm.sph(.118, 0, .18, -.01, o.hatC ?? 0xa02020, S.cloth, .96, .78, 1.02); hm.box(.06, .1, .03, 0, .16, -.12, o.hatC ?? 0xa02020, S.cloth, .3); break;
+    case 'roman': hm.sph(.13, 0, .18, 0, 0xc0a050, S.brass, 1, .85, 1.05, 1); hm.obox(.27, .03, .2, 0, .14, -.01, 0xb09040, S.brass); hm.obox(.03, .14, .1, .11, .08, .04, 0xb09040, S.brass); hm.obox(.03, .14, .1, -.11, .08, .04, 0xb09040, S.brass); hm.obox(.22, .04, .08, 0, .12, -.12, 0xb09040, S.brass, -.4); if (o.crest) { hm.obox(.04, .12, .3, 0, .34, -.01, o.crest, S.cloth); hm.obox(.03, .1, .02, 0, .28, .12, 0xb09040, S.brass); } break;
+    case 'knight': hm.cyl(.13, .13, .26, 0, .15, 0, 0x9aa0a8, S.steel, 0, 0, 0, 12); hm.sph(.13, 0, .28, 0, 0x9aa0a8, S.steel, 1, .5, 1); hm.obox(.2, .015, .02, 0, .17, .132, 0x111111, S.matte); hm.obox(.012, .1, .015, 0, .11, .132, 0x111111, S.matte); for (let i = 0; i < 4; i++) hm.obox(.01, .01, .01, .04 + i * .015, .08, .13, 0x111111, S.matte); if (o.plume) { hm.cone(.05, .3, 0, .48, -.02, o.plume, S.cloth, -.3); } if (o.horns) for (const s of [-1, 1]) hm.cone(.035, .2, s * .15, .32, 0, 0xe8e0c8, S.bone, 0, 0, -s * 1); break;
+    case 'tricorn': hm.cyl(.15, .16, .03, 0, .23, 0, o.hatC ?? 0x1a1814, S.cloth, 0, 0, 0, 3); hm.cyl(.11, .12, .1, 0, .28, 0, o.hatC ?? 0x1a1814, S.cloth); hm.obox(.26, .015, .015, 0, .245, .08, 0xd0b050, S.brass, 0, .5); if (o.skullBadge) hm.sph(.025, 0, .29, .115, 0xeeeeee, S.bone); break;
+    case 'bandana': hm.sph(.118, 0, .18, -.01, o.hatC ?? 0xa02020, S.cloth, .96, .78, 1.02); hm.obox(.06, .1, .03, 0, .16, -.12, o.hatC ?? 0xa02020, S.cloth, .3); break;
     case 'stahl': hm.sph(.135, 0, .2, -.01, o.hatC ?? 0x4a5240, S.gun, 1, .78, 1.08, 1); hm.cyl(.15, .16, .05, 0, .13, -.02, o.hatC ?? 0x4a5240, S.gun, -.15, 0, 0, 14); break;
     case 'brodie': hm.sph(.12, 0, .21, 0, o.hatC ?? 0x5a5a3a, S.gun, 1, .6, 1); hm.cyl(.19, .19, .02, 0, .2, 0, o.hatC ?? 0x5a5a3a, S.gun, 0, 0, 0, 14); break;
-    case 'modern': hm.sph(.135, 0, .2, -.01, o.hatC ?? 0x3a3e30, S.poly, 1, .8, 1.05, 1); hm.box(.08, .05, .04, 0, .3, .1, 0x1a1a1a, S.poly); hm.cyl(.02, .02, .06, .05, .3, .13, 0x222222, S.poly, PI / 2); if (o.nvg) { hm.cyl(.025, .025, .07, .03, .2, .16, 0x111111, S.dark, PI / 2); hm.cyl(.025, .025, .07, -.03, .2, .16, 0x111111, S.dark, PI / 2); hm.sph(.02, .03, .2, .2, 0x30ff40, S.glow2); hm.sph(.02, -.03, .2, .2, 0x30ff40, S.glow2); } for (const s of [-1, 1]) hm.box(.03, .08, .1, s * .13, .15, 0, 0x2a2a2a, S.poly); break;
-    case 'riot': hm.sph(.14, 0, .19, 0, 0x15181c, S.poly, 1, .9, 1.08, 1); hm.box(.24, .14, .03, 0, .15, .13, 0x223344, S.glass, -.1); break;
-    case 'cyber': hm.sph(.135, 0, .19, -.01, 0xd8dce0, S.poly, 1, .9, 1.1, 1); hm.box(.22, .06, .04, 0, .17, .12, o.visor ?? 0xff2a40, S.glow2); hm.box(.04, .2, .25, 0, .25, -.02, 0x30343a, S.gun); for (const s of [-1, 1]) hm.box(.03, .1, .12, s * .14, .14, -.02, 0x30343a, S.gun); break;
-    case 'hood': hm.sph(.135, 0, .17, -.02, o.hatC ?? 0x3a3020, S.cloth, 1, 1.05, 1.1); hm.box(.16, .1, .04, 0, .1, .1, 0x111111, S.matte); break;
+    case 'modern': hm.sph(.135, 0, .2, -.01, o.hatC ?? 0x3a3e30, S.poly, 1, .8, 1.05, 1); hm.obox(.08, .05, .04, 0, .3, .1, 0x1a1a1a, S.poly); hm.cyl(.02, .02, .06, .05, .3, .13, 0x222222, S.poly, PI / 2); if (o.nvg) { hm.cyl(.025, .025, .07, .03, .2, .16, 0x111111, S.dark, PI / 2); hm.cyl(.025, .025, .07, -.03, .2, .16, 0x111111, S.dark, PI / 2); hm.sph(.02, .03, .2, .2, 0x30ff40, S.glow2); hm.sph(.02, -.03, .2, .2, 0x30ff40, S.glow2); } for (const s of [-1, 1]) hm.obox(.03, .08, .1, s * .13, .15, 0, 0x2a2a2a, S.poly); break;
+    case 'riot': hm.sph(.14, 0, .19, 0, 0x15181c, S.poly, 1, .9, 1.08, 1); hm.obox(.24, .14, .03, 0, .15, .13, 0x223344, S.glass, -.1); break;
+    case 'cyber': hm.sph(.135, 0, .19, -.01, 0xd8dce0, S.poly, 1, .9, 1.1, 1); hm.obox(.22, .06, .04, 0, .17, .12, o.visor ?? 0xff2a40, S.glow2); hm.obox(.04, .2, .25, 0, .25, -.02, 0x30343a, S.gun); for (const s of [-1, 1]) hm.obox(.03, .1, .12, s * .14, .14, -.02, 0x30343a, S.gun); break;
+    case 'hood': hm.sph(.135, 0, .17, -.02, o.hatC ?? 0x3a3020, S.cloth, 1, 1.05, 1.1); hm.obox(.16, .1, .04, 0, .1, .1, 0x111111, S.matte); break;
     case 'crown': hm.cyl(.12, .11, .07, 0, .26, 0, 0xffcc30, S.brass, 0, 0, 0, 10); for (let i = 0; i < 8; i++) hm.cone(.02, .07, Math.cos(i * .785) * .115, .32, Math.sin(i * .785) * .115, 0xffcc30, S.brass); break;
     case 'bone': hm.sph(.13, 0, .21, -.02, 0xd8cfb8, S.bone, 1, .7, 1.1); for (const s of [-1, 1]) hm.cone(.03, .18, s * .1, .3, -.02, 0xe8dfc8, S.bone, 0, 0, -s * .5); break;
   }
@@ -1312,14 +1318,16 @@ function buildBiped(o) {
   const sleeve = o.sleeve ?? shirt, glove = o.glove ?? skin;
   for (const [ui, li, s] of [[3, 4, 1], [5, 6, -1]]) {
     const u = P[ui], l = P[li];
-    if (o.bareArms) limb(u, .06 * bx, .05 * bx, .3, skin, S.skin); else { limb(u, .062 * bx, .055 * bx, .3, sleeve, sf); }
+    if (o.bareArms) { limb(u, .06 * bx, .05 * bx, .3, skin, S.skin); u.sph(.05 * bx, 0, -.12, .02, skin, S.skin, 1, 1.5, 1); u.sph(.042 * bx, 0, -.1, -.025, skin, S.skin, 1, 1.4, .9); } else { limb(u, .062 * bx, .055 * bx, .3, sleeve, sf); u.cyl(.066 * bx, .064 * bx, .03, 0, -.25, 0, sleeve, sf); }
+    u.sph(.07 * bx, 0, -.01, 0, o.pauldron ? o.pauldron : (o.bareArms ? skin : sleeve), o.pauldron ? (o.armorSurf || S.steel) : (o.bareArms ? S.skin : sf), 1, .9, 1); // deltoid
     if (o.armArmor) { u.cyl(.07 * bx, .065 * bx, .16, 0, -.1, 0, o.armArmor, o.armorSurf || S.steel); }
     if (o.armband) u.cyl(.065 * bx, .065 * bx, .04, 0, -.06, 0, o.armband, S.cloth);
     if (o.bareForearm || o.bareArms) limb(l, .05 * bx, .042 * bx, .26, skin, S.skin); else limb(l, .052 * bx, .045 * bx, .26, o.forearm ?? sleeve, sf);
     if (o.bracer) l.cyl(.058 * bx, .052 * bx, .14, 0, -.15, 0, o.bracer, o.bracerSurf || S.leather);
     if (o.cuff) l.cyl(.06 * bx, .06 * bx, .05, 0, -.22, 0, o.cuff, S.cloth);
-    l.box(.08 * bx, .1, .07 * bx, 0, -.29, .005, glove, o.glove ? S.leather : S.skin);
-    l.box(.025, .06, .03, s * -.03, -.28, .045, glove, S.skin); // thumb
+    l.obox(.075 * bx, .07, .045 * bx, 0, -.28, .005, glove, o.glove ? S.leather : S.skin);
+    for (let f = 0; f < 4; f++) l.box(.017 * bx, .055, .022, (-.026 + f * .0175) * bx, -.33, .018 - Math.abs(f - 1.5) * .003, glove, o.glove ? S.leather : S.skin, .5, 0, 0);
+    l.obox(.022, .05, .025, s * -.036, -.28, .03, glove, S.skin, .3, 0, s * .4); // thumb
     if (o.claws) for (let i = 0; i < 3; i++) l.cone(.012, .07, (i - 1) * .025, -.37, .02, 0xeeeedd, S.bone, PI);
   }
   // ---- legs
@@ -1327,14 +1335,15 @@ function buildBiped(o) {
     const th = P[ti], sh = P[si];
     if (o.bareLegs) limb(th, .085 * bx, .065 * bx, .44, skin, S.skin); else limb(th, .088 * bx, .07 * bx, .44, pants, pf);
     if (o.cuisse) th.cyl(.095 * bx, .08 * bx, .3, 0, -.18, .01, o.cuisse, o.armorSurf || S.steel);
-    if (o.legPouch && ti === 7) th.box(.06, .12, .1, .08, -.15, 0, o.legPouch, S.cloth);
+    if (o.legPouch && ti === 7) th.obox(.06, .12, .1, .08, -.15, 0, o.legPouch, S.cloth);
     if (o.kneepad) th.sph(.06, 0, -.43, .05, o.kneepad, S.poly, 1, 1, .7);
-    if (o.bareLegs) limb(sh, .062 * bx, .045 * bx, .42, skin, S.skin); else limb(sh, .066 * bx, .052 * bx, .42, o.shinC ?? pants, pf);
+    if (o.bareLegs) { limb(sh, .062 * bx, .045 * bx, .42, skin, S.skin); sh.sph(.06 * bx, 0, -.12, -.02, skin, S.skin, 1, 1.6, 1.1); } else { limb(sh, .066 * bx, .052 * bx, .42, o.shinC ?? pants, pf); sh.sph(.064 * bx, 0, -.12, -.015, o.shinC ?? pants, pf, 1, 1.5, 1.05); }
+    sh.sph(.06 * bx, 0, 0, .01, o.cuisse || (o.bareLegs ? skin : pants), o.cuisse ? (o.armorSurf || S.steel) : pf, 1, .8, 1); // knee
     if (o.greaves) sh.cyl(.07 * bx, .058 * bx, .3, 0, -.2, .01, o.greaves, o.armorSurf || S.steel);
     if (o.wraps) for (let i = 0; i < 5; i++) sh.cyl(.064 * bx, .06 * bx, .03, 0, -.12 - i * .055, 0, o.wraps, S.cloth);
-    if (o.sandals) { sh.box(.1, .025, .22, 0, -.455, .04, 0x5a3a1a, S.leather); sh.box(.09, .05, .17, 0, -.42, .04, skin, S.skin); for (let i = 0; i < 3; i++) sh.cyl(.058, .055, .015, 0, -.3 - i * .05, 0, 0x5a3a1a, S.leather); }
-    else if (o.feet === 'bare') sh.box(.1, .06, .2, 0, -.43, .04, skin, S.skin);
-    else { sh.box(.11 * bx, .1, .23, 0, -.42, .045, boots, S.leather); sh.box(.115 * bx, .03, .24, 0, -.465, .045, 0x15100a, S.rubber); if (o.tallBoots) sh.cyl(.075 * bx, .07 * bx, .24, 0, -.3, 0, boots, S.leather); }
+    if (o.sandals) { sh.obox(.1, .025, .22, 0, -.455, .04, 0x5a3a1a, S.leather); sh.obox(.09, .05, .17, 0, -.42, .04, skin, S.skin); for (let i = 0; i < 3; i++) sh.cyl(.058, .055, .015, 0, -.3 - i * .05, 0, 0x5a3a1a, S.leather); }
+    else if (o.feet === 'bare') sh.obox(.1, .06, .2, 0, -.43, .04, skin, S.skin);
+    else { sh.obox(.11 * bx, .1, .23, 0, -.42, .045, boots, S.leather); sh.obox(.115 * bx, .03, .24, 0, -.465, .045, 0x15100a, S.rubber); if (o.tallBoots) sh.cyl(.075 * bx, .07 * bx, .24, 0, -.3, 0, boots, S.leather); }
   }
   // ---- weapon & offhand
   if (o.weapon) WEAPON_PARTS[o.weapon](P[11], o);
@@ -1343,32 +1352,32 @@ function buildBiped(o) {
 }
 // Enemy held weapons. Ranged guns point along local -Y; melee blades along +Z.
 const WEAPON_PARTS = {
-  sword(b, o) { b.cyl(.018, .018, .12, 0, 0, .0, 0x3a2414, S.leather, PI / 2); b.box(.18, .03, .03, 0, 0, .07, 0xb0a070, S.brass); b.box(.05, .012, .7, 0, 0, .43, 0xc8ccd0, S.chrome); b.cone(.025, .08, 0, 0, .82, 0xc8ccd0, S.chrome, PI / 2); b.sph(.025, 0, 0, -.07, 0xb0a070, S.brass); },
-  greatsword(b) { b.cyl(.022, .022, .3, 0, 0, -.05, 0x2a1810, S.leather, PI / 2); b.box(.34, .045, .05, 0, 0, .12, 0x30303a, S.steel); b.box(.09, .02, 1.5, 0, 0, .9, 0x50545c, S.steel); b.box(.02, .022, 1.4, 0, 0, .9, 0xff3020, S.glow); b.cone(.045, .2, 0, 0, 1.75, 0x50545c, S.steel, PI / 2); },
-  gladius(b) { b.cyl(.018, .018, .1, 0, 0, 0, 0x8a6a40, S.wood, PI / 2); b.sph(.03, 0, 0, -.06, 0xc0a050, S.brass); b.box(.1, .03, .04, 0, 0, .06, 0xc0a050, S.brass); b.box(.055, .012, .45, 0, 0, .3, 0xd0d4d8, S.chrome); b.cone(.03, .07, 0, 0, .56, 0xd0d4d8, S.chrome, PI / 2); },
-  cutlass(b) { b.tor(.06, .008, 0, 0, .0, 0xc0a050, S.brass, 0, PI / 2, 0, PI); b.cyl(.016, .016, .1, 0, 0, 0, 0x2a1a10, S.leather, PI / 2); for (let i = 0; i < 6; i++) b.box(.05, .01, .1, 0, i * i * .004, .08 + i * .095, 0xc8ccd0, S.chrome, -i * .05); },
+  sword(b, o) { b.cyl(.018, .018, .12, 0, 0, .0, 0x3a2414, S.leather, PI / 2); b.obox(.18, .03, .03, 0, 0, .07, 0xb0a070, S.brass); b.obox(.05, .012, .7, 0, 0, .43, 0xc8ccd0, S.chrome); b.cone(.025, .08, 0, 0, .82, 0xc8ccd0, S.chrome, PI / 2); b.sph(.025, 0, 0, -.07, 0xb0a070, S.brass); },
+  greatsword(b) { b.cyl(.022, .022, .3, 0, 0, -.05, 0x2a1810, S.leather, PI / 2); b.obox(.34, .045, .05, 0, 0, .12, 0x30303a, S.steel); b.obox(.09, .02, 1.5, 0, 0, .9, 0x50545c, S.steel); b.obox(.02, .022, 1.4, 0, 0, .9, 0xff3020, S.glow); b.cone(.045, .2, 0, 0, 1.75, 0x50545c, S.steel, PI / 2); },
+  gladius(b) { b.cyl(.018, .018, .1, 0, 0, 0, 0x8a6a40, S.wood, PI / 2); b.sph(.03, 0, 0, -.06, 0xc0a050, S.brass); b.obox(.1, .03, .04, 0, 0, .06, 0xc0a050, S.brass); b.obox(.055, .012, .45, 0, 0, .3, 0xd0d4d8, S.chrome); b.cone(.03, .07, 0, 0, .56, 0xd0d4d8, S.chrome, PI / 2); },
+  cutlass(b) { b.tor(.06, .008, 0, 0, .0, 0xc0a050, S.brass, 0, PI / 2, 0, PI); b.cyl(.016, .016, .1, 0, 0, 0, 0x2a1a10, S.leather, PI / 2); for (let i = 0; i < 6; i++) b.obox(.05, .01, .1, 0, i * i * .004, .08 + i * .095, 0xc8ccd0, S.chrome, -i * .05); },
   club(b) { b.cyl(.03, .07, .7, 0, 0, .3, 0x6a4a2a, S.wood, PI / 2); for (let i = 0; i < 5; i++) b.cone(.02, .07, Math.cos(i * 1.3) * .06, Math.sin(i * 1.3) * .06, .55 + i * .03, 0xd8d0b8, S.bone, Math.cos(i) * 1.4, 0, Math.sin(i) * 1.4); },
-  axe(b) { b.cyl(.02, .02, .8, 0, 0, .3, 0x6a4a2a, S.wood, PI / 2); b.box(.02, .22, .16, 0, .08, .62, 0xa0a4a8, S.steel); b.box(.025, .05, .05, 0, -.03, .62, 0x606468, S.steel); },
+  axe(b) { b.cyl(.02, .02, .8, 0, 0, .3, 0x6a4a2a, S.wood, PI / 2); b.obox(.02, .22, .16, 0, .08, .62, 0xa0a4a8, S.steel); b.obox(.025, .05, .05, 0, -.03, .62, 0x606468, S.steel); },
   spear(b) { b.cyl(.016, .016, 1.9, 0, 0, .3, 0x7a5a32, S.wood, PI / 2); b.cone(.04, .22, 0, 0, 1.35, 0x2a2a30, S.stone, PI / 2, 0, 0, 4); b.cyl(.022, .022, .06, 0, 0, 1.2, 0x5a3a1a, S.leather, PI / 2); },
   pilum(b) { b.cyl(.016, .016, 1.4, 0, 0, .25, 0x7a5a32, S.wood, PI / 2); b.cyl(.008, .008, .5, 0, 0, 1.15, 0x9a9a9a, S.steel, PI / 2); b.cone(.02, .08, 0, 0, 1.42, 0xaaaaaa, S.steel, PI / 2, 0, 0, 4); },
-  pitchfork(b) { b.cyl(.016, .016, 1.6, 0, 0, .3, 0x8a6a40, S.wood, PI / 2); b.box(.2, .02, .02, 0, 0, 1.1, 0x5a5a5a, S.dark); for (const x of [-.09, 0, .09]) b.cyl(.008, .004, .3, x, 0, 1.25, 0x6a6a6a, S.dark, PI / 2); },
+  pitchfork(b) { b.cyl(.016, .016, 1.6, 0, 0, .3, 0x8a6a40, S.wood, PI / 2); b.obox(.2, .02, .02, 0, 0, 1.1, 0x5a5a5a, S.dark); for (const x of [-.09, 0, .09]) b.cyl(.008, .004, .3, x, 0, 1.25, 0x6a6a6a, S.dark, PI / 2); },
   torch(b) { b.cyl(.02, .025, .5, 0, 0, .1, 0x5a3a1a, S.wood, PI / 2.6); b.sph(.05, 0, .1, .32, 0xffa020, S.glow2, 1, 1.4, 1); },
-  bow(b, o, off) { for (let i = 0; i < 7; i++) { const a = (i - 3) / 3; b.box(.025, .17, .025, 0, a * .5, Math.abs(a) * Math.abs(a) * -.15 + .1, 0x6a4422, S.wood, a * .5); } b.cyl(.003, .003, 1.0, 0, 0, -.05, 0xeeeeee, S.cloth); },
-  crossbow(b) { b.box(.06, .7, .07, 0, -.2, 0, 0x6a4a2a, S.wood); b.box(.7, .04, .04, 0, -.5, .02, 0x4a4a4a, S.steel); b.cyl(.003, .003, .6, 0, -.38, .02, 0xdddddd, S.cloth, 0, 0, PI / 2); b.box(.02, .4, .02, 0, -.45, .05, 0x7a5a3a, S.wood); },
-  musket(b) { b.box(.05, .5, .08, 0, .05, -.01, 0x6a3a1a, S.wood); b.tube(.014, .01, 0, 0, 0, 0x555555, S.gun); b.cyl(.014, .014, .95, 0, -.6, 0, 0x3a3a3a, S.gun); b.box(.04, .08, .05, .03, -.08, .0, 0x8a8a8a, S.steel); b.cyl(.004, .004, .8, 0, -.5, .025, 0x8a6a40, S.wood); },
-  flintpistol(b) { b.box(.035, .04, .14, 0, .0, -.03, 0x5a3a1a, S.wood, -.4); b.cyl(.014, .012, .3, 0, -.17, .03, 0x4a4a4a, S.gun); b.box(.02, .04, .03, .02, -.04, .05, 0x8a8a8a, S.steel); },
-  rifle(b) { b.box(.045, .3, .1, 0, .12, -.02, 0x5a3a20, S.wood); b.box(.045, .5, .05, 0, -.25, .02, 0x5a3a20, S.wood); b.cyl(.012, .012, .45, 0, -.55, .04, 0x2a2a2a, S.gun); b.box(.035, .1, .06, 0, -.05, .045, 0x3a3a3a, S.gun); b.cyl(.006, .006, .05, .03, -.05, .07, 0x666666, S.steel, 0, 0, PI / 2); },
-  smg(b) { b.box(.045, .3, .07, 0, -.1, .02, 0x2a2a2a, S.gun); b.cyl(.016, .016, .2, 0, -.33, .02, 0x3a3a3a, S.gun); b.box(.03, .14, .03, 0, -.02, -.07, 0x2a2a2a, S.gun); b.box(.025, .02, .2, 0, -.06, .1, 0x1a1a1a, S.gun, .5); b.box(.03, .05, .14, 0, .12, .0, 0x3a3a3a, S.gun); },
-  flamer(b) { b.cyl(.025, .025, .6, 0, -.25, .03, 0x3a3a2a, S.gun); b.cyl(.04, .04, .2, 0, -.05, .03, 0x4a4a3a, S.gun); b.sph(.02, 0, -.56, .03, 0xff8020, S.glow2); b.box(.03, .08, .05, 0, .1, .0, 0x2a2a2a, S.gun); },
-  ar(b) { b.box(.045, .25, .08, 0, .16, -.01, 0x1c1e20, S.poly); b.box(.05, .34, .09, 0, -.12, .01, 0x2a2c2e, S.gun); b.cyl(.014, .014, .3, 0, -.45, .02, 0x222222, S.gun); b.box(.035, .12, .1, 0, -.1, .07, 0x1a1a1a, S.gun, -.2); b.box(.03, .1, .05, 0, -.08, -.04, 0x1a1a1a, S.poly); b.box(.03, .07, .05, 0, -.05, -.04, 0x333333, S.gun); b.box(.035, .08, .04, 0, -.14, -.05, 0x121212, S.gun); b.sph(.012, 0, -.08, -.08, 0xff2010, S.glow); },
-  minigun(b) { for (let i = 0; i < 6; i++) b.cyl(.012, .012, .8, Math.cos(i) * .04, -.5, Math.sin(i) * .04, 0x2a2a2a, S.gun); b.cyl(.06, .06, .3, 0, -.1, 0, 0x3a3a3a, S.gun); b.box(.12, .2, .15, 0, .05, .08, 0x2a2e20, S.gun); b.cyl(.065, .065, .03, 0, -.8, 0, 0x1a1a1a, S.gun); },
-  plasma(b, o) { b.box(.05, .5, .09, 0, -.1, .02, 0xd8dce0, S.poly); b.box(.06, .2, .1, 0, .15, -.01, 0x2a2e34, S.gun); b.cyl(.025, .025, .25, 0, -.45, .03, 0x30343a, S.gun); b.box(.012, .4, .012, 0, -.15, .075, o.glow ?? 0xff2a40, S.glow2); b.sph(.02, 0, -.58, .03, o.glow ?? 0xff2a40, S.glow2); },
-  rocketl(b) { b.cyl(.05, .05, 1.1, 0, -.3, .06, 0x3a4a2a, S.gun); b.cone(.06, .15, 0, -.88, .06, 0x5a5a3a, S.gun, PI); b.box(.03, .1, .06, 0, 0, -.02, 0x222222, S.poly); },
+  bow(b, o, off) { for (let i = 0; i < 7; i++) { const a = (i - 3) / 3; b.obox(.025, .17, .025, 0, a * .5, Math.abs(a) * Math.abs(a) * -.15 + .1, 0x6a4422, S.wood, a * .5); } b.cyl(.003, .003, 1.0, 0, 0, -.05, 0xeeeeee, S.cloth); },
+  crossbow(b) { b.obox(.06, .7, .07, 0, -.2, 0, 0x6a4a2a, S.wood); b.obox(.7, .04, .04, 0, -.5, .02, 0x4a4a4a, S.steel); b.cyl(.003, .003, .6, 0, -.38, .02, 0xdddddd, S.cloth, 0, 0, PI / 2); b.obox(.02, .4, .02, 0, -.45, .05, 0x7a5a3a, S.wood); },
+  musket(b) { b.obox(.05, .5, .08, 0, .05, -.01, 0x6a3a1a, S.wood); b.tube(.014, .01, 0, 0, 0, 0x555555, S.gun); b.cyl(.014, .014, .95, 0, -.6, 0, 0x3a3a3a, S.gun); b.obox(.04, .08, .05, .03, -.08, .0, 0x8a8a8a, S.steel); b.cyl(.004, .004, .8, 0, -.5, .025, 0x8a6a40, S.wood); },
+  flintpistol(b) { b.obox(.035, .04, .14, 0, .0, -.03, 0x5a3a1a, S.wood, -.4); b.cyl(.014, .012, .3, 0, -.17, .03, 0x4a4a4a, S.gun); b.obox(.02, .04, .03, .02, -.04, .05, 0x8a8a8a, S.steel); },
+  rifle(b) { b.obox(.045, .3, .1, 0, .12, -.02, 0x5a3a20, S.wood); b.obox(.045, .5, .05, 0, -.25, .02, 0x5a3a20, S.wood); b.cyl(.012, .012, .45, 0, -.55, .04, 0x2a2a2a, S.gun); b.obox(.035, .1, .06, 0, -.05, .045, 0x3a3a3a, S.gun); b.cyl(.006, .006, .05, .03, -.05, .07, 0x666666, S.steel, 0, 0, PI / 2); },
+  smg(b) { b.obox(.045, .3, .07, 0, -.1, .02, 0x2a2a2a, S.gun); b.cyl(.016, .016, .2, 0, -.33, .02, 0x3a3a3a, S.gun); b.obox(.03, .14, .03, 0, -.02, -.07, 0x2a2a2a, S.gun); b.obox(.025, .02, .2, 0, -.06, .1, 0x1a1a1a, S.gun, .5); b.obox(.03, .05, .14, 0, .12, .0, 0x3a3a3a, S.gun); },
+  flamer(b) { b.cyl(.025, .025, .6, 0, -.25, .03, 0x3a3a2a, S.gun); b.cyl(.04, .04, .2, 0, -.05, .03, 0x4a4a3a, S.gun); b.sph(.02, 0, -.56, .03, 0xff8020, S.glow2); b.obox(.03, .08, .05, 0, .1, .0, 0x2a2a2a, S.gun); },
+  ar(b) { b.obox(.045, .25, .08, 0, .16, -.01, 0x1c1e20, S.poly); b.obox(.05, .34, .09, 0, -.12, .01, 0x2a2c2e, S.gun); b.cyl(.014, .014, .3, 0, -.45, .02, 0x222222, S.gun); b.obox(.035, .12, .1, 0, -.1, .07, 0x1a1a1a, S.gun, -.2); b.obox(.03, .1, .05, 0, -.08, -.04, 0x1a1a1a, S.poly); b.obox(.03, .07, .05, 0, -.05, -.04, 0x333333, S.gun); b.obox(.035, .08, .04, 0, -.14, -.05, 0x121212, S.gun); b.sph(.012, 0, -.08, -.08, 0xff2010, S.glow); },
+  minigun(b) { for (let i = 0; i < 6; i++) b.cyl(.012, .012, .8, Math.cos(i) * .04, -.5, Math.sin(i) * .04, 0x2a2a2a, S.gun); b.cyl(.06, .06, .3, 0, -.1, 0, 0x3a3a3a, S.gun); b.obox(.12, .2, .15, 0, .05, .08, 0x2a2e20, S.gun); b.cyl(.065, .065, .03, 0, -.8, 0, 0x1a1a1a, S.gun); },
+  plasma(b, o) { b.obox(.05, .5, .09, 0, -.1, .02, 0xd8dce0, S.poly); b.obox(.06, .2, .1, 0, .15, -.01, 0x2a2e34, S.gun); b.cyl(.025, .025, .25, 0, -.45, .03, 0x30343a, S.gun); b.obox(.012, .4, .012, 0, -.15, .075, o.glow ?? 0xff2a40, S.glow2); b.sph(.02, 0, -.58, .03, o.glow ?? 0xff2a40, S.glow2); },
+  rocketl(b) { b.cyl(.05, .05, 1.1, 0, -.3, .06, 0x3a4a2a, S.gun); b.cone(.06, .15, 0, -.88, .06, 0x5a5a3a, S.gun, PI); b.obox(.03, .1, .06, 0, 0, -.02, 0x222222, S.poly); },
   claw(b) { for (let i = 0; i < 3; i++) b.cone(.015, .2, (i - 1) * .03, -.05, .1, 0xddd8c8, S.bone, PI / 2 + .3); },
   shield_round(b) { b.cyl(.36, .36, .04, .06, -.05, 0, 0x8a5a2a, S.wood, 0, 0, PI / 2, 16); b.cyl(.1, .1, .07, .08, -.05, 0, 0xaaaaaa, S.steel, 0, 0, PI / 2); b.tor(.36, .02, .06, -.05, 0, 0x777777, S.steel, 0, PI / 2, 0); },
-  scutum(b) { b.box(.05, .95, .58, .07, -.05, .08, 0xa01818, S.cloth); b.box(.06, .97, .04, .07, -.05, .37, 0xc0a050, S.brass); b.box(.06, .97, .04, .07, -.05, -.21, 0xc0a050, S.brass); b.box(.06, .04, .58, .07, .42, .08, 0xc0a050, S.brass); b.box(.06, .04, .58, .07, -.52, .08, 0xc0a050, S.brass); b.sph(.08, .1, -.05, .08, 0xd0b060, S.brass, .6, 1, 1); for (const s of [-1, 1]) { b.box(.055, .06, .3, .09, s * .24, .08, 0xe0c060, S.brass, 0, 0, 0); } },
-  kite(b) { b.box(.05, .7, .45, .07, 0, .05, 0xeeeeee, S.cloth); b.cone(.32, .5, .07, -.6, .05, 0xeeeeee, S.cloth, PI, 0, 0, 3); b.box(.06, .5, .1, .08, 0, .05, 0xc01818, S.cloth); b.box(.06, .1, .35, .08, .15, .05, 0xc01818, S.cloth); },
-  riotshield(b) { b.box(.04, 1.1, .6, .08, -.1, .1, 0x223344, S.glass); b.box(.05, 1.12, .03, .08, -.1, .4, 0x111111, S.poly); b.box(.05, 1.12, .03, .08, -.1, -.2, 0x111111, S.poly); b.box(.05, .06, .3, .085, .25, .1, 0xffffff, S.poly); },
+  scutum(b) { b.obox(.05, .95, .58, .07, -.05, .08, 0xa01818, S.cloth); b.obox(.06, .97, .04, .07, -.05, .37, 0xc0a050, S.brass); b.obox(.06, .97, .04, .07, -.05, -.21, 0xc0a050, S.brass); b.obox(.06, .04, .58, .07, .42, .08, 0xc0a050, S.brass); b.obox(.06, .04, .58, .07, -.52, .08, 0xc0a050, S.brass); b.sph(.08, .1, -.05, .08, 0xd0b060, S.brass, .6, 1, 1); for (const s of [-1, 1]) { b.obox(.055, .06, .3, .09, s * .24, .08, 0xe0c060, S.brass, 0, 0, 0); } },
+  kite(b) { b.obox(.05, .7, .45, .07, 0, .05, 0xeeeeee, S.cloth); b.cone(.32, .5, .07, -.6, .05, 0xeeeeee, S.cloth, PI, 0, 0, 3); b.obox(.06, .5, .1, .08, 0, .05, 0xc01818, S.cloth); b.obox(.06, .1, .35, .08, .15, .05, 0xc01818, S.cloth); },
+  riotshield(b) { b.obox(.04, 1.1, .6, .08, -.1, .1, 0x223344, S.glass); b.obox(.05, 1.12, .03, .08, -.1, .4, 0x111111, S.poly); b.obox(.05, 1.12, .03, .08, -.1, -.2, 0x111111, S.poly); b.obox(.05, .06, .3, .085, .25, .1, 0xffffff, S.poly); },
   keg(b) { b.cyl(.2, .2, .32, 0, -.1, .05, 0x6a4422, S.wood, 0, 0, 0, 10); b.cyl(.21, .21, .03, 0, 0, .05, 0x333333, S.steel); b.sph(.03, 0, .1, .05, 0xffa030, S.glow2); },
 };
 
@@ -1382,23 +1391,23 @@ function buildRaptor(o) {
   hips.sph(.3, 0, 0, 0, c, sk, .85, .85, 1.25, 1); hips.sph(.22, 0, -.1, 0, belly, sk, .8, .7, 1.1);
   chest.sph(.28, 0, 0, .15, c, sk, .85, .9, 1.25, 1); chest.sph(.2, 0, -.12, .18, belly, sk, .8, .7, 1);
   for (let i = 0; i < 9; i++) { const z = .4 - i * .15; (i < 4 ? chest : hips).cone(.035, .14 + (i % 2) * .05, 0, .26 - Math.abs(i - 4) * .01, (i < 4 ? z - .3 : z + .25), o.crest ?? 0xc04020, S.cloth, -.5); }
-  for (let i = 0; i < 4; i++) chest.box(.3, .02, .06, 0, .2, .3 - i * .12, c2, sk);
+  for (let i = 0; i < 4; i++) chest.obox(.3, .02, .06, 0, .2, .3 - i * .12, c2, sk);
   neck.cyl(.1, .13, .38, 0, .17, .08, c, sk, .45); neck.sph(.1, 0, .05, .12, belly, sk, .8, 1.2, .6);
-  head.box(.2, .17, .3, 0, .02, .1, c, sk); head.box(.15, .1, .25, 0, .0, .32, c, sk); head.box(.16, .04, .26, 0, .07, .3, c2, sk);
-  for (const s of [-1, 1]) { head.sph(.035, s * .095, .05, .15, o.eye ?? 0xffcc20, S.glow, .6, 1, 1); head.box(.01, .04, .01, s * .11, .05, .155, 0x000000, S.matte); head.box(.06, .02, .12, s * .07, .1, .14, c2, sk, 0, s * .2, 0); }
+  head.obox(.2, .17, .3, 0, .02, .1, c, sk); head.obox(.15, .1, .25, 0, .0, .32, c, sk); head.obox(.16, .04, .26, 0, .07, .3, c2, sk);
+  for (const s of [-1, 1]) { head.sph(.035, s * .095, .05, .15, o.eye ?? 0xffcc20, S.glow, .6, 1, 1); head.obox(.01, .04, .01, s * .11, .05, .155, 0x000000, S.matte); head.obox(.06, .02, .12, s * .07, .1, .14, c2, sk, 0, s * .2, 0); }
   for (let i = 0; i < 7; i++) for (const s of [-1, 1]) head.cone(.012, .04, s * .065, -.06, .18 + i * .045, 0xf0ead8, S.bone, PI);
-  jaw.box(.13, .05, .3, 0, -.03, .22, c, sk); jaw.box(.12, .03, .26, 0, -.005, .22, 0x8a2020, S.skin);
+  jaw.obox(.13, .05, .3, 0, -.03, .22, c, sk); jaw.obox(.12, .03, .26, 0, -.005, .22, 0x8a2020, S.skin);
   for (let i = 0; i < 6; i++) for (const s of [-1, 1]) jaw.cone(.011, .035, s * .055, .02, .12 + i * .045, 0xf0ead8, S.bone);
-  t1.cyl(.08, .2, .85, 0, 0, -.4, c, sk, PI / 2); for (let i = 0; i < 4; i++) t1.box(.2 - i * .03, .02, .08, 0, .12 - i * .02, -.15 - i * .18, c2, sk);
-  t2.cyl(.015, .08, .95, 0, 0, -.45, c, sk, PI / 2); if (o.tailFeathers) for (let i = 0; i < 6; i++) t2.box(.02, .1, .25, (i % 2 ? 1 : -1) * .06, .04, -.6 - i * .06, o.crest ?? 0xc04020, S.cloth, 0, (i % 2 ? 1 : -1) * .4);
+  t1.cyl(.08, .2, .85, 0, 0, -.4, c, sk, PI / 2); for (let i = 0; i < 4; i++) t1.obox(.2 - i * .03, .02, .08, 0, .12 - i * .02, -.15 - i * .18, c2, sk);
+  t2.cyl(.015, .08, .95, 0, 0, -.45, c, sk, PI / 2); if (o.tailFeathers) for (let i = 0; i < 6; i++) t2.obox(.02, .1, .25, (i % 2 ? 1 : -1) * .06, .04, -.6 - i * .06, o.crest ?? 0xc04020, S.cloth, 0, (i % 2 ? 1 : -1) * .4);
   for (const [th, sh, ft, s] of [[P[7], P[8], P[9], 1], [P[10], P[11], P[12], -1]]) {
     th.sph(.15, 0, -.15, .03, c, sk, .85, 1.6, 1.1); th.cyl(.08, .06, .42, 0, -.21, 0, c, sk);
     sh.cyl(.055, .04, .44, 0, -.22, 0, c, sk);
-    ft.cyl(.04, .035, .3, 0, -.15, 0, c2, sk); ft.box(.1, .04, .2, 0, -.3, .08, c2, sk);
+    ft.cyl(.04, .035, .3, 0, -.15, 0, c2, sk); ft.obox(.1, .04, .2, 0, -.3, .08, c2, sk);
     for (const x of [-.03, .03]) ft.cone(.012, .07, x, -.31, .2, 0xe8e0d0, S.bone, PI / 2);
     ft.cone(.02, .14, s * .04, -.24, .12, 0xf0e8d8, S.bone, -.6); // sickle claw
   }
-  for (const [a, s] of [[P[13], 1], [P[14], -1]]) { a.cyl(.035, .025, .28, 0, -.12, .05, c, sk, -.5); for (let i = 0; i < 3; i++) a.cone(.01, .07, (i - 1) * .02, -.25, .16, 0xe8e0d0, S.bone, -2.2); if (o.armFeathers) a.box(.01, .12, .2, s * .04, -.08, -.02, o.crest ?? 0xc04020, S.cloth); }
+  for (const [a, s] of [[P[13], 1], [P[14], -1]]) { a.cyl(.035, .025, .28, 0, -.12, .05, c, sk, -.5); for (let i = 0; i < 3; i++) a.cone(.01, .07, (i - 1) * .02, -.25, .16, 0xe8e0d0, S.bone, -2.2); if (o.armFeathers) a.obox(.01, .12, .2, s * .04, -.08, -.02, o.crest ?? 0xc04020, S.cloth); }
   return P;
 }
 function buildQuad(o) {
@@ -1408,23 +1417,23 @@ function buildQuad(o) {
   switch (o.kind) {
     case 'trike':
       body.sph(L * .5, 0, 0, 0, c, sk, .62, .55, 1, 2); body.sph(L * .4, 0, -.15 * h, 0, c2, sk, .6, .45, .9);
-      for (let i = 0; i < 8; i++) body.box(w * .6, .05, .25, 0, h * .32, L * .35 - i * L * .1, c2, S.scale);
-      head.box(.9, .8, 1.1, 0, .1, .4, c, sk); head.cone(.32, 1.0, 0, .2, 1.05, c, sk, PI / 2); head.cyl(1.25, 1.1, .12, 0, .75, -.15, c2, S.scale, -1.0, 0, 0, 16);
+      for (let i = 0; i < 8; i++) body.obox(w * .6, .05, .25, 0, h * .32, L * .35 - i * L * .1, c2, S.scale);
+      head.obox(.9, .8, 1.1, 0, .1, .4, c, sk); head.cone(.32, 1.0, 0, .2, 1.05, c, sk, PI / 2); head.cyl(1.25, 1.1, .12, 0, .75, -.15, c2, S.scale, -1.0, 0, 0, 16);
       for (let i = 0; i < 9; i++) { const a = -PI * .5 + i / 8 * PI; head.cone(.07, .25, Math.sin(a) * 1.2, .75 + Math.cos(a) * .9, -.55 + Math.cos(a) * .25, 0xe8d8b0, S.bone, -1.1 + Math.cos(a) * .3, 0, -Math.sin(a) * .9); }
       for (const s of [-1, 1]) { head.cone(.12, 1.5, s * .32, .62, .95, 0xf0e4c8, S.bone, 1.2, 0, s * -.15); head.sph(.07, s * .42, .35, .6, 0xff9020, S.glow, 1, .8, .8); }
       head.cone(.1, .4, 0, .05, 1.45, 0xf0e4c8, S.bone, 1.4);
-      jaw.box(.6, .25, .7, 0, -.1, .4, c2, sk); jaw.cone(.2, .4, 0, -.1, .85, 0x3a3a30, S.bone, PI / 2);
+      jaw.obox(.6, .25, .7, 0, -.1, .4, c2, sk); jaw.cone(.2, .4, 0, -.1, .85, 0x3a3a30, S.bone, PI / 2);
       tail.cyl(.12, .55, 2.6, 0, 0, -1.2, c, sk, PI / 2 + .25);
       for (const [u, l] of [[P[4], P[5]], [P[6], P[7]], [P[8], P[9]], [P[10], P[11]]]) { u.cyl(.38, .3, h * .5, 0, -h * .24, 0, c, sk); l.cyl(.3, .32, h * .48, 0, -h * .24, 0, c, sk); l.cyl(.36, .36, .14, 0, -h * .47, .05, c2, sk); for (let i = 0; i < 3; i++) l.cone(.06, .15, (i - 1) * .14, -h * .48, .3, 0xd8c8a0, S.bone, PI / 2); }
       break;
     case 'dog': case 'robodog': {
       const robo = o.kind === 'robodog';
-      if (robo) { body.box(w * 1.2, h * .35, L * .95, 0, 0, 0, c, S.gun); body.box(w * 1.0, h * .1, L * .8, 0, h * .2, 0, c2, S.steel); body.box(w * .3, h * .08, L * .3, 0, h * .26, 0, o.glow ?? 0xff3020, S.glow2); for (const s of [-1, 1]) body.cyl(h * .1, h * .1, w * .2, s * w * .55, 0, L * .38, 0x222222, S.steel, 0, 0, PI / 2), body.cyl(h * .1, h * .1, w * .2, s * w * .55, 0, -L * .38, 0x222222, S.steel, 0, 0, PI / 2); if (o.gunTop) { body.box(.1, .12, .5, 0, h * .32, .2, 0x2a2a2a, S.gun); body.cyl(.03, .03, .4, 0, h * .34, .55, 0x111111, S.gun, PI / 2); } }
-      else { body.sph(L * .5, 0, 0, 0, c, sk, .45, .48, 1, 1); body.sph(L * .3, 0, .05 * h, L * .2, c, sk, .7, .75, 1); if (o.armor) { body.box(w * 1.2, h * .25, L * .5, 0, h * .12, L * .1, o.armor, S.leather); body.box(w * 1.25, h * .05, L * .52, 0, h * .25, L * .1, 0xb09040, S.brass); } if (o.spikedCollar) { body.tor(w * .5, .03, 0, .05 * h, L * .42, 0x3a2a1a, S.leather, 0, 0, 0); for (let i = 0; i < 6; i++) body.cone(.02, .07, Math.cos(i) * w * .5, .05 * h + Math.sin(i) * w * .5, L * .42, 0xcccccc, S.steel, 0, 0, i - PI / 2); } }
-      if (robo) { head.box(w * .7, h * .28, h * .4, 0, 0, h * .15, c, S.gun); head.box(w * .5, h * .06, .02, 0, h * .03, h * .36, o.glow ?? 0xff3020, S.glow2); jaw.box(w * .5, h * .08, h * .3, 0, -.02, h * .2, c2, S.steel); }
-      else { head.sph(h * .22, 0, 0, h * .1, c, sk, .8, .8, 1); head.box(w * .35, h * .17, h * .35, 0, -.02, h * .35, c, sk); head.sph(.03, 0, .01, h * .52, 0x111111, S.skin); for (const s of [-1, 1]) { head.cone(.05, .14, s * w * .2, h * .2, h * .02, c2, sk, -.3); head.sph(.022, s * w * .14, h * .07, h * .26, o.eye ?? 0xffaa10, S.glow); } jaw.box(w * .3, h * .07, h * .3, 0, -.03, h * .2, c2, sk); for (let i = 0; i < 4; i++) jaw.cone(.01, .03, (i % 2 ? 1 : -1) * w * .1, .02, h * .1 + i * .05, 0xffffff, S.bone); }
+      if (robo) { body.obox(w * 1.2, h * .35, L * .95, 0, 0, 0, c, S.gun); body.obox(w * 1.0, h * .1, L * .8, 0, h * .2, 0, c2, S.steel); body.obox(w * .3, h * .08, L * .3, 0, h * .26, 0, o.glow ?? 0xff3020, S.glow2); for (const s of [-1, 1]) body.cyl(h * .1, h * .1, w * .2, s * w * .55, 0, L * .38, 0x222222, S.steel, 0, 0, PI / 2), body.cyl(h * .1, h * .1, w * .2, s * w * .55, 0, -L * .38, 0x222222, S.steel, 0, 0, PI / 2); if (o.gunTop) { body.obox(.1, .12, .5, 0, h * .32, .2, 0x2a2a2a, S.gun); body.cyl(.03, .03, .4, 0, h * .34, .55, 0x111111, S.gun, PI / 2); } }
+      else { body.sph(L * .5, 0, 0, 0, c, sk, .45, .48, 1, 1); body.sph(L * .3, 0, .05 * h, L * .2, c, sk, .7, .75, 1); if (o.armor) { body.obox(w * 1.2, h * .25, L * .5, 0, h * .12, L * .1, o.armor, S.leather); body.obox(w * 1.25, h * .05, L * .52, 0, h * .25, L * .1, 0xb09040, S.brass); } if (o.spikedCollar) { body.tor(w * .5, .03, 0, .05 * h, L * .42, 0x3a2a1a, S.leather, 0, 0, 0); for (let i = 0; i < 6; i++) body.cone(.02, .07, Math.cos(i) * w * .5, .05 * h + Math.sin(i) * w * .5, L * .42, 0xcccccc, S.steel, 0, 0, i - PI / 2); } }
+      if (robo) { head.obox(w * .7, h * .28, h * .4, 0, 0, h * .15, c, S.gun); head.obox(w * .5, h * .06, .02, 0, h * .03, h * .36, o.glow ?? 0xff3020, S.glow2); jaw.obox(w * .5, h * .08, h * .3, 0, -.02, h * .2, c2, S.steel); }
+      else { head.sph(h * .22, 0, 0, h * .1, c, sk, .8, .8, 1); head.obox(w * .35, h * .17, h * .35, 0, -.02, h * .35, c, sk); head.sph(.03, 0, .01, h * .52, 0x111111, S.skin); for (const s of [-1, 1]) { head.cone(.05, .14, s * w * .2, h * .2, h * .02, c2, sk, -.3); head.sph(.022, s * w * .14, h * .07, h * .26, o.eye ?? 0xffaa10, S.glow); } jaw.obox(w * .3, h * .07, h * .3, 0, -.03, h * .2, c2, sk); for (let i = 0; i < 4; i++) jaw.cone(.01, .03, (i % 2 ? 1 : -1) * w * .1, .02, h * .1 + i * .05, 0xffffff, S.bone); }
       tail.cyl(.02, robo ? .04 : .06, L * .45, 0, 0, -L * .2, robo ? 0x2a2a2a : c, sk, PI / 2 + .6);
-      for (const [u, l] of [[P[4], P[5]], [P[6], P[7]], [P[8], P[9]], [P[10], P[11]]]) { if (robo) { u.box(.09, h * .5, .12, 0, -h * .24, 0, c2, S.steel); u.cyl(.04, .04, .14, 0, -h * .48, 0, 0x222222, S.steel, 0, 0, PI / 2); l.box(.07, h * .48, .08, 0, -h * .24, 0, 0x2a2a2a, S.gun); l.box(.1, .04, .14, 0, -h * .48, .02, 0x111111, S.rubber); } else { u.cyl(.07, .05, h * .5, 0, -h * .24, 0, c, sk); l.cyl(.045, .035, h * .48, 0, -h * .24, 0, c, sk); l.box(.08, .04, .1, 0, -h * .47, .03, c2, sk); } }
+      for (const [u, l] of [[P[4], P[5]], [P[6], P[7]], [P[8], P[9]], [P[10], P[11]]]) { if (robo) { u.obox(.09, h * .5, .12, 0, -h * .24, 0, c2, S.steel); u.cyl(.04, .04, .14, 0, -h * .48, 0, 0x222222, S.steel, 0, 0, PI / 2); l.obox(.07, h * .48, .08, 0, -h * .24, 0, 0x2a2a2a, S.gun); l.obox(.1, .04, .14, 0, -h * .48, .02, 0x111111, S.rubber); } else { u.cyl(.07, .05, h * .5, 0, -h * .24, 0, c, sk); l.cyl(.045, .035, h * .48, 0, -h * .24, 0, c, sk); l.obox(.08, .04, .1, 0, -h * .47, .03, c2, sk); } }
       break;
     }
   }
@@ -1434,7 +1443,7 @@ function buildBug(o) {
   const P = RIGS.bug.names.map(() => new GB());
   const c = o.color ?? 0x3a2a4a, c2 = o.color2 ?? 0x1a0a2a, g = o.glow ?? 0x9aff30, sk = S.scale;
   const [th, ab, hd, mL, mR] = P;
-  th.sph(.25, 0, 0, 0, c, sk, 1, .7, 1.1, 1); for (let i = 0; i < 3; i++) th.box(.42 - i * .05, .04, .12, 0, .16, .15 - i * .14, c2, sk);
+  th.sph(.25, 0, 0, 0, c, sk, 1, .7, 1.1, 1); for (let i = 0; i < 3; i++) th.obox(.42 - i * .05, .04, .12, 0, .16, .15 - i * .14, c2, sk);
   if (o.spikes) for (let i = 0; i < 4; i++) th.cone(.04, .25, (i % 2 ? .1 : -.1), .22, .1 - i * .08, c2, S.bone, -.6, 0, (i % 2 ? -.3 : .3));
   ab.sph(.32, 0, .05, -.25, c, sk, .9, .75, 1.3, 1); for (let i = 0; i < 4; i++) ab.tor(.24 - i * .03, .025, 0, .05, -.1 - i * .14, c2, sk, 0, 0, 0); ab.sph(.12, 0, .1, -.5, g, S.glow, 1, .6, 1.4); for (let i = 0; i < 4; i++) ab.sph(.04, (i % 2 ? .18 : -.18), .12, -.2 - i * .1, g, S.glow2);
   hd.sph(.17, 0, 0, .08, c, sk, 1, .8, 1.15); hd.sph(.05, .1, .04, .17, g, S.glow2); hd.sph(.05, -.1, .04, .17, g, S.glow2); hd.sph(.03, .06, .08, .2, g, S.glow2); hd.sph(.03, -.06, .08, .2, g, S.glow2);
@@ -1442,7 +1451,7 @@ function buildBug(o) {
   for (const [m, s] of [[mL, 1], [mR, -1]]) { m.cone(.035, .28, 0, 0, .12, 0xe8e0c8, S.bone, PI / 2 + .1, 0, s * .4); }
   for (let i = 0; i < 6; i++) { const s = i < 3 ? 1 : -1; const up = P[5 + i], lo = P[11 + i];
     up.cyl(.04, .03, .58, s * .25, .13, 0, c, sk, 0, 0, -s * 1.1); lo.cyl(.03, .008, .9, s * .1, -.38, 0, c2, sk, 0, 0, s * .25); lo.sph(.04, 0, 0, 0, c, sk); }
-  if (o.robot) { th.box(.3, .1, .3, 0, .18, 0, 0x2a2e34, S.gun); th.cyl(.04, .04, .5, 0, .28, .2, 0x111111, S.gun, PI / 2); th.sph(.05, 0, .28, .45, 0xff3020, S.glow2); }
+  if (o.robot) { th.obox(.3, .1, .3, 0, .18, 0, 0x2a2e34, S.gun); th.cyl(.04, .04, .5, 0, .28, .2, 0x111111, S.gun, PI / 2); th.sph(.05, 0, .28, .45, 0xff3020, S.glow2); }
   return P;
 }
 function buildFlyer(o) {
@@ -1452,30 +1461,30 @@ function buildFlyer(o) {
   switch (o.kind) {
     case 'ptero':
       body.sph(.22, 0, 0, 0, c, S.skin, .8, .8, 1.6, 1); head.cyl(.05, .07, .3, 0, .05, .12, c, S.skin, PI / 2 - .3); head.cone(.06, .7, 0, .02, .55, 0xd8c890, S.bone, PI / 2); head.cone(.08, .5, 0, .2, -.05, o.crest ?? 0xc03020, S.skin, -.6); head.sph(.025, .05, .08, .2, 0xffcc00, S.glow);
-      for (const [w1, w2, s] of [[wL, wL2, 1], [wR, wR2, -1]]) { w1.box(.95, .02, .55, s * .47, 0, -.05, c2, S.skin); w1.cyl(.03, .03, .95, s * .47, .02, .2, c, S.skin, 0, 0, PI / 2); w2.box(1.0, .015, .45, s * .5, 0, -.08, c2, S.skin, 0, s * .2, 0); w2.cone(.025, 1.1, s * .55, .02, .15, c, S.skin, 0, 0, -s * PI / 2); }
-      tail.cone(.03, .4, 0, 0, -.2, c, S.skin, -PI / 2); gun.box(.05, .2, .05, .08, -.05, -.2, c, S.skin); gun.box(.05, .2, .05, -.08, -.05, -.2, c, S.skin);
+      for (const [w1, w2, s] of [[wL, wL2, 1], [wR, wR2, -1]]) { w1.obox(.95, .02, .55, s * .47, 0, -.05, c2, S.skin); w1.cyl(.03, .03, .95, s * .47, .02, .2, c, S.skin, 0, 0, PI / 2); w2.obox(1.0, .015, .45, s * .5, 0, -.08, c2, S.skin, 0, s * .2, 0); w2.cone(.025, 1.1, s * .55, .02, .15, c, S.skin, 0, 0, -s * PI / 2); }
+      tail.cone(.03, .4, 0, 0, -.2, c, S.skin, -PI / 2); gun.obox(.05, .2, .05, .08, -.05, -.2, c, S.skin); gun.obox(.05, .2, .05, -.08, -.05, -.2, c, S.skin);
       break;
     case 'drone': case 'kamikaze':
-      body.box(.5, .18, .5, 0, 0, 0, c, S.gun); body.box(.3, .1, .3, 0, .12, 0, c2, S.poly); body.sph(.08, 0, -.04, .26, o.glow ?? 0xff2020, S.glow2);
-      for (let i = 0; i < 4; i++) { const a = PI / 4 + i * PI / 2; body.box(.6, .04, .06, Math.cos(a) * .35, .05, Math.sin(a) * .35, c2, S.gun, 0, -a, 0); body.cyl(.05, .05, .08, Math.cos(a) * .6, .1, Math.sin(a) * .6, 0x222222, S.gun); rotor.box(.4, .01, .04, Math.cos(a) * .6, -.28, Math.sin(a) * .6, 0x111111, S.poly); rotor.box(.04, .01, .4, Math.cos(a) * .6, -.28, Math.sin(a) * .6, 0x111111, S.poly); }
-      if (o.kind === 'kamikaze') { body.cyl(.1, .1, .4, 0, -.18, 0, 0x8a2a1a, S.gun); body.sph(.05, 0, -.4, 0, 0xffaa00, S.glow2); } else { gun.box(.06, .06, .35, 0, 0, .1, 0x1a1a1a, S.gun); gun.cyl(.02, .02, .2, 0, 0, .35, 0x111111, S.gun, PI / 2); }
+      body.obox(.5, .18, .5, 0, 0, 0, c, S.gun); body.obox(.3, .1, .3, 0, .12, 0, c2, S.poly); body.sph(.08, 0, -.04, .26, o.glow ?? 0xff2020, S.glow2);
+      for (let i = 0; i < 4; i++) { const a = PI / 4 + i * PI / 2; body.obox(.6, .04, .06, Math.cos(a) * .35, .05, Math.sin(a) * .35, c2, S.gun, 0, -a, 0); body.cyl(.05, .05, .08, Math.cos(a) * .6, .1, Math.sin(a) * .6, 0x222222, S.gun); rotor.obox(.4, .01, .04, Math.cos(a) * .6, -.28, Math.sin(a) * .6, 0x111111, S.poly); rotor.obox(.04, .01, .4, Math.cos(a) * .6, -.28, Math.sin(a) * .6, 0x111111, S.poly); }
+      if (o.kind === 'kamikaze') { body.cyl(.1, .1, .4, 0, -.18, 0, 0x8a2a1a, S.gun); body.sph(.05, 0, -.4, 0, 0xffaa00, S.glow2); } else { gun.obox(.06, .06, .35, 0, 0, .1, 0x1a1a1a, S.gun); gun.cyl(.02, .02, .2, 0, 0, .35, 0x111111, S.gun, PI / 2); }
       break;
     case 'heli':
-      body.sph(1, 0, 0, .2, c, S.gun, .9, .85, 2, 2); body.box(1.4, .8, 2.6, 0, -.1, -.4, c, S.gun); body.sph(.8, 0, .15, 1.5, 0x223040, S.glass, .9, .7, .8); body.box(.15, .15, .6, 0, .8, 0, 0x222222, S.gun);
-      for (const s of [-1, 1]) { body.box(1.6, .1, .5, s * 1.3, -.2, 0, c2, S.gun); for (let i = 0; i < 2; i++) body.cyl(.18, .18, 1, s * (1.6 + i * .4), -.4, .1, 0x2a2a2a, S.gun, PI / 2), body.cone(.18, .3, s * (1.6 + i * .4), -.4, .75, 0xbb3020, S.gun, PI / 2); body.box(.08, .5, .08, s * .7, -1.1, .4, 0x222222, S.gun); body.box(.08, .08, 2.6, s * .7, -1.35, .2, 0x222222, S.gun); }
-      tail.box(.4, .45, 3.5, 0, .2, -2.2, c, S.gun); tail.box(.08, 1.2, .8, 0, .7, -3.9, c, S.gun); tail.box(1.4, .08, .5, 0, .4, -3.4, c, S.gun);
-      rotor.cyl(.18, .18, .4, 0, .2, 0, 0x1a1a1a, S.gun); for (let i = 0; i < 4; i++) rotor.box(6.5, .04, .35, 0, .38, 0, 0x151515, S.poly, 0, i * PI / 4 * 2 / 2, 0);
-      head.box(.5, .4, .5, 0, -.8, .9, 0x2a2a2a, S.gun); head.cyl(.05, .05, .9, 0, -.85, 1.5, 0x111111, S.gun, PI / 2); head.sph(.1, 0, -.8, 1.15, 0xff2020, S.glow2);
+      body.sph(1, 0, 0, .2, c, S.gun, .9, .85, 2, 2); body.obox(1.4, .8, 2.6, 0, -.1, -.4, c, S.gun); body.sph(.8, 0, .15, 1.5, 0x223040, S.glass, .9, .7, .8); body.obox(.15, .15, .6, 0, .8, 0, 0x222222, S.gun);
+      for (const s of [-1, 1]) { body.obox(1.6, .1, .5, s * 1.3, -.2, 0, c2, S.gun); for (let i = 0; i < 2; i++) body.cyl(.18, .18, 1, s * (1.6 + i * .4), -.4, .1, 0x2a2a2a, S.gun, PI / 2), body.cone(.18, .3, s * (1.6 + i * .4), -.4, .75, 0xbb3020, S.gun, PI / 2); body.obox(.08, .5, .08, s * .7, -1.1, .4, 0x222222, S.gun); body.obox(.08, .08, 2.6, s * .7, -1.35, .2, 0x222222, S.gun); }
+      tail.obox(.4, .45, 3.5, 0, .2, -2.2, c, S.gun); tail.obox(.08, 1.2, .8, 0, .7, -3.9, c, S.gun); tail.obox(1.4, .08, .5, 0, .4, -3.4, c, S.gun);
+      rotor.cyl(.18, .18, .4, 0, .2, 0, 0x1a1a1a, S.gun); for (let i = 0; i < 4; i++) rotor.obox(6.5, .04, .35, 0, .38, 0, 0x151515, S.poly, 0, i * PI / 4 * 2 / 2, 0);
+      head.obox(.5, .4, .5, 0, -.8, .9, 0x2a2a2a, S.gun); head.cyl(.05, .05, .9, 0, -.85, 1.5, 0x111111, S.gun, PI / 2); head.sph(.1, 0, -.8, 1.15, 0xff2020, S.glow2);
       break;
     case 'wasp':
       body.sph(.25, 0, 0, .1, c, S.scale, .8, .8, 1.3, 1); tail.sph(.3, 0, -.05, -.25, 0xffcc20, S.scale, .7, .7, 1.4); for (let i = 0; i < 3; i++) tail.tor(.2, .03, 0, -.05, -.15 - i * .14, 0x111111, S.scale); tail.cone(.04, .35, 0, -.12, -.75, 0x111111, S.bone, -PI / 2 - .3);
       head.sph(.15, 0, 0, .08, c, S.scale); head.sph(.07, .08, .03, .14, 0x9aff30, S.glow2); head.sph(.07, -.08, .03, .14, 0x9aff30, S.glow2);
-      for (const [w1, w2, s] of [[wL, wL2, 1], [wR, wR2, -1]]) { w1.box(.9, .01, .3, s * .45, .05, 0, 0xaaddff, S.glass); w2.box(.6, .01, .25, s * .3, 0, -.1, 0x88bbee, S.glass); }
+      for (const [w1, w2, s] of [[wL, wL2, 1], [wR, wR2, -1]]) { w1.obox(.9, .01, .3, s * .45, .05, 0, 0xaaddff, S.glass); w2.obox(.6, .01, .25, s * .3, 0, -.1, 0x88bbee, S.glass); }
       break;
     case 'plane':
       body.cyl(.35, .25, 3.6, 0, 0, 0, c, S.gun, PI / 2, 0, 0, 12); body.sph(.3, 0, .25, .4, 0x223040, S.glass, .8, .8, 1.6); body.cone(.35, .5, 0, 0, 2.05, 0x333333, S.gun, PI / 2);
-      for (const s of [-1, 1]) { body.box(3.4, .08, .9, s * 1.8, -.1, .3, c2, S.gun); body.sph(.08, s * 3.4, -.1, .3, 0xff2020, S.glow2); }
-      tail.box(.08, .8, .6, 0, .4, -1.6, c, S.gun); tail.box(1.6, .06, .5, 0, .05, -1.6, c, S.gun); rotor.box(.06, 1.6, .1, 0, -.42, 2.3, 0x111111, S.gun);
+      for (const s of [-1, 1]) { body.obox(3.4, .08, .9, s * 1.8, -.1, .3, c2, S.gun); body.sph(.08, s * 3.4, -.1, .3, 0xff2020, S.glow2); }
+      tail.obox(.08, .8, .6, 0, .4, -1.6, c, S.gun); tail.obox(1.6, .06, .5, 0, .05, -1.6, c, S.gun); rotor.obox(.06, 1.6, .1, 0, -.42, 2.3, 0x111111, S.gun);
       break;
   }
   return P;
@@ -1484,15 +1493,15 @@ function buildTank(o) {
   const P = RIGS.tank.names.map(() => new GB());
   const c = o.color ?? 0x5a5a3a, c2 = o.color2 ?? 0x3a3a26, s = o.size || 1;
   const [hull, tur, bar, tL, tR, mg] = P;
-  hull.box(2.4 * s, .7 * s, 5 * s, 0, .95 * s, 0, c, S.gun); hull.box(2.2 * s, .4 * s, 1.2 * s, 0, .85 * s, 2.7 * s, c, S.gun, -.6); hull.box(2.8 * s, .1 * s, 5.2 * s, 0, 1.3 * s, 0, c2, S.gun);
-  for (let i = 0; i < 6; i++) hull.box(.3 * s, .3 * s, .02, (i - 2.5) * .35 * s, 1.15 * s, -2.52 * s, 0x222222, S.gun);
-  hull.cyl(.12 * s, .12 * s, .5 * s, -.8 * s, 1.5 * s, -2 * s, 0x2a2a2a, S.gun); hull.box(.4 * s, .3 * s, .6 * s, .8 * s, 1.45 * s, -1.9 * s, c2, S.gun);
-  if (o.cross) { for (const sd of [-1, 1]) { hull.box(.02, .4 * s, .1 * s, sd * 1.41 * s, 1.05 * s, .5 * s, 0xffffff, S.cloth); hull.box(.02, .1 * s, .4 * s, sd * 1.41 * s, 1.05 * s, .5 * s, 0xffffff, S.cloth); hull.box(.025, .3 * s, .06 * s, sd * 1.415 * s, 1.05 * s, .5 * s, 0x111111, S.cloth); hull.box(.025, .06 * s, .3 * s, sd * 1.415 * s, 1.05 * s, .5 * s, 0x111111, S.cloth); } }
-  tur.box(1.9 * s, .6 * s, 2.3 * s, 0, .3 * s, 0, c, S.gun); tur.box(1.6 * s, .4 * s, 1 * s, 0, .3 * s, -1.4 * s, c2, S.gun); tur.cyl(.35 * s, .35 * s, .25 * s, .4 * s, .7 * s, -.3 * s, c2, S.gun); tur.box(.5 * s, .5 * s, .4 * s, 0, .3 * s, 1.1 * s, c2, S.gun);
-  for (let i = 0; i < 4; i++) tur.box(.25 * s, .15 * s, .1 * s, (i - 1.5) * .4 * s, .35 * s, -1.95 * s, 0x3a3a2a, S.gun);
+  hull.obox(2.4 * s, .7 * s, 5 * s, 0, .95 * s, 0, c, S.gun); hull.obox(2.2 * s, .4 * s, 1.2 * s, 0, .85 * s, 2.7 * s, c, S.gun, -.6); hull.obox(2.8 * s, .1 * s, 5.2 * s, 0, 1.3 * s, 0, c2, S.gun);
+  for (let i = 0; i < 6; i++) hull.obox(.3 * s, .3 * s, .02, (i - 2.5) * .35 * s, 1.15 * s, -2.52 * s, 0x222222, S.gun);
+  hull.cyl(.12 * s, .12 * s, .5 * s, -.8 * s, 1.5 * s, -2 * s, 0x2a2a2a, S.gun); hull.obox(.4 * s, .3 * s, .6 * s, .8 * s, 1.45 * s, -1.9 * s, c2, S.gun);
+  if (o.cross) { for (const sd of [-1, 1]) { hull.obox(.02, .4 * s, .1 * s, sd * 1.41 * s, 1.05 * s, .5 * s, 0xffffff, S.cloth); hull.obox(.02, .1 * s, .4 * s, sd * 1.41 * s, 1.05 * s, .5 * s, 0xffffff, S.cloth); hull.obox(.025, .3 * s, .06 * s, sd * 1.415 * s, 1.05 * s, .5 * s, 0x111111, S.cloth); hull.obox(.025, .06 * s, .3 * s, sd * 1.415 * s, 1.05 * s, .5 * s, 0x111111, S.cloth); } }
+  tur.obox(1.9 * s, .6 * s, 2.3 * s, 0, .3 * s, 0, c, S.gun); tur.obox(1.6 * s, .4 * s, 1 * s, 0, .3 * s, -1.4 * s, c2, S.gun); tur.cyl(.35 * s, .35 * s, .25 * s, .4 * s, .7 * s, -.3 * s, c2, S.gun); tur.obox(.5 * s, .5 * s, .4 * s, 0, .3 * s, 1.1 * s, c2, S.gun);
+  for (let i = 0; i < 4; i++) tur.obox(.25 * s, .15 * s, .1 * s, (i - 1.5) * .4 * s, .35 * s, -1.95 * s, 0x3a3a2a, S.gun);
   bar.cyl(.12 * s, .1 * s, 3.4 * s, 0, 0, 1.7 * s, c2, S.gun, PI / 2); bar.cyl(.17 * s, .17 * s, .5 * s, 0, 0, 3.4 * s, 0x2a2a1a, S.gun, PI / 2); bar.cyl(.2 * s, .2 * s, .4 * s, 0, 0, .1 * s, c2, S.gun, PI / 2);
-  for (const tr of [tL, tR]) { tr.box(.7 * s, .9 * s, 5.4 * s, 0, 0, 0, 0x1e1e1a, S.rubber); for (let i = 0; i < 6; i++) tr.cyl(.32 * s, .32 * s, .72 * s, 0, -.1 * s, (i - 2.5) * .85 * s, 0x3a3a30, S.gun, 0, 0, PI / 2, 12); for (let i = 0; i < 18; i++) tr.box(.74 * s, .05 * s, .12 * s, 0, .46 * s, (i - 8.5) * .3 * s, 0x2a2a24, S.gun); tr.box(.75 * s, .35 * s, 5.5 * s, 0, .35 * s, 0, c, S.gun); }
-  mg.box(.1 * s, .1 * s, .5 * s, 0, 0, .2 * s, 0x1a1a1a, S.gun); mg.cyl(.03 * s, .03 * s, .5 * s, 0, 0, .6 * s, 0x111111, S.gun, PI / 2); mg.box(.3 * s, .25 * s, .05 * s, 0, .05 * s, .25 * s, c2, S.gun);
+  for (const tr of [tL, tR]) { tr.obox(.7 * s, .9 * s, 5.4 * s, 0, 0, 0, 0x1e1e1a, S.rubber); for (let i = 0; i < 6; i++) tr.cyl(.32 * s, .32 * s, .72 * s, 0, -.1 * s, (i - 2.5) * .85 * s, 0x3a3a30, S.gun, 0, 0, PI / 2, 12); for (let i = 0; i < 18; i++) tr.obox(.74 * s, .05 * s, .12 * s, 0, .46 * s, (i - 8.5) * .3 * s, 0x2a2a24, S.gun); tr.obox(.75 * s, .35 * s, 5.5 * s, 0, .35 * s, 0, c, S.gun); }
+  mg.obox(.1 * s, .1 * s, .5 * s, 0, 0, .2 * s, 0x1a1a1a, S.gun); mg.cyl(.03 * s, .03 * s, .5 * s, 0, 0, .6 * s, 0x111111, S.gun, PI / 2); mg.obox(.3 * s, .25 * s, .05 * s, 0, .05 * s, .25 * s, c2, S.gun);
   return P;
 }
 
@@ -2565,7 +2574,7 @@ WDEFS.push({
 WDEFS.push({
   id: 'rocket', name: 'HELLCASTER RPG-X', era: 'RECOVERED · 2026', slot: 8,
   mode: 'semi', rpm: 80, dmg: 300, proj: 'rocket', projSpeed: 48, mag: 1, reserve: 16, reload: 2.15, reloadEmpty: 2.15, spreadHip: .004, spreadAds: 0, knock: 30,
-  hip: [.17, -.115, -.5], ads: [.0, -.098, -.42], adsFov: .7, recoil: { up: .04, side: .01, back: .12, rot: .25, shake: .35, vm: 1 }, sound: 'rocket',
+  hip: [.2, -.11, -.64], ads: [.0, -.098, -.5], adsFov: .7, recoil: { up: .04, side: .01, back: .12, rot: .25, shake: .35, vm: 1 }, sound: 'rocket',
   rh: [0, -.05, .05], lh: [-.0, -.08, -.22],
   build(W) {
     const g = W.root, P = W.P;
@@ -2737,7 +2746,7 @@ function ammoDraw(col = '#4af0ff') { const f = (g, W, H, w) => { const s = w.s; 
 // holographic reticle texture
 const RETICLE_TEX = canvasTex(128, 128, (g) => { g.clearRect(0, 0, 128, 128); g.strokeStyle = 'rgba(255,60,70,1)'; g.lineWidth = 5; g.beginPath(); g.arc(64, 64, 40, 0, TAU); g.stroke(); g.fillStyle = 'rgba(255,60,70,1)'; g.beginPath(); g.arc(64, 64, 6, 0, TAU); g.fill(); for (const [x, y, w, h] of [[61, 8, 6, 14], [61, 106, 6, 14], [8, 61, 14, 6], [106, 61, 14, 6]]) g.fillRect(x, y, w, h); }, 1, false);
 function reticle(parent, x, y, z, s, color = 0xff4050) { const m = new THREE.Mesh(new THREE.PlaneGeometry(s, s), new THREE.MeshBasicMaterial({ map: RETICLE_TEX, color: new COL(color).multiplyScalar(3), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); m.position.set(x, y, z); parent.add(m); return m; }
-function glassPane(parent, x, y, z, w, h, tint = 0x60a0c0) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ color: tint, transparent: true, opacity: .22, roughness: .02, metalness: .9, envMapIntensity: 2.5, depthWrite: false })); m.position.set(x, y, z); parent.add(m); return m; }
+function glassPane(parent, x, y, z, w, h, tint = 0x60a0c0) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ color: tint, transparent: true, opacity: .1, roughness: .02, metalness: .9, envMapIntensity: 1.5, depthWrite: false })); m.position.set(x, y, z); parent.add(m); return m; }
 function tubeVM(parent, pts, r, color, surf = S.rubber) { const b = new GB(); tubeInto(b, pts.map(p => new V3(...p)), pts.map(() => r), () => new COL(color), 6, surf, false); const m = new THREE.Mesh(b.build(), MAT_VM); parent.add(m); return m; }
 function curve(p0, p1, p2, n = 10) { const out = []; for (let i = 0; i <= n; i++) { const t = i / n, a = 1 - t; out.push([a * a * p0[0] + 2 * a * t * p1[0] + t * t * p2[0], a * a * p0[1] + 2 * a * t * p1[1] + t * t * p2[1], a * a * p0[2] + 2 * a * t * p1[2] + t * t * p2[2]]); } return out; }
 
@@ -2775,7 +2784,6 @@ const WDETAIL = {
       b.rbox(.04, .004, .074, 0, .132, -.058, C.blk, S.gun);
       for (let i = 0; i < 3; i++) b.rbox(.006, .006, .006, .022, .085 + i * .01, -.03, i === 0 ? 0x3a3a3a : C.blk2, S.rubber); // buttons
       b.cyl(.008, .008, .02, -.022, .084, -.075, C.gun, S.gun, 0, 0, PI / 2, 12); knurl(b, -.032, .084, -.075, .0082, .004, 'x', C.steel);
-      b.rbox(.024, .03, .004, 0, .1, -.093, 0x101418, S.dark);
     });
     glassPane(B, 0, .1, -.092, .03, .032, 0x40b0d0); glassPane(B, 0, .1, -.024, .03, .032, 0x40b0d0);
     reticle(B, 0, .1035, -.06, .016);
@@ -2917,21 +2925,36 @@ function vmToWorld(obj, depth, out, local) {
 const VM = { rig: new THREE.Group(), weaponHolder: new THREE.Group() };
 vmScene.add(VM.rig); VM.rig.add(VM.weaponHolder);
 function buildHand(left) {
-  const s = left ? -1 : 1, b = new GB();
-  b.box(.075, .085, .035, 0, 0, 0, 0x1a1c20, S.leather); // palm
-  for (let i = 0; i < 4; i++) { const x = (-.027 + i * .018) * s; b.box(.016, .016, .04, x, .03, -.025, 0x22252a, S.leather, -.9); b.box(.015, .015, .03, x, .028, -.05, 0x22252a, S.leather, -1.8); }
-  b.box(.018, .045, .018, .04 * s, -.01, -.02, 0x22252a, S.leather, .3, 0, -.5 * s); // thumb
-  b.box(.07, .02, .02, 0, .035, .012, 0x2e3238, S.gun); b.box(.06, .004, .004, 0, .046, .014, 0x38e8ff, S.dim); // knuckle plate
-  b.cyl(.04, .042, .05, 0, -.02, .04, 0x2a2e34, S.cloth, PI / 2); // cuff
+  const s = left ? -1 : 1, b = new GB(), glove = 0x1c1e22, glove2 = 0x2a2d33, plate = 0x3a3f46;
+  // palm (slightly cupped), back-of-hand armour, wrist
+  b.rbox(.07, .082, .03, 0, 0, 0, glove, S.leather, 0, 0, 0, .009);
+  b.rbox(.062, .05, .012, 0, .008, .018, plate, S.gun, -.15, 0, 0, .004); for (let i = 0; i < 3; i++) b.rbox(.064, .006, .013, 0, -.012 + i * .012, .02, glove2, S.gun);
+  b.rbox(.008, .03, .004, 0, .01, .026, 0x38e8ff, S.dim);
+  // four curled fingers, 3 phalanges each, knuckle caps
+  for (let i = 0; i < 4; i++) {
+    const x = (-.026 + i * .0175) * s, L = i === 0 || i === 3 ? .82 : 1;
+    b.push(x, .038, -.006, -.25, 0, 0);
+    b.rbox(.0155, .016, .026 * L, 0, 0, -.012 * L, glove, S.leather, 0, 0, 0, .006); b.sph(.0085, 0, .004, .001, plate, S.gun, 1, .7, 1);
+    b.push(0, 0, -.025 * L, -1.15, 0, 0); b.rbox(.0145, .0145, .021 * L, 0, 0, -.01 * L, glove, S.leather, 0, 0, 0, .006);
+    b.push(0, 0, -.02 * L, -1.0, 0, 0); b.rbox(.0135, .013, .017 * L, 0, 0, -.008 * L, glove2, S.leather, 0, 0, 0, .006); b.pop(); b.pop(); b.pop();
+  }
+  // thumb wrapping the other side
+  b.push(.036 * s, -.012, -.004, .2, 0, -.7 * s); b.rbox(.019, .036, .02, 0, .012, 0, glove, S.leather, 0, 0, 0, .007); b.push(0, .03, 0, -.7, 0, 0); b.rbox(.017, .026, .018, 0, .01, 0, glove2, S.leather, 0, 0, 0, .007); b.pop(); b.pop();
+  // cuff + strap
+  b.cyl(.041, .043, .05, 0, -.03, .042, 0x2a2e34, S.cloth, PI / 2, 0, 0, 12); b.cyl(.044, .044, .012, 0, -.03, .03, 0x15171a, S.leather, PI / 2, 0, 0, 12); b.rbox(.014, .01, .008, .03 * s, -.02, .03, 0x8a9098, S.steel);
   return new THREE.Mesh(b.build(), MAT_VM);
 }
 function buildForearm() {
   const b = new GB();
-  b.cyl(.042, .055, .42, 0, 0, .21, 0x2e333a, S.cloth, PI / 2, 0, 0, 10); // sleeve along +Z
-  b.cyl(.05, .05, .14, 0, 0, .1, 0x3a4048, S.gun, PI / 2, 0, 0, 10); // bracer
-  b.box(.012, .06, .02, 0, .05, .1, 0x38e8ff, S.dim); b.box(.03, .03, .05, .045, 0, .12, 0x22262c, S.gun); // chrono display
-  b.box(.02, .012, .03, .048, .006, .12, 0x38e8ff, S.glow);
-  for (let i = 0; i < 3; i++) b.cyl(.046, .046, .01, 0, 0, .22 + i * .05, 0x22262c, S.cloth, PI / 2, 0, 0, 10);
+  b.cyl(.043, .056, .42, 0, 0, .21, 0x2e333a, S.cloth, PI / 2, 0, 0, 14); // sleeve along +Z
+  for (let i = 0; i < 5; i++) b.cyl(.0445 + i * .002, .0445 + i * .002, .006, 0, 0, .19 + i * .045, 0x262a30, S.cloth, PI / 2, 0, 0, 14); // fabric folds
+  // armoured bracer with segmented plates
+  b.rbox(.07, .03, .13, 0, .03, .1, 0x3a4048, S.gun, 0, 0, 0, .008); for (let i = 0; i < 3; i++) b.rbox(.074, .012, .03, 0, .046, .055 + i * .035, 0x4a5058, S.gun, .08, 0, 0, .004);
+  b.rbox(.06, .02, .11, 0, -.035, .1, 0x2a2e34, S.gun, 0, 0, 0, .006); b.rbox(.012, .05, .1, .045, 0, .1, 0x22262c, S.gun);
+  // chrono wrist unit
+  b.rbox(.034, .022, .046, .046, .012, .11, 0x1a1c20, S.gun); b.box(.002, .014, .032, .0635, .012, .11, 0x38e8ff, S.dim); for (let i = 0; i < 3; i++) b.cyl(.0025, .0025, .006, .063, -.002, .095 + i * .012, 0x8a9098, S.steel, 0, 0, PI / 2, 6);
+  b.cyl(.003, .003, .1, -.04, .02, .14, 0x101112, S.rubber, PI / 2); // cable
+  for (const z of [.06, .15]) b.cyl(.058, .058, .01, 0, 0, z, 0x15171a, S.leather, PI / 2, 0, 0, 14); // straps
   return new THREE.Mesh(b.build(), MAT_VM);
 }
 const HANDR = buildHand(false), HANDL = buildHand(true), ARMR = buildForearm(), ARML = buildForearm();
@@ -3433,7 +3456,7 @@ function updateProjectiles(dt) {
   for (let i = PROJ.length - 1; i >= 0; i--) {
     const pr = PROJ[i]; pr.life -= dt;
     if (pr.hole) { updateHole(pr, dt); if (pr.life <= 0) { PROJ.splice(i, 1); } continue; }
-    if (pr.life <= 0) { if (pr.kind === 'grenade' || pr.kind === 'rocket' || pr.kind === 'missile' || pr.kind === 'shell') projExplode(pr); if (pr.kind === 'orb') { makeHole(pr); continue; } for (const c of pr.carry) c.pinned = null; PROJ.splice(i, 1); continue; }
+    if (pr.life <= 0) { if (pr.kind === 'grenade' || pr.kind === 'rocket' || pr.kind === 'missile' || pr.kind === 'shell') projExplode(pr); if (pr.kind === 'orb') { makeHole(pr); continue; } for (const c of pr.carry || []) c.pinned = null; PROJ.splice(i, 1); continue; }
     if (pr.stuck) { renderProj(pr, counts); continue; }
     if (pr.ghost) { pr.v.y -= pr.grav * dt; pr.p.addScaledVector(pr.v, dt); if (pr.burning) { PA.spawn(pr.p.x, pr.p.y, pr.p.z, 0, 0, 0, .25, 1.2, 3, 1.2, .3, 1); PN.spawn(pr.p.x, pr.p.y, pr.p.z, 0, 0, 0, 1.6, 1, .2, .18, .16, .5, { grow: 1.5, shape: 1 }); } else projTrail(pr, dt); renderProj(pr, counts); continue; }
     pr.v.y -= pr.grav * dt;
@@ -3462,7 +3485,7 @@ function updateProjectiles(dt) {
     if (wh && wh.t <= step + .05) { if (onProjWorld(pr, wh)) { PROJ.splice(i, 1); continue; } }
     // trails
     projTrail(pr, dt);
-    for (const c of pr.carry) if (c.pinned) c.pinned.p = pr.p;
+    if (pr.carry) for (const c of pr.carry) if (c.pinned) c.pinned.p = pr.p;
     renderProj(pr, counts);
   }
   for (const k in PMODEL) { PMODEL[k].count = counts[k] || 0; PMODEL[k].instanceMatrix.needsUpdate = true; }
@@ -3546,8 +3569,8 @@ function onProjWorld(pr, wh) {
   }
   if (kind === 'pspear' || kind === 'arrow' || kind === 'bolt' || kind === 'spear') {
     pr.p.copy(wh.point).addScaledVector(_pn.copy(pr.v).normalize(), .25); pr.stuck = 1; pr.life = Math.min(pr.life, kind === 'pspear' ? 8 : 4);
-    for (const c of pr.carry) if (c.pinned) { c.pinned.p = pr.p.clone(); c.pinned.done = true; c.limp && c.limp.fill(0); c.sleep = false; if (c.def.blood !== 'oil') DEC_SPLAT.add(wh.point, n, rand(1, 1.8), BLOOD_HEX[c.def.blood]); }
-    if (pr.carry.length) { SFX.impact(wh.point, 'flesh'); addShake(.08); if (pr.carry.length >= 3) notice(pr.carry.length + '× SHISH-KEBAB', .9); setTimeout(() => { for (const c of pr.carry) if (c.pinned) c.pinned = null; }, 7000); }
+    for (const c of pr.carry || []) if (c.pinned) { c.pinned.p = pr.p.clone(); c.pinned.done = true; c.limp && c.limp.fill(0); c.sleep = false; if (c.def.blood !== 'oil') DEC_SPLAT.add(wh.point, n, rand(1, 1.8), BLOOD_HEX[c.def.blood]); }
+    if (pr.carry && pr.carry.length) { SFX.impact(wh.point, 'flesh'); addShake(.08); if (pr.carry.length >= 3) notice(pr.carry.length + '× SHISH-KEBAB', .9); setTimeout(() => { for (const c of pr.carry) if (c.pinned) c.pinned = null; }, 7000); }
     SFX.impact(wh.point, wh.box ? wh.box.mat : 'wood'); dustPuff(wh.point.x, wh.point.y, wh.point.z, .4, 1);
     if (wh.box && wh.box.ref && wh.box.ref.isStructure && kind === 'pspear') wh.box.ref.hitBlock(wh.block, 80, pr.v);
     if (wh.box && wh.box.ref && wh.box.ref.isProp) wh.box.ref.damage(pr.dmg * .3, pr.v);
@@ -4643,14 +4666,14 @@ ERAS.push({
 ERAS.push({
   id: 'rome', year: '52 BC', name: "THE LEGION'S LAST STAND", loc: 'ALESIA · GAUL', rift: [1.4, 1, .4], riftHex: 0xffc040, music: { root: 50, scale: [0, 2, 3, 7, 8], bpm: 132, tone: 'brass' },
   sky: { top: 0x3a78c8, hor: 0xf0d8a8, bot: 0x9a8a68, sunDir: new V3(-.6, .55, -.5), sunCol: 0xfff0c8, sunI: 1.3, cloud: .3, cloudCol: 0xffffff, cloudDark: 0xb0a090, haze: 0x403020 },
-  fog: [0xe0d0b0, .0042], sun: [0xfff0d0, 3.3], hemi: [0xd8e8ff, 0x6a5030, 1.0], exposure: 1.05,
+  fog: [0xe0d0b0, .0042], sun: [0xfff0d0, 2.7], hemi: [0xc8d8f0, 0x6a5030, .85], exposure: .92,
   ground: ['roman', 0xe0d0b0, { h: 60, base: 6, edge: 80 }], groundMat: 'dirt', dust: [.62, .55, .4], groundHex: 0x8a7a54, weather: 'dust',
   enemies: ['legion', 'archer', 'wardog', 'centurion'],
   build() {
     WORLD.bounds = { minX: -56, maxX: 56, minZ: -56, maxZ: 56 };
     const r = srng(22), marble = 0xe0d8c4;
     // forum paving
-    staticGB(b => { b.box(70, .2, 70, 0, .05, -5, 0xc8bca0, S.stone); for (let i = 0; i < 12; i++) b.box(70, .22, .15, 0, .06, -40 + i * 6, 0x9a907a, S.stone); });
+    staticGB(b => { b.box(70, .2, 70, 0, .05, -5, 0x9a907a, S.stone); for (let i = 0; i < 12; i++) b.box(70, .22, .15, 0, .06, -40 + i * 6, 0x9a907a, S.stone); });
     // temple: columns + pediment
     for (let i = 0; i < 8; i++) columnStruct(-21 + i * 6, -30, 11, marble);
     for (let i = 0; i < 2; i++) for (let k = 0; k < 3; k++) columnStruct(-21 + i * 42, -36 - k * 5, 11, marble);
@@ -5416,7 +5439,7 @@ bindSet('sQ', 'quality', () => applyQuality()); bindSet('sSens', 'sens'); bindSe
 hudEl.fps.style.display = SET.fps ? 'block' : 'none';
 canvas.addEventListener('click', () => { if (!locked && ['fight', 'intro', 'portal', 'transition'].includes(GAME.state) && !GAME.paused) lockPointer(); });
 // debug helpers (console)
-window.TB = { GAME, PLAYER, ENEMIES, startCampaign, loadEra, giveWeapon, spawnEnemy, spawnBoss: () => spawnBoss(), god: () => GAME.god = !GAME.god, skipWave: () => { for (const e of ENEMIES) if (e.alive) killEnemy(e, { kind: 'blast', dir: UP, force: 10 }); DIR.queue = []; }, killBoss: () => BOSS && BOSS.damage(BOSS.parts[0], 1e9, 'pierce'), portal: () => openPortal(), WPN, ETYPES, BOSS: () => BOSS, fire(v) { mouseL = v; if (v) mouseLP = true; }, key(k, v) { KEY[k] = v; if (v) KEYP[k] = true; }, look(dx, dy) { mouseDX += dx; mouseDY += dy; }, aim(v) { mouseR = v; }, startWave, DIR, show(id) { const w = giveWeapon(id, true); for (const o of WPN.owned) o.root.visible = false; WPN.cur = w; WPN.next = null; w.root.visible = true; WPN.equipT = 1; WPN.inspectT = -1; onWeaponChanged(); return w.def.name; }, inspect(t) { WPN.inspectT = t; }, FX_clear() { FX.flash = 0; FX.rift = 0; FX.crack = 0; FX.aberr = 0; FX.damage = 0; PA.clear(); PN.clear(); }, fps: () => fpsV, freeze(v) { if (v) slowmo(.0001, 1e6); else { FX.slowmoT = 0; } }, cam(x, y, z, yaw, pitch) { PLAYER.pos.set(x, y, z); PLAYER.vel.set(0, 0, 0); PLAYER.yaw = yaw; PLAYER.pitch = pitch; }, spawn: (t, x, z, o) => { const e = spawnEnemy(t, x, z, Object.assign({ anim: 'run', fx: false }, o || {})); return !!e; } };
+window.TB = { GAME, PLAYER, ENEMIES, startCampaign, loadEra, giveWeapon, spawnEnemy, spawnBoss: () => spawnBoss(), god: () => GAME.god = !GAME.god, skipWave: () => { for (const e of ENEMIES) if (e.alive) killEnemy(e, { kind: 'blast', dir: UP, force: 10 }); DIR.queue = []; }, killBoss: () => BOSS && BOSS.damage(BOSS.parts[0], 1e9, 'pierce'), portal: () => openPortal(), WPN, ETYPES, BOSS: () => BOSS, fire(v) { mouseL = v; if (v) mouseLP = true; }, key(k, v) { KEY[k] = v; if (v) KEYP[k] = true; }, look(dx, dy) { mouseDX += dx; mouseDY += dy; }, aim(v) { mouseR = v; }, startWave, DIR, dbg: () => ({ q: JSON.stringify(DIR.queue), alive: ALIVE, n: ENEMIES.length, st: GAME.state, w: DIR.wave && DIR.wave.title, acc: DIR.spawnAcc, cap: QL.cap, cm: GAME.capMul }), show(id) { const w = giveWeapon(id, true); for (const o of WPN.owned) o.root.visible = false; WPN.cur = w; WPN.next = null; w.root.visible = true; WPN.equipT = 1; WPN.inspectT = -1; onWeaponChanged(); return w.def.name; }, inspect(t) { WPN.inspectT = t; }, FX_clear() { FX.flash = 0; FX.rift = 0; FX.crack = 0; FX.aberr = 0; FX.damage = 0; PA.clear(); PN.clear(); }, fps: () => fpsV, freeze(v) { if (v) slowmo(.0001, 1e6); else { FX.slowmoT = 0; } }, cam(x, y, z, yaw, pitch) { PLAYER.pos.set(x, y, z); PLAYER.vel.set(0, 0, 0); PLAYER.yaw = yaw; PLAYER.pitch = pitch; }, spawn: (t, x, z, o) => { const e = spawnEnemy(t, x, z, Object.assign({ anim: 'run', fx: false }, o || {})); return !!e; } };
 
 /* =====================================================================
    MAIN LOOP
