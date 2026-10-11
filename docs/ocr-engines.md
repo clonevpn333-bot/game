@@ -1,9 +1,12 @@
 # OCR engines: Tesseract vs. the operating system's own
 
 Measured by `.github/workflows/ocr-engines.yml` (`packages/corpus/src/compare-engines.ts`) on
-GitHub-hosted runners, 2026-10-11, commit cf412ab. Synthetic scanned and photo tiers (see
-`docs/accuracy`) and the 100-page mixed benchmark. Windows OCR reports no word confidences, so
-Tesseract decides page orientation and Windows OCR reads the page; that cost is included.
+GitHub-hosted runners, 2026-10-11, in two runs (commits cf412ab and 3ccac02; the engine code is
+the same in both). Synthetic scanned and photo tiers (see `docs/accuracy`) and the 100-page mixed
+benchmark. Windows OCR reports no word confidences, so Tesseract decides page orientation and
+Windows OCR reads the page; that cost is included.
+
+The tables below are run 1. Run 2 is summarized after them.
 
 ## macOS 26 (Apple Silicon runner, 3 cores) — Tesseract 5 from Homebrew vs. Apple Vision
 
@@ -37,6 +40,16 @@ auto-accepted). Both remain available as a manual choice in Settings, which stat
 Both platforms meet the speed target with Tesseract: 100 mixed pages in 48.4 s (macOS, 3 cores)
 and 45.3 s (Windows, 4 cores), against 60 s.
 
-**Open:** the newer Tesseract builds on macOS and Windows misfile one auto-accepted scanned
-document (0.7%, target ≤ 0.5%), where Linux's Tesseract 5.3.4 misfiles none. The comparison now
-logs every miss so the document can be identified and the rule fixed.
+## Run 2
+
+| Platform | Engine            | Scanned correct | Scanned misfiled while auto | Photo correct | Photo misfiled while auto | 100 mixed pages |
+| -------- | ----------------- | --------------- | --------------------------- | ------------- | ------------------------- | --------------- |
+| macOS    | Tesseract 5       | 100.0%          | 0.0%                        | 100.0%        | 0.0%                      | 32.4 s          |
+| macOS    | Apple Vision      | 94.6%           | 1.3%                        | 80.4%         | 0.0%                      | 88.4 s          |
+| Windows  | Tesseract 5       | 100.0%          | 0.0%                        | 100.0%        | 0.0%                      | 41.7 s          |
+| Windows  | Windows.Media.Ocr | 89.9%           | 7.7%                        | 100.0%        | 0.0%                      | 50.2 s          |
+
+Run 1's single misfiled scan with Tesseract (0.7% on both platforms) did not reproduce in run 2,
+and run 2 logged no Tesseract misses at all. The difference came from the corpus, not the engine:
+ImageMagick's noise in `degrade.ts` wasn't seeded, so every CI run degraded the pages slightly
+differently. The noise is now seeded, so each tier is the same on every run and machine.

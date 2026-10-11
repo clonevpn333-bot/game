@@ -194,6 +194,8 @@ They are excluded from lint/format and untouched. Ask Corey before moving or del
 - `updater-e2e.yml` proves updates on Windows: throwaway key, two builds, a temporary pre-release,
   `scripts/updater-e2e.ts` drives the installed app over tauri-driver + msedgedriver.
 - Node scripts use `if (import.meta.main)`; comparing `import.meta.url` with argv fails on Windows.
+- Desktop e2e runs itself in a new user namespace + session keyring (Linux): the trial count lives
+  in the per-user persistent keyring, which outlives runs. Never add a trial-reset path to the app.
 - `node scripts/licenses.ts` regenerates `src/generated/third-party.json` (Settings → About) and
   `src-tauri/resources/third-party-notices.txt` (bundled); `--check` runs in CI.
 - Diagnostic report (`diagnostics.rs`): zip with version, OS, engine, timings and error codes;
@@ -239,7 +241,8 @@ classify each page (`classify.ts`) → group pages into documents (`split.ts`) �
 
 ## Corpus (packages/corpus)
 
-`generate.ts` builds a seeded synthetic corpus (`out/clean`, gitignored) with ground truth in
+`generate.ts` builds a seeded synthetic corpus (`degrade.ts` seeds ImageMagick's noise too, so
+every tier is identical across runs and machines) (`out/clean`, gitignored) with ground truth in
 `manifest.json`: single files, multi-document scans, 4-up W-2 sheets, instruction backs, exact
 duplicates, Copy B/C rescans, a password-protected PDF (qpdf) and a corrupt file. Templates
 (`templates.ts`) are written as printed form text, independently of forms.json's regexes, but they

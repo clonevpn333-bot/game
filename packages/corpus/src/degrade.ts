@@ -38,6 +38,14 @@ function rasterize(pdf: string, page: number, dpi: number, outPrefix: string): s
   return `${outPrefix}.png`;
 }
 
+/**
+ * ImageMagick's noise is random unless seeded; without this every run produced a
+ * slightly different tier. Images are made one at a time, so a counter is reproducible
+ * and leaves the corpus's own random sequence untouched.
+ */
+let noiseSeed = 0;
+const nextNoiseSeed = () => (noiseSeed += 1);
+
 async function scannedTier(
   clean: CorpusManifest,
   cleanDir: string,
@@ -75,6 +83,8 @@ async function scannedTier(
         'white',
         '-rotate',
         angle.toFixed(2),
+        '-seed',
+        String(nextNoiseSeed()),
         '-attenuate',
         (0.25 + rng.next() * 0.35).toFixed(2),
         '+noise',
@@ -159,6 +169,8 @@ async function photoTier(
         String(m),
         '(',
         '+clone',
+        '-seed',
+        String(nextNoiseSeed()),
         '-attenuate',
         '0.9',
         '+noise',
