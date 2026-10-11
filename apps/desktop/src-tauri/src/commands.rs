@@ -153,7 +153,8 @@ fn walk(dir: &std::path::Path, out: &mut Vec<String>, depth: usize) {
 }
 
 /// Expands dropped folders into the supported files inside them, in name order.
-#[tauri::command]
+// Walking a large folder must not block the UI.
+#[tauri::command(async)]
 pub fn expand_paths(paths: Vec<String>) -> Vec<String> {
     let mut out = Vec::new();
     for p in paths {

@@ -1,4 +1,4 @@
-import { DEFAULT_NAME_TEMPLATE, type CategoryId } from '@binderready/engine';
+import { CATEGORY_IDS, DEFAULT_NAME_TEMPLATE, type CategoryId } from '@binderready/engine';
 import { create } from 'zustand';
 import {
   backend,
@@ -9,6 +9,8 @@ import {
   type Stage,
 } from '../lib/backend';
 import { runEngine } from '../lib/engine-client';
+import type { Quality } from '../lib/export-plan';
+import type { ExportResult } from '../lib/export-run';
 import * as review from '../lib/review';
 
 export type View =
@@ -35,6 +37,52 @@ export interface Batch {
   engineMillis: number | null;
 }
 
+export interface ExportPrefs {
+  includeCover: boolean;
+  includeIndex: boolean;
+  singles: boolean;
+  quality: Quality;
+}
+
+export const DEFAULT_EXPORT_PREFS: ExportPrefs = {
+  includeCover: true,
+  includeIndex: true,
+  singles: false,
+  quality: 'balanced',
+};
+
+/** Settings keys (SQLite settings table). */
+const KEYS = {
+  exportPrefs: 'export.prefs',
+  nameTemplate: 'naming.template',
+  categoryOrder: 'binder.order',
+} as const;
+
+function parseOrder(raw: string | null): CategoryId[] {
+  try {
+    const value: unknown = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(value)) return [];
+    const known = new Set<string>(CATEGORY_IDS);
+    return value.filter((c): c is CategoryId => typeof c === 'string' && known.has(c));
+  } catch {
+    return [];
+  }
+}
+
+function parsePrefs(raw: string | null): ExportPrefs {
+  try {
+    const value = (raw ? JSON.parse(raw) : {}) as Partial<ExportPrefs>;
+    return {
+      includeCover: typeof value.includeCover === 'boolean' ? value.includeCover : true,
+      includeIndex: typeof value.includeIndex === 'boolean' ? value.includeIndex : true,
+      singles: typeof value.singles === 'boolean' ? value.singles : false,
+      quality: value.quality === 'compact' || value.quality === 'high' ? value.quality : 'balanced',
+    };
+  } catch {
+    return DEFAULT_EXPORT_PREFS;
+  }
+}
+
 interface State {
   view: View;
   clients: Client[];
@@ -52,9 +100,19 @@ interface State {
   paletteOpen: boolean;
   notice: string | null;
   nameTemplate: string;
+  /** The firm's category order; empty means the default order. */
   categoryOrder: CategoryId[];
+  exportPrefs: ExportPrefs;
+  exportOpen: boolean;
+  lastExport: ExportResult | null;
 
   go: (view: View) => void;
+  loadPrefs: () => Promise<void>;
+  setNameTemplate: (template: string) => Promise<void>;
+  setCategoryOrder: (order: CategoryId[]) => Promise<void>;
+  setExportPrefs: (prefs: ExportPrefs) => Promise<void>;
+  openExport: () => void;
+  exportDone: (result: ExportResult) => void;
   loadClients: () => Promise<void>;
   createClient: (name: string) => Promise<Client>;
   queuePaths: (paths: string[]) => void;
@@ -79,7 +137,14 @@ interface State {
     patch: Partial<
       Pick<
         State,
-        'stripOpen' | 'previewOpen' | 'formPickerOpen' | 'editingName' | 'paletteOpen' | 'notice'
+        | 'stripOpen'
+        | 'previewOpen'
+        | 'formPickerOpen'
+        | 'editingName'
+        | 'paletteOpen'
+        | 'notice'
+        | 'exportOpen'
+        | 'lastExport'
       >
     >,
   ) => void;
@@ -118,9 +183,52 @@ export const useApp = create<State>((set, get) => ({
   notice: null,
   nameTemplate: DEFAULT_NAME_TEMPLATE,
   categoryOrder: [],
+  exportPrefs: DEFAULT_EXPORT_PREFS,
+  exportOpen: false,
+  lastExport: null,
 
   go: (view) => {
     set({ view, paletteOpen: false });
+  },
+  loadPrefs: async () => {
+    const [prefs, template, order] = await Promise.all([
+      backend.getSetting(KEYS.exportPrefs),
+      backend.getSetting(KEYS.nameTemplate),
+      backend.getSetting(KEYS.categoryOrder),
+    ]);
+    set({
+      exportPrefs: parsePrefs(prefs),
+      nameTemplate: template?.trim() ? template : DEFAULT_NAME_TEMPLATE,
+      categoryOrder: parseOrder(order),
+    });
+  },
+  setNameTemplate: async (template) => {
+    set({ nameTemplate: template });
+    set({ docs: review.applyTemplate(get().docs, naming(get)) });
+    await backend.setSetting(KEYS.nameTemplate, template);
+  },
+  setCategoryOrder: async (order) => {
+    set({ categoryOrder: order });
+    await backend.setSetting(KEYS.categoryOrder, JSON.stringify(order));
+  },
+  setExportPrefs: async (prefs) => {
+    set({ exportPrefs: prefs });
+    await backend.setSetting(KEYS.exportPrefs, JSON.stringify(prefs));
+  },
+  openExport: () => {
+    const { batch, docs } = get();
+    if (!batch || !docs.some((d) => !d.excluded)) return;
+    set({
+      exportOpen: true,
+      paletteOpen: false,
+      formPickerOpen: false,
+      previewOpen: false,
+      editingName: false,
+    });
+  },
+  exportDone: (result) => {
+    set({ exportOpen: false, lastExport: result });
+    void get().loadClients();
   },
   loadClients: async () => {
     set({ clients: await backend.listClients() });
@@ -146,7 +254,15 @@ export const useApp = create<State>((set, get) => ({
       finishedAt: null,
       engineMillis: null,
     };
-    set({ batch, inputs: {}, docs: [], rotations: {}, selectedId: null, view: 'processing' });
+    set({
+      batch,
+      inputs: {},
+      docs: [],
+      rotations: {},
+      selectedId: null,
+      lastExport: null,
+      view: 'processing',
+    });
     const pending = get().pendingPaths;
     set({ pendingPaths: [] });
     if (pending.length) await get().addPaths(pending);
@@ -202,14 +318,23 @@ export const useApp = create<State>((set, get) => ({
   closeBinder: () => {
     const batch = get().batch;
     if (batch && !allSettled(batch)) void backend.cancelIngest(batch.id);
-    set({ batch: null, inputs: {}, docs: [], rotations: {}, selectedId: null, view: 'home' });
+    set({
+      batch: null,
+      inputs: {},
+      docs: [],
+      rotations: {},
+      selectedId: null,
+      exportOpen: false,
+      lastExport: null,
+      view: 'home',
+    });
   },
 
   select: (id) => {
     set({ selectedId: id, editingName: false, formPickerOpen: false });
   },
   move: (delta) => {
-    const order = review.navigationOrder(get().docs);
+    const order = review.navigationOrder(get().docs, get().categoryOrder);
     if (!order.length) return;
     const at = order.indexOf(get().selectedId ?? '');
     const next = at < 0 ? order[0] : order[Math.min(order.length - 1, Math.max(0, at + delta))];
@@ -253,8 +378,8 @@ export const useApp = create<State>((set, get) => ({
       set({ notice: result.error });
       return;
     }
-    const removedIndex = review.navigationOrder(docs).indexOf(id);
-    const order = review.navigationOrder(result.docs);
+    const removedIndex = review.navigationOrder(docs, get().categoryOrder).indexOf(id);
+    const order = review.navigationOrder(result.docs, get().categoryOrder);
     set({ docs: result.docs, selectedId: order[Math.max(0, removedIndex - 1)] ?? null });
   },
   toggleExcluded: () => {
@@ -295,7 +420,7 @@ async function maybeRunEngine(batch: Batch) {
   const current = useApp.getState().batch;
   useApp.setState({
     docs,
-    selectedId: review.navigationOrder(docs)[0] ?? null,
+    selectedId: review.navigationOrder(docs, useApp.getState().categoryOrder)[0] ?? null,
     batch: current ? { ...current, engineMillis: millis } : current,
     view: docs.length || batch.files.some((f) => f.stage === 'error') ? 'review' : 'processing',
   });

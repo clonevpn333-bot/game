@@ -48,7 +48,8 @@ fn allowed_read(state: &AppState, path: &Path) -> bool {
 }
 
 /// Bytes of an ingested source file (digital PDF pages are copied, not re-rendered).
-#[tauri::command]
+// Off the main thread: file IO, JPEG encoding and the modal dialog would block the UI.
+#[tauri::command(async)]
 pub fn read_source(state: State<AppState>, path: String) -> Result<Response, String> {
     let path = PathBuf::from(path);
     if !allowed_read(&state, &path) {
@@ -58,7 +59,8 @@ pub fn read_source(state: State<AppState>, path: String) -> Result<Response, Str
 }
 
 /// A page image re-encoded at the export quality.
-#[tauri::command]
+// Off the main thread: file IO, JPEG encoding and the modal dialog would block the UI.
+#[tauri::command(async)]
 pub fn page_jpeg(state: State<AppState>, path: String, quality: Quality) -> Result<Response, String> {
     let path = PathBuf::from(path);
     if !allowed_read(&state, &path) {
@@ -69,7 +71,8 @@ pub fn page_jpeg(state: State<AppState>, path: String, quality: Quality) -> Resu
 }
 
 /// Asks for an output folder with the system dialog and allows writing there.
-#[tauri::command]
+// Off the main thread: file IO, JPEG encoding and the modal dialog would block the UI.
+#[tauri::command(async)]
 pub fn choose_output_dir(app: AppHandle, state: State<AppState>, start: Option<String>) -> Option<String> {
     let mut dialog = app.dialog().file().set_title("Choose where to save the binder");
     if let Some(start) = start.filter(|s| Path::new(s).is_dir()) {
@@ -118,7 +121,8 @@ pub fn unique_path(dir: &Path, name: &str) -> PathBuf {
 }
 
 /// Writes a PDF. Raw body; headers `x-dir` (an allowed folder), `x-name` and `x-subdir` (optional).
-#[tauri::command]
+// Off the main thread: file IO, JPEG encoding and the modal dialog would block the UI.
+#[tauri::command(async)]
 pub fn write_output(state: State<AppState>, request: Request<'_>) -> Result<String, String> {
     let header = |k: &str| request.headers().get(k).and_then(|v| v.to_str().ok()).map(percent_decode);
     let dir = PathBuf::from(header("x-dir").ok_or("Missing folder")?);

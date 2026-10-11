@@ -35,6 +35,7 @@ function useBackendEvents() {
       }),
     ];
     void useApp.getState().loadClients();
+    void useApp.getState().loadPrefs();
     return () => {
       for (const u of unlisten)
         void u.then((f) => {

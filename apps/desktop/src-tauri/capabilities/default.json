@@ -11,7 +11,7 @@
     "core:window:allow-start-dragging",
     "core:event:default",
     "dialog:allow-open",
-    "dialog:allow-save",
+    "dialog:allow-ask",
     "opener:allow-reveal-item-in-dir"
   ]
 }

@@ -115,7 +115,7 @@ jobs:
           libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libclang-dev
           libtesseract-dev libleptonica-dev tesseract-ocr-eng
           libheif-dev libheif-plugin-libde265 libheif-plugin-x265 libheif-examples
-          poppler-utils qpdf imagemagick webkit2gtk-driver xvfb
+          poppler-utils qpdf imagemagick webkit2gtk-driver xvfb xdotool
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @binderready/desktop fetch:pdfium
       - name: Clippy
@@ -141,7 +141,8 @@ jobs:
           node src/harness.ts --tier photo
           node src/bench.ts
       - run: cargo install tauri-driver --locked
-      - name: End-to-end (real app over WebDriver)
+      - run: pnpm --filter @binderready/desktop exec playwright-core install --with-deps chromium
+      - name: End-to-end (real app over WebDriver, export verified page by page)
         run: xvfb-run --auto-servernum --server-args="-screen 0 1440x900x24" node apps/desktop/scripts/e2e.ts
       - uses: actions/upload-artifact@v4
         if: always()
@@ -149,4 +150,6 @@ jobs:
           name: desktop-results
           path: |
             docs/accuracy/
+            docs/export-sizes.md
             docs/screenshots/phase-3/
+            docs/screenshots/phase-4/

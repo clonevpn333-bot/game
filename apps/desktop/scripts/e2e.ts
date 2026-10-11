@@ -8,16 +8,18 @@
  * Needs tauri-driver (cargo install tauri-driver), WebKitWebDriver and a display
  * (Xvfb on Linux CI). Screenshots go to docs/screenshots/phase-3/.
  */
-import { spawn, type ChildProcess } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import type { CorpusManifest } from '../../../packages/corpus/src/manifest.ts';
 import tauriConfig from '../src-tauri/tauri.conf.json' with { type: 'json' };
+import { checkBinder, shootBinder } from './verify-binder.ts';
 
 const root = resolve(import.meta.dirname, '../../..');
 const app = resolve(import.meta.dirname, '../src-tauri/target/release/binderready');
 const shots = resolve(root, process.env.SHOT_DIR ?? 'docs/screenshots/phase-3');
+const exportShots = resolve(root, process.env.EXPORT_SHOT_DIR ?? 'docs/screenshots/phase-4');
 const corpus = resolve(root, 'packages/corpus/out');
 const DRIVER = 'http://127.0.0.1:4444';
 
@@ -86,7 +88,7 @@ async function main() {
       }
       return false;
     };
-    const shot = async (name: string) => {
+    const shot = async (name: string, dir = shots) => {
       // Page images load lazily from disk: let visible ones finish first.
       const end = Date.now() + 5000;
       while (
@@ -97,7 +99,7 @@ async function main() {
       )
         await sleep(150);
       const png = await wd<string>('GET', `${s}/screenshot`);
-      await writeFile(join(shots, `${name}.png`), Buffer.from(png, 'base64'));
+      await writeFile(join(dir, `${name}.png`), Buffer.from(png, 'base64'));
     };
     const theme = async (t: 'light' | 'dark') => {
       await exec(
@@ -140,6 +142,84 @@ async function main() {
       if (!ok) throw new Error(`No button "${label}"`);
       await sleep(300);
     };
+
+    /** The native GTK folder chooser: type the path into its location bar (xdotool). */
+    const pickFolder = async (dir: string) => {
+      const find = () => {
+        try {
+          return execFileSync('xdotool', [
+            'search',
+            '--onlyvisible',
+            '--name',
+            'Choose where to save the binder',
+          ])
+            .toString()
+            .trim()
+            .split('\n')[0];
+        } catch {
+          return undefined;
+        }
+      };
+      let win: string | undefined;
+      for (let end = Date.now() + 15000; Date.now() < end && !win; await sleep(300)) win = find();
+      if (!win) throw new Error('The folder dialog did not open');
+      // No window manager under Xvfb: focus the dialog directly. GTK opens on
+      // "Recent", where a typed path can't be chosen: go Home (Alt+Home), type the
+      // folder, Return opens it, Return again chooses it.
+      execFileSync('xdotool', ['windowfocus', '--sync', win]);
+      const steps: string[][] = [
+        ['key', 'alt+Home'],
+        ['key', 'ctrl+l'],
+        ['type', '--delay', '15', `${dir}/`],
+        ['key', 'Return'],
+      ];
+      for (const step of steps) {
+        execFileSync('xdotool', step);
+        await sleep(500);
+      }
+      // Depending on the view, the first Return opens the folder or already chooses it.
+      await sleep(500);
+      if (find()) execFileSync('xdotool', ['key', 'Return']);
+      for (let end = Date.now() + 5000; Date.now() < end && find();) await sleep(300);
+      if (find()) throw new Error('The folder dialog did not accept the folder');
+    };
+    /** Opens the export dialog, sets it up, exports and waits for the toast. */
+    const exportBinder = async (opts: { folder?: string; quality?: string; singles?: boolean }) => {
+      await chord('\uE009', 'e');
+      if (!(await waitFor('Binder order', 5000))) throw new Error('Export dialog did not open');
+      if (opts.folder) {
+        await clickText('Choose');
+        await pickFolder(opts.folder);
+        if (!(await waitFor(opts.folder, 10000))) throw new Error('Folder was not chosen');
+      }
+      if (opts.quality) await clickText(opts.quality);
+      if (opts.singles) await clickText('Also export individual files');
+      await click('dialog button[type=submit]');
+      const started = Date.now();
+      const ok = await waitFor('Binder saved', 300000);
+      return { ok, seconds: (Date.now() - started) / 1000 };
+    };
+    const newestPdf = async (dir: string) => {
+      const entries = await Promise.all(
+        (await readdir(dir))
+          .filter((f) => f.endsWith('.pdf'))
+          .map(async (f) => ({ f, s: await stat(join(dir, f)) })),
+      );
+      const latest = entries.sort((a, b) => b.s.mtimeMs - a.s.mtimeMs)[0];
+      if (!latest) throw new Error(`No PDF in ${dir}`);
+      return { path: join(dir, latest.f), bytes: latest.s.size };
+    };
+    const verify = async (path: string, title: string, prefix: string | null) => {
+      const result = await checkBinder(path, title);
+      for (const f of result.failures) console.log(`      ${f}`);
+      check(
+        result.failures.length === 0,
+        `${prefix ?? 'binder'}: ${String(result.links.length)} index links and ${String(result.bookmarks.reduce((n, b) => n + 1 + b.children.length, 0))} bookmarks land on the right pages`,
+      );
+      if (prefix) await shootBinder(path, result, exportShots, prefix);
+      return result;
+    };
+    const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
 
     await wd('POST', `${s}/window/rect`, { width: 1280, height: 820 });
     check(await waitFor('Start with a client’s documents.'), 'empty state shows the drop zone');
@@ -284,6 +364,40 @@ async function main() {
     await shot('08-command-palette-light');
     await press('\uE00C');
 
+    // Export through the real dialog, then open the file and follow every link.
+    await mkdir(exportShots, { recursive: true });
+    const out = join(data, 'out');
+    await mkdir(out, { recursive: true });
+    await chord('\uE009', 'e');
+    check(await waitFor('Binder order', 5000), 'Ctrl+E opens the export dialog');
+    await shot('01-export-dialog-light', exportShots);
+    await theme('dark');
+    await shot('01-export-dialog-dark', exportShots);
+    await theme('light');
+    await press('\uE00C');
+    check(
+      !(await exec<boolean>('return !!document.querySelector("dialog[open]")')),
+      'Escape closes the export dialog',
+    );
+    const firstExport = await exportBinder({ folder: out, singles: true });
+    check(firstExport.ok, `export finishes (${firstExport.seconds.toFixed(1)} s)`);
+    await shot('02-export-done-light', exportShots);
+    const title = `${client} – 2025 Binder`;
+    const binder = await newestPdf(out);
+    check(binder.path.endsWith(`${title}.pdf`), 'the binder is named after the client and year');
+    const result = await verify(binder.path, title, 'binder');
+    const singles = (await readdir(join(out, `${client} – 2025 files`))).filter((f) =>
+      f.endsWith('.pdf'),
+    );
+    const documentCount = result.bookmarks.reduce((n, b) => n + b.children.length, 0);
+    check(
+      singles.length === documentCount,
+      `individual files: ${String(singles.length)} for ${String(documentCount)} documents`,
+    );
+    console.log(
+      `      binder: ${String(result.pages)} pages, ${mb(binder.bytes)} (balanced, mixed digital/scanned/photo)`,
+    );
+
     await clickText('Settings');
     check(await waitFor('App data folder'), 'settings open');
     await shot('09-settings-light');
@@ -293,10 +407,77 @@ async function main() {
     await clickText('Clients');
     check(await waitFor(client), 'the new client is listed');
     await shot('10-clients-light');
+
+    // File sizes: 100 phone photos as one binder, at each quality preset.
+    await clickText('Current binder');
+    await clickText('Start next binder');
+    check(await waitFor('Who is this binder for?'), 'Start next binder opens a new binder');
+    await clickText('+ Add a new client');
+    const photoClient = 'John Example';
+    await exec(
+      'const i = document.querySelector("input"); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(i, arguments[0]); i.dispatchEvent(new Event("input", { bubbles: true }));',
+      [photoClient],
+    );
+    await clickText('Start empty binder');
+    check(await waitFor('Add documents to begin'), 'the second binder starts');
+    const photos = await pick(
+      'photo',
+      (f) => f.expect === 'ok' && f.documents.every((d) => d.duplicateOf === null),
+      100,
+    );
+    const photoStart = Date.now();
+    await exec(
+      'return window.__TAURI_INTERNALS__.invoke("plugin:event|emit", { event: "tauri://drag-drop", payload: { paths: arguments[0], position: { x: 400, y: 300 } } });',
+      [photos],
+    );
+    check(
+      await waitFor(/\d+ documents · \d+ pages/, 900000),
+      `${String(photos.length)} photos processed`,
+    );
+    console.log(
+      `      ${String(photos.length)} photos in ${((Date.now() - photoStart) / 1000).toFixed(1)} s`,
+    );
+    const out2 = join(data, 'out-photos');
+    await mkdir(out2, { recursive: true });
+    const sizes: { quality: string; bytes: number; pages: number; seconds: number }[] = [];
+    for (const [i, quality] of ['Balanced', 'Compact', 'High'].entries()) {
+      if (i > 0) await click('[aria-label=Dismiss]');
+      const run = await exportBinder({ ...(i === 0 ? { folder: out2 } : {}), quality });
+      check(run.ok, `${quality} export finishes (${run.seconds.toFixed(1)} s)`);
+      const file = await newestPdf(out2);
+      const checked = await verify(file.path, `${photoClient} – 2025 Binder`, null);
+      sizes.push({ quality, bytes: file.bytes, pages: checked.pages, seconds: run.seconds });
+      console.log(`      ${quality}: ${String(checked.pages)} pages, ${mb(file.bytes)}`);
+    }
+    const balanced = sizes.find((x) => x.quality === 'Balanced');
+    check(
+      (balanced?.bytes ?? Infinity) < 25 * 1024 * 1024,
+      'a 100-photo binder is under 25 MB on Balanced',
+    );
+    await writeFile(
+      resolve(root, 'docs/export-sizes.md'),
+      [
+        '# Binder file sizes',
+        '',
+        `${String(photos.length)} phone photos from the synthetic photo tier (12 MP, JPEG and HEIC), exported by the release app as one binder with cover and index. Generated by \`apps/desktop/scripts/e2e.ts\`.`,
+        '',
+        '| Preset | Pages | File size | Per page | Export time |',
+        '|---|---|---|---|---|',
+        ...sizes.map(
+          (x) =>
+            `| ${x.quality} | ${String(x.pages)} | ${mb(x.bytes)} | ${String(Math.round(x.bytes / x.pages / 1024))} KB | ${x.seconds.toFixed(1)} s |`,
+        ),
+        '',
+        `Mixed binder (digital, scanned and photo pages, ${String(result.pages)} pages, Balanced): ${mb(binder.bytes)}.`,
+        '',
+      ].join('\n'),
+    );
   } finally {
     if (session) await wd('DELETE', `/session/${session}`).catch(() => undefined);
     driver.kill();
-    await rm(data, { recursive: true, force: true });
+    // The app may still be flushing its database as it exits.
+    if (driver.exitCode === null) await new Promise((r) => driver.once('exit', r));
+    await rm(data, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
   }
   if (failures.length) {
     console.error(`\n${String(failures.length)} check(s) failed`);

@@ -21,3 +21,5 @@ apps/desktop/src-tauri/pdfium
 apps/desktop/dist
 apps/desktop/e2e-results
 packages/corpus/out
+apps/web/next-env.d.ts
+docs/export-sizes.md

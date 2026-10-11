@@ -6,13 +6,14 @@ it is built one phase per session, and each phase stops at its gate with a repor
 
 ## Status
 
-| Phase | Scope                                                       | State                                           |
-| ----- | ----------------------------------------------------------- | ----------------------------------------------- |
-| 0     | Monorepo, design system + showcase, forms.json research, CI | Done except forms.json verification (see below) |
-| 1     | Website (`apps/web`)                                        | Done (see docs/lighthouse/phase-1.md)           |
-| 2     | Engine + corpus                                             | Done on synthetic corpus (docs/accuracy/)       |
-| 3     | Desktop ingest pipeline + review board                      | Done (docs/accuracy, docs/screenshots/phase-3)  |
-| 4–8   | Export, missing docs, native OCR, licensing, polish         | Not started                                     |
+| Phase | Scope                                                       | State                                                 |
+| ----- | ----------------------------------------------------------- | ----------------------------------------------------- |
+| 0     | Monorepo, design system + showcase, forms.json research, CI | Done except forms.json verification (see below)       |
+| 1     | Website (`apps/web`)                                        | Done (see docs/lighthouse/phase-1.md)                 |
+| 2     | Engine + corpus                                             | Done on synthetic corpus (docs/accuracy/)             |
+| 3     | Desktop ingest pipeline + review board                      | Done (docs/accuracy, docs/screenshots/phase-3)        |
+| 4     | Binder export                                               | Done (docs/export-sizes.md, docs/screenshots/phase-4) |
+| 5–8   | Missing docs, native OCR, licensing, polish                 | Not started                                           |
 
 **Open from Phase 0:** `forms.json` patterns are drafted but unverified, and no OMB numbers are
 recorded, because the cloud sessions could not reach irs.gov/ssa.gov. Run `pnpm forms:verify --write`
@@ -44,7 +45,10 @@ pnpm security:pdf     # re-print public/<slug>-security-overview.pdf after editi
 pnpm fetch:pdfium     # PDFium binaries (bblanchon chromium/8086) → src-tauri/pdfium/ (gitignored)
 pnpm dev              # tauri dev (Vite on :1420 + Rust app)
 pnpm tauri build --no-bundle   # release app at src-tauri/target/release/binderready
-pnpm e2e              # drives the release app over WebDriver → docs/screenshots/phase-3 (needs a display)
+pnpm e2e              # drives the release app over WebDriver: review, export, binder checks, sizes
+                      # → docs/screenshots/phase-3, phase-4, docs/export-sizes.md (needs a display,
+                      #   xdotool for the native folder picker, and a Chromium for the verifier)
+node scripts/verify-binder.ts <binder.pdf> [--shots dir]   # check bookmarks + index links
 
 # packages/corpus (desktop pipeline accuracy; needs the release binderready-ingest)
 cargo build --release --bin binderready-ingest   # in apps/desktop/src-tauri
@@ -143,7 +147,15 @@ They are excluded from lint/format and untouched. Ask Corey before moving or del
   (`<app data>/binderready.db`).
 - Frontend: React 19 + Zustand (`src/state/store.ts`); the engine runs in a Web Worker
   (`lib/engine.worker.ts`). Review edits are pure functions in `lib/review.ts` (tested).
-  `lib/binder.ts` assembles the binder PDF with pdf-lib (Phase 4 wires the export UI).
+- Export: `lib/export-plan.ts` (pure, tested) turns reviewed documents into binder sections:
+  digital PDF pages are copied as vector pages, scans/photos use the straightened page JPEG
+  re-encoded by Rust at the quality preset (Compact 0.75× q55, Balanced q68, High q85). The main
+  thread fetches bytes; `lib/export.worker.ts` runs pdf-lib (`lib/binder.ts`); Rust writes the
+  files into the folder chosen in the system dialog (never overwrites: "name (2).pdf").
+  Export preferences, the name template and the firm's category order persist in SQLite
+  settings; the output folder is remembered per client. The board follows the same order.
+- Export commands and folder walking are `#[tauri::command(async)]`: sync commands run on the
+  main thread, where encoding would freeze the UI and the GTK dialog can deadlock.
 - Product name: `productName` in `src-tauri/tauri.conf.json`, read by `lib/product.ts`;
   `product.test.ts` keeps it equal to the website's `PRODUCT_NAME`.
 - IPC for bytes uses raw `tauri::ipc::Response`/`Request`. Only files the user added (or folders
@@ -206,6 +218,8 @@ the engine and writes `docs/accuracy/<tier>.md`; exits 1 below target. Needs `pd
 - 2026-10-11 Corpus uses built-in synthetic templates because irs.gov is unreachable from cloud
   sessions; the report says so on every run. Official-PDF filling is the release-gate follow-up.
 - 2026-10-11 Photo tier renders pages at 300 DPI (a 12 MP phone photo of a letter page), not 150.
+- 2026-10-11 Names never come from OCR lines with mean word confidence < 0.75 (photo glare
+  produced junk issuers). An empty field is better than a wrong one; the name drops the token.
 - 2026-10-11 Desktop e2e drives the release build: the debug build's unoptimized image code
   makes OCR runs take minutes.
 - 2026-10-11 Empty `apps/*` and `packages/corpus` were not scaffolded. Placeholder apps would

@@ -5,6 +5,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { FileInput as EngineFile, PageInput as EnginePage } from '@binderready/engine';
+import type { Quality } from './export-plan';
 
 export const inTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
@@ -74,6 +75,35 @@ export const backend = {
     invoke<null>('ingest_files', { batchId, files }),
   cancelIngest: (batchId: string) => invoke<null>('cancel_ingest', { batchId }),
   expandPaths: (paths: string[]) => invoke<string[]>('expand_paths', { paths }),
+  /** Bytes of a file ingested in this session (digital PDF pages are copied from it). */
+  readSource: async (path: string) =>
+    new Uint8Array(await invoke<ArrayBuffer>('read_source', { path })),
+  /** A cached page image re-encoded at an export quality preset. */
+  pageJpeg: async (path: string, quality: Quality) =>
+    new Uint8Array(await invoke<ArrayBuffer>('page_jpeg', { path, quality })),
+  /** System folder picker; the chosen folder becomes writable. Null when cancelled. */
+  chooseOutputDir: (start: string | null) => invoke<string | null>('choose_output_dir', { start }),
+  /** Re-allows a client's remembered folder; null if it's gone. */
+  allowRememberedDir: (clientId: number) =>
+    invoke<string | null>('allow_remembered_dir', { clientId }),
+  /** Writes a PDF into an allowed folder; returns the path actually written (never overwrites). */
+  writeOutput: (bytes: Uint8Array, dir: string, name: string, subdir?: string) =>
+    invoke<string>('write_output', bytes, {
+      headers: {
+        'x-dir': encodeURIComponent(dir),
+        'x-name': encodeURIComponent(name),
+        ...(subdir ? { 'x-subdir': encodeURIComponent(subdir) } : {}),
+      },
+    }),
+  recordBinder: (record: {
+    clientId: number;
+    taxYear: number;
+    documents: number;
+    pages: number;
+    outputPath: string;
+    outputDir: string;
+    trial: boolean;
+  }) => invoke<null>('record_binder', { record }),
   onProgress: (handler: (p: Progress) => void): Promise<UnlistenFn> =>
     listen<Progress>('ingest://progress', (e) => {
       handler(e.payload);

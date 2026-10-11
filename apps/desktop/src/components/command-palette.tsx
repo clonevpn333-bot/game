@@ -1,7 +1,9 @@
 import { Kbd, cx } from '@binderready/design';
-import { BookCopy, Moon, Plus, Settings, Users } from 'lucide-react';
+import { ask } from '@tauri-apps/plugin-dialog';
+import { BookCopy, FileDown, Moon, Plus, Settings, Users, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { themeStore } from '../lib/theme';
+import { modKey } from '../lib/platform';
 import { useApp } from '../state/store';
 
 interface Command {
@@ -13,12 +15,25 @@ interface Command {
 }
 
 /** ⌘K / Ctrl+K: new binder, open client, export, toggle theme, open settings. */
+/** Closing loses review edits unless the binder was exported: ask first. */
+async function confirmClose(): Promise<boolean> {
+  const { lastExport, docs } = useApp.getState();
+  if (lastExport || docs.length === 0) return true;
+  return ask('This binder hasn’t been exported. Close it and discard the review?', {
+    title: 'Close binder',
+    kind: 'warning',
+    okLabel: 'Close binder',
+    cancelLabel: 'Keep reviewing',
+  });
+}
+
 export function CommandPalette() {
   const open = useApp((s) => s.paletteOpen);
   const set = useApp((s) => s.set);
   const go = useApp((s) => s.go);
   const clients = useApp((s) => s.clients);
   const batch = useApp((s) => s.batch);
+  const docs = useApp((s) => s.docs);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
@@ -60,6 +75,30 @@ export function CommandPalette() {
         },
       },
     ];
+    if (batch?.finishedAt && docs.some((d) => !d.excluded)) {
+      list.push({
+        id: 'export',
+        label: 'Export binder',
+        hint: `${modKey} E`,
+        icon: <FileDown strokeWidth={1.5} />,
+        run: () => {
+          go('review');
+          useApp.getState().openExport();
+        },
+      });
+    }
+    if (batch) {
+      list.push({
+        id: 'close',
+        label: 'Close binder',
+        icon: <X strokeWidth={1.5} />,
+        run: () => {
+          void confirmClose().then((ok) => {
+            if (ok) useApp.getState().closeBinder();
+          });
+        },
+      });
+    }
     list.push(
       {
         id: 'clients',
@@ -110,7 +149,7 @@ export function CommandPalette() {
       }
     }
     return list;
-  }, [batch, clients, go]);
+  }, [batch, clients, docs, go]);
 
   const filtered = commands.filter((c) =>
     c.label.toLowerCase().includes(query.toLowerCase().trim()),

@@ -15,8 +15,8 @@ Corpus: 127 files, 168 documents, 223 pages (seed 2026, synthetic-templates). En
 | Tax year read correctly                     | 100.0%                  |           |
 | Issuer read correctly                       | 100.0%                  |           |
 | Recipient last name read correctly          | 100.0%                  |           |
-| Pages per second (extraction + engine)      | 26.0                    |           |
-| Pages per second (engine only)              | 635                     |           |
+| Pages per second (extraction + engine)      | 26.2                    |           |
+| Pages per second (engine only)              | 454                     |           |
 
 ## Per form
 

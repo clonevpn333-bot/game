@@ -48,22 +48,73 @@ const NOT_A_NAME =
 /** A street address line ("456 Example Ave, Suite 100"): the line under a name, never the name. */
 const STREET_ADDRESS =
   /^\W*\d+\s+\S.*\b(?:ave|avenue|st|street|rd|road|blvd|boulevard|dr|drive|ln|lane|way|ct|court|pl|place|pkwy|hwy|suite|ste)\b|\b(?:suite|ste\.?|apt\.?)\s*\d|\bp\.?\s*o\.?\s+box\b/i;
-const LEGAL_SUFFIX =
-  /^(?:llc|l\.l\.c\.|inc\.?|corp\.?|co\.?|lp|llp|pllc|n\.a\.|na|usa|fsb|plc|pc|p\.c\.)$/i;
 const NAME_SUFFIX = /^(?:jr\.?|sr\.?|ii|iii|iv|v)$/i;
 
+/** How legal suffixes are written, whatever case the document (or OCR) used. */
+const SUFFIX_FORMS: Record<string, string> = {
+  llc: 'LLC',
+  'l.l.c.': 'L.L.C.',
+  inc: 'Inc',
+  'inc.': 'Inc.',
+  corp: 'Corp',
+  'corp.': 'Corp.',
+  co: 'Co',
+  'co.': 'Co.',
+  lp: 'LP',
+  llp: 'LLP',
+  pllc: 'PLLC',
+  'n.a.': 'N.A.',
+  na: 'NA',
+  usa: 'USA',
+  fsb: 'FSB',
+  plc: 'PLC',
+  pc: 'PC',
+  'p.c.': 'P.C.',
+};
+/** Acronyms that stay upper case when an all-caps name is title-cased. */
+const ACRONYMS = new Set([
+  'hsa',
+  'hra',
+  'fsa',
+  'ira',
+  'esa',
+  'hmo',
+  'ppo',
+  'epo',
+  'us',
+  'cu',
+  'fcu',
+]);
+
 function smartCase(value: string): string {
-  if (value !== value.toUpperCase()) return value;
+  const allCaps = value === value.toUpperCase();
   return value
-    .toLowerCase()
     .split(' ')
-    .map((word) =>
-      LEGAL_SUFFIX.test(word)
-        ? word.toUpperCase()
-        : word.replace(/(^|[-'])([a-z])/g, (_, p: string, c: string) => p + c.toUpperCase()),
-    )
+    .map((word) => {
+      const lower = word.toLowerCase();
+      const bare = lower.replace(/[,;]$/, '');
+      const suffix = SUFFIX_FORMS[bare];
+      if (suffix) return suffix + lower.slice(bare.length);
+      if (!allCaps) return word;
+      // Keep acronyms, and letter runs without a vowel ("PNC", "TD").
+      if (ACRONYMS.has(bare) || /^[b-df-hj-np-tv-z]{2,4}$/.test(bare)) return word;
+      return lower.replace(/(^|[-'])([a-z])/g, (_, p: string, c: string) => p + c.toUpperCase());
+    })
     .join(' ');
 }
+
+/**
+ * OCR read this line well enough to use as a name: recognizers return low-confidence
+ * fragments ("es Coen, ' SUE a0") for smudges and photo glare. Text layers are exact.
+ */
+function readable(line: Line): boolean {
+  if (!line.words.length) return true;
+  const mean = line.words.reduce((n, w) => n + w.confidence, 0) / line.words.length;
+  return mean >= MIN_NAME_CONFIDENCE;
+}
+
+/** Mean OCR word confidence below which a line is never used as a name. */
+export const MIN_NAME_CONFIDENCE = 0.75;
 
 function cleanName(raw: string, allowDigits = false): string | null {
   const value = raw
@@ -90,14 +141,14 @@ function valueAfterLabel(lines: Line[], labelRe: RegExp, allowDigits = false): s
     if (!m) continue;
     // "Taxpayer name: Jane Sample" style: the value follows a colon on the same line.
     const inline = /^[^:]{0,60}:\s*(.+)$/.exec(line.text.slice(m.index + m[0].length));
-    if (inline?.[1] && !LABELISH.test(inline[1])) {
+    if (inline?.[1] && !LABELISH.test(inline[1]) && readable(line)) {
       const name = cleanName(inline[1], allowDigits);
       if (name) return name;
     }
     for (const next of lines.slice(i + 1)) {
       if (next.y - line.y > 0.1) break;
       if (next.y <= line.y + 0.002 || Math.abs(next.x - line.x) > 0.2) continue;
-      if (LABELISH.test(next.text)) continue;
+      if (LABELISH.test(next.text) || !readable(next)) continue;
       const name = cleanName(next.text, allowDigits);
       if (name) return name;
     }
@@ -118,7 +169,7 @@ function letterhead(catalog: FormsCatalog, form: FormDefinition, text: PageText)
       !/treasurer|collector/i.test(line.text)
     )
       continue;
-    const name = cleanName(line.text);
+    const name = readable(line) ? cleanName(line.text) : null;
     if (name) return name;
   }
   return null;

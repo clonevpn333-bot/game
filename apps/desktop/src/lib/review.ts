@@ -60,6 +60,16 @@ function nameFor(doc: ReviewDoc, naming: NamingContext): string {
   });
 }
 
+/** Re-renders every generated name with a new template; hand-typed names stay. */
+export function applyTemplate(docs: ReviewDoc[], naming: NamingContext): ReviewDoc[] {
+  return docs.map((d) => (d.nameEdited ? d : { ...d, name: nameFor(d, naming) }));
+}
+
+/** A firm's (possibly partial) category order, completed with the default order. */
+export function fullOrder(order: readonly CategoryId[]): CategoryId[] {
+  return [...order, ...CATEGORY_IDS.filter((c) => !order.includes(c))];
+}
+
 /** Board groups: unresolved "Needs review" first, then categories in binder order. */
 export function boardGroups(docs: ReviewDoc[], order: readonly CategoryId[] = CATEGORY_IDS) {
   const live = docs.filter((d) => !d.excluded);
@@ -68,7 +78,7 @@ export function boardGroups(docs: ReviewDoc[], order: readonly CategoryId[] = CA
   const groups: { id: string; label: string; docs: ReviewDoc[] }[] = [];
   if (needsReview.length)
     groups.push({ id: 'needs-review', label: 'Needs review', docs: needsReview });
-  for (const category of order) {
+  for (const category of fullOrder(order)) {
     const inCategory = rest.filter((d) => d.category === category);
     if (inCategory.length) {
       groups.push({
@@ -85,8 +95,11 @@ export function boardGroups(docs: ReviewDoc[], order: readonly CategoryId[] = CA
 }
 
 /** Keyboard order: the board read top to bottom. */
-export function navigationOrder(docs: ReviewDoc[]): string[] {
-  return boardGroups(docs).flatMap((g) => g.docs.map((d) => d.id));
+export function navigationOrder(
+  docs: ReviewDoc[],
+  order: readonly CategoryId[] = CATEGORY_IDS,
+): string[] {
+  return boardGroups(docs, order).flatMap((g) => g.docs.map((d) => d.id));
 }
 
 const replace = (docs: ReviewDoc[], id: string, f: (d: ReviewDoc) => ReviewDoc) =>

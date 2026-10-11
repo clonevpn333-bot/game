@@ -5,9 +5,12 @@ import { ChevronLeft, ChevronRight, Copy, RotateCw, Scissors, X } from 'lucide-r
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DesktopFile } from '../lib/backend';
 import { catalog, categoryName, formLabel } from '../lib/catalog';
+import { modKey } from '../lib/platform';
 import { boardGroups, categoryForKey, rotationKey, type ReviewDoc } from '../lib/review';
 import { useApp } from '../state/store';
 import { pickFiles } from './drop-zone';
+import { ExportDialog } from './export-dialog';
+import { ExportToast } from './export-toast';
 
 function pageImage(files: Record<string, DesktopFile>, fileId: string, page: number) {
   const p = files[fileId]?.pages.find((x) => x.index === page);
@@ -506,6 +509,7 @@ const footerKeys: [string[], string][] = [
   [['M'], 'Merge'],
   [['D'], 'Duplicate / remove'],
   [['Space'], 'Preview'],
+  [[modKey, 'E'], 'Export'],
 ];
 
 export function ReviewBoard() {
@@ -516,10 +520,13 @@ export function ReviewBoard() {
   const previewOpen = useApp((s) => s.previewOpen);
   const formPickerOpen = useApp((s) => s.formPickerOpen);
   const notice = useApp((s) => s.notice);
+  const exportOpen = useApp((s) => s.exportOpen);
+  const openExport = useApp((s) => s.openExport);
   const addPaths = useApp((s) => s.addPaths);
   const set = useApp((s) => s.set);
   const [page, setPage] = useState(0);
-  const groups = useMemo(() => boardGroups(docs), [docs]);
+  const categoryOrder = useApp((s) => s.categoryOrder);
+  const groups = useMemo(() => boardGroups(docs, categoryOrder), [docs, categoryOrder]);
   const selected = docs.find((d) => d.id === selectedId) ?? null;
 
   // A newly selected document opens at its first page.
@@ -538,10 +545,32 @@ export function ReviewBoard() {
     };
   }, [notice, set]);
 
+  // ⌘E / Ctrl+E: export.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        useApp.getState().openExport();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const s = useApp.getState();
-      if (s.paletteOpen || s.formPickerOpen || s.editingName || e.metaKey || e.ctrlKey || e.altKey)
+      if (
+        s.paletteOpen ||
+        s.formPickerOpen ||
+        s.editingName ||
+        s.exportOpen ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.altKey
+      )
         return;
       if ((e.target as HTMLElement | null)?.closest('input, textarea, select')) return;
       const doc = s.docs.find((d) => d.id === s.selectedId);
@@ -649,6 +678,11 @@ export function ReviewBoard() {
           >
             Add files
           </Button>
+          <Button size="sm" onClick={openExport} disabled={live.length === 0}>
+            Export binder
+            <Kbd className="ml-1">{modKey}</Kbd>
+            <Kbd>E</Kbd>
+          </Button>
         </div>
       </div>
       <div className="flex min-h-0 flex-1">
@@ -715,6 +749,8 @@ export function ReviewBoard() {
       ) : null}
       {selected && formPickerOpen ? <FormPicker doc={selected} /> : null}
       {selected && previewOpen ? <Preview doc={selected} page={page} setPage={setPage} /> : null}
+      {exportOpen ? <ExportDialog /> : null}
+      <ExportToast />
     </div>
   );
 }
