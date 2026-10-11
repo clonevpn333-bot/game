@@ -30,7 +30,7 @@ const PHRASES: Phrase[] = [
   { top: 120, out: 10.1, lines: [{ size: 100, w: [w("BUT", 7.92), w("BY", 8.14), w("A", 8.37)] }, { size: 92, w: [w("CZECHOSLOVAK", 8.6, { c: "y" })] }, { size: 108, w: [w("FIGHTER", 9.34), w("JET.", 9.74)] }] },
   { top: 120, out: 13.45, lines: [{ size: 92, w: [w("IF", 10.29), w("THEY'RE", 10.51), w("RIGHT,", 10.74, { c: "y" })] }, { size: 92, w: [w("SHE", 11.19), w("DIDN'T", 11.6), w("FALL", 12.02)] }, { size: 120, w: [w("33,000", 12.43, { c: "r" }), w("FEET.", 12.85, { c: "r" })] }] },
   { top: 130, out: 15.35, lines: [{ size: 100, w: [w("MAYBE", 13.65), w("JUST", 13.87)] }, { size: 116, w: [w("A", 14.09, { c: "y" }), w("FEW", 14.31, { c: "y" }), w("HUNDRED", 14.53, { c: "y", em: true })] }, { size: 100, w: [w("METERS.", 14.91, { c: "y" })] }] },
-  { top: 120, out: 16.8, lines: [{ size: 100, w: [w("AND", 15.54), w("THE", 15.75)] }, { size: 116, w: [w("MIRACLE", 15.97, { c: "y" }), w("RECORD?", 16.5, { c: "y" })] }] },
+  { top: 120, out: 16.8, lines: [{ size: 100, w: [w("AND", 15.54), w("THE", 15.75)] }, { size: 98, w: [w("MIRACLE", 15.97, { c: "y" }), w("RECORD?", 16.5, { c: "y" })] }] },
   { top: 140, out: 18.45, lines: [{ size: 116, w: [w("A", 16.87), w("COVER", 17.08, { c: "r", fx: "pop" }), w("STORY,", 17.45, { c: "r" })] }, { size: 80, w: [w("THEY", 17.82), w("CLAIMED.", 18.04)] }] },
   // PIVOT
   { top: 120, out: 20.5, lines: [{ size: 140, w: [w("BUT", 19, { fx: "slam", c: "y" })] }, { size: 100, w: [w("THE", 19.27), w("BLACK", 19.5), w("BOXES", 19.72)] }] },
