@@ -164,7 +164,8 @@ jobs:
           ls -l "$app/Contents/Frameworks" "$app/Contents/Resources"
           fail=0
           for f in "$app/Contents/MacOS/binderready" "$app"/Contents/Frameworks/*.dylib; do
-            for dep in $(otool -L "$f" | tail -n +2 | awk '{print $1}'); do
+            # Header lines ("file:" or "file (architecture arm64):") end with a colon.
+            for dep in $(otool -L "$f" | grep -v ':$' | awk '{print $1}'); do
               case "$dep" in
                 /usr/lib/*|/System/*) ;;
                 @rpath/*) [ -f "$app/Contents/Frameworks/${dep#@rpath/}" ] || { echo "::error::$(basename "$f") needs $dep, not in Frameworks"; fail=1; } ;;

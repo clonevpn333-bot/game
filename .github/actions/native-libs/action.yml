@@ -91,3 +91,8 @@ runs:
         curl -fsSL -o src-tauri/tessdata/eng.traineddata \
           https://github.com/tesseract-ocr/tessdata_fast/raw/4.1.0/eng.traineddata
         pnpm fetch:pdfium
+        # PDFium ships as a universal binary; each DMG needs only its own architecture.
+        if [ "$RUNNER_OS" = macOS ]; then
+          lipo src-tauri/pdfium/libpdfium.dylib -thin "$(uname -m)" -output src-tauri/pdfium/libpdfium.thin
+          mv src-tauri/pdfium/libpdfium.thin src-tauri/pdfium/libpdfium.dylib
+        fi

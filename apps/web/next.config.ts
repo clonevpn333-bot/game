@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 };
 
-const withMDX = createMDX({ extension: /\.mdx$/ });
+// GFM for the docs' tables. Plugins are named by string so Turbopack can load them.
+const withMDX = createMDX({
+  extension: /\.mdx$/,
+  options: { remarkPlugins: [['remark-gfm', {}]] },
+});
 
 export default withMDX(nextConfig);

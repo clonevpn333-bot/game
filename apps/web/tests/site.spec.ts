@@ -227,6 +227,12 @@ test('download: Windows is primary by default, macOS on a Mac', async ({ browser
   await context.close();
 });
 
+test('docs: shortcut tables render as tables', async ({ page }) => {
+  await page.goto('/docs/review-shortcuts/');
+  await expect(page.locator('main table')).toHaveCount(3);
+  await expect(page.getByRole('cell', { name: 'Accept the selected document' })).toBeVisible();
+});
+
 test('keyboard: the first Tab lands on the skip link, which moves focus to main', async ({
   page,
 }) => {
