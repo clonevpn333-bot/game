@@ -1,0 +1,46 @@
+{
+  "name": "@binderready/design",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./tokens.css",
+    "./preset.css": "./preset.css",
+    "./fonts.css": "./fonts.css"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "build": "vite build showcase",
+    "showcase": "vite showcase",
+    "screenshots": "vite build showcase && node scripts/screenshots.ts"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource-variable/geist-mono": "5.3.0",
+    "tailwind-merge": "3.7.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "lucide-react": "1.55.0",
+    "playwright-core": "1.64.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "tailwindcss": "4.3.3",
+    "vite": "8.3.4",
+    "vitest": "5.0.3"
+  }
+}

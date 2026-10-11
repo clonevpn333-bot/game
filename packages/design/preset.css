@@ -1,0 +1,132 @@
+/*
+ * Steel Tailwind v4 preset. Consumers write:
+ *
+ *   @import 'tailwindcss';
+ *   @import '@binderready/design/preset.css';
+ *   @source '../node_modules/@binderready/design/src';
+ *
+ * Colors resolve through CSS variables, so components never need `dark:`
+ * variants: switching data-theme swaps every token at once.
+ */
+
+@import './tokens.css';
+
+@theme inline {
+  /* Monochrome by design: Tailwind's default palette is removed. */
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  --color-bg: var(--bg);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-focus: var(--focus);
+
+  --font-sans: var(--font-family-sans);
+  --font-mono: var(--font-family-mono);
+
+  --radius-*: initial;
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+  --radius-panel: var(--radius-panel);
+  --radius-full: 9999px;
+
+  --ease-out-steel: var(--ease-out-steel);
+
+  --text-display: clamp(2.5rem, 1.35rem + 4.6vw, 4.75rem);
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.045em;
+  --text-display--font-weight: 600;
+
+  --text-h2: clamp(1.875rem, 1.5rem + 1.5vw, 2.5rem);
+  --text-h2--line-height: 1.1;
+  --text-h2--letter-spacing: -0.035em;
+  --text-h2--font-weight: 600;
+
+  --text-body: 1rem;
+  --text-body--line-height: 1.6;
+
+  --text-label: 0.75rem;
+  --text-label--line-height: 1rem;
+  --text-label--letter-spacing: 0.06em;
+}
+
+@layer base {
+  html {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-family-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-color: var(--bg);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  ::selection {
+    background-color: var(--fg);
+    color: var(--bg);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Mono section label, e.g. "01 — HOW IT WORKS". */
+@utility eyebrow {
+  font-family: var(--font-family-mono);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+
+/* Steel gradient headline accent. Use on one phrase per page at most. */
+@utility text-steel {
+  background-image: var(--steel);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Hairline grid that fades out from the center. */
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 60% 55% at 50% 40%, #000 30%, transparent 100%);
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}

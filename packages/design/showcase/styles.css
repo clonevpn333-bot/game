@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+@import '../preset.css';
+@import '../fonts.css';
+
+@source '../src';
+@source './';

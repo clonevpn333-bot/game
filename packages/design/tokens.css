@@ -1,0 +1,100 @@
+/*
+ * Steel — BinderReady design tokens.
+ *
+ * Theme resolution:
+ *   1. No data-theme attribute: follows the OS (prefers-color-scheme).
+ *   2. data-theme="light" | "dark" on <html>: explicit user choice.
+ *   3. data-theme on any element scopes that theme to its subtree
+ *      (the website's privacy panel is dark even in the light theme).
+ *
+ * The dark values appear twice (media query + attribute). tokens.test.ts
+ * asserts the two blocks stay identical.
+ */
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #ffffff;
+  --bg-subtle: #fafafa;
+  --surface: #ffffff;
+  --fg: #0a0a0a;
+  --fg-muted: #666666;
+  /* Brief specifies #8f8f8f (3.1:1). Darkened to pass WCAG AA (4.5:1) on every light background. */
+  --fg-subtle: #737373;
+  --border: #eaeaea;
+  --border-strong: #d4d4d4;
+  --success: #15803d;
+  --warning: #b45309;
+  --danger: #b91c1c;
+  --focus: #0a0a0a;
+
+  --steel: linear-gradient(180deg, #0a0a0a 0%, #555555 100%);
+  --hero-glow: rgb(0 0 0 / 0.04);
+  --overlay: rgb(255 255 255 / 0.72);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #000000;
+  --bg-subtle: #0a0a0a;
+  --surface: #111111;
+  --fg: #ededed;
+  --fg-muted: #a1a1a1;
+  /* Brief specifies #6b6b6b (3.5:1 on --surface). Lightened to pass WCAG AA on every dark background. */
+  --fg-subtle: #7d7d7d;
+  --border: #1f1f1f;
+  --border-strong: #333333;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --focus: #ededed;
+
+  --steel: linear-gradient(180deg, #ffffff 0%, #8a8a8a 100%);
+  --hero-glow: rgb(255 255 255 / 0.06);
+  --overlay: rgb(0 0 0 / 0.72);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --bg: #000000;
+    --bg-subtle: #0a0a0a;
+    --surface: #111111;
+    --fg: #ededed;
+    --fg-muted: #a1a1a1;
+    /* Brief specifies #6b6b6b (3.5:1 on --surface). Lightened to pass WCAG AA on every dark background. */
+    --fg-subtle: #7d7d7d;
+    --border: #1f1f1f;
+    --border-strong: #333333;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --focus: #ededed;
+
+    --steel: linear-gradient(180deg, #ffffff 0%, #8a8a8a 100%);
+    --hero-glow: rgb(255 255 255 / 0.06);
+    --overlay: rgb(0 0 0 / 0.72);
+  }
+}
+
+/* Theme-independent tokens. */
+:root {
+  /* next/font sets --font-geist-sans / --font-geist-mono on the website; fonts.css provides the same faces elsewhere. */
+  --font-family-sans:
+    var(--font-geist-sans, 'Geist Variable'), ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
+  --font-family-mono:
+    var(--font-geist-mono, 'Geist Mono Variable'), ui-monospace, 'SF Mono', 'Cascadia Mono',
+    Consolas, monospace;
+
+  --radius-control: 6px;
+  --radius-card: 10px;
+  --radius-panel: 14px;
+
+  --duration-fast: 150ms;
+  --duration-base: 220ms;
+  --ease-out-steel: cubic-bezier(0.22, 1, 0.36, 1);
+}

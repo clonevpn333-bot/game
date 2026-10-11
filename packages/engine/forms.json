@@ -1,0 +1,697 @@
+{
+  "version": 1,
+  "patternFlags": "iu",
+  "categories": [
+    {
+      "id": "organizer",
+      "displayName": "Client organizer & engagement"
+    },
+    {
+      "id": "wages",
+      "displayName": "Wages"
+    },
+    {
+      "id": "interest-dividends",
+      "displayName": "Interest & dividends"
+    },
+    {
+      "id": "brokerage",
+      "displayName": "Brokerage"
+    },
+    {
+      "id": "retirement",
+      "displayName": "Retirement & Social Security"
+    },
+    {
+      "id": "self-employment",
+      "displayName": "Self-employment & other income"
+    },
+    {
+      "id": "health",
+      "displayName": "Health"
+    },
+    {
+      "id": "education",
+      "displayName": "Education"
+    },
+    {
+      "id": "mortgage-property",
+      "displayName": "Mortgage & property"
+    },
+    {
+      "id": "pass-through",
+      "displayName": "Pass-through"
+    },
+    {
+      "id": "debt-other",
+      "displayName": "Debt & other"
+    },
+    {
+      "id": "other",
+      "displayName": "Other / unrecognized"
+    }
+  ],
+  "forms": [
+    {
+      "id": "w-2",
+      "displayName": "W-2",
+      "category": "wages",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Wage\\s+and\\s+Tax\\s+Statement"],
+      "boxLabelPatterns": [
+        "Wages,\\s*tips,\\s*other\\s+compensation",
+        "Federal\\s+income\\s+tax\\s+withheld",
+        "Social\\s+security\\s+wages",
+        "Medicare\\s+wages\\s+and\\s+tips",
+        "Employer\\s+identification\\s+number"
+      ],
+      "keywords": ["W-2", "Copy B", "Copy C", "Copy 2"],
+      "issuerFieldLabels": ["Employer'?s\\s+name,\\s*address,\\s*and\\s+ZIP\\s+code"],
+      "yearPatterns": [
+        "(20\\d{2})\\s*Wage\\s+and\\s+Tax\\s+Statement",
+        "Wage\\s+and\\s+Tax\\s+Statement\\s*(20\\d{2})",
+        "(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"
+      ],
+      "filenameHints": ["\\bw-?2\\b(?!g)"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/fw2.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "w-2g",
+      "displayName": "W-2G",
+      "category": "wages",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Certain\\s+Gambling\\s+Winnings"],
+      "boxLabelPatterns": [
+        "Reportable\\s+winnings",
+        "Date\\s+won",
+        "Type\\s+of\\s+wager",
+        "Federal\\s+income\\s+tax\\s+withheld"
+      ],
+      "keywords": ["W-2G", "gambling", "wager"],
+      "issuerFieldLabels": ["PAYER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["\\bw-?2g\\b"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/fw2g.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1099-int",
+      "displayName": "1099-INT",
+      "category": "interest-dividends",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Interest\\s+Income"],
+      "boxLabelPatterns": [
+        "Early\\s+withdrawal\\s+penalty",
+        "Interest\\s+on\\s+U\\.?\\s*S\\.?\\s+Savings\\s+Bonds",
+        "Tax-exempt\\s+interest",
+        "Bond\\s+premium"
+      ],
+      "keywords": ["1099-INT", "interest"],
+      "issuerFieldLabels": ["PAYER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1099[\\s_-]*int"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1099int.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1099-oid",
+      "displayName": "1099-OID",
+      "category": "interest-dividends",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Original\\s+Issue\\s+Discount"],
+      "boxLabelPatterns": [
+        "Other\\s+periodic\\s+interest",
+        "Early\\s+withdrawal\\s+penalty",
+        "Market\\s+discount",
+        "Acquisition\\s+premium"
+      ],
+      "keywords": ["1099-OID", "OID"],
+      "issuerFieldLabels": ["PAYER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1099[\\s_-]*oid"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1099oid.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1099-div",
+      "displayName": "1099-DIV",
+      "category": "interest-dividends",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Dividends\\s+and\\s+Distributions"],
+      "boxLabelPatterns": [
+        "Total\\s+ordinary\\s+dividends",
+        "Qualified\\s+dividends",
+        "Total\\s+capital\\s+gain\\s+distr",
+        "Nondividend\\s+distributions",
+        "Section\\s+199A\\s+dividends"
+      ],
+      "keywords": ["1099-DIV", "dividends"],
+      "issuerFieldLabels": ["PAYER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1099[\\s_-]*div"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1099div.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1099-b",
+      "displayName": "1099-B",
+      "category": "brokerage",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Proceeds\\s+From\\s+Broker\\s+and\\s+Barter\\s+Exchange\\s+Transactions"],
+      "boxLabelPatterns": [
+        "Date\\s+acquired",
+        "Date\\s+sold\\s+or\\s+disposed",
+        "Cost\\s+or\\s+other\\s+basis",
+        "Wash\\s+sale\\s+loss\\s+disallowed"
+      ],
+      "keywords": ["1099-B", "proceeds", "cost basis"],
+      "issuerFieldLabels": ["PAYER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1099[\\s_-]*b\\b"],
+      "multiPage": true,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1099b.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1099-r",
+      "displayName": "1099-R",
+      "category": "retirement",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Distributions\\s+From\\s+Pensions,\\s*Annuities,\\s*Retirement"],
+      "boxLabelPatterns": [
+        "Gross\\s+distribution",
+        "Taxable\\s+amount",
+        "Distribution\\s+code",
+        "IRA/\\s*SEP/\\s*SIMPLE",
+        "Employee\\s+contributions"
+      ],
+      "keywords": ["1099-R", "pension", "annuity", "IRA"],
+      "issuerFieldLabels": ["PAYER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1099[\\s_-]*r\\b"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1099r.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1099-nec",
+      "displayName": "1099-NEC",
+      "category": "self-employment",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Nonemployee\\s+Compensation"],
+      "boxLabelPatterns": ["Payer\\s+made\\s+direct\\s+sales"],
+      "keywords": ["1099-NEC", "nonemployee"],
+      "issuerFieldLabels": ["PAYER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1099[\\s_-]*nec"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1099nec.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1099-misc",
+      "displayName": "1099-MISC",
+      "category": "self-employment",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Miscellaneous\\s+Information"],
+      "boxLabelPatterns": [
+        "Rents",
+        "Royalties",
+        "Other\\s+income",
+        "Fishing\\s+boat\\s+proceeds",
+        "Crop\\s+insurance\\s+proceeds"
+      ],
+      "keywords": ["1099-MISC", "rents", "royalties"],
+      "issuerFieldLabels": ["PAYER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1099[\\s_-]*misc"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1099msc.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1099-k",
+      "displayName": "1099-K",
+      "category": "self-employment",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Payment\\s+Card\\s+and\\s+Third\\s+Party\\s+Network\\s+Transactions"],
+      "boxLabelPatterns": [
+        "Card\\s+not\\s+present\\s+transactions",
+        "Merchant\\s+category\\s+code",
+        "Number\\s+of\\s+payment\\s+transactions"
+      ],
+      "keywords": ["1099-K", "payment card", "third party network"],
+      "issuerFieldLabels": ["FILER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1099[\\s_-]*k\\b"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1099k.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1099-g",
+      "displayName": "1099-G",
+      "category": "self-employment",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Certain\\s+Government\\s+Payments"],
+      "boxLabelPatterns": [
+        "Unemployment\\s+compensation",
+        "State\\s+or\\s+local\\s+income\\s+tax\\s+refunds",
+        "Taxable\\s+grants",
+        "Agriculture\\s+payments"
+      ],
+      "keywords": ["1099-G", "unemployment", "refund"],
+      "issuerFieldLabels": ["PAYER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1099[\\s_-]*g\\b"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1099g.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1099-sa",
+      "displayName": "1099-SA",
+      "category": "health",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Distributions\\s+From\\s+an\\s+HSA"],
+      "boxLabelPatterns": [
+        "Gross\\s+distribution",
+        "Earnings\\s+on\\s+excess\\s+cont",
+        "Distribution\\s+code",
+        "FMV\\s+on\\s+date\\s+of\\s+death"
+      ],
+      "keywords": ["1099-SA", "HSA", "Archer MSA"],
+      "issuerFieldLabels": ["TRUSTEE'?S\\s*/\\s*PAYER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1099[\\s_-]*sa\\b"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1099sa.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1099-q",
+      "displayName": "1099-Q",
+      "category": "education",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Payments\\s+From\\s+Qualified\\s+Education\\s+Programs"],
+      "boxLabelPatterns": [
+        "Gross\\s+distribution",
+        "Earnings",
+        "Basis",
+        "Trustee-to-trustee\\s+transfer",
+        "Coverdell\\s+ESA"
+      ],
+      "keywords": ["1099-Q", "529", "Coverdell"],
+      "issuerFieldLabels": ["PAYER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1099[\\s_-]*q\\b"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1099q.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1099-s",
+      "displayName": "1099-S",
+      "category": "mortgage-property",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Proceeds\\s+From\\s+Real\\s+Estate\\s+Transactions"],
+      "boxLabelPatterns": [
+        "Date\\s+of\\s+closing",
+        "Gross\\s+proceeds",
+        "Buyer'?s\\s+part\\s+of\\s+real\\s+estate\\s+tax"
+      ],
+      "keywords": ["1099-S", "real estate", "closing"],
+      "issuerFieldLabels": ["FILER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1099[\\s_-]*s\\b"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1099s.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1099-c",
+      "displayName": "1099-C",
+      "category": "debt-other",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Cancellation\\s+of\\s+Debt"],
+      "boxLabelPatterns": [
+        "Date\\s+of\\s+identifiable\\s+event",
+        "Amount\\s+of\\s+debt\\s+discharged",
+        "Debt\\s+description",
+        "Identifiable\\s+event\\s+code"
+      ],
+      "keywords": ["1099-C", "cancellation of debt"],
+      "issuerFieldLabels": ["CREDITOR'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1099[\\s_-]*c\\b"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1099c.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "ssa-1099",
+      "displayName": "SSA-1099",
+      "category": "retirement",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Social\\s+Security\\s+Benefit\\s+Statement"],
+      "boxLabelPatterns": [
+        "Benefits\\s+paid\\s+in",
+        "Benefits\\s+repaid\\s+to\\s+SSA\\s+in",
+        "Net\\s+benefits\\s+for",
+        "Voluntary\\s+federal\\s+income\\s+tax\\s+withheld"
+      ],
+      "keywords": ["SSA-1099", "Social Security Administration"],
+      "issuerFieldLabels": [],
+      "yearPatterns": [
+        "(20\\d{2})\\s*Social\\s+Security\\s+Benefit\\s+Statement",
+        "Social\\s+Security\\s+Benefit\\s+Statement\\s*(20\\d{2})",
+        "(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"
+      ],
+      "filenameHints": ["ssa[\\s_-]*1099"],
+      "multiPage": false,
+      "source": null,
+      "verifiedOn": null,
+      "fixedIssuer": "Social Security Administration",
+      "notes": "SSA does not publish a blank SSA-1099 at a stable irs.gov-style PDF URL. Needs an official ssa.gov sample before verification."
+    },
+    {
+      "id": "rrb-1099",
+      "displayName": "RRB-1099",
+      "category": "retirement",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Payments\\s+by\\s+the\\s+Railroad\\s+Retirement\\s+Board"],
+      "boxLabelPatterns": [
+        "Social\\s+Security\\s+Equivalent\\s+Benefit",
+        "Portion\\s+of\\s+Tier\\s+I"
+      ],
+      "keywords": ["RRB-1099", "Railroad Retirement Board", "SSEB"],
+      "issuerFieldLabels": [],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["rrb[\\s_-]*1099"],
+      "multiPage": false,
+      "source": "https://www.rrb.gov/sites/default/files/2017-03/txl-1099_0.pdf",
+      "verifiedOn": null,
+      "fixedIssuer": "Railroad Retirement Board",
+      "notes": "Source is the RRB's explanation sheet for Form RRB-1099 (TXL-1099), not the statement itself."
+    },
+    {
+      "id": "1098",
+      "displayName": "1098",
+      "category": "mortgage-property",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Mortgage\\s+Interest\\s+Statement"],
+      "boxLabelPatterns": [
+        "Mortgage\\s+interest\\s+received\\s+from\\s+payer",
+        "Outstanding\\s+mortgage\\s+principal",
+        "Mortgage\\s+origination\\s+date",
+        "Refund\\s+of\\s+overpaid\\s+interest",
+        "Mortgage\\s+insurance\\s+premiums"
+      ],
+      "keywords": ["1098", "mortgage interest"],
+      "issuerFieldLabels": ["RECIPIENT'?S\\s*/\\s*LENDER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["\\b1098\\b(?![\\s_-]*[te]\\b)"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1098.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1098-t",
+      "displayName": "1098-T",
+      "category": "education",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Tuition\\s+Statement"],
+      "boxLabelPatterns": [
+        "Payments\\s+received\\s+for\\s+qualified\\s+tuition",
+        "Scholarships\\s+or\\s+grants",
+        "at\\s+least\\s+half-time\\s+student",
+        "graduate\\s+student"
+      ],
+      "keywords": ["1098-T", "tuition"],
+      "issuerFieldLabels": ["FILER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1098[\\s_-]*t\\b"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1098t.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1098-e",
+      "displayName": "1098-E",
+      "category": "education",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Student\\s+Loan\\s+Interest\\s+Statement"],
+      "boxLabelPatterns": ["Student\\s+loan\\s+interest\\s+received\\s+by\\s+lender"],
+      "keywords": ["1098-E", "student loan"],
+      "issuerFieldLabels": ["RECIPIENT'?S\\s*/\\s*LENDER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1098[\\s_-]*e\\b"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1098e.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1095-a",
+      "displayName": "1095-A",
+      "category": "health",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Health\\s+Insurance\\s+Marketplace\\s+Statement"],
+      "boxLabelPatterns": [
+        "Marketplace\\s+identifier",
+        "Marketplace-assigned\\s+policy\\s+number",
+        "Monthly\\s+enrollment\\s+premiums",
+        "second\\s+lowest\\s+cost\\s+silver\\s+plan",
+        "advance\\s+payment\\s+of\\s+premium\\s+tax\\s+credit"
+      ],
+      "keywords": ["1095-A", "Marketplace"],
+      "issuerFieldLabels": ["Policy\\s+issuer'?s\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1095[\\s_-]*a\\b"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1095a.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1095-b",
+      "displayName": "1095-B",
+      "category": "health",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Health\\s+Coverage"],
+      "boxLabelPatterns": [
+        "Responsible\\s+Individual",
+        "Origin\\s+of\\s+the\\s+health\\s+coverage",
+        "Issuer\\s+or\\s+Other\\s+Coverage\\s+Provider",
+        "Covered\\s+Individuals"
+      ],
+      "keywords": ["1095-B", "minimum essential coverage"],
+      "issuerFieldLabels": ["Issuer\\s+or\\s+Other\\s+Coverage\\s+Provider"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1095[\\s_-]*b\\b"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1095b.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "1095-c",
+      "displayName": "1095-C",
+      "category": "health",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Employer-Provided\\s+Health\\s+Insurance\\s+Offer\\s+and\\s+Coverage"],
+      "boxLabelPatterns": [
+        "Applicable\\s+Large\\s+Employer\\s+Member",
+        "Offer\\s+of\\s+Coverage",
+        "Employee\\s+Required\\s+Contribution",
+        "Section\\s+4980H\\s+Safe\\s+Harbor"
+      ],
+      "keywords": ["1095-C", "Applicable Large Employer"],
+      "issuerFieldLabels": ["Name\\s+of\\s+employer"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["1095[\\s_-]*c\\b"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1095c.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "5498",
+      "displayName": "5498",
+      "category": "retirement",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["IRA\\s+Contribution\\s+Information"],
+      "boxLabelPatterns": [
+        "Rollover\\s+contributions",
+        "Roth\\s+IRA\\s+conversion\\s+amount",
+        "Fair\\s+market\\s+value\\s+of\\s+account",
+        "Required\\s+minimum\\s+distribution"
+      ],
+      "keywords": ["5498", "IRA contribution"],
+      "issuerFieldLabels": ["TRUSTEE'?S\\s+or\\s+ISSUER'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["\\b5498\\b(?![\\s_-]*sa)"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f5498.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "5498-sa",
+      "displayName": "5498-SA",
+      "category": "health",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": [
+        "HSA,\\s*Archer\\s+MSA,\\s*or\\s+Medicare\\s+Advantage\\s+MSA\\s+Information"
+      ],
+      "boxLabelPatterns": [
+        "Total\\s+contributions\\s+made\\s+in",
+        "Rollover\\s+contributions",
+        "Fair\\s+market\\s+value\\s+of\\s+HSA"
+      ],
+      "keywords": ["5498-SA", "HSA"],
+      "issuerFieldLabels": ["TRUSTEE'?S\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["5498[\\s_-]*sa"],
+      "multiPage": false,
+      "source": "https://www.irs.gov/pub/irs-pdf/f5498sa.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "k-1-1065",
+      "displayName": "Schedule K-1 (Form 1065)",
+      "category": "pass-through",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Partner'?s\\s+Share\\s+of\\s+Income,\\s*Deductions,\\s*Credits"],
+      "boxLabelPatterns": [
+        "Information\\s+About\\s+the\\s+Partnership",
+        "Information\\s+About\\s+the\\s+Partner\\b",
+        "Ordinary\\s+business\\s+income\\s+\\(loss\\)",
+        "Guaranteed\\s+payments"
+      ],
+      "keywords": ["Schedule K-1", "Form 1065", "partnership"],
+      "issuerFieldLabels": ["Partnership'?s\\s+name,\\s*address"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["k-?1"],
+      "multiPage": true,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1065sk1.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "k-1-1120s",
+      "displayName": "Schedule K-1 (Form 1120-S)",
+      "category": "pass-through",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Shareholder'?s\\s+Share\\s+of\\s+Income,\\s*Deductions,\\s*Credits"],
+      "boxLabelPatterns": [
+        "Information\\s+About\\s+the\\s+Corporation",
+        "Information\\s+About\\s+the\\s+Shareholder",
+        "Ordinary\\s+business\\s+income\\s+\\(loss\\)"
+      ],
+      "keywords": ["Schedule K-1", "Form 1120-S", "S corporation"],
+      "issuerFieldLabels": ["Corporation'?s\\s+name,\\s*address"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["k-?1"],
+      "multiPage": true,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1120ssk.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "k-1-1041",
+      "displayName": "Schedule K-1 (Form 1041)",
+      "category": "pass-through",
+      "kind": "official",
+      "ombNumbers": [],
+      "titlePatterns": ["Beneficiary'?s\\s+Share\\s+of\\s+Income,\\s*Deductions,\\s*Credits"],
+      "boxLabelPatterns": [
+        "Information\\s+About\\s+the\\s+Estate\\s+or\\s+Trust",
+        "Information\\s+About\\s+the\\s+Beneficiary"
+      ],
+      "keywords": ["Schedule K-1", "Form 1041", "estate", "trust"],
+      "issuerFieldLabels": ["Estate'?s\\s+or\\s+trust'?s\\s+name"],
+      "yearPatterns": ["(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["k-?1"],
+      "multiPage": true,
+      "source": "https://www.irs.gov/pub/irs-pdf/f1041sk1.pdf",
+      "verifiedOn": null
+    },
+    {
+      "id": "brokerage-consolidated",
+      "displayName": "Brokerage consolidated statement",
+      "category": "brokerage",
+      "kind": "heuristic",
+      "ombNumbers": [],
+      "titlePatterns": [
+        "Consolidated\\s+(?:Form\\s+)?1099",
+        "Composite\\s+(?:Form\\s+)?1099",
+        "Consolidated\\s+Tax\\s+Statement",
+        "Tax\\s+Information\\s+Statement"
+      ],
+      "boxLabelPatterns": ["Summary\\s+of\\s+Proceeds", "1099-DIV", "1099-INT", "1099-B"],
+      "keywords": ["brokerage", "consolidated", "composite", "realized gain"],
+      "issuerFieldLabels": [],
+      "yearPatterns": ["Tax\\s+Year\\s*(20\\d{2})", "(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
+      "filenameHints": ["consolidated", "composite", "tax[\\s_-]*statement"],
+      "multiPage": true,
+      "source": null,
+      "verifiedOn": null,
+      "notes": "Not an IRS form: brokerages combine several 1099s into one statement. Kept together as one document."
+    },
+    {
+      "id": "property-tax-statement",
+      "displayName": "Property tax statement",
+      "category": "mortgage-property",
+      "kind": "heuristic",
+      "ombNumbers": [],
+      "titlePatterns": [
+        "(?:Real\\s+Estate|Real\\s+Property|Property)\\s+Tax\\s+(?:Bill|Statement|Notice)",
+        "Secured\\s+Property\\s+Tax"
+      ],
+      "boxLabelPatterns": [
+        "Parcel\\s+(?:Number|No\\.?|ID)",
+        "Assessed\\s+Value",
+        "Tax\\s+Rate",
+        "Installment"
+      ],
+      "keywords": ["property tax", "parcel", "assessed value", "treasurer", "tax collector"],
+      "issuerFieldLabels": ["(?:County\\s+)?(?:Treasurer|Tax\\s+Collector)"],
+      "yearPatterns": [
+        "(?:Tax\\s+Year|Fiscal\\s+Year)\\s*(20\\d{2})",
+        "(20\\d{2})\\s*(?:Real\\s+Estate|Property)\\s+Tax"
+      ],
+      "filenameHints": ["property[\\s_-]*tax", "real[\\s_-]*estate[\\s_-]*tax"],
+      "multiPage": true,
+      "source": null,
+      "verifiedOn": null,
+      "notes": "Issued by local governments in many formats; recognized by layout vocabulary, not a fixed title."
+    }
+  ]
+}

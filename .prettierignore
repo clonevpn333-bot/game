@@ -1,0 +1,12 @@
+pnpm-lock.yaml
+**/dist
+**/.next
+**/out
+**/.turbo
+docs/screenshots
+# Pre-existing browser game at the repo root; not part of BinderReady.
+index.html
+css
+js
+packages/engine/forms-verification.md
+BUILD_PROMPT.md

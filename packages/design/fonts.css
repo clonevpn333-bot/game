@@ -1,0 +1,7 @@
+/*
+ * Bundled Geist faces for non-Next consumers (desktop app, showcase).
+ * The website loads the same faces through next/font (`geist` package) instead.
+ * No remote font requests: the desktop CSP forbids them.
+ */
+@import '@fontsource-variable/geist/wght.css';
+@import '@fontsource-variable/geist-mono/wght.css';
