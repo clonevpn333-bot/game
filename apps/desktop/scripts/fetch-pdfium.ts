@@ -35,7 +35,8 @@ const response = await fetch(url);
 if (!response.ok) throw new Error(`HTTP ${String(response.status)} for ${url}`);
 const { writeFile } = await import('node:fs/promises');
 await writeFile(archive, new Uint8Array(await response.arrayBuffer()));
-execFileSync('tar', ['-xzf', archive, '-C', work]);
+// Relative paths: GNU tar (Git Bash on Windows) reads `C:\…` as a remote host.
+execFileSync('tar', ['-xzf', 'pdfium.tgz'], { cwd: work });
 const outDir = resolve(import.meta.dirname, '../src-tauri/pdfium');
 await mkdir(outDir, { recursive: true });
 const file = library.split('/').at(-1) ?? library;

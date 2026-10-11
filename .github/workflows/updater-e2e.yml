@@ -14,6 +14,7 @@ on:
       - apps/desktop/scripts/updater-e2e.ts
       - apps/desktop/scripts/updater-manifest.ts
       - apps/desktop/scripts/release-config.ts
+      - apps/desktop/scripts/fetch-pdfium.ts
       - apps/desktop/src-tauri/src/commands.rs
       - apps/desktop/src-tauri/src/lib.rs
       - apps/desktop/src-tauri/Cargo.toml

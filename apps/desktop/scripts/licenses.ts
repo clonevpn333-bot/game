@@ -106,7 +106,7 @@ export const NATIVE: (Component & { notice: string; files?: RegExp })[] = [
     kind: 'native',
     notice:
       'Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler. zlib license. https://zlib.net/zlib_license.html',
-    files: /^(zlib|libz)[\d.]*\.(dll|dylib)$/i,
+    files: /^(zlib|libz|z)[\d.]*\.(dll|dylib)$/i,
   },
   {
     name: 'libpng',

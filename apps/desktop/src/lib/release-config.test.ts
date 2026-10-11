@@ -2,7 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { releaseConfig } from '../../scripts/release-config.ts';
 import { patchManifest, patchPortfile } from '../../scripts/vcpkg-overlay.ts';
 
+// File names from the first Windows release build.
 const WINDOWS_LIBS = ['tesseract55.dll', 'leptonica-1.87.0.dll', 'heif.dll', 'libde265.dll'];
+const WINDOWS_BUILD = [
+  ...WINDOWS_LIBS,
+  ...['concrt140.dll', 'gif.dll', 'jpeg62.dll', 'liblzma.dll', 'libpng16.dll', 'libsharpyuv.dll'],
+  ...['libwebp.dll', 'libwebpdecoder.dll', 'libwebpdemux.dll', 'libwebpmux.dll', 'msvcp140.dll'],
+  ...['msvcp140_1.dll', 'msvcp140_2.dll', 'msvcp140_atomic_wait.dll', 'msvcp140_codecvt_ids.dll'],
+  ...['openjp2.dll', 'tiff.dll', 'turbojpeg.dll', 'vccorlib140.dll', 'vcruntime140.dll'],
+  ...['vcruntime140_1.dll', 'vcruntime140_threads.dll', 'z.dll'],
+];
 const MAC_LIBS = ['libtesseract.5.dylib', 'libleptonica.6.dylib', 'libheif.1.dylib'];
 
 describe('release config', () => {
@@ -81,6 +90,12 @@ describe('release config', () => {
       env: { APPLE_SIGNING_IDENTITY: 'Developer ID Application: Sample (TEAM)' },
     });
     expect(signed.bundle).not.toHaveProperty('macOS.signingIdentity');
+  });
+
+  it('accounts for every library a Windows release build bundled', () => {
+    expect(() =>
+      releaseConfig({ platform: 'windows', libs: WINDOWS_BUILD, env: {} }),
+    ).not.toThrow();
   });
 
   it('refuses libraries the third-party notices do not list', () => {
