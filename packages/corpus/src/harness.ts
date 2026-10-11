@@ -3,6 +3,7 @@
  * Markdown report.
  *
  *   pnpm --filter @binderready/corpus test:accuracy [--tier clean] [--corpus out/clean] [--report path]
+ *     [--engine tesseract|native]   (scanned and photo tiers: which recognizer the desktop pipeline uses)
  *
  * Fails (exit 1) when a tier misses its target. Tune rules and thresholds,
  * never the labels.
@@ -37,7 +38,7 @@ export interface RunResult {
 /** The desktop app's own ingest pipeline (Rust: PDFium, preprocessing, Tesseract) as a CLI. */
 export const DESKTOP_INGEST = resolve(
   import.meta.dirname,
-  '../../../apps/desktop/src-tauri/target/release/binderready-ingest',
+  `../../../apps/desktop/src-tauri/target/release/binderready-ingest${process.platform === 'win32' ? '.exe' : ''}`,
 );
 
 interface CliLine {
@@ -46,22 +47,28 @@ interface CliLine {
   error?: 'password' | 'corrupt' | 'unsupported' | 'unreadable';
 }
 
+export type OcrEngineName = 'tesseract' | 'native';
+
 /** Runs the desktop pipeline over every file once; results keyed by path. */
-function desktopInputs(corpusDir: string, manifest: CorpusManifest) {
+function desktopInputs(corpusDir: string, manifest: CorpusManifest, engine: OcrEngineName) {
   const started = performance.now();
   const paths = manifest.files.map((f) => join(corpusDir, f.path));
   // OCR output only changes when the binary or the corpus does: reuse it for engine-only tuning runs.
-  const key = `${String(statSync(DESKTOP_INGEST).mtimeMs)}-${String(statSync(join(corpusDir, 'manifest.json')).mtimeMs)}`;
+  const key = `${engine}-${String(statSync(DESKTOP_INGEST).mtimeMs)}-${String(statSync(join(corpusDir, 'manifest.json')).mtimeMs)}`;
   const cacheFile = join(corpusDir, '.cache', `ingest-${key}.jsonl`);
   const cached = existsSync(cacheFile)
     ? (JSON.parse(readFileSync(cacheFile, 'utf8')) as { out: string; seconds: number })
     : null;
   const out =
     cached?.out ??
-    execFileSync(DESKTOP_INGEST, ['--cache', join(corpusDir, '.cache'), ...paths], {
-      maxBuffer: 1024 * 1024 * 1024,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).toString();
+    execFileSync(
+      DESKTOP_INGEST,
+      ['--cache', join(corpusDir, '.cache'), '--engine', engine, ...paths],
+      {
+        maxBuffer: 1024 * 1024 * 1024,
+        stdio: ['ignore', 'pipe', 'ignore'],
+      },
+    ).toString();
   const seconds = cached?.seconds ?? (performance.now() - started) / 1000;
   if (!cached) writeFileSync(cacheFile, JSON.stringify({ out, seconds }));
   const byPath = new Map<string, CliLine>();
@@ -75,11 +82,12 @@ function desktopInputs(corpusDir: string, manifest: CorpusManifest) {
 export async function run(
   corpusDir: string,
   source: 'text-layer' | 'desktop' = 'text-layer',
+  engine: OcrEngineName = 'tesseract',
 ): Promise<RunResult> {
   const manifest = JSON.parse(
     await readFile(join(corpusDir, 'manifest.json'), 'utf8'),
   ) as CorpusManifest;
-  const desktop = source === 'desktop' ? desktopInputs(corpusDir, manifest) : null;
+  const desktop = source === 'desktop' ? desktopInputs(corpusDir, manifest, engine) : null;
   const catalog = parseFormsCatalog(formsJson);
   const byClient = new Map<
     string,
@@ -210,20 +218,30 @@ export function report(
 
 if (import.meta.url === `file://${process.argv[1] ?? ''}`) {
   const { values } = parseArgs({
-    options: { tier: { type: 'string' }, corpus: { type: 'string' }, report: { type: 'string' } },
+    options: {
+      tier: { type: 'string' },
+      corpus: { type: 'string' },
+      report: { type: 'string' },
+      engine: { type: 'string' },
+    },
   });
   const tier = values.tier ?? 'clean';
   const corpus = resolve(values.corpus ?? resolve(import.meta.dirname, `../out/${tier}`));
   const source = tier === 'clean' ? 'text-layer' : 'desktop';
-  const result = await run(corpus, source);
+  const engine: OcrEngineName = values.engine === 'native' ? 'native' : 'tesseract';
+  const result = await run(corpus, source, engine);
   const { markdown, pass } = report(
     result,
     source === 'desktop'
-      ? 'desktop ingest pipeline (PDFium, preprocessing, Tesseract 5 OCR) via binderready-ingest'
+      ? `desktop ingest pipeline (PDFium, preprocessing, ${engine === 'native' ? `native OCR on ${process.platform}` : 'Tesseract 5 OCR'}) via binderready-ingest`
       : 'PDF text layer (pdfjs) + page dHash (pdftoppm)',
   );
   const out = resolve(
-    values.report ?? resolve(import.meta.dirname, `../../../docs/accuracy/${tier}.md`),
+    values.report ??
+      resolve(
+        import.meta.dirname,
+        `../../../docs/accuracy/${tier}${engine === 'native' ? `-native-${process.platform}` : ''}.md`,
+      ),
   );
   await mkdir(dirname(out), { recursive: true });
   await writeFile(out, markdown);

@@ -28,6 +28,7 @@ tauri = { version = "2.12", features = ["protocol-asset"] }
 tauri-plugin-dialog = "2.8"
 tauri-plugin-opener = "2.7"
 tauri-plugin-clipboard-manager = "2.3"
+native-ocr = { path = "native-ocr" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"

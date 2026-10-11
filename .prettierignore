@@ -23,3 +23,6 @@ apps/desktop/e2e-results
 packages/corpus/out
 apps/web/next-env.d.ts
 docs/export-sizes.md
+apps/desktop/src-tauri/native-ocr/target
+docs/ocr-engines-*.md
+docs/accuracy/*-native-*.md

@@ -1,0 +1,122 @@
+name: OCR engines
+
+# Compares Tesseract with the operating system's own text recognition
+# (Windows.Media.Ocr, Apple Vision) on the synthetic scanned and photo tiers and the
+# 100-page benchmark, on real Windows and macOS machines. The reports set the desktop
+# app's "Automatic" engine (AUTOMATIC_PREFERS_NATIVE in apps/desktop/src-tauri/src/ocr.rs).
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+    tags: ['v*']
+    paths:
+      - apps/desktop/src-tauri/native-ocr/**
+      - apps/desktop/src-tauri/src/ocr.rs
+      - apps/desktop/src-tauri/src/preprocess.rs
+      - apps/desktop/src-tauri/src/ingest.rs
+      - packages/corpus/src/compare-engines.ts
+      - .github/workflows/ocr-engines.yml
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  corpus:
+    name: Synthetic corpus
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: >
+          sudo apt-get update && sudo apt-get install -y
+          poppler-utils qpdf imagemagick libheif-examples libheif-plugin-x265
+      - run: pnpm install --frozen-lockfile
+      - name: Clean, scanned and photo tiers
+        working-directory: packages/corpus
+        run: |
+          node src/generate.ts
+          node src/degrade.ts --tier scanned
+          node src/degrade.ts --tier photo
+          tar -cf corpus.tar --exclude=.cache -C out clean scanned photo
+      - uses: actions/upload-artifact@v4
+        with:
+          name: corpus
+          path: packages/corpus/corpus.tar
+          retention-days: 3
+
+  compare:
+    name: Compare on ${{ matrix.os }}
+    needs: corpus
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TERM_COLOR: always
+      # One Tesseract per worker thread; its own OpenMP threads would oversubscribe.
+      OMP_THREAD_LIMIT: 1
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Tesseract, Leptonica, libheif (Homebrew)
+        if: runner.os == 'macOS'
+        run: brew install tesseract leptonica libheif pkg-config
+
+      - name: Cache vcpkg builds
+        if: runner.os == 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: C:/vcpkg-cache
+          key: vcpkg-${{ runner.os }}-tesseract-libheif-v1
+      - name: Tesseract, Leptonica, libheif (vcpkg)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          VCPKG_DEFAULT_BINARY_CACHE: C:/vcpkg-cache
+        run: |
+          New-Item -ItemType Directory -Force C:/vcpkg-cache | Out-Null
+          & "$env:VCPKG_INSTALLATION_ROOT/vcpkg" install tesseract:x64-windows-static-md libheif[hevc]:x64-windows-static-md
+          "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -Append $env:GITHUB_ENV
+          New-Item -ItemType Directory -Force tessdata | Out-Null
+          Invoke-WebRequest https://github.com/tesseract-ocr/tessdata_fast/raw/main/eng.traineddata -OutFile tessdata/eng.traineddata
+          "BINDERREADY_TESSDATA=$PWD/tessdata" | Out-File -Append $env:GITHUB_ENV
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @binderready/desktop fetch:pdfium
+      # The Tauri library embeds the built frontend, even for the CLI.
+      - run: pnpm --filter @binderready/desktop build
+      - name: Build binderready-ingest
+        run: cargo build --release --bin binderready-ingest --manifest-path apps/desktop/src-tauri/Cargo.toml
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: corpus
+          path: packages/corpus
+      - name: Unpack corpus
+        working-directory: packages/corpus
+        shell: bash
+        run: mkdir -p out && tar -xf corpus.tar -C out
+
+      - name: Compare engines
+        run: node packages/corpus/src/compare-engines.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ocr-engines-${{ matrix.os }}
+          path: |
+            docs/ocr-engines-*.md
+            docs/accuracy/

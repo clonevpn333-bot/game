@@ -24,14 +24,83 @@ pub enum OcrError {
     Recognize(String),
 }
 
-/// Engines this build can run, best first. Native engines join in Phase 6.
+/// Which recognizer reads the pages.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Engine {
+    Tesseract,
+    /// Windows.Media.Ocr or Apple Vision.
+    Native,
+}
+
+/// "Automatic" uses the native engine only once a measured comparison on that platform
+/// shows it is at least as accurate as Tesseract (`docs/ocr-engines.md`, produced by
+/// CI on Windows and macOS). No such measurement exists yet, so Automatic is Tesseract.
+pub const AUTOMATIC_PREFERS_NATIVE: bool = false;
+
+/// Engines this computer can run, the Automatic choice first.
 pub fn available_engines() -> Vec<&'static str> {
-    vec!["tesseract"]
+    let mut engines = vec!["tesseract"];
+    if native_ocr::available() {
+        if AUTOMATIC_PREFERS_NATIVE {
+            engines.insert(0, native_ocr::NAME);
+        } else {
+            engines.push(native_ocr::NAME);
+        }
+    }
+    engines
+}
+
+/// The engine for a stored setting: "auto", "tesseract", "windows" or "vision".
+pub fn engine_for_setting(setting: Option<&str>) -> Engine {
+    let native = native_ocr::available();
+    match setting {
+        Some(name) if native && name == native_ocr::NAME => Engine::Native,
+        Some("tesseract") => Engine::Tesseract,
+        _ if native && AUTOMATIC_PREFERS_NATIVE => Engine::Native,
+        _ => Engine::Tesseract,
+    }
 }
 
 pub trait OcrEngine {
     fn name(&self) -> &'static str;
     fn recognize(&mut self, image: &GrayImage, ppi: u32) -> Result<Vec<OcrWord>, OcrError>;
+    /// Whether word confidences are real. Orientation detection and name extraction
+    /// rely on them; engines without them get orientation from Tesseract.
+    fn reports_confidence(&self) -> bool {
+        true
+    }
+}
+
+/// Confidence given to words from an engine that reports none (Windows OCR): high
+/// enough to count as readable text, so names and orientation logic still work.
+pub const UNREPORTED_CONFIDENCE: f32 = 0.9;
+
+/// The operating system's recognizer (see the `native-ocr` crate).
+pub struct NativeEngine;
+
+impl OcrEngine for NativeEngine {
+    fn name(&self) -> &'static str {
+        native_ocr::NAME
+    }
+
+    fn recognize(&mut self, image: &GrayImage, _ppi: u32) -> Result<Vec<OcrWord>, OcrError> {
+        let words = native_ocr::recognize(image.as_raw(), image.width(), image.height()).map_err(OcrError::Recognize)?;
+        Ok(words
+            .into_iter()
+            .map(|w| OcrWord {
+                text: w.text,
+                left: w.left,
+                top: w.top,
+                width: w.width,
+                height: w.height,
+                confidence: w.confidence.unwrap_or(UNREPORTED_CONFIDENCE),
+            })
+            .collect())
+    }
+
+    fn reports_confidence(&self) -> bool {
+        cfg!(target_os = "macos")
+    }
 }
 
 /// Tesseract parallelizes internally with OpenMP; with one engine per worker thread
@@ -137,6 +206,20 @@ pub fn parse_tsv(tsv: &str) -> Vec<OcrWord> {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn engine_setting_falls_back_to_tesseract() {
+        assert_eq!(engine_for_setting(Some("tesseract")), Engine::Tesseract);
+        assert_eq!(engine_for_setting(Some("no-such-engine")), Engine::Tesseract);
+        if !native_ocr::available() {
+            // Without a native engine, asking for one (or Automatic) reads with Tesseract.
+            assert_eq!(engine_for_setting(Some("windows")), Engine::Tesseract);
+            assert_eq!(engine_for_setting(Some("vision")), Engine::Tesseract);
+            assert_eq!(engine_for_setting(None), Engine::Tesseract);
+            assert_eq!(available_engines(), vec!["tesseract"]);
+        }
+    }
+
     use super::*;
 
     #[test]

@@ -47,7 +47,7 @@ pub fn run() {
                 store: Mutex::new(store),
                 ingested: Mutex::new(std::collections::HashSet::new()),
                 writable: Mutex::new(std::collections::HashSet::new()),
-                ingest: ingest::Options { cache_dir, resource_dir, tessdata },
+                ingest: ingest::Options { cache_dir, resource_dir, tessdata, engine: ocr::Engine::Tesseract },
                 data_dir,
                 cancels: Mutex::new(HashMap::new()),
             });

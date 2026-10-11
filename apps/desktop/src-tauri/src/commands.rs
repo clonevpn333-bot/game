@@ -83,7 +83,10 @@ pub fn ingest_files(app: AppHandle, state: State<AppState>, batch_id: String, fi
     if let Ok(mut cancels) = state.cancels.lock() {
         cancels.insert(batch_id.clone(), cancel.clone());
     }
-    let opts = state.ingest.clone();
+    let mut opts = state.ingest.clone();
+    // Settings → Text recognition, read per batch so a change applies to the next drop.
+    let setting = state.store.lock().ok().and_then(|s| s.get_setting("ocr.engine").ok().flatten());
+    opts.engine = crate::ocr::engine_for_setting(setting.as_deref());
     if let Ok(mut set) = state.ingested.lock() {
         set.extend(files.iter().map(|f| PathBuf::from(&f.path)));
     }

@@ -6,7 +6,7 @@
 //! near-duplicate detection. Nothing here logs document text.
 
 use crate::images::{self, Kind};
-use crate::ocr::{OcrEngine, TesseractEngine};
+use crate::ocr::{Engine, NativeEngine, OcrEngine, TesseractEngine};
 use crate::pdf;
 use crate::phash::dhash;
 use crate::preprocess;
@@ -33,6 +33,7 @@ pub struct Options {
     pub cache_dir: PathBuf,
     pub resource_dir: Option<PathBuf>,
     pub tessdata: Option<PathBuf>,
+    pub engine: Engine,
 }
 
 thread_local! {
@@ -88,7 +89,23 @@ fn timed<T>(label: &str, f: impl FnOnce() -> T) -> T {
 
 fn recognize_image(opts: &Options, image: GrayImage, ppi: u32) -> Result<(Vec<Word>, GrayImage, u16, f32), FileErrorKind> {
     let image = timed("contrast", || preprocess::normalize_contrast(&image));
-    let reading = timed("recognize", || with_engine(opts, |e| preprocess::read_upright(e, &image, ppi)))?.map_err(|_| FileErrorKind::Unreadable)?;
+    let reading = timed("recognize", || -> Result<preprocess::Reading, FileErrorKind> {
+        let tesseract = |image: &GrayImage| with_engine(opts, |e| preprocess::read_upright(e, image, ppi))?.map_err(|_| FileErrorKind::Unreadable);
+        match opts.engine {
+            Engine::Tesseract => tesseract(&image),
+            Engine::Native => {
+                let mut native = NativeEngine;
+                if native.reports_confidence() {
+                    return preprocess::read_upright(&mut native, &image, ppi).map_err(|_| FileErrorKind::Unreadable);
+                }
+                // No confidences to judge orientation with: Tesseract turns the page
+                // upright, the native engine reads it.
+                let upright = tesseract(&image)?;
+                let words = native.recognize(&upright.image, ppi).map_err(|_| FileErrorKind::Unreadable)?;
+                Ok(preprocess::Reading { words, ..upright })
+            }
+        }
+    })?;
     let (ocr, straight, rotation) = (reading.words, reading.image, reading.rotation);
     let (w, h) = (straight.width() as f32, straight.height() as f32);
     let mean = if ocr.is_empty() { 0.0 } else { ocr.iter().map(|o| o.confidence).sum::<f32>() / ocr.len() as f32 };
