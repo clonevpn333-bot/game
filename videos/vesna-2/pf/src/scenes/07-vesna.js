@@ -4,9 +4,10 @@
   'use strict';
   FILM.scene({ id: 'vesna', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, PB = FILM.pb;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t - FILM.OFF;
     PB.plate(ctx, { seed: 261, color: '#100C10' });
-    PB.burst(ctx, 420, 900, 900, 0.25, '255,200,140');
+    PB.burst(ctx, 420 + 120 * Math.sin((T - 21.5) * 1.2), 900, 900, 0.3, '255,200,140');
+    PB.motes(ctx, T, { n: 70, seed: 71, vy: -55, alpha: 0.55, col: '255,210,150' });
     PB.fem(ctx, 400, 1000, 900, { yaw: 0.65 - 0.2 * L.ease.outCubic(L.clamp((T - 21.5) / 2.5)), key: [-0.2, 0.5, 0.85], rim: [0.9, 0.3, -0.4], res: 0.34, slot: 18, warm: [1.05, 0.95, 0.85] });
     const dp = L.ease.outCubic(L.clamp((T - 21.75) / 0.3));
     if (dp > 0) {

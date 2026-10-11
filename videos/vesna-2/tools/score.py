@@ -11,7 +11,7 @@ ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(ROOT, '..', '_shared', 'tools'))
 from sfxlib import *  # noqa
 
-TOTAL = 34.0
+TOTAL = 34.5
 N = int(TOTAL * SR)
 VO = json.load(open(os.path.join(ROOT, 'vo', 'assets', 'timing.json')))
 BPM = 120.0
@@ -20,13 +20,13 @@ BAR = 4 * B             # 2 s
 S16 = B / 4
 
 # sections (seconds) — shared with the visuals (pf/src/timeline.js cues)
-HOOK, A, BSEC, RISE, DROP, BREAK, LIFT, OUTRO = 0, 2.5, 6.0, 9.5, 9.75, 24.25, 18.5, 27.5
+HOOK, A, BSEC, RISE, DROP, BREAK, LIFT, OUTRO = 0, 3.0, 6.5, 10.0, 10.25, 24.75, 19.0, 28.0
 QUIET = 99.0
 QUIET_D = 1.0
-SIL0, SIL1 = 18.0, 18.5
-CLIFF = 15.0
+SIL0, SIL1 = 18.5, 19.0
+CLIFF = 15.5
 GAP0, GAP1 = 99.0, 99.5
-OFF0, OFF1 = 9.5, 9.75
+OFF0, OFF1 = 10.0, 10.25
 
 CH = {
     'Em': [52, 55, 59, 64, 67], 'C': [48, 55, 60, 64, 67], 'Am': [45, 52, 57, 60, 64], 'B': [47, 54, 59, 63, 66],
@@ -189,11 +189,11 @@ def build_music():
             for o, mm, d in ([(0, 72, 1.0), (1.0, 74, 0.5), (1.5, 76, 0.5)] if (kb // 4) % 2 == 0 else [(0, 79, 1.0), (1.0, 78, 1.0)]):
                 P(lead(mm, d * BAR * 0.95), t0 + o * BAR, 0.08)
     # HOOK: low drone
-    P(lp(saw(mtof(28), 2.6, (-12, 0, 12), 200), 160) * adsr(int(2.6 * SR), 0.01, 2.6, 1, 0.3), 0.0, 0.5)
+    P(lp(saw(mtof(28), 3.1, (-12, 0, 12), 200), 160) * adsr(int(3.1 * SR), 0.01, 3.1, 1, 0.3), 0.0, 0.5)
     # DROP: the rewinding altitude — a falling-then-rising lead
     for k, mm in enumerate([83, 81, 79, 78, 76, 74, 72, 71, 69, 67]):
         P(lead(mm, B * 0.9), DROP + 0.25 + k * B, 0.07)
-    tr = tt(1.0); P(bp(noise(1.0), 500, 7000) * (tr / 1.0) ** 2, 8.5, 0.3)
+    tr = tt(1.0); P(bp(noise(1.0), 500, 7000) * (tr / 1.0) ** 2, 9.0, 0.3)
     P(lp(noise(0.25), 3000)[::-1] * np.linspace(0, 1, int(0.25 * SR)) ** 3, OFF0, 0.3)
     # CLIFF (cover story): low drone; reverse swell through the silence into the pivot
     P(lp(saw(mtof(28), SIL0 - CLIFF, (-10, 0, 10), 220), 180) * adsr(int((SIL0 - CLIFF) * SR), 0.3, 1, 1, 0.2), CLIFF, 0.45)
@@ -201,7 +201,7 @@ def build_music():
     # BREAK: a slow heartbeat (she never remembered)
     for k in range(6): P(kick(0.3), BREAK + k * B, 0.45); P(kick(0.25), BREAK + k * B + 0.17, 0.28)
     # OUTRO bells: the record stands; the question
-    P(bell(82.4, 4.5), OUTRO, 0.3); P(bell(110, 3.5), 30.0, 0.22)
+    P(bell(82.4, 4.5), OUTRO, 0.3); P(bell(110, 3.5), 30.5, 0.22)
     P(padv([64, 67, 71, 76], 6.3, 1400), OUTRO, 0.17)
     m = m[:N]
     m = reverb(m, 1.8, 0.18)
@@ -214,8 +214,8 @@ def build_music():
     k = int(0.08 * SR)
     duck = np.convolve(duck, np.ones(k) / k, mode='same')
     # hard silences: the drop-out before the flash, the half-beat before "He didn't" (reverb tails cut too)
-    gate = np.interp(tm, [0, OFF0, OFF0 + 0.05, OFF1 - 0.02, OFF1, SIL0, SIL0 + 0.06, SIL1 - 0.02, SIL1, 33.0, TOTAL], [1, 1, 0.25, 0.4, 1, 1, 0.0, 0.0, 1, 1, 0])
-    energy = np.interp(tm, [0, 0.4, 2.4, 2.5, 6.0, 9.5, 9.75, 14.9, 15.0, 18.0, 18.5, 24.2, 24.25, 27.5, TOTAL], [1.0, 0.75, 0.65, 0.85, 0.95, 1.0, 1.3, 1.25, 0.85, 0.9, 1.3, 1.25, 0.75, 1.0, 0.85])
+    gate = np.interp(tm, [0, OFF0, OFF0 + 0.05, OFF1 - 0.02, OFF1, SIL0, SIL0 + 0.06, SIL1 - 0.02, SIL1, 33.5, TOTAL], [1, 1, 0.25, 0.4, 1, 1, 0.0, 0.0, 1, 1, 0])
+    energy = np.interp(tm, [0, 0.4, 2.9, 3.0, 6.5, 10.0, 10.25, 15.4, 15.5, 18.5, 19.0, 24.7, 24.75, 28.0, TOTAL], [1.0, 0.95, 0.9, 0.95, 1.0, 1.05, 1.3, 1.25, 0.85, 0.9, 1.3, 1.25, 0.75, 1.0, 0.85])
     return m * duck * gate * energy
 
 
@@ -238,32 +238,35 @@ def wind(d, lo=200, hi=2500):
 def build_sfx():
     s = np.zeros(N + 4 * SR)
     P = lambda x, at, g=1.0: place(s, x, at, g)
-    # HOOK: the certificate rips again + a glitch
-    P(boom(), 0.0, 0.6); P(bp(noise(0.5), 1500, 7000) * expdec(int(0.5 * SR), 0.15), 0.0, 0.4)
-    for k in range(4): P(bp(noise(0.05), 2000, 8000), 1.25 + k * 0.06, 0.25)          # glitch stutter
-    P(stamp(), 1.75, 0.45)
+    # HOOK: she is falling — wind roar + impact on frame 1; the fall freezes and glitches; strike on LIE (2.5)
+    P(boom(), 0.0, 0.6); P(bp(noise(1.8), 300, 4000) * np.linspace(1, 0.6, int(1.8 * SR)), 0.0, 0.45)
+    for a in (0.5, 1.0): P(whoosh(0.18, 900, 6000), a - 0.05, 0.3)
+    P(sweep_sine(600, 60, 0.4, 1.5) * expdec(int(0.4 * SR), 0.2), 1.55, 0.35)                # tape-stop freeze
+    for k in range(5): P(bp(noise(0.05), 2000, 8000), 1.7 + k * 0.07, 0.25)                    # glitch stutter
+    P(stamp(), 2.5, 0.6); P(thud(60), 2.5, 0.5)                                                # LIE — struck out
+    P(whoosh(0.4, 3000, 300, up=False), 2.75, 0.3)
     # RADAR LOCK (second hook): beeps on the beats, then the strike
-    P(boom(), A, 0.55)
+    P(boom(), A, 0.55); P(hum(3.5, 90) * np.linspace(0.3, 1, int(3.5 * SR)), A, 0.12)
     for k in range(4): P(ding(1800, 0.12), A + k * 0.5, 0.12)
-    P(ding(2400, 0.4), 4.0, 0.14)                                                       # lock tone
-    P(whoosh(0.35, 400, 7000), 4.0, 0.4); P(boom(), 4.33, 0.9); P(crunch(), 4.35, 0.4)  # SHOT DOWN
-    P(stamp(), 5.03, 0.6)                                                               # BY MISTAKE
-    P(stamp(), 6.73, 0.55)                                                              # bomb struck out
-    P(whoosh(1.0, 200, 5000), 7.6, 0.5); P(hum(1.5, 70) * np.linspace(1, 0, int(1.5 * SR)), 7.7, 0.15)   # fighter flyby
+    P(ding(2400, 0.4), 4.5, 0.14)                                                       # lock tone
+    P(whoosh(0.35, 400, 7000), 4.5, 0.4); P(boom(), 4.83, 0.9); P(crunch(), 4.85, 0.4)  # SHOT DOWN
+    P(stamp(), 5.53, 0.6)                                                               # BY MISTAKE
+    P(stamp(), 7.23, 0.55)                                                              # bomb struck out
+    P(whoosh(1.0, 200, 5000), 8.1, 0.5); P(hum(1.5, 70) * np.linspace(1, 0, int(1.5 * SR)), 8.2, 0.15)   # fighter flyby
     # the rewind
-    P(sweep_sine(200, 900, 1.2, 1.0) * adsr(int(1.2 * SR), 0.05, 1.2, 1, 0.1), 10.0, 0.12)
-    P(stamp(), 11.93, 0.5)                                                               # 33,000 struck out
-    for k in range(10): P(tick(), 13.15 + k * 0.08, 0.14)
-    P(thud(60), 14.03, 0.5)
+    P(sweep_sine(200, 900, 1.2, 1.0) * adsr(int(1.2 * SR), 0.05, 1.2, 1, 0.1), 10.5, 0.12)
+    P(stamp(), 12.43, 0.5)                                                               # 33,000 struck out
+    for k in range(10): P(tick(), 13.65 + k * 0.08, 0.14)
+    P(thud(60), 14.53, 0.5)
     # cover story
-    P(stamp(), 16.58, 0.6); P(whoosh(0.3, 300, 3000), 15.4, 0.25)
+    P(stamp(), 17.08, 0.6); P(whoosh(0.3, 300, 3000), 15.9, 0.25)
     # PIVOT: the black box
     P(boom(), SIL1, 0.8); P(thud(55), SIL1, 0.6)
-    for k in range(3): P(ding(1200, 0.1), 19.0 + k * 0.25, 0.1)
-    P(sparkle(0.6, 8, 3), 20.07, 0.18)
-    P(whoosh(0.4, 300, 3000), 21.5, 0.25); P(stamp(), 22.67, 0.55)                    # REJECTED
-    for k in range(3): P(whoosh(0.15, 900, 6000), 24.5 + k * 0.5, 0.18)                # memory frames
-    P(sparkle(1.0, 10, 7), 27.5, 0.2); P(ding(1568, 1.0), 30.0, 0.13)
+    for k in range(3): P(ding(1200, 0.1), 19.5 + k * 0.25, 0.1)
+    P(sparkle(0.6, 8, 3), 20.57, 0.18)
+    P(whoosh(0.4, 300, 3000), 22, 0.25); P(stamp(), 23.17, 0.55)                    # REJECTED
+    for k in range(3): P(whoosh(0.15, 900, 6000), 25 + k * 0.5, 0.18)                # memory frames
+    P(sparkle(1.0, 10, 7), 28, 0.2); P(ding(1568, 1.0), 30.5, 0.13)
     return reverb(s[:N], 1.4, 0.2)
 
 

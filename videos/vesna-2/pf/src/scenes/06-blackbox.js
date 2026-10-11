@@ -5,12 +5,14 @@
   'use strict';
   FILM.scene({ id: 'blackbox', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, PB = FILM.pb;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t - FILM.OFF;
     PB.plate(ctx, { seed: 251, color: '#0A0E18' });
     PB.grid(ctx, 0.07, 60);
     // the recorder slams down (scale + shake)
-    const sl = L.clamp((T - 18.5) / 0.1), sh = T < 18.8 ? (1 - (T - 18.5) / 0.3) * 12 : 0;
-    ctx.save(); ctx.translate(540 + Math.sin(T * 90) * sh, 600); const g = 1 + 0.5 * (1 - L.ease.outCubic(sl)); ctx.scale(g * 0.95, g * 0.95);
+    PB.motes(ctx, T, { n: 50, seed: 61, vy: -50, alpha: 0.4 });
+    const sl = L.clamp((T - 18.5) / 0.18), sh = T < 18.8 ? (1 - (T - 18.5) / 0.3) * 12 : 0;
+    const drop = (1 - L.ease.outBounce(sl)) * -700;
+    ctx.save(); ctx.translate(540 + Math.sin(T * 90) * sh, 600 + drop + 10 * Math.sin(T * 2)); ctx.rotate((1 - sl) * 0.6 + 0.04 * Math.sin(T * 1.6)); ctx.scale(0.95, 0.95);
     D.engrave(ctx, L.rrectPts(-260, -170, 520, 340, 26), { ink: '#FFB060', base: '#C85A10', light: () => 0.35, angle: 0.8, spacing: 4.5, seed: 330, smooth: false, outW: 5 });
     for (const dy of [-110, 110]) { ctx.fillStyle = '#F2E8D0'; ctx.fillRect(-260, dy - 14, 520, 28); for (let k = 0; k < 12; k++) { ctx.fillStyle = '#1A1A1A'; ctx.beginPath(); ctx.moveTo(-260 + k * 44, dy - 14); ctx.lineTo(-240 + k * 44, dy - 14); ctx.lineTo(-218 + k * 44, dy + 14); ctx.lineTo(-238 + k * 44, dy + 14); ctx.fill(); } }
     L.text(ctx, 'FLIGHT RECORDER', 0, -28, { size: 46, family: PB.SERIF, weight: 700, align: 'center', baseline: 'middle', color: '#1A0A00', tracking: '0.04em' });

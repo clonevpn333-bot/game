@@ -4,11 +4,15 @@
   'use strict';
   FILM.scene({ id: 'cover', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, PB = FILM.pb;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t - FILM.OFF;
     PB.plate(ctx, { seed: 241, color: '#0B0D16' });
-    PB.burst(ctx, 540, 1050, 900, 0.2, '255,220,160');
-    const z = 1 + 0.04 * (T - 15);
-    ctx.save(); ctx.translate(540, 1050); ctx.scale(z, z); ctx.translate(-540, -1050);
+    const lampX = 540 + 260 * Math.sin((T - 15) * 1.8);   // a swinging lamp
+    PB.burst(ctx, lampX, 760, 1000, 0.3, '255,220,160');
+    PB.motes(ctx, T, { n: 80, seed: 51, vy: -20, vx: 10, alpha: 0.5, col: '255,230,190' });
+    const z = 1 + 0.05 * (T - 15);
+    ctx.save(); ctx.translate(540, 1050); ctx.rotate(0.03 * Math.sin((T - 15) * 1.1)); ctx.scale(z, z); ctx.translate(-540, -1050);
+    // loose photos fluttering down across the desk
+    for (let i = 0; i < 3; i++) { const ph = L.clamp((T - 15.2 - i * 0.35) / 1.4); if (ph <= 0) continue; const px = 160 + i * 380 + 60 * Math.sin(ph * 6 + i), py = L.lerp(-200, 1500 - i * 80, L.ease.outCubic(ph)), rot = (1 - ph) * 3 + i * 0.3; ctx.save(); ctx.translate(px, py); ctx.rotate(rot); D.engrave(ctx, L.rectPts(-90, -70, 180, 140, 30), { ink: '#E8E2D2', base: '#9A9488', light: () => 0.2, spacing: 4, seed: 330 + i, smooth: false, outW: 2, cross: false, stip: false }); ctx.fillStyle = '#2A2E3A'; ctx.fillRect(-74, -56, 148, 96); ctx.restore(); }
     FILM.pbCert(ctx, L, D, PB, 540, 1180, 1);
     const dp = L.ease.outCubic(L.clamp((T - 15.35) / 0.35));
     if (dp > 0) {

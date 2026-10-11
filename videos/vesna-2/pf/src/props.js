@@ -3012,3 +3012,31 @@
     ctx.restore();
   };
 })();
+
+/* ep8 p2 v2: moving-object helpers — drifting motes (dust / embers / snow) and speed streaks, all deterministic from T */
+(function () {
+  'use strict';
+  const FILM = window.FILM, L = FILM.lib, pb = FILM.pb;
+  /** motes(ctx, T, o): o.n, o.seed, o.vx, o.vy (px/s), o.col 'r,g,b', o.size, o.alpha, o.sway */
+  pb.motes = (ctx, T, o = {}) => {
+    const r = L.rng(L.hash('motes', o.seed || 1)), n = o.n || 60, col = o.col || '242,232,208';
+    for (let i = 0; i < n; i++) {
+      const z = 0.4 + r() * 0.9, x0 = r() * 1180 - 50, y0 = r() * 2020 - 50, ph = r() * 6.28;
+      const x = ((x0 + T * (o.vx || 0) * z + Math.sin(T * 1.3 + ph) * (o.sway || 18)) % 1180 + 1180) % 1180 - 50;
+      const y = ((y0 + T * (o.vy != null ? o.vy : -40) * z) % 2020 + 2020) % 2020 - 50;
+      const a = (o.alpha || 0.6) * z * (0.6 + 0.4 * Math.sin(T * 3 + ph));
+      ctx.fillStyle = `rgba(${col},${a})`; ctx.beginPath(); ctx.arc(x, y, (o.size || 2.4) * z, 0, 6.283); ctx.fill();
+    }
+  };
+  /** streaks(ctx, T, o): fast parallel speed lines; o.angle (rad, direction of travel), o.speed, o.n, o.alpha, o.col */
+  pb.streaks = (ctx, T, o = {}) => {
+    const r = L.rng(L.hash('streaks', o.seed || 1)), n = o.n || 36, ang = o.angle != null ? o.angle : -Math.PI / 2;
+    const ux = Math.cos(ang), uy = Math.sin(ang), D = 2600;
+    for (let i = 0; i < n; i++) {
+      const off = r() * 2200 - 1100, sp = (o.speed || 3000) * (0.6 + r() * 0.8), len = 80 + r() * 220;
+      const s = ((r() * D + T * sp) % D) - D / 2;
+      const cx = 540 + ux * s - uy * off, cy = 960 + uy * s + ux * off;
+      L.inkPath(ctx, [[cx, cy], [cx - ux * len, cy - uy * len]], { width: 1.5 + r() * 2.5, color: o.col || '#C8D2EC', alpha: (o.alpha || 0.4) * (0.5 + r() * 0.5), seed: 900 + i, taper: [4, 30] });
+    }
+  };
+})();

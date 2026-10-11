@@ -17,31 +17,31 @@ const w = (t: string, at: number, o: Partial<W> = {}): W => ({ t, at, ...o });
 
 // onsets from vo/assets/timing.json (locked to the 120 bpm grid)
 const PHRASES: Phrase[] = [
-  // HOOK — frame 1
-  { top: 110, out: 2.35, lines: [
-    { size: 90, w: [w("THAT", 0, { fx: "hold" }), w("33,000-FOOT", 0, { fx: "hold", c: "y", em: true })] },
-    { size: 104, w: [w("FALL", 0, { fx: "hold", c: "y" }), w("MAY", 0, { fx: "hold" }), w("NEVER", 0, { fx: "hold", c: "r" })] },
-    { size: 104, w: [w("HAVE", 0, { fx: "hold" }), w("HAPPENED.", 0, { fx: "hold" })] },
+  // HOOK — on frame 1 (narration at normal speed)
+  { top: 100, out: 2.78, lines: [
+    { size: 96, w: [w("HER", 0, { fx: "hold" }), w("33,000-FOOT", 0, { fx: "hold", c: "y", em: true })] },
+    { size: 112, w: [w("FALL", 0, { fx: "hold", c: "y" }), w("MAY", 0, { fx: "hold" }), w("BE", 0, { fx: "hold" })] },
+    { size: 150, w: [w("A", 2.4, { c: "r" }), w("LIE.", 2.5, { fx: "slam", c: "r" })] },
   ] },
   // SECOND HOOK on the 2.5 hit
-  { top: 120, out: 4.2, lines: [{ size: 100, w: [w("JOURNALISTS", 2.5, { fx: "slam" })] }, { size: 100, w: [w("CLAIMED", 3.13), w("HER", 3.53), w("JET", 3.77)] }] },
-  { top: 140, out: 5.85, lines: [{ size: 150, w: [w("SHOT", 4.33, { fx: "slam", c: "r" }), w("DOWN.", 4.45, { fx: "slam", c: "r" })] }, { size: 100, w: [w("BY", 5.03), w("MISTAKE?", 5.2, { c: "y", em: true })] }] },
-  { top: 130, out: 7.5, lines: [{ size: 120, w: [w("NOT", 6.04), w("BY", 6.27), w("A", 6.5)] }, { size: 150, w: [w("BOMB,", 6.73, { c: "y" })] }] },
-  { top: 120, out: 9.6, lines: [{ size: 100, w: [w("BUT", 7.42), w("BY", 7.64), w("A", 7.87)] }, { size: 92, w: [w("CZECHOSLOVAK", 8.1, { c: "y" })] }, { size: 108, w: [w("FIGHTER", 8.84), w("JET.", 9.24)] }] },
-  { top: 120, out: 12.95, lines: [{ size: 92, w: [w("IF", 9.79), w("THEY'RE", 10.01), w("RIGHT,", 10.24, { c: "y" })] }, { size: 92, w: [w("SHE", 10.69), w("DIDN'T", 11.1), w("FALL", 11.52)] }, { size: 120, w: [w("33,000", 11.93, { c: "r" }), w("FEET.", 12.35, { c: "r" })] }] },
-  { top: 130, out: 14.85, lines: [{ size: 100, w: [w("MAYBE", 13.15), w("JUST", 13.37)] }, { size: 116, w: [w("A", 13.59, { c: "y" }), w("FEW", 13.81, { c: "y" }), w("HUNDRED", 14.03, { c: "y", em: true })] }, { size: 100, w: [w("METERS.", 14.41, { c: "y" })] }] },
-  { top: 120, out: 16.3, lines: [{ size: 100, w: [w("AND", 15.04), w("THE", 15.25)] }, { size: 116, w: [w("MIRACLE", 15.47, { c: "y" }), w("RECORD?", 16.0, { c: "y" })] }] },
-  { top: 140, out: 17.95, lines: [{ size: 116, w: [w("A", 16.37), w("COVER", 16.58, { c: "r", fx: "pop" }), w("STORY,", 16.95, { c: "r" })] }, { size: 80, w: [w("THEY", 17.32), w("CLAIMED.", 17.54)] }] },
+  { top: 120, out: 4.7, lines: [{ size: 100, w: [w("JOURNALISTS", 3, { fx: "slam" })] }, { size: 100, w: [w("CLAIMED", 3.63), w("HER", 4.03), w("JET", 4.27)] }] },
+  { top: 140, out: 6.35, lines: [{ size: 150, w: [w("SHOT", 4.83, { fx: "slam", c: "r" }), w("DOWN.", 4.95, { fx: "slam", c: "r" })] }, { size: 100, w: [w("BY", 5.53), w("MISTAKE?", 5.7, { c: "y", em: true })] }] },
+  { top: 130, out: 8, lines: [{ size: 120, w: [w("NOT", 6.54), w("BY", 6.77), w("A", 7)] }, { size: 150, w: [w("BOMB,", 7.23, { c: "y" })] }] },
+  { top: 120, out: 10.1, lines: [{ size: 100, w: [w("BUT", 7.92), w("BY", 8.14), w("A", 8.37)] }, { size: 92, w: [w("CZECHOSLOVAK", 8.6, { c: "y" })] }, { size: 108, w: [w("FIGHTER", 9.34), w("JET.", 9.74)] }] },
+  { top: 120, out: 13.45, lines: [{ size: 92, w: [w("IF", 10.29), w("THEY'RE", 10.51), w("RIGHT,", 10.74, { c: "y" })] }, { size: 92, w: [w("SHE", 11.19), w("DIDN'T", 11.6), w("FALL", 12.02)] }, { size: 120, w: [w("33,000", 12.43, { c: "r" }), w("FEET.", 12.85, { c: "r" })] }] },
+  { top: 130, out: 15.35, lines: [{ size: 100, w: [w("MAYBE", 13.65), w("JUST", 13.87)] }, { size: 116, w: [w("A", 14.09, { c: "y" }), w("FEW", 14.31, { c: "y" }), w("HUNDRED", 14.53, { c: "y", em: true })] }, { size: 100, w: [w("METERS.", 14.91, { c: "y" })] }] },
+  { top: 120, out: 16.8, lines: [{ size: 100, w: [w("AND", 15.54), w("THE", 15.75)] }, { size: 116, w: [w("MIRACLE", 15.97, { c: "y" }), w("RECORD?", 16.5, { c: "y" })] }] },
+  { top: 140, out: 18.45, lines: [{ size: 116, w: [w("A", 16.87), w("COVER", 17.08, { c: "r", fx: "pop" }), w("STORY,", 17.45, { c: "r" })] }, { size: 80, w: [w("THEY", 17.82), w("CLAIMED.", 18.04)] }] },
   // PIVOT
-  { top: 120, out: 20.0, lines: [{ size: 140, w: [w("BUT", 18.5, { fx: "slam", c: "y" })] }, { size: 100, w: [w("THE", 18.77), w("BLACK", 19.0), w("BOXES", 19.22)] }] },
-  { top: 130, out: 21.4, lines: [{ size: 92, w: [w("PUT", 19.62), w("THE", 19.84), w("BLAST", 20.07, { c: "r" })] }, { size: 86, w: [w("AT", 20.3), w("CRUISING", 20.53, { c: "y", em: true }), w("HEIGHT.", 20.92, { c: "y" })] }] },
-  { top: 120, out: 24.1, lines: [{ size: 100, w: [w("AND", 21.54), w("VESNA", 21.79, { c: "y" })] }, { size: 100, w: [w("HERSELF", 22.23)] }, { size: 116, w: [w("REJECTED", 22.67, { c: "r", fx: "pop" })] }, { size: 90, w: [w("THE", 23.3), w("THEORY.", 23.55)] }] },
-  { top: 120, out: 25.5, lines: [{ size: 116, w: [w("THE", 24.28), w("TRUTH?", 24.49, { c: "y" })] }, { size: 80, w: [w("SHE", 24.7), w("COULDN'T", 24.91), w("TELL", 25.12), w("US.", 25.33)] }] },
-  { top: 120, out: 27.35, lines: [{ size: 76, w: [w("SHE", 25.54), w("NEVER", 25.75, { c: "y", em: true }), w("REMEMBERED", 26.11)] }, { size: 120, w: [w("THE", 26.79), w("FALL.", 27.0, { c: "y" })] }] },
+  { top: 120, out: 20.5, lines: [{ size: 140, w: [w("BUT", 19, { fx: "slam", c: "y" })] }, { size: 100, w: [w("THE", 19.27), w("BLACK", 19.5), w("BOXES", 19.72)] }] },
+  { top: 130, out: 21.9, lines: [{ size: 92, w: [w("PUT", 20.12), w("THE", 20.34), w("BLAST", 20.57, { c: "r" })] }, { size: 86, w: [w("AT", 20.8), w("CRUISING", 21.03, { c: "y", em: true }), w("HEIGHT.", 21.42, { c: "y" })] }] },
+  { top: 120, out: 24.6, lines: [{ size: 100, w: [w("AND", 22.04), w("VESNA", 22.29, { c: "y" })] }, { size: 100, w: [w("HERSELF", 22.73)] }, { size: 116, w: [w("REJECTED", 23.17, { c: "r", fx: "pop" })] }, { size: 90, w: [w("THE", 23.8), w("THEORY.", 24.05)] }] },
+  { top: 120, out: 26, lines: [{ size: 116, w: [w("THE", 24.78), w("TRUTH?", 24.99, { c: "y" })] }, { size: 80, w: [w("SHE", 25.2), w("COULDN'T", 25.41), w("TELL", 25.62), w("US.", 25.83)] }] },
+  { top: 120, out: 27.85, lines: [{ size: 76, w: [w("SHE", 26.04), w("NEVER", 26.25, { c: "y", em: true }), w("REMEMBERED", 26.61)] }, { size: 120, w: [w("THE", 27.29), w("FALL.", 27.5, { c: "y" })] }] },
   // OUTRO
-  { top: 1060, out: 29.85, lines: [{ size: 92, w: [w("OFFICIALLY,", 27.54, { c: "y" })] }, { size: 84, w: [w("SHE", 28.28), w("STILL", 28.52), w("HOLDS", 28.75)] }, { size: 84, w: [w("THE", 28.98), w("RECORD.", 29.21, { c: "y" })] }] },
-  { top: 140, out: 33.8, lines: [{ size: 104, w: [w("WHICH", 30.03), w("DO", 30.25), w("YOU", 30.47)] }, { size: 140, w: [w("BELIEVE?", 30.69, { c: "y", fx: "pop", em: true })] }] },
-  { top: 1352, out: 33.8, lines: [{ size: 52, mono: true, w: [w("COMMENT", 31.3, { mono: true }), w("BELOW", 31.45, { mono: true, c: "y" })] }] },
+  { top: 1060, out: 30.35, lines: [{ size: 92, w: [w("OFFICIALLY,", 28.04, { c: "y" })] }, { size: 84, w: [w("SHE", 28.78), w("STILL", 29.02), w("HOLDS", 29.25)] }, { size: 84, w: [w("THE", 29.48), w("RECORD.", 29.71, { c: "y" })] }] },
+  { top: 140, out: 34.3, lines: [{ size: 104, w: [w("WHICH", 30.53), w("DO", 30.75), w("YOU", 30.97)] }, { size: 140, w: [w("BELIEVE?", 31.19, { c: "y", fx: "pop", em: true })] }] },
+  { top: 1352, out: 34.3, lines: [{ size: 52, mono: true, w: [w("COMMENT", 31.8, { mono: true }), w("BELOW", 31.95, { mono: true, c: "y" })] }] },
 ];
 
 const LEAD = 2; // frames: a word starts moving just before it is heard

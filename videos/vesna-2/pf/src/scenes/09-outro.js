@@ -5,9 +5,10 @@
   'use strict';
   FILM.scene({ id: 'outro', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, PB = FILM.pb;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t - FILM.OFF;
     ctx.fillStyle = '#04060B'; ctx.fillRect(0, 0, 1080, 1920);
     const v = ctx.createRadialGradient(540, 900, 20, 540, 900, 900); v.addColorStop(0, 'rgba(26,34,60,0.9)'); v.addColorStop(1, 'rgba(4,6,11,0)'); ctx.fillStyle = v; ctx.fillRect(0, 0, 1080, 1920);
+    PB.motes(ctx, T, { n: 70, seed: 91, vy: -40, alpha: 0.45 });
     const join = L.ease.inOutCubic(L.clamp((T - 27.5) / 0.8)), re = 1 - join;
     const q = L.clamp((T - 29.9) / 0.3);
     const cy = L.lerp(800, 560, q), cs = L.lerp(1, 0.62, q), cx = 540;

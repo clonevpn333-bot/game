@@ -7,9 +7,13 @@
   const Y = (ft) => G - (ft / 33330) * (G - TOP);
   FILM.scene({ id: 'rewind', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, PB = FILM.pb;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t - FILM.OFF;
     PB.plate(ctx, { seed: 231, color: '#0A1024' });
-    PB.grid(ctx, 0.06, 60);
+    PB.grid(ctx, 0.06, 60, 0, (T - 9.75) * 40);
+    // slow camera: push in and tilt toward the line as it drains
+    const cz = 1 + 0.06 * L.ease.inOutSine(L.clamp((T - 9.75) / 5));
+    ctx.save(); ctx.translate(800, 1300); ctx.scale(cz, cz); ctx.translate(-800, -1300);
+    PB.clouds(ctx, T, { vx: -220, seed: 41, n: 7, alpha: 0.5, yOff: -400 });
     const ev = [[-40, G], [80, Y(14000)], [190, Y(22000)], [260, Y(26500)], [330, Y(29032)], [400, Y(26000)], [470, Y(23500)], [560, Y(15000)], [700, G]];
     D.engrave(ctx, ev, { ink: '#C8D2EC', base: '#1A2440', light: (x, y) => L.clamp(0.25 + 0.5 * (330 - x) / 400 + 0.2 * (1 - (y - TOP) / 1100)), angle: -0.8, spacing: 4.5, seed: 170, smooth: false, outW: 4 });
     L.inkPath(ctx, [[330, Y(29032)], [300, Y(25000)], [320, Y(21000)], [270, Y(16000)]], { width: 4, color: '#F2F0EA', alpha: 0.85, seed: 171 });
@@ -26,6 +30,10 @@
     PB.label(ctx, '33,330 FT', 640, TOP - 60, 1, { size: 26, col: drain > 0 ? '#8A7A40' : PB.Y });
     const st = L.clamp((T - 11.93) / 0.08);
     if (st > 0) L.inkPath(ctx, [[620, TOP - 60], [L.lerp(620, 900, st), TOP - 60]], { width: 10, color: PB.RED, seed: 302, taper: 0 });
+    // a tiny falling figure slides down the line, over and over (the fall, being questioned)
+    for (let q = 0; q < 2; q++) { const ph = ((T - 9.75) * 0.7 + q * 0.5) % 1, fy = L.lerp(ty, G, ph); ctx.fillStyle = `rgba(242,232,208,${0.9 * (1 - ph)})`; ctx.beginPath(); ctx.arc(fx - 22, fy, 7, 0, 6.283); ctx.fill(); L.inkPath(ctx, [[fx - 22, fy + 6], [fx - 18, fy + 26]], { width: 4, color: '#F2E8D0', alpha: 1 - ph, seed: 320 + q, taper: 0 }); }
     if (drain > 0.6) { L.inkPath(ctx, [[fx - 120, ty], [fx + 60, ty]], { width: 3, color: '#FF7A5A', seed: 303, taper: 0 }); L.inkPath(ctx, [[fx + 30, ty], [fx + 80, 1440]], { width: 2.5, color: '#FF7A5A', seed: 304 }); PB.label(ctx, '~800 M?', 820, 1410, (T - 13.9) / 0.15, { size: 30, col: '#FF7A5A' }); }
+    ctx.restore();
+    PB.motes(ctx, T, { n: 70, seed: 42, vy: 70, vx: -30, col: '230,236,250', alpha: 0.55, size: 2.6 });
   } });
 })();

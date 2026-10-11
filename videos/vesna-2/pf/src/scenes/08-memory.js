@@ -4,8 +4,9 @@
   'use strict';
   FILM.scene({ id: 'memory', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, PB = FILM.pb;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t - FILM.OFF;
     PB.plate(ctx, { seed: 271, color: '#0A0C14' });
+    PB.motes(ctx, T, { n: 60, seed: 81, vy: -30, alpha: 0.4 });
     // filmstrip band
     const y = 1330, H = 290, off = (T - 24.25) * 260;
     ctx.fillStyle = '#14161E'; ctx.fillRect(0, y - H / 2 - 40, 1080, H + 80);

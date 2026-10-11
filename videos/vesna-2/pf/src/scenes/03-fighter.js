@@ -5,18 +5,23 @@
   'use strict';
   FILM.scene({ id: 'fighter', draw(ctx, tIn, info) {
     const L = info.lib, D = FILM.df, PB = FILM.pb;
-    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t;
+    const t = L.clamp(tIn, 0, info.dur), T = info.shot.start + t - FILM.OFF;
     if (T < 7.5) {
       PB.plate(ctx, { seed: 221, color: '#0B0D16' });
-      PB.grid(ctx, 0.05, 60);
-      // the bomb: an engraved suitcase with a timer
-      const bx = 540, by = 1050, s = 1 + 0.04 * (T - 6);
-      ctx.save(); ctx.translate(bx, by); ctx.scale(s, s);
+      PB.grid(ctx, 0.05, 60, (T - 6) * 120, (T - 6) * 60);
+      PB.motes(ctx, T, { n: 50, seed: 31, vy: -60, alpha: 0.45 });
+      // the bomb: an engraved suitcase with a timer, swinging in on a drift
+      const bx = 540 + 40 * Math.sin((T - 6) * 2.2), by = 1050 + 20 * Math.cos((T - 6) * 1.7), s = 1.12 - 0.08 * L.ease.outCubic(L.clamp((T - 6) / 0.4)) + 0.05 * (T - 6);
+      ctx.save(); ctx.translate(bx, by); ctx.rotate(0.12 * Math.sin((T - 6) * 1.9)); ctx.scale(s, s);
       D.engrave(ctx, L.rrectPts(-260, -170, 520, 340, 30), { ink: '#B07A48', base: '#2A1808', light: () => 0.45, angle: 0.9, spacing: 4.5, seed: 260, smooth: false, outW: 5 });
       D.engrave(ctx, L.rrectPts(-80, -230, 160, 70, 20), { ink: '#8A6040', base: '#1A1006', light: () => 0.4, spacing: 3.5, seed: 261, smooth: false, outW: 3, cross: false, stip: false });
       ctx.fillStyle = '#0A0A0A'; ctx.fillRect(-130, -60, 260, 110); L.inkPath(ctx, L.rectPts(-130, -60, 260, 110, 30), { closed: true, width: 3, color: '#000', seed: 262 });
       L.text(ctx, '0:00', 0, -4, { size: 72, family: PB.MONO, weight: 600, align: 'center', baseline: 'middle', color: '#FF5A40' });
       for (const dx of [-200, 200]) L.inkPath(ctx, [[dx, -170], [dx, 170]], { width: 8, color: '#5A3A1A', seed: 263 + dx, taper: 0 });
+      // sparks from the fuse
+      const rs = L.rng(L.hash('fuse', Math.floor(T * 12)));
+      for (let i = 0; i < 14; i++) { const a = -Math.PI / 2 + (rs() - 0.5) * 2.2, d = rs() * 160; ctx.fillStyle = `rgba(255,${180 + rs() * 70},90,${1 - d / 160})`; ctx.beginPath(); ctx.arc(80 + Math.cos(a) * d, -230 + Math.sin(a) * d, 3 + rs() * 3, 0, 6.283); ctx.fill(); }
+      PB.burst(ctx, 80, -230, 90, 0.8, '255,190,90');
       ctx.restore();
       const st = L.clamp((T - 6.73) / 0.08);
       if (st > 0) { L.inkCircle(ctx, bx, by, 380, { width: 16, color: PB.RED, seed: 270 }); L.inkPath(ctx, [[bx - 270, by + 270], [L.lerp(bx - 270, bx + 270, st), L.lerp(by + 270, by - 270, st)]], { width: 18, color: PB.RED, seed: 271, taper: 0 }); }

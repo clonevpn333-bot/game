@@ -157,3 +157,12 @@ FILM.pb.jet DC-9 with breakup, pb.clouds, pb.alt altimeter, FILM.pbCert, FILM.pb
 - Part 2 hooks must be SELF-CONTAINED: Shorts serves Part 2 to people who never saw Part 1, so name the thing being
   questioned in the hook ("THAT 33,000-FOOT FALL MAY NEVER HAVE HAPPENED.", not "HER RECORD FALL…"). The best CTA comes
   from the story itself (WHICH DO YOU BELIEVE? → comments) rather than a generic ask.
+
+## RETENTION POST-MORTEM (ep8 p2 v2: ~12 s average view, deleted) — hard rules
+- NEVER speed a narration line beyond the film's normal TTS speed (≈1.15–1.2) to fit a slot — a 1.38× hook sounded
+  wrong and the viewer felt it in the first second. Shift the timeline instead (FILM.OFF + shifted cues).
+- MOTION DENSITY: something must physically MOVE in every second, not only the kinetic type. Hooks: the hero in motion
+  (falling / tumbling / racing), parallax layers (clouds, streaks, debris), camera drift or shake. Every later scene:
+  at least one moving object (drifting motes `pb.motes`, speed lines `pb.streaks`, tumbling props, swinging light,
+  a camera push) plus the scene's main action. A static diagram with only text animating = bland = swipe.
+- Second hook: show the ACTION, not a symbol of it (a HUD locking onto the real 3D jet, missile, breakup — not a radar dot).
