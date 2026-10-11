@@ -10,7 +10,7 @@ it is built one phase per session, and each phase stops at its gate with a repor
 | ----- | -------------------------------------------------------------- | ----------------------------------------------- |
 | 0     | Monorepo, design system + showcase, forms.json research, CI    | Done except forms.json verification (see below) |
 | 1     | Website (`apps/web`)                                           | Done (see docs/lighthouse/phase-1.md)           |
-| 2     | Engine + corpus                                                | Not started (forms catalog + validator exist)   |
+| 2     | Engine + corpus                                                | Done on synthetic corpus (docs/accuracy/)       |
 | 3–8   | Desktop pipeline, export, missing docs, OCR, licensing, polish | Not started                                     |
 
 **Open from Phase 0:** `forms.json` patterns are drafted but unverified, and no OMB numbers are
@@ -27,6 +27,7 @@ pnpm lint | typecheck | test | build | format
 pnpm showcase         # design system showcase on Vite dev server
 pnpm screenshots      # build showcase, capture 375/768/1440 × light/dark → docs/screenshots/phase-0
 pnpm forms:verify     # check forms.json against official PDFs; --write, --pdf-dir <dir>, --only a,b
+pnpm test:accuracy    # generate the synthetic corpus and score the engine → docs/accuracy/clean.md
 
 # apps/web (run inside apps/web)
 pnpm dev              # Next dev server
@@ -118,6 +119,34 @@ They are excluded from lint/format and untouched. Ask Corey before moving or del
 - `forms:verify` marks a form verified only if every title, box-label and issuer-label pattern matches
   the official text. It writes `packages/engine/forms-verification.md`.
 
+## Engine pipeline (packages/engine)
+
+Pure TypeScript, deterministic, no IO: `processFiles(catalog, files, options)` →
+classify each page (`classify.ts`) → group pages into documents (`split.ts`) → extract naming fields
+(`extract.ts`) → render names (`naming.ts`) → mark duplicates (`duplicates.ts`). `binderSections`
+(`order.ts`) produces binder order. Input pages are words with page-fraction boxes; the Rust side
+(Phase 3) and the corpus harness both produce that shape.
+
+- Signals and weights: `defaultClassifierConfig`. Thresholds: ≥0.90 auto, ≥0.60 check, else review;
+  never auto when the runner-up is within `closeMargin`. Tune these, never the corpus labels.
+- Text is read twice: row order (`full`, `header`) and column order (`columns`) so multi-line titles
+  in a box survive interleaving. Lines split at wide horizontal gaps (`COLUMN_GAP`).
+- Extraction reads only year, issuer and recipient last name. Lines with identifier or amount
+  shapes are never names. `maskIdentifiers` before logging any text.
+- Near-duplicates need form + issuer + year + page dHash within 10 bits + the same amounts/dates.
+  Figures are compared in memory only.
+- `containsForms` (forms.json) lets a container such as a consolidated brokerage statement outrank
+  the forms whose sections it prints.
+
+## Corpus (packages/corpus)
+
+`generate.ts` builds a seeded synthetic corpus (`out/clean`, gitignored) with ground truth in
+`manifest.json`: single files, multi-document scans, 4-up W-2 sheets, instruction backs, exact
+duplicates, Copy B/C rescans, a password-protected PDF (qpdf) and a corrupt file. Templates
+(`templates.ts`) are written as printed form text, independently of forms.json's regexes, but they
+are approximations: results on them prove the pipeline, not real-world accuracy. `harness.ts` runs
+the engine and writes `docs/accuracy/<tier>.md`; exits 1 below target. Needs `pdftoppm` and `qpdf`.
+
 ## Decisions log
 
 - 2026-10-11 `--fg-subtle` changed from the brief's #8f8f8f / #6b6b6b to #737373 / #7d7d7d. The
@@ -131,5 +160,7 @@ They are excluded from lint/format and untouched. Ask Corey before moving or del
   `geist/font/*` (138 KB → 29 KB preloaded). Same typeface, needed for the LCP gate.
 - 2026-10-11 Open Graph image is a static route handler (`/og.png`) because the
   `opengraph-image` convention exports a file without an extension under `output: 'export'`.
+- 2026-10-11 Corpus uses built-in synthetic templates because irs.gov is unreachable from cloud
+  sessions; the report says so on every run. Official-PDF filling is the release-gate follow-up.
 - 2026-10-11 Empty `apps/*` and `packages/corpus` were not scaffolded. Placeholder apps would
   violate the anti-stub rule; each arrives in its phase.

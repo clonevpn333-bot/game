@@ -36,6 +36,11 @@ export interface FormDefinition {
   /** Only ever filled by `pnpm forms:verify` from the official PDF. Never typed by hand. */
   ombNumbers: string[];
   titlePatterns: string[];
+  /**
+   * The form's designation as printed ("1099-INT", "Schedule K-1 … Form 1065"), derived from the
+   * MVP list in BUILD_PROMPT.md rather than from form text, so it needs no source verification.
+   */
+  designationPatterns: string[];
   boxLabelPatterns: string[];
   keywords: string[];
   issuerFieldLabels: string[];
@@ -43,6 +48,11 @@ export interface FormDefinition {
   yearPatterns: string[];
   filenameHints: string[];
   multiPage: boolean;
+  /**
+   * Forms this one bundles (a brokerage consolidated statement prints 1099-DIV,
+   * 1099-INT and 1099-B sections). When its title matches, these can't outrank it.
+   */
+  containsForms?: string[];
   /** Official document the patterns are checked against; null for heuristic types or unknown sources. */
   source: string | null;
   /** ISO date the patterns were last confirmed against `source`; null until verified. */
@@ -125,6 +135,7 @@ export function parseFormsCatalog(raw: unknown): FormsCatalog {
     for (const key of [
       'ombNumbers',
       'titlePatterns',
+      'designationPatterns',
       'boxLabelPatterns',
       'keywords',
       'issuerFieldLabels',
@@ -139,6 +150,7 @@ export function parseFormsCatalog(raw: unknown): FormsCatalog {
 
     for (const key of [
       'titlePatterns',
+      'designationPatterns',
       'boxLabelPatterns',
       'issuerFieldLabels',
       'yearPatterns',
@@ -178,8 +190,19 @@ export function parseFormsCatalog(raw: unknown): FormsCatalog {
       if (omb.length > 0) at('heuristic types cannot have OMB numbers');
       if (source !== null) at('heuristic types have no official source');
     }
+    if (f.containsForms !== undefined) {
+      if (!isStringArray(f.containsForms)) at('containsForms must be an array of form ids');
+    }
     if (f.fixedIssuer !== undefined && typeof f.fixedIssuer !== 'string') {
       at('fixedIssuer must be a string');
+    }
+  }
+
+  const ids = new Set(forms.map((f) => f.id));
+  for (const f of forms) {
+    for (const contained of isStringArray(f.containsForms) ? f.containsForms : []) {
+      if (!ids.has(contained))
+        problems.push(`${String(f.id)}: containsForms names unknown form ${contained}`);
     }
   }
 

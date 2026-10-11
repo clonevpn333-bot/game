@@ -59,6 +59,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Wage\\s+and\\s+Tax\\s+Statement"],
+      "designationPatterns": ["\\bW[\\s-]?2\\b(?![\\s-]?G\\b)"],
       "boxLabelPatterns": [
         "Wages,\\s*tips,\\s*other\\s+compensation",
         "Federal\\s+income\\s+tax\\s+withheld",
@@ -85,6 +86,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Certain\\s+Gambling\\s+Winnings"],
+      "designationPatterns": ["\\bW[\\s-]?2G\\b"],
       "boxLabelPatterns": [
         "Reportable\\s+winnings",
         "Date\\s+won",
@@ -106,6 +108,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Interest\\s+Income"],
+      "designationPatterns": ["\\b1099[\\s-]?INT\\b"],
       "boxLabelPatterns": [
         "Early\\s+withdrawal\\s+penalty",
         "Interest\\s+on\\s+U\\.?\\s*S\\.?\\s+Savings\\s+Bonds",
@@ -127,6 +130,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Original\\s+Issue\\s+Discount"],
+      "designationPatterns": ["\\b1099[\\s-]?OID\\b"],
       "boxLabelPatterns": [
         "Other\\s+periodic\\s+interest",
         "Early\\s+withdrawal\\s+penalty",
@@ -148,6 +152,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Dividends\\s+and\\s+Distributions"],
+      "designationPatterns": ["\\b1099[\\s-]?DIV\\b"],
       "boxLabelPatterns": [
         "Total\\s+ordinary\\s+dividends",
         "Qualified\\s+dividends",
@@ -170,6 +175,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Proceeds\\s+From\\s+Broker\\s+and\\s+Barter\\s+Exchange\\s+Transactions"],
+      "designationPatterns": ["\\b1099[\\s-]?B\\b"],
       "boxLabelPatterns": [
         "Date\\s+acquired",
         "Date\\s+sold\\s+or\\s+disposed",
@@ -191,6 +197,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Distributions\\s+From\\s+Pensions,\\s*Annuities,\\s*Retirement"],
+      "designationPatterns": ["(?<!RRB[\\s-]?)\\b1099[\\s-]?R\\b"],
       "boxLabelPatterns": [
         "Gross\\s+distribution",
         "Taxable\\s+amount",
@@ -213,6 +220,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Nonemployee\\s+Compensation"],
+      "designationPatterns": ["\\b1099[\\s-]?NEC\\b"],
       "boxLabelPatterns": ["Payer\\s+made\\s+direct\\s+sales"],
       "keywords": ["1099-NEC", "nonemployee"],
       "issuerFieldLabels": ["PAYER'?S\\s+name"],
@@ -229,6 +237,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Miscellaneous\\s+Information"],
+      "designationPatterns": ["\\b1099[\\s-]?MISC\\b"],
       "boxLabelPatterns": [
         "Rents",
         "Royalties",
@@ -251,6 +260,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Payment\\s+Card\\s+and\\s+Third\\s+Party\\s+Network\\s+Transactions"],
+      "designationPatterns": ["\\b1099[\\s-]?K\\b"],
       "boxLabelPatterns": [
         "Card\\s+not\\s+present\\s+transactions",
         "Merchant\\s+category\\s+code",
@@ -271,6 +281,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Certain\\s+Government\\s+Payments"],
+      "designationPatterns": ["\\b1099[\\s-]?G\\b"],
       "boxLabelPatterns": [
         "Unemployment\\s+compensation",
         "State\\s+or\\s+local\\s+income\\s+tax\\s+refunds",
@@ -292,6 +303,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Distributions\\s+From\\s+an\\s+HSA"],
+      "designationPatterns": ["\\b1099[\\s-]?SA\\b"],
       "boxLabelPatterns": [
         "Gross\\s+distribution",
         "Earnings\\s+on\\s+excess\\s+cont",
@@ -313,6 +325,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Payments\\s+From\\s+Qualified\\s+Education\\s+Programs"],
+      "designationPatterns": ["\\b1099[\\s-]?Q\\b"],
       "boxLabelPatterns": [
         "Gross\\s+distribution",
         "Earnings",
@@ -335,6 +348,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Proceeds\\s+From\\s+Real\\s+Estate\\s+Transactions"],
+      "designationPatterns": ["\\b1099[\\s-]?S\\b(?![\\s-]?A\\b)"],
       "boxLabelPatterns": [
         "Date\\s+of\\s+closing",
         "Gross\\s+proceeds",
@@ -355,6 +369,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Cancellation\\s+of\\s+Debt"],
+      "designationPatterns": ["\\b1099[\\s-]?C\\b"],
       "boxLabelPatterns": [
         "Date\\s+of\\s+identifiable\\s+event",
         "Amount\\s+of\\s+debt\\s+discharged",
@@ -376,6 +391,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Social\\s+Security\\s+Benefit\\s+Statement"],
+      "designationPatterns": ["\\bSSA[\\s-]?1099\\b"],
       "boxLabelPatterns": [
         "Benefits\\s+paid\\s+in",
         "Benefits\\s+repaid\\s+to\\s+SSA\\s+in",
@@ -403,6 +419,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Payments\\s+by\\s+the\\s+Railroad\\s+Retirement\\s+Board"],
+      "designationPatterns": ["\\bRRB[\\s-]?1099\\b(?![\\s-]?R\\b)"],
       "boxLabelPatterns": [
         "Social\\s+Security\\s+Equivalent\\s+Benefit",
         "Portion\\s+of\\s+Tier\\s+I"
@@ -424,6 +441,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Mortgage\\s+Interest\\s+Statement"],
+      "designationPatterns": ["\\b1098\\b(?![\\s-]?[A-Z])"],
       "boxLabelPatterns": [
         "Mortgage\\s+interest\\s+received\\s+from\\s+payer",
         "Outstanding\\s+mortgage\\s+principal",
@@ -446,6 +464,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Tuition\\s+Statement"],
+      "designationPatterns": ["\\b1098[\\s-]?T\\b"],
       "boxLabelPatterns": [
         "Payments\\s+received\\s+for\\s+qualified\\s+tuition",
         "Scholarships\\s+or\\s+grants",
@@ -467,6 +486,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Student\\s+Loan\\s+Interest\\s+Statement"],
+      "designationPatterns": ["\\b1098[\\s-]?E\\b"],
       "boxLabelPatterns": ["Student\\s+loan\\s+interest\\s+received\\s+by\\s+lender"],
       "keywords": ["1098-E", "student loan"],
       "issuerFieldLabels": ["RECIPIENT'?S\\s*/\\s*LENDER'?S\\s+name"],
@@ -483,6 +503,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Health\\s+Insurance\\s+Marketplace\\s+Statement"],
+      "designationPatterns": ["\\b1095[\\s-]?A\\b"],
       "boxLabelPatterns": [
         "Marketplace\\s+identifier",
         "Marketplace-assigned\\s+policy\\s+number",
@@ -505,6 +526,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Health\\s+Coverage"],
+      "designationPatterns": ["\\b1095[\\s-]?B\\b"],
       "boxLabelPatterns": [
         "Responsible\\s+Individual",
         "Origin\\s+of\\s+the\\s+health\\s+coverage",
@@ -526,6 +548,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Employer-Provided\\s+Health\\s+Insurance\\s+Offer\\s+and\\s+Coverage"],
+      "designationPatterns": ["\\b1095[\\s-]?C\\b"],
       "boxLabelPatterns": [
         "Applicable\\s+Large\\s+Employer\\s+Member",
         "Offer\\s+of\\s+Coverage",
@@ -547,6 +570,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["IRA\\s+Contribution\\s+Information"],
+      "designationPatterns": ["\\b5498\\b(?![\\s-]?(?:SA|ESA)\\b)"],
       "boxLabelPatterns": [
         "Rollover\\s+contributions",
         "Roth\\s+IRA\\s+conversion\\s+amount",
@@ -570,6 +594,7 @@
       "titlePatterns": [
         "HSA,\\s*Archer\\s+MSA,\\s*or\\s+Medicare\\s+Advantage\\s+MSA\\s+Information"
       ],
+      "designationPatterns": ["\\b5498[\\s-]?SA\\b"],
       "boxLabelPatterns": [
         "Total\\s+contributions\\s+made\\s+in",
         "Rollover\\s+contributions",
@@ -590,6 +615,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Partner'?s\\s+Share\\s+of\\s+Income,\\s*Deductions,\\s*Credits"],
+      "designationPatterns": ["Schedule\\s+K[\\s-]?1\\b.{0,40}?\\bForm\\s+1065\\b"],
       "boxLabelPatterns": [
         "Information\\s+About\\s+the\\s+Partnership",
         "Information\\s+About\\s+the\\s+Partner\\b",
@@ -611,6 +637,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Shareholder'?s\\s+Share\\s+of\\s+Income,\\s*Deductions,\\s*Credits"],
+      "designationPatterns": ["Schedule\\s+K[\\s-]?1\\b.{0,40}?\\bForm\\s+1120[\\s-]?S\\b"],
       "boxLabelPatterns": [
         "Information\\s+About\\s+the\\s+Corporation",
         "Information\\s+About\\s+the\\s+Shareholder",
@@ -631,6 +658,7 @@
       "kind": "official",
       "ombNumbers": [],
       "titlePatterns": ["Beneficiary'?s\\s+Share\\s+of\\s+Income,\\s*Deductions,\\s*Credits"],
+      "designationPatterns": ["Schedule\\s+K[\\s-]?1\\b.{0,40}?\\bForm\\s+1041\\b"],
       "boxLabelPatterns": [
         "Information\\s+About\\s+the\\s+Estate\\s+or\\s+Trust",
         "Information\\s+About\\s+the\\s+Beneficiary"
@@ -655,12 +683,14 @@
         "Consolidated\\s+Tax\\s+Statement",
         "Tax\\s+Information\\s+Statement"
       ],
+      "designationPatterns": [],
       "boxLabelPatterns": ["Summary\\s+of\\s+Proceeds", "1099-DIV", "1099-INT", "1099-B"],
       "keywords": ["brokerage", "consolidated", "composite", "realized gain"],
       "issuerFieldLabels": [],
       "yearPatterns": ["Tax\\s+Year\\s*(20\\d{2})", "(?:for\\s+)?calendar\\s+year\\s*(20\\d{2})"],
       "filenameHints": ["consolidated", "composite", "tax[\\s_-]*statement"],
       "multiPage": true,
+      "containsForms": ["1099-div", "1099-int", "1099-b", "1099-misc", "1099-oid"],
       "source": null,
       "verifiedOn": null,
       "notes": "Not an IRS form: brokerages combine several 1099s into one statement. Kept together as one document."
@@ -675,6 +705,7 @@
         "(?:Real\\s+Estate|Real\\s+Property|Property)\\s+Tax\\s+(?:Bill|Statement|Notice)",
         "Secured\\s+Property\\s+Tax"
       ],
+      "designationPatterns": [],
       "boxLabelPatterns": [
         "Parcel\\s+(?:Number|No\\.?|ID)",
         "Assessed\\s+Value",

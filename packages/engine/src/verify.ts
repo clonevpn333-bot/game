@@ -4,15 +4,9 @@
  */
 import { compilePattern, type FormDefinition, type FormsCatalog } from './forms.ts';
 
-/** Collapses whitespace and folds typographic quotes and dashes to ASCII. */
-export function normalizeText(text: string): string {
-  return text
-    .replace(/[‘’ʼ]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/[‐-―−]/g, '-')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+import { normalizeText } from './text.ts';
+
+export { normalizeText };
 
 /** Every distinct "OMB No. 1545-0000" style number in the text, in order of appearance. */
 export function extractOmbNumbers(text: string): string[] {

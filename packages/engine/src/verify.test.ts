@@ -10,6 +10,7 @@ const form: FormDefinition = {
   kind: 'official',
   ombNumbers: [],
   titlePatterns: ['Sample\\s+Statement'],
+  designationPatterns: [],
   boxLabelPatterns: ['Box\\s+one\\s+amount', "Payer'?s\\s+code"],
   keywords: [],
   issuerFieldLabels: ["ISSUER'?S\\s+name"],
