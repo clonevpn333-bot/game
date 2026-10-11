@@ -35,73 +35,131 @@ textarea,
   scrollbar-color: var(--border-strong) transparent;
 }
 
-/* Hover motion: what you can act on answers the cursor. The standalone translate and
-   scale properties are used so nothing fights the transforms components already set
-   (page rotation on thumbnails). Off under reduced motion. */
+/* Hover motion: what you can act on answers the cursor, clearly. A springy ease that
+   overshoots a touch; the standalone translate and scale properties are used so nothing
+   fights the transforms components already set (page rotation on thumbnails). Off under
+   reduced motion. */
+:root {
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  /* Cards lift and their page image leans in. */
+  /* Cards float up off the board, cast a shadow, and their page image leans in. */
   .float {
     transition:
-      translate 240ms var(--ease-out-steel),
+      translate 320ms var(--ease-spring),
+      scale 320ms var(--ease-spring),
+      box-shadow 320ms var(--ease-out-steel),
       border-color 150ms,
       opacity 150ms;
   }
   .float:hover {
-    translate: 0 -3px;
+    translate: 0 -8px;
+    scale: 1.03;
+    box-shadow:
+      0 18px 36px -14px rgb(0 0 0 / 0.45),
+      0 0 0 1px var(--border-strong);
+    z-index: 1;
   }
   .float:active {
-    translate: 0 -1px;
-    transition-duration: 80ms;
+    translate: 0 -3px;
+    scale: 0.99;
+    transition-duration: 90ms;
   }
   .float-img {
-    transition: scale 320ms var(--ease-out-steel);
+    transition: scale 420ms var(--ease-spring);
   }
   .float:hover .float-img {
-    scale: 1.03;
+    scale: 1.08;
   }
 
-  /* Navigation: the icon steps toward where you're going. */
+  /* Navigation: the row slides toward where you're going, its icon leads. */
+  .nudge {
+    transition:
+      translate 260ms var(--ease-spring),
+      background-color 150ms,
+      color 150ms;
+  }
+  .nudge:hover {
+    translate: 4px 0;
+  }
   .nudge svg {
-    transition: translate 200ms var(--ease-out-steel);
+    transition:
+      translate 260ms var(--ease-spring),
+      scale 260ms var(--ease-spring);
   }
   .nudge:hover svg {
     translate: 2px 0;
+    scale: 1.15;
   }
 
-  /* Main actions rise a pixel and press down when clicked. */
+  /* Main actions lift with a shadow and press down when clicked. */
   .press {
     transition:
-      translate 180ms var(--ease-out-steel),
-      scale 120ms var(--ease-out-steel),
+      translate 240ms var(--ease-spring),
+      scale 160ms var(--ease-spring),
+      box-shadow 240ms var(--ease-out-steel),
       background-color 150ms;
   }
   .press:not(:disabled):hover {
-    translate: 0 -1px;
+    translate: 0 -3px;
+    scale: 1.04;
+    box-shadow: 0 12px 24px -10px rgb(0 0 0 / 0.5);
   }
   .press:not(:disabled):active {
     translate: 0;
-    scale: 0.97;
+    scale: 0.95;
+    box-shadow: none;
   }
 
-  /* The drop zone's icon floats while a cursor (or a dragged file) is over it. */
+  /* The drop zone swells toward the cursor and its icon bobs. */
+  .bob {
+    transition:
+      scale 360ms var(--ease-spring),
+      border-color 200ms;
+  }
+  .bob:hover,
+  .bob[data-over] {
+    scale: 1.015;
+  }
   .bob:hover .bob-icon,
   .bob[data-over] .bob-icon {
-    animation: bob 1.6s var(--ease-out-steel) infinite;
+    animation: bob 1.2s ease-in-out infinite;
   }
   @keyframes bob {
     0%,
     100% {
       translate: 0 0;
+      rotate: 0deg;
     }
     50% {
-      translate: 0 -6px;
+      translate: 0 -12px;
+      rotate: -6deg;
     }
   }
-}
 
-/* Every other button gives a small press. */
-@media (prefers-reduced-motion: no-preference) {
-  #root button:not(.float, .press, :disabled):active {
-    scale: 0.97;
+  /* Every other button: a small lift and a firm press. */
+  #root button:not(.float, .press, .nudge, :disabled) {
+    transition:
+      translate 200ms var(--ease-spring),
+      scale 140ms var(--ease-spring),
+      background-color 150ms,
+      border-color 150ms,
+      color 150ms;
+  }
+  #root button:not(.float, .press, .nudge, :disabled):hover {
+    translate: 0 -1px;
+  }
+  #root button:not(.float, .press, .nudge, :disabled):active {
+    translate: 0;
+    scale: 0.94;
+  }
+
+  /* The logo's bars re-sort on hover (design preset); here it also tips up a little. */
+  .mark {
+    transition: scale 300ms var(--ease-spring);
+  }
+  .mark:hover {
+    scale: 1.2;
   }
 }
