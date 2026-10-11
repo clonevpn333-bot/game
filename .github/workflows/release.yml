@@ -241,43 +241,67 @@ jobs:
 
   publish:
     name: Publish release
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Tags publish. A branch build also fills the release for its app version when that
+    # release exists without installers (made on github.com, or its tag build failed late).
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref_type == 'branch'
     needs: build
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
+          # pnpm isn't installed in this job; the scripts it runs need only Node.
+          package-manager-cache: false
+      - name: Release to fill
+        id: target
+        run: |
+          version=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")
+          tag="v$version"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+          elif [ "$(gh release view "$tag" --json assets --jq '.assets | length' 2>/dev/null)" = 0 ]; then
+            echo "Release $tag exists without installers: filling it from this build"
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          else
+            echo "Nothing to publish from a branch build"
+          fi
       - uses: actions/download-artifact@v4
+        if: steps.target.outputs.tag != ''
         with:
           pattern: installers-*
           path: dist-release
           merge-multiple: true
       - name: Updater manifest
+        if: steps.target.outputs.tag != ''
+        env:
+          TAG: ${{ steps.target.outputs.tag }}
         run: |
           if ls dist-release/*.sig >/dev/null 2>&1; then
-            node apps/desktop/scripts/updater-manifest.ts --version "${GITHUB_REF_NAME#v}" \
-              --repo "$GITHUB_REPOSITORY" --dir dist-release
+            node apps/desktop/scripts/updater-manifest.ts --version "${TAG#v}" \
+              --repo "$GITHUB_REPOSITORY" --dir dist-release --tag "$TAG"
           else
             echo "No signed updater artifacts: the release has no latest.json"
           fi
       # Pushing the tag is the release decision: the website's download buttons and the
       # updater read releases/latest, which never includes drafts.
       - name: Publish the release
+        if: steps.target.outputs.tag != ''
         env:
-          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.target.outputs.tag }}
         run: |
           product=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').productName")
           # Version-free copies for the website's download buttons.
           node apps/desktop/scripts/release-assets.ts --dir dist-release --product "$product"
           # A release made on github.com (which is how the tag got there) gets the files;
           # a pushed tag gets a new release.
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" dist-release/* --clobber
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist-release/* --clobber
           else
-            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes \
-              --title "$product ${GITHUB_REF_NAME#v}" dist-release/*
+            gh release create "$TAG" --verify-tag --generate-notes \
+              --title "$product ${TAG#v}" dist-release/*
           fi
