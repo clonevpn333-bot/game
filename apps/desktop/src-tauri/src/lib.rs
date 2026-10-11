@@ -36,6 +36,8 @@ pub fn run() {
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             let cache_dir = app.path().app_cache_dir()?;
+            // Page images exist only for the working session: clear what a previous run left.
+            ingest::clear_page_cache(&cache_dir);
             let resource_dir = app.path().resource_dir().ok();
             let store = store::Store::open(&data_dir.join("binderready.db")).map_err(|e| e.to_string())?;
             let tessdata = ocr::tessdata_dir(resource_dir.as_deref());

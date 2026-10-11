@@ -10,6 +10,7 @@ import { ReviewBoard } from './components/review-board';
 import { Settings } from './components/settings';
 import { Sidebar } from './components/sidebar';
 import { TitleBar } from './components/title-bar';
+import { PRODUCT_NAME } from './lib/product';
 import { backend, inTauri } from './lib/backend';
 import { useApp } from './state/store';
 
@@ -50,7 +51,7 @@ export function App() {
     return (
       <div className="grid h-full place-items-center p-10 text-center">
         <p className="max-w-[44ch] text-sm text-fg-muted">
-          This is the BinderReady desktop interface. Open it through the app (pnpm dev in
+          This is the {PRODUCT_NAME} desktop interface. Open it through the app (pnpm dev in
           apps/desktop) so it can read files on this computer.
         </p>
       </div>

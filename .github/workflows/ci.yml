@@ -89,3 +89,64 @@ jobs:
         with:
           name: showcase-screenshots
           path: docs/screenshots/phase-0/
+
+  desktop:
+    name: Desktop app (Rust checks, OCR accuracy, end-to-end)
+    runs-on: ubuntu-24.04
+    needs: checks
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+      - name: System libraries (WebKitGTK, Tesseract, libheif, corpus tools)
+        run: >
+          sudo apt-get update && sudo apt-get install -y
+          libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libclang-dev
+          libtesseract-dev libleptonica-dev tesseract-ocr-eng
+          libheif-dev libheif-plugin-libde265 libheif-plugin-x265 libheif-examples
+          poppler-utils qpdf imagemagick webkit2gtk-driver xvfb
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @binderready/desktop fetch:pdfium
+      - name: Clippy
+        working-directory: apps/desktop/src-tauri
+        run: cargo clippy --release --all-targets -- -D warnings
+      - name: Rust tests
+        working-directory: apps/desktop/src-tauri
+        run: cargo test --release
+      - name: Build the app and the ingest CLI
+        run: |
+          pnpm --filter @binderready/desktop tauri build --no-bundle
+          cargo build --release --bin binderready-ingest --manifest-path apps/desktop/src-tauri/Cargo.toml
+      - name: Corpus (clean, scanned, photo)
+        working-directory: packages/corpus
+        run: |
+          node src/generate.ts
+          node src/degrade.ts --tier scanned
+          node src/degrade.ts --tier photo
+      - name: Accuracy through the desktop pipeline
+        working-directory: packages/corpus
+        run: |
+          node src/harness.ts --tier scanned
+          node src/harness.ts --tier photo
+          node src/bench.ts
+      - run: cargo install tauri-driver --locked
+      - name: End-to-end (real app over WebDriver)
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1440x900x24" node apps/desktop/scripts/e2e.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-results
+          path: |
+            docs/accuracy/
+            docs/screenshots/phase-3/

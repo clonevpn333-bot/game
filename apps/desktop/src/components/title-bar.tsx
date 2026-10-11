@@ -3,6 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Minus, Square, X } from 'lucide-react';
 import { isMac } from '../lib/platform';
 import { useApp } from '../state/store';
+import { PRODUCT_NAME } from '../lib/product';
 
 function WindowButton({
   label,
@@ -38,7 +39,7 @@ export function TitleBar() {
       <div data-tauri-drag-region className={`flex items-center gap-2 ${isMac ? 'pl-20' : 'pl-4'}`}>
         <Mark className="text-[15px]" />
         <span data-tauri-drag-region className="text-[13px] font-semibold tracking-[-0.01em]">
-          BinderReady
+          {PRODUCT_NAME}
         </span>
       </div>
       <p

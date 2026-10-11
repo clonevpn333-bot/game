@@ -2,6 +2,7 @@ import { ThemeSwitcher } from '@binderready/design';
 import type { ReactNode } from 'react';
 import { themeStore } from '../lib/theme';
 import { useAppInfo } from '../lib/platform';
+import { PRODUCT_NAME } from '../lib/product';
 
 function Row({
   title,
@@ -44,15 +45,15 @@ export function Settings() {
           About
         </h2>
         <div className="divide-y divide-border border-y border-border">
-          <Row title="Version" description="The installed version of BinderReady.">
+          <Row title="Version" description={`The installed version of ${PRODUCT_NAME}.`}>
             <span className="font-mono text-[13px]">{info?.version ?? '…'}</span>
           </Row>
           <Row title="Text recognition" description="Scans and photos are read on this computer.">
-            <span className="font-mono text-[13px]">{info ? 'Tesseract 5 (bundled)' : '…'}</span>
+            <span className="font-mono text-[13px]">{info ? 'Tesseract 5' : '…'}</span>
           </Row>
           <Row
             title="App data folder"
-            description="Settings and your client list are stored here. Document images and text are never stored."
+            description="Settings, your client list and binder history are stored here. Page images are kept in a cache only while you work and are deleted when the app next starts. Document text is never stored."
           >
             <span
               className="block max-w-[320px] break-all text-right font-mono text-xs text-fg-muted"

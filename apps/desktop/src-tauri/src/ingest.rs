@@ -60,6 +60,15 @@ fn save_jpeg(image: &GrayImage, path: &Path) -> Result<(), FileErrorKind> {
     JpegEncoder::new_with_quality(&mut writer, 82).encode_image(image).map_err(|_| FileErrorKind::Unreadable)
 }
 
+/// Deletes every cached page image. Run at startup: images are only needed while a
+/// binder is open, and tax documents should not linger on disk.
+pub fn clear_page_cache(cache_dir: &Path) {
+    let pages = cache_dir.join("pages");
+    if pages.exists() {
+        let _ = fs::remove_dir_all(&pages);
+    }
+}
+
 /// What one page needs before recognition.
 enum Raw {
     TextLayer { words: Vec<Word>, display: GrayImage },

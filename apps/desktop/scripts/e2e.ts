@@ -3,7 +3,7 @@
  * tauri-driver → WebKitWebDriver. Files enter through the app's own drag-and-drop
  * event, so the real drop handler, folder expansion and Rust ingest all run.
  *
- *   pnpm tauri build --debug --no-bundle && node scripts/e2e.ts
+ *   pnpm tauri build --no-bundle && node scripts/e2e.ts
  *
  * Needs tauri-driver (cargo install tauri-driver), WebKitWebDriver and a display
  * (Xvfb on Linux CI). Screenshots go to docs/screenshots/phase-3/.
@@ -13,9 +13,10 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import type { CorpusManifest } from '../../../packages/corpus/src/manifest.ts';
+import tauriConfig from '../src-tauri/tauri.conf.json' with { type: 'json' };
 
 const root = resolve(import.meta.dirname, '../../..');
-const app = resolve(import.meta.dirname, '../src-tauri/target/debug/binderready');
+const app = resolve(import.meta.dirname, '../src-tauri/target/release/binderready');
 const shots = resolve(root, process.env.SHOT_DIR ?? 'docs/screenshots/phase-3');
 const corpus = resolve(root, 'packages/corpus/out');
 const DRIVER = 'http://127.0.0.1:4444';
@@ -62,6 +63,20 @@ async function main() {
     const exec = <T = unknown>(script: string, args: unknown[] = []) =>
       wd<T>('POST', `${s}/execute/sync`, { script, args });
     const text = () => exec<string>('return document.body.innerText');
+    const placeholderShown = async (prefix: string, timeout = 5000) => {
+      const end = Date.now() + timeout;
+      while (Date.now() < end) {
+        if (
+          await exec<boolean>(
+            'return [...document.querySelectorAll("input")].some(i => i.placeholder.startsWith(arguments[0]))',
+            [prefix],
+          )
+        )
+          return true;
+        await sleep(200);
+      }
+      return false;
+    };
     const waitFor = async (needle: string | RegExp, timeout = 120000) => {
       const end = Date.now() + timeout;
       while (Date.now() < end) {
@@ -72,6 +87,15 @@ async function main() {
       return false;
     };
     const shot = async (name: string) => {
+      // Page images load lazily from disk: let visible ones finish first.
+      const end = Date.now() + 5000;
+      while (
+        Date.now() < end &&
+        !(await exec<boolean>(
+          'return [...document.images].filter(i => i.getBoundingClientRect().top < innerHeight).every(i => i.complete)',
+        ))
+      )
+        await sleep(150);
       const png = await wd<string>('GET', `${s}/screenshot`);
       await writeFile(join(shots, `${name}.png`), Buffer.from(png, 'base64'));
     };
@@ -119,6 +143,7 @@ async function main() {
 
     await wd('POST', `${s}/window/rect`, { width: 1280, height: 820 });
     check(await waitFor('Start with a client’s documents.'), 'empty state shows the drop zone');
+    check((await exec<string>('return document.title')) === tauriConfig.productName, 'the window title is the configured product name');
     for (const t of ['light', 'dark'] as const) {
       await theme(t);
       await shot(`01-empty-${t}`);
@@ -200,7 +225,7 @@ async function main() {
     await press('k');
     check((await selected()) === first, 'K moves back');
     await press('t');
-    check(await waitFor('Form type for', 5000), 'T opens the form-type picker');
+    check(await placeholderShown('Form type for'), 'T opens the form-type picker');
     await shot('05-form-picker-light');
     await press('\uE00C');
     await press('e');
@@ -252,7 +277,7 @@ async function main() {
     check(true, 'Enter accepts');
 
     await chord('\uE009', 'k');
-    check(await waitFor('Type a command', 5000), 'Ctrl+K opens the command palette');
+    check(await placeholderShown('Type a command'), 'Ctrl+K opens the command palette');
     await shot('08-command-palette-light');
     await press('\uE00C');
 

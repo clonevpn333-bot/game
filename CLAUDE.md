@@ -6,12 +6,13 @@ it is built one phase per session, and each phase stops at its gate with a repor
 
 ## Status
 
-| Phase | Scope                                                          | State                                           |
-| ----- | -------------------------------------------------------------- | ----------------------------------------------- |
-| 0     | Monorepo, design system + showcase, forms.json research, CI    | Done except forms.json verification (see below) |
-| 1     | Website (`apps/web`)                                           | Done (see docs/lighthouse/phase-1.md)           |
-| 2     | Engine + corpus                                                | Done on synthetic corpus (docs/accuracy/)       |
-| 3–8   | Desktop pipeline, export, missing docs, OCR, licensing, polish | Not started                                     |
+| Phase | Scope                                                       | State                                           |
+| ----- | ----------------------------------------------------------- | ----------------------------------------------- |
+| 0     | Monorepo, design system + showcase, forms.json research, CI | Done except forms.json verification (see below) |
+| 1     | Website (`apps/web`)                                        | Done (see docs/lighthouse/phase-1.md)           |
+| 2     | Engine + corpus                                             | Done on synthetic corpus (docs/accuracy/)       |
+| 3     | Desktop ingest pipeline + review board                      | Done (docs/accuracy, docs/screenshots/phase-3)  |
+| 4–8   | Export, missing docs, native OCR, licensing, polish         | Not started                                     |
 
 **Open from Phase 0:** `forms.json` patterns are drafted but unverified, and no OMB numbers are
 recorded, because the cloud sessions could not reach irs.gov/ssa.gov. Run `pnpm forms:verify --write`
@@ -38,7 +39,24 @@ pnpm e2e              # release build with tests/e2e.env.ts values + Playwright 
 pnpm screenshots      # every route × 375/768/1440 × light/dark → docs/screenshots/phase-1
 pnpm lighthouse       # mobile Lighthouse, median of 3 per route → docs/lighthouse/phase-1.md
 pnpm security:pdf     # re-print public/<slug>-security-overview.pdf after editing lib/security-content.ts
+
+# apps/desktop (run inside apps/desktop)
+pnpm fetch:pdfium     # PDFium binaries (bblanchon chromium/8086) → src-tauri/pdfium/ (gitignored)
+pnpm dev              # tauri dev (Vite on :1420 + Rust app)
+pnpm tauri build --no-bundle   # release app at src-tauri/target/release/binderready
+pnpm e2e              # drives the release app over WebDriver → docs/screenshots/phase-3 (needs a display)
+
+# packages/corpus (desktop pipeline accuracy; needs the release binderready-ingest)
+cargo build --release --bin binderready-ingest   # in apps/desktop/src-tauri
+node src/degrade.ts --tier scanned|photo         # derive degraded tiers from out/clean
+node src/harness.ts --tier scanned|photo         # → docs/accuracy/<tier>.md
+node src/bench.ts                                # ~100 mixed pages, end to end
 ```
+
+Desktop system libraries (Ubuntu 24.04; CI installs the same): `libwebkit2gtk-4.1-dev`,
+`libtesseract-dev`, `libleptonica-dev`, `tesseract-ocr-eng`, `libheif-dev`, `libheif-plugin-libde265`,
+`libclang-dev`; for the corpus also `imagemagick`, `libheif-examples`, `libheif-plugin-x265`;
+for e2e `webkit2gtk-driver`, `xvfb` and `cargo install tauri-driver`.
 
 Screenshots need a Chromium: `pnpm --filter @binderready/design exec playwright-core install chromium`,
 or set `CHROMIUM_PATH` (cloud sessions: `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`).
@@ -108,6 +126,29 @@ They are excluded from lint/format and untouched. Ask Corey before moving or del
 - The security PDF is committed in `public/`; `lib/security-pdf.test.ts` fails when it is stale.
 - Testimonials render only when `content/testimonials.json` has real entries (ships `[]`).
 
+## Desktop (apps/desktop)
+
+- Tauri 2. Rust (`src-tauri/src`): `ingest.rs` per-file pipeline → `pdf.rs` (PDFium: text layer when
+  usable, else render 300 DPI), `images.rs` (JPEG/PNG/TIFF/HEIC, EXIF orientation),
+  `preprocess.rs` (contrast, orientation, deskew), `ocr.rs` (`OcrEngine` trait, Tesseract impl),
+  `phash.rs`. Pages run in parallel (rayon), one Tesseract per thread. `bin/ingest.rs` is the same
+  pipeline as a CLI (`binderready-ingest`) for the corpus harness; it prints JSON lines.
+- Orientation: OCR the page as it came; only if it has < 20 confident (≥0.85) horizontal real words,
+  read the other turns (180 first) and keep the most readable. Tesseract reads sideways text, and
+  upside-down pages yield lots of low-confidence junk, so raw confidence sums are not a signal.
+- `limit_internal_threads()` re-execs the process with `OMP_THREAD_LIMIT=1` (Unix): libgomp reads
+  it at load time, before `main`, and without it OpenMP barriers made ingest 2× slower.
+- Page images are a session cache (`<app cache>/pages/<sha>/`), deleted at startup. Document text
+  is never written to disk or logged. Settings, clients and binder history live in SQLite
+  (`<app data>/binderready.db`).
+- Frontend: React 19 + Zustand (`src/state/store.ts`); the engine runs in a Web Worker
+  (`lib/engine.worker.ts`). Review edits are pure functions in `lib/review.ts` (tested).
+  `lib/binder.ts` assembles the binder PDF with pdf-lib (Phase 4 wires the export UI).
+- Product name: `productName` in `src-tauri/tauri.conf.json`, read by `lib/product.ts`;
+  `product.test.ts` keeps it equal to the website's `PRODUCT_NAME`.
+- IPC for bytes uses raw `tauri::ipc::Response`/`Request`. Only files the user added (or folders
+  they picked) can be read or written; see `export.rs` allowlists.
+
 ## Engine: forms.json
 
 - Schema and provenance rules are enforced by `parseFormsCatalog` (`packages/engine/src/forms.ts`):
@@ -133,8 +174,10 @@ classify each page (`classify.ts`) → group pages into documents (`split.ts`) �
   in a box survive interleaving. Lines split at wide horizontal gaps (`COLUMN_GAP`).
 - Extraction reads only year, issuer and recipient last name. Lines with identifier or amount
   shapes are never names. `maskIdentifiers` before logging any text.
-- Near-duplicates need form + issuer + year + page dHash within 10 bits + the same amounts/dates.
-  Figures are compared in memory only.
+- Lines chain word by word (nearest neighbour at the same height), so slanted photo lines hold.
+- Near-duplicates: same form, no conflicting issuer/year, ≥80% shared amounts/dates (tolerating
+  one OCR slip per figure), and either ≥4 shared figures or page dHash within 10 bits. Figures are
+  compared in memory only.
 - `containsForms` (forms.json) lets a container such as a consolidated brokerage statement outrank
   the forms whose sections it prints.
 
@@ -162,5 +205,8 @@ the engine and writes `docs/accuracy/<tier>.md`; exits 1 below target. Needs `pd
   `opengraph-image` convention exports a file without an extension under `output: 'export'`.
 - 2026-10-11 Corpus uses built-in synthetic templates because irs.gov is unreachable from cloud
   sessions; the report says so on every run. Official-PDF filling is the release-gate follow-up.
+- 2026-10-11 Photo tier renders pages at 300 DPI (a 12 MP phone photo of a letter page), not 150.
+- 2026-10-11 Desktop e2e drives the release build: the debug build's unoptimized image code
+  makes OCR runs take minutes.
 - 2026-10-11 Empty `apps/*` and `packages/corpus` were not scaffolded. Placeholder apps would
   violate the anti-stub rule; each arrives in its phase.
