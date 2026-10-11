@@ -79,7 +79,13 @@ export function releaseConfig({ platform, libs, env, version }: ReleaseInput) {
     bundle.macOS = {
       frameworks: [...bundled.map((f) => `${LIBS_DIR}/${f}`), 'pdfium/libpdfium.dylib'],
       minimumSystemVersion: '11.0',
-      ...(set(env, 'APPLE_SIGNING_IDENTITY') ? {} : { signingIdentity: '-' }),
+      // Without a Developer ID the app is signed ad hoc. Ad-hoc code has no Team ID, so the
+      // hardened runtime's library validation would refuse every bundled dylib at launch
+      // ("different Team IDs"). Notarization needs the hardened runtime, and gets it with a
+      // real identity.
+      ...(set(env, 'APPLE_SIGNING_IDENTITY')
+        ? {}
+        : { signingIdentity: '-', hardenedRuntime: false }),
     };
   }
 

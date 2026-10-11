@@ -82,6 +82,7 @@ describe('release config', () => {
           'pdfium/libpdfium.dylib',
         ],
         signingIdentity: '-',
+        hardenedRuntime: false,
       },
     });
     const signed = releaseConfig({
@@ -90,6 +91,7 @@ describe('release config', () => {
       env: { APPLE_SIGNING_IDENTITY: 'Developer ID Application: Sample (TEAM)' },
     });
     expect(signed.bundle).not.toHaveProperty('macOS.signingIdentity');
+    expect(signed.bundle).not.toHaveProperty('macOS.hardenedRuntime');
   });
 
   it('accounts for every library a Windows release build bundled', () => {

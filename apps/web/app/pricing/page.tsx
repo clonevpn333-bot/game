@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FaqList } from '@/components/faq';
+import { Roi } from '@/components/home/roi';
 import { PageHeader } from '@/components/page-header';
 import { FoundersBanner, PricingCards, PricingFootnote } from '@/components/pricing-cards';
 import { Band, SectionHeading } from '@/components/rails';
@@ -66,6 +67,7 @@ export default function PricingPage() {
           <PricingFootnote />
         </div>
       </Band>
+      <Roi />
       <Band labelledBy="license-title">
         <div className="grid gap-10 px-5 py-16 md:px-10 md:py-24 lg:grid-cols-[1fr_2fr] lg:gap-16">
           <SectionHeading id="license-title" eyebrow="Licensing" title="How licenses work." />

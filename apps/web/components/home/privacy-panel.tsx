@@ -19,9 +19,8 @@ export function PrivacyPanel() {
               Nothing leaves this computer.
             </h2>
             <p className="mt-6 max-w-[52ch] text-body text-fg-muted">
-              {site.productName} reads, recognizes and assembles documents entirely on your machine.
-              There’s no account and no cloud processing, and client files are never uploaded. The
-              app’s own security policy blocks every network request except two.
+              No account, no cloud, no uploads. {site.productName} does all its work on your
+              machine, and it blocks every network request except these two.
             </p>
             <Link
               href="/security/"

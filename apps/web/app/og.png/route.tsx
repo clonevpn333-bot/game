@@ -67,18 +67,18 @@ export async function GET() {
             style={{
               width: 36,
               height: 36,
-              borderRadius: 9,
+              borderRadius: 3.6,
               background: '#ededed',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
-              gap: 5,
-              paddingLeft: 9,
+              gap: 3.15,
+              paddingLeft: 8.1,
             }}
           >
-            <div style={{ width: 18, height: 4, borderRadius: 2, background: '#000' }} />
-            <div style={{ width: 13, height: 4, borderRadius: 2, background: '#000' }} />
-            <div style={{ width: 7, height: 4, borderRadius: 2, background: '#000' }} />
+            <div style={{ width: 19.8, height: 4.5, background: '#000' }} />
+            <div style={{ width: 13.5, height: 4.5, background: '#000' }} />
+            <div style={{ width: 7.2, height: 4.5, background: '#000' }} />
           </div>
           <div style={{ fontSize: 30, fontWeight: 600, letterSpacing: -0.6 }}>
             {site.productName}

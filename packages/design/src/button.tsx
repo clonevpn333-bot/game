@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 import { cx } from './cx';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
-export type ButtonSize = 'sm' | 'md';
+export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonStyleOptions {
   variant?: ButtonVariant | undefined;
@@ -24,6 +24,7 @@ const variants: Record<ButtonVariant, string> = {
 const sizes: Record<ButtonSize, string> = {
   sm: 'h-8 px-3 text-[13px]',
   md: 'h-10 px-4 text-sm',
+  lg: 'h-12 px-6 text-[15px]',
 };
 
 /** Class string for anything that should look like a button (e.g. a framework Link). */

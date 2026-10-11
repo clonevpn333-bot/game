@@ -161,6 +161,12 @@ jobs:
         run: |
           app="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/$PRODUCT.app"
           codesign --verify --deep --strict --verbose=2 "$app"
+          # CI runners don't enforce library validation (SIP is off), so check the flags: an
+          # ad-hoc app with the hardened runtime is refused its own dylibs on a real Mac.
+          sig=$(codesign -dv "$app" 2>&1)
+          if grep -q 'Signature=adhoc' <<<"$sig" && grep -q 'flags=.*runtime' <<<"$sig"; then
+            echo "::error::Ad-hoc signed with the hardened runtime: macOS would refuse the bundled libraries"; exit 1
+          fi
           # Only the app itself: the corpus CLI (binderready-ingest) must never ship.
           [ "$(ls "$app/Contents/MacOS")" = binderready ] || { echo "::error::Unexpected binaries: $(ls "$app/Contents/MacOS")"; exit 1; }
           ls -l "$app/Contents/Frameworks" "$app/Contents/Resources"

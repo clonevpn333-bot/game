@@ -1,47 +1,44 @@
 import { buttonStyles } from '@binderready/design';
-import { Download } from 'lucide-react';
+import { ArrowDown, Download } from 'lucide-react';
 import Link from 'next/link';
 import { site } from '@/site.config';
-import { BuyButton } from '../buy-button';
 import { Rails } from '../rails';
 import { HeroStage } from '../hero/hero-stage';
 
+/**
+ * Get in first, learn second: the headline, one sentence and the two ways in (download, or
+ * watch it work) fit above the fold; the demo sits right under them and everything else
+ * comes after.
+ */
 export function Hero() {
   return (
     <section aria-labelledby="hero-title" className="relative overflow-hidden">
       <div className="bg-grid pointer-events-none absolute inset-0 opacity-80" aria-hidden />
       <Rails className="relative">
-        <div className="grid gap-10 px-5 pb-14 pt-16 md:px-10 md:pt-24 lg:grid-cols-[1.25fr_1fr] lg:items-end lg:gap-16 lg:pb-20">
-          <div>
-            <p className="eyebrow">Local-first tax document organizer</p>
-            <h1 id="hero-title" className="mt-6 text-display">
-              The shoebox, <span className="text-steel">sorted.</span>
-            </h1>
+        <div className="flex flex-col items-center px-5 pb-12 pt-16 text-center md:px-10 md:pt-24">
+          <p className="eyebrow">For tax preparers · Windows &amp; macOS</p>
+          <h1 id="hero-title" className="mt-5 text-display text-balance">
+            The shoebox, <span className="text-steel">sorted.</span>
+          </h1>
+          <p className="mt-5 max-w-[40ch] text-body text-pretty text-fg-muted md:text-[18px]">
+            Drop in a client’s pile. Get one ordered, bookmarked PDF binder. Nothing leaves your
+            computer.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link href="/download/" className={buttonStyles({ size: 'lg' })}>
+              <Download strokeWidth={1.5} />
+              Download free trial
+            </Link>
+            <a href="#demo" className={buttonStyles({ variant: 'secondary', size: 'lg' })}>
+              See it work
+              <ArrowDown strokeWidth={1.5} />
+            </a>
           </div>
-          <div className="lg:pb-2">
-            <p className="max-w-[46ch] text-body text-pretty text-fg-muted md:text-[17px]">
-              Drop in a client’s messy pile of tax documents. Get one bookmarked, perfectly ordered
-              PDF binder in seconds. Everything runs on your computer.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/download/" className={buttonStyles()}>
-                <Download strokeWidth={1.5} />
-                Download free trial
-              </Link>
-              <BuyButton
-                checkoutUrl={site.checkout.solo}
-                envName="LEMON_SQUEEZY_SOLO_CHECKOUT_URL"
-                variant="secondary"
-              >
-                Buy for ${site.pricing.solo.price}, once
-              </BuyButton>
-            </div>
-            <p className="mt-5 font-mono text-xs text-fg-subtle">
-              Windows &amp; macOS · Works offline · No subscription
-            </p>
-          </div>
+          <p className="mt-4 font-mono text-xs text-fg-subtle">
+            {site.pricing.trialBinders} binders free · No account · ${site.pricing.solo.price} once
+          </p>
         </div>
-        <div className="relative px-3 pb-16 md:px-10 md:pb-24">
+        <div id="demo" className="relative scroll-mt-20 px-3 pb-16 md:px-10 md:pb-24">
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-0 -top-10 mx-auto h-[70%] max-w-4xl rounded-full bg-[radial-gradient(closest-side,var(--hero-glow),transparent)]"

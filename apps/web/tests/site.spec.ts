@@ -43,6 +43,17 @@ test.describe('every page', () => {
   }
 });
 
+test('home: download and the demo are the first two actions', async ({ page }) => {
+  await page.goto('/');
+  const hero = page.locator('section[aria-labelledby="hero-title"]');
+  await expect(hero.getByRole('link', { name: 'Download free trial' })).toHaveAttribute(
+    'href',
+    '/download/',
+  );
+  await hero.getByRole('link', { name: 'See it work' }).click();
+  await expect(page).toHaveURL(/#demo$/);
+});
+
 test('home: the hero sorts the pile into a binder, and Replay starts over', async ({ page }) => {
   await page.goto('/');
   const hero = page.locator('figure').first();
@@ -115,7 +126,7 @@ test('FAQ: a question opens with the keyboard', async ({ page }) => {
 });
 
 test('ROI calculator: defaults match the brief and respond to input', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/pricing/');
   const roi = page.locator('section', {
     has: page.getByRole('heading', { name: 'Pay once. Keep the difference.' }),
   });

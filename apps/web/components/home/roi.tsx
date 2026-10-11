@@ -8,7 +8,7 @@ export function Roi() {
       <div className="grid gap-12 px-5 py-16 md:px-10 md:py-24">
         <SectionHeading
           id="roi-title"
-          eyebrow="04 — The math"
+          eyebrow="The math"
           title="Pay once. Keep the difference."
           lede="Per-return organizing services charge you every return, every season. Compare it with your own numbers."
           className="reveal"

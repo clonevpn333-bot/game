@@ -87,6 +87,29 @@
     outline-offset: 2px;
   }
 
+  /* The mark re-sorts its bars on hover (src/mark.tsx). */
+  .mark-bar {
+    transform-box: fill-box;
+    transform-origin: left center;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .mark:hover .mark-bar,
+    :is(a, button):hover > .mark .mark-bar,
+    :is(a, button):focus-visible > .mark .mark-bar {
+      animation: mark-sort 640ms var(--ease-out-steel) both;
+      animation-delay: calc(var(--i) * 60ms);
+    }
+  }
+  @keyframes mark-sort {
+    0%,
+    100% {
+      transform: scaleX(1);
+    }
+    40% {
+      transform: scaleX(var(--from));
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     ::before,

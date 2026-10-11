@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 @import '@binderready/design/preset.css';
 
-@source '../../packages/design/src';
+@source '../../../packages/design/src';
 
 /* Sticky nav gains its hairline once the page scrolls (no JS). */
 @keyframes nav-hairline {
