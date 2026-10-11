@@ -9,7 +9,7 @@
  * (Xvfb on Linux CI), xdotool and xclip. Screenshots go to docs/screenshots/phase-3,
  * phase-4 and phase-5.
  */
-import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
+import { execFileSync, spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -279,6 +279,7 @@ async function main() {
     const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
 
     check(await waitFor('Start with a client’s documents.'), 'empty state shows the drop zone');
+    check(await waitFor('3 of 3 binders left', 5000), 'a fresh install starts with the full trial');
     check(
       (await exec<string>('return document.title')) === tauriConfig.productName,
       'the window title is the configured product name',
@@ -834,4 +835,38 @@ async function main() {
   }
 }
 
-await main();
+/**
+ * The trial count lives in the OS keychain: on Linux, the kernel keyrings, linked into
+ * the per-user persistent keyring, which outlives a run. Each run enters a new user
+ * namespace (its own persistent keyring; the same uid maps to itself) and a new, empty
+ * session keyring, so it starts like a fresh machine and never touches the caller's
+ * keys. The app itself has no way to reset the trial.
+ */
+const FRESH_KEYRINGS = `
+import ctypes, os, platform, sys
+uid, gid = os.getuid(), os.getgid()
+try:
+    os.unshare(os.CLONE_NEWUSER)
+    open("/proc/self/setgroups", "w").write("deny")
+    open("/proc/self/uid_map", "w").write(f"{uid} {uid} 1")
+    open("/proc/self/gid_map", "w").write(f"{gid} {gid} 1")
+except OSError as e:
+    # Some hosts (Ubuntu's AppArmor default) forbid user namespaces; a fresh CI machine
+    # has an empty keyring anyway.
+    print(f"No separate user namespace ({e}); using this user's keyrings", file=sys.stderr)
+nr = {"x86_64": 250, "aarch64": 219}[platform.machine()]
+if ctypes.CDLL(None, use_errno=True).syscall(nr, 1, None) < 0:
+    sys.exit("keyctl(JOIN_SESSION_KEYRING) failed: errno %d" % ctypes.get_errno())
+os.execvp(sys.argv[1], sys.argv[1:])
+`;
+
+if (process.platform === 'linux' && !process.env.BR_E2E_FRESH_KEYRING) {
+  const { status } = spawnSync(
+    'python3',
+    ['-c', FRESH_KEYRINGS, process.execPath, ...process.argv.slice(1)],
+    { stdio: 'inherit', env: { ...process.env, BR_E2E_FRESH_KEYRING: '1' } },
+  );
+  process.exitCode = status ?? 1;
+} else {
+  await main();
+}
