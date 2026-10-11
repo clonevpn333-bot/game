@@ -1,0 +1,49 @@
+import { P, SOLO, FIRM, REFUND_DAYS } from '@/lib/brand';
+import { Company, GoverningState, SupportEmail, LegalHeader } from '@/components/legal';
+
+export const metadata = { title: 'Terms of Sale', alternates: { canonical: '/legal/terms/' } };
+
+<LegalHeader title="Terms of Sale" updated="2026-10-11" />
+
+These terms cover buying a {P} license from <Company /> (“we”, “us”). Using the software itself is covered by the [End User License Agreement](/legal/eula/). By completing a purchase you agree to both.
+
+## Who sells the license
+
+Payments are processed by Lemon Squeezy, which acts as the merchant of record. Lemon Squeezy charges your payment method, calculates and collects any sales tax or VAT, and issues your receipt. Its own terms apply to the payment.
+
+## What you buy
+
+A license is a one-time purchase of a perpetual right to use {P} under the EULA. It is not a subscription and does not renew.
+
+- **Solo** (${SOLO.price}): activates on up to {SOLO.activations} computers
+- **Firm** (${FIRM.price}): activates on up to {FIRM.activations} computers
+
+Each license includes free updates for every 1.x version. A future major version, if one is released, may be offered as a paid upgrade; your 1.x version keeps working either way.
+
+## Delivery
+
+Your license key is emailed to the address you enter at checkout, usually within minutes. Activation needs an internet connection once.
+
+## Prices and discounts
+
+Prices are shown in US dollars and may change for future purchases. Discount codes, including limited Founders codes, are applied by Lemon Squeezy at checkout and can’t be applied after purchase.
+
+## Refunds
+
+You can request a full refund within {REFUND_DAYS} days of purchase for any reason. See the [refund policy](/legal/refunds/).
+
+## Not tax advice
+
+{P} organizes documents. It does not prepare tax returns, give tax, legal or accounting advice, or verify that documents are accurate or complete. You are responsible for your work product and for reviewing every document.
+
+## Limitation of liability
+
+To the extent the law allows, our total liability for any claim related to a purchase is limited to the amount you paid for the license. We are not liable for indirect, incidental or consequential damages, including lost profits or lost data.
+
+## Governing law
+
+These terms are governed by the laws of the State of <GoverningState />, without regard to its conflict-of-law rules.
+
+## Contact
+
+Questions about a purchase: <SupportEmail />.

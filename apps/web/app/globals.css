@@ -1,0 +1,140 @@
+@import 'tailwindcss';
+@import '@binderready/design/preset.css';
+
+@source '../../packages/design/src';
+
+/* Sticky nav gains its hairline once the page scrolls (no JS). */
+@keyframes nav-hairline {
+  from {
+    border-bottom-color: transparent;
+  }
+  to {
+    border-bottom-color: var(--border);
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .nav-scroll-border {
+    animation: nav-hairline linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 48px;
+  }
+}
+
+/* Route changes: a quiet crossfade. Lateral navigation, so no direction. */
+::view-transition-old(.page-out) {
+  animation: 120ms ease-in both page-fade reverse;
+}
+::view-transition-new(.page-in) {
+  animation: 200ms var(--ease-out-steel) 60ms both page-fade;
+}
+@keyframes page-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Hero: each file card flies to its new spot; its name crossfades on the way. */
+::view-transition-group(.hero-card) {
+  animation-duration: 640ms;
+  animation-timing-function: var(--ease-out-steel);
+}
+::view-transition-new(.hero-binder) {
+  animation: 360ms var(--ease-out-steel) 200ms both hero-binder-in;
+}
+::view-transition-old(.hero-binder) {
+  animation: 160ms ease-in both page-fade reverse;
+}
+@keyframes hero-binder-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* FAQ: native <details> with animated height where supported. */
+@supports (interpolate-size: allow-keywords) {
+  :root {
+    interpolate-size: allow-keywords;
+  }
+  .faq-item::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition:
+      block-size 220ms var(--ease-out-steel),
+      content-visibility 220ms allow-discrete;
+  }
+  .faq-item[open]::details-content {
+    block-size: auto;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .border-x {
+    border-left-color: transparent !important;
+    border-right-color: transparent !important;
+  }
+  .bg-grid {
+    display: none;
+  }
+  dl > div,
+  section > h2 {
+    break-inside: avoid;
+  }
+}
+
+/*
+ * Scroll-driven reveals (CSS only, off the main thread). Content is fully visible
+ * without support or with reduced motion: the rules only exist inside both guards.
+ *   .reveal          rises into place as it enters the viewport
+ *   .reveal-stagger  children rise in sequence (set --i on each child)
+ *   .settle          the hero product frame straightens as the page scrolls
+ */
+@keyframes reveal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+}
+@keyframes settle {
+  from {
+    transform: perspective(1600px) rotateX(10deg) scale(0.96);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+    .reveal-stagger > * {
+      animation: reveal-rise linear both;
+      animation-timeline: view();
+      animation-range: entry calc(var(--i, 0) * 6%) entry calc(50% + var(--i, 0) * 6%);
+    }
+    .settle {
+      transform-origin: 50% 0;
+      animation: settle linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 420px;
+    }
+  }
+}

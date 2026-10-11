@@ -9,7 +9,7 @@ it is built one phase per session, and each phase stops at its gate with a repor
 | Phase | Scope                                                          | State                                           |
 | ----- | -------------------------------------------------------------- | ----------------------------------------------- |
 | 0     | Monorepo, design system + showcase, forms.json research, CI    | Done except forms.json verification (see below) |
-| 1     | Website (`apps/web`)                                           | Not started                                     |
+| 1     | Website (`apps/web`)                                           | Done (see docs/lighthouse/phase-1.md)           |
 | 2     | Engine + corpus                                                | Not started (forms catalog + validator exist)   |
 | 3–8   | Desktop pipeline, export, missing docs, OCR, licensing, polish | Not started                                     |
 
@@ -27,6 +27,16 @@ pnpm lint | typecheck | test | build | format
 pnpm showcase         # design system showcase on Vite dev server
 pnpm screenshots      # build showcase, capture 375/768/1440 × light/dark → docs/screenshots/phase-0
 pnpm forms:verify     # check forms.json against official PDFs; --write, --pdf-dir <dir>, --only a,b
+
+# apps/web (run inside apps/web)
+pnpm dev              # Next dev server
+pnpm build            # static export to out/ (missing config renders "X not set" markers)
+BINDERREADY_RELEASE=1 pnpm build   # refuses to build unless every value in .env.example is set
+pnpm start            # serve out/ like a static host (brotli), port 4400
+pnpm e2e              # release build with tests/e2e.env.ts values + Playwright suite
+pnpm screenshots      # every route × 375/768/1440 × light/dark → docs/screenshots/phase-1
+pnpm lighthouse       # mobile Lighthouse, median of 3 per route → docs/lighthouse/phase-1.md
+pnpm security:pdf     # re-print public/<slug>-security-overview.pdf after editing lib/security-content.ts
 ```
 
 Screenshots need a Chromium: `pnpm --filter @binderready/design exec playwright-core install chromium`,
@@ -76,6 +86,27 @@ They are excluded from lint/format and untouched. Ask Corey before moving or del
   `cx()` wraps tailwind-merge, configured for the preset's custom keys. Extend it when adding keys.
 - Icons: `lucide-react`, 16px, `strokeWidth={1.5}`.
 
+## Website (apps/web)
+
+- Next.js 16 App Router, `output: 'export'`, `trailingSlash: true`, Turbopack. MDX via `@next/mdx`
+  (`mdx-components.tsx` → `components/prose.tsx`). Docs, legal and changelog are MDX.
+- `site.config.ts` holds every business value; Corey-supplied values come from env (`.env.example`).
+  It is read by **server components only**: client components get values as props (server env vars
+  don't exist in the browser bundle). `PRODUCT_NAME` is the one-line rename.
+- Modules that Node scripts import (`lib/security-content.ts`, `lib/content-hash.ts`, `site.config.ts`)
+  use relative `.ts` imports, never `@/`.
+- Checkout: `lib/checkout.ts` lazy-loads lemon.js on intent (hover/focus/click), opens
+  `LemonSqueezy.Url.Open(url?embed=1)`, sends `Checkout.Success` to `/thanks/`, and falls back to the
+  hosted checkout URL if the script can't load. Tests stub lemon.js; nothing reaches Lemon Squeezy.
+- Motion: route crossfades and the hero use React `<ViewTransition>` (React 19.3). Scroll reveals are
+  CSS scroll-driven animations (`.reveal`, `.reveal-stagger`, `.settle` in `app/globals.css`), only
+  inside `@supports` + `prefers-reduced-motion: no-preference`. The `motion` package is not used.
+- Fonts: Latin-subset Geist via `next/font/local` (sans preloaded, mono not) to keep mobile LCP down.
+  The `geist` package is only used for TTFs in the Open Graph image route (`app/og.png/route.tsx`).
+- Theme: website defaults to dark (`lib/theme-options.ts`); boot script in `<head>` prevents a flash.
+- The security PDF is committed in `public/`; `lib/security-pdf.test.ts` fails when it is stale.
+- Testimonials render only when `content/testimonials.json` has real entries (ships `[]`).
+
 ## Engine: forms.json
 
 - Schema and provenance rules are enforced by `parseFormsCatalog` (`packages/engine/src/forms.ts`):
@@ -94,5 +125,11 @@ They are excluded from lint/format and untouched. Ask Corey before moving or del
 - 2026-10-11 Tailwind v4: the "preset" is a CSS file (`preset.css`), the v4-native mechanism.
 - 2026-10-11 The `geist` package has a Next.js peer dependency, so non-Next consumers use the same
   Geist faces from `@fontsource-variable/geist{,-mono}` (OFL).
+- 2026-10-11 Website hero uses React `<ViewTransition>` instead of the `motion` package: native,
+  no extra JS, and the brief only allows motion for the hero anyway.
+- 2026-10-11 Website fonts: Latin-subset Geist files through `next/font/local` instead of
+  `geist/font/*` (138 KB → 29 KB preloaded). Same typeface, needed for the LCP gate.
+- 2026-10-11 Open Graph image is a static route handler (`/og.png`) because the
+  `opengraph-image` convention exports a file without an extension under `output: 'export'`.
 - 2026-10-11 Empty `apps/*` and `packages/corpus` were not scaffolded. Placeholder apps would
   violate the anti-stub rule; each arrives in its phase.

@@ -1,0 +1,46 @@
+{
+  "name": "@binderready/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "node scripts/serve.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "e2e": "node scripts/e2e.ts",
+    "screenshots": "node scripts/screenshots.ts",
+    "lighthouse": "node scripts/lighthouse.ts",
+    "security:pdf": "node scripts/security-pdf.ts"
+  },
+  "dependencies": {
+    "@binderready/design": "workspace:*",
+    "@binderready/engine": "workspace:*",
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource-variable/geist-mono": "5.3.0",
+    "@mdx-js/loader": "3.1.1",
+    "@mdx-js/react": "3.1.1",
+    "@next/mdx": "16.4.0",
+    "geist": "1.7.2",
+    "lucide-react": "1.55.0",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/mdx": "2.0.14",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "lighthouse": "13.5.0",
+    "pdf-lib": "1.17.1",
+    "playwright-core": "1.64.0",
+    "tailwindcss": "4.3.3",
+    "vitest": "5.0.3",
+    "chrome-launcher": "1.2.2"
+  }
+}

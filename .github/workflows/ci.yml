@@ -30,6 +30,26 @@ jobs:
       - run: pnpm test
       - run: pnpm build
 
+  web-e2e:
+    name: Website end-to-end tests
+    runs-on: ubuntu-latest
+    needs: checks
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @binderready/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @binderready/web e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: web-e2e-results
+          path: apps/web/test-results/
+
   showcase-screenshots:
     name: Design showcase screenshots
     runs-on: ubuntu-latest

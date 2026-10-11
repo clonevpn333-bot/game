@@ -1,0 +1,34 @@
+import { P, SOLO, FIRM, LICENSE_HOST } from '@/lib/brand';
+
+export const metadata = {
+  title: 'License activation',
+  description: 'Activate, move and deactivate your license.',
+  alternates: { canonical: '/docs/license-activation/' },
+};
+
+# License activation
+
+A license key turns the trial into the full version. Activating needs an internet connection once; after that {P} works offline.
+
+## Activate
+
+1. Find the license key in your receipt email from Lemon Squeezy.
+2. In {P}, open **Settings → License**.
+3. Paste the key and choose **Activate**.
+
+The app sends the key and this computer’s name to `{LICENSE_HOST}` and stores the activation in your operating system’s credential store. A Solo key activates on {SOLO.activations} computers and a Firm key on {FIRM.activations}.
+
+## Move to another computer
+
+Open **Settings → License** on the old computer and choose **Deactivate this device**. That frees the activation, and the same key works on the new computer.
+
+## Error messages
+
+- **This key has reached its device limit**: deactivate it on another computer from Settings → License, then try again.
+- **This key isn’t valid**: check that you pasted the whole key, without spaces at either end.
+- **This key has been disabled**: the purchase was refunded or the key was revoked. Contact support if that’s unexpected.
+- **Couldn’t reach the license server**: activation needs the internet once. Check the connection, or a firewall that blocks `{LICENSE_HOST}`.
+
+## Working offline
+
+After activation, {P} checks the key again at most every 14 days, and only when it’s online. A failed check, for any network reason, never deactivates the app.

@@ -14,3 +14,14 @@ export { Kbd } from './kbd';
 export { Card, CardBody, CardDescription, CardFooter, CardHeader, CardTitle } from './card';
 export { Mark } from './mark';
 export { Crosshair, type CrosshairCorner } from './crosshair';
+export {
+  applyThemePreference,
+  createThemeStore,
+  themeBootScript,
+  type ResolvedTheme,
+  type ThemePreference,
+  type ThemeStore,
+  type ThemeStoreOptions,
+} from './theme';
+export { useTheme } from './use-theme';
+export { ThemeSwitcher } from './theme-switcher';

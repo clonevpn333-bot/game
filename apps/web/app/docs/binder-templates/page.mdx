@@ -1,0 +1,45 @@
+import { P } from '@/lib/brand';
+
+export const metadata = {
+  title: 'Binder templates',
+  description: 'Change the category order, cover page and file names of your binders.',
+  alternates: { canonical: '/docs/binder-templates/' },
+};
+
+# Binder templates
+
+A binder template controls the order of categories in the binder and how documents are named. Set a default in **Settings**, and change it for one binder in the export dialog.
+
+## Default category order
+
+Binders follow this order unless you change it:
+
+1. Client organizer and engagement documents
+2. Wages: W-2, W-2G
+3. Interest and dividends: 1099-INT, 1099-OID, 1099-DIV
+4. Brokerage: 1099-B, consolidated statements
+5. Retirement and Social Security: 1099-R, SSA-1099, RRB-1099, 5498
+6. Self-employment and other income: 1099-NEC, 1099-MISC, 1099-K, 1099-G
+7. Health: 1095-A, 1095-B, 1095-C, 1099-SA, 5498-SA
+8. Education: 1098-T, 1098-E, 1099-Q
+9. Mortgage and property: 1098, property tax statements, 1099-S
+10. Pass-through: Schedule K-1 (1065, 1120-S, 1041)
+11. Debt and other: 1099-C
+12. Other and unrecognized
+
+To change it, open the export dialog, choose **Custom**, and drag categories into the order your firm uses. Empty categories are left out of the binder.
+
+## Naming template
+
+File names are built from four tokens:
+
+- `{year}`: the tax year printed on the form
+- `{form}`: the form type, such as `1099-DIV`
+- `{issuer}`: the employer, payer or lender
+- `{client}`: the client’s display name
+
+The default template is `{year} {form} – {issuer} – {client}`, which produces names like `2026 1099-DIV – Sample Brokerage – Sample`. **Settings → Naming** shows a live preview as you edit.
+
+## Cover page and index
+
+Every binder starts with a cover page (your firm name and logo, the client, the tax year, the date and the document and page counts) and an index that links to each document. Turn either off in the export dialog. Add your logo, as a PNG or SVG file, in **Settings → Firm profile**.

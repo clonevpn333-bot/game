@@ -1,0 +1,39 @@
+import { P, UPDATE_HOST } from '@/lib/brand';
+
+export const metadata = {
+  title: 'Troubleshooting',
+  description: 'Fix common problems with files, recognition and exports.',
+  alternates: { canonical: '/docs/troubleshooting/' },
+};
+
+# Troubleshooting
+
+Most problems come from the files themselves: a locked PDF, a dark photo, an unusual statement layout. This page covers each one and how to fix it.
+
+## “Couldn’t open this file: it’s password-protected”
+
+{P} can’t read encrypted PDFs. Open the file in your PDF reader with its password, save an unprotected copy, and drop that copy in instead.
+
+## “Couldn’t open this file: it’s damaged”
+
+The file is incomplete or corrupt, often from an interrupted download or email attachment. Ask the client to send it again.
+
+## A document is in the wrong category
+
+Select it and press a number key (<Kbd>1</Kbd>–<Kbd>9</Kbd>) to move it, or <Kbd>T</Kbd> to change its form type. The category follows the form type.
+
+## Too many documents need review
+
+Phone photos taken in low light, at a steep angle or with a shadow across the page are the usual cause. Ask clients to photograph documents flat, in daylight, filling the frame. Scanned PDFs at 300 DPI give the best results.
+
+## Two documents were merged into one
+
+Open the document, move to the first page of the second document and press <Kbd>S</Kbd> to split there.
+
+## The update check fails
+
+The update check contacts `{UPDATE_HOST}`. If your network blocks it, turn off automatic update checks in **Settings → Updates** and download new versions from the website instead.
+
+## Send a diagnostic report
+
+If none of this helps, choose **Settings → Export diagnostic report**. It saves a zip file with the app version, operating system, timings and error codes, and no document content. Attach it to an email to support.

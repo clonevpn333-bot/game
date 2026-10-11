@@ -1,4 +1,4 @@
-import { Check, Copy, Download, FileText, Monitor, Moon, Play, Sun } from 'lucide-react';
+import { Check, Copy, Download, FileText, Play } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import {
   Badge,
@@ -16,12 +16,14 @@ import {
   Kbd,
   Mark,
   StatusDot,
+  ThemeSwitcher,
+  useTheme,
 } from '../src';
 import { contrastRatio, normalizeHex } from './contrast';
-import { setThemePreference, useTheme, type ThemePreference } from './theme';
+import { themeStore } from './theme';
 
 export function App() {
-  const { resolved } = useTheme();
+  const { resolved } = useTheme(themeStore);
   return (
     <div className="px-4 md:px-8">
       <div className="mx-auto max-w-[1120px] border-x border-border">
@@ -60,47 +62,8 @@ function Header() {
         <span className="hidden h-4 w-px bg-border-strong sm:block" aria-hidden="true" />
         <span className="hidden text-sm text-fg-muted sm:block">Steel</span>
       </div>
-      <ThemeSwitcher />
+      <ThemeSwitcher store={themeStore} />
     </header>
-  );
-}
-
-const themeOptions: { value: ThemePreference; label: string; icon: ReactNode }[] = [
-  { value: 'system', label: 'System', icon: <Monitor strokeWidth={1.5} /> },
-  { value: 'light', label: 'Light', icon: <Sun strokeWidth={1.5} /> },
-  { value: 'dark', label: 'Dark', icon: <Moon strokeWidth={1.5} /> },
-];
-
-function ThemeSwitcher() {
-  const { preference } = useTheme();
-  return (
-    <fieldset className="flex rounded-full border border-border p-0.5">
-      <legend className="sr-only">Theme</legend>
-      {themeOptions.map((option) => (
-        <label
-          key={option.value}
-          title={option.label}
-          className={cx(
-            'relative grid size-7 cursor-pointer place-items-center rounded-full text-fg-subtle transition-colors duration-150',
-            'hover:text-fg has-checked:bg-fg/8 has-checked:text-fg has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus',
-            '[&_svg]:size-4',
-          )}
-        >
-          <input
-            type="radio"
-            name="theme"
-            value={option.value}
-            checked={preference === option.value}
-            onChange={() => {
-              setThemePreference(option.value);
-            }}
-            className="sr-only"
-          />
-          {option.icon}
-          <span className="sr-only">{option.label}</span>
-        </label>
-      ))}
-    </fieldset>
   );
 }
 

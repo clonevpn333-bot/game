@@ -1,0 +1,45 @@
+import { P, LICENSE_HOST, UPDATE_HOST } from '@/lib/brand';
+import { Company, Address, SupportEmail, LegalHeader } from '@/components/legal';
+
+export const metadata = { title: 'Privacy policy', alternates: { canonical: '/legal/privacy/' } };
+
+<LegalHeader title="Privacy policy" updated="2026-10-11" />
+
+This policy explains what information <Company /> (“we”) handles when you use this website and the {P} desktop app. The short version: the app never sends us your clients’ documents, and the website doesn’t track you.
+
+## The desktop app
+
+{P} processes documents entirely on your computer. Client files, document images, recognized text and the contents of your binders are never uploaded to us or anyone else.
+
+The app makes two kinds of network request:
+
+- **License activation** to `{LICENSE_HOST}` (Lemon Squeezy): your license key and a device name, when you activate, deactivate, or when the app rechecks the key (at most every 14 days)
+- **Update check** to `{UPDATE_HOST}`: a request for the latest version information, which you can turn off in Settings
+
+The hosts that receive these requests see your IP address, as any internet request does. The app contains no analytics, telemetry or crash reporting.
+
+The app stores settings, your client list (display names and tax years) and a minimal index of form types and issuer names on your computer. You can delete it with **Settings → Data → Delete all local history**.
+
+## Purchases
+
+Lemon Squeezy processes payments as merchant of record. It collects your name, email address, billing details and payment information, under its own privacy policy. We receive your name, email address, order details and license key status so we can support your purchase. We never see your full card number.
+
+## This website
+
+The website sets no cookies and runs no analytics or advertising scripts. It stores your theme choice (light or dark) in your browser’s local storage, which never leaves your device. The checkout overlay is provided by Lemon Squeezy and loads only when you choose to buy.
+
+## Support email
+
+If you email us, we keep the conversation to answer you. We don’t add you to marketing lists.
+
+## Your choices
+
+You can ask to see, correct or delete the personal information we hold about you by writing to <SupportEmail />. We respond within 30 days. We don’t sell personal information.
+
+## Changes
+
+We’ll update the date at the top of this page when the policy changes, and describe significant changes in the [changelog](/changelog/).
+
+## Contact
+
+<Company />, <Address />. Email: <SupportEmail />.

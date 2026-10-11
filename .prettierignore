@@ -10,3 +10,8 @@ css
 js
 packages/engine/forms-verification.md
 BUILD_PROMPT.md
+apps/web/out
+apps/web/.next
+apps/web/public/*.pdf
+apps/web/test-results
+docs/lighthouse
