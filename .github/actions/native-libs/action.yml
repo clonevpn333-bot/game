@@ -1,0 +1,93 @@
+name: Native libraries for the desktop installers
+description: >
+  Builds Tesseract (without curl and libarchive) and libheif (decoder only, no x265) as
+  dynamic libraries with a pinned vcpkg, and stages everything the installer bundles:
+  apps/desktop/src-tauri/release-libs (DLLs or dylibs), tessdata/eng.traineddata and pdfium/.
+  Exports VCPKG_ROOT and the variables the Rust build needs to link against them.
+
+inputs:
+  triplet:
+    description: vcpkg triplet from apps/desktop/vcpkg/triplets
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: vcpkg 2026.07.29
+      shell: bash
+      run: |
+        temp="$RUNNER_TEMP"
+        if [ "$RUNNER_OS" = Windows ]; then temp=$(cygpath -m "$temp"); fi
+        root="$temp/vcpkg"
+        git clone --quiet --depth 1 --branch 2026.07.29 https://github.com/microsoft/vcpkg "$root"
+        if [ "$RUNNER_OS" = Windows ]; then "$root/bootstrap-vcpkg.bat" -disableMetrics; else "$root/bootstrap-vcpkg.sh" -disableMetrics; fi
+        echo "VCPKG_ROOT=$root" >> "$GITHUB_ENV"
+        echo "VCPKG_DEFAULT_BINARY_CACHE=$temp/vcpkg-cache" >> "$GITHUB_ENV"
+        mkdir -p "$temp/vcpkg-cache"
+
+    - name: Restore vcpkg builds
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.temp }}/vcpkg-cache
+        key: vcpkg-release-${{ inputs.triplet }}-${{ github.run_id }}
+        restore-keys: vcpkg-release-${{ inputs.triplet }}-
+
+    - name: Build Tesseract and libheif
+      shell: bash
+      working-directory: apps/desktop
+      run: |
+        node scripts/vcpkg-overlay.ts "$VCPKG_ROOT"
+        "$VCPKG_ROOT/vcpkg" install --triplet ${{ inputs.triplet }} \
+          --overlay-ports=vcpkg/ports --overlay-triplets=vcpkg/triplets \
+          tesseract 'libheif[core]'
+        "$VCPKG_ROOT/vcpkg" list
+
+    - name: Stage libraries (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: |
+        installed="$VCPKG_ROOT/installed/${{ inputs.triplet }}"
+        mkdir -p apps/desktop/src-tauri/release-libs
+        cp "$installed"/bin/*.dll apps/desktop/src-tauri/release-libs/
+        # The C++ runtime those DLLs use, deployed app-locally (Visual Studio redistributable
+        # files), so the app runs where the VC++ Redistributable was never installed.
+        vs=$("/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe" -latest -property installationPath)
+        crt=$(ls -d "$(cygpath -u "$vs")"/VC/Redist/MSVC/*/x64/Microsoft.VC14*.CRT | sort -V | tail -1)
+        cp "$crt"/*.dll apps/desktop/src-tauri/release-libs/
+        ls -l apps/desktop/src-tauri/release-libs
+        echo "VCPKGRS_TRIPLET=${{ inputs.triplet }}" >> "$GITHUB_ENV"
+        echo "VCPKGRS_DYNAMIC=1" >> "$GITHUB_ENV"
+
+    # Every library is identified as @rpath/<name> (the app's rpath is
+    # @executable_path/../Frameworks) and staged under that name, so nothing in the
+    # bundle points back at the build machine.
+    - name: Stage libraries (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        lib="$VCPKG_ROOT/installed/${{ inputs.triplet }}/lib"
+        out=apps/desktop/src-tauri/release-libs
+        mkdir -p "$out"
+        for f in "$lib"/*.dylib; do
+          [ -L "$f" ] && continue
+          name=$(basename "$(otool -D "$f" | tail -1)")
+          install_name_tool -id "@rpath/$name" "$f"
+          otool -L "$f" | tail -n +2 | awk '{print $1}' | while read -r dep; do
+            case "$dep" in
+              "$VCPKG_ROOT"*|@loader_path/*) install_name_tool -change "$dep" "@rpath/$(basename "$dep")" "$f" ;;
+            esac
+          done
+          codesign --force --sign - "$f"
+          cp "$f" "$out/$name"
+        done
+        ls -l "$out"
+        echo "PKG_CONFIG_PATH=$lib/pkgconfig" >> "$GITHUB_ENV"
+
+    - name: Tesseract English data (tessdata_fast 4.1.0) and PDFium
+      shell: bash
+      working-directory: apps/desktop
+      run: |
+        mkdir -p src-tauri/tessdata
+        curl -fsSL -o src-tauri/tessdata/eng.traineddata \
+          https://github.com/tesseract-ocr/tessdata_fast/raw/4.1.0/eng.traineddata
+        pnpm fetch:pdfium

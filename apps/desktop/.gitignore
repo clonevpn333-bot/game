@@ -4,3 +4,6 @@ src-tauri/pdfium/*
 src-tauri/gen/
 dist/
 e2e-results/
+src-tauri/tauri.release.json
+src-tauri/release-libs/
+src-tauri/tessdata/

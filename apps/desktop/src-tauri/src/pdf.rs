@@ -23,6 +23,8 @@ fn candidate_dirs(resource_dir: Option<&Path>) -> Vec<PathBuf> {
             dirs.push(parent.join("pdfium"));
             dirs.push(parent.to_path_buf());
             dirs.push(parent.join("../Resources/pdfium"));
+            // Release builds for macOS sign PDFium with the app, in Contents/Frameworks.
+            dirs.push(parent.join("../Frameworks"));
         }
     }
     dirs.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("pdfium"));

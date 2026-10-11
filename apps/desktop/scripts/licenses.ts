@@ -31,20 +31,25 @@ export interface Component {
   kind: 'rust' | 'npm' | 'native';
 }
 
+const LGPL_NOTICE =
+  'Copyright (c) struktur AG. Licensed under the GNU Lesser General Public License v3. Shipped as a separate dynamic library that can be replaced. https://www.gnu.org/licenses/lgpl-3.0.html';
+
 /**
- * Bundled with the installers but not managed by cargo or npm. License names are the
- * projects' own; their texts are included from the URLs below at release time by the
- * packaging workflow (see release.yml) and summarized here.
+ * Bundled with the installers but not managed by cargo or npm: the native libraries the
+ * release workflow builds with vcpkg (see vcpkg/ and release.yml), the OCR language data
+ * and the fonts. `files` matches the library file names in the installers; the release
+ * build fails if it bundles a library no entry here accounts for.
  */
-const NATIVE: (Component & { notice: string })[] = [
+export const NATIVE: (Component & { notice: string; files?: RegExp })[] = [
   {
     name: 'Tesseract OCR',
-    version: '5',
+    version: '5.5',
     license: 'Apache-2.0',
     source: 'https://github.com/tesseract-ocr/tesseract',
     kind: 'native',
     notice:
       'Licensed under the Apache License, Version 2.0. https://www.apache.org/licenses/LICENSE-2.0',
+    files: /^(lib)?tesseract/i,
   },
   {
     name: 'Tesseract English language data (tessdata_fast)',
@@ -57,12 +62,13 @@ const NATIVE: (Component & { notice: string })[] = [
   },
   {
     name: 'Leptonica',
-    version: '1.8x',
+    version: '1.87',
     license: 'BSD-2-Clause',
     source: 'http://www.leptonica.org/',
     kind: 'native',
     notice:
       'Copyright (C) 2001-2024 Leptonica. Redistribution under the Leptonica license (BSD 2-clause style). http://www.leptonica.org/about-the-license.html',
+    files: /^(lib)?lept/i,
   },
   {
     name: 'PDFium (binaries by bblanchon/pdfium-binaries)',
@@ -72,24 +78,115 @@ const NATIVE: (Component & { notice: string })[] = [
     kind: 'native',
     notice:
       'Copyright 2014 The PDFium Authors. Redistribution under the BSD 3-Clause license; some components under Apache-2.0 and other permissive licenses (see the LICENSE file in the PDFium source).',
+    files: /^(lib)?pdfium/i,
   },
   {
-    name: 'libheif',
-    version: '1.17+',
-    license: 'LGPL-3.0-or-later',
+    name: 'libheif (decoding only, without the x265 encoder)',
+    version: '1.23',
+    license: 'LGPL-3.0-only',
     source: 'https://github.com/strukturag/libheif',
     kind: 'native',
-    notice:
-      'Copyright (c) struktur AG. Licensed under the GNU Lesser General Public License v3. Shipped as a separate dynamic library that can be replaced. https://www.gnu.org/licenses/lgpl-3.0.html',
+    notice: LGPL_NOTICE,
+    files: /^(lib)?heif/i,
   },
   {
     name: 'libde265',
-    version: '1.0',
-    license: 'LGPL-3.0-or-later',
+    version: '1.1',
+    license: 'LGPL-3.0-only',
     source: 'https://github.com/strukturag/libde265',
     kind: 'native',
+    notice: LGPL_NOTICE,
+    files: /^(lib)?de265/i,
+  },
+  {
+    name: 'zlib',
+    version: '1.3',
+    license: 'Zlib',
+    source: 'https://zlib.net/',
+    kind: 'native',
     notice:
-      'Copyright (c) struktur AG. Licensed under the GNU Lesser General Public License v3. Shipped as a separate dynamic library that can be replaced. https://www.gnu.org/licenses/lgpl-3.0.html',
+      'Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler. zlib license. https://zlib.net/zlib_license.html',
+    files: /^(zlib|libz)[\d.]*\.(dll|dylib)$/i,
+  },
+  {
+    name: 'libpng',
+    version: '1.6',
+    license: 'Libpng-2.0',
+    source: 'http://www.libpng.org/pub/png/libpng.html',
+    kind: 'native',
+    notice:
+      'Copyright (c) 1995-2024 The PNG Reference Library Authors. PNG Reference Library License version 2. http://www.libpng.org/pub/png/src/libpng-LICENSE.txt',
+    files: /^(lib)?png/i,
+  },
+  {
+    name: 'libjpeg-turbo',
+    version: '3',
+    license: 'BSD-3-Clause AND IJG',
+    source: 'https://libjpeg-turbo.org/',
+    kind: 'native',
+    notice:
+      'This software is based in part on the work of the Independent JPEG Group. Modified BSD license and IJG license. https://github.com/libjpeg-turbo/libjpeg-turbo/blob/main/LICENSE.md',
+    files: /^(lib)?(turbo)?jpeg/i,
+  },
+  {
+    name: 'LibTIFF',
+    version: '4.7',
+    license: 'libtiff',
+    source: 'https://libtiff.gitlab.io/libtiff/',
+    kind: 'native',
+    notice:
+      'Copyright (c) 1988-1997 Sam Leffler, Copyright (c) 1991-1997 Silicon Graphics, Inc. LibTIFF license. https://libtiff.gitlab.io/libtiff/project/license.html',
+    files: /^(lib)?tiff/i,
+  },
+  {
+    name: 'liblzma (XZ Utils)',
+    version: '5.8',
+    license: '0BSD',
+    source: 'https://tukaani.org/xz/',
+    kind: 'native',
+    notice:
+      'BSD Zero Clause License. https://github.com/tukaani-project/xz/blob/master/COPYING.0BSD',
+    files: /^(lib)?lzma/i,
+  },
+  {
+    name: 'libwebp',
+    version: '1.6',
+    license: 'BSD-3-Clause',
+    source: 'https://chromium.googlesource.com/webm/libwebp',
+    kind: 'native',
+    notice:
+      'Copyright (c) 2010, Google Inc. BSD 3-Clause license. https://chromium.googlesource.com/webm/libwebp/+/refs/heads/main/COPYING',
+    files: /^(lib)?(webp|sharpyuv)/i,
+  },
+  {
+    name: 'OpenJPEG',
+    version: '2.5',
+    license: 'BSD-2-Clause',
+    source: 'https://www.openjpeg.org/',
+    kind: 'native',
+    notice:
+      'Copyright (c) 2002-2014 Universite catholique de Louvain (UCL), Belgium, and other contributors. BSD 2-Clause license. https://github.com/uclouvain/openjpeg/blob/master/LICENSE',
+    files: /^(lib)?openjp2/i,
+  },
+  {
+    name: 'GIFLIB',
+    version: '6',
+    license: 'MIT',
+    source: 'https://giflib.sourceforge.net/',
+    kind: 'native',
+    notice:
+      'Copyright (c) 1997 Eric S. Raymond and contributors. MIT license. https://sourceforge.net/p/giflib/code/ci/master/tree/COPYING',
+    files: /^(lib)?gif/i,
+  },
+  {
+    name: 'Microsoft Visual C++ Runtime (Windows only)',
+    version: '14',
+    license: 'Microsoft Visual Studio redistributable',
+    source: 'https://learn.microsoft.com/cpp/windows/redistributing-visual-cpp-files',
+    kind: 'native',
+    notice:
+      'Redistributable files from Microsoft Visual Studio, deployed next to the app under the Visual Studio license terms. https://visualstudio.microsoft.com/license-terms/',
+    files: /^(msvcp140|vcruntime140|concrt140|vccorlib140)/i,
   },
   {
     name: 'Geist and Geist Mono fonts',
@@ -101,6 +198,11 @@ const NATIVE: (Component & { notice: string })[] = [
       'Copyright (c) 2023 Vercel, in collaboration with basement.studio. SIL Open Font License, Version 1.1. https://openfontlicense.org',
   },
 ];
+
+/** Bundled native library files that no NATIVE entry accounts for. */
+export function unlistedLibraries(files: string[]): string[] {
+  return files.filter((f) => !NATIVE.some((n) => n.files?.test(f)));
+}
 
 interface CargoPackage {
   id: string;
@@ -269,7 +371,7 @@ export function build() {
   return { summary: `${JSON.stringify(summary, null, 2)}\n`, notices };
 }
 
-if (import.meta.url === `file://${process.argv[1] ?? ''}`) {
+if (import.meta.main) {
   const { values } = parseArgs({ options: { check: { type: 'boolean' } } });
   const { summary, notices } = build();
   if (values.check) {

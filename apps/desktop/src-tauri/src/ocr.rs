@@ -32,9 +32,9 @@ pub enum Engine {
     Native,
 }
 
-/// "Automatic" uses the native engine only once a measured comparison on that platform
-/// shows it is at least as accurate as Tesseract (`docs/ocr-engines.md`, produced by
-/// CI on Windows and macOS). No such measurement exists yet, so Automatic is Tesseract.
+/// "Automatic" uses the native engine only when a measured comparison on that platform
+/// shows it is at least as accurate as Tesseract. Measured (docs/ocr-engines.md): Apple
+/// Vision and Windows.Media.Ocr are both less accurate and slower, so Automatic is Tesseract.
 pub const AUTOMATIC_PREFERS_NATIVE: bool = false;
 
 /// Engines this computer can run, the Automatic choice first.

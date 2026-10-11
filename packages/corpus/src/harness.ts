@@ -216,7 +216,7 @@ export function report(
   return { markdown: lines.join('\n'), pass };
 }
 
-if (import.meta.url === `file://${process.argv[1] ?? ''}`) {
+if (import.meta.main) {
   const { values } = parseArgs({
     options: {
       tier: { type: 'string' },

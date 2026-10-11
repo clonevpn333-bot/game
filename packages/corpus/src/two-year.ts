@@ -83,7 +83,7 @@ export async function generateTwoYear(outDir: string, seed = 2026): Promise<TwoY
   return manifest;
 }
 
-if (import.meta.url === `file://${process.argv[1] ?? ''}`) {
+if (import.meta.main) {
   const { values } = parseArgs({ options: { out: { type: 'string' } } });
   const out = resolve(values.out ?? resolve(import.meta.dirname, '../out/two-year'));
   const manifest = await generateTwoYear(out);

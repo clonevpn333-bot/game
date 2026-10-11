@@ -1,0 +1,250 @@
+name: Release
+
+# Desktop installers: Windows (NSIS + MSI, x64) and macOS (DMG, Apple Silicon and Intel).
+# A v* tag builds them and drafts a GitHub release with the updater manifest; pushes that
+# touch packaging build them as workflow artifacts. Signing, notarization and the updater
+# turn on only when their secrets and variables exist (docs/release.md lists them).
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+    tags: ['v*']
+    paths:
+      - .github/workflows/release.yml
+      - .github/actions/native-libs/**
+      - apps/desktop/scripts/release-config.ts
+      - apps/desktop/scripts/vcpkg-overlay.ts
+      - apps/desktop/scripts/updater-manifest.ts
+      - apps/desktop/scripts/licenses.ts
+      - apps/desktop/vcpkg/**
+      - apps/desktop/src-tauri/tauri.conf.json
+      - apps/desktop/src-tauri/Cargo.toml
+      - apps/desktop/src-tauri/src/pdf.rs
+
+permissions:
+  contents: read
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows x64
+            os: windows-latest
+            platform: windows
+            target: x86_64-pc-windows-msvc
+            triplet: binderready-x64-windows
+          - name: macOS Apple Silicon
+            os: macos-latest
+            platform: macos
+            target: aarch64-apple-darwin
+            triplet: binderready-arm64-osx
+            arch: aarch64
+          - name: macOS Intel
+            os: macos-15-intel
+            platform: macos
+            target: x86_64-apple-darwin
+            triplet: binderready-x64-osx
+            arch: x86_64
+    runs-on: ${{ matrix.os }}
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '11.0'
+      HAS_AZURE: ${{ secrets.AZURE_CLIENT_SECRET != '' }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Product name
+        shell: bash
+        run: echo "PRODUCT=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').productName")" >> "$GITHUB_ENV"
+      - name: Tag matches the app version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          version=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match tauri.conf.json version $version"; exit 1
+          fi
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+          key: release-${{ matrix.target }}
+      - name: vcpkg build tools (macOS)
+        if: runner.os == 'macOS'
+        run: brew install autoconf autoconf-archive automake libtool nasm pkgconf
+      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/native-libs
+        with:
+          triplet: ${{ matrix.triplet }}
+
+      # Only values that are set reach the build: the app reads them with option_env!,
+      # where an empty string would count as configured.
+      - name: Build-time configuration
+        shell: bash
+        env:
+          LS_STORE_ID: ${{ vars.BINDERREADY_LS_STORE_ID }}
+          LS_PRODUCT_IDS: ${{ vars.BINDERREADY_LS_PRODUCT_IDS }}
+          BUY_URL: ${{ vars.BINDERREADY_BUY_URL }}
+          UPDATER_PUBKEY: ${{ vars.BINDERREADY_UPDATER_PUBKEY }}
+          HAS_SIGNING_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY != '' }}
+        run: |
+          put() { if [ -n "$2" ]; then echo "$1=$2" >> "$GITHUB_ENV"; echo "$1 set"; else echo "$1 not set"; fi; }
+          put BINDERREADY_LS_STORE_ID "$LS_STORE_ID"
+          put BINDERREADY_LS_PRODUCT_IDS "$LS_PRODUCT_IDS"
+          put BINDERREADY_BUY_URL "$BUY_URL"
+          if [ -n "$UPDATER_PUBKEY" ] && [ "$HAS_SIGNING_KEY" = true ]; then
+            put BINDERREADY_UPDATER_PUBKEY "$UPDATER_PUBKEY"
+            put BINDERREADY_UPDATE_URL "https://github.com/$GITHUB_REPOSITORY/releases/latest/download/latest.json"
+          else
+            echo "Updater not configured (needs the BINDERREADY_UPDATER_PUBKEY variable and the TAURI_SIGNING_PRIVATE_KEY secret)"
+          fi
+
+      - name: Azure Trusted Signing client
+        if: runner.os == 'Windows' && env.HAS_AZURE == 'true'
+        run: cargo install trusted-signing-cli --locked
+
+      - name: Release configuration
+        working-directory: apps/desktop
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SIGNING_ENDPOINT: ${{ vars.AZURE_SIGNING_ENDPOINT }}
+          AZURE_SIGNING_ACCOUNT: ${{ vars.AZURE_SIGNING_ACCOUNT }}
+          AZURE_SIGNING_PROFILE: ${{ vars.AZURE_SIGNING_PROFILE }}
+        run: node scripts/release-config.ts --platform ${{ matrix.platform }} --libs src-tauri/release-libs
+
+      - name: Build installers
+        working-directory: apps/desktop
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: pnpm tauri build --ci --target ${{ matrix.target }} --config src-tauri/tauri.release.json
+
+      - name: Check the app bundle (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          app="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/$PRODUCT.app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          ls -l "$app/Contents/Frameworks" "$app/Contents/Resources"
+          fail=0
+          for f in "$app/Contents/MacOS/binderready" "$app"/Contents/Frameworks/*.dylib; do
+            for dep in $(otool -L "$f" | tail -n +2 | awk '{print $1}'); do
+              case "$dep" in
+                /usr/lib/*|/System/*) ;;
+                @rpath/*) [ -f "$app/Contents/Frameworks/${dep#@rpath/}" ] || { echo "::error::$(basename "$f") needs $dep, not in Frameworks"; fail=1; } ;;
+                *) [ "$dep" = "$(otool -D "$f" | tail -1)" ] || { echo "::error::$(basename "$f") links $dep outside the bundle"; fail=1; } ;;
+              esac
+            done
+          done
+          [ $fail = 0 ]
+          # Launch with the build machine's libraries out of the way.
+          mv "$VCPKG_ROOT/installed" "$VCPKG_ROOT/installed.off"
+          "$app/Contents/MacOS/binderready" & pid=$!
+          sleep 20
+          if ! kill -0 $pid; then echo "::error::The app exited at launch"; exit 1; fi
+          kill $pid
+          mv "$VCPKG_ROOT/installed.off" "$VCPKG_ROOT/installed"
+
+      - name: Check the installer (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $bundle = "apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
+          $setup = Get-ChildItem "$bundle/nsis/*-setup.exe" | Select-Object -First 1
+          Start-Process $setup.FullName -ArgumentList '/S' -Wait
+          $exe = Get-ChildItem $env:LOCALAPPDATA -Filter binderready.exe -Recurse -Depth 2 | Select-Object -First 1
+          if (-not $exe) { throw 'The installer did not install binderready.exe' }
+          $dir = $exe.DirectoryName
+          Get-ChildItem $dir -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
+          # vcpkg's DLLs must come from the install folder, not the build machine.
+          Rename-Item "$env:VCPKG_ROOT/installed" installed.off
+          $app = Start-Process "$dir\binderready.exe" -PassThru
+          Start-Sleep 20
+          $app.Refresh()
+          if ($app.HasExited) { throw "The app exited at launch (code $($app.ExitCode))" }
+          # A missing DLL leaves a "System Error" box instead of the app window.
+          if ($app.MainWindowTitle -ne $env:PRODUCT) { throw "Unexpected window: '$($app.MainWindowTitle)'" }
+          Stop-Process -Id $app.Id
+          Rename-Item "$env:VCPKG_ROOT/installed.off" installed
+          Start-Process "$dir\uninstall.exe" -ArgumentList '/S' -Wait
+
+      - name: Collect installers
+        shell: bash
+        run: |
+          bundle="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle"
+          mkdir -p dist-release
+          if [ "$RUNNER_OS" = Windows ]; then
+            cp "$bundle"/nsis/*-setup.exe* "$bundle"/msi/*.msi* dist-release/
+          else
+            version=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")
+            cp "$bundle"/dmg/*.dmg dist-release/
+            # Tauri names the updater archive without an architecture; both Macs need one.
+            for f in "$bundle/macos/$PRODUCT.app.tar.gz"*; do
+              [ -e "$f" ] || continue
+              cp "$f" "dist-release/${PRODUCT}_${version}_${{ matrix.arch }}.app.tar.gz${f##*.app.tar.gz}"
+            done
+          fi
+          ls -l dist-release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.target }}
+          path: dist-release/
+          retention-days: 14
+
+  publish:
+    name: Draft release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: installers-*
+          path: dist-release
+          merge-multiple: true
+      - name: Updater manifest
+        run: |
+          if ls dist-release/*.sig >/dev/null 2>&1; then
+            node apps/desktop/scripts/updater-manifest.ts --version "${GITHUB_REF_NAME#v}" \
+              --repo "$GITHUB_REPOSITORY" --dir dist-release
+          else
+            echo "No signed updater artifacts: the release has no latest.json"
+          fi
+      - name: Draft the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          product=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').productName")
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag --generate-notes \
+            --title "$product ${GITHUB_REF_NAME#v}" dist-release/*

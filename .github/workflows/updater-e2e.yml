@@ -1,0 +1,163 @@
+name: Updater end to end
+
+# Builds two Windows installers with a throwaway signing key (the configured version
+# and the next patch version), publishes the newer one as a temporary pre-release of this
+# repository, installs the older one and lets it update itself. The pre-release and its
+# tag are deleted at the end of the run. See apps/desktop/scripts/updater-e2e.ts.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['**']
+    paths:
+      - .github/workflows/updater-e2e.yml
+      - .github/actions/native-libs/**
+      - apps/desktop/scripts/updater-e2e.ts
+      - apps/desktop/scripts/updater-manifest.ts
+      - apps/desktop/scripts/release-config.ts
+      - apps/desktop/src-tauri/src/commands.rs
+      - apps/desktop/src-tauri/src/lib.rs
+      - apps/desktop/src-tauri/Cargo.toml
+      - apps/desktop/src-tauri/tauri.conf.json
+
+permissions:
+  contents: read
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  CARGO_TERM_COLOR: always
+
+jobs:
+  corpus:
+    name: Synthetic documents
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: >
+          sudo apt-get update && sudo apt-get install -y
+          poppler-utils qpdf imagemagick libheif-examples libheif-plugin-x265
+      - run: pnpm install --frozen-lockfile
+      - name: Scanned and photo tiers
+        working-directory: packages/corpus
+        run: |
+          node src/generate.ts
+          node src/degrade.ts --tier scanned
+          node src/degrade.ts --tier photo
+          tar -cf corpus.tar --exclude=.cache -C out scanned photo
+      - uses: actions/upload-artifact@v4
+        with:
+          name: updater-e2e-corpus
+          path: packages/corpus/corpus.tar
+          retention-days: 3
+
+  update:
+    name: Install, update, restart (Windows)
+    needs: corpus
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      TAG: updater-e2e-${{ github.run_id }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+          key: updater-e2e
+      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/native-libs
+        with:
+          triplet: binderready-x64-windows
+
+      - name: Throwaway updater key and versions
+        shell: bash
+        run: |
+          key="$(cygpath -m "$RUNNER_TEMP")/updater.key"
+          pnpm --filter @binderready/desktop exec tauri signer generate --ci -p e2e -w "$key"
+          {
+            echo "TAURI_SIGNING_PRIVATE_KEY=$(cat "$key")"
+            echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=e2e"
+            echo "BINDERREADY_UPDATER_PUBKEY=$(cat "$key.pub")"
+            echo "BINDERREADY_UPDATE_URL=https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/latest.json"
+            from=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")
+            echo "FROM=$from"
+            echo "TO=$(node -p "const [a,b,c]=process.argv[1].split('.').map(Number); [a,b,c+1].join('.')" "$from")"
+          } >> "$GITHUB_ENV"
+
+      - name: Build the current version
+        shell: bash
+        working-directory: apps/desktop
+        run: |
+          node scripts/release-config.ts --platform windows --libs src-tauri/release-libs --version "$FROM"
+          pnpm tauri build --ci --bundles nsis --config src-tauri/tauri.release.json
+          mkdir -p "$RUNNER_TEMP/from"
+          cp src-tauri/target/release/bundle/nsis/*_"$FROM"_x64-setup.exe "$RUNNER_TEMP/from/"
+
+      - name: Build the next version and publish it as a test pre-release
+        shell: bash
+        working-directory: apps/desktop
+        run: |
+          node scripts/release-config.ts --platform windows --libs src-tauri/release-libs --version "$TO"
+          pnpm tauri build --ci --bundles nsis --config src-tauri/tauri.release.json
+          mkdir -p "$RUNNER_TEMP/to"
+          cp src-tauri/target/release/bundle/nsis/*_"$TO"_x64-setup.exe* "$RUNNER_TEMP/to/"
+          node scripts/updater-manifest.ts --version "$TO" --repo "$GITHUB_REPOSITORY" \
+            --dir "$RUNNER_TEMP/to" --tag "$TAG" --notes "Updater test build"
+          cat "$RUNNER_TEMP/to/latest.json"
+          gh release create "$TAG" --prerelease --target "$GITHUB_SHA" \
+            --title "Updater test $GITHUB_RUN_ID (deleted after the run)" \
+            --notes "Temporary release for the updater end-to-end test." \
+            "$RUNNER_TEMP"/to/*-setup.exe "$RUNNER_TEMP/to/latest.json"
+
+      - name: Install the current version
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem "$env:RUNNER_TEMP/from/*-setup.exe" | Select-Object -First 1
+          Start-Process $setup.FullName -ArgumentList '/S' -Wait
+          $exe = Get-ChildItem $env:LOCALAPPDATA -Filter binderready.exe -Recurse -Depth 2 | Select-Object -First 1
+          if (-not $exe) { throw 'The installer did not install binderready.exe' }
+          "APP_EXE=$($exe.FullName)" | Out-File -Append $env:GITHUB_ENV
+          # The installed app must not lean on the build machine's libraries.
+          Rename-Item "$env:VCPKG_ROOT/installed" installed.off
+
+      - name: WebDriver (tauri-driver and the Edge driver matching WebView2)
+        shell: pwsh
+        run: |
+          cargo install tauri-driver --locked
+          $key = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+          $version = (Get-ItemProperty $key).pv
+          Write-Output "WebView2 $version"
+          Invoke-WebRequest "https://msedgedriver.microsoft.com/$version/edgedriver_win64.zip" -OutFile "$env:RUNNER_TEMP/edgedriver.zip"
+          Expand-Archive "$env:RUNNER_TEMP/edgedriver.zip" -DestinationPath "$env:RUNNER_TEMP/edgedriver"
+          "EDGE_DRIVER=$env:RUNNER_TEMP\edgedriver\msedgedriver.exe" | Out-File -Append $env:GITHUB_ENV
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: updater-e2e-corpus
+          path: packages/corpus
+      - name: Unpack documents
+        working-directory: packages/corpus
+        shell: bash
+        run: mkdir -p out && tar -xf corpus.tar -C out
+
+      - name: Update end to end
+        shell: bash
+        run: >
+          node apps/desktop/scripts/updater-e2e.ts --exe "$APP_EXE" --from "$FROM" --to "$TO"
+          --corpus "$(cygpath -w "$PWD/packages/corpus/out")" --driver "$EDGE_DRIVER"
+
+      - name: Delete the test pre-release
+        if: always()
+        shell: bash
+        run: gh release delete "$TAG" --yes --cleanup-tag || true

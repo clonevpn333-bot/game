@@ -217,7 +217,7 @@ export async function shootBinder(
   }
 }
 
-if (import.meta.url === `file://${process.argv[1] ?? ''}`) {
+if (import.meta.main) {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: {

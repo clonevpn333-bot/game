@@ -41,6 +41,12 @@ for (const engine of engines) {
   const speed = await benchmark(100, engine);
   for (const { tier, result } of tiers) {
     const m = result.metrics;
+    // Wrong documents in the log, so a platform difference can be diagnosed from CI.
+    for (const v of m.verdicts.filter((x) => !x.correct)) {
+      console.error(
+        `${label} ${tier} miss: ${v.truth.formId} pages ${v.truth.pages.join(',')} → ${v.predicted ? `${v.predicted.formId ?? 'none'} (${v.predicted.pages.join(',')})` : 'split differently'} ${v.flagged ? 'flagged' : 'AUTO'}`,
+      );
+    }
     rows.push(
       `| ${label} | ${tier} | ${pct(m.correct, m.documents)} | ${pct(m.correctOrFlagged, m.documents)} | ${pct(m.misfiledWhileAuto, m.autoAccepted)} | ${pct(m.autoAccepted, m.documents)} | ${pct(m.fields.issuer, m.splitCorrect)} | ${pct(m.fields.recipient, m.splitCorrect)} | ${(m.pages / result.extractSeconds).toFixed(2)} |`,
     );

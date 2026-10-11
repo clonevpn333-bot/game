@@ -71,7 +71,7 @@ export async function benchmark(
   };
 }
 
-if (import.meta.url === `file://${process.argv[1] ?? ''}`) {
+if (import.meta.main) {
   const { values } = parseArgs({
     options: { pages: { type: 'string' }, engine: { type: 'string' } },
   });

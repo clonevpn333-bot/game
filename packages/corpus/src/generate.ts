@@ -273,7 +273,7 @@ export async function generate(seed: number, outDir: string): Promise<CorpusMani
   return manifest;
 }
 
-if (import.meta.url === `file://${process.argv[1] ?? ''}`) {
+if (import.meta.main) {
   const { values } = parseArgs({ options: { seed: { type: 'string' }, out: { type: 'string' } } });
   const out = resolve(values.out ?? resolve(import.meta.dirname, '../out/clean'));
   const manifest = await generate(Number(values.seed ?? 2026), out);

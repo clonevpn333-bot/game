@@ -91,7 +91,7 @@ export function serveStatic(port: number): Promise<Server> {
   );
 }
 
-if (import.meta.url === `file://${process.argv[1] ?? ''}`) {
+if (import.meta.main) {
   const port = Number(process.argv[2] ?? 4400);
   await serveStatic(port);
   console.log(`Serving ${root} at http://localhost:${port}`);

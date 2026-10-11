@@ -706,7 +706,7 @@ export function Settings() {
           description={
             info && info.ocrEngines.length === 1
               ? 'Scans and photos are read on this computer. Tesseract is the engine available here.'
-              : 'Scans and photos are read on this computer. Automatic picks the best engine for this system.'
+              : 'Scans and photos are read on this computer. Automatic uses Tesseract: in our tests the system’s own engine was less accurate and slower (docs/ocr-engines.md).'
           }
         >
           <OcrEngine />

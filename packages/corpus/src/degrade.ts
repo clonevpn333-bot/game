@@ -220,7 +220,7 @@ async function photoTier(
   return { ...clean, tier: 'photo', files };
 }
 
-if (import.meta.url === `file://${process.argv[1] ?? ''}`) {
+if (import.meta.main) {
   const { values } = parseArgs({
     options: { tier: { type: 'string' }, clean: { type: 'string' }, out: { type: 'string' } },
   });
