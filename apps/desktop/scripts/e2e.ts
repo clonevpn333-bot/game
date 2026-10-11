@@ -143,7 +143,10 @@ async function main() {
 
     await wd('POST', `${s}/window/rect`, { width: 1280, height: 820 });
     check(await waitFor('Start with a client’s documents.'), 'empty state shows the drop zone');
-    check((await exec<string>('return document.title')) === tauriConfig.productName, 'the window title is the configured product name');
+    check(
+      (await exec<string>('return document.title')) === tauriConfig.productName,
+      'the window title is the configured product name',
+    );
     for (const t of ['light', 'dark'] as const) {
       await theme(t);
       await shot(`01-empty-${t}`);
