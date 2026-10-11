@@ -1,7 +1,7 @@
 name: Release
 
 # Desktop installers: Windows (NSIS + MSI, x64) and macOS (DMG, Apple Silicon and Intel).
-# A v* tag builds them and drafts a GitHub release with the updater manifest; pushes that
+# A v* tag builds them and publishes a GitHub release with the updater manifest; pushes that
 # touch packaging build them as workflow artifacts. Signing, notarization and the updater
 # turn on only when their secrets and variables exist (docs/release.md lists them).
 on:
@@ -240,7 +240,7 @@ jobs:
           retention-days: 14
 
   publish:
-    name: Draft release
+    name: Publish release
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-24.04
@@ -264,12 +264,14 @@ jobs:
           else
             echo "No signed updater artifacts: the release has no latest.json"
           fi
-      - name: Draft the release
+      # Pushing the tag is the release decision: the website's download buttons and the
+      # updater read releases/latest, which never includes drafts.
+      - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           product=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').productName")
           # Version-free copies for the website's download buttons.
           node apps/desktop/scripts/release-assets.ts --dir dist-release --product "$product"
-          gh release create "$GITHUB_REF_NAME" --draft --verify-tag --generate-notes \
+          gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes \
             --title "$product ${GITHUB_REF_NAME#v}" dist-release/*

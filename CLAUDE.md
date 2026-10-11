@@ -189,7 +189,7 @@ They are excluded from lint/format and untouched. Ask Corey before moving or del
   x265 encoder). `scripts/release-config.ts` writes `src-tauri/tauri.release.json` (merged with
   `--config`): bundled libs (Windows next to the exe, macOS in Frameworks with PDFium), tessdata,
   and signing/updater only when secrets exist. It fails on any library `licenses.ts` `NATIVE`
-  doesn't list. Tags `v*` draft a release with `latest.json` and version-free installer copies
+  doesn't list. Tags `v*` publish a release with `latest.json` and version-free installer copies
   (`scripts/release-assets.ts`) that the website links to via `DOWNLOAD_REPO`.
 - `updater-e2e.yml` proves updates on Windows: throwaway key, two builds, a temporary pre-release,
   `scripts/updater-e2e.ts` drives the installed app over tauri-driver + msedgedriver.

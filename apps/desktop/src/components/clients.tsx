@@ -54,7 +54,10 @@ export function Clients() {
           </thead>
           <tbody>
             {clients.map((c) => (
-              <tr key={c.id} className="border-b border-border">
+              <tr
+                key={c.id}
+                className="border-b border-border transition-colors duration-150 hover:bg-fg/[0.03]"
+              >
                 <td className="py-2.5">{c.displayName}</td>
                 <td className="py-2.5 font-mono text-fg-muted tabular">{c.lastYear ?? '—'}</td>
                 <td className="py-2.5 font-mono text-fg-muted tabular">

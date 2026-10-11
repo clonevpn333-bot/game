@@ -26,10 +26,10 @@ export function DropZone({
 }) {
   return (
     <div
-      className={`flex flex-col items-center justify-center rounded-panel border-2 border-dashed border-border-strong text-center ${compact ? 'gap-3 px-6 py-8' : 'gap-5 px-10 py-20'}`}
+      className={`bob flex flex-col items-center justify-center rounded-panel border-2 border-dashed border-border-strong text-center transition-colors duration-200 hover:border-fg/40 ${compact ? 'gap-3 px-6 py-8' : 'gap-5 px-10 py-20'}`}
     >
       <FilePlus2
-        className={compact ? 'size-6 text-fg-subtle' : 'size-9 text-fg-subtle'}
+        className={`bob-icon ${compact ? 'size-6 text-fg-subtle' : 'size-9 text-fg-subtle'}`}
         strokeWidth={1.25}
         aria-hidden
       />

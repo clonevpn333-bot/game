@@ -9,8 +9,9 @@
 | macOS Intel         | `macos-15-intel` | `BinderReady_<v>_x64.dmg`, updater archive                              |
 
 Pushing a tag `v<version>` (it must equal `version` in `apps/desktop/src-tauri/tauri.conf.json`)
-builds all three and drafts a GitHub release with the installers and, when the updater is
-configured, `latest.json`. Review the draft, then publish it. The app's updater reads
+builds all three and publishes a GitHub release with the installers and, when the updater is
+configured, `latest.json`. Pushing the tag is the release decision: the website's download
+buttons and the app's updater read the latest published release. The updater reads
 `https://github.com/<repo>/releases/latest/download/latest.json`, so only the published,
 non-pre-release version is offered. Pushes that change packaging build the same installers
 as workflow artifacts (14 days).

@@ -48,7 +48,7 @@ function Thumb({
           src={src}
           alt=""
           draggable={false}
-          className="max-h-full max-w-full object-contain transition-transform duration-150"
+          className="float-img max-h-full max-w-full object-contain transition-transform duration-150"
           style={{ transform: `rotate(${String(rotation)}deg)` }}
         />
       ) : null}
@@ -76,7 +76,7 @@ function DocCard({ doc, selected }: { doc: ReviewDoc; selected: boolean }) {
         set({ stripOpen: true });
       }}
       className={cx(
-        'group flex flex-col gap-2.5 rounded-card border bg-surface p-2.5 text-left transition-[border-color,opacity] duration-150',
+        'float group flex flex-col gap-2.5 rounded-card border bg-surface p-2.5 text-left',
         selected
           ? 'border-fg shadow-[0_0_0_1px_var(--fg)]'
           : 'border-border hover:border-border-strong',
@@ -484,7 +484,7 @@ function Detail({ doc }: { doc: ReviewDoc }) {
         ))}
       </dl>
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" onClick={accept}>
+        <Button size="sm" className="press" onClick={accept}>
           Accept <Kbd className="border-bg/30 bg-transparent text-bg/80 shadow-none">Enter</Kbd>
         </Button>
         <Button size="sm" variant="secondary" onClick={toggleExcluded}>
@@ -677,7 +677,7 @@ export function ReviewBoard() {
           >
             Add files
           </Button>
-          <Button size="sm" onClick={openExport} disabled={live.length === 0}>
+          <Button size="sm" className="press" onClick={openExport} disabled={live.length === 0}>
             Export binder
             <Kbd className="ml-1 border-bg/30 bg-transparent text-bg/80 shadow-none">{modKey}</Kbd>
             <Kbd className="border-bg/30 bg-transparent text-bg/80 shadow-none">E</Kbd>

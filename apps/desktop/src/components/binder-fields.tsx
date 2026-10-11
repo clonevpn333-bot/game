@@ -242,7 +242,7 @@ export function QualityField({
           <label
             key={preset.id}
             className={cx(
-              'relative cursor-pointer rounded-control border px-2.5 py-2 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus',
+              'float relative cursor-pointer rounded-control border px-2.5 py-2 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-focus',
               quality === preset.id ? 'border-fg' : 'border-border hover:border-border-strong',
             )}
           >

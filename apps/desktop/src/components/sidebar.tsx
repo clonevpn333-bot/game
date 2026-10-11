@@ -26,7 +26,7 @@ function Item({
         go(view);
       }}
       className={cx(
-        'flex h-8 w-full items-center gap-2.5 rounded-control px-2.5 text-[13px] transition-colors duration-150 [&_svg]:size-4',
+        'nudge flex h-8 w-full items-center gap-2.5 rounded-control px-2.5 text-[13px] transition-colors duration-150 [&_svg]:size-4',
         active ? 'bg-fg/8 text-fg' : 'text-fg-muted hover:bg-fg/5 hover:text-fg',
       )}
     >
@@ -52,7 +52,7 @@ export function Sidebar() {
         onClick={() => {
           go(batch ? (batch.finishedAt ? 'review' : 'processing') : 'new-binder');
         }}
-        className="flex h-9 items-center gap-2 rounded-control bg-fg px-3 text-[13px] font-medium text-bg transition-colors duration-150 hover:bg-fg/85 [&_svg]:size-4"
+        className="press flex h-9 items-center gap-2 rounded-control bg-fg px-3 text-[13px] font-medium text-bg transition-colors duration-150 hover:bg-fg/85 [&_svg]:size-4"
       >
         {batch ? <FolderOpen strokeWidth={1.5} /> : <Plus strokeWidth={1.5} />}
         {batch ? 'Current binder' : 'New binder'}
