@@ -2,6 +2,7 @@
 
 pub mod images;
 pub mod ingest;
+pub mod logo;
 pub mod ocr;
 pub mod pdf;
 pub mod phash;
@@ -33,6 +34,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             let cache_dir = app.path().app_cache_dir()?;
@@ -67,6 +69,14 @@ pub fn run() {
             export::allow_remembered_dir,
             export::write_output,
             export::record_binder,
+            commands::record_index,
+            commands::previous_index,
+            commands::dismissed_missing,
+            commands::set_missing_dismissed,
+            commands::delete_history,
+            commands::choose_logo,
+            commands::firm_logo,
+            commands::clear_logo,
         ])
         .run(tauri::generate_context!())
         .expect("error while running BinderReady");

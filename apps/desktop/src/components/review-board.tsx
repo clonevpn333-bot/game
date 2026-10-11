@@ -11,6 +11,7 @@ import { useApp } from '../state/store';
 import { pickFiles } from './drop-zone';
 import { ExportDialog } from './export-dialog';
 import { ExportToast } from './export-toast';
+import { MissingPanel } from './missing-panel';
 
 function pageImage(files: Record<string, DesktopFile>, fileId: string, page: number) {
   const p = files[fileId]?.pages.find((x) => x.index === page);
@@ -403,10 +404,7 @@ function Detail({ doc }: { doc: ReviewDoc }) {
     ['Confidence', `${String(Math.round(doc.confidence * 100))}%`],
   ];
   return (
-    <aside
-      aria-label="Selected document"
-      className="flex w-80 shrink-0 flex-col gap-5 overflow-y-auto border-l border-border px-5 py-5"
-    >
+    <section aria-label="Selected document" className="flex flex-col gap-5 px-5 py-5">
       <div>
         <p className="eyebrow">Name</p>
         {editing ? (
@@ -494,7 +492,7 @@ function Detail({ doc }: { doc: ReviewDoc }) {
           {doc.excluded ? 'Include in binder' : 'Remove'}
         </Button>
       </div>
-    </aside>
+    </section>
   );
 }
 
@@ -521,6 +519,7 @@ export function ReviewBoard() {
   const formPickerOpen = useApp((s) => s.formPickerOpen);
   const notice = useApp((s) => s.notice);
   const exportOpen = useApp((s) => s.exportOpen);
+  const history = useApp((s) => s.history);
   const openExport = useApp((s) => s.openExport);
   const addPaths = useApp((s) => s.addPaths);
   const set = useApp((s) => s.set);
@@ -680,8 +679,8 @@ export function ReviewBoard() {
           </Button>
           <Button size="sm" onClick={openExport} disabled={live.length === 0}>
             Export binder
-            <Kbd className="ml-1">{modKey}</Kbd>
-            <Kbd>E</Kbd>
+            <Kbd className="ml-1 border-bg/30 bg-transparent text-bg/80 shadow-none">{modKey}</Kbd>
+            <Kbd className="border-bg/30 bg-transparent text-bg/80 shadow-none">E</Kbd>
           </Button>
         </div>
       </div>
@@ -724,7 +723,12 @@ export function ReviewBoard() {
             </p>
           ) : null}
         </div>
-        {selected ? <Detail doc={selected} /> : null}
+        {selected || history ? (
+          <aside className="flex w-80 shrink-0 flex-col overflow-y-auto border-l border-border">
+            {selected ? <Detail doc={selected} /> : null}
+            <MissingPanel />
+          </aside>
+        ) : null}
       </div>
       {selected && stripOpen ? <PageStrip doc={selected} page={page} setPage={setPage} /> : null}
       <footer className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border bg-bg-subtle px-6 py-2.5 text-xs text-fg-muted">

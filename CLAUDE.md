@@ -13,7 +13,8 @@ it is built one phase per session, and each phase stops at its gate with a repor
 | 2     | Engine + corpus                                             | Done on synthetic corpus (docs/accuracy/)             |
 | 3     | Desktop ingest pipeline + review board                      | Done (docs/accuracy, docs/screenshots/phase-3)        |
 | 4     | Binder export                                               | Done (docs/export-sizes.md, docs/screenshots/phase-4) |
-| 5–8   | Missing docs, native OCR, licensing, polish                 | Not started                                           |
+| 5     | Missing docs, duplicates, settings                          | Done (docs/screenshots/phase-5)                       |
+| 6–8   | Native OCR, licensing, polish                               | Not started                                           |
 
 **Open from Phase 0:** `forms.json` patterns are drafted but unverified, and no OMB numbers are
 recorded, because the cloud sessions could not reach irs.gov/ssa.gov. Run `pnpm forms:verify --write`
@@ -55,6 +56,7 @@ cargo build --release --bin binderready-ingest   # in apps/desktop/src-tauri
 node src/degrade.ts --tier scanned|photo         # derive degraded tiers from out/clean
 node src/harness.ts --tier scanned|photo         # → docs/accuracy/<tier>.md
 node src/bench.ts                                # ~100 mixed pages, end to end
+node src/two-year.ts                             # one client's 2024 + 2025 piles (missing-docs check)
 ```
 
 Desktop system libraries (Ubuntu 24.04; CI installs the same): `libwebkit2gtk-4.1-dev`,
@@ -154,6 +156,17 @@ They are excluded from lint/format and untouched. Ask Corey before moving or del
   files into the folder chosen in the system dialog (never overwrites: "name (2).pdf").
   Export preferences, the name template and the firm's category order persist in SQLite
   settings; the output folder is remembered per client. The board follows the same order.
+- Missing documents (`lib/missing.ts`, pure, tested): each export stores, per client and tax
+  year, only `{formType, issuerName}` (`client_index`; the Rust type rejects any other field).
+  The next binder compares against the most recent earlier year, matching one to one (same
+  form + issuer first, then same form when an issuer was unreadable). "Not expected this year"
+  is stored per client + year (`missing_dismissals`). The copied email text leaves those out.
+- Settings persist in SQLite (`settings` table) except the theme (localStorage) and the firm
+  logo (`<app data>/firm-logo.png`, PNG or SVG rasterized with resvg, max 1200 px). "Delete all
+  local history" removes clients, binder records, indexes and dismissals, then VACUUMs.
+  Update checks and License arrive with the updater and licensing (Phase 7): no inert toggles.
+- The app shell uses `overflow: clip` and `#root { position: relative }`: with `hidden`, focusing
+  a visually hidden input positioned against the page scrolled the whole window.
 - Export commands and folder walking are `#[tauri::command(async)]`: sync commands run on the
   main thread, where encoding would freeze the UI and the GTK dialog can deadlock.
 - Product name: `productName` in `src-tauri/tauri.conf.json`, read by `lib/product.ts`;

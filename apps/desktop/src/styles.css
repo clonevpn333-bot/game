@@ -8,9 +8,18 @@ html,
 body,
 #root {
   height: 100%;
-  overflow: hidden;
+  /* clip, not hidden: hidden boxes still scroll when focus moves into view, which
+     slid the whole window (sidebar included) up. Panes scroll themselves. */
+  overflow: clip;
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* Absolutely positioned descendants with no positioned ancestor (visually hidden
+   radios and checkboxes) are laid out against #root, inside the clip, instead of
+   the page, so focusing one can never make the window itself scroll. */
+#root {
+  position: relative;
 }
 
 input,

@@ -3,6 +3,7 @@ import { revealItemInDir } from '@tauri-apps/plugin-opener';
 import { CircleCheck, X } from 'lucide-react';
 import { isMac } from '../lib/platform';
 import { useApp } from '../state/store';
+import { copyMissingList, useCopied, useMissing } from './missing-panel';
 
 const isWindows = typeof navigator !== 'undefined' && /Win/i.test(navigator.platform);
 const revealLabel = isMac ? 'Show in Finder' : isWindows ? 'Show in Explorer' : 'Show in folder';
@@ -18,7 +19,10 @@ export function ExportToast() {
   const set = useApp((s) => s.set);
   const closeBinder = useApp((s) => s.closeBinder);
   const go = useApp((s) => s.go);
+  const missing = useMissing();
+  const [copied, markCopied] = useCopied();
   if (!result) return null;
+  const openMissing = missing?.items.filter((i) => !i.dismissed).length ?? 0;
   const file = result.path.split(/[\\/]/).at(-1) ?? result.path;
   return (
     <div
@@ -35,10 +39,23 @@ export function ExportToast() {
           {result.documents} documents · {result.pages} pages · {formatBytes(result.bytes)}
           {result.singlesWritten ? ` · ${String(result.singlesWritten)} individual files` : ''}
         </p>
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           <Button size="sm" variant="secondary" onClick={() => void revealItemInDir(result.path)}>
             {revealLabel}
           </Button>
+          {missing && openMissing ? (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() =>
+                void copyMissingList(missing.items, missing.previousYear).then((ok) => {
+                  if (ok) markCopied();
+                })
+              }
+            >
+              {copied ? 'Copied' : `Copy missing-docs list (${String(openMissing)})`}
+            </Button>
+          ) : null}
           <Button
             size="sm"
             variant="ghost"

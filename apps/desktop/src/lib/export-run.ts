@@ -7,6 +7,7 @@ import { backend } from './backend';
 import type { BinderOptions } from './binder';
 import { binderTitle, filesFolder, planBinder, requiredInputs, type Quality } from './export-plan';
 import type { ExportJob, ExportReply } from './export.worker';
+import { indexItems } from './missing';
 import type { Files, ReviewDoc, Rotations } from './review';
 import type { CategoryId } from '@binderready/engine';
 
@@ -153,6 +154,7 @@ export async function runExport(
     outputDir: request.outputDir,
     trial: request.trial,
   });
+  await backend.recordIndex(request.clientId, request.taxYear, indexItems(request.docs));
   return {
     path,
     bytes: reply.binder.byteLength,

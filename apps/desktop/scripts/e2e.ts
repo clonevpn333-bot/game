@@ -6,7 +6,8 @@
  *   pnpm tauri build --no-bundle && node scripts/e2e.ts
  *
  * Needs tauri-driver (cargo install tauri-driver), WebKitWebDriver and a display
- * (Xvfb on Linux CI). Screenshots go to docs/screenshots/phase-3/.
+ * (Xvfb on Linux CI), xdotool and xclip. Screenshots go to docs/screenshots/phase-3,
+ * phase-4 and phase-5.
  */
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
@@ -14,12 +15,14 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import type { CorpusManifest } from '../../../packages/corpus/src/manifest.ts';
 import tauriConfig from '../src-tauri/tauri.conf.json' with { type: 'json' };
-import { checkBinder, shootBinder } from './verify-binder.ts';
+import type { TwoYearManifest } from '../../../packages/corpus/src/two-year.ts';
+import { checkBinder, coverInfo, shootBinder } from './verify-binder.ts';
 
 const root = resolve(import.meta.dirname, '../../..');
 const app = resolve(import.meta.dirname, '../src-tauri/target/release/binderready');
 const shots = resolve(root, process.env.SHOT_DIR ?? 'docs/screenshots/phase-3');
 const exportShots = resolve(root, process.env.EXPORT_SHOT_DIR ?? 'docs/screenshots/phase-4');
+const settingsShots = resolve(root, process.env.SETTINGS_SHOT_DIR ?? 'docs/screenshots/phase-5');
 const corpus = resolve(root, 'packages/corpus/out');
 const DRIVER = 'http://127.0.0.1:4444';
 
@@ -53,7 +56,9 @@ async function main() {
   await sleep(1500);
   await mkdir(shots, { recursive: true });
   let session = '';
-  try {
+  // Helpers read the current session, so the app can be restarted mid-run.
+  let s = '';
+  const startApp = async () => {
     session = (
       await wd<{ sessionId: string }>('POST', '/session', {
         capabilities: {
@@ -61,7 +66,11 @@ async function main() {
         },
       })
     ).sessionId;
-    const s = `/session/${session}`;
+    s = `/session/${session}`;
+    await wd('POST', `${s}/window/rect`, { width: 1280, height: 820 });
+  };
+  try {
+    await startApp();
     const exec = <T = unknown>(script: string, args: unknown[] = []) =>
       wd<T>('POST', `${s}/execute/sync`, { script, args });
     const text = () => exec<string>('return document.body.innerText');
@@ -143,16 +152,38 @@ async function main() {
       await sleep(300);
     };
 
-    /** The native GTK folder chooser: type the path into its location bar (xdotool). */
-    const pickFolder = async (dir: string) => {
+    const typeInto = async (selector: string, value: string) => {
+      const el = await wd<Record<string, string>>('POST', `${s}/element`, {
+        using: 'css selector',
+        value: selector,
+      });
+      const id = Object.values(el)[0] ?? '';
+      await wd('POST', `${s}/element/${id}/clear`, {});
+      await wd('POST', `${s}/element/${id}/value`, { text: value });
+      await sleep(200);
+    };
+    /** Sets a controlled <select> the way a user change would. */
+    const choose = (selector: string, value: string) =>
+      exec(
+        'const el = document.querySelector(arguments[0]); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(el, arguments[1]); el.dispatchEvent(new Event("change", { bubbles: true }));',
+        [selector, value],
+      );
+    const typeName = (value: string) =>
+      exec(
+        'const i = document.querySelector("input"); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(i, arguments[0]); i.dispatchEvent(new Event("input", { bubbles: true }));',
+        [value],
+      );
+    const drop = (files: string[]) =>
+      exec(
+        'return window.__TAURI_INTERNALS__.invoke("plugin:event|emit", { event: "tauri://drag-drop", payload: { paths: arguments[0], position: { x: 400, y: 300 } } });',
+        [files],
+      );
+
+    /** The native GTK file chooser: type the path into its location bar (xdotool). */
+    const pickPath = async (title: string, path: string, folder: boolean) => {
       const find = () => {
         try {
-          return execFileSync('xdotool', [
-            'search',
-            '--onlyvisible',
-            '--name',
-            'Choose where to save the binder',
-          ])
+          return execFileSync('xdotool', ['search', '--onlyvisible', '--name', title])
             .toString()
             .trim()
             .split('\n')[0];
@@ -162,7 +193,7 @@ async function main() {
       };
       let win: string | undefined;
       for (let end = Date.now() + 15000; Date.now() < end && !win; await sleep(300)) win = find();
-      if (!win) throw new Error('The folder dialog did not open');
+      if (!win) throw new Error(`The "${title}" dialog did not open`);
       // No window manager under Xvfb: focus the dialog directly. GTK opens on
       // "Recent", where a typed path can't be chosen: go Home (Alt+Home), type the
       // folder, Return opens it, Return again chooses it.
@@ -170,7 +201,7 @@ async function main() {
       const steps: string[][] = [
         ['key', 'alt+Home'],
         ['key', 'ctrl+l'],
-        ['type', '--delay', '15', `${dir}/`],
+        ['type', '--delay', '15', folder ? `${path}/` : path],
         ['key', 'Return'],
       ];
       for (const step of steps) {
@@ -181,8 +212,9 @@ async function main() {
       await sleep(500);
       if (find()) execFileSync('xdotool', ['key', 'Return']);
       for (let end = Date.now() + 5000; Date.now() < end && find();) await sleep(300);
-      if (find()) throw new Error('The folder dialog did not accept the folder');
+      if (find()) throw new Error(`The "${title}" dialog did not accept ${path}`);
     };
+    const pickFolder = (dir: string) => pickPath('Choose where to save the binder', dir, true);
     /** Opens the export dialog, sets it up, exports and waits for the toast. */
     const exportBinder = async (opts: { folder?: string; quality?: string; singles?: boolean }) => {
       await chord('\uE009', 'e');
@@ -221,7 +253,6 @@ async function main() {
     };
     const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`;
 
-    await wd('POST', `${s}/window/rect`, { width: 1280, height: 820 });
     check(await waitFor('Start with a client’s documents.'), 'empty state shows the drop zone');
     check(
       (await exec<string>('return document.title')) === tauriConfig.productName,
@@ -250,7 +281,8 @@ async function main() {
     };
     const client = 'Jane Sample';
     const paths = [
-      ...(await pick('clean', (f) => f.client === client && f.expect === 'ok', 14)),
+      // All of the client's digital files, including an exact re-send and a Copy C rescan.
+      ...(await pick('clean', (f) => f.client === client && f.expect === 'ok', 40)),
       ...(await pick('scanned', (f) => f.client === client && f.documents.length > 1, 2)),
       ...(await pick('photo', (f) => f.client === client, 4)),
       ...(await pick('clean', (f) => f.expect !== 'ok', 2)),
@@ -293,18 +325,28 @@ async function main() {
     check(body.includes('password-protected'), 'the password-protected file shows a clear card');
     check(body.includes('damaged or incomplete'), 'the corrupt file shows a clear card');
     check(/Wages|Interest/.test(body), 'documents are grouped by category');
+    const duplicateBadges = await exec<number>(
+      'return [...document.querySelectorAll("[aria-labelledby=group-excluded] button[aria-pressed]")].filter(b => b.textContent.includes("Duplicate")).length',
+    );
+    check(
+      duplicateBadges >= 2,
+      `duplicates are caught and set aside (${String(duplicateBadges)}: an exact re-send and a Copy C rescan)`,
+    );
     await shot('04-review-light');
     await theme('dark');
     await shot('04-review-dark');
     await theme('light');
 
     // Keyboard review.
+    // Position of the selected card on the board (names can repeat across duplicates).
     const selected = () =>
-      exec<string>('return document.querySelector("[aria-pressed=true] p")?.textContent ?? ""');
+      exec<number>(
+        'return [...document.querySelectorAll("main button[aria-pressed]")].findIndex(b => b.getAttribute("aria-pressed") === "true")',
+      );
     const first = await selected();
     await press('j');
     const second = await selected();
-    check(first !== second && second !== '', 'J moves to the next document');
+    check(second === first + 1, 'J moves to the next document');
     await press('k');
     check((await selected()) === first, 'K moves back');
     await press('t');
@@ -409,68 +451,329 @@ async function main() {
     await shot('10-clients-light');
 
     // File sizes: 100 phone photos as one binder, at each quality preset.
-    await clickText('Current binder');
-    await clickText('Start next binder');
-    check(await waitFor('Who is this binder for?'), 'Start next binder opens a new binder');
-    await clickText('+ Add a new client');
-    const photoClient = 'John Example';
-    await exec(
-      'const i = document.querySelector("input"); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(i, arguments[0]); i.dispatchEvent(new Event("input", { bubbles: true }));',
-      [photoClient],
-    );
-    await clickText('Start empty binder');
-    check(await waitFor('Add documents to begin'), 'the second binder starts');
-    const photos = await pick(
-      'photo',
-      (f) => f.expect === 'ok' && f.documents.every((d) => d.duplicateOf === null),
-      100,
-    );
-    const photoStart = Date.now();
-    await exec(
-      'return window.__TAURI_INTERNALS__.invoke("plugin:event|emit", { event: "tauri://drag-drop", payload: { paths: arguments[0], position: { x: 400, y: 300 } } });',
-      [photos],
-    );
-    check(
-      await waitFor(/\d+ documents · \d+ pages/, 900000),
-      `${String(photos.length)} photos processed`,
-    );
-    console.log(
-      `      ${String(photos.length)} photos in ${((Date.now() - photoStart) / 1000).toFixed(1)} s`,
-    );
-    const out2 = join(data, 'out-photos');
-    await mkdir(out2, { recursive: true });
-    const sizes: { quality: string; bytes: number; pages: number; seconds: number }[] = [];
-    for (const [i, quality] of ['Balanced', 'Compact', 'High'].entries()) {
-      if (i > 0) await click('[aria-label=Dismiss]');
-      const run = await exportBinder({ ...(i === 0 ? { folder: out2 } : {}), quality });
-      check(run.ok, `${quality} export finishes (${run.seconds.toFixed(1)} s)`);
-      const file = await newestPdf(out2);
-      const checked = await verify(file.path, `${photoClient} – 2025 Binder`, null);
-      sizes.push({ quality, bytes: file.bytes, pages: checked.pages, seconds: run.seconds });
-      console.log(`      ${quality}: ${String(checked.pages)} pages, ${mb(file.bytes)}`);
+    // E2E_QUICK=1 skips it (about three minutes) while iterating on later steps.
+    if (!process.env.E2E_QUICK) {
+      await clickText('Current binder');
+      await clickText('Start next binder');
+      check(await waitFor('Who is this binder for?'), 'Start next binder opens a new binder');
+      await clickText('+ Add a new client');
+      const photoClient = 'John Example';
+      await exec(
+        'const i = document.querySelector("input"); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(i, arguments[0]); i.dispatchEvent(new Event("input", { bubbles: true }));',
+        [photoClient],
+      );
+      await clickText('Start empty binder');
+      check(await waitFor('Add documents to begin'), 'the second binder starts');
+      const photos = await pick(
+        'photo',
+        (f) => f.expect === 'ok' && f.documents.every((d) => d.duplicateOf === null),
+        100,
+      );
+      const photoStart = Date.now();
+      await exec(
+        'return window.__TAURI_INTERNALS__.invoke("plugin:event|emit", { event: "tauri://drag-drop", payload: { paths: arguments[0], position: { x: 400, y: 300 } } });',
+        [photos],
+      );
+      check(
+        await waitFor(/\d+ documents · \d+ pages/, 900000),
+        `${String(photos.length)} photos processed`,
+      );
+      console.log(
+        `      ${String(photos.length)} photos in ${((Date.now() - photoStart) / 1000).toFixed(1)} s`,
+      );
+      const out2 = join(data, 'out-photos');
+      await mkdir(out2, { recursive: true });
+      const sizes: { quality: string; bytes: number; pages: number; seconds: number }[] = [];
+      for (const [i, quality] of ['Balanced', 'Compact', 'High'].entries()) {
+        if (i > 0) await click('[aria-label=Dismiss]');
+        const run = await exportBinder({ ...(i === 0 ? { folder: out2 } : {}), quality });
+        check(run.ok, `${quality} export finishes (${run.seconds.toFixed(1)} s)`);
+        const file = await newestPdf(out2);
+        const checked = await verify(file.path, `${photoClient} – 2025 Binder`, null);
+        sizes.push({ quality, bytes: file.bytes, pages: checked.pages, seconds: run.seconds });
+        console.log(`      ${quality}: ${String(checked.pages)} pages, ${mb(file.bytes)}`);
+      }
+      const balanced = sizes.find((x) => x.quality === 'Balanced');
+      check(
+        (balanced?.bytes ?? Infinity) < 25 * 1024 * 1024,
+        'a 100-photo binder is under 25 MB on Balanced',
+      );
+      await writeFile(
+        resolve(root, 'docs/export-sizes.md'),
+        [
+          '# Binder file sizes',
+          '',
+          `${String(photos.length)} phone photos from the synthetic photo tier (12 MP, JPEG and HEIC), exported by the release app as one binder with cover and index. Generated by \`apps/desktop/scripts/e2e.ts\`.`,
+          '',
+          '| Preset | Pages | File size | Per page | Export time |',
+          '|---|---|---|---|---|',
+          ...sizes.map(
+            (x) =>
+              `| ${x.quality} | ${String(x.pages)} | ${mb(x.bytes)} | ${String(Math.round(x.bytes / x.pages / 1024))} KB | ${x.seconds.toFixed(1)} s |`,
+          ),
+          '',
+          `Mixed binder (digital, scanned and photo pages, ${String(result.pages)} pages, Balanced): ${mb(binder.bytes)}.`,
+          '',
+        ].join('\n'),
+      );
     }
-    const balanced = sizes.find((x) => x.quality === 'Balanced');
-    check(
-      (balanced?.bytes ?? Infinity) < 25 * 1024 * 1024,
-      'a 100-photo binder is under 25 MB on Balanced',
-    );
+
+    // ---- Settings, the missing-documents check, and both surviving a restart.
+    await mkdir(settingsShots, { recursive: true });
+    const firm = 'Example Tax Co.';
+    const template = '{year} {form} – {issuer}';
+    await clickText('Settings');
+    check(await waitFor('Firm profile'), 'settings show the firm profile');
+    await typeInto('input[placeholder="Example Tax Co."]', firm);
+    await press('');
+    check(await waitFor('Saved', 5000), 'the firm name saves');
+    const logo = join(data, 'firm-logo.svg');
     await writeFile(
-      resolve(root, 'docs/export-sizes.md'),
-      [
-        '# Binder file sizes',
-        '',
-        `${String(photos.length)} phone photos from the synthetic photo tier (12 MP, JPEG and HEIC), exported by the release app as one binder with cover and index. Generated by \`apps/desktop/scripts/e2e.ts\`.`,
-        '',
-        '| Preset | Pages | File size | Per page | Export time |',
-        '|---|---|---|---|---|',
-        ...sizes.map(
-          (x) =>
-            `| ${x.quality} | ${String(x.pages)} | ${mb(x.bytes)} | ${String(Math.round(x.bytes / x.pages / 1024))} KB | ${x.seconds.toFixed(1)} s |`,
-        ),
-        '',
-        `Mixed binder (digital, scanned and photo pages, ${String(result.pages)} pages, Balanced): ${mb(binder.bytes)}.`,
-        '',
-      ].join('\n'),
+      logo,
+      '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="60"><rect width="60" height="60" rx="8" fill="#111"/><rect x="76" y="14" width="150" height="10" fill="#111"/><rect x="76" y="36" width="100" height="10" fill="#777"/></svg>',
+    );
+    await clickText('Choose logo');
+    await pickPath('Choose your firm logo', logo, false);
+    const logoShown = async () => {
+      for (let end = Date.now() + 8000; Date.now() < end; await sleep(300))
+        if (await exec<boolean>('return !!document.querySelector("img[alt=\'Firm logo\']")'))
+          return true;
+      return false;
+    };
+    check(await logoShown(), 'an SVG logo is imported and previewed');
+    await typeInto('input[aria-describedby$="-preview"]', template);
+    check(
+      await waitFor('Example: 2025 W-2 – Northwind Logistics LLC', 5000),
+      'the name template previews live',
+    );
+    await sleep(1200);
+    for (let i = 0; i < 4; i++)
+      await exec(
+        'document.querySelector("[aria-label=\'Move Retirement & Social Security up\']").click()',
+      );
+    await clickText('Compact');
+    await choose('select', 'tesseract');
+    const settled = async () => {
+      await exec('document.querySelector("main .overflow-y-auto")?.scrollTo(0, 0)');
+      await sleep(700);
+    };
+    check(
+      await exec<boolean>(
+        'return [document.scrollingElement, document.body, document.getElementById("root"), document.querySelector("main")].every(e => !e || e.scrollTop === 0)',
+      ),
+      `the app shell never scrolls as a whole (only panes do) ${await exec<string>('const out = []; for (const e of document.querySelectorAll("*")) if (e.scrollTop > 0) out.push(e.tagName + "." + String(e.className).slice(0, 60) + "=" + e.scrollTop + " overflow:" + getComputedStyle(e).overflowY); return document.scrollingElement.tagName + "=" + document.scrollingElement.scrollTop + " " + out.join(" | ")')}`,
+    );
+    await click('label[title=Dark]');
+    await settled();
+    await shot('01-settings-dark', settingsShots);
+    await click('label[title=Light]');
+    await settled();
+    await shot('01-settings-light', settingsShots);
+    await click('label[title=Dark]');
+
+    // Two tax years for one client: 2024 exported first, then 2025 arrives incomplete.
+    const twoYearDir = join(corpus, 'two-year');
+    const twoYear = JSON.parse(
+      await readFile(join(twoYearDir, 'manifest.json'), 'utf8'),
+    ) as TwoYearManifest;
+    const yearFiles = (y: number) =>
+      (twoYear.years.find((x) => x.taxYear === y)?.files ?? []).map((f) => join(twoYearDir, f));
+    const labels: Record<string, string> = {
+      'w-2': 'Form W-2',
+      '1099-div': 'Form 1099-DIV',
+      'k-1-1065': 'Schedule K-1 (Form 1065)',
+    };
+    const expected = twoYear.expectedMissing.map(
+      (m) => `${labels[m.formType] ?? m.formType} from ${m.issuerName}`,
+    );
+    const startBinder = async (existing: boolean, year: number) => {
+      await clickText('Current binder');
+      await clickText('Start next binder');
+      if (!(await waitFor('Who is this binder for?'))) throw new Error('New binder did not open');
+      if (existing) await clickText(twoYear.client);
+      else {
+        await clickText('+ Add a new client');
+        await typeName(twoYear.client);
+      }
+      await choose('select', String(year));
+      await clickText('Start empty binder');
+      await waitFor('Add documents to begin');
+      await drop(yearFiles(year));
+      return waitFor(/\d+ documents · \d+ pages/, 300000);
+    };
+    const missingList = () =>
+      exec<string[]>(
+        'return [...document.querySelectorAll("ul[aria-label=\'Missing documents\'] li p")].map(p => p.textContent)',
+      );
+    check(await startBinder(false, 2024), 'the 2024 binder is reviewed');
+    check(
+      !(await text()).includes('Missing from'),
+      'a client with no history shows no missing list',
+    );
+    const out3 = join(data, 'out-two-year');
+    await mkdir(out3, { recursive: true });
+    check((await exportBinder({ folder: out3 })).ok, 'the 2024 binder exports');
+    check(await startBinder(true, 2025), 'the 2025 binder is reviewed');
+    check(
+      await waitFor('Missing from 2024', 10000),
+      'the 2025 binder shows what is missing from 2024',
+    );
+    const missing = await missingList();
+    check(
+      JSON.stringify([...missing].sort()) === JSON.stringify([...expected].sort()),
+      `missing items match the scenario: ${missing.join('; ')}`,
+    );
+    await exec(
+      '[...document.querySelectorAll("ul[aria-label=\'Missing documents\'] li")].find(li => li.textContent.includes("Schedule K-1")).querySelector("button").click()',
+    );
+    await sleep(400);
+    check(
+      (await missingList()).length === expected.length - 1,
+      '"Not expected this year" removes an item',
+    );
+    await clickText('Copy missing-docs list');
+    await sleep(400);
+    const copied = execFileSync('xclip', ['-o', '-selection', 'clipboard']).toString();
+    check(
+      copied.startsWith('Hi Robin,') &&
+        copied.includes('- Form W-2 from Testville Unified Schools') &&
+        !copied.includes('K-1') &&
+        copied.trimEnd().endsWith(firm),
+      'the copied list is a friendly email without dismissed items, signed by the firm',
+    );
+    if (await exec<boolean>('return !!document.querySelector("[aria-label=\'Close page strip\']")'))
+      await click('[aria-label="Close page strip"]');
+    await exec('document.getElementById("missing-title")?.scrollIntoView({ block: "start" })');
+    await sleep(700);
+    await shot('02-missing-dark', settingsShots);
+    await theme('light');
+    await sleep(500);
+    await shot('02-missing-light', settingsShots);
+    await theme('dark');
+    const exported2025 = await exportBinder({});
+    check(exported2025.ok, 'the 2025 binder exports to the remembered folder');
+    check(
+      await waitFor('Copy missing-docs list (2)', 5000),
+      'the export toast offers the missing-docs list',
+    );
+    await shot('03-export-toast-dark', settingsShots);
+    const binder2025 = await newestPdf(out3);
+    const checked2025 = await verify(binder2025.path, `${twoYear.client} – 2025 Binder`, null);
+    const cover = await coverInfo(binder2025.path);
+    check(cover.text.includes(firm) && cover.images > 0, 'the cover shows the firm name and logo');
+    const titles = checked2025.bookmarks.flatMap((b) => b.children.map((c) => c.title));
+    check(
+      titles.includes('2025 W-2 – Northwind Logistics LLC'),
+      'documents are named with the custom template',
+    );
+    check(
+      checked2025.bookmarks.filter((b) => b.children.length)[0]?.title ===
+        'Retirement & Social Security' || !titles.some((t) => /SSA|RRB|1099-R|5498/.test(t)),
+      'the binder follows the firm’s category order',
+    );
+    execFileSync('pdftoppm', [
+      '-f',
+      '1',
+      '-l',
+      '1',
+      '-r',
+      '80',
+      '-png',
+      '-singlefile',
+      binder2025.path,
+      join(settingsShots, '04-cover-with-logo'),
+    ]);
+
+    // Restart the app: everything above must still be there.
+    await wd('DELETE', `/session/${session}`);
+    session = '';
+    await sleep(1500);
+    await startApp();
+    check(await waitFor('Start with a client’s documents.'), 'the app restarts');
+    check(
+      (await exec<string | null>('return document.documentElement.dataset.theme ?? null')) ===
+        'dark',
+      'the theme persists',
+    );
+    await clickText('Settings');
+    await waitFor('Firm profile');
+    check(
+      (await exec<string>(
+        'return document.querySelector("input[placeholder=\'Example Tax Co.\']").value',
+      )) === firm,
+      'the firm name persists',
+    );
+    check(await logoShown(), 'the logo persists');
+    check(
+      (await exec<string>(
+        'return document.querySelector("input[aria-describedby$=\'-preview\']").value',
+      )) === template,
+      'the name template persists',
+    );
+    check(
+      (
+        await exec<string>(
+          'return document.querySelector("ol[aria-label=\'Category order\'] li")?.textContent ?? ""',
+        )
+      ).includes('Retirement & Social Security'),
+      'the binder order persists',
+    );
+    check(
+      await exec<boolean>(
+        'return document.querySelector("input[name=quality][value=compact]").checked',
+      ),
+      'the quality preset persists',
+    );
+    check(
+      (await exec<string>('return document.querySelector("select").value')) === 'tesseract',
+      'the OCR engine choice persists',
+    );
+    await clickText('New binder');
+    await waitFor('Who is this binder for?');
+    await clickText(twoYear.client);
+    await choose('select', '2025');
+    await clickText('Start empty binder');
+    await waitFor('Add documents to begin');
+    await drop(yearFiles(2025));
+    await waitFor(/\d+ documents · \d+ pages/, 300000);
+    await waitFor('Missing from 2024', 10000);
+    check(
+      (await missingList()).length === expected.length - 1 &&
+        (await text()).includes('Not expected this year'),
+      `the "Not expected this year" choice persists (${(await missingList()).join('; ')})`,
+    );
+
+    // Delete all local history, through the real confirmation dialog.
+    await clickText('Settings');
+    await waitFor('Local history');
+    await clickText('Delete all local history');
+    let confirmWin: string | undefined;
+    for (let end = Date.now() + 10000; Date.now() < end && !confirmWin; await sleep(300)) {
+      try {
+        confirmWin = execFileSync('xdotool', [
+          'search',
+          '--onlyvisible',
+          '--name',
+          'Delete all local history',
+        ])
+          .toString()
+          .trim()
+          .split('\n')[0];
+      } catch {
+        confirmWin = undefined;
+      }
+    }
+    check(!!confirmWin, 'deleting history asks for confirmation');
+    if (confirmWin) {
+      execFileSync('xdotool', ['windowfocus', '--sync', confirmWin]);
+      execFileSync('xdotool', ['key', 'Return']);
+    }
+    check(await waitFor('History deleted', 10000), 'history is deleted after confirming');
+    await clickText('Clients');
+    await sleep(500);
+    check(
+      !(await text()).includes(twoYear.client),
+      'the client list is empty after deleting history',
     );
   } finally {
     if (session) await wd('DELETE', `/session/${session}`).catch(() => undefined);

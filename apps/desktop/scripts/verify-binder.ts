@@ -16,7 +16,7 @@ import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { chromium } from 'playwright-core';
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { OPS, getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 // pdfjs reads its standard fonts with fs in Node: a plain path, not a file:// URL.
 const standardFontDataUrl = `${join(dirname(createRequire(import.meta.url).resolve('pdfjs-dist/package.json')), 'standard_fonts')}/`;
@@ -132,6 +132,20 @@ export async function checkBinder(path: string, expectTitle?: string): Promise<B
   const result = { pages: pdf.numPages, title, bookmarks, links, failures };
   await pdf.loadingTask.destroy();
   return result;
+}
+
+/** Text on the cover page and how many images it draws (the firm logo). */
+export async function coverInfo(path: string): Promise<{ text: string; images: number }> {
+  const pdf = await getDocument({ data: new Uint8Array(await readFile(path)), standardFontDataUrl })
+    .promise;
+  const page = await pdf.getPage(1);
+  const text = (await page.getTextContent()).items
+    .map((it) => ('str' in it ? it.str : ''))
+    .join(' ');
+  const ops = await page.getOperatorList();
+  const images = ops.fnArray.filter((op) => op === OPS.paintImageXObject).length;
+  await pdf.loadingTask.destroy();
+  return { text, images };
 }
 
 const escape = (s: string) =>

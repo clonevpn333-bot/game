@@ -6,6 +6,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type { FileInput as EngineFile, PageInput as EnginePage } from '@binderready/engine';
 import type { Quality } from './export-plan';
+import type { IndexItem } from './missing';
 
 export const inTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
@@ -59,7 +60,8 @@ export interface BinderRow {
 
 export interface AppInfo {
   version: string;
-  ocrEngine: string;
+  /** Text recognition engines on this system, best first. */
+  ocrEngines: string[];
   dataDir: string;
   platform: string;
 }
@@ -104,6 +106,24 @@ export const backend = {
     outputDir: string;
     trial: boolean;
   }) => invoke<null>('record_binder', { record }),
+  /** Stores this binder's {form, issuer} list for next year's missing-documents check. */
+  recordIndex: (clientId: number, taxYear: number, items: IndexItem[]) =>
+    invoke<null>('record_index', { clientId, taxYear, items }),
+  previousIndex: (clientId: number, taxYear: number) =>
+    invoke<{ taxYear: number; items: IndexItem[] } | null>('previous_index', { clientId, taxYear }),
+  dismissedMissing: (clientId: number, taxYear: number) =>
+    invoke<IndexItem[]>('dismissed_missing', { clientId, taxYear }),
+  setMissingDismissed: (clientId: number, taxYear: number, item: IndexItem, dismissed: boolean) =>
+    invoke<null>('set_missing_dismissed', { clientId, taxYear, item, dismissed }),
+  deleteHistory: () => invoke<null>('delete_history'),
+  /** System picker for a PNG/SVG logo; false when cancelled. */
+  chooseLogo: () => invoke<boolean>('choose_logo'),
+  /** The firm logo as PNG bytes, or null. */
+  firmLogo: async () => {
+    const bytes = new Uint8Array(await invoke<ArrayBuffer>('firm_logo'));
+    return bytes.byteLength ? bytes : null;
+  },
+  clearLogo: () => invoke<null>('clear_logo'),
   onProgress: (handler: (p: Progress) => void): Promise<UnlistenFn> =>
     listen<Progress>('ingest://progress', (e) => {
       handler(e.payload);

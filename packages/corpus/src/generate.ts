@@ -40,7 +40,7 @@ function draw(page: PDFPage, blocks: Block[], fonts: Fonts) {
   }
 }
 
-async function pdfFromPages(pages: Block[][], title: string): Promise<Uint8Array> {
+export async function pdfFromPages(pages: Block[][], title: string): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.setTitle(title);
   doc.setProducer('BinderReady synthetic corpus');

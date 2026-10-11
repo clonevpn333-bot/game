@@ -24,6 +24,11 @@ pub enum OcrError {
     Recognize(String),
 }
 
+/// Engines this build can run, best first. Native engines join in Phase 6.
+pub fn available_engines() -> Vec<&'static str> {
+    vec!["tesseract"]
+}
+
 pub trait OcrEngine {
     fn name(&self) -> &'static str;
     fn recognize(&mut self, image: &GrayImage, ppi: u32) -> Result<Vec<OcrWord>, OcrError>;

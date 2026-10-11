@@ -4,7 +4,8 @@
 
 use crate::AppState;
 use crate::ingest;
-use crate::store::{Client, StoreError};
+use crate::logo;
+use crate::store::{Client, IndexItem, Store, StoreError, YearIndex};
 use crate::types::{Progress, Stage};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -17,7 +18,8 @@ use tauri::{AppHandle, Emitter, Manager, State};
 #[serde(rename_all = "camelCase")]
 pub struct AppInfo {
     version: String,
-    ocr_engine: &'static str,
+    /// Text recognition engines on this system, best first (Automatic uses the first).
+    ocr_engines: Vec<&'static str>,
     data_dir: String,
     platform: &'static str,
 }
@@ -26,10 +28,14 @@ pub struct AppInfo {
 pub fn app_info(app: AppHandle, state: State<AppState>) -> AppInfo {
     AppInfo {
         version: app.package_info().version.to_string(),
-        ocr_engine: "tesseract",
+        ocr_engines: crate::ocr::available_engines(),
         data_dir: state.data_dir.to_string_lossy().into_owned(),
         platform: std::env::consts::OS,
     }
+}
+
+fn lock<'a>(state: &'a State<AppState>) -> Result<std::sync::MutexGuard<'a, Store>, StoreError> {
+    state.store.lock().map_err(|e| StoreError::Invalid(e.to_string()))
 }
 
 #[tauri::command]
@@ -166,4 +172,68 @@ pub fn expand_paths(paths: Vec<String>) -> Vec<String> {
         }
     }
     out
+}
+
+// Missing-documents check.
+
+#[tauri::command]
+pub fn record_index(state: State<AppState>, client_id: i64, tax_year: i64, items: Vec<IndexItem>) -> Result<(), StoreError> {
+    lock(&state)?.record_index(client_id, tax_year, &items)
+}
+
+#[tauri::command]
+pub fn previous_index(state: State<AppState>, client_id: i64, tax_year: i64) -> Result<Option<YearIndex>, StoreError> {
+    lock(&state)?.previous_index(client_id, tax_year)
+}
+
+#[tauri::command]
+pub fn dismissed_missing(state: State<AppState>, client_id: i64, tax_year: i64) -> Result<Vec<IndexItem>, StoreError> {
+    lock(&state)?.dismissed(client_id, tax_year)
+}
+
+#[tauri::command]
+pub fn set_missing_dismissed(state: State<AppState>, client_id: i64, tax_year: i64, item: IndexItem, dismissed: bool) -> Result<(), StoreError> {
+    lock(&state)?.set_dismissed(client_id, tax_year, &item, dismissed)
+}
+
+/// Settings → Data → "Delete all local history".
+#[tauri::command]
+pub fn delete_history(state: State<AppState>) -> Result<(), StoreError> {
+    lock(&state)?.delete_history()
+}
+
+// Firm logo.
+
+/// Picks a PNG or SVG with the system dialog and stores it as the cover logo.
+/// Returns false when the dialog was cancelled.
+#[tauri::command(async)]
+pub fn choose_logo(app: AppHandle, state: State<'_, AppState>) -> Result<bool, String> {
+    use tauri_plugin_dialog::DialogExt;
+    let Some(file) = app.dialog().file().set_title("Choose your firm logo").add_filter("Logo (PNG or SVG)", &["png", "svg"]).blocking_pick_file() else {
+        return Ok(false);
+    };
+    let path = file.into_path().map_err(|e| e.to_string())?;
+    let bytes = std::fs::read(&path).map_err(|e| e.to_string())?;
+    let svg = path.extension().is_some_and(|e| e.eq_ignore_ascii_case("svg"));
+    let png = logo::normalize(&bytes, svg)?;
+    std::fs::create_dir_all(&state.data_dir).map_err(|e| e.to_string())?;
+    std::fs::write(state.data_dir.join(logo::LOGO_FILE), png).map_err(|e| e.to_string())?;
+    Ok(true)
+}
+
+/// The stored logo as PNG bytes; empty when there is none.
+#[tauri::command(async)]
+pub fn firm_logo(state: State<'_, AppState>) -> Result<tauri::ipc::Response, String> {
+    let path = state.data_dir.join(logo::LOGO_FILE);
+    let bytes = if path.exists() { std::fs::read(path).map_err(|e| e.to_string())? } else { Vec::new() };
+    Ok(tauri::ipc::Response::new(bytes))
+}
+
+#[tauri::command]
+pub fn clear_logo(state: State<AppState>) -> Result<(), String> {
+    let path = state.data_dir.join(logo::LOGO_FILE);
+    if path.exists() {
+        std::fs::remove_file(path).map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }

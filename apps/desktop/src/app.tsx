@@ -63,7 +63,7 @@ export function App() {
       <TitleBar />
       <div className="flex min-h-0 flex-1">
         <Sidebar />
-        <main className="min-w-0 flex-1">
+        <main className="min-h-0 min-w-0 flex-1 overflow-clip">
           {view === 'home' ? <Home /> : null}
           {view === 'new-binder' ? <NewBinder /> : null}
           {view === 'processing' ? <Processing /> : null}

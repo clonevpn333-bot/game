@@ -11,6 +11,7 @@ import {
 import { runEngine } from '../lib/engine-client';
 import type { Quality } from '../lib/export-plan';
 import type { ExportResult } from '../lib/export-run';
+import type { IndexItem } from '../lib/missing';
 import * as review from '../lib/review';
 
 export type View =
@@ -56,6 +57,7 @@ const KEYS = {
   exportPrefs: 'export.prefs',
   nameTemplate: 'naming.template',
   categoryOrder: 'binder.order',
+  firmName: 'firm.name',
 } as const;
 
 function parseOrder(raw: string | null): CategoryId[] {
@@ -103,6 +105,12 @@ interface State {
   /** The firm's category order; empty means the default order. */
   categoryOrder: CategoryId[];
   exportPrefs: ExportPrefs;
+  /** Firm profile: printed on binder covers and signed on missing-docs emails. */
+  firmName: string;
+  /** What the client sent for the most recent earlier year, if a binder was exported then. */
+  history: { taxYear: number; items: IndexItem[] } | null;
+  /** "Not expected this year" items for the current binder's year. */
+  dismissedMissing: IndexItem[];
   exportOpen: boolean;
   lastExport: ExportResult | null;
 
@@ -111,7 +119,9 @@ interface State {
   setNameTemplate: (template: string) => Promise<void>;
   setCategoryOrder: (order: CategoryId[]) => Promise<void>;
   setExportPrefs: (prefs: ExportPrefs) => Promise<void>;
+  setFirmName: (name: string) => Promise<void>;
   openExport: () => void;
+  setMissingDismissed: (item: IndexItem, dismissed: boolean) => Promise<void>;
   exportDone: (result: ExportResult) => void;
   loadClients: () => Promise<void>;
   createClient: (name: string) => Promise<Client>;
@@ -120,7 +130,8 @@ interface State {
   addPaths: (paths: string[]) => Promise<void>;
   onProgress: (p: Progress) => void;
   onFile: (batchId: string, file: DesktopFile) => void;
-  closeBinder: () => void;
+  /** Discards the open binder; goes home unless `stay`. */
+  closeBinder: (stay?: boolean) => void;
 
   select: (id: string | null) => void;
   move: (delta: 1 | -1) => void;
@@ -184,6 +195,9 @@ export const useApp = create<State>((set, get) => ({
   nameTemplate: DEFAULT_NAME_TEMPLATE,
   categoryOrder: [],
   exportPrefs: DEFAULT_EXPORT_PREFS,
+  firmName: '',
+  history: null,
+  dismissedMissing: [],
   exportOpen: false,
   lastExport: null,
 
@@ -191,12 +205,14 @@ export const useApp = create<State>((set, get) => ({
     set({ view, paletteOpen: false });
   },
   loadPrefs: async () => {
-    const [prefs, template, order] = await Promise.all([
+    const [prefs, template, order, firmName] = await Promise.all([
       backend.getSetting(KEYS.exportPrefs),
       backend.getSetting(KEYS.nameTemplate),
       backend.getSetting(KEYS.categoryOrder),
+      backend.getSetting(KEYS.firmName),
     ]);
     set({
+      firmName: firmName ?? '',
       exportPrefs: parsePrefs(prefs),
       nameTemplate: template?.trim() ? template : DEFAULT_NAME_TEMPLATE,
       categoryOrder: parseOrder(order),
@@ -210,6 +226,11 @@ export const useApp = create<State>((set, get) => ({
   setCategoryOrder: async (order) => {
     set({ categoryOrder: order });
     await backend.setSetting(KEYS.categoryOrder, JSON.stringify(order));
+  },
+  setFirmName: async (name) => {
+    const firmName = name.trim().slice(0, 120);
+    set({ firmName });
+    await backend.setSetting(KEYS.firmName, firmName);
   },
   setExportPrefs: async (prefs) => {
     set({ exportPrefs: prefs });
@@ -225,6 +246,25 @@ export const useApp = create<State>((set, get) => ({
       previewOpen: false,
       editingName: false,
     });
+  },
+  setMissingDismissed: async (item, dismissed) => {
+    const batch = get().batch;
+    if (!batch) return;
+    // Exactly what the backend stores: form type and issuer, nothing else.
+    const stored: IndexItem = { formType: item.formType, issuerName: item.issuerName };
+    const same = (i: IndexItem) =>
+      i.formType === stored.formType && i.issuerName === stored.issuerName;
+    const before = get().dismissedMissing;
+    set({
+      dismissedMissing: dismissed
+        ? [...before.filter((i) => !same(i)), stored]
+        : before.filter((i) => !same(i)),
+    });
+    try {
+      await backend.setMissingDismissed(batch.client.id, batch.taxYear, stored, dismissed);
+    } catch {
+      set({ dismissedMissing: before, notice: 'That change couldn’t be saved. Try again.' });
+    }
   },
   exportDone: (result) => {
     set({ exportOpen: false, lastExport: result });
@@ -264,7 +304,13 @@ export const useApp = create<State>((set, get) => ({
       view: 'processing',
     });
     const pending = get().pendingPaths;
-    set({ pendingPaths: [] });
+    set({ pendingPaths: [], history: null, dismissedMissing: [] });
+    void Promise.all([
+      backend.previousIndex(client.id, taxYear),
+      backend.dismissedMissing(client.id, taxYear),
+    ]).then(([history, dismissedMissing]) => {
+      if (get().batch?.id === batch.id) set({ history, dismissedMissing });
+    });
     if (pending.length) await get().addPaths(pending);
   },
   addPaths: async (paths) => {
@@ -315,7 +361,7 @@ export const useApp = create<State>((set, get) => ({
     set((s) => ({ inputs: { ...s.inputs, [file.id]: file } }));
     void maybeRunEngine(get().batch ?? batch);
   },
-  closeBinder: () => {
+  closeBinder: (stay = false) => {
     const batch = get().batch;
     if (batch && !allSettled(batch)) void backend.cancelIngest(batch.id);
     set({
@@ -326,7 +372,9 @@ export const useApp = create<State>((set, get) => ({
       selectedId: null,
       exportOpen: false,
       lastExport: null,
-      view: 'home',
+      history: null,
+      dismissedMissing: [],
+      ...(stay ? {} : { view: 'home' as const }),
     });
   },
 

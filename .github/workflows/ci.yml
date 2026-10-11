@@ -115,7 +115,7 @@ jobs:
           libwebkit2gtk-4.1-dev librsvg2-dev libayatana-appindicator3-dev libclang-dev
           libtesseract-dev libleptonica-dev tesseract-ocr-eng
           libheif-dev libheif-plugin-libde265 libheif-plugin-x265 libheif-examples
-          poppler-utils qpdf imagemagick webkit2gtk-driver xvfb xdotool
+          poppler-utils qpdf imagemagick webkit2gtk-driver xvfb xdotool xclip
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @binderready/desktop fetch:pdfium
       - name: Clippy
@@ -134,6 +134,7 @@ jobs:
           node src/generate.ts
           node src/degrade.ts --tier scanned
           node src/degrade.ts --tier photo
+          node src/two-year.ts
       - name: Accuracy through the desktop pipeline
         working-directory: packages/corpus
         run: |
@@ -153,3 +154,4 @@ jobs:
             docs/export-sizes.md
             docs/screenshots/phase-3/
             docs/screenshots/phase-4/
+            docs/screenshots/phase-5/

@@ -142,7 +142,12 @@ export function Processing() {
         <div className="flex-1">
           <DropZone compact title="Drop more documents" onFiles={(paths) => void addPaths(paths)} />
         </div>
-        <Button variant="ghost" onClick={close}>
+        <Button
+          variant="ghost"
+          onClick={() => {
+            close();
+          }}
+        >
           Cancel binder
         </Button>
       </div>
