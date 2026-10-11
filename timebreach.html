@@ -1205,13 +1205,189 @@ class Tree {
 }
 
 /* =====================================================================
+   ANATOMY KIT — sculpted single-mesh heads (painted lips, brows, stubble,
+   sockets), contoured torsos, lathe-profiled muscular limbs with blended
+   joints, fingered gripping hands, real boots & feet.
+   ===================================================================== */
+// add geometry whose per-vertex 'color' multiplies the given tint
+GB.prototype.addVC = function (geo, color, surf, m) {
+  const mm = this.M.clone().multiply(m || new M4()); const nm = new THREE.Matrix3().getNormalMatrix(mm);
+  const P = geo.attributes.position, N = geo.attributes.normal, C = geo.attributes.color, SF = geo.attributes.surf, t = new COL(color ?? 0xffffff), s = surf || S.matte;
+  for (let i = 0; i < P.count; i++) {
+    _v3.fromBufferAttribute(P, i).applyMatrix4(mm); this.p.push(_v3.x, _v3.y, _v3.z);
+    _v4.fromBufferAttribute(N, i).applyMatrix3(nm).normalize(); this.n.push(_v4.x, _v4.y, _v4.z);
+    if (C) this.c.push(C.getX(i) * t.r, C.getY(i) * t.g, C.getZ(i) * t.b); else this.c.push(t.r, t.g, t.b);
+    if (SF) this.s.push(SF.getX(i), SF.getY(i), SF.getZ(i)); else this.s.push(s[0], s[1], s[2]);
+  }
+  return this;
+};
+const _G = (d, w) => Math.exp(-(d * d) / (w * w));
+const _ss = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+// ---------- the head ----------
+function headDisp(x, y, z, v) {
+  const sx = Math.sign(x) || 1, ax = Math.abs(x), zn = z / Math.max(.15, Math.hypot(x, z)), front = _ss(.45, .95, zn) * _ss(.05, .3, z + .25), low = _ss(-.15, -.95, y);
+  let X = x * .088, Y = y * .118, Z = z * .103;
+  X *= 1 - low * (.24 - v.jaw * .14) - _ss(.2, .9, y) * .04;
+  if (z < 0) { Z *= 1 + .12 * _ss(0, -.8, z) * _ss(-.6, .5, y); Z *= 1 - low * .3; }
+  if (z > 0) Z *= 1 - .11 * front;                                               // flatter face plane
+  Y += _ss(-.6, -1, y) * .012 * (z > 0 ? 1 : .2);                                  // squarer jaw underside
+  const ch = _G(ax - .6, .22) * _G(y + .08, .18) * front; X += sx * ch * .01 * v.cheek; Z += ch * .006 * v.cheek;
+  const es = _G(ax - .36, .16) * _G(y - .02, .12) * front; Z -= es * .016;        // eye sockets
+  const br = _G(ax - .32, .3) * _G(y - .14, .07) * front; Z += br * .012 * v.brow;  // brow ridge
+  const nb = _G(x, .1 + .07 * _ss(-.1, -.4, y)) * _ss(.12, -.05, y) * _ss(-.48, -.34, y); const tip = _G(x, .12) * _G(y + .36, .08);
+  Z += (nb * .022 + tip * .016) * v.nose * front; X += sx * _G(ax - .1, .06) * _G(y + .3, .07) * front * .004;                                  // nose bridge + tip
+  const nw = _G(ax - .12, .055) * _G(y + .41, .045) * front; Z += nw * .006; X += sx * nw * .002;
+  const lu = _G(x, .28) * _G(y + .5, .038) * front, ll = _G(x, .24) * _G(y + .6, .042) * front, cr = _G(x, .3) * _G(y + .552, .015) * front;
+  Z += lu * .009 + ll * .01 - cr * .007 + _G(x, .06) * _G(y + .45, .025) * front * -.002; // lips, crease, philtrum
+  Z -= _G(x, .3) * _G(y + .7, .05) * front * .004;                                     // mentolabial groove
+  const chn = _G(x, .26) * _G(y + .86, .1) * front; Z += chn * .014 * v.chin; Y -= chn * .006;
+  const jawA = _G(ax - .55, .2) * _G(y + .75, .15); X += sx * jawA * .006 * v.jaw;
+  return [X, Y, Z, { front, low, lu, ll, es, br, ch, ax }];
+}
+function sculptHead(o, v) {
+  const g = GB.low ? new THREE.SphereGeometry(1, 30, 22) : new THREE.SphereGeometry(1, 46, 34); g.rotateY(-PI / 2); // seam to the back
+  const P = g.attributes.position, n = P.count, col = new Float32Array(n * 3), sf = new Float32Array(n * 3), meta = [];
+  const skin = new COL(o.skin ?? 0xc89070), lip = skin.clone().lerp(new COL(0x8a3a3a), .6).multiplyScalar(.85), brow = new COL(o.brow ?? o.hair ?? 0x2a1a10), stub = skin.clone().multiplyScalar(.7).lerp(new COL(0x2a2018), .25), rosy = skin.clone().lerp(new COL(0xc05050), .4), paint = o.warpaint !== undefined && o.warpaint !== null ? new COL(o.warpaint) : null;
+  for (let i = 0; i < n; i++) {
+    const x = P.getX(i), y = P.getY(i), z = P.getZ(i); const [X, Y, Z, m] = headDisp(x, y, z, v); P.setXYZ(i, X, Y, Z);
+    let c = skin.clone().multiplyScalar(.93 + .14 * vnoise(x * 6 + 3, y * 6 + z * 4));
+    c.lerp(rosy, m.ch * .35);
+    c.multiplyScalar(1 - m.es * .38);
+    c.lerp(lip, clamp((m.lu + m.ll) * 1.3, 0, .55)); c.multiplyScalar(1 - _G(x, .26) * _G(y + .552, .01) * m.front * .45);
+    c.multiplyScalar(1 - _G(m.ax - (.25 + (y + .36) * -.3), .035) * _ss(-.32, -.44, y) * _ss(-.66, -.54, y) * m.front * .25); // smile lines
+    c.multiplyScalar(1 - _G(m.ax - .13, .05) * _ss(.05, -.15, y) * _ss(-.45, -.3, y) * m.front * .22);     // nose sides
+    c.multiplyScalar(1 - _G(x, .1) * _G(y + .45, .02) * m.front * .12);                                    // under nose
+    c.multiplyScalar(1 - _G(m.ax - .33, .25) * _G(y - .085, .03) * m.front * .25);                          // under brow
+    c.multiplyScalar(1 - _ss(-.88, -1, y) * .3 + _G(x, .14) * _G(y + .3, .06) * m.front * .06);            // under jaw / nose highlight
+    c.multiplyScalar(1 - _G(m.ax - .36, .14) * _G(y - .07, .018) * m.front * .3);                          // lid crease
+    const bw = _G(m.ax - .33, .2) * _G(y - .155, .045) * m.front; c.lerp(brow, clamp(bw * 1.8, 0, 1));
+    if (v.stubble) c.lerp(stub, clamp(m.low * 1.5 - .25, 0, 1) * (1 - clamp((m.lu + m.ll) * 2, 0, 1)) * .7 * (z > -.2 ? 1 : 0));
+    if (paint) { const pw = _G(m.ax - .52, .12) * (_G(y + .05, .03) + _G(y + .16, .03)) * m.front; c.lerp(paint, clamp(pw * 2, 0, 1)); }
+    if (v.scar) { const sw = _G(x - .5, .03) * _ss(.15, -.1, y) * _ss(-.45, -.3, y) * m.front; c.lerp(new COL(0x8a4a40), sw); }
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; const s = S.skin; sf[i * 3] = s[0] - m.ll * .15; sf[i * 3 + 1] = s[1]; sf[i * 3 + 2] = s[2];
+    meta.push([x, y, z]);
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('surf', new THREE.BufferAttribute(sf, 3)); g.computeVertexNormals();
+  return { geo: g.toNonIndexed() };
+}
+// shell of the head surface (hair cap, beard) — keep triangles passing `keep(x,y,z)` in sphere space
+function headShell(v, scale, keep, colorFn) {
+  const g = GB.low ? new THREE.SphereGeometry(1, 22, 16) : new THREE.SphereGeometry(1, 32, 24); g.rotateY(-PI / 2); const P = g.attributes.position, n = P.count, uv = [];
+  for (let i = 0; i < n; i++) { const x = P.getX(i), y = P.getY(i), z = P.getZ(i); uv.push([x, y, z]); const [X, Y, Z] = headDisp(x, y, z, v); const r = scale(x, y, z); P.setXYZ(i, X * r, Y * r, Z * r); }
+  g.computeVertexNormals(); const ng = g.toNonIndexed(); const idx = g.index.array, NP = ng.attributes.position, NN = ng.attributes.normal;
+  const pos = [], nor = [], col = [];
+  for (let f = 0; f < idx.length; f += 3) {
+    const a = uv[idx[f]], b = uv[idx[f + 1]], c = uv[idx[f + 2]]; const cx = (a[0] + b[0] + c[0]) / 3, cy = (a[1] + b[1] + c[1]) / 3, cz = (a[2] + b[2] + c[2]) / 3;
+    if (!keep(cx, cy, cz)) continue;
+    for (let k = 0; k < 3; k++) { const j = f + k; pos.push(NP.getX(j), NP.getY(j), NP.getZ(j)); nor.push(NN.getX(j), NN.getY(j), NN.getZ(j)); const q = uv[idx[j]]; const cc = colorFn(q[0], q[1], q[2]); col.push(cc, cc, cc); }
+  }
+  const out = new THREE.BufferGeometry(); out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); out.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  return out;
+}
+const strands = (x, y, z) => .78 + .3 * vnoise(Math.atan2(x, z) * 9, y * 2) + .12 * vnoise(Math.atan2(x, z) * 30, y * 6);
+// ---------- limbs ----------
+const _limbCache = new Map();
+function limbGeo(len, r0, r1, o = {}) {
+  const key = [len, r0, r1, o.bulge, o.bp, o.back, o.bk, o.fold, o.fx].join('_'); if (_limbCache.has(key)) return _limbCache.get(key);
+  const pts = [], N = 18;
+  for (let i = 0; i <= N; i++) {
+    const t = i / N; let r = lerp(r0, r1, t) + (o.bulge || 0) * _G(t - (o.bp ?? .45), .22);
+    pts.push(new THREE.Vector2(Math.max(.0005, r), -t * len));
+  }
+  // blunt, slightly domed ends that overlap neighbouring limbs (no pinched 'ball joints')
+  const rTop = pts[0].x, rBot = pts[N].x;
+  pts.unshift(new THREE.Vector2(.0005, rTop * .5), new THREE.Vector2(rTop * .82, rTop * .35)); pts.push(new THREE.Vector2(rBot * .82, -len - rBot * .35), new THREE.Vector2(.0005, -len - rBot * .5));
+  const g = new THREE.LatheGeometry(pts, 14); const P = g.attributes.position, col = new Float32Array(P.count * 3);
+  for (let i = 0; i < P.count; i++) {
+    let x = P.getX(i), y = P.getY(i), z = P.getZ(i); const t = clamp(-y / len, 0, 1), rr = Math.hypot(x, z) || 1; if (rr < 1e-3) { col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = 1; continue; }
+    x *= o.fx || 1; z *= o.fz || 1;
+    if (o.back) z -= Math.max(0, -z / rr) * o.back * _G(t - (o.bk ?? .3), .18);         // calf / triceps on the back
+    if (o.front) z += Math.max(0, z / rr) * o.front * _G(t - (o.bp ?? .45), .2);        // bicep / quad on the front
+    P.setXYZ(i, x, y, z);
+    let c = 1; if (o.fold) c = .9 + .1 * Math.sin(t * 38 + Math.atan2(x, z) * 2 + Math.sin(t * 13) * 2) - .12 * _G(t - .05, .06) - .1 * _G(t - .96, .05);
+    else c = .95 + .05 * vnoise(t * 8, Math.atan2(x, z) * 2);
+    col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = c;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.computeVertexNormals(); const out = g.toNonIndexed(); _limbCache.set(key, out); return out;
+}
+// ---------- torso ----------
+function torsoGeo(bx, o = {}) {
+  const g = new THREE.CylinderGeometry(1, 1, 1, 30, 18, true); const P = g.attributes.position, col = new Float32Array(P.count * 3);
+  const W = [[0, .15], [.22, .142], [.42, .156], [.62, .182], [.78, .2], [.87, .198], [.94, .15], [1, .062]], D = [[0, .1], [.3, .098], [.6, .118], [.78, .114], [.9, .09], [1, .058]];
+  for (let i = 0; i < P.count; i++) {
+    const t = P.getY(i) + .5, x0 = P.getX(i), z0 = P.getZ(i), th = Math.atan2(z0, x0), cx = Math.cos(th), cz = Math.sin(th);
+    let w = kf(t, W) * bx, d = kf(t, D) * (.55 + .45 * bx);
+    let X = cx * w, Z = cz * d;
+    const fr = Math.max(0, cz), bk = Math.max(0, -cz), xn = cx;
+    Z += fr * .02 * _G(t - .69, .11) * _G(Math.abs(xn) - .42, .3) * (o.pecs ? 1.3 : 1);   // chest
+    Z += fr * (o.belly || 0) * .03 * _G(t - .22, .2);                                     // gut
+    Z -= bk * .009 * _G(t - .74, .1) * (1 - _G(xn, .15));                            // shoulder blades
+    Z += bk * .005 * _G(xn, .09) * _G(t - .55, .4);                                       // spine groove (inward)
+    X += Math.sign(xn) * .008 * _G(t - .58, .14) * Math.abs(xn);                          // lats
+    const Y = t * .5;
+    P.setXYZ(i, X, Y, Z);
+    let c = 1;
+    if (o.bare) { const abs = fr * _G(xn, .06) * _ss(.12, .5, t) * _ss(.62, .5, t), row = fr * _G(Math.abs(xn) - .2, .45) * (Math.sin(t * 40) > .7 ? 1 : 0) * _ss(.15, .45, t) * _ss(.58, .45, t), pc = fr * _G(t - .6, .025) * _G(Math.abs(xn) - .45, .35);
+      c = 1 - abs * .18 - row * .1 - pc * .22 + fr * .05 * _G(t - .7, .12); }
+    else c = .92 + .08 * Math.sin(t * 34 + th * 3 + Math.sin(th * 5)) * _ss(.45, .1, t) - .1 * _G(t - .02, .05) + .04 * vnoise(th * 3, t * 6);
+    col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = c;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.computeVertexNormals(); return g.toNonIndexed();
+}
+// ---------- hands (gripping) ----------
+function buildBipedHand(b, col, surf, s) {
+  b.push(0, -.285, .004);
+  b.obox(.068, .078, .032, 0, 0, 0, col, surf);
+  for (let f = 0; f < 4; f++) {
+    const fx = (-.024 + f * .016), len = [.03, .034, .032, .026][f];
+    b.push(fx, -.038, .006, -1.15, 0, 0); b.cyl(.0088, .0082, len, 0, -len / 2, 0, col, surf, 0, 0, 0, 6); b.sph(.0088, 0, 0, 0, col, surf, 1, 1, 1, 0);
+    b.push(0, -len, 0, -1.25, 0, 0); b.cyl(.0078, .0072, len * .8, 0, -len * .4, 0, col, surf, 0, 0, 0, 6); b.sph(.0076, 0, -len * .8, 0, col, surf, 1, 1, 1, 0); b.pop(); b.pop();
+  }
+  b.push(-s * .03, -.012, .016, -.7, 0, s * .9); b.cyl(.011, .009, .036, 0, -.018, 0, col, surf, 0, 0, 0, 6); b.sph(.0095, 0, -.036, 0, col, surf, 1, 1, 1, 0); b.pop();
+  b.sph(.03, 0, .035, 0, col, surf, 1.1, .6, .7, 0); // wrist blend
+  b.pop();
+}
+// ---------- feet ----------
+function buildBoot(b, col, bx, tall) {
+  const sole = 0x15100a;
+  b.obox(.1 * bx, .09, .15, 0, -.405, .0, col, S.leather);
+  b.sph(.056, 0, -.425, .1, col, S.leather, .95 * bx, .62, 1.25, 1);
+  b.obox(.108 * bx, .026, .28, 0, -.462, .045, sole, S.rubber); b.obox(.095 * bx, .03, .07, 0, -.44, -.05, sole, S.rubber);
+  for (let i = 0; i < 4; i++) b.box(.05, .006, .008, 0, -.37 - i * .018, .06 + i * .012, 0x0a0806, S.cloth, -.5);
+  b.cyl(.062 * bx, .058 * bx, tall ? .26 : .1, 0, tall ? -.3 : -.35, 0, col, S.leather, 0, 0, 0, 12);
+  b.tor(.063 * bx, .007, 0, tall ? -.18 : -.3, 0, new COL(col).multiplyScalar(.75).getHex(), S.leather, PI / 2, 0, 0, TAU, 4, 14);
+}
+function buildFoot(b, skin) {
+  b.obox(.085, .055, .17, 0, -.43, .035, skin, S.skin); b.sph(.045, 0, -.425, -.035, skin, S.skin, 1, .8, 1.1, 0);
+  for (let i = 0; i < 5; i++) b.sph(i === 0 ? .016 : .012, -.032 + i * .016, -.448, .125 - Math.abs(i - 1) * .006, skin, S.skin, 1, .8, 1.2, 0);
+}
+const _capCache = {};
+function sphereCap(a) { const k = a.toFixed(3); if (!_capCache[k]) { _capCache[k] = new THREE.SphereGeometry(1, 22, 12, 0, TAU, 0, PI * a).toNonIndexed(); _capCache[k].userData.shared = true; } return _capCache[k]; }
+function helmetDome(b, col, surf, r, sy, a, y = .185, z = -.01, tilt = -.15) { b.geo(sphereCap(a), col, surf, 0, y, z, tilt, 0, 0, r, r * sy, r * 1.07); }
+// explicit facial features layered on the sculpt so they read under flat light and at a distance
+function faceFeatures(h, o, v, hs, skin, lipC) {
+  const at = (x, y, z, push = 0) => { const l = Math.hypot(x, y, z); const [X, Y, Z] = headDisp(x / l, y / l, z / l, v); return [X * hs, .165 + Y * hs, -.005 + Z * hs + push]; };
+  const browC = o.brow ?? o.hair ?? 0x2a1a10, shade = new COL(skin).multiplyScalar(.82).getHex();
+  // nose: bridge + tip + wings
+  let [x, y, z] = at(0, -.2, .97); h.box(.013, .036, .012, x, y - .004, z - .008, skin, S.skin, -.32);
+  [x, y, z] = at(0, -.36, .94); h.sph(.0098 * v.nose, x, y, z - .0075, skin, S.skin, 1.15, .95, 1, 0);
+  for (const s of [-1, 1]) { [x, y, z] = at(s * .1, -.4, .92); h.sph(.0078, x, y, z - .0075, skin, S.skin, 1.05, .8, .9, 0); h.sph(.003, x - s * .001, y - .0045, z - .002, 0x3a2420, S.skin, 1.3, .55, 1, 0); }
+  // brows: tapered strokes following the ridge
+  for (const s of [-1, 1]) for (let k = 0; k < 3; k++) { const u = .2 + k * .11; [x, y, z] = at(s * u, .17 - k * .012 + (k === 0 ? .004 : 0), .93 - k * .04, .002); h.sph(.0095 - k * .0012, x, y, z - .0045, browC, S.cloth, 1.4, .32, .5, 0, 0, 0, -s * (.08 + k * .1)); }
+  // lips: upper bow + fuller lower
+  [x, y, z] = at(0, -.5, .9); h.sph(.016, x, y, z - .0075, lipC, S.skin, 1.45, .32, .55, 0);
+  [x, y, z] = at(0, -.6, .87); h.sph(.0155, x, y, z - .0075, lipC, S.skin, 1.35, .4, .6, 0);
+}
+function headVariant(o) { const r = srng(((o.skin ?? 0) * 7 + (o.hair ?? 3) * 3 + (o.bulk || 1) * 101) | 0); return { jaw: (o.jaw ?? .6 + r() * .8) * (o.bulk > 1.15 ? 1.3 : 1), nose: .8 + r() * .5, brow: .7 + r() * .7 + (o.bulk > 1.15 ? .5 : 0), chin: .6 + r() * .8, cheek: .7 + r() * .6, stubble: o.stubble ?? r() < .45, scar: o.scar }; }
+
+/* =====================================================================
    ENEMY RIGS — hierarchical part pivots (model units, facing +Z)
    ===================================================================== */
 const RIGS = {
   biped: {
     names: ['pelvis', 'torso', 'head', 'uarmL', 'larmL', 'uarmR', 'larmR', 'thighL', 'shinL', 'thighR', 'shinR', 'weapon', 'offhand', 'helmet'],
     parent: [-1, 0, 1, 1, 3, 1, 5, 0, 7, 0, 9, 6, 4, 2],
-    pivot: [[0, .98, 0], [0, .08, 0], [0, .52, 0], [.23, .44, 0], [0, -.29, 0], [-.23, .44, 0], [0, -.29, 0], [.11, -.04, 0], [0, -.44, 0], [-.11, -.04, 0], [0, -.44, 0], [0, -.27, 0], [0, -.27, 0], [0, 0, 0]],
+    pivot: [[0, .98, 0], [0, .08, 0], [0, .5, 0], [.23, .44, 0], [0, -.29, 0], [-.23, .44, 0], [0, -.29, 0], [.11, -.04, 0], [0, -.44, 0], [-.11, -.04, 0], [0, -.44, 0], [0, -.27, 0], [0, -.27, 0], [0, 0, 0]],
     com: .98, thick: .16
   },
   raptor: {
@@ -1271,11 +1447,10 @@ function buildBiped(o) {
   // ---- torso
   const t = P[1];
   // sculpted torso: abdomen, ribcage, lats, trapezius, deltoid caps, neck
-  t.sph(.15, 0, .1, 0, o.belly ?? shirt, sf, 1 * bx, 1.02, .72 * bx, 1);
-  t.sph(.19, 0, .32, .01, shirt, sf, 1.05 * bx, .86, .64 * bx, 1);
-  t.sph(.16, 0, .3, -.045, shirt, sf, 1.15 * bx, .92, .58 * bx, 1);
-  for (const s of [-1, 1]) { t.sph(.095, s * .085, .44, -.025, shirt, sf, 1.25, .6, .9, 0); t.sph(.085, s * .2 * bx, .43, 0, o.shoulderC ?? shirt, sf, 1, .9, 1.05, 1); }
-  t.cyl(.055, .066, .11, 0, .5, -.005, skin, S.skin); for (const s of [-1, 1]) t.cyl(.014, .018, .1, s * .03, .5, .03, skin, S.skin, -.3, 0, s * .35);
+  { const bare = !!o.bareChest; t.addVC(torsoGeo(bx, { pecs: o.pecs, belly: o.belly ? 1 : (o.bulk > 1.3 ? .7 : 0), bare }), bare ? skin : shirt, bare ? S.skin : sf, t._m(0, .02, 0, 0, 0, 0, 1, 1, 1)); }
+  t.sph(.075, 0, .515, -.005, o.bareChest ? skin : shirt, o.bareChest ? S.skin : sf, 1.3 * bx, .32, .9, 1);
+  for (const s of [-1, 1]) t.sph(.064, s * .2 * bx, .418, 0, o.shoulderC ?? (o.bareChest ? skin : shirt), o.bareChest ? S.skin : sf, 1, .78, 1.1, 1);
+  t.cyl(.05, .062, .09, 0, .5, -.008, skin, S.skin); for (const s of [-1, 1]) t.cyl(.014, .018, .1, s * .03, .5, .03, skin, S.skin, -.3, 0, s * .35);
   if (!o.bareChest) { t.tor(.072, .013, 0, .465, .0, dk(shirt), sf, PI / 2 + .25, 0, 0, TAU, 5, 14); t.box(.012, .26, .008, 0, .27, .128 * bx * .64 + .02, dk(shirt), sf); for (const s of [-1, 1]) t.box(.06, .055, .008, s * .075 * bx, .35, .126 * bx * .64 + .028, dk(shirt, .85), sf); }
   if (o.chestArmor) { const c = o.chestArmor; t.obox(.45 * bx, .32, .06, 0, .33, .12 * bx, c, o.armorSurf || S.steel); t.obox(.45 * bx, .32, .05, 0, .33, -.12 * bx, c, o.armorSurf || S.steel); t.obox(.34 * bx, .22, .05, 0, .1, .1 * bx, c, o.armorSurf || S.steel); }
   if (o.lorica) { for (let i = 0; i < 5; i++) t.obox((.44 - i * .015) * bx, .065, .27 * bx, 0, .44 - i * .075, 0, i % 2 ? o.lorica : 0x9a9a92, S.steel); t.obox(.05, .3, .01, 0, .3, .14 * bx, 0xb89a40, S.brass); }
@@ -1286,8 +1461,7 @@ function buildBiped(o) {
   if (o.sash) t.obox(.08, .6, .28 * bx, 0, .25, 0, o.sash, S.cloth, 0, 0, .7);
   if (o.straps) { t.obox(.05, .5, .01, .08, .3, .13 * bx, o.straps, S.leather, 0, 0, -.35); t.obox(.05, .5, .01, -.08, .3, .13 * bx, o.straps, S.leather, 0, 0, .35); }
   if (o.bandolier) { t.obox(.06, .62, .27 * bx, 0, .28, 0, o.bandolier, S.leather, 0, 0, -.75); for (let i = 0; i < 7; i++) t.obox(.02, .05, .02, -.16 + i * .05, .08 + i * .055, .145 * bx, 0xc8a040, S.brass); }
-  if (o.pecs) { for (const s of [-1, 1]) { t.sph(.085, s * .085, .37, .1, skin, S.skin, 1.25, .8, .62, 1); for (let i = 0; i < 3; i++) t.sph(.03, s * .035, .24 - i * .065, .1, skin, S.skin, 1.1, .9, .6, 0); t.sph(.06, s * .15, .2, .03, skin, S.skin, .6, 1.4, .9, 0); } }
-  if (o.fur) { for (let i = 0; i < 10; i++) t.ico(.09, rand(-.2, .2) * bx, .3 + rand(-.1, .18), rand(-.12, .12), o.fur, S.cloth, 1.3, .7, 1); t.ico(.12, .17, .45, 0, o.fur, S.cloth, 1.2, .6, 1.2); }
+  if (o.fur) { t.obox(.13, .62, .27 * bx, .02, .28, 0, o.fur, S.cloth, 0, 0, -.62); t.sph(.13, .17 * bx, .44, 0, o.fur, S.cloth, 1.05, .55, 1.15, 1); for (let i = 0; i < 9; i++) t.cone(.025, .07, -.18 + i * .045, .04 + i * .05, .13 * bx, o.fur, S.cloth, PI, 0, -.6); }
   if (o.pauldron) for (const s of [-1, 1]) { t.sph(.13, s * .24 * bx, .46, 0, o.pauldron, o.armorSurf || S.steel, 1, .55, 1.1, 1, 0, 0, s * .4); t.sph(.11, s * .26 * bx, .4, 0, o.pauldron, o.armorSurf || S.steel, 1, .4, 1, 1, 0, 0, s * .6); }
   if (o.collar) t.cyl(.12, .14, .06, 0, .49, 0, o.collar, S.cloth);
   if (o.backpack) { t.obox(.32 * bx, .38, .16, 0, .3, -.21 * bx, o.backpack, S.cloth); t.obox(.3 * bx, .12, .12, 0, .53, -.2 * bx, o.bedroll ?? 0x4a5a3a, S.cloth); t.obox(.1, .14, .06, .12, .2, -.3 * bx, o.backpack, S.cloth); if (o.antenna) t.cyl(.006, .006, .7, -.1, .75, -.22 * bx, 0x111111, S.dark); }
@@ -1300,7 +1474,7 @@ function buildBiped(o) {
   // ---- head
   const h = P[2];
   const hs = o.headScale || 1;
-  h.cyl(.055, .06, .08, 0, .02, 0, skin, S.skin);
+  h.cyl(.046, .052, .1, 0, .04, -.008, skin, S.skin, -.12);
   if (o.headType === 'skull') {
     h.sph(.115, 0, .15, 0, 0xddd6c4, S.bone, 1, 1.05, 1.1); h.obox(.1, .05, .09, 0, .06, .04, 0xddd6c4, S.bone); h.obox(.03, .035, .02, .045, .15, .105, 0x000000, S.matte); h.obox(.03, .035, .02, -.045, .15, .105, 0x000000, S.matte); h.sph(.012, .045, .15, .1, o.eyes ?? 0xff3a20, S.glow2); h.sph(.012, -.045, .15, .1, o.eyes ?? 0xff3a20, S.glow2);
   } else if (o.headType === 'robot') {
@@ -1310,26 +1484,20 @@ function buildBiped(o) {
   } else {
     // sculpted face: cranium, cheeks, jaw, chin, brow, sockets, eyes w/ iris, lids, nose, lips, ears
     const lip = new COL(skin).lerp(new COL(0x9a4a44), .45).getHex(), shade = new COL(skin).multiplyScalar(.62).getHex(), iris = o.iris ?? pick([0x3a2a1a, 0x4a6a8a, 0x3a5a3a, 0x2a1a10]);
-    h.sph(.105, 0, .165, -.005, skin, S.skin, .9 * hs, 1.02 * hs, 1.06 * hs, 2);
-    h.sph(.085, 0, .1, .022, skin, S.skin, .88, 1, .95, 1); h.sph(.06, 0, .066, .04, skin, S.skin, 1.15, .7, 1, 1); h.sph(.028, 0, .046, .074, skin, S.skin, 1.05, 1, .9, 0);
+    const v = headVariant(o); h.addVC(sculptHead(o, v).geo, 0xffffff, S.skin, h._m(0, .165, -.005, 0, 0, 0, hs, hs, hs));
+    faceFeatures(h, o, v, hs, skin, lip);
     for (const s of [-1, 1]) {
-      h.sph(.03, s * .05, .124, .07, skin, S.skin, 1.1, .8, .8, 0);
-      h.sph(.028, s * .034, .181, .088, o.brow ?? skin, S.skin, 1.45, .55, .72, 0);
-      h.sph(.021, s * .037, .158, .087, shade, S.skin, 1.25, .85, .6, 0);
-      h.sph(.0135, s * .037, .157, .093, 0xeee8e0, [.25, 0, 0], 1, 1, 1, 0); h.sph(.0068, s * .037, .157, .105, o.eyes ?? iris, o.eyesGlow ? S.glow : [.2, 0, 0], 1, 1, .45, 0); h.sph(.003, s * .037, .157, .1085, 0x050505, [.1, 0, 0], 1, 1, .5, 0);
-      h.sph(.0155, s * .037, .1655, .093, skin, S.skin, 1.15, .45, 1, 0);
-      h.sph(.011, s * .041, .184, .1, o.hair ?? 0x2a1a10, S.cloth, 2.2, .45, .6, 0, 0, 0, -s * .12);
-      h.sph(.024, s * .1, .145, -.005, skin, S.skin, .35, 1, .72, 0); h.sph(.011, s * .104, .145, -.002, shade, S.skin, .3, .8, .6, 0);
-      h.sph(.011, s * .014, .114, .104, skin, S.skin, 1, .8, 1, 0);
+      const [ex, ey, ez] = headDisp(s * .36, .02, .93, v), X = ex * hs, Y = .165 + ey * hs, Z = -.005 + ez * hs - .007;
+      h.sph(.0128, X, Y, Z, 0xeee8e0, [.22, 0, 0], 1, 1, 1, 0); h.sph(.0064, X, Y, Z + .0104, o.eyes ?? iris, o.eyesGlow ? S.glow : [.15, 0, 0], 1, 1, .4, 0); h.sph(.003, X, Y, Z + .0127, 0x050505, [.1, 0, 0], 1, 1, .5, 0); h.sph(.0018, X + .003, Y + .003, Z + .0131, 0xffffff, [.05, 0, 0], 1, 1, .5, 0);
+      h.sph(.0142, X, Y + .0042, Z - .0008, skin, S.skin, 1.08, .52, 1.06, 0); h.sph(.0138, X, Y - .0058, Z - .0012, skin, S.skin, 1.04, .32, 1.02, 0);
+      const [ax, ay, az] = headDisp(s * .985, -.02, .02, v); h.sph(.026, ax * hs + s * .006, .165 + ay * hs - .004, -.012 + az * hs, skin, S.skin, .3, 1, .68, 0); h.sph(.014, ax * hs + s * .0085, .165 + ay * hs - .004, -.008 + az * hs, shade, S.skin, .18, .7, .5, 0);
     }
-    h.box(.017, .044, .022, 0, .14, .1, skin, S.skin, -.28); h.sph(.016, 0, .118, .112, skin, S.skin, 1.1, .9, 1, 0);
-    h.sph(.022, 0, .089, .098, lip, S.skin, 1.3, .36, .6, 0); h.sph(.02, 0, .078, .095, lip, S.skin, 1.22, .42, .6, 0); h.box(.032, .003, .004, 0, .0835, .106, 0x3a1a18, S.skin);
-    if (o.stubble ?? chance(.4)) h.sph(.063, 0, .07, .039, new COL(skin).multiplyScalar(.78).getHex(), S.cloth, 1.17, .72, 1.02, 0);
-    if (o.scar) h.box(.004, .05, .004, .05, .14, .1, 0x8a4a40, S.skin, 0, 0, .3);
-    if (o.hair) { h.sph(.11, 0, .192, -.018, o.hair, S.cloth, .96, .8, 1.04, 1); for (const s of [-1, 1]) h.sph(.05, s * .083, .17, -.03, o.hair, S.cloth, .5, 1, 1.15, 0); h.sph(.08, 0, .15, -.07, o.hair, S.cloth, 1.05, 1, .7, 0); h.sph(.04, .03, .245, .07, o.hair, S.cloth, 1.4, .5, 1, 0, 0, 0, .3); if (o.longHair) { h.sph(.09, 0, .06, -.085, o.hair, S.cloth, 1.15, 1.6, .55, 0); for (const s of [-1, 1]) h.sph(.04, s * .09, .08, -.02, o.hair, S.cloth, .6, 1.8, .8, 0); } }
-    if (o.beard) { h.sph(.068, 0, .062, .05, o.beard, S.cloth, 1.18, .95, 1, 0); h.sph(.042, 0, .022, .075, o.beard, S.cloth, 1, 1.1, .9, 0); for (const s of [-1, 1]) h.sph(.03, s * .07, .1, .055, o.beard, S.cloth, .7, 1.4, .9, 0); h.sph(.022, 0, .097, .104, o.beard, S.cloth, 1.8, .45, .7, 0); }
+    if (o.hair) { const hairKeep = (x, y, z) => { let hl = lerp(.34, -.62, _ss(.55, -.65, z)); if (Math.abs(x) > .8 && z > -.35 && z < .55) hl = Math.max(hl, .12); return y > hl; };
+      h.addVC(headShell(v, (x, y, z) => 1.045 + .035 * vnoise(x * 5 + 2, z * 5 + y * 3) + .03 * _ss(.2, .9, y), hairKeep, strands), o.hair, S.cloth, h._m(0, .165, -.005, 0, 0, 0, hs, hs, hs));
+      for (let k = 0; k < 7; k++) h.ico(.026, (k - 3) * .022, .27 - Math.abs(k - 3) * .006, .04 - (k % 3) * .03, o.hair, S.cloth, 1.4, .6, 1.1);
+      if (o.longHair) { h.sph(.09, 0, .06, -.085, o.hair, S.cloth, 1.15, 1.6, .55, 0); for (const s of [-1, 1]) h.sph(.04, s * .09, .08, -.02, o.hair, S.cloth, .6, 1.8, .8, 0); } }
+    if (o.beard) { const bk = (x, y, z) => y < -.28 && z > -.3 && !(Math.abs(x) < .3 && y > -.72 && y < -.48 && z > .6) && !(Math.abs(x) > .85 && y > -.4); h.addVC(headShell(v, (x, y, z) => 1.055 + .05 * _ss(-.6, -1, y) + .04 * vnoise(x * 7, y * 7), bk, strands), o.beard, S.cloth, h._m(0, .165, -.005, 0, 0, 0, hs, hs, hs)); h.sph(.022, 0, .099, .1, o.beard, S.cloth, 1.9, .42, .7, 0); }
     if (o.stache) h.sph(.02, 0, .098, .106, o.stache, S.cloth, 2.2, .5, .7, 0);
-    if (o.warpaint) for (const s of [-1, 1]) { h.sph(.03, s * .055, .135, .078, o.warpaint, S.cloth, 1.1, .3, .7, 0, 0, 0, s * .3); h.sph(.025, s * .055, .115, .074, o.warpaint, S.cloth, 1.1, .25, .7, 0, 0, 0, s * .3); }
     if (o.eyepatch) { h.obox(.04, .035, .015, .042, .16, .11, 0x111111, S.leather); h.obox(.2, .012, .2, 0, .19, 0, 0x111111, S.leather, 0, 0, .35); }
     if (o.goggles) { h.cyl(.03, .03, .03, .045, .165, .1, o.goggles, S.glass, PI / 2); h.cyl(.03, .03, .03, -.045, .165, .1, o.goggles, S.glass, PI / 2); h.obox(.24, .02, .2, 0, .165, 0, 0x222222, S.rubber); }
     if (o.mask) { h.obox(.15, .08, .05, 0, .08, .085, o.mask, S.cloth); }
@@ -1339,49 +1507,47 @@ function buildBiped(o) {
   // ---- helmet (separate detachable part)
   const hm = P[13];
   switch (o.helmet) {
-    case 'roman': hm.sph(.13, 0, .18, 0, 0xc0a050, S.brass, 1, .85, 1.05, 1); hm.obox(.27, .03, .2, 0, .14, -.01, 0xb09040, S.brass); hm.obox(.03, .14, .1, .11, .08, .04, 0xb09040, S.brass); hm.obox(.03, .14, .1, -.11, .08, .04, 0xb09040, S.brass); hm.obox(.22, .04, .08, 0, .12, -.12, 0xb09040, S.brass, -.4); if (o.crest) { hm.obox(.04, .12, .3, 0, .34, -.01, o.crest, S.cloth); hm.obox(.03, .1, .02, 0, .28, .12, 0xb09040, S.brass); } break;
+    case 'roman': helmetDome(hm, 0xc0a050, S.brass, .13, .86, .52, .185, -.005, -.1); hm.obox(.27, .03, .2, 0, .14, -.01, 0xb09040, S.brass); hm.obox(.03, .14, .1, .11, .08, .04, 0xb09040, S.brass); hm.obox(.03, .14, .1, -.11, .08, .04, 0xb09040, S.brass); hm.obox(.22, .04, .08, 0, .12, -.12, 0xb09040, S.brass, -.4); if (o.crest) { hm.obox(.04, .12, .3, 0, .34, -.01, o.crest, S.cloth); hm.obox(.03, .1, .02, 0, .28, .12, 0xb09040, S.brass); } break;
     case 'knight': hm.cyl(.13, .13, .26, 0, .15, 0, 0x9aa0a8, S.steel, 0, 0, 0, 12); hm.sph(.13, 0, .28, 0, 0x9aa0a8, S.steel, 1, .5, 1); hm.obox(.2, .015, .02, 0, .17, .132, 0x111111, S.matte); hm.obox(.012, .1, .015, 0, .11, .132, 0x111111, S.matte); for (let i = 0; i < 4; i++) hm.obox(.01, .01, .01, .04 + i * .015, .08, .13, 0x111111, S.matte); if (o.plume) { hm.cone(.05, .3, 0, .48, -.02, o.plume, S.cloth, -.3); } if (o.horns) for (const s of [-1, 1]) hm.cone(.035, .2, s * .15, .32, 0, 0xe8e0c8, S.bone, 0, 0, -s * 1); break;
     case 'tricorn': hm.cyl(.15, .16, .03, 0, .23, 0, o.hatC ?? 0x1a1814, S.cloth, 0, 0, 0, 3); hm.cyl(.11, .12, .1, 0, .28, 0, o.hatC ?? 0x1a1814, S.cloth); hm.obox(.26, .015, .015, 0, .245, .08, 0xd0b050, S.brass, 0, .5); if (o.skullBadge) hm.sph(.025, 0, .29, .115, 0xeeeeee, S.bone); break;
-    case 'bandana': hm.sph(.118, 0, .18, -.01, o.hatC ?? 0xa02020, S.cloth, .96, .78, 1.02); hm.obox(.06, .1, .03, 0, .16, -.12, o.hatC ?? 0xa02020, S.cloth, .3); break;
-    case 'stahl': hm.sph(.135, 0, .2, -.01, o.hatC ?? 0x4a5240, S.gun, 1, .78, 1.08, 1); hm.cyl(.15, .16, .05, 0, .13, -.02, o.hatC ?? 0x4a5240, S.gun, -.15, 0, 0, 14); break;
-    case 'brodie': hm.sph(.12, 0, .21, 0, o.hatC ?? 0x5a5a3a, S.gun, 1, .6, 1); hm.cyl(.19, .19, .02, 0, .2, 0, o.hatC ?? 0x5a5a3a, S.gun, 0, 0, 0, 14); break;
-    case 'modern': hm.sph(.135, 0, .2, -.01, o.hatC ?? 0x3a3e30, S.poly, 1, .8, 1.05, 1); hm.obox(.08, .05, .04, 0, .3, .1, 0x1a1a1a, S.poly); hm.cyl(.02, .02, .06, .05, .3, .13, 0x222222, S.poly, PI / 2); if (o.nvg) { hm.cyl(.025, .025, .07, .03, .2, .16, 0x111111, S.dark, PI / 2); hm.cyl(.025, .025, .07, -.03, .2, .16, 0x111111, S.dark, PI / 2); hm.sph(.02, .03, .2, .2, 0x30ff40, S.glow2); hm.sph(.02, -.03, .2, .2, 0x30ff40, S.glow2); } for (const s of [-1, 1]) hm.obox(.03, .08, .1, s * .13, .15, 0, 0x2a2a2a, S.poly); break;
-    case 'riot': hm.sph(.14, 0, .19, 0, 0x15181c, S.poly, 1, .9, 1.08, 1); hm.obox(.24, .14, .03, 0, .15, .13, 0x223344, S.glass, -.1); break;
-    case 'cyber': hm.sph(.135, 0, .19, -.01, 0xd8dce0, S.poly, 1, .9, 1.1, 1); hm.obox(.22, .06, .04, 0, .17, .12, o.visor ?? 0xff2a40, S.glow2); hm.obox(.04, .2, .25, 0, .25, -.02, 0x30343a, S.gun); for (const s of [-1, 1]) hm.obox(.03, .1, .12, s * .14, .14, -.02, 0x30343a, S.gun); break;
+    case 'bandana': helmetDome(hm, o.hatC ?? 0xa02020, S.cloth, .113, .95, .5, .18, -.008, -.25); hm.obox(.06, .1, .03, 0, .16, -.12, o.hatC ?? 0xa02020, S.cloth, .3); break;
+    case 'stahl': helmetDome(hm, o.hatC ?? 0x4a5240, S.gun, .132, .82, .5, .19); hm.geo(new THREE.CylinderGeometry(.128, .15, .06, 18, 1, true).toNonIndexed(), o.hatC ?? 0x4a5240, S.gun, 0, .175, -.02, -.22, 0, 0, 1, 1, 1.06); break;
+    case 'brodie': helmetDome(hm, o.hatC ?? 0x5a5a3a, S.gun, .12, .62, .5, .21, 0, -.05); hm.cyl(.19, .19, .02, 0, .2, 0, o.hatC ?? 0x5a5a3a, S.gun, 0, 0, 0, 14); break;
+    case 'modern': helmetDome(hm, o.hatC ?? 0x3a3e30, S.poly, .132, .84, .52, .19); hm.obox(.08, .05, .04, 0, .3, .1, 0x1a1a1a, S.poly); hm.cyl(.02, .02, .06, .05, .3, .13, 0x222222, S.poly, PI / 2); if (o.nvg) { hm.cyl(.025, .025, .07, .03, .2, .16, 0x111111, S.dark, PI / 2); hm.cyl(.025, .025, .07, -.03, .2, .16, 0x111111, S.dark, PI / 2); hm.sph(.02, .03, .2, .2, 0x30ff40, S.glow2); hm.sph(.02, -.03, .2, .2, 0x30ff40, S.glow2); } for (const s of [-1, 1]) hm.obox(.03, .08, .1, s * .13, .15, 0, 0x2a2a2a, S.poly); break;
+    case 'riot': helmetDome(hm, 0x15181c, S.poly, .138, .9, .58, .18, -.01, -.1); hm.obox(.24, .14, .03, 0, .15, .13, 0x223344, S.glass, -.1); break;
+    case 'cyber': helmetDome(hm, 0xd8dce0, S.poly, .134, .9, .56, .185); hm.obox(.22, .06, .04, 0, .17, .12, o.visor ?? 0xff2a40, S.glow2); hm.obox(.04, .2, .25, 0, .25, -.02, 0x30343a, S.gun); for (const s of [-1, 1]) hm.obox(.03, .1, .12, s * .14, .14, -.02, 0x30343a, S.gun); break;
     case 'hood': hm.sph(.135, 0, .17, -.02, o.hatC ?? 0x3a3020, S.cloth, 1, 1.05, 1.1); hm.obox(.16, .1, .04, 0, .1, .1, 0x111111, S.matte); break;
     case 'crown': hm.cyl(.12, .11, .07, 0, .26, 0, 0xffcc30, S.brass, 0, 0, 0, 10); for (let i = 0; i < 8; i++) hm.cone(.02, .07, Math.cos(i * .785) * .115, .32, Math.sin(i * .785) * .115, 0xffcc30, S.brass); break;
-    case 'bone': hm.sph(.13, 0, .21, -.02, 0xd8cfb8, S.bone, 1, .7, 1.1); for (const s of [-1, 1]) hm.cone(.03, .18, s * .1, .3, -.02, 0xe8dfc8, S.bone, 0, 0, -s * .5); break;
+    case 'bone': helmetDome(hm, 0xd8cfb8, S.bone, .13, .75, .5, .2, -.02); for (const s of [-1, 1]) hm.cone(.03, .18, s * .1, .3, -.02, 0xe8dfc8, S.bone, 0, 0, -s * .5); break;
   }
   // ---- arms
   const sleeve = o.sleeve ?? shirt, glove = o.glove ?? skin;
   for (const [ui, li, s] of [[3, 4, 1], [5, 6, -1]]) {
     const u = P[ui], l = P[li];
-    if (o.bareArms) { limb(u, .06 * bx, .05 * bx, .3, skin, S.skin); u.sph(.05 * bx, 0, -.12, .02, skin, S.skin, 1, 1.5, 1); u.sph(.042 * bx, 0, -.1, -.025, skin, S.skin, 1, 1.4, .9); } else { limb(u, .062 * bx, .055 * bx, .3, sleeve, sf); u.cyl(.066 * bx, .064 * bx, .03, 0, -.25, 0, sleeve, sf); }
-    u.sph(.07 * bx, 0, -.01, 0, o.pauldron ? o.pauldron : (o.bareArms ? skin : sleeve), o.pauldron ? (o.armorSurf || S.steel) : (o.bareArms ? S.skin : sf), 1, .9, 1); // deltoid
+    if (o.bareArms) u.addVC(limbGeo(.31, .058 * bx, .046 * bx, { bulge: .004, front: .014 * bx, bp: .45, back: .009, bk: .35 }), skin, S.skin); else { u.addVC(limbGeo(.31, .065 * bx, .055 * bx, { bulge: .004, front: .006, bp: .45, fold: 1 }), sleeve, sf); }
+    u.sph(.062 * bx, 0, -.025, 0, o.pauldron ? o.pauldron : (o.bareArms ? skin : sleeve), o.pauldron ? (o.armorSurf || S.steel) : (o.bareArms ? S.skin : sf), 1, .9, 1); // deltoid
     if (o.armArmor) { u.cyl(.07 * bx, .065 * bx, .16, 0, -.1, 0, o.armArmor, o.armorSurf || S.steel); }
     if (o.armband) u.cyl(.065 * bx, .065 * bx, .04, 0, -.06, 0, o.armband, S.cloth);
-    if (o.bareForearm || o.bareArms) limb(l, .05 * bx, .042 * bx, .26, skin, S.skin); else limb(l, .052 * bx, .045 * bx, .26, o.forearm ?? sleeve, sf);
+    if (o.bareForearm || o.bareArms) l.addVC(limbGeo(.27, .052 * bx, .036 * bx, { bulge: .009, bp: .2 }), skin, S.skin); else l.addVC(limbGeo(.27, .056 * bx, .045 * bx, { bulge: .005, bp: .2, fold: 1 }), o.forearm ?? sleeve, sf);
     if (o.bracer) l.cyl(.058 * bx, .052 * bx, .14, 0, -.15, 0, o.bracer, o.bracerSurf || S.leather);
     if (o.cuff) l.cyl(.06 * bx, .06 * bx, .05, 0, -.22, 0, o.cuff, S.cloth);
-    l.obox(.075 * bx, .07, .045 * bx, 0, -.28, .005, glove, o.glove ? S.leather : S.skin);
-    for (let f = 0; f < 4; f++) l.box(.017 * bx, .055, .022, (-.026 + f * .0175) * bx, -.33, .018 - Math.abs(f - 1.5) * .003, glove, o.glove ? S.leather : S.skin, .5, 0, 0);
-    l.obox(.022, .05, .025, s * -.036, -.28, .03, glove, S.skin, .3, 0, s * .4); // thumb
+    buildBipedHand(l, glove, o.glove ? S.leather : S.skin, s);
     if (o.claws) for (let i = 0; i < 3; i++) l.cone(.012, .07, (i - 1) * .025, -.37, .02, 0xeeeedd, S.bone, PI);
   }
   // ---- legs
   for (const [ti, si] of [[7, 8], [9, 10]]) {
     const th = P[ti], sh = P[si];
-    if (o.bareLegs) limb(th, .085 * bx, .065 * bx, .44, skin, S.skin); else limb(th, .088 * bx, .07 * bx, .44, pants, pf);
+    if (o.bareLegs) th.addVC(limbGeo(.46, .086 * bx, .062 * bx, { front: .014, bp: .4, back: .007, bk: .5 }), skin, S.skin); else th.addVC(limbGeo(.46, .092 * bx, .07 * bx, { front: .008, bp: .4, fold: 1 }), pants, pf);
     if (o.cuisse) th.cyl(.095 * bx, .08 * bx, .3, 0, -.18, .01, o.cuisse, o.armorSurf || S.steel);
     if (o.legPouch && ti === 7) th.obox(.06, .12, .1, .08, -.15, 0, o.legPouch, S.cloth);
     if (o.kneepad) th.sph(.06, 0, -.43, .05, o.kneepad, S.poly, 1, 1, .7);
-    if (o.bareLegs) { limb(sh, .062 * bx, .045 * bx, .42, skin, S.skin); sh.sph(.06 * bx, 0, -.12, -.02, skin, S.skin, 1, 1.6, 1.1); } else { limb(sh, .066 * bx, .052 * bx, .42, o.shinC ?? pants, pf); sh.sph(.064 * bx, 0, -.12, -.015, o.shinC ?? pants, pf, 1, 1.5, 1.05); }
-    sh.sph(.06 * bx, 0, 0, .01, o.cuisse || (o.bareLegs ? skin : pants), o.cuisse ? (o.armorSurf || S.steel) : pf, 1, .8, 1); // knee
+    if (o.bareLegs) sh.addVC(limbGeo(.43, .054 * bx, .038 * bx, { back: .022, bk: .3 }), skin, S.skin); else sh.addVC(limbGeo(.43, .06 * bx, .05 * bx, { back: .013, bk: .3, fold: 1 }), o.shinC ?? pants, pf);
+    if (o.cuisse) sh.sph(.054 * bx, 0, -.01, .015, o.cuisse, o.armorSurf || S.steel, 1, .8, 1); // knee cop
     if (o.greaves) sh.cyl(.07 * bx, .058 * bx, .3, 0, -.2, .01, o.greaves, o.armorSurf || S.steel);
     if (o.wraps) for (let i = 0; i < 5; i++) sh.cyl(.064 * bx, .06 * bx, .03, 0, -.12 - i * .055, 0, o.wraps, S.cloth);
     if (o.sandals) { sh.obox(.1, .025, .22, 0, -.455, .04, 0x5a3a1a, S.leather); sh.obox(.09, .05, .17, 0, -.42, .04, skin, S.skin); for (let i = 0; i < 3; i++) sh.cyl(.058, .055, .015, 0, -.3 - i * .05, 0, 0x5a3a1a, S.leather); }
-    else if (o.feet === 'bare') sh.obox(.1, .06, .2, 0, -.43, .04, skin, S.skin);
-    else { sh.obox(.11 * bx, .1, .23, 0, -.42, .045, boots, S.leather); sh.obox(.115 * bx, .03, .24, 0, -.465, .045, 0x15100a, S.rubber); if (o.tallBoots) sh.cyl(.075 * bx, .07 * bx, .24, 0, -.3, 0, boots, S.leather); }
+    else if (o.feet === 'bare') buildFoot(sh, skin);
+    else buildBoot(sh, boots, bx, o.tallBoots);
   }
   // ---- weapon & offhand
   if (o.weapon) WEAPON_PARTS[o.weapon](P[11], o);
@@ -6981,7 +7147,7 @@ hudEl.fps.style.display = SET.fps ? 'block' : 'none';
 canvas.addEventListener('click', () => { if (!locked && ['fight', 'intro', 'portal', 'transition'].includes(GAME.state) && !GAME.paused) lockPointer(); });
 // debug helpers (console)
 window.TB = { GAME, PLAYER, ENEMIES, startCampaign, loadEra, giveWeapon, spawnEnemy, spawnBoss: () => spawnBoss(), god: () => GAME.god = !GAME.god, skipWave: () => { for (const e of ENEMIES) if (e.alive) killEnemy(e, { kind: 'blast', dir: UP, force: 10 }); DIR.queue = []; }, killBoss: () => BOSS && BOSS.damage(BOSS.parts[0], 1e9, 'pierce'), portal: () => openPortal(), WPN, ETYPES, BOSS: () => BOSS, fire(v) { mouseL = v; if (v) mouseLP = true; }, key(k, v) { KEY[k] = v; if (v) KEYP[k] = true; }, look(dx, dy) { mouseDX += dx; mouseDY += dy; }, aim(v) { mouseR = v; }, startWave, DIR, viewer(id, a = .6, d = 5, h = 1.4, ty = .9, anim = 'run', era = 0) { if (GAME.era !== era || !GAME.eraDef) loadEra(era, false); ERA_G.visible = false; GROUND.visible = true; for (const s of STRUCTS) s.mesh.visible = false; for (const p of PROPS) p.mesh.visible = false; for (const t of TREES) t.pivot.visible = false; clearEnemies(); if (BOSS) BOSS.remove(); hideAll(); showHUD(false); GAME.state = 'viewer'; GAME.view = { x: 0, z: 0, a, d, h, ty, dt: 0 }; if (id) { const e = spawnEnemy(id, 0, 0, { yaw: 0, anim, fx: false }); if (e) { e.spd = anim === 'run' ? e.def.speed : 0; e.gait = 1.2; } } return true; }, view(o) { Object.assign(GAME.view, o); }, sim(sec) { const n = Math.round(sec * 30); for (let i = 0; i < n; i++) { tick(1 / 30, performance.now()); endFrameInput(); } return GAME.state; }, dbg: () => ({ q: JSON.stringify(DIR.queue), alive: ALIVE, n: ENEMIES.length, st: GAME.state, w: DIR.wave && DIR.wave.title, acc: DIR.spawnAcc, cap: QL.cap, cm: GAME.capMul }), show(id) { const w = giveWeapon(id, true); for (const o of WPN.owned) o.root.visible = false; WPN.cur = w; WPN.next = null; w.root.visible = true; WPN.equipT = 1; WPN.inspectT = -1; onWeaponChanged(); return w.def.name; }, inspect(t) { WPN.inspectT = t; }, FX_clear() { FX.flash = 0; FX.rift = 0; FX.crack = 0; FX.aberr = 0; FX.damage = 0; PA.clear(); PN.clear(); }, fps: () => fpsV, freeze(v) { if (v) slowmo(.0001, 1e6); else { FX.slowmoT = 0; } }, cam(x, y, z, yaw, pitch) { PLAYER.pos.set(x, y, z); PLAYER.vel.set(0, 0, 0); PLAYER.yaw = yaw; PLAYER.pitch = pitch; }, spawn: (t, x, z, o) => { const e = spawnEnemy(t, x, z, Object.assign({ anim: 'run', fx: false }, o || {})); return !!e; } };
-Object.assign(window.TB, { AU, MUSIC, SANDE, DODGE, GIBS, PROJ, killEnemy, UP, ED, FACTION, fireEP, MELEE, WORLD, OBJ, ALLIES, CREW, HOOK, rayWorld, GROUND: () => GROUND, skipWave, skipEra, recallEnemy, GSFX, WETFX, get canFire() { return [!WPN.next, WPN.equipT, WPN.cur && WPN.cur.s.reloading, PLAYER.kickT, PLAYER.alive, GAME.state]; } });
+Object.assign(window.TB, { AU, MUSIC, SANDE, DODGE, GIBS, PROJ, killEnemy, UP, ED, FACTION, fireEP, MELEE, WORLD, OBJ, ALLIES, CREW, HOOK, rayWorld, headDisp, sculptHead, GROUND: () => GROUND, skipWave, skipEra, recallEnemy, GSFX, WETFX, get canFire() { return [!WPN.next, WPN.equipT, WPN.cur && WPN.cur.s.reloading, PLAYER.kickT, PLAYER.alive, GAME.state]; } });
 
 /* =====================================================================
    MAIN LOOP
