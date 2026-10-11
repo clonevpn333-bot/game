@@ -1,0 +1,6 @@
+src-tauri/target/
+src-tauri/pdfium/*
+!src-tauri/pdfium/.gitkeep
+src-tauri/gen/
+dist/
+e2e-results/

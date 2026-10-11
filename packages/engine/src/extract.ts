@@ -41,10 +41,13 @@ export function extractYear(
 // Words that mark a line as a printed label rather than a value. "State", "city" and
 // "ZIP" are left out on purpose: they appear in real issuer names ("State College").
 const LABELISH =
-  /\b(?:name|address|street|telephone|phone|number|identification|tin|ein|ssn|account|box|omb|corrected|void)\b|['’]s\b|:$/i;
+  /\b(?:name|address|street|telephone|phone|number|identification|tin|ein|ssn|account|box|omb|corrected|void)\b|['’]s\b|:$|\bcity\b.*\b(?:town|state)\b|\bstate\s+or\s+province\b|\b(?:zip|postal)\s+code\b/i;
 /** Identifier and amount shapes: a line with any of these is never a name. */
 const NOT_A_NAME =
   /\d{3}-\d{2}-\d{4}|\d{2}-\d{7}|X{3}-X{2}|\$|\d+[.,]\d{2}\b|\b\d{5}(?:-\d{4})?\b|\d{4,}/;
+/** A street address line ("456 Example Ave, Suite 100"): the line under a name, never the name. */
+const STREET_ADDRESS =
+  /^\W*\d+\s+\S.*\b(?:ave|avenue|st|street|rd|road|blvd|boulevard|dr|drive|ln|lane|way|ct|court|pl|place|pkwy|hwy|suite|ste)\b|\b(?:suite|ste\.?|apt\.?)\s*\d|\bp\.?\s*o\.?\s+box\b/i;
 const LEGAL_SUFFIX =
   /^(?:llc|l\.l\.c\.|inc\.?|corp\.?|co\.?|lp|llp|pllc|n\.a\.|na|usa|fsb|plc|pc|p\.c\.)$/i;
 const NAME_SUFFIX = /^(?:jr\.?|sr\.?|ii|iii|iv|v)$/i;
@@ -68,7 +71,14 @@ function cleanName(raw: string, allowDigits = false): string | null {
     .replace(/[,;]+$/, '')
     .replace(/^[\s:–-]+/, '')
     .trim();
-  if (value.length < 2 || !/[a-z]{2}/i.test(value) || NOT_A_NAME.test(value)) return null;
+  if (
+    value.length < 2 ||
+    !/[a-z]{2}/i.test(value) ||
+    NOT_A_NAME.test(value) ||
+    STREET_ADDRESS.test(value)
+  ) {
+    return null;
+  }
   if (!allowDigits && /\d/.test(value)) return null;
   return smartCase(value.slice(0, 80));
 }

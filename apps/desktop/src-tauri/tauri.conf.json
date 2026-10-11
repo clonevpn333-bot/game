@@ -1,0 +1,63 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "BinderReady",
+  "version": "0.1.0",
+  "identifier": "com.binderready.desktop",
+  "build": {
+    "beforeDevCommand": "pnpm vite:dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm vite:build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "BinderReady",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 1100,
+        "minHeight": 720,
+        "decorations": false,
+        "center": true,
+        "dragDropEnabled": true
+      }
+    ],
+    "security": {
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "worker-src": "'self' blob:",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' asset: http://asset.localhost data: blob:",
+        "font-src": "'self'",
+        "connect-src": "ipc: http://ipc.localhost https://api.lemonsqueezy.com https://github.com",
+        "object-src": "'none'",
+        "base-uri": "'none'",
+        "form-action": "'none'",
+        "frame-ancestors": "'none'"
+      },
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPCACHE/pages/**"]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi", "dmg", "app", "deb"],
+    "category": "Business",
+    "shortDescription": "Client docs in, binder ready.",
+    "copyright": "",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": {
+      "pdfium/": "pdfium/"
+    }
+  }
+}

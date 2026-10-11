@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+@import '@binderready/design/preset.css';
+@import '@binderready/design/fonts.css';
+
+@source '../../../packages/design/src';
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+input,
+textarea,
+[data-selectable] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Thin scrollbars that follow the theme. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}

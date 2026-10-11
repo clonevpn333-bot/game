@@ -7,13 +7,18 @@ import { parseFormsCatalog } from './forms.ts';
 import { dedupeNames, renderName } from './naming.ts';
 import { binderSections } from './order.ts';
 import { processFiles } from './pipeline.ts';
-import { buildLines, maskIdentifiers, pageText } from './text.ts';
+import { buildLines, foldOcrConfusions, maskIdentifiers, pageText } from './text.ts';
 import { file, instructionsRows, int1099Rows, page, w2Rows, words } from './test-helpers.ts';
 
 const catalog = parseFormsCatalog(raw);
 const formById = (id: string) => catalog.forms.find((f) => f.id === id) ?? null;
 
 describe('text', () => {
+  it('folds OCR confusions in designations only', () => {
+    expect(foldOcrConfusions('Form 1O99-lNT Interest')).toBe('Form 1099-INT Interest');
+    expect(foldOcrConfusions('Sample Brokerage, Ohio 0H')).toBe('Sample Brokerage, Ohio 0H');
+  });
+
   it('groups words into reading-order lines', () => {
     const lines = buildLines(
       words([
@@ -23,6 +28,20 @@ describe('text', () => {
       ]),
     );
     expect(lines.map((l) => l.text)).toEqual(['first line', 'second line']);
+  });
+
+  it('keeps a slanted photographed line together', () => {
+    // Each word sits a little lower than the last: the ends differ by more than a line height.
+    const slanted = ['SAMPLE', '529', 'COLLEGE', 'SAVINGS', 'PLAN'].map((text, i) => ({
+      text,
+      x: 0.1 + i * 0.07,
+      y: 0.3 + i * 0.005,
+      w: 0.06,
+      h: 0.012,
+      confidence: 0.9,
+    }));
+    const lines = buildLines([...slanted, ...words([['next line', 0.1, 0.34]])]);
+    expect(lines.map((l) => l.text)).toEqual(['SAMPLE 529 COLLEGE SAVINGS PLAN', 'next line']);
   });
 
   it('splits a row into separate lines at a column gap', () => {
@@ -133,6 +152,19 @@ describe('extract', () => {
     ]);
     expect(fields.issuer).toBeNull();
   });
+
+  it('never takes an address line or an address label as the issuer', () => {
+    const fields = extractFields(catalog, formById('1099-nec'), [
+      pageText(
+        words([
+          ['PAYER’S name, street address,', 0.05, 0.2],
+          ['city or town, state or province, country, ZIP', 0.05, 0.215],
+          ['456 Example Ave, Suite 100', 0.05, 0.235],
+        ]),
+      ),
+    ]);
+    expect(fields.issuer).toBeNull();
+  });
 });
 
 describe('naming', () => {
@@ -209,6 +241,24 @@ describe('pipeline', () => {
     const b = file('b', 'W2 copy C.jpg', [page(0, w2Rows(), 'ffff0000ffff0001')], 'h2');
     const c = file('c', 'other W2.jpg', [page(0, w2Rows(), '0000ffff0000ffff')], 'h3');
     const docs = processFiles(catalog, [a, b, c]);
+    expect(docs.map((d) => d.duplicateKind)).toEqual([null, 'near', null]);
+  });
+
+  it('matches a photographed copy by its figures despite a different image and OCR slips', () => {
+    const amounts = (values: string[]): [string, number, number][] =>
+      values.map((v, i) => [v, 0.56, 0.4 + i * 0.03]);
+    const scan = [...w2Rows(), ...amounts(['12,001.02', '16,814.52', '10,495.16', '644.37'])];
+    // The photo lost a leading digit and the employer line; framing changed the dHash.
+    const photo = [
+      ...w2Rows('').filter(([t]) => t !== ''),
+      ...amounts(['2,001.02', '16,814.52', '10,495.16', '644.37']),
+    ];
+    const other = [...w2Rows(), ...amounts(['9,100.00', '1,204.11', '3,333.33', '77.10'])];
+    const docs = processFiles(catalog, [
+      file('a', 'W2.pdf', [page(0, scan, 'ffff0000ffff0000')], 'h1'),
+      file('b', 'IMG_1.HEIC', [page(0, photo, '0f0f0f0f0f0f0f0f')], 'h2'),
+      file('c', 'second job W2.pdf', [page(0, other, 'ffff0000ffff0000')], 'h3'),
+    ]);
     expect(docs.map((d) => d.duplicateKind)).toEqual([null, 'near', null]);
   });
 

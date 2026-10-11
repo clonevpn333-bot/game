@@ -15,4 +15,9 @@ apps/web/.next
 apps/web/public/*.pdf
 apps/web/test-results
 docs/lighthouse
+apps/desktop/src-tauri/target
+apps/desktop/src-tauri/gen
+apps/desktop/src-tauri/pdfium
+apps/desktop/dist
+apps/desktop/e2e-results
 packages/corpus/out

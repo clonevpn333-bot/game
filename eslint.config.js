@@ -12,6 +12,7 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/.turbo/**',
       'docs/screenshots/**',
+      'apps/desktop/src-tauri/**',
       // Pre-existing browser game at the repo root; not part of BinderReady.
       'index.html',
       'css/**',

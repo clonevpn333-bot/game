@@ -1,0 +1,43 @@
+{
+  "name": "@binderready/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "vite:dev": "vite",
+    "vite:build": "vite build",
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "vite build",
+    "bundle": "tauri build",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "fetch:pdfium": "node scripts/fetch-pdfium.ts",
+    "e2e": "node scripts/e2e.ts"
+  },
+  "dependencies": {
+    "@binderready/design": "workspace:*",
+    "@binderready/engine": "workspace:*",
+    "@tauri-apps/api": "2.12.3",
+    "@tauri-apps/plugin-dialog": "2.8.2",
+    "@tauri-apps/plugin-opener": "2.7.1",
+    "lucide-react": "1.55.0",
+    "pdf-lib": "1.17.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zustand": "5.0.15"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@tauri-apps/cli": "2.12.2",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "pdfjs-dist": "6.4.299",
+    "tailwindcss": "4.3.3",
+    "vite": "8.3.4",
+    "vitest": "5.0.3"
+  }
+}

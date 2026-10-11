@@ -6,12 +6,12 @@
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import type { FileInput, PageInput, Word } from '@binderready/engine';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 const pdfjsRoot = dirname(createRequire(import.meta.url).resolve('pdfjs-dist/package.json'));
-const standardFontDataUrl = `${pathToFileURL(join(pdfjsRoot, 'standard_fonts')).href}/`;
+// pdfjs reads these with fs in Node: a plain path, not a file:// URL.
+const standardFontDataUrl = `${join(pdfjsRoot, 'standard_fonts')}/`;
 
 export class OpenError extends Error {
   readonly kind: 'password' | 'corrupt';

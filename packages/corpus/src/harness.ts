@@ -7,7 +7,9 @@
  * Fails (exit 1) when a tier misses its target. Tune rules and thresholds,
  * never the labels.
  */
+import { execFileSync } from 'node:child_process';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { parseFormsCatalog, processFiles, type FileInput } from '@binderready/engine';
@@ -32,13 +34,52 @@ export interface RunResult {
   engineSeconds: number;
 }
 
+/** The desktop app's own ingest pipeline (Rust: PDFium, preprocessing, Tesseract) as a CLI. */
+export const DESKTOP_INGEST = resolve(
+  import.meta.dirname,
+  '../../../apps/desktop/src-tauri/target/release/binderready-ingest',
+);
+
+interface CliLine {
+  ok?: FileInput & { path: string };
+  path?: string;
+  error?: 'password' | 'corrupt' | 'unsupported' | 'unreadable';
+}
+
+/** Runs the desktop pipeline over every file once; results keyed by path. */
+function desktopInputs(corpusDir: string, manifest: CorpusManifest) {
+  const started = performance.now();
+  const paths = manifest.files.map((f) => join(corpusDir, f.path));
+  // OCR output only changes when the binary or the corpus does: reuse it for engine-only tuning runs.
+  const key = `${String(statSync(DESKTOP_INGEST).mtimeMs)}-${String(statSync(join(corpusDir, 'manifest.json')).mtimeMs)}`;
+  const cacheFile = join(corpusDir, '.cache', `ingest-${key}.jsonl`);
+  const cached = existsSync(cacheFile)
+    ? (JSON.parse(readFileSync(cacheFile, 'utf8')) as { out: string; seconds: number })
+    : null;
+  const out =
+    cached?.out ??
+    execFileSync(DESKTOP_INGEST, ['--cache', join(corpusDir, '.cache'), ...paths], {
+      maxBuffer: 1024 * 1024 * 1024,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).toString();
+  const seconds = cached?.seconds ?? (performance.now() - started) / 1000;
+  if (!cached) writeFileSync(cacheFile, JSON.stringify({ out, seconds }));
+  const byPath = new Map<string, CliLine>();
+  for (const line of out.split('\n').filter(Boolean)) {
+    const parsed = JSON.parse(line) as CliLine;
+    byPath.set(parsed.ok?.path ?? parsed.path ?? '', parsed);
+  }
+  return { byPath, seconds };
+}
+
 export async function run(
   corpusDir: string,
-  pageSource?: (path: string, file: FileInput) => Promise<FileInput>,
+  source: 'text-layer' | 'desktop' = 'text-layer',
 ): Promise<RunResult> {
   const manifest = JSON.parse(
     await readFile(join(corpusDir, 'manifest.json'), 'utf8'),
   ) as CorpusManifest;
+  const desktop = source === 'desktop' ? desktopInputs(corpusDir, manifest) : null;
   const catalog = parseFormsCatalog(formsJson);
   const byClient = new Map<
     string,
@@ -51,15 +92,25 @@ export async function run(
 
   for (const [i, file] of manifest.files.entries()) {
     const path = join(corpusDir, file.path);
-    const bytes = new Uint8Array(await readFile(path));
     const started = performance.now();
     let input: FileInput | { error: 'password' | 'corrupt' };
-    try {
-      input = await fileInput(`f${String(i)}`, file.name, path, bytes, file.sha256);
-      if (pageSource) input = await pageSource(path, input);
-    } catch (error) {
-      if (!(error instanceof OpenError)) throw error;
-      input = { error: error.kind };
+    if (desktop) {
+      const line = desktop.byPath.get(path);
+      if (line?.ok) input = { ...line.ok, id: `f${String(i)}`, name: file.name };
+      else input = { error: line?.error === 'password' ? 'password' : 'corrupt' };
+    } else {
+      try {
+        input = await fileInput(
+          `f${String(i)}`,
+          file.name,
+          path,
+          new Uint8Array(await readFile(path)),
+          file.sha256,
+        );
+      } catch (error) {
+        if (!(error instanceof OpenError)) throw error;
+        input = { error: error.kind };
+      }
     }
     extractMs += performance.now() - started;
     const list = byClient.get(file.client) ?? [];
@@ -87,7 +138,7 @@ export async function run(
   return {
     manifest,
     metrics: evaluate(outcomes),
-    extractSeconds: extractMs / 1000,
+    extractSeconds: desktop ? desktop.seconds : extractMs / 1000,
     engineSeconds: engineMs / 1000,
   };
 }
@@ -163,8 +214,14 @@ if (import.meta.url === `file://${process.argv[1] ?? ''}`) {
   });
   const tier = values.tier ?? 'clean';
   const corpus = resolve(values.corpus ?? resolve(import.meta.dirname, `../out/${tier}`));
-  const result = await run(corpus);
-  const { markdown, pass } = report(result, 'PDF text layer (pdfjs) + page dHash (pdftoppm)');
+  const source = tier === 'clean' ? 'text-layer' : 'desktop';
+  const result = await run(corpus, source);
+  const { markdown, pass } = report(
+    result,
+    source === 'desktop'
+      ? 'desktop ingest pipeline (PDFium, preprocessing, Tesseract 5 OCR) via binderready-ingest'
+      : 'PDF text layer (pdfjs) + page dHash (pdftoppm)',
+  );
   const out = resolve(
     values.report ?? resolve(import.meta.dirname, `../../../docs/accuracy/${tier}.md`),
   );

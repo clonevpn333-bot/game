@@ -19,28 +19,56 @@ export function normalizeText(text: string): string {
     .trim();
 }
 
+/**
+ * Undoes the commonest OCR character confusions in form designations without
+ * touching ordinary words: O/o next to digits becomes 0 ("1O99" → "1099"), and a
+ * lowercase l inside an all-caps word becomes I ("1099-lNT" → "1099-INT").
+ */
+export function foldOcrConfusions(text: string): string {
+  return text
+    .replace(/(?<=\d)[Oo]|[Oo](?=\d)/g, '0')
+    .replace(/(?<=[A-Z])l(?=[A-Z])|(?<=[\s-])l(?=[A-Z]{2})/g, 'I');
+}
+
 /** Horizontal gap (page fraction) that separates two columns or form boxes. */
 export const COLUMN_GAP = 0.035;
 
-/** Groups words into reading-order lines: words whose vertical centers are close share a line. */
+/**
+ * Groups words into reading-order lines. A word joins the line whose horizontally
+ * nearest word sits at the same height, so a line photographed at a slant (left
+ * and right ends at different heights) still chains into one line.
+ */
 export function buildLines(words: Word[]): Line[] {
   const sorted = [...words]
     .filter((w) => w.text.trim() !== '')
     .sort((a, b) => a.y + a.h / 2 - (b.y + b.h / 2) || a.x - b.x);
+  const center = (w: Word) => w.y + w.h / 2;
   const lines: Word[][] = [];
   for (const word of sorted) {
-    const center = word.y + word.h / 2;
-    const line = lines.at(-1);
-    const first = line?.[0];
-    if (
-      line &&
-      first &&
-      Math.abs(first.y + first.h / 2 - center) <= Math.max(first.h, word.h) * 0.5
-    ) {
-      line.push(word);
-    } else {
-      lines.push([word]);
+    let best: { line: Word[]; distance: number } | null = null;
+    // Only recent lines can still be at this height.
+    for (let i = lines.length - 1; i >= Math.max(0, lines.length - 8); i--) {
+      const line = lines[i];
+      if (!line) continue;
+      let nearest: Word | null = null;
+      let distance = Infinity;
+      for (const other of line) {
+        const gap = Math.max(other.x - (word.x + word.w), word.x - (other.x + other.w), 0);
+        if (gap < distance) {
+          distance = gap;
+          nearest = other;
+        }
+      }
+      if (
+        nearest &&
+        Math.abs(center(nearest) - center(word)) <= Math.max(nearest.h, word.h) * 0.5 &&
+        (!best || distance < best.distance)
+      ) {
+        best = { line, distance };
+      }
     }
+    if (best) best.line.push(word);
+    else lines.push([word]);
   }
   // A wide horizontal gap separates boxes on a form: split there so a box label and
   // the neighbouring box's text don't read as one phrase.
@@ -56,7 +84,7 @@ export function buildLines(words: Word[]): Line[] {
     return out;
   });
   return segments.map((ws) => ({
-    text: normalizeText(ws.map((w) => w.text).join(' ')),
+    text: foldOcrConfusions(normalizeText(ws.map((w) => w.text).join(' '))),
     y: Math.min(...ws.map((w) => w.y)),
     x: Math.min(...ws.map((w) => w.x)),
     right: Math.max(...ws.map((w) => w.x + w.w)),
