@@ -15,10 +15,16 @@ name = "binderready"
 path = "src/main.rs"
 
 # Runs the same ingest pipeline from the command line: used by the accuracy harness
-# for the scanned and photo tiers, and for benchmarking.
+# for the scanned and photo tiers, and for benchmarking. Behind a feature so the app's
+# own builds (and Tauri's bundler, which ships every built binary) leave it out:
+#   cargo build --release --features cli --bin binderready-ingest
 [[bin]]
 name = "binderready-ingest"
 path = "src/bin/ingest.rs"
+required-features = ["cli"]
+
+[features]
+cli = []
 
 [build-dependencies]
 tauri-build = { version = "2.7", features = [] }

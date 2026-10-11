@@ -54,7 +54,7 @@ pnpm e2e              # drives the release app over WebDriver: review, export, b
 node scripts/verify-binder.ts <binder.pdf> [--shots dir]   # check bookmarks + index links
 
 # packages/corpus (desktop pipeline accuracy; needs the release binderready-ingest)
-cargo build --release --bin binderready-ingest   # in apps/desktop/src-tauri
+cargo build --release --features cli --bin binderready-ingest   # in apps/desktop/src-tauri
 node src/degrade.ts --tier scanned|photo         # derive degraded tiers from out/clean
 node src/harness.ts --tier scanned|photo         # → docs/accuracy/<tier>.md
 node src/bench.ts                                # ~100 mixed pages, end to end

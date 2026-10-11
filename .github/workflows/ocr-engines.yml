@@ -100,7 +100,7 @@ jobs:
       # The Tauri library embeds the built frontend, even for the CLI.
       - run: pnpm --filter @binderready/desktop build
       - name: Build binderready-ingest
-        run: cargo build --release --bin binderready-ingest --manifest-path apps/desktop/src-tauri/Cargo.toml
+        run: cargo build --release --features cli --bin binderready-ingest --manifest-path apps/desktop/src-tauri/Cargo.toml
 
       - uses: actions/download-artifact@v4
         with:

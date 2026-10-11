@@ -29,22 +29,28 @@ env:
 
 jobs:
   release-access:
-    name: The token can create releases
+    name: The token can publish a test release
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Create and delete a draft release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: updater-e2e-access-${{ github.run_id }}
+      # The test release only carries files; its tag sits on the default branch, because a
+      # workflow token may not create a tag on a commit that changes workflow files.
+      - name: Publish and delete a pre-release
         run: |
-          if ! gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" \
+          gh release list --repo "$GITHUB_REPOSITORY" --json tagName,isDraft \
+            --jq '.[] | select(.tagName | startswith("updater-e2e-")) | .tagName' |
+            while read -r old; do gh release delete "$old" --repo "$GITHUB_REPOSITORY" --yes || true; done
+          base=$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch)
+          tag="updater-e2e-access-$GITHUB_RUN_ID"
+          if ! gh release create "$tag" --repo "$GITHUB_REPOSITORY" --prerelease --target "$base" \
             --title "Access check (deleted at once)" --notes "Temporary"; then
-            echo "::error::GITHUB_TOKEN can't create releases in this repository. Allow it under Settings → Actions → General → Workflow permissions → Read and write permissions, then re-run. The release workflow needs the same to draft releases."
+            echo "::error::GITHUB_TOKEN can't publish releases in this repository. Allow it under Settings → Actions → General → Workflow permissions → Read and write permissions, then re-run. The release workflow needs the same to draft releases."
             exit 1
           fi
-          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
+          gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
 
   corpus:
     name: Synthetic documents
@@ -136,7 +142,8 @@ jobs:
           node scripts/updater-manifest.ts --version "$TO" --repo "$GITHUB_REPOSITORY" \
             --dir "$RUNNER_TEMP/to" --tag "$TAG" --notes "Updater test build"
           cat "$RUNNER_TEMP/to/latest.json"
-          gh release create "$TAG" --prerelease --target "$GITHUB_SHA" \
+          base=$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch)
+          gh release create "$TAG" --prerelease --target "$base" \
             --title "Updater test $GITHUB_RUN_ID (deleted after the run)" \
             --notes "Temporary release for the updater end-to-end test." \
             "$RUNNER_TEMP"/to/*-setup.exe "$RUNNER_TEMP/to/latest.json"

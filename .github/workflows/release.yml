@@ -161,6 +161,8 @@ jobs:
         run: |
           app="apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle/macos/$PRODUCT.app"
           codesign --verify --deep --strict --verbose=2 "$app"
+          # Only the app itself: the corpus CLI (binderready-ingest) must never ship.
+          [ "$(ls "$app/Contents/MacOS")" = binderready ] || { echo "::error::Unexpected binaries: $(ls "$app/Contents/MacOS")"; exit 1; }
           ls -l "$app/Contents/Frameworks" "$app/Contents/Resources"
           fail=0
           for f in "$app/Contents/MacOS/binderready" "$app"/Contents/Frameworks/*.dylib; do
@@ -193,6 +195,9 @@ jobs:
           if (-not $exe) { throw 'The installer did not install binderready.exe' }
           $dir = $exe.DirectoryName
           Get-ChildItem $dir -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
+          # Only the app and its uninstaller: the corpus CLI (binderready-ingest) must never ship.
+          $exes = (Get-ChildItem $dir -Filter *.exe).Name | Sort-Object
+          if (($exes -join ',') -ne 'binderready.exe,uninstall.exe') { throw "Unexpected executables: $($exes -join ', ')" }
           # vcpkg's DLLs must come from the install folder, not the build machine.
           Rename-Item "$env:VCPKG_ROOT/installed" installed.off
           $app = Start-Process "$dir\binderready.exe" -PassThru
