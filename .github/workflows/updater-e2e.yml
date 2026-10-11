@@ -28,6 +28,24 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  release-access:
+    name: The token can create releases
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Create and delete a draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: updater-e2e-access-${{ github.run_id }}
+        run: |
+          if ! gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" \
+            --title "Access check (deleted at once)" --notes "Temporary"; then
+            echo "::error::GITHUB_TOKEN can't create releases in this repository. Allow it under Settings → Actions → General → Workflow permissions → Read and write permissions, then re-run. The release workflow needs the same to draft releases."
+            exit 1
+          fi
+          gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
+
   corpus:
     name: Synthetic documents
     runs-on: ubuntu-24.04
@@ -57,7 +75,7 @@ jobs:
 
   update:
     name: Install, update, restart (Windows)
-    needs: corpus
+    needs: [release-access, corpus]
     runs-on: windows-latest
     permissions:
       contents: write
@@ -86,6 +104,8 @@ jobs:
         run: |
           key="$(cygpath -m "$RUNNER_TEMP")/updater.key"
           pnpm --filter @binderready/desktop exec tauri signer generate --ci -p e2e -w "$key"
+          # Single-use and deleted with the runner, but kept out of the logs all the same.
+          echo "::add-mask::$(cat "$key")"
           {
             echo "TAURI_SIGNING_PRIVATE_KEY=$(cat "$key")"
             echo "TAURI_SIGNING_PRIVATE_KEY_PASSWORD=e2e"
