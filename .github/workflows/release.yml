@@ -273,5 +273,11 @@ jobs:
           product=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').productName")
           # Version-free copies for the website's download buttons.
           node apps/desktop/scripts/release-assets.ts --dir dist-release --product "$product"
-          gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes \
-            --title "$product ${GITHUB_REF_NAME#v}" dist-release/*
+          # A release made on github.com (which is how the tag got there) gets the files;
+          # a pushed tag gets a new release.
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist-release/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes \
+              --title "$product ${GITHUB_REF_NAME#v}" dist-release/*
+          fi

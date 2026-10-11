@@ -8,7 +8,8 @@
 | macOS Apple Silicon | `macos-latest`   | `BinderReady_<v>_aarch64.dmg`, updater archive                          |
 | macOS Intel         | `macos-15-intel` | `BinderReady_<v>_x64.dmg`, updater archive                              |
 
-Pushing a tag `v<version>` (it must equal `version` in `apps/desktop/src-tauri/tauri.conf.json`)
+Pushing a tag `v<version>` (or creating a release with that new tag on github.com, Releases →
+Draft a new release; CI then attaches the files to it) (it must equal `version` in `apps/desktop/src-tauri/tauri.conf.json`)
 builds all three and publishes a GitHub release with the installers and, when the updater is
 configured, `latest.json`. Pushing the tag is the release decision: the website's download
 buttons and the app's updater read the latest published release. The updater reads
