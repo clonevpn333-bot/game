@@ -9,6 +9,7 @@ import { PRODUCT_NAME } from '../lib/product';
 import { fullOrder } from '../lib/review';
 import { themeStore } from '../lib/theme';
 import { useApp } from '../state/store';
+import thirdParty from '../generated/third-party.json';
 import { OrderList, QualityField, TemplateField, templateIsValid } from './binder-fields';
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
@@ -341,12 +342,328 @@ function DeleteHistory() {
   );
 }
 
+const dateFormat = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' });
+const day = (seconds: number | null) =>
+  seconds ? dateFormat.format(new Date(seconds * 1000)) : '—';
+
+function License() {
+  const license = useApp((s) => s.license);
+  const setLicense = useApp((s) => s.setLicense);
+  const notice = useApp((s) => s.licenseNotice);
+  const [key, setKey] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const id = useId();
+  if (!license) return null;
+
+  const activate = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      setLicense(await backend.activateLicense(key));
+      setKey('');
+      useApp.setState({ licenseNotice: null });
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const deactivate = async () => {
+    const ok = await ask(
+      'This frees one of your license’s devices so you can activate another computer. This computer goes back to the trial.',
+      {
+        title: 'Deactivate this computer?',
+        kind: 'warning',
+        okLabel: 'Deactivate',
+        cancelLabel: 'Cancel',
+      },
+    );
+    if (!ok) return;
+    setBusy(true);
+    setError(null);
+    try {
+      setLicense(await backend.deactivateLicense());
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const errorLine = error ? (
+    <p role="alert" className="mt-2 max-w-[52ch] text-xs text-danger">
+      {error}
+    </p>
+  ) : null;
+
+  if (license.licensed) {
+    return (
+      <>
+        <Row
+          title={`Licensed${license.variantName ? ` · ${license.variantName}` : ''}`}
+          description={`Activated ${day(license.activatedAt)}. Works offline; the key is checked at most every 14 days when online.`}
+        >
+          <span className="font-mono text-[13px]" data-selectable>
+            {license.keyMasked}
+          </span>
+        </Row>
+        <Row
+          title="This computer"
+          description={
+            <>
+              Deactivate to move the license to another computer.
+              {errorLine}
+            </>
+          }
+        >
+          <Button size="sm" variant="secondary" disabled={busy} onClick={() => void deactivate()}>
+            {busy ? 'Deactivating…' : 'Deactivate this computer…'}
+          </Button>
+        </Row>
+      </>
+    );
+  }
+
+  const left = Math.max(0, license.trialLimit - license.trialUsed);
+  return (
+    <>
+      {notice ? (
+        <div className="py-4">
+          <p role="alert" className="rounded-card border border-warning/40 p-3 text-[13px]">
+            {notice}
+          </p>
+        </div>
+      ) : null}
+      <Row
+        title="Trial"
+        description={`Every feature works during the trial, for ${String(license.trialLimit)} client binders. Exported trial binders say so in small print on the cover.`}
+      >
+        <span className="font-mono text-[13px] tabular">
+          {license.trialUsed} of {license.trialLimit} used{left ? '' : ' · trial over'}
+        </span>
+      </Row>
+      <Row
+        title="Activate a license"
+        description={
+          license.storeConfigured ? (
+            <>
+              Paste the key from your purchase email. Activation needs an internet connection once.
+              {license.canBuy ? (
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    className="text-fg underline underline-offset-2"
+                    onClick={() => void backend.openBuyPage()}
+                  >
+                    Buy a license
+                  </button>
+                </>
+              ) : null}
+              {errorLine}
+            </>
+          ) : (
+            'This build isn’t connected to a store, so it can’t activate licenses. Release builds are.'
+          )
+        }
+      >
+        <form
+          className="flex items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void activate();
+          }}
+        >
+          <label htmlFor={id} className="sr-only">
+            License key
+          </label>
+          <input
+            id={id}
+            value={key}
+            disabled={!license.storeConfigured || busy}
+            spellCheck={false}
+            autoComplete="off"
+            placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX"
+            onChange={(e) => {
+              setKey(e.target.value);
+            }}
+            className="h-9 w-80 rounded-control border border-border-strong bg-bg px-3 font-mono text-xs outline-none focus:border-fg disabled:opacity-50"
+          />
+          <Button
+            type="submit"
+            size="sm"
+            disabled={!license.storeConfigured || busy || !key.trim()}
+          >
+            {busy ? 'Activating…' : 'Activate'}
+          </Button>
+        </form>
+      </Row>
+    </>
+  );
+}
+
+function Updates() {
+  const info = useAppInfo();
+  const autoUpdate = useApp((s) => s.autoUpdate);
+  const setAutoUpdate = useApp((s) => s.setAutoUpdate);
+  const checkUpdate = useApp((s) => s.checkUpdate);
+  const [message, setMessage] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
+  if (!info) return null;
+  if (!info.updates) {
+    return (
+      <Row
+        title="Updates"
+        description="This build doesn’t include automatic updates. Release builds check GitHub Releases for signed updates."
+      >
+        <span className="font-mono text-[13px]">{info.version}</span>
+      </Row>
+    );
+  }
+  return (
+    <Row
+      title="Check for updates automatically"
+      description={
+        <>
+          Once at launch, from GitHub Releases. Updates are signed and installed only when you
+          choose.
+          {message ? <span className="mt-1 block text-fg">{message}</span> : null}
+        </>
+      }
+    >
+      <div className="flex items-center gap-3">
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={checking}
+          onClick={() => {
+            setChecking(true);
+            void checkUpdate().then((m) => {
+              setMessage(m);
+              setChecking(false);
+            });
+          }}
+        >
+          {checking ? 'Checking…' : 'Check now'}
+        </Button>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={autoUpdate}
+            onChange={(e) => void setAutoUpdate(e.target.checked)}
+            className="size-4 accent-[var(--fg)]"
+          />
+          On
+        </label>
+      </div>
+    </Row>
+  );
+}
+
+function OpenSource() {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const shown = thirdParty.filter((c) =>
+    `${c.name} ${c.license}`.toLowerCase().includes(query.toLowerCase().trim()),
+  );
+  return (
+    <div className="py-5">
+      <div className="flex items-start justify-between gap-8">
+        <div className="max-w-[52ch]">
+          <p className="text-[14px] font-medium">Open-source licenses</p>
+          <p className="mt-1 text-[13px] text-fg-muted">
+            {PRODUCT_NAME} is built with {thirdParty.length} open-source components, used under
+            their licenses.
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-expanded={open}
+            onClick={() => {
+              setOpen(!open);
+            }}
+          >
+            {open ? 'Hide list' : 'Show list'}
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => void backend.openNotices()}>
+            Open full notices
+          </Button>
+        </div>
+      </div>
+      {open ? (
+        <div className="mt-4">
+          <input
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+            }}
+            placeholder="Filter by name or license"
+            aria-label="Filter components"
+            className="h-8 w-72 rounded-control border border-border-strong bg-bg px-3 text-sm outline-none focus:border-fg"
+          />
+          <ul className="mt-3 max-h-80 divide-y divide-border overflow-y-auto rounded-card border border-border text-xs">
+            {shown.map((c) => (
+              <li
+                key={`${c.kind}:${c.name}@${c.version}`}
+                className="flex justify-between gap-4 px-3 py-1.5"
+              >
+                <span className="min-w-0 truncate font-mono" data-selectable>
+                  {c.name} <span className="text-fg-subtle">{c.version}</span>
+                </span>
+                <span className="shrink-0 text-fg-muted">{c.license}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function DiagnosticReport() {
+  const [saved, setSaved] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="flex flex-col items-end gap-1.5">
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={() => {
+          setError(null);
+          backend.exportDiagnostics().then(setSaved, (e: unknown) => {
+            setError(String(e));
+          });
+        }}
+      >
+        Export diagnostic report…
+      </Button>
+      {saved ? (
+        <span className="max-w-[320px] truncate font-mono text-xs text-fg-muted" title={saved}>
+          Saved {saved.split(/[\\/]/).at(-1)}
+        </span>
+      ) : null}
+      {error ? (
+        <span role="alert" className="text-xs text-danger">
+          {error}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 export function Settings() {
   const info = useAppInfo();
   return (
     <div className="h-full overflow-y-auto px-10 py-8">
       <p className="eyebrow">Settings</p>
       <h1 className="mt-2 text-[22px] font-semibold tracking-[-0.02em]">Settings</h1>
+
+      <Section id="license" title="License">
+        <License />
+      </Section>
 
       <Section id="firm" title="Firm profile">
         <Row
@@ -420,12 +737,23 @@ export function Settings() {
         >
           <DeleteHistory />
         </Row>
+        <Row
+          title="Diagnostic report"
+          description="A zip with the app version, your system, processing times and error codes, for support. No file names, client names or document contents."
+        >
+          <DiagnosticReport />
+        </Row>
+      </Section>
+
+      <Section id="updates" title="Updates">
+        <Updates />
       </Section>
 
       <Section id="about" title="About">
         <Row title="Version" description={`The installed version of ${PRODUCT_NAME}.`}>
           <span className="font-mono text-[13px]">{info?.version ?? '…'}</span>
         </Row>
+        <OpenSource />
       </Section>
     </div>
   );

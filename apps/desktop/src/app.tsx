@@ -24,6 +24,12 @@ function useBackendEvents() {
       backend.onFile((batchId, file) => {
         useApp.getState().onFile(batchId, file);
       }),
+      backend.onLicenseRevoked((reason) => {
+        useApp.setState({
+          licenseNotice: `${reason} This computer is back on the trial. If that seems wrong, contact support, or activate another key in Settings → License.`,
+        });
+        void useApp.getState().loadLicense();
+      }),
       // Files or folders dropped anywhere on the window.
       getCurrentWebview().onDragDropEvent((event) => {
         if (event.payload.type !== 'drop') return;
@@ -35,7 +41,11 @@ function useBackendEvents() {
       }),
     ];
     void useApp.getState().loadClients();
-    void useApp.getState().loadPrefs();
+    void useApp.getState().loadLicense();
+    // Automatic update check (when this build has an updater and the setting is on).
+    void Promise.all([backend.appInfo(), useApp.getState().loadPrefs()]).then(([info]) => {
+      if (info.updates && useApp.getState().autoUpdate) void useApp.getState().checkUpdate();
+    });
     return () => {
       for (const u of unlisten)
         void u.then((f) => {

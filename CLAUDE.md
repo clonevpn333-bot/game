@@ -167,6 +167,23 @@ They are excluded from lint/format and untouched. Ask Corey before moving or del
   Update checks and License arrive with the updater and licensing (Phase 7): no inert toggles.
 - The app shell uses `overflow: clip` and `#root { position: relative }`: with `hidden`, focusing
   a visually hidden input positioned against the page scrolled the whole window.
+- Licensing (`src-tauri/src/license.rs`, unit-tested with a fake server): Lemon Squeezy License
+  API `activate` / `validate` / `deactivate` (form POSTs to `api.lemonsqueezy.com/v1/licenses/*`,
+  checked against the official docs; responses must match the build's store and product IDs).
+  Activation in the OS keychain (`keyring`). Revalidation at most every 14 days; only an explicit
+  "disabled/expired/not found" ends a license, never a network failure. Trial: 3 distinct
+  client+year binders, counted in keychain and settings (max wins), gated in Rust (`begin_export`)
+  before anything is written. Store IDs, buy URL, updater key and manifest URL are build-time env
+  (`BINDERREADY_LS_STORE_ID`, `BINDERREADY_LS_PRODUCT_IDS`, `BINDERREADY_BUY_URL`,
+  `BINDERREADY_UPDATER_PUBKEY`, `BINDERREADY_UPDATE_URL`); without them the UI says so.
+- Network: `src-tauri/src/net.rs` is the only HTTP client (ureq, HTTPS, no redirects) and allows
+  exactly `api.lemonsqueezy.com` and `github.com`; `net::tests::allowlist_matches_csp` keeps the
+  CSP `connect-src` identical and fails on any external origin in other directives.
+- Updater plugin is registered only when configured (it panics at startup without its config).
+- `node scripts/licenses.ts` regenerates `src/generated/third-party.json` (Settings → About) and
+  `src-tauri/resources/third-party-notices.txt` (bundled); `--check` runs in CI.
+- Diagnostic report (`diagnostics.rs`): zip with version, OS, engine, timings and error codes;
+  a test asserts no names, paths, identifiers or key leak into it.
 - Export commands and folder walking are `#[tauri::command(async)]`: sync commands run on the
   main thread, where encoding would freeze the UI and the GTK dialog can deadlock.
 - Product name: `productName` in `src-tauri/tauri.conf.json`, read by `lib/product.ts`;

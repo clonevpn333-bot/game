@@ -26,7 +26,6 @@ export interface ExportRequest {
   outputDir: string;
   firmName: string;
   logoPng: Uint8Array | null;
-  trial: boolean;
   productName: string;
 }
 
@@ -86,6 +85,8 @@ export async function runExport(
     request.categoryOrder,
   );
   if (!sections.length) throw new Error('There are no documents in this binder.');
+  // The trial gate: refuses before anything is written, and says if this is a trial export.
+  const trial = await backend.beginExport(request.clientId, request.taxYear);
   const { pdfs, images } = requiredInputs(sections, request.files);
 
   const total = pdfs.size + images.size;
@@ -114,7 +115,7 @@ export async function runExport(
     logoPng: request.logoPng,
     includeCover: request.includeCover,
     includeIndex: request.includeIndex,
-    trial: request.trial,
+    trial,
     productName: request.productName,
     generatedOn: new Date(),
   };
@@ -152,7 +153,6 @@ export async function runExport(
     pages: reply.pageCount,
     outputPath: path,
     outputDir: request.outputDir,
-    trial: request.trial,
   });
   await backend.recordIndex(request.clientId, request.taxYear, indexItems(request.docs));
   return {

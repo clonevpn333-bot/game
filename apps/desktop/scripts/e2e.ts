@@ -215,6 +215,25 @@ async function main() {
       if (find()) throw new Error(`The "${title}" dialog did not accept ${path}`);
     };
     const pickFolder = (dir: string) => pickPath('Choose where to save the binder', dir, true);
+    /** Confirms a native message dialog (Return activates its default, the confirm button). */
+    const confirmNative = async (title: string) => {
+      let win: string | undefined;
+      for (let end = Date.now() + 10000; Date.now() < end && !win; await sleep(300)) {
+        try {
+          win = execFileSync('xdotool', ['search', '--onlyvisible', '--name', title])
+            .toString()
+            .trim()
+            .split('\n')[0];
+        } catch {
+          win = undefined;
+        }
+      }
+      if (!win) return false;
+      execFileSync('xdotool', ['windowfocus', '--sync', win]);
+      execFileSync('xdotool', ['key', 'Return']);
+      await sleep(800);
+      return true;
+    };
     /** Opens the export dialog, sets it up, exports and waits for the toast. */
     const exportBinder = async (opts: { folder?: string; quality?: string; singles?: boolean }) => {
       await chord('\uE009', 'e');
@@ -456,12 +475,10 @@ async function main() {
       await clickText('Current binder');
       await clickText('Start next binder');
       check(await waitFor('Who is this binder for?'), 'Start next binder opens a new binder');
-      await clickText('+ Add a new client');
-      const photoClient = 'John Example';
-      await exec(
-        'const i = document.querySelector("input"); const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set; set.call(i, arguments[0]); i.dispatchEvent(new Event("input", { bubbles: true }));',
-        [photoClient],
-      );
+      // The same client and year again: re-exporting a binder doesn't use another trial slot.
+      const photoClient = client;
+      await clickText(photoClient);
+      await choose('select', '2025');
       await clickText('Start empty binder');
       check(await waitFor('Add documents to begin'), 'the second binder starts');
       const photos = await pick(
@@ -661,6 +678,7 @@ async function main() {
     const checked2025 = await verify(binder2025.path, `${twoYear.client} – 2025 Binder`, null);
     const cover = await coverInfo(binder2025.path);
     check(cover.text.includes(firm) && cover.images > 0, 'the cover shows the firm name and logo');
+    check(cover.text.includes('trial'), 'an unlicensed binder says so on the cover');
     const titles = checked2025.bookmarks.flatMap((b) => b.children.map((c) => c.title));
     check(
       titles.includes('2025 W-2 – Northwind Logistics LLC'),
@@ -743,31 +761,50 @@ async function main() {
       `the "Not expected this year" choice persists (${(await missingList()).join('; ')})`,
     );
 
+    // The trial: three binders were exported (Jane 2025, Robin 2024, Robin 2025); a fourth is refused.
+    check((await text()).includes('Trial used'), 'the sidebar shows the trial is used up');
+    // Close the unexported binder from before the restart (it asks first).
+    await chord('\uE009', 'k');
+    await exec(
+      '[...document.querySelectorAll("[role=option]")].find(o => o.textContent.includes("Close binder"))?.click()',
+    );
+    check(await confirmNative('Close binder'), 'closing an unexported binder asks first');
+    await clickText('New binder');
+    await waitFor('Who is this binder for?');
+    await clickText('+ Add a new client');
+    await typeName('Avery Fakename');
+    await clickText('Start empty binder');
+    await waitFor('Add documents to begin');
+    await drop(yearFiles(2025).slice(0, 1));
+    await waitFor(/\d+ documents · \d+ pages/, 120000);
+    await chord('\uE009', 'e');
+    await waitFor('Binder order', 5000);
+    await clickText('Choose');
+    const out4 = join(data, 'out-trial');
+    await mkdir(out4, { recursive: true });
+    await pickFolder(out4);
+    await waitFor(out4, 10000);
+    await click('dialog button[type=submit]');
+    check(
+      await waitFor('The trial includes 3 client binders', 10000),
+      'a fourth binder is refused with a clear message',
+    );
+    check((await readdir(out4)).length === 0, 'nothing is written when the trial is used up');
+    await shot('05-trial-over-dark', settingsShots);
+    await clickText('Enter a license key');
+    check(await waitFor('3 of 3 used', 5000), 'the license section shows the trial count');
+    await exec('document.getElementById("license")?.scrollIntoView({ block: "start" })');
+    await sleep(500);
+    await shot('06-license-dark', settingsShots);
+
     // Delete all local history, through the real confirmation dialog.
     await clickText('Settings');
     await waitFor('Local history');
     await clickText('Delete all local history');
-    let confirmWin: string | undefined;
-    for (let end = Date.now() + 10000; Date.now() < end && !confirmWin; await sleep(300)) {
-      try {
-        confirmWin = execFileSync('xdotool', [
-          'search',
-          '--onlyvisible',
-          '--name',
-          'Delete all local history',
-        ])
-          .toString()
-          .trim()
-          .split('\n')[0];
-      } catch {
-        confirmWin = undefined;
-      }
-    }
-    check(!!confirmWin, 'deleting history asks for confirmation');
-    if (confirmWin) {
-      execFileSync('xdotool', ['windowfocus', '--sync', confirmWin]);
-      execFileSync('xdotool', ['key', 'Return']);
-    }
+    check(
+      await confirmNative('Delete all local history'),
+      'deleting history asks for confirmation',
+    );
     check(await waitFor('History deleted', 10000), 'history is deleted after confirming');
     await clickText('Clients');
     await sleep(500);
@@ -775,6 +812,7 @@ async function main() {
       !(await text()).includes(twoYear.client),
       'the client list is empty after deleting history',
     );
+    check((await text()).includes('Trial used'), 'deleting history doesn’t reset the trial');
   } finally {
     if (session) await wd('DELETE', `/session/${session}`).catch(() => undefined);
     driver.kill();

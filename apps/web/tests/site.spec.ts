@@ -55,17 +55,34 @@ test('home: the hero sorts the pile into a binder, and Replay starts over', asyn
   await expect(
     hero.locator('figcaption').getByText('1 binder · 23 documents · 41 pages'),
   ).toBeVisible({ timeout: 6000 });
+  // Record every phase the stage passes through, so a slow runner can't miss the short
+  // "scattered" step between Replay and the next sort.
+  await hero.locator('[data-phase]').evaluate((stage) => {
+    const seen: string[] = [];
+    (window as unknown as { phases: string[] }).phases = seen;
+    new MutationObserver(() => {
+      const phase = stage.getAttribute('data-phase') ?? '';
+      if (seen.at(-1) !== phase) seen.push(phase);
+    }).observe(stage, { attributes: true, attributeFilter: ['data-phase'] });
+  });
   await hero.getByRole('button', { name: 'Replay' }).click();
-  await expect(hero.getByText('18 files dropped')).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { phases: string[] }).phases), {
+      timeout: 10000,
+    })
+    .toEqual(['scattered', 'sorted', 'binder']);
 });
 
 test('home: the Sort button skips the wait', async ({ page }) => {
   await page.goto('/');
   const hero = page.locator('figure').first();
-  await hero.getByRole('button', { name: 'Sort' }).click();
-  await expect(hero.getByText('23 documents recognized · 3 need review')).toBeVisible({
-    timeout: 1000,
-  });
+  // A click before hydration does nothing on a static page: retry until it takes.
+  await expect(async () => {
+    await hero.getByRole('button', { name: 'Sort' }).click();
+    await expect(hero.getByText('23 documents recognized · 3 need review')).toBeVisible({
+      timeout: 1000,
+    });
+  }).toPass({ timeout: 15000 });
 });
 
 test('home: reduced motion shows the finished binder', async ({ browser }) => {
@@ -105,8 +122,12 @@ test('ROI calculator: defaults match the brief and respond to input', async ({ p
   await expect(roi).toContainText(
     'This season: $1,500 vs. $149 once. BinderReady pays for itself after 30 returns.',
   );
-  await roi.getByLabel('Returns per season').fill('1000');
-  await expect(roi).toContainText('This season: $5,000 vs. $149 once.');
+  // The page is static HTML until React hydrates; input before that is reset. Retry
+  // until the calculator answers (it hydrates within a second or two on a slow runner).
+  await expect(async () => {
+    await roi.getByLabel('Returns per season').fill('1000');
+    await expect(roi).toContainText('This season: $5,000 vs. $149 once.', { timeout: 1000 });
+  }).toPass({ timeout: 15000 });
   await roi.getByLabel('Per-return cost of an organizing service').fill('10');
   await expect(roi).toContainText('pays for itself after 15 returns.');
 });

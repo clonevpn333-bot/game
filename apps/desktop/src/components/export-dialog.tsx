@@ -43,6 +43,8 @@ export function ExportDialog() {
   const [step, setStep] = useState<ExportStep | null>(null);
   const [error, setError] = useState<string | null>(null);
   const busy = step !== null;
+  const license = useApp((s) => s.license);
+  const trialOver = !!license && !license.licensed && license.trialUsed >= license.trialLimit;
 
   const included = useMemo(() => docs.filter((d) => !d.excluded), [docs]);
   const pages = included.reduce((n, d) => n + d.pages.length, 0);
@@ -118,7 +120,6 @@ export function ExportDialog() {
           outputDir: folder,
           firmName: fresh.firmName,
           logoPng: await backend.firmLogo(),
-          trial: false,
           productName: PRODUCT_NAME,
         },
         setStep,
@@ -292,7 +293,28 @@ export function ExportDialog() {
               </div>
             </div>
           ) : null}
-          {error ? (
+          {error && trialOver ? (
+            <div role="alert" className="mb-3 rounded-card border border-warning/40 p-3 text-sm">
+              <p>{error}</p>
+              <div className="mt-2 flex gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    set({ exportOpen: false });
+                    useApp.getState().go('settings');
+                  }}
+                >
+                  Enter a license key
+                </Button>
+                {license.canBuy ? (
+                  <Button size="sm" variant="ghost" onClick={() => void backend.openBuyPage()}>
+                    Buy a license
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          ) : error ? (
             <p role="alert" className="mb-3 text-sm text-danger">
               The binder wasn’t saved: {error}
             </p>

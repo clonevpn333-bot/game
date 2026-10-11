@@ -2,6 +2,7 @@ import { CATEGORY_IDS, DEFAULT_NAME_TEMPLATE, type CategoryId } from '@binderrea
 import { create } from 'zustand';
 import {
   backend,
+  type LicenseStatus,
   type Client,
   type DesktopFile,
   type FileErrorKind,
@@ -58,6 +59,7 @@ const KEYS = {
   nameTemplate: 'naming.template',
   categoryOrder: 'binder.order',
   firmName: 'firm.name',
+  autoUpdate: 'updates.auto',
 } as const;
 
 function parseOrder(raw: string | null): CategoryId[] {
@@ -107,6 +109,12 @@ interface State {
   exportPrefs: ExportPrefs;
   /** Firm profile: printed on binder covers and signed on missing-docs emails. */
   firmName: string;
+  license: LicenseStatus | null;
+  /** Why a license ended (refund or disabled key), shown until dismissed or reactivated. */
+  licenseNotice: string | null;
+  /** A newer signed version, found by the update check. */
+  update: { version: string; notes: string | null } | null;
+  autoUpdate: boolean;
   /** What the client sent for the most recent earlier year, if a binder was exported then. */
   history: { taxYear: number; items: IndexItem[] } | null;
   /** "Not expected this year" items for the current binder's year. */
@@ -120,6 +128,11 @@ interface State {
   setCategoryOrder: (order: CategoryId[]) => Promise<void>;
   setExportPrefs: (prefs: ExportPrefs) => Promise<void>;
   setFirmName: (name: string) => Promise<void>;
+  loadLicense: () => Promise<void>;
+  setLicense: (license: LicenseStatus) => void;
+  setAutoUpdate: (on: boolean) => Promise<void>;
+  /** Checks for an update; returns the message to show. */
+  checkUpdate: () => Promise<string>;
   openExport: () => void;
   setMissingDismissed: (item: IndexItem, dismissed: boolean) => Promise<void>;
   exportDone: (result: ExportResult) => void;
@@ -196,6 +209,10 @@ export const useApp = create<State>((set, get) => ({
   categoryOrder: [],
   exportPrefs: DEFAULT_EXPORT_PREFS,
   firmName: '',
+  license: null,
+  licenseNotice: null,
+  update: null,
+  autoUpdate: true,
   history: null,
   dismissedMissing: [],
   exportOpen: false,
@@ -205,13 +222,15 @@ export const useApp = create<State>((set, get) => ({
     set({ view, paletteOpen: false });
   },
   loadPrefs: async () => {
-    const [prefs, template, order, firmName] = await Promise.all([
+    const [prefs, template, order, firmName, autoUpdate] = await Promise.all([
       backend.getSetting(KEYS.exportPrefs),
       backend.getSetting(KEYS.nameTemplate),
       backend.getSetting(KEYS.categoryOrder),
       backend.getSetting(KEYS.firmName),
+      backend.getSetting(KEYS.autoUpdate),
     ]);
     set({
+      autoUpdate: autoUpdate !== 'false',
       firmName: firmName ?? '',
       exportPrefs: parsePrefs(prefs),
       nameTemplate: template?.trim() ? template : DEFAULT_NAME_TEMPLATE,
@@ -226,6 +245,25 @@ export const useApp = create<State>((set, get) => ({
   setCategoryOrder: async (order) => {
     set({ categoryOrder: order });
     await backend.setSetting(KEYS.categoryOrder, JSON.stringify(order));
+  },
+  loadLicense: async () => {
+    set({ license: await backend.licenseStatus() });
+  },
+  setLicense: (license) => {
+    set({ license });
+  },
+  setAutoUpdate: async (on) => {
+    set({ autoUpdate: on });
+    await backend.setSetting(KEYS.autoUpdate, on ? 'true' : 'false');
+  },
+  checkUpdate: async () => {
+    try {
+      const update = await backend.checkUpdate();
+      set({ update });
+      return update ? `Version ${update.version} is available.` : 'You have the newest version.';
+    } catch (e) {
+      return String(e);
+    }
   },
   setFirmName: async (name) => {
     const firmName = name.trim().slice(0, 120);
@@ -269,6 +307,7 @@ export const useApp = create<State>((set, get) => ({
   exportDone: (result) => {
     set({ exportOpen: false, lastExport: result });
     void get().loadClients();
+    void get().loadLicense();
   },
   loadClients: async () => {
     set({ clients: await backend.listClients() });

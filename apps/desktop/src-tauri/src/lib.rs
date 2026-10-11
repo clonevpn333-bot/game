@@ -3,6 +3,9 @@
 pub mod images;
 pub mod ingest;
 pub mod logo;
+pub mod diagnostics;
+pub mod license;
+pub mod net;
 pub mod ocr;
 pub mod pdf;
 pub mod phash;
@@ -28,13 +31,22 @@ pub struct AppState {
     pub ingest: ingest::Options,
     pub data_dir: PathBuf,
     pub cancels: Mutex<HashMap<String, Arc<AtomicBool>>>,
+    /// Timings and error codes for the diagnostic report (this session only).
+    pub diagnostics: diagnostics::Recorder,
 }
 
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_clipboard_manager::init());
+    // Only release builds with a signing key and manifest URL have an updater; the
+    // release workflow also passes the matching `plugins.updater` config, which the
+    // plugin requires at startup.
+    if commands::updates_configured() {
+        builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+    }
+    builder
         .setup(|app| {
             let data_dir = app.path().app_data_dir()?;
             let cache_dir = app.path().app_cache_dir()?;
@@ -50,7 +62,9 @@ pub fn run() {
                 ingest: ingest::Options { cache_dir, resource_dir, tessdata, engine: ocr::Engine::Tesseract },
                 data_dir,
                 cancels: Mutex::new(HashMap::new()),
+                diagnostics: diagnostics::Recorder::default(),
             });
+            commands::revalidate_in_background(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -77,6 +91,15 @@ pub fn run() {
             commands::choose_logo,
             commands::firm_logo,
             commands::clear_logo,
+            commands::license_status,
+            commands::activate_license,
+            commands::deactivate_license,
+            commands::begin_export,
+            commands::open_buy_page,
+            commands::export_diagnostics,
+            commands::check_update,
+            commands::install_update,
+            commands::open_notices,
         ])
         .run(tauri::generate_context!())
         .expect("error while running BinderReady");

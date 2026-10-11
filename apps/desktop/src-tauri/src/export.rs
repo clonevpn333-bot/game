@@ -170,17 +170,24 @@ pub struct BinderRecord {
     pages: i64,
     output_path: String,
     output_dir: String,
-    trial: bool,
 }
 
 /// Records an exported binder (for Recent binders) and remembers the client's folder.
 #[tauri::command]
 pub fn record_binder(state: State<AppState>, record: BinderRecord) -> Result<(), String> {
     let store = state.store.lock().map_err(|e| e.to_string())?;
+    // Unlicensed exports count toward the trial (re-exporting the same binder doesn't).
+    let trial = crate::license::load_activation(&crate::license::Keychain).is_none();
+    if trial {
+        let key = crate::license::binder_key(record.client_id, record.tax_year);
+        let current = store.get_setting(crate::commands::TRIAL_SETTING).map_err(|e| e.to_string())?;
+        let json = crate::license::record_trial(&crate::license::Keychain, current.as_deref(), &key);
+        store.set_setting(crate::commands::TRIAL_SETTING, &json).map_err(|e| e.to_string())?;
+    }
     let conn = store.connection();
     conn.execute(
         "INSERT INTO binders (client_id, tax_year, documents, pages, output_path, trial) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        rusqlite::params![record.client_id, record.tax_year, record.documents, record.pages, record.output_path, record.trial as i64],
+        rusqlite::params![record.client_id, record.tax_year, record.documents, record.pages, record.output_path, trial as i64],
     )
     .map_err(|e| e.to_string())?;
     conn.execute("UPDATE clients SET output_dir = ?1 WHERE id = ?2", rusqlite::params![record.output_dir, record.client_id]).map_err(|e| e.to_string())?;

@@ -58,10 +58,27 @@ export interface BinderRow {
   trial: boolean;
 }
 
+export interface LicenseStatus {
+  licensed: boolean;
+  keyMasked: string | null;
+  productName: string | null;
+  variantName: string | null;
+  /** Unix seconds. */
+  activatedAt: number | null;
+  lastValidated: number | null;
+  trialUsed: number;
+  trialLimit: number;
+  /** False in builds without store settings: activation is unavailable. */
+  storeConfigured: boolean;
+  canBuy: boolean;
+}
+
 export interface AppInfo {
   version: string;
   /** Text recognition engines on this system, best first. */
   ocrEngines: string[];
+  /** The build has a signed updater configured. */
+  updates: boolean;
   dataDir: string;
   platform: string;
 }
@@ -104,8 +121,25 @@ export const backend = {
     pages: number;
     outputPath: string;
     outputDir: string;
-    trial: boolean;
   }) => invoke<null>('record_binder', { record }),
+  licenseStatus: () => invoke<LicenseStatus>('license_status'),
+  activateLicense: (key: string) => invoke<LicenseStatus>('activate_license', { key }),
+  deactivateLicense: () => invoke<LicenseStatus>('deactivate_license'),
+  /** Checks the trial before an export; true means a trial export. Rejects when it's used up. */
+  beginExport: (clientId: number, taxYear: number) =>
+    invoke<boolean>('begin_export', { clientId, taxYear }),
+  openBuyPage: () => invoke<null>('open_buy_page'),
+  /** Saves a zip of version, system, timings and error codes; null if cancelled. */
+  exportDiagnostics: () => invoke<string | null>('export_diagnostics'),
+  /** The newer version, or null when up to date. Rejects when offline. */
+  checkUpdate: () => invoke<{ version: string; notes: string | null } | null>('check_update'),
+  /** Downloads, verifies, installs and restarts. */
+  installUpdate: () => invoke<null>('install_update'),
+  openNotices: () => invoke<null>('open_notices'),
+  onLicenseRevoked: (handler: (reason: string) => void): Promise<UnlistenFn> =>
+    listen<string>('license://revoked', (e) => {
+      handler(e.payload);
+    }),
   /** Stores this binder's {form, issuer} list for next year's missing-documents check. */
   recordIndex: (clientId: number, taxYear: number, items: IndexItem[]) =>
     invoke<null>('record_index', { clientId, taxYear, items }),

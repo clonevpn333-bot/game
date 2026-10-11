@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useReducedMotion } from '@/lib/use-reduced-motion';
 
 const usd = new Intl.NumberFormat('en-US', {
@@ -44,6 +44,16 @@ export function RoiCalculator({ price, productName }: { price: number; productNa
   const [costInput, setCostInput] = useState('5');
   const sliderId = useId();
   const costId = useId();
+  // The page is static HTML until React hydrates. A visitor who moves the slider or types
+  // before then leaves the DOM ahead of the state (and the same value again fires no
+  // change event), so adopt whatever the inputs hold when they mount.
+  const adoptSlider = useCallback((el: HTMLInputElement | null) => {
+    const value = Number(el?.value);
+    if (el && Number.isFinite(value)) setReturns(value);
+  }, []);
+  const adoptCost = useCallback((el: HTMLInputElement | null) => {
+    if (el) setCostInput(el.value.replace(/[^0-9.]/g, ''));
+  }, []);
 
   const cost = Number.parseFloat(costInput);
   const validCost = Number.isFinite(cost) && cost > 0 ? cost : null;
@@ -65,6 +75,7 @@ export function RoiCalculator({ price, productName }: { price: number; productNa
             </output>
           </div>
           <input
+            ref={adoptSlider}
             id={sliderId}
             type="range"
             min={50}
@@ -90,6 +101,7 @@ export function RoiCalculator({ price, productName }: { price: number; productNa
               $
             </span>
             <input
+              ref={adoptCost}
               id={costId}
               inputMode="decimal"
               value={costInput}

@@ -125,6 +125,9 @@ jobs:
       - name: Rust tests
         working-directory: apps/desktop/src-tauri
         run: cargo test --release
+      - name: Third-party notices are current
+        working-directory: apps/desktop
+        run: node scripts/licenses.ts --check
       - name: Native OCR engines type-check for Windows and macOS
         working-directory: apps/desktop/src-tauri/native-ocr
         run: |

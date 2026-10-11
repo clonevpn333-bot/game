@@ -45,6 +45,10 @@ rayon = "1.12"
 tiff = "0.10"
 imageproc = { version = "0.27", default-features = false }
 num_cpus = "1"
+keyring = { version = "3", features = ["apple-native", "windows-native", "linux-native"] }
+ureq = "3"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+tauri-plugin-updater = "2"
 
 [profile.release]
 lto = "thin"
