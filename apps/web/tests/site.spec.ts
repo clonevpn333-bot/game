@@ -201,7 +201,10 @@ test('download: Windows is primary by default, macOS on a Mac', async ({ browser
   await win.goto('/download/');
   const winLinks = win.locator('main a', { hasText: /^Download for/ });
   await expect(winLinks.first()).toHaveText('Download for Windows');
-  await expect(winLinks.first()).toHaveAttribute('href', e2eEnv.DOWNLOAD_WINDOWS_URL);
+  await expect(winLinks.first()).toHaveAttribute(
+    'href',
+    `https://github.com/${e2eEnv.DOWNLOAD_REPO}/releases/latest/download/BinderReady-windows-x64-setup.exe`,
+  );
   await win.close();
 
   const context = await browser.newContext({
@@ -212,6 +215,14 @@ test('download: Windows is primary by default, macOS on a Mac', async ({ browser
   await mac.goto('/download/');
   await expect(mac.locator('main a', { hasText: /^Download for/ }).first()).toHaveText(
     'Download for macOS',
+  );
+  await expect(mac.locator('main a', { hasText: /^Download for/ }).first()).toHaveAttribute(
+    'href',
+    /\/releases\/latest\/download\/BinderReady-macos-apple-silicon\.dmg$/,
+  );
+  await expect(mac.getByRole('link', { name: /Intel version/ })).toHaveAttribute(
+    'href',
+    /\/releases\/latest\/download\/BinderReady-macos-intel\.dmg$/,
   );
   await context.close();
 });

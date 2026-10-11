@@ -299,7 +299,7 @@ function OcrEngine() {
           setEngine(e.target.value);
           void backend.setSetting('ocr.engine', e.target.value);
         }}
-        className="h-9 w-56 rounded-control border border-border-strong bg-bg px-2 text-sm outline-none focus:border-fg"
+        className="h-9 w-56 rounded-control border border-border-strong bg-bg px-2 text-sm text-fg outline-none focus:border-fg"
       >
         <option value="auto">Automatic{automatic ? ` (${automatic})` : ''}</option>
         {engines.map((e) => (

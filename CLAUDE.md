@@ -14,7 +14,9 @@ it is built one phase per session, and each phase stops at its gate with a repor
 | 3     | Desktop ingest pipeline + review board                      | Done (docs/accuracy, docs/screenshots/phase-3)        |
 | 4     | Binder export                                               | Done (docs/export-sizes.md, docs/screenshots/phase-4) |
 | 5     | Missing docs, duplicates, settings                          | Done (docs/screenshots/phase-5)                       |
-| 6–8   | Native OCR, licensing, polish                               | Not started                                           |
+| 6     | Native OCR engines                                          | Done; Tesseract stays default (docs/ocr-engines.md)   |
+| 7     | Licensing, privacy, packaging, updates                      | Done pending CI gates (docs/release.md)               |
+| 8     | Polish + launch readiness                                   | In progress (docs/launch-checklist.md)                |
 
 **Open from Phase 0:** `forms.json` patterns are drafted but unverified, and no OMB numbers are
 recorded, because the cloud sessions could not reach irs.gov/ssa.gov. Run `pnpm forms:verify --write`
@@ -180,6 +182,18 @@ They are excluded from lint/format and untouched. Ask Corey before moving or del
   exactly `api.lemonsqueezy.com` and `github.com`; `net::tests::allowlist_matches_csp` keeps the
   CSP `connect-src` identical and fails on any external origin in other directives.
 - Updater plugin is registered only when configured (it panics at startup without its config).
+- Release (`.github/workflows/release.yml`, docs/release.md): Windows NSIS+MSI, macOS arm64 and
+  Intel DMGs. Native libs come from a pinned vcpkg (`.github/actions/native-libs`, overlay
+  triplets in `vcpkg/triplets`) as dynamic libraries: Tesseract without curl/libarchive
+  (`scripts/vcpkg-overlay.ts`), `libheif[core]` (never the default `hevc` feature: it is the GPL
+  x265 encoder). `scripts/release-config.ts` writes `src-tauri/tauri.release.json` (merged with
+  `--config`): bundled libs (Windows next to the exe, macOS in Frameworks with PDFium), tessdata,
+  and signing/updater only when secrets exist. It fails on any library `licenses.ts` `NATIVE`
+  doesn't list. Tags `v*` draft a release with `latest.json` and version-free installer copies
+  (`scripts/release-assets.ts`) that the website links to via `DOWNLOAD_REPO`.
+- `updater-e2e.yml` proves updates on Windows: throwaway key, two builds, a temporary pre-release,
+  `scripts/updater-e2e.ts` drives the installed app over tauri-driver + msedgedriver.
+- Node scripts use `if (import.meta.main)`; comparing `import.meta.url` with argv fails on Windows.
 - `node scripts/licenses.ts` regenerates `src/generated/third-party.json` (Settings → About) and
   `src-tauri/resources/third-party-notices.txt` (bundled); `--check` runs in CI.
 - Diagnostic report (`diagnostics.rs`): zip with version, OS, engine, timings and error codes;
@@ -252,5 +266,11 @@ the engine and writes `docs/accuracy/<tier>.md`; exits 1 below target. Needs `pd
   produced junk issuers). An empty field is better than a wrong one; the name drops the token.
 - 2026-10-11 Desktop e2e drives the release build: the debug build's unoptimized image code
   makes OCR runs take minutes.
+- 2026-10-11 OCR "Automatic" stays Tesseract on Windows and macOS: Apple Vision and
+  Windows.Media.Ocr were less accurate on the synthetic tiers and slower (docs/ocr-engines.md).
+- 2026-10-11 Installers ship native libraries as separate dynamic files (LGPL libheif/libde265
+  must stay replaceable); Windows deploys the VC++ runtime DLLs app-locally.
+- 2026-10-11 Website downloads point at `releases/latest/download/<Product>-<platform>` on
+  GitHub: no site rebuild per release. macOS gets two DMGs (Apple silicon, Intel), not universal.
 - 2026-10-11 Empty `apps/*` and `packages/corpus` were not scaffolded. Placeholder apps would
   violate the anti-stub rule; each arrives in its phase.

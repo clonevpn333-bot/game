@@ -15,37 +15,43 @@ export const metadata: Metadata = {
 const req = site.systemRequirements;
 
 export default function DownloadPage() {
-  const missing = [
-    !site.downloads.windows && 'DOWNLOAD_WINDOWS_URL',
-    !site.downloads.mac && 'DOWNLOAD_MAC_URL',
-  ].filter(Boolean) as string[];
+  const { downloads } = site;
   return (
     <>
       <PageHeader
-        eyebrow={site.downloads.version ? `Version ${site.downloads.version}` : 'Download'}
+        eyebrow="Download"
         title={`Download ${site.productName}.`}
         lede={`The download is the full app. It runs as a free trial for ${site.pricing.trialBinders} client binders, and a license key unlocks it without reinstalling.`}
       >
         <div className="mt-10">
           <DownloadOptions
             windows={{
-              url: site.downloads.windows,
+              url: downloads.windows,
               label: 'Download for Windows',
               file: 'Windows installer (.exe)',
             }}
             mac={{
-              url: site.downloads.mac,
+              url: downloads.macAppleSilicon,
               label: 'Download for macOS',
-              file: 'macOS disk image (.dmg)',
+              file: 'macOS disk image (.dmg), Apple silicon',
+              alternate: {
+                url: downloads.macIntel,
+                label: 'Mac with an Intel processor? Download the Intel version',
+              },
             }}
           />
-          {missing.length ? (
+          {downloads.releases ? (
             <p className="mt-4 text-sm text-fg-muted">
-              {missing.map((m) => (
-                <NotConfigured key={m} name={m} />
-              ))}
+              Always the newest version.{' '}
+              <a href={downloads.releases} className="text-fg underline underline-offset-4">
+                All versions and release notes
+              </a>
             </p>
-          ) : null}
+          ) : (
+            <p className="mt-4 text-sm text-fg-muted">
+              <NotConfigured name="DOWNLOAD_REPO" />
+            </p>
+          )}
         </div>
       </PageHeader>
 
@@ -87,7 +93,7 @@ export default function DownloadPage() {
               ['Install and open it.', 'No account, no email address, no card.'],
               [
                 `Build up to ${site.pricing.trialBinders} client binders.`,
-                'Every feature works. Cover pages carry a small “Created with trial” note.',
+                `Every feature works. Cover pages carry a small “Created with ${site.productName} trial” note.`,
               ],
               [
                 'Buy when you’re ready.',

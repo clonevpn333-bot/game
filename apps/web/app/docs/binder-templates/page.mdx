@@ -8,38 +8,42 @@ export const metadata = {
 
 # Binder templates
 
-A binder template controls the order of categories in the binder and how documents are named. Set a default in **Settings**, and change it for one binder in the export dialog.
+Your firm’s binder order and naming template apply to every binder. Set them in **Settings → Binders**, or change them in the export dialog, which saves them the same way. The review board shows documents in the same order.
 
 ## Default category order
 
-Binders follow this order unless you change it:
+Binders follow this order until you change it:
 
-1. Client organizer and engagement documents
+1. Client organizer & engagement
 2. Wages: W-2, W-2G
-3. Interest and dividends: 1099-INT, 1099-OID, 1099-DIV
-4. Brokerage: 1099-B, consolidated statements
-5. Retirement and Social Security: 1099-R, SSA-1099, RRB-1099, 5498
-6. Self-employment and other income: 1099-NEC, 1099-MISC, 1099-K, 1099-G
-7. Health: 1095-A, 1095-B, 1095-C, 1099-SA, 5498-SA
-8. Education: 1098-T, 1098-E, 1099-Q
-9. Mortgage and property: 1098, property tax statements, 1099-S
-10. Pass-through: Schedule K-1 (1065, 1120-S, 1041)
-11. Debt and other: 1099-C
-12. Other and unrecognized
+3. Interest & dividends: 1099-INT, 1099-OID, 1099-DIV
+4. Brokerage: 1099-B, brokerage consolidated statements
+5. Retirement & Social Security: 1099-R, SSA-1099, RRB-1099, 5498
+6. Self-employment & other income: 1099-NEC, 1099-MISC, 1099-K, 1099-G
+7. Health: 1099-SA, 1095-A, 1095-B, 1095-C, 5498-SA
+8. Education: 1099-Q, 1098-T, 1098-E
+9. Mortgage & property: 1099-S, 1098, property tax statements
+10. Pass-through: Schedule K-1 (Form 1065, 1120-S, 1041)
+11. Debt & other: 1099-C
+12. Other / unrecognized
 
-To change it, open the export dialog, choose **Custom**, and drag categories into the order your firm uses. Empty categories are left out of the binder.
+To change it, drag categories in **Settings → Binders → Default binder order** or in the export dialog’s **Binder order** list; **Reset to default order** puts it back. Empty categories are left out of the binder.
 
 ## Naming template
 
-File names are built from four tokens:
+Document names are used for the bookmarks, the index and the individual files. They are built from four tokens:
 
 - `{year}`: the tax year printed on the form
 - `{form}`: the form type, such as `1099-DIV`
 - `{issuer}`: the employer, payer or lender
-- `{client}`: the client’s display name
+- `{client}`: the client’s last name
 
-The default template is `{year} {form} – {issuer} – {client}`, which produces names like `2026 1099-DIV – Sample Brokerage – Sample`. **Settings → Naming** shows a live preview as you edit.
+The default template is `{year} {form} – {issuer} – {client}`, which produces names like `2026 1099-DIV – Sample Brokerage – Sample`. When {P} can’t read a value, the name leaves that part out rather than guess. Names you typed yourself on the review board stay as they are. The export dialog previews the template on the selected document.
 
 ## Cover page and index
 
-Every binder starts with a cover page (your firm name and logo, the client, the tax year, the date and the document and page counts) and an index that links to each document. Turn either off in the export dialog. Add your logo, as a PNG or SVG file, in **Settings → Firm profile**.
+Every binder can start with a cover page (your firm name and logo, the client, the tax year, the date and the document and page counts) and an index that links to each document. Turn either off in the export dialog. Add your firm name and logo (PNG or SVG) in **Settings → Firm profile**.
+
+## Image quality
+
+Scanned and photographed pages are saved at the quality you choose: **Compact** for email, **Balanced** (the default), or **High**. Digital PDFs are copied as they are, at full quality, whatever you pick.

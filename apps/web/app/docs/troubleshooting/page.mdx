@@ -14,9 +14,13 @@ Most problems come from the files themselves: a locked PDF, a dark photo, an unu
 
 {P} can’t read encrypted PDFs. Open the file in your PDF reader with its password, save an unprotected copy, and drop that copy in instead.
 
-## “Couldn’t open this file: it’s damaged”
+## “Couldn’t open this file: it’s damaged or incomplete”
 
 The file is incomplete or corrupt, often from an interrupted download or email attachment. Ask the client to send it again.
+
+## “This file type isn’t supported”
+
+{P} reads PDF, JPG, PNG, HEIC and TIFF files. Save other formats (Word documents, spreadsheets, email messages) as PDF first.
 
 ## A document is in the wrong category
 
@@ -28,7 +32,7 @@ Phone photos taken in low light, at a steep angle or with a shadow across the pa
 
 ## Two documents were merged into one
 
-Open the document, move to the first page of the second document and press <Kbd>S</Kbd> to split there.
+Select the document, move to the first page of the second document with <Kbd>→</Kbd> and press <Kbd>S</Kbd> to start a new document there. <Kbd>M</Kbd> does the opposite: it merges a document with the one before it.
 
 ## The update check fails
 
@@ -36,4 +40,4 @@ The update check contacts `{UPDATE_HOST}`. If your network blocks it, turn off a
 
 ## Send a diagnostic report
 
-If none of this helps, choose **Settings → Export diagnostic report**. It saves a zip file with the app version, operating system, timings and error codes, and no document content. Attach it to an email to support.
+If none of this helps, choose **Settings → Data → Export diagnostic report…**. It saves a zip file with the app version, operating system, text recognition engine, timings and error codes. It contains no file names, client names, document contents or license key; open `report.json` inside to check. Attach it to an email to support.

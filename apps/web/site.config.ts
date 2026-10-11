@@ -16,6 +16,23 @@ function env(value: string | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
+/** `owner/name` of the GitHub repository whose releases carry the installers. */
+const downloadRepo = env(process.env.DOWNLOAD_REPO);
+
+/** Installer file names after the product name; equal to the desktop release-assets.ts. */
+export const RELEASE_ASSET_SUFFIXES = {
+  windows: 'windows-x64-setup.exe',
+  macAppleSilicon: 'macos-apple-silicon.dmg',
+  macIntel: 'macos-intel.dmg',
+} as const;
+
+/** A version-free installer file on the latest release, e.g. `BinderReady-macos-intel.dmg`. */
+export function releaseAsset(suffix: string): string | null {
+  return downloadRepo
+    ? `https://github.com/${downloadRepo}/releases/latest/download/${PRODUCT_NAME}-${suffix}`
+    : null;
+}
+
 export const site = {
   productName: PRODUCT_NAME,
   /** File-name-safe form of the product name, e.g. for the security PDF. */
@@ -58,16 +75,24 @@ export const site = {
     limit: 100,
   },
 
+  /**
+   * Installers from the newest published GitHub release. The release workflow attaches
+   * version-free copies (apps/desktop/scripts/release-assets.ts), so these links never
+   * go stale and the site needs no rebuild per release.
+   */
   downloads: {
-    version: env(process.env.RELEASE_VERSION),
-    windows: env(process.env.DOWNLOAD_WINDOWS_URL),
-    mac: env(process.env.DOWNLOAD_MAC_URL),
+    repo: downloadRepo,
+    releases: downloadRepo ? `https://github.com/${downloadRepo}/releases` : null,
+    windows: releaseAsset(RELEASE_ASSET_SUFFIXES.windows),
+    macAppleSilicon: releaseAsset(RELEASE_ASSET_SUFFIXES.macAppleSilicon),
+    macIntel: releaseAsset(RELEASE_ASSET_SUFFIXES.macIntel),
   },
 
   /** The only two hosts the desktop app may contact; shown on the Security page. */
   network: {
     licenseHost: 'api.lemonsqueezy.com',
-    updateHost: env(process.env.UPDATE_MANIFEST_HOST) ?? 'github.com',
+    /** Updates come from this repository's GitHub releases (apps/desktop net.rs allows it). */
+    updateHost: 'github.com',
   },
 
   systemRequirements: {
@@ -89,9 +114,7 @@ export const requiredForRelease = {
   COMPANY_ADDRESS: site.company.address,
   LEMON_SQUEEZY_SOLO_CHECKOUT_URL: site.checkout.solo,
   LEMON_SQUEEZY_FIRM_CHECKOUT_URL: site.checkout.firm,
-  RELEASE_VERSION: site.downloads.version,
-  DOWNLOAD_WINDOWS_URL: site.downloads.windows,
-  DOWNLOAD_MAC_URL: site.downloads.mac,
+  DOWNLOAD_REPO: site.downloads.repo,
 } as const;
 
 export function missingReleaseValues(): string[] {

@@ -15,6 +15,7 @@ on:
       - apps/desktop/scripts/release-config.ts
       - apps/desktop/scripts/vcpkg-overlay.ts
       - apps/desktop/scripts/updater-manifest.ts
+      - apps/desktop/scripts/release-assets.ts
       - apps/desktop/scripts/licenses.ts
       - apps/desktop/vcpkg/**
       - apps/desktop/src-tauri/tauri.conf.json
@@ -142,7 +143,16 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: pnpm tauri build --ci --target ${{ matrix.target }} --config src-tauri/tauri.release.json
+        shell: bash
+        # Tauri treats a set-but-empty APPLE_CERTIFICATE (an absent secret) as a certificate to
+        # import: unset whatever is empty so unconfigured signing is simply off.
+        run: |
+          for v in TAURI_SIGNING_PRIVATE_KEY TAURI_SIGNING_PRIVATE_KEY_PASSWORD AZURE_CLIENT_ID \
+            AZURE_CLIENT_SECRET AZURE_TENANT_ID APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD \
+            APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            if [ -z "${!v}" ]; then unset "$v"; fi
+          done
+          pnpm tauri build --ci --target ${{ matrix.target }} --config src-tauri/tauri.release.json
 
       - name: Check the app bundle (macOS)
         if: runner.os == 'macOS'
@@ -246,5 +256,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           product=$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').productName")
+          # Version-free copies for the website's download buttons.
+          node apps/desktop/scripts/release-assets.ts --dir dist-release --product "$product"
           gh release create "$GITHUB_REF_NAME" --draft --verify-tag --generate-notes \
             --title "$product ${GITHUB_REF_NAME#v}" dist-release/*

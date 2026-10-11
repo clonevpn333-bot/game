@@ -1,4 +1,4 @@
-import { P, SOLO, FIRM, LICENSE_HOST } from '@/lib/brand';
+import { P, SOLO, FIRM, LICENSE_HOST, TRIAL } from '@/lib/brand';
 
 export const metadata = {
   title: 'License activation',
@@ -20,15 +20,20 @@ The app sends the key and this computer’s name to `{LICENSE_HOST}` and stores 
 
 ## Move to another computer
 
-Open **Settings → License** on the old computer and choose **Deactivate this device**. That frees the activation, and the same key works on the new computer.
+Open **Settings → License** on the old computer and choose **Deactivate this computer…**. That frees the activation, and the same key works on the new computer. Deactivating needs the internet; if the old computer is offline, it stays activated until you try again.
 
 ## Error messages
 
 - **This key has reached its device limit**: deactivate it on another computer from Settings → License, then try again.
-- **This key isn’t valid**: check that you pasted the whole key, without spaces at either end.
-- **This key has been disabled**: the purchase was refunded or the key was revoked. Contact support if that’s unexpected.
+- **That license key wasn’t recognized**: check that you pasted the whole key from your purchase email.
+- **This license key has been disabled** or **has expired**: the purchase was refunded or the key was revoked. Contact support if that’s unexpected.
+- **This key is for a different product**: the key belongs to another Lemon Squeezy product. Use the key from your {P} receipt.
 - **Couldn’t reach the license server**: activation needs the internet once. Check the connection, or a firewall that blocks `{LICENSE_HOST}`.
 
 ## Working offline
 
-After activation, {P} checks the key again at most every 14 days, and only when it’s online. A failed check, for any network reason, never deactivates the app.
+After activation, {P} checks the key again at most every 14 days, and only when it’s online. A failed check, for any network reason, never deactivates the app. Only an answer from the license server that the key was disabled, refunded or expired ends the license, and the app tells you when that happens.
+
+## The trial
+
+Until a key is activated, {P} exports binders for {TRIAL} different clients or tax years. Exporting the same client and year again doesn’t count twice. Trial binders carry a small “Created with {P} trial” note on the cover. Activating doesn’t change your clients, settings or history.

@@ -1,12 +1,11 @@
 import { Badge, Button, Kbd, StatusDot, cx } from '@binderready/design';
-import { CATEGORY_IDS } from '@binderready/engine';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { ChevronLeft, ChevronRight, Copy, RotateCw, Scissors, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DesktopFile } from '../lib/backend';
 import { catalog, categoryName, formLabel } from '../lib/catalog';
 import { modKey } from '../lib/platform';
-import { boardGroups, categoryForKey, rotationKey, type ReviewDoc } from '../lib/review';
+import { boardGroups, categoryForKey, fullOrder, rotationKey, type ReviewDoc } from '../lib/review';
 import { useApp } from '../state/store';
 import { pickFiles } from './drop-zone';
 import { ExportDialog } from './export-dialog';
@@ -633,7 +632,8 @@ export function ReviewBoard() {
           default: {
             const n = Number(key);
             if (Number.isInteger(n) && n >= 1 && n <= 9) {
-              const category = categoryForKey(n, CATEGORY_IDS);
+              // Numbers follow the firm's binder order, the order the board shows.
+              const category = categoryForKey(n, fullOrder(s.categoryOrder));
               if (category) s.reassign(category);
               return true;
             }

@@ -4,8 +4,8 @@
 
 | Preset | Pages | File size | Per page | Export time |
 |---|---|---|---|---|
-| Balanced | 105 | 18.9 MB | 184 KB | 6.6 s |
-| Compact | 105 | 5.9 MB | 57 KB | 6.9 s |
-| High | 105 | 22.7 MB | 221 KB | 5.2 s |
+| Balanced | 105 | 18.9 MB | 184 KB | 7.7 s |
+| Compact | 105 | 5.9 MB | 57 KB | 6.1 s |
+| High | 105 | 22.7 MB | 221 KB | 4.3 s |
 
 Mixed binder (digital, scanned and photo pages, 39 pages, Balanced): 0.4 MB.

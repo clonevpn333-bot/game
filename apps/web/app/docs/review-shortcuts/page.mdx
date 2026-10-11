@@ -12,28 +12,35 @@ Every action on the review board has a key, and the footer of the board always s
 
 ## Moving and accepting
 
-| Key                         | Action                       |
-| --------------------------- | ---------------------------- |
-| <Kbd>J</Kbd> / <Kbd>K</Kbd> | Next / previous document     |
-| <Kbd>Enter</Kbd>            | Accept the selected document |
-| <Kbd>Space</Kbd>            | Open a large preview         |
+| Key                         | Action                                                              |
+| --------------------------- | ------------------------------------------------------------------- |
+| <Kbd>J</Kbd> / <Kbd>K</Kbd> | Next / previous document                                            |
+| <Kbd>Enter</Kbd>            | Accept the selected document                                        |
+| <Kbd>Space</Kbd>            | Open a large preview (<Kbd>Space</Kbd> or <Kbd>Esc</Kbd> closes it) |
+| <Kbd>←</Kbd> / <Kbd>→</Kbd> | Previous / next page of the document                                |
 
 ## Fixing a document
 
-| Key                       | Action                                            |
-| ------------------------- | ------------------------------------------------- |
-| <Kbd>1</Kbd>–<Kbd>9</Kbd> | Move to binder category 1–9                       |
-| <Kbd>T</Kbd>              | Change the form type (searchable list)            |
-| <Kbd>E</Kbd>              | Edit the name                                     |
-| <Kbd>R</Kbd>              | Rotate the current page                           |
-| <Kbd>S</Kbd>              | Split the document at the current page            |
-| <Kbd>M</Kbd>              | Merge with the previous document                  |
-| <Kbd>D</Kbd>              | Mark as a duplicate and remove it from the binder |
+| Key                       | Action                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------ |
+| <Kbd>1</Kbd>–<Kbd>9</Kbd> | Move to binder category 1–9                                                          |
+| <Kbd>T</Kbd>              | Change the form type (searchable list)                                               |
+| <Kbd>E</Kbd>              | Edit the name                                                                        |
+| <Kbd>R</Kbd>              | Rotate the current page clockwise (<Kbd>Shift</Kbd> <Kbd>R</Kbd>: counter-clockwise) |
+| <Kbd>S</Kbd>              | Start a new document at the current page                                             |
+| <Kbd>M</Kbd>              | Merge with the previous document                                                     |
+| <Kbd>D</Kbd>              | Set aside as a duplicate, out of the binder (again to bring it back)                 |
+| <Kbd>Esc</Kbd>            | Close the page strip                                                                 |
+
+<Kbd>S</Kbd> needs a page after the first: if the first page is selected, {P} opens the page strip
+so you can pick one. In the strip you can also move pages between positions and rotate them one by
+one.
 
 ## Everywhere
 
-| Key                                                       | Action                                                            |
-| --------------------------------------------------------- | ----------------------------------------------------------------- |
-| <Kbd>Ctrl</Kbd> <Kbd>K</Kbd> or <Kbd>⌘</Kbd> <Kbd>K</Kbd> | Command palette: new binder, open client, export, theme, settings |
+| Key                                                       | Action                                                                                      |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| <Kbd>Ctrl</Kbd> <Kbd>K</Kbd> or <Kbd>⌘</Kbd> <Kbd>K</Kbd> | Command palette: new binder, export, close binder, clients, recent binders, theme, settings |
+| <Kbd>Ctrl</Kbd> <Kbd>E</Kbd> or <Kbd>⌘</Kbd> <Kbd>E</Kbd> | Export the binder                                                                           |
 
-Category numbers follow your binder order, so <Kbd>1</Kbd> is the first category in [your template](/docs/binder-templates/). {P} never files a document on its own when two form types score close together; it marks it **Check** and shows both, so <Kbd>T</Kbd> is usually one keystroke away from the fix.
+Category numbers follow your [binder order](/docs/binder-templates/), so <Kbd>1</Kbd> is the first category on the board; the 10th and later categories are one <Kbd>T</Kbd> away. {P} never files a document on its own when two form types score close together: it marks it **Check** and shows both, so the fix is usually one keystroke.

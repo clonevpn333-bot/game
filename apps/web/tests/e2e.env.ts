@@ -14,7 +14,5 @@ export const e2eEnv = {
   LEMON_SQUEEZY_FIRM_CHECKOUT_URL:
     'https://binderready-test.lemonsqueezy.com/buy/firm-test-variant',
   FOUNDERS_ACTIVE: '1',
-  RELEASE_VERSION: '1.0.0',
-  DOWNLOAD_WINDOWS_URL: 'https://downloads.binderready.test/BinderReady_x64-setup.exe',
-  DOWNLOAD_MAC_URL: 'https://downloads.binderready.test/BinderReady_universal.dmg',
+  DOWNLOAD_REPO: 'sample-owner/binderready',
 };

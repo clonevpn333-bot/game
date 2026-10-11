@@ -107,6 +107,12 @@ async function main() {
         ))
       )
         await sleep(150);
+      // Loaded isn't painted: wait for the decode, then a frame.
+      await wd('POST', `${s}/execute/async`, {
+        script:
+          'const done = arguments[arguments.length - 1]; Promise.all([...document.images].filter(i => i.getBoundingClientRect().top < innerHeight).map(i => i.decode().catch(() => null))).then(() => requestAnimationFrame(() => requestAnimationFrame(() => done(true))));',
+        args: [],
+      });
       const png = await wd<string>('GET', `${s}/screenshot`);
       await writeFile(join(dir, `${name}.png`), Buffer.from(png, 'base64'));
     };
