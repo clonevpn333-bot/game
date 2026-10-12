@@ -41,6 +41,12 @@ const firstOpen: { os: string; steps: ReactNode[] }[] = [
   {
     os: 'Windows',
     steps: [
+      <>
+        If your browser says the file isn’t commonly downloaded, keep it. In Edge: hover the
+        download, choose <strong className="font-medium text-fg">⋯ → Keep</strong>, then{' '}
+        <strong className="font-medium text-fg">Show more → Keep anyway</strong>. In Chrome: choose{' '}
+        <strong className="font-medium text-fg">Keep</strong>.
+      </>,
       <>Run the downloaded .exe.</>,
       <>
         If a blue “Windows protected your PC” box appears, choose{' '}
