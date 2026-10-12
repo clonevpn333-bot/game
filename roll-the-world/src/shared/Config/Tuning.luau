@@ -139,7 +139,7 @@ local Tuning = {
 	},
 
 	Rewards = {
-		StardustPerMeterGrown = 6, -- per display metre of final diameter (tier-scaled)
+		StardustPerMeterGrown = 60, -- per display metre of final diameter (tier-scaled)
 		StardustPerDiscovery = 15,
 		StardustPerNewVariant = 30,
 		StardustPerPlayerRolled = 20,

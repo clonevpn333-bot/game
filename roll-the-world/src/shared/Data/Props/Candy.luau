@@ -657,12 +657,15 @@ add({
 	rarity = "Common",
 	tags = { "dessert", "baked", "sweet", "cake" },
 	hint = "On a doily by the cake stand.",
+	-- Triangular wedges rotated flat so the slice is a triangle seen from above, wide end at +Z.
 	parts = {
-		wedge(6, 10, 14, 0, 5, 0, "#f6bd60", { rot = { 0, 0, 0 } }),
-		box(6.05, 1, 13.9, 0, 3.4, 0, "#ff8fab"),
-		box(6.05, 1, 13.9, 0, 6.6, 0, "#ff8fab"),
-		box(6.2, 1.2, 1.4, 0, 9.4, -6.4, "#ffffff"),
-		ball(2, 0, 11, -6.4, "#e63946"),
+		wedge(3, 7, 14, 0, 1.5, 0, "#f6bd60", { rot = { 0, 0, 90 } }),
+		wedge(1, 7, 14, 0, 3.5, 0, "#ff8fab", { rot = { 0, 0, 90 } }),
+		wedge(3, 7, 14, 0, 5.5, 0, "#f6bd60", { rot = { 0, 0, 90 } }),
+		wedge(1.2, 7.2, 14.2, 0, 7.6, 0, "#fff0f6", { rot = { 0, 0, 90 } }),
+		box(7.2, 7.6, 1.2, 0, 3.8, 6.6, "#fff0f6"),
+		ball(2.2, 0, 9.2, 5, "#e63946"),
+		blob(2.6, 1.2, 2.6, 0, 8.4, 5, "#ffffff"),
 	},
 })
 
@@ -874,8 +877,8 @@ add({
 			cyl(30, 6, 0, 3, 0, "#ffc8dd"),
 			cyl(31, 1.4, 0, 6.6, 0, "#ffd166", { mat = "Foil" }),
 			cyl(2, 26, 0, 19, 0, "#ffd166", { mat = "Foil" }),
-			wedge(16, 8, 15, 0, 36, 7.5, "#bde0fe"),
-			wedge(16, 8, 15, 0, 36, -7.5, "#bde0fe", { rot = { 0, 180, 0 } }),
+			wedge(16, 8, 15, 0, 36, 7.5, "#bde0fe", { rot = { 0, 180, 0 } }),
+			wedge(16, 8, 15, 0, 36, -7.5, "#bde0fe"),
 			cyl(32, 2, 0, 31.6, 0, "#ff70a6"),
 			ball(3, 0, 41, 0, "#ffd166", { mat = "Foil" }),
 		}
@@ -907,8 +910,8 @@ add({
 		box(2, 30, 2, 18, 48, 10, "#ffffff"),
 		box(2, 30, 2, -18, 48, -10, "#ffffff"),
 		box(2, 30, 2, 18, 48, -10, "#ffffff"),
-		wedge(44, 8, 14, 0, 67, 7, "#8ff0c8", { mat = "Fabric" }),
-		wedge(44, 8, 14, 0, 67, -7, "#ff8fc7", { rot = { 0, 180, 0 }, mat = "Fabric" }),
+		wedge(44, 8, 14, 0, 67, 7, "#8ff0c8", { rot = { 0, 180, 0 }, mat = "Fabric" }),
+		wedge(44, 8, 14, 0, 67, -7, "#ff8fc7", { mat = "Fabric" }),
 		ball(6, -10, 37, 0, "#ff4d6d"),
 		ball(6, 0, 37, 4, "#ffd60a"),
 		ball(6, 10, 37, -2, "#06d6a0"),
@@ -1045,8 +1048,8 @@ add({
 	hint = "Shop window centrepiece.",
 	parts = {
 		box(60, 44, 50, 0, 22, 0, "#c47f35"),
-		wedge(66, 28, 30, 0, 58, 13, "#a0602a"),
-		wedge(66, 28, 30, 0, 58, -13, "#a0602a", { rot = { 0, 180, 0 } }),
+		wedge(66, 28, 30, 0, 58, 13, "#a0602a", { rot = { 0, 180, 0 } }),
+		wedge(66, 28, 30, 0, 58, -13, "#a0602a"),
 		box(68, 3, 2, 0, 47, 26, "#ffffff"),
 		box(16, 22, 1, 0, 11, 25.6, "#6b3e26"),
 		box(12, 12, 1, -20, 26, 25.6, "#ffd166", { neon = true }),

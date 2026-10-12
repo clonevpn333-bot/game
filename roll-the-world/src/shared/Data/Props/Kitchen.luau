@@ -1099,8 +1099,8 @@ add({
 	parts = {
 		box(9, 16, 9, 0, 8, 0, "#ffffff"),
 		box(9.05, 7, 9.05, 0, 7, 0, "#4cc9f0"),
-		wedge(9, 4, 4.5, 0, 18, 2.25, "#ffffff"),
-		wedge(9, 4, 4.5, 0, 18, -2.25, "#ffffff", { rot = { 0, 180, 0 } }),
+		wedge(9, 4, 4.5, 0, 18, 2.25, "#ffffff", { rot = { 0, 180, 0 } }),
+		wedge(9, 4, 4.5, 0, 18, -2.25, "#ffffff"),
 		box(9, 1.6, 0.6, 0, 20.6, 0, "#ffffff"),
 		cyl(2, 1, 2, 18.8, 2.2, "#ff595e", { rot = { 30, 0, 0 } }),
 		blob(3.6, 2.4, 0.2, 0, 8, 4.55, "#ffffff"),
@@ -1299,8 +1299,8 @@ add({
 	hint = "Fell off the wall. Still cuckooing.",
 	parts = {
 		box(12, 12, 6, 0, 6, 0, WOOD, { mat = "Wood" }),
-		wedge(14, 5, 3.6, 0, 14.5, 1.8, WOOD_DARK, { mat = "Wood" }),
-		wedge(14, 5, 3.6, 0, 14.5, -1.8, WOOD_DARK, { rot = { 0, 180, 0 }, mat = "Wood" }),
+		wedge(14, 5, 3.6, 0, 14.5, 1.8, WOOD_DARK, { rot = { 0, 180, 0 }, mat = "Wood" }),
+		wedge(14, 5, 3.6, 0, 14.5, -1.8, WOOD_DARK, { mat = "Wood" }),
 		cyl(8, 0.6, 0, 5.6, 3.2, CREAM, { rot = { 90, 0, 0 } }),
 		box(0.5, 3, 0.3, 0, 6.8, 3.6, INK),
 		box(2.4, 0.5, 0.3, 0.9, 5.6, 3.6, INK),
