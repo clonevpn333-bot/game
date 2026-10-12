@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { DownloadOptions } from '@/components/download-options';
 import { NotConfigured } from '@/components/not-configured';
@@ -13,6 +14,43 @@ export const metadata: Metadata = {
 };
 
 const req = site.systemRequirements;
+
+/**
+ * The installers aren't signed with an Apple Developer ID or a Windows publisher certificate,
+ * so both systems ask once before the first launch. These are the steps, in the systems' words.
+ */
+const firstOpen: { os: string; steps: ReactNode[] }[] = [
+  {
+    os: 'macOS',
+    steps: [
+      <>Open the .dmg and drag {site.productName} into Applications.</>,
+      <>
+        Double-click {site.productName}. macOS says it can’t verify the app: choose{' '}
+        <strong className="font-medium text-fg">Done</strong>.
+      </>,
+      <>
+        Open{' '}
+        <strong className="font-medium text-fg">System Settings → Privacy &amp; Security</strong>,
+        scroll down and choose <strong className="font-medium text-fg">Open Anyway</strong> next to{' '}
+        {site.productName}. Enter your Mac password, then choose{' '}
+        <strong className="font-medium text-fg">Open Anyway</strong> again.
+      </>,
+      <>That’s it. From now on it opens with a normal double-click.</>,
+    ],
+  },
+  {
+    os: 'Windows',
+    steps: [
+      <>Run the downloaded .exe.</>,
+      <>
+        If a blue “Windows protected your PC” box appears, choose{' '}
+        <strong className="font-medium text-fg">More info</strong>, then{' '}
+        <strong className="font-medium text-fg">Run anyway</strong>.
+      </>,
+      <>Follow the installer. {site.productName} opens from the Start menu after that.</>,
+    ],
+  },
+];
 
 export default function DownloadPage() {
   const { downloads } = site;
@@ -54,6 +92,38 @@ export default function DownloadPage() {
           )}
         </div>
       </PageHeader>
+
+      <Band labelledBy="first-open-title">
+        <div className="grid gap-10 px-5 py-16 md:px-10 md:py-20 lg:grid-cols-[1fr_2fr] lg:gap-16">
+          <SectionHeading
+            id="first-open-title"
+            eyebrow="Opening it the first time"
+            title="One extra click, once."
+          />
+          <div className="grid gap-10 md:grid-cols-2">
+            {firstOpen.map(({ os, steps }) => (
+              <div key={os}>
+                <h3 className="font-medium text-fg">{os}</h3>
+                <ol className="mt-4 space-y-4 text-[15px] text-fg-muted">
+                  {steps.map((step, i) => (
+                    <li key={i} className="grid grid-cols-[2rem_1fr] gap-2">
+                      <span className="tabular font-mono text-sm text-fg-subtle">0{i + 1}</span>
+                      <p>{step}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
+          </div>
+          <p className="text-sm text-fg-muted lg:col-start-2">
+            Prefer Terminal on a Mac? After dragging it into Applications, run{' '}
+            <code className="mt-2 block w-fit max-w-full break-all rounded-control bg-surface px-2 py-1 font-mono text-[13px] text-fg">
+              xattr -dr com.apple.quarantine /Applications/{site.productName}.app
+            </code>{' '}
+            and open it normally.
+          </p>
+        </div>
+      </Band>
 
       <Band labelledBy="requirements-title">
         <div className="grid gap-10 px-5 py-16 md:px-10 md:py-20 lg:grid-cols-[1fr_2fr] lg:gap-16">

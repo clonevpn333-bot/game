@@ -216,6 +216,9 @@ test('download: Windows is primary by default, macOS on a Mac', async ({ browser
     'href',
     `https://github.com/${e2eEnv.DOWNLOAD_REPO}/releases/latest/download/BinderReady-windows-x64-setup.exe`,
   );
+  const firstOpen = win.getByRole('region', { name: 'One extra click, once.' });
+  await expect(firstOpen.getByText('Open Anyway').first()).toBeVisible();
+  await expect(firstOpen.getByText('Run anyway')).toBeVisible();
   await win.close();
 
   const context = await browser.newContext({
