@@ -102,14 +102,15 @@
 /*
  * Scroll-driven reveals (CSS only, off the main thread). Content is fully visible
  * without support or with reduced motion: the rules only exist inside both guards.
- *   .reveal          rises into place as it enters the viewport
+ *   .reveal          rises into place and comes into focus as it enters the viewport
  *   .reveal-stagger  children rise in sequence (set --i on each child)
  *   .settle          the hero product frame straightens as the page scrolls
  */
 @keyframes reveal-rise {
   from {
     opacity: 0;
-    transform: translateY(28px);
+    transform: translateY(24px);
+    filter: blur(6px);
   }
 }
 @keyframes settle {
@@ -135,6 +136,242 @@
       animation: settle linear both;
       animation-timeline: scroll(root);
       animation-range: 0 420px;
+    }
+  }
+}
+
+/* In-page links (See it work, #pricing) glide instead of jumping. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/*
+ * How it works: the pile becomes a binder.
+ * The still (no scroll-driven animations, narrow screens, reduced motion) is the review
+ * board: six sheets in a grid, status dots on, the duplicate labelled. On wide screens with
+ * support, the section is three screens tall, its content pins, and one timeline (--story)
+ * drives the sheets from pile → board → tabbed binder while the steps light up in turn.
+ */
+.story-stage {
+  position: relative;
+  container-type: inline-size;
+  aspect-ratio: 100 / 80;
+  overflow: clip;
+}
+.story-sheet {
+  position: absolute;
+  inset: 0 auto auto 0;
+  display: flex;
+  flex-direction: column;
+  width: 26cqw;
+  height: 33.6cqw;
+  padding: 2cqw;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface);
+  box-shadow:
+    0 1px 0 rgb(0 0 0 / 0.04),
+    0 10px 30px -18px rgb(0 0 0 / 0.5);
+  translate: calc(var(--gx) * 1cqw) calc(var(--gy) * 1cqw);
+}
+.story-dot {
+  width: max(6px, 1.1cqw);
+  height: max(6px, 1.1cqw);
+  border-radius: 999px;
+}
+.story-tab {
+  position: absolute;
+  left: calc(100% - 1px);
+  top: calc(3cqw + var(--tab) * 5.6cqw);
+  padding: 0.5cqw 1.2cqw;
+  border: 1px solid var(--border-strong);
+  border-left-color: var(--surface);
+  border-radius: 0 3px 3px 0;
+  background: var(--surface);
+  color: var(--fg-muted);
+  white-space: nowrap;
+  opacity: 0;
+}
+.story-dup-label {
+  position: absolute;
+  inset: auto 2cqw 2cqw auto;
+  padding: 0.3cqw 1cqw;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+  color: var(--warning);
+}
+.story-dup {
+  opacity: 0.7;
+}
+.story-cover {
+  position: absolute;
+  inset: 0 auto auto 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  width: 26cqw;
+  height: 33.6cqw;
+  padding: 2.4cqw;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--surface);
+  translate: calc(36cqw) calc(16cqw);
+  opacity: 0;
+  visibility: hidden;
+}
+.story-rail {
+  position: absolute;
+  inset: 0.4rem auto 0.4rem 0;
+  width: 1px;
+  background: var(--border-strong);
+}
+.story-rail::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--fg);
+  transform-origin: top;
+  scale: 1 0;
+}
+
+@keyframes story-sheet {
+  0% {
+    opacity: 0;
+    translate: calc(var(--px) * 1cqw) calc((var(--py) - 14) * 1cqw);
+    rotate: calc(var(--pr) * 1.6);
+  }
+  12%,
+  30% {
+    opacity: 1;
+    translate: calc(var(--px) * 1cqw) calc(var(--py) * 1cqw);
+    rotate: var(--pr);
+  }
+  46%,
+  62% {
+    opacity: 1;
+    translate: calc(var(--gx) * 1cqw) calc(var(--gy) * 1cqw);
+    rotate: 0deg;
+    scale: 1;
+  }
+  82%,
+  100% {
+    opacity: 1;
+    translate: calc(var(--sx) * 1cqw) calc(var(--sy) * 1cqw);
+    rotate: 0deg;
+    scale: 1.3;
+  }
+}
+@keyframes story-set-aside {
+  0%,
+  70% {
+    opacity: 0.7;
+  }
+  82%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes story-review {
+  0%,
+  38% {
+    opacity: 0;
+    scale: 0.4;
+  }
+  48%,
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@keyframes story-file {
+  0%,
+  76% {
+    opacity: 0;
+    translate: -1.5cqw 0;
+  }
+  88%,
+  100% {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@keyframes story-cover {
+  0%,
+  84% {
+    opacity: 0;
+    visibility: visible;
+    translate: 36cqw 15cqw;
+    scale: 1.3;
+  }
+  96%,
+  100% {
+    opacity: 1;
+    visibility: visible;
+    translate: 36cqw 21cqw;
+    scale: 1.3;
+  }
+}
+@keyframes story-step {
+  from {
+    opacity: 0.32;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes story-rail {
+  to {
+    scale: 1 1;
+  }
+}
+
+@supports (view-timeline: --t block) {
+  @media (prefers-reduced-motion: no-preference) and (min-width: 1024px) {
+    .story {
+      view-timeline: --story block;
+      height: 300vh;
+    }
+    .story-pin {
+      position: sticky;
+      top: 4rem;
+      min-height: calc(100svh - 4rem);
+    }
+    .story-sheet,
+    .story-dot,
+    .story-tab,
+    .story-dup-label,
+    .story-cover,
+    .story-step,
+    .story-rail::after {
+      animation-timeline: --story;
+      animation-range: contain 0% contain 100%;
+      animation-fill-mode: both;
+      animation-timing-function: linear;
+    }
+    .story-sheet {
+      animation-name: story-sheet;
+    }
+    .story-dup {
+      animation-name: story-sheet, story-set-aside;
+    }
+    .story-dot,
+    .story-dup-label {
+      animation-name: story-review;
+    }
+    .story-tab {
+      animation-name: story-file;
+    }
+    .story-cover {
+      animation-name: story-cover;
+    }
+    .story-rail::after {
+      animation-name: story-rail;
+    }
+    .story-step {
+      animation-name: story-step;
+      animation-range: contain calc(var(--step) * 33%) contain calc(var(--step) * 33% + 10%);
     }
   }
 }
