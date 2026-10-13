@@ -56,6 +56,14 @@ local comboScale: UIScale
 local combo = 0
 local lastComboAt = 0
 local speedLines: Frame
+local countdownLabel: TextLabel
+local riderPanel: Frame
+local riderTitle: TextLabel
+local riderSub: TextLabel
+
+local burstHolder: Frame
+local feed: Frame
+local lastCountdown = -1
 local lines = {}
 local COMBO_COLORS = {
 	{ 0, Color3.fromRGB(255, 255, 255) },
@@ -428,6 +436,105 @@ function HudController:bonkGauge(hitPart: Instance?)
 	end)
 end
 
+-- Rolled up: big, funny, and it always tells you exactly how to get back in the game.
+local function buildRiderPanel()
+	riderPanel = Ui.new("Frame", {
+		Name = "Rider",
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -40),
+		Size = UDim2.fromOffset(560, 230),
+		BackgroundTransparency = 1,
+		Visible = false,
+		Parent = root,
+	})
+	riderTitle = Ui.display("😂 YOU GOT ROLLED!", {
+		Size = UDim2.new(1, 0, 0, 74),
+		TextColor3 = Theme.Color.Accent,
+		Parent = riderPanel,
+	})
+	riderSub = Ui.new("TextLabel", {
+		Position = UDim2.fromOffset(0, 76),
+		Size = UDim2.new(1, 0, 0, 34),
+		TextScaled = true,
+		Text = "",
+		Parent = riderPanel,
+	}, { Ui.stroke(2, Theme.Color.Ink) })
+	local _burstButton
+	_burstButton, burstHolder = Ui.button({
+		name = "Burst",
+		text = "💥 BURST OFF!",
+		color = Theme.Color.Bad,
+		size = UDim2.fromOffset(300, 92),
+		position = UDim2.new(0.5, 0, 1, 0),
+		anchor = Vector2.new(0.5, 1),
+		radius = Theme.Radius.Pill,
+		font = Theme.Font.Display,
+		parent = riderPanel,
+		onClick = function()
+			input:press("Burst")
+		end,
+	})
+end
+
+local function updateRiderPanel()
+	local rider = state.rider
+	local isRider = state.playerState == "Rider" and rider ~= nil
+	riderPanel.Visible = isRider
+	if not isRider then
+		return
+	end
+	local now = state:serverTime()
+	local wait = (rider.burstAt or now) - now
+	local by = rider.by or "someone"
+	if wait > 0 then
+		riderSub.Text = "Stuck to " .. by .. "'s ball! Burst off in " .. math.ceil(wait) .. "…"
+		burstHolder.Visible = false
+	else
+		local hint = if input.inputType == "Gamepad" then "  (B)" elseif input.inputType == "Keyboard" then "  (F)" else ""
+		riderSub.Text = "Smash out and knock their stuff loose! 💥" .. hint
+		burstHolder.Visible = true
+		local s = burstHolder:FindFirstChildOfClass("UIScale")
+		if s then
+			s.Scale = 1 + math.sin(os.clock() * 8) * 0.05
+		end
+	end
+	riderTitle.Rotation = math.sin(os.clock() * 3) * 3
+end
+
+-- Little top-left feed: who rolled up whom (big banners only when you're involved).
+function HudController:feed(text: string, color: Color3?)
+	local row = Ui.new("TextLabel", {
+		Size = UDim2.new(1, 0, 0, 26),
+		Text = text,
+		TextScaled = true,
+		TextColor3 = color or Theme.Color.White,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		LayoutOrder = math.floor(os.clock() * 100),
+		Parent = feed,
+	}, { Ui.stroke(2, Theme.Color.Ink) })
+	task.delay(5, function()
+		Ui.tween(row, Theme.Tween.Smooth, { TextTransparency = 1 })
+		local stroke = row:FindFirstChildOfClass("UIStroke")
+		if stroke then
+			Ui.tween(stroke, Theme.Tween.Smooth, { Transparency = 1 })
+		end
+		task.wait(0.3)
+		row:Destroy()
+	end)
+	local rows = {}
+	for _, c in feed:GetChildren() do
+		if c:IsA("TextLabel") then
+			table.insert(rows, c)
+		end
+	end
+	if #rows > 5 then
+		table.sort(rows, function(a, b)
+			return a.LayoutOrder < b.LayoutOrder
+		end)
+		rows[1]:Destroy()
+	end
+end
+
 local function buildContainers()
 	floaters = Ui.new("Frame", {
 		Name = "Floaters",
@@ -458,6 +565,22 @@ local function buildContainers()
 		Position = UDim2.fromScale(0.5, 0.34),
 		Size = UDim2.fromOffset(760, 110),
 		TextTransparency = 1,
+		Parent = root,
+	})
+	feed = Ui.new("Frame", {
+		Name = "Feed",
+		Position = UDim2.fromOffset(16, 76),
+		Size = UDim2.fromOffset(340, 170),
+		BackgroundTransparency = 1,
+		Parent = root,
+	}, { Ui.new("UIListLayout", { Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder }) })
+	countdownLabel = Ui.display("", {
+		Name = "Countdown",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.45),
+		Size = UDim2.fromOffset(260, 200),
+		TextTransparency = 1,
+		TextColor3 = Theme.Color.Accent,
 		Parent = root,
 	})
 	loadingChip = Ui.new("TextLabel", {
@@ -653,7 +776,9 @@ local function setTopRow(i: number, entry)
 	sizeLabel.Text = Format.size(entry.d, cmPerStud())
 	local avatar = row:FindFirstChild("Avatar") :: ImageLabel
 	local thumb = thumbnails[entry.userId]
-	if thumb then
+	if entry.userId < 0 then
+		avatar.Image = "" -- bots have no avatar thumbnail; their name carries a 🤖
+	elseif thumb then
 		avatar.Image = thumb
 	elseif thumb == nil then
 		thumbnails[entry.userId] = false
@@ -838,6 +963,37 @@ local function update(dt: number)
 	timerPill.BackgroundColor3 = if final then Theme.Color.Bad else Theme.Color.Panel
 	timerLabel.TextColor3 = if final then Theme.Color.White else Theme.Color.Ink
 	timerPill.Visible = round.state == "Playing"
+
+	-- The last 10 seconds count down big so the launch is never a surprise.
+	if round.state == "Playing" and left <= 10.5 and left > 0 then
+		local n = math.ceil(left - 0.5)
+		if n ~= lastCountdown and n >= 1 and n <= 10 then
+			lastCountdown = n
+			countdownLabel.Text = tostring(n)
+			countdownLabel.TextTransparency = 0
+			local stroke = countdownLabel:FindFirstChildOfClass("UIStroke")
+			if stroke then
+				stroke.Transparency = 0
+			end
+			local s = countdownLabel:FindFirstChildOfClass("UIScale") or Ui.new("UIScale", { Parent = countdownLabel })
+			s.Scale = 1.6
+			Ui.tween(s, Theme.Tween.Pop, { Scale = 1 })
+			Ui.tween(countdownLabel, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { TextTransparency = 0.6 })
+			if controllers.AudioController then
+				controllers.AudioController:play("Tick", { pitch = 1 + (10 - n) * 0.06 })
+			end
+			if n == 10 then
+				HudController:showBanner("🚀 Launch in 10! Get BIG!", Theme.Color.Accent, 1.8)
+			end
+		end
+	elseif lastCountdown ~= -1 then
+		lastCountdown = -1
+		countdownLabel.TextTransparency = 1
+		local stroke = countdownLabel:FindFirstChildOfClass("UIStroke")
+		if stroke then
+			stroke.Transparency = 1
+		end
+	end
 	topList.Visible = round.state == "Playing"
 
 	-- Touch buttons + dash cooldown.
@@ -881,6 +1037,7 @@ function HudController:start()
 	buildContainers()
 	buildCombo()
 	buildSpeedLines()
+	buildRiderPanel()
 	controllers.WorldController.PropAbsorbed:Connect(function(_, absorberKey, isPrediction)
 		if isPrediction and absorberKey == state.player.UserId then
 			onLocalAbsorb()
@@ -942,6 +1099,16 @@ function HudController:start()
 	end)
 	state.ResultsReceived:Connect(showResults)
 	Net.connect("Announce", function(kind, data)
+		if kind == "rolled" and data then
+			local me = state.player.UserId
+			if data.hostId == me then
+				self:showBanner("🌀 You rolled up " .. tostring(data.victimName) .. "!", Theme.Color.Accent, 2.2)
+				bumpSpring:impulse(10)
+			elseif data.victimId ~= me then
+				self:feed("🌀 " .. tostring(data.hostName) .. " rolled up " .. tostring(data.victimName), Theme.Color.Secondary)
+			end
+			return
+		end
 		if kind == "legendary" and data then
 			local def = PropLibrary.get(data.uid)
 			self:showBanner("🌟 " .. tostring(data.name) .. " found " .. (if def then def.name else "a Legendary") .. "!", rarityColor("Legendary"), 3)
@@ -949,6 +1116,7 @@ function HudController:start()
 	end)
 	RunService.RenderStepped:Connect(function(dt)
 		update(dt)
+		updateRiderPanel()
 		updateSpeedLines(dt)
 		fadeCombo()
 	end)

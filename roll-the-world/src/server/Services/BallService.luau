@@ -43,6 +43,13 @@ export type BallState = {
 	isMergeHost: boolean,
 	riders: { [Player]: boolean },
 	alive: boolean,
+	serverOwned: boolean, -- bots: the server simulates this ball's physics
+	isBot: boolean,
+	composition: any?,
+	notable: any?,
+	sweepFrom: Vector3?,
+	magnetUntil: number?,
+	launchFx: string?,
 }
 
 BallService.states = {} :: { [Player]: BallState }
@@ -51,6 +58,7 @@ BallService.DiameterChanged = Signal.new()
 BallService.BallSpawned = Signal.new()
 BallService.BallRemoved = Signal.new()
 BallService.ActionUsed = Signal.new()
+BallService.BurstRequested = Signal.new() -- (player) riders have no ball, so this skips the ball check
 
 local services
 
@@ -151,7 +159,8 @@ function BallService:spawn(player: Player, position: Vector3, diameter: number, 
 	if not character or not character:FindFirstChild("HumanoidRootPart") then
 		return nil
 	end
-	local data = services.PlayerDataService and services.PlayerDataService:getLoaded(player)
+	local isBot = not Net.isPlayer(player)
+	local data = if isBot then nil else (services.PlayerDataService and services.PlayerDataService:getLoaded(player))
 	local core = opts.core or (data and data.cores.equipped) or "Classic"
 	local coreLevel = (data and data.cores.owned[core]) or 1
 	local shell = (data and data.cosmetics.equipped.shell) or "Classic"
@@ -174,6 +183,7 @@ function BallService:spawn(player: Player, position: Vector3, diameter: number, 
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
 	part:SetAttribute("OwnerId", player.UserId)
+	part:SetAttribute("OwnerName", player.DisplayName)
 	part:SetAttribute("Diameter", diameter)
 	part:SetAttribute("Core", core)
 	part:SetAttribute("Shell", shell)
@@ -208,11 +218,18 @@ function BallService:spawn(player: Player, position: Vector3, diameter: number, 
 		isMergeHost = false,
 		riders = {},
 		alive = true,
+		serverOwned = isBot,
+		isBot = isBot,
 	}
 	part:SetAttribute("ShieldUntil", workspace:GetServerTimeNow() + (state.shieldUntil - now))
 	self.states[player] = state
 
-	part:SetNetworkOwner(player)
+	if isBot then
+		part:SetNetworkOwner(nil)
+		part:SetAttribute("Bot", true)
+	else
+		part:SetNetworkOwner(player)
+	end
 	self:markRiding(player, true)
 	local hrp = character.HumanoidRootPart :: BasePart
 	hrp.CFrame = CFrame.new(part.Position + Vector3.new(0, diameter / 2 + 3, 0))
@@ -248,12 +265,17 @@ function BallService:setDiameter(state: BallState, diameter: number, reason: str
 	state.stats.peak = math.max(state.stats.peak or 0, diameter)
 	local part = state.part
 	if part and part.Parent then
-		local lift = math.max(0, (diameter - old) / 2)
-		part.Size = Vector3.one * diameter
-		if lift > 0.05 then
-			part.CFrame = part.CFrame + Vector3.new(0, lift, 0)
-		end
 		part:SetAttribute("Diameter", diameter)
+		-- Client-owned balls are resized smoothly by their clients (the owner also lifts its ball
+		-- as it grows). Writing Size/CFrame here would fight the owner's physics and hitch, so the
+		-- server only resizes balls it simulates itself (bots, anchored launch balls).
+		if state.serverOwned or part.Anchored then
+			local lift = math.max(0, (diameter - old) / 2)
+			part.Size = Vector3.one * diameter
+			if lift > 0.05 and not part.Anchored then
+				part.CFrame = part.CFrame + Vector3.new(0, lift, 0)
+			end
+		end
 	end
 	scaleCharacter(state)
 	self.DiameterChanged:Fire(state, old, diameter, reason)
@@ -288,7 +310,14 @@ end
 -- Server applies a velocity change on the owning client (server can't push client-owned physics).
 function BallService:impulse(state: BallState, velocityChange: Vector3)
 	state.allowSpeedUntil = os.clock() + 1.5
-	Net.fire("Impulse", state.player, velocityChange)
+	if state.serverOwned then
+		local part = state.part
+		if part and part.Parent and not part.Anchored then
+			part.AssemblyLinearVelocity += velocityChange
+		end
+	else
+		Net.fire("Impulse", state.player, velocityChange)
+	end
 end
 
 function BallService:teleport(state: BallState, position: Vector3)
@@ -304,6 +333,10 @@ function BallService:teleport(state: BallState, position: Vector3)
 end
 
 local function onAction(player: Player, action: string, arg: any)
+	if action == "burst" then
+		BallService.BurstRequested:Fire(player)
+		return
+	end
 	local state = BallService.states[player]
 	if not state then
 		return
@@ -381,7 +414,7 @@ function BallService:start()
 	RunService.Heartbeat:Connect(function()
 		local now = os.clock()
 		for _, state in self.states do
-			if state.alive then
+			if state.alive and not state.serverOwned then
 				validate(state, now)
 			end
 		end

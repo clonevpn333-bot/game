@@ -590,6 +590,40 @@ end
 
 -- Rendering, collision, highlights, goals ------------------------------------------------------
 
+-- Collision only on props too big to absorb (they bonk); everything smaller rolls straight in.
+-- Runs on every render pass AND immediately whenever the ball grows, so a prop that just became
+-- absorbable never stays solid for a frame (that caused bumpy absorbs of bigger things).
+local function setCollides(p, collide: boolean)
+	if collide == p.collides then
+		return
+	end
+	p.collides = collide
+	local hb = p.model and p.model.PrimaryPart
+	if hb then
+		hb.CanCollide = collide
+		hb.CanQuery = collide
+	end
+end
+
+function WorldController:updateCollisions()
+	local ball = state.ball
+	if not ball or not ball.Parent then
+		return
+	end
+	local d = state.diameter
+	local threshold = Absorb.threshold(d, state:absorbContext())
+	local final = state:isFinalRoll()
+	local pos = ball.Position
+	table.clear(queryScratch)
+	self.hash:query(pos.X, pos.Z, d * 3 + 40, queryScratch)
+	for _, id in queryScratch do
+		local p = self.props[id]
+		if p and p.model and p.state == "world" then
+			setCollides(p, p.absorbSize > threshold or (p.landmark and not final))
+		end
+	end
+end
+
 local function renderPass()
 	if not WorldController.ready then
 		return
@@ -621,17 +655,8 @@ local function renderPass()
 		elseif distSq < rd * rd then
 			table.insert(toSpawn, { p = p, d = distSq })
 		end
-		-- Collision only on props too big to absorb (they bonk); everything smaller rolls in.
 		if p.model and distSq < (d * 3 + 40) ^ 2 then
-			local collide = p.absorbSize > threshold or (p.landmark and not state:isFinalRoll())
-			if collide ~= p.collides then
-				p.collides = collide
-				local hb = p.model.PrimaryPart
-				if hb then
-					hb.CanCollide = collide
-					hb.CanQuery = collide
-				end
-			end
+			setCollides(p, p.absorbSize > threshold or (p.landmark and not state:isFinalRoll()))
 		end
 	end
 	table.sort(toSpawn, function(a, b)
@@ -787,6 +812,9 @@ function WorldController:start()
 			pcall(updateHighlights)
 			pcall(updateGoals)
 		end
+	end)
+	state.DiameterChanged:Connect(function()
+		self:updateCollisions()
 	end)
 	-- Ask to be dropped in only once the world around spawn is built (server falls back after 6s).
 	self.SpawnAreaReady:Connect(function()

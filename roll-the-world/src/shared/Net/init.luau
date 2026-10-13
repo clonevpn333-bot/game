@@ -103,7 +103,15 @@ end
 
 -- SERVER API -------------------------------------------------------------------------------
 
+-- True for real players (bots use lightweight identity tables that duck-type a Player).
+function Net.isPlayer(p: any): boolean
+	return typeof(p) == "Instance" and p:IsA("Player")
+end
+
 function Net.fire(name: string, player: Player, ...)
+	if not Net.isPlayer(player) then
+		return
+	end
 	getRemote(name):FireClient(player, ...)
 end
 

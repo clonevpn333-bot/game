@@ -154,7 +154,7 @@ local function createEntry(model: Model)
 		label.FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json")
 		label.TextScaled = true
 		label.TextColor3 = Color3.new(1, 1, 1)
-		label.Text = if player then player.DisplayName else "?"
+		label.Text = if player then player.DisplayName else (part:GetAttribute("OwnerName") or "?")
 		local stroke = Instance.new("UIStroke")
 		stroke.Thickness = 2
 		stroke.Color = Color3.fromRGB(38, 26, 74)
@@ -289,6 +289,16 @@ function BallVisualController:absorbProp(userId: number, p)
 	local entry = self.balls[userId]
 	local model = p.model
 	p.model = nil
+	if model then
+		-- Grabbed props must never collide again (a still-solid prop flying in shoves the ball).
+		for _, d in model:GetDescendants() do
+			if d:IsA("BasePart") then
+				d.CanCollide = false
+				d.CanQuery = false
+				d.CanTouch = false
+			end
+		end
+	end
 	if not entry then
 		if model then
 			model:Destroy()
@@ -325,7 +335,17 @@ function BallVisualController:absorbProp(userId: number, p)
 			fold(entry, s)
 		else
 			PropBuilder.makeStatic(model)
-			table.insert(flights, { entry = entry, s = s, from = fromPos, t0 = os.clock(), dur = math.clamp(0.1 + p.absorbSize / math.max(entry.diameter, 1) * 0.15, 0.1, 0.22) })
+			-- Bigger props take a little longer and glide in (smooth), small ones snap in (punchy).
+			local rel = p.absorbSize / math.max(entry.diameter, 1)
+			table.insert(flights, {
+				entry = entry,
+				s = s,
+				from = fromPos,
+				fromCF = model:GetPivot(),
+				t0 = os.clock(),
+				dur = math.clamp(0.1 + rel * 0.45, 0.1, 0.36),
+				smooth = rel > 0.3,
+			})
 		end
 	else
 		fold(entry, s)
@@ -430,10 +450,16 @@ local function updateFlights()
 			continue
 		end
 		local t = math.clamp((now - f.t0) / f.dur, 0, 1)
-		local eased = MathUtil.easeOutBack(t)
 		local target = entry.part.CFrame * stickPlacement(entry, s)
-		local pos = f.from:Lerp(target.Position, math.clamp(eased, 0, 1.08))
-		s.model:PivotTo((target - target.Position) + pos)
+		if f.smooth then
+			-- Ease-out cubic for position AND rotation: big things glide onto the ball.
+			local e = 1 - (1 - t) ^ 3
+			s.model:PivotTo(f.fromCF:Lerp(target, e))
+		else
+			local eased = MathUtil.easeOutBack(t)
+			local pos = f.from:Lerp(target.Position, math.clamp(eased, 0, 1.08))
+			s.model:PivotTo((target - target.Position) + pos)
+		end
 		if t >= 1 then
 			table.remove(flights, i)
 			attach(entry, s)
@@ -451,7 +477,20 @@ local function updateShells(dt: number)
 			continue
 		end
 		local sq = e.squash:step(dt)
-		local d = e.diameter
+		-- Smooth physical growth toward the server's diameter (no hitches on big absorbs).
+		local target = e.diameter
+		local current = e.part.Size.X
+		if math.abs(current - target) > 1e-3 then
+			local new = current + (target - current) * math.min(1, dt * 14)
+			if math.abs(target - new) < 0.005 then
+				new = target
+			end
+			e.part.Size = Vector3.one * new
+			if e.isLocal and new > current and not e.part.Anchored then
+				e.part.CFrame += Vector3.new(0, (new - current) / 2, 0)
+			end
+		end
+		local d = e.part.Size.X
 		local shellD = d * 0.97
 		e.shell.Size = Vector3.one * shellD
 		if e.shellMesh then

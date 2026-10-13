@@ -319,6 +319,37 @@ function VFXController:start()
 			task.delay(0.5, setupTrail)
 		end
 	end)
+	Net.connect("BallFx", function(kind, data)
+		if type(data) ~= "table" or typeof(data.position) ~= "Vector3" then
+			return
+		end
+		local me = state.player.UserId
+		if kind == "bump" then
+			local size = data.size or 10
+			burst(data.position, { color = Color3.fromRGB(255, 240, 180), size = math.clamp(size * 0.3, 0.6, 40), speed = size * 4, count = 16, life = 0.5, light = 1 })
+			self:shockwave(data.position, size * (1 + data.power), Color3.fromRGB(255, 220, 140))
+			if data.a == me or data.b == me then
+				input:rumble(0.4 + data.power * 0.5, 0.18)
+				if controllers.CameraController then
+					controllers.CameraController:shake(0.35 + data.power * 0.5)
+				end
+				self:emoji(data.position + Vector3.new(0, size * 0.6, 0), "💥", 0.8)
+			end
+		elseif kind == "burst" then
+			self:poof(data.position, 12, Color3.fromRGB(255, 200, 120))
+			self:shockwave(data.position, 18, Color3.fromRGB(255, 92, 120))
+			if data.userId == me and controllers.CameraController then
+				controllers.CameraController:shake(0.5)
+				input:rumble(0.7, 0.25)
+			end
+		end
+	end)
+	Net.connect("Announce", function(kind, data)
+		if kind == "rolled" and type(data) == "table" and typeof(data.position) == "Vector3" then
+			self:sparkle(data.position, Color3.fromRGB(255, 214, 64), 3, 30)
+			self:emoji(data.position + Vector3.new(0, 6, 0), "😂", 1.4)
+		end
+	end)
 	RunService.RenderStepped:Connect(updateTrail)
 end
 

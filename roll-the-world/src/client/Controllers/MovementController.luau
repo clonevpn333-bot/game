@@ -117,25 +117,61 @@ local function loadAnimations(character: Model)
 	end
 	local rig = if humanoid.RigType == Enum.HumanoidRigType.R6 then "R6" else "R15"
 	local ids = Animations[rig]
-	for _, name in { "Run", "Idle", "Fall", "Cheer" } do
+	for _, name in { "Run", "Idle", "Fall", "Cheer", "Wave", "Laugh" } do
 		local anim = Instance.new("Animation")
 		anim.AnimationId = ids[name]
 		local ok, track = pcall(function()
 			return animator:LoadAnimation(anim)
 		end)
 		if ok and track then
-			track.Priority = if name == "Cheer" then Enum.AnimationPriority.Action2 else Enum.AnimationPriority.Action
-			track.Looped = name ~= "Cheer"
+			local oneShot = name == "Cheer" or name == "Wave" or name == "Laugh"
+			track.Priority = if oneShot then Enum.AnimationPriority.Action2 else Enum.AnimationPriority.Action
+			track.Looped = not oneShot
 			animTracks[name] = track
 		end
 	end
 end
 
+-- Humanoid states that must never run while riding (any of them can pull the avatar off the ball
+-- and make it walk on the ground behind it).
+local RIDE_DISABLED_STATES = {
+	Enum.HumanoidStateType.Running,
+	Enum.HumanoidStateType.RunningNoPhysics,
+	Enum.HumanoidStateType.Jumping,
+	Enum.HumanoidStateType.Freefall,
+	Enum.HumanoidStateType.Landed,
+	Enum.HumanoidStateType.Climbing,
+	Enum.HumanoidStateType.Seated,
+	Enum.HumanoidStateType.FallingDown,
+	Enum.HumanoidStateType.Ragdoll,
+	Enum.HumanoidStateType.GettingUp,
+	Enum.HumanoidStateType.Swimming,
+	Enum.HumanoidStateType.StrafingNoPhysics,
+}
+
+local function setRideStates(humanoid: Humanoid, riding: boolean)
+	for _, st in RIDE_DISABLED_STATES do
+		pcall(function()
+			humanoid:SetStateEnabled(st, not riding)
+		end)
+	end
+	if riding then
+		humanoid.PlatformStand = true
+		humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+	else
+		humanoid.PlatformStand = false
+		humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+	end
+end
+
 -- The Roller: the avatar balances on top of the ball, running on it like a circus performer.
+-- It is locked to the ball every physics step (see holdRider), with a rigid AlignPosition as a
+-- second line of defence, so it can never be left behind however big or fast the ball gets.
 local function attachRider()
 	local character = Players.LocalPlayer.Character
 	local hrp = character and character:FindFirstChild("HumanoidRootPart")
-	if not hrp then
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not hrp or not humanoid then
 		return
 	end
 	if alignPos then
@@ -158,11 +194,10 @@ local function attachRider()
 	local ao = Instance.new("AlignOrientation")
 	ao.Mode = Enum.OrientationAlignmentMode.OneAttachment
 	ao.Attachment0 = att
-	ao.RigidityEnabled = false
-	ao.Responsiveness = 30
-	ao.MaxTorque = math.huge
+	ao.RigidityEnabled = true
 	ao.Parent = hrp
 	riderAttachment, alignPos, alignOri = att, ap, ao
+	setRideStates(humanoid, true)
 	loadAnimations(character)
 end
 
@@ -184,6 +219,52 @@ local function detachRider()
 			track:Stop(0.2)
 		end)
 	end
+	local character = Players.LocalPlayer.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		setRideStates(humanoid, false)
+	end
+end
+
+-- Where the avatar should be: standing on top of the ball, facing the direction of travel.
+local function riderTarget(): CFrame?
+	local character = Players.LocalPlayer.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local hrp = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not ball or not humanoid or not hrp then
+		return nil
+	end
+	local r = ball.Size.X / 2
+	local standHeight = humanoid.HipHeight + hrp.Size.Y / 2
+	local h = MovementController.heading
+	local pos = ball.Position + Vector3.new(0, r + standHeight * 0.95, 0)
+	return CFrame.lookAt(pos, pos + Vector3.new(h.X, 0, h.Z))
+end
+
+-- Hard-lock the avatar to the ball every physics step (client owns the character, so this
+-- replicates to everyone). Also re-asserts the Physics humanoid state if anything changed it.
+local function holdRider()
+	if not ball or not alignPos then
+		return
+	end
+	local character = Players.LocalPlayer.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local hrp = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local target = riderTarget()
+	if not humanoid or not hrp or not target then
+		return
+	end
+	if humanoid:GetState() ~= Enum.HumanoidStateType.Physics then
+		humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+	end
+	humanoid.PlatformStand = true
+	hrp.CFrame = target
+	hrp.AssemblyLinearVelocity = ball.AssemblyLinearVelocity
+	hrp.AssemblyAngularVelocity = Vector3.zero
+	alignPos.Position = target.Position
+	if alignOri then
+		alignOri.CFrame = target - target.Position
+	end
 end
 
 function MovementController:bind(part: BasePart?)
@@ -194,6 +275,38 @@ function MovementController:bind(part: BasePart?)
 		attachRider()
 		self.lastDash = -math.huge
 		input:setRollingBindings(true)
+	elseif state.playerState == "Rider" then
+		-- Rolled up: the server welds us to the host ball. Keep the avatar limp (Physics state)
+		-- and goofing around until we Burst Off.
+		if alignPos then
+			alignPos:Destroy()
+			alignPos = nil
+		end
+		if alignOri then
+			alignOri:Destroy()
+			alignOri = nil
+		end
+		input:setRollingBindings(false)
+		local character = Players.LocalPlayer.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			setRideStates(humanoid, true)
+		end
+		task.spawn(function()
+			-- Wave, cheer and laugh while stuck on someone's ball: funny, not punishing.
+			local cycle = { "Cheer", "Wave", "Laugh" }
+			local i = 0
+			while state.playerState == "Rider" do
+				i += 1
+				local track = animTracks[cycle[(i - 1) % #cycle + 1]]
+				if track then
+					pcall(function()
+						track:Play(0.1)
+					end)
+				end
+				task.wait(1.3)
+			end
+		end)
 	else
 		detachRider()
 		input:setRollingBindings(false)
@@ -285,17 +398,12 @@ function MovementController:applyImpulse(dv: Vector3)
 end
 
 local function updateRider()
-	if not ball or not alignPos or not alignOri then
+	if not ball or not alignPos then
 		return
 	end
+	holdRider()
 	local character = Players.LocalPlayer.Character
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local scale = if character then character:GetScale() else 1
-	local hip = (if humanoid then humanoid.HipHeight else 2) + 1
-	local r = ball.Size.X / 2
-	alignPos.Position = ball.Position + Vector3.new(0, r + hip * 0.92, 0)
-	local h = MovementController.heading
-	alignOri.CFrame = CFrame.lookAt(Vector3.zero, Vector3.new(h.X, 0, h.Z))
 	-- Animation: run on the ball proportionally to speed; idle balance when still; flail in the air.
 	local run, idle, fall = animTracks.Run, animTracks.Idle, animTracks.Fall
 	local speedFrac = MovementController.speed / math.max(Growth.maxSpeed(state.diameter), 1)
@@ -437,6 +545,17 @@ function MovementController:start()
 			self:hop()
 		elseif action == "Dash" then
 			self:dash()
+		elseif action == "Burst" and state.playerState == "Rider" then
+			Net.send("Action", "burst")
+		end
+	end)
+	state.PlayerStateChanged:Connect(function(newState)
+		if newState == "Rider" then
+			-- Make sure rider animations are loaded even if we never rolled this life.
+			local character = Players.LocalPlayer.Character
+			if character and not animTracks.Cheer then
+				loadAnimations(character)
+			end
 		end
 	end)
 	Net.connect("Impulse", function(dv: Vector3)
@@ -451,7 +570,10 @@ function MovementController:start()
 			attachRider()
 		end
 	end)
-	RunService.PreSimulation:Connect(step)
+	RunService.PreSimulation:Connect(function(dt)
+		step(dt)
+		holdRider()
+	end)
 	RunService.RenderStepped:Connect(updateRider)
 	state.DiameterChanged:Connect(function()
 		refreshFilter()

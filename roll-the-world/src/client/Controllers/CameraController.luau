@@ -98,14 +98,20 @@ local function desiredHeight(d: number): number
 end
 
 local function chase(self, dt: number)
-	local ball = state.ball
-	if not ball or not ball.Parent then
+	local ball = state:focusBall()
+	if not ball then
 		return
 	end
+	local riding = ball ~= state.ball
 	local c = Tuning.Camera
-	local d = state.diameter
+	local d = if riding then (ball:GetAttribute("Diameter") or ball.Size.X) else state.diameter
 	local now = os.clock()
 	local sens = settings.values.cameraSensitivity
+	-- Riders watch the host ball's motion; rollers use their own (smoothed) movement.
+	local velocity = if riding then ball.AssemblyLinearVelocity else movement.velocity
+	local flatVel = Vector3.new(velocity.X, 0, velocity.Z)
+	local speed = if riding then flatVel.Magnitude else movement.speed
+	local heading = if riding then (if flatVel.Magnitude > 1 then flatVel.Unit else Vector3.new(0, 0, -1)) else movement.heading
 
 	-- Manual orbit input.
 	local orbit = input:takeOrbit()
@@ -127,9 +133,9 @@ local function chase(self, dt: number)
 
 	-- Auto-follow: swing behind the direction of travel, faster the faster we go.
 	local maxSpeed = Growth.maxSpeed(d)
-	local speedFrac = math.clamp(movement.speed / math.max(maxSpeed, 1), 0, 1.6)
+	local speedFrac = math.clamp(speed / math.max(maxSpeed, 1), 0, 1.6)
 	if now > manualUntil and speedFrac > 0.15 then
-		local h = movement.heading
+		local h = heading
 		local targetYaw = math.atan2(-h.X, -h.Z)
 		local delta = MathUtil.angleDelta(self.yaw, targetYaw)
 		-- Don't whip around when reversing briefly: follow lazily for large angle changes.
@@ -145,7 +151,7 @@ local function chase(self, dt: number)
 	local height = heightSpring:step(dt)
 
 	-- Smooth focus point slightly above the ball centre; lead a little in the direction of travel.
-	local lead = movement.velocity * Vector3.new(1, 0, 1) * 0.08
+	local lead = flatVel * 0.08
 	local target = ball.Position + Vector3.new(0, d * 0.32, 0) + lead
 	focus = focus:Lerp(target, MathUtil.damp(c.FollowSharpness * 2.2, dt))
 	if (focus - target).Magnitude > d * 6 + 60 then
@@ -242,14 +248,20 @@ function CameraController:setMode(mode: string)
 	if mode == "Chase" then
 		cam.CameraType = Enum.CameraType.Scriptable
 		lastCamPos = nil
-		local ball = state.ball
+		local ball = state:focusBall()
 		if ball then
 			focus = ball.Position
-			local d = state.diameter
+			local riding = ball ~= state.ball
+			local d = if riding then (ball:GetAttribute("Diameter") or ball.Size.X) else state.diameter
 			distSpring:snap(desiredDistance(d))
 			heightSpring:snap(desiredHeight(d))
-			-- Every spawn starts with the swoop (from the reveal orbit if we were showing it).
-			blendFrom = if previous == "Reveal" then cam.CFrame else establishingShot(ball.Position)
+			if riding then
+				-- Rolled up: a quick blend from where we were, no establishing swoop.
+				blendFrom = cam.CFrame
+			else
+				-- Every spawn starts with the swoop (from the reveal orbit if we were showing it).
+				blendFrom = if previous == "Reveal" then cam.CFrame else establishingShot(ball.Position)
+			end
 			blendStart = os.clock()
 		end
 		refreshFilter()
@@ -291,8 +303,15 @@ function CameraController:start()
 				self.yaw = math.atan2(part.Position.X, part.Position.Z)
 			end
 			self:setMode("Chase")
-		elseif self.mode == "Chase" then
+		elseif self.mode == "Chase" and state.playerState ~= "Rider" then
 			self:setMode("Default")
+		end
+	end)
+	-- Rolled up: keep chasing, now following the ball we're stuck to.
+	state.PlayerStateChanged:Connect(function(newState)
+		if newState == "Rider" then
+			self:shake(0.6)
+			self:setMode("Chase")
 		end
 	end)
 	state.DiameterChanged:Connect(function(new, old)

@@ -133,6 +133,13 @@ local Tuning = {
 		MinPlayersForPvpAwards = 2,
 	},
 
+	Bots = {
+		-- Bots fill each round up to this many balls total; one leaves for every player who joins.
+		TargetBalls = 8,
+		MaxBots = 7,
+		ManageInterval = 3,
+	},
+
 	World = {
 		CritterTickRate = 10,
 		CritterFleeRange = 4, -- multiples of ball D

@@ -264,9 +264,31 @@ function AudioController:start()
 		updateMusic()
 	end)
 	state.PlayerStateChanged:Connect(updateMusic)
-	Net.connect("Announce", function(kind)
+	Net.connect("Announce", function(kind, data)
 		if kind == "legendary" then
 			self:play("Legendary", { volume = 0.6 })
+		elseif kind == "rolled" and type(data) == "table" then
+			local me = state.player.UserId
+			if data.victimId == me then
+				self:play("GotRolled")
+			elseif data.hostId == me then
+				self:play("PlayerRolled")
+			else
+				self:play("PlayerRolled", { volume = 0.35 })
+			end
+		end
+	end)
+	Net.connect("BallFx", function(kind, data)
+		if type(data) ~= "table" then
+			return
+		end
+		if kind == "bump" then
+			local alpha = Growth.sizeAlpha(data.size or 10)
+			local me = state.player.UserId
+			local involved = data.a == me or data.b == me
+			self:play("Clang", { pitch = 1.3 - alpha * 0.6, volume = if involved then 1 else 0.4 })
+		elseif kind == "burst" then
+			self:play("BurstOff", { volume = if data.userId == state.player.UserId then 1 else 0.5 })
 		end
 	end)
 	controllers.WorldController.GoalUnlocked:Connect(function()

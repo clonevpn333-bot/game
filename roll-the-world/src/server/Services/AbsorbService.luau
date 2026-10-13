@@ -145,7 +145,7 @@ function AbsorbService:commit(state, prop)
 
 	local info = { isNew = false, isNewVariant = false }
 	local rolledex = services.RolledexService
-	if rolledex then
+	if rolledex and Net.isPlayer(state.player) then
 		info.isNew, info.isNewVariant = rolledex:discover(state.player, prop.uid, prop.mutation)
 	end
 	self.Absorbed:Fire(state, prop, info)

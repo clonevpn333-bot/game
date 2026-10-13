@@ -266,7 +266,13 @@ end
 
 local function collectStats(): { any }
 	local list = {}
-	for _, player in Players:GetPlayers() do
+	local everyone = table.clone(Players:GetPlayers()) :: { any }
+	if services.BotService then
+		for _, bot in services.BotService:identities() do
+			table.insert(everyone, bot)
+		end
+	end
+	for _, player in everyone do
 		local stats = RoundService.roundStats[player.UserId]
 		if stats then
 			local ball = services.BallService:get(player)

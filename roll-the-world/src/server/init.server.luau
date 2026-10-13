@@ -39,6 +39,7 @@ local ORDER = {
 	"AbsorbService",
 	"CritterService",
 	"PvpService",
+	"BotService",
 	"MergeService",
 	"EventService",
 	"RolledexService",

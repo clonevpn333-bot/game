@@ -32,6 +32,7 @@ ClientState.core = "Classic"
 ClientState.coreLevel = 1
 ClientState.profile = nil
 ClientState.lastResults = nil
+ClientState.rider = nil -- { hostId, hostBall: Model, burstAt, autoAt, by } while rolled up
 
 ClientState.RoundChanged = Signal.new() -- (round, previous)
 ClientState.PlayerStateChanged = Signal.new() -- (state, data)
@@ -50,6 +51,19 @@ end
 
 function ClientState:isFinalRoll(): boolean
 	return self.round.state == "Playing" and self.round.phase == "FinalRoll"
+end
+
+-- The ball the camera should follow: ours, or the one we're stuck to as a rider.
+function ClientState:focusBall(): BasePart?
+	if self.ball and self.ball.Parent then
+		return self.ball
+	end
+	local host = self.rider and self.rider.hostBall
+	local part = host and host:FindFirstChild("Ball")
+	if part and part.Parent then
+		return part :: BasePart
+	end
+	return nil
 end
 
 function ClientState:isRolling(): boolean
@@ -106,8 +120,13 @@ function ClientState:start()
 				local balls = Workspace:WaitForChild("Balls", 10)
 				model = balls and balls:WaitForChild("Ball_" .. self.player.UserId, 10)
 			end
+			self.rider = nil
 			bindBall(model)
+		elseif state == "Rider" then
+			self.rider = data
+			bindBall(nil)
 		elseif state ~= "Rolling" then
+			self.rider = nil
 			bindBall(nil)
 		end
 		self.PlayerStateChanged:Fire(state, data)
