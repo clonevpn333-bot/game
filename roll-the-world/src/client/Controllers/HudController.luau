@@ -1074,6 +1074,14 @@ local function showResults(results)
 	local mine = results.mine
 	local payout = results.payout
 	local summary = "Your ball: " .. Format.size(mine and mine.finalDiameter or 0, results.cmPerStud or 1)
+	if mode.scoring == "crown" then
+		summary = "👑 Crown time: " .. Format.clock(mine and mine.crownTime or 0)
+	elseif mode.scoring == "gold" then
+		summary = "💰 Gold: " .. math.floor(mine and mine.goldPoints or 0)
+	end
+	if mine and mine.placement then
+		summary = Format.ordinal(mine.placement) .. " place  •  " .. summary
+	end
 	if payout then
 		summary ..= "    ✨ +" .. Format.commas(payout.total) .. " Stardust"
 	end
