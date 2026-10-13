@@ -24,7 +24,7 @@ for _, cfg in CONFIGS do
 for k, v in cfg do Tuning.Growth[k] = v end
 print(string.format("Gain %.2f EarlyBoost %.1f EarlyScale %d", cfg.Gain, cfg.EarlyBoost, cfg.EarlyScale))
 for _, kit in Kits.List do
-	for _, seed in { 11 } do
+	for _, seed in { 11, 23, 37, 51, 77 } do
 		local world = WorldGen.generate(kit, seed)
 		local hash = SpatialHash.new(32)
 		local props = {}

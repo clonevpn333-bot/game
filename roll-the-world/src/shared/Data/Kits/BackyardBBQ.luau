@@ -95,7 +95,7 @@ return {
 		{ type = "pillars", ring = { 0.5, 0.97 }, count = { 4, 6 }, radius = 12, height = 110, color = "#7f5539", material = "Wood", canopy = { size = 120, solidFoot = 30, color = "#52b788", colors = { "#40916c", "#52b788", "#74c69d", "#2d6a4f" }, material = "Grass" } },
 	},
 	bands = {
-		{ max = 1.7, count = 780, ring = { 0, 0.3 }, topBias = 0.8 },
+		{ max = 1.7, count = 1000, ring = { 0, 0.3 }, topBias = 0.8 },
 		{ max = 4.6, count = 420, ring = { 0.02, 0.45 }, topBias = 0.5 },
 		{ max = 11.5, count = 300, ring = { 0.12, 0.65 }, topBias = 0.35 },
 		{ max = 30, count = 180, ring = { 0.25, 0.9 }, topBias = 0.25 },

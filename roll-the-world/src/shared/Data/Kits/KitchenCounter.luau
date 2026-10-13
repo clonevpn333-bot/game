@@ -84,7 +84,7 @@ return {
 		{ type = "pillars", ring = { 0.45, 0.95 }, count = { 3, 4 }, radius = 7, height = 60, color = "#3d2b1f", material = "Wood", canopy = { shape = "disc", size = 18, thick = 8, color = "#c0c6ce", material = "Metal" } },
 	},
 	bands = {
-		{ max = 1.7, count = 660, ring = { 0, 0.3 }, topBias = 0.85 },
+		{ max = 1.7, count = 780, ring = { 0, 0.3 }, topBias = 0.85 },
 		{ max = 4.6, count = 430, ring = { 0.02, 0.45 }, topBias = 0.6 },
 		{ max = 11.5, count = 300, ring = { 0.12, 0.65 }, topBias = 0.4 },
 		{ max = 30, count = 190, ring = { 0.25, 0.9 }, topBias = 0.3 },

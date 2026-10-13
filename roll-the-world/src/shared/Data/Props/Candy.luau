@@ -1373,7 +1373,7 @@ add({
 		end
 		table.insert(prof, { 0, R * math.sin(math.rad(44)) })
 		local out = { lathe(prof, 0, R, 0, "#ff4d6d", { rot = { 90, 0, 0 } }, { seg = 36, smooth = 2 }) }
-		local rings = { { 1.82, "#ffd23f" }, { 1.36, "#4cc9f0" }, { 0.92, "#7bd88f" }, { 0.46, "#ffffff" } }
+		local rings: { { any } } = { { 1.82, "#ffd23f" }, { 1.36, "#4cc9f0" }, { 0.92, "#7bd88f" }, { 0.46, "#ffffff" } }
 		for k, ring in rings do
 			table.insert(out, cyl(ring[1], 0.04, 0, R, 0.905 + k * 0.012, ring[2], { rot = { 90, 0, 0 }, sharp = true }))
 		end
