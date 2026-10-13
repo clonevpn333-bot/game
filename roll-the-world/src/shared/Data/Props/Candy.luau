@@ -1172,13 +1172,17 @@ local function sprinkles(out: { any }, n: number, rMin: number, rMax: number, yA
 	for i = 0, n - 1 do
 		local a = i * 2.39996 + seed
 		local r = rMin + (rMax - rMin) * ((i * 0.618 + seed * 0.37) % 1)
-		table.insert(out, cylX(len * 0.32, len, math.cos(a) * r, yAt(r), math.sin(a) * r, SPRINKLES[i % #SPRINKLES + 1], { rot = { 0, (i * 67 + seed * 31) % 180, 0 } }))
+		local yaw = math.rad((i * 67 + seed * 31) % 180)
+		local hx, hz = math.cos(yaw) * len * 0.34, math.sin(yaw) * len * 0.34
+		local x, y, z = math.cos(a) * r, yAt(r), math.sin(a) * r
+		-- Tubes with round caps are far cheaper than bevelled cylinders for dozens of sprinkles.
+		table.insert(out, tube({ { x - hx, y, z - hz }, { x + hx, y, z + hz } }, len * 0.16, SPRINKLES[i % #SPRINKLES + 1], nil, { sides = 6, smooth = 1 }))
 	end
 end
 
 -- Faceted rock-candy crystal growing from (x, y, z) tilted toward heading a.
 local function crystal(out: { any }, x: number, y: number, z: number, a: number, tilt: number, s: number, color: string)
-	table.insert(out, lathe({ { 0, 0 }, { 0.42 * s, 0 }, { 0.42 * s, 1.4 * s }, { 0, 2.1 * s } }, x, y, z, color, { mat = "Glass", t = 0.05, refl = 0.15, rot = tiltRot(a, tilt) }, { seg = 6, smooth = 1 }))
+	table.insert(out, lathe({ { 0, 0 }, { 0.42 * s, 0 }, { 0.42 * s, 1.4 * s }, { 0, 2.1 * s } }, x, y, z, color, { refl = 0.2, rot = tiltRot(a, tilt) }, { seg = 6, smooth = 1 }))
 end
 
 -- Glass candy jar with a lid and a pile of candies inside.
@@ -1364,7 +1368,7 @@ add({
 	parts = (function()
 		local R = 1.3
 		local prof = {}
-		for _, deg in { -90, -65, -40, -15, 10, 30, 44 } do
+		for _, deg in { -90, -78, -66, -54, -42, -30, -18, -6, 6, 18, 30, 40, 44 } do
 			table.insert(prof, { R * math.cos(math.rad(deg)), R * math.sin(math.rad(deg)) })
 		end
 		table.insert(prof, { 0, R * math.sin(math.rad(44)) })
@@ -1469,7 +1473,7 @@ add({
 	parts = (function()
 		local frost = "#bde0fe"
 		local out = {
-			lathe({ { 0, 0 }, { 0.95, 0 }, { 1.25, 1.2 }, { 1.2, 1.24 }, { 0, 1.24 } }, 0, 0, 0, "#ff8fc7", nil, { seg = 64, lobes = 16, lobeDepth = 0.06 }),
+			lathe({ { 0, 0 }, { 0.95, 0 }, { 1.25, 1.2 }, { 1.2, 1.24 }, { 0, 1.24 } }, 0, 0, 0, "#ff8fc7", nil, { seg = 48, lobes = 12, lobeDepth = 0.06 }),
 			ell(2.45, 0.7, 2.45, 0, 1.25, 0, DOUGH, nil, { segU = 16, segV = 8 }),
 			lathe(
 				{ { 0, 0 }, { 1.08, 0 }, { 1.12, 0.22 }, { 0.92, 0.45 }, { 0.82, 0.62 }, { 0.56, 0.85 }, { 0.46, 1.0 }, { 0.16, 1.3 }, { 0, 1.36 } },
@@ -1574,8 +1578,6 @@ add({
 		for i = 0, 4 do
 			local a = i / 5 * math.pi * 2 + math.pi / 2
 			table.insert(out, ball(0.24, math.cos(a) * 1.1, 0.53, math.sin(a) * 1.1, ICING))
-			local b = a + math.pi / 5
-			table.insert(out, ball(0.18, math.cos(b) * 0.5, 0.53, math.sin(b) * 0.5, "#e8e8f4", { mat = "Foil" }))
 		end
 		return out
 	end)(),
@@ -1615,7 +1617,7 @@ add({
 	hint = "Climbed out of the gummy pile to see the world.",
 	critter = { speed = 9, flee = 1.4, style = "waddle", sound = "PopSoft" },
 	parts = (function()
-		local c = "#ff9f1c"
+		local c = "#ff8c1a"
 		local light = shade(c, 0.35)
 		local function g(tag: string?)
 			return { t = 0.08, refl = 0.08, tag = tag }
@@ -2369,7 +2371,7 @@ add({
 	uid = 394,
 	id = "candy_shelf",
 	name = "Candy Display Shelf",
-	rarity = "Common",
+	rarity = "Uncommon",
 	tags = { "furniture", "wood", "glass", "candy", "colorful", "shelf" },
 	hint = "Floor-to-ceiling jars. You'll have to roll the whole thing.",
 	parts = (function()
@@ -2498,24 +2500,31 @@ add({
 		}
 		for i = 0, 9 do
 			local a = i * 2.39996
-			local r = 4 + (i % 4) * 2.2
+			local r = 6 + (i % 4) * 1.8
 			table.insert(out, ball(2.2, math.cos(a) * r, 13.4, math.sin(a) * r, SPRINKLES[i % 5 + 1]))
 		end
-		for k = 0, 8 do
+		-- candy-cane striped trunk
+		for k = 0, 6 do
 			table.insert(out, cyl(9, 7.2, 0, 12.8 + 3.6 + k * 7.2, 0, if k % 2 == 0 then RED else ICING))
 		end
-		local discColors = { "#ff4d6d", "#ffd23f", "#7bd88f", "#4cc9f0", "#b388ff", "#ff9f1c" }
-		local branches = { { 20, 46, 22 }, { 140, 52, 20 }, { 260, 50, 21 }, { 80, 62, 16 }, { 200, 66, 15 }, { 320, 64, 17 } }
-		for i, b in branches do
-			local a, y0, len = math.rad(b[1]), b[2], b[3]
-			local dx, dz = math.cos(a) * len, math.sin(a) * len
-			table.insert(out, tube({ { 0, y0, 0 }, { dx * 0.5, y0 + 6, dz * 0.5 }, { dx, y0 + 13, dz } }, { 2.4, 1.9, 1.4 }, PINK, nil, { sides = 10, smooth = 3 }))
-			local d = 21 - (i > 3 and 4 or 0)
-			lollyDisc(out, { dx + math.cos(a) * 0.5, y0 + 13 + d * 0.45, dz + math.sin(a) * 0.5 }, { 90, 90 - b[1], 0 }, d, 2.4, discColors[i], ICING, "Glass")
+		-- cotton candy canopy
+		local cy = 74
+		table.insert(out, ell(52, 34, 52, 0, cy, 0, "#ffc8dd", { mat = "Sand" }, { segU = 24, segV = 16, lump = 0.22, seed = 5 }))
+		for i, p in { { 18, 64, 10, 26, "#bde0fe" }, { -17, 66, -9, 24, "#e0c3fc" }, { -6, 88, 12, 22, "#c8f7dc" }, { 10, 86, -12, 22, "#fff1b8" } } do
+			table.insert(out, ell(p[4], p[4] * 0.75, p[4], p[1], p[2], p[3], p[5], { mat = "Sand" }, { segU = 20, segV = 12, lump = 0.25, seed = i * 3 }))
 		end
-		lollyDisc(out, { 0, 77.6 + 14, 0 }, { 90, 0, 0 }, 30, 3.4, "#ff8fc7", ICING, "Glass")
-		for i, p in { { 10, 40, 4, "#bde0fe" }, { -9, 44, -7, "#ffc8dd" }, { 1, 48, 11, "#e0c3fc" }, { -6, 58, 8, "#c8f7dc" }, { 8, 62, -8, "#fff1b8" } } do
-			table.insert(out, ell(22, 14, 22, p[1], p[2], p[3], p[4], { mat = "Sand" }, { segU = 22, segV = 14, lump = 0.25, seed = i * 3 }))
+		-- lollipops sprouting out of the canopy
+		local discColors = { "#ff4d6d", "#ffd23f", "#7bd88f", "#4cc9f0", "#b388ff", "#ff9f1c", "#ff70a6" }
+		for i, l in { { 20, 18 }, { 95, 30 }, { 170, 12 }, { 240, 26 }, { 310, 14 }, { 60, 58 }, { 205, 62 } } do
+			local a, e = math.rad(l[1]), math.rad(l[2])
+			local dir = { math.cos(a) * math.cos(e), math.sin(e), math.sin(a) * math.cos(e) }
+			local r = 1 / math.sqrt((math.cos(e) / 26) ^ 2 + (math.sin(e) / 17) ^ 2)
+			local base = addv({ 0, cy, 0 }, dir, r - 4)
+			local rot = tiltRot(l[1], 90 - l[2])
+			local mid = addv(base, dir, 6)
+			table.insert(out, cyl(1.2, 12, mid[1], mid[2], mid[3], ICING, { rot = rot }))
+			local d = if i > 5 then 13 else 15
+			lollyDisc(out, addv(base, dir, 12 + d * 0.42), { 90, 90 - l[1], 0 }, d, 2.2, discColors[i], ICING, "Glass")
 		end
 		return out
 	end)(),
@@ -2530,39 +2539,39 @@ add({
 	hint = "Everything behind the glass is for sale. Everything.",
 	parts = (function()
 		local out = {
-			rbox(112, 2.4, 36, 0, 1.2, 0, shade(PINK, -0.25), nil, 0.8),
-			rbox(110, 12, 34, 0, 8.4, 0, PINK, nil, 1.5),
-			box(110.4, 2, 34.4, 0, 13.4, 0, MINT),
-			rbox(110, 24, 8, 0, 26.4, -13, PINK, nil, 1.5),
-			rbox(10, 24, 34, -50, 26.4, 0, PINK, nil, 1.5),
-			rbox(10, 24, 34, 50, 26.4, 0, PINK, nil, 1.5),
-			rbox(114, 3, 38, 0, 39.9, 0, "#fff8f0", { mat = "Marble" }, 1),
-			box(90, 23, 0.6, 0, 26.4, 16.4, GLASS, { mat = "Glass", t = 0.55 }),
-			rbox(92, 2, 2, 0, 37.4, 16.4, GOLD, { mat = "Foil" }, 0.6),
+			rbox(86, 2.4, 36, 0, 1.2, 0, shade(PINK, -0.25), nil, 0.8),
+			rbox(84, 12, 34, 0, 8.4, 0, PINK, nil, 1.5),
+			box(84.4, 2, 34.4, 0, 13.4, 0, MINT),
+			rbox(84, 24, 8, 0, 26.4, -13, PINK, nil, 1.5),
+			rbox(8, 24, 34, -38, 26.4, 0, PINK, nil, 1.5),
+			rbox(8, 24, 34, 38, 26.4, 0, PINK, nil, 1.5),
+			rbox(90, 3, 38, 0, 39.9, 0, "#fff8f0", { mat = "Marble" }, 1),
+			box(68, 23, 0.6, 0, 26.4, 16.4, GLASS, { mat = "Glass", t = 0.55 }),
+			rbox(70, 2, 2, 0, 37.4, 16.4, GOLD, { mat = "Foil" }, 0.6),
 			-- stepped trays behind the glass
-			rbox(88, 1, 10, 0, 15.0, 9, ICING, nil, 0.4),
-			rbox(88, 6, 10, 0, 18.0, -0.5, shade(PINK, 0.3), nil, 0.6),
-			rbox(88, 1, 10, 0, 21.5, -0.5, ICING, nil, 0.4),
+			rbox(66, 1, 10, 0, 15.0, 9, ICING, nil, 0.4),
+			rbox(66, 6, 10, 0, 18.0, -0.5, shade(PINK, 0.3), nil, 0.6),
+			rbox(66, 1, 10, 0, 21.5, -0.5, ICING, nil, 0.4),
 		}
-		for i = 0, 10 do
-			local x = -40 + i * 8
+		for i = 0, 7 do
+			local x = -29 + i * 8
 			table.insert(out, blob(4.2, 3.2, 4.2, x, 17.0, 9, SPRINKLES[i % 5 + 1], { mat = "Sand" }))
 			table.insert(out, ball(4.0, x + 2, 24.0, -0.5, if i % 2 == 0 then CHOC else "#f3e5c8"))
 		end
 		-- lollipop decals on the front
-		for i = 0, 4 do
-			lollyDisc(out, { -36 + i * 18, 7.4, 17.0 }, { 90, 0, 0 }, 7, 0.6, SPRINKLES[i + 1], ICING)
+		for i = 0, 3 do
+			lollyDisc(out, { -27 + i * 18, 7.4, 17.0 }, { 90, 0, 0 }, 7, 0.6, SPRINKLES[i + 1], ICING)
 		end
 		-- things on the counter top
 		candyJar(out, -8, 41.4, -8, 9, 12, "#ff4d6d", 1)
 		candyJar(out, 4, 41.4, -8, 8, 10, "#4cc9f0", 2)
 		candyJar(out, 15, 41.4, -8, 7, 9, "#7bd88f", 3)
-		table.insert(out, lathe({ { 0, 0 }, { 3.2, 0 }, { 3.0, 0.6 }, { 2.6, 3.2 }, { 1.2, 5.0 }, { 0.6, 5.6 }, { 0.5, 6.6 }, { 0, 6.8 } }, 40, 41.4, 6, GOLD, { mat = "Foil" }, { seg = 24, smooth = 2 }))
-		table.insert(out, cyl(9, 1.2, -36, 42.0, 2, CHROME, { mat = "Metal" }))
-		table.insert(out, cyl(2, 6, -36, 45.6, 2, CHROME, { mat = "Metal" }))
-		table.insert(out, lathe({ { 0, 0 }, { 3, 0.4 }, { 6, 2.6 }, { 6.2, 3.0 }, { 0, 1.0 } }, -36, 48.4, 2, CHROME, { mat = "Metal" }, { seg = 28 }))
-		table.insert(out, ball(3.2, -37, 51.0, 3, "#ff8fc7"))
-		table.insert(out, ball(3.0, -34.6, 51.0, 1.6, "#ffd23f"))
+		table.insert(out, lathe({ { 0, 0 }, { 3.2, 0 }, { 3.0, 0.6 }, { 2.6, 3.2 }, { 1.2, 5.0 }, { 0.6, 5.6 }, { 0.5, 6.6 }, { 0, 6.8 } }, 30, 41.4, 6, GOLD, { mat = "Foil" }, { seg = 24, smooth = 2 }))
+		table.insert(out, cyl(9, 1.2, -27, 42.0, 2, CHROME, { mat = "Metal" }))
+		table.insert(out, cyl(2, 6, -27, 45.6, 2, CHROME, { mat = "Metal" }))
+		table.insert(out, lathe({ { 0, 0 }, { 3, 0.4 }, { 6, 2.6 }, { 6.2, 3.0 }, { 0, 1.0 } }, -27, 48.4, 2, CHROME, { mat = "Metal" }, { seg = 28 }))
+		table.insert(out, ball(3.2, -28, 51.0, 3, "#ff8fc7"))
+		table.insert(out, ball(3.0, -25.6, 51.0, 1.6, "#ffd23f"))
 		return out
 	end)(),
 })
