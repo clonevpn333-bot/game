@@ -13,6 +13,9 @@ local Net = require(Shared.Net)
 local Theme = require(Shared.Config.Theme)
 local Format = require(Shared.Util.Format)
 local Spring = require(Shared.Util.Spring)
+local Progression = require(Shared.Logic.Progression)
+local Cosmetics = require(Shared.Data.Cosmetics)
+local Titles = require(Shared.Data.Titles)
 local Ui = require(script.Parent.Parent.UI.Ui)
 local Panel = require(script.Parent.Parent.UI.Panel)
 local Panels = script.Parent.Parent.Panels
@@ -33,6 +36,8 @@ local stardustLabel: TextLabel
 local stardustSpring = Spring.new(0, 90, 14)
 local stardustShown = 0
 local notices: Frame
+local levelLabel: TextLabel
+local levelFill: Frame
 local panels: { [string]: any } = {}
 local tracker
 local badges = {}
@@ -44,6 +49,16 @@ end
 
 -- A short notice that slides in at the top centre (stacking).
 function MenuController:notify(icon: string, text: string, color: Color3?)
+	-- Keep the stack short: the oldest notice makes room.
+	local existing = {}
+	for _, c in notices:GetChildren() do
+		if c:IsA("Frame") then
+			table.insert(existing, c)
+		end
+	end
+	if #existing >= 4 then
+		existing[1]:Destroy()
+	end
 	local card = Ui.new("Frame", {
 		Size = UDim2.fromOffset(420, 52),
 		BackgroundColor3 = Theme.Color.Panel,
@@ -116,7 +131,7 @@ local function buildMenu()
 		Name = "SideMenu",
 		AnchorPoint = Vector2.new(0, 0.5),
 		Position = UDim2.new(0, 16, 0.56, 0),
-		Size = UDim2.fromOffset(180, 420),
+		Size = UDim2.fromOffset(180, 470),
 		BackgroundTransparency = 1,
 		Visible = false,
 		Parent = gui,
@@ -145,6 +160,34 @@ local function buildMenu()
 		Parent = pill,
 	}, { Ui.stroke(2, Theme.Color.Ink) })
 	Common.flyTarget = pill
+	local levelPill = Ui.new("Frame", {
+		Name = "Level",
+		Size = UDim2.fromOffset(170, 40),
+		BackgroundColor3 = Theme.Color.Panel,
+		LayoutOrder = 0,
+		Parent = menu,
+	}, { Ui.corner(Theme.Radius.Pill), Ui.stroke(3, Theme.Color.Ink) })
+	local track = Ui.new("Frame", {
+		Position = UDim2.fromOffset(66, 12),
+		Size = UDim2.new(1, -78, 0, 16),
+		BackgroundColor3 = Theme.Color.PaperDim,
+		Parent = levelPill,
+	}, { Ui.corner(Theme.Radius.Pill), Ui.stroke(1.5, Theme.Color.Ink) })
+	levelFill = Ui.new("Frame", {
+		Size = UDim2.fromScale(0, 1),
+		BackgroundColor3 = Theme.Color.Magic,
+		Parent = track,
+	}, { Ui.corner(Theme.Radius.Pill) })
+	levelLabel = Ui.new("TextLabel", {
+		Text = "Lv 1",
+		Position = UDim2.fromOffset(10, 6),
+		Size = UDim2.fromOffset(54, 28),
+		TextScaled = true,
+		FontFace = Theme.Font.Display,
+		TextColor3 = Theme.Color.Magic,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Parent = levelPill,
+	}, { Ui.stroke(1.5, Theme.Color.Ink) })
 	local _, nanaBadge = menuButton(1, "🧶", "Nana", Theme.Color.Magic, function()
 		panels.requests.panel:toggle()
 	end)
@@ -180,7 +223,17 @@ local function updateBadges(profile)
 	badges.dex.Visible = (dex.foundCount or 0) > dex.seenCount
 end
 
+local function updateLevel(profile)
+	if not profile or not levelLabel then
+		return
+	end
+	local level, into, need = Progression.levelFromXp(profile.xp or 0)
+	levelLabel.Text = "Lv " .. level
+	Ui.tween(levelFill, Theme.Tween.Smooth, { Size = UDim2.fromScale(math.clamp(into / math.max(need, 1), 0, 1), 1) })
+end
+
 local function onProfile(profile)
+	updateLevel(profile)
 	for _, p in panels do
 		local ok, err = pcall(p.refresh, p, profile)
 		if not ok then
@@ -215,6 +268,51 @@ local function onToast(kind: string, data)
 	elseif kind == "boost" then
 		local reasons = { comeback = "Comeback boost!", catchup = "Catch-up boost!" }
 		MenuController:notify("⚡", string.format("%s Grow x%.1f for %ds", reasons[data.reason] or "Growth boost!", data.mult or 1, data.duration or 0), Theme.Color.Accent)
+	elseif kind == "progress" then
+		if controllers.HudController then
+			controllers.HudController:showProgress(data)
+		end
+		for i, up in data.levelUps or {} do
+			task.delay(1 + i * 1.2, function()
+				local extras = {}
+				if up.shell then
+					local def = Cosmetics.ById[up.shell]
+					table.insert(extras, (def and def.icon or "🎨") .. " " .. (def and def.name or up.shell) .. " shell")
+				end
+				if up.title then
+					local def = Titles.ById[up.title]
+					table.insert(extras, "title « " .. (def and def.text or up.title) .. " »")
+				end
+				local text = "Level " .. up.level .. "! +" .. up.stardust .. " ✨"
+				if #extras > 0 then
+					text ..= " + " .. table.concat(extras, " + ")
+				end
+				MenuController:notify("⭐", text, Theme.Color.Magic)
+			end)
+		end
+		if data.record then
+			local cm = (state.round and state.round.cmPerStud) or 1
+			MenuController:notify("🏆", "New personal best: " .. Format.size(data.record.new, cm) .. "!", Theme.Color.Accent)
+		end
+	elseif kind == "achievement" then
+		local text = "Achievement: " .. tostring(data.name) .. "  +" .. tostring(data.stardust) .. " ✨"
+		if data.title then
+			local def = Titles.ById[data.title]
+			text ..= " + title « " .. (def and def.text or data.title) .. " »"
+		end
+		MenuController:notify(data.icon or "🏅", text, Theme.Color.Accent)
+		if controllers.AudioController then
+			controllers.AudioController:play("Legendary", { volume = 0.5 })
+		end
+	elseif kind == "setProgress" then
+		MenuController:notify(data.icon or "📖", string.format("%s  %d / %d", tostring(data.name), data.have or 0, data.total or 0), Theme.Color.Secondary)
+	elseif kind == "setComplete" then
+		MenuController:notify(data.icon or "📖", "Set complete: " .. tostring(data.name) .. "!  +" .. tostring(data.stardust) .. " ✨", Theme.Color.Good)
+		if controllers.AudioController then
+			controllers.AudioController:play("Legendary", { volume = 0.6 })
+		end
+	elseif kind == "title" then
+		MenuController:notify("🎖️", "New title: « " .. tostring(data.text) .. " »", Theme.Color.Magic)
 	elseif kind == "warning" then
 		MenuController:notify("⚠️", tostring(data.text or "Something went wrong"), Theme.Color.Bad)
 	end

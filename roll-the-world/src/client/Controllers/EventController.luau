@@ -45,6 +45,7 @@ local beam: Model? = nil
 local giantFx: { Instance } = {}
 local giantBall: BasePart? = nil
 local lastRoundId = nil
+local beamPropId: number? = nil
 local nightFx: ColorCorrectionEffect? = nil
 local nightSaved = nil
 
@@ -551,8 +552,13 @@ local function applyEvent(ev, fresh: boolean)
 	applyLighting(ev.lighting)
 	chip.Visible = true
 	chipFill.BackgroundColor3 = color
+	beamPropId = nil
 	if ev.pos and typeof(ev.pos) == "Vector3" then
 		makeBeam(ev.pos, color)
+	elseif type(ev.propId) == "number" then
+		-- Golden Runner: the beam follows the critter around.
+		beamPropId = ev.propId
+		makeBeam(Vector3.new(0, -5000, 0), color)
 	else
 		clearBeam()
 	end
@@ -574,6 +580,7 @@ local function onWorldEvent(id: string?, info)
 		endsAt = info.endsAt,
 		startedAt = state:serverTime(),
 		pos = info.pos,
+		propId = info.propId,
 		giantId = info.giantId,
 		weather = info.weather,
 		lighting = info.lighting,
@@ -622,6 +629,18 @@ local function update()
 	local total = math.max(1, (current.endsAt or 0) - (current.startedAt or (current.endsAt or 0) - 30))
 	chipLabel.Text = string.format("%s %s  %ds", current.icon or "✨", current.name or "", math.ceil(left))
 	chipFill.Size = UDim2.fromScale(math.clamp(left / total, 0, 1), 1)
+	if beam and beamPropId then
+		local world = controllers.WorldController
+		local p = world and world.props[beamPropId]
+		local pillar = beam:FindFirstChildWhichIsA("BasePart")
+		if not p then
+			clearBeam()
+			beamPropId = nil
+		elseif pillar and p.model then
+			local at = p.model:GetPivot().Position
+			pillar.CFrame = CFrame.new(at + Vector3.new(0, 200, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+		end
+	end
 	if beam then
 		local pillar = beam:FindFirstChildWhichIsA("BasePart")
 		local ball = state:focusBall()

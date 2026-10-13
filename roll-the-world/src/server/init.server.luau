@@ -44,6 +44,7 @@ local ORDER = {
 	"EventService",
 	"RolledexService",
 	"RequestService",
+	"ProgressionService",
 	"GalaxyService",
 	"ShopService",
 	"MonetizationService",

@@ -955,6 +955,74 @@ end
 
 -- Results ---------------------------------------------------------------------------------------
 
+local pendingProgress = nil
+local recordShownRound = nil
+
+-- XP bar on the results card: fills from the old XP to the new, flashing LEVEL UP on the way.
+function HudController:showProgress(data)
+	local panel = resultsPanel
+	if not panel then
+		pendingProgress = data
+		return
+	end
+	pendingProgress = nil
+	local box = Ui.new("Frame", {
+		Name = "Progress",
+		Position = UDim2.new(0, 0, 1, -150),
+		Size = UDim2.new(1, 0, 0, 44),
+		BackgroundTransparency = 1,
+		Parent = panel,
+	})
+	local levelLabel = Ui.display("⭐ Lv " .. data.from.level, {
+		Size = UDim2.fromOffset(120, 40),
+		TextColor3 = Theme.Color.Magic,
+		Parent = box,
+	})
+	local bar = Ui.new("Frame", {
+		Position = UDim2.fromOffset(130, 8),
+		Size = UDim2.new(1, -260, 0, 28),
+		BackgroundColor3 = Theme.Color.PaperDim,
+		Parent = box,
+	}, { Ui.corner(Theme.Radius.Pill), Ui.stroke(2.5, Theme.Color.Ink) })
+	local fill = Ui.new("Frame", {
+		Size = UDim2.fromScale(math.clamp(data.from.into / math.max(data.from.need, 1), 0, 1), 1),
+		BackgroundColor3 = Theme.Color.Magic,
+		Parent = bar,
+	}, { Ui.corner(Theme.Radius.Pill), Ui.gradient(Color3.new(1, 1, 1), Color3.fromRGB(205, 205, 205)) })
+	Ui.display("+" .. data.xp .. " XP", {
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, 0),
+		Size = UDim2.fromOffset(120, 40),
+		TextColor3 = Theme.Color.Good,
+		Parent = box,
+	})
+	task.spawn(function()
+		task.wait(0.6)
+		local level = data.from.level
+		while level < data.to.level and box.Parent do
+			Ui.tween(fill, TweenInfo.new(0.5, Enum.EasingStyle.Quad), { Size = UDim2.fromScale(1, 1) })
+			task.wait(0.55)
+			level += 1
+			levelLabel.Text = "⭐ Lv " .. level
+			self:showBanner("⭐ LEVEL " .. level .. "! ⭐", Theme.Color.Magic, 2)
+			if controllers.AudioController then
+				controllers.AudioController:play("Legendary", { volume = 0.6 })
+			end
+			if controllers.VFXController and state.ball then
+				controllers.VFXController:sparkle(state.ball.Position, Theme.Color.Magic, 6, 30)
+			end
+			fill.Size = UDim2.fromScale(0, 1)
+			task.wait(0.4)
+		end
+		if box.Parent then
+			Ui.tween(fill, TweenInfo.new(0.6, Enum.EasingStyle.Quad), { Size = UDim2.fromScale(math.clamp(data.to.into / math.max(data.to.need, 1), 0, 1), 1) })
+		end
+	end)
+	if data.record then
+		self:feed("🏆 New personal best: " .. Format.size(data.record.new, cmPerStud()) .. "!", Theme.Color.Accent)
+	end
+end
+
 local function closeResults()
 	if resultsPanel then
 		resultsPanel:Destroy()
@@ -967,8 +1035,8 @@ local function showResults(results)
 	local panel = Ui.new("Frame", {
 		Name = "Results",
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.4),
-		Size = UDim2.fromOffset(640, 400),
+		Position = UDim2.fromScale(0.5, 0.385),
+		Size = UDim2.fromOffset(640, 470),
 		BackgroundColor3 = Theme.Color.Panel,
 		Parent = root,
 	}, { Ui.corner(Theme.Radius.Large), Ui.stroke(4, Theme.Color.Ink), Ui.padding(18) })
@@ -1038,6 +1106,9 @@ local function showResults(results)
 	end)
 	local s = Ui.new("UIScale", { Scale = 0.3, Parent = panel })
 	Ui.tween(s, Theme.Tween.Pop, { Scale = 1 })
+	if pendingProgress then
+		HudController:showProgress(pendingProgress)
+	end
 end
 
 -- Loop ------------------------------------------------------------------------------------------
@@ -1058,6 +1129,21 @@ local function update(dt: number)
 	local rolling = state:isRolling() or state.playerState == "Rider"
 	local sizeHolder = sizeValue.Parent :: Frame
 	sizeHolder.Visible = rolling
+
+	-- Beat your best on this map mid-round: celebrate once.
+	local profile = state.profile
+	local roundNow = state.round
+	if rolling and profile and profile.records and roundNow.kitId and recordShownRound ~= roundNow.roundId then
+		local best = profile.records[roundNow.kitId]
+		if best and best > 5 and state.diameter > best then
+			recordShownRound = roundNow.roundId
+			HudController:showBanner("🏆 NEW PERSONAL RECORD!", Theme.Color.Accent, 2.4)
+			bumpSpring:impulse(14)
+			if controllers.AudioController then
+				controllers.AudioController:play("Legendary", { volume = 0.5 })
+			end
+		end
+	end
 
 	-- Aggregate tiny gains into readable floaters.
 	if pendingGain > 0 and os.clock() - pendingAt > 0.18 then
@@ -1219,6 +1305,14 @@ function HudController:start()
 				bumpSpring:impulse(10)
 			elseif data.victimId ~= me then
 				self:feed("🌀 " .. tostring(data.hostName) .. " rolled up " .. tostring(data.victimName), Theme.Color.Secondary)
+			end
+			return
+		end
+		if kind == "runnerCaught" and data then
+			if data.userId == state.player.UserId then
+				self:showBanner("🏃 YOU CAUGHT THE GOLDEN RUNNER!", Color3.fromRGB(255, 210, 63), 2.6)
+			else
+				self:feed("🏃 " .. tostring(data.name) .. " caught the Golden Runner!", Color3.fromRGB(255, 210, 63))
 			end
 			return
 		end

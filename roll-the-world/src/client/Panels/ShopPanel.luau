@@ -10,6 +10,7 @@ local Net = require(Shared.Net)
 local Theme = require(Shared.Config.Theme)
 local Cores = require(Shared.Data.Cores)
 local Cosmetics = require(Shared.Data.Cosmetics)
+local Titles = require(Shared.Data.Titles)
 local Ui = require(script.Parent.Parent.UI.Ui)
 local Panel = require(script.Parent.Parent.UI.Panel)
 local Common = require(script.Parent.Common)
@@ -20,6 +21,8 @@ ShopPanel.__index = ShopPanel
 local SOURCE_TEXT = {
 	Streak = "🔥 Login streak",
 	Nana = "🧶 Nana's gift",
+	Level = "⭐ Level reward",
+	Achievement = "🏅 Achievement",
 	Default = "",
 }
 
@@ -77,9 +80,9 @@ function ShopPanel.new(ctx)
 		Parent = body,
 	}, { Ui.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8) }) })
 	self.tabButtons = {}
-	for i, name in { "Cores", "Shells" } do
+	for i, name in { "Cores", "Shells", "Titles" } do
 		self.tabButtons[name] = Ui.button({
-			text = if name == "Cores" then "⚙️ Cores" else "🎨 Shells",
+			text = if name == "Cores" then "⚙️ Cores" elseif name == "Shells" then "🎨 Shells" else "🎖️ Titles",
 			size = UDim2.fromOffset(180, 44),
 			color = Theme.Color.Panel,
 			radius = Theme.Radius.Pill,
@@ -190,10 +193,14 @@ function ShopPanel:render()
 		self.hint.Text = "Cores change how your ball handles. Upgrade your favorite!"
 		self.layout.CellSize = UDim2.fromOffset(420, 150)
 		self:renderCores(profile)
-	else
+	elseif self.tab == "Shells" then
 		self.hint.Text = "Shells change how your ball looks. Earn rare ones daily!"
 		self.layout.CellSize = UDim2.fromOffset(205, 230)
 		self:renderShells(profile)
+	else
+		self.hint.Text = "Titles show under your name. Earn them by leveling up and achievements!"
+		self.layout.CellSize = UDim2.fromOffset(280, 96)
+		self:renderTitles(profile)
 	end
 end
 
@@ -276,6 +283,47 @@ function ShopPanel:renderCores(profile)
 				onClick = function()
 					self:buy("EquipCore", def.id, equip)
 				end,
+			})
+		end
+	end
+end
+
+function ShopPanel:renderTitles(profile)
+	for i, def in Titles.List do
+		local owned = profile.titles and profile.titles[def.id] == true
+		local equipped = profile.title == def.id
+		local card = Common.card(self.list, { LayoutOrder = (if owned then 0 else 100) + i, BackgroundColor3 = if equipped then Color3.fromRGB(255, 248, 225) else Theme.Color.Panel })
+		Common.text(card, "« " .. def.text .. " »", {
+			Position = UDim2.fromOffset(12, 8),
+			Size = UDim2.new(1, -24, 0, 30),
+			FontFace = Theme.Font.Display,
+			TextColor3 = if owned then Color3.fromHex(def.color) else Theme.Color.InkSoft,
+		})
+		Common.text(card, (if owned then "✅ " else "🔒 ") .. def.how, {
+			Position = UDim2.fromOffset(12, 40),
+			Size = UDim2.new(1, -130, 0, 20),
+			TextColor3 = Theme.Color.InkSoft,
+		})
+		if owned and not equipped then
+			local button
+			button = Ui.button({
+				text = "Wear",
+				size = UDim2.fromOffset(100, 42),
+				anchor = Vector2.new(1, 1),
+				position = UDim2.new(1, -10, 1, -8),
+				color = Theme.Color.Secondary,
+				parent = card,
+				onClick = function()
+					self:buy("EquipTitle", def.id, button)
+				end,
+			})
+		elseif equipped then
+			Common.text(card, "Wearing", {
+				AnchorPoint = Vector2.new(1, 1),
+				Position = UDim2.new(1, -12, 1, -14),
+				Size = UDim2.fromOffset(100, 24),
+				TextColor3 = Theme.Color.GoodDark,
+				TextXAlignment = Enum.TextXAlignment.Right,
 			})
 		end
 	end

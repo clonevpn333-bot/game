@@ -89,6 +89,37 @@ function CritterService:stampede(uids: { number }, count: number)
 	end
 end
 
+-- One golden critter that runs from EVERY ball and must be chased down (Golden Runner event).
+-- Returns the prop id.
+function CritterService:spawnRunner(uid: number, mutation: number, position: Vector3, speed: number): number?
+	local world = services.WorldService
+	local ground = world:groundAt(position.X, position.Z)
+	local ids = world:spawnLoot({
+		{
+			uid = uid,
+			mutation = mutation,
+			scale = 1,
+			from = Vector3.new(position.X, ground + 120, position.Z),
+			to = Vector3.new(position.X, ground, position.Z),
+			settle = 1.2,
+		},
+	})
+	local id = ids[1]
+	local prop = id and world:get(id)
+	if not prop or not prop.def.critter then
+		return nil
+	end
+	prop.expiresAt = os.clock() + 60
+	register(prop)
+	local c = critters[id]
+	c.runner = true
+	c.runnerSince = os.clock()
+	c.speed = speed
+	c.platform = nil -- runs anywhere on the floor
+	c.fleeMult = 1
+	return id
+end
+
 local function insidePlatform(p, x: number, z: number, margin: number): boolean
 	return math.abs(x - p.x) <= p.sx / 2 - margin and math.abs(z - p.z) <= p.sz / 2 - margin
 end
@@ -138,11 +169,11 @@ local function tick(dt: number)
 		-- Find the most threatening ball (one that can absorb us) within flee range.
 		local threat, threatDist = nil, math.huge
 		for _, ball in balls do
-			if Absorb.canAbsorbProp(ball.diameter, prop.absorbSize, false, ctx) then
+			if c.runner or Absorb.canAbsorbProp(ball.diameter, prop.absorbSize, false, ctx) then
 				local pos = ball.part.Position
 				local dx, dz = x - pos.X, z - pos.Z
 				local dist = math.sqrt(dx * dx + dz * dz)
-				local range = ball.diameter * Tuning.World.CritterFleeRange * c.fleeMult + prop.radius * 4
+				local range = if c.runner then 90 + ball.diameter * 2 else ball.diameter * Tuning.World.CritterFleeRange * c.fleeMult + prop.radius * 4
 				if dist < range and dist < threatDist then
 					threat, threatDist = pos, dist
 				end
@@ -162,7 +193,11 @@ local function tick(dt: number)
 			-- A little zig-zag so fleeing reads as panicky-cute rather than robotic.
 			local wobble = math.sin(nowT * 6 + id) * 0.5
 			moveDir = CFrame.Angles(0, wobble, 0):VectorToWorldSpace(fleeDir)
-			speed *= 1.6
+			speed *= if c.runner then 1 else 1.6
+			if c.runner then
+				-- It tires out over time so persistent chasers win.
+				speed *= math.clamp(1 - (nowT - (c.runnerSince or nowT)) / 50, 0.55, 1)
+			end
 			newState = FLEE
 		else
 			if nowT >= c.nextThink then

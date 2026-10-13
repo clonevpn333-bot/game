@@ -25,6 +25,7 @@ export type EventDef = {
 	giant: boolean?, -- one random ball gets a huge growth boost
 	supplyDrop: number?, -- props dropped in one big pile somewhere on the map
 	frenzy: boolean?,
+	goldenRunner: boolean?, -- a golden critter bolts around; catch it for a big reward
 	weather: string?, -- client weather preset
 	lighting: { [string]: any }?,
 }
@@ -155,6 +156,19 @@ Events.List = {
 		purchasable = false,
 		meteors = 0.8,
 		weather = "Meteors",
+	},
+	{
+		id = "GoldenRunner",
+		name = "Golden Runner",
+		icon = "🏃",
+		color = "#ffd23f",
+		description = "A GOLDEN critter is on the loose! Catch it!",
+		duration = 35,
+		weight = 3,
+		major = false,
+		purchasable = false,
+		goldenRunner = true,
+		weather = "Glitter",
 	},
 } :: { EventDef }
 

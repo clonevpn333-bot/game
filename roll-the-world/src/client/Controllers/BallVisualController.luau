@@ -221,14 +221,14 @@ local function createEntry(model: Model)
 		local player = Players:GetPlayerByUserId(userId)
 		local gui = Instance.new("BillboardGui")
 		gui.Name = "Tag"
-		gui.Size = UDim2.fromOffset(160, 44)
+		gui.Size = UDim2.fromOffset(170, 62)
 		gui.AlwaysOnTop = true
 		gui.MaxDistance = 600
 		gui.LightInfluence = 0
 		gui.Adornee = part
 		local label = Instance.new("TextLabel")
 		label.BackgroundTransparency = 1
-		label.Size = UDim2.fromScale(1, 1)
+		label.Size = UDim2.fromScale(1, 0.66)
 		label.FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json")
 		label.TextScaled = true
 		label.TextColor3 = Color3.new(1, 1, 1)
@@ -239,12 +239,32 @@ local function createEntry(model: Model)
 		stroke.Parent = label
 		label.Parent = gui
 		gui.Parent = vf
-		local level = part:GetAttribute("Level")
-		local name = label.Text
-		if type(level) == "number" and level > 0 then
-			name = "Lv" .. level .. " " .. name
+		-- Title line (earned titles like "Ball Bully") under the name.
+		local titleLabel = Instance.new("TextLabel")
+		titleLabel.BackgroundTransparency = 1
+		titleLabel.Position = UDim2.fromScale(0, 0.64)
+		titleLabel.Size = UDim2.fromScale(1, 0.36)
+		titleLabel.FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json")
+		titleLabel.TextScaled = true
+		titleLabel.Text = ""
+		local titleStroke = stroke:Clone()
+		titleStroke.Thickness = 1.5
+		titleStroke.Parent = titleLabel
+		titleLabel.Parent = gui
+		local baseName = label.Text
+		local tag = { gui = gui, label = label, name = baseName, title = titleLabel }
+		local function refreshTag()
+			local level = part:GetAttribute("Level")
+			tag.name = if type(level) == "number" and level > 0 then "Lv" .. level .. " " .. baseName else baseName
+			local title = part:GetAttribute("Title")
+			titleLabel.Text = if type(title) == "string" then "« " .. title .. " »" else ""
+			local color = part:GetAttribute("TitleColor")
+			titleLabel.TextColor3 = if type(color) == "string" then Color3.fromHex(color) else Color3.fromRGB(255, 230, 150)
 		end
-		entry.tag = { gui = gui, label = label, name = name }
+		refreshTag()
+		part:GetAttributeChangedSignal("Level"):Connect(refreshTag)
+		part:GetAttributeChangedSignal("Title"):Connect(refreshTag)
+		entry.tag = tag
 	end
 
 	part:GetAttributeChangedSignal("Diameter"):Connect(function()

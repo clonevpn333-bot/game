@@ -47,6 +47,13 @@ function Profile.default(): { [string]: any }
 		streak = { day = -1, count = 0, best = 0 },
 		daily = { day = -1, requests = {}, bonusClaimed = false, swaps = 0 },
 		nanaDays = 0,
+		xp = 0,
+		level = 1,
+		titles = { Rookie = true },
+		title = "Rookie",
+		achievements = {},
+		setsClaimed = {},
+		records = {}, -- kitId -> best final diameter (studs)
 		galaxy = { planets = {}, mass = 0, nextId = 1, total = 0 },
 		settings = {},
 		receipts = {}, -- purchaseId -> unix time (idempotent ProcessReceipt)
@@ -121,6 +128,12 @@ function Profile.reconcile(raw: any): { [string]: any }
 	if type(data.cores.equipped) ~= "string" or not data.cores.owned[data.cores.equipped] then
 		data.cores.equipped = "Classic"
 	end
+	data.xp = math.floor(num(data.xp, 0, 0))
+	data.level = math.floor(num(data.level, 1, 1, 100))
+	data.titles.Rookie = true
+	if type(data.title) ~= "string" or not data.titles[data.title] then
+		data.title = "Rookie"
+	end
 	if not isArray(data.galaxy.planets) then
 		data.galaxy.planets = {}
 	end
@@ -172,6 +185,13 @@ function Profile.clientView(data: { [string]: any }): { [string]: any }
 		streak = data.streak,
 		daily = data.daily,
 		nanaDays = data.nanaDays,
+		xp = data.xp,
+		level = data.level,
+		titles = data.titles,
+		title = data.title,
+		achievements = data.achievements,
+		setsClaimed = data.setsClaimed,
+		records = data.records,
 		galaxy = data.galaxy,
 		settings = data.settings,
 		passes = data.passes,

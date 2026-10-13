@@ -14,6 +14,7 @@ local Signal = require(Shared.Util.Signal)
 local Growth = require(Shared.Logic.Growth)
 local Tuning = require(Shared.Config.Tuning)
 local Cores = require(Shared.Data.Cores)
+local Titles = require(Shared.Data.Titles)
 
 local BallService = {}
 
@@ -188,6 +189,11 @@ function BallService:spawn(player: Player, position: Vector3, diameter: number, 
 	part:SetAttribute("Core", core)
 	part:SetAttribute("Shell", shell)
 	part:SetAttribute("Level", if isBot then (player :: any).level else (data and data.level or 1))
+	local titleDef = Titles.get(if isBot then (player :: any).title else (data and data.title))
+	if titleDef and titleDef.id ~= "Rookie" then
+		part:SetAttribute("Title", titleDef.text)
+		part:SetAttribute("TitleColor", titleDef.color)
+	end
 	part.Parent = model
 	model.PrimaryPart = part
 	model.Parent = self.folder

@@ -22,7 +22,7 @@ describe("World events", function()
 			end
 			-- Every event must actually do something.
 			local effect = e.ratioBonus or e.growthMult or e.speedMult or e.gravityMult or e.stardustMult
-				or e.mutation or e.meteors or e.stampede or e.giant or e.supplyDrop
+				or e.mutation or e.meteors or e.stampede or e.giant or e.supplyDrop or e.goldenRunner
 			expect(effect ~= nil).toBe(true)
 			if e.major then
 				majors += 1

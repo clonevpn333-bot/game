@@ -16,6 +16,7 @@ local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
 local Absorb = require(Shared.Logic.Absorb)
 local PropLibrary = require(Shared.Logic.PropLibrary)
+local Growth = require(Shared.Logic.Growth)
 local Events = require(Shared.Data.Events)
 local Mutations = require(Shared.Data.Mutations)
 local Mutators = require(Shared.Data.Mutators)
@@ -194,6 +195,7 @@ function EventService:current()
 		lighting = def.lighting,
 		giantId = active.giantId,
 		pos = active.info.pos,
+		propId = active.info.propId,
 	}
 end
 
@@ -356,6 +358,61 @@ local function supplyDrop(count: number): Vector3?
 end
 
 -- Giant Moment: a ball outside the lead gets a burst of growth so the pecking order flips.
+-- Golden Runner: a golden critter most balls can catch, fast enough to need a real chase.
+local function spawnRunner(): number?
+	local world = services.WorldService
+	local kit = world.kit
+	local balls = liveBalls()
+	if not kit or #balls == 0 or not services.CritterService then
+		return nil
+	end
+	local sizes = {}
+	local cx, cz = 0, 0
+	for _, b in balls do
+		table.insert(sizes, b.diameter)
+		cx += b.part.Position.X
+		cz += b.part.Position.Z
+	end
+	table.sort(sizes)
+	local median = sizes[math.ceil(#sizes / 2)]
+	local threshold = Absorb.threshold(median, { ratioBonus = EventService:absorbRatioBonus() })
+	local pick, pickSize, smallest, smallestSize = nil, -1, nil, math.huge
+	for _, def in (PropLibrary.ByKit[kit.id] or {}) :: { any } do
+		if def.critter and not def.landmark then
+			local size = def.metrics.absorbSize
+			if size <= threshold * 0.8 and size > pickSize then
+				pick, pickSize = def, size
+			end
+			if size < smallestSize then
+				smallest, smallestSize = def, size
+			end
+		end
+	end
+	pick = pick or smallest
+	if not pick then
+		return nil
+	end
+	-- Somewhere on open floor between the players.
+	cx /= #balls
+	cz /= #balls
+	local spot = nil
+	for _ = 1, 20 do
+		local a = math.random() * math.pi * 2
+		local r = 80 + math.random() * 120
+		local x, z = clampToArena(kit, cx + math.cos(a) * r, cz + math.sin(a) * r)
+		local p = world:platformAt(x, z)
+		if not p or p.kind == "table" then
+			spot = Vector3.new(x, 0, z)
+			break
+		end
+	end
+	if not spot then
+		return nil
+	end
+	local speed = Growth.maxSpeed(median) * 0.8
+	return services.CritterService:spawnRunner(pick.uid, GOLDEN, spot, speed)
+end
+
 local function pickGiant()
 	local balls = liveBalls()
 	if #balls == 0 then
@@ -411,6 +468,9 @@ local function run(def, by: string?): boolean
 	if def.supplyDrop then
 		state.info.pos = supplyDrop(def.supplyDrop)
 	end
+	if def.goldenRunner then
+		state.info.propId = spawnRunner()
+	end
 	if def.stampede then
 		local kit = services.WorldService.kit
 		if kit and services.CritterService then
@@ -441,6 +501,7 @@ local function run(def, by: string?): boolean
 		pos = state.info.pos,
 		giantId = state.giantId,
 		giantName = state.info.giantName,
+		propId = state.info.propId,
 		weather = def.weather,
 		lighting = def.lighting,
 	})
@@ -555,6 +616,24 @@ end
 
 function EventService:start()
 	baseGravity = Workspace.Gravity
+	services.AbsorbService.Absorbed:Connect(function(ballState, prop, info)
+		if not active or not active.info.propId or prop.id ~= active.info.propId or (info and info.shared) then
+			return
+		end
+		local player = ballState.player
+		Net.fireAll("Announce", "runnerCaught", { userId = ballState.userId, name = player.DisplayName })
+		if Net.isPlayer(player) and services.PlayerDataService then
+			services.PlayerDataService:grantStardust(player, 250, "GoldenRunner")
+			if services.ProgressionService then
+				services.ProgressionService:addXp(player, 60)
+			end
+			Net.fire("Toast", player, "warning", { text = "🏃 You caught the Golden Runner! +250 ✨ +60 XP" })
+		end
+		if services.BotService and player.IsBot then
+			services.BotService:say(player, "rolledSomeone", 1, "Cheer")
+		end
+		stop()
+	end)
 	local round = services.RoundService
 	round.RoundStarted:Connect(function()
 		table.clear(usedThisRound)

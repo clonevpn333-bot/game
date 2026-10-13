@@ -17,6 +17,7 @@ local Kits = require(Shared.Data.Kits)
 local Mutations = require(Shared.Data.Mutations)
 local PropLibrary = require(Shared.Logic.PropLibrary)
 local PropBuilder = require(Shared.PropBuilder)
+local Progression = require(Shared.Logic.Progression)
 local Ui = require(script.Parent.Parent.UI.Ui)
 local Panel = require(script.Parent.Parent.UI.Panel)
 local Common = require(script.Parent.Common)
@@ -87,6 +88,17 @@ function RolledexPanel.new(ctx)
 		})
 		self.tabs[kit.id] = button
 	end
+	self.tabs.__sets = Ui.button({
+		text = "🧩 Sets",
+		size = UDim2.fromOffset(130, 44),
+		color = Theme.Color.Panel,
+		radius = Theme.Radius.Pill,
+		order = #Kits.List + 1,
+		parent = tabs,
+		onClick = function()
+			self:showKit("__sets")
+		end,
+	})
 
 	-- Grid (left) and detail pane (right).
 	local gridHolder = Ui.new("Frame", {
@@ -96,7 +108,7 @@ function RolledexPanel.new(ctx)
 		Parent = body,
 	})
 	self.grid = Panel.scroller(gridHolder)
-	Ui.new("UIGridLayout", {
+	self.gridLayout = Ui.new("UIGridLayout", {
 		CellSize = UDim2.fromOffset(CELL, CELL + 18),
 		CellPadding = UDim2.fromOffset(8, 8),
 		SortOrder = Enum.SortOrder.LayoutOrder,
@@ -227,8 +239,19 @@ function RolledexPanel:showKit(kitId: string)
 	for _, cell in self.cells do
 		cell.frame:Destroy()
 	end
+	for _, c in self.grid:GetChildren() do
+		if c:IsA("Frame") and c.Name == "SetCard" then
+			c:Destroy()
+		end
+	end
 	table.clear(self.cells)
 	table.clear(self.queue)
+	if kitId == "__sets" then
+		self.gridLayout.CellSize = UDim2.fromOffset(620, 128)
+		self:showSets()
+		return
+	end
+	self.gridLayout.CellSize = UDim2.fromOffset(CELL, CELL + 18)
 	local colorblind = self.ctx.controllers.SettingsController and self.ctx.controllers.SettingsController.values.colorblind
 	for i, def in sortedDefs(kitId) do
 		local isFound = self:found(def.uid)
@@ -286,6 +309,87 @@ function RolledexPanel:showKit(kitId: string)
 		end)
 		table.insert(self.cells, cell)
 		table.insert(self.queue, cell)
+	end
+	self.grid.CanvasPosition = Vector2.zero
+	if self.cells[1] then
+		self:select(self.cells[1])
+	end
+end
+
+-- Themed sets per map: finish one for Stardust, finish a whole map for its Master title.
+function RolledexPanel:showSets()
+	local profile = self.ctx.state.profile
+	local claimed = profile and profile.setsClaimed or {}
+	local kitNames = {}
+	for _, kit in Kits.List do
+		kitNames[kit.id] = kit.name
+	end
+	local list = table.clone(Progression.sets())
+	-- Nearly-finished sets first: that's what you want to chase.
+	table.sort(list, function(a, b)
+		local fa = Progression.setProgress(a, function(u)
+			return self:found(u)
+		end) / #a.uids
+		local fb = Progression.setProgress(b, function(u)
+			return self:found(u)
+		end) / #b.uids
+		local da, db = claimed[a.id] == true, claimed[b.id] == true
+		if da ~= db then
+			return db
+		end
+		if fa ~= fb then
+			return fa > fb
+		end
+		return a.id < b.id
+	end)
+	for i, set in list do
+		local have = Progression.setProgress(set, function(u)
+			return self:found(u)
+		end)
+		local done = claimed[set.id] == true
+		local card = Common.card(self.grid, {
+			Name = "SetCard",
+			LayoutOrder = i,
+			BackgroundColor3 = if done then Color3.fromRGB(226, 250, 230) else Theme.Color.Panel,
+		})
+		Common.text(card, set.icon .. " " .. set.name, {
+			Position = UDim2.fromOffset(12, 6),
+			Size = UDim2.new(0.6, 0, 0, 28),
+			FontFace = Theme.Font.Display,
+		})
+		Common.text(card, (kitNames[set.kitId] or set.kitId) .. "  •  " .. (if done then "✅ Complete!" else string.format("%d / %d  •  +%d ✨", have, #set.uids, set.reward)), {
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -12, 0, 10),
+			Size = UDim2.new(0.42, 0, 0, 22),
+			TextXAlignment = Enum.TextXAlignment.Right,
+			TextColor3 = if done then Theme.Color.GoodDark else Theme.Color.InkSoft,
+		})
+		local row = Ui.new("Frame", {
+			Position = UDim2.fromOffset(10, 40),
+			Size = UDim2.new(1, -20, 0, 80),
+			BackgroundTransparency = 1,
+			Parent = card,
+		}, { Ui.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6) }) })
+		for _, uid in set.uids do
+			local def = PropLibrary.get(uid)
+			if def then
+				local isFound = self:found(uid)
+				local chip = Ui.new("TextButton", {
+					Text = "",
+					AutoButtonColor = false,
+					Size = UDim2.fromOffset(70, 76),
+					BackgroundColor3 = if isFound then Theme.Color.PanelAlt else Theme.Color.PaperDim,
+					Parent = row,
+				}, { Ui.corner(Theme.Radius.Small), Ui.stroke(2, if isFound then Theme.Color.Good else Theme.Color.InkSoft) })
+				local vp = Ui.viewport(nil, { Size = UDim2.new(1, 0, 1, -4), Parent = chip })
+				local cell = { frame = chip, viewport = vp, def = def, found = isFound, built = false }
+				chip.Activated:Connect(function()
+					self:select(cell)
+				end)
+				table.insert(self.cells, cell)
+				table.insert(self.queue, cell)
+			end
+		end
 	end
 	self.grid.CanvasPosition = Vector2.zero
 	if self.cells[1] then

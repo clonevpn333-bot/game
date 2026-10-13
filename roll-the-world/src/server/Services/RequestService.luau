@@ -87,6 +87,10 @@ local function push(player: any, ev)
 			anyChange = true
 		end
 		if completed then
+			if services.RoundService and services.RoundService:isPlaying() then
+				local st = services.RoundService:stats(player)
+				st.requestsCompleted += 1
+			end
 			Net.fire("Toast", player, "request", {
 				slot = slot,
 				text = Daily.describe(req),

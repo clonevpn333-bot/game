@@ -78,6 +78,7 @@ local function newIdentity(name: string)
 		Name = name,
 		DisplayName = name,
 		level = math.random(2, 46),
+		title = ({ "Roller", "Sticky", "Hoover", "Winner", "Collector", nil, nil, nil })[math.random(1, 8)],
 		shell = if math.random() < 0.45 and #SHELL_CHOICES > 0 then SHELL_CHOICES[math.random(1, #SHELL_CHOICES)] else "Classic",
 		lastChat = 0,
 		Character = nil,

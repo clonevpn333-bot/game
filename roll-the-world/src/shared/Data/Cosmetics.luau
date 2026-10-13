@@ -13,7 +13,7 @@ export type ShellDef = {
 	neon: boolean?, -- glowing flecks on the lumps
 	rainbow: boolean?, -- hue cycles over time
 	cost: number?, -- Stardust price when sold in the shop
-	source: "Default" | "Shop" | "Streak" | "Nana",
+	source: "Default" | "Shop" | "Streak" | "Nana" | "Level" | "Achievement",
 	order: number,
 	description: string,
 }
@@ -33,6 +33,14 @@ Cosmetics.Shells = {
 	{ id = "Golden", name = "Golden", icon = "🏆", color = "#ffc83a", color2 = "#fff1b0", material = "Foil", reflectance = 0.3, source = "Streak", order = 10, description = "Login streak reward: day 14." },
 	{ id = "Rainbow", name = "Rainbow", icon = "🌈", color = "#ff5c8a", material = "SmoothPlastic", rainbow = true, source = "Streak", order = 11, description = "Login streak reward: day 30." },
 	{ id = "Knitted", name = "Nana's Knit", icon = "🧶", color = "#c8b6ff", color2 = "#ffafcc", material = "Fabric", source = "Nana", order = 12, description = "Finish all three of Nana's requests on 5 days." },
+	{ id = "Cookie", name = "Cookie Dough", icon = "🍪", color = "#d9a066", color2 = "#5b3a1e", material = "Sand", source = "Level", order = 13, description = "Reach level 5." },
+	{ id = "Comet", name = "Comet", icon = "☄️", color = "#1d1b3a", color2 = "#7ee8ff", material = "SmoothPlastic", neon = true, source = "Level", order = 14, description = "Reach level 10." },
+	{ id = "Jelly", name = "Jelly", icon = "🍮", color = "#ff6fb5", color2 = "#ffd1ea", material = "Glass", reflectance = 0.1, source = "Level", order = 15, description = "Reach level 15." },
+	{ id = "Aurora", name = "Aurora", icon = "🌌", color = "#3bd6c6", color2 = "#b06cff", material = "SmoothPlastic", neon = true, source = "Level", order = 16, description = "Reach level 20." },
+	{ id = "Diamond", name = "Diamond", icon = "💎", color = "#cfefff", color2 = "#ffffff", material = "Glass", reflectance = 0.35, source = "Level", order = 17, description = "Reach level 30." },
+	{ id = "Nebula", name = "Nebula", icon = "🪐", color = "#3a1d6e", color2 = "#ff8fc7", material = "SmoothPlastic", neon = true, source = "Level", order = 18, description = "Reach level 40." },
+	{ id = "Sun", name = "Little Sun", icon = "☀️", color = "#ffb21e", color2 = "#fff3b0", material = "Neon", source = "Level", order = 19, description = "Reach level 50." },
+	{ id = "Champion", name = "Champion", icon = "🏆", color = "#ffd640", color2 = "#ff7a45", material = "Foil", reflectance = 0.2, source = "Achievement", order = 20, description = "Win 25 rounds." },
 } :: { ShellDef }
 
 Cosmetics.ById = {} :: { [string]: ShellDef }
