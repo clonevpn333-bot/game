@@ -775,19 +775,23 @@ local function setTopRow(i: number, entry)
 	local sizeLabel = row:FindFirstChild("Size") :: TextLabel
 	sizeLabel.Text = Format.size(entry.d, cmPerStud())
 	local avatar = row:FindFirstChild("Avatar") :: ImageLabel
-	local thumb = thumbnails[entry.userId]
-	if entry.userId < 0 then
-		avatar.Image = "" -- bots have no avatar thumbnail; their name carries a 🤖
-	elseif thumb then
+	-- Bots wear real avatars; show the headshot of the look they're wearing.
+	local thumbId = if entry.userId < 0 then entry.avatarId else entry.userId
+	if not thumbId then
+		avatar.Image = ""
+		return
+	end
+	local thumb = thumbnails[thumbId]
+	if thumb then
 		avatar.Image = thumb
 	elseif thumb == nil then
-		thumbnails[entry.userId] = false
+		thumbnails[thumbId] = false
 		task.spawn(function()
 			local ok, img = pcall(function()
-				return Players:GetUserThumbnailAsync(entry.userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
+				return Players:GetUserThumbnailAsync(thumbId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
 			end)
 			if ok then
-				thumbnails[entry.userId] = img
+				thumbnails[thumbId] = img
 			end
 		end)
 	end

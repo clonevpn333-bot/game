@@ -104,7 +104,7 @@ end
 function RoundService:snapshot()
 	local top = {}
 	for _, state in services.BallService:all() do
-		table.insert(top, { userId = state.userId, name = state.player.DisplayName, d = state.diameter })
+		table.insert(top, { userId = state.userId, name = state.player.DisplayName, d = state.diameter, avatarId = (state.player :: any).avatarId })
 	end
 	table.sort(top, function(a, b)
 		return a.d > b.d

@@ -163,7 +163,7 @@ function BallService:spawn(player: Player, position: Vector3, diameter: number, 
 	local data = if isBot then nil else (services.PlayerDataService and services.PlayerDataService:getLoaded(player))
 	local core = opts.core or (data and data.cores.equipped) or "Classic"
 	local coreLevel = (data and data.cores.owned[core]) or 1
-	local shell = (data and data.cosmetics.equipped.shell) or "Classic"
+	local shell = (data and data.cosmetics.equipped.shell) or (isBot and (player :: any).shell) or "Classic"
 
 	local model = Instance.new("Model")
 	model.Name = "Ball_" .. player.UserId
@@ -187,6 +187,7 @@ function BallService:spawn(player: Player, position: Vector3, diameter: number, 
 	part:SetAttribute("Diameter", diameter)
 	part:SetAttribute("Core", core)
 	part:SetAttribute("Shell", shell)
+	part:SetAttribute("Level", if isBot then (player :: any).level else (data and data.level or 1))
 	part.Parent = model
 	model.PrimaryPart = part
 	model.Parent = self.folder
@@ -213,7 +214,7 @@ function BallService:spawn(player: Player, position: Vector3, diameter: number, 
 		history = opts.history or {},
 		stats = opts.stats or { absorbed = 0, playersRolled = 0, timesRolled = 0, discoveries = 0, peak = diameter, bumps = 0, bursts = 0, merges = 0 },
 		growthBoosts = opts.growthBoosts or {},
-		riderScale = 1,
+		riderScale = math.max(character:GetScale(), 0.01),
 		mergedWith = nil,
 		isMergeHost = false,
 		riders = {},

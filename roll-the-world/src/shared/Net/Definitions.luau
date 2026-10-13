@@ -14,6 +14,7 @@ local Definitions: { [string]: RemoteKind } = {
 	CritterState = "Unreliable", -- (buffer)
 	WorldEvent = "Event", -- (eventId | nil, info)
 	Announce = "Event", -- (kind, data)
+	BotChat = "Event", -- (botUserId, text) chat bubble over a bot
 
 	-- Ball + absorption
 	Absorbed = "Event", -- (list of absorb results for the local player)

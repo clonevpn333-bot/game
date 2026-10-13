@@ -194,7 +194,12 @@ local function createEntry(model: Model)
 		stroke.Parent = label
 		label.Parent = gui
 		gui.Parent = vf
-		entry.tag = { gui = gui, label = label, name = label.Text }
+		local level = part:GetAttribute("Level")
+		local name = label.Text
+		if type(level) == "number" and level > 0 then
+			name = "Lv" .. level .. " " .. name
+		end
+		entry.tag = { gui = gui, label = label, name = name }
 	end
 
 	part:GetAttributeChangedSignal("Diameter"):Connect(function()
@@ -589,6 +594,60 @@ local function updateShells(dt: number)
 	end
 end
 
+-- Speech bubble over a ball's rider (bots chatting like real players).
+function BallVisualController:bubble(userId: number, text: string)
+	local entry = self.balls[userId]
+	if not entry or not entry.part.Parent then
+		return
+	end
+	local ownerName = entry.part:GetAttribute("OwnerName")
+	local bots = Workspace:FindFirstChild("Bots")
+	local character = bots and ownerName and bots:FindFirstChild(ownerName)
+	local head = character and character:FindFirstChild("Head")
+	local adornee = head or entry.part
+	if entry.bubbleGui then
+		entry.bubbleGui:Destroy()
+	end
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "Bubble"
+	gui.Size = UDim2.fromOffset(220, 56)
+	gui.StudsOffsetWorldSpace = if head then Vector3.new(0, head.Size.Y * 1.6 + 1, 0) else Vector3.new(0, entry.diameter * 0.75 + 6, 0)
+	gui.AlwaysOnTop = true
+	gui.MaxDistance = 260
+	gui.LightInfluence = 0
+	gui.Adornee = adornee
+	local frame = Instance.new("TextLabel")
+	frame.AutomaticSize = Enum.AutomaticSize.X
+	frame.AnchorPoint = Vector2.new(0.5, 1)
+	frame.Position = UDim2.fromScale(0.5, 1)
+	frame.Size = UDim2.fromOffset(40, 34)
+	frame.BackgroundColor3 = Color3.new(1, 1, 1)
+	frame.TextColor3 = Color3.fromRGB(38, 26, 74)
+	frame.FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json")
+	frame.TextSize = 20
+	frame.Text = text
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 14)
+	corner.Parent = frame
+	local pad = Instance.new("UIPadding")
+	pad.PaddingLeft = UDim.new(0, 10)
+	pad.PaddingRight = UDim.new(0, 10)
+	pad.Parent = frame
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 2
+	stroke.Color = Color3.fromRGB(38, 26, 74)
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = frame
+	frame.Parent = gui
+	gui.Parent = folder
+	entry.bubbleGui = gui
+	task.delay(3.5, function()
+		if gui.Parent then
+			gui:Destroy()
+		end
+	end)
+end
+
 function BallVisualController:start()
 	state = controllers.ClientState
 	folder = Workspace:FindFirstChild("BallVisuals") or Instance.new("Folder")
@@ -609,6 +668,11 @@ function BallVisualController:start()
 			if e.model == model then
 				removeEntry(userId)
 			end
+		end
+	end)
+	Net.connect("BotChat", function(userId, text)
+		if type(userId) == "number" and type(text) == "string" then
+			self:bubble(userId, text)
 		end
 	end)
 	Net.connect("BallFx", function(kind, data)

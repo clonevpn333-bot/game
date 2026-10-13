@@ -17,6 +17,9 @@ local Growth = require(Shared.Logic.Growth)
 local MovementModel = require(Shared.Logic.MovementModel)
 local Tuning = require(Shared.Config.Tuning)
 local Animations = require(Shared.Config.Animations)
+local Cosmetics = require(Shared.Data.Cosmetics)
+local AvatarPool = require(script.Parent.Parent.Lib.AvatarPool)
+local BotNames = require(script.Parent.Parent.Lib.BotNames)
 
 local BotService = {}
 BotService.bots = {} :: { any } -- identity list
@@ -27,17 +30,33 @@ local nextId = 1
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
 
-local NAMES = {
-	"Pip", "Mochi", "Bubbles", "Waffles", "Noodle", "Biscuit", "Pickle", "Sprout", "Jellybean", "Tofu",
-	"Pudding", "Sprinkles", "Gizmo", "Marble", "Pebble", "Zippy", "Nugget", "Clover", "Muffin", "Taffy",
-}
+-- Fallback look when no real avatar is cached yet (fresh server, or avatar web calls failing).
 local SKIN = {
 	Color3.fromRGB(255, 220, 177), Color3.fromRGB(234, 192, 134), Color3.fromRGB(198, 134, 66),
 	Color3.fromRGB(141, 85, 36), Color3.fromRGB(255, 205, 148), Color3.fromRGB(110, 70, 45),
 }
-local OUTFIT = {
-	Color3.fromRGB(255, 122, 69), Color3.fromRGB(77, 196, 255), Color3.fromRGB(255, 120, 196),
-	Color3.fromRGB(120, 214, 110), Color3.fromRGB(176, 108, 255), Color3.fromRGB(255, 196, 46),
+local CLOTHES = {
+	Color3.fromRGB(39, 70, 144), Color3.fromRGB(27, 42, 53), Color3.fromRGB(196, 40, 28),
+	Color3.fromRGB(91, 93, 105), Color3.fromRGB(242, 243, 243), Color3.fromRGB(75, 151, 75),
+	Color3.fromRGB(218, 133, 65), Color3.fromRGB(107, 50, 124),
+}
+local SHELL_CHOICES = {}
+for _, shell in Cosmetics.Shells do
+	if shell.source == "Shop" then
+		table.insert(SHELL_CHOICES, shell.id)
+	end
+end
+
+-- What bots say (chat bubbles), by situation. Short and kid-like, like real players.
+local LINES = {
+	hello = { "hi", "yo", "lets goooo", "hii", "im gonna win this", "back again lol", "this map 😍", "ez" },
+	rolledSomeone = { "gotcha 😂", "get rolled", "lol", "sorry not sorry", "nom", "yoink", "hehe", "ur mine now" },
+	gotRolled = { "NOOO", "bruh", "hey!!", "😭", "not fair", "lol ok", "WAIT", "nooooo" },
+	burst = { "freedom!!", "im free", "BYE", "ha!", "u cant hold me" },
+	event = { "omg", "WHAT", "lets gooo", "yesss", "woah", "chaos 😂", "no way" },
+	giant = { "RUN", "AHHH", "its huge 😱", "everyone run" },
+	finalRoll = { "FINAL ROLL", "go go go", "landmark time", "im getting that" },
+	gg = { "gg", "gg wp", "gg!!", "ggs", "that was fun", "one more", "close one", "ez gg" },
 }
 
 function BotService:init(s)
@@ -57,7 +76,10 @@ local function newIdentity(name: string)
 		IsBot = true,
 		UserId = -id,
 		Name = name,
-		DisplayName = name .. " 🤖",
+		DisplayName = name,
+		level = math.random(2, 46),
+		shell = if math.random() < 0.45 and #SHELL_CHOICES > 0 then SHELL_CHOICES[math.random(1, #SHELL_CHOICES)] else "Classic",
+		lastChat = 0,
 		Character = nil,
 		Parent = Workspace,
 	}
@@ -70,23 +92,60 @@ local function newIdentity(name: string)
 	return identity
 end
 
-local function buildCharacter(identity)
+local function fallbackDescription(): HumanoidDescription
 	local desc = Instance.new("HumanoidDescription")
 	local skin = SKIN[math.random(1, #SKIN)]
-	local shirt = OUTFIT[math.random(1, #OUTFIT)]
-	local pants = OUTFIT[math.random(1, #OUTFIT)]
 	desc.HeadColor = skin
 	desc.LeftArmColor = skin
 	desc.RightArmColor = skin
-	desc.TorsoColor = shirt
-	desc.LeftLegColor = pants
-	desc.RightLegColor = pants
+	desc.TorsoColor = CLOTHES[math.random(1, #CLOTHES)]
+	local legs = CLOTHES[math.random(1, #CLOTHES)]
+	desc.LeftLegColor = legs
+	desc.RightLegColor = legs
+	desc.HeightScale = 0.95 + math.random() * 0.1
+	desc.WidthScale = 0.9 + math.random() * 0.15
+	return desc
+end
+
+local function loadTrack(animator: Animator, id: string, priority: Enum.AnimationPriority, looped: boolean)
+	local anim = Instance.new("Animation")
+	anim.AnimationId = id
+	local ok, track = pcall(function()
+		return animator:LoadAnimation(anim)
+	end)
+	if ok and track then
+		track.Looped = looped
+		track.Priority = priority
+		return track
+	end
+	return nil
+end
+
+-- Builds (or rebuilds) the bot's avatar from its saved description.
+local function buildCharacter(identity)
+	if identity.Character then
+		identity.Character:Destroy()
+		identity.Character = nil
+	end
+	if not identity.desc then
+		local desc, avatarId = AvatarPool.take()
+		identity.desc = desc or fallbackDescription()
+		identity.avatarId = avatarId
+	end
 	local ok, model = pcall(function()
-		return Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
+		return Players:CreateHumanoidModelFromDescription(identity.desc, Enum.HumanoidRigType.R15)
 	end)
 	if not ok or not model then
-		warn("[Bots] could not build a bot avatar: " .. tostring(model))
-		return nil
+		-- A real avatar can fail to load (deleted items); retry once with the fallback look.
+		identity.desc = fallbackDescription()
+		identity.avatarId = nil
+		ok, model = pcall(function()
+			return Players:CreateHumanoidModelFromDescription(identity.desc, Enum.HumanoidRigType.R15)
+		end)
+		if not ok or not model then
+			warn("[Bots] could not build a bot avatar: " .. tostring(model))
+			return nil
+		end
 	end
 	model.Name = identity.Name
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
@@ -96,6 +155,15 @@ local function buildCharacter(identity)
 		humanoid.RequiresNeck = false
 		humanoid.BreakJointsOnDeath = false
 	end
+	-- Riders never collide with anything (their own ball included).
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.CollisionGroup = "Riders"
+			d.Massless = true
+			d.CanQuery = false
+			d.CanTouch = false
+		end
+	end
 	model.Parent = folder
 	local hrp = model:FindFirstChild("HumanoidRootPart")
 	if hrp then
@@ -103,22 +171,52 @@ local function buildCharacter(identity)
 			hrp:SetNetworkOwner(nil)
 		end)
 	end
-	-- Run animation (bots balance-run on their balls like players do).
 	local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+	identity.tracks = {}
 	if animator then
-		local anim = Instance.new("Animation")
-		anim.AnimationId = Animations.R15.Run
-		local okTrack, track = pcall(function()
-			return animator:LoadAnimation(anim)
-		end)
-		if okTrack and track then
-			track.Looped = true
-			track.Priority = Enum.AnimationPriority.Action
-			identity.runTrack = track
+		identity.runTrack = loadTrack(animator, Animations.R15.Run, Enum.AnimationPriority.Action, true)
+		for _, key in { "Cheer", "Laugh", "Wave", "Point", "Dance1" } do
+			identity.tracks[key] = loadTrack(animator, Animations.R15[key], Enum.AnimationPriority.Action2, false)
 		end
 	end
 	identity.Character = model
 	return model
+end
+
+-- Chat bubble + optional emote, rate limited per bot so it feels human, not spammy.
+function BotService:say(identity, kind: string, chance: number?, emote: string?)
+	if not identity or not identity.IsBot or math.random() > (chance or 1) then
+		return
+	end
+	local now = os.clock()
+	if now - (identity.lastChat or 0) < 7 then
+		return
+	end
+	identity.lastChat = now
+	local lines = LINES[kind]
+	if not lines then
+		return
+	end
+	local text = lines[math.random(1, #lines)]
+	task.delay(0.3 + math.random() * 1.2, function()
+		if identity.Character and identity.Character.Parent then
+			Net.fireAll("BotChat", identity.UserId, text)
+			local track = emote and identity.tracks and identity.tracks[emote]
+			if track then
+				track:Play(0.15)
+			end
+		end
+	end)
+end
+
+local function randomBot(filter: ((any) -> boolean)?)
+	local pool = {}
+	for _, b in BotService.bots do
+		if b.Character and b.Character.Parent and (not filter or filter(b)) then
+			table.insert(pool, b)
+		end
+	end
+	return if #pool > 0 then pool[math.random(1, #pool)] else nil
 end
 
 local function brainFor()
@@ -138,33 +236,35 @@ local function brainFor()
 end
 
 function BotService:add()
-	local used = {}
+	local taken = {}
 	for _, b in self.bots do
-		used[b.Name] = true
+		taken[b.Name] = true
 	end
-	local pool = {}
-	for _, n in NAMES do
-		if not used[n] then
-			table.insert(pool, n)
-		end
+	for _, p in Players:GetPlayers() do
+		taken[p.Name] = true
+		taken[p.DisplayName] = true
 	end
-	local identity = newIdentity(if #pool > 0 then pool[math.random(1, #pool)] else "Bot" .. nextId)
+	local identity = newIdentity(BotNames.generate(taken))
 	if not buildCharacter(identity) then
 		return nil
 	end
 	identity.brain = brainFor()
 	table.insert(self.bots, identity)
 	self:spawnBall(identity)
+	self:say(identity, "hello", 0.35, "Wave")
 	return identity
 end
 
 function BotService:spawnBall(identity)
 	local round = services.RoundService
-	if not round or not round:isPlaying() or not identity.Character then
+	if not round or not round:isPlaying() then
 		return
 	end
-	if identity.Character.Parent ~= folder then
-		identity.Character.Parent = folder
+	-- Fresh avatar model every round: no leftover scale, welds or ownership from the last map.
+	if not identity.Character or identity.Character.Parent ~= folder then
+		if not buildCharacter(identity) then
+			return
+		end
 	end
 	local catchUp = (Workspace:GetServerTimeNow() - round.startedAt) > 15
 	round:spawnIntoRound(identity, { catchUp = catchUp })
@@ -395,6 +495,14 @@ local function manage()
 	local have = #BotService.bots
 	if have < want then
 		BotService:add()
+		-- Early in a round, fill up quickly so the map is lively from the start.
+		if want - have > 1 and round:timeLeft() > Tuning.Round.Length - 30 then
+			task.delay(1.2, function()
+				if #BotService.bots < BotService:wanted() and round:isPlaying() then
+					BotService:add()
+				end
+			end)
+		end
 	elseif have > want then
 		-- Leave gracefully: the smallest bot pops out.
 		local smallest, smallestD = nil, math.huge
@@ -413,23 +521,69 @@ end
 
 function BotService:start()
 	local round = services.RoundService
+	AvatarPool.start()
 	round.RoundStarted:Connect(function()
 		rayParams.FilterDescendantsInstances = { services.BallService.folder, folder }
-		for _, b in self.bots do
-			self:spawnBall(b)
+		-- Bots who stayed from last round rejoin one by one, like players loading in.
+		for i, b in table.clone(self.bots) do
+			task.delay(0.3 + i * 0.35 + math.random() * 0.4, function()
+				if table.find(self.bots, b) and round:isPlaying() and not services.BallService:get(b) then
+					self:spawnBall(b)
+					if i <= 2 then
+						self:say(b, "hello", 0.5, "Wave")
+					end
+				end
+			end)
 		end
 	end)
 	round.RoundEnded:Connect(function()
-		for _, b in self.bots do
-			services.BallService:remove(b, "round_end")
-			if b.Character then
-				b.Character.Parent = nil
-			end
-			if b.runTrack then
-				b.runTrack:Stop()
-			end
+		for _, b in table.clone(self.bots) do
+			self:say(b, "gg", 0.55, "Cheer")
 		end
+		task.delay(2.5, function()
+			for _, b in table.clone(self.bots) do
+				-- Some bots "leave" between rounds and new ones join next round, like a real server.
+				if math.random() < 0.35 then
+					self:remove(b, false)
+				else
+					services.BallService:remove(b, "round_end")
+					if b.runTrack then
+						b.runTrack:Stop()
+					end
+					if b.Character then
+						b.Character:Destroy()
+						b.Character = nil
+					end
+				end
+			end
+		end)
 	end)
+	round.FinalRollStarted:Connect(function()
+		self:say(randomBot(), "finalRoll", 0.8, "Point")
+	end)
+	if services.PvpService then
+		services.PvpService.Rolled:Connect(function(host, victim)
+			if host and host.player and host.player.IsBot then
+				self:say(host.player, "rolledSomeone", 0.6, "Cheer")
+			end
+			if victim and victim.IsBot then
+				self:say(victim, "gotRolled", 0.7, "Laugh")
+			end
+		end)
+		services.PvpService.Burst:Connect(function(rider)
+			if rider and rider.IsBot then
+				self:say(rider, "burst", 0.6)
+			end
+		end)
+	end
+	if services.EventService then
+		services.EventService.Started:Connect(function(def, info)
+			local kind = if def.giant then "giant" else "event"
+			self:say(randomBot(function(b)
+				return info == nil or info.giantName ~= b.DisplayName
+			end), kind, 0.85)
+		end)
+	end
 	rayParams.FilterDescendantsInstances = { services.BallService.folder, folder }
 	RunService.Heartbeat:Connect(function(dt)
 		for _, identity in self.bots do

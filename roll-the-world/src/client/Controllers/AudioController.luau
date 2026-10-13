@@ -90,13 +90,21 @@ function AudioController:play(name: string, opts: { [string]: number }?)
 end
 
 -- Absorb pop: small things squeak high, big things thunk low; quick streaks climb in pitch.
+-- Absorb pop: soft and organic. Small things tick lightly, big things land with a thump. Streaks
+-- get a gentle lift (a few percent, not a rising beep) and rapid pickups are thinned and ducked so
+-- hoovering a crumb field sounds like a satisfying patter instead of a buzz.
+local recentPops = 0
+
 function AudioController:pop(relativeSize: number, isLocal: boolean, distance: number?)
 	local now = os.clock()
 	popsThisFrame += 1
-	if popsThisFrame > 4 then
-		return -- a vacuum-cleaner moment would just be noise
+	if popsThisFrame > 2 then
+		return
 	end
 	if isLocal then
+		if now - lastPopAt < 0.045 and relativeSize < 0.3 then
+			return -- too close to the last one to hear as separate pops anyway
+		end
 		if now - lastPopAt < 0.55 then
 			combo = math.min(combo + 1, 18)
 		else
@@ -104,11 +112,24 @@ function AudioController:pop(relativeSize: number, isLocal: boolean, distance: n
 		end
 		lastPopAt = now
 	end
-	local base = 1.75 - math.clamp(relativeSize, 0, 1.2) * 0.9
-	local ladder = if isLocal then 1 + combo * 0.028 else 1
-	local volume = if isLocal then 1 else math.clamp(1 - (distance or 0) / 300, 0.05, 0.5)
-	local name = if relativeSize > 0.55 then "PopBig" elseif relativeSize < 0.18 then "PopSoft" else "Pop"
-	self:play(name, { pitch = base * ladder, volume = volume })
+	recentPops += 1
+	task.delay(1, function()
+		recentPops -= 1
+	end)
+	local size = math.clamp(relativeSize, 0, 1.2)
+	local base = 1.18 - size * 0.4
+	local ladder = if isLocal then 1 + math.min(combo, 10) * 0.008 else 1
+	local duck = 1 / (1 + math.max(0, recentPops - 3) * 0.12)
+	local volume = (if isLocal then 1 else math.clamp(1 - (distance or 0) / 300, 0.05, 0.4)) * duck
+	local pitch = math.clamp(base * ladder, 0.7, 1.3)
+	if relativeSize > 0.55 then
+		self:play("PopBig", { volume = volume })
+		self:play("PopBigLayer", { volume = volume })
+	elseif relativeSize < 0.18 then
+		self:play("PopSoft", { pitch = pitch, volume = volume })
+	else
+		self:play("Pop", { pitch = pitch, volume = volume })
+	end
 end
 
 local function setMusic(name: string?)
@@ -191,6 +212,21 @@ function AudioController:start()
 	group.Name = "SFX"
 	group.Volume = settings.values.sfx
 	group.Parent = SoundService
+	-- Warm the whole effects bus: take the harsh top off and add a touch of room.
+	local eq = Instance.new("EqualizerSoundEffect")
+	eq.HighGain = -9
+	eq.MidGain = -1.5
+	eq.LowGain = 2
+	eq.Priority = 1
+	eq.Parent = group
+	local room = Instance.new("ReverbSoundEffect")
+	room.DecayTime = 0.6
+	room.Density = 0.6
+	room.Diffusion = 0.8
+	room.DryLevel = 0
+	room.WetLevel = -18
+	room.Priority = 0
+	room.Parent = group
 	musicGroup = Instance.new("SoundGroup")
 	musicGroup.Name = "Music"
 	musicGroup.Volume = settings.values.music
@@ -229,12 +265,16 @@ function AudioController:start()
 		end
 		self:pop(rel, isLocal, dist)
 		if isLocal and p.critter then
-			self:play("PopSoft", { pitch = 2.2, volume = 0.8 }) -- the critter's happy giggle
+			self:play("PopSoft", { pitch = 1.55, volume = 0.45 }) -- the critter's little squeak
 		end
 	end)
+	local lastChime = 0
 	Net.connect("Absorbed", function(list)
 		for _, a in list do
-			if a.n then
+			-- New Rolledex entries chime softly, at most every couple of seconds (early game finds
+			-- something new constantly; a chime per find would be a beep-fest).
+			if a.n and os.clock() - lastChime > 2.5 then
+				lastChime = os.clock()
 				self:play("NewDiscovery")
 			end
 			local def = PropLibrary.get(a.uid)
