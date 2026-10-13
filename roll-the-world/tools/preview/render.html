@@ -136,6 +136,7 @@ function baseGeometry(shape) {
   let g;
   if (shape === "Block") g = new THREE.BoxGeometry(1, 1, 1);
   else if (shape === "Cylinder") { g = new THREE.CylinderGeometry(0.5, 0.5, 1, 32); g.rotateZ(Math.PI / 2); }
+  else if (shape === "Ball") g = new THREE.SphereGeometry(0.5, 24, 16);
   else g = wedgeGeometry();
   // Box UVs in "studs/4" so procedural textures tile like Roblox materials (scaled per mesh below).
   geoCache.set(shape, g);
@@ -236,14 +237,16 @@ if (mode === "gallery") {
   scene.fog = new THREE.Fog(new THREE.Color(L.FogColor), 900, 4200);
   for (const g of map.geometry) {
     if ((g.transparency || 0) >= 0.99) continue;
-    const shape = g.shape === "Wedge" ? "Wedge" : g.shape === "Cylinder" ? "Cylinder" : "Block";
+    const shape = g.shape === "Wedge" ? "Wedge" : g.shape === "Cylinder" ? "Cylinder" : g.shape === "Ball" ? "Ball" : "Block";
     const m = mapMaterial(g.color, g.material, g.transparency || 0);
     if (m.map) { m.map = m.map.clone(); m.map.needsUpdate = true; m.map.repeat.set(Math.max(g.size[0], g.size[2]) / 16, Math.max(g.size[1], g.size[2]) / 16); }
     const mesh = new THREE.Mesh(baseGeometry(shape), m);
     mesh.scale.set(g.size[0], g.size[1], g.size[2]);
     mesh.position.set(g.pos[0], g.pos[1], g.pos[2]);
+    mesh.rotation.order = "YZX";
     mesh.rotation.y = THREE.MathUtils.degToRad(g.yaw);
-    mesh.castShadow = g.kind !== "tile" && g.kind !== "floor";
+    mesh.rotation.z = THREE.MathUtils.degToRad(g.roll || 0);
+    mesh.castShadow = g.kind !== "tile" && g.kind !== "floor" && g.kind !== "path" && g.kind !== "rug" && g.kind !== "water";
     mesh.receiveShadow = true;
     scene.add(mesh);
   }

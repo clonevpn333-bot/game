@@ -10,12 +10,14 @@ local SpatialHash = require(script.Parent.Parent.Util.SpatialHash)
 local PropLibrary = require(script.Parent.PropLibrary)
 local Rarity = require(script.Parent.Parent.Config.Rarity)
 local Mutations = require(script.Parent.Parent.Data.Mutations)
+local WorldFeatures = require(script.Parent.WorldFeatures)
 
 export type Geometry = {
-	shape: string, -- "Block" | "Wedge" | "Cylinder"
+	shape: string, -- "Block" | "Wedge" | "Cylinder" | "Ball"
 	size: { number },
 	pos: { number },
 	yaw: number, -- degrees
+	roll: number?, -- degrees around the part's Z axis (upright cylinders use 90)
 	color: string,
 	material: string,
 	collide: boolean,
@@ -337,7 +339,7 @@ local function surfaceAt(ctx: PlaceCtx, x: number, z: number, footprint: number,
 		return nil
 	end
 	for _, b in ctx.blocked do
-		if b.kind == "ramp" then
+		if b.kind == "ramp" or b.kind == "solid" then
 			if math.abs(x - b.x) < b.sx / 2 + footprint and math.abs(z - b.z) < b.sz / 2 + footprint then
 				return nil
 			end
@@ -347,7 +349,7 @@ local function surfaceAt(ctx: PlaceCtx, x: number, z: number, footprint: number,
 		local inside = math.abs(x - p.x) < p.sx / 2 + footprint and math.abs(z - p.z) < p.sz / 2 + footprint
 		if inside then
 			if insideRect(p, x, z, footprint) then
-				if p.kind == "table" and height < p.height - 10 then
+				if (p.kind == "table" or p.kind == "bridge") and height < p.height - 10 then
 					return 0 -- tucked under the table
 				end
 				return p.height
@@ -609,6 +611,14 @@ function WorldGen.generate(kit: any, seed: number): Result
 	local geometry: { Geometry } = {}
 	buildArena(kit, geometry)
 	local platforms, blocked = placePlatforms(kit, rng:fork(1), geometry)
+	-- Map-specific set pieces (hills, bridges, ponds, trees...) so every map has its own shape.
+	WorldFeatures.build(kit, {
+		rng = rng:fork(4),
+		H = kit.arenaHalf,
+		out = geometry,
+		platforms = platforms,
+		blocked = blocked,
+	})
 
 	local spawnPlatform: Platform? = nil
 	for _, p in platforms do

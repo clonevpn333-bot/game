@@ -47,7 +47,11 @@ The camera follows your direction of travel automatically, so you never need rig
 | 🌪️ Mayhem | Non-stop events and faster growth; biggest ball wins |
 
 - **Round mutators** (most rounds): Bouncy Day, Speed Rush, Extra Sticky, Floaty, Rainbow Day, Critter Party, Growth Spurt, Night Roll. They're announced at round start and stack with world events.
-- **Five maps:** Kitchen Counter, Backyard BBQ, Candy Shop, Toy Room and Beach Day. Backyard and Candy Shop roughly doubled their props.
+- **Each map has its own layout**, not just its own colors:
+  - **Kitchen Counter:** a giant mixing bowl to roll into, a sink full of water, cookbook staircases, a cutting-board bridge, flour heaps, pepper-mill towers, a spilled-milk trail and a round rug.
+  - **Backyard BBQ:** a winding stream with stone banks and a wooden footbridge, grassy hills (one big one), leafy trees, a lily pond, a stone garden path and picnic blankets.
+  - **Candy Shop:** a chocolate river with wafer bridges, candy-cane poles, lollipop trees, frosting hills, cookie staircases and a candy bowl.
+  - Backyard and Candy Shop now have about 97–99 props each, close to the Kitchen's 98.
 
 ## World events (chaos)
 Every round has two big events, at 2:00 and 4:30. Small surprises land about every 40–60 s in between. The same event never repeats within a round.

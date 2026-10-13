@@ -71,8 +71,20 @@ return {
 
 	-- Density by size band. `max` is the band's largest absorbSize; ring is distance from the
 	-- spawn centre as a fraction of arenaHalf; topBias = chance to prefer a platform top.
+
+	-- Set pieces: what makes the Kitchen play differently from the other maps.
+	features = {
+		{ type = "rug", ring = { 0.45, 0.8 }, size = { 260, 260 }, round = true, colors = { "#e76f51", "#f4a261", "#e9c46a", "#f4f1de" }, material = "Fabric" },
+		{ type = "path", width = 26, segment = 40, wiggle = 0.5, color = "#fbfbf2", material = "Glass", transparency = 0.15, kind = "path" },
+		{ type = "bowl", id = "MixingBowl", ring = { 0.4, 0.8 }, inner = 120, height = 26, slope = 2.4, wall = { color = "#d9dee6", material = "Metal" }, rim = "#f4f6fa", floor = { color = "#fff3d6", material = "Sand" } },
+		{ type = "pool", ring = { 0.35, 0.8 }, size = { 150, 100 }, rimHeight = 6, rimWidth = 8, rim = { color = "#cfd6df", material = "Metal" }, water = { color = "#9fd8ff", transparency = 0.35 }, bottom = "#b8c4cf", floaters = { count = 7, size = 8, colors = { "#ffffff", "#f1faff" } } },
+		{ type = "stairs", id = "CookbookStairs", ring = { 0.3, 0.75 }, count = { 1, 2 }, steps = 6, stepHeight = 6, stepDepth = 22, width = 64, landing = { 70, 60 }, colors = { "#e63946", "#457b9d", "#2a9d8f", "#e9c46a", "#f4a261", "#6d597a" }, landingColor = "#f1faee", material = "SmoothPlastic" },
+		{ type = "bridge", id = "CuttingBoard", ring = { 0.3, 0.7 }, length = 140, width = 50, height = 18, deck = { color = "#d9a066", stripe = "#c08552", material = "Wood" }, post = "#8c5a2e" },
+		{ type = "hill", id = "FlourHeap", ring = { 0.3, 0.85 }, count = { 2, 3 }, size = { 70, 60 }, jitter = 10, height = 10, slope = 3, top = { color = "#f7f3ea", material = "Sand" } },
+		{ type = "pillars", ring = { 0.45, 0.95 }, count = { 3, 4 }, radius = 7, height = 60, color = "#3d2b1f", material = "Wood", canopy = { shape = "disc", size = 18, thick = 8, color = "#c0c6ce", material = "Metal" } },
+	},
 	bands = {
-		{ max = 1.7, count = 560, ring = { 0, 0.3 }, topBias = 0.85 },
+		{ max = 1.7, count = 660, ring = { 0, 0.3 }, topBias = 0.85 },
 		{ max = 4.6, count = 430, ring = { 0.02, 0.45 }, topBias = 0.6 },
 		{ max = 11.5, count = 300, ring = { 0.12, 0.65 }, topBias = 0.4 },
 		{ max = 30, count = 190, ring = { 0.25, 0.9 }, topBias = 0.3 },

@@ -40,7 +40,8 @@ server.listen(0, async () => {
   const port = server.address().port;
   const browser = await chromium.launch({
     executablePath: process.env.CHROMIUM || "/opt/pw-browsers/chromium",
-    args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
+    headless: false,
+    args: ["--headless=new", "--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"],
   });
   const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
   page.on("pageerror", (e) => console.error("page error:", e.message));

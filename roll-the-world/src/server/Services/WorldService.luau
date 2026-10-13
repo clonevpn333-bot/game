@@ -106,11 +106,16 @@ local function buildGeometry(result, kit): Model
 			part = Instance.new("Part")
 			if g.shape == "Cylinder" then
 				part.Shape = Enum.PartType.Cylinder
+			elseif g.shape == "Ball" then
+				-- Squashable sphere (leafy canopies, rim stones): a sphere mesh on a block part.
+				local mesh = Instance.new("SpecialMesh")
+				mesh.MeshType = Enum.MeshType.Sphere
+				mesh.Parent = part
 			end
 		end
 		part.Name = g.kind .. i
 		part.Size = Vector3.new(g.size[1], g.size[2], g.size[3])
-		part.CFrame = CFrame.new(g.pos[1], g.pos[2], g.pos[3]) * CFrame.Angles(0, math.rad(g.yaw), 0)
+		part.CFrame = CFrame.new(g.pos[1], g.pos[2], g.pos[3]) * CFrame.Angles(0, math.rad(g.yaw), 0) * CFrame.Angles(0, 0, math.rad(g.roll or 0))
 		part.Color = hexColor(g.color)
 		local okMat, mat = pcall(function()
 			return Enum.Material[g.material]
@@ -121,7 +126,7 @@ local function buildGeometry(result, kit): Model
 		part.CanTouch = false
 		part.CanQuery = g.collide
 		part.Transparency = g.transparency or 0
-		part.CastShadow = g.kind ~= "tile" and g.kind ~= "barrier" and g.kind ~= "window"
+		part.CastShadow = g.kind ~= "tile" and g.kind ~= "barrier" and g.kind ~= "window" and g.kind ~= "water" and g.kind ~= "path" and g.kind ~= "rug"
 		part.TopSurface = Enum.SurfaceType.Smooth
 		part.BottomSurface = Enum.SurfaceType.Smooth
 		if g.kind == "ramp" or g.kind == "floor" or g.kind == "platform" then

@@ -80,3 +80,9 @@ for _, kit in Kits.List do
 	maps[kit.id] = { geometry = r.geometry, props = placed, arenaHalf = r.arenaHalf, spawn = r.spawnCenter, lighting = kit.lighting }
 end
 print("@@JSON@@" .. encode({ props = props, nana = groupsOut(NanaNova.Parts, 1), chair = groupsOut(NanaNova.Chair, 1), maps = maps }) .. "@@END@@")
+
+describe("Preview export", function()
+	it("exported every kit", function()
+		expect(next(maps) ~= nil).toBe(true)
+	end)
+end)

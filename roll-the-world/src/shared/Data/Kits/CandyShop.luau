@@ -14,9 +14,9 @@ return {
 	arenaHalf = 620,
 
 	floor = {
-		color = "#fff0f6",
+		color = "#ffd6e8",
 		material = "SmoothPlastic",
-		tile = { size = 124, colors = { "#fff0f6", "#ffc8dd" }, material = "SmoothPlastic" },
+		tile = { size = 124, colors = { "#ffd6e8", "#b9eedc" }, material = "SmoothPlastic" },
 	},
 	walls = {
 		height = 400,
@@ -100,9 +100,21 @@ return {
 		},
 	},
 
+
+	-- Set pieces: a chocolate river with wafer bridges, candy canes, lollipop trees, frosting hills.
+	features = {
+		{ type = "path", width = 46, segment = 46, wiggle = 0.3, color = "#5b3a1e", material = "SmoothPlastic", kind = "water", edge = { size = 6, colors = { "#ff8fc7", "#8ff0c8", "#ffd166", "#bde0fe" }, material = "SmoothPlastic" } },
+		{ type = "rug", ring = { 0.35, 0.85 }, count = { 2, 2 }, size = { 180, 180 }, round = true, colors = { "#8ff0c8", "#ffffff", "#ff8fc7", "#ffffff" }, material = "SmoothPlastic" },
+		{ type = "bowl", id = "CandyBowl", ring = { 0.4, 0.8 }, inner = 110, height = 22, slope = 2.4, wall = { color = "#9b5de5", material = "SmoothPlastic" }, rim = "#ffffff", floor = { color = "#f15bb5" } },
+		{ type = "hill", id = "FrostingHill", ring = { 0.3, 0.85 }, count = { 3, 3 }, size = { 90, 80 }, jitter = 15, height = 12, slope = 3.2, top = { color = "#ff8fc7", material = "SmoothPlastic" }, side = { color = "#ff6fb5", material = "SmoothPlastic" }, cap = { color = "#fff0f6" } },
+		{ type = "stairs", id = "CookieStairs", ring = { 0.3, 0.8 }, count = { 2, 2 }, steps = 5, stepHeight = 6, stepDepth = 24, width = 64, landing = { 72, 64 }, colors = { "#d9a066", "#ff8fc7", "#8ff0c8", "#ffd166", "#bde0fe" }, landingColor = "#d9a066", material = "SmoothPlastic" },
+		{ type = "bridge", id = "WaferBridge", ring = { 0.25, 0.75 }, count = { 1, 2 }, length = 110, width = 50, height = 16, deck = { color = "#f4c27a", stripe = "#d9a066", material = "SmoothPlastic" }, post = "#ffffff", rail = "#ff8fc7" },
+		{ type = "pillars", ring = { 0.45, 0.95 }, count = { 4, 5 }, radius = 7, height = 90, material = "SmoothPlastic", stripes = { size = 9, colors = { "#ffffff", "#e63946" } } },
+		{ type = "pillars", ring = { 0.5, 0.95 }, count = { 3, 4 }, radius = 4, height = 100, color = "#ffffff", material = "SmoothPlastic", canopy = { shape = "disc", size = 70, thick = 10, color = "#ff5c8a", swirl = "#ffffff", material = "SmoothPlastic" } },
+	},
 	bands = {
-		{ max = 1.7, count = 560, ring = { 0, 0.3 }, topBias = 0.85 },
-		{ max = 4.6, count = 430, ring = { 0.02, 0.45 }, topBias = 0.6 },
+		{ max = 1.7, count = 680, ring = { 0, 0.3 }, topBias = 0.85 },
+		{ max = 4.6, count = 480, ring = { 0.02, 0.45 }, topBias = 0.6 },
 		{ max = 11.5, count = 300, ring = { 0.12, 0.65 }, topBias = 0.4 },
 		{ max = 30, count = 185, ring = { 0.25, 0.9 }, topBias = 0.3 },
 		{ max = 75, count = 85, ring = { 0.4, 1.3 }, topBias = 0.1 },

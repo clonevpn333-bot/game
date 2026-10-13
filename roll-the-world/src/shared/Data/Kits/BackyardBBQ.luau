@@ -82,6 +82,18 @@ return {
 		},
 	},
 
+
+	-- Set pieces: a stream with a footbridge, rolling hills, trees and a lily pond.
+	features = {
+		{ type = "path", width = 42, segment = 50, wiggle = 0.25, color = "#4cc9f0", material = "Glass", transparency = 0.25, kind = "water", edge = { size = 7, colors = { "#a5a58d", "#8d8f7a", "#b7b7a4" }, material = "Slate" } },
+		{ type = "path", width = 30, segment = 44, wiggle = 0.4, color = "#c9c5b9", material = "Slate" },
+		{ type = "rug", ring = { 0.35, 0.8 }, count = { 2, 2 }, size = { 120, 90 }, colors = { "#e63946", "#ffffff", "#e63946", "#ffffff", "#e63946" }, material = "Fabric" },
+		{ type = "hill", id = "Hill", ring = { 0.35, 0.85 }, count = { 3, 4 }, size = { 110, 90 }, jitter = 25, height = 14, slope = 3.6, top = { color = "#8fd16a", material = "Grass" }, side = { color = "#4f9a34", material = "Grass" } },
+		{ type = "hill", id = "BigHill", ring = { 0.55, 0.85 }, size = { 190, 150 }, jitter = 20, height = 34, slope = 3.4, top = { color = "#95d76f", material = "Grass" }, side = { color = "#4a9230", material = "Grass" } },
+		{ type = "pool", ring = { 0.4, 0.85 }, round = true, size = { 170, 130 }, rimHeight = 4, rimWidth = 12, rim = { color = "#8d8f7a", material = "Slate" }, water = { color = "#3fa7d6", transparency = 0.3 }, bottom = "#2a6f97", floaters = { count = 7, size = 16, colors = { "#52b788", "#40916c", "#74c69d" } } },
+		{ type = "bridge", id = "FootBridge", ring = { 0.25, 0.7 }, length = 90, width = 46, height = 14, deck = { color = "#b5835a", stripe = "#a0673a", material = "WoodPlanks" }, post = "#7f5539", rail = "#f2e2c4" },
+		{ type = "pillars", ring = { 0.5, 0.97 }, count = { 4, 6 }, radius = 12, height = 110, color = "#7f5539", material = "Wood", canopy = { size = 120, solidFoot = 30, color = "#52b788", colors = { "#40916c", "#52b788", "#74c69d", "#2d6a4f" }, material = "Grass" } },
+	},
 	bands = {
 		{ max = 1.7, count = 780, ring = { 0, 0.3 }, topBias = 0.8 },
 		{ max = 4.6, count = 420, ring = { 0.02, 0.45 }, topBias = 0.5 },
