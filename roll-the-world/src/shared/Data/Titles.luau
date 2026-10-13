@@ -27,6 +27,8 @@ Titles.List = {
 	{ id = "KitchenMaster", text = "Kitchen Master", color = "#ff9a52", how = "Complete every Kitchen set" },
 	{ id = "BackyardMaster", text = "Backyard Master", color = "#6cc04a", how = "Complete every Backyard set" },
 	{ id = "CandyMaster", text = "Candy Master", color = "#ff6fb5", how = "Complete every Candy Shop set" },
+	{ id = "ToyMaster", text = "Toy Box Master", color = "#ffd166", how = "Complete every Toy Room set" },
+	{ id = "BeachMaster", text = "Beach Master", color = "#48cae4", how = "Complete every Beach Day set" },
 } :: { TitleDef }
 
 Titles.ById = {} :: { [string]: TitleDef }
@@ -39,6 +41,8 @@ Titles.ForKit = {
 	KitchenCounter = "KitchenMaster",
 	BackyardBBQ = "BackyardMaster",
 	CandyShop = "CandyMaster",
+	ToyRoom = "ToyMaster",
+	BeachDay = "BeachMaster",
 } :: { [string]: string }
 
 function Titles.get(id: string?): TitleDef?

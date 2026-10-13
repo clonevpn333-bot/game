@@ -56,6 +56,8 @@ local Sounds: { [string]: SoundDef } = {
 	MusicKitchen = { id = "", volume = 0.35, looped = true },
 	MusicBackyard = { id = "", volume = 0.35, looped = true },
 	MusicCandy = { id = "", volume = 0.35, looped = true },
+	MusicToyRoom = { id = "", volume = 0.35, looped = true },
+	MusicBeach = { id = "", volume = 0.35, looped = true },
 	MusicFinalRoll = { id = "", volume = 0.45, looped = true },
 	MusicEventLayer = { id = "", volume = 0.3, looped = true },
 	MusicResults = { id = "", volume = 0.4, looped = true },
