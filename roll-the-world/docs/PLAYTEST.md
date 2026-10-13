@@ -4,7 +4,7 @@
 - **Quickest:** open `roll-the-world/RollTheWorld.rbxlx` in Roblox Studio and press **Play** (F5).
 - **Live sync while iterating:** install the Rojo plugin, run `rojo serve` in `roll-the-world/`, then click Connect.
 
-You should drop straight onto the counter as a tiny ball (no lobby), with crumbs and peas all around.
+On join, the camera slowly orbits the map while the props around spawn finish building, which takes a second or two. Then the camera swoops down from high above, framing your tiny ball against the giant landmark, and you're rolling on the counter surrounded by crumbs. There's no lobby.
 
 ## Controls
 | | PC / MacBook trackpad | Phone | Gamepad |
@@ -22,7 +22,9 @@ The camera follows your direction of travel automatically, so you never need rig
 2. **Absorbing:** do things pop onto the ball instantly, pitched by size and climbing in pitch on streaks? Do props visibly stick out and roll with the ball?
 3. **Bonking:** hit something too big at speed. You should get a bounce, a bonk sound, stars, a shockwave, camera shake, and at full speed a couple of props knocked loose.
 4. **Growing:** watch the big counter tick up, the "+cm" floaters, and the **next target** card (icon + 🔒 + progress bar). When you pass it you get a "✓ … can be rolled up now!" moment.
-5. **Goals in the distance:** the landmark (fridge / treehouse oak / gumball tower) has a marker that turns into "⭐ ROLL IT UP!" in the Final Roll. Props you're *almost* big enough for glow with a warm outline.
+5. **Combo and vacuum:** roll through a crumb field. Tiny things get hoovered in from slightly further away, the pops climb in pitch, and a ×N combo counter builds up, with SWEEP! at 12 and WOW! at 25.
+6. **Bonk gauge:** bonk something too big. A 🔒 bar over it shows how close you are to rolling it up.
+7. **Goals in the distance:** the landmark (fridge / treehouse oak / gumball tower) has a marker that turns into "⭐ ROLL IT UP!" in the Final Roll. Props you're *almost* big enough for glow with a warm outline.
 
 ## Tuning panel (Studio only)
 Press **F2** or click the 🔧 button. Change speed, acceleration, turn assist, brake, hop, dash, absorb ratio, growth and camera while rolling; changes apply instantly on client and server. **Print** writes the values to Output so they can be pasted into `src/shared/Config/Tuning.luau`. There are also buttons to change size, start the Final Roll, and end the round.

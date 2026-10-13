@@ -15,6 +15,7 @@ local Tuning = require(Shared.Config.Tuning)
 local Format = require(Shared.Util.Format)
 local Spring = require(Shared.Util.Spring)
 local PropLibrary = require(Shared.Logic.PropLibrary)
+local Growth = require(Shared.Logic.Growth)
 local Mutations = require(Shared.Data.Mutations)
 local Kits = require(Shared.Data.Kits)
 local PropBuilder = require(Shared.PropBuilder)
@@ -50,6 +51,19 @@ local pendingGain = 0
 local pendingAt = 0
 local lastUnit = "cm"
 local thumbnails = {}
+local comboLabel: TextLabel
+local comboScale: UIScale
+local combo = 0
+local lastComboAt = 0
+local speedLines: Frame
+local lines = {}
+local COMBO_COLORS = {
+	{ 0, Color3.fromRGB(255, 255, 255) },
+	{ 5, Color3.fromRGB(255, 236, 120) },
+	{ 12, Color3.fromRGB(255, 170, 70) },
+	{ 25, Color3.fromRGB(255, 110, 170) },
+	{ 50, Color3.fromRGB(176, 140, 255) },
+}
 
 function HudController:init(c)
 	controllers = c
@@ -271,6 +285,147 @@ local function buildTouchButtons()
 			input:press("Hop")
 		end,
 	})
+end
+
+-- Combo: rapid pickups chain into a growing "×N" that climbs through colors.
+local function buildCombo()
+	comboLabel = Ui.display("", {
+		Name = "Combo",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.74),
+		Size = UDim2.fromOffset(260, 56),
+		TextTransparency = 1,
+		Parent = root,
+	})
+	comboScale = Ui.new("UIScale", { Parent = comboLabel })
+end
+
+-- Speed lines streaking in from the screen edges when going fast or dashing.
+local function buildSpeedLines()
+	speedLines = Ui.new("Frame", {
+		Name = "SpeedLines",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		ZIndex = 0,
+		Parent = root,
+	})
+	for i = 1, 18 do
+		local angle = (i / 18) * math.pi * 2 + math.random() * 0.2
+		local line = Ui.new("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			BackgroundColor3 = Color3.new(1, 1, 1),
+			BackgroundTransparency = 1,
+			Size = UDim2.fromOffset(4, 120),
+			Rotation = math.deg(angle) + 90,
+			Parent = speedLines,
+		}, { Ui.corner(Theme.Radius.Pill) })
+		table.insert(lines, { frame = line, angle = angle, phase = math.random() * 10 })
+	end
+end
+
+local function updateSpeedLines(dt: number)
+	local movement = controllers.MovementController
+	local d = state.diameter
+	local maxSpeed = math.max(Growth.maxSpeed(d), 1)
+	local frac = if state:isRolling() then movement.speed / maxSpeed else 0
+	local dashing = os.clock() < movement.dashUntil + 0.15
+	local strength = math.clamp((frac - 0.95) * 3, 0, 1)
+	if dashing then
+		strength = 1
+	end
+	if settings.values.reducedMotion then
+		strength *= 0.3
+	end
+	for _, l in lines do
+		l.phase += dt * (2.5 + strength * 3)
+		local p = l.phase % 1
+		local radius = 0.62 - p * 0.18
+		l.frame.Position = UDim2.fromScale(0.5 + math.cos(l.angle) * radius, 0.5 + math.sin(l.angle) * radius * 1.1)
+		l.frame.BackgroundTransparency = 1 - strength * 0.55 * math.sin(p * math.pi)
+	end
+end
+
+local function onLocalAbsorb()
+	local now = os.clock()
+	if now - lastComboAt < 0.7 then
+		combo += 1
+	else
+		combo = 1
+	end
+	lastComboAt = now
+	if combo >= 3 then
+		local color = COMBO_COLORS[1][2]
+		for _, entry in COMBO_COLORS do
+			if combo >= entry[1] then
+				color = entry[2]
+			end
+		end
+		comboLabel.Text = "×" .. combo .. (if combo >= 25 then " WOW!" elseif combo >= 12 then " SWEEP!" else "")
+		comboLabel.TextColor3 = color
+		comboLabel.TextTransparency = 0
+		local stroke = comboLabel:FindFirstChildOfClass("UIStroke")
+		if stroke then
+			stroke.Transparency = 0
+		end
+		comboScale.Scale = 1 + math.min(combo, 40) * 0.012 + 0.25
+		Ui.tween(comboScale, Theme.Tween.Pop, { Scale = 1 + math.min(combo, 40) * 0.012 })
+	end
+end
+
+local function fadeCombo()
+	if comboLabel.TextTransparency < 1 and os.clock() - lastComboAt > 0.9 then
+		Ui.tween(comboLabel, Theme.Tween.Smooth, { TextTransparency = 1 })
+		local stroke = comboLabel:FindFirstChildOfClass("UIStroke")
+		if stroke then
+			Ui.tween(stroke, Theme.Tween.Smooth, { Transparency = 1 })
+		end
+		combo = 0
+	end
+end
+
+-- "Too big!" gauge over a prop you bonked: how close you are to rolling it up (wordless).
+function HudController:bonkGauge(hitPart: Instance?)
+	if not hitPart or not hitPart:IsA("BasePart") then
+		return
+	end
+	local propId = hitPart:GetAttribute("PropId")
+	local world = controllers.WorldController
+	local p = propId and world and world.props[propId]
+	if not p or hitPart:FindFirstChild("BonkGauge") then
+		return
+	end
+	local need = p.absorbSize / (Tuning.Absorb.Ratio + ((state.round.event and state.round.event.ratioBonus) or 0))
+	local frac = math.clamp(state.diameter / need, 0, 1)
+	local gui = Ui.new("BillboardGui", {
+		Name = "BonkGauge",
+		Size = UDim2.fromOffset(150, 46),
+		StudsOffsetWorldSpace = Vector3.new(0, hitPart.Size.Y * 0.6 + 2, 0),
+		AlwaysOnTop = true,
+		LightInfluence = 0,
+		Adornee = hitPart,
+		Parent = hitPart,
+	})
+	local bg = Ui.new("Frame", {
+		Size = UDim2.new(1, 0, 0, 22),
+		Position = UDim2.fromOffset(0, 22),
+		BackgroundColor3 = Theme.Color.Ink,
+		Parent = gui,
+	}, { Ui.corner(Theme.Radius.Pill), Ui.stroke(2, Color3.new(1, 1, 1)) })
+	local fill = Ui.new("Frame", {
+		Size = UDim2.fromScale(0, 1),
+		BackgroundColor3 = if frac > 0.85 then Theme.Color.Good else Theme.Color.Accent,
+		Parent = bg,
+	}, { Ui.corner(Theme.Radius.Pill) })
+	Ui.new("TextLabel", {
+		Text = "🔒 " .. Format.size(need, cmPerStud()),
+		Size = UDim2.new(1, 0, 0, 22),
+		TextScaled = true,
+		Parent = gui,
+	}, { Ui.stroke(2, Theme.Color.Ink) })
+	Ui.tween(fill, Theme.Tween.Slow, { Size = UDim2.fromScale(frac, 1) })
+	task.delay(1.6, function()
+		gui:Destroy()
+	end)
 end
 
 local function buildContainers()
@@ -724,6 +879,16 @@ function HudController:start()
 	buildTopList()
 	buildTouchButtons()
 	buildContainers()
+	buildCombo()
+	buildSpeedLines()
+	controllers.WorldController.PropAbsorbed:Connect(function(_, absorberKey, isPrediction)
+		if isPrediction and absorberKey == state.player.UserId then
+			onLocalAbsorb()
+		end
+	end)
+	controllers.MovementController.Bonked:Connect(function(_, hitPart)
+		self:bonkGauge(hitPart)
+	end)
 
 	sizeSpring:snap(state.diameter)
 	state.DiameterChanged:Connect(function(new, old)
@@ -782,7 +947,11 @@ function HudController:start()
 			self:showBanner("🌟 " .. tostring(data.name) .. " found " .. (if def then def.name else "a Legendary") .. "!", rarityColor("Legendary"), 3)
 		end
 	end)
-	RunService.RenderStepped:Connect(update)
+	RunService.RenderStepped:Connect(function(dt)
+		update(dt)
+		updateSpeedLines(dt)
+		fadeCombo()
+	end)
 	task.spawn(function()
 		while true do
 			task.wait(0.25)

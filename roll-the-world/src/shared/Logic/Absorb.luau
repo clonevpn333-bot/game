@@ -70,6 +70,17 @@ function Absorb.segmentDistanceSq(
 	return cx * cx + cy * cy + cz * cz
 end
 
+-- Extra contact reach for props much smaller than the ball (the "vacuum" feel). 0 for props near
+-- the threshold, rising to D * VacuumReach for the tiniest crumbs.
+function Absorb.vacuumReach(diameter: number, absorbSize: number, threshold: number): number
+	local a = Tuning.Absorb
+	local limit = threshold * a.VacuumBelow
+	if absorbSize >= limit or limit <= 0 then
+		return 0
+	end
+	return diameter * a.VacuumReach * (1 - absorbSize / limit)
+end
+
 -- Server-side latency allowance for a ball moving at `speed`.
 function Absorb.latencyReach(speed: number): number
 	local a = Tuning.Absorb

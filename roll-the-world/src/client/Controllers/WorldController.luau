@@ -35,11 +35,15 @@ WorldController.ready = false
 WorldController.templateProgress = 0
 WorldController.nextGoal = nil -- { uid, needDiameter }
 WorldController.bigGoal = nil
+WorldController.spawnCenter = nil :: { number }?
+WorldController.arenaHalf = 600
 
 WorldController.WorldLoaded = Signal.new()
 WorldController.PropAbsorbed = Signal.new() -- (prop, absorberKey, isLocalPrediction)
 WorldController.GoalUnlocked = Signal.new() -- (uid)
 WorldController.TemplateProgress = Signal.new() -- (done, total)
+WorldController.SpawnAreaReady = Signal.new() -- fired once the props around spawn + skyline are built
+WorldController.spawnAreaReady = false
 
 local controllers
 local state, settings
@@ -182,7 +186,11 @@ function WorldController:get(id: number)
 	return self.props[id]
 end
 
--- Prioritised background template building: what's near spawn first, then by frequency.
+-- Prioritised background template building. Order matters for the first second of play:
+--   1. the landmark and big props (the skyline you see in the spawn swoop),
+--   2. everything near spawn (what you roll into immediately),
+--   3. the rest, by how common it is.
+-- SpawnAreaReady fires as soon as groups 1 and 2 are done.
 local function prepareTemplates(kitId: string, spawnCenter)
 	local counts = {}
 	local nearScore = {}
@@ -194,17 +202,37 @@ local function prepareTemplates(kitId: string, spawnCenter)
 		end
 	end
 	local uids = {}
+	local priority = {}
 	local defs: { any } = PropLibrary.ByKit[kitId] or {}
 	for _, def in defs do
 		table.insert(uids, def.uid)
+		if def.landmark then
+			priority[def.uid] = 3
+		elseif def.metrics.absorbSize > 40 and (counts[def.uid] or 0) > 0 then
+			priority[def.uid] = 2
+		elseif (nearScore[def.uid] or 0) > 0 then
+			priority[def.uid] = 1
+		else
+			priority[def.uid] = 0
+		end
 	end
 	table.sort(uids, function(a, b)
+		local pa, pb = priority[a], priority[b]
+		if pa ~= pb then
+			return pa > pb
+		end
 		local na, nb = nearScore[a] or 0, nearScore[b] or 0
 		if na ~= nb then
 			return na > nb
 		end
 		return (counts[a] or 0) > (counts[b] or 0)
 	end)
+	local needed = 0
+	for _, uid in uids do
+		if priority[uid] > 0 then
+			needed += 1
+		end
+	end
 	local roundId = WorldController.roundId
 	PropBuilder.prepareAsync(uids, function(done, total)
 		if WorldController.roundId ~= roundId then
@@ -212,7 +240,15 @@ local function prepareTemplates(kitId: string, spawnCenter)
 		end
 		WorldController.templateProgress = done / total
 		WorldController.TemplateProgress:Fire(done, total)
+		if not WorldController.spawnAreaReady and done >= needed then
+			WorldController.spawnAreaReady = true
+			WorldController.SpawnAreaReady:Fire()
+		end
 	end)
+	if not WorldController.spawnAreaReady and WorldController.roundId == roundId then
+		WorldController.spawnAreaReady = true
+		WorldController.SpawnAreaReady:Fire()
+	end
 end
 
 local function onWorldLoad(info, buf)
@@ -222,6 +258,9 @@ local function onWorldLoad(info, buf)
 	self.roundId = info.roundId
 	self.landmarkId = info.landmarkId
 	self.ready = false
+	self.spawnAreaReady = false
+	self.arenaHalf = info.arenaHalf
+	self.spawnCenter = info.spawnCenter
 	local folderName = "ClientProps"
 	folder = Workspace:FindFirstChild(folderName) or Instance.new("Folder")
 	folder.Name = folderName
@@ -495,12 +534,15 @@ local function predict()
 	local pos = ball.Position
 	local ctx = state:absorbContext()
 	local now = os.clock()
+	local threshold = Absorb.threshold(d, ctx)
+	local vacuumMax = d * Tuning.Absorb.VacuumReach
 	table.clear(queryScratch)
-	WorldController.hash:query(pos.X, pos.Z, r + WorldController.maxRadius + 2, queryScratch)
+	WorldController.hash:query(pos.X, pos.Z, r + WorldController.maxRadius + vacuumMax + 2, queryScratch)
 	for _, id in queryScratch do
 		local p = WorldController.props[id]
 		if p and p.state == "world" and (not p.loot or now >= p.activeAt) then
-			if Absorb.canAbsorbProp(d, p.absorbSize, p.landmark, ctx) and Absorb.inContact(pos.X, pos.Y, pos.Z, r, p.x, p.cy, p.z, p.radius, 0.4) then
+			local reach = 0.4 + Absorb.vacuumReach(d, p.absorbSize, threshold)
+			if Absorb.canAbsorbProp(d, p.absorbSize, p.landmark, ctx) and Absorb.inContact(pos.X, pos.Y, pos.Z, r, p.x, p.cy, p.z, p.radius, reach) then
 				if not p.model then
 					spawnVisual(p, true)
 				end
@@ -553,7 +595,14 @@ local function renderPass()
 		return
 	end
 	local cam = Workspace.CurrentCamera
-	local focus = if state.ball and state.ball.Parent then state.ball.Position else cam.CFrame.Position
+	local focus = cam.CFrame.Position
+	if state.ball and state.ball.Parent then
+		focus = state.ball.Position
+	elseif WorldController.spawnCenter and state.round.state == "Playing" then
+		-- Not rolling yet: build around spawn so the area is full when the ball drops in.
+		local c = WorldController.spawnCenter
+		focus = Vector3.new(c[1], c[2], c[3])
+	end
 	local d = state.diameter
 	local threshold = Absorb.threshold(d, state:absorbContext())
 	local toSpawn = {}
@@ -588,7 +637,8 @@ local function renderPass()
 	table.sort(toSpawn, function(a, b)
 		return a.d < b.d
 	end)
-	local budget = 40
+	-- Build faster while waiting to spawn so the area is full the moment the ball appears.
+	local budget = if state:isRolling() then 60 else 140
 	for _, entry in toSpawn do
 		if budget <= 0 then
 			break
@@ -670,6 +720,8 @@ local function updateGoals()
 		WorldController.bigGoal = { uid = landmark.uid, needDiameter = landmark.absorbSize / Tuning.Absorb.LandmarkReach, prop = landmark }
 	else
 		WorldController.bigGoal = nil
+WorldController.spawnCenter = nil :: { number }?
+WorldController.arenaHalf = 600
 	end
 end
 
@@ -734,6 +786,12 @@ function WorldController:start()
 			task.wait(0.3)
 			pcall(updateHighlights)
 			pcall(updateGoals)
+		end
+	end)
+	-- Ask to be dropped in only once the world around spawn is built (server falls back after 6s).
+	self.SpawnAreaReady:Connect(function()
+		if state.playerState ~= "Rolling" and state.round.state == "Playing" then
+			Net.request("Spawn", true)
 		end
 	end)
 	settings.Changed:Connect(function(key)

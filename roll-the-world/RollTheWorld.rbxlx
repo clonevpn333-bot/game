@@ -737,13 +737,14 @@ local Tuning = {
 		SpeedExponent = 0.45,
 		-- Seconds to reach top speed from rest; interpolated on log(D) between small and huge.
 		AccelTimeSmall = 0.32,
-		AccelTimeHuge = 0.85,
+		AccelTimeHuge = 0.72,
 		HugeDiameter = 250,
 		-- Extra force multiplier when steering against current velocity (snappy turn-in).
-		TurnAssist = 1.9,
+		TurnAssist = 2.3,
 		-- Seconds to coast to a stop with no input.
 		BrakeTimeSmall = 1.1,
 		BrakeTimeHuge = 2.4,
+		BrakeStrength = 2.2, -- multiplier on the coasting brake (higher = stops sooner)
 		AirControl = 0.35,
 		Density = 0.7,
 		Friction = 0.9,
@@ -786,6 +787,10 @@ local Tuning = {
 		BonkCooldown = 0.8,
 		-- Magnet core / merge magnet reach in multiples of D.
 		MagnetReach = 1.1,
+		-- Vacuum: props much smaller than you are grabbed from a little further away so rolling
+		-- through crumbs feels like hoovering. Extra reach = D * VacuumReach * (1 - size/(threshold*VacuumBelow)).
+		VacuumReach = 0.22,
+		VacuumBelow = 0.5,
 		-- Max visible stuck-prop instances per ball (client LOD may lower further).
 		VisibleStuckLocal = 44,
 		VisibleStuckRemote = 22,
@@ -6618,6 +6623,17 @@ function Absorb.segmentDistanceSq(
 	return cx * cx + cy * cy + cz * cz
 end
 
+-- Extra contact reach for props much smaller than the ball (the "vacuum" feel). 0 for props near
+-- the threshold, rising to D * VacuumReach for the tiniest crumbs.
+function Absorb.vacuumReach(diameter: number, absorbSize: number, threshold: number): number
+	local a = Tuning.Absorb
+	local limit = threshold * a.VacuumBelow
+	if absorbSize >= limit or limit <= 0 then
+		return 0
+	end
+	return diameter * a.VacuumReach * (1 - absorbSize / limit)
+end
+
 -- Server-side latency allowance for a ball moving at `speed`.
 function Absorb.latencyReach(speed: number): number
 	local a = Tuning.Absorb
@@ -6879,9 +6895,10 @@ function Growth.sizeAlpha(diameter: number): number
 	return MathUtil.clamp01(math.log(math.max(diameter, b.StartDiameter) / b.StartDiameter) / math.log(b.HugeDiameter / b.StartDiameter))
 end
 
+-- Eased so mid-size balls (the first couple of minutes) stay almost as snappy as small ones.
 function Growth.accelTime(diameter: number): number
 	local b = Tuning.Ball
-	return MathUtil.lerp(b.AccelTimeSmall, b.AccelTimeHuge, Growth.sizeAlpha(diameter))
+	return MathUtil.lerp(b.AccelTimeSmall, b.AccelTimeHuge, Growth.sizeAlpha(diameter) ^ 1.5)
 end
 
 function Growth.brakeTime(diameter: number): number
@@ -7804,6 +7821,86 @@ return MeshKit
         </Item>
         <Item class="ModuleScript" referent="33">
           <Properties>
+            <string name="Name">MovementModel</string>
+            <string name="Source"><![CDATA[--!strict
+-- The rolling movement model, as pure math (no Roblox types) so it can be measured headless.
+-- MovementController calls step() every physics frame; tests/feel.spec.luau measures time to top
+-- speed, turn times and stopping distances at every ball size from the same code.
+
+local Tuning = require(script.Parent.Parent.Config.Tuning)
+local Growth = require(script.Parent.Growth)
+
+local MovementModel = {}
+
+export type Input = {
+	dirX: number, -- desired world direction (magnitude 0..1)
+	dirZ: number,
+	grounded: boolean,
+	dashing: boolean,
+	speedMult: number,
+}
+
+-- Returns the new horizontal velocity (vx, vz) for one step.
+function MovementModel.step(vx: number, vz: number, diameter: number, input: Input, dt: number): (number, number)
+	local b = Tuning.Ball
+	local maxSpeed = Growth.maxSpeed(diameter) * input.speedMult
+	local cap = if input.dashing then maxSpeed * (1 + b.DashBoost) else maxSpeed
+	local accel = maxSpeed / Growth.accelTime(diameter)
+	if not input.grounded then
+		accel *= b.AirControl
+	end
+	local speed = math.sqrt(vx * vx + vz * vz)
+	local inMag = math.sqrt(input.dirX * input.dirX + input.dirZ * input.dirZ)
+	local nx, nz
+	if inMag > 0.05 then
+		local ux, uz = input.dirX / inMag, input.dirZ / inMag
+		local strength = math.min(inMag, 1)
+		local tx, tz = ux * cap * strength, uz * cap * strength
+		local rate = accel
+		-- Turn-in: steering against current motion gets extra grip so turns feel crisp.
+		if speed > 1 and (vx * ux + vz * uz) / speed < 0.6 then
+			rate *= b.TurnAssist
+		end
+		local dx, dz = tx - vx, tz - vz
+		if input.dashing and speed > cap * strength then
+			-- Keep dash momentum along the input; only damp the sideways part.
+			local along = vx * ux + vz * uz
+			local sideX, sideZ = vx - ux * along, vz - uz * along
+			local wantAlong = math.max(0, cap * strength - along)
+			dx, dz = ux * wantAlong - sideX * 0.5, uz * wantAlong - sideZ * 0.5
+		end
+		local dmag = math.sqrt(dx * dx + dz * dz)
+		local maxStep = rate * dt
+		if dmag > maxStep then
+			dx, dz = dx / dmag * maxStep, dz / dmag * maxStep
+		end
+		nx, nz = vx + dx, vz + dz
+	else
+		-- Coast: exponential brake (a heavy ball rolls a little longer than a pea).
+		local brake = if input.grounded then dt / Growth.brakeTime(diameter) * b.BrakeStrength else dt * 0.2
+		local k = math.max(0, 1 - brake)
+		nx, nz = vx * k, vz * k
+	end
+	-- Soft cap: momentum above the cap (slopes, bumps, dash) bleeds off instead of snapping.
+	local mag = math.sqrt(nx * nx + nz * nz)
+	if mag > cap then
+		local target = math.max(cap, mag - accel * 1.5 * dt)
+		nx, nz = nx / mag * target, nz / mag * target
+	end
+	return nx, nz
+end
+
+-- Hop launch velocity for the given hop height.
+function MovementModel.hopVelocity(height: number, gravity: number): number
+	return math.sqrt(2 * gravity * height)
+end
+
+return MovementModel
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="34">
+          <Properties>
             <string name="Name">PropLibrary</string>
             <string name="Source"><![CDATA[--!strict
 -- Global registry of every prop across every World Kit, keyed by permanent uid and by "kit:id".
@@ -7924,7 +8021,7 @@ return PropLibrary
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="34">
+        <Item class="ModuleScript" referent="35">
           <Properties>
             <string name="Name">PropMetrics</string>
             <string name="Source"><![CDATA[--!strict
@@ -8071,7 +8168,7 @@ return PropMetrics
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="35">
+        <Item class="ModuleScript" referent="36">
           <Properties>
             <string name="Name">Rewards</string>
             <string name="Source"><![CDATA[--!strict
@@ -8145,7 +8242,7 @@ return Rewards
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="36">
+        <Item class="ModuleScript" referent="37">
           <Properties>
             <string name="Name">WorldGen</string>
             <string name="Source"><![CDATA[--!strict
@@ -8814,7 +8911,7 @@ return WorldGen
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="37">
+      <Item class="ModuleScript" referent="38">
         <Properties>
           <string name="Name">Net</string>
           <string name="Source"><![CDATA[--!nonstrict
@@ -9015,7 +9112,7 @@ end
 return Net
 ]]></string>
         </Properties>
-        <Item class="ModuleScript" referent="38">
+        <Item class="ModuleScript" referent="39">
           <Properties>
             <string name="Name">Definitions</string>
             <string name="Source"><![CDATA[--!strict
@@ -9063,7 +9160,7 @@ return Definitions
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="39">
+      <Item class="ModuleScript" referent="40">
         <Properties>
           <string name="Name">PropBuilder</string>
           <string name="Source"><![CDATA[--!nonstrict
@@ -9549,11 +9646,11 @@ return PropBuilder
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="40">
+      <Item class="Folder" referent="41">
         <Properties>
           <string name="Name">Util</string>
         </Properties>
-        <Item class="ModuleScript" referent="41">
+        <Item class="ModuleScript" referent="42">
           <Properties>
             <string name="Name">Base64</string>
             <string name="Source"><![CDATA[--!strict
@@ -9612,7 +9709,7 @@ return Base64
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="42">
+        <Item class="ModuleScript" referent="43">
           <Properties>
             <string name="Name">Bitset</string>
             <string name="Source"><![CDATA[--!strict
@@ -9707,7 +9804,7 @@ return Bitset
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="43">
+        <Item class="ModuleScript" referent="44">
           <Properties>
             <string name="Name">Format</string>
             <string name="Source"><![CDATA[--!strict
@@ -9824,7 +9921,7 @@ return Format
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="44">
+        <Item class="ModuleScript" referent="45">
           <Properties>
             <string name="Name">Guard</string>
             <string name="Source"><![CDATA[--!strict
@@ -9953,7 +10050,7 @@ return Guard
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="45">
+        <Item class="ModuleScript" referent="46">
           <Properties>
             <string name="Name">MathUtil</string>
             <string name="Source"><![CDATA[--!strict
@@ -10049,7 +10146,7 @@ return MathUtil
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="46">
+        <Item class="ModuleScript" referent="47">
           <Properties>
             <string name="Name">PropCodec</string>
             <string name="Source"><![CDATA[--!strict
@@ -10160,7 +10257,7 @@ return PropCodec
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="47">
+        <Item class="ModuleScript" referent="48">
           <Properties>
             <string name="Name">RateLimiter</string>
             <string name="Source"><![CDATA[--!strict
@@ -10211,7 +10308,7 @@ return RateLimiter
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="48">
+        <Item class="ModuleScript" referent="49">
           <Properties>
             <string name="Name">Rng</string>
             <string name="Source"><![CDATA[--!strict
@@ -10359,7 +10456,7 @@ return Rng
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="49">
+        <Item class="ModuleScript" referent="50">
           <Properties>
             <string name="Name">Signal</string>
             <string name="Source"><![CDATA[--!strict
@@ -10453,7 +10550,7 @@ return Signal
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="50">
+        <Item class="ModuleScript" referent="51">
           <Properties>
             <string name="Name">SpatialHash</string>
             <string name="Source"><![CDATA[--!strict
@@ -10580,7 +10677,7 @@ return SpatialHash
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="51">
+        <Item class="ModuleScript" referent="52">
           <Properties>
             <string name="Name">Spring</string>
             <string name="Source"><![CDATA[--!strict
@@ -10636,7 +10733,7 @@ return Spring
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="52">
+        <Item class="ModuleScript" referent="53">
           <Properties>
             <string name="Name">TableUtil</string>
             <string name="Source"><![CDATA[--!strict
@@ -10743,7 +10840,7 @@ return TableUtil
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="53">
+        <Item class="ModuleScript" referent="54">
           <Properties>
             <string name="Name">Trove</string>
             <string name="Source"><![CDATA[--!strict
@@ -10811,11 +10908,11 @@ return Trove
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="54">
+  <Item class="ServerScriptService" referent="55">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="55">
+    <Item class="Script" referent="56">
       <Properties>
         <string name="Name">Server</string>
         <token name="RunContext">0</token>
@@ -10908,11 +11005,11 @@ for _, name in ORDER do
 end
 ]]></string>
       </Properties>
-      <Item class="Folder" referent="56">
+      <Item class="Folder" referent="57">
         <Properties>
           <string name="Name">Services</string>
         </Properties>
-        <Item class="ModuleScript" referent="57">
+        <Item class="ModuleScript" referent="58">
           <Properties>
             <string name="Name">AbsorbService</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -11006,9 +11103,10 @@ function AbsorbService:tryAbsorb(state, prop, reach: number, ctx, segmentFrom: V
 	end
 	local pos = state.part.Position
 	local r = d / 2
-	local limit = r + prop.radius * (1 - Tuning.Absorb.ContactSlack) + reach
-	-- Magnet: much smaller props are pulled in from further away.
-	if prop.absorbSize < Absorb.threshold(d, ctx) * 0.4 then
+	local threshold = Absorb.threshold(d, ctx)
+	local limit = r + prop.radius * (1 - Tuning.Absorb.ContactSlack) + reach + Absorb.vacuumReach(d, prop.absorbSize, threshold)
+	-- Magnet core: much smaller props are pulled in from further away still.
+	if prop.absorbSize < threshold * 0.4 then
 		limit += d * magnetReach(state)
 	end
 	local distSq
@@ -11184,7 +11282,7 @@ local function sweep()
 			local from = state.sweepFrom or pos
 			local mid = (from + pos) / 2
 			local span = (pos - from).Magnitude / 2
-			local reachRadius = state.diameter / 2 + span + state.diameter * magnetReach(state) + 4
+			local reachRadius = state.diameter / 2 + span + state.diameter * (magnetReach(state) + Tuning.Absorb.VacuumReach) + 4
 			table.clear(scratch)
 			world:queryNear(mid.X, mid.Z, reachRadius, scratch)
 			local reach = Absorb.latencyReach(part.AssemblyLinearVelocity.Magnitude) * 0.5
@@ -11208,52 +11306,73 @@ local function flushNotifications()
 	table.clear(pendingNotify)
 end
 
--- Small balls in sparse areas get a gentle rain of tiny props so early growth never stalls.
+-- Supply rain: any ball in a sparse area gets props sized for it dropped from the sky, so early
+-- growth never stalls and the map never feels picked clean late in a round. Small balls get the
+-- kit's crumb list; bigger balls get kit props between 25% and 55% of what they can absorb.
+local function replenishCandidates(kit, threshold: number): { number }
+	local out = {}
+	for _, def in PropLibrary.ByKit[kit.id] do
+		local s = def.metrics.absorbSize
+		if not def.critter and not def.landmark and s >= threshold * 0.25 and s <= threshold * 0.55 then
+			table.insert(out, def.uid)
+		end
+	end
+	return out
+end
+
 local function replenish()
 	if not canPlay() then
 		return
 	end
 	local world = services.WorldService
 	local kit = world.kit
-	if not kit or not kit.replenish then
+	if not kit then
 		return
 	end
-	local uids = {}
-	for _, id in kit.replenish do
+	local crumbs = {}
+	for _, id in kit.replenish or {} do
 		local def = PropLibrary.find(kit.id, id)
 		if def then
-			table.insert(uids, def.uid)
+			table.insert(crumbs, def.uid)
 		end
 	end
-	if #uids == 0 then
-		return
-	end
 	local ctx = context()
+	local w = Tuning.World
 	for _, state in services.BallService:all() do
-		if state.diameter < 14 and state.part.Parent then
-			local pos = state.part.Position
-			local near = world:queryNear(pos.X, pos.Z, Tuning.World.ReplenishRadius)
-			local edible = 0
-			for _, id in near do
-				local p = world:get(id)
-				if p and Absorb.canAbsorbProp(state.diameter, p.absorbSize, p.landmark, ctx) then
-					edible += 1
-				end
+		if not state.part.Parent then
+			continue
+		end
+		local d = state.diameter
+		local pos = state.part.Position
+		local radius = w.ReplenishRadius + d * 5
+		local threshold = Absorb.threshold(d, ctx)
+		local near = world:queryNear(pos.X, pos.Z, radius)
+		local edible = 0
+		for _, id in near do
+			local p = world:get(id)
+			if p and Absorb.canAbsorbProp(d, p.absorbSize, p.landmark, ctx) and p.absorbSize >= threshold * 0.08 then
+				edible += 1
 			end
-			if edible < 18 then
+		end
+		local wanted = if d < 14 then 18 else 10
+		if edible < wanted then
+			local pool = if d < 14 then crumbs else replenishCandidates(kit, threshold)
+			if #pool > 0 then
 				local entries = {}
-				for _ = 1, Tuning.World.ReplenishMaxPerTick do
+				local count = if d < 14 then w.ReplenishMaxPerTick else math.max(2, math.floor(w.ReplenishMaxPerTick / 2))
+				for _ = 1, count do
 					local a = math.random() * math.pi * 2
-					local dist = 8 + math.random() * Tuning.World.ReplenishRadius * 0.7
-					local land = Vector3.new(pos.X + math.cos(a) * dist, 0, pos.Z + math.sin(a) * dist)
-					local ground = world:groundAt(land.X, land.Z)
+					local dist = d * 1.5 + 8 + math.random() * radius * 0.6
+					local lx = math.clamp(pos.X + math.cos(a) * dist, -kit.arenaHalf + 30, kit.arenaHalf - 30)
+					local lz = math.clamp(pos.Z + math.sin(a) * dist, -kit.arenaHalf + 30, kit.arenaHalf - 30)
+					local ground = world:groundAt(lx, lz)
 					table.insert(entries, {
-						uid = uids[math.random(1, #uids)],
+						uid = pool[math.random(1, #pool)],
 						mutation = 0,
 						scale = 0.9 + math.random() * 0.25,
-						from = Vector3.new(land.X, ground + 60, land.Z),
-						to = Vector3.new(land.X, ground, land.Z),
-						settle = 0.6,
+						from = Vector3.new(lx, ground + 60 + d * 2, lz),
+						to = Vector3.new(lx, ground, lz),
+						settle = 0.6 + math.min(d / 200, 0.6),
 					})
 				end
 				world:spawnLoot(entries)
@@ -11307,7 +11426,7 @@ return AbsorbService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="58">
+        <Item class="ModuleScript" referent="59">
           <Properties>
             <string name="Name">BallService</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -11734,7 +11853,7 @@ return BallService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="59">
+        <Item class="ModuleScript" referent="60">
           <Properties>
             <string name="Name">CritterService</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -11999,7 +12118,7 @@ return CritterService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="60">
+        <Item class="ModuleScript" referent="61">
           <Properties>
             <string name="Name">DevService</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -12105,7 +12224,7 @@ return DevService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="61">
+        <Item class="ModuleScript" referent="62">
           <Properties>
             <string name="Name">HubService</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -12556,7 +12675,7 @@ return HubService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="62">
+        <Item class="ModuleScript" referent="63">
           <Properties>
             <string name="Name">RoundService</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -13063,6 +13182,19 @@ function RoundService:loop()
 	end
 end
 
+-- Drop a newly joined player into the running round (once their client has built the props
+-- around spawn, or after a short fallback so nobody waits).
+local function dropIn(player: Player)
+	if RoundService.state ~= "Playing" or not RoundService.ready[player] then
+		return
+	end
+	if services.BallService:get(player) or RoundService.playerState[player] == "Rolling" then
+		return
+	end
+	local catchUp = (now() - RoundService.startedAt) > 20
+	RoundService:spawnIntoRound(player, { catchUp = catchUp })
+end
+
 local function onReady(player: Player)
 	if RoundService.ready[player] then
 		return
@@ -13073,12 +13205,13 @@ local function onReady(player: Player)
 	if RoundService.lastResults and RoundService.state ~= "Playing" then
 		Net.fire("Results", player, RoundService.lastResults)
 	end
+	RoundService:setPlayerState(player, "Hub")
 	if RoundService.state == "Playing" then
-		-- Drop straight in: rolling within seconds of loading.
-		local catchUp = (now() - RoundService.startedAt) > 20
-		RoundService:spawnIntoRound(player, { catchUp = catchUp })
-	else
-		RoundService:setPlayerState(player, "Hub")
+		task.delay(6, function()
+			if player.Parent then
+				dropIn(player)
+			end
+		end)
 	end
 end
 
@@ -13088,6 +13221,10 @@ function RoundService:start()
 		task.spawn(onReady, player)
 		return true
 	end, 2)
+	Net.action("Spawn", Guard.optional(Guard.boolean()), function(player)
+		task.spawn(dropIn, player)
+		return true
+	end, 1)
 	Players.PlayerRemoving:Connect(function(player)
 		self.ready[player] = nil
 		self.playerState[player] = nil
@@ -13127,7 +13264,7 @@ return RoundService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="63">
+        <Item class="ModuleScript" referent="64">
           <Properties>
             <string name="Name">WorldService</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -13568,13 +13705,13 @@ return WorldService
       </Item>
     </Item>
   </Item>
-  <Item class="SoundService" referent="64">
+  <Item class="SoundService" referent="65">
     <Properties>
       <string name="Name">SoundService</string>
       <bool name="RespectFilteringEnabled">true</bool>
     </Properties>
   </Item>
-  <Item class="StarterPlayer" referent="65">
+  <Item class="StarterPlayer" referent="66">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <bool name="AutoJumpEnabled">false</bool>
@@ -13585,11 +13722,11 @@ return WorldService
       <float name="CharacterWalkSpeed">20</float>
       <bool name="LoadCharacterAppearance">true</bool>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="66">
+    <Item class="StarterPlayerScripts" referent="67">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="67">
+      <Item class="LocalScript" referent="68">
         <Properties>
           <string name="Name">Client</string>
           <string name="Source"><![CDATA[--!nonstrict
@@ -13672,11 +13809,11 @@ task.spawn(function()
 end)
 ]]></string>
         </Properties>
-        <Item class="Folder" referent="68">
+        <Item class="Folder" referent="69">
           <Properties>
             <string name="Name">Controllers</string>
           </Properties>
-          <Item class="ModuleScript" referent="69">
+          <Item class="ModuleScript" referent="70">
             <Properties>
               <string name="Name">AudioController</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -13961,7 +14098,7 @@ return AudioController
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="70">
+          <Item class="ModuleScript" referent="71">
             <Properties>
               <string name="Name">BallVisualController</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -14501,7 +14638,7 @@ return BallVisualController
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="71">
+          <Item class="ModuleScript" referent="72">
             <Properties>
               <string name="Name">CameraController</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -14541,6 +14678,11 @@ local scripted: ((dt: number) -> CFrame?)? = nil
 local occlusionParams = RaycastParams.new()
 occlusionParams.FilterType = Enum.RaycastFilterType.Exclude
 local fovKick = 0
+-- Spawn swoop: blend from a high establishing shot down into the chase camera.
+local blendFrom: CFrame? = nil
+local blendStart = 0
+local BLEND_TIME = 1.25
+local revealAngle = 0
 
 function CameraController:init(c)
 	controllers = c
@@ -14696,11 +14838,49 @@ local function chase(self, dt: number)
 	fovSpring.target = c.FovBase + c.FovSpeedBonus * math.clamp(speedFrac, 0, 1.4) ^ 1.5 + fovKick
 	fovKick = math.max(0, fovKick - dt * 30)
 	cam.FieldOfView = fovSpring:step(dt)
+	if blendFrom then
+		local t = math.clamp((os.clock() - blendStart) / BLEND_TIME, 0, 1)
+		-- Ease in-out cubic: hang on the skyline for a beat, then dive to the ball.
+		local e = if t < 0.5 then 4 * t * t * t else 1 - (-2 * t + 2) ^ 3 / 2
+		cf = blendFrom:Lerp(cf, e)
+		if t >= 1 then
+			blendFrom = nil
+		end
+	end
 	cam.CFrame = cf
 	cam.Focus = CFrame.new(focus)
 end
 
+-- A high shot that frames the ball against the map's giant stuff (landmark, furniture).
+local function establishingShot(ballPos: Vector3): CFrame
+	local world = controllers.WorldController
+	local landmark = world and world.props[world.landmarkId]
+	local target = if landmark then Vector3.new(landmark.x, landmark.cy, landmark.z) else ballPos + Vector3.new(0, 0, -200)
+	local half = (world and world.arenaHalf) or 600
+	local away = Vector3.new(ballPos.X - target.X, 0, ballPos.Z - target.Z)
+	away = if away.Magnitude > 1 then away.Unit else Vector3.new(0, 0, 1)
+	local pos = ballPos + away * half * 0.35 + Vector3.new(0, half * 0.38, 0)
+	return CFrame.lookAt(pos, ballPos:Lerp(target, 0.45))
+end
+
+-- Slow cinematic orbit over the arena while the world around spawn finishes building.
+local function reveal(dt: number)
+	local world = controllers.WorldController
+	local center = world and world.spawnCenter
+	if not center then
+		return
+	end
+	local half = world.arenaHalf or 600
+	revealAngle += dt * 0.12
+	local c = Vector3.new(center[1], center[2], center[3])
+	local pos = c + Vector3.new(math.cos(revealAngle) * half * 0.75, half * 0.42, math.sin(revealAngle) * half * 0.75)
+	cam.CameraType = Enum.CameraType.Scriptable
+	cam.FieldOfView = 60
+	cam.CFrame = CFrame.lookAt(pos, c)
+end
+
 function CameraController:setMode(mode: string)
+	local previous = self.mode
 	self.mode = mode
 	if mode == "Chase" then
 		cam.CameraType = Enum.CameraType.Scriptable
@@ -14711,6 +14891,9 @@ function CameraController:setMode(mode: string)
 			local d = state.diameter
 			distSpring:snap(desiredDistance(d))
 			heightSpring:snap(desiredHeight(d))
+			-- Every spawn starts with the swoop (from the reveal orbit if we were showing it).
+			blendFrom = if previous == "Reveal" then cam.CFrame else establishingShot(ball.Position)
+			blendStart = os.clock()
 		end
 		refreshFilter()
 	elseif mode == "Default" then
@@ -14734,10 +14917,22 @@ function CameraController:start()
 		local c = Tuning.Camera
 		self.zoom = math.clamp(self.zoom + delta * 0.08, c.ZoomMin, c.ZoomMax)
 	end)
+	controllers.WorldController.WorldLoaded:Connect(function()
+		if not state:isRolling() and state.round.state == "Playing" then
+			self.mode = "Reveal"
+		end
+	end)
 	state.BallChanged:Connect(function(part)
 		if part then
-			-- Face the way the ball can go: start looking across the counter, not into a wall.
-			self.yaw = math.atan2(part.Position.X, part.Position.Z)
+			-- Face the landmark (the big goal) so the first view is "everything I'll eat".
+			local world = controllers.WorldController
+			local landmark = world and world.props[world.landmarkId]
+			if landmark then
+				local to = Vector3.new(landmark.x - part.Position.X, 0, landmark.z - part.Position.Z)
+				self.yaw = math.atan2(-to.X, -to.Z)
+			else
+				self.yaw = math.atan2(part.Position.X, part.Position.Z)
+			end
 			self:setMode("Chase")
 		elseif self.mode == "Chase" then
 			self:setMode("Default")
@@ -14771,8 +14966,18 @@ function CameraController:start()
 		end
 	end)
 	RunService:BindToRenderStep("RTW_Camera", Enum.RenderPriority.Camera.Value + 1, function(dt)
+		-- Waiting to drop into a running round: show the map. Otherwise hand back the default camera.
+		local world = controllers.WorldController
+		local waiting = not state:isRolling() and state.round.state == "Playing" and world and world.ready
+		if waiting and self.mode == "Default" then
+			self.mode = "Reveal"
+		elseif not waiting and self.mode == "Reveal" then
+			self:setMode("Default")
+		end
 		if self.mode == "Chase" then
 			chase(self, dt)
+		elseif self.mode == "Reveal" then
+			reveal(dt)
 		elseif self.mode == "Scripted" and scripted then
 			local cf = scripted(dt)
 			if cf then
@@ -14790,7 +14995,7 @@ return CameraController
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="72">
+          <Item class="ModuleScript" referent="73">
             <Properties>
               <string name="Name">ClientState</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -14929,7 +15134,7 @@ return ClientState
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="73">
+          <Item class="ModuleScript" referent="74">
             <Properties>
               <string name="Name">HubController</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -15001,7 +15206,7 @@ return HubController
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="74">
+          <Item class="ModuleScript" referent="75">
             <Properties>
               <string name="Name">HudController</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -15021,6 +15226,7 @@ local Tuning = require(Shared.Config.Tuning)
 local Format = require(Shared.Util.Format)
 local Spring = require(Shared.Util.Spring)
 local PropLibrary = require(Shared.Logic.PropLibrary)
+local Growth = require(Shared.Logic.Growth)
 local Mutations = require(Shared.Data.Mutations)
 local Kits = require(Shared.Data.Kits)
 local PropBuilder = require(Shared.PropBuilder)
@@ -15056,6 +15262,19 @@ local pendingGain = 0
 local pendingAt = 0
 local lastUnit = "cm"
 local thumbnails = {}
+local comboLabel: TextLabel
+local comboScale: UIScale
+local combo = 0
+local lastComboAt = 0
+local speedLines: Frame
+local lines = {}
+local COMBO_COLORS = {
+	{ 0, Color3.fromRGB(255, 255, 255) },
+	{ 5, Color3.fromRGB(255, 236, 120) },
+	{ 12, Color3.fromRGB(255, 170, 70) },
+	{ 25, Color3.fromRGB(255, 110, 170) },
+	{ 50, Color3.fromRGB(176, 140, 255) },
+}
 
 function HudController:init(c)
 	controllers = c
@@ -15277,6 +15496,147 @@ local function buildTouchButtons()
 			input:press("Hop")
 		end,
 	})
+end
+
+-- Combo: rapid pickups chain into a growing "×N" that climbs through colors.
+local function buildCombo()
+	comboLabel = Ui.display("", {
+		Name = "Combo",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.74),
+		Size = UDim2.fromOffset(260, 56),
+		TextTransparency = 1,
+		Parent = root,
+	})
+	comboScale = Ui.new("UIScale", { Parent = comboLabel })
+end
+
+-- Speed lines streaking in from the screen edges when going fast or dashing.
+local function buildSpeedLines()
+	speedLines = Ui.new("Frame", {
+		Name = "SpeedLines",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		ZIndex = 0,
+		Parent = root,
+	})
+	for i = 1, 18 do
+		local angle = (i / 18) * math.pi * 2 + math.random() * 0.2
+		local line = Ui.new("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			BackgroundColor3 = Color3.new(1, 1, 1),
+			BackgroundTransparency = 1,
+			Size = UDim2.fromOffset(4, 120),
+			Rotation = math.deg(angle) + 90,
+			Parent = speedLines,
+		}, { Ui.corner(Theme.Radius.Pill) })
+		table.insert(lines, { frame = line, angle = angle, phase = math.random() * 10 })
+	end
+end
+
+local function updateSpeedLines(dt: number)
+	local movement = controllers.MovementController
+	local d = state.diameter
+	local maxSpeed = math.max(Growth.maxSpeed(d), 1)
+	local frac = if state:isRolling() then movement.speed / maxSpeed else 0
+	local dashing = os.clock() < movement.dashUntil + 0.15
+	local strength = math.clamp((frac - 0.95) * 3, 0, 1)
+	if dashing then
+		strength = 1
+	end
+	if settings.values.reducedMotion then
+		strength *= 0.3
+	end
+	for _, l in lines do
+		l.phase += dt * (2.5 + strength * 3)
+		local p = l.phase % 1
+		local radius = 0.62 - p * 0.18
+		l.frame.Position = UDim2.fromScale(0.5 + math.cos(l.angle) * radius, 0.5 + math.sin(l.angle) * radius * 1.1)
+		l.frame.BackgroundTransparency = 1 - strength * 0.55 * math.sin(p * math.pi)
+	end
+end
+
+local function onLocalAbsorb()
+	local now = os.clock()
+	if now - lastComboAt < 0.7 then
+		combo += 1
+	else
+		combo = 1
+	end
+	lastComboAt = now
+	if combo >= 3 then
+		local color = COMBO_COLORS[1][2]
+		for _, entry in COMBO_COLORS do
+			if combo >= entry[1] then
+				color = entry[2]
+			end
+		end
+		comboLabel.Text = "×" .. combo .. (if combo >= 25 then " WOW!" elseif combo >= 12 then " SWEEP!" else "")
+		comboLabel.TextColor3 = color
+		comboLabel.TextTransparency = 0
+		local stroke = comboLabel:FindFirstChildOfClass("UIStroke")
+		if stroke then
+			stroke.Transparency = 0
+		end
+		comboScale.Scale = 1 + math.min(combo, 40) * 0.012 + 0.25
+		Ui.tween(comboScale, Theme.Tween.Pop, { Scale = 1 + math.min(combo, 40) * 0.012 })
+	end
+end
+
+local function fadeCombo()
+	if comboLabel.TextTransparency < 1 and os.clock() - lastComboAt > 0.9 then
+		Ui.tween(comboLabel, Theme.Tween.Smooth, { TextTransparency = 1 })
+		local stroke = comboLabel:FindFirstChildOfClass("UIStroke")
+		if stroke then
+			Ui.tween(stroke, Theme.Tween.Smooth, { Transparency = 1 })
+		end
+		combo = 0
+	end
+end
+
+-- "Too big!" gauge over a prop you bonked: how close you are to rolling it up (wordless).
+function HudController:bonkGauge(hitPart: Instance?)
+	if not hitPart or not hitPart:IsA("BasePart") then
+		return
+	end
+	local propId = hitPart:GetAttribute("PropId")
+	local world = controllers.WorldController
+	local p = propId and world and world.props[propId]
+	if not p or hitPart:FindFirstChild("BonkGauge") then
+		return
+	end
+	local need = p.absorbSize / (Tuning.Absorb.Ratio + ((state.round.event and state.round.event.ratioBonus) or 0))
+	local frac = math.clamp(state.diameter / need, 0, 1)
+	local gui = Ui.new("BillboardGui", {
+		Name = "BonkGauge",
+		Size = UDim2.fromOffset(150, 46),
+		StudsOffsetWorldSpace = Vector3.new(0, hitPart.Size.Y * 0.6 + 2, 0),
+		AlwaysOnTop = true,
+		LightInfluence = 0,
+		Adornee = hitPart,
+		Parent = hitPart,
+	})
+	local bg = Ui.new("Frame", {
+		Size = UDim2.new(1, 0, 0, 22),
+		Position = UDim2.fromOffset(0, 22),
+		BackgroundColor3 = Theme.Color.Ink,
+		Parent = gui,
+	}, { Ui.corner(Theme.Radius.Pill), Ui.stroke(2, Color3.new(1, 1, 1)) })
+	local fill = Ui.new("Frame", {
+		Size = UDim2.fromScale(0, 1),
+		BackgroundColor3 = if frac > 0.85 then Theme.Color.Good else Theme.Color.Accent,
+		Parent = bg,
+	}, { Ui.corner(Theme.Radius.Pill) })
+	Ui.new("TextLabel", {
+		Text = "🔒 " .. Format.size(need, cmPerStud()),
+		Size = UDim2.new(1, 0, 0, 22),
+		TextScaled = true,
+		Parent = gui,
+	}, { Ui.stroke(2, Theme.Color.Ink) })
+	Ui.tween(fill, Theme.Tween.Slow, { Size = UDim2.fromScale(frac, 1) })
+	task.delay(1.6, function()
+		gui:Destroy()
+	end)
 end
 
 local function buildContainers()
@@ -15730,6 +16090,16 @@ function HudController:start()
 	buildTopList()
 	buildTouchButtons()
 	buildContainers()
+	buildCombo()
+	buildSpeedLines()
+	controllers.WorldController.PropAbsorbed:Connect(function(_, absorberKey, isPrediction)
+		if isPrediction and absorberKey == state.player.UserId then
+			onLocalAbsorb()
+		end
+	end)
+	controllers.MovementController.Bonked:Connect(function(_, hitPart)
+		self:bonkGauge(hitPart)
+	end)
 
 	sizeSpring:snap(state.diameter)
 	state.DiameterChanged:Connect(function(new, old)
@@ -15788,7 +16158,11 @@ function HudController:start()
 			self:showBanner("🌟 " .. tostring(data.name) .. " found " .. (if def then def.name else "a Legendary") .. "!", rarityColor("Legendary"), 3)
 		end
 	end)
-	RunService.RenderStepped:Connect(update)
+	RunService.RenderStepped:Connect(function(dt)
+		update(dt)
+		updateSpeedLines(dt)
+		fadeCombo()
+	end)
 	task.spawn(function()
 		while true do
 			task.wait(0.25)
@@ -15801,7 +16175,7 @@ return HudController
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="75">
+          <Item class="ModuleScript" referent="76">
             <Properties>
               <string name="Name">InputController</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -15866,6 +16240,29 @@ function InputController:getMoveVector(): Vector3
 	end
 	self.lastMove = v
 	return v
+end
+
+-- Short rumble on gamepads (and phones that support it). intensity 0..1.
+function InputController:rumble(intensity: number, duration: number)
+	local HapticService = game:GetService("HapticService")
+	local targets = { Enum.UserInputType.Gamepad1, Enum.UserInputType.Touch }
+	for _, t in targets do
+		local ok, supported = pcall(function()
+			return HapticService:IsVibrationSupported(t)
+		end)
+		if ok and supported then
+			pcall(function()
+				HapticService:SetMotor(t, Enum.VibrationMotor.Large, math.clamp(intensity, 0, 1))
+				HapticService:SetMotor(t, Enum.VibrationMotor.Small, math.clamp(intensity * 0.7, 0, 1))
+			end)
+			task.delay(duration, function()
+				pcall(function()
+					HapticService:SetMotor(t, Enum.VibrationMotor.Large, 0)
+					HapticService:SetMotor(t, Enum.VibrationMotor.Small, 0)
+				end)
+			end)
+		end
+	end
 end
 
 -- Called by HUD touch buttons as well as keybinds.
@@ -16009,7 +16406,7 @@ return InputController
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="76">
+          <Item class="ModuleScript" referent="77">
             <Properties>
               <string name="Name">MovementController</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -16029,6 +16426,7 @@ local Shared = ReplicatedStorage.Shared
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
 local Growth = require(Shared.Logic.Growth)
+local MovementModel = require(Shared.Logic.MovementModel)
 local Tuning = require(Shared.Config.Tuning)
 local Cores = require(Shared.Data.Cores)
 local Animations = require(Shared.Config.Animations)
@@ -16383,45 +16781,19 @@ local function step(dt: number)
 	wasGrounded = grounded
 	self.grounded = grounded
 
-	local maxSpeed = Growth.maxSpeed(d) * speedMultiplier()
+	local speedMult = speedMultiplier()
+	local maxSpeed = Growth.maxSpeed(d) * speedMult
 	local v = ball.AssemblyLinearVelocity
 	local horizontal = Vector3.new(v.X, 0, v.Z)
 	local dashing = now < self.dashUntil
-	local cap = if dashing then maxSpeed * (1 + Tuning.Ball.DashBoost) else maxSpeed
-
-	local accel = maxSpeed / Growth.accelTime(d)
-	if not grounded then
-		accel *= Tuning.Ball.AirControl
-	end
-
-	local newHorizontal
-	if desired.Magnitude > 0.05 then
-		local target = desired * cap * math.clamp(desired.Magnitude, 0, 1)
-		local diff = target - horizontal
-		local rate = accel
-		-- Turn-in: steering against current motion gets extra grip so turns feel crisp, not floaty.
-		if horizontal.Magnitude > 1 and horizontal.Unit:Dot(desired.Unit) < 0.6 then
-			rate *= Tuning.Ball.TurnAssist
-		end
-		if dashing and horizontal.Magnitude > target.Magnitude then
-			-- Don't eat dash momentum; let it bleed off naturally.
-			diff = desired.Unit * math.max(0, target.Magnitude - horizontal:Dot(desired.Unit)) + (horizontal - desired.Unit * horizontal:Dot(desired.Unit)) * -0.5
-		end
-		local maxStep = rate * dt
-		if diff.Magnitude > maxStep then
-			diff = diff.Unit * maxStep
-		end
-		newHorizontal = horizontal + diff
-	else
-		-- Coast: exponential brake (a heavy ball rolls a little longer than a pea).
-		local brake = if grounded then dt / Growth.brakeTime(d) else dt * 0.2
-		newHorizontal = horizontal * math.max(0, 1 - brake * 2.2)
-	end
-	-- Speed cap with a soft ceiling (momentum from slopes/bumps decays instead of snapping).
-	local mag = newHorizontal.Magnitude
-	if mag > cap then
-		newHorizontal = newHorizontal.Unit * math.max(cap, mag - accel * 1.5 * dt)
-	end
+	local nvx, nvz = MovementModel.step(v.X, v.Z, d, {
+		dirX = desired.X,
+		dirZ = desired.Z,
+		grounded = grounded,
+		dashing = dashing,
+		speedMult = speedMult,
+	}, dt)
+	local newHorizontal = Vector3.new(nvx, 0, nvz)
 
 	-- Bonk detection: a sudden loss of speed while pushing into something.
 	local prevSpeed = prevHorizontal.Magnitude
@@ -16501,7 +16873,7 @@ return MovementController
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="77">
+          <Item class="ModuleScript" referent="78">
             <Properties>
               <string name="Name">NanaController</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -16587,7 +16959,7 @@ return NanaController
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="78">
+          <Item class="ModuleScript" referent="79">
             <Properties>
               <string name="Name">SettingsController</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -16672,7 +17044,7 @@ return SettingsController
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="79">
+          <Item class="ModuleScript" referent="80">
             <Properties>
               <string name="Name">TuningPanel</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -16846,7 +17218,7 @@ return TuningPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="80">
+          <Item class="ModuleScript" referent="81">
             <Properties>
               <string name="Name">VFXController</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -17096,6 +17468,7 @@ function VFXController:start()
 	folder.Parent = Workspace
 
 	local world = controllers.WorldController
+	local input = controllers.InputController
 	world.PropAbsorbed:Connect(function(p, absorberKey, isPrediction)
 		local isLocal = absorberKey == state.player.UserId
 		if isLocal and not isPrediction then
@@ -17106,6 +17479,13 @@ function VFXController:start()
 		local rarity = Rarity.get(p.def.rarity)
 		local mut = Mutations.get(p.mutation)
 		self:pop(pos, color, p.absorbSize, rarity.order + (if mut then mut.rarityBoost else 0))
+		if isLocal then
+			-- Tiny tick for every pickup, a real thump for big ones.
+			local rel = p.absorbSize / math.max(state.diameter * 0.62, 0.1)
+			if rel > 0.35 then
+				input:rumble(math.clamp(rel * 0.6, 0.15, 0.6), 0.08)
+			end
+		end
 		if isLocal and p.critter then
 			self:emoji(pos + Vector3.new(0, p.def.metrics.sy * p.eff, 0), if math.random() < 0.5 then "😆" else "🎉", 1.1)
 		end
@@ -17114,6 +17494,7 @@ function VFXController:start()
 	movement.Bonked:Connect(function(speed, _, hitPos)
 		local d = state.diameter
 		local frac = math.clamp(speed / math.max(Growth.maxSpeed(d), 1), 0.3, 1.4)
+		input:rumble(0.25 + frac * 0.5, 0.12)
 		burst(hitPos, { color = Color3.fromRGB(255, 236, 140), size = math.clamp(d * 0.25, 0.5, 30), speed = d * 3 * frac, count = 9, life = 0.45, light = 1 })
 		self:shockwave(hitPos, d * 0.9 * frac, Color3.fromRGB(255, 240, 200))
 		self:emoji(hitPos + Vector3.new(0, d * 0.5, 0), "💫", 0.7)
@@ -17135,6 +17516,7 @@ function VFXController:start()
 		end
 	end)
 	world.GoalUnlocked:Connect(function()
+		input:rumble(0.6, 0.25)
 		local ball = state.ball
 		if ball then
 			self:sparkle(ball.Position, Color3.fromRGB(255, 214, 64), math.clamp(state.diameter * 0.3, 0.6, 30), 30)
@@ -17167,7 +17549,7 @@ return VFXController
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="81">
+          <Item class="ModuleScript" referent="82">
             <Properties>
               <string name="Name">WorldController</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -17207,11 +17589,15 @@ WorldController.ready = false
 WorldController.templateProgress = 0
 WorldController.nextGoal = nil -- { uid, needDiameter }
 WorldController.bigGoal = nil
+WorldController.spawnCenter = nil :: { number }?
+WorldController.arenaHalf = 600
 
 WorldController.WorldLoaded = Signal.new()
 WorldController.PropAbsorbed = Signal.new() -- (prop, absorberKey, isLocalPrediction)
 WorldController.GoalUnlocked = Signal.new() -- (uid)
 WorldController.TemplateProgress = Signal.new() -- (done, total)
+WorldController.SpawnAreaReady = Signal.new() -- fired once the props around spawn + skyline are built
+WorldController.spawnAreaReady = false
 
 local controllers
 local state, settings
@@ -17354,7 +17740,11 @@ function WorldController:get(id: number)
 	return self.props[id]
 end
 
--- Prioritised background template building: what's near spawn first, then by frequency.
+-- Prioritised background template building. Order matters for the first second of play:
+--   1. the landmark and big props (the skyline you see in the spawn swoop),
+--   2. everything near spawn (what you roll into immediately),
+--   3. the rest, by how common it is.
+-- SpawnAreaReady fires as soon as groups 1 and 2 are done.
 local function prepareTemplates(kitId: string, spawnCenter)
 	local counts = {}
 	local nearScore = {}
@@ -17366,17 +17756,37 @@ local function prepareTemplates(kitId: string, spawnCenter)
 		end
 	end
 	local uids = {}
+	local priority = {}
 	local defs: { any } = PropLibrary.ByKit[kitId] or {}
 	for _, def in defs do
 		table.insert(uids, def.uid)
+		if def.landmark then
+			priority[def.uid] = 3
+		elseif def.metrics.absorbSize > 40 and (counts[def.uid] or 0) > 0 then
+			priority[def.uid] = 2
+		elseif (nearScore[def.uid] or 0) > 0 then
+			priority[def.uid] = 1
+		else
+			priority[def.uid] = 0
+		end
 	end
 	table.sort(uids, function(a, b)
+		local pa, pb = priority[a], priority[b]
+		if pa ~= pb then
+			return pa > pb
+		end
 		local na, nb = nearScore[a] or 0, nearScore[b] or 0
 		if na ~= nb then
 			return na > nb
 		end
 		return (counts[a] or 0) > (counts[b] or 0)
 	end)
+	local needed = 0
+	for _, uid in uids do
+		if priority[uid] > 0 then
+			needed += 1
+		end
+	end
 	local roundId = WorldController.roundId
 	PropBuilder.prepareAsync(uids, function(done, total)
 		if WorldController.roundId ~= roundId then
@@ -17384,7 +17794,15 @@ local function prepareTemplates(kitId: string, spawnCenter)
 		end
 		WorldController.templateProgress = done / total
 		WorldController.TemplateProgress:Fire(done, total)
+		if not WorldController.spawnAreaReady and done >= needed then
+			WorldController.spawnAreaReady = true
+			WorldController.SpawnAreaReady:Fire()
+		end
 	end)
+	if not WorldController.spawnAreaReady and WorldController.roundId == roundId then
+		WorldController.spawnAreaReady = true
+		WorldController.SpawnAreaReady:Fire()
+	end
 end
 
 local function onWorldLoad(info, buf)
@@ -17394,6 +17812,9 @@ local function onWorldLoad(info, buf)
 	self.roundId = info.roundId
 	self.landmarkId = info.landmarkId
 	self.ready = false
+	self.spawnAreaReady = false
+	self.arenaHalf = info.arenaHalf
+	self.spawnCenter = info.spawnCenter
 	local folderName = "ClientProps"
 	folder = Workspace:FindFirstChild(folderName) or Instance.new("Folder")
 	folder.Name = folderName
@@ -17667,12 +18088,15 @@ local function predict()
 	local pos = ball.Position
 	local ctx = state:absorbContext()
 	local now = os.clock()
+	local threshold = Absorb.threshold(d, ctx)
+	local vacuumMax = d * Tuning.Absorb.VacuumReach
 	table.clear(queryScratch)
-	WorldController.hash:query(pos.X, pos.Z, r + WorldController.maxRadius + 2, queryScratch)
+	WorldController.hash:query(pos.X, pos.Z, r + WorldController.maxRadius + vacuumMax + 2, queryScratch)
 	for _, id in queryScratch do
 		local p = WorldController.props[id]
 		if p and p.state == "world" and (not p.loot or now >= p.activeAt) then
-			if Absorb.canAbsorbProp(d, p.absorbSize, p.landmark, ctx) and Absorb.inContact(pos.X, pos.Y, pos.Z, r, p.x, p.cy, p.z, p.radius, 0.4) then
+			local reach = 0.4 + Absorb.vacuumReach(d, p.absorbSize, threshold)
+			if Absorb.canAbsorbProp(d, p.absorbSize, p.landmark, ctx) and Absorb.inContact(pos.X, pos.Y, pos.Z, r, p.x, p.cy, p.z, p.radius, reach) then
 				if not p.model then
 					spawnVisual(p, true)
 				end
@@ -17725,7 +18149,14 @@ local function renderPass()
 		return
 	end
 	local cam = Workspace.CurrentCamera
-	local focus = if state.ball and state.ball.Parent then state.ball.Position else cam.CFrame.Position
+	local focus = cam.CFrame.Position
+	if state.ball and state.ball.Parent then
+		focus = state.ball.Position
+	elseif WorldController.spawnCenter and state.round.state == "Playing" then
+		-- Not rolling yet: build around spawn so the area is full when the ball drops in.
+		local c = WorldController.spawnCenter
+		focus = Vector3.new(c[1], c[2], c[3])
+	end
 	local d = state.diameter
 	local threshold = Absorb.threshold(d, state:absorbContext())
 	local toSpawn = {}
@@ -17760,7 +18191,8 @@ local function renderPass()
 	table.sort(toSpawn, function(a, b)
 		return a.d < b.d
 	end)
-	local budget = 40
+	-- Build faster while waiting to spawn so the area is full the moment the ball appears.
+	local budget = if state:isRolling() then 60 else 140
 	for _, entry in toSpawn do
 		if budget <= 0 then
 			break
@@ -17842,6 +18274,8 @@ local function updateGoals()
 		WorldController.bigGoal = { uid = landmark.uid, needDiameter = landmark.absorbSize / Tuning.Absorb.LandmarkReach, prop = landmark }
 	else
 		WorldController.bigGoal = nil
+WorldController.spawnCenter = nil :: { number }?
+WorldController.arenaHalf = 600
 	end
 end
 
@@ -17908,6 +18342,12 @@ function WorldController:start()
 			pcall(updateGoals)
 		end
 	end)
+	-- Ask to be dropped in only once the world around spawn is built (server falls back after 6s).
+	self.SpawnAreaReady:Connect(function()
+		if state.playerState ~= "Rolling" and state.round.state == "Playing" then
+			Net.request("Spawn", true)
+		end
+	end)
 	settings.Changed:Connect(function(key)
 		if key == "quality" then
 			for _, p in self.props do
@@ -17922,11 +18362,11 @@ return WorldController
             </Properties>
           </Item>
         </Item>
-        <Item class="Folder" referent="82">
+        <Item class="Folder" referent="83">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="83">
+          <Item class="ModuleScript" referent="84">
             <Properties>
               <string name="Name">Ui</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -18150,12 +18590,12 @@ return Ui
       </Item>
     </Item>
   </Item>
-  <Item class="TextChatService" referent="84">
+  <Item class="TextChatService" referent="85">
     <Properties>
       <string name="Name">TextChatService</string>
     </Properties>
   </Item>
-  <Item class="Workspace" referent="85">
+  <Item class="Workspace" referent="86">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="FallenPartsDestroyHeight">-2000</float>

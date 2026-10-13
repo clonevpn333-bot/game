@@ -11,13 +11,14 @@ local Tuning = {
 		SpeedExponent = 0.45,
 		-- Seconds to reach top speed from rest; interpolated on log(D) between small and huge.
 		AccelTimeSmall = 0.32,
-		AccelTimeHuge = 0.85,
+		AccelTimeHuge = 0.72,
 		HugeDiameter = 250,
 		-- Extra force multiplier when steering against current velocity (snappy turn-in).
-		TurnAssist = 1.9,
+		TurnAssist = 2.3,
 		-- Seconds to coast to a stop with no input.
 		BrakeTimeSmall = 1.1,
 		BrakeTimeHuge = 2.4,
+		BrakeStrength = 2.2, -- multiplier on the coasting brake (higher = stops sooner)
 		AirControl = 0.35,
 		Density = 0.7,
 		Friction = 0.9,
@@ -60,6 +61,10 @@ local Tuning = {
 		BonkCooldown = 0.8,
 		-- Magnet core / merge magnet reach in multiples of D.
 		MagnetReach = 1.1,
+		-- Vacuum: props much smaller than you are grabbed from a little further away so rolling
+		-- through crumbs feels like hoovering. Extra reach = D * VacuumReach * (1 - size/(threshold*VacuumBelow)).
+		VacuumReach = 0.22,
+		VacuumBelow = 0.5,
 		-- Max visible stuck-prop instances per ball (client LOD may lower further).
 		VisibleStuckLocal = 44,
 		VisibleStuckRemote = 22,

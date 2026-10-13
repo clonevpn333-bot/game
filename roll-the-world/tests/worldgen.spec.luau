@@ -96,3 +96,35 @@ describe("WorldGen", function()
 		expect(a.props[10].x ~= b.props[10].x or a.props[10].uid ~= b.props[10].uid).toBeTruthy()
 	end)
 end)
+
+describe("First seconds", function()
+	it("every spawn point has a pickup within ~1 second and plenty within 5", function()
+		local startD = Tuning.Ball.StartDiameter
+		local threshold = Absorb.threshold(startD)
+		local speed = require(Shared.Logic.Growth).maxSpeed(startD)
+		local worstNearest, worstCount = 0, math.huge
+		for _, kit in Kits.List do
+			for _, seed in { 3, 17, 99 } do
+				local result = WorldGen.generate(kit, seed)
+				for _, s in result.spawns do
+					local nearest, within5s = math.huge, 0
+					for _, p in result.props do
+						local def = PropLibrary.ByUid[p.uid]
+						if def.metrics.absorbSize * p.scale <= threshold and math.abs(p.y - (s[2] - 3)) < 1 then
+							local dist = math.sqrt((p.x - s[1]) ^ 2 + (p.z - s[3]) ^ 2)
+							nearest = math.min(nearest, dist)
+							if dist <= speed * 5 * 0.7 then
+								within5s += 1
+							end
+						end
+					end
+					worstNearest = math.max(worstNearest, nearest)
+					worstCount = math.min(worstCount, within5s)
+				end
+			end
+		end
+		print(string.format("  first seconds: worst nearest pickup %.1f studs (%.2fs at top speed), fewest pickups within 5s reach: %d", worstNearest, worstNearest / speed, worstCount))
+		expect(worstNearest / speed).toBeLessThan(1.0)
+		expect(worstCount).toBeGreaterThan(15)
+	end)
+end)

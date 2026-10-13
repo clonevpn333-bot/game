@@ -35,6 +35,11 @@ local scripted: ((dt: number) -> CFrame?)? = nil
 local occlusionParams = RaycastParams.new()
 occlusionParams.FilterType = Enum.RaycastFilterType.Exclude
 local fovKick = 0
+-- Spawn swoop: blend from a high establishing shot down into the chase camera.
+local blendFrom: CFrame? = nil
+local blendStart = 0
+local BLEND_TIME = 1.25
+local revealAngle = 0
 
 function CameraController:init(c)
 	controllers = c
@@ -190,11 +195,49 @@ local function chase(self, dt: number)
 	fovSpring.target = c.FovBase + c.FovSpeedBonus * math.clamp(speedFrac, 0, 1.4) ^ 1.5 + fovKick
 	fovKick = math.max(0, fovKick - dt * 30)
 	cam.FieldOfView = fovSpring:step(dt)
+	if blendFrom then
+		local t = math.clamp((os.clock() - blendStart) / BLEND_TIME, 0, 1)
+		-- Ease in-out cubic: hang on the skyline for a beat, then dive to the ball.
+		local e = if t < 0.5 then 4 * t * t * t else 1 - (-2 * t + 2) ^ 3 / 2
+		cf = blendFrom:Lerp(cf, e)
+		if t >= 1 then
+			blendFrom = nil
+		end
+	end
 	cam.CFrame = cf
 	cam.Focus = CFrame.new(focus)
 end
 
+-- A high shot that frames the ball against the map's giant stuff (landmark, furniture).
+local function establishingShot(ballPos: Vector3): CFrame
+	local world = controllers.WorldController
+	local landmark = world and world.props[world.landmarkId]
+	local target = if landmark then Vector3.new(landmark.x, landmark.cy, landmark.z) else ballPos + Vector3.new(0, 0, -200)
+	local half = (world and world.arenaHalf) or 600
+	local away = Vector3.new(ballPos.X - target.X, 0, ballPos.Z - target.Z)
+	away = if away.Magnitude > 1 then away.Unit else Vector3.new(0, 0, 1)
+	local pos = ballPos + away * half * 0.35 + Vector3.new(0, half * 0.38, 0)
+	return CFrame.lookAt(pos, ballPos:Lerp(target, 0.45))
+end
+
+-- Slow cinematic orbit over the arena while the world around spawn finishes building.
+local function reveal(dt: number)
+	local world = controllers.WorldController
+	local center = world and world.spawnCenter
+	if not center then
+		return
+	end
+	local half = world.arenaHalf or 600
+	revealAngle += dt * 0.12
+	local c = Vector3.new(center[1], center[2], center[3])
+	local pos = c + Vector3.new(math.cos(revealAngle) * half * 0.75, half * 0.42, math.sin(revealAngle) * half * 0.75)
+	cam.CameraType = Enum.CameraType.Scriptable
+	cam.FieldOfView = 60
+	cam.CFrame = CFrame.lookAt(pos, c)
+end
+
 function CameraController:setMode(mode: string)
+	local previous = self.mode
 	self.mode = mode
 	if mode == "Chase" then
 		cam.CameraType = Enum.CameraType.Scriptable
@@ -205,6 +248,9 @@ function CameraController:setMode(mode: string)
 			local d = state.diameter
 			distSpring:snap(desiredDistance(d))
 			heightSpring:snap(desiredHeight(d))
+			-- Every spawn starts with the swoop (from the reveal orbit if we were showing it).
+			blendFrom = if previous == "Reveal" then cam.CFrame else establishingShot(ball.Position)
+			blendStart = os.clock()
 		end
 		refreshFilter()
 	elseif mode == "Default" then
@@ -228,10 +274,22 @@ function CameraController:start()
 		local c = Tuning.Camera
 		self.zoom = math.clamp(self.zoom + delta * 0.08, c.ZoomMin, c.ZoomMax)
 	end)
+	controllers.WorldController.WorldLoaded:Connect(function()
+		if not state:isRolling() and state.round.state == "Playing" then
+			self.mode = "Reveal"
+		end
+	end)
 	state.BallChanged:Connect(function(part)
 		if part then
-			-- Face the way the ball can go: start looking across the counter, not into a wall.
-			self.yaw = math.atan2(part.Position.X, part.Position.Z)
+			-- Face the landmark (the big goal) so the first view is "everything I'll eat".
+			local world = controllers.WorldController
+			local landmark = world and world.props[world.landmarkId]
+			if landmark then
+				local to = Vector3.new(landmark.x - part.Position.X, 0, landmark.z - part.Position.Z)
+				self.yaw = math.atan2(-to.X, -to.Z)
+			else
+				self.yaw = math.atan2(part.Position.X, part.Position.Z)
+			end
 			self:setMode("Chase")
 		elseif self.mode == "Chase" then
 			self:setMode("Default")
@@ -265,8 +323,18 @@ function CameraController:start()
 		end
 	end)
 	RunService:BindToRenderStep("RTW_Camera", Enum.RenderPriority.Camera.Value + 1, function(dt)
+		-- Waiting to drop into a running round: show the map. Otherwise hand back the default camera.
+		local world = controllers.WorldController
+		local waiting = not state:isRolling() and state.round.state == "Playing" and world and world.ready
+		if waiting and self.mode == "Default" then
+			self.mode = "Reveal"
+		elseif not waiting and self.mode == "Reveal" then
+			self:setMode("Default")
+		end
 		if self.mode == "Chase" then
 			chase(self, dt)
+		elseif self.mode == "Reveal" then
+			reveal(dt)
 		elseif self.mode == "Scripted" and scripted then
 			local cf = scripted(dt)
 			if cf then

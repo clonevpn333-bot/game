@@ -72,9 +72,10 @@ function Growth.sizeAlpha(diameter: number): number
 	return MathUtil.clamp01(math.log(math.max(diameter, b.StartDiameter) / b.StartDiameter) / math.log(b.HugeDiameter / b.StartDiameter))
 end
 
+-- Eased so mid-size balls (the first couple of minutes) stay almost as snappy as small ones.
 function Growth.accelTime(diameter: number): number
 	local b = Tuning.Ball
-	return MathUtil.lerp(b.AccelTimeSmall, b.AccelTimeHuge, Growth.sizeAlpha(diameter))
+	return MathUtil.lerp(b.AccelTimeSmall, b.AccelTimeHuge, Growth.sizeAlpha(diameter) ^ 1.5)
 end
 
 function Growth.brakeTime(diameter: number): number

@@ -89,9 +89,10 @@ function AbsorbService:tryAbsorb(state, prop, reach: number, ctx, segmentFrom: V
 	end
 	local pos = state.part.Position
 	local r = d / 2
-	local limit = r + prop.radius * (1 - Tuning.Absorb.ContactSlack) + reach
-	-- Magnet: much smaller props are pulled in from further away.
-	if prop.absorbSize < Absorb.threshold(d, ctx) * 0.4 then
+	local threshold = Absorb.threshold(d, ctx)
+	local limit = r + prop.radius * (1 - Tuning.Absorb.ContactSlack) + reach + Absorb.vacuumReach(d, prop.absorbSize, threshold)
+	-- Magnet core: much smaller props are pulled in from further away still.
+	if prop.absorbSize < threshold * 0.4 then
 		limit += d * magnetReach(state)
 	end
 	local distSq
@@ -267,7 +268,7 @@ local function sweep()
 			local from = state.sweepFrom or pos
 			local mid = (from + pos) / 2
 			local span = (pos - from).Magnitude / 2
-			local reachRadius = state.diameter / 2 + span + state.diameter * magnetReach(state) + 4
+			local reachRadius = state.diameter / 2 + span + state.diameter * (magnetReach(state) + Tuning.Absorb.VacuumReach) + 4
 			table.clear(scratch)
 			world:queryNear(mid.X, mid.Z, reachRadius, scratch)
 			local reach = Absorb.latencyReach(part.AssemblyLinearVelocity.Magnitude) * 0.5
@@ -291,52 +292,73 @@ local function flushNotifications()
 	table.clear(pendingNotify)
 end
 
--- Small balls in sparse areas get a gentle rain of tiny props so early growth never stalls.
+-- Supply rain: any ball in a sparse area gets props sized for it dropped from the sky, so early
+-- growth never stalls and the map never feels picked clean late in a round. Small balls get the
+-- kit's crumb list; bigger balls get kit props between 25% and 55% of what they can absorb.
+local function replenishCandidates(kit, threshold: number): { number }
+	local out = {}
+	for _, def in PropLibrary.ByKit[kit.id] do
+		local s = def.metrics.absorbSize
+		if not def.critter and not def.landmark and s >= threshold * 0.25 and s <= threshold * 0.55 then
+			table.insert(out, def.uid)
+		end
+	end
+	return out
+end
+
 local function replenish()
 	if not canPlay() then
 		return
 	end
 	local world = services.WorldService
 	local kit = world.kit
-	if not kit or not kit.replenish then
+	if not kit then
 		return
 	end
-	local uids = {}
-	for _, id in kit.replenish do
+	local crumbs = {}
+	for _, id in kit.replenish or {} do
 		local def = PropLibrary.find(kit.id, id)
 		if def then
-			table.insert(uids, def.uid)
+			table.insert(crumbs, def.uid)
 		end
 	end
-	if #uids == 0 then
-		return
-	end
 	local ctx = context()
+	local w = Tuning.World
 	for _, state in services.BallService:all() do
-		if state.diameter < 14 and state.part.Parent then
-			local pos = state.part.Position
-			local near = world:queryNear(pos.X, pos.Z, Tuning.World.ReplenishRadius)
-			local edible = 0
-			for _, id in near do
-				local p = world:get(id)
-				if p and Absorb.canAbsorbProp(state.diameter, p.absorbSize, p.landmark, ctx) then
-					edible += 1
-				end
+		if not state.part.Parent then
+			continue
+		end
+		local d = state.diameter
+		local pos = state.part.Position
+		local radius = w.ReplenishRadius + d * 5
+		local threshold = Absorb.threshold(d, ctx)
+		local near = world:queryNear(pos.X, pos.Z, radius)
+		local edible = 0
+		for _, id in near do
+			local p = world:get(id)
+			if p and Absorb.canAbsorbProp(d, p.absorbSize, p.landmark, ctx) and p.absorbSize >= threshold * 0.08 then
+				edible += 1
 			end
-			if edible < 18 then
+		end
+		local wanted = if d < 14 then 18 else 10
+		if edible < wanted then
+			local pool = if d < 14 then crumbs else replenishCandidates(kit, threshold)
+			if #pool > 0 then
 				local entries = {}
-				for _ = 1, Tuning.World.ReplenishMaxPerTick do
+				local count = if d < 14 then w.ReplenishMaxPerTick else math.max(2, math.floor(w.ReplenishMaxPerTick / 2))
+				for _ = 1, count do
 					local a = math.random() * math.pi * 2
-					local dist = 8 + math.random() * Tuning.World.ReplenishRadius * 0.7
-					local land = Vector3.new(pos.X + math.cos(a) * dist, 0, pos.Z + math.sin(a) * dist)
-					local ground = world:groundAt(land.X, land.Z)
+					local dist = d * 1.5 + 8 + math.random() * radius * 0.6
+					local lx = math.clamp(pos.X + math.cos(a) * dist, -kit.arenaHalf + 30, kit.arenaHalf - 30)
+					local lz = math.clamp(pos.Z + math.sin(a) * dist, -kit.arenaHalf + 30, kit.arenaHalf - 30)
+					local ground = world:groundAt(lx, lz)
 					table.insert(entries, {
-						uid = uids[math.random(1, #uids)],
+						uid = pool[math.random(1, #pool)],
 						mutation = 0,
 						scale = 0.9 + math.random() * 0.25,
-						from = Vector3.new(land.X, ground + 60, land.Z),
-						to = Vector3.new(land.X, ground, land.Z),
-						settle = 0.6,
+						from = Vector3.new(lx, ground + 60 + d * 2, lz),
+						to = Vector3.new(lx, ground, lz),
+						settle = 0.6 + math.min(d / 200, 0.6),
 					})
 				end
 				world:spawnLoot(entries)

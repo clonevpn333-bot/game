@@ -245,6 +245,7 @@ function VFXController:start()
 	folder.Parent = Workspace
 
 	local world = controllers.WorldController
+	local input = controllers.InputController
 	world.PropAbsorbed:Connect(function(p, absorberKey, isPrediction)
 		local isLocal = absorberKey == state.player.UserId
 		if isLocal and not isPrediction then
@@ -255,6 +256,13 @@ function VFXController:start()
 		local rarity = Rarity.get(p.def.rarity)
 		local mut = Mutations.get(p.mutation)
 		self:pop(pos, color, p.absorbSize, rarity.order + (if mut then mut.rarityBoost else 0))
+		if isLocal then
+			-- Tiny tick for every pickup, a real thump for big ones.
+			local rel = p.absorbSize / math.max(state.diameter * 0.62, 0.1)
+			if rel > 0.35 then
+				input:rumble(math.clamp(rel * 0.6, 0.15, 0.6), 0.08)
+			end
+		end
 		if isLocal and p.critter then
 			self:emoji(pos + Vector3.new(0, p.def.metrics.sy * p.eff, 0), if math.random() < 0.5 then "😆" else "🎉", 1.1)
 		end
@@ -263,6 +271,7 @@ function VFXController:start()
 	movement.Bonked:Connect(function(speed, _, hitPos)
 		local d = state.diameter
 		local frac = math.clamp(speed / math.max(Growth.maxSpeed(d), 1), 0.3, 1.4)
+		input:rumble(0.25 + frac * 0.5, 0.12)
 		burst(hitPos, { color = Color3.fromRGB(255, 236, 140), size = math.clamp(d * 0.25, 0.5, 30), speed = d * 3 * frac, count = 9, life = 0.45, light = 1 })
 		self:shockwave(hitPos, d * 0.9 * frac, Color3.fromRGB(255, 240, 200))
 		self:emoji(hitPos + Vector3.new(0, d * 0.5, 0), "💫", 0.7)
@@ -284,6 +293,7 @@ function VFXController:start()
 		end
 	end)
 	world.GoalUnlocked:Connect(function()
+		input:rumble(0.6, 0.25)
 		local ball = state.ball
 		if ball then
 			self:sparkle(ball.Position, Color3.fromRGB(255, 214, 64), math.clamp(state.diameter * 0.3, 0.6, 30), 30)

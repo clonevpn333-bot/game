@@ -62,6 +62,29 @@ function InputController:getMoveVector(): Vector3
 	return v
 end
 
+-- Short rumble on gamepads (and phones that support it). intensity 0..1.
+function InputController:rumble(intensity: number, duration: number)
+	local HapticService = game:GetService("HapticService")
+	local targets = { Enum.UserInputType.Gamepad1, Enum.UserInputType.Touch }
+	for _, t in targets do
+		local ok, supported = pcall(function()
+			return HapticService:IsVibrationSupported(t)
+		end)
+		if ok and supported then
+			pcall(function()
+				HapticService:SetMotor(t, Enum.VibrationMotor.Large, math.clamp(intensity, 0, 1))
+				HapticService:SetMotor(t, Enum.VibrationMotor.Small, math.clamp(intensity * 0.7, 0, 1))
+			end)
+			task.delay(duration, function()
+				pcall(function()
+					HapticService:SetMotor(t, Enum.VibrationMotor.Large, 0)
+					HapticService:SetMotor(t, Enum.VibrationMotor.Small, 0)
+				end)
+			end)
+		end
+	end
+end
+
 -- Called by HUD touch buttons as well as keybinds.
 function InputController:press(action: string)
 	self.ActionPressed:Fire(action)

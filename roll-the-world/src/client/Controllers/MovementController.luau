@@ -15,6 +15,7 @@ local Shared = ReplicatedStorage.Shared
 local Net = require(Shared.Net)
 local Signal = require(Shared.Util.Signal)
 local Growth = require(Shared.Logic.Growth)
+local MovementModel = require(Shared.Logic.MovementModel)
 local Tuning = require(Shared.Config.Tuning)
 local Cores = require(Shared.Data.Cores)
 local Animations = require(Shared.Config.Animations)
@@ -369,45 +370,19 @@ local function step(dt: number)
 	wasGrounded = grounded
 	self.grounded = grounded
 
-	local maxSpeed = Growth.maxSpeed(d) * speedMultiplier()
+	local speedMult = speedMultiplier()
+	local maxSpeed = Growth.maxSpeed(d) * speedMult
 	local v = ball.AssemblyLinearVelocity
 	local horizontal = Vector3.new(v.X, 0, v.Z)
 	local dashing = now < self.dashUntil
-	local cap = if dashing then maxSpeed * (1 + Tuning.Ball.DashBoost) else maxSpeed
-
-	local accel = maxSpeed / Growth.accelTime(d)
-	if not grounded then
-		accel *= Tuning.Ball.AirControl
-	end
-
-	local newHorizontal
-	if desired.Magnitude > 0.05 then
-		local target = desired * cap * math.clamp(desired.Magnitude, 0, 1)
-		local diff = target - horizontal
-		local rate = accel
-		-- Turn-in: steering against current motion gets extra grip so turns feel crisp, not floaty.
-		if horizontal.Magnitude > 1 and horizontal.Unit:Dot(desired.Unit) < 0.6 then
-			rate *= Tuning.Ball.TurnAssist
-		end
-		if dashing and horizontal.Magnitude > target.Magnitude then
-			-- Don't eat dash momentum; let it bleed off naturally.
-			diff = desired.Unit * math.max(0, target.Magnitude - horizontal:Dot(desired.Unit)) + (horizontal - desired.Unit * horizontal:Dot(desired.Unit)) * -0.5
-		end
-		local maxStep = rate * dt
-		if diff.Magnitude > maxStep then
-			diff = diff.Unit * maxStep
-		end
-		newHorizontal = horizontal + diff
-	else
-		-- Coast: exponential brake (a heavy ball rolls a little longer than a pea).
-		local brake = if grounded then dt / Growth.brakeTime(d) else dt * 0.2
-		newHorizontal = horizontal * math.max(0, 1 - brake * 2.2)
-	end
-	-- Speed cap with a soft ceiling (momentum from slopes/bumps decays instead of snapping).
-	local mag = newHorizontal.Magnitude
-	if mag > cap then
-		newHorizontal = newHorizontal.Unit * math.max(cap, mag - accel * 1.5 * dt)
-	end
+	local nvx, nvz = MovementModel.step(v.X, v.Z, d, {
+		dirX = desired.X,
+		dirZ = desired.Z,
+		grounded = grounded,
+		dashing = dashing,
+		speedMult = speedMult,
+	}, dt)
+	local newHorizontal = Vector3.new(nvx, 0, nvz)
 
 	-- Bonk detection: a sudden loss of speed while pushing into something.
 	local prevSpeed = prevHorizontal.Magnitude

@@ -75,9 +75,9 @@ for _, kit in Kits.List do
 				end
 			end
 			-- Absorb everything in contact (also things we roll over on the way).
-			for _, id in hash:query(x, z, d / 2 + 2) do
+			for _, id in hash:query(x, z, d / 2 + d * Tuning.Absorb.VacuumReach + 2) do
 				local p = props[id]
-				if p and p.size <= threshold and math.sqrt((p.x - x) ^ 2 + (p.z - z) ^ 2) <= d / 2 + p.r * 0.75 then
+				if p and p.size <= threshold and math.sqrt((p.x - x) ^ 2 + (p.z - z) ^ 2) <= d / 2 + p.r * 0.75 + Absorb.vacuumReach(d, p.size, threshold) then
 					local mult = if t > LENGTH - 60 then Tuning.Growth.FinalRollMultiplier else 1
 					d = Growth.grow(d, p.vol, { multiplier = mult })
 					props[id] = nil

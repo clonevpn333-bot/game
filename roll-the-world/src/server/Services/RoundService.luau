@@ -502,6 +502,19 @@ function RoundService:loop()
 	end
 end
 
+-- Drop a newly joined player into the running round (once their client has built the props
+-- around spawn, or after a short fallback so nobody waits).
+local function dropIn(player: Player)
+	if RoundService.state ~= "Playing" or not RoundService.ready[player] then
+		return
+	end
+	if services.BallService:get(player) or RoundService.playerState[player] == "Rolling" then
+		return
+	end
+	local catchUp = (now() - RoundService.startedAt) > 20
+	RoundService:spawnIntoRound(player, { catchUp = catchUp })
+end
+
 local function onReady(player: Player)
 	if RoundService.ready[player] then
 		return
@@ -512,12 +525,13 @@ local function onReady(player: Player)
 	if RoundService.lastResults and RoundService.state ~= "Playing" then
 		Net.fire("Results", player, RoundService.lastResults)
 	end
+	RoundService:setPlayerState(player, "Hub")
 	if RoundService.state == "Playing" then
-		-- Drop straight in: rolling within seconds of loading.
-		local catchUp = (now() - RoundService.startedAt) > 20
-		RoundService:spawnIntoRound(player, { catchUp = catchUp })
-	else
-		RoundService:setPlayerState(player, "Hub")
+		task.delay(6, function()
+			if player.Parent then
+				dropIn(player)
+			end
+		end)
 	end
 end
 
@@ -527,6 +541,10 @@ function RoundService:start()
 		task.spawn(onReady, player)
 		return true
 	end, 2)
+	Net.action("Spawn", Guard.optional(Guard.boolean()), function(player)
+		task.spawn(dropIn, player)
+		return true
+	end, 1)
 	Players.PlayerRemoving:Connect(function(player)
 		self.ready[player] = nil
 		self.playerState[player] = nil
