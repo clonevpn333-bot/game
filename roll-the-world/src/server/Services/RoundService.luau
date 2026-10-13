@@ -338,6 +338,10 @@ function RoundService:results(statsList)
 		awardCount[award.userId] = (awardCount[award.userId] or 0) + 1
 	end
 
+	for place, stats in standings do
+		stats.placement = place
+	end
+
 	-- Stardust for everyone who played.
 	local payouts = {}
 	for _, stats in statsList do
