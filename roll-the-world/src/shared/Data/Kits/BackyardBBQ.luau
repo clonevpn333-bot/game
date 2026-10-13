@@ -96,7 +96,7 @@ return {
 	},
 	bands = {
 		{ max = 1.7, count = 1000, ring = { 0, 0.3 }, topBias = 0.8 },
-		{ max = 4.6, count = 420, ring = { 0.02, 0.45 }, topBias = 0.5 },
+		{ max = 4.6, count = 580, ring = { 0.02, 0.45 }, topBias = 0.5 },
 		{ max = 11.5, count = 300, ring = { 0.12, 0.65 }, topBias = 0.35 },
 		{ max = 30, count = 180, ring = { 0.25, 0.9 }, topBias = 0.25 },
 		{ max = 75, count = 90, ring = { 0.4, 1.3 }, topBias = 0.05 },
