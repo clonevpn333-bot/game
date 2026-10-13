@@ -28,6 +28,7 @@ local ORDER = {
 	"HudController",
 	"LaunchController",
 	"EventController",
+	"MenuController",
 	"NanaController",
 	"HubController",
 	"TuningPanel",

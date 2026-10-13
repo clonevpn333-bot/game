@@ -18,6 +18,7 @@ local Rarity = require(Shared.Config.Rarity)
 local Tuning = require(Shared.Config.Tuning)
 local Absorb = require(Shared.Logic.Absorb)
 local Format = require(Shared.Util.Format)
+local Cosmetics = require(Shared.Data.Cosmetics)
 
 local BallVisualController = {}
 BallVisualController.balls = {} :: { [number]: any }
@@ -68,6 +69,40 @@ local function colorFor(userId: number): Color3
 	return PALETTE[(userId % #PALETTE) + 1]
 end
 
+local function materialNamed(name: string?): Enum.Material
+	local ok, m = pcall(function()
+		return (Enum.Material :: any)[name or "SmoothPlastic"]
+	end)
+	return if ok and m then m else Enum.Material.SmoothPlastic
+end
+
+local function lumpShade(base: Color3, i: number): Color3
+	local h, s, v = base:ToHSV()
+	return Color3.fromHSV((h + (i % 5 - 2) * 0.015) % 1, math.clamp(s * (0.8 + (i % 3) * 0.12), 0, 1), math.clamp(v * (0.82 + (i % 4) * 0.06), 0, 1))
+end
+
+-- Dress a ball in its shell cosmetic (Shell attribute; "Classic" = the owner's personal color).
+local function applyShell(entry)
+	local def = Cosmetics.shell(entry.part:GetAttribute("Shell"))
+	local base = if def.color then Color3.fromHex(def.color) else colorFor(entry.userId)
+	local accent = if def.color2 then Color3.fromHex(def.color2) else nil
+	local material = materialNamed(def.material)
+	entry.color = base
+	entry.rainbow = def.rainbow == true
+	entry.shell.Color = base
+	entry.shell.Material = material
+	entry.shell.Reflectance = def.reflectance or 0.04
+	for i, lump in entry.lumps do
+		if accent and i % 3 == 0 then
+			lump.Color = accent
+			lump.Material = if def.neon then Enum.Material.Neon else material
+		else
+			lump.Color = lumpShade(base, i)
+			lump.Material = material
+		end
+	end
+end
+
 local function layoutLumps(entry)
 	local d = entry.diameter
 	local r = d / 2
@@ -105,9 +140,7 @@ local function createEntry(model: Model)
 
 	local lumps = {}
 	for i = 1, #LUMPS do
-		local h, s, v = color:ToHSV()
-		local shade = Color3.fromHSV((h + (i % 5 - 2) * 0.015) % 1, math.clamp(s * (0.8 + (i % 3) * 0.12), 0, 1), math.clamp(v * (0.82 + (i % 4) * 0.06), 0, 1))
-		local lump = visualPart("Lump", shade)
+		local lump = visualPart("Lump", lumpShade(color, i))
 		lump.Anchored = false
 		local weld = Instance.new("Weld")
 		weld.Name = "W"
@@ -166,6 +199,13 @@ local function createEntry(model: Model)
 
 	part:GetAttributeChangedSignal("Diameter"):Connect(function()
 		BallVisualController:onDiameter(entry, part:GetAttribute("Diameter"))
+	end)
+	applyShell(entry)
+	part:GetAttributeChangedSignal("Shell"):Connect(function()
+		applyShell(entry)
+		if controllers.VFXController then
+			controllers.VFXController:sparkle(part.Position, entry.color, entry.diameter, 16)
+		end
 	end)
 	return entry
 end
@@ -488,6 +528,18 @@ local function updateShells(dt: number)
 			e.part.Size = Vector3.one * new
 			if e.isLocal and new > current and not e.part.Anchored then
 				e.part.CFrame += Vector3.new(0, (new - current) / 2, 0)
+			end
+		end
+		if e.rainbow then
+			local hue = (os.clock() * 0.12 + (userId % 7) * 0.13) % 1
+			e.color = Color3.fromHSV(hue, 0.62, 1)
+			e.shell.Color = e.color
+			e.rainbowTick = (e.rainbowTick or 0) + dt
+			if e.rainbowTick > 0.1 then
+				e.rainbowTick = 0
+				for i, lump in e.lumps do
+					lump.Color = lumpShade(Color3.fromHSV((hue + i * 0.03) % 1, 0.62, 1), i)
+				end
 			end
 		end
 		local d = e.part.Size.X

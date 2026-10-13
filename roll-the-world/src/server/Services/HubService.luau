@@ -11,8 +11,9 @@ local Shared = ReplicatedStorage.Shared
 local HubService = {}
 
 HubService.ORIGIN = Vector3.new(0, 900, 6000)
--- Station panels (shop, Rolledex, cores, galaxy, pass, requests) arrive with the progression
--- milestone; until then their prompts are disabled so nothing in the hub is a dead button.
+-- Stations whose panels exist. Others (Roll Pass, tier portals) keep their prompts disabled so
+-- nothing in the hub is a dead button.
+HubService.LiveStations = { Shop = true, Rolledex = true, Cores = true, Galaxy = true, Requests = true }
 HubService.StationsEnabled = false
 HubService.model = nil :: Model?
 HubService.spawns = {} :: { CFrame }
@@ -117,7 +118,7 @@ local function station(parent: Instance, origin: Vector3, name: string, label: s
 	prompt.RequiresLineOfSight = false
 	prompt.KeyboardKeyCode = Enum.KeyCode.E
 	prompt.GamepadKeyCode = Enum.KeyCode.ButtonX
-	prompt.Enabled = HubService.StationsEnabled
+	prompt.Enabled = HubService.StationsEnabled or HubService.LiveStations[name] == true
 	prompt.Parent = base
 	model:SetAttribute("Station", name)
 	base:SetAttribute("Station", name)
@@ -297,7 +298,7 @@ local function buildNana(hub: Model, o: Vector3)
 	prompt.HoldDuration = 0
 	prompt.MaxActivationDistance = 18
 	prompt.RequiresLineOfSight = false
-	prompt.Enabled = HubService.StationsEnabled
+	prompt.Enabled = HubService.StationsEnabled or HubService.LiveStations.Requests == true
 	prompt.Parent = anchor
 end
 

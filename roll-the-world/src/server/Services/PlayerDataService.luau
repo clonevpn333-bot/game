@@ -66,11 +66,13 @@ end
 local function claim(userId: number, steal: boolean): (boolean, any, string?)
 	local key = keyFor(userId)
 	local lockedBy = nil
+	local claimed = nil
 	local ok, err = pcall(function()
 		(store :: GlobalDataStore):UpdateAsync(key, function(old)
 			local record = if type(old) == "table" then old else {}
 			local lock = record.lock
 			local now = os.time()
+			lockedBy, claimed = nil, nil
 			if type(lock) == "table" and lock.job ~= JOB_ID and type(lock.t) == "number" then
 				local fresh = now - lock.t < Tuning.Data.SessionLockTimeout
 				if fresh and not steal then
@@ -79,6 +81,7 @@ local function claim(userId: number, steal: boolean): (boolean, any, string?)
 				end
 			end
 			record.lock = { job = JOB_ID, t = now }
+			claimed = record -- the transform's input is the authoritative stored value
 			return record
 		end)
 	end)
@@ -88,14 +91,7 @@ local function claim(userId: number, steal: boolean): (boolean, any, string?)
 	if lockedBy then
 		return false, nil, "locked"
 	end
-	-- Read back what we just locked.
-	local readOk, record = pcall(function()
-		return (store :: GlobalDataStore):GetAsync(key)
-	end)
-	if not readOk then
-		return false, nil, "error: " .. tostring(record)
-	end
-	return true, record, nil
+	return true, claimed, nil
 end
 
 local function loadProfile(player: Player)
@@ -220,16 +216,22 @@ function PlayerDataService:isMemoryMode(): boolean
 	return memoryMode
 end
 
--- Send the client a fresh view of its profile (coalesced to once per frame per player).
+-- Send the client a fresh view of its profile. Coalesced and capped at SYNC_INTERVAL per player
+-- (a burst of discoveries or claims becomes one message).
+local SYNC_INTERVAL = 0.5
+local lastSync: { [Player]: number } = {}
+
 function PlayerDataService:sync(player: Player)
 	if syncQueued[player] then
 		return
 	end
 	syncQueued[player] = true
-	task.defer(function()
+	local delaySeconds = math.max(0, (lastSync[player] or 0) + SYNC_INTERVAL - os.clock())
+	task.delay(delaySeconds, function()
 		syncQueued[player] = nil
 		local entry = profiles[player]
 		if entry and player.Parent then
+			lastSync[player] = os.clock()
 			Net.fire("ProfileSync", player, Profile.clientView(entry.data))
 		end
 	end)
@@ -370,6 +372,7 @@ function PlayerDataService:start()
 			save(player, true)
 			profiles[player] = nil
 			syncQueued[player] = nil
+			lastSync[player] = nil
 		end)
 	end)
 
