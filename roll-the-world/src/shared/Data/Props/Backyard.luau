@@ -3,6 +3,7 @@
 
 local S = require(script.Parent.Shapes)
 local box, ball, blob, cyl, cylX, wedge, eyes = S.box, S.ball, S.blob, S.cyl, S.cylX, S.wedge, S.eyes
+local lathe, rbox, tube, torus, ell, extrude = S.lathe, S.rbox, S.tube, S.torus, S.ell, S.extrude
 local shade = S.shade
 
 local P = {}
@@ -27,6 +28,38 @@ local function legs4(out: { any }, w: number, l: number, h: number, d: number, c
 			table.insert(out, cyl(d, h, sx * w / 2, h / 2, sz * l / 2, color, { tag = "leg" }))
 		end
 	end
+end
+
+-- Extrude outlines must wind clockwise in (x, z) for outward-facing walls; this fixes either winding.
+local function cwPoly(points: { { number } }): { { number } }
+	local area = 0
+	for i, p in points do
+		local q = points[i % #points + 1]
+		area += p[1] * q[2] - q[1] * p[2]
+	end
+	if area <= 0 then
+		return points
+	end
+	local out = {}
+	for i = #points, 1, -1 do
+		table.insert(out, points[i])
+	end
+	return out
+end
+
+-- Rotate a 2D outline by deg degrees (to spin extruded shapes in their own plane).
+local function spinPoly(points: { { number } }, deg: number): { { number } }
+	local a = math.rad(deg)
+	local c, s = math.cos(a), math.sin(a)
+	local out = {}
+	for _, p in points do
+		table.insert(out, { p[1] * c - p[2] * s, p[1] * s + p[2] * c })
+	end
+	return out
+end
+
+local function star(points: number, outer: number, inner: number): { { number } }
+	return cwPoly(S.starOutline(points, outer, inner))
 end
 
 local function legs2(out: { any }, w: number, h: number, d: number, color: string, z: number?)
@@ -1218,6 +1251,893 @@ add({
 		box(40, 4, 4, 0, 62, -66, "#2b2d42"),
 		box(30, 20, 30, 0, 8, -26, "#38b000", { t = 0.2 }),
 	},
+})
+
+-- MORE BACKYARD: TINY FINDS --------------------------------------------------------------------
+
+add({
+	uid = 264,
+	id = "ladybird",
+	name = "Spotty Ladybird",
+	rarity = "Uncommon",
+	tags = { "animal", "bug", "critter", "red", "scurry", "garden" },
+	hint = "Climbing the clover. Count her spots!",
+	critter = { speed = 5, flee = 1.2, style = "scurry", sound = "PopSoft" },
+	parts = (function()
+		local RED = "#e5383b"
+		local out = {
+			blob(1.2, 0.5, 1.4, 0, 0.32, -0.05, INK, { tag = "body" }),
+			ell(0.7, 0.72, 1.5, -0.33, 0.52, -0.08, RED, { rot = { 0, 0, 8 } }),
+			ell(0.7, 0.72, 1.5, 0.33, 0.52, -0.08, RED, { rot = { 0, 0, -8 } }),
+			blob(0.9, 0.42, 0.45, 0, 0.55, 0.58, INK),
+			ball(0.16, -0.26, 0.66, 0.66, "#ffffff"),
+			ball(0.16, 0.26, 0.66, 0.66, "#ffffff"),
+			ball(0.62, 0, 0.42, 0.78, INK, { tag = "head" }),
+		}
+		for _, s in { -1, 1 } do
+			table.insert(out, ball(0.22, s * 0.34, 0.84, 0.0, INK))
+			table.insert(out, ball(0.18, s * 0.4, 0.78, 0.38, INK))
+			table.insert(out, ball(0.18, s * 0.3, 0.78, -0.48, INK))
+			table.insert(out, tube({ { s * 0.1, 0.62, 0.98 }, { s * 0.2, 0.82, 1.1 }, { s * 0.3, 0.9, 1.12 } }, 0.025, INK))
+			for i = -1, 1 do
+				table.insert(out, box(0.45, 0.05, 0.05, s * 0.55, 0.16, i * 0.32, INK, { rot = { 0, 0, s * 25 }, tag = "leg" }))
+			end
+		end
+		eyes(0.28, 0.17, 0.5, 1.03, out)
+		return out
+	end)(),
+})
+
+add({
+	uid = 265,
+	id = "wild_blueberry",
+	name = "Wild Blueberry",
+	rarity = "Common",
+	tags = { "food", "fruit", "berry", "blue", "round" },
+	hint = "Fell off the bush by the fence.",
+	weight = 2,
+	parts = {
+		ball(1.0, 0, 0.5, 0, "#4757b8"),
+		ball(0.3, -0.22, 0.78, 0.22, "#9aa8ea"),
+		extrude(star(5, 0.24, 0.1), 0.07, 0, 0.96, 0, "#252c5c"),
+		ball(0.12, 0, 1.02, 0, "#1b1f45"),
+		leaf(0.3, 0.95, -0.12, 0.6, 140, "#52b788", 10),
+	},
+})
+
+add({
+	uid = 266,
+	id = "sunflower_seed",
+	name = "Sunflower Seed",
+	rarity = "Common",
+	tags = { "seed", "plant", "snack" },
+	hint = "The birds dropped a few.",
+	weight = 2.5,
+	parts = {
+		blob(0.5, 0.28, 0.95, 0, 0.14, 0, "#3a3f4b"),
+		blob(0.09, 0.285, 0.8, -0.11, 0.142, 0, "#e9ecef"),
+		blob(0.09, 0.285, 0.8, 0.11, 0.142, 0, "#e9ecef"),
+		blob(0.05, 0.29, 0.66, 0, 0.145, 0, "#adb5bd"),
+	},
+})
+
+add({
+	uid = 267,
+	id = "daisy",
+	name = "Lawn Daisy",
+	rarity = "Common",
+	tags = { "plant", "flower", "white", "garden" },
+	hint = "Dotted all over the lawn.",
+	weight = 1.6,
+	variants = { "#ffffff", "#ffc8dd", "#d0bfff", "#fff3b0" },
+	parts = {
+		extrude(star(10, 0.62, 0.3), 0.07, 0, 0.84, 0, "#ffffff", nil, { smooth = 2 }),
+		cyl(0.08, 0.86, 0, 0.43, 0, "#4f772d"),
+		leaf(0.16, 0.22, 0, 0.5, 90, GRASS, 35),
+		leaf(-0.14, 0.38, 0, 0.42, -90, GRASS_DARK, 35),
+		blob(0.36, 0.2, 0.36, 0, 0.93, 0, "#ffd166"),
+		ball(0.14, 0.05, 1.0, 0.05, "#ffe8a3"),
+	},
+})
+
+add({
+	uid = 268,
+	id = "charcoal_briquette",
+	name = "Charcoal Briquette",
+	rarity = "Common",
+	tags = { "bbq", "fire", "black" },
+	hint = "Rolled out of the grill. Still a little warm.",
+	weight = 1.6,
+	parts = {
+		rbox(0.95, 0.55, 0.95, 0, 0.275, 0, "#2f2f33", { mat = "Slate" }, 0.24),
+		blob(0.42, 0.1, 0.36, 0.08, 0.54, 0.06, "#ff6b35", { neon = true }),
+		blob(0.3, 0.08, 0.28, -0.2, 0.53, -0.18, "#bfc0c0"),
+	},
+})
+
+add({
+	uid = 269,
+	id = "potato_chip",
+	name = "Potato Chip",
+	rarity = "Common",
+	tags = { "food", "snack", "bbq", "salty" },
+	hint = "Someone always drops one.",
+	weight = 1.8,
+	parts = {
+		lathe(
+			{ { 0, 0 }, { 0.45, 0.06 }, { 0.72, 0.22 }, { 0.8, 0.32 }, { 0.74, 0.34 }, { 0.42, 0.15 }, { 0, 0.1 } },
+			0, 0, 0, "#f6c453", nil, { lobes = 6, lobeDepth = 0.12, squash = { 1, 0.8 } }
+		),
+		blob(0.24, 0.05, 0.18, 0.3, 0.15, 0.05, "#d08c2c"),
+		blob(0.2, 0.05, 0.16, -0.34, 0.17, -0.12, "#d08c2c"),
+		ball(0.07, -0.1, 0.14, 0.22, "#ffffff"),
+		ball(0.07, 0.38, 0.17, -0.18, "#ffffff"),
+		ball(0.07, -0.42, 0.2, 0.14, "#ffffff"),
+	},
+})
+
+-- MORE BACKYARD: SMALL ---------------------------------------------------------------------------
+
+add({
+	uid = 270,
+	id = "picnic_cherries",
+	name = "Cherry Pair",
+	rarity = "Common",
+	tags = { "food", "fruit", "red", "sweet", "summer", "round" },
+	hint = "Twins from the picnic fruit bowl.",
+	parts = {
+		ball(1.3, -0.55, 0.65, 0.1, "#b5172f"),
+		ball(1.3, 0.62, 0.65, -0.12, "#c1121f"),
+		ball(0.32, -0.78, 0.98, 0.42, "#ff6b81"),
+		ball(0.32, 0.4, 0.98, 0.2, "#ff6b81"),
+		ball(0.26, -0.55, 1.26, 0.1, "#6a040f"),
+		ball(0.26, 0.62, 1.26, -0.12, "#6a040f"),
+		tube({ { -0.55, 1.22, 0.1 }, { -0.4, 1.9, 0.05 }, { 0.05, 2.6, 0 } }, 0.06, "#6a994e"),
+		tube({ { 0.62, 1.22, -0.12 }, { 0.5, 1.9, -0.08 }, { 0.05, 2.6, 0 } }, 0.06, "#6a994e"),
+		leaf(0.35, 2.62, 0.1, 0.9, 70, "#52b788", -10),
+		ball(0.16, 0.05, 2.62, 0, "#4f772d"),
+	},
+})
+
+add({
+	uid = 271,
+	id = "ice_cube",
+	name = "Melting Ice Cube",
+	rarity = "Common",
+	tags = { "cold", "drink", "summer", "clear" },
+	hint = "Escaped the cooler. Hurry!",
+	parts = {
+		box(2.2, 2.0, 2.2, 0, 1.0, 0, "#dff6ff", { mat = "Glass", t = 0.3, rot = { 0, 20, 0 } }),
+		ball(0.4, 0.25, 1.1, 0.1, "#ffffff", { t = 0.4 }),
+		ball(0.25, -0.35, 0.7, -0.3, "#ffffff", { t = 0.4 }),
+		box(1.2, 0.08, 0.3, -0.2, 2.0, 0.5, "#ffffff", { rot = { 0, 20, 0 }, t = 0.2 }),
+		blob(3.2, 0.1, 2.8, 0.3, 0.05, 0.2, "#a2d2ff", { mat = "Glass", t = 0.45 }),
+	},
+})
+
+add({
+	uid = 272,
+	id = "sidewalk_chalk",
+	name = "Sidewalk Chalk",
+	rarity = "Common",
+	tags = { "toy", "colorful", "art" },
+	hint = "Hopscotch is drawn by the patio.",
+	variants = { "#ff8fab", "#8ecae6", "#ffe066", "#95d5b2", "#cdb4db" },
+	parts = {
+		cylX(1.3, 3.0, -0.3, 0.65, 0, "#ff8fab", { mat = "Sand" }),
+		ball(1.1, 1.2, 0.6, 0, "#ff8fab", { mat = "Sand" }),
+		cylX(1.38, 1.3, -1.0, 0.65, 0, "#fff8e7", { mat = "Fabric" }),
+		box(1.0, 0.06, 0.1, -1.0, 1.33, 0, "#adb5bd"),
+		blob(2.2, 0.04, 0.9, 0.9, 0.02, 1.2, "#ff8fab", { t = 0.55, mat = "Sand", rot = { 0, 15, 0 } }),
+		ball(0.3, 2.0, 0.15, 0.7, "#ff8fab", { mat = "Sand" }),
+	},
+})
+
+add({
+	uid = 273,
+	id = "bouncy_ball",
+	name = "Super Bouncy Ball",
+	rarity = "Common",
+	tags = { "toy", "ball", "round", "colorful", "bouncy" },
+	hint = "Boinged over the fence from next door.",
+	variants = { "#7b2cbf", "#ff006e", "#3a86ff", "#ff9f1c" },
+	parts = {
+		ball(2.4, 0, 1.2, 0, "#7b2cbf", { refl = 0.1 }),
+		torus(1.13, 0.1, 0, 1.2, 0, "#ffd60a", { rot = { 25, 0, 15 } }),
+		torus(1.13, 0.1, 0, 1.2, 0, "#06d6a0", { rot = { -35, 60, 0 } }),
+	},
+})
+
+add({
+	uid = 274,
+	id = "toadstool",
+	name = "Spotty Toadstool",
+	rarity = "Common",
+	tags = { "plant", "mushroom", "red", "garden", "nature" },
+	hint = "Pops up in rings after the sprinkler runs.",
+	parts = (function()
+		local out = {
+			lathe({ { 0, 0 }, { 0.45, 0.02 }, { 0.4, 0.5 }, { 0.33, 1.15 }, { 0, 1.2 } }, 0, 0, 0, "#fff3dc"),
+			lathe({ { 0, 0 }, { 1.2, 0 }, { 1.18, 0.22 }, { 0.9, 0.62 }, { 0.45, 0.85 }, { 0, 0.9 } }, 0, 1.08, 0, "#e63946"),
+			cyl(2.15, 0.08, 0, 1.06, 0, "#f6e7c1"),
+			torus(0.36, 0.06, 0, 0.8, 0, "#f6e7c1"),
+			ball(0.36, 0, 1.97, 0, "#ffffff"),
+			leaf(0.4, 0.1, 0.25, 0.7, 60, GRASS, 10),
+		}
+		for i = 0, 4 do
+			local a = i / 5 * math.pi * 2
+			table.insert(out, ball(0.3, math.cos(a) * 0.76, 1.75, math.sin(a) * 0.76, "#ffffff"))
+			local b = a + math.pi / 5
+			table.insert(out, ball(0.2, math.cos(b) * 1.04, 1.48, math.sin(b) * 1.04, "#ffffff"))
+		end
+		return out
+	end)(),
+})
+
+add({
+	uid = 275,
+	id = "caterpillar",
+	name = "Hungry Caterpillar",
+	rarity = "Common",
+	tags = { "animal", "bug", "critter", "green", "wiggle", "garden" },
+	hint = "Munching through the lettuce, one leaf at a time.",
+	critter = { speed = 2.2, flee = 0.8, style = "wiggle", sound = "PopSoft" },
+	parts = (function()
+		local cols = { "#80b918", "#aacc00" }
+		local out = {}
+		for i = 0, 4 do
+			local z = -2.0 + i * 0.68
+			local x = math.sin(i * 1.1) * 0.15
+			local y = 0.42 + (if i % 2 == 1 then 0.06 else 0)
+			table.insert(out, ball(0.86, x, y, z, cols[i % 2 + 1], { tag = "body" }))
+			table.insert(out, ball(0.18, x - 0.3, y + 0.25, z, "#ffd60a"))
+			table.insert(out, ball(0.18, x + 0.3, y + 0.25, z, "#ffd60a"))
+			table.insert(out, ball(0.2, x - 0.25, 0.08, z + 0.1, "#4f772d"))
+			table.insert(out, ball(0.2, x + 0.25, 0.08, z + 0.1, "#4f772d"))
+		end
+		table.insert(out, ball(1.05, 0, 0.62, 1.45, "#70e000", { tag = "head" }))
+		for _, s in { -1, 1 } do
+			table.insert(out, tube({ { s * 0.15, 1.05, 1.4 }, { s * 0.25, 1.35, 1.5 }, { s * 0.35, 1.55, 1.45 } }, 0.04, INK))
+			table.insert(out, ball(0.16, s * 0.35, 1.58, 1.45, "#ff70a6"))
+		end
+		table.insert(out, blob(0.3, 0.08, 0.1, 0, 0.42, 1.94, "#3d2b1f"))
+		eyes(0.4, 0.28, 0.74, 1.86, out)
+		return out
+	end)(),
+})
+
+-- MORE BACKYARD: HANDHELD ------------------------------------------------------------------------
+
+add({
+	uid = 276,
+	id = "juice_box",
+	name = "Juice Box",
+	rarity = "Common",
+	tags = { "drink", "summer", "box", "orange" },
+	hint = "Squeezed flat by the kids' table.",
+	parts = {
+		box(4, 6.4, 2.6, 0, 3.2, 0, "#ffb703"),
+		box(3.3, 3.4, 0.16, 0, 3.0, 1.33, "#fff8e7"),
+		blob(1.7, 1.7, 0.3, 0, 3.1, 1.42, "#fb8500"),
+		blob(0.15, 1.5, 0.32, 0, 3.1, 1.43, "#ffd29d"),
+		blob(1.5, 0.15, 0.32, 0, 3.1, 1.43, "#ffd29d"),
+		blob(0.8, 0.45, 0.2, 0.75, 4.05, 1.42, "#52b788", { rot = { 0, 0, 30 } }),
+		box(4.04, 0.3, 2.64, 0, 6.2, 0, shade("#ffb703", -0.15)),
+		cyl(0.62, 0.06, 0.9, 6.42, -0.4, CHROME, { mat = "Foil" }),
+		tube({ { 0.9, 6.0, -0.4 }, { 0.9, 8.0, -0.4 }, { 1.05, 8.6, -0.4 }, { 1.5, 8.95, -0.4 }, { 2.0, 9.0, -0.4 } }, 0.17, "#ff70a6"),
+	},
+})
+
+add({
+	uid = 277,
+	id = "seed_packet",
+	name = "Seed Packet",
+	rarity = "Common",
+	tags = { "garden", "plant", "seed", "paper", "flower" },
+	hint = "Marks the end of the flower row.",
+	parts = {
+		box(5.6, 7.6, 0.36, 0, 7.4, 0, "#fff3dc"),
+		box(5.64, 1.5, 0.4, 0, 10.45, 0, "#2d6a4f"),
+		box(5.64, 0.6, 0.4, 0, 3.9, 0, "#2d6a4f"),
+		extrude(star(6, 1.35, 0.6), 0.1, 0, 7.6, 0.18, "#ff4d6d", { rot = { 90, 0, 0 } }, { smooth = 2 }),
+		blob(0.9, 0.9, 0.24, 0, 7.6, 0.3, "#ffd166"),
+		box(0.22, 2.4, 0.08, 0, 5.4, 0.2, "#40916c"),
+		blob(1.0, 0.4, 0.1, 0.45, 5.3, 0.22, "#52b788", { rot = { 0, 0, 25 } }),
+		box(3.2, 0.22, 0.06, 0, 10.6, 0.21, "#fff3dc"),
+		box(2.2, 0.18, 0.06, 0, 10.15, 0.21, "#b7e4c7"),
+		cyl(0.36, 4.8, 0, 2.4, -0.34, WOOD, { mat = "Wood" }),
+		blob(2.4, 0.6, 2.0, 0, 0.15, 0, "#5c4033"),
+	},
+})
+
+add({
+	uid = 278,
+	id = "ice_pop",
+	name = "Sunset Ice Pop",
+	rarity = "Uncommon",
+	tags = { "food", "sweet", "cold", "summer", "colorful" },
+	hint = "Dropped mid-lick. Melting fast!",
+	parts = {
+		box(3.6, 1.3, 6.2, 0, 0.68, 0.6, "#ff9f1c"),
+		box(3.66, 1.36, 1.6, 0, 0.68, 2.9, "#ff4d6d"),
+		blob(3.6, 1.3, 2.2, 0, 0.68, 3.7, "#ff4d6d"),
+		box(3.66, 1.36, 1.4, 0, 0.68, -1.9, "#ffd60a"),
+		box(1.0, 0.24, 4.4, 0, 0.36, -4.3, "#e9c46a", { rot = { -6, 0, 0 }, mat = "Wood" }),
+		blob(4.6, 0.08, 3.4, 0.5, 0.04, 4.6, "#ff4d6d", { t = 0.3 }),
+		ball(0.5, 1.5, 0.3, 3.0, "#ff4d6d"),
+		blob(0.5, 0.2, 0.9, -1.0, 1.35, 0.8, "#ffd29d"),
+	},
+})
+
+add({
+	uid = 279,
+	id = "smore",
+	name = "Gooey S'more",
+	rarity = "Common",
+	tags = { "food", "sweet", "campfire", "bbq" },
+	hint = "Toasted to perfection at the fire pit.",
+	parts = (function()
+		local GRAHAM = "#d4a373"
+		local out = {
+			box(5, 0.9, 5, 0, 0.45, 0, GRAHAM),
+			box(4.2, 0.55, 3.4, 0.1, 1.17, 0.1, "#5c3d2e"),
+			cyl(3.8, 1.5, 0, 2.2, 0, "#fff8f0"),
+			blob(4.6, 0.9, 4.2, 0.1, 2.1, 0.2, "#fffaf0"),
+			blob(3.9, 0.5, 3.9, 0, 2.95, 0, "#e9b872"),
+			box(5, 0.9, 5, 0.3, 3.6, -0.2, GRAHAM, { rot = { 0, 12, 4 } }),
+		}
+		for _, sx in { -1, 1 } do
+			for _, sz in { -1, 1 } do
+				table.insert(out, box(1.9, 0.14, 1.55, 0.1 + sx * 1.05, 1.5, 0.1 + sz * 0.85, "#6f4518"))
+			end
+		end
+		for _, p in { { -1.2, -1.0 }, { 1.4, -0.6 }, { -0.6, 1.3 }, { 1.1, 1.2 } } do
+			table.insert(out, ball(0.24, p[1], 4.02 + 0.07 * (p[1] - 0.3), p[2], "#a98467"))
+		end
+		return out
+	end)(),
+})
+
+add({
+	uid = 280,
+	id = "sunscreen",
+	name = "Sunscreen",
+	rarity = "Common",
+	tags = { "summer", "plastic", "bottle", "orange" },
+	hint = "SPF 50. Reapply after every roll.",
+	parts = {
+		lathe({ { 0, 0 }, { 1.6, 0 }, { 1.75, 0.35 }, { 1.75, 6.8 }, { 1.4, 8.0 }, { 0.85, 8.6 }, { 0, 8.65 } }, 0, 0, 0, "#ff9e00", nil, { squash = { 1, 0.55 } }),
+		lathe({ { 0, 0 }, { 0.9, 0 }, { 0.95, 1.5 }, { 0.75, 1.8 }, { 0, 1.85 } }, 0, 8.4, 0, "#ffffff", nil, { squash = { 1, 0.85 } }),
+		cyl(0.4, 0.3, 0.35, 10.3, 0, "#e9ecef"),
+		box(2.7, 3.6, 0.8, 0, 4.0, 0.62, "#ffffff"),
+		extrude(star(8, 0.9, 0.55), 0.1, 0, 4.5, 1.0, "#ffb703", { rot = { 90, 0, 0 } }),
+		blob(1.05, 1.05, 0.2, 0, 4.5, 1.12, "#ffd60a"),
+		box(1.7, 0.36, 0.06, 0, 2.95, 1.03, "#e63946"),
+		box(1.2, 0.2, 0.06, 0, 2.5, 1.03, "#3a86ff"),
+	},
+})
+
+add({
+	uid = 281,
+	id = "drumstick",
+	name = "BBQ Drumstick",
+	rarity = "Common",
+	tags = { "food", "bbq", "meat" },
+	hint = "Sticky, glazed and slightly charred.",
+	parts = (function()
+		local out = {
+			lathe(
+				{ { 0, 0 }, { 0.55, 0.15 }, { 0.62, 1.2 }, { 1.4, 3.2 }, { 1.9, 4.9 }, { 1.65, 6.4 }, { 0.9, 7.1 }, { 0, 7.25 } },
+				3.4, 1.9, 0, "#c8641e", { rot = { 0, 0, 90 } }
+			),
+			cylX(0.75, 2.6, 4.5, 1.9, 0, "#fff3dc"),
+			ball(1.05, 5.8, 1.9, -0.38, "#fff3dc"),
+			ball(1.05, 5.8, 1.9, 0.38, "#fff3dc"),
+			blob(2.6, 0.5, 1.5, -1.6, 3.55, -0.5, "#e88a3a"),
+		}
+		for _, m in { { -0.4, 3.42 }, { -1.5, 3.72 }, { -2.6, 3.56 } } do
+			table.insert(out, box(0.35, 0.2, 1.4, m[1], m[2], 0, "#6b2c0e", { rot = { 0, 30, 0 } }))
+		end
+		return out
+	end)(),
+})
+
+-- MORE BACKYARD: MEDIUM ------------------------------------------------------------------------
+
+add({
+	uid = 282,
+	id = "garden_glove",
+	name = "Garden Glove",
+	rarity = "Common",
+	tags = { "garden", "clothing", "fabric", "tool" },
+	hint = "Its partner is still missing.",
+	parts = (function()
+		local G = "#90be6d"
+		local out = {
+			blob(7, 1.7, 7.6, 0, 0.85, 0, G, { mat = "Fabric" }),
+			blob(7.6, 1.9, 4.4, 0, 0.95, -4.4, "#f9c74f", { mat = "Fabric" }),
+			blob(1.6, 1.4, 3.2, 3.6, 0.75, 1.4, G, { rot = { 0, 40, 0 }, mat = "Fabric" }),
+		}
+		for _, z in { -5.6, -4.4, -3.2 } do
+			local w = 7.6 * math.sqrt(1 - ((z + 4.4) / 2.3) ^ 2)
+			table.insert(out, blob(w, 2.0, 0.35, 0, 0.95, z, "#f3a712", { mat = "Fabric" }))
+		end
+		local lens = { 3.0, 3.8, 3.6, 2.8 }
+		for i, x in { -2.4, -0.8, 0.8, 2.3 } do
+			table.insert(out, blob(1.5, 1.4, lens[i] + 1.2, x * 1.04, 0.75, 3.0 + lens[i] / 2, G, { mat = "Fabric" }))
+		end
+		for _, f in { { -1.5, 1.5, 1.2 }, { 1.4, 1.55, -0.8 }, { 0.1, 1.62, 0.3 } } do
+			table.insert(out, extrude(star(5, 0.55, 0.25), 0.08, f[1], f[2], f[3], "#ff70a6", nil, { smooth = 2 }))
+			table.insert(out, ball(0.25, f[1], f[2] + 0.08, f[3], "#ffd166"))
+		end
+		return out
+	end)(),
+})
+
+add({
+	uid = 283,
+	id = "pinwheel",
+	name = "Garden Pinwheel",
+	rarity = "Uncommon",
+	tags = { "toy", "colorful", "summer", "garden", "plastic" },
+	hint = "Spins whenever someone rolls past.",
+	parts = (function()
+		local colors = { "#e63946", "#ffd60a", "#3a86ff", "#06d6a0" }
+		local out = {
+			cyl(0.8, 27, 0, 13.5, 0, "#ffffff"),
+			blob(3.4, 0.9, 3.4, 0, 0.25, 0, "#6f4518"),
+			ball(1.5, 0, 26, 1.1, "#ffd60a"),
+			cyl(0.4, 1.6, 0, 26, 0.3, CHROME, { rot = { 90, 0, 0 }, mat = "Metal" }),
+		}
+		for _, y in { 4, 9, 14, 19, 24 } do
+			table.insert(out, cyl(0.86, 1.2, 0, y, 0, "#e63946"))
+		end
+		for k = 0, 3 do
+			local blade = cwPoly(spinPoly({ { 0.3, 0.2 }, { 7.4, 1.0 }, { 5.4, 5.4 } }, k * 90))
+			table.insert(out, extrude(blade, 0.25, 0, 26, 0.55 + k * 0.04, colors[k + 1], { rot = { 90, 0, 0 } }, { bevel = 0.08 }))
+		end
+		return out
+	end)(),
+})
+
+add({
+	uid = 284,
+	id = "birdhouse",
+	name = "Birdhouse",
+	rarity = "Uncommon",
+	tags = { "wood", "house", "bird", "garden", "decor" },
+	hint = "Someone is home. Peek inside!",
+	parts = (function()
+		local BODY, ROOF, TRIM = "#8ecae6", "#e76f51", "#fff8ec"
+		local out = {
+			box(12, 13, 11, 0, 7.0, 0, BODY, { mat = "Wood" }),
+			box(13, 1, 12, 0, 0.5, 0, WOOD_DARK, { mat = "Wood" }),
+			extrude(cwPoly({ { -6, 0 }, { 6, 0 }, { 0, -4.5 } }), 11, 0, 13.4, -5.5, BODY, { rot = { 90, 0, 0 }, mat = "Wood" }, { bevel = 0.3 }),
+			box(9, 1, 13.4, -3.9, 15.6, 0, ROOF, { rot = { 0, 0, 36.87 }, mat = "Wood" }),
+			box(9, 1, 13.4, 3.9, 15.6, 0, ROOF, { rot = { 0, 0, -36.87 }, mat = "Wood" }),
+			cyl(1.2, 13.8, 0, 18.4, 0, shade(ROOF, -0.2), { rot = { 90, 0, 0 } }),
+			cyl(3.6, 0.3, 0, 9, 5.55, INK, { rot = { 90, 0, 0 } }),
+			torus(1.85, 0.32, 0, 9, 5.6, TRIM, { rot = { 90, 0, 0 } }),
+			cyl(0.6, 3.2, 0, 5.8, 6.9, WOOD, { rot = { 90, 0, 0 }, mat = "Wood" }),
+			ball(0.9, 0, 5.8, 8.5, WOOD, { mat = "Wood" }),
+			extrude(star(5, 1.1, 0.5), 0.2, 0, 14.6, 5.5, "#ffd166", { rot = { 90, 0, 0 } }, { smooth = 2 }),
+			ball(2.6, 0, 9.2, 5.2, "#ffd60a"),
+			lathe({ { 0, 0 }, { 0.35, 0.05 }, { 0.2, 0.5 }, { 0, 0.9 } }, 0, 8.8, 6.3, "#ff9f1c", { rot = { 90, 0, 0 } }),
+		}
+		for _, sx in { -1, 1 } do
+			for _, sz in { -1, 1 } do
+				table.insert(out, box(0.8, 13, 0.8, sx * 5.8, 7, sz * 5.5, TRIM, { mat = "Wood" }))
+			end
+		end
+		eyes(1.0, 0.6, 9.6, 6.25, out)
+		return out
+	end)(),
+})
+
+add({
+	uid = 285,
+	id = "firefly_jar",
+	name = "Firefly Jar",
+	rarity = "Rare",
+	tags = { "glass", "glow", "bug", "magic", "summer" },
+	hint = "Glows softly near the hedge as the sun goes down.",
+	weight = 0.7,
+	parts = (function()
+		local out = {
+			lathe({ { 0, 0 }, { 3.1, 0 }, { 3.5, 0.6 }, { 3.5, 9.0 }, { 3.0, 10.2 }, { 2.7, 10.8 }, { 0, 10.8 } }, 0, 0, 0, "#d8f3dc", { mat = "Glass", t = 0.55 }),
+			cyl(5.8, 1.4, 0, 11.3, 0, "#adb5bd", { mat = "Metal" }),
+			cyl(5.0, 0.3, 0, 12.1, 0, "#ced4da", { mat = "Metal" }),
+			torus(3.1, 0.2, 0, 10.0, 0, "#e63946"),
+			blob(1.6, 1.0, 0.5, 2.0, 10.0, 2.6, "#e63946", { rot = { 0, 40, 0 } }),
+			tube({ { -3.0, 11.2, 0 }, { -3.6, 14.2, 0 }, { 0, 16.0, 0 }, { 3.6, 14.2, 0 }, { 3.0, 11.2, 0 } }, 0.16, CHROME, { mat = "Metal" }),
+		}
+		for _, h in { { -1.2, 0.8 }, { 0, -1.3 }, { 1.2, 0.6 } } do
+			table.insert(out, cyl(0.5, 0.12, h[1], 12.22, h[2], INK, { sharp = true }))
+		end
+		for i = 0, 4 do
+			local a = i * 1.3
+			table.insert(out, leaf(math.cos(a) * 1.4, 1.2, math.sin(a) * 1.4, 2.6, math.deg(a), if i % 2 == 0 then GRASS else GRASS_DARK, 60))
+		end
+		for _, f in { { -1.2, 3.2, 0.6 }, { 1.0, 5.6, -0.8 }, { 0.2, 8.0, 1.0 }, { -0.7, 6.4, -1.2 }, { 1.4, 2.6, 1.0 } } do
+			table.insert(out, ball(0.8, f[1], f[2], f[3], "#fff3b0", { neon = true }))
+			table.insert(out, ball(0.35, f[1], f[2] + 0.35, f[3] + 0.2, INK))
+		end
+		return out
+	end)(),
+})
+
+add({
+	uid = 286,
+	id = "toy_dump_truck",
+	name = "Sandpit Dump Truck",
+	rarity = "Common",
+	tags = { "toy", "vehicle", "wheels", "yellow", "plastic" },
+	hint = "Hauling sand from the sandpit, one scoop at a time.",
+	parts = (function()
+		local Y, R = "#ffbe0b", "#e63946"
+		local GLASS = "#a2d2ff"
+		local out = {
+			box(8, 2, 18, 0, 3.6, 0, Y),
+			box(7.6, 5.6, 6, 0, 7.4, 5.6, Y),
+			box(6.4, 2.4, 0.3, 0, 8.6, 8.6, GLASS, { mat = "Glass", t = 0.15 }),
+			box(0.3, 2.2, 3.6, -3.8, 8.6, 5.8, GLASS, { mat = "Glass", t = 0.15 }),
+			box(0.3, 2.2, 3.6, 3.8, 8.6, 5.8, GLASS, { mat = "Glass", t = 0.15 }),
+			box(8.8, 1.4, 1.2, 0, 3.4, 9.4, "#6c757d"),
+			cyl(1.1, 0.3, -2.6, 5.8, 8.7, "#fff3b0", { rot = { 90, 0, 0 }, neon = true }),
+			cyl(1.1, 0.3, 2.6, 5.8, 8.7, "#fff3b0", { rot = { 90, 0, 0 }, neon = true }),
+			box(8.4, 0.8, 10.4, 0, 5.0, -3.6, R),
+			box(0.8, 4, 10.4, -3.8, 7.2, -3.6, R),
+			box(0.8, 4, 10.4, 3.8, 7.2, -3.6, R),
+			box(8.4, 4, 0.8, 0, 7.2, -8.4, R),
+			box(8.4, 4.6, 0.8, 0, 7.5, 1.2, R),
+			blob(6.8, 2.6, 8.8, 0, 8.6, -3.6, "#f4d58d", { mat = "Sand" }),
+		}
+		for _, x in { -4.3, 4.3 } do
+			for _, z in { 5.6, -5.0 } do
+				table.insert(out, cylX(4.6, 1.8, x, 2.3, z, "#2b2d42"))
+				table.insert(out, cylX(2.2, 1.9, x, 2.3, z, "#ffffff"))
+				table.insert(out, cylX(0.8, 2.0, x, 2.3, z, Y))
+			end
+		end
+		return out
+	end)(),
+})
+
+add({
+	uid = 287,
+	id = "golden_spatula",
+	name = "Grillmaster's Golden Spatula",
+	rarity = "Legendary",
+	tags = { "bbq", "metal", "shiny", "gold", "tool", "magic" },
+	hint = "Passed down from Grandpa. Only flips the finest burgers.",
+	weight = 0.4,
+	parts = (function()
+		local GOLD = "#ffd166"
+		local out = {
+			box(7, 0.4, 8.4, 0, 0.2, 7, GOLD, { mat = "Foil" }),
+			tube({ { 0, 0.3, 3.4 }, { 0, 0.9, 1.4 }, { 0, 2.0, -0.4 } }, 0.38, GOLD, { mat = "Foil" }),
+			box(1.7, 1.4, 9, 0, 1.35, -4.9, "#7f5539", { rot = { -8.2, 0, 0 }, mat = "Wood" }),
+			cyl(2.0, 1.2, 0, 1.93, -0.9, GOLD, { rot = { 98.2, 0, 0 }, mat = "Foil" }),
+			ball(0.45, 0, 2.3, -3.0, GOLD, { mat = "Foil" }),
+			ball(0.45, 0, 1.8, -6.5, GOLD, { mat = "Foil" }),
+			torus(0.8, 0.2, 0, 0.2, -10.1, GOLD, { mat = "Foil" }),
+			extrude(cwPoly(S.starOutline(4, 1.3, 0.35)), 0.25, 2.6, 1.7, 10.0, "#fff3b0", { rot = { 90, 0, 0 }, neon = true }),
+			extrude(cwPoly(S.starOutline(4, 0.9, 0.25)), 0.2, -2.4, 1.3, 4.0, "#fff3b0", { rot = { 90, 0, 0 }, neon = true }),
+		}
+		for _, x in { -1.8, 0, 1.8 } do
+			table.insert(out, box(0.55, 0.44, 5, x, 0.2, 7.6, "#b8892b", { mat = "Foil" }))
+		end
+		return out
+	end)(),
+})
+
+add({
+	uid = 288,
+	id = "robin",
+	name = "Robin Redbreast",
+	rarity = "Uncommon",
+	tags = { "animal", "critter", "bird", "hop", "garden" },
+	hint = "Hops along the lawn listening for worms.",
+	critter = { speed = 14, flee = 1.6, style = "hop", sound = "PopSoft" },
+	parts = (function()
+		local BROWN, BREAST, WING = "#7a5c45", "#f4844c", "#634832"
+		local out = {
+			blob(6, 6, 8, 0, 5, 0, BROWN, { tag = "body" }),
+			blob(4.8, 5, 4.2, 0, 4.8, 2.0, BREAST, { tag = "body" }),
+			blob(4, 1.6, 3.4, 0, 2.4, 1.0, "#f8edeb"),
+			ball(4.6, 0, 8.8, 2.4, BROWN, { tag = "head" }),
+			blob(3.4, 2.8, 2.0, 0, 7.8, 3.9, BREAST),
+			lathe({ { 0, 0 }, { 0.45, 0.05 }, { 0.3, 0.7 }, { 0, 1.5 } }, 0, 8.6, 4.4, "#ffb703", { rot = { 90, 0, 0 } }),
+			blob(1.4, 3.6, 6, -3, 5.4, -0.4, WING, { tag = "wing" }),
+			blob(1.4, 3.6, 6, 3, 5.4, -0.4, WING, { tag = "wing" }),
+			blob(3, 0.8, 5.4, 0, 6.2, -5.4, WING, { rot = { 25, 0, 0 }, tag = "tail" }),
+		}
+		legs2(out, 2.2, 2.4, 0.45, "#c9a227")
+		eyes(2.2, 0.95, 9.5, 4.3, out)
+		return out
+	end)(),
+})
+
+-- MORE BACKYARD: LARGE -------------------------------------------------------------------------
+
+add({
+	uid = 289,
+	id = "swim_ring",
+	name = "Duckie Swim Ring",
+	rarity = "Uncommon",
+	tags = { "toy", "summer", "plastic", "water", "round", "duck" },
+	hint = "Floats in the paddling pool. Quack!",
+	parts = (function()
+		local Y = "#ffd60a"
+		local out = {
+			torus(15, 6.5, 0, 6.5, 0, Y),
+			blob(6, 9, 6, 0, 13, 15.5, Y),
+			ball(9, 0, 19.5, 16.5, Y),
+			blob(4.8, 1.6, 4.2, 0, 18.6, 21.2, "#ff9f1c"),
+			blob(1.4, 0.9, 0.3, -3.0, 18.8, 19.9, "#ff8fab"),
+			blob(1.4, 0.9, 0.3, 3.0, 18.8, 19.9, "#ff8fab"),
+			blob(5, 4, 4, 0, 12.5, -16, Y, { rot = { 30, 0, 0 } }),
+			cyl(1.4, 1.6, 12, 13.2, -6, "#ffffff", { rot = { 0, 0, -30 } }),
+		}
+		for k = 0, 3 do
+			table.insert(out, torus(15, 6.6, 0, 6.5, 0, "#ffffff", { rot = { 0, k * 90 + 20, 0 } }, { arc = 0.45 }))
+		end
+		eyes(3.4, 1.7, 20.8, 20.3, out)
+		return out
+	end)(),
+})
+
+add({
+	uid = 290,
+	id = "skateboard",
+	name = "Skateboard",
+	rarity = "Uncommon",
+	tags = { "toy", "sports", "wheels", "wood" },
+	hint = "Abandoned mid-kickflip on the patio.",
+	parts = (function()
+		local DECK, GRIP = "#ff006e", "#2b2d42"
+		local out = {
+			box(21, 1.4, 48, 0, 9, 0, DECK, { mat = "Wood" }),
+			box(20, 0.2, 47, 0, 9.75, 0, GRIP, { mat = "Sand" }),
+			box(21.1, 0.35, 48.1, 0, 8.6, 0, "#ffd60a"),
+			extrude(star(5, 4, 1.8), 0.15, 0, 9.8, 0, "#ffffff"),
+		}
+		local a = math.rad(15)
+		for _, s in { -1, 1 } do
+			table.insert(out, box(21, 1.4, 8, 0, 9 + 4 * math.sin(a), s * (24 + 4 * math.cos(a)), DECK, { rot = { -s * 15, 0, 0 }, mat = "Wood" }))
+			table.insert(out, cyl(21, 1.4, 0, 9 + 8 * math.sin(a), s * (24 + 8 * math.cos(a)), DECK, { rot = { -s * 15, 0, 0 }, mat = "Wood" }))
+			local z = s * 18
+			table.insert(out, box(6, 1.2, 4, 0, 7.7, z, CHROME, { mat = "Metal" }))
+			table.insert(out, box(2.6, 2.6, 2.6, 0, 5.8, z, "#adb5bd", { mat = "Metal" }))
+			table.insert(out, box(15, 1.8, 2.4, 0, 3.6, z, "#adb5bd", { mat = "Metal" }))
+			table.insert(out, cylX(0.8, 21, 0, 2.8, z, CHROME, { mat = "Metal" }))
+			for _, x in { -9.2, 9.2 } do
+				table.insert(out, cylX(5.6, 3.6, x, 2.8, z, "#ffd60a"))
+				table.insert(out, cylX(2.2, 3.7, x, 2.8, z, CHROME, { mat = "Metal" }))
+			end
+		end
+		return out
+	end)(),
+})
+
+add({
+	uid = 291,
+	id = "bird_bath",
+	name = "Stone Bird Bath",
+	rarity = "Uncommon",
+	tags = { "garden", "stone", "water", "bird", "decor" },
+	hint = "The sparrows' favourite splash spot.",
+	parts = (function()
+		local STONE = "#cfc7b8"
+		local BLUE = "#4cc9f0"
+		local out = {
+			lathe({ { 0, 0 }, { 11, 0 }, { 11, 2.5 }, { 8, 3.6 }, { 4.6, 6 }, { 3.6, 20 }, { 4.6, 33 }, { 6.5, 35.5 }, { 0, 36 } }, 0, 0, 0, STONE, { mat = "Slate" }),
+			lathe({ { 0, 0 }, { 7, 0 }, { 16, 3.5 }, { 21, 7 }, { 21.2, 8.8 }, { 19.6, 9.2 }, { 14, 8.2 }, { 0, 7.9 } }, 0, 35, 0, shade(STONE, 0.08), { mat = "Slate" }),
+			cyl(39, 0.5, 0, 43.2, 0, "#74c0fc", { mat = "Glass", t = 0.2 }),
+			torus(6, 0.18, -5, 43.45, -4, "#e7f5ff", nil, { flatten = 0.4 }),
+			torus(4.1, 0.6, 0, 20, 0, shade(STONE, -0.12), { mat = "Slate" }),
+			blob(7, 1.4, 4, 14, 44, -9, "#7fb069"),
+			blob(4, 1, 3, -16, 43.8, -8, "#90be6d"),
+			-- a blue tit perched on the rim, looking out
+			blob(3.6, 3.4, 5, 0, 46.4, 20.0, BLUE, { tag = "body" }),
+			blob(2.6, 2.4, 3, 0, 45.9, 20.8, "#ffd60a"),
+			ball(2.8, 0, 48.8, 21.4, BLUE),
+			blob(2.4, 1.8, 1.4, 0, 48.4, 22.4, "#ffffff"),
+			blob(1.2, 0.8, 3, 0, 47.2, 17.0, shade(BLUE, -0.3), { rot = { 20, 0, 0 } }),
+			lathe({ { 0, 0 }, { 0.3, 0.05 }, { 0.15, 0.4 }, { 0, 0.7 } }, 0, 48.5, 22.6, INK, { rot = { 90, 0, 0 } }),
+			cyl(0.3, 0.8, -0.5, 44.6, 20.4, "#495057"),
+			cyl(0.3, 0.8, 0.5, 44.6, 20.4, "#495057"),
+		}
+		eyes(1.2, 0.55, 49.1, 22.55, out)
+		return out
+	end)(),
+})
+
+add({
+	uid = 292,
+	id = "golden_flamingo",
+	name = "Gilded Flamingo",
+	rarity = "Epic",
+	tags = { "decor", "bird", "gold", "shiny" },
+	hint = "Won 'Best Lawn' three summers running.",
+	weight = 0.6,
+	parts = (function()
+		local GOLD, GOLD_DARK = "#ffcf3f", "#e0a526"
+		local out = {
+			cyl(10, 2, 0, 1, 0, "#2b2d42", { mat = "Marble" }),
+			cyl(10.6, 0.6, 0, 2.1, 0, GOLD, { mat = "Foil" }),
+			cyl(1, 22, 0, 13, 0, GOLD, { mat = "Foil" }),
+			tube({ { 0, 22, 0 }, { 1.0, 17.5, 2.2 }, { 0.5, 15, -1.6 } }, 0.5, GOLD, { mat = "Foil" }),
+			blob(10, 8, 16, 0, 27, 0, GOLD, { mat = "Foil", tag = "body" }),
+			tube({ { 0, 29, 5.5 }, { 0, 34, 8.5 }, { 0, 38.5, 5.5 }, { 0, 42.5, 6 }, { 0, 45, 8.6 } }, { 1.5, 1.2, 1.0, 1.0, 1.1 }, GOLD, { mat = "Foil" }),
+			ball(5, 0, 45.6, 9.4, GOLD, { mat = "Foil", tag = "head" }),
+			blob(2, 1.8, 2.4, 0, 45.0, 11.8, "#fff3dc"),
+			wedge(1.8, 2, 3.4, 0, 44.0, 12.8, INK, { rot = { 30, 0, 0 } }),
+			blob(3, 6, 12, -4.6, 28, -1, GOLD_DARK, { mat = "Foil", tag = "wing" }),
+			blob(3, 6, 12, 4.6, 28, -1, GOLD_DARK, { mat = "Foil", tag = "wing" }),
+			blob(5, 2, 6, 0, 29.5, -8.5, GOLD_DARK, { rot = { 20, 0, 0 }, mat = "Foil" }),
+			extrude(cwPoly(S.starOutline(4, 1.6, 0.4)), 0.3, 3.6, 4.0, 2.4, "#fff3b0", { rot = { 90, 0, 0 }, neon = true }),
+			extrude(cwPoly(S.starOutline(4, 1.1, 0.3)), 0.3, -3.4, 3.5, -1.8, "#fff3b0", { rot = { 90, 0, 0 }, neon = true }),
+		}
+		eyes(2.4, 1.0, 46.4, 11.3, out)
+		return out
+	end)(),
+})
+
+add({
+	uid = 293,
+	id = "trampoline",
+	name = "Trampoline",
+	rarity = "Uncommon",
+	tags = { "toy", "sports", "round", "summer", "metal" },
+	hint = "Boing! The kids are on a snack break.",
+	parts = (function()
+		local STEEL = "#adb5bd"
+		local R = 44
+		local out = {
+			cyl(R * 2 - 8, 0.6, 0, 27.6, 0, INK, { mat = "Fabric" }),
+			cyl(16, 0.64, 0, 27.62, 0, "#ff006e", { mat = "Fabric" }),
+			torus(R, 1.6, 0, 27.6, 0, STEEL, { mat = "Metal" }),
+			torus(R, 4.4, 0, 28.6, 0, "#3a86ff", nil, { flatten = 0.4 }),
+			box(2, 30, 2, -6, 15, R + 6, STEEL, { mat = "Metal" }),
+			box(2, 30, 2, 6, 15, R + 6, STEEL, { mat = "Metal" }),
+		}
+		for k = 0, 5 do
+			table.insert(out, torus(R, 4.5, 0, 28.6, 0, "#ffd60a", { rot = { 0, k * 60, 0 } }, { flatten = 0.4, arc = 0.38 }))
+			local a = math.rad(k * 60 + 30)
+			table.insert(out, cyl(2.6, 27, math.cos(a) * R, 13.5, math.sin(a) * R, STEEL, { mat = "Metal" }))
+			table.insert(out, blob(7, 2, 7, math.cos(a) * R, 1, math.sin(a) * R, "#495057"))
+		end
+		for _, y in { 8, 16, 24 } do
+			table.insert(out, box(14, 1.6, 2.4, 0, y, R + 6, "#ffd60a"))
+		end
+		return out
+	end)(),
+})
+
+add({
+	uid = 294,
+	id = "picnic_table",
+	name = "Picnic Table",
+	rarity = "Common",
+	tags = { "furniture", "wood", "bbq", "picnic" },
+	hint = "Where every BBQ ends up. Bring napkins.",
+	parts = (function()
+		local W = "#c58c56"
+		local out = {}
+		for i = -2, 2 do
+			table.insert(out, box(140, 4, 13, 0, 72, i * 14, if i % 2 == 0 then W else shade(W, -0.08), { mat = "Wood" }))
+		end
+		for _, s in { -1, 1 } do
+			table.insert(out, box(136, 4, 10, 0, 42, s * 45, W, { mat = "Wood" }))
+			table.insert(out, box(136, 4, 10, 0, 42, s * 56, shade(W, -0.08), { mat = "Wood" }))
+		end
+		for _, x in { -52, 52 } do
+			for _, s in { -1, 1 } do
+				table.insert(out, box(5, 78.7, 7, x, 35, s * 30, WOOD_DARK, { rot = { -s * 27.2, 0, 0 }, mat = "Wood" }))
+			end
+			table.insert(out, box(5, 5, 124, x, 37.5, 0, WOOD_DARK, { mat = "Wood" }))
+			table.insert(out, box(5, 5, 64, x, 67.5, 0, WOOD_DARK, { mat = "Wood" }))
+		end
+		table.insert(out, box(56, 0.4, 70.6, 0, 74.2, 0, "#e63946", { mat = "Fabric" }))
+		for ix = 0, 3 do
+			for iz = 0, 4 do
+				if (ix + iz) % 2 == 0 then
+					table.insert(out, box(14, 0.42, 14.1, -21 + ix * 14, 74.22, -28.2 + iz * 14.1, "#fff1e6", { mat = "Fabric", sharp = true }))
+				end
+			end
+		end
+		-- Modelled at full size, shipped a little smaller so it fits between the yard's platforms.
+		return S.transform(out, 0.86, 0, 0, 0)
+	end)(),
+})
+
+add({
+	uid = 295,
+	id = "swing_set",
+	name = "Swing Set",
+	rarity = "Uncommon",
+	tags = { "toy", "metal", "summer", "colorful" },
+	hint = "Squeaks a little on the way up.",
+	parts = (function()
+		local FRAME = "#3a86ff"
+		local HALF = 60
+		local out = {
+			cylX(5, HALF * 2 + 8, 0, 128, 0, "#e63946", { mat = "Metal" }),
+		}
+		for _, side in { -1, 1 } do
+			local x = side * HALF
+			for _, s in { -1, 1 } do
+				table.insert(out, cyl(4.4, 134.7, x, 64, s * 21, FRAME, { rot = { -s * 18.2, 0, 0 }, mat = "Metal" }))
+				table.insert(out, blob(8, 2, 8, x, 1, s * 42, "#adb5bd"))
+			end
+			table.insert(out, box(3, 3, 64.4, x, 30, 0, FRAME, { mat = "Metal" }))
+			table.insert(out, ball(7, side * (HALF + 4), 128, 0, "#ffd60a"))
+		end
+		local seats = { "#ffd60a", "#06d6a0" }
+		for i, x in { -29, 29 } do
+			for _, dx in { -9, 9 } do
+				table.insert(out, cyl(0.8, 88, x + dx, 82, 0, CHROME, { mat = "Metal" }))
+				table.insert(out, torus(1.4, 0.45, x + dx, 126.2, 0, CHROME, { rot = { 90, 0, 0 }, mat = "Metal" }))
+			end
+			table.insert(out, box(22, 2, 10, x, 37, 0, seats[i]))
+		end
+		return out
+	end)(),
+})
+
+add({
+	uid = 296,
+	id = "garden_shed",
+	name = "Garden Shed",
+	rarity = "Uncommon",
+	tags = { "wood", "house", "garden", "building" },
+	hint = "Full of tools nobody can ever find.",
+	parts = (function()
+		local WALL, ROOF, TRIM, DOOR = "#88b49a", "#6d4c41", "#fff8ec", "#5f8f73"
+		local W, D, EAVE, RISE = 56, 42, 102, 36 -- half width, half depth, wall height, roof rise
+		local ridge = EAVE + RISE
+		local slope = math.atan2(RISE, D)
+		local sn, cs = math.sin(slope), math.cos(slope)
+		local deg = math.deg(slope)
+		local slab = math.sqrt(D * D + RISE * RISE) + 6
+		local front = D + 0.6
+		local out = {
+			box(W * 2, EAVE - 2, D * 2, 0, EAVE / 2 + 1, 0, WALL, { mat = "WoodPlanks" }),
+			box(W * 2 + 8, 4, D * 2 + 8, 0, 2, 0, "#8d99ae", { mat = "Slate" }),
+			extrude(cwPoly({ { 0, -D }, { 0, D }, { -RISE, 0 } }), W * 2, -W, EAVE, 0, WALL, { rot = { 0, 0, -90 }, mat = "WoodPlanks" }, { bevel = 1 }),
+			box(W * 2 + 14, 4, 8, 0, ridge + 2.5, 0, shade(ROOF, -0.2), { mat = "Slate" }),
+			-- door with a Z brace
+			box(34, 72, 2, -20, 40, front, DOOR, { mat = "WoodPlanks" }),
+			box(3, 70, 1, -20, 40, front + 1.1, TRIM, { rot = { 0, 0, 25 } }),
+			box(3, 72, 1, -37, 40, front + 1.1, TRIM),
+			box(3, 72, 1, -3, 40, front + 1.1, TRIM),
+			box(37, 3, 1, -20, 76, front + 1.1, TRIM),
+			ball(3, -7, 40, front + 1.6, CHROME, { mat = "Metal" }),
+			-- window + flower box
+			box(30, 26, 1.6, 27, 64, front, TRIM),
+			box(26, 22, 1.8, 27, 64, front, "#a2d2ff", { mat = "Glass", t = 0.15 }),
+			box(26, 1.4, 2, 27, 64, front, TRIM),
+			box(1.4, 22, 2, 27, 64, front, TRIM),
+			box(34, 7, 8, 27, 46, front + 3.4, "#e76f51", { mat = "Wood" }),
+			blob(32, 4, 6, 27, 50, front + 3.4, "#52b788"),
+		}
+		for _, s in { -1, 1 } do
+			local mid = slab / 2
+			table.insert(out, box(W * 2 + 12, 5, slab, 0, ridge - mid * sn + 2.5 * cs, s * (mid * cs + 2.5 * sn), ROOF, { rot = { s * deg, 0, 0 }, mat = "Slate" }))
+			for _, d in { 14, 28, 42 } do
+				table.insert(out, box(W * 2 + 12, 0.8, 1.6, 0, ridge - d * sn + 5.4 * cs, s * (d * cs + 5.4 * sn), shade(ROOF, -0.12), { rot = { s * deg, 0, 0 } }))
+			end
+			for _, sz in { -1, 1 } do
+				table.insert(out, box(4, EAVE - 2, 4, s * (W - 1), EAVE / 2 + 1, sz * (D - 1), TRIM))
+			end
+		end
+		local flowers = { "#ff4d6d", "#ffd60a", "#c77dff", "#ff8fab", "#ffffff" }
+		for i = 0, 4 do
+			table.insert(out, ball(6, 15 + i * 6, 52, front + 3.4 + (i % 2) * 1.5, flowers[i + 1]))
+		end
+		return out
+	end)(),
 })
 
 -- LANDMARK ------------------------------------------------------------------------------------
