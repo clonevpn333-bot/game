@@ -125,7 +125,7 @@ local Tuning = {
 
 	Round = {
 		Length = 450,
-		EventTimes = { 165 }, -- seconds after round start when the round's world event fires
+		EventTimes = { 120, 270 }, -- seconds after round start when the round's big world events fire
 		FinalRoll = 60,
 		Launch = 9,
 		Results = 12,

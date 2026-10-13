@@ -15,6 +15,7 @@ local DT = 0.1
 local LENGTH = 450
 
 local startClock = os.clock()
+local pacing = {} -- { kit, first60, maxGap } for the assertions at the bottom
 -- First entry = the shipped tuning; add rows to compare alternatives.
 local CONFIGS = {
 	{ Gain = Tuning.Growth.Gain, EarlyBoost = Tuning.Growth.EarlyBoost, EarlyScale = Tuning.Growth.EarlyScale },
@@ -101,8 +102,20 @@ for _, kit in Kits.List do
 				last = at
 			end
 		end
+		table.insert(pacing, { kit = kit.id, first60 = first60, maxGap = maxGap })
 		print(string.format("%-15s seed %-3d | first 60s: %3d absorbs, longest gap %.1fs | D @10s %.1f @30s %.1f @60s %.1f @2m %.1f @4m %.1f @6m %.1f @end %.1f | total %d",
 			kit.id, seed, first60, maxGap, marks[10] or 0, marks[30] or 0, marks[60] or 0, marks[120] or 0, marks[240] or 0, marks[360] or 0, marks[450] or d, #absorbTimes))
 	end
 end
 end
+
+-- The first minute is the game's hook: every kit must keep a greedy roller busy.
+describe("Growth pacing", function()
+	it("every kit gives 200+ pickups in the first minute with no gap over 2s", function()
+		expect(#pacing).toBeGreaterThan(0)
+		for _, r in pacing do
+			expect(r.first60).toBeGreaterThan(199)
+			expect(r.maxGap).toBeLessThan(2)
+		end
+	end)
+end)

@@ -10,6 +10,7 @@ local Shared = ReplicatedStorage.Shared
 local Net = require(Shared.Net)
 local Guard = require(Shared.Util.Guard)
 local Tuning = require(Shared.Config.Tuning)
+local Events = require(Shared.Data.Events)
 
 local DevService = {}
 
@@ -89,6 +90,13 @@ function DevService:start()
 		elseif payload.cmd == "finalroll" and services.RoundService:isPlaying() then
 			services.RoundService.endsAt = workspace:GetServerTimeNow() + Tuning.Round.FinalRoll
 			return true
+		elseif payload.cmd == "event" and services.EventService then
+			local def = Events.List[math.floor(payload.arg or 1)]
+			if def then
+				services.EventService:stop()
+				return services.EventService:trigger(def.id, player.DisplayName)
+			end
+			return false
 		elseif payload.cmd == "endround" and services.RoundService:isPlaying() then
 			services.RoundService.endsAt = workspace:GetServerTimeNow() + 1
 			return true

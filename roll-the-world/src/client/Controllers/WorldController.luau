@@ -25,6 +25,8 @@ local PropBuilder = require(Shared.PropBuilder)
 
 local WorldController = {}
 
+local STARFALL = (Mutations.ById.Starfall and Mutations.ById.Starfall.index) or 5
+
 WorldController.props = {} :: { [number]: any }
 WorldController.hash = SpatialHash.new(32)
 WorldController.maxRadius = 1
@@ -345,14 +347,29 @@ local function onLoot(buf, origins, settles)
 			self.maxRadius = math.max(self.maxRadius, p.radius)
 			local from = origins[i]
 			if typeof(from) == "Vector3" and spawnVisual(p) and p.model then
+				local to = Vector3.new(p.x, p.y, p.z)
+				-- Meteors streak in on a straight line with a flaming tail instead of a lob.
+				local meteor = p.mutation == STARFALL and (from - to).Magnitude > 120
+				local fx = nil
+				if meteor and controllers.VFXController and p.model.PrimaryPart then
+					fx = controllers.VFXController:meteorTrail(p.model.PrimaryPart, math.max(1.5, p.absorbSize))
+				end
+				if meteor and controllers.AudioController and state.ball then
+					local dist = (state.ball.Position - to).Magnitude
+					if dist < 400 then
+						controllers.AudioController:play("Meteor", { volume = math.clamp(1 - dist / 400, 0.15, 1) })
+					end
+				end
 				table.insert(arcs, {
 					prop = p,
 					from = from,
-					to = Vector3.new(p.x, p.y, p.z),
+					to = to,
 					t0 = now,
 					dur = settle,
-					spin = (math.random() - 0.5) * 12,
-					height = math.max(6, (from - Vector3.new(p.x, p.y, p.z)).Magnitude * 0.35),
+					spin = (math.random() - 0.5) * (if meteor then 30 else 12),
+					height = if meteor then 0 else math.max(6, (from - to).Magnitude * 0.35),
+					meteor = meteor,
+					fx = fx,
 				})
 			end
 		end
@@ -505,19 +522,48 @@ local function animateArcs()
 		local a = arcs[i]
 		local p = a.prop
 		if not p.model or p.state ~= "world" then
+			if a.fx then
+				for _, inst in a.fx do
+					inst:Destroy()
+				end
+			end
 			table.remove(arcs, i)
 			continue
 		end
 		local t = math.clamp((now - a.t0) / a.dur, 0, 1)
-		local pos = a.from:Lerp(a.to, t) + Vector3.new(0, math.sin(t * math.pi) * a.height, 0)
+		local pos
+		if a.meteor then
+			-- Accelerates into the ground like it's falling from orbit.
+			pos = a.from:Lerp(a.to, t ^ 1.7)
+		else
+			pos = a.from:Lerp(a.to, t) + Vector3.new(0, math.sin(t * math.pi) * a.height, 0)
+		end
 		local spin = CFrame.Angles(a.spin * (1 - t) * t, p.yaw + a.spin * t, 0)
 		p.model:PivotTo(CFrame.new(pos) * spin)
 		if t >= 1 then
 			placeModel(p)
-			if controllers.VFXController then
-				controllers.VFXController:dust(a.to, math.max(1, p.absorbSize * 0.6))
+			local vfx = controllers.VFXController
+			if a.meteor then
+				if vfx then
+					vfx:meteorImpact(a.to, p.absorbSize)
+				end
+				if controllers.CameraController and state.ball then
+					local dist = (state.ball.Position - a.to).Magnitude
+					local reach = 60 + p.absorbSize * 10
+					if dist < reach then
+						controllers.CameraController:shake(0.5 * (1 - dist / reach))
+					end
+				end
+			elseif vfx then
+				vfx:dust(a.to, math.max(1, p.absorbSize * 0.6))
 			end
 			table.remove(arcs, i)
+		end
+		if t >= 1 and a.fx then
+			for _, inst in a.fx do
+				inst:Destroy()
+			end
+			a.fx = nil
 		end
 	end
 end

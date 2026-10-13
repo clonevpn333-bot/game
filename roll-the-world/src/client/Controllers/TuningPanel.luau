@@ -12,6 +12,7 @@ local Shared = ReplicatedStorage.Shared
 local Net = require(Shared.Net)
 local Theme = require(Shared.Config.Theme)
 local Tuning = require(Shared.Config.Tuning)
+local Events = require(Shared.Data.Events)
 local Ui = require(script.Parent.Parent.UI.Ui)
 
 local TuningPanel = {}
@@ -125,8 +126,8 @@ function TuningPanel:start()
 		end })
 	end
 	local actions = Ui.new("Frame", {
-		Position = UDim2.new(0, 0, 1, -84),
-		Size = UDim2.new(1, 0, 0, 84),
+		Position = UDim2.new(0, 0, 1, -126),
+		Size = UDim2.new(1, 0, 0, 126),
 		BackgroundTransparency = 1,
 		Parent = panel,
 	}, { Ui.new("UIGridLayout", { CellSize = UDim2.fromOffset(100, 36), CellPadding = UDim2.fromOffset(6, 6) }) })
@@ -140,6 +141,15 @@ function TuningPanel:start()
 	cmd("Reset size", "reset")
 	cmd("Final Roll", "finalroll")
 	cmd("End round", "endround")
+	-- Cycles through every world event so each can be tested on demand.
+	local eventIndex = 0
+	local eventButton
+	eventButton = Ui.button({ text = "Event ▶", size = UDim2.fromOffset(100, 36), color = Theme.Color.Magic, radius = Theme.Radius.Small, parent = actions, onClick = function()
+		eventIndex = eventIndex % #Events.List + 1
+		local def = Events.List[eventIndex]
+		Net.request("DevCommand", { cmd = "event", arg = eventIndex })
+		eventButton.Text = def.icon .. " " .. def.id
+	end })
 	Ui.button({ text = "Print", size = UDim2.fromOffset(100, 36), color = Theme.Color.Accent, radius = Theme.Radius.Small, parent = actions, onClick = function()
 		local lines = {}
 		for _, param in PARAMS do

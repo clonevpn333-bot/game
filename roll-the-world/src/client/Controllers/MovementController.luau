@@ -363,6 +363,11 @@ function MovementController:hop()
 	end
 	lastHop = now
 	local h = hopHeight(state.diameter)
+	-- Low Gravity: hops go much higher so the whole map turns into a bouncy castle.
+	local event = state.round.event
+	if event and event.gravityMult then
+		h *= 1.8
+	end
 	local vy = math.sqrt(2 * Workspace.Gravity * h)
 	local v = ball.AssemblyLinearVelocity
 	ball.AssemblyLinearVelocity = Vector3.new(v.X, math.max(v.Y, 0) + vy, v.Z)

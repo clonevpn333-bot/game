@@ -20,6 +20,7 @@ local VFXController = {}
 
 local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
 local SMOKE = "rbxasset://textures/particles/smoke_main.dds"
+local FIRE = "rbxasset://textures/particles/fire_main.dds"
 
 local controllers
 local state, settings
@@ -129,6 +130,63 @@ function VFXController:shockwave(pos: Vector3, radius: number, color: Color3?)
 	tween.Completed:Once(function()
 		ring:Destroy()
 	end)
+end
+
+-- Flaming tail for a falling meteor. Returns the instances so the caller can clean them up.
+function VFXController:meteorTrail(part: BasePart, size: number): { Instance }
+	local made = {}
+	local a0 = Instance.new("Attachment")
+	a0.Position = Vector3.new(size * 0.35, 0, 0)
+	a0.Parent = part
+	local a1 = Instance.new("Attachment")
+	a1.Position = Vector3.new(-size * 0.35, 0, 0)
+	a1.Parent = part
+	local tail = Instance.new("Trail")
+	tail.Attachment0 = a0
+	tail.Attachment1 = a1
+	tail.FaceCamera = true
+	tail.Lifetime = 0.7
+	tail.MinLength = 0
+	tail.LightEmission = 1
+	tail.WidthScale = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0.1) })
+	tail.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 250, 220)),
+		ColorSequenceKeypoint.new(0.35, Color3.fromRGB(255, 160, 80)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 110, 255)),
+	})
+	tail.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) })
+	tail.Parent = part
+	local core = Instance.new("Attachment")
+	core.Parent = part
+	local fire = Instance.new("ParticleEmitter")
+	fire.Texture = FIRE
+	fire.LightEmission = 1
+	fire.Color = ColorSequence.new(Color3.fromRGB(255, 236, 170), Color3.fromRGB(255, 110, 70))
+	fire.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, size * 0.9), NumberSequenceKeypoint.new(1, 0) })
+	fire.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
+	fire.Lifetime = NumberRange.new(0.25, 0.5)
+	fire.Rate = math.floor(40 * quality()) + 10
+	fire.Speed = NumberRange.new(0.5, 2)
+	fire.LockedToPart = false
+	fire.Parent = core
+	local glow = Instance.new("PointLight")
+	glow.Color = Color3.fromRGB(255, 170, 110)
+	glow.Range = math.clamp(size * 4, 8, 60)
+	glow.Brightness = 3
+	glow.Parent = part
+	table.insert(made, a0)
+	table.insert(made, a1)
+	table.insert(made, tail)
+	table.insert(made, core)
+	table.insert(made, glow)
+	return made
+end
+
+-- Meteor impact: flash ring, debris puff and starry sparks.
+function VFXController:meteorImpact(pos: Vector3, size: number)
+	self:shockwave(pos + Vector3.new(0, 0.2, 0), math.max(6, size * 3), Color3.fromRGB(255, 190, 120))
+	self:dust(pos, math.max(2, size * 1.2))
+	burst(pos, { texture = SPARKLE, color = Color3.fromRGB(200, 170, 255), size = math.clamp(size * 0.5, 0.5, 12), speed = math.clamp(size * 4, 10, 90), count = math.floor(14 * quality()) + 4, life = 0.8, light = 1, alpha = 0 })
 end
 
 -- Little floating emoji reaction (critters fleeing, giggling when rolled up, stickers).

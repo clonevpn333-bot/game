@@ -337,7 +337,7 @@ local function drive(identity, state, dt: number)
 		dirZ = dirZ,
 		grounded = grounded,
 		dashing = dashing,
-		speedMult = brain.skill,
+		speedMult = brain.skill * (if services.EventService then services.EventService:speedMultiplier() else 1),
 	}, dt)
 	local vy = v.Y
 	-- Dash: same cooldown as players.

@@ -179,10 +179,15 @@ end
 
 P.runSpec = function(name, fn)
 	currentSpec = name
+	local before = passed + failed
 	local ok, err = pcall(fn)
 	if not ok then
 		failed += 1
 		table.insert(failures, name .. " (load error)\n    " .. tostring(err))
+	elseif passed + failed == before then
+		-- A spec that fails to parse can come back from require without running anything.
+		failed += 1
+		table.insert(failures, name .. " ran no tests (syntax error?)")
 	end
 end
 
