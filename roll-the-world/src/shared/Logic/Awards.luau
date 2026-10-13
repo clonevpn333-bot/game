@@ -91,10 +91,20 @@ Awards.Categories = {
 	},
 }
 
-function Awards.select(players: { PlayerRound }): { Award }
+export type Primary = { title: string, icon: string, score: (p: any) -> number }
+
+-- `primary` replaces the top award's title and scoring for the current mode (e.g. Crown Keeper).
+function Awards.select(players: { PlayerRound }, primary: Primary?): { Award }
 	local awards: { Award } = {}
 	local winners: { [number]: boolean } = {}
-	for _, cat in Awards.Categories do
+	for index, baseCat in Awards.Categories do
+		local cat = baseCat
+		if index == 1 and primary then
+			cat = table.clone(baseCat)
+			cat.title = primary.title
+			cat.icon = primary.icon
+			cat.score = primary.score
+		end
 		local ranked = {}
 		for _, p in players do
 			local s = cat.score(p)

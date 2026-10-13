@@ -16,6 +16,9 @@ local Net = require(Shared.Net)
 local Theme = require(Shared.Config.Theme)
 local Signal = require(Shared.Util.Signal)
 local Ui = require(script.Parent.Parent.UI.Ui)
+local Modes = require(Shared.Data.Modes)
+local Mutators = require(Shared.Data.Mutators)
+local Kits = require(Shared.Data.Kits)
 
 local EventController = {}
 EventController.Changed = Signal.new() -- (eventInfo?)
@@ -41,6 +44,9 @@ local colorFx: ColorCorrectionEffect? = nil
 local beam: Model? = nil
 local giantFx: { Instance } = {}
 local giantBall: BasePart? = nil
+local lastRoundId = nil
+local nightFx: ColorCorrectionEffect? = nil
+local nightSaved = nil
 
 local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
 local SMOKE = "rbxasset://textures/particles/smoke_main.dds"
@@ -638,6 +644,56 @@ local function update()
 	end
 end
 
+function EventController:showCard(icon: string, title: string, sub: string, color: Color3)
+	slamCard(icon, title, sub, color)
+end
+
+-- Night Roll mutator: moonlit lighting for the round, restored afterwards.
+local function setNight(on: boolean)
+	if on and not nightSaved then
+		nightSaved = { clock = Lighting.ClockTime, brightness = Lighting.Brightness, ambient = Lighting.OutdoorAmbient }
+		local fx = Instance.new("ColorCorrectionEffect")
+		fx.Name = "NightRoll"
+		fx.Parent = Lighting
+		nightFx = fx
+		local info = TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+		TweenService:Create(Lighting, info, { ClockTime = 23.2, Brightness = 1.4, OutdoorAmbient = Color3.fromRGB(90, 96, 150) }):Play()
+		TweenService:Create(fx, info, { TintColor = Color3.fromRGB(200, 210, 255), Saturation = -0.05, Contrast = 0.1 }):Play()
+	elseif not on and nightSaved then
+		local saved = nightSaved
+		nightSaved = nil
+		local info = TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+		TweenService:Create(Lighting, info, { ClockTime = saved.clock, Brightness = saved.brightness, OutdoorAmbient = saved.ambient }):Play()
+		local fx = nightFx
+		nightFx = nil
+		if fx then
+			TweenService:Create(fx, info, { TintColor = Color3.new(1, 1, 1), Saturation = 0, Contrast = 0 }):Play()
+			task.delay(2.2, function()
+				fx:Destroy()
+			end)
+		end
+	end
+end
+
+-- New round: announce the map + mode, then the mutator.
+local function onRoundStart(round)
+	local mode = Modes.get(round.mode)
+	local kit = round.kitId and Kits.get(round.kitId)
+	local mutator = Mutators.get(round.mutator)
+	setNight(mutator ~= nil and mutator.night == true)
+	task.delay(1.5, function()
+		slamCard(mode.icon, mode.name, (if kit then kit.name .. ": " else "") .. mode.goal, hex(mode.color) or Theme.Color.Primary)
+		if controllers.AudioController then
+			controllers.AudioController:play("EventStart")
+		end
+	end)
+	if mutator then
+		task.delay(5.6, function()
+			slamCard(mutator.icon, mutator.name, mutator.description, hex(mutator.color) or Theme.Color.Magic)
+		end)
+	end
+end
+
 function EventController:current()
 	return current
 end
@@ -659,6 +715,12 @@ function EventController:start()
 	Net.connect("WorldEvent", onWorldEvent)
 	-- Late joiners and missed pings: the round snapshot is the source of truth.
 	state.RoundChanged:Connect(function(round)
+		if round and round.state == "Playing" and round.roundId ~= lastRoundId then
+			lastRoundId = round.roundId
+			onRoundStart(round)
+		elseif round and round.state ~= "Playing" and round.state ~= "Launch" and nightSaved then
+			setNight(false)
+		end
 		local ev = round and round.event
 		if ev then
 			if ev.id ~= currentId then

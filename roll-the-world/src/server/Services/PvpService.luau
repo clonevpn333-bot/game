@@ -278,6 +278,9 @@ local function tick()
 			local dist = delta.Magnitude
 			local reach = (a.diameter + b.diameter) / 2
 			local latency = Absorb.latencyReach(math.max(a.part.AssemblyLinearVelocity.Magnitude, b.part.AssemblyLinearVelocity.Magnitude)) * 0.5
+			if dist <= reach * 1.04 + latency and services.RoundService:sameTeam(a.player, b.player) then
+				continue -- teammates just roll past each other
+			end
 			if dist <= reach * 1.04 + latency then
 				local big, small = a, b
 				if b.diameter > a.diameter then

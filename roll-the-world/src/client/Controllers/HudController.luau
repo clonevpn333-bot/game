@@ -18,6 +18,7 @@ local PropLibrary = require(Shared.Logic.PropLibrary)
 local Growth = require(Shared.Logic.Growth)
 local Mutations = require(Shared.Data.Mutations)
 local Kits = require(Shared.Data.Kits)
+local Modes = require(Shared.Data.Modes)
 local PropBuilder = require(Shared.PropBuilder)
 local Ui = require(script.Parent.Parent.UI.Ui)
 
@@ -63,6 +64,11 @@ local riderSub: TextLabel
 
 local burstHolder: Frame
 local feed: Frame
+local modeChip: Frame
+local modeChipLabel: TextLabel
+local teamBar: Frame
+local teamRedFill: Frame
+local teamLabel: TextLabel
 local lastCountdown = -1
 local lines = {}
 local COMBO_COLORS = {
@@ -247,6 +253,88 @@ local function buildTopList()
 	end
 end
 
+-- Under the top list: what this round is about (mode, your score) and, in Team Roll, the score bar.
+local function buildModeHud()
+	modeChip = Ui.new("Frame", {
+		Name = "ModeChip",
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -16, 0, 156),
+		Size = UDim2.fromOffset(230, 34),
+		BackgroundColor3 = Theme.Color.Panel,
+		BackgroundTransparency = 0.1,
+		Visible = false,
+		Parent = root,
+	}, { Ui.corner(Theme.Radius.Pill), Ui.stroke(2.5, Theme.Color.Ink) })
+	modeChipLabel = Ui.new("TextLabel", {
+		Position = UDim2.fromOffset(10, 4),
+		Size = UDim2.new(1, -20, 1, -8),
+		TextScaled = true,
+		TextColor3 = Theme.Color.Ink,
+		Parent = modeChip,
+	})
+	teamBar = Ui.new("Frame", {
+		Name = "TeamBar",
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -16, 0, 196),
+		Size = UDim2.fromOffset(230, 30),
+		BackgroundColor3 = Color3.fromRGB(70, 160, 255),
+		Visible = false,
+		Parent = root,
+	}, { Ui.corner(Theme.Radius.Pill), Ui.stroke(2.5, Theme.Color.Ink) })
+	teamRedFill = Ui.new("Frame", {
+		Size = UDim2.fromScale(0.5, 1),
+		BackgroundColor3 = Color3.fromRGB(255, 84, 104),
+		Parent = teamBar,
+	}, { Ui.corner(Theme.Radius.Pill) })
+	teamLabel = Ui.new("TextLabel", {
+		Size = UDim2.fromScale(1, 1),
+		TextScaled = true,
+		ZIndex = 3,
+		Parent = teamBar,
+	}, { Ui.stroke(2, Theme.Color.Ink), Ui.padding(3) })
+end
+
+local function updateModeHud()
+	local round = state.round
+	local playing = round.state == "Playing"
+	local mode = Modes.get(round.mode)
+	modeChip.Visible = playing
+	teamBar.Visible = playing and round.teamTotals ~= nil
+	if not playing then
+		return
+	end
+	local me = nil
+	for _, e in round.top or {} do
+		if e.userId == state.player.UserId then
+			me = e
+		end
+	end
+	local text = mode.icon .. " " .. mode.name
+	if mode.scoring == "crown" then
+		local holder = "nobody"
+		for _, e in round.top or {} do
+			if e.userId == round.crownId then
+				holder = if e.userId == state.player.UserId then "YOU!" else e.name
+			end
+		end
+		text = "👑 " .. holder
+	elseif mode.scoring == "gold" and me then
+		text = "💰 Your gold: " .. math.floor(me.s or 0)
+	end
+	modeChipLabel.Text = text
+	local totals = round.teamTotals
+	if totals then
+		local total = math.max(totals.Red + totals.Blue, 1e-3)
+		Ui.tween(teamRedFill, Theme.Tween.Smooth, { Size = UDim2.fromScale(math.clamp(totals.Red / total, 0.04, 0.96), 1) })
+		local myTeam = me and me.team
+		teamLabel.Text = string.format("🔴 %s  vs  %s 🔵", Format.size(totals.Red, cmPerStud()), Format.size(totals.Blue, cmPerStud()))
+		local stroke = teamBar:FindFirstChildOfClass("UIStroke")
+		if stroke then
+			stroke.Color = if myTeam == "Red" then Color3.fromRGB(255, 84, 104) elseif myTeam == "Blue" then Color3.fromRGB(70, 160, 255) else Theme.Color.Ink
+		end
+	end
+end
+
 local function buildTouchButtons()
 	touchButtons = Ui.new("Frame", {
 		Name = "Touch",
@@ -402,7 +490,7 @@ function HudController:bonkGauge(hitPart: Instance?)
 	if not p or hitPart:FindFirstChild("BonkGauge") then
 		return
 	end
-	local need = p.absorbSize / (Tuning.Absorb.Ratio + ((state.round.event and state.round.event.ratioBonus) or 0))
+	local need = p.absorbSize / (Tuning.Absorb.Ratio + (state:mods().ratioBonus or 0))
 	local frac = math.clamp(state.diameter / need, 0, 1)
 	local gui = Ui.new("BillboardGui", {
 		Name = "BonkGauge",
@@ -773,7 +861,17 @@ local function setTopRow(i: number, entry)
 	local nameLabel = row:FindFirstChild("Name") :: TextLabel
 	nameLabel.Text = entry.name
 	local sizeLabel = row:FindFirstChild("Size") :: TextLabel
-	sizeLabel.Text = Format.size(entry.d, cmPerStud())
+	local mode = Modes.get(state.round.mode)
+	if mode.scoring == "crown" then
+		sizeLabel.Text = "👑" .. Format.clock(entry.s or 0)
+	elseif mode.scoring == "gold" then
+		sizeLabel.Text = "💰" .. math.floor(entry.s or 0)
+	else
+		sizeLabel.Text = Format.size(entry.d, cmPerStud())
+	end
+	if entry.team then
+		row.BackgroundColor3 = if entry.team == "Red" then Color3.fromRGB(170, 40, 70) else Color3.fromRGB(30, 90, 190)
+	end
 	local avatar = row:FindFirstChild("Avatar") :: ImageLabel
 	-- Bots wear real avatars; show the headshot of the look they're wearing.
 	local thumbId = if entry.userId < 0 then entry.avatarId else entry.userId
@@ -869,14 +967,23 @@ local function showResults(results)
 	local panel = Ui.new("Frame", {
 		Name = "Results",
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.55),
-		Size = UDim2.fromOffset(640, 420),
+		Position = UDim2.fromScale(0.5, 0.4),
+		Size = UDim2.fromOffset(640, 400),
 		BackgroundColor3 = Theme.Color.Panel,
 		Parent = root,
 	}, { Ui.corner(Theme.Radius.Large), Ui.stroke(4, Theme.Color.Ink), Ui.padding(18) })
 	resultsPanel = panel
 	local kit = Kits.get(results.kitId or "")
-	Ui.display((if kit then kit.icon .. " " .. kit.name else "Round") .. " — Results", {
+	local mode = Modes.get(results.mode)
+	local headline = (if kit then kit.icon .. " " .. kit.name else "Round") .. " — " .. mode.name
+	if results.winningTeam then
+		headline = (if results.winningTeam == "Red" then "🔴 RED" else "🔵 BLUE") .. " TEAM WINS!"
+		local myTeam = results.mine and results.mine.team
+		if myTeam == results.winningTeam then
+			headline ..= " 🎉"
+		end
+	end
+	Ui.display(headline, {
 		Size = UDim2.new(1, 0, 0, 46),
 		TextColor3 = Theme.Color.Primary,
 		Parent = panel,
@@ -999,6 +1106,7 @@ local function update(dt: number)
 		end
 	end
 	topList.Visible = round.state == "Playing"
+	updateModeHud()
 
 	-- Touch buttons + dash cooldown.
 	touchButtons.Visible = input.inputType == "Touch" and state:isRolling()
@@ -1037,6 +1145,7 @@ function HudController:start()
 	buildGoalCard()
 	buildTimer()
 	buildTopList()
+	buildModeHud()
 	buildTouchButtons()
 	buildContainers()
 	buildCombo()
@@ -1110,6 +1219,14 @@ function HudController:start()
 				bumpSpring:impulse(10)
 			elseif data.victimId ~= me then
 				self:feed("🌀 " .. tostring(data.hostName) .. " rolled up " .. tostring(data.victimName), Theme.Color.Secondary)
+			end
+			return
+		end
+		if kind == "crown" and data then
+			if data.userId == state.player.UserId then
+				self:showBanner("👑 YOU HAVE THE CROWN! Keep it!", Color3.fromRGB(255, 214, 64), 2.2)
+			else
+				self:feed("👑 " .. tostring(data.name) .. " took the crown!", Color3.fromRGB(255, 214, 64))
 			end
 			return
 		end

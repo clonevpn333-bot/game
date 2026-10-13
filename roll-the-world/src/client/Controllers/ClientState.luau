@@ -70,10 +70,19 @@ function ClientState:isRolling(): boolean
 	return self.playerState == "Rolling" and self.ball ~= nil and self.ball.Parent ~= nil
 end
 
+-- Combined round modifiers from the server (event + mutator): ratioBonus, speedMult, hopMult.
+function ClientState:mods()
+	local mods = self.round and self.round.mods
+	if mods then
+		return mods
+	end
+	local event = self.round and self.round.event
+	return { ratioBonus = event and event.ratioBonus or 0, speedMult = event and event.speedMult or 1, hopMult = 1 }
+end
+
 function ClientState:absorbContext()
-	local event = self.round.event
 	return {
-		ratioBonus = if event and event.ratioBonus then event.ratioBonus else 0,
+		ratioBonus = self:mods().ratioBonus or 0,
 		finalRoll = self:isFinalRoll(),
 	}
 end

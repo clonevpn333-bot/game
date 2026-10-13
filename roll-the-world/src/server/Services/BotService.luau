@@ -336,8 +336,9 @@ local function think(identity, state)
 		finalRoll = services.RoundService:isFinalRoll(),
 	}
 	-- Danger first.
+	local round = services.RoundService
 	local threat, threatDist = nearestBall(state, function(o)
-		return Absorb.canAbsorbBall(o.diameter, d)
+		return Absorb.canAbsorbBall(o.diameter, d) and not round:sameTeam(o.player, identity)
 	end)
 	if threat and threatDist < d * 5 + threat.diameter * 1.5 + 20 and brain.bravery < 0.85 then
 		local away = pos - threat.part.Position
@@ -351,9 +352,10 @@ local function think(identity, state)
 	end
 	-- Hunt balls we can roll up.
 	local prey, preyDist = nearestBall(state, function(o)
-		return Absorb.canAbsorbBall(d, o.diameter) and os.clock() >= o.shieldUntil
+		return Absorb.canAbsorbBall(d, o.diameter) and os.clock() >= o.shieldUntil and not round:sameTeam(o.player, identity)
 	end)
-	if prey and preyDist < d * 7 + 50 and math.random() < brain.aggression then
+	local crownChase = round:mode().scoring == "crown"
+	if prey and preyDist < d * (if crownChase then 10 else 7) + 50 and math.random() < brain.aggression + (if crownChase then 0.25 else 0) then
 		brain.mode = "chase"
 		local lead = prey.part.AssemblyLinearVelocity * 0.35
 		brain.target = prey.part.Position + Vector3.new(lead.X, 0, lead.Z)
@@ -377,6 +379,9 @@ local function think(identity, state)
 		if p and not p.landmark and p.absorbSize <= threshold and math.abs(p.cy - pos.Y) < d + 30 then
 			local dist = math.sqrt((p.x - pos.X) ^ 2 + (p.z - pos.Z) ^ 2)
 			local score = (p.absorbSize / threshold * brain.greed + 0.2) / (dist + 6)
+			if p.mutation > 0 then
+				score *= if round:mode().scoring == "gold" then 6 else 1.6 -- sparkly things are tempting
+			end
 			if score > bestScore then
 				best, bestScore = p, score
 			end
@@ -455,7 +460,7 @@ local function drive(identity, state, dt: number)
 		brain.stuckSince = brain.stuckSince or now
 		if now - brain.stuckSince > 0.9 and grounded and now - brain.lastHop > 1.2 then
 			brain.lastHop = now
-			vy = math.sqrt(2 * Workspace.Gravity * Growth.hopHeight(d))
+			vy = math.sqrt(2 * Workspace.Gravity * Growth.hopHeight(d) * (if services.EventService then services.EventService:hopMultiplier() else 1))
 			brain.wander = nil
 			brain.target = nil
 			brain.nextThink = now + 0.4

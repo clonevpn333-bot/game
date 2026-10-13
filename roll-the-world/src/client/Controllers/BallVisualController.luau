@@ -103,6 +103,51 @@ local function applyShell(entry)
 	end
 end
 
+local TEAM_COLORS = { Red = Color3.fromRGB(255, 84, 104), Blue = Color3.fromRGB(70, 160, 255) }
+
+-- Team outline and the Crown Chase crown, driven by ball attributes.
+local function updateBadges(entry)
+	local part = entry.part
+	local team = part:GetAttribute("Team")
+	local crown = part:GetAttribute("Crown") == true
+	entry.team = team
+	if entry.badgeHighlight then
+		entry.badgeHighlight:Destroy()
+		entry.badgeHighlight = nil
+	end
+	if entry.crownGui then
+		entry.crownGui:Destroy()
+		entry.crownGui = nil
+	end
+	if team or crown then
+		local hl = Instance.new("Highlight")
+		hl.Adornee = entry.folder
+		hl.FillTransparency = 1
+		hl.OutlineTransparency = 0
+		hl.OutlineColor = if crown then Color3.fromRGB(255, 214, 64) else TEAM_COLORS[team] or Color3.new(1, 1, 1)
+		hl.DepthMode = if crown then Enum.HighlightDepthMode.AlwaysOnTop else Enum.HighlightDepthMode.Occluded
+		hl.Parent = entry.folder
+		entry.badgeHighlight = hl
+	end
+	if crown then
+		local gui = Instance.new("BillboardGui")
+		gui.Name = "Crown"
+		gui.Size = UDim2.fromOffset(90, 90)
+		gui.AlwaysOnTop = true
+		gui.LightInfluence = 0
+		gui.MaxDistance = 5000
+		gui.Adornee = part
+		local icon = Instance.new("TextLabel")
+		icon.BackgroundTransparency = 1
+		icon.Size = UDim2.fromScale(1, 1)
+		icon.Text = "👑"
+		icon.TextScaled = true
+		icon.Parent = gui
+		gui.Parent = entry.folder
+		entry.crownGui = gui
+	end
+end
+
 local function layoutLumps(entry)
 	local d = entry.diameter
 	local r = d / 2
@@ -206,6 +251,13 @@ local function createEntry(model: Model)
 		BallVisualController:onDiameter(entry, part:GetAttribute("Diameter"))
 	end)
 	applyShell(entry)
+	updateBadges(entry)
+	part:GetAttributeChangedSignal("Team"):Connect(function()
+		updateBadges(entry)
+	end)
+	part:GetAttributeChangedSignal("Crown"):Connect(function()
+		updateBadges(entry)
+	end)
 	part:GetAttributeChangedSignal("Shell"):Connect(function()
 		applyShell(entry)
 		if controllers.VFXController then
@@ -575,9 +627,12 @@ local function updateShells(dt: number)
 		end
 		if e.tag then
 			e.tag.gui.StudsOffsetWorldSpace = Vector3.new(0, d * 0.7 + 3, 0)
-			e.tag.label.Text = e.tag.name .. "  " .. Format.size(d, state.round.cmPerStud or 1)
+			local teamIcon = if e.team == "Red" then "🔴 " elseif e.team == "Blue" then "🔵 " else ""
+			e.tag.label.Text = teamIcon .. e.tag.name .. "  " .. Format.size(d, state.round.cmPerStud or 1)
 			local me = BallVisualController.balls[myUserId]
-			if me then
+			if me and e.team and e.team == me.team then
+				e.tag.label.TextColor3 = TEAM_COLORS[e.team] -- teammate: can't roll each other up
+			elseif me then
 				-- Red tag = can roll you up; green = you can roll them up.
 				local color = Color3.new(1, 1, 1)
 				if Absorb.canAbsorbBall(d, me.diameter) then
@@ -587,6 +642,12 @@ local function updateShells(dt: number)
 				end
 				e.tag.label.TextColor3 = color
 			end
+		end
+	end
+	for _, e in BallVisualController.balls do
+		if e.crownGui then
+			e.crownGui.StudsOffsetWorldSpace = Vector3.new(0, e.part.Size.X * 0.7 + 8, 0)
+			e.crownGui.Size = UDim2.fromOffset(70 + math.min(e.part.Size.X, 60), 70 + math.min(e.part.Size.X, 60))
 		end
 	end
 	if #parts > 0 then

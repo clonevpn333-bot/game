@@ -18,7 +18,7 @@ local Absorb = require(Shared.Logic.Absorb)
 local PropLibrary = require(Shared.Logic.PropLibrary)
 local Events = require(Shared.Data.Events)
 local Mutations = require(Shared.Data.Mutations)
-local Tuning = require(Shared.Config.Tuning)
+local Mutators = require(Shared.Data.Mutators)
 
 local EventService = {}
 EventService.Started = Signal.new() -- (def, info)
@@ -33,6 +33,21 @@ local baseGravity = Workspace.Gravity
 local token = 0
 
 local MINOR_GAP_MIN, MINOR_GAP_MAX = 38, 62
+local mutator = nil -- this round's MutatorDef (or nil)
+
+local function minorGap(): (number, number)
+	local round = services and services.RoundService
+	local gap = round and round:mode().minorGap
+	if gap then
+		return gap[1], gap[2]
+	end
+	return MINOR_GAP_MIN, MINOR_GAP_MAX
+end
+
+-- Gravity for "no event running": the round mutator may lower it.
+local function restingGravity(): number
+	return baseGravity * (if mutator and mutator.gravityMult then mutator.gravityMult else 1)
+end
 local GOLDEN = (Mutations.ById.Golden and Mutations.ById.Golden.index) or 1
 local STARFALL = (Mutations.ById.Starfall and Mutations.ById.Starfall.index) or 5
 
@@ -47,22 +62,103 @@ end
 -- MODIFIER QUERIES ------------------------------------------------------------------------
 
 function EventService:absorbRatioBonus(): number
-	return if active and active.def.ratioBonus then active.def.ratioBonus else 0
+	local bonus = if active and active.def.ratioBonus then active.def.ratioBonus else 0
+	if mutator and mutator.ratioBonus then
+		bonus += mutator.ratioBonus
+	end
+	return bonus
 end
 
 function EventService:growthMultiplier(state): number
-	if not active then
-		return 1
+	local mult = 1
+	if active then
+		mult *= active.def.growthMult or 1
+		if active.giantId and state and state.userId == active.giantId then
+			mult *= 3
+		end
 	end
-	local mult = active.def.growthMult or 1
-	if active.giantId and state and state.userId == active.giantId then
-		mult *= 3
+	if mutator and mutator.growthMult then
+		mult *= mutator.growthMult
+	end
+	local round = services.RoundService
+	if round then
+		mult *= round:mode().growthMult or 1
 	end
 	return mult
 end
 
 function EventService:speedMultiplier(): number
-	return if active and active.def.speedMult then active.def.speedMult else 1
+	local mult = if active and active.def.speedMult then active.def.speedMult else 1
+	if mutator and mutator.speedMult then
+		mult *= mutator.speedMult
+	end
+	return mult
+end
+
+function EventService:hopMultiplier(): number
+	local mult = if mutator and mutator.hopMult then mutator.hopMult else 1
+	if active and active.def.gravityMult then
+		mult *= 1.8
+	end
+	return mult
+end
+
+-- Everything the client needs to predict absorbs and movement, combined.
+function EventService:mods()
+	return {
+		ratioBonus = self:absorbRatioBonus(),
+		speedMult = self:speedMultiplier(),
+		hopMult = self:hopMultiplier(),
+	}
+end
+
+function EventService:mutatorId(): string?
+	return mutator and mutator.id or nil
+end
+
+function EventService:chooseMutator(allowed: boolean)
+	mutator = nil
+	if allowed and math.random() < Mutators.Chance then
+		local total = 0
+		for _, m in Mutators.List do
+			total += m.weight
+		end
+		local r = math.random() * total
+		for _, m in Mutators.List do
+			r -= m.weight
+			if r <= 0 then
+				mutator = m
+				break
+			end
+		end
+	end
+	Workspace.Gravity = restingGravity()
+end
+
+-- Before the map is sent: Gold Rush gilds a share of props; mutators sprinkle mutations.
+local NATURAL_MUTATIONS = {}
+for _, m in Mutations.List do
+	if m.weight > 0 and m.scale == 1 then
+		table.insert(NATURAL_MUTATIONS, m.index)
+	end
+end
+
+function EventService:prepareWorld(world, mode)
+	local goldShare = mode and mode.goldenShare or 0
+	local mutShare = mutator and mutator.mutationShare or 0
+	if goldShare <= 0 and mutShare <= 0 then
+		return
+	end
+	for id, p in world.props do
+		if p.mutation == 0 and not p.landmark then
+			local r = math.random()
+			if r < goldShare then
+				world:setMutation(id, GOLDEN)
+			elseif r < goldShare + mutShare and #NATURAL_MUTATIONS > 0 then
+				world:setMutation(id, NATURAL_MUTATIONS[math.random(1, #NATURAL_MUTATIONS)])
+			end
+		end
+	end
 end
 
 function EventService:stardustMultiplier(): number
@@ -283,7 +379,7 @@ local function stop()
 	active.token = -1
 	active = nil
 	if def.gravityMult then
-		Workspace.Gravity = baseGravity
+		Workspace.Gravity = restingGravity()
 	end
 	Net.fireAll("WorldEvent", nil, { id = def.id, ended = true })
 	EventService.Ended:Fire(def)
@@ -310,7 +406,7 @@ local function run(def, by: string?): boolean
 	local state = active
 
 	if def.gravityMult then
-		Workspace.Gravity = baseGravity * def.gravityMult
+		Workspace.Gravity = restingGravity() * def.gravityMult
 	end
 	if def.supplyDrop then
 		state.info.pos = supplyDrop(def.supplyDrop)
@@ -436,7 +532,7 @@ function EventService:triggerRoundEvent()
 		end
 	end
 	run(pick(true), nil)
-	nextMinorAt = math.max(nextMinorAt, active.endsAt + MINOR_GAP_MIN * 0.6)
+	nextMinorAt = math.max(nextMinorAt, active.endsAt + (minorGap()) * 0.6)
 end
 
 -- Purchases / dev commands. Returns true if started now, false if queued.
@@ -462,11 +558,24 @@ function EventService:start()
 	local round = services.RoundService
 	round.RoundStarted:Connect(function()
 		table.clear(usedThisRound)
-		nextMinorAt = now() + MINOR_GAP_MIN * 0.9 + math.random() * 15
+		nextMinorAt = now() + (minorGap()) * 0.9 + math.random() * 15
+		-- Critter Party: a big herd joins right away.
+		task.delay(4, function()
+			if mutator and mutator.critterParty and services.CritterService then
+				local kit = services.WorldService.kit
+				local uids = kit and critterUids(kit) or {}
+				if #uids > 0 then
+					services.CritterService:stampede(uids, mutator.critterParty)
+				end
+			end
+		end)
 	end)
 	round.RoundEnded:Connect(function()
 		stop()
 		nextMinorAt = math.huge
+		-- The hub always has normal gravity; the mutator ends with the round.
+		mutator = nil
+		Workspace.Gravity = baseGravity
 	end)
 	-- Scheduler for small surprises and queued purchases.
 	task.spawn(function()
@@ -487,7 +596,7 @@ function EventService:start()
 			end
 			-- Keep the scheduled major slots clear: don't start a minor right before one.
 			local blocked = false
-			for _, at in Tuning.Round.EventTimes do
+			for _, at in round:eventTimes() do
 				local slot = round.startedAt + at
 				if t < slot and slot - t < 18 then
 					blocked = true
@@ -495,7 +604,8 @@ function EventService:start()
 			end
 			if not blocked and t >= nextMinorAt and timeLeft > 12 then
 				run(pick(false), nil)
-				nextMinorAt = t + MINOR_GAP_MIN + math.random() * (MINOR_GAP_MAX - MINOR_GAP_MIN)
+				local lo, hi = minorGap()
+				nextMinorAt = t + lo + math.random() * (hi - lo)
 			end
 		end
 	end)

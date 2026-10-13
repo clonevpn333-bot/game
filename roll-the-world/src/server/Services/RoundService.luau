@@ -17,6 +17,8 @@ local Kits = require(Shared.Data.Kits)
 local Mutations = require(Shared.Data.Mutations)
 local Awards = require(Shared.Logic.Awards)
 local Rewards = require(Shared.Logic.Rewards)
+local ModeScoring = require(Shared.Logic.ModeScoring)
+local Modes = require(Shared.Data.Modes)
 
 local RoundService = {}
 
@@ -31,6 +33,11 @@ RoundService.roundStats = {} :: { [number]: any }
 RoundService.playerState = {} :: { [Player]: string }
 RoundService.ready = {} :: { [Player]: boolean }
 RoundService.lastResults = nil
+RoundService.modeId = "Classic"
+RoundService.teams = {} :: { [number]: string } -- userId -> "Red" | "Blue" (team modes)
+RoundService.crownId = nil :: number?
+RoundService.vote = nil :: any -- { options, votes = { [userId] = index }, endsAt }
+RoundService.nextChoice = nil :: any -- { kitId, modeId } decided by the vote
 
 RoundService.RoundStarted = Signal.new()
 RoundService.FinalRollStarted = Signal.new()
@@ -47,7 +54,40 @@ end
 
 local function roundLength(): number
 	local live = services.LiveConfigService
-	return (live and live:get("roundLength")) or Tuning.Round.Length
+	return (live and live:get("roundLength")) or Modes.get(RoundService.modeId).length or Tuning.Round.Length
+end
+
+function RoundService:mode()
+	return Modes.get(self.modeId)
+end
+
+function RoundService:eventTimes(): { number }
+	return self:mode().eventTimes or Tuning.Round.EventTimes
+end
+
+-- Team for a ball owner (assigned on first ask in team modes; nil otherwise).
+function RoundService:teamOf(player: any): string?
+	if not self:mode().teams then
+		return nil
+	end
+	local team = self.teams[player.UserId]
+	if not team then
+		local counts = { Red = 0, Blue = 0 }
+		for _, t in self.teams do
+			counts[t] += 1
+		end
+		team = ModeScoring.pickTeam(counts)
+		self.teams[player.UserId] = team
+	end
+	return team
+end
+
+function RoundService:sameTeam(a: any, b: any): boolean
+	if not self:mode().teams or not a or not b then
+		return false
+	end
+	local ta, tb = self:teamOf(a), self:teamOf(b)
+	return ta ~= nil and ta == tb
 end
 
 function RoundService:init(s)
@@ -93,6 +133,9 @@ function RoundService:stats(player: Player)
 			rarestMutation = 0,
 			rarityPoints = 0,
 			absorbed = 0,
+			crownTime = 0,
+			goldPoints = 0,
+			team = nil,
 			biggestAbsorb = nil,
 			joinedAt = os.clock(),
 		}
@@ -104,10 +147,22 @@ end
 function RoundService:snapshot()
 	local top = {}
 	for _, state in services.BallService:all() do
-		table.insert(top, { userId = state.userId, name = state.player.DisplayName, d = state.diameter, avatarId = (state.player :: any).avatarId })
+		local st = self.roundStats[state.userId]
+		local entry = {
+			userId = state.userId,
+			name = state.player.DisplayName,
+			d = state.diameter,
+			avatarId = (state.player :: any).avatarId,
+			team = self.teams[state.userId],
+		}
+		entry.s = ModeScoring.score(self.modeId, { userId = state.userId, finalDiameter = state.diameter, crownTime = st and st.crownTime, goldPoints = st and st.goldPoints })
+		table.insert(top, entry)
 	end
 	table.sort(top, function(a, b)
-		return a.d > b.d
+		if a.s == b.s then
+			return a.d > b.d
+		end
+		return a.s > b.s
 	end)
 	for i = #top, 4, -1 do
 		top[i] = nil
@@ -125,6 +180,12 @@ function RoundService:snapshot()
 		top = top,
 		event = event,
 		players = #Players:GetPlayers(),
+		mode = self.modeId,
+		mutator = services.EventService and services.EventService:mutatorId() or nil,
+		mods = services.EventService and services.EventService:mods() or nil,
+		teamTotals = if self:mode().teams then self:teamTotals() else nil,
+		crownId = self.crownId,
+		vote = self:voteSnapshot(),
 	}
 end
 
@@ -221,6 +282,11 @@ function RoundService:spawnIntoRound(player: Player, options: { [string]: any }?
 	end
 	local state = services.BallService:spawn(player, position, diameter, { growthBoosts = boosts, shield = opts.shield })
 	if state then
+		local team = self:teamOf(player)
+		if team then
+			state.part:SetAttribute("Team", team)
+			self:stats(player).team = team
+		end
 		self:setPlayerState(player, "Rolling")
 		local stats = self:stats(player)
 		stats.peakDiameter = math.max(stats.peakDiameter, diameter)
@@ -243,11 +309,27 @@ end
 
 function RoundService:startRound()
 	self.roundId += 1
-	self.kitId = nextKit()
+	local choice = self.nextChoice
+	self.nextChoice = nil
+	self.vote = nil
+	self.kitId = if choice and Kits.get(choice.kitId) then choice.kitId else nextKit()
+	-- The very first round of a server is always Classic so new players learn the basics.
+	self.modeId = if choice then Modes.get(choice.modeId).id else (if self.roundId == 1 then "Classic" else self:randomMode())
+	table.clear(self.teams)
+	self.crownId = nil
 	local seed = math.floor(os.time() % 1000000) * 7919 + self.roundId * 104729
 	table.clear(self.roundStats)
 	table.clear(eventFired)
-	services.WorldService:load(self.kitId, seed)
+	local events = services.EventService
+	if events then
+		events:chooseMutator(self.roundId > 1)
+	end
+	local mode = self:mode()
+	services.WorldService:load(self.kitId, seed, function(world)
+		if events then
+			events:prepareWorld(world, mode)
+		end
+	end)
 	self.state = "Playing"
 	self.phase = "Scramble"
 	self.startedAt = now()
@@ -331,8 +413,17 @@ function RoundService:results(statsList)
 	self.state = "Results"
 	self.phase = "Results"
 	self.endsAt = now() + Tuning.Round.Results
-	local awards = Awards.select(statsList)
-	local standings = Awards.standings(statsList)
+	local mode = self:mode()
+	local modeId = self.modeId
+	local awards = Awards.select(statsList, {
+		title = mode.winnerTitle,
+		icon = mode.winnerIcon,
+		score = function(p)
+			return ModeScoring.score(modeId, p)
+		end,
+	})
+	local standings = ModeScoring.standings(modeId, statsList)
+	local winningTeam = ModeScoring.winningTeam(modeId, statsList)
 	local awardCount = {}
 	for _, award in awards do
 		awardCount[award.userId] = (awardCount[award.userId] or 0) + 1
@@ -374,7 +465,7 @@ function RoundService:results(statsList)
 
 	local podium = {}
 	for i = 1, math.min(3, #standings) do
-		podium[i] = { userId = standings[i].userId, name = standings[i].name, d = standings[i].finalDiameter }
+		podium[i] = { userId = standings[i].userId, name = standings[i].name, d = standings[i].finalDiameter, s = ModeScoring.score(modeId, standings[i]), team = standings[i].team }
 	end
 	-- Roll of the Round: the single biggest absorption (players rolled count extra).
 	local highlight = nil
@@ -404,6 +495,9 @@ function RoundService:results(statsList)
 		standings = standings,
 		highlight = highlight,
 		cmPerStud = self.tier.cmPerStud,
+		mode = modeId,
+		winningTeam = winningTeam,
+		teamTotals = if mode.teams then ModeScoring.teamTotals(statsList) else nil,
 	}
 	for _, player in Players:GetPlayers() do
 		local personal = table.clone(self.lastResults)
@@ -412,6 +506,8 @@ function RoundService:results(statsList)
 		Net.fire("Results", player, personal)
 	end
 	self.RoundEnded:Fire(statsList, awards)
+	self.crownId = nil
+	self:openVote()
 	self:broadcast()
 end
 
@@ -439,6 +535,10 @@ local function hookStats()
 		end
 		local stats = RoundService:stats(player)
 		stats.absorbed += 1
+		local mutDef = Mutations.get(prop.mutation)
+		if mutDef then
+			stats.goldPoints += mutDef.stardust
+		end
 		if info.isNew then
 			stats.discoveries += 1
 		end
@@ -478,15 +578,152 @@ local function hookStats()
 	end)
 end
 
+function RoundService:teamTotals(): { [string]: number }
+	local totals = { Red = 0, Blue = 0 }
+	for _, state in services.BallService:all() do
+		local team = self.teams[state.userId]
+		if team then
+			totals[team] += state.diameter
+		end
+	end
+	return totals
+end
+
+function RoundService:randomMode(): string
+	local balls = #services.BallService:all() + #Players:GetPlayers()
+	local pool, total = {}, 0
+	for _, m in Modes.List do
+		if (m.minBalls or 0) <= math.max(balls, Tuning.Bots.TargetBalls) then
+			table.insert(pool, m)
+			total += m.weight
+		end
+	end
+	local r = math.random() * total
+	for _, m in pool do
+		r -= m.weight
+		if r <= 0 then
+			return m.id
+		end
+	end
+	return "Classic"
+end
+
+-- Per-tick mode rules: the crown follows the biggest ball and banks crown time.
+local lastCrownAnnounce = 0
+function RoundService:tickMode(dt: number)
+	if self:mode().scoring ~= "crown" or self.state ~= "Playing" then
+		return
+	end
+	local best, bestD = nil, 0
+	for _, state in services.BallService:all() do
+		if state.alive and state.diameter > bestD then
+			best, bestD = state, state.diameter
+		end
+	end
+	local newId = best and best.userId or nil
+	if newId ~= self.crownId then
+		for _, state in services.BallService:all() do
+			if state.part then
+				state.part:SetAttribute("Crown", if state.userId == newId then true else nil)
+			end
+		end
+		self.crownId = newId
+		if best and now() - lastCrownAnnounce > 3 then
+			lastCrownAnnounce = now()
+			Net.fireAll("Announce", "crown", { userId = best.userId, name = best.player.DisplayName })
+		end
+	end
+	if best then
+		local st = self:stats(best.player)
+		st.crownTime += dt
+	end
+end
+
+-- VOTE ---------------------------------------------------------------------------------------
+
+function RoundService:openVote()
+	-- Three different map + mode combos; at least one is a new map.
+	local kits = {}
+	for _, kit in Kits.forTier(self.tier.id) do
+		table.insert(kits, kit.id)
+	end
+	if #kits == 0 then
+		table.insert(kits, Kits.List[1].id)
+	end
+	local options = {}
+	local usedModes = {}
+	for i = 1, 3 do
+		local kitId = kits[((self.roundId + i) % #kits) + 1]
+		if i == 1 and #kits > 1 and kitId == self.kitId then
+			kitId = kits[((self.roundId + i + 1) % #kits) + 1]
+		end
+		local modeId = self:randomMode()
+		for _ = 1, 6 do
+			if not usedModes[modeId] then
+				break
+			end
+			modeId = self:randomMode()
+		end
+		usedModes[modeId] = true
+		table.insert(options, { kitId = kitId, modeId = modeId })
+	end
+	local social = services.SocialService
+	local length = (social and social:hostSetting("intermission")) or Tuning.Round.Intermission
+	self.vote = {
+		options = options,
+		votes = {},
+		endsAt = now() + Tuning.Round.Results + length - 1,
+	}
+	-- Bots vote too, at human-ish moments.
+	if services.BotService then
+		for _, bot in services.BotService:identities() do
+			task.delay(2 + math.random() * (Tuning.Round.Results + length - 6), function()
+				if self.vote and self.vote.options == options then
+					self.vote.votes[bot.UserId] = math.random(1, 3)
+					self:broadcast()
+				end
+			end)
+		end
+	end
+end
+
+function RoundService:closeVote()
+	local vote = self.vote
+	if not vote then
+		return
+	end
+	local pick = ModeScoring.resolveVote(#vote.options, vote.votes, math.random(1, 3))
+	self.nextChoice = vote.options[pick]
+	self.vote = nil
+end
+
+function RoundService:voteSnapshot()
+	local vote = self.vote
+	if not vote then
+		return nil
+	end
+	local counts = table.create(#vote.options, 0)
+	for _, idx in vote.votes do
+		if counts[idx] then
+			counts[idx] += 1
+		end
+	end
+	return { options = vote.options, counts = counts, endsAt = vote.endsAt }
+end
+
 function RoundService:loop()
 	-- First round starts immediately so nobody waits in a lobby.
 	self:startRound()
 	while true do
 		local fireAt = {}
-		for _, t in Tuning.Round.EventTimes do
+		for _, t in self:eventTimes() do
 			table.insert(fireAt, self.startedAt + t)
 		end
+		local lastTick = now()
 		while now() < self.endsAt do
+			local tickNow = now()
+			self:tickMode(tickNow - lastTick)
+			lastTick = tickNow
 			local left = self.endsAt - now()
 			if self.phase == "Scramble" and left <= Tuning.Round.FinalRoll then
 				self.phase = "FinalRoll"
@@ -508,6 +745,7 @@ function RoundService:loop()
 		waitUntil(self.endsAt)
 		self:intermission()
 		waitUntil(self.endsAt)
+		self:closeVote()
 		self:startRound()
 	end
 end
@@ -551,6 +789,14 @@ function RoundService:start()
 		task.spawn(onReady, player)
 		return true
 	end, 2)
+	Net.action("Vote", Guard.integer(1, 3), function(player, index)
+		if not self.vote then
+			return false
+		end
+		self.vote.votes[player.UserId] = index
+		self:broadcast()
+		return true
+	end, 4)
 	Net.action("Spawn", Guard.optional(Guard.boolean()), function(player)
 		task.spawn(dropIn, player)
 		return true

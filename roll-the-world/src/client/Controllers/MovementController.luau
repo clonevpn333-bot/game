@@ -62,10 +62,7 @@ local function speedMultiplier(): number
 	if def and def.speedMult then
 		mult *= def.speedMult(state.coreLevel)
 	end
-	local event = state.round.event
-	if event and event.speedMult then
-		mult *= event.speedMult
-	end
+	mult *= state:mods().speedMult or 1
 	if state.playerState == "Merged" then
 		mult *= Tuning.Merge.SpeedPenalty
 	end
@@ -364,10 +361,7 @@ function MovementController:hop()
 	lastHop = now
 	local h = hopHeight(state.diameter)
 	-- Low Gravity: hops go much higher so the whole map turns into a bouncy castle.
-	local event = state.round.event
-	if event and event.gravityMult then
-		h *= 1.8
-	end
+	h *= state:mods().hopMult or 1
 	local vy = math.sqrt(2 * Workspace.Gravity * h)
 	local v = ball.AssemblyLinearVelocity
 	ball.AssemblyLinearVelocity = Vector3.new(v.X, math.max(v.Y, 0) + vy, v.Z)

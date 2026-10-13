@@ -198,7 +198,8 @@ function WorldService:clear()
 	lootCount = 0
 end
 
-function WorldService:load(kitId: string, seed: number)
+-- `prepare(world)` may adjust props (e.g. mode/mutator mutations) before anyone is sent the map.
+function WorldService:load(kitId: string, seed: number, prepare: ((any) -> ())?)
 	local kit = Kits.get(kitId)
 	assert(kit, "unknown kit " .. tostring(kitId))
 	self:clear()
@@ -218,6 +219,13 @@ function WorldService:load(kitId: string, seed: number)
 		self.maxRadius = math.max(self.maxRadius, state.radius)
 	end
 	self.nextId = #result.props + 1
+	if prepare then
+		local ok, err = pcall(prepare, self)
+		if not ok then
+			warn("[World] prepare failed: " .. tostring(err))
+		end
+		table.clear(pendingMutations) -- already part of the snapshot below
+	end
 	self.mapFolder = buildGeometry(result, kit)
 	self.mapFolder.Parent = Workspace
 	self:applyLighting(kit)
