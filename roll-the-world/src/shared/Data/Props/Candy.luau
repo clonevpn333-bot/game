@@ -1,4 +1,4 @@
---!strict
+--!nonstrict
 -- Candy Shop prop library. UIDs 300-399 are reserved for this kit and are permanent.
 
 local S = require(script.Parent.Shapes)
@@ -1619,7 +1619,7 @@ add({
 	parts = (function()
 		local c = "#ff8c1a"
 		local light = shade(c, 0.35)
-		local function g(tag: string?)
+		local function g(tag: string?): any
 			return { t = 0.08, refl = 0.08, tag = tag }
 		end
 		local out = {
@@ -1986,7 +1986,7 @@ add({
 			ball(0.7, 0, 4.0, 4.3, PINK),
 			ell(8.0, 1.8, 8.0, 0, 7.2, 0, ICING, nil, { segU = 20, segV = 10, lump = 0.25, seed = 7 }),
 		}
-		local lollies = {
+		local lollies: { { any } } = {
 			{ 90, 0, 14, 5.2, "#ff4d6d" },
 			{ 20, 22, 12, 4.6, "#ffd23f" },
 			{ 160, 22, 12.5, 4.6, "#7bd88f" },

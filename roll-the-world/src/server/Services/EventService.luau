@@ -593,7 +593,9 @@ function EventService:triggerRoundEvent()
 		end
 	end
 	run(pick(true), nil)
-	nextMinorAt = math.max(nextMinorAt, active.endsAt + (minorGap()) * 0.6)
+	if active then
+		nextMinorAt = math.max(nextMinorAt, active.endsAt + (minorGap()) * 0.6)
+	end
 end
 
 -- Purchases / dev commands. Returns true if started now, false if queued.

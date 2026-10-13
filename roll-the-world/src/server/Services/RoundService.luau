@@ -322,7 +322,7 @@ function RoundService:startRound()
 	table.clear(eventFired)
 	local events = services.EventService
 	if events then
-		events:chooseMutator(self.roundId > 1)
+		events:chooseMutator(self.roundId > 1 and not self.safeMode)
 	end
 	local mode = self:mode()
 	services.WorldService:load(self.kitId, seed, function(world)
@@ -334,16 +334,23 @@ function RoundService:startRound()
 	self.phase = "Scramble"
 	self.startedAt = now()
 	self.endsAt = self.startedAt + roundLength()
+	-- From here on the map is loaded and the round is live: nothing below may abort it.
 	for _, player in Players:GetPlayers() do
 		if self.ready[player] then
-			self:spawnIntoRound(player)
+			local ok, err = pcall(self.spawnIntoRound, self, player)
+			if not ok then
+				warn("[Round] couldn't spawn " .. player.Name .. ": " .. tostring(err))
+			end
 		end
 	end
 	self.RoundStarted:Fire(self.kitId, self.roundId)
 	if services.AnalyticsService then
-		services.AnalyticsService:serverEvent("RoundStart", { kit = self.kitId, players = #Players:GetPlayers() })
+		pcall(services.AnalyticsService.serverEvent, services.AnalyticsService, "RoundStart", { kit = self.kitId, players = #Players:GetPlayers() })
 	end
-	self:broadcast()
+	local ok, err = pcall(self.broadcast, self)
+	if not ok then
+		warn("[Round] broadcast failed: " .. tostring(err))
+	end
 end
 
 local function collectStats(): { any }
@@ -711,9 +718,64 @@ function RoundService:voteSnapshot()
 	return { options = vote.options, counts = counts, endsAt = vote.endsAt }
 end
 
-function RoundService:loop()
-	-- First round starts immediately so nobody waits in a lobby.
-	self:startRound()
+-- ERROR SAFETY -----------------------------------------------------------------------------
+-- A bug in one feature must never take the round down with it. Every step of the loop runs
+-- protected: the error is logged (once per distinct message, with a traceback, so it shows in
+-- Output) and the round carries on. A failed round start retries the SAME map in plain Classic,
+-- backing off, instead of jumping to the next map (which looked like maps cycling forever).
+RoundService.errorCount = 0
+local seenErrors: { [string]: boolean } = {}
+
+local function guarded(label: string, fn, ...): (boolean, any)
+	local ok, result = xpcall(fn, debug.traceback, ...)
+	if not ok then
+		RoundService.errorCount += 1
+		local key = label .. ":" .. string.sub(tostring(result), 1, 160)
+		if not seenErrors[key] then
+			seenErrors[key] = true
+			warn("[Round] " .. label .. " failed (the round keeps going): " .. tostring(result))
+		end
+	end
+	return ok, result
+end
+
+function RoundService:safeStartRound()
+	local attempt = 0
+	while true do
+		attempt += 1
+		local ok = guarded("startRound", self.startRound, self)
+		if ok then
+			self.safeMode = false
+			return
+		end
+		self.safeMode = true
+		self.nextChoice = { kitId = self.kitId or Kits.List[1].id, modeId = "Classic" }
+		task.wait(math.min(5 * attempt, 30))
+	end
+end
+
+function RoundService:tickOnce(fireAt: { number }, dt: number)
+	self:tickMode(dt)
+	local left = self.endsAt - now()
+	if self.phase == "Scramble" and left <= Tuning.Round.FinalRoll then
+		self.phase = "FinalRoll"
+		self.FinalRollStarted:Fire()
+		Net.fireAll("Announce", "finalroll", { landmarkId = services.WorldService.landmarkId })
+		self:broadcast()
+	end
+	for i, t in fireAt do
+		if not eventFired[i] and now() >= t and services.EventService then
+			eventFired[i] = true
+			guarded("roundEvent", services.EventService.triggerRoundEvent, services.EventService)
+		end
+	end
+end
+
+-- `resume`: after a crash of the loop itself, carry on with the round in progress if there is one.
+function RoundService:loop(resume: boolean?)
+	if not (resume and self.state == "Playing" and now() < self.endsAt) then
+		self:safeStartRound()
+	end
 	while true do
 		local fireAt = {}
 		for _, t in self:eventTimes() do
@@ -722,31 +784,30 @@ function RoundService:loop()
 		local lastTick = now()
 		while now() < self.endsAt do
 			local tickNow = now()
-			self:tickMode(tickNow - lastTick)
+			guarded("tick", self.tickOnce, self, fireAt, tickNow - lastTick)
 			lastTick = tickNow
-			local left = self.endsAt - now()
-			if self.phase == "Scramble" and left <= Tuning.Round.FinalRoll then
-				self.phase = "FinalRoll"
-				self.FinalRollStarted:Fire()
-				Net.fireAll("Announce", "finalroll", { landmarkId = services.WorldService.landmarkId })
-				self:broadcast()
-			end
-			for i, t in fireAt do
-				if not eventFired[i] and now() >= t and services.EventService then
-					eventFired[i] = true
-					services.EventService:triggerRoundEvent()
-				end
-			end
 			task.wait(0.25)
 		end
-		local statsList = self:launch()
+		local ok, statsList = guarded("launch", self.launch, self)
+		if not ok then
+			statsList = {}
+			self.state = "Launch"
+			self.endsAt = now() + 3
+		end
 		waitUntil(self.endsAt)
-		self:results(statsList)
+		if not guarded("results", self.results, self, statsList) then
+			pcall(moveAllToHub)
+			self.state = "Results"
+			self.endsAt = now() + 3
+		end
 		waitUntil(self.endsAt)
-		self:intermission()
+		if not guarded("intermission", self.intermission, self) then
+			self.state = "Intermission"
+			self.endsAt = now() + Tuning.Round.Intermission
+		end
 		waitUntil(self.endsAt)
-		self:closeVote()
-		self:startRound()
+		guarded("closeVote", self.closeVote, self)
+		self:safeStartRound()
 	end
 end
 
@@ -819,18 +880,20 @@ function RoundService:start()
 		while true do
 			task.wait(1)
 			if self.state == "Playing" then
-				self:broadcast()
+				guarded("broadcast", self.broadcast, self)
 			end
 		end
 	end)
 	task.spawn(function()
-		-- If anything in the loop throws, log it, reset to a fresh round and keep the server alive.
+		-- Last line of defence: if the loop itself dies, log it, wait, and resume the current round
+		-- (never start a fresh map straight away).
+		local resume = false
 		while true do
-			local ok, err = xpcall(self.loop, debug.traceback, self)
+			local ok, err = xpcall(self.loop, debug.traceback, self, resume)
 			if not ok then
-				warn("[Round] loop error, restarting round: " .. tostring(err))
-				task.wait(2)
-				pcall(moveAllToHub)
+				warn("[Round] loop crashed, resuming in 10s: " .. tostring(err))
+				task.wait(10)
+				resume = true
 			end
 		end
 	end)
