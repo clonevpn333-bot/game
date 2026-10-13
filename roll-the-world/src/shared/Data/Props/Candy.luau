@@ -11,12 +11,12 @@ local function add(def: any)
 end
 
 local PINK = "#ff8fc7"
-local MINT = "#8ff0c8"
 local CREAM = "#fff3dc"
 local CHOC = "#6b3e26"
 local CHOC_DARK = "#4a2817"
 local INK = "#2a1f3d"
 local GLASS = "#e8f6ff"
+local CHROME = "#d9dee6"
 
 local function swirl(out: { any }, d: number, y: number, z: number, a: string, b: string, axisFront: boolean?)
 	-- A peppermint-style disc: base disc plus alternating wedge stripes.

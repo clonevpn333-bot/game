@@ -74,6 +74,7 @@ function PropMetrics.compute(parts: { any }, fill: number?): Metrics
 	local minX, minY, minZ = math.huge, math.huge, math.huge
 	local maxX, maxY, maxZ = -math.huge, -math.huge, -math.huge
 	local bestVolume, mainColor = -1, "#ffffff"
+	local solid = 0
 	for _, part in parts do
 		local m = PropMetrics.partRotation(part)
 		local hx, hy, hz = part.size[1] / 2, part.size[2] / 2, part.size[3] / 2
@@ -83,10 +84,31 @@ function PropMetrics.compute(parts: { any }, fill: number?): Metrics
 		end
 		local ex, ey, ez = rotatedHalfExtents(m, hx, hy, hz)
 		local px, py, pz = part.pos[1], part.pos[2], part.pos[3]
+		if part.meshCenter then
+			-- Mesh parts are placed by their own origin; their bounds are offset from it.
+			local c = part.meshCenter
+			px += m[1] * c[1] + m[2] * c[2] + m[3] * c[3]
+			py += m[4] * c[1] + m[5] * c[2] + m[6] * c[3]
+			pz += m[7] * c[1] + m[8] * c[2] + m[9] * c[3]
+		end
 		minX, maxX = math.min(minX, px - ex), math.max(maxX, px + ex)
 		minY, maxY = math.min(minY, py - ey), math.max(maxY, py + ey)
 		minZ, maxZ = math.min(minZ, pz - ez), math.max(maxZ, pz + ez)
 		local v = part.size[1] * part.size[2] * part.size[3]
+		-- Real (approximate) solid volume of the shape, not its bounding box.
+		local factor = 1
+		if part.shape == "Ball" then
+			factor = math.pi / 6
+		elseif part.shape == "Cylinder" then
+			factor = math.pi / 4
+		elseif part.shape == "Wedge" or part.shape == "CornerWedge" then
+			factor = 0.5
+		elseif part.shape == "Mesh" then
+			factor = 0.55
+		end
+		if (part.transparency or 0) < 0.9 then
+			solid += v * factor
+		end
 		if v > bestVolume and not part.neon and part.tag ~= "eye" then
 			bestVolume = v
 			mainColor = part.color
@@ -98,7 +120,7 @@ function PropMetrics.compute(parts: { any }, fill: number?): Metrics
 		return a > b
 	end)
 	local absorbSize = dims[1] * 0.6 + dims[2] * 0.4
-	local f = fill or 0.55
+	local f = fill or 1
 	local halfDiag = 0.5 * math.sqrt(sx * sx + sy * sy + sz * sz)
 	return {
 		sx = sx,
@@ -107,7 +129,8 @@ function PropMetrics.compute(parts: { any }, fill: number?): Metrics
 		minY = minY,
 		centerY = (minY + maxY) / 2,
 		absorbSize = absorbSize,
-		volume = sx * sy * sz * f,
+		-- Overlapping parts double count, so never exceed 70% of the bounding box.
+		volume = math.min(solid, sx * sy * sz * 0.7) * f,
 		-- Fuzzy contact sphere: between the inscribed and circumscribed radius.
 		contactRadius = (halfDiag + dims[2] / 2) / 2,
 		footprint = 0.5 * math.sqrt(sx * sx + sz * sz),

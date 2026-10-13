@@ -144,8 +144,8 @@ function BallService:all(): { BallState }
 	return out
 end
 
-function BallService:spawn(player: Player, position: Vector3, diameter: number, opts: { [string]: any }?): BallState?
-	opts = opts or {}
+function BallService:spawn(player: Player, position: Vector3, diameter: number, options: { [string]: any }?): BallState?
+	local opts: { [string]: any } = options or {}
 	self:remove(player, "respawn")
 	local character = player.Character
 	if not character or not character:FindFirstChild("HumanoidRootPart") then

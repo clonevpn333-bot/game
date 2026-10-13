@@ -1,4 +1,5 @@
 .testbuild/
-*.rbxlx
 *.rbxl
 sourcemap.json
+*.rbxlx
+!RollTheWorld.rbxlx

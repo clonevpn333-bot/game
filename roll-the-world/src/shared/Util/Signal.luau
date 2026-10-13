@@ -59,7 +59,7 @@ end
 
 function Signal.Fire(self: any, ...)
 	-- Copy so handlers may disconnect during dispatch.
-	local list = table.clone(self._handlers)
+	local list: { any } = table.clone(self._handlers)
 	for _, conn in list do
 		if conn.Connected then
 			local ok, err = pcall(conn._fn, ...)

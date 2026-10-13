@@ -84,7 +84,8 @@ Rarity.Defs = {
 } :: { [RarityId]: RarityDef }
 
 function Rarity.get(id: string): RarityDef
-	return Rarity.Defs[id :: RarityId] or Rarity.Defs.Common
+	local defs: { [string]: RarityDef } = Rarity.Defs :: any
+	return defs[id] or defs.Common
 end
 
 function Rarity.color(id: string, colorblind: boolean?): Color3

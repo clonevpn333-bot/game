@@ -68,11 +68,12 @@ local Tuning = {
 	},
 
 	Growth = {
-		-- volumeGained = propVolume * Fill * Gain * earlyBoost(D) * modifiers
-		DefaultFill = 0.55,
-		Gain = 1.75,
-		EarlyBoost = 1.4,
-		EarlyScale = 14, -- D at which early boost has decayed to ~37%
+		-- volumeGained = propSolidVolume * Gain * earlyBoost(D) * modifiers
+		-- Tuned with tools/sim/growth.spec.luau (see docs/TUNING.md): a solo greedy roller grabs ~5
+		-- things/second in the first minute and grows 3 -> ~15 (1 min) -> ~65 (4 min) -> ~150 (end).
+		Gain = 0.7,
+		EarlyBoost = 2.8,
+		EarlyScale = 10, -- D at which early boost has decayed to ~37%
 		FinalRollMultiplier = 1.5,
 		-- Absorbing another player adds this share of their ball volume.
 		PlayerVolumeShare = 0.8,
@@ -171,6 +172,23 @@ local Tuning = {
 		LoadRetries = 6,
 		SaveRetries = 5,
 		ReceiptHistory = 60,
+	},
+
+	Graphics = {
+		-- Build props as smooth EditableMesh meshes (falls back to primitive parts automatically
+		-- if the device/experience can't create editable meshes).
+		UseEditableMesh = true,
+		-- Baked contact shadows / sky light as vertex colors on generated meshes.
+		VertexShading = true,
+		-- Safety valve: flip triangle winding if generated meshes render inside-out on a platform.
+		FlipWinding = false,
+		-- Max templates built per frame while preparing a kit in the background.
+		TemplatesPerFrame = 2,
+		-- Render distance (studs) = clamp(absorbSize * PropRenderScale, Min, Max) per prop,
+		-- multiplied by the device quality factor; huge props and landmarks always render.
+		PropRenderScale = 70,
+		PropRenderMin = 90,
+		PropRenderMax = 1600,
 	},
 
 	Camera = {

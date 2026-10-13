@@ -1,4 +1,4 @@
---!strict
+--!nonstrict
 -- World Kit: Backyard BBQ. Golden afternoon, lawn, wooden deck, picnic tables, veggie beds.
 
 return {

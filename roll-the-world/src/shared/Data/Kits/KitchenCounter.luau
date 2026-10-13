@@ -1,4 +1,4 @@
---!strict
+--!nonstrict
 -- World Kit: Kitchen Counter. Warm morning light, marble counters, wooden floor.
 -- Players start on the counter top among crumbs and work down the ramps to the kitchen floor.
 
@@ -35,7 +35,7 @@ return {
 			size = { 440, 160 },
 			jitter = 30,
 			height = 40,
-			top = { color = "#f4f1ec", material = "Marble" },
+			top = { color = "#dfe6ea", material = "Marble" },
 			side = { color = "#7fc8a9", material = "SmoothPlastic" },
 			trim = { color = "#d9dee6", height = 3 },
 			ramps = { count = 3, width = 46, color = "#deb887", material = "Wood" },

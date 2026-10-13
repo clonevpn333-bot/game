@@ -35,6 +35,9 @@ PropLibrary.MaxUid = 0
 local function register(kit: any, raw: any)
 	assert(type(raw.uid) == "number" and raw.uid > 0 and raw.uid < 4096, "bad uid on " .. tostring(raw.id))
 	assert(PropLibrary.ByUid[raw.uid] == nil, "duplicate prop uid " .. raw.uid)
+	for i, part in raw.parts do
+		assert(type(part.color) == "string" and part.color:match("^#%x%x%x%x%x%x$"), string.format("prop %s part %d has an invalid color", tostring(raw.id), i))
+	end
 	local metrics = PropMetrics.compute(raw.parts, raw.fill)
 	local parts = raw.parts
 	if math.abs(metrics.minY) > 1e-3 then
@@ -71,7 +74,7 @@ local function register(kit: any, raw: any)
 		weight = raw.weight or 1,
 		critter = raw.critter,
 		landmark = raw.landmark == true,
-		fill = raw.fill or 0.55,
+		fill = raw.fill or 1,
 		metrics = metrics,
 	}
 	assert(Rarity.Defs[def.rarity :: any], "bad rarity on " .. def.id)

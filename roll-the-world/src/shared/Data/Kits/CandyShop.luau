@@ -1,4 +1,4 @@
---!strict
+--!nonstrict
 -- World Kit: Candy Shop. Candy-pink light, checkerboard floor, counters and soda fountain.
 
 return {

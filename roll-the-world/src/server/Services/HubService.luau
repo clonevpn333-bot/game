@@ -7,12 +7,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage.Shared
-local PropBuilder = require(Shared.PropBuilder)
-local NanaNova = require(Shared.Data.NanaNova)
 
 local HubService = {}
 
 HubService.ORIGIN = Vector3.new(0, 900, 6000)
+-- Station panels (shop, Rolledex, cores, galaxy, pass, requests) arrive with the progression
+-- milestone; until then their prompts are disabled so nothing in the hub is a dead button.
+HubService.StationsEnabled = false
 HubService.model = nil :: Model?
 HubService.spawns = {} :: { CFrame }
 HubService.podium = {} :: { CFrame }
@@ -116,6 +117,7 @@ local function station(parent: Instance, origin: Vector3, name: string, label: s
 	prompt.RequiresLineOfSight = false
 	prompt.KeyboardKeyCode = Enum.KeyCode.E
 	prompt.GamepadKeyCode = Enum.KeyCode.ButtonX
+	prompt.Enabled = HubService.StationsEnabled
 	prompt.Parent = base
 	model:SetAttribute("Station", name)
 	base:SetAttribute("Station", name)
@@ -276,23 +278,27 @@ local function buildPodium(hub: Model, o: Vector3)
 	stage:SetAttribute("PodiumStage", true)
 end
 
+-- Nana Nova and her chair are smooth meshes built on each client (editable meshes don't replicate),
+-- so the server only places an anchor with her prompt; see client NanaController.
 local function buildNana(hub: Model, o: Vector3)
 	local spot = o + Vector3.new(0, 0, 30)
-	local chair = PropBuilder.buildParts(NanaNova.Chair, "NanaChair")
-	chair:PivotTo(CFrame.new(spot) * CFrame.Angles(0, math.pi, 0))
-	chair.Parent = hub
-	local nana = PropBuilder.buildParts(NanaNova.Parts, "NanaNova")
-	nana:PivotTo(CFrame.new(spot + Vector3.new(0, 4.6, 0.3)) * CFrame.Angles(0, math.pi, 0))
-	nana:SetAttribute("NanaNova", true)
+	local anchor = part(hub, {
+		Name = "NanaAnchor",
+		Size = Vector3.new(8, 12, 8),
+		CFrame = CFrame.new(spot + Vector3.new(0, 6, 0)) * CFrame.Angles(0, math.pi, 0),
+		Transparency = 1,
+		CanCollide = true,
+	})
+	anchor:SetAttribute("NanaNova", true)
+	anchor:SetAttribute("Station", "Requests")
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Requests"
 	prompt.ObjectText = "Nana Nova"
 	prompt.HoldDuration = 0
 	prompt.MaxActivationDistance = 18
 	prompt.RequiresLineOfSight = false
-	prompt.Parent = nana.PrimaryPart
-	nana.PrimaryPart:SetAttribute("Station", "Requests")
-	nana.Parent = hub
+	prompt.Enabled = HubService.StationsEnabled
+	prompt.Parent = anchor
 end
 
 local function buildPortals(hub: Model, o: Vector3)
@@ -331,6 +337,7 @@ local function buildPortals(hub: Model, o: Vector3)
 		prompt.HoldDuration = 0
 		prompt.MaxActivationDistance = 16
 		prompt.RequiresLineOfSight = false
+		prompt.Enabled = HubService.StationsEnabled
 		prompt.Parent = film
 		film:SetAttribute("Station", "Tier")
 		film:SetAttribute("TierId", tier.id)

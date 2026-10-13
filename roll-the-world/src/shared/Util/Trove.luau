@@ -14,7 +14,7 @@ function Trove.new(): Trove
 	return (setmetatable({ _items = {} }, Trove) :: any) :: Trove
 end
 
-local function cleanupItem(item: any)
+local function cleanupItem(item: any): ()
 	local kind = typeof(item)
 	if kind == "function" then
 		item()
@@ -33,7 +33,7 @@ local function cleanupItem(item: any)
 	end
 end
 
-function Trove.Add(self: any, item)
+function Trove.Add(self: any, item: any): any
 	table.insert(self._items, item)
 	return item
 end
@@ -42,7 +42,10 @@ function Trove.Clean(self: any)
 	local items = self._items
 	self._items = {}
 	for i = #items, 1, -1 do
-		local ok, err = pcall(cleanupItem, items[i])
+		local item = items[i]
+		local ok, err = pcall(function()
+			cleanupItem(item)
+		end)
 		if not ok then
 			warn("[Trove] cleanup error: " .. tostring(err))
 		end

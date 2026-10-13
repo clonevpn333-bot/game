@@ -6,7 +6,7 @@
 -- footprint at ground level (y = 0 is the floor), +Z is the prop's "front".
 -- Colors are hex strings. Rotations are degrees, applied Y then X then Z (CFrame.fromEulerAnglesYXZ).
 
-export type Shape = "Block" | "Ball" | "Cylinder" | "Wedge" | "CornerWedge"
+export type Shape = "Block" | "Ball" | "Cylinder" | "Wedge" | "CornerWedge" | "Mesh"
 
 export type PartSpec = {
 	shape: Shape,
@@ -20,6 +20,9 @@ export type PartSpec = {
 	reflectance: number?,
 	neon: boolean?,
 	tag: string?, -- "eye", "leg", "wing", "tail", "head", "body", "accent" (used by critter animation)
+	mesh: { [string]: any }?, -- MeshKit descriptor when shape == "Mesh"
+	meshCenter: { number }?, -- bbox centre of the generated mesh in its own space
+	sharp: boolean?, -- opt out of automatic bevelling for blocks/cylinders
 }
 
 export type Opts = {
@@ -29,7 +32,10 @@ export type Opts = {
 	refl: number?,
 	tag: string?,
 	neon: boolean?,
+	sharp: boolean?,
 }
+
+local MeshKit = require(script.Parent.Parent.Parent.Logic.MeshKit)
 
 local Shapes = {}
 
@@ -40,6 +46,7 @@ local function finish(spec: PartSpec, opts: Opts?): PartSpec
 		spec.transparency = opts.t
 		spec.reflectance = opts.refl
 		spec.tag = opts.tag
+		spec.sharp = opts.sharp
 		if opts.neon then
 			spec.neon = true
 			spec.material = "Neon"
@@ -80,6 +87,88 @@ end
 -- Kept as a Ball shape with non-uniform size; PropBuilder renders it with a sphere mesh.
 function Shapes.blob(sx: number, sy: number, sz: number, x: number, y: number, z: number, color: string, opts: Opts?): PartSpec
 	return finish({ shape = "Ball", size = { sx, sy, sz }, pos = { x, y, z }, color = color }, opts)
+end
+
+-- Smooth meshes ---------------------------------------------------------------------------------
+-- These generate real triangle meshes (see Logic/MeshKit). x, y, z place the mesh's own origin.
+
+local function meshSpec(desc: { [string]: any }, x: number, y: number, z: number, color: string, opts: Opts?): PartSpec
+	local mesh = MeshKit.generate(desc)
+	local size = { mesh.max[1] - mesh.min[1], mesh.max[2] - mesh.min[2], mesh.max[3] - mesh.min[3] }
+	local center = { (mesh.max[1] + mesh.min[1]) / 2, (mesh.max[2] + mesh.min[2]) / 2, (mesh.max[3] + mesh.min[3]) / 2 }
+	return finish({ shape = "Mesh", mesh = desc, meshCenter = center, size = size, pos = { x, y, z }, color = color }, opts)
+end
+
+-- Revolve a profile { {radius, y}, ... } (bottom to top) around the vertical axis.
+-- extra: { seg, smooth, lobes, lobeDepth, twist, squash = {sx, sz} }
+function Shapes.lathe(profile: { { number } }, x: number, y: number, z: number, color: string, opts: Opts?, extra: { [string]: any }?): PartSpec
+	local desc: { [string]: any } = { kind = "lathe", profile = profile, seg = 24, smooth = 3 }
+	if extra then
+		for k, v in extra do
+			desc[k] = v
+		end
+	end
+	return meshSpec(desc, x, y, z, color, opts)
+end
+
+-- Rounded box with real bevels; radius defaults to 18% of the smallest side.
+function Shapes.rbox(sx: number, sy: number, sz: number, x: number, y: number, z: number, color: string, opts: Opts?, radius: number?): PartSpec
+	local r = radius or math.min(sx, sy, sz) * 0.18
+	return meshSpec({ kind = "rbox", size = { sx, sy, sz }, radius = r, seg = 3 }, x, y, z, color, opts)
+end
+
+-- Tube swept along a path of points (smoothed), radius scalar or per point.
+function Shapes.tube(path: { { number } }, radius: number | { number }, color: string, opts: Opts?, extra: { [string]: any }?): PartSpec
+	local desc: { [string]: any } = { kind = "tube", path = path, radius = radius, sides = 12, smooth = 4, caps = "round" }
+	if extra then
+		for k, v in extra do
+			desc[k] = v
+		end
+	end
+	return meshSpec(desc, 0, 0, 0, color, opts)
+end
+
+function Shapes.torus(major: number, minor: number, x: number, y: number, z: number, color: string, opts: Opts?, extra: { [string]: any }?): PartSpec
+	local desc: { [string]: any } = { kind = "torus", major = major, minor = minor, segU = 28, segV = 14 }
+	if extra then
+		for k, v in extra do
+			desc[k] = v
+		end
+	end
+	return meshSpec(desc, x, y, z, color, opts)
+end
+
+-- Smooth ellipsoid; lump > 0 gives organic cloud/foliage silhouettes.
+function Shapes.ell(sx: number, sy: number, sz: number, x: number, y: number, z: number, color: string, opts: Opts?, extra: { [string]: any }?): PartSpec
+	local desc: { [string]: any } = { kind = "ellipsoid", size = { sx, sy, sz }, segU = 24, segV = 16 }
+	if extra then
+		for k, v in extra do
+			desc[k] = v
+		end
+	end
+	return meshSpec(desc, x, y, z, color, opts)
+end
+
+-- Extrude a 2D outline {{x, z}, ...} upward by height with a soft bevel.
+function Shapes.extrude(outline: { { number } }, height: number, x: number, y: number, z: number, color: string, opts: Opts?, extra: { [string]: any }?): PartSpec
+	local desc: { [string]: any } = { kind = "extrude", outline = outline, height = height }
+	if extra then
+		for k, v in extra do
+			desc[k] = v
+		end
+	end
+	return meshSpec(desc, x, y, z, color, opts)
+end
+
+-- Regular star / flower outline helper for extrude.
+function Shapes.starOutline(points: number, outer: number, inner: number): { { number } }
+	local out = {}
+	for i = 0, points * 2 - 1 do
+		local a = i / (points * 2) * math.pi * 2 + math.pi / 2
+		local r = if i % 2 == 0 then outer else inner
+		table.insert(out, { math.cos(a) * r, math.sin(a) * r })
+	end
+	return out
 end
 
 -- Two cartoon eyes (white + pupil + highlight) placed symmetrically at +/- x on the +Z face.

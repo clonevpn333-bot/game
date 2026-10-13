@@ -42,7 +42,8 @@ end
 function Format.commas(n: number): string
 	local negative = n < 0
 	local s = tostring(math.floor(math.abs(n)))
-	local out = s:reverse():gsub("(%d%d%d)", "%1,"):reverse()
+	local reversed = s:reverse():gsub("(%d%d%d)", "%1,")
+	local out = reversed:reverse()
 	if out:sub(1, 1) == "," then
 		out = out:sub(2)
 	end
@@ -52,14 +53,16 @@ end
 -- 15300 -> "15.3K"
 function Format.compact(n: number): string
 	local abs = math.abs(n)
-	local suffixes = { { 1e12, "T" }, { 1e9, "B" }, { 1e6, "M" }, { 1e3, "K" } }
-	for _, pair in suffixes do
-		if abs >= pair[1] then
-			local v = n / pair[1]
+	local limits = { 1e12, 1e9, 1e6, 1e3 }
+	local suffixes = { "T", "B", "M", "K" }
+	for i, limit in limits do
+		if abs >= limit then
+			local v = n / limit
 			if math.abs(v) >= 100 then
-				return string.format("%d%s", math.floor(v), pair[2])
+				return string.format("%d%s", math.floor(v), suffixes[i])
 			end
-			return (string.format("%.1f", v):gsub("%.0$", "")) .. pair[2]
+			local text = string.format("%.1f", v):gsub("%.0$", "")
+			return text .. suffixes[i]
 		end
 	end
 	return tostring(math.floor(n))

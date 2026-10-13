@@ -6,6 +6,7 @@ local PropMetrics = require(Shared.Logic.PropMetrics)
 local WorldGen = require(Shared.Logic.WorldGen)
 local Kits = require(Shared.Data.Kits)
 local NanaNova = require(Shared.Data.NanaNova)
+local MeshAssembly = require(Shared.Logic.MeshAssembly)
 
 local function encode(v)
 	local t = type(v)
@@ -17,6 +18,9 @@ local function encode(v)
 	elseif t == "boolean" then
 		return tostring(v)
 	elseif t == "table" then
+		if v.__raw then
+			return v.__raw
+		end
 		if #v > 0 or next(v) == nil then
 			local out = {}
 			for i, x in v do out[i] = encode(x) end
@@ -27,6 +31,27 @@ local function encode(v)
 		return "{" .. table.concat(out, ",") .. "}"
 	end
 	return "null"
+end
+
+-- Compact number list: 3 significant decimals is plenty for previews.
+local function numList(list, fmt)
+	local out = table.create(#list)
+	for i, v in list do
+		out[i] = string.format(fmt, v)
+	end
+	return "[" .. table.concat(out, ",") .. "]"
+end
+
+local function groupsOut(parts, detail)
+	local out = {}
+	for _, g in MeshAssembly.assemble(parts, true, detail) do
+		table.insert(out, string.format(
+			'{"c":%q,"m":%q,"t":%s,"n":%s,"v":%s,"no":%s,"uv":%s,"s":%s,"i":%s}',
+			g.color, g.material, tostring(g.transparency), tostring(g.neon),
+			numList(g.verts, "%.3f"), numList(g.norms, "%.2f"), numList(g.uvs, "%.3f"), numList(g.shade, "%.2f"), numList(g.tris, "%d")
+		))
+	end
+	return { __raw = "[" .. table.concat(out, ",") .. "]" }
 end
 
 local function partsOut(parts)
@@ -42,7 +67,10 @@ end
 
 local props = {}
 for _, def in PropLibrary.All do
-	props[tostring(def.uid)] = { name = def.name, kit = def.kitId, rarity = def.rarity, size = def.metrics.absorbSize, parts = partsOut(def.parts), variants = def.variants or {} }
+	props[tostring(def.uid)] = {
+		name = def.name, kit = def.kitId, rarity = def.rarity, size = def.metrics.absorbSize,
+		groups = groupsOut(def.parts, MeshAssembly.detailFor(def.metrics.absorbSize)),
+	}
 end
 local maps = {}
 for _, kit in Kits.List do
@@ -51,4 +79,4 @@ for _, kit in Kits.List do
 	for _, p in r.props do table.insert(placed, { p.uid, p.x, p.y, p.z, p.yaw, p.scale, p.id }) end
 	maps[kit.id] = { geometry = r.geometry, props = placed, arenaHalf = r.arenaHalf, spawn = r.spawnCenter, lighting = kit.lighting }
 end
-print("@@JSON@@" .. encode({ props = props, nana = partsOut(NanaNova.Parts), chair = partsOut(NanaNova.Chair), maps = maps }) .. "@@END@@")
+print("@@JSON@@" .. encode({ props = props, nana = groupsOut(NanaNova.Parts, 1), chair = groupsOut(NanaNova.Chair, 1), maps = maps }) .. "@@END@@")
