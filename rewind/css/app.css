@@ -76,7 +76,9 @@ h3 { margin: 0 0 10px; font-size: 11px; font-weight: 700; letter-spacing: .14em;
 .frame-inner.enter-down { animation: enterDown .42s var(--ease); }
 @keyframes enterUp   { from { opacity: 0; transform: translateY(34px) scale(.985); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes enterDown { from { opacity: 0; transform: translateY(-34px) scale(.985); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
-.player-host, .tt-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+.tt-pre { pointer-events: none; z-index: -1; }   /* NOT visibility:hidden — TikTok's player won't initialise while hidden; it sits behind the active (opaque) player instead */
+.player-host { position: absolute; inset: 0; width: 100%; height: 100%; isolation: isolate; background: #000; }
+.tt-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
 .shield { position: absolute; inset: 0 0 64px 0; z-index: 3; touch-action: none; cursor: pointer; }
 
 .meta { position: absolute; z-index: 4; inset: auto 0 0 0; padding: 70px 78px 74px 16px; pointer-events: none; color: #fff; background: linear-gradient(0deg, rgba(5,3,9,.82), rgba(5,3,9,.5) 52%, transparent); transition: opacity .3s; }

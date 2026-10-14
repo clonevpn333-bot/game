@@ -105,11 +105,12 @@
   /* ---------------- player ---------------- */
   const player = new window.TikTokPlayer($('playerHost'), {
     onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.activated) player.unmute(); },
-    onPlaying: (v) => { state.failures = 0; state.timeouts = 0; hideStates(); S.recordHealth(v.id, { state: 'ok' }); S.markSeen(v.id); setStatusDot(v); syncSound(); },
+    onPlaying: (v) => { state.failures = 0; state.timeouts = 0; hideStates(); S.recordHealth(v.id, { state: 'ok' }); S.markSeen(v.id); setStatusDot(v); syncSound(); schedulePreload(); },
     onPaused: () => {},
     onEnded: () => { if (settings.autoplayNext) next(); },
     onNeedsTap: () => { hideSkeleton(); $('stTap').hidden = false; },
     onFail: (kind, code, v) => handleFailure(kind, code, v),
+    onPreloadFail: (v, kind) => preloadFailed(v, kind),
     onMute: (m) => { state.muted = m; syncSound(); },
   }, { readyTimeout: Number(qs.get('readyTimeout')) || 0, startTimeout: Number(qs.get('startTimeout')) || 0, stallTimeout: Number(qs.get('stallTimeout')) || 0 });
 
@@ -147,6 +148,21 @@
       $('skipText').textContent = msg; $('skipbar').hidden = false;
       clearTimeout(skipTimer); skipTimer = setTimeout(() => { $('skipbar').hidden = true; skipCurrent(kind === 'invalid'); }, 1800);
     } else showErrorPanel(kind, v);
+  }
+  /* Preload the next video once the current one is playing (so the two never fight for bandwidth). */
+  let preloadT = null;
+  function schedulePreload() {
+    clearTimeout(preloadT);
+    const c = navigator.connection; if (c && c.saveData) return;
+    preloadT = setTimeout(() => { const n = queue.peek(1)[0]; if (n && playable(n)) player.preload(n, { loop: !settings.autoplayNext }); }, 900);
+  }
+  /* A preloaded video turned out to be gone: drop it from the feed before the user ever reaches it. */
+  function preloadFailed(v, kind) {
+    if (kind !== 'invalid') return schedulePreload();
+    S.recordHealth(v.id, { state: 'broken', kind: 'invalid', code: 1001 });
+    const i = queue.items.findIndex((x) => x.id === v.id);
+    if (i >= 0 && i !== queue.index) { queue.items.splice(i, 1); if (i < queue.index) queue.index--; }
+    renderSide(); schedulePreload();
   }
   function skipCurrent(remove) { if (remove && settings.hideUnavailable) { queue.removeCurrent(); present(1); } else next(); }
 

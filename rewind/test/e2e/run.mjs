@@ -15,9 +15,11 @@ const mode = ${JSON.stringify(mode)};
 if (mode === 'hang') { /* never answers */ }
 else if (mode === 'gone') setTimeout(() => send({ type: 'onPlayerError', value: { errorCode: 1001, errorType: 'INVALID_VIDEO' } }), 80);
 else if (mode === 'error3001') setTimeout(() => send({ type: 'onPlayerError', value: { errorCode: 3001, errorType: 'PLAYBACK_ERROR' } }), 80);
-else { setTimeout(() => send({ type: 'onPlayerReady' }), 60);
+else { let paused = false;
+  addEventListener('message', (e) => { const d = e.data || {}; if (d.type === 'pause') { paused = true; send({ type: 'onStateChange', value: 2 }); } if (d.type === 'play') { paused = false; send({ type: 'onStateChange', value: 1 }); } });
+  setTimeout(() => send({ type: 'onPlayerReady' }), 60);
   if (mode === 'autoplay') setTimeout(() => send({ type: 'onPlayerError', value: { errorCode: 3002 } }), 120);
-  else { setTimeout(() => send({ type: 'onMute', value: true }), 90); setTimeout(() => send({ type: 'onStateChange', value: 3 }), 100); setTimeout(() => send({ type: 'onStateChange', value: 1 }), 220); } }
+  else { setTimeout(() => send({ type: 'onMute', value: true }), 90); setTimeout(() => send({ type: 'onStateChange', value: 3 }), 100); setTimeout(() => { if (!paused) send({ type: 'onStateChange', value: 1 }); }, 220); } }
 addEventListener('message', (e) => { const d = e.data || {}; if (d.type === 'unMute') send({ type: 'onMute', value: false }); if (d.type === 'mute') send({ type: 'onMute', value: true }); });
 </script>`;
 async function newPage(url, { readyTimeout = 1500 } = {}) {
@@ -40,12 +42,28 @@ await t('boots without errors; 2020 and fall themes differ', async () => {
   await p.keyboard.press('1'); await p.waitForFunction(() => document.body.dataset.theme === 'y2020');
   assert.deepEqual(p.errors, []); await p.ctx.close(); assert.ok(accent);
 });
-await t('arrow keys navigate and keep exactly one TikTok iframe', async () => {
+await t('arrow keys navigate and keep exactly one visible player (plus at most one hidden preload)', async () => {
   const p = await newPage('period=2023-10'); await p.waitForSelector('.tt-frame'); const a = await cur(p);
   await p.keyboard.press('ArrowDown'); await p.waitForFunction((a) => window.__rewind.queue.current.id !== a, a);
-  await p.waitForTimeout(300); assert.equal(await p.locator('.tt-frame').count(), 1);
+  await p.waitForTimeout(300); assert.equal(await p.locator('.tt-frame:not(.tt-pre)').count(), 1); assert.ok(await p.locator('iframe').count() <= 2);
   await p.keyboard.press('ArrowUp'); await p.waitForFunction((a) => window.__rewind.queue.current.id === a, a);
   assert.deepEqual(p.errors, []); await p.ctx.close();
+});
+await t('the next video is preloaded behind the player and a swipe reveals it without a new load', async () => {
+  const p = await newPage('period=2023-10'); await p.waitForFunction(() => window.__rewind.player.pre && window.__rewind.player.pre.ready, null, { timeout: 8000 });
+  assert.equal(await p.locator('iframe').count(), 2); const nextId = await p.evaluate(() => window.__rewind.player.pre.video.id);
+  const src = await p.evaluate(() => window.__rewind.player.pre.frame.src);
+  await p.keyboard.press('ArrowDown'); await p.waitForFunction(() => window.__rewind.player.promoted === true && window.__rewind.player.state === 'playing', null, { timeout: 4000 });
+  assert.equal(await cur(p), nextId); assert.equal(await p.evaluate(() => window.__rewind.player.frame.src), src, 'same iframe element was reused');
+  await p.ctx.close();
+});
+await t('a dead video is discovered by the preload and removed before the user reaches it', async () => {
+  const p = await newPage('period=2023-10'); await p.waitForSelector('.tt-frame');
+  const [cur0, nxt, after] = await p.evaluate(() => { const q = window.__rewind.queue; return [q.current.id, q.items[(q.index + 1) % q.length].id, q.items[(q.index + 2) % q.length].id]; });
+  behaviors.set(nxt, 'gone');   // cur0 already playing; the NEXT one is dead
+  await p.waitForFunction((id) => !window.__rewind.queue.items.some((v) => v.id === id), nxt, { timeout: 12000 });
+  await p.keyboard.press('ArrowDown'); await p.waitForFunction((a) => window.__rewind.queue.current.id === a, after, { timeout: 5000 });
+  assert.notEqual(cur0, nxt); await p.ctx.close();
 });
 await t('a removed video (1001) auto-skips, is remembered as broken, and never returns', async () => {
   const p = await newPage('period=2023-10'); await p.waitForSelector('.tt-frame');
