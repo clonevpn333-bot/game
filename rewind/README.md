@@ -15,7 +15,7 @@ Open it through `localhost` rather than double-clicking the file: TikTok's playe
 
 | | |
 |---|---|
-| **Library** | `data/library.json` — 700+ real posts with creator, title, upload date, vibe/trend tags, sound (only where a source names it), status, provenance link |
+| **Library** | `data/library.json` — 713 records (669 playable) with creator, title, upload date, vibe/trend tags, sound (only where a source names it), status, provenance link |
 | **Eras** | 2020 · Sep · Oct · Nov · Dec 2023 · All Fall 2023, plus a month timeline (Jan–Dec 2020, Sep–Dec 2023) |
 | **Atmosphere** | Per-era animated backgrounds (LED bokeh + floor strip + ring-light halo; amber bokeh + leaves, Nov rain, Dec cool motes). Sep/Oct/Nov/Dec each have their own palette. Intensity, blur, depth sliders; reduce-motion switch (also honors the OS setting); optional synthesized room tone (off by default) |
 | **Feed** | Shuffled differently every visit: unseen posts first, the same trend/creator never back-to-back. Wheel, swipe, ↑/↓, J/K. Double-tap to favorite. Autoplay-next |
@@ -32,7 +32,9 @@ Statuses in the library mean exactly this:
 * **`verified`** — TikTok's public oEmbed endpoint confirmed the post exists *at the date checked* (`lastChecked`).
 * **`playback: "ok"`** — additionally, the post reached the player's *playing* state in a real Chrome (`playbackChecked`). Audio output is not checked (headless).
 * **`unverified`** — the upload date was decoded from the video ID but nothing else has been confirmed.
-* **`broken`** — TikTok reports it gone (deleted/private). Kept as a record, never played.
+* **`broken`** — gone, private, or refused by the embedded player (error 1001). Kept as a record, never played.
+
+Current state: 654 posts have `playback: "ok"` (played in Chrome 155 on 2026-10-14); 15 more exist but timed out or errored in that test and stay `verified` without a playback mark; 44 are `broken` (9 from the original seed list plus 35 the player rejected).
 
 Dates are not trusted from sources: a TikTok ID embeds its creation timestamp, so every entry's date is decoded from its own ID and
 `npm test` fails if the library disagrees or an entry falls outside 2020 / Sep–Dec 2023. Old posts get deleted all the time; re-run the checks now and then.
@@ -77,6 +79,6 @@ The e2e tests *simulate* TikTok's player (served at TikTok's origin so the origi
 * **Sound:** TikTok autoplays muted until the browser allows audio; the "Tap for sound" prompt handles this. Audio was not verified in headless testing.
 * **Tag quality:** the library skews toward memes and sounds because its sources are meme histories. Posts from trend pages are tagged by their trend; unknown ones default to `memes`. Dances, cozy and aesthetic content, especially in fall 2023, are thinner than they should be — the best next additions.
 * **Some requested formats couldn't be sourced:** specific "which bedroom would you choose", "phobia types" and "now you won't let go" videos, and Fortnite Chapter 2 season clips, aren't documented in any source I could reach, so none were added rather than guessed. If you have links, `npm run add` takes them.
-* Dec 2023 (≈77) and Jan–May 2020 are the smallest periods.
+* Dec 2023 (76 playable) and Jan–May 2020 are the smallest periods. Current playable counts: 2020 = 227, Sep = 127, Oct = 132, Nov = 107, Dec = 76.
 * `rewind.html`/`seed-videos.json` in `legacy/` are the originals; 9 of those 70 posts have since been deleted from TikTok and are flagged `broken`.
 * Independent project, not affiliated with TikTok. Playback uses TikTok's official embedded player; nothing is downloaded or re-hosted.

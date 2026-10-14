@@ -72,7 +72,7 @@ test('add-videos: validates scope, dedupes, records provenance', async () => {
 
 test('apply-health: ok -> verified, invalid -> broken, timeouts ignored', async () => {
   const dir = sandbox(); const [a, b, c] = lib(dir).slice(0, 3).map((v) => v.id);
-  writeFileSync(join(dir, 'h.json'), JSON.stringify({ results: { [a]: { state: 'ok', at: '2026-01-02T00:00:00Z' }, [b]: { state: 'broken', kind: 'invalid', at: '2026-01-02' }, [c]: { state: 'broken', kind: 'timeout' } } }));
+  writeFileSync(join(dir, 'h.json'), JSON.stringify({ results: { [a]: { state: 'ok', at: '2026-01-02T00:00:00Z' }, [b]: { state: 'error', kind: 'invalid', code: 1001, at: '2026-01-02' }, [c]: { state: 'broken', kind: 'timeout' } } }));
   const r = await run(dir, 'apply-health.mjs', [join(dir, 'h.json')]); assert.equal(r.code, 0, r.out);
   const v = Object.fromEntries(lib(dir).map((x) => [x.id, x]));
   assert.equal(v[a].status, 'verified'); assert.equal(v[a].lastChecked, '2026-01-02'); assert.equal(v[b].status, 'broken'); assert.equal(v[c].status, 'unverified');
