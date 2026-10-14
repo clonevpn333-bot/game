@@ -9,13 +9,20 @@
   class TikTokPlayer {
     constructor(host, handlers = {}, opts = {}) {
       this.host = host; this.h = handlers;
-      this.readyTimeout = opts.readyTimeout || 10000;   // iframe never says "ready"
-      this.startTimeout = opts.startTimeout || 4000;    // ready, but autoplay never began -> ask for a tap
-      this.stallTimeout = opts.stallTimeout || 15000;   // buffering forever
+      /* Timeouts adapt: the first video of a visit also downloads TikTok's player bundle (measured 13 s on slow 3G),
+       * and slow/data-saver connections get double time. Explicit opts (tests) are used as-is. */
+      this.fixed = !!opts.readyTimeout;
+      this.baseReady = opts.readyTimeout || 12000;      // iframe never says "ready"
+      this.startTimeout = opts.startTimeout || 5000;    // ready, but autoplay never began -> ask for a tap
+      this.baseStall = opts.stallTimeout || 45000;      // buffering forever (a buffering clip exists, it is just slow)
+      this.warm = false;                                // true once any video has become ready
       this.frame = null; this.state = 'idle'; this.video = null; this.timers = {}; this.token = 0; this.muted = false;
       this._onMsg = this._onMsg.bind(this);
       window.addEventListener('message', this._onMsg);
     }
+    get slow() { const c = navigator.connection; return !!(c && (c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || ''))); }
+    get readyTimeout() { return this.fixed ? this.baseReady : this.baseReady * (this.warm ? 1 : 2.5) * (this.slow ? 2 : 1); }
+    get stallTimeout() { return this.fixed ? this.baseStall : this.baseStall * (this.slow ? 2 : 1); }
     _clear(name) { if (name) { clearTimeout(this.timers[name]); delete this.timers[name]; } else { Object.values(this.timers).forEach(clearTimeout); this.timers = {}; } }
     _set(name, ms, fn) { this._clear(name); const t = this.token; this.timers[name] = setTimeout(() => { if (t === this.token) fn(); }, ms); }
 
@@ -49,7 +56,7 @@
       if (!d || d['x-tiktok-player'] !== true || !this.video) return;
       switch (d.type) {
         case 'onPlayerReady':
-          this._clear('ready'); if (this.state === 'loading') this.state = 'ready';
+          this._clear('ready'); this.warm = true; if (this.state === 'loading') this.state = 'ready';
           this.h.onReady && this.h.onReady(this.video);
           if (this.autoplay) this._set('start', this.startTimeout, () => { if (this.state === 'ready') this.h.onNeedsTap && this.h.onNeedsTap(); });
           break;

@@ -18,7 +18,7 @@
   const queue = new C.Queue([]);
   let library = [];
   let settings = S.settings();
-  let skipTimer = null, skelTimer = null, toastTimer = null, tapTimer = null;
+  let skipTimer = null, skelTimer = null, skelTimer2 = null, toastTimer = null, tapTimer = null;
 
   function loadLibrary() {
     const seen = new Set();
@@ -111,7 +111,7 @@
     onNeedsTap: () => { hideSkeleton(); $('stTap').hidden = false; },
     onFail: (kind, code, v) => handleFailure(kind, code, v),
     onMute: (m) => { state.muted = m; syncSound(); },
-  }, { readyTimeout: Number(qs.get('readyTimeout')) || 10000, startTimeout: Number(qs.get('startTimeout')) || 4000, stallTimeout: Number(qs.get('stallTimeout')) || 15000 });
+  }, { readyTimeout: Number(qs.get('readyTimeout')) || 0, startTimeout: Number(qs.get('startTimeout')) || 0, stallTimeout: Number(qs.get('stallTimeout')) || 0 });
 
   /* TikTok starts muted until the browser allows sound: make that obvious and one tap to fix. */
   function syncSound() {
@@ -121,8 +121,8 @@
     $('soundHint').hidden = !(m && !state.userMuted && player.state === 'playing');
   }
   function setMuted(m) { state.userMuted = m; state.activated = true; m ? player.mute() : player.unmute(); syncSound(); }
-  function hideStates() { $('stSkeleton').hidden = true; $('stTap').hidden = true; $('stPanel').hidden = true; clearTimeout(skelTimer); }
-  function hideSkeleton() { $('stSkeleton').hidden = true; clearTimeout(skelTimer); }
+  function hideStates() { $('stSkeleton').hidden = true; $('stTap').hidden = true; $('stPanel').hidden = true; clearTimeout(skelTimer); clearTimeout(skelTimer2); }
+  function hideSkeleton() { $('stSkeleton').hidden = true; clearTimeout(skelTimer); clearTimeout(skelTimer2); }
   function resetFailures() { state.failures = 0; state.timeouts = 0; state.blocked = false; }
 
   function showSkeleton(v) {
@@ -130,7 +130,10 @@
     $('skTitle').textContent = `Tuning in to ${C.MON3[Number(v.month.slice(5)) - 1]} ${v.year}…`;
     $('skSub').textContent = 'Waiting for TikTok’s player';
     $('skSkip').hidden = true; $('stSkeleton').hidden = false;
-    skelTimer = setTimeout(() => { $('skSub').textContent = 'Taking a while — this one might be gone'; $('skSkip').hidden = false; }, Math.min(5000, player.readyTimeout * 0.5));
+    const slow = player.slow || !player.warm;
+    clearTimeout(skelTimer2);
+    skelTimer = setTimeout(() => { $('skSub').textContent = slow ? 'Slow connection — still tuning in…' : 'Taking a while…'; $('skSkip').hidden = false; }, Math.min(5000, player.readyTimeout * 0.4));
+    skelTimer2 = setTimeout(() => { $('skSub').textContent = 'Still nothing — it may be gone. Skip, or keep waiting.'; }, Math.min(14000, player.readyTimeout * 0.8));
   }
 
   function handleFailure(kind, code, v) {
@@ -157,7 +160,7 @@
     const v = queue.current;
     panel(`<div class="glyph">📡</div><p class="state-title">TikTok isn’t responding</p>
       <p class="state-sub">Several videos in a row failed, so auto-skip paused instead of looping forever.</p>
-      <ul><li>Is your connection up, and tiktok.com reachable?</li><li>Ad/tracker blockers can block TikTok embeds.</li><li>Running from a file? Try <code>npm start</code> and open localhost.</li><li>Some posts are removed or region-locked.</li></ul>
+      <ul><li>Slow connection? Give it another go — the first video takes the longest.</li><li>Is tiktok.com reachable from here?</li><li>Ad/tracker blockers can block TikTok embeds.</li><li>Running from a file? Try <code>npm start</code> and open localhost.</li><li>Some posts are removed or region-locked.</li></ul>
       <div class="row"><button class="btn" data-act="retryall">Try again</button>${v ? `<a class="btn ghost" href="${esc(v.url)}" target="_blank" rel="noopener noreferrer">Open on TikTok</a>` : ''}<button class="btn ghost" data-act="skip">Skip</button></div>`);
   }
   function showEmpty() {
