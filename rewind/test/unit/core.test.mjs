@@ -55,7 +55,8 @@ test('buildFeed filters by period, tags, search, favorites, broken', () => {
   const f = (o) => core.buildFeed(vids, o);
   assert.ok(f({ period: '2020' }).every((v) => v.year === 2020));
   assert.ok(f({ period: 'fall' }).every((v) => v.year === 2023));
-  assert.equal(f({ period: 'fall' }).length + f({ period: '2020' }).length, vids.length);
+  assert.equal(f({ period: 'fall' }).length + f({ period: '2020' }).length, vids.filter((v) => v.status !== 'broken').length);
+  assert.equal(f({ hideUnavailable: false }).length, vids.length);
   const oct = f({ period: '2023-10' });
   assert.ok(oct.length > 0 && oct.every((v) => v.month === '2023-10'));
   assert.ok(f({ tags: ['dances'] }).every((v) => v.trends.includes('dances')));
@@ -73,10 +74,11 @@ test('buildFeed filters by period, tags, search, favorites, broken', () => {
 test('buildFeed: chronological by default, deterministic shuffle with seed', () => {
   const a = core.buildFeed(vids, { period: 'fall' });
   assert.deepEqual(a.map((v) => v.date), [...a.map((v) => v.date)].sort());
+  const live = vids.filter((v) => v.status !== 'broken');
   const s1 = core.buildFeed(vids, { shuffle: true, rng: core.mulberry32(1) }).map((v) => v.id);
   const s2 = core.buildFeed(vids, { shuffle: true, rng: core.mulberry32(1) }).map((v) => v.id);
   assert.deepEqual(s1, s2);
-  assert.deepEqual([...s1].sort(), vids.map((v) => v.id).sort());
+  assert.deepEqual([...s1].sort(), live.map((v) => v.id).sort());
 });
 
 test('collections and moods resolve to real, non-empty feeds', () => {

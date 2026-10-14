@@ -2,6 +2,101 @@
  "schema": 1,
  "videos": [
   {
+   "id": "6784426505243086086",
+   "creator": "playlamo",
+   "title": "Ninja floss, TikTok edition • @playlamo",
+   "date": "2020-01-21",
+   "trends": [
+    "dances",
+    "memes",
+    "ninja-woah"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/ninja-hits-the-woah",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6784862060758060294",
+   "creator": "qpark",
+   "title": "Hip replacement on point",
+   "date": "2020-01-22",
+   "trends": [
+    "dances",
+    "blick"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/hit-you-with-the-blick-tiktok-trend",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6786760672563825925",
+   "creator": "anya_murphy",
+   "title": "Wiping tears with a hamster • @anya_murphy",
+   "date": "2020-01-27",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "hamster-tears"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/wiping-tears-with-a-hamster",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6786994658745601285",
+   "creator": "kenadeelc",
+   "title": "Wiping tears with a hamster • @kenadeelc",
+   "date": "2020-01-28",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "hamster-tears"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/wiping-tears-with-a-hamster",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6787438605506727174",
+   "creator": "urbaekay",
+   "title": "Wiping tears with a hamster • @urbaekay",
+   "date": "2020-01-29",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "hamster-tears"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/wiping-tears-with-a-hamster",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6792361525194575110",
+   "creator": "elsalinger",
+   "title": "Wiping tears with a hamster • @elsalinger",
+   "date": "2020-02-12",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "hamster-tears"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/wiping-tears-with-a-hamster",
+   "dateSource": "tiktok-id"
+  },
+  {
    "id": "6792413587685018885",
    "creator": "bbqfreedom",
    "title": "BBQ satisfying",
@@ -10,8 +105,8 @@
     "food"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -25,8 +120,8 @@
     "viral-chaos"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -39,9 +134,159 @@
     "dances"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "broken",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6801139503068122373",
+   "creator": "elite.oliver",
+   "title": "You not special bruh. Chase a bag instead✊🏾",
+   "date": "2020-03-06",
+   "trends": [
+    "memes",
+    "iconic-sounds",
+    "it-is-what-it-is"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/it-is-what-it-is",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6802719232426528005",
+   "creator": "iamtiagz",
+   "title": "How to make a song with It is what it is",
+   "date": "2020-03-10",
+   "trends": [
+    "memes",
+    "iconic-sounds",
+    "it-is-what-it-is"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/it-is-what-it-is",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6803304484463234305",
+   "creator": "xathiencam",
+   "title": "Coffin Dance • @xathiencam",
+   "date": "2020-03-12",
+   "trends": [
+    "memes",
+    "quarantine",
+    "viral-chaos",
+    "coffin-dance"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/coffin-dance-dancing-pallbearers",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6804872828828093702",
+   "creator": "ashleytisdalefrench",
+   "title": "Quarantine dance • “We’re All in This Together” • @ashleytisdalefrench",
+   "date": "2020-03-16",
+   "trends": [
+    "dances",
+    "quarantine",
+    "iconic-sounds",
+    "quarantine-dance"
+   ],
+   "sound": "We’re All in This Together – High School Musical",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/ashley-tisdales-were-all-in-this-together-quarantine-dance",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6804971868555136262",
+   "creator": "thetoliverfam",
+   "title": "Quarantine dance • “We’re All in This Together” • @thetoliverfam",
+   "date": "2020-03-17",
+   "trends": [
+    "dances",
+    "quarantine",
+    "iconic-sounds",
+    "quarantine-dance"
+   ],
+   "sound": "We’re All in This Together – High School Musical",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/ashley-tisdales-were-all-in-this-together-quarantine-dance",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6804996041692269829",
+   "creator": "kaycstroh",
+   "title": "Quarantine dance • “We’re All in This Together” • @kaycstroh",
+   "date": "2020-03-17",
+   "trends": [
+    "dances",
+    "quarantine",
+    "iconic-sounds",
+    "quarantine-dance"
+   ],
+   "sound": "We’re All in This Together – High School Musical",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/ashley-tisdales-were-all-in-this-together-quarantine-dance",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6805021466216647942",
+   "creator": "vanessahudgens",
+   "title": "Quarantine dance • “We’re All in This Together” • @vanessahudgens",
+   "date": "2020-03-17",
+   "trends": [
+    "dances",
+    "quarantine",
+    "iconic-sounds",
+    "quarantine-dance"
+   ],
+   "sound": "We’re All in This Together – High School Musical",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/ashley-tisdales-were-all-in-this-together-quarantine-dance",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6805069351352306949",
+   "creator": "bart_johnson",
+   "title": "Quarantine dance • “We’re All in This Together” • @bart_johnson",
+   "date": "2020-03-17",
+   "trends": [
+    "dances",
+    "quarantine",
+    "iconic-sounds",
+    "quarantine-dance"
+   ],
+   "sound": "We’re All in This Together – High School Musical",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/ashley-tisdales-were-all-in-this-together-quarantine-dance",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6805637961661680902",
+   "creator": "chelcielynn",
+   "title": "Sometimes i do a lot of things",
+   "date": "2020-03-18",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "sometimes-i-run"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/sometimes-i-run",
    "dateSource": "tiktok-id"
   },
   {
@@ -56,9 +301,24 @@
     "banana-bread"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6807075946470837509",
+   "creator": "jeremycohen",
+   "title": "How to date while being quarantined (part 1)",
+   "date": "2020-03-22",
+   "trends": [
+    "skits",
+    "quarantine"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/quarantine-cutie",
    "dateSource": "tiktok-id"
   },
   {
@@ -71,9 +331,39 @@
     "quarantine"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6815844494240484614",
+   "creator": "erikhornsten",
+   "title": "Boat jumping challenge • @erikhornsten",
+   "date": "2020-04-15",
+   "trends": [
+    "viral-chaos",
+    "boat-jumping"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/boat-jumping-challenge-tiktok",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6820864207668382982",
+   "creator": "panicatthedisco",
+   "title": "Pointer / pinky • @panicatthedisco",
+   "date": "2020-04-28",
+   "trends": [
+    "memes",
+    "pointer-pinky"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/its-the-pointer-pinky-tiktok-trend",
    "dateSource": "tiktok-id"
   },
   {
@@ -85,8 +375,8 @@
     "aesthetic"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -101,8 +391,8 @@
     "pancake-cereal"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -116,9 +406,25 @@
     "quarantine"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6825285563688455429",
+   "creator": "tova_leigh",
+   "title": "Mom life in song",
+   "date": "2020-05-10",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "sometimes-i-run"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/sometimes-i-run",
    "dateSource": "tiktok-id"
   },
   {
@@ -131,8 +437,8 @@
     "aesthetic"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -146,8 +452,8 @@
     "donut-cereal"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -162,8 +468,8 @@
     "wipe-it-down"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -178,8 +484,8 @@
     "dalgona-coffee"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -193,14 +499,14 @@
     "aesthetic"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
   {
    "id": "6837135439581728006",
-   "creator": null,
+   "creator": "plastique_tiara",
    "title": "2020 fashion glow-up",
    "date": "2020-06-11",
    "trends": [
@@ -208,8 +514,8 @@
     "aesthetic"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -223,22 +529,22 @@
     "aesthetic"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
   {
    "id": "6841335438490258694",
-   "creator": "skincarebyhyram",
+   "creator": "hyram",
    "title": "Hyram skincare • 2020",
    "date": "2020-06-23",
    "trends": [
     "aesthetic"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -252,14 +558,14 @@
     "transitions"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
   {
    "id": "6849216781303827717",
-   "creator": "awa_de_horchata_uwu",
+   "creator": "_awa_de_horchata",
    "title": "Mia Khalifa / bread meme",
    "date": "2020-07-14",
    "trends": [
@@ -267,9 +573,53 @@
     "viral-chaos"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6851795705787354374",
+   "creator": "car.shearer",
+   "title": "Carson Shearer’s dance • @car.shearer",
+   "date": "2020-07-21",
+   "trends": [
+    "dances"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/carson-shearers-dance",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6854960694102641925",
+   "creator": "the_horror_cub",
+   "title": "Sometimes, I run",
+   "date": "2020-07-29",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "sometimes-i-run"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/sometimes-i-run",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6855631606401617158",
+   "creator": "anjiebaby45",
+   "title": "What do you hear? • @anjiebaby45",
+   "date": "2020-07-31",
+   "trends": [
+    "viral-chaos"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/what-do-you-hear-tiktok-challenge",
    "dateSource": "tiktok-id"
   },
   {
@@ -282,8 +632,8 @@
     "memes"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -296,22 +646,22 @@
     "fashion"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
   {
    "id": "6859497646692912389",
-   "creator": null,
+   "creator": "dxvidkim",
    "title": "Shoe-change transformation",
    "date": "2020-08-10",
    "trends": [
     "fashion"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -325,8 +675,8 @@
     "lip-sync"
    ],
    "sound": "M to the B – Millie B",
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "broken",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -339,8 +689,8 @@
     "food"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -355,8 +705,8 @@
     "face-masks"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -369,9 +719,25 @@
     "food"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6865765755649068293",
+   "creator": "momohkd",
+   "title": "Skinny jeans just aren’t for me but to each their own",
+   "date": "2020-08-27",
+   "trends": [
+    "memes",
+    "fashion",
+    "skinny-jeans"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/skinny-jeans-are-canceled",
    "dateSource": "tiktok-id"
   },
   {
@@ -383,8 +749,8 @@
     "lip-sync"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "broken",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -397,8 +763,8 @@
     "dances"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -411,9 +777,41 @@
     "food"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6869746246555340038",
+   "creator": "meniyahsimone",
+   "title": "“That’s just what gangstas do” • @meniyahsimone",
+   "date": "2020-09-07",
+   "trends": [
+    "memes",
+    "skits",
+    "gangstas"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/thats-just-what-gangstas-do",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6870133726475455750",
+   "creator": "bobbybichhh",
+   "title": "“That’s just what gangstas do” • @bobbybichhh",
+   "date": "2020-09-08",
+   "trends": [
+    "memes",
+    "skits",
+    "gangstas"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/thats-just-what-gangstas-do",
    "dateSource": "tiktok-id"
   },
   {
@@ -426,36 +824,52 @@
     "skits"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
   {
    "id": "6871605473318112517",
-   "creator": null,
+   "creator": "dylanlemay",
    "title": "Ice cream cake",
    "date": "2020-09-12",
    "trends": [
     "food"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
   {
+   "id": "6871700119947939074",
+   "creator": "tik_davit_tok",
+   "title": "“That’s just what gangstas do” • @tik_davit_tok",
+   "date": "2020-09-12",
+   "trends": [
+    "memes",
+    "skits",
+    "gangstas"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/thats-just-what-gangstas-do",
+   "dateSource": "tiktok-id"
+  },
+  {
    "id": "6872835529109441798",
-   "creator": "inmyseams",
+   "creator": "ms.janetteok",
    "title": "Fashion styling",
    "date": "2020-09-15",
    "trends": [
     "fashion"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -469,8 +883,8 @@
     "cozy"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -483,8 +897,8 @@
     "aesthetic"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "broken",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -497,9 +911,25 @@
     "dances"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6874309460983090437",
+   "creator": "jackietodd_",
+   "title": "It really do be like that",
+   "date": "2020-09-19",
+   "trends": [
+    "skits",
+    "school-vibe",
+    "pov-coming-of-age"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/pov-coming-of-age",
    "dateSource": "tiktok-id"
   },
   {
@@ -514,8 +944,8 @@
     "dreams-skateboard"
    ],
    "sound": "Dreams – Fleetwood Mac",
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -529,9 +959,71 @@
     "thirst-traps"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6881344847404436742",
+   "creator": "jayrscottyy",
+   "title": "“Two pretty best friends” • @jayrscottyy",
+   "date": "2020-10-08",
+   "trends": [
+    "memes"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/i-aint-never-seen-two-pretty-best-friends",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6883189278352887046",
+   "creator": "bettercallhall",
+   "title": "Pt 2 of my movie series!",
+   "date": "2020-10-13",
+   "trends": [
+    "skits",
+    "school-vibe",
+    "pov-coming-of-age"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/pov-coming-of-age",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6883604679935282433",
+   "creator": "daveyboyyyyyy",
+   "title": "POV: coming of age • @daveyboyyyyyy",
+   "date": "2020-10-14",
+   "trends": [
+    "skits",
+    "school-vibe",
+    "pov-coming-of-age"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/pov-coming-of-age",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6884621053717515522",
+   "creator": "kallmekris",
+   "title": "Every Early 2000s High school Movie Trailer. Ft. Chad",
+   "date": "2020-10-17",
+   "trends": [
+    "skits",
+    "school-vibe",
+    "pov-coming-of-age"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/pov-coming-of-age",
    "dateSource": "tiktok-id"
   },
   {
@@ -544,8 +1036,8 @@
     "aesthetic"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -559,8 +1051,8 @@
     "aesthetic"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
@@ -573,9 +1065,176 @@
     "dances"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "broken",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6886965272947870982",
+   "creator": "dont.test.me.like.a.quiz",
+   "title": "“Two pretty best friends” • @dont.test.me.like.a.quiz",
+   "date": "2020-10-23",
+   "trends": [
+    "memes"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/i-aint-never-seen-two-pretty-best-friends",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6887648779491675397",
+   "creator": "kaylaaaaaaaa829",
+   "title": "I asked my mom to pretend to be me 😭",
+   "date": "2020-10-25",
+   "trends": [
+    "skits",
+    "family-impressions"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/family-impression-tiktoks",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6887719449735007494",
+   "creator": "kynaspring",
+   "title": "I asked my mom to pretend to be me",
+   "date": "2020-10-26",
+   "trends": [
+    "skits",
+    "family-impressions"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/family-impression-tiktoks",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6887785334998895878",
+   "creator": "jeeplord",
+   "title": "Oh no no no no no",
+   "date": "2020-10-26",
+   "trends": [
+    "iconic-sounds",
+    "viral-chaos",
+    "oh-no"
+   ],
+   "sound": "Oh No – Capone",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/capone-oh-no-tiktok-trend",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6887926732893048069",
+   "creator": "breezy_brz",
+   "title": "Tensioner pulley drop out of a 900hp vet",
+   "date": "2020-10-26",
+   "trends": [
+    "iconic-sounds",
+    "viral-chaos",
+    "oh-no"
+   ],
+   "sound": "Oh No – Capone",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/capone-oh-no-tiktok-trend",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6888774668409474305",
+   "creator": "pierreclerte0",
+   "title": "“Oh no” trend • @pierreclerte0",
+   "date": "2020-10-28",
+   "trends": [
+    "iconic-sounds",
+    "viral-chaos",
+    "oh-no"
+   ],
+   "sound": "Oh No – Capone",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/capone-oh-no-tiktok-trend",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6889135827042012422",
+   "creator": "nickregallis",
+   "title": "Love getting kicked off my own WiFi",
+   "date": "2020-10-29",
+   "trends": [
+    "iconic-sounds",
+    "viral-chaos",
+    "oh-no"
+   ],
+   "sound": "Oh No – Capone",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/capone-oh-no-tiktok-trend",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6891109415286607109",
+   "creator": "isabellarizopatron",
+   "title": "Family impressions • @isabellarizopatron",
+   "date": "2020-11-04",
+   "trends": [
+    "skits",
+    "family-impressions"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/family-impression-tiktoks",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6892857532130282757",
+   "creator": "amygrimshaw",
+   "title": "“We did it, Joe” • @amygrimshaw",
+   "date": "2020-11-08",
+   "trends": [
+    "memes"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/we-did-it-joe",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6892974868518800646",
+   "creator": "dustyfromwisconsin",
+   "title": "“We did it, Joe” • @dustyfromwisconsin",
+   "date": "2020-11-09",
+   "trends": [
+    "memes"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/we-did-it-joe",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6894064091036519685",
+   "creator": "catherinebertholddd",
+   "title": "This or That challenge • @catherinebertholddd",
+   "date": "2020-11-12",
+   "trends": [
+    "dances",
+    "viral-chaos",
+    "this-or-that"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/this-or-that-challenge",
    "dateSource": "tiktok-id"
   },
   {
@@ -588,14 +1247,198 @@
     "aesthetic"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
    "dateSource": "tiktok-id"
   },
   {
+   "id": "6895236689896197382",
+   "creator": "caitlynisabella",
+   "title": "and i have immaculate taste in men",
+   "date": "2020-11-15",
+   "trends": [
+    "dances",
+    "viral-chaos",
+    "this-or-that"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/this-or-that-challenge",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6895505660964834566",
+   "creator": "brookemonk_",
+   "title": "I love this trend",
+   "date": "2020-11-16",
+   "trends": [
+    "dances",
+    "viral-chaos",
+    "this-or-that"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/this-or-that-challenge",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6896274446005308674",
+   "creator": "orsonpadilla63",
+   "title": "This or That challenge • @orsonpadilla63",
+   "date": "2020-11-18",
+   "trends": [
+    "dances",
+    "viral-chaos",
+    "this-or-that"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/this-or-that-challenge",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6898440110266666246",
+   "creator": "onevilage",
+   "title": "“Justin is cracked at Fortnite” • @onevilage",
+   "date": "2020-11-23",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "justin-fortnite"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/my-friend-justin-is-cracked-at-fortnite-my-guy",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6901003163365674245",
+   "creator": "officialhowiemandel",
+   "title": "Dice roll walk • @officialhowiemandel",
+   "date": "2020-11-30",
+   "trends": [
+    "viral-chaos"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/dice-roll-walk",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6902216908293147910",
+   "creator": "jordanstatzer",
+   "title": "Tell your boyfriend he looks like he can’t swim💀",
+   "date": "2020-12-04",
+   "trends": [
+    "skits",
+    "memes",
+    "cant-swim"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/tell-your-boyfriend-you-look-like-you-cant-swim",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6902265704867728646",
+   "creator": "kelccatastrophe",
+   "title": "Finding the soft spot 😂",
+   "date": "2020-12-04",
+   "trends": [
+    "skits",
+    "memes",
+    "cant-swim"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/tell-your-boyfriend-you-look-like-you-cant-swim",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6902557231363984646",
+   "creator": "laurabrooks3",
+   "title": "“You look like you can’t swim” • @laurabrooks3",
+   "date": "2020-12-05",
+   "trends": [
+    "skits",
+    "memes",
+    "cant-swim"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/tell-your-boyfriend-you-look-like-you-cant-swim",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6906611090998693126",
+   "creator": "brianerickson96",
+   "title": "My Friend Justin Milkshake (fortnite player)",
+   "date": "2020-12-15",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "justin-fortnite"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/my-friend-justin-is-cracked-at-fortnite-my-guy",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6909281605269982469",
+   "creator": "soggywaterboy",
+   "title": "“Ya, Wilhelm, you’re killing it” • @soggywaterboy",
+   "date": "2020-12-23",
+   "trends": [
+    "memes"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/ya-wilhelm-youre-killing-it",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6910603551228071174",
+   "creator": "quentin.luvz",
+   "title": "Forget - pogo slowed down",
+   "date": "2020-12-26",
+   "trends": [
+    "iconic-sounds"
+   ],
+   "sound": "Forget (slowed) – Pogo",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/tiktok-dodging-trend-forget-slowed-down-pogo",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "6911702558285335809",
+   "creator": "meylien.thea",
+   "title": "“Aku sayang” remix • @meylien.thea",
+   "date": "2020-12-29",
+   "trends": [
+    "viral-chaos"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/aku-sayang",
+   "dateSource": "tiktok-id"
+  },
+  {
    "id": "7273706542040370475",
-   "creator": "whitelocksvstheworld",
+   "creator": "ashley.whitelock",
    "title": "How often do you think about the Roman Empire?",
    "date": "2023-09-01",
    "trends": [
@@ -604,8 +1447,8 @@
     "roman-empire"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/memes/how-often-do-you-think-about-the-roman-empire",
    "dateSource": "tiktok-id"
   },
@@ -619,9 +1462,105 @@
     "cozy"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://vamp.com/blog/tiktok-trend-report-october-2023/",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7276499652919299361",
+   "creator": "wiral_y",
+   "title": "we live we love we lie",
+   "date": "2023-09-08",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "we-live-we-love-we-lie"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/we-live-we-love-we-lie",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7276979242112535813",
+   "creator": "curly.mp",
+   "title": "We live, we love, we lie • @curly.mp",
+   "date": "2023-09-09",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "we-live-we-love-we-lie"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/we-live-we-love-we-lie",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7277437316619193602",
+   "creator": "onyxtheshephered",
+   "title": "Neil the seal • @onyxtheshephered",
+   "date": "2023-09-11",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "neil-the-seal"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/neil-the-seal",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7277606890383609096",
+   "creator": "joke.ae",
+   "title": "WE LIVE WE LOVE WE LIE",
+   "date": "2023-09-11",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "we-live-we-love-we-lie"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/we-live-we-love-we-lie",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7277623657973796138",
+   "creator": "z1ngeress",
+   "title": "We live, we love, we lie • @z1ngeress",
+   "date": "2023-09-11",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "we-live-we-love-we-lie"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/we-live-we-love-we-lie",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7277674105015454982",
+   "creator": "nikov.x",
+   "title": "hakari dance >>>",
+   "date": "2023-09-11",
+   "trends": [
+    "dances",
+    "iconic-sounds",
+    "hakari-dance"
+   ],
+   "sound": "Tuca Donka",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/tuca-donka-hakari-dance",
    "dateSource": "tiktok-id"
   },
   {
@@ -635,14 +1574,46 @@
     "roman-empire"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/memes/how-often-do-you-think-about-the-roman-empire",
    "dateSource": "tiktok-id"
   },
   {
+   "id": "7278302668303420673",
+   "creator": "frankiakuta",
+   "title": "remain calm (ifykyk)",
+   "date": "2023-09-13",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "lepidodendron"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/lepidodendron-tree-attention-have-you-seen-this-tree",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7278381489828498694",
+   "creator": ".engn",
+   "title": "Hakari dance • Tuca Donka • @.engn",
+   "date": "2023-09-13",
+   "trends": [
+    "dances",
+    "iconic-sounds",
+    "hakari-dance"
+   ],
+   "sound": "Tuca Donka",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/tuca-donka-hakari-dance",
+   "dateSource": "tiktok-id"
+  },
+  {
    "id": "7278515268429581614",
-   "creator": "idkhowyoufoundme",
+   "creator": "ashleylsatterfield",
    "title": "Asking my boyfriend about Rome",
    "date": "2023-09-14",
    "trends": [
@@ -650,9 +1621,73 @@
     "roman-empire"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/memes/how-often-do-you-think-about-the-roman-empire",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7278730505825324334",
+   "creator": "rj_hooks",
+   "title": "Hakari dance • Tuca Donka • @rj_hooks",
+   "date": "2023-09-14",
+   "trends": [
+    "dances",
+    "iconic-sounds",
+    "hakari-dance"
+   ],
+   "sound": "Tuca Donka",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/tuca-donka-hakari-dance",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7278847520833342722",
+   "creator": "dearhaileyx",
+   "title": "Bobbie Goods coloring challenge • @dearhaileyx",
+   "date": "2023-09-15",
+   "trends": [
+    "aesthetic",
+    "cozy",
+    "bobbie-goods"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/bobbie-goods-coloring-book-tiktok-trend-color-book-challenge",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7279169183605083398",
+   "creator": "modeloscapcutapp",
+   "title": "Crunchy cat • @modeloscapcutapp",
+   "date": "2023-09-15",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "crunchy-cat"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/cat-crunching-crunchy-cat",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7279356810576792834",
+   "creator": "shinrawrz",
+   "title": "i had an idea for some reason",
+   "date": "2023-09-16",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "lepidodendron"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/lepidodendron-tree-attention-have-you-seen-this-tree",
    "dateSource": "tiktok-id"
   },
   {
@@ -665,9 +1700,25 @@
     "roman-empire"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/memes/my-roman-empire",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7279820207248526622",
+   "creator": "prize22222",
+   "title": "Have you seen this tree? • @prize22222",
+   "date": "2023-09-17",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "lepidodendron"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/lepidodendron-tree-attention-have-you-seen-this-tree",
    "dateSource": "tiktok-id"
   },
   {
@@ -680,8 +1731,8 @@
     "roman-empire"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "broken",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/memes/my-roman-empire",
    "dateSource": "tiktok-id"
   },
@@ -696,9 +1747,177 @@
     "roman-empire"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/memes/my-roman-empire",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7280257575772261664",
+   "creator": "maybe.kitsalt",
+   "title": "Have you seen this tree? • @maybe.kitsalt",
+   "date": "2023-09-18",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "lepidodendron"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/lepidodendron-tree-attention-have-you-seen-this-tree",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7280269185211518241",
+   "creator": "emporiothetrue",
+   "title": "Napoleon: “nothing we can do” • @emporiothetrue",
+   "date": "2023-09-18",
+   "trends": [
+    "memes",
+    "napoleon"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/napoleon-there-is-nothing-we-can-do",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7280459236323151136",
+   "creator": "theonewithmemes",
+   "title": "\"There is nothing we can do\"",
+   "date": "2023-09-19",
+   "trends": [
+    "memes",
+    "napoleon"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/napoleon-there-is-nothing-we-can-do",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7280560428600528174",
+   "creator": "caintrent",
+   "title": "“Me genuinely tweaking” • @caintrent",
+   "date": "2023-09-19",
+   "trends": [
+    "memes",
+    "tweaking"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/me-genuinely-tweaking",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7280562140442840366",
+   "creator": "martywartyz",
+   "title": "Napoleon: “nothing we can do” • @martywartyz",
+   "date": "2023-09-19",
+   "trends": [
+    "memes",
+    "napoleon"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/napoleon-there-is-nothing-we-can-do",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7280880979923701038",
+   "creator": "rigley.beans",
+   "title": "living rent free",
+   "date": "2023-09-20",
+   "trends": [
+    "memes",
+    "staring-dogs"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/awkwardly-staring-dogs",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7280890691499068714",
+   "creator": "thosefewhuman",
+   "title": "Napoleon: “nothing we can do” • @thosefewhuman",
+   "date": "2023-09-20",
+   "trends": [
+    "memes",
+    "napoleon"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/napoleon-there-is-nothing-we-can-do",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7282229472307219742",
+   "creator": "nolatheiggy",
+   "title": "First-day-of-fall ghost photoshoot • @nolatheiggy",
+   "date": "2023-09-24",
+   "trends": [
+    "fall-vibe",
+    "aesthetic",
+    "cozy",
+    "ghost-photoshoot"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/ghost-photoshoot",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7282844022434024746",
+   "creator": "jritt",
+   "title": "Wild Side / green dress trend • @jritt",
+   "date": "2023-09-25",
+   "trends": [
+    "dances",
+    "wild-side"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/wild-side-green-dress-girl-benjamins-deli-tiktok-trend",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7283963363103690014",
+   "creator": "danthemantt0",
+   "title": "“Me genuinely tweaking” • @danthemantt0",
+   "date": "2023-09-28",
+   "trends": [
+    "memes",
+    "tweaking"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/me-genuinely-tweaking",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7285472638657400107",
+   "creator": "favpinoy",
+   "title": "IN A BEAR SUIT????",
+   "date": "2023-10-02",
+   "trends": [
+    "dances",
+    "jubi-slide"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/jubi-slide-jubislide",
    "dateSource": "tiktok-id"
   },
   {
@@ -711,9 +1930,102 @@
     "aggressive-typing"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://vamp.com/blog/tiktok-trend-report-october-2023/",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7286341539293334786",
+   "creator": "nexisstw",
+   "title": "Driverposting • “I drive” • @nexisstw",
+   "date": "2023-10-05",
+   "trends": [
+    "memes",
+    "driverposting"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/driverposting-i-drive-tiktok-trend",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7286380628256279840",
+   "creator": "rizzbrigitte",
+   "title": "Crunchy cat • @rizzbrigitte",
+   "date": "2023-10-05",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "crunchy-cat"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/cat-crunching-crunchy-cat",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7286486598315805959",
+   "creator": "slbglllll",
+   "title": "Driverposting • “I drive” • @slbglllll",
+   "date": "2023-10-05",
+   "trends": [
+    "memes",
+    "driverposting"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/driverposting-i-drive-tiktok-trend",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7286564473370856734",
+   "creator": "vivi000.o",
+   "title": "Rambling goat & huh cat • @vivi000.o",
+   "date": "2023-10-05",
+   "trends": [
+    "memes",
+    "huh-cat"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/rambling-goat-and-huh-cat-goat-cat-huh",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7286746777632378144",
+   "creator": "papunk__",
+   "title": "Crunchy cat • @papunk__",
+   "date": "2023-10-06",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "crunchy-cat"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/cat-crunching-crunchy-cat",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7286803072574033153",
+   "creator": "chu_gomikasudegomenn_",
+   "title": "Huh? cat • @chu_gomikasudegomenn_",
+   "date": "2023-10-06",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "huh-cat"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/huh-cat",
    "dateSource": "tiktok-id"
   },
   {
@@ -727,9 +2039,145 @@
     "ceiling-challenge"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "broken",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/memes/ceiling-challenge-tiktok",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7287105291072605473",
+   "creator": "..kekky",
+   "title": "Rambling goat & huh cat • @..kekky",
+   "date": "2023-10-07",
+   "trends": [
+    "memes",
+    "huh-cat"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/rambling-goat-and-huh-cat-goat-cat-huh",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7287382984641039623",
+   "creator": "takutyanman1",
+   "title": "I learned English perfectly in Japan , but",
+   "date": "2023-10-08",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "huh-cat"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/huh-cat",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7287430781662743850",
+   "creator": "_demilano",
+   "title": "Wild Side / green dress trend • @_demilano",
+   "date": "2023-10-08",
+   "trends": [
+    "dances",
+    "wild-side"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/wild-side-green-dress-girl-benjamins-deli-tiktok-trend",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7287544611344518432",
+   "creator": "aktios",
+   "title": "I swear they think it exists only their language",
+   "date": "2023-10-08",
+   "trends": [
+    "memes",
+    "huh-cat"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/rambling-goat-and-huh-cat-goat-cat-huh",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7288202841984863495",
+   "creator": "hea_dli_",
+   "title": "Jubi slide • @hea_dli_",
+   "date": "2023-10-10",
+   "trends": [
+    "dances",
+    "jubi-slide"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/jubi-slide-jubislide",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7288344250729680133",
+   "creator": "juan.exe_tilin",
+   "title": "Huh? cat • @juan.exe_tilin",
+   "date": "2023-10-10",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "huh-cat"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/huh-cat",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7288435940601728298",
+   "creator": "mark_e_04",
+   "title": "Wild Side / green dress trend • @mark_e_04",
+   "date": "2023-10-10",
+   "trends": [
+    "dances",
+    "wild-side"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/wild-side-green-dress-girl-benjamins-deli-tiktok-trend",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7289369359758232839",
+   "creator": "slbglllll",
+   "title": "Driverposting • “I drive” • @slbglllll",
+   "date": "2023-10-13",
+   "trends": [
+    "memes",
+    "driverposting"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/driverposting-i-drive-tiktok-trend",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7289904614713871647",
+   "creator": "mad_mitch",
+   "title": "“How hard can it be?” • @mad_mitch",
+   "date": "2023-10-14",
+   "trends": [
+    "memes"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/how-hard-can-it-be-boys-do-it",
    "dateSource": "tiktok-id"
   },
   {
@@ -743,8 +2191,8 @@
     "huh-cat"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://vamp.com/blog/tiktok-trend-report-october-2023/",
    "dateSource": "tiktok-id"
   },
@@ -758,14 +2206,138 @@
     "aggressive-typing"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://vamp.com/blog/tiktok-trend-report-october-2023/",
    "dateSource": "tiktok-id"
   },
   {
+   "id": "7291916073748663559",
+   "creator": "duc_tip_20",
+   "title": "Awkwardly staring dogs • @duc_tip_20",
+   "date": "2023-10-20",
+   "trends": [
+    "memes",
+    "staring-dogs"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/awkwardly-staring-dogs",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7292710051301854510",
+   "creator": "rikat101",
+   "title": "Awkwardly staring dogs • @rikat101",
+   "date": "2023-10-22",
+   "trends": [
+    "memes",
+    "staring-dogs"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/awkwardly-staring-dogs",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7292990140589329671",
+   "creator": "haha_official",
+   "title": "Ceiling challenge • @haha_official",
+   "date": "2023-10-23",
+   "trends": [
+    "viral-chaos",
+    "memes",
+    "ceiling-challenge"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/ceiling-challenge-tiktok",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7293045560959880453",
+   "creator": "wendzy_t",
+   "title": "Awkwardly staring dogs • @wendzy_t",
+   "date": "2023-10-23",
+   "trends": [
+    "memes",
+    "staring-dogs"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/awkwardly-staring-dogs",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7293670802765925662",
+   "creator": "zerouday",
+   "title": "I start thinking about dropping out",
+   "date": "2023-10-24",
+   "trends": [
+    "memes",
+    "tweaking"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/me-genuinely-tweaking",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7294713381729258758",
+   "creator": "awaken_fox",
+   "title": "Boykisser meme Animation",
+   "date": "2023-10-27",
+   "trends": [
+    "iconic-sounds",
+    "memes",
+    "chipi-chipi"
+   ],
+   "sound": "Chipi Chipi Chapa Chapa (Dubidubidu)",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/chipi-chipi-chapa-chapa-dubidubidu",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7294968586899131694",
+   "creator": "toostle",
+   "title": "Bobbie Goods coloring challenge • @toostle",
+   "date": "2023-10-28",
+   "trends": [
+    "aesthetic",
+    "cozy",
+    "bobbie-goods"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/bobbie-goods-coloring-book-tiktok-trend-color-book-challenge",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7295007941965466885",
+   "creator": "fruitypoppin",
+   "title": "This but your household don’t believe in dishwashers 😜",
+   "date": "2023-10-28",
+   "trends": [
+    "viral-chaos",
+    "memes",
+    "ceiling-challenge"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/ceiling-challenge-tiktok",
+   "dateSource": "tiktok-id"
+  },
+  {
    "id": "7295139070513007918",
-   "creator": "arcsteelandconcrete",
+   "creator": "arcc037",
    "title": "Surround Sound ceiling challenge",
    "date": "2023-10-28",
    "trends": [
@@ -774,9 +2346,23 @@
     "ceiling-challenge"
    ],
    "sound": "Surround Sound – JID, 21 Savage & Baby Tate",
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/memes/ceiling-challenge-tiktok",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7295259880791969070",
+   "creator": "zetorocks",
+   "title": "yeah I throw alot of tiktok rizz partys",
+   "date": "2023-10-29",
+   "trends": [
+    "memes"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/tiktok-rizz-party",
    "dateSource": "tiktok-id"
   },
   {
@@ -789,9 +2375,25 @@
     "ceiling-challenge"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/memes/ceiling-challenge-tiktok",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7295497142800649518",
+   "creator": "t1nker_fairy",
+   "title": "Bobbie Goods coloring challenge • @t1nker_fairy",
+   "date": "2023-10-29",
+   "trends": [
+    "aesthetic",
+    "cozy",
+    "bobbie-goods"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/bobbie-goods-coloring-book-tiktok-trend-color-book-challenge",
    "dateSource": "tiktok-id"
   },
   {
@@ -803,9 +2405,25 @@
     "memes"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://vamp.com/blog/social-media-updates-november-2023-2/",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7297645141840399622",
+   "creator": "lootlove2",
+   "title": "Ceiling challenge • @lootlove2",
+   "date": "2023-11-04",
+   "trends": [
+    "viral-chaos",
+    "memes",
+    "ceiling-challenge"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/ceiling-challenge-tiktok",
    "dateSource": "tiktok-id"
   },
   {
@@ -820,9 +2438,39 @@
     "priscilla"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://vamp.com/blog/social-media-updates-november-2023-2/",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7299602933518322946",
+   "creator": "rabbitfart39",
+   "title": "rabbitfart39 fiber optic cable v5",
+   "date": "2023-11-09",
+   "trends": [
+    "memes",
+    "markiplier"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/markipliers-youre-so-portuguese",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7299670884531391787",
+   "creator": "awleli",
+   "title": "“You’re so Portuguese” • @awleli",
+   "date": "2023-11-10",
+   "trends": [
+    "memes",
+    "markiplier"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/markipliers-youre-so-portuguese",
    "dateSource": "tiktok-id"
   },
   {
@@ -835,9 +2483,72 @@
     "viral-chaos"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://vamp.com/blog/social-media-updates-november-2023-2/",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7301573360620670251",
+   "creator": "wildstorm312",
+   "title": "“You’re so Portuguese” • @wildstorm312",
+   "date": "2023-11-15",
+   "trends": [
+    "memes",
+    "markiplier"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/markipliers-youre-so-portuguese",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7301765794042547488",
+   "creator": "vicenews",
+   "title": "Neil the seal • @vicenews",
+   "date": "2023-11-15",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "neil-the-seal"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/neil-the-seal",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7302167201681870111",
+   "creator": "its.lauren.hunt",
+   "title": "“We’re X, of course we Y” • @its.lauren.hunt",
+   "date": "2023-11-16",
+   "trends": [
+    "memes",
+    "school-vibe",
+    "of-course-we"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/were-x-of-course-we-y",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7302199924261801258",
+   "creator": "slipperyrockuniv",
+   "title": "“We’re X, of course we Y” • @slipperyrockuniv",
+   "date": "2023-11-16",
+   "trends": [
+    "memes",
+    "school-vibe",
+    "of-course-we"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/were-x-of-course-we-y",
    "dateSource": "tiktok-id"
   },
   {
@@ -852,14 +2563,14 @@
     "little-life"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://vamp.com/blog/social-media-updates-november-2023-2/",
    "dateSource": "tiktok-id"
   },
   {
    "id": "7303324642910063877",
-   "creator": "thishouse5000",
+   "creator": "elena.lohse",
    "title": "Little life / cozy moment",
    "date": "2023-11-19",
    "trends": [
@@ -869,9 +2580,57 @@
     "little-life"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://vamp.com/blog/social-media-updates-november-2023-2/",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7303720238019923208",
+   "creator": "jamiefknlee",
+   "title": "Pt2 Neil the seal! Our buddy!",
+   "date": "2023-11-21",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "neil-the-seal"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/neil-the-seal",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7304071659525377281",
+   "creator": "news.com.au",
+   "title": "Neil the seal • @news.com.au",
+   "date": "2023-11-22",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "neil-the-seal"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/neil-the-seal",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7304452587758095647",
+   "creator": "loveeestefani",
+   "title": "“We’re X, of course we Y” • @loveeestefani",
+   "date": "2023-11-23",
+   "trends": [
+    "memes",
+    "school-vibe",
+    "of-course-we"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/were-x-of-course-we-y",
    "dateSource": "tiktok-id"
   },
   {
@@ -885,9 +2644,25 @@
     "memes"
    ],
    "sound": "Hi Birdy (Nanalan’)",
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "broken",
+   "lastChecked": "2026-10-14",
    "provenance": "https://gensdinternet.fr/2023/11/29/les-5-tendances-video-les-plus-utilisees-sur-tiktok-en-decembre-2023/amp/",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7306165175667723563",
+   "creator": "merme.lada",
+   "title": "Squirtle saxophone • @merme.lada",
+   "date": "2023-11-27",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "squirtle-sax"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/squirtle-saxophone",
    "dateSource": "tiktok-id"
   },
   {
@@ -901,8 +2676,8 @@
     "name-a-woman"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/sensitive/memes/name-a-woman-trend",
    "dateSource": "tiktok-id"
   },
@@ -917,8 +2692,8 @@
     "name-a-woman"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/sensitive/memes/name-a-woman-trend",
    "dateSource": "tiktok-id"
   },
@@ -933,9 +2708,41 @@
     "name-a-woman"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/sensitive/memes/name-a-woman-trend",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7306929651304140038",
+   "creator": "elelmo50210.1",
+   "title": "Squirtle saxophone • @elelmo50210.1",
+   "date": "2023-11-29",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "squirtle-sax"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/squirtle-saxophone",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7307784777229225249",
+   "creator": "alextodorov1995",
+   "title": "It really be like that 😁",
+   "date": "2023-12-02",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "squirtle-sax"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/squirtle-saxophone",
    "dateSource": "tiktok-id"
   },
   {
@@ -949,8 +2756,8 @@
     "name-a-woman"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/sensitive/memes/name-a-woman-trend",
    "dateSource": "tiktok-id"
   },
@@ -965,14 +2772,46 @@
     "name-a-woman"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "broken",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/sensitive/memes/name-a-woman-trend",
    "dateSource": "tiktok-id"
   },
   {
+   "id": "7308330809247780114",
+   "creator": "hnkn___ki",
+   "title": "Squirtle saxophone • @hnkn___ki",
+   "date": "2023-12-03",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "squirtle-sax"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/squirtle-saxophone",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7308417594451643681",
+   "creator": "antonylee29",
+   "title": "Squirtle saxophone • @antonylee29",
+   "date": "2023-12-03",
+   "trends": [
+    "memes",
+    "viral-chaos",
+    "squirtle-sax"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/squirtle-saxophone",
+   "dateSource": "tiktok-id"
+  },
+  {
    "id": "7308789837975342378",
-   "creator": null,
+   "creator": "davidandhana",
    "title": "Name a Woman • December trend",
    "date": "2023-12-04",
    "trends": [
@@ -981,14 +2820,14 @@
     "name-a-woman"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/sensitive/memes/name-a-woman-trend",
    "dateSource": "tiktok-id"
   },
   {
    "id": "7308813099187096878",
-   "creator": null,
+   "creator": "hornedbookworm",
    "title": "Name a Woman • 2023 example",
    "date": "2023-12-04",
    "trends": [
@@ -997,14 +2836,14 @@
     "name-a-woman"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/sensitive/memes/name-a-woman-trend",
    "dateSource": "tiktok-id"
   },
   {
    "id": "7308867063164980510",
-   "creator": null,
+   "creator": "ashlyn_bischoff",
    "title": "Name a Woman • December example",
    "date": "2023-12-04",
    "trends": [
@@ -1013,14 +2852,14 @@
     "name-a-woman"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/sensitive/memes/name-a-woman-trend",
    "dateSource": "tiktok-id"
   },
   {
    "id": "7308931933763816746",
-   "creator": null,
+   "creator": "jesssimarrie",
    "title": "Name a Woman • early December example",
    "date": "2023-12-05",
    "trends": [
@@ -1029,14 +2868,30 @@
     "name-a-woman"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/sensitive/memes/name-a-woman-trend",
    "dateSource": "tiktok-id"
   },
   {
+   "id": "7309899131789626657",
+   "creator": "mel0dyyyy_02",
+   "title": "Chipi Chipi Chapa Chapa • @mel0dyyyy_02",
+   "date": "2023-12-07",
+   "trends": [
+    "iconic-sounds",
+    "memes",
+    "chipi-chipi"
+   ],
+   "sound": "Chipi Chipi Chapa Chapa (Dubidubidu)",
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/chipi-chipi-chapa-chapa-dubidubidu",
+   "dateSource": "tiktok-id"
+  },
+  {
    "id": "7313689467175341345",
-   "creator": null,
+   "creator": "bluweesh",
    "title": "Big boots • December 2023",
    "date": "2023-12-17",
    "trends": [
@@ -1045,9 +2900,54 @@
     "big-boots"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/memes/people-getting-arrested-over-big-boots",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7315196900376907013",
+   "creator": "swa9in",
+   "title": "“I’m your Uber driver, get in” • @swa9in",
+   "date": "2023-12-21",
+   "trends": [
+    "memes",
+    "uber-driver"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/im-your-uber-driver-get-in",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7316978128843197742",
+   "creator": "sacred_sun_music",
+   "title": "“I’m your Uber driver, get in” • @sacred_sun_music",
+   "date": "2023-12-26",
+   "trends": [
+    "memes",
+    "uber-driver"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/im-your-uber-driver-get-in",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7317153267614534917",
+   "creator": "zyradcbasco",
+   "title": "yung dulo hahah",
+   "date": "2023-12-27",
+   "trends": [
+    "dances",
+    "work-dance"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/work-dance-tiktok-trend",
    "dateSource": "tiktok-id"
   },
   {
@@ -1061,9 +2961,24 @@
     "big-boots"
    ],
    "sound": null,
-   "status": "unverified",
-   "lastChecked": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
    "provenance": "https://knowyourmeme.com/memes/people-getting-arrested-over-big-boots",
+   "dateSource": "tiktok-id"
+  },
+  {
+   "id": "7317872327662947630",
+   "creator": "4urentertainmentonly",
+   "title": "“I’m your Uber driver, get in” • @4urentertainmentonly",
+   "date": "2023-12-29",
+   "trends": [
+    "memes",
+    "uber-driver"
+   ],
+   "sound": null,
+   "status": "verified",
+   "lastChecked": "2026-10-14",
+   "provenance": "https://knowyourmeme.com/memes/im-your-uber-driver-get-in",
    "dateSource": "tiktok-id"
   }
  ]

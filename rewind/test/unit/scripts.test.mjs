@@ -13,6 +13,9 @@ function sandbox() {
   const src = fileURLToPath(new URL('../../', import.meta.url));
   for (const d of ['js', 'data', 'scripts']) cpSync(join(src, d), join(dir, d), { recursive: true });
   writeFileSync(join(dir, 'package.json'), '{"type":"module"}');
+  // Tests must not depend on whatever statuses the real library currently holds.
+  const f = join(dir, 'data/library.json'); const l = JSON.parse(readFileSync(f, 'utf8'));
+  l.videos.forEach((v) => { v.status = 'unverified'; v.lastChecked = null; }); writeFileSync(f, JSON.stringify(l));
   return dir;
 }
 const run = (dir, script, args, env = {}) => new Promise((res) => {

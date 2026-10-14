@@ -1,0 +1,575 @@
+{
+  "sources": {
+    "tiktok2020": "https://newsroom.tiktok.com/the-year-on-tiktok-top-100?lang=en",
+    "vampOct": "https://vamp.com/blog/tiktok-trend-report-october-2023/",
+    "vampNov": "https://vamp.com/blog/social-media-updates-november-2023-2/",
+    "kymCeiling": "https://knowyourmeme.com/memes/ceiling-challenge-tiktok",
+    "gensDec": "https://gensdinternet.fr/2023/11/29/les-5-tendances-video-les-plus-utilisees-sur-tiktok-en-decembre-2023/amp/",
+    "kymWoman": "https://knowyourmeme.com/sensitive/memes/name-a-woman-trend",
+    "kymBoots": "https://knowyourmeme.com/memes/people-getting-arrested-over-big-boots",
+    "kymRome": "https://knowyourmeme.com/memes/how-often-do-you-think-about-the-roman-empire",
+    "kymMyRome": "https://knowyourmeme.com/memes/my-roman-empire"
+  },
+  "videos": [
+    {
+      "id": "6862153058223197445",
+      "creator": "bellapoarch",
+      "label": "M to the B • the original",
+      "category": "Iconic",
+      "date": "2020-08-18",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6876424179084709126",
+      "creator": "420doggface208",
+      "label": "Dreams • cranberry juice skateboard",
+      "category": "Iconic",
+      "date": "2020-09-25",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6824228103624183046",
+      "creator": "itscaitlinhello",
+      "label": "Work-from-home office comedy",
+      "category": "Comedy",
+      "date": "2020-05-07",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6794240876827692294",
+      "creator": "nba",
+      "label": "Jalaiah at the NBA All-Star Game",
+      "category": "Dance",
+      "date": "2020-02-17",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6829090092984929541",
+      "creator": "willsmith",
+      "label": "Wipe It Down challenge",
+      "category": "Trends",
+      "date": "2020-05-21",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6849216781303827717",
+      "creator": "awa_de_horchata_uwu",
+      "label": "Mia Khalifa / bread meme",
+      "category": "Comedy",
+      "date": "2020-07-14",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6870511001536646405",
+      "creator": "lizemopetey",
+      "label": "Meteor or meatier?",
+      "category": "Comedy",
+      "date": "2020-09-09",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6814921699725905158",
+      "creator": "iamtabithabrown",
+      "label": "Carrot bacon",
+      "category": "Food",
+      "date": "2020-04-12",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6844906456471457030",
+      "creator": "thejulianbass",
+      "label": "Superhero transition",
+      "category": "Trends",
+      "date": "2020-07-02",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6793098952326581510",
+      "creator": "hartyt_",
+      "label": "Dancing goose",
+      "category": "Comedy",
+      "date": "2020-02-14",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6868358560640666885",
+      "creator": "charlidamelio",
+      "label": "A 2020 Charli dance",
+      "category": "Dance",
+      "date": "2020-09-03",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6873160872571800837",
+      "creator": "iamtabithabrown",
+      "label": "Tabitha Brown • 2020",
+      "category": "Food",
+      "date": "2020-09-16",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6866177723358792966",
+      "creator": "bellapoarch",
+      "label": "Bella Poarch • 2020",
+      "category": "Iconic",
+      "date": "2020-08-28",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6895033626677742854",
+      "creator": "devonrodriguezart",
+      "label": "2020 subway portrait art",
+      "category": "Art",
+      "date": "2020-11-14",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6884689832702987526",
+      "creator": "wisdm8",
+      "label": "Wisdom Kaye • 2020 fashion",
+      "category": "Style",
+      "date": "2020-10-17",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6841335438490258694",
+      "creator": "skincarebyhyram",
+      "label": "Hyram skincare • 2020",
+      "category": "Style",
+      "date": "2020-06-23",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6886890490067832069",
+      "creator": "addisonre",
+      "label": "Addison Rae • 2020 dance",
+      "category": "Dance",
+      "date": "2020-10-23",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6873943104664227077",
+      "creator": "justmaiko",
+      "label": "JustMaiko • 2020 dance",
+      "category": "Dance",
+      "date": "2020-09-18",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6886516654075940101",
+      "creator": "chrisellelim",
+      "label": "Chriselle Lim • 2020",
+      "category": "Style",
+      "date": "2020-10-22",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6878030149271424261",
+      "creator": "noahbeck",
+      "label": "Noah Beck • 2020",
+      "category": "Dance",
+      "date": "2020-09-29",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6823517995856301317",
+      "creator": "myhealthydish",
+      "label": "Mini pancake cereal",
+      "category": "Food",
+      "date": "2020-05-06",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6834696215796501765",
+      "creator": "coffeebae97",
+      "label": "Dalgona whipped coffee",
+      "category": "Food",
+      "date": "2020-06-05",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6805684184099622150",
+      "creator": "cookingwithshereen",
+      "label": "Banana bread days",
+      "category": "Food",
+      "date": "2020-03-18",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6792413587685018885",
+      "creator": "bbqfreedom",
+      "label": "BBQ satisfying",
+      "category": "Food",
+      "date": "2020-02-12",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6827454470486510854",
+      "creator": "soflofooodie",
+      "label": "Donut cereal",
+      "category": "Food",
+      "date": "2020-05-16",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6859028770813168902",
+      "creator": "gordonramsayofficial",
+      "label": "Ramsay reaction",
+      "category": "Food",
+      "date": "2020-08-09",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6864668351155801349",
+      "creator": "janellerohner",
+      "label": "Cream cheese and peppers",
+      "category": "Food",
+      "date": "2020-08-24",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6871605473318112517",
+      "creator": "archive",
+      "label": "Ice cream cake",
+      "category": "Food",
+      "date": "2020-09-12",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6868727587636530438",
+      "creator": "nick.digiovanni",
+      "label": "Making chocolate from scratch",
+      "category": "Food",
+      "date": "2020-09-04",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6865054431352835334",
+      "creator": "flakeysalt",
+      "label": "Homemade hazelnut spread",
+      "category": "Food",
+      "date": "2020-08-25",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6827203360823758085",
+      "creator": "wisdm8",
+      "label": "Savage inspired styling",
+      "category": "Style",
+      "date": "2020-05-15",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6859497646692912389",
+      "creator": "archive",
+      "label": "Shoe-change transformation",
+      "category": "Style",
+      "date": "2020-08-10",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6859146311086705925",
+      "creator": "gunnardeatherage",
+      "label": "High / low fashion transformation",
+      "category": "Style",
+      "date": "2020-08-10",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6835771893048511750",
+      "creator": "devanondeck",
+      "label": "Color combo outfit",
+      "category": "Style",
+      "date": "2020-06-08",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6837135439581728006",
+      "creator": "archive",
+      "label": "2020 fashion glow-up",
+      "category": "Style",
+      "date": "2020-06-11",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6873218294329986310",
+      "creator": "archive",
+      "label": "Bee-inspired makeup",
+      "category": "Style",
+      "date": "2020-09-16",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6864676116754353414",
+      "creator": "lauraleewatts",
+      "label": "Face masks gone wrong",
+      "category": "Comedy",
+      "date": "2020-08-24",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6821791582526688518",
+      "creator": "yayayayoung",
+      "label": "2020 skincare",
+      "category": "Style",
+      "date": "2020-05-01",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6872835529109441798",
+      "creator": "inmyseams",
+      "label": "Fashion styling",
+      "category": "Style",
+      "date": "2020-09-15",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "6839847521699761414",
+      "creator": "crescentshay",
+      "label": "Butterfly dress",
+      "category": "Style",
+      "date": "2020-06-19",
+      "source": "tiktok2020"
+    },
+    {
+      "id": "7273706542040370475",
+      "creator": "whitelocksvstheworld",
+      "label": "How often do you think about the Roman Empire?",
+      "category": "Trends",
+      "date": "2023-09-01",
+      "source": "kymRome"
+    },
+    {
+      "id": "7278026291327077675",
+      "creator": "thatadhdlife",
+      "label": "The Roman Empire question",
+      "category": "Comedy",
+      "date": "2023-09-12",
+      "source": "kymRome"
+    },
+    {
+      "id": "7278515268429581614",
+      "creator": "idkhowyoufoundme",
+      "label": "Asking my boyfriend about Rome",
+      "category": "Trends",
+      "date": "2023-09-14",
+      "source": "kymRome"
+    },
+    {
+      "id": "7279504729292442923",
+      "creator": "yourstrulydevon",
+      "label": "This is MY Roman Empire",
+      "category": "Trends",
+      "date": "2023-09-16",
+      "source": "kymMyRome"
+    },
+    {
+      "id": "7279958567044631850",
+      "creator": "laurenrewatches",
+      "label": "Barbie • my Roman Empire",
+      "category": "Comedy",
+      "date": "2023-09-18",
+      "source": "kymMyRome"
+    },
+    {
+      "id": "7279913572002581803",
+      "creator": "gotscinema",
+      "label": "My Roman Empire",
+      "category": "Trends",
+      "date": "2023-09-17",
+      "source": "kymMyRome"
+    },
+    {
+      "id": "7274266823699254560",
+      "creator": "budgetingmumofficial",
+      "label": "Halloween crafts on a budget",
+      "category": "Fall vibes",
+      "date": "2023-09-02",
+      "source": "vampOct"
+    },
+    {
+      "id": "7290505556610141473",
+      "creator": "paywithclick",
+      "label": "Huh cat!",
+      "category": "Comedy",
+      "date": "2023-10-16",
+      "source": "vampOct"
+    },
+    {
+      "id": "7290941330811784494",
+      "creator": "kennedyibrown",
+      "label": "Aggressive typing meme",
+      "category": "Comedy",
+      "date": "2023-10-17",
+      "source": "vampOct"
+    },
+    {
+      "id": "7285950153385626923",
+      "creator": "hanmariela",
+      "label": "Typing / work stress meme",
+      "category": "Comedy",
+      "date": "2023-10-04",
+      "source": "vampOct"
+    },
+    {
+      "id": "7301449112610704672",
+      "creator": "chucklelicious",
+      "label": "“I don’t know if I like it”",
+      "category": "Trends",
+      "date": "2023-11-14",
+      "source": "vampNov"
+    },
+    {
+      "id": "7299259521975749919",
+      "creator": "juliaquang",
+      "label": "Priscilla-inspired style",
+      "category": "Style",
+      "date": "2023-11-09",
+      "source": "vampNov"
+    },
+    {
+      "id": "7303246186230648097",
+      "creator": "alice_nevin",
+      "label": "I think I like this little life",
+      "category": "Cozy",
+      "date": "2023-11-19",
+      "source": "vampNov"
+    },
+    {
+      "id": "7303324642910063877",
+      "creator": "thishouse5000",
+      "label": "Little life / cozy moment",
+      "category": "Cozy",
+      "date": "2023-11-19",
+      "source": "vampNov"
+    },
+    {
+      "id": "7296937537623379206",
+      "creator": "goodtreesbadknees",
+      "label": "Emotional groom / post-hike meme",
+      "category": "Comedy",
+      "date": "2023-11-02",
+      "source": "vampNov"
+    },
+    {
+      "id": "7287054057124924677",
+      "creator": "michaelfirshort",
+      "label": "Phone on ceiling • early trend",
+      "category": "Trends",
+      "date": "2023-10-07",
+      "source": "kymCeiling"
+    },
+    {
+      "id": "7295139070513007918",
+      "creator": "arcsteelandconcrete",
+      "label": "Surround Sound ceiling challenge",
+      "category": "Trends",
+      "date": "2023-10-28",
+      "source": "kymCeiling"
+    },
+    {
+      "id": "7295458479798766894",
+      "creator": "retirementhouse",
+      "label": "Ceiling challenge with the gang",
+      "category": "Trends",
+      "date": "2023-10-29",
+      "source": "kymCeiling"
+    },
+    {
+      "id": "7304929630551592224",
+      "creator": "rizgaulade",
+      "label": "Hi Birdy / Nanalan sound",
+      "category": "Trends",
+      "date": "2023-11-24",
+      "source": "gensDec"
+    },
+    {
+      "id": "7306647899306347819",
+      "creator": "austinshow",
+      "label": "Name a Woman • streaming reaction",
+      "category": "Comedy",
+      "date": "2023-11-28",
+      "source": "kymWoman"
+    },
+    {
+      "id": "7306733949198339359",
+      "creator": "taniatotanesmartinez",
+      "label": "Name a Woman • original trend",
+      "category": "Trends",
+      "date": "2023-11-29",
+      "source": "kymWoman"
+    },
+    {
+      "id": "7306924400719220010",
+      "creator": "taniatotanesmartinez",
+      "label": "Name a Woman • followup",
+      "category": "Trends",
+      "date": "2023-11-29",
+      "source": "kymWoman"
+    },
+    {
+      "id": "7308060118166408491",
+      "creator": "abbieherbert",
+      "label": "Name a Woman • December stitch",
+      "category": "Comedy",
+      "date": "2023-12-02",
+      "source": "kymWoman"
+    },
+    {
+      "id": "7308080967028165919",
+      "creator": "jusdancedotcom",
+      "label": "Name a Woman • December stitch",
+      "category": "Comedy",
+      "date": "2023-12-02",
+      "source": "kymWoman"
+    },
+    {
+      "id": "7308931933763816746",
+      "creator": "archive",
+      "label": "Name a Woman • early December example",
+      "category": "Trends",
+      "date": "2023-12-05",
+      "source": "kymWoman"
+    },
+    {
+      "id": "7308867063164980510",
+      "creator": "archive",
+      "label": "Name a Woman • December example",
+      "category": "Trends",
+      "date": "2023-12-04",
+      "source": "kymWoman"
+    },
+    {
+      "id": "7308789837975342378",
+      "creator": "archive",
+      "label": "Name a Woman • December trend",
+      "category": "Trends",
+      "date": "2023-12-04",
+      "source": "kymWoman"
+    },
+    {
+      "id": "7308813099187096878",
+      "creator": "archive",
+      "label": "Name a Woman • 2023 example",
+      "category": "Trends",
+      "date": "2023-12-04",
+      "source": "kymWoman"
+    },
+    {
+      "id": "7313689467175341345",
+      "creator": "archive",
+      "label": "Big boots • December 2023",
+      "category": "Comedy",
+      "date": "2023-12-17",
+      "source": "kymBoots"
+    },
+    {
+      "id": "7317421325822315809",
+      "creator": "bluweesh",
+      "label": "People arrested over big boots • 2023",
+      "category": "Comedy",
+      "date": "2023-12-27",
+      "source": "kymBoots"
+    }
+  ]
+}
