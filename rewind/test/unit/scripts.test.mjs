@@ -15,7 +15,8 @@ function sandbox() {
   writeFileSync(join(dir, 'package.json'), '{"type":"module"}');
   // Tests must not depend on whatever statuses the real library currently holds.
   const f = join(dir, 'data/library.json'); const l = JSON.parse(readFileSync(f, 'utf8'));
-  l.videos.forEach((v) => { v.status = 'unverified'; v.lastChecked = null; }); writeFileSync(f, JSON.stringify(l));
+  l.videos = l.videos.filter((v) => v.status !== 'broken').slice(0, 12);   // small + fast; the real library is covered by core.test
+  l.videos.forEach((v) => { v.status = 'unverified'; v.lastChecked = null; v.playback = null; }); writeFileSync(f, JSON.stringify(l));
   return dir;
 }
 const run = (dir, script, args, env = {}) => new Promise((res) => {
@@ -59,7 +60,7 @@ test('add-videos: validates scope, dedupes, records provenance', async () => {
   const dir = sandbox(); const n0 = lib(dir).length;
   const good = 'https://www.tiktok.com/@newperson/video/7290505556610141000'; // Oct 2023 range ID
   const out2021 = 'https://www.tiktok.com/@old/video/7000000000000000000';
-  const dupe = 'https://www.tiktok.com/@paywithclick/video/7290505556610141473';
+  const d0 = lib(dir)[0]; const dupe = `https://www.tiktok.com/@${d0.creator || 'x'}/video/${d0.id}`;
   const r = await run(dir, 'add-videos.mjs', [good, out2021, dupe, 'https://vm.tiktok.com/abc', '--offline', '--tags=memes,cozy', '--provenance=https://example.com/src', '--title=Test post'], {});
   assert.equal(r.code, 0, r.out);
   assert.match(r.out, /dupe/); assert.match(r.out, /outside/); assert.match(r.out, /short link/);

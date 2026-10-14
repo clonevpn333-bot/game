@@ -8,11 +8,12 @@
   const icon = (n) => `<svg viewBox="0 0 24 24"><use href="#i-${n}"/></svg>`;
   const vibeLabel = Object.fromEntries(D.vibes.map((v) => [v.id, v.label]));
   const MAX_FAILS = 4, MAX_TIMEOUTS = 3;
+  const GENERIC = new Set(D.vibes.map((v) => v.id));
 
   /* ---------------- state ---------------- */
   const state = {
     period: 'fall', tags: [], collection: null, mood: null, query: '', favoritesOnly: false, override: null /* {ids,title} */,
-    failures: 0, timeouts: 0, blocked: false, muted: false, lastNav: 0, dir: 1,
+    failures: 0, timeouts: 0, blocked: false, muted: false, userMuted: false, activated: false, lastNav: 0, dir: 1,
   };
   const queue = new C.Queue([]);
   let library = [];
@@ -61,7 +62,8 @@
   /* ---------------- feed ---------------- */
   function feedOpts() {
     return { period: state.period, tags: state.tags, collection: state.collection, query: state.query, favoritesOnly: state.favoritesOnly,
-      favorites: S.favorites(), hidden: S.hidden(), broken: brokenIds(), hideUnavailable: settings.hideUnavailable, shuffle: settings.shuffle };
+      favorites: S.favorites(), hidden: S.hidden(), broken: brokenIds(), hideUnavailable: settings.hideUnavailable, shuffle: settings.shuffle,
+      seen: S.seen(), generic: GENERIC };
   }
   function rebuildFeed(startId = null, dir = 1) {
     if (state.override) {
@@ -102,15 +104,23 @@
 
   /* ---------------- player ---------------- */
   const player = new window.TikTokPlayer($('playerHost'), {
-    onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.muted) player.mute(); },
-    onPlaying: (v) => { state.failures = 0; state.timeouts = 0; hideStates(); S.recordHealth(v.id, { state: 'ok' }); setStatusDot(v); },
+    onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.activated) player.unmute(); },
+    onPlaying: (v) => { state.failures = 0; state.timeouts = 0; hideStates(); S.recordHealth(v.id, { state: 'ok' }); S.markSeen(v.id); setStatusDot(v); syncSound(); },
     onPaused: () => {},
     onEnded: () => { if (settings.autoplayNext) next(); },
     onNeedsTap: () => { hideSkeleton(); $('stTap').hidden = false; },
     onFail: (kind, code, v) => handleFailure(kind, code, v),
-    onMute: (m) => { state.muted = m; $('actMute').innerHTML = icon(m ? 'mute' : 'vol'); $('actMute').classList.toggle('on', m); },
+    onMute: (m) => { state.muted = m; syncSound(); },
   }, { readyTimeout: Number(qs.get('readyTimeout')) || 10000, startTimeout: Number(qs.get('startTimeout')) || 4000, stallTimeout: Number(qs.get('stallTimeout')) || 15000 });
 
+  /* TikTok starts muted until the browser allows sound: make that obvious and one tap to fix. */
+  function syncSound() {
+    const m = player.muted; state.muted = m;
+    $('actMute').innerHTML = icon(m ? 'mute' : 'vol');
+    $('actMute').classList.toggle('on', m && state.userMuted); $('actMute').classList.toggle('pulse', m && !state.userMuted);
+    $('soundHint').hidden = !(m && !state.userMuted && player.state === 'playing');
+  }
+  function setMuted(m) { state.userMuted = m; state.activated = true; m ? player.mute() : player.unmute(); syncSound(); }
   function hideStates() { $('stSkeleton').hidden = true; $('stTap').hidden = true; $('stPanel').hidden = true; clearTimeout(skelTimer); }
   function hideSkeleton() { $('stSkeleton').hidden = true; clearTimeout(skelTimer); }
   function resetFailures() { state.failures = 0; state.timeouts = 0; state.blocked = false; }
@@ -169,7 +179,7 @@
 
   /* ---------------- present current video ---------------- */
   function present(dir = 1) {
-    const v = queue.current;
+    const v = queue.current; $('soundHint').hidden = true;
     renderAll();
     if (!v) { applyTheme(null); showEmpty(); return; }
     $('meta').hidden = false; $('actions').hidden = false; $('shield').hidden = false;
@@ -184,6 +194,7 @@
   function renderMeta(v) {
     $('metaEra').textContent = v.year === 2020 ? '2020' : 'Fall 2023';
     $('metaDate').textContent = C.formatDate(v.date);
+    const mm = $('meta'); mm.classList.remove('flash'); void mm.offsetWidth; mm.classList.add('flash');
     $('metaCreator').textContent = v.creator ? '@' + v.creator : 'Original creator unknown';
     $('metaTitle').textContent = v.title;
     const tags = v.trends.filter((t) => vibeLabel[t]).slice(0, 2).map((t) => `<span class="tag">${esc(vibeLabel[t])}</span>`);
@@ -308,7 +319,7 @@
     w.classList.add('on'); closeMenu();
     setTimeout(() => {
       clearContext(); state.period = p; state.tags = []; resetFailures();
-      const list = C.buildFeed(library, { ...feedOpts(), shuffle: true, rng: Math.random }); queue.set(list, pick.id); present(1);
+      const list = C.buildFeed(library, { ...feedOpts(), shuffle: true, rng: Math.random, seen: new Set() }); queue.set(list, pick.id); present(1);
     }, reduced() ? 150 : 650);
     setTimeout(() => w.classList.remove('on'), reduced() ? 400 : 1300);
   }
@@ -421,7 +432,7 @@
     const t = e.target;
     const open = t.closest('[data-open]'); if (open) { closeMenu(); openers[open.dataset.open]?.(); return; }
     if (t.closest('[data-close]') || t === $('modalRoot')) return closeModal();
-    const per = t.closest('[data-period]'); if (per) return setPeriod(per.dataset.period);
+    const per = t.closest('button[data-period]'); if (per) return setPeriod(per.dataset.period);
     const mood = t.closest('[data-mood]'); if (mood) return setMood(mood.dataset.mood);
     const coll = t.closest('[data-coll]'); if (coll) return setCollection(coll.dataset.coll);
     const tag = t.closest('[data-tag]'); if (tag) { if (tag.dataset.tag === '') { state.tags = []; state.mood = null; rebuildFeed(); } else toggleTag(tag.dataset.tag); return; }
@@ -436,7 +447,7 @@
   });
   $('btnTransport').onclick = transport; $('btnNext').onclick = next; $('btnPrev').onclick = prev; $('btnMenu').onclick = openMenu; $('scrim').onclick = closeMenu;
   $('btnFavs').onclick = showFavorites; $('actFav').onclick = () => toggleFav(false); $('actShuffle').onclick = toggleShuffle;
-  $('actMute').onclick = () => player.toggleMute(); $('actSimilar').onclick = () => { const v = queue.current; if (!v) return; const sim = C.similar(v, library.filter(playable), 8);
+  $('actMute').onclick = () => setMuted(!player.muted); $('soundHint').onclick = () => setMuted(false); $('actSimilar').onclick = () => { const v = queue.current; if (!v) return; const sim = C.similar(v, library.filter(playable), 8);
     openModal(`<h2>Similar <em>vibe</em></h2><p class="lead">More in the feeling of “${esc(v.title)}”.</p><div class="results">${sim.map((x) => `<button type="button" class="vrow" data-sim="${x.id}"><span class="vi">${x.month.slice(5)}</span><span><span class="vt">${esc(x.title)}</span><span class="vs">${x.creator ? '@' + esc(x.creator) + ' · ' : ''}${C.formatDate(x.date)}</span></span></button>`).join('') || '<p class="empty-note">Nothing similar yet.</p>'}</div>${sim.length ? '<div class="btn-row"><button class="btn" type="button" id="simAll">Play all as a feed</button></div>' : ''}`, { label: 'Similar vibe' })
       .addEventListener('click', (e) => { const r = e.target.closest('[data-sim]'); if (r) playOverride([v.id, ...sim.map((x) => x.id)], 'More like this', r.dataset.sim); if (e.target.id === 'simAll') playSimilar(v); }); };
   $('skSkip').onclick = () => skipCurrent(false); $('skipCancel').onclick = () => { clearTimeout(skipTimer); $('skipbar').hidden = true; showErrorPanel('playback', queue.current); };
@@ -470,7 +481,7 @@
     if (e.key === 'ArrowDown' || k === 'j') { e.preventDefault(); next(); }
     else if (e.key === 'ArrowUp' || k === 'k') { e.preventDefault(); prev(); }
     else if (e.key === ' ') { e.preventDefault(); player.toggle(); }
-    else if (k === 'f') toggleFav(false); else if (k === 'm') player.toggleMute(); else if (k === 's') toggleShuffle(); else if (k === 't') transport();
+    else if (k === 'f') toggleFav(false); else if (k === 'm') setMuted(!player.muted); else if (k === 's') toggleShuffle(); else if (k === 't') transport();
     else if (k === 'o') { const v = queue.current; if (v) window.open(v.url, '_blank', 'noopener'); }
     else if (k === 'h') hideCurrent();
     else if (e.key === '/') { e.preventDefault(); modalSearch(); } else if (e.key === '?') { modalOpen() ? closeModal() : modalHelp(); }
@@ -489,5 +500,6 @@
     if (!S.onboarded() && !qs.has('skipIntro')) modalOnboard();
   }
   window.__rewind = { state, queue, player, get library() { return library; }, present, go };
+  ['pointerdown', 'keydown'].forEach((ev) => addEventListener(ev, () => (state.activated = true), { once: true, capture: true }));
   boot();
 })();

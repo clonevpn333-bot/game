@@ -83,6 +83,8 @@
       sound: raw.sound || null,
       status: ['verified', 'unverified', 'broken'].includes(raw.status) ? raw.status : 'unverified',
       lastChecked: raw.lastChecked || null,
+      playback: raw.playback === 'ok' ? 'ok' : null,   // 'ok' only when it genuinely played in a real browser
+      playbackChecked: raw.playbackChecked || null,
       provenance: raw.provenance || null,
       imported: !!raw.imported,
       url: tiktokUrl({ id: raw.id, creator }),
@@ -123,6 +125,7 @@
   function collectionMatches(col, v) {
     const r = col.rules || {};
     if (r.ids && r.ids.includes(v.id)) return true;
+    if (r.creators && v.creator && r.creators.includes(v.creator)) return true;
     if (r.months && !r.months.includes(v.month)) return false;
     if (r.period && !periodMatches(r.period, v)) return false;
     if (r.tagsAny && !r.tagsAny.some((t) => v.trends.includes(t))) return false;
@@ -143,8 +146,27 @@
     return a;
   }
 
+  /* The specific meme/trend a post belongs to: its first tag that is not a generic vibe or editorial label. */
+  const EDITORIAL = ['tiktok-top-100'];
+  function trendKey(v, generic) {
+    const g = generic || new Set();
+    return v.trends.find((t) => !g.has(t) && !EDITORIAL.includes(t)) || (v.creator ? '@' + v.creator : v.id);
+  }
+  /* Reorder so the same trend (window 4) or creator (window 3) doesn't repeat back-to-back when avoidable. */
+  function diversify(list, generic) {
+    const out = [], rest = list.slice();
+    while (rest.length) {
+      const tk = new Set(out.slice(-4).map((v) => trendKey(v, generic))), ck = new Set(out.slice(-3).map((v) => v.creator).filter(Boolean));
+      let i = rest.findIndex((v) => !tk.has(trendKey(v, generic)) && !(v.creator && ck.has(v.creator)));
+      if (i < 0) i = rest.findIndex((v) => !tk.has(trendKey(v, generic)));
+      out.push(rest.splice(i < 0 ? 0 : i, 1)[0]);
+    }
+    return out;
+  }
+
   /* opts: {period, tags[], collection (object), query, favoritesOnly, favorites:Set, hidden:Set,
-   *        broken:Set (device-level), hideUnavailable, shuffle, rng, ids[] } */
+   *        broken:Set (device-level), hideUnavailable, shuffle, rng, ids[],
+   *        seen:Set (recently watched -> pushed to the back when shuffling), generic:Set (vibe ids, for trend spacing) } */
   function buildFeed(videos, opts = {}) {
     let a = videos.filter((v) => {
       if (opts.hidden && opts.hidden.has(v.id)) return false;
@@ -158,7 +180,10 @@
       return true;
     });
     a.sort((x, y) => x.date.localeCompare(y.date) || x.id.localeCompare(y.id));
-    return opts.shuffle ? shuffled(a, opts.rng) : a;
+    if (!opts.shuffle) return a;
+    a = shuffled(a, opts.rng);
+    if (opts.seen && opts.seen.size) a = [...a.filter((v) => !opts.seen.has(v.id)), ...a.filter((v) => opts.seen.has(v.id))];
+    return opts.diversify === false ? a : diversify(a, opts.generic);
   }
 
   /* "Similar vibe": shared tags (rarer tags weigh more), same sound, same creator, nearby date. */
@@ -242,5 +267,5 @@
   }
 
   return { MONTHS, MON3, PERIODS, dateFromId, parseTikTokUrl, periodOfDate, inScope, themeOfPeriod, periodMatches, normalizeVideo, tiktokUrl,
-    validateLibrary, matchesQuery, collectionMatches, buildFeed, similar, Queue, classifyError, failurePolicy, mulberry32, shuffled, formatDuration, formatDate, periodLabel };
+    validateLibrary, trendKey, diversify, matchesQuery, collectionMatches, buildFeed, similar, Queue, classifyError, failurePolicy, mulberry32, shuffled, formatDuration, formatDate, periodLabel };
 });

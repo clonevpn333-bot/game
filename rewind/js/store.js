@@ -31,6 +31,10 @@
     health() { return get('health', {}); },
     recordHealth(id, entry) { const h = Store.health(); h[id] = { ...entry, at: new Date().toISOString() }; set('health', h); emit('health'); },
     clearHealth() { set('health', {}); emit('health'); },
+    /* last ~250 watched ids: the shuffle serves unseen posts first, so each visit feels fresh */
+    seen() { return new Set(get('seen', [])); },
+    markSeen(id) { const a = get('seen', []).filter((x) => x !== id); a.push(id); set('seen', a.slice(-250)); },
+    clearSeen() { set('seen', []); },
     onboarded() { return !!get('onboarded', false); },
     setOnboarded() { set('onboarded', true); },
     lastPeriod() { return get('period', null); },

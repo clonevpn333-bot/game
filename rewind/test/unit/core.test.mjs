@@ -127,3 +127,31 @@ test('formatting helpers', () => {
   assert.equal(core.formatDuration(125 * 60000), '2 hrs 5 min');
   assert.equal(core.formatDate('2023-10-07'), 'Oct 7, 2023');
 });
+
+test('shuffle: different seeds give different orders, unseen first, trends spaced out', () => {
+  const generic = new Set(meta.vibes.map((v) => v.id));
+  const live = vids.filter((v) => v.status !== 'broken');
+  const orders = [1, 2, 3].map((n) => core.buildFeed(vids, { shuffle: true, rng: core.mulberry32(n), generic }).map((v) => v.id).join());
+  assert.equal(new Set(orders).size, 3, 'each shuffle should differ');
+  // seen posts are served last
+  const seen = new Set(live.slice(0, 50).map((v) => v.id));
+  const f = core.buildFeed(vids, { shuffle: true, rng: core.mulberry32(9), seen, generic, diversify: false });
+  const firstSeen = f.findIndex((v) => seen.has(v.id));
+  assert.ok(firstSeen >= live.length - 50, 'all unseen posts come before seen ones');
+  // no trend repeats inside a window of 4 across a whole-library feed (when avoidable)
+  const d = core.buildFeed(vids, { shuffle: true, rng: core.mulberry32(5), generic });
+  let clashes = 0;
+  for (let i = 4; i < d.length; i++) { const k = core.trendKey(d[i], generic); if (d.slice(i - 4, i).some((x) => core.trendKey(x, generic) === k)) clashes++; }
+  assert.ok(clashes <= d.length * 0.01, `trend clashes: ${clashes}`);
+});
+
+test('coverage: every target period is well represented, no trend dominates', () => {
+  const generic = new Set(meta.vibes.map((v) => v.id));
+  const live = vids.filter((v) => v.status !== 'broken');
+  for (const [p, min] of [['2020', 150], ['2023-09', 80], ['2023-10', 80], ['2023-11', 70], ['2023-12', 50]]) {
+    const inP = live.filter((v) => core.periodMatches(p, v)); assert.ok(inP.length >= min, `${p} has only ${inP.length}`);
+    const counts = {}; inP.forEach((v) => { const k = core.trendKey(v, generic); counts[k] = (counts[k] || 0) + 1; });
+    const top = Math.max(...Object.values(counts)); assert.ok(top / inP.length <= 0.1, `${p}: one trend is ${Math.round(100 * top / inP.length)}%`);
+  }
+  for (let m = 1; m <= 12; m++) assert.ok(live.filter((v) => v.month === '2020-' + String(m).padStart(2, '0')).length >= 5, `2020-${m} thin`);
+});
