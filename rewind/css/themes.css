@@ -1,0 +1,70 @@
+/* Era themes. Colors are registered custom properties so switching eras cross-fades smoothly. */
+@property --accent  { syntax: '<color>'; inherits: true; initial-value: #a78bff; }
+@property --accent2 { syntax: '<color>'; inherits: true; initial-value: #4cc9ff; }
+@property --tint1   { syntax: '<color>'; inherits: true; initial-value: #5b3df5; }
+@property --tint2   { syntax: '<color>'; inherits: true; initial-value: #1e6bff; }
+@property --tint3   { syntax: '<color>'; inherits: true; initial-value: #ff3fb4; }
+@property --base-top    { syntax: '<color>'; inherits: true; initial-value: #0b0720; }
+@property --base-bottom { syntax: '<color>'; inherits: true; initial-value: #05030f; }
+@property --ring { syntax: '<number>'; inherits: true; initial-value: 1; }
+
+:root {
+  --ink: #f5f2fb; --muted: rgba(245,242,251,.62); --faint: rgba(245,242,251,.38);
+  --glass: rgba(255,255,255,.055); --glass-2: rgba(255,255,255,.09); --line: rgba(255,255,255,.1);
+  --radius: 22px; --ease: cubic-bezier(.22,.8,.2,1);
+  --font: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  --nostalgia: .7;          /* set from the intensity slider */
+  --bg-blur: 0px;
+  --depth: .5;
+}
+
+body {
+  /* 2020: late-night bedroom — violet/blue LED haze, a hint of magenta */
+  --accent: #a78bff; --accent2: #4cc9ff;
+  --tint1: #5b3df5; --tint2: #1e6bff; --tint3: #ff3fb4;
+  --base-top: #0b0720; --base-bottom: #05030f; --ring: 1;
+  transition: --accent 1s, --accent2 1s, --tint1 1.1s, --tint2 1.1s, --tint3 1.1s, --base-top 1.1s, --base-bottom 1.1s, --ring 1s;
+}
+/* Fall 2023: amber dusk — warm brown base, golden light */
+body[data-theme="fall"] {
+  --accent: #ffb454; --accent2: #ff7a3d;
+  --tint1: #c46a1c; --tint2: #7a3b12; --tint3: #e8a64a;
+  --base-top: #1d120a; --base-bottom: #0c0605; --ring: 0;
+}
+body[data-theme="fall"][data-period="2023-09"] { --tint1: #d58a22; --tint2: #8b4a14; --tint3: #f1c15f; --accent: #ffc15e; --base-top: #20150a; }          /* early school year: brighter, golden */
+body[data-theme="fall"][data-period="2023-10"] { --tint1: #c4561a; --tint2: #6e2a0e; --tint3: #e8892f; --accent: #ff9f4a; --accent2: #ff6a2e; --base-top: #1c0f08; } /* deep orange, ember */
+body[data-theme="fall"][data-period="2023-11"] { --tint1: #8a5a2b; --tint2: #3a4a63; --tint3: #c98f4e; --accent: #f0b070; --accent2: #8fa6c8; --base-top: #15100e; --base-bottom: #090708; } /* rainy brown, blue-grey dusk */
+body[data-theme="fall"][data-period="2023-12"] { --tint1: #a8702f; --tint2: #3d4f73; --tint3: #e6b574; --accent: #ffcf8a; --accent2: #9fb4d9; --base-top: #121018; --base-bottom: #07060b; } /* cool amber, winter slate */
+
+body { background: var(--base-bottom); color: var(--ink); }
+
+.bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; contain: paint; }
+.bg-wash {
+  position: absolute; inset: 0; transform: scale(1.12); opacity: calc(.45 + var(--nostalgia) * .55);
+  background:
+    radial-gradient(55% 45% at 12% 8%,  color-mix(in srgb, var(--tint1) 55%, transparent), transparent 70%),
+    radial-gradient(50% 50% at 92% 18%, color-mix(in srgb, var(--tint2) 50%, transparent), transparent 70%),
+    radial-gradient(60% 45% at 50% 108%, color-mix(in srgb, var(--tint3) 38%, transparent), transparent 72%),
+    linear-gradient(180deg, var(--base-top), var(--base-bottom));
+  animation: wash 38s ease-in-out infinite alternate;
+  filter: blur(var(--bg-blur));
+}
+@keyframes wash { from { transform: translate3d(-1.5%, -1%, 0) scale(1.1); } to { transform: translate3d(1.5%, 1.2%, 0) scale(1.16); } }
+#atmo { position: absolute; inset: 0; width: 100%; height: 100%; filter: blur(var(--bg-blur)); opacity: .95; }
+.bg-grain {
+  position: absolute; inset: 0; opacity: calc(.05 + var(--nostalgia) * .06); mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.bg-vignette { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 45%, transparent 38%, rgba(0,0,0,calc(.35 + var(--depth) * .4)) 100%); }
+
+/* 2020 only: a soft ring-light halo behind the phone frame */
+.frame::before {
+  content: ''; position: absolute; inset: -9% -22%; z-index: -1; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 34%, transparent), color-mix(in srgb, var(--tint3) 10%, transparent) 55%, transparent 72%);
+  opacity: calc(var(--ring) * var(--nostalgia) * .8); animation: ring 7s ease-in-out infinite alternate; transition: opacity 1s;
+}
+body[data-theme="fall"] .frame::before { opacity: calc(var(--nostalgia) * .55); background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 24%, transparent), transparent 70%); }
+@keyframes ring { from { transform: scale(.97); } to { transform: scale(1.03); } }
+
+body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after { animation: none !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }

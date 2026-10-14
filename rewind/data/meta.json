@@ -1,0 +1,242 @@
+{
+ "vibes": [
+  {
+   "id": "dances",
+   "label": "Dances"
+  },
+  {
+   "id": "memes",
+   "label": "Memes"
+  },
+  {
+   "id": "storytimes",
+   "label": "Storytimes"
+  },
+  {
+   "id": "skits",
+   "label": "Funny skits"
+  },
+  {
+   "id": "thirst-traps",
+   "label": "Thirst traps"
+  },
+  {
+   "id": "aesthetic",
+   "label": "Aesthetic"
+  },
+  {
+   "id": "school-vibe",
+   "label": "School vibe"
+  },
+  {
+   "id": "fall-vibe",
+   "label": "Fall vibe"
+  },
+  {
+   "id": "iconic-sounds",
+   "label": "Iconic sounds"
+  },
+  {
+   "id": "viral-chaos",
+   "label": "Viral chaos"
+  },
+  {
+   "id": "quarantine",
+   "label": "Quarantine"
+  },
+  {
+   "id": "food",
+   "label": "Food"
+  },
+  {
+   "id": "fashion",
+   "label": "Fashion"
+  },
+  {
+   "id": "cozy",
+   "label": "Cozy"
+  },
+  {
+   "id": "lip-sync",
+   "label": "Lip-sync"
+  },
+  {
+   "id": "art",
+   "label": "Art"
+  },
+  {
+   "id": "rizz",
+   "label": "Rizz & mogging"
+  },
+  {
+   "id": "pop-songs",
+   "label": "Pop songs"
+  },
+  {
+   "id": "gaming",
+   "label": "Gaming"
+  }
+ ],
+ "collections": [
+  {
+   "id": "peak-quarantine",
+   "name": "Peak Quarantine",
+   "blurb": "Spring 2020: banana bread, whipped coffee, working from the couch.",
+   "rules": {
+    "months": [
+     "2020-03",
+     "2020-04",
+     "2020-05",
+     "2020-06"
+    ]
+   }
+  },
+  {
+   "id": "back-to-school",
+   "name": "Back-to-School 2023",
+   "blurb": "September 2023, start to finish.",
+   "rules": {
+    "months": [
+     "2023-09"
+    ]
+   }
+  },
+  {
+   "id": "fall-night-scroll",
+   "name": "Fall Night Scroll",
+   "blurb": "Cozy, soft and a little wistful.",
+   "rules": {
+    "tagsAny": [
+     "cozy",
+     "fall-vibe",
+     "aesthetic"
+    ],
+    "period": "fall"
+   }
+  },
+  {
+   "id": "iconic-sounds",
+   "name": "Iconic Sounds",
+   "blurb": "The audio you can still hear in your head.",
+   "rules": {
+    "tagsAny": [
+     "iconic-sounds"
+    ]
+   }
+  },
+  {
+   "id": "main-character",
+   "name": "Main Character Energy",
+   "blurb": "Dances, fits and unapologetic confidence.",
+   "rules": {
+    "tagsAny": [
+     "dances",
+     "fashion",
+     "thirst-traps",
+     "lip-sync"
+    ]
+   }
+  },
+  {
+   "id": "unhinged",
+   "name": "Unhinged Viral Era",
+   "blurb": "Peak internet chaos. No notes.",
+   "rules": {
+    "tagsAny": [
+     "viral-chaos"
+    ]
+   }
+  },
+  {
+   "id": "rizz-era",
+   "name": "The Rizz Era",
+   "blurb": "Rizz, gyatt, mewing and mogging — fall 2023 in a nutshell.",
+   "rules": {
+    "tagsAny": [
+     "rizz"
+    ],
+    "period": "fall"
+   }
+  },
+  {
+   "id": "pop-moments",
+   "name": "Pop Song Moments",
+   "blurb": "Taylor, Saltburn, and the sounds that took over feeds.",
+   "rules": {
+    "tagsAny": [
+     "pop-songs"
+    ]
+   }
+  },
+  {
+   "id": "charli",
+   "name": "Charli & the Dances",
+   "blurb": "The dance era, led by Charli D’Amelio.",
+   "rules": {
+    "tagsAny": [
+     "charli"
+    ]
+   }
+  },
+  {
+   "id": "gaming",
+   "name": "Fortnite & FNAF",
+   "blurb": "Gamer TikTok, 2020 to Freddy season.",
+   "rules": {
+    "tagsAny": [
+     "gaming"
+    ]
+   }
+  }
+ ],
+ "moods": [
+  {
+   "id": "late-night-2020",
+   "name": "Late Night 2020",
+   "blurb": "Dim room, LED glow, one more scroll.",
+   "period": "2020",
+   "tagsAny": [],
+   "shuffle": true,
+   "intensity": 80,
+   "ambience": true
+  },
+  {
+   "id": "fall-2023",
+   "name": "Fall 2023",
+   "blurb": "Amber light, crisp air, the whole season.",
+   "period": "fall",
+   "tagsAny": [],
+   "shuffle": true,
+   "intensity": 70,
+   "ambience": true
+  },
+  {
+   "id": "chaotic-viral",
+   "name": "Chaotic Viral",
+   "blurb": "Memes, sounds and absolute mayhem.",
+   "period": "all",
+   "tagsAny": [
+    "viral-chaos",
+    "memes"
+   ],
+   "shuffle": true,
+   "intensity": 55,
+   "ambience": false
+  },
+  {
+   "id": "cozy-scroll",
+   "name": "Cozy Scroll",
+   "blurb": "Soft, slow and warm.",
+   "period": "all",
+   "tagsAny": [
+    "cozy",
+    "aesthetic",
+    "food",
+    "fall-vibe"
+   ],
+   "shuffle": true,
+   "intensity": 85,
+   "ambience": true
+  }
+ ]
+}

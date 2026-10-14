@@ -1,0 +1,21 @@
+{
+  "name": "rewind",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Rewind — a TikTok time machine for 2020 and Sep–Dec 2023",
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "build:data": "node scripts/build-library.mjs",
+    "verify": "node scripts/verify-links.mjs",
+    "add": "node scripts/add-videos.mjs",
+    "test": "node --test \"test/unit/*.test.mjs\"",
+    "test:e2e": "node test/e2e/run.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.64.1"
+  }
+}
