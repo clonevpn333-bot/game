@@ -4,6 +4,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { AOPass, GradePass, patchHeightFog } from './post.js';
 import { lerp, smoothstep } from '../core/math.js';
 
 const SKY_VS = `
@@ -55,6 +56,7 @@ void main(){
 
 export class Renderer {
   constructor(canvas) {
+    patchHeightFog();
     const r = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', stencil: false });
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     r.toneMapping = THREE.ACESFilmicToneMapping;
@@ -103,12 +105,22 @@ export class Renderer {
     this.envTimer = 0;
 
     // post
-    this.composer = new EffectComposer(r);
+    const rt = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, { type: THREE.HalfFloatType });
+    rt.depthTexture = new THREE.DepthTexture(window.innerWidth, window.innerHeight);
+    rt.depthTexture.type = THREE.UnsignedIntType;
+    this.composer = new EffectComposer(r, rt);
+    // the composer clones its target; a cloned DepthTexture shares the GPU texture, so give each its own
+    this.composer.renderTarget2.depthTexture = new THREE.DepthTexture(window.innerWidth, window.innerHeight);
+    this.composer.renderTarget2.depthTexture.type = THREE.UnsignedIntType;
     this.renderPass = new RenderPass(this.scene, this.camera);
     this.composer.addPass(this.renderPass);
+    this.ao = new AOPass(this.camera);
+    this.composer.addPass(this.ao);
     this.bloom = new UnrealBloomPass(new THREE.Vector2(512, 512), 0.55, 0.5, 0.86);
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
+    this.grade = new GradePass();
+    this.composer.addPass(this.grade);
 
     // shared uniforms for city shaders
     this.U = {
@@ -131,6 +143,7 @@ export class Renderer {
     const size = q === 'high' ? 2048 : 1024;
     if (this.sun.shadow.mapSize.x !== size) { this.sun.shadow.mapSize.set(size, size); if (this.sun.shadow.map) { this.sun.shadow.map.dispose(); this.sun.shadow.map = null; } }
     this.bloom.enabled = q !== 'low';
+    this.ao.enabled = q === 'high';
     try { localStorage.setItem('cityexe.quality', q); } catch (e) { /* ignore */ }
     this.resize();
   }
@@ -139,6 +152,9 @@ export class Renderer {
     const w = window.innerWidth, h = window.innerHeight;
     this.r.setSize(w, h, false);
     this.composer.setSize(w, h);
+    const pr = this.r.getPixelRatio();
+    this.ao.setSize(w * pr, h * pr);
+    this.grade.setSize(w * pr, h * pr);
     this.bloom.resolution.set(w / 2, h / 2);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
@@ -167,7 +183,7 @@ export class Renderer {
     const gold = new THREE.Color('#ff9a50');
     hor.lerp(gold, goldenF * 0.65 * (1 - cloud * 0.7));
     top.lerp(new THREE.Color('#4a5aa0'), goldenF * 0.35);
-    const nTop = new THREE.Color('#03060f'), nHor = new THREE.Color('#141c30');
+    const nTop = new THREE.Color('#03060f'), nHor = new THREE.Color('#2a2838');
     if (weather.heat) { hor.lerp(new THREE.Color('#e8c890'), 0.35 * dayF); }
     U.uTop.value.copy(top).lerp(nTop, night);
     U.uHorizon.value.copy(hor).lerp(nHor, night);
@@ -179,23 +195,29 @@ export class Renderer {
     U.uMoonDir.value.copy(moon);
     U.uFlash.value = weather.flash || 0;
     // sun light
-    const sunI = dayF * 2.6 * (1 - cloud * 0.65);
-    this.sun.intensity = Math.max(sunI, night * 0.18);
-    if (dayF > 0.02) this.sun.color.copy(U.uSunColor.value);
-    else this.sun.color.set('#8aa0d8');
+    const sunI = dayF * 3.1 * (1 - cloud * 0.62);
+    this.sun.intensity = Math.max(sunI, night * 0.55 * (1 - cloud * 0.4));
+    if (dayF > 0.02) this.sun.color.copy(U.uSunColor.value).lerp(new THREE.Color('#ff7a34'), goldenF * 0.35);
+    else this.sun.color.set('#7a90d8');
     const lightDir = dayF > 0.02 ? sunDir : moon;
     this.sun.position.set(focus.x + lightDir.x * 400, Math.max(60, lightDir.y * 400), focus.z + lightDir.z * 400);
     this.sun.target.position.set(focus.x, 0, focus.z);
     this.sun.castShadow = this.quality !== 'low' && (dayF > 0.05 || night > 0.95);
-    this.hemi.intensity = lerp(0.12, 0.85, dayF) * (1 - cloud * 0.25) + weather.flash * 2;
-    this.hemi.color.copy(new THREE.Color('#bcd8ff').lerp(new THREE.Color('#2a3860'), night));
-    this.hemi.groundColor.copy(new THREE.Color('#5a5048').lerp(new THREE.Color('#141418'), night));
+    this.hemi.intensity = lerp(0.42, 0.78, dayF) * (1 - cloud * 0.15) + weather.flash * 2;
+    // cool sky fill in the shadows, warm bounce from the ground, violet dusk
+    this.hemi.color.copy(new THREE.Color('#9cc2ff').lerp(new THREE.Color('#a08ac8'), goldenF * 0.5).lerp(new THREE.Color('#3a4a8a'), night));
+    this.hemi.groundColor.copy(new THREE.Color('#6a5a46').lerp(new THREE.Color('#3a2a30'), goldenF * 0.4).lerp(new THREE.Color('#3a2a22'), night));
     // fog
     const fogBase = 0.0009 + cloud * 0.0006 + (weather.fog || 0) * 0.006 + (weather.precip || 0) * 0.0012;
     this.scene.fog.density = fogBase;
     this.scene.fog.color.copy(U.uHorizon.value).lerp(new THREE.Color('#8a9098'), (weather.fog || 0) * 0.5 * dayF);
-    this.r.toneMappingExposure = lerp(1.15, 0.95, dayF);
-    this.bloom.strength = lerp(0.3, 0.7, night);
+    // sodium skyglow: at night the haze picks up the city's own light
+    this.scene.fog.color.lerp(new THREE.Color('#3a2a26'), night * (0.55 + cloud * 0.3));
+    this.r.toneMappingExposure = lerp(1.28, 0.98, dayF) + goldenF * 0.06;
+    this.bloom.strength = lerp(0.28, 0.85, night);
+    this.bloom.radius = lerp(0.45, 0.6, night);
+    this.grade.setMood(this.env, weather);
+    this.ao.mat.uniforms.uNight.value = night;
     this.U.uNight.value = night;
     this.U.uDay.value = dayF;
     // env map refresh
@@ -219,6 +241,7 @@ export class Renderer {
   render(dt) {
     this.U.uTime.value += dt;
     this.skyU.uTime.value = this.U.uTime.value;
+    this.grade.mat.uniforms.uTime.value = this.U.uTime.value;
     if (this.bloom.enabled) this.composer.render(dt);
     else this.r.render(this.activeScene || this.scene, this.camera);
   }

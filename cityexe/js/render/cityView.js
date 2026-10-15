@@ -91,6 +91,7 @@ export class CityView {
     this.buildWater();
     this.buildStructures();
     this.buildBuildings();
+    this.buildDetails();
     this.buildProps();
     this.buildSignals();
     this.dirty = true;
@@ -444,6 +445,8 @@ export class CityView {
       b._parts = [];
       for (const p of b.parts) {
         if (p.cooling) continue;
+        // roof clutter that gets a detailed model instead of a plain box
+        if (p.tank || this.isHvac(p, b) || this.isChimney(p, b)) continue;
         if (p.gable) { gables[p.gable].push({ b, p }); continue; }
         parts.push({ b, p });
       }
@@ -535,6 +538,151 @@ export class CityView {
     this.signGroup = new THREE.Group();
     this.group.add(this.signGroup);
     this.signs = new Map();
+  }
+
+  isHvac(p, b) { return p.style === 7 && p.y > 3 && p.w * p.d < 14 && p.h < 3 && !p.antenna && !p.fence && b.kind !== 'house'; }
+  isChimney(p, b) { return b.kind === 'house' && p.style === 7 && p.w < 1.2; }
+
+  // detailed geometry around buildings: rooftop equipment, water towers, chimneys,
+  // balconies aligned to the facade window grid, storefront awnings, porches, dishes
+  buildDetails() {
+    const city = this.city;
+    const U = this.U;
+    const mat = makeInstMaterial(U, { key: 'bdet', roughness: 0.7, snow: true });
+    const L = { hvac: [], tank: [], chim: [], balc: [], awn: [], porch: [], dish: [], bulk: [] };
+    const front = (b) => b.front || 'S';
+    const faceRy = { N: Math.PI, S: 0, E: Math.PI / 2, W: -Math.PI / 2 };
+    for (const b of city.buildings) {
+      if (b.kind === 'substation') continue;
+      for (const p of b.parts) {
+        if (p.tank) L.tank.push({ x: p.x, y: p.y - p.h / 2, z: p.z, ry: hash01(b.id, 3) * 6 });
+        else if (this.isHvac(p, b)) L.hvac.push({ x: p.x, y: p.y - p.h / 2, z: p.z, sx: p.w, sy: p.h, sz: p.d, ry: 0 });
+        else if (this.isChimney(p, b)) L.chim.push({ x: p.x, y: p.y - p.h / 2, z: p.z, sx: p.w, sy: p.h, sz: p.d, c: '#8a4a3a' });
+      }
+      const main = b.parts[0];
+      if (!main) continue;
+      const top = main.y + main.h / 2;
+      const fr = front(b);
+      const ry = faceRy[fr];
+      const fx = fr === 'E' ? b.x1 : fr === 'W' ? b.x0 : b.x, fz = fr === 'S' ? b.z1 : fr === 'N' ? b.z0 : b.z;
+      const along = fr === 'N' || fr === 'S' ? b.w : b.d;
+      const ox = Math.sin(ry), oz = Math.cos(ry); // outward normal
+      const tx = Math.cos(ry), tz = -Math.sin(ry); // along the facade
+      // roof stair bulkheads and dishes on flat roofs
+      if ((b.kind === 'midrise' || b.kind === 'brick' || b.kind === 'tower' || b.kind === 'civic') && b.w > 10 && b.d > 10) {
+        const r1 = hash01(b.id, 21);
+        if (r1 < 0.7) L.bulk.push({ x: b.x + (hash01(b.id, 22) - 0.5) * b.w * 0.4, y: b.kind === 'tower' ? top : b.h + 0.8, z: b.z + (hash01(b.id, 23) - 0.5) * b.d * 0.4, ry: Math.floor(r1 * 4) * Math.PI / 2 });
+        if (b.resUnits > 0 && hash01(b.id, 24) < 0.6) for (let i = 0; i < 1 + Math.floor(hash01(b.id, 25) * 3); i++) L.dish.push({ x: b.x0 + 2 + hash01(b.id, 30 + i) * (b.w - 4), y: b.h + 0.8, z: b.z0 + 2 + hash01(b.id, 40 + i) * (b.d - 4), ry: 2.4 + hash01(b.id, i) * 0.6 });
+      }
+      // balconies: residential mid-rises, on the street facade, every other window column
+      if ((b.kind === 'midrise' || b.kind === 'brick') && b.resUnits > 0 && b.style >= 1 && b.style <= 4 && b.h > 7) {
+        const fh = b.style === 3 ? 3.2 : b.style === 4 ? 3.0 : 3.4;
+        const cw = b.style === 3 ? 3.0 : b.style === 4 ? 3.4 : 2.6;
+        const ncol = Math.max(1, Math.floor(along / cw));
+        const cwa = along / ncol;
+        const floors = Math.floor(b.h / fh);
+        const startF = b.shop ? 2 : 1;
+        const pattern = hash01(b.id, 50) < 0.5 ? 2 : 3;
+        for (let f = startF; f < floors; f++) for (let c = 0; c < ncol; c++) {
+          if ((c + (b.id % 2)) % pattern !== 0) continue;
+          const u = (c + 0.5) * cwa - along / 2;
+          L.balc.push({ x: fx + tx * u + ox * 0.55, y: f * fh + 0.05, z: fz + tz * u + oz * 0.55, ry, sx: Math.min(cwa * 0.92, 2.6) / 2.2 });
+        }
+      }
+      // storefront awnings in the shop's colour
+      if (b.shop && b.kind !== 'house' && along > 6) {
+        const bizCol = b.signColor || (b.bizId != null ? null : '#8a8a8a');
+        const n = Math.max(1, Math.round(along / 9));
+        for (let i = 0; i < n; i++) {
+          const u = ((i + 0.5) / n - 0.5) * along;
+          L.awn.push({ x: fx + tx * u + ox * 0.8, y: 3.0, z: fz + tz * u + oz * 0.8, ry, sx: (along / n) * 0.82 / 3, c: bizCol || ['#8a2a2a', '#2a5a3a', '#2a3a6a', '#7a5a2a', '#5a2a5a'][Math.floor(hash01(b.id, 60) * 5)] });
+        }
+      }
+      // porches on houses
+      if (b.kind === 'house') L.porch.push({ x: fx, y: 0, z: fz, ry, c: b.trim || '#e8e4dc' });
+    }
+    // ---- models (unit-sized where they get scaled)
+    const hvac = new ModelKit();
+    hvac.surf('metal');
+    hvac.rbox(0, 0.42, 0, 0.96, 0.84, 0.96, 0.04, '#9aa0a4');
+    for (let i = 0; i < 6; i++) hvac.box(0.485, 0.2 + i * 0.1, 0, 0.01, 0.03, 0.8, '#6a7074');
+    hvac.surf('plastic');
+    hvac.cyl(0, 0.86, 0, 0.32, 0.04, '#2a2c2e', 16);
+    hvac.surf('metal');
+    for (let i = 0; i < 4; i++) hvac.box(0, 0.89, 0, 0.66, 0.015, 0.025, '#4a4e52', 0, 0, [0, (i * Math.PI) / 4, 0]);
+    hvac.cyl(-0.3, 0.5, -0.49, 0.05, 0.6, '#7a7e82', 8);
+    const tank = new ModelKit();
+    tank.surf('metal');
+    for (const [lx, lz] of [[-0.9, -0.9], [0.9, -0.9], [-0.9, 0.9], [0.9, 0.9]]) tank.cyl(lx, 0.9, lz, 0.07, 1.8, '#3a3632', 6);
+    tank.box(0, 1.85, 0, 2.3, 0.12, 2.3, '#4a4440');
+    tank.surf('wood');
+    tank.lathe(0, 1.9, 0, [[1.2, 0], [1.25, 1.2], [1.2, 2.4]], '#7a5a40', 18);
+    tank.surf('metal');
+    for (const hy of [2.2, 3.0, 3.8]) tank.cyl(0, hy, 0, 1.27, 0.06, '#2a2826', 18);
+    tank.surf('wood');
+    tank.lathe(0, 4.3, 0, [[1.3, 0], [0.7, 0.45], [0.06, 0.9]], '#5a4434', 18);
+    const chim = new ModelKit();
+    chim.surf('concrete');
+    chim.box(0, 0.5, 0, 1, 1, 1, '#ffffff', 1);
+    chim.surf('concrete');
+    chim.box(0, 1.02, 0, 1.15, 0.06, 1.15, '#6a6a66');
+    chim.surf('metal'); chim.cyl(0, 1.12, 0, 0.18, 0.18, '#3a3a3a', 8);
+    const balc = new ModelKit();
+    balc.surf('concrete');
+    balc.box(0, 0, 0, 2.2, 0.14, 1.1, '#b8b4ac');
+    balc.surf('metal');
+    balc.box(0, 1.0, 0.53, 2.2, 0.05, 0.05, '#2a2c30');
+    for (const sx of [-1.08, 1.08]) balc.box(sx, 0.55, 0, 0.05, 0.05, 1.1, '#2a2c30'), balc.box(sx, 1.0, 0, 0.05, 0.05, 1.1, '#2a2c30');
+    for (let i = 0; i <= 10; i++) balc.box(-1.08 + i * 0.216, 0.55, 0.53, 0.025, 0.9, 0.025, '#2a2c30');
+    balc.surf('glass');
+    balc.box(0, 0.5, 0.5, 2.1, 0.6, 0.02, '#8aa0b0', 0, 7);
+    const awn = new ModelKit();
+    awn.surf('fabric');
+    awn.box(0, 0.25, 0.75, 3, 0.04, 1.6, '#ffffff', 1, 0, [0.32, 0, 0]);
+    awn.box(0, -0.05, 1.5, 3, 0.32, 0.03, '#ffffff', 1);
+    awn.surf('metal');
+    for (const sx of [-1.45, 1.45]) awn.box(sx, 0.2, 0.75, 0.03, 0.03, 1.65, '#2a2a2a', 0, 0, [0.32, 0, 0]);
+    const porch = new ModelKit();
+    porch.surf('wood');
+    porch.box(0, 0.12, 0.9, 2.6, 0.24, 1.8, '#8a7a6a');
+    porch.box(0, 0.06, 1.95, 1.4, 0.12, 0.35, '#8a7a6a');
+    for (const sx of [-1.15, 1.15]) porch.box(sx, 1.45, 1.65, 0.14, 2.5, 0.14, '#ffffff', 1);
+    porch.box(0, 2.75, 0.95, 2.9, 0.12, 1.9, '#ffffff', 1, 0, [0.12, 0, 0]);
+    porch.surf('metal'); porch.cyl(0.6, 2.2, 0.15, 0.12, 0.25, '#2a2a2a', 8); porch.sphere(0.6, 2.05, 0.15, 0.09, '#fff0c0', 0, 9, 1, 1, 1, 1);
+    const dish = new ModelKit();
+    dish.surf('metal');
+    dish.cyl(0, 0.5, 0, 0.04, 1.0, '#6a6a6a', 6);
+    dish.lathe(0, 1.0, 0.15, [[0, 0], [0.32, 0.06], [0.45, 0.16]], '#e0e0dc', 14, 0, 0, [-1.1, 0, 0]);
+    dish.cyl(0, 1.05, 0.45, 0.02, 0.5, '#4a4a4a', 4, 0, 0, [-1.1, 0, 0]);
+    const bulk = new ModelKit();
+    bulk.surf('concrete');
+    bulk.box(0, 1.4, 0, 3.2, 2.8, 2.6, '#9a9890');
+    bulk.box(0, 2.85, 0, 3.4, 0.12, 2.8, '#6a6862');
+    bulk.surf('metal');
+    bulk.box(0, 1.05, 1.31, 0.95, 2.05, 0.04, '#4a5058');
+    bulk.sphere(0, 2.3, 1.36, 0.08, '#fff0c0', 0, 9, 1, 1, 1, 1);
+    const inst = (kitObj, items, shadow = true) => {
+      if (!items.length) return null;
+      const geo = kitObj.build();
+      const n = items.length;
+      const im = new THREE.InstancedMesh(geo, mat, n);
+      const c1 = new Float32Array(n * 3).fill(1), c2 = new Float32Array(n * 3).fill(1), st = new Float32Array(n * 4);
+      const col = new THREE.Color();
+      items.forEach((it, i) => {
+        tmpQ.setFromAxisAngle(UP, it.ry || 0);
+        tmpM.compose(tmpV.set(it.x, it.y || 0, it.z), tmpQ, tmpS.set(it.sx ?? 1, it.sy ?? 1, it.sz ?? 1));
+        im.setMatrixAt(i, tmpM);
+        if (it.c) { col.set(it.c); c1[i * 3] = col.r; c1[i * 3 + 1] = col.g; c1[i * 3 + 2] = col.b; }
+      });
+      geo.setAttribute('iCol1', new THREE.InstancedBufferAttribute(c1, 3));
+      geo.setAttribute('iCol2', new THREE.InstancedBufferAttribute(c2, 3));
+      geo.setAttribute('iState', new THREE.InstancedBufferAttribute(st, 4));
+      im.castShadow = shadow; im.receiveShadow = true; im.frustumCulled = false;
+      this.group.add(im);
+      return im;
+    };
+    inst(hvac, L.hvac); inst(tank, L.tank); inst(chim, L.chim); inst(balc, L.balc); inst(awn, L.awn); inst(porch, L.porch); inst(dish, L.dish, false); inst(bulk, L.bulk);
+    this.detailCounts = Object.fromEntries(Object.entries(L).map(([k, v]) => [k, v.length]));
   }
 
   // Refresh per-building visual state from the simulation
@@ -637,23 +785,54 @@ export class CityView {
     pools.renderOrder = 2;
     this.pools = pools;
     this.group.add(pools);
-    // trees: kinds 0 round deciduous, 1 yard tree, 2 conifer
-    const tk = new ModelKit();
-    tk.cyl(0, 1.4, 0, 0.18, 2.8, '#5a4030', 6, 0);
-    tk.sphere(0, 4.0, 0, 2.2, '#ffffff', 1, 0, 1, 0.9, 1, 0);
-    tk.sphere(0.9, 3.3, 0.5, 1.5, '#ffffff', 1, 0, 1, 0.9, 1, 0);
-    tk.sphere(-0.8, 3.5, -0.6, 1.6, '#ffffff', 1, 0, 1, 0.9, 1, 0);
-    const treeGeo = tk.build();
-    const ck = new ModelKit();
-    ck.cyl(0, 1.0, 0, 0.2, 2, '#4a3428', 6, 0);
-    ck.cyl(0, 3.4, 0, 2.2, 3.6, '#ffffff', 8, 1, 0, null, 0.1);
-    ck.cyl(0, 5.4, 0, 1.6, 3.0, '#ffffff', 8, 1, 0, null, 0.05);
-    const conGeo = ck.build();
-    const tm = makeInstMaterial(U, { key: 'tree', roughness: 0.9, snow: true });
-    const decid = city.props.trees.filter((t) => t.kind !== 2), con = city.props.trees.filter((t) => t.kind === 2);
-    this.treeDecid = this.staticInst(treeGeo, tm, decid.map((t) => ({ x: t.x, y: 0.15, z: t.z, s: t.s, ry: hash01(t.x * 10, t.z * 10) * 6 })), true, decid);
-    this.treeCon = this.staticInst(conGeo, tm, con.map((t) => ({ x: t.x, y: 0.15, z: t.z, s: t.s, ry: 0 })), true, con);
-    this.trees = { decid, con };
+    // trees: kinds 0 broadleaf street/park tree, 1 yard tree (birch-like), 2 conifer
+    const LEAF = '#ffffff';
+    const broad = new ModelKit();
+    broad.surf('bark');
+    broad.lathe(0, 0, 0, [[0.42, 0], [0.3, 0.25], [0.24, 0.8], [0.2, 2.2], [0.16, 3.4], [0.1, 4.2]], '#5a4434', 9);
+    for (const [ang, h0, len, tilt] of [[0.3, 2.3, 2.4, 0.9], [2.4, 2.7, 2.2, 0.8], [4.3, 2.0, 2.6, 1.0], [5.6, 3.1, 1.8, 0.6]]) {
+      const ex = Math.cos(ang) * Math.sin(tilt) * len, ez = Math.sin(ang) * Math.sin(tilt) * len, ey = Math.cos(tilt) * len;
+      broad.tube([[0, h0, 0], [ex * 0.5, h0 + ey * 0.55, ez * 0.5], [ex, h0 + ey, ez]], 0.09, '#5a4434', 5);
+    }
+    broad.surf('leaf');
+    const clusters = [[0, 5.0, 0, 2.1], [1.4, 4.4, 0.6, 1.5], [-1.3, 4.6, -0.7, 1.6], [0.4, 4.2, -1.5, 1.4], [-0.6, 4.0, 1.4, 1.4], [0.9, 5.6, -0.5, 1.3], [-0.8, 5.7, 0.6, 1.2], [0, 3.6, 0, 1.6]];
+    clusters.forEach(([x, y, z, r], i) => broad.blob(x, y, z, r, r * 0.82, r, LEAF, 1, 0, i * 1.9 + 0.5, 0.26));
+    const yard = new ModelKit();
+    yard.surf('bark');
+    yard.lathe(0, 0, 0, [[0.22, 0], [0.15, 0.3], [0.12, 2.5], [0.07, 4.6]], '#d8d4c8', 8);
+    yard.tube([[0, 2.2, 0], [0.5, 3.0, 0.2], [0.9, 3.6, 0.3]], 0.05, '#c8c4b8', 4);
+    yard.tube([[0, 2.6, 0], [-0.4, 3.3, -0.3], [-0.7, 4.0, -0.4]], 0.05, '#c8c4b8', 4);
+    yard.surf('leaf');
+    [[0, 4.4, 0, 1.4], [0.7, 3.8, 0.3, 1.0], [-0.6, 3.9, -0.4, 1.0], [0.1, 3.3, 0.5, 0.95], [0, 5.1, 0, 0.9]].forEach(([x, y, z, r], i) => yard.blob(x, y, z, r * 0.9, r * 1.1, r * 0.9, LEAF, 1, 0, i * 2.3 + 4, 0.3));
+    const con = new ModelKit();
+    con.surf('bark');
+    con.lathe(0, 0, 0, [[0.3, 0], [0.22, 0.3], [0.18, 2], [0.06, 7.5]], '#4a3428', 8);
+    con.surf('leaf');
+    for (let t = 0; t < 6; t++) {
+      const y0 = 1.3 + t * 1.05, r = 2.3 - t * 0.33;
+      const g = new THREE.ConeGeometry(r, 1.9, 11, 2, true);
+      const pa = g.attributes.position;
+      for (let i = 0; i < pa.count; i++) {
+        const vx = pa.getX(i), vz = pa.getZ(i), vy = pa.getY(i);
+        const ang = Math.atan2(vz, vx);
+        const j = 1 + Math.sin(ang * 5 + t * 1.3) * 0.12 + Math.sin(ang * 11 + t) * 0.06;
+        const droop = vy < -0.5 ? -Math.abs(Math.sin(ang * 5 + t)) * 0.25 : 0;
+        pa.setXYZ(i, vx * j, vy + droop, vz * j);
+      }
+      g.computeVertexNormals();
+      con.geo(g, LEAF, 1, 0, new THREE.Matrix4().makeTranslation(0, y0 + 0.95, 0));
+      // underside so tiers aren't see-through from below
+      const under = new THREE.CircleGeometry(r * 0.95, 11).rotateX(Math.PI / 2);
+      con.geo(under, '#9ab09a', 1, 0, new THREE.Matrix4().makeTranslation(0, y0 + 0.02, 0));
+    }
+    const tm = makeInstMaterial(U, { key: 'tree2', roughness: 0.9, snow: true });
+    const all = city.props.trees;
+    const broadL = all.filter((t) => t.kind === 0), yardL = all.filter((t) => t.kind === 1), conL = all.filter((t) => t.kind === 2);
+    const items = (list, sy) => list.map((t) => ({ x: t.x, y: 0.15, z: t.z, s: t.s * sy * (0.85 + hash01(t.x * 7, t.z * 3) * 0.3), ry: hash01(t.x * 10, t.z * 10) * 6.28 }));
+    this.treeDecid = this.staticInst(broad.build(), tm, items(broadL, 0.95), true, broadL);
+    this.treeYard = this.staticInst(yard.build(), tm, items(yardL, 1), true, yardL);
+    this.treeCon = this.staticInst(con.build(), tm, items(conL, 1), true, conL);
+    this.trees = { decid: broadL, yard: yardL, con: conL };
     this.setSeasonColors(0);
     // benches
     const bk = new ModelKit();
@@ -705,6 +884,7 @@ export class CityView {
       a.needsUpdate = true;
     };
     set(this.treeDecid, this.trees.decid, pal);
+    set(this.treeYard, this.trees.yard, season === 2 ? ['#e8c040', '#d8b030', '#f0d060'] : season === 3 ? pal : ['#8ab858', '#7aa848', '#9ac868']);
     set(this.treeCon, this.trees.con, cpal);
     this.season = season;
   }
@@ -847,7 +1027,7 @@ export class CityView {
       this.updateCranes(world);
     }
     // streetlights follow power zones; light pools fade in at night
-    this.poolMat.opacity = Math.min(1, night * 1.15) * 0.55;
+    this.poolMat.opacity = Math.min(1, night * 1.15) * 0.4;
     if (this._powerKey !== world.power.key) {
       this._powerKey = world.power.key;
       const st = this.lightMesh.geometry.getAttribute('iCol1');

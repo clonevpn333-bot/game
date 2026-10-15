@@ -252,6 +252,7 @@ export class EventView {
       };
       hide(cv.treeDecid, cv.trees.decid);
       hide(cv.treeCon, cv.trees.con);
+      hide(cv.treeYard, cv.trees.yard);
     }
   }
 }

@@ -36,6 +36,7 @@ const BUILDING_FRAG_COLOR = `
   float constr = vFx2.w;
   float lightF = vFx.z;
   float inWin = 0.0;
+  float bH = 0.0; float bS = 0.0;
   float grime = n21(vWP.xz * 0.35 + vWP.y * 0.2) * 0.12;
   if (N.y > 0.3) {
     // roofs
@@ -122,7 +123,15 @@ const BUILDING_FRAG_COLOR = `
       inWin *= step(0.7, edgeDist) * step(0.6, topDist);
       if (style > 8.5 && style < 9.5) inWin = step(my0, f.y) * step(f.y, my1) * step(0.6, edgeDist) * (1.0 - step(0.94, f.x));
       if (constr > 0.01) inWin = 0.0;
+      // frame + sill around each window (relief via bump)
+      float fx0 = mx - 0.04, fx1 = 1.0 - mx + 0.04, fy0 = my0 - 0.05, fy1 = my1 + 0.035;
+      float inFrame = step(fx0, f.x) * step(f.x, fx1) * step(fy0, f.y) * step(f.y, fy1) * step(0.7, edgeDist) * step(0.6, topDist) * (1.0 - inWin);
+      float inSill = step(fx0 - 0.03, f.x) * step(f.x, fx1 + 0.03) * step(fy0 - 0.035, f.y) * step(f.y, fy0 + 0.01) * step(0.7, edgeDist) * step(0.6, topDist);
+      if (style < 0.5 || (style > 8.5 && style < 9.5) || constr > 0.01) { inFrame = 0.0; inSill = 0.0; }
+      if (inFrame > 0.5) { base = mix(base * 1.22, vec3(0.86, 0.85, 0.82), 0.35); bH = 0.35; }
+      if (inSill > 0.5) { base = mix(base * 1.3, vec3(0.8), 0.4); bH = 0.7; }
       if (inWin > 0.5) {
+        bH = -1.0;
         float r = h21(cell + vec2(faceId, vFx.y));
         float r2 = h21(cell * 1.7 + vec2(vFx.y, faceId));
         vec3 wc = mix(vec3(1.0, 0.72, 0.42), vec3(0.78, 0.86, 1.0), step(0.72, r2));
@@ -133,11 +142,60 @@ const BUILDING_FRAG_COLOR = `
         if (dmg > 0.35 && h21(cell + 3.1) < dmg) g = vec3(0.02);
         base = g;
         rough = 0.07; metal = 0.85;
-        emis += wc * lit * blind * (0.1 + uNight * 1.25);
+        // interior mapping: trace the view ray into a fake room behind the glass
+        vec3 Vw = normalize(vWP - cameraPosition);
+        vec3 axU = xFace ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+        float vin = max(0.05, dot(Vw, -N));
+        float vu = dot(Vw, axU), vy2 = Vw.y;
+        float rw = cwa * (1.0 - 2.0 * mx), rh = fh * (my1 - my0), rd = 3.6 + r * 2.0;
+        float px = (f.x - mx) / (1.0 - 2.0 * mx) * rw, py = (f.y - my0) / (my1 - my0) * rh;
+        float sb = rd / vin;
+        float sx2 = vu > 0.0 ? (rw - px) / max(vu, 1e-3) : px / max(-vu, 1e-3);
+        float sy2 = vy2 > 0.0 ? (rh + 0.5 - py) / max(vy2, 1e-3) : (py + 0.35) / max(-vy2, 1e-3);
+        float sh = min(sb, min(sx2, sy2));
+        vec3 wallC = mix(vec3(0.82, 0.78, 0.7), vec3(0.62, 0.7, 0.74), step(0.5, r2)) * (0.8 + 0.2 * h21(cell + 9.0));
+        vec3 room;
+        float dep = sh * vin / rd;
+        if (sh == sb) {
+          vec2 bw = vec2(px + vu * sh, py + vy2 * sh);
+          room = wallC;
+          // shelf / picture / tv on the back wall
+          float pic = step(0.25 * rw, bw.x) * step(bw.x, 0.6 * rw) * step(0.45 * rh, bw.y) * step(bw.y, 0.75 * rh);
+          room = mix(room, mix(vec3(0.2, 0.25, 0.3), vec3(0.6, 0.3, 0.2), h21(cell + 4.0)), pic * 0.8);
+          float sofa = step(bw.y, 0.28 * rh) * step(0.1 * rw, bw.x) * step(bw.x, 0.9 * rw);
+          room = mix(room, vec3(0.25, 0.22, 0.24) * (0.6 + h21(cell + 5.0)), sofa * step(0.4, r));
+        } else if (sh == sy2) {
+          room = vy2 > 0.0 ? vec3(0.9, 0.9, 0.88) : mix(vec3(0.42, 0.3, 0.2), vec3(0.5, 0.48, 0.46), step(0.6, r2));
+        } else {
+          room = wallC * 0.82;
+        }
+        room *= 1.0 - dep * 0.45;
+        vec3 roomLight = lit > 0.5 ? mix(vec3(0.95, 0.97, 1.0), wc, uNight) * (0.55 + 0.45 * (1.0 - dep)) : vec3(0.05 + uDay * 0.1);
+        vec3 inside = room * roomLight * blind;
+        // by day the glass mostly mirrors the sky; rooms read faintly behind it. At night they glow.
+        float see = mix(0.18, 0.75, uNight);
+        base = mix(base, inside * 0.5, see * 0.6);
+        emis += inside * see * (lit > 0.5 ? (0.25 + uNight * 1.1) : 0.12 * uDay) + wc * lit * blind * uNight * 0.12;
         if (boarded > 0.5) { base = vec3(0.4, 0.3, 0.19) * (0.85 + 0.15 * step(0.5, fract(f.y * 6.0))); rough = 0.9; metal = 0.0; }
       }
       // ledges between floors
-      if (style > 0.5 && style < 7.0) base *= 1.0 - 0.12 * step(0.94, f.y) * (1.0 - inWin);
+      if (style > 0.5 && style < 7.0) { float ld = step(0.94, f.y) * (1.0 - inWin); base *= 1.0 - 0.12 * ld; bH += ld * 0.5; }
+      // wall material relief: brick courses (styles 2-3), panel joints (4, 6), fading out with distance
+      float near = 1.0 - smoothstep(0.015, 0.05, fwidth(v));
+      if (inWin < 0.5 && inFrame < 0.5 && near > 0.0) {
+        if (style > 1.5 && style < 3.5) {
+          float by = v / 0.075, bx = locU / 0.22 + 0.5 * step(0.5, fract(by * 0.5));
+          float mortar = max(step(0.86, fract(by)), step(0.93, fract(bx)));
+          base *= 1.0 - mortar * 0.22 * near;
+          base *= 0.92 + 0.16 * h21(vec2(floor(bx), floor(by)) + faceId) * near;
+          bH += (1.0 - mortar) * 0.4 * near;
+        } else if (style > 3.5 && style < 6.5) {
+          float jy = step(0.97, fract((v - baseY) / (fh * 0.5))), jx = step(0.985, fract(locU / 1.6));
+          base *= 1.0 - max(jx, jy) * 0.15 * near;
+          bH -= max(jx, jy) * 0.6 * near;
+        }
+      }
+      bS = 1.0;
     }
     // ground floor door accent darker band near street level
     base *= 1.0 - 0.15 * smoothstep(0.8, 0.0, v - baseY) * step(0.5, edgeDist);
@@ -174,41 +232,129 @@ export function makeBuildingMaterial(U) {
       .replace('#include <color_fragment>', '#include <color_fragment>\n' + BUILDING_FRAG_COLOR)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n roughnessFactor = rough;')
       .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\n metalnessFactor = metal;')
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+  if (bS > 0.0) {
+    vec3 _vp = -vViewPosition;
+    vec3 _dpx = dFdx(_vp), _dpy = dFdy(_vp);
+    float _dhx = dFdx(bH), _dhy = dFdy(bH);
+    vec3 _r1 = cross(_dpy, normal), _r2 = cross(normal, _dpx);
+    float _det = dot(_dpx, _r1);
+    vec3 _grad = sign(_det) * (_dhx * _r1 + _dhy * _r2);
+    vec3 _nn = abs(_det) * normal - _grad * 0.05;
+    if (dot(_nn, _nn) > 1e-12 && abs(_det) > 1e-12) normal = normalize(_nn);
+  }`)
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance += emis;');
   };
-  m.customProgramCacheKey = () => 'building-v1';
+  m.customProgramCacheKey = () => 'building-v3';
   return m;
 }
+
+// Surface types (per vertex, aMat): procedural micro-texture + bump relief so plain
+// geometry reads as cloth, wood, metal, bark, foliage, hair, skin, rubber, glass...
+export const SURF = { none: 0, fabric: 1, skin: 2, hair: 3, wood: 4, metal: 5, rubber: 6, glass: 7, leaf: 8, bark: 9, leather: 10, chrome: 11, concrete: 12, plastic: 13, denim: 14, knit: 15 };
+
+const SURF_GLSL = `
+float sh21(vec2 p){ p = mod(floor(p + 0.5), 289.0); return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+float sn21(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(sh21(i),sh21(i+vec2(1,0)),f.x), mix(sh21(i+vec2(0,1)),sh21(i+vec2(1,1)),f.x), f.y); }
+float sfbm(vec2 p){ return sn21(p) * 0.55 + sn21(p * 2.07 + 3.1) * 0.3 + sn21(p * 4.3 + 7.7) * 0.15; }
+vec2 stp(vec3 p, vec3 n){ vec3 a = abs(n); return a.x > a.y && a.x > a.z ? p.zy : (a.y > a.z ? p.xz : p.xy); }
+`;
 
 // Generic instanced material: vertex colors (aCol) * optional per-instance paint for parts flagged aPaint,
 // per-instance second color (iCol2) for parts flagged aPaint==2, emissive channels driven by iState.
 // aGlow channels: 1 headlight, 2 taillight/brake, 3 siren red, 4 siren blue, 5 constant glow (sign), 6 amber flasher
 export function makeInstMaterial(U, opts = {}) {
-  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: opts.roughness ?? 0.6, metalness: opts.metalness ?? 0.1, vertexColors: false, transparent: !!opts.transparent, depthWrite: opts.depthWrite ?? true });
+  const physical = !!opts.clearcoat;
+  const Mat = physical ? THREE.MeshPhysicalMaterial : THREE.MeshStandardMaterial;
+  const m = new Mat({ color: 0xffffff, roughness: opts.roughness ?? 0.6, metalness: opts.metalness ?? 0.1, vertexColors: false, transparent: !!opts.transparent, depthWrite: opts.depthWrite ?? true, ...(physical ? { clearcoat: 1, clearcoatRoughness: 0.12 } : {}) });
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = `
-attribute vec3 aCol; attribute float aPaint; attribute float aGlow;
+attribute vec3 aCol; attribute float aPaint; attribute float aGlow; attribute float aMat;
 attribute vec3 iCol1; attribute vec3 iCol2; attribute vec4 iState;
-varying vec3 vCol; varying float vGlow; varying vec4 vState; varying float vPaint; varying vec3 vObj; varying vec3 vWorldN;
+varying vec3 vCol; varying float vGlow; varying vec4 vState; varying float vPaint; varying vec3 vObj; varying vec3 vObjN; varying vec3 vWorldN; varying float vMat; varying vec3 vWPos;
 ` + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
   vec3 pc = aPaint > 1.5 ? iCol2 : (aPaint > 0.5 ? iCol1 : vec3(1.0));
-  vCol = aCol * pc; vGlow = aGlow; vState = iState; vPaint = aPaint; vObj = position;
+  vCol = aCol * pc; vGlow = aGlow; vState = iState; vPaint = aPaint; vObj = position; vObjN = objectNormal; vMat = aMat;
   vWorldN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * objectNormal);
+  vWPos = (modelMatrix * instanceMatrix * vec4(position, 1.0)).xyz;
 `);
     sh.fragmentShader = `
 uniform float uNight; uniform float uTime; uniform float uSnow; uniform float uWet;
-varying vec3 vCol; varying float vGlow; varying vec4 vState; varying float vPaint; varying vec3 vObj; varying vec3 vWorldN;
-` + sh.fragmentShader
+varying vec3 vCol; varying float vGlow; varying vec4 vState; varying float vPaint; varying vec3 vObj; varying vec3 vObjN; varying vec3 vWorldN; varying float vMat; varying vec3 vWPos;
+` + SURF_GLSL + sh.fragmentShader
       .replace('#include <color_fragment>', `#include <color_fragment>
   diffuseColor.rgb *= vCol;
   float _rough = ${(opts.roughness ?? 0.6).toFixed(3)};
   float _metal = ${(opts.metalness ?? 0.1).toFixed(3)};
-  if (vPaint > 0.5 && vPaint < 1.5) { _rough = 0.32; _metal = 0.35; }
+  float _bh = 0.0; float _bs = 0.0; float _cc = 0.0;
+  if (vPaint > 0.5 && vPaint < 1.5) { _rough = 0.32; _metal = 0.35; _cc = 1.0; }
   if (vGlow > 6.5 && vGlow < 7.5) { _rough = 0.05; _metal = 0.9; }
+  int sm = int(vMat + 0.5);
+  vec2 suv = stp(vObj, vObjN);
+  if (sm == 1 || sm == 14 || sm == 15) {
+    float fq = sm == 14 ? 260.0 : sm == 15 ? 60.0 : 420.0;
+    float fine = 1.0 - smoothstep(0.004, 0.012, fwidth(suv.x));
+    float weave = mix(0.5, (sin(suv.x * fq) * sin(suv.y * fq)) * 0.5 + 0.5, fine);
+    float twill = sm == 14 ? mix(0.5, fract((suv.x + suv.y) * 120.0), fine) : weave;
+    float fold = sfbm(vObj.xy * 7.0 + vObj.z * 3.0);
+    diffuseColor.rgb *= 0.9 + (sm == 15 ? 0.1 : 0.05) * twill + 0.16 * (fold - 0.5);
+    if (sm == 14) diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.15, 1.18, 1.25), sn21(suv * 160.0) * 0.25);
+    _rough = 0.92; _metal = 0.0; _bh = twill * 0.15 + fold * 0.9; _bs = 0.6;
+  } else if (sm == 2) {
+    float sv = sn21(vObj.xy * 40.0 + vObj.z * 13.0);
+    diffuseColor.rgb *= 0.95 + 0.07 * sv;
+    diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.08, 0.94, 0.92), sn21(vObj.xz * 9.0) * 0.35);
+    _rough = 0.52; _metal = 0.0; _bh = sv * 0.2; _bs = 0.2;
+  } else if (sm == 3) {
+    float ang = atan(vObj.x, vObj.z);
+    float strand = sn21(vec2(ang * 34.0, vObj.y * 3.0)) * 0.6 + sn21(vec2(ang * 90.0, vObj.y * 9.0)) * 0.4;
+    diffuseColor.rgb *= 0.62 + 0.62 * strand;
+    _rough = 0.42; _metal = 0.12; _bh = strand; _bs = 1.1;
+  } else if (sm == 4) {
+    float wn = sfbm(suv * vec2(1.2, 9.0));
+    float ring = fract((suv.x * 3.0 + wn * 2.4) * 2.6);
+    diffuseColor.rgb *= 0.74 + 0.3 * smoothstep(0.0, 0.7, ring) + 0.1 * wn;
+    _rough = 0.58; _metal = 0.0; _bh = ring * 0.6 + wn; _bs = 0.5;
+  } else if (sm == 5 || sm == 11) {
+    float br = sn21(vec2(suv.x * 2.0, suv.y * 260.0));
+    diffuseColor.rgb *= 0.9 + 0.12 * br;
+    _rough = sm == 11 ? 0.08 : 0.34 + br * 0.1; _metal = sm == 11 ? 1.0 : 0.88;
+  } else if (sm == 6) {
+    float tr = sn21(suv * 50.0);
+    diffuseColor.rgb *= 0.85 + 0.15 * tr;
+    _rough = 0.95; _metal = 0.0; _bh = tr; _bs = 0.5;
+  } else if (sm == 7) {
+    _rough = 0.04; _metal = 0.92;
+  } else if (sm == 8) {
+    float cl = sfbm(vWPos.xz * 0.9 + vWPos.y * 0.7);
+    float lf = sn21(vObj.xy * 7.5 + vObj.z * 5.0);
+    float hi = sn21(vObj.xz * 14.0 + vObj.y * 9.0);
+    diffuseColor.rgb *= 0.62 + 0.5 * cl + 0.25 * lf;
+    diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.25, 1.2, 0.75), smoothstep(0.65, 0.95, hi) * 0.5);
+    diffuseColor.rgb *= mix(0.55, 1.0, smoothstep(-0.6, 0.6, normalize(vObjN).y));
+    _rough = 0.82; _metal = 0.0; _bh = lf * 0.7 + hi * 0.5; _bs = 1.6;
+  } else if (sm == 9) {
+    float ang = atan(vObj.x, vObj.z);
+    float bk = sfbm(vec2(ang * 3.0, vObj.y * 2.5)) ;
+    float cr = smoothstep(0.35, 0.55, sn21(vec2(ang * 7.0, vObj.y * 0.9)));
+    diffuseColor.rgb *= 0.6 + 0.45 * bk - 0.18 * cr;
+    _rough = 0.96; _metal = 0.0; _bh = bk - cr * 0.8; _bs = 1.4;
+  } else if (sm == 10) {
+    float gr = sn21(suv * 120.0);
+    diffuseColor.rgb *= 0.92 + 0.1 * gr;
+    _rough = 0.48; _metal = 0.0; _bh = gr; _bs = 0.25;
+  } else if (sm == 12) {
+    float sp = sn21(suv * 30.0) * 0.6 + sh21(suv * 200.0) * 0.4;
+    diffuseColor.rgb *= 0.86 + 0.2 * sp;
+    _rough = 0.94; _metal = 0.0; _bh = sp; _bs = 0.5;
+  } else if (sm == 13) {
+    _rough = 0.38; _metal = 0.02;
+  }
   float _dmg = vState.w;
   if (_dmg > 0.01 && vPaint > 0.5) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.08,0.07,0.06), _dmg * 0.8 * (0.6 + 0.4*sin(vObj.x*9.0+vObj.z*7.0)));
   ${opts.snow ? 'diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.92,0.94,0.97), uSnow * smoothstep(0.4, 0.9, normalize(vWorldN).y) * 0.85);' : ''}
+  ${opts.wet !== false ? 'if (uWet > 0.01 && sm != 7) { float wv = uWet * smoothstep(0.2, 0.9, normalize(vWorldN).y + 0.4); diffuseColor.rgb *= 1.0 - wv * 0.25; _rough = mix(_rough, 0.15, wv * 0.7); }' : ''}
   vec3 _emis = vec3(0.0);
   if (vGlow > 0.5) {
     if (vGlow < 1.5) _emis = vec3(1.0, 0.95, 0.85) * (0.2 + vState.x * 3.0);
@@ -224,35 +370,72 @@ varying vec3 vCol; varying float vGlow; varying vec4 vState; varying float vPain
 `)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n roughnessFactor = _rough;')
       .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\n metalnessFactor = _metal;')
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+  if (_bs > 0.0) {
+    vec3 _vp = -vViewPosition;
+    vec3 _dpx = dFdx(_vp), _dpy = dFdy(_vp);
+    float _dhx = dFdx(_bh), _dhy = dFdy(_bh);
+    vec3 _r1 = cross(_dpy, normal), _r2 = cross(normal, _dpx);
+    float _det = dot(_dpx, _r1);
+    vec3 _grad = sign(_det) * (_dhx * _r1 + _dhy * _r2);
+    vec3 _nn = abs(_det) * normal - _grad * _bs * 0.02;
+    if (dot(_nn, _nn) > 1e-12 && abs(_det) > 1e-12) normal = normalize(_nn);
+  }`)
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance += _emis;');
+    if (physical) sh.fragmentShader = sh.fragmentShader.replace('#include <lights_physical_fragment>', '#include <lights_physical_fragment>\n material.clearcoat = _cc;');
   };
-  m.customProgramCacheKey = () => 'inst-v1-' + (opts.key || '') + (opts.snow ? 's' : '');
+  m.customProgramCacheKey = () => 'inst-v2-' + (opts.key || '') + (opts.snow ? 's' : '') + (physical ? 'p' : '');
   return m;
 }
 
-// Geometry builder that tags vertices with color/paint/glow attributes and merges.
+// Geometry builder that tags vertices with color/paint/glow/surface attributes and merges.
+// k.surf('fabric') sets the surface type for the parts added after it.
 export class ModelKit {
-  constructor() { this.pos = []; this.nrm = []; this.col = []; this.paint = []; this.glow = []; }
+  constructor() { this.pos = []; this.nrm = []; this.col = []; this.paint = []; this.glow = []; this.mat = []; this.cur = 0; }
+  surf(name) { this.cur = typeof name === 'number' ? name : (SURF[name] ?? 0); return this; }
   _push(geo, color, paint, glow, mat) {
     geo = geo.index ? geo.toNonIndexed() : geo;
     if (mat) geo.applyMatrix4(mat);
+    if (!geo.attributes.normal) geo.computeVertexNormals();
     const p = geo.attributes.position.array, n = geo.attributes.normal.array;
     const c = new THREE.Color(color);
+    const sm = glow === 7 && this.cur === 0 ? SURF.glass : this.cur;
     for (let i = 0; i < p.length; i += 3) {
       this.pos.push(p[i], p[i + 1], p[i + 2]);
       this.nrm.push(n[i], n[i + 1], n[i + 2]);
       this.col.push(c.r, c.g, c.b);
       this.paint.push(paint);
       this.glow.push(glow);
+      this.mat.push(sm);
     }
     return this;
   }
-  box(x, y, z, w, h, d, color, paint = 0, glow = 0, rot = null) {
-    const g = new THREE.BoxGeometry(w, h, d);
+  _xf(x, y, z, rot, sx = 1, sy = 1, sz = 1) {
     const m = new THREE.Matrix4();
-    if (rot) m.makeRotationFromEuler(new THREE.Euler(rot[0], rot[1], rot[2]));
+    if (rot) m.makeRotationFromEuler(new THREE.Euler(rot[0], rot[1], rot[2], rot[3] || 'XYZ'));
+    if (sx !== 1 || sy !== 1 || sz !== 1) m.multiply(new THREE.Matrix4().makeScale(sx, sy, sz));
     m.setPosition(x, y, z);
-    return this._push(g, color, paint, glow, m);
+    return m;
+  }
+  box(x, y, z, w, h, d, color, paint = 0, glow = 0, rot = null) {
+    return this._push(new THREE.BoxGeometry(w, h, d), color, paint, glow, this._xf(x, y, z, rot));
+  }
+  // rounded box: radius r on every edge (smooth shading), centered at x,y,z
+  rbox(x, y, z, w, h, d, r, color, paint = 0, glow = 0, rot = null, seg = 1) {
+    r = Math.min(r, w / 2 - 1e-3, h / 2 - 1e-3, d / 2 - 1e-3);
+    const g = new THREE.BoxGeometry(w, h, d, seg * 2, seg * 2, seg * 2);
+    const p = g.attributes.position, n = g.attributes.normal;
+    const ix = w / 2 - r, iy = h / 2 - r, iz = d / 2 - r;
+    for (let i = 0; i < p.count; i++) {
+      const vx = p.getX(i), vy = p.getY(i), vz = p.getZ(i);
+      const cx = Math.max(-ix, Math.min(ix, vx)), cy = Math.max(-iy, Math.min(iy, vy)), cz = Math.max(-iz, Math.min(iz, vz));
+      let dx = vx - cx, dy = vy - cy, dz = vz - cz;
+      const L = Math.hypot(dx, dy, dz) || 1;
+      dx /= L; dy /= L; dz /= L;
+      p.setXYZ(i, cx + dx * r, cy + dy * r, cz + dz * r);
+      n.setXYZ(i, dx, dy, dz);
+    }
+    return this._push(g, color, paint, glow, this._xf(x, y, z, rot));
   }
   // tapered box: bottom w*d, top tw*td (centered), y from y0 to y1, top shifted by dz
   taper(x, y0, z, w, d, tw, td, h, color, paint = 0, glow = 0, topShiftZ = 0) {
@@ -267,17 +450,87 @@ export class ModelKit {
     return this._push(g, color, paint, glow, null);
   }
   cyl(x, y, z, r, h, color, segs = 10, paint = 0, glow = 0, rot = null, r2 = null) {
-    const g = new THREE.CylinderGeometry(r2 ?? r, r, h, segs);
-    const m = new THREE.Matrix4();
-    if (rot) m.makeRotationFromEuler(new THREE.Euler(rot[0], rot[1], rot[2]));
-    m.setPosition(x, y, z);
-    return this._push(g, color, paint, glow, m);
+    return this._push(new THREE.CylinderGeometry(r2 ?? r, r, h, segs), color, paint, glow, this._xf(x, y, z, rot));
   }
   sphere(x, y, z, r, color, paint = 0, glow = 0, sx = 1, sy = 1, sz = 1, detail = 1) {
     const g = new THREE.IcosahedronGeometry(r, detail);
     const m = new THREE.Matrix4().makeScale(sx, sy, sz);
     m.setPosition(x, y, z);
     return this._push(g, color, paint, glow, m);
+  }
+  // smooth UV-sphere ellipsoid (better shading than icosa for heads/bodies)
+  ball(x, y, z, rx, ry, rz, color, paint = 0, glow = 0, ws = 14, hs = 10, rot = null) {
+    return this._push(new THREE.SphereGeometry(1, ws, hs), color, paint, glow, this._xf(x, y, z, rot, rx, ry, rz));
+  }
+  // organic lump (foliage, rocks): icosphere with value-noise displaced radius
+  blob(x, y, z, rx, ry, rz, color, paint = 0, glow = 0, seed = 1, amp = 0.22, detail = 2) {
+    const g = new THREE.IcosahedronGeometry(1, detail);
+    const pa = g.attributes.position;
+    for (let i = 0; i < pa.count; i++) {
+      const vx = pa.getX(i), vy = pa.getY(i), vz = pa.getZ(i);
+      const n = Math.sin(vx * 3.1 + seed) * Math.sin(vy * 2.7 + seed * 1.7) * Math.sin(vz * 3.4 + seed * 0.6) + Math.sin(vx * 7.3 - seed) * Math.sin(vz * 6.1 + vy * 5.2) * 0.5;
+      const f = 1 + n * amp;
+      pa.setXYZ(i, vx * f, vy * f, vz * f);
+    }
+    g.computeVertexNormals();
+    // flat-ish facets share vertices via toNonIndexed in _push; recompute smooth normals there
+    return this._push(mergeVerticesSmooth(g.index ? g.toNonIndexed() : g), color, paint, glow, this._xf(x, y, z, null, rx, ry, rz));
+  }
+  // lathe around Y from [[r, y], ...]
+  lathe(x, y, z, pts, color, segs = 14, paint = 0, glow = 0, rot = null, sx = 1, sz = 1) {
+    const g = new THREE.LatheGeometry(pts.map(([r, yy]) => new THREE.Vector2(Math.max(0, r), yy)), segs);
+    return this._push(g, color, paint, glow, this._xf(x, y, z, rot, sx, 1, sz));
+  }
+  // tube along a polyline of [x,y,z] with radius r (or per-point radii)
+  tube(pts, r, color, segs = 6, paint = 0, glow = 0) {
+    const curve = new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(p[0], p[1], p[2])));
+    const g = new THREE.TubeGeometry(curve, Math.max(2, pts.length * 3), r, segs, false);
+    return this._push(g, color, paint, glow, null);
+  }
+  // loft through cross sections {z, w, yb, yt, r (corner roundness 0..1), xo}: rounded-rect rings
+  // connected along Z (sections sorted by increasing z), with end caps. Good for car bodies, furniture, torsos.
+  loft(sections, color, paint = 0, glow = 0, ring = 16, rot = null, cap = true) {
+    const pos = [];
+    const ringPts = (s) => {
+      const out = [];
+      const hw = s.w / 2, hh = (s.yt - s.yb) / 2, cy = (s.yt + s.yb) / 2;
+      const rr = Math.min(hw, hh) * (s.r ?? 0.5);
+      // superellipse-ish rounded rectangle, counter-clockwise looking down +Z
+      for (let i = 0; i < ring; i++) {
+        const a = (i / ring) * Math.PI * 2;
+        const ca = Math.cos(a), sa = Math.sin(a);
+        const ex = Math.sign(ca) * Math.pow(Math.abs(ca), 2 / (2 + 6 * (1 - (s.r ?? 0.5))));
+        const ey = Math.sign(sa) * Math.pow(Math.abs(sa), 2 / (2 + 6 * (1 - (s.r ?? 0.5))));
+        out.push([(s.xo || 0) + ex * hw, cy + ey * hh]);
+        void rr;
+      }
+      return out;
+    };
+    const rings = sections.map((s) => ({ z: s.z, p: ringPts(s) }));
+    for (let k = 0; k < rings.length - 1; k++) {
+      const A = rings[k], B = rings[k + 1];
+      for (let i = 0; i < ring; i++) {
+        const i2 = (i + 1) % ring;
+        const a0 = [A.p[i][0], A.p[i][1], A.z], a1 = [A.p[i2][0], A.p[i2][1], A.z];
+        const b0 = [B.p[i][0], B.p[i][1], B.z], b1 = [B.p[i2][0], B.p[i2][1], B.z];
+        pos.push(...a0, ...a1, ...b0, ...a1, ...b1, ...b0);
+      }
+    }
+    if (cap) for (const [R, flip] of [[rings[0], true], [rings[rings.length - 1], false]]) {
+      let cx = 0, cy = 0;
+      for (const q of R.p) { cx += q[0]; cy += q[1]; }
+      cx /= ring; cy /= ring;
+      for (let i = 0; i < ring; i++) {
+        const i2 = (i + 1) % ring;
+        const a = [R.p[i][0], R.p[i][1], R.z], b = [R.p[i2][0], R.p[i2][1], R.z], c = [cx, cy, R.z];
+        if (flip) pos.push(...a, ...c, ...b); else pos.push(...a, ...b, ...c);
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    // smooth normals across rings (caps keep flat normals)
+    const merged = mergeVerticesSmooth(g);
+    return this._push(merged, color, paint, glow, rot ? this._xf(0, 0, 0, rot) : null);
   }
   geo(g, color, paint = 0, glow = 0, mat = null) { return this._push(g, color, paint, glow, mat); }
   build() {
@@ -287,9 +540,45 @@ export class ModelKit {
     g.setAttribute('aCol', new THREE.Float32BufferAttribute(this.col, 3));
     g.setAttribute('aPaint', new THREE.Float32BufferAttribute(this.paint, 1));
     g.setAttribute('aGlow', new THREE.Float32BufferAttribute(this.glow, 1));
+    g.setAttribute('aMat', new THREE.Float32BufferAttribute(this.mat, 1));
     g.computeBoundingSphere();
     return g;
   }
+}
+
+// smooth vertex normals for a non-indexed triangle soup, keeping hard edges sharper than ~50 degrees
+function mergeVerticesSmooth(g) {
+  const p = g.attributes.position.array;
+  const faceN = [];
+  for (let i = 0; i < p.length; i += 9) {
+    const ax = p[i + 3] - p[i], ay = p[i + 4] - p[i + 1], az = p[i + 5] - p[i + 2];
+    const bx = p[i + 6] - p[i], by = p[i + 7] - p[i + 1], bz = p[i + 8] - p[i + 2];
+    let nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx;
+    const L = Math.hypot(nx, ny, nz) || 1;
+    faceN.push(nx / L, ny / L, nz / L);
+  }
+  const key = (i) => `${Math.round(p[i] * 1000)},${Math.round(p[i + 1] * 1000)},${Math.round(p[i + 2] * 1000)}`;
+  const groups = new Map();
+  for (let v = 0; v < p.length / 3; v++) {
+    const k = key(v * 3);
+    let arr = groups.get(k); if (!arr) groups.set(k, arr = []);
+    arr.push(v);
+  }
+  const n = new Float32Array(p.length);
+  for (let v = 0; v < p.length / 3; v++) {
+    const f = Math.floor(v / 3);
+    const fx = faceN[f * 3], fy = faceN[f * 3 + 1], fz = faceN[f * 3 + 2];
+    let sx = 0, sy = 0, sz = 0;
+    for (const o of groups.get(key(v * 3))) {
+      const of = Math.floor(o / 3);
+      const ox = faceN[of * 3], oy = faceN[of * 3 + 1], oz = faceN[of * 3 + 2];
+      if (ox * fx + oy * fy + oz * fz > 0.64) { sx += ox; sy += oy; sz += oz; }
+    }
+    const L = Math.hypot(sx, sy, sz) || 1;
+    n[v * 3] = sx / L; n[v * 3 + 1] = sy / L; n[v * 3 + 2] = sz / L;
+  }
+  g.setAttribute('normal', new THREE.BufferAttribute(n, 3));
+  return g;
 }
 
 // An InstancedMesh that is re-filled every frame from a list of visible entities.
