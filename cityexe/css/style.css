@@ -143,7 +143,7 @@ a[data-act]:hover { text-decoration: underline; }
 .pr { position: relative; overflow: hidden; padding: 7px 14px; background: rgba(12,15,20,0.8); border: 1px solid var(--line); border-radius: 9px; font-size: 13.5px; }
 .pr.danger { border-color: rgba(255,93,93,0.45); }
 .pr i { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--accent); }
-.p-speed { position: absolute; right: 230px; bottom: 18px; font-family: var(--mono); font-size: 13px; color: var(--muted); text-align: right; }
+.p-speed { position: absolute; right: 230px; bottom: 56px; font-family: var(--mono); font-size: 13px; color: var(--muted); text-align: right; }
 .p-speed b { font-size: 34px; color: #fff; }
 .p-speed .siren { color: #ff4040; animation: heat 0.3s infinite alternate; }
 .p-speed .dmg { width: 120px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 4px; margin-left: auto; }
