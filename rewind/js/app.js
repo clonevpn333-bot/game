@@ -9,6 +9,9 @@
   const vibeLabel = Object.fromEntries(D.vibes.map((v) => [v.id, v.label]));
   const MAX_FAILS = 4, MAX_TIMEOUTS = 3;
   const GENERIC = new Set(D.vibes.map((v) => v.id));
+  /* A gentle head start toward "vibing" content (sounds, songs, cozy/fall mood, dances). Learned taste adds on top of it. */
+  const PRIOR = { 't:iconic-sounds': 1.6, 't:pop-songs': 1.6, 't:cozy': 1.3, 't:fall-vibe': 1.3, 't:aesthetic': 1.1, 't:dances': 1.0, 't:rizz': 0.8, 't:ecstasy': 1.4 };
+  const tasteWithPrior = () => { const t = { ...PRIOR }; for (const [k, x] of Object.entries(S.taste())) t[k] = (t[k] || 0) + x; return t; };
   /* iOS only allows sound / play while handling a fresh tap. Programmatic unmute outside a gesture makes it PAUSE the video. */
   const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const recentGesture = (ms = 1200) => Date.now() - (state.lastGesture || 0) < ms;
@@ -65,8 +68,13 @@
   /* ---------------- feed ---------------- */
   function feedOpts() {
     return { period: state.period, tags: state.tags, collection: state.collection, query: state.query, favoritesOnly: state.favoritesOnly,
-      favorites: S.favorites(), hidden: S.hidden(), broken: brokenIds(), hideUnavailable: settings.hideUnavailable, shuffle: settings.shuffle,
-      seen: S.seen(), generic: GENERIC, affinity: settings.adapt ? S.taste() : null };
+      favorites: S.favorites(), hidden: S.hidden(), broken: brokenIds(), hideUnavailable: settings.hideUnavailable, englishOnly: settings.englishOnly, shuffle: settings.shuffle,
+      seen: S.seen(), generic: GENERIC, affinity: settings.adapt ? tasteWithPrior() : { ...PRIOR } };
+  }
+  /* If every post that matches the current filters has been seen, forget (all but the last 40) so the feed can continue. */
+  function resetSeenIfExhausted() {
+    const seen = S.seen(), pool = C.buildFeed(library, { ...feedOpts(), shuffle: false });
+    if (pool.length && pool.every((v) => seen.has(v.id))) { const keep = [...seen].slice(-40); S.clearSeen(); keep.forEach((id) => S.markSeen(id)); dbg('seen everything: starting over'); }
   }
   function rebuildFeed(startId = null, dir = 1) {
     if (state.override) {
@@ -122,7 +130,7 @@
     state.sinceAdapt = (state.sinceAdapt || 0) + 1;
     if (!force && state.sinceAdapt < ADAPT_EVERY) return;
     const cut = queue.index + 1 + LOOKAHEAD, head = queue.items.slice(0, cut), tail = queue.items.slice(cut); if (tail.length < 6) return;
-    state.sinceAdapt = 0; queue.items = [...head, ...C.rerank(tail, S.taste(), { generic: GENERIC, seen: S.seen() })]; dbg('feed gently re-ranked');
+    state.sinceAdapt = 0; queue.items = [...head, ...C.rerank(tail, tasteWithPrior(), { generic: GENERIC, seen: S.seen() })]; dbg('feed gently re-ranked');
   }
   const go = (n, why = 'user') => {
     if (!queue.length) return;
@@ -130,6 +138,8 @@
     if (why === 'user' && Date.now() - state.lastNav < 450) { dbg('nav ignored (too soon)'); return; }
     clearTimeout(skipTimer); $('skipbar').hidden = true;
     recordView();
+    /* End of the feed: never loop back to what you just watched. Build a fresh order (unseen first) instead. */
+    if (n > 0 && queue.index >= queue.length - 1 && settings.shuffle && !state.override) { dbg('end of feed: fresh shuffle'); state.lastNav = Date.now(); state.dir = 1; resetSeenIfExhausted(); rebuildFeed(null, 1); return; }
     state.dir = n >= 0 ? 1 : -1; state.lastNav = Date.now(); queue.step(n); adaptQueue(); dbg(`go ${n} (${why}) -> ${queue.current && queue.current.id.slice(-5)}`); present(state.dir);
   };
   const next = () => go(1), prev = () => go(-1);
@@ -278,7 +288,7 @@
 
   /* ---------------- present current video ---------------- */
   function present(dir = 1) {
-    const v = queue.current; $('soundHint').hidden = true; soundTries = 0; state.presentedAt = performance.now(); state.pauseFix = 0; state.view = { id: v ? v.id : null, start: 0, frac: 0, ended: false };
+    const v = queue.current; if (v) S.markSeen(v.id); $('soundHint').hidden = true; soundTries = 0; state.presentedAt = performance.now(); state.pauseFix = 0; state.view = { id: v ? v.id : null, start: 0, frac: 0, ended: false };
     renderAll();
     if (!v) { applyTheme(null); showEmpty(); return; }
     $('meta').hidden = false; $('actions').hidden = false; $('shield').hidden = false;
@@ -448,6 +458,7 @@
       ${toggleRow('sReduce', 'Reduce motion', 'Calm, still backgrounds and no transitions', reduced())}
       ${toggleRow('sAmbience', 'Ambient room tone', 'Soft synthesized hum. Off by default', s.ambience)}
       <h3 style="margin-top:18px">Playback</h3>
+      ${toggleRow('sEnglish', 'English only', 'Hide videos in other languages (Spanish, Portuguese, Korean…)', s.englishOnly)}
       ${toggleRow('sAdapt', 'Adapt to what I watch', 'The feed learns from what you finish, skip, save and hide. Stays on this device', s.adapt)}
       ${toggleRow('sAuto', 'Autoplay next', 'Move on when a video ends', s.autoplayNext)}
       ${toggleRow('sSkip', 'Auto-skip unavailable', 'Skip removed or unresponsive posts', s.autoSkip)}
@@ -455,7 +466,7 @@
     const bind = (id, key) => { m.querySelector('#' + id).addEventListener('input', (e) => { S.setSetting(key, Number(e.target.value)); applySettings(); }); };
     bind('sIntensity', 'intensity'); bind('sBlur', 'blur'); bind('sDepth', 'depth');
     const sw = (id, key, after) => { const b = m.querySelector('#' + id); b.onclick = async () => { const on = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', on); S.setSetting(key, on); applySettings(); if (after) await after(on); }; };
-    sw('sReduce', 'reduceMotion'); sw('sAdapt', 'adapt'); sw('sAuto', 'autoplayNext'); sw('sSkip', 'autoSkip'); sw('sHideBad', 'hideUnavailable', () => rebuildFeed(queue.current && queue.current.id));
+    sw('sReduce', 'reduceMotion'); sw('sEnglish', 'englishOnly', () => rebuildFeed(null)); sw('sAdapt', 'adapt'); sw('sAuto', 'autoplayNext'); sw('sSkip', 'autoSkip'); sw('sHideBad', 'hideUnavailable', () => rebuildFeed(queue.current && queue.current.id));
     sw('sAmbience', 'ambience', async (on) => { if (on) await ambience.enable(document.body.dataset.theme); else ambience.disable(); });
   }
 
@@ -602,6 +613,12 @@
     if (!S.onboarded() && !qs.has('skipIntro')) modalOnboard();
   }
   window.__rewind = { state, queue, player, get library() { return library; }, present, go };
+  /* A tap INSIDE the TikTok player is the one gesture iOS accepts for sound. We can't see it, but the page loses focus to the
+   * iframe when it happens: use that moment (a real activation inside the player) to switch sound on. */
+  addEventListener('blur', () => setTimeout(() => {
+    const el = document.activeElement; if (!el || el.tagName !== 'IFRAME' || !player.muted || state.userMuted) return;
+    state.soundOn = true; player.unmute(); dbg('tap inside the player: sound on');
+  }, 0));
   ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'].forEach((ev) => addEventListener(ev, () => { state.activated = true; state.lastGesture = Date.now(); }, { capture: true, passive: true }));
   /* Measure the REAL visible height (iOS Safari's toolbars make 100vh/100dvh unreliable) and keep it current. */
   function fit() { const h = (window.visualViewport && visualViewport.height) || innerHeight; document.documentElement.style.setProperty('--app-h', Math.round(h) + 'px'); }

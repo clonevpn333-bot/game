@@ -187,9 +187,72 @@
      "gaming"
     ]
    }
+  },
+  {
+   "id": "sounds-of-fall",
+   "name": "Sounds of Fall ’23",
+   "blurb": "The audio that played on repeat, Sep–Dec 2023.",
+   "rules": {
+    "tagsAny": [
+     "iconic-sounds",
+     "pop-songs"
+    ],
+    "period": "fall"
+   }
+  },
+  {
+   "id": "fall-vibes",
+   "name": "Fall Vibes",
+   "blurb": "Cozy, aesthetic and seasonal.",
+   "rules": {
+    "tagsAny": [
+     "cozy",
+     "fall-vibe",
+     "aesthetic"
+    ],
+    "period": "fall"
+   }
+  },
+  {
+   "id": "ecstasy",
+   "name": "The “ecstacy” Sound",
+   "blurb": "Tongue-out for the picture.",
+   "rules": {
+    "tagsAny": [
+     "ecstasy"
+    ]
+   }
+  },
+  {
+   "id": "rizz-audio",
+   "name": "Rizz & Gyatt",
+   "blurb": "The rizzler, level-5 gyatt and friends.",
+   "rules": {
+    "tagsAny": [
+     "rizz"
+    ],
+    "period": "fall"
+   }
   }
  ],
  "moods": [
+  {
+   "id": "full-vibe",
+   "name": "Full Vibe",
+   "blurb": "Sounds, songs and good energy. No chaos.",
+   "period": "fall",
+   "tagsAny": [
+    "iconic-sounds",
+    "pop-songs",
+    "cozy",
+    "fall-vibe",
+    "aesthetic",
+    "dances"
+   ],
+   "shuffle": true,
+   "intensity": 75,
+   "ambience": true
+  },
   {
    "id": "late-night-2020",
    "name": "Late Night 2020",

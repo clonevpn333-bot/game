@@ -152,6 +152,24 @@ await t('debug text only appears with ?debug and a tap dismisses it', async () =
   const a = await newPage('period=2023-10'); await a.keyboard.press('ArrowDown'); await a.waitForTimeout(500); assert.equal(await a.locator('#dbg').count(), 0, 'debug overlay shown without ?debug'); await a.ctx.close();
   const b = await newPage('period=2023-10&debug=1'); await b.keyboard.press('ArrowDown'); await b.waitForSelector('#dbg'); await b.click('#dbg'); assert.equal(await b.locator('#dbg').count(), 0); await b.ctx.close();
 });
+await t('no repeats: swiping through videos never shows one twice, and a reload starts with fresh ones', async () => {
+  const p = await newPage('period=2023-10'); await p.waitForSelector('.tt-frame'); const seen = [await cur(p)];
+  for (let i = 0; i < 14; i++) { await p.waitForTimeout(480); await p.keyboard.press('ArrowDown'); await p.waitForFunction((n) => window.__rewind.queue.current && true, i); seen.push(await cur(p)); }
+  assert.equal(new Set(seen).size, seen.length, 'a video repeated within one session');
+  await p.reload(); await p.waitForFunction(() => window.__rewind.queue.length);
+  const first = await p.evaluate(() => window.__rewind.queue.items.slice(0, 15).map((v) => v.id)); assert.ok(!first.some((id) => seen.includes(id)), 'reload re-served videos you already saw'); await p.ctx.close();
+});
+await t('end of the feed builds a fresh shuffle instead of looping back', async () => {
+  const p = await newPage('period=2023-12'); await p.waitForSelector('.tt-frame'); const firstId = await cur(p), len = await p.evaluate(() => window.__rewind.queue.length);
+  await p.evaluate(() => { const q = window.__rewind.queue; q.jump(q.length - 1); window.__rewind.present(1); }); const lastId = await cur(p); await p.waitForTimeout(520);
+  await p.keyboard.press('ArrowDown'); await p.waitForFunction((l) => window.__rewind.queue.current.id !== l, lastId);
+  assert.notEqual(await cur(p), firstId, 'looped back to the first video'); assert.equal(await p.evaluate(() => window.__rewind.queue.index), 0); await p.ctx.close();
+});
+await t('English only is on by default: no non-English videos in the feed', async () => {
+  const p = await newPage('period=fall'); await p.waitForSelector('.tt-frame');
+  const [bad, total] = await p.evaluate(() => [window.__rewind.queue.items.filter((v) => v.lang === 'non-en').length, window.__rewind.library.filter((v) => v.lang === 'non-en').length]);
+  assert.ok(total > 20, 'library should contain flagged non-English posts'); assert.equal(bad, 0); await p.ctx.close();
+});
 await t('a removed video (1001) auto-skips, is remembered as broken, and never returns', async () => {
   const p = await newPage('period=2023-10'); await p.waitForSelector('.tt-frame');
   const [first] = await p.evaluate(() => window.__rewind.queue.items.map((v) => v.id)); behaviors.set(first, 'gone');

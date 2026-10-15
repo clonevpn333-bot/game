@@ -148,8 +148,8 @@ test('shuffle: different seeds give different orders, unseen first, trends space
 test('coverage: every target period is well represented, no trend dominates', () => {
   const generic = new Set(meta.vibes.map((v) => v.id));
   const live = vids.filter((v) => v.status !== 'broken');
-  for (const [p, min] of [['2020', 150], ['2023-09', 80], ['2023-10', 80], ['2023-11', 70], ['2023-12', 50]]) {
-    const inP = live.filter((v) => core.periodMatches(p, v)); assert.ok(inP.length >= min, `${p} has only ${inP.length}`);
+  for (const [p, min] of [['2020', 250], ['2023-09', 170], ['2023-10', 180], ['2023-11', 140], ['2023-12', 150]]) {
+    const inP = live.filter((v) => v.lang !== 'non-en' && core.periodMatches(p, v)); assert.ok(inP.length >= min, `${p} has only ${inP.length}`);
     const counts = {}; inP.forEach((v) => { const k = core.trendKey(v, generic); counts[k] = (counts[k] || 0) + 1; });
     const top = Math.max(...Object.values(counts)); assert.ok(top / inP.length <= 0.1, `${p}: one trend is ${Math.round(100 * top / inP.length)}%`);
   }
@@ -201,4 +201,34 @@ test('taste: buildFeed uses affinity when given', () => {
   const f = core.buildFeed(vids, { shuffle: true, rng: core.mulberry32(2), generic, affinity: aff });
   assert.equal(new Set(f.map((v) => v.id)).size, f.length);
   assert.ok(f.slice(0, 20).filter((v) => v.trends.includes('dances')).length >= 3);
+});
+
+test('language: detects non-English captions, keeps English names and slang', () => {
+  const non = ['que lindo este video para todos', '#рекомендации #реки', 'こんにちは', 'mañana de fresa', 'obrigado por tudo você é demais', 'Est-ce que tu viens ce soir', 'ich liebe das nicht', 'yang penting happy', 'Все ясно автору', '#dúo con @x los pingüino me la van a mascar'];
+  const ok = ['POV: you finally understand why everyone says this is the vibe', 'he really said that lol', 'Mia Khalifa / bread meme', 'Die Hard Christmas debate', 'Dan and Ben at the mall', 'Wash your strawberries very well! #рекомендации', 'cafe vibes only', 'Tilted Tower Dance'];
+  for (const t of non) assert.equal(core.detectLanguage(t), 'non-en', t);
+  for (const t of ok) assert.notEqual(core.detectLanguage(t), 'non-en', t);
+  assert.equal(core.detectLanguage('#fyp #viral'), 'unknown'); assert.equal(core.detectLanguage(''), 'unknown');
+});
+
+test('language: englishOnly drops non-English posts from the feed, nothing else', () => {
+  const marked = vids.map((v, i) => (i % 10 === 0 ? { ...v, lang: 'non-en' } : v));
+  const all = core.buildFeed(marked, {}), en = core.buildFeed(marked, { englishOnly: true });
+  assert.ok(en.length < all.length && en.every((v) => v.lang !== 'non-en'));
+  assert.equal(all.length - en.length, marked.filter((v) => v.lang === 'non-en' && v.status !== 'broken').length);
+});
+
+test('fall 2023 has real depth in the vibing categories the viewer asked for', () => {
+  const fall = vids.filter((v) => v.status !== 'broken' && v.lang !== 'non-en' && v.date >= '2023-09-01');
+  const n = (t) => fall.filter((v) => v.trends.includes(t)).length;
+  assert.ok(fall.length >= 700, 'fall total ' + fall.length); assert.ok(n('iconic-sounds') >= 40 && n('pop-songs') >= 30 && n('rizz') >= 30 && n('cozy') >= 30 && n('ecstasy') >= 4, JSON.stringify({ s: n('iconic-sounds'), p: n('pop-songs'), r: n('rizz'), c: n('cozy'), e: n('ecstasy') }));
+});
+
+test('feed: a long viewing session never repeats a post until the pool is used up', () => {
+  const pool = vids.filter((v) => v.status !== 'broken' && v.lang !== 'non-en' && core.periodMatches('fall', v)); const seen = new Set(), shown = [];
+  for (let round = 0; round < 3; round++) {
+    const feed = core.buildFeed(vids, { period: 'fall', shuffle: true, rng: core.mulberry32(round + 1), seen, englishOnly: true, generic: new Set(meta.vibes.map((x) => x.id)) });
+    for (const v of feed.slice(0, 200)) { assert.ok(!seen.has(v.id), 'repeat after ' + shown.length + ' videos'); seen.add(v.id); shown.push(v.id); }
+  }
+  assert.equal(new Set(shown).size, shown.length); assert.ok(shown.length === Math.min(600, shown.length) && pool.length > 600);
 });

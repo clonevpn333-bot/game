@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Plays each post in a real Chrome and records whether TikTok's player actually reaches "playing".
-//   node scripts/check-playback.mjs --chrome="/path/to/chrome" [--only=verified] [--limit=40] [--out=rewind-health.json]
+//   node scripts/check-playback.mjs --chrome="/path/to/chrome" [--only=verified] [--untested] [--limit=40] [--out=rewind-health.json]
 //   node scripts/apply-health.mjs rewind-health.json        # writes playback:"ok" into the library
 // Needs: npm i (playwright-core) and a Chrome with H.264 (Google Chrome — NOT the bundled open-source Chromium,
 // which cannot decode TikTok video). Audio output isn't checked; only that the stream decodes and advances.
@@ -11,7 +11,7 @@ import { start } from './serve.mjs';
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split(/=(.*)/s).slice(0, 2)).map(([k, v]) => [k, v ?? true]));
 const chrome = args.chrome || process.env.CHROME_BIN;
 if (!chrome) { console.error('Pass --chrome=/path/to/google-chrome'); process.exit(1); }
-const vids = readLib().videos.filter((v) => v.status !== 'broken' && (!args.only || v.status === args.only)).slice(0, Number(args.limit) || 1e9);
+const vids = readLib().videos.filter((v) => v.status !== 'broken' && (!args.only || v.status === args.only) && (!args.untested || v.playback !== 'ok')).slice(0, Number(args.limit) || 1e9);
 const srv = await start(0);
 const proxy = process.env.HTTPS_PROXY ? { server: process.env.HTTPS_PROXY, bypass: 'localhost,127.0.0.1' } : undefined;
 const browser = await chromium.launch({ executablePath: chrome, headless: true, args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'], proxy });

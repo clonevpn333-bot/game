@@ -9,7 +9,7 @@
 
   const DEFAULTS = {
     intensity: 70, blur: 35, depth: 50, reduceMotion: null /* null = follow OS */, ambience: false,
-    autoplayNext: false, autoSkip: true, hideUnavailable: true, shuffle: true, adapt: true,
+    autoplayNext: false, autoSkip: true, hideUnavailable: true, shuffle: true, adapt: true, englishOnly: true,
   };
   const listeners = new Set();
   const emit = (what) => listeners.forEach((f) => f(what));
@@ -31,9 +31,10 @@
     health() { return get('health', {}); },
     recordHealth(id, entry) { const h = Store.health(); h[id] = { ...entry, at: new Date().toISOString() }; set('health', h); emit('health'); },
     clearHealth() { set('health', {}); emit('health'); },
-    /* last ~250 watched ids: the shuffle serves unseen posts first, so each visit feels fresh */
+    /* every post you have been shown (up to 4000): the feed serves unseen posts first, so nothing repeats until you've seen it all */
     seen() { return new Set(get('seen', [])); },
-    markSeen(id) { const a = get('seen', []).filter((x) => x !== id); a.push(id); set('seen', a.slice(-250)); },
+    markSeen(id) { const a = get('seen', []).filter((x) => x !== id); a.push(id); set('seen', a.slice(-4000)); },
+    seenCount() { return get('seen', []).length; },
     clearSeen() { set('seen', []); },
     taste() { return get('taste', {}); },
     setTaste(t) { set('taste', t); },

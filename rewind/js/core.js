@@ -83,6 +83,7 @@
       sound: raw.sound || null,
       status: ['verified', 'unverified', 'broken'].includes(raw.status) ? raw.status : 'unverified',
       lastChecked: raw.lastChecked || null,
+      lang: ['en', 'non-en', 'unknown'].includes(raw.lang) ? raw.lang : 'unknown',
       playback: raw.playback === 'ok' ? 'ok' : null,   // 'ok' only when it genuinely played in a real browser
       playbackChecked: raw.playbackChecked || null,
       provenance: raw.provenance || null,
@@ -111,6 +112,40 @@
       if (!['verified', 'unverified', 'broken'].includes(v.status)) problems.push(`${tag}: bad status ${v.status}`);
     }
     return problems;
+  }
+
+  /* ---- language: keep the feed readable for English speakers ----
+   * Returns 'en' (clearly English), 'non-en' (clearly another language) or 'unknown' (no words: music/dance/visual). */
+  const FOREIGN = {   // words that are clearly NOT English (ambiguous ones like mia, die, dan, bin, ma, var are left out)
+    es: 'que el los las una para por con del como pero muy esto esta este porque cuando tiene hay eres soy fue pues sobre todos todo nada gracias hola quiero',
+    pt: 'você voce não nao uma com para muito mais pra meu minha está esta né tá obrigado ele ela nós eles isso aqui porque quando vai também',
+    fr: 'les des est une pas qui dans pour avec sur elle nous vous très mais ça cest suis mes bonjour merci aussi comme fait être',
+    de: 'und der das ist nicht ein eine mit für auf ich wir aber auch wie wenn noch nur schon sehr',
+    it: 'gli che è per non sono della questo molto anche ciao sei',
+    id: 'yang ini itu dengan untuk tidak saya aku kamu kita ada kalau banget udah dari',
+    tl: 'ang ng mga sa ay naman lang pero kasi hindi ako ikaw siya',
+    tr: 'bir ve bu için ama çok ben sen biz değil yok',
+    vi: 'và của là không có một những được cho tôi bạn này',
+  };
+  const FOREIGN_SETS = Object.values(FOREIGN).map((w) => new Set(w.split(' ')));
+  const EN_WORDS = new Set('the and is are was were to of in it you your i my me this that for on with when so but just like be have has had at not what who how why if or as we they he she them his her our their its an a do does did can will would should could there here from by about up out all one get got go going know see now no yes oh omg lol literally really very too also than then them these those been being because every never always still even more most some any only other into over after before while'.split(' '));
+  const NON_LATIN = /[\u0400-\u04FF\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u0900-\u097F\u0E00-\u0E7F\u1100-\u11FF\u3040-\u30FF\u3400-\u9FFF\uAC00-\uD7AF]/;
+  function detectLanguage(text) {
+    const raw = String(text || '').replace(/https?:\/\/\S+/g, ' ');
+    const tags = raw.match(/[#@][^\s#@]+/g) || [];
+    const body = raw.replace(/[#@][^\s#@]+/g, ' ').trim();
+    const tagsNonLatin = tags.some((x) => NON_LATIN.test(x));
+    if (NON_LATIN.test(body)) return 'non-en';
+    const words = body.toLowerCase().replace(/[^\p{L}\s']/gu, ' ').split(/\s+/).filter(Boolean);
+    const en = words.filter((w) => EN_WORDS.has(w)).length;
+    if (tagsNonLatin && en < 2) return 'non-en';           // e.g. only Russian/Arabic/Korean hashtags: foreign-language creator
+    if (!words.length) return 'unknown';
+    const foreign = Math.max(...FOREIGN_SETS.map((set) => words.filter((w) => set.has(w.replace(/'/g, ''))).length));
+    const accents = (body.match(/[áéíóúñçãõâêôàèùìòüöäßœ¿¡şğıșț]/gi) || []).length;
+    if (foreign >= 2 && foreign >= en) return 'non-en';
+    if (accents >= 1 && en === 0) return 'non-en';
+    if (foreign >= 1 && en === 0) return 'non-en';             // a foreign word and not one English function word
+    return en > 0 || words.length >= 3 ? 'en' : 'unknown';
   }
 
   function matchesQuery(v, q) {
@@ -205,6 +240,7 @@
     let a = videos.filter((v) => {
       if (opts.hidden && opts.hidden.has(v.id)) return false;
       if (opts.hideUnavailable !== false && (v.status === 'broken' || (opts.broken && opts.broken.has(v.id)))) return false;
+      if (opts.englishOnly && v.lang === 'non-en') return false;
       if (opts.ids && !opts.ids.includes(v.id)) return false;
       if (!periodMatches(opts.period, v)) return false;
       if (opts.tags && opts.tags.length && !opts.tags.some((t) => v.trends.includes(t))) return false;
@@ -302,5 +338,5 @@
   }
 
   return { MONTHS, MON3, PERIODS, dateFromId, parseTikTokUrl, periodOfDate, inScope, themeOfPeriod, periodMatches, normalizeVideo, tiktokUrl,
-    validateLibrary, trendKey, diversify, viewSignal, updateAffinity, scoreVideo, rerank, matchesQuery, collectionMatches, buildFeed, similar, Queue, classifyError, failurePolicy, mulberry32, shuffled, formatDuration, formatDate, periodLabel };
+    validateLibrary, detectLanguage, trendKey, diversify, viewSignal, updateAffinity, scoreVideo, rerank, matchesQuery, collectionMatches, buildFeed, similar, Queue, classifyError, failurePolicy, mulberry32, shuffled, formatDuration, formatDate, periodLabel };
 });
