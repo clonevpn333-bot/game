@@ -304,3 +304,21 @@ body.menu-open .rail { transform: none; }
   .actions { right: calc(10px + env(safe-area-inset-right)); }
   .topbar { left: calc(12px + env(safe-area-inset-left)); right: calc(12px + env(safe-area-inset-right)); }
 }
+
+
+/* ===== framed card: rounded video with a glowing gradient border, era background visible all around ===== */
+.frame-inner::after { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 3px; pointer-events: none; z-index: 12; opacity: .95;
+  background: linear-gradient(140deg, var(--accent), var(--accent2) 45%, var(--tint3));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.frame-inner { box-shadow: 0 0 0 1px rgba(255,255,255,.1), 0 34px 80px -24px rgba(0,0,0,.9), 0 0 70px -8px color-mix(in srgb, var(--accent) 55%, transparent); }
+@media (max-width: 760px) {
+  .feed { padding: calc(64px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
+  .frame { width: min(100cqw, 100cqh * 9 / 16); height: min(100cqh, 100cqw * 16 / 9); border-radius: 26px; }
+  .frame::before { display: block; inset: -4% -10%; }
+  .frame-inner { border-radius: 26px; }
+  .player-host, .shield { top: 0; }
+  .shield { bottom: 64px; }
+  .actions { right: 10px; top: 84px; }
+  .sound-hint { bottom: 100px; }
+  .skipbar { top: 70px; }
+}

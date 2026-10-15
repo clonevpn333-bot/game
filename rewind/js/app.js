@@ -136,9 +136,16 @@
 
   /* ---------------- player ---------------- */
   const player = new window.TikTokPlayer($('playerHost'), {
-    onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.soundOn && (!IOS || recentGesture())) player.unmute(); },
+    onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.soundOn && !IOS) player.unmute(); },
     onPlaying: (v) => { state.failures = 0; state.timeouts = 0; hideStates(); S.recordHealth(v.id, { state: 'ok' }); S.markSeen(v.id); state.playingSince = performance.now(); if (state.view.id === v.id && !state.view.start) state.view.start = state.playingSince; dbg('playing ' + v.id.slice(-5)); setStatusDot(v); syncSound(); if (state.soundOn && !state.userMuted) wantSound(); schedulePreload(); },
-    onPaused: () => {},
+    onPaused: () => {
+      /* iOS pauses a video it dislikes (e.g. after an unmute attempt). Resume it muted, but never fight a pause the viewer chose. */
+      if (!IOS || !queue.current) return;
+      const userPaused = Date.now() - (state.userPausedAt || 0) < 6000, early = performance.now() - (state.presentedAt || 0) < 7000;
+      if (userPaused || !early) return;
+      if ((state.pauseFix = (state.pauseFix || 0) + 1) <= 2) { dbg('iOS paused it, resuming (muted) #' + state.pauseFix); player.play(); }
+      else { dbg('iOS keeps pausing: asking for a tap'); $('stTap').hidden = false; }
+    },
     onTime: (t) => { if (t && t.duration > 0 && state.view.id) state.view.frac = Math.max(state.view.frac, t.currentTime / t.duration); },
     onEnded: (v) => {
       /* A genuine end comes after the clip has actually played. An "ended" within 2.5 s of starting is spurious
@@ -166,12 +173,17 @@
   let soundTries = 0, soundT = null;
   function wantSound() {
     if (!state.soundOn || state.userMuted) return;
-    if (IOS && !recentGesture()) { dbg('iOS: no fresh tap, staying muted (tap for sound)'); return; }   // would pause the video
+    if (IOS) return;   // iOS pauses the video when sound is switched on without a tap inside the player; never do it automatically
     if (soundTries >= 4) return; soundTries++; clearTimeout(soundT);
     player.unmute(); dbg('re-asserting sound #' + soundTries);
     soundT = setTimeout(() => { if (player.muted && state.soundOn && !state.userMuted) wantSound(); }, 700);
   }
-  function setMuted(m) { state.userMuted = m; state.activated = true; if (!m) { state.soundOn = true; soundTries = 0; } m ? player.mute() : player.unmute(); syncSound(); }
+  function setMuted(m) {
+    state.userMuted = m; state.activated = true; if (!m) { state.soundOn = true; soundTries = 0; } m ? player.mute() : player.unmute(); syncSound();
+    if (IOS && !m) setTimeout(() => {   // if iOS refused (it pauses the clip), put it back muted and explain
+      if (player.state === 'paused' && Date.now() - (state.userPausedAt || 0) > 2500) { state.soundOn = false; player.mute(); player.play(); toast('iPhone only allows sound when you tap the speaker on the video itself'); }
+    }, 1500);
+  }
   function hideStates() { $('stSkeleton').hidden = true; $('stTap').hidden = true; $('stPanel').hidden = true; clearTimeout(skelTimer); clearTimeout(skelTimer2); }
   function hideSkeleton() { $('stSkeleton').hidden = true; clearTimeout(skelTimer); clearTimeout(skelTimer2); }
   function resetFailures() { state.failures = 0; state.timeouts = 0; state.blocked = false; }
@@ -251,7 +263,7 @@
 
   /* ---------------- present current video ---------------- */
   function present(dir = 1) {
-    const v = queue.current; $('soundHint').hidden = true; soundTries = 0; state.view = { id: v ? v.id : null, start: 0, frac: 0, ended: false };
+    const v = queue.current; $('soundHint').hidden = true; soundTries = 0; state.presentedAt = performance.now(); state.pauseFix = 0; state.view = { id: v ? v.id : null, start: 0, frac: 0, ended: false };
     renderAll();
     if (!v) { applyTheme(null); showEmpty(); return; }
     $('meta').hidden = false; $('actions').hidden = false; $('shield').hidden = false;
@@ -542,7 +554,7 @@
     if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && dt < 400) {
       const now = Date.now();
       if (now - lastTap < 300) { clearTimeout(tapTimer); lastTap = 0; const v = queue.current; if (v && !S.favorites().has(v.id)) toggleFav(true); else { const b = $('burst'); b.classList.remove('go'); void b.offsetWidth; b.classList.add('go'); } }
-      else { lastTap = now; tapTimer = setTimeout(() => player.toggle(), 260); }
+      else { lastTap = now; tapTimer = setTimeout(() => { state.userPausedAt = Date.now(); player.toggle(); }, 260); }
     }
   });
   $('shield').addEventListener('pointercancel', () => (pd = null));
@@ -555,7 +567,7 @@
     const k = e.key.toLowerCase();
     if (e.key === 'ArrowDown' || k === 'j') { e.preventDefault(); next(); }
     else if (e.key === 'ArrowUp' || k === 'k') { e.preventDefault(); prev(); }
-    else if (e.key === ' ') { e.preventDefault(); player.toggle(); }
+    else if (e.key === ' ') { e.preventDefault(); state.userPausedAt = Date.now(); player.toggle(); }
     else if (k === 'f') toggleFav(false); else if (k === 'm') setMuted(!player.muted); else if (k === 's') toggleShuffle(); else if (k === 't') transport();
     else if (k === 'o') { const v = queue.current; if (v) window.open(v.url, '_blank', 'noopener'); }
     else if (k === 'h') hideCurrent();

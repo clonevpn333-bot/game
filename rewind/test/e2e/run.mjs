@@ -14,6 +14,8 @@ const send = (m) => parent.postMessage({ 'x-tiktok-player': true, ...m }, '*');
 const mode = ${JSON.stringify(mode)};
 if (mode === 'hang') { /* never answers */ }
 else if (mode === 'end3s') { setTimeout(() => send({ type: 'onPlayerReady' }), 60); setTimeout(() => send({ type: 'onStateChange', value: 1 }), 150); setTimeout(() => send({ type: 'onStateChange', value: 0 }), 3200); }
+else if (mode === 'pauseonce') { let paused = false; addEventListener('message', (e) => { const d = e.data || {}; if (d.type === 'pause') { paused = true; send({ type: 'onStateChange', value: 2 }); } if (d.type === 'play') { paused = false; send({ type: 'onStateChange', value: 1 }); } });
+  setTimeout(() => send({ type: 'onPlayerReady' }), 60); setTimeout(() => send({ type: 'onStateChange', value: 1 }), 150); setTimeout(() => send({ type: 'onStateChange', value: 2 }), 700); }   // iOS-style surprise pause
 else if (mode === 'earlyend') { setTimeout(() => send({ type: 'onPlayerReady' }), 60); setTimeout(() => send({ type: 'onStateChange', value: 1 }), 150); setTimeout(() => send({ type: 'onStateChange', value: 0 }), 500); }
 else if (mode === 'gone') setTimeout(() => send({ type: 'onPlayerError', value: { errorCode: 1001, errorType: 'INVALID_VIDEO' } }), 80);
 else if (mode === 'error3001') setTimeout(() => send({ type: 'onPlayerError', value: { errorCode: 3001, errorType: 'PLAYBACK_ERROR' } }), 80);
@@ -77,19 +79,31 @@ await t('a spurious early "ended" does not skip the video', async () => {
   await p.evaluate((id) => { const q = window.__rewind.queue; q.jump(q.items.findIndex((v) => v.id === id)); window.__rewind.present(1); }, first);
   await p.waitForTimeout(2200); assert.equal(await cur(p), first, 'video was skipped by an early ended event'); await p.ctx.close();
 });
-await t('iPhone: preload runs, sound is only (re)asserted inside the tap, never in the background', async () => {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' }); const p = await ctx.newPage();
+const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+async function iphonePage(extra = '') {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: IPHONE, isMobile: true, hasTouch: true }); const p = await ctx.newPage();
   await p.addInitScript(() => { window.__cmds = []; addEventListener('message', (e) => { if (e.data && e.data.type === '__cmd') window.__cmds.push({ t: Date.now(), c: e.data.value }); }); });
-  await p.route('https://www.tiktok.com/player/v1/**', (r) => r.fulfill({ contentType: 'text/html', body: PLAYER('ok') })); await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
-  await p.goto(`${base}/?skipIntro=1&period=2023-10`); await p.waitForFunction(() => window.__rewind.player.state === 'playing');
+  await p.route('https://www.tiktok.com/player/v1/**', (r) => { const id = new URL(r.request().url()).pathname.split('/').pop(); r.fulfill({ contentType: 'text/html', body: PLAYER(behaviors.get(id) || 'ok') }); }); await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  await p.goto(`${base}/?skipIntro=1&period=2023-10${extra}`); p.ctx = ctx; return p;
+}
+await t('iPhone: swipes preload + play muted and NEVER send unmute/seek on their own (that pauses video on iOS)', async () => {
+  const p = await iphonePage(); await p.waitForFunction(() => window.__rewind.player.state === 'playing');
   await p.waitForFunction(() => window.__rewind.player.pre && window.__rewind.player.pre.ready, null, { timeout: 8000 });
-  await p.click('#actMute'); await p.waitForFunction(() => window.__rewind.player.muted === false);
-  await p.waitForTimeout(600); await p.evaluate(() => { window.__g = Date.now(); window.__cmds.length = 0; }); await p.keyboard.press('ArrowDown');
-  await p.waitForFunction(() => window.__rewind.player.promoted && window.__rewind.player.state === 'playing'); await p.waitForTimeout(3500);
-  const late = await p.evaluate(() => window.__cmds.filter((x) => x.c === 'unMute' && x.t - window.__g > 1500).length);
-  assert.equal(late, 0, 'unmute was attempted in the background on iOS (that pauses the video)');
-  assert.ok((await p.evaluate(() => window.__cmds.filter((x) => x.c === 'unMute' && x.t - window.__g < 1500).length)) >= 1, 'sound was not carried into the swipe');
-  assert.ok((await p.evaluate(() => window.__cmds.some((x) => x.c === 'play'))), 'play was not sent inside the swipe'); await ctx.close();
+  await p.evaluate(() => { window.__cmds.length = 0; }); await p.keyboard.press('ArrowDown');
+  await p.waitForFunction(() => window.__rewind.player.promoted && window.__rewind.player.state === 'playing'); await p.waitForTimeout(3000);
+  const cmds = await p.evaluate(() => window.__cmds.map((x) => x.c));
+  assert.ok(cmds.includes('play'), 'play not sent'); assert.ok(!cmds.includes('unMute'), 'iOS got an automatic unMute'); assert.ok(!cmds.includes('seekTo'), 'seekTo sent'); await p.ctx.close();
+});
+await t('iPhone: a surprise pause right after starting is resumed automatically', async () => {
+  const p = await iphonePage(); await p.waitForSelector('.tt-frame'); const first = await cur(p); behaviors.set(first, 'pauseonce');
+  await p.evaluate((id) => { const q = window.__rewind.queue; q.jump(q.items.findIndex((v) => v.id === id)); window.__rewind.present(1); }, first);
+  await p.waitForFunction(() => window.__rewind.player.state === 'playing', null, { timeout: 4000 }); await p.waitForTimeout(1600);
+  assert.equal(await p.evaluate(() => window.__rewind.player.state), 'playing', 'stayed paused after iOS paused it'); await p.ctx.close();
+});
+await t('iPhone: a pause the viewer chose is respected', async () => {
+  const p = await iphonePage(); await p.waitForFunction(() => window.__rewind.player.state === 'playing'); await p.waitForTimeout(800);
+  await p.keyboard.press(' '); await p.waitForFunction(() => window.__rewind.player.state === 'paused'); await p.waitForTimeout(2000);
+  assert.equal(await p.evaluate(() => window.__rewind.player.state), 'paused', 'auto-resumed a viewer pause'); await p.ctx.close();
 });
 await t('the feed adapts: finishing/saving a vibe raises it, flicking past lowers it, and it persists', async () => {
   const p = await newPage('period=fall'); await p.waitForFunction(() => window.__rewind.player.state === 'playing');
