@@ -251,7 +251,7 @@ export function makeBuildingMaterial(U) {
 
 // Surface types (per vertex, aMat): procedural micro-texture + bump relief so plain
 // geometry reads as cloth, wood, metal, bark, foliage, hair, skin, rubber, glass...
-export const SURF = { none: 0, fabric: 1, skin: 2, hair: 3, wood: 4, metal: 5, rubber: 6, glass: 7, leaf: 8, bark: 9, leather: 10, chrome: 11, concrete: 12, plastic: 13, denim: 14, knit: 15 };
+export const SURF = { none: 0, fabric: 1, skin: 2, hair: 3, wood: 4, metal: 5, rubber: 6, glass: 7, leaf: 8, bark: 9, leather: 10, chrome: 11, concrete: 12, plastic: 13, denim: 14, knit: 15, planks: 16, tile: 17, carpet: 18, marble: 19, wallpaper: 20, felt: 21, mirror: 22, plaster: 23 };
 
 const SURF_GLSL = `
 float sh21(vec2 p){ p = mod(floor(p + 0.5), 289.0); return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
@@ -269,6 +269,7 @@ export function makeInstMaterial(U, opts = {}) {
   const m = new Mat({ color: 0xffffff, roughness: opts.roughness ?? 0.6, metalness: opts.metalness ?? 0.1, vertexColors: false, transparent: !!opts.transparent, depthWrite: opts.depthWrite ?? true, ...(physical ? { clearcoat: 1, clearcoatRoughness: 0.12 } : {}) });
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
+    if (opts.uniforms) Object.assign(sh.uniforms, opts.uniforms);
     sh.vertexShader = `
 attribute vec3 aCol; attribute float aPaint; attribute float aGlow; attribute float aMat;
 attribute vec3 iCol1; attribute vec3 iCol2; attribute vec4 iState;
@@ -282,8 +283,10 @@ varying vec3 vCol; varying float vGlow; varying vec4 vState; varying float vPain
     sh.fragmentShader = `
 uniform float uNight; uniform float uTime; uniform float uSnow; uniform float uWet;
 varying vec3 vCol; varying float vGlow; varying vec4 vState; varying float vPaint; varying vec3 vObj; varying vec3 vObjN; varying vec3 vWorldN; varying float vMat; varying vec3 vWPos;
+${opts.cutaway ? 'uniform vec3 uCutC; uniform vec2 uCutD; uniform float uCutOn; uniform float uCeilY;' : ''}
 ` + SURF_GLSL + sh.fragmentShader
       .replace('#include <color_fragment>', `#include <color_fragment>
+  ${opts.cutaway ? 'if (uCutOn > 0.5) { if (vWPos.y > uCeilY) discard; vec2 _rel = vWPos.xz - uCutC.xz; if (vWPos.y > 1.05 && dot(_rel, uCutD) > 0.55) discard; }' : ''}
   diffuseColor.rgb *= vCol;
   float _rough = ${(opts.roughness ?? 0.6).toFixed(3)};
   float _metal = ${(opts.metalness ?? 0.1).toFixed(3)};
@@ -350,6 +353,46 @@ varying vec3 vCol; varying float vGlow; varying vec4 vState; varying float vPain
     _rough = 0.94; _metal = 0.0; _bh = sp; _bs = 0.5;
   } else if (sm == 13) {
     _rough = 0.38; _metal = 0.02;
+  } else if (sm == 16) {
+    // floorboards: staggered planks with grain
+    vec2 fp = vWPos.xz;
+    float row = floor(fp.x / 0.19);
+    float pz = fp.y + sh21(vec2(row, 3.0)) * 3.0;
+    float seam = max(step(0.94, fract(fp.x / 0.19)), step(0.985, fract(pz / 1.8)));
+    float gr = sfbm(vec2(fp.x * 30.0, pz * 2.0));
+    diffuseColor.rgb *= (0.8 + 0.3 * sh21(vec2(row, floor(pz / 1.8)))) * (0.85 + 0.25 * gr) * (1.0 - seam * 0.45);
+    _rough = 0.42; _metal = 0.0; _bh = -seam + gr * 0.2; _bs = 0.6;
+  } else if (sm == 17) {
+    vec2 tq = fract(vWPos.xz / 0.6);
+    float grout = max(step(0.95, tq.x), step(0.95, tq.y));
+    float chk = mod(floor(vWPos.x / 0.6) + floor(vWPos.z / 0.6), 2.0);
+    diffuseColor.rgb *= (0.92 + 0.08 * chk) * (1.0 - grout * 0.35) * (0.96 + 0.06 * sn21(vWPos.xz * 3.0));
+    _rough = mix(0.18, 0.8, grout); _metal = 0.0; _bh = -grout; _bs = 0.5;
+  } else if (sm == 18) {
+    float pile = sn21(vWPos.xz * 60.0) * 0.6 + sn21(vWPos.xz * 7.0) * 0.4;
+    diffuseColor.rgb *= 0.86 + 0.2 * pile;
+    _rough = 1.0; _metal = 0.0; _bh = pile; _bs = 0.25;
+  } else if (sm == 19) {
+    vec2 mp = vWPos.xz * 0.7 + vWPos.y * 0.5;
+    float vein = abs(sin(mp.x * 3.0 + sfbm(mp * 2.0) * 6.0));
+    diffuseColor.rgb *= 0.9 + 0.12 * smoothstep(0.9, 1.0, vein) * -1.0 + 0.1 * sfbm(mp * 4.0);
+    _rough = 0.12; _metal = 0.05;
+  } else if (sm == 20) {
+    // wallpaper: vertical stripes with a small damask dot
+    float u = dot(vWPos.xz, vec2(0.7071, 0.7071)) * 6.0;
+    float stripe = step(0.5, fract(u * 0.5));
+    float dotp = smoothstep(0.18, 0.1, length(fract(vec2(u, vWPos.y * 6.0)) - 0.5));
+    diffuseColor.rgb *= 0.93 + 0.07 * stripe + 0.06 * dotp;
+    _rough = 0.85; _metal = 0.0;
+  } else if (sm == 21) {
+    diffuseColor.rgb *= 0.92 + 0.1 * sn21(vWPos.xz * 80.0);
+    _rough = 1.0; _metal = 0.0;
+  } else if (sm == 22) {
+    _rough = 0.02; _metal = 1.0;
+  } else if (sm == 23) {
+    float pl = sfbm(vWPos.xy * 1.5 + vWPos.zy * 1.5);
+    diffuseColor.rgb *= 0.95 + 0.07 * pl;
+    _rough = 0.9; _metal = 0.0; _bh = pl * 0.3; _bs = 0.3;
   }
   float _dmg = vState.w;
   if (_dmg > 0.01 && vPaint > 0.5) diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.08,0.07,0.06), _dmg * 0.8 * (0.6 + 0.4*sin(vObj.x*9.0+vObj.z*7.0)));
@@ -365,7 +408,8 @@ varying vec3 vCol; varying float vGlow; varying vec4 vState; varying float vPain
     else if (vGlow < 6.5) _emis = vec3(1.0, 0.55, 0.05) * vState.z * step(0.5, fract(uTime * 1.6)) * 4.0;
     else if (vGlow < 7.5) _emis = vec3(0.0);
     else if (vGlow < 8.5) _emis = vCol * vState.x * 4.0;
-    else _emis = vCol * uNight * 2.5;
+    else if (vGlow < 9.5) _emis = vCol * uNight * 2.5;
+    else _emis = vCol * 1.6;
   }
 `)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\n roughnessFactor = _rough;')
@@ -384,7 +428,7 @@ varying vec3 vCol; varying float vGlow; varying vec4 vState; varying float vPain
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance += _emis;');
     if (physical) sh.fragmentShader = sh.fragmentShader.replace('#include <lights_physical_fragment>', '#include <lights_physical_fragment>\n material.clearcoat = _cc;');
   };
-  m.customProgramCacheKey = () => 'inst-v2-' + (opts.key || '') + (opts.snow ? 's' : '') + (physical ? 'p' : '');
+  m.customProgramCacheKey = () => 'inst-v2-' + (opts.key || '') + (opts.snow ? 's' : '') + (physical ? 'p' : '') + (opts.cutaway ? 'c' : '');
   return m;
 }
 
@@ -533,6 +577,22 @@ export class ModelKit {
     return this._push(merged, color, paint, glow, rot ? this._xf(0, 0, 0, rot) : null);
   }
   geo(g, color, paint = 0, glow = 0, mat = null) { return this._push(g, color, paint, glow, mat); }
+  // append another kit, transformed (furniture into a room)
+  append(other, x = 0, y = 0, z = 0, ry = 0, sc = 1) {
+    const c = Math.cos(ry), s = Math.sin(ry);
+    const P = other.pos, N = other.nrm;
+    for (let i = 0; i < P.length; i += 3) {
+      const px = P[i] * sc, py = P[i + 1] * sc, pz = P[i + 2] * sc;
+      this.pos.push(x + px * c + pz * s, y + py, z - px * s + pz * c);
+      const nx = N[i], ny = N[i + 1], nz = N[i + 2];
+      this.nrm.push(nx * c + nz * s, ny, -nx * s + nz * c);
+    }
+    for (const v of other.col) this.col.push(v);
+    for (const v of other.paint) this.paint.push(v);
+    for (const v of other.glow) this.glow.push(v);
+    for (const v of other.mat) this.mat.push(v);
+    return this;
+  }
   build() {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));

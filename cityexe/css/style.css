@@ -170,3 +170,35 @@ a[data-act]:hover { text-decoration: underline; }
 .modal-in h3 { margin: 16px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
 .modal-in .keys li { padding: 6px 0; }
 .p-obj { top: 78px; }
+
+/* ---------- panels (activities, phone, computer, games) ---------- */
+.panel-modal .modal-in { max-width: 560px; width: min(560px, 94vw); max-height: 86vh; overflow: auto; }
+.panel-modal.wide .modal-in { max-width: 860px; width: min(860px, 96vw); }
+.pm-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.pm-head h2 { margin: 0; }
+.pm-x { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; }
+.menu { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.menu.cols { display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; }
+.menu button { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; }
+.menu .prog { display: flex; gap: 6px; align-items: center; padding: 6px 8px; background: rgba(255,255,255,0.04); border-radius: 8px; }
+.menu .prog span { flex: 1; } .menu .prog small { color: var(--muted); }
+.gmsg { font-weight: 600; min-height: 1.2em; }
+.bets, .row { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.table.felt { background: radial-gradient(ellipse at center, #1f6a3e, #0f3a20); border: 6px solid #3a2010; border-radius: 18px; padding: 14px; margin: 8px 0; }
+.hand { display: flex; align-items: center; gap: 6px; min-height: 64px; color: #e8f0e8; }
+.hand b { width: 56px; font-size: 12px; opacity: 0.8; } .hand em { margin-left: 8px; font-style: normal; font-weight: 700; color: #ffe080; }
+.card { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 40px; height: 56px; border-radius: 6px; background: #fbfaf4; color: #111; font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,0.4); font-size: 15px; }
+.card i { font-style: normal; font-size: 16px; } .card.red { color: #c81e1e; }
+.card.back { background: repeating-linear-gradient(45deg, #7a1a2a, #7a1a2a 4px, #a82a3a 4px, #a82a3a 8px); }
+.wheel { display: flex; justify-content: center; margin: 4px 0 8px; }
+.ball { display: inline-flex; width: 64px; height: 64px; border-radius: 50%; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; background: #222; color: #fff; border: 4px solid #d8c060; }
+.ball.r, .rnums .r, .hist .r { background: #b81e1e; } .ball.b, .rnums .b, .hist .b { background: #161616; } .ball.g, .rnums .g, .hist .g { background: #1a8a3a; }
+.hist { display: flex; gap: 4px; justify-content: center; margin-bottom: 8px; } .hist span { width: 22px; height: 22px; border-radius: 50%; color: #fff; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; }
+.rgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 6px; }
+.rnums { display: grid; grid-template-columns: repeat(13, 1fr); gap: 3px; } .rnums button { padding: 4px 0; color: #fff; font-size: 11px; border: 1px solid rgba(255,255,255,0.15); } .rnums button.sel { outline: 2px solid #ffe080; }
+.slots .reels { display: flex; justify-content: center; gap: 10px; margin: 10px 0; }
+.slots .reels span { width: 84px; height: 96px; display: inline-flex; align-items: center; justify-content: center; font-size: 46px; background: linear-gradient(#fff, #e8e4d8 50%, #fff); color: #c81e1e; font-weight: 900; border-radius: 10px; box-shadow: inset 0 0 12px rgba(0,0,0,0.35); }
+.paytable { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; font-size: 12px; color: var(--muted); }
+.lnums { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin: 8px 0; } .lnums button { padding: 6px 0; } .lnums button.sel { background: #e0b020; color: #111; }
+.ward b { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); padding: 0; } .sw.sel { border-color: #fff; }

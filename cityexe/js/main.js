@@ -3,6 +3,7 @@ import { Possession } from './play/possession.js';
 import { HUD } from './ui/hud.js';
 import { GodTools } from './play/godTools.js';
 import { Interiors } from './render/interiors.js';
+import { Activities } from './play/activities.js';
 import { Audio } from './audio/audio.js';
 import { loadSave, saveWorld, deserialize, clearSave } from './sim/save.js';
 import { Anomalies } from './sim/anomaly.js';
@@ -46,10 +47,11 @@ async function main() {
   game.possession = new Possession(game);
   game.godTool = new GodTools(game);
   game.interiors = new Interiors(game);
+  game.activities = new Activities(game);
   game.audio = new Audio(game);
   const hud = new HUD(game);
   game.hud = hud;
-  game.on('frame', (dt) => { hud.update(dt); game.audio.update(dt); });
+  game.on('frame', (dt) => { hud.update(dt); game.audio.update(dt); game.activities.update(dt); });
   // persistence
   let saving = false;
   game.save = async () => {

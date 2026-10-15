@@ -239,6 +239,9 @@ export class Renderer {
   }
 
   render(dt) {
+    // interiors are exposed on their own terms (no outdoor night boost, gentler bloom)
+    if (this.activeScene) { this.r.toneMappingExposure = 1.0; this.bloom.strength = 0.22; this.bloom.threshold = 0.92; }
+    else this.bloom.threshold = 0.86;
     this.U.uTime.value += dt;
     this.skyU.uTime.value = this.U.uTime.value;
     this.grade.mat.uniforms.uTime.value = this.U.uTime.value;

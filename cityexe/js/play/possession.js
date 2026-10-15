@@ -442,9 +442,14 @@ export class Possession {
     if (b) {
       const name = W.citizenAI.buildingName(b.id);
       const open = b.bizId == null || W.economy.isOpen(W.economy.biz[b.bizId], W.minuteOfDay) || b.residents.includes(c.id) || (c.job && W.economy.biz[c.job.biz]?.b === b.id);
+      const home = b.residents.includes(c.id);
+      if (home && b.bizId != null && b.state === 'ok') {
+        this.prompts.push({ key: 'H', text: 'Go up to your apartment' });
+        if (I.hit('KeyH')) { this.enterBuilding(b, { home: true }); return; }
+      }
       if (b.state === 'ok' && (open || b.civic)) {
-        this.prompts.push({ key: 'E', text: `Enter ${name}` });
-        if (I.hit('KeyE')) { this.enterBuilding(b); return; }
+        this.prompts.push({ key: 'E', text: home && b.bizId == null ? 'Go home' : `Enter ${name}` });
+        if (I.hit('KeyE')) { this.enterBuilding(b, { home: home && b.bizId == null, fromStreet: true }); return; }
       } else if (b.state === 'ok') this.prompts.push({ key: '', text: `${name} is closed` });
       const biz = b.bizId != null ? W.economy.biz[b.bizId] : null;
       if (biz && BTYPES[biz.type].robbable && W.economy.isOpen(biz, W.minuteOfDay) && !c.duty) {
@@ -556,12 +561,12 @@ export class Possession {
     this.game.audio && this.game.audio.door();
   }
 
-  enterBuilding(b) {
+  enterBuilding(b, opt = {}) {
     const W = this.W, c = this.c;
     if (this.game.interiors && this.game.interiors.canEnter(b)) {
       W.peds.despawn(c.ped);
       W.citizenAI.placeInside(c, b.id);
-      this.game.interiors.enter(b, c, true);
+      this.game.interiors.enter(b, c, true, opt);
       this.mode = 'inside';
       this.game.audio && this.game.audio.door();
       return;

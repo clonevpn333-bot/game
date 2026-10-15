@@ -38,6 +38,7 @@ export function serialize(W) {
     trees: Array.from(W.disasters.downTrees),
     anom: W.anomalies ? W.anomalies.serialize() : null,
     lanes: W.city.net.lanes.filter((l) => l.closed).map((l) => l.id),
+    lotto: W.lottery ? W.lottery.serialize() : null,
   };
   data.ms = Math.round(performance.now() - t0);
   return data;
@@ -120,6 +121,7 @@ export function deserialize(data, opts = {}) {
   W.disasters.treesDirty = W.disasters.downTrees.size > 0;
   for (const id of data.lanes || []) { const l = W.city.net.links[id]; if (l) l.closed = true; }
   if (data.anom && W.anomalies) W.anomalies.deserialize(data.anom);
+  if (data.lotto && W.lottery) W.lottery.deserialize(data.lotto);
   W.lastHour = Math.floor(W.time / 60);
   W.lastDay = W.day;
   for (const b of city.buildings) if (b.fire > 0) b.fire = Math.min(b.fire, 0.2);

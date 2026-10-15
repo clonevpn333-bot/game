@@ -608,6 +608,7 @@ export class CitizenAI {
         if (g.type === 'eat' || g.type === 'meet') N.hunger = clamp(N.hunger + (spent > 0 ? 0.7 : 0.1), 0, 1);
         if (g.type === 'drink' || g.type === 'meet') { N.social = clamp(N.social + 0.4, 0, 1); N.fun = clamp(N.fun + 0.3, 0, 1); }
         if (g.type === 'shop') { c.lastShop = now; N.fun = clamp(N.fun + 0.2, 0, 1); }
+        if (biz && (biz.type === 'convenience' || biz.type === 'gas') && W.lottery && rand.chance(0.12 + (1 - c.traits.thrift) * 0.15)) W.lottery.npcBuy(c);
         if (g.type === 'gym') { N.fun = clamp(N.fun + 0.4, 0, 1); N.energy = clamp(N.energy - 0.15, 0, 1); }
         c.until = now + (g.type === 'drink' ? 90 + rand.float() * 120 : g.type === 'meet' ? 60 + rand.float() * 90 : 25 + rand.float() * 35);
         c.nextThink = c.until;
