@@ -9,7 +9,7 @@
 
   const DEFAULTS = {
     intensity: 70, blur: 35, depth: 50, reduceMotion: null /* null = follow OS */, ambience: false,
-    autoplayNext: true, autoSkip: true, hideUnavailable: true, shuffle: true, adapt: true,
+    autoplayNext: false, autoSkip: true, hideUnavailable: true, shuffle: true, adapt: true,
   };
   const listeners = new Set();
   const emit = (what) => listeners.forEach((f) => f(what));

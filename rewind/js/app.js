@@ -13,7 +13,7 @@
   /* ---------------- state ---------------- */
   const state = {
     period: 'fall', tags: [], collection: null, mood: null, query: '', favoritesOnly: false, override: null /* {ids,title} */,
-    view: { id: null, start: 0, frac: 0, ended: false }, failures: 0, timeouts: 0, blocked: false, muted: false, userMuted: false, activated: false, lastNav: 0, dir: 1,
+    view: { id: null, start: 0, frac: 0, ended: false }, failures: 0, timeouts: 0, blocked: false, muted: false, userMuted: false, soundOn: false, activated: false, lastNav: 0, dir: 1,
   };
   const queue = new C.Queue([]);
   let library = [];
@@ -96,10 +96,10 @@
   function playOverride(ids, title, startId = null) { clearContext(); state.override = { ids, title }; state.period = 'all'; state.tags = []; closeMenu(); closeModal(); rebuildFeed(startId); }
 
   /* On-screen event log: open the page with ?debug=1 (for diagnosing device-specific behaviour). */
-  const DEBUG = qs.has('debug'); const dlog = [];
+  let DEBUG = qs.has('debug') && !sessionStorage.getItem('rewind.nodebug'); const dlog = [];
   function dbg(msg) {
     if (!DEBUG) return; dlog.push(((performance.now() / 1000) | 0) + 's ' + msg); if (dlog.length > 14) dlog.shift();
-    let el = document.getElementById('dbg'); if (!el) { el = document.createElement('pre'); el.id = 'dbg'; el.style.cssText = 'position:fixed;left:6px;right:6px;top:60px;z-index:99;margin:0;padding:8px;font:10px/1.35 ui-monospace,Menlo,monospace;color:#9fffb0;background:rgba(0,0,0,.72);border-radius:8px;pointer-events:none;white-space:pre-wrap'; document.body.appendChild(el); }
+    let el = document.getElementById('dbg'); if (!el) { el = document.createElement('pre'); el.id = 'dbg'; el.style.cssText = 'position:fixed;left:6px;right:6px;top:60px;z-index:99;max-height:40vh;overflow:hidden;margin:0;padding:8px;font:10px/1.35 ui-monospace,Menlo,monospace;color:#9fffb0;background:rgba(0,0,0,.72);border-radius:8px;white-space:pre-wrap'; el.title = 'tap to hide'; el.onclick = () => { DEBUG = false; try { sessionStorage.setItem('rewind.nodebug', '1'); } catch (e) {} el.remove(); }; document.body.appendChild(el); }
     el.textContent = dlog.join('\n');
   }
   /* ---- learn from what is viewed / skipped, and adapt the videos still to come ---- */
@@ -111,10 +111,15 @@
     const v = queue.current, w = state.view; if (!v || w.id !== v.id || !w.start) return;     // never actually played: no signal
     learn(v, C.viewSignal({ dwellMs: performance.now() - w.start, frac: w.frac, ended: w.ended }));
   }
-  function adaptQueue() {
+  /* Gentle by design: the next LOOKAHEAD videos are never touched (so scrolling never reshuffles what is coming), and the
+   * rest is only re-ranked every ADAPT_EVERY videos (or right away after a save/hide), at half strength with lots of exploration. */
+  const LOOKAHEAD = 4, ADAPT_EVERY = 8;
+  function adaptQueue(force = false) {
     if (!settings.adapt || !settings.shuffle || state.override || state.favoritesOnly || !queue.length) return;
-    const head = queue.items.slice(0, queue.index + 1), tail = queue.items.slice(queue.index + 1); if (tail.length < 3) return;
-    queue.items = [...head, ...C.rerank(tail, S.taste(), { generic: GENERIC, seen: S.seen() })];
+    state.sinceAdapt = (state.sinceAdapt || 0) + 1;
+    if (!force && state.sinceAdapt < ADAPT_EVERY) return;
+    const cut = queue.index + 1 + LOOKAHEAD, head = queue.items.slice(0, cut), tail = queue.items.slice(cut); if (tail.length < 6) return;
+    state.sinceAdapt = 0; queue.items = [...head, ...C.rerank(tail, S.taste(), { generic: GENERIC, seen: S.seen() })]; dbg('feed gently re-ranked');
   }
   const go = (n, why = 'user') => {
     if (!queue.length) return;
@@ -128,8 +133,8 @@
 
   /* ---------------- player ---------------- */
   const player = new window.TikTokPlayer($('playerHost'), {
-    onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.activated) player.unmute(); },
-    onPlaying: (v) => { state.failures = 0; state.timeouts = 0; hideStates(); S.recordHealth(v.id, { state: 'ok' }); S.markSeen(v.id); state.playingSince = performance.now(); if (state.view.id === v.id && !state.view.start) state.view.start = state.playingSince; dbg('playing ' + v.id.slice(-5)); setStatusDot(v); syncSound(); schedulePreload(); },
+    onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.soundOn) player.unmute(); },
+    onPlaying: (v) => { state.failures = 0; state.timeouts = 0; hideStates(); S.recordHealth(v.id, { state: 'ok' }); S.markSeen(v.id); state.playingSince = performance.now(); if (state.view.id === v.id && !state.view.start) state.view.start = state.playingSince; dbg('playing ' + v.id.slice(-5)); setStatusDot(v); syncSound(); if (state.soundOn && !state.userMuted) wantSound(); schedulePreload(); },
     onPaused: () => {},
     onTime: (t) => { if (t && t.duration > 0 && state.view.id) state.view.frac = Math.max(state.view.frac, t.currentTime / t.duration); },
     onEnded: (v) => {
@@ -143,7 +148,7 @@
     onNeedsTap: () => { hideSkeleton(); $('stTap').hidden = false; },
     onFail: (kind, code, v) => { dbg(`FAIL ${kind} ${code ?? ''} ${v && v.id.slice(-5)}`); handleFailure(kind, code, v); },
     onPreloadFail: (v, kind) => preloadFailed(v, kind),
-    onMute: (m) => { state.muted = m; syncSound(); },
+    onMute: (m) => { state.muted = m; syncSound(); if (m && state.soundOn && !state.userMuted) wantSound(); },
   }, { readyTimeout: Number(qs.get('readyTimeout')) || 0, startTimeout: Number(qs.get('startTimeout')) || 0, stallTimeout: Number(qs.get('stallTimeout')) || 0 });
 
   /* TikTok starts muted until the browser allows sound: make that obvious and one tap to fix. */
@@ -153,7 +158,16 @@
     $('actMute').classList.toggle('on', m && state.userMuted); $('actMute').classList.toggle('pulse', m && !state.userMuted);
     $('soundHint').hidden = !(m && !state.userMuted && player.state === 'playing');
   }
-  function setMuted(m) { state.userMuted = m; state.activated = true; m ? player.mute() : player.unmute(); syncSound(); }
+  /* TikTok re-mutes every fresh player right after it loads, which overrides an early unmute. Once the viewer has turned sound
+   * on, keep asking (a few tries over the first seconds of each video) until the player stops reporting muted. */
+  let soundTries = 0, soundT = null;
+  function wantSound() {
+    if (!state.soundOn || state.userMuted) return;
+    if (soundTries >= 4) return; soundTries++; clearTimeout(soundT);
+    player.unmute(); dbg('re-asserting sound #' + soundTries);
+    soundT = setTimeout(() => { if (player.muted && state.soundOn && !state.userMuted) wantSound(); }, 700);
+  }
+  function setMuted(m) { state.userMuted = m; state.activated = true; if (!m) { state.soundOn = true; soundTries = 0; } m ? player.mute() : player.unmute(); syncSound(); }
   function hideStates() { $('stSkeleton').hidden = true; $('stTap').hidden = true; $('stPanel').hidden = true; clearTimeout(skelTimer); clearTimeout(skelTimer2); }
   function hideSkeleton() { $('stSkeleton').hidden = true; clearTimeout(skelTimer); clearTimeout(skelTimer2); }
   function resetFailures() { state.failures = 0; state.timeouts = 0; state.blocked = false; }
@@ -233,7 +247,7 @@
 
   /* ---------------- present current video ---------------- */
   function present(dir = 1) {
-    const v = queue.current; $('soundHint').hidden = true; state.view = { id: v ? v.id : null, start: 0, frac: 0, ended: false };
+    const v = queue.current; $('soundHint').hidden = true; soundTries = 0; state.view = { id: v ? v.id : null, start: 0, frac: 0, ended: false };
     renderAll();
     if (!v) { applyTheme(null); showEmpty(); return; }
     $('meta').hidden = false; $('actions').hidden = false; $('shield').hidden = false;
@@ -351,7 +365,7 @@
   function toggleFav(burst) {
     const v = queue.current; if (!v) return;
     const on = S.toggleFavorite(v.id); renderMeta(v); renderRail();
-    if (on) { learn(v, 3); adaptQueue(); }
+    if (on) { learn(v, 3); adaptQueue(true); }
     if (on && burst) { const b = $('burst'); b.classList.remove('go'); void b.offsetWidth; b.classList.add('go'); }
     if (on) toast('Saved to favorites', { label: 'More like this', fn: () => playSimilar(v) });
     else { toast('Removed from favorites'); if (state.favoritesOnly) rebuildFeed(); }

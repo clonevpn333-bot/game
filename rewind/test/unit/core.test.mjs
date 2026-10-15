@@ -157,7 +157,7 @@ test('coverage: every target period is well represented, no trend dominates', ()
 });
 
 test('taste: viewSignal reads watching, flicking, saving and hiding', () => {
-  assert.ok(core.viewSignal({ dwellMs: 600 }) < 0, 'flicked past');
+  assert.ok(core.viewSignal({ dwellMs: 600 }) < 0 && core.viewSignal({ dwellMs: 600 }) > -0.5, 'flicked past is only a whisper');
   assert.ok(core.viewSignal({ dwellMs: 9000, frac: 0.95 }) > 0.9, 'watched through');
   assert.ok(core.viewSignal({ dwellMs: 5000, frac: 0.55 }) > 0, 'watched most');
   assert.equal(core.viewSignal({ favorited: true }), 3); assert.equal(core.viewSignal({ hidden: true }), -3);
@@ -182,13 +182,13 @@ test('taste: liked vibes rise to the top, disliked sink, but exploration keeps v
   for (let i = 0; i < 6; i++) aff = core.updateAffinity(aff, dance, 1, generic);
   const liked = []; for (let i = 0; i < 20; i++) liked.push(share(core.rerank(live, aff, { rng: core.mulberry32(i), generic }), 'dances'));
   const likedAvg = liked.reduce((a, b) => a + b) / liked.length;
-  assert.ok(likedAvg > baseAvg + 0.15, `dances share ${baseAvg.toFixed(2)} -> ${likedAvg.toFixed(2)}`);
-  assert.ok(likedAvg < 0.95, 'never a monoculture');
+  assert.ok(likedAvg > baseAvg + 0.06, `dances share ${baseAvg.toFixed(2)} -> ${likedAvg.toFixed(2)}`);
+  assert.ok(likedAvg < 0.6, 'gentle: never a monoculture');
   // disliking memes pushes them down
   let neg = {}; const meme = live.find((v) => v.trends.includes('memes'));
   for (let i = 0; i < 6; i++) neg = core.updateAffinity(neg, meme, -1, generic);
   const memeBase = share(core.rerank(live, {}, { rng: core.mulberry32(3), generic }), 'memes'), memeNeg = share(core.rerank(live, neg, { rng: core.mulberry32(3), generic }), 'memes');
-  assert.ok(memeNeg < memeBase, 'disliked vibe sinks');
+  assert.ok(memeNeg <= memeBase, 'disliked vibe does not rise');
   // result is a permutation (nothing lost or duplicated)
   const r = core.rerank(live, aff, { rng: core.mulberry32(1), generic }); assert.deepEqual(r.map((v) => v.id).sort(), live.map((v) => v.id).sort());
   // spacing still holds
@@ -200,5 +200,5 @@ test('taste: buildFeed uses affinity when given', () => {
   for (let i = 0; i < 6; i++) aff = core.updateAffinity(aff, dance, 1, generic);
   const f = core.buildFeed(vids, { shuffle: true, rng: core.mulberry32(2), generic, affinity: aff });
   assert.equal(new Set(f.map((v) => v.id)).size, f.length);
-  assert.ok(f.slice(0, 20).filter((v) => v.trends.includes('dances')).length >= 6);
+  assert.ok(f.slice(0, 20).filter((v) => v.trends.includes('dances')).length >= 3);
 });

@@ -13,6 +13,7 @@ const PLAYER = (mode) => `<!doctype html><body style="background:#111"><script>
 const send = (m) => parent.postMessage({ 'x-tiktok-player': true, ...m }, '*');
 const mode = ${JSON.stringify(mode)};
 if (mode === 'hang') { /* never answers */ }
+else if (mode === 'end3s') { setTimeout(() => send({ type: 'onPlayerReady' }), 60); setTimeout(() => send({ type: 'onStateChange', value: 1 }), 150); setTimeout(() => send({ type: 'onStateChange', value: 0 }), 3200); }
 else if (mode === 'earlyend') { setTimeout(() => send({ type: 'onPlayerReady' }), 60); setTimeout(() => send({ type: 'onStateChange', value: 1 }), 150); setTimeout(() => send({ type: 'onStateChange', value: 0 }), 500); }
 else if (mode === 'gone') setTimeout(() => send({ type: 'onPlayerError', value: { errorCode: 1001, errorType: 'INVALID_VIDEO' } }), 80);
 else if (mode === 'error3001') setTimeout(() => send({ type: 'onPlayerError', value: { errorCode: 3001, errorType: 'PLAYBACK_ERROR' } }), 80);
@@ -92,6 +93,24 @@ await t('the feed adapts: finishing/saving a vibe raises it, flicking past lower
   const after = await p.evaluate(() => JSON.parse(localStorage.getItem('rewind.v4.taste'))); assert.ok(Object.values(after).some((x) => x < 0), 'flicking past created a dislike');
   await p.reload(); await p.waitForFunction(() => window.__rewind.queue.length);
   assert.ok(Object.keys(await p.evaluate(() => JSON.parse(localStorage.getItem('rewind.v4.taste')))).length > 3, 'taste persisted'); await p.ctx.close();
+});
+await t('sound stays on for the next videos even though TikTok re-mutes every new player', async () => {
+  const p = await newPage('period=2023-10'); await p.waitForFunction(() => window.__rewind.player.state === 'playing');
+  await p.click('#actMute'); await p.waitForFunction(() => window.__rewind.player.muted === false, null, { timeout: 4000 });
+  for (let i = 0; i < 2; i++) {
+    await p.waitForTimeout(550); await p.keyboard.press('ArrowDown'); await p.waitForFunction(() => window.__rewind.player.state === 'playing');
+    await p.waitForFunction(() => window.__rewind.player.muted === false, null, { timeout: 5000 });
+  }
+  assert.equal(await p.locator('#soundHint:not([hidden])').count(), 0); await p.ctx.close();
+});
+await t('a finished video does not auto-advance (autoplay-next is off by default)', async () => {
+  const p = await newPage('period=2023-10'); await p.waitForSelector('.tt-frame'); const first = await cur(p); behaviors.set(first, 'end3s');
+  await p.evaluate((id) => { const q = window.__rewind.queue; q.jump(q.items.findIndex((v) => v.id === id)); window.__rewind.present(1); }, first);
+  await p.waitForTimeout(5000); assert.equal(await cur(p), first, 'advanced by itself'); await p.ctx.close();
+});
+await t('debug text only appears with ?debug and a tap dismisses it', async () => {
+  const a = await newPage('period=2023-10'); await a.keyboard.press('ArrowDown'); await a.waitForTimeout(500); assert.equal(await a.locator('#dbg').count(), 0, 'debug overlay shown without ?debug'); await a.ctx.close();
+  const b = await newPage('period=2023-10&debug=1'); await b.keyboard.press('ArrowDown'); await b.waitForSelector('#dbg'); await b.click('#dbg'); assert.equal(await b.locator('#dbg').count(), 0); await b.ctx.close();
 });
 await t('a removed video (1001) auto-skips, is remembered as broken, and never returns', async () => {
   const p = await newPage('period=2023-10'); await p.waitForSelector('.tt-frame');

@@ -165,7 +165,7 @@
   }
 
   /* ---- taste model: learns from what the viewer finishes, flicks past, saves and hides ---- */
-  const AFF_MAX = 6;
+  const AFF_MAX = 4;
   function affinityKeys(v, generic) {
     const out = v.trends.map((t) => ['t:' + t, generic && generic.has(t) ? 0.8 : 1]);   // a specific trend counts double a broad vibe
     if (v.creator) out.push(['c:' + v.creator, 0.5]);
@@ -177,11 +177,11 @@
   function viewSignal({ dwellMs = 0, frac = 0, ended = false, favorited = false, hidden = false } = {}) {
     if (hidden) return -3;
     if (favorited) return 3;
-    if (dwellMs < 1800) return -1;                       // scrolled past almost immediately
+    if (dwellMs < 1800) return -0.35;                    // flicked past: a whisper, scrolling is normal
     if (ended || frac >= 0.85) return 1;                 // watched it through (or looped)
-    if (frac >= 0.5) return 0.6;
-    if (frac >= 0.2) return 0.1;
-    return dwellMs > 8000 ? 0.6 : -0.4;                  // no duration info: long dwell = interest, short = meh
+    if (frac >= 0.5) return 0.5;
+    if (frac >= 0.2) return 0;
+    return dwellMs > 8000 ? 0.5 : -0.1;                  // no duration info: long dwell = interest, short = meh
   }
   function updateAffinity(aff, v, signal, generic) {
     const next = {};
@@ -191,8 +191,8 @@
   }
   function scoreVideo(v, aff, generic) { let s = 0; for (const [k] of affinityKeys(v, generic)) s += aff[k] || 0; return s; }
   /* Best-liked first, with noise + exploration so the feed never collapses into one corner, then spaced by trend/creator. */
-  function rerank(items, aff, { rng = Math.random, generic, seen, explore = 0.25 } = {}) {
-    const pool = items.map((v) => ({ v, s: scoreVideo(v, aff, generic) + (rng() - 0.5) * 1.6 - (seen && seen.has(v.id) ? 1.5 : 0) })).sort((a, b) => b.s - a.s).map((x) => x.v);
+  function rerank(items, aff, { rng = Math.random, generic, seen, explore = 0.4, strength = 0.5 } = {}) {
+    const pool = items.map((v) => ({ v, s: strength * scoreVideo(v, aff, generic) + (rng() - 0.5) * 1.6 - (seen && seen.has(v.id) ? 1.5 : 0) })).sort((a, b) => b.s - a.s).map((x) => x.v);
     const out = [];
     while (pool.length) out.push(pool.splice(rng() < explore ? Math.floor(rng() * pool.length) : 0, 1)[0]);
     return diversify(out, generic);
