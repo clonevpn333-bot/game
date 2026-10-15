@@ -66,6 +66,7 @@ export class HUD {
     // right tools
     this.tools = h('div', 'tools');
     const mk = (label, title, fn) => { const b = h('button', 'tool', label); b.title = title; b.onclick = fn; this.tools.appendChild(b); return b; };
+    mk('🎬', 'Show me something interesting (N)', () => this.director());
     this.btnBook = mk('★', 'Bookmarked citizens (B)', () => this.togglePanel('bookmarks'));
     mk('📜', 'City Archive (H)', () => this.togglePanel('archive'));
     mk('⚡', 'God tools (G)', () => this.togglePanel('god'));
@@ -106,6 +107,7 @@ export class HUD {
     addEventListener('keydown', (e) => {
       if (e.target && e.target.tagName === 'INPUT') { if (e.code === 'Escape') this.closePanel(); return; }
       if (this.game.mode !== 'observe') return;
+      if (e.code === 'KeyN') this.director();
       if (e.code === 'KeyB') this.togglePanel('bookmarks');
       if (e.code === 'KeyH') this.togglePanel('archive');
       if (e.code === 'KeyG') this.togglePanel('god');
@@ -138,7 +140,7 @@ export class HUD {
       <ul class="keys">
         <li><b>Watch.</b> Drag to pan, scroll to zoom, click anyone or anything to see who they are.</li>
         <li><b>Become anyone.</b> Double-click a person (or press <kbd>P</kbd>) to dive in and play as them. <kbd>Q</kbd> leaves their body; <kbd>R</kbd> lets them carry on while you ride along.</li>
-        <li><b>Follow the stories.</b> The ticker (bottom-left) shows what is happening. Click an entry to fly there.</li>
+        <li><b>Follow the stories.</b> The ticker (bottom-left) shows what is happening. Click an entry to fly there, or press <kbd>N</kbd> (🎬) to jump to the most interesting thing going on.</li>
         <li><b>Interfere.</b> God tools (<kbd>G</kbd>) start fires, blackouts, storms, riots, meteors…</li>
         <li><b>Come back later.</b> The city saves itself and remembers what happened.</li>
       </ul>`);
@@ -217,6 +219,29 @@ export class HUD {
     const now = performance.now();
     for (const t of this.ticker) t.el.style.opacity = Math.max(0.45, 1 - (now - t.t) / 60000);
   }
+  // jump to the most interesting thing happening right now
+  director() {
+    const W = this.W;
+    const score = (inc) => {
+      if (!inc.reported || inc.closed) return 0;
+      let s = { robbery: 6, theft: 5, accident: 4, fire: 5, riot: 9, animal: 7, medical: 3, fight: 4, power: 2, signal: 1 }[inc.type] || 1;
+      if (inc.data.pursuitBy != null) s += 10;
+      if (inc.type === 'fire') s += W.city.buildings[inc.b]?.fire * 5 || 0;
+      s += inc.units.length * 0.5;
+      s -= (W.time - inc.t) / 60;
+      return s;
+    };
+    const list = W.incidents.active().map((i) => [i, score(i)]).filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1]);
+    this.dirIdx = ((this.dirIdx ?? -1) + 1) % Math.max(1, Math.min(3, list.length));
+    const pick = list[this.dirIdx];
+    if (pick) { this.focusIncident(pick[0].id); this.toast(`🎬 ${pick[0].title}${pick[0].b != null ? ' — ' + W.citizenAI.buildingName(pick[0].b) : ''}`); return; }
+    for (const t of W.disasters.tornadoes) { this.game.flyTo(t.x, t.z, 220); return; }
+    // nothing dramatic: follow someone with a story
+    const cands = W.citizens.filter((c) => c.status === 'ok' && c.state !== 'inside' && c.state !== 'abstract' && (c.bookmarked || c.goal && ['meet', 'jobhunt', 'crime', 'drink'].includes(c.goal.type)));
+    const c = cands[Math.floor(Math.random() * cands.length)] || W.citizens.find((c) => c.ped);
+    if (c) { this.game.select({ kind: 'citizen', id: c.id }); this.game.followSelected(); this.toast(`🎬 ${c.name}: ${W.citizenAI.describe(c)}`); }
+  }
+
   focusIncident(id) {
     const W = this.W;
     const inc = W.incidents.get(id);
@@ -479,7 +504,7 @@ export class HUD {
       <li><kbd>WASD</kbd>/<kbd>drag</kbd> pan · <kbd>wheel</kbd> zoom · <kbd>right-drag</kbd>/<kbd>Q</kbd><kbd>E</kbd> rotate</li>
       <li><kbd>click</kbd> inspect · <kbd>double-click</kbd> or <kbd>P</kbd> possess · <kbd>F</kbd> follow · <kbd>M</kbd> bookmark</li>
       <li><kbd>Space</kbd> pause · <kbd>1</kbd>–<kbd>5</kbd> speed · <kbd>0</kbd> slow-mo</li>
-      <li><kbd>B</kbd> bookmarks · <kbd>H</kbd> archive · <kbd>G</kbd> god tools · <kbd>/</kbd> find someone</li></ul>
+      <li><kbd>N</kbd> show me something interesting · <kbd>B</kbd> bookmarks · <kbd>H</kbd> archive · <kbd>G</kbd> god tools · <kbd>/</kbd> find someone</li></ul>
       <h3>Possessed</h3><ul class="keys">
       <li><kbd>WASD</kbd> move/drive · <kbd>mouse</kbd> look · <kbd>Shift</kbd> run · <kbd>Space</kbd> jump/handbrake</li>
       <li><kbd>E</kbd> interact · <kbd>F</kbd> enter/exit vehicle · <kbd>G</kbd> crime · <kbd>H</kbd> horn · <kbd>L</kbd> siren</li>
@@ -570,6 +595,8 @@ export class HUD {
     for (const u of W.services.units) { if (u.kind !== 'police' || u.state === 'base') continue; const v = W.services.veh(u); if (v) dot(v.x, v.z, '#4a8aff', 2.4); }
     for (const inc of W.incidents.active()) for (const sid of inc.suspects) { const sp = W.citizenPos(W.citizens[sid]); if (sp && !sp.inside && inc.data.pursuitBy != null) dot(sp.x, sp.z, '#ff2020', 3); }
     if (obj && obj.x != null) dot(obj.x, obj.z, '#ffd040', 3.6);
+    const ch = this.game.possession.carHint && this.game.possession.carHint();
+    if (ch) { g.fillStyle = '#5fe3a0'; g.fillRect(tx(ch.x) - 2.2 / zoom * 2, tx(ch.z) - 1.4 / zoom * 2, 4.4 / zoom * 2, 2.8 / zoom * 2); }
     g.restore();
     // player arrow
     g.fillStyle = '#5fe3d0';

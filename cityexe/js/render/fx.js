@@ -114,6 +114,34 @@ void main(){
 const PRECIP_FS = `varying float vA; uniform float uAmount; uniform float uNight;
 void main(){ gl_FragColor = vec4(vec3(0.8, 0.85, 0.9) * mix(1.0, 0.35, uNight), vA * uAmount); }`;
 
+// A tiny pool of real lights shared by everything that wants one (fires, sirens,
+// meteors, the player's headlights, the police helicopter searchlight). The light
+// count stays constant so shaders never recompile.
+export class LightPool {
+  constructor(scene) {
+    this.points = [new THREE.PointLight('#ffffff', 0, 40, 1.6), new THREE.PointLight('#ffffff', 0, 40, 1.6)];
+    this.spot = new THREE.SpotLight('#ffffff', 0, 120, 0.5, 0.45, 1.3);
+    for (const l of this.points) scene.add(l);
+    scene.add(this.spot, this.spot.target);
+    this.reqP = []; this.reqS = [];
+  }
+  point(x, y, z, color, intensity, range, priority) { this.reqP.push({ x, y, z, color, intensity, range, priority }); }
+  spotlight(x, y, z, tx, ty, tz, color, intensity, angle, range, priority) { this.reqS.push({ x, y, z, tx, ty, tz, color, intensity, angle, range, priority }); }
+  flush() {
+    this.reqP.sort((a, b) => b.priority - a.priority);
+    this.points.forEach((l, i) => {
+      const r = this.reqP[i];
+      if (!r) { l.intensity = 0; return; }
+      l.position.set(r.x, r.y, r.z); l.color.set(r.color); l.intensity = r.intensity; l.distance = r.range;
+    });
+    this.reqS.sort((a, b) => b.priority - a.priority);
+    const s = this.reqS[0];
+    if (s) { this.spot.position.set(s.x, s.y, s.z); this.spot.target.position.set(s.tx, s.ty, s.tz); this.spot.color.set(s.color); this.spot.intensity = s.intensity; this.spot.angle = s.angle; this.spot.distance = s.range; }
+    else this.spot.intensity = 0;
+    this.reqP.length = 0; this.reqS.length = 0;
+  }
+}
+
 export class FX {
   constructor(renderer, world) {
     this.R = renderer;
@@ -148,11 +176,8 @@ export class FX {
     this.beacon.visible = false;
     scene.add(this.beacon);
     this.incidentMarkers = [];
-    // dynamic lights
-    this.fireLights = [new THREE.PointLight('#ff7a30', 0, 45, 1.6), new THREE.PointLight('#ff7a30', 0, 45, 1.6)];
-    for (const l of this.fireLights) scene.add(l);
-    this.sirenLight = new THREE.PointLight('#ff2020', 0, 30, 1.8);
-    scene.add(this.sirenLight);
+    // dynamic lights (shared pool)
+    this.lights = new LightPool(scene);
     this.t = 0;
     this.emitAcc = 0;
     world.on('impact', (e) => this.sparks(e.x, (e.v?.y || 0) + 0.7, e.z, e.power));
@@ -196,11 +221,7 @@ export class FX {
         }
       }
       fires.sort((a, b) => a.d - b.d);
-      this.fireLights.forEach((l, i) => {
-        const f = fires[i];
-        if (f && f.d < 500) { l.position.set(f.b.x, Math.min(8, f.b.h * 0.4), f.b.z); l.intensity = (60 + Math.random() * 40) * f.b.fire * (0.4 + W.env.night); l.distance = 40 + f.b.fire * 30; }
-        else l.intensity = 0;
-      });
+      this.fireReq = fires.slice(0, 2).filter((f) => f.d < 500);
       // wreck smoke, stacks, hoses
       for (const v of W.traffic.vehicles) {
         if ((v.state === 'wreck' || v.damage > 0.6) && v.state !== 'repair' && v.state !== 'garage' && Math.random() < 0.5) {
@@ -250,14 +271,13 @@ export class FX {
       this.beacon.material.color.setRGB(...(objective.color || [1.5, 1.0, 0.2]));
       this.beacon.material.opacity = 0.18 + Math.sin(this.t * 3) * 0.06;
     } else this.beacon.visible = false;
-    // nearest siren light at night
+    // request pooled lights: fires, nearest siren at night
+    for (const f of this.fireReq || []) this.lights.point(f.b.x, Math.min(8, f.b.h * 0.4), f.b.z, '#ff7a30', (60 + Math.random() * 40) * f.b.fire * (0.4 + W.env.night), 40 + f.b.fire * 30, 2 + f.b.fire - f.d / 500);
     let best = null, bd = 120 * 120;
     for (const v of W.sirens || []) { const d = (v.x - cam.position.x) ** 2 + (v.z - cam.position.z) ** 2; if (d < bd) { bd = d; best = v; } }
     if (best && W.env.night > 0.3) {
       const red = Math.floor(this.t * 4.6) % 2 === 0;
-      this.sirenLight.color.set(red ? '#ff2a20' : '#2a50ff');
-      this.sirenLight.position.set(best.x, best.y + 2.5, best.z);
-      this.sirenLight.intensity = 40 * W.env.night;
-    } else this.sirenLight.intensity = 0;
+      this.lights.point(best.x, best.y + 2.5, best.z, red ? '#ff2a20' : '#2a50ff', 40 * W.env.night, 30, 1.5);
+    }
   }
 }

@@ -464,6 +464,8 @@ export class Possession {
         if (I.hit('KeyE')) { this.talk(o); return; }
       }
     }
+    const ch = this.carHint();
+    if (ch && ch.d > 6 && !this.prompts.length) this.prompts.push({ key: '', text: ch.label });
     // firefighter hose
     if (role === 'firefighter') {
       const fireB = this.fireAhead(p, 34);
@@ -823,6 +825,18 @@ export class Possession {
       return;
     } }
     this.game.rig.updateThird(dt, v, { autoYaw: v.h, autoK: 2 });
+  }
+
+  // where is this person's own car?
+  carHint() {
+    const W = this.W, c = this.c;
+    if (!c || this.mode !== 'foot' || c.vehicle == null) return null;
+    const v = W.traffic.byId.get(c.vehicle);
+    if (!v || v.state === 'garage' || v.state === 'repair' || v.state === 'abstract' || v.stolen) return null;
+    const p = c.ped;
+    const d = dist(v.x, v.z, p.x, p.z);
+    if (d > 500) return null;
+    return { x: v.x, z: v.z, d, label: `Your ${v.T.label} is ${d < 15 ? 'right here' : Math.round(d) + ' m away'}` };
   }
 
   // ------------------------------------------------------------------ objective for HUD + beacon

@@ -10,8 +10,8 @@ const DARK = '#1c1d20', TIRE = '#141414', TRIM = '#3a3c40', CHROME = '#b8bcc0', 
 function wheels(k, len, wid, r = 0.34, front = 0.33, back = 0.32) {
   const zf = len * front, zb = -len * back;
   for (const z of [zf, zb]) for (const sx of [-1, 1]) {
-    k.cyl(sx * (wid / 2 - 0.12), r, z, r, 0.26, TIRE, 12, 0, 0, [0, 0, Math.PI / 2]);
-    k.cyl(sx * (wid / 2 - 0.02), r, z, r * 0.55, 0.06, '#8a8c90', 8, 0, 0, [0, 0, Math.PI / 2]);
+    k.cyl(sx * (wid / 2 - 0.12), r, z, r, 0.26, TIRE, 9, 0, 0, [0, 0, Math.PI / 2]);
+    k.cyl(sx * (wid / 2 - 0.02), r, z, r * 0.55, 0.06, '#8a8c90', 6, 0, 0, [0, 0, Math.PI / 2]);
   }
 }
 function lights(k, len, wid, y, opts = {}) {
@@ -239,23 +239,15 @@ export class VehicleView {
     this.frustum = new THREE.Frustum();
     this.projM = new THREE.Matrix4();
     this.visible = [];
-    // real headlights for the vehicle the player is driving
-    this.headL = new THREE.SpotLight('#fff2dc', 0, 70, 0.55, 0.45, 1.3);
-    this.headR = this.headL.clone();
-    renderer.scene.add(this.headL, this.headR, this.headL.target, this.headR.target);
   }
 
-  updatePlayerLights() {
+  // real headlights for the vehicle the player is driving (via the shared light pool)
+  updatePlayerLights(lights) {
     const P = this.world.possessed;
     const v = P && P.veh;
-    const on = v && (v.lightsOn || this.R.U.uNight.value > 0.35);
-    for (const [L, side] of [[this.headL, -1], [this.headR, 1]]) {
-      if (!on) { L.intensity = 0; continue; }
-      const sh = Math.sin(v.h), ch = Math.cos(v.h);
-      L.position.set(v.x + sh * v.len * 0.5 + ch * side * 0.6, v.y + 0.75, v.z + ch * v.len * 0.5 - sh * side * 0.6);
-      L.target.position.set(v.x + sh * 30, v.y - 0.5, v.z + ch * 30);
-      L.intensity = 900;
-    }
+    if (!lights || !v || !(v.lightsOn || this.R.U.uNight.value > 0.35)) return;
+    const sh = Math.sin(v.h), ch = Math.cos(v.h);
+    lights.spotlight(v.x + sh * v.len * 0.5, v.y + 0.8, v.z + ch * v.len * 0.5, v.x + sh * 30, v.y - 1, v.z + ch * 30, '#fff2dc', 1400, 0.6, 80, 5);
   }
 
   update(dt) {
@@ -327,7 +319,7 @@ export class VehicleView {
     }
     tmpS.set(1, 1, 1);
     for (const t in this.pools) this.pools[t].end();
-    this.updatePlayerLights();
+    this.updatePlayerLights(this.lightPool);
     this.beams.count = nb;
     this.beams.instanceMatrix.needsUpdate = true;
     this.beamMat.opacity = Math.min(1, night * 1.3) * 0.45;

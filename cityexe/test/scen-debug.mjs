@@ -1,12 +1,7 @@
 export default async function ({ page, shot, wait }) {
-  await page.evaluate(() => {
-    window.__ts = [];
-    const g = window.game;
-    const u = g.update.bind(g);
-    g.update = (dt) => { const t0 = performance.now(); u(dt); window.__ts.push([Math.round(t0), Math.round(performance.now() - t0)]); };
-    const r = g.renderer.render.bind(g.renderer);
-    g.renderer.render = (dt) => { const t0 = performance.now(); r(dt); window.__rt = Math.round(performance.now() - t0); };
-  });
-  await wait(4000);
-  console.log(JSON.stringify(await page.evaluate(() => ({ ts: window.__ts.slice(-10), rt: window.__rt, n: window.__ts.length }))));
+  for (let i = 0; i < 6; i++) {
+    const r = await page.evaluate(() => { const g = window.game; return { f: g.frame, progs: g.renderer.r.info.programs.length, calls: g.renderer.r.info.render.calls, t: g.world.history.timeStr(g.world.time) }; });
+    console.log(JSON.stringify(r));
+    await wait(8000);
+  }
 }

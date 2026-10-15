@@ -588,10 +588,10 @@ export class Traffic {
     let F = 0;
     if (ctl.throttle > 0) {
       if (fwd < -0.5 && ctl.throttle > 0) F = 9 * ctl.throttle; // braking from reverse
-      else F = T.acc * 1.7 * ctl.throttle * dmgF * (1 - Math.pow(Math.max(0, fwd) / (T.vmax * dmgF), 2));
+      else F = T.acc * 2.5 * ctl.throttle * dmgF * (1 - Math.pow(Math.max(0, fwd) / (T.vmax * dmgF), 2));
     }
     if (ctl.brake > 0) {
-      const bf = 12 * ctl.brake * this.brakeFactor;
+      const bf = 9.5 * ctl.brake * this.brakeFactor;
       if (fwd > 0.05) F -= Math.min(bf, fwd / dt);
       else if (fwd < -0.05) F += Math.min(bf, -fwd / dt);
     }
@@ -601,7 +601,7 @@ export class Traffic {
     }
     fwd += F * dt;
     // drag/rolling
-    fwd -= fwd * (0.06 + Math.abs(fwd) * 0.0016) * dt * (ctl.throttle > 0 ? 1 : 3);
+    fwd -= fwd * (0.05 + Math.abs(fwd) * 0.001) * dt * (ctl.throttle > 0 ? 1 : 2.5);
     if (Math.abs(fwd) < 0.05 && ctl.throttle === 0) fwd = 0;
     // lateral grip
     const grip = T.grip * surface * (ctl.handbrake ? 0.22 : 1) * (v.state === 'wreck' ? 1.5 : 1);
@@ -610,7 +610,10 @@ export class Traffic {
     // yaw from steering (bicycle model)
     const wheelbase = v.len * 0.6;
     let targetAv = (fwd / wheelbase) * Math.tan(v.steer);
-    if (ctl.handbrake) targetAv *= 1.6;
+    // grip-limited yaw rate: sharp at low speed, planted at high speed
+    const avMax = (T.grip * surface * 1.5) / Math.max(3, Math.abs(fwd));
+    targetAv = clamp(targetAv, -avMax, avMax);
+    if (ctl.handbrake) targetAv *= 1.9;
     v.av = lerp(v.av, targetAv, 1 - Math.exp(-(ctl.handbrake ? 3 : 8) * surface * dt));
     if (v.spin) { v.av += v.spin; v.spin *= Math.exp(-3 * dt); if (Math.abs(v.spin) < 0.01) v.spin = 0; }
     v.h = wrapAngle(v.h + v.av * dt);

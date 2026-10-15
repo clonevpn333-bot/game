@@ -323,7 +323,7 @@ export class Interiors {
     const amb = new THREE.HemisphereLight('#fff8f0', '#504840', kind === 'anomaly' ? 0.4 : 0.9);
     group.add(amb);
     const pts = [];
-    for (let x = -hw + RW / 4; x < hw; x += RW / 2) for (let z = -hd + RD / 4; z < hd; z += RD / 2) { const p = new THREE.PointLight(kind === 'diner' ? '#ffc890' : kind === 'anomaly' ? '#ffffff' : '#fff0dc', kind === 'warehouse' || kind === 'mall' ? 26 : 12, Math.max(RW, RD), 1.6); p.position.set(x, H - 0.4, z); group.add(p); pts.push(p); }
+    for (let x = -hw + RW / 4; x < hw; x += RW / 2) for (let z = -hd + RD / 4; z < hd; z += RD / 2) { const p = new THREE.PointLight(kind === 'diner' ? '#ffc890' : kind === 'anomaly' ? '#ffffff' : '#fff0dc', kind === 'warehouse' || kind === 'mall' ? 26 : 12, Math.max(RW, RD), 1.6); p.position.set(x, H - 0.4, z); p.userData.base = p.intensity; group.add(p); pts.push(p); }
     return { group, W: RW, D: RD, H, door: { x: 0, z: hd - 0.2 }, spots, col, winMat, lights: pts };
   }
 
@@ -386,7 +386,7 @@ export class Interiors {
     const night = W.env.night;
     R.winMat.color.setRGB(0.25 + (1 - night) * 0.9, 0.3 + (1 - night) * 0.95, 0.45 + (1 - night) * 0.9);
     const powered = this.b.powered;
-    for (const l of R.lights) l.visible = powered;
+    for (const l of R.lights) l.intensity = powered ? l.userData.base : 0;
     // customers wander between browse spots
     for (const f of this.figs.values()) {
       const s = R.spots[f.spot];

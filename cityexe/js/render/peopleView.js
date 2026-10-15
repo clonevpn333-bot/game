@@ -23,8 +23,8 @@ export class PeopleView {
     // pivot conventions: torso origin at hips, legs/arms origin at joint (extend downward)
     const G = {
       torso: partGeo((k) => { k.taper(0, 0, 0, 0.44, 0.26, 0.5, 0.28, 0.62, '#ffffff', 1); k.box(0, 0.66, 0, 0.14, 0.08, 0.12, '#ffffff', 2); }),
-      head: partGeo((k) => { k.sphere(0, 0.12, 0, 0.13, '#ffffff', 2, 0, 0.92, 1.12, 1, 1); k.box(0, 0.11, 0.115, 0.05, 0.05, 0.03, '#ffffff', 2); }),
-      hair: partGeo((k) => { k.sphere(0, 0.18, -0.015, 0.135, '#ffffff', 1, 0, 1.0, 0.72, 1.04, 1); }),
+      head: partGeo((k) => { k.sphere(0, 0.12, 0, 0.13, '#ffffff', 2, 0, 0.92, 1.12, 1, 0); k.box(0, 0.11, 0.115, 0.05, 0.05, 0.03, '#ffffff', 2); }),
+      hair: partGeo((k) => { k.sphere(0, 0.18, -0.015, 0.135, '#ffffff', 1, 0, 1.0, 0.72, 1.04, 0); }),
       hat: partGeo((k) => { k.cyl(0, 0.24, 0, 0.14, 0.09, '#ffffff', 10, 1); k.box(0, 0.205, 0.1, 0.24, 0.025, 0.14, '#ffffff', 1); }),
       leg: partGeo((k) => { k.taper(0, -0.84, 0, 0.13, 0.15, 0.17, 0.18, 0.84, '#ffffff', 1); k.box(0, -0.86, 0.04, 0.12, 0.08, 0.26, '#2a2420'); }),
       arm: partGeo((k) => { k.taper(0, -0.56, 0, 0.09, 0.1, 0.12, 0.13, 0.56, '#ffffff', 1); k.box(0, -0.6, 0, 0.08, 0.1, 0.09, '#ffffff', 2); }),

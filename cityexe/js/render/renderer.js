@@ -116,6 +116,9 @@ export class Renderer {
       uDay: { value: 1 },
     };
     this.env = { night: 0, sunUp: 1 };
+    let saved = null;
+    try { saved = localStorage.getItem('cityexe.quality'); } catch (e) { /* ignore */ }
+    if (saved) { this.setQuality(saved); this.qualityChosen = true; }
     this.resize();
     window.addEventListener('resize', () => this.resize());
   }
@@ -125,7 +128,10 @@ export class Renderer {
     this.r.setPixelRatio(q === 'low' ? 0.75 : Math.min(window.devicePixelRatio || 1, q === 'high' ? 1.5 : 1));
     this.r.shadowMap.enabled = q !== 'low';
     this.sun.castShadow = q !== 'low';
+    const size = q === 'high' ? 2048 : 1024;
+    if (this.sun.shadow.mapSize.x !== size) { this.sun.shadow.mapSize.set(size, size); if (this.sun.shadow.map) { this.sun.shadow.map.dispose(); this.sun.shadow.map = null; } }
     this.bloom.enabled = q !== 'low';
+    try { localStorage.setItem('cityexe.quality', q); } catch (e) { /* ignore */ }
     this.resize();
   }
 

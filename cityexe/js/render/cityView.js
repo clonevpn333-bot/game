@@ -540,9 +540,12 @@ export class CityView {
   }
 
   // Refresh per-building visual state from the simulation
-  updateBuildings(world) {
-    const night = this.U.uNight.value;
-    for (const b of this.city.buildings) {
+  updateBuildings(world, slices = 1) {
+    const list = this.city.buildings;
+    this._bi = this._bi || 0;
+    const n = Math.ceil(list.length / slices);
+    for (let k = 0; k < n; k++) {
+      const b = list[(this._bi++) % list.length];
       if (!b._parts) continue;
       const v = world.buildingVisual(b);
       const key = `${v.light.toFixed(2)}|${v.shop}|${v.damage.toFixed(2)}|${v.fire.toFixed(2)}|${v.boarded}|${v.constr.toFixed(2)}|${v.scaleY.toFixed(2)}|${v.sign}`;
@@ -639,9 +642,9 @@ export class CityView {
     // trees: kinds 0 round deciduous, 1 yard tree, 2 conifer
     const tk = new ModelKit();
     tk.cyl(0, 1.4, 0, 0.18, 2.8, '#5a4030', 6, 0);
-    tk.sphere(0, 4.0, 0, 2.2, '#ffffff', 1, 0, 1, 0.9, 1, 1);
-    tk.sphere(0.9, 3.3, 0.5, 1.5, '#ffffff', 1, 0, 1, 0.9, 1, 1);
-    tk.sphere(-0.8, 3.5, -0.6, 1.6, '#ffffff', 1, 0, 1, 0.9, 1, 1);
+    tk.sphere(0, 4.0, 0, 2.2, '#ffffff', 1, 0, 1, 0.9, 1, 0);
+    tk.sphere(0.9, 3.3, 0.5, 1.5, '#ffffff', 1, 0, 1, 0.9, 1, 0);
+    tk.sphere(-0.8, 3.5, -0.6, 1.6, '#ffffff', 1, 0, 1, 0.9, 1, 0);
     const treeGeo = tk.build();
     const ck = new ModelKit();
     ck.cyl(0, 1.0, 0, 0.2, 2, '#4a3428', 6, 0);

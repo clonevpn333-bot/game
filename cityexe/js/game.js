@@ -43,6 +43,7 @@ export class Game {
     progress('Building the skyline…', 0.55);
     await tick();
     this.renderer = new Renderer(this.canvas);
+    this.qualityLocked = this.renderer.qualityChosen;
     this.input = new Input(this.canvas);
     this.rig = new CameraRig(this.renderer.camera, this.input, this.world);
     this.cityView = new CityView(this.renderer, this.world);
@@ -53,6 +54,7 @@ export class Game {
     this.peopleView = new PeopleView(this.renderer, this.world);
     this.fx = new FX(this.renderer, this.world);
     this.eventView = new EventView(this.renderer, this.world, this.cityView);
+    this.vehicleView.lightPool = this.fx.lights;
     this.raycaster = new THREE.Raycaster();
     this.box = new THREE.Box3();
     progress('Compiling shaders…', 0.9);
@@ -119,7 +121,8 @@ export class Game {
     U.uWet.value = W.weather.wet;
     U.uSnow.value = W.weather.snowCover;
     if (W.signalsChanged || this.frame % 20 === 0) { this.cityView.updateSignals(this.renderer.U.uTime.value); W.signalsChanged = false; }
-    if (this.frame % 15 === 0) this.cityView.updateBuildings(W);
+    if (this.frame % 3 === 0) this.cityView.updateBuildings(W, 6);
+    this.autoQuality(dt);
     this.cityView.update(dt, W);
     if (this.cityView.season !== W.season) this.cityView.setSeasonColors(W.season);
     this.vehicleView.update(dt);
@@ -128,9 +131,25 @@ export class Game {
     const selP = this.selectionPos(this.selected), hovP = this.mode === 'observe' ? this.selectionPos(this.hover) : null;
     this.fx.update(dt, this.mode === 'observe' ? selP : null, hovP && (!this.selected || this.hover.id !== this.selected.id || this.hover.kind !== this.selected.kind) ? hovP : null, this.possession && this.possession.objective());
     this.eventView.update(dt, this.fx);
+    this.fx.lights.flush();
     this.renderer.render(dt);
     this.emit('frame', dt);
     I.endFrame();
+  }
+
+  // drop graphics quality automatically on slow GPUs (only once, early on)
+  autoQuality(dt) {
+    if (this.qualityLocked) return;
+    this.aqT = (this.aqT || 0) + 1;
+    this.aqSum = (this.aqSum || 0) + dt;
+    if (this.aqT < 90) return;
+    const avg = this.aqSum / this.aqT;
+    this.aqT = 0; this.aqSum = 0;
+    const q = this.renderer.quality;
+    if (avg > 0.045 && q === 'high') { this.renderer.setQuality('medium'); this.toast && this.toast('Graphics set to Medium for smoother play (Settings to change).'); }
+    else if (avg > 0.07 && q === 'medium') { this.renderer.setQuality('low'); this.toast && this.toast('Graphics set to Low for smoother play (Settings to change).'); this.qualityLocked = true; }
+    else this.qualityChecks = (this.qualityChecks || 0) + 1;
+    if (this.qualityChecks > 3) this.qualityLocked = true;
   }
 
   togglePause() {

@@ -60,8 +60,7 @@ export class EventView {
     this.meteorMesh = new THREE.Mesh(new THREE.SphereGeometry(4, 16, 12), new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 3, 1), toneMapped: false }));
     this.meteorMesh.visible = false;
     scene.add(this.meteorMesh);
-    this.meteorLight = new THREE.PointLight('#ffa040', 0, 600, 1.2);
-    scene.add(this.meteorLight);
+    this.meteorLight = { intensity: 0, position: new THREE.Vector3() };
     // flood water plane
     this.flood = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), cityView.waterMat);
     this.flood.visible = false;
@@ -115,12 +114,10 @@ export class EventView {
     g.add(beacon);
     g.userData = { rg, tr, beacon };
     if (h.kind === 'police') {
-      const spot = new THREE.SpotLight('#eef4ff', 0, 260, 0.16, 0.5, 1.2);
-      spot.position.set(0, -1, 1.2);
-      g.add(spot); g.add(spot.target);
       const cone = new THREE.Mesh(new THREE.ConeGeometry(9, 70, 20, 1, true).translate(0, -35, 0), new THREE.MeshBasicMaterial({ color: '#d8e4ff', transparent: true, opacity: 0.06, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
       this.R.scene.add(cone);
-      g.userData.spot = spot; g.userData.cone = cone;
+      g.userData.cone = cone;
+      g.userData.spot = true;
     }
     this.R.scene.add(g);
     this.heliMeshes.set(h.id, g);
@@ -138,13 +135,9 @@ export class EventView {
       g.userData.beacon.visible = Math.floor(h.t * 1.5) % 2 === 0;
       if (g.userData.spot) {
         const on = h.spot && h.look;
-        g.userData.spot.intensity = on ? 9000 : 0;
         g.userData.cone.visible = !!on;
         if (on) {
-          g.userData.spot.target.position.set(0, 0, 0);
-          g.userData.spot.target.parent?.remove(g.userData.spot.target);
-          this.R.scene.add(g.userData.spot.target);
-          g.userData.spot.target.position.set(h.look.x, 0, h.look.z);
+          this.fxRef && this.fxRef.lights.spotlight(h.x, h.y, h.z, h.look.x, 0, h.look.z, '#eef4ff', 9000, 0.16, 260, 1);
           const c = g.userData.cone;
           const dx = h.look.x - h.x, dz = h.look.z - h.z, dy = h.y;
           const L = Math.hypot(dx, dy, dz);
@@ -160,6 +153,7 @@ export class EventView {
   update(dt, fx) {
     const W = this.world;
     const D = W.disasters;
+    this.fxRef = fx;
     this.updateHelis(dt);
     const t = this.R.U.uTime.value;
     // tornadoes
@@ -191,6 +185,7 @@ export class EventView {
       for (let k = 0; k < 8; k++) fx.glow.emit({ x, y, z, vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6, vz: (Math.random() - 0.5) * 6, life: 0, max: 1.2, s0: 9, s1: 2, c0: [4, 2, 0.6, 1], c1: [1.5, 0.3, 0.05, 0], rot: 0 });
       for (let k = 0; k < 3; k++) fx.smoke.emit({ x, y, z, vx: 0, vy: 0, vz: 0, life: 0, max: 5, s0: 6, s1: 20, c0: [0.2, 0.18, 0.16, 0.7], c1: [0.4, 0.4, 0.4, 0], rot: Math.random() * 6, vr: 0.3 });
     } else { this.meteorMesh.visible = false; this.meteorLight.intensity = Math.max(0, this.meteorLight.intensity - dt * 3000); }
+    if (this.meteorLight.intensity > 1) fx.lights.point(this.meteorLight.position.x, this.meteorLight.position.y, this.meteorLight.position.z, '#ffa040', this.meteorLight.intensity, 600, 10);
     for (const mm of D.meteors) if (mm.done && !mm.fxDone) {
       mm.fxDone = true;
       for (let k = 0; k < 160; k++) { const a = Math.random() * Math.PI * 2, sp = 8 + Math.random() * 40; fx.glow.emit({ x: mm.x, y: 2, z: mm.z, vx: Math.cos(a) * sp, vy: 6 + Math.random() * 30, vz: Math.sin(a) * sp, life: 0, max: 1.5 + Math.random(), s0: 3, s1: 0.5, c0: [4, 2, 0.5, 1], c1: [1, 0.2, 0, 0], grav: -18, floor: 0.2, rot: 0 }); }
