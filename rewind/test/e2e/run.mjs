@@ -22,7 +22,7 @@ else { let paused = false;
   setTimeout(() => send({ type: 'onPlayerReady' }), 60);
   if (mode === 'autoplay') setTimeout(() => send({ type: 'onPlayerError', value: { errorCode: 3002 } }), 120);
   else { setTimeout(() => send({ type: 'onMute', value: true }), 90); setTimeout(() => send({ type: 'onStateChange', value: 3 }), 100); setTimeout(() => { if (!paused) send({ type: 'onStateChange', value: 1 }); }, 220); } }
-addEventListener('message', (e) => { const d = e.data || {}; if (d.type === 'unMute') send({ type: 'onMute', value: false }); if (d.type === 'mute') send({ type: 'onMute', value: true }); });
+addEventListener('message', (e) => { const d = e.data || {}; send({ type: '__cmd', value: d.type }); if (d.type === 'unMute') send({ type: 'onMute', value: false }); if (d.type === 'mute') send({ type: 'onMute', value: true }); });
 </script>`;
 async function newPage(url, { readyTimeout = 1500 } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } }); const page = await ctx.newPage();
@@ -77,11 +77,19 @@ await t('a spurious early "ended" does not skip the video', async () => {
   await p.evaluate((id) => { const q = window.__rewind.queue; q.jump(q.items.findIndex((v) => v.id === id)); window.__rewind.present(1); }, first);
   await p.waitForTimeout(2200); assert.equal(await cur(p), first, 'video was skipped by an early ended event'); await p.ctx.close();
 });
-await t('iPhone user agent: no hidden preload player is created', async () => {
+await t('iPhone: preload runs, sound is only (re)asserted inside the tap, never in the background', async () => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' }); const p = await ctx.newPage();
+  await p.addInitScript(() => { window.__cmds = []; addEventListener('message', (e) => { if (e.data && e.data.type === '__cmd') window.__cmds.push({ t: Date.now(), c: e.data.value }); }); });
   await p.route('https://www.tiktok.com/player/v1/**', (r) => r.fulfill({ contentType: 'text/html', body: PLAYER('ok') })); await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
-  await p.goto(`${base}/?skipIntro=1&period=2023-10`); await p.waitForFunction(() => window.__rewind.player.state === 'playing'); await p.waitForTimeout(2500);
-  assert.equal(await p.locator('iframe').count(), 1); await ctx.close();
+  await p.goto(`${base}/?skipIntro=1&period=2023-10`); await p.waitForFunction(() => window.__rewind.player.state === 'playing');
+  await p.waitForFunction(() => window.__rewind.player.pre && window.__rewind.player.pre.ready, null, { timeout: 8000 });
+  await p.click('#actMute'); await p.waitForFunction(() => window.__rewind.player.muted === false);
+  await p.waitForTimeout(600); await p.evaluate(() => { window.__g = Date.now(); window.__cmds.length = 0; }); await p.keyboard.press('ArrowDown');
+  await p.waitForFunction(() => window.__rewind.player.promoted && window.__rewind.player.state === 'playing'); await p.waitForTimeout(3500);
+  const late = await p.evaluate(() => window.__cmds.filter((x) => x.c === 'unMute' && x.t - window.__g > 1500).length);
+  assert.equal(late, 0, 'unmute was attempted in the background on iOS (that pauses the video)');
+  assert.ok((await p.evaluate(() => window.__cmds.filter((x) => x.c === 'unMute' && x.t - window.__g < 1500).length)) >= 1, 'sound was not carried into the swipe');
+  assert.ok((await p.evaluate(() => window.__cmds.some((x) => x.c === 'play'))), 'play was not sent inside the swipe'); await ctx.close();
 });
 await t('the feed adapts: finishing/saving a vibe raises it, flicking past lowers it, and it persists', async () => {
   const p = await newPage('period=fall'); await p.waitForFunction(() => window.__rewind.player.state === 'playing');

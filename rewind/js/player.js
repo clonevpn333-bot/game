@@ -46,7 +46,7 @@
       if (pre && pre.video.id === video.id && pre.ready && !pre.failed && pre.loop === loop) {
         /* Instant path: the hidden player already loaded this video. Reveal it and press play. */
         this.pre = null; clearTimeout(pre.timer); this.frame = pre.frame; this.frame.classList.remove('tt-pre'); this.warm = true; this.state = 'ready'; this.muted = true;   // we muted it while preloading
-        this.h.onMute && this.h.onMute(true); this.h.onReady && this.h.onReady(video); this._send('play'); this.promoted = true;
+        this.h.onMute && this.h.onMute(true); this.h.onReady && this.h.onReady(video); this._send('seekTo', 0); this._send('play'); this.promoted = true;
         this._set('start', this.startTimeout, () => { if (this.state === 'ready') this.h.onNeedsTap && this.h.onNeedsTap(); });
         return;
       }

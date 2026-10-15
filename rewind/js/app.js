@@ -9,11 +9,14 @@
   const vibeLabel = Object.fromEntries(D.vibes.map((v) => [v.id, v.label]));
   const MAX_FAILS = 4, MAX_TIMEOUTS = 3;
   const GENERIC = new Set(D.vibes.map((v) => v.id));
+  /* iOS only allows sound / play while handling a fresh tap. Programmatic unmute outside a gesture makes it PAUSE the video. */
+  const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const recentGesture = (ms = 1200) => Date.now() - (state.lastGesture || 0) < ms;
 
   /* ---------------- state ---------------- */
   const state = {
     period: 'fall', tags: [], collection: null, mood: null, query: '', favoritesOnly: false, override: null /* {ids,title} */,
-    view: { id: null, start: 0, frac: 0, ended: false }, failures: 0, timeouts: 0, blocked: false, muted: false, userMuted: false, soundOn: false, activated: false, lastNav: 0, dir: 1,
+    view: { id: null, start: 0, frac: 0, ended: false }, failures: 0, timeouts: 0, blocked: false, muted: false, userMuted: false, soundOn: false, activated: false, lastGesture: 0, lastNav: 0, dir: 1,
   };
   const queue = new C.Queue([]);
   let library = [];
@@ -133,7 +136,7 @@
 
   /* ---------------- player ---------------- */
   const player = new window.TikTokPlayer($('playerHost'), {
-    onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.soundOn) player.unmute(); },
+    onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.soundOn && (!IOS || recentGesture())) player.unmute(); },
     onPlaying: (v) => { state.failures = 0; state.timeouts = 0; hideStates(); S.recordHealth(v.id, { state: 'ok' }); S.markSeen(v.id); state.playingSince = performance.now(); if (state.view.id === v.id && !state.view.start) state.view.start = state.playingSince; dbg('playing ' + v.id.slice(-5)); setStatusDot(v); syncSound(); if (state.soundOn && !state.userMuted) wantSound(); schedulePreload(); },
     onPaused: () => {},
     onTime: (t) => { if (t && t.duration > 0 && state.view.id) state.view.frac = Math.max(state.view.frac, t.currentTime / t.duration); },
@@ -163,6 +166,7 @@
   let soundTries = 0, soundT = null;
   function wantSound() {
     if (!state.soundOn || state.userMuted) return;
+    if (IOS && !recentGesture()) { dbg('iOS: no fresh tap, staying muted (tap for sound)'); return; }   // would pause the video
     if (soundTries >= 4) return; soundTries++; clearTimeout(soundT);
     player.unmute(); dbg('re-asserting sound #' + soundTries);
     soundT = setTimeout(() => { if (player.muted && state.soundOn && !state.userMuted) wantSound(); }, 700);
@@ -200,9 +204,9 @@
   function schedulePreload() {
     clearTimeout(preloadT);
     const c = navigator.connection; if (c && c.saveData) return;
-    /* iOS lets only one video play at a time and throttles hidden players; the preload is unproven there, so skip it. */
-    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (ios && !qs.has('preload')) return;
+    /* On iOS the preload is what makes sound and instant play possible: the next video is already loaded, so it can be
+     * unmuted and played inside the swipe's own tap. ?nopreload switches it off (for diagnosing). */
+    if (qs.has('nopreload')) return;
     preloadT = setTimeout(() => { const n = queue.peek(1)[0]; if (n && playable(n)) player.preload(n, { loop: !settings.autoplayNext }); }, 900);
   }
   /* A preloaded video turned out to be gone: drop it from the feed before the user ever reaches it. */
@@ -571,6 +575,9 @@
     if (!S.onboarded() && !qs.has('skipIntro')) modalOnboard();
   }
   window.__rewind = { state, queue, player, get library() { return library; }, present, go };
-  ['pointerdown', 'keydown'].forEach((ev) => addEventListener(ev, () => (state.activated = true), { once: true, capture: true }));
+  ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'].forEach((ev) => addEventListener(ev, () => { state.activated = true; state.lastGesture = Date.now(); }, { capture: true, passive: true }));
+  /* Measure the REAL visible height (iOS Safari's toolbars make 100vh/100dvh unreliable) and keep it current. */
+  function fit() { const h = (window.visualViewport && visualViewport.height) || innerHeight; document.documentElement.style.setProperty('--app-h', Math.round(h) + 'px'); }
+  fit(); addEventListener('resize', fit); addEventListener('orientationchange', () => setTimeout(fit, 250)); if (window.visualViewport) visualViewport.addEventListener('resize', fit);
   boot();
 })();
