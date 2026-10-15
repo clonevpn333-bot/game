@@ -11,6 +11,8 @@ npm start            # → http://localhost:8080  (Node 18+, no install needed)
 
 Any static file server works (`python3 -m http.server`), because the game is plain ES modules with Three.js vendored in `vendor/`. Open `?fresh` to start a brand-new city, or `?seed=1234` for a different layout.
 
+The title screen offers two ways to play. **Life** is BitLife meets GTA: make a character, wake up in your family's home and live one life in the city. **Sandbox** (`?sandbox`) is the original god's-eye view, where you can possess anyone.
+
 ## What you can do
 
 | | |
@@ -23,11 +25,19 @@ Any static file server works (`python3 -m http.server`), because the game is pla
 | **Interiors** | Shops, restaurants, bars, homes, offices, police station (holding cells with whoever was actually arrested), fire station, hospital (beds with actual patients), metro stations (ride the train between stations), mall, warehouses, garages. They're populated by the citizens who are really inside |
 | **God tools** (`G`) | Fire, blackout, broken traffic light, accident, gridlock, crime wave, riot, zoo escape, tornado, meteor, flood, economic boom/crash, every weather type, skip to night/morning |
 | **History** | The City Archive (`H`) records major events by year, city records (longest chase, worst crash, longest blackout, richest citizen), and places to remember (craters, memorials, ruins) |
+| **Life mode** | Create a character with a background (struggling, working class, middle class, wealthy, or a country kid out past the city limits) and a real family of citizens. Stats (health, happiness, smarts, looks, fitness, karma), skills and needs. Phone (`P`): messages, contacts, GPS, bank, lottery, news. Home computer: apply for jobs (clerk to officer to teacher to dealer), college programs, rent or buy homes with a mortgage, buy cars, a social feed. Clock in (`C`), perform, get promoted or fired. Date, marry, have or adopt kids, break up. Random life events, birthdays, inheritance, death and playing on as your heir |
+| **Personalities** | Everyone has a Big Five profile, an archetype, likes, pet peeves, a backstory and a way of talking. Talk to anyone (`T`) |
+| **Nightlife & money** | Nightclub, cabaret lounge, casino (blackjack, roulette, slots, three-card poker), bars. A daily lottery draw with real odds, banks with deposits and loans |
+| **Crime** | Weapons (`X` to draw, right mouse to aim, left to fire or swing), mugging at gunpoint, a 5-star wanted level, police who return fire. Bank heists are hard: tellers only have their drawers; the money is in a steel vault you have to drill or burn through while guards shoot back and the alarm brings every unit in the city. Gun stores need a licence. The underground board on your computer (get an invite from a gang member) sells gear and illegal hardware, launders dirty cash and connects you to three gangs with turf, feuds and missions. Sell product on the street at night (`B`), and watch out for undercover cops. Jail time, lawyers, escape attempts, hospital bills |
+| **The dark side** | A few citizens hide something. Night-time killers follow people walking alone. Stalkers watch a neighbour's building and escalate. Con artists empty pensioners' savings, an arsonist sets fires, and some people have a violent streak. They prey on other citizens and only rarely on you. Detectives work every case, link serial crimes ("the Night Caller") and make arrests. You can read the police blotter in the phone's news app |
+| **Outskirts** | County Road 9 leads out of the city to Pinewood Hollow: cabins, trailers and farmhouses with yards, a working farm with jobs, firepits, gardens and woodpiles. It's cheap and quiet, and 25 minutes from everything |
 | **EXE Mode** | Optional, in Settings. Rare, subtle, unexplained things start accumulating underneath the normal simulation |
 
 ### Controls
 
 City view: `WASD`/drag pan · wheel zoom · right-drag or `Q`/`E` rotate · click inspect · double-click / `P` possess · `F` follow · `M` bookmark · `Space` pause · `1`–`5` speed · `0` slow-mo · `B` bookmarks · `H` archive · `G` god tools · `/` search.
+
+Life / on foot: `P` phone · `T` talk · `C` clock in · `X` weapon · right mouse aim · left mouse fire · `G` mug / rob · `B` sell product (night).
 
 Possessed: `WASD` move/drive · mouse look (click to lock the pointer) · `Shift` run/boost · `Space` jump/handbrake · `E` interact · `F` enter/exit vehicle · `G` crime · `H` horn · `L` siren/searchlight · `R` autopilot · `Q` leave · `C` camera. Helicopter: `W/S` pitch, `A/D` turn, `Space`/`C` altitude.
 
@@ -77,11 +87,13 @@ cityexe/
   js/game.js            loop, picking, observe mode
   js/sim/               world, cityGen, roads, sidewalks, traffic, peds, citizens, economy,
                         services, incidents, transit, power, weather, evolution, history,
-                        disasters, helis, anomaly, save
-  js/render/            renderer (sky, sun, bloom), cityView, materials (facade shader),
-                        vehicleView, peopleView, fx (particles, rain/snow), eventView, interiors
-  js/play/              cameraRig, possession, godTools
-  js/ui/hud.js          top bar, ticker, inspector, panels, possession HUD, minimap
+                        disasters, helis, anomaly, save; life, lifeState, careers, persona,
+                        lottery, combat, heists, crime (gangs), dark (killers, investigations)
+  js/render/            renderer (sky, sun, bloom), post (AO, grading), cityView, materials
+                        (surface shader, ModelKit), vehicleModels, vehicleView, peopleView, fx,
+                        eventView, interiors, layouts (authored floorplans), furniture
+  js/play/              cameraRig, possession, godTools, activities, weapons
+  js/ui/                hud, lifeUI (creator, phone, computer, talk, jail), panels, games (casino)
   js/audio/audio.js     procedural WebAudio
   test/                 headless sim + browser screenshot scenarios
   vendor/               three.js r170 (MIT)
@@ -101,14 +113,17 @@ node test/sim-headless.mjs 1 8      # one simulated day at 8×, prints traffic/i
 node test/long-run.mjs 30           # 30 days abstract: economy, evolution, sample life stories
 node test/browser-shot.mjs out police   # boots the game in headless Chromium, waits for an organic
                                         # incident, possesses the responding officer, saves screenshots
+node test/sim-crime.mjs 2.5         # gangs, feuds, missions, scams and cases over a few days
+node test/sim-dark.mjs              # forces killers and stalkers to act and traces each hunt
 ```
 
-Other browser scenarios are `overview`, `possess`, `god`, `interior` and `closeup` (see `test/scenarios.mjs`).
+Other browser scenarios are `overview`, `possess`, `god`, `interior`, `rooms`, `closeup`, and the Life-mode scenarios `life`, `crime` and `country` (run them with a `?life` query, e.g. `node test/browser-shot.mjs out crime "?life"`). See `test/scenarios.mjs` for the full list.
 
 ## Known limitations
 
 - One travel lane per direction (overtaking is a scripted pass maneuver).
 - Pedestrians don't collide with each other.
 - Time compression makes cross-town walks take game-hours, so citizens prefer cars, metro, buses and cabs for longer trips.
-- Interiors are generated per building type rather than authored, and there are no stairs or elevators between floors.
+- Interiors are authored per building type, not per building, and there are no stairs between floors.
+- Pinewood Hollow is reached through a gateway at the city's edge, not by a drivable road.
 - Software-rendered/integrated GPUs: use Settings → Graphics → Medium/Low (disables bloom/shadows).

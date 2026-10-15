@@ -27,6 +27,7 @@ export const BTYPES = {
   lounge: { label: 'Lounge', roles: { performer: [3, 26], bartender: [1, 17], bouncer: [1, 19] }, open: [20, 28], price: 70, need: 'party', color: '#ff2e7e', cap: 40, stock: true },
   gunstore: { label: 'Gun store', roles: { clerk: [1, 18] }, open: [10, 19], price: 420, need: 'arms', color: '#5d6d3a', cap: 6 },
   // civic
+  farm: { label: 'Farm', roles: { farmhand: [6, 17], 'ranch hand': [3, 18], 'farm manager': [1, 29] }, open: [6, 15], civic: true, color: '#5a9a3a', cap: 40 },
   school: { label: 'School', roles: { teacher: [8, 27], janitor: [1, 15] }, open: [7, 16], civic: true, color: '#e08a30', cap: 300, weekdays: true },
   college: { label: 'College', roles: { professor: [6, 40], 'admissions clerk': [1, 18] }, open: [8, 21], civic: true, color: '#7a3ad0', cap: 260, weekdays: true },
   police: { label: 'Police', roles: { officer: [6, 26] }, open: [0, 24], civic: true, color: '#2a5bd7', cap: 60, fleet: 'police' },

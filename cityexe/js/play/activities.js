@@ -27,6 +27,7 @@ const SHOP = {
   nightclub: [['Beer', 9, { drink: 1 }], ['Cocktail', 16, { drink: 1.2 }], ['Shots', 24, { drink: 2 }], ['Bottle service', 400, { drink: 1.5, fame: 2, social: 0.7 }]],
   lounge: [['Cocktail', 18, { drink: 1.2 }], ['Champagne', 90, { drink: 1.2, fame: 1 }]],
   casino: [['Cocktail', 14, { drink: 1.2 }], ['Champagne', 90, { drink: 1.2 }]],
+  farm: [['Farm-fresh eggs (2 meals)', 9, { groceries: 2 }], ['Basket of vegetables (4 meals)', 18, { groceries: 4 }], ['Fresh apple cider', 4, { hunger: 0.15, happy: 1 }], ['Jar of local honey', 8, { gift: 'honey' }]],
   gym: [['Day pass', 14, { pass: 1 }], ['Protein shake', 7, { hunger: 0.2, fitness: 0.5 }], ['Monthly membership', 49, { pass: 30 }]],
   hotel: [['Room for the night', 120, { room: 1 }]],
 };
@@ -44,7 +45,7 @@ export class Activities {
   label(a, I) {
     const W = this.W, c = this.c, biz = this.biz(I);
     switch (a.kind) {
-      case 'exit': return `Leave ${W.citizenAI.buildingName(I.b.id)}`;
+      case 'exit': return a.label && a.label !== 'Leave' ? a.label : `Leave ${W.citizenAI.buildingName(I.b.id)}`;
       case 'bed': return this.isHome(I) ? (this.timed?.kind === 'sleep' ? 'Wake up' : 'Sleep') : null;
       case 'fridge': return this.isHome(I) ? `Eat something (${c.life?.groceries ?? 3} meals left)` : null;
       case 'stove': return this.isHome(I) ? 'Cook a meal' : null;
@@ -100,6 +101,19 @@ export class Activities {
         this.startTimed('shower', 15, { onDone: () => { L.hygiene = 1; stat(c, 'happy', 1); g.toast('Fresh and clean.'); } });
         return;
       case 'toilet': g.toast('Much better.'); return;
+      case 'firepit':
+        p.action = 'sit';
+        this.startTimed('fire', 60, { speed: 5, onDone: () => { p.action = ''; N.fun = clamp(N.fun + 0.3, 0, 1); c.stress = clamp((c.stress || 0) - 0.2, 0, 1); stat(c, 'happy', 2); g.toast(rand.pick(['Crickets, woodsmoke, a sky full of stars you never see in the city.', 'The fire pops. Somewhere an owl answers.', 'You watch the embers until your thoughts go quiet.'])); } });
+        return;
+      case 'chop':
+        if (c.needs.energy < 0.15) { g.toast('Too tired to swing an axe.'); return; }
+        p.action = 'carry';
+        this.startTimed('chop', 45, { onDone: () => { p.action = ''; stat(c, 'fitness', 1.5); L.skills.fitness = Math.min(100, (L.skills.fitness || 0) + 1); c.needs.energy = clamp(c.needs.energy - 0.1, 0, 1); g.toast('A stack of split logs. Your shoulders burn in the good way.'); } });
+        return;
+      case 'garden':
+        p.action = 'repair';
+        this.startTimed('garden', 60, { onDone: () => { p.action = ''; if ((L.gardenDay ?? -9) < W.day) { L.gardenDay = W.day; L.groceries = (L.groceries ?? 3) + 2; g.toast('You weed, water and pick what\'s ripe: two meals\' worth of vegetables.'); } else g.toast('The garden is tended. Nothing more to pick today.'); stat(c, 'happy', 1); } });
+        return;
       case 'tv':
         p.action = 'sit';
         this.startTimed('tv', 60, { speed: 5, onDone: () => { p.action = ''; N.fun = clamp(N.fun + 0.35, 0, 1); stat(c, 'happy', 1.5); g.toast(rand.pick(['You binge a crime drama.', 'Channel 6 News covers the city.', 'A cooking show. You feel inspired.', 'Reality TV. You regret nothing.'])); } });

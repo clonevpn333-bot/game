@@ -447,11 +447,11 @@ export class Possession {
       const open = b.bizId == null || W.economy.isOpen(W.economy.biz[b.bizId], W.minuteOfDay) || b.residents.includes(c.id) || (c.job && W.economy.biz[c.job.biz]?.b === b.id);
       const home = b.residents.includes(c.id);
       if (home && b.bizId != null && b.state === 'ok') {
-        this.prompts.push({ key: 'H', text: 'Go up to your apartment' });
+        this.prompts.push({ key: 'H', text: b.civic === 'county' ? 'Drive home to your place in Pinewood Hollow (25 min)' : 'Go up to your apartment' });
         if (I.hit('KeyH')) { this.enterBuilding(b, { home: true }); return; }
       }
       if (b.state === 'ok' && (open || b.civic)) {
-        this.prompts.push({ key: 'E', text: home && b.bizId == null ? 'Go home' : `Enter ${name}` });
+        this.prompts.push({ key: 'E', text: home && b.bizId == null ? 'Go home' : b.civic === 'county' ? 'Drive out to the farms of Pinewood Hollow (25 min)' : `Enter ${name}` });
         if (I.hit('KeyE')) { this.enterBuilding(b, { home: home && b.bizId == null, fromStreet: true }); return; }
       } else if (b.state === 'ok') this.prompts.push({ key: '', text: `${name} is closed` });
       const biz = b.bizId != null ? W.economy.biz[b.bizId] : null;
@@ -569,6 +569,8 @@ export class Possession {
     if (this.game.interiors && this.game.interiors.canEnter(b)) {
       W.peds.despawn(c.ped);
       W.citizenAI.placeInside(c, b.id);
+      // County Road 9 leads out of the city: the drive takes a while
+      if (b.civic === 'county') { W.time += 25; this.game.toast('You drive out past the city limits on County Road 9. The streetlights give way to pines.', 4); }
       this.game.interiors.enter(b, c, true, opt);
       this.mode = 'inside';
       this.game.audio && this.game.audio.door();

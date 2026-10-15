@@ -16,6 +16,7 @@ export const BACKGROUNDS = {
   poor: { label: 'Struggling', desc: 'A cramped apartment in Old Town or the Ironworks. Every dollar counts.', cash: 120, bank: 0, districts: ['O', 'I', 'H'], house: false, parentMoney: [100, 900] },
   working: { label: 'Working class', desc: 'Your parents work hard for a modest apartment.', cash: 400, bank: 300, districts: ['O', 'W', 'C', 'H'], house: false, parentMoney: [600, 3000] },
   middle: { label: 'Middle class', desc: 'A house in the suburbs, a car in the driveway.', cash: 900, bank: 2500, districts: ['SW', 'SE'], house: true, parentMoney: [3000, 9000], car: 'hatch' },
+  rural: { label: 'Country kid', desc: 'A homestead out in Pinewood Hollow, past the city limits. Pines, chores, a long drive to anything.', cash: 300, bank: 800, districts: [], county: true, house: false, parentMoney: [800, 4000], car: 'pickup' },
   rich: { label: 'Wealthy', desc: 'Maple Heights. Private tutors. A trust fund.', cash: 2500, bank: 25000, districts: ['SE'], house: true, parentMoney: [20000, 60000], car: 'suv' },
 };
 export const START_TRAITS = {
@@ -54,7 +55,7 @@ export class LifeSim {
     const B = BACKGROUNDS[spec.background] || BACKGROUNDS.working;
     const age = clamp(spec.age || 18, 18, 30);
     // find parents: a real household of the right kind, with two adults old enough
-    const fits = (b) => b.state === 'ok' && B.districts.includes(b.code) && (B.house ? b.kind === 'house' : b.kind !== 'house' && b.resUnits > 0);
+    const fits = (b) => b.state === 'ok' && (B.county ? b.civic === 'county' : B.districts.includes(b.code) && b.civic !== 'county' && (B.house ? b.kind === 'house' : b.kind !== 'house' && b.resUnits > 0));
     let parents = null, home = null;
     const cands = rand.shuffle(W.city.buildings.filter(fits));
     for (const b of cands) {

@@ -50,6 +50,8 @@ const SPECIAL = {
   '8,2': { full: true, civic: 'college', name: 'Silver River College' },
   '1,8': { half: 'N', civic: 'school', name: 'Westpoint High School' },
   '5,8': { half: 'N', civic: 'school', name: 'Maple Heights School' },
+  // the edge of the city: County Road 9 runs out to the homesteads and farms of Pinewood Hollow
+  '9,9': { half: 'S', civic: 'county', name: 'Pinewood Hollow (County Rd 9)' },
 };
 const SUBSTATIONS = { '1,4': 'W', '7,2': 'C', '8,0': 'I', '6,8': 'S' };
 export const POWER_ZONES = {
@@ -331,6 +333,11 @@ function buildParts(b, spec, rng) {
       if (b.civic === 'mall') {
         box(x0 + 8, z0 + 8, x1 - 8, z1 - 8, h, h + 5, 8, '#4a6a80');
       }
+      if (b.civic === 'county') {
+        // a red barn of a feed store at the city limits, a silo, the road sign
+        P.push({ x: b.x, z: b.z, y: h + 1, w: x1 - x0 + 0.8, d: z1 - z0 + 0.8, h: 4, style: 12, color: '#5a4a3a', gable: (b.front === 'N' || b.front === 'S') ? 'x' : 'z' });
+        P.push({ x: x0 + 4, z: z0 + 4, y: 9, w: 5, d: 5, h: 18, style: 10, color: '#b8bcc0', stack: true });
+      }
       if (b.civic === 'fire' || b.civic === 'police') {
         box(x1 - 7, z0 + 2, x1 - 2, z0 + 7, h, h + 7, 7, b.trim);
       }
@@ -423,9 +430,10 @@ function layoutBlock(city, blk, rng) {
       casino: { h: 30, style: 8, color: '#3a2a48', trim: '#c9a227', signColor: '#ffd040' },
       college: { h: 16, style: 6, color: '#b89a7a', trim: '#5a3a2a', signColor: '#7a3ad0' },
       school: { h: 10, style: 6, color: '#c8704a', trim: '#e8e0d0', signColor: '#e08a30' },
+      county: { h: 6, style: 4, color: '#9a3a2a', trim: '#e8e0d0', signColor: '#5a9a3a', resUnits: 16, rent: 14 },
     }[civ];
     const rect = sp.full ? { x0: blk.x0 + (civ === 'cityhall' ? 10 : 0), z0: blk.z0 + (civ === 'cityhall' ? 8 : 0), x1: blk.x1 - (civ === 'cityhall' ? 10 : 0), z1: blk.z1 - (civ === 'cityhall' ? 14 : 0) } : addSpecialHalf(sp.half);
-    const b = addBuilding(city, blk, rect, { ...specs, kind: 'civic', civic: civ, name: sp.name, prefer: sp.half || (civ === 'cityhall' ? 'S' : null), rent: 0 }, rng);
+    const b = addBuilding(city, blk, rect, { ...specs, kind: 'civic', civic: civ, name: sp.name, prefer: sp.half || (civ === 'cityhall' ? 'S' : null), rent: specs.rent || 0 }, rng);
     if (b) city.special[civ] = (city.special[civ] || []).concat(b.id);
     if (sp.half) {
       // fill other half with regular lots

@@ -27,6 +27,7 @@ export function layoutFor(b, W, c, opt = {}) {
   if (b.metro) return { key: 'metro', ctx };
   if (b.garage) return { key: 'garage', ctx };
   if (b.kind === 'house') return { key: 'house', ctx };
+  if (b.civic === 'county') return { key: c && c.home === b.id && opt.home ? 'homestead' : 'farm', ctx };
   const resident = c && c.home === b.id;
   if (t) {
     if (resident && opt.home) return { key: 'apartment', ctx };
@@ -60,7 +61,7 @@ export function layoutFor(b, W, c, opt = {}) {
 const ROLE_SPOT = {
   dealer: 'dealer', 'pit boss': 'guard', dj: 'dj', performer: 'perform', bouncer: 'guard', 'security guard': 'guard', teacher: 'teach', professor: 'teach',
   bartender: 'bar_staff', cook: 'cook', server: 'staff', doctor: 'staff2', nurse: 'staff2', officer: 'desk', analyst: 'desk', clerk: 'staff', manager: 'desk',
-  teller: 'staff', 'bank manager': 'desk', receptionist: 'staff', janitor: 'stand', worker: 'stand', mechanic: 'stand', trainer: 'staff', firefighter: 'wait',
+  teller: 'staff', 'bank manager': 'desk', farmhand: 'staff', 'ranch hand': 'staff', 'farm manager': 'desk', receptionist: 'staff', janitor: 'stand', worker: 'stand', mechanic: 'stand', trainer: 'staff', firefighter: 'wait',
 };
 const SIT = new Set(['seat', 'sofa', 'desk', 'student', 'gamble', 'watch']);
 
@@ -108,7 +109,7 @@ export class Interiors {
     this.b = b;
     this.c = c;
     const { key, ctx } = layoutFor(b, this.W, c, { home: opt.home ?? (c && c.home === b.id && !(b.bizId != null && opt.fromStreet)), key: opt.key });
-    this.key = key; this.ctx = ctx; this.unitOf = opt.unitOf ?? (key === 'apartment' ? c?.id : null);
+    this.key = key; this.ctx = ctx; this.unitOf = opt.unitOf ?? (key === 'apartment' || key === 'homestead' ? c?.id : null);
     this.room = this.buildRoom(b, key, ctx);
     this.scene.add(this.room.group);
     const R = this.room;
@@ -116,7 +117,7 @@ export class Interiors {
     this.game.renderer.setScene(this.scene);
     const T = this.game.rig.third;
     T.dist = 7.5; T.height = 0.4; T.pitch = 0.82; T.lookY = 0.9; T.yaw = Math.PI;
-    this.cut.uCeilY.value = R.H - 0.06;
+    this.cut.uCeilY.value = R.outdoor ? 80 : R.H - 0.06;
     this.game.emit('interior', { b, kind: key });
     this.lastOcc = '';
     this.syncFigures(true);
@@ -128,6 +129,7 @@ export class Interiors {
     this.clearRoom();
     this.game.renderer.setScene(null);
     if (!silent && c && c.possessed) {
+      if (b.civic === 'county') { W.time += 25; this.game.toast('Twenty-five minutes of two-lane road, and the skyline rises ahead.', 4); }
       W.citizenAI.leaveBuilding(c);
       if (c.ped) { this.game.possession.enterFoot(); this.game.rig.third.yaw = c.ped.h; }
       this.game.audio && this.game.audio.door();
@@ -203,7 +205,14 @@ export class Interiors {
       }
       if (a.type === 'clublights') anim.club = true;
     }
-    return { group, W: w, D: d, H: h, door: L.door, spots: L.spots, col: L.col, acts: L.acts, winMat, lights, anim, key };
+    // open-air plots (the outskirts): a sun / moon and the sky instead of a ceiling
+    let sun = null;
+    if (L.outdoor) {
+      sun = new THREE.DirectionalLight('#fff2dc', 2);
+      sun.position.set(18, 30, 12); sun.target.position.set(0, 0, 0);
+      group.add(sun, sun.target);
+    }
+    return { group, W: w, D: d, H: h, door: L.door, spots: L.spots, col: L.col, acts: L.acts, winMat, lights, anim, key, outdoor: !!L.outdoor, sun };
   }
 
   // reopen the vault door (heist progress), rebuilding just that mesh
@@ -226,7 +235,7 @@ export class Interiors {
     if (c.job && W.economy.biz[c.job.biz]?.b === b.id && c.working) return ROLE_SPOT[c.job.role] || (this.key === 'office' ? 'desk' : 'staff');
     if (c.duty != null) return 'wait';
     if (c.activity === 'sleep' || W.citizenAI && c.activity === 'home' && (W.minuteOfDay / 60 > c.sleepH || W.minuteOfDay / 60 < c.wakeH)) return 'bed';
-    if (this.key === 'apartment' || this.key === 'house') return rand.pick(['sofa', 'seat', 'stand', 'sofa']);
+    if (this.key === 'apartment' || this.key === 'house' || this.key === 'homestead') return rand.pick(['sofa', 'seat', 'stand', 'sofa']);
     if (this.key === 'club') return rand.chance(0.7) ? 'dance' : 'bar';
     if (this.key === 'lounge') return 'watch';
     if (this.key === 'casino') return 'gamble';
@@ -243,7 +252,7 @@ export class Interiors {
     if (!b) return;
     let occ = Array.from(b.occupants).filter((id) => id !== this.c?.id || !this.c.possessed);
     // a private apartment only shows the people who live in that unit (or are visiting it)
-    if (this.key === 'apartment') { const host = W.citizens[this.unitOf ?? this.c?.id]; occ = occ.filter((id) => { const o = W.citizens[id]; return host && (o.unit === host.unit && o.home === host.home || o.goal?.with === host.id); }); }
+    if (this.key === 'apartment' || this.key === 'homestead') { const host = W.citizens[this.unitOf ?? this.c?.id]; occ = occ.filter((id) => { const o = W.citizens[id]; return host && (o.unit === host.unit && o.home === host.home || o.goal?.with === host.id); }); }
     if (this.key === 'lobby') occ = occ.slice(0, 3);
     const key = occ.join(',');
     if (!force && key === this.lastOcc) return;
@@ -298,6 +307,14 @@ export class Interiors {
     R.winMat.color.setRGB(0.18 + (1 - night) * 0.95, 0.22 + (1 - night) * 0.98, 0.35 + (1 - night) * 0.92);
     const powered = this.b.powered;
     this.amb.intensity = powered ? (['club', 'lounge', 'casino', 'bar'].includes(this.key) ? 0.5 : 0.7) : 0.18 + (1 - night) * 0.35;
+    if (R.outdoor) {
+      const day = 1 - night;
+      this.scene.background.setRGB(0.01 + day * 0.2, 0.015 + day * 0.4, 0.04 + day * 0.78);
+      R.sun.intensity = 0.12 + day * 2.4;
+      R.sun.color.setRGB(0.55 + day * 0.45, 0.62 + day * 0.33, 0.95);
+      this.amb.intensity = 0.15 + day * 0.75;
+      this.scene.environmentIntensity = 0.06 + day * 0.45;
+    } else { this.scene.background.set('#0b0d10'); this.scene.environmentIntensity = 0.55; }
     for (const l of R.lights) {
       if (!powered) { l.intensity = 0; continue; }
       if (l.userData.club) {

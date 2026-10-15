@@ -266,6 +266,7 @@ export class CitizenAI {
   homeName(c) {
     if (c.homeless) return 'No fixed address';
     const b = this.world.city.buildings[c.home];
+    if (b && b.civic === 'county') return 'a homestead in Pinewood Hollow';
     if (b && b.bizId != null && b.kind !== 'house') return `Apartment above ${this.buildingName(c.home)}`;
     return this.buildingName(c.home);
   }

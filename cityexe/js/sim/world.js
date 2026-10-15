@@ -26,7 +26,7 @@ import { Bus } from '../core/bus.js';
 import { RNG, rand } from '../core/rng.js';
 import { clamp } from '../core/math.js';
 
-const CIVIC_TYPE = { police: 'police', fire: 'fire', hospital: 'hospital', cityhall: 'cityhall', mall: 'mall', busdepot: 'busdepot', powerplant: 'powerplant', utility: 'utility', construction: 'construction', towyard: 'towyard', taxi: 'taxi', casino: 'casino', college: 'college', school: 'school' };
+const CIVIC_TYPE = { police: 'police', fire: 'fire', hospital: 'hospital', cityhall: 'cityhall', mall: 'mall', busdepot: 'busdepot', powerplant: 'powerplant', utility: 'utility', construction: 'construction', towyard: 'towyard', taxi: 'taxi', casino: 'casino', college: 'college', school: 'school', county: 'farm' };
 export const HYPER = 50;
 
 export class World {

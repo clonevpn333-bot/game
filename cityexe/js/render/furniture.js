@@ -387,6 +387,74 @@ export const FURN = {
     k.surf('metal'); for (let x = -w / 2; x <= w / 2; x += 2) k.box(x, 1.95, -0.05, 0.06, 1.42, 0.06, '#c8b070');
     for (let x = -w / 2 + 1; x < w / 2; x += 2) { k.box(x, 1.32, -0.05, 0.4, 0.06, 0.3, '#b8bcc0'); k.surf('plastic'); k.box(x, 1.75, -0.08, 0.3, 0.2, 0.01, '#20d080', 0, 10); k.surf('metal'); }
   } },
+  // ---------------------------------------------------------------- the countryside
+  pine: { fp: [0.8, 0.8], b: (k, o) => {
+    const h = o.h || 8;
+    k.surf('bark'); k.cyl(0, h * 0.3, 0, 0.16, h * 0.6, '#4a3424', 7, 0, 0, null, 0.1);
+    k.surf('leaf');
+    for (let i = 0; i < 5; i++) { const y = h * (0.28 + i * 0.15), r = (1 - i * 0.17) * (o.r || 1.9); k.cyl(0, y, 0, r, h * 0.26, i % 2 ? '#2a4a2c' : '#24432a', 9, 0, 0, null, 0.05); }
+  } },
+  oak: { fp: [0.9, 0.9], b: (k, o) => {
+    const h = o.h || 6;
+    k.surf('bark'); k.cyl(0, h * 0.25, 0, 0.26, h * 0.5, '#5a4432', 8, 0, 0, null, 0.18);
+    for (const [a, l] of [[0.6, 1.4], [2.4, 1.2], [4.2, 1.5]]) k.tube([[0, h * 0.4, 0], [Math.cos(a) * l * 0.6, h * 0.55, Math.sin(a) * l * 0.6], [Math.cos(a) * l, h * 0.62, Math.sin(a) * l]], 0.1, '#5a4432', 5);
+    k.surf('leaf');
+    for (let i = 0; i < 7; i++) { const a = i * 0.9; k.blob(Math.cos(a) * 1.3, h * 0.72 + (i % 3) * 0.5, Math.sin(a) * 1.3, 1.5, 1.1, 1.4, i % 2 ? '#4a7232' : '#3e6a2c', 0, 0, i * 4.7 + (o.seed || 0), 0.3, 1); }
+    k.blob(0, h * 0.95, 0, 1.6, 1.2, 1.6, '#4c7834', 0, 0, 9, 0.3, 1);
+  } },
+  fence: { fp: null, b: (k, o) => {
+    const w = o.w || 4;
+    k.surf('wood');
+    for (let x = -w / 2; x <= w / 2 + 0.01; x += 2) k.box(x, 0.55, 0, 0.12, 1.1, 0.12, '#8a7a62');
+    k.box(0, 0.85, 0, w, 0.09, 0.05, '#9a8a70'); k.box(0, 0.45, 0, w, 0.09, 0.05, '#9a8a70');
+  } },
+  hayBale: { fp: [1.2, 0.9], b: (k) => { k.surf('fabric'); k.cyl(0, 0.6, 0, 0.6, 1.1, '#c8a850', 14, 0, 0, [0, 0, Math.PI / 2]); k.cyl(0, 0.6, 0, 0.62, 0.06, '#b89840', 14, 0, 0, [0, 0, Math.PI / 2]); } },
+  cropRows: { fp: null, b: (k, o) => {
+    const w = o.w || 8, d = o.d || 6, c = o.c || '#4a8a34';
+    k.surf('concrete'); k.box(0, 0.02, 0, w, 0.04, d, '#5a4430');
+    k.surf('leaf');
+    for (let z = -d / 2 + 0.4; z < d / 2; z += 0.8) { k.box(0, 0.08, z, w, 0.12, 0.34, '#4a3626'); for (let x = -w / 2 + 0.3; x < w / 2; x += 0.45) k.blob(x, 0.32, z, 0.2, o.tall ? 0.45 : 0.22, 0.2, c, 0, 0, x * 7 + z, 0.35, 0); }
+  } },
+  tractor: { fp: [2.0, 3.4], b: (k) => {
+    k.surf('metal'); k.rbox(0, 1.0, 0.2, 1.1, 0.7, 2.2, 0.08, '#3a8a3a'); k.rbox(0, 1.55, -0.6, 1.2, 1.1, 1.0, 0.06, '#3a8a3a');
+    k.surf('glass'); k.box(0, 1.75, -0.6, 1.1, 0.6, 0.92, '#a8c8d8', 0, 7);
+    k.surf('rubber'); for (const s of [-1, 1]) { k.cyl(s * 0.85, 0.75, -0.8, 0.75, 0.45, '#1e1e1e', 18, 0, 0, [0, 0, Math.PI / 2]); k.cyl(s * 0.7, 0.45, 1.0, 0.45, 0.35, '#1e1e1e', 14, 0, 0, [0, 0, Math.PI / 2]); }
+    k.surf('metal'); k.cyl(0.3, 1.7, 0.9, 0.06, 0.8, '#2a2a2a', 6);
+  } },
+  pickup: { fp: [2.0, 5.0], b: (k, o) => {
+    const c = o.c || '#8a2a24';
+    k.surf('metal'); k.rbox(0, 0.85, 0, 1.9, 0.7, 4.9, 0.15, c); k.rbox(0, 1.45, 0.7, 1.8, 0.65, 1.6, 0.18, c);
+    k.surf('glass'); k.box(0, 1.5, 0.7, 1.82, 0.4, 1.4, '#30404a', 0, 7);
+    k.surf('rubber'); for (const s of [-1, 1]) for (const z of [-1.5, 1.55]) k.cyl(s * 0.88, 0.42, z, 0.42, 0.3, '#1a1a1a', 14, 0, 0, [0, 0, Math.PI / 2]);
+    k.surf('chrome'); k.box(0, 0.6, 2.47, 1.8, 0.2, 0.06, '#c8ccd0');
+  } },
+  trailerHome: { fp: [3.6, 11], b: (k, o) => {
+    k.surf('metal'); k.rbox(0, 1.55, 0, 3.4, 2.5, 10.8, 0.12, o.c || '#e8e2d2');
+    k.box(0, 1.2, 0, 3.42, 0.22, 10.82, '#5a8aa8');
+    k.surf('concrete'); for (const z of [-4, 0, 4]) k.box(0, 0.15, z, 3.0, 0.3, 0.4, '#7a7a76');
+    k.surf('glass'); for (const z of [-3.5, 2.5]) k.box(1.72, 1.8, z, 0.03, 0.8, 1.4, '#9ab8d0', 0, 7);
+  } },
+  firepit: { fp: [1.4, 1.4], b: (k) => {
+    k.surf('concrete'); for (let i = 0; i < 10; i++) { const a = i * 0.628; k.blob(Math.cos(a) * 0.6, 0.12, Math.sin(a) * 0.6, 0.16, 0.13, 0.14, '#7a746c', 0, 0, i, 0.3, 0); }
+    k.surf('bark'); for (let i = 0; i < 4; i++) k.cyl(0, 0.15, 0, 0.06, 0.8, '#3a2a1e', 6, 0, 0, [Math.PI / 2, i * 0.8, 0.3]);
+    k.surf('none'); k.blob(0, 0.3, 0, 0.22, 0.3, 0.22, '#ff8a30', 0, 10, 3, 0.4, 1);
+  } },
+  woodpile: { fp: [2.0, 0.8], b: (k) => { k.surf('bark'); for (let y = 0; y < 4; y++) for (let x = 0; x < 6 - y; x++) k.cyl(-0.8 + x * 0.3 + y * 0.15, 0.13 + y * 0.24, 0, 0.12, 0.7, y % 2 ? '#7a5a3a' : '#6a4a2e', 7, 0, 0, [Math.PI / 2, 0, 0]); } },
+  coop: { fp: [2.2, 1.6], b: (k) => {
+    k.surf('planks'); k.box(0, 0.8, 0, 2.0, 1.0, 1.4, '#a8462e'); k.taper(0, 1.3, 0, 2.2, 1.6, 0.1, 1.6, 0.5, '#4a3a2e');
+    k.surf('metal'); k.box(0, 0.4, 0.95, 2.0, 0.8, 0.02, '#8a8a8a');
+    k.surf('fabric'); for (let i = 0; i < 4; i++) k.ball(-0.6 + i * 0.4, 0.15, 1.3, 0.12, 0.12, 0.16, i % 2 ? '#f0ece4' : '#a86a3a');
+  } },
+  silo: { fp: [3.2, 3.2], b: (k) => { k.surf('metal'); k.cyl(0, 5, 0, 1.5, 10, '#b8bcc0', 18); k.lathe(0, 10, 0, [[1.55, 0], [1.2, 0.7], [0.4, 1.3], [0, 1.4]], '#8a9096', 18); } },
+  mailboxPost: { fp: null, b: (k) => { k.surf('wood'); k.box(0, 0.55, 0, 0.1, 1.1, 0.1, '#6a4a30'); k.surf('metal'); k.rbox(0, 1.2, 0, 0.25, 0.25, 0.5, 0.1, '#3a4a6a'); k.box(0.14, 1.3, -0.1, 0.02, 0.18, 0.04, '#d03a2a'); } },
+  porchSwing: { fp: [1.6, 0.8], b: (k) => { k.surf('wood'); k.box(0, 0.5, 0, 1.5, 0.08, 0.5, '#8a6a4a'); k.box(0, 0.75, -0.22, 1.5, 0.45, 0.06, '#8a6a4a'); k.surf('metal'); for (const s of [-1, 1]) k.cyl(s * 0.7, 1.6, 0, 0.01, 2.1, '#5a5a5a', 4); } },
+  rocking: { fp: [0.7, 0.9], b: (k) => { k.surf('wood'); k.box(0, 0.45, 0, 0.55, 0.06, 0.5, '#6a4a30'); k.box(0, 0.8, -0.24, 0.55, 0.7, 0.05, '#6a4a30'); for (const s of [-1, 1]) k.box(s * 0.25, 0.08, 0, 0.04, 0.06, 0.9, '#5a3a24'); } },
+  animal: { fp: [0.8, 1.8], b: (k, o) => {
+    const c = o.c || '#5a3a2a';
+    k.surf('leather'); k.ball(0, 1.0, 0, 0.42, 0.42, 0.85, c); k.ball(0, 1.2, 0.95, 0.2, 0.22, 0.3, c);
+    for (const [x, z] of [[-0.25, -0.55], [0.25, -0.55], [-0.25, 0.5], [0.25, 0.5]]) k.cyl(x, 0.35, z, 0.07, 0.7, c, 6);
+    if (o.spots) { k.ball(0.2, 1.15, -0.2, 0.25, 0.2, 0.3, '#f0ece4'); k.ball(-0.15, 0.95, 0.3, 0.3, 0.2, 0.25, '#f0ece4'); }
+  } },
   vaultDoor: { fp: null, b: (k, o) => {
     const open = o.open ? 1 : 0;
     // a steel frame around a walk-through opening (hidden by the door when shut)

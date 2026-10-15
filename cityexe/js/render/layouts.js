@@ -576,7 +576,119 @@ export const LAYOUTS = {
 };
 
 // sizes per layout (fixed, authored): [w, d, h]
+
+// ---------------------------------------------------------------- the outskirts
+// Open-air plots out on County Road 9: grass, trees, a fence line, the dirt
+// drive back to the city. Buildings on them are open-topped so the cutaway
+// camera can see inside.
+function countryPlot(L, o = {}) {
+  const hw = L.w / 2, hd = L.d / 2;
+  L.outdoor = true;
+  L.floor(-hw - 160, -hd - 160, hw + 160, hd + 160, 'leaf', '#55723a');
+  L.floor(-1.6, hd - 9, 1.6, hd + 4, 'concrete', '#8a7456');
+  // the fence line, with a gate on the road side
+  for (let x = -hw + 2; x <= hw - 2; x += 4) { if (Math.abs(x) > 3) L.put('fence', x, hd - 0.4, 0, {}, false); L.put('fence', x, -hd + 0.4, 0, {}, false); }
+  for (let z = -hd + 2; z <= hd - 2; z += 4) { L.put('fence', -hw + 0.4, z, Math.PI / 2, {}, false); L.put('fence', hw - 0.4, z, Math.PI / 2, {}, false); }
+  L.block(-hw, hd - 0.5, -2, hd - 0.3, true); L.block(2, hd - 0.5, hw, hd - 0.3, true);
+  L.block(-hw, -hd + 0.3, hw, -hd + 0.5, true); L.block(-hw + 0.3, -hd, -hw + 0.5, hd, true); L.block(hw - 0.5, -hd, hw - 0.3, hd, true);
+  L.put('mailboxPost', 2.6, hd - 0.2, 0, {}, false);
+  // woods beyond the fence
+  for (let i = 0; i < 26; i++) {
+    const a = L.r(100 + i) * Math.PI * 2, r = Math.max(hw, hd) + 4 + L.r(200 + i) * 22;
+    const x = Math.cos(a) * r * 1.1, z = Math.sin(a) * r;
+    if (z > hd && Math.abs(x) < 6) continue;
+    L.put(L.r(300 + i) < 0.7 ? 'pine' : 'oak', x, z, L.r(400 + i) * 6, { h: 6 + L.r(500 + i) * 7, seed: i }, false);
+  }
+  // and the treeline on the horizon
+  for (let i = 0; i < 70; i++) {
+    const a = (i / 70) * Math.PI * 2 + L.r(600 + i) * 0.08, r = 45 + L.r(700 + i) * 40;
+    const x = Math.cos(a) * r * 1.15, z = Math.sin(a) * r;
+    if (z > 0 && Math.abs(x) < 8) continue;
+    L.put('pine', x, z, 0, { h: 10 + L.r(800 + i) * 8, r: 2.4 }, false);
+  }
+  L.door = { x: 0, z: hd - 1.5 };
+  L.act('exit', 0, hd - 1.2, o.exit || 'Drive back into the city', { r: 1.6 });
+}
+// one open-topped dwelling: walls with a door, a lived-in room inside
+function dwelling(L, x0, z0, x1, z1, o) {
+  const wo = { c: o.c, surf: o.surf, base: false };
+  const dx = (x0 + x1) / 2;
+  L.floor(x0, z0, x1, z1, o.floor || 'planks', o.fc || '#8a6a4a');
+  L.wallX(z1, x0, x1, { ...wo, gaps: [[dx - 0.6, dx + 0.6]] }); L.wallX(z0, x0, x1, wo); L.wallZ(x0, z0, z1, wo); L.wallZ(x1, z0, z1, wo);
+  const W = x1 - x0, D = z1 - z0;
+  // bedroom corner (back left), kitchen (back right), living (front)
+  L.put('bed', x0 + 1.1, z0 + 1.2, 0, { single: W < 6, c2: L.pick(PALETTE.bed, 3), c: '#6a4a30' });
+  L.act('bed', x0 + 1.1, z0 + 2.6, 'Sleep'); L.spot('bed', x0 + 1.1, z0 + 1.2, Math.PI);
+  L.put('wardrobe', x0 + (W < 6 ? 2.4 : 2.8), z0 + 0.4, 0, { c: '#6a4a30' }); L.act('wardrobe', x0 + 2.6, z0 + 1.2, 'Change clothes');
+  L.put('stove', x1 - 0.4, z0 + 1.0, -Math.PI / 2); L.put('fridge', x1 - 0.45, z0 + 2.0, -Math.PI / 2); L.put('sink', x1 - 0.4, z0 + 3.0, -Math.PI / 2);
+  L.act('stove', x1 - 1.3, z0 + 1.0, 'Cook a meal'); L.act('fridge', x1 - 1.3, z0 + 2.0, 'Eat something');
+  if (D > 6) { L.put('dining', x1 - 2.2, z0 + 4.4, 0, { c: '#6a4a30' }); L.spot('seat', x1 - 2.6, z0 + 3.7, 0); L.spot('seat', x1 - 1.8, z0 + 5.1, Math.PI); }
+  L.put('sofa', dx - 0.6, z1 - 1.0, Math.PI, { c: L.pick(PALETTE.sofa, 4) }); L.put('tvStand', dx - 0.6, z1 - (D > 6 ? 3.2 : 2.6), 0, { on: true });
+  L.act('tv', dx - 0.6, z1 - 1.8, 'Watch TV'); L.spot('sofa', dx - 1.1, z1 - 1.0, Math.PI); L.spot('sofa', dx - 0.1, z1 - 1.0, Math.PI);
+  L.put('desk', x0 + 0.5, z1 - 1.4, Math.PI / 2, { on: true }); L.act('computer', x0 + 1.2, z1 - 1.4, 'Use computer');
+  L.put('rug', dx - 0.6, z1 - 1.8, 0, { w: 2.4, d: 1.6 }, false);
+  if (o.bath) { L.put('bathtub', x0 + 0.6 + 2.4, z0 + (D > 6 ? 3.6 : 2.4), Math.PI / 2); L.act('shower', x0 + 3.0, z0 + (D > 6 ? 2.6 : 1.6), 'Take a bath'); }
+  L.light(dx, (z0 + z1) / 2, '#ffe8c8', 7, 2.6);
+  L.spot('stand', x1 - 1.4, z0 + 1.5, -Math.PI / 2);
+}
+
+export const OUTSKIRTS = {
+  homestead(L) {
+    const style = L.pick(['cabin', 'trailer', 'farmhouse'], 11);
+    countryPlot(L);
+    const hd = L.d / 2;
+    if (style === 'cabin') {
+      dwelling(L, -5, -hd + 2, 5, -hd + 10, { c: '#8a5a3a', surf: 'planks', fc: '#9a7a52', bath: true });
+      L.floor(-5, -hd + 10, 5, -hd + 12.4, 'planks', '#7a5a3a');
+      L.put('rocking', -3.2, -hd + 11.2, 0); L.put('rocking', 3.2, -hd + 11.2, 0); L.spot('seat', 3.2, -hd + 11.2, 0);
+    } else if (style === 'trailer') {
+      dwelling(L, -6, -hd + 2, 6, -hd + 6.4, { c: '#e8e2d2', surf: 'metal', fc: '#b8a888', floor: 'carpet' });
+      L.floor(-1.5, -hd + 6.4, 1.5, -hd + 8.2, 'planks', '#8a7a62');
+      L.put('porchSwing', 4.0, -hd + 7.4, Math.PI);
+    } else {
+      dwelling(L, -7, -hd + 2, 7, -hd + 11, { c: '#e8e4dc', surf: 'planks', fc: '#8a6a4a', bath: true });
+      L.floor(-7, -hd + 11, 7, -hd + 13.2, 'planks', '#9a8a70');
+      L.put('porchSwing', -4.5, -hd + 12.2, Math.PI); L.put('rocking', 4.0, -hd + 12.1, 0);
+    }
+    // the yard
+    L.put('pickup', -6.0, hd - 6.5, 0.15, { c: L.pick(['#b8382e', '#3a6a9a', '#e8e4dc', '#4a7a4a', '#c89a3a'], 12) });
+    L.put('firepit', 6.5, 3.0, 0); L.act('firepit', 6.5, 4.4, 'Sit by the fire'); L.spot('seat', 5.4, 3.6, 2.2); L.spot('seat', 7.6, 3.6, -2.2);
+    L.put('woodpile', 11.0, -3.0, Math.PI / 2); L.act('chop', 10.0, -3.0, 'Chop firewood');
+    L.put('cropRows', -9.0, 2.5, 0, { w: 7, d: 5, tall: L.r(13) < 0.5 }, true); L.act('garden', -9.0, 5.6, 'Tend the vegetable garden');
+    if (L.r(14) < 0.6) L.put('coop', 10.5, 6.5, -Math.PI / 2);
+    L.put('oak', 11.5, -9.0, 0, { h: 7, seed: 3 }); L.put('pine', -12.0, -8.0, 0, { h: 9 });
+  },
+  farm(L) {
+    countryPlot(L, { exit: 'Drive back into the city' });
+    const hw = L.w / 2, hd = L.d / 2;
+    // the barn: open-topped, stalls and a tack room
+    const red = '#a8382a';
+    L.floor(-hw + 2, -hd + 2, -2, -hd + 13, 'planks', '#7a5a3a');
+    L.wallX(-hd + 13, -hw + 2, -2, { c: red, surf: 'planks', base: false, h: 4.5, gaps: [[-10.5, -7.5]] });
+    L.wallX(-hd + 2, -hw + 2, -2, { c: red, surf: 'planks', base: false, h: 4.5 });
+    L.wallZ(-hw + 2, -hd + 2, -hd + 13, { c: red, surf: 'planks', base: false, h: 4.5 }); L.wallZ(-2, -hd + 2, -hd + 13, { c: red, surf: 'planks', base: false, h: 4.5 });
+    for (let x = -hw + 4; x < -3; x += 3) { L.wallZ(x + 1.5, -hd + 2, -hd + 5.5, { c: '#8a6a4a', surf: 'planks', base: false, h: 1.4 }); }
+    L.put('animal', -hw + 4.5, -hd + 3.8, 0.1, { c: '#5a3a2a' }); L.put('animal', -hw + 7.5, -hd + 3.8, -0.2, { c: '#2a2422', spots: true }); L.put('animal', -hw + 10.5, -hd + 3.8, 0.3, { c: '#8a6a4a' });
+    L.put('hayBale', -5.0, -hd + 11.5, 0); L.put('hayBale', -6.3, -hd + 11.5, 0.2); L.put('hayBale', -5.6, -hd + 10.4, 1.4);
+    L.act('work', -9.0, -hd + 7.5, 'Work'); L.spot('staff', -10.0, -hd + 8.0, 0); L.spot('staff', -6.0, -hd + 7.0, 0.5);
+    L.put('desk', -12.5, -hd + 11.2, Math.PI / 2, {}); L.spot('desk', -12.0, -hd + 11.2, -Math.PI / 2);
+    L.light(-9, -hd + 7.5, '#ffe0b0', 8, 4.2);
+    // fields, tractor, silo, farm stand by the road
+    L.put('cropRows', 8.0, -6.0, 0, { w: 12, d: 9, tall: true, c: '#8aa83a' }); L.act('work', 8.0, -0.8, 'Work the field');
+    L.spot('staff', 6.0, -2.0, Math.PI); L.spot('staff', 10.0, -2.0, Math.PI);
+    L.put('cropRows', 8.0, 5.5, 0, { w: 12, d: 5, c: '#3a7a2a' });
+    L.put('tractor', 3.0, 1.5, Math.PI / 2); L.put('silo', -hw + 4.0, 1.5, 0);
+    L.put('counter', -6.0, hd - 4.0, 0, { w: 2.4, c: '#8a6a4a' }); L.act('counter', -6.0, hd - 2.9, 'Farm stand (fresh produce)');
+    L.spot('staff', -6.0, hd - 4.9, 0); L.spot('browse', -6.6, hd - 2.4, Math.PI); L.spot('browse', -5.2, hd - 2.4, Math.PI);
+    L.put('coop', 12.0, 9.0, -Math.PI / 2);
+    for (let i = 0; i < 4; i++) L.spot('wait', -1 + i * 1.2, 4.5, Math.PI);
+  },
+};
+
+Object.assign(LAYOUTS, OUTSKIRTS);
+
 export const SIZES = {
+  homestead: [30, 24, 2.8], farm: [34, 26, 5],
   apartment: [12, 11, 2.8], house: [15, 14, 2.8], lobby: [12, 10, 3.6], store: [16, 13, 3.4], boutique: [12, 11, 3.4], mall: [28, 24, 6],
   restaurant: [14, 16, 3.2], cafe: [11, 11, 3.2], bar: [14, 12, 3.2], club: [20, 18, 5.5], lounge: [16, 16, 4.5], casino: [26, 22, 5.5], bank: [18, 15, 4.2],
   office: [20, 16, 3.2], hotel: [16, 12, 4.5], school: [22, 18, 3.4], police: [20, 16, 3.4], hospital: [22, 18, 3.4], fire: [18, 16, 6], gym: [16, 14, 3.6],

@@ -351,10 +351,12 @@ export class LifeUI {
         const listings = [];
         for (const b of W.city.buildings) { if (b.state !== 'ok' || b.resUnits <= b.residents.length || b.id === c.home) continue; listings.push(b); }
         rand.shuffle(listings);
-        const show = listings.slice(0, 24).sort((a, b) => a.rent - b.rent);
+        // the outskirts are always listed: cheap, quiet, a long drive
+        const county = listings.filter((b) => b.civic === 'county');
+        const show = [...county.slice(0, 1), ...listings.filter((b) => b.civic !== 'county').slice(0, 23)].sort((a, b) => a.rent - b.rent);
         const price = (b) => Math.round(((b.rent || 25) * (b.kind === 'house' ? 1.8 : 1)) * (1 + (W.economy.multiplier - 1) * 0.5));
         const buyPrice = (b) => Math.round(price(b) * 900 / 1000) * 1000;
-        body = `<p class="muted">Rent is charged daily. Buying needs 20% down (the rest becomes a mortgage).</p><div class="jobs">${show.map((b) => `<div class="job"><span><b>${esc(W.citizenAI.buildingName(b.id))}</b><br><small>${esc(DISTRICTS[b.code]?.name || '')} · ${b.kind === 'house' ? 'House' : 'Apartment'} · ${money(price(b))}/day · buy ${money(buyPrice(b))}</small></span><button data-rent="${b.id}">Rent</button><button data-buy="${b.id}" data-price="${buyPrice(b)}">Buy</button></div>`).join('')}</div>`;
+        body = `<p class="muted">Rent is charged daily. Buying needs 20% down (the rest becomes a mortgage).</p><div class="jobs">${show.map((b) => `<div class="job"><span><b>${esc(W.citizenAI.buildingName(b.id))}</b><br><small>${b.civic === 'county' ? 'Outside the city · Homestead with a yard (25 min drive)' : `${esc(DISTRICTS[b.code]?.name || '')} · ${b.kind === 'house' ? 'House' : 'Apartment'}`} · ${money(price(b))}/day · buy ${money(buyPrice(b))}</small></span><button data-rent="${b.id}">Rent</button><button data-buy="${b.id}" data-price="${buyPrice(b)}">Buy</button></div>`).join('')}</div>`;
       }
       if (app === 'cars') body = `<p>Current car: ${c.vehicle != null ? esc(W.traffic.byId.get(c.vehicle)?.T.label || '—') : 'none'}${L.license.driver ? '' : ' · <em>You have no driver\'s licence — take the test ($120)</em> <button data-lic>Take the driving test</button>'}</p><div class="menu">${CARS.map(([t, n, p]) => `<button data-car="${t}" data-p="${p}" ${c.money + (c.bank || 0) < p ? 'disabled' : ''}><span>${n}</span><b>${money(p)}</b></button>`).join('')}</div>`;
       if (app === 'bank') body = `<p>Checking: <b>${money(c.bank || 0)}</b> · Cash: <b>${money(c.money)}</b></p>${L.loans.map((l) => `<p class="muted">${l.kind} loan: ${money(l.left)} left (${money(l.daily)}/day)</p>`).join('')}<p class="muted">Deposits and withdrawals happen at a bank or ATM. Loans from a bank manager.</p>`;
