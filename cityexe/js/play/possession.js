@@ -851,6 +851,13 @@ export class Possession {
     if (!c || this.autopilot && !c) return null;
     if (!c) return null;
     const pos = W.citizenPos(c);
+    // GPS waypoint set from the phone
+    const wp = this.game.waypoint;
+    if (wp && c.duty == null) {
+      const inside = c.at === wp.b;
+      if (inside || (pos && dist(wp.x, wp.z, pos.x, pos.z) < 6)) { this.game.waypoint = null; this.game.toast && this.game.toast(`You've arrived: ${wp.label}`); }
+      else return { x: wp.x, z: wp.z, label: `GPS → ${wp.label}`, color: [0.4, 2.0, 1.6] };
+    }
     // responders: their incident
     if (c.duty != null && typeof c.duty === 'number') {
       const u = W.services.unit(c.duty);

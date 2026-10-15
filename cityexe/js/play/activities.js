@@ -11,13 +11,14 @@ import { openPanel, money, esc } from '../ui/panels.js';
 import { blackjack, roulette, slots, poker } from '../ui/games.js';
 import { clamp } from '../core/math.js';
 import { rand } from '../core/rng.js';
+import { formOf } from '../core/names.js';
 
 const SHOP = {
   grocery: [['Weekly groceries (7 meals)', 68, { groceries: 7 }], ['Snack', 4, { hunger: 0.25 }], ['Coffee', 3, { energy: 0.15 }], ['Flowers', 18, { gift: 'flowers' }], ['Cigarettes', 11, { smoke: 1 }], ['Six-pack of beer', 12, { beer: 1 }]],
   convenience: [['Snack', 4, { hunger: 0.3 }], ['Energy drink', 4, { energy: 0.25 }], ['Sandwich', 7, { hunger: 0.55 }], ['Groceries (3 meals)', 32, { groceries: 3 }], ['Cigarettes', 11, { smoke: 1 }], ['Six-pack of beer', 12, { beer: 1 }]],
   gas: [['Snack', 4, { hunger: 0.3 }], ['Hot dog', 5, { hunger: 0.45 }], ['Coffee', 3, { energy: 0.15 }], ['Fill up the tank', 45, { fuel: 1 }], ['Cigarettes', 11, { smoke: 1 }]],
   pharmacy: [['Painkillers', 14, { health: 6 }], ['Vitamins', 22, { health: 3, vit: 1 }], ['First-aid kit', 35, { health: 12, heal: 1 }], ['Cold medicine', 12, { health: 4 }], ['Toiletries', 18, { hygiene: 1 }]],
-  clothing: [['New outfit', 120, { outfit: 1, looks: 2 }], ['Designer jacket', 420, { outfit: 1, looks: 5, fame: 1 }], ['Sneakers', 160, { looks: 2 }], ['Accessories', 60, { looks: 1 }]],
+  clothing: [['New outfit', 120, { outfit: 1, looks: 2 }], ['Designer jacket', 420, { outfit: 1, looks: 5, fame: 1 }], ['Sneakers', 160, { looks: 2 }], ['Accessories', 60, { looks: 1 }], ['Engagement ring', 2400, { item: 'ring' }]],
   electronics: [['Smartphone', 699, { item: 'phone' }], ['Laptop', 1199, { item: 'laptop' }], ['Headphones', 149, { happy: 3 }], ['Game console', 499, { item: 'console', happy: 5 }]],
   mall: [['Clothes', 90, { outfit: 1, looks: 2 }], ['Food court meal', 14, { hunger: 0.7 }], ['Movie ticket', 15, { fun: 0.4, happy: 4 }], ['Gift', 40, { gift: 'gift' }]],
   restaurant: [['Burger & fries', 18, { hunger: 0.8 }], ['Steak dinner', 48, { hunger: 1, happy: 4 }], ['Pasta', 24, { hunger: 0.85 }], ['Glass of wine', 12, { drink: 1 }]],
@@ -225,7 +226,7 @@ export class Activities {
           if (fx.pass) L.passDay = W.day + fx.pass - 1;
           if (fx.item) L.inv[fx.item] = true;
           if (fx.gift) L.inv.gift = fx.gift;
-          if (fx.outfit) { L.outfitDay = W.day; c.look.outfit = rand.pick(['tee', 'polo', 'suit', 'hoodie', ...(c.look.form ? ['dress'] : [])]); c.look.shirt = rand.pick(['#c04040', '#4060a0', '#e8e8e0', '#2a2a2a', '#d8a040', '#3a8a5a', '#a04080', '#5a3a2a']); }
+          if (fx.outfit) { L.outfitDay = W.day; c.look.outfit = rand.pick(['tee', 'polo', 'suit', 'hoodie', ...(formOf(c) ? ['dress'] : [])]); c.look.shirt = rand.pick(['#c04040', '#4060a0', '#e8e8e0', '#2a2a2a', '#d8a040', '#3a8a5a', '#a04080', '#5a3a2a']); }
           if (fx.smoke) { L.addictions.nicotine = Math.min(100, (L.addictions.nicotine || 0) + 6); stat(c, 'health', -0.6); stat(c, 'happy', 1); }
           if (fx.drink || fx.beer) { L.drunk = Math.min(1.5, (L.drunk || 0) + 0.18 * (fx.drink || 1)); L.addictions.alcohol = Math.min(100, (L.addictions.alcohol || 0) + 1.5); N.fun = clamp(N.fun + 0.12, 0, 1); N.social = clamp(N.social + 0.08, 0, 1); stat(c, 'happy', 1); stat(c, 'health', -0.3); }
           if (fx.room) { g.toast('You check in. Your room is upstairs.'); L.hotelDay = W.day; }

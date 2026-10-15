@@ -8,6 +8,7 @@ import { Peds } from './peds.js';
 import { Economy, BTYPES } from './economy.js';
 import { CitizenAI } from './citizens.js';
 import { Lottery } from './lottery.js';
+import { LifeSim } from './life.js';
 import { History } from './history.js';
 import { Weather } from './weather.js';
 import { Power } from './power.js';
@@ -58,6 +59,7 @@ export class World {
     this.animals = new Animals(this);
     this.helis = new Helis(this);
     this.lottery = new Lottery(this);
+    this.life = new LifeSim(this);
     this.driverCtrl = { onLink: () => {}, idle: (v) => {} };
     this.lastHour = Math.floor(this.time / 60);
     this.lastDay = Math.floor(this.time / 1440);

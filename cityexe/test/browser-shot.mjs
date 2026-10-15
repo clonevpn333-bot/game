@@ -28,7 +28,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const errors = [];
 page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(`[${m.type()}] ${m.text()}`); });
 page.on('pageerror', (e) => errors.push('[pageerror] ' + e.message + '\n' + e.stack));
-await page.goto(`http://localhost:${port}/index.html${process.argv[4] || ''}`);
+const qs = process.argv[4] || ''; await page.goto(`http://localhost:${port}/index.html${qs}${qs.includes('life') ? '' : (qs ? '&' : '?') + 'sandbox'}`);
 await page.waitForFunction(() => window.game && window.game.renderer && !document.getElementById('boot'), null, { timeout: 120000 });
 const shot = async (name) => { await page.screenshot({ path: path.join(out, name + '.png') }); console.log('saved', name); };
 const wait = (ms) => page.waitForTimeout(ms);

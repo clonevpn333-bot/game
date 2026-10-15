@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { ModelKit, makeInstMaterial, InstPool } from './materials.js';
 import { UNIFORMS } from '../sim/citizens.js';
 import { hash01 } from '../core/rng.js';
+import { formOfName } from '../core/names.js';
 
 const tmpM = new THREE.Matrix4(), base = new THREE.Matrix4(), part = new THREE.Matrix4(), rot = new THREE.Matrix4(), joint = new THREE.Matrix4();
 const q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), s = new THREE.Vector3();
@@ -244,7 +245,7 @@ export class PeopleView {
     const uni = role && UNIFORMS[role];
     const L = c.look;
     const id = c.id;
-    const form = L.form ?? (hash01(id, 11) < 0.5 ? 1 : 0);
+    const form = L.form ?? formOfName(c.first);
     let outfit = L.outfit ?? OUTFITS[Math.floor(hash01(id, 12) * (form ? 5 : 4))];
     if (role && SUITED.has(role)) outfit = 'suit';
     else if (uni) outfit = 'polo';
@@ -260,7 +261,7 @@ export class PeopleView {
       shirt: uni ? uni.shirt : L.shirt,
       pants: outfit === 'dress' ? L.skin : (uni ? uni.pants : L.pants),
       hat: uni && uni.hat ? uni.hat : L.hat ? L.shirt : null,
-      skin: L.skin, hair: hairCol, h: L.height, b: L.build, style, form, outfit, beard, shortSleeve,
+      skin: L.skin, hair: hairCol, h: c.age < 18 ? L.height * Math.min(1, 0.42 + c.age * 0.034) : L.height, b: c.age < 14 ? L.build * 0.92 : L.build, style, form, outfit: c.age < 12 && outfit === 'suit' ? 'tee' : outfit, beard: beard && c.age >= 18, shortSleeve,
       shoes: L.shoes || SHOES[Math.floor(hash01(id, 16) * SHOES.length)],
       bag: L.bag ?? (hash01(id, 17) < 0.18),
     };

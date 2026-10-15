@@ -2,7 +2,7 @@
 // and a life log. Decisions are made at a low tick rate (staggered); outdoors they
 // become pedestrian agents or drive real vehicles; indoors they are abstract.
 import { C } from './config.js';
-import { FIRST, LAST } from '../core/names.js';
+import { LAST, NAMES_BY_FORM } from '../core/names.js';
 import { rand } from '../core/rng.js';
 import { clamp, dist } from '../core/math.js';
 import { BTYPES, ROLE_TITLE } from './economy.js';
@@ -37,17 +37,18 @@ export const UNIFORMS = {
 const physMin = (sec) => (sec * C.TIME_SCALE) / 60;
 export const minToPhys = (min) => (min * 60) / C.TIME_SCALE;
 // optional per-citizen fields persisted in saves (life sim, crime, family)
-export const EXTRA_KEYS = ['bank', 'lastBank', 'edu', 'skills', 'family', 'gang', 'weapons', 'heat', 'life', 'school', 'parents', 'kids', 'studying', 'dealer', 'drugs'];
+export const EXTRA_KEYS = ['bank', 'lastBank', 'edu', 'skills', 'family', 'gang', 'weapons', 'heat', 'life', 'school', 'parents', 'kids', 'siblings', 'studying', 'dealer', 'drugs', 'owes', 'married', 'isPlayer', 'mourned'];
 
 let CID = 0;
 export function newCitizen(rng, opts = {}) {
-  const first = opts.first || rng.pick(FIRST), last = opts.last || rng.pick(LAST);
+  const form = opts.form ?? (rng.chance(0.5) ? 1 : 0);
+  const first = opts.first || rng.pick(NAMES_BY_FORM[form]), last = opts.last || rng.pick(LAST);
   const age = opts.age ?? Math.round(clamp(rng.gauss(38, 15), 18, 86));
   const c = {
     id: opts.id ?? CID++, first, last, name: `${first} ${last}`, age, bday: rng.int(0, C.YEAR_DAYS - 1),
     look: {
       skin: rng.pick(SKIN), hair: rng.pick(HAIR), hairStyle: rng.int(0, 4), shirt: rng.pick(SHIRT), pants: rng.pick(PANTS),
-      height: rng.range(0.92, 1.08), build: rng.range(0.9, 1.15), hat: rng.chance(0.08),
+      height: rng.range(0.92, 1.08) * (form ? 0.96 : 1.02), build: rng.range(0.9, 1.15), hat: rng.chance(0.08), form,
     },
     traits: { ambition: rng.float(), social: rng.float(), honesty: clamp(rng.gauss(0.68, 0.22), 0, 1), caution: rng.float(), thrift: rng.float(), curiosity: rng.float() },
     money: Math.round(clamp(rng.gauss(2600, 2200), 60, 40000)),
@@ -111,8 +112,9 @@ export class CitizenAI {
     const workers = rng.shuffle(citizens.filter((c) => c.age >= 18 && c.age < 66));
     let wi = 0;
     for (const j of jobs) {
-      // keep ~8% unemployed and some slots open
+      // keep ~8% unemployed and some slots open (a real job market has vacancies)
       if (wi >= workers.length * 0.92) break;
+      if (priority(j) === 1 && rng.chance(0.07)) continue;
       let pick = null;
       for (let k = wi; k < Math.min(workers.length, wi + 25); k++) {
         const c = workers[k];
@@ -353,6 +355,7 @@ export class CitizenAI {
 
     // finish current activity first
     if (now < c.until && c.activity !== 'home') return;
+    if (c.age < 18) { this.thinkChild(c, hour, dow, atHome); return; }
 
     // ---- work
     if (c.job) {
@@ -701,6 +704,33 @@ export class CitizenAI {
     }
   }
 
+  // children: school on weekdays from age 5, home otherwise; teens hang out after school
+  thinkChild(c, hour, dow, atHome) {
+    const W = this.world;
+    const now = W.time;
+    if (c.age >= 5 && dow < 5 && hour >= 7.2 && hour < 14.5) {
+      const school = this.nearestOf(c, 'school');
+      if (school && c.at !== school.b) { this.go(c, school.b, 'school', { biz: school.id }); return; }
+      if (school) { c.activity = 'school'; c.until = now + (15 - hour) * 60; c.nextThink = c.until; return; }
+    }
+    if (c.age >= 13 && hour >= 15 && hour < 20 && c.needs.social < 0.5 && rand.chance(0.25)) {
+      if (rand.chance(0.5)) { this.goPark(c); return; }
+      const cafe = this.pickBiz(c, 'cafe', 500);
+      if (cafe) { this.go(c, cafe.b, 'eat', { biz: cafe.id }); return; }
+    }
+    if (!atHome && c.home != null) { this.go(c, c.home, 'home'); return; }
+    c.activity = 'home';
+    c.until = now + 30 + rand.float() * 40;
+    c.nextThink = c.until;
+  }
+  nearestOf(c, type) {
+    const W = this.world;
+    const hb = W.city.buildings[c.home];
+    let best = null, bd = 1e9;
+    for (const biz of W.economy.ofType(type)) { const b = W.city.buildings[biz.b]; const d = dist(b.x, b.z, hb.x, hb.z); if (d < bd) { bd = d; best = biz; } }
+    return best;
+  }
+
   // ---------------------------------------------------- trips
   estimateTravel(c, fromB, toB) {
     const W = this.world;
@@ -736,6 +766,7 @@ export class CitizenAI {
       case 'bank': return `Banking at ${name}`;
       case 'party': return `Night out at ${name}`;
       case 'gamble': return `Trying their luck at ${name}`;
+      case 'school': return `At school (${name})`;
       case 'jobhunt': return `Applying for a job at ${name}`;
       case 'park': return 'Walking in Greenway Park';
       case 'crime': return opts.disguise || `Running an errand near ${name}`;
@@ -1048,6 +1079,14 @@ export class CitizenAI {
     const day = W.day;
     for (const c of W.citizens) {
       if (c.status === 'dead' || c.status === 'left') continue;
+      // birthdays
+      if (day % C.YEAR_DAYS === c.bday && !c.flags.ageless) {
+        c.age++;
+        if (c.bookmarked) W.history.citizenLog(c, `Turned ${c.age}`, false);
+        W.emit('birthday', { c });
+      }
+      // you (Life mode) and children make their own money decisions
+      if (c.isPlayer || c.age < 18) continue;
       // rent & bills
       const hb = W.city.buildings[c.home];
       if (!c.homeless && hb) {
@@ -1060,11 +1099,6 @@ export class CitizenAI {
       if (c.money < -800 && !c.homeless) this.evict(c);
       else if (c.money > 15000 && hb && hb.rent < 40 && rand.chance(0.04)) this.moveUp(c);
       c.earnedToday = 0;
-      // birthdays
-      if (day % C.YEAR_DAYS === c.bday && !c.flags.ageless) {
-        c.age++;
-        if (c.bookmarked) W.history.citizenLog(c, `Turned ${c.age}`, false);
-      }
       // retirement
       if (c.job && c.age >= 67 && rand.chance(0.2)) { this.quitJob(c, '', true); W.history.citizenLog(c, 'Retired', true); }
       // natural death (rare), replaced by newcomers

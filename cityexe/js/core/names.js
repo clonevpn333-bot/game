@@ -1,6 +1,13 @@
 export const FIRST = ['Marcus','Elena','Dev','Priya','Jonah','Tess','Omar','Lucia','Wes','Hana','Theo','Imani','Caleb','Rosa','Nikolai','June','Andre','Mei','Silas','Grace','Rafael','Nadia','Owen','Leila','Felix','Ines','Gus','Zara','Malik','Ruth','Kenji','Mara','Dmitri','Anya','Hector','Clara','Tobias','Yara','Ezra','Paloma','Isaac','Freya','Victor','Esme','Reuben','Lena','Hugo','Ada','Bruno','Selene','Cyrus','Vera','Abel','Noor','Ivan','Della','Quentin','Sasha','Rowan','Tamsin','Arlo','Bea','Desmond','Ottilie','Jasper','Mina','Luther','Wren','Santiago','Fern','Kofi','Iris','Mateo','Nell','Dashiell','Pia','Ronan','Saoirse','Ibrahim','Lottie','Emil','Odette','Pavel','Marisol','Cole','Juno','Rami','Thea','Lionel','Ama','Ignacio','Celeste','Boris','Kit','Alonzo','Margo','Yusuf','Dina','Harlan','Petra','Sami','Lou'];
 export const LAST = ['Reed','Okafor','Vance','Lindqvist','Moreau','Castillo','Brennan','Nakamura','Hollis','Petrov','Abara','Duarte','Whitlock','Sato','Kessler','Marsh','Oyelaran','Fontaine','Calloway','Ibarra','Novak','Quist','Harrow','Delacroix','Tran','Mbeki','Grady','Lowell','Ferro','Achterberg','Bishop','Szabo','Rourke','Valdez','Haddad','Pryce','Ewing','Kowalski','Sorensen','Amari','Blackwood','Chen','Dunmore','Esposito','Faulk','Gentry','Holm','Iversen','Jaramillo','Kaur','Lark','Mendel','Nygaard','Ortega','Pike','Quinlan','Ross','Stroud','Thorne','Underhill','Vasquez','Wilder','Yoon','Zeller','Ashby','Corwin','Draper','Ellery','Finch','Garrow','Hale','Ingram','Juarez','Kemp','Ludlow','Mercer','Nash','Orr','Pell','Rhee','Sable','Tolliver','Voss','Wade','Yardley'];
 
+const FEM = new Set(['Elena', 'Priya', 'Tess', 'Lucia', 'Hana', 'Imani', 'Rosa', 'June', 'Mei', 'Grace', 'Nadia', 'Leila', 'Ines', 'Zara', 'Ruth', 'Mara', 'Anya', 'Clara', 'Yara', 'Paloma', 'Freya', 'Esme', 'Lena', 'Ada', 'Selene', 'Vera', 'Noor', 'Della', 'Tamsin', 'Bea', 'Ottilie', 'Mina', 'Wren', 'Fern', 'Iris', 'Nell', 'Pia', 'Saoirse', 'Lottie', 'Odette', 'Marisol', 'Juno', 'Thea', 'Ama', 'Celeste', 'Margo', 'Dina', 'Petra']);
+const NEUTRAL = new Set(['Dev', 'Rowan', 'Kit', 'Sami', 'Lou', 'Sasha']);
+// first names by body form (0 / 1); neutral names appear in both
+export const NAMES_BY_FORM = [FIRST.filter((n) => !FEM.has(n)), FIRST.filter((n) => FEM.has(n) || NEUTRAL.has(n))];
+export const formOfName = (n) => (FEM.has(n) ? 1 : 0);
+export const formOf = (c) => c.look.form ?? formOfName(c.first);
+
 export const STREETS_NS = ['Harbor St','Kessler Ave','Mill Rd','Riverbank Dr','Quay St','Union Ave','Grand Ave','Fifth Ave','Lowell St','Parkside Ave','Ironside Rd'];
 export const STREETS_EW = ['Dock Rd','Foundry St','Canal St','Market St','Hill St','Central Blvd','Elm St','Maple Ave','Birch Ln','Cedar St','Southgate Rd'];
 

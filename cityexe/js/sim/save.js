@@ -39,6 +39,7 @@ export function serialize(W) {
     anom: W.anomalies ? W.anomalies.serialize() : null,
     lanes: W.city.net.lanes.filter((l) => l.closed).map((l) => l.id),
     lotto: W.lottery ? W.lottery.serialize() : null,
+    life: W.life ? W.life.serialize() : null,
   };
   data.ms = Math.round(performance.now() - t0);
   return data;
@@ -122,6 +123,7 @@ export function deserialize(data, opts = {}) {
   for (const id of data.lanes || []) { const l = W.city.net.links[id]; if (l) l.closed = true; }
   if (data.anom && W.anomalies) W.anomalies.deserialize(data.anom);
   if (data.lotto && W.lottery) W.lottery.deserialize(data.lotto);
+  if (data.life && W.life) W.life.deserialize(data.life);
   W.lastHour = Math.floor(W.time / 60);
   W.lastDay = W.day;
   for (const b of city.buildings) if (b.fire > 0) b.fire = Math.min(b.fire, 0.2);

@@ -269,7 +269,14 @@ export class Game {
   flyTo(x, z, dist = 160) { this.rig.flyTo(x, z, dist); this.rig.userPitch = false; }
 
   possessSelected() {
-    if (!this.selected || !this.possession) return;
+    if (!this.possession) return;
+    // in Life mode you can only ever be yourself
+    if (this.lifeMode) {
+      const me = this.world.life.player;
+      if (!me || me.status === 'dead') return;
+      if (!this.selected || this.selected.kind !== 'citizen' || this.selected.id !== me.id) this.select({ kind: 'citizen', id: me.id });
+    }
+    if (!this.selected) return;
     this.possession.possess(this.selected);
   }
 }

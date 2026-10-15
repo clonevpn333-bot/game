@@ -1,3 +1,4 @@
+import life from './scen-life.mjs';
 import rooms from './scen-rooms.mjs';
 import quick from './scen-quick.mjs';
 import dbg2 from './scen-dbg2.mjs';
@@ -11,6 +12,7 @@ import interior from './scen-interior.mjs';
 import police from './scen-police.mjs';
 const setTime = (page, h) => page.evaluate((h) => { const W = window.game.world; W.time = Math.floor(W.time / 1440) * 1440 + h * 60; }, h);
 export default {
+  life,
   rooms,
   quick,
   dbg2,

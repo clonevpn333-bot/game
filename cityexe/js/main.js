@@ -4,6 +4,7 @@ import { HUD } from './ui/hud.js';
 import { GodTools } from './play/godTools.js';
 import { Interiors } from './render/interiors.js';
 import { Activities } from './play/activities.js';
+import { LifeUI } from './ui/lifeUI.js';
 import { Audio } from './audio/audio.js';
 import { loadSave, saveWorld, deserialize, clearSave } from './sim/save.js';
 import { Anomalies } from './sim/anomaly.js';
@@ -51,11 +52,12 @@ async function main() {
   game.audio = new Audio(game);
   const hud = new HUD(game);
   game.hud = hud;
-  game.on('frame', (dt) => { hud.update(dt); game.audio.update(dt); game.activities.update(dt); });
+  game.lifeUI = new LifeUI(game);
+  game.on('frame', (dt) => { hud.update(dt); game.audio.update(dt); game.activities.update(dt); game.lifeUI.update(dt); });
   // persistence
   let saving = false;
   game.save = async () => {
-    if (saving || game.possession.c) return;
+    if (saving || (game.possession.c && !game.lifeMode) || game.rig.trans) return;
     saving = true;
     try { await saveWorld(game.world); } finally { saving = false; }
   };
@@ -67,7 +69,12 @@ async function main() {
   document.getElementById('boot').classList.add('done');
   setTimeout(() => document.getElementById('boot').remove(), 900);
   game.start();
-  if (away && (away.events.length || away.bookmarks.length)) hud.showAway(away);
+  const me = game.world.life && game.world.life.player;
+  if (me && me.status !== 'dead' && !params.has('sandbox')) {
+    game.lifeUI.startLife(me, false);
+    if (away && (away.events.length || away.bookmarks.length)) hud.showAway(away);
+  } else if (away && (away.events.length || away.bookmarks.length)) hud.showAway(away);
+  else if (!world && !params.has('sandbox')) game.lifeUI.title(() => hud.showWelcome());
   else if (!world) hud.showWelcome();
   if (params.has('fresh')) history.replaceState(null, '', location.pathname);
 }

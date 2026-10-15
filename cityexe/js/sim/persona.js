@@ -16,7 +16,7 @@ const pickN = (arr, n, id, salt) => {
 export const INTERESTS = ['jazz records', 'basketball', 'cooking', 'video games', 'street photography', 'gardening', 'old cars', 'fishing', 'fashion', 'true-crime podcasts', 'stand-up comedy', 'chess', 'hiking', 'horror movies', 'poetry', 'boxing', 'astronomy', 'baking', 'vinyl hunting', 'tattoos', 'skateboarding', 'karaoke', 'history books', 'crypto', 'yoga', 'anime', 'dancing', 'sneakers', 'board games', 'birdwatching', 'motorcycles', 'thrift shopping', 'soccer', 'conspiracy forums', 'painting', 'wine', 'running', 'reality TV', 'woodworking', 'poker'];
 const PEEVES = ['loud chewers', 'people who are late', 'bad tippers', 'small talk', 'slow walkers', 'landlords', 'rich people', 'cops', 'pineapple on pizza', 'the bus schedule', 'politicians', 'noisy neighbours', 'people on their phones', 'Mondays', 'the cold', 'tourists', 'gym bros', 'snobs', 'liars', 'traffic'];
 const QUIRKS = ['hums when nervous', 'collects bottle caps', 'never sits with their back to a door', 'names every houseplant', 'talks to pigeons', 'quotes old movies', 'always carries snacks', 'checks the weather twice an hour', 'cannot whistle', 'keeps a dream journal', 'is terrified of escalators', 'has an encyclopedic memory for licence plates', 'tips 30% everywhere', 'reads the last page first', 'refuses to use elevators', 'mispronounces "espresso" on purpose', 'laughs at their own jokes before the punchline', 'knows every bus driver by name', 'wears sunglasses indoors', 'counts stairs'];
-const HOMETOWNS = ['a farm town three hours north', 'the coast', 'right here in the city', 'a mining town nobody has heard of', 'overseas', 'the suburbs', 'a military family that moved every two years', 'a fishing village', 'a big city out east', 'the desert', 'a college town', 'the mountains'];
+const HOMETOWNS = ['on a farm three hours north', 'on the coast', 'right here in the city', 'in a mining town nobody has heard of', 'overseas', 'in the suburbs', 'all over, in a military family that moved every two years', 'in a fishing village', 'in a big city out east', 'out in the desert', 'in a college town', 'up in the mountains'];
 const WHY = ['for a job that fell through', 'chasing a girlfriend who left', 'to start over', 'for school', 'because it was the cheapest bus ticket', 'to be near family', 'for the music scene', 'to get away from a small town', 'after a divorce', 'with nothing but a suitcase', 'for a factory job', 'on a dare'];
 const DREAMS = ['open their own restaurant', 'see the ocean again', 'buy a house in Maple Heights', 'retire early', 'become famous', 'pay off their debts', 'travel the world', 'start a band', 'write a novel', 'get out of this city', 'raise a big family', 'run for mayor', 'own a sports car', 'win the lottery', 'make their parents proud', 'just sleep in for once', 'open a tattoo parlour', 'become a detective'];
 const MUSIC = ['jazz', 'hip-hop', 'country', 'metal', 'classical', 'house music', 'old soul', 'punk', 'pop', 'R&B', 'synthwave', 'folk', 'reggaeton', 'blues'];
@@ -93,7 +93,7 @@ export function personaSummary(c) {
   if (B.N > 0.7) traitWords.push('anxious'); else if (B.N < 0.3) traitWords.push('unflappable');
   return {
     archetype: P.archetype, traits: traitWords, likes: P.likes, peeves: P.peeves, quirk: P.quirk, music: P.music,
-    backstory: `Grew up in ${P.hometown} and came to the city ${P.why}. Dreams of being able to ${P.dream}. Values ${P.value} above all.`,
+    backstory: `${P.hometown === 'right here in the city' ? 'Born and raised in the city' : `Grew up ${P.hometown} and came to the city ${P.why}`}. Dreams of being able to ${P.dream}. Values ${P.value} above all.`,
     pets: P.pets,
   };
 }
@@ -129,7 +129,7 @@ export function talk(W, c, player, topic, rng = Math.random) {
       topics.push(`Can't stand ${P.peeves[0]}, you know?`);
       if (P.pets) topics.push(`I've got ${P.pets} at home, they're my whole world.`);
       if (recent) topics.push(recent.text.startsWith('Lost') || recent.text.includes('fired') || recent.text.includes('Evicted') ? `Honestly? ${recent.text}. Still processing it.` : `Did you hear? ${recent.text}!`);
-      topics.push(`I grew up in ${P.hometown}. City's a whole different thing.`);
+      topics.push(P.hometown === 'right here in the city' ? 'Born and raised here. I know every corner of this city.' : `I grew up ${P.hometown}. City's a whole different thing.`);
       if (W.weather.precip > 0.3) topics.push('This rain is not helping my mood.');
       line = pick(topics);
       d = 0.03 + (shared.length ? 0.05 : 0) + B.E * 0.02;
@@ -174,7 +174,7 @@ export function talk(W, c, player, topic, rng = Math.random) {
       line = pick([
         `Honestly? I want to ${P.dream}. One day.`,
         `I came here ${P.why}. Long story.`,
-        `My friends say I ${P.quirk}. They're not wrong.`,
+        `My friends say I'm the type who ${P.quirk}. They're not wrong.`,
         `I'm a big ${P.music} person. Can't live without it.`,
         `What matters most to me? ${P.value[0].toUpperCase() + P.value.slice(1)}. Always has been.`,
       ]);
