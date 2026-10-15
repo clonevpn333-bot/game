@@ -232,3 +232,14 @@ test('feed: a long viewing session never repeats a post until the pool is used u
   }
   assert.equal(new Set(shown).size, shown.length); assert.ok(shown.length === Math.min(600, shown.length) && pool.length > 600);
 });
+
+test('no repeats even when the viewer strongly likes what they already saw', () => {
+  const generic = new Set(meta.vibes.map((x) => x.id)); const pool = vids.filter((v) => v.status !== 'broken' && v.lang !== 'non-en');
+  const liked = pool.filter((v) => v.trends.includes('dances')).slice(0, 25); const seen = new Set(liked.map((v) => v.id));
+  const aff = { 't:dances': 6, 't:iconic-sounds': 6, 't:pop-songs': 6 };   // maximal taste for exactly what was already shown
+  for (let i = 0; i < 20; i++) {
+    const feed = core.buildFeed(vids, { shuffle: true, rng: core.mulberry32(i + 7), seen, englishOnly: true, generic, affinity: aff });
+    const firstSeen = feed.findIndex((v) => seen.has(v.id)); assert.ok(firstSeen === -1 || firstSeen >= feed.length - seen.size, 'a seen post jumped the queue (seed ' + i + ')');
+    const re = core.rerank(feed.slice(0, 60), aff, { rng: core.mulberry32(i), generic, seen }); assert.deepEqual(re.map((v) => v.id).sort(), feed.slice(0, 60).map((v) => v.id).sort());
+  }
+});

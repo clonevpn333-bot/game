@@ -227,7 +227,12 @@
   function scoreVideo(v, aff, generic) { let s = 0; for (const [k] of affinityKeys(v, generic)) s += aff[k] || 0; return s; }
   /* Best-liked first, with noise + exploration so the feed never collapses into one corner, then spaced by trend/creator. */
   function rerank(items, aff, { rng = Math.random, generic, seen, explore = 0.4, strength = 0.5 } = {}) {
-    const pool = items.map((v) => ({ v, s: strength * scoreVideo(v, aff, generic) + (rng() - 0.5) * 1.6 - (seen && seen.has(v.id) ? 1.5 : 0) })).sort((a, b) => b.s - a.s).map((x) => x.v);
+    /* Seen posts are a HARD back-of-the-line: however much you like them, nothing you've been shown comes before something new. */
+    if (seen && seen.size) {
+      const fresh = items.filter((v) => !seen.has(v.id)), old = items.filter((v) => seen.has(v.id));
+      return [...rerank(fresh, aff, { rng, generic, explore, strength }), ...rerank(old, aff, { rng, generic, explore, strength })];   // each half is spaced on its own; never mixed
+    }
+    const pool = items.map((v) => ({ v, s: strength * scoreVideo(v, aff, generic) + (rng() - 0.5) * 1.6 })).sort((a, b) => b.s - a.s).map((x) => x.v);
     const out = [];
     while (pool.length) out.push(pool.splice(rng() < explore ? Math.floor(rng() * pool.length) : 0, 1)[0]);
     return diversify(out, generic);
@@ -253,7 +258,10 @@
     if (!opts.shuffle) return a;
     a = shuffled(a, opts.rng);
     if (opts.affinity && Object.keys(opts.affinity).length) return rerank(a, opts.affinity, { rng: opts.rng || Math.random, generic: opts.generic, seen: opts.seen });
-    if (opts.seen && opts.seen.size) a = [...a.filter((v) => !opts.seen.has(v.id)), ...a.filter((v) => opts.seen.has(v.id))];
+    if (opts.seen && opts.seen.size) {   // new first, then seen; spacing is applied inside each group so the order stays strict
+      const fresh = a.filter((v) => !opts.seen.has(v.id)), old = a.filter((v) => opts.seen.has(v.id));
+      return opts.diversify === false ? [...fresh, ...old] : [...diversify(fresh, opts.generic), ...diversify(old, opts.generic)];
+    }
     return opts.diversify === false ? a : diversify(a, opts.generic);
   }
 
