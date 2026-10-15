@@ -16,7 +16,7 @@ export class CameraRig {
     this.goal = { target: this.target.clone(), dist: this.dist, yaw: this.yaw, pitch: this.pitch };
     this.mode = 'observe';
     this.follow = null; // fn -> {x,y,z,h}
-    this.third = { yaw: 0, pitch: 0.25, dist: 7, height: 1.6, lookY: 1.4 };
+    this.third = { yaw: 0, pitch: 0.25, dist: 7, height: 1.6, lookY: 1.4, side: 0 };
     this.trans = null;
     this.shake = 0;
     this.fov = 55;
@@ -95,21 +95,26 @@ export class CameraRig {
     const T = this.third;
     const yaw = T.yaw, pitch = T.pitch;
     const cd = T.dist;
-    const hx = ent.x - Math.sin(yaw) * Math.cos(pitch) * cd;
-    const hz = ent.z - Math.cos(yaw) * Math.cos(pitch) * cd;
+    // over-the-shoulder offset (aiming): shift camera and look point to the subject's right
+    const sx = -Math.cos(yaw) * (T.side || 0), sz = Math.sin(yaw) * (T.side || 0);
+    const hx = ent.x - Math.sin(yaw) * Math.cos(pitch) * cd + sx;
+    const hz = ent.z - Math.cos(yaw) * Math.cos(pitch) * cd + sz;
     const hy = (ent.y || 0) + T.height + Math.sin(pitch) * cd;
     out.set(hx, hy, hz);
-    look.set(ent.x + Math.sin(yaw) * 2, (ent.y || 0) + T.lookY, ent.z + Math.cos(yaw) * 2);
+    look.set(ent.x + Math.sin(yaw) * 2 + sx, (ent.y || 0) + T.lookY, ent.z + Math.cos(yaw) * 2 + sz);
     // keep the camera out of buildings
     const W = this.world;
     if (this.indoors) return out;
     const hit = W.collideBox(out.x, out.z, 0.6, out.y - 1);
     if (hit) {
       // pull the camera toward the subject until clear
+      let clear = false;
       for (let s = 0.9; s > 0.2; s -= 0.1) {
         const px = ent.x + (out.x - ent.x) * s, pz = ent.z + (out.z - ent.z) * s;
-        if (!W.collideBox(px, pz, 0.6, out.y - 1)) { out.x = px; out.z = pz; break; }
+        if (!W.collideBox(px, pz, 0.6, out.y - 1)) { out.x = px; out.z = pz; clear = true; break; }
       }
+      // backed against a wall: hover just above and behind the head instead
+      if (!clear) { out.x = ent.x + (out.x - ent.x) * 0.12; out.z = ent.z + (out.z - ent.z) * 0.12; out.y = Math.max(out.y, (ent.y || 0) + 2.6); }
     }
     const gh = W.groundHeight(out.x, out.z, out.y);
     if (out.y < gh + 0.6) out.y = gh + 0.6;

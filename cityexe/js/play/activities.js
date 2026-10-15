@@ -66,6 +66,8 @@ export class Activities {
     const W = this.W, c = this.c, biz = this.biz(I);
     if (a.kind === 'counter' && biz && BTYPES[biz.type].robbable && c.duty == null) out.push({ key: 'G', code: 'KeyG', text: 'Rob the register', danger: true, fn: () => this.robRegister(I, biz) });
     if (a.kind === 'teller' && W.heists) out.push({ key: 'G', code: 'KeyG', text: 'Hold up the teller', danger: true, fn: () => W.heists.tellerRobbery(c, I.b, this.game) });
+    if (a.kind === 'reception' && I.key === 'police' && c.flags.stalker != null && W.investigations) out.push({ key: 'R', code: 'KeyR', text: 'Report your stalker', fn: () => { const s = W.citizens[c.flags.stalker]; W.investigations.open('stalking', c, s, { x: 0, z: 0 }, 'stalking', 0.55); c.flags.stalker = null; this.game.toast(`The desk sergeant takes your statement about ${s.name}. Detectives will follow up.`, 4); } });
+    if (a.kind === 'reception' && I.key === 'police' && W.heists) out.push({ key: 'L', code: 'KeyL', text: 'Apply for a gun licence ($150)', fn: () => W.heists.applyLicence(c, this.game) });
     if (a.kind === 'metro') {
       const others = (W.city.special.metro || []).filter((id) => id !== I.b.id && W.city.buildings[id].state === 'ok');
       others.forEach((id, i) => out.push({ key: String(i + 1), code: 'Digit' + (i + 1), text: W.city.buildings[id].name, fn: () => this.rideMetro(I, id) }));

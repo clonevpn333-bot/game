@@ -74,6 +74,22 @@ export class Interiors {
     this.cut = { uCutC: { value: new THREE.Vector3() }, uCutD: { value: new THREE.Vector2(0, 1) }, uCutOn: { value: 1 }, uCeilY: { value: 3 } };
     this.mat = makeInstMaterial(this.U, { key: 'room', roughness: 0.7, snow: false, wet: false, cutaway: true, uniforms: this.cut });
     this.people = new PeopleView({ scene: this.scene, U: this.U, camera: game.renderer.camera }, game.world, { onlyExtra: true, cap: 90 });
+    // a simple "room" environment so metal and chrome pick up reflections indoors
+    {
+      const env = new THREE.Scene();
+      const shell = new THREE.Mesh(new THREE.BoxGeometry(20, 8, 20), new THREE.MeshBasicMaterial({ color: '#8a8278', side: THREE.BackSide }));
+      env.add(shell);
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshBasicMaterial({ color: '#3a342e' }));
+      floor.rotation.x = -Math.PI / 2; floor.position.y = -3.9; env.add(floor);
+      for (const [x, z, w, d] of [[-5, -4, 4, 1.2], [5, 3, 4, 1.2], [0, 0, 1.5, 6]]) {
+        const lamp = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ color: '#fff4e0' }));
+        lamp.material.color.multiplyScalar(4); lamp.rotation.x = Math.PI / 2; lamp.position.set(x, 3.9, z); env.add(lamp);
+      }
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(8, 3), new THREE.MeshBasicMaterial({ color: '#b8d0f0' }));
+      win.material.color.multiplyScalar(2); win.position.set(0, 0.5, -9.9); env.add(win);
+      this.scene.environment = game.renderer.pmrem.fromScene(env, 0.02).texture;
+      this.scene.environmentIntensity = 0.55;
+    }
     this.amb = new THREE.HemisphereLight('#fff8f0', '#504840', 0.55);
     this.scene.add(this.amb);
     this.room = null;
@@ -362,6 +378,22 @@ export class Interiors {
       if (p.v > 0.5) { this.stepAcc = (this.stepAcc || 0) + dt * p.v * 0.8; if (this.stepAcc > 1) { this.stepAcc = 0; g.audio && g.audio.footstep(run, 0, 0, true); } }
     }
     const b = this.b;
+    // weapons indoors: X to draw, right mouse to aim, left click to fire
+    const Wp = g.weapons;
+    if (Wp && !this.busy) {
+      if (I.hit('KeyX')) { const list = Wp.owned(c); const i = Wp.cur == null ? 0 : list.indexOf(Wp.cur) + 1; Wp.cur = i >= list.length ? null : list[i]; g.toast(Wp.cur ? Wp.cur : 'Weapon holstered', 1.4); }
+      p.weapon = Wp.cur && Wp.cur !== 'fists' ? Wp.cur : null;
+      const aiming = p.weapon && I.mouse.down[2];
+      if (aiming) { p.action = 'aim'; p.h = T.yaw; }
+      else if (p.action === 'aim') p.action = '';
+      Wp.fireT -= dt;
+      const down = I.mouse.down[0] && I.locked; const edge = down && !Wp.prevDown; Wp.prevDown = down;
+      if (aiming && Wp.fireT <= 0 && (edge || (down && W.combat && Wp.cur && ['smg', 'rifle'].includes(Wp.cur)))) {
+        const am = Wp.ammo(c, Wp.cur);
+        if (am > 0) { if (am !== Infinity) c.life.ammo[Wp.cur] = am - 1; Wp.fireT = 0.3; W.heists.indoorShot(g, Wp.cur); g.rig.shake = 0.4; }
+        else if (edge) g.toast('Out of ammo.');
+      }
+    }
     // nearest interaction point
     let best = null, bd = 1e9;
     for (const a of R.acts) { const d = dist(p.x, p.z, a.x, a.z); if (d < (a.r || 1.3) && d < bd) { bd = d; best = a; } }

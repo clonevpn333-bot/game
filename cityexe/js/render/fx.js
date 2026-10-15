@@ -181,6 +181,30 @@ export class FX {
     this.t = 0;
     this.emitAcc = 0;
     world.on('impact', (e) => this.sparks(e.x, (e.v?.y || 0) + 0.7, e.z, e.power));
+    // gunfire: tracers, muzzle flashes, impacts
+    const TR = 64;
+    this.tracerGeo = new THREE.BufferGeometry();
+    this.tracerGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TR * 6), 3));
+    this.tracerGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(TR * 6), 3));
+    this.tracerLines = new THREE.LineSegments(this.tracerGeo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+    this.tracerLines.frustumCulled = false;
+    scene.add(this.tracerLines);
+    this.tracers = [];
+    this.flashes = [];
+    world.on('shot', (e) => {
+      for (const s of e.shots) {
+        this.tracers.push({ a: s.from, b: s.to, life: 0.07 });
+        if (this.tracers.length > TR) this.tracers.shift();
+        if (s.hit === 'wall' || s.hit === 'veh' || s.hit === 'ground') for (let i = 0; i < 5; i++) this.glow.emit({ x: s.to.x, y: s.to.y, z: s.to.z, vx: (Math.random() - 0.5) * 4, vy: Math.random() * 3, vz: (Math.random() - 0.5) * 4, life: 0, max: 0.25, s0: 0.12, s1: 0.02, c0: [3, 2.4, 1.2, 1], c1: [1, 0.4, 0.1, 0], grav: -10, rot: 0 });
+        if (s.hit === 'ground' || s.hit === 'wall') this.smoke.emit({ x: s.to.x, y: s.to.y, z: s.to.z, vx: 0, vy: 0.4, vz: 0, life: 0, max: 0.8, s0: 0.2, s1: 0.7, c0: [0.6, 0.56, 0.5, 0.5], c1: [0.6, 0.6, 0.6, 0], rot: Math.random() * 6, vr: 0.3 });
+      }
+      const f = e.shots[0]?.from;
+      if (f && e.noise > 0) { this.flashes.push({ x: f.x, y: f.y, z: f.z, life: 0.06 }); this.glow.emit({ x: f.x, y: f.y, z: f.z, vx: 0, vy: 0, vz: 0, life: 0, max: 0.06, s0: 0.7, s1: 0.2, c0: [4, 3, 1.5, 1], c1: [3, 1, 0.2, 0], rot: 0 }); }
+    });
+    world.on('wounded', (e) => {
+      const p = e.c.ped; if (!p) return;
+      for (let i = 0; i < 10; i++) this.smoke.emit({ x: p.x, y: (p.y || 0) + 1.1, z: p.z, vx: (Math.random() - 0.5) * 2.5, vy: Math.random() * 1.5, vz: (Math.random() - 0.5) * 2.5, life: 0, max: 0.5, s0: 0.12, s1: 0.25, c0: [0.45, 0.02, 0.02, 0.9], c1: [0.3, 0.0, 0.0, 0], grav: -9, rot: 0 });
+    });
     world.on('splash', (e) => { for (let i = 0; i < 40; i++) this.water.emit({ x: e.x, y: -2.2, z: e.z, vx: (Math.random() - 0.5) * 6, vy: 4 + Math.random() * 6, vz: (Math.random() - 0.5) * 6, life: 0, max: 1.2, s0: 0.5, s1: 1.2, c0: [0.85, 0.92, 1, 0.7], c1: [0.85, 0.92, 1, 0], grav: -14, rot: 0 }); });
   }
 
@@ -198,6 +222,24 @@ export class FX {
     const cam = this.R.camera;
     this.t += dt;
     const sdt = Math.min(dt, 0.05);
+    // tracers & muzzle flashes
+    if (this.tracers.length || this.tracerGeo.drawRange.count) {
+      const pa = this.tracerGeo.attributes.position.array, ca = this.tracerGeo.attributes.color.array;
+      let n = 0;
+      for (const t of this.tracers) {
+        t.life -= dt;
+        if (t.life <= 0) continue;
+        const k = t.life / 0.07;
+        pa.set([t.a.x, t.a.y, t.a.z, t.b.x, t.b.y, t.b.z], n * 6);
+        ca.set([3 * k, 2.6 * k, 1.4 * k, 1.2 * k, 0.8 * k, 0.3 * k], n * 6);
+        n++;
+      }
+      this.tracers = this.tracers.filter((t) => t.life > 0);
+      this.tracerGeo.setDrawRange(0, n * 2);
+      this.tracerGeo.attributes.position.needsUpdate = true; this.tracerGeo.attributes.color.needsUpdate = true;
+    }
+    for (const f of this.flashes) { f.life -= dt; if (f.life > 0) this.lights.point(f.x, f.y, f.z, '#ffd890', 60, 18, 9); }
+    this.flashes = this.flashes.filter((f) => f.life > 0);
     const simRunning = W._speed > 0;
     // emitters
     this.emitAcc += sdt;

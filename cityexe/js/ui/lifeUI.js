@@ -28,6 +28,7 @@ export class LifeUI {
     this.W.on('lifeMsg', ({ icon, text }) => { if (this.game.lifeMode) this.game.toast(`${icon} ${text}`, 5); });
     this.W.on('playerDied', ({ c, cause }) => this.onDeath(c, cause));
     game.on('wake', (c) => this.wakeCard(c));
+    this.W.on('playerJailed', ({ c, days }) => { if (this.game.lifeMode && c.id === this.L.pid) this.jailPanel(c, days); });
     addEventListener('keydown', (e) => {
       if (!this.game.lifeMode || document.querySelector('.panel-modal') || e.target.tagName === 'INPUT') return;
       if (e.code === 'KeyP' && this.game.mode === 'possess') { e.preventDefault(); this.openPhone(); }
@@ -103,6 +104,21 @@ export class LifeUI {
   update(dt) {
     if (!this.game.lifeMode) return;
     this.t += dt;
+    // locked up or in hospital: time passes; when you're out, you're you again
+    const me = this.c;
+    if (me && me.status !== 'ok' && me.status !== 'dead' && me.status !== 'left') {
+      this.away = me.status;
+      if (me.status === 'hospital' && !this.hospShown && !document.querySelector('.panel-modal')) { this.hospShown = true; this.hospitalPanel(me); }
+    } else if (me && this.away && me.status === 'ok') {
+      const was = this.away;
+      this.away = null; this.hospShown = false;
+      this.game.setSpeed(2);
+      document.querySelectorAll('.status-panel').forEach((m) => m.remove());
+      this.game.input.enabled = true;
+      if (was === 'hospital') { const L = ensureLife(me, this.W); const bill = Math.round((me.job && me.job.wage > 20 ? 0.2 : 1) * (1800 + rand.int(0, 2400))); this.L.pay(me, bill, 'hospital'); L.stats.health = Math.max(L.stats.health, 70); this.L.msg('🏥', `Discharged from St. Aurelia. Bill: $${bill.toLocaleString()}${me.job && me.job.wage > 20 ? ' after insurance' : ''}.`); }
+      else this.L.msg('🔓', 'You walk out of the station a free person. Your record follows you.');
+      setTimeout(() => this.game.possessSelected(), 400);
+    }
     if (this.t > 0.4) { this.t = 0; this.renderHud(); }
     // life events wait for a quiet moment
     if (this.L.pending.length && !document.querySelector('.panel-modal') && this.game.mode === 'possess' && !this.game.rig.trans && !this.game.activities.timed) {
@@ -184,7 +200,7 @@ export class LifeUI {
         body = `<p>Next draw 20:00 · Jackpot <b>${money(LT.jackpot)}</b></p><p class="muted">Your tickets: ${mine.length ? mine.map((t) => t.nums.join('-')).join(' · ') : 'none — buy at a convenience store or gas station'}</p>${LT.history.slice(-5).reverse().map((h) => `<p><b>Day ${h.day + 1}:</b> ${h.nums.join(' – ')} <small class="muted">${h.sold} tickets · ${h.winners.filter((w) => w.m >= 4).length} winners${h.winners.some((w) => w.m === 6) ? ' · JACKPOT' : ''}</small></p>`).join('')}`;
       }
       if (cur === 'life') body = this.lifeSummary(c);
-      if (cur === 'news') body = `<div class="news">${W.history.events.slice(-14).reverse().map((e) => `<p><small>${W.history.dateStr(e.t)} ${W.history.timeStr(e.t)}</small> ${esc(e.text)}</p>`).join('')}</div>`;
+      if (cur === 'news') body = `<div class="news">${W.history.events.slice(-14).reverse().map((e) => `<p><small>${W.history.dateStr(e.t)} ${W.history.timeStr(e.t)}</small> ${esc(e.text)}</p>`).join('')}</div>${W.investigations ? `<h4>Police blotter</h4>${W.investigations.html(esc)}` : ''}`;
       return `<div class="phone"><div class="ph-bar"><span>${W.history.timeStr(W.time)}</span><span>${cur !== 'home' ? '<button data-app="home">◀</button>' : ''}</span><span>🔋</span></div><div class="ph-body">${body}</div></div>`;
     };
     openPanel(g, {
@@ -249,6 +265,9 @@ export class LifeUI {
       }
       if (c.life?.inv.gift) opts.push(['gift', '🎁 Give a gift']);
       opts.push(['ask_money', 'Ask for money'], ['insult', 'Insult'], ['apologize', 'Apologize']);
+      if (o.gang && !c.gang && !remote && o.age >= 16 && c.age >= 16) opts.push(['connect', '🕶 Ask about "opportunities"']);
+      if (o.duty != null && o.job?.role === 'officer' && c.flags.stalker != null) opts.push(['report', '🚔 Report your stalker']);
+      if (o.owesGang && c.gang === o.owesGang.gang) opts.push(['collect', `💰 "You owe the ${W.crime.gang(o.owesGang.gang).name}"`], ['scare', '🔪 Lean on them']);
       return `<div class="talk"><div class="tk-head"><span class="av big" style="background:${o.look.shirt}">${esc(o.first[0])}</span><div><b>${esc(o.name)}</b> <small>${o.age} · ${esc(W.citizenAI.jobTitle(o))}</small><div class="rb wide"><i style="width:${Math.round(clamp((a + 1) / 2 * 100, 0, 100))}%;background:${a < 0 ? '#e05a5a' : '#5ad08a'}"></i></div><small>${esc(r ? r.t : 'stranger')}${remote ? ' · on the phone' : ''}</small></div></div>
         ${known ? `<div class="persona"><b>${esc(P.archetype)}</b> · ${esc(P.traits.join(', '))}<br><small>Into ${esc(P.likes.join(', '))}. Can't stand ${esc(P.peeves.join(' or '))}. ${esc(P.backstory)}</small></div>` : '<div class="persona muted"><small>You don\'t know much about them yet.</small></div>'}
         <div class="chat">${lines.slice(-6).map((l) => `<p class="${l.who === 'You' ? 'me' : ''}"><b>${esc(l.who)}:</b> ${esc(l.text)}</p>`).join('')}</div>
@@ -276,6 +295,17 @@ export class LifeUI {
         } else say(o.first, 'Isn\'t it a bit soon?');
       } else if (k === 'baby') { say('You', 'I think I\'m ready to start a family.'); const err = Ls.tryForBaby(c, o); say(o.first, err ? (err.includes('adoption') ? 'Maybe we should look into adoption…' : err) : 'Let\'s do it. 💕'); }
       else if (k === 'breakup') { say('You', 'I think we should break up.'); Ls.breakUp(c, o, `You broke up with ${o.first}.`); say(o.first, rand.pick(['…Wow. Okay.', 'Get out.', 'I saw this coming.'])); }
+      else if (k === 'connect') {
+        const g = W.crime.gang(o.gang), L = ensureLife(c, W);
+        say('You', 'I hear you know where the real money is.');
+        if ((r?.a ?? 0) > 0.15 || L.stats.karma < 50 || rand.chance(0.35)) { L.gangContact = true; say(o.first, `Maybe. I run with the ${g.name}. Here is a number. Log on, ask for work. Do not make me look bad.`); Ls.msg('🕶', 'New contact: the underground board is on your computer now.'); }
+        else { W.citizenAI.addAff(c, o, -0.05); say(o.first, rand.pick(['No idea what you mean.', 'You a cop or something?', 'Get to know me first.'])); }
+      } else if (k === 'report') {
+        const s = W.citizens[c.flags.stalker];
+        say('You', `Someone has been following me. ${s.name}. Messages, showing up outside my place.`);
+        W.investigations.open('stalking', c, s, W.citizenPos(c) || { x: 0, z: 0 }, 'stalking', 0.55); c.flags.stalker = null;
+        say(o.first, 'Okay. I\'m writing this down. We\'ll pay them a visit. Call 911 if they come near you.');
+      } else if (k === 'collect' || k === 'scare') { say('You', k === 'scare' ? 'Pay up. Today. Or things get ugly.' : 'You owe some people money. They sent me.'); say(o.first, W.crime.collect(c, o, k === 'scare') || '…'); }
       else if (k === 'gift') { say('You', 'I got you something.'); c.life.inv.gift = null; W.citizenAI.addAff(c, o, 0.2); say(o.first, 'Aww, you didn\'t have to!'); }
       else if (k === 'play' || k === 'read') { W.citizenAI.addAff(c, o, 0.08); say(o.first, rand.pick(['Again! Again!', 'Hehe!', 'You\'re the best!', 'Can we get ice cream?'])); c.needs.fun = Math.min(1, c.needs.fun + 0.1); }
       else {
@@ -404,6 +434,34 @@ export class LifeUI {
     W.history.citizenLog(c, `${buy ? 'Bought' : 'Moved into'} ${W.citizenAI.homeName(c)}`, true);
     this.L.msg('🔑', `${buy ? 'You bought' : 'You signed a lease on'} ${W.citizenAI.homeName(c)}. Your stuff is there.`);
     re(`${buy ? 'Bought' : 'Rented'}: ${W.citizenAI.buildingName(bid)}. Set GPS → Home to find it.`);
+  }
+
+  // ---------------------------------------------------------------- jail & hospital
+  jailPanel(c, days) {
+    const g = this.game, W = this.W, L = ensureLife(c, W);
+    const fee = Math.round(days * 650);
+    const render = () => `<div class="ev-text">⛓ You've been booked at ${esc(W.citizenAI.buildingName(c.at ?? 0))}.<br>Sentence: <b>${Math.max(1, Math.round((c.releaseAt - W.time) / 1440))} day(s)</b>.</div>
+      <div class="ev-ch"><button class="pri" data-a="serve">Serve your time</button><button data-a="lawyer" ${c.money + (c.bank || 0) < fee ? 'disabled' : ''}>Hire a lawyer (${money(fee)})</button><button data-a="escape">Try to escape</button></div><div class="ev-res"></div>`;
+    openPanel(g, {
+      title: '', cls: 'event-card status-panel', closable: false, html: render(),
+      onBind: (a) => {
+        const res = (t) => { a.el.querySelector('.ev-res').textContent = t; };
+        a.el.querySelectorAll('[data-a]').forEach((b) => b.onclick = () => {
+          const k = b.dataset.a;
+          if (k === 'serve') { a.close(); g.setSpeed(6); g.toast('Days blur together in the cell…', 4); }
+          if (k === 'lawyer') { this.L.pay(c, fee, 'lawyer'); if (rand.chance(0.55)) { c.releaseAt = W.time + (c.releaseAt - W.time) * 0.4; res('Your lawyer gets the sentence cut down.'); } else res('The judge is not moved. You serve the full term.'); a.set(render()); }
+          if (k === 'escape') {
+            if (rand.float() < 0.15 + (L.skills.stealth || 0) / 300 + (L.stats.fitness || 0) / 600) { c.releaseAt = W.time; c.flags.escaped = true; W.combat.raiseHeat(4); a.close(); g.toast('You slip out during a shift change. Every cop in the city is looking for you.', 6); }
+            else { c.releaseAt += 1440 * 4; res('Caught in the yard. Four more days added.'); a.set(render()); }
+          }
+        });
+      },
+    });
+  }
+  hospitalPanel(c) {
+    const g = this.game;
+    openPanel(g, { title: '', cls: 'event-card status-panel', closable: false, html: '<div class="ev-text">🏥 You wake up in a hospital bed at St. Aurelia General. Doctors are patching you up.</div><div class="ev-ch"><button class="pri" data-close>Rest and recover</button></div>', onClose: () => g.setSpeed(6) });
+    void c;
   }
 
   // ---------------------------------------------------------------- the end

@@ -441,14 +441,15 @@ export class Incidents {
     if (u.state === 'transport') return;
     for (const uid of inc.units) { const o = W.services.unit(uid); if (o && o !== u && o.state === 'pursuit') { o.pursuit = null; W.services.veh(o).pursuing = false; W.services.release(o); } }
     W.services.loadCargo(u, s.id);
-    const crime = inc.type === 'robbery' ? 'armed robbery' : inc.type === 'theft' ? 'auto theft' : inc.type === 'fight' ? 'assault' : inc.type === 'riot' ? 'rioting' : 'a crime';
+    const crime = { robbery: 'armed robbery', theft: 'auto theft', fight: 'assault', riot: 'rioting', heist: 'bank robbery', homicide: 'murder', shooting: 'assault with a deadly weapon', wanted: 'evading police' }[inc.type] || 'a crime';
     s.record.arrests++;
     s.record.wanted = 0;
     W.history.counters.arrests++;
     W.history.citizenLog(s, `Arrested for ${crime}`, true);
     for (const cid of u.crew) W.history.citizenLog(W.citizens[cid], `Arrested ${s.name} for ${crime}`, inc.data.chaseStart != null);
     W.history.cityEvent(`${s.name} arrested for ${crime}${inc.data.chaseStart ? ' after a chase' : ''}`, { type: 'arrest', x: inc.x, z: inc.z, who: s.id, minor: !inc.data.chaseStart });
-    s.flags.jailFor = inc.type === 'robbery' ? 3 : inc.type === 'theft' ? 2 : 1;
+    s.flags.jailFor = { robbery: 3, theft: 2, heist: 18, homicide: 40, shooting: 10, wanted: Math.max(2, (s.record.wanted || 1) * 3) }[inc.type] || 1;
+    if (s.isPlayer && s.record.arrests > 1) s.flags.jailFor = Math.round(s.flags.jailFor * (1 + s.record.arrests * 0.25));
     this.close(inc, 'suspect arrested');
     u.incident = null;
     W.services.crewIn(u, () => W.services.transport(u));
@@ -459,11 +460,13 @@ export class Incidents {
     const W = this.world;
     const days = c.flags.jailFor || 1;
     c.status = 'jail';
+    c.lastJailed = W.time;
     c.flags.cuffed = false;
     c.releaseAt = W.time + days * 1440 * (0.8 + rand.float() * 0.4);
     W.citizenAI.placeInside(c, stationB);
     c.activity = 'jail';
     c.trip = null; c.goal = null;
+    if (c.isPlayer) { if (c.life) { c.life.dirty = 0; } W.emit('playerJailed', { c, days }); }
     if (c.job && rand.chance(0.6)) W.citizenAI.loseJob(c, 'fired after an arrest');
   }
 
@@ -688,7 +691,7 @@ export class Incidents {
     switch (u.kind) {
       case 'police': {
         if (inc.data.pursuitBy != null && inc.data.pursuitBy !== u.id && this.joinPursuit(u, inc)) return;
-        if (inc.type === 'robbery' || inc.type === 'theft' || inc.type === 'fight' || inc.type === 'riot') {
+        if (['robbery', 'theft', 'fight', 'riot', 'shooting', 'homicide', 'wanted', 'heist'].includes(inc.type)) {
           const s = inc.suspects.length ? W.citizens[inc.suspects[0]] : null;
           const pos = s ? W.citizenPos(s) : null;
           if (s && pos && !pos.inside && !s.flags.cuffed && dist(pos.x, pos.z, inc.x, inc.z) < 160 && inc.data.pursuitBy == null) { this.startPursuit(u, inc, s); return; }

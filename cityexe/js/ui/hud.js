@@ -90,6 +90,8 @@ export class HUD {
     this.ph = h('div', 'phud hidden');
     this.ph.innerHTML = `
       <div class="p-obj" id="p-obj"></div>
+      <div class="p-stars" id="p-stars"></div>
+      <div class="p-weapon" id="p-weapon"></div>
       <div class="p-id" id="p-id"></div>
       <div class="p-prompts" id="p-prompts"></div>
       <div class="p-speed" id="p-speed"></div>
@@ -544,6 +546,12 @@ export class HUD {
     if (this._spd !== spd) { this._spd = spd; this.ph.querySelector('#p-speed').innerHTML = spd; }
     const keys = P.autopilot ? '<kbd>R</kbd> take control · <kbd>Q</kbd> leave' : P.mode === 'drive' ? '<kbd>WASD</kbd> drive · <kbd>Space</kbd> handbrake · <kbd>F</kbd> exit · <kbd>R</kbd> autopilot · <kbd>Q</kbd> leave' : P.mode === 'fly' ? '<kbd>W</kbd><kbd>S</kbd> pitch · <kbd>A</kbd><kbd>D</kbd> turn · <kbd>Space</kbd> climb · <kbd>C</kbd> descend · <kbd>Shift</kbd> boost' + (P.heli && P.heli.kind === 'police' ? ' · <kbd>L</kbd> searchlight' : '') + ' · <kbd>R</kbd> autopilot · <kbd>Q</kbd> leave' : P.mode === 'inside' ? '<kbd>WASD</kbd> move · <kbd>E</kbd> interact · <kbd>R</kbd> autopilot · <kbd>Q</kbd> leave' : '<kbd>WASD</kbd> move · <kbd>Shift</kbd> run · <kbd>E</kbd> interact · <kbd>R</kbd> autopilot · <kbd>Q</kbd> leave';
     if (this._keys !== keys) { this._keys = keys; this.ph.querySelector('#p-keys').innerHTML = keys; }
+    // wanted level & weapon
+    const heat = W.combat ? W.combat.heat : 0;
+    const stars = heat > 0 ? `${'★'.repeat(Math.ceil(heat))}${'☆'.repeat(5 - Math.ceil(heat))}${W.time - W.combat.lastSeen > 20 ? '<small>searching</small>' : ''}` : '';
+    if (this._st !== stars) { this._st = stars; const el = this.ph.querySelector('#p-stars'); el.innerHTML = stars; el.classList.toggle('flash', heat >= 3); }
+    const wpn = g.weapons && g.weapons.cur ? `${g.weapons.cur === 'fists' ? '👊' : '🔫'} ${g.weapons.cur} ${g.weapons.cur !== 'fists' ? (g.weapons.ammo(c, g.weapons.cur) === Infinity ? '∞' : g.weapons.ammo(c, g.weapons.cur)) : ''}` : '';
+    if (this._wp !== wpn) { this._wp = wpn; this.ph.querySelector('#p-weapon').textContent = wpn; }
     this.drawMinimap(pos, obj);
   }
 

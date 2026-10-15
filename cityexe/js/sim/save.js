@@ -40,6 +40,11 @@ export function serialize(W) {
     lanes: W.city.net.lanes.filter((l) => l.closed).map((l) => l.id),
     lotto: W.lottery ? W.lottery.serialize() : null,
     life: W.life ? W.life.serialize() : null,
+    combat: W.combat ? W.combat.serialize() : null,
+    heists: W.heists ? W.heists.serialize() : null,
+    dark: W.dark ? W.dark.serialize() : null,
+    cases: W.investigations ? W.investigations.serialize() : null,
+    crime: W.crime ? { setup: W.crime.setup, mission: W.crime.mission } : null,
   };
   data.ms = Math.round(performance.now() - t0);
   return data;
@@ -124,6 +129,11 @@ export function deserialize(data, opts = {}) {
   if (data.anom && W.anomalies) W.anomalies.deserialize(data.anom);
   if (data.lotto && W.lottery) W.lottery.deserialize(data.lotto);
   if (data.life && W.life) W.life.deserialize(data.life);
+  if (data.combat && W.combat) W.combat.deserialize(data.combat);
+  if (data.heists && W.heists) W.heists.deserialize(data.heists);
+  if (data.dark && W.dark) W.dark.deserialize(data.dark);
+  if (data.cases && W.investigations) W.investigations.deserialize(data.cases);
+  if (data.crime && W.crime) { W.crime.setup = !!data.crime.setup; W.crime.mission = data.crime.mission; }
   W.lastHour = Math.floor(W.time / 60);
   W.lastDay = W.day;
   for (const b of city.buildings) if (b.fire > 0) b.fire = Math.min(b.fire, 0.2);

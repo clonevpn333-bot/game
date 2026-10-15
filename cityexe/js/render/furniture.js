@@ -388,8 +388,11 @@ export const FURN = {
     for (let x = -w / 2 + 1; x < w / 2; x += 2) { k.box(x, 1.32, -0.05, 0.4, 0.06, 0.3, '#b8bcc0'); k.surf('plastic'); k.box(x, 1.75, -0.08, 0.3, 0.2, 0.01, '#20d080', 0, 10); k.surf('metal'); }
   } },
   vaultDoor: { fp: null, b: (k, o) => {
-    k.surf('metal'); k.rbox(0, 1.4, 0, 3.4, 3.0, 0.5, 0.06, '#5a5e64');
     const open = o.open ? 1 : 0;
+    // a steel frame around a walk-through opening (hidden by the door when shut)
+    k.surf('metal');
+    for (const sx of [-1, 1]) k.rbox(sx * 1.275, 1.4, 0, 0.85, 3.0, 0.5, 0.04, '#5a5e64');
+    k.rbox(0, 2.575, 0, 1.7, 0.65, 0.5, 0.04, '#5a5e64'); k.rbox(0, 0.225, 0, 1.7, 0.65, 0.5, 0.04, '#5a5e64');
     const door = new ModelKit();
     door.surf('chrome'); door.cyl(0, 0, 0, 1.25, 0.6, '#9aa0a8', 32, 0, 0, [Math.PI / 2, 0, 0]);
     for (let i = 0; i < 3; i++) door.cyl(0, 0, 0.31 + i * 0.01, 1.1 - i * 0.25, 0.02, '#7a8088', 32, 0, 0, [Math.PI / 2, 0, 0]);
@@ -397,7 +400,7 @@ export const FURN = {
     for (let i = 0; i < 4; i++) door.box(Math.cos(i * 1.57) * 0.35, Math.sin(i * 1.57) * 0.35, 0.42, 0.06, 0.5, 0.06, '#d8dce0', 0, 0, [0, 0, i * 1.57]);
     for (let i = 0; i < 10; i++) door.cyl(Math.cos(i * 0.628) * 1.15, Math.sin(i * 0.628) * 1.15, 0, 0.07, 0.75, '#c8ccd0', 8, 0, 0, [Math.PI / 2, 0, 0]);
     k.append(door, open ? -1.2 : 0, 1.4, open ? 1.3 : 0.1, open ? 1.5 : 0);
-    k.surf('none'); k.cyl(0, 1.4, 0.05, 1.28, 0.55, '#0a0a0c', 32, 0, 0, [Math.PI / 2, 0, 0]);
+    if (!open) { k.surf('none'); k.cyl(0, 1.4, 0.05, 1.28, 0.55, '#0a0a0c', 32, 0, 0, [Math.PI / 2, 0, 0]); }
   } },
   depositBoxes: { fp: null, b: (k, o) => {
     const w = o.w || 4;

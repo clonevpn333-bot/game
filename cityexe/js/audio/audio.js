@@ -139,6 +139,15 @@ export class Audio {
     this.tone('square', big ? 220 : 392, 0.12, 0.01, 0.45);
     this.tone('square', big ? 277 : 494, 0.1, 0.01, 0.45);
   }
+  gunshot(x, z, heavy = 1) {
+    if (!this.ctx) return;
+    const cam = this.game.renderer.camera.position;
+    const d = Math.hypot(cam.x - x, cam.z - z);
+    const v = clamp(1.2 / (1 + d / 25), 0.02, 1) * heavy;
+    this.burst(this.white, 'lowpass', d > 120 ? 700 : 3800, 0.6, 0.9 * v, 0.001, 0.12 + Math.min(0.5, d / 300));
+    this.tone('sine', 120, 0.5 * v, 0.001, 0.18, 40);
+    if (d > 40) setTimeout(() => this.burst(this.brown, 'lowpass', 400, 0.7, 0.25 * v, 0.02, 0.6), d * 2.5);
+  }
   door() { if (!this.ctx) return; this.tone('sine', 140, 0.15, 0.003, 0.12, 80); this.burst(this.white, 'bandpass', 600, 2, 0.08, 0.002, 0.08); }
   alarm() {
     if (!this.ctx) return;

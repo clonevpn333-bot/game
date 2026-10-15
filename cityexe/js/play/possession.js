@@ -383,6 +383,9 @@ export class Possession {
     W.playerObstacles = [{ x: p.x, z: p.z, radius: 0.5, player: true, y: p.y }];
     // footsteps
     if (p.v > 0.5) { this.stepAcc = (this.stepAcc || 0) + dt * p.v * 0.75; if (this.stepAcc > 1) { this.stepAcc = 0; g.audio && g.audio.footstep(run, W.weather.wet, W.weather.snowCover); } }
+    // weapons & street dealing
+    if (this.game.weapons) this.game.weapons.update(dt, this, p);
+    if (W.crime) W.crime.dealPrompt(this.game, this, p);
     // interactions
     this.footInteractions(dt);
     g.rig.updateThird(dt, p, { minDist: 2, maxDist: 14 });

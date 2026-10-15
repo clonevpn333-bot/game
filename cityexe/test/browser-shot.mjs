@@ -30,7 +30,7 @@ page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') 
 page.on('pageerror', (e) => errors.push('[pageerror] ' + e.message + '\n' + e.stack));
 const qs = process.argv[4] || ''; await page.goto(`http://localhost:${port}/index.html${qs}${qs.includes('life') ? '' : (qs ? '&' : '?') + 'sandbox'}`);
 await page.waitForFunction(() => window.game && window.game.renderer && !document.getElementById('boot'), null, { timeout: 120000 });
-const shot = async (name) => { await page.screenshot({ path: path.join(out, name + '.png') }); console.log('saved', name); };
+const shot = async (name) => { await page.screenshot({ path: path.join(out, name + '.png'), timeout: 120000 }); console.log('saved', name); };
 const wait = (ms) => page.waitForTimeout(ms);
 const scenarios = (await import(path.join(root, 'test', 'scenarios.mjs'))).default;
 try { await scenarios[scenario]({ page, shot, wait }); } catch (e) { console.log('SCENARIO FAILED', e.message); console.log(errors.filter((x) => !x.startsWith('[warning]')).slice(0, 20).join('\n')); console.log(JSON.stringify(await page.evaluate(() => { const P = window.game.possession; return { pending: P.pending && P.pending.name, c: P.c && P.c.name, mode: window.game.mode, trans: !!window.game.rig.trans, toast: Array.from(document.querySelectorAll('.toast')).map((t) => t.textContent) }; }).catch(() => null))); }

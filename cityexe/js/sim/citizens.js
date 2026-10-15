@@ -37,7 +37,7 @@ export const UNIFORMS = {
 const physMin = (sec) => (sec * C.TIME_SCALE) / 60;
 export const minToPhys = (min) => (min * 60) / C.TIME_SCALE;
 // optional per-citizen fields persisted in saves (life sim, crime, family)
-export const EXTRA_KEYS = ['bank', 'lastBank', 'edu', 'skills', 'family', 'gang', 'weapons', 'heat', 'life', 'school', 'parents', 'kids', 'siblings', 'studying', 'dealer', 'drugs', 'owes', 'married', 'isPlayer', 'mourned'];
+export const EXTRA_KEYS = ['lastJailed', 'gangRank', 'owesGang', 'bank', 'lastBank', 'edu', 'skills', 'family', 'gang', 'weapons', 'heat', 'life', 'school', 'parents', 'kids', 'siblings', 'studying', 'dealer', 'drugs', 'owes', 'married', 'isPlayer', 'mourned'];
 
 let CID = 0;
 export function newCitizen(rng, opts = {}) {
@@ -906,14 +906,21 @@ export class CitizenAI {
       }
       case 'carout': {
         const v = W.traffic.byId.get(c.veh);
-        v.driver = null; c.veh = null;
+        c.veh = null;
         let x, z;
-        if (v.state === 'garage') { const gb = W.city.buildings[v.garage]; [x, z] = this.doorOut(gb); }
-        else [x, z] = this.carSidePoint(v);
-        W.peds.spawn(c, x, z, v.h);
+        if (!v) {
+          // the car is gone (towed, destroyed): carry on from where the leg was headed
+          [x, z] = trip.point || this.doorOut(W.city.buildings[c.home]);
+          W.peds.spawn(c, x, z, 0);
+        } else {
+          v.driver = null;
+          if (v.state === 'garage') { const gb = W.city.buildings[v.garage]; [x, z] = this.doorOut(gb); }
+          else [x, z] = this.carSidePoint(v);
+          W.peds.spawn(c, x, z, v.h);
+        }
         c.state = 'walking';
         trip.from = [x, z];
-        W.emit('carOut', { c, v });
+        if (v) W.emit('carOut', { c, v });
         done();
         break;
       }

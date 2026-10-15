@@ -192,6 +192,19 @@ const umbrellaGeo = () => kit((k) => {
 });
 const toolGeo = () => kit((k) => { k.surf('metal'); k.rbox(0, -0.05, 0.25, 0.05, 0.05, 0.55, 0.015, '#3a3a3a'); });
 const phoneGeo = () => kit((k) => { k.surf('glass'); k.rbox(0, 0, 0, 0.075, 0.15, 0.012, 0.008, '#101418'); });
+const pistolGeo = () => kit((k) => {
+  k.surf('metal');
+  k.rbox(0, -0.1, 0.04, 0.032, 0.2, 0.05, 0.008, '#1c1c1e');
+  k.rbox(0, -0.02, -0.02, 0.03, 0.05, 0.11, 0.008, '#2a2420', 0, 0, [0.3, 0, 0]);
+});
+const longGunGeo = () => kit((k) => {
+  k.surf('metal');
+  k.rbox(0, -0.35, 0.05, 0.05, 0.7, 0.07, 0.01, '#1c1c1e');
+  k.cyl(0, -0.75, 0.06, 0.015, 0.3, '#141414', 6);
+  k.surf('wood');
+  k.rbox(0, 0.12, 0.02, 0.05, 0.28, 0.1, 0.01, '#4a3020');
+  k.rbox(0, -0.15, -0.05, 0.04, 0.1, 0.12, 0.01, '#2a2420');
+});
 const bagGeo = () => kit((k) => {
   k.surf('leather'); k.rbox(0, 0, 0, 0.26, 0.32, 0.12, 0.04, WHITE, 1);
   k.surf('fabric'); k.tube([[-0.08, 0.15, 0.05], [-0.1, 0.4, 0.0], [0.1, 0.42, 0.0], [0.08, 0.15, 0.05]], 0.012, '#2a2420', 4);
@@ -230,7 +243,9 @@ export class PeopleView {
     this.tool = pool(toolGeo(), 60, false);
     this.phone = pool(phoneGeo(), 120, false);
     this.bag = pool(bagGeo(), Math.ceil(cap / 4), false);
-    this.all = [...Object.values(this.torso), ...this.head, ...Object.values(this.hair), this.beard, this.upperArm, this.forearm, this.thigh, this.shin, this.hat, this.umbrella, this.tool, this.phone, this.bag];
+    this.pistol = pool(pistolGeo(), 60, false);
+    this.longGun = pool(longGunGeo(), 40, false);
+    this.all = [...Object.values(this.torso), ...this.head, ...Object.values(this.hair), this.beard, this.upperArm, this.forearm, this.thigh, this.shin, this.hat, this.umbrella, this.tool, this.phone, this.bag, this.pistol, this.longGun];
     this.frustum = new THREE.Frustum();
     this.pm = new THREE.Matrix4();
     this.visible = [];
@@ -382,7 +397,12 @@ export class PeopleView {
       joint.makeTranslation(0, -0.3, 0).multiply(rot.makeRotationX(elbow));
       tmpM.multiply(joint);
       this.forearm.add(tmpM, sleeve, skin);
-      if (side > 0 && detail) {
+      const gun = ped.weapon || (act === 'aim' ? 'pistol' : null);
+      if (side > 0 && gun && gun !== 'knife' && gun !== 'bat' && gun !== 'taser') {
+        const long = gun === 'rifle' || gun === 'shotgun' || gun === 'smg';
+        if (act !== 'aim' && !long) { /* holstered pistol rides on the hip */ }
+        else { joint.makeTranslation(0, -0.36, 0.02); tmpM.multiply(joint); (long ? this.longGun : this.pistol).add(tmpM, C3.set('#1c1c1e'), C3); }
+      } else if (side > 0 && detail) {
         if (act === 'hose' || act === 'build' || act === 'repair') { tmpM.multiply(joint.makeTranslation(0, -0.33, 0)); this.tool.add(tmpM, C3.set('#3a3a3a'), C3); }
         else if (act === 'phone' || act === 'text') { tmpM.multiply(joint.makeTranslation(0, -0.36, 0.04)); this.phone.add(tmpM, C3.set('#101418'), C3); }
       }

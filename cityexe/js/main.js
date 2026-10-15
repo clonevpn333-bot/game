@@ -5,6 +5,7 @@ import { GodTools } from './play/godTools.js';
 import { Interiors } from './render/interiors.js';
 import { Activities } from './play/activities.js';
 import { LifeUI } from './ui/lifeUI.js';
+import { PlayerWeapons } from './play/weapons.js';
 import { Audio } from './audio/audio.js';
 import { loadSave, saveWorld, deserialize, clearSave } from './sim/save.js';
 import { Anomalies } from './sim/anomaly.js';
@@ -53,7 +54,10 @@ async function main() {
   const hud = new HUD(game);
   game.hud = hud;
   game.lifeUI = new LifeUI(game);
-  game.on('frame', (dt) => { hud.update(dt); game.audio.update(dt); game.activities.update(dt); game.lifeUI.update(dt); });
+  game.weapons = new PlayerWeapons(game);
+  game.world.__game = game;
+  game.world.on('shot', (e) => { const s = e.shots[0]; if (s) game.audio.gunshot(s.from.x, s.from.z, e.noise); });
+  game.on('frame', (dt) => { hud.update(dt); game.audio.update(dt); game.activities.update(dt); game.lifeUI.update(dt); game.world.heists.update(dt, game); });
   // persistence
   let saving = false;
   game.save = async () => {

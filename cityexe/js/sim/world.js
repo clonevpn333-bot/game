@@ -9,6 +9,10 @@ import { Economy, BTYPES } from './economy.js';
 import { CitizenAI } from './citizens.js';
 import { Lottery } from './lottery.js';
 import { LifeSim } from './life.js';
+import { Combat } from './combat.js';
+import { Heists } from './heists.js';
+import { Crime } from './crime.js';
+import { DarkSide, Investigations } from './dark.js';
 import { History } from './history.js';
 import { Weather } from './weather.js';
 import { Power } from './power.js';
@@ -60,6 +64,11 @@ export class World {
     this.helis = new Helis(this);
     this.lottery = new Lottery(this);
     this.life = new LifeSim(this);
+    this.combat = new Combat(this);
+    this.heists = new Heists(this);
+    this.crime = new Crime(this);
+    this.investigations = new Investigations(this);
+    this.dark = new DarkSide(this);
     this.driverCtrl = { onLink: () => {}, idle: (v) => {} };
     this.lastHour = Math.floor(this.time / 60);
     this.lastDay = Math.floor(this.time / 1440);
@@ -162,6 +171,8 @@ export class World {
     this.disasters && this.disasters.update(dt, dtMin);
     this.animals && this.animals.update(dt);
     this.helis && this.helis.update(dt);
+    this.combat && this.combat.update(dt, dtMin);
+    this.dark && this.dark.update(dt);
     this.restCheck(dt);
   }
 

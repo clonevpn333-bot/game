@@ -259,3 +259,10 @@ button.big { padding: 12px 18px; font-size: 15px; } .small { font-size: 12px; }
 .panel-modal button.sw { padding: 0; }
 .panel-modal .pm-x { border: none; background: none; }
 .panel-modal { animation: none; }
+.p-stars { position: absolute; top: 120px; left: 50%; transform: translateX(-50%); font-size: 22px; color: #ffd040; letter-spacing: 3px; text-shadow: 0 0 8px rgba(0,0,0,0.8); }
+.p-stars small { display: block; font-size: 10px; letter-spacing: 0; color: var(--muted); text-align: center; }
+.p-stars.flash { animation: heat 0.6s infinite alternate; }
+.p-weapon { position: absolute; right: 230px; bottom: 120px; font-family: var(--mono); font-size: 13px; color: #fff; text-shadow: 0 1px 3px #000; }
+#crosshair { position: fixed; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border: 2px solid rgba(255,255,255,0.85); border-radius: 50%; pointer-events: none; box-shadow: 0 0 4px #000; }
+#crosshair::after { content: ''; position: absolute; left: 50%; top: 50%; width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; background: #fff; border-radius: 50%; }
+#crosshair.hidden { display: none; }
