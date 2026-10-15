@@ -13,6 +13,7 @@ const PLAYER = (mode) => `<!doctype html><body style="background:#111"><script>
 const send = (m) => parent.postMessage({ 'x-tiktok-player': true, ...m }, '*');
 const mode = ${JSON.stringify(mode)};
 if (mode === 'hang') { /* never answers */ }
+else if (mode === 'earlyend') { setTimeout(() => send({ type: 'onPlayerReady' }), 60); setTimeout(() => send({ type: 'onStateChange', value: 1 }), 150); setTimeout(() => send({ type: 'onStateChange', value: 0 }), 500); }
 else if (mode === 'gone') setTimeout(() => send({ type: 'onPlayerError', value: { errorCode: 1001, errorType: 'INVALID_VIDEO' } }), 80);
 else if (mode === 'error3001') setTimeout(() => send({ type: 'onPlayerError', value: { errorCode: 3001, errorType: 'PLAYBACK_ERROR' } }), 80);
 else { let paused = false;
@@ -46,7 +47,7 @@ await t('arrow keys navigate and keep exactly one visible player (plus at most o
   const p = await newPage('period=2023-10'); await p.waitForSelector('.tt-frame'); const a = await cur(p);
   await p.keyboard.press('ArrowDown'); await p.waitForFunction((a) => window.__rewind.queue.current.id !== a, a);
   await p.waitForTimeout(300); assert.equal(await p.locator('.tt-frame:not(.tt-pre)').count(), 1); assert.ok(await p.locator('iframe').count() <= 2);
-  await p.keyboard.press('ArrowUp'); await p.waitForFunction((a) => window.__rewind.queue.current.id === a, a);
+  await p.waitForTimeout(550); await p.keyboard.press('ArrowUp'); await p.waitForFunction((a) => window.__rewind.queue.current.id === a, a);
   assert.deepEqual(p.errors, []); await p.ctx.close();
 });
 await t('the next video is preloaded behind the player and a swipe reveals it without a new load', async () => {
@@ -64,6 +65,33 @@ await t('a dead video is discovered by the preload and removed before the user r
   await p.waitForFunction((id) => !window.__rewind.queue.items.some((v) => v.id === id), nxt, { timeout: 12000 });
   await p.keyboard.press('ArrowDown'); await p.waitForFunction((a) => window.__rewind.queue.current.id === a, after, { timeout: 5000 });
   assert.notEqual(cur0, nxt); await p.ctx.close();
+});
+await t('one swipe moves exactly one video, even if the gesture fires twice', async () => {
+  const p = await newPage('period=2023-10'); await p.waitForSelector('.tt-frame'); const [a, b] = await p.evaluate(() => { const q = window.__rewind.queue; return [q.current.id, q.items[(q.index + 1) % q.length].id]; });
+  await p.keyboard.press('ArrowDown'); await p.keyboard.press('ArrowDown'); await p.waitForTimeout(700);
+  assert.equal(await cur(p), b, 'a duplicate trigger skipped past the next video'); assert.notEqual(a, b); await p.ctx.close();
+});
+await t('a spurious early "ended" does not skip the video', async () => {
+  const p = await newPage('period=2023-10'); await p.waitForSelector('.tt-frame'); const first = await cur(p); behaviors.set(first, 'earlyend');
+  await p.evaluate((id) => { const q = window.__rewind.queue; q.jump(q.items.findIndex((v) => v.id === id)); window.__rewind.present(1); }, first);
+  await p.waitForTimeout(2200); assert.equal(await cur(p), first, 'video was skipped by an early ended event'); await p.ctx.close();
+});
+await t('iPhone user agent: no hidden preload player is created', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' }); const p = await ctx.newPage();
+  await p.route('https://www.tiktok.com/player/v1/**', (r) => r.fulfill({ contentType: 'text/html', body: PLAYER('ok') })); await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  await p.goto(`${base}/?skipIntro=1&period=2023-10`); await p.waitForFunction(() => window.__rewind.player.state === 'playing'); await p.waitForTimeout(2500);
+  assert.equal(await p.locator('iframe').count(), 1); await ctx.close();
+});
+await t('the feed adapts: finishing/saving a vibe raises it, flicking past lowers it, and it persists', async () => {
+  const p = await newPage('period=fall'); await p.waitForFunction(() => window.__rewind.player.state === 'playing');
+  const tag = await p.evaluate(() => window.__rewind.queue.current.trends[0]);
+  await p.keyboard.press('f'); await p.waitForTimeout(300);
+  const taste = await p.evaluate(() => JSON.parse(localStorage.getItem('rewind.v4.taste')));
+  assert.ok(taste['t:' + tag] > 0, 'favorite raised the vibe'); await p.waitForTimeout(500);
+  for (let i = 0; i < 3; i++) { await p.waitForFunction(() => window.__rewind.player.state === 'playing'); await p.waitForTimeout(250); await p.keyboard.press('ArrowDown'); await p.waitForTimeout(500); }
+  const after = await p.evaluate(() => JSON.parse(localStorage.getItem('rewind.v4.taste'))); assert.ok(Object.values(after).some((x) => x < 0), 'flicking past created a dislike');
+  await p.reload(); await p.waitForFunction(() => window.__rewind.queue.length);
+  assert.ok(Object.keys(await p.evaluate(() => JSON.parse(localStorage.getItem('rewind.v4.taste')))).length > 3, 'taste persisted'); await p.ctx.close();
 });
 await t('a removed video (1001) auto-skips, is remembered as broken, and never returns', async () => {
   const p = await newPage('period=2023-10'); await p.waitForSelector('.tt-frame');

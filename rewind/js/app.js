@@ -13,7 +13,7 @@
   /* ---------------- state ---------------- */
   const state = {
     period: 'fall', tags: [], collection: null, mood: null, query: '', favoritesOnly: false, override: null /* {ids,title} */,
-    failures: 0, timeouts: 0, blocked: false, muted: false, userMuted: false, activated: false, lastNav: 0, dir: 1,
+    view: { id: null, start: 0, frac: 0, ended: false }, failures: 0, timeouts: 0, blocked: false, muted: false, userMuted: false, activated: false, lastNav: 0, dir: 1,
   };
   const queue = new C.Queue([]);
   let library = [];
@@ -63,7 +63,7 @@
   function feedOpts() {
     return { period: state.period, tags: state.tags, collection: state.collection, query: state.query, favoritesOnly: state.favoritesOnly,
       favorites: S.favorites(), hidden: S.hidden(), broken: brokenIds(), hideUnavailable: settings.hideUnavailable, shuffle: settings.shuffle,
-      seen: S.seen(), generic: GENERIC };
+      seen: S.seen(), generic: GENERIC, affinity: settings.adapt ? S.taste() : null };
   }
   function rebuildFeed(startId = null, dir = 1) {
     if (state.override) {
@@ -95,21 +95,53 @@
   function showFavorites() { clearContext(); state.favoritesOnly = true; state.period = 'all'; state.tags = []; closeMenu(); rebuildFeed(); }
   function playOverride(ids, title, startId = null) { clearContext(); state.override = { ids, title }; state.period = 'all'; state.tags = []; closeMenu(); closeModal(); rebuildFeed(startId); }
 
-  const go = (n) => {
+  /* On-screen event log: open the page with ?debug=1 (for diagnosing device-specific behaviour). */
+  const DEBUG = qs.has('debug'); const dlog = [];
+  function dbg(msg) {
+    if (!DEBUG) return; dlog.push(((performance.now() / 1000) | 0) + 's ' + msg); if (dlog.length > 14) dlog.shift();
+    let el = document.getElementById('dbg'); if (!el) { el = document.createElement('pre'); el.id = 'dbg'; el.style.cssText = 'position:fixed;left:6px;right:6px;top:60px;z-index:99;margin:0;padding:8px;font:10px/1.35 ui-monospace,Menlo,monospace;color:#9fffb0;background:rgba(0,0,0,.72);border-radius:8px;pointer-events:none;white-space:pre-wrap'; document.body.appendChild(el); }
+    el.textContent = dlog.join('\n');
+  }
+  /* ---- learn from what is viewed / skipped, and adapt the videos still to come ---- */
+  function learn(v, signal) {
+    if (!settings.adapt || !v) return;
+    S.setTaste(C.updateAffinity(S.taste(), v, signal, GENERIC)); dbg(`taste ${signal > 0 ? '+' : ''}${signal} ${v.id.slice(-5)}`);
+  }
+  function recordView() {
+    const v = queue.current, w = state.view; if (!v || w.id !== v.id || !w.start) return;     // never actually played: no signal
+    learn(v, C.viewSignal({ dwellMs: performance.now() - w.start, frac: w.frac, ended: w.ended }));
+  }
+  function adaptQueue() {
+    if (!settings.adapt || !settings.shuffle || state.override || state.favoritesOnly || !queue.length) return;
+    const head = queue.items.slice(0, queue.index + 1), tail = queue.items.slice(queue.index + 1); if (tail.length < 3) return;
+    queue.items = [...head, ...C.rerank(tail, S.taste(), { generic: GENERIC, seen: S.seen() })];
+  }
+  const go = (n, why = 'user') => {
     if (!queue.length) return;
+    /* One physical swipe must move exactly one video: ignore repeat triggers (duplicate touch/pointer/wheel events). */
+    if (why === 'user' && Date.now() - state.lastNav < 450) { dbg('nav ignored (too soon)'); return; }
     clearTimeout(skipTimer); $('skipbar').hidden = true;
-    state.dir = n >= 0 ? 1 : -1; state.lastNav = Date.now(); queue.step(n); present(state.dir);
+    recordView();
+    state.dir = n >= 0 ? 1 : -1; state.lastNav = Date.now(); queue.step(n); adaptQueue(); dbg(`go ${n} (${why}) -> ${queue.current && queue.current.id.slice(-5)}`); present(state.dir);
   };
   const next = () => go(1), prev = () => go(-1);
 
   /* ---------------- player ---------------- */
   const player = new window.TikTokPlayer($('playerHost'), {
     onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.activated) player.unmute(); },
-    onPlaying: (v) => { state.failures = 0; state.timeouts = 0; hideStates(); S.recordHealth(v.id, { state: 'ok' }); S.markSeen(v.id); setStatusDot(v); syncSound(); schedulePreload(); },
+    onPlaying: (v) => { state.failures = 0; state.timeouts = 0; hideStates(); S.recordHealth(v.id, { state: 'ok' }); S.markSeen(v.id); state.playingSince = performance.now(); if (state.view.id === v.id && !state.view.start) state.view.start = state.playingSince; dbg('playing ' + v.id.slice(-5)); setStatusDot(v); syncSound(); schedulePreload(); },
     onPaused: () => {},
-    onEnded: () => { if (settings.autoplayNext) next(); },
+    onTime: (t) => { if (t && t.duration > 0 && state.view.id) state.view.frac = Math.max(state.view.frac, t.currentTime / t.duration); },
+    onEnded: (v) => {
+      /* A genuine end comes after the clip has actually played. An "ended" within 2.5 s of starting is spurious
+       * (e.g. a preloaded player reporting its state): restart instead of skipping the video. */
+      const played = performance.now() - (state.playingSince || 0); dbg(`ended after ${Math.round(played)}ms`);
+      if (played < 2500) { player.play(); return; }
+      state.view.ended = true;
+      if (settings.autoplayNext) go(1, 'autoplay-next');
+    },
     onNeedsTap: () => { hideSkeleton(); $('stTap').hidden = false; },
-    onFail: (kind, code, v) => handleFailure(kind, code, v),
+    onFail: (kind, code, v) => { dbg(`FAIL ${kind} ${code ?? ''} ${v && v.id.slice(-5)}`); handleFailure(kind, code, v); },
     onPreloadFail: (v, kind) => preloadFailed(v, kind),
     onMute: (m) => { state.muted = m; syncSound(); },
   }, { readyTimeout: Number(qs.get('readyTimeout')) || 0, startTimeout: Number(qs.get('startTimeout')) || 0, stallTimeout: Number(qs.get('stallTimeout')) || 0 });
@@ -154,6 +186,9 @@
   function schedulePreload() {
     clearTimeout(preloadT);
     const c = navigator.connection; if (c && c.saveData) return;
+    /* iOS lets only one video play at a time and throttles hidden players; the preload is unproven there, so skip it. */
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (ios && !qs.has('preload')) return;
     preloadT = setTimeout(() => { const n = queue.peek(1)[0]; if (n && playable(n)) player.preload(n, { loop: !settings.autoplayNext }); }, 900);
   }
   /* A preloaded video turned out to be gone: drop it from the feed before the user ever reaches it. */
@@ -164,7 +199,7 @@
     if (i >= 0 && i !== queue.index) { queue.items.splice(i, 1); if (i < queue.index) queue.index--; }
     renderSide(); schedulePreload();
   }
-  function skipCurrent(remove) { if (remove && settings.hideUnavailable) { queue.removeCurrent(); present(1); } else next(); }
+  function skipCurrent(remove) { if (remove && settings.hideUnavailable) { queue.removeCurrent(); present(1); } else go(1, 'skip'); }
 
   function panel(html) { $('stPanel').innerHTML = html; $('stPanel').hidden = false; $('stSkeleton').hidden = true; $('stTap').hidden = true; }
   function showErrorPanel(kind, v) {
@@ -198,7 +233,7 @@
 
   /* ---------------- present current video ---------------- */
   function present(dir = 1) {
-    const v = queue.current; $('soundHint').hidden = true;
+    const v = queue.current; $('soundHint').hidden = true; state.view = { id: v ? v.id : null, start: 0, frac: 0, ended: false };
     renderAll();
     if (!v) { applyTheme(null); showEmpty(); return; }
     $('meta').hidden = false; $('actions').hidden = false; $('shield').hidden = false;
@@ -316,6 +351,7 @@
   function toggleFav(burst) {
     const v = queue.current; if (!v) return;
     const on = S.toggleFavorite(v.id); renderMeta(v); renderRail();
+    if (on) { learn(v, 3); adaptQueue(); }
     if (on && burst) { const b = $('burst'); b.classList.remove('go'); void b.offsetWidth; b.classList.add('go'); }
     if (on) toast('Saved to favorites', { label: 'More like this', fn: () => playSimilar(v) });
     else { toast('Removed from favorites'); if (state.favoritesOnly) rebuildFeed(); }
@@ -326,7 +362,7 @@
     playOverride([v.id, ...sim.map((x) => x.id)], 'More like this', v.id);
   }
   function toggleShuffle() { S.setSetting('shuffle', !settings.shuffle); applySettings(); rebuildFeed(queue.current && queue.current.id); toast(settings.shuffle ? 'Shuffle on' : 'Shuffle off — chronological'); }
-  function hideCurrent() { const v = queue.current; if (!v) return; S.hide(v.id); toast('Hidden from your feed', { label: 'Undo', fn: () => { const h = S.hidden(); h.delete(v.id); localStorage.setItem('rewind.v4.hidden', JSON.stringify([...h])); rebuildFeed(v.id); } }); skipCurrent(true); }
+  function hideCurrent() { const v = queue.current; if (!v) return; learn(v, -3); S.hide(v.id); toast('Hidden from your feed', { label: 'Undo', fn: () => { const h = S.hidden(); h.delete(v.id); localStorage.setItem('rewind.v4.hidden', JSON.stringify([...h])); rebuildFeed(v.id); } }); skipCurrent(true); }
 
   function transport() {
     const pool = library.filter(playable); if (!pool.length) return;
@@ -367,13 +403,14 @@
       ${toggleRow('sReduce', 'Reduce motion', 'Calm, still backgrounds and no transitions', reduced())}
       ${toggleRow('sAmbience', 'Ambient room tone', 'Soft synthesized hum. Off by default', s.ambience)}
       <h3 style="margin-top:18px">Playback</h3>
+      ${toggleRow('sAdapt', 'Adapt to what I watch', 'The feed learns from what you finish, skip, save and hide. Stays on this device', s.adapt)}
       ${toggleRow('sAuto', 'Autoplay next', 'Move on when a video ends', s.autoplayNext)}
       ${toggleRow('sSkip', 'Auto-skip unavailable', 'Skip removed or unresponsive posts', s.autoSkip)}
       ${toggleRow('sHideBad', 'Hide known-broken posts', 'Keep removed posts out of your feed', s.hideUnavailable)}`, { label: 'Atmosphere settings' });
     const bind = (id, key) => { m.querySelector('#' + id).addEventListener('input', (e) => { S.setSetting(key, Number(e.target.value)); applySettings(); }); };
     bind('sIntensity', 'intensity'); bind('sBlur', 'blur'); bind('sDepth', 'depth');
     const sw = (id, key, after) => { const b = m.querySelector('#' + id); b.onclick = async () => { const on = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', on); S.setSetting(key, on); applySettings(); if (after) await after(on); }; };
-    sw('sReduce', 'reduceMotion'); sw('sAuto', 'autoplayNext'); sw('sSkip', 'autoSkip'); sw('sHideBad', 'hideUnavailable', () => rebuildFeed(queue.current && queue.current.id));
+    sw('sReduce', 'reduceMotion'); sw('sAdapt', 'adapt'); sw('sAuto', 'autoplayNext'); sw('sSkip', 'autoSkip'); sw('sHideBad', 'hideUnavailable', () => rebuildFeed(queue.current && queue.current.id));
     sw('sAmbience', 'ambience', async (on) => { if (on) await ambience.enable(document.body.dataset.theme); else ambience.disable(); });
   }
 
@@ -428,9 +465,10 @@
       <h3>Archive status</h3><div class="stats"><div class="stat"><b>${lib.verified}</b><span>link-verified</span></div><div class="stat"><b>${lib.unverified}</b><span>unverified</span></div><div class="stat"><b>${lib.broken}</b><span>known broken</span></div></div>
       <h3>Played on this device</h3><div class="stats"><div class="stat"><b>${n((x) => x.state === 'ok')}</b><span>played fine</span></div><div class="stat"><b>${n((x) => x.state === 'broken')}</b><span>gone</span></div><div class="stat"><b>${n((x) => x.state === 'timeout' || x.state === 'error')}</b><span>no response</span></div></div>
       <div class="note"><b>Unverified</b> means the date was decoded from the video ID but nobody has confirmed the post still plays. Playing a video here records the result. “Gone” posts are hidden automatically.</div>
-      <div class="btn-row"><button class="btn ghost" type="button" id="hExport">Export results</button><button class="btn ghost" type="button" id="hReset">Reset device results</button><button class="btn ghost" type="button" id="hRestore">Restore hidden (${S.hidden().size})</button></div>`, { label: 'Library health' });
+      <div class="btn-row"><button class="btn ghost" type="button" id="hExport">Export results</button><button class="btn ghost" type="button" id="hReset">Reset device results</button><button class="btn ghost" type="button" id="hRestore">Restore hidden (${S.hidden().size})</button><button class="btn ghost" type="button" id="hTaste">Reset what Rewind learned</button></div>`, { label: 'Library health' });
     m.querySelector('#hExport').onclick = () => download('rewind-health.json', { exportedAt: new Date().toISOString(), results: S.health() });
     m.querySelector('#hReset').onclick = () => { S.clearHealth(); closeModal(); rebuildFeed(queue.current && queue.current.id); toast('Device results cleared'); };
+    m.querySelector('#hTaste').onclick = () => { S.clearTaste(); S.clearSeen(); closeModal(); rebuildFeed(queue.current && queue.current.id); toast('Taste reset — fresh start'); };
     m.querySelector('#hRestore').onclick = () => { S.clearHidden(); closeModal(); rebuildFeed(queue.current && queue.current.id); toast('Hidden posts restored'); };
   }
 

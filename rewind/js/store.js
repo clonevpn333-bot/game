@@ -9,7 +9,7 @@
 
   const DEFAULTS = {
     intensity: 70, blur: 35, depth: 50, reduceMotion: null /* null = follow OS */, ambience: false,
-    autoplayNext: true, autoSkip: true, hideUnavailable: true, shuffle: true,
+    autoplayNext: true, autoSkip: true, hideUnavailable: true, shuffle: true, adapt: true,
   };
   const listeners = new Set();
   const emit = (what) => listeners.forEach((f) => f(what));
@@ -35,6 +35,9 @@
     seen() { return new Set(get('seen', [])); },
     markSeen(id) { const a = get('seen', []).filter((x) => x !== id); a.push(id); set('seen', a.slice(-250)); },
     clearSeen() { set('seen', []); },
+    taste() { return get('taste', {}); },
+    setTaste(t) { set('taste', t); },
+    clearTaste() { set('taste', {}); },
     onboarded() { return !!get('onboarded', false); },
     setOnboarded() { set('onboarded', true); },
     lastPeriod() { return get('period', null); },

@@ -18,7 +18,7 @@ Open it through `localhost` rather than double-clicking the file: TikTok's playe
 | **Library** | `data/library.json` — 713 records (669 playable) with creator, title, upload date, vibe/trend tags, sound (only where a source names it), status, provenance link |
 | **Eras** | 2020 · Sep · Oct · Nov · Dec 2023 · All Fall 2023, plus a month timeline (Jan–Dec 2020, Sep–Dec 2023) |
 | **Atmosphere** | Per-era animated backgrounds (LED bokeh + floor strip + ring-light halo; amber bokeh + leaves, Nov rain, Dec cool motes). Sep/Oct/Nov/Dec each have their own palette. Intensity, blur, depth sliders; reduce-motion switch (also honors the OS setting); optional synthesized room tone (off by default) |
-| **Feed** | Shuffled differently every visit: unseen posts first, the same trend/creator never back-to-back. Wheel, swipe, ↑/↓, J/K. Double-tap to favorite. Autoplay-next |
+| **Feed** | **Adapts to you**: finishing or saving a video raises its trend/vibe/creator/sound, flicking past within ~2 s lowers it, hiding lowers it strongly, and the videos still to come are re-ranked after every swipe (with ~25% random exploration and trend spacing so it never traps you). Learned locally, can be switched off or reset (Atmosphere / Library health). Shuffled differently every visit: unseen posts first, the same trend/creator never back-to-back. Wheel, swipe, ↑/↓, J/K. Double-tap to favorite. Autoplay-next |
 | **Reliability** | One visible TikTok player at a time, plus one hidden **preload of the next video** (swipe-to-playing measured at ~50 ms instead of ~950 ms; a dead next video is dropped from the feed before you reach it). adaptive timeouts (12 s "never became ready", ×2.5 for the first video of a visit because it downloads TikTok's player, ×2 on slow/data-saver connections; 45 s buffering patience — measured: first video takes 13 s on slow 3G and 29 s at 150 kbps, so a fixed 10 s would have skipped good videos), a Skip button during any wait, removed posts (TikTok error 1001) are skipped and remembered, auto-skip pauses after repeated failures with an explanation instead of looping, autoplay-blocked → tap-to-play, "Tap for sound" (TikTok starts muted) |
 | **Explore** | Vibe filters, 4 moods, 10 collections (Peak Quarantine, Back-to-School 2023, Fall Night Scroll, Iconic Sounds, Main Character Energy, Unhinged Viral Era, The Rizz Era, Pop Song Moments, Charli & the Dances, Fortnite & FNAF), search (creator / trend / sound / month), **Transport me**, favorites, "similar vibe", session timer ("You've been in October 2023 for 18 minutes") |
 | **Keys** | `↓/J` next · `↑/K` prev · `Space` play/pause · `F` favorite · `M` mute · `S` shuffle · `T` transport · `1–6` eras · `[ ]` prev/next era · `/` search · `O` open on TikTok · `H` hide · `?` help |
@@ -72,6 +72,10 @@ npm i && npm run test:e2e   # 11 browser tests, TikTok's player simulated (CHROM
 ```
 
 The e2e tests *simulate* TikTok's player (served at TikTok's origin so the origin checks are real) because that is the only way to force removed, hanging and blocked videos on demand. Real playback is covered separately by `check-playback`.
+
+## Debugging on a phone
+
+Open the site with `?debug=1` (e.g. `https://clonevpn333-bot.github.io/Rewind/?debug=1`) to show a live on-screen log of every navigation, playback start/end, failure and taste update. Safety guards you can reason about: one swipe moves exactly one video (repeat triggers within 450 ms are ignored), an "ended" event within 2.5 s of starting is treated as spurious and the clip is restarted, and the hidden next-video preload is disabled on iOS (add `?preload` to force it on).
 
 ## Known limitations
 

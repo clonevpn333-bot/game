@@ -155,3 +155,50 @@ test('coverage: every target period is well represented, no trend dominates', ()
   }
   for (let m = 1; m <= 12; m++) assert.ok(live.filter((v) => v.month === '2020-' + String(m).padStart(2, '0')).length >= 5, `2020-${m} thin`);
 });
+
+test('taste: viewSignal reads watching, flicking, saving and hiding', () => {
+  assert.ok(core.viewSignal({ dwellMs: 600 }) < 0, 'flicked past');
+  assert.ok(core.viewSignal({ dwellMs: 9000, frac: 0.95 }) > 0.9, 'watched through');
+  assert.ok(core.viewSignal({ dwellMs: 5000, frac: 0.55 }) > 0, 'watched most');
+  assert.equal(core.viewSignal({ favorited: true }), 3); assert.equal(core.viewSignal({ hidden: true }), -3);
+});
+
+test('taste: affinity is bounded, decays, and moves trend/creator/sound weights', () => {
+  const generic = new Set(meta.vibes.map((v) => v.id)); const v = vids.find((x) => x.sound && x.trends.includes('iconic-sounds'));
+  let aff = {}; for (let i = 0; i < 50; i++) aff = core.updateAffinity(aff, v, 3, generic);
+  for (const k in aff) assert.ok(Math.abs(aff[k]) <= 6, 'clamped');
+  assert.ok(aff['t:iconic-sounds'] > 0 && aff['s:' + v.sound] > 0);
+  const other = vids.find((x) => !x.trends.includes('iconic-sounds') && x.creator !== v.creator);
+  const before = aff['t:iconic-sounds']; for (let i = 0; i < 200; i++) aff = core.updateAffinity(aff, other, 0.1, generic);
+  assert.ok(aff['t:iconic-sounds'] < before / 2, 'old taste fades');
+});
+
+test('taste: liked vibes rise to the top, disliked sink, but exploration keeps variety', () => {
+  const generic = new Set(meta.vibes.map((v) => v.id)); const live = vids.filter((v) => v.status !== 'broken');
+  const share = (list, tag, n = 30) => list.slice(0, n).filter((v) => v.trends.includes(tag)).length / n;
+  const base = []; for (let i = 0; i < 20; i++) base.push(share(core.rerank(live, {}, { rng: core.mulberry32(i), generic }), 'dances'));
+  const baseAvg = base.reduce((a, b) => a + b) / base.length;
+  let aff = {}; const dance = live.find((v) => v.trends.includes('dances'));
+  for (let i = 0; i < 6; i++) aff = core.updateAffinity(aff, dance, 1, generic);
+  const liked = []; for (let i = 0; i < 20; i++) liked.push(share(core.rerank(live, aff, { rng: core.mulberry32(i), generic }), 'dances'));
+  const likedAvg = liked.reduce((a, b) => a + b) / liked.length;
+  assert.ok(likedAvg > baseAvg + 0.15, `dances share ${baseAvg.toFixed(2)} -> ${likedAvg.toFixed(2)}`);
+  assert.ok(likedAvg < 0.95, 'never a monoculture');
+  // disliking memes pushes them down
+  let neg = {}; const meme = live.find((v) => v.trends.includes('memes'));
+  for (let i = 0; i < 6; i++) neg = core.updateAffinity(neg, meme, -1, generic);
+  const memeBase = share(core.rerank(live, {}, { rng: core.mulberry32(3), generic }), 'memes'), memeNeg = share(core.rerank(live, neg, { rng: core.mulberry32(3), generic }), 'memes');
+  assert.ok(memeNeg < memeBase, 'disliked vibe sinks');
+  // result is a permutation (nothing lost or duplicated)
+  const r = core.rerank(live, aff, { rng: core.mulberry32(1), generic }); assert.deepEqual(r.map((v) => v.id).sort(), live.map((v) => v.id).sort());
+  // spacing still holds
+  let clashes = 0; for (let i = 4; i < r.length; i++) { const k = core.trendKey(r[i], generic); if (r.slice(i - 4, i).some((x) => core.trendKey(x, generic) === k)) clashes++; } assert.ok(clashes <= r.length * 0.02, 'clashes ' + clashes);
+});
+
+test('taste: buildFeed uses affinity when given', () => {
+  const generic = new Set(meta.vibes.map((v) => v.id)); let aff = {}; const dance = vids.find((v) => v.trends.includes('dances'));
+  for (let i = 0; i < 6; i++) aff = core.updateAffinity(aff, dance, 1, generic);
+  const f = core.buildFeed(vids, { shuffle: true, rng: core.mulberry32(2), generic, affinity: aff });
+  assert.equal(new Set(f.map((v) => v.id)).size, f.length);
+  assert.ok(f.slice(0, 20).filter((v) => v.trends.includes('dances')).length >= 6);
+});

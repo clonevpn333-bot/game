@@ -164,6 +164,40 @@
     return out;
   }
 
+  /* ---- taste model: learns from what the viewer finishes, flicks past, saves and hides ---- */
+  const AFF_MAX = 6;
+  function affinityKeys(v, generic) {
+    const out = v.trends.map((t) => ['t:' + t, generic && generic.has(t) ? 0.8 : 1]);   // a specific trend counts double a broad vibe
+    if (v.creator) out.push(['c:' + v.creator, 0.5]);
+    if (v.sound) out.push(['s:' + v.sound, 0.8]);
+    out.push(['e:' + v.era, 0.3]);
+    return out;
+  }
+  /* How much one viewing says about taste: <0 flicked past or hidden, >0 watched/finished/saved. */
+  function viewSignal({ dwellMs = 0, frac = 0, ended = false, favorited = false, hidden = false } = {}) {
+    if (hidden) return -3;
+    if (favorited) return 3;
+    if (dwellMs < 1800) return -1;                       // scrolled past almost immediately
+    if (ended || frac >= 0.85) return 1;                 // watched it through (or looped)
+    if (frac >= 0.5) return 0.6;
+    if (frac >= 0.2) return 0.1;
+    return dwellMs > 8000 ? 0.6 : -0.4;                  // no duration info: long dwell = interest, short = meh
+  }
+  function updateAffinity(aff, v, signal, generic) {
+    const next = {};
+    for (const k in aff) { const x = aff[k] * 0.985; if (Math.abs(x) > 0.02) next[k] = x; }   // old tastes fade slowly
+    for (const [k, w] of affinityKeys(v, generic)) next[k] = Math.max(-AFF_MAX, Math.min(AFF_MAX, (next[k] || 0) + signal * w));
+    return next;
+  }
+  function scoreVideo(v, aff, generic) { let s = 0; for (const [k] of affinityKeys(v, generic)) s += aff[k] || 0; return s; }
+  /* Best-liked first, with noise + exploration so the feed never collapses into one corner, then spaced by trend/creator. */
+  function rerank(items, aff, { rng = Math.random, generic, seen, explore = 0.25 } = {}) {
+    const pool = items.map((v) => ({ v, s: scoreVideo(v, aff, generic) + (rng() - 0.5) * 1.6 - (seen && seen.has(v.id) ? 1.5 : 0) })).sort((a, b) => b.s - a.s).map((x) => x.v);
+    const out = [];
+    while (pool.length) out.push(pool.splice(rng() < explore ? Math.floor(rng() * pool.length) : 0, 1)[0]);
+    return diversify(out, generic);
+  }
+
   /* opts: {period, tags[], collection (object), query, favoritesOnly, favorites:Set, hidden:Set,
    *        broken:Set (device-level), hideUnavailable, shuffle, rng, ids[],
    *        seen:Set (recently watched -> pushed to the back when shuffling), generic:Set (vibe ids, for trend spacing) } */
@@ -182,6 +216,7 @@
     a.sort((x, y) => x.date.localeCompare(y.date) || x.id.localeCompare(y.id));
     if (!opts.shuffle) return a;
     a = shuffled(a, opts.rng);
+    if (opts.affinity && Object.keys(opts.affinity).length) return rerank(a, opts.affinity, { rng: opts.rng || Math.random, generic: opts.generic, seen: opts.seen });
     if (opts.seen && opts.seen.size) a = [...a.filter((v) => !opts.seen.has(v.id)), ...a.filter((v) => opts.seen.has(v.id))];
     return opts.diversify === false ? a : diversify(a, opts.generic);
   }
@@ -267,5 +302,5 @@
   }
 
   return { MONTHS, MON3, PERIODS, dateFromId, parseTikTokUrl, periodOfDate, inScope, themeOfPeriod, periodMatches, normalizeVideo, tiktokUrl,
-    validateLibrary, trendKey, diversify, matchesQuery, collectionMatches, buildFeed, similar, Queue, classifyError, failurePolicy, mulberry32, shuffled, formatDuration, formatDate, periodLabel };
+    validateLibrary, trendKey, diversify, viewSignal, updateAffinity, scoreVideo, rerank, matchesQuery, collectionMatches, buildFeed, similar, Queue, classifyError, failurePolicy, mulberry32, shuffled, formatDuration, formatDate, periodLabel };
 });
