@@ -94,6 +94,21 @@ export class CityView {
     this.buildProps();
     this.buildSignals();
     this.dirty = true;
+    world.on('anomalyBuilding', (b) => this.addLoneBuilding(b));
+  }
+
+  // buildings that appear after boot (EXE anomalies) get their own mesh
+  addLoneBuilding(b) {
+    if (b._parts) return;
+    const g = new THREE.Group();
+    for (const p of b.parts) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(p.w, p.h, p.d), new THREE.MeshStandardMaterial({ color: p.color, roughness: 0.95 }));
+      m.position.set(p.x, p.y, p.z); m.castShadow = true; m.receiveShadow = true; g.add(m);
+    }
+    const door = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.3, 0.1), new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.4 }));
+    door.position.set(b.door[0], 1.15, b.door[1] + 0.03);
+    g.add(door);
+    this.group.add(g);
   }
 
   buildTextures() {
@@ -714,6 +729,48 @@ export class CityView {
     return im;
   }
 
+  buildTransitProps(world) {
+    // bus stop shelters with a route sign
+    const stops = world.transit.stops;
+    const k = new ModelKit();
+    k.box(0, 1.2, 0, 3.2, 0.08, 1.4, '#3a4048');
+    k.box(0, 0.6, -0.65, 3.2, 1.2, 0.05, '#9ec4d8', 0, 7);
+    k.box(-1.55, 0.6, 0, 0.06, 1.2, 1.3, '#3a4048');
+    k.box(1.55, 0.6, 0, 0.06, 1.2, 1.3, '#3a4048');
+    k.box(0, 0.45, -0.4, 2.4, 0.06, 0.4, '#5a4a3a');
+    k.cyl(1.9, 1.3, 0.4, 0.05, 2.6, '#3a4048', 6);
+    k.box(1.9, 2.5, 0.4, 0.5, 0.5, 0.06, '#ffffff', 1, 5);
+    const items = stops.map((s) => ({ x: s.wx - Math.cos(s.h) * 0.9, y: 0.16, z: s.wz + Math.sin(s.h) * 0.9, ry: s.h + Math.PI / 2 }));
+    const mesh = this.staticInst(k.build(), makeInstMaterial(this.U, { key: 'stop', snow: true }), items, true);
+    const c1 = mesh.geometry.getAttribute('iCol1');
+    stops.forEach((s, i) => { const col = new THREE.Color(world.transit.lines[s.line].color); c1.setXYZ(i, col.r, col.g, col.b); });
+    c1.needsUpdate = true;
+  }
+
+  updateCranes(world) {
+    // tower cranes appear over construction sites
+    const sites = this.city.buildings.filter((b) => b.state === 'construction' || b.state === 'damaged' && b.damage > 0.5);
+    if (!this.craneGroup) { this.craneGroup = new THREE.Group(); this.group.add(this.craneGroup); this.cranes = new Map(); }
+    for (const [id, m] of this.cranes) if (!sites.find((b) => b.id === id)) { this.craneGroup.remove(m); this.cranes.delete(id); }
+    for (const b of sites) {
+      if (this.cranes.has(b.id)) continue;
+      const k = new ModelKit();
+      const H = Math.max(18, Math.min(b.h + 10, 70));
+      k.box(0, H / 2, 0, 1.4, H, 1.4, '#e8a020');
+      k.box(6, H + 0.6, 0, 22, 1.0, 1.0, '#e8a020');
+      k.box(-6, H + 0.2, 0, 3, 2, 2, '#5a5a5a');
+      k.box(12, H - 3, 0, 0.1, 6, 0.1, '#202020');
+      k.box(12, H - 6.2, 0, 1.2, 0.6, 1.2, '#606060');
+      const g = k.build(); g.setAttribute('color', g.getAttribute('aCol'));
+      const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6 }));
+      m.position.set(b.x0 - 2, 0, b.z0 - 2);
+      m.rotation.y = (b.id % 7) * 0.9;
+      m.castShadow = true;
+      this.craneGroup.add(m);
+      this.cranes.set(b.id, m);
+    }
+  }
+
   buildSignals() {
     // one head per incoming lane at signalized nodes, three lamps each
     const net = this.city.net;
@@ -777,6 +834,17 @@ export class CityView {
 
   update(dt, world) {
     const night = this.U.uNight.value;
+    // signs only near the camera (each one is a draw call)
+    this.signT = (this.signT || 0) + dt;
+    if (this.signT > 0.4) {
+      this.signT = 0;
+      const cam = this.R.camera.position;
+      for (const { mesh } of this.signs.values()) {
+        const d = Math.hypot(mesh.position.x - cam.x, mesh.position.z - cam.z);
+        mesh.visible = d < 260 && cam.y < 220;
+      }
+      this.updateCranes(world);
+    }
     // streetlights follow power zones; light pools fade in at night
     this.poolMat.opacity = Math.min(1, night * 1.15) * 0.55;
     if (this._powerKey !== world.power.key) {

@@ -37,7 +37,7 @@ export class Incidents {
   announce(inc) {
     const W = this.world;
     inc.reported = true;
-    W.emit('incident', inc);
+    if (!inc.quiet) W.emit('incident', inc);
   }
 
   close(inc, outcome = '') {
@@ -73,6 +73,19 @@ export class Incidents {
       const cars = W.traffic.vehicles.filter((v) => v.state === 'parked' && v.owner != null && v.owner !== c.id && !v.fleet && dist(v.x, v.z, from.x, from.z) < 300);
       if (cars.length) {
         const v = cars[rand.int(0, cars.length - 1)];
+        if (W.abstract) {
+          // nobody is watching: the theft happens off-screen
+          c.record.crimes++; c.record.lastCrime = W.time;
+          const owner = v.owner != null ? W.citizens[v.owner] : null;
+          W.history.citizenLog(c, `Stole a ${v.T.label} (${v.plate})`, true);
+          if (owner) W.history.citizenLog(owner, `Their ${v.T.label} was stolen`, true);
+          c.money += 300 + rand.int(0, 900);
+          const sl = W.traffic.findSlotNear(v.x + (rand.float() - 0.5) * 600, v.z + (rand.float() - 0.5) * 600, [], 400);
+          if (sl) W.traffic.parkAtSlot(v, sl.id);
+          v.stolen = { by: c.id, t: W.time }; v.abandoned = W.time;
+          if (rand.chance(0.35)) { c.record.arrests++; c.flags.jailFor = 2; W.history.citizenLog(c, 'Arrested for auto theft', true); W.history.counters.arrests++; this.jail(c, (W.city.special.police || [c.home])[0]); }
+          return true;
+        }
         c.flags.crime = { type: 'theft', v: v.id };
         c.goal = { type: 'crime', b: null, label: 'Out for a walk', point: [v.x, v.z] };
         c.record.lastCrime = W.time;
@@ -492,7 +505,9 @@ export class Incidents {
     inc.severity = Math.max(inc.severity, impact);
     inc.needs.tow = inc.vehicles.filter((id) => { const v = W.traffic.byId.get(id); return v && v.wreck && !v.fleet; }).length;
     inc.needs.ems = inc.injured.length;
-    W.history.record('worstCrash', Math.round(impact * 3.6), `Worst crash: ${Math.round(impact * 3.6)} km/h impact`, { x, z });
+    const disaster = W.disasters.tornadoes.length || W.disasters.meteors.length;
+    if (!disaster) W.history.record('worstCrash', Math.round(impact * 3.6), `Worst crash: ${Math.round(impact * 3.6)} km/h impact`, { x, z });
+    if (disaster) inc.quiet = true;
     // AI drivers get out (unless injured or fleeing)
     for (const v of [a, b]) {
       const c = v.driver != null ? W.citizens[v.driver] : null;
@@ -937,6 +952,55 @@ export class Incidents {
     const inc = this.create('signal', { x: n.x, z: n.z, node: n.id, priority: 0, needs: { utility: 1 }, title: `Traffic light out (${cause})` });
     W.history.cityEvent(`Traffic signal failed at ${W.nodeName(n)}`, { type: 'signal', x: n.x, z: n.z, minor: true });
     return inc;
+  }
+
+  // ------------------------------------------------------------ offline (catch-up) resolution
+  offlineUpdate(dtMin) {
+    const W = this.world;
+    this.updateFires(dtMin);
+    this.randomEvents(dtMin);
+    // occasional traffic accidents happen even when nobody is watching
+    if (rand.chance(dtMin * 0.0012)) {
+      const drivers = W.citizens.filter((c) => c.state === 'abstract' && c.veh != null);
+      if (drivers.length) {
+        const c = drivers[rand.int(0, drivers.length - 1)];
+        const v = W.traffic.byId.get(c.veh);
+        W.history.counters.crashes++;
+        W.history.citizenLog(c, 'Was in a car crash', true);
+        if (v) { v.damage = Math.max(v.damage, 0.3 + rand.float() * 0.5); }
+        if (rand.chance(0.35)) { c.injured = 0.3 + rand.float() * 0.5; c.state = 'inside'; c.trip = null; if (v) { W.traffic.parkInGarage(v, (W.city.special.towyard || [0])[0]); v.state = 'repair'; v.repairUntil = W.time + 1440 * 2; v.driver = null; } c.veh = null; this.admitHospital(c, (W.city.special.hospital || [c.home])[0]); }
+      }
+    }
+    for (const inc of this.list) {
+      if (inc.closed) continue;
+      const age = W.time - inc.t;
+      if (inc.type === 'fire') {
+        const b = W.city.buildings[inc.b];
+        if (b && age > 25 + rand.float() * 60) { b.suppress = 0.2; }
+        continue;
+      }
+      if (age < 20) continue;
+      if (inc.type === 'robbery' || inc.type === 'theft' || inc.type === 'fight') {
+        const s = inc.suspects.length ? W.citizens[inc.suspects[0]] : null;
+        if (s && s.status === 'ok' && rand.chance(0.5)) {
+          if (s.at != null) W.city.buildings[s.at].occupants.delete(s.id);
+          s.trip = null; s.state = 'inside'; s.veh = null;
+          if (s.ped) W.peds.despawn(s.ped);
+          s.record.arrests++; s.record.wanted = 0;
+          s.flags.jailFor = inc.type === 'robbery' ? 3 : 2;
+          W.history.citizenLog(s, `Arrested for ${inc.type === 'robbery' ? 'armed robbery' : inc.type === 'theft' ? 'auto theft' : 'assault'}`, true);
+          W.history.cityEvent(`${s.name} arrested for ${inc.type === 'robbery' ? 'armed robbery' : inc.type === 'theft' ? 'auto theft' : 'assault'}`, { type: 'arrest', x: inc.x, z: inc.z, who: s.id, minor: true });
+          W.history.counters.arrests++;
+          this.jail(s, (W.city.special.police || [s.home])[0]);
+          this.close(inc, 'suspect arrested');
+        } else this.close(inc, 'suspect escaped');
+        continue;
+      }
+      for (const cid of inc.injured) { const c = W.citizens[cid]; if (c.status === 'ok') { if (c.ped) W.peds.despawn(c.ped); if (c.at != null) W.city.buildings[c.at].occupants.delete(c.id); c.at = null; c.trip = null; c.state = 'inside'; this.admitHospital(c, (W.city.special.hospital || [c.home])[0]); } }
+      if (inc.type === 'signal' && inc.node != null) W.city.net.nodes[inc.node].failed = false;
+      for (const vid of inc.vehicles) { const v = W.traffic.byId.get(vid); if (v && v.wreck && !v.fleet) { W.traffic.parkInGarage(v, (W.city.special.towyard || [0])[0]); v.state = 'repair'; v.repairUntil = W.time + 1440 * (1 + v.damage * 2); v.driver = null; } }
+      if (inc.type !== 'power') this.close(inc, 'resolved');
+    }
   }
 
   // ------------------------------------------------------------ main update

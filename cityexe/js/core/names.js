@@ -24,10 +24,18 @@ export const BIZ_TEMPLATES = {
   hotel: ['The Grand {L}', 'Riverside Hotel'],
 };
 
+const usedNames = new Set();
 export function genBizName(rng, type, owner) {
   const t = BIZ_TEMPLATES[type] || ['{L} Company'];
-  const tpl = rng.pick(t);
-  return tpl.replace('{L}', owner ? owner.last : rng.pick(LAST)).replace('{L2}', rng.pick(LAST)).replace('{F}', owner ? owner.first : rng.pick(FIRST));
+  let name = '';
+  for (let k = 0; k < 8; k++) {
+    const tpl = rng.pick(t);
+    name = tpl.replace('{L}', owner ? owner.last : rng.pick(LAST)).replace('{L2}', rng.pick(LAST)).replace('{F}', owner ? owner.first : rng.pick(FIRST));
+    if (!usedNames.has(name)) break;
+    if (k > 3) name = name + ' ' + rng.pick(['II', 'East', 'West', 'Express', 'Uptown', 'on Main']);
+  }
+  usedNames.add(name);
+  return name;
 }
 
 const APT_PREFIX = ['Westpoint', 'Harbor View', 'Kessler', 'Elm Court', 'Maple', 'Union', 'Riverside', 'Foundry', 'Canal', 'Parkside', 'Linden', 'Ashby', 'Hollis', 'Monarch', 'Sterling'];

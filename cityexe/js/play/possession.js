@@ -73,6 +73,7 @@ export class Possession {
 
   entityPos(c) {
     const W = this.W;
+    if (c.dutyHeli && (c.possessed || c.dutyHeli.state !== 'pad' || this.pending === c)) return c.dutyHeli;
     if (c.ped) return c.ped;
     if (c.veh != null) { const v = W.traffic.byId.get(c.veh); if (v && v.state !== 'garage') return v; }
     if (c.at != null) { const b = W.city.buildings[c.at]; const [x, z] = W.citizenAI.doorOut(b); return { x, z, y: 0, h: 0 }; }
@@ -97,6 +98,13 @@ export class Possession {
     }
     if (c.busLeg || c.taxiReq) { this.cancelTransitWait(c); }
     c.trip = null;
+    if (c.dutyHeli) {
+      if (c.at != null) { W.city.buildings[c.at].occupants.delete(c.id); c.at = null; }
+      this.mode = 'fly'; this.heli = c.dutyHeli; this.heli.player = true; this.heli.input = {};
+      const T = this.game.rig.third; T.dist = 16; T.height = 3; T.pitch = 0.25; T.yaw = this.heli.h;
+      this.afterTake();
+      return;
+    }
     const v = c.veh != null ? W.traffic.byId.get(c.veh) : null;
     if (v && v.driver === c.id) this.enterDrive(v, true);
     else if (v) { this.mode = 'ride'; this.rideVeh = v; }
@@ -110,7 +118,6 @@ export class Possession {
     W.possessed = { c: this.c, veh: this.veh || null };
     this.game.input.lock();
     this.game.emit('possess', this.c);
-    W.history.citizenLog(this.c, 'Felt strangely watched today', false);
     if (W.anomalies) W.anomalies.onPossess(this.c);
   }
 
@@ -161,6 +168,7 @@ export class Possession {
     const v = this.veh;
     c.possessed = false;
     W.possessed = null;
+    if (this.heli) { this.heli.player = false; this.heli.input = null; this.heli = null; }
     this.autopilot = false;
     if (c.ped) { c.ped.player = false; c.ped.action = c.ped.action === 'hose' ? '' : c.ped.action; c.ped.run = false; }
     if (v) {
@@ -232,13 +240,37 @@ export class Possession {
     if (I.hit('KeyR')) this.toggleAutopilot();
     if (I.hit('KeyC')) this.camMode = (this.camMode + 1) % 2;
     this.prompts = [];
-    if (this.game.interiors && this.game.interiors.active) { this.game.interiors.updatePlayer(dt, this); this.mode = 'inside'; }
+    this.dutyArrival();
+    if (this.game.interiors && this.game.interiors.active && !this.autopilot) { this.mode = 'inside'; this.game.interiors.updatePlayer(dt, this); }
+    else if (this.mode === 'inside') { if (this.c.ped) this.enterFoot(); else this.updateAutopilot(dt); }
     else if (this.autopilot) this.updateAutopilot(dt);
     else if (this.mode === 'foot') this.updateFoot(dt);
     else if (this.mode === 'drive') this.updateDrive(dt);
     else if (this.mode === 'ride') this.updateRide(dt);
+    else if (this.mode === 'fly') this.updateFly(dt);
     if (rig.trans) rig.updateTransition(dt);
     if (this.msgT > 0) this.msgT -= dt;
+  }
+
+  // a possessed responder reaching their call puts the unit "on scene"
+  dutyArrival() {
+    const W = this.W, c = this.c;
+    if (!c || this.autopilot || typeof c.duty !== 'number') return;
+    const u = W.services.unit(c.duty);
+    if (!u || u.state !== 'respond' || u.incident == null) return;
+    const inc = W.incidents.get(u.incident);
+    if (!inc || inc.closed) return;
+    const pos = W.citizenPos(c);
+    if (!pos || pos.inside) return;
+    const v = this.veh;
+    if (dist(pos.x, pos.z, inc.x, inc.z) < 32 && (!v || v.speed < 2.5)) {
+      W.services.arriveScene(u);
+      const s = inc.suspects.length ? W.citizens[inc.suspects[0]] : null;
+      if (u.state === 'pursuit' && s) this.game.toast(`The suspect, ${s.name}, is nearby. Stop them!`);
+      else if (u.kind === 'police') this.game.toast('On scene. Talk to witnesses, or go after the suspect if they\'re still around.');
+      else if (u.kind === 'fire') this.game.toast('On scene. Hold the mouse button near the fire to spray.');
+      else if (u.kind === 'ems') this.game.toast('On scene. Hold E next to the injured to treat them.');
+    }
   }
 
   end(text) {
@@ -292,7 +324,10 @@ export class Possession {
   updateFoot(dt) {
     const g = this.game, W = this.W, I = g.input, c = this.c;
     const p = c.ped;
-    if (!p) { if (c.veh != null) { this.enterDrive(W.traffic.byId.get(c.veh)); } return; }
+    if (!p) {
+      if (c.veh != null) { const v = W.traffic.byId.get(c.veh); if (v && v.driver === c.id && !c.flags.cuffed) this.enterDrive(v); else { this.mode = 'ride'; this.rideVeh = v; } }
+      return;
+    }
     if (p.action === 'cuffed') { this.prompts.push({ key: '', text: 'You are under arrest' }); g.rig.updateThird(dt, p); return; }
     if (p.fallen > 0) { p.fallen -= dt; g.rig.updateThird(dt, p); return; }
     const T = g.rig.third;
@@ -603,6 +638,26 @@ export class Possession {
     if (!o.job && o.age < 66) return rand.pick(['Know anyone hiring?', 'Still looking for work.', 'Money\'s tight lately.']);
     if (mood > 0.65) return rand.pick(['Beautiful day.', `Heading to ${o.goal ? o.goal.label.toLowerCase() : 'nowhere special'}.`, 'Hey there!']);
     return rand.pick(['Hm?', 'Do I know you?', 'Long day.', `Can't stop, I'm ${o.goal ? o.goal.label.toLowerCase() : 'busy'}.`]);
+  }
+
+  // ------------------------------------------------------------------ helicopter
+  updateFly(dt) {
+    const g = this.game, I = g.input, h = this.heli;
+    h.input = { f: I.axis('KeyS', 'KeyW'), turn: I.axis('KeyA', 'KeyD'), up: (I.down('Space') ? 1 : 0) - (I.down('KeyC') || I.down('ControlLeft') ? 1 : 0), boost: I.down('ShiftLeft') };
+    if (I.hit('KeyL') && h.kind === 'police') { h.spot = !h.spot; }
+    if (h.spot) {
+      // searchlight follows the camera's aim point on the ground
+      const T = g.rig.third;
+      h.look = { x: h.x + Math.sin(T.yaw) * 40, z: h.z + Math.cos(T.yaw) * 40 };
+    }
+    const W = this.W;
+    const pad = h.pad;
+    if (dist(h.x, h.z, pad.x, pad.z) < 8 && h.y - pad.y < 3) this.prompts.push({ key: '', text: `Over the ${h.kind === 'news' ? 'Channel 6' : 'police'} helipad — descend with C to land` });
+    if (h.kind === 'police') this.prompts.push({ key: 'L', text: 'Searchlight' });
+    this.prompts.push({ key: '', text: `Altitude ${Math.round(h.y)} m` });
+    const T = g.rig.third;
+    g.rig.updateThird(dt, h, { autoYaw: Math.hypot(h.vx, h.vz) > 3 ? h.h : null, autoK: 1.6, minDist: 8, maxDist: 60, fov: 62 });
+    if (g.audio && g.audio.ctx && Math.random() < dt * 14) g.audio.burst(g.audio.brown, 'lowpass', 160, 1, 0.12, 0.005, 0.07);
   }
 
   // ------------------------------------------------------------------ driving

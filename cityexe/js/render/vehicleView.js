@@ -239,6 +239,23 @@ export class VehicleView {
     this.frustum = new THREE.Frustum();
     this.projM = new THREE.Matrix4();
     this.visible = [];
+    // real headlights for the vehicle the player is driving
+    this.headL = new THREE.SpotLight('#fff2dc', 0, 70, 0.55, 0.45, 1.3);
+    this.headR = this.headL.clone();
+    renderer.scene.add(this.headL, this.headR, this.headL.target, this.headR.target);
+  }
+
+  updatePlayerLights() {
+    const P = this.world.possessed;
+    const v = P && P.veh;
+    const on = v && (v.lightsOn || this.R.U.uNight.value > 0.35);
+    for (const [L, side] of [[this.headL, -1], [this.headR, 1]]) {
+      if (!on) { L.intensity = 0; continue; }
+      const sh = Math.sin(v.h), ch = Math.cos(v.h);
+      L.position.set(v.x + sh * v.len * 0.5 + ch * side * 0.6, v.y + 0.75, v.z + ch * v.len * 0.5 - sh * side * 0.6);
+      L.target.position.set(v.x + sh * 30, v.y - 0.5, v.z + ch * 30);
+      L.intensity = 900;
+    }
   }
 
   update(dt) {
@@ -310,6 +327,7 @@ export class VehicleView {
     }
     tmpS.set(1, 1, 1);
     for (const t in this.pools) this.pools[t].end();
+    this.updatePlayerLights();
     this.beams.count = nb;
     this.beams.instanceMatrix.needsUpdate = true;
     this.beamMat.opacity = Math.min(1, night * 1.3) * 0.45;

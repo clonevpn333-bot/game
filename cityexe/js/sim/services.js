@@ -42,7 +42,7 @@ export class Services {
     (sp.hospital || []).forEach((b) => make('ems', b, 4));
     (sp.towyard || []).forEach((b) => make('tow', b, 2));
     (sp.utility || []).forEach((b) => make('utility', b, 2));
-    (sp.taxi || []).forEach((b) => make('taxi', b, 6));
+    (sp.taxi || []).forEach((b) => make('taxi', b, 10));
     (sp.construction || []).forEach((b) => make('construction', b, 2));
     for (const biz of W.economy.biz) if (biz.type === 'warehouse') make('delivery', biz.b, 1);
   }
@@ -57,7 +57,7 @@ export class Services {
     if (!kind || kind === 'bus' || kind === 'heli') { if (kind === 'bus') W.transit && W.transit.onDriverArrive(c); if (kind === 'heli') W.helis && W.helis.onPilotArrive(c); return; }
     const bid = W.economy.biz[c.job.biz].b;
     const u = this.units.find((u) => u.kind === kind && u.base === bid && u.crew.length < MAX_CREW[kind] && (u.state === 'base' || u.crew.length < MIN_CREW[kind]));
-    if (!u) return;
+    if (!u) { if (kind === 'police' && W.helis) W.helis.onPilotArrive(c); return; }
     u.crew.push(c.id);
     c.duty = u.id;
     if (u.state === 'base' && u.crew.length >= MIN_CREW[kind]) this.deploy(u);
@@ -79,7 +79,11 @@ export class Services {
   }
   dutyLabel(c) {
     const u = this.unit(c.duty);
-    if (!u) return c.duty === 'bus' ? 'Driving a city bus' : 'On duty';
+    if (!u) {
+      if (c.duty === 'bus') return 'Driving a city bus';
+      if (c.duty === 'heli') { const h = c.dutyHeli; return h ? (h.state === 'pad' ? `On standby with ${h.name}` : h.story ? `Flying ${h.name} over a breaking story` : `Flying ${h.name}`) : 'Flying'; }
+      return 'On duty';
+    }
     const inc = u.incident != null ? this.world.incidents.get(u.incident) : null;
     switch (u.state) {
       case 'base': return `On standby at ${this.world.citizenAI.buildingName(u.base)}`;
@@ -302,7 +306,7 @@ export class Services {
     u.state = 'scene';
     v.siren = inc.priority >= 1 && u.kind !== 'tow';
     v.sceneLights = true;
-    if (u.kind !== 'tow') this.pullOver(v);
+    if (u.kind !== 'tow' && !v.player) this.pullOver(v);
     W.incidents.unitArrived(inc, u);
   }
 
@@ -395,7 +399,11 @@ export class Services {
     const tick = this.timer > 0.5;
     if (tick) this.timer = 0;
     for (const u of this.units) {
-      if (W.isPossessedUnit(u)) continue;
+      if (W.isPossessedUnit(u)) {
+        // the player's crewmates still do their part on scene
+        if (tick && u.state === 'scene') W.incidents.sceneTick(u);
+        continue;
+      }
       const v = this.veh(u);
       if (!v) continue;
       if (u.pauseT > 0) { u.pauseT -= dt; if (u.pauseT <= 0 && u.state === 'patrol') this.patrol(u); }

@@ -6,33 +6,33 @@ import { clamp } from '../core/math.js';
 const H = 60;
 // role: [count, wage/hour]; open: [openHour, closeHour] (close may exceed 24)
 export const BTYPES = {
-  grocery: { label: 'Grocery', roles: { cashier: [2, 15], stocker: [1, 14] }, open: [7, 22], price: 34, need: 'groceries', color: '#4caf50', cap: 14, stock: true },
-  convenience: { label: 'Convenience store', roles: { clerk: [1, 14] }, open: [0, 24], price: 11, need: 'snack', color: '#ff9800', cap: 6, stock: true, robbable: 1 },
-  restaurant: { label: 'Restaurant', roles: { cook: [1, 17], server: [2, 13] }, open: [11, 23], price: 26, need: 'meal', color: '#e53935', cap: 20, stock: true },
-  cafe: { label: 'Cafe', roles: { barista: [1, 14] }, open: [6, 19], price: 10, need: 'coffee', color: '#a1887f', cap: 10, stock: true },
-  bar: { label: 'Bar', roles: { bartender: [1, 15] }, open: [17, 26], price: 22, need: 'drink', color: '#ab47bc', cap: 20, stock: true },
+  grocery: { label: 'Grocery', roles: { cashier: [1, 15], stocker: [1, 14] }, open: [7, 22], price: 68, need: 'groceries', color: '#4caf50', cap: 14, stock: true },
+  convenience: { label: 'Convenience store', roles: { clerk: [1, 13] }, open: [0, 24], price: 15, need: 'snack', color: '#ff9800', cap: 6, stock: true, robbable: 1 },
+  restaurant: { label: 'Restaurant', roles: { cook: [1, 16], server: [1, 13] }, open: [11, 23], price: 34, need: 'meal', color: '#e53935', cap: 20, stock: true },
+  cafe: { label: 'Cafe', roles: { barista: [1, 13] }, open: [6, 19], price: 13, need: 'coffee', color: '#a1887f', cap: 10, stock: true },
+  bar: { label: 'Bar', roles: { bartender: [1, 14] }, open: [17, 26], price: 26, need: 'drink', color: '#ab47bc', cap: 20, stock: true },
   clothing: { label: 'Clothing store', roles: { clerk: [1, 14] }, open: [10, 20], price: 55, need: 'goods', color: '#ec407a', cap: 8, stock: true },
   electronics: { label: 'Electronics', roles: { clerk: [1, 16] }, open: [10, 20], price: 140, need: 'goods', color: '#29b6f6', cap: 8, stock: true, robbable: 0.6 },
-  pharmacy: { label: 'Pharmacy', roles: { pharmacist: [1, 30], clerk: [1, 14] }, open: [8, 21], price: 24, need: 'health', color: '#26a69a', cap: 8, stock: true, robbable: 0.7 },
+  pharmacy: { label: 'Pharmacy', roles: { pharmacist: [1, 26] }, open: [8, 21], price: 38, need: 'health', color: '#26a69a', cap: 8, stock: true, robbable: 0.7 },
   gym: { label: 'Gym', roles: { trainer: [1, 16] }, open: [6, 22], price: 14, need: 'fun', color: '#ffca28', cap: 18 },
   autoshop: { label: 'Auto repair', roles: { mechanic: [2, 21] }, open: [8, 18], price: 260, need: 'repair', color: '#78909c', cap: 6 },
   gas: { label: 'Gas station', roles: { attendant: [1, 13] }, open: [0, 24], price: 38, need: 'fuel', color: '#ef6c00', cap: 6, stock: true, robbable: 0.9 },
-  hotel: { label: 'Hotel', roles: { receptionist: [1, 15], housekeeper: [2, 13] }, open: [0, 24], price: 0, color: '#c5a572', cap: 40 },
-  office: { label: 'Office', roles: { clerk: [6, 24], analyst: [3, 32], manager: [1, 45] }, open: [9, 17], price: 0, color: '#90a4ae', cap: 80, office: true },
-  factory: { label: 'Factory', roles: { worker: [6, 20] }, open: [7, 23], price: 0, color: '#8d6e63', cap: 40, industry: true },
-  warehouse: { label: 'Warehouse', roles: { worker: [3, 18], driver: [2, 19] }, open: [6, 20], price: 0, color: '#795548', cap: 20, industry: true, depot: true },
+  hotel: { label: 'Hotel', roles: { receptionist: [1, 15], housekeeper: [1, 13] }, open: [0, 24], price: 0, color: '#c5a572', cap: 40, guests: true },
+  office: { label: 'Office', roles: { clerk: [10, 23], analyst: [5, 30], manager: [1, 42] }, open: [9, 17], price: 0, color: '#90a4ae', cap: 80, office: true },
+  factory: { label: 'Factory', roles: { worker: [9, 19] }, open: [7, 23], price: 0, color: '#8d6e63', cap: 40, industry: true },
+  warehouse: { label: 'Warehouse', roles: { worker: [5, 17], driver: [2, 18] }, open: [6, 20], price: 0, color: '#795548', cap: 20, industry: true, depot: true },
   // civic
   police: { label: 'Police', roles: { officer: [6, 26] }, open: [0, 24], civic: true, color: '#2a5bd7', cap: 60, fleet: 'police' },
   fire: { label: 'Fire Department', roles: { firefighter: [6, 25] }, open: [0, 24], civic: true, color: '#e04a2a', cap: 40, fleet: 'firetruck' },
   hospital: { label: 'Hospital', roles: { doctor: [3, 55], nurse: [4, 28], paramedic: [4, 24] }, open: [0, 24], civic: true, color: '#e03a3a', cap: 120, fleet: 'ambulance' },
   busdepot: { label: 'Transit', roles: { 'bus driver': [4, 21] }, open: [5, 24], civic: true, color: '#3a7bd5', cap: 30, fleet: 'bus' },
-  taxi: { label: 'Taxi company', roles: { 'taxi driver': [5, 17] }, open: [0, 24], color: '#e0b020', cap: 20, fleet: 'taxi', civic: true },
+  taxi: { label: 'Taxi company', roles: { 'taxi driver': [8, 17] }, open: [0, 24], color: '#e0b020', cap: 20, fleet: 'taxi', civic: true },
   towyard: { label: 'Towing', roles: { 'tow operator': [2, 20] }, open: [0, 24], civic: true, color: '#6a6a70', cap: 10, fleet: 'tow' },
   utility: { label: 'City Utilities', roles: { lineworker: [3, 27] }, open: [0, 24], civic: true, color: '#c8a030', cap: 20, fleet: 'utility' },
   construction: { label: 'Construction', roles: { builder: [6, 23] }, open: [7, 16], civic: true, color: '#d08a2a', cap: 30, fleet: 'construction' },
   cityhall: { label: 'City Hall', roles: { clerk: [4, 22], mayor: [1, 60] }, open: [9, 17], civic: true, color: '#c8b070', cap: 60, office: true },
   news: { label: 'Channel 6 News', roles: { reporter: [3, 26], pilot: [1, 34] }, open: [6, 24], civic: true, color: '#d03030', cap: 30 },
-  mall: { label: 'Mall', roles: { 'retail clerk': [6, 14], 'security guard': [1, 17] }, open: [10, 21], price: 48, need: 'goods', color: '#d4a020', cap: 80, stock: true, mallShop: true },
+  mall: { label: 'Mall', roles: { 'retail clerk': [4, 14], 'security guard': [1, 17] }, open: [10, 21], price: 48, need: 'goods', color: '#d4a020', cap: 80, stock: true, mallShop: true },
   metro: { label: 'Metro', roles: { attendant: [1, 16] }, open: [5, 25], civic: true, color: '#2e5e9e', cap: 60 },
   powerplant: { label: 'Power Station', roles: { operator: [2, 30] }, open: [0, 24], civic: true, color: '#8a8a84', cap: 20 },
 };
@@ -173,10 +173,17 @@ export class Economy {
       const rent = (b.rent || 25) * (biz.type === 'office' ? 3 : 1);
       let cost = rent;
       if (t.stock) cost += biz.revToday * 0.25;
-      if (t.office || t.industry) {
+      if (t.price && !t.mallShop) {
+        // shoppers from out of town (the expressway brings regional visitors)
+        const draw = { D: 1.6, W: 1.5, C: 1.2, O: 1.1, SE: 0.6, SW: 0.6, I: 0.3, H: 0.5 }[b.code] || 1;
+        const visitors = Math.round(draw * (2 + rand.float() * 4) * this.multiplier * (0.5 + biz.rep));
+        const amt = visitors * t.price * biz.priceF;
+        biz.cash += amt; biz.revToday += amt; biz.lifetimeRev += amt; biz.custToday += visitors;
+      }
+      if (t.office || t.industry || t.guests) {
         // B2B revenue proportional to staffed hours (offices, factories sell elsewhere)
         const staffed = biz.jobs.filter((jid) => this.jobs[jid].holder != null).length;
-        const rev = staffed * (t.office ? 300 : 230) * this.multiplier * (0.85 + rand.float() * 0.3);
+        const rev = staffed * (t.office ? 300 : t.guests ? 280 : 230) * this.multiplier * (0.85 + rand.float() * 0.3);
         biz.cash += rev; biz.revToday += rev; biz.lifetimeRev += rev;
       }
       biz.cash -= cost;

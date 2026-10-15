@@ -8,6 +8,7 @@ import { CityView } from './render/cityView.js';
 import { VehicleView } from './render/vehicleView.js';
 import { PeopleView } from './render/peopleView.js';
 import { FX } from './render/fx.js';
+import { EventView } from './render/eventView.js';
 import { Input } from './core/input.js';
 import { CameraRig } from './play/cameraRig.js';
 import { rand } from './core/rng.js';
@@ -47,11 +48,17 @@ export class Game {
     this.cityView = new CityView(this.renderer, this.world);
     progress('Starting traffic…', 0.75);
     await tick();
+    this.cityView.buildTransitProps(this.world);
     this.vehicleView = new VehicleView(this.renderer, this.world);
     this.peopleView = new PeopleView(this.renderer, this.world);
     this.fx = new FX(this.renderer, this.world);
+    this.eventView = new EventView(this.renderer, this.world, this.cityView);
     this.raycaster = new THREE.Raycaster();
     this.box = new THREE.Box3();
+    progress('Compiling shaders…', 0.9);
+    // warm the shader cache behind the loading screen (avoids hitches on the first frames)
+    this.vehicleView.update(0); this.peopleView.update(0);
+    try { if (this.renderer.r.compileAsync) await this.renderer.r.compileAsync(this.renderer.scene, this.renderer.camera); } catch (e) { /* not critical */ }
     progress('Ready', 1);
     // warm up the simulation a little so the streets are alive on first frame
     for (let i = 0; i < 90; i++) this.world.update(1 / 30, 3);
@@ -82,12 +89,14 @@ export class Game {
     this.frame++;
     // global keys
     if (I.hit('Space') && this.mode === 'observe') this.togglePause();
-    if (I.hit('Digit1')) this.setSpeed(2);
-    if (I.hit('Digit2')) this.setSpeed(3);
-    if (I.hit('Digit3')) this.setSpeed(4);
-    if (I.hit('Digit4')) this.setSpeed(5);
-    if (I.hit('Digit5')) this.setSpeed(6);
-    if (I.hit('Digit0') || I.hit('Backquote')) this.setSpeed(1);
+    if (this.mode === 'observe') {
+      if (I.hit('Digit1')) this.setSpeed(2);
+      if (I.hit('Digit2')) this.setSpeed(3);
+      if (I.hit('Digit3')) this.setSpeed(4);
+      if (I.hit('Digit4')) this.setSpeed(5);
+      if (I.hit('Digit5')) this.setSpeed(6);
+    }
+    if (I.hit('Digit0') || I.hit('Backquote')) this.setSpeed(this.speedIdx === 1 ? 2 : 1);
     if (I.hit('Equal') || I.hit('NumpadAdd')) this.setSpeed(this.speedIdx + 1);
     if (I.hit('Minus') || I.hit('NumpadSubtract')) this.setSpeed(this.speedIdx - 1);
 
@@ -115,8 +124,10 @@ export class Game {
     if (this.cityView.season !== W.season) this.cityView.setSeasonColors(W.season);
     this.vehicleView.update(dt);
     this.peopleView.update(dt);
+    if (this.interiors) { this.rig.indoors = this.interiors.active; if (this.interiors.active) this.interiors.update(dt); }
     const selP = this.selectionPos(this.selected), hovP = this.mode === 'observe' ? this.selectionPos(this.hover) : null;
     this.fx.update(dt, this.mode === 'observe' ? selP : null, hovP && (!this.selected || this.hover.id !== this.selected.id || this.hover.kind !== this.selected.kind) ? hovP : null, this.possession && this.possession.objective());
+    this.eventView.update(dt, this.fx);
     this.renderer.render(dt);
     this.emit('frame', dt);
     I.endFrame();
@@ -153,6 +164,7 @@ export class Game {
     const W = this.world;
     if (sel.kind === 'citizen') {
       const c = W.citizens[sel.id];
+      if (c.dutyHeli && c.dutyHeli.state !== 'pad') { const h = c.dutyHeli; return { x: h.x, y: h.y, z: h.z, r: 7 }; }
       const p = W.citizenPos(c);
       if (!p) return null;
       if (p.inside) return null;
@@ -188,6 +200,7 @@ export class Game {
       if (veh.state === 'parked' && hoverOnly) continue;
       consider(veh.x, veh.y + 1, veh.z, veh.driver != null && veh.state !== 'parked' ? { kind: 'vehicle', id: veh.id } : { kind: 'vehicle', id: veh.id }, 0);
     }
+    for (const hl of W.helis.list) if (hl.pilot != null) consider(hl.x, hl.y + 1, hl.z, { kind: 'citizen', id: hl.pilot }, 400);
     if (best) return best;
     // buildings via ray
     const ndc = new THREE.Vector2((mx / w) * 2 - 1, -(my / h) * 2 + 1);

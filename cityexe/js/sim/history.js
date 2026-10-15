@@ -52,9 +52,9 @@ export class History {
   record(key, value, text, data = {}) {
     const r = this.records[key];
     if (!r || value > r.value) {
-      const isNew = !!r;
-      this.records[key] = { value, text, t: this.world.time, ...data };
-      if (isNew) this.cityEvent(`New city record: ${text}`, { type: 'record', ...data });
+      const announce = r && !data.silent && value > r.value * 1.2 && this.world.time - (r.announced || -1e9) > 240;
+      this.records[key] = { value, text, t: this.world.time, announced: announce ? this.world.time : r?.announced, ...data };
+      if (announce) this.cityEvent(`New city record: ${text}`, { type: 'record', ...data });
       return true;
     }
     return false;

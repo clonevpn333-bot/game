@@ -102,6 +102,7 @@ export class CameraRig {
     look.set(ent.x + Math.sin(yaw) * 2, (ent.y || 0) + T.lookY, ent.z + Math.cos(yaw) * 2);
     // keep the camera out of buildings
     const W = this.world;
+    if (this.indoors) return out;
     const hit = W.collideBox(out.x, out.z, 0.6, out.y - 1);
     if (hit) {
       // pull the camera toward the subject until clear

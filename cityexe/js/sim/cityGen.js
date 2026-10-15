@@ -41,6 +41,10 @@ const SPECIAL = {
   '5,5': { metro: true, name: 'Central Station' },
   '1,2': { metro: true, name: 'Old Town Station' },
   '7,8': { metro: true, name: 'Maple Heights Station' },
+  '0,8': { metro: true, name: 'Westpoint Station' },
+  '8,3': { metro: true, name: 'Greenway Station' },
+  '3,7': { metro: true, name: 'Riverside Station' },
+  '5,1': { metro: true, name: 'Harbor Gate Station' },
   '3,3': { hotel: true, name: 'Riverside Hotel' },
 };
 const SUBSTATIONS = { '1,4': 'W', '7,2': 'C', '8,0': 'I', '6,8': 'S' };
@@ -566,7 +570,7 @@ function regularLot(city, blk, r, side, rng) {
 }
 
 function addSubstation(city, blk, zone, rng, rect) {
-  const r = rect ? shrink(rect, 6) : { x0: blk.x0 + 2, z0: blk.z1 - 18, x1: blk.x0 + 22, z1: blk.z1 - 2 };
+  const r = rect ? shrink(rect, 6) : { x0: blk.x0 + 2, z0: blk.z1 - 16, x1: blk.x0 + 15.5, z1: blk.z1 - 2 };
   const b = addBuilding(city, blk, r, { kind: 'substation', h: 3, style: 7, color: '#6a6a66', name: `${zone === 'W' ? 'West' : zone === 'C' ? 'Central' : zone === 'I' ? 'Ironworks' : 'South'} Substation`, civic: 'substation', rent: 0 }, rng);
   if (b) { b.zoneFeeds = zone; city.substations[zone] = b.id; }
 }

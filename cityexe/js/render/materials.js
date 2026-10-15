@@ -133,7 +133,7 @@ const BUILDING_FRAG_COLOR = `
         if (dmg > 0.35 && h21(cell + 3.1) < dmg) g = vec3(0.02);
         base = g;
         rough = 0.07; metal = 0.85;
-        emis += wc * lit * blind * (0.12 + uNight * 1.75);
+        emis += wc * lit * blind * (0.1 + uNight * 1.25);
         if (boarded > 0.5) { base = vec3(0.4, 0.3, 0.19) * (0.85 + 0.15 * step(0.5, fract(f.y * 6.0))); rough = 0.9; metal = 0.0; }
       }
       // ledges between floors

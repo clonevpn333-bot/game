@@ -15,6 +15,7 @@ import { Incidents } from './incidents.js';
 import { Transit } from './transit.js';
 import { Evolution } from './evolution.js';
 import { Disasters, Animals } from './disasters.js';
+import { Helis } from './helis.js';
 import { Bus } from '../core/bus.js';
 import { RNG, rand } from '../core/rng.js';
 import { clamp, dist } from '../core/math.js';
@@ -54,6 +55,7 @@ export class World {
     this.parkLife = new ParkLife(this);
     this.disasters = new Disasters(this);
     this.animals = new Animals(this);
+    this.helis = new Helis(this);
     this.driverCtrl = { onLink: () => {}, idle: (v) => {} };
     this.lastHour = Math.floor(this.time / 60);
     this.lastDay = Math.floor(this.time / 1440);
@@ -70,15 +72,16 @@ export class World {
       else if (b.metro) this.economy.create('metro', b.id, { rng, name: b.name });
       else if (b.jobsOverride && b.jobsOverride.news) this.economy.create('news', b.id, { rng, name: b.name });
       else if (b.bizType) {
-        if (b.shop && rng.chance(0.3)) { b.vacantSince = -rng.int(1, 30); continue; }
+        if (b.shop && rng.chance(0.38)) { b.vacantSince = -rng.int(1, 30); continue; }
         this.economy.create(b.bizType, b.id, { rng, founded: -rng.int(30, 4000) });
       }
     }
     const jobs = this.economy.jobs.length;
-    this.targetPop = opts.population ?? Math.round(Math.min(2200, Math.max(900, jobs / 0.6)));
+    this.targetPop = opts.population ?? Math.round(Math.min(2200, Math.max(900, jobs / 0.8)));
     this.citizenAI.generate(rng, this.targetPop);
     this.services.init();
     this.transit.init();
+    this.helis.init();
     for (const c of this.citizens) if (c.working && c.job) this.services.onArriveWork(c);
     this.power.apply();
     this.weather.set('clear', 300, false);
@@ -144,6 +147,34 @@ export class World {
     this.animals && this.animals.update(dt);
     this.helis && this.helis.update(dt);
     this.restCheck(dt);
+  }
+
+  // Simulate time that passed while the player was away (abstract, no physics).
+  catchUp(minutes, onProgress) {
+    this.offline = true;
+    this.setAbstract(true);
+    const end = this.time + minutes;
+    let i = 0;
+    while (this.time < end) {
+      const dm = Math.min(5, end - this.time);
+      this.time += dm;
+      this.physT += (dm * 60) / C.TIME_SCALE;
+      if (this.timers.length) { const due = this.timers.filter((t) => t.t <= this.physT); this.timers = this.timers.filter((t) => t.t > this.physT); for (const t of due) { try { t.fn(); } catch (e) { /* stale */ } } }
+      this.citizenAI.update(dm);
+      this.weather.update(dm, 0);
+      this.power.update(dm);
+      for (const z of Object.values(this.power.zones)) if (!z.on) this.power.work(z.id, dm * 1.5);
+      this.incidents.offlineUpdate(dm);
+      this.evolution.offlineUpdate(dm);
+      this.disasters.updateFlood(dm);
+      const hour = Math.floor(this.time / 60);
+      if (hour !== this.lastHour) { this.lastHour = hour; this.hourly(); }
+      if (this.day !== this.lastDay) { this.lastDay = this.day; this.daily(); }
+      if (onProgress && ++i % 12 === 0) onProgress(1 - (end - this.time) / minutes);
+    }
+    this.offline = false;
+    this.setAbstract(false);
+    for (const c of this.citizens) if (c.state === 'abstract') this.citizenAI.finishAbstract(c);
   }
 
   hourly() {

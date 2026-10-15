@@ -33,7 +33,7 @@ await page.waitForFunction(() => window.game && window.game.renderer && !documen
 const shot = async (name) => { await page.screenshot({ path: path.join(out, name + '.png') }); console.log('saved', name); };
 const wait = (ms) => page.waitForTimeout(ms);
 const scenarios = (await import(path.join(root, 'test', 'scenarios.mjs'))).default;
-await scenarios[scenario]({ page, shot, wait });
+try { await scenarios[scenario]({ page, shot, wait }); } catch (e) { console.log('SCENARIO FAILED', e.message); console.log(errors.filter((x) => !x.startsWith('[warning]')).slice(0, 20).join('\n')); console.log(JSON.stringify(await page.evaluate(() => { const P = window.game.possession; return { pending: P.pending && P.pending.name, c: P.c && P.c.name, mode: window.game.mode, trans: !!window.game.rig.trans, toast: Array.from(document.querySelectorAll('.toast')).map((t) => t.textContent) }; }).catch(() => null))); }
 const stats = await page.evaluate(() => ({ fps: Math.round(window.game.fps), time: window.game.world.history.timeStr(window.game.world.time), calls: window.game.renderer.r.info.render.calls, tris: window.game.renderer.r.info.render.triangles }));
 console.log('stats', JSON.stringify(stats));
 console.log(errors.slice(0, 30).join('\n') || 'no console errors');

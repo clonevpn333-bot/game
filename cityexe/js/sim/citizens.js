@@ -70,6 +70,8 @@ export class CitizenAI {
     const units = [];
     for (const b of city.buildings) for (let u = 0; u < b.resUnits; u++) units.push({ b: b.id, u });
     rng.shuffle(units);
+    // families fill the houses first; apartments take the rest
+    units.sort((a, b) => (city.buildings[a.b].kind === 'house' ? 0 : 1) - (city.buildings[b.b].kind === 'house' ? 0 : 1));
     const citizens = [];
     // households
     let ui = 0;
@@ -109,6 +111,7 @@ export class CitizenAI {
         const c = workers[k];
         if (c.job) continue;
         if ((j.role === 'officer') && c.traits.honesty < 0.45) continue;
+        if (['doctor', 'pharmacist', 'manager', 'mayor', 'analyst', 'pilot'].includes(j.role) && c.age < 26) continue;
         pick = k; break;
       }
       if (pick == null) continue;
@@ -164,7 +167,9 @@ export class CitizenAI {
       this.placeInside(c, at);
       c.working = at !== c.home;
       c.nextThink = W.time + rng.range(0, 40);
-      c.log.push({ t: W.time - rng.int(200, 30000), text: `Moved into ${this.buildingName(c.home)}` });
+      c.lastShop = W.time - rng.range(0, 4) * 1440;
+      c.lastFuel = W.time - rng.range(0, 5) * 1440;
+      c.log.push({ t: W.time - rng.int(200, 30000), text: `Moved into ${this.homeName(c)}` });
       if (c.job) c.log.push({ t: W.time + c.job.since * 1440 / 100, text: `Started as ${this.jobTitle(c)} at ${W.economy.biz[c.job.biz].name}` });
     }
   }
@@ -248,7 +253,12 @@ export class CitizenAI {
     if (b.kind === 'house') return `a house on ${W.city.net.roads[b.roadId]?.name || 'the street'}`;
     return `${b.district} apartments`;
   }
-  homeName(c) { return c.homeless ? 'No fixed address' : this.buildingName(c.home); }
+  homeName(c) {
+    if (c.homeless) return 'No fixed address';
+    const b = this.world.city.buildings[c.home];
+    if (b && b.bizId != null && b.kind !== 'house') return `Apartment above ${this.buildingName(c.home)}`;
+    return this.buildingName(c.home);
+  }
   doorOut(b) {
     const o = 0.9;
     const [dx, dz] = b.door;
@@ -344,6 +354,7 @@ export class CitizenAI {
       if (this.inShift(c, mod, commute + 10)) {
         if (atWork) {
           if (!c.working) this.startWork(c);
+          if (!c.job) return;
           const end = this.shiftEndTime(c, mod);
           c.activity = 'work'; c.until = end; c.nextThink = Math.min(end, now + 60);
           return;
@@ -388,6 +399,30 @@ export class CitizenAI {
     if (!c.job && c.age < 66 && hour > 9 && hour < 16 && dow < 6 && rand.chance(0.45)) {
       const j = this.findJobFor(c);
       if (j) { this.go(c, W.economy.biz[j.biz].b, 'jobhunt', { job: j.id }); return; }
+    }
+    // ---- errands: pharmacy, gas, car service, a quick snack
+    if (hour > 8 && hour < 21 && c.money > 40) {
+      if ((c.health < 0.9 || c.injured > 0 || (c.age > 62 && rand.chance(0.04))) && now - (c.lastPharm || -1e9) > 1440 * 2) {
+        const biz = this.pickBiz(c, 'pharmacy', 700);
+        if (biz) { c.lastPharm = now; this.go(c, biz.b, 'shop', { biz: biz.id }); return; }
+      }
+      if (c.vehicle != null && now - (c.lastFuel || 0) > 1440 * 4 && rand.chance(0.5)) {
+        const biz = this.pickBiz(c, 'gas', 2000);
+        if (biz) { c.lastFuel = now; this.go(c, biz.b, 'shop', { biz: biz.id }); return; }
+      }
+      if (c.vehicle != null && now - (c.lastService || -rand.float() * 30 * 1440) > 1440 * 18 && rand.chance(0.3)) {
+        const biz = this.pickBiz(c, 'autoshop', 2000);
+        if (biz) { c.lastService = now; this.go(c, biz.b, 'shop', { biz: biz.id }); return; }
+      }
+      if (N.hunger < 0.6 && rand.chance(0.15)) {
+        const biz = this.pickBiz(c, 'convenience', 300);
+        if (biz) { this.go(c, biz.b, 'eat', { biz: biz.id }); return; }
+      }
+    }
+    // late-night snack runs (24h stores)
+    if ((hour > 22 || hour < 2) && N.hunger < 0.5 && c.money > 15 && rand.chance(0.25)) {
+      const biz = this.pickBiz(c, 'convenience', 400);
+      if (biz) { this.go(c, biz.b, 'eat', { biz: biz.id }); return; }
     }
     // ---- groceries
     if (now - c.lastShop > 1440 * 3 && c.money > 60 && hour > 8 && hour < 20) {
@@ -456,11 +491,11 @@ export class CitizenAI {
     const mod = W.minuteOfDay;
     let late = mod - c.job.shift[0];
     if (late < -600) late += 1440;
-    if (late > 30 && late < 400) {
+    if (late > 45 && late < 400) {
       c.lateCount++;
-      if (c.lateCount === 3) W.history.citizenLog(c, `Got a warning for being late to work`, false);
-      if (c.lateCount >= 6 && rand.chance(0.5)) { this.loseJob(c, 'fired for repeated lateness'); return; }
-    }
+      if (c.lateCount === 4) W.history.citizenLog(c, `Got a warning for being late to work`, false);
+      if (c.lateCount >= 9 && rand.chance(0.3 + c.traits.caution * -0.2)) { this.loseJob(c, 'fired for repeated lateness'); return; }
+    } else if (late <= 10 && c.lateCount > 0 && rand.chance(0.25)) c.lateCount--;
     W.services && W.services.onArriveWork(c);
   }
   endWork(c) {
@@ -481,7 +516,7 @@ export class CitizenAI {
     const open = W.economy.openJobs((j, biz) => {
       if (j.role === 'mayor') return false;
       if (j.role === 'officer' && (c.traits.honesty < 0.5 || c.record.arrests > 0)) return false;
-      if (['doctor', 'pharmacist', 'manager', 'analyst'].includes(j.role) && c.traits.ambition < 0.5) return false;
+      if (['doctor', 'pharmacist', 'manager', 'analyst', 'pilot'].includes(j.role) && (c.traits.ambition < 0.5 || c.age < 26)) return false;
       return true;
     });
     if (!open.length) return null;
@@ -536,7 +571,9 @@ export class CitizenAI {
     c.activity = g.type || 'idle';
     switch (g.type) {
       case 'work': {
+        if (!c.job) { c.until = now + 20; c.nextThink = c.until; break; }
         this.startWork(c);
+        if (!c.job) { c.until = now + 20; c.nextThink = c.until; break; }
         c.until = this.shiftEndTime(c, W.minuteOfDay);
         c.nextThink = Math.min(c.until, now + 60);
         break;
@@ -620,8 +657,12 @@ export class CitizenAI {
     const a = W.city.buildings[fromB], b = W.city.buildings[toB];
     if (!a || !b) return 30;
     const d = dist(a.x, a.z, b.x, b.z);
-    if (d < 220 || c.vehicle == null) return physMin((d * 1.3) / (d < 220 ? 1.35 : 5.5)) + 5;
-    return physMin((d * 1.35) / 9.5) + 8;
+    if (d < 230) return physMin((d * 1.3) / 1.4) + 4;
+    const v = c.vehicle != null ? W.traffic.byId.get(c.vehicle) : null;
+    if (v && !v.stolen && v.state !== 'repair') return physMin((d * 1.35) / 8.5) + 10;
+    if (W.transit && W.transit.metroOption(a.x, a.z, b.x, b.z)) return physMin(300 / 1.4) + physMin(d / 15) + 15;
+    if (W.transit && W.transit.busOption(a.x, a.z, b.x, b.z)) return physMin(300 / 1.4) + physMin((d * 1.4) / 6) + 25;
+    return physMin((d * 1.3) / 1.4) + 5;
   }
 
   go(c, destB, type, opts = {}) {

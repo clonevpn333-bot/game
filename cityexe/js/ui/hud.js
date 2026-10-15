@@ -34,6 +34,7 @@ export class HUD {
     W.on('incident', (inc) => this.pushTicker(`${inc.title}${inc.b != null ? ' — ' + W.citizenAI.buildingName(inc.b) : ''}`, inc.type, { x: inc.x, z: inc.z, inc: inc.id, live: true }));
     W.on('pursuit', (e) => this.pushTicker(`Police chase underway${e.s ? ' — suspect ' + e.s.name : ''}`, 'chase', { x: e.inc.x, z: e.inc.z, inc: e.inc.id, who: e.s?.id, live: true }));
     W.on('bookmarkEvent', ({ c, entry }) => { if (entry.major) this.pushTicker(`★ ${c.name}: ${entry.text}`, 'bookmark', { who: c.id }); });
+    W.on('anomalyLine', ({ c, text }) => this.toast(`${c.first}: “${text}”`, 4));
     W.on('playerArrested', ({ c }) => this.toast(`BUSTED. ${c.first} is going to jail.`, 4));
     W.on('playerInjured', ({ c }) => this.toast(`${c.first} is hurt. An ambulance has been called.`, 4));
   }
@@ -114,6 +115,35 @@ export class HUD {
     });
   }
 
+  // ---------------------------------------------------------------- dialogs
+  modal(html) {
+    const m = h('div', 'modal');
+    m.innerHTML = `<div class="modal-in">${html}<div class="btns"><button class="pri" data-ok>Continue</button></div></div>`;
+    this.root.appendChild(m);
+    m.querySelector('[data-ok]').onclick = () => m.remove();
+    m.querySelectorAll('[data-act]').forEach((b) => b.onclick = () => { this.act(b.dataset.act, b.dataset.id); m.remove(); });
+    return m;
+  }
+  showAway(a) {
+    const W = this.W;
+    const d = Math.floor(a.gameMin / 1440), hh = Math.floor((a.gameMin % 1440) / 60);
+    const span = d ? `${d} day${d > 1 ? 's' : ''}${hh ? ` and ${hh} hours` : ''}` : `${hh} hours`;
+    const ev = a.events.slice(-12).reverse().map((e) => `<li><span>${W.history.dateStr(e.t)} ${W.history.timeStr(e.t)}</span>${ICON[e.type] || '•'} ${esc(e.text)}</li>`).join('');
+    const bm = a.bookmarks.map(({ c, fresh }) => `<div class="bm"><div class="bm-h"><a data-act="sel" data-id="${c.id}">★ ${esc(c.name)}</a></div><ul class="log">${fresh.slice(-4).map((e) => `<li class="major">${esc(e.text)}</li>`).join('')}</ul></div>`).join('');
+    this.modal(`<h2>While you were away</h2><p class="muted">The city kept living for ${span}.</p>${bm ? `<h3>Your bookmarked people</h3>${bm}` : ''}${ev ? `<h3>City news</h3><ul class="arch">${ev}</ul>` : ''}`);
+  }
+  showWelcome() {
+    this.modal(`<h2>CITY<span style="color:var(--accent)">.EXE</span></h2>
+      <p>This city runs on its own. ${this.W.citizens.length.toLocaleString()} people have homes, jobs, money, friends and plans — and they will keep living whether you watch or not.</p>
+      <ul class="keys">
+        <li><b>Watch.</b> Drag to pan, scroll to zoom, click anyone or anything to see who they are.</li>
+        <li><b>Become anyone.</b> Double-click a person (or press <kbd>P</kbd>) to dive in and play as them. <kbd>Q</kbd> leaves their body; <kbd>R</kbd> lets them carry on while you ride along.</li>
+        <li><b>Follow the stories.</b> The ticker (bottom-left) shows what is happening. Click an entry to fly there.</li>
+        <li><b>Interfere.</b> God tools (<kbd>G</kbd>) start fires, blackouts, storms, riots, meteors…</li>
+        <li><b>Come back later.</b> The city saves itself and remembers what happened.</li>
+      </ul>`);
+  }
+
   // ---------------------------------------------------------------- top bar
   renderSpeed() {
     const btns = this.top.querySelectorAll('.spd');
@@ -161,15 +191,26 @@ export class HUD {
   // ---------------------------------------------------------------- ticker
   pushTicker(text, type, data = {}) {
     const W = this.W;
+    // merge repeats of the same headline within a short window
+    const top = this.ticker[0];
+    if (top && top.text === text && performance.now() - top.t < 45000) {
+      top.n = (top.n || 1) + 1;
+      top.el.querySelector('.tx').textContent = `${text} ×${top.n}`;
+      top.t = performance.now();
+      top.data = data;
+      return;
+    }
     const el = h('div', 'tk' + (data.live ? ' live' : '') + (type === 'bookmark' ? ' star' : ''));
     el.innerHTML = `<span class="ic">${ICON[type] || (type === 'bookmark' ? '★' : '•')}</span><span class="tt">${W.history.timeStr(W.time)}</span><span class="tx">${esc(text)}</span>`;
     el.onclick = () => {
+      const entry = this.ticker.find((t) => t.el === el);
+      if (entry) data = entry.data;
       if (data.who != null) { this.game.select({ kind: 'citizen', id: data.who }); this.game.followSelected(); }
       else if (data.x != null) this.game.flyTo(data.x, data.z, 90);
       if (data.inc != null) this.focusIncident(data.inc);
     };
     this.tick.prepend(el);
-    this.ticker.unshift({ el, t: performance.now(), data });
+    this.ticker.unshift({ el, t: performance.now(), data, text });
     while (this.ticker.length > 6) { const o = this.ticker.pop(); o.el.remove(); }
   }
   updateTickerAges() {
@@ -493,7 +534,7 @@ export class HUD {
     g.fillStyle = '#1a1f26'; g.fillRect(0, 0, S, S);
     for (const b of W.city.blocks) {
       g.fillStyle = b.water ? '#1d3a52' : b.park ? '#25402a' : '#232a33';
-      g.fillRect(tx(b.X0), tx(b.Z0), b.X1 - b.X0 * 1 > 0 ? (b.X1 - b.X0) * scale : 0, (b.Z1 - b.Z0) * scale);
+      g.fillRect(tx(b.X0), tx(b.Z0), (b.X1 - b.X0) * scale, (b.Z1 - b.Z0) * scale);
     }
     g.fillStyle = '#1d3a52';
     g.fillRect(tx(W.riverX[0]), 0, (W.riverX[1] - W.riverX[0]) * scale, S);

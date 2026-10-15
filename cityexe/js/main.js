@@ -2,23 +2,77 @@ import { Game } from './game.js';
 import { Possession } from './play/possession.js';
 import { HUD } from './ui/hud.js';
 import { GodTools } from './play/godTools.js';
+import { Interiors } from './render/interiors.js';
+import { Audio } from './audio/audio.js';
+import { loadSave, saveWorld, deserialize, clearSave } from './sim/save.js';
+import { Anomalies } from './sim/anomaly.js';
 
 const canvas = document.getElementById('view');
 const fill = document.getElementById('boot-fill');
 const msg = document.getElementById('boot-msg');
 const params = new URLSearchParams(location.search);
+const progress = (text, p) => { msg.textContent = text; fill.style.width = `${Math.round(p * 100)}%`; };
+const tick = () => new Promise((r) => setTimeout(r, 0));
 
 async function main() {
-  const game = new Game(canvas, { seed: params.has('seed') ? +params.get('seed') : undefined });
+  let world = null, away = null;
+  if (!params.has('fresh')) {
+    progress('Looking for your city…', 0.05);
+    const data = await loadSave().catch(() => null);
+    if (data) {
+      progress('Rebuilding your city…', 0.15);
+      await tick();
+      world = deserialize(data);
+      new Anomalies(world).attach();
+      if (data.anom) world.anomalies.deserialize(data.anom);
+      // the city kept living while you were gone
+      const realMin = (Date.now() - data.savedAt) / 60000;
+      const gameMin = Math.min(Math.round(realMin * 3), 1440 * 3);
+      if (gameMin > 30) {
+        const before = world.history.events.length;
+        const logs = new Map(world.citizens.filter((c) => c.bookmarked).map((c) => [c.id, c.log.length]));
+        progress(`Catching up on ${fmtSpan(gameMin)} of city life…`, 0.2);
+        await tick();
+        world.catchUp(gameMin, (p) => { fill.style.width = `${Math.round(20 + p * 30)}%`; });
+        away = { gameMin, realMin, events: world.history.events.slice(before).filter((e) => !e.minor), bookmarks: [] };
+        for (const [id, n] of logs) { const c = world.citizens[id]; const fresh = c.log.slice(n).filter((e) => e.major); if (fresh.length) away.bookmarks.push({ c, fresh }); }
+      }
+    }
+  }
+  const game = new Game(canvas, { seed: params.has('seed') ? +params.get('seed') : undefined, world });
   window.game = game;
-  await game.boot((text, p) => { msg.textContent = text; fill.style.width = `${Math.round(p * 100)}%`; });
+  await game.boot(progress);
+  if (!world) new Anomalies(game.world).attach();
   game.possession = new Possession(game);
   game.godTool = new GodTools(game);
+  game.interiors = new Interiors(game);
+  game.audio = new Audio(game);
   const hud = new HUD(game);
   game.hud = hud;
-  game.on('frame', (dt) => hud.update(dt));
+  game.on('frame', (dt) => { hud.update(dt); game.audio.update(dt); });
+  // persistence
+  let saving = false;
+  game.save = async () => {
+    if (saving || game.possession.c) return;
+    saving = true;
+    try { await saveWorld(game.world); } finally { saving = false; }
+  };
+  game.resetCity = async () => { await clearSave(); location.href = location.pathname + '?fresh'; };
+  game.world.on('day', () => game.save());
+  setInterval(() => game.save(), 120000);
+  addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') game.save(); });
+  addEventListener('pagehide', () => game.save());
   document.getElementById('boot').classList.add('done');
   setTimeout(() => document.getElementById('boot').remove(), 900);
   game.start();
+  if (away && (away.events.length || away.bookmarks.length)) hud.showAway(away);
+  else if (!world) hud.showWelcome();
+  if (params.has('fresh')) history.replaceState(null, '', location.pathname);
 }
+
+function fmtSpan(min) {
+  const d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60);
+  return d ? `${d} day${d > 1 ? 's' : ''}${h ? ` ${h}h` : ''}` : `${h} hours`;
+}
+
 main().catch((e) => { console.error(e); msg.textContent = 'Failed to start: ' + e.message; });

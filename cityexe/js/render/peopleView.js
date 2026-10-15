@@ -13,12 +13,13 @@ const sphere = new THREE.Sphere();
 function partGeo(fn) { const k = new ModelKit(); fn(k); return k.build(); }
 
 export class PeopleView {
-  constructor(renderer, world) {
+  constructor(renderer, world, opts = {}) {
     this.R = renderer;
     this.world = world;
+    this.onlyExtra = !!opts.onlyExtra;
     const U = renderer.U;
     const mat = makeInstMaterial(U, { key: 'ppl', roughness: 0.75, metalness: 0.0, snow: false });
-    const cap = 900;
+    const cap = opts.cap || 900;
     // pivot conventions: torso origin at hips, legs/arms origin at joint (extend downward)
     const G = {
       torso: partGeo((k) => { k.taper(0, 0, 0, 0.44, 0.26, 0.5, 0.28, 0.62, '#ffffff', 1); k.box(0, 0.66, 0, 0.14, 0.08, 0.12, '#ffffff', 2); }),
@@ -63,7 +64,7 @@ export class PeopleView {
     this.visible.length = 0;
     const cx = cam.position.x, cz = cam.position.z, cy = cam.position.y;
     const maxD = Math.max(240, cy * 2.2);
-    for (const ped of W.peds.list) {
+    for (const ped of this.onlyExtra ? [] : W.peds.list) {
       if (ped.hidden) continue;
       const d2 = (ped.x - cx) ** 2 + (ped.z - cz) ** 2;
       if (d2 > maxD * maxD) continue;

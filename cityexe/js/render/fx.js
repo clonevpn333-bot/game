@@ -106,13 +106,13 @@ void main(){
   p.z = mod(p.z - uCam.z + 30.0, 60.0) - 30.0 + uCam.z;
   p.y += uCam.y;
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
-  float stretch = mix(0.9, 0.08, uSnow);
-  mv.xy += position.xy * vec2(mix(0.012, 0.06, uSnow), stretch);
-  vA = mix(0.35, 0.9, uSnow);
+  float stretch = mix(0.55, 0.07, uSnow);
+  mv.xy += position.xy * vec2(mix(0.01, 0.06, uSnow), stretch);
+  vA = mix(0.16, 0.85, uSnow) * clamp(1.0 - (-mv.z - 10.0) / 40.0, 0.0, 1.0);
   gl_Position = projectionMatrix * mv;
 }`;
 const PRECIP_FS = `varying float vA; uniform float uAmount; uniform float uNight;
-void main(){ gl_FragColor = vec4(vec3(mix(0.75, 1.0, uAmount)) * mix(1.0, 0.45, uNight), vA * uAmount); }`;
+void main(){ gl_FragColor = vec4(vec3(0.8, 0.85, 0.9) * mix(1.0, 0.35, uNight), vA * uAmount); }`;
 
 export class FX {
   constructor(renderer, world) {
@@ -233,7 +233,7 @@ export class FX {
     P.uSpeed.value = w.snowing ? 2.2 : 22;
     P.uWind.value = w.wind * (w.snowing ? 0.5 : 0.25);
     P.uNight.value = W.env.night;
-    this.precip.visible = P.uAmount.value > 0.02 && cam.position.y < 300;
+    this.precip.visible = P.uAmount.value > 0.02 && cam.position.y < 160;
     this.precip.geometry.instanceCount = Math.floor(6000 * clamp(w.precip, 0.2, 1));
     // selection rings
     if (sel) {

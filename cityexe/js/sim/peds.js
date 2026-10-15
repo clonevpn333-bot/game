@@ -19,7 +19,7 @@ export class Peds {
     let p = this.byCid.get(c.id);
     if (p) { p.x = x; p.z = z; return p; }
     p = {
-      id: PID++, cid: c.id, x, z, y: 0, h, v: 0, speed: 1.25 + rand.float() * 0.35, path: null, wi: 0, lane: (rand.float() * 2 - 1) * 1.1,
+      id: PID++, cid: c.id, x, z, y: 0, h, v: 0, speed: 1.35 + rand.float() * 0.4, path: null, wi: 0, lane: (rand.float() * 2 - 1) * 1.1,
       state: 'idle', onArrive: null, anim: rand.float() * 10, action: '', wait: 0, player: false, run: false, vx: 0, vz: 0,
       target: null, umbrella: false, fallen: 0, idleT: 0, radius: 0.45, lod: 0, acc: 0,
     };
@@ -114,7 +114,7 @@ export class Peds {
       // keep to the right side of the sidewalk
       let tx = wp.x, tz = wp.z;
       if (!last && d > 1.5) { tx += (-dz / d) * p.lane * 0.5; tz += (dx / d) * p.lane * 0.5; }
-      const sp = p.run ? p.speed * 3.2 : p.speed * (W.weather.precip > 0.5 ? 1.15 : 1);
+      const sp = (p.run ? p.speed * 3.2 : p.speed * (W.weather.precip > 0.5 ? 1.15 : 1)) * (p.lod === 2 ? 1.8 : 1);
       p.v = sp;
       const ddx = tx - p.x, ddz = tz - p.z, dd = Math.hypot(ddx, ddz) || 1;
       const step = Math.min(sp * dt, d);

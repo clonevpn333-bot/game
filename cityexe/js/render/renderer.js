@@ -189,7 +189,7 @@ export class Renderer {
     this.scene.fog.density = fogBase;
     this.scene.fog.color.copy(U.uHorizon.value).lerp(new THREE.Color('#8a9098'), (weather.fog || 0) * 0.5 * dayF);
     this.r.toneMappingExposure = lerp(1.15, 0.95, dayF);
-    this.bloom.strength = lerp(0.35, 0.85, night);
+    this.bloom.strength = lerp(0.3, 0.7, night);
     this.U.uNight.value = night;
     this.U.uDay.value = dayF;
     // env map refresh
@@ -204,10 +204,16 @@ export class Renderer {
     this.scene.environmentIntensity = lerp(0.15, 1.0, dayF);
   }
 
+  // render an alternative scene (interiors) or the city (null)
+  setScene(scene) {
+    this.activeScene = scene;
+    this.renderPass.scene = scene || this.scene;
+  }
+
   render(dt) {
     this.U.uTime.value += dt;
     this.skyU.uTime.value = this.U.uTime.value;
     if (this.bloom.enabled) this.composer.render(dt);
-    else this.r.render(this.scene, this.camera);
+    else this.r.render(this.activeScene || this.scene, this.camera);
   }
 }

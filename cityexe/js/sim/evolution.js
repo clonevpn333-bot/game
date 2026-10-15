@@ -72,7 +72,8 @@ export class Evolution {
     for (const b of W.city.buildings) {
       if (!b.shop || b.bizId != null || b.state !== 'ok') continue;
       const vacantDays = W.day - (b.vacantSince ?? W.day - 3);
-      if (vacantDays > 2 && rand.chance(0.025 * econ.multiplier)) {
+      const unemp = econ.stats.unemployment || 0.1;
+      if (vacantDays > 3 && rand.chance(0.006 * econ.multiplier * (0.6 + unemp * 4))) {
         const type = rand.pick(['convenience', 'cafe', 'restaurant', 'pharmacy', 'clothing', 'grocery', 'bar']);
         const biz = econ.create(type, b.id, { founded: W.day });
         W.history.cityEvent(`${biz.name} opened in ${b.district}`, { type: 'business', b: b.id, x: b.x, z: b.z, minor: true });
@@ -82,9 +83,10 @@ export class Evolution {
     }
     // abandonment & demolition
     for (const b of W.city.buildings) {
-      if (b.state === 'ok' && b.resUnits > 0 && !b.shop && b.residents.length === 0 && b.kind !== 'tower') {
+      const declining = ['I', 'H', 'O'].includes(b.code) || b.damage > 0.3 || W.incidents.dangerAt(b.x, b.z) > 1;
+      if (b.state === 'ok' && b.resUnits > 0 && !b.shop && b.residents.length === 0 && b.kind !== 'tower' && declining) {
         b.emptyDays = (b.emptyDays || 0) + 1;
-        if (b.emptyDays > 12 && rand.chance(0.15)) {
+        if (b.emptyDays > 14 && rand.chance(0.08)) {
           b.state = 'abandoned';
           W.history.cityEvent(`${ai.buildingName(b.id)} in ${b.district} was abandoned`, { type: 'building', b: b.id, x: b.x, z: b.z });
         }
@@ -184,6 +186,21 @@ export class Evolution {
         if (p.progress >= p.need) { this.complete(p); this.projects.splice(this.projects.indexOf(p), 1); S.release(u); }
         else if (shiftOver) { p.crew = null; S.release(u); }
       }
+    }
+  }
+
+  // construction progress while nobody is watching
+  offlineUpdate(dtMin) {
+    const W = this.world;
+    const h = W.minuteOfDay / 60;
+    if (h < 7 || h > 16) return;
+    for (const p of this.projects.slice(0, 2)) {
+      if (W.time < p.started) continue;
+      const b = W.city.buildings[p.b];
+      if (b.state === 'ruin') continue;
+      p.progress += dtMin * 2.4;
+      if (b.state === 'construction') b.built = Math.min(1, p.progress / p.need);
+      if (p.progress >= p.need) { this.complete(p); this.projects.splice(this.projects.indexOf(p), 1); }
     }
   }
 
