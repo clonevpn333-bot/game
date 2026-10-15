@@ -100,7 +100,6 @@ export class Interiors {
 
   // ------------------------------------------------------------------ room generation
   buildRoom(b, kind) {
-    const W = this.W;
     const seed = b.id * 7919;
     const R = (k) => hash01(seed, k);
     const big = ['hospital', 'mall', 'police', 'fire', 'metro', 'garage', 'warehouse', 'office'].includes(kind);
@@ -349,7 +348,7 @@ export class Interiors {
     if (!force && key === this.lastOcc) return;
     this.lastOcc = key;
     const used = new Set();
-    for (const [cid, f] of this.figs) if (!b.occupants.has(cid)) this.figs.delete(cid);
+    for (const cid of this.figs.keys()) if (!b.occupants.has(cid)) this.figs.delete(cid);
     for (const f of this.figs.values()) used.add(f.spot);
     for (const cid of occ.slice(0, 60)) {
       if (this.figs.has(cid)) continue;

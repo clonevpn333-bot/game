@@ -1,7 +1,7 @@
 // God / sandbox tools. Each tool pokes the simulation; consequences play out
 // through the normal systems (and can then be possessed from the inside).
 import { dist } from '../core/math.js';
-import { rand } from '../core/rng.js';
+
 
 const TOOLS = [
   { id: 'fire', icon: '🔥', label: 'Start fire', target: 'building', hint: 'Click a building to set it on fire' },

@@ -6,7 +6,7 @@ import { Sidewalks } from './sidewalks.js';
 import { Traffic } from './traffic.js';
 import { Peds } from './peds.js';
 import { Economy, BTYPES } from './economy.js';
-import { CitizenAI, minToPhys } from './citizens.js';
+import { CitizenAI } from './citizens.js';
 import { History } from './history.js';
 import { Weather } from './weather.js';
 import { Power } from './power.js';
@@ -18,7 +18,7 @@ import { Disasters, Animals } from './disasters.js';
 import { Helis } from './helis.js';
 import { Bus } from '../core/bus.js';
 import { RNG, rand } from '../core/rng.js';
-import { clamp, dist } from '../core/math.js';
+import { clamp } from '../core/math.js';
 
 const CIVIC_TYPE = { police: 'police', fire: 'fire', hospital: 'hospital', cityhall: 'cityhall', mall: 'mall', busdepot: 'busdepot', powerplant: 'powerplant', utility: 'utility', construction: 'construction', towyard: 'towyard', taxi: 'taxi' };
 export const HYPER = 50;
@@ -279,7 +279,6 @@ export class World {
 
   // circle vs building AABBs. Returns {nx, nz, pen, b} or null
   collideBox(x, z, r, y = 0) {
-    const blk = this.blockOf(x, z);
     let best = null;
     const check = (b) => {
       if (b.state === 'construction' && (b.built || 0) < 0.05) return;
@@ -312,7 +311,6 @@ export class World {
   // per-building visual state for the renderer
   buildingVisual(b) {
     const hour = this.minuteOfDay / 60;
-    const night = this.env.night;
     let light = 0;
     const biz = b.bizId != null ? this.economy.biz[b.bizId] : null;
     if (b.state === 'ok' || b.state === 'damaged') {

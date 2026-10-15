@@ -482,7 +482,7 @@ function layoutBlock(city, blk, rng) {
       city.special.metro = (city.special.metro || []).concat(city.buildings[city.buildings.length - 1].id);
     }
     if (sp && sp.hotel) {
-      const b = addBuilding(city, blk, { x0: blk.x0, z0: blk.z0, x1: blk.x0 + 30, z1: blk.z1 }, { kind: 'tower', h: 42, style: 1, color: '#d8c8a8', trim: '#5a4a3a', name: sp.name, bizType: 'hotel', front: 'W', rent: 60 }, rng);
+      addBuilding(city, blk, { x0: blk.x0, z0: blk.z0, x1: blk.x0 + 30, z1: blk.z1 }, { kind: 'tower', h: 42, style: 1, color: '#d8c8a8', trim: '#5a4a3a', name: sp.name, bizType: 'hotel', front: 'W', rent: 60 }, rng);
       for (const r of lotsPerimeter(blk, 3, 22)) if (r.x0 > blk.x0 + 31) regularLot(city, blk, shrink(r, 0.6), r.side, rng);
       return;
     }
@@ -579,10 +579,7 @@ function placeProps(city, rng) {
   const { net } = city;
   // streetlights along both sides of grid streets
   for (const r of net.roads) {
-    if (r.kind === 'highway' || r.kind === 'ramp') {
-      const L = r.pts.length;
-      continue;
-    }
+    if (r.kind === 'highway' || r.kind === 'ramp') continue;
     const [ax, az] = r.pts[0], [bx, bz] = r.pts[r.pts.length - 1];
     const L = Math.hypot(bx - ax, bz - az);
     const dx = (bx - ax) / L, dz = (bz - az) / L;

@@ -2,7 +2,7 @@
 // pursuits (a tracking helicopter makes escape much harder). Both are crewed by
 // on-shift citizens and can be possessed and flown.
 import { clamp, dist, wrapAngle } from '../core/math.js';
-import { rand } from '../core/rng.js';
+
 
 let HID = 1;
 export class Helis {
@@ -29,7 +29,6 @@ export class Helis {
   }
 
   onPilotArrive(c) {
-    const W = this.world;
     const role = c.job.role;
     const h = this.list.find((h) => h.pilot == null && (role === 'pilot' ? h.kind === 'news' : h.kind === 'police'));
     if (!h) return false;

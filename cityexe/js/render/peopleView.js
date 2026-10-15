@@ -107,7 +107,6 @@ export class PeopleView {
     tmpM.multiplyMatrices(base, part);
     P.torso.add(tmpM, C1, C2);
     // head
-    let headTurn = 0;
     part.makeTranslation(0, hipY + 0.68, 0);
     if (act === 'phone') rot.makeRotationZ(0.15), part.multiply(rot);
     tmpM.multiplyMatrices(base, part);

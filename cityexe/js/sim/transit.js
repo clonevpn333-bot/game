@@ -1,6 +1,6 @@
 // Public transit: bus lines driven by on-shift bus drivers, an underground metro
 // (abstract travel between physical station buildings), and taxis.
-import { C, nodeX, nodeZ } from './config.js';
+import { C } from './config.js';
 import { clamp, dist } from '../core/math.js';
 import { rand } from '../core/rng.js';
 import { setTimeoutGame } from './citizens.js';

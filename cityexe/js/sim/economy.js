@@ -1,6 +1,6 @@
 // Businesses, jobs, wages, customers, money flow, bankruptcies and new ventures.
 import { genBizName } from '../core/names.js';
-import { RNG, rand } from '../core/rng.js';
+import { rand } from '../core/rng.js';
 import { clamp } from '../core/math.js';
 
 const H = 60;
@@ -188,7 +188,6 @@ export class Economy {
       }
       biz.cash -= cost;
       this.treasury += Math.max(0, biz.revToday * 0.05);
-      const profit = biz.revToday - cost;
       biz.history.push(Math.round(biz.revToday));
       if (biz.history.length > 30) biz.history.shift();
       if (biz.revToday > biz.bestDay) biz.bestDay = biz.revToday;

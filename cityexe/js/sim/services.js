@@ -1,7 +1,7 @@
 // City services: fleet vehicles crewed by on-shift citizens. Police patrol and
 // pursue, firefighters fight fires, paramedics transport patients, tow trucks
 // clear wrecks, utility crews fix the grid, delivery vans restock stores.
-import { C } from './config.js';
+
 import { clamp, dist } from '../core/math.js';
 import { rand } from '../core/rng.js';
 import { setTimeoutGame } from './citizens.js';
@@ -66,7 +66,6 @@ export class Services {
     // handled by duty check in update
   }
   endDuty(c) {
-    const W = this.world;
     if (c.duty == null) return;
     const u = this.unit(c.duty);
     if (u) {

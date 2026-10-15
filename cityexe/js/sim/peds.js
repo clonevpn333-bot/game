@@ -1,7 +1,7 @@
 // Pedestrian agents: the physical body of a citizen while outdoors on foot.
 // Movement follows sidewalk-graph waypoints; crosswalks at signals wait for the
 // right phase; pedestrians on crosswalks become obstacles cars stop for.
-import { clamp, wrapAngle, dist, SpatialHash } from '../core/math.js';
+import { wrapAngle, dist, SpatialHash } from '../core/math.js';
 import { rand } from '../core/rng.js';
 
 let PID = 0;

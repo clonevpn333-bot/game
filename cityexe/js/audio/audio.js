@@ -1,7 +1,7 @@
 // Procedural audio (no asset files): city ambience, traffic, weather, wildlife,
 // sirens with stereo + distance, the possessed vehicle's engine, footsteps,
 // impacts, horns, alarms, thunder, transitions.
-import { clamp, dist, lerp } from '../core/math.js';
+import { clamp, dist } from '../core/math.js';
 
 export class Audio {
   constructor(game) {
@@ -146,7 +146,7 @@ export class Audio {
   }
   thunder(close) {
     if (!this.ctx) return;
-    const f = this.burst(this.brown, 'lowpass', close ? 900 : 300, 0.5, close ? 1.0 : 0.6, 0.05, 4.5, 0.6);
+    this.burst(this.brown, 'lowpass', close ? 900 : 300, 0.5, close ? 1.0 : 0.6, 0.05, 4.5, 0.6);
     this.tone('sine', 45, 0.4, 0.05, 2.5, 30);
   }
   siren(on) { this.forceSiren = on ? 6 : 0; }

@@ -126,7 +126,7 @@ export class Sidewalks {
   path(from, to) {
     if ((from.a === to.a && from.b === to.b) || (from.a === to.b && from.b === to.a)) return [{ x: to.x, z: to.z, gate: null }];
     const nodes = this.nodes;
-    const START = -1, GOAL = -2;
+    const START = -1;
     const g = new Map(), prev = new Map();
     const heap = new MinHeap();
     const h = (id) => { const n = nodes[id]; return Math.hypot(n.x - to.x, n.z - to.z); };

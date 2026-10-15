@@ -1,8 +1,8 @@
 // CITY.EXE — game shell: boots the world, runs the loop, routes input between
 // observe mode and possession, and wires the views, UI and audio together.
 import * as THREE from 'three';
-import { World, HYPER } from './sim/world.js';
-import { C } from './sim/config.js';
+import { World } from './sim/world.js';
+
 import { Renderer } from './render/renderer.js';
 import { CityView } from './render/cityView.js';
 import { VehicleView } from './render/vehicleView.js';
@@ -11,7 +11,7 @@ import { FX } from './render/fx.js';
 import { EventView } from './render/eventView.js';
 import { Input } from './core/input.js';
 import { CameraRig } from './play/cameraRig.js';
-import { rand } from './core/rng.js';
+
 
 export const SPEEDS = [0, 0.25, 1, 3, 8, 60, 240];
 export const SPEED_LABELS = ['Paused', 'Slow-mo', '1×', '3×', '8×', 'Fast-forward', 'Skip time'];

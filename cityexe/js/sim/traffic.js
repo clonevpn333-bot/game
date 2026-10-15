@@ -3,8 +3,8 @@
 // intersection reservations, merging, yielding to sirens, passing stopped obstacles.
 // Free mode: 2-D arcade rigid body (player driving, crashes, close pursuit).
 // Parked: sits in a curb slot or inside a garage building.
-import { C } from './config.js';
-import { clamp, lerp, wrapAngle, SpatialHash, dist } from '../core/math.js';
+
+import { clamp, lerp, wrapAngle, SpatialHash } from '../core/math.js';
 import { rand } from '../core/rng.js';
 
 export const VTYPES = {

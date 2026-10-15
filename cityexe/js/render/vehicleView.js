@@ -228,7 +228,6 @@ export class VehicleView {
     this.beams.renderOrder = 3;
     renderer.scene.add(this.beams);
     // emergency glow sprites (bloom catches them)
-    const gl = new THREE.SpriteMaterial({ color: new THREE.Color(3, 3, 3), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, map: makeGlowTex() });
     this.glowGeo = new THREE.PlaneGeometry(1, 1);
     this.glowMat = new THREE.MeshBasicMaterial({ map: makeGlowTex(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false, vertexColors: false });
     this.glows = new THREE.InstancedMesh(this.glowGeo, this.glowMat, 300);
@@ -266,8 +265,6 @@ export class VehicleView {
       if (v.hidden || v.state === 'garage' || v.state === 'repair' || v.state === 'gone') continue;
       let x = v.x, y = v.y, z = v.z, h = v.h;
       if (v.state === 'abstract') {
-        if (!v.abs) continue;
-        const t = Math.min(1, Math.max(0, (W.time - v.abs.t0) / (v.abs.t1 - v.abs.t0 || 1)));
         continue;
       }
       if (v.state === 'towed') {

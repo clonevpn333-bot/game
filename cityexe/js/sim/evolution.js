@@ -2,10 +2,10 @@
 // are repaired by real construction crews, ruins are cleared and rebuilt (sometimes
 // as something new), empty buildings get abandoned and demolished, people move in
 // and out of the city. Changes are written to the City Archive.
-import { BTYPES } from './economy.js';
+
 import { clamp, dist } from '../core/math.js';
 import { rand } from '../core/rng.js';
-import { setTimeoutGame } from './citizens.js';
+
 import { genTowerName, genAptName } from '../core/names.js';
 
 export class Evolution {

@@ -827,7 +827,7 @@ export class Incidents {
         if (pat.possessed) { if (t.t > t.need) W.emit('playerTreated', { c: pat }); break; }
         if (t.t > t.need && !t.loading) {
           t.loading = true;
-          const peds = u.crew.map((cid) => W.citizens[cid].ped).filter(Boolean);
+          
           S.loadCargo(u, pat.id, () => {
             inc.injured = inc.injured.filter((id) => id !== pat.id);
             inc.needs.ems = inc.injured.length;

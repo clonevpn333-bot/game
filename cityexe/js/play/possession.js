@@ -2,9 +2,9 @@
 // No separate mission instance: you take over whatever they are doing right now,
 // and when you leave, their AI picks up from wherever you left them.
 import * as THREE from 'three';
-import { clamp, dist, wrapAngle, damp, lerp } from '../core/math.js';
+import { clamp, dist, wrapAngle, damp } from '../core/math.js';
 import { rand } from '../core/rng.js';
-import { BTYPES, ROLE_TITLE } from '../sim/economy.js';
+import { BTYPES } from '../sim/economy.js';
 import { EMERGENCY } from '../sim/traffic.js';
 
 const tmpPos = new THREE.Vector3(), tmpLook = new THREE.Vector3();
@@ -546,7 +546,7 @@ export class Possession {
     c.veh = v.id;
     v.driver = c.id;
     c.state = 'driving';
-    if (v.unit != null && !mine) { const u = W.services.unit(v.unit); v.siren = false; }
+    if (v.unit != null && !mine) v.siren = false;
     if (c.dutyBus && c.dutyBus.v === v.id) c.dutyBus.state = 'player';
     this.enterDrive(v);
     this.game.audio && this.game.audio.door();
@@ -652,12 +652,10 @@ export class Possession {
       const T = g.rig.third;
       h.look = { x: h.x + Math.sin(T.yaw) * 40, z: h.z + Math.cos(T.yaw) * 40 };
     }
-    const W = this.W;
     const pad = h.pad;
     if (dist(h.x, h.z, pad.x, pad.z) < 8 && h.y - pad.y < 3) this.prompts.push({ key: '', text: `Over the ${h.kind === 'news' ? 'Channel 6' : 'police'} helipad — descend with C to land` });
     if (h.kind === 'police') this.prompts.push({ key: 'L', text: 'Searchlight' });
     this.prompts.push({ key: '', text: `Altitude ${Math.round(h.y)} m` });
-    const T = g.rig.third;
     g.rig.updateThird(dt, h, { autoYaw: Math.hypot(h.vx, h.vz) > 3 ? h.h : null, autoK: 1.6, minDist: 8, maxDist: 60, fov: 62 });
     if (g.audio && g.audio.ctx && Math.random() < dt * 14) g.audio.burst(g.audio.brown, 'lowpass', 160, 1, 0.12, 0.005, 0.07);
   }

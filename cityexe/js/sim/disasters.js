@@ -1,6 +1,6 @@
 // Large events. Each one acts on the simulation (buildings, power, traffic,
 // citizens, emergency services, history), not just on visuals.
-import { C, nodeX, nodeZ } from './config.js';
+import { C } from './config.js';
 import { clamp, dist } from '../core/math.js';
 import { rand } from '../core/rng.js';
 import { setTimeoutGame } from './citizens.js';
@@ -360,7 +360,7 @@ export class Animals {
         a.tx = a.x + Math.cos(ang) * 40; a.tz = a.z + Math.sin(ang) * 40;
         a.wait = 0;
       }
-      const dx = a.tx - a.x, dz = a.tz - a.z, L = Math.hypot(dx, dz) || 1;
+      const dx = a.tx - a.x, dz = a.tz - a.z;
       const scared = W.peds.near(a.x, a.z, 6).length > 2 || W.sirens.some((s) => dist(s.x, s.z, a.x, a.z) < 25);
       const sp = a.T.speed * (scared ? 1.8 : 1) * (a.caught > 0 ? 0.2 : 1);
       a.h += Math.atan2(Math.sin(Math.atan2(dx, dz) - a.h), Math.cos(Math.atan2(dx, dz) - a.h)) * Math.min(1, dt * 2);

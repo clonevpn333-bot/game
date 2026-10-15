@@ -3,7 +3,7 @@
 // become pedestrian agents or drive real vehicles; indoors they are abstract.
 import { C } from './config.js';
 import { FIRST, LAST } from '../core/names.js';
-import { RNG, rand } from '../core/rng.js';
+import { rand } from '../core/rng.js';
 import { clamp, dist } from '../core/math.js';
 import { BTYPES, ROLE_TITLE } from './economy.js';
 
@@ -105,7 +105,6 @@ export class CitizenAI {
     for (const j of jobs) {
       // keep ~8% unemployed and some slots open
       if (wi >= workers.length * 0.92) break;
-      const biz = W.economy.biz[j.biz];
       let pick = null;
       for (let k = wi; k < Math.min(workers.length, wi + 25); k++) {
         const c = workers[k];
@@ -235,7 +234,6 @@ export class CitizenAI {
   loseJob(c, why) {
     const W = this.world;
     if (!c.job) return;
-    const biz = W.economy.biz[c.job.biz];
     const title = ROLE_TITLE[c.job.role] || c.job.role;
     this.quitJob(c, '', true);
     W.history.citizenLog(c, `Lost job as ${title} — ${why}`, true);
@@ -478,7 +476,7 @@ export class CitizenAI {
   }
   shiftEndTime(c, mod) {
     const W = this.world;
-    let [s, e] = c.job.shift;
+    let e = c.job.shift[1];
     let end;
     if (e > 1440 && mod < e - 1440) end = W.time - mod + (e - 1440);
     else end = W.time - mod + e;
@@ -556,7 +554,6 @@ export class CitizenAI {
     this.go(c, null, 'park', { point: [P.x0 + 10 + rand.float() * (P.x1 - P.x0 - 20), (P.z0 + P.z1) / 2 + (rand.chance(0.5) ? 2.5 : -2.5)] });
   }
   goHomeless(c) {
-    const W = this.world;
     c.activity = 'drift';
     this.goPark(c);
   }
@@ -666,7 +663,6 @@ export class CitizenAI {
   }
 
   go(c, destB, type, opts = {}) {
-    const W = this.world;
     c.goal = { type, b: destB, ...opts, label: this.goalLabel(type, destB, opts) };
     if (destB != null && c.at === destB) { this.arriveGoal(c); return; }
     this.startTrip(c, destB, opts.point);
@@ -899,7 +895,6 @@ export class CitizenAI {
 
   // re-plan from wherever the citizen is now (after possession, accidents, chases)
   resume(c) {
-    const W = this.world;
     if (c.possessed || c.status !== 'ok' || c.duty) return;
     c.trip = null;
     if (c.ped) { c.ped.action = ''; c.ped.run = false; }
@@ -957,7 +952,7 @@ export class CitizenAI {
     } else {
       // park visit etc: become present outdoors if not abstract anymore
       if (!W.abstract && trip) {
-        const p = W.peds.spawn(c, trip.point[0], trip.point[1]);
+        W.peds.spawn(c, trip.point[0], trip.point[1]);
         c.state = 'walking';
         c.activity = c.goal?.type || 'park';
         W.parkLife && W.parkLife.loiter(c);

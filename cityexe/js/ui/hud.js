@@ -1,8 +1,8 @@
 // In-game UI. The city stays the main interface: a slim top bar, a live event
 // ticker, a concise inspector card, and a possession HUD with prompts + minimap.
 import { SPEED_LABELS, SPEEDS } from '../game.js';
-import { C, WEEKDAYS, SEASONS, DISTRICTS } from '../sim/config.js';
-import { BTYPES, ROLE_TITLE } from '../sim/economy.js';
+import { C, WEEKDAYS, SEASONS } from '../sim/config.js';
+import { BTYPES } from '../sim/economy.js';
 import { WEATHER } from '../sim/weather.js';
 import { dist } from '../core/math.js';
 
@@ -156,7 +156,6 @@ export class HUD {
   update(dt) {
     const g = this.game, W = this.W;
     // clock
-    const mod = W.minuteOfDay;
     this.top.querySelector('#h-time').textContent = W.history.timeStr(W.time);
     this.top.querySelector('#h-date').textContent = `${WEEKDAYS[W.dow]} · ${SEASONS[W.season]} ${(W.day % C.SEASON_DAYS) + 1} · Year ${W.year}`;
     const wk = WEATHER[W.weather.kind];
@@ -396,7 +395,6 @@ export class HUD {
   closePanel() { this.panel = null; this.panelEl.classList.add('hidden'); }
   renderPanel() {
     const P = this.panelEl;
-    const W = this.W;
     P.classList.remove('hidden');
     const name = this.panel;
     let html = '';

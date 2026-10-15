@@ -1,8 +1,8 @@
 // Static + slowly-changing city visuals: ground, roads, markings, sidewalks, river,
 // bridges, expressway, park, buildings (instanced), streetlights, trees, signals.
 import * as THREE from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { C, nodeX, nodeZ, BRIDGE_ROWS } from '../sim/config.js';
+
+import { C, nodeX } from '../sim/config.js';
 import { makeBuildingMaterial, makeInstMaterial, ModelKit, canvasTexture } from './materials.js';
 import { hash01 } from '../core/rng.js';
 import { makePolyline, samplePolyline } from '../core/math.js';
@@ -242,7 +242,7 @@ export class CityView {
     const pave = new GeoBuf();
     const lots = new GeoBuf();
     const plazas = new GeoBuf();
-    const grass = new THREE.Color('#6e8a4a'), plaza = new THREE.Color('#b8b2a6'), dirt = new THREE.Color('#7a7064'), asph = new THREE.Color('#6a6a6a');
+    const grass = new THREE.Color('#6e8a4a'), plaza = new THREE.Color('#b8b2a6'), asph = new THREE.Color('#6a6a6a');
     const CURB_H = 0.16;
     for (const b of this.city.blocks) {
       const o = C.CURB;
@@ -298,7 +298,6 @@ export class CityView {
   }
 
   buildWater() {
-    const river = this.city.blocks.filter((b) => b.water);
     const [x0, x1] = this.riverX;
     const U = this.U;
     this.waterU = { uLevel: { value: 0 } };
@@ -356,7 +355,7 @@ export class CityView {
     const concrete = '#9a9890', dark = '#5a5a58', rail = '#c8c4bc';
     for (const r of net.roads) {
       if (r.kind === 'bridge') {
-        const [ax, az] = r.pts[0], [bx, bz] = r.pts[1];
+        const az = r.pts[0][1];
         const z = az;
         const xa = this.riverX[0] - 2, xb = this.riverX[1] + 2;
         kit.box(xa, -1.4, z - 9.6, xb, 0.0, z + 9.6, concrete);
@@ -382,7 +381,6 @@ export class CityView {
         const half = r.width / 2;
         const s = { x: 0, z: 0, h: 0 };
         // deck thickness under the road strip
-        const deck = new GeoBuf();
         for (let i = 1; i < r.pts.length; i++) {
           const [x0, z0] = r.pts[i - 1], [x1, z1] = r.pts[i];
           const y0 = r.ys[i - 1], y1 = r.ys[i];
@@ -799,7 +797,7 @@ export class CityView {
     pk.cyl(0, 2.9, 0, 0.1, 5.8, '#2a2c30', 6);
     pk.box(-1.6, 5.5, 0, 3.2, 0.12, 0.12, '#2a2c30');
     pk.box(-3.0, 5.0, 0.05, 0.42, 1.25, 0.32, '#1a1c1e');
-    const poleMesh = this.staticInst(pk.build(), makeInstMaterial(this.U, { key: 'sig', snow: true }), heads.map((h) => ({ x: h.x, y: h.y, z: h.z, ry: h.h + Math.PI / 2 })), true);
+    this.staticInst(pk.build(), makeInstMaterial(this.U, { key: 'sig', snow: true }), heads.map((h) => ({ x: h.x, y: h.y, z: h.z, ry: h.h + Math.PI / 2 })), true);
     // lamps
     const lampGeo = new THREE.SphereGeometry(0.13, 8, 6);
     const lampMat = new THREE.MeshBasicMaterial({ toneMapped: false });

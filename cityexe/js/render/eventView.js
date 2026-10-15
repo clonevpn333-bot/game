@@ -5,12 +5,10 @@ import { ModelKit, makeInstMaterial, InstPool } from './materials.js';
 import { ANIMALS } from '../sim/disasters.js';
 
 const tmpM = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), s = new THREE.Vector3();
-const C1 = new THREE.Color(), C2 = new THREE.Color();
+const C1 = new THREE.Color();
 
 function animalModel(kind) {
   const k = new ModelKit();
-  const T = ANIMALS[kind];
-  const L = T.len, Wd = T.wid, Ht = T.hgt;
   if (kind === 'elephant') {
     k.sphere(0, 1.9, 0, 1.0, '#ffffff', 1, 0, 1.0, 0.9, 1.8, 1);
     k.sphere(0, 2.3, 1.7, 0.7, '#ffffff', 1, 0, 1, 1, 1, 1);
