@@ -11,6 +11,7 @@
       this.host = host; this.h = handlers;
       /* Timeouts adapt: the first video of a visit also downloads TikTok's player bundle (measured 13 s on slow 3G),
        * and slow/data-saver connections get double time. Explicit opts (tests) are used as-is. */
+      this.reuse = !!opts.reuse;   // one iframe for the whole session; videos change by navigating it (keeps iOS's per-frame sound permission)
       this.fixed = !!opts.readyTimeout;
       this.baseReady = opts.readyTimeout || 12000;      // iframe never says "ready"
       this.startTimeout = opts.startTimeout || 5000;    // ready, but autoplay never began -> ask for a tap
@@ -40,6 +41,14 @@
     }
 
     load(video, { autoplay = true, loop = false } = {}) {
+      if (this.reuse && this.frame && this.frame.isConnected) {
+        /* Single-frame mode: navigate the SAME iframe instead of making a new one. */
+        this._clear(); this.token++; this.video = video; this.state = 'loading'; this.autoplay = autoplay; this.loadedAt = performance.now(); this.promoted = false;
+        const f = this._makeFrame(video, { autoplay, loop, hidden: false });
+        this.frame.title = f.title; this.frame.src = f.src;
+        this._set('ready', this.readyTimeout, () => this._fail('timeout'));
+        return;
+      }
       this.destroyFrame();
       this.token++; this.video = video; this.state = 'loading'; this.autoplay = autoplay; this.loadedAt = performance.now();
       const pre = this.pre;

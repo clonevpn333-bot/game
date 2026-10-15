@@ -146,7 +146,7 @@
 
   /* ---------------- player ---------------- */
   const player = new window.TikTokPlayer($('playerHost'), {
-    onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.soundOn) { if (!IOS) player.unmute(); else if (qs.has('iossound')) iosTryUnmute(); } },   // iOS: never touch sound on its own (pauses the video); ?iossound re-enables the experimental probe
+    onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.soundOn && !IOS) player.unmute(); },   // iOS: never touch sound on its own (that pauses the video)
     onPlaying: (v) => { state.failures = 0; state.timeouts = 0; hideStates(); S.recordHealth(v.id, { state: 'ok' }); S.markSeen(v.id); state.playingSince = performance.now(); if (state.view.id === v.id && !state.view.start) state.view.start = state.playingSince; dbg('playing ' + v.id.slice(-5)); setStatusDot(v); syncSound(); if (state.soundOn && !state.userMuted) wantSound(); schedulePreload(); },
     onPaused: () => {
       /* iOS pauses a video it dislikes (e.g. after an unmute attempt). Resume it muted, but never fight a pause the viewer chose. */
@@ -169,7 +169,7 @@
     onFail: (kind, code, v) => { dbg(`FAIL ${kind} ${code ?? ''} ${v && v.id.slice(-5)}`); handleFailure(kind, code, v); },
     onPreloadFail: (v, kind) => preloadFailed(v, kind),
     onMute: (m) => { state.muted = m; syncSound(); if (m && state.soundOn && !state.userMuted) wantSound(); },
-  }, { readyTimeout: Number(qs.get('readyTimeout')) || 0, startTimeout: Number(qs.get('startTimeout')) || 0, stallTimeout: Number(qs.get('stallTimeout')) || 0 });
+  }, { reuse: (IOS || qs.has('reuse')) && !qs.has('newframes'), readyTimeout: Number(qs.get('readyTimeout')) || 0, startTimeout: Number(qs.get('startTimeout')) || 0, stallTimeout: Number(qs.get('stallTimeout')) || 0 });
 
   /* TikTok starts muted until the browser allows sound: make that obvious and one tap to fix. */
   function syncSound() {
@@ -178,21 +178,6 @@
     $('actMute').classList.toggle('on', m && state.userMuted); $('actMute').classList.toggle('pulse', m && !state.userMuted);
     $('soundHint').hidden = !(m && !state.userMuted && player.state === 'playing');
   }
-  /* iOS: sound can only be switched on by a tap, but a tap in OUR page might count (it did for the sound button).
-   * So make exactly ONE attempt, inside the swipe's own tap, then check whether iOS paused the video. If it did, put it
-   * back muted, remember that this iPhone refuses, and never try again (no repeated blips). */
-  function iosTryUnmute() {
-    if (!IOS || state.userMuted || !state.soundOn || S.iosSound() === 'blocked' || !recentGesture(1500)) return;
-    const id = queue.current && queue.current.id; state.iosProbeUntil = Date.now() + 1700; player.unmute(); dbg('iOS: one unmute attempt inside the swipe');
-    setTimeout(() => {
-      if (!queue.current || queue.current.id !== id) return;
-      if (player.state === 'paused' && Date.now() - (state.userPausedAt || 0) > 3000) {
-        S.setIosSound('blocked'); state.soundOn = false; player.mute(); player.play(); dbg('iOS refused sound: remembered');
-        toast('iPhone blocks automatic sound. Tap the speaker on the video when you want it');
-      } else if (player.state === 'playing' && !player.muted) { S.setIosSound('ok'); dbg('iOS accepted sound'); }
-    }, 1400);
-  }
-
   /* TikTok re-mutes every fresh player right after it loads, which overrides an early unmute. Once the viewer has turned sound
    * on, keep asking (a few tries over the first seconds of each video) until the player stops reporting muted. */
   let soundTries = 0, soundT = null;
@@ -241,9 +226,8 @@
   function schedulePreload() {
     clearTimeout(preloadT);
     const c = navigator.connection; if (c && c.saveData) return;
-    /* On iOS the preload is what makes sound and instant play possible: the next video is already loaded, so it can be
-     * unmuted and played inside the swipe's own tap. ?nopreload switches it off (for diagnosing). */
-    if (qs.has('nopreload')) return;
+    /* iOS uses ONE reused frame (below), so there is nothing to preload. Elsewhere the next video loads behind the player. */
+    if (qs.has('nopreload') || ((IOS || qs.has('reuse')) && !qs.has('newframes'))) return;
     preloadT = setTimeout(() => { const n = queue.peek(1)[0]; if (n && playable(n)) player.preload(n, { loop: !settings.autoplayNext }); }, 900);
   }
   /* A preloaded video turned out to be gone: drop it from the feed before the user ever reaches it. */
