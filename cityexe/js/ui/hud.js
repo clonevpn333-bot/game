@@ -540,9 +540,9 @@ export class HUD {
     const pr = P.prompts.map((p) => `<div class="pr ${p.danger ? 'danger' : ''}">${p.key ? `<kbd>${p.key}</kbd>` : ''}${esc(p.text)}${p.progress != null ? `<i style="width:${Math.round(p.progress * 100)}%"></i>` : ''}</div>`).join('');
     if (this._pr !== pr) { this._pr = pr; this.ph.querySelector('#p-prompts').innerHTML = pr; }
     const v = P.veh;
-    const spd = v ? `<b>${Math.round(v.speed * 3.6)}</b> km/h${v.siren ? ' <span class="siren">●</span>' : ''}<div class="dmg"><i style="width:${Math.round((1 - v.damage) * 100)}%"></i></div>` : '';
+    const spd = v ? `<b>${Math.round(v.speed * 3.6)}</b> km/h${v.siren ? ' <span class="siren">●</span>' : ''}<div class="dmg"><i style="width:${Math.round((1 - v.damage) * 100)}%"></i></div>` : P.heli ? `<b>${Math.round(Math.hypot(P.heli.vx, P.heli.vz) * 3.6)}</b> km/h · ${Math.round(P.heli.y - this.W.groundHeight(P.heli.x, P.heli.z, 0))} m AGL` : '';
     if (this._spd !== spd) { this._spd = spd; this.ph.querySelector('#p-speed').innerHTML = spd; }
-    const keys = P.autopilot ? '<kbd>R</kbd> take control · <kbd>Q</kbd> leave' : P.mode === 'drive' ? '<kbd>WASD</kbd> drive · <kbd>Space</kbd> handbrake · <kbd>F</kbd> exit · <kbd>R</kbd> autopilot · <kbd>Q</kbd> leave' : '<kbd>WASD</kbd> move · <kbd>Shift</kbd> run · <kbd>E</kbd> interact · <kbd>R</kbd> autopilot · <kbd>Q</kbd> leave';
+    const keys = P.autopilot ? '<kbd>R</kbd> take control · <kbd>Q</kbd> leave' : P.mode === 'drive' ? '<kbd>WASD</kbd> drive · <kbd>Space</kbd> handbrake · <kbd>F</kbd> exit · <kbd>R</kbd> autopilot · <kbd>Q</kbd> leave' : P.mode === 'fly' ? '<kbd>W</kbd><kbd>S</kbd> pitch · <kbd>A</kbd><kbd>D</kbd> turn · <kbd>Space</kbd> climb · <kbd>C</kbd> descend · <kbd>Shift</kbd> boost' + (P.heli && P.heli.kind === 'police' ? ' · <kbd>L</kbd> searchlight' : '') + ' · <kbd>R</kbd> autopilot · <kbd>Q</kbd> leave' : P.mode === 'inside' ? '<kbd>WASD</kbd> move · <kbd>E</kbd> interact · <kbd>R</kbd> autopilot · <kbd>Q</kbd> leave' : '<kbd>WASD</kbd> move · <kbd>Shift</kbd> run · <kbd>E</kbd> interact · <kbd>R</kbd> autopilot · <kbd>Q</kbd> leave';
     if (this._keys !== keys) { this._keys = keys; this.ph.querySelector('#p-keys').innerHTML = keys; }
     this.drawMinimap(pos, obj);
   }

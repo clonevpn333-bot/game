@@ -73,7 +73,7 @@ export class Possession {
 
   entityPos(c) {
     const W = this.W;
-    if (c.dutyHeli && (c.possessed || c.dutyHeli.state !== 'pad' || this.pending === c)) return c.dutyHeli;
+    if (c.dutyHeli && (c.possessed || this.heli === c.dutyHeli || c.dutyHeli.state !== 'pad' || this.pending === c)) return c.dutyHeli;
     if (c.ped) return c.ped;
     if (c.veh != null) { const v = W.traffic.byId.get(c.veh); if (v && v.state !== 'garage') return v; }
     if (c.at != null) { const b = W.city.buildings[c.at]; const [x, z] = W.citizenAI.doorOut(b); return { x, z, y: 0, h: 0 }; }
@@ -238,7 +238,7 @@ export class Possession {
     if (I.mouse.clicked && !I.locked) I.lock();
     if (I.hit('KeyQ') || I.hit('Tab')) { this.release(); return; }
     if (I.hit('KeyR')) this.toggleAutopilot();
-    if (I.hit('KeyC')) this.camMode = (this.camMode + 1) % 2;
+    if (I.hit('KeyC') && this.mode !== 'fly') this.camMode = (this.camMode + 1) % 2;
     this.prompts = [];
     this.dutyArrival();
     if (this.game.interiors && this.game.interiors.active && !this.autopilot) { this.mode = 'inside'; this.game.interiors.updatePlayer(dt, this); }
@@ -289,8 +289,9 @@ export class Possession {
       W.possessed = null;
       if (c.ped) c.ped.player = false;
       if (this.veh) { this.veh.player = false; this.veh.input = null; }
+      if (this.heli) { this.heli.player = false; this.heli.input = null; }
       if (c.duty != null && typeof c.duty === 'number') W.services.recover(W.services.unit(c.duty));
-      else W.citizenAI.resume(c);
+      else if (!c.dutyHeli) W.citizenAI.resume(c);
       this.game.toast(`Autopilot: ${c.first} carries on with their day. Press R to take back control.`);
     } else {
       this.autopilot = false;
@@ -298,7 +299,8 @@ export class Possession {
       c.trip = null;
       this.cancelTransitWait(c);
       const v = c.veh != null ? W.traffic.byId.get(c.veh) : null;
-      if (v && v.driver === c.id) this.enterDrive(v);
+      if (c.dutyHeli) { this.mode = 'fly'; this.heli = c.dutyHeli; this.heli.player = true; this.heli.input = {}; }
+      else if (v && v.driver === c.id) this.enterDrive(v);
       else if (v) { this.mode = 'ride'; this.rideVeh = v; }
       else if (c.ped) this.enterFoot();
       else if (c.at != null) { W.citizenAI.leaveBuilding(c); if (c.ped) this.enterFoot(); }
@@ -313,8 +315,10 @@ export class Possession {
     if (c.state === 'inside' && c.at != null && this.game.interiors && this.game.interiors.canEnter(W.city.buildings[c.at]) && !this.game.interiors.active) {
       this.game.interiors.enter(W.city.buildings[c.at], c, false);
     }
+    if (this.heli && c.dutyHeli !== this.heli) this.heli = null; // shift ended and they landed
     const v = c.veh != null ? W.traffic.byId.get(c.veh) : null;
     const T = this.game.rig.third;
+    if (c.dutyHeli && ent === c.dutyHeli) { this.game.rig.updateThird(dt, ent, { autoYaw: Math.hypot(ent.vx, ent.vz) > 3 ? ent.h : null, autoK: 1.6, minDist: 8, maxDist: 60, fov: 62 }); return; }
     if (v) { T.dist = damp(T.dist, v.len * 1.25 + 4.5, 2, dt); T.height = v.T.hgt * 0.75; }
     else { T.dist = damp(T.dist, 4.8, 2, dt); T.height = 1.2; }
     this.game.rig.updateThird(dt, ent, { autoYaw: v ? v.h : c.ped && c.ped.v > 0.3 ? c.ped.h : null, autoK: v ? 2.5 : 1.2 });
@@ -655,7 +659,6 @@ export class Possession {
     const pad = h.pad;
     if (dist(h.x, h.z, pad.x, pad.z) < 8 && h.y - pad.y < 3) this.prompts.push({ key: '', text: `Over the ${h.kind === 'news' ? 'Channel 6' : 'police'} helipad — descend with C to land` });
     if (h.kind === 'police') this.prompts.push({ key: 'L', text: 'Searchlight' });
-    this.prompts.push({ key: '', text: `Altitude ${Math.round(h.y)} m` });
     g.rig.updateThird(dt, h, { autoYaw: Math.hypot(h.vx, h.vz) > 3 ? h.h : null, autoK: 1.6, minDist: 8, maxDist: 60, fov: 62 });
     if (g.audio && g.audio.ctx && Math.random() < dt * 14) g.audio.burst(g.audio.brown, 'lowpass', 160, 1, 0.12, 0.005, 0.07);
   }

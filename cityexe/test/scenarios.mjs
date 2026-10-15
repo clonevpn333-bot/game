@@ -1,3 +1,4 @@
+import heli from './scen-heli.mjs';
 import flows from './scen-flows.mjs';
 import perf from './scen-perf.mjs';
 import debug from './scen-debug.mjs';
@@ -6,6 +7,7 @@ import interior from './scen-interior.mjs';
 import police from './scen-police.mjs';
 const setTime = (page, h) => page.evaluate((h) => { const W = window.game.world; W.time = Math.floor(W.time / 1440) * 1440 + h * 60; }, h);
 export default {
+  heli,
   flows,
   perf,
   debug,
