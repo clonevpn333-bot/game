@@ -90,18 +90,21 @@ async function iphonePage(extra = '') {
   await p.route('https://www.tiktok.com/player/v1/**', (r) => { const id = new URL(r.request().url()).pathname.split('/').pop(); r.fulfill({ contentType: 'text/html', body: PLAYER(behaviors.get(id) || behaviors.get('*') || 'ok') }); }); await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
   await p.goto(`${base}/?skipIntro=1&period=2023-10${extra}`); p.ctx = ctx; return p;
 }
-await t('iPhone: sound is tried ONCE inside the swipe (never in the background) and kept if iOS accepts it', async () => {
+await t('iPhone: swipes NEVER send unmute/seek on their own (any unmute attempt pauses video on iOS)', async () => {
   const p = await iphonePage(); await p.waitForFunction(() => window.__rewind.player.state === 'playing');
   await p.waitForFunction(() => window.__rewind.player.pre && window.__rewind.player.pre.ready, null, { timeout: 8000 });
-  await p.click('#actMute'); await p.waitForFunction(() => window.__rewind.player.muted === false); await p.waitForTimeout(600);
-  await p.evaluate(() => { window.__g = Date.now(); window.__cmds.length = 0; }); await p.keyboard.press('ArrowDown');
-  await p.waitForFunction(() => window.__rewind.player.promoted && window.__rewind.player.state === 'playing'); await p.waitForTimeout(3200);
-  const un = await p.evaluate(() => window.__cmds.filter((x) => x.c === 'unMute').map((x) => x.t - window.__g));
-  assert.ok(un.length >= 1 && un.every((t) => t < 1500), 'unmute outside the swipe: ' + JSON.stringify(un)); assert.equal(await p.evaluate(() => window.__cmds.filter((x) => x.c === 'seekTo').length), 0);
-  assert.equal(await p.evaluate(() => window.__rewind.player.muted), false, 'sound was not carried over'); assert.equal(await p.evaluate(() => localStorage.getItem('rewind.v4.iosSound')), '"ok"'); await p.ctx.close();
+  await p.click('#actMute'); await p.waitForTimeout(600);   // the viewer asked for sound once
+  for (let i = 0; i < 3; i++) {
+    await p.evaluate(() => { window.__cmds.length = 0; }); await p.keyboard.press('ArrowDown');
+    await p.waitForFunction(() => window.__rewind.player.state === 'playing'); await p.waitForTimeout(2500); await p.waitForTimeout(550);
+    const cmds = await p.evaluate(() => window.__cmds.map((x) => x.c));
+    assert.ok(!cmds.includes('unMute'), 'automatic unMute on swipe ' + (i + 1)); assert.ok(!cmds.includes('seekTo'), 'seekTo sent'); assert.ok(cmds.includes('play') || i > 0, 'play not sent');
+    assert.equal(await p.evaluate(() => window.__rewind.player.state), 'playing', 'video not playing after swipe ' + (i + 1));
+  }
+  await p.ctx.close();
 });
 await t('iPhone that refuses sound: one blip, video put back muted and playing, and it never tries again', async () => {
-  behaviors.set('*', 'ok'); const p = await iphonePage(); await p.waitForFunction(() => window.__rewind.player.state === 'playing');
+  behaviors.set('*', 'ok'); const p = await iphonePage('&iossound=1'); await p.waitForFunction(() => window.__rewind.player.state === 'playing');
   await p.waitForFunction(() => window.__rewind.player.pre && window.__rewind.player.pre.ready, null, { timeout: 8000 });
   await p.evaluate(() => { window.RewindStore.setSetting('x', 1); }); await p.click('#actMute'); await p.waitForTimeout(400);
   const ids = await p.evaluate(() => window.__rewind.library.map((v) => v.id)); ids.forEach((id) => behaviors.set(id, 'iospolicy'));

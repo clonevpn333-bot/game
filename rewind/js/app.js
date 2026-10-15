@@ -146,7 +146,7 @@
 
   /* ---------------- player ---------------- */
   const player = new window.TikTokPlayer($('playerHost'), {
-    onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.soundOn) { IOS ? iosTryUnmute() : player.unmute(); } },
+    onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.soundOn) { if (!IOS) player.unmute(); else if (qs.has('iossound')) iosTryUnmute(); } },   // iOS: never touch sound on its own (pauses the video); ?iossound re-enables the experimental probe
     onPlaying: (v) => { state.failures = 0; state.timeouts = 0; hideStates(); S.recordHealth(v.id, { state: 'ok' }); S.markSeen(v.id); state.playingSince = performance.now(); if (state.view.id === v.id && !state.view.start) state.view.start = state.playingSince; dbg('playing ' + v.id.slice(-5)); setStatusDot(v); syncSound(); if (state.soundOn && !state.userMuted) wantSound(); schedulePreload(); },
     onPaused: () => {
       /* iOS pauses a video it dislikes (e.g. after an unmute attempt). Resume it muted, but never fight a pause the viewer chose. */
