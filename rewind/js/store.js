@@ -38,6 +38,8 @@
     taste() { return get('taste', {}); },
     setTaste(t) { set('taste', t); },
     clearTaste() { set('taste', {}); },
+    iosSound() { return get('iosSound', null); },
+    setIosSound(v) { set('iosSound', v); },
     onboarded() { return !!get('onboarded', false); },
     setOnboarded() { set('onboarded', true); },
     lastPeriod() { return get('period', null); },

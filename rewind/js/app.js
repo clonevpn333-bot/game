@@ -136,13 +136,13 @@
 
   /* ---------------- player ---------------- */
   const player = new window.TikTokPlayer($('playerHost'), {
-    onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.soundOn && !IOS) player.unmute(); },
+    onReady: () => { $('skTitle').textContent = 'Connected'; hideSkeleton(); if (state.userMuted) player.mute(); else if (state.soundOn) { IOS ? iosTryUnmute() : player.unmute(); } },
     onPlaying: (v) => { state.failures = 0; state.timeouts = 0; hideStates(); S.recordHealth(v.id, { state: 'ok' }); S.markSeen(v.id); state.playingSince = performance.now(); if (state.view.id === v.id && !state.view.start) state.view.start = state.playingSince; dbg('playing ' + v.id.slice(-5)); setStatusDot(v); syncSound(); if (state.soundOn && !state.userMuted) wantSound(); schedulePreload(); },
     onPaused: () => {
       /* iOS pauses a video it dislikes (e.g. after an unmute attempt). Resume it muted, but never fight a pause the viewer chose. */
       if (!IOS || !queue.current) return;
       const userPaused = Date.now() - (state.userPausedAt || 0) < 6000, early = performance.now() - (state.presentedAt || 0) < 7000;
-      if (userPaused || !early) return;
+      if (userPaused || !early || Date.now() < (state.iosProbeUntil || 0)) return;   // a sound probe is running: it decides what to do
       if ((state.pauseFix = (state.pauseFix || 0) + 1) <= 2) { dbg('iOS paused it, resuming (muted) #' + state.pauseFix); player.play(); }
       else { dbg('iOS keeps pausing: asking for a tap'); $('stTap').hidden = false; }
     },
@@ -168,6 +168,21 @@
     $('actMute').classList.toggle('on', m && state.userMuted); $('actMute').classList.toggle('pulse', m && !state.userMuted);
     $('soundHint').hidden = !(m && !state.userMuted && player.state === 'playing');
   }
+  /* iOS: sound can only be switched on by a tap, but a tap in OUR page might count (it did for the sound button).
+   * So make exactly ONE attempt, inside the swipe's own tap, then check whether iOS paused the video. If it did, put it
+   * back muted, remember that this iPhone refuses, and never try again (no repeated blips). */
+  function iosTryUnmute() {
+    if (!IOS || state.userMuted || !state.soundOn || S.iosSound() === 'blocked' || !recentGesture(1500)) return;
+    const id = queue.current && queue.current.id; state.iosProbeUntil = Date.now() + 1700; player.unmute(); dbg('iOS: one unmute attempt inside the swipe');
+    setTimeout(() => {
+      if (!queue.current || queue.current.id !== id) return;
+      if (player.state === 'paused' && Date.now() - (state.userPausedAt || 0) > 3000) {
+        S.setIosSound('blocked'); state.soundOn = false; player.mute(); player.play(); dbg('iOS refused sound: remembered');
+        toast('iPhone blocks automatic sound. Tap the speaker on the video when you want it');
+      } else if (player.state === 'playing' && !player.muted) { S.setIosSound('ok'); dbg('iOS accepted sound'); }
+    }, 1400);
+  }
+
   /* TikTok re-mutes every fresh player right after it loads, which overrides an early unmute. Once the viewer has turned sound
    * on, keep asking (a few tries over the first seconds of each video) until the player stops reporting muted. */
   let soundTries = 0, soundT = null;
@@ -180,9 +195,9 @@
   }
   function setMuted(m) {
     state.userMuted = m; state.activated = true; if (!m) { state.soundOn = true; soundTries = 0; } m ? player.mute() : player.unmute(); syncSound();
-    if (IOS && !m) setTimeout(() => {   // if iOS refused (it pauses the clip), put it back muted and explain
-      if (player.state === 'paused' && Date.now() - (state.userPausedAt || 0) > 2500) { state.soundOn = false; player.mute(); player.play(); toast('iPhone only allows sound when you tap the speaker on the video itself'); }
-    }, 1500);
+    if (IOS && !m) { const id = queue.current && queue.current.id; setTimeout(() => {   // if iOS refused (it pauses the clip), put it back muted, remember, explain
+      if (queue.current && queue.current.id === id && player.state === 'paused' && Date.now() - (state.userPausedAt || 0) > 2500) { S.setIosSound('blocked'); state.soundOn = false; player.mute(); player.play(); toast('iPhone only allows sound when you tap the speaker on the video itself'); }
+    }, 1500); }
   }
   function hideStates() { $('stSkeleton').hidden = true; $('stTap').hidden = true; $('stPanel').hidden = true; clearTimeout(skelTimer); clearTimeout(skelTimer2); }
   function hideSkeleton() { $('stSkeleton').hidden = true; clearTimeout(skelTimer); clearTimeout(skelTimer2); }

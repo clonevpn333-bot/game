@@ -14,6 +14,10 @@ const send = (m) => parent.postMessage({ 'x-tiktok-player': true, ...m }, '*');
 const mode = ${JSON.stringify(mode)};
 if (mode === 'hang') { /* never answers */ }
 else if (mode === 'end3s') { setTimeout(() => send({ type: 'onPlayerReady' }), 60); setTimeout(() => send({ type: 'onStateChange', value: 1 }), 150); setTimeout(() => send({ type: 'onStateChange', value: 0 }), 3200); }
+else if (mode === 'iospolicy') { /* iOS: unmuting without a tap inside the player pauses the video, and it stays paused until told to play */
+  let held = false;
+  addEventListener('message', (e) => { const d = e.data || {}; if (d.type === 'unMute') { held = true; send({ type: 'onStateChange', value: 2 }); } if (d.type === 'mute') { held = false; send({ type: 'onMute', value: true }); } if (d.type === 'play' && !held) send({ type: 'onStateChange', value: 1 }); if (d.type === 'pause') send({ type: 'onStateChange', value: 2 }); });
+  setTimeout(() => send({ type: 'onPlayerReady' }), 60); setTimeout(() => send({ type: 'onMute', value: true }), 90); setTimeout(() => { if (!held) send({ type: 'onStateChange', value: 1 }); }, 220); }
 else if (mode === 'pauseonce') { let paused = false; addEventListener('message', (e) => { const d = e.data || {}; if (d.type === 'pause') { paused = true; send({ type: 'onStateChange', value: 2 }); } if (d.type === 'play') { paused = false; send({ type: 'onStateChange', value: 1 }); } });
   setTimeout(() => send({ type: 'onPlayerReady' }), 60); setTimeout(() => send({ type: 'onStateChange', value: 1 }), 150); setTimeout(() => send({ type: 'onStateChange', value: 2 }), 700); }   // iOS-style surprise pause
 else if (mode === 'earlyend') { setTimeout(() => send({ type: 'onPlayerReady' }), 60); setTimeout(() => send({ type: 'onStateChange', value: 1 }), 150); setTimeout(() => send({ type: 'onStateChange', value: 0 }), 500); }
@@ -83,16 +87,30 @@ const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebK
 async function iphonePage(extra = '') {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: IPHONE, isMobile: true, hasTouch: true }); const p = await ctx.newPage();
   await p.addInitScript(() => { window.__cmds = []; addEventListener('message', (e) => { if (e.data && e.data.type === '__cmd') window.__cmds.push({ t: Date.now(), c: e.data.value }); }); });
-  await p.route('https://www.tiktok.com/player/v1/**', (r) => { const id = new URL(r.request().url()).pathname.split('/').pop(); r.fulfill({ contentType: 'text/html', body: PLAYER(behaviors.get(id) || 'ok') }); }); await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  await p.route('https://www.tiktok.com/player/v1/**', (r) => { const id = new URL(r.request().url()).pathname.split('/').pop(); r.fulfill({ contentType: 'text/html', body: PLAYER(behaviors.get(id) || behaviors.get('*') || 'ok') }); }); await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
   await p.goto(`${base}/?skipIntro=1&period=2023-10${extra}`); p.ctx = ctx; return p;
 }
-await t('iPhone: swipes preload + play muted and NEVER send unmute/seek on their own (that pauses video on iOS)', async () => {
+await t('iPhone: sound is tried ONCE inside the swipe (never in the background) and kept if iOS accepts it', async () => {
   const p = await iphonePage(); await p.waitForFunction(() => window.__rewind.player.state === 'playing');
   await p.waitForFunction(() => window.__rewind.player.pre && window.__rewind.player.pre.ready, null, { timeout: 8000 });
-  await p.evaluate(() => { window.__cmds.length = 0; }); await p.keyboard.press('ArrowDown');
-  await p.waitForFunction(() => window.__rewind.player.promoted && window.__rewind.player.state === 'playing'); await p.waitForTimeout(3000);
-  const cmds = await p.evaluate(() => window.__cmds.map((x) => x.c));
-  assert.ok(cmds.includes('play'), 'play not sent'); assert.ok(!cmds.includes('unMute'), 'iOS got an automatic unMute'); assert.ok(!cmds.includes('seekTo'), 'seekTo sent'); await p.ctx.close();
+  await p.click('#actMute'); await p.waitForFunction(() => window.__rewind.player.muted === false); await p.waitForTimeout(600);
+  await p.evaluate(() => { window.__g = Date.now(); window.__cmds.length = 0; }); await p.keyboard.press('ArrowDown');
+  await p.waitForFunction(() => window.__rewind.player.promoted && window.__rewind.player.state === 'playing'); await p.waitForTimeout(3200);
+  const un = await p.evaluate(() => window.__cmds.filter((x) => x.c === 'unMute').map((x) => x.t - window.__g));
+  assert.ok(un.length >= 1 && un.every((t) => t < 1500), 'unmute outside the swipe: ' + JSON.stringify(un)); assert.equal(await p.evaluate(() => window.__cmds.filter((x) => x.c === 'seekTo').length), 0);
+  assert.equal(await p.evaluate(() => window.__rewind.player.muted), false, 'sound was not carried over'); assert.equal(await p.evaluate(() => localStorage.getItem('rewind.v4.iosSound')), '"ok"'); await p.ctx.close();
+});
+await t('iPhone that refuses sound: one blip, video put back muted and playing, and it never tries again', async () => {
+  behaviors.set('*', 'ok'); const p = await iphonePage(); await p.waitForFunction(() => window.__rewind.player.state === 'playing');
+  await p.waitForFunction(() => window.__rewind.player.pre && window.__rewind.player.pre.ready, null, { timeout: 8000 });
+  await p.evaluate(() => { window.RewindStore.setSetting('x', 1); }); await p.click('#actMute'); await p.waitForTimeout(400);
+  const ids = await p.evaluate(() => window.__rewind.library.map((v) => v.id)); ids.forEach((id) => behaviors.set(id, 'iospolicy'));
+  await p.evaluate(() => { window.__rewind.player.dropPreload(); }); await p.waitForTimeout(300);
+  await p.keyboard.press('ArrowDown'); await p.waitForFunction(() => window.__rewind.player.state === 'playing', null, { timeout: 6000 });
+  await p.waitForFunction(() => localStorage.getItem('rewind.v4.iosSound') === '"blocked"', null, { timeout: 8000 });
+  await p.waitForFunction(() => window.__rewind.player.state === 'playing', null, { timeout: 4000 });
+  await p.evaluate(() => { window.__cmds.length = 0; }); await p.waitForTimeout(700); await p.keyboard.press('ArrowDown'); await p.waitForFunction(() => window.__rewind.player.state === 'playing'); await p.waitForTimeout(2500);
+  assert.equal(await p.evaluate(() => window.__cmds.filter((x) => x.c === 'unMute').length), 0, 'kept trying after iOS refused'); behaviors.clear(); await p.ctx.close();
 });
 await t('iPhone: a surprise pause right after starting is resumed automatically', async () => {
   const p = await iphonePage(); await p.waitForSelector('.tt-frame'); const first = await cur(p); behaviors.set(first, 'pauseonce');
