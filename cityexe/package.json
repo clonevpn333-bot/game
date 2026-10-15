@@ -1,0 +1,12 @@
+{
+  "name": "city-exe",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CITY.EXE — a living city simulation you can step into",
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/serve.mjs 8080",
+    "test": "node test/sim-headless.mjs 0.5 8",
+    "shot": "node test/browser-shot.mjs"
+  }
+}

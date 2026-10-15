@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CITY.EXE</title>
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js", "three/addons/": "./vendor/addons/" } }
+</script>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="ui"></div>
+<div id="boot">
+  <div class="boot-inner">
+    <div class="boot-logo">CITY<span>.EXE</span></div>
+    <div class="boot-sub">a living city you can step into</div>
+    <div class="boot-bar"><div id="boot-fill"></div></div>
+    <div id="boot-msg">Loading…</div>
+  </div>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
