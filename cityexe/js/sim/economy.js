@@ -208,6 +208,7 @@ export class Economy {
   bankrupt(biz, reason) {
     const W = this.world;
     biz.status = 'closed';
+    W.history.counters.closedBiz++;
     biz.closedReason = reason;
     biz.closedDay = W.day;
     const b = W.city.buildings[biz.b];

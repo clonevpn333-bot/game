@@ -1096,6 +1096,7 @@ export class CitizenAI {
     W.history.citizenLog(c, `Passed away (${cause}) at ${c.age}`, true);
     if (c.bookmarked || cause !== 'natural causes') W.history.cityEvent(`${c.name} passed away (${cause})`, { type: 'death', who: c.id, minor: cause === 'natural causes' });
     c.status = 'dead';
+    W.history.counters.deaths++;
     c.deathCause = cause;
     c.diedDay = W.day;
     if (c.ped) W.peds.despawn(c.ped);

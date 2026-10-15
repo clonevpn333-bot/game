@@ -7,7 +7,7 @@ export class History {
     this.events = []; // {t, text, type, x, z, b, who, minor, anomaly}
     this.records = { longestChase: null, biggestFire: null, worstCrash: null, mostArrests: null, richest: null, oldest: null, longestBlackout: null };
     this.landmarks = []; // physical evidence: craters, memorials, ruins {kind, x, z, text, t, r}
-    this.counters = { robberies: 0, arrests: 0, fires: 0, crashes: 0, chases: 0, births: 0, deaths: 0, newBiz: 0, closedBiz: 0, blackouts: 0 };
+    this.counters = { robberies: 0, arrests: 0, fires: 0, crashes: 0, chases: 0, arrivals: 0, departures: 0, deaths: 0, newBiz: 0, closedBiz: 0, blackouts: 0 };
   }
 
   dateStr(t) {

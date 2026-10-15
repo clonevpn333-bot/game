@@ -129,14 +129,19 @@ export class Evolution {
     let arrivals = 0;
     if (vacancies > 20 && openJobs > unemployed * 0.5) arrivals = Math.min(6, Math.round((openJobs - unemployed * 0.5) / 15 * econ.multiplier) + (rand.chance(0.5) ? 1 : 0));
     if (alive.length < W.targetPop * 0.9) arrivals += 2;
-    for (let i = 0; i < arrivals; i++) ai.immigrate();
+    // the city's pull follows its live job count; some people also move in for
+    // family, school or a change of scene
+    const liveJobs = econ.jobs.filter((j) => econ.biz[j.biz].status === 'open').length;
+    const want = Math.max(W.targetPop * 0.9, liveJobs / 0.8);
+    if (vacancies > 20 && alive.length < want) arrivals += rand.chance(Math.min(1, 0.4 + (want - alive.length) / 60) * Math.min(1.3, econ.multiplier)) ? 1 + (alive.length < want * 0.95 ? 1 : 0) : 0;
+    for (let i = 0; i < arrivals; i++) if (ai.immigrate() != null) W.history.counters.arrivals++;
     // the long-term unemployed and broke may leave the city
     for (const c of alive) {
       if (c.possessed || c.bookmarked && rand.chance(0.5)) continue;
       if (!c.job && c.age < 66 && c.money < 100 && c.state === 'inside' && rand.chance(0.01 + (econ.multiplier < 1 ? 0.02 : 0))) {
         W.history.citizenLog(c, 'Left the city looking for work elsewhere', true);
         if (c.at != null) W.city.buildings[c.at].occupants.delete(c.id);
-        c.at = null; c.status = 'left'; c.leftDay = W.day;
+        c.at = null; c.status = 'left'; c.leftDay = W.day; W.history.counters.departures++;
         ai.leaveHome(c);
         if (c.vehicle != null) { const v = W.traffic.byId.get(c.vehicle); if (v && (v.state === 'parked' || v.state === 'garage')) W.traffic.remove(v); c.vehicle = null; }
       }

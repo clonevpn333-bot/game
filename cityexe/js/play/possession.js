@@ -90,7 +90,7 @@ export class Possession {
     this.game.mode = 'possess';
     this.autopilot = false;
     // inside a building: step out of the door
-    if (c.state === 'inside' && c.at != null) {
+    if (c.state === 'inside' && c.at != null && !c.dutyHeli) {
       const b = W.city.buildings[c.at];
       if (this.game.interiors && this.game.interiors.canEnter(b)) { this.game.interiors.enter(b, c, true); this.mode = 'inside'; this.afterTake(); return; }
       W.citizenAI.leaveBuilding(c);

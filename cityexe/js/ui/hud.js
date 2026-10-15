@@ -435,7 +435,9 @@ export class HUD {
       <div><b>${W.citizens.filter((c) => c.status === 'ok' || c.status === 'hospital' || c.status === 'jail').length}</b>citizens</div>
       <div><b>${W.economy.biz.filter((b) => b.status === 'open').length}</b>businesses</div>
       <div><b>${Math.round(W.economy.stats.unemployment * 100)}%</b>unemployed</div>
-      <div><b>${H.counters.arrests}</b>arrests</div><div><b>${H.counters.fires}</b>fires</div><div><b>${H.counters.crashes}</b>crashes</div></div>`;
+      <div><b>${H.counters.arrests}</b>arrests</div><div><b>${H.counters.fires}</b>fires</div><div><b>${H.counters.crashes}</b>crashes</div>
+      <div><b>${H.counters.robberies}</b>robberies</div><div><b>${H.counters.chases}</b>chases</div><div><b>${H.counters.newBiz}/${H.counters.closedBiz}</b>opened/closed</div>
+      <div><b>${H.counters.arrivals || 0}/${H.counters.departures || 0}</b>moved in/out</div><div><b>${H.counters.deaths}</b>deaths</div><div><b>${H.counters.blackouts}</b>blackouts</div></div>`;
     const recs = Object.values(H.records).filter(Boolean);
     if (recs.length) html += `<h3>Records</h3><ul class="recs">${recs.map((r) => `<li>🏆 ${esc(r.text)}</li>`).join('')}</ul>`;
     if (H.landmarks.length) html += `<h3>Places to remember</h3><ul class="recs">${H.landmarks.slice(-12).reverse().map((l) => `<li data-fly="${l.x},${l.z}" class="click">📍 ${esc(l.text)} <span class="muted">${H.dateStr(l.t)}</span></li>`).join('')}</ul>`;
