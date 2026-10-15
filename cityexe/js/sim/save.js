@@ -2,7 +2,7 @@
 // changes (people, businesses, buildings, vehicles, history) is saved.
 // Saves go to IndexedDB (gzip when available) with a localStorage fallback.
 import { World } from './world.js';
-import { newCitizen } from './citizens.js';
+import { newCitizen, EXTRA_KEYS } from './citizens.js';
 
 const VERSION = 3;
 const KEY = 'cityexe.save';
@@ -19,6 +19,7 @@ export function serialize(W) {
     const at = c.state === 'abstract' || c.trip ? (c.trip && c.trip.dest != null ? c.trip.dest : c.home) : c.at;
     return {
       i: c.id, f: c.first, l: c.last, a: c.age, bd: c.bday, lk: c.look, tr: c.traits, m: Math.round(c.money), h: c.home, u: c.unit, j: c.job, cr: c.career.slice(-8), v: c.vehicle, ob: c.ownedBiz,
+      x: Object.fromEntries(EXTRA_KEYS.filter((k) => c[k] != null).map((k) => [k, c[k]])),
       r: rel, n: c.needs, hp: c.health, inj: c.injured, st: c.status, rec: c.record, ra: c.releaseAt, lg: c.log.slice(-logCap), at, act: c.activity, hl: c.homeless,
       bk: c.bookmarked ? 1 : 0, lc: c.lateCount, sl: c.sleepH, wk: c.wakeH, fl: { ageless: c.flags.ageless, anomalyNote: c.flags.anomalyNote, aware: c.flags.aware, dup: c.flags.dup }, mv: c.moves, dd: c.diedDay, dc: c.deathCause, ld: c.leftDay, hap: c.happiness, sx: c.stress,
     };
@@ -70,6 +71,7 @@ export function deserialize(data, opts = {}) {
       needs: s.n, health: s.hp, injured: s.inj, status: s.st, record: s.rec, releaseAt: s.ra, log: s.lg || [], activity: s.act || 'home', homeless: !!s.hl,
       bookmarked: !!s.bk, lateCount: s.lc || 0, sleepH: s.sl, wakeH: s.wk, flags: { ...(s.fl || {}) }, moves: s.mv || 0, diedDay: s.dd, deathCause: s.dc, leftDay: s.ld, happiness: s.hap ?? 0.6, stress: s.sx || 0,
     });
+    if (s.x) Object.assign(c, s.x);
     c.rel = {};
     for (const id in s.r) c.rel[id] = { a: s.r[id][0], t: s.r[id][1] };
     c.state = 'inside'; c.at = null; c.lastNeedT = W.time; c.nextThink = W.time + Math.random() * 20; c.until = 0;

@@ -21,7 +21,14 @@ export const BTYPES = {
   office: { label: 'Office', roles: { clerk: [10, 23], analyst: [5, 30], manager: [1, 42] }, open: [9, 17], price: 0, color: '#90a4ae', cap: 80, office: true },
   factory: { label: 'Factory', roles: { worker: [9, 19] }, open: [7, 23], price: 0, color: '#8d6e63', cap: 40, industry: true },
   warehouse: { label: 'Warehouse', roles: { worker: [5, 17], driver: [2, 18] }, open: [6, 20], price: 0, color: '#795548', cap: 20, industry: true, depot: true },
+  bank: { label: 'Bank', roles: { teller: [3, 22], 'bank manager': [1, 46], 'security guard': [1, 19] }, open: [9, 17], price: 0, need: 'bank', color: '#2e7d5b', cap: 30, weekdays: true, finance: true },
+  casino: { label: 'Casino', roles: { dealer: [4, 24], 'pit boss': [1, 38], 'security guard': [2, 19], cashier: [1, 17] }, open: [0, 24], price: 90, need: 'gamble', color: '#c9a227', cap: 90 },
+  nightclub: { label: 'Nightclub', roles: { bartender: [2, 17], bouncer: [1, 19], dj: [1, 26] }, open: [21, 28], price: 45, need: 'party', color: '#d500f9', cap: 70, stock: true },
+  lounge: { label: 'Lounge', roles: { performer: [3, 26], bartender: [1, 17], bouncer: [1, 19] }, open: [20, 28], price: 70, need: 'party', color: '#ff2e7e', cap: 40, stock: true },
+  gunstore: { label: 'Gun store', roles: { clerk: [1, 18] }, open: [10, 19], price: 420, need: 'arms', color: '#5d6d3a', cap: 6 },
   // civic
+  school: { label: 'School', roles: { teacher: [8, 27], janitor: [1, 15] }, open: [7, 16], civic: true, color: '#e08a30', cap: 300, weekdays: true },
+  college: { label: 'College', roles: { professor: [6, 40], 'admissions clerk': [1, 18] }, open: [8, 21], civic: true, color: '#7a3ad0', cap: 260, weekdays: true },
   police: { label: 'Police', roles: { officer: [6, 26] }, open: [0, 24], civic: true, color: '#2a5bd7', cap: 60, fleet: 'police' },
   fire: { label: 'Fire Department', roles: { firefighter: [6, 25] }, open: [0, 24], civic: true, color: '#e04a2a', cap: 40, fleet: 'firetruck' },
   hospital: { label: 'Hospital', roles: { doctor: [3, 55], nurse: [4, 28], paramedic: [4, 24] }, open: [0, 24], civic: true, color: '#e03a3a', cap: 120, fleet: 'ambulance' },
@@ -39,7 +46,7 @@ export const BTYPES = {
 export const ROLE_TITLE = {
   officer: 'Police Officer', firefighter: 'Firefighter', paramedic: 'Paramedic', doctor: 'Doctor', nurse: 'Nurse', 'bus driver': 'Bus Driver',
   'taxi driver': 'Taxi Driver', 'tow operator': 'Tow Operator', lineworker: 'Lineworker', builder: 'Construction Worker', mayor: 'Mayor', reporter: 'Reporter',
-  pilot: 'News Pilot', driver: 'Delivery Driver', mechanic: 'Mechanic', cashier: 'Cashier', stocker: 'Stocker', clerk: 'Clerk', cook: 'Cook', server: 'Server',
+  pilot: 'News Pilot', teller: 'Bank Teller', 'bank manager': 'Bank Manager', dealer: 'Casino Dealer', 'pit boss': 'Pit Boss', bouncer: 'Bouncer', dj: 'DJ', performer: 'Performer', teacher: 'Teacher', janitor: 'Janitor', professor: 'Professor', 'admissions clerk': 'Admissions Clerk', driver: 'Delivery Driver', mechanic: 'Mechanic', cashier: 'Cashier', stocker: 'Stocker', clerk: 'Clerk', cook: 'Cook', server: 'Server',
   barista: 'Barista', bartender: 'Bartender', pharmacist: 'Pharmacist', trainer: 'Trainer', attendant: 'Attendant', receptionist: 'Receptionist', housekeeper: 'Housekeeper',
   analyst: 'Analyst', manager: 'Manager', worker: 'Worker', 'retail clerk': 'Retail Clerk', 'security guard': 'Security Guard', operator: 'Plant Operator', owner: 'Owner',
 };
@@ -77,6 +84,9 @@ export class Economy {
       status: 'open', founded: opts.founded ?? W.day, revToday: 0, custToday: 0, history: [], losingDays: 0, color: t.color,
       jobs: [], robbedAt: -1e9, closedReason: '', lifetimeRev: 0, bestDay: 0,
     };
+    // banks hold real money: teller drawers for walk-in cash, the vault for everyone's deposits
+    if (t.finance) { biz.vault = Math.round(140000 + rng.float() * 260000); biz.drawers = Math.round(3000 + rng.float() * 3000); }
+    if (type === 'casino') { biz.cage = Math.round(250000 + rng.float() * 150000); biz.cash = 60000; }
     if (b.civic && !b.signColor) b.signColor = t.color;
     this.biz.push(biz);
     b.bizId = biz.id;
@@ -180,7 +190,7 @@ export class Economy {
         const amt = visitors * t.price * biz.priceF;
         biz.cash += amt; biz.revToday += amt; biz.lifetimeRev += amt; biz.custToday += visitors;
       }
-      if (t.office || t.industry || t.guests) {
+      if (t.office || t.industry || t.guests || t.finance) {
         // B2B revenue proportional to staffed hours (offices, factories sell elsewhere)
         const staffed = biz.jobs.filter((jid) => this.jobs[jid].holder != null).length;
         const rev = staffed * (t.office ? 300 : t.guests ? 280 : 230) * this.multiplier * (0.85 + rand.float() * 0.3);
@@ -259,12 +269,20 @@ export class Economy {
     return out;
   }
 
+  vaultChange(biz, amt) {
+    biz.vault = Math.max(0, (biz.vault || 0) + amt * 0.85);
+    biz.drawers = clamp((biz.drawers || 0) + amt * 0.15, 800, 12000);
+  }
+
+  // total customer deposits held by a bank right now
+  deposits(biz) { return Math.round((biz.vault || 0) + (biz.drawers || 0)); }
+
   ofType(type) { return this.biz.filter((b) => b.type === type && b.status === 'open'); }
 }
 
 function workDays(t, seed) {
   // offices Mon-Fri; others work 5 days in a rotating pattern
-  if (t.office) return [1, 1, 1, 1, 1, 0, 0];
+  if (t.office || t.weekdays) return [1, 1, 1, 1, 1, 0, 0];
   const off = seed % 7;
   const d = [1, 1, 1, 1, 1, 1, 1];
   d[off] = 0; d[(off + 3) % 7] = 0;

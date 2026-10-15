@@ -46,6 +46,10 @@ const SPECIAL = {
   '3,7': { metro: true, name: 'Riverside Station' },
   '5,1': { metro: true, name: 'Harbor Gate Station' },
   '3,3': { hotel: true, name: 'Riverside Hotel' },
+  '4,4': { full: true, civic: 'casino', name: 'The Golden Ace Casino' },
+  '8,2': { full: true, civic: 'college', name: 'Silver River College' },
+  '1,8': { half: 'N', civic: 'school', name: 'Westpoint High School' },
+  '5,8': { half: 'N', civic: 'school', name: 'Maple Heights School' },
 };
 const SUBSTATIONS = { '1,4': 'W', '7,2': 'C', '8,0': 'I', '6,8': 'S' };
 export const POWER_ZONES = {
@@ -416,6 +420,9 @@ function layoutBlock(city, blk, rng) {
       construction: { h: 6, style: 5, color: '#d08a2a', trim: '#3a3a3a' },
       towyard: { h: 7, style: 5, color: '#6a6a70', trim: '#2a2a30' },
       taxi: { h: 8, style: 5, color: '#e0b020', trim: '#202020' },
+      casino: { h: 30, style: 8, color: '#3a2a48', trim: '#c9a227', signColor: '#ffd040' },
+      college: { h: 16, style: 6, color: '#b89a7a', trim: '#5a3a2a', signColor: '#7a3ad0' },
+      school: { h: 10, style: 6, color: '#c8704a', trim: '#e8e0d0', signColor: '#e08a30' },
     }[civ];
     const rect = sp.full ? { x0: blk.x0 + (civ === 'cityhall' ? 10 : 0), z0: blk.z0 + (civ === 'cityhall' ? 8 : 0), x1: blk.x1 - (civ === 'cityhall' ? 10 : 0), z1: blk.z1 - (civ === 'cityhall' ? 14 : 0) } : addSpecialHalf(sp.half);
     const b = addBuilding(city, blk, rect, { ...specs, kind: 'civic', civic: civ, name: sp.name, prefer: sp.half || (civ === 'cityhall' ? 'S' : null), rent: 0 }, rng);

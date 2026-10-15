@@ -22,6 +22,11 @@ export const BIZ_TEMPLATES = {
   gas: ['FuelStop', 'Petro {L}', 'Express Gas'],
   gym: ['Iron Temple Gym', '{L} Fitness'],
   hotel: ['The Grand {L}', 'Riverside Hotel'],
+  bank: ['First Silver Bank', '{L} Savings & Loan', 'Harbor Trust', 'Union Federal', 'Meridian Bank'],
+  casino: ['The Golden Ace', 'Lucky Seven Casino', 'Royal Flush Casino'],
+  nightclub: ['Pulse', 'Neon Jungle', 'Club Static', 'Velvet Underground', 'Afterglow'],
+  lounge: ['The Velvet Lounge', 'Scarlet Room', 'Starlight Cabaret', 'The Gilded Cage'],
+  gunstore: ['{L} Arms', 'Liberty Firearms', 'Frontier Guns & Ammo'],
 };
 
 const usedNames = new Set();

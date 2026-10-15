@@ -26,10 +26,18 @@ export const UNIFORMS = {
   mechanic: { shirt: '#3a4a6a', pants: '#3a4a6a' },
   cook: { shirt: '#f4f4f4', pants: '#2a2a2a' },
   pilot: { shirt: '#4a5a3a', pants: '#4a5a3a' },
+  teller: { shirt: '#e8eef4', pants: '#2a3040' },
+  'bank manager': { shirt: '#2a3448', pants: '#2a3448' },
+  dealer: { shirt: '#f4f4f0', pants: '#18181a' },
+  'pit boss': { shirt: '#1a1a1e', pants: '#1a1a1e' },
+  bouncer: { shirt: '#111114', pants: '#111114' },
+  janitor: { shirt: '#4a6a8a', pants: '#3a4a5a' },
 };
 
 const physMin = (sec) => (sec * C.TIME_SCALE) / 60;
 export const minToPhys = (min) => (min * 60) / C.TIME_SCALE;
+// optional per-citizen fields persisted in saves (life sim, crime, family)
+export const EXTRA_KEYS = ['bank', 'lastBank', 'edu', 'skills', 'family', 'gang', 'weapons', 'heat', 'life', 'school', 'parents', 'kids', 'studying', 'dealer', 'drugs'];
 
 let CID = 0;
 export function newCitizen(rng, opts = {}) {
@@ -123,6 +131,8 @@ export class CitizenAI {
     }
     // the unemployed start with little money
     for (const c of citizens) if (!c.job && c.age < 66) c.money = Math.round(Math.max(15, rng.gauss(350, 380)));
+    // savings in the bank (what the bank vaults actually hold)
+    for (const c of citizens) c.bank = Math.round(c.job || c.age >= 66 ? c.money * rng.range(0.6, 3.5) * (0.6 + c.traits.thrift) : c.money * rng.range(0, 0.4));
     // business owners (some small shops)
     for (const biz of W.economy.biz) {
       if (BTYPES[biz.type].civic || BTYPES[biz.type].office || BTYPES[biz.type].industry) continue;
@@ -412,6 +422,11 @@ export class CitizenAI {
         const biz = this.pickBiz(c, 'autoshop', 2000);
         if (biz) { c.lastService = now; this.go(c, biz.b, 'shop', { biz: biz.id }); return; }
       }
+      // banking: deposit spare cash, withdraw when running low
+      if (dow < 5 && hour < 17 && now - (c.lastBank || -rand.float() * 12 * 1440) > 1440 * 6 && (c.money > 2500 + c.traits.thrift * 3000 || c.money < 150 && (c.bank || 0) > 300) && rand.chance(0.35)) {
+        const biz = this.pickBiz(c, 'bank', 1200);
+        if (biz) { c.lastBank = now; this.go(c, biz.b, 'bank', { biz: biz.id }); return; }
+      }
       if (N.hunger < 0.6 && rand.chance(0.15)) {
         const biz = this.pickBiz(c, 'convenience', 300);
         if (biz) { this.go(c, biz.b, 'eat', { biz: biz.id }); return; }
@@ -441,6 +456,17 @@ export class CitizenAI {
           return;
         }
         if (!o.homeless && o.home !== c.home) { this.go(c, o.home, 'visit', { with: o.id }); return; }
+      }
+      // big nights out: clubs and lounges for the young and social, the casino for gamblers
+      if ((hour >= 21 || hour < 2) && (weekend || dow === 4) && c.money > 120) {
+        if (c.age < 40 && rand.chance(0.25 + c.traits.social * 0.4)) {
+          const club = this.pickBiz(c, rand.chance(0.75) ? 'nightclub' : 'lounge', 1600);
+          if (club) { this.go(c, club.b, 'party', { biz: club.id }); return; }
+        }
+        if (c.money > 400 && rand.chance((1 - c.traits.thrift) * 0.3 + (c.traits.caution < 0.3 ? 0.1 : 0))) {
+          const cas = this.pickBiz(c, 'casino', 2500);
+          if (cas) { this.go(c, cas.b, 'gamble', { biz: cas.id }); return; }
+        }
       }
       if (hour > 19 && c.money > 60 && rand.chance(0.35 + c.traits.social * 0.3)) {
         const bar = this.pickBiz(c, 'bar', 700);
@@ -589,6 +615,32 @@ export class CitizenAI {
         this.socialize(c, b);
         break;
       }
+      case 'bank': {
+        const biz = b && b.bizId != null ? W.economy.biz[b.bizId] : null;
+        if (biz && W.economy.isOpen(biz, W.minuteOfDay)) {
+          if (c.money > 1500) { const dep = Math.round(c.money * (0.4 + c.traits.thrift * 0.4)); c.money -= dep; c.bank = (c.bank || 0) + dep; W.economy.vaultChange(biz, dep); }
+          else if ((c.bank || 0) > 0) { const wd = Math.min(c.bank, 400 + rand.float() * 600); c.bank -= wd; c.money += wd; W.economy.vaultChange(biz, -wd); }
+        }
+        c.until = now + 15 + rand.float() * 20; c.nextThink = c.until;
+        break;
+      }
+      case 'party': case 'gamble': {
+        const biz = b && b.bizId != null ? W.economy.biz[b.bizId] : null;
+        const spent = biz ? W.economy.visit(biz, c) : 0;
+        N.social = clamp(N.social + 0.5, 0, 1); N.fun = clamp(N.fun + 0.6, 0, 1); N.energy = clamp(N.energy - 0.2, 0, 1);
+        if (g.type === 'gamble' && biz && spent > 0) {
+          // the house edge is real: a few win big, most lose a little
+          const stake = Math.min(c.money * 0.25 * (1.2 - c.traits.thrift), 2000);
+          const r = rand.float();
+          const delta = r < 0.02 ? stake * 8 : r < 0.4 ? stake * rand.range(0.3, 1.2) : -stake;
+          c.money = Math.max(0, c.money + delta); biz.cash -= delta; biz.revToday -= delta;
+          if (delta > 2000) W.history.citizenLog(c, `Won $${Math.round(delta).toLocaleString()} at ${biz.name}`, true);
+          else if (delta < -800) W.history.citizenLog(c, `Lost $${Math.round(-delta).toLocaleString()} at ${biz.name}`, false);
+        }
+        c.until = now + 100 + rand.float() * 140; c.nextThink = c.until;
+        this.socialize(c, b); this.socialize(c, b);
+        break;
+      }
       case 'visit': {
         N.social = clamp(N.social + 0.5, 0, 1);
         c.until = now + 60 + rand.float() * 120; c.nextThink = c.until;
@@ -680,6 +732,9 @@ export class CitizenAI {
       case 'visit': return `Visiting ${W.citizens[opts.with]?.first || 'a friend'}`;
       case 'drink': return `Drinks at ${name}`;
       case 'gym': return `Working out at ${name}`;
+      case 'bank': return `Banking at ${name}`;
+      case 'party': return `Night out at ${name}`;
+      case 'gamble': return `Trying their luck at ${name}`;
       case 'jobhunt': return `Applying for a job at ${name}`;
       case 'park': return 'Walking in Greenway Park';
       case 'crime': return opts.disguise || `Running an errand near ${name}`;

@@ -20,7 +20,7 @@ import { Bus } from '../core/bus.js';
 import { RNG, rand } from '../core/rng.js';
 import { clamp } from '../core/math.js';
 
-const CIVIC_TYPE = { police: 'police', fire: 'fire', hospital: 'hospital', cityhall: 'cityhall', mall: 'mall', busdepot: 'busdepot', powerplant: 'powerplant', utility: 'utility', construction: 'construction', towyard: 'towyard', taxi: 'taxi' };
+const CIVIC_TYPE = { police: 'police', fire: 'fire', hospital: 'hospital', cityhall: 'cityhall', mall: 'mall', busdepot: 'busdepot', powerplant: 'powerplant', utility: 'utility', construction: 'construction', towyard: 'towyard', taxi: 'taxi', casino: 'casino', college: 'college', school: 'school' };
 export const HYPER = 50;
 
 export class World {
@@ -66,13 +66,25 @@ export class World {
 
   init(opts = {}) {
     const rng = new RNG(this.seed ^ 0xa5a5);
+    // destination venues: banks, clubs, lounges and gun stores take over suitable shop lots
+    const VENUES = { bank: [5, ['C', 'D', 'O', 'SE', 'SW']], nightclub: [3, ['O', 'W', 'C', 'H']], lounge: [2, ['O', 'H', 'W', 'I']], gunstore: [2, ['O', 'C', 'I', 'SW', 'SE']] };
+    const lots = rng.shuffle(this.city.buildings.filter((b) => b.shop && b.bizType && b.bizType !== 'gas' && b.w * b.d > 260));
+    for (const type in VENUES) {
+      const [n, districts] = VENUES[type];
+      let placed = 0;
+      for (const b of lots) {
+        if (placed >= n) break;
+        if (b.venue || !districts.includes(b.code)) continue;
+        b.bizType = type; b.venue = true; placed++;
+      }
+    }
     // businesses
     for (const b of this.city.buildings) {
-      if (b.civic && CIVIC_TYPE[b.civic]) this.economy.create(CIVIC_TYPE[b.civic], b.id, { rng });
+      if (b.civic && CIVIC_TYPE[b.civic]) this.economy.create(CIVIC_TYPE[b.civic], b.id, { rng, name: b.name });
       else if (b.metro) this.economy.create('metro', b.id, { rng, name: b.name });
       else if (b.jobsOverride && b.jobsOverride.news) this.economy.create('news', b.id, { rng, name: b.name });
       else if (b.bizType) {
-        if (b.shop && rng.chance(0.38)) { b.vacantSince = -rng.int(1, 30); continue; }
+        if (b.shop && !b.venue && rng.chance(0.38)) { b.vacantSince = -rng.int(1, 30); continue; }
         this.economy.create(b.bizType, b.id, { rng, founded: -rng.int(30, 4000) });
       }
     }
