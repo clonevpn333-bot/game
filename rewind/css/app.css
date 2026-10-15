@@ -263,3 +263,35 @@ body.menu-open .rail { transform: none; }
   .toast { bottom: calc(18px + env(safe-area-inset-bottom)); }
 }
 @media (max-width: 1100px) and (min-width: 761px) { .nav { right: 12px; } }
+
+/* ---------- full-screen, TikTok-style ---------- */
+.stage { padding: 0; height: 100dvh; }
+.feed { position: absolute; inset: 0; flex: none; padding: 12px 0; }
+.topbar { position: absolute; z-index: 30; top: calc(12px + env(safe-area-inset-top)); left: 14px; right: 14px; padding: 0; min-height: 0; pointer-events: none; }
+.topbar > * { pointer-events: auto; }
+.topbar .icon-btn, .topbar .btn-transport { background: rgba(10,6,18,.46); border-color: rgba(255,255,255,.14); backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2); }
+.act { background: rgba(12,8,20,.5); }
+
+@media (max-width: 760px) {
+  /* the video is the whole screen; buttons float over it */
+  .feed { padding: 0; }
+  .frame { width: 100cqw; height: 100cqh; border-radius: 0; }
+  .frame::before { display: none; }
+  .frame-inner { border-radius: 0; box-shadow: none; }
+  .player-host { top: calc(54px + env(safe-area-inset-top)); }     /* TikTok's own header sits below our buttons */
+  .shield { top: calc(54px + env(safe-area-inset-top)); }
+  .actions { left: auto; right: 10px; top: calc(54px + env(safe-area-inset-top) + 18px); bottom: auto; transform: none; flex-direction: column; gap: 12px; }
+  .act { width: 46px; height: 46px; padding: 12px; }
+  .sound-hint { top: calc(62px + env(safe-area-inset-top)); bottom: auto; }
+  .skipbar { top: calc(62px + env(safe-area-inset-top)); }
+  .topbar { left: 12px; right: 12px; }
+}
+
+/* keep our floating controls off TikTok's own header/footer */
+@media (min-width: 761px) {
+  .topbar { justify-content: flex-start; gap: 10px; }
+  .topbar [data-open="search"] { margin-left: auto; }
+}
+@media (max-width: 760px) {
+  .sound-hint { top: auto; bottom: calc(104px + env(safe-area-inset-bottom)); }
+}
