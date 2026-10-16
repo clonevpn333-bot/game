@@ -14,6 +14,7 @@ import { Heists } from './heists.js';
 import { Crime } from './crime.js';
 import { DarkSide, Investigations } from './dark.js';
 import { StreetLife } from './street.js';
+import { Love } from './love.js';
 import { History } from './history.js';
 import { Weather } from './weather.js';
 import { Power } from './power.js';
@@ -71,6 +72,7 @@ export class World {
     this.investigations = new Investigations(this);
     this.dark = new DarkSide(this);
     this.street = new StreetLife(this);
+    this.love = new Love(this);
     this.driverCtrl = { onLink: () => {}, idle: (v) => {} };
     this.lastHour = Math.floor(this.time / 60);
     this.lastDay = Math.floor(this.time / 1440);
@@ -177,6 +179,7 @@ export class World {
     this.combat && this.combat.update(dt, dtMin);
     this.dark && this.dark.update(dt);
     this.street && this.street.update(dt);
+    this.love && this.love.update(dt);
     this.restCheck(dt);
   }
 

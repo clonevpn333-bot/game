@@ -170,7 +170,7 @@ export class LifeUI {
     const g = this.game, W = this.W, c = this.c, Ls = this.L;
     if (!c) return;
     let cur = tab;
-    const apps = [['messages', '💬', 'Messages'], ['contacts', '👥', 'Contacts'], ['gps', '🗺', 'GPS'], ['bank', '🏦', 'Bank'], ['lotto', '🎟', 'Lotto'], ['life', '📊', 'My life'], ['news', '📰', 'News']];
+    const apps = [['messages', '💬', 'Messages'], ['contacts', '👥', 'Contacts'], ['gps', '🗺', 'GPS'], ['bank', '🏦', 'Bank'], ['lotto', '🎟', 'Lotto'], ['life', '📊', 'My life'], ['news', '📰', 'News'], ['spark', '🔥', 'Spark']];
     const render = () => {
       let body = '';
       if (cur === 'home') body = `<div class="apps">${apps.map(([k, ic, n]) => `<button data-app="${k}"><span>${ic}</span>${n}${k === 'messages' && Ls.inbox.some((m) => !m.read) ? '<b class="badge">•</b>' : ''}</button>`).join('')}</div>`;
@@ -200,6 +200,7 @@ export class LifeUI {
         body = `<p>Next draw 20:00 · Jackpot <b>${money(LT.jackpot)}</b></p><p class="muted">Your tickets: ${mine.length ? mine.map((t) => t.nums.join('-')).join(' · ') : 'none — buy at a convenience store or gas station'}</p>${LT.history.slice(-5).reverse().map((h) => `<p><b>Day ${h.day + 1}:</b> ${h.nums.join(' – ')} <small class="muted">${h.sold} tickets · ${h.winners.filter((w) => w.m >= 4).length} winners${h.winners.some((w) => w.m === 6) ? ' · JACKPOT' : ''}</small></p>`).join('')}`;
       }
       if (cur === 'life') body = this.lifeSummary(c);
+      if (cur === 'spark') body = W.love ? W.love.html(c) : '';
       if (cur === 'news') body = `<div class="news">${W.history.events.slice(-14).reverse().map((e) => `<p><small>${W.history.dateStr(e.t)} ${W.history.timeStr(e.t)}</small> ${esc(e.text)}</p>`).join('')}</div>${W.investigations ? `<h4>Police blotter</h4>${W.investigations.html(esc)}` : ''}`;
       return `<div class="phone"><div class="ph-bar"><span>${W.history.timeStr(W.time)}</span><span>${cur !== 'home' ? '<button data-app="home">◀</button>' : ''}</span><span>🔋</span></div><div class="ph-body">${body}</div></div>`;
     };
@@ -207,6 +208,7 @@ export class LifeUI {
       title: '', cls: 'phone-modal', html: render(),
       onBind: (a) => {
         a.el.querySelectorAll('[data-app]').forEach((b) => b.onclick = () => { cur = b.dataset.app; a.set(render()); });
+        if (cur === 'spark' && W.love) W.love.bind(a, c, () => a.set(render()));
         a.el.querySelectorAll('[data-call]').forEach((b) => b.onclick = () => { a.close(); this.openTalk(W.citizens[+b.dataset.call], null, true); });
         a.el.querySelectorAll('[data-wp]').forEach((b) => b.onclick = () => { if (b.dataset.wp === 'x') g.waypoint = null; else { const [l, bb] = this._dest[+b.dataset.wp]; g.waypoint = { x: bb.door[0], z: bb.door[1], b: bb.id, label: `${l} (${W.citizenAI.buildingName(bb.id)})` }; g.toast(`Route set: ${l}`); } a.close(); });
         a.el.querySelectorAll('[data-send]').forEach((b) => b.onclick = () => { const o = W.citizens[+b.dataset.send]; if ((c.bank || 0) >= 100) { c.bank -= 100; o.money += 100; W.citizenAI.addAff(c, o, 0.05); g.toast(`Sent $100 to ${o.first}.`); } a.set(render()); });
@@ -306,7 +308,7 @@ export class LifeUI {
         W.investigations.open('stalking', c, s, W.citizenPos(c) || { x: 0, z: 0 }, 'stalking', 0.55); c.flags.stalker = null;
         say(o.first, 'Okay. I\'m writing this down. We\'ll pay them a visit. Call 911 if they come near you.');
       } else if (k === 'collect' || k === 'scare') { say('You', k === 'scare' ? 'Pay up. Today. Or things get ugly.' : 'You owe some people money. They sent me.'); say(o.first, W.crime.collect(c, o, k === 'scare') || '…'); }
-      else if (k === 'gift') { say('You', 'I got you something.'); c.life.inv.gift = null; W.citizenAI.addAff(c, o, 0.2); say(o.first, 'Aww, you didn\'t have to!'); }
+      else if (k === 'gift') { say('You', 'I got you something.'); c.life.inv.gift = null; W.love && W.love.onGift(c, o); W.citizenAI.addAff(c, o, 0.2); say(o.first, 'Aww, you didn\'t have to!'); }
       else if (k === 'play' || k === 'read') { W.citizenAI.addAff(c, o, 0.08); say(o.first, rand.pick(['Again! Again!', 'Hehe!', 'You\'re the best!', 'Can we get ice cream?'])); c.needs.fun = Math.min(1, c.needs.fun + 0.1); }
       else {
         say('You', { chat: 'So what\'s new?', joke: 'Okay, so a guy walks into a bar…', compliment: 'You look great today.', ask_life: 'Tell me about yourself.', ask_job: 'How\'s work?', gossip: 'Heard anything interesting?', flirt: 'Has anyone told you you\'re really cute?', insult: 'You know what? You\'re a joke.', ask_money: 'Could you spot me some cash?', hangout: 'Want to hang out?', apologize: 'Hey… I\'m sorry.' }[k] || '…');
