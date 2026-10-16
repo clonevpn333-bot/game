@@ -283,6 +283,7 @@ export class PeopleView {
   }
 
   update(dt) {
+    this.dt = dt;
     const W = this.world;
     const cam = this.R.camera;
     this.season = W.season ?? 0;
@@ -309,14 +310,29 @@ export class PeopleView {
   drawPerson(ped, L, detail) {
     const scale = L.h || 1;
     const act = ped.action || '';
-    const moving = ped.v > 0.1 && ped.state === 'walk';
-    const run = ped.run && moving;
     const ph = ped.anim || 0;
-    const freq = run ? 1.6 : 1.25;
-    const cyc = ph * freq;
-    let swing = moving ? Math.sin(cyc) * (run ? 0.8 : 0.45) : 0;
-    let bob = moving ? Math.abs(Math.cos(cyc)) * (run ? 0.07 : 0.03) : Math.sin(ph * 2) * 0.004;
-    let lie = 0, sit = 0, kneel = 0, lean = run ? 0.16 : moving ? 0.04 : 0;
+    const fdt = Math.min(0.1, this.dt || 0.016);
+    // ---- gait: the cycle advances with distance actually travelled (so feet don't slide),
+    // stride lengthens with speed, and starts/stops blend in and out
+    const v = ped.state === 'walk' ? (ped.v || 0) : 0;
+    const da = ph - (ped.lastAnim ?? ph);
+    ped.lastAnim = ph;
+    const walked = da > 0 && da < 30 ? da / 2.4 : 0;
+    const stride = 0.95 + Math.min(v, 7) * 0.35;
+    ped.gait = ((ped.gait || 0) + walked / stride * Math.PI * 2) % 6283.18;
+    ped.mv = (ped.mv ?? 0) + ((v > 0.1 ? 1 : 0) - (ped.mv ?? 0)) * Math.min(1, fdt * 7);
+    ped.rk = (ped.rk ?? 0) + (Math.min(1, Math.max(0, (v - 2.3) / 1.8)) - (ped.rk ?? 0)) * Math.min(1, fdt * 5);
+    const mv = ped.mv, rk = ped.rk, g = ped.gait;
+    const moving = mv > 0.03;
+    const legA = Math.asin(Math.min(0.42 + 0.2 * (1 - rk), stride / 4 / 0.88)) * mv;
+    // pelvis height: walking rides on the stance leg, running bounces through the flight phase
+    const legH = (phi) => { const th = -legA * Math.cos(phi); return 0.44 * Math.cos(th) + 0.45 * Math.cos(th + 0.12 * Math.max(0, Math.sin(phi)) * mv); };
+    const walkOff = Math.max(-0.1, Math.max(legH(g), legH(g + Math.PI)) - 0.89);
+    const runOff = -0.05 + 0.045 * Math.cos(2 * g);
+    let swing = 0;
+    let bob = (walkOff * (1 - rk) + runOff * rk) * mv;
+    let lie = 0, sit = 0, kneel = 0, lean = (0.05 + rk * 0.2) * mv;
+    const torsoYaw = -Math.cos(g) * (0.1 + rk * 0.12) * mv;
     if (act === 'down' || act === 'sleep' || ped.fallen > 0) lie = 1;
     if (act === 'sit') sit = 1;
     if (act === 'dance') { bob = Math.abs(Math.sin(ph * 3)) * 0.08; swing = Math.sin(ph * 3) * 0.3; }
@@ -330,7 +346,7 @@ export class PeopleView {
     if (act === 'cheer') bob = Math.abs(Math.sin(ph * 4 + pid)) * 0.09;
     let y = (ped.y || 0) + bob;
     const stum = act === 'stumble';
-    const roll = moving ? Math.sin(cyc) * (run ? 0.05 : 0.035) : idle ? Math.sin(ph * 0.45 + pid) * 0.025 : stum ? Math.sin(ph * 1.1 + pid) * 0.14 : 0;
+    const roll = moving ? Math.sin(g) * (0.035 - rk * 0.01) * mv : idle ? Math.sin(ph * 0.45 + pid) * 0.025 : stum ? Math.sin(ph * 1.1 + pid) * 0.14 : 0;
     e.set(lie ? -Math.PI / 2 : lean + (stum ? 0.18 + Math.sin(ph * 1.3) * 0.08 : 0), ped.h + (act === 'dance' ? Math.sin(ph * 1.5) * 0.4 : 0) + (stum ? Math.sin(ph * 0.7 + pid) * 0.3 : 0), roll, 'YXZ');
     if (lie) y += 0.16;
     q.setFromEuler(e);
@@ -341,7 +357,7 @@ export class PeopleView {
     const hipY = sit ? 0.47 : kneel ? 0.52 : 0.9;
     // torso (slight counter-rotation while walking)
     part.makeTranslation(0, hipY, 0);
-    if (moving) part.multiply(rot.makeRotationY(swing * (run ? 0.3 : 0.22)));
+    if (moving) part.multiply(rot.makeRotationY(torsoYaw));
     tmpM.multiplyMatrices(base, part);
     const shirt = C1.set(L.shirt), skin = C2.set(L.skin);
     const tp = this.torso[form + L.outfit] || this.torso[form + 'tee'];
@@ -357,7 +373,7 @@ export class PeopleView {
     if (act === 'phone') part.multiply(rot.makeRotationZ(0.15));
     if (act === 'talk') part.multiply(rot.makeRotationX(Math.sin(ph * 4) * 0.06));
     // the head keeps looking ahead while walking, glances around while standing
-    if (moving) part.multiply(rot.makeRotationY(-swing * 0.18));
+    if (moving) part.multiply(rot.makeRotationY(-torsoYaw * 0.85).multiply(tmpM.makeRotationX(-rk * 0.12 * mv)));
     if (idle) part.multiply(rot.makeRotationY(Math.sin(ph * 0.31 + pid) * 0.45 * Math.max(0, Math.sin(ph * 0.11 + pid))));
     if (stum) part.multiply(rot.makeRotationX(0.45 + Math.sin(ph * 0.9) * 0.15));
     if (act === 'cheer' || act === 'film') part.multiply(rot.makeRotationX(-0.18));
@@ -372,7 +388,19 @@ export class PeopleView {
     const pants = new THREE.Color(L.pants), shoes = new THREE.Color(L.shoes || '#2a2420');
     for (const side of [-1, 1]) {
       let a = swing * side, knee = 0;
-      if (moving) knee = Math.max(0, Math.sin(cyc + (side > 0 ? 0 : Math.PI) + 1.2)) * (run ? 1.3 : 0.7);
+      if (moving && act !== 'dance') {
+        // stance (0..π): heel strike forward, roll over a nearly straight leg, push off behind;
+        // swing (π..2π): knee folds, the thigh drives forward, the leg straightens to reach
+        const phi = (g + (side > 0 ? 0 : Math.PI)) % (Math.PI * 2);
+        a = -legA * Math.cos(phi);
+        if (phi < Math.PI) knee = (0.12 + rk * 0.33) * Math.sin(phi);
+        else {
+          const sw = (phi - Math.PI) / Math.PI;
+          knee = (1.0 + rk * 0.9) * Math.sin(Math.PI * Math.min(1, sw * 1.3));
+          a -= rk * 0.3 * Math.sin(Math.PI * sw);
+        }
+        knee *= mv;
+      }
       if (sit) { a = -Math.PI / 2; knee = Math.PI / 2; }
       if (kneel) { a = side > 0 ? -Math.PI / 2 : 0.1; knee = side > 0 ? Math.PI / 2 : Math.PI / 2 + 0.2; }
       part.makeTranslation(side * 0.1, hipY, 0);
@@ -386,7 +414,14 @@ export class PeopleView {
     // arms: upper arm at the shoulder, forearm at the elbow
     const sleeve = L.shortSleeve ? skin : shirt;
     for (const side of [-1, 1]) {
-      let ax = -swing * side * 0.9, az = side * 0.08, elbow = moving ? -0.25 - Math.max(0, -swing * side) * 0.6 : -0.12;
+      let ax = 0, az = side * (0.08 + rk * 0.04), elbow = -0.12;
+      if (moving) {
+        // arms counter-swing the legs; runners pump with bent elbows
+        const phi = (g + (side > 0 ? 0 : Math.PI)) % (Math.PI * 2);
+        ax = Math.cos(phi) * (0.32 + rk * 0.38) * mv;
+        elbow = (-0.2 - Math.max(0, -Math.cos(phi)) * 0.35) * (1 - rk) + (-1.5 - Math.cos(phi) * 0.25) * rk;
+      }
+      if (act === 'dance') { ax = -swing * side * 0.9; }
       if (act === 'hose' || act === 'repair' || act === 'build' || act === 'kneel' || act === 'carry') { ax = -1.1 + (act === 'build' || act === 'repair' ? Math.sin(ph * 6 + side) * 0.3 : 0); elbow = -0.4; }
       if (act === 'cuffed') { ax = 0.45; az = -side * 0.2; elbow = -0.6; }
       if (act === 'phone' && side > 0) { ax = -0.5; az = 0.25; elbow = -2.2; }
@@ -401,7 +436,6 @@ export class PeopleView {
       if (act === 'type' || act === 'cards') { ax = -0.55; az = -side * 0.12; elbow = -1.05; }
       if (act === 'drink' && side > 0) { ax = -0.3 + Math.sin(ph * 0.7) * 0.2; elbow = -2.0; }
       if (ped.umbrella && side > 0 && !act) { ax = -0.9; az = 0.25; elbow = -1.0; }
-      if (run && !act) { ax *= 1.3; elbow = -1.4; }
       if (idle) { ax = 0.04 + Math.sin(ph * 0.45 + pid + side) * 0.03; az = side * 0.1; elbow = -0.18; }
       if (act === 'cheer') { ax = -2.8 + Math.sin(ph * 5 + side) * 0.25; az = side * 0.35; elbow = -0.25; }
       if (act === 'film') { ax = -1.25; az = -side * 0.3; elbow = -1.35; }
