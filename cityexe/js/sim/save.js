@@ -4,7 +4,7 @@
 import { World } from './world.js';
 import { newCitizen, EXTRA_KEYS } from './citizens.js';
 
-const VERSION = 3;
+const VERSION = 4;
 const KEY = 'cityexe.save';
 
 export function serialize(W) {
@@ -55,6 +55,8 @@ export function deserialize(data, opts = {}) {
   W.exeMode = !!data.exe;
   W.targetPop = data.pop || W.targetPop;
   const city = W.city;
+  // a save from a different city layout can't be mapped onto this one
+  if (!data.B || data.B.length !== city.buildings.length) throw new Error('incompatible save');
   // buildings
   data.B.forEach((r, i) => {
     const b = city.buildings[i];

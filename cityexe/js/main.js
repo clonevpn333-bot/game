@@ -21,11 +21,14 @@ async function main() {
   let world = null, away = null;
   if (!params.has('fresh')) {
     progress('Looking for your city…', 0.05);
-    const data = await loadSave().catch(() => null);
+    let data = await loadSave().catch(() => null);
     if (data) {
       progress('Rebuilding your city…', 0.15);
       await tick();
-      world = deserialize(data);
+      // an old or broken save: start a fresh city instead of failing
+      try { world = deserialize(data); } catch (e) { console.warn('Discarding save:', e.message); await clearSave().catch(() => {}); world = null; data = null; }
+    }
+    if (data && world) {
       new Anomalies(world).attach();
       if (data.anom) world.anomalies.deserialize(data.anom);
       // the city kept living while you were gone
