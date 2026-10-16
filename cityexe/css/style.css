@@ -286,3 +286,14 @@ button.big { padding: 12px 18px; font-size: 15px; } .small { font-size: 12px; }
 .spark .sp-btns { display: flex; gap: 10px; } .spark .sp-btns button { flex: 1; padding: 12px; font-size: 15px; border-radius: 12px; }
 .spark .av { display: inline-flex; width: 26px; height: 26px; border-radius: 50%; align-items: center; justify-content: center; font-weight: 700; vertical-align: middle; margin-right: 4px; }
 .spark h4 { margin: 6px 0 0; }
+
+/* target health bar when you hit someone */
+#target-hud { position: absolute; left: 50%; top: 18%; transform: translateX(-50%); min-width: 220px; padding: 8px 14px; text-align: center; background: rgba(10,12,16,0.72); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; pointer-events: none; z-index: 6; font-size: 13px; }
+#target-hud.hidden { display: none; }
+#target-hud .tn { font-weight: 700; margin-bottom: 5px; }
+#target-hud .tb { height: 7px; background: rgba(255,255,255,0.12); border-radius: 4px; overflow: hidden; }
+#target-hud .tb i { display: block; height: 100%; background: linear-gradient(90deg, #e04a3a, #f0a040); transition: width 0.15s; }
+#target-hud .ko { display: block; margin-top: 6px; font: 900 26px system-ui, sans-serif; letter-spacing: 0.08em; color: #ff5a3a; text-shadow: 0 2px 0 #000, 0 0 18px rgba(255,80,40,0.6); }
+#target-hud .ko.small { font-size: 15px; color: #ffd060; }
+#target-hud.pop { animation: thud 0.22s ease-out; }
+@keyframes thud { 0% { transform: translateX(-50%) scale(1.25); } 100% { transform: translateX(-50%) scale(1); } }

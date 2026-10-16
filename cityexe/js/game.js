@@ -8,6 +8,7 @@ import { CityView } from './render/cityView.js';
 import { VehicleView } from './render/vehicleView.js';
 import { PeopleView } from './render/peopleView.js';
 import { StreetView } from './render/streetView.js';
+import { HitFX } from './play/hitfx.js';
 import { FX } from './render/fx.js';
 import { EventView } from './render/eventView.js';
 import { Input } from './core/input.js';
@@ -55,6 +56,7 @@ export class Game {
     this.peopleView = new PeopleView(this.renderer, this.world);
     this.streetView = new StreetView(this.renderer, this.world, this.peopleView);
     this.fx = new FX(this.renderer, this.world);
+    this.hitfx = new HitFX(this);
     this.eventView = new EventView(this.renderer, this.world, this.cityView);
     this.vehicleView.lightPool = this.fx.lights;
     this.raycaster = new THREE.Raycaster();
@@ -91,6 +93,9 @@ export class Game {
     const W = this.world;
     const I = this.input;
     this.frame++;
+    // hit-stop: the world freezes for a beat when a blow lands
+    if (this.hitStop > 0) { this.hitStop -= dt; dt *= 0.05; }
+    this.hitfx && this.hitfx.update(dt);
     // global keys
     if (I.hit('Space') && this.mode === 'observe') this.togglePause();
     if (this.mode === 'observe') {

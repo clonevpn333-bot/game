@@ -9,6 +9,7 @@ import { ModelKit, makeInstMaterial, InstPool } from './materials.js';
 import { UNIFORMS } from '../sim/citizens.js';
 import { hash01 } from '../core/rng.js';
 import { formOfName } from '../core/names.js';
+import { attackPose, hitPose } from '../play/hitfx.js';
 
 const tmpM = new THREE.Matrix4(), base = new THREE.Matrix4(), part = new THREE.Matrix4(), rot = new THREE.Matrix4(), joint = new THREE.Matrix4();
 const q = new THREE.Quaternion(), e = new THREE.Euler(), p = new THREE.Vector3(), s = new THREE.Vector3();
@@ -284,6 +285,7 @@ export class PeopleView {
 
   update(dt) {
     this.dt = dt;
+    this.now = performance.now() / 1000;
     const W = this.world;
     const cam = this.R.camera;
     this.season = W.season ?? 0;
@@ -333,6 +335,7 @@ export class PeopleView {
     let bob = (walkOff * (1 - rk) + runOff * rk) * mv;
     let lie = 0, sit = 0, kneel = 0, lean = (0.05 + rk * 0.2) * mv;
     const torsoYaw = -Math.cos(g) * (0.1 + rk * 0.12) * mv;
+    const AP = attackPose(ped, this.now || performance.now() / 1000), HF = hitPose(ped, this.now || performance.now() / 1000);
     if (act === 'down' || act === 'sleep' || ped.fallen > 0) lie = 1;
     if (act === 'sit') sit = 1;
     if (act === 'dance') { bob = Math.abs(Math.sin(ph * 3)) * 0.08; swing = Math.sin(ph * 3) * 0.3; }
@@ -358,6 +361,9 @@ export class PeopleView {
     // torso (slight counter-rotation while walking)
     part.makeTranslation(0, hipY, 0);
     if (moving) part.multiply(rot.makeRotationY(torsoYaw));
+    // throwing a punch twists the shoulders into it; taking one snaps the torso back
+    if (AP) { part.multiply(rot.makeRotationY(AP.side * (0.5 * AP.strike - 0.3 * AP.wind) * (AP.kind === 'swing' ? 0.6 : 1))); part.multiply(rot.makeRotationX(0.18 * AP.strike)); }
+    if (HF) part.multiply(rot.makeRotationX(-0.42 * HF));
     tmpM.multiplyMatrices(base, part);
     const shirt = C1.set(L.shirt), skin = C2.set(L.skin);
     const tp = this.torso[form + L.outfit] || this.torso[form + 'tee'];
@@ -378,6 +384,7 @@ export class PeopleView {
     if (stum) part.multiply(rot.makeRotationX(0.45 + Math.sin(ph * 0.9) * 0.15));
     if (act === 'cheer' || act === 'film') part.multiply(rot.makeRotationX(-0.18));
     if (act === 'beg') part.multiply(rot.makeRotationX(0.25));
+    if (HF) { part.multiply(rot.makeRotationX(-0.4 * HF)); part.multiply(rot.makeRotationY(0.35 * HF * ((ped.id || 0) % 2 ? 1 : -1))); }
     tmpM.multiplyMatrices(torsoM, part);
     const hairC = C3.set(L.hair);
     this.head[form].add(tmpM, skin, hairC);
@@ -442,6 +449,13 @@ export class PeopleView {
       if (act === 'beg' && side > 0) { ax = -0.85; az = 0.1; elbow = -0.35; }
       if (act === 'sell' && side > 0) { ax = -1.0 + Math.sin(ph * 2.5) * 0.35; az = 0.5; elbow = -0.6; }
       if (stum) { ax = 0.15 + Math.sin(ph * 1.2 + side) * 0.25; az = side * 0.2; elbow = -0.1; }
+      // fighting: the lead hand winds back and drives through, the other guards the face
+      if (AP) {
+        if (AP.kind === 'swing') { ax = -0.9 - 1.8 * AP.wind + 0.4 * AP.strike; elbow = -0.6 * AP.wind - 0.15; az = side * 0.12; }
+        else if (side === AP.side) { ax = -0.9 + 1.25 * AP.wind - 0.75 * AP.strike; elbow = -2.0 + 0.2 * AP.wind + 1.9 * AP.strike; az = side * 0.15 * AP.wind - side * 0.14 * AP.strike; }
+        else { ax = -0.95; elbow = -2.05; az = side * 0.08; }
+      }
+      if (HF) { const f = Math.min(1, HF); ax = ax * (1 - f) - 1.25 * f; elbow = elbow * (1 - f) - 1.9 * f; az = az * (1 - f) + side * 0.25 * f; }
       part.makeTranslation(side * (form ? 0.195 : 0.22), hipY + 0.53, 0);
       e.set(ax, 0, az, 'XYZ');
       part.multiply(rot.makeRotationFromEuler(e));
@@ -455,6 +469,8 @@ export class PeopleView {
         const long = gun === 'rifle' || gun === 'shotgun' || gun === 'smg';
         if (act !== 'aim' && !long) { /* holstered pistol rides on the hip */ }
         else { joint.makeTranslation(0, -0.36, 0.02); tmpM.multiply(joint); (long ? this.longGun : this.pistol).add(tmpM, C3.set('#1c1c1e'), C3); }
+      } else if (side > 0 && (gun === 'knife' || gun === 'bat')) {
+        tmpM.multiply(joint.makeTranslation(0, -0.33, gun === 'knife' ? -0.12 : 0)); this.tool.add(tmpM, C3.set(gun === 'knife' ? '#d8dce0' : '#2a2a2a'), C3);
       } else if (side > 0 && detail) {
         if (act === 'hose' || act === 'build' || act === 'repair') { tmpM.multiply(joint.makeTranslation(0, -0.33, 0)); this.tool.add(tmpM, C3.set('#3a3a3a'), C3); }
         else if (act === 'phone' || act === 'text' || (act === 'film' && side > 0)) { tmpM.multiply(joint.makeTranslation(0, -0.36, 0.04)); this.phone.add(tmpM, C3.set('#101418'), C3); }

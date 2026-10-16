@@ -113,8 +113,7 @@ export class PlayerWeapons {
 
   swing(c, p, wid) {
     const W = this.W;
-    p.action = 'build';
-    setTimeout(() => { if (p.action === 'build') p.action = ''; }, 300);
+    this.game.hitfx && this.game.hitfx.swing(p, wid);
     let best = null, bd = WEAPONS[wid].range + 0.4;
     for (const o of W.peds.near(p.x, p.z, 3)) {
       if (o.cid === c.id) continue;

@@ -416,7 +416,7 @@ export class Interiors {
         const mwid = wpn && wpn.melee ? Wp.cur : 'fists';
         const mw = WEAPONS[mwid];
         Wp.fireT = mw.rate;
-        p.action = 'build'; setTimeout(() => { if (this.player === p && p.action === 'build') p.action = ''; }, 300);
+        g.hitfx && g.hitfx.swing(p, mwid);
         let hit = null, hd = mw.range + 0.5;
         for (const f of this.figs.values()) {
           if (f.action === 'down') continue;
