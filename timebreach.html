@@ -151,6 +151,7 @@ button.b.sm{font-size:16px;min-width:0;padding:8px 22px}
   <div class="tag">ONE SOLDIER · EVERY ERA · NO SURVIVORS</div>
   <div class="btns" id="mainbtns">
     <button class="b" id="bStart">BEGIN BREACH</button>
+    <button class="b" id="bBlank">OPEN IN ABOUT:BLANK</button>
     <button class="b" id="bEras">CHAPTER SELECT</button>
     <button class="b" id="bSet">SETTINGS</button>
     <button class="b" id="bKeys">CONTROLS</button>
@@ -7841,6 +7842,15 @@ function hideAll() { for (const id of ['menu', 'settings', 'keys', 'pause', 'dea
 function showHUD(on) { $('hud').classList.toggle('hide', !on); }
 let settingsReturn = 'menu';
 $('bStart').onclick = () => { AU.init(); MUSIC.start(); lockPointer(); startCampaign(0); };
+// about:blank launcher: reopen the game full-window inside a blank tab
+if (window.self !== window.top) $('bBlank').remove();
+else $('bBlank').onclick = () => {
+  const w = window.open('about:blank', '_blank');
+  if (!w) { alert('Pop-up blocked — allow pop-ups for this page and try again.'); return; }
+  const d = w.document; d.open(); d.write('<!doctype html><html><head><meta charset="utf-8"><title></title><style>html,body{margin:0;height:100%;overflow:hidden;background:#000}iframe{border:0;width:100%;height:100%;display:block}</style></head><body></body></html>'); d.close();
+  const f = d.createElement('iframe'); f.src = location.href; f.allow = 'fullscreen; pointer-lock; autoplay; gamepad'; f.setAttribute('allowfullscreen', ''); d.body.appendChild(f);
+  f.addEventListener('load', () => { try { f.contentWindow.focus(); } catch (e) { } });
+};
 $('bEras').onclick = () => { $('mainbtns').classList.add('hide'); show('erapick'); };
 $('bSet').onclick = () => { settingsReturn = 'menu'; hide('menu'); show('settings'); };
 $('bKeys').onclick = () => { hide('menu'); show('keys'); };
