@@ -104,7 +104,7 @@ cityexe/
 `node tools/build-single.mjs [out.html]` bundles every module, Three.js and the
 stylesheet into one self-contained HTML file (default `dist/cityexe.html`,
 about 0.9 MB) that runs by double-clicking it, without a server. Needs
-`esbuild` (`npm i -D esbuild`).
+`esbuild` (`npm i -D esbuild`). It also writes `dist/cityexe-launcher.html`: press Launch and the game opens in a blank (`about:blank`) tab.
 
 ## Tests
 
