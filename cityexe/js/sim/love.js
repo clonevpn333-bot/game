@@ -100,6 +100,13 @@ export class Love {
     if (ok) {
       W.citizenAI.addAff(c, o, M.first ? 0.3 : 0.14);
       stat(c, 'happy', 4);
+      const cur = W.citizenAI.partner(c);
+      if (M.first && cur && cur !== o) {
+        if (!S.revealed.includes(o.id)) S.revealed.push(o.id);
+        const L = ensureLife(c, W); L.affairs = [...(L.affairs || []).filter((x) => x.id !== o.id), { id: o.id, since: W.day, n: 1 }];
+        W.life && W.life.msg('🤫', `The date with ${o.first} went great. ${cur.first} has no idea. (Talk to ${o.first} to see where it goes.)`);
+        return;
+      }
       if (M.first) {
         if (!S.revealed.includes(o.id)) S.revealed.push(o.id);
         W.citizenAI.setRel(c, o, Math.max(0.65, this.rel(c, o)), 'partner');
@@ -179,7 +186,7 @@ export class Love {
         <div class="sp-btns"><button data-swipe="0">✕ Nope</button><button data-swipe="1" class="pri">❤ Like</button></div>`;
     } else h += '<p class="muted">No one new nearby. Check back tomorrow.</p>';
     const ms = S.matches.map((id) => W.citizens[id]).filter((m) => m && m.status === 'ok' && m !== partner);
-    if (ms.length) h += `<h4>Matches</h4>${ms.map((m) => `<div class="job"><span>${av(m)} <b>${esc(m.name)}</b> <small>${this.shownVibe(c, m).join(' ')}</small></span><button data-date="${m.id}" ${M || partner ? 'disabled' : ''}>Ask on a date</button><button data-unmatch="${m.id}">✕</button></div>`).join('')}`;
+    if (ms.length) h += `<h4>Matches</h4>${ms.map((m) => `<div class="job"><span>${av(m)} <b>${esc(m.name)}</b> <small>${this.shownVibe(c, m).join(' ')}</small></span><button data-date="${m.id}" ${M ? 'disabled' : ''}>${partner ? 'Secret date 🤫' : 'Ask on a date'}</button><button data-unmatch="${m.id}">✕</button></div>`).join('')}`;
     return h + `<p class="gmsg">${esc(this.flash || '')}</p></div>`;
   }
   bind(a, c, re) {

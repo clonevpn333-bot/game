@@ -140,6 +140,15 @@ export class PlayerWeapons {
       const o = W.citizens[best.cid];
       W.combat.melee(c, wid, o);
       this.game.audio && this.game.audio.impact(4);
+      // their friends, family and crew jump in
+      for (const q of W.peds.near(best.x, best.z, 12)) {
+        const f = W.citizens[q.cid];
+        if (!f || f === c || f === o || f.possessed || f.duty != null || f.age < 16 || q.action === 'down') continue;
+        const r = f.rel[o.id];
+        if (!((r && (r.t === 'friend' || r.t === 'family' || r.t === 'partner')) || (f.gang && f.gang === o.gang))) continue;
+        W.peds.walkTo(q, p.x, p.z, () => { if (c.status === 'ok' && dist(q.x, q.z, c.ped?.x ?? 0, c.ped?.z ?? 0) < 2.5) W.combat.melee(f, 'fists', c); }, { run: true, direct: true });
+        this.game.toast(`${f.first} ${f.gang && f.gang === o.gang ? 'and the crew are' : 'is'} coming at you!`, 2);
+      }
       // they fight back or run
       if (o.status === 'ok' && best.fallen < 1) {
         const tough = (o.traits.honesty < 0.4 || o.job?.role === 'bouncer' || o.job?.role === 'officer') && rand.chance(0.6);

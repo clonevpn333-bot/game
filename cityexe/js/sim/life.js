@@ -315,6 +315,7 @@ export class LifeSim {
   birth(c, adopted = false) {
     const W = this.W, L = c.life;
     const o = L.pregnant ? W.citizens[L.pregnant.with] : W.citizenAI.partner(c);
+    const preg = L.pregnant;
     L.pregnant = null;
     const kid = newCitizen(rand, { id: W.citizens.length, last: c.last, age: adopted ? rand.int(1, 6) : 0 });
     kid.look.skin = adopted ? kid.look.skin : (rand.chance(0.5) || !o ? c.look.skin : o.look.skin);
@@ -330,6 +331,7 @@ export class LifeSim {
     W.history.citizenLog(c, adopted ? `Adopted ${kid.first}` : `${formOf(kid) ? 'Daughter' : 'Son'} ${kid.first} was born`, true);
     this.msg('👶', adopted ? `You adopted ${kid.first} (${kid.age}).` : `${kid.first} ${kid.last} was born! A healthy ${formOf(kid) ? 'girl' : 'boy'}.`);
     stat(c, 'happy', 18);
+    if (preg && W.drama) W.drama.onBirth(c, kid, preg.with, preg.carrier);
   }
   onFamilyDeath(c, o, role) {
     const W = this.W;

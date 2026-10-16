@@ -270,6 +270,7 @@ export class LifeUI {
       }
       if (c.life?.inv.gift) opts.push(['gift', '🎁 Give a gift']);
       opts.push(['ask_money', 'Ask for money'], ['insult', 'Insult'], ['apologize', 'Apologize']);
+      if (!remote && W.drama && W.drama.canHookUp(c, o)) opts.push(['night', '🌙 Spend the night']);
       if (o.gang && !c.gang && !remote && o.age >= 16 && c.age >= 16) opts.push(['connect', '🕶 Ask about "opportunities"']);
       if (o.duty != null && o.job?.role === 'officer' && c.flags.stalker != null) opts.push(['report', '🚔 Report your stalker']);
       if (o.owesGang && c.gang === o.owesGang.gang) opts.push(['collect', `💰 "You owe the ${W.crime.gang(o.owesGang.gang).name}"`], ['scare', '🔪 Lean on them']);
@@ -300,6 +301,7 @@ export class LifeUI {
         } else say(o.first, 'Isn\'t it a bit soon?');
       } else if (k === 'baby') { say('You', 'I think I\'m ready to start a family.'); const err = Ls.tryForBaby(c, o); say(o.first, err ? (err.includes('adoption') ? 'Maybe we should look into adoption…' : err) : 'Let\'s do it. 💕'); }
       else if (k === 'breakup') { say('You', 'I think we should break up.'); Ls.breakUp(c, o, `You broke up with ${o.first}.`); say(o.first, rand.pick(['…Wow. Okay.', 'Get out.', 'I saw this coming.'])); }
+      else if (k === 'night') { say('You', rand.pick(['Want to come back to my place?', 'Stay tonight?', 'I don\'t want tonight to end.'])); if (rand.chance(0.2 + Math.max(0, (r?.a ?? 0)) * 0.8)) say('🌙', W.drama.hookUp(c, o)); else { W.citizenAI.addAff(c, o, -0.05); say(o.first, rand.pick(['Not tonight.', 'Slow down.', 'I don\'t think so.'])); } }
       else if (k === 'connect') {
         const g = W.crime.gang(o.gang), L = ensureLife(c, W);
         say('You', 'I hear you know where the real money is.');
