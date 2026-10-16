@@ -195,7 +195,7 @@ export class Renderer {
     U.uMoonDir.value.copy(moon);
     U.uFlash.value = weather.flash || 0;
     // sun light
-    const sunI = dayF * 3.1 * (1 - cloud * 0.62);
+    const sunI = dayF * 2.35 * (1 - cloud * 0.62);
     this.sun.intensity = Math.max(sunI, night * 0.55 * (1 - cloud * 0.4));
     if (dayF > 0.02) this.sun.color.copy(U.uSunColor.value).lerp(new THREE.Color('#ff7a34'), goldenF * 0.35);
     else this.sun.color.set('#7a90d8');
@@ -203,17 +203,17 @@ export class Renderer {
     this.sun.position.set(focus.x + lightDir.x * 400, Math.max(60, lightDir.y * 400), focus.z + lightDir.z * 400);
     this.sun.target.position.set(focus.x, 0, focus.z);
     this.sun.castShadow = this.quality !== 'low' && (dayF > 0.05 || night > 0.95);
-    this.hemi.intensity = lerp(0.42, 0.78, dayF) * (1 - cloud * 0.15) + weather.flash * 2;
+    this.hemi.intensity = lerp(0.4, 0.7, dayF) * (1 - cloud * 0.15) + weather.flash * 2;
     // cool sky fill in the shadows, warm bounce from the ground, violet dusk
     this.hemi.color.copy(new THREE.Color('#9cc2ff').lerp(new THREE.Color('#a08ac8'), goldenF * 0.5).lerp(new THREE.Color('#3a4a8a'), night));
     this.hemi.groundColor.copy(new THREE.Color('#6a5a46').lerp(new THREE.Color('#3a2a30'), goldenF * 0.4).lerp(new THREE.Color('#3a2a22'), night));
     // fog
-    const fogBase = 0.0009 + cloud * 0.0006 + (weather.fog || 0) * 0.006 + (weather.precip || 0) * 0.0012;
+    const fogBase = 0.0015 + cloud * 0.0006 + (weather.fog || 0) * 0.006 + (weather.precip || 0) * 0.0012;
     this.scene.fog.density = fogBase;
-    this.scene.fog.color.copy(U.uHorizon.value).lerp(new THREE.Color('#8a9098'), (weather.fog || 0) * 0.5 * dayF);
+    this.scene.fog.color.copy(U.uHorizon.value).lerp(new THREE.Color('#c4b4a2'), 0.35 * dayF).lerp(new THREE.Color('#8a9098'), (weather.fog || 0) * 0.5 * dayF);
     // sodium skyglow: at night the haze picks up the city's own light
     this.scene.fog.color.lerp(new THREE.Color('#3a2a26'), night * (0.55 + cloud * 0.3));
-    this.r.toneMappingExposure = lerp(1.28, 0.98, dayF) + goldenF * 0.06;
+    this.r.toneMappingExposure = lerp(1.2, 0.92, dayF) + goldenF * 0.05;
     this.bloom.strength = lerp(0.28, 0.85, night);
     this.bloom.radius = lerp(0.45, 0.6, night);
     this.grade.setMood(this.env, weather);

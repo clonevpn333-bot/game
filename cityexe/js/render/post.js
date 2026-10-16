@@ -78,7 +78,7 @@ export class AOPass extends Pass {
     this.camera = camera;
     this.mat = new THREE.ShaderMaterial({
       vertexShader: VS, fragmentShader: AO_FS,
-      uniforms: { tDiffuse: { value: null }, tDepth: { value: null }, uRes: { value: new THREE.Vector2(1, 1) }, uNear: { value: 0.5 }, uFar: { value: 5000 }, uProjInv: { value: new THREE.Matrix4() }, uRadius: { value: 1.6 }, uStrength: { value: 0.75 }, uNight: { value: 0 } },
+      uniforms: { tDiffuse: { value: null }, tDepth: { value: null }, uRes: { value: new THREE.Vector2(1, 1) }, uNear: { value: 0.5 }, uFar: { value: 5000 }, uProjInv: { value: new THREE.Matrix4() }, uRadius: { value: 1.8 }, uStrength: { value: 0.85 }, uNight: { value: 0 } },
       depthTest: false, depthWrite: false,
     });
     this.quad = new FullScreenQuad(this.mat);
@@ -120,13 +120,14 @@ export class GradePass extends Pass {
     const U = this.mat.uniforms;
     const day = env.dayF ?? 1, gold = env.golden ?? 0, night = env.night ?? 0;
     const wet = Math.min(1, (weather.cloud || 0) * 0.6 + (weather.precip || 0));
-    U.uSat.value = (1.08 + gold * 0.12) * (1 - wet * 0.18) * (1 - night * 0.08);
-    U.uContrast.value = 1.06 + gold * 0.04 + night * 0.06 - wet * 0.04;
-    const sh = new THREE.Color(0.96, 0.99, 1.07).lerp(new THREE.Color(0.9, 0.95, 1.14), night).lerp(new THREE.Color(0.93, 0.96, 1.05), wet * 0.6);
-    const hi = new THREE.Color(1.04, 1.0, 0.95).lerp(new THREE.Color(1.1, 0.98, 0.86), gold).lerp(new THREE.Color(1.08, 0.98, 0.88), night * 0.7).lerp(new THREE.Color(1.0, 1.0, 1.02), wet * 0.6);
+    // mellow: muted colour, soft contrast, faded blacks, teal shadows and amber highlights
+    U.uSat.value = (0.86 + gold * 0.1) * (1 - wet * 0.15) * (1 - night * 0.06);
+    U.uContrast.value = 0.95 + gold * 0.03 + night * 0.05 - wet * 0.03;
+    const sh = new THREE.Color(0.9, 0.98, 1.05).lerp(new THREE.Color(0.86, 0.94, 1.12), night).lerp(new THREE.Color(0.92, 0.96, 1.03), wet * 0.6);
+    const hi = new THREE.Color(1.07, 1.0, 0.9).lerp(new THREE.Color(1.12, 0.97, 0.82), gold).lerp(new THREE.Color(1.1, 0.97, 0.85), night * 0.7).lerp(new THREE.Color(1.02, 1.0, 0.98), wet * 0.6);
     U.uShadowTint.value.copy(sh); U.uHighTint.value.copy(hi);
-    U.uVig.value = 0.28 + night * 0.16;
-    U.uLift.value = -0.01 * day + 0.006 * night;
+    U.uVig.value = 0.4 + night * 0.15;
+    U.uLift.value = 0.018 * day + 0.012 * night;
   }
 }
 
