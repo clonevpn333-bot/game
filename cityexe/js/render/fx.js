@@ -205,6 +205,11 @@ export class FX {
       const p = e.c.ped; if (!p) return;
       for (let i = 0; i < 10; i++) this.smoke.emit({ x: p.x, y: (p.y || 0) + 1.1, z: p.z, vx: (Math.random() - 0.5) * 2.5, vy: Math.random() * 1.5, vz: (Math.random() - 0.5) * 2.5, life: 0, max: 0.5, s0: 0.12, s1: 0.25, c0: [0.45, 0.02, 0.02, 0.9], c1: [0.3, 0.0, 0.0, 0], grav: -9, rot: 0 });
     });
+    world.on('explosion', (e) => {
+      for (let i = 0; i < 60; i++) { const a = Math.random() * 6.28, sp = 2 + Math.random() * 7; this.glow.emit({ x: e.x, y: e.y, z: e.z, vx: Math.cos(a) * sp, vy: 2 + Math.random() * 8, vz: Math.sin(a) * sp, life: 0, max: 0.5 + Math.random() * 0.6, s0: 1.6, s1: 0.4, c0: [5, 2.6, 0.8, 1], c1: [2, 0.4, 0.1, 0], grav: -6, rot: 0 }); }
+      for (let i = 0; i < 30; i++) this.smoke.emit({ x: e.x + (Math.random() - 0.5) * 2, y: e.y + Math.random(), z: e.z + (Math.random() - 0.5) * 2, vx: (Math.random() - 0.5) * 2, vy: 2 + Math.random() * 3, vz: (Math.random() - 0.5) * 2, life: 0, max: 4 + Math.random() * 4, s0: 1.5, s1: 6, c0: [0.12, 0.11, 0.1, 0.8], c1: [0.2, 0.2, 0.2, 0], rot: Math.random() * 6 });
+      this.flashes.push({ x: e.x, y: e.y + 1, z: e.z, life: 0.4 });
+    });
     world.on('splash', (e) => { for (let i = 0; i < 40; i++) this.water.emit({ x: e.x, y: -2.2, z: e.z, vx: (Math.random() - 0.5) * 6, vy: 4 + Math.random() * 6, vz: (Math.random() - 0.5) * 6, life: 0, max: 1.2, s0: 0.5, s1: 1.2, c0: [0.85, 0.92, 1, 0.7], c1: [0.85, 0.92, 1, 0], grav: -14, rot: 0 }); });
   }
 

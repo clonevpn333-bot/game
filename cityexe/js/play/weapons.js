@@ -109,6 +109,19 @@ export class PlayerWeapons {
       const d = dist(o.x, o.z, p.x, p.z);
       if (d < bd) { bd = d; best = o; }
     }
+    if (!best) {
+      // nobody there: take it out on the nearest car
+      for (const v of W.traffic.vehicles) {
+        if (v.hidden || v.state === 'garage' || v.state === 'abstract' || v.state === 'gone' || v.id === c.veh) continue;
+        if (dist(v.x, v.z, p.x, p.z) > Math.max(v.len, v.wid) / 2 + 1.2) continue;
+        const ang = Math.atan2(v.x - p.x, v.z - p.z);
+        if (Math.abs(((ang - p.h + Math.PI * 3) % (Math.PI * 2)) - Math.PI) > 1.2) continue;
+        W.combat.damageVehicle(v, WEAPONS[wid].dmg * 0.12, c, { x: p.x + Math.sin(p.h), z: p.z + Math.cos(p.h) });
+        if (v.alarm === 0 && v.state === 'parked') v.alarm = 4;
+        this.game.audio && this.game.audio.impact(3);
+        break;
+      }
+    }
     if (best) {
       const o = W.citizens[best.cid];
       W.combat.melee(c, wid, o);

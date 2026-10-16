@@ -96,7 +96,7 @@ export const LAYOUTS = {
     L.shell({ floor: 'planks', fc: wood, wc: wall });
     const hw = L.w / 2, hd = L.d / 2;
     // bedroom + bathroom at the back, divided from the living area
-    L.wallX(-0.6, -hw, hw, { c: wall, gaps: [[-4.1, -3.1], [1.6, 2.6]] });
+    L.wallX(-0.6, -hw, hw, { c: wall, gaps: [[-4.1, -3.1], [4.0, 5.0]] });
     L.wallZ(-1.0, -hd, -0.6, { c: '#e8eef0', gaps: [] });
     L.floor(-hw, -hd, -1.0, -0.6, 'tile', '#dfe6ea');
     // bathroom (back left)
@@ -120,7 +120,7 @@ export const LAYOUTS = {
     L.put('tvStand', 2.2, -0.15, 0, { on: true });
     L.put('armchair', 4.6, 1.1, -Math.PI / 2, { c: L.pick(PALETTE.sofa, 5) });
     L.put('rug', 2.2, 1.2, 0, { w: 3.2, d: 2.6, c: L.pick(['#8a3a3a', '#3a5a8a', '#6a6a3a', '#5a3a5a'], 6) }, false);
-    L.put('floorLamp', 5.4, 2.6, 0, {}, false); L.put('plant', 5.4, -0.2, 0);
+    L.put('floorLamp', 5.4, 2.6, 0, {}, false); L.put('plant', 5.5, 4.4, 0);
     L.put('bookshelf', 0.4, 4.6, Math.PI);
     L.spot('sofa', 1.7, 2.1, Math.PI); L.spot('sofa', 2.7, 2.1, Math.PI); L.spot('seat', 4.5, 1.1, -Math.PI / 2);
     L.act('tv', 2.2, 1.6, 'Watch TV');

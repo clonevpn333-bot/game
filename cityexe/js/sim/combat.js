@@ -86,12 +86,31 @@ export class Combat {
       const L = Math.hypot(d.x, d.y, d.z); d.x /= L; d.y /= L; d.z /= L;
       const r = this.ray(from, d, wp.range, shooter ? shooter.id : -1);
       if (r.hit === 'ped') this.wound(r.c, wp.dmg * (r.head ? 2.2 : 1) * (wp.pellets ? clamp(1.4 - r.t / wp.range, 0.3, 1.2) : 1), shooter, wid, wp.stun);
-      if (r.hit === 'veh') { r.v.damage = clamp(r.v.damage + 0.02 * (wp.pellets ? 0.4 : 1), 0, 1); if (r.v.driver != null && !r.v.player && rand.chance(0.12)) this.wound(W.citizens[r.v.driver], wp.dmg * 0.7, shooter, wid); if (r.v.alarm === 0 && r.v.state === 'parked') r.v.alarm = 4; }
+      if (r.hit === 'veh') { this.damageVehicle(r.v, wp.dmg * 0.14 * (wp.pellets ? 0.5 : 1), shooter, r.point); if (r.v.driver != null && !r.v.player && rand.chance(0.15)) this.wound(W.citizens[r.v.driver], wp.dmg * 0.7, shooter, wid); if (r.v.alarm === 0 && r.v.state === 'parked') r.v.alarm = 4; }
       out.push({ from, to: r.point, hit: r.hit });
     }
     W.emit('shot', { shooter, wid, from, shots: out, noise: wp.noise });
     if (wp.noise > 0) this.gunshotHeard(shooter, from, wp.noise);
     return out;
+  }
+
+  // cars take punishment, stall into wrecks, and finally go up in flames
+  damageVehicle(v, amt, attacker, at) {
+    const W = this.W;
+    if (!v || v.burnt) return;
+    v.damage = clamp((v.damage || 0) + amt, 0, 1);
+    W.emit('impact', { x: at ? at.x : v.x, z: at ? at.z : v.z, v, power: 1 + amt * 20 });
+    if (v.damage > 0.6 && !v.player && (v.state === 'lane' || v.state === 'parked' || v.state === 'merging')) { W.traffic.toFree(v, 'shot'); v.state = 'wreck'; v.wreck = true; v.input = null; }
+    if (v.damage >= 1) {
+      v.burnt = true; v.state = v.player ? v.state : 'wreck'; v.wreck = true; v.input = null;
+      W.emit('explosion', { x: v.x, z: v.z, y: (v.y || 0) + 1 });
+      W.emit('shot', { shooter: attacker, wid: 'shotgun', from: { x: v.x, y: 1, z: v.z }, shots: [], noise: 3 });
+      if (attacker) this.gunshotHeard(attacker, { x: v.x, z: v.z }, 3);
+      for (const p of W.peds.near(v.x, v.z, 5)) { const o = W.citizens[p.cid]; if (o) this.wound(o, 0.8 * (1 - dist(p.x, p.z, v.x, v.z) / 6), attacker, 'shotgun'); }
+      if (v.driver != null) { const d = W.citizens[v.driver]; if (d && !d.possessed) this.wound(d, 2, attacker, 'shotgun'); }
+      W.history.cityEvent(`A ${v.T?.label || 'car'} exploded on the street`, { type: 'crime', x: v.x, z: v.z, minor: true });
+      if (attacker && attacker === this.player) this.raiseHeat(1.5);
+    }
   }
 
   melee(attacker, wid, target) {
@@ -105,6 +124,8 @@ export class Combat {
     const W = this.W;
     if (!c || c.status === 'dead') return;
     const pos = W.citizenPos(c) || { x: 0, z: 0 };
+    // children are never harmed: they scream and run
+    if (c.age < 16) { if (c.ped && !c.possessed) W.peds.walkTo(c.ped, c.ped.x + (rand.float() - 0.5) * 60, c.ped.z + (rand.float() - 0.5) * 60, () => W.citizenAI.resume(c), { run: true, direct: true }); return; }
     if (stun) { if (c.ped) { c.ped.fallen = stun; W.peds.stop(c.ped, 'down'); } this.crimeAgainst(c, attacker, 'tased', pos, 0); return; }
     const armour = c.life?.inv?.armour ? 0.5 : 1;
     c.health = clamp((c.health ?? 1) - dmg * armour, 0, 1);
@@ -114,7 +135,7 @@ export class Combat {
     const lethal = c.health <= 0;
     if (lethal || c.health < 0.35) {
       // down: dead, or critically injured waiting for EMS
-      const dies = lethal && rand.chance(c.possessed ? 0.35 : 0.65);
+      const dies = lethal && (c.possessed ? rand.chance(0.35) : true);
       if (dies) {
         const cause = WEAPONS[wid]?.melee ? 'violent assault' : 'gunshot wound';
         if (c.isPlayer && W.life && W.life.pid === c.id) W.life.die(c, cause);

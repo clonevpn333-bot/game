@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { makeInstMaterial } from './materials.js';
 import { piece } from './furniture.js';
+import { WEAPONS } from '../sim/combat.js';
 import { Layout, LAYOUTS, SIZES } from './layouts.js';
 import { PeopleView } from './peopleView.js';
 import { BTYPES } from '../sim/economy.js';
@@ -400,11 +401,31 @@ export class Interiors {
     if (Wp && !this.busy) {
       if (I.hit('KeyX')) { const list = Wp.owned(c); const i = Wp.cur == null ? 0 : list.indexOf(Wp.cur) + 1; Wp.cur = i >= list.length ? null : list[i]; g.toast(Wp.cur ? Wp.cur : 'Weapon holstered', 1.4); }
       p.weapon = Wp.cur && Wp.cur !== 'fists' ? Wp.cur : null;
-      const aiming = p.weapon && I.mouse.down[2];
+      const wpn = Wp.cur ? WEAPONS[Wp.cur] : null;
+      const aiming = p.weapon && !(wpn && wpn.melee) && I.mouse.down[2];
       if (aiming) { p.action = 'aim'; p.h = T.yaw; }
       else if (p.action === 'aim') p.action = '';
       Wp.fireT -= dt;
       const down = I.mouse.down[0] && I.locked; const edge = down && !Wp.prevDown; Wp.prevDown = down;
+      // fists, knives and bats: swing at whoever is in front of you
+      if (wpn && wpn.melee && edge && Wp.fireT <= 0) {
+        Wp.fireT = wpn.rate;
+        p.action = 'build'; setTimeout(() => { if (this.player === p && p.action === 'build') p.action = ''; }, 300);
+        let hit = null, hd = wpn.range + 0.5;
+        for (const f of this.figs.values()) {
+          if (f.action === 'down') continue;
+          const d = dist(f.x, f.z, p.x, p.z), ang = Math.atan2(f.x - p.x, f.z - p.z);
+          if (d < hd && Math.abs(((ang - p.h + Math.PI * 3) % (Math.PI * 2)) - Math.PI) < 1.0) { hd = d; hit = f; }
+        }
+        if (hit) {
+          const o = W.citizens[hit.cid];
+          W.combat.melee(c, Wp.cur, o);
+          g.audio && g.audio.impact(4);
+          if (o.status !== 'ok' || o.injured > 0 || (o.health ?? 1) < 0.35) hit.action = 'down';
+          for (const f of this.figs.values()) if (f !== hit && f.action !== 'down' && f.action !== 'aim') f.action = 'hail';
+          if (W.heists) { const V = W.heists.vaults[b.id] || (W.heists.vaults[b.id] = {}); V.hostile = W.time; }
+        }
+      }
       if (aiming && Wp.fireT <= 0 && (edge || (down && W.combat && Wp.cur && ['smg', 'rifle'].includes(Wp.cur)))) {
         const am = Wp.ammo(c, Wp.cur);
         if (am > 0) { if (am !== Infinity) c.life.ammo[Wp.cur] = am - 1; Wp.fireT = 0.3; W.heists.indoorShot(g, Wp.cur); g.rig.shake = 0.4; }
