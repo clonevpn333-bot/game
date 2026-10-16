@@ -3,6 +3,7 @@
 // underground board), conversations, life-event cards and the end of a life.
 import { openPanel, money, esc } from './panels.js';
 import { BACKGROUNDS, START_TRAITS } from '../sim/life.js';
+import { repLabel } from '../sim/goals.js';
 import { ensureLife } from '../sim/lifeState.js';
 import { persona, personaSummary, talk } from '../sim/persona.js';
 import { meets, interviewChance, PROGRAMS, enroll } from '../sim/careers.js';
@@ -137,7 +138,9 @@ export class LifeUI {
       <div class="lh-money"><span>💵 ${money(c.money)}</span><span>🏦 ${money(c.bank || 0)}</span>${L.loans.length ? `<span class="neg">debt ${money(L.loans.reduce((a, l) => a + l.left, 0))}</span>` : ''}</div>
       <div class="lh-stats">${[['❤', S.health, '#e05a5a'], ['😊', S.happy, '#e8c040'], ['🧠', S.smarts, '#5aa0e8'], ['✨', S.looks, '#d070d0'], ['💪', S.fitness, '#50c080']].map(([ic, v, col]) => `<div title="${ic}"><em>${ic}</em><span class="b">${bar(v, col)}</span></div>`).join('')}</div>
       <div class="lh-needs">${[['Energy', N.energy], ['Hunger', N.hunger], ['Social', N.social], ['Fun', N.fun]].map(([n, v]) => `<div><em>${n}</em><span class="b">${bar(v * 100, v < 0.2 ? '#e05a5a' : '#8ab0c8')}</span></div>`).join('')}</div>
-      <div class="lh-keys"><kbd>P</kbd> phone${unread ? ` <b class="badge">${unread}</b>` : ''} · <kbd>Q</kbd> watch the city</div>`;
+      <div class="lh-goals"><em>🎯 Objectives</em>${W.goals ? W.goals.list(c).map((x) => `<div>• ${esc(x.def.text)} <small>${money(x.def.pay)}</small></div>`).join('') : ''}</div>
+      <div class="lh-rep">Reputation: <b>${repLabel(L.rep ?? 50)}</b> <span class="b">${bar(L.rep ?? 50, (L.rep ?? 50) < 35 ? '#e05a5a' : (L.rep ?? 50) > 65 ? '#50c080' : '#c8b060')}</span></div>
+      <div class="lh-keys"><kbd>V</kbd> attack · <kbd>X</kbd> weapon · <kbd>E</kbd> use · <kbd>T</kbd> talk · <kbd>P</kbd> phone${unread ? ` <b class="badge">${unread}</b>` : ''} · <kbd>Q</kbd> watch the city</div>`;
     if (html !== this._h) { this._h = html; this.hud.innerHTML = html; }
   }
 

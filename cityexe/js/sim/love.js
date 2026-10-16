@@ -175,8 +175,8 @@ export class Love {
     if (o) {
       const [ic, label] = this.shownVibe(c, o);
       const P = persona(o);
-      h += `<div class="card">${av(o, true)}<div><b>${esc(o.first)}, ${o.age}</b> <small>${ic} ${label}</small><br><small>${esc(W.citizenAI.jobTitle(o))} · into ${esc(P.likes.slice(0, 2).join(' & '))}</small><p>"${esc(rand.pick(BIOS[this.vibe(o)]))}"</p></div></div>
-        <div class="menu"><button data-swipe="0">✕ Nope</button><button data-swipe="1" class="pri">❤ Like</button></div>`;
+      h += `<div class="sp-card">${av(o, true)}<div><b>${esc(o.first)}, ${o.age}</b> <small>${ic} ${label}</small><br><small>${esc(W.citizenAI.jobTitle(o))} · into ${esc(P.likes.slice(0, 2).join(' & '))}</small><p>"${esc(rand.pick(BIOS[this.vibe(o)]))}"</p></div></div>
+        <div class="sp-btns"><button data-swipe="0">✕ Nope</button><button data-swipe="1" class="pri">❤ Like</button></div>`;
     } else h += '<p class="muted">No one new nearby. Check back tomorrow.</p>';
     const ms = S.matches.map((id) => W.citizens[id]).filter((m) => m && m.status === 'ok' && m !== partner);
     if (ms.length) h += `<h4>Matches</h4>${ms.map((m) => `<div class="job"><span>${av(m)} <b>${esc(m.name)}</b> <small>${this.shownVibe(c, m).join(' ')}</small></span><button data-date="${m.id}" ${M || partner ? 'disabled' : ''}>Ask on a date</button><button data-unmatch="${m.id}">✕</button></div>`).join('')}`;

@@ -408,10 +408,16 @@ export class Interiors {
       Wp.fireT -= dt;
       const down = I.mouse.down[0] && I.locked; const edge = down && !Wp.prevDown; Wp.prevDown = down;
       // fists, knives and bats: swing at whoever is in front of you
-      if (wpn && wpn.melee && edge && Wp.fireT <= 0) {
-        Wp.fireT = wpn.rate;
+      let front = null;
+      { let fd = 2.3; for (const f of this.figs.values()) { if (f.action === 'down') continue; const d = dist(f.x, f.z, p.x, p.z), ang = Math.atan2(f.x - p.x, f.z - p.z); if (d < fd && Math.abs(((ang - p.h + Math.PI * 3) % (Math.PI * 2)) - Math.PI) < 1.1) { fd = d; front = f; } } }
+      if (front && !aiming) P.prompts.push({ key: 'V', text: `Attack ${W.citizens[front.cid]?.first || 'them'}`, danger: true });
+      const swingNow = Wp.fireT <= 0 && (I.hit('KeyV') || (edge && (!wpn || wpn.melee)));
+      if (swingNow) {
+        const mwid = wpn && wpn.melee ? Wp.cur : 'fists';
+        const mw = WEAPONS[mwid];
+        Wp.fireT = mw.rate;
         p.action = 'build'; setTimeout(() => { if (this.player === p && p.action === 'build') p.action = ''; }, 300);
-        let hit = null, hd = wpn.range + 0.5;
+        let hit = null, hd = mw.range + 0.5;
         for (const f of this.figs.values()) {
           if (f.action === 'down') continue;
           const d = dist(f.x, f.z, p.x, p.z), ang = Math.atan2(f.x - p.x, f.z - p.z);
@@ -419,8 +425,9 @@ export class Interiors {
         }
         if (hit) {
           const o = W.citizens[hit.cid];
-          W.combat.melee(c, Wp.cur, o);
+          W.combat.melee(c, mwid, o);
           g.audio && g.audio.impact(4);
+          hit.h = Math.atan2(p.x - hit.x, p.z - hit.z);
           if (o.status !== 'ok' || o.injured > 0 || (o.health ?? 1) < 0.35) hit.action = 'down';
           for (const f of this.figs.values()) if (f !== hit && f.action !== 'down' && f.action !== 'aim') f.action = 'hail';
           if (W.heists) { const V = W.heists.vaults[b.id] || (W.heists.vaults[b.id] = {}); V.hostile = W.time; }

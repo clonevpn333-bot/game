@@ -130,7 +130,7 @@ export const LAYOUTS = {
     L.put('sink', -5.3, 2.7, Math.PI / 2);
     L.put('fridge', -5.25, 3.9, Math.PI / 2);
     L.put('dining', -2.6, 1.8, 0, { c: wood });
-    L.act('fridge', -4.3, 3.9, 'Eat something'); L.act('stove', -4.3, -0.25, 'Cook a meal');
+    L.act('fridge', -4.3, 3.9, 'Eat something'); L.act('stove', -4.3, -0.25, 'Cook a meal'); L.act('drawer', -4.3, 1.4, 'Open the kitchen drawer');
     L.spot('seat', -3.0, 1.1, 0); L.spot('seat', -2.2, 2.5, Math.PI); L.spot('stand', -4.2, 1.0, -Math.PI / 2);
     // the home computer
     L.put('desk', 0.4, -1.4, Math.PI, { on: true, c: wood });
@@ -176,7 +176,7 @@ export const LAYOUTS = {
     L.put('counter', -7.1, 1.2, Math.PI / 2, { w: 3.0, upper: true }); L.put('stove', -7.1, -0.6, Math.PI / 2); L.put('sink', -7.1, 3.2, Math.PI / 2); L.put('fridge', -7.0, 4.6, Math.PI / 2);
     L.put('counter', -4.4, 1.6, 0, { w: 2.2, c: '#3a4a5a' });
     L.put('dining', -3.8, 4.2, 0, { c: wood });
-    L.act('fridge', -6.0, 4.6, 'Eat something'); L.act('stove', -6.0, -0.6, 'Cook a meal');
+    L.act('fridge', -6.0, 4.6, 'Eat something'); L.act('stove', -6.0, -0.6, 'Cook a meal'); L.act('drawer', -6.0, 1.6, 'Open the kitchen drawer');
     L.spot('seat', -4.2, 3.5, 0); L.spot('seat', -3.4, 4.9, Math.PI); L.spot('stand', -6.0, 1.2, -Math.PI / 2);
     L.light(-5, 2.5, '#fff0d8', 10); L.light(4, 2.5, '#fff0d8', 10);
   },
@@ -621,7 +621,7 @@ function dwelling(L, x0, z0, x1, z1, o) {
   L.act('bed', x0 + 1.1, z0 + 2.6, 'Sleep'); L.spot('bed', x0 + 1.1, z0 + 1.2, Math.PI);
   L.put('wardrobe', x0 + (W < 6 ? 2.4 : 2.8), z0 + 0.4, 0, { c: '#6a4a30' }); L.act('wardrobe', x0 + 2.6, z0 + 1.2, 'Change clothes');
   L.put('stove', x1 - 0.4, z0 + 1.0, -Math.PI / 2); L.put('fridge', x1 - 0.45, z0 + 2.0, -Math.PI / 2); L.put('sink', x1 - 0.4, z0 + 3.0, -Math.PI / 2);
-  L.act('stove', x1 - 1.3, z0 + 1.0, 'Cook a meal'); L.act('fridge', x1 - 1.3, z0 + 2.0, 'Eat something');
+  L.act('stove', x1 - 1.3, z0 + 1.0, 'Cook a meal'); L.act('fridge', x1 - 1.3, z0 + 2.0, 'Eat something'); L.act('drawer', x1 - 1.3, z0 + 3.0, 'Open the kitchen drawer');
   if (D > 6) { L.put('dining', x1 - 2.2, z0 + 4.4, 0, { c: '#6a4a30' }); L.spot('seat', x1 - 2.6, z0 + 3.7, 0); L.spot('seat', x1 - 1.8, z0 + 5.1, Math.PI); }
   L.put('sofa', dx - 0.6, z1 - 1.0, Math.PI, { c: L.pick(PALETTE.sofa, 4) }); L.put('tvStand', dx - 0.6, z1 - (D > 6 ? 3.2 : 2.6), 0, { on: true });
   L.act('tv', dx - 0.6, z1 - 1.8, 'Watch TV'); L.spot('sofa', dx - 1.1, z1 - 1.0, Math.PI); L.spot('sofa', dx - 0.1, z1 - 1.0, Math.PI);

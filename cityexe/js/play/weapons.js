@@ -67,6 +67,10 @@ export class PlayerWeapons {
     const down = I.mouse.down[0] && I.locked;
     const edge = down && !this.prevDown;
     this.prevDown = down;
+    // V: attack whoever is in front of you, armed or not (guns pistol-whip)
+    const front = this.frontPed(c, p, 2.2);
+    if (front && !this.aiming) P.prompts.push({ key: 'V', text: `Attack ${W.citizens[front.cid]?.first || 'them'}`, danger: true });
+    if (this.fireT <= 0 && (I.hit('KeyV') || (!wp && edge))) { const mw = wp && wp.melee ? this.cur : 'fists'; this.swing(c, p, mw); this.fireT = WEAPONS[mw].rate; return; }
     if (!wp || this.fireT > 0) return;
     if (wp.melee && edge) { this.swing(c, p, this.cur); this.fireT = wp.rate; return; }
     if (!this.aiming) return;
@@ -87,6 +91,16 @@ export class PlayerWeapons {
     W.combat.fire(c, this.cur, muzzle, { x: dx / Ld, y: dy / Ld, z: dz / Ld });
     g.rig.shake = Math.max(g.rig.shake, wp.dmg * 0.6 + (wp.pellets ? 0.4 : 0));
     T.pitch = clamp(T.pitch - wp.dmg * 0.03, -0.25, 1.25);
+  }
+
+  frontPed(c, p, range) {
+    let best = null, bd = range;
+    for (const o of this.W.peds.near(p.x, p.z, range + 0.5)) {
+      if (o.cid === c.id || o.action === 'down') continue;
+      const d = dist(o.x, o.z, p.x, p.z), ang = Math.atan2(o.x - p.x, o.z - p.z);
+      if (d < bd && Math.abs(((ang - p.h + Math.PI * 3) % (Math.PI * 2)) - Math.PI) < 1.1) { bd = d; best = o; }
+    }
+    return best;
   }
 
   targetPed(c, range) {

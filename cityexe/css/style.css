@@ -266,3 +266,23 @@ button.big { padding: 12px 18px; font-size: 15px; } .small { font-size: 12px; }
 #crosshair { position: fixed; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border: 2px solid rgba(255,255,255,0.85); border-radius: 50%; pointer-events: none; box-shadow: 0 0 4px #000; }
 #crosshair::after { content: ''; position: absolute; left: 50%; top: 50%; width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; background: #fff; border-radius: 50%; }
 #crosshair.hidden { display: none; }
+
+/* objectives & reputation in the life HUD */
+#life-hud .lh-goals { margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--line); line-height: 1.45; }
+#life-hud .lh-goals em { font-style: normal; font-weight: 600; display: block; margin-bottom: 2px; }
+#life-hud .lh-goals small { color: #7ad8a0; }
+#life-hud .lh-rep { margin-top: 6px; display: flex; gap: 6px; align-items: center; } #life-hud .lh-rep .b { flex: 1; }
+
+/* Spark dating app */
+.spark { display: flex; flex-direction: column; gap: 8px; }
+.spark > p.muted { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 0; }
+.spark > p.muted button { padding: 3px 9px; font-size: 11px; border-radius: 99px; }
+.spark .job { display: flex; gap: 8px; align-items: center; padding: 8px 10px; background: rgba(255,255,255,0.05); border-radius: 10px; }
+.spark .job span { flex: 1; line-height: 1.35; } .spark .job small { color: var(--muted); }
+.spark .job button { padding: 5px 10px; font-size: 12px; white-space: nowrap; }
+.spark .sp-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 18px 14px; border-radius: 16px; background: linear-gradient(160deg, rgba(255,90,120,0.18), rgba(120,80,255,0.12)); border: 1px solid rgba(255,255,255,0.08); }
+.spark .sp-card .av.big { width: 76px; height: 76px; font-size: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.spark .sp-card p { margin: 6px 0 0; font-style: italic; opacity: 0.85; }
+.spark .sp-btns { display: flex; gap: 10px; } .spark .sp-btns button { flex: 1; padding: 12px; font-size: 15px; border-radius: 12px; }
+.spark .av { display: inline-flex; width: 26px; height: 26px; border-radius: 50%; align-items: center; justify-content: center; font-weight: 700; vertical-align: middle; margin-right: 4px; }
+.spark h4 { margin: 6px 0 0; }

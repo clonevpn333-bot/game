@@ -101,6 +101,12 @@ export class Activities {
         this.startTimed('shower', 15, { onDone: () => { L.hygiene = 1; stat(c, 'happy', 1); g.toast('Fresh and clean.'); } });
         return;
       case 'toilet': g.toast('Much better.'); return;
+      case 'drawer': {
+        const take = (wid, label) => { L.inv.weapons = Array.from(new Set([...(L.inv.weapons || []), wid])); if (g.weapons) g.weapons.cur = wid; g.toast(`You take the ${label}. (X to switch weapons, click or V to swing)`, 4); };
+        openPanel(g, { title: '🗄 Kitchen drawer', html: '<div class="menu"><button data-k="knife"><span>Kitchen knife</span><b>🔪</b></button><button data-k="bat"><span>Cast-iron frying pan</span><b>🍳</b></button><button data-k="x"><span>Close the drawer</span></button></div>',
+          onBind: (a) => a.el.querySelectorAll('[data-k]').forEach((b) => b.onclick = () => { a.close(); if (b.dataset.k === 'knife') take('knife', 'kitchen knife'); else if (b.dataset.k === 'bat') take('bat', 'frying pan'); }) });
+        return;
+      }
       case 'firepit':
         p.action = 'sit';
         this.startTimed('fire', 60, { speed: 5, onDone: () => { p.action = ''; N.fun = clamp(N.fun + 0.3, 0, 1); c.stress = clamp((c.stress || 0) - 0.2, 0, 1); stat(c, 'happy', 2); g.toast(rand.pick(['Crickets, woodsmoke, a sky full of stars you never see in the city.', 'The fire pops. Somewhere an owl answers.', 'You watch the embers until your thoughts go quiet.'])); } });

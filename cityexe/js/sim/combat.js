@@ -109,7 +109,7 @@ export class Combat {
       for (const p of W.peds.near(v.x, v.z, 5)) { const o = W.citizens[p.cid]; if (o) this.wound(o, 0.8 * (1 - dist(p.x, p.z, v.x, v.z) / 6), attacker, 'shotgun'); }
       if (v.driver != null) { const d = W.citizens[v.driver]; if (d && !d.possessed) this.wound(d, 2, attacker, 'shotgun'); }
       W.history.cityEvent(`A ${v.T?.label || 'car'} exploded on the street`, { type: 'crime', x: v.x, z: v.z, minor: true });
-      if (attacker && attacker === this.player) this.raiseHeat(1.5);
+      if (attacker && attacker === this.player) { this.raiseHeat(1.5); if (attacker.life) attacker.life.carsBlown = (attacker.life.carsBlown || 0) + 1; this.W.goals && this.W.goals.rep(attacker, -4); }
     }
   }
 
@@ -164,10 +164,49 @@ export class Combat {
       attacker.flags.suspectOf = inc.id;
     } else { inc.needs.police = Math.min(6, inc.needs.police + 1); if (!inc.victims.includes(victim.id)) inc.victims.push(victim.id); }
     W.history.citizenLog(attacker, what === 'killed' ? `Killed ${victim.name}` : `Attacked ${victim.name}`, true);
+    if (attacker === this.player) this.consequences(attacker, victim, what, witnesses, severity);
     if (attacker === this.player) {
       const add = what === 'killed' ? (copVictim ? 5 : 3.5) : severity >= 2 ? 2 : 1;
       if (witnesses > 0 || W.incidents.anyPoliceSees(pos.x, pos.z, 60)) this.raiseHeat(add, inc);
       if (attacker.life) attacker.life.stats.karma = Math.max(0, attacker.life.stats.karma - (what === 'killed' ? 25 : 6));
+    }
+  }
+
+  // what the player's violence does to their life: reputation, family, job, partner
+  consequences(c, victim, what, witnesses, severity) {
+    const W = this.W, L = c.life;
+    if (!L) return;
+    const killed = what === 'killed';
+    W.goals && W.goals.rep(c, -(killed ? 14 : 3 + severity * 2) * (witnesses > 0 ? 1.6 : 0.7));
+    if (killed || victim.health < 0.35) L.kos = (L.kos || 0) + 1;
+    const fam = [...(c.parents || []), ...(c.siblings || []), ...(c.kids || [])].includes(victim.id);
+    const partner = W.citizenAI.partner(c);
+    if (fam || partner === victim) {
+      // the family closes ranks
+      const kin = [...(c.parents || []), ...(c.siblings || []), ...(c.kids || [])].map((id) => W.citizens[id]).filter((o) => o && o.status !== 'dead');
+      for (const o of kin) W.citizenAI.setRel(c, o, -0.9, 'enemy');
+      if (partner) { W.life.breakUp(c, partner, `${partner.first} left you after what you did.`); }
+      if (!L.disowned) {
+        L.disowned = true;
+        W.life.msg('🚪', `Your family has disowned you. ${killed ? 'Nobody will say your name at the funeral.' : 'They will not answer your calls.'}`);
+        W.history.citizenLog(c, 'Was disowned by their family', true);
+        if (rand.chance(0.6)) W.history.cityEvent(`${c.name} ${killed ? 'killed' : 'attacked'} a member of their own family`, { type: 'crime', who: c.id });
+      }
+      // living under their roof? not any more
+      const home = W.city.buildings[c.home];
+      if (home && kin.some((o) => o.home === c.home) && !L.kickedOut) {
+        L.kickedOut = true; L.withParents = false;
+        home.residents = home.residents.filter((id) => id !== c.id);
+        c.homeless = true;
+        c.home = (W.city.special.metro || [c.home])[0];
+        W.life.msg('🏚', 'You have been kicked out. You are sleeping rough until you rent a place (computer → HomeFinder).');
+      }
+    } else if (c.job && victim.job && victim.job.biz === c.job.biz) {
+      W.citizenAI.loseJob(c, 'fired for attacking a coworker');
+      W.life.msg('📦', `You were fired from ${W.economy.biz[victim.job.biz]?.name} for attacking ${victim.first}.`);
+    } else if (c.rel[victim.id] && c.rel[victim.id].t === 'friend') {
+      W.citizenAI.setRel(c, victim, -0.8, 'enemy');
+      if (witnesses > 0) W.life.msg('📱', `Word gets around: your friends heard what you did to ${victim.first}.`);
     }
   }
 
