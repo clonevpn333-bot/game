@@ -13,6 +13,7 @@ import { Combat } from './combat.js';
 import { Heists } from './heists.js';
 import { Crime } from './crime.js';
 import { DarkSide, Investigations } from './dark.js';
+import { StreetLife } from './street.js';
 import { History } from './history.js';
 import { Weather } from './weather.js';
 import { Power } from './power.js';
@@ -69,6 +70,7 @@ export class World {
     this.crime = new Crime(this);
     this.investigations = new Investigations(this);
     this.dark = new DarkSide(this);
+    this.street = new StreetLife(this);
     this.driverCtrl = { onLink: () => {}, idle: (v) => {} };
     this.lastHour = Math.floor(this.time / 60);
     this.lastDay = Math.floor(this.time / 1440);
@@ -102,11 +104,12 @@ export class World {
       }
     }
     const jobs = this.economy.jobs.length;
-    this.targetPop = opts.population ?? Math.round(Math.min(2200, Math.max(900, jobs / 0.8)));
+    this.targetPop = opts.population ?? Math.round(Math.min(2700, Math.max(1100, jobs / 0.68)));
     this.citizenAI.generate(rng, this.targetPop);
     this.services.init();
     this.transit.init();
     this.helis.init();
+    this.street.init();
     for (const c of this.citizens) if (c.working && c.job) this.services.onArriveWork(c);
     this.power.apply();
     this.weather.set('clear', 300, false);
@@ -173,6 +176,7 @@ export class World {
     this.helis && this.helis.update(dt);
     this.combat && this.combat.update(dt, dtMin);
     this.dark && this.dark.update(dt);
+    this.street && this.street.update(dt);
     this.restCheck(dt);
   }
 

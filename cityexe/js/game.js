@@ -7,6 +7,7 @@ import { Renderer } from './render/renderer.js';
 import { CityView } from './render/cityView.js';
 import { VehicleView } from './render/vehicleView.js';
 import { PeopleView } from './render/peopleView.js';
+import { StreetView } from './render/streetView.js';
 import { FX } from './render/fx.js';
 import { EventView } from './render/eventView.js';
 import { Input } from './core/input.js';
@@ -52,6 +53,7 @@ export class Game {
     this.cityView.buildTransitProps(this.world);
     this.vehicleView = new VehicleView(this.renderer, this.world);
     this.peopleView = new PeopleView(this.renderer, this.world);
+    this.streetView = new StreetView(this.renderer, this.world, this.peopleView);
     this.fx = new FX(this.renderer, this.world);
     this.eventView = new EventView(this.renderer, this.world, this.cityView);
     this.vehicleView.lightPool = this.fx.lights;
@@ -126,6 +128,7 @@ export class Game {
     this.cityView.update(dt, W);
     if (this.cityView.season !== W.season) this.cityView.setSeasonColors(W.season);
     this.vehicleView.update(dt);
+    this.streetView.update(dt);
     this.peopleView.update(dt);
     if (this.interiors) { this.rig.indoors = this.interiors.active; if (this.interiors.active) this.interiors.update(dt); }
     const selP = this.selectionPos(this.selected), hovP = this.mode === 'observe' ? this.selectionPos(this.hover) : null;

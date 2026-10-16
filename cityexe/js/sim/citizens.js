@@ -37,7 +37,7 @@ export const UNIFORMS = {
 const physMin = (sec) => (sec * C.TIME_SCALE) / 60;
 export const minToPhys = (min) => (min * 60) / C.TIME_SCALE;
 // optional per-citizen fields persisted in saves (life sim, crime, family)
-export const EXTRA_KEYS = ['lastJailed', 'gangRank', 'owesGang', 'bank', 'lastBank', 'edu', 'skills', 'family', 'gang', 'weapons', 'heat', 'life', 'school', 'parents', 'kids', 'siblings', 'studying', 'dealer', 'drugs', 'owes', 'married', 'isPlayer', 'mourned'];
+export const EXTRA_KEYS = ['celeb', 'visitor', 'lastJailed', 'gangRank', 'owesGang', 'bank', 'lastBank', 'edu', 'skills', 'family', 'gang', 'weapons', 'heat', 'life', 'school', 'parents', 'kids', 'siblings', 'studying', 'dealer', 'drugs', 'owes', 'married', 'isPlayer', 'mourned'];
 
 let CID = 0;
 export function newCitizen(rng, opts = {}) {
@@ -114,7 +114,7 @@ export class CitizenAI {
     for (const j of jobs) {
       // keep ~8% unemployed and some slots open (a real job market has vacancies)
       if (wi >= workers.length * 0.92) break;
-      if (priority(j) === 1 && rng.chance(0.07)) continue;
+      if (priority(j) === 1 && rng.chance(0.12)) continue;
       let pick = null;
       for (let k = wi; k < Math.min(workers.length, wi + 25); k++) {
         const c = workers[k];
@@ -543,6 +543,8 @@ export class CitizenAI {
     const W = this.world;
     const open = W.economy.openJobs((j, biz) => {
       if (j.role === 'mayor') return false;
+      // freshly posted openings stay on the board for a day before locals snap them up
+      if (j.posted != null && W.time - j.posted < 1440) return false;
       if (j.role === 'officer' && (c.traits.honesty < 0.5 || c.record.arrests > 0)) return false;
       if (['doctor', 'pharmacist', 'manager', 'analyst', 'pilot'].includes(j.role) && (c.traits.ambition < 0.5 || c.age < 26)) return false;
       return true;

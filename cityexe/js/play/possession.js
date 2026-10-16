@@ -386,6 +386,7 @@ export class Possession {
     // weapons & street dealing
     if (this.game.weapons) this.game.weapons.update(dt, this, p);
     if (W.crime) W.crime.dealPrompt(this.game, this, p);
+    if (W.street) W.street.footPrompts(this.game, this, p);
     // interactions
     this.footInteractions(dt);
     g.rig.updateThird(dt, p, { minDist: 2, maxDist: 14 });

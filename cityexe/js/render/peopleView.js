@@ -323,8 +323,15 @@ export class PeopleView {
     if (act === 'kneel' || act === 'repair' && (ped.id % 2 === 0)) kneel = 1;
     const form = L.form || 0;
     const B = L.b || 1;
+    const idle = !moving && !act && !lie;
+    const pid = (ped.id || 0) * 1.37;
+    // weight shift: hips roll with each step; idle people shift their weight; stumbling people sway
+    if (idle) bob = Math.sin(ph * 1.6 + pid) * 0.006;
+    if (act === 'cheer') bob = Math.abs(Math.sin(ph * 4 + pid)) * 0.09;
     let y = (ped.y || 0) + bob;
-    e.set(lie ? -Math.PI / 2 : lean, ped.h + (act === 'dance' ? Math.sin(ph * 1.5) * 0.4 : 0), 0, 'YXZ');
+    const stum = act === 'stumble';
+    const roll = moving ? Math.sin(cyc) * (run ? 0.05 : 0.035) : idle ? Math.sin(ph * 0.45 + pid) * 0.025 : stum ? Math.sin(ph * 1.1 + pid) * 0.14 : 0;
+    e.set(lie ? -Math.PI / 2 : lean + (stum ? 0.18 + Math.sin(ph * 1.3) * 0.08 : 0), ped.h + (act === 'dance' ? Math.sin(ph * 1.5) * 0.4 : 0) + (stum ? Math.sin(ph * 0.7 + pid) * 0.3 : 0), roll, 'YXZ');
     if (lie) y += 0.16;
     q.setFromEuler(e);
     p.set(ped.x, y, ped.z);
@@ -334,7 +341,7 @@ export class PeopleView {
     const hipY = sit ? 0.47 : kneel ? 0.52 : 0.9;
     // torso (slight counter-rotation while walking)
     part.makeTranslation(0, hipY, 0);
-    if (moving) part.multiply(rot.makeRotationY(swing * 0.15));
+    if (moving) part.multiply(rot.makeRotationY(swing * (run ? 0.3 : 0.22)));
     tmpM.multiplyMatrices(base, part);
     const shirt = C1.set(L.shirt), skin = C2.set(L.skin);
     const tp = this.torso[form + L.outfit] || this.torso[form + 'tee'];
@@ -349,6 +356,12 @@ export class PeopleView {
     part.makeTranslation(0, 0.685, 0);
     if (act === 'phone') part.multiply(rot.makeRotationZ(0.15));
     if (act === 'talk') part.multiply(rot.makeRotationX(Math.sin(ph * 4) * 0.06));
+    // the head keeps looking ahead while walking, glances around while standing
+    if (moving) part.multiply(rot.makeRotationY(-swing * 0.18));
+    if (idle) part.multiply(rot.makeRotationY(Math.sin(ph * 0.31 + pid) * 0.45 * Math.max(0, Math.sin(ph * 0.11 + pid))));
+    if (stum) part.multiply(rot.makeRotationX(0.45 + Math.sin(ph * 0.9) * 0.15));
+    if (act === 'cheer' || act === 'film') part.multiply(rot.makeRotationX(-0.18));
+    if (act === 'beg') part.multiply(rot.makeRotationX(0.25));
     tmpM.multiplyMatrices(torsoM, part);
     const hairC = C3.set(L.hair);
     this.head[form].add(tmpM, skin, hairC);
@@ -389,6 +402,12 @@ export class PeopleView {
       if (act === 'drink' && side > 0) { ax = -0.3 + Math.sin(ph * 0.7) * 0.2; elbow = -2.0; }
       if (ped.umbrella && side > 0 && !act) { ax = -0.9; az = 0.25; elbow = -1.0; }
       if (run && !act) { ax *= 1.3; elbow = -1.4; }
+      if (idle) { ax = 0.04 + Math.sin(ph * 0.45 + pid + side) * 0.03; az = side * 0.1; elbow = -0.18; }
+      if (act === 'cheer') { ax = -2.8 + Math.sin(ph * 5 + side) * 0.25; az = side * 0.35; elbow = -0.25; }
+      if (act === 'film') { ax = -1.25; az = -side * 0.3; elbow = -1.35; }
+      if (act === 'beg' && side > 0) { ax = -0.85; az = 0.1; elbow = -0.35; }
+      if (act === 'sell' && side > 0) { ax = -1.0 + Math.sin(ph * 2.5) * 0.35; az = 0.5; elbow = -0.6; }
+      if (stum) { ax = 0.15 + Math.sin(ph * 1.2 + side) * 0.25; az = side * 0.2; elbow = -0.1; }
       part.makeTranslation(side * (form ? 0.195 : 0.22), hipY + 0.53, 0);
       e.set(ax, 0, az, 'XYZ');
       part.multiply(rot.makeRotationFromEuler(e));
@@ -404,7 +423,7 @@ export class PeopleView {
         else { joint.makeTranslation(0, -0.36, 0.02); tmpM.multiply(joint); (long ? this.longGun : this.pistol).add(tmpM, C3.set('#1c1c1e'), C3); }
       } else if (side > 0 && detail) {
         if (act === 'hose' || act === 'build' || act === 'repair') { tmpM.multiply(joint.makeTranslation(0, -0.33, 0)); this.tool.add(tmpM, C3.set('#3a3a3a'), C3); }
-        else if (act === 'phone' || act === 'text') { tmpM.multiply(joint.makeTranslation(0, -0.36, 0.04)); this.phone.add(tmpM, C3.set('#101418'), C3); }
+        else if (act === 'phone' || act === 'text' || (act === 'film' && side > 0)) { tmpM.multiply(joint.makeTranslation(0, -0.36, 0.04)); this.phone.add(tmpM, C3.set('#101418'), C3); }
       }
     }
     if (ped.umbrella && detail && !lie && !act) {

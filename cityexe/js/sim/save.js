@@ -43,6 +43,7 @@ export function serialize(W) {
     combat: W.combat ? W.combat.serialize() : null,
     heists: W.heists ? W.heists.serialize() : null,
     dark: W.dark ? W.dark.serialize() : null,
+    street: W.street ? W.street.serialize() : null,
     cases: W.investigations ? W.investigations.serialize() : null,
     crime: W.crime ? { setup: W.crime.setup, mission: W.crime.mission } : null,
   };
@@ -134,6 +135,7 @@ export function deserialize(data, opts = {}) {
   if (data.combat && W.combat) W.combat.deserialize(data.combat);
   if (data.heists && W.heists) W.heists.deserialize(data.heists);
   if (data.dark && W.dark) W.dark.deserialize(data.dark);
+  if (data.street && W.street) W.street.deserialize(data.street);
   if (data.cases && W.investigations) W.investigations.deserialize(data.cases);
   if (data.crime && W.crime) { W.crime.setup = !!data.crime.setup; W.crime.mission = data.crime.mission; }
   W.lastHour = Math.floor(W.time / 60);
