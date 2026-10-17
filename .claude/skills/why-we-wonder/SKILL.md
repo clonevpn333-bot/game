@@ -166,3 +166,14 @@ FILM.pb.jet DC-9 with breakup, pb.clouds, pb.alt altimeter, FILM.pbCert, FILM.pb
   at least one moving object (drifting motes `pb.motes`, speed lines `pb.streaks`, tumbling props, swinging light,
   a camera push) plus the scene's main action. A static diagram with only text animating = bland = swipe.
 - Second hook: show the ACTION, not a symbol of it (a HUD locking onto the real 3D jet, missile, breakup — not a radar dot).
+
+## FRAME-1 RULE + OUTRO VARIANT (ep9 Struck 7 Times)
+- Frame 1 is MID-ACTION, never a build-up: the climax image is already happening (bolt already connected, sparks already
+  flying, camera already kicked), the full hook sentence already on screen, narration starting on frame 1 at normal speed.
+  No whiteout on frame 1 (a white frame reads as blank in the feed) — light the subject, flash the sky.
+- Best hook shape: a COUNTED MONTAGE that accelerates into the spoken number (seven strikes in 1.75 s, ×1…×6 hard-cut
+  counter, "7 TIMES." slams on "seven"), each cut a new angle/place/year, one thunder hit per cut.
+- Kinetic `cut: true` phrases disappear instantly (for counters) instead of exiting.
+- Outro default from ep9: the classic transition — the hero shrinks into a point of light that becomes the curiosity line
+  and WRITES "WHY WE / WONDER" — but the end card is SUBSCRIBE FOR MORE (kinetic slam on a red pill), not STAY CURIOUS.
+  A story question (WOULD YOU…?) comes right before it as the comment trigger.
