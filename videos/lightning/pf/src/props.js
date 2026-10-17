@@ -3141,3 +3141,205 @@
     });
   };
 })();
+
+/* ep9 v2 kit: REAL 3D effects + 3D people.
+   - df.r3dProj(V): the exact projection df.r3d uses, available BEFORE drawing (so effects can be split behind/in front)
+   - pb.fx: bolt3d / sparks3d / fire3d / smoke3d in object space, perspective-sized, layered 'back' | 'front'
+   - pb.body: an engraved, posable 3D full-body figure (ranger or the wife in a dress); pb.bear: a 3D black bear
+   - pb.ambient: storm motion layer (distant sheet lightning, swaying grass, splashes, blown leaves) */
+(function () {
+  'use strict';
+  const FILM = window.FILM, L = FILM.lib, df = FILM.df, pb = FILM.pb, { ell, smin, cap } = df.sd;
+  const clamp = (v, a = 0, b = 1) => (v < a ? a : v > b ? b : v);
+  const rgb = (hex) => { const a = L.rgb(hex); return [a[0] / 255, a[1] / 255, a[2] / 255]; };
+  df.r3dProj = (V) => {
+    const [X0, X1, Y0, Y1] = V.win, unit = V.unit;
+    const cyw = Math.cos(V.yaw || 0), syw = Math.sin(V.yaw || 0), cp = Math.cos(V.pitch || 0), sp = Math.sin(V.pitch || 0), cr = Math.cos(V.roll || 0), sr = Math.sin(V.roll || 0);
+    const R = [cyw * cr + syw * sp * sr, -cyw * sr + syw * sp * cr, syw * cp, cp * sr, cp * cr, -sp, -syw * cr + cyw * sp * sr, syw * sr + cyw * sp * cr, cyw * cp];
+    const D = V.camD || 9, wcx = (X0 + X1) / 2, wcy = (Y0 + Y1) / 2;
+    return (x, y, z) => { const w0 = R[0] * x + R[1] * y + R[2] * z, w1 = R[3] * x + R[4] * y + R[5] * z, w2 = R[6] * x + R[7] * y + R[8] * z; const tt = D / (D - w2); return [V.cx + (wcx + (w0 - wcx) * tt) * unit, V.cy - (wcy + (w1 - wcy) * tt) * unit, w2, tt * unit]; };
+  };
+  pb.headProj = (cx, cy, H, o = {}) => df.r3dProj({ cx, cy, unit: H / 2.2, win: o.win || [-2.1, 2.1, -3.1, 1.25], yaw: o.yaw || 0, pitch: o.pitch || 0.04, roll: o.roll || 0 });
+
+  // ------------------------------------------------------------------ 3D EFFECTS
+  const glowStroke = (ctx, pts, w, k, cols) => { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; cols.forEach(([m, al, c]) => { ctx.strokeStyle = `rgba(${c},${al * k})`; ctx.lineWidth = w * m; ctx.beginPath(); pts.forEach((p, j) => (j ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke(); }); ctx.restore(); };
+  const BOLTC = [[7, 0.07, '160,190,255'], [3, 0.22, '190,210,255'], [1.4, 0.6, '220,232,255'], [0.55, 1, '255,255,255']];
+  pb.fx = {
+    /** a 3D bolt from a sky point to a target (object space). o.seed, o.k, o.w (screen px at unit scale), layer 'back'|'front' */
+    bolt3d(ctx, P, from, to, o, layer) {
+      const k = o.k != null ? o.k : 1; if (k <= 0) return;
+      const r = L.rng(L.hash('b3', o.seed || 1)), n = 16, pts = [];
+      for (let i = 0; i <= n; i++) { const u = i / n, j = i === 0 || i === n ? 0 : 1; pts.push([from[0] + (to[0] - from[0]) * u + j * (r() - 0.5) * 0.7, from[1] + (to[1] - from[1]) * u, from[2] + (to[2] - from[2]) * u + j * (r() - 0.5) * 0.7]); }
+      const paths = [pts];
+      for (let b = 0; b < (o.branches != null ? o.branches : 4); b++) { const s0 = pts[2 + Math.floor(r() * 10)], bp = [s0]; let c = s0.slice(); const dx = (r() - 0.5) * 0.5, dz = (r() - 0.5) * 0.5; for (let i = 0; i < 6; i++) { c = [c[0] + dx + (r() - 0.5) * 0.25, c[1] - 0.25 - r() * 0.2, c[2] + dz + (r() - 0.5) * 0.25]; bp.push(c); } paths.push(bp); }
+      paths.forEach((pp, pi) => {
+        for (let i = 0; i < pp.length - 1; i++) {
+          const a = P(...pp[i]), bq = P(...pp[i + 1]), mz = (a[2] + bq[2]) / 2;
+          if ((layer === 'back') !== (mz < 0)) continue;
+          const w = (o.w || 0.05) * (a[3] + bq[3]) / 2 * (pi ? 0.45 : 1);
+          glowStroke(ctx, [a, bq], w, k * (mz < 0 ? 0.7 : 1), BOLTC);
+        }
+      });
+    },
+    /** sparks bursting from a 3D point at time d after impact */
+    sparks3d(ctx, P, at, d, o, layer) {
+      if (d < 0 || d > 1.4) return;
+      const r = L.rng(L.hash('s3', o.seed || 1)), n = o.n || 40, g = -6;
+      for (let i = 0; i < n; i++) {
+        const th = r() * Math.PI * 2, ph = Math.acos(1 - r() * 1.2), sp = 2 + r() * 4, vx = Math.sin(ph) * Math.cos(th) * sp, vy = Math.cos(ph) * sp, vz = Math.sin(ph) * Math.sin(th) * sp;
+        const life = 0.5 + r() * 0.8; if (d > life) continue;
+        const pos = (tt) => [at[0] + vx * tt, at[1] + vy * tt + 0.5 * g * tt * tt, at[2] + vz * tt];
+        const a = P(...pos(Math.max(0, d - 0.05))), b = P(...pos(d));
+        if ((layer === 'back') !== (b[2] < 0)) continue;
+        const al = 1 - d / life, w = Math.max(1.2, 0.03 * b[3]);
+        glowStroke(ctx, [a, b], w, al, [[3, 0.25, '255,170,80'], [1, 1, '255,240,200']]);
+      }
+    },
+    /** flames ringing a 3D crown (centre c, radius rad), intensity k */
+    fire3d(ctx, P, c, rad, T, k, layer, seed = 1) {
+      if (k <= 0) return;
+      const n = 22;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2 + 0.3 * Math.sin(T * 0.7 + i), base = [c[0] + Math.cos(a) * rad, c[1], c[2] + Math.sin(a) * rad];
+        const pB = P(...base); if ((layer === 'back') !== (pB[2] < 0)) continue;
+        for (let j = 0; j < 3; j++) {
+          const life = ((T * (1.4 + 0.3 * j) + i * 0.37 + j * 0.31 + seed) % 1), h = (0.22 + 0.25 * L.noise1(T * 5, i + j * 40)) * k;
+          const tip = [base[0] + 0.08 * Math.sin(T * 9 + i + j), base[1] + h * (0.4 + life), base[2] + 0.08 * Math.cos(T * 8 + i)];
+          const q0 = P(...base), q1 = P(...tip), w = 0.1 * q0[3] * (1 - life * 0.6) * (j === 0 ? 1 : 0.6);
+          const dx = q1[0] - q0[0], dy = q1[1] - q0[1], l = Math.hypot(dx, dy) || 1, nx = -dy / l * w, ny = dx / l * w;
+          const pts = [[q0[0] - nx, q0[1] - ny], [q0[0] + dx * 0.45 - nx * 0.8, q0[1] + dy * 0.45 - ny * 0.8], q1, [q0[0] + dx * 0.45 + nx * 0.8, q0[1] + dy * 0.45 + ny * 0.8], [q0[0] + nx, q0[1] + ny]];
+          df.engrave(ctx, pts, { ink: j === 2 ? '#FFF4C8' : j === 1 ? '#FFC050' : '#FF8A30', base: j === 0 ? '#B8380E' : '#E06818', light: () => 0.75, angle: 1.5, spacing: 3, seed: seed * 100 + i * 3 + j, outW: 1.2, cross: false, stip: false, alpha: 0.95 * (1 - life * 0.5) });
+        }
+      }
+      if (layer === 'front') { const pc = P(c[0], c[1] + 0.3, c[2]); pb.burst(ctx, pc[0], pc[1], rad * pc[3] * 1.8, 0.75 * k, '255,140,50'); }
+    },
+    /** smoke puffs rising from a 3D point */
+    smoke3d(ctx, P, at, T, k, layer, seed = 1) {
+      if (k <= 0) return;
+      for (let i = 0; i < 10; i++) {
+        const life = ((T * 0.35 + i / 10 + seed * 0.13) % 1), pos = [at[0] + 0.25 * Math.sin(i * 2.1 + T * 0.8) + life * 0.4, at[1] + life * 1.6, at[2] + 0.25 * Math.cos(i * 1.7)];
+        const q = P(...pos); if ((layer === 'back') !== (q[2] < 0)) continue;
+        const rr = (0.12 + life * 0.35) * q[3];
+        ctx.save(); ctx.globalAlpha = 0.28 * k * (1 - life); L.inkCircle(ctx, q[0], q[1], rr, { width: 2, color: '#8A92A8', fill: 'rgba(90,96,116,0.6)', seed: seed * 40 + i }); ctx.restore();
+      }
+    },
+  };
+
+  // ------------------------------------------------------------------ 3D PEOPLE
+  let SK = null, BM = 0, DRESS = 0, HATB = 1;
+  const add = (a, b, s = 1) => [a[0] + b[0] * s, a[1] + b[1] * s, a[2] + b[2] * s];
+  /** pose → joints. pose: { arms:[{sw,ab,el},{…}] (L,R), legs:[{hp,kn},{…}], rod, stick:{ang} } */
+  function rig(pose) {
+    const J = { neck: [0, 1.0, 0], head: [0, 1.3, 0.02], chest: [0, 0.68, 0], hips: [0, 0, 0] };
+    const arm = (sg, a) => { const S = [sg * 0.37, 0.9, 0], dir = (sw) => [sg * Math.sin(a.ab || 0.08), -Math.cos(a.ab || 0.08) * Math.cos(sw), Math.cos(a.ab || 0.08) * Math.sin(sw)]; const E = add(S, dir(a.sw || 0), 0.52), Hd = add(E, dir((a.sw || 0) + (a.el || 0.15)), 0.48); return { S, E, H: Hd }; };
+    const leg = (sg, l) => { const Hp = [sg * 0.15, -0.04, 0], dir = (a) => [0, -Math.cos(a), Math.sin(a)]; const K = add(Hp, dir(l.hp || 0), 0.86), A = add(K, dir((l.hp || 0) - (l.kn || 0.04)), 0.84); return { Hp, K, A, F: add(A, [0, -0.04, 0.2]) }; };
+    J.L = arm(1, pose.arms[0]); J.R = arm(-1, pose.arms[1]); J.lL = leg(1, pose.legs[0]); J.lR = leg(-1, pose.legs[1]);
+    J.rod = pose.rod ? [J.R.H, add(J.R.H, pose.rod, 2.8)] : null;
+    J.stick = pose.stick ? [J.R.H, add(J.R.H, pose.stick, 1.1)] : null;
+    return J;
+  }
+  function bodySd(x, y, z, want) {
+    const J = SK; let d = 1e9, m = 0;
+    const put = (dd, mm, k = 0.06) => { if (dd < d + k) { const nd = smin(d, dd, k); if (dd < d) m = mm; d = nd; } };
+    // torso: chest/shoulder block tapering to the waist, hips
+    put(ell(x, y - 0.45, z, 0.29, 0.48, 0.18), 3, 0.01);
+    put(ell(x, y - 0.76, z, 0.42, 0.2, 0.22), 3, 0.12);
+    for (const sg of [-1, 1]) put(Math.hypot(x - sg * 0.38, y - 0.86, z) - 0.13, 3, 0.1);          // deltoids
+    put(ell(x, y - 0.04, z, 0.27, 0.19, 0.19), DRESS ? 11 : 4, 0.08);
+    if (!DRESS) { put(Math.max(ell(x, y - 0.14, z, 0.285, 0.055, 0.205), -1), 10, 0.01); }
+    // neck + head with a real face: brow, nose, cheekbones, jaw, ears
+    const HS = 1.2, hx = (x - J.head[0]) / HS, hyy = (y - J.head[1]) / HS, hz = (z - J.head[2]) / HS;
+    const put0 = put, putH = (dd, mm, k) => put0(dd * HS, mm, k);
+    put(cap(x, y, z, ...J.neck, J.head[0], J.head[1] - 0.12, J.head[2], 0.075), 1, 0.05);
+    putH(ell(hx, hyy, hz, 0.15, 0.19, 0.17), 1, 0.02);
+    putH(ell(hx, hyy + 0.12, hz - 0.04, 0.12, 0.1, 0.13), 1, 0.08);                                  // jaw
+    putH(ell(hx, hyy - 0.04, hz - 0.13, 0.13, 0.035, 0.05), 1, 0.04);                                // brow ridge
+    putH(cap(hx, hyy, hz, 0, -0.04, 0.17, 0, 0.05, 0.2, 0.026), 1, 0.03);                             // nose
+    for (const sg of [-1, 1]) { putH(ell(hx - sg * 0.08, hyy + 0.04, hz - 0.12, 0.045, 0.035, 0.04), 1, 0.04); putH(ell(hx - sg * 0.15, hyy + 0.0, hz + 0.0, 0.025, 0.05, 0.03), 1, 0.02); }
+    if (!DRESS) putH(ell(hx, hyy + 0.09, hz - 0.15, 0.06, 0.012, 0.02), 2, 0.01);                       // moustache-shadow mouth line
+    if (DRESS) { putH(ell(hx, hyy - 0.04, hz + 0.05, 0.175, 0.2, 0.17), 2, 0.03); putH(ell(hx, hyy - 0.1, hz + 0.18, 0.1, 0.1, 0.1), 2, 0.03); }
+    else putH(Math.max(ell(hx, hyy - 0.06, hz + 0.02, 0.158, 0.14, 0.168), -(hyy + 0.0)), 2, 0.01);    // short hair under the hat
+    // arms: muscled upper arm, forearm, a mitten hand
+    for (const A of [J.L, J.R]) {
+      put(cap(x, y, z, ...A.S, ...A.E, 0.105), 3, 0.06);
+      put(cap(x, y, z, ...A.E, ...A.H, 0.085), DRESS ? 1 : 3, 0.05);
+      const hd = add(A.H, [A.H[0] - A.E[0], A.H[1] - A.E[1], A.H[2] - A.E[2]], 0.18);
+      put(cap(x, y, z, ...A.H, ...hd, 0.06), 1, 0.04);
+    }
+    // legs: thigh, calf, boot
+    for (const G of [J.lL, J.lR]) { put(cap(x, y, z, ...G.Hp, ...G.K, 0.15), DRESS ? 1 : 4, 0.06); put(cap(x, y, z, ...G.K, ...G.A, 0.115), DRESS ? 1 : 4, 0.05); put(cap(x, y, z, ...G.A, ...add(G.A, [0, 0.12, 0]), 0.1), 5, 0.03); put(cap(x, y, z, ...G.A, ...G.F, 0.085), 5, 0.04); }
+    // dress: a flared skirt
+    if (DRESS) { const u = clamp((0.05 - y) / 1.0); const sk = Math.max(Math.hypot(x, z * 1.2) - (0.27 + 0.32 * u), y - 0.05, -(y + 0.95)); put(sk, 11, 0.03); }
+    // campaign hat
+    if (HATB && !DRESS) {
+      const hy = y - J.head[1] - 0.2, hz = z - J.head[2];
+      const brim = Math.max(Math.hypot(x, hz) - 0.44, Math.abs(hy + 0.01 * Math.hypot(x, hz) * 3) - 0.014);
+      const crown = Math.max(Math.hypot(x, hz) - 0.22 * (1 - 0.55 * clamp(hy / 0.21)), -hy, hy - 0.21);
+      const hat = Math.min(brim, crown); if (hat < d) { d = hat; m = 8; }
+    }
+    // props
+    if (J.rod) { const r = cap(x, y, z, ...J.rod[0], ...J.rod[1], 0.018); if (r < d) { d = r; m = 12; } }
+    if (J.stick) { const r = cap(x, y, z, ...J.stick[0], ...J.stick[1], 0.04); if (r < d) { d = r; m = 12; } }
+    if (want) BM = m;
+    return d;
+  }
+  pb.BODY = {
+    sdf: (x, y, z) => bodySd(x, y, z, false), mat: (x, y, z) => { bodySd(x, y, z, true); return BM; },
+    col: (m) => ({ 1: rgb('#E2C2A4'), 2: rgb('#6A4A36'), 3: DRESS ? rgb('#E8DCC4') : rgb('#C8B48A'), 4: rgb('#5A6448'), 5: rgb('#3A2A1E'), 8: rgb('#B08A58'), 10: rgb('#4A3020'), 11: rgb('#8A5A7A'), 12: rgb('#6A4A2A') }[m] || [1, 1, 1]),
+    uv: (m, x, y, z, o) => { if (m === 8) { o[0] = Math.hypot(x, z) * 4; o[1] = Math.atan2(x, z); } else { o[0] = y * 1.6 + 0.08 * Math.sin(x * 9); o[1] = (x + z) * 1.2; } },
+    bound: [0, -0.2, 0, 2.2],
+  };
+  /** poses */
+  pb.pose = {
+    stand: () => ({ arms: [{ sw: 0.05, ab: 0.12, el: 0.15 }, { sw: 0.05, ab: 0.12, el: 0.15 }], legs: [{ hp: 0.02, kn: 0.03 }, { hp: -0.02, kn: 0.03 }] }),
+    walk: (ph) => ({ arms: [{ sw: -0.4 * Math.sin(ph), ab: 0.1, el: 0.35 }, { sw: 0.4 * Math.sin(ph), ab: 0.1, el: 0.35 }], legs: [{ hp: 0.45 * Math.sin(ph), kn: 0.7 * Math.max(0, -Math.cos(ph)) + 0.05 }, { hp: -0.45 * Math.sin(ph), kn: 0.7 * Math.max(0, Math.cos(ph)) + 0.05 }] }),
+    fish: (T) => ({ arms: [{ sw: 0.7, ab: 0.15, el: 0.5 }, { sw: 0.9 + 0.04 * Math.sin(T * 2), ab: 0.05, el: 0.3 }], legs: [{ hp: 0.15, kn: 0.08 }, { hp: -0.12, kn: 0.05 }], rod: [0, 0.55, 0.84] }),
+    swing: (s) => ({ arms: [{ sw: 0.3, ab: 0.2, el: 0.4 }, { sw: 2.6 - 2.8 * s, ab: 0.25, el: 0.2 }], legs: [{ hp: 0.3, kn: 0.15 }, { hp: -0.3, kn: 0.1 }], stick: [0, Math.cos(2.6 - 2.8 * s) * -1, Math.sin(2.6 - 2.8 * s)] }),
+    reach: (T) => ({ arms: [{ sw: 2.9, ab: 0.35, el: 0.1 + 0.05 * Math.sin(T * 3) }, { sw: 2.9, ab: 0.35, el: 0.1 + 0.05 * Math.cos(T * 3) }], legs: [{ hp: 0.05, kn: 0.03 }, { hp: -0.05, kn: 0.03 }] }),
+    struck: (k) => ({ arms: [{ sw: 0.2 + 1.6 * k, ab: 0.6 * k + 0.1, el: 0.4 }, { sw: 0.2 + 1.6 * k, ab: 0.6 * k + 0.1, el: 0.4 }], legs: [{ hp: 0.1, kn: 0.2 * k + 0.04 }, { hp: -0.1, kn: 0.2 * k + 0.04 }] }),
+  };
+  /** body(ctx, fx, fy, H, pose, o): feet at (fx, fy), H = height px; returns { proj } */
+  pb.body = (ctx, fx, fy, H, pose, o = {}) => {
+    SK = rig(pose); DRESS = o.dress ? 1 : 0; HATB = o.hat === false ? 0 : 1;
+    const unit = H / 3.55, win = [-1.6, 1.6, -1.95, 1.75];
+    return df.r3d(ctx, { cx: fx, cy: fy - 1.95 * unit, unit, win, yaw: o.yaw || 0, pitch: o.pitch || 0.06, roll: o.roll || 0, res: o.res || 0.36, spacing: o.spacing || 3.2, slot: o.slot || 40,
+      key: o.key || [-0.5, 0.6, 0.6], fill: [0.6, -0.1, 0.5], rim: o.rim || [0.7, 0.5, -0.5], flat: o.flat != null ? o.flat : 0.14, warm: o.warm }, pb.BODY);
+  };
+  pb.bodyProj = (fx, fy, H, o = {}) => { const unit = H / 3.55; return df.r3dProj({ cx: fx, cy: fy - 1.95 * unit, unit, win: [-1.6, 1.6, -1.95, 1.75], yaw: o.yaw || 0, pitch: o.pitch || 0.06, roll: o.roll || 0 }); };
+
+  // ------------------------------------------------------------------ 3D BEAR (faces −x, walks on a phase)
+  let BPH = 0, BFL = 0, BRM = 0;
+  function bearSd(x, y, z, want) {
+    let d = ell(x, y, z, 0.95, 0.52, 0.48), m = 1;
+    d = smin(d, ell(x + 0.35, y - 0.32, z, 0.45, 0.3, 0.42), 0.2);                    // shoulder hump
+    const hx = -1.02 - BFL * 0.2, hy = 0.22 + BFL * 0.12;
+    d = smin(d, ell(x - hx, y - hy, z, 0.36, 0.3, 0.3), 0.18);
+    d = smin(d, ell(x - hx + 0.36, y - hy + 0.08, z, 0.22, 0.13, 0.13), 0.08);       // snout
+    for (const s of [-1, 1]) d = smin(d, Math.hypot(x - hx - 0.05, y - hy - 0.28, z - s * 0.18) - 0.085, 0.04);
+    for (const [lx, lz, o] of [[-0.55, 0.26, 0], [-0.55, -0.26, Math.PI], [0.55, 0.26, Math.PI], [0.55, -0.26, 0]]) { const sw = 0.18 * Math.sin(BPH + o); d = smin(d, cap(x, y, z, lx, -0.2, lz, lx + sw, -0.95, lz, 0.15), 0.1); }
+    if (want) { const nose = Math.hypot(x - hx + 0.58, y - hy + 0.06, z) < 0.07; BRM = nose ? 2 : 1; }
+    return d;
+  }
+  pb.BEAR = { sdf: (x, y, z) => bearSd(x, y, z, false), mat: (x, y, z) => { bearSd(x, y, z, true); return BRM; }, col: (m) => (m === 2 ? rgb('#100C0C') : rgb('#3A3440')), uv: (m, x, y, z, o) => { o[0] = y * 2.2 + 0.2 * Math.sin(x * 7 + z * 5); o[1] = (x + z) * 1.4; }, bound: [-0.2, -0.2, 0, 1.7] };
+  pb.bear3d = (ctx, fx, fy, H, ph, flinch, o = {}) => { BPH = ph; BFL = flinch; const unit = H / 1.6; return df.r3d(ctx, { cx: fx, cy: fy - 0.95 * unit, unit, win: [-1.8, 1.4, -0.98, 0.95], yaw: o.yaw || 0.35, pitch: 0.12, res: 0.4, spacing: 4, slot: o.slot || 60, key: [-0.4, 0.7, 0.6], rim: [0.7, 0.5, -0.5], flat: 0.12 }, pb.BEAR); };
+
+  // ------------------------------------------------------------------ STORM MOTION LAYER (something moves every second)
+  /** ambient(ctx, T, o): o.ground (y of ground line for splashes/grass), o.flash (bool distant flicker), o.leaves */
+  pb.ambient = (ctx, T, o = {}) => {
+    // distant sheet lightning flickering inside the clouds, irregular but deterministic
+    if (o.flash !== false) { const k = Math.max(0, Math.sin(T * 4.3 + 1.1)) ** 30 * 0.6 + Math.max(0, Math.sin(T * 6.9)) ** 40 * 0.4; if (k > 0.01) pb.flash(ctx, k * 0.35, 200 + 700 * ((Math.floor(T * 2) * 0.37) % 1), 0); }
+    const G = o.ground;
+    if (G != null) {
+      // rain splashes on the ground
+      const rs = L.rng(L.hash('splash', Math.floor(T * 12)));
+      for (let i = 0; i < 26; i++) { const x = rs() * 1080, y = G + rs() * (1920 - G), s = 4 + rs() * 8; ctx.strokeStyle = `rgba(200,212,236,${0.5 * rs()})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(x, y, s, s * 0.35, 0, Math.PI, 0); ctx.stroke(); }
+      // foreground grass swaying in the wind (ink)
+      const rg = L.rng(L.hash('grass', o.seed || 1));
+      for (let i = 0; i < 70; i++) { const x = rg() * 1120 - 20, h = 40 + rg() * 90, y = 1920 - rg() * 60, lean = 22 * Math.sin(T * 2.2 + x * 0.01) + 10; L.inkPath(ctx, [[x, y], [x + lean * 0.4, y - h * 0.6], [x + lean, y - h]], { width: 3, color: '#05070C', seed: 500 + i, taper: [0, 18] }); }
+    }
+    if (o.leaves !== false) {
+      const rl = L.rng(L.hash('leaves', o.seed || 2));
+      for (let i = 0; i < 10; i++) { const sp = 380 + rl() * 400, y0 = rl() * 1700, x = ((rl() * 1400 + T * sp) % 1400) - 160, y = y0 + 80 * Math.sin(T * 2 + i) + (T * 60 % 300), rot = T * (3 + rl() * 4) + i; ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.fillStyle = 'rgba(120,110,70,0.85)'; ctx.beginPath(); ctx.ellipse(0, 0, 11, 5, 0, 0, 6.283); ctx.fill(); ctx.strokeStyle = 'rgba(20,16,8,0.9)'; ctx.lineWidth = 1.2; ctx.stroke(); ctx.restore(); }
+    }
+  };
+})();

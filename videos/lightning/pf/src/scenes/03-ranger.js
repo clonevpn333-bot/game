@@ -13,10 +13,17 @@
     PB.motes(ctx, T, { n: 50, seed: 5, vy: 30, vx: -20, alpha: 0.4, col: '200,212,236' });
     const z = 1 + 0.05 * u;
     ctx.save(); ctx.translate(540, 1200); ctx.scale(z, z); ctx.translate(-540, -1200);
-    PB.head(ctx, 540, 1200, 760, { yaw: 0.7 - 0.35 * L.ease.inOutSine(L.clamp(u / 4)), hat: true, key: [-0.4, 0.5, 0.8], rim: [0.6, 0.6, -0.4], res: 0.32, slot: 3, warm: [1 + 0.2 * fl, 1 + 0.15 * fl, 1 + 0.3 * fl] });
+    // strikes land all around him IN 3D: ground points in his space, behind and in front of his head
+    const HO = { yaw: 0.7 - 0.35 * L.ease.inOutSine(L.clamp(u / 4)), hat: true, key: [-0.4, 0.5, 0.8], rim: [0.6, 0.6, -0.4], res: 0.32, slot: 3, warm: [1 + 0.2 * fl, 1 + 0.15 * fl, 1 + 0.3 * fl] };
+    const P = PB.headProj(540, 1200, 760, HO);
+    const G = [[-1.5, -0.3, -2.5], [1.3, -1.6, 0.7], [-1.3, -1.7, 0.9], [1.6, -0.3, -3], [-1.35, -1.2, 0.6], [1.7, -0.3, -1.6]];
+    const each = (layer) => hits.forEach((h, j) => { const d = T - h; const g = G[j]; if (d >= 0 && d < 0.3) PB.fx.bolt3d(ctx, P, [g[0] * 1.25, 10, g[2]], g, { seed: 70 + j, k: d < 0.06 ? 1 : Math.max(0, 0.6 - d * 2), w: 0.04, branches: 2 }, layer); PB.fx.sparks3d(ctx, P, g, d, { seed: 170 + j, n: 26 }, layer); });
+    each('back');
+    PB.head(ctx, 540, 1200, 760, HO);
+    each('front');
+    hits.forEach((h, j) => { const d = T - h; if (d < 0 || d > 0.3) return; const q = P(...G[j]); PB.burst(ctx, q[0], q[1], 160 * q[3] / 345, Math.exp(-d * 8), '200,215,255'); });
     ctx.restore();
-    // small strikes all around him
-    hits.forEach((h, j) => { const d = T - h; if (d < 0 || d > 0.3) return; const gx = [120, 960, 200, 880, 80, 1000][j], gy = [1500, 1450, 900, 950, 1250, 1300][j]; PB.bolt(ctx, [gx + (j % 2 ? -60 : 60), -60], [gx, gy], { seed: 70 + j, k: d < 0.06 ? 1 : Math.max(0, 0.6 - d * 2), w: 5, branches: 2 }); PB.burst(ctx, gx, gy, 160, Math.exp(-d * 8), '200,215,255'); });
+    PB.ambient(ctx, T, { seed: 3 });
     // name card
     const nc = L.clamp((T - 6.4) / 0.12);
     if (nc > 0) { PB.label(ctx, 'ROY SULLIVAN', 90, 1350, nc, { size: 36 }); PB.label(ctx, 'PARK RANGER · VIRGINIA', 90, 1420, (T - 6.55) / 0.12, { size: 26, col: PB.IV }); }

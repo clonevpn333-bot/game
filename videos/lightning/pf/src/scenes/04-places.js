@@ -10,7 +10,8 @@
     PB.plate(ctx, { seed: 940 + cut, color: '#080B18' });
     PB.flash(ctx, fk * 0.55, 540, 0);
     const lit = 0.25 + 0.5 * fk, shake = fk * 14;
-    ctx.save(); ctx.translate(Math.sin(T * 91) * shake, Math.cos(T * 77) * shake);
+    const pz = 1 + 0.06 * (T - [9.75, 10.95, 11.7][cut]);
+    ctx.save(); ctx.translate(540 + Math.sin(T * 91) * shake, 1200 + Math.cos(T * 77) * shake); ctx.scale(pz, pz); ctx.translate(-540, -1200);
     let target;
     if (cut === 0) {
       // fire tower on a ridge
@@ -21,7 +22,7 @@
       D.engrave(ctx, [[430, 800], [650, 800], [650, 660], [430, 660]], { ink: '#8A9AC8', base: '#141A2C', light: () => lit, angle: 1.4, spacing: 4, seed: 30, smooth: false, outW: 3 });
       D.engrave(ctx, [[400, 670], [680, 670], [540, 560]], { ink: '#8A9AC8', base: '#141A2C', light: () => lit, angle: 0.4, spacing: 4, seed: 31, smooth: false, outW: 3 });
       ctx.fillStyle = `rgba(255,220,150,${0.5 + 0.4 * fk})`; ctx.fillRect(460, 700, 160, 70);
-      PB.ranger(ctx, 540, 770, 0.38, { lit: 0.3 });
+      PB.body(ctx, 540, 790, 170, fk > 0.05 ? PB.pose.struck(fk) : PB.pose.stand(), { yaw: 0.4, slot: 41, res: 0.5 });
       target = [540, 560];
     } else if (cut === 1) {
       // his truck under a tree, lightning through the open window
@@ -39,7 +40,7 @@
       ctx.fillStyle = `rgba(255,210,140,${0.6})`; ctx.fillRect(140, 1220, 90, 80); ctx.fillRect(420, 1220, 90, 80);
       L.inkPath(ctx, [[900, 1450], [900, 760]], { width: 14, color: '#1A140E', seed: 52, taper: 0 }); L.inkPath(ctx, [[820, 800], [980, 800]], { width: 8, color: '#1A140E', seed: 53, taper: 0 });
       D.engrave(ctx, L.rectPts(862, 840, 76, 100, 30), { ink: '#8A92A8', base: '#1A1E28', light: () => lit, spacing: 3, seed: 54, smooth: false, outW: 2, cross: false, stip: false });
-      PB.ranger(ctx, 690, 1460, 0.75, { lit: 0.35 + fk * 0.4 });
+      PB.body(ctx, 690, 1470, 380, fk > 0.05 ? PB.pose.struck(fk) : PB.pose.walk((T - 11.7) * 5), { yaw: 0.9, slot: 42 });
       target = [690, 1265];
       if (fk > 0) L.inkPath(ctx, [[900, 900], [800, 1080], [700, 1260]], { width: 6, color: '#E8F0FF', alpha: fk, seed: 55 });
     }
@@ -47,5 +48,6 @@
     ctx.restore();
     if (d >= 0) { PB.label(ctx, ['1942', '1969', '1970'][cut], 80, 1310, d / 0.08, { size: 34 }); PB.label(ctx, 'STRIKE #' + (cut + 1), 80, 1380, (d - 0.05) / 0.08, { size: 28, col: PB.IV }); }
     PB.rain(ctx, T, { n: 140, a: 0.3, seed: 4 + cut });
+    PB.ambient(ctx, T, { ground: 1560, seed: 4 + cut });
   } });
 })();

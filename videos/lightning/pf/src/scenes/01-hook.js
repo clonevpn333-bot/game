@@ -29,20 +29,22 @@
     // camera kick on every strike
     const kick = hitK * 18, z = sh.z * (1 + 0.04 * hitK) + 0.02 * d;
     ctx.save(); ctx.translate(sh.cx + Math.sin(T * 97) * kick, sh.cy + Math.cos(T * 83) * kick); ctx.scale(z, z); ctx.translate(-sh.cx, -sh.cy);
-    const r = PB.head(ctx, sh.cx, sh.cy, 700, { yaw: sh.yaw, hat: true, key: [-0.25, 0.55, 0.8], fill: [0.6, -0.2, 0.5], rim: [0.2, 0.9, -0.3], res: 0.3, slot: 1 + (i % 2), warm: [1.0 + 0.2 * hitK, 0.95 + 0.2 * hitK, 1.0 + 0.3 * hitK] });
-    const top = r.proj(0.1, 1.28, -0.05);
+    // REAL 3D: the bolt comes down from the sky in his own space, wraps in depth around the hat; sparks fly through 3D
+    const HO = { yaw: sh.yaw, hat: true, key: [-0.25, 0.55, 0.8], fill: [0.6, -0.2, 0.5], rim: [0.2, 0.9, -0.3], res: 0.3, slot: 1 + (i % 2), warm: [1.0 + 0.2 * hitK, 0.95 + 0.2 * hitK, 1.0 + 0.3 * hitK] };
+    const P = PB.headProj(sh.cx, sh.cy, 700, HO), hit = [0.1, 1.28, -0.05], sky = [(sh.from[0] < 540 ? -1 : 1) * 2.2, 9, -2.5 + (i % 3)];
+    const bk = d < 0.06 ? 1 : d < 0.12 ? 0.35 : d < 0.2 ? 0.85 : Math.max(0, 0.6 - (d - 0.2) * 3);
+    const BO = { seed: 10 + i, k: bk, w: 0.055, branches: 5 }, SO = { seed: 20 + i, n: 46 };
+    PB.fx.bolt3d(ctx, P, sky, hit, BO, 'back'); PB.fx.sparks3d(ctx, P, hit, d, SO, 'back');
+    if (i === 6) PB.fx.smoke3d(ctx, P, hit, T, L.clamp(d / 0.3), 'back', 3);
+    PB.head(ctx, sh.cx, sh.cy, 700, HO);
+    PB.fx.bolt3d(ctx, P, sky, hit, BO, 'front'); PB.fx.sparks3d(ctx, P, hit, d, SO, 'front');
+    if (i === 6) PB.fx.smoke3d(ctx, P, hit, T, L.clamp(d / 0.3), 'front', 3);
+    const top = P(...hit);
+    PB.burst(ctx, top[0], top[1], 260 * (0.6 + hitK), 0.9 * hitK + 0.2, '200,215,255');
     ctx.restore();
     const topS = [sh.cx + (top[0] - sh.cx) * z + Math.sin(T * 97) * kick, sh.cy + (top[1] - sh.cy) * z + Math.cos(T * 83) * kick];
-    // the bolt: full for ~0.18 s, then flickers out; afterglow on the hat
-    const bk = d < 0.06 ? 1 : d < 0.12 ? 0.35 : d < 0.2 ? 0.85 : Math.max(0, 0.6 - (d - 0.2) * 3);
     PB.flash(ctx, hitK * 0.55, sh.from[0], 0);
-    PB.bolt(ctx, sh.from, topS, { seed: 10 + i, k: bk, w: 9, branches: 5 });
-    PB.burst(ctx, topS[0], topS[1], 260 * (0.6 + hitK), 0.9 * hitK + 0.2, '200,215,255');
-    // sparks blasting off the hat
-    const rr = L.rng(L.hash('sparks9', i));
-    for (let k = 0; k < 30; k++) { const a = -Math.PI * rr(), sp = 400 + rr() * 900, dd = sp * d, x = topS[0] + Math.cos(a) * dd, y = topS[1] + Math.sin(a) * dd + 900 * d * d; const al = Math.max(0, 1 - d * 2.2); if (al <= 0) break; ctx.fillStyle = `rgba(255,${210 + rr() * 45},150,${al})`; ctx.beginPath(); ctx.arc(x, y, 2.5 + rr() * 3, 0, 6.283); ctx.fill(); }
-    // smoke curling off the hat after the last strike
-    if (i === 6) for (let k = 0; k < 6; k++) { const ph = ((d * 0.7 + k / 6) % 1); L.inkPath(ctx, [[topS[0] - 20 + k * 8, topS[1] - ph * 300], [topS[0] + 30 * Math.sin(ph * 7 + k) + k * 8, topS[1] - 60 - ph * 320]], { width: 12, color: '#8A92A8', alpha: 0.35 * (1 - ph), seed: 990 + k }); }
+    PB.ambient(ctx, T, { seed: 1 + i });
     // the year, stamped in-world at the strike point
     PB.label(ctx, sh.year, topS[0] + 40, topS[1] + 30, Math.min(1, d / 0.05), { size: 30 });
   } });

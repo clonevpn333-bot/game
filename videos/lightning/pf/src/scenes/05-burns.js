@@ -22,19 +22,25 @@
     PB.motes(ctx, T, { n: 50, seed: 6, vy: -80, alpha: 0.5, col: '255,180,110' });
     const sh = fk * 16, z = 1.15 + 0.06 * (T - 13.25);
     ctx.save(); ctx.translate(540 + Math.sin(T * 91) * sh, 1180 + Math.cos(T * 77) * sh); ctx.scale(z, z); ctx.translate(-540, -1180);
-    const r = PB.head(ctx, 540, 1180, 800, { yaw: 0.25 + 0.1 * Math.sin(T), hat: true, key: [-0.3, 0.5, 0.8], rim: [0.7, 0.4, -0.3], res: 0.32, slot: 4, warm: [1.1 + 0.3 * fk, 0.95, 0.9] });
-    const brow = r.proj(0, 0.02, 0.7), brimL = r.proj(-0.9, 0.58, 0.3), brimR = r.proj(0.9, 0.58, 0.3), top = r.proj(0.1, 1.28, -0.05);
+    const HO = { yaw: 0.25 + 0.1 * Math.sin(T), hat: true, key: [-0.3, 0.5, 0.8], rim: [0.7, 0.4, -0.3], res: 0.32, slot: 4, warm: [1.1 + 0.3 * fk, 0.95, 0.9] };
+    const P = PB.headProj(540, 1180, 800, HO), hit = [0.1, 1.28, -0.05];
+    // hair on fire: a 3D ring of flames round the hat crown — the back half burns BEHIND his head, the front half in front
+    const f1 = L.clamp((T - 14.85) / 0.3) * (1 - L.clamp((T - 16.1) / 0.3)), f2 = L.clamp((T - 16.45) / 0.25), fire = Math.max(f1, f2) * 1.3;
+    const eb = L.clamp((T - 14.15) / 0.5), brow = [0, 0.05, 0.85];
+    const bd = hi >= 0 ? T - hits[hi] : -1, BO = { seed: 90 + hi, k: bd < 0.07 ? 1 : Math.max(0, 0.7 - bd * 2), w: 0.06, branches: 5 }, sky = [hi ? 2.5 : -2.5, 9, -2];
+    const layer = (Lr) => {
+      PB.fx.fire3d(ctx, P, [0, 0.62, -0.05], 0.8, T, fire, Lr, 5);
+      PB.fx.smoke3d(ctx, P, [0, 0.9, -0.05], T, Math.max(fire * 0.8, T > 14.2 ? 0.5 : 0), Lr, 7);
+      PB.fx.sparks3d(ctx, P, brow, T - 14.15, { seed: 33, n: 40 }, Lr);
+      if (hi >= 0 && bd < 0.4) { PB.fx.bolt3d(ctx, P, sky, hit, BO, Lr); PB.fx.sparks3d(ctx, P, hit, bd, { seed: 40 + hi, n: 50 }, Lr); }
+    };
+    layer('back');
+    PB.head(ctx, 540, 1180, 800, HO);
+    layer('front');
+    if (eb > 0 && eb < 1) { const b = P(...brow); PB.burst(ctx, b[0], b[1], 220, 0.8 * (1 - eb), '255,190,110'); }
+    if (hi >= 0 && bd < 0.4) { const tp = P(...hit); PB.burst(ctx, tp[0], tp[1], 280, Math.exp(-bd * 7), '200,215,255'); }
     ctx.restore();
-    const P = (p) => [540 + (p[0] - 540) * z, 1180 + (p[1] - 1180) * z];
-    // eyebrows: a sizzle line of sparks along the brow + smoke
-    const eb = L.clamp((T - 14.15) / 0.5);
-    if (eb > 0 && eb < 1) { const b = P(brow); const rr = L.rng(L.hash('brow', Math.floor(T * 24))); for (let k = 0; k < 24; k++) { const x = b[0] - 180 + rr() * 360, y = b[1] - 10 + rr() * 20 - eb * 40 * rr(); ctx.fillStyle = `rgba(255,${200 + rr() * 55},120,${1 - eb})`; ctx.beginPath(); ctx.arc(x, y, 2 + rr() * 3, 0, 6.283); ctx.fill(); } }
-    if (T > 14.2) for (let k = 0; k < 4; k++) { const b = P(brow), ph = ((T - 14.2) * 0.8 + k / 4) % 1; L.inkPath(ctx, [[b[0] - 120 + k * 80, b[1] - ph * 200], [b[0] - 100 + k * 80 + 20 * Math.sin(ph * 6), b[1] - 60 - ph * 220]], { width: 10, color: '#8A92A8', alpha: 0.3 * (1 - ph), seed: 70 + k }); }
-    // hair on fire under the brim (after each strike)
-    const f1 = L.clamp((T - 14.85) / 0.3) * (1 - L.clamp((T - 16.1) / 0.3)), f2 = L.clamp((T - 16.45) / 0.25);
-    const bl = P(brimL), br = P(brimR);
-    const tp0 = P(top); flames(ctx, L, D, PB, tp0[0], (bl[1] + br[1]) / 2 - 10, Math.abs(br[0] - bl[0]) * 0.62, T, Math.max(f1, f2) * 1.5, 100);
-    if (hi >= 0) { const d = T - hits[hi], tp = P(top); PB.bolt(ctx, [hi ? 900 : 180, -60], tp, { seed: 90 + hi, k: d < 0.07 ? 1 : Math.max(0, 0.7 - d * 2), w: 9, branches: 5 }); PB.burst(ctx, tp[0], tp[1], 280, Math.exp(-d * 7), '200,215,255'); }
+    PB.ambient(ctx, T, { seed: 5, flash: false });
     if (T > 14.75) { PB.label(ctx, '1972', 80, 1340, (T - 14.78) / 0.08, { size: 34 }); PB.label(ctx, 'STRIKE #4', 80, 1410, (T - 14.82) / 0.08, { size: 28, col: PB.IV }); }
     if (T > 16.38) { PB.label(ctx, '1973', 700, 1340, (T - 16.41) / 0.08, { size: 34 }); PB.label(ctx, 'STRIKE #5', 700, 1410, (T - 16.45) / 0.08, { size: 28, col: PB.IV }); }
   } });

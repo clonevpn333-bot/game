@@ -55,13 +55,18 @@
     if (H > 10) {
       const z = 1 + 0.04 * (T - 30.75);
       ctx.save(); ctx.translate(540, 1150); ctx.scale(z, z); ctx.translate(-540, -1150);
-      const r = PB.head(ctx, 540, 1150, H, { win: [-2.1, 2.1, -1.6, 1.6], yaw: -0.4 + 0.15 * (T - 30.75), hat: true, key: [-0.3, 0.5, 0.8], rim: [0.6, 0.6, -0.4], res: 0.36, slot: 5, warm: [1 + 0.2 * fk, 1 + 0.15 * fk, 1 + 0.3 * fk] });
+      const HO = { win: [-2.1, 2.1, -1.6, 1.6], yaw: -0.4 + 0.15 * (T - 30.75), hat: true, key: [-0.3, 0.5, 0.8], rim: [0.6, 0.6, -0.4], res: 0.36, slot: 5, warm: [1 + 0.2 * fk, 1 + 0.15 * fk, 1 + 0.3 * fk] };
+      const P = PB.headProj(540, 1150, H, HO), G = [[-2.6, -2.2, -2.2], [2.5, -2.2, 1.8], [0.1, 1.28, -0.05]];
+      const lay = (Lr) => { if (hi >= 0) { const d = T - hits[hi], g = G[hi]; PB.fx.bolt3d(ctx, P, [g[0] + (hi === 1 ? 1.5 : -1.5), 9, g[2] - 1], g, { seed: 140 + hi, k: d < 0.07 ? 1 : Math.max(0, 0.65 - d * 2), w: hi === 2 ? 0.06 : 0.045, branches: 4 }, Lr); PB.fx.sparks3d(ctx, P, g, d, { seed: 60 + hi, n: 40 }, Lr); } };
+      lay('back');
+      const r = PB.head(ctx, 540, 1150, H, HO);
+      lay('front');
       ctx.restore();
       const tp = r.proj(0.1, 1.28, -0.05); top = [540 + (tp[0] - 540) * z, 1150 + (tp[1] - 1150) * z];
     } else top = [540, 1150 - 380];
-    if (hi >= 0 && hi < 2) { const d = T - hits[hi], gx = [140, 950][hi]; PB.bolt(ctx, [gx + 80, 450], [gx, 1500], { seed: 140 + hi, k: d < 0.07 ? 1 : Math.max(0, 0.6 - d * 2), w: 7, branches: 3 }); }
-    if (hi === 2) { const d = T - hits[2]; PB.bolt(ctx, [700, -60], top, { seed: 150, k: d < 0.08 ? 1 : Math.max(0, 0.7 - d * 2), w: 10, branches: 5 }); }
+    if (H <= 10 && hi === 2) { const d = T - hits[2]; PB.bolt(ctx, [700, -60], top, { seed: 150, k: d < 0.08 ? 1 : Math.max(0, 0.7 - d * 2), w: 10, branches: 5 }); }
     PB.rain(ctx, T, { n: 200, a: 0.35 * (1 - dim * 0.7), seed: 11 });
+    if (dim < 1) { ctx.save(); ctx.globalAlpha = 1 - dim; PB.ambient(ctx, T, { seed: 9, flash: false }); ctx.restore(); }
     // the point of light he shrinks into → the line's head → it writes WHY WE / WONDER
     if (T > 33.0) PB.burst(ctx, top[0], top[1], 120, 0.9 * (1 - L.clamp((T - 33.6) / 0.4)), '220,230,255');
     const pl = plan();

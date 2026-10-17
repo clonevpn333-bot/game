@@ -6,10 +6,13 @@
     PB.plate(ctx, { seed: 900, color: '#070A16' });
     PB.ridges(ctx, 0, T, { y: 1350 });
     PB.rain(ctx, T, { n: 200, a: 0.4 });
-    const r = PB.head(ctx, 560, 1230, 820, { yaw: 0.35, hat: true, key: [-0.25, 0.55, 0.8], fill: [0.6, -0.2, 0.5], rim: [0.2, 0.9, -0.3], res: 0.6, spacing: 6.5, slot: 1, warm: [1.15, 1.1, 1.25] });
-    const top = r.proj(0.1, 1.28, -0.05);
+    const HO = { yaw: 0.35, hat: true, key: [-0.25, 0.55, 0.8], fill: [0.6, -0.2, 0.5], rim: [0.2, 0.9, -0.3], res: 0.6, spacing: 6.5, slot: 1, warm: [1.15, 1.1, 1.25] };
+    const P = PB.headProj(560, 1230, 820, HO), hit = [0.1, 1.28, -0.05], sky = [-2.2, 9, -2.5], BO = { seed: 10, k: 1, w: 0.06, branches: 6 }, SO = { seed: 20, n: 60 };
     PB.flash(ctx, 0.5, 180, 0);
-    PB.bolt(ctx, [180, -80], top, { seed: 10, k: 1, w: 12, branches: 6 });
+    PB.fx.bolt3d(ctx, P, sky, hit, BO, 'back'); PB.fx.sparks3d(ctx, P, hit, 0.18, SO, 'back');
+    PB.head(ctx, 560, 1230, 820, HO);
+    PB.fx.bolt3d(ctx, P, sky, hit, BO, 'front'); PB.fx.sparks3d(ctx, P, hit, 0.18, SO, 'front');
+    const top = P(...hit);
     PB.burst(ctx, top[0], top[1], 380, 1, '200,215,255');
     PB.word(ctx, 'STRUCK BY', 540, 170, 120, 1);
     PB.word(ctx, 'LIGHTNING', 540, 310, 140, 1, { color: PB.Y });

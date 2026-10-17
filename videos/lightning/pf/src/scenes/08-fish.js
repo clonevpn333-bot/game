@@ -35,21 +35,25 @@
     D.engrave(ctx, [[-40, 1520], [1120, 1460], [1120, 1960], [-40, 1960]], { ink: '#4A5A3A', base: '#0A100A', light: () => 0.2 + fk * 0.3, angle: 0.1, spacing: 6, seed: 982, smooth: false, outW: 2, cross: false, stip: false });
     // Roy on the bank: fishing → struck → swinging a stick at the bear
     const swing = L.clamp((T - 29.95) / 0.2), swingBack = L.clamp((T - 30.35) / 0.3);
-    const pose = T > 29.6 ? 'swing' : 'fish';
-    PB.ranger(ctx, 300, 1620, 1.75, { pose, swing: swing * (1 - swingBack * 0.6), lit: 0.3 + fk * 0.6 });
+    const RO = { yaw: 0.8, slot: 45, warm: [1 + fk, 1 + fk, 1 + 1.2 * fk] }, RH = 800;
+    const pose = T > 29.6 ? PB.pose.swing(swing * (1 - swingBack * 0.6)) : d >= 0 && d < 0.9 ? Object.assign(PB.pose.fish(T), PB.pose.struck(Math.exp(-d * 3)), { rod: [0, 0.55, 0.84] }) : PB.pose.fish(T);
+    const P = PB.bodyProj(270, 1720, RH, RO), hat = [0, 1.66, 0.02], BO = { seed: 130, k: d < 0.08 ? 1 : Math.max(0, 0.7 - d * 2), w: 0.12, branches: 5 }, sky = [-2.5, 9, -2.5];
+    const lay = (Lr) => { if (d >= 0 && d < 0.4) PB.fx.bolt3d(ctx, P, sky, hat, BO, Lr); PB.fx.sparks3d(ctx, P, hat, d, { seed: 13, n: 60 }, Lr); };
+    lay('back'); PB.body(ctx, 270, 1720, RH, pose, RO); lay('front');
+    if (d >= 0 && d < 0.4) { const q = P(...hat); PB.burst(ctx, q[0], q[1], 420, Math.exp(-d * 6), '210,225,255'); }
     // the creel with the trout
     const grab = L.ease.inOutCubic(L.clamp((T - 29.45) / 0.4)), drop = L.clamp((T - 30.2) / 0.3);
     // the bear lumbers in from the right
     const bin = L.ease.outCubic(L.clamp((T - 28.4) / 1.1)), flinch = L.clamp((T - 30.15) / 0.15) * (1 - L.clamp((T - 30.5) / 0.2) * 0.5);
-    const bx = L.lerp(1500, 760, bin) + flinch * 140, by = 1640;
-    if (bin > 0) bear(ctx, L, D, bx, by, 1.45, (T - 28.4) * 7 * (1 - flinch), flinch, 1000);
+    const bx = L.lerp(1700, 900, bin) + flinch * 160, by = 1720;
+    if (bin > 0) PB.bear3d(ctx, bx - 60, by, 560, (T - 28.4) * 7 * (1 - flinch), flinch, { yaw: 0.3, slot: 61 });
     const tx = L.lerp(480, bx - 300, grab * (1 - drop)), ty = L.lerp(1560, 1430, grab * (1 - drop)) + drop * 80;
     trout(ctx, L, D, tx, ty, 1.4, 0.2 + grab * 0.6, 1100);
     // THWACK
     const th = T - 30.15; if (th >= 0 && th < 0.3) { PB.burst(ctx, bx - 230, by - 230, 200, Math.exp(-th * 10), '255,240,200'); PB.rays(ctx, bx - 230, by - 230, 20, 180, 12, Math.exp(-th * 8), 7, '#F2C230', T); }
     // strike seven
-    if (d >= 0 && d < 0.4) { PB.bolt(ctx, [140, -60], [300, 1180], { seed: 130, k: d < 0.08 ? 1 : Math.max(0, 0.7 - d * 2), w: 11, branches: 5 }); PB.burst(ctx, 300, 1200, 420, Math.exp(-d * 6), '210,225,255'); }
-    if (d >= 0.05) { PB.label(ctx, '1977', 80, 1410, (d - 0.05) / 0.08, { size: 34 }); PB.label(ctx, 'STRIKE #7', 290, 1410, (d - 0.1) / 0.08, { size: 34 }); }
+    if (d >= 0.05) { PB.label(ctx, '1977', 560, 1120, (d - 0.05) / 0.08, { size: 34 }); PB.label(ctx, 'STRIKE #7', 560, 1190, (d - 0.1) / 0.08, { size: 34 }); }
     PB.rain(ctx, T, { n: 120, a: 0.25, seed: 10 });
+    PB.ambient(ctx, T, { ground: 1560, seed: 8 });
   } });
 })();

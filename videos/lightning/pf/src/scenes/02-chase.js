@@ -22,6 +22,7 @@
     // bolts walking up the road behind it
     hits.forEach((h, j) => { const d = T - h; if (d < 0 || d > 0.35) return; const gx = L.lerp(1000, 700, j / 2), gy = 1650 - gx * 0.11; PB.bolt(ctx, [gx + 120, 650], [gx, gy], { seed: 50 + j, k: d < 0.08 ? 1 : Math.max(0, 0.7 - d * 2), w: 8 }); PB.burst(ctx, gx, gy, 220, Math.exp(-d * 6), '200,215,255'); });
     PB.rain(ctx, T, { n: 200, a: 0.35, seed: 3 });
+    PB.ambient(ctx, T, { ground: 1720, seed: 2 });
     PB.streaks(ctx, T, { angle: Math.PI, speed: 2600, n: 18, alpha: 0.2 });
   } });
 })();

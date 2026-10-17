@@ -21,14 +21,18 @@
     L.inkPath(ctx, [[120, 980], [540, 1010], [960, 980]], { width: 3, color: '#C9D1E6', seed: 974 });
     const lit = 0.35 + 0.6 * fk;
     sheet(ctx, L, D, 170, 1000, 190, 260, T, 1, lit); sheet(ctx, L, D, 400, 1012, 170, 220, T, 2, lit); sheet(ctx, L, D, 720, 1000, 200, 250, T, 3, lit);
-    // his wife: an engraved silhouette in a dress, arms up pinning a sheet
-    const wx = 640, wy = 1500, s = 1.45, P = (x, y) => [wx + x * s, wy + y * s];
-    D.engrave(ctx, [P(-50, 0), P(-30, -150), P(-20, -210), P(20, -210), P(30, -150), P(50, 0)], { ink: '#7A6A8A', base: '#0A0C14', light: () => 0.35 + fk * 0.5, angle: 1.2, spacing: 3, seed: 980, smooth: false, outW: 2, cross: false, stip: false });
-    L.inkCircle(ctx, wx, wy - 232 * s, 18 * s, { width: 2, color: '#000', fill: '#2A2420', seed: 981 });
-    L.inkPath(ctx, [P(-14, -205), P(-34, -300), P(-44, -390)], { width: 10, color: '#0A0C14', seed: 982, taper: 0 }); L.inkPath(ctx, [P(14, -205), P(40, -300), P(56, -392)], { width: 10, color: '#0A0C14', seed: 983, taper: 0 });
-    if (d >= 0 && d < 0.4) { PB.bolt(ctx, [820, 300], [wx + 30, 1000], { seed: 120, k: d < 0.08 ? 1 : Math.max(0, 0.7 - d * 2), w: 10, branches: 5 }); PB.burst(ctx, wx + 30, 1000, 360, Math.exp(-d * 6), '210,225,255'); }
+    // his wife, a real 3D figure in a dress, arms up pinning a sheet; the bolt hits the line in her space
+    const WO = { yaw: -0.35 + 0.1 * Math.sin(T * 0.8), dress: true, slot: 44, warm: [1 + fk, 1 + fk, 1 + 1.2 * fk] }, wx = 640, wy = 1620, WH = 640;
+    const P = PB.bodyProj(wx, wy, WH, WO), line = [0.25, 1.95, 0.05], sky = [2.5, 9, -2.5];
+    const BO = { seed: 120, k: d < 0.08 ? 1 : Math.max(0, 0.7 - d * 2), w: 0.1, branches: 5 };
+    const lay = (Lr) => { if (d >= 0 && d < 0.4) PB.fx.bolt3d(ctx, P, sky, line, BO, Lr); PB.fx.sparks3d(ctx, P, line, d, { seed: 12, n: 60 }, Lr); };
+    lay('back');
+    PB.body(ctx, wx, wy, WH, d >= 0 && d < 0.8 ? PB.pose.struck(Math.exp(-d * 3)) : PB.pose.reach(T), WO);
+    lay('front');
+    if (d >= 0 && d < 0.4) { const q = P(...line); PB.burst(ctx, q[0], q[1], 360, Math.exp(-d * 6), '210,225,255'); }
     if (d >= 0.05) PB.label(ctx, 'HIS WIFE · STRUCK TOO', 80, 1350, (d - 0.05) / 0.1, { size: 30 });
     PB.rain(ctx, T, { n: 140, a: 0.3, seed: 8 });
+    PB.ambient(ctx, T, { ground: 1560, seed: 7 });
     PB.motes(ctx, T, { n: 30, seed: 9, vx: 160, vy: 20, alpha: 0.5, col: '200,220,180', size: 3 });
   } });
 })();

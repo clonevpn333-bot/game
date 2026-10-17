@@ -177,3 +177,14 @@ FILM.pb.jet DC-9 with breakup, pb.clouds, pb.alt altimeter, FILM.pbCert, FILM.pb
 - Outro default from ep9: the classic transition — the hero shrinks into a point of light that becomes the curiosity line
   and WRITES "WHY WE / WONDER" — but the end card is SUBSCRIBE FOR MORE (kinetic slam on a red pill), not STAY CURIOUS.
   A story question (WOULD YOU…?) comes right before it as the comment trigger.
+
+## 3D RULE (ep9 v2 feedback: "2d humans kinda suck", "the effects for 3d should be 3d!!!")
+- **No 2D stick/silhouette people, ever.** Every human is a posable engraved 3D SDF figure (`pb.body(ctx, feetX, feetY, H, pose, {yaw, dress, hat})`,
+  poses in `pb.pose`: stand / walk(ph) / fish / swing(s) / reach / struck(k)). Animals the same (`pb.bear3d`). Keep figures BIG (H ≥ 600 px in
+  wide shots); a small 3D figure reads as a mannequin. Real proportions: head scale 1.2, deltoids, thick limbs, a face (brow, nose, jaw, ears).
+- **Effects touching a 3D object are 3D too.** Get the object's exact projection BEFORE drawing it (`df.r3dProj` / `pb.headProj` / `pb.bodyProj`),
+  then draw effects in object space in two passes: `'back'` → object → `'front'` (`pb.fx.bolt3d / sparks3d / fire3d / smoke3d`).
+  Bolts wrap around the head in depth, sparks fly through 3D with gravity and perspective size, fire rings the crown.
+  Never route an effect across the face; front-side hits land beside the figure.
+- **Something moves every second in every scene.** Add `pb.ambient(ctx, T, {ground, seed})`: distant sheet-lightning flicker, rain splashes,
+  wind-swept foreground grass, blown leaves. Add a slow camera push on any held frame.
