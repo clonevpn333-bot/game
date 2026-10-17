@@ -193,6 +193,7 @@ export class StreetLife {
     if (!c || c.status !== 'ok' || C.venue == null) return;
     const vb = W.city.buildings[C.venue];
     W.citizenAI.go(c, C.venue, 'party');
+    W.tasks && W.tasks.add({ key: 'celeb', icon: '⭐', label: `${c.name} is at ${W.citizenAI.buildingName(C.venue)}`, b: C.venue, until: W.time + 240 });
     W.history.cityEvent(`${c.name} spotted heading to ${W.citizenAI.buildingName(C.venue)} — fans gathering`, { type: 'celebrity', x: vb.x, z: vb.z, who: c.id });
   }
   celebLeave() {

@@ -17,6 +17,7 @@ import { StreetLife } from './street.js';
 import { Love } from './love.js';
 import { Goals } from './goals.js';
 import { Drama } from './drama.js';
+import { Tasks } from './tasks.js';
 import { History } from './history.js';
 import { Weather } from './weather.js';
 import { Power } from './power.js';
@@ -76,6 +77,7 @@ export class World {
     this.street = new StreetLife(this);
     this.love = new Love(this);
     this.goals = new Goals(this);
+    this.tasks = new Tasks(this);
     this.drama = new Drama(this);
     this.driverCtrl = { onLink: () => {}, idle: (v) => {} };
     this.lastHour = Math.floor(this.time / 60);

@@ -89,12 +89,18 @@ export class Love {
     else if (k === 'car') M.text = TEXT.car(W.citizenAI.buildingName(o.home));
     else M.text = TEXT[k]();
     S.mission = M;
+    if (W.tasks) {
+      const near = (types) => { const p = W.citizenPos(c) || { x: 0, z: 0 }; return W.economy.biz.filter((b) => types.includes(b.type) && b.status === 'open').map((b) => W.city.buildings[b.b]).sort((a, b2) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b2.x - p.x, b2.z - p.z))[0]; };
+      const loc = { date: [M.b, `Date with ${o.first}`], car: [o.home, `Bring ${o.first} a stolen car`], visit: [o.at ?? o.home, `Go see ${o.first}`], gift: [o.at ?? o.home, `Bring ${o.first} flowers (buy some first)`], curfew: [c.home, 'Be home by 11pm'], crime: [near(['convenience', 'gas', 'electronics'])?.id, `Rob a store for ${o.first}`] }[k];
+      if (loc && loc[0] != null) W.tasks.add({ key: 'spark', icon: VIBES[v][0], label: loc[1], b: loc[0], until: M.until });
+    }
     W.life && W.life.msg(VIBES[v][0], `${o.first} (Spark): "${M.text}"`);
     return M;
   }
   complete(c, M, ok) {
     const W = this.W, S = this.S(c), o = W.citizens[M.who];
     S.mission = null;
+    W.tasks && W.tasks.remove('spark');
     if (!o) return;
     const v = this.vibe(o);
     if (ok) {

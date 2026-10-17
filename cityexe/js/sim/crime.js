@@ -108,6 +108,7 @@ export class Crime {
     if (m.b != null || m.cid != null || m.biz != null) {
       const W = this.W;
       const b = m.b != null ? W.city.buildings[m.b] : m.biz != null ? W.city.buildings[W.economy.biz[m.biz].b] : null;
+      if (b && W.tasks) W.tasks.add({ key: 'gang', icon: '🕶', label: m.type === 'delivery' ? 'Drop the package' : m.type === 'car' ? `Deliver a ${m.vtype}` : m.type === 'store' ? 'Hit the store' : 'Gang job', b: b.id, until: (m.until + 1) * 1440 });
       if (b) game.waypoint = { x: b.door[0], z: b.door[1], b: b.id, label: m.type === 'delivery' ? 'Drop the package' : m.type === 'car' ? 'Deliver the car' : 'The target' };
     }
     W_msg(this.W, '🕶', m.text);
@@ -132,6 +133,7 @@ export class Crime {
       W_msg(W, '💼', `Job done. ${money(m.pay)} in your pocket.`);
       W.history.citizenLog(c, `Did a job for the ${this.gang(c.gang)?.name}`, false);
       this.mission = null;
+      W.tasks && W.tasks.remove('gang');
     }
   }
 

@@ -17,6 +17,7 @@ import street from './scen-street.mjs';
 import gait from './scen-gait.mjs';
 import spark from './scen-spark.mjs';
 import punch from './scen-punch.mjs';
+import map from './scen-map.mjs';
 const setTime = (page, h) => page.evaluate((h) => { const W = window.game.world; W.time = Math.floor(W.time / 1440) * 1440 + h * 60; }, h);
 export default {
   life,
@@ -38,6 +39,7 @@ export default {
   gait,
   spark,
   punch,
+  map,
   closeup: (a) => closeup(a),
   async overview({ page, shot, wait }) {
     await setTime(page, 13);
