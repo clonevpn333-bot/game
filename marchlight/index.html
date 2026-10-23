@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MARCHLIGHT</title>
+<link rel="stylesheet" href="css/game.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "./vendor/three/addons/",
+    "rapier": "./vendor/rapier/rapier.es.js"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="ui"></div>
+<div id="boot">
+  <div class="boot-mark">MARCHLIGHT</div>
+  <div class="boot-bar"><i id="boot-fill"></i></div>
+  <div class="boot-msg" id="boot-msg">Waking the city…</div>
+</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

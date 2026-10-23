@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>rig test</title>
+<style>body{margin:0;background:#222}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"../vendor/three/three.module.js","three/addons/":"../vendor/three/addons/"}}</script>
+</head><body>
+<script type="module">
+import * as THREE from 'three';
+import { buildCharacter, randomLook } from '../src/characters/rig.js';
+import { Animator } from '../src/characters/anim.js';
+const q = new URLSearchParams(location.search);
+const r = new THREE.WebGLRenderer({ antialias: true }); r.setSize(innerWidth, innerHeight); document.body.appendChild(r.domElement);
+r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace; r.shadowMap.enabled = true;
+const s = new THREE.Scene(); s.background = new THREE.Color(0x6f7f8f);
+const cam = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.05, 100);
+const zoom = q.get('face') ? 1 : 0;
+cam.position.set(zoom ? 0 : 1.2, zoom ? 1.6 : 1.4, zoom ? 1.0 : 5.5); cam.lookAt(0, zoom ? 1.58 : 0.95, 0);
+s.add(new THREE.HemisphereLight(0xcfe3ff, 0x6a5a48, 1.2));
+const sun = new THREE.DirectionalLight(0xffe2c0, 2.5); sun.position.set(3, 5, 4); sun.castShadow = true; sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02; s.add(sun);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshStandardMaterial({ color: 0x555555 })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; s.add(floor);
+const looks = [
+  { hairStyle: 'swept', outfit: 'runner', tetherArm: true, backpack: true, skin: '#c58c64' },
+  { hairStyle: 'ponytail', outfit: 'casual', skin: '#8e5a3a', hair: '#1b1512', primary: '#c8692b', tank: true, tiedJacket: '#3d4f3a', goggles: true, frame: 0.85, freckles: true },
+  { hairStyle: 'shaved', outfit: 'runner', beard: true, build: 1, frame: 0, hair: '#9c9a96', skin: '#e8b896', primary: '#6a4a3a', scarf: '#a14a52', height: 1.05 },
+  { hairStyle: 'crop', outfit: 'engineer', glasses: true, coat: '#3b4a5a', build: 0.2, lid: 0.8, primary: '#55606a' },
+  { kid: true, hairStyle: 'curls', outfit: 'casual', primary: '#d1b04a' },
+];
+const actors = [];
+const n = q.get('one') ? 1 : looks.length;
+for (let i = 0; i < n; i++) {
+  const c = buildCharacter(looks[i]); c.group.position.x = (i - (n - 1) / 2) * 0.75; s.add(c.group);
+  const a = new Animator(c); actors.push(a);
+  a.mode = q.get('mode') || 'loco'; a.speed = +(q.get('speed') || 0); a.talking = !!q.get('talk'); a.emotion = q.get('emo') || 'neutral';
+  if (q.get('act')) { a.mode = 'activity'; a.activity = q.get('act'); }
+  if (q.get('aim')) { a.aim = 1; a.weapon = q.get('aim'); }
+  if (q.get('tether')) a.tether = 1;
+  if (q.get('rot')) c.group.rotation.y = +q.get('rot');
+}
+let last = performance.now();
+function loop() { const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  actors.forEach(a => a.update(dt)); r.render(s, cam); requestAnimationFrame(loop); }
+loop(); window.__ready = true;
+</script></body></html>
