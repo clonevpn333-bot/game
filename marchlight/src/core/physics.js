@@ -106,6 +106,13 @@ export class Physics {
     return k;
   }
 
+  removeKinematic(k) {
+    if (!k) return;
+    this.kinematics = this.kinematics.filter(x => x !== k);
+    k.cols.forEach(c => this.meta.delete(c.handle));
+    this.world.removeRigidBody(k.body);
+  }
+
   syncKinematics() {
     const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3();
     for (const k of this.kinematics) {

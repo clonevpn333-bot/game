@@ -22,6 +22,31 @@ function sizedBox(sx, sy, sz, texScale, ao) {
   return g;
 }
 
+// Box with rounded edges (bevel catches the light on props & furniture)
+function roundedSizedBox(sx, sy, sz, r, texScale) {
+  const g = sizedBox(sx, sy, sz, texScale, false);
+  const seg = new THREE.BoxGeometry(sx, sy, sz, 4, 4, 4);
+  const uvSrc = sizedBox(sx, sy, sz, texScale, false); // reuse UV logic below
+  const P = seg.attributes.position, v = new THREE.Vector3(), c = new THREE.Vector3();
+  const inner = new THREE.Vector3(sx / 2 - r, sy / 2 - r, sz / 2 - r);
+  for (let i = 0; i < P.count; i++) {
+    v.fromBufferAttribute(P, i);
+    c.set(Math.max(-inner.x, Math.min(inner.x, v.x)), Math.max(-inner.y, Math.min(inner.y, v.y)), Math.max(-inner.z, Math.min(inner.z, v.z)));
+    const off = v.clone().sub(c); if (off.lengthSq() > 1e-12) off.setLength(r);
+    P.setXYZ(i, c.x + off.x, c.y + off.y, c.z + off.z);
+  }
+  seg.computeVertexNormals();
+  const uv = seg.attributes.uv, nor = seg.attributes.normal;
+  for (let i = 0; i < uv.count; i++) {
+    const nx = Math.abs(nor.getX(i)), ny = Math.abs(nor.getY(i));
+    const px = P.getX(i) + sx / 2, py = P.getY(i) + sy / 2, pz = P.getZ(i) + sz / 2;
+    let u, w; if (nx > 0.5) { u = pz; w = py; } else if (ny > 0.5) { u = px; w = pz; } else { u = px; w = py; }
+    uv.setXY(i, u / texScale, w / texScale);
+  }
+  g.dispose(); uvSrc.dispose();
+  return seg;
+}
+
 function applyColor(g, color, ao, bottomY, aoRange = 2.2, topDark = 0) {
   const pos = g.attributes.position, nor = g.attributes.normal;
   const col = new Float32Array(pos.count * 3);
@@ -38,8 +63,10 @@ function applyColor(g, color, ao, bottomY, aoRange = 2.2, topDark = 0) {
 }
 
 export class Builder {
-  constructor(game, parent, { cell = 70 } = {}) {
+  constructor(game, parent, { cell = 70, offset = null } = {}) {
     this.game = game; this.parent = parent; this.cell = cell;
+    // translation of `parent` within the city frame (colliders are always created in the city frame)
+    this.off = offset || { x: 0, y: 0, z: 0 };
     this.M = game.materials; this.physics = game.physics;
     this.buckets = new Map();
     this.meshes = [];
@@ -69,14 +96,14 @@ export class Builder {
     const { rx = 0, ry = 0, rz = 0, color = WHITE, tex = 2, ao = true, collide = true, cast = true, receive = true, meta = {}, visible = true } = o;
     _q.setFromEuler(_e.set(rx, ry, rz));
     if (visible) {
-      const g = sizedBox(s[0], s[1], s[2], tex, ao);
+      const g = o.round ? roundedSizedBox(s[0], s[1], s[2], Math.min(o.round, Math.min(s[0], s[1], s[2]) * 0.45), tex) : sizedBox(s[0], s[1], s[2], tex, ao);
       if (ao) applyColor(g, toColor(color), true, -s[1] / 2, o.aoRange ?? 2.2);
       else applyColor(g, toColor(color), false, 0);
       _m.compose(_v.set(p[0], p[1], p[2]), _q, _s.set(1, 1, 1));
       this.geom(mat, g, _m, { cast, receive });
     }
     if (collide) {
-      return this.physics.addBox({ x: p[0], y: p[1], z: p[2] }, { x: s[0] / 2, y: s[1] / 2, z: s[2] / 2 }, (rx || ry || rz) ? { x: _q.x, y: _q.y, z: _q.z, w: _q.w } : null, meta);
+      return this.physics.addBox({ x: p[0] + this.off.x, y: p[1] + this.off.y, z: p[2] + this.off.z }, { x: s[0] / 2, y: s[1] / 2, z: s[2] / 2 }, (rx || ry || rz) ? { x: _q.x, y: _q.y, z: _q.z, w: _q.w } : null, meta);
     }
     return null;
   }
@@ -91,7 +118,7 @@ export class Builder {
     _q.setFromEuler(_e.set(rx, ry, rz));
     _m.compose(_v.set(p[0], p[1], p[2]), _q, _s.set(1, 1, 1));
     this.geom(mat, g, _m, { cast });
-    if (collide) return this.physics.addCylinder({ x: p[0], y: p[1], z: p[2] }, h / 2, Math.max(r, r2), (rx || ry || rz) ? { x: _q.x, y: _q.y, z: _q.z, w: _q.w } : null, meta);
+    if (collide) return this.physics.addCylinder({ x: p[0] + this.off.x, y: p[1] + this.off.y, z: p[2] + this.off.z }, h / 2, Math.max(r, r2), (rx || ry || rz) ? { x: _q.x, y: _q.y, z: _q.z, w: _q.w } : null, meta);
     return null;
   }
   sphere(mat, p, r, o = {}) {
@@ -114,7 +141,7 @@ export class Builder {
     _m.compose(mid, _q, _s.set(1, 1, 1));
     this.geom(mat, g, _m, { cast: o.cast ?? true });
     if (o.collide) {
-      this.physics.addCylinder({ x: mid.x, y: mid.y, z: mid.z }, len / 2, Math.max(r, 0.08), { x: _q.x, y: _q.y, z: _q.z, w: _q.w }, o.meta || {});
+      this.physics.addCylinder({ x: mid.x + this.off.x, y: mid.y + this.off.y, z: mid.z + this.off.z }, len / 2, Math.max(r, 0.08), { x: _q.x, y: _q.y, z: _q.z, w: _q.w }, o.meta || {});
     }
   }
   // Polyline tube (cables with sag)
@@ -159,7 +186,7 @@ export class Builder {
     const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-ang, ry, 0, 'YXZ'));
     // offset ramp down so its top surface passes through step nosings
     const nrm = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
-    this.physics.addBox({ x: cx - nrm.x * 0.12, y: cy - nrm.y * 0.12, z: cz - nrm.z * 0.12 }, { x: w / 2, y: 0.12, z: len / 2 }, q, { surface: o.surface ?? 'metal' });
+    this.physics.addBox({ x: cx - nrm.x * 0.12 + this.off.x, y: cy - nrm.y * 0.12 + this.off.y, z: cz - nrm.z * 0.12 + this.off.z }, { x: w / 2, y: 0.12, z: len / 2 }, q, { surface: o.surface ?? 'metal' });
     if (o.rails !== false) {
       for (const side of [-1, 1]) {
         const ox = c * side * (w / 2 - 0.05), oz = -s * side * (w / 2 - 0.05);
@@ -187,7 +214,7 @@ export class Builder {
     const c = Math.cos(ry), s = Math.sin(ry), w = 0.5;
     for (const side of [-1, 1]) this.tube('steel', [p[0] + c * side * w / 2, p[1], p[2] - s * side * w / 2], [p[0] + c * side * w / 2, p[1] + h, p[2] - s * side * w / 2], 0.03, { color: o.color ?? 0xd8b030 });
     for (let y = 0.3; y < h; y += 0.3) this.tube('steel', [p[0] - c * w / 2, p[1] + y, p[2] + s * w / 2], [p[0] + c * w / 2, p[1] + y, p[2] - s * w / 2], 0.02, { color: o.color ?? 0xd8b030 });
-    const col = this.physics.addBox({ x: p[0] - s * 0.08, y: p[1] + h / 2, z: p[2] - c * 0.08 }, { x: 0.3, y: h / 2, z: 0.06 }, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, 0)), { climb: 'ladder', ladderTop: p[1] + h, ladderRy: ry, surface: 'metal', group: G.STATIC });
+    const col = this.physics.addBox({ x: p[0] - s * 0.08 + this.off.x, y: p[1] + h / 2 + this.off.y, z: p[2] - c * 0.08 + this.off.z }, { x: 0.3, y: h / 2, z: 0.06 }, new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, 0)), { climb: 'ladder', ladderTop: p[1] + h, ladderRy: ry, surface: 'metal', group: G.STATIC });
     return col;
   }
 

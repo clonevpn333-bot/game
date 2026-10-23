@@ -51,6 +51,7 @@ export class Animator {
     this.tailS = new THREE.Vector2();
     this.kid = !!char.look.kid;
     this.upperOverride = 0;
+    this.lean = 0; this.leanS = 0; this.accelLean = 0; this.idleT = 0; this.fidget = null; this.fidgetT = 0; this.nextFidget = 6 + Math.random() * 5;
   }
   setMode(m, param = 0) { if (this.mode !== m) { this.mode = m; this.modeT = 0; } this.modeParam = param; }
   setEmotion(e) { this.emotion = EMO[e] ? e : 'neutral'; }
@@ -99,6 +100,22 @@ export class Animator {
     if (this.tether > 0.01) this.layerTether(this.tether);
     if (this.mode !== 'lie' && this.mode !== 'freeze') this.layerBreath();
 
+    // ---------- banking into turns, leaning into acceleration
+    this.leanS = damp(this.leanS, this.lean, 6, dt);
+    if (this.mode === 'loco') { this.add(B.hips, 0, 0, this.leanS * 0.6); this.add(B.spine, this.accelLean * 0.25, 0, this.leanS * 0.5); this.add(B.head, 0, 0, -this.leanS * 0.6); }
+    // ---------- idle fidgets (only when standing around in loco)
+    if (this.mode === 'loco' && this.speed < 0.15 && !this.talking && this.aim < 0.1 && this.tether < 0.1 && this.fidgetsOn !== false) {
+      this.idleT += dt;
+      if (!this.fidget && this.idleT > this.nextFidget) { this.fidget = ['look', 'wrist', 'shift', 'neck'][Math.floor(Math.random() * 4)]; this.fidgetT = 0; this.nextFidget = this.idleT + 7 + Math.random() * 7; }
+    } else { this.idleT = 0; this.fidget = null; }
+    if (this.fidget) {
+      this.fidgetT += dt; const f = this.fidgetT, env = Math.sin(Math.min(1, f / 2.6) * Math.PI);
+      if (this.fidget === 'look') { this.add(B.head, -0.05 * env, Math.sin(f * 1.4) * 0.7 * env, 0); this.add(B.neck, 0, Math.sin(f * 1.4) * 0.25 * env, 0); }
+      if (this.fidget === 'wrist') { this.mix(B.armL, -0.9, 0.3, -0.35, env); this.mix(B.foreL, -1.6, 0.5, 0, env); this.add(B.head, 0.35 * env, 0.2 * env, 0); }
+      if (this.fidget === 'shift') { this.hip.x += 0.03 * env; this.add(B.hips, 0, 0, -0.06 * env); this.add(B.thighR, -0.1 * env, 0, -0.05 * env); this.add(B.shinR, 0.25 * env, 0, 0); }
+      if (this.fidget === 'neck') { this.add(B.head, 0.15 * env, 0, Math.sin(f * 2.4) * 0.25 * env); this.add(B.shoulderL, 0, 0, 0.12 * env); }
+      if (f > 2.6) this.fidget = null;
+    }
     // ---------- emotion posture
     const em = EMO[this.emotion] || EMO.neutral; const es = this.emoS;
     for (const k of Object.keys(es)) es[k] = damp(es[k], em[k], 4, dt);
@@ -121,8 +138,25 @@ export class Animator {
     this.add(B.head, this.lookPitch * 0.55 * lw, this.lookYaw * 0.55 * lw, 0);
     this.add(B.neck, this.lookPitch * 0.3 * lw, this.lookYaw * 0.3 * lw, 0);
     this.add(B.chest, 0, this.lookYaw * 0.15 * lw, 0);
-    this.add(B.eyeL, this.lookPitch * 0.3 * lw, this.lookYaw * 0.35 * lw, 0); this.add(B.eyeR, this.lookPitch * 0.3 * lw, this.lookYaw * 0.35 * lw, 0);
+    // saccades: small, quick eye darts
+    this.sacT = (this.sacT ?? 1) - dt;
+    if (this.sacT < 0) { this.sacT = 0.6 + Math.random() * 2.2; this.sac = [(Math.random() - 0.5) * 0.12, (Math.random() - 0.5) * 0.2]; }
+    const sc = this.sac || [0, 0];
+    this.add(B.eyeL, this.lookPitch * 0.3 * lw + sc[0], this.lookYaw * 0.35 * lw + sc[1], 0); this.add(B.eyeR, this.lookPitch * 0.3 * lw + sc[0], this.lookYaw * 0.35 * lw + sc[1], 0);
 
+    // ---------- hands: finger curl (grip, support, open, relaxed) and toe roll
+    {
+      let cr = 0.35 + Math.sin(t * 0.7 + this.seed) * 0.05, cl = cr;
+      if (this.talkAmt > 0.2) { cr = 0.2 + Math.max(0, noise2(t * 0.8, this.seed + 5)) * 0.5; cl = 0.25 + Math.max(0, noise2(t * 0.7, this.seed + 6)) * 0.4; }
+      if (this.weapon && this.aim > 0.3) { cr = 1.25; cl = this.weapon === 'carbine' ? 1.0 : 0.95; }
+      if (this.mode === 'hang' || this.mode === 'wallclimb' || this.mode === 'ladder' || this.mode === 'mantle') { cr = cl = 1.35; }
+      if (this.carry > 0.3 || this.armsCrossed > 0.5) { cr = cl = 0.9; }
+      if (this.tether > 0.3) cl = this.tetherStrain > 0.1 ? 0.15 + Math.sin(t * 30) * 0.05 : 0.05;
+      if (this.meleeT > 0) cr = 1.6;
+      if (this.activity === 'busk') { cr = 0.6; cl = 1.1; }
+      if (this.mode === 'freeze') { cr = this.S[B.fingersR * 3]; cl = this.S[B.fingersL * 3]; }
+      this.set(B.fingersR, -cr, 0, 0); this.set(B.fingersL, -cl, 0, 0);
+    }
     // ---------- smoothing
     const k = 1 - Math.exp(-lambda * dt);
     for (let i = 0; i < NB * 3; i++) this.S[i] += (P[i] - this.S[i]) * k;
@@ -168,18 +202,61 @@ export class Animator {
     bl[B.hips].position.set(rest.hips.x + this.hipS.x, rest.hips.y + this.hipS.y, rest.hips.z + this.hipS.z);
     bl[B.root].position.copy(this.rootOffS);
     _e.set(this.rootRotS.x, this.rootRotS.y, this.rootRotS.z, 'YXZ'); bl[B.root].quaternion.setFromEuler(_e);
-    // face scaling
-    const eye = es.eye * blinkS;
-    bl[B.eyeL].scale.set(1, eye, 1); bl[B.eyeR].scale.set(1, eye, 1);
+    // face: lids (blink, tiredness, surprise), brows, jaw, mouth corners
+    const lidBase = (1 - (this.c.look.lid ?? 1)) * 2.2 + (1 - es.eye) * 1.4;
+    const lidRot = clamp(lidBase + (1 - blinkS) * 1.45, -0.35, 1.45);
+    bl[B.lidL].rotation.x = lidRot; bl[B.lidR].rotation.x = lidRot;
+    const lowLod = this.c.lod === 'low';
+    const eyeS = lowLod ? es.eye * blinkS : 1;
+    bl[B.eyeL].scale.set(1, eyeS, 1); bl[B.eyeR].scale.set(1, eyeS, 1);
     bl[B.browL].position.set(rest.browL.x - rest.head.x, rest.browL.y - rest.head.y + es.brow * 0.008 + this.mouth * 0.002, rest.browL.z - rest.head.z);
     bl[B.browR].position.set(rest.browR.x - rest.head.x, rest.browR.y - rest.head.y + es.brow * 0.008 + this.mouth * 0.002, rest.browR.z - rest.head.z);
     bl[B.browL].rotation.z = es.tilt * 0.4; bl[B.browR].rotation.z = -es.tilt * 0.4;
-    bl[B.jaw].scale.set(1 + es.smile * 0.18 - this.mouth * 0.1, 1 + this.mouth * 2.2 - Math.max(0, es.smile) * 0.2, 1);
-    bl[B.jaw].position.set(0, rest.jaw.y - rest.head.y - this.mouth * 0.006, rest.jaw.z - rest.head.z);
+    bl[B.jaw].scale.set(1, 1, 1);
+    bl[B.jaw].rotation.x = this.mouth * 0.34 + (es.smile < 0 ? 0.02 : 0);
+    bl[B.jaw].position.set(0, rest.jaw.y - rest.head.y - this.mouth * 0.002, rest.jaw.z - rest.head.z);
+    const sm = es.smile;
+    for (const [bn, sx] of [[B.cornerL, 1], [B.cornerR, -1]]) {
+      const rp = sx > 0 ? rest.cornerL : rest.cornerR;
+      bl[bn].position.set(rp.x - rest.head.x + sx * (sm * 0.003 - this.mouth * 0.002), rp.y - rest.head.y + sm * 0.004 - this.mouth * 0.002, rp.z - rest.head.z - Math.max(0, sm) * 0.002);
+    }
     // hair tail sway
     const sway = Math.sin(t * 3.1) * 0.08 * (0.3 + Math.min(1, this.speed / 3));
     this.tailS.x = damp(this.tailS.x, -this.vy * 0.04 + this.speed * 0.08 + sway, 6, dt);
     bl[B.hair1].rotation.set(0.25 + this.tailS.x, 0, sway * 0.5); bl[B.hair2].rotation.set(0.15 + this.tailS.x * 0.6, 0, sway);
+  }
+
+  // ------------------------------------------------------------- foot IK
+  // groundAt(x, y, z) -> ground height under a world point, or null. Plants feet on steps
+  // and slopes: drops the pelvis for the lower foot, then two-bone IK per leg.
+  footIK(groundAt, weight = 1) {
+    if (weight <= 0.01 || !(this.mode === 'loco' || this.mode === 'activity') || !this.grounded) { this.ikHip = damp(this.ikHip || 0, 0, 10, 1 / 60); return; }
+    const g = this.c.group, bl = this.b; g.updateMatrixWorld(true);
+    const s = g.scale.y, baseY = g.position.y;
+    const legs = [['thighL', 'shinL', 'footL'], ['thighR', 'shinR', 'footR']].map(n => n.map(k => bl[B[k]]));
+    const offs = legs.map(([th, sh, ft]) => {
+      const a = ft.getWorldPosition(new THREE.Vector3());
+      const gy = groundAt(a.x, a.y + 0.45 * s, a.z);
+      if (gy === null || gy === undefined) return 0;
+      const lift = Math.max(0, a.y - baseY - 0.075 * s);
+      return clamp(gy + 0.075 * s + lift - a.y, -0.45 * s, 0.45 * s);
+    });
+    const drop = Math.min(0, Math.min(offs[0], offs[1]));
+    this.ikHip = damp(this.ikHip || 0, drop, 14, 1 / 60);
+    bl[B.hips].position.y += this.ikHip / s;
+    g.updateMatrixWorld(true);
+    legs.forEach(([th, sh, ft], i) => {
+      const need = (offs[i] - this.ikHip) * weight;
+      if (Math.abs(need) < 0.004) return;
+      const a = th.getWorldPosition(new THREE.Vector3()), b = sh.getWorldPosition(new THREE.Vector3()), c = ft.getWorldPosition(new THREE.Vector3());
+      const t = c.clone(); t.y += need;
+      const footQ = ft.getWorldQuaternion(new THREE.Quaternion());
+      twoBoneIK(th, sh, a, b, c, t);
+      // keep the foot's world orientation (flat on the step)
+      g.updateMatrixWorld(true);
+      const pq = ft.parent.getWorldQuaternion(new THREE.Quaternion()).invert();
+      ft.quaternion.copy(pq.multiply(footQ));
+    });
   }
 
   // ------------------------------------------------------------- base modes
@@ -218,12 +295,15 @@ export class Animator {
       const kL = Math.max(0, c * sgn) ** 1.2 * knA + 0.1, kR = Math.max(0, -c * sgn) ** 1.2 * knA + 0.1;
       this.mix(B.shinL, kL, 0, 0, w); this.mix(B.shinR, kR, 0, 0, w);
       this.mix(B.footL, -swingL * 0.4 - kL * 0.3 + Math.max(0, -s * sgn) * 0.4, 0, 0, w); this.mix(B.footR, -swingR * 0.4 - kR * 0.3 + Math.max(0, s * sgn) * 0.4, 0, 0, w);
+      // toe-off: the toes bend as the heel lifts behind the body
+      this.mix(B.toeL, -Math.max(0, s * sgn) * 0.7 * (0.5 + runW * 0.5), 0, 0, w); this.mix(B.toeR, -Math.max(0, -s * sgn) * 0.7 * (0.5 + runW * 0.5), 0, 0, w);
       this.mix(B.armL, s * armA * sgn * fs, 0, 0.1 + runW * 0.08, w); this.mix(B.armR, -s * armA * sgn * fs, 0, -0.1 - runW * 0.08, w);
       this.mix(B.foreL, -elb - Math.max(0, -s) * 0.2 * runW, 0, 0, w); this.mix(B.foreR, -elb - Math.max(0, s) * 0.2 * runW, 0, 0, w);
       this.mix(B.hips, 0, s * 0.12 * fs, s * 0.035, w);
       this.mix(B.spine, lean * dir * fs, -s * 0.08, 0, w);
       this.mix(B.chest, lean * 0.4, -s * 0.12 * fs, -s * 0.02, w);
-      this.mix(B.head, -lean * 0.6, s * 0.06, 0, w);
+      this.mix(B.head, -lean * 0.6, s * 0.12 * fs, 0, w); // counter the chest twist: the head stays on target
+      this.mix(B.neck, 0, s * 0.05 * fs, 0, w);
       const bob = lerp(0.03, 0.07, runW);
       this.hip.y += (Math.abs(c) - 0.7) * bob * w - runW * 0.05;
       this.hip.x += s * 0.015 * w * (1 - runW);
@@ -518,4 +598,31 @@ export class Animator {
     this.add(B.chest, 0, y * 0.35 * w - 0.2 * w, 0); this.add(B.spine, st * 0.15 * w, 0, 0);
     if (!this.weapon || this.aim < 0.5) { this.mix(B.armR, -0.3 - st * 0.5, 0, -0.4, w * 0.7); this.mix(B.foreR, -1.4, 0, 0, w * 0.7); }
   }
+}
+
+// Analytic two-bone IK (thigh→shin→ankle) toward target t, in world space.
+const _ia = new THREE.Vector3(), _ib = new THREE.Vector3(), _ic = new THREE.Vector3(), _iq = new THREE.Quaternion(), _iq2 = new THREE.Quaternion();
+function rotateWorld(bone, axis, angle) {
+  if (!isFinite(angle) || Math.abs(angle) < 1e-5 || axis.lengthSq() < 1e-10) return;
+  const wq = bone.getWorldQuaternion(_iq2);
+  const r = _iq.setFromAxisAngle(axis, angle);
+  const parentInv = bone.parent.getWorldQuaternion(new THREE.Quaternion()).invert();
+  bone.quaternion.copy(parentInv.multiply(r.multiply(wq)));
+  bone.updateMatrixWorld(true);
+}
+function twoBoneIK(thigh, shin, a, b, c, t) {
+  const lab = b.distanceTo(a), lcb = c.distanceTo(b);
+  const lat = clamp(t.distanceTo(a), 0.01, lab + lcb - 0.002);
+  const ca = _ia.copy(c).sub(a).normalize(), ba = _ib.copy(b).sub(a).normalize(), ta = _ic.copy(t).sub(a).normalize();
+  const ac_ab_0 = Math.acos(clamp(ca.dot(ba), -1, 1));
+  const ab_ = b.clone().sub(a).negate().normalize(), cb_ = c.clone().sub(b).normalize();
+  const ba_bc_0 = Math.acos(clamp(ab_.dot(cb_.clone()), -1, 1));
+  const ac_at_0 = Math.acos(clamp(ca.dot(ta), -1, 1));
+  const ac_ab_1 = Math.acos(clamp((lcb * lcb - lab * lab - lat * lat) / (-2 * lab * lat), -1, 1));
+  const ba_bc_1 = Math.acos(clamp((lat * lat - lab * lab - lcb * lcb) / (-2 * lab * lcb), -1, 1));
+  const axis0 = new THREE.Vector3().crossVectors(c.clone().sub(a), b.clone().sub(a)).normalize();
+  const axis1 = new THREE.Vector3().crossVectors(c.clone().sub(a), t.clone().sub(a)).normalize();
+  rotateWorld(thigh, axis0, ac_ab_1 - ac_ab_0);
+  rotateWorld(shin, axis0, ba_bc_1 - ba_bc_0);
+  rotateWorld(thigh, axis1, ac_at_0);
 }

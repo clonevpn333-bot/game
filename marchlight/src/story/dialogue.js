@@ -38,12 +38,12 @@ export class Dialogue {
     g.audio.voice(opts.radio || !actor ? null : actor.pos?.clone().add({ x: 0, y: 1.6, z: 0 }), spk.pitch, text.length);
     const dur = opts.dur ?? Math.max(1.6, 0.9 + text.length * 0.052);
     this.lineActive = true; this.advanceReq = false;
-    const t0 = performance.now();
+    const t0 = g.rtime || 0;
     const blocking = opts.wait !== false;
     if (blocking) {
-      while ((performance.now() - t0) / 1000 < dur) {
+      while (((g.rtime || 0) - t0) < dur) {
         await sleep(30);
-        if (this.advanceReq && (performance.now() - t0) > 350 && g.director.active) break;
+        if (this.advanceReq && ((g.rtime || 0) - t0) > 0.35 && g.director.active) break;
         if (g.skipAll) break;
       }
     }
@@ -53,7 +53,7 @@ export class Dialogue {
       el.classList.add('fade'); setTimeout(() => el.remove(), 300);
     };
     if (blocking) { finish(); await sleep(opts.gap ?? 120); }
-    else setTimeout(finish, dur * 1000);
+    else { const tEnd = (g.rtime || 0) + dur; const iv = setInterval(() => { if ((g.rtime || 0) >= tEnd || g.skipAll) { clearInterval(iv); finish(); } }, 50); }
   }
   radio(name, text, opts = {}) { return this.say(name, text, { radio: true, ...opts }); }
   clearLines() { [...this.subs.querySelectorAll('.sub:not(.bark)')].forEach(e => e.remove()); }

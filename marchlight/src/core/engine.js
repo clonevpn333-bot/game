@@ -69,6 +69,7 @@ export class Engine {
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.shadowMap.enabled = this.quality.shadows;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.info.autoReset = false;
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(60, 1, 0.08, 40000);
@@ -83,7 +84,7 @@ export class Engine {
     this.composer = new EffectComposer(this.renderer);
     this.renderPass = new RenderPass(this.scene, this.camera);
     this.composer.addPass(this.renderPass);
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.55, 0.6, 0.86);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.42, 0.55, 1.05);
     this.bloom.enabled = this.quality.bloom;
     this.composer.addPass(this.bloom);
     this.output = new OutputPass();
@@ -119,6 +120,7 @@ export class Engine {
   render(dt) {
     this.time += dt;
     this.grade.uniforms.uTime.value = this.time;
+    this.renderer.info.reset();
     this.composer.render(dt);
   }
 }

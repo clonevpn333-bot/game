@@ -241,8 +241,36 @@ function leaf() {
   return t.finish('leaf', { normalStrength: 1 });
 }
 
+function brick() {
+  const t = new TexBuilder(512), r = rng(21);
+  const tones = []; for (let k = 0; k < 256; k++) tones.push(0.75 + r() * 0.4);
+  t.each((x, y, i, u, v) => {
+    const row = Math.floor(y / 32), off = (row % 2) * 32, bx = Math.floor((x + off) / 64) % 8, px = (x + off) % 64, py = y % 32;
+    const mortar = px < 3 || py < 3;
+    const n = fbm(N1, u * 16, v * 16, 16, 3), n2 = fbm(N2, u * 64, v * 64, 64, 2);
+    const k = tones[(bx + row * 8) & 255];
+    if (mortar) { const c = 0.62 + n * 0.1; setA(t, i, c, c * 0.97, c * 0.92); t.h[i] = -0.8; t.rough[i] = 0.95; }
+    else { setA(t, i, (0.55 + n2 * 0.1) * k, (0.3 + n2 * 0.06) * k, (0.22 + n2 * 0.05) * k); t.h[i] = n2 * 0.3; t.rough[i] = 0.85; }
+    t.metal[i] = 0;
+  });
+  return t.finish('brick', { normalStrength: 2.5 });
+}
+function corrugated() {
+  const t = new TexBuilder(512);
+  t.each((x, y, i, u, v) => {
+    const wave = Math.sin(u * Math.PI * 2 * 16);
+    const n = fbm(N1, u * 6, v * 6, 6), n3 = fbm(N3, u * 4, v * 12, 4, 3);
+    const streak = Math.max(0, fbm(N2, u * 40, v * 3, 40, 3) - 0.5) * 2;
+    const rustAmt = Math.min(1, Math.max(0, (n3 - 0.5) * 3) + streak * 0.6);
+    const base = 0.6 + n * 0.1 + wave * 0.04;
+    setA(t, i, base + (0.45 - base) * rustAmt, base + (0.24 - base) * rustAmt, base * 0.98 + (0.1 - base) * rustAmt);
+    t.h[i] = wave; t.rough[i] = 0.45 + rustAmt * 0.45; t.metal[i] = 0.6 * (1 - rustAmt);
+  });
+  return t.finish('corrugated', { normalStrength: 3 });
+}
+
 export function buildTextures(progress) {
-  const list = [['panel', panelMetal], ['rust', rust], ['concrete', concrete], ['grate', grate], ['tiles', tiles], ['wood', wood], ['plaster', plaster], ['fabric', fabric], ['hazard', hazard], ['facade', facade], ['leaf', leaf]];
+  const list = [['panel', panelMetal], ['rust', rust], ['concrete', concrete], ['grate', grate], ['tiles', tiles], ['wood', wood], ['plaster', plaster], ['fabric', fabric], ['hazard', hazard], ['facade', facade], ['leaf', leaf], ['brick', brick], ['corrugated', corrugated]];
   const out = {};
   list.forEach(([n, f], i) => { out[n] = f(); progress?.((i + 1) / list.length); });
   return out;

@@ -31,6 +31,7 @@ async function boot() {
   finishBoot(game);
   game.start();
   window.__ready = true;
+  if (q.get('view')) { game.player.teleport(new (await import('three')).Vector3(205, -38, -190), Math.PI); return; }
   if (q.get('beat')) { await game.menu.quickStart(q.get('beat')); return; }
   game.menu.showTitle();
 }

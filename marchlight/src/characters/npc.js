@@ -95,6 +95,8 @@ export class Actor {
       const step = d > 45 ? 0.1 : d > 25 ? 0.05 : 0;
       if (this.lodT >= step) { this.anim.update(this.lodT); this.lodT = 0; }
       this.char.mesh.castShadow = d < 35;
+      this.char.setLOD?.(d < (this.lodDist ?? 16) ? 'high' : 'low');
+      if (this.char.meshLow) this.char.meshLow.castShadow = d < 35;
     }
   }
   sync() {

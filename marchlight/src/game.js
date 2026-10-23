@@ -85,7 +85,7 @@ export class Game {
       let ts = this.timeScale * this.slowmo;
       if (this.hitStop > 0) { this.hitStop -= dtReal; ts *= 0.05; }
       const dt = dtReal * ts; this.dt = dt;
-      this.time += dt; this.state.playtime += dtReal;
+      this.time += dt; this.rtime = (this.rtime || 0) + dtReal; this.state.playtime += dtReal;
       this.city?.update(dt, dtReal);
       this.world?.update?.(dt);
       for (const f of this.updaters) f(dt, dtReal);

@@ -53,7 +53,7 @@ export class Player {
     const old = this.char;
     if (old) old.group.removeFromParent();
     this.look = look;
-    this.char = buildCharacter({ ...look, tetherArm: true });
+    this.char = buildCharacter({ ...look, tetherArm: look.tetherArm ?? true });
     this.anim = new Animator(this.char);
     this.game.engine.cityRoot.add(this.char.group);
     this.char.group.position.copy(this.pos);
@@ -109,7 +109,19 @@ export class Player {
     // sync visuals
     this.char.group.position.copy(this.pos);
     this.char.group.rotation.y = this.yaw;
+    // bank into turns, lean into acceleration
+    const yawRate = (this.yaw - (this._prevYaw ?? this.yaw)) / Math.max(dt, 1e-4); this._prevYaw = this.yaw;
+    const hsp = Math.hypot(this.vel.x, this.vel.z);
+    this.anim.lean = this.state === 'ground' ? clamp(-yawRate * hsp * 0.025, -0.22, 0.22) : 0;
+    this.anim.accelLean = damp(this.anim.accelLean, clamp((hsp - (this._prevSp ?? hsp)) / Math.max(dt, 1e-4) * 0.04, -0.3, 0.3), 8, dt); this._prevSp = hsp;
+    // Rook looks where the player looks (head & eyes), unless a scene has set a target
+    if (!this.game.director.active && !this.lookOverride) {
+      const cam = this.game.engine.camera; const f = cam.getWorldDirection(new THREE.Vector3());
+      this.anim.lookTarget = cam.position.clone().addScaledVector(f, 25);
+    }
     this.anim.update(dt);
+    // plant feet on stairs/slopes
+    if (this.state === 'ground') this.anim.footIK((x, y, z) => { const h = this.physics.raycastFilter(new THREE.Vector3(x, y, z), DOWN, 1.1, G.STATIC | G.PLATFORM, c => c.handle !== this.collider.handle); return h ? h.point.y : null; });
 
     // fell off the world
     if (this.pos.y < g.killY && !this.dead) g.onPlayerFell?.();
