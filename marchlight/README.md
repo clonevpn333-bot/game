@@ -16,6 +16,8 @@ node tools/serve.mjs 8080      # or any static file server
 # open http://localhost:8080/
 ```
 
+You can also open `dist/marchlight.html`. It's a single self-contained file (about 3 MB) that runs by double-clicking, with no server needed. To rebuild it after changes, run `node tools/build-single.mjs <path-to-esbuild-package>`. esbuild is only needed at build time.
+
 Use a desktop browser with WebGL2 (Chrome, Edge, Firefox or Safari 16+). Headphones are recommended, since all audio is synthesized live.
 
 ### Controls

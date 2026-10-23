@@ -14,6 +14,7 @@ async function openDB() {
 }
 // The cache is keyed by a hash of the sculpting source, so any change to the anatomy re-sculpts.
 async function sourceHash() {
+  if (globalThis.__SCULPT_HASH) return globalThis.__SCULPT_HASH; // single-file build
   let h = 2166136261;
   for (const f of ['anatomy.js', 'sculpt.js']) {
     try { const t = await (await fetch(new URL('./' + f, import.meta.url))).text(); for (let i = 0; i < t.length; i++) h = Math.imul(h ^ t.charCodeAt(i), 16777619); } catch (e) { return 'nohash'; }
@@ -44,7 +45,12 @@ export async function prewarmAnatomy(onProgress = () => {}) {
       let live = n;
       for (let w = 0; w < n; w++) {
         let worker;
-        try { worker = new Worker(new URL('./sculpt.worker.js', import.meta.url), { type: 'module' }); } catch (e) { live--; if (!live) resolve(); continue; }
+        try {
+          // the single-file build carries the worker inline; otherwise load it as a module
+          worker = globalThis.__SCULPT_WORKER_SRC
+            ? new Worker(URL.createObjectURL(new Blob([globalThis.__SCULPT_WORKER_SRC], { type: 'text/javascript' })))
+            : new Worker(new URL('./sculpt.worker.js', import.meta.url), { type: 'module' });
+        } catch (e) { live--; if (!live) resolve(); continue; }
         const feed = () => { if (next < missing.length) worker.postMessage({ ...missing[next++] }); else { worker.terminate(); if (--live === 0) resolve(); } };
         worker.onmessage = (e) => {
           const { key, data } = e.data;
