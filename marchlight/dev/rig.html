@@ -41,6 +41,6 @@ function loop() { const now = performance.now(); const dt = Math.min(0.05, (now 
   if (!manual) { actors.forEach(a => a.update(dt)); r.render(s, cam); } requestAnimationFrame(loop); }
 // deterministic stepping for filmstrips: advance every animator by `sec` at 60 Hz and render once
 window.__step = (sec) => { manual = true; for (let i = 0; i < Math.round(sec * 60); i++) actors.forEach(a => a.update(1 / 60)); r.render(s, cam); };
-window.__actors = actors;
+window.__actors = actors; window.__cam = cam; window.__cam = cam;
 loop(); window.__ready = true;
 </script></body></html>

@@ -894,12 +894,15 @@ export class Prologue {
     // place Callow Reach so the falling tram leads the eye to it
     // Out to starboard and a little ahead, so that by the time Rook raises the visor the city's
     // stride has carried it abeam, well clear of the hull and the legs.
-    g.ground.placeSettlement(P.pos.x + 330, P.pos.z - 90);
+    // Rook will watch from the relay deck's east railing; the city's stride carries the town abeam
+    const watchSpot = V(221.2, -96, -283); // on the relay deck (SP.deck), at the east railing
+    g.ground.placeSettlement(watchSpot.x + 560, watchSpot.z - 90);
     // follow the tram down
     this.enter(true);
     g.slowmo = 0.6;
-    const from = P.pos.clone().add(V(0, 1.6, 0));
-    g.director.shot({ pos: from, look: () => tram.group.position, fov: 50, to: { pos: from.clone().add(V(2, -1, 3)), fov: 35 }, dur: 3 });
+    // a witness camera hanging below the deck as the cabin drops past it
+    const from = tram.group.position.clone().add(V(35, -8, 30));
+    g.director.shot({ pos: from, look: () => tram.group.position, fov: 50, to: { pos: from.clone().add(V(2, -2, 3)), fov: 35 }, dur: 3 });
     await this.waitGame(2.2);
     const chase = V(24, 14, 26);
     g.director.shot({ pos: () => { const p = tram.group.position.clone().add(chase); p.y = Math.min(p.y, -135); return p; }, look: () => tram.group.position, fov: 45, cut: true });
@@ -921,7 +924,8 @@ export class Prologue {
     g.engine.grade.uniforms.uStill.value = 0;
     const stillUp = g.add((dt) => { g.engine.grade.uniforms.uStill.value = damp(g.engine.grade.uniforms.uStill.value, 0.45, 0.5, dt); });
     await this.wait(5.5);
-    // back to Rook on the boom: player looks for themself, visor zoom
+    // back to Rook, at the railing: player looks for themself, visor zoom
+    if (P.state !== 'hang' && P.state !== 'climb') { P.teleport(watchSpot, Math.PI / 2); g.camera.snapBehind(Math.PI / 2, 0.2); }
     { const lk = P.pos.clone().add(V(0, 1.4, 0)); g.director.shot({ pos: g.director.frame(lk, [V(2.6, 0.6, 2.2), V(-2.2, 0.6, 2.6), V(2.4, 0.5, -2.4), V(-2.6, 0.5, -2.2)]), look: lk, fov: 40, cut: true }); }
     await this.wait(1.8);
     this.exit();

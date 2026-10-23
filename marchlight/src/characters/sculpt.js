@@ -327,6 +327,14 @@ export function meshField(field, opts) {
     pos[v * 3] = px - nx_ * mv; pos[v * 3 + 1] = py - ny_ * mv; pos[v * 3 + 2] = pz - nz_ * mv;
     nrm[v * 3] = nx_; nrm[v * 3 + 1] = ny_; nrm[v * 3 + 2] = nz_;
   }
+  // orient every triangle by the field's normals: projection can fold a quad so that one of its
+  // triangles faces inward (it would be culled and read as a hole)
+  for (let t = 0; t < I.length; t += 3) {
+    const a = I[t] * 3, b = I[t + 1] * 3, c = I[t + 2] * 3;
+    const ux = pos[b] - pos[a], uy = pos[b + 1] - pos[a + 1], uz = pos[b + 2] - pos[a + 2], vx = pos[c] - pos[a], vy = pos[c + 1] - pos[a + 1], vz = pos[c + 2] - pos[a + 2];
+    const gx = uy * vz - uz * vy, gy = uz * vx - ux * vz, gz = ux * vy - uy * vx;
+    if (gx * (nrm[a] + nrm[b] + nrm[c]) + gy * (nrm[a + 1] + nrm[b + 1] + nrm[c + 1]) + gz * (nrm[a + 2] + nrm[b + 2] + nrm[c + 2]) < 0) { const k = I[t + 1]; I[t + 1] = I[t + 2]; I[t + 2] = k; }
+  }
   // exact plane clips (keep a*x + b*y + c*z + d >= 0): new vertices land on the plane, so
   // pieces sculpted separately meet on a clean seam
   let posA = pos, nrmA = nrm, nvA = nv, Icl = I;

@@ -56,7 +56,10 @@ export class CameraRig {
     if (aiming) { dist = 1.75; side = 0.62; fov = 50; height = 1.52 - p.crouchS * 0.35; }
     if (g.cameraZoneDist) dist = Math.min(dist, g.cameraZoneDist);
     dist += this.extraDist;
-    if (this.zoomFov) fov = this.zoomFov;
+    if (this.zoomFov) { fov = this.zoomFov; dist = 0.06; side = 0; height = 1.63; } // visor: look through Rook's own eyes
+    // first person while the visor is up: hide Rook's own body from the lens
+    const fp = this.zoomFov && this.distS < 0.5;
+    if (fp !== !!this._fpHidden) { this._fpHidden = fp; p.char.group.visible = !fp; }
     this.distS = damp(this.distS, dist, aiming ? 14 : 6, dt);
     this.sideS = damp(this.sideS, side * this.shoulderSwap, 8, dt);
     this.fovS = damp(this.fovS, fov, this.zoomFov ? 10 : 6, dt);

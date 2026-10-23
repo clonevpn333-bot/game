@@ -119,7 +119,7 @@ export function characterMaterial() {
         diffuseColor.rgb *= alb;`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
         roughnessFactor = mSkin * (0.52 + cn(vRest * 120.0) * 0.12) + mCloth * 0.88 + mCanvas * 0.8 + mKnit * 0.95 + mLeather * (0.42 + grain * 0.2)
-          + mMetal * 0.28 + mHair * (0.56 + strands * 0.22) + mEye * 0.06 + mRubber * 0.95 + mLips * 0.35;`)
+          + mMetal * 0.28 + mHair * (0.64 + strands * 0.16) + mEye * 0.06 + mRubber * 0.95 + mLips * 0.35;`)
       .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
         metalnessFactor = mMetal * 0.85;`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
