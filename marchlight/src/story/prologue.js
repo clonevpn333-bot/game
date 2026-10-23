@@ -446,27 +446,35 @@ export class Prologue {
     this.passengers = pass;
     await this.useOnce({ pos: V(155, 5.55, -124.6), radius: 3.5, label: 'Board the tram' });
     P.sit({ obj: tram.seats[0], pose: 'sit' });
-    this.enter(false); g.director.freeLook = true; g.director.cam = false;
+    // the ride is shot from inside the car: the shots ride along with it
+    const cp = (x, y, z) => () => g.engine.cityRoot.worldToLocal(tram.car.localToWorld(V(x, y, z)));
+    this.enter(true);
     this.objective(null);
+    g.director.shot({ pos: cp(-0.55, 1.8, 4.9), look: cp(0.7, 1.05, -2.6), fov: 52, to: { pos: cp(-0.5, 1.75, 4.2) }, dur: 7 });
     await this.wait(0.8);
     const ride = tram.depart();
     tram.riding = true;
     await this.wait(2.5);
     this.bark('WORKER', '—they say Vesper\'s three days north of us.', 3.2, pass[0]);
     await this.wait(3.6);
+    // past Rook's shoulder, out through the far windows as the city slides by
+    g.director.shot({ pos: cp(1.12, 1.5, -2.45), look: cp(-2.6, 1.25, -0.6), fov: 48, to: { pos: cp(1.1, 1.48, -2.6), look: cp(-2.6, 1.15, -1.6) }, dur: 8 });
     this.bark('WORKER', 'Vesper. All glass and greenhouses. I heard they grow real oranges.', 3.6, pass[1]);
     await this.wait(4);
     this.bark('WORKER', 'I heard they ration the air.', 2.6, pass[0]);
     await this.wait(3);
+    // Rook, watching the drop
+    P.anim.lookTarget = tram.car.localToWorld(V(-6, 0.6, 2));
+    g.director.shot({ pos: cp(-0.25, 1.32, -2.85), look: cp(1.0, 1.24, -3.2), fov: 36, to: { pos: cp(-0.15, 1.3, -2.95) }, dur: 9 });
     g.audio.chime(tram.car.position.clone());
     this.say('PA', 'Next stop: Engineering. Please mind the gap. The gap is three hundred meters.', { radio: true, wait: false, dur: 4.4 });
     await this.waitFor(() => tram.s > tram.len * 0.62);
     g.hud.location('THE LOWER DECKS', 'MERIDIAN · ENGINEERING', 5);
     this.populateLower();
     await ride;
-    tram.riding = false;
+    tram.riding = false; P.anim.lookTarget = null;
     P.stand(V(128, LD.floor + 1.1, -232.2)); P.yaw = 0; g.camera.snapBehind(0.3, 0.1);
-    this.exit(); g.director.freeLook = false;
+    this.exit();
     pass.forEach(a => { a.mount = null; a.place(V(118 + Math.random() * 10, LD.floor + 1.1, -232.6)); a.pose('loco'); a.walker = false; a.goTo(V(150 + Math.random() * 20, LD.floor, -222), 1.3); });
     g.state.checkpoint = 'lower'; g.state.save(g);
   }
@@ -721,8 +729,8 @@ export class Prologue {
     await this.wait(4.2);
     g.hud.location('THE SPINE', 'MERIDIAN · EXTERIOR, STARBOARD', 6);
     await this.wait(4.8);
-    // then down and back along the hull to Leg Two, mid-stride
-    g.director.shot({ pos: V(215.5, LD.floor + 3.2, -185.5), look: V(420, LD.floor - 95, -215), fov: 60, to: { pos: V(216.5, LD.floor + 4.0, -180), look: V(178, LD.floor - 120, -232), fov: 55 }, dur: 8, ease: ease.inOutSine, cut: false });
+    // then a long crane-out over the drop: the whole flank, and Leg Two mid-stride
+    g.director.shot({ pos: V(215.5, LD.floor + 3.2, -185.5), look: V(420, LD.floor - 95, -215), fov: 60, to: { pos: V(318, LD.floor + 22, -112), look: V(178, LD.floor - 175, -236), fov: 50 }, dur: 9, ease: ease.inOutSine, cut: false });
     await this.radio('NIA', 'Comms check. You hear me?', { dur: 2.2 });
     await this.radio('ROOK', 'Loud and clear.', { dur: 1.6 });
     await this.radio('NIA', 'Good. Your vitals look disgustingly calm.', { dur: 2.6 });

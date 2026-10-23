@@ -207,7 +207,7 @@ export class Animator {
     const lidRot = clamp(lidBase + (1 - blinkS) * 1.45, -0.35, 1.45);
     bl[B.lidL].rotation.x = lidRot; bl[B.lidR].rotation.x = lidRot;
     const lowLod = this.c.lod === 'low';
-    const eyeS = lowLod ? es.eye * blinkS : 1;
+    const eyeS = lowLod ? Math.max(0.12, es.eye * blinkS) : 1; // never a degenerate (zero-scale) bone
     bl[B.eyeL].scale.set(1, eyeS, 1); bl[B.eyeR].scale.set(1, eyeS, 1);
     bl[B.browL].position.set(rest.browL.x - rest.head.x, rest.browL.y - rest.head.y + es.brow * 0.005 + this.mouth * 0.0012, rest.browL.z - rest.head.z);
     bl[B.browR].position.set(rest.browR.x - rest.head.x, rest.browR.y - rest.head.y + es.brow * 0.005 + this.mouth * 0.0012, rest.browR.z - rest.head.z);
@@ -272,9 +272,9 @@ export class Animator {
     // amplitudes
     const thA = lerp(0.42, 0.85, runW) + sprintW * 0.2;
     const knA = lerp(0.75, 1.55, runW) + sprintW * 0.25;
-    const armA = lerp(0.44, 0.8, runW);
+    const armA = lerp(0.44, 0.95, runW) + sprintW * 0.15;
     const elb = lerp(0.26, 1.35, runW);
-    const lean = lerp(0.04, 0.2, runW) + sprintW * 0.12;
+    const lean = lerp(0.04, 0.27, runW) + sprintW * 0.12;
     const fs = Math.abs(fwd), ss = Math.abs(side);
 
     // idle
@@ -290,7 +290,7 @@ export class Animator {
     }
     if (walkW > 0) {
       const w = walkW;
-      const bias = -0.07 * (1 - runW * 0.5); // swing a little more in front of the hips than behind
+      const bias = -0.07 * (1 - runW * 0.5) - 0.12 * runW; // swing more in front of the hips than behind
       const swingL = -s * thA * sgn + bias, swingR = s * thA * sgn + bias;
       this.mix(B.thighL, swingL * fs, 0.0, 0.04 + s * side * 0.35, w); this.mix(B.thighR, swingR * fs, 0.0, -0.04 - s * side * 0.35, w);
       // swing-phase flexion plus a small loading flex just after heel strike
@@ -299,7 +299,8 @@ export class Animator {
       this.mix(B.footL, -swingL * 0.4 - kL * 0.3 + Math.max(0, -s * sgn) * 0.4, 0, 0, w); this.mix(B.footR, -swingR * 0.4 - kR * 0.3 + Math.max(0, s * sgn) * 0.4, 0, 0, w);
       // toe-off: the toes bend as the heel lifts behind the body
       this.mix(B.toeL, -Math.max(0, s * sgn) * 0.7 * (0.5 + runW * 0.5), 0, 0, w); this.mix(B.toeR, -Math.max(0, -s * sgn) * 0.7 * (0.5 + runW * 0.5), 0, 0, w);
-      this.mix(B.armL, s * armA * sgn * fs, 0, 0.1 + runW * 0.08, w); this.mix(B.armR, -s * armA * sgn * fs, 0, -0.1 - runW * 0.08, w);
+      const armBias = -0.14 * runW; // runners carry their arms forward
+      this.mix(B.armL, s * armA * sgn * fs + armBias, 0, 0.1 + runW * 0.08, w); this.mix(B.armR, -s * armA * sgn * fs + armBias, 0, -0.1 - runW * 0.08, w);
       this.mix(B.foreL, -elb - Math.max(0, -s * sgn) * (0.25 + 0.2 * runW), 0, 0, w); this.mix(B.foreR, -elb - Math.max(0, s * sgn) * (0.25 + 0.2 * runW), 0, 0, w);
       this.mix(B.hips, 0, s * 0.12 * fs, s * 0.035, w);
       this.mix(B.spine, lean * dir * fs, -s * 0.08, 0, w);
@@ -389,9 +390,12 @@ export class Animator {
     this.set(B.thighL, -1.5, 0, 0.08); this.set(B.thighR, -1.5, 0, -0.08);
     this.set(B.shinL, 1.45, 0, 0); this.set(B.shinR, 1.5, 0, 0); this.set(B.footL, 0.0, 0, 0); this.set(B.footR, 0.0, 0, 0);
     this.set(B.spine, 0.08, 0, 0); this.set(B.chest, 0.06 + Math.sin(t * 0.9) * 0.01, 0, 0);
-    this.set(B.armL, -0.55, 0, 0.12); this.set(B.armR, -0.55, 0, -0.12);
-    this.set(B.foreL, -0.9, 0, 0); this.set(B.foreR, -0.9, 0, 0);
-    this.set(B.handL, 0, 0, 0.3); this.set(B.handR, 0, 0, -0.3);
+    // hands resting on the thighs, palms down
+    this.set(B.armL, -0.22, 0.12, -0.05); this.set(B.armR, -0.22, -0.12, 0.05);
+    this.set(B.foreL, -1.05, 0.25, 0); this.set(B.foreR, -1.05, -0.25, 0);
+    this.set(B.handL, 0.12, 1.1, 0.05); this.set(B.handR, 0.12, 1.1, -0.05);
+    this.set(B.fingersL, 0.35, 0, 0); this.set(B.fingersR, 0.35, 0, 0);
+    this.set(B.head, 0.04 + Math.sin(t * 0.37) * 0.03, Math.sin(t * 0.23) * 0.12, 0);
     this.hip.y -= 0.44; this.hip.z -= 0.05;
   }
   sitGround() { // sitting on an edge with legs hanging (modeParam=1) or cross-legged (0)

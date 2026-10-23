@@ -33,6 +33,10 @@ export function garment(L) {
 // 1.5 mm inside above it, so the two pieces meet without a step.
 export const NECK_SEAM = 1.455, WRIST_SEAM = 0.852;
 function neckPrim() { return roundCone([0, 1.358, -0.03], [0, 1.518, -0.019], 0.056, 0.047); }
+// The trapezius pair and neck exactly as the torso blends them (absolute rest coordinates); the
+// head piece uses the same field so the two pieces share one surface across the seam.
+const TRAP_L = capsule([0, 1.4, -0.022], [0.125, 1.348, -0.014], 0.036), TRAP_R = capsule([0, 1.4, -0.022], [-0.125, 1.348, -0.014], 0.036), NECK = neckPrim();
+function neckBase(x, y, z) { return smin(smin(TRAP_L.f(x, y, z), TRAP_R.f(x, y, z), 0.05), NECK.f(x, y, z), 0.04); }
 // signed keep-functions for the seams (>= 0 kept), in sculpt space
 const armAxis = (s) => [s * Math.sin(ARM_A), -Math.cos(ARM_A)];
 function wristAlong(x, y, s) { const a = baseRest()[s > 0 ? 'armL' : 'armR'], u = armAxis(s); return (x - a.x) * u[0] + (y - a.y) * u[1]; }
@@ -68,7 +72,7 @@ function buildBodyField(rest, P, g, B, lod) {
 
   // --- torso
   const torsoW = (x, y, z) => {
-    const a = sstep(0.94, 1.08, y), b = sstep(1.1, 1.24, y), n = sstep(1.37, 1.45, y);
+    const a = sstep(0.94, 1.08, y), b = sstep(1.1, 1.24, y), n = sstep(1.37, NECK_SEAM - 0.004, y);
     const ax = Math.abs(x), sw = sstep(0.09, 0.17, ax) * sstep(1.24, 1.34, y) * 0.55;
     const w = [[B.hips, 1 - a], [B.spine, a * (1 - b)], [B.chest, a * b * (1 - n) * (1 - sw)], [B.neck, n], [x > 0 ? B.shoulderL : B.shoulderR, a * b * (1 - n) * sw]];
     if (y < 0.86) { const t = sstep(0.86, 0.74, y) * 0.5 * sstep(0.02, 0.09, ax); w.push([x > 0 ? B.thighL : B.thighR, t]); w[0][1] *= 1 - t; }
@@ -117,9 +121,9 @@ function buildBodyField(rest, P, g, B, lod) {
     .add(ellipsoid(0, 1.04, 0.0, 0.128 * wst, 0.11, 0.09 * (0.7 + bw * 0.3)))
     .add(ellipsoid(0, 1.2, -0.008, 0.142 * sh, 0.165, 0.104))
     .add(ellipsoid(0.066 * sh, 1.258, 0.032, 0.074 * sh, 0.058, 0.068), 0.04).add(ellipsoid(-0.066 * sh, 1.258, 0.032, 0.074 * sh, 0.058, 0.068), 0.04)
-    .add(capsule([0, 1.4, -0.022], [0.125 * sh, 1.348, -0.014], 0.036)).add(capsule([0, 1.4, -0.022], [-0.125 * sh, 1.348, -0.014], 0.036))
+    .add(TRAP_L).add(TRAP_R)
     .add(ellipsoid(0, 1.29, -0.06, 0.12 * sh, 0.09, 0.06), 0.05) // upper back / scapulae
-    .add(neckPrim(), 0.04);
+    .add(NECK, 0.04);
   if (bust > 0) for (const sx of [-1, 1]) torso.add(ellipsoid(sx * 0.07 * sh, 1.218, 0.058, bust * 1.05, bust * 0.95, bust * 0.9), 0.045);
   if (g.jacket) {
     // jacket body stands off the hips and flares slightly at the hem
@@ -213,18 +217,10 @@ function buildBodyField(rest, P, g, B, lod) {
   }
   const field = new Field(parts, edges);
   const h = lod === 'high' ? 0.0105 : 0.025;
-  // drop the forearm end (hands are sculpted finer) and the top of the neck (the head piece owns it)
-  const keep = (x, y, z) => {
-    if (y > 1.452) return false;
-    // undo the arm spread to test the wrist cut in rest space
-    for (const s of [1, -1]) {
-      const a = s > 0 ? rest.armL : rest.armR; if (x * s < 0.22 || y < 0.6) continue;
-      const c = Math.cos(-s * ARM_A), sn = Math.sin(-s * ARM_A), px = x - a.x, py = y - a.y;
-      const ry = sn * px + c * py + a.y; if (ry < 0.826) return false;
-    }
-    return true;
-  };
-  const mesh = meshField(field, { h, keep, stats: (globalThis.__st = {}), nEps: lod === 'high' ? 0.0025 : 0.006 });
+  // clip off the hands (sculpted finer) and the top of the neck (the head piece owns it)
+  const neckClip = (x, y, z) => Math.max(NECK_SEAM - y, Math.hypot(x, z + 0.025) - 0.09);
+  const wristClip = (x, y, z) => (Math.abs(x) < 0.2 || y > 1.2 || y < 0.65) ? 1 : WRIST_T - wristAlong(x, y, Math.sign(x));
+  const mesh = meshField(field, { h, clip: [neckClip, wristClip], nEps: lod === 'high' ? 0.0025 : 0.006 });
   const at = attributes(field, mesh, { sigma: 0.014, aoStep: 0.02, aoN: 3, aoK: 1.3 });
   // the neck matches the head piece's (unoccluded) shading where the two meet
   for (let v = 0; v < mesh.count; v++) { const y = mesh.pos[v * 3 + 1]; if (y > 1.4 && Math.hypot(mesh.pos[v * 3], mesh.pos[v * 3 + 2] + 0.025) < 0.07) at.ao[v] += (1 - at.ao[v]) * sstep(1.4, 1.425, y); }
@@ -247,11 +243,11 @@ export function headShape(P, L) {
     .add(ellipsoid(0, 0.112, 0.028, 0.066, 0.078, 0.06), 0.028)                                  // upper face
     .add(ellipsoid(0, 0.152, 0.036, 0.063, 0.05, 0.052), 0.025)                                  // forehead
     .add(ellipsoid(0.045, 0.094, 0.054, 0.022, 0.014, 0.022), 0.016).add(ellipsoid(-0.045, 0.094, 0.054, 0.022, 0.014, 0.022), 0.016) // cheekbones
-    .add(ellipsoid(0.035, 0.068, 0.058, 0.021 * ch, 0.019 * ch, 0.021), 0.018).add(ellipsoid(-0.035, 0.068, 0.058, 0.021 * ch, 0.019 * ch, 0.021), 0.018) // cheeks
-    .add(ellipsoid(0, 0.05, 0.026, 0.06 * jw, 0.05, 0.056), 0.024)                               // lower face
-    .add(roundCone([0.056 * jw, 0.046, -0.024], [0.017, 0.012, 0.06], 0.011, 0.01), 0.026).add(roundCone([-0.056 * jw, 0.046, -0.024], [-0.017, 0.012, 0.06], 0.011, 0.01), 0.026) // jaw line
-    .add(ellipsoid(0, 0.013, 0.066, 0.018 * jw, 0.015, 0.014), 0.018)                            // chin
-    .add(ellipsoid(0, 0.048, 0.077, 0.026, 0.022, 0.02), 0.016)                                  // muzzle
+    .add(ellipsoid(0.034, 0.07, 0.058, 0.019 * ch, 0.017 * ch, 0.02), 0.016).add(ellipsoid(-0.034, 0.07, 0.058, 0.019 * ch, 0.017 * ch, 0.02), 0.016) // cheeks
+    .add(ellipsoid(0, 0.052, 0.03, 0.052 * jw, 0.048, 0.052), 0.022)                              // lower face
+    .add(roundCone([0.053 * jw, 0.048, -0.026], [0.016, 0.012, 0.058], 0.01, 0.0095), 0.024).add(roundCone([-0.053 * jw, 0.048, -0.026], [-0.016, 0.012, 0.058], 0.01, 0.0095), 0.024) // jaw line
+    .add(ellipsoid(0, 0.014, 0.065, 0.019 * jw, 0.016, 0.015), 0.03)                             // chin
+    .add(ellipsoid(0, 0.047, 0.077, 0.026, 0.023, 0.02), 0.024)                                  // muzzle
     .add(capsule([0, 0.128, 0.088], [0.04, 0.1295, 0.08], fem ? 0.0068 : 0.0085), 0.016).add(capsule([0, 0.128, 0.088], [-0.04, 0.1295, 0.08], fem ? 0.0068 : 0.0085), 0.016); // brow ridge
   // nose
   const nk = kid ? 0.82 : 1;
@@ -260,12 +256,12 @@ export function headShape(P, L) {
     .add(ellipsoid(0.0088, 0.071, 0.0985, 0.0056, 0.0052, 0.0062), 0.005).add(ellipsoid(-0.0088, 0.071, 0.0985, 0.0056, 0.0052, 0.0062), 0.005);
   // lips
   const my = F.mouthY;
-  const lu = ellipsoid(0, my + 0.0046, 0.0935, 0.0168, fem ? 0.0046 : 0.0039, 0.0068);
-  const ll = ellipsoid(0, my - 0.0047, 0.0918, 0.015, fem ? 0.0056 : 0.0048, 0.007);
+  const lu = ellipsoid(0, my + 0.0046, 0.0918, 0.0172, fem ? 0.0052 : 0.0044, 0.0068);
+  const ll = ellipsoid(0, my - 0.0049, 0.0905, 0.0156, fem ? 0.006 : 0.0053, 0.007);
   head.add(lu, 0.004).add(ll, 0.004);
   // eye sockets open around the eyeballs; an upper-lid fold and a lower-lid ridge
   for (const sx of [-1, 1]) {
-    head.sub(ellipsoid(sx * ex, ey, 0.083, 0.0132, 0.0068, 0.012), 0.004);
+    head.sub(ellipsoid(sx * ex, ey, 0.083, 0.0142, 0.0074, 0.012), 0.004);
     head.add(ellipsoid(sx * ex, ey + 0.0068, 0.0815, 0.0142, 0.0036, 0.0085), 0.004);
     head.add(ellipsoid(sx * ex, ey - 0.0072, 0.0828, 0.0122, 0.0026, 0.0062), 0.0035);
   }
@@ -274,8 +270,8 @@ export function headShape(P, L) {
     head.add(ellipsoid(sx * F.ear[0], F.ear[1], F.ear[2], 0.0085, 0.027, 0.0165, [0, sx * 0.42, sx * -0.1]), 0.006);
     head.sub(ellipsoid(sx * (F.ear[0] + 0.0062), F.ear[1] - 0.002, F.ear[2] + 0.002, 0.0038, 0.016, 0.0095, [0, sx * 0.42, 0]), 0.0025);
   }
-  head.add(neckRC(), 0.016);
-  if (!fem && !kid) head.add(ellipsoid(0, -0.018, 0.03, 0.0085, 0.012, 0.0085), 0.01);
+  head.add(custom((x, y, z) => neckBase(x, y + 1.468, z), [-0.16, -0.13, -0.08, 0.16, 0.06, 0.05]), 0.016);
+  if (!fem && !kid) head.add(ellipsoid(0, 0.006, 0.031, 0.0085, 0.0105, 0.0085), 0.006);
   return { head, lu, ll, fem, old };
 }
 
@@ -298,18 +294,18 @@ export function sculptHead(P, L, B, lod) {
     // the jaw takes everything below the lip line, out along the jaw to the ear
     const jawW = (x, y, z) => {
       const ax = Math.abs(x), line = my + Math.max(0, ax - cx) * 0.55, wd = 0.0008 + Math.max(0, ax - cx) * 0.5;
-      return sstep(line + wd, line - wd, y) * sstep(-0.03, 0.01, z + (0.06 - ax) * 0.3) * sstep(-0.035, -0.005, y);
+      return sstep(line + wd, line - wd, y) * sstep(-0.03, 0.01, z + (0.06 - ax) * 0.3) * sstep(-0.006, 0.012, y);
     };
     head.weights = (x, y, z) => {
       const jw = jawW(x, y, z);
-      const n = sstep(0.0, -0.045, y) * (1 - jw);
+      const n = sstep(0.028, NECK_SEAM - 1.468, y) * (1 - jw); // all neck at the seam, matching the body piece
       const cr = Math.exp(-(((Math.abs(x) - cx) / 0.01) ** 2 + ((y - my) / 0.01) ** 2)) * sstep(0.07, 0.085, z) * 0.85;
       const rest = Math.max(0, 1 - jw - n - cr);
       return [[B.head, rest], [B.jaw, jw * (1 - cr)], [B.neck, n], [x > 0 ? B.cornerL : B.cornerR, cr]];
     };
     head.pairBand = 0.006;
     head.tag = (x, y, z) => {
-      const ld = 0.0006 - Math.min(lu.f(x, y, z), ll.f(x, y, z));
+      const ld = 0.0021 - Math.min(lu.f(x, y, z), ll.f(x, y, z)); // the blended surface sits a few mm outside the lip primitives
       if (ld > -0.006) return [TAG.LIP, 0, TAG.SKIN, ld, 1];
       const cheek = Math.exp(-(((Math.abs(x) - 0.038) / 0.018) ** 2 + ((y - 0.072) / 0.018) ** 2)) * sstep(0.04, 0.06, z);
       const nose = Math.exp(-((x / 0.01) ** 2 + ((y - 0.075) / 0.01) ** 2)) * sstep(0.098, 0.106, z) * 0.6;
@@ -335,7 +331,9 @@ export function sculptHead(P, L, B, lod) {
     const field = new Field(parts, []);
     const h = lod === 'high' ? 0.0033 : 0.0088;
     const mesh = dropSpecks(meshField(field, { h, bounds: [-0.1, -0.06, -0.13, 0.1, 0.25, 0.13], clip: [[0, 1, 0, -(NECK_SEAM - 1.468)]], nEps: lod === 'high' ? 0.001 : 0.002 }), 40);
-    const at = attributes(field, mesh, { sigma: 0.0035, aoStep: 0.0045, aoN: 3, aoK: 1.4 });
+    const at = attributes(field, mesh, { sigma: 0.0035, aoStep: 0.0045, aoN: 3, aoK: 2.2 });
+    // match the body piece's (lifted) neck shading at the seam
+    for (let v = 0; v < mesh.count; v++) { const y = mesh.pos[v * 3 + 1]; if (y < 0.012 && mesh.pos[v * 3 + 2] < 0.035) at.ao[v] += (1 - at.ao[v]) * sstep(0.012, NECK_SEAM - 1.468, y); }
     if (lod === 'high') splitMouth(mesh, at, B, h);
     return { mesh, at };
   });
@@ -373,7 +371,7 @@ function splitMouth(mesh, at, B, h) {
 }
 
 // ------------------------------------------------------------------ hair
-const HL = [[0, 0.5], [0.55, 0.42], [0.85, 0.3], [1.2, -0.02], [1.38, 0.0], [1.55, 0.22], [1.8, 0.12], [2.05, -0.22], [2.5, -0.45], [Math.PI, -0.52]];
+const HL = [[0, 0.52], [0.55, 0.44], [0.85, 0.26], [1.15, -0.12], [1.35, -0.06], [1.55, 0.06], [1.8, -0.06], [2.05, -0.36], [2.5, -0.58], [Math.PI, -0.64]];
 function hairline(th) {
   const a = Math.abs(th);
   for (let i = 1; i < HL.length; i++) if (a <= HL[i][0]) { const t = (a - HL[i - 1][0]) / (HL[i][0] - HL[i - 1][0]); const s = t * t * (3 - 2 * t); return HL[i - 1][1] + (HL[i][1] - HL[i - 1][1]) * s; }

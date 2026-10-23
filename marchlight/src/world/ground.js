@@ -62,21 +62,34 @@ const FS = /* glsl */`
     vec3 dry = vec3(0.56, 0.5, 0.33), green = vec3(0.3, 0.38, 0.19), earth = vec3(0.42, 0.34, 0.25), rock = vec3(0.5, 0.48, 0.45);
     vec3 col = mix(dry, green, smoothstep(0.42, 0.62, n1));
     col = mix(col, earth, smoothstep(0.55, 0.75, n2) * 0.5);
-    // old farmland: rotated grid of fields with furrow stripes
-    vec2 fg = mat2(0.94, 0.34, -0.34, 0.94) * W / 140.0; vec2 fc = floor(fg); float fh = hash12(fc);
-    float field = step(0.45, fh) * step(fbm(fc * 0.3), 0.55);
-    float stripes = 0.5 + 0.5 * sin((fract(fg.x) * 140.0) * (fh > 0.7 ? 1.2 : 0.8));
-    vec3 fieldCol = mix(vec3(0.62, 0.55, 0.3), vec3(0.4, 0.45, 0.22), fh) * (0.9 + stripes * 0.12);
-    col = mix(col, fieldCol, field * 0.75);
-    // hedgerows along field boundaries
-    float edge = min(min(fract(fg.x), 1.0 - fract(fg.x)), min(fract(fg.y), 1.0 - fract(fg.y)));
-    col = mix(col, vec3(0.2, 0.26, 0.13), (1.0 - smoothstep(0.012, 0.03, edge)) * step(0.35, hash12(fc + 3.0)) * 0.85);
-    // fine grass / soil variation and scattered shrubs
+    // old farmland: irregular parcels (warped Voronoi) with their own crop and furrow direction
+    vec2 Wp = W + (vec2(fbm(W * 0.0021 + 2.0), fbm(W * 0.0021 + 9.0)) - 0.5) * 140.0;
+    vec2 cid; float cedge; vec2 gq = Wp / 170.0, gi = floor(gq), gf = fract(gq);
+    { float d1 = 8.0, d2 = 8.0; vec2 best = vec2(0.0);
+      for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+        vec2 o = vec2(float(i), float(j)), c = gi + o;
+        vec2 r = o + vec2(hash12(c), hash12(c + 17.3)) * 0.85 + 0.075 - gf;
+        float d = dot(r, r);
+        if (d < d1) { d2 = d1; d1 = d; best = c; } else if (d < d2) d2 = d;
+      }
+      cid = best; cedge = (sqrt(d2) - sqrt(d1)) * 170.0; }
+    float fh = hash12(cid), fk = hash12(cid + 5.1);
+    float field = step(0.32, fh) * (1.0 - smoothstep(0.5, 0.62, fbm(cid * 0.21)));
+    float ang = fk * 3.14159; vec2 fdir = vec2(cos(ang), sin(ang));
+    float px = max(fwidth(dot(W, fdir)) * 0.6, 1e-3);
+    float furrow = 0.5 + 0.5 * sin(dot(W, fdir) * (0.9 + fh * 0.8));
+    furrow = mix(0.5, furrow, 1.0 - smoothstep(0.6, 2.0, px)); // fade furrows before they alias
+    vec3 crops[5]; crops[0] = vec3(0.66, 0.58, 0.3); crops[1] = vec3(0.42, 0.48, 0.22); crops[2] = vec3(0.36, 0.29, 0.2); crops[3] = vec3(0.7, 0.64, 0.26); crops[4] = vec3(0.5, 0.5, 0.3);
+    vec3 fieldCol = crops[int(fk * 4.99)] * (0.88 + furrow * 0.16) * (0.9 + fbm(W * 0.03 + cid) * 0.2);
+    col = mix(col, fieldCol, field * 0.8);
+    // hedgerows and tree lines along most parcel boundaries
+    float hedge = (1.0 - smoothstep(2.0, 5.5, cedge)) * step(0.3, hash12(cid + 3.0));
+    col = mix(col, vec3(0.17, 0.23, 0.12) * (0.8 + vnoise(W * 0.4) * 0.4), hedge * 0.85);
+    // fine grass / soil variation, and scrub in clumps (not on a grid)
     float fine = vnoise(W * 0.35) * 0.6 + vnoise(W * 1.3) * 0.4;
-    col *= 0.86 + fine * 0.28;
-    vec2 bc = floor(W / 7.0); float bh = hash12(bc);
-    vec2 bp = (fract(W / 7.0) - 0.5) * 7.0 - (vec2(hash12(bc + 1.7), hash12(bc + 4.1)) - 0.5) * 4.0;
-    col = mix(col, vec3(0.17, 0.22, 0.11), step(0.86, bh) * (1.0 - smoothstep(0.8, 1.6, length(bp))) * (1.0 - field));
+    col *= 0.88 + fine * 0.24;
+    float scrub = smoothstep(0.62, 0.72, fbm(W * 0.045 + 31.0)) * smoothstep(0.3, 0.7, vnoise(W * 0.6));
+    col = mix(col, vec3(0.18, 0.23, 0.12), scrub * (1.0 - field) * 0.8);
     // forests
     float forest = smoothstep(0.58, 0.66, fbm(W * 0.0025 + 11.0));
     col = mix(col, vec3(0.16, 0.22, 0.12) * (0.8 + n4 * 0.4), forest);
@@ -127,7 +140,9 @@ const FS = /* glsl */`
     sh = max(sh, boxHit(ro, uSun, uHullMin, uHullMax));
     for (int i = 0; i < 4; i++) { sh = max(sh, segRay(ro, uSun, uLegA[i], uLegB[i], 10.0)); sh = max(sh, segRay(ro, uSun, uLegB[i], uLegC[i], 8.0)); }
     sh = max(sh, segRay(ro, uSun, vec3(0.0, -150.0, -10.0), vec3(0.0, -195.0, -10.0), 40.0));
-    vec3 lit = col * (uSunCol * diff * (1.0 - sh * 0.82) + uSky * 0.55);
+    float cloud = smoothstep(0.5, 0.68, fbm(W * 0.0009 + vec2(uTime * 0.004, uTime * 0.0015) + 40.0));
+    col = mix(col, col * vec3(0.95, 0.88, 0.8), smoothstep(0.75, 0.45, N.y) * 0.6); // bare, warmer slopes
+    vec3 lit = col * (uSunCol * diff * (1.0 - sh * 0.82) * (1.0 - cloud * 0.55) + uSky * 0.55);
     // water sheen
     lit = mix(lit, mix(vec3(0.25, 0.32, 0.38), uSky * 0.9, 0.5) + pow(max(dot(reflect(normalize(vPos - cameraPosition), vec3(0,1,0)), uSun), 0.0), 60.0) * uSunCol * 0.8, water);
     // aerial perspective
@@ -250,10 +265,35 @@ export class Ground {
   }
   // ------------------------------------------------------------- birds circling the city
   buildBirds() {
+    // gull silhouette: slim body, wings with an inner and outer panel (aWing: 0 body .. 1 tip);
+    // the vertex shader flaps them per instance, gliding now and then
+    const P = [], W = [];
+    const tri = (a, b, c) => { for (const v of [a, b, c]) { P.push(v[0], v[1], v[2]); W.push(Math.min(1, Math.abs(v[0]) / 0.66)); } };
+    tri([0, 0, 0.32], [-0.05, 0, -0.05], [0.05, 0, -0.05]); tri([-0.05, 0, -0.05], [0, 0, -0.3], [0.05, 0, -0.05]);
+    tri([0.05, 0, -0.18], [0, 0, -0.32], [0.11, 0, -0.36]); tri([-0.05, 0, -0.18], [-0.11, 0, -0.36], [0, 0, -0.32]); // tail
+    for (const sx of [-1, 1]) {
+      const r0 = [sx * 0.04, 0, 0.08], r1 = [sx * 0.04, 0, -0.1], e0 = [sx * 0.34, 0.05, 0.04], e1 = [sx * 0.34, 0.05, -0.12], tip = [sx * 0.66, -0.02, -0.18];
+      tri(r0, sx > 0 ? e0 : r1, sx > 0 ? r1 : e0); tri(r1, sx > 0 ? e0 : e1, sx > 0 ? e1 : e0); tri(e0, sx > 0 ? tip : e1, sx > 0 ? e1 : tip);
+    }
     const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0.3, -0.9, 0, -0.2, 0, 0, -0.1, 0, 0, 0.3, 0, 0, -0.1, 0.9, 0, -0.2], 3));
+    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('aWing', new THREE.Float32BufferAttribute(W, 1));
     g.computeVertexNormals();
-    this.birdMat = new THREE.MeshBasicMaterial({ color: 0x1e1c1a, side: THREE.DoubleSide });
+    this.birdMat = new THREE.MeshLambertMaterial({ color: 0x4a4744, side: THREE.DoubleSide });
+    this.birdTime = { value: 0 };
+    this.birdMat.onBeforeCompile = (sh) => {
+      sh.uniforms.uBirdT = this.birdTime;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aWing; uniform float uBirdT;')
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+          #ifdef USE_INSTANCING
+            float ph = instanceMatrix[3].x * 0.37 + instanceMatrix[3].z * 0.21;
+          #else
+            float ph = 0.0;
+          #endif
+          float flapOn = smoothstep(-0.2, 0.4, sin(uBirdT * 0.45 + ph * 1.7));
+          float fl = sin(uBirdT * 7.5 + ph) * flapOn;
+          transformed.y += (fl * 0.32 * aWing * aWing + 0.06 * aWing) * (1.0 - flapOn * 0.2);
+          transformed.x *= 1.0 - abs(fl) * 0.08 * aWing;`);
+    };
     this.birds = new THREE.InstancedMesh(g, this.birdMat, 36); this.birds.frustumCulled = false;
     this.birdData = []; const r = rng(8);
     for (let i = 0; i < 36; i++) this.birdData.push({ flock: i < 20 ? 0 : 1, a: r() * 6.28, r: 30 + r() * 25, y: (r() - 0.5) * 12, sp: 0.1 + r() * 0.05, ph: r() * 6 });
@@ -320,7 +360,8 @@ export class Ground {
     const dust = new THREE.Points(dustG, new THREE.PointsMaterial({ color: 0xd8d8e0, size: 0.35, transparent: true, opacity: 0.7, sizeAttenuation: true }));
     g.add(dust);
     // birds frozen mid-flight
-    for (let i = 0; i < 9; i++) { const bm = new THREE.Mesh(this.birds.geometry, this.birdMat); bm.position.set((r() - 0.5) * 60, 12 + r() * 14, (r() - 0.5) * 60); bm.rotation.set(0.3, r() * 6, (r() - 0.5) * 0.6); bm.scale.setScalar(0.7); g.add(bm); }
+    const stillBirdMat = new THREE.MeshLambertMaterial({ color: 0x4a4744, side: THREE.DoubleSide }); // no flapping: they are still
+    for (let i = 0; i < 9; i++) { const bm = new THREE.Mesh(this.birds.geometry, stillBirdMat); bm.position.set((r() - 0.5) * 60, 12 + r() * 14, (r() - 0.5) * 60); bm.rotation.set(0.3, r() * 6, (r() - 0.5) * 0.6); bm.scale.setScalar(0.7); g.add(bm); }
     this.settlement = g;
     g.visible = false;
     this.game.engine.worldRoot.add(g);
@@ -363,13 +404,14 @@ export class Ground {
     for (const cl of this.clouds) { if (cl.position.z + c.travel > 6000) cl.position.z -= 12000; }
     // birds
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), t = this.game.time;
+    this.birdTime.value = t;
     this.birdData.forEach((b, i) => {
       b.a += b.sp * dt;
       const C = this.birdCenters[b.flock];
       const x = C.x + Math.cos(b.a) * b.r, z = C.z + Math.sin(b.a) * b.r * 1.4, y = C.y + b.y + Math.sin(b.a * 3 + b.ph) * 3;
-      const flap = Math.sin(t * 9 + b.ph) * 0.6;
-      q.setFromEuler(new THREE.Euler(0, -b.a, flap * 0.3));
-      m.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(0.8 + Math.abs(flap) * 0.2, 1, 0.8));
+      // bank into the circle; flapping happens in the vertex shader
+      q.setFromEuler(new THREE.Euler(0, -b.a, -0.35 + Math.sin(b.a * 2 + b.ph) * 0.1));
+      m.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(1.1, 1.1, 1.1));
       this.birds.setMatrixAt(i, m);
     });
     this.birds.instanceMatrix.needsUpdate = true;

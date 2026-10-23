@@ -55,7 +55,7 @@ Gamepads are supported through the standard mapping.
   - The Lower Decks: the piston hall, the Underwell, and Tomas's Engine Control gallery.
   - The Runner Bay and the firing range.
   - The exterior Spine, Pylon 7 on Leg Two's hip, and the Undercroft.
-- **Characters.** Rook (customizable), Nia, Bram, Tomas, Odile, Sefa, Mrs. Okafor, the kids Pell and Juno, the tram crew, and Commander Harrow on the radio. All are procedural skinned rigs with expressive faces (blinks, brows, talking mouths, look-at) and procedural animation for locomotion, climbing, aiming, conversation gestures and ambient activities.
+- **Characters.** Rook (customizable), Nia, Bram, Tomas, Odile, Sefa, Mrs. Okafor, the kids Pell and Juno, the tram crew, and Commander Harrow on the radio. Bodies, heads, hair and hands are sculpted as signed distance fields (smoothly blended anatomy, cloth folds and hems, a split lip seam on the jaw) and meshed with surface nets at boot in worker threads, then cached in IndexedDB. They are skinned with dual-quaternion skinning, so shoulders and knees keep their volume, and animated procedurally: locomotion, climbing, aiming, conversation gestures, ambient activities, blinks, brows, talking mouths and look-at.
 - **Choices.** Choices change dialogue and are tracked silently through hidden trust, warmth and spark values; there are no meters. Some examples: buying Nia a honey knot, how you talk to Tomas, whether you push him to come to dinner, and whether you or Dace catches Ivo.
 - **Combat.** There are two weapons with recoil, reloads and procedural sound. There are three scavenger machines:
   - **Gnats** strafe, dodge when aimed at, and telegraph their bursts.
@@ -67,7 +67,9 @@ Gamepads are supported through the standard mapping.
 
 ```
 src/core/       engine (renderer + post), input, procedural audio & score, Rapier wrapper, textures, materials
-src/characters/ rig (skinned procedural humanoid), anim (procedural animator), npc (actors, crowds)
+src/characters/ sculpt (SDF primitives, surface nets, weights/AO), anatomy (body/head/hair/hand sculpts),
+                sculptpool + sculpt.worker (parallel prewarm, IndexedDB cache), rig (skeleton, accessories,
+                DQ skinning, shading), anim (procedural animator), npc (actors, crowds)
 src/player/     player controller, camera rig, kinetic tether
 src/combat/     weapons, enemies, fx
 src/world/      city (gait, legs, exterior), ground, sky, districts (city, lower decks, spine), tram, props/light pool
@@ -86,3 +88,19 @@ node tools/play.mjs tests/playthrough.mjs "http://localhost:8080/index.html?beat
 ```
 
 `?beat=<name>` jumps straight to a prologue beat. The beats are `wake`, `terraces`, `market`, `tram`, `lower`, `hangar`, `range`, `spine`, `galleryB`, `relay`, `rescue` and `title`.
+
+The character viewer `dev/rig.html` shows the cast lineup. Query parameters:
+
+- `one=1`: a single character.
+- `face=1`: a face close-up.
+- `cam=x,y,z,lx,ly,lz`: a custom camera position and look-at point.
+- `mode=` and `act=`: a pose or activity.
+- `speed=`: walk or run speed.
+- `emo=`: an emotion.
+- `rot=`: rotation.
+
+`tools/strip.mjs` renders a deterministic filmstrip from the viewer:
+
+```bash
+node tools/strip.mjs "one=1&speed=1.4&rot=1.5708&cam=0,1.0,3.6,0,0.9,0" walk.png 8 0.12
+```

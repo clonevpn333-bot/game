@@ -319,9 +319,11 @@ export function meshField(field, opts) {
     const gx = a - b - c + d4, gy = -a - b + c + d4, gz = -a + b - c + d4;
     const d = (a + b + c + d4) * 0.25;
     const L = Math.hypot(gx, gy, gz) || 1, nx_ = gx / L, ny_ = gy / L, nz_ = gz / L;
-    let mv = Math.max(-h * 0.6, Math.min(h * 0.6, d));
+    // Newton step: the field is a bound, not a distance, so divide by its slope (|grad| = L / 4e)
+    const slope = Math.max(0.25, L / (4 * e));
+    let mv = Math.max(-h * 0.6, Math.min(h * 0.6, d / slope));
     let px = x - nx_ * mv, py = y - ny_ * mv, pz = z - nz_ * mv;
-    const d2 = f(px, py, pz); mv = Math.max(-h * 0.3, Math.min(h * 0.3, d2));
+    const d2 = f(px, py, pz); mv = Math.max(-h * 0.3, Math.min(h * 0.3, d2 / slope));
     pos[v * 3] = px - nx_ * mv; pos[v * 3 + 1] = py - ny_ * mv; pos[v * 3 + 2] = pz - nz_ * mv;
     nrm[v * 3] = nx_; nrm[v * 3 + 1] = ny_; nrm[v * 3 + 2] = nz_;
   }
@@ -397,6 +399,9 @@ export function attributes(field, mesh, { sigma = 0.012, aoStep = 0.012, aoN = 3
       for (const [b, bw] of p.weights(r[0], r[1], r[2])) { if (bw <= 0) continue; acc.set(b, (acc.get(b) || 0) + bw * w); tot += bw * w; }
     }
     const list = [...acc.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4); let s = 0; for (const e of list) s += e[1];
+    if (!(s > 0)) { // no bone claimed this vertex: give it to the nearest part's first bone
+      const w0 = field.parts[best].weights(r[0], r[1], r[2]); list.length = 0; list.push([w0[0][0], 1]); s = 1;
+    }
     for (let k = 0; k < 4; k++) { si[v * 4 + k] = list[k] ? list[k][0] : 0; sw[v * 4 + k] = list[k] ? list[k][1] / s : 0; }
     const bp = field.parts[best]; bp.toRest(x, y, z, r); part[v] = best;
     const tg = bp.tag(r[0], r[1], r[2]); aux[v] = tg[1] || 0;
@@ -412,7 +417,21 @@ export function attributes(field, mesh, { sigma = 0.012, aoStep = 0.012, aoN = 3
     for (let i = 1; i <= aoN; i++) { const hs = aoStep * i; const d = (field.eval(x + nx * hs, y + ny * hs, z + nz * hs, hs + 0.01) - d0) / gs; occ += Math.max(0, hs - d) / hs * sca; sca *= 0.7; }
     ao[v] = Math.max(0.25, 1 - occ / aoK);
   }
+  smoothAO(mesh, ao);
   return { si, sw, tag, tag2, mask, pair, ao, aux, part };
+}
+
+// Baked occlusion is noisy where normals are (creases): a median pass removes single-vertex
+// outliers, then one averaging pass softens what is left.
+function smoothAO(mesh, ao) {
+  const n = mesh.count, idx = mesh.idx, start = new Int32Array(n + 1);
+  for (let t = 0; t < idx.length; t++) start[idx[t] + 1] += 2;
+  for (let i = 0; i < n; i++) start[i + 1] += start[i];
+  const adj = new Int32Array(start[n]), fill = start.slice(0, n);
+  for (let t = 0; t < idx.length; t += 3) for (let k = 0; k < 3; k++) { const a = idx[t + k], b = idx[t + (k + 1) % 3], c = idx[t + (k + 2) % 3]; adj[fill[a]++] = b; adj[fill[a]++] = c; }
+  const tmp = new Float32Array(n), buf = [];
+  for (let i = 0; i < n; i++) { buf.length = 0; buf.push(ao[i]); for (let j = start[i]; j < start[i + 1]; j++) buf.push(ao[adj[j]]); buf.sort((a, b) => a - b); tmp[i] = buf[buf.length >> 1]; }
+  for (let i = 0; i < n; i++) { let s = tmp[i] * 2, c = 2; for (let j = start[i]; j < start[i + 1]; j++) { s += tmp[adj[j]]; c++; } ao[i] = s / c; }
 }
 
 // Drop connected components smaller than minTris triangles (specks where shells barely cross).
