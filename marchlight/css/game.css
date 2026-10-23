@@ -97,7 +97,7 @@ body.bigsubs .sub { font-size: 26px; }
 #dmgdir i { position: absolute; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-top: 4px solid rgba(255,70,50,0.9); border-radius: 50%; opacity: 0; transition: opacity .6s; filter: blur(1px); }
 
 /* title card */
-#title { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 2.5s; z-index: 6; }
+#title { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 2.5s; z-index: 10; }
 #title.show { opacity: 1; }
 #title .m { font-family: var(--cond); font-weight: 600; font-size: min(9vw, 120px); letter-spacing: 0.42em; margin-right: -0.42em; color: #efe6d6; text-shadow: 0 0 40px rgba(255,170,90,0.35); }
 #title .m span { display: inline-block; opacity: 0; transform: translateY(10px); transition: opacity 1.4s, transform 1.4s; }

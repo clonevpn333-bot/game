@@ -2,6 +2,7 @@
 // for staging actors. All methods are async so story scripts read top-to-bottom.
 import * as THREE from 'three';
 import { ease, lerp, sleep } from '../core/util.js';
+import { G } from '../core/physics.js';
 
 const resolveV = v => (typeof v === 'function' ? v() : v);
 
@@ -53,6 +54,18 @@ export class Director {
   async fade(out, dur = 1) { return this.game.hud.fade(out ? 1 : 0, dur); }
   wait(s) { return sleep(s * 1000); }
 
+  // Camera position near `look` from preferred offsets, rejecting any blocked by geometry; falls back
+  // to the least-blocked offset pulled in to its first hit.
+  frame(look, offsets, { min = 0.8 } = {}) {
+    const P = this.game.physics; let best = null, bestD = -1;
+    for (const o of offsets) {
+      const want = look.clone().add(o), dir = want.clone().sub(look); const len = dir.length(); dir.divideScalar(len || 1);
+      const hit = P.raycastFilter(look, dir, len + 0.3, G.STATIC | G.PLATFORM, (c, m) => !m?.nocam);
+      if (!hit) return want;
+      const d = hit.toi - 0.3; if (d > bestD) { bestD = d; best = look.clone().addScaledVector(dir, Math.max(min, d)); }
+    }
+    return best;
+  }
   // Over-the-shoulder conversation framing between two actors (A speaks to B)
   ots(a, b, { side = 1, dist = 1.15, height = 1.62, fov = 34, lookH = 1.58 } = {}) {
     const pa = a.pos ? a.pos.clone() : a.clone(), pb = b.pos ? b.pos.clone() : b.clone();

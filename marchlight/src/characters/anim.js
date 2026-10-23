@@ -209,11 +209,11 @@ export class Animator {
     const lowLod = this.c.lod === 'low';
     const eyeS = lowLod ? es.eye * blinkS : 1;
     bl[B.eyeL].scale.set(1, eyeS, 1); bl[B.eyeR].scale.set(1, eyeS, 1);
-    bl[B.browL].position.set(rest.browL.x - rest.head.x, rest.browL.y - rest.head.y + es.brow * 0.008 + this.mouth * 0.002, rest.browL.z - rest.head.z);
-    bl[B.browR].position.set(rest.browR.x - rest.head.x, rest.browR.y - rest.head.y + es.brow * 0.008 + this.mouth * 0.002, rest.browR.z - rest.head.z);
+    bl[B.browL].position.set(rest.browL.x - rest.head.x, rest.browL.y - rest.head.y + es.brow * 0.005 + this.mouth * 0.0012, rest.browL.z - rest.head.z);
+    bl[B.browR].position.set(rest.browR.x - rest.head.x, rest.browR.y - rest.head.y + es.brow * 0.005 + this.mouth * 0.0012, rest.browR.z - rest.head.z);
     bl[B.browL].rotation.z = es.tilt * 0.4; bl[B.browR].rotation.z = -es.tilt * 0.4;
     bl[B.jaw].scale.set(1, 1, 1);
-    bl[B.jaw].rotation.x = this.mouth * 0.34 + (es.smile < 0 ? 0.02 : 0);
+    bl[B.jaw].rotation.x = this.mouth * 0.2 + (es.smile < 0 ? 0.012 : 0);
     bl[B.jaw].position.set(0, rest.jaw.y - rest.head.y - this.mouth * 0.002, rest.jaw.z - rest.head.z);
     const sm = es.smile;
     for (const [bn, sx] of [[B.cornerL, 1], [B.cornerR, -1]]) {
@@ -272,8 +272,8 @@ export class Animator {
     // amplitudes
     const thA = lerp(0.42, 0.85, runW) + sprintW * 0.2;
     const knA = lerp(0.75, 1.55, runW) + sprintW * 0.25;
-    const armA = lerp(0.32, 0.75, runW);
-    const elb = lerp(0.18, 1.35, runW);
+    const armA = lerp(0.44, 0.8, runW);
+    const elb = lerp(0.26, 1.35, runW);
     const lean = lerp(0.04, 0.2, runW) + sprintW * 0.12;
     const fs = Math.abs(fwd), ss = Math.abs(side);
 
@@ -290,15 +290,17 @@ export class Animator {
     }
     if (walkW > 0) {
       const w = walkW;
-      const swingL = -s * thA * sgn, swingR = s * thA * sgn;
+      const bias = -0.07 * (1 - runW * 0.5); // swing a little more in front of the hips than behind
+      const swingL = -s * thA * sgn + bias, swingR = s * thA * sgn + bias;
       this.mix(B.thighL, swingL * fs, 0.0, 0.04 + s * side * 0.35, w); this.mix(B.thighR, swingR * fs, 0.0, -0.04 - s * side * 0.35, w);
-      const kL = Math.max(0, c * sgn) ** 1.2 * knA + 0.1, kR = Math.max(0, -c * sgn) ** 1.2 * knA + 0.1;
+      // swing-phase flexion plus a small loading flex just after heel strike
+      const kL = Math.max(0, c * sgn) ** 1.2 * knA + 0.08 + Math.max(0, -c * sgn) * Math.max(0, s * sgn) * 0.32 * (1 - runW * 0.5), kR = Math.max(0, -c * sgn) ** 1.2 * knA + 0.08 + Math.max(0, c * sgn) * Math.max(0, -s * sgn) * 0.32 * (1 - runW * 0.5);
       this.mix(B.shinL, kL, 0, 0, w); this.mix(B.shinR, kR, 0, 0, w);
       this.mix(B.footL, -swingL * 0.4 - kL * 0.3 + Math.max(0, -s * sgn) * 0.4, 0, 0, w); this.mix(B.footR, -swingR * 0.4 - kR * 0.3 + Math.max(0, s * sgn) * 0.4, 0, 0, w);
       // toe-off: the toes bend as the heel lifts behind the body
       this.mix(B.toeL, -Math.max(0, s * sgn) * 0.7 * (0.5 + runW * 0.5), 0, 0, w); this.mix(B.toeR, -Math.max(0, -s * sgn) * 0.7 * (0.5 + runW * 0.5), 0, 0, w);
       this.mix(B.armL, s * armA * sgn * fs, 0, 0.1 + runW * 0.08, w); this.mix(B.armR, -s * armA * sgn * fs, 0, -0.1 - runW * 0.08, w);
-      this.mix(B.foreL, -elb - Math.max(0, -s) * 0.2 * runW, 0, 0, w); this.mix(B.foreR, -elb - Math.max(0, s) * 0.2 * runW, 0, 0, w);
+      this.mix(B.foreL, -elb - Math.max(0, -s * sgn) * (0.25 + 0.2 * runW), 0, 0, w); this.mix(B.foreR, -elb - Math.max(0, s * sgn) * (0.25 + 0.2 * runW), 0, 0, w);
       this.mix(B.hips, 0, s * 0.12 * fs, s * 0.035, w);
       this.mix(B.spine, lean * dir * fs, -s * 0.08, 0, w);
       this.mix(B.chest, lean * 0.4, -s * 0.12 * fs, -s * 0.02, w);

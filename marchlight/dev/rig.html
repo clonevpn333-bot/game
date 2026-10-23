@@ -13,7 +13,8 @@ r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColo
 const s = new THREE.Scene(); s.background = new THREE.Color(0x6f7f8f);
 const cam = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.05, 100);
 const zoom = q.get('face') ? 1 : 0;
-cam.position.set(zoom ? 0 : 1.2, zoom ? 1.6 : 1.4, zoom ? 1.0 : 5.5); cam.lookAt(0, zoom ? 1.58 : 0.95, 0);
+cam.position.set(zoom ? 0 : 1.2, zoom ? 1.6 : 1.4, zoom ? 0.75 : 5.5); cam.lookAt(0, zoom ? 1.57 : 0.95, 0);
+if (q.get('cam')) { const c = q.get('cam').split(',').map(Number); cam.position.set(c[0], c[1], c[2]); cam.lookAt(c[3], c[4], c[5]); }
 s.add(new THREE.HemisphereLight(0xcfe3ff, 0x6a5a48, 1.2));
 const sun = new THREE.DirectionalLight(0xffe2c0, 2.5); sun.position.set(3, 5, 4); sun.castShadow = true; sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02; s.add(sun);
 const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshStandardMaterial({ color: 0x555555 })); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; s.add(floor);
@@ -35,8 +36,11 @@ for (let i = 0; i < n; i++) {
   if (q.get('tether')) a.tether = 1;
   if (q.get('rot')) c.group.rotation.y = +q.get('rot');
 }
-let last = performance.now();
+let last = performance.now(), manual = false;
 function loop() { const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now;
-  actors.forEach(a => a.update(dt)); r.render(s, cam); requestAnimationFrame(loop); }
+  if (!manual) { actors.forEach(a => a.update(dt)); r.render(s, cam); } requestAnimationFrame(loop); }
+// deterministic stepping for filmstrips: advance every animator by `sec` at 60 Hz and render once
+window.__step = (sec) => { manual = true; for (let i = 0; i < Math.round(sec * 60); i++) actors.forEach(a => a.update(1 / 60)); r.render(s, cam); };
+window.__actors = actors;
 loop(); window.__ready = true;
 </script></body></html>

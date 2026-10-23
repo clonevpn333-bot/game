@@ -10,7 +10,7 @@ const logs = [];
 page.on('console', m => { const t = `[${m.type()}] ${m.text()}`; logs.push(t); if (m.type() === 'error' || process.env.VERBOSE) console.log(t); });
 page.on('pageerror', e => { const t = `[pageerror] ${e.message}\n${e.stack}`; logs.push(t); console.log(t); });
 await page.goto(url);
-await page.waitForFunction(() => window.__ready === true, null, { timeout: 120000 });
+await page.waitForFunction(() => window.__ready === true, null, { timeout: 300000 });
 const wait = ms => page.waitForTimeout(ms);
 const shot = async name => { const f = path.join(outDir, name + '.png'); try { await page.screenshot({ path: f, timeout: 180000 }); console.log('shot', f); } catch (e) { console.log('shot FAILED', name, e.message.split('\n')[0]); } };
 const ev = (fn, arg) => page.evaluate(fn, arg);

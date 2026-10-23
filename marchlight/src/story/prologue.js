@@ -716,11 +716,13 @@ export class Prologue {
     // the reveal: step out past the hull and the world opens below
     P.setScripted(true);
     const walk = g.add((dt) => { if (P.pos.x < 205) { P.pos.x += dt * 1.4; P.anim.speed = 1.4; P.placeScripted(P.pos, Math.PI / 2 - 0.25); } else P.anim.speed = 0; });
-    g.director.shot({ pos: V(198, LD.floor + 1.6, -188.8), look: V(207, LD.floor + 1.2, -190), fov: 55, to: { pos: V(213.5, LD.floor + 3.5, -196), look: V(180, -170, -240), fov: 62 }, dur: 9, ease: ease.inOutSine });
+    // push out past Rook as he steps onto the apron, toward the open horizon
+    g.director.shot({ pos: V(197.5, LD.floor + 1.7, -189.2), look: V(207, LD.floor + 1.3, -190.3), fov: 52, to: { pos: V(215.5, LD.floor + 3.2, -185.5), look: V(420, LD.floor - 95, -215), fov: 60 }, dur: 9, ease: ease.inOutSine });
     await this.wait(4.2);
     g.hud.location('THE SPINE', 'MERIDIAN · EXTERIOR, STARBOARD', 6);
     await this.wait(4.8);
-    g.director.shot({ pos: V(214, LD.floor + 2.5, -196), look: V(176, -200, -236), fov: 60, to: { pos: V(214.6, LD.floor + 2.8, -199), look: V(260, -330, -380), fov: 58 }, dur: 8, ease: ease.inOutSine, cut: false });
+    // then down and back along the hull to Leg Two, mid-stride
+    g.director.shot({ pos: V(215.5, LD.floor + 3.2, -185.5), look: V(420, LD.floor - 95, -215), fov: 60, to: { pos: V(216.5, LD.floor + 4.0, -180), look: V(178, LD.floor - 120, -232), fov: 55 }, dur: 8, ease: ease.inOutSine, cut: false });
     await this.radio('NIA', 'Comms check. You hear me?', { dur: 2.2 });
     await this.radio('ROOK', 'Loud and clear.', { dur: 1.6 });
     await this.radio('NIA', 'Good. Your vitals look disgustingly calm.', { dur: 2.6 });
@@ -882,15 +884,17 @@ export class Prologue {
   async afterRescue(id) {
     const g = this.game, P = g.player, tram = this.workTram, S = g.districts.spine;
     // place Callow Reach so the falling tram leads the eye to it
-    const impact = tram.pos.clone(); impact.y = -400;
-    g.ground.placeSettlement(impact.x + 150, impact.z - 70);
+    // Out to starboard and a little ahead, so that by the time Rook raises the visor the city's
+    // stride has carried it abeam, well clear of the hull and the legs.
+    g.ground.placeSettlement(P.pos.x + 330, P.pos.z - 90);
     // follow the tram down
     this.enter(true);
     g.slowmo = 0.6;
     const from = P.pos.clone().add(V(0, 1.6, 0));
     g.director.shot({ pos: from, look: () => tram.group.position, fov: 50, to: { pos: from.clone().add(V(2, -1, 3)), fov: 35 }, dur: 3 });
     await this.waitGame(2.2);
-    g.director.shot({ pos: () => tram.group.position.clone().add(V(14, 26, 18)), look: () => tram.group.position, fov: 45, cut: true });
+    const chase = V(24, 14, 26);
+    g.director.shot({ pos: () => { const p = tram.group.position.clone().add(chase); p.y = Math.min(p.y, -135); return p; }, look: () => tram.group.position, fov: 45, cut: true });
     await this.waitFor(() => tram.pos.y < -392);
     g.slowmo = 1;
     // impact
@@ -910,7 +914,7 @@ export class Prologue {
     const stillUp = g.add((dt) => { g.engine.grade.uniforms.uStill.value = damp(g.engine.grade.uniforms.uStill.value, 0.45, 0.5, dt); });
     await this.wait(5.5);
     // back to Rook on the boom: player looks for themself, visor zoom
-    g.director.shot({ pos: P.pos.clone().add(V(-2.2, 2.0, 2.6)), look: P.pos.clone().add(V(0, 1.4, 0)), fov: 40, cut: true });
+    { const lk = P.pos.clone().add(V(0, 1.4, 0)); g.director.shot({ pos: g.director.frame(lk, [V(2.6, 0.6, 2.2), V(-2.2, 0.6, 2.6), V(2.4, 0.5, -2.4), V(-2.6, 0.5, -2.2)]), look: lk, fov: 40, cut: true }); }
     await this.wait(1.8);
     this.exit();
     g.director.freeLook = false;
@@ -960,7 +964,9 @@ export class Prologue {
     g.state.journal('He\'s lying. I don\'t know why yet.');
     // final beat: Rook looks down once more
     this.enter(true);
-    g.director.shot({ pos: P.pos.clone().add(V(1.4, 1.75, 1.0)), look: P.pos.clone().add(V(0, 1.6, 0)), fov: 32, to: { pos: P.pos.clone().add(V(1.2, 1.7, 0.7)) }, dur: 4 });
+    { const lk = P.pos.clone().add(V(0, 1.6, 0)), toS = sp().clone().sub(P.pos).setY(0).normalize(), side = V(-toS.z, 0, toS.x);
+      const cp = g.director.frame(lk, [toS.clone().multiplyScalar(1.3).addScaledVector(side, 0.6).setY(0.12), toS.clone().multiplyScalar(1.3).addScaledVector(side, -0.6).setY(0.12), side.clone().multiplyScalar(1.4).setY(0.1)]);
+      g.director.shot({ pos: cp, look: lk, fov: 32, to: { pos: cp.clone().lerp(lk, 0.15) }, dur: 4 }); }
     P.anim.setEmotion('worried'); P.anim.lookTarget = sp();
     await this.wait(1.8);
     await this.say('ROOK', '…They moved.', { dur: 2.8 });
