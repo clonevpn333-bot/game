@@ -517,7 +517,12 @@ export class Prologue {
     await this.wait(3);
     // Rook, watching the drop
     P.anim.lookTarget = tram.car.localToWorld(V(-6, 0.6, 2));
-    g.director.shot({ pos: cp(-0.3, 1.52, -2.75), look: cp(1.0, 1.46, -3.2), fov: 36, to: { pos: cp(-0.2, 1.5, -2.9) }, dur: 9 }); // Rook's seated eye line ~1.46 in car space
+    { const root = g.engine.cityRoot, q = new THREE.Quaternion();
+      const head = () => root.worldToLocal(P.char.bones.head.getWorldPosition(V(0, 0, 0))).add(V(0, 0.12, 0));
+      const fwd = () => { P.char.group.getWorldQuaternion(q); const f = V(0, 0, 1).applyQuaternion(q); f.y = 0; return f.normalize(); };
+      const side = () => { const f = fwd(); return V(f.z, 0, -f.x); };
+      // framed from Rook's own head and facing (he stays upright while the car pitches on the descent)
+      g.director.shot({ pos: () => head().addScaledVector(fwd(), 1.05).addScaledVector(side(), 0.3).add(V(0, 0.04, 0)), look: head, fov: 38 }); }
     g.audio.chime(tram.car.position.clone());
     this.say('PA', 'Next stop: Engineering. Please mind the gap. The gap is three hundred meters.', { radio: true, wait: false, dur: 4.4 });
     await this.waitFor(() => tram.s > tram.len * 0.62);
