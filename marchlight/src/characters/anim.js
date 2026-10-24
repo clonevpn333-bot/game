@@ -79,6 +79,7 @@ export class Animator {
       case 'sit': this.sit(); break;
       case 'sitGround': this.sitGround(); break;
       case 'lie': this.lie(); break;
+      case 'getUp': this.getUp(); lambda = 30; break;
       case 'tinker': this.tinker(); break;
       case 'kneel': this.kneel(); break;
       case 'cower': this.cower(); break;
@@ -98,7 +99,8 @@ export class Animator {
     }
     if (this.aim > 0.01 && this.weapon) this.layerAim(this.aim);
     if (this.tether > 0.01) this.layerTether(this.tether);
-    if (this.mode !== 'lie' && this.mode !== 'freeze') this.layerBreath();
+    const inBed = this.mode === 'lie' || (this.mode === 'getUp' && this.modeParam < 1);
+    if (!inBed && this.mode !== 'freeze') this.layerBreath();
 
     // ---------- banking into turns, leaning into acceleration
     this.leanS = damp(this.leanS, this.lean, 6, dt);
@@ -119,10 +121,10 @@ export class Animator {
     // ---------- emotion posture
     const em = EMO[this.emotion] || EMO.neutral; const es = this.emoS;
     for (const k of Object.keys(es)) es[k] = damp(es[k], em[k], 4, dt);
-    if (this.mode !== 'lie' && this.mode !== 'freeze') { this.add(B.head, es.head, 0, 0); this.add(B.neck, es.head * 0.5, 0, 0); if (es.head > 0.1) { this.add(B.shoulderL, 0, 0, -es.head * 0.4); this.add(B.shoulderR, 0, 0, es.head * 0.4); } }
+    if (this.mode !== 'lie' && this.mode !== 'getUp' && this.mode !== 'freeze') { this.add(B.head, es.head, 0, 0); this.add(B.neck, es.head * 0.5, 0, 0); if (es.head > 0.1) { this.add(B.shoulderL, 0, 0, -es.head * 0.4); this.add(B.shoulderR, 0, 0, es.head * 0.4); } }
 
     // ---------- look-at (head/neck/eyes)
-    this.lookW = damp(this.lookW, this.lookTarget && this.mode !== 'lie' && this.mode !== 'freeze' ? 1 : 0, 5, dt);
+    this.lookW = damp(this.lookW, this.lookTarget && this.mode !== 'lie' && this.mode !== 'getUp' && this.mode !== 'freeze' ? 1 : 0, 5, dt);
     if (this.lookTarget) {
       const g = this.c.group; g.updateMatrixWorld();
       _m.copy(g.matrixWorld).invert();
@@ -160,7 +162,9 @@ export class Animator {
     // ---------- smoothing
     const k = 1 - Math.exp(-lambda * dt);
     for (let i = 0; i < NB * 3; i++) this.S[i] += (P[i] - this.S[i]) * k;
-    this.hipS.lerp(this.hip, k); this.rootOffS.lerp(this.rootOff, 1 - Math.exp(-8 * dt)); this.rootRotS.lerp(this.rootRot, 1 - Math.exp(-6 * dt));
+    this.hipS.lerp(this.hip, k);
+    if (this.mode === 'getUp') { this.rootOffS.copy(this.rootOff); this.rootRotS.copy(this.rootRot); }
+    else { this.rootOffS.lerp(this.rootOff, 1 - Math.exp(-8 * dt)); this.rootRotS.lerp(this.rootRot, 1 - Math.exp(-6 * dt)); }
 
     // ---------- additives (unsmoothed, crisp)
     this.A.fill(0);
@@ -417,6 +421,64 @@ export class Animator {
       this.set(B.armL, -0.5, 0, 0.2); this.set(B.armR, -0.5, 0, -0.2); this.set(B.foreL, -0.8, 0, 0); this.set(B.foreR, -0.8, 0, 0);
       this.set(B.spine, 0.2, 0, 0); this.hip.y -= 0.8;
     }
+  }
+  // Getting out of bed as one continuous motion. modeParam u: 0 asleep on the back, 1 sat up in
+  // bed, 2 sitting on the edge, 3 standing. The actor's origin is where the feet stand at the end,
+  // facing away from the bed; the bed runs along local +x with the pillow at -x. Each key fixes the
+  // hip position (`bed` overrides the defaults), the body's pitch/yaw about the hips, and the legs:
+  // flat on the mattress in bed, solved by IK onto the floor once they are over the edge.
+  getUp() {
+    const u = clamp(this.modeParam, 0, 3), t = this.t, stir = this.stir || 0;
+    const bed = this.bed || {};
+    const Hl = bed.lie || [-0.37, 0.71, -1.08], Hs = bed.sit || [-0.37, 0.72, -1.08], He = bed.edge || [0, 0.7, -0.4], Hu = [0, 0.92, 0];
+    const ez = (x) => x * x * (3 - 2 * x), f01 = ez(clamp(u, 0, 1)), f12 = ez(clamp(u - 1, 0, 1)), f23 = ez(clamp(u - 2, 0, 1));
+    const lerp3 = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
+    let H, pitch, yaw;
+    if (u <= 1) { H = lerp3(Hl, Hs, f01); pitch = lerp(-Math.PI / 2 + 0.25, 0.15, f01); yaw = Math.PI / 2; }
+    else if (u <= 2) { H = lerp3(Hs, He, f12); pitch = lerp(0.15, 0.12, f12); yaw = lerp(Math.PI / 2, 0, f12); }
+    else { H = lerp3(He, Hu, f23); pitch = lerp(0.12, 0, f23) + Math.sin(Math.PI * f23) * 0.5; yaw = 0; } // lean over the feet to rise
+    // root about the feet so that the hips land on H
+    this.rootRot.set(pitch, yaw, 0);
+    _e.set(pitch, yaw, 0, 'YXZ'); _q.setFromEuler(_e); _v.set(0, 0.92, 0).applyQuaternion(_q);
+    this.rootOff.set(H[0] - _v.x, H[1] - _v.y, H[2] - _v.z);
+    // legs: flat on the bed (world pitch -pi/2 about the body's x) ...
+    const flatThigh = -Math.PI / 2 - pitch, flatShin = lerp(0.06, 0.18, f01);
+    // ... or planted on the floor: two-bone IK in the root frame toward ankles beside the origin
+    const _qi = _q.clone().invert();
+    const ik = (sx) => {
+      const a = _v.set(sx * 0.1, 0.075, 0.02).sub(this.rootOff).applyQuaternion(_qi); // ankle in root space
+      const dy = a.y - 0.88, dz = a.z, L1 = 0.41, L2 = 0.395, d = clamp(Math.hypot(dy, dz), 0.2, L1 + L2 - 1e-3);
+      const alpha = Math.atan2(dz, -dy), beta = Math.acos(clamp((L1 * L1 + d * d - L2 * L2) / (2 * L1 * d), -1, 1));
+      const knee = Math.PI - Math.acos(clamp((L1 * L1 + L2 * L2 - d * d) / (2 * L1 * L2), -1, 1));
+      const thigh = -(alpha + beta);
+      return [thigh, knee, -(pitch + thigh + knee)];
+    };
+    const floorW = u <= 1 ? 0 : u <= 2 ? smoothstep(0.35, 1, u - 1) : 1;
+    for (const [sx, th, sh, ft] of [[1, B.thighL, B.shinL, B.footL], [-1, B.thighR, B.shinR, B.footR]]) {
+      const [it, ik2, ift] = floorW > 0 ? ik(sx) : [0, 0, 0];
+      this.set(th, lerp(flatThigh, it, floorW), 0, sx * lerp(0.05, 0.08, floorW));
+      this.set(sh, lerp(flatShin, ik2, floorW), 0, 0);
+      this.set(ft, lerp(0.85, ift, floorW), 0, 0); // toes pointed and relaxed in bed, soles flat on the floor
+    }
+    // upper body
+    const lieW = 1 - f01;
+    this.set(B.spine, lerp(0.04, 0.1, f01) - f23 * 0.05, 0, 0);
+    this.set(B.chest, Math.sin(t * 1.1) * 0.02 * lieW, 0, 0);
+    this.set(B.neck, 0.22 * lieW, 0, 0);
+    this.set(B.head, 0.18 * lieW + Math.sin(Math.PI * f01) * 0.15, (0.3 + Math.sin(t * 0.4) * 0.12 * stir) * lieW, 0);
+    // arms: asleep (one hand on the chest) -> pushing up off the mattress -> hands on the bed edge -> push off the thighs -> relaxed
+    const push01 = Math.sin(Math.PI * f01), push23 = Math.sin(Math.PI * f23);
+    const stretch = stir * Math.max(0, Math.sin(t * 1.2)) * lieW;
+    const arm = (sx, a0, a1, a2, a3) => { const k = u <= 1 ? lerp3(a0, a1, f01) : u <= 2 ? lerp3(a1, a2, f12) : lerp3(a2, a3, f23); return k; };
+    const aL = arm(1, [0.05, 0, 0.14 + stretch * 0.15], [0.45, 0, 0.32], [-0.1, 0, 0.32], [0.05, 0, 0.09]);
+    const aR = arm(-1, [0.05, 0, -0.14 - stretch * 0.15], [0.45, 0, -0.32], [-0.1, 0, -0.32], [0.05, 0, -0.09]);
+    this.set(B.armL, aL[0] - push01 * 0.25 - push23 * 0.5, aL[1], aL[2]); this.set(B.armR, aR[0] - push01 * 0.25 - push23 * 0.5, aR[1], aR[2]);
+    const fL = u <= 1 ? lerp(-0.3, -0.15, f01) : u <= 2 ? lerp(-0.15, -0.45, f12) : lerp(-0.45, -0.18, f23) - push23 * 0.5;
+    const fR = u <= 1 ? lerp(-0.3, -0.15, f01) : u <= 2 ? lerp(-0.15, -0.45, f12) : lerp(-0.45, -0.18, f23) - push23 * 0.5;
+    this.set(B.foreL, fL, 0, 0); this.set(B.foreR, fR, 0, 0);
+    this.set(B.handL, u > 1 ? 0.5 * (1 - f23) : 0, 0, 0); this.set(B.handR, u > 1 ? 0.5 * (1 - f23) : 0, 0, 0);
+    // eyes: closed asleep, heavy while stirring, open once up
+    this.emoS.eye = u > 0.3 ? lerp(0.75, 1, clamp(u - 0.3, 0, 1)) : lerp(0.06, 0.75, stir);
   }
   lie() { // on back, head toward -z of local. modeParam: 0 sleeping, 1 stirring
     const t = this.t, stir = this.modeParam;

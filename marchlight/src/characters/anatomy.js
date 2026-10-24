@@ -24,6 +24,7 @@ export function garment(L) {
   if (o === 'runnerLight') Object.assign(g, { hem: 0.845, collar: 'stand', sleeve: 'rolled', jacket: true });
   if (o === 'engineer' || o === 'worker') Object.assign(g, { hem: 0, collar: 'coverall', sleeve: 'rolled', coverall: true });
   if (o === 'casual' || o === 'vendor' || o === 'smart') Object.assign(g, { hem: 0.9, collar: 'crew', boots: 'low' });
+  if (L.socks) g.boots = 'socks';
   if (o === 'smart') g.collar = 'shirt';
   if (g.tank) { g.sleeve = 'none'; g.collar = 'tank'; }
   return g;
@@ -185,7 +186,7 @@ function buildBodyField(rest, P, g, B, lod) {
     thigh.add(roundCone([t0.x, 0.9, t0.z - 0.005], add3(k0, 0, 0, -0.005), 0.08 * hw, 0.053 * bw))
       .add(ellipsoid(t0.x + sx * 0.008, 0.69, t0.z + 0.024, 0.066 * hw, 0.16, 0.058), 0.04)
       .add(ellipsoid(t0.x, 0.71, t0.z - 0.03, 0.058 * hw, 0.15, 0.052), 0.04);
-    const bootTop = g.boots === 'tall' ? 0.3 : 0.15;
+    const socks = g.boots === 'socks', bootTop = g.boots === 'tall' ? 0.3 : socks ? 0.13 : 0.15;
     const shW = (x, y, z) => { const t = sstep(0.52, 0.44, y), u = sstep(0.14, 0.09, y) * 0.5; return [[B['shin' + s], (1 - t * 0.5) * (1 - u)], [B['thigh' + s], t * 0.5], [B['foot' + s], u]]; };
     const shBump = (x, y, z) => { // tucked trousers bunch above the boot
       const bunch = Math.sin(y * 200 + nz(x, y, z, 25) * 7) * 0.003 * sstep(bootTop - 0.005, bootTop + 0.02, y) * sstep(bootTop + 0.11, bootTop + 0.05, y);
@@ -199,6 +200,7 @@ function buildBodyField(rest, P, g, B, lod) {
     // boot
     const ftW = (x, y, z) => { const t = sstep(0.07, 0.13, z - f0.z), u = sstep(0.12, bootTop, y) * 0.6; return [[B['foot' + s], (1 - t) * (1 - u)], [B['toe' + s], t * (1 - u)], [B['shin' + s], u]]; };
     const ftTag = (x, y, z) => {
+      if (socks) return y > bootTop - 0.02 ? [TAG.BOOTD, 0, TAG.BOOT, y - (bootTop - 0.008), 10] : [TAG.BOOT, 0];
       if (y < 0.05) return [TAG.BOOT, 0, TAG.SOLE, y - 0.0265, 9];
       if (y > bootTop - 0.03) return [TAG.BOOTD, 0, TAG.BOOT, y - (bootTop - 0.011), 10];
       return [TAG.BOOT, 0];
@@ -206,12 +208,19 @@ function buildBodyField(rest, P, g, B, lod) {
     const ftBump = (x, y, z) => (Math.sin(y * 260 + nz(x, y, z, 30) * 4) * 0.0012 * sstep(0.1, 0.13, y) * sstep(bootTop - 0.02, bootTop - 0.06, y)) + nz(x, y, z, 60) * 0.0006;
     const foot = new Part('foot' + s, { k: 0.018, xf: lxf, weights: ftW, tag: ftTag, bump: ftBump, bumpAmp: 0.002 });
     const fx = f0.x, fz = f0.z;
+    if (socks) { // a soft socked foot: heel, arch, rounded toes; no sole
+      foot.add(roundCone([fx, 0.075, fz - 0.012], [fx, bootTop + 0.004, fz - 0.01], 0.042 * bw, 0.044 * bw))
+        .add(ellipsoid(fx, 0.04, fz - 0.03, 0.036, 0.04, 0.042), 0.02)
+        .add(ellipsoid(fx + sx * 0.004, 0.032, fz + 0.06, 0.04, 0.03, 0.075), 0.03)
+        .add(ellipsoid(fx + sx * 0.006, 0.026, fz + 0.13, 0.042, 0.024, 0.036), 0.02);
+    } else {
     foot.add(roundCone([fx, 0.07, fz - 0.008], [fx, bootTop + 0.006, fz - 0.008], 0.05 * bw, 0.055 * bw))
       .add(ellipsoid(fx, 0.055, fz - 0.035, 0.047, 0.055, 0.054), 0.02)
       .add(roundBox(fx, 0.052, fz + 0.045, 0.028, 0.022, 0.07, 0.026), 0.025)
       .add(ellipsoid(fx + sx * 0.003, 0.043, fz + 0.135, 0.052, 0.039, 0.056), 0.025)
       .add(torus(fx, bootTop + 0.002, fz - 0.008, 0.055 * bw, 0.0065), 0.004)
       .hard(roundBox(fx + sx * 0.002, 0.0145, fz + 0.045, 0.045, 0.0072, 0.128, 0.008));
+    }
     parts.push(up, fore, thigh, shin, foot);
     edges.push([torso, up, 0.035], [up, fore, 0.03], [torso, thigh, 0.055], [thigh, shin, 0.035], [shin, foot, 0.02]);
   }
@@ -255,7 +264,7 @@ export function headShape(P, L) {
   const my = F.mouthY;
   const lu = ellipsoid(0, my + 0.0038, 0.0885, 0.016, fem ? 0.0042 : 0.0034, 0.0062);
   const ll = ellipsoid(0, my - 0.0042, 0.0875, 0.0148, fem ? 0.0048 : 0.004, 0.0064);
-  head.add(lu, 0.004).add(ll, 0.004);
+  // no sculpted lips: the mouth is built from blocks in rig.js (stylized)
   // eye sockets open around the eyeballs; an upper-lid fold and a lower-lid ridge
   for (const sx of [-1, 1]) {
     head.sub(ellipsoid(sx * ex, ey, 0.083, 0.0168, 0.0096, 0.013), 0.005);
@@ -300,8 +309,6 @@ export function sculptHead(P, L, B, lod) {
     };
     head.pairBand = 0.006;
     head.tag = (x, y, z) => {
-      const ld = 0.0016 - Math.min(lu.f(x, y, z), ll.f(x, y, z)); // the blended surface sits a few mm outside the lip primitives
-      if (ld > -0.006) return [TAG.LIP, 0, TAG.SKIN, ld, 1];
       const cheek = Math.exp(-(((Math.abs(x) - 0.038) / 0.018) ** 2 + ((y - 0.072) / 0.018) ** 2)) * sstep(0.04, 0.06, z);
       const nose = Math.exp(-((x / 0.01) ** 2 + ((y - 0.075) / 0.01) ** 2)) * sstep(0.098, 0.106, z) * 0.6;
       const ear = sstep(0.065, 0.078, Math.abs(x)) * sstep(0.07, 0.085, y) * sstep(0.14, 0.125, y) * 0.55;
@@ -521,6 +528,7 @@ export function allJobs(B, hairStyles) {
   const jobs = [], lods = ['high', 'low', 'far'];
   const adult = (fem) => ({ sh: 1, hw: 1, bw: 1, fr: fem ? 0.85 : 0.4, kid: false });
   const outfits = [{ outfit: 'runner' }, { outfit: 'runnerLight' }, { outfit: 'casual' }, { outfit: 'casual', tank: true }, { outfit: 'smart' }, { outfit: 'engineer' }];
+  for (const fem of [false, true]) jobs.push({ kind: 'body', P: adult(fem), L: { outfit: 'casual', socks: true }, lod: 'high', B }); // Rook in bed
   for (const lod of lods) {
     for (const o of outfits) for (const fem of [false, true]) jobs.push({ kind: 'body', P: adult(fem), L: o, lod, B });
     for (const fem of [false, true]) for (const beard of [false, true]) if (!(fem && beard)) jobs.push({ kind: 'head', P: adult(fem), L: { beard }, lod, B });

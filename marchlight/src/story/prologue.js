@@ -195,53 +195,70 @@ export class Prologue {
     this.setupCityCast('morning');
     // Rook in bed, in sleep clothes (casual) until the gear rack
     const look = { ...(g.state.look || defaultLook()) };
-    P.setLook({ ...look, outfit: 'casual', primary: '#8a8a82', secondary: '#5a5a54', backpack: false, tetherArm: false });
+    P.setLook({ ...look, outfit: 'casual', primary: '#8a8a82', secondary: '#5a5a54', pants: '#5c5f66', boots: '#cfcac0', socks: true, backpack: false, tetherArm: false });
     if (P.char.sockets.tetherRing) P.char.sockets.tetherRing.visible = false;
     g.tether.locked = true; g.tether.latchLocked = true; g.weapons.locked = true;
     P.relaxed = true;
-    const bedPos = V(190.3, 14.32, -25.1);
-    P.teleport(V(190.1, 14.0, -24.5), Math.PI); P.setScripted(true); P.placeScripted(V(190.2, 14.12, -25.55), Math.PI); P.anim.setMode('lie', 0);
+    // Rook asleep under the blanket, head on the pillow. One continuous getUp motion (see anim.js):
+    // the actor stands at the bedside spot the whole time and the pose carries the body from the
+    // pillow to the floor, so nothing pops.
+    const stand = V(189.9, 14.0, -23.22), blanket = g.districts.city.blanket;
+    P.teleport(stand, 0); P.setScripted(true); P.placeScripted(stand, 0);
+    P.anim.setMode('getUp', 0); P.anim.stir = 0;
+    for (let i = 0; i < 30; i++) P.anim.update(1 / 30); // settle the pose before the first frame
+    blanket.set(1, 1);
+    // drive u (and the blanket with it) smoothly over game time
+    const getUp = (to, dur) => new Promise(res => {
+      const from = P.anim.modeParam; let t = 0;
+      const stop = g.add((dt) => {
+        t = Math.min(dur, t + dt); const k = t / dur, e = k * k * (3 - 2 * k);
+        P.anim.modeParam = from + (to - from) * e;
+        const u = P.anim.modeParam;
+        blanket.set(1 - Math.min(1, Math.max(0, u)), 1 - Math.min(1, Math.max(0, u - 1)));
+        if (t >= dur) { stop(); res(); }
+      });
+    });
+    const face = V(189.05, 14.82, -24.32); // where Rook's face is on the pillow
     this.enter(true);
-    g.director.shot({ pos: V(189.2, 16.6, -23.2), look: V(190.2, 14.6, -24.9), fov: 50 });
+    g.director.shot({ pos: V(190.35, 15.55, -23.2), look: face.clone().add(V(0.25, -0.05, 0)), fov: 40, to: { pos: V(190.05, 15.4, -23.45), look: face }, dur: 9 });
     g.hud.letterbox(true);
     g.audio.music.stop(0.5);
+    g.hud.fade(0, 2.5);
     await this.wait(0.6);
     // the city's step in the dark
     g.audio.giantStep(V(174, -400, -228), 1.2, 200);
-    await this.wait(2.6);
+    await this.wait(2.2);
     g.audio.giantStep(V(-174, -400, 228), 0.9, 400);
-    await this.wait(1.4);
+    await this.wait(1.2);
     g.director.shot({ pos: V(188.15, 14.95, -25.15), look: V(188.1, 14.75, -25.5), fov: 32 }); // the glass of water
-    g.hud.fade(0, 3);
     // the water ripples as the next step lands
     const glass = new THREE.Mesh(new THREE.CircleGeometry(0.032, 20), new THREE.MeshStandardMaterial({ color: 0x9ab4c8, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.75 }));
     glass.rotation.x = -Math.PI / 2; glass.position.set(188.1, 14.72, -25.5); g.engine.cityRoot.add(glass);
     const ripple = g.add((dt) => { const s = g.city.shakeAmount; glass.position.y = 14.72 + Math.sin(g.time * 40) * 0.002 * s; glass.scale.setScalar(1 + Math.sin(g.time * 30) * 0.03 * s); });
-    await this.wait(2.4);
+    await this.wait(0.8);
     g.city.shakeAmount = 0.8; g.audio.rattle(V(188.1, 14.7, -25.5), 1.2); g.audio.giantStep(V(174, -400, -228), 1, 300);
-    // radio clicks on
-    await this.wait(1.2);
-    g.audio.ui('radio');
-    await this.say('RADIO', '—good morning, Meridian. Day two hundred fourteen of the March.', { radio: true, dur: 3.4 });
-    g.director.shot({ pos: V(189.2, 16.4, -22.6), look: V(190.2, 14.6, -25.0), fov: 46, to: { pos: V(188.6, 16.0, -22.2), look: V(190.1, 14.9, -24.6) }, dur: 9, cut: true });
-    g.audio.music.play('morning', 4);
-    await this.say('RADIO', 'Crossing the Sallow Plains today. Steady pace, clear skies east.', { radio: true, dur: 3.2 });
-    await this.say('RADIO', 'And to whoever keeps feeding the gulls on the Crown deck — they know where you live now.', { radio: true, dur: 4 });
-    P.anim.modeParam = 1;
-    await this.wait(1.2);
-    // Rook sits up on the edge of the bed
-    P.anim.setMode('sitGround', 1);
-    P.placeScripted(V(189.0, 14.05 + 0.48, -24.4), -Math.PI / 2);
-    P.anim.setMode('sit');
-    P.placeScripted(V(189.15, 14.0 + 0.1, -24.4), -Math.PI / 2);
-    g.director.shot({ pos: V(186.9, 15.5, -23.4), look: V(189.2, 14.9, -24.4), fov: 42, to: { pos: V(186.6, 15.6, -23.1) }, dur: 4 });
     await this.wait(1.6);
+    // radio clicks on; Rook stirs
+    g.audio.ui('radio');
+    g.director.shot({ pos: V(191.55, 15.55, -22.9), look: V(189.4, 14.75, -24.3), fov: 46, to: { pos: V(191.4, 15.5, -22.75) }, dur: 8 });
+    const stirOn = g.add((dt) => { P.anim.stir = Math.min(1, P.anim.stir + dt * 0.5); });
+    await this.say('RADIO', '—good morning, Meridian. Day two hundred fourteen of the March.', { radio: true, dur: 3.4 });
+    g.audio.music.play('morning', 4);
+    // sits up, pushing the blanket down, while the radio talks
+    const up = getUp(1, 2.0);
+    await this.say('RADIO', 'Crossing the Sallow Plains today. Steady pace, clear skies east.', { radio: true, dur: 3.2 });
+    await up; stirOn();
+    // swings the legs out and stands
+    g.director.shot({ pos: V(191.3, 15.45, -21.4), look: V(189.8, 14.95, -23.6), fov: 46, to: { pos: V(191.0, 15.5, -21.2), look: V(189.8, 15.2, -23.3) }, dur: 6 });
+    const out = getUp(2, 1.6).then(() => getUp(3, 1.4));
+    await this.say('RADIO', 'And to whoever keeps feeding the gulls on the Crown deck — they know where you live now.', { radio: true, dur: 4 });
+    await out;
+    // stretch where Rook stands (the getUp end pose is the standing pose at the same spot)
     P.anim.setMode('activity'); P.anim.activity = 'stretch';
-    P.placeScripted(V(188.6, 14.0, -24.0), -Math.PI / 2);
     await this.wait(2.2);
     ripple(); glass.removeFromParent();
     P.anim.activity = null; P.anim.setMode('loco');
-    P.setScripted(false); P.teleport(V(188.4, 14.0, -23.8), -Math.PI / 2 - 0.3); g.camera.snapBehind(-Math.PI / 2 - 0.4, 0.1);
+    P.setScripted(false); P.teleport(stand, 0); g.camera.snapBehind(0, 0.1);
     this.exit();
     g.hud.location('RESIDENTIAL TERRACES', 'MERIDIAN · 3-C', 6);
     this.objective('Get ready for your shift', 'Tomas left a note. Your gear is on the rack.');
@@ -269,7 +286,7 @@ export class Prologue {
       await this.say('RADIO', 'Stillness advisory: fields reported along the western ridge. Grid Forty-One remains classified uninhabited.', { radio: true, wait: false, dur: 5 });
       await this.wait(5.2);
       this.say('RADIO', 'Runners: keep your visors on the horizon. And keep moving. Meridian always does.', { radio: true, wait: false, dur: 4.4 }); } });
-    this.item({ pos: V(182.4, 14, -17.6), radius: 1.5, label: 'Mirror', onUse: () => { g.menu.customize(false, () => { this.equip(false); P.setLook({ ...(g.state.look), tetherArm: false, ...(said.geared ? {} : { outfit: 'casual', primary: '#8a8a82', secondary: '#5a5a54' }) }); }); } });
+    this.item({ pos: V(182.4, 14, -17.6), radius: 1.5, label: 'Mirror', onUse: () => { g.menu.customize(false, () => { this.equip(false); P.setLook({ ...(g.state.look), tetherArm: false, ...(said.geared ? {} : { outfit: 'casual', primary: '#8a8a82', secondary: '#5a5a54', pants: '#5c5f66', boots: '#cfcac0', socks: true }) }); }); } });
     this.item({ pos: V(189.5, 14, -16.6), radius: 1.6, label: () => said.geared ? 'Runner kit (worn)' : 'Gear up', enabled: () => !said.geared, onUse: async () => {
       said.geared = true; g.hud.fade(1, 0.35); await this.wait(0.4);
       P.setLook({ ...(g.state.look || defaultLook()), tetherArm: false }); g.audio.reloadPart('rack'); g.hud.fade(0, 0.5);

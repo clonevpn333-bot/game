@@ -73,8 +73,8 @@ export function buildCityDistrict(game, lights) {
   // bed (head against the north wall, along the window)
   b.box('wood', [190.1, F + 0.2, -24.5], [2.9, 0.4, 2.0], { color: 0x5a4030, tex: 1 });
   b.box('fabric', [190.1, F + 0.5, -24.5], [2.8, 0.22, 1.9], { color: 0xece4d6, collide: false, tex: 1 });
-  b.box('fabric', [190.6, F + 0.65, -24.5], [1.9, 0.12, 1.95], { color: 0x3d5a78, collide: false, rz: 0.03, tex: 1 }); // blanket
-  b.box('fabric', [188.95, F + 0.72, -24.5], [0.45, 0.16, 1.2], { color: 0xf4efe6, collide: false, tex: 1 }); // pillow
+  b.box('fabric', [188.97, F + 0.675, -24.45], [0.5, 0.12, 1.1], { color: 0xf4efe6, collide: false, tex: 1, round: 0.05 }); // pillow
+  D.blanket = makeBlanket(root, F);
   b.box('wood', [188.5, F + 0.95, -25.85], [0.12, 1.3, 2.0], { color: 0x5a4030, collide: false, ry: Math.PI / 2 });
   // nightstand with glass + lamp
   b.box('wood', [188.2, F + 0.3, -25.55], [0.5, 0.6, 0.4], { color: 0x6a5040, tex: 1 });
@@ -133,6 +133,7 @@ export function buildCityDistrict(game, lights) {
   D.photoParents = photo([182.12, F + 1.8, -23.2], ['', 'MIGRATION OF \'79', 'Mama · Papa', 'Tomas · Rook'], '#5a6a7a');
   D.photoCrew = photo([182.12, F + 1.75, -24.4], ['', 'RUNNER CREW 4', 'Bram · Nia · Rook', '"never again"'], '#8a5a3a');
   D.bed = { pos: new THREE.Vector3(190.2, F + 0.6, -24.4) };
+  D.blanket.set(1, 1); // made bed with someone in it until the wake beat says otherwise
 
   // exterior walkway along the west face at y=14
   b.box('concrete', [178.5, F - 0.15, -20], [3, 0.3, 40], { color: 0xa8a294, tex: 2 });
@@ -432,3 +433,45 @@ export function buildCityDistrict(game, lights) {
   game.sky?.addZone([161.5, 0, -72.3], [173, 5.9, -57.2], 0.45, 'odile');
   return D;
 }
+
+// Rook's blanket: a height field draped over the mattress that follows the body under it.
+// set(torso, legs): how much of the torso / legs are under it (1 asleep, 0 out of bed). As the
+// torso leaves, the top edge folds back to the waist.
+function makeBlanket(root, F) {
+  const NX = 40, NZ = 26, X1 = 191.64, Z0 = -25.64, Z1 = -23.36, top = F + 0.622, bodyZ = -24.3;
+  const g = new THREE.BufferGeometry(), pos = new Float32Array((NX + 1) * (NZ + 1) * 3), col = new Float32Array(pos.length), idx = [];
+  const base = new THREE.Color(0x3d5a78), stripe = new THREE.Color(0x5a7896), tmp = new THREE.Color();
+  for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) {
+    const k = (i * (NZ + 1) + j) * 3, sv = i / NX;
+    tmp.copy(base).lerp(stripe, (Math.sin(sv * 34) > 0.82 ? 0.7 : 0) + (j === 0 || j === NZ ? 0.2 : 0));
+    col[k] = tmp.r; col[k + 1] = tmp.g; col[k + 2] = tmp.b;
+  }
+  for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) { const a = i * (NZ + 1) + j, b = a + 1, c = a + NZ + 1, d = c + 1; idx.push(a, b, c, b, d, c); }
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setIndex(idx);
+  const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, side: THREE.DoubleSide }));
+  mesh.receiveShadow = true; root.add(mesh);
+  const bump = (x, x0, x1, s) => { const a = Math.min(1, Math.max(0, (x - x0) / s)), b = Math.min(1, Math.max(0, (x1 - x) / s)); return a * a * (3 - 2 * a) * b * b * (3 - 2 * b); };
+  let last = '';
+  const set = (torso, legs) => {
+    const key = torso.toFixed(3) + legs.toFixed(3); if (key === last) return; last = key;
+    const X0 = 189.22 + (1 - torso) * 0.55; // the top edge slides down to the waist as the torso comes up
+    for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) {
+      const k = (i * (NZ + 1) + j) * 3, x = X0 + (X1 - X0) * (i / NX), z = Z0 + (Z1 - Z0) * (j / NZ);
+      // body under the covers: chest/belly, then two legs, toes pointing up
+      const dz = z - bodyZ;
+      const torsoH = 0.28 * torso * bump(x, 189.05, 190.0, 0.22) * Math.exp(-(((dz / 0.36) ** 2) ** 2));
+      const legH = legs * (0.19 * bump(x, 189.8, 190.55, 0.2) * Math.exp(-((dz / 0.2) ** 2))
+        + 0.3 * bump(x, 190.3, 190.8, 0.12) * Math.exp(-((dz / 0.24) ** 2)));
+      const rumple = (1 - legs) * 0.02 * Math.sin(x * 3.1 + z * 1.7) * Math.sin(z * 4.3 - x * 1.3);
+      const roll = 0.025 * Math.exp(-(((x - X0) / 0.05) ** 2)); // folded-over edge
+      let y = top + Math.max(torsoH, legH) + rumple + roll;
+      // drape over the sides and the foot of the bed
+      const over = Math.max(Math.abs(z + 24.5) - 0.96, x - 191.52, 0);
+      y -= over * 1.4;
+      pos[k] = x; pos[k + 1] = y; pos[k + 2] = z;
+    }
+    g.attributes.position.needsUpdate = true; g.computeVertexNormals(); g.computeBoundingSphere();
+  };
+  return { mesh, set };
+}
+

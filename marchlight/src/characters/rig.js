@@ -526,10 +526,26 @@ function buildBody(L, rest, P, lod) {
     const bpts = [V(-sx * 0.015, -0.0015, 0.0115), V(sx * 0.001, 0.0022, 0.0068), V(sx * 0.016, -0.0025, 0.0006)].map(p => p.add(bb)); // centreline ~2 mm off the brow surface
     M.add(taperTube(bpts, 0.0058, 0.0028, hi ? 6 : 4, 1), HM(0, 0, 0), browC, w1(bn === 'eyeL' ? 'browL' : 'browR'), MAT.hair);
   }
-  // mouth interior and teeth behind the lips
-  { const my = FACE.mouthY;
-    if (!far) M.add(ellipsoid(0.015, 0.0065, 0.009, seg(12)), HM(0, my - 0.001, 0.083), C('#2a0e0e'), w1('jaw'), MAT.lips);
-    if (hi) { M.add(roundedBox(0.017, 0.0044, 0.006, 0.0018, 1), HM(0, my + 0.0022, 0.0848), C('#e2dccf'), w1('head'), MAT.eye); M.add(roundedBox(0.015, 0.0038, 0.006, 0.0016, 1), HM(0, my - 0.0026, 0.0838), C('#d8d0c2'), w1('jaw'), MAT.eye); }
+  // block mouth (stylized): each lip is three flat blocks (a centre block and two angled side
+  // blocks that ride the mouth-corner bones), over a dark slot with block teeth. The upper lip
+  // stays with the head, the lower lip opens with the jaw.
+  { const my = FACE.mouthY, lipC = skin.clone().lerp(C('#a03a3c'), 0.5), lipD = lipC.clone().multiplyScalar(0.82);
+    const cornerW = (s, k) => [[B[s > 0 ? 'cornerL' : 'cornerR'], k], [B.head, 1 - k]];
+    const lowW = (s) => [[B[s > 0 ? 'cornerL' : 'cornerR'], 0.35], [B.jaw, 0.65]];
+    const blk = (w, h, d, x, y, z, ry, col, wts) => M.add(roundedBox(w, h, d, Math.min(w, h) * 0.2, 1), HM(x, y, z, 0, ry, 0), col, wts, MAT.lips);
+    // upper lip
+    blk(0.018, 0.0062, 0.008, 0, my + 0.0035, 0.0889, 0, lipC, w1('head'));
+    for (const sx of [-1, 1]) blk(0.0135, 0.0054, 0.008, sx * 0.0152, my + 0.003, 0.0868, sx * 0.3, lipC, cornerW(sx, 0.7));
+    // lower lip
+    blk(0.0165, 0.0068, 0.008, 0, my - 0.0037, 0.0886, 0, lipD, w1('jaw'));
+    for (const sx of [-1, 1]) blk(0.0125, 0.0058, 0.008, sx * 0.0142, my - 0.0032, 0.0866, sx * 0.3, lipD, lowW(sx));
+    if (!far) {
+      M.add(new THREE.BoxGeometry(0.032, 0.014, 0.012), HM(0, my - 0.002, 0.0765), C('#241010'), w1('head'), MAT.lips); // the slot behind the lips
+      if (hi) { // block teeth
+        for (let i = -2; i <= 1; i++) M.add(roundedBox(0.0046, 0.0042, 0.004, 0.0008, 1), HM((i + 0.5) * 0.0049, my + 0.0012, 0.0836, 0, 0, 0), C('#ece6da'), w1('head'), MAT.eye);
+        for (let i = -1; i <= 0; i++) M.add(roundedBox(0.0046, 0.0036, 0.004, 0.0008, 1), HM((i + 0.5) * 0.0049, my - 0.0016, 0.083, 0, 0, 0), C('#e0d8ca'), w1('jaw'), MAT.eye);
+      }
+    }
   }
   if (L.freckles && !far) for (let i = 0; i < (hi ? 26 : 8); i++) { const r = rng(i + 3); const sx = r.sign(), fx = 0.012 + r() * 0.03; M.add(ellipsoid(0.0022, 0.0022, 0.0015, 4), HM(sx * fx, 0.07 + r() * 0.02, 0.087 - fx * 0.32), skin.clone().multiplyScalar(0.72), w1('head'), MAT.skin); }
   if (L.glasses) {

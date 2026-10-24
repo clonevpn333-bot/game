@@ -53,7 +53,7 @@ export class Player {
     const old = this.char;
     if (old) old.group.removeFromParent();
     this.look = look;
-    this.char = buildCharacter({ ...look, tetherArm: look.tetherArm ?? true });
+    this.char = buildCharacter({ ...look, tetherArm: look.tetherArm ?? true }, { lods: false }); // the player is always the hero LOD
     this.anim = new Animator(this.char);
     this.game.engine.cityRoot.add(this.char.group);
     this.char.group.position.copy(this.pos);
