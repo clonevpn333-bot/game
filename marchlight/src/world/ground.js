@@ -352,7 +352,7 @@ export class Ground {
     });
     // pose them for a moment, then freeze
     for (let k = 0; k < 20; k++) this.stillPeople.forEach(a => { a.anim.update(0.05); });
-    this.stillPeople.forEach(a => { a.anim.setMode('freeze'); a.anim.speed = 0; a.char.mesh.castShadow = false; a.char.setLOD('high'); });
+    this.stillPeople.forEach(a => { a.anim.setMode('freeze'); a.anim.speed = 0; a.char.mesh.castShadow = false; a.noShadow = true; a.char.setLOD('high'); });
     // motionless dust hanging in the air above the town
     const dustG = new THREE.BufferGeometry(); const dp = [];
     for (let i = 0; i < 400; i++) dp.push((r() - 0.5) * 120, r() * 25, (r() - 0.5) * 120);

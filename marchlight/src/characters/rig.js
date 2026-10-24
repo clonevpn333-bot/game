@@ -79,26 +79,28 @@ export function characterDepthMaterials() {
 }
 
 // ----------------------------------------------------------------- shared material
-let SHARED_MAT = null;
-export function characterMaterial() {
-  if (SHARED_MAT) return SHARED_MAT;
+// Stylized shading: flat painted albedo per material, a soft cel band on direct light, a strong
+// rim and warm skin. No per-pixel noise (cheap, and it suits the look). `dqs` selects dual-
+// quaternion skinning (hero LOD); the cheaper LODs use plain linear blend skinning.
+const SHARED_MATS = {};
+export function characterMaterial(dqs = true) {
+  const key = dqs ? 'dqs' : 'lbs';
+  if (SHARED_MATS[key]) return SHARED_MATS[key];
   const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.72, metalness: 0.0 });
-  m.userData.rim = { value: new THREE.Color(0.32, 0.3, 0.28) };
+  m.userData.rim = { value: new THREE.Color(0.42, 0.4, 0.38) };
   m.onBeforeCompile = (sh) => {
-    patchDQS(sh);
+    if (dqs) patchDQS(sh);
     sh.uniforms.uRim = m.userData.rim;
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute float aMat; attribute float aMatP; attribute float aMatN; attribute vec3 aColP; attribute vec3 aColN; attribute float aMask; attribute float aPair;\nvarying float vMat; varying float vMatP; varying float vMatN; varying vec3 vColP; varying vec3 vColN; varying float vMask; varying float vPair; varying vec3 vRest; varying vec3 vRestN;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMat = aMat; vMatP = aMatP; vMatN = aMatN; vColP = aColP; vColN = aColN; vMask = aMask; vPair = aPair; vRest = position; vRestN = normal;');
+      .replace('#include <common>', '#include <common>\nattribute float aMat; attribute float aMatP; attribute float aMatN; attribute vec3 aColP; attribute vec3 aColN; attribute float aMask; attribute float aPair;\nvarying float vMat; varying float vMatP; varying float vMatN; varying vec3 vColP; varying vec3 vColN; varying float vMask; varying float vPair;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvMat = aMat; vMatP = aMatP; vMatN = aMatN; vColP = aColP; vColN = aColN; vMask = aMask; vPair = aPair;');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
-        uniform vec3 uRim; varying float vMat; varying float vMatP; varying float vMatN; varying vec3 vColP; varying vec3 vColN; varying float vMask; varying float vPair; varying vec3 vRest; varying vec3 vRestN;
+        uniform vec3 uRim; varying float vMat; varying float vMatP; varying float vMatN; varying vec3 vColP; varying vec3 vColN; varying float vMask; varying float vPair;
         float gMat;
-        float ch(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
-        float cn(vec3 p){ vec3 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
-          return mix(mix(mix(ch(i), ch(i+vec3(1,0,0)), f.x), mix(ch(i+vec3(0,1,0)), ch(i+vec3(1,1,0)), f.x), f.y),
-                     mix(mix(ch(i+vec3(0,0,1)), ch(i+vec3(1,0,1)), f.x), mix(ch(i+vec3(0,1,1)), ch(i+vec3(1,1,1)), f.x), f.y), f.z); }
         float matIs(float id){ return 1.0 - step(0.5, abs(gMat - id)); }`)
+      .replace('#include <lights_physical_pars_fragment>', THREE.ShaderChunk.lights_physical_pars_fragment
+        .replace('vec3 irradiance = dotNL * directLight.color;', 'vec3 irradiance = (smoothstep(0.0, 0.14, dotNL) * 0.7 + dotNL * 0.3) * directLight.color; // soft cel band'))
       .replace('#include <color_fragment>', `#include <color_fragment>
         // two-layer colour: an antialiased boundary from the interpolated signed distance
         // (only inside triangles whose vertices all describe the same boundary)
@@ -107,52 +109,23 @@ export function characterMaterial() {
           float wm = max(fwidth(vMask) * 0.8, 1e-5), kM = smoothstep(-wm, wm, vMask);
           diffuseColor.rgb = diffuse * mix(vColN, vColP, kM); gMat = kM > 0.5 ? vMatP : vMatN;
         }
-        float mSkin = matIs(0.0), mCloth = matIs(1.0), mLeather = matIs(2.0), mMetal = matIs(3.0), mHair = matIs(4.0), mEye = matIs(5.0), mRubber = matIs(6.0), mCanvas = matIs(7.0), mLips = matIs(8.0), mKnit = matIs(9.0);
-        float mottle = cn(vRest * 30.0) * 0.6 + cn(vRest * 90.0) * 0.4;
-        float strands = cn(vec3(vRest.x * 420.0, vRest.y * 40.0, vRest.z * 420.0));
-        float grain = cn(vRest * 260.0);
-        float alb = 1.0;
-        alb *= mix(1.0, 0.9 + mottle * 0.2, mCloth + mCanvas + mKnit);
-        alb *= mix(1.0, 0.8 + grain * 0.35, mLeather);
-        alb *= mix(1.0, 0.7 + strands * 0.55, mHair);
-        alb *= mix(1.0, 0.93 + mottle * 0.12, mSkin);
-        diffuseColor.rgb *= alb;`)
+        float mSkin = matIs(0.0), mCloth = matIs(1.0), mLeather = matIs(2.0), mMetal = matIs(3.0), mHair = matIs(4.0), mEye = matIs(5.0), mRubber = matIs(6.0), mCanvas = matIs(7.0), mLips = matIs(8.0), mKnit = matIs(9.0);`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-        roughnessFactor = mSkin * (0.52 + cn(vRest * 120.0) * 0.12) + mCloth * 0.88 + mCanvas * 0.8 + mKnit * 0.95 + mLeather * (0.42 + grain * 0.2)
-          + mMetal * 0.28 + mHair * (0.64 + strands * 0.16) + mEye * 0.06 + mRubber * 0.95 + mLips * 0.35;`)
+        roughnessFactor = mSkin * 0.58 + mCloth * 0.88 + mCanvas * 0.82 + mKnit * 0.95 + mLeather * 0.5
+          + mMetal * 0.3 + mHair * 0.6 + mEye * 0.08 + mRubber * 0.95 + mLips * 0.45;`)
       .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
         metalnessFactor = mMetal * 0.85;`)
-      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
-        {
-          // procedural micro-relief (heights in metres): weave, twill, knit, leather grain,
-          // hair strands, skin pores; each band fades out once a pixel covers its period
-          float fp = length(fwidth(vRest)) + 1e-6;
-          float w1 = 1.0 - smoothstep(0.0003, 0.0011, fp), w2 = 1.0 - smoothstep(0.0012, 0.004, fp);
-          float weave = sin(vRest.x * 4200.0) * sin(vRest.y * 4200.0 + vRest.z * 4200.0);
-          float twill = sin((vRest.x + vRest.y + vRest.z) * 3200.0);
-          float knit = sin(vRest.x * 2300.0 + sin(vRest.y * 1150.0) * 2.0) * sin(vRest.y * 1150.0);
-          float pores = cn(vRest * 1700.0), wrink = cn(vRest * 140.0 + 3.0);
-          float h = (mCloth * weave * 0.00007 + mCanvas * twill * 0.00009 + mKnit * knit * 0.00016 + mSkin * pores * 0.00003) * w1
-                  + (mLeather * grain * 0.00012 + mHair * strands * 0.0002 + (mCloth + mCanvas + mKnit) * wrink * 0.00035 + mSkin * cn(vRest * 420.0) * 0.00004) * w2;
-          vec3 dpx = dFdx(-vViewPosition), dpy = dFdy(-vViewPosition);
-          float dhx = dFdx(h), dhy = dFdy(h);
-          vec3 r1 = cross(dpy, normal), r2 = cross(normal, dpx);
-          float det = dot(dpx, r1);
-          vec3 grad = sign(det) * (dhx * r1 + dhy * r2);
-          vec3 nn = abs(det) * normal - grad;
-          if (dot(nn, nn) > 1e-36 && abs(det) > 1e-24) normal = normalize(nn); // tiny far triangles underflow: keep the plain normal
-        }`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-        float rimF = pow(1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0), 3.0);
-        totalEmissiveRadiance += uRim * rimF * diffuseColor.rgb * (1.2 + mHair * 0.8);
-        // fake subsurface warmth on skin
-        totalEmissiveRadiance += diffuseColor.rgb * vec3(0.12, 0.035, 0.02) * (mSkin + mLips);`)
+        float rimF = smoothstep(0.55, 0.85, 1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0));
+        totalEmissiveRadiance += uRim * rimF * diffuseColor.rgb * (1.0 + mHair * 0.6);
+        // warm light through skin
+        totalEmissiveRadiance += diffuseColor.rgb * vec3(0.13, 0.04, 0.025) * (mSkin + mLips);`)
       // never hand a NaN/Inf pixel to the bloom chain (it smears into black blocks)
       .replace('#include <dithering_fragment>', `#include <dithering_fragment>
         if (any(isnan(gl_FragColor)) || any(isinf(gl_FragColor))) gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);`);
   };
-  SHARED_MAT = m;
-  return m;
+  m.customProgramCacheKey = () => 'char-' + key;
+  return (SHARED_MATS[key] = m);
 }
 
 // ----------------------------------------------------------------- geometry helpers
@@ -383,7 +356,7 @@ export function buildCharacter(lookIn = {}, { lods = true } = {}) {
   const kid = L.kid; const H = (kid ? 0.62 : 1) * L.height;
   const bw = 0.88 + L.build * 0.28, fr = L.frame;
   const sh = (1.08 - fr * 0.16) * bw, hw = (0.92 + fr * 0.14) * bw;
-  const headS = kid ? 1.25 : 1.0;
+  const headS = kid ? 1.42 : 1.2; // stylized: big heads (about six heads tall)
   const rest = {
     root: V(0, 0, 0), hips: V(0, 0.92, 0), spine: V(0, 1.03, 0), chest: V(0, 1.2, 0), neck: V(0, 1.4, 0), head: V(0, 1.468, 0),
     jaw: V(0, 1.468, 0).add(V(...FACE.jaw)), eyeL: V(FACE.eye[0], 1.468 + FACE.eye[1], FACE.eye[2]), eyeR: V(-FACE.eye[0], 1.468 + FACE.eye[1], FACE.eye[2]),
@@ -415,16 +388,17 @@ export function buildCharacter(lookIn = {}, { lods = true } = {}) {
   for (const n of ['armL', 'armR', 'thighL', 'thighR']) bones[B[n]].rotation.z = 0;
   holder.updateMatrixWorld(true);
   const meshes = {};
-  for (const lod of (lods ? ['high', 'low'] : ['high'])) {
+  for (const lod of (lods ? ['high', 'low', 'far'] : ['high'])) {
     const geo = buildBody(L, rest, { sh, hw, bw, fr, headS, kid, A }, lod);
-    const mesh = new THREE.SkinnedMesh(geo, characterMaterial());
+    const mesh = new THREE.SkinnedMesh(geo, characterMaterial(lod === 'high'));
     holder.add(mesh); mesh.updateMatrixWorld(true);
     mesh.bind(skeleton, mesh.matrixWorld.clone());
     mesh.castShadow = true; mesh.receiveShadow = true; mesh.frustumCulled = false;
-    const dm = characterDepthMaterials(); mesh.customDepthMaterial = dm.depth; mesh.customDistanceMaterial = dm.dist;
+    if (lod === 'high') { const dm = characterDepthMaterials(); mesh.customDepthMaterial = dm.depth; mesh.customDistanceMaterial = dm.dist; }
     meshes[lod] = mesh;
   }
   if (meshes.low) meshes.low.visible = false;
+  if (meshes.far) meshes.far.visible = false;
   const bonesBy = Object.fromEntries(BONES.map((n, i) => [n, bones[i]]));
   const sockets = {};
   sockets.gripR = new THREE.Object3D(); sockets.gripR.position.set(0, -0.075, 0.025); bonesBy.handR.add(sockets.gripR);
@@ -440,15 +414,16 @@ export function buildCharacter(lookIn = {}, { lods = true } = {}) {
     const strip = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.1, 0.02), ring.material); strip.position.set(0.048, -0.12, 0.0); bonesBy.foreL.add(strip);
   }
   const char = { group, mesh: meshes.high, meshLow: meshes.low, bones: bonesBy, boneList: bones, rest, look: L, sockets, height: H * 1.73, lod: 'high' };
-  char.setLOD = (lod) => { if (!meshes.low || char.lod === lod) return; char.lod = lod; meshes.high.visible = lod === 'high'; meshes.low.visible = lod === 'low'; };
+  char.setLOD = (lod) => { if (!meshes.low || char.lod === lod) return; char.lod = lod; for (const k in meshes) meshes[k].visible = k === lod; };
+  char.meshes = meshes;
   return char;
 }
 
 // ----------------------------------------------------------------- body
 function buildBody(L, rest, P, lod) {
   const { sh, hw, bw, fr, headS, kid, A } = P;
-  const hi = lod === 'high';
-  const S = hi ? 1 : 0.55; // segment scale
+  const hi = lod === 'high', far = lod === 'far';
+  const S = hi ? 1 : far ? 0.35 : 0.55; // segment scale
   const seg = (n) => Math.max(5, Math.round(n * S));
   const M = new Mesher(lod, A);
   const C = c => new THREE.Color(c);
@@ -530,9 +505,11 @@ function buildBody(L, rest, P, lod) {
   for (const [bn, sx] of [['eyeL', 1], ['eyeR', -1]]) {
     const e = rel(bn), R = FACE.eyeR;
     M.add(ellipsoid(R, R, R, seg(16)), HM(e.x, e.y, e.z), C('#e8e2d8'), w1(bn), MAT.eye);
-    M.add(ellipsoid(0.0059, 0.0059, 0.0024, seg(16)), HM(e.x, e.y, e.z + R - 0.0012), (lp) => { const t = Math.min(1, Math.hypot(lp.x, lp.y) / 0.0059); return iris.clone().multiplyScalar(1.3 - 0.8 * t * t * t); }, w1(bn), MAT.eye);
-    M.add(ellipsoid(0.0026, 0.0026, 0.0012, seg(10)), HM(e.x, e.y, e.z + R + 0.0008), C('#070606'), w1(bn), MAT.eye);
-    M.add(ellipsoid(0.0011, 0.0011, 0.0006, 6), HM(e.x + 0.0018, e.y + 0.0022, e.z + R + 0.0012), C('#ffffff'), w1(bn), MAT.eye);
+    // big stylized iris and pupil, painted catchlight
+    const IR = R * 0.56, PR = R * 0.25;
+    M.add(ellipsoid(IR, IR, IR * 0.38, seg(16)), HM(e.x, e.y, e.z + R - IR * 0.22), (lp) => { const t = Math.min(1, Math.hypot(lp.x, lp.y) / IR); return iris.clone().multiplyScalar(1.25 - 0.7 * t * t * t); }, w1(bn), MAT.eye);
+    M.add(ellipsoid(PR, PR, PR * 0.45, seg(10)), HM(e.x, e.y, e.z + R + IR * 0.1), C('#070606'), w1(bn), MAT.eye);
+    if (!far) M.add(ellipsoid(PR * 0.5, PR * 0.5, PR * 0.25, 6), HM(e.x + IR * 0.3, e.y + IR * 0.36, e.z + R + IR * 0.2), C('#ffffff'), w1(bn), MAT.eye);
     if (hi) {
       const lidName = bn === 'eyeL' ? 'lidL' : 'lidR';
       const lidG = new THREE.SphereGeometry(R + 0.0011, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.36);
@@ -543,14 +520,14 @@ function buildBody(L, rest, P, lod) {
     const bb = rel(bn === 'eyeL' ? 'browL' : 'browR');
     const browC = L.brows ? C(L.brows) : hair.clone().multiplyScalar(0.75);
     const bpts = [V(-sx * 0.015, -0.0015, 0.0025), V(sx * 0.001, 0.0022, 0.0035), V(sx * 0.016, -0.0025, -0.0005)].map(p => p.add(bb));
-    M.add(taperTube(bpts, 0.0042, 0.0018, hi ? 6 : 4, 1), HM(0, 0, 0), browC, w1(bn === 'eyeL' ? 'browL' : 'browR'), MAT.hair);
+    M.add(taperTube(bpts, 0.0056, 0.0026, hi ? 6 : 4, 1), HM(0, 0, 0), browC, w1(bn === 'eyeL' ? 'browL' : 'browR'), MAT.hair);
   }
   // mouth interior and teeth behind the lips
   { const my = FACE.mouthY;
-    M.add(ellipsoid(0.015, 0.0065, 0.009, seg(12)), HM(0, my - 0.001, 0.083), C('#2a0e0e'), w1('jaw'), MAT.lips);
+    if (!far) M.add(ellipsoid(0.015, 0.0065, 0.009, seg(12)), HM(0, my - 0.001, 0.083), C('#2a0e0e'), w1('jaw'), MAT.lips);
     if (hi) { M.add(roundedBox(0.017, 0.0044, 0.006, 0.0018, 1), HM(0, my + 0.0022, 0.0848), C('#e2dccf'), w1('head'), MAT.eye); M.add(roundedBox(0.015, 0.0038, 0.006, 0.0016, 1), HM(0, my - 0.0026, 0.0838), C('#d8d0c2'), w1('jaw'), MAT.eye); }
   }
-  if (L.freckles) for (let i = 0; i < (hi ? 26 : 8); i++) { const r = rng(i + 3); const sx = r.sign(), fx = 0.012 + r() * 0.03; M.add(ellipsoid(0.0022, 0.0022, 0.0015, 4), HM(sx * fx, 0.07 + r() * 0.02, 0.087 - fx * 0.32), skin.clone().multiplyScalar(0.72), w1('head'), MAT.skin); }
+  if (L.freckles && !far) for (let i = 0; i < (hi ? 26 : 8); i++) { const r = rng(i + 3); const sx = r.sign(), fx = 0.012 + r() * 0.03; M.add(ellipsoid(0.0022, 0.0022, 0.0015, 4), HM(sx * fx, 0.07 + r() * 0.02, 0.087 - fx * 0.32), skin.clone().multiplyScalar(0.72), w1('head'), MAT.skin); }
   if (L.glasses) {
     const fc = C('#1d1d1f'), e = FACE.eye;
     for (const sx of [-1, 1]) M.add(new THREE.TorusGeometry(0.0168, 0.0018, 6, 20), HM(sx * e[0], e[1], 0.094), fc, w1('head'), MAT.metal);
@@ -562,7 +539,7 @@ function buildBody(L, rest, P, lod) {
     for (const sx of [-1, 1]) { M.add(new THREE.CylinderGeometry(0.02, 0.022, 0.016, seg(14)), HM(sx * 0.029, 0.19, 0.08, Math.PI / 2 - 0.6, 0, 0), C('#6a5a48'), w1('head'), MAT.metal); M.add(new THREE.CylinderGeometry(0.016, 0.016, 0.018, seg(14)), HM(sx * 0.029, 0.192, 0.083, Math.PI / 2 - 0.6, 0, 0), C('#3f8aa8'), w1('head'), MAT.eye); }
   }
   if (L.earrings) for (const sx of [-1, 1]) M.add(new THREE.TorusGeometry(0.0065, 0.0015, 4, 10), HM(sx * 0.078, 0.076, -0.008), C('#d8b45a'), w1('head'), MAT.metal);
-  buildHairExtras(M, L, hair, rest, hi, hairPiece, headS);
+  buildHairExtras(M, L, hair, rest, hi);
 
   // Tether gauntlet (left forearm): bracer, coil housings, cable to the palm
   if (L.tetherArm) {
@@ -578,7 +555,7 @@ function buildBody(L, rest, P, lod) {
   for (const s of ['L', 'R']) {
     const sx = s === 'L' ? 1 : -1;
     const t0 = rest['thigh' + s], k0 = rest['shin' + s];
-    if (outfit === 'runner') {
+    if (outfit === 'runner' && !far) {
       M.add(roundedBox(0.085, 0.1, 0.045, 0.02, 2), T(k0.x, k0.y - 0.025, k0.z + 0.058), C('#26282c'), w1('shin' + s), MAT.rubber);
       M.add(roundedBox(0.03, 0.022, 0.03, 0.006, 1), T(k0.x + sx * 0.0, k0.y - 0.025, k0.z + 0.078), C('#3a3d42'), w1('shin' + s), MAT.metal);
       M.add(roundedBox(0.055, 0.1, 0.075, 0.015, 2), T(t0.x + sx * 0.07 * hw, 0.68, 0.008), pants.clone().multiplyScalar(0.85), w1('thigh' + s), MAT.canvas);
@@ -644,40 +621,18 @@ function buildBody(L, rest, P, lod) {
 }
 
 // ----------------------------------------------------------------- hair extras
-// The scalp shell is sculpted (anatomy.js); tails, braids and a few loose strands are added here.
-function buildHairExtras(M, L, hair, rest, hi, piece, headS) {
+// The scalp shell is sculpted (anatomy.js); tails and braids are added here as chunky stylized shapes.
+function buildHairExtras(M, L, hair, rest, hi) {
   const style = L.hairStyle;
   const r = rng(style.length * 17 + 3);
-  const C0 = hair, C2 = hair.clone().lerp(new THREE.Color(1, 0.95, 0.85), 0.1);
-  // strand clumps grown from the sculpted shell along the style's flow: they break up the
-  // silhouette and the specular so the hair stops reading as a helmet
-  if (hi && piece && style !== 'shaved' && style !== 'curls') {
-    const { mesh } = piece, hp = rest.head, n = mesh.count;
-    const flow = (p) => style === 'swept' ? V(-0.35, 0.15, -1) : style === 'long' ? V(p.x * 2, -1, -0.3) : style === 'crop' ? V(p.x * 0.6, -0.4, -1) : V(0, 0.2, -1).add(V(...FACE.hair1).sub(p).multiplyScalar(6));
-    const want = style === 'long' ? 110 : 80;
-    for (let k = 0, tries = 0; k < want && tries < want * 20; tries++) {
-      const i = (r() * n) | 0;
-      const p = V(mesh.pos[i * 3], mesh.pos[i * 3 + 1], mesh.pos[i * 3 + 2]), nn = V(mesh.nrm[i * 3], mesh.nrm[i * 3 + 1], mesh.nrm[i * 3 + 2]);
-      if (nn.y < -0.1 || p.y < (style === 'long' ? 0.06 : 0.135) || nn.z > 0.85) continue;
-      const f = flow(p); f.addScaledVector(nn, -f.dot(nn)).normalize();
-      const len = (style === 'long' ? 0.05 : 0.026) * (0.7 + r() * 0.6), rad = 0.0026 + r() * 0.0012;
-      const p0 = p.clone().addScaledVector(nn, -0.001), p1 = p.clone().addScaledVector(f, len * 0.5).addScaledVector(nn, 0.0014), p2 = p.clone().addScaledVector(f, len).addScaledVector(nn, -0.001);
-      const pts = [p0, p1, p2].map(q => q.multiplyScalar(headS).add(hp));
-      M.add(taperTube(pts, rad * headS, 0.0004, 4, 0.45), T(0, 0, 0), C0.clone().multiplyScalar(0.8 + r() * 0.15), [[B.head, 1]], MAT.hair);
-      k++;
-    }
-  }
+  const C0 = hair;
   if (style === 'ponytail' || style === 'braid') {
     const r0 = rest.hair1.clone(), r1 = rest.hair2.clone();
     M.add(new THREE.TorusGeometry(0.022, 0.006, 6, 12), TR(r0.x, r0.y + 0.02, r0.z - 0.02, Math.PI / 2 - 0.4, 0, 0), new THREE.Color('#2a2a2a'), [[B.head, 1]], MAT.rubber);
     if (style === 'braid') { for (let i = 0; i < 7; i++) M.add(ellipsoid(0.024, 0.03, 0.024, hi ? 10 : 6), T(r1.x + (i % 2 ? 0.006 : -0.006), r1.y + 0.06 - i * 0.035, r1.z - i * 0.003), i % 2 ? C0 : C0.clone().multiplyScalar(0.8), [[i < 2 ? B.hair1 : B.hair2, 1]], MAT.hair); }
     else {
-      const N = hi ? 12 : 1;
-      for (let k = 0; k < N; k++) {
-        const off = hi ? V((r() - 0.5) * 0.026, 0, (r() - 0.5) * 0.018) : V(0, 0, 0);
-        const pts = [r0.clone().add(V(0, 0.02, -0.02)).add(off.clone().multiplyScalar(0.2)), r0.clone().lerp(r1, 0.5).add(off).add(V(0, 0, -0.03)), r1.clone().add(off), r1.clone().add(V(off.x * 1.5, -0.14, -0.02))];
-        M.add(taperTube(pts, hi ? 0.016 : 0.038, 0.003, hi ? 6 : 8, hi ? 0.8 : 1), T(0, 0, 0), k % 2 ? C0 : C2, (lp, v) => { const t = smooth(r0.y, r1.y, v.y); return [[B.hair1, t], [B.hair2, 1 - t]]; }, MAT.hair);
-      }
+      const pts = [r0.clone().add(V(0, 0.02, -0.02)), r0.clone().lerp(r1, 0.5).add(V(0, 0, -0.035)), r1.clone(), r1.clone().add(V(0, -0.14, -0.02))];
+      M.add(taperTube(pts, 0.04, 0.006, hi ? 12 : 7, 1), T(0, 0, 0), C0, (lp, v) => { const t = smooth(r0.y, r1.y, v.y); return [[B.hair1, t], [B.hair2, 1 - t]]; }, MAT.hair);
     }
   }
 }

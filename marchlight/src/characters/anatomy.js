@@ -64,7 +64,7 @@ export function sculptBody(P, L, B, lod) {
 
 function buildBodyField(rest, P, g, B, lod) {
   const { sh, hw, bw, fr, kid } = P;
-  const wst = bw * 0.6 + 0.4;
+  const wst = (bw * 0.6 + 0.4) * 0.9;
   const fem = fr > 0.55 && !kid;
   const bust = fem ? 0.04 + (fr - 0.55) * 0.05 : 0;
   const hem = g.hem;
@@ -119,7 +119,7 @@ function buildBodyField(rest, P, g, B, lod) {
   torso.add(ellipsoid(0, 0.915, -0.005, 0.148 * hw, 0.105, 0.1))
     .add(ellipsoid(0.068 * hw, 0.855, -0.042, 0.08 * hw, 0.09, 0.074)).add(ellipsoid(-0.068 * hw, 0.855, -0.042, 0.08 * hw, 0.09, 0.074))
     .add(ellipsoid(0, 1.04, 0.0, 0.128 * wst, 0.11, 0.09 * (0.7 + bw * 0.3)))
-    .add(ellipsoid(0, 1.2, -0.008, 0.142 * sh, 0.165, 0.104))
+    .add(ellipsoid(0, 1.21, -0.008, 0.152 * sh, 0.165, 0.108))
     .add(ellipsoid(0.066 * sh, 1.258, 0.032, 0.074 * sh, 0.058, 0.068), 0.04).add(ellipsoid(-0.066 * sh, 1.258, 0.032, 0.074 * sh, 0.058, 0.068), 0.04)
     .add(TRAP_L).add(TRAP_R)
     .add(ellipsoid(0, 1.29, -0.06, 0.12 * sh, 0.09, 0.06), 0.05) // upper back / scapulae
@@ -160,7 +160,7 @@ function buildBodyField(rest, P, g, B, lod) {
     };
     const up = new Part('upper' + s, { k: 0.025, xf: axf, weights: upW, tag: sleeveTag(1.11), bump: elbowFolds, bumpAmp: 0.004 });
     up.add(roundCone(add3(a, 0, 0.012, 0), add3(e, 0, 0, 0), 0.045 * bw, 0.037 * bw))
-      .add(ellipsoid(a.x + sx * 0.008, a.y - 0.03, a.z, 0.043 * bw, 0.066, 0.049 * bw), 0.03)
+      .add(ellipsoid(a.x + sx * 0.008, a.y - 0.03, a.z, 0.048 * bw, 0.07, 0.054 * bw), 0.03)
       .add(ellipsoid(a.x + sx * 0.002, 1.2, a.z + 0.01, 0.034 * bw, 0.075, 0.037 * bw), 0.03);
     if (g.sleeve === 'rolled') up.add(torus(e.x, 1.112, e.z, 0.044 * bw, 0.011), 0.008);
     const foreW = (x, y, z) => { const t = sstep(1.0, 1.08, y), u = handFrac(y); return [[B['fore' + s], (1 - t * 0.5) * (1 - u)], [B['arm' + s], t * 0.5], [B['hand' + s], u]]; };
@@ -171,7 +171,7 @@ function buildBodyField(rest, P, g, B, lod) {
     };
     const foreBump = (x, y, z) => g.sleeve === 'long' ? nz(x, y, z, 30) * 0.0018 + Math.sin(y * 240 + nz(x, y, z, 20) * 6) * 0.0012 * sstep(0.9, 0.95, y) * sstep(1.0, 0.96, y) : 0;
     const fore = new Part('fore' + s, { k: 0.02, xf: axf, weights: foreW, tag: foreTag, bump: foreBump, bumpAmp: 0.003 });
-    fore.add(roundCone(add3(e, 0, 0.005, 0), [h.x, 0.835, h.z], 0.041 * bw, 0.026 * bw))
+    fore.add(roundCone(add3(e, 0, 0.005, 0), [h.x, 0.835, h.z], 0.044 * bw, 0.028 * bw))
       .add(ellipsoid(e.x + sx * 0.004, 0.99, e.z + 0.004, 0.042 * bw, 0.075, 0.04 * bw), 0.03)
       .add(ellipsoid(h.x, 0.858, h.z, 0.021, 0.04, 0.027), 0.02);
     if (g.cuff) fore.add(torus(h.x, 0.885, h.z, 0.032 * bw, 0.0085, null, 0.85, 1), 0.006);
@@ -207,20 +207,20 @@ function buildBodyField(rest, P, g, B, lod) {
     const foot = new Part('foot' + s, { k: 0.018, xf: lxf, weights: ftW, tag: ftTag, bump: ftBump, bumpAmp: 0.002 });
     const fx = f0.x, fz = f0.z;
     foot.add(roundCone([fx, 0.07, fz - 0.008], [fx, bootTop + 0.006, fz - 0.008], 0.05 * bw, 0.055 * bw))
-      .add(ellipsoid(fx, 0.052, fz - 0.035, 0.042, 0.052, 0.05), 0.02)
-      .add(roundBox(fx, 0.05, fz + 0.045, 0.024, 0.02, 0.07, 0.024), 0.025)
-      .add(ellipsoid(fx + sx * 0.003, 0.04, fz + 0.132, 0.046, 0.034, 0.052), 0.025)
+      .add(ellipsoid(fx, 0.055, fz - 0.035, 0.047, 0.055, 0.054), 0.02)
+      .add(roundBox(fx, 0.052, fz + 0.045, 0.028, 0.022, 0.07, 0.026), 0.025)
+      .add(ellipsoid(fx + sx * 0.003, 0.043, fz + 0.135, 0.052, 0.039, 0.056), 0.025)
       .add(torus(fx, bootTop + 0.002, fz - 0.008, 0.055 * bw, 0.0065), 0.004)
-      .hard(roundBox(fx + sx * 0.002, 0.0135, fz + 0.045, 0.04, 0.0062, 0.122, 0.0075));
+      .hard(roundBox(fx + sx * 0.002, 0.0145, fz + 0.045, 0.045, 0.0072, 0.128, 0.008));
     parts.push(up, fore, thigh, shin, foot);
     edges.push([torso, up, 0.035], [up, fore, 0.03], [torso, thigh, 0.055], [thigh, shin, 0.035], [shin, foot, 0.02]);
   }
   const field = new Field(parts, edges);
-  const h = lod === 'high' ? 0.0105 : 0.025;
+  const h = { high: 0.016, low: 0.03, far: 0.055 }[lod];
   // clip off the hands (sculpted finer) and the top of the neck (the head piece owns it)
   const neckClip = (x, y, z) => Math.max(NECK_SEAM - y, Math.hypot(x, z + 0.025) - 0.09);
   const wristClip = (x, y, z) => (Math.abs(x) < 0.2 || y > 1.2 || y < 0.65) ? 1 : WRIST_T - wristAlong(x, y, Math.sign(x));
-  const mesh = meshField(field, { h, clip: [neckClip, wristClip], nEps: lod === 'high' ? 0.0025 : 0.006 });
+  const mesh = meshField(field, { h, clip: [neckClip, wristClip], nEps: h * 0.3 });
   const at = attributes(field, mesh, { sigma: 0.014, aoStep: 0.02, aoN: 3, aoK: 1.3 });
   // the neck matches the head piece's (unoccluded) shading where the two meet
   for (let v = 0; v < mesh.count; v++) { const y = mesh.pos[v * 3 + 1]; if (y > 1.4 && Math.hypot(mesh.pos[v * 3], mesh.pos[v * 3 + 2] + 0.025) < 0.07) at.ao[v] += (1 - at.ao[v]) * sstep(1.4, 1.425, y); }
@@ -231,7 +231,7 @@ function buildBodyField(rest, P, g, B, lod) {
 // Head-local coordinates relative to the head bone (the skull base): chin ~0, crown ~0.235,
 // adult proportions (head 15.6 cm wide, eyes 6.4 cm apart, 12 mm eyeballs). Kids scale by headS.
 export const FACE = {
-  eye: [0.032, 0.112, 0.074], eyeR: 0.0122, brow: [0.033, 0.1315, 0.0885], mouthY: 0.0442, corner: [0.0178, 0.0442, 0.09],
+  eye: [0.033, 0.11, 0.0715], eyeR: 0.0148, brow: [0.033, 0.1315, 0.0885], mouthY: 0.0442, corner: [0.0178, 0.0442, 0.09],
   jaw: [0, 0.075, -0.004], hair1: [0, 0.17, -0.1], hair2: [0, 0.03, -0.122], ear: [0.075, 0.104, -0.012],
 };
 function neckRC() { return roundCone([0, -0.11, -0.03], [0, 0.05, -0.019], 0.056, 0.047); }
@@ -245,30 +245,27 @@ export function headShape(P, L) {
     .add(ellipsoid(0.045, 0.094, 0.054, 0.022, 0.014, 0.022), 0.016).add(ellipsoid(-0.045, 0.094, 0.054, 0.022, 0.014, 0.022), 0.016) // cheekbones
     .add(ellipsoid(0.034, 0.07, 0.058, 0.019 * ch, 0.017 * ch, 0.02), 0.016).add(ellipsoid(-0.034, 0.07, 0.058, 0.019 * ch, 0.017 * ch, 0.02), 0.016) // cheeks
     .add(ellipsoid(0, 0.052, 0.03, 0.052 * jw, 0.048, 0.052), 0.022)                              // lower face
-    .add(roundCone([0.053 * jw, 0.048, -0.026], [0.016, 0.012, 0.058], 0.01, 0.0095), 0.024).add(roundCone([-0.053 * jw, 0.048, -0.026], [-0.016, 0.012, 0.058], 0.01, 0.0095), 0.024) // jaw line
+    .add(roundCone([0.052 * jw, 0.048, -0.026], [0.016, 0.014, 0.058], 0.01, 0.0095), 0.03).add(roundCone([-0.052 * jw, 0.048, -0.026], [-0.016, 0.014, 0.058], 0.01, 0.0095), 0.03) // jaw line
     .add(ellipsoid(0, 0.014, 0.065, 0.019 * jw, 0.016, 0.015), 0.03)                             // chin
     .add(ellipsoid(0, 0.047, 0.077, 0.026, 0.023, 0.02), 0.024)                                  // muzzle
     .add(capsule([0, 0.128, 0.088], [0.04, 0.1295, 0.08], fem ? 0.0068 : 0.0085), 0.016).add(capsule([0, 0.128, 0.088], [-0.04, 0.1295, 0.08], fem ? 0.0068 : 0.0085), 0.016); // brow ridge
   // nose
   const nk = kid ? 0.82 : 1;
-  head.add(roundCone([0, 0.117, 0.088], [0, 0.079, 0.088 + 0.019 * nk], 0.0062, 0.0074), 0.01)
-    .add(ellipsoid(0, 0.0748, 0.088 + 0.021 * nk, 0.0082, 0.0078, 0.008), 0.007)
-    .add(ellipsoid(0.0088, 0.071, 0.0985, 0.0056, 0.0052, 0.0062), 0.005).add(ellipsoid(-0.0088, 0.071, 0.0985, 0.0056, 0.0052, 0.0062), 0.005);
+  head.add(roundCone([0, 0.112, 0.086], [0, 0.079, 0.086 + 0.017 * nk], 0.0058, 0.0078), 0.014)
+    .add(ellipsoid(0, 0.0765, 0.086 + 0.0185 * nk, 0.0095, 0.0075, 0.0078), 0.012);
   // lips
   const my = F.mouthY;
-  const lu = ellipsoid(0, my + 0.0046, 0.0918, 0.0172, fem ? 0.0052 : 0.0044, 0.0068);
-  const ll = ellipsoid(0, my - 0.0049, 0.0905, 0.0156, fem ? 0.006 : 0.0053, 0.007);
+  const lu = ellipsoid(0, my + 0.0038, 0.0885, 0.016, fem ? 0.0042 : 0.0034, 0.0062);
+  const ll = ellipsoid(0, my - 0.0042, 0.0875, 0.0148, fem ? 0.0048 : 0.004, 0.0064);
   head.add(lu, 0.004).add(ll, 0.004);
   // eye sockets open around the eyeballs; an upper-lid fold and a lower-lid ridge
   for (const sx of [-1, 1]) {
-    head.sub(ellipsoid(sx * ex, ey, 0.083, 0.0142, 0.0074, 0.012), 0.004);
-    head.add(ellipsoid(sx * ex, ey + 0.0068, 0.0815, 0.0142, 0.0036, 0.0085), 0.004);
-    head.add(ellipsoid(sx * ex, ey - 0.0072, 0.0828, 0.0122, 0.0026, 0.0062), 0.0035);
+    head.sub(ellipsoid(sx * ex, ey, 0.083, 0.0168, 0.0096, 0.013), 0.005);
+    head.add(ellipsoid(sx * ex, ey + 0.0098, 0.0805, 0.0165, 0.004, 0.009), 0.005);
   }
   // ears: a shell with a rim
   for (const sx of [-1, 1]) {
-    head.add(ellipsoid(sx * F.ear[0], F.ear[1], F.ear[2], 0.0085, 0.027, 0.0165, [0, sx * 0.42, sx * -0.1]), 0.006);
-    head.sub(ellipsoid(sx * (F.ear[0] + 0.0062), F.ear[1] - 0.002, F.ear[2] + 0.002, 0.0038, 0.016, 0.0095, [0, sx * 0.42, 0]), 0.0025);
+    head.add(ellipsoid(sx * F.ear[0], F.ear[1], F.ear[2], 0.0085, 0.023, 0.015, [0, sx * 0.42, sx * -0.1]), 0.008);
   }
   head.add(custom((x, y, z) => neckBase(x, y + 1.468, z), [-0.16, -0.13, -0.08, 0.16, 0.06, 0.05]), 0.016);
   if (!fem && !kid) head.add(ellipsoid(0, 0.006, 0.031, 0.0085, 0.0105, 0.0085), 0.006);
@@ -305,7 +302,7 @@ export function sculptHead(P, L, B, lod) {
     };
     head.pairBand = 0.006;
     head.tag = (x, y, z) => {
-      const ld = 0.0021 - Math.min(lu.f(x, y, z), ll.f(x, y, z)); // the blended surface sits a few mm outside the lip primitives
+      const ld = 0.0016 - Math.min(lu.f(x, y, z), ll.f(x, y, z)); // the blended surface sits a few mm outside the lip primitives
       if (ld > -0.006) return [TAG.LIP, 0, TAG.SKIN, ld, 1];
       const cheek = Math.exp(-(((Math.abs(x) - 0.038) / 0.018) ** 2 + ((y - 0.072) / 0.018) ** 2)) * sstep(0.04, 0.06, z);
       const nose = Math.exp(-((x / 0.01) ** 2 + ((y - 0.075) / 0.01) ** 2)) * sstep(0.098, 0.106, z) * 0.6;
@@ -329,8 +326,8 @@ export function sculptHead(P, L, B, lod) {
       parts.push(beard);
     }
     const field = new Field(parts, []);
-    const h = lod === 'high' ? 0.0033 : 0.0088;
-    const mesh = dropSpecks(meshField(field, { h, bounds: [-0.1, -0.06, -0.13, 0.1, 0.25, 0.13], clip: [[0, 1, 0, -(NECK_SEAM - 1.468)]], nEps: lod === 'high' ? 0.001 : 0.002 }), 40);
+    const h = { high: 0.0052, low: 0.011, far: 0.02 }[lod];
+    const mesh = dropSpecks(meshField(field, { h, bounds: [-0.1, -0.06, -0.13, 0.1, 0.25, 0.13], clip: [[0, 1, 0, -(NECK_SEAM - 1.468)]], nEps: h * 0.3 }), 20);
     const at = attributes(field, mesh, { sigma: 0.0035, aoStep: 0.0045, aoN: 3, aoK: 2.2 });
     // match the body piece's (lifted) neck shading at the seam
     for (let v = 0; v < mesh.count; v++) { const y = mesh.pos[v * 3 + 1]; if (y < 0.012 && mesh.pos[v * 3 + 2] < 0.035) at.ao[v] += (1 - at.ao[v]) * sstep(0.012, NECK_SEAM - 1.468, y); }
@@ -386,8 +383,8 @@ export function sculptHair(P, L, B, lod) {
     const head = scalpShape(P);
     const C = [0, 0.12, -0.012];
     const S = {
-      crop: { base: 0.0065, top: 0.006, groove: 'crown', lower: 0 },
-      swept: { base: 0.0055, top: 0.004, groove: 'swept', lower: 0 },
+      crop: { base: 0.009, top: 0.009, groove: 'crown', lower: 0 },
+      swept: { base: 0.008, top: 0.006, groove: 'swept', lower: 0 },
       ponytail: { base: 0.0045, top: 0.002, groove: 'back', lower: 0 },
       braid: { base: 0.0045, top: 0.002, groove: 'back', lower: 0 },
       bun: { base: 0.005, top: 0.002, groove: 'up', lower: 0 },
@@ -408,8 +405,8 @@ export function sculptHair(P, L, B, lod) {
     const hair = new Part('hair', { k: 0.02, weights: (x, y, z) => [[B.head, 1]], tag: (x, y, z) => [style === 'shaved' ? TAG.SCALP : TAG.HAIR, 0] });
     hair.add(custom(shell, [-0.11, -0.03, -0.14, 0.11, 0.26, 0.13]));
     if (style === 'swept') {
-      hair.add(ellipsoid(0.006, 0.214, 0.02, 0.064, 0.04, 0.078, [0.15, 0, -0.12]), 0.03);
-      hair.add(ellipsoid(-0.024, 0.196, 0.066, 0.046, 0.021, 0.028, [0.5, 0.3, -0.35]), 0.022);
+      hair.add(ellipsoid(0.006, 0.22, 0.02, 0.07, 0.048, 0.084, [0.15, 0, -0.12]), 0.03);
+      hair.add(ellipsoid(-0.026, 0.2, 0.07, 0.054, 0.026, 0.034, [0.5, 0.3, -0.35]), 0.022);
     }
     if (style === 'crop') hair.add(ellipsoid(0, 0.214, 0.012, 0.058, 0.026, 0.07), 0.035);
     if (style === 'ponytail' || style === 'braid') hair.add(sphere(0, 0.165, -0.104, 0.022), 0.022);
@@ -432,8 +429,8 @@ export function sculptHair(P, L, B, lod) {
     hair.bumpAmp = S.groove === 'curl' ? 0.008 : 0.002;
     if (style === 'long') hair.weights = (x, y, z) => { const t = sstep(0.06, -0.04, y); return [[B.head, 1 - t], [B.hair1, t]]; };
     const field = new Field([hair], []);
-    const h = lod === 'high' ? 0.0042 : 0.011;
-    const mesh = dropSpecks(meshField(field, { h, bounds: [-0.115, -0.09, -0.15, 0.115, 0.27, 0.13], nEps: lod === 'high' ? 0.0012 : 0.003 }), 60);
+    const h = { high: 0.0062, low: 0.013, far: 0.022 }[lod];
+    const mesh = dropSpecks(meshField(field, { h, bounds: [-0.115, -0.09, -0.15, 0.115, 0.27, 0.13], nEps: h * 0.3 }), 30);
     const at = attributes(field, mesh, { sigma: 0.004, aoStep: 0.006, aoN: 3, aoK: 1.3 });
     return { mesh, at };
   });
@@ -497,8 +494,8 @@ export function sculptHands(P, L, B, lod) {
       .add(roundCone(o(-0.017, -0.066, 0.058), o(-0.021, -0.082, 0.062), 0.0094, 0.0078), 0.004);
     parts.push(thumb); edges.push([palm, thumb, 0.016]);
     const field = new Field(parts, edges);
-    const h = lod === 'high' ? 0.0031 : 0.009;
-    const mesh = meshField(field, { h, bounds: field.bounds(0.01).map((v, i) => i === 4 ? Math.min(v, 1.0) : v), clip: [(x, y, z) => wristAlong(x, y, 1) - WRIST_T], nEps: lod === 'high' ? 0.0009 : 0.0025 });
+    const h = { high: 0.0045, low: 0.011, far: 0.018 }[lod];
+    const mesh = meshField(field, { h, bounds: field.bounds(0.01).map((v, i) => i === 4 ? Math.min(v, 1.0) : v), clip: [(x, y, z) => wristAlong(x, y, 1) - WRIST_T], nEps: h * 0.3 });
     const at = attributes(field, mesh, { sigma: 0.004, aoStep: 0.005, aoN: 3, aoK: 1.2 });
     const bm = { [B.handL]: B.handR, [B.foreL]: B.foreR, [B.fingersL]: B.fingersR };
     const [mR, aR] = mirror(mesh, at, bm);
@@ -522,7 +519,7 @@ export function runJob(j) {
 }
 // Every piece the game can ask for: garments x frame, heads, hair styles, gloves.
 export function allJobs(B, hairStyles) {
-  const jobs = [], lods = ['high', 'low'];
+  const jobs = [], lods = ['high', 'low', 'far'];
   const adult = (fem) => ({ sh: 1, hw: 1, bw: 1, fr: fem ? 0.85 : 0.4, kid: false });
   const outfits = [{ outfit: 'runner' }, { outfit: 'runnerLight' }, { outfit: 'casual' }, { outfit: 'casual', tank: true }, { outfit: 'smart' }, { outfit: 'engineer' }];
   for (const lod of lods) {

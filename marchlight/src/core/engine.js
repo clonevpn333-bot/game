@@ -62,8 +62,14 @@ export class Engine {
   constructor(canvas) {
     this.canvas = canvas;
     this.quality = loadQuality();
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', logarithmicDepthBuffer: true, stencil: false });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.quality.pixelRatio));
+    // Depth precision for a scene that spans 8 cm to 40 km: reversed-Z into a float depth buffer
+    // where the browser has EXT_clip_control (keeps early-Z rejection, which a logarithmic depth
+    // buffer turns off by writing gl_FragDepth in every fragment); logarithmic depth otherwise.
+    const reversed = !/[?&]depth=log/.test(location.search) && hasClipControl();
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', reversedDepthBuffer: reversed, logarithmicDepthBuffer: !reversed, stencil: false });
+    this.reversedDepth = reversed;
+    this.dynScale = 1; // dynamic resolution (see adapt)
+    this.renderer.setPixelRatio(this.targetPixelRatio());
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
@@ -81,7 +87,9 @@ export class Engine {
     this.worldRoot = new THREE.Group(); this.worldRoot.name = 'worldRoot';
     this.scene.add(this.cityRoot, this.worldRoot);
 
-    this.composer = new EffectComposer(this.renderer);
+    const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
+    if (reversed) rt.depthTexture = new THREE.DepthTexture(1, 1, THREE.FloatType); // 32-bit float depth
+    this.composer = new EffectComposer(this.renderer, rt);
     this.renderPass = new RenderPass(this.scene, this.camera);
     this.composer.addPass(this.renderPass);
     this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.42, 0.55, 1.05);
@@ -100,11 +108,27 @@ export class Engine {
   applyQuality(q) {
     Object.assign(this.quality, q);
     saveQuality(this.quality);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.quality.pixelRatio));
+    this.renderer.setPixelRatio(this.targetPixelRatio());
     this.renderer.shadowMap.enabled = this.quality.shadows;
     this.bloom.enabled = this.quality.bloom;
     this.scene.traverse(o => { if (o.material) { const m = Array.isArray(o.material) ? o.material : [o.material]; m.forEach(mm => (mm.needsUpdate = true)); } });
     this.resize();
+  }
+
+  targetPixelRatio() { return Math.min(window.devicePixelRatio, this.quality.pixelRatio) * (this.quality.autoRes ? this.dynScale : 1); }
+
+  // Dynamic resolution: watch real frame times and trade pixels for frame rate (and back).
+  adapt(rawDt) {
+    if (!this.quality.autoRes || rawDt <= 0 || rawDt > 0.5) return; // ignore hitches (tab switches, loads)
+    this.ft = this.ft ? this.ft + (rawDt - this.ft) * 0.05 : rawDt;
+    this.adaptT = (this.adaptT || 0) + rawDt;
+    const target = 1 / (this.quality.targetFps || 55);
+    let s = this.dynScale;
+    if (this.ft > target * 1.12 && this.adaptT > 0.75) s = Math.max(0.5, s - 0.08);
+    else if (this.ft < target * 0.8 && this.adaptT > 3) s = Math.min(1, s + 0.05);
+    else return;
+    this.adaptT = 0;
+    if (s !== this.dynScale) { this.dynScale = s; this.renderer.setPixelRatio(this.targetPixelRatio()); this.resize(); }
   }
 
   resize() {
@@ -125,8 +149,12 @@ export class Engine {
   }
 }
 
+function hasClipControl() {
+  try { const gl = document.createElement('canvas').getContext('webgl2'); const ok = !!gl?.getExtension('EXT_clip_control'); gl?.getExtension('WEBGL_lose_context')?.loseContext(); return ok; } catch { return false; }
+}
+
 function loadQuality() {
-  const def = { pixelRatio: 1.5, shadows: true, bloom: true, shadowSize: 2048, crowd: 1 };
+  const def = { pixelRatio: 1.25, shadows: true, bloom: true, shadowSize: 2048, crowd: 1, autoRes: true, targetFps: 55 };
   try { return Object.assign(def, JSON.parse(localStorage.getItem('marchlight.quality') || '{}')); } catch { return def; }
 }
 function saveQuality(q) { try { localStorage.setItem('marchlight.quality', JSON.stringify(q)); } catch { /* ignore */ } }

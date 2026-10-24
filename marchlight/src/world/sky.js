@@ -11,6 +11,8 @@ export class Sky {
     this.sky.material.depthWrite = false;
     this.skyGain = { value: 0.5 };
     this.sky.material.uniforms.uSkyGain = this.skyGain;
+    // with a reversed depth buffer the far plane is z = 0, not z = w
+    if (e.reversedDepth) this.sky.material.vertexShader = this.sky.material.vertexShader.replace('gl_Position.z = gl_Position.w;', 'gl_Position.z = 0.0;');
     this.sky.material.fragmentShader = this.sky.material.fragmentShader.replace('uniform vec3 up;', 'uniform vec3 up;\nuniform float uSkyGain;').replace('gl_FragColor = vec4( retColor, 1.0 );', 'gl_FragColor = vec4( retColor * uSkyGain, 1.0 );');
     scene.add(this.sky);
     const u = this.sky.material.uniforms;

@@ -83,7 +83,9 @@ export class Game {
   }
 
   frame(now, skipRender = false) {
-    const dtReal = clamp((now - this.last) / 1000, 0, 1 / 20); this.last = now;
+    const raw = (now - this.last) / 1000;
+    const dtReal = clamp(raw, 0, 1 / 20); this.last = now;
+    if (!this.manual && !skipRender) this.engine.adapt(raw);
     this.input.update();
     if (!this.paused) {
       let ts = this.timeScale * this.slowmo;
@@ -115,7 +117,7 @@ export class Game {
     this.input.endFrame();
     // fps meter
     this.fpsAcc += dtReal; this.fpsN++;
-    if (this.fpsAcc > 0.5) { this.fps = this.fpsN / this.fpsAcc; this.fpsAcc = 0; this.fpsN = 0; const el = document.getElementById('fps'); if (el && el.style.display === 'block') el.textContent = this.fps.toFixed(0) + ' fps · ' + this.engine.renderer.info.render.calls + ' calls'; }
+    if (this.fpsAcc > 0.5) { this.fps = this.fpsN / this.fpsAcc; this.fpsAcc = 0; this.fpsN = 0; const el = document.getElementById('fps'); if (el && el.style.display === 'block') el.textContent = this.fps.toFixed(0) + ' fps · ' + this.engine.renderer.info.render.calls + ' calls · ' + Math.round(this.engine.renderer.getPixelRatio() * 100) + '% res'; }
   }
 }
 

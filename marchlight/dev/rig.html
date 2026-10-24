@@ -35,6 +35,7 @@ for (let i = 0; i < n; i++) {
   if (q.get('aim')) { a.aim = 1; a.weapon = q.get('aim'); }
   if (q.get('tether')) a.tether = 1;
   if (q.get('rot')) c.group.rotation.y = +q.get('rot');
+  if (q.get('lod')) c.setLOD(q.get('lod'));
 }
 let last = performance.now(), manual = false;
 function loop() { const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now;

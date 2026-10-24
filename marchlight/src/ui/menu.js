@@ -166,6 +166,7 @@ export class Menu {
       <div class="row"><label>Shadows</label><input type="checkbox" ${q.shadows ? 'checked' : ''} data-q="shadows"></div>
       <div class="row"><label>Bloom</label><input type="checkbox" ${q.bloom ? 'checked' : ''} data-q="bloom"></div>
       <div class="row"><label>Resolution scale</label><select data-q="pixelRatio">${[0.75, 1, 1.25, 1.5, 2].map(x => `<option ${q.pixelRatio === x ? 'selected' : ''} value="${x}">${x}×</option>`).join('')}</select></div>
+      <div class="row"><label>Auto resolution (hold frame rate)</label><input type="checkbox" ${q.autoRes ? 'checked' : ''} data-q="autoRes"></div>
       <div class="row"><label>Combat difficulty</label><select data-s="diff">${[['Story', 0.5], ['Runner', 1], ['Hardened', 1.5]].map(([n, x]) => `<option ${g.settings.difficulty === x ? 'selected' : ''} value="${x}">${n}</option>`).join('')}</select></div>
       <div class="row"><label>Show FPS</label><input type="checkbox" ${document.getElementById('fps').style.display === 'block' ? 'checked' : ''} data-s="fps"></div>
       <button class="btn" data-a="back" style="margin-top:20px">Back</button></div>`, 'menu dim');

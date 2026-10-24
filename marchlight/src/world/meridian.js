@@ -21,7 +21,7 @@ export async function buildMeridian(game, progress) {
   game.exterior = new Exterior(game, game.city);
   progress?.(0.56, 'Unrolling the world below…'); await tick();
   game.ground = new Ground(game, game.city);
-  const lights = game.lights = new LightPool(game, 10);
+  const lights = game.lights = new LightPool(game, 6);
   progress?.(0.64, 'Opening the market…'); await tick();
   game.districts = {};
   game.districts.city = buildCityDistrict(game, lights);

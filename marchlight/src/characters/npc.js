@@ -94,9 +94,12 @@ export class Actor {
       this.lodT += dt;
       const step = d > 45 ? 0.1 : d > 25 ? 0.05 : 0;
       if (this.lodT >= step) { this.anim.update(this.lodT); this.lodT = 0; }
-      this.char.mesh.castShadow = d < 35;
-      this.char.setLOD?.(d * Math.min(1, g.engine.camera.fov / 50) < (this.lodDist ?? 11) ? 'high' : 'low'); // telephoto shots keep detail
-      if (this.char.meshLow) this.char.meshLow.castShadow = d < 35;
+      // three LODs; telephoto shots keep detail. Only nearby actors cast shadows (far ones are
+      // a handful of pixels and their shadows cost more than they draw).
+      const de = d * Math.min(1, g.engine.camera.fov / 50);
+      this.char.setLOD?.(de < (this.lodDist ?? 9) ? 'high' : de < 24 ? 'low' : 'far');
+      const cast = !this.noShadow && de < 18;
+      for (const k in this.char.meshes || { high: 1 }) (this.char.meshes ? this.char.meshes[k] : this.char.mesh).castShadow = cast && k !== 'far';
     }
   }
   sync() {
