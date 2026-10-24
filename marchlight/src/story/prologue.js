@@ -510,7 +510,7 @@ export class Prologue {
     this.bark('WORKER', '—they say Vesper\'s three days north of us.', 3.2, pass[0]);
     await this.wait(3.6);
     // past Rook's shoulder, out through the far windows as the city slides by
-    g.director.shot({ pos: cp(1.12, 1.5, -2.45), look: cp(-2.6, 1.25, -0.6), fov: 48, to: { pos: cp(1.1, 1.48, -2.6), look: cp(-2.6, 1.15, -1.6) }, dur: 8 });
+    g.director.shot({ pos: cp(1.25, 1.6, -2.55), look: cp(-2.6, 1.05, -3.6), fov: 50, to: { pos: cp(1.25, 1.58, -2.75), look: cp(-2.6, 1.0, -4.2) }, dur: 8 }); // over Rook's shoulder (seated head ~1.25)
     this.bark('WORKER', 'Vesper. All glass and greenhouses. I heard they grow real oranges.', 3.6, pass[1]);
     await this.wait(4);
     this.bark('WORKER', 'I heard they ration the air.', 2.6, pass[0]);
@@ -781,8 +781,10 @@ export class Prologue {
     P.setScripted(true);
     const walk = g.add((dt) => { if (P.pos.x < 205) { P.pos.x += dt * 1.4; P.anim.speed = 1.4; P.placeScripted(P.pos, Math.PI / 2 - 0.25); } else P.anim.speed = 0; });
     // push out past Rook as he steps onto the apron, toward the open horizon
-    g.director.shot({ pos: V(197.5, LD.floor + 1.7, -189.2), look: V(207, LD.floor + 1.3, -190.3), fov: 52, to: { pos: V(215.5, LD.floor + 3.2, -185.5), look: V(420, LD.floor - 95, -215), fov: 60 }, dur: 9, ease: ease.inOutSine });
+    // follow Rook out through the tunnel, then rise past him as he reaches the apron
+    g.director.shot({ pos: () => P.pos.clone().add(V(-3.2, 1.9, 0.9)), look: () => P.pos.clone().add(V(6, 1.2, -0.4)), fov: 52 });
     await this.wait(4.2);
+    g.director.shot({ pos: P.pos.clone().add(V(-3.2, 1.9, 0.9)), look: P.pos.clone().add(V(6, 1.2, -0.4)), fov: 52, to: { pos: V(215.5, LD.floor + 3.2, -185.5), look: V(420, LD.floor - 95, -215), fov: 60 }, dur: 7, ease: ease.inOutSine, cut: false });
     g.hud.location('THE SPINE', 'MERIDIAN · EXTERIOR, STARBOARD', 6);
     await this.wait(4.8);
     // then a long crane-out over the drop: the whole flank, and Leg Two mid-stride
@@ -957,11 +959,11 @@ export class Prologue {
     this.enter(true);
     g.slowmo = 0.6;
     // a witness camera hanging below the deck as the cabin drops past it
-    const from = tram.group.position.clone().add(V(35, -8, 30));
+    const from = g.director.frame(tram.group.position.clone(), [V(35, -8, 30), V(-35, -8, 30), V(30, -8, -35), V(-30, -8, -35)]);
     g.director.shot({ pos: from, look: () => tram.group.position, fov: 50, to: { pos: from.clone().add(V(2, -2, 3)), fov: 35 }, dur: 3 });
     await this.waitGame(2.2);
-    const chase = V(24, 14, 26);
-    g.director.shot({ pos: () => { const p = tram.group.position.clone().add(chase); p.y = Math.min(p.y, -135); return p; }, look: () => tram.group.position, fov: 45, cut: true });
+    const chase = g.director.follow(() => tram.group.position, [V(24, 14, 26), V(-24, 14, 26), V(26, 14, -24), V(-26, 14, -24), V(0, 30, 30)]);
+    g.director.shot({ pos: () => { const p = chase(); p.y = Math.min(p.y, -135); return p; }, look: () => tram.group.position, fov: 45, cut: true });
     await this.waitFor(() => tram.pos.y < -392);
     g.slowmo = 1;
     // impact
@@ -969,12 +971,13 @@ export class Prologue {
     g.fx.explosion(ip, 3); g.audio.explosion(ip, 1.2);
     for (let i = 0; i < 30; i++) { const a = Math.random() * 6.28, s = 4 + Math.random() * 10; g.fx.alpha.spawn({ x: ip.x, y: ip.y, z: ip.z, vx: Math.cos(a) * s, vy: 2 + Math.random() * 4, vz: Math.sin(a) * s + g.city.speed, life: 7, s0: 6, s1: 22, c0: [0.6, 0.55, 0.47, 0.7], c1: [0.6, 0.55, 0.47, 0], drag: 0.4 }); }
     tram.group.visible = false; tram.state = 'gone';
-    g.director.shot({ pos: () => ip.clone().add(V(-40, 60, 60)).add(V(0, 0, g.city.travel - this.tTravel0)), look: () => ip.clone().add(V(0, 0, g.city.travel - this.tTravel0)), fov: 40, cut: true });
+    const impOff = g.director.frame(ip.clone(), [V(-40, 60, 60), V(40, 60, 60), V(-60, 60, -40), V(60, 60, -40)]).sub(ip);
+    g.director.shot({ pos: () => ip.clone().add(impOff).add(V(0, 0, g.city.travel - this.tTravel0)), look: () => ip.clone().add(V(0, 0, g.city.travel - this.tTravel0)), fov: 40, cut: true });
     this.tTravel0 = g.city.travel;
     await this.wait(2.4);
     // the dust settles… and there is a town, and there are people in its streets
     const sp = () => g.ground.settlementCityPos();
-    g.director.shot({ pos: () => ip.clone().add(V(-40, 60, 60)), look: () => sp(), fov: 40, to: { pos: () => sp().clone().add(V(-60, 70, 90)), look: () => sp(), fov: 22 }, dur: 6, cut: false });
+    g.director.shot({ pos: () => ip.clone().add(impOff), look: () => sp(), fov: 40, to: { pos: () => sp().clone().add(V(-60, 70, 90)), look: () => sp(), fov: 22 }, dur: 6, cut: false });
     g.audio.music.play('stillness', 4);
     g.audio.duck(0.25, 4); g.windMul = 0.2;
     g.engine.grade.uniforms.uStill.value = 0;
@@ -1034,7 +1037,7 @@ export class Prologue {
     this.enter(true);
     { const lk = P.pos.clone().add(V(0, 1.6, 0)), toS = sp().clone().sub(P.pos).setY(0).normalize(), side = V(-toS.z, 0, toS.x);
       const cp = g.director.frame(lk, [toS.clone().multiplyScalar(1.3).addScaledVector(side, 0.6).setY(0.12), toS.clone().multiplyScalar(1.3).addScaledVector(side, -0.6).setY(0.12), side.clone().multiplyScalar(1.4).setY(0.1)]);
-      g.director.shot({ pos: cp, look: lk, fov: 32, to: { pos: cp.clone().lerp(lk, 0.15) }, dur: 4 }); }
+      g.director.shot({ pos: cp, look: lk, fov: 32, to: { pos: cp.clone().lerp(lk, 0.15) }, dur: 4, cut: true }); } // cut: the visor camera was inside Rook's head
     P.anim.setEmotion('worried'); P.anim.lookTarget = sp();
     await this.wait(1.8);
     await this.say('ROOK', '…They moved.', { dur: 2.8 });

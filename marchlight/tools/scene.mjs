@@ -20,7 +20,7 @@ const log = [], shots = [];
 const step = async (s) => { await p.evaluate((s) => __game.advance(s, 1 / 30, false), s); await p.waitForTimeout(15); };
 let t = 0, next = 0, ui = 0;
 while (t < secs) {
-  if (ui < uses.length) { const r = await p.evaluate((label) => { const it = [...__game.interact.items].find(i => (typeof i.label === 'function' ? i.label() : i.label).includes(label)); if (!it) return false; it.onUse(it); if (it.once) __game.interact.remove(it); return true; }, uses[ui]); if (r) ui++; }
+  if (ui < uses.length) { const r = await p.evaluate((label) => { const it = [...__game.interact.items].find(i => (typeof i.label === 'function' ? i.label() : i.label).includes(label)); if (!it) return false; const g = __game, P = g.player, ip = it.getPos ? it.getPos() : it.pos; if (ip) { const d = P.pos.clone().sub(ip).setY(0); if (d.length() > 1.8) { d.setLength(1.5); const to = ip.clone().add(d); to.y = P.pos.y; P.teleport(to, Math.atan2(-d.x, -d.z)); g.camera.snapBehind(Math.atan2(-d.x, -d.z), 0.1); } } it.onUse(it); if (it.once) __game.interact.remove(it); return true; }, uses[ui]); if (r) ui++; }
   if (t >= next) {
     const info = await p.evaluate(() => {
       const g = __game, P = g.player; g.engine.render(1 / 30);

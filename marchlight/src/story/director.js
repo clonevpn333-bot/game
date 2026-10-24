@@ -57,14 +57,27 @@ export class Director {
   // Camera position near `look` from preferred offsets, rejecting any blocked by geometry; falls back
   // to the least-blocked offset pulled in to its first hit.
   frame(look, offsets, { min = 0.8 } = {}) {
-    const P = this.game.physics; let best = null, bestD = -1;
+    const occ = this.occluders(), rc = this._rc || (this._rc = new THREE.Raycaster()); let best = null, bestD = -1;
     for (const o of offsets) {
       const want = look.clone().add(o), dir = want.clone().sub(look); const len = dir.length(); dir.divideScalar(len || 1);
-      const hit = P.raycastFilter(look, dir, len + 0.3, G.STATIC | G.PLATFORM, (c, m) => !m?.nocam);
+      rc.set(look, dir); rc.near = 0.2; rc.far = len + 0.3;
+      const hit = rc.intersectObjects(occ, false)[0];
       if (!hit) return want;
-      const d = hit.toi - 0.3; if (d > bestD) { bestD = d; best = look.clone().addScaledVector(dir, Math.max(min, d)); }
+      const d = hit.distance - 0.3; if (d > bestD) { bestD = d; best = look.clone().addScaledVector(dir, Math.max(min, d)); }
     }
     return best;
+  }
+  // A camera riding along with a moving target at one of several offsets; it re-checks its view
+  // every few frames and cuts to the next clear offset when geometry gets in the way.
+  follow(target, offsets) {
+    let i = 0, n = 0;
+    const occ = this.occluders(), rc = this._rc || (this._rc = new THREE.Raycaster());
+    const blocked = (t, o) => { const d = o.clone(), len = d.length(); rc.set(t, d.divideScalar(len)); rc.near = 0.5; rc.far = len; return rc.intersectObjects(occ, false).length > 0; };
+    return () => {
+      const t = resolveV(target);
+      if (n++ % 6 === 0 && blocked(t, offsets[i])) { for (let k = 1; k <= offsets.length; k++) { const j = (i + k) % offsets.length; if (!blocked(t, offsets[j])) { i = j; break; } } }
+      return t.clone().add(offsets[i]);
+    };
   }
   // Over-the-shoulder conversation framing between two actors (A speaks to B)
   ots(a, b, { side = 1, dist = 1.15, height = 1.62, fov = 34, lookH = 1.58 } = {}) {
@@ -90,16 +103,19 @@ export class Director {
     const pa = a.pos.clone(), pb = b.pos.clone(), hA = eye(a), hB = eye(b);
     const dir = pa.clone().sub(pb).setY(0); if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1); dir.normalize();
     const right = new THREE.Vector3(-dir.z, 0, dir.x), look = pa.clone().setY(hA - 0.03);
-    const ots = (s, d) => ({ pos: pb.clone().addScaledVector(dir, -d).addScaledVector(right, 0.42 * s).setY(hB + 0.05), look: look.clone(), fov: d > 1.3 ? 38 : 34 });
+    // over the listener's shoulder; a short listener (a kid) gets the camera lifted and moved wider
+    const lift = Math.max(0, hA - hB);
+    const ots = (s, d) => ({ pos: pb.clone().addScaledVector(dir, -d).addScaledVector(right, (0.42 + lift * 0.6) * s).setY(hB + 0.05 + lift * 0.7), look: look.clone(), fov: d > 1.3 ? 38 : 34 });
     const close = (s) => ({ pos: pa.clone().addScaledVector(dir, -0.95).addScaledVector(right, 0.32 * s).setY(hA + 0.02), look: look.clone(), fov: 30 });
     const wide = (s) => { const mid = pa.clone().add(pb).multiplyScalar(0.5); return { pos: mid.clone().addScaledVector(right, 3.0 * s).setY(Math.max(hA, hB) - 0.05), look: mid.setY((hA + hB) / 2 - 0.2), fov: 40 }; };
     const order = style === 'close' ? [close(side), close(-side), ots(side, 1.15), ots(-side, 1.15), wide(side), wide(-side)]
       : style === 'wide' ? [wide(side), wide(-side), ots(side, 1.15), ots(-side, 1.15), close(side)]
       : [ots(side, 1.15), ots(-side, 1.15), ots(side, 1.6), close(side), close(-side), wide(side), wide(-side)];
-    const P = this.game.physics;
+    const occ = this.occluders(), rc = this._rc || (this._rc = new THREE.Raycaster());
     const clear = (c) => {
       const d = c.pos.clone().sub(c.look), len = d.length(); d.divideScalar(len);
-      if (P.raycastFilter(c.look, d, len, G.STATIC | G.PLATFORM, (col, m) => !m?.nocam)) return false; // a wall
+      rc.set(c.look, d); rc.far = len + 0.25; rc.near = 0.3;
+      if (rc.intersectObjects(occ, false).length) return false; // a wall (any visible solid surface)
       for (const o of others) {
         if (o === a || o === b || !o.pos) continue;
         const top = eye(o) + 0.15;
@@ -111,6 +127,18 @@ export class Director {
       return true;
     };
     return order.find(clear) || order[0];
+  }
+  // visible, opaque world meshes that can block a shot (characters, glass and particles don't)
+  occluders() {
+    const out = [], sky = this.game.sky?.sky;
+    this.game.engine.scene.traverse(o => {
+      if (!o.isMesh || o.isSkinnedMesh || o === sky) return;
+      for (let p = o; p; p = p.parent) if (!p.visible) return;
+      const m = Array.isArray(o.material) ? o.material[0] : o.material;
+      if (m && (m.transparent || m.opacity < 1 || m.depthWrite === false)) return;
+      out.push(o);
+    });
+    return out;
   }
   // Close-up on an actor's face from in front
   closeUp(a, { dist = 0.85, fov = 30, side = 0.25, h = 1.6 } = {}) {
