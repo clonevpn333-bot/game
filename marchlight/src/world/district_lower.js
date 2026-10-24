@@ -26,9 +26,16 @@ export function buildLowerDecks(game, lights) {
   b.box('hazard', [140, Y + 0.01, -224.6], [70, 0.01, 0.25], { collide: false, tex: 1 });
   b.box('hazard', [140, Y + 0.01, -219.4], [70, 0.01, 0.25], { collide: false, tex: 1 });
   // ceiling (the underside of the deck slab) with heavy beams
-  b.box('darkSteel', [113, LD.ceil + 0.3, -195], [166, 0.6, 110], { color: 0x2e2d2b, collide: false, ao: false });
-  for (let x = 36; x < 196; x += 14) b.box('darkSteel', [x, LD.ceil - 1.2, -195], [1.6, 2.4, 110], { color: 0x45433f, collide: false, ao: false });
-  for (let z = -246; z < -140; z += 16) b.box('darkSteel', [113, LD.ceil - 0.8, z], [166, 1.4, 1.0], { color: 0x45433f, collide: false, ao: false });
+  // (with a slot where the tram line comes down through it: x 54..62, z -176..-204)
+  b.box('darkSteel', [129, LD.ceil + 0.3, -195], [134, 0.6, 110], { color: 0x2e2d2b, collide: false, ao: false });
+  b.box('darkSteel', [42, LD.ceil + 0.3, -195], [24, 0.6, 110], { color: 0x2e2d2b, collide: false, ao: false });
+  b.box('darkSteel', [58, LD.ceil + 0.3, -158], [8, 0.6, 36], { color: 0x2e2d2b, collide: false, ao: false });
+  b.box('darkSteel', [58, LD.ceil + 0.3, -227], [8, 0.6, 46], { color: 0x2e2d2b, collide: false, ao: false });
+  for (let x = 36; x < 196; x += 14) if (Math.abs(x - 58) > 4) b.box('darkSteel', [x, LD.ceil - 1.2, -195], [1.6, 2.4, 110], { color: 0x45433f, collide: false, ao: false });
+  for (let z = -246; z < -140; z += 16) {
+    if (z > -206 && z < -174) { b.box('darkSteel', [42, LD.ceil - 0.8, z], [24, 1.4, 1.0], { color: 0x45433f, collide: false, ao: false }); b.box('darkSteel', [129, LD.ceil - 0.8, z], [134, 1.4, 1.0], { color: 0x45433f, collide: false, ao: false }); }
+    else b.box('darkSteel', [113, LD.ceil - 0.8, z], [166, 1.4, 1.0], { color: 0x45433f, collide: false, ao: false });
+  }
   // walls
   b.box('panel', [113, -23, LD.z1 + 0.5], [166, 30, 1], { color: wallC, tex: 4 });
   b.box('panel', [113, -23, LD.z0 - 0.5], [166, 30, 1], { color: wallC, tex: 4 });

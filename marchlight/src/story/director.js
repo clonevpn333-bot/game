@@ -82,6 +82,36 @@ export class Director {
     const look = mid.clone(); look.y += 1.35;
     return { pos, look, fov };
   }
+  // Conversation coverage for `a` speaking to `b`: candidate setups in order of preference for the
+  // style ('ots' | 'close' | 'wide'), rejecting any whose view of the speaker's face is blocked by
+  // a wall or by another person. Heights follow the actors (kids are framed at kid height).
+  cover(a, b, { style = 'ots', side = 1, others = [] } = {}) {
+    const eye = (o) => o.pos.y + 1.6 * (o.char?.group.scale.y ?? 1);
+    const pa = a.pos.clone(), pb = b.pos.clone(), hA = eye(a), hB = eye(b);
+    const dir = pa.clone().sub(pb).setY(0); if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1); dir.normalize();
+    const right = new THREE.Vector3(-dir.z, 0, dir.x), look = pa.clone().setY(hA - 0.03);
+    const ots = (s, d) => ({ pos: pb.clone().addScaledVector(dir, -d).addScaledVector(right, 0.42 * s).setY(hB + 0.05), look: look.clone(), fov: d > 1.3 ? 38 : 34 });
+    const close = (s) => ({ pos: pa.clone().addScaledVector(dir, -0.95).addScaledVector(right, 0.32 * s).setY(hA + 0.02), look: look.clone(), fov: 30 });
+    const wide = (s) => { const mid = pa.clone().add(pb).multiplyScalar(0.5); return { pos: mid.clone().addScaledVector(right, 3.0 * s).setY(Math.max(hA, hB) - 0.05), look: mid.setY((hA + hB) / 2 - 0.2), fov: 40 }; };
+    const order = style === 'close' ? [close(side), close(-side), ots(side, 1.15), ots(-side, 1.15), wide(side), wide(-side)]
+      : style === 'wide' ? [wide(side), wide(-side), ots(side, 1.15), ots(-side, 1.15), close(side)]
+      : [ots(side, 1.15), ots(-side, 1.15), ots(side, 1.6), close(side), close(-side), wide(side), wide(-side)];
+    const P = this.game.physics;
+    const clear = (c) => {
+      const d = c.pos.clone().sub(c.look), len = d.length(); d.divideScalar(len);
+      if (P.raycastFilter(c.look, d, len, G.STATIC | G.PLATFORM, (col, m) => !m?.nocam)) return false; // a wall
+      for (const o of others) {
+        if (o === a || o === b || !o.pos) continue;
+        const top = eye(o) + 0.15;
+        for (let t = 0.08; t < 0.97; t += 0.06) {
+          const q = c.pos.clone().lerp(c.look, t);
+          if (q.y > o.pos.y + 0.1 && q.y < top && Math.hypot(q.x - o.pos.x, q.z - o.pos.z) < 0.3) return false; // a person in the way
+        }
+      }
+      return true;
+    };
+    return order.find(clear) || order[0];
+  }
   // Close-up on an actor's face from in front
   closeUp(a, { dist = 0.85, fov = 30, side = 0.25, h = 1.6 } = {}) {
     const f = new THREE.Vector3(Math.sin(a.yaw ?? a.char.group.rotation.y), 0, Math.cos(a.yaw ?? a.char.group.rotation.y));

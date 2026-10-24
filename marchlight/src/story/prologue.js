@@ -72,13 +72,22 @@ export class Prologue {
     npc.face(P.pos.clone()); npc.lookAtPlayer();
     this.playerFace(npc.pos);
     const rookActor = { pos: P.pos, yaw: P.yaw, char: P.char };
+    const others = () => [...g.actors, ...g.crowd.actors].filter(o => o.visible !== false && !o.hidden && o.pos.distanceTo(P.pos) < 9);
+    const EMOTIVE = new Set(['sad', 'worried', 'angry', 'surprised', 'shy', 'tired']);
+    let prevWho = null, run = 0, n = 0, prevKey = '';
     for (const L of lines) {
       if (typeof L === 'function') { const r = await L(); if (r === 'break') break; continue; }
       const [who, text, opt = {}] = L;
-      const speaker = who === 'ROOK' ? rookActor : (g.cast[who.toLowerCase()] || npc);
-      const listener = who === 'ROOK' ? npc : rookActor;
-      const shot = opt.wide ? g.director.twoShot(speaker, listener, { side: opt.side ?? 1 }) : g.director.ots(speaker, listener, { side: who === 'ROOK' ? -1 : 1 });
-      g.director.shot({ ...shot, handheld: 0.6 });
+      const radio = !!opt.radio;
+      const speaker = radio ? (who === 'ROOK' ? rookActor : npc) : who === 'ROOK' ? rookActor : (g.cast[who.toLowerCase()] || npc);
+      const listener = speaker === rookActor ? npc : rookActor;
+      // coverage: over the shoulder by default; close on emotional lines and on a speaker's
+      // second line in a row; a wide two-shot now and then to re-establish the room
+      run = who === prevWho ? run + 1 : 0; prevWho = who; n++;
+      const style = opt.wide ? 'wide' : (opt.emotion && EMOTIVE.has(opt.emotion)) || run % 2 === 1 ? 'close' : n % 6 === 0 ? 'wide' : 'ots';
+      const side = speaker === rookActor ? -1 : 1, key = who + style;
+      if (key !== prevKey) g.director.shot({ ...g.director.cover(speaker, listener, { style, side, others: others() }), handheld: 0.6 });
+      prevKey = key;
       if (who === 'ROOK') { P.anim.talking = true; P.anim.lookTarget = npc.head; }
       await this.say(who, text, { ...opt, actor: who === 'ROOK' ? { anim: P.anim, pos: P.pos } : speaker });
       P.anim.talking = false;
@@ -87,7 +96,8 @@ export class Prologue {
   // a choice inside a conversation: frames Rook, returns value
   async pick(npc, options) {
     const g = this.game, P = g.player;
-    g.director.shot({ ...g.director.ots({ pos: P.pos }, npc, { side: -1, dist: 1.4, height: 1.7 }), handheld: 0.4 });
+    const others = [...g.actors, ...g.crowd.actors].filter(o => o.visible !== false && !o.hidden && o.pos.distanceTo(P.pos) < 9);
+    g.director.shot({ ...g.director.cover({ pos: P.pos, char: P.char }, npc, { style: 'ots', side: -1, others }), handheld: 0.4 });
     return this.choose(options);
   }
 
@@ -461,8 +471,11 @@ export class Prologue {
       ['BRAM', 'I\'ve got to see a man about a boot.'],
     ]);
     // Bram presses the note into Rook's hand
-    g.director.shot({ ...g.director.twoShot(C.bram, { pos: P.pos }, { dist: 2.4, height: 1.3, fov: 34 }) });
-    C.bram.anim.point = 1; await this.wait(0.9); C.bram.anim.point = 0;
+    { const to = P.pos.clone().add(C.bram.pos.clone().sub(P.pos).setY(0).normalize().multiplyScalar(0.72));
+      g.director.shot({ ...g.director.twoShot(C.bram, { pos: P.pos }, { dist: 2.6, height: 1.3, fov: 36 }) });
+      C.bram.goTo(to, 0.9); await this.waitFor(() => !C.bram.target);
+      C.bram.face(P.pos.clone()); await this.wait(0.3);
+      C.bram.anim.point = 0.55; await this.wait(1.1); C.bram.anim.point = 0; }
     g.hud.notify('BRAM\'S NOTE: "Eight bells. Stew. No excuses. — B."', 5);
     g.state.flag('dinnerInvite'); g.state.journal('Bram invited the crew to dinner. Eight bells, his place. "The stew."');
     this.exit();

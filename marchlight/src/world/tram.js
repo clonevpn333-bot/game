@@ -6,8 +6,9 @@ import { clamp, damp, smoothstep } from '../core/util.js';
 import { sign } from './props.js';
 
 export const TRAM_PATH = [
-  [158, 5.55, -127.2], [140, 5.55, -127.2], [118, 5.6, -127.4], [96, 5.8, -128.5], [76, 5.6, -136], [62, 4.6, -150], [55, 1.5, -166],
-  [52, -6, -184], [52, -16, -200], [56, -26, -214], [66, -33.6, -224], [86, -36.9, -229], [106, -37.0, -229.2], [128, -37.0, -229.2],
+  // the descent stays east of x = 56.5 so the car clears the hull block faces at x = 54
+  [158, 5.55, -127.2], [140, 5.55, -127.2], [118, 5.6, -127.4], [96, 5.8, -128.5], [78, 5.6, -136], [66, 4.6, -150], [59, 1.5, -166],
+  [57.5, -6, -184], [57.5, -16, -200], [60, -26, -214], [68, -33.6, -224], [86, -36.9, -229], [106, -37.0, -229.2], [128, -37.0, -229.2],
 ].map(p => new THREE.Vector3(...p));
 
 export class Tram {
@@ -36,8 +37,11 @@ export class Tram {
       if (i % 8 === 0) {
         // supports: pylons down to the deck where above it, girders hang from the ceiling below it
         if (p.y > 1) { b.box('darkSteel', [p.x, p.y / 2 - 0.3, p.z], [0.7, Math.max(0.5, p.y - 0.4), 0.7], { color: 0x4a4a48, collide: false }); }
-        else if (p.y < -9) { b.box('darkSteel', [p.x, (p.y - 8) / 2 - 0.4, p.z], [0.6, Math.max(0.5, -8 - p.y - 0.6), 0.6], { color: 0x4a4a48, collide: false }); }
-        b.box('darkSteel', [p.x, p.y - 0.35, p.z], [3.4, 0.4, 0.5], { ry: ry + Math.PI / 2 - Math.PI / 2, color: 0x4a4a48, collide: false });
+        else if (p.y < -9) for (const o of [-1.95, 1.95]) { // hangers either side of the car, down from the ceiling
+          const q = p.clone().addScaledVector(side, o), top = -8.6, bot = p.y - 0.3;
+          b.box('darkSteel', [q.x, (top + bot) / 2, q.z], [0.3, Math.max(0.5, top - bot), 0.3], { color: 0x4a4a48, collide: false });
+        }
+        b.box('darkSteel', [p.x, p.y - 0.35, p.z], [4.2, 0.4, 0.5], { ry: ry + Math.PI / 2 - Math.PI / 2, color: 0x4a4a48, collide: false });
       }
     }
     // rails
@@ -47,9 +51,11 @@ export class Tram {
       b.path('steel', pts, 0.06, { segs: 400, radial: 5, color: 0xb0b0b0 });
     }
     // portal where the line dives through the deck (around z -150..-175)
-    b.box('concrete', [58, 2.5, -166], [9, 7, 2], { color: 0x6a665e, collide: false });
-    b.box('hazard', [58, 5.7, -165.2], [7, 0.6, 0.3], { collide: false, tex: 1 });
-    sign(g, root, 'DECK PORTAL 7 · LOWER DECKS', [58, 4.4, -164.9], { w: 5, h: 0.5, neon: false, color: '#e8e0d0', bg: '#3a3a3a', font: '700 34px "Barlow Condensed", sans-serif' });
+    // an arch: two piers and a lintel, open 4 m wide and 4.6 m high around the line
+    for (const dx of [-3.4, 3.4]) b.box('concrete', [59 + dx, 1.5, -166], [2.2, 9, 2], { color: 0x6a665e, collide: false });
+    b.box('concrete', [59, 6.6, -166], [9, 1.6, 2], { color: 0x6a665e, collide: false });
+    b.box('hazard', [59, 5.65, -165.0], [4.2, 0.3, 0.3], { collide: false, tex: 1 });
+    sign(g, root, 'DECK PORTAL 7 · LOWER DECKS', [59, 6.6, -164.95], { w: 5, h: 0.5, neon: false, color: '#e8e0d0', bg: '#3a3a3a', font: '700 34px "Barlow Condensed", sans-serif' });
     // the deck around the portal so the player can't see into the void while riding
     b.box('concrete', [70, -0.2, -150], [50, 0.4, 40], { color: 0x8a847a, collide: false });
     b.finalize();
@@ -98,7 +104,7 @@ export class Tram {
     // seats (sockets for the player and passengers)
     this.seats = [];
     for (const [x, z] of [[1.0, -3.2], [-1.0, -3.2], [-1.0, -1.0], [-1.0, 1.4], [1.0, 3.4], [-1.0, 3.6], [1.0, -0.6]]) {
-      const s = new THREE.Object3D(); s.position.set(x, 0.48 - 0.0, z); s.rotation.y = x > 0 ? -Math.PI / 2 : Math.PI / 2; car.add(s); this.seats.push(s);
+      const s = new THREE.Object3D(); s.position.set(x, 0.15, z); s.rotation.y = x > 0 ? -Math.PI / 2 : Math.PI / 2; car.add(s); this.seats.push(s); // at floor level: the sit pose seats the hips 0.48 above its origin, on the 0.52 bench
     }
     this.light = new THREE.PointLight(0xffd8a8, 6, 9, 2); this.light.position.set(0, 2.6, 0); car.add(this.light);
     // kinematic collider for the car body (floor + walls) so the player can walk inside when docked

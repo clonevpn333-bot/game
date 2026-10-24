@@ -1,6 +1,7 @@
 // Boot sequence and top-level flow: loading → title → customization → prologue.
 import { initPhysics } from './core/physics.js';
 import { Game } from './game.js';
+import * as THREE from 'three';
 
 const q = new URLSearchParams(location.search);
 const bootEl = document.getElementById('boot'), fill = document.getElementById('boot-fill'), msg = document.getElementById('boot-msg');
@@ -10,7 +11,7 @@ async function boot() {
   progress(0.02, 'Waking the city…');
   await initPhysics();
   const game = new Game(document.getElementById('view'));
-  window.__game = game;
+  window.__game = game; window.__THREE = THREE; // for the test tools
   // people are sculpted in worker threads while the city is built on this one
   const { prewarmAnatomy } = await import('./characters/sculptpool.js');
   let sculpted = 0;

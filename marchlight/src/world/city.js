@@ -3,6 +3,7 @@
 // suspended engine, skyline, the Crown.
 import * as THREE from 'three';
 import { Builder } from './builder.js';
+import { TRAM_PATH } from './tram.js';
 import { clamp, damp, lerp, rng, smoothstep, ease } from '../core/util.js';
 
 export const GROUND_Y = -400;
@@ -165,6 +166,7 @@ export class Exterior {
     for (let i = 0; i < 260; i++) {
       const x = -190 + r() * 380, z = -290 + r() * 580;
       if (x > 100 && z < 60 && z > -300) continue;
+      if (TRAM_PATH.some(p => p.y > -10 && Math.hypot(p.x - x, p.z - z) < 16)) continue; // keep clear of the tram line and its deck portal
       const dc = Math.hypot(x, z + 80);
       const crown = dc < 70;
       const h = crown ? 60 + r() * 120 : 8 + Math.pow(r(), 2) * 40 + (Math.abs(x) < 60 ? 10 : 0);
