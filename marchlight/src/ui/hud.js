@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 // DOM HUD: crosshair, tether cells, ammo, objectives, prompts, hints,
 // hitmarkers, damage direction, location cards, letterbox, fades.
 import { WEAPONS } from '../combat/weapons.js';
@@ -19,6 +20,7 @@ const HINTS = {
   zoom: ['VISOR', 'Hold <span class="key">Z</span> to zoom your Runner visor.'],
 };
 
+const _wpUp = new THREE.Vector3(0, 1.2, 0), _wpDir = new THREE.Vector3();
 export class HUD {
   constructor(game) {
     this.game = game;
@@ -31,6 +33,7 @@ export class HUD {
       <div id="dmgdir"></div>
       <div id="ammo"><div class="wn"></div><div class="ct"></div></div>
       <div id="obj" class="hide"><div class="h">Objective</div><div class="t"></div><div class="s"></div></div>
+      <div id="wp"><div class="pin"></div><div class="arrow"></div><div class="d"></div></div>
       <div id="prompt"><span class="key">F</span><span class="lbl"></span></div>
       <div id="hint"><div class="h"></div><div class="b"></div></div>
       <div id="notify"></div>
@@ -40,7 +43,7 @@ export class HUD {
       <div id="clickhint">CLICK TO CONTINUE</div>
       <div id="fader"></div><div id="fps"></div>`;
     this.$ = s => ui.querySelector(s);
-    this.xh = this.$('#xh'); this.cellsEl = this.$('#cells'); this.ammoEl = this.$('#ammo'); this.objEl = this.$('#obj');
+    this.xh = this.$('#xh'); this.cellsEl = this.$('#cells'); this.ammoEl = this.$('#ammo'); this.objEl = this.$('#obj'); this.wpEl = this.$('#wp');
     this.promptEl = this.$('#prompt'); this.hintEl = this.$('#hint'); this.subs = this.$('#subs'); this.choicesEl = this.$('#choices');
     this.locEl = this.$('#loc'); this.notifyEl = this.$('#notify'); this.fader = this.$('#fader'); this.titleEl = this.$('#title');
     this.lbTop = this.$('.lb.top'); this.lbBot = this.$('.lb.bot'); this.hitmEl = this.$('.hitm');
@@ -70,13 +73,38 @@ export class HUD {
   letterbox(on) { this.lbTop.classList.toggle('on', on); this.lbBot.classList.toggle('on', on); }
   fade(to, dur = 1) { this.fader.style.transition = `opacity ${dur}s`; this.fader.classList.toggle('on', to > 0.5); return new Promise(r => setTimeout(r, dur * 1000)); }
 
-  setObjective(text, sub = '') {
+  // target: where the waypoint marker points (a Vector3 in city space, or a function returning one)
+  setObjective(text, sub = '', target = null) {
     if (!text) { this.objEl.classList.add('hide'); this.objective = null; return; }
     const changed = !this.objective || this.objective.text !== text;
-    this.objective = { text, sub };
+    this.objective = { text, sub, target };
     this.objEl.querySelector('.t').textContent = text; this.objEl.querySelector('.s').textContent = sub;
     this.objEl.classList.remove('hide');
     if (changed) { this.objEl.classList.remove('new'); void this.objEl.offsetWidth; this.objEl.classList.add('new'); this.game.audio.ui('objective'); this.objShowT = 7; }
+  }
+  // Waypoint: a marker over the objective's target with the distance; off screen (or behind the
+  // camera) it sticks to the screen edge and points the way.
+  updateWaypoint(show) {
+    const o = this.objective, el = this.wpEl;
+    let tp = o && o.target ? (typeof o.target === 'function' ? o.target() : o.target) : null;
+    if (!show || !tp) { el.style.opacity = 0; return; }
+    const g = this.game, cam = g.engine.camera;
+    const w = g.engine.cityRoot.localToWorld(tp.clone().add(_wpUp)), v = w.clone().project(cam);
+    const behind = cam.position.clone().sub(w).dot(cam.getWorldDirection(_wpDir)) > 0;
+    const W = innerWidth, H = innerHeight, m = 48;
+    let x = (v.x * 0.5 + 0.5) * W, y = (-v.y * 0.5 + 0.5) * H;
+    if (behind) { x = W - x; y = H - y; }
+    const off = behind || x < m || x > W - m || y < m || y > H - m;
+    if (off) { // push to the edge along the direction from the screen centre
+      const dx = x - W / 2, dy = y - H / 2 || 0.001, k = Math.min((W / 2 - m) / Math.abs(dx || 0.001), (H / 2 - m) / Math.abs(dy));
+      x = W / 2 + dx * k; y = H / 2 + dy * k;
+      el.querySelector('.arrow').style.transform = `rotate(${Math.atan2(dy, dx)}rad) translateX(14px)`;
+    }
+    el.classList.toggle('off', off);
+    const dist = g.player.pos.distanceTo(tp);
+    el.querySelector('.d').textContent = dist < 3 ? '' : Math.round(dist) + ' m';
+    el.style.opacity = dist < 2 ? 0 : 1;
+    el.style.transform = `translate(${x.toFixed(0)}px, ${y.toFixed(0)}px)`;
   }
   notify(text, dur = 3) { this.notifyEl.textContent = text; this.notifyEl.classList.add('show'); clearTimeout(this._nt); this._nt = setTimeout(() => this.notifyEl.classList.remove('show'), dur * 1000); }
   location(a, b, dur = 5) { this.locEl.querySelector('.a').textContent = a; this.locEl.querySelector('.b').textContent = b; this.locEl.classList.add('show'); clearTimeout(this._lt); this._lt = setTimeout(() => this.locEl.classList.remove('show'), dur * 1000); }
@@ -114,6 +142,7 @@ export class HUD {
   update(dt) {
     const g = this.game, p = g.player, w = g.weapons, t = g.tether;
     const show = this.visible && !g.director.active && !g.paused;
+    this.updateWaypoint(show);
     this.combatUI = Math.max(0, this.combatUI - dt);
     const combatVisible = show && (w.drawn || t.fill > 0.01 || this.combatUI > 0 || t.target || t.anchor || g.enemies.anyAware);
     // crosshair + spread

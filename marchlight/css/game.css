@@ -160,3 +160,10 @@ body.bigsubs .sub { font-size: 26px; }
 #clickhint.show { opacity: 1; }
 #fps { position: absolute; right: 8px; bottom: 6px; font: 11px monospace; color: #888; display: none; }
 @media (max-width: 700px) { #obj { left: 16px; top: 16px; max-width: 70vw; } #ammo { right: 16px; bottom: 16px; } #hint { right: 16px; width: 240px; } .menu .col { margin-left: 16px; } #custom { right: 16px; left: 16px; width: auto; } }
+
+/* objective waypoint */
+#wp { position: absolute; left: 0; top: 0; pointer-events: none; transition: opacity .3s; opacity: 0; will-change: transform; }
+#wp .pin { position: absolute; left: -9px; top: -9px; width: 14px; height: 14px; border: 2px solid var(--amber); transform: rotate(45deg); background: rgba(255,179,92,0.18); box-shadow: 0 0 8px rgba(255,179,92,0.6); }
+#wp .d { position: absolute; left: -40px; top: 12px; width: 80px; text-align: center; font-family: var(--cond); font-size: 13px; letter-spacing: 0.08em; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+#wp .arrow { position: absolute; left: 0; top: -7px; width: 0; height: 0; display: none; }
+#wp.off .arrow { display: block; border-left: 12px solid var(--amber); border-top: 7px solid transparent; border-bottom: 7px solid transparent; transform-origin: 0 50%; }

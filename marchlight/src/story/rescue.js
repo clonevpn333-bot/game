@@ -214,7 +214,7 @@ export async function runRescue(story, startStage = 'A') {
     g.audio.music.play('rescue', 0.5);
     g.slowmo = 0.7;
     D.radio('NIA', 'The haul cable — it\'s gone! The scavs cut it halfway through!', { wait: false, dur: 2.6 });
-    g.hud.setObjective('Stop the tram', 'Capture its momentum [E] · Release it into the brake clamps [Q]');
+    g.hud.setObjective('Stop the tram', 'Capture its momentum [E] · Release it into the brake clamps [Q]', () => tram.group.position);
     g.hud.hint('capture', true); story.wait(3.5).then(() => g.hud.hint('release', true)).catch(() => {});
     await story.wait(2.6);
     D.radio('BRAM', 'Slow it down, kid! Throw it into the clamps on the towers!', { wait: false, dur: 3 });
@@ -248,14 +248,14 @@ export async function runRescue(story, startStage = 'A') {
     g.camera.shake(0.6);
     tram.pos.copy(tram.group.position); tram.vel.set(0, -1, 0); tram.state = 'fall';
     tram.makeKinematic();
-    g.hud.setObjective('Catch the tram', 'Capture the fall [E], then release the momentum into the crane [Q]');
+    g.hud.setObjective('Catch the tram', 'Capture the fall [E], then release the momentum into the crane [Q]', () => tram.group.position);
     D.radio('NIA', 'The whole line\'s down — it\'s falling onto the platform!', { wait: false, dur: 2.4 });
     // kinetic focus: time slows hard while you work the tether
     const focus = g.add((dt, dtr) => {
       const want = (T.capturing || (T.target === tramTarget) || T.target === craneTarget) && tram.state === 'fall' ? 0.28 : (tram.state === 'fall' ? 0.55 : 1);
       g.slowmo = damp(g.slowmo, want, 6, dtr);
       g.engine.grade.uniforms.uFocus.value = damp(g.engine.grade.uniforms.uFocus.value, tram.state === 'fall' ? 1 : 0, 4, dtr);
-      if (tram.state === 'fall' && T.cells >= 2 && !stage.promptShown) { stage.promptShown = true; g.hud.setObjective('REDIRECT', 'Aim at the Undercroft crane and RELEASE [Q]'); g.dialogue.bark('BRAM', 'You\'ve got it! The crane — throw it into the crane!', 3); }
+      if (tram.state === 'fall' && T.cells >= 2 && !stage.promptShown) { stage.promptShown = true; g.hud.setObjective('REDIRECT', 'Aim at the Undercroft crane and RELEASE [Q]', S.crane.position); g.dialogue.bark('BRAM', 'You\'ve got it! The crane — throw it into the crane!', 3); }
     });
     await story.waitFor(() => stage.caught || tram.pos.y < SP.under + 3.2);
     focus();
@@ -297,7 +297,7 @@ export async function runRescue(story, startStage = 'A') {
     }
     S.craneAnchorOn = true;
     g.audio.music.play('tension', 2);
-    g.hud.setObjective('Get the crew out', 'Latch to the crane [F] or cross its boom, then blow the jammed hatch [Q]');
+    g.hud.setObjective('Get the crew out', 'Latch to the crane [F] or cross its boom, then blow the jammed hatch [Q]', () => g.engine.cityRoot.worldToLocal(tram.hatch.getWorldPosition(new THREE.Vector3())));
     g.hud.hint('latch', true);
     // hatch
     await story.waitFor(() => stage.hatchOpen || P.pos.y < g.killY + 5);
@@ -327,7 +327,7 @@ export async function runRescue(story, startStage = 'A') {
     stage.ivoFalling = true;
     const ivoV = new THREE.Vector3(0.6, 1.5, 0.4);
     g.slowmo = 0.3; g.engine.grade.uniforms.uFocus.value = 1;
-    g.hud.setObjective('CATCH HIM', 'Hold [E] on Ivo');
+    g.hud.setObjective('CATCH HIM', 'Hold [E] on Ivo', () => tram.ivo.pos);
     const t1 = g.time;
     const fallTick = g.add((dt) => {
       if (stage.ivoCaught) return;
@@ -370,7 +370,7 @@ export async function runRescue(story, startStage = 'A') {
     g.camera.shake(0.3);
     tram.tilt = 0.35;
     D.radio('BRAM', 'That hook\'s going! Rook, get OFF it!', { wait: false, dur: 2.4 });
-    g.hud.setObjective('Get clear!', 'The catch frame is failing');
+    g.hud.setObjective('Get clear!', 'The catch frame is failing', new THREE.Vector3(205, SP.deck, -292));
     await story.wait(4.2);
     // the drop
     const onTram = P.groundCollider && tram.kin && tram.kin.cols.some(c => c.handle === P.groundCollider.handle);

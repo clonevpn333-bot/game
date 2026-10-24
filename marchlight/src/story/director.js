@@ -112,10 +112,12 @@ export class Director {
       : style === 'wide' ? [wide(side), wide(-side), ots(side, 1.15), ots(-side, 1.15), close(side)]
       : [ots(side, 1.15), ots(-side, 1.15), ots(side, 1.6), close(side), close(-side), wide(side), wide(-side)];
     const occ = this.occluders(), rc = this._rc || (this._rc = new THREE.Raycaster());
+    let room = null, roomD = -1; // fallback: the setup with the most clear room, pulled in before the wall
     const clear = (c) => {
       const d = c.pos.clone().sub(c.look), len = d.length(); d.divideScalar(len);
       rc.set(c.look, d); rc.far = len + 0.25; rc.near = 0.3;
-      if (rc.intersectObjects(occ, false).length) return false; // a wall (any visible solid surface)
+      const hit = rc.intersectObjects(occ, false)[0];
+      if (hit) { const free = hit.distance - 0.25; if (free > roomD) { roomD = free; room = { ...c, pos: c.look.clone().addScaledVector(d, Math.max(0.55, free)) }; } return false; } // a wall
       for (const o of others) {
         if (o === a || o === b || !o.pos) continue;
         const top = eye(o) + 0.15;
@@ -126,7 +128,7 @@ export class Director {
       }
       return true;
     };
-    return order.find(clear) || order[0];
+    return order.find(clear) || room || order[0];
   }
   // visible, opaque world meshes that can block a shot (characters, glass and particles don't)
   occluders() {

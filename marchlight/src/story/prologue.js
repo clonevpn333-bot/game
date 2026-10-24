@@ -31,7 +31,7 @@ export class Prologue {
   wait(s) { const t0 = this.game.rtime; return this.waitFor(() => this.game.rtime - t0 >= s); }
   waitGame(s) { const t0 = this.game.time; return this.waitFor(() => this.game.time - t0 >= s); }
   near(p, r = 2) { return this.waitFor(() => this.game.player.pos.distanceTo(p) < r); }
-  objective(t, s = '') { this.game.hud.setObjective(t, s); }
+  objective(t, s = '', target = null) { this.game.hud.setObjective(t, s, target); } // target: waypoint (Vector3 or fn)
   say(...a) { return this.game.dialogue.say(...a); }
   radio(name, text, o = {}) { return this.game.dialogue.radio(name, text, o); }
   bark(name, text, d = 3, a) { this.game.dialogue.bark(name, text, d, a); }
@@ -289,7 +289,7 @@ export class Prologue {
     P.setScripted(false); P.teleport(stand, 0); g.camera.snapBehind(0, 0.1);
     this.exit();
     g.hud.location('RESIDENTIAL TERRACES', 'MERIDIAN · 3-C', 6);
-    this.objective('Get ready for your shift', 'Tomas left a note. Your gear is on the rack.');
+    this.objective('Get ready for your shift', 'Tomas left a note. Your gear is on the rack.', V(189.5, 14, -16.6));
     g.hud.hint('move'); setTimeout(() => g.hud.hint('interact'), 6000); setTimeout(() => g.hud.hint('journal'), 30000);
     g.state.journal('Day 214 of the March. Meridian is crossing the Sallow Plains.');
     // ---- apartment interactions
@@ -318,7 +318,7 @@ export class Prologue {
     this.item({ pos: V(189.5, 14, -16.6), radius: 1.6, label: () => said.geared ? 'Runner kit (worn)' : 'Gear up', enabled: () => !said.geared, onUse: async () => {
       said.geared = true; g.hud.fade(1, 0.35); await this.wait(0.4);
       P.setLook({ ...(g.state.look || defaultLook()), tetherArm: false }); g.audio.reloadPart('rack'); g.hud.fade(0, 0.5);
-      this.objective('Head to the Market', 'Leave through the front door.'); } });
+      this.objective('Head to the Market', 'Leave through the front door.', V(182.3, 14, -21)); } });
     // the door
     await this.useOnce({ pos: V(182.3, 14, -21), radius: 1.6, label: () => said.geared ? 'Leave the apartment' : 'Leave the apartment (not geared up)', onUse: () => {} });
     if (!said.geared) { P.setLook({ ...(g.state.look || defaultLook()), tetherArm: false }); this.say('ROOK', 'Boots. Jacket. Right.', { wait: false, dur: 2 }); }
@@ -372,7 +372,7 @@ export class Prologue {
     this.equip(false); P.relaxed = true;
     if (P.pos.distanceTo(V(179, 14, -21)) > 3) { P.teleport(V(179.0, 14, -21), -Math.PI / 2); g.camera.snapBehind(-Math.PI / 2 + 0.3, 0.05); }
     g.hud.fade(0, 0.8);
-    this.objective('Head to the Market', 'Bram\'s at Odile\'s Kitchen.');
+    this.objective('Head to the Market', 'Bram\'s at Odile\'s Kitchen.', V(168.2, 0, -64));
     g.weapons.locked = true;
     await this.wait(1.5);
     await this.radio('BRAM', 'Kid. You up? Odile\'s. I\'m buying.', { wait: false, dur: 2.6 });
@@ -422,7 +422,7 @@ export class Prologue {
     P.relaxed = true; g.weapons.locked = true;
     g.hud.location('THE MARKET', 'MERIDIAN · DECK ONE', 5);
     g.audio.music.stop(4);
-    this.objective('Meet Bram at Odile\'s Kitchen', '');
+    this.objective('Meet Bram at Odile\'s Kitchen', '', () => C.bram.pos);
     g.state.meet('Odile Varga', 'Runs Odile\'s Kitchen. Has fed Runner Crew Four for twelve years and still calls Bram "that man".');
     // Sun Loaf: buy a honey knot (for Nia, if you think of it)
     const bakery = D.spots.shopW0;
@@ -481,7 +481,7 @@ export class Prologue {
     this.exit();
     C.bram.lookAt(null); C.bram.faceTarget = null; C.odile.lookAt(null); C.odile.activity('cook');
     C.bram.goTo(V(155, 0, -66), 1.5).then(() => C.bram.goTo(V(156, 0, -90), 1.6)).then(() => C.bram.goTo(V(140, 0, -100), 1.6)).then(() => hide(C.bram));
-    this.objective('Take the tram to the Lower Decks', 'Market Station, south end of the street.');
+    this.objective('Take the tram to the Lower Decks', 'Market Station, south end of the street.', V(155, 5.55, -124.6));
     g.state.checkpoint = 'tram'; g.state.save(g);
   }
 
@@ -489,7 +489,7 @@ export class Prologue {
     const g = this.game, P = g.player, C = this.cast, D = g.districts.city;
     if (g.crowd.actors.length === 0) { this.populateCity(); this.setupCityCast('later'); this.equip(false); P.teleport(V(155, 0, -110), Math.PI); g.camera.snapBehind(Math.PI, 0.05); g.hud.fade(0, 0.8); }
     P.relaxed = true; g.weapons.locked = true;
-    this.objective('Take the tram to the Lower Decks', 'Market Station, south end of the street.');
+    this.objective('Take the tram to the Lower Decks', 'Market Station, south end of the street.', V(155, 5.55, -124.6));
     // tram waits at Market Station
     const tram = g.tram; tram.s = 0; tram.state = 'docked'; tram.doorOpen = 1;
     // passengers
@@ -517,7 +517,7 @@ export class Prologue {
     await this.wait(3);
     // Rook, watching the drop
     P.anim.lookTarget = tram.car.localToWorld(V(-6, 0.6, 2));
-    g.director.shot({ pos: cp(-0.25, 1.32, -2.85), look: cp(1.0, 1.24, -3.2), fov: 36, to: { pos: cp(-0.15, 1.3, -2.95) }, dur: 9 });
+    g.director.shot({ pos: cp(-0.3, 1.52, -2.75), look: cp(1.0, 1.46, -3.2), fov: 36, to: { pos: cp(-0.2, 1.5, -2.9) }, dur: 9 }); // Rook's seated eye line ~1.46 in car space
     g.audio.chime(tram.car.position.clone());
     this.say('PA', 'Next stop: Engineering. Please mind the gap. The gap is three hundred meters.', { radio: true, wait: false, dur: 4.4 });
     await this.waitFor(() => tram.s > tram.len * 0.62);
@@ -536,7 +536,7 @@ export class Prologue {
     if (!g.crowd.actors.some(a => a.pos.y < -20)) { this.populateLower(); this.equip(false); P.teleport(V(128, LD.floor + 1.1, -232.2), 0); g.camera.snapBehind(0.3, 0.1); g.hud.fade(0, 0.8); }
     P.relaxed = true; g.weapons.locked = true;
     g.tram.s = g.tram.len - 0.01; g.tram.state = 'docked';
-    this.objective('See Tomas in Engine Control', 'The glass gallery above the Underwell.');
+    this.objective('See Tomas in Engine Control', 'The glass gallery above the Underwell.', () => C.tomas.pos);
     show(C.tomas, L.spots.tomas.pos.clone(), L.spots.tomas.yaw); C.tomas.activity('console');
     // optional: look into the Underwell
     this.trigger(() => P.pos.distanceTo(V(75, LD.floor, -190)) < 19, () => { this.say('ROOK', 'Every time. Every single time it makes my stomach drop.', { wait: false, dur: 3 }); });
@@ -582,7 +582,7 @@ export class Prologue {
     g.state.meet('Commander Harrow', 'Head of Meridian Security. A voice on the radio this morning, asking for Leg Two\'s telemetry before Council sees it.');
     g.state.journal('Tomas says Leg Two is drifting — two meters at the foot, every step. I\'m to re-seat the couplings at Pylon Seven.');
     g.state.journal('Commander Harrow has ordered Leg Two\'s telemetry routed to Security first.');
-    this.objective('Get your tether from Nia', 'Runner Bay, east end of the Lower Decks.');
+    this.objective('Get your tether from Nia', 'Runner Bay, east end of the Lower Decks.', () => C.nia.pos);
     g.state.checkpoint = 'hangar'; g.state.save(g);
   }
 
@@ -590,7 +590,7 @@ export class Prologue {
     const g = this.game, P = g.player, C = this.cast, L = g.districts.lower;
     if (!g.crowd.actors.some(a => a.pos.y < -20)) { this.populateLower(); this.equip(false); P.teleport(V(150, LD.floor, -200), Math.PI / 2); g.camera.snapBehind(Math.PI / 2, 0.1); g.hud.fade(0, 0.8); show(C.tomas, L.spots.tomas.pos.clone(), L.spots.tomas.yaw); C.tomas.activity('console'); }
     P.relaxed = true; g.weapons.locked = true;
-    this.objective('Get your tether from Nia', 'Runner Bay, east end of the Lower Decks.');
+    this.objective('Get your tether from Nia', 'Runner Bay, east end of the Lower Decks.', () => C.nia.pos);
     show(C.nia, L.spots.niaTinker.pos.clone(), L.spots.niaTinker.yaw); C.nia.pose('tinker');
     // tools clank from under the Mule
     const clankT = g.add(() => { if (Math.random() < 0.01) g.audio.clank(V(180, LD.floor + 0.5, -176), 0.3, 1.4); });
@@ -681,7 +681,7 @@ export class Prologue {
     { const T = L.spots.niaTinker, out = T.pos.clone().add(V(Math.sin(T.yaw) * 0.8, 0, Math.cos(T.yaw) * 0.8));
       C.nia.goTo(out, 1.2).then(() => { C.nia.face(out.clone().add(V(Math.sin(T.yaw), 0, Math.cos(T.yaw)))); return this.waitGame(0.8); }).then(() => { C.nia.faceTarget = null; C.nia.yaw = T.yaw; return C.nia.rollIn(0.8, 0.55); }); }
     C.bram.goTo(V(160, LD.floor, -228), 1.6);
-    this.objective('Recertify at the range', 'South corridor, past the lockers.');
+    this.objective('Recertify at the range', 'South corridor, past the lockers.', V(158, LD.floor, -240));
     g.state.checkpoint = 'range'; g.state.save(g);
   }
 
@@ -689,7 +689,7 @@ export class Prologue {
     const g = this.game, P = g.player, C = this.cast, L = g.districts.lower;
     if (C.nia.hidden) { this.populateLower(); show(C.nia, L.spots.niaTinker.pos.clone(), L.spots.niaTinker.yaw); C.nia.pose('tinker'); P.teleport(V(163, LD.floor, -212), Math.PI); g.camera.snapBehind(Math.PI, 0.1); g.hud.fade(0, 0.8); L.benchTether.visible = false; }
     this.equip(true); P.relaxed = true; g.weapons.locked = true;
-    this.objective('Recertify at the range', 'South corridor, past the lockers.');
+    this.objective('Recertify at the range', 'South corridor, past the lockers.', V(158, LD.floor, -240));
     show(C.bram, V(159.4, LD.floor, -238.5), -Math.PI / 2 - 0.6); C.bram.anim.armsCrossed = 1; C.bram.lookAtPlayer();
     await this.near(V(158, LD.floor, -240), 4);
     g.weapons.locked = false; g.weapons.give('pistol'); g.weapons.give('carbine'); g.weapons.select('pistol');
@@ -755,7 +755,7 @@ export class Prologue {
     await this.wait(2);
     C.bram.anim.armsCrossed = 0; C.bram.lookAt(null);
     await this.radio('BRAM', 'Spine\'s through the bay doors. I\'ll be on comms. Nia too, whether she admits it or not.', { wait: false, dur: 4.2 });
-    this.objective('Head out onto the Spine', 'Through the bay doors. Pylon Seven, Leg Two.');
+    this.objective('Head out onto the Spine', 'Through the bay doors. Pylon Seven, Leg Two.', V(195, LD.floor, -190));
     g.weapons.holster();
     // open the bay doors as Rook approaches
     hide(C.bram);
@@ -796,7 +796,7 @@ export class Prologue {
     walk(); P.setScripted(false); P.teleport(P.pos.clone(), Math.PI); g.camera.snapBehind(Math.PI, 0.15); // (cut from the crane shot)
     this.exit();
     g.state.journal('Out on the Spine. From up here you can see the whole Sallow — and the trail of our own footprints behind us.');
-    this.objective('Reach Pylon Seven', 'Follow the Spine walkway forward, toward Leg Two.');
+    this.objective('Reach Pylon Seven', 'Follow the Spine walkway forward, toward Leg Two.', S.spots.vantage);
     g.hud.hint('jump', true);
     // traversal chatter
     this.trigger(() => P.pos.z < -207 && P.pos.y > -40, () => this.radio('NIA', 'Walkway\'s out ahead. Use the rail on the hull — the amber one. Hang, shimmy, don\'t look down.', { wait: false, dur: 4.6 }).then(() => this.radio('ROOK', 'Why would you *say* that?', { wait: false, dur: 2 })));
@@ -823,7 +823,7 @@ export class Prologue {
     await this.wait(4.7);
     await this.radio('BRAM', 'Bold little things. Clear them off. The leeches haven\'t seen you — come in quiet if you want.', { wait: false, dur: 4.6 });
     g.hud.hint('crouch');
-    this.objective('Clear the scavs off the cable trunks', 'Leeches are armored in front — hit the canister, or throw them off the edge.');
+    this.objective('Clear the scavs off the cable trunks', 'Leeches are armored in front — hit the canister, or throw them off the edge.', () => g.enemies.alive.sort((a, b) => a.pos.distanceTo(P.pos) - b.pos.distanceTo(P.pos))[0]?.pos);
     let combatStarted = false;
     const music = g.add(() => { if (!combatStarted && E.anyAware) { combatStarted = true; g.audio.music.play('combat', 1); } });
     let killLine = 0;
@@ -838,7 +838,7 @@ export class Prologue {
     await this.wait(0.8);
     await this.radio('BRAM', 'Clean. Maybe you\'ll make dinner after all.', { wait: false, dur: 3 });
     g.state.journal('Scav drones were stripping the cable trunks on Gallery B. Not any more.');
-    this.objective('Take the cargo lift down to Pylon Seven', 'South end of the gallery.');
+    this.objective('Take the cargo lift down to Pylon Seven', 'South end of the gallery.', S.spots.liftPanel);
     // the lift
     await this.useOnce({ pos: S.spots.liftPanel, radius: 2.2, label: 'Operate the cargo lift' });
     if (P.pos.distanceTo(S.lift.position) > 2.8) P.teleport(S.lift.position.clone().add(V(0.6, 0.2, 0.6)), Math.PI);
@@ -862,7 +862,7 @@ export class Prologue {
     if (P.pos.y > -80) { this.equip(true, true); P.teleport(S.spots.deckArrive.clone(), 0); g.camera.snapBehind(0.3, 0.1); g.hud.fade(0, 0.6); }
     this.equip(true, true); P.relaxed = false; g.weapons.locked = false;
     g.audio.music.play('exterior', 2);
-    this.objective('Re-seat the three couplings on Pylon Seven', 'Capture momentum from Leg Two\'s hip flywheel, release into each coupling.');
+    this.objective('Re-seat the three couplings on Pylon Seven', 'Capture momentum from Leg Two\'s hip flywheel, release into each coupling.', () => { const c = S.couplings.find(c => !c.seated); return c ? g.engine.cityRoot.worldToLocal(c.lamp.getWorldPosition(V(0, 0, 0))) : null; });
     await this.radio('TOMAS', 'You\'re at Pylon Seven. Three couplings — they need a jolt to seat. Your tether can give them one.', { wait: false, dur: 4.6 });
     await this.wait(4.7);
     await this.radio('TOMAS', 'Take it from the hip flywheel. There\'s plenty to spare.', { wait: false, dur: 3 });
@@ -898,7 +898,7 @@ export class Prologue {
     await this.wait(2.4);
     await this.radio('BRAM', 'Don\'t trade punches with that thing. When it charges — take it.', { wait: false, dur: 3.4 });
     g.hud.hint('shearer', true);
-    this.objective('Deal with the Shearer', 'Stall its charge with the tether [E], then hit back — or put it over the edge.');
+    this.objective('Deal with the Shearer', 'Stall its charge with the tether [E], then hit back — or put it over the edge.', () => (sh.dead ? null : sh.pos));
     // counterweight: capture its swing, release into the Shearer
     const cw = S.counterweight; let cwA = 0.5, cwV = 0;
     const cwTick = g.add((dt) => { cwV += -9.8 / 7.5 * Math.sin(cwA) * dt; cwA += cwV * dt; cw.rotation.x = cwA; });
@@ -922,7 +922,7 @@ export class Prologue {
     this.equip(true, true); P.relaxed = false; g.weapons.locked = false;
     S.relayLight.material.color.setRGB(0.4, 4, 0.8); S.couplings.forEach(c => { c.seated = true; c.arm.rotation.x = 0; c.lamp.material.color.setRGB(0.4, 4, 0.8); });
     this.spawnUndercroftCrowd();
-    g.hud.setObjective('Watch the line', 'The Undercroft shift change is coming down.');
+    g.hud.setObjective('Watch the line', 'The Undercroft shift change is coming down.', SP.lineU);
     const ok = await runRescue(this, 'A');
     this.guard(id);
     if (ok) await this.afterRescue(id);
@@ -990,7 +990,7 @@ export class Prologue {
     this.exit();
     g.director.freeLook = false;
     const toS = sp().clone().sub(P.pos); g.camera.yaw = Math.atan2(toS.x, toS.z); g.camera.pitch = Math.atan2(-toS.y, Math.hypot(toS.x, toS.z));
-    this.objective('Look closer', 'Hold Z to zoom your visor on the town below.');
+    this.objective('Look closer', 'Hold Z to zoom your visor on the town below.', () => sp());
     g.hud.hint('zoom', true);
     const zoomTick = g.add((dt) => { g.camera.zoomFov = g.input.down('zoom') || g.input.down('aim') ? 5 : null; });
     // wait until Rook's visor rests on the town
