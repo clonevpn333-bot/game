@@ -12,11 +12,6 @@ async function boot() {
   await initPhysics();
   const game = new Game(document.getElementById('view'));
   window.__game = game; window.__THREE = THREE; // for the test tools
-  // people are sculpted in worker threads while the city is built on this one
-  const { prewarmAnatomy } = await import('./characters/sculptpool.js');
-  let sculpted = 0;
-  game.anatomyReady = prewarmAnatomy(p => { sculpted = p; });
-  game.anatomyProgress = () => sculpted;
   await game.init(progress);
   if (q.get('fps')) document.getElementById('fps').style.display = 'block';
   if (q.get('test') === 'arena') {

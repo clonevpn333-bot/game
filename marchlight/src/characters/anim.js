@@ -212,8 +212,8 @@ export class Animator {
     const lidBase = (1 - (this.c.look.lid ?? 1)) * 2.2 + (1 - eyeOpen) * 1.45;
     const lidRot = clamp(lidBase + (1 - blinkS) * 1.45, -0.35, 1.45);
     bl[B.lidL].rotation.x = lidRot; bl[B.lidR].rotation.x = lidRot;
-    const lowLod = this.c.lod === 'low';
-    const eyeS = lowLod ? Math.max(0.12, eyeOpen * blinkS) : 1; // never a degenerate (zero-scale) bone
+    // block eyes squash shut to blink and sleep (never a degenerate zero-scale bone)
+    const eyeS = Math.max(0.08, Math.min(1, (eyeOpen * 0.85 + 0.15 * (this.c.look.lid ?? 1)) * blinkS));
     bl[B.eyeL].scale.set(1, eyeS, 1); bl[B.eyeR].scale.set(1, eyeS, 1);
     bl[B.browL].position.set(rest.browL.x - rest.head.x, rest.browL.y - rest.head.y + es.brow * 0.005 + this.mouth * 0.0012, rest.browL.z - rest.head.z);
     bl[B.browR].position.set(rest.browR.x - rest.head.x, rest.browR.y - rest.head.y + es.brow * 0.005 + this.mouth * 0.0012, rest.browR.z - rest.head.z);

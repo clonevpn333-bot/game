@@ -55,10 +55,6 @@ export class Game {
     this.enemies = new Enemies(this);
     this.crowd = new Crowd(this);
     this.noise = (pos, radius) => this.enemies.noise(pos, radius);
-    if (this.anatomyReady) {
-      let done = false; this.anatomyReady.then(() => { done = true; });
-      while (!done) { progress?.(0.4, `Sculpting the people of Meridian… ${Math.round((this.anatomyProgress?.() || 0) * 100)}%`); await new Promise(r => setTimeout(r, 100)); }
-    }
     this.player = new Player(this, this.state.look || {});
     this.input.onLockChange = locked => { if (!locked && this.running && !this.paused && !this.menuOpen && !this.dialogue.choosing && !this.noPauseOnUnlock) this.onRequestPause?.(); };
   }

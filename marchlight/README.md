@@ -57,7 +57,7 @@ Gamepads are supported through the standard mapping.
   - The Lower Decks: the piston hall, the Underwell, and Tomas's Engine Control gallery.
   - The Runner Bay and the firing range.
   - The exterior Spine, Pylon 7 on Leg Two's hip, and the Undercroft.
-- **Characters.** Rook (customizable), Nia, Bram, Tomas, Odile, Sefa, Mrs. Okafor, the kids Pell and Juno, the tram crew, and Commander Harrow on the radio. Bodies, heads, hair and hands are sculpted as signed distance fields (smoothly blended anatomy, cloth folds and hems, a split lip seam on the jaw) and meshed with surface nets at boot in worker threads, then cached in IndexedDB. They are skinned with dual-quaternion skinning, so shoulders and knees keep their volume, and animated procedurally: locomotion, climbing, aiming, conversation gestures, ambient activities, blinks, brows, talking mouths and look-at.
+- **Characters.** Rook (customizable), Nia, Bram, Tomas, Odile, Sefa, Mrs. Okafor, the kids Pell and Juno, the tram crew, and Commander Harrow on the radio. Every character is built from simple shapes in code: rounded boxes for each body part, rigidly attached to a shared skeleton and merged into one mesh (one draw call each). Faces are blocks too, with eyes that squash to blink, block brows and a block mouth that opens with the jaw. Hair styles, beards and outfits are block pieces. Animation is procedural: locomotion, climbing, aiming, conversation gestures, ambient activities, getting up from beds, chairs and creepers, blinks, brows, talking mouths and look-at.
 - **Choices.** Choices change dialogue and are tracked silently through hidden trust, warmth and spark values; there are no meters. Some examples: buying Nia a honey knot, how you talk to Tomas, whether you push him to come to dinner, and whether you or Dace catches Ivo.
 - **Combat.** There are two weapons with recoil, reloads and procedural sound. There are three scavenger machines:
   - **Gnats** strafe, dodge when aimed at, and telegraph their bursts.
@@ -69,9 +69,8 @@ Gamepads are supported through the standard mapping.
 
 ```
 src/core/       engine (renderer + post), input, procedural audio & score, Rapier wrapper, textures, materials
-src/characters/ sculpt (SDF primitives, surface nets, weights/AO), anatomy (body/head/hair/hand sculpts),
-                sculptpool + sculpt.worker (parallel prewarm, IndexedDB cache), rig (skeleton, accessories,
-                DQ skinning, shading), anim (procedural animator), npc (actors, crowds)
+src/characters/ rig (skeleton + block body, face, hair, outfits), anim (procedural animation),
+                npc (actors, crowds, stand up / sit down / roll out)
 src/player/     player controller, camera rig, kinetic tether
 src/combat/     weapons, enemies, fx
 src/world/      city (gait, legs, exterior), ground, sky, districts (city, lower decks, spine), tram, props/light pool
