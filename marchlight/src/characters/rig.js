@@ -30,7 +30,10 @@ export const MAT = { skin: 0, cloth: 1, leather: 2, metal: 3, hair: 4, eye: 5, r
 // blending rigid transforms as dual quaternions keeps their volume. Bone matrices are converted
 // in the vertex shader, so the skeleton and animation code are unchanged.
 const DQS_PARS = `
-  vec4 dqQuat(mat4 m) {
+  // bone matrices carry the actor's uniform world scale (kids, heights): strip it before the
+  // rotation is read, and blend it separately
+  vec4 dqQuat(mat4 mm) {
+    mat3 m = mat3(mm) / max(length(mm[0].xyz), 1e-6);
     float tr = m[0][0] + m[1][1] + m[2][2];
     if (tr > 0.0) { float s = sqrt(max(tr + 1.0, 1e-6)) * 2.0; return vec4((m[1][2] - m[2][1]) / s, (m[2][0] - m[0][2]) / s, (m[0][1] - m[1][0]) / s, 0.25 * s); }
     if (m[0][0] > m[1][1] && m[0][0] > m[2][2]) { float s = sqrt(max(1.0 + m[0][0] - m[1][1] - m[2][2], 1e-6)) * 2.0; return vec4(0.25 * s, (m[1][0] + m[0][1]) / s, (m[2][0] + m[0][2]) / s, (m[1][2] - m[2][1]) / s); }
@@ -41,13 +44,14 @@ const DQS_PARS = `
   vec3 dqRotate(vec4 q, vec3 v) { return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v); }
 `;
 const DQS_BASE = `
-  vec4 dqR = vec4(0.0), dqD = vec4(0.0);
+  vec4 dqR = vec4(0.0), dqD = vec4(0.0); float dqS = 1.0;
   {
     vec4 q0 = dqQuat(boneMatX), q1 = dqQuat(boneMatY), q2 = dqQuat(boneMatZ), q3 = dqQuat(boneMatW);
     float s1 = sign(dot(q0, q1) + 1e-6), s2 = sign(dot(q0, q2) + 1e-6), s3 = sign(dot(q0, q3) + 1e-6);
     dqR = q0 * skinWeight.x + q1 * (skinWeight.y * s1) + q2 * (skinWeight.z * s2) + q3 * (skinWeight.w * s3);
     dqD = dqDual(q0, boneMatX[3].xyz) * skinWeight.x + dqDual(q1, boneMatY[3].xyz) * (skinWeight.y * s1)
         + dqDual(q2, boneMatZ[3].xyz) * (skinWeight.z * s2) + dqDual(q3, boneMatW[3].xyz) * (skinWeight.w * s3);
+    dqS = length(boneMatX[0].xyz) * skinWeight.x + length(boneMatY[0].xyz) * skinWeight.y + length(boneMatZ[0].xyz) * skinWeight.z + length(boneMatW[0].xyz) * skinWeight.w;
     float len = length(dqR);
     if (len < 1e-5) { dqR = vec4(0.0, 0.0, 0.0, 1.0); dqD = vec4(0.0); } else { dqR /= len; dqD /= len; }
   }
@@ -56,11 +60,11 @@ const DQS_POS = `
   {
     vec3 p = (bindMatrix * vec4(transformed, 1.0)).xyz;
     vec3 tr = 2.0 * (dqR.w * dqD.xyz - dqD.w * dqR.xyz + cross(dqR.xyz, dqD.xyz));
-    transformed = (bindMatrixInverse * vec4(dqRotate(dqR, p) + tr, 1.0)).xyz;
+    transformed = (bindMatrixInverse * vec4(dqRotate(dqR, p) * dqS + tr, 1.0)).xyz;
   }
 `;
 const DQS_NRM = `
-  objectNormal = (bindMatrixInverse * vec4(dqRotate(dqR, (bindMatrix * vec4(objectNormal, 0.0)).xyz), 0.0)).xyz;
+  objectNormal = (bindMatrixInverse * vec4(dqRotate(dqR, (bindMatrix * vec4(objectNormal, 0.0)).xyz) * dqS, 0.0)).xyz;
 `;
 export function patchDQS(sh) {
   sh.vertexShader = sh.vertexShader
@@ -252,7 +256,7 @@ function taperTube(pts, r0, r1, radial = 6, flat = 1) {
     }
   }
   const W = radial + 1;
-  for (let i = 0; i < N; i++) for (let j = 0; j < radial; j++) { const a = i * W + j, b = a + 1, c = a + W, d = c + 1; idx.push(a, c, b, b, c, d); }
+  for (let i = 0; i < N; i++) for (let j = 0; j < radial; j++) { const a = i * W + j, b = a + 1, c = a + W, d = c + 1; idx.push(a, b, c, b, d, c); } // outward-facing
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
   return g;
 }
@@ -454,7 +458,7 @@ function buildBody(L, rest, P, lod) {
     // baked occlusion; skin keeps some red in its shadows (scattering)
     const o = Math.max(0, Math.min(1, ao));
     if (tag === TAG.SKIN || tag === TAG.LIP) { c.r *= Math.pow(o, 0.55); c.g *= Math.pow(o, 1.05); c.b *= Math.pow(o, 1.2); }
-    else if (tag === TAG.HAIR) c.multiplyScalar(0.35 + 0.65 * o * o);
+    else if (tag === TAG.HAIR) c.multiplyScalar(0.5 + 0.5 * o);
     else c.multiplyScalar(0.2 + 0.8 * o);
   };
   const matOf = (tag) => tag === TAG.SKIN || tag === TAG.NAIL ? MAT.skin : tag === TAG.LIP ? MAT.lips : tag === TAG.HAIR || tag === TAG.SCALP ? MAT.hair
@@ -519,8 +523,8 @@ function buildBody(L, rest, P, lod) {
     // brows: tapered strokes on the brow ridge
     const bb = rel(bn === 'eyeL' ? 'browL' : 'browR');
     const browC = L.brows ? C(L.brows) : hair.clone().multiplyScalar(0.75);
-    const bpts = [V(-sx * 0.015, -0.0015, 0.0025), V(sx * 0.001, 0.0022, 0.0035), V(sx * 0.016, -0.0025, -0.0005)].map(p => p.add(bb));
-    M.add(taperTube(bpts, 0.0056, 0.0026, hi ? 6 : 4, 1), HM(0, 0, 0), browC, w1(bn === 'eyeL' ? 'browL' : 'browR'), MAT.hair);
+    const bpts = [V(-sx * 0.015, -0.0015, 0.0115), V(sx * 0.001, 0.0022, 0.0068), V(sx * 0.016, -0.0025, 0.0006)].map(p => p.add(bb)); // centreline ~2 mm off the brow surface
+    M.add(taperTube(bpts, 0.0058, 0.0028, hi ? 6 : 4, 1), HM(0, 0, 0), browC, w1(bn === 'eyeL' ? 'browL' : 'browR'), MAT.hair);
   }
   // mouth interior and teeth behind the lips
   { const my = FACE.mouthY;

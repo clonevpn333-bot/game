@@ -64,6 +64,14 @@ export async function buildMeridian(game, progress) {
       game.tram.update(dt);
       for (const f of L.anim) f(t, game.city, dt);
       for (const f of S.anim) f(t, game.city, dt);
+      // occlusion by the hull: districts the camera cannot possibly see are switched off (draw
+      // calls, culling and the shadow pass all skip them). The deck plates and hull walls are
+      // solid, so the tests are simple boxes in city space.
+      { const c = game.engine.camera.position, outside = c.x > 196;
+        L.root.visible = c.y < -2 || outside;            // under the market deck, or through the bay tunnel
+        S.root.visible = c.x > 186 || c.y < -30;         // starboard hull face (seen from Rook's window too)
+        C.root.visible = !(c.y < -10 && !outside);       // not from inside the Lower Decks
+      }
       // ambience by place
       const cam = game.engine.camera.position, p = game.player.pos;
       const inLower = p.y < -9 && p.y > -40 && p.x < 197 && p.z < -139 && p.z > -251;

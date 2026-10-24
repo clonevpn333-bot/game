@@ -242,13 +242,11 @@ export function headShape(P, L) {
   head.add(ellipsoid(0, 0.13, -0.014, 0.078, 0.105, 0.1))                                        // cranium
     .add(ellipsoid(0, 0.112, 0.028, 0.066, 0.078, 0.06), 0.028)                                  // upper face
     .add(ellipsoid(0, 0.152, 0.036, 0.063, 0.05, 0.052), 0.025)                                  // forehead
-    .add(ellipsoid(0.045, 0.094, 0.054, 0.022, 0.014, 0.022), 0.016).add(ellipsoid(-0.045, 0.094, 0.054, 0.022, 0.014, 0.022), 0.016) // cheekbones
-    .add(ellipsoid(0.034, 0.07, 0.058, 0.019 * ch, 0.017 * ch, 0.02), 0.016).add(ellipsoid(-0.034, 0.07, 0.058, 0.019 * ch, 0.017 * ch, 0.02), 0.016) // cheeks
-    .add(ellipsoid(0, 0.052, 0.03, 0.052 * jw, 0.048, 0.052), 0.022)                              // lower face
-    .add(roundCone([0.052 * jw, 0.048, -0.026], [0.016, 0.014, 0.058], 0.01, 0.0095), 0.03).add(roundCone([-0.052 * jw, 0.048, -0.026], [-0.016, 0.014, 0.058], 0.01, 0.0095), 0.03) // jaw line
-    .add(ellipsoid(0, 0.014, 0.065, 0.019 * jw, 0.016, 0.015), 0.03)                             // chin
-    .add(ellipsoid(0, 0.047, 0.077, 0.026, 0.023, 0.02), 0.024)                                  // muzzle
-    .add(capsule([0, 0.128, 0.088], [0.04, 0.1295, 0.08], fem ? 0.0068 : 0.0085), 0.016).add(capsule([0, 0.128, 0.088], [-0.04, 0.1295, 0.08], fem ? 0.0068 : 0.0085), 0.016); // brow ridge
+    // stylized: soft round cheeks and a simple tapered jaw, no cheekbones or muzzle
+    .add(ellipsoid(0.033, 0.074, 0.05, 0.026 * ch, 0.024 * ch, 0.026), 0.03).add(ellipsoid(-0.033, 0.074, 0.05, 0.026 * ch, 0.024 * ch, 0.026), 0.03) // cheeks
+    .add(ellipsoid(0, 0.05, 0.03, 0.054 * jw, 0.05, 0.054), 0.03)                                 // lower face
+    .add(ellipsoid(0, 0.02, 0.058, 0.024 * jw, 0.02, 0.02), 0.035)                               // chin
+    .add(capsule([0.012, 0.128, 0.086], [0.04, 0.13, 0.078], 0.007), 0.024).add(capsule([-0.012, 0.128, 0.086], [-0.04, 0.13, 0.078], 0.007), 0.024); // soft brow
   // nose
   const nk = kid ? 0.82 : 1;
   head.add(roundCone([0, 0.112, 0.086], [0, 0.079, 0.086 + 0.017 * nk], 0.0058, 0.0078), 0.014)
@@ -311,7 +309,7 @@ export function sculptHead(P, L, B, lod) {
     };
     const parts = [head];
     if (L.beard) {
-      const beard = new Part('beard', { k: 0.008, weights: head.weights, tag: () => [TAG.HAIR, 0.3], bump: (x, y, z) => (vnoise(x * 400, y * 160, z * 400) - 0.5) * 0.0014, bumpAmp: 0.002 });
+      const beard = new Part('beard', { k: 0.012, weights: head.weights, tag: () => [TAG.HAIR, 0.2] });
       beard.add(custom((x, y, z) => {
         const d = head.dist(x, y, z, 0.03);
         const ax = Math.abs(x);
@@ -320,7 +318,7 @@ export function sculptHead(P, L, B, lod) {
         const must = sstep(my + 0.0075, my + 0.0105, y) * sstep(0.069, 0.064, y) * sstep(0.028, 0.02, ax) * sstep(0.078, 0.088, z);
         const lips = sstep(0.022, 0.017, ax) * sstep(my + 0.011, my + 0.006, y) * sstep(my - 0.012, my - 0.007, y);
         m = Math.max(m * (1 - lips), must);
-        const th = (0.0075 + (vnoise(x * 120, y * 120, z * 120) - 0.5) * 0.004) * m - 0.004 * (1 - m);
+        const th = 0.0085 * m - 0.004 * (1 - m);
         return d - th;
       }, [-0.09, -0.05, -0.06, 0.09, 0.13, 0.12]));
       parts.push(beard);
@@ -415,13 +413,14 @@ export function sculptHair(P, L, B, lod) {
       hair.add(roundCone([0, 0.12, -0.076], [0, -0.06, -0.074], 0.066, 0.058), 0.035);
       for (const sx of [-1, 1]) hair.add(roundCone([sx * 0.072, 0.12, 0.004], [sx * 0.066, -0.02, -0.022], 0.018, 0.022), 0.026);
     }
-    const curl = (x, y, z) => { const s = 70; return (vnoise(x * s, y * s, z * s) - 0.45) * 0.009 + (vnoise(x * 160, y * 160, z * 160) - 0.5) * 0.004; };
+    // stylized hair: a few broad sculpted clumps, no strand-scale noise
+    const curl = (x, y, z) => { const s = 42; return (vnoise(x * s, y * s, z * s) - 0.45) * 0.011; };
     hair.bump = (x, y, z) => {
       const dx = x - C[0], dz = z - C[2];
       switch (S.groove) {
-        case 'crown': { const u = Math.atan2(x - 0.0, z + 0.05); return Math.sin(u * 46 + vnoise(x * 60, y * 60, z * 60) * 4) * 0.0009 + (vnoise(x * 90, y * 90, z * 90) - 0.5) * 0.0018; }
-        case 'swept': return Math.sin((x * 0.95 + z * 0.3) * 260 + vnoise(x * 50, y * 50, z * 50) * 5) * 0.001 + (vnoise(x * 80, y * 80, z * 80) - 0.5) * 0.0018;
-        case 'back': case 'up': case 'down': { const u = Math.atan2(dx, dz); return Math.sin(u * 60 + vnoise(x * 50, y * 50, z * 50) * 3) * 0.0008; }
+        case 'crown': { const u = Math.atan2(x - 0.0, z + 0.05); return Math.sin(u * 14 + vnoise(x * 30, y * 30, z * 30) * 2) * 0.0016; }
+        case 'swept': return Math.sin((x * 0.95 + z * 0.3) * 110 + vnoise(x * 25, y * 25, z * 25) * 3) * 0.0018;
+        case 'back': case 'up': case 'down': { const u = Math.atan2(dx, dz); return Math.sin(u * 18 + vnoise(x * 25, y * 25, z * 25) * 2) * 0.0014; }
         case 'curl': return curl(x, y, z);
         default: return 0;
       }

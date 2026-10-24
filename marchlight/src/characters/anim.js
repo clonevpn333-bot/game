@@ -294,7 +294,9 @@ export class Animator {
       const swingL = -s * thA * sgn + bias, swingR = s * thA * sgn + bias;
       this.mix(B.thighL, swingL * fs, 0.0, 0.04 + s * side * 0.35, w); this.mix(B.thighR, swingR * fs, 0.0, -0.04 - s * side * 0.35, w);
       // swing-phase flexion plus a small loading flex just after heel strike
-      const kL = Math.max(0, c * sgn) ** 1.2 * knA + 0.08 + Math.max(0, -c * sgn) * Math.max(0, s * sgn) * 0.32 * (1 - runW * 0.5), kR = Math.max(0, -c * sgn) ** 1.2 * knA + 0.08 + Math.max(0, c * sgn) * Math.max(0, -s * sgn) * 0.32 * (1 - runW * 0.5);
+      // running: the swing knee folds hardest just after toe-off (heel kick), so its flex leads the walk's
+      const cK = Math.cos(ph + 0.55 * runW);
+      const kL = Math.max(0, cK * sgn) ** (1.2 + runW * 0.4) * knA + 0.08 + runW * 0.12 + Math.max(0, -c * sgn) * Math.max(0, s * sgn) * 0.32 * (1 - runW * 0.5), kR = Math.max(0, -cK * sgn) ** (1.2 + runW * 0.4) * knA + 0.08 + runW * 0.12 + Math.max(0, c * sgn) * Math.max(0, -s * sgn) * 0.32 * (1 - runW * 0.5);
       this.mix(B.shinL, kL, 0, 0, w); this.mix(B.shinR, kR, 0, 0, w);
       this.mix(B.footL, -swingL * 0.4 - kL * 0.3 + Math.max(0, -s * sgn) * 0.4, 0, 0, w); this.mix(B.footR, -swingR * 0.4 - kR * 0.3 + Math.max(0, s * sgn) * 0.4, 0, 0, w);
       // toe-off: the toes bend as the heel lifts behind the body
@@ -307,8 +309,9 @@ export class Animator {
       this.mix(B.chest, lean * 0.4, -s * 0.12 * fs, -s * 0.02, w);
       this.mix(B.head, -lean * 0.6, s * 0.12 * fs, 0, w); // counter the chest twist: the head stays on target
       this.mix(B.neck, 0, s * 0.05 * fs, 0, w);
-      const bob = lerp(0.03, 0.07, runW);
-      this.hip.y += (Math.abs(c) - 0.7) * bob * w - runW * 0.05;
+      // walking vaults over a straight stance leg (high at mid-stance); running is lowest at
+      // mid-stance and peaks in flight with the legs split
+      this.hip.y += ((Math.abs(c) - 0.7) * 0.03 * (1 - runW) + (Math.abs(s) - 0.55) * 0.075 * runW) * w - runW * 0.035;
       this.hip.x += s * 0.015 * w * (1 - runW);
     }
     // crouch

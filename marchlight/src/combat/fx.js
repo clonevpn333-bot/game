@@ -97,7 +97,7 @@ export class FX {
       return new THREE.CanvasTexture(c); })();
     this.add = new Pool(root, 3000, spark, THREE.AdditiveBlending);
     this.alpha = new Pool(root, 2000, smoke, THREE.NormalBlending);
-    this.lights = []; for (let i = 0; i < 4; i++) { const l = new THREE.PointLight(0xffb060, 0, 9, 2); root.add(l); this.lights.push({ l, t: 0, max: 0 }); }
+    this.lights = []; for (let i = 0; i < 2; i++) { const l = new THREE.PointLight(0xffb060, 0, 9, 2); root.add(l); this.lights.push({ l, t: 0, max: 0 }); }
     this.li = 0;
     this.meshes = []; // transient meshes (shockwaves, tracers, debris)
     this.emitters = [];
