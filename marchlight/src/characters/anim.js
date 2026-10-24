@@ -66,6 +66,7 @@ export class Animator {
   update(dt) {
     this.t += dt; this.modeT += dt;
     const P = this.P; P.fill(0); this.hip.set(0, 0, 0); this.rootOff.set(0, 0, 0); this.rootRot.set(0, 0, 0);
+    this.eyeOverride = null; // a base mode may hold the eyes (sleep), past the emotion smoothing
     const t = this.t;
     let lambda = this.lambda;
 
@@ -207,11 +208,12 @@ export class Animator {
     bl[B.root].position.copy(this.rootOffS);
     _e.set(this.rootRotS.x, this.rootRotS.y, this.rootRotS.z, 'YXZ'); bl[B.root].quaternion.setFromEuler(_e);
     // face: lids (blink, tiredness, surprise), brows, jaw, mouth corners
-    const lidBase = (1 - (this.c.look.lid ?? 1)) * 2.2 + (1 - es.eye) * 1.4;
+    const eyeOpen = this.eyeOverride ?? es.eye;
+    const lidBase = (1 - (this.c.look.lid ?? 1)) * 2.2 + (1 - eyeOpen) * 1.45;
     const lidRot = clamp(lidBase + (1 - blinkS) * 1.45, -0.35, 1.45);
     bl[B.lidL].rotation.x = lidRot; bl[B.lidR].rotation.x = lidRot;
     const lowLod = this.c.lod === 'low';
-    const eyeS = lowLod ? Math.max(0.12, es.eye * blinkS) : 1; // never a degenerate (zero-scale) bone
+    const eyeS = lowLod ? Math.max(0.12, eyeOpen * blinkS) : 1; // never a degenerate (zero-scale) bone
     bl[B.eyeL].scale.set(1, eyeS, 1); bl[B.eyeR].scale.set(1, eyeS, 1);
     bl[B.browL].position.set(rest.browL.x - rest.head.x, rest.browL.y - rest.head.y + es.brow * 0.005 + this.mouth * 0.0012, rest.browL.z - rest.head.z);
     bl[B.browR].position.set(rest.browR.x - rest.head.x, rest.browR.y - rest.head.y + es.brow * 0.005 + this.mouth * 0.0012, rest.browR.z - rest.head.z);
@@ -468,17 +470,16 @@ export class Animator {
     this.set(B.head, 0.18 * lieW + Math.sin(Math.PI * f01) * 0.15, (0.3 + Math.sin(t * 0.4) * 0.12 * stir) * lieW, 0);
     // arms: asleep (one hand on the chest) -> pushing up off the mattress -> hands on the bed edge -> push off the thighs -> relaxed
     const push01 = Math.sin(Math.PI * f01), push23 = Math.sin(Math.PI * f23);
-    const stretch = stir * Math.max(0, Math.sin(t * 1.2)) * lieW;
     const arm = (sx, a0, a1, a2, a3) => { const k = u <= 1 ? lerp3(a0, a1, f01) : u <= 2 ? lerp3(a1, a2, f12) : lerp3(a2, a3, f23); return k; };
-    const aL = arm(1, [0.05, 0, 0.14 + stretch * 0.15], [0.45, 0, 0.32], [-0.1, 0, 0.32], [0.05, 0, 0.09]);
-    const aR = arm(-1, [0.05, 0, -0.14 - stretch * 0.15], [0.45, 0, -0.32], [-0.1, 0, -0.32], [0.05, 0, -0.09]);
+    const aL = arm(1, [0.0, 0, 0.08], [0.45, 0, 0.32], [-0.1, 0, 0.32], [0.05, 0, 0.09]);
+    const aR = arm(-1, [0.0, 0, -0.08], [0.45, 0, -0.32], [-0.1, 0, -0.32], [0.05, 0, -0.09]);
     this.set(B.armL, aL[0] - push01 * 0.25 - push23 * 0.5, aL[1], aL[2]); this.set(B.armR, aR[0] - push01 * 0.25 - push23 * 0.5, aR[1], aR[2]);
     const fL = u <= 1 ? lerp(-0.3, -0.15, f01) : u <= 2 ? lerp(-0.15, -0.45, f12) : lerp(-0.45, -0.18, f23) - push23 * 0.5;
     const fR = u <= 1 ? lerp(-0.3, -0.15, f01) : u <= 2 ? lerp(-0.15, -0.45, f12) : lerp(-0.45, -0.18, f23) - push23 * 0.5;
     this.set(B.foreL, fL, 0, 0); this.set(B.foreR, fR, 0, 0);
     this.set(B.handL, u > 1 ? 0.5 * (1 - f23) : 0, 0, 0); this.set(B.handR, u > 1 ? 0.5 * (1 - f23) : 0, 0, 0);
     // eyes: closed asleep, heavy while stirring, open once up
-    this.emoS.eye = u > 0.3 ? lerp(0.75, 1, clamp(u - 0.3, 0, 1)) : lerp(0.06, 0.75, stir);
+    this.eyeOverride = u > 0.3 ? lerp(0.75, 1, clamp(u - 0.3, 0, 1)) : lerp(0, 0.75, stir);
   }
   lie() { // on back, head toward -z of local. modeParam: 0 sleeping, 1 stirring
     const t = this.t, stir = this.modeParam;
@@ -489,7 +490,7 @@ export class Animator {
     this.set(B.thighL, -0.05, 0, 0.06); this.set(B.thighR, -0.25, 0, -0.05); this.set(B.shinR, 0.4, 0, 0);
     this.set(B.head, 0.1, 0.3 + Math.sin(t * 0.4) * 0.1 * stir, 0);
     this.set(B.chest, Math.sin(t * 1.1) * 0.02, 0, 0);
-    this.emoS.eye = lerp(0.1, 0.9, stir);
+    this.eyeOverride = lerp(0, 0.9, stir);
   }
   tinker() { // lying on a creeper under a vehicle, working overhead
     const t = this.t;

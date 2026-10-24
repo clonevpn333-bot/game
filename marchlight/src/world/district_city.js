@@ -459,7 +459,7 @@ function makeBlanket(root, F) {
       const k = (i * (NZ + 1) + j) * 3, x = X0 + (X1 - X0) * (i / NX), z = Z0 + (Z1 - Z0) * (j / NZ);
       // body under the covers: chest/belly, then two legs, toes pointing up
       const dz = z - bodyZ;
-      const torsoH = 0.28 * torso * bump(x, 189.05, 190.0, 0.22) * Math.exp(-(((dz / 0.36) ** 2) ** 2));
+      const torsoH = 0.3 * torso * bump(x, 189.05, 190.2, 0.22) * Math.exp(-(((dz / 0.42) ** 2) ** 2));
       const legH = legs * (0.19 * bump(x, 189.8, 190.55, 0.2) * Math.exp(-((dz / 0.2) ** 2))
         + 0.3 * bump(x, 190.3, 190.8, 0.12) * Math.exp(-((dz / 0.24) ** 2)));
       const rumple = (1 - legs) * 0.02 * Math.sin(x * 3.1 + z * 1.7) * Math.sin(z * 4.3 - x * 1.3);

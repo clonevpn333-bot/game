@@ -516,7 +516,7 @@ function buildBody(L, rest, P, lod) {
     if (!far) M.add(ellipsoid(PR * 0.5, PR * 0.5, PR * 0.25, 6), HM(e.x + IR * 0.3, e.y + IR * 0.36, e.z + R + IR * 0.2), C('#ffffff'), w1(bn), MAT.eye);
     if (hi) {
       const lidName = bn === 'eyeL' ? 'lidL' : 'lidR';
-      const lidG = new THREE.SphereGeometry(R + 0.0011, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.36);
+      const lidG = new THREE.SphereGeometry(R + 0.0036, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.4); // clears the stylized iris when closed
       M.add(lidG, HMS(e.x, e.y, e.z, -0.1, 0, 0, 1, 1, 0.92), skin.clone().multiplyScalar(0.93), w1(lidName), MAT.skin);
       const lash = new THREE.TorusGeometry(R * 0.98, 0.0008, 4, 18, Math.PI * 0.8); M.add(lash, HMS(e.x, e.y + R * 0.47, e.z + 0.0012, Math.PI / 2 - 0.3, 0, Math.PI * 0.1, 0.88, 0.8, 1), C('#1a1412'), w1(lidName), MAT.hair);
     }
