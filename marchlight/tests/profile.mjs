@@ -2,7 +2,7 @@
 // statistics. Run at a busy beat:  node tools/play.mjs tests/profile.mjs "...index.html?beat=market"
 export default async ({ ev, log }) => {
   const adv = (s) => ev(s => __game.advance(s), s);
-  await adv(4);
+  await adv(6); // let the crowd spawn and settle its LODs
   const r = await ev(() => {
     const g = __game, T = {}, wrap = (obj, name, label) => { const f = obj[name].bind(obj); obj[name] = (...a) => { const t = performance.now(); const r = f(...a); T[label] = (T[label] || 0) + performance.now() - t; return r; }; };
     wrap(g.city, 'update', 'city'); if (g.world?.update) wrap(g.world, 'update', 'world');

@@ -1,12 +1,12 @@
 // Relative render cost of features: times engine.render with each toggled off.
 export default async ({ ev, log }) => {
   const adv = (s) => ev(s => __game.advance(s), s);
-  await adv(4);
+  await adv(6); // let the crowd spawn and settle its LODs
   const r = await ev(() => {
     const g = __game, e = g.engine, sc = e.scene;
     const gl = e.renderer.getContext(), px = new Uint8Array(4);
     const sync = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); // forces the GPU to finish
-    const time = (n = 2) => { e.render(1 / 60); sync(); const t = performance.now(); for (let i = 0; i < n; i++) { e.render(1 / 60); sync(); } return +((performance.now() - t) / n).toFixed(0); };
+    const time = (n = 4) => { for (let i = 0; i < 3; i++) { e.render(1 / 60); sync(); } const t = performance.now(); for (let i = 0; i < n; i++) { e.render(1 / 60); sync(); } return +((performance.now() - t) / n).toFixed(0); };
     const out = {};
     out.base = time();
     const chars = []; sc.traverse(o => { if (o.isSkinnedMesh) chars.push(o); });
