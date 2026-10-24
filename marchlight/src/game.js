@@ -76,10 +76,10 @@ export class Game {
   }
 
   // Deterministic stepping for automated playtests: advance(seconds) without rAF.
-  advance(sec, step = 1 / 30) {
+  advance(sec, step = 1 / 30, render = true) {
     this.manual = true;
     const n = Math.max(1, Math.round(sec / step));
-    for (let i = 0; i < n; i++) { this.last = performance.now() - step * 1000; this.frame(performance.now(), i < n - 1); }
+    for (let i = 0; i < n; i++) { this.last = performance.now() - step * 1000; this.frame(performance.now(), !render || i < n - 1); }
   }
 
   frame(now, skipRender = false) {

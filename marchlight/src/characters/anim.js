@@ -8,7 +8,7 @@ const NB = BONES.length;
 const UPPER = new Set(['spine', 'chest', 'neck', 'head', 'shoulderL', 'armL', 'foreL', 'handL', 'shoulderR', 'armR', 'foreR', 'handR'].map(n => B[n]));
 const ARM_L = new Set(['shoulderL', 'armL', 'foreL', 'handL'].map(n => B[n]));
 const ARM_R = new Set(['shoulderR', 'armR', 'foreR', 'handR'].map(n => B[n]));
-const _e = new THREE.Euler(), _q = new THREE.Quaternion(), _v = new THREE.Vector3(), _m = new THREE.Matrix4();
+const _e = new THREE.Euler(), _q = new THREE.Quaternion(), _v = new THREE.Vector3(), _m = new THREE.Matrix4(), _up = new THREE.Vector3(0, 1, 0);
 
 // Emotion presets for brows/eyes/mouth/posture
 const EMO = {
@@ -80,7 +80,7 @@ export class Animator {
       case 'sit': this.sit(); break;
       case 'sitGround': this.sitGround(); break;
       case 'lie': this.lie(); break;
-      case 'getUp': this.getUp(); lambda = 30; break;
+      case 'getUp': this.getUp(); lambda = this.modeT < 0.6 ? 8 : 30; break; // ease in from the previous pose
       case 'tinker': this.tinker(); break;
       case 'kneel': this.kneel(); break;
       case 'cower': this.cower(); break;
@@ -433,12 +433,13 @@ export class Animator {
     const u = clamp(this.modeParam, 0, 3), t = this.t, stir = this.stir || 0;
     const bed = this.bed || {};
     const Hl = bed.lie || [-0.37, 0.71, -1.08], Hs = bed.sit || [-0.37, 0.72, -1.08], He = bed.edge || [0, 0.7, -0.4], Hu = [0, 0.92, 0];
+    const yawL = bed.yawLie ?? Math.PI / 2, yawE = bed.yawEdge ?? 0, tilt = bed.lieTilt ?? 0.25; // lying direction, final facing, pillow prop
     const ez = (x) => x * x * (3 - 2 * x), f01 = ez(clamp(u, 0, 1)), f12 = ez(clamp(u - 1, 0, 1)), f23 = ez(clamp(u - 2, 0, 1));
     const lerp3 = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
     let H, pitch, yaw;
-    if (u <= 1) { H = lerp3(Hl, Hs, f01); pitch = lerp(-Math.PI / 2 + 0.25, 0.15, f01); yaw = Math.PI / 2; }
-    else if (u <= 2) { H = lerp3(Hs, He, f12); pitch = lerp(0.15, 0.12, f12); yaw = lerp(Math.PI / 2, 0, f12); }
-    else { H = lerp3(He, Hu, f23); pitch = lerp(0.12, 0, f23) + Math.sin(Math.PI * f23) * 0.5; yaw = 0; } // lean over the feet to rise
+    if (u <= 1) { H = lerp3(Hl, Hs, f01); pitch = lerp(-Math.PI / 2 + tilt, 0.15, f01); yaw = yawL; }
+    else if (u <= 2) { H = lerp3(Hs, He, f12); pitch = lerp(0.15, 0.12 + (bed.crouchLean || 0), f12); yaw = lerp(yawL, yawE, f12); }
+    else { H = lerp3(He, Hu, f23); pitch = lerp(0.12 + (bed.crouchLean || 0), 0, f23) + Math.sin(Math.PI * f23) * 0.5; yaw = yawE; } // lean over the feet to rise
     // root about the feet so that the hips land on H
     this.rootRot.set(pitch, yaw, 0);
     _e.set(pitch, yaw, 0, 'YXZ'); _q.setFromEuler(_e); _v.set(0, 0.92, 0).applyQuaternion(_q);
@@ -448,7 +449,7 @@ export class Animator {
     // ... or planted on the floor: two-bone IK in the root frame toward ankles beside the origin
     const _qi = _q.clone().invert();
     const ik = (sx) => {
-      const a = _v.set(sx * 0.1, 0.075, 0.02).sub(this.rootOff).applyQuaternion(_qi); // ankle in root space
+      const a = _v.set(sx * 0.1, 0.075, 0.02).applyAxisAngle(_up, yawE).sub(this.rootOff).applyQuaternion(_qi); // ankle in root space
       const dy = a.y - 0.88, dz = a.z, L1 = 0.41, L2 = 0.395, d = clamp(Math.hypot(dy, dz), 0.2, L1 + L2 - 1e-3);
       const alpha = Math.atan2(dz, -dy), beta = Math.acos(clamp((L1 * L1 + d * d - L2 * L2) / (2 * L1 * d), -1, 1));
       const knee = Math.PI - Math.acos(clamp((L1 * L1 + L2 * L2 - d * d) / (2 * L1 * L2), -1, 1));

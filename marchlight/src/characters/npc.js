@@ -7,6 +7,12 @@ import { G, groups } from '../core/physics.js';
 import { clamp, damp, dampAngle, rng, sleep } from '../core/util.js';
 
 const _v = new THREE.Vector3();
+// The 'sit' pose (anim.js) puts the hips 0.48 m up, 5 cm behind the actor's origin, with the ankles
+// 0.29 m in front of it. Standing up keeps those feet where they are.
+const SIT_FEET = 0.29, SIT_HIP = [0, 0.48, -0.05 - 0.29];
+export function tween(game, dur, fn) {
+  return new Promise(res => { let t = 0; const stop = game.add((dt) => { t = Math.min(dur, t + dt); const k = t / dur; fn(k * k * (3 - 2 * k)); if (t >= dur) { stop(); res(); } }); });
+}
 
 export class Actor {
   constructor(game, { name = null, look = {}, pos = new THREE.Vector3(), yaw = 0, collide = false, parent = null } = {}) {
@@ -47,6 +53,46 @@ export class Actor {
   lookAtSpeaker() { /* conversations set explicit looks */ }
   activity(name) { if (!name) { this.anim.setMode('loco'); this.anim.activity = null; return; } this.anim.setMode('activity'); this.anim.activity = name; }
   pose(mode, param) { this.anim.setMode(mode, param); }
+  // Rise from the 'sit' pose / sit back down, as one motion over planted feet (Animator.getUp
+  // phases 2-3). The actor's origin moves to the feet (SIT_FEET in front of the seat point).
+  standUp(dur = 1.1) {
+    if (this.mount) { this.mount.updateMatrixWorld(); this.pos.setFromMatrixPosition(this.mount.matrixWorld); this.mount = null; }
+    const f = _v.set(Math.sin(this.yaw), 0, Math.cos(this.yaw));
+    this.place(this.pos.clone().addScaledVector(f, SIT_FEET), this.yaw);
+    const a = this.anim; a.bed = { edge: SIT_HIP }; a.setMode('getUp', 2);
+    return tween(this.game, dur, k => { a.modeParam = 2 + k; }).then(() => { a.setMode('loco'); a.bed = null; });
+  }
+  // From 'tinker' (on a creeper under a vehicle, feet toward +z) to standing d metres further out,
+  // facing the way the feet pointed: slide out, sit up, pull the feet in to a crouch, stand.
+  async rollOut(d = 0.8, slide = 0.55) {
+    const a = this.anim, g = this.game, z0 = -0.02 - d; // the tinker hips, seen from the stand spot
+    this.place(this.pos.clone().addScaledVector(_v.set(Math.sin(this.yaw), 0, Math.cos(this.yaw)), d), this.yaw);
+    a.bed = { lie: [0, 0.22, z0], sit: [0, 0.2, z0 + slide], edge: [0, 0.42, -0.24], yawLie: 0, yawEdge: 0, lieTilt: 0, crouchLean: 0.3 };
+    a.setMode('getUp', 0);
+    await tween(g, 0.9, k => { a.bed.lie[2] = z0 + slide * k; });
+    await tween(g, 1.0, k => { a.modeParam = k; });
+    await tween(g, 0.8, k => { a.modeParam = 1 + k; });
+    await tween(g, 0.9, k => { a.modeParam = 2 + k; });
+    a.setMode('loco'); a.bed = null;
+  }
+  async rollIn(d = 0.8, slide = 0.55) { // the reverse, from standing at the spot rollOut ended on
+    const a = this.anim, g = this.game, z0 = -0.02 - d;
+    a.bed = { lie: [0, 0.22, z0 + slide], sit: [0, 0.2, z0 + slide], edge: [0, 0.42, -0.24], yawLie: 0, yawEdge: 0, lieTilt: 0, crouchLean: 0.3 };
+    a.setMode('getUp', 3); a.modeT = 1;
+    await tween(g, 0.9, k => { a.modeParam = 3 - k; });
+    await tween(g, 0.8, k => { a.modeParam = 2 - k; });
+    await tween(g, 1.0, k => { a.modeParam = 1 - k; });
+    await tween(g, 0.9, k => { a.bed.lie[2] = z0 + slide * (1 - k); });
+    this.place(this.pos.clone().addScaledVector(_v.set(Math.sin(this.yaw), 0, Math.cos(this.yaw)), -d), this.yaw);
+    a.bed = null; a.setMode('tinker');
+  }
+  sitDown(dur = 1.1) { // from standing at the seat's feet spot; ends in the 'sit' pose at the seat point
+    const a = this.anim; a.bed = { edge: SIT_HIP }; a.setMode('getUp', 3);
+    return tween(this.game, dur, k => { a.modeParam = 3 - k; }).then(() => {
+      const f = _v.set(Math.sin(this.yaw), 0, Math.cos(this.yaw));
+      this.place(this.pos.clone().addScaledVector(f, -SIT_FEET), this.yaw); a.bed = null; a.setMode('sit');
+    });
+  }
 
   update(dt) {
     const g = this.game;

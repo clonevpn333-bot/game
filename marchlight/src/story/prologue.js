@@ -6,10 +6,11 @@ import { makeCast, show, hide } from './cast.js';
 import { runRescue, WorkTram } from './rescue.js';
 import { SP } from '../world/district_spine.js';
 import { LD } from '../world/district_lower.js';
-import { clamp, damp, ease, lerp, sleep, rng } from '../core/util.js';
+import { clamp, damp, dampAngle, ease, lerp, sleep, rng } from '../core/util.js';
 import { defaultLook } from '../characters/rig.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const _w = new THREE.Vector3();
 class Abort extends Error {}
 
 export class Prologue {
@@ -44,6 +45,23 @@ export class Prologue {
   lookAtPlayer(a) { a.lookAtPlayer(); }
   enter(cine = true) { const g = this.game; g.director.begin({ letterbox: cine, hideHud: true }); g.player.controlsLocked = true; }
   exit() { const g = this.game; g.director.end(); g.player.controlsLocked = false; }
+  // Rook walks to a mark during a cutscene (instead of popping there), then turns to face `face`.
+  async rookWalk(to, face = null, speed = 1.3) {
+    const P = this.game.player; P.setScripted(true); P.vel.set(0, 0, 0);
+    await this.waitFor((dt) => {
+      const d = _w.copy(to).sub(P.pos).setY(0), L = d.length();
+      if (L < 0.04) { P.anim.speed = 0; return true; }
+      P.yaw = dampAngle(P.yaw, Math.atan2(d.x, d.z), 9, dt);
+      const sp = Math.min(speed, L * 4 + 0.3); P.anim.speed = sp;
+      P.placeScripted(P.pos.clone().addScaledVector(d.normalize(), Math.min(L, sp * dt)), P.yaw);
+      return false;
+    });
+    if (face) {
+      const yaw = Math.atan2(face.x - P.pos.x, face.z - P.pos.z);
+      await this.waitFor((dt) => { P.yaw = dampAngle(P.yaw, yaw, 7, dt); P.placeScripted(P.pos, P.yaw); return Math.abs(Math.atan2(Math.sin(yaw - P.yaw), Math.cos(yaw - P.yaw))) < 0.03; });
+    }
+    P.setScripted(false); P.controlsLocked = true; P.targetYaw = P.yaw;
+  }
   playerFace(target) { const p = this.game.player; const d = target.clone().sub(p.pos); p.yaw = p.targetYaw = Math.atan2(d.x, d.z); }
 
   // dialogue staging: two-shot alternating over-the-shoulder cameras
@@ -367,7 +385,7 @@ export class Prologue {
     } });
     // the kids
     this.item({ getPos: () => C.pell.pos, radius: 2.4, label: 'Talk to Pell and Juno', once: true, onUse: async () => {
-      C.pell.stop(); C.juno.stop(); C.juno.place(C.pell.pos.clone().add(V(0.9, 0, 0.3)));
+      C.pell.stop(); C.juno.stop(); C.juno.goTo(C.pell.pos.clone().add(V(0.9, 0, 0.3)), 2.2).then(() => C.juno.face(g.player.pos.clone())); // runs over
       C.pell.activity(null); C.juno.activity(null);
       C.juno.lookAtPlayer();
       await this.convo(C.pell, [
@@ -407,10 +425,14 @@ export class Prologue {
       await this.wait(2); this.exit(); } });
     // conversation with Bram
     await this.useOnce({ getPos: () => C.bram.pos, radius: 2.6, label: 'Talk to Bram' });
-    C.bram.anim.activity = null; C.bram.pose('loco');
-    C.bram.place(V(167.4, 0, -63.6), Math.PI / 2 + 0.6);
-    C.odile.place(V(170.3, 0, -63.6), -Math.PI / 2); C.odile.activity(null);
-    C.bram.lookAtPlayer(); C.odile.lookAtPlayer();
+    // Bram gets up off his stool (instead of popping to his feet); Odile talks from her counter
+    this.enter(true);
+    g.director.shot({ ...g.director.twoShot(C.bram, { pos: P.pos }, { dist: 3.0, height: 1.35, fov: 38 }) });
+    C.bram.anim.activity = null; C.bram.lookAtPlayer();
+    await C.bram.standUp(1.1);
+    C.bram.face(P.pos.clone());
+    C.odile.activity(null); C.odile.lookAtPlayer();
+    await this.wait(0.4);
     await this.convo(C.bram, [['BRAM', 'There they are. Sun\'s been up an hour, Rook. The sun has a longer commute than you.', { emotion: 'amused', gesture: 0.9 }]]);
     const v1 = await this.pick(C.bram, [
       { text: 'The sun doesn\'t have to climb down a leg to get to work.', tone: 'tease', value: 'tease' },
@@ -444,7 +466,7 @@ export class Prologue {
     g.hud.notify('BRAM\'S NOTE: "Eight bells. Stew. No excuses. — B."', 5);
     g.state.flag('dinnerInvite'); g.state.journal('Bram invited the crew to dinner. Eight bells, his place. "The stew."');
     this.exit();
-    C.bram.lookAt(null); C.odile.lookAt(null); C.odile.place(D.spots.odile.pos.clone(), D.spots.odile.yaw); C.odile.activity('cook');
+    C.bram.lookAt(null); C.bram.faceTarget = null; C.odile.lookAt(null); C.odile.activity('cook');
     C.bram.goTo(V(155, 0, -66), 1.5).then(() => C.bram.goTo(V(156, 0, -90), 1.6)).then(() => C.bram.goTo(V(140, 0, -100), 1.6)).then(() => hide(C.bram));
     this.objective('Take the tram to the Lower Decks', 'Market Station, south end of the street.');
     g.state.checkpoint = 'tram'; g.state.save(g);
@@ -564,11 +586,12 @@ export class Prologue {
     clankT();
     // she rolls out from under the Mule
     this.enter(true);
-    g.director.shot({ pos: V(175.6, LD.floor + 1.2, -178.5), look: V(178.5, LD.floor + 0.3, -176.6), fov: 40, to: { pos: V(175.4, LD.floor + 1.5, -178.9) }, dur: 2.5 });
-    await this.wait(0.9);
-    C.nia.place(V(176.6, LD.floor, -176.9), -Math.PI / 2); C.nia.pose('loco'); C.nia.anim.setMode('kneel');
-    await this.wait(0.7); C.nia.anim.setMode('loco'); C.nia.place(V(176.4, LD.floor, -177.2), -Math.PI / 2 - 0.4);
-    P.teleport(V(174.6, LD.floor, -178.4), Math.atan2(176.4 - 174.6, -177.2 + 178.4)); P.controlsLocked = true;
+    g.director.shot({ pos: V(175.2, LD.floor + 1.25, -179.2), look: V(178.1, LD.floor + 0.55, -176.8), fov: 42, to: { pos: V(175.0, LD.floor + 1.55, -179.5), look: V(177.8, LD.floor + 1.1, -176.8) }, dur: 4.5 });
+    // Rook steps up to the lift deck while she slides out on the creeper, sits up and stands
+    const rook = this.rookWalk(V(176.3, LD.floor, -177.7), V(177.8, LD.floor, -176.8));
+    await C.nia.rollOut(0.8, 0.55);
+    await rook;
+    C.nia.face(P.pos.clone());
     const options = [
       { text: 'It\'s me. I need more grease.', tone: 'tease', value: 'tease' },
       { text: 'It\'s Rook.', tone: 'plain', value: 'plain' },
@@ -583,9 +606,9 @@ export class Prologue {
     // the tether
     C.nia.goTo(V(171.6, LD.floor, -183.2), 1.4);
     g.director.shot({ pos: V(173.6, LD.floor + 1.7, -180.6), look: V(171.4, LD.floor + 1.0, -184), fov: 42 });
+    await this.rookWalk(V(172.6, LD.floor, -182.2), V(171.6, LD.floor, -183.2));
     await this.waitFor(() => !C.nia.target);
     C.nia.face(P.pos.clone());
-    P.teleport(V(172.6, LD.floor, -182.2), Math.atan2(171.6 - 172.6, -183.2 + 182.2));
     L.benchTether.visible = false;
     await this.convo(C.nia, [
       ['NIA', 'Speaking of. Your tether.', { gesture: 0.6 }],
@@ -641,7 +664,9 @@ export class Prologue {
     g.state.journal('Nia rewound my tether. Bram\'s invited her to the stew too. She\'s bringing bread. As a precaution.');
     this.exit();
     C.nia.lookAt(null); C.bram.lookAt(null);
-    C.nia.goTo(L.spots.niaTinker.pos.clone().add(V(-1.5, 0, 0)), 1.2).then(() => { C.nia.place(L.spots.niaTinker.pos.clone(), L.spots.niaTinker.yaw); C.nia.pose('tinker'); });
+    // she walks back to the Mule and rolls back under it
+    { const T = L.spots.niaTinker, out = T.pos.clone().add(V(Math.sin(T.yaw) * 0.8, 0, Math.cos(T.yaw) * 0.8));
+      C.nia.goTo(out, 1.2).then(() => { C.nia.face(out.clone().add(V(Math.sin(T.yaw), 0, Math.cos(T.yaw)))); return this.waitGame(0.8); }).then(() => { C.nia.faceTarget = null; C.nia.yaw = T.yaw; return C.nia.rollIn(0.8, 0.55); }); }
     C.bram.goTo(V(160, LD.floor, -228), 1.6);
     this.objective('Recertify at the range', 'South corridor, past the lockers.');
     g.state.checkpoint = 'range'; g.state.save(g);
@@ -736,8 +761,9 @@ export class Prologue {
     const t0 = g.time;
     const doors = g.add(() => { const k = clamp((g.time - t0) / 5, 0, 1); this.setBay(ease.inOutCubic(k)); g.windMul = 1 + k * 3; });
     g.director.shot({ pos: V(186, LD.floor + 2.2, -186), look: V(196, LD.floor + 3, -190), fov: 50, to: { pos: V(189, LD.floor + 2.0, -188), look: V(200, LD.floor + 1, -191) }, dur: 5 });
-    P.teleport(V(188, LD.floor, -190), Math.PI / 2);
+    const toDoor = this.rookWalk(V(188, LD.floor, -190), V(196, LD.floor, -190), 1.2); // walks up as they open
     await this.wait(5); doors(); g.windMul = 1;
+    await toDoor;
     // the reveal: step out past the hull and the world opens below
     P.setScripted(true);
     const walk = g.add((dt) => { if (P.pos.x < 205) { P.pos.x += dt * 1.4; P.anim.speed = 1.4; P.placeScripted(P.pos, Math.PI / 2 - 0.25); } else P.anim.speed = 0; });
@@ -752,7 +778,7 @@ export class Prologue {
     await this.radio('ROOK', 'Loud and clear.', { dur: 1.6 });
     await this.radio('NIA', 'Good. Your vitals look disgustingly calm.', { dur: 2.6 });
     await this.radio('BRAM', 'That\'s my Runner.', { dur: 1.8 });
-    walk(); P.setScripted(false); P.teleport(V(205, LD.floor, -190), Math.PI); g.camera.snapBehind(Math.PI, 0.15);
+    walk(); P.setScripted(false); P.teleport(P.pos.clone(), Math.PI); g.camera.snapBehind(Math.PI, 0.15); // (cut from the crane shot)
     this.exit();
     g.state.journal('Out on the Spine. From up here you can see the whole Sallow — and the trail of our own footprints behind us.');
     this.objective('Reach Pylon Seven', 'Follow the Spine walkway forward, toward Leg Two.');

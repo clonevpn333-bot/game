@@ -258,7 +258,8 @@ export function buildLowerDecks(game, lights) {
   }
   b.solid([180, Y + 1.6, -176], [3, 3.2, 7.4]);
   sign(game, root, 'MULE', [181.33, Y + 2.1, -175.4], { ry: Math.PI / 2, w: 1.6, h: 0.45, neon: false, color: '#2a2a2a', bg: '#e8e0d0', font: '700 56px "Barlow Condensed", sans-serif' });
-  D.spots.niaTinker = { pos: new THREE.Vector3(178.0, Y + 0.05, -176.8), yaw: Math.PI / 2 };
+  // on her creeper on the lift deck (top at Y + 0.3), head and shoulders under the chassis, legs out
+  D.spots.niaTinker = { pos: new THREE.Vector3(178.6, Y + 0.3, -176.8), yaw: -Math.PI / 2 };
   // tool bench (where Nia hands back the tether)
   table(b, [172, Y, -184], { w: 3, d: 1, mat: 'darkSteel', color: 0x4a4a48 });
   b.box('darkSteel', [172, Y + 1.6, -184.45], [3, 1.2, 0.08], { color: 0x3a3a3a, collide: false }); // pegboard

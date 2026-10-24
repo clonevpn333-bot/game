@@ -5,6 +5,7 @@
 //     momentum into the Undercroft crane — it swings round and catches the cabin.
 //  C: get to the hanging tram, blow the jammed hatch, get the crew out, catch whoever slips.
 import * as THREE from 'three';
+import { tween } from '../characters/npc.js';
 import { Builder } from '../world/builder.js';
 import { SP } from '../world/district_spine.js';
 import { Actor } from '../characters/npc.js';
@@ -108,6 +109,18 @@ export class WorkTram {
 }
 
 // --------------------------------------------------------------------------- the sequence
+// A crew member climbs up out of the cabin hatch (from inside) and hand over hand up the line to
+// the boom (`top`), or just out onto the roof when `top` is null.
+async function climbOut(a, hatch, top) {
+  const g = a.game, inside = hatch.clone().add(new THREE.Vector3(0, -1.1, 0)), roof = hatch.clone().add(new THREE.Vector3(0, 0.15, 0));
+  a.anim.setMode('ladder'); a.anim.grounded = true; a.place(inside, a.yaw);
+  await tween(g, 0.7, k => { a.pos.lerpVectors(inside, roof, k); a.anim.climbPhase = k * 6; });
+  if (!top) return;
+  const d = top.clone().sub(roof); a.yaw = Math.atan2(d.x, d.z);
+  await tween(g, Math.max(0.8, d.length() / 2.2), k => { a.pos.lerpVectors(roof, top, k); a.anim.climbPhase = 6 + k * 14; });
+  a.pose('loco');
+}
+
 export async function runRescue(story, startStage = 'A') {
   const g = story.game, S = g.districts.spine, P = g.player, T = g.tether, D = g.dialogue;
   const tram = story.workTram || (story.workTram = new WorkTram(g));
@@ -300,18 +313,15 @@ export async function runRescue(story, startStage = 'A') {
     const tip = S.spots.boomTip.clone();
     const climbers = [tram.crew[3], tram.crew[2], tram.crew[1]];
     for (const [k, a] of climbers.entries()) {
-      a.mount = null; a.pose('loco');
-      a.place(hp.clone().add(new THREE.Vector3(0, 0.2, 0)), 0);
-      await story.wait(0.5);
-      a.place(tip.clone().add(new THREE.Vector3(-0.4 * k, 0.05, 0.6 * k)));
-      a.activity('watch'); a.goTo(S.boomCatwalk.start.clone().add(new THREE.Vector3(1 + k, 0, 2 + k * 0.8)), 1.6);
-      g.audio.footstep(tip, 'metal', 0.6);
-      await story.wait(0.9);
+      a.mount = null;
+      const top = tip.clone().add(new THREE.Vector3(-0.4 * k, 0.05, 0.6 * k));
+      climbOut(a, hp, top).then(() => { a.activity('watch'); a.goTo(S.boomCatwalk.start.clone().add(new THREE.Vector3(1 + k, 0, 2 + k * 0.8)), 1.6); g.audio.footstep(top, 'metal', 0.6); });
+      await story.wait(1.3); // the next one follows up the line
     }
     // Ivo slips
-    const ivo = tram.ivo; ivo.mount = null; ivo.pose('loco');
-    ivo.place(hp.clone().add(new THREE.Vector3(0, 0.2, 0)), 0);
-    await story.wait(0.7);
+    const ivo = tram.ivo; ivo.mount = null;
+    await climbOut(ivo, hp, null); // up through the hatch, reaching for the line...
+    ivo.pose('loco');
     D.radio('IVO', 'I— my hand, I can\'t—', { wait: false, dur: 1.4 });
     g.audio.whoosh(1);
     stage.ivoFalling = true;
@@ -342,10 +352,14 @@ export async function runRescue(story, startStage = 'A') {
       D.radio('IVO', '...I\'m down. I\'m down. Runner— thank you. Thank you.', { wait: false, dur: 3 });
     } else {
       // Dace grabs him — saved, but not by Rook
-      ivo.place(tip.clone().add(new THREE.Vector3(0, -1.6, 0))); ivo.anim.setMode('hang');
-      await story.wait(0.4);
+      // Dace catches his wrist; he hangs, then is hauled up onto the catwalk
+      const caught = ivo.pos.clone(), below = tip.clone().add(new THREE.Vector3(0, -1.6, 0)), onTop = tip.clone().add(new THREE.Vector3(0.5, 0.05, 1));
+      ivo.anim.setMode('hang'); ivo.anim.grounded = true;
+      await tween(g, 0.4, k => ivo.pos.lerpVectors(caught, below, k));
       D.radio('DACE', "I've got him— I've GOT him! Pull, Ivo, pull!", { wait: false, dur: 2.6 });
-      await story.wait(1.6); ivo.place(tip.clone().add(new THREE.Vector3(0.5, 0.05, 1))); ivo.pose('kneel');
+      await story.wait(0.8);
+      await tween(g, 1.0, k => ivo.pos.lerpVectors(below, onTop, k));
+      ivo.pose('kneel');
       g.state.flag('ivoCaughtByDace');
     }
     stage.crewOut = true;

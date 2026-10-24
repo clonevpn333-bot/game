@@ -6,7 +6,7 @@ export default async ({ shot, ev, log, page }) => {
   const st = () => ev(() => ({ cp: __game.state.checkpoint, obj: __game.hud.objective?.text, p: [__game.player.pos.x.toFixed(1), __game.player.pos.y.toFixed(1), __game.player.pos.z.toFixed(1)], ps: __game.player.state, dir: __game.director.active, hp: Math.round(__game.player.health) }));
   await ev(() => { window.__game.godMode = true; window.__game.skipAll = true; __game.autoChoose = (opts, pick) => setTimeout(() => pick(0), 50); });
   const until = async (label, pred, maxSec = 120, step = 0.5, every = null) => {
-    for (let t = 0; t < maxSec; t += step) {
+    for (let t = 0; t < maxSec * (globalThis.FILM_SLOW || 1); t += step) {
       if (await ev(pred)) { log('✓', label, JSON.stringify(await st())); return true; }
       if (every) await ev(every);
       await adv(step); await page.waitForTimeout(20);

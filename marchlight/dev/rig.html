@@ -36,6 +36,7 @@ for (let i = 0; i < n; i++) {
   if (q.get('tether')) a.tether = 1;
   if (q.get('rot')) c.group.rotation.y = +q.get('rot');
   if (q.get('lod')) c.setLOD(q.get('lod'));
+  if (q.get('gu')) { a.mode = 'getUp'; a.modeParam = +q.get('gu'); if (q.get('chair')) a.bed = { edge: [0, 0.48, -0.34] }; }
 }
 let last = performance.now(), manual = false;
 function loop() { const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now;
