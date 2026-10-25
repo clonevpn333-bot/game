@@ -32,7 +32,9 @@ for (let i = 0; i < n; i++) {
   const a = new Animator(c); actors.push(a);
   a.mode = q.get('mode') || 'loco'; a.speed = +(q.get('speed') || 0); a.talking = !!q.get('talk'); a.emotion = q.get('emo') || 'neutral';
   if (q.get('act')) { a.mode = 'activity'; a.activity = q.get('act'); }
-  if (q.get('aim')) { a.aim = 1; a.weapon = q.get('aim'); }
+  if (q.get('aim')) { a.aim = +(q.get('aimw') || 1); a.weapon = q.get('aim');
+    const gun = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.08, a.weapon === 'carbine' ? 0.62 : 0.2), new THREE.MeshStandardMaterial({ color: 0x222 }));
+    gun.position.set(0, 0, a.weapon === 'carbine' ? 0.12 : 0.06); const piv = new THREE.Object3D(); piv.add(gun); s.add(piv); a.gun = piv; }
   if (q.get('tether')) a.tether = 1;
   if (q.get('rot')) c.group.rotation.y = +q.get('rot');
   if (q.get('lod')) c.setLOD(q.get('lod'));
@@ -42,7 +44,9 @@ let last = performance.now(), manual = false;
 function loop() { const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now;
   if (!manual) { actors.forEach(a => a.update(dt)); r.render(s, cam); } requestAnimationFrame(loop); }
 // deterministic stepping for filmstrips: advance every animator by `sec` at 60 Hz and render once
-window.__step = (sec) => { manual = true; for (let i = 0; i < Math.round(sec * 60); i++) actors.forEach(a => a.update(1 / 60)); r.render(s, cam); };
+const afterUpdate = (a) => { if (!a.gun) return; const c = a.c; const f = new THREE.Vector3(Math.sin(c.group.rotation.y), -Math.sin(+(q.get('pitch') || 0)), Math.cos(c.group.rotation.y)).normalize(); a.weaponIK(f);
+  c.sockets.gripR.getWorldPosition(a.gun.position); a.gun.lookAt(a.gun.position.clone().add(f)); };
+window.__step = (sec) => { manual = true; for (let i = 0; i < Math.round(sec * 60); i++) actors.forEach(a => { a.update(1 / 60); afterUpdate(a); }); r.render(s, cam); };
 window.__actors = actors; window.__cam = cam; window.__cam = cam;
 loop(); window.__ready = true;
 </script></body></html>

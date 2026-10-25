@@ -14,7 +14,7 @@ const HINTS = {
   release: ['KINETIC TETHER — RELEASE', 'Press <span class="key">Q</span> to throw all stored momentum into your target, along your aim. With no target, it becomes a short kinetic blast.'],
   leap: ['KINETIC LEAP', 'While airborne with a charged cell, press <span class="key">Space</span> again to launch yourself where you\'re looking.'],
   latch: ['TETHER LINE', 'Aim at a <b style="color:#7fdcff">blue ring</b> anchor and press <span class="key">F</span> to latch on. Moving machinery carries you with it — let go (release <span class="key">F</span>) at the top to be flung.'],
-  shoot: ['WEAPONS', 'Hold <span class="key">RMB</span> to aim, <span class="key">LMB</span> to fire, <span class="key">R</span> to reload. <span class="key">1</span>/<span class="key">2</span> or the wheel switches weapons. <span class="key">V</span> is a melee strike.'],
+  shoot: ['WEAPONS', 'Click <span class="key">RMB</span> to aim (click again to lower), <span class="key">LMB</span> to fire, <span class="key">R</span> to reload. <span class="key">1</span>/<span class="key">2</span> or the wheel switches weapons. <span class="key">V</span> is a melee strike.'],
   crouch: ['STEALTH', '<span class="key">C</span> crouches. Machines that haven\'t noticed you can be approached quietly — a melee strike from behind lands hard.'],
   shearer: ['HEAVY CUTTER', 'Shearers telegraph their charges. Hold <span class="key">E</span> on one <i>while it charges</i> to steal its momentum and stall it — then put it somewhere it won\'t like.'],
   zoom: ['VISOR', 'Hold <span class="key">Z</span> to zoom your Runner visor.'],

@@ -184,7 +184,7 @@ export class Menu {
   }
   controls(back) {
     const rows = [['W A S D', 'Move'], ['Mouse', 'Look'], ['Shift', 'Hurry / sprint'], ['Space', 'Jump · climb · (airborne, charged) Kinetic Leap'], ['C', 'Crouch · drop from a ledge'], ['F', 'Talk · use · latch tether line'],
-      ['E (hold)', 'Tether: capture momentum'], ['Q', 'Tether: release momentum'], ['RMB', 'Aim'], ['LMB', 'Fire'], ['R', 'Reload'], ['V', 'Melee'], ['1 / 2 · X · Wheel', 'Switch weapon'], ['H', 'Holster'], ['Z (hold)', 'Visor zoom'], ['J', 'Journal'], ['Esc', 'Pause']];
+      ['E (hold)', 'Tether: capture momentum'], ['Q', 'Tether: release momentum'], ['RMB', 'Aim (toggle)'], ['LMB', 'Fire'], ['R', 'Reload'], ['V', 'Melee'], ['1 / 2 · X · Wheel', 'Switch weapon'], ['H', 'Holster'], ['Z (hold)', 'Visor zoom'], ['J', 'Journal'], ['Esc', 'Pause']];
     const d = this.mount(`<div class="col" style="min-width:480px"><h1 style="font-size:36px">CONTROLS</h1><h2>KEYBOARD & MOUSE · GAMEPAD SUPPORTED</h2>
       <div class="controls-grid">${rows.map(([k, v]) => `<span class="key">${k}</span><span>${v}</span>`).join('')}</div>
       <button class="btn" data-a="back" style="margin-top:24px">Back</button></div>`, 'menu dim');

@@ -106,9 +106,12 @@ export class Weapons {
       if (inp.pressed('weapon2') && this.owned.carbine && !g.dialogue.choosing) this.select('carbine');
       if (inp.pressed('swap')) { const ids = Object.keys(this.owned); const i = ids.indexOf(this.current); this.select(ids[(i + 1) % ids.length]); }
       if (inp.wheel) { const ids = Object.keys(this.owned); if (ids.length > 1) { const i = ids.indexOf(this.current); this.select(ids[(i + (inp.wheel > 0 ? 1 : ids.length - 1)) % ids.length]); } }
-      if (inp.pressed('holster')) this.drawn ? this.holster() : this.draw();
+      if (inp.pressed('holster')) { if (this.drawn) { this.holster(); this.aimToggle = false; } else this.draw(); }
     }
-    const wantAim = free && has && inp.down('aim') && p.state !== 'latch';
+    // right click toggles aim (on until clicked again, holstered, or a traversal move takes over)
+    if (free && has && inp.pressed('aim')) this.aimToggle = !this.aimToggle;
+    if (!free || !has || inp.pressed('sprint') || ['latch', 'hang', 'climb', 'ladder', 'seated', 'scripted'].includes(p.state)) this.aimToggle = false;
+    const wantAim = free && has && this.aimToggle && p.state !== 'latch';
     if (wantAim && !this.drawn) this.draw();
     this.aiming = wantAim && this.drawn;
     if (free && has && inp.down('fire') && !this.drawn && !g.interact.blockFire) this.draw();

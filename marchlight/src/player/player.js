@@ -121,6 +121,7 @@ export class Player {
     }
     this.anim.update(dt);
     // plant feet on stairs/slopes
+    if (g.weapons?.drawn) this.anim.weaponIK(g.engine.camera.getWorldDirection(new THREE.Vector3()));
     if (this.state === 'ground') this.anim.footIK((x, y, z) => { const h = this.physics.raycastFilter(new THREE.Vector3(x, y, z), DOWN, 1.1, G.STATIC | G.PLATFORM, c => c.handle !== this.collider.handle); return h ? h.point.y : null; });
 
     // fell off the world

@@ -233,6 +233,30 @@ export class Animator {
   }
 
   // ------------------------------------------------------------- foot IK
+  // Hands on the weapon: two-bone IK for both arms after the pose is applied. aimDir is the world
+  // aim direction (the camera's); the hold blends from a low-ready carry (drawn, aim 0.35) to the
+  // full aim (aim 1). Right hand on the grip, left on the carbine's foregrip or cupping the pistol.
+  weaponIK(aimDir) {
+    const w = this.aim; if (!this.weapon || w < 0.02 || this.mode !== 'loco' && this.mode !== 'activity') return;
+    const g = this.c.group, bl = this.b, s = g.scale.y; g.updateMatrixWorld(true);
+    const rifle = this.weapon === 'carbine', k = clamp((w - 0.35) / 0.65, 0, 1), weight = clamp(w / 0.35, 0, 1);
+    // aim frame: blend from pointing low and ahead to the real aim direction
+    const fwd = _w1.set(0, 0, 1).applyQuaternion(g.getWorldQuaternion(_wq)).setY(0).normalize();
+    const low = _w2.copy(fwd).multiplyScalar(Math.cos(0.75)).setY(-Math.sin(0.75));
+    const dir = _w3.copy(low).lerp(aimDir, k).normalize(), up = _w4.set(0, 1, 0), right = _w5.crossVectors(dir, up).normalize(), u = _w6.crossVectors(right, dir);
+    const shR = bl[B.armR].getWorldPosition(_w7), neck = bl[B.neck].getWorldPosition(_w8);
+    const at = (base, f, r, d) => base.clone().addScaledVector(dir, f * s).addScaledVector(right, r * s).addScaledVector(u, -d * s);
+    let tR, tL;
+    if (rifle) { tR = at(shR, 0.17, -0.03, 0.035); tL = at(shR, 0.47, -0.14, 0.01); } // stock at the shoulder, barrel near the eye line
+    else { tR = at(neck, 0.44, 0.06, 0.13); tL = tR.clone().addScaledVector(right, -0.035 * s).addScaledVector(u, -0.03 * s); }
+    const solve = (arm, fore, hand, t) => {
+      const a = bl[B[arm]].getWorldPosition(new THREE.Vector3()), b = bl[B[fore]].getWorldPosition(new THREE.Vector3()), c = bl[B[hand]].getWorldPosition(new THREE.Vector3());
+      twoBoneIK(bl[B[arm]], bl[B[fore]], a, b, c, c.clone().lerp(t, weight));
+      g.updateMatrixWorld(true);
+    };
+    solve('armR', 'foreR', 'handR', tR);
+    if (this.tether < 0.1 && this.reload <= 0) solve('armL', 'foreL', 'handL', tL);
+  }
   // groundAt(x, y, z) -> ground height under a world point, or null. Plants feet on steps
   // and slopes: drops the pelvis for the lower foot, then two-bone IK per leg.
   footIK(groundAt, weight = 1) {
@@ -674,6 +698,7 @@ export class Animator {
 }
 
 // Analytic two-bone IK (thigh→shin→ankle) toward target t, in world space.
+const _w1 = new THREE.Vector3(), _w2 = new THREE.Vector3(), _w3 = new THREE.Vector3(), _w4 = new THREE.Vector3(), _w5 = new THREE.Vector3(), _w6 = new THREE.Vector3(), _w7 = new THREE.Vector3(), _w8 = new THREE.Vector3(), _wq = new THREE.Quaternion();
 const _ia = new THREE.Vector3(), _ib = new THREE.Vector3(), _ic = new THREE.Vector3(), _iq = new THREE.Quaternion(), _iq2 = new THREE.Quaternion();
 function rotateWorld(bone, axis, angle) {
   if (!isFinite(angle) || Math.abs(angle) < 1e-5 || axis.lengthSq() < 1e-10) return;
