@@ -306,7 +306,7 @@ export async function runRescue(story, startStage = 'A') {
     g.fx.kineticBurst(hp, 1); g.audio.clank(hp, 1.5, 1.2);
     const lid = tram.hatch.clone(); lid.visible = true; lid.position.copy(hp); g.engine.cityRoot.add(lid);
     const lv = new THREE.Vector3(1, 6, -2);
-    g.fx.meshes.push({ m: lid, t: 0, life: 8, update: (e, k, dt) => { lv.y -= 15 * dt; e.m.position.addScaledVector(lv, dt); e.m.rotation.x += dt * 6; } });
+    g.fx.meshes.push({ m: lid, t: 0, life: 8, keep: true, update: (e, k, dt) => { lv.y -= 15 * dt; e.m.position.addScaledVector(lv, dt); e.m.rotation.x += dt * 6; } });
     D.radio('DACE', 'Light! There\'s light! Ivo, go— go, up the cable!', { wait: false, dur: 2.6 });
     g.hud.setObjective('Get the crew out', 'Hold position — help them climb');
     // the crew climb out one by one to the boom catwalk

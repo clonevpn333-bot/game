@@ -187,8 +187,9 @@ export class Engine {
     this.adaptT = (this.adaptT || 0) + rawDt;
     const target = 1 / (this.quality.targetFps || 55);
     let s = this.dynScale;
-    if (this.ft > target * 1.12 && this.adaptT > 0.75) s = Math.max(0.5, s - 0.08);
-    else if (this.ft < target * 0.8 && this.adaptT > 3) s = Math.min(1, s + 0.05);
+    // change rarely and in bigger steps: every change reallocates all the render targets
+    if (this.ft > target * 1.15 && this.adaptT > 3) s = Math.max(0.5, s - 0.15);
+    else if (this.ft < target * 0.75 && this.adaptT > 10) s = Math.min(1, s + 0.1);
     else return;
     this.adaptT = 0;
     if (s !== this.dynScale) { this.dynScale = s; this.renderer.setPixelRatio(this.targetPixelRatio()); this.resize(); }

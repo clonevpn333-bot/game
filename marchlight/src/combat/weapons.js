@@ -244,7 +244,7 @@ export class Weapons {
     const c = mag.clone(); mag.getWorldPosition(c.position); mag.getWorldQuaternion(c.quaternion);
     this.game.engine.cityRoot.add(c);
     const v = new THREE.Vector3((Math.random() - 0.5) * 0.5, -1, (Math.random() - 0.5) * 0.5);
-    this.game.fx.meshes.push({ m: c, t: 0, life: 4, update: (e, k, dt) => { v.y -= 12 * dt; if (e.m.position.y + v.y * dt < this.player.pos.y + 0.03) { v.set(v.x * 0.3, Math.abs(v.y) * 0.2, v.z * 0.3); } e.m.position.addScaledVector(v, dt); e.m.rotation.x += dt * 4; } });
+    this.game.fx.meshes.push({ m: c, t: 0, life: 4, keep: true, update: (e, k, dt) => { v.y -= 12 * dt; if (e.m.position.y + v.y * dt < this.player.pos.y + 0.03) { v.set(v.x * 0.3, Math.abs(v.y) * 0.2, v.z * 0.3); } e.m.position.addScaledVector(v, dt); e.m.rotation.x += dt * 4; } });
     mag.visible = false; setTimeout(() => (mag.visible = true), WEAPONS[this.current].reload * 450);
   }
 

@@ -150,6 +150,8 @@ class Enemy {
   }
   remove() {
     this.model.removeFromParent();
+    // each enemy builds its own model: free its GPU buffers (waves of drones used to leak them)
+    this.model.traverse(o => { o.geometry?.dispose(); for (const m of Array.isArray(o.material) ? o.material : o.material ? [o.material] : []) m.dispose(); });
     if (this.body) { this.game.physics.world.removeRigidBody(this.body); this.body = null; }
     this.untether?.();
     this.game.audio.stopLoop('drone' + this.id, 0.3);

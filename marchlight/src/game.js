@@ -59,6 +59,17 @@ export class Game {
     this.input.onLockChange = locked => { if (!locked && this.running && !this.paused && !this.menuOpen && !this.dialogue.choosing && !this.noPauseOnUnlock) this.onRequestPause?.(); };
   }
 
+  // compile every shader up front (hidden things too: guns, enemies-in-waiting, other districts) so the
+  // first sight of something mid-fight doesn't stall the frame while its shader compiles
+  prewarm() {
+    try {
+      const { scene, camera, renderer } = this.engine, hidden = [];
+      scene.traverse(o => { if (!o.visible) { hidden.push(o); o.visible = true; } });
+      const p = renderer.compileAsync(scene, camera);
+      hidden.forEach(o => (o.visible = false));
+      p?.catch?.(() => {});
+    } catch (e) { console.warn('prewarm', e); }
+  }
   add(fn) { this.updaters.add(fn); return () => this.updaters.delete(fn); }
   addActor(a) { this.actors.add(a); return a; }
   removeActor(a) { this.actors.delete(a); a.remove?.(); }
@@ -67,6 +78,7 @@ export class Game {
 
   start() {
     this.running = true; this.last = performance.now();
+    this.prewarm();
     const loop = (now) => { requestAnimationFrame(loop); if (this.manual) { this.last = now; return; } this.frame(now); };
     requestAnimationFrame(loop);
   }
@@ -78,6 +90,13 @@ export class Game {
     for (let i = 0; i < n; i++) { this.last = performance.now() - step * 1000; this.frame(performance.now(), !render || i < n - 1); }
   }
 
+  guard = (name, fn) => {
+    try { fn(); } catch (e) {
+      const key = name + ':' + e.message; (this.reported ||= new Set());
+      if (!this.reported.has(key)) { this.reported.add(key); console.error('[' + name + ']', e); }
+      if (this.manual && this.rethrow) throw e;
+    }
+  };
   frame(now, skipRender = false) {
     const raw = (now - this.last) / 1000;
     const dtReal = clamp(raw, 0, 1 / 20); this.last = now;
@@ -88,28 +107,30 @@ export class Game {
       if (this.hitStop > 0) { this.hitStop -= dtReal; ts *= 0.05; }
       const dt = dtReal * ts; this.dt = dt;
       this.time += dt; this.rtime = (this.rtime || 0) + dtReal; this.state.playtime += dtReal;
-      this.city?.update(dt, dtReal);
-      this.world?.update?.(dt);
-      for (const f of this.updaters) f(dt, dtReal);
-      this.director.update(dt);
-      this.physics.syncKinematics();
-      this.player.update(dt);
-      this.tether.update(dt);
-      this.weapons.update(dt);
-      this.enemies.update(dt);
-      this.crowd.update(dt);
-      for (const a of this.actors) a.update(dt);
-      this.physics.step(dt);
-      this.fx.update(dt);
-      this.camera.update(dtReal * (this.slowmo < 1 ? Math.max(0.35, this.slowmo) : 1) * (this.hitStop > 0 ? 0.3 : 1) || dt);
-      this.interact.update();
-      this.sky?.update(dt);
+      // each system runs guarded: an error in one is reported once and the frame still draws
+      // (an uncaught error here used to freeze the picture while sound and input carried on)
+      const run = this.guard;
+      run('city', () => this.city?.update(dt, dtReal));
+      run('world', () => this.world?.update?.(dt));
+      for (const f of this.updaters) run('script', () => f(dt, dtReal));
+      run('director', () => this.director.update(dt));
+      run('kinematics', () => this.physics.syncKinematics());
+      run('player', () => this.player.update(dt));
+      run('tether', () => this.tether.update(dt));
+      run('weapons', () => this.weapons.update(dt));
+      run('enemies', () => this.enemies.update(dt));
+      run('crowd', () => this.crowd.update(dt));
+      for (const a of this.actors) run('actor', () => a.update(dt));
+      run('physics', () => this.physics.step(dt));
+      run('fx', () => this.fx.update(dt));
+      run('camera', () => this.camera.update(dtReal * (this.slowmo < 1 ? Math.max(0.35, this.slowmo) : 1) * (this.hitStop > 0 ? 0.3 : 1) || dt));
+      run('interact', () => this.interact.update());
+      run('sky', () => this.sky?.update(dt));
       // audio listener follows the camera
-      const cam = this.engine.camera; const f = cam.getWorldDirection(new THREE.Vector3());
-      this.audio.setListener(cam.position, f, cam.up);
+      run('listener', () => { const cam = this.engine.camera; const f = cam.getWorldDirection(new THREE.Vector3()); this.audio.setListener(cam.position, f, cam.up); });
     }
-    this.hud.update(dtReal);
-    if (!skipRender) this.engine.render(dtReal);
+    this.guard('hud', () => this.hud.update(dtReal));
+    if (!skipRender) this.guard('render', () => this.engine.render(dtReal));
     this.input.endFrame();
     // fps meter
     this.fpsAcc += dtReal; this.fpsN++;

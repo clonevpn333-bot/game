@@ -104,6 +104,7 @@ export class FX {
     this.ringGeo = new THREE.RingGeometry(0.8, 1, 48);
     this.debrisGeo = new THREE.BoxGeometry(1, 1, 1);
     this.tracerGeo = new THREE.CylinderGeometry(0.012, 0.012, 1, 4, 1, true); this.tracerGeo.rotateX(Math.PI / 2); this.tracerGeo.translate(0, 0, 0.5);
+    this.decalGeo = new THREE.CircleGeometry(1, 8);
   }
 
   flash(pos, color = 0xffb060, intensity = 8, dur = 0.06, dist = 9) {
@@ -153,8 +154,8 @@ export class FX {
     if (mat === 'drone') this.sparks(pos, normal, 14, 7, [0.6, 0.9, 1, 1]);
     this.smoke(pos, mat === 'concrete' ? 3 : 1, 0.3, mat === 'concrete' ? [0.6, 0.58, 0.55, 0.4] : [0.4, 0.4, 0.4, 0.25], normal.clone().multiplyScalar(0.6), 0.9);
     // scorch decal
-    const d = new THREE.Mesh(new THREE.CircleGeometry(0.06 + this.r() * 0.04, 8), new THREE.MeshBasicMaterial({ color: 0x080808, transparent: true, opacity: 0.75, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
-    d.position.copy(pos).addScaledVector(normal, 0.01); d.lookAt(pos.clone().add(normal));
+    const d = new THREE.Mesh(this.decalGeo, new THREE.MeshBasicMaterial({ color: 0x080808, transparent: true, opacity: 0.75, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+    d.scale.setScalar(0.06 + this.r() * 0.04); d.position.copy(pos).addScaledVector(normal, 0.01); d.lookAt(pos.clone().add(normal));
     this.game.engine.cityRoot.add(d);
     this.meshes.push({ m: d, t: 0, life: 12, update: (e, k) => { e.m.material.opacity = 0.75 * (1 - Math.max(0, (k - 0.8) / 0.2)); } });
   }
@@ -212,6 +213,14 @@ export class FX {
   // continuous emitters (steam vents, sparks from welding etc.)
   emitter(o) { const e = { t: 0, rate: 10, acc: 0, active: true, ...o }; this.emitters.push(e); return e; }
 
+  // free an effect's GPU resources (groups too), but never the shared geometries
+  release(obj) {
+    const shared = new Set([this.ringGeo, this.debrisGeo, this.tracerGeo, this.decalGeo]);
+    obj.traverse(o => {
+      if (o.geometry && !shared.has(o.geometry)) o.geometry.dispose();
+      for (const m of Array.isArray(o.material) ? o.material : o.material ? [o.material] : []) m.dispose();
+    });
+  }
   update(dt) {
     const cam = this.game.engine.camera;
     const scale = window.innerHeight * 0.5 / Math.tan(cam.fov * Math.PI / 360) * this.game.engine.renderer.getPixelRatio();
@@ -226,7 +235,7 @@ export class FX {
     for (let i = this.meshes.length - 1; i >= 0; i--) {
       const e = this.meshes[i]; e.t += dt; const k = Math.min(1, e.t / e.life);
       e.update?.(e, k, dt);
-      if (k >= 1) { e.m.removeFromParent(); e.m.material.dispose?.(); if (e.m.geometry !== this.ringGeo && e.m.geometry !== this.debrisGeo && e.m.geometry !== this.tracerGeo) e.m.geometry.dispose?.(); this.meshes.splice(i, 1); }
+      if (k >= 1) { this.meshes.splice(i, 1); e.m.removeFromParent(); if (!e.keep) this.release(e.m); }
     }
   }
 }
