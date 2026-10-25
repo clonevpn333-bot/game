@@ -690,6 +690,17 @@ export class Prologue {
     g.state.checkpoint = 'range'; g.state.save(g);
   }
 
+  // wait for every plate to drop; if one stays up long after the others (stuck, unreachable), Bram
+  // waves it off and the drill moves on, so the range can never soft-lock the game
+  async platesDown(targets) {
+    const g = this.game; let lastDown = g.time, down = 0;
+    await this.waitFor(() => {
+      const n = targets.filter(t => !t.up).length; if (n !== down) { down = n; lastDown = g.time; }
+      return n === targets.length || (n > 0 && g.time - lastDown > 30);
+    });
+    if (targets.some(t => t.up)) { targets.forEach(t => { t.up = false; }); await this.radio('BRAM', 'Close enough. That one\'s been sticking for a year.', { wait: false, dur: 2.6 }); await this.wait(2.7); }
+  }
+
   async beat_range(id) {
     const g = this.game, P = g.player, C = this.cast, L = g.districts.lower;
     if (C.nia.hidden) { this.populateLower(); show(C.nia, L.spots.niaTinker.pos.clone(), L.spots.niaTinker.yaw); C.nia.pose('tinker'); P.teleport(V(163, LD.floor, -212), Math.PI); g.camera.snapBehind(Math.PI, 0.1); g.hud.fade(0, 0.8); L.benchTether.visible = false; }
@@ -709,23 +720,28 @@ export class Prologue {
       plate.rotation.z = Math.PI / 2; plate.position.y = 0.9; grp.add(plate);
       const ring = new THREE.Mesh(new THREE.RingGeometry(0.12, 0.2, 20), new THREE.MeshBasicMaterial({ color: 0xc8392a, side: THREE.DoubleSide })); ring.rotation.y = Math.PI / 2; ring.position.set(0.03, 0.9, 0); grp.add(ring);
       const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.9, 0.08), new THREE.MeshStandardMaterial({ color: 0x3a3a3a })); post.position.y = 0.45; grp.add(post);
-      const t = { grp, up: true, moving, x0: z };
+      const t = { grp, up: true, moving, x0: z, amp: moving ? 1.0 : 0 };
       const kin = g.physics.addKinematic(grp, [{ type: 'box', hx: 0.06, hy: 0.4, hz: 0.4, pos: { x: 0, y: 0.9, z: 0 }, meta: { onShot: () => { if (!t.up) return; t.up = false; g.audio.clank(grp.position.clone().add(V(0, 0.9, 0)), 0.8, 1.6); g.hud.hitmarker(true); } } }]);
       t.kin = kin; targets.push(t); return t;
     };
     this.rangeCleanup?.();
-    for (let i = 0; i < 5; i++) mkPlate(138.5 + (i % 2) * 3, LD.floor, -246 + i * 2.2);
-    const anim = g.add((dt) => { for (const t of targets) { t.grp.rotation.z = damp(t.grp.rotation.z, t.up ? 0 : Math.PI / 2, 10, dt); if (t.moving && t.up) t.grp.position.z = t.x0 + Math.sin(g.time * 1.4 + t.x0) * 3.5; } });
-    await this.waitFor(() => targets.every(t => !t.up));
+    // one row at one depth (so no plate can hide another from the firing line), south of the leap platform (z > -239.7)
+    for (let i = 0; i < 5; i++) mkPlate(138.8, LD.floor, -247.2 + i * 1.5);
+    const nextPlate = () => { const t = targets.find(t => t.up); return t ? t.grp.position.clone().add(V(0, 0.9, 0)) : null; };
+    this.objective('Recertify: Kestrel', 'Drop all five plates. RMB to aim, LMB to fire.', nextPlate);
+    const anim = g.add((dt) => { for (const t of targets) { t.grp.rotation.z = damp(t.grp.rotation.z, t.up ? 0 : Math.PI / 2, 10, dt); if (t.moving && t.up) t.grp.position.z = t.x0 + Math.sin(g.time * 1.4 + t.x0) * t.amp; } });
+    await this.platesDown(targets);
     await this.radio('BRAM', 'Good. Halyard next. Short bursts — she climbs.', { wait: false, dur: 3 });
     g.weapons.select('carbine');
+    this.objective('Recertify: Halyard', 'Drop the three moving plates. Short bursts.', nextPlate);
     targets.forEach(t => { t.grp.removeFromParent(); g.physics.removeKinematic(t.kin); });
     targets.length = 0;
-    for (let i = 0; i < 3; i++) mkPlate(140 + i * 1.5, LD.floor, -242 + (i - 1) * 3, true);
-    await this.waitFor(() => targets.every(t => !t.up));
+    for (let i = 0; i < 3; i++) mkPlate(145.5, LD.floor, -245.5 + i * 2.5, true); // a row east of the platform, each swinging ±1 m
+    await this.platesDown(targets);
     // --- tether drill: a swinging weight and a target plate
     await this.radio('BRAM', 'Now the tether. See the weight? It\'s swinging. Hold on it — feel the cells fill.', { wait: false, dur: 4.2 });
     g.hud.hint('capture', true);
+    this.objective('Recertify: Tether', 'Hold the tether on the swinging weight to fill a cell.', () => V(146, -35.3, -242));
     const pend = new THREE.Group(); pend.position.set(146, -29, -242); g.engine.cityRoot.add(pend);
     const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 6, 6), g.materials.cable); rope.position.y = -3; pend.add(rope);
     const bob = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 12), new THREE.MeshStandardMaterial({ color: 0x8a6a4a, metalness: 0.7, roughness: 0.4 })); bob.position.y = -6.3; pend.add(bob);
@@ -737,6 +753,7 @@ export class Prologue {
     await this.waitFor(() => g.tether.cells >= 1);
     await this.radio('BRAM', 'There. Now throw it — release into the plate on the berm.', { wait: false, dur: 3.2 });
     g.hud.hint('release', true);
+    this.objective('Recertify: Tether', 'Release the stored momentum into the plate on the berm.', () => V(137.6, LD.floor + 3.2, -242));
     // big hinged plate
     const big = new THREE.Group(); big.position.set(137.6, LD.floor + 2, -242); g.engine.cityRoot.add(big);
     const bp = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.4, 2.4), new THREE.MeshStandardMaterial({ color: 0xc8a030, metalness: 0.5, roughness: 0.5 })); bp.position.y = 1.2; big.add(bp);
@@ -748,6 +765,7 @@ export class Prologue {
     await this.wait(0.8);
     await this.radio('BRAM', 'Lovely. Last one. Jump off the floor, and in the air — spend a cell. Leap for the high platform.', { wait: false, dur: 4.4 });
     g.hud.hint('leap', true);
+    this.objective('Recertify: Kinetic leap', 'Jump, then spend a cell in the air to reach the high platform.', () => V(141, LD.floor + 5, -238.2));
     // keep a cell available: the weight keeps swinging
     angV = Math.max(angV, 1.4);
     await this.waitFor(() => P.pos.y > LD.floor + 4.5 && P.pos.distanceTo(V(141, LD.floor + 5, -238.2)) < 3);
