@@ -16,5 +16,7 @@
   - `node tools/poses.mjs` — one sheet of character poses from `dev/rig.html` (~10 s).
   - `node tools/scene.mjs <beat> --secs N --frames K [--use "Talk to X"]` — one contact sheet of a
     cutscene played in real game time at 640x360, plus a one-line-per-frame text log (~1-3 min).
+  - `node tools/music.mjs [cue ...] --secs N` — renders score cues offline (WAV/MP3 + spectrogram + loudness
+    per 5 s, plus render time: keep cues well under realtime). `dev/music.html` is a jukebox.
   - `tools/play.mjs tests/playthrough.mjs` for the full prologue; `tests/film.mjs` films every
     cutscene but is slow, so prefer `scene.mjs` per beat.

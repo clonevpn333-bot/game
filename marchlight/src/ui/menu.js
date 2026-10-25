@@ -12,6 +12,13 @@ const OUTFIT_SETS = {
   'Night Shift': { primary: '#22262e', secondary: '#7fdcff', pants: '#1e2024' },
 };
 
+const TRACKS = [
+  ['title', 'Marchlight', 'Main theme'], ['menu', 'Far Away, Home', 'Title screen'], ['morning', 'Day Two Hundred Fourteen', 'Waking up'],
+  ['market', 'The Market Dance', 'Deck One'], ['exterior', 'Meridian Walks', 'Outside the hull'], ['combat', 'Iron Stride', 'Combat'],
+  ['shearer', 'The Shearer', 'Final fight'], ['rescue', 'Cable Run', 'The rescue'], ['tension', 'Something Is Wrong', 'Tension'],
+  ['stillness', 'The Stillness', 'The settlement'], ['ruins', 'Underfoot', 'Chapter One'], ['signal', 'Someone Is Alive', 'Chapter One'], ['night', 'Refusal', 'Chapter One'],
+];
+
 export class Menu {
   constructor(game) {
     this.game = game; this.el = null;
@@ -50,6 +57,7 @@ export class Menu {
       <h1>MARCHLIGHT</h1><h2>NOTHING STAYS STILL. NOT EVEN HOME.</h2>
       ${has ? '<button class="btn" data-a="continue">Continue</button>' : ''}
       <button class="btn" data-a="new">New Game</button>
+      <button class="btn" data-a="music">Soundtrack</button>
       <button class="btn" data-a="settings">Settings</button>
       <button class="btn" data-a="controls">Controls</button>
       <div class="note">Headphones recommended. Click anywhere in the game to capture the mouse; Esc to pause.</div>
@@ -62,9 +70,25 @@ export class Menu {
       if (a === 'continue') { g.state.load(); this.clear(); await this.beginGame(g.state.checkpoint); }
       if (a === 'settings') this.settings(() => this.showTitle());
       if (a === 'controls') this.controls(() => this.showTitle());
+      if (a === 'music') this.soundtrack(() => this.showTitle());
     };
     const startAudio = () => { g.audio.init(); if (!g.audio.music.cue) g.audio.music.play('menu', 3); window.removeEventListener('pointerdown', startAudio); };
     window.addEventListener('pointerdown', startAudio);
+  }
+
+  // ------------------------------------------------------------ soundtrack (listen to every cue from the title)
+  soundtrack(back) {
+    const g = this.game; g.audio.init();
+    const list = TRACKS.map(([cue, name, note], i) => `<button class="trk${g.audio.music.cue === cue ? ' on' : ''}" data-cue="${cue}"><span class="n">${String(i + 1).padStart(2, '0')}</span><span class="t">${name}</span><span class="d">${note}</span></button>`).join('');
+    const d = this.mount(`<div class="col sound"><h1 style="font-size:40px">SOUNDTRACK</h1><h2>MARCHLIGHT — ORIGINAL SCORE</h2>
+      <div class="tracks">${list}</div>
+      <div class="note">Every note is played live by the game's own synthesized orchestra.</div>
+      <button class="btn" data-a="back" style="margin-top:18px">Back</button></div>`, 'menu dim');
+    d.querySelectorAll('[data-cue]').forEach(b => b.onclick = () => {
+      g.audio.music.play(b.dataset.cue, 1.2);
+      d.querySelectorAll('[data-cue]').forEach(x => x.classList.toggle('on', x === b));
+    });
+    d.querySelector('[data-a=back]').onclick = () => { g.audio.ui('select'); g.audio.music.play('menu', 2); back(); };
   }
 
   // ------------------------------------------------------------ customization

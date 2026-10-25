@@ -1,6 +1,7 @@
 // Fully procedural audio: ambience beds, spatial SFX, synthesized weapons,
-// the giant footfalls of Meridian, and a small adaptive score.
+// the giant footfalls of Meridian. The score lives in score.js.
 import { clamp, rng } from './util.js';
+import { Score } from './score.js';
 
 const NOTE = n => 440 * Math.pow(2, (n - 69) / 12);
 const N = name => { // "D4" -> midi
@@ -41,8 +42,6 @@ export class Audio {
     this.verbSend.connect(this.verb); this.verb.connect(this.worldDuck);
     this.bigVerb = ctx.createConvolver(); this.bigVerb.buffer = this._ir(6.5, 1.6);
     this.bigSend = ctx.createGain(); this.bigSend.gain.value = 0.5; this.bigSend.connect(this.bigVerb); this.bigVerb.connect(this.worldDuck);
-    this.musicVerb = ctx.createConvolver(); this.musicVerb.buffer = this._ir(3.5, 2.2);
-    this.musicSend = ctx.createGain(); this.musicSend.gain.value = 0.45; this.musicSend.connect(this.musicVerb); this.musicVerb.connect(this.musicBus);
 
     // Noise buffers
     const len = ctx.sampleRate * 3;
@@ -58,7 +57,7 @@ export class Audio {
       last = (last + 0.02 * x) / 1.02; b[i] = last * 3.5;
     }
     this.ready = true;
-    this.music = new Score(this);
+    this.music = new Score(ctx, this.musicBus, { audio: this });
     this.applyVolumes();
   }
 
@@ -289,7 +288,7 @@ export class Audio {
   cellChime(i) {
     if (!this.ready) return;
     const t = this.t, o = this.out(null, { verb: 0.3, bus: this.uiBus }); o.gain.value = 0.25;
-    const s = this.osc('sine', NOTE([74, 78, 81, 86][Math.min(i, 3)]), 0.5); const g = this.ctx.createGain(); this.env(g, t, 0.003, 0.5, 0.45); s.connect(g); g.connect(o);
+    const s = this.osc('sine', NOTE([65, 70, 72, 76][Math.min(i, 3)]), 0.5); const g = this.ctx.createGain(); this.env(g, t, 0.003, 0.5, 0.45); s.connect(g); g.connect(o);
   }
   // A continuous, controllable loop: returns an object with set(param) & stop()
   loop(id, builder) {
@@ -333,7 +332,7 @@ export class Audio {
     const t = this.t, o = this.out(null, { verb: 0.1, bus: this.uiBus });
     if (kind === 'tick') { o.gain.value = 0.18; const s = this.osc('sine', 1400, 0.05); const g = this.ctx.createGain(); this.env(g, t, 0.001, 0.4, 0.04); s.connect(g); g.connect(o); }
     else if (kind === 'select') { o.gain.value = 0.25; [880, 1320].forEach((f, i) => { const s = this.osc('triangle', f, 0.15, t + i * 0.05); const g = this.ctx.createGain(); this.env(g, t + i * 0.05, 0.002, 0.4, 0.12); s.connect(g); g.connect(o); }); }
-    else if (kind === 'objective') { o.gain.value = 0.3; [N('D5'), N('A5'), N('D6')].forEach((n, i) => { const s = this.osc('sine', NOTE(n), 0.8, t + i * 0.09); const g = this.ctx.createGain(); this.env(g, t + i * 0.09, 0.005, 0.35, 0.7); s.connect(g); g.connect(o); }); }
+    else if (kind === 'objective') { o.gain.value = 0.3; [N('F5'), N('Bb5'), N('C6')].forEach((n, i) => { const s = this.osc('sine', NOTE(n), 0.8, t + i * 0.09); const g = this.ctx.createGain(); this.env(g, t + i * 0.09, 0.005, 0.35, 0.7); s.connect(g); g.connect(o); }); }
     else if (kind === 'radio') { o.gain.value = 0.2; const n = this.noise('white', 0.18); const f = this.filter('bandpass', 2500, 1); const g = this.ctx.createGain(); this.env(g, t, 0.002, 0.6, 0.16); n.connect(f); f.connect(g); g.connect(o); const s = this.osc('square', 1800, 0.04); const sg = this.ctx.createGain(); this.env(sg, t, 0.001, 0.1, 0.03); s.connect(sg); sg.connect(o); }
     else if (kind === 'hit') { o.gain.value = 0.22; const s = this.osc('square', 2600, 0.04); const f = this.filter('bandpass', 2600, 4); const g = this.ctx.createGain(); this.env(g, t, 0.0005, 0.6, 0.035); s.connect(f); f.connect(g); g.connect(o); }
     else if (kind === 'kill') { o.gain.value = 0.25; [2000, 1500].forEach((fr, i) => { const s = this.osc('square', fr, 0.05, t + i * 0.06); const f = this.filter('bandpass', fr, 3); const g = this.ctx.createGain(); this.env(g, t + i * 0.06, 0.0005, 0.6, 0.05); s.connect(f); f.connect(g); g.connect(o); }); }
@@ -442,192 +441,3 @@ export class Audio {
 
 // ---------------------------------------------------------------- SCORE
 // A lookahead sequencer with a handful of synthesized instruments and cues.
-class Score {
-  constructor(audio) {
-    this.a = audio; this.ctx = audio.ctx;
-    this.cue = null; this.next = 0; this.step = 0; this.bpm = 70;
-    this.cueGain = this.ctx.createGain(); this.cueGain.gain.value = 0.0001; this.cueGain.connect(audio.musicBus); this.cueGain.connect(audio.musicSend);
-    this.intensity = 0;
-    this.timer = setInterval(() => this._tick(), 50);
-    this.r = rng(7);
-    this.diegetic = new Map();
-  }
-  play(name, fade = 2) {
-    if (this.cue === name) return;
-    const t = this.a.t;
-    // crossfade: fade old gain then switch
-    const old = this.cueGain;
-    old.gain.cancelScheduledValues(t); old.gain.setTargetAtTime(0.0001, t, fade / 3);
-    setTimeout(() => { try { old.disconnect(); } catch { /* */ } }, fade * 1000 + 2000);
-    this.cueGain = this.ctx.createGain(); this.cueGain.gain.value = 0.0001;
-    this.cueGain.connect(this.a.musicBus); this.cueGain.connect(this.a.musicSend);
-    this.cue = name; this.step = 0; this.next = t + 0.1;
-    const def = CUES[name];
-    if (def) { this.bpm = def.bpm; this.cueGain.gain.setTargetAtTime(def.gain ?? 0.8, t, fade / 3); }
-  }
-  stop(fade = 2) { this.play(null, fade); this.cue = null; }
-  _tick() {
-    if (!this.cue || !CUES[this.cue]) return;
-    const def = CUES[this.cue];
-    const spb = 60 / this.bpm / 4; // 16th notes
-    while (this.next < this.a.t + 0.25) {
-      def.step(this, this.step, this.next, spb);
-      this.step++; this.next += spb;
-    }
-  }
-  // ---- instruments
-  piano(midi, t, dur = 1.5, vel = 0.5, dest = this.cueGain) {
-    const ctx = this.ctx, f = NOTE(midi), g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vel * 0.5, t + 0.006); g.gain.exponentialRampToValueAtTime(vel * 0.18, t + 0.3); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 1.2);
-    const lp = this.a.filter('lowpass', 1800 + vel * 2500, 0.5); lp.frequency.exponentialRampToValueAtTime(600, t + dur);
-    [[1, 'triangle', 1], [2, 'sine', 0.35], [3, 'sine', 0.12], [4.01, 'sine', 0.06]].forEach(([m, type, a]) => {
-      const o = ctx.createOscillator(); o.type = type; o.frequency.value = f * m; o.detune.value = (this.r() - 0.5) * 6;
-      const og = ctx.createGain(); og.gain.value = a; o.connect(og); og.connect(lp); o.start(t); o.stop(t + dur + 1.3);
-    });
-    lp.connect(g); g.connect(dest);
-  }
-  pad(midis, t, dur, vel = 0.2, bright = 900) {
-    const ctx = this.ctx, g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vel, t + dur * 0.35); g.gain.linearRampToValueAtTime(vel * 0.8, t + dur * 0.8); g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.8);
-    const lp = this.a.filter('lowpass', bright, 0.7);
-    midis.forEach(m => [-7, 7].forEach(d => { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = NOTE(m); o.detune.value = d + (this.r() - 0.5) * 4; o.connect(lp); o.start(t); o.stop(t + dur + 1); }));
-    const sg = ctx.createGain(); sg.gain.value = 0.18; lp.connect(sg); sg.connect(g); g.connect(this.cueGain);
-  }
-  strings(midi, t, dur, vel = 0.25) {
-    const ctx = this.ctx, g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vel, t + Math.min(0.5, dur * 0.4)); g.gain.setValueAtTime(vel, t + dur * 0.8); g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.6);
-    const lp = this.a.filter('lowpass', 2200, 0.8);
-    const vib = ctx.createOscillator(); vib.frequency.value = 5.2; const vg = ctx.createGain(); vg.gain.value = 5; vib.connect(vg); vib.start(t); vib.stop(t + dur + 0.7);
-    [-5, 5, 0].forEach(d => { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = NOTE(midi); o.detune.value = d; vg.connect(o.detune); o.connect(lp); o.start(t); o.stop(t + dur + 0.7); });
-    const sg = ctx.createGain(); sg.gain.value = 0.15; lp.connect(sg); sg.connect(g); g.connect(this.cueGain);
-  }
-  bass(midi, t, dur, vel = 0.5) {
-    const ctx = this.ctx, g = ctx.createGain(); this.a.env(g, t, 0.01, vel, dur, 0.0001);
-    const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = NOTE(midi);
-    const lp = this.a.filter('lowpass', 380, 4); lp.frequency.setValueAtTime(900, t); lp.frequency.exponentialRampToValueAtTime(200, t + dur);
-    const s = ctx.createOscillator(); s.type = 'sine'; s.frequency.value = NOTE(midi - 12); const sg = ctx.createGain(); sg.gain.value = 0.6; s.connect(sg); sg.connect(g);
-    o.connect(lp); lp.connect(g); g.connect(this.cueGain); o.start(t); o.stop(t + dur + 0.1); s.start(t); s.stop(t + dur + 0.1);
-  }
-  kick(t, vel = 0.9) {
-    const ctx = this.ctx, o = ctx.createOscillator(), g = ctx.createGain();
-    o.frequency.setValueAtTime(130, t); o.frequency.exponentialRampToValueAtTime(38, t + 0.18); this.a.env(g, t, 0.002, vel, 0.32);
-    o.connect(g); g.connect(this.cueGain); o.start(t); o.stop(t + 0.4);
-  }
-  snare(t, vel = 0.5) {
-    const n = this.a.noise('white', 0.25, t), f = this.a.filter('bandpass', 1900, 0.8), g = this.ctx.createGain(); this.a.env(g, t, 0.001, vel, 0.18);
-    n.connect(f); f.connect(g); g.connect(this.cueGain);
-    const o = this.a.osc('triangle', 190, 0.12, t), og = this.ctx.createGain(); this.a.env(og, t, 0.001, vel * 0.6, 0.09); o.connect(og); og.connect(this.cueGain);
-  }
-  hat(t, vel = 0.15) {
-    const n = this.a.noise('white', 0.06, t), f = this.a.filter('highpass', 7000), g = this.ctx.createGain(); this.a.env(g, t, 0.001, vel, 0.04);
-    n.connect(f); f.connect(g); g.connect(this.cueGain);
-  }
-  metal(t, vel = 0.3, pitch = 1) { // industrial percussion
-    [1, 1.47, 2.09, 2.76].forEach((m, i) => { const o = this.a.osc('sine', 330 * pitch * m, 0.9, t), g = this.ctx.createGain(); this.a.env(g, t, 0.001, vel / (i + 1.5), 0.5 + i * 0.1); o.connect(g); g.connect(this.cueGain); });
-  }
-  boom(t, vel = 0.9) {
-    const o = this.a.osc('sine', 70, 3, t), g = this.ctx.createGain(); o.frequency.exponentialRampToValueAtTime(30, t + 2); this.a.env(g, t, 0.02, vel, 2.6);
-    o.connect(g); g.connect(this.cueGain);
-    const n = this.a.noise('brown', 2.5, t), f = this.a.filter('lowpass', 300), ng = this.ctx.createGain(); this.a.env(ng, t, 0.01, vel * 0.6, 2.2); n.connect(f); f.connect(ng); ng.connect(this.cueGain);
-  }
-  // Diegetic instrument for the street musician (spatialized)
-  busker(pos, active) {
-    if (!this.a.ready) return;
-    let d = this.diegetic.get('busker');
-    if (!d && active) {
-      const g = this.ctx.createGain(); g.gain.value = 0.0001; const p = this.a.panner(pos, 3, 80, 1.2);
-      g.connect(p); p.connect(this.a.sfxBus); const s = this.ctx.createGain(); s.gain.value = 0.3; p.connect(s); s.connect(this.a.verbSend);
-      d = { g, p, next: this.a.t + 0.2, step: 0 }; this.diegetic.set('busker', d);
-      d.timer = setInterval(() => {
-        const spb = 60 / 96 / 2;
-        while (d.next < this.a.t + 0.3) { buskerStep(this, d, d.step, d.next, spb); d.step++; d.next += spb; }
-      }, 60);
-    }
-    if (d) { d.g.gain.setTargetAtTime(active ? 0.55 : 0.0001, this.a.t, 0.4); this.a.setPannerPos(d.p, pos); }
-  }
-  pluck(midi, t, vel, dest) { // lyre-like pluck
-    const ctx = this.ctx, f = NOTE(midi), g = ctx.createGain();
-    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vel, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
-    const lp = this.a.filter('lowpass', 3500, 1); lp.frequency.exponentialRampToValueAtTime(700, t + 0.6);
-    [[1, 'sawtooth', 0.4], [2, 'triangle', 0.3], [3.0, 'sine', 0.15]].forEach(([m, type, a]) => { const o = ctx.createOscillator(); o.type = type; o.frequency.value = f * m; o.detune.value = (this.r() - 0.5) * 8; const og = ctx.createGain(); og.gain.value = a; o.connect(og); og.connect(lp); o.start(t); o.stop(t + 1.7); });
-    lp.connect(g); g.connect(dest);
-  }
-}
-
-// Theme: D dorian. The four-note "footstep" figure D–A–G–F recurs in every cue.
-const THEME = ['D4', 'A4', 'G4', 'F4', 'E4', 'F4', 'D4', 'C4', 'D4', 'F4', 'A4', 'C5', 'Bb4', 'A4', 'G4', 'A4'].map(N);
-const CHORDS = [['D3', 'A3', 'F4'], ['Bb2', 'F3', 'D4'], ['F3', 'C4', 'A4'], ['C3', 'G3', 'E4']].map(c => c.map(N));
-
-const CUES = {
-  // gentle morning: sparse piano over a warm pad
-  morning: { bpm: 66, gain: 0.7, step(s, i, t, spb) {
-    const bar = Math.floor(i / 16), b = i % 16;
-    if (b === 0) s.pad(CHORDS[bar % 4], t, spb * 16, 0.16, 700);
-    if (b === 0 || b === 6 || b === 10) { const n = THEME[(bar * 3 + b / 2) % THEME.length | 0]; s.piano(n + 12, t, 1.6, 0.32); }
-    if (b === 8 && bar % 2 === 1) s.piano(CHORDS[bar % 4][0] + 12, t, 2, 0.18);
-  } },
-  // the exterior: vast, slow, a pulse like footsteps
-  exterior: { bpm: 60, gain: 0.75, step(s, i, t, spb) {
-    const bar = Math.floor(i / 16), b = i % 16;
-    if (b === 0) { s.pad(CHORDS[bar % 4].map(n => n - 12).concat([CHORDS[bar % 4][2]]), t, spb * 16, 0.2, 1200); s.bass(CHORDS[bar % 4][0] - 12, t, spb * 14, 0.25); }
-    if (b === 0 && bar % 2 === 0) s.boom(t, 0.35);
-    if (bar >= 2 && (b === 4 || b === 12)) s.strings(THEME[(bar * 2 + (b === 12 ? 1 : 0)) % THEME.length] + 12, t, spb * 7, 0.12);
-  } },
-  // combat: driving industrial percussion and ostinato bass
-  combat: { bpm: 128, gain: 0.7, step(s, i, t, spb) {
-    const bar = Math.floor(i / 16), b = i % 16;
-    if (b === 0 || b === 6 || b === 10) s.kick(t, 0.8);
-    if (b === 4 || b === 12) s.snare(t, 0.45);
-    if (b % 2 === 0) s.hat(t, b % 4 === 0 ? 0.08 : 0.04);
-    if (b === 14 && bar % 2 === 1) s.metal(t, 0.25, 0.8);
-    const root = CHORDS[bar % 4][0] - 12; const pat = [0, 0, 12, 0, 7, 0, 10, 0];
-    if (b % 2 === 0) s.bass(root + pat[(b / 2) % 8], t, spb * 1.6, 0.32);
-    if (b === 0) s.pad(CHORDS[bar % 4], t, spb * 16, 0.1, 1400);
-    if (bar % 4 >= 2 && b % 4 === 0) s.strings(THEME[(bar * 4 + b / 4) % THEME.length] + 12, t, spb * 3.5, 0.08);
-  } },
-  // rescue: urgent string ostinato, rising
-  rescue: { bpm: 140, gain: 0.8, step(s, i, t, spb) {
-    const bar = Math.floor(i / 16), b = i % 16;
-    const ch = CHORDS[bar % 4];
-    if (b % 2 === 0) s.strings(ch[(b / 2) % 3] + 12, t, spb * 1.6, 0.09);
-    if (b === 0 || b === 8) s.kick(t, 0.9);
-    if (b === 0) { s.bass(ch[0] - 12, t, spb * 15, 0.35); s.boom(t, 0.4); }
-    if (b === 12) s.snare(t, 0.4);
-    if (b === 4 || b === 12) s.metal(t, 0.18, 1.2);
-  } },
-  // stillness: almost nothing. A glassy, held tone.
-  stillness: { bpm: 40, gain: 0.6, step(s, i, t, spb) {
-    const b = i % 32;
-    if (b === 0) { s.pad([N('D5'), N('A5')], t, spb * 30, 0.08, 3000); }
-    if (b === 16) s.piano(N('E6'), t, 3, 0.12);
-  } },
-  // tension: low drone + heartbeat pulses
-  tension: { bpm: 72, gain: 0.7, step(s, i, t, spb) {
-    const bar = Math.floor(i / 16), b = i % 16;
-    if (b === 0) { s.pad([N('D2'), N('A2'), N('Eb3')], t, spb * 16, 0.18, 500); }
-    if (b === 0 || b === 3) s.kick(t, 0.35);
-    if (b === 8 && bar % 2) s.metal(t, 0.1, 0.5);
-  } },
-  // title: the full theme on piano with strings, synced to booms
-  title: { bpm: 58, gain: 0.95, step(s, i, t, spb) {
-    const bar = Math.floor(i / 16), b = i % 16;
-    if (b === 0) { s.boom(t, 0.8); s.pad(CHORDS[bar % 4], t, spb * 16, 0.22, 1500); s.bass(CHORDS[bar % 4][0] - 12, t, spb * 15, 0.3); }
-    if (b % 4 === 0) s.piano(THEME[(bar * 4 + b / 4) % THEME.length] + 12, t, 1.8, 0.4);
-    if (bar >= 1 && b === 0) s.strings(THEME[(bar * 4) % THEME.length] + 12, t, spb * 15, 0.16);
-    if (bar >= 2 && b === 8) s.strings(THEME[(bar * 4 + 2) % THEME.length] + 24, t, spb * 7, 0.08);
-  } },
-  menu: { bpm: 54, gain: 0.6, step(s, i, t, spb) {
-    const bar = Math.floor(i / 16), b = i % 16;
-    if (b === 0) s.pad(CHORDS[bar % 4], t, spb * 16, 0.14, 800);
-    if (b === 0 && bar % 2 === 0) s.boom(t, 0.3);
-    if (b === 8) s.piano(THEME[bar % THEME.length] + 12, t, 2.5, 0.22);
-  } },
-};
-
-// The market busker: a looping folk tune in the same key so the theme is "of the city".
-const BUSK = ['D5', 'F5', 'A5', 'G5', 'F5', 'E5', 'D5', '-', 'C5', 'D5', 'E5', 'F5', 'E5', 'C5', 'A4', '-', 'D5', 'F5', 'A5', 'C6', 'Bb5', 'A5', 'G5', 'A5', 'F5', 'E5', 'D5', 'C5', 'D5', '-', '-', '-'];
-function buskerStep(s, d, i, t, spb) {
-  const n = BUSK[i % BUSK.length];
-  if (n !== '-') s.pluck(N(n), t, 0.22, d.g);
-  if (i % 4 === 0) { const ch = CHORDS[Math.floor(i / 8) % 4]; s.pluck(ch[0], t, 0.14, d.g); s.pluck(ch[1], t + 0.03, 0.1, d.g); }
-}

@@ -783,6 +783,7 @@ export class Prologue {
     await this.wait(5); doors(); g.windMul = 1;
     await toDoor;
     // the reveal: step out past the hull and the world opens below
+    g.audio.music.sting('reveal');
     P.setScripted(true);
     const walk = g.add((dt) => { if (P.pos.x < 205) { P.pos.x += dt * 1.4; P.anim.speed = 1.4; P.placeScripted(P.pos, Math.PI / 2 - 0.25); } else P.anim.speed = 0; });
     // push out past Rook as he steps onto the apron, toward the open horizon
@@ -898,7 +899,8 @@ export class Prologue {
     const sh = g.enemies.spawn('shearer', S.spots.shearerIn.clone().add(V(4, -6, 0)), { yaw: -Math.PI / 2, alwaysAware: true });
     sh.vel.set(-4, 9, -1);
     g.audio.explosion(S.spots.shearerIn, 0.4);
-    g.audio.music.play('combat', 0.5);
+    g.audio.music.play('shearer', 0.5); g.audio.music.sting('danger');
+    const heaven = g.add(() => { if (!sh.dead && sh.hp < sh.maxHp * 0.45) { g.audio.music.mark('heaven'); heaven(); } });
     await this.radio('NIA', 'Big contact, east edge — that\'s a Shearer! Where did it—', { wait: false, dur: 2.8 });
     await this.wait(2.4);
     await this.radio('BRAM', 'Don\'t trade punches with that thing. When it charges — take it.', { wait: false, dur: 3.4 });
@@ -912,9 +914,10 @@ export class Prologue {
     const offCharge = g.events.on('shearer:charge', () => this.radio('NIA', 'It\'s charging — NOW, Rook!', { wait: false, dur: 1.6 }));
     const offStall = g.events.on('shearer:stalled', () => this.radio('BRAM', 'You stopped it dead! Now give it back!', { wait: false, dur: 2.2 }));
     await this.waitFor(() => sh.dead);
-    offF(); offCharge(); offStall(); cwTick(); offCW();
+    offF(); offCharge(); offStall(); cwTick(); offCW(); heaven();
+    g.audio.music.stop(0.6); g.audio.music.sting('victory');
     await this.wait(2.2);
-    g.audio.music.play('exterior', 3);
+    g.audio.music.play('exterior', 5);
     await this.radio('BRAM', '…Remind me never to make you angry.', { wait: false, dur: 2.6 });
     g.state.journal('A Shearer came up Leg Two. It didn\'t go back down the same way.');
     g.state.checkpoint = 'rescue'; g.state.save(g);

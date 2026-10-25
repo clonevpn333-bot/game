@@ -167,3 +167,11 @@ body.bigsubs .sub { font-size: 26px; }
 #wp .d { position: absolute; left: -40px; top: 12px; width: 80px; text-align: center; font-family: var(--cond); font-size: 13px; letter-spacing: 0.08em; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
 #wp .arrow { position: absolute; left: 0; top: -7px; width: 0; height: 0; display: none; }
 #wp.off .arrow { display: block; border-left: 12px solid var(--amber); border-top: 7px solid transparent; border-bottom: 7px solid transparent; transform-origin: 0 50%; }
+/* soundtrack */
+.menu .sound .tracks { display: flex; flex-direction: column; gap: 2px; max-height: 58vh; overflow-y: auto; pointer-events: auto; padding-right: 8px; }
+.menu .trk { pointer-events: auto; display: grid; grid-template-columns: 34px 1fr auto; align-items: baseline; gap: 12px; background: rgba(10, 12, 14, 0.35); border: none; border-left: 2px solid transparent; color: var(--ink); font-family: var(--cond); text-align: left; padding: 7px 12px; cursor: pointer; opacity: 0.75; transition: opacity .15s, border-color .15s, background .15s; }
+.menu .trk:hover { opacity: 1; background: rgba(10, 12, 14, 0.55); }
+.menu .trk.on { opacity: 1; border-left-color: var(--amber); color: var(--amber); }
+.menu .trk .n { font-size: 14px; opacity: 0.6; letter-spacing: 0.1em; }
+.menu .trk .t { font-size: 20px; letter-spacing: 0.12em; text-transform: uppercase; }
+.menu .trk .d { font-size: 13px; opacity: 0.6; letter-spacing: 0.1em; text-transform: uppercase; }

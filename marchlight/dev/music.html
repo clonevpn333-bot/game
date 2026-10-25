@@ -1,0 +1,47 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MARCHLIGHT · Score</title>
+<style>
+  body { background: #101214; color: #e8e0d0; font: 15px/1.5 "Barlow Condensed", system-ui, sans-serif; margin: 0; padding: 24px; }
+  h1 { font-weight: 600; letter-spacing: .2em; font-size: 20px; margin: 0 0 16px; }
+  button { background: #1d2124; color: inherit; border: 1px solid #3a3f44; padding: 8px 14px; margin: 4px; font: inherit; cursor: pointer; letter-spacing: .08em; }
+  button.on { border-color: #ffb35c; color: #ffb35c; }
+  #now { margin-top: 14px; opacity: .7; }
+</style>
+<script type="importmap">{"imports":{"three":"../vendor/three/three.module.js","three/addons/":"../vendor/three/addons/"}}</script>
+</head>
+<body>
+<h1>MARCHLIGHT — SCORE</h1>
+<div id="cues"></div><div id="stings"></div>
+<div id="now">click a cue</div>
+<script type="module">
+import { Score, CUE_NAMES } from '../src/core/score.js';
+let ctx, score;
+const now = document.getElementById('now');
+const start = () => { if (!ctx) { ctx = new AudioContext(); const g = ctx.createGain(); g.gain.value = 0.8; g.connect(ctx.destination); score = new Score(ctx, g); } };
+for (const name of CUE_NAMES) {
+  const b = document.createElement('button'); b.textContent = name.toUpperCase();
+  b.onclick = () => { start(); score.play(name, 1.5); document.querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); now.textContent = 'playing: ' + name; };
+  document.getElementById('cues').append(b);
+}
+for (const name of ['reveal', 'danger', 'discover', 'still']) {
+  const b = document.createElement('button'); b.textContent = '✦ ' + name; b.onclick = () => { start(); score.sting(name); };
+  document.getElementById('stings').append(b);
+}
+const stop = document.createElement('button'); stop.textContent = 'STOP'; stop.onclick = () => { score?.stop(1.5); now.textContent = 'stopped'; }; document.getElementById('cues').append(stop);
+// offline render for tools/music.mjs: returns 16-bit stereo PCM as base64
+window.renderCue = async (name, secs, sr = 44100, mute = []) => {
+  const oc = new OfflineAudioContext(2, Math.floor(secs * sr), sr);
+  const s = new Score(oc, oc.destination, { offline: true, mute });
+  const t0 = performance.now();
+  if (name.startsWith('sting:')) s.sting(name.slice(6)); else { s.play(name, 0.01); s.renderTo(secs - 0.5); }
+  const sched = performance.now() - t0;
+  const buf = await oc.startRendering();
+  const L = buf.getChannelData(0), R = buf.getChannelData(1), n = L.length, pcm = new Int16Array(n * 2);
+  let peak = 0, clip = 0;
+  for (let i = 0; i < n; i++) { const l = L[i], r = R[i]; peak = Math.max(peak, Math.abs(l), Math.abs(r)); if (Math.abs(l) > 1 || Math.abs(r) > 1) clip++; pcm[i * 2] = Math.max(-1, Math.min(1, l)) * 32767; pcm[i * 2 + 1] = Math.max(-1, Math.min(1, r)) * 32767; }
+  const bytes = new Uint8Array(pcm.buffer); let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return { b64: btoa(bin), peak, clip, sched, render: performance.now() - t0, sr };
+};
+window.CUES = CUE_NAMES;
+</script>
+</body></html>
