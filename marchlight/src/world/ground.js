@@ -2,7 +2,7 @@
 // footprints trailing behind it, old roads and rivers, ruins, low clouds,
 // Stillness regions — and Callow Reach, the settlement that should be empty.
 import * as THREE from 'three';
-import { GLSL_NOISE, rng, clamp } from '../core/util.js';
+import { GLSL_NOISE, rng, clamp, fbmGL } from '../core/util.js';
 import { GROUND_Y, HULL } from './city.js';
 import { Actor } from '../characters/npc.js';
 import { randomLook } from '../characters/rig.js';
@@ -165,7 +165,7 @@ export class Ground {
       P.setXYZ(i, f(x), 0, f(z));
     }
     this.u = {
-      uTravel: { value: 0 }, uTime: { value: 0 }, uStride: { value: city.speed * city.T }, uFogDensity: { value: 0.00016 },
+      uTravel: { value: 0 }, uTime: { value: 0 }, uStride: { value: city.speed * city.T }, uFogDensity: { value: game.engine.atmosphere ? 0.00005 : 0.00016 },
       uSun: { value: new THREE.Vector3() }, uSunCol: { value: new THREE.Color(1.6, 1.35, 1.05) }, uSky: { value: new THREE.Color(0.55, 0.65, 0.78) }, uFog: { value: new THREE.Color(0.75, 0.78, 0.8) },
       uHullMin: { value: new THREE.Vector3(HULL.x0, HULL.bottom - 10, HULL.z0) }, uHullMax: { value: new THREE.Vector3(HULL.x1, 120, HULL.z1) },
       uLegA: { value: [0, 1, 2, 3].map(() => new THREE.Vector3()) }, uLegB: { value: [0, 1, 2, 3].map(() => new THREE.Vector3()) }, uLegC: { value: [0, 1, 2, 3].map(() => new THREE.Vector3()) },
@@ -229,6 +229,13 @@ export class Ground {
     this.game.engine.worldRoot.add(this.trees);
     this.layoutRuins(true);
   }
+  // terrain height (relative to GROUND_Y) under a ground-frame point (x, z), exactly as the terrain
+  // shader displaces it; hills rise away from the city, so this changes as the city travels
+  heightAt(x, z) {
+    const wz = z + this.city.travel, t = Math.min(1, Math.max(0, (Math.abs(x) + Math.max(0, -wz - 1200) * 0.4 - 500) / 2500)), far = t * t * (3 - 2 * t);
+    const h = (fbmGL(x * 0.0006, z * 0.0006) - 0.45) * 520 + fbmGL(x * 0.003, z * 0.003) * 60;
+    return h * far + (fbmGL(x * 0.01, z * 0.01) - 0.5) * 3;
+  }
   layoutRuins(force = false) {
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
     const travel = this.city.travel; let changed = force;
@@ -238,14 +245,16 @@ export class Ground {
       if (sz > this.span / 2) { it.z -= this.span; changed = true; } else if (sz < -this.span / 2) { it.z += this.span; changed = true; }
     }
     for (const t of this.treeItems) { const sz = t.z + travel; if (sz > this.span / 2) { t.z -= this.span; changed = true; } }
+    // the hills under them move as the city travels: re-seat everything every few seconds
+    if (Math.abs(travel - (this.seatTravel ?? -1e9)) > 6) { this.seatTravel = travel; changed = true; }
     if (!changed) return;
     this.ruinItems.forEach((it, i) => {
       q.setFromEuler(e.set(it.tilt || 0, it.ry || 0, (it.tilt || 0) * 0.5));
-      m.compose(new THREE.Vector3(it.x, gy + (it.y || 0) - (it.kind === 'bldg' ? 1 : 0), it.z), q, new THREE.Vector3(it.w, it.h, it.d));
+      m.compose(new THREE.Vector3(it.x, gy + this.heightAt(it.x, it.z) + (it.y || 0) - (it.kind === 'bldg' ? 1.5 : 0.5), it.z), q, new THREE.Vector3(it.w, it.h + 1, it.d));
       this.ruins.setMatrixAt(i, m);
     });
     this.ruins.instanceMatrix.needsUpdate = true;
-    this.treeItems.forEach((t, i) => { m.compose(new THREE.Vector3(t.x, gy - 1, t.z), q.identity(), new THREE.Vector3(t.s * 0.45, t.s, t.s * 0.45)); this.trees.setMatrixAt(i, m); });
+    this.treeItems.forEach((t, i) => { m.compose(new THREE.Vector3(t.x, gy + this.heightAt(t.x, t.z) - 1, t.z), q.identity(), new THREE.Vector3(t.s * 0.45, t.s, t.s * 0.45)); this.trees.setMatrixAt(i, m); });
     this.trees.instanceMatrix.needsUpdate = true;
   }
 

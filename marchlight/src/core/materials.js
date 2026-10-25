@@ -63,6 +63,10 @@ export function buildMaterials(T) {
   M.rubber = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 });
   M.glass = new THREE.MeshStandardMaterial({ color: 0x9fc4d8, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.25, depthWrite: false, envMapIntensity: 2 });
   M.glassDark = new THREE.MeshStandardMaterial({ color: 0x1d2a33, roughness: 0.08, metalness: 0.6, envMapIntensity: 1.5 });
+  // windows with a room lit behind them (warm and cool), for building facades
+  M.glassLit = new THREE.MeshStandardMaterial({ color: 0x2a2219, roughness: 0.12, metalness: 0.3, emissive: new THREE.Color(1.0, 0.72, 0.42), emissiveIntensity: 0.32, envMapIntensity: 1.2 });
+  M.glassLitCool = new THREE.MeshStandardMaterial({ color: 0x1e2630, roughness: 0.12, metalness: 0.3, emissive: new THREE.Color(0.62, 0.8, 1.0), emissiveIntensity: 0.24, envMapIntensity: 1.2 });
+  M.glassLit.name = 'glassLit'; M.glassLitCool.name = 'glassLitCool';
   M.cable = new THREE.MeshStandardMaterial({ color: 0x1b1b1d, roughness: 0.6, metalness: 0.4 });
   M.cableSteel = new THREE.MeshStandardMaterial({ color: 0x6c6c70, roughness: 0.4, metalness: 0.9 });
   // Emissives (bloom)

@@ -114,6 +114,12 @@ export class Exterior {
     b.box('panel', [127, -46.15, 90], [146, 91.7, 420], { color: hullC, collide: false, tex: 8, ao: false });
     // Front-east block (x 80..200, z -300..-120) — its east face is the Spine Gallery wall built by the spine district.
     b.box('panel', [125, -46.15, -210], [142, 91.7, 180], { color: hullC, collide: false, tex: 8, ao: false });
+    // a tapered keel under the middle of the hull (between the legs) so Meridian reads as a ship, not a box
+    { const k = new THREE.Shape(); k.moveTo(-140, 0); k.lineTo(140, 0); k.lineTo(96, -20); k.lineTo(-96, -20); k.closePath();
+      b.extrude('panel', k, 380, [0, -91.8, 0], { color: 0x6a665e, tex: 8 });
+      const kr = new THREE.Shape(); kr.moveTo(-142, 0.2); kr.lineTo(142, 0.2); kr.lineTo(97.5, -20.6); kr.lineTo(-97.5, -20.6); kr.closePath();
+      for (let z = -180; z <= 180; z += 30) b.extrude('darkSteel', kr, 2, [0, -91.8, z], { color: darkC, tex: 8 });
+      for (const sx of [-1, 1]) for (let z = -170; z <= 170; z += 20) b.box('lampWarm', [sx * 120.6, -101, z], [0.6, 0.4, 6], { collide: false, ao: false, rz: sx * 0.43 }); }
     // underside trusses
     for (let z = -280; z <= 280; z += 40) b.box('darkSteel', [0, -95, z], [390, 6, 4], { color: darkC, collide: false, ao: false });
     for (let x = -180; x <= 180; x += 45) b.box('darkSteel', [x, -97, 0], [4, 4, 590], { color: darkC, collide: false, ao: false });
@@ -152,8 +158,8 @@ export class Exterior {
     for (let i = 0; i < 26; i++) {
       const t = -290 + i * 23, sx = i % 2 ? 1 : -1;
       if (sx > 0 && t < -110) continue;
-      b.box('darkSteel', [sx * 201, 4, t], [0.6, 8, 0.6], { color: darkC, collide: false, ao: false });
-      b.box('lampWarm', [sx * 201, 8.4, t], [1.2, 0.6, 1.2], { collide: false, ao: false });
+      b.box('darkSteel', [sx * 199.4, 3.7, t], [0.6, 8, 0.6], { color: darkC, collide: false, ao: false }); // on the deck edge
+      b.box('lampWarm', [sx * 199.4, 8.0, t], [1.2, 0.6, 1.2], { collide: false, ao: false });
     }
     b.finalize().forEach(m => { m.castShadow = false; });
   }
@@ -173,19 +179,56 @@ export class Exterior {
       const w = crown ? 14 + r() * 14 : 8 + r() * 18, d = crown ? 14 + r() * 14 : 8 + r() * 18;
       boxes.push({ x, z, w, d, h, crown });
     }
-    const geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0, 0.5, 0);
-    // scale UVs per instance via shader? keep simple: use facade with repeat 1 per 16m by giving base UV big
-    const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 3, uv.getY(i) * 4);
-    const col = new Float32Array(geo.attributes.position.count * 3).fill(1); geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    const inst = new THREE.InstancedMesh(geo, M.facade, boxes.length);
-    const m4 = new THREE.Matrix4(), c = new THREE.Color();
-    boxes.forEach((bx, i) => {
-      m4.compose(new THREE.Vector3(bx.x, 0, bx.z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, (r() < 0.2 ? r() * 0.6 : 0), 0)), new THREE.Vector3(bx.w, bx.h, bx.d));
-      inst.setMatrixAt(i, m4);
-      c.setHSL(0.08 + r() * 0.06, 0.08 + r() * 0.1, bx.crown ? 0.75 : 0.45 + r() * 0.3); inst.setColorAt(i, c);
-    });
-    inst.castShadow = false; inst.receiveShadow = false;
-    this.root.add(inst);
+    // towers are stacked tiers that step back as they rise, each capped by a darker slab, with a
+    // penthouse/plant room on top; windows are mapped from world position so every floor is the same size
+    const tiers = [], caps = [];
+    for (const bx of boxes) {
+      const n = bx.crown ? 3 : bx.h > 26 ? (r() < 0.6 ? 2 : 1) : 1, ry = r() < 0.2 ? r() * 0.6 : 0;
+      const tone = new THREE.Color().setHSL(0.07 + r() * 0.07, 0.1 + r() * 0.12, bx.crown ? 0.72 : 0.5 + r() * 0.24);
+      let y = -0.35, w = bx.w, d = bx.d;
+      const parts = n === 1 ? [1] : n === 2 ? [0.68, 0.32] : [0.55, 0.28, 0.17];
+      parts.forEach((f, k) => {
+        const h = bx.h * f;
+        tiers.push({ x: bx.x, y, z: bx.z, w, h, d, ry, c: tone });
+        caps.push({ x: bx.x, y: y + h, z: bx.z, w: w + 0.6, h: 0.7, d: d + 0.6, ry, c: new THREE.Color(0x6a655c) });
+        y += h + 0.7; w *= 0.72; d *= 0.72;
+      });
+      caps.push({ x: bx.x + (r() - 0.5) * w * 0.4, y, z: bx.z + (r() - 0.5) * d * 0.4, w: w * 0.45, h: 2.5 + r() * 2, d: d * 0.4, ry, c: new THREE.Color(0x8a847a) });
+    }
+    const inst = (list, mat) => {
+      const geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0, 0.5, 0);
+      geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count * 3).fill(1), 3));
+      const im = new THREE.InstancedMesh(geo, mat, list.length), m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+      list.forEach((t, i) => { m4.compose(new THREE.Vector3(t.x, t.y, t.z), q.setFromEuler(e.set(0, t.ry, 0)), new THREE.Vector3(t.w, t.h, t.d)); im.setMatrixAt(i, m4); im.setColorAt(i, t.c); });
+      im.castShadow = false; im.receiveShadow = false; this.root.add(im); return im;
+    };
+    const towerMat = M.facade.clone();
+    towerMat.onBeforeCompile = (sh) => {
+      sh.vertexShader = sh.vertexShader.replace('#include <fog_vertex>', `#include <fog_vertex>
+        {
+          mat4 im = modelMatrix * instanceMatrix;
+          vec3 wp = (im * vec4(position, 1.0)).xyz, wn = abs(normalize(mat3(im) * normal));
+          vec2 bu = (wn.x > 0.5 ? wp.zy : wn.z > 0.5 ? wp.xy : wp.xz + 999.0) / 51.2; // 16 windows per tile, 3.2 m floors
+          #ifdef USE_MAP
+            vMapUv = bu;
+          #endif
+          #ifdef USE_NORMALMAP
+            vNormalMapUv = bu;
+          #endif
+          #ifdef USE_ROUGHNESSMAP
+            vRoughnessMapUv = bu;
+          #endif
+          #ifdef USE_METALNESSMAP
+            vMetalnessMapUv = bu;
+          #endif
+          #ifdef USE_EMISSIVEMAP
+            vEmissiveMapUv = bu;
+          #endif
+        }`);
+    };
+    towerMat.customProgramCacheKey = () => 'towerUV';
+    inst(tiers, towerMat);
+    inst(caps, M.concrete);
     // the Crown: a cluster of slender towers with observation rings and a spire
     const b = new Builder(this.game, this.root, { cell: 400 });
     const cz = -80;
@@ -213,7 +256,7 @@ export class Exterior {
       cb.box('hazard', [0, 0, 0], [4, 4, 4], { collide: false, ao: false, tex: 2 });
       cb.box('darkSteel', [12, 0, 0], [26, 2, 2], { color: 0xc8a030, collide: false, ao: false });
       cb.tube('cable', [24, 0, 0], [24, -30, 0], 0.2);
-      cb.box('rust', [24, -32, 0], [5, 3, 5], { collide: false, ao: false });
+      cb.box('rust', [24, -31.5, 0], [5, 3, 5], { collide: false, ao: false }); // hangs from the cable end
       cb.finalize();
       g.position.set(-40, 62, -200 + i * 160); this.root.add(g);
       this.cranes.push({ g, phase: i * 2.1, base: -200 + i * 160 });

@@ -76,6 +76,8 @@ export class Builder {
     let b = this.buckets.get(key); if (!b) { b = { mat, geoms: [], flags }; this.buckets.set(key, b); }
     return b;
   }
+  // every placed shape is logged (parent, centre, size, rotation) so tests can find floating props
+  log(kind, mat, p, s, rx, ry, rz) { (this.game.propLog ||= []).push({ kind, mat, parent: this.parent, p: [p[0], p[1], p[2]], s: [s[0], s[1], s[2]], r: [rx, ry, rz] }); }
   // Add a prepared geometry (already in local space of `matrix`)
   geom(mat, g, matrix, { color = WHITE, ao = false, bottomY = null, cast = true, receive = true } = {}) {
     if (!g.attributes.color) {
@@ -94,6 +96,7 @@ export class Builder {
   // Axis-aligned or Y-rotated box. p = center, s = size.
   box(mat, p, s, o = {}) {
     const { rx = 0, ry = 0, rz = 0, color = WHITE, tex = 2, ao = true, collide = true, cast = true, receive = true, meta = {}, visible = true } = o;
+    if (visible) this.log('box', mat, p, s, rx, ry, rz);
     _q.setFromEuler(_e.set(rx, ry, rz));
     if (visible) {
       const g = o.round ? roundedSizedBox(s[0], s[1], s[2], Math.min(o.round, Math.min(s[0], s[1], s[2]) * 0.45), tex) : sizedBox(s[0], s[1], s[2], tex, ao);
@@ -112,6 +115,7 @@ export class Builder {
 
   cyl(mat, p, r, h, o = {}) {
     const { rx = 0, ry = 0, rz = 0, color = WHITE, seg = 16, collide = false, r2 = r, cast = true, open = false, tex = 2, meta = {} } = o;
+    this.log('cyl', mat, p, [2 * Math.max(r, r2), h, 2 * Math.max(r, r2)], rx, ry, rz);
     const g = new THREE.CylinderGeometry(r2, r, h, seg, 1, open);
     const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (Math.PI * 2 * r) / tex, uv.getY(i) * h / tex);
     applyColor(g, toColor(color), false, 0);
@@ -123,6 +127,7 @@ export class Builder {
   }
   sphere(mat, p, r, o = {}) {
     const { color = WHITE, seg = 16, sy = 1, cast = true } = o;
+    this.log('sphere', mat, p, [2 * r, 2 * r * sy, 2 * r], 0, 0, 0);
     const g = new THREE.SphereGeometry(r, seg, Math.max(6, seg >> 1));
     g.scale(1, sy, 1);
     applyColor(g, toColor(color), false, 0);
@@ -133,6 +138,7 @@ export class Builder {
   tube(mat, a, b, r, o = {}) {
     const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b);
     const len = A.distanceTo(B); if (len < 1e-4) return;
+    this.log('tube', mat, [(A.x + B.x) / 2, (A.y + B.y) / 2, (A.z + B.z) / 2], [Math.abs(A.x - B.x) + 2 * r, Math.abs(A.y - B.y) + 2 * r, Math.abs(A.z - B.z) + 2 * r], 0, 0, 0);
     const g = new THREE.CylinderGeometry(o.r2 ?? r, r, len, o.seg ?? 10, 1, o.open ?? false);
     const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (Math.PI * 2 * r) / (o.tex ?? 1), uv.getY(i) * len / (o.tex ?? 1));
     applyColor(g, toColor(o.color ?? WHITE), false, 0);
@@ -147,6 +153,8 @@ export class Builder {
   // Polyline tube (cables with sag)
   path(mat, pts, r, o = {}) {
     const curve = new THREE.CatmullRomCurve3(pts.map(p => (p.isVector3 ? p : new THREE.Vector3(...p))));
+    const P3 = pts.map(p => (p.isVector3 ? p : new THREE.Vector3(...p)));
+    for (let i = 1; i < P3.length; i++) { const A = P3[i - 1], B = P3[i]; this.log('path', mat, [(A.x + B.x) / 2, (A.y + B.y) / 2, (A.z + B.z) / 2], [Math.abs(A.x - B.x) + 2 * r, Math.abs(A.y - B.y) + 2 * r, Math.abs(A.z - B.z) + 2 * r], 0, 0, 0); }
     const g = new THREE.TubeGeometry(curve, o.segs ?? Math.max(8, pts.length * 3), r, o.radial ?? 6, false);
     applyColor(g, toColor(o.color ?? WHITE), false, 0);
     this.geom(mat, g, _m.identity(), { cast: o.cast ?? false });
@@ -177,8 +185,16 @@ export class Builder {
     const c = Math.cos(ry), s = Math.sin(ry);
     for (let i = 0; i < steps; i++) {
       const d = sd * (i + 0.5), h = sr * (i + 1);
+      if (o.open) { this.box(mat, [p[0] + s * d, p[1] + h - sr / 2 - 0.04, p[2] + c * d], [w, sr + 0.08, sd + 0.03], { ry, color: o.color, collide: false, tex: o.tex ?? 1 }); continue; } // floating tread on stringers
       // step block from floor to step top
       this.box(mat, [p[0] + s * d, p[1] + h / 2, p[2] + c * d], [w, h, sd], { ry, color: o.color, collide: false, tex: o.tex ?? 1 });
+    }
+    if (o.open) { // two steel stringers under the treads, and a post at mid-flight
+      for (const side of [-1, 1]) {
+        const ox = c * side * (w / 2 - 0.12), oz = -s * side * (w / 2 - 0.12);
+        this.tube('darkSteel', [p[0] + ox, p[1] - 0.15, p[2] + oz], [p[0] + ox + s * run, p[1] + rise - 0.15, p[2] + oz + c * run], 0.09, { color: o.stringer ?? 0x4a4a46 });
+        this.tube('darkSteel', [p[0] + ox + s * run / 2, p[1], p[2] + oz + c * run / 2], [p[0] + ox + s * run / 2, p[1] + rise / 2 - 0.2, p[2] + oz + c * run / 2], 0.07, { color: o.stringer ?? 0x4a4a46 });
+      }
     }
     // smooth ramp collider so the character glides up
     const len = Math.hypot(run, rise), ang = Math.atan2(rise, run);

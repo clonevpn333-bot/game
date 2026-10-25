@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { Builder } from './builder.js';
 import { crate, barrel, lamp, cable, pipeRun, vent, console_, screen, sign, poster, bench, table, chair, stool } from './props.js';
 import { rng } from '../core/util.js';
+import { industrialWall } from './arch.js';
 
 export const LD = { floor: -38, ceil: -8, x0: 30, x1: 196, z0: -250, z1: -140 };
 
@@ -329,6 +330,11 @@ export function buildLowerDecks(game, lights) {
   D.range = { origin: new THREE.Vector3(158.5, Y, -242), yaw: -Math.PI / 2 };
   game.sky?.addZone([136, Y, -248], [160, -28, -236], 0.95, 'range');
 
+  // structure on the big blank walls of the bay and hall: columns, bands, light strips, hazard trim
+  industrialWall(b, { face: 'x-', at: 196, u0: -250, u1: -201, y0: Y, y1: LD.ceil, seed: 51 });
+  industrialWall(b, { face: 'x-', at: 196, u0: -179, u1: -140, y0: Y, y1: LD.ceil, seed: 52 });
+  industrialWall(b, { face: 'z+', at: -250, u0: 170, u1: 196, y0: Y, y1: LD.ceil, seed: 53 });
+  industrialWall(b, { face: 'z-', at: -140, u0: 178, u1: 196, y0: Y, y1: LD.ceil, seed: 54, panels: false });
   // ---------------------------------------------------------------- lights for the big hall
   for (let x = 46; x < 196; x += 24) for (const z of [-170, -215]) lamp(b, lights, [x, -16, z], { drop: 2.5, intensity: 7, distance: 22 });
   lights.add([120, -20, -195], 0xffb070, 4, 40);

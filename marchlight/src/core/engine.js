@@ -5,13 +5,71 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
+
+// Atmosphere: exponential height fog integrated along each view ray (thick near the ground far
+// below, thin up on the city), tinted toward the sun, plus screen-space light shafts that stream
+// from the sun past anything that occludes the sky. Reads the scene's float depth (reverse-Z).
+class AtmospherePass extends Pass {
+  constructor(camera) {
+    super();
+    this.camera = camera; this.needsSwap = true;
+    this.uniforms = {
+      tDiffuse: { value: null }, tDepth: { value: null }, uInvProj: { value: new THREE.Matrix4() }, uCamWorld: { value: new THREE.Matrix4() },
+      uCamPos: { value: new THREE.Vector3() }, uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uSunCol: { value: new THREE.Color(1, 0.85, 0.65) },
+      uFogCol: { value: new THREE.Color(0.72, 0.78, 0.84) }, uDensity: { value: 0.00055 }, uFalloff: { value: 0.0042 }, uBaseY: { value: -400 },
+      uInterior: { value: 0 }, uGod: { value: 0.45 }, uSunUv: { value: new THREE.Vector2() }, uSunOn: { value: 0 },
+    };
+    this.quad = new FullScreenQuad(new THREE.ShaderMaterial({ uniforms: this.uniforms, depthTest: false, depthWrite: false,
+      vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
+      fragmentShader: `
+        uniform sampler2D tDiffuse, tDepth; uniform mat4 uInvProj, uCamWorld; uniform vec3 uCamPos, uSunDir, uSunCol, uFogCol;
+        uniform float uDensity, uFalloff, uBaseY, uInterior, uGod, uSunOn; uniform vec2 uSunUv; varying vec2 vUv;
+        vec3 worldAt(vec2 uv, float d){ vec4 v = uInvProj * vec4(uv * 2.0 - 1.0, d, 1.0); v /= v.w; return (uCamWorld * v).xyz; }
+        void main(){
+          vec4 col = texture2D(tDiffuse, vUv);
+          float d = texture2D(tDepth, vUv).r;                 // reverse-Z: 1 near, 0 far / sky
+          bool sky = d <= 0.0;
+          vec3 dir = normalize(worldAt(vUv, sky ? 0.5 : d) - uCamPos);
+          float dist = sky ? 30000.0 : length(worldAt(vUv, d) - uCamPos);
+          // ∫ a·exp(-b·(y - base)) along the ray
+          float h0 = max(uCamPos.y - uBaseY, 0.0), k = dir.y * uFalloff;
+          float od = abs(k) > 1e-5 ? (uDensity / uFalloff) * exp(-h0 * uFalloff) * (1.0 - exp(-dist * k)) / dir.y : uDensity * exp(-h0 * uFalloff) * dist;
+          float fog = (1.0 - exp(-max(od, 0.0))) * (sky ? 0.4 : 1.0) * (1.0 - uInterior * 0.75);
+          float sunAmt = pow(max(dot(dir, uSunDir), 0.0), 6.0);
+          vec3 fogC = mix(uFogCol, uSunCol * 1.1, sunAmt * 0.4);
+          vec3 c = mix(col.rgb, fogC, fog);
+          // light shafts
+          if (uSunOn > 0.001) {
+            vec2 delta = (uSunUv - vUv) / 28.0; vec2 uv = vUv; float illum = 0.0, decay = 1.0;
+            for (int i = 0; i < 28; i++) { uv += delta; if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) break; illum += (texture2D(tDepth, uv).r <= 0.0 ? 1.0 : 0.0) * decay; decay *= 0.955; }
+            float near = exp(-length((vUv - uSunUv) * vec2(1.6, 1.0)) * 3.2); // shafts radiate from the sun, not a veil over the frame
+            c += uSunCol * (illum / 28.0) * near * uGod * uSunOn * (1.0 - uInterior * 0.5);
+          }
+          gl_FragColor = vec4(c, col.a);
+        }` }));
+  }
+  render(renderer, writeBuffer, readBuffer) {
+    const u = this.uniforms, cam = this.camera;
+    u.tDiffuse.value = readBuffer.texture; u.tDepth.value = readBuffer.depthTexture;
+    u.uInvProj.value.copy(cam.projectionMatrixInverse); u.uCamWorld.value.copy(cam.matrixWorld); u.uCamPos.value.setFromMatrixPosition(cam.matrixWorld);
+    // the sun on screen, and how much the camera faces it
+    const sp = _sunP.copy(u.uCamPos.value).addScaledVector(u.uSunDir.value, 5000).project(cam);
+    const facing = cam.getWorldDirection(_sunD).dot(u.uSunDir.value);
+    u.uSunUv.value.set(sp.x * 0.5 + 0.5, sp.y * 0.5 + 0.5);
+    u.uSunOn.value = facing > 0 ? Math.pow(facing, 1.5) * Math.max(0, 1 - Math.max(Math.abs(sp.x), Math.abs(sp.y)) / 2.2) : 0;
+    renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer);
+    this.quad.render(renderer);
+  }
+}
+const _sunP = new THREE.Vector3(), _sunD = new THREE.Vector3();
 
 const GradeShader = {
   uniforms: {
     tDiffuse: { value: null },
     uTime: { value: 0 },
     uVignette: { value: 0.32 },
-    uGrain: { value: 0.035 },
+    uGrain: { value: 0.025 },
     uAberration: { value: 0.0012 },
     uDamage: { value: 0 },
     uStill: { value: 0 },      // desaturation / blue drain used by Stillness moments
@@ -43,6 +101,10 @@ const GradeShader = {
       col = mix(vec3(l), col, uSaturation * (1.0 - uStill * 0.85));
       col = (col - 0.5) * uContrast + 0.5;
       col += vec3(uWarmth, uWarmth * 0.35, -uWarmth * 0.5) * (1.0 - uStill);
+      // split toning: cool, slightly teal shadows and warm highlights; a gentle filmic S-curve
+      float lt = clamp(l, 0.0, 1.0);
+      col += (vec3(-0.014, 0.004, 0.02) * (1.0 - lt) + vec3(0.022, 0.009, -0.016) * lt) * (1.0 - uStill);
+      vec3 cc = clamp(col, 0.0, 1.0); col = mix(col, cc * cc * (3.0 - 2.0 * cc), 0.22);
       col = mix(col, col * vec3(0.82, 0.92, 1.08) + vec3(0.0, 0.01, 0.03), uStill);
       col = mix(col, vec3(0.55, 0.85, 1.0) * (l + 0.2), uFocus * 0.08 * smoothstep(0.3, 0.7, r));
       // damage
@@ -92,7 +154,8 @@ export class Engine {
     this.composer = new EffectComposer(this.renderer, rt);
     this.renderPass = new RenderPass(this.scene, this.camera);
     this.composer.addPass(this.renderPass);
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.42, 0.55, 1.05);
+    if (reversed) { this.atmosphere = new AtmospherePass(this.camera); this.composer.addPass(this.atmosphere); } // needs the depth texture
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.4, 0.6, 0.95);
     this.bloom.enabled = this.quality.bloom;
     this.composer.addPass(this.bloom);
     this.output = new OutputPass();

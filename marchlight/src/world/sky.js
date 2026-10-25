@@ -28,7 +28,7 @@ export class Sky {
     scene.add(this.sun, this.sun.target);
     this.hemi = new THREE.HemisphereLight(0xbcd4ec, 0x7a6450, 0.85); scene.add(this.hemi);
     this.fogColor = new THREE.Color(0xb9c7d2);
-    scene.fog = new THREE.FogExp2(this.fogColor.getHex(), 0.00018);
+    scene.fog = new THREE.FogExp2(this.fogColor.getHex(), e.atmosphere ? 0.00003 : 0.00018); // the atmosphere pass does the real fog when it can
     this.interior = 0; this.interiorTarget = 0; this.zones = [];
     this.setSun(elevation, azimuth);
     this.buildEnv();
@@ -82,5 +82,7 @@ export class Sky {
     this.hemi.intensity = lerp(0.85, 0.4, k);
     g.engine.scene.environmentIntensity = lerp(0.55, 0.25, k);
     g.engine.renderer.toneMappingExposure = lerp(0.62, 1.0, k) * (this.exposureMul || 1);
+    const at = g.engine.atmosphere;
+    if (at) { const u = at.uniforms; u.uSunDir.value.copy(this.sunDir); u.uSunCol.value.copy(this.sun.color); u.uFogCol.value.copy(this.fogColor); u.uInterior.value = k; }
   }
 }

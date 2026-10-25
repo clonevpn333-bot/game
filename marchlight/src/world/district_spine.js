@@ -51,6 +51,7 @@ export function buildSpine(game, lights) {
   barrel(b, [210.6, A, -200]); barrel(b, [210.6, A, -201.2]);
   lamp(b, lights, [206, A + 6, -186], { drop: 0.3, intensity: 5, distance: 14 });
   b.box('darkSteel', [206, A + 6.5, -190], [12, 0.3, 0.3], { color: dark, collide: false });
+  for (const x of [200.35, 211.65]) b.box('darkSteel', [x, A + 3.25, -190], [0.3, 6.5, 0.3], { color: dark, collide: false }); // posts under the lamp beam
   D.spots.apron = new THREE.Vector3(205, A, -190);
   D.spots.revealCam = new THREE.Vector3(208, A + 2.4, -185);
   // walkway forward (z -205..-212)
@@ -238,7 +239,7 @@ export function buildSpine(game, lights) {
   b.railing([116.2, UN, -270.2], [116.2, UN, -305.8]); b.railing([177.8, UN, -270.2], [177.8, UN, -305.8]);
   b.box('rust', [140, UN + 3.6, -296], [16, 0.3, 8], { color: 0x6a5a4a }); // shelter roof
   for (const [x, z] of [[133, -292.5], [147, -292.5], [133, -299.5], [147, -299.5]]) b.tube('darkSteel', [x, UN, z], [x, UN + 3.5, z], 0.12);
-  for (let i = 0; i < 4; i++) b.box('wood', [134 + i * 4, UN + 0.45, -299], [3, 0.1, 0.6], { color: 0x8a6a4a });
+  for (let i = 0; i < 4; i++) { b.box('wood', [134 + i * 4, UN + 0.45, -299], [3, 0.1, 0.6], { color: 0x8a6a4a }); for (const dx of [-1.3, 1.3]) b.box('darkSteel', [134 + i * 4 + dx, UN + 0.2, -299], [0.08, 0.4, 0.5], { color: 0x3a3a3a, collide: false }); } // benches
   // lower station
   b.box('panel', [170, UN + 2.5, -277], [4, 5, 3], { color: 0x6a6a68 });
   sign(game, root, 'UNDERCROFT', [167.95, UN + 4, -277], { ry: -Math.PI / 2, w: 3, h: 0.5, neon: false, color: '#e8e0d0', bg: '#2a3a4a', font: '700 44px "Barlow Condensed", sans-serif' });

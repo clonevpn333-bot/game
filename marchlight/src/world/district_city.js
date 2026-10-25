@@ -5,6 +5,7 @@ import { Builder } from './builder.js';
 import { crate, barrel, lamp, stringLights, cable, planter, bench, table, stool, chair, awning, sign, poster, laundry, pipeRun, vent, screen } from './props.js';
 import { paperTexture } from '../core/textures.js';
 import { rng } from '../core/util.js';
+import { facade, rooftop } from './arch.js';
 
 const WALL = 0.2;
 
@@ -22,19 +23,14 @@ export function buildCityDistrict(game, lights) {
   b.box('concrete', [187, 7.05, -20], [14.4, 0.3, 40.4], { color: 0x9a948a, collide: false, ao: false });
   b.box('concrete', [187, 13.85, -20], [14.6, 0.3, 40.6], { color: 0x9a948a, collide: false, ao: false });
   // facade details: windows on the west face (courtyard side) for floors 1-2
-  for (let z = -37; z <= -3; z += 4.25) for (const y of [2.2, 9.6]) {
-    b.box('glassDark', [179.92, y + 0.6, z], [0.1, 1.6, 1.6], { collide: false });
-    b.box('wood', [179.9, y - 0.25, z], [0.25, 0.1, 1.8], { color: 0x6a5040, collide: false });
-    if (r() < 0.4) b.box('fabric', [179.85, y + 1.5, z], [0.4, 0.06, 1.8], { rz: 0.4, color: [0xc85a3a, 0x3a6a8a, 0xd8b050][Math.floor(r() * 3)], collide: false });
-  }
+  facade(b, { face: 'x-', at: 180, u0: -40, u1: 0, y0: 7, y1: 14, floor: 3.5, bay: 4.25, style: 'terrace', seed: 11, ac: 0.2, cornice: false, pilasters: 4,
+    skip: [-34, -26, -14, -6].map(z => [z - 1.2, z + 1.2, 7, 10.5]) });
   // doors to floor-2 units on the courtyard level (y=7)
   for (const z of [-34, -26, -14, -6]) b.box('wood', [179.95, 8.1, z], [0.12, 2.2, 1.1], { color: 0x5a3a2a, collide: false });
   // east face (edge side): balconies with lit windows
-  for (let z = -37; z <= -3; z += 5) for (const y of [2.5, 9.5]) {
-    b.box('facade', [194.05, y + 0.8, z], [0.1, 2.2, 2.8], { color: 0xd8d0c0, collide: false, tex: 3 });
-    b.box('concrete', [195, y - 0.4, z], [2, 0.18, 3.2], { color: 0x9a948a, collide: false });
-    b.railing([196, y - 0.3, z - 1.5], [196, y - 0.3, z + 1.5], { collide: false, h: 0.9 });
-  }
+  facade(b, { face: 'x+', at: 194, u0: -40, u1: 0, y0: 0, y1: 14, floor: 3.5, bay: 3.3, style: 'terrace', seed: 12, balcony: 0.55, lit: 0.45, cornice: false });
+  facade(b, { face: 'x+', at: 194, u0: -40, u1: 0, y0: 14, y1: 17.6, floor: 3.6, bay: 3.3, style: 'terrace', seed: 13, skip: [[-26.5, -15.5, 13, 18]] });
+  facade(b, { face: 'x-', at: 180, u0: -40, u1: 0, y0: 14, y1: 17.6, floor: 3.6, bay: 3.3, style: 'terrace', seed: 14, shutters: 0.6, ac: 0, skip: [[-26.5, -15.5, 13, 18], [-34.4, -31.6, 13, 18], [-9.4, -6.6, 13, 18]] });
 
   // third floor: Rook's apartment (interior x 182..192, z -26..-16) and closed neighbour units
   const F = 14.0;
@@ -119,7 +115,8 @@ export function buildCityDistrict(game, lights) {
   b.box('tiles', [183.6, F + 0.02, -17.6], [2.8, 0.04, 2.8], { color: 0xe8eef0, collide: false, tex: 0.6 });
   b.box('paint', [182.45, F + 0.85, -17.6], [0.4, 0.1, 0.5], { color: 0xf0f0f0 }); // basin
   b.box('glassDark', [182.13, F + 1.55, -17.6], [0.02, 0.8, 0.55], { collide: false }); // mirror
-  b.box('steel', [184.4, F + 2.1, -16.5], [0.15, 0.05, 0.15], { color: 0xc0c0c0, collide: false });
+  b.box('steel', [185.03, F + 2.1, -16.5], [0.14, 0.05, 0.15], { color: 0xc0c0c0, collide: false }); // shower head, on the wall
+  b.tube('steel', [185.1, F + 2.12, -16.5], [185.03, F + 2.12, -16.5], 0.015);
   // plants on the window sill
   for (let i = 0; i < 4; i++) { b.cyl('paint', [191.7, F + 1.0, -23.3 + i * 1.5], 0.09, 0.16, { color: 0xb86a4a, seg: 10 }); b.plane('leaf', [191.7, F + 1.25, -23.3 + i * 1.5], 0.4, 0.4, { ry: i, tex: 0.4 }); b.plane('leaf', [191.7, F + 1.25, -23.3 + i * 1.5], 0.4, 0.4, { ry: i + 1.6, tex: 0.4 }); }
   // radio on the kitchen shelf
@@ -147,7 +144,7 @@ export function buildCityDistrict(game, lights) {
   sign(game, root, '3-C  ROOK', [180.11, F + 2.5, -21], { ry: Math.PI / 2, w: 0.7, h: 0.18, neon: false, color: '#e8e0d0', bg: '#2a3a4a', tw: 256, th: 64, font: '700 40px "Barlow Condensed", sans-serif' });
   // stairs from the walkway down to the courtyard (y 14 -> 7), heading -x
   b.box('concrete', [176.4, F - 0.15, -6], [1.6, 0.3, 3], { color: 0xa8a294 });
-  b.stairs('concrete', [165.6, 7, -6], 10, 7, 2.4, Math.PI / 2, { color: 0xb0aa9c, tex: 1.5 });
+  b.stairs('concrete', [165.6, 7, -6], 10, 7, 2.4, Math.PI / 2, { color: 0xb0aa9c, tex: 1.5, open: true });
 
   // =================================================================== TERRACE COURTYARD (y=7)
   const T = 7;
@@ -187,6 +184,7 @@ export function buildCityDistrict(game, lights) {
   laundry(b, [158, T + 3.3, -30], [174, T + 3.3, -30], 8, 5);
   // notice board
   b.box('wood', [172, T + 1.3, -12.2], [2.2, 1.4, 0.1], { color: 0x6a5040 });
+  for (const x of [171.0, 173.0]) b.box('wood', [x, T + 1.0, -12.27], [0.09, 2.0, 0.09], { color: 0x5a4030 }); // posts
   poster(game, root, ['Route: Sallow Plains', '→ Gray Fork crossing', 'Day 214 of the March'], [171.4, T + 1.35, -12.12], { title: 'MIGRATION NOTICE', w: 0.6 });
   poster(game, root, ['Report unregistered', 'surface persons to', 'Security, Deck 2.'], [172.5, T + 1.35, -12.12], { title: 'BY ORDER', accent: '#2a3a5a', w: 0.6 });
   // water pump / fountain
@@ -195,18 +193,18 @@ export function buildCityDistrict(game, lights) {
   // bikes and crates
   crate(b, [152, T, -36], 0.8); crate(b, [152.9, T, -36.3], 0.7, { ry: 0.3 });
   // west apartment block (Coil Block) with balconies facing the courtyard
-  b.box('brick', [143, 12, -20], [14, 24, 40], { color: 0xe0d0c0, tex: 4 });
-  for (let z = -36; z <= -4; z += 5.3) for (const y of [10.5, 14, 17.5, 21]) {
-    b.box('concrete', [150.9, y - 0.1, z], [1.8, 0.2, 3.2], { color: 0x9a948a });
-    b.railing([151.75, y, z - 1.5], [151.75, y, z + 1.5], { collide: false, h: 0.95 });
-    b.box('facade', [150.05, y + 1.2, z], [0.1, 2.4, 2.6], { color: 0xd0c8b8, collide: false, tex: 3 });
-    if (r() < 0.5) planter(b, [151.3, y, z + 1.1], 0.6, 0.4);
-    if (r() < 0.35) laundry(b, [151.7, y + 1.9, z - 1.4], [151.7, y + 1.9, z + 1.4], 3, Math.floor(r() * 99));
-  }
+  b.box('brick', [143, 12, -20], [14, 24, 40], { color: 0xc08068, tex: 4 });
+  b.box('concrete', [143, 8.6, -20], [14.2, 3.2, 40.2], { color: 0xb8ac98, tex: 3, collide: false }); // stone base storey
+  facade(b, { face: 'x+', at: 150.1, u0: -40, u1: 0, y0: 7, y1: 24, floor: 3.5, bay: 3.3, style: 'brick', seed: 21, balcony: 0.6, lit: 0.4,
+    skip: [-30, -18, -6].map(z => [z - 1.4, z + 1.4, 7, 10.4]) });
+  rooftop(b, 143, 24, -20, 14, 40, { seed: 22, style: 'brick' });
   for (const z of [-30, -18, -6]) b.box('wood', [150.05, T + 1.1, z], [0.12, 2.2, 1.2], { color: 0x5a3a2a, collide: false });
   // north closure: Lantern Row
-  b.box('brick', [166, 10, 4], [62, 20, 8], { color: 0xd8c8b8, tex: 4 });
-  for (let x = 140; x < 196; x += 4) for (const y of [9.5, 13, 16.5]) b.box('facade', [x, y, -0.05], [2.4, 2.2, 0.1], { color: 0xd8d0c0, collide: false, tex: 3 });
+  b.box('brick', [166, 10, 4], [62, 20, 8], { color: 0xb47a62, tex: 4 });
+  b.box('plaster', [172.5, 13.5, -0.06], [15, 13, 0.1], { color: 0xd6bc9c, tex: 3, collide: false }); // the eastern house is rendered, not brick
+  facade(b, { face: 'z-', at: 0, u0: 150, u1: 165, y0: 7, y1: 20, floor: 3.25, bay: 3.2, style: 'brick', seed: 31, balcony: 0.4, lit: 0.45 });
+  facade(b, { face: 'z-', at: -0.11, u0: 165, u1: 180, y0: 7, y1: 20, floor: 3.25, bay: 3.0, style: 'terrace', seed: 32, shutters: 0.7, lit: 0.4 });
+  rooftop(b, 166, 20, 4, 62, 8, { seed: 33, style: 'brick' });
   stringLights(b, [151.5, T + 4.2, -38], [176.5, T + 4.6, -8], 1.2, 16);
   stringLights(b, [151.5, T + 4.0, -8], [176.5, T + 4.4, -38], 1.0, 16);
 
@@ -414,7 +412,9 @@ export function buildCityDistrict(game, lights) {
   D.spots.tramStop = new THREE.Vector3(155, 5.55, -124.2);
   // closing buildings south of the station (Customs House)
   b.box('plaster', [155, 9, -139], [40, 18, 14], { color: 0xd0c4b0, tex: 3 });
-  for (let x = 138; x <= 172; x += 4) b.box('facade', [x, 12, -131.95], [2.4, 3, 0.1], { color: 0xd8d0c0, collide: false, tex: 2 });
+  facade(b, { face: 'z+', at: -132, u0: 135, u1: 175, y0: 0, y1: 18, floor: 3.6, bay: 3.4, style: 'terrace', seed: 41, shutters: 0.5, flowers: 0.3, lit: 0.5,
+    skip: [[152.5, 157.5, 10, 18], [141, 170, 0, 10.5]] });
+  rooftop(b, 155, 18, -139, 40, 14, { seed: 42 });
   b.box('fabric', [155, 14, -131.9], [3, 6, 0.05], { color: 0x7a2a22, collide: false });
   // boundary: west side closed by the Coil Block & market backs; invisible walls at district edges
   b.solid([135.5, 10, -80], [1, 20, 120]);
