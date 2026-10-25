@@ -206,7 +206,7 @@ export class Player {
       // try mantle first (vault onto things in front)
       if (this.tryMantle(true)) { this.jumpBuffer = 0; return; }
       if (this.coyote > 0) {
-        this.vel.y = 6.6; this.state = 'air'; this.coyote = 0; this.jumpBuffer = 0; this.crouch = false;
+        this.vel.y = 7.2; this.state = 'air'; this.coyote = 0; this.jumpBuffer = 0; this.crouch = false;
         if (this.platformVel) { this.vel.x += this.platformVel.x; this.vel.z += this.platformVel.z; }
         g.audio.footstep(this.pos, this.surface, 0.8); g.audio.whoosh(0.3);
       } else if (this.state === 'air' && g.tether?.cells >= 1 && this.leapCooldown <= 0 && !g.tether.locked) {
@@ -219,7 +219,7 @@ export class Player {
     // gravity
     // (use the current state: a jump this frame has already left the ground, so don't clamp its lift-off speed)
     if (this.state !== 'ground') { this.vel.y -= GRAV * dt; this.airTime += dt; this.maxFall = Math.max(this.maxFall, -this.vel.y); }
-    else { this.vel.y = Math.min(this.vel.y, 0) - 2 * dt; this.airTime = 0; }
+    else { this.vel.y = -2; this.airTime = 0; } // a constant stick-to-floor push (it used to accumulate and stall Rook on stairs)
     this.vel.y = Math.max(this.vel.y, -48);
 
     // external impulses (tether pushes, explosions)

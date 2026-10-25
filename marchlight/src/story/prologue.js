@@ -830,7 +830,7 @@ export class Prologue {
     this.objective('Reach Pylon Seven', 'Follow the Spine walkway forward, toward Leg Two.', S.spots.vantage);
     g.hud.hint('jump', true);
     // traversal chatter
-    this.trigger(() => P.pos.z < -207 && P.pos.y > -40, () => this.radio('NIA', 'Walkway\'s out ahead. Use the rail on the hull — the amber one. Hang, shimmy, don\'t look down.', { wait: false, dur: 4.6 }).then(() => this.radio('ROOK', 'Why would you *say* that?', { wait: false, dur: 2 })));
+    this.trigger(() => P.pos.z < -207 && P.pos.y > -40, () => this.radio('NIA', 'Walkway\'s broken just ahead — little hop, take a run at it. Or hang off the amber rail on the hull, if you like heights.', { wait: false, dur: 4.8 }).then(() => this.radio('ROOK', 'Why would you *say* that?', { wait: false, dur: 2 })));
     this.trigger(() => P.state === 'hang', () => this.radio('BRAM', 'Hands like a crane, kid.', { wait: false, dur: 2 }));
     this.trigger(() => P.pos.z < -228 && P.pos.y > -40, () => { this.radio('BRAM', 'Maintenance cradle\'s on auto. Ride it, or latch the anchor above the far side. Or steal its swing and jump — Nia hates that one.', { wait: false, dur: 5.5 }).then(() => this.radio('NIA', 'I hate all of them.', { wait: false, dur: 1.8 })); g.hud.hint('latch'); g.hud.hint('leap'); });
     this.trigger(() => P.pos.z < -258 && P.pos.y > -40, () => g.hud.hint('climb'));

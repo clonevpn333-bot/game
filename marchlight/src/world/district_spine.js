@@ -62,15 +62,17 @@ export function buildSpine(game, lights) {
     for (let z = Math.max(z0, z1) - 2; z > Math.min(z0, z1); z -= 6) b.tube('darkSteel', [x1 - 0.3, y - 0.5, z], [201.2, y - 4.5, z], 0.12, { color: 0x4a4a48 });
   };
   walk(-204.8, -212, A);
-  b.railing([200.2, A, -212], [204.1, A, -212], { h: 1.1, collide: false }); // visual chain across the gap (no collider)
-  sign(game, root, 'WALKWAY OUT — USE RAIL', [202.2, A + 1.6, -211.7], { w: 2.6, h: 0.35, neon: false, color: '#1a1a1a', bg: '#d8b030', font: '700 32px "Barlow Condensed", sans-serif' });
+  // the walkway is broken for one short stretch: a 1.6 m hop (the amber hang rail on the hull is the
+  // optional long way round)
+  walk(-212, -215.6, A); walk(-217.2, -222.5, A);
+  for (const z of [-215.5, -217.3]) b.box('hazard', [202.2, A + 0.005, z], [4, 0.01, 0.2], { collide: false, tex: 1 });
+  sign(game, root, 'WALKWAY DAMAGED — MIND THE GAP', [202.2, A + 1.6, -211.7], { w: 2.6, h: 0.35, neon: false, color: '#1a1a1a', bg: '#d8b030', font: '700 30px "Barlow Condensed", sans-serif' });
   // the ledge rail along the hull face (hang & shimmy), z -211..-223, top at y A+2.15
   b.box('hazard', [200.35, A + 2.0, -217], [0.5, 0.3, 12.4], { tex: 1, meta: { ledge: true } });
   b.box('panel', [200.6, A + 0.9, -217], [0.8, 2.0, 12.4], { color: hullC, meta: { ledge: true }, tex: 2 });
   D.spots.ledgeStart = new THREE.Vector3(202.0, A, -211.2);
   // walkway continues z -222..-232
   walk(-222.5, -232, A);
-  b.railing([200.2, A, -222.6], [204.1, A, -222.6], { h: 1.1, collide: false });
   // ---- gap 1 (z -232..-242): the shuttling cradle + a latch anchor
   b.box('darkSteel', [202.2, A + 8.2, -237], [0.4, 0.4, 16], { color: rail, collide: false, ao: false }); // cradle rail
   const cradle = new THREE.Group(); cradle.position.set(202.2, A - 0.15, -234); root.add(cradle);
@@ -91,8 +93,16 @@ export function buildSpine(game, lights) {
   b.box('hazard', [201.5, A + 7.2, -243.5], [2.4, 0.4, 0.4], { tex: 1, collide: false });
   b.sphere('lampCool', [202.7, A + 7.2, -243.5], 0.18, { seg: 8 });
   D.anchors.push(game.tether.registerAnchor({ getPoint: () => anc.clone(), label: 'Anchor', onArrive: (p) => { p.endLatch(false); p.vel.set(0, -1, -2.5); } }));
+  // a catch grating under the cradle gap with a ladder back up, so a missed jump costs seconds, not a life
+  b.box('grate', [202.2, A - 3.3, -236.85], [4, 0.2, 10.1], { color: 0x8a8a8a, tex: 1 });
+  b.railing([204.1, A - 3.2, -231.8], [204.1, A - 3.2, -241.9], { h: 1.0 });
+  b.railing([200.3, A - 3.2, -231.8], [204.1, A - 3.2, -231.8], { h: 1.0 });
+  b.box('panel', [202.2, A - 1.7, -242.05], [4, 3.2, 0.2], { color: 0x8a8070, meta: { climb: 'wall' }, tex: 1 }); // rung wall: the way back up
+  for (let y = A - 2.9; y < A - 0.2; y += 0.4) b.box('hazard', [202.2, y, -241.92], [3.4, 0.06, 0.08], { collide: false, tex: 0.5 });
   // walkway resumes z -242..-262
   walk(-242, -262, A);
+  // stairs up to the top of the bulkhead (the rung panel stays for climbers)
+  b.stairs('grate', [202.2, A, -254], 8, 5, 2.6, Math.PI, { color: 0x9a9a9a, tex: 1, open: true });
   b.railing([200.2, A, -242.1], [204.1, A, -242.1], { h: 1.1, collide: false });
   // ---- bulkhead with rungs (climb) at z -262..-264.5
   b.box('panel', [202.2, A + 2.5, -263.3], [4.2, 5, 2.4], { color: 0x7a7468, tex: 2 });
@@ -104,11 +114,16 @@ export function buildSpine(game, lights) {
   for (const dx of [-1.2, 0, 1.2]) b.tube('rust', [202.2 + dx, PB - 0.8, -262], [202.2 + dx, PB - 0.8, -278], 0.5, { color: 0x7a6a58 });
   b.railing([204.1, PB, -264.5], [204.1, PB, -276]);
   // ---- scaffold drops down to gallery B
-  b.box('grate', [203.6, PB - 6.2, -279.5], [5, 0.2, 5], { color: 0x9a9a9a, tex: 1 }); // S1
-  b.box('hazard', [203.6, PB - 6.0, -277.0], [5, 0.2, 0.15], { collide: false, tex: 1 });
-  b.box('grate', [205.6, PB - 12.6, -284.5], [5, 0.2, 5], { color: 0x9a9a9a, tex: 1 }); // S2
-  for (const [x, y, z] of [[203.6, PB - 6.2, -279.5], [205.6, PB - 12.6, -284.5]]) { b.tube('darkSteel', [x + 2.4, y - 0.1, z], [201.2, y - 5, z], 0.15, { color: 0x4a4a48 }); b.railing([x + 2.45, y, z - 2.4], [x + 2.45, y, z + 2.4], { collide: true, h: 1.0 }); }
-  D.spots.vantage = new THREE.Vector3(205.6, PB - 12.6, -284.5);
+  // each drop is ~6.3 m (no damage) and each platform is deep enough that even a sprint off the edge
+  // lands on the next one, so nobody skips a level and takes a long fall
+  b.box('grate', [203.6, PB - 6.2, -280], [5, 0.2, 7], { color: 0x9a9a9a, tex: 1 }); // S1  z -276.5..-283.5
+  b.box('hazard', [203.6, PB - 6.0, -276.6], [5, 0.2, 0.15], { collide: false, tex: 1 });
+  b.box('grate', [205.6, PB - 12.6, -288.25], [5, 0.2, 9.5], { color: 0x9a9a9a, tex: 1 }); // S2  z -283.5..-293
+  for (const [x, y, z, d] of [[203.6, PB - 6.2, -280, 7], [205.6, PB - 12.6, -288.25, 9.5]]) {
+    for (const dz of [-d / 3, d / 3]) b.tube('darkSteel', [x + 2.4, y - 0.1, z + dz], [201.2, y - 5, z + dz], 0.15, { color: 0x4a4a48 });
+    b.railing([x + 2.45, y, z - d / 2 + 0.1], [x + 2.45, y, z + d / 2 - 0.1], { collide: true, h: 1.0 });
+  }
+  D.spots.vantage = new THREE.Vector3(205.6, PB - 12.6, -286);
 
   // ================================================================ GALLERY B (y=-52): the cable trunks — first fight
   const B = SP.B;
@@ -130,12 +145,13 @@ export function buildSpine(game, lights) {
   b.box('paint', [210.5, B + 0.9, -280], [1.4, 1.8, 2.4], { color: 0x6a6a5a });
   crate(b, [205, B, -286], 1.3); crate(b, [206.3, B, -287], 1.1, { ry: 0.5 }); crate(b, [205.4, B + 1.3, -286.3], 0.9);
   b.cyl('wood', [209.5, B + 1.1, -292], 1.1, 1.4, { rz: Math.PI / 2, color: 0x8a6a4a, seg: 16, collide: true });
-  b.box('panel', [203.5, B + 1.4, -296.5], [3, 2.8, 3], { color: 0x8a8070 });
-  b.box('glassDark', [205.05, B + 1.8, -296.5], [0.06, 1, 1.8], { collide: false });
+  // the control hut stands well back from the south edge (from its roof a sprint would clear the railing)
+  b.box('panel', [203.5, B + 1.4, -291.5], [3, 2.8, 3], { color: 0x8a8070 });
+  b.box('glassDark', [205.05, B + 1.8, -291.5], [0.06, 1, 1.8], { collide: false });
   lamp(b, lights, [207, B + 5.5, -270], { drop: 0.4, intensity: 5, distance: 14 }); lamp(b, lights, [207, B + 5.5, -290], { drop: 0.4, intensity: 5, distance: 14, flicker: 0.5 });
   // scav harpoon lines over the edge (how they got up here)
   for (const z of [-272, -285.5]) { b.tube('cable', [213.6, B + 0.3, z], [222, B - 40, z + 3], 0.04); b.box('rust', [213.4, B + 0.25, z], [0.6, 0.5, 0.6], { color: 0x6a3a2a, collide: false }); }
-  D.spots.leech1 = new THREE.Vector3(203.2, B, -270.5); D.spots.leech2 = new THREE.Vector3(203.2, B, -290);
+  D.spots.leech1 = new THREE.Vector3(203.2, B, -270.5); D.spots.leech2 = new THREE.Vector3(203.2, B, -296);
   D.spots.gnat1 = new THREE.Vector3(209, B + 4, -275); D.spots.gnat2 = new THREE.Vector3(211, B + 5, -292); D.spots.gnat3 = new THREE.Vector3(216, B + 3, -283);
   D.spots.galleryB = new THREE.Vector3(207, B, -268);
   // upper station of the work-tram line (north end of B)
@@ -143,6 +159,7 @@ export function buildSpine(game, lights) {
   b.box('hazard', [210, B + 6.1, -264], [4.2, 0.2, 3.2], { collide: false, tex: 1 });
   sign(game, root, 'WORK LINE · UNDERCROFT', [207.95, B + 4.5, -264], { ry: -Math.PI / 2, w: 3.2, h: 0.4, neon: false, color: '#e8e0d0', bg: '#2a3a4a', font: '700 34px "Barlow Condensed", sans-serif' });
 
+  b.railing([200.3, B, -299.85], [204.4, B, -299.85], { h: 1.1 }); // south edge beside the lift shaft
   // ---- cargo lift: gallery B (south end) down to the relay deck
   const lift = new THREE.Group(); lift.position.set(207, B - 0.1, -296.8); root.add(lift);
   { const lb = new Builder(game, lift, { cell: 1000 });
@@ -270,10 +287,13 @@ export function buildSpine(game, lights) {
   const mid = bs.clone().lerp(be, 0.5), blen = bs.distanceTo(be), bry = Math.atan2(be.x - bs.x, be.z - bs.z);
   b.box('grate', [mid.x, mid.y, mid.z], [1.8, 0.15, blen], { ry: bry, color: 0x9a9a9a, tex: 1 });
   const bperp = new THREE.Vector3(Math.cos(bry), 0, -Math.sin(bry));
-  for (const s of [-1, 1]) b.railing([bs.x + bperp.x * 0.9 * s, -96.3, bs.z + bperp.z * 0.9 * s], [be.x + bperp.x * 0.9 * s, -96.3, be.z + bperp.z * 0.9 * s], { h: 1.0 });
-  // a gangway from the deck's south-west corner to the boom root
+  // side railings start just past the gangway so you can walk straight on from it
+  const bdir = be.clone().sub(bs).normalize(), r0 = bs.clone().addScaledVector(bdir, 1.3);
+  for (const s of [-1, 1]) b.railing([r0.x + bperp.x * 0.9 * s, -96.3, r0.z + bperp.z * 0.9 * s], [be.x + bperp.x * 0.9 * s, -96.3, be.z + bperp.z * 0.9 * s], { h: 1.0 });
+  // a gangway from the deck's south-west corner to the boom root (solid railings: the only way off is the boom)
   b.box('grate', [193, DK - 0.1, -298.5], [7, 0.2, 3], { color: 0x9a9a9a, tex: 1 });
-  b.railing([189.5, DK, -300], [196.2, DK, -300]); b.railing([189.5, DK, -297], [196.2, DK, -297], { collide: false });
+  b.railing([189.5, DK, -300], [196.2, DK, -300]); b.railing([189.5, DK, -297], [196.2, DK, -297]);
+  b.railing([189.5, DK, -297], [189.5, DK, -297.95]); // closes the corner beside the catwalk mouth
   D.boomCatwalk = { start: bs, end: be };
   D.anchors.push(game.tether.registerAnchor({ getPoint: () => SP.hook.clone().add(new THREE.Vector3(0, 5.2, 0)), label: 'Crane', enabled: () => D.craneAnchorOn !== false }));
   D.spots.boomTip = be.clone();
