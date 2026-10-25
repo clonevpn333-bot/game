@@ -16,7 +16,7 @@ const HINTS = {
   latch: ['TETHER LINE', 'Aim at a <b style="color:#7fdcff">blue ring</b> anchor and press <span class="key">F</span> to latch on. Moving machinery carries you with it — let go (release <span class="key">F</span>) at the top to be flung.'],
   shoot: ['WEAPONS', 'Click <span class="key">RMB</span> to aim (click again to lower), <span class="key">LMB</span> to fire, <span class="key">R</span> to reload. <span class="key">1</span>/<span class="key">2</span> or the wheel switches weapons. <span class="key">V</span> is a melee strike.'],
   crouch: ['STEALTH', '<span class="key">C</span> crouches. Machines that haven\'t noticed you can be approached quietly — a melee strike from behind lands hard.'],
-  shearer: ['HEAVY CUTTER', 'Shearers telegraph their charges. Hold <span class="key">E</span> on one <i>while it charges</i> to steal its momentum and stall it — then put it somewhere it won\'t like.'],
+  shearer: ['SHEARER', 'Bullets glance off its armour. Hold <span class="key">E</span> on it <i>while it charges</i> to stall it: the shell opens. Shoot the amber core — or press <span class="key">Q</span> to throw its own momentum back at it.'],
   zoom: ['VISOR', 'Hold <span class="key">Z</span> to zoom your Runner visor.'],
 };
 
@@ -38,6 +38,7 @@ export class HUD {
       <div id="hint"><div class="h"></div><div class="b"></div></div>
       <div id="notify"></div>
       <div id="loc"><div class="a"></div><div class="b"></div></div>
+      <div id="boss"><div class="n"></div><div class="bar"><i></i><i></i><i></i><b></b></div><div class="s"></div></div>
       <div id="subs"></div><div id="choices"></div>
       <div id="title"><div class="m"></div><div class="tag">NOTHING STAYS STILL. NOT EVEN HOME.</div></div>
       <div id="clickhint">CLICK TO CONTINUE</div>
@@ -45,6 +46,7 @@ export class HUD {
     this.$ = s => ui.querySelector(s);
     this.xh = this.$('#xh'); this.cellsEl = this.$('#cells'); this.ammoEl = this.$('#ammo'); this.objEl = this.$('#obj'); this.wpEl = this.$('#wp');
     this.promptEl = this.$('#prompt'); this.hintEl = this.$('#hint'); this.subs = this.$('#subs'); this.choicesEl = this.$('#choices');
+    this.bossEl = this.$('#boss');
     this.locEl = this.$('#loc'); this.notifyEl = this.$('#notify'); this.fader = this.$('#fader'); this.titleEl = this.$('#title');
     this.lbTop = this.$('.lb.top'); this.lbBot = this.$('.lb.bot'); this.hitmEl = this.$('.hitm');
     this.dmgEl = this.$('#dmgdir');
@@ -139,7 +141,17 @@ export class HUD {
     this.promptEl.querySelector('.key').textContent = key; this.promptEl.querySelector('.lbl').textContent = text; this.promptEl.classList.add('show');
   }
 
+  // boss readout: name, a thin integrity line split into its phases, and what it's doing now
+  boss(o) { this.bossO = o; this.bossEl.classList.toggle('show', !!o); if (o) this.bossEl.querySelector('.n').textContent = o.name; }
+  updateBoss() {
+    const o = this.bossO; if (!o) return;
+    const k = Math.max(0, Math.min(1, o.health())), cut = o.cuts || [0.62, 0.45];
+    this.bossEl.querySelector('b').style.width = (k * 100).toFixed(1) + '%';
+    const is = this.bossEl.querySelectorAll('i'); is[0].style.left = (cut[1] * 100) + '%'; is[1].style.left = (cut[0] * 100) + '%'; is[2].style.display = 'none';
+    this.bossEl.querySelector('.s').textContent = o.status?.() || '';
+  }
   update(dt) {
+    this.updateBoss();
     const g = this.game, p = g.player, w = g.weapons, t = g.tether;
     const show = this.visible && !g.director.active && !g.paused;
     this.updateWaypoint(show);

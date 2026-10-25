@@ -64,30 +64,83 @@ function leechModel() {
   g.userData = { legs, mands, canister, eyes };
   return g;
 }
+// A harvest-line service crawler: six jointed legs, two climbing claws, a saw arm, and an amber
+// core (the same colour as Meridian's engine) behind three armour shells that open when it's stalled.
+// The serial plate says where it came from.
+function serialTexture() {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 96; const x = c.getContext('2d');
+  x.fillStyle = '#8a8270'; x.fillRect(0, 0, 256, 96); x.strokeStyle = '#3a362e'; x.lineWidth = 4; x.strokeRect(4, 4, 248, 88);
+  x.fillStyle = '#2a2620'; x.font = '700 26px "Barlow Condensed", sans-serif'; x.fillText('MERIDIAN ENGINEERING', 16, 36);
+  x.font = '600 22px "Barlow Condensed", sans-serif'; x.fillText('HARVEST SERVICE · H-7', 16, 66);
+  for (let i = 0; i < 260; i++) { x.fillStyle = `rgba(90,50,30,${Math.random() * 0.35})`; x.fillRect(Math.random() * 256, Math.random() * 96, 2 + Math.random() * 6, 2 + Math.random() * 4); } // rust
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
 function shearerModel() {
-  const g = new THREE.Group();
+  const g = new THREE.Group(), body = new THREE.Group(); body.position.y = 1.9; g.add(body);
   const hull = mat(0x5a5248, { roughness: 0.6 }), dark = mat(0x1e1f22), paint = mat(0x8a3a22, { roughness: 0.7, metalness: 0.3 }), yel = mat(0xc8a030, { roughness: 0.6, metalness: 0.3 });
-  const chassis = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.9, 2.4), hull); chassis.position.y = 1.4; chassis.castShadow = true; g.add(chassis);
-  const top = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.4, 1.6), paint); top.position.set(0, 2.0, -0.2); top.castShadow = true; g.add(top);
-  const plow = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.9, 0.3), dark); plow.position.set(0, 1.1, 1.35); plow.rotation.x = -0.3; g.add(plow);
-  for (let i = 0; i < 5; i++) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.9, 0.04), yel); s.position.set(-0.76 + i * 0.38, 1.1, 1.52); s.rotation.set(-0.3, 0, i % 2 ? 0.5 : -0.5); s.scale.x = 0.4; g.add(s); }
+  const steel = mat(0xb0b4b8, { metalness: 0.95, roughness: 0.25 });
+  const coreMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 0.55, 0.18).multiplyScalar(3) });
+  const box = (m, w, h, d, x, y, z, parent = body) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.castShadow = true; parent.add(o); return o; };
+  box(hull, 2.0, 1.0, 3.0, 0, 0, 0);                         // chassis
+  box(dark, 2.1, 0.25, 3.1, 0, -0.55, 0);                    // belly
+  box(paint, 1.6, 0.35, 1.2, 0, 0.62, 0.9);                  // front deck
+  box(hull, 1.5, 0.7, 0.9, 0, 0.5, -1.25);                   // rear power housing
+  for (const sx of [-1, 1]) box(dark, 0.12, 0.5, 0.7, sx * 0.55, 0.95, -1.25);
+  // jaw / plough with teeth
+  const jaw = new THREE.Group(); jaw.position.set(0, -0.2, 1.55); body.add(jaw);
+  box(dark, 2.2, 0.9, 0.35, 0, 0, 0.1, jaw).rotation.x = -0.3;
+  for (let i = 0; i < 6; i++) { const t = box(yel, 0.14, 0.42, 0.1, -0.9 + i * 0.36, -0.42, 0.28, jaw); t.rotation.x = -0.3; }
+  // eye slit and headlights
+  const eye = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.08, 0.05), new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 0.4, 0.15).multiplyScalar(4) })); eye.position.set(0, 0.32, 1.52); body.add(eye);
   const lights = [];
-  for (const sx of [-1, 1]) { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.1, 10), glow(0xfff0c0, 3)); l.rotation.x = Math.PI / 2; l.position.set(sx * 0.5, 1.75, 1.22); g.add(l); lights.push(l); }
-  const sawArm = new THREE.Group(); sawArm.position.set(0.9, 1.6, 0.6); g.add(sawArm);
-  const armM = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 1.2), dark); armM.position.z = 0.5; sawArm.add(armM);
-  const saw = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.05, 32), mat(0xb0b4b8, { metalness: 0.95, roughness: 0.25 })); saw.rotation.z = Math.PI / 2; saw.position.z = 1.15; sawArm.add(saw);
-  for (let i = 0; i < 16; i++) { const t = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.14, 4), dark); const a = (i / 16) * Math.PI * 2; t.position.set(0, Math.cos(a) * 0.78, Math.sin(a) * 0.78); t.rotation.x = a; saw.add(t); }
-  const cell = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.8, 14), glow(0x6fd6ff, 2.5)); cell.rotation.z = Math.PI / 2; cell.position.set(0, 2.15, -1.05); g.add(cell);
-  const cage = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.82, 8, 1, true), new THREE.MeshStandardMaterial({ color: 0x1e1f22, wireframe: true })); cage.rotation.z = Math.PI / 2; cage.position.copy(cell.position); g.add(cage);
-  for (const sx of [-1, 1]) { const st = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.8, 8), dark); st.position.set(sx * 0.45, 2.45, -0.7); g.add(st); }
-  const legs = [];
-  for (const [sx, sz] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
-    const hip = new THREE.Group(); hip.position.set(sx * 0.85, 1.2, sz * 0.85); g.add(hip);
-    const th = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.9, 0.22), hull); th.position.y = -0.1; th.rotation.z = sx * 0.5; hip.add(th);
-    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.32, 0.25, 8), dark); foot.position.set(sx * 0.35, -0.95, 0); hip.add(foot);
-    legs.push({ hip, sx, sz });
+  for (const sx of [-1, 1]) { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.1, 10), glow(0xfff0c0, 3)); l.rotation.x = Math.PI / 2; l.position.set(sx * 0.65, 0.2, 1.52); body.add(l); lights.push(l); }
+  // the core and its three armour shells
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.45, 18, 12), coreMat); core.position.set(0, 0.85, -0.2); body.add(core);
+  const plates = [];
+  for (const [sx, rz] of [[-1, 1], [1, -1]]) {
+    const hinge = new THREE.Group(); hinge.position.set(sx * 0.62, 0.5, -0.2); body.add(hinge);
+    const pl = box(paint, 0.12, 0.9, 1.3, sx * -0.05, 0.42, 0, hinge); pl.rotation.z = rz * -0.35;
+    box(yel, 0.14, 0.1, 1.32, sx * -0.12, 0.82, 0, hinge);
+    plates.push({ hinge, open: rz * 1.25 });
   }
-  g.userData = { saw, sawArm, cell, lights, legs };
+  { const hinge = new THREE.Group(); hinge.position.set(0, 0.5, -0.9); body.add(hinge);
+    box(hull, 1.1, 0.9, 0.12, 0, 0.42, 0.05, hinge).rotation.x = 0.3; plates.push({ hinge, open: -1.2, axis: 'x' }); }
+  // serial plate on the flank (the only clue where it came from)
+  const sp = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.34), new THREE.MeshStandardMaterial({ map: serialTexture(), roughness: 0.8, metalness: 0.3 }));
+  sp.position.set(-1.011, 0.05, -0.3); sp.rotation.y = -Math.PI / 2; body.add(sp);
+  // climbing claws (front), each: shoulder → forearm → three hooked fingers
+  const claws = [];
+  for (const sx of [-1, 1]) {
+    const sh = new THREE.Group(); sh.position.set(sx * 1.05, 0.15, 1.05); body.add(sh);
+    box(dark, 0.3, 0.3, 0.3, 0, 0, 0, sh);
+    const up = box(hull, 0.22, 0.22, 1.2, 0, 0, 0.6, sh);
+    const fore = new THREE.Group(); fore.position.set(0, 0, 1.2); sh.add(fore);
+    box(hull, 0.18, 0.18, 1.0, 0, 0, 0.5, fore);
+    const hand = new THREE.Group(); hand.position.set(0, 0, 1.0); fore.add(hand);
+    const fingers = [];
+    for (let k = 0; k < 3; k++) { const f = new THREE.Group(); f.rotation.z = (k - 1) * 1.6; hand.add(f); const fm = box(steel, 0.06, 0.06, 0.42, 0, 0.12, 0.18, f); fm.rotation.x = -0.6; fingers.push(f); }
+    claws.push({ sh, fore, hand, fingers, sx, up });
+  }
+  // the saw arm
+  const sawArm = new THREE.Group(); sawArm.position.set(0.7, 0.75, 0.5); body.add(sawArm);
+  box(dark, 0.25, 0.25, 1.3, 0, 0, 0.55, sawArm);
+  const saw = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.05, 32), steel); saw.rotation.z = Math.PI / 2; saw.position.z = 1.25; sawArm.add(saw);
+  for (let i = 0; i < 16; i++) { const t = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.14, 4), dark); const a = (i / 16) * Math.PI * 2; t.position.set(0, Math.cos(a) * 0.83, Math.sin(a) * 0.83); t.rotation.x = a; saw.add(t); }
+  // six jointed legs (tripod gait)
+  const legs = [];
+  for (const [sx, sz, grp] of [[-1, 1, 0], [1, 0, 0], [-1, -1, 0], [1, 1, 1], [-1, 0, 1], [1, -1, 1]]) {
+    const hip = new THREE.Group(); hip.position.set(sx * 1.0, 1.75, sz * 1.05); g.add(hip);
+    box(hull, 0.9, 0.2, 0.2, sx * 0.45, 0, 0, hip).rotation.z = sx * -0.5;
+    const knee = new THREE.Group(); knee.position.set(sx * 0.82, 0.4, 0); hip.add(knee);
+    box(dark, 0.18, 1.9, 0.18, sx * 0.15, -0.9, 0, knee).rotation.z = sx * 0.16;
+    box(dark, 0.32, 0.18, 0.32, sx * 0.3, -1.86, 0, knee);
+    legs.push({ hip, knee, sx, sz, grp });
+  }
+  // the kinetic shield it raises while it feeds
+  const shield = new THREE.Mesh(new THREE.SphereGeometry(2.7, 24, 16), new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 0.55, 0.2), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
+  shield.position.y = 1.9; shield.visible = false; g.add(shield);
+  g.scale.setScalar(1.12);
+  g.userData = { body, core, plates, claws, saw, sawArm, legs, lights, shield, eye, jaw };
   return g;
 }
 
@@ -384,73 +437,209 @@ class Leech extends Enemy {
 }
 
 // ------------------------------------------------------------------ SHEARER
+// The prologue's boss. Its moods (mode): 'intro' (driven by the script), 'hunt' (charges; phase 3
+// chains them and slams a shockwave), 'feed' (clamped onto a power source, shielded), 'climb' (back
+// over an edge it was thrown off), 'dying' (the script plays the finish). Armour: bullets glance off
+// until a stalled charge opens its shells; in phase 3 the shells are gone.
 class Shearer extends Enemy {
   constructor(sys, pos, opts) {
     super(sys, 'shearer', pos, opts);
-    this.hp = this.maxHp = 420;
+    this.hp = this.maxHp = opts.boss ? 900 : 420;
     this.model = shearerModel(); this.game.engine.cityRoot.add(this.model);
+    this.mode = opts.intro ? 'intro' : 'hunt'; this.phase = 1;
     this.chargeT = 2.5; this.windup = 0; this.charging = 0; this.chargeDir = new THREE.Vector3(); this.gait = 0; this.sawSpin = 8;
-    this.makeBody([{ hx: 0.85, hy: 0.65, hz: 1.3, pos: { x: 0, y: 1.5, z: 0 } }, { r: 0.3, pos: { x: 0, y: 2.15, z: -1.05 }, weak: true, part: 'cell' }]);
+    this.open = 0; this.platesOff = false; this.chain = 0; this.slam = null; this.clamps = [true, true]; this.pose = { climb: 0, clamp: 0, reach: 0 };
+    this.arena = opts.arena || null; // { x0, x1, z0, z1, y } — the deck, for climbing back when thrown off
+    this.makeBody([{ hx: 1.15, hy: 0.8, hz: 1.75, pos: { x: 0, y: 2.1, z: 0 } }, { r: 0.55, pos: { x: 0, y: 3.05, z: -0.22 }, weak: true, part: 'core' }]);
     this.untether = this.game.tether.register({
-      kind: 'enemy', label: 'Shearer', big: true, priority: 2, enabled: () => !this.dead, getPos: () => this.pos.clone().add(new THREE.Vector3(0, 1.5, 0)), getVel: () => this.vel, mass: 2200, colliders: this.colliders,
+      kind: 'enemy', label: 'Shearer', big: true, priority: 2, enabled: () => !this.dead && this.mode !== 'intro' && this.mode !== 'dying' && this.mode !== 'feed', getPos: () => this.pos.clone().add(new THREE.Vector3(0, 2, 0)), getVel: () => this.vel, mass: 2200, colliders: this.colliders,
       capture: (dt) => {
-        // Charging: its momentum floods the tether and it stalls. At rest it barely yields.
-        if (this.charging > 0) { this.capturedCharge = (this.capturedCharge || 0) + dt; this.vel.multiplyScalar(Math.max(0, 1 - dt * 5)); if (this.vel.length() < 2) { this.charging = 0; this.stun = 3.2; this.game.events.emit('shearer:stalled', this); this.game.audio.metalStress(this.pos, 1.5); } return 2200 * 4 * dt; }
+        if (this.mode === 'feed') return 0; // shielded: its own field throws the tether off
+        // charging: its momentum floods the tether and it stalls; at rest it barely yields
+        if (this.charging > 0) {
+          this.vel.multiplyScalar(Math.max(0, 1 - dt * 5));
+          if (this.vel.length() < 2.5) { this.charging = 0; this.chain = 0; this.windowDmg = 0; this.stun = this.phase === 3 ? 2.6 : 3.6; this.game.events.emit('shearer:stalled', this); this.game.audio.metalStress(this.pos, 1.5); }
+          return 2200 * 4 * dt;
+        }
         return 120 * dt;
       },
-      push: (imp, cells) => { const v = imp.clone().multiplyScalar(1 / 2200 * 2.4); this.vel.add(v); this.stun = Math.max(this.stun, 1.2); this.thrown = 1.5; this.damage(cells * 22, this.pos, v.clone().normalize(), 'tether', true); },
+      push: (imp, cells) => {
+        if (this.mode === 'feed') { this.game.events.emit('shearer:shielded', this); return; }
+        const v = imp.clone().multiplyScalar(1 / 2200 * 2.6); this.vel.add(v); this.vel.y = Math.max(this.vel.y, 3); this.stun = Math.max(this.stun, 1.4); this.thrown = 1.6;
+        this.damage(cells * 45 * (this.stun > 1.5 ? 1.3 : 1), this.pos, v.clone().normalize(), 'tether', true);
+      },
     });
   }
-  armor(point, dir, part, melee) { if (part === 'cell') return 2.0; if (part === 'tether') return 1; if (this.stun > 0) return 0.6; return melee ? 0.4 : 0.25; }
+  get exposed() { return this.platesOff || this.open > 0.6; }
+  // a walker: sweep horizontally at body height (railings stop it; their gaps let it be thrown over),
+  // then move vertically (the base sweep also aimed down at the deck and pinned it in place)
+  collideMove(dt, radius = 1.5) {
+    const hv = _v3.set(this.vel.x, 0, this.vel.z).multiplyScalar(dt), len = hv.length(); let res = null;
+    if (len > 1e-5) {
+      const dir = hv.clone().divideScalar(len), o = this.pos.clone(); o.y += 1.2;
+      const hit = this.game.physics.raycastFilter(o, dir, len + radius, G.STATIC | G.PLATFORM, () => true);
+      if (hit) { const impact = this.vel.x * hit.normal.x + this.vel.z * hit.normal.z; this.pos.addScaledVector(dir, Math.max(0, hit.toi - radius)); this.vel.x -= hit.normal.x * impact * 1.3; this.vel.z -= hit.normal.z * impact * 1.3; res = { hit, speed: -impact }; }
+      else this.pos.add(hv);
+    }
+    this.pos.y += this.vel.y * dt;
+    return res;
+  }
+  armor(point, dir, part, melee) {
+    if (this.mode === 'feed' || this.mode === 'intro' || this.mode === 'dying' || this.mode === 'climb') return 0;
+    if (part === 'tether') return 1;
+    // overdrive: no shells, but it only really gives while stalled (stalls stay the heart of the fight)
+    if (this.platesOff) return part === 'core' ? (this.stun > 0 ? 0.9 : 0.35) : (melee ? 0.6 : this.stun > 0 ? 0.4 : 0.12);
+    if (part === 'core') return this.exposed ? 0.9 : 0.1;
+    return this.stun > 0 ? 0.3 : (melee ? 0.25 : 0.06);
+  }
+  damage(amount, point, dir, part, melee = false) {
+    if (this.dead || this.mode === 'dying') return 0;
+    if (this.mode === 'feed') { this.shieldFlash = 0.35; if (point) this.game.fx.sparks(point, new THREE.Vector3(0, 1, 0), 3, 4, [1, 0.6, 0.2, 1]); }
+    const a = amount * this.armor(point, dir, part, melee);
+    if (a < amount * 0.12 && this.mode === 'hunt') { this.deflects = (this.deflects || 0) + 1; this.game.events.emit('shearer:deflect', this); if (point) this.game.fx.sparks(point, dir ? dir.clone().negate() : new THREE.Vector3(0, 1, 0), 4, 5); }
+    if (a <= 0) return 0;
+    let dealt = a;
+    if (this.opts.boss && this.phase === 1 && part !== 'tether') { this.windowDmg = (this.windowDmg || 0) + a; if (this.windowDmg > this.maxHp * 0.2) dealt = a * 0.1; }
+    this.hp -= dealt; this.flinch = 1; if (!this.aware) this.becomeAware();
+    if (!this.opts.boss) { if (this.hp <= 0) this.die(dir); return a; }
+    if (this.phase === 1 && this.hp <= this.maxHp * 0.62) { this.hp = this.maxHp * 0.62; this.phase = 2; this.stun = 0; this.charging = 0; this.windup = 0; this.game.events.emit('shearer:phase2', this); }
+    if (this.phase === 3 && this.hp <= 0) { this.hp = 0; this.mode = 'dying'; this.charging = 0; this.windup = 0; this.game.events.emit('shearer:finisher', this); }
+    return a;
+  }
+  // the script tears one of its feeding clamps away
+  breakClamp(i) {
+    if (!this.clamps[i]) return; this.clamps[i] = false; this.hp -= this.maxHp * 0.085;
+    const c = this.model.userData.claws[i]; this.flail = 1.2;
+    this.game.fx.sparks(c.hand.getWorldPosition(new THREE.Vector3()), new THREE.Vector3(0, 1, 0), 40, 9);
+    if (!this.clamps[0] && !this.clamps[1]) this.enterPhase3();
+  }
+  enterPhase3() {
+    this.phase = 3; this.mode = 'hunt'; this.platesOff = true; this.stun = 5; this.thrown = 0; this.chargeT = 1.2;
+    this.vel.set(-Math.sin(this.yaw) * 6, 5, -Math.cos(this.yaw) * 6); // torn loose: it's thrown back off the pylon
+    const u = this.model.userData;
+    u.plates.forEach(pl => { pl.hinge.visible = false; });
+    this.game.fx.debris(this.pos.clone().add(new THREE.Vector3(0, 2.6, 0)), 10, 0x8a3a22, 9, 0.35);
+    this.game.events.emit('shearer:phase3', this);
+  }
   update(dt) {
     const g = this.game, p = this.player;
     this.stateT += dt; if (this.dead) return this.updateDead(dt);
     this.perceive(dt); if (this.opts.alwaysAware && !this.aware) this.becomeAware();
-    this.stun = Math.max(0, this.stun - dt); this.thrown = Math.max(0, (this.thrown || 0) - dt);
+    this.stun = Math.max(0, this.stun - dt); this.thrown = Math.max(0, (this.thrown || 0) - dt); this.flail = Math.max(0, (this.flail || 0) - dt);
     const toP = p.pos.clone().sub(this.pos); const flat = toP.clone().setY(0); const dist = flat.length(); flat.divideScalar(Math.max(dist, 0.01));
-    if (this.stun > 0) {
+    const od = this.phase === 3; // overdrive
+    if (this.mode === 'intro' || this.mode === 'dying') { this.syncVisual(dt); return; } // the script moves it
+    if (this.mode === 'climb') { // hauling itself back over the edge it was thrown off
+      this.climbT += dt; const k = Math.min(1, this.climbT / 1.6);
+      this.pos.lerpVectors(this.climbFrom, this.climbTo, k * k * (3 - 2 * k)); this.pose.climb = Math.sin(k * Math.PI);
+      if (k >= 1) { this.mode = 'hunt'; this.pose.climb = 0; this.vel.set(0, 0, 0); this.chargeT = 1.5; }
+      this.syncVisual(dt); return;
+    }
+    if (this.mode === 'feed') {
+      const f = this.feedSpot; const to = f.pos.clone().sub(this.pos).setY(0), d = to.length();
+      if (d > 0.4 && !this.clamped) { to.divideScalar(d); this.vel.x = to.x * 7; this.vel.z = to.z * 7; this.yaw = dampAngle(this.yaw, Math.atan2(to.x, to.z), 6, dt); }
+      else { if (!this.clamped) { this.clamped = true; g.events.emit('shearer:clamped', this); } this.vel.x = 0; this.vel.z = 0; this.pos.x = damp(this.pos.x, f.pos.x, 6, dt); this.pos.z = damp(this.pos.z, f.pos.z, 6, dt); this.yaw = dampAngle(this.yaw, f.yaw, 6, dt); }
+      this.pose.clamp = damp(this.pose.clamp, this.clamped ? 1 : 0, 4, dt);
+      this.sawSpin = damp(this.sawSpin, 30, 2, dt);
+    } else if (this.stun > 0) {
       this.vel.x = damp(this.vel.x, 0, this.thrown > 0 ? 1 : 4, dt); this.vel.z = damp(this.vel.z, 0, this.thrown > 0 ? 1 : 4, dt);
       this.sawSpin = damp(this.sawSpin, 2, 2, dt);
     } else if (this.charging > 0) {
       this.charging -= dt;
-      this.vel.x = this.chargeDir.x * 13; this.vel.z = this.chargeDir.z * 13;
-      if (p.pos.clone().sub(this.pos).setY(0).length() < 2.2 && Math.abs(p.pos.y - this.pos.y) < 2) {
-        p.damage(40, this.pos.clone()); p.externalImpulse.add(this.chargeDir.clone().multiplyScalar(11)).setY(5); g.camera.shake(0.6); g.audio.punch(p.pos); this.charging = 0; this.stun = 0.6;
+      const sp = od ? 16 : 13; this.vel.x = this.chargeDir.x * sp; this.vel.z = this.chargeDir.z * sp;
+      if (p.pos.clone().sub(this.pos).setY(0).length() < 2.6 && Math.abs(p.pos.y - this.pos.y) < 2.2) {
+        p.damage(od ? 34 : 30, this.pos.clone()); p.externalImpulse.add(this.chargeDir.clone().multiplyScalar(11)).setY(5); g.camera.shake(0.6); g.audio.punch(p.pos); this.charging = 0; this.stun = 0.5; this.chain = 0;
       }
-      if (this.charging <= 0) this.chargeT = 2 + R() * 1.5;
-      if (this.stateT % 0.1 < dt) g.fx.dust(this.pos, 0.6);
+      if (this.charging <= 0) this.endCharge();
+      if (this.stateT % 0.1 < dt) g.fx.dust(this.pos, 0.7);
     } else if (this.windup > 0) {
       this.windup -= dt; this.vel.multiplyScalar(0.85);
-      this.yaw = dampAngle(this.yaw, Math.atan2(flat.x, flat.z), 5, dt);
+      this.yaw = dampAngle(this.yaw, Math.atan2(flat.x, flat.z), od ? 7 : 5, dt);
       this.sawSpin = damp(this.sawSpin, 40, 4, dt);
-      if (this.windup <= 0) { this.charging = 1.6; this.chargeDir.set(Math.sin(this.yaw), 0, Math.cos(this.yaw)); g.audio.explosion(this.pos, 0.3); g.camera.shake(0.2); g.events.emit('shearer:charge', this); }
+      if (this.windup <= 0) { this.charging = od ? 1.3 : 1.6; this.chargeDir.set(Math.sin(this.yaw), 0, Math.cos(this.yaw)); g.audio.explosion(this.pos, 0.3); g.camera.shake(0.2); g.events.emit('shearer:charge', this); }
     } else if (this.aware) {
       this.yaw = dampAngle(this.yaw, Math.atan2(flat.x, flat.z), 2.5, dt);
-      const want = flat.clone().multiplyScalar(dist > 7 ? 2.4 : 0);
+      const want = flat.clone().multiplyScalar(dist > 7 ? (od ? 3.6 : 2.4) : 0);
       this.vel.x = damp(this.vel.x, want.x, 3, dt); this.vel.z = damp(this.vel.z, want.z, 3, dt);
       this.chargeT -= dt;
-      if (this.chargeT < 0 && dist < 26 && Math.abs(toP.y) < 3) { this.windup = 1.15; g.audio.metalStress(this.pos, 1.2); g.hud.hint('shearer'); }
+      if (this.chargeT < 0 && dist < 28 && Math.abs(toP.y) < 3) { this.windup = od ? 0.8 : 1.15; g.audio.metalStress(this.pos, 1.2); g.hud.hint('shearer'); }
       this.sawSpin = damp(this.sawSpin, 14, 3, dt);
     }
+    // the overdrive slam: a shockwave rolling out across the deck (jump it)
+    if (this.slam) {
+      const sl = this.slam; sl.t += dt; const r = sl.t * 13;
+      const d = p.pos.clone().sub(sl.pos).setY(0).length();
+      if (!sl.hit && Math.abs(d - r) < 0.9 && p.pos.y - sl.pos.y < 0.6 && p.state === 'ground') { sl.hit = true; p.damage(16, sl.pos.clone()); p.externalImpulse.add(p.pos.clone().sub(sl.pos).setY(0).normalize().multiplyScalar(6)).setY(4); g.camera.shake(0.35); }
+      if (r > 11) this.slam = null;
+    }
     this.vel.y -= 20 * dt;
-    const c = this.collideMove(dt, 1.2);
-    if (c && this.charging > 0) { this.charging = 0; this.stun = 1.4; g.camera.shake(0.4); g.audio.clank(this.pos, 2, 0.5); g.fx.sparks(this.pos.clone().add(new THREE.Vector3(0, 1, 0)), c.hit.normal, 30, 8); }
-    if (c && this.thrown > 0 && c.speed > 4) { this.damage(c.speed * 20, this.pos, c.hit.normal.clone().negate(), 'tether', true); g.camera.shake(0.5); g.audio.explosion(this.pos, 0.5); g.fx.sparks(this.pos.clone().add(new THREE.Vector3(0, 1.4, 0)), c.hit.normal, 40, 9); }
+    const c = this.collideMove(dt, 1.5);
+    if (c && this.charging > 0) { this.charging = 0; this.stun = 1.4; this.chain = 0; g.camera.shake(0.4); g.audio.clank(this.pos, 2, 0.5); g.fx.sparks(this.pos.clone().add(new THREE.Vector3(0, 1, 0)), c.hit.normal, 30, 8); }
+    if (c && this.thrown > 0 && c.speed > 4) { this.damage(c.speed * 22, this.pos, c.hit.normal.clone().negate(), 'tether', true); g.camera.shake(0.5); g.audio.explosion(this.pos, 0.5); g.fx.sparks(this.pos.clone().add(new THREE.Vector3(0, 1.4, 0)), c.hit.normal, 40, 9); }
     const gh = g.physics.raycastFilter(this.pos.clone().add(new THREE.Vector3(0, 1, 0)), DOWN, 1.3, G.STATIC | G.PLATFORM, () => true);
     if (gh && this.vel.y <= 0) { this.pos.y = gh.point.y; this.vel.y = 0; }
+    // thrown off the deck: it hooks the edge and hauls itself back up (and it costs it)
+    const A = this.arena;
+    if (A && this.opts.boss && this.pos.y < A.y - 2.5 && this.mode === 'hunt') {
+      const back = new THREE.Vector3(clamp(this.pos.x, A.x0 + 1.5, A.x1 - 1.5), A.y, clamp(this.pos.z, A.z0 + 1.5, A.z1 - 1.5));
+      this.mode = 'climb'; this.climbT = 0; this.climbFrom = new THREE.Vector3(this.pos.x, A.y - 3, this.pos.z).lerp(back, 0.15); this.climbTo = back; this.vel.set(0, 0, 0); this.charging = 0; this.stun = 0;
+      this.yaw = Math.atan2(back.x - this.pos.x, back.z - this.pos.z);
+      if (this.phase !== 2) { this.hp -= this.maxHp * 0.1; if (this.phase === 3 && this.hp <= 0) this.hp = 1; }
+      if (this.phase === 1 && this.hp <= this.maxHp * 0.62) { this.hp = this.maxHp * 0.62; this.phase = 2; g.events.emit('shearer:phase2', this); }
+      g.audio.metalStress(this.pos, 2); g.events.emit('shearer:edge', this);
+    }
     if (this.pos.y < g.killY + 10 && !this.dead) { this.hp = 0; this.die(DOWN); }
-    this.gait += Math.hypot(this.vel.x, this.vel.z) * dt * 1.2;
+    this.gait += Math.hypot(this.vel.x, this.vel.z) * dt * 1.1;
     this.syncVisual(dt);
   }
+  endCharge() {
+    const g = this.game;
+    if (this.phase === 3) {
+      // overdrive: slam the deck, then (once) turn and charge again
+      this.slam = { pos: this.pos.clone(), t: 0, hit: false }; g.fx.shockwave(this.pos.clone().add(new THREE.Vector3(0, 0.2, 0)), 11, [1, 0.55, 0.2], new THREE.Vector3(0, 1, 0), 0.85);
+      g.audio.explosion(this.pos, 0.45); g.camera.shake(0.35); g.events.emit('shearer:slam', this);
+      if (this.chain < 1) { this.chain++; this.windup = 0.55; return; }
+    }
+    this.chain = 0; this.chargeT = this.phase === 3 ? 1.6 + R() : 2.2 + R() * 1.5;
+  }
   syncVisual(dt) {
-    const m = this.model, u = m.userData;
-    m.position.copy(this.pos); m.rotation.set(this.windup > 0 ? -0.08 : 0, this.yaw, Math.sin(this.gait * 2) * 0.03);
+    const m = this.model, u = m.userData, t = this.stateT, od = this.phase === 3;
+    m.position.copy(this.pos); m.rotation.set(this.tumble || 0, this.yaw, 0);
+    // body: lean into charges, rock while walking, rear up while it climbs or clamps
+    const pitch = (this.windup > 0 ? -0.12 : this.charging > 0 ? 0.1 : 0) - this.pose.climb * 0.7 - this.pose.clamp * 0.32 + (this.stun > 0 ? Math.sin(t * 9) * 0.04 : 0);
+    u.body.rotation.x = damp(u.body.rotation.x, pitch, 8, dt); u.body.rotation.z = Math.sin(this.gait * 2) * 0.035 + (this.flail > 0 ? Math.sin(t * 25) * 0.08 : 0);
+    u.body.position.y = 1.9 + Math.abs(Math.sin(this.gait * 2)) * 0.06 + this.pose.clamp * 0.5 + this.pose.climb * 0.6;
     u.saw.rotation.x += this.sawSpin * dt;
-    u.sawArm.rotation.x = this.charging > 0 ? -0.3 : this.windup > 0 ? -0.6 : Math.sin(this.stateT) * 0.1;
-    u.legs.forEach((L, i) => { L.hip.rotation.x = Math.sin(this.gait * 2 + i * Math.PI / 2) * 0.35; });
-    const l = this.windup > 0 ? (Math.sin(this.stateT * 30) > 0 ? 6 : 1) : 3;
+    u.sawArm.rotation.x = this.charging > 0 ? -0.3 : this.windup > 0 ? -0.7 : this.mode === 'feed' ? -0.9 + Math.sin(t * 3) * 0.2 : Math.sin(t) * 0.12;
+    // armour shells open while it's stalled
+    this.open = damp(this.open, this.stun > 0.3 && !this.platesOff ? 1 : 0, 6, dt);
+    u.plates.forEach(pl => { if (pl.axis === 'x') pl.hinge.rotation.x = pl.open * this.open; else pl.hinge.rotation.z = pl.open * this.open; });
+    // claws: reach while hunting, raised in windup, forward when charging, hooked onto the pylon when feeding
+    u.claws.forEach((c, i) => {
+      const clampHere = this.mode === 'feed' && this.clamps[i];
+      const reachUp = this.windup > 0 ? 1 : 0, climb = this.pose.climb ? Math.sin(t * 8 + i * Math.PI) * 0.5 + 0.5 : 0;
+      const tgtX = clampHere ? -0.55 * this.pose.clamp : this.charging > 0 ? 0.15 : -0.6 * reachUp - climb * 1.1 + Math.sin(t * 1.6 + i) * 0.06 + (this.flail > 0 && !this.clamps[i] ? Math.sin(t * 22) * 0.6 : 0);
+      c.sh.rotation.x = damp(c.sh.rotation.x, tgtX, 8, dt);
+      c.sh.rotation.y = damp(c.sh.rotation.y, clampHere ? -c.sx * 0.35 : c.sx * 0.15, 6, dt);
+      c.fore.rotation.x = damp(c.fore.rotation.x, clampHere ? 0.9 : 0.5 + reachUp * 0.4, 8, dt);
+      c.fingers.forEach((f, k) => { f.rotation.x = damp(f.rotation.x, clampHere ? 0.9 : this.windup > 0 ? -0.4 : 0.2, 10, dt); });
+    });
+    // tripod gait
+    const moving = Math.hypot(this.vel.x, this.vel.z) > 0.3 || this.pose.climb > 0;
+    u.legs.forEach(L => {
+      const ph = this.gait * 2.2 + L.grp * Math.PI, sw = moving ? Math.sin(ph) : 0, lift = moving ? Math.max(0, Math.cos(ph)) : 0;
+      L.hip.rotation.y = sw * 0.32 * L.sx;
+      L.hip.rotation.z = L.sx * (-lift * 0.35 + this.pose.clamp * 0.15);
+      L.knee.rotation.z = L.sx * lift * 0.25;
+    });
+    // lights: headlights strobe in windup; the core breathes, flares when exposed, burns in overdrive
+    const l = this.windup > 0 ? (Math.sin(t * 30) > 0 ? 6 : 1) : 3;
     u.lights.forEach(x => x.material.color.setRGB(l, l * 0.9, l * 0.7));
-    u.cell.material.color.setRGB(0.4 * 2.5, 0.85 * 2.5, 2.5).multiplyScalar(this.stun > 0 ? 1.8 + Math.sin(this.stateT * 12) * 0.6 : 1);
+    const ck = (this.exposed ? 2.2 + Math.sin(t * 12) * 0.6 : 1) * (od ? 1.8 + Math.sin(t * 20) * 0.3 : 1) * (this.mode === 'feed' ? 1.6 : 1);
+    u.core.material.color.setRGB(3 * ck, 1.65 * ck, 0.55 * ck);
+    u.eye.material.color.setRGB(4 * (od ? 1.6 : 1), 1.6, 0.6);
+    u.shield.visible = this.mode === 'feed' && this.clamped;
+    if (u.shield.visible) u.shield.material.opacity = 0.12 + Math.sin(t * 6) * 0.05 + (this.shieldFlash = Math.max(0, (this.shieldFlash || 0) - dt)) * 0.6;
     this.syncBody();
   }
   die(dir) {
@@ -459,8 +648,9 @@ class Shearer extends Enemy {
   }
   updateDead(dt) {
     this.deadT += dt;
+    if (this.opts.boss) { this.syncVisual?.(0); if (this.deadT > 0.1) { this.remove(); this.removed = true; } return; } // the script has already played its end
     this.vel.y -= 15 * dt; this.collideMove(dt, 1); this.model.position.copy(this.pos);
-    if (this.deadT % 0.1 < dt) this.game.fx.sparks(this.pos.clone().add(new THREE.Vector3(0, 2, -1)), new THREE.Vector3(0, 1, 0), 6, 5, [0.5, 0.8, 1, 1]);
+    if (this.deadT % 0.1 < dt) this.game.fx.sparks(this.pos.clone().add(new THREE.Vector3(0, 2, -1)), new THREE.Vector3(0, 1, 0), 6, 5, [1, 0.6, 0.2, 1]);
     if (this.deadT > 1.0 && !this.exploded) { this.exploded = true; const c = this.pos.clone().add(new THREE.Vector3(0, 1.5, 0)); this.game.fx.explosion(c, 1.6); this.game.audio.explosion(c, 1.6); this.game.camera.shake(0.8); this.sys.splash(c, 5, 45); this.model.visible = false; }
     if (this.deadT > 2) { this.remove(); this.removed = true; }
   }

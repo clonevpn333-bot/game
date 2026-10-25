@@ -131,12 +131,14 @@ export class Score {
     const def = CUES[name]; if (!def) return;
     this.bus = this._bus(); const lv = def.gain ?? 0.8;
     for (const g of [this.bus.g, this.bus.w, this.bus.d]) g.gain.setTargetAtTime(lv, t, Math.max(0.03, fade / 3));
-    this.bar = 0; this.k = 0; this.next = t + 0.08; this.spb = 60 / def.bpm; this.jumpTo = null; this.marked = new Set();
+    this.bar = 0; this.k = 0; this.next = t + 0.08; this.spb = 60 / def.bpm; this.jumpTo = null; this.marked = new Set(); this.sectionName = null;
     const dly = def.delay ?? this.spb * 0.75;
     this.dl.delayTime.setValueAtTime(dly, t); this.dr.delayTime.setValueAtTime(dly, t);
   }
   stop(fade = 2) { this.play(null, fade); this.cue = null; }
   // jump to a named section of the running cue at the next bar line (adaptive music)
+  // name the section a cue should stay in (the cue's route() decides what that means)
+  section(name) { this.sectionName = name; }
   mark(name) { const m = CUES[this.cue]?.marks?.[name]; if (m != null && !this.marked?.has(name)) { this.jumpTo = m; (this.marked ||= new Set()).add(name); } }
   // one-shot flourishes on their own bus, independent of the running cue
   sting(name) {
@@ -154,6 +156,7 @@ export class Score {
     const def = CUES[this.cue]; if (!def || !this.bus) return;
     while (this.next < h) {
       if (this.jumpTo != null) { this.bar = this.jumpTo; this.jumpTo = null; }
+      if (def.route) this.bar = def.route(this, this.bar);
       if (def.len && this.bar >= def.len) { this.bar = def.back ?? 0; this.k++; }
       const m = typeof def.meter === 'function' ? def.meter(this.bar) : def.meter;
       try { def.bar(this, this.bar, this.next, this.spb, this.k); } catch (e) { console.error('score', this.cue, e); }
@@ -652,7 +655,9 @@ const CUES = {
   // full force (7/8), a Phrygian push (7/8), and then the turn: G minor opens into B♭ major and the
   // Marchlight theme rises over the whole choir, voice on top, horns beneath, harp and bells — the
   // city's song answering the thing that came up its leg. mark('heaven') jumps there when it's winnable.
-  shearer: { bpm: 300, meter: n => (n < 4 || n >= 20 ? 8 : 7), gain: 0.88, len: 32, back: 4, marks: { heaven: 20 }, delay: 0.6, bar(s, n, t, b, k) {
+  shearer: { bpm: 300, meter: n => (n < 4 || n >= 20 ? 8 : 7), gain: 0.88, len: 32, back: 4, marks: { heaven: 20 }, delay: 0.6,
+    route: (s, n) => { const sec = s.sectionName; if (!sec) return n; const [a, z] = { march: [4, 12], push: [12, 20], heaven: [20, 32] }[sec] || [0, 32]; return n < a || n >= z ? a : n; },
+    bar(s, n, t, b, k) {
     const e = b;
     if (n < 4) { // arrival
       if (n === 0) { s.drone([N('G1'), N('D2')], t, 8 * b * 4, 0.3); s.brass([N('G2'), N('Ab2'), N('D3')], t, 8 * b * 4 - 0.2, 0.32, { att: 3 }); s.boom(t, 0.7); }

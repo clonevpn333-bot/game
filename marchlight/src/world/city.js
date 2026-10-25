@@ -121,8 +121,10 @@ export class Exterior {
       for (let z = -180; z <= 180; z += 30) b.extrude('darkSteel', kr, 2, [0, -91.8, z], { color: darkC, tex: 8 });
       for (const sx of [-1, 1]) for (let z = -170; z <= 170; z += 20) b.box('lampWarm', [sx * 120.6, -101, z], [0.6, 0.4, 6], { collide: false, ao: false, rz: sx * 0.43 }); }
     // underside trusses
-    for (let z = -280; z <= 280; z += 40) b.box('darkSteel', [0, -95, z], [390, 6, 4], { color: darkC, collide: false, ao: false });
-    for (let x = -180; x <= 180; x += 45) b.box('darkSteel', [x, -97, 0], [4, 4, 590], { color: darkC, collide: false, ao: false });
+    // (both grids stop short of the work line's corridor under the starboard-forward corner: the line, its
+    //  tram and the relay deck's west side need the air)
+    for (let z = -280; z <= 280; z += 40) { const x1 = z === -280 ? 140 : 195; b.box('darkSteel', [(-195 + x1) / 2, -95, z], [x1 + 195, 6, 4], { color: darkC, collide: false, ao: false }); }
+    for (let x = -180; x <= 180; x += 45) { const z0 = x === 180 ? -240 : -295; b.box('darkSteel', [x, -97, (z0 + 295) / 2], [4, 4, 295 - z0], { color: darkC, collide: false, ao: false }); }
     // hull ribs + window bands on all four faces
     const sides = [
       { axis: 'x', at: H.x1, n: 1, from: -295, to: 295 }, { axis: 'x', at: H.x0, n: -1, from: -295, to: 295 },

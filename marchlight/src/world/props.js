@@ -25,7 +25,7 @@ export class LightPool {
       if (s.flicker) k *= 1 - s.flicker * (Math.random() < 0.08 ? Math.random() : 0) + Math.sin(this.t * 13 + s.pos.x) * s.flicker * 0.05;
       // fade lights near the edge of the active set to avoid popping
       const fade = i >= this.lights.length - 2 ? 0.5 : 1;
-      l.intensity = k * fade;
+      l.intensity = k * fade * (this.game.lightMul ?? 1); // lightMul: whole-city brownouts (the Shearer feeding, blackouts)
     });
   }
 }

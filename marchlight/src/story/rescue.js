@@ -79,7 +79,7 @@ export class WorkTram {
     this.t += dt;
     const g = this.game;
     if (this.state === 'descend' || this.state === 'slide' || this.state === 'braked') {
-      if (this.state === 'descend') { this.v = damp(this.v, 2.2, 1, dt); }
+      if (this.state === 'descend') { this.v = damp(this.v, this.holdAt != null && this.s > this.holdAt - 2 ? 0 : 2.2, this.holdAt != null && this.s > this.holdAt - 2 ? 2 : 1, dt); } // held near the top until the deck is clear
       if (this.state === 'slide') { this.v += 4.6 * dt; }
       if (this.state === 'braked') { this.v = damp(this.v, 0, 6, dt); }
       this.s += this.v * dt;
@@ -121,11 +121,21 @@ async function climbOut(a, hatch, top) {
   a.pose('loco');
 }
 
+export function tramOnLine(story) {
+  const g = story.game, tram = story.workTram || (story.workTram = new WorkTram(g));
+  if (!tram.ticking) tram.ticking = g.add(dt => tram.update(dt));
+  tram.group.visible = true;
+  if (!tram.crew.length) tram.spawnCrew();
+  tram.crew.forEach((a, i) => { a.mount = tram.seats[i]; a.pose('sit'); a.hidden = false; });
+  tram.state = 'descend'; tram.s = 0; tram.v = 0; tram.holdAt = 12; tram.placeOnLine(0);
+  return tram;
+}
+
 export async function runRescue(story, startStage = 'A') {
   const g = story.game, S = g.districts.spine, P = g.player, T = g.tether, D = g.dialogue;
   const tram = story.workTram || (story.workTram = new WorkTram(g));
   const off = [];
-  g.add(dt => tram.update(dt));
+  if (!tram.ticking) tram.ticking = g.add(dt => tram.update(dt)); // one updater for the life of the tram (retries used to add another)
   const stage = { failed: false };
   const fail = async (why) => { if (stage.failed) return; stage.failed = true; await story.failState(why); };
 
@@ -199,21 +209,25 @@ export async function runRescue(story, startStage = 'A') {
   S.craneAnchorOn = false;
 
   if (startStage === 'A') {
-    tram.state = 'descend'; tram.s = 0; tram.v = 0; tram.placeOnLine(0);
-    g.audio.music.play('exterior', 2);
-    await D.radio('OPS', 'All crews, Undercroft shift change. Work tram descending from E-4.', { wait: false });
-    await story.wait(2.6);
-    D.radio('DACE', 'Morning, Runner! Saw the show with the Shearer. Remind me never to owe you money.', { wait: false });
-    await story.waitFor(() => tram.s > 10.5);
-    // the snap
-    g.audio.cableSnap(tram.group.position.clone().add(new THREE.Vector3(0, 2, 0)));
-    g.fx.sparks(tram.group.position.clone().add(new THREE.Vector3(0, 1.4, 0)), new THREE.Vector3(0, 1, 0), 40, 9);
-    g.camera.shake(0.4);
-    story.whipCable(tram.group.position.clone());
-    tram.state = 'slide'; tram.v = 2.5;
-    g.audio.music.play('rescue', 0.5);
+    const fromShearer = story.snapFromShearer; story.snapFromShearer = null;
+    if (!fromShearer) { // (a retry: the tram comes down again, and the damaged cable goes)
+      tram.state = 'descend'; tram.s = 0; tram.v = 0; tram.holdAt = null; tram.placeOnLine(0);
+      g.audio.music.play('exterior', 2);
+      await D.radio('OPS', 'All crews, Undercroft shift change. Work tram descending from E-4.', { wait: false });
+      await story.wait(2.6);
+      await story.waitFor(() => tram.s > 10.5);
+      g.audio.cableSnap(tram.group.position.clone().add(new THREE.Vector3(0, 2, 0)));
+      g.fx.sparks(tram.group.position.clone().add(new THREE.Vector3(0, 1.4, 0)), new THREE.Vector3(0, 1, 0), 40, 9);
+      g.camera.shake(0.4);
+      story.whipCable(tram.group.position.clone());
+    }
+    // the haul cable is gone: the cabin runs free down the line
+    tram.holdAt = null; tram.state = 'slide'; tram.v = Math.max(tram.v, 2.5);
+    g.audio.music.play('rescue', 0.3);
     g.slowmo = 0.7;
-    D.radio('NIA', 'The haul cable — it\'s gone! The scavs cut it halfway through!', { wait: false, dur: 2.6 });
+    D.radio('DACE', 'We\'re moving— we\'re MOVING! Somebody—', { wait: false, dur: 2.2 });
+    await story.wait(2.2);
+    D.radio('NIA', 'It cut the haul cable! Rook, that tram\'s running free!', { wait: false, dur: 2.6 });
     g.hud.setObjective('Stop the tram', 'Capture its momentum [E] · Release it into the brake clamps [Q]', () => tram.group.position);
     g.hud.hint('capture', true); story.wait(3.5).then(() => g.hud.hint('release', true)).catch(() => {});
     await story.wait(2.6);
