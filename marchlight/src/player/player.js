@@ -217,7 +217,8 @@ export class Player {
     if (this.state === 'air' && canControl && inp.released('jump') && this.vel.y > 2.5 && !this.leaping) this.vel.y *= 0.55;
 
     // gravity
-    if (!grounded) { this.vel.y -= GRAV * dt; this.airTime += dt; this.maxFall = Math.max(this.maxFall, -this.vel.y); }
+    // (use the current state: a jump this frame has already left the ground, so don't clamp its lift-off speed)
+    if (this.state !== 'ground') { this.vel.y -= GRAV * dt; this.airTime += dt; this.maxFall = Math.max(this.maxFall, -this.vel.y); }
     else { this.vel.y = Math.min(this.vel.y, 0) - 2 * dt; this.airTime = 0; }
     this.vel.y = Math.max(this.vel.y, -48);
 
@@ -272,7 +273,7 @@ export class Player {
     const dir = g.camera.forwardFlat(_v.set(0, 0, 0));
     const pitch = clamp(-g.camera.pitch, -0.2, 0.9);
     const f = 11.5;
-    this.vel.set(dir.x * f * Math.cos(pitch * 0.5), 7.5 + Math.max(0, pitch) * 5, dir.z * f * Math.cos(pitch * 0.5));
+    this.vel.set(dir.x * f * Math.cos(pitch * 0.5), 9.5 + Math.max(0, pitch) * 5, dir.z * f * Math.cos(pitch * 0.5));
     this.state = 'air'; this.leaping = true; this.leapCooldown = 0.35;
     g.tether.spend(1, 'leap');
     g.fx.kineticBurst(this.pos.clone().add(new THREE.Vector3(0, 0.3, 0)), 1);

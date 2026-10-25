@@ -741,34 +741,41 @@ export class Prologue {
     // --- tether drill: a swinging weight and a target plate
     await this.radio('BRAM', 'Now the tether. See the weight? It\'s swinging. Hold on it — feel the cells fill.', { wait: false, dur: 4.2 });
     g.hud.hint('capture', true);
-    this.objective('Recertify: Tether', 'Hold the tether on the swinging weight to fill a cell.', () => V(146, -35.3, -242));
-    const pend = new THREE.Group(); pend.position.set(146, -29, -242); g.engine.cityRoot.add(pend);
+    this.objective('Recertify: Tether', 'Hold the tether on the swinging weight to fill a cell.', () => V(150, -35.3, -238.6));
+    // the weight hangs north of the line to the berm plate, so it never sits between Rook and the plate
+    const pend = new THREE.Group(); pend.position.set(150, -29, -238.6); g.engine.cityRoot.add(pend);
     const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 6, 6), g.materials.cable); rope.position.y = -3; pend.add(rope);
     const bob = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 12), new THREE.MeshStandardMaterial({ color: 0x8a6a4a, metalness: 0.7, roughness: 0.4 })); bob.position.y = -6.3; pend.add(bob);
-    let ang = 0.9, angV = 0;
-    const pendTick = g.add((dt) => { angV += -9.8 / 6.3 * Math.sin(ang) * dt; ang += angV * dt; pend.rotation.x = ang; });
+    let ang = 0.42, angV = 0, drainedNow = false;
+    // a motor keeps it swinging (between ~0.3 and 0.45 rad) so there is always momentum to take
+    const pendTick = g.add((dt) => {
+      angV += -9.8 / 6.3 * Math.sin(ang) * dt;
+      const E = 0.5 * (angV * 6.3) ** 2 + 9.8 * 6.3 * (1 - Math.cos(ang)), Emin = 9.8 * 6.3 * (1 - Math.cos(0.3)), Emax = 9.8 * 6.3 * (1 - Math.cos(0.45));
+      if (!drainedNow && E < Emin) angV += (angV >= 0 ? 1 : -1) * 0.9 * dt;
+      if (E > Emax) angV *= 1 - 0.8 * dt;
+      ang += angV * dt; pend.rotation.x = ang; drainedNow = false;
+    });
     let drained = 0;
-    const offP = g.tether.register({ kind: 'machine', label: 'Weight', getPos: () => bob.getWorldPosition(new THREE.Vector3()), getVel: () => V(0, 0, angV * 6.3), radius: 0.6,
-      capture: (dt) => { const sp = Math.abs(angV) * 6.3; const take = Math.min(sp, 8 * dt); angV *= sp > 0.01 ? (sp - take) / sp : 0; drained += dt; return 300 * take + 260 * dt; }, push: () => {} });
+    const offP = g.tether.register({ kind: 'machine', label: 'Weight', captureOnly: true, getPos: () => bob.getWorldPosition(new THREE.Vector3()), getVel: () => V(0, 0, angV * 6.3), radius: 0.6,
+      capture: (dt) => { drainedNow = true; const sp = Math.abs(angV) * 6.3; const take = Math.min(sp, 8 * dt); angV *= sp > 0.01 ? (sp - take) / sp : 0; drained += dt; return 300 * take + 260 * dt; }, push: () => {} });
     await this.waitFor(() => g.tether.cells >= 1);
     await this.radio('BRAM', 'There. Now throw it — release into the plate on the berm.', { wait: false, dur: 3.2 });
     g.hud.hint('release', true);
-    this.objective('Recertify: Tether', 'Release the stored momentum into the plate on the berm.', () => V(137.6, LD.floor + 3.2, -242));
+    this.objective('Recertify: Tether', 'Release the stored momentum into the plate on the berm.', () => V(138.45, LD.floor + 3.2, -245.5));
     // big hinged plate
-    const big = new THREE.Group(); big.position.set(137.6, LD.floor + 2, -242); g.engine.cityRoot.add(big);
+    const big = new THREE.Group(); big.position.set(138.45, LD.floor + 2, -245.5); g.engine.cityRoot.add(big); // in front of the berm face (x 138)
     const bp = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.4, 2.4), new THREE.MeshStandardMaterial({ color: 0xc8a030, metalness: 0.5, roughness: 0.5 })); bp.position.y = 1.2; big.add(bp);
     let bigHit = false;
-    const offB = g.tether.register({ kind: 'special', label: 'Target plate', getPos: () => big.position.clone().add(V(0, 1.2, 0)), getVel: () => V(), radius: 1.2, capture: () => 0, push: (imp, cells) => { bigHit = true; g.audio.clank(big.position, 2, 0.6); g.camera.shake(0.2); } });
+    const offB = g.tether.register({ kind: 'special', label: 'Target plate', releaseOnly: true, getPos: () => big.position.clone().add(V(0, 1.2, 0)), getVel: () => V(), radius: 1.2, capture: () => 0, push: (imp, cells) => { bigHit = true; g.audio.clank(big.position, 2, 0.6); g.camera.shake(0.2); } });
     let bigRot = 0;
     const bigTick = g.add((dt) => { bigRot = damp(bigRot, bigHit ? -1.3 : 0, 6, dt); big.rotation.z = bigRot; });
     await this.waitFor(() => bigHit);
     await this.wait(0.8);
     await this.radio('BRAM', 'Lovely. Last one. Jump off the floor, and in the air — spend a cell. Leap for the high platform.', { wait: false, dur: 4.4 });
     g.hud.hint('leap', true);
-    this.objective('Recertify: Kinetic leap', 'Jump, then spend a cell in the air to reach the high platform.', () => V(141, LD.floor + 5, -238.2));
-    // keep a cell available: the weight keeps swinging
-    angV = Math.max(angV, 1.4);
-    await this.waitFor(() => P.pos.y > LD.floor + 4.5 && P.pos.distanceTo(V(141, LD.floor + 5, -238.2)) < 3);
+    this.objective('Recertify: Kinetic leap', 'Jump, then spend a cell in the air to reach the high platform.', () => V(141, LD.floor + 3.2, -238.2));
+    // a cell is always there to take: the weight's motor keeps it swinging
+    await this.waitFor(() => P.pos.y > LD.floor + 2.9 && P.pos.distanceTo(V(141, LD.floor + 3.2, -238.2)) < 3);
     pendTick(); bigTick(); anim(); offP(); offB();
     [pend, big].forEach(o => o.removeFromParent());
     this.rangeCleanup = () => targets.forEach(t => { t.grp.removeFromParent(); g.physics.removeKinematic(t.kin); });
@@ -892,9 +899,9 @@ export class Prologue {
     await this.radio('TOMAS', 'Take it from the hip flywheel. There\'s plenty to spare.', { wait: false, dur: 3 });
     // flywheel target
     const fly = S.flywheel;
-    const offF = g.tether.register({ kind: 'machine', label: 'Hip flywheel', big: true, priority: 1, radius: 8, range: 60, getPos: () => fly.position.clone().add(V(2, 0, 0)), getVel: () => V(0, 3, 0),
+    const offF = g.tether.register({ kind: 'machine', label: 'Hip flywheel', captureOnly: true, noLos: true, big: true, priority: 1, radius: 8, range: 95, getPos: () => fly.position.clone().add(V(2, 0, 0)), getVel: () => V(0, 3, 0),
       capture: (dt) => { g.city.shakeAmount = Math.max(g.city.shakeAmount, 0.15); return 1500 * dt; }, push: () => {} });
-    const offs = S.couplings.map((c, i) => g.tether.register({ kind: 'special', label: 'Coupling', priority: 3, radius: 0.6,
+    const offs = S.couplings.map((c, i) => g.tether.register({ kind: 'special', label: 'Coupling', releaseOnly: true, priority: 3, radius: 0.6,
       enabled: () => !c.seated, getPos: () => c.g.position.clone().add(V(0, 0.9, 0)), getVel: () => V(), capture: () => 0,
       push: () => { c.seated = true; g.audio.clank(c.g.position, 2, 0.9); g.fx.sparks(c.g.position.clone().add(V(0, 1, 0)), V(0, 1, 0), 20, 5); g.camera.shake(0.15); c.lamp.material.color.setRGB(0.4, 4, 0.8); } }));
     const armTick = g.add((dt) => S.couplings.forEach(c => (c.arm.rotation.x = damp(c.arm.rotation.x, c.seated ? 0 : -0.9, 12, dt))));

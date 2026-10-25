@@ -79,12 +79,15 @@ export class Tether {
   get fill() { return this.cells + (this.cells < this.max ? this.charge / CELL_MOMENTUM : 0); }
 
   // ---------------------------------------------------------------- targeting
-  pickTarget(list, range, dirTol = 0.965) {
+  // mode: 'capture' skips release-only targets (plates, sockets); 'release' skips capture-only ones (a
+  // weight you can drain but not push), so a target in the way never swallows the wrong action
+  pickTarget(list, range, dirTol = 0.965, mode = null) {
     const cam = this.game.engine.camera;
     const origin = cam.position, fwd = cam.getWorldDirection(_v2);
     let best = null, bestScore = Infinity;
     for (const t of list) {
       if (t.enabled && !t.enabled()) continue;
+      if ((mode === 'capture' && t.releaseOnly) || (mode === 'release' && t.captureOnly)) continue;
       const p = t.getPoint ? t.getPoint() : t.getPos();
       const to = _v.copy(p).sub(origin); const d = to.length();
       const fromPlayer = p.distanceTo(this.player.pos);
@@ -93,8 +96,8 @@ export class Tether {
       const dot = to.dot(fwd);
       const tol = t.big ? Math.min(dirTol, 0.9) : dirTol;
       if (dot < tol - (t.radius || 0) / Math.max(d, 1)) continue;
-      // line of sight (ignore the target's own colliders)
-      const los = this.game.physics.raycastFilter(origin, to, d - 0.6, G.STATIC, (c, m) => !m?.nocam && !(t.colliders && t.colliders.includes(c)));
+      // line of sight (ignore the target's own colliders); huge machinery (noLos) is felt through the structure
+      const los = t.noLos ? null : this.game.physics.raycastFilter(origin, to, d - 0.6, G.STATIC, (c, m) => !m?.nocam && !(t.colliders && t.colliders.includes(c)));
       if (los) continue;
       const score = (1 - dot) * 40 + d * 0.02 - (t.priority || 0);
       if (score < bestScore) { bestScore = score; best = t; }
@@ -106,7 +109,8 @@ export class Tether {
     const g = this.game, inp = g.input, p = this.player;
     if (!p) return;
     const canUse = !g.director.active && !p.dead && !this.locked && (p.state !== 'seated') && (p.state !== 'scripted');
-    const fwdTargets = canUse ? this.pickTarget(this.targets, RANGE) : null;
+    const mode = inp.down('capture') || this.cells === 0 ? 'capture' : 'release';
+    const fwdTargets = canUse ? this.pickTarget(this.targets, RANGE, 0.965, mode) : null;
     this.target = fwdTargets;
     this.anchor = canUse && !this.latchLocked ? this.pickTarget(this.anchors, LATCH_RANGE, 0.975) : null;
 

@@ -324,8 +324,8 @@ export function buildLowerDecks(game, lights) {
   // back berm
   b.box('concrete', [137, Y + 4, -242], [2, 8, 12], { color: 0x4a4640 });
   // high platform for the kinetic-leap drill
-  b.box('panel', [141, Y + 2.5, -238.2], [4, 5, 3], { color: 0x6a6a68, meta: { ledge: true } });
-  b.box('hazard', [141, Y + 5.03, -238.2], [4.04, 0.06, 3.04], { collide: false, tex: 1 });
+  b.box('panel', [141, Y + 1.6, -238.2], [4, 3.2, 3], { color: 0x6a6a68, meta: { ledge: true } }); // above a jump, within a kinetic leap
+  b.box('hazard', [141, Y + 3.23, -238.2], [4.04, 0.06, 3.04], { collide: false, tex: 1 });
   for (let i = 0; i < 3; i++) lamp(b, lights, [140 + i * 8, -28.5, -242], { drop: 0.2, intensity: i === 1 ? 5 : 0, distance: 14, light: i === 1 });
   D.range = { origin: new THREE.Vector3(158.5, Y, -242), yaw: -Math.PI / 2 };
   game.sky?.addZone([136, Y, -248], [160, -28, -236], 0.95, 'range');
