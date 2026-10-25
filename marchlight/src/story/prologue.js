@@ -127,8 +127,21 @@ export class Prologue {
     await this.wait(1.4);
     g.audio.duck(1, 0.5);
     this.failing = false;
-    g.player.revive();
-    await this.start(g.state.checkpoint || 'wake');
+    const P = g.player, cp = g.state.checkpoint || 'wake';
+    P.revive();
+    // put Rook somewhere safe for this checkpoint first: the beats only reposition him when he's arriving
+    // from elsewhere, so after a long fall he'd otherwise stay below the course and keep falling
+    const S = g.districts.spine, spawn = {
+      spine: [V(184, LD.floor, -190), Math.PI / 2], galleryB: [S.spots.vantage, Math.PI], relay: [S.spots.deckArrive, 0],
+      rescue: [S.spots.deckCenter.clone().add(V(-6, 0, 0)), -Math.PI / 2], rescueC: [V(199, SP.deck, -292), -Math.PI / 2],
+    }[cp];
+    if (spawn) { P.teleport(spawn[0].clone(), spawn[1]); g.camera.snapBehind(spawn[1], 0.1); }
+    else if (P.pos.y < g.killY + 20 && P.safe?.length) { const s0 = P.safe.find(e => g.time - e.t > 3) || P.safe[0]; P.teleport(s0.p.clone(), P.yaw); } // fell elsewhere: last solid footing
+    this.retrying = cp;
+    const next = this.runId + 1; // start() takes the next run id
+    this.start(cp);
+    // whatever the beat does, bring the picture back once it has had a moment to set up
+    const t0 = g.rtime, off = g.add(() => { if (g.rtime - t0 > 1.2) { off(); if (this.runId === next) g.hud.fade(0, 0.8); } });
   }
   restartCheckpoint() { this.start(this.game.state.checkpoint || 'wake'); }
 
@@ -797,34 +810,39 @@ export class Prologue {
     const g = this.game, P = g.player, C = this.cast, L = g.districts.lower, S = g.districts.spine;
     if (P.pos.distanceTo(V(185, LD.floor, -190)) > 12) { this.equip(true, true); this.populateLower(); show(C.nia, L.spots.niaTinker.pos.clone(), L.spots.niaTinker.yaw); C.nia.pose('tinker'); P.teleport(V(184, LD.floor, -190), Math.PI / 2); g.camera.snapBehind(Math.PI / 2, 0.05); L.benchTether.visible = false; g.hud.fade(0, 0.6); }
     this.equip(true, true); P.relaxed = false; g.weapons.locked = false;
-    // ---- the doors open: wind, light, the world
-    this.enter(true);
-    g.audio.metalStress(V(196, -32, -190), 3);
-    g.audio.music.play('exterior', 3);
-    const t0 = g.time;
-    const doors = g.add(() => { const k = clamp((g.time - t0) / 5, 0, 1); this.setBay(ease.inOutCubic(k)); g.windMul = 1 + k * 3; });
-    g.director.shot({ pos: V(186, LD.floor + 2.2, -186), look: V(196, LD.floor + 3, -190), fov: 50, to: { pos: V(189, LD.floor + 2.0, -188), look: V(200, LD.floor + 1, -191) }, dur: 5 });
-    const toDoor = this.rookWalk(V(188, LD.floor, -190), V(196, LD.floor, -190), 1.2); // walks up as they open
-    await this.wait(5); doors(); g.windMul = 1;
-    await toDoor;
-    // the reveal: step out past the hull and the world opens below
-    g.audio.music.sting('reveal');
-    P.setScripted(true);
-    const walk = g.add((dt) => { if (P.pos.x < 205) { P.pos.x += dt * 1.4; P.anim.speed = 1.4; P.placeScripted(P.pos, Math.PI / 2 - 0.25); } else P.anim.speed = 0; });
-    // push out past Rook as he steps onto the apron, toward the open horizon
-    // follow Rook out through the tunnel, then rise past him as he reaches the apron
-    g.director.shot({ pos: () => P.pos.clone().add(V(-3.2, 1.9, 0.9)), look: () => P.pos.clone().add(V(6, 1.2, -0.4)), fov: 52 });
-    await this.wait(4.2);
-    g.director.shot({ pos: P.pos.clone().add(V(-3.2, 1.9, 0.9)), look: P.pos.clone().add(V(6, 1.2, -0.4)), fov: 52, to: { pos: V(215.5, LD.floor + 3.2, -185.5), look: V(420, LD.floor - 95, -215), fov: 60 }, dur: 7, ease: ease.inOutSine, cut: false });
-    g.hud.location('THE SPINE', 'MERIDIAN · EXTERIOR, STARBOARD', 6);
-    await this.wait(4.8);
-    // then a long crane-out over the drop: the whole flank, and Leg Two mid-stride
-    g.director.shot({ pos: V(215.5, LD.floor + 3.2, -185.5), look: V(420, LD.floor - 95, -215), fov: 60, to: { pos: V(318, LD.floor + 22, -112), look: V(178, LD.floor - 175, -236), fov: 50 }, dur: 9, ease: ease.inOutSine, cut: false });
-    await this.radio('NIA', 'Comms check. You hear me?', { dur: 2.2 });
-    await this.radio('ROOK', 'Loud and clear.', { dur: 1.6 });
-    await this.radio('NIA', 'Good. Your vitals look disgustingly calm.', { dur: 2.6 });
-    await this.radio('BRAM', 'That\'s my Runner.', { dur: 1.8 });
-    walk(); P.setScripted(false); P.teleport(P.pos.clone(), Math.PI); g.camera.snapBehind(Math.PI, 0.15); // (cut from the crane shot)
+    const retry = this.retrying === 'spine'; this.retrying = null;
+    if (retry) { // after a fall on the course: back at the start of the walkway, doors already open, no replay
+      this.setBay(1); P.teleport(V(202.6, SP.A, -204), Math.PI); g.camera.snapBehind(Math.PI, 0.15); g.audio.music.play('exterior', 2);
+    } else {
+      // ---- the doors open: wind, light, the world
+      this.enter(true);
+      g.audio.metalStress(V(196, -32, -190), 3);
+      g.audio.music.play('exterior', 3);
+      const t0 = g.time;
+      const doors = g.add(() => { const k = clamp((g.time - t0) / 5, 0, 1); this.setBay(ease.inOutCubic(k)); g.windMul = 1 + k * 3; });
+      g.director.shot({ pos: V(186, LD.floor + 2.2, -186), look: V(196, LD.floor + 3, -190), fov: 50, to: { pos: V(189, LD.floor + 2.0, -188), look: V(200, LD.floor + 1, -191) }, dur: 5 });
+      const toDoor = this.rookWalk(V(188, LD.floor, -190), V(196, LD.floor, -190), 1.2); // walks up as they open
+      await this.wait(5); doors(); g.windMul = 1;
+      await toDoor;
+      // the reveal: step out past the hull and the world opens below
+      g.audio.music.sting('reveal');
+      P.setScripted(true);
+      const walk = g.add((dt) => { if (P.pos.x < 205) { P.pos.x += dt * 1.4; P.anim.speed = 1.4; P.placeScripted(P.pos, Math.PI / 2 - 0.25); } else P.anim.speed = 0; });
+      // push out past Rook as he steps onto the apron, toward the open horizon
+      // follow Rook out through the tunnel, then rise past him as he reaches the apron
+      g.director.shot({ pos: () => P.pos.clone().add(V(-3.2, 1.9, 0.9)), look: () => P.pos.clone().add(V(6, 1.2, -0.4)), fov: 52 });
+      await this.wait(4.2);
+      g.director.shot({ pos: P.pos.clone().add(V(-3.2, 1.9, 0.9)), look: P.pos.clone().add(V(6, 1.2, -0.4)), fov: 52, to: { pos: V(215.5, LD.floor + 3.2, -185.5), look: V(420, LD.floor - 95, -215), fov: 60 }, dur: 7, ease: ease.inOutSine, cut: false });
+      g.hud.location('THE SPINE', 'MERIDIAN · EXTERIOR, STARBOARD', 6);
+      await this.wait(4.8);
+      // then a long crane-out over the drop: the whole flank, and Leg Two mid-stride
+      g.director.shot({ pos: V(215.5, LD.floor + 3.2, -185.5), look: V(420, LD.floor - 95, -215), fov: 60, to: { pos: V(318, LD.floor + 22, -112), look: V(178, LD.floor - 175, -236), fov: 50 }, dur: 9, ease: ease.inOutSine, cut: false });
+      await this.radio('NIA', 'Comms check. You hear me?', { dur: 2.2 });
+      await this.radio('ROOK', 'Loud and clear.', { dur: 1.6 });
+      await this.radio('NIA', 'Good. Your vitals look disgustingly calm.', { dur: 2.6 });
+      await this.radio('BRAM', 'That\'s my Runner.', { dur: 1.8 });
+      walk(); P.setScripted(false); P.teleport(P.pos.clone(), Math.PI); g.camera.snapBehind(Math.PI, 0.15); // (cut from the crane shot)
+    }
     this.exit();
     g.state.journal('Out on the Spine. From up here you can see the whole Sallow — and the trail of our own footprints behind us.');
     this.objective('Reach Pylon Seven', 'Follow the Spine walkway forward, toward Leg Two.', S.spots.vantage);

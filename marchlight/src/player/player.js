@@ -126,6 +126,10 @@ export class Player {
 
     // fell off the world
     if (this.pos.y < g.killY && !this.dead) g.onPlayerFell?.();
+    else if (!this.dead && this.state === 'air' && this.airTime > 2.2 && this.vel.y < -28) g.onPlayerFell?.(); // a long free-fall: no need to watch it all the way down
+    // remember recent footing (a spot stood on for a while) as a respawn fallback after falls
+    if (this.state === 'ground' && !this.dead) { this.groundT = (this.groundT || 0) + g.dt; if (this.groundT > 1.5 && g.time - (this.safeT || -9) > 1) { this.safeT = g.time; (this.safe ||= []).push({ p: this.pos.clone(), t: g.time }); if (this.safe.length > 8) this.safe.shift(); } }
+    else this.groundT = 0;
   }
 
   applyPlatformCarry() {
@@ -521,5 +525,5 @@ export class Player {
     this.anim.hit(dir);
     if (this.health <= 0) { this.health = 0; this.dead = true; g.onPlayerDeath?.(kind); }
   }
-  revive() { this.dead = false; this.health = this.maxHealth; this.state = 'ground'; this.anim.setMode('loco'); this.invuln = 2; }
+  revive() { this.dead = false; this.health = this.maxHealth; this.state = 'ground'; this.vel.set(0, 0, 0); this.maxFall = 0; this.anim.setMode('loco'); this.invuln = 2; }
 }
