@@ -248,13 +248,16 @@ export class Ground {
     // the hills under them move as the city travels: re-seat everything every few seconds
     if (Math.abs(travel - (this.seatTravel ?? -1e9)) > 6) { this.seatTravel = travel; changed = true; }
     if (!changed) return;
+    // playable zones on the ground clear the background dressing out of their footprint (ground frame)
+    const masked = (x, z, pad) => this.masks?.some(m => x > m.x0 - pad && x < m.x1 + pad && z > m.z0 - pad && z < m.z1 + pad);
     this.ruinItems.forEach((it, i) => {
+      if (masked(it.x, it.z, Math.max(it.w, it.d))) { m.makeScale(0, 0, 0); this.ruins.setMatrixAt(i, m); return; }
       q.setFromEuler(e.set(it.tilt || 0, it.ry || 0, (it.tilt || 0) * 0.5));
       m.compose(new THREE.Vector3(it.x, gy + this.heightAt(it.x, it.z) + (it.y || 0) - (it.kind === 'bldg' ? 1.5 : 0.5), it.z), q, new THREE.Vector3(it.w, it.h + 1, it.d));
       this.ruins.setMatrixAt(i, m);
     });
     this.ruins.instanceMatrix.needsUpdate = true;
-    this.treeItems.forEach((t, i) => { m.compose(new THREE.Vector3(t.x, gy + this.heightAt(t.x, t.z) - 1, t.z), q.identity(), new THREE.Vector3(t.s * 0.45, t.s, t.s * 0.45)); this.trees.setMatrixAt(i, m); });
+    this.treeItems.forEach((t, i) => { if (masked(t.x, t.z, 4)) { m.makeScale(0, 0, 0); this.trees.setMatrixAt(i, m); return; } m.compose(new THREE.Vector3(t.x, gy + this.heightAt(t.x, t.z) - 1, t.z), q.identity(), new THREE.Vector3(t.s * 0.45, t.s, t.s * 0.45)); this.trees.setMatrixAt(i, m); });
     this.trees.instanceMatrix.needsUpdate = true;
   }
 
@@ -384,6 +387,8 @@ export class Ground {
     this.settlement.visible = true;
     this.u.uStill.value.set(sx, sz - travel);
   }
+  // masks are given in the city frame at the current travel and stored in the ground frame
+  addMask(x0, x1, z0, z1) { const t = this.city.travel, m = { x0, x1, z0: z0 - t, z1: z1 - t }; (this.masks ||= []).push(m); this.layoutRuins(true); return () => { this.masks = this.masks.filter(k => k !== m); this.layoutRuins(true); }; }
   settlementCityPos() { const s = this.settlement; return s ? new THREE.Vector3(s.position.x, s.position.y, s.position.z + this.city.travel) : null; }
 
   update(dt) {

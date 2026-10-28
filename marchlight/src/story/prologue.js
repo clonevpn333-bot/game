@@ -8,8 +8,13 @@ import { SP } from '../world/district_spine.js';
 import { LD } from '../world/district_lower.js';
 import { clamp, damp, dampAngle, ease, lerp, sleep, rng } from '../core/util.js';
 import { defaultLook } from '../characters/rig.js';
+import { Chapter1, CH1, enterSurface, leaveSurface, c1Spawn } from './chapter1.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const PROLOGUE = ['wake', 'terraces', 'market', 'tram', 'lower', 'hangar', 'range', 'spine', 'galleryB', 'relay', 'shearer', 'rescue', 'rescueC', 'title'];
+const CH2 = [];
+const ORDER = [...PROLOGUE, ...CH1, ...CH2];
+const chapterOf = (b) => CH1.includes(b) ? 'chapter1' : CH2.includes(b) ? 'chapter2' : 'prologue';
 const _w = new THREE.Vector3();
 class Abort extends Error {}
 
@@ -20,7 +25,7 @@ export class Prologue {
     this.items = [];
     this.waiters = new Set();
     game.add((dt) => { for (const w of [...this.waiters]) { if (w.id !== this.runId) { this.waiters.delete(w); w.reject(new Abort()); continue; } try { if (w.pred(dt)) { this.waiters.delete(w); w.resolve(); } } catch (e) { this.waiters.delete(w); w.reject(e); } } });
-    game.onPlayerDeath = (kind) => this.failState(kind === 'fall' ? 'You fell.' : 'Rook went down.');
+    game.onPlayerDeath = (kind) => this.failState(kind === 'fall' ? 'You fell.' : kind === 'still' ? 'The Stillness held you.' : 'Rook went down.');
     game.onPlayerFell = () => this.failState('You fell.');
     this.ambient = [];
   }
@@ -134,7 +139,7 @@ export class Prologue {
     const S = g.districts.spine, spawn = {
       spine: [V(184, LD.floor, -190), Math.PI / 2], galleryB: [S.spots.vantage, Math.PI], relay: [S.spots.deckArrive, 0], shearer: [S.spots.deckArrive, 0],
       rescue: [S.spots.deckCenter.clone().add(V(-6, 0, 0)), -Math.PI / 2], rescueC: [V(199, SP.deck, -292), -Math.PI / 2],
-    }[cp];
+    }[cp] || c1Spawn(this, cp);
     if (spawn) { P.teleport(spawn[0].clone(), spawn[1]); g.camera.snapBehind(spawn[1], 0.1); }
     else if (P.pos.y < g.killY + 20 && P.safe?.length) { const s0 = P.safe.find(e => g.time - e.t > 3) || P.safe[0]; P.teleport(s0.p.clone(), P.yaw); } // fell elsewhere: last solid footing
     this.retrying = cp;
@@ -163,6 +168,13 @@ export class Prologue {
     this.setBay(0);
     g.tether.locked = false; g.tether.latchLocked = false; g.tether.cells = 0; g.tether.charge = 0;
     g.weapons.locked = false;
+    // chapter state that outlives a beat
+    g.stillness?.clear(); g.lightMul = 1; g.windMul = 1;
+    if (this.c1Glow) { this.c1Glow.removeFromParent(); this.c1Glow = null; }
+    this.c1StillCleanup?.(); this.c1StillCleanup = null;
+    for (const a of Object.values(C)) { a.frozen = false; a.scripted = false; }
+    g.districts.lower.mule.visible = true;
+    if (this.groundMule) this.groundMule.visible = false;
   }
   setBay(k) { const L = this.game.districts.lower; L.openBay(k); if (k > 0.5 && L.bayDoorCol) { this.game.physics.world.removeCollider(L.bayDoorCol, true); L.bayDoorCol = null; } else if (k < 0.5 && !L.bayDoorCol) { L.bayDoorCol = this.game.physics.addBox({ x: LD.x1 + 0.3, y: LD.floor + 7, z: -190 }, { x: 0.3, y: 7, z: 11 }, null, {}); } }
   equip(hasTether, weapons) {
@@ -178,18 +190,26 @@ export class Prologue {
     this.runId++;
     const id = this.runId;
     this.resetWorld();
-    g.state.chapter = 'prologue';
-    const order = ['wake', 'terraces', 'market', 'tram', 'lower', 'hangar', 'range', 'spine', 'galleryB', 'relay', 'shearer', 'rescue', 'rescueC', 'title'];
+    const order = ORDER;
     let i = Math.max(0, order.indexOf(beat));
     try {
       await g.hud.fade(1, 0.01);
       for (; i < order.length; i++) {
         this.guard(id);
+        this.setChapter(chapterOf(order[i]), order[i]);
         await this['beat_' + order[i]](id);
       }
     } catch (e) {
       if (!(e instanceof Abort)) { console.error(e); }
     }
+  }
+  // the world each chapter needs: the prologue walks; chapter one rests on the ground at the Gray Fork
+  setChapter(ch, beat) {
+    const g = this.game;
+    g.state.chapter = ch;
+    const mood = (m) => { if ((g.sky.mood || 'morning') !== m) g.sky.setMood(m); };
+    if (ch === 'prologue') { if (this.zone) leaveSurface(this); mood('morning'); }
+    else if (ch === 'chapter1') { if (beat !== 'c1_title') enterSurface(this); if (beat !== 'c1_title') mood(beat === 'c1_night' ? 'night' : 'day'); }
   }
   // populate ambient life for the city part (persistent through the morning)
   populateCity() {
@@ -1280,7 +1300,7 @@ export class Prologue {
     await this.wait(1.8);
     await this.say('ROOK', '…They moved.', { dur: 2.8 });
     stillUp();
-    await this.title();
+    g.state.checkpoint = 'title'; g.state.save(g); // the title beat follows (and rescueC is skipped)
   }
 
   async beat_title() { await this.title(); }
@@ -1299,14 +1319,9 @@ export class Prologue {
     await this.wait(11);
     g.hud.hideTitle();
     await this.wait(2.5);
-    g.state.chapter = 'chapter1'; g.state.checkpoint = 'title'; g.state.flag('prologueComplete'); g.state.save(g);
-    const el = document.createElement('div'); el.className = 'endcard';
-    el.innerHTML = `<h2>PROLOGUE COMPLETE</h2>
-      <p>Next: <b>Chapter One — Underfoot.</b><br>Rook and Bram descend into the ruins beneath Meridian.</p>
-      <p style="color:#8f897c;font-size:14px">Chapter One is in development. The prologue you just played is the full opening slice.<br>Your choices so far have been saved.</p>
-      <div style="display:flex;gap:12px"><button class="btn" data-a="replay">Replay the prologue</button><button class="btn" data-a="title">Title screen</button></div>`;
-    document.getElementById('ui').appendChild(el);
-    g.input.unlock();
-    el.onclick = (e) => { const a = e.target.dataset?.a; if (!a) return; if (a === 'title') location.href = location.pathname; if (a === 'replay') { el.remove(); g.state.reset(); g.state.look = JSON.parse(JSON.stringify(g.state.look || {})); location.href = location.pathname + '?replay=1'; } };
+    g.state.flag('prologueComplete'); g.state.checkpoint = 'c1_title'; g.state.save(g);
+    g.audio.music.stop(2);
+    this.exit();
   }
 }
+Object.assign(Prologue.prototype, Chapter1);

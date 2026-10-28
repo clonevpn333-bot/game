@@ -17,6 +17,7 @@ const HINTS = {
   shoot: ['WEAPONS', 'Click <span class="key">RMB</span> to aim (click again to lower), <span class="key">LMB</span> to fire, <span class="key">R</span> to reload. <span class="key">1</span>/<span class="key">2</span> or the wheel switches weapons. <span class="key">V</span> is a melee strike.'],
   crouch: ['STEALTH', '<span class="key">C</span> crouches. Machines that haven\'t noticed you can be approached quietly — a melee strike from behind lands hard.'],
   shearer: ['SHEARER', 'Bullets glance off its armour. Hold <span class="key">E</span> on it <i>while it charges</i> to stall it: the shell opens. Shoot the amber core — or press <span class="key">Q</span> to throw its own momentum back at it.'],
+  still: ['THE STILLNESS', 'Inside a still-field everything slows and sound drains away. <b>Keep moving</b> — standing still lets it hold you. Fields breathe: cross when they ease. A kinetic leap (<span class="key">Space</span> in the air, with a charged cell) always fires.'],
   zoom: ['VISOR', 'Hold <span class="key">Z</span> to zoom your Runner visor.'],
 };
 
@@ -40,6 +41,7 @@ export class HUD {
       <div id="loc"><div class="a"></div><div class="b"></div></div>
       <div id="boss"><div class="n"></div><div class="bar"><i></i><i></i><i></i><b></b></div><div class="s"></div></div>
       <div id="subs"></div><div id="choices"></div>
+      <div id="chapter"><div class="n"></div><div class="t"></div><div class="s"></div></div>
       <div id="title"><div class="m"></div><div class="tag">NOTHING STAYS STILL. NOT EVEN HOME.</div></div>
       <div id="clickhint">CLICK TO CONTINUE</div>
       <div id="fader"></div><div id="fps"></div>`;
@@ -119,6 +121,9 @@ export class HUD {
     this.titleEl.classList.add('show');
   }
   hideTitle() { this.titleEl.classList.remove('show'); }
+  // chapter card over black: "CHAPTER ONE" / "UNDERFOOT" / a line
+  chapterCard(n, t, sub = '') { const el = this.$('#chapter'); el.querySelector('.n').textContent = n; el.querySelector('.t').textContent = t; el.querySelector('.s').textContent = sub; el.classList.add('show'); }
+  hideChapter() { this.$('#chapter').classList.remove('show'); }
   clickHint(on) { this.$('#clickhint').classList.toggle('show', on); }
 
   hitmarker(kill, weak) {

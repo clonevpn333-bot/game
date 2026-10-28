@@ -184,3 +184,17 @@ body.bigsubs .sub { font-size: 26px; }
 #boss .bar b { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #ff9a40, #ffd08a); transition: width .25s; }
 #boss .bar i { position: absolute; top: -3px; bottom: -3px; width: 2px; background: rgba(255,230,190,.8); z-index: 2; }
 #boss .s { font-family: var(--cond); font-size: 12px; letter-spacing: 0.3em; color: rgba(240,232,216,.75); text-transform: uppercase; text-shadow: 0 1px 8px rgba(0,0,0,.7); }
+
+/* the Stillness holding you */
+#stillHud { position: absolute; left: 50%; bottom: 22%; transform: translateX(-50%); text-align: center; opacity: 0; transition: opacity .6s; pointer-events: none; }
+#stillHud.show { opacity: 1; }
+#stillHud .t { font-family: var(--cond); font-size: 15px; letter-spacing: 0.45em; color: #cfd8e8; text-shadow: 0 0 14px rgba(140,170,220,.6); }
+#stillHud .m { width: 260px; height: 3px; margin: 9px auto 7px; background: rgba(20,24,30,.6); }
+#stillHud .m b { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #8aa6d8, #e8eef8); }
+#stillHud .s { font-family: var(--cond); font-size: 12px; letter-spacing: 0.3em; color: rgba(220,228,240,.7); text-transform: uppercase; }
+
+#chapter { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 1.8s; z-index: 11; pointer-events: none; }
+#chapter.show { opacity: 1; }
+#chapter .n { font-family: var(--cond); font-size: 15px; letter-spacing: 0.6em; margin-right: -0.6em; color: var(--amber); }
+#chapter .t { margin-top: 14px; font-family: var(--cond); font-weight: 600; font-size: min(7vw, 78px); letter-spacing: 0.3em; margin-right: -0.3em; color: #efe6d6; }
+#chapter .s { margin-top: 18px; font-size: 15px; color: #a8a090; letter-spacing: 0.08em; font-style: italic; }

@@ -44,6 +44,21 @@ export class Sky {
     this.fogColor.setRGB(lerp(0.72, 0.8, warm), lerp(0.78, 0.76, warm), lerp(0.84, 0.74, warm));
     this.game.engine.scene.fog.color.copy(this.fogColor);
   }
+  // moods for the story: morning (the prologue), day, dusk, night. At night the sky shader's sun sits
+  // below the horizon and the directional light becomes a cool moon.
+  setMood(name) {
+    const M = { morning: [14, 112, 3.4, 0.85, 0.5, 1], day: [38, 150, 3.6, 0.9, 0.5, 1], dusk: [3.5, 258, 2.4, 0.6, 0.42, 1.15], night: [-9, 250, 0.45, 0.22, 0.16, 1.9] }[name] || [14, 112, 3.4, 0.85, 0.5, 1];
+    const [elev, azim, sunI, hemiI, gain, exp] = M; this.mood = name;
+    this.setSun(elev, azim); this.sun.intensity = sunI; this.hemiBase = hemiI; this.skyGain.value = gain; this.exposureMul = exp;
+    if (name === 'night') {
+      const moon = new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - 38), THREE.MathUtils.degToRad(200));
+      this.lightDir = moon; this.sun.color.setRGB(0.55, 0.65, 0.95);
+      this.hemi.color.setRGB(0.25, 0.32, 0.5); this.hemi.groundColor.setRGB(0.08, 0.07, 0.07);
+      this.fogColor.setRGB(0.07, 0.09, 0.13); this.game.engine.scene.fog.color.copy(this.fogColor);
+    } else { this.lightDir = null; this.hemi.color.set(0xbcd4ec); this.hemi.groundColor.set(0x7a6450); }
+    this.buildEnv();
+    this.game.engine.scene.environmentIntensity = name === 'night' ? 0.12 : 0.55;
+  }
   buildEnv() {
     const r = this.game.engine.renderer;
     const pm = new THREE.PMREMGenerator(r);
@@ -56,6 +71,8 @@ export class Sky {
     const g = new THREE.Mesh(new THREE.SphereGeometry(500, 32, 16, 0, Math.PI * 2, Math.PI / 2 + 0.02, Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x3a3632, side: THREE.BackSide }));
     envScene.add(g);
     const rt = pm.fromScene(envScene, 0.02);
+    this.envRT?.dispose(); this.envRT = rt;
+    envScene.traverse(o => { o.geometry?.dispose(); o.material?.dispose(); });
     this.game.engine.scene.environment = rt.texture;
     this.game.engine.scene.environmentIntensity = 0.55;
     pm.dispose();
@@ -72,15 +89,16 @@ export class Sky {
     const L = new THREE.Matrix4().lookAt(new THREE.Vector3(), this.sunDir.clone().negate(), new THREE.Vector3(0, 1, 0));
     const inv = L.clone().invert();
     const fl = focus.clone().applyMatrix4(inv); fl.x = Math.round(fl.x / ts) * ts; fl.y = Math.round(fl.y / ts) * ts; focus.copy(fl.applyMatrix4(L));
-    this.sun.position.copy(focus).addScaledVector(this.sunDir, 200);
+    this.sun.position.copy(focus).addScaledVector(this.lightDir || this.sunDir, 200);
     this.sun.target.position.copy(focus); this.sun.target.updateMatrixWorld();
     // interior blending
     const camZone = this.zoneAt(g.engine.camera.position) || this.zoneAt(p.pos.clone().add(new THREE.Vector3(0, 1.5, 0)));
     this.interiorTarget = camZone ? camZone.level : 0;
     this.interior = damp(this.interior, this.interiorTarget, 2.5, dt);
     const k = this.interior;
-    this.hemi.intensity = lerp(0.85, 0.4, k);
-    g.engine.scene.environmentIntensity = lerp(0.55, 0.25, k);
+    const hb = this.hemiBase ?? 0.85, night = this.mood === 'night';
+    this.hemi.intensity = lerp(hb, Math.min(hb, 0.4), k);
+    g.engine.scene.environmentIntensity = lerp(night ? 0.12 : 0.55, night ? 0.1 : 0.25, k);
     g.engine.renderer.toneMappingExposure = lerp(0.62, 1.0, k) * (this.exposureMul || 1);
     const at = g.engine.atmosphere;
     if (at) { const u = at.uniforms; u.uSunDir.value.copy(this.sunDir); u.uSunCol.value.copy(this.sun.color); u.uFogCol.value.copy(this.fogColor); u.uInterior.value = k; }

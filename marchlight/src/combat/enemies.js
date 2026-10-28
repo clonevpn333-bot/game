@@ -67,15 +67,15 @@ function leechModel() {
 // A harvest-line service crawler: six jointed legs, two climbing claws, a saw arm, and an amber
 // core (the same colour as Meridian's engine) behind three armour shells that open when it's stalled.
 // The serial plate says where it came from.
-function serialTexture() {
+function serialTexture(serial = 'H-7') {
   const c = document.createElement('canvas'); c.width = 256; c.height = 96; const x = c.getContext('2d');
   x.fillStyle = '#8a8270'; x.fillRect(0, 0, 256, 96); x.strokeStyle = '#3a362e'; x.lineWidth = 4; x.strokeRect(4, 4, 248, 88);
   x.fillStyle = '#2a2620'; x.font = '700 26px "Barlow Condensed", sans-serif'; x.fillText('MERIDIAN ENGINEERING', 16, 36);
-  x.font = '600 22px "Barlow Condensed", sans-serif'; x.fillText('HARVEST SERVICE · H-7', 16, 66);
+  x.font = '600 22px "Barlow Condensed", sans-serif'; x.fillText('HARVEST SERVICE · ' + serial, 16, 66);
   for (let i = 0; i < 260; i++) { x.fillStyle = `rgba(90,50,30,${Math.random() * 0.35})`; x.fillRect(Math.random() * 256, Math.random() * 96, 2 + Math.random() * 6, 2 + Math.random() * 4); } // rust
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
-function shearerModel() {
+export function shearerModel(o = {}) {
   const g = new THREE.Group(), body = new THREE.Group(); body.position.y = 1.9; g.add(body);
   const hull = mat(0x5a5248, { roughness: 0.6 }), dark = mat(0x1e1f22), paint = mat(0x8a3a22, { roughness: 0.7, metalness: 0.3 }), yel = mat(0xc8a030, { roughness: 0.6, metalness: 0.3 });
   const steel = mat(0xb0b4b8, { metalness: 0.95, roughness: 0.25 });
@@ -106,7 +106,7 @@ function shearerModel() {
   { const hinge = new THREE.Group(); hinge.position.set(0, 0.5, -0.9); body.add(hinge);
     box(hull, 1.1, 0.9, 0.12, 0, 0.42, 0.05, hinge).rotation.x = 0.3; plates.push({ hinge, open: -1.2, axis: 'x' }); }
   // serial plate on the flank (the only clue where it came from)
-  const sp = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.34), new THREE.MeshStandardMaterial({ map: serialTexture(), roughness: 0.8, metalness: 0.3 }));
+  const sp = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.34), new THREE.MeshStandardMaterial({ map: serialTexture(o.serial), roughness: 0.8, metalness: 0.3 }));
   sp.position.set(-1.011, 0.05, -0.3); sp.rotation.y = -Math.PI / 2; body.add(sp);
   // climbing claws (front), each: shoulder → forearm → three hooked fingers
   const claws = [];
