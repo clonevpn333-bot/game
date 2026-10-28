@@ -9,10 +9,10 @@ import { LD } from '../world/district_lower.js';
 import { clamp, damp, dampAngle, ease, lerp, sleep, rng } from '../core/util.js';
 import { defaultLook } from '../characters/rig.js';
 import { Chapter1, CH1, enterSurface, leaveSurface, c1Spawn } from './chapter1.js';
+import { Chapter2, CH2, enterReach, approachMode, c2Spawn, restoreLights, C2_ON_GROUND } from './chapter2.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const PROLOGUE = ['wake', 'terraces', 'market', 'tram', 'lower', 'hangar', 'range', 'spine', 'galleryB', 'relay', 'shearer', 'rescue', 'rescueC', 'title'];
-const CH2 = [];
 const ORDER = [...PROLOGUE, ...CH1, ...CH2];
 const chapterOf = (b) => CH1.includes(b) ? 'chapter1' : CH2.includes(b) ? 'chapter2' : 'prologue';
 const _w = new THREE.Vector3();
@@ -139,7 +139,7 @@ export class Prologue {
     const S = g.districts.spine, spawn = {
       spine: [V(184, LD.floor, -190), Math.PI / 2], galleryB: [S.spots.vantage, Math.PI], relay: [S.spots.deckArrive, 0], shearer: [S.spots.deckArrive, 0],
       rescue: [S.spots.deckCenter.clone().add(V(-6, 0, 0)), -Math.PI / 2], rescueC: [V(199, SP.deck, -292), -Math.PI / 2],
-    }[cp] || c1Spawn(this, cp);
+    }[cp] || c1Spawn(this, cp) || c2Spawn(this, cp);
     if (spawn) { P.teleport(spawn[0].clone(), spawn[1]); g.camera.snapBehind(spawn[1], 0.1); }
     else if (P.pos.y < g.killY + 20 && P.safe?.length) { const s0 = P.safe.find(e => g.time - e.t > 3) || P.safe[0]; P.teleport(s0.p.clone(), P.yaw); } // fell elsewhere: last solid footing
     this.retrying = cp;
@@ -175,6 +175,7 @@ export class Prologue {
     for (const a of Object.values(C)) { a.frozen = false; a.scripted = false; }
     g.districts.lower.mule.visible = true;
     if (this.groundMule) this.groundMule.visible = false;
+    this.harvestCleanup?.(); approachMode(this, false); restoreLights(this); g.engine.grade.uniforms.uWarmth && (g.engine.grade.uniforms.uWarmth.value = 0);
   }
   setBay(k) { const L = this.game.districts.lower; L.openBay(k); if (k > 0.5 && L.bayDoorCol) { this.game.physics.world.removeCollider(L.bayDoorCol, true); L.bayDoorCol = null; } else if (k < 0.5 && !L.bayDoorCol) { L.bayDoorCol = this.game.physics.addBox({ x: LD.x1 + 0.3, y: LD.floor + 7, z: -190 }, { x: 0.3, y: 7, z: 11 }, null, {}); } }
   equip(hasTether, weapons) {
@@ -209,6 +210,7 @@ export class Prologue {
     g.state.chapter = ch;
     const mood = (m) => { if ((g.sky.mood || 'morning') !== m) g.sky.setMood(m); };
     if (ch === 'prologue') { if (this.zone) leaveSurface(this); mood('morning'); }
+    else if (ch === 'chapter2') { if (C2_ON_GROUND.has(beat)) enterReach(this, beat); if (beat !== 'c2_title' && beat !== 'c2_end') mood(beat === 'c2_descent' ? 'night' : 'morning'); }
     else if (ch === 'chapter1') { if (beat !== 'c1_title') enterSurface(this); if (beat !== 'c1_title') mood(beat === 'c1_night' ? 'night' : 'day'); }
   }
   // populate ambient life for the city part (persistent through the morning)
@@ -1324,4 +1326,4 @@ export class Prologue {
     this.exit();
   }
 }
-Object.assign(Prologue.prototype, Chapter1);
+Object.assign(Prologue.prototype, Chapter1, Chapter2);

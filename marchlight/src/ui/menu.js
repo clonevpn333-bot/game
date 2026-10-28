@@ -58,6 +58,7 @@ export class Menu {
       <h1>MARCHLIGHT</h1><h2>NOTHING STAYS STILL. NOT EVEN HOME.</h2>
       ${has ? '<button class="btn" data-a="continue">Continue</button>' : ''}
       <button class="btn" data-a="new">New Game</button>
+      <button class="btn" data-a="chapters">Chapters</button>
       <button class="btn" data-a="music">Soundtrack</button>
       <button class="btn" data-a="settings">Settings</button>
       <button class="btn" data-a="controls">Controls</button>
@@ -72,9 +73,24 @@ export class Menu {
       if (a === 'settings') this.settings(() => this.showTitle());
       if (a === 'controls') this.controls(() => this.showTitle());
       if (a === 'music') this.soundtrack(() => this.showTitle());
+      if (a === 'chapters') this.chapters(() => this.showTitle());
     };
     const startAudio = () => { g.audio.init(); if (!g.audio.music.cue) g.audio.music.play('menu', 3); window.removeEventListener('pointerdown', startAudio); };
     window.addEventListener('pointerdown', startAudio);
+  }
+
+  // ------------------------------------------------------------ chapter select
+  chapters(back) {
+    const g = this.game;
+    const list = [['wake', 'Prologue', 'The City That Never Sleeps'], ['c1_title', 'Chapter One', 'Underfoot'], ['c2_title', 'Chapter Two', 'The People Below']];
+    const d = this.mount(`<div class="col"><h1 style="font-size:40px">CHAPTERS</h1><h2>MARCHLIGHT</h2>
+      ${list.map(([b, n, t]) => `<button class="btn" data-b="${b}">${n} — ${t}</button>`).join('')}
+      <button class="btn" data-a="back" style="margin-top:18px">Back</button></div>`, 'menu dim');
+    d.querySelectorAll('[data-b]').forEach(btn => btn.onclick = async () => {
+      g.audio.ui('select'); g.state.load(); g.state.look = g.state.look || defaultLook({ outfit: 'runner', hairStyle: 'swept', skin: '#c58c64' });
+      this.clear(); await this.beginGame(btn.dataset.b);
+    });
+    d.querySelector('[data-a=back]').onclick = () => { g.audio.ui('select'); back(); };
   }
 
   // ------------------------------------------------------------ soundtrack (listen to every cue from the title)
@@ -156,7 +172,7 @@ export class Menu {
     const g = this.game; if (g.paused || g.menuOpen) return;
     g.paused = true; this.paused = true; g.input.unlock();
     g.audio.ctx?.suspend?.();
-    const d = this.mount(`<div class="col"><h1 style="font-size:40px">PAUSED</h1><h2>${g.state.chapter === 'prologue' ? 'PROLOGUE — THE CITY THAT NEVER SLEEPS' : ''}</h2>
+    const d = this.mount(`<div class="col"><h1 style="font-size:40px">PAUSED</h1><h2>${{ prologue: 'PROLOGUE — THE CITY THAT NEVER SLEEPS', chapter1: 'CHAPTER ONE — UNDERFOOT', chapter2: 'CHAPTER TWO — THE PEOPLE BELOW' }[g.state.chapter] || ''}</h2>
       <button class="btn" data-a="resume">Resume</button>
       <button class="btn" data-a="journal">Journal</button>
       <button class="btn" data-a="look">Appearance</button>

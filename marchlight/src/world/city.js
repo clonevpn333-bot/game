@@ -72,11 +72,13 @@ export class City {
     this.exterior?.update(dt);
   }
 
+  // where a foot really is: in approach mode the city's visuals walk while the frames stand still
+  footAt(L) { const p = L.foot.clone(); p.z += this.visOffZ || 0; return p; }
   footfall(L) {
     const g = this.game;
-    const cam = g.engine.camera.position;
-    const d = L.foot.distanceTo(cam);
-    g.audio.giantStep(L.foot, 1, d);
+    const cam = g.engine.camera.position, foot = this.footAt(L);
+    const d = foot.distanceTo(cam);
+    g.audio.giantStep(foot, 1, d);
     const interiorDamp = g.sky ? lerp(1, 0.55, g.sky.interior) : 1;
     // the shake arrives with the sound (structure-borne it's faster — use half delay)
     setTimeout(() => { this.shakeAmount = Math.min(1.4, this.shakeAmount + clamp(1.3 - d / 900, 0.35, 1.1) * interiorDamp); g.events.emit('footfall', L); }, Math.min(1200, d / 343 * 500));
@@ -362,12 +364,12 @@ export class Exterior {
 
   dustAt(L) {
     // dust ring rising where the foot lands — spawn in the city frame, drifting backwards with the ground
-    const fx = this.game.fx; const p = L.foot.clone(); p.y = this.city.groundY - this.city.bob + 2;
+    const fx = this.game.fx; const p = this.city.footAt(L); p.y = this.city.groundY - this.city.bob + 2;
     const d = p.distanceTo(this.game.engine.camera.position);
     if (d > 2500) return;
     for (let i = 0; i < 26; i++) {
       const a = (i / 26) * Math.PI * 2;
-      fx.alpha.spawn({ x: p.x + Math.cos(a) * 22, y: p.y, z: p.z + Math.sin(a) * 22, vx: Math.cos(a) * 9, vy: 2 + Math.random() * 3, vz: Math.sin(a) * 9 + this.city.speed,
+      fx.alpha.spawn({ x: p.x + Math.cos(a) * 22, y: p.y, z: p.z + Math.sin(a) * 22, vx: Math.cos(a) * 9, vy: 2 + Math.random() * 3, vz: Math.sin(a) * 9 + (this.city.visOffZ ? 0 : this.city.speed),
         life: 7 + Math.random() * 4, s0: 18, s1: 60, c0: [0.62, 0.56, 0.47, 0.5], c1: [0.62, 0.56, 0.47, 0], drag: 0.35, spin: (Math.random() - 0.5) * 0.2 });
     }
   }

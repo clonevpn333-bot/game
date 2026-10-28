@@ -11,7 +11,7 @@ import { rng, clamp } from '../core/util.js';
 
 export class Zone {
   constructor(game, name) {
-    this.game = game; this.T0 = game.city.travel;
+    this.game = game; this.name = name; this.T0 = game.city.travel;
     this.root = new THREE.Group(); this.root.name = 'zone:' + name; this.root.position.z = -this.T0;
     game.engine.worldRoot.add(this.root);
     this.colliders = []; this.disposers = []; this.spots = {}; this.offs = [];
@@ -70,10 +70,22 @@ export function tree(z, x, zz, h = 9) {
   z.b.cyl('wood', [x, y + h * 0.3, zz], h * 0.035, h * 0.6, { r2: h * 0.025, color: 0x4a3a2a, seg: 7, collide: true });
   for (let i = 0; i < 3; i++) z.b.sphere('leaf', [x + (R() - 0.5) * h * 0.25, y + h * (0.62 + i * 0.12), zz + (R() - 0.5) * h * 0.25], h * (0.24 - i * 0.04), { color: [0x2f4a24, 0x3a5a2a, 0x46602c][i], seg: 9, sy: 0.8 });
 }
+// a tuft: seven thin blades fanned out from the root, each bending outward (reads as grass, not a spike)
+function tuftGeometry() {
+  const pos = [], nrm = [];
+  for (let i = 0; i < 7; i++) {
+    const a = i / 7 * Math.PI * 2 + (i % 2) * 0.3, lean = 0.18 + (i % 3) * 0.08, h = 0.45 + (i % 4) * 0.09, w = 0.05;
+    const dx = Math.cos(a), dz = Math.sin(a), px = -dz * w, pz = dx * w, tip = [dx * lean, h, dz * lean];
+    pos.push(px, 0, pz, -px, 0, -pz, ...tip);
+    for (let k = 0; k < 3; k++) nrm.push(dx * 0.4, 0.9, dz * 0.4);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
+  return g;
+}
 // a field of grass clumps: one instanced mesh (cheap) seated on the terrain
 export function grass(z, x0, x1, z0, z1, n, o = {}) {
-  const geo = new THREE.ConeGeometry(0.34, 0.6, 5); geo.translate(0, 0.28, 0); // tufts: low and wide, not spikes
-  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, vertexColors: false });
+  const geo = tuftGeometry();
+  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, side: THREE.DoubleSide });
   const im = new THREE.InstancedMesh(geo, mat, n), m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), c = new THREE.Color();
   for (let i = 0; i < n; i++) {
     const x = x0 + R() * (x1 - x0), zz = z0 + R() * (z1 - z0); if (o.skip?.(x, zz)) { m.makeScale(0, 0, 0); im.setMatrixAt(i, m); continue; }

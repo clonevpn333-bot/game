@@ -232,13 +232,13 @@ export class Ground {
   // terrain height (relative to GROUND_Y) under a ground-frame point (x, z), exactly as the terrain
   // shader displaces it; hills rise away from the city, so this changes as the city travels
   heightAt(x, z) {
-    const wz = z + this.city.travel, t = Math.min(1, Math.max(0, (Math.abs(x) + Math.max(0, -wz - 1200) * 0.4 - 500) / 2500)), far = t * t * (3 - 2 * t);
+    const wz = z + (this.travelFix ?? this.city.travel), t = Math.min(1, Math.max(0, (Math.abs(x) + Math.max(0, -wz - 1200) * 0.4 - 500) / 2500)), far = t * t * (3 - 2 * t);
     const h = (fbmGL(x * 0.0006, z * 0.0006) - 0.45) * 520 + fbmGL(x * 0.003, z * 0.003) * 60;
     return h * far + (fbmGL(x * 0.01, z * 0.01) - 0.5) * 3;
   }
   layoutRuins(force = false) {
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
-    const travel = this.city.travel; let changed = force;
+    const travel = this.travelFix ?? this.city.travel; let changed = force;
     const gy = GROUND_Y;
     for (const it of this.ruinItems) {
       const sz = it.z + travel;
@@ -393,10 +393,16 @@ export class Ground {
 
   update(dt) {
     const c = this.city, u = this.u;
-    u.uTravel.value = c.travel; u.uTime.value += dt;
-    this.mesh.position.y = GROUND_Y - c.bob;
+    const fixed = this.travelFix != null; // approach mode: the ground holds still and the city's visuals walk
+    u.uTravel.value = fixed ? this.travelFix : c.travel; u.uTime.value += dt;
+    this.mesh.position.y = GROUND_Y - (fixed ? 0 : c.bob);
     const sky = this.game.sky;
-    if (sky) { u.uSun.value.copy(sky.sunDir); u.uFog.value.copy(sky.fogColor); u.uSunCol.value.copy(sky.sun.color).multiplyScalar(1.65); }
+    if (sky) {
+      const night = sky.mood === 'night'; // the moon lights the fields, faintly; the sky's ambient goes deep blue
+      u.uSun.value.copy(night && sky.lightDir ? sky.lightDir : sky.sunDir); u.uFog.value.copy(sky.fogColor);
+      u.uSunCol.value.copy(sky.sun.color).multiplyScalar(night ? 0.35 : 1.65);
+      if (night) u.uSky.value.setRGB(0.07, 0.09, 0.15); else u.uSky.value.setRGB(0.55, 0.65, 0.78);
+    }
     // legs for shadows
     const ext = c.exterior;
     if (ext) ext.legs.forEach((leg, i) => {
@@ -410,7 +416,7 @@ export class Ground {
       const p = (c.phase + L.off) % 1;
       const plantWorldZ = -(-L.hip.z + c.stride / 2) - (c.travel - c.speed * p * c.T); // world z when this foot last planted
       u.uFootOff.value.setComponent(i, plantWorldZ);
-      u.uFootX.value.setComponent(i, L.hip.x);
+      u.uFootX.value.setComponent(i, fixed ? 1e5 : L.hip.x);
       u.uFootFront.value.setComponent(i, -(-L.hip.z + c.stride / 2) + 0.0);
     });
     u.uStride.value = c.speed * c.T;

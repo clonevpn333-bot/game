@@ -19,6 +19,7 @@ export const CH1 = ['c1_title', 'c1_descent', 'c1_fields', 'c1_highway', 'c1_sti
 export function enterSurface(s) {
   const g = s.game;
   if (!g.stillness) g.stillness = new Stillness(g);
+  if (s.zone && s.zone.name !== 'underfoot') { s.zone.dispose(); s.zone = null; }
   if (!s.zone) {
     // the city stops with all four feet planted (no leg hanging mid-swing while she rests)
     g.city.walking = false; g.city.phase = 0.015; g.city.speedMul = 1; g.city.bob = 0; g.city.roll = 0; g.city.pitch = 0;
@@ -49,7 +50,7 @@ export function c1Spawn(s, cp) {
 }
 
 // the Mule outside the city: a copy of Nia's crawler (the original stays parked on its lift in the bay)
-function groundMule(s) {
+export function groundMule(s) {
   if (s.groundMule) return s.groundMule;
   const g = s.game, m = g.districts.lower.mule.clone(true);
   m.name = 'mule:ground'; g.engine.cityRoot.add(m);
@@ -407,7 +408,7 @@ export const Chapter1 = {
     const g = this.game, P = g.player, Z = this.zone, C = this.cast;
     if (this.c1Arrive('c1_yard') || C.bram.hidden) this.bramAt(P.pos.clone().add(V(2, 0, 2)), P.yaw);
     this.equip(true, true); P.relaxed = false; g.weapons.locked = false;
-    this.c1StillCleanup?.(); g.stillness.clear();
+    this.c1StillCleanup?.(); g.stillness?.clear();
     Z.dome.material.opacity = 0.05;
     const offB = this.companion(C.bram);
     this.objective('Reach the salvage yard', 'A harvester carcass, somewhere among the containers.', Z.spots.yard);
@@ -628,7 +629,7 @@ export const Chapter1 = {
   async beat_c1_home(id) {
     const g = this.game, P = g.player, C = this.cast, L = g.districts.lower;
     this.equip(true, true); P.relaxed = true; g.weapons.locked = true;
-    g.stillness.clear(); g.hud.setObjective(null);
+    g.stillness?.clear(); g.hud.setObjective(null);
     L.mule.visible = true; this.setBay(1);
     g.crowd.clear(); this.populateLower();
     P.teleport(V(176, -38, -186), Math.PI / 2); g.camera.snapBehind(Math.PI / 2, 0.05);

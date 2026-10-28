@@ -22,12 +22,12 @@ export function buildReach(game) {
   Z.offs.push(game.ground.addMask(150, 520, -1180, -150));
   const S = Z.spots;
   // ---------------------------------------------------------------- the road in, and the stalled truck
-  for (let z = -880; z > -975; z -= 4) { const x = 320 + Math.sin(z * 0.03) * 3; b.box('concrete', [x, Z.gy(x, z) + 0.02, z], [4.2, 0.1, 4.2], { color: 0x8a7a62, collide: false, tex: 3 }); }
+  for (let z = -880; z > -975; z -= 4) { const x = 320 + Math.sin(z * 0.03) * 3; b.box('concrete', [x, Z.gy(x, z) + 0.02, z], [4.2, 0.1, 4.2], { color: 0xa89a80, collide: false, tex: 3, ao: false }); }
   Z.truck = truck(Z, 323.5, -918, Math.PI + 0.08);
   S.gate = V(320, 0, -905); S.mulePark = V(315.5, 0, -896);
   // ---------------------------------------------------------------- the square
   const sq = V(RC.x, 0, RC.z); S.square = sq;
-  b.box('concrete', [sq.x, sq.y + 0.04, sq.z], [22, 0.12, 20], { color: 0x9a8a72, collide: false, tex: 2 });
+  b.box('concrete', [sq.x, sq.y + 0.04, sq.z], [22, 0.12, 20], { color: 0xb0a088, collide: false, tex: 2, ao: false });
   b.cyl('concrete', [sq.x, sq.y + 0.45, sq.z], 1.2, 0.9, { color: 0x8a8278, seg: 16, collide: true });  // the well
   b.box('wood', [sq.x, sq.y + 2.2, sq.z], [2.8, 0.15, 0.15], { color: 0x5a4632, collide: false });
   for (const sx of [-1, 1]) b.box('wood', [sq.x + sx * 1.3, sq.y + 1.4, sq.z], [0.15, 1.8, 0.15], { color: 0x5a4632, collide: false });
