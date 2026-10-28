@@ -36,6 +36,7 @@ const HS = {
   Ebm6: 'Eb2|Gb3 Bb3 C4 Eb4', Dm7: 'D2|F3 A3 C4 F4', Dm9: 'D2|F3 A3 C4 E4', Bbmaj7s11: 'Bb1|D3 F3 A3 E4', Csus2: 'C2|G3 C4 D4 G4',
   Ab: 'Ab1|Eb3 Ab3 C4 Eb4', D: 'D2|F#3 A3 D4 F#4', Eb: 'Eb2|G3 Bb3 Eb4 G4', Cm: 'C2|Eb3 G3 C4 Eb4', Dm: 'D2|F3 A3 D4 F4',
   Fmaj7: 'F2|C3 E3 A3 E4', G: 'G1|D3 G3 B3 D4', Bbadd9: 'Bb1|F3 C4 D4 F4', Am7: 'A1|E3 G3 C4 E4',
+  Gadd9: 'G1|D3 A3 B3 D4', Em7: 'E2|D3 G3 B3 E4', A: 'A1|E3 A3 C#4 E4', Bm7: 'B1|D3 F#3 A3 D4', Dsus: 'D2|A3 D4 E4 A4', Db: 'Db2|F3 Ab3 Db4 F4', Fm: 'F2|C3 F3 Ab3 C4',
 };
 const HC = {};
 for (const [k, v] of Object.entries(HS)) { const [b, u] = v.split('|'); HC[k] = { b: N(b), v: V(u) }; }
@@ -63,6 +64,8 @@ const MK_A = mel('D5:2 G5:1 A5:3 | Bb5:1 A5:1 G5:1 E5:3 | F5:2 E5:1 D5:2 C5:1 | 
 const MK_B = mel('F5:2 Bb5:1 C6:3 | D6:2 C6:1 Bb5:3 | A5:1 Bb5:1 C6:1 G5:3 | A5:6');
 // Chapter One: "Underfoot" — the surface. D minor with a Lydian ache.
 const UF = mel('A4:1 D5:1 E5:2 | F5:1.5 E5:.5 C5:2 | D5:1 A4:1 E5:2 | D5:4');
+const RM = mel('D5:1 F#5:.5 E5:.5 D5:1 A4:1 | B4:1.5 A4:.5 F#4:2 | G4:1 A4:1 B4:1 D5:1 | E5:4'); // Callow Reach's tune
+const RM2 = mel('F#5:1 E5:.5 D5:.5 E5:1 A4:1 | B4:1 D5:1 E5:2 | F#5:1 E5:1 D5:1 B4:.5 A4:.5 | D5:4');
 const UF_HOME = mel('C4:1 F4:1 G4:2 | A4:1.5 G4:.5 F4:1 C4:1 | D4:1 E4:1 F4:1 B4:1 | A4:4'); // the theme, remembered, in F
 
 const VOW = { ah: [[730, 1], [1090, 0.5], [2440, 0.22], [3300, 0.16]], oo: [[300, 1], [870, 0.3], [2240, 0.1], [3300, 0.16]], eh: [[530, 1], [1840, 0.4], [2480, 0.2], [3300, 0.16]] };
@@ -794,6 +797,37 @@ const CUES = {
     if (n === 8) s.seq('celesta', TH.A, t, b, 0.18, 12);
     if (n === 12) s.line('flute', TH.A2, t, b, { vel: 0.38 });
     if (n === 0) s.drone([N('G1')], t, B * 8, 0.18);
+  } },
+
+  // CHAPTER TWO — Callow Reach alive: a hand drum, a harp picked like a guitar, the reed and the flute trading a tune
+  reach: { bpm: 96, meter: 4, gain: 0.74, len: 16, back: 0, bar(s, n, t, b, k) {
+    const B = 4 * b, e = b / 2, H = ['D', 'Gadd9', 'Bm7', 'A', 'D', 'Gadd9', 'Em7', 'A', 'Gadd9', 'D', 'Bm7', 'Gadd9', 'Em7', 'Gadd9', 'A', 'D'];
+    const c = hc(H[n]);
+    s.arp('harp', c.v, t, e, 8, 0.15, { pat: [0, 2, 1, 3, 2, 1, 3, 2] });
+    s.strings([c.b + 12], t, B, 0.14, { ch: 'strLo' });
+    for (let i = 0; i < 8; i++) s.shaker(t + i * e, i % 2 ? 0.035 : 0.06);
+    s.thud(t, 0.26); s.thud(t + 1.5 * b, 0.16); s.thud(t + 2 * b, 0.22);
+    if (n >= 4) s.choir(up(c.v.slice(1), 12), t, B, 0.05, { vowel: 'oo' });
+    if (n === 0) s.line('reed', RM, t, b, { vel: 0.42 });
+    if (n === 4) s.line('flute', RM2, t, b, { vel: 0.42 });
+    if (n === 8) { s.line('flute', RM, t, b, { vel: 0.4, tr: 12 }); s.line('cello', RM, t, b, { vel: 0.32, tr: -12 }); }
+    if (n === 12) s.line('reed', RM2, t, b, { vel: 0.4 });
+  } },
+
+  // CHAPTER TWO — the harvest: Meridian's machinery wakes over the settlement. C against D♭, drums like footfalls
+  harvest: { bpm: 72, meter: 4, gain: 0.84, len: 16, back: 4, bar(s, n, t, b, k) {
+    const B = 4 * b, e = b / 2, H = ['Cm', 'Db', 'Cm', 'Db', 'Fm', 'Db', 'Cm', 'G', 'Cm', 'Db', 'Ab', 'Db', 'Fm', 'Db', 'G', 'Cm'];
+    const c = hc(H[n]);
+    s.taiko(t, 0.8, 1.3); s.taiko(t + 1.5 * b, 0.45, 1); if (n % 2) s.taiko(t + 3 * b, 0.5, 1.1);
+    s.gate('strLo', [0, 1, 2, 3, 4, 5, 6, 7].map(i => ({ m: (i % 4 === 3 ? N('Db2') : N('C2')) + 12, v: i % 4 === 0 ? 0.6 : 0.36 })), t, e, { bright: 1400 });
+    s.drone([c.b], t, B, 0.22);
+    if (n >= 4) s.brass(c.v.slice(0, 3), t, B * 0.9, 0.22 + (n >= 8 ? 0.1 : 0), { att: 0.3 });
+    if (n >= 8) s.choir(up(c.v, 12), t, B, 0.12 + (n - 8) * 0.012, { vowel: n >= 12 ? 'ah' : 'oo' });
+    for (let i = 0; i < 4; i++) s.tick(t + i * b + e, 0.06);
+    if (n === 8) s.line('horn', mel('C4:2 Db4:1 C4:1 | G3:4 | Ab3:2 G3:1 F3:1 | G3:4'), t, b, { vel: 0.55 });
+    if (n === 12) s.line('voice', mel('G5:2 Ab5:1 G5:1 | Eb5:4 | F5:2 Eb5:1 Db5:1 | C5:4'), t, b, { vel: 0.3 });
+    if (n % 4 === 3) s.riser(t + 2 * b, 2 * b, 0.1);
+    if (n === 0) s.boom(t, 0.5);
   } },
 };
 

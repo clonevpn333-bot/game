@@ -17,6 +17,7 @@ const TRACKS = [
   ['market', 'The Market Dance', 'Deck One'], ['exterior', 'Meridian Walks', 'Outside the hull'], ['combat', 'Iron Stride', 'Combat'],
   ['shearer', 'The Shearer', 'Final fight'], ['rescue', 'Cable Run', 'The rescue'], ['tension', 'Something Is Wrong', 'Tension'],
   ['stillness', 'The Stillness', 'The settlement'], ['ruins', 'Underfoot', 'Chapter One'], ['signal', 'Someone Is Alive', 'Chapter One'], ['night', 'Refusal', 'Chapter One'],
+  ['reach', 'Callow Reach', 'Chapter Two'], ['harvest', 'The Harvest', 'Chapter Two'],
 ];
 
 export class Menu {

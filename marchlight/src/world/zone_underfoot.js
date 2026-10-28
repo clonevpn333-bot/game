@@ -19,12 +19,7 @@ export function buildUnderfoot(game) {
   // ================================================================== landing, beside Leg Two
   // the Mule comes down on its own line from a boom over the Runner Bay door; the line stays hanging
   const L = V(214, 0, -196); Z.spots.landing = L; Z.spots.mulePark = V(213, 0, -192);
-  const boomTip = new THREE.Vector3(209.5, -24.4, -190);
-  b.box('darkSteel', [203.2, -24.4, -190], [13, 0.6, 0.8], { color: 0x3a3a3a, collide: false });
-  b.tube('steel', [197, -31, -190], [205, -24.6, -190], 0.12, { color: 0x6a6a64 });
-  b.cyl('darkSteel', [boomTip.x, boomTip.y - 0.3, boomTip.z], 0.35, 0.5, { color: 0x2a2a2a, seg: 12 });
-  Z.cableLine = cableLine(Z, boomTip.clone().setY(boomTip.y - 0.6), new THREE.Vector3(boomTip.x, L.y + 0.2, boomTip.z));
-  Z.spots.boomTip = boomTip; Z.spots.cableFoot = new THREE.Vector3(boomTip.x, L.y, boomTip.z);
+  muleBoom(Z);
   // a fence line, an old tractor, wildflowers
   for (let z = -250; z > -330; z -= 3.2) b.box('wood', [252, Z.gy(252, z) + 0.55, z], [0.12, 1.1, 0.12], { color: 0x5a4a3a, collide: false });
   b.box('wood', [252, Z.gy(252, -290) + 0.9, -290], [0.06, 0.08, 80], { color: 0x5a4a3a, collide: false });
@@ -136,7 +131,7 @@ export function buildUnderfoot(game) {
   Z.spots.yardEnemies = [V(448, 0, -612), V(462, 0, -630), V(440, 3.5, -634), V(470, 4, -606), V(456, 5, -598)];
   // the relay building (the mast is on its roof) and the tower that fell against it
   const B = { x: 545, z: -664, w: 22, d: 20, floors: 4 };
-  const RB = shell(Z, B.x, B.z, B.w, B.d, B.floors, { seed: 31, open: ['w0:2', 'w1:2', 's0:2', 's0:3', 'w2:1'], broken: 0.18, color: 0x8a847a });
+  const RB = shell(Z, B.x, B.z, B.w, B.d, B.floors, { seed: 31, open: ['w0:2', 'w1:2', 's0:2', 's0:3', 'w2:2', 'w2:3', 'w2:4', 'e1:2', 'e1:3'], broken: 0.18, color: 0x8a847a });
   Z.relay = RB; Z.B = B;
   const f2 = RB.levels[2];
   { // the fallen tower: an office block lying on its side, its top resting on the second floor — a ramp
@@ -210,6 +205,15 @@ function turbine(Z, x, z, y, h) {
   return T;
 }
 
+// the Mule's boom over the Runner Bay door, and its line hanging to the ground (shared by every ground chapter)
+export function muleBoom(Z) {
+  const b = Z.b, boomTip = new THREE.Vector3(209.5, -24.4, -190), gy = Z.gy(boomTip.x, boomTip.z);
+  b.box('darkSteel', [203.2, -24.4, -190], [13, 0.6, 0.8], { color: 0x3a3a3a, collide: false });
+  b.tube('steel', [197, -31, -190], [205, -24.6, -190], 0.12, { color: 0x6a6a64 });
+  b.cyl('darkSteel', [boomTip.x, boomTip.y - 0.3, boomTip.z], 0.35, 0.5, { color: 0x2a2a2a, seg: 12 });
+  Z.cableLine = cableLine(Z, boomTip.clone().setY(boomTip.y - 0.6), new THREE.Vector3(boomTip.x, gy + 0.2, boomTip.z));
+  Z.spots.boomTip = boomTip; Z.spots.cableFoot = new THREE.Vector3(boomTip.x, gy, boomTip.z);
+}
 // a hanging line (thin, slightly swaying) — the Mule's cable down from the boom
 function cableLine(Z, top, foot) {
   const N = 16, pts = []; for (let i = 0; i < N; i++) pts.push(top.clone().lerp(foot, i / (N - 1)));

@@ -297,7 +297,7 @@ export const Chapter1 = {
     this.objective('Gnats', 'Shoot them down. Stay off the open deck.', null);
     g.audio.music.play('combat', 1.2);
     const nest = V(HW.x + 4, deckY(-462) + 3, -462);
-    for (const d of [V(-2, 2, 0), V(2, 3, -3), V(0, 4, 3)]) g.enemies.spawn('gnat', nest.clone().add(d), { aware: true });
+    for (const d of [V(-2, 2, 0), V(2, 3, -3), V(0, 4, 3)]) g.enemies.spawn('gnat', nest.clone().add(d), { alwaysAware: true });
     this.bark('BRAM', 'Gnats! In the bus — get down!', 2.6, C.bram);
     g.hud.hint('shoot');
     C.bram.scripted = true; C.bram.goTo(V(HW.x - 5.5, deckY(-446), -446), 4.2);
@@ -415,8 +415,8 @@ export const Chapter1 = {
     this.guard(id);
     // the yard's tenants
     const E = Z.spots.yardEnemies;
-    g.enemies.spawn('leech', E[0], { aware: true }); g.enemies.spawn('leech', E[1], { aware: true });
-    for (const p of E.slice(2)) g.enemies.spawn('gnat', p.clone().add(V(0, 3, 0)), { aware: true });
+    g.enemies.spawn('leech', E[0], { alwaysAware: true }); g.enemies.spawn('leech', E[1], { alwaysAware: true });
+    for (const p of E.slice(2)) g.enemies.spawn('gnat', p.clone().add(V(0, 3, 0)), { alwaysAware: true });
     g.audio.music.play('combat', 1);
     this.objective('Clear the salvage yard', 'Leeches lunge — keep your distance, or throw them away with the tether [Q].', null);
     this.bark('BRAM', 'Leeches! Don\'t let them latch on!', 2.6, C.bram);
@@ -480,7 +480,15 @@ export const Chapter1 = {
     if (C.bram.pos.distanceTo(P.pos) < 30 && !C.bram.hidden) C.bram.goTo(V(430, Z.gy(430, -580), -580), 1.6).then(() => hide(C.bram)); else hide(C.bram);
     Z.mastLamp.material.color.setRGB(0.3, 0.05, 0.03); Z.dynLamp.material.color.setRGB(0.4, 0.05, 0.03);
     const foot = Z.spots.towerFoot, f2 = V(B.x - B.w / 2 + 3, Z.relay.levels[2], -660);
-    this.objective('Climb to the relay mast', 'Up the fallen tower and in at the second floor.', () => P.pos.distanceTo(foot) > 12 && P.pos.y < Z.relay.levels[2] - 2 ? foot : P.pos.y < Z.relay.levels[2] + 1 ? f2 : V(Z.relay.stair.x, Z.relay.top, Z.relay.stair.z1));
+    // waypoints: the tower's foot, up its back to the second floor, then flight by flight to the roof
+    const R = Z.relay, inB = () => Math.abs(P.pos.x - B.x) < B.w / 2 && Math.abs(P.pos.z - B.z) < B.d / 2;
+    const climbTo = () => {
+      if (!inB() || P.pos.y < R.levels[2] - 1) return P.pos.y < foot.y + 1.2 && P.pos.distanceTo(foot) > 10 ? foot : f2;
+      const f = clamp(Math.floor((P.pos.y - R.levels[0] + 0.3) / R.FH), 2, R.levels.length - 2), fl = R.flight(f), lv = R.levels[f];
+      const start = V(fl.x, lv, fl.from);
+      return P.pos.y < lv + 0.4 && Math.hypot(P.pos.x - start.x, P.pos.z - start.z) > 1.4 ? start : V(fl.x, R.levels[f + 1], fl.to);
+    };
+    this.objective('Climb to the relay mast', 'Up the fallen tower and in at the second floor, then the stairs to the roof.', climbTo);
     this.banter([3,
       ['NIA', 'Bram says you\'re climbing a building that fell over.', { radio: true, dur: 3 }],
       ['ROOK', 'Half of one.', { radio: true, dur: 1.4 }],

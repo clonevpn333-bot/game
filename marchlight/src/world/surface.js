@@ -88,8 +88,9 @@ export function grass(z, x0, x1, z0, z1, n, o = {}) {
 export function shell(z, cx, cz, w, d, floors, o = {}) {
   const b = z.b, y0 = z.gy(cx, cz) - 0.3, FH = o.fh ?? 3.5, col = o.color ?? 0x8a847a, r = rng(o.seed ?? 7);
   const levels = [];
-  // the stairwell: every slab above the ground has a hole over the stair footprint (north-east corner)
-  const sx = cx + w / 2 - 2.0, run = Math.min(d - 3, 5.2), hz1 = cz + d / 2 - 1.2, hz0 = hz1 - run, hx0 = sx - 1.1, hx1 = sx + 1.1;
+  // the stairwell: every slab above the ground has a hole over the stair footprint (east side). Flights
+  // alternate between two lanes side by side (even floors west lane, odd floors east lane) so each has headroom.
+  const sx = cx + w / 2 - 3.0, run = Math.min(d - 3, 5.2), hz1 = cz + d / 2 - 1.2, hz0 = hz1 - run, hx0 = sx - 2.2, hx1 = sx + 2.2;
   const slab = (y, c) => {
     const W0 = cx - w / 2, E0 = cx + w / 2, N0 = cz - d / 2, S0 = cz + d / 2;
     b.box('concrete', [(W0 + hx0) / 2, y - 0.15, cz], [hx0 - W0, 0.3, d], { color: c, tex: 3 });
@@ -117,9 +118,11 @@ export function shell(z, cx, cz, w, d, floors, o = {}) {
     for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b.box('concrete', [cx + sx * (w / 2 - 0.3), y + FH / 2, cz + sz * (d / 2 - 0.3)], [0.7, FH, 0.7], { color: col - 0x101010, tex: 2 });
     // stairs in the north-east corner, alternating direction each floor
     if (o.stairs !== false && f < floors) {
-      if (f % 2 === 0) b.stairs('concrete', [sx, y, hz1], run, FH, 2.0, Math.PI, { color: 0x9a948a, tex: 1.5, rails: false });
-      else b.stairs('concrete', [sx, y, hz0], run, FH, 2.0, 0, { color: 0x9a948a, tex: 1.5, rails: false });
+      if (f % 2 === 0) b.stairs('concrete', [sx - 1.1, y, hz1], run, FH, 2.0, Math.PI, { color: 0x9a948a, tex: 1.5, rails: false });
+      else b.stairs('concrete', [sx + 1.1, y, hz0], run, FH, 2.0, 0, { color: 0x9a948a, tex: 1.5, rails: false });
     }
   }
-  return { levels, top: y0 + floors * FH, stair: { x: sx, z0: hz0, z1: hz1 } };
+    // the way up from floor f: where its flight starts and where it arrives
+  const flight = (f) => f % 2 === 0 ? { x: sx - 1.1, from: hz1 + 0.9, to: hz0 - 0.6 } : { x: sx + 1.1, from: hz0 - 0.9, to: hz1 + 0.6 };
+  return { levels, top: y0 + floors * FH, FH, stair: { x: sx, z0: hz0, z1: hz1 }, flight };
 }
