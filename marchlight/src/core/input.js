@@ -41,11 +41,17 @@ export class Input {
     canvas.addEventListener('contextmenu', e => e.preventDefault());
     window.addEventListener('mousemove', e => {
       if (!this.locked) return;
+      // Chrome sometimes reports one bogus, huge movement during a long sweep (or as the lock engages): the camera
+      // used to jump to a random angle. Drop any single reading far outside what the mouse has been doing.
+      const m = Math.hypot(e.movementX, e.movementY), avg = this.moveAvg ?? 0, prev = this.prevMove ?? 0;
+      this.prevMove = m; this.moveAvg = avg * 0.85 + Math.min(m, avg * 3 + 40) * 0.15;
+      if (performance.now() - (this.lockT || 0) < 120) return; // the first events after the lock engages
+      if (m > 180 && m > avg * 6 + 60 && prev < 120) return;     // an isolated outlier (a real flick is several big readings in a row)
       this.mouseDX += e.movementX; this.mouseDY += e.movementY;
     });
     window.addEventListener('wheel', e => { this.wheel += Math.sign(e.deltaY); }, { passive: true });
     document.addEventListener('pointerlockchange', () => {
-      this.locked = document.pointerLockElement === this.canvas;
+      this.locked = document.pointerLockElement === this.canvas; if (this.locked) { this.lockT = performance.now(); this.moveAvg = 0; }
       if (!this.locked) this.keys.clear();
       this.onLockChange?.(this.locked);
     });
@@ -54,7 +60,11 @@ export class Input {
 
   onKey(fn) { this.listeners.push(fn); return () => { this.listeners = this.listeners.filter(l => l !== fn); }; }
 
-  lock() { try { const p = this.canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch { /* ignore */ } }
+  // raw mouse input where the browser supports it (no OS acceleration, and no spurious jumps), plain lock otherwise
+  lock() {
+    const plain = () => { try { const p = this.canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch { /* ignore */ } };
+    try { const p = this.canvas.requestPointerLock({ unadjustedMovement: true }); if (p && p.catch) p.catch(() => plain()); else if (!p) { /* old API: lock requested without options */ } } catch { plain(); }
+  }
   unlock() { if (document.pointerLockElement) document.exitPointerLock(); }
 
   update() {

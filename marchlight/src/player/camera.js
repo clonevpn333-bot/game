@@ -83,8 +83,11 @@ export class CameraRig {
     const origin = this.pivot.clone().addScaledVector(right, this.sideS * 0.5);
     const dir = desired.clone().sub(origin); const len = dir.length(); dir.divideScalar(len || 1);
     const hit = g.physics.raycastFilter(origin, dir, len + 0.25, G.STATIC | G.PLATFORM, (c, m) => !m?.nocam);
-    let gp = desired;
-    if (hit) gp = origin.clone().addScaledVector(dir, Math.max(0.3, hit.toi - 0.25));
+    // pull in at once when something gets between Rook and the lens (never clip through it); ease back out
+    // when it clears, so swinging past a wall or a post doesn't make the camera jump in and out
+    const allowed = hit ? Math.max(0.3, hit.toi - 0.25) : len;
+    this.colDist = this.colDist === undefined ? allowed : (allowed < this.colDist ? allowed : damp(this.colDist, allowed, 5, dt));
+    const gp = origin.clone().addScaledVector(dir, Math.min(len, this.colDist));
     const gl = this.pivot.clone().addScaledVector(fwd, 8).addScaledVector(right, this.sideS * 0.5);
 
     // shake
