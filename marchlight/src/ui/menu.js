@@ -18,6 +18,7 @@ const TRACKS = [
   ['shearer', 'The Shearer', 'Final fight'], ['rescue', 'Cable Run', 'The rescue'], ['tension', 'Something Is Wrong', 'Tension'],
   ['stillness', 'The Stillness', 'The settlement'], ['ruins', 'Underfoot', 'Chapter One'], ['signal', 'Someone Is Alive', 'Chapter One'], ['night', 'Refusal', 'Chapter One'],
   ['reach', 'Callow Reach', 'Chapter Two'], ['harvest', 'The Harvest', 'Chapter Two'],
+  ['caravan', 'The Long Road', 'Chapter Three'], ['stillwater', 'Stillwater', 'Chapter Four'],
 ];
 
 export class Menu {
@@ -82,7 +83,7 @@ export class Menu {
   // ------------------------------------------------------------ chapter select
   chapters(back) {
     const g = this.game;
-    const list = [['wake', 'Prologue', 'The City That Never Sleeps'], ['c1_title', 'Chapter One', 'Underfoot'], ['c2_title', 'Chapter Two', 'The People Below']];
+    const list = [['wake', 'Prologue', 'The City That Never Sleeps'], ['c1_title', 'Chapter One', 'Underfoot'], ['c2_title', 'Chapter Two', 'The People Below'], ['c3_title', 'Chapter Three', 'The Trade Road'], ['c4_title', 'Chapter Four', 'Stillwater']];
     const d = this.mount(`<div class="col"><h1 style="font-size:40px">CHAPTERS</h1><h2>MARCHLIGHT</h2>
       ${list.map(([b, n, t]) => `<button class="btn" data-b="${b}">${n} — ${t}</button>`).join('')}
       <button class="btn" data-a="back" style="margin-top:18px">Back</button></div>`, 'menu dim');
@@ -172,7 +173,7 @@ export class Menu {
     const g = this.game; if (g.paused || g.menuOpen) return;
     g.paused = true; this.paused = true; g.input.unlock();
     g.audio.ctx?.suspend?.();
-    const d = this.mount(`<div class="col"><h1 style="font-size:40px">PAUSED</h1><h2>${{ prologue: 'PROLOGUE — THE CITY THAT NEVER SLEEPS', chapter1: 'CHAPTER ONE — UNDERFOOT', chapter2: 'CHAPTER TWO — THE PEOPLE BELOW' }[g.state.chapter] || ''}</h2>
+    const d = this.mount(`<div class="col"><h1 style="font-size:40px">PAUSED</h1><h2>${{ prologue: 'PROLOGUE — THE CITY THAT NEVER SLEEPS', chapter1: 'CHAPTER ONE — UNDERFOOT', chapter2: 'CHAPTER TWO — THE PEOPLE BELOW', chapter3: 'CHAPTER THREE — THE TRADE ROAD', chapter4: 'CHAPTER FOUR — STILLWATER' }[g.state.chapter] || ''}</h2>
       <button class="btn" data-a="resume">Resume</button>
       <button class="btn" data-a="journal">Journal</button>
       <button class="btn" data-a="look">Appearance</button>

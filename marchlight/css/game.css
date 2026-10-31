@@ -198,3 +198,8 @@ body.bigsubs .sub { font-size: 26px; }
 #chapter .n { font-family: var(--cond); font-size: 15px; letter-spacing: 0.6em; margin-right: -0.6em; color: var(--amber); }
 #chapter .t { margin-top: 14px; font-family: var(--cond); font-weight: 600; font-size: min(7vw, 78px); letter-spacing: 0.3em; margin-right: -0.3em; color: #efe6d6; }
 #chapter .s { margin-top: 18px; font-size: 15px; color: #a8a090; letter-spacing: 0.08em; font-style: italic; }
+
+.doc { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(620px, 88vw); padding: 28px 34px 22px; background: rgba(18,20,18,0.94); border: 1px solid rgba(160,200,170,0.35); box-shadow: 0 0 60px rgba(0,0,0,0.6); z-index: 20; font-family: 'Courier New', monospace; color: #b8e0c4; }
+.doc h3 { margin: 0 0 14px; font-family: var(--cond); letter-spacing: 0.3em; font-size: 16px; color: #e8d8a8; font-weight: 600; }
+.doc p { margin: 0 0 10px; font-size: 15px; line-height: 1.5; }
+.doc .k { margin-top: 12px; font-size: 12px; color: #7a9a84; text-align: right; }

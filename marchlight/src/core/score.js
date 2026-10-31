@@ -66,6 +66,8 @@ const MK_B = mel('F5:2 Bb5:1 C6:3 | D6:2 C6:1 Bb5:3 | A5:1 Bb5:1 C6:1 G5:3 | A5:
 const UF = mel('A4:1 D5:1 E5:2 | F5:1.5 E5:.5 C5:2 | D5:1 A4:1 E5:2 | D5:4');
 const RM = mel('D5:1 F#5:.5 E5:.5 D5:1 A4:1 | B4:1.5 A4:.5 F#4:2 | G4:1 A4:1 B4:1 D5:1 | E5:4'); // Callow Reach's tune
 const RM2 = mel('F#5:1 E5:.5 D5:.5 E5:1 A4:1 | B4:1 D5:1 E5:2 | F#5:1 E5:1 D5:1 B4:.5 A4:.5 | D5:4');
+const CV = mel('A4:.5 C#5:.5 E5:1 D5:.5 C#5:.5 B4:1 | A4:.5 B4:.5 C#5:.5 D5:.5 E5:2 | G5:1 F#5:.5 E5:.5 D5:1 B4:1 | C#5:1 B4:.5 A4:.5 A4:2'); // the Long Road's fiddle tune
+const CV2 = mel('E5:1 E5:.5 F#5:.5 G5:1 E5:1 | D5:1 B4:1 A4:2 | B4:.5 C#5:.5 D5:1 E5:1 C#5:1 | A4:4');
 const UF_HOME = mel('C4:1 F4:1 G4:2 | A4:1.5 G4:.5 F4:1 C4:1 | D4:1 E4:1 F4:1 B4:1 | A4:4'); // the theme, remembered, in F
 
 const VOW = { ah: [[730, 1], [1090, 0.5], [2440, 0.22], [3300, 0.16]], oo: [[300, 1], [870, 0.3], [2240, 0.1], [3300, 0.16]], eh: [[530, 1], [1840, 0.4], [2480, 0.2], [3300, 0.16]] };
@@ -828,6 +830,33 @@ const CUES = {
     if (n === 12) s.line('voice', mel('G5:2 Ab5:1 G5:1 | Eb5:4 | F5:2 Eb5:1 Db5:1 | C5:4'), t, b, { vel: 0.3 });
     if (n % 4 === 3) s.riser(t + 2 * b, 2 * b, 0.1);
     if (n === 0) s.boom(t, 0.5);
+  } },
+
+  // CHAPTER THREE — the Long Road at night: a fiddle tune over a strummed harp, hand drums and claps
+  caravan: { bpm: 108, meter: 4, gain: 0.74, len: 16, back: 0, bar(s, n, t, b, k) {
+    const B = 4 * b, e = b / 2, H = ['A', 'G', 'D', 'A', 'A', 'G', 'Em7', 'A', 'D', 'A', 'G', 'D', 'Bm7', 'G', 'A', 'A'];
+    const c = hc(H[n]);
+    s.arp('harp', c.v, t, e, 8, 0.16, { pat: [0, 1, 2, 1, 3, 1, 2, 1] });
+    s.strings([c.b + 12], t, B, 0.15, { ch: 'strLo' });
+    s.thud(t, 0.3); s.thud(t + 1.5 * b, 0.18); s.thud(t + 2 * b, 0.26); s.thud(t + 3.5 * b, 0.14);
+    for (let i = 0; i < 4; i++) { s.tick(t + i * b + e, 0.09); if (i % 2) s.tick(t + i * b, 0.12); }
+    for (let i = 0; i < 8; i++) s.shaker(t + i * e, i % 2 ? 0.03 : 0.05);
+    if (n === 0 || n === 8) s.line('reed', CV, t, b, { vel: 0.44, tr: n === 8 ? 12 : 0 });
+    if (n === 4 || n === 12) s.line('flute', CV2, t, b, { vel: 0.4 });
+    if (n >= 8) s.choir(up(c.v.slice(1), 12), t, B, 0.05, { vowel: 'ah' });
+  } },
+
+  // CHAPTER FOUR — Stillwater: almost silence. A low cluster that never resolves, glass that rings
+  // and stops dead, a heartbeat that falters, a music box playing the Underfoot tune too slowly
+  stillwater: { bpm: 46, meter: 4, gain: 0.78, len: 16, back: 0, bar(s, n, t, b, k) {
+    const B = 4 * b;
+    if (n % 8 === 0) { s.drone([N('C1'), N('Db2')], t, B * 8, 0.2); s.strings([N('C3'), N('Db3'), N('G3')], t, B * 8, 0.06, { art: 'trem', ch: 'strLo' }); }
+    if (n % 2 === 0) { s.thud(t, 0.18); s.thud(t + 0.38, 0.12); }
+    if (n % 4 === 1) s.bell('glass', N('Db6'), t + b * 1.5, 0.1, { att: 0.01, T: 1.2 });
+    if (n % 4 === 3) s.bell('glass', N('G5'), t + b * 0.5, 0.09, { att: 1.5, T: 7 });
+    if (n === 4 || n === 12) s.seq('celesta', aug(UF, 1.6), t, b, 0.07, 12);
+    if (n === 8) s.choir([N('C4'), N('Db4')], t, B * 4, 0.04, { vowel: 'oo', att: 5 });
+    if (n === 15) s.riser(t + b, 3 * b, 0.06);
   } },
 };
 

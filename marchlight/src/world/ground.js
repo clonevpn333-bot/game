@@ -139,7 +139,7 @@ const FS = /* glsl */`
     vec3 ro = vPos + N * 0.5;
     sh = max(sh, boxHit(ro, uSun, uHullMin, uHullMax));
     for (int i = 0; i < 4; i++) { sh = max(sh, segRay(ro, uSun, uLegA[i], uLegB[i], 10.0)); sh = max(sh, segRay(ro, uSun, uLegB[i], uLegC[i], 8.0)); }
-    sh = max(sh, segRay(ro, uSun, vec3(0.0, -150.0, -10.0), vec3(0.0, -195.0, -10.0), 40.0));
+    if (uHullMin.y < 10000.0) sh = max(sh, segRay(ro, uSun, vec3(0.0, -150.0, -10.0), vec3(0.0, -195.0, -10.0), 40.0));
     float cloud = smoothstep(0.5, 0.68, fbm(W * 0.0009 + vec2(uTime * 0.004, uTime * 0.0015) + 40.0));
     col = mix(col, col * vec3(0.95, 0.88, 0.8), smoothstep(0.75, 0.45, N.y) * 0.6); // bare, warmer slopes
     vec3 lit = col * (uSunCol * diff * (1.0 - sh * 0.82) * (1.0 - cloud * 0.55) + uSky * 0.55);
@@ -403,9 +403,11 @@ export class Ground {
       u.uSunCol.value.copy(sky.sun.color).multiplyScalar(night ? 0.35 : 1.65);
       if (night) u.uSky.value.setRGB(0.07, 0.09, 0.15); else u.uSky.value.setRGB(0.55, 0.65, 0.78);
     }
-    // legs for shadows
+    // legs for shadows (none when Meridian is far away)
     const ext = c.exterior;
-    if (ext) ext.legs.forEach((leg, i) => {
+    u.uHullMin.value.y = this.game.cityHidden ? 1e5 : HULL.bottom - 10;
+    if (this.game.cityHidden) for (let i = 0; i < 4; i++) { u.uLegA.value[i].set(0, 1e5, 0); u.uLegB.value[i].set(0, 1e5, 1); u.uLegC.value[i].set(0, 1e5, 2); }
+    else if (ext) ext.legs.forEach((leg, i) => {
       leg.thigh.updateMatrixWorld(true);
       u.uLegA.value[i].setFromMatrixPosition(leg.thigh.matrixWorld);
       u.uLegB.value[i].setFromMatrixPosition(leg.knee.matrixWorld);

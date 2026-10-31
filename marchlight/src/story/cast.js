@@ -12,6 +12,10 @@ export function makeCast(game) {
   C.sefa = new Actor(game, { name: 'SEFA', collide: true, look: { hairStyle: 'curls', hair: '#2a1a12', skin: '#6b4029', outfit: 'casual', primary: '#d8a040', secondary: '#3a6a8a', build: 0.3, height: 1.02, scarf: '#3a6a8a' } });
   C.okafor = new Actor(game, { name: 'MRS. OKAFOR', collide: true, look: { hairStyle: 'bun', hair: '#d8d4cc', skin: '#4a2c1d', outfit: 'casual', primary: '#5a3a6a', build: 0.7, frame: 0.9, height: 0.93, glasses: true, hood: false } });
   C.imani = new Actor(game, { name: 'IMANI', collide: true, look: { hairStyle: 'braid', hair: '#1b1512', skin: '#5a3420', outfit: 'casual', primary: '#2f6a5a', secondary: '#d8a040', scarf: '#c85a3a', build: 0.5, frame: 0.72, height: 1.0, earrings: true, eyes: '#2a2018' } });
+  C.maren = new Actor(game, { name: 'MAREN', collide: true, look: { hairStyle: 'bun', hair: '#9c9a96', skin: '#b7794f', outfit: 'casual', primary: '#7a3a2a', secondary: '#d8a040', scarf: '#d8a040', build: 0.7, frame: 0.8, height: 1.0, age: 1, goggles: true } });
+  C.kofi = new Actor(game, { name: 'KOFI', collide: true, look: { hairStyle: 'shaved', beard: true, hair: '#1b1512', skin: '#4a2c1d', outfit: 'vendor', apron: '#c8a070', primary: '#3a6a8a', build: 0.8, height: 1.03 } });
+  C.pip = new Actor(game, { name: 'PIP', collide: false, look: { kid: true, hairStyle: 'curls', hair: '#6b4426', skin: '#e8b896', outfit: 'casual', primary: '#d8a040', freckles: true } });
+  C.wren = new Actor(game, { name: 'WREN', collide: true, look: { hairStyle: 'long', hair: '#e9e4dc', skin: '#8e5a3a', outfit: 'casual', primary: '#5a3a6a', scarf: '#3a6a8a', build: 0.4, height: 0.94, age: 1 } });
   C.pell = new Actor(game, { name: 'PELL', collide: false, look: { kid: true, hairStyle: 'crop', hair: '#3a2618', skin: '#d29a72', outfit: 'casual', primary: '#3a6a8a', freckles: true } });
   C.juno = new Actor(game, { name: 'JUNO', collide: false, look: { kid: true, hairStyle: 'braid', hair: '#1b1512', skin: '#8e5a3a', outfit: 'casual', primary: '#c85a3a' } });
   for (const a of Object.values(C)) { game.addActor(a); a.hidden = true; a.char.group.visible = false; }

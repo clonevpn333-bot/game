@@ -40,7 +40,7 @@ function pistolModel(M) {
   return g;
 }
 
-function carbineModel() {
+export function carbineModel() {
   const g = new THREE.Group();
   const steel = new THREE.MeshStandardMaterial({ color: 0x26282c, roughness: 0.35, metalness: 0.85 });
   const recv = new THREE.MeshStandardMaterial({ color: 0x3e4249, roughness: 0.45, metalness: 0.7 });

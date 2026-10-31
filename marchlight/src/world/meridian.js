@@ -72,6 +72,8 @@ export async function buildMeridian(game, progress) {
         S.root.visible = c.x > 186 || c.y < -30;         // starboard hull face (seen from Rook's window too)
         C.root.visible = !(c.y < -10 && !outside);       // not from inside the Lower Decks
         if (c.y < -250) { L.root.visible = false; C.root.visible = false; } // from the ground: the hull hides both
+        if (game.cityHidden) { L.root.visible = false; C.root.visible = false; S.root.visible = false; } // chapters far from Meridian
+        game.exterior.root.visible = !game.cityHidden;
       }
       // ambience by place
       const cam = game.engine.camera.position, p = game.player.pos;

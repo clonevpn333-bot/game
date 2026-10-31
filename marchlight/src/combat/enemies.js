@@ -2,9 +2,13 @@
 //  GNAT    — flying cutter drone. Strafes, dodges when aimed at, telegraphs bolt bursts.
 //  LEECH   — clamp-crawler. Cuts cables when unaware; scuttles and lunges. Armored front.
 //  SHEARER — heavy cutter rig. Telegraphed charges; capture its charge with the tether.
+//  RAIDER  — a scavenger with a carbine (people, not machines). Rides vehicles; aims, then fires a burst.
 import * as THREE from 'three';
 import { G } from '../core/physics.js';
 import { clamp, damp, dampAngle, lerp, rng } from '../core/util.js';
+import { buildCharacter, randomLook } from '../characters/rig.js';
+import { Animator } from '../characters/anim.js';
+import { carbineModel } from './weapons.js';
 
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3();
 const R = rng(77);
@@ -665,7 +669,7 @@ export class Enemies {
     this.killed = 0;
   }
   spawn(type, pos, opts = {}) {
-    const C = { gnat: Gnat, leech: Leech, shearer: Shearer }[type];
+    const C = { gnat: Gnat, leech: Leech, shearer: Shearer, raider: Raider }[type];
     const e = new C(this, pos, opts); this.list.push(e);
     if (opts.aware) e.becomeAware();
     return e;
@@ -687,7 +691,7 @@ export class Enemies {
   }
   clear() { for (const e of this.list) if (!e.removed) e.remove(); this.list = []; for (const b of this.bolts) b.m.removeFromParent(); this.bolts = []; }
   update(dt) {
-    for (const e of this.list) e.update(dt);
+    for (const e of this.list) e.update(dt * (e.timeScale ?? 1)); // timeScale: enemies caught in the Stillness move in bursts
     this.list = this.list.filter(e => !e.removed);
     const p = this.game.player;
     for (let i = this.bolts.length - 1; i >= 0; i--) {
@@ -709,4 +713,101 @@ export class Enemies {
       if (b.life <= 0) { b.m.removeFromParent(); this.bolts.splice(i, 1); }
     }
   }
+}
+
+// ------------------------------------------------------------------ RAIDER
+// A scavenger on foot or riding a vehicle (opts.mount: an Object3D it stands on, opts.local: its spot
+// on it). Telegraphs (a red muzzle glow and a held aim), then fires a three-round burst. The tether
+// can yank one off whatever it's riding; a raider thrown off a moving vehicle doesn't get up.
+class Raider extends Enemy {
+  constructor(sys, pos, opts) {
+    super(sys, 'raider', pos, opts);
+    this.hp = this.maxHp = opts.hp ?? 55;
+    const look = randomLook(opts.seed ?? Math.floor(R() * 9999), { outfit: 'worker', primary: ['#5a4a3a', '#4a3a3a', '#3a4238', '#6a5a40'][Math.floor(R() * 4)], scarf: '#8a2a1e', goggles: R() < 0.6, hood: R() < 0.3, ...(opts.look || {}) });
+    this.char = buildCharacter(look); this.anim = new Animator(this.char); this.model = this.char.group; this.game.engine.cityRoot.add(this.model);
+    this.gun = carbineModel(); this.char.sockets.gripR.add(this.gun);
+    this.anim.weapon = 'carbine'; this.anim.aim = 0.35;
+    this.mount = opts.mount || null; this.local = (opts.local || new THREE.Vector3()).clone();
+    this.fireT = 1.5 + R() * 2.5; this.telegraph = 0; this.burst = 0; this.burstT = 0; this.sway = R() * 10;
+    this.makeBody([{ hx: 0.28, hy: 0.85, hz: 0.28, pos: { x: 0, y: 0.9, z: 0 } }, { r: 0.17, pos: { x: 0, y: 1.62, z: 0 }, weak: true, part: 'head' }]);
+    this.untether = this.game.tether.register({
+      kind: 'enemy', label: 'Raider', enabled: () => !this.dead, getPos: () => this.pos.clone().add(new THREE.Vector3(0, 1.1, 0)), getVel: () => this.vel, mass: 80, colliders: this.colliders,
+      capture: (dt) => { this.stun = Math.max(this.stun, 0.8); if (this.mount) this.dismount(new THREE.Vector3(0, 3, 0)); return 260 * dt; },
+      push: (imp) => { this.dismount(imp.clone().multiplyScalar(1 / 80).add(new THREE.Vector3(0, 4, 0))); this.stun = 2; this.thrown = 2; },
+    });
+    if (this.mount) this.followMount();
+  }
+  followMount() { this.mount.updateMatrixWorld(true); this.pos.copy(this.local).applyMatrix4(this.mount.matrixWorld); }
+  dismount(v) {
+    if (!this.mount) { this.vel.add(v); return; }
+    this.mount = null; this.vel.copy(v); this.airborne = true;
+    // off a moving vehicle at speed: the ground takes them away
+    if (this.game.chaseSpeed) { this.damage(999, this.pos, v.clone().normalize()); }
+  }
+  armor(point, dir, part) { return part === 'head' ? 2.4 : 1; }
+  update(dt) {
+    const g = this.game, p = this.player;
+    this.stateT += dt; this.sway += dt;
+    if (this.dead) return this.updateDead(dt);
+    this.aware = true;
+    this.stun = Math.max(0, this.stun - dt);
+    if (this.mount) this.followMount();
+    else {
+      this.vel.y -= 18 * dt; const c = this.collideMove(dt, 0.3); if (c && c.hit.normal.y > 0.5) { this.vel.set(0, 0, 0); this.airborne = false; }
+    }
+    const target = p.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), toP = target.clone().sub(this.pos);
+    this.yaw = dampAngle(this.yaw, Math.atan2(toP.x, toP.z), 6, dt);
+    const eye = this.pos.clone().add(new THREE.Vector3(0, 1.5, 0));
+    if (this.stun <= 0 && !p.dead) {
+      this.fireT -= dt;
+      const sees = () => !g.physics.raycastFilter(eye, target.clone().sub(eye).normalize(), eye.distanceTo(target) - 0.8, G.STATIC, () => true);
+      if (this.fireT < 0 && this.telegraph <= 0 && this.burst <= 0 && toP.length() < (this.opts.range ?? 45) && sees()) { this.telegraph = this.opts.telegraph ?? 0.9; g.audio.creak(this.pos, 0.15); }
+      if (this.telegraph > 0) { this.telegraph -= dt; if (this.telegraph <= 0) { this.burst = 3; this.burstT = 0; } }
+      if (this.burst > 0) { this.burstT -= dt; if (this.burstT <= 0) { this.shoot(target); this.burst--; this.burstT = 0.16; if (this.burst === 0) this.fireT = (this.opts.cooldown ?? 2.6) + R() * 1.8; } }
+    }
+    this.anim.aim = damp(this.anim.aim, this.telegraph > 0 || this.burst > 0 ? 1 : 0.4, 8, dt);
+    this.anim.speed = this.mount ? 0 : 0; this.anim.lookTarget = target;
+    this.syncVisual(dt, toP);
+  }
+  shoot(target) {
+    const g = this.game, p = this.player;
+    const muzzle = this.gun.getWorldPosition(new THREE.Vector3()); g.engine.cityRoot.worldToLocal(muzzle);
+    const spread = this.opts.spread ?? 1.6;
+    const aim = target.clone().addScaledVector(p.vel, 0.2).add(new THREE.Vector3((R() - 0.5) * spread, (R() - 0.5) * spread * 0.6, (R() - 0.5) * spread));
+    this.sys.bolt(muzzle, aim.sub(muzzle).normalize(), 40, this.opts.dmg ?? 7, this);
+    g.audio.gunshot('carbine', muzzle, false);
+    g.fx.flash(muzzle, 0xffa050, 5, 0.05, 6);
+    this.anim.recoil = 1;
+  }
+  syncVisual(dt, toP) {
+    const m = this.model; m.position.copy(this.pos); m.rotation.y = this.yaw;
+    if (this.mount) { const e = new THREE.Euler().setFromRotationMatrix(this.mount.matrixWorld, 'YXZ'); m.rotation.x = e.x * 0.5; m.rotation.z = e.z * 0.5; }
+    this.anim.update(dt);
+    m.updateMatrixWorld(true);
+    if (toP) this.anim.weaponIK(toP.clone().normalize());
+    const tel = this.telegraph > 0;
+    this.gun.traverse(o => { if (o.isMesh && o.material?.emissive && o.userData.muzzle) o.material.emissiveIntensity = tel ? 3 : 0; });
+    if (tel && Math.random() < 0.5) this.game.fx.flash(this.gun.getWorldPosition(new THREE.Vector3()), 0xff2010, 1.5, 0.03, 3);
+    this.syncBody();
+  }
+  die(dir) {
+    this.dead = true; this.deadT = 0; this.mount = null;
+    this.vel.addScaledVector(dir || new THREE.Vector3(), 3); this.vel.y = Math.max(this.vel.y, 2);
+    this.game.audio.impact(this.pos, 'flesh', 1);
+    this.sys.onKilled(this);
+    if (this.body) { this.game.physics.world.removeRigidBody(this.body); this.body = null; }
+    this.untether?.(); this.untether = null;
+  }
+  updateDead(dt) {
+    this.deadT += dt;
+    // fall over, and if the world is rushing past (a chase), be left behind
+    if (this.game.chaseSpeed) this.pos.z += this.game.chaseSpeed * dt;
+    this.vel.y -= 18 * dt; this.pos.addScaledVector(this.vel, dt);
+    const gr = this.game.ground, gy = gr ? -400 + gr.heightAt(this.pos.x, this.pos.z - (gr.travelFix ?? this.game.city.travel)) : -1e9;
+    if (this.pos.y < gy) { this.pos.y = gy; this.vel.set(0, 0, 0); }
+    this.model.position.copy(this.pos); this.model.rotation.x = Math.max(-Math.PI / 2, this.model.rotation.x - dt * 5);
+    this.anim.aim = 0; this.anim.update(dt);
+    if (this.deadT > 6) { this.remove(); this.removed = true; }
+  }
+  remove() { this.model.removeFromParent(); this.gun.traverse(o => o.geometry?.dispose()); if (this.body) { this.game.physics.world.removeRigidBody(this.body); this.body = null; } this.untether?.(); }
 }

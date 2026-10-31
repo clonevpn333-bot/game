@@ -15,7 +15,7 @@ import { groundMule } from './chapter1.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const worldOf = (o) => o.getWorldPosition(new THREE.Vector3());
-export const CH2 = ['c2_title', 'c2_descent', 'c2_reach', 'c2_imani', 'c2_approach', 'c2_choice', 'c2_anchor', 'c2_tomas', 'c2_end'];
+export const CH2 = ['c2_title', 'c2_descent', 'c2_reach', 'c2_imani', 'c2_approach', 'c2_choice', 'c2_anchor', 'c2_tomas'];
 const ON_GROUND = new Set(['c2_descent', 'c2_reach', 'c2_imani', 'c2_approach', 'c2_choice', 'c2_anchor']);
 const APPROACH = 650; // how far Meridian walks toward the Reach before the harvest
 
@@ -564,7 +564,7 @@ export const Chapter2 = {
     g.state.flag('c2Complete');
     await g.hud.fade(1, 2.2); this.guard(id);
     this.exit();
-    g.state.checkpoint = 'c2_end'; g.state.save(g);
+    g.state.checkpoint = 'c3_title'; g.state.save(g);
   },
   harvestCleanup() {
     const g = this.game;

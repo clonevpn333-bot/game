@@ -6,7 +6,7 @@ export const SPEAKERS = {
   TOMAS: { color: '#a9c8ff', pitch: 0.9 }, HARROW: { color: '#ff8f7f', pitch: 0.78 }, OPS: { color: '#ff8f7f', pitch: 0.85 },
   ODILE: { color: '#e9b8ff', pitch: 1.1 }, SEFA: { color: '#c8e88a', pitch: 1.05 }, 'MRS. OKAFOR': { color: '#f2c6a0', pitch: 1.15 },
   PELL: { color: '#b0f0ff', pitch: 1.6 }, JUNO: { color: '#ffc0d8', pitch: 1.7 }, IVO: { color: '#d8d0b0', pitch: 0.95 }, DACE: { color: '#c0d0a0', pitch: 1.0 },
-  RADIO: { color: '#c9c3b6', pitch: 1.0 }, 'CALLOW REACH': { color: '#e8c48a', pitch: 1.12 }, TOBIAS: { color: '#d8c8a0', pitch: 0.8 }, AMA: { color: '#ffd0a0', pitch: 1.65 }, VILLAGER: { color: '#d0c8b8', pitch: 1.0 }, IMANI: { color: '#e8c48a', pitch: 1.12 }, PA: { color: '#c9c3b6', pitch: 1.0 }, WORKER: { color: '#d0c8b8', pitch: 1.0 }, VENDOR: { color: '#d0c8b8', pitch: 1.1 },
+  RADIO: { color: '#c9c3b6', pitch: 1.0 }, 'CALLOW REACH': { color: '#e8c48a', pitch: 1.12 }, TOBIAS: { color: '#d8c8a0', pitch: 0.8 }, MAREN: { color: '#f0b080', pitch: 0.95 }, KOFI: { color: '#a0d0f0', pitch: 0.8 }, PIP: { color: '#fff0a0', pitch: 1.55 }, WREN: { color: '#d8b8ff', pitch: 1.05 }, RAIDER: { color: '#ff7a5a', pitch: 0.85 }, AMA: { color: '#ffd0a0', pitch: 1.65 }, VILLAGER: { color: '#d0c8b8', pitch: 1.0 }, IMANI: { color: '#e8c48a', pitch: 1.12 }, PA: { color: '#c9c3b6', pitch: 1.0 }, WORKER: { color: '#d0c8b8', pitch: 1.0 }, VENDOR: { color: '#d0c8b8', pitch: 1.1 },
 };
 
 export class Dialogue {
