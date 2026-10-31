@@ -84,8 +84,9 @@ export const Chapter1 = {
         a.place(back, P.yaw); return;
       }
       if (d > 3.4 || (a.target && d > 2.4)) {
-        const dir = a.pos.clone().sub(P.pos).setY(0); if (dir.lengthSq() < 0.01) dir.set(1, 0, 0); dir.normalize();
-        const goal = P.pos.clone().addScaledVector(dir, 2.2).add(V(-dir.z, 0, dir.x).multiplyScalar(0.8));
+        // beside Rook (whichever side they're already on), a little ahead — never between him and the camera
+        const f = P.forward(), right = V(-f.z, 0, f.x), side = a.pos.clone().sub(P.pos).dot(right) >= 0 ? 1 : -1;
+        const goal = P.pos.clone().addScaledVector(right, side * 1.8).addScaledVector(f, 0.6);
         goal.y = this.groundAt(goal.x, Math.max(a.pos.y, P.pos.y), goal.z);
         a.target = goal; a.speed = d > 12 ? 5.4 : d > 6 ? 3.6 : 1.7;
       } else if (a.target) { a.target = null; a.vel.set(0, 0, 0); }

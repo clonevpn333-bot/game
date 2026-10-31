@@ -126,7 +126,7 @@ export class Player {
 
     // fell off the world
     if (this.pos.y < g.killY && !this.dead) g.onPlayerFell?.();
-    else if (!this.dead && this.state === 'air' && this.airTime > 2.2 && this.vel.y < -28) g.onPlayerFell?.(); // a long free-fall: no need to watch it all the way down
+    else if (!this.dead && this.state === 'air' && this.airTime > 2.2 && this.vel.y < -28 && (this.airY ?? this.pos.y) - this.pos.y > 25) g.onPlayerFell?.(); // a long free-fall: no need to watch it all the way down
     // remember recent footing (a spot stood on for a while) as a respawn fallback after falls
     if (this.state === 'ground' && !this.dead) { this.groundT = (this.groundT || 0) + g.dt; if (this.groundT > 1.5 && g.time - (this.safeT || -9) > 1) { this.safeT = g.time; (this.safe ||= []).push({ p: this.pos.clone(), t: g.time }); if (this.safe.length > 8) this.safe.shift(); } }
     else this.groundT = 0;
@@ -222,7 +222,7 @@ export class Player {
 
     // gravity
     // (use the current state: a jump this frame has already left the ground, so don't clamp its lift-off speed)
-    if (this.state !== 'ground') { this.vel.y -= GRAV * dt; this.airTime += dt; this.maxFall = Math.max(this.maxFall, -this.vel.y); }
+    if (this.state !== 'ground') { if (this.airTime === 0) this.airY = this.pos.y; this.vel.y -= GRAV * dt; this.airTime += dt; this.maxFall = Math.max(this.maxFall, -this.vel.y); }
     else { this.vel.y = -2; this.airTime = 0; } // a constant stick-to-floor push (it used to accumulate and stall Rook on stairs)
     this.vel.y = Math.max(this.vel.y, -48);
 
@@ -232,6 +232,8 @@ export class Player {
     const res = this.moveBy(_v.copy(this.vel).multiplyScalar(dt));
     // ceiling bonk
     if (this.vel.y > 0 && res.moved.y < this.vel.y * dt * 0.5) this.vel.y = 0;
+    // wedged on an edge (falling but not actually going down): don't let the fall speed build up
+    if (this.state === 'air' && this.vel.y < -4 && res.moved.y > this.vel.y * dt * 0.25) { this.vel.y = -4; this.airTime = Math.min(this.airTime, 0.5); }
     const wasAir = this.state === 'air';
     const nowGrounded = res.grounded && this.vel.y <= 0.5;
     if (nowGrounded) {

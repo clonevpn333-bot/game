@@ -16,6 +16,11 @@ export function makeCast(game) {
   C.kofi = new Actor(game, { name: 'KOFI', collide: true, look: { hairStyle: 'shaved', beard: true, hair: '#1b1512', skin: '#4a2c1d', outfit: 'vendor', apron: '#c8a070', primary: '#3a6a8a', build: 0.8, height: 1.03 } });
   C.pip = new Actor(game, { name: 'PIP', collide: false, look: { kid: true, hairStyle: 'curls', hair: '#6b4426', skin: '#e8b896', outfit: 'casual', primary: '#d8a040', freckles: true } });
   C.wren = new Actor(game, { name: 'WREN', collide: true, look: { hairStyle: 'long', hair: '#e9e4dc', skin: '#8e5a3a', outfit: 'casual', primary: '#5a3a6a', scarf: '#3a6a8a', build: 0.4, height: 0.94, age: 1 } });
+  C.harrow = new Actor(game, { name: 'HARROW', collide: true, look: { hairStyle: 'crop', hair: '#c8c4bc', skin: '#d29a72', outfit: 'engineer', coat: '#2a2e36', primary: '#3a3e46', build: 0.6, frame: 0.6, height: 1.05, age: 1, brows: '#9c9a96' } });
+  C.ferrand = new Actor(game, { name: 'FERRAND', collide: true, look: { hairStyle: 'long', hair: '#e9e4dc', skin: '#8e5a3a', outfit: 'casual', primary: '#e8e0d0', secondary: '#c8a040', scarf: '#c8a040', build: 0.3, frame: 0.7, height: 1.07, earrings: true } });
+  C.orel = new Actor(game, { name: 'OREL', collide: true, look: { hairStyle: 'curls', hair: '#3a2618', skin: '#b7794f', outfit: 'casual', primary: '#5a3a6a', scarf: '#d8a040', build: 0.2, height: 1.02, glasses: true } });
+  C.lumi = new Actor(game, { name: 'LUMI', collide: false, look: { kid: true, hairStyle: 'bun', hair: '#1b1512', skin: '#6b4029', outfit: 'casual', primary: '#ff8fb0' } });
+  C.sable = new Actor(game, { name: 'SABLE', collide: true, look: { hairStyle: 'shaved', beard: true, hair: '#e9e4dc', skin: '#4a2c1d', outfit: 'engineer', primary: '#4a5a4a', build: 0.6, height: 0.98, age: 1, glasses: true } });
   C.pell = new Actor(game, { name: 'PELL', collide: false, look: { kid: true, hairStyle: 'crop', hair: '#3a2618', skin: '#d29a72', outfit: 'casual', primary: '#3a6a8a', freckles: true } });
   C.juno = new Actor(game, { name: 'JUNO', collide: false, look: { kid: true, hairStyle: 'braid', hair: '#1b1512', skin: '#8e5a3a', outfit: 'casual', primary: '#c85a3a' } });
   for (const a of Object.values(C)) { game.addActor(a); a.hidden = true; a.char.group.visible = false; }

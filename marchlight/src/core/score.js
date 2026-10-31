@@ -68,6 +68,8 @@ const RM = mel('D5:1 F#5:.5 E5:.5 D5:1 A4:1 | B4:1.5 A4:.5 F#4:2 | G4:1 A4:1 B4:
 const RM2 = mel('F#5:1 E5:.5 D5:.5 E5:1 A4:1 | B4:1 D5:1 E5:2 | F#5:1 E5:1 D5:1 B4:.5 A4:.5 | D5:4');
 const CV = mel('A4:.5 C#5:.5 E5:1 D5:.5 C#5:.5 B4:1 | A4:.5 B4:.5 C#5:.5 D5:.5 E5:2 | G5:1 F#5:.5 E5:.5 D5:1 B4:1 | C#5:1 B4:.5 A4:.5 A4:2'); // the Long Road's fiddle tune
 const CV2 = mel('E5:1 E5:.5 F#5:.5 G5:1 E5:1 | D5:1 B4:1 A4:2 | B4:.5 C#5:.5 D5:1 E5:1 C#5:1 | A4:4');
+const VW = mel('F#5:2 E5:1 | D5:2 A4:1 | B4:1 C#5:1 D5:1 | E5:3 | G5:2 F#5:1 | E5:2 D5:1 | C#5:1 D5:1 E5:1 | D5:3 | F#5:2 E5:1 | D5:2 B4:1 | G4:1 A4:1 B4:1 | C#5:3 | E5:2 D5:1 | C#5:1 B4:1 A4:1 | B4:1 C#5:1 E5:1 | D5:3'); // Vesper's waltz
+const VW2 = mel('A5:1 F#5:1 D5:1 | E5:1 C#5:1 A4:1 | B4:1 D5:1 F#5:1 | E5:3');
 const UF_HOME = mel('C4:1 F4:1 G4:2 | A4:1.5 G4:.5 F4:1 C4:1 | D4:1 E4:1 F4:1 B4:1 | A4:4'); // the theme, remembered, in F
 
 const VOW = { ah: [[730, 1], [1090, 0.5], [2440, 0.22], [3300, 0.16]], oo: [[300, 1], [870, 0.3], [2240, 0.1], [3300, 0.16]], eh: [[530, 1], [1840, 0.4], [2480, 0.2], [3300, 0.16]] };
@@ -857,6 +859,20 @@ const CUES = {
     if (n === 4 || n === 12) s.seq('celesta', aug(UF, 1.6), t, b, 0.07, 12);
     if (n === 8) s.choir([N('C4'), N('Db4')], t, B * 4, 0.04, { vowel: 'oo', att: 5 });
     if (n === 15) s.riser(t + b, 3 * b, 0.06);
+  } },
+
+  // CHAPTER FIVE — Vesper: a waltz. Harp and pizzicato on the beat, strings sighing on two and three,
+  // the flute with an elegant tune, and the main theme turned to three-four for the festival
+  vesper: { bpm: 132, meter: 3, gain: 0.72, len: 16, back: 0, bar(s, n, t, b, k) {
+    const B = 3 * b, H = ['D', 'D', 'A', 'A', 'Bm7', 'Gadd9', 'Em7', 'A', 'D', 'D', 'A', 'Bm7', 'G', 'A', 'D', 'D'];
+    const c = hc(H[n]);
+    s.pluck('harp', c.b + 12, t, 0.2); s.pluck('harp', c.v[1] + 12, t + b, 0.12); s.pluck('harp', c.v[2] + 12, t + 2 * b, 0.12);
+    s.strings(c.v.slice(1), t + b, 2 * b, 0.11);
+    if (n % 4 === 0) s.strings([c.b + 12], t, B * 4, 0.12, { ch: 'strLo' });
+    if (n === 0) s.line('flute', VW, t, b, { vel: 0.42 });
+    if (n === 8) { s.line('flute', VW, t, b, { vel: 0.4, tr: 12 }); s.line('cello', VW, t, b, { vel: 0.3, tr: -12 }); }
+    if (n === 4 || n === 12) s.seq('celesta', VW2, t, b, 0.12, 12);
+    if (n >= 8) s.choir(up(c.v.slice(1), 12), t, B, 0.04, { vowel: 'ah' });
   } },
 };
 

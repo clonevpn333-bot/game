@@ -24,7 +24,7 @@ export function enterStillwater(s, beat) {
   const at = g.engine.atmosphere?.uniforms; if (at && s.fogSave === undefined) { s.fogSave = at.uDensity.value; at.uDensity.value *= 5; }
   if (!s.lamp) { // the visor lamp: the only light in the city
     const l = new THREE.SpotLight(0xdfe8ff, 70, 42, 0.42, 0.55, 1.4); g.engine.cityRoot.add(l, l.target);
-    s.lamp = l; s.lampOff = g.add(() => { const cam = g.engine.camera, d = cam.getWorldDirection(new THREE.Vector3()); l.position.copy(cam.position).add(V(0, -0.2, 0)); l.target.position.copy(cam.position).addScaledVector(d, 12); });
+    s.lamp = l; s.lampOff = g.add(() => { const cam = g.engine.camera, d = cam.getWorldDirection(new THREE.Vector3()), P = g.player; if (g.director.active) { l.position.copy(cam.position); } else { l.position.copy(P.pos).add(V(0, 1.75, 0)).addScaledVector(d, 0.45); } l.target.position.copy(l.position).addScaledVector(d, 12); }); // a headlamp: from Rook's brow, where the camera looks
   }
 }
 export function leaveStillwater(s) {
@@ -36,7 +36,7 @@ export function leaveStillwater(s) {
 export function c4Spawn(s, cp) {
   const Z = s.zone; if (!Z || Z.name !== 'stillwater') return null;
   return { c4_arrive: [Z.spots.edge, Math.PI], c4_square: [Z.spots.square.clone().add(V(0, 0, 16)), Math.PI], c4_works: [Z.spots.worksDoor.clone().add(V(0, 0, 4)), Math.PI],
-    c4_escape: [Z.spots.office.clone().add(V(-3.6, 0, 7)), 0] }[cp] || null;
+    c4_escape: [Z.spots.stairBottom.clone().add(V(-1.6, 0, 1.5)), 0] }[cp] || null;
 }
 
 // ------------------------------------------------------------------ bursts: the held city twitching
@@ -84,7 +84,7 @@ export const Chapter4 = {
     for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2, rr = 7 + Math.random() * 6; person(at(S.square.x + Math.cos(a) * rr, S.square.z + Math.sin(a) * rr), Math.random() * 6, ['phone', null, 'watch', null][i % 4], i % 3 ? 1.2 : 0); }
     // some are still alive: they move in bursts, a step at a time, and turn toward the light
     list.forEach((a, i) => { if (i % 3) return;
-      B.add({ pos: () => a.pos, min: 2.5, max: 7, dur: [0.25, 0.6], start: () => { a.anim.setMode('loco'); if (a.frozenAct) a.activity(a.frozenAct); const P = g.player; const d = P.pos.clone().sub(a.pos).setY(0); if (d.length() < 30) { d.setLength(0.7); a.goTo(a.pos.clone().add(d), 2.2); } a.face(P.pos.clone()); },
+      B.add({ pos: () => a.pos, min: 2.5, max: 7, dur: [0.25, 0.6], start: () => { a.anim.setMode('loco'); if (a.frozenAct) a.activity(a.frozenAct); const P = g.player; const d = P.pos.clone().sub(a.pos).setY(0); if (d.length() < 30 && d.length() > 3.2) { d.setLength(0.7); a.goTo(a.pos.clone().add(d), 2.2); } a.face(P.pos.clone()); },
         end: () => { a.stop(); a.anim.setMode('freeze'); } }); });
     this.c4List = list;
     return list;
@@ -184,8 +184,8 @@ export const Chapter4 = {
     foes.forEach(e => { if (!e.dead) e.timeScale = 1; });
     await this.waitFor(() => foes.every(e => e.dead)); this.guard(id);
     // the archive
-    this.objective('Search the archive', 'Inside the town hall.', S.terminal.clone().add(V(0, Z.gy(S.terminal.x, S.terminal.z), 0)));
-    const term = S.terminal.clone(); term.y += Z.gy(term.x, term.z);
+    const term = S.terminal.clone(); // already on the floor's height (Zone.v)
+    this.objective('Search the archive', 'Inside the town hall.', term);
     await this.useOnce({ getPos: () => term, radius: 2.4, label: 'Wake the terminal' }); this.guard(id);
     Z.screen.material.color.setRGB(0.3, 1.6, 0.6); g.audio.ui('radio');
     await readDoc(this, 'MUNICIPAL RECORD 41-C', [
@@ -224,7 +224,7 @@ export const Chapter4 = {
           if (under && pr.t < 0.2 && !pr.hurt) { pr.hurt = true; P.damage(45, pr.ram.position); P.vel.x += (P.pos.x > pr.ram.position.x ? 1 : -1) * 8; } },
         end: () => { pr.hit = false; pr.hurt = false; pr.ram.position.y = pr.up; } });
     }
-    this.objective('Search the works office', 'Through the press hall. Move between the slams.', () => P.pos.z > SW.works + 23 ? S.worksDoor : P.pos.y < Z.gy(S.office.x, S.office.z) + 2 && P.pos.distanceTo(S.office) > 5 ? S.office.clone().add(V(-3.6, 0, 6.5)) : S.logbookW);
+    this.objective('Search the works office', 'Through the press hall. Move between the slams.', () => P.pos.z > SW.works + 19 ? Z.v(SW.x - 2.4, 0, SW.works + 15) : P.pos.y < Z.gy(S.office.x, S.office.z) + 0.6 && Math.hypot(P.pos.x - S.stairBottom.x, P.pos.z - S.stairBottom.z) > 1.4 ? S.stairBottom : P.pos.y < S.stairTop.y - 0.3 ? S.stairTop.clone().add(V(0, 0, -1.2)) : S.logbookW);
     this.trigger(() => P.pos.z < SW.works + 22, () => this.banter([['BRAM', 'Wait for it… wait… there\'s no rhythm to them. There\'s no rhythm!', { dur: 3.4, emotion: 'worried' }]]));
     await this.useOnce({ getPos: () => S.logbookW, radius: 2.2, label: 'Read the logbook' }); this.guard(id);
     offB();
@@ -267,7 +267,9 @@ export const Chapter4 = {
     await this.radio('NIA', 'Rook! Everything just moved — everything, the whole street! I\'m bringing the Mule in — get to the square!', { dur: 4.4 });
     this.exit();
     const offB = this.companion(C.bram, { far: 30 });
-    const grow = ST.add({ pos: S.works.clone(), r: 12, base: 0.9, pulse: 0.05, period: 3, grow: 4.2, maxR: 130 });
+    // it starts at the far end of the works, behind Rook, and spreads at a run you can just outpace
+    const grow = ST.add({ pos: S.office.clone().add(V(0, 0, -6)), r: 5, base: 0.88, pulse: 0.05, period: 3, grow: 0, maxR: 150 });
+    setTimeout(() => { grow.grow = 3.1; }, 1500);
     const m = groundMule(this); m.visible = true; const pick = S.square.clone().add(V(0, 0, 14)); m.position.copy(pick).add(V(3, 0.3, 0)); m.rotation.set(0, Math.PI, 0);
     show(C.nia, m.position.clone(), Math.PI); C.nia.mount = m.userData.cab; C.nia.mountYaw = 0; C.nia.anim.setMode('sit');
     this.objective('Get out', 'Back to the square — Nia\'s bringing the Mule. Don\'t stop moving.', pick);
@@ -291,7 +293,7 @@ export const Chapter4 = {
     this.bursts?.off(); this.bursts = null; g.stillness?.clear(); g.audio.duck(1, 1);
     this.equip(true, true); P.relaxed = true; g.weapons.locked = true;
     // a rise outside the city: the Mule, the three of them, the hanging rain glowing faintly behind
-    const camp = S.edge.clone().add(V(-6, 0, 30)); camp.y = Z.gy(camp.x, camp.z);
+    const camp = S.edge.clone().add(V(-6, 0, 16)); camp.y = Z.gy(camp.x, camp.z); // inside the zone's ground (it ends at z = 80)
     const m = groundMule(this); m.visible = true; m.position.copy(camp).add(V(4, 0.3, -1)); m.rotation.set(0, 0.6, 0);
     P.teleport(camp.clone(), Math.PI * 0.2); g.camera.snapBehind(Math.PI * 0.2, 0.05);
     show(C.bram, camp.clone().add(V(-2.2, 0, -1.6)), 0.6); C.bram.activity(null); C.bram.anim.setMode('loco'); C.bram.pose('sitGround');

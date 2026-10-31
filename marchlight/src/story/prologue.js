@@ -12,11 +12,12 @@ import { Chapter1, CH1, enterSurface, leaveSurface, c1Spawn } from './chapter1.j
 import { Chapter2, CH2, enterReach, approachMode, c2Spawn, restoreLights, C2_ON_GROUND } from './chapter2.js';
 import { Chapter3, CH3, enterConvoy, c3Spawn } from './chapter3.js';
 import { Chapter4, CH4, enterStillwater, c4Spawn } from './chapter4.js';
+import { Chapter5, CH5, enterVesper, leaveVesper, c5Spawn } from './chapter5.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const PROLOGUE = ['wake', 'terraces', 'market', 'tram', 'lower', 'hangar', 'range', 'spine', 'galleryB', 'relay', 'shearer', 'rescue', 'rescueC', 'title'];
-const ORDER = [...PROLOGUE, ...CH1, ...CH2, ...CH3, ...CH4];
-const chapterOf = (b) => CH1.includes(b) ? 'chapter1' : CH2.includes(b) ? 'chapter2' : CH3.includes(b) ? 'chapter3' : CH4.includes(b) ? 'chapter4' : 'prologue';
+const ORDER = [...PROLOGUE, ...CH1, ...CH2, ...CH3, ...CH4, ...CH5];
+const chapterOf = (b) => CH1.includes(b) ? 'chapter1' : CH2.includes(b) ? 'chapter2' : CH3.includes(b) ? 'chapter3' : CH4.includes(b) ? 'chapter4' : CH5.includes(b) ? 'chapter5' : 'prologue';
 const _w = new THREE.Vector3();
 class Abort extends Error {}
 
@@ -141,7 +142,7 @@ export class Prologue {
     const S = g.districts.spine, spawn = {
       spine: [V(184, LD.floor, -190), Math.PI / 2], galleryB: [S.spots.vantage, Math.PI], relay: [S.spots.deckArrive, 0], shearer: [S.spots.deckArrive, 0],
       rescue: [S.spots.deckCenter.clone().add(V(-6, 0, 0)), -Math.PI / 2], rescueC: [V(199, SP.deck, -292), -Math.PI / 2],
-    }[cp] || c1Spawn(this, cp) || c2Spawn(this, cp) || c3Spawn(this, cp) || c4Spawn(this, cp);
+    }[cp] || c1Spawn(this, cp) || c2Spawn(this, cp) || c3Spawn(this, cp) || c4Spawn(this, cp) || c5Spawn(this, cp);
     if (spawn) { P.teleport(spawn[0].clone(), spawn[1]); g.camera.snapBehind(spawn[1], 0.1); }
     else if (P.pos.y < g.killY + 20 && P.safe?.length) { const s0 = P.safe.find(e => g.time - e.t > 3) || P.safe[0]; P.teleport(s0.p.clone(), P.yaw); } // fell elsewhere: last solid footing
     this.retrying = cp;
@@ -177,7 +178,7 @@ export class Prologue {
     for (const a of Object.values(C)) { a.frozen = false; a.scripted = false; }
     g.districts.lower.mule.visible = true;
     if (this.groundMule) this.groundMule.visible = false;
-    this.harvestCleanup?.(); this.c3Cleanup?.(); this.c4Cleanup?.(); approachMode(this, false); restoreLights(this); g.engine.grade.uniforms.uWarmth && (g.engine.grade.uniforms.uWarmth.value = 0);
+    this.harvestCleanup?.(); this.c3Cleanup?.(); this.c4Cleanup?.(); this.c5Cleanup?.(); approachMode(this, false); restoreLights(this); g.engine.grade.uniforms.uWarmth && (g.engine.grade.uniforms.uWarmth.value = 0);
   }
   setBay(k) { const L = this.game.districts.lower; L.openBay(k); if (k > 0.5 && L.bayDoorCol) { this.game.physics.world.removeCollider(L.bayDoorCol, true); L.bayDoorCol = null; } else if (k < 0.5 && !L.bayDoorCol) { L.bayDoorCol = this.game.physics.addBox({ x: LD.x1 + 0.3, y: LD.floor + 7, z: -190 }, { x: 0.3, y: 7, z: 11 }, null, {}); } }
   equip(hasTether, weapons) {
@@ -213,6 +214,8 @@ export class Prologue {
     g.state.chapter = ch;
     const mood = (m) => { if ((g.sky.mood || 'morning') !== m) g.sky.setMood(m); };
     if (ch !== 'chapter3' && ch !== 'chapter4') g.cityHidden = false;
+    if (ch !== 'chapter5' && this.vesper) leaveVesper(this);
+    if (ch === 'chapter5') { if (beat !== 'c5_title') enterVesper(this); if (beat !== 'c5_title' && beat !== 'c5_end') mood({ c5_festival: 'dusk', c5_rooftop: 'night', c5_reception: 'night' }[beat] || 'day'); }
     if (ch === 'chapter4') { if (beat !== 'c4_title') enterStillwater(this, beat); if (beat !== 'c4_title') mood('night'); }
     if (ch === 'prologue') { if (this.zone) leaveSurface(this); mood('morning'); }
     else if (ch === 'chapter3') { if (beat !== 'c3_title') enterConvoy(this, beat); if (beat !== 'c3_title') mood({ c3_camp: 'dusk', c3_nia: 'night' }[beat] || 'morning'); }
@@ -1332,4 +1335,4 @@ export class Prologue {
     this.exit();
   }
 }
-Object.assign(Prologue.prototype, Chapter1, Chapter2, Chapter3, Chapter4);
+Object.assign(Prologue.prototype, Chapter1, Chapter2, Chapter3, Chapter4, Chapter5);

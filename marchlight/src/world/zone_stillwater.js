@@ -58,7 +58,8 @@ export function buildStillwater(game) {
   const TH = V(SQ.x, 0, SQ.z - 26); S.hall = TH;
   b.box('plaster', [TH.x - 9, TH.y + 6, TH.z - 4], [8, 12, 10], { color: 0xb8ac98, tex: 3 }); b.box('plaster', [TH.x + 9, TH.y + 6, TH.z - 4], [8, 12, 10], { color: 0xb8ac98, tex: 3 });
   b.box('plaster', [TH.x, TH.y + 10, TH.z - 4], [10, 4, 10], { color: 0xb8ac98, tex: 3 });
-  b.box('plaster', [TH.x, TH.y + 4, TH.z - 8.8], [10, 8, 0.4], { color: 0xb8ac98, tex: 3 });
+  for (const sx of [-1, 1]) b.box('plaster', [TH.x + sx * 3.4, TH.y + 4, TH.z - 8.8], [3.2, 8, 0.4], { color: 0xb8ac98, tex: 3 });   // back wall, with a door through to the works
+  b.box('plaster', [TH.x, TH.y + 5.6, TH.z - 8.8], [3.6, 4.8, 0.4], { color: 0xb8ac98, tex: 3 });
   for (const sx of [-1, 1]) b.box('plaster', [TH.x + sx * 4.8, TH.y + 4, TH.z - 4], [0.4, 8, 10], { color: 0xb8ac98, tex: 3 });
   for (let k = -2; k <= 2; k++) b.cyl('plaster', [TH.x + k * 2.2, TH.y + 3.2, TH.z + 1.4], 0.35, 6.4, { color: 0xd8ccb8, seg: 12, collide: true });
   b.box('plaster', [TH.x, TH.y + 6.6, TH.z + 1.4], [12, 0.6, 1.4], { color: 0xc8bca8, collide: false });
@@ -102,11 +103,12 @@ export function buildStillwater(game) {
   }
   // a walkway beside the conveyor and crates on it frozen mid-trip
   for (let k = 0; k < 8; k++) crate(b, [W.x + (r() - 0.5) * 1.6, wy + 1.04, W.z - HL / 2 + 4 + k * 5.2], 0.8, { ry: r() });
-  for (let i = 0; i < 6; i++) barrel(b, [W.x + (r() < 0.5 ? -5.5 : 5.5), wy, W.z - HL / 2 + 3 + i * 7]);
+  for (let i = 0; i < 6; i++) barrel(b, [W.x - 5.5, wy, W.z - HL / 2 + 3 + i * 7]);
   // the works office at the far end, up a stair
   const O = V(W.x + 5, 0, W.z - HL / 2 + 4); S.office = O;
   b.box('concrete', [O.x, wy + 3.0, O.z], [5, 0.3, 6], { color: 0x6a6866 });
-  b.stairs('concrete', [O.x - 3.6, wy, O.z + 6], 6, 3.15, 1.4, Math.PI, { color: 0x6a6866, rails: true });
+  b.stairs('concrete', [O.x + 1, wy, O.z + 9], 6, 3.15, 1.4, Math.PI, { color: 0x6a6866, rails: true });   // up the east wall, onto the office floor
+  S.stairBottom = V(O.x + 1, 0, O.z + 9.6); S.stairTop = new THREE.Vector3(O.x + 1, wy + 3.15, O.z + 2.4);
   b.box('wood', [O.x + 0.6, wy + 3.9, O.z - 1.8], [2.4, 0.08, 1.0], { color: 0x5a3a28 }); b.box('wood', [O.x + 0.6, wy + 3.5, O.z - 1.8], [2.3, 0.8, 0.9], { color: 0x4a3020 });
   b.box('paint', [O.x + 0.4, wy + 4.0, O.z - 1.8], [0.5, 0.06, 0.36], { color: 0x2a4a3a, collide: false }); // the logbook
   S.logbook = V(O.x + 0.4, wy + 4.0 - Z.gy(O.x, O.z), O.z - 1.8); S.logbookW = new THREE.Vector3(O.x + 0.4, wy + 4.0, O.z - 1.8);
