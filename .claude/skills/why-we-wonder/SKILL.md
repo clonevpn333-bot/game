@@ -188,3 +188,21 @@ FILM.pb.jet DC-9 with breakup, pb.clouds, pb.alt altimeter, FILM.pbCert, FILM.pb
   Never route an effect across the face; front-side hits land beside the figure.
 - **Something moves every second in every scene.** Add `pb.ambient(ctx, T, {ground, seed})`: distant sheet-lightning flicker, rain splashes,
   wind-swept foreground grass, blown leaves. Add a slow camera push on any held frame.
+
+## CLAY 3D STORY FORMAT (ep10 Haunted Shift, ep11 Roadster Ghost; "Zach D Films" style)
+- Stack: `videos/haunted-shift/remotion/src/three/` — `clay.js` (clay materials w/ thumbprint normal map, `makeChar` stylized
+  posable characters: 3D eyes+lids, brows, opening mouth, hair styles, outfits, zombie variant, washable makeup; `pose({walk, run,
+  zarms, armL/armR [fwd,out,twist], elL/elR, legL/kneeL (seated = 1.45/1.45), crouch, headYaw/Pitch/Tilt, lookX/Y, blink, lids,
+  brow, open, smile, wide, sq})`), `sets.js` (pumpkins, manor, corridor, street, trucks, rain, phone, fog, halo glow sprites),
+  `film.js` (all shots as [a,b,fn(t,T)] in ONE persistent three scene; sets live at different x offsets), `Stage.tsx` (one canvas).
+  Roadster kit: `videos/roadster-ghost/remotion/src/three/roadster.js` (car w/ thrusters + screen, ghost, cemetery, ramp, force arrows in film.js).
+- Lip-sync: `vo/lips.py` → `lips.json` per-speaker mouth envelopes (30 fps). Multi-voice cast via Kokoro (no ElevenLabs key in env):
+  narrator am_michael 1.12, hero am_puck, bro am_fenrir, girl af_bella, kid af_sky (+pitch), ghost af_sky 0.92 + aecho.
+- Captions: `Overlay.tsx` — Luckiest Guy, 2–3 words per chunk, each word pops on its onset, slime/orange/red emphasis, SLAM set,
+  speaker tags for dialogue, claim badges ("TESLA'S CLAIM", "IN THEORY"), flashes, end card "SUBSCRIBE FOR MORE".
+- Preview: `node tools/stills.mjs <Comp> <dir> <t1,t2,..> [scale] [cols]` (bundles once). Cameras: keep ≥1.5 m from faces unless an
+  intentional ECU; never put a camera behind a character in a reaction shot; check walls (corridor inner face ±1.6).
+- Render: `--timeout=300000` (world build is heavy), MeshStandardMaterial + 1024 PCF shadows (Physical+2048 PCFSoft = 2x slower);
+  ~2.3 s/frame at 4x on swangle → 61 s @30fps ≈ 70 min. Don't run stills during the render. `pkill -f` patterns must not match
+  your own command line.
+- USER RULE: a story video must still TEACH (real mechanism, numbers, hedged claims) and must never read as a promo for a product.
