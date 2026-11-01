@@ -36,6 +36,16 @@ export const box = (w, h, d, x, y, z, c, rx = 0, g, ry = 0) => { const geo = new
 // flat polygon (list of Vector3) as a part, both windings
 export function poly(pts, c, g) { const P = []; for (let i = 1; i < pts.length - 1; i++) for (const [a, b, d] of [[0, i, i + 1], [0, i + 1, i]]) P.push(pts[a].x, pts[a].y, pts[a].z, pts[b].x, pts[b].y, pts[b].z, pts[d].x, pts[d].y, pts[d].z); const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); geo.computeVertexNormals(); return g === undefined ? { geo, c } : { geo, c, g }; }
 
+// auto-smooth: per-vertex normal = average of the adjacent face normals within `deg` of this face (smooth curves, crisp creases)
+export function autoSmooth(geo, deg = 32) {
+  const pos = geo.attributes.position.array; const n = pos.length / 9; const fn = new Float32Array(n * 3); const cosT = Math.cos(deg * Math.PI / 180);
+  for (let f = 0; f < n; f++) { const o = f * 9; const ux = pos[o + 3] - pos[o], uy = pos[o + 4] - pos[o + 1], uz = pos[o + 5] - pos[o + 2], vx = pos[o + 6] - pos[o], vy = pos[o + 7] - pos[o + 1], vz = pos[o + 8] - pos[o + 2]; let cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx; const l = Math.hypot(cx, cy, cz) || 1; fn[f * 3] = cx / l; fn[f * 3 + 1] = cy / l; fn[f * 3 + 2] = cz / l; }
+  const key = (i) => Math.round(pos[i * 3] * 2000) + ',' + Math.round(pos[i * 3 + 1] * 2000) + ',' + Math.round(pos[i * 3 + 2] * 2000); const map = new Map();
+  for (let i = 0; i < n * 3; i++) { const k = key(i); let l = map.get(k); if (!l) map.set(k, (l = [])); l.push(i); }
+  const nor = new Float32Array(n * 9);
+  for (const list of map.values()) for (const i of list) { const f = (i / 3) | 0; let x = 0, y = 0, z = 0; for (const j of list) { const g = (j / 3) | 0; const d = fn[f * 3] * fn[g * 3] + fn[f * 3 + 1] * fn[g * 3 + 1] + fn[f * 3 + 2] * fn[g * 3 + 2]; if (d >= cosT) { x += fn[g * 3]; y += fn[g * 3 + 1]; z += fn[g * 3 + 2]; } } const l = Math.hypot(x, y, z) || 1; nor[i * 3] = x / l; nor[i * 3 + 1] = y / l; nor[i * 3 + 2] = z / l; }
+  geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); return geo;
+}
 const ORDER = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'];
 function inPoly(pt, poly2) { let ins = false; for (let i = 0, j = poly2.length - 1; i < poly2.length; j = i++) { const [zi, yi] = poly2[i], [zj, yj] = poly2[j]; if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < (zj - zi) * (pt[1] - yi) / (yj - yi) + zi) ins = !ins; } return ins; }
 
@@ -75,18 +85,18 @@ export function buildCreaseCar(def, spec, paintColor) {
   const capFan = (mat, pts, dir) => { for (const s of [1, -1]) T.fan(mat, pts.map((v) => (s > 0 ? v : mirror(v))), dir); };
   if (def.noseCap) def.noseCap(cols[NZ], capFan); else { const [p0, p1, p2, p2m, p3, p4, p5, p6, p7] = cols[NZ]; capFan('trim', [V(0, p0.y, p0.z), p7, p6, p5, p4, p3, p2m, p2, p1, p0], V(0, 0, 1)); }
   if (def.tailCap) def.tailCap(cols[0], capFan); else { const [p0, p1, p2, p2m, p3, p4, p5, p6, p7] = cols[0]; capFan('paint', [V(0, p3.y, p0.z), p7, p6, p5, p4, p3], V(0, 0, -1)); capFan('trim', [V(0, p3.y, p0.z), p3, p2m, p2, p1, p0], V(0, 0, -1)); }
-  const bodyGeo = T.geometry(['paint', 'trim']); const bodyMesh = new THREE.Mesh(bodyGeo, [paint, trim]);
+  const bodyGeo = autoSmooth(T.geometry(['paint', 'trim']), def.smooth ?? 32); const bodyMesh = new THREE.Mesh(bodyGeo, [paint, trim]);
   // ---- canopy ----
   const C = def.canopy; const CT = new Tris(['paint', 'glass', 'trim']); const NC = C.n || 100; const ccols = [];
   for (let i = 0; i <= NC; i++) { const z = C.z0 + (C.z1 - C.z0) * i / NC; const r = canopy(z); const ring = [...r]; for (let k = 4; k >= 0; k--) ring.push(mirror(r[k])); ccols.push(ring); }
   const CN = ccols[0].length;
   for (let i = 0; i < NC; i++) for (let k = 0; k < CN - 1; k++) { const a = ccols[i][k], b = ccols[i][k + 1], cc = ccols[i + 1][k + 1], d = ccols[i + 1][k]; const j = k < 5 ? k : CN - 2 - k; const zc = (a.z + cc.z) / 2, yc = (a.y + b.y + cc.y + d.y) / 4; CT.quad(C.mat(j, zc, yc, pwl(C.belt, zc)), a, b, cc, d); }
   { const r = ccols[0]; CT.fan(C.rearCap || 'paint', [V(0, r[0].y, r[0].z), ...r], V(0, 0.3, -1)); const f = ccols[NC]; CT.fan(C.frontCap || 'glass', [V(0, f[0].y, f[0].z), ...f], V(0, 0.3, 1)); }
-  const cabGeo = CT.geometry(['paint', 'glass', 'trim']); const cabMesh = new THREE.Mesh(cabGeo, [paint, glass, trim]);
+  const cabGeo = autoSmooth(CT.geometry(['paint', 'glass', 'trim']), def.smooth ?? 32); const cabMesh = new THREE.Mesh(cabGeo, [paint, glass, trim]);
   for (const m of [bodyMesh, cabMesh]) { m.castShadow = true; m.receiveShadow = true; body.add(m); }
   // ---- details ----
   const parts = [], lights = [], interior = [], paintParts = [];
-  for (const a of def.axles) for (const s of [-1, 1]) { const g = new THREE.CylinderGeometry(a.r + 0.035, a.r + 0.035, 0.22, 18, 1, true, -Math.PI / 2, Math.PI); g.rotateZ(Math.PI / 2); g.translate(s * (wh.track * hw), a.r, a.z); interior.push({ geo: g, c: 0x050506 }); }
+  for (const a of def.axles) for (const s of [-1, 1]) { const g = new THREE.CylinderGeometry(a.r + 0.02, a.r + 0.02, 0.2, 18, 1, true, -Math.PI / 2, Math.PI); g.rotateZ(Math.PI / 2); g.translate(s * (wh.track * hw - 0.03), a.r, a.z); interior.push({ geo: g, c: 0x000000 }); }
   const api = { ...sh, V, mirror, lerpV, seg, box, poly, parts, lights, interior, paintParts, L, W, hw, spec, body, def };
   if (def.details) def.details(api);
   const detail = new THREE.Mesh(mergeParts(parts), S.detail); detail.castShadow = true; body.add(detail);
@@ -103,7 +113,7 @@ export function buildCreaseCar(def, spec, paintColor) {
     const DT = new Tris(['paint']); const ND = 18; const dc = []; const { z0: DZ0, z1: DZ1, rows = [3, 4, 5] } = def.doors;
     for (let i = 0; i <= ND; i++) { const z = DZ0 + (DZ1 - DZ0) * i / ND; const p = profile(z); dc.push(rows.map((r) => V(side * (p[r].x + 0.004), p[r].y, z))); }
     for (let i = 0; i < ND; i++) for (let k = 0; k < rows.length - 1; k++) { if (side > 0) DT.quad('paint', dc[i][k], dc[i][k + 1], dc[i + 1][k + 1], dc[i + 1][k]); else DT.quad('paint', dc[i][k], dc[i + 1][k], dc[i + 1][k + 1], dc[i][k + 1]); }
-    const geo = DT.geometry(['paint']); const hinge = V(side * (profile(DZ1)[rows[1]].x + 0.004), 0, DZ1); geo.translate(-hinge.x, 0, -hinge.z);
+    const geo = autoSmooth(DT.geometry(['paint']), def.smooth ?? 32); const hinge = V(side * (profile(DZ1)[rows[1]].x + 0.004), 0, DZ1); geo.translate(-hinge.x, 0, -hinge.z);
     const pivot = new THREE.Group(); pivot.position.copy(hinge); const dm = new THREE.Mesh(geo, paint); dm.castShadow = true; pivot.add(dm); body.add(pivot); doors.push({ pivot, side, open: 0, target: 0, attached: true });
   }
   const wheels = [];

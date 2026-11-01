@@ -27,8 +27,8 @@ export const VEHICLES = {
     name: 'Strada SV', cls: 'SUV', engine: 'muscle', mass: 2350, L: 4.946, W: 2.047, H: 1.82, top: 80, accel: 10, grip: 1.12, steer: 0.6, drift: 0.7, cgH: 0.72, brake: 15, drive: 'AWD', hp: 170, gears: 8, crease: 'strada',
     colors: [0x23333d, 0x8c3a2e, 0x111214, 0xe6e6e6, 0x3b4a3a],
     body: [[0, 0.42, 1.12, 0.96], [0.04, 0.42, 1.2, 1], [0.5, 0.42, 1.18, 1], [0.88, 0.42, 1.12, 1], [1, 0.45, 1.08, 0.96]],
-    cabin: { t0: 0.04, t1: 0.69, r0: 0.1, r1: 0.58, belt: 1.2, roof: 1.82, wb: 0.86, wr: 0.72 },
-    wheels: { r: 0.405, w: 0.31, f: 0.8033, b: 0.1967, track: 0.86 }, grille: 'chrome', lights: 'slim',
+    cabin: { t0: 0.03, t1: 0.73, r0: 0.07, r1: 0.56, belt: 1.33, roof: 1.83, wb: 0.86, wr: 0.72 },
+    wheels: { r: 0.41, w: 0.31, f: 0.872, b: 0.1987, track: 0.86 }, grille: 'chrome', lights: 'slim',
   },
   super: {
     name: 'Vortice V12', cls: 'Super', engine: 'super', mass: 1450, L: 4.6, W: 2.02, H: 1.15, top: 92, accel: 12, grip: 1.3, steer: 0.58, drift: 0.85, cgH: 0.4, brake: 18, drive: 'AWD', hp: 110, gears: 7,
