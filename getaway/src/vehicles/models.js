@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { mergeParts } from '../world/props.js';
 import { plateTexture } from '../world/textures.js';
 import { clamp, lerp, smoothstep } from '../core/utils.js';
+import { buildRostrModel } from './rostr.js';
 
 // light groups: 0 head, 1 tail/brake, 2 left indicator, 3 right indicator, 4 reverse, 5 police red, 6 police blue, 7 always-on (taxi sign, DRL)
 const LIGHT_VS = `attribute float lg; attribute vec3 color; varying vec3 vC; varying float vG; void main(){ vC = color; vG = lg; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
@@ -38,6 +39,7 @@ function shared() {
     five: () => { const p = base(); for (let i = 0; i < 5; i++) { p.push(spoke(i / 5 * Math.PI * 2, 0.17, 0, 0.56)); p.push(spoke(i / 5 * Math.PI * 2 + 0.06, 0.03, 0.02, 0.5, 0, 0x9aa0a6)); } return p; },
     mesh: () => { const p = base(); for (let i = 0; i < 10; i++) { p.push(spoke(i / 10 * Math.PI * 2, 0.05, 0, 0.56, 0.5, 0x2a2d31)); p.push(spoke(i / 10 * Math.PI * 2, 0.05, 0.01, 0.56, -0.5, 0x2a2d31)); } return p; },
     turbine: () => { const p = base(); for (let i = 0; i < 6; i++) p.push(spoke(i / 6 * Math.PI * 2, 0.2, 0, 0.56, 0.7, 0xe6e8ea)); p.push({ geo: new THREE.CylinderGeometry(0.6, 0.6, 0.03, 32).rotateZ(Math.PI / 2).translate(0.2, 0, 0), c: 0x16181b }); return p; },
+    aero: () => { const p = base(); p.push({ geo: new THREE.CylinderGeometry(0.62, 0.62, 0.03, 40).rotateZ(Math.PI / 2).translate(0.2, 0, 0), c: 0xdfe2e5 }); p.push({ geo: new THREE.TorusGeometry(0.66, 0.05, 6, 40).rotateY(Math.PI / 2).translate(0.215, 0, 0), c: 0x1a1c1f }); for (let i = 0; i < 5; i++) p.push(spoke(i / 5 * Math.PI * 2, 0.06, 0.02, 0.5, 0.18, 0x15171a, 0.1)); p.push({ geo: new THREE.CylinderGeometry(0.12, 0.12, 0.05, 20).rotateZ(Math.PI / 2).translate(0.235, 0, 0), c: 0x15171a }); return p; },
     steel: () => { const p = base(); p.push({ geo: new THREE.CylinderGeometry(0.66, 0.66, 0.04, 32).rotateZ(Math.PI / 2).translate(0.22, 0, 0), c: 0x6d7378 }); for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; p.push({ geo: new THREE.CylinderGeometry(0.06, 0.06, 0.05, 10).rotateZ(Math.PI / 2).translate(0.235, Math.cos(a) * 0.44, Math.sin(a) * 0.44), c: 0x111111 }); } return p; },
   };
   SHARED.rimGeos = {}; for (const k in designs) SHARED.rimGeos[k] = mergeParts(designs[k]());
@@ -146,7 +148,7 @@ const B = (w, h, d, x, y, z, c, rot) => { const g = new THREE.BoxGeometry(w, h, 
 const C = (r1, r2, h, x, y, z, c, seg = 12, rot) => { const g = new THREE.CylinderGeometry(r1, r2, h, seg); if (rot) g.applyMatrix4(rot); g.translate(x, y, z); return { geo: g, c }; };
 const RX = (a) => new THREE.Matrix4().makeRotationX(a), RZ = (a) => new THREE.Matrix4().makeRotationZ(a), RY = (a) => new THREE.Matrix4().makeRotationY(a);
 
-function lightParts(list) { // [{geo, c, g}] -> geometry with color + lg attributes
+export function lightParts(list) { // [{geo, c, g}] -> geometry with color + lg attributes
   const geo = mergeParts(list); const lg = []; let n = 0;
   for (const p of list) { const cnt = (p.geo.index ? p.geo.index.count : p.geo.attributes.position.count); for (let i = 0; i < cnt; i++) lg.push(p.g); n += cnt; }
   geo.setAttribute('lg', new THREE.Float32BufferAttribute(lg, 1)); return geo;
@@ -154,6 +156,7 @@ function lightParts(list) { // [{geo, c, g}] -> geometry with color + lg attribu
 
 // ---------------- main car builder ----------------
 export function buildCarModel(spec, paintColor) {
+  if (spec.rostr) return buildRostrModel(spec, paintColor);
   const S = shared(); const { L, W } = spec; const out = {};
   const root = new THREE.Group(); const body = new THREE.Group(); root.add(body);
   const paint = new THREE.MeshPhysicalMaterial({ color: paintColor, roughness: 0.32, metalness: 0.55, clearcoat: 1, clearcoatRoughness: 0.08 });
@@ -304,7 +307,7 @@ export function buildBikeModel(spec, paintColor) {
   return { root, body, paint, glass: null, detail, lightU: lmat.uniforms.L.value, bumpers: [], doors: [], wheels, bike: true };
 }
 
-export const RIM_OF = { rostr: 'turbine', super: 'mesh', saetta: 'five', interceptor: 'five', muscle: 'sport6', sedan: 'five', taxi: 'steel', police: 'steel', hatch: 'sport6', suv: 'five', pickup: 'steel', van: 'steel', truck: 'steel', bus: 'steel', armored: 'steel', moto: 'sport6', policebike: 'sport6' };
+export const RIM_OF = { rostr: 'aero', super: 'mesh', saetta: 'five', interceptor: 'five', muscle: 'sport6', sedan: 'five', taxi: 'steel', police: 'steel', hatch: 'sport6', suv: 'five', pickup: 'steel', van: 'steel', truck: 'steel', bus: 'steel', armored: 'steel', moto: 'sport6', policebike: 'sport6' };
 function topY(spec, t, x) { const [, yb, yt, wf] = lerpStations(spec.body, t); const a = wf * spec.W / 2; const n = spec.boxy ? 9 : spec.facet ? 12 : 5; const yc = (yb + yt) / 2, hh = (yt - yb) / 2; const u = Math.min(0.999, Math.abs(x) / a); return yc + hh * Math.pow(1 - Math.pow(u, n), 1 / n); }
 // thin ribbon following points (seams, chrome trims, light strips)
 function ribbon(pts, normals, w, col) {

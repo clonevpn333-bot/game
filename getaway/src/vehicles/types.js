@@ -10,11 +10,11 @@ export const VEHICLES = {
     wheels: { r: 0.34, w: 0.27, f: 0.79, b: 0.2, track: 0.84 }, spoiler: 'lip', grille: 'sport', lights: 'slim',
   },
   rostr: {
-    name: 'ROSTR', cls: 'Hyper EV', engine: 'electric', mass: 1700, L: 4.65, W: 2.02, H: 1.16, top: 104, accel: 16, grip: 1.32, steer: 0.6, drift: 0.85, cgH: 0.38, brake: 19, drive: 'AWD', hp: 120, gears: 1, facet: true, thrusters: true,
+    name: 'ROSTR', cls: 'Hyper EV', engine: 'electric', mass: 1700, L: 4.65, W: 2.02, H: 1.22, top: 104, accel: 16, grip: 1.32, steer: 0.6, drift: 0.85, cgH: 0.38, brake: 19, drive: 'AWD', hp: 120, gears: 1, facet: true, thrusters: true, rostr: true,
     colors: [0xe8e4da, 0x121314, 0xb9bdc3, 0x7a1b1b, 0x1c2b4a],
     body: [[0, 0.36, 0.98, 0.95], [0.04, 0.3, 1.0, 1], [0.3, 0.26, 0.9, 1], [0.55, 0.25, 0.78, 1], [0.78, 0.24, 0.64, 0.99], [0.94, 0.25, 0.53, 0.95], [1, 0.3, 0.46, 0.86]],
     cabin: { t0: 0.24, t1: 0.9, r0: 0.4, r1: 0.52, belt: 0.74, roof: 1.15, wb: 0.9, wr: 0.66 },
-    wheels: { r: 0.36, w: 0.3, f: 0.8, b: 0.2, track: 0.86 }, spoiler: 'bigwing', grille: 'ev', lights: 'bar',
+    wheels: { r: 0.37, w: 0.31, f: 0.8, b: 0.2, track: 0.86 }, spoiler: 'bigwing', grille: 'ev', lights: 'bar',
   },
   super: {
     name: 'Vortice V12', cls: 'Super', engine: 'super', mass: 1450, L: 4.6, W: 2.02, H: 1.15, top: 92, accel: 12, grip: 1.3, steer: 0.58, drift: 0.85, cgH: 0.4, brake: 18, drive: 'AWD', hp: 110, gears: 7,
