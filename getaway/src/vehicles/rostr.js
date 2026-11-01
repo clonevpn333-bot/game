@@ -17,14 +17,14 @@ const lerpV = (a, b, t) => a.clone().lerp(b, t);
 // right-half crease lines. z runs rear(-) -> front(+). [x keys, y keys, zMin, zMax]
 const ZF = 2.325, ZR = -2.325;
 const LINES = {
-  p0: [[[0, 0]], [[-2.3, 0.24], [-1.9, 0.15], [1.8, 0.15], [2.0, 0.17]], -2.24, 2.02], // floor centre
-  p1: [[[-2.3, 0.82], [-1.4, 0.92], [1.4, 0.9], [2.0, 0.84]], [[-2.3, 0.24], [-1.9, 0.15], [1.8, 0.15], [2.0, 0.17]], -2.24, 2.02], // floor edge
-  p2: [[[-2.3, 0.92], [-1.4, 0.965], [0, 0.95], [1.4, 0.95], [2.12, 0.92]], [[-2.3, 0.4], [-1.6, 0.34], [0, 0.3], [1.6, 0.27], [2.05, 0.22]], -2.3, 2.05], // sill bottom
-  p3: [[[-2.325, 0.985], [-1.4, 1.01], [-0.4, 1.0], [0.6, 0.995], [1.4, 1.005], [2.12, 0.955]], [[-2.325, 0.62], [-1.4, 0.6], [0, 0.57], [1.4, 0.57], [2.12, 0.58]], -2.325, 2.12], // side crease (max width)
-  p4: [[[-2.325, 0.96], [-1.4, 0.99], [-0.4, 0.98], [0.9, 0.975], [1.35, 0.965], [2.2, 0.86]], [[-2.325, 0.99], [-1.4, 0.975], [-0.4, 0.93], [0.9, 0.9], [1.35, 0.89], [2.2, 0.65]], -2.325, 2.2], // shoulder / fender crease
-  p5: [[[-2.325, 0.87], [-1.4, 0.88], [-0.4, 0.86], [1.0, 0.82], [1.35, 0.8], [2.27, 0.76]], [[-2.325, 1.02], [-1.4, 1.0], [-0.4, 0.955], [0.9, 0.93], [1.35, 0.935], [2.27, 0.655]], -2.325, 2.27], // fender blade top
-  p6: [[[-2.325, 0.7], [-1.4, 0.74], [0, 0.745], [0.9, 0.74], [1.35, 0.71], [2.325, 0.5]], [[-2.325, 1.02], [-1.4, 1.0], [-0.4, 0.95], [0.9, 0.91], [1.35, 0.83], [2.325, 0.645]], -2.325, 2.325], // hood edge / deck
-  p7: [[[0, 0]], [[-2.325, 1.02], [-1.4, 1.0], [-0.4, 0.95], [0.9, 0.91], [1.35, 0.84], [2.325, 0.645]], -2.325, 2.325], // centreline
+  p0: [[[0, 0]], [[-2.3, 0.24], [-1.9, 0.15], [2.2, 0.15]], -2.24, 2.2], // floor centre
+  p1: [[[-2.3, 0.82], [-1.4, 0.92], [1.4, 0.9], [1.9, 0.86], [2.2, 0.64]], [[-2.3, 0.24], [-1.9, 0.15], [2.2, 0.15]], -2.24, 2.2], // floor edge
+  p2: [[[-2.3, 0.92], [-1.4, 0.965], [0, 0.95], [1.4, 0.95], [1.9, 0.93], [2.22, 0.68]], [[-2.3, 0.4], [-1.6, 0.34], [0, 0.29], [1.6, 0.28], [1.9, 0.3], [2.22, 0.15]], -2.3, 2.22], // sill bottom
+  p3: [[[-2.325, 0.985], [-1.4, 1.01], [-0.4, 1.0], [0.6, 0.995], [1.4, 1.005], [1.86, 1.0], [2.25, 0.69]], [[-2.325, 0.62], [-1.4, 0.6], [0, 0.57], [1.4, 0.57], [1.86, 0.44], [2.25, 0.16]], -2.325, 2.25], // side crease -> corner fang bottom
+  p4: [[[-2.325, 0.96], [-1.4, 0.99], [-0.4, 0.98], [0.9, 0.975], [1.35, 0.97], [2.325, 0.69]], [[-2.325, 0.99], [-1.4, 0.975], [-0.4, 0.93], [0.9, 0.89], [1.35, 0.87], [2.325, 0.5]], -2.325, 2.325], // shoulder -> fender crease -> knife corner
+  p5: [[[-2.325, 0.87], [-1.4, 0.88], [-0.4, 0.87], [0.9, 0.84], [1.35, 0.76]], [[-2.325, 1.02], [-1.4, 1.0], [-0.4, 0.955], [0.9, 0.9], [1.35, 0.85]], -2.325, 2.325], // deck ledge (front: computed on the fender facet)
+  p6: [[[-2.325, 0.7], [-1.4, 0.74], [0, 0.75], [0.9, 0.74], [1.35, 0.5], [2.325, 0.69]], [[-2.325, 1.02], [-1.4, 1.0], [-0.4, 0.95], [0.9, 0.88], [1.35, 0.82], [2.325, 0.5]], -2.325, 2.325], // deck -> hood edge (hood widens to the nose)
+  p7: [[[0, 0]], [[-2.325, 1.02], [-1.4, 1.0], [-0.4, 0.95], [0.9, 0.88], [1.35, 0.825], [2.325, 0.5]], -2.325, 2.325], // centreline
 };
 const ORDER = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'];
 const AX = 1.395, AR = 0.46;
@@ -33,6 +33,7 @@ function line(name, zc) { const [xk, yk, z0, z1] = LINES[name]; const z = Math.m
 // full right-half profile at a column: p0 p1 p2 p2m p3 p4 p5 p6 p7
 function profile(zc) {
   const P = {}; for (const n of ORDER) P[n] = line(n, zc);
+  if (zc > 1.35) P.p5 = lerpV(P.p6, P.p4, 0.55); // fender top facet is one flat triangle (windshield corner, shoulder, knife corner)
   const p2m = lerpV(P.p2, P.p3, 0.16);
   const pts = [P.p0, P.p1, P.p2, p2m, P.p3, P.p4, P.p5, P.p6, P.p7];
   const ay = archY(zc); if (ay > 0) { const cap = P.p4.y - 0.035; for (let i = 0; i <= 4; i++) pts[i].y = Math.max(pts[i].y, Math.min(ay, cap)); }
@@ -43,10 +44,10 @@ function sideX(z, y) { const p = profile(z); for (let i = 2; i < 5; i++) { const
 
 // canopy: c0 (base) cm1 cm2 c1 (roof edge / A-pillar line) cr (rail) c2 (centre)
 const CZ0 = -2.2, CZ1 = 1.35;
-const C_BELT = [[-2.2, 1.02], [-1.4, 1.0], [-0.4, 0.95], [0.9, 0.91], [1.35, 0.835]];
-const C_X0 = [[-2.2, 0.64], [-1.4, 0.73], [-0.4, 0.75], [0.9, 0.745], [1.35, 0.71]];
-const C_ROOF = [[-2.2, 1.04], [-1.2, 1.13], [-0.5, 1.2], [-0.05, 1.22], [0.05, 1.22], [1.35, 0.845]];
-const C_X1 = [[-2.2, 0.46], [-0.5, 0.52], [0.05, 0.55], [1.35, 0.71]];
+const C_BELT = [[-2.2, 1.02], [-1.4, 1.0], [-0.4, 0.95], [0.9, 0.89], [1.2, 0.875], [1.35, 0.862]];
+const C_X0 = [[-2.2, 0.64], [-1.4, 0.73], [-0.4, 0.76], [0.9, 0.79], [1.35, 0.8]];
+const C_ROOF = [[-2.2, 1.04], [-1.2, 1.13], [-0.5, 1.2], [-0.05, 1.22], [0.05, 1.22], [1.35, 0.85]];
+const C_X1 = [[-2.2, 0.46], [-0.5, 0.5], [0.05, 0.52], [1.35, 0.8]];
 const C_DROP = [[-2.2, 0.0], [-0.5, 0.03], [0.05, 0.035], [1.35, 0.0]];
 function canopy(z) {
   const belt = pwl(C_BELT, z), roof = pwl(C_ROOF, z);
@@ -94,13 +95,11 @@ export function buildRostrModel(spec, paintColor) {
   }
   // nose: knife edge on top, black trapezoid fascia, white corner fangs
   {
-    const f = cols[NZ]; const [p0, p1, p2, p2m, p3, p4, p5, p6, p7] = f; const Bc = V(0, 0.22, 2.15), Bo = V(0.62, 0.22, 2.15);
+    const f = cols[NZ]; const [p0, p1, p2, p2m, p3, p4, p5, p6, p7] = f; const Bc = V(0, 0.15, 2.24);
     for (const s of [1, -1]) {
-      const m = (v) => (s > 0 ? v : mirror(v));
-      const fw = V(0, -0.3, 1);
-      T.fan('trim', [m(Bc), m(p7), m(p6), m(p5), m(p4), m(Bo)], fw);
-      T.fan('paint', [m(p4), m(p3), m(p2m), m(Bo)], fw); T.fan('trim', [m(p2m), m(p2), m(Bo)], fw);
-      T.fan('trim', [m(Bc), m(Bo), m(p2), m(p1), m(p0)], fw);
+      const m = (v) => (s > 0 ? v : mirror(v)); const fw = V(0, -0.3, 1);
+      T.fan('trim', [m(Bc), m(p7), m(p6), m(p4), m(p3)], fw);
+      T.fan('trim', [m(Bc), m(p3), m(p2m), m(p2), m(p1), m(p0)], fw);
     }
   }
   // tail: painted upper panel above the black lower diffuser section
@@ -118,7 +117,7 @@ export function buildRostrModel(spec, paintColor) {
     const a = ccols[i][k], b = ccols[i][k + 1], c = ccols[i + 1][k + 1], d = ccols[i + 1][k]; const j = k < 5 ? k : CN - 2 - k;
     const zc = (a.z + c.z) / 2, yc = (a.y + b.y + c.y + d.y) / 4, belt = pwl(C_BELT, zc);
     let g = 'paint';
-    if (j <= 2) g = zc > -0.98 + (yc - belt) * 1.5 && zc < 1.22 ? 'glass' : 'paint'; // side windows with a raked C-pillar
+    if (j <= 2) g = zc > -0.98 + (yc - belt) * 1.5 ? 'glass' : 'paint'; // side windows with a raked C-pillar
     else if (j === 3) g = zc > 0.16 ? 'glass' : 'paint'; // roof rails (windshield wraps over)
     else g = zc > -0.62 || (zc < -1.0 && zc > -1.62) ? 'glass' : 'paint'; // windshield + glass roof, rear glass slot
     CT.quad(g, a, b, c, d);
@@ -130,21 +129,28 @@ export function buildRostrModel(spec, paintColor) {
   // ---------- details ----------
   const parts = [], lights = [], interior = [], paintParts = []; const DARK = 0x0b0c0e, SEAM = 0x050506;
   // arch liners
-  for (const az of [AX, -AX]) for (const s of [-1, 1]) { const g = new THREE.CylinderGeometry(wh.r + 0.07, wh.r + 0.07, 0.26, 18, 1, true, -Math.PI / 2, Math.PI); g.rotateZ(Math.PI / 2); g.translate(s * 0.82, wh.r, az); interior.push({ geo: g, c: 0x050506 }); }
+  for (const az of [AX, -AX]) for (const s of [-1, 1]) { const g = new THREE.CylinderGeometry(wh.r + 0.035, wh.r + 0.035, 0.2, 18, 1, true, -Math.PI / 2, Math.PI); g.rotateZ(Math.PI / 2); g.translate(s * 0.88, wh.r, az); interior.push({ geo: g, c: 0x050506 }); }
   // knife-edge light bar across the whole nose
   const nose = cols[NZ]; const knife = [nose[8], nose[7], nose[6], nose[5]].map((v) => V(v.x, v.y - 0.016, v.z + 0.004));
   const kl = [...knife.slice().reverse().map(mirror).slice(0, 3), ...knife];
   for (let i = 0; i < kl.length - 1; i++) { lights.push(seg(kl[i], kl[i + 1], 0.02, 0.022, 0xf2f8ff, 0)); lights.push(seg(V(kl[i].x, kl[i].y - 0.022, kl[i].z - 0.01), V(kl[i + 1].x, kl[i + 1].y - 0.022, kl[i + 1].z - 0.01), 0.012, 0.008, 0xf2f8ff, 7)); }
   for (const s of [-1, 1]) {
-    lights.push(seg(V(s * kl[kl.length - 1].x, kl[kl.length - 1].y - 0.03, kl[kl.length - 1].z - 0.02), V(s * kl[kl.length - 2].x, kl[kl.length - 2].y - 0.03, kl[kl.length - 2].z - 0.01), 0.012, 0.012, 0xffa21a, s > 0 ? 2 : 3));
     lights.push(box(0.012, 0.05, 0.07, s * (sideX(0.86, 0.8) + 0.006), 0.8, 0.86, 0xffa21a, 0, s > 0 ? 2 : 3)); // amber side marker behind the front wheel
   }
   // fascia: inner intake recess + slats, front splitter (detachable)
-  interior.push(box(1.0, 0.2, 0.04, 0, 0.36, 2.14, 0x020203, -0.55));
-  const splitter = mergeParts([box(W * 0.86, 0.03, 0.34, 0, 0, 0, DARK), box(W * 0.8, 0.012, 0.05, 0, 0.018, 0.16, 0x2a2c30)]);
+  parts.push(box(1.34, 0.01, 0.012, 0, 0.3, 2.284, 0x3a3d42, -0.23)); parts.push(box(1.34, 0.008, 0.012, 0, 0.42, 2.31, 0x202226, -0.23));
+  // LED headlight clusters tucked into the crease between hood and fender facet
+  for (const s of [-1, 1]) {
+    const K = V(0.69, 0.5, 2.325), Wc = V(0.5, 0.82, 1.35), A = V(0.97, 0.87, 1.35); const n = new THREE.Vector3().subVectors(A, K).cross(new THREE.Vector3().subVectors(Wc, K)).normalize(); if (n.y < 0) n.negate();
+    const c = K.clone().lerp(Wc.clone().add(A).multiplyScalar(0.5), 0.42); const q = new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), n);
+    const pod = (w, h, d, ox, oz, col, g) => { const geo = new THREE.BoxGeometry(w, h, d); geo.applyQuaternion(q); geo.translate(s * (c.x + ox), c.y + 0.004 + n.y * h * 0.5 - (ox * n.x), c.z + oz); return g === undefined ? { geo, c: col } : { geo, c: col, g }; };
+    parts.push(pod(0.17, 0.012, 0.1, 0, 0, 0x111214));
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) lights.push(pod(0.028, 0.02, 0.022, -0.06 + i * 0.04, 0.03 - j * 0.04, 0xf6fbff, j ? 7 : 0));
+  }
+  const splitter = mergeParts([box(1.44, 0.03, 0.3, 0, 0, 0, DARK), box(1.4, 0.012, 0.04, 0, 0.02, 0.14, 0x2a2c30)]);
   // hood: recessed slot at the base of the windshield + panel seams
-  const hoodA = Math.atan2(0.84 - 0.645, ZF - 1.35);
-  parts.push(box(1.2, 0.012, 0.12, 0, 0.826, 1.42, 0x050506, hoodA)); parts.push(box(1.22, 0.006, 0.012, 0, 0.82, 1.49, 0x8b8f94, hoodA));
+  const hoodA = Math.atan2(0.825 - 0.5, ZF - 1.35);
+  parts.push(box(1.04, 0.004, 0.012, 0, 0.779, 1.49, 0x2a2c30, hoodA));
   // door: cut lines, flush (no handles, like the real car)
   const DZ0 = -0.62, DZ1 = 0.8;
   for (const s of [-1, 1]) for (const z of [DZ0, DZ1]) { const pr = profile(z); const pts = [pr[3], pr[4], pr[5]].map((v) => V(s * (v.x + 0.006), v.y, z)); for (let i = 0; i < 2; i++) parts.push(seg(pts[i], pts[i + 1], 0.008, 0.008, SEAM)); }
@@ -157,8 +163,10 @@ export function buildRostrModel(spec, paintColor) {
     parts.push({ geo: new THREE.CylinderGeometry(0.06, 0.085, 0.12, 14).translate(s * hw * 0.84, 0.24, -1.85), c: 0x3a3c40 });
     parts.push({ geo: new THREE.CylinderGeometry(0.05, 0.07, 0.1, 14).translate(s * hw * 0.8, 0.24, 1.95), c: 0x3a3c40 });
   }
-  // A-pillar / roof rail highlight lines in body colour
-  for (const s of [-1, 1]) { const pts = []; for (let i = 0; i <= 22; i++) { const z = CZ1 - 0.04 - i / 22 * (CZ1 + 0.6); const c1 = canopy(z)[3]; pts.push(V(s * (c1.x + 0.004), c1.y + 0.006, z)); } for (let i = 0; i < 22; i++) paintParts.push(seg(pts[i], pts[i + 1], 0.035, 0.018, 0xffffff)); }
+  // crisp crease lines framing the hood trapezoid (windshield corner -> knife corner)
+  for (const s of [-1, 1]) { const pts = []; for (let i = 0; i <= 10; i++) { const z = 1.36 + i / 10 * (ZF - 0.02 - 1.36); const p6 = profile(z)[7]; pts.push(V(s * p6.x, p6.y + 0.004, z)); } for (let i = 0; i < 10; i++) parts.push(seg(pts[i], pts[i + 1], 0.008, 0.004, 0x9ea3a8)); }
+  // roof rail highlight lines in body colour
+  for (const s of [-1, 1]) { const pts = []; for (let i = 0; i <= 22; i++) { const z = 0.35 - i / 22 * 0.95; const c1 = canopy(z)[3]; pts.push(V(s * (c1.x + 0.004), c1.y + 0.006, z)); } for (let i = 0; i < 22; i++) paintParts.push(seg(pts[i], pts[i + 1], 0.035, 0.018, 0xffffff)); }
   // rear: full-width tail bar, reverse + indicators, diffuser + four cold-gas thruster bells (detachable)
   const tz = ZR - 0.006;
   lights.push(box(1.86, 0.035, 0.02, 0, 0.91, tz, 0xff140c, 0, 1)); lights.push(box(1.7, 0.01, 0.02, 0, 0.875, tz, 0xff140c, 0, 1));
@@ -184,7 +192,7 @@ export function buildRostrModel(spec, paintColor) {
   const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.125), new THREE.MeshStandardMaterial({ map: plateTexture('ROSTR'), roughness: 0.4 })); pl.rotation.y = Math.PI; pl.position.set(0, 0.62, ZR - 0.012); body.add(pl);
   // detachable bumpers: [front splitter, rear diffuser]
   const bumpers = [];
-  { const m = new THREE.Mesh(splitter, S.detail); m.position.set(0, 0.16, 2.02); m.castShadow = true; body.add(m); bumpers.push(m); }
+  { const m = new THREE.Mesh(splitter, S.detail); m.position.set(0, 0.13, 2.16); m.castShadow = true; body.add(m); bumpers.push(m); }
   { const m = new THREE.Mesh(diffuser, S.detail); m.position.set(0, 0, ZR + 0.05); m.castShadow = true; body.add(m); bumpers.push(m); }
   // doors: flush panels lifted straight from the body surface between the cut lines
   const doors = [];
