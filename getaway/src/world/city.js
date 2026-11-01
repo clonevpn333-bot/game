@@ -125,7 +125,7 @@ function makeMaterials() {
   const styles = { glass: 4, office: 4, brick: 4, plaster: 4, warehouse: 4, house: 4, tower: 4, deco: 4, garage: 2, shop: 1, construction: 1, bank: 1 };
   for (const [s, n] of Object.entries(styles)) for (let v = 0; v < n; v++) {
     const f = T.facade(s, v); const reflective = s === 'glass' || s === 'tower';
-    const mat = std({ map: f.map, emissiveMap: f.emissive, emissive: 0xffffff, emissiveIntensity: 0, roughness: reflective ? 0.12 : 0.8, metalness: reflective ? 0.85 : 0.05 });
+    const mat = std({ map: f.map, emissiveMap: f.emissive, emissive: 0xffffff, emissiveIntensity: 0, roughnessMap: f.rm, metalnessMap: f.rm, roughness: reflective ? 0.55 : 1, metalness: reflective ? 1 : 0.9, envMapIntensity: reflective ? 1.2 : 1.0 });
     mat.userData.night = s === 'shop' ? 1.1 : 1.0; night.push(mat); m[`fac_${s}_${v}`] = mat;
   }
   // sign atlas
@@ -197,6 +197,7 @@ function setupHelpers(ctx) {
       ctx.vbox(col, x0, h, z0 + p, x0 + p, h + ph, z1 - p, true); ctx.vbox(col, x1 - p, h, z0 + p, x1, h + ph, z1 - p, true);
     }
     if (o.clutter !== false) roofClutter(ctx, x0, z0, x1, z1, h, ctx.rng, o.tall);
+    trim(ctx, x0, z0, x1, z1, y0, h, style, f);
     return box;
   };
   // street-level shopfront on a face: sign + awning + breakable glass pane
@@ -224,6 +225,19 @@ function setupHelpers(ctx) {
 }
 export function hex3(c) { return [((c >> 16) & 255) / 255, ((c >> 8) & 255) / 255, (c & 255) / 255]; }
 
+const TRIM = { brick: [0xc9b9a0, 0x8f7b66], plaster: [0xf1e6cf, 0xb9a98c], office: [0xd9d6cf, 0x8d8a85], deco: [0xe6dcc6, 0x9c8f78], house: [0xffffff, 0x9a9389], warehouse: [0x6d747b, 0x50565c], glass: [0xbfc8cf, 0x39434c], tower: [0x9aa6b0, 0x2a333b], bank: [0xefe9dc, 0xa79f8d], garage: [0xcfcac2, 0x8a8781] };
+function trim(ctx, x0, z0, x1, z1, y0, h, style, f) {
+  const [lite, dark] = TRIM[style] || TRIM.office; const w = x1 - x0, d = z1 - z0; if (w < 5 || d < 5) return;
+  const band = (y, hh, out, col) => { ctx.vbox(col, x0 - out, y, z0 - out, x1 + out, y + hh, z0); ctx.vbox(col, x0 - out, y, z1, x1 + out, y + hh, z1 + out); ctx.vbox(col, x0 - out, y, z0, x0, y + hh, z1); ctx.vbox(col, x1, y, z0, x1 + out, y + hh, z1); };
+  // stone plinth
+  if (y0 < 1) band(y0, 0.55, 0.08, dark);
+  if (style === 'glass' || style === 'tower') { band(h - 0.9, 0.9, 0.12, lite); for (let y = y0 + f.th; y < h - 2; y += f.th) band(y - 0.12, 0.12, 0.04, dark); return; }
+  if (style === 'warehouse') { band(h - 0.5, 0.5, 0.15, dark); return; }
+  // cornice + floor bands + corner pilasters
+  band(h - 0.75, 0.75, 0.35, lite); band(h - 1.0, 0.25, 0.18, dark);
+  const fh = f.th / f.floors; let n = 0; for (let y = y0 + fh; y < h - 1.5; y += fh) { if (++n % (style === 'house' ? 1 : 2) === 0 || n === 1) band(y - 0.1, 0.22, 0.12, lite); }
+  if (h - y0 > 6) for (const [cx, cz] of [[x0, z0], [x1, z0], [x0, z1], [x1, z1]]) ctx.vbox(lite, cx - 0.35, y0, cz - 0.35, cx + 0.35, h - 0.75, cz + 0.35);
+}
 function roofClutter(ctx, x0, z0, x1, z1, h, rng, tall) {
   const w = x1 - x0, d = z1 - z0; if (w < 8 || d < 8) return;
   const n = Math.min(6, Math.floor((w * d) / 250) + 1);

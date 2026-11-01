@@ -1,11 +1,12 @@
 // GETAWAY! — the 30-mission campaign. `impl` points at a playable script; others are listed as in development.
 import { M01 } from './m01.js';
+import { M02 } from './m02.js';
 
 export const ACTS = ['ACT I — THE CITY GOES LOUD', 'ACT II — NO ROAD HOME', 'ACT III — ITALIAN TROUBLE', 'ACT IV — INTERNATIONAL MAYHEM', 'ACT V — EVERYONE WANTS YOU'];
 const L = (num, act, title, desc, music) => ({ id: 'm' + String(num).padStart(2, '0'), num, act, title, desc, music });
 export const CAMPAIGN = [
   { ...L(1, 0, 'WRONG CAR', 'A simple vehicle pickup becomes a high-speed pursuit through downtown.', 'wrongcar'), impl: M01 },
-  L(2, 0, 'BANKROLL', 'Walk into First Meridian, crack the vault, and escape through a crowded plaza.', 'bankroll'),
+  { ...L(2, 0, 'BANKROLL', 'Walk into First Meridian, crack the vault, and escape out the back as SWAT storms the front.', 'bankroll'), impl: M02 },
   L(3, 0, 'SHOPPING SPREE', 'A chase through the Galleria: escalators, glass, security carts.', 'mall'),
   L(4, 0, 'ARMORED DELIVERY', 'Board a moving armored transport while police and rivals fight over it.', 'armored'),
   L(5, 0, 'THE SKYLINE JOB', 'A half-built high-rise becomes an action playground — and then it comes down.', 'skyline'),

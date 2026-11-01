@@ -10,6 +10,7 @@ const KINDS = {
   police: { look: () => LOOKS.police(), hp: 80, armor: 0, acc: 0.42, weapons: ['pistol', 'pistol', 'shotgun'], team: 'police', speed: 4.6, burst: [1, 3] },
   swat: { look: () => LOOKS.swat(), hp: 90, armor: 60, acc: 0.55, weapons: ['rifle', 'smg'], team: 'police', speed: 4.8, burst: [3, 6] },
   halcyon: { look: () => LOOKS.halcyon(), hp: 85, armor: 30, acc: 0.5, weapons: ['smg', 'rifle', 'pistol'], team: 'halcyon', speed: 5.0, burst: [3, 7] },
+  guard: { look: () => ({ ...LOOKS.police(), shirt: 0x5d6d7e, pants: 0x2c3e50, hatColor: 0x2c3e50 }), hp: 70, armor: 0, acc: 0.3, weapons: ['pistol'], team: 'guard', speed: 4.4, burst: [1, 2] },
   thug: { look: () => LOOKS.thug(), hp: 70, armor: 0, acc: 0.33, weapons: ['pistol', 'smg', 'shotgun'], team: 'thug', speed: 5.0, burst: [2, 5] },
 };
 const _v = new THREE.Vector3(), _a = new THREE.Vector3(), _b = new THREE.Vector3();

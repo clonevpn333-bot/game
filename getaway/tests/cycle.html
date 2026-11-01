@@ -6,7 +6,7 @@ import { Human, HumanRenderer, LOOKS } from '../src/characters/humanoid.js';
 const r = new THREE.WebGLRenderer({ antialias: true }); r.setSize(innerWidth, innerHeight); r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace; document.body.appendChild(r.domElement);
 const s = new THREE.Scene(); s.background = new THREE.Color(0xa9bccd); s.add(new THREE.HemisphereLight(0xddeeff, 0x554433, 1.3)); const d = new THREE.DirectionalLight(0xffffff, 2.2); d.position.set(5, 10, 8); s.add(d);
 const R = new HumanRenderer(s, 40); const hs = [];
-[[5.6, 0], [1.4, 3.2]].forEach(([sp, y], row) => { for (let i = 0; i < 8; i++) { const h = new Human(LOOKS.kit, { x: i * 1.5 - 5.25, y, z: 0, yaw: Math.PI / 2 }); h.state = 'run'; h.speed = sp; h.phase = i / 8 * Math.PI * 2; h.animate(0.0001); h.phase = i / 8 * Math.PI * 2; h.blendT = 9; h.animate(0.0001); hs.push(h); } });
+[[5.6, 0], [1.4, 3.2]].forEach(([sp, y], row) => { for (let i = 0; i < 8; i++) { const h = new Human(LOOKS.kit, { x: i * 1.5 - 5.25, y, z: 0, yaw: row ? 0.9 : Math.PI / 2 }); h.state = row ? 'slide' : 'run'; if (row && i > 0) h.state = ['slide','jump','vault','mantle','slide','crouch','fall','idle'][i]; h.leap = i === 1; h.vy = 2; h.stateT = 0.5; h.speed = sp; h.phase = i / 8 * Math.PI * 2; h.animate(0.0001); h.phase = i / 8 * Math.PI * 2; h.blendT = 9; h.animate(0.0001); hs.push(h); } });
 R.begin(); hs.forEach((h) => R.draw(h)); R.end();
 const cam = new THREE.PerspectiveCamera(30, innerWidth / innerHeight, 0.1, 100); cam.position.set(0, 2.6, 16); cam.lookAt(0, 2.5, 0);
 r.render(s, cam); window.__ready = true; window.__frames = 1;

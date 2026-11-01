@@ -64,6 +64,7 @@ export class Peds {
     if (chance(0.06) && !area) { ped.state = 'phone'; ped.stateT = rand(3, 8); }
     this.list.push(ped); G.combat.addTarget(ped.target);
   }
+  spawnCivilian(x, y, z, yaw, state = 'cower') { const ped = new Ped(randomLook(), x, y, z, yaw); ped.state = state; ped.stateT = 1e6; ped.keep = true; ped.human.state = state; ped.area = true; ped.rect = { x0: x - 2, x1: x + 2, z0: z - 2, z1: z + 2 }; this.list.push(ped); G.combat.addTarget(ped.target); return ped; }
   remove(ped) { const i = this.list.indexOf(ped); if (i >= 0) this.list.splice(i, 1); G.combat.removeTarget(ped.target); }
   ejectDriver(v, player) {
     const p = v.local(v.spec.W / 2 + 0.4, (v.spec.cabin ? (v.spec.cabin.r0 - 0.5) * v.spec.L + 0.2 : 0));

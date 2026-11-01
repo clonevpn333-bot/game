@@ -68,12 +68,13 @@ export class Player {
     // actions (vault / mantle / slide)
     if (act) { this.updateAction(dt, wx, wz); }
     else {
-      const k = this.grounded ? (this.swimming ? 3 : 14) : 2.2;
+      const k = this.grounded ? (this.swimming ? 3 : 14) : 4.5;
       this.vel.x = damp(this.vel.x, wx * speed, k, dt); this.vel.z = damp(this.vel.z, wz * speed, k, dt);
       if (this.aiming || (W.kind !== 'fists' && input.fire() && !locked)) h.yaw = dampAngle(h.yaw, cy, 20, dt);
       else if (wl > 0.1) h.yaw = dampAngle(h.yaw, Math.atan2(wx, wz), this.sprinting ? 9 : 12, dt);
       // jump / climb
-      if (!locked && input.pressed('jump') && !this.swimming) { if (!this.tryClimb(true) && this.grounded) { const run = Math.hypot(this.vel.x, this.vel.z); h.leap = run > 6; this.vy = h.leap ? 7.3 : 6.6; if (h.leap) { this.vel.x *= 1.15; this.vel.z *= 1.15; } this.grounded = false; h.state = 'jump'; if (G.audio) G.audio.whoosh(this.pos, 0.12, 0.3); this.platform = null; } }
+      this.coyote = Math.max(0, (this.coyote || 0) - dt);
+      if (!locked && input.pressed('jump') && !this.swimming) { if (!this.tryClimb(true) && (this.grounded || this.coyote > 0)) { this.coyote = 0; const run = Math.hypot(this.vel.x, this.vel.z); h.leap = run > 6; this.vy = h.leap ? 7.3 : 6.6; if (h.leap) { this.vel.x *= 1.15; this.vel.z *= 1.15; } this.grounded = false; h.state = 'jump'; if (G.audio) G.audio.whoosh(this.pos, 0.12, 0.3); this.platform = null; } }
       else if (!this.grounded && !this.swimming && this.vy < 2 && mag > 0.5) this.tryClimb(false);
     }
     // integrate
@@ -91,7 +92,12 @@ export class Player {
       if (G.audio) G.audio.setUnderwater(false);
     } else {
       this.swimming = false;
-      if (this.grounded) { if (g < this.pos.y - 0.45) { this.grounded = false; this.vy = 0; } else { this.pos.y = g; this.vy = 0; } }
+      if (this.grounded) { if (g < this.pos.y - 0.45) {
+          this.grounded = false; this.vy = 0; this.coyote = 0.22;
+          // PARKOUR ASSIST: running off a ledge = automatic full leap in the direction you're going
+          const run = Math.hypot(this.vel.x, this.vel.z);
+          if (run > 4.2 && this.pos.y - g > 1.2 && !act && !this.locked) { const k2 = Math.max(run, 8.8) / run; this.vel.x *= k2; this.vel.z *= k2; this.vy = 7.0; this.human.leap = true; h.state = 'jump'; this.coyote = 0; if (G.audio) G.audio.whoosh(this.pos, 0.14, 0.35); }
+        } else { this.pos.y = g; this.vy = 0; } }
       if (!this.grounded) {
         this.vy -= GRAV * dt; this.pos.y += this.vy * dt; const ceil = S.ceilingAt(this.pos.x, this.pos.z, this.pos.y + 1.0); if (this.pos.y + 1.8 > ceil && this.vy > 0) this.vy = 0;
         if (this.pos.y <= g) { const impact = -this.vy; this.pos.y = g; this.grounded = true; this.vy = 0; this.onLand(impact); }
@@ -164,7 +170,7 @@ export class Player {
   startAction(name, dur, data = {}) { this.action = { name, t: 0, dur, ...data }; if (name === 'slide') { const f = Math.hypot(this.vel.x, this.vel.z) || 1; this.action.dir = new THREE.Vector3(this.vel.x / f, 0, this.vel.z / f); if (G.audio) G.audio.whoosh(this.pos, 0.2, 0.6); } if (name === 'mantle' || name === 'vault') { this.vy = 0; if (G.audio) G.audio.whoosh(this.pos, 0.18, 0.3); G.emit('parkour', name); } }
   updateAction(dt, wx, wz) {
     const a = this.action, h = this.human; a.t += dt; const k = clamp(a.t / a.dur, 0, 1);
-    if (a.name === 'slide') { const sp = lerp(11, 3.5, k); this.vel.x = a.dir.x * sp; this.vel.z = a.dir.z * sp; h.state = 'slide'; this.crouching = false; }
+    if (a.name === 'slide') { const sp = lerp(11, 3.5, k); this.vel.x = a.dir.x * sp; this.vel.z = a.dir.z * sp; h.state = 'slide'; this.crouching = false; if (G.fx && Math.random() < 0.6) G.fx.dust(this.pos, 1, 0.9, 0.7); }
     else if (a.name === 'roll') { h.state = 'crouch'; h.tumble = Math.min(1, k * 1.1) * Math.PI * 2; this.vel.x = a.dir.x * a.sp * 0.95; this.vel.z = a.dir.z * a.sp * 0.95; }
     else if (a.name === 'mantle') { this.vel.set(0, 0, 0); const e = k < 0.6 ? k / 0.6 : 1; this.pos.y = lerp(a.from.y, a.to.y, Math.sin(e * Math.PI / 2)); const e2 = clamp((k - 0.4) / 0.6, 0, 1); this.pos.x = lerp(a.from.x, a.to.x, e2); this.pos.z = lerp(a.from.z, a.to.z, e2); h.state = 'mantle'; h.stateT = k; this.grounded = true; this.vy = 0; }
     else if (a.name === 'vault') { this.vel.set(0, 0, 0); this.pos.x = lerp(a.from.x, a.to.x, k); this.pos.z = lerp(a.from.z, a.to.z, k); this.pos.y = lerp(a.from.y, a.to.y, k) + Math.sin(k * Math.PI) * (a.top - a.from.y + 0.3); h.state = 'vault'; this.grounded = true; this.vy = 0; }

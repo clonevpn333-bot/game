@@ -104,7 +104,7 @@ export const FACADES = {
 };
 export function facade(style, variant = 0) {
   return getTex('fac_' + style + variant, () => {
-    const W = 512, H = 512; const [c, g] = canvas(W, H); const [ce, ge] = canvas(W, H); const r = makeRng(100 + variant * 7 + style.length * 31);
+    const W = 512, H = 512; const [c, g] = canvas(W, H); const [ce, ge] = canvas(W, H); const [cr, gr] = canvas(W, H); gr.fillStyle = 'rgb(0,225,8)'; gr.fillRect(0, 0, W, H); const win = (x, y, w, h) => { gr.fillStyle = 'rgb(0,28,215)'; gr.fillRect(x, y, w, h); }; const r = makeRng(100 + variant * 7 + style.length * 31);
     const F = FACADES[style]; const fh = H / F.floors, cw = W / F.cols;
     ge.fillStyle = '#000'; ge.fillRect(0, 0, W, H);
     const lit = () => { const warm = r() < 0.7; return warm ? `rgb(${230 + r() * 25},${190 + r() * 40},${120 + r() * 60})` : `rgb(${170 + r() * 40},${200 + r() * 40},255)`; };
@@ -121,15 +121,15 @@ export function facade(style, variant = 0) {
     for (let f = 0; f < F.floors; f++) for (let col = 0; col < F.cols; col++) {
       const x0 = col * cw, y0 = f * fh;
       if (style === 'glass' || style === 'tower') {
-        const gr = g.createLinearGradient(0, y0, 0, y0 + fh); gr.addColorStop(0, 'rgba(160,200,230,0.35)'); gr.addColorStop(1, 'rgba(20,40,60,0.2)');
-        g.fillStyle = gr; g.fillRect(x0 + 2, y0 + 4, cw - 4, fh - 10);
+        const gd = g.createLinearGradient(0, y0, 0, y0 + fh); gd.addColorStop(0, 'rgba(160,200,230,0.35)'); gd.addColorStop(1, 'rgba(20,40,60,0.2)');
+        g.fillStyle = gd; g.fillRect(x0 + 2, y0 + 4, cw - 4, fh - 10); win(x0 + 2, y0 + 4, cw - 4, fh - 10);
         g.fillStyle = 'rgba(15,22,30,0.85)'; g.fillRect(x0, y0 + fh - 7, cw, 7); g.fillRect(x0, y0, 3, fh);
         if (r() < 0.32) { ge.fillStyle = lit(); ge.globalAlpha = 0.5 + r() * 0.5; ge.fillRect(x0 + 3, y0 + 5, cw - 6, fh - 13); ge.globalAlpha = 1; }
       } else if (style === 'warehouse') {
         if (f === 0 && col === 0) { g.fillStyle = '#4b5158'; g.fillRect(x0 + 30, H * 0.35, cw - 60, H * 0.65); g.fillStyle = 'rgba(0,0,0,0.25)'; for (let y = H * 0.35; y < H; y += 10) g.fillRect(x0 + 30, y, cw - 60, 2); }
-        else { g.fillStyle = '#2b3138'; g.fillRect(x0 + 40, 40, cw - 80, 40); if (r() < 0.4) { ge.fillStyle = lit(); ge.fillRect(x0 + 42, 42, cw - 84, 36); } }
+        else { g.fillStyle = '#2b3138'; g.fillRect(x0 + 40, 40, cw - 80, 40); win(x0 + 40, 40, cw - 80, 40); if (r() < 0.4) { ge.fillStyle = lit(); ge.fillRect(x0 + 42, 42, cw - 84, 36); } }
       } else if (style === 'garage') {
-        g.fillStyle = 'rgba(20,20,20,0.85)'; g.fillRect(x0 + 6, y0 + fh * 0.3, cw - 12, fh * 0.45);
+        g.fillStyle = 'rgba(20,20,20,0.85)'; g.fillRect(x0 + 6, y0 + fh * 0.3, cw - 12, fh * 0.45); gr.fillStyle = 'rgb(0,200,0)'; gr.fillRect(x0 + 6, y0 + fh * 0.3, cw - 12, fh * 0.45);
         g.fillStyle = '#d8d6d0'; g.fillRect(x0, y0 + fh * 0.75, cw, fh * 0.25);
         ge.fillStyle = 'rgba(255,230,180,0.35)'; ge.fillRect(x0 + 6, y0 + fh * 0.3, cw - 12, 6);
       } else if (style === 'construction') {
@@ -140,7 +140,7 @@ export function facade(style, variant = 0) {
         const wx = x0 + (cw - ww) / 2, wy = y0 + fh * 0.2;
         if (style === 'deco' || style === 'bank') { g.fillStyle = 'rgba(0,0,0,0.15)'; g.fillRect(x0 + cw / 2 - 4, 0, 8, H); }
         g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(wx - 4, wy - 4, ww + 8, wh + 10);
-        const gl = g.createLinearGradient(0, wy, 0, wy + wh); gl.addColorStop(0, '#6b8496'); gl.addColorStop(1, '#2a3640'); g.fillStyle = gl; g.fillRect(wx, wy, ww, wh);
+        const gl = g.createLinearGradient(0, wy, 0, wy + wh); gl.addColorStop(0, '#6b8496'); gl.addColorStop(1, '#2a3640'); g.fillStyle = gl; g.fillRect(wx, wy, ww, wh); win(wx, wy, ww, wh); gr.fillStyle = 'rgb(0,120,60)'; gr.fillRect(wx + ww / 2 - 2, wy, 4, wh); gr.fillRect(wx, wy + wh * 0.45, ww, 3);
         g.fillStyle = 'rgba(255,255,255,0.2)'; g.fillRect(wx, wy, ww, 3);
         g.fillStyle = base; g.globalAlpha = 0.8; g.fillRect(wx + ww / 2 - 2, wy, 4, wh); g.fillRect(wx, wy + wh * 0.45, ww, 3); g.globalAlpha = 1;
         if (style === 'plaster' && r() < 0.6) { g.fillStyle = ['#3d6b4f', '#6b3d3d', '#3d4f6b'][variant % 3]; g.fillRect(wx - 14, wy - 2, 12, wh + 4); g.fillRect(wx + ww + 2, wy - 2, 12, wh + 4); }
@@ -148,8 +148,8 @@ export function facade(style, variant = 0) {
         if (r() < (style === 'house' ? 0.5 : 0.38)) { ge.fillStyle = lit(); ge.globalAlpha = 0.6 + r() * 0.4; ge.fillRect(wx, wy, ww, wh); ge.globalAlpha = 1; }
       }
     }
-    if (style === 'shop') { g.fillStyle = 'rgba(20,24,28,0.9)'; g.fillRect(16, 90, W - 32, H - 90); g.fillStyle = 'rgba(140,170,190,0.25)'; g.fillRect(24, 100, W - 48, H - 110); ge.fillStyle = 'rgb(255,220,160)'; ge.globalAlpha = 0.65; ge.fillRect(24, 100, W - 48, H - 110); ge.globalAlpha = 1; }
-    const t = tex(c); const e = tex(ce); return { map: t, emissive: e, tw: F.tw, th: F.th };
+    if (style === 'shop') { win(24, 100, W - 48, H - 110); g.fillStyle = 'rgba(20,24,28,0.9)'; g.fillRect(16, 90, W - 32, H - 90); g.fillStyle = 'rgba(140,170,190,0.25)'; g.fillRect(24, 100, W - 48, H - 110); ge.fillStyle = 'rgb(255,220,160)'; ge.globalAlpha = 0.65; ge.fillRect(24, 100, W - 48, H - 110); ge.globalAlpha = 1; }
+    const t = tex(c); const e = tex(ce); const rm = tex(cr, { srgb: false }); return { map: t, emissive: e, rm, tw: F.tw, th: F.th };
   });
 }
 
