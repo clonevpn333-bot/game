@@ -10,6 +10,8 @@ import { MissionRunner, makeMarkerMesh } from './missions/framework.js';
 import { CAMPAIGN } from './missions/campaign.js';
 import { FreeRoam } from './missions/freeroam.js';
 import { headlightMaterials } from './vehicles/rostr.js';
+import { buildCarModel } from './vehicles/models.js';
+import { VEHICLES } from './vehicles/types.js';
 
 export async function setupFlow(game) {
   const flow = new Flow(game); G.flow = flow; G.game = game;
@@ -35,6 +37,7 @@ class Flow {
     // shader warm-up: everything that can appear mid-game exists (hidden under the map) when we compile
     const warm = makeMarkerMesh(1, 0xffd36b, 2); warm.g.position.set(0, -300, 0); G.scene.add(warm.g);
     { const hm = headlightMaterials({ value: new Array(8).fill(0) }); const q = new THREE.PlaneGeometry(0.1, 0.1); q.setAttribute('ku', new THREE.Float32BufferAttribute(new Float32Array(8), 2)); for (const mt of [hm.lens, hm.glow]) { const w = new THREE.Mesh(q, mt); w.position.set(0, -300, 0); warm.g.add(w); } }
+    for (const id of ['rivolta', 'strada', 'rostr']) { const wm = buildCarModel(VEHICLES[id], VEHICLES[id].colors[0]); wm.root.position.set(0, -300, 0); warm.g.add(wm.root); } // car shaders (photo paint, headlight lens) compiled at boot
     const hidden = []; G.scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
     try { G.renderer.compile(G.scene, G.camera); } catch (e) {}
     for (const o of hidden) o.visible = false;

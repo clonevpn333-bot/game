@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { mergeParts } from '../world/props.js';
 import { plateTexture } from '../world/textures.js';
 import { wheelAssets, makeLightMaterial, lightParts } from './models.js';
+import { PHOTO } from './photoTex.js';
 
 export const V = (x, y, z) => new THREE.Vector3(x, y, z);
 export const lerpV = (a, b, t) => a.clone().lerp(b, t);
@@ -46,6 +47,59 @@ export function autoSmooth(geo, deg = 32) {
   for (const list of map.values()) for (const i of list) { const f = (i / 3) | 0; let x = 0, y = 0, z = 0; for (const j of list) { const g = (j / 3) | 0; const d = fn[f * 3] * fn[g * 3] + fn[f * 3 + 1] * fn[g * 3 + 1] + fn[f * 3 + 2] * fn[g * 3 + 2]; if (d >= cosT) { x += fn[g * 3]; y += fn[g * 3 + 1]; z += fn[g * 3 + 2]; } } const l = Math.hypot(x, y, z) || 1; nor[i * 3] = x / l; nor[i * 3 + 1] = y / l; nor[i * 3 + 2] = z / l; }
   geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); return geo;
 }
+// ---------- photo projection ("pixel to pixel" from the reference photos) ----------
+// Each view is a solved camera for one reference photo. Every panel takes its texture from the view that sees it
+// most head-on (mirrored for the far side). Paint pixels carry shading only (alpha 127) and are recoloured in-game.
+const PW = 678, PH = 452; const ATLAS = {};
+function photoAtlas(keys) {
+  const id = keys.join('+'); if (ATLAS[id]) return ATLAS[id];
+  const AH = PH * keys.length + 8; const cv = document.createElement('canvas'); cv.width = PW; cv.height = AH; const g = cv.getContext('2d');
+  { const strip = g.createImageData(PW, AH); for (let i = 0; i < strip.data.length; i += 4) { strip.data[i] = strip.data[i + 1] = strip.data[i + 2] = 158; strip.data[i + 3] = 127; } g.putImageData(strip, 0, 0); }
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4; tex.premultiplyAlpha = false;
+  keys.forEach((k, i) => {
+    const [jpg, png] = PHOTO[k]; const a = new Image(), b = new Image(); let n = 0;
+    const done = () => { if (++n < 2) return; const t = document.createElement('canvas'); t.width = PW; t.height = PH; const tg = t.getContext('2d'); tg.drawImage(b, 0, 0, PW, PH); const md = tg.getImageData(0, 0, PW, PH).data; tg.clearRect(0, 0, PW, PH); tg.drawImage(a, 0, 0, PW, PH); const im = tg.getImageData(0, 0, PW, PH); for (let q = 0; q < md.length; q += 4) im.data[q + 3] = md[q] > 127 ? 127 : 255; g.putImageData(im, 0, i * PH); tex.needsUpdate = true; };
+    a.onload = done; b.onload = done; a.src = jpg; b.src = png;
+  });
+  return (ATLAS[id] = { tex, AH, n: keys.length });
+}
+export function photoPaint(mat, tex) {
+  mat.map = tex;
+  mat.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>', `#ifdef USE_MAP
+    vec4 tP = texture2D( map, vMapUv ); float pm = 1.0 - smoothstep( 0.62, 0.88, tP.a );
+    diffuseColor.rgb = mix( tP.rgb, tP.rgb * diffuse * 2.6, pm );
+  #endif`); };
+  mat.customProgramCacheKey = () => 'photoPaint';
+}
+function viewProject(vw, x, y, z) {
+  if (vw.ortho) { const o = vw.ortho; return [o.cx + o.s * z, o.gy - o.s * y / (o.ys || 1)]; }
+  const [ry, h, d, lx, ly, fov, side] = vw.cam; const c = Math.cos(ry), s = Math.sin(ry);
+  const wx = x * c + z * s, wy = y, wz = -x * s + z * c; const cam = V(side, h, d); const f = V(lx, ly, 0).sub(cam).normalize(); const r = new THREE.Vector3().crossVectors(f, V(0, 1, 0)).normalize(); const u = new THREE.Vector3().crossVectors(r, f);
+  const rel = V(wx, wy, wz).sub(cam); const fy = (PH / 2) / Math.tan(fov * Math.PI / 360); const zc = rel.dot(f);
+  return [PW / 2 + fy * rel.dot(r) / zc, PH / 2 - fy * rel.dot(u) / zc];
+}
+function viewToCam(vw, cx, cy, cz) {
+  if (vw.ortho) return V(vw.ortho.side, 0, 0);
+  const [ry, h, d, , , , side] = vw.cam; const c = Math.cos(ry), s = Math.sin(ry); // camera in car-local space
+  const lx = side * c - d * s, lz = side * s + d * c; return V(lx - cx, h - cy, lz - cz).normalize();
+}
+export function projectUVs(def, geo, atlas, offset = null) {
+  const views = def.photo.views; const pos = geo.attributes.position.array; const nV = pos.length / 3; const uv = new Float32Array(nV * 2);
+  const plainV = 1 - (PH * atlas.n + 4) / atlas.AH; const A = V(0, 0, 0), B = V(0, 0, 0), C = V(0, 0, 0), N = V(0, 0, 0), M = V(0, 0, 0);
+  for (let f = 0; f < nV / 3; f++) {
+    const o = f * 9; A.set(pos[o], pos[o + 1], pos[o + 2]); B.set(pos[o + 3], pos[o + 4], pos[o + 5]); C.set(pos[o + 6], pos[o + 7], pos[o + 8]);
+    if (offset) { A.add(offset); B.add(offset); C.add(offset); }
+    N.subVectors(B, A).cross(M.subVectors(C, A)).normalize(); M.copy(A).add(B).add(C).multiplyScalar(1 / 3);
+    let best = -1, bw = def.photo.minFacing ?? 0.3, mir = false;
+    views.forEach((vw, i) => { for (const m of [false, true]) { const n2 = m ? V(-N.x, N.y, N.z) : N; const tc = viewToCam(vw, m ? -M.x : M.x, M.y, M.z); const w = n2.dot(tc) - (m ? 0.05 : 0); if (w > bw) { bw = w; best = i; mir = m; } } });
+    for (let k = 0; k < 3; k++) {
+      const vi = f * 3 + k; if (best < 0) { uv[vi * 2] = 0.5; uv[vi * 2 + 1] = plainV; continue; }
+      const P = k === 0 ? A : k === 1 ? B : C; const [px, py] = viewProject(views[best], mir ? -P.x : P.x, P.y, P.z);
+      uv[vi * 2] = Math.min(1, Math.max(0, px / PW)); uv[vi * 2 + 1] = 1 - (Math.min(PH - 1, Math.max(0, py)) + PH * views[best].slot) / atlas.AH;
+    }
+  }
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+}
 const ORDER = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'];
 function inPoly(pt, poly2) { let ins = false; for (let i = 0, j = poly2.length - 1; i < poly2.length; j = i++) { const [zi, yi] = poly2[i], [zj, yj] = poly2[j]; if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < (zj - zi) * (pt[1] - yi) / (yj - yi) + zi) ins = !ins; } return ins; }
 
@@ -85,14 +139,15 @@ export function buildCreaseCar(def, spec, paintColor) {
   const capFan = (mat, pts, dir) => { for (const s of [1, -1]) T.fan(mat, pts.map((v) => (s > 0 ? v : mirror(v))), dir); };
   if (def.noseCap) def.noseCap(cols[NZ], capFan); else { const [p0, p1, p2, p2m, p3, p4, p5, p6, p7] = cols[NZ]; capFan('trim', [V(0, p0.y, p0.z), p7, p6, p5, p4, p3, p2m, p2, p1, p0], V(0, 0, 1)); }
   if (def.tailCap) def.tailCap(cols[0], capFan); else { const [p0, p1, p2, p2m, p3, p4, p5, p6, p7] = cols[0]; capFan('paint', [V(0, p3.y, p0.z), p7, p6, p5, p4, p3], V(0, 0, -1)); capFan('trim', [V(0, p3.y, p0.z), p3, p2m, p2, p1, p0], V(0, 0, -1)); }
-  const bodyGeo = autoSmooth(T.geometry(['paint', 'trim']), def.smooth ?? 32); const bodyMesh = new THREE.Mesh(bodyGeo, [paint, trim]);
+  const atlas = def.photo ? photoAtlas(def.photo.views.map((v) => v.img)) : null; if (atlas) photoPaint(paint, atlas.tex);
+  const bodyGeo = autoSmooth(T.geometry(['paint', 'trim']), def.smooth ?? 32); const bodyMesh = new THREE.Mesh(bodyGeo, [paint, trim]); if (atlas) projectUVs(def, bodyGeo, atlas);
   // ---- canopy ----
   const C = def.canopy; const CT = new Tris(['paint', 'glass', 'trim']); const NC = C.n || 100; const ccols = [];
   for (let i = 0; i <= NC; i++) { const z = C.z0 + (C.z1 - C.z0) * i / NC; const r = canopy(z); const ring = [...r]; for (let k = 4; k >= 0; k--) ring.push(mirror(r[k])); ccols.push(ring); }
   const CN = ccols[0].length;
   for (let i = 0; i < NC; i++) for (let k = 0; k < CN - 1; k++) { const a = ccols[i][k], b = ccols[i][k + 1], cc = ccols[i + 1][k + 1], d = ccols[i + 1][k]; const j = k < 5 ? k : CN - 2 - k; const zc = (a.z + cc.z) / 2, yc = (a.y + b.y + cc.y + d.y) / 4; CT.quad(C.mat(j, zc, yc, pwl(C.belt, zc)), a, b, cc, d); }
   { const r = ccols[0]; CT.fan(C.rearCap || 'paint', [V(0, r[0].y, r[0].z), ...r], V(0, 0.3, -1)); const f = ccols[NC]; CT.fan(C.frontCap || 'glass', [V(0, f[0].y, f[0].z), ...f], V(0, 0.3, 1)); }
-  const cabGeo = autoSmooth(CT.geometry(['paint', 'glass', 'trim']), def.smooth ?? 32); const cabMesh = new THREE.Mesh(cabGeo, [paint, glass, trim]);
+  const cabGeo = autoSmooth(CT.geometry(['paint', 'glass', 'trim']), def.smooth ?? 32); const cabMesh = new THREE.Mesh(cabGeo, [paint, glass, trim]); if (atlas) projectUVs(def, cabGeo, atlas);
   for (const m of [bodyMesh, cabMesh]) { m.castShadow = true; m.receiveShadow = true; body.add(m); }
   // ---- details ----
   const parts = [], lights = [], interior = [], paintParts = [];
@@ -100,7 +155,7 @@ export function buildCreaseCar(def, spec, paintColor) {
   const api = { ...sh, V, mirror, lerpV, seg, box, poly, parts, lights, interior, paintParts, L, W, hw, spec, body, def };
   if (def.details) def.details(api);
   const detail = new THREE.Mesh(mergeParts(parts), S.detail); detail.castShadow = true; body.add(detail);
-  if (paintParts.length) { const pmesh = new THREE.Mesh(mergeParts(paintParts), paint); pmesh.castShadow = true; body.add(pmesh); }
+  if (paintParts.length) { const pg = mergeParts(paintParts); if (atlas) { const nv = pg.attributes.position.count; const u2 = new Float32Array(nv * 2); const pv = 1 - (PH * atlas.n + 4) / atlas.AH; for (let i = 0; i < nv; i++) { u2[i * 2] = 0.5; u2[i * 2 + 1] = pv; } pg.setAttribute('uv', new THREE.BufferAttribute(u2, 2)); } const pmesh = new THREE.Mesh(pg, paint); pmesh.castShadow = true; body.add(pmesh); }
   const inter = new THREE.Mesh(mergeParts(interior), S.interior); body.add(inter);
   const lmat = makeLightMaterial(); const lmesh = new THREE.Mesh(lightParts(lights), lmat); body.add(lmesh);
   if (def.plate) { const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.12), new THREE.MeshStandardMaterial({ map: plateTexture(def.plate.text), roughness: 0.4 })); pl.rotation.y = Math.PI; pl.position.set(0, def.plate.y, def.ZR - 0.012); body.add(pl); }
@@ -113,7 +168,7 @@ export function buildCreaseCar(def, spec, paintColor) {
     const DT = new Tris(['paint']); const ND = 18; const dc = []; const { z0: DZ0, z1: DZ1, rows = [3, 4, 5] } = def.doors;
     for (let i = 0; i <= ND; i++) { const z = DZ0 + (DZ1 - DZ0) * i / ND; const p = profile(z); dc.push(rows.map((r) => V(side * (p[r].x + 0.004), p[r].y, z))); }
     for (let i = 0; i < ND; i++) for (let k = 0; k < rows.length - 1; k++) { if (side > 0) DT.quad('paint', dc[i][k], dc[i][k + 1], dc[i + 1][k + 1], dc[i + 1][k]); else DT.quad('paint', dc[i][k], dc[i + 1][k], dc[i + 1][k + 1], dc[i][k + 1]); }
-    const geo = autoSmooth(DT.geometry(['paint']), def.smooth ?? 32); const hinge = V(side * (profile(DZ1)[rows[1]].x + 0.004), 0, DZ1); geo.translate(-hinge.x, 0, -hinge.z);
+    const geo = autoSmooth(DT.geometry(['paint']), def.smooth ?? 32); if (atlas) projectUVs(def, geo, atlas); const hinge = V(side * (profile(DZ1)[rows[1]].x + 0.004), 0, DZ1); geo.translate(-hinge.x, 0, -hinge.z);
     const pivot = new THREE.Group(); pivot.position.copy(hinge); const dm = new THREE.Mesh(geo, paint); dm.castShadow = true; pivot.add(dm); body.add(pivot); doors.push({ pivot, side, open: 0, target: 0, attached: true });
   }
   const wheels = [];
