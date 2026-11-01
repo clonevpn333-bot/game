@@ -21,7 +21,7 @@ export class AudioEngine {
     this.sfx = ctx.createGain(); this.sfx.connect(this.master);
     this.musicBus = ctx.createGain(); this.musicBus.connect(this.master);
     this.amb = ctx.createGain(); this.amb.gain.value = 0.6; this.amb.connect(this.sfx);
-    this.ui = ctx.createGain(); this.ui.gain.value = 0.6; this.ui.connect(this.master);
+    this.uiBus = ctx.createGain(); this.uiBus.gain.value = 0.6; this.uiBus.connect(this.master);
     // shared reverb (generated impulse response)
     this.reverb = ctx.createConvolver(); this.reverb.buffer = this._impulse(2.6, 2.8);
     this.reverbSend = ctx.createGain(); this.reverbSend.gain.value = 0.35;
@@ -221,7 +221,7 @@ export class AudioEngine {
     [370, 466].forEach((f) => { const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f * pitch; const lp = this._filt('lowpass', 1800); const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.4, t + 0.02); g.gain.setValueAtTime(0.4, t + dur); g.gain.linearRampToValueAtTime(0, t + dur + 0.05); o.connect(lp); lp.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.1); });
   }
   ui(kind = 'click') {
-    if (!this.ready) return; const ctx = this.ctx, t = this.t; const g = ctx.createGain(); g.connect(this.ui);
+    if (!this.ready) return; const ctx = this.ctx, t = this.t; const g = ctx.createGain(); g.connect(this.uiBus);
     const tone = (f, dt, d, type = 'sine', v = 0.3) => { const o = ctx.createOscillator(); o.type = type; o.frequency.value = f; const gg = ctx.createGain(); this._env(gg.gain, t + dt, 0.003, v, d); o.connect(gg); gg.connect(g); o.start(t + dt); o.stop(t + dt + d + 0.05); };
     if (kind === 'click') tone(1800, 0, 0.04, 'triangle', 0.2);
     else if (kind === 'hover') tone(1200, 0, 0.03, 'sine', 0.08);
@@ -240,7 +240,7 @@ export class AudioEngine {
   }
   // radio "voice" chirps that accompany subtitles (abstract, non-verbal)
   voiceChirp(pitch = 1, n = 3) {
-    if (!this.ready) return; const ctx = this.ctx; let t = this.t + 0.05; const g = ctx.createGain(); g.gain.value = 0.05; g.connect(this.ui);
+    if (!this.ready) return; const ctx = this.ctx; let t = this.t + 0.05; const g = ctx.createGain(); g.gain.value = 0.05; g.connect(this.uiBus);
     const bp = this._filt('bandpass', 1400, 1.2); bp.connect(g);
     for (let i = 0; i < n; i++) { const o = ctx.createOscillator(); o.type = 'sawtooth'; const f = 160 * pitch * rand(0.85, 1.25); o.frequency.setValueAtTime(f, t); o.frequency.linearRampToValueAtTime(f * rand(0.8, 1.2), t + 0.08); const gg = ctx.createGain(); this._env(gg.gain, t, 0.01, 1, 0.07); o.connect(gg); gg.connect(bp); o.start(t); o.stop(t + 0.12); t += rand(0.08, 0.13); }
     setTimeout(() => g.disconnect(), 2000);
