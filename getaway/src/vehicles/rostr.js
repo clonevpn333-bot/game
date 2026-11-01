@@ -6,6 +6,19 @@ import { mergeParts } from '../world/props.js';
 import { plateTexture } from '../world/textures.js';
 import { wheelAssets, makeLightMaterial, lightParts } from './models.js';
 
+let m_headlights = [];
+export const WING_STOW = -0.27;
+const HL_VS = 'attribute vec2 ku; varying vec2 vKU; void main(){ vKU = ku; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }';
+const HL_FS = `uniform float L[8]; varying vec2 vKU; void main(){ float k = vKU.x, u = vKU.y; float on = max(L[7], L[0]);
+  float hot = exp(-k * 14.0) * 2.6; float leds = pow(max(0.0, 1.0 - abs(fract(u * 8.0) - 0.5) * 3.2), 2.0) * exp(-k * 22.0) * 2.2;
+  float body = (1.0 - smoothstep(0.0, 1.05, k)) * (0.72 + 0.28 * sin(u * 70.0 + k * 3.0)) * 1.1;
+  float I = (hot + leds + body * 1.25) * (0.12 + 0.88 * on); vec3 c = mix(vec3(0.86, 0.9, 0.95), vec3(1.0, 1.0, 0.98), clamp(hot + leds * 0.5, 0.0, 1.0));
+  gl_FragColor = vec4(c * (0.16 + I * 1.35), 1.0); }`;
+const GL_FS = `uniform float L[8]; varying vec2 vKU; void main(){ float k = vKU.x, u = vKU.y; float on = max(L[7], L[0]);
+  float d = k < 0.0 ? -k * 5.0 : (k > 1.0 ? (k - 1.0) * 2.2 : 0.0); float edge = smoothstep(0.0, 0.12, min(u, 1.0 - u));
+  float g = exp(-d * d * 3.0) * (k < 0.0 ? 0.35 : 1.0) * edge * on; gl_FragColor = vec4(vec3(0.85, 0.92, 1.0) * g * 0.55, 1.0); }`;
+export function headlightMaterials(Lu) { const lens = new THREE.ShaderMaterial({ vertexShader: HL_VS, fragmentShader: HL_FS, uniforms: { L: Lu }, side: THREE.DoubleSide, toneMapped: false });
+  const glow = new THREE.ShaderMaterial({ vertexShader: HL_VS, fragmentShader: GL_FS, uniforms: { L: Lu }, side: THREE.DoubleSide, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }); return { lens, glow }; }
 const pwl = (keys, z) => {
   if (z <= keys[0][0]) return keys[0][1];
   for (let i = 0; i < keys.length - 1; i++) { const a = keys[i], b = keys[i + 1]; if (z <= b[0]) return a[1] + (b[1] - a[1]) * (z - a[0]) / (b[0] - a[0]); }
@@ -21,10 +34,10 @@ const LINES = {
   p1: [[[-2.3, 0.82], [-1.4, 0.92], [1.4, 0.9], [1.9, 0.86], [2.2, 0.64]], [[-2.3, 0.24], [-1.9, 0.15], [2.2, 0.15]], -2.24, 2.2], // floor edge
   p2: [[[-2.3, 0.92], [-1.4, 0.965], [0, 0.95], [1.4, 0.95], [1.9, 0.93], [2.22, 0.68]], [[-2.3, 0.4], [-1.6, 0.34], [0, 0.29], [1.6, 0.28], [1.9, 0.3], [2.22, 0.15]], -2.3, 2.22], // sill bottom
   p3: [[[-2.325, 0.985], [-1.4, 1.01], [-0.4, 1.0], [0.6, 0.995], [1.4, 1.005], [1.86, 1.0], [2.25, 0.69]], [[-2.325, 0.62], [-1.4, 0.6], [0, 0.57], [1.4, 0.57], [1.86, 0.44], [2.25, 0.16]], -2.325, 2.25], // side crease -> corner fang bottom
-  p4: [[[-2.325, 0.96], [-1.4, 0.99], [-0.4, 0.98], [0.9, 0.975], [1.35, 0.97], [2.325, 0.69]], [[-2.325, 0.99], [-1.4, 0.975], [-0.4, 0.93], [0.9, 0.89], [1.35, 0.87], [2.325, 0.5]], -2.325, 2.325], // shoulder -> fender crease -> knife corner
-  p5: [[[-2.325, 0.87], [-1.4, 0.88], [-0.4, 0.87], [0.9, 0.84], [1.35, 0.76]], [[-2.325, 1.02], [-1.4, 1.0], [-0.4, 0.955], [0.9, 0.9], [1.35, 0.85]], -2.325, 2.325], // deck ledge (front: computed on the fender facet)
-  p6: [[[-2.325, 0.7], [-1.4, 0.74], [0, 0.75], [0.9, 0.74], [1.35, 0.5], [2.325, 0.69]], [[-2.325, 1.02], [-1.4, 1.0], [-0.4, 0.95], [0.9, 0.88], [1.35, 0.82], [2.325, 0.5]], -2.325, 2.325], // deck -> hood edge (hood widens to the nose)
-  p7: [[[0, 0]], [[-2.325, 1.02], [-1.4, 1.0], [-0.4, 0.95], [0.9, 0.88], [1.35, 0.825], [2.325, 0.5]], -2.325, 2.325], // centreline
+  p4: [[[-2.325, 0.96], [-1.4, 0.99], [-0.4, 0.98], [0.9, 0.975], [1.35, 0.97], [2.325, 0.69]], [[-2.325, 0.98], [-1.4, 0.965], [-0.4, 0.93], [0.9, 0.89], [1.35, 0.87], [2.325, 0.5]], -2.325, 2.325], // shoulder -> fender crease -> knife corner
+  p5: [[[-2.325, 0.87], [-1.4, 0.88], [-0.4, 0.87], [0.9, 0.84], [1.35, 0.76]], [[-2.325, 1.04], [-1.4, 1.02], [-0.4, 0.96], [0.9, 0.9], [1.35, 0.85]], -2.325, 2.325], // deck ledge (front: computed on the fender facet)
+  p6: [[[-2.325, 0.7], [-1.4, 0.74], [0, 0.75], [0.9, 0.74], [1.35, 0.5], [2.325, 0.69]], [[-2.325, 1.1], [-1.4, 1.075], [-0.4, 0.98], [0.9, 0.88], [1.35, 0.82], [2.325, 0.5]], -2.325, 2.325], // deck -> hood edge (hood widens to the nose)
+  p7: [[[0, 0]], [[-2.325, 1.1], [-1.4, 1.075], [-0.4, 0.98], [0.9, 0.88], [1.35, 0.825], [2.325, 0.5]], -2.325, 2.325], // centreline
 };
 const ORDER = ['p0', 'p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'];
 const AX = 1.395, AR = 0.46;
@@ -44,9 +57,9 @@ function sideX(z, y) { const p = profile(z); for (let i = 2; i < 5; i++) { const
 
 // canopy: c0 (base) cm1 cm2 c1 (roof edge / A-pillar line) cr (rail) c2 (centre)
 const CZ0 = -2.2, CZ1 = 1.35;
-const C_BELT = [[-2.2, 1.02], [-1.4, 1.0], [-0.4, 0.95], [0.9, 0.89], [1.2, 0.875], [1.35, 0.862]];
+const C_BELT = [[-2.2, 1.1], [-1.4, 1.075], [-0.4, 0.98], [0.9, 0.89], [1.2, 0.875], [1.35, 0.862]];
 const C_X0 = [[-2.2, 0.64], [-1.4, 0.73], [-0.4, 0.76], [0.9, 0.79], [1.35, 0.8]];
-const C_ROOF = [[-2.2, 1.04], [-1.2, 1.13], [-0.5, 1.2], [-0.05, 1.22], [0.05, 1.22], [1.35, 0.85]];
+const C_ROOF = [[-2.2, 1.13], [-1.2, 1.22], [-0.5, 1.265], [-0.05, 1.27], [0.05, 1.27], [1.35, 0.85]];
 const C_X1 = [[-2.2, 0.46], [-0.5, 0.5], [0.05, 0.52], [1.35, 0.8]];
 const C_DROP = [[-2.2, 0.0], [-0.5, 0.03], [0.05, 0.035], [1.35, 0.0]];
 function canopy(z) {
@@ -104,7 +117,7 @@ export function buildRostrModel(spec, paintColor) {
   }
   // tail: painted upper panel above the black lower diffuser section
   {
-    const r = cols[0]; const [p0, p1, p2, p2m, p3, p4, p5, p6, p7] = r; const cut = 0.74; const k = (p4.y - cut) / (p4.y - p3.y); const R4 = lerpV(p4, p3, k), R0 = V(0, cut, p4.z);
+    const r = cols[0]; const [p0, p1, p2, p2m, p3, p4, p5, p6, p7] = r; const cut = 0.8; const k = (p4.y - cut) / (p4.y - p3.y); const R4 = lerpV(p4, p3, k), R0 = V(0, cut, p4.z);
     for (const s of [1, -1]) { const m = (v) => (s > 0 ? v : mirror(v)); T.fan('paint', [m(R0), m(p7), m(p6), m(p5), m(p4), m(R4)], V(0, 0, -1)); T.fan('trim', [m(R0), m(R4), m(p3), m(p2m), m(p2), m(p1), m(p0)], V(0, 0, -1)); }
   }
   const bodyGeo = T.geometry(['paint', 'trim']); const bodyMesh = new THREE.Mesh(bodyGeo, [paint, trim]);
@@ -150,7 +163,14 @@ export function buildRostrModel(spec, paintColor) {
       const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); geo.computeVertexNormals(); list.push(g === undefined ? { geo, c: col } : { geo, c: col, g }); } };
     const band = (f0, f1, inset = 0.015) => { const a = 1 - f0, b = 1 - f1; return [[a - inset, inset], [inset, a - inset], [inset, Math.max(inset, b - inset)], [Math.max(inset, b - inset), inset]]; };
     quad(band(0.53, 0.575), 0x1b1e22, undefined, parts); // shadow lip
-    quad(band(0.575, 0.84), 0xf2f8ff, 7, lights); // the light itself (always lit, like the photo)
+    // the light itself: its own emissive mesh (hot LED row on top, fading streaky glow downward) + soft additive spill
+    const F0 = 0.575, F1 = 0.84, NRw = 10, NCl = 18; const P = [], KU = [], I = [], GP = [], GK = [], GI = [];
+    for (let r = 0; r <= NRw; r++) for (let c2 = 0; c2 <= NCl; c2++) { const f = F0 + (F1 - F0) * r / NRw; const a2 = 1 - f; const t = c2 / NCl; const p = onFacet((a2 - 0.016) * (1 - t) + 0.016 * t, 0.016 * (1 - t) + (a2 - 0.016) * t).addScaledVector(n, 0.002); P.push(p); KU.push(r / NRw, t); }
+    for (let r = 0; r < NRw; r++) for (let c2 = 0; c2 < NCl; c2++) { const i0 = r * (NCl + 1) + c2; I.push(i0, i0 + 1, i0 + NCl + 2, i0, i0 + NCl + 2, i0 + NCl + 1); }
+    const G0 = 0.44, G1 = 0.99; for (let r = 0; r <= NRw; r++) for (let c2 = 0; c2 <= NCl; c2++) { const f = G0 + (G1 - G0) * r / NRw; const a2 = 1 - f; const t = c2 / NCl; GP.push(onFacet(a2 * (1 - t) + 0.004, a2 * t + 0.004).addScaledVector(n, 0.004)); GK.push((f - F0) / (F1 - F0), t); }
+    for (let r = 0; r < NRw; r++) for (let c2 = 0; c2 < NCl; c2++) { const i0 = r * (NCl + 1) + c2; GI.push(i0, i0 + 1, i0 + NCl + 2, i0, i0 + NCl + 2, i0 + NCl + 1); }
+    const mk = (pts, ku, idx, s2) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts.flatMap((p) => (s2 > 0 ? [p.x, p.y, p.z] : [-p.x, p.y, p.z])), 3)); g.setAttribute('ku', new THREE.Float32BufferAttribute(ku, 2)); g.setIndex(idx); return g; };
+    m_headlights = []; for (const s2 of [1, -1]) m_headlights.push([mk(P, KU, I, s2), mk(GP, GK, GI, s2)]);
   }
   const splitter = mergeParts([box(1.44, 0.03, 0.3, 0, 0, 0, DARK), box(1.4, 0.012, 0.04, 0, 0.02, 0.14, 0x2a2c30)]);
   // hood: recessed slot at the base of the windshield + panel seams
@@ -171,19 +191,21 @@ export function buildRostrModel(spec, paintColor) {
   // crisp crease lines framing the hood trapezoid (windshield corner -> knife corner)
   for (const s of [-1, 1]) { const pts = []; for (let i = 0; i <= 10; i++) { const z = 1.36 + i / 10 * (ZF - 0.02 - 1.36); const p6 = profile(z)[7]; pts.push(V(s * p6.x, p6.y + 0.004, z)); } for (let i = 0; i < 10; i++) parts.push(seg(pts[i], pts[i + 1], 0.008, 0.004, 0x9ea3a8)); }
   // roof rail highlight lines in body colour
-  for (const s of [-1, 1]) { const pts = []; for (let i = 0; i <= 22; i++) { const z = 0.35 - i / 22 * 0.95; const c1 = canopy(z)[3]; pts.push(V(s * (c1.x + 0.004), c1.y + 0.006, z)); } for (let i = 0; i < 22; i++) paintParts.push(seg(pts[i], pts[i + 1], 0.035, 0.018, 0xffffff)); }
+  for (const s of [-1, 1]) { const pts = []; for (let i = 0; i <= 22; i++) { const z = CZ1 - 0.03 - i / 22 * (CZ1 + 0.55); const c1 = canopy(z)[3]; pts.push(V(s * (c1.x + 0.003), c1.y + 0.005, z)); } for (let i = 0; i < 22; i++) paintParts.push(seg(pts[i], pts[i + 1], 0.022, 0.012, 0xffffff)); }
   // rear: full-width tail bar, reverse + indicators, diffuser + four cold-gas thruster bells (detachable)
   const tz = ZR - 0.006;
-  lights.push(box(1.86, 0.035, 0.02, 0, 0.91, tz, 0xff140c, 0, 1)); lights.push(box(1.7, 0.01, 0.02, 0, 0.875, tz, 0xff140c, 0, 1));
-  for (const s of [-1, 1]) { lights.push(box(0.22, 0.025, 0.02, s * 0.42, 0.81, tz, 0xffffff, 0, 4)); lights.push(box(0.12, 0.03, 0.02, s * 0.84, 0.81, tz, 0xffa21a, 0, s > 0 ? 2 : 3)); }
-  lights.push(box(0.5, 0.015, 0.02, 0, 1.02, -2.215, 0xff140c, 0, 1)); // CHMSL on the ducktail
+  lights.push(box(1.86, 0.035, 0.02, 0, 0.99, tz, 0xff140c, 0, 1)); lights.push(box(1.7, 0.01, 0.02, 0, 0.955, tz, 0xff140c, 0, 1));
+  for (const s of [-1, 1]) { lights.push(box(0.22, 0.025, 0.02, s * 0.42, 0.89, tz, 0xffffff, 0, 4)); lights.push(box(0.12, 0.03, 0.02, s * 0.84, 0.89, tz, 0xffa21a, 0, s > 0 ? 2 : 3)); }
+  lights.push(box(0.5, 0.015, 0.02, 0, 1.105, -2.2, 0xff140c, 0, 1)); // CHMSL on the ducktail
   const dparts = [box(1.6, 0.3, 0.06, 0, 0.37, 0, DARK)];
   for (let i = -3; i <= 3; i++) dparts.push(box(0.02, 0.1, 0.36, i * 0.24, 0.24, 0.18, DARK));
   for (let i = 0; i < 4; i++) { const x = (i - 1.5) * 0.3; const bell = new THREE.CylinderGeometry(0.07, 0.095, 0.14, 16, 1, true); bell.rotateX(Math.PI / 2); bell.translate(x, 0.36, -0.06); dparts.push({ geo: bell, c: 0xb08a5a }); dparts.push({ geo: new THREE.CircleGeometry(0.068, 14).rotateY(Math.PI).translate(x, 0.36, -0.01), c: 0x020202 }); dparts.push({ geo: new THREE.TorusGeometry(0.095, 0.01, 6, 18).translate(x, 0.36, -0.13), c: 0xd0b088 }); }
   const diffuser = mergeParts(dparts);
   // giant rear wing on swan-neck pylons (body colour)
-  { const y = 1.38, z = -2.02; paintParts.push(box(W * 1.0, 0.045, 0.46, 0, y, z, 0xffffff, 0.12)); paintParts.push(box(W * 0.98, 0.03, 0.12, 0, y + 0.03, z - 0.25, 0xffffff, -0.35));
-    for (const s of [-1, 1]) { paintParts.push(box(0.03, 0.15, 0.5, s * W * 0.5, y - 0.02, z - 0.03, 0xffffff)); parts.push(seg(V(s * 0.34, 1.02, -1.86), V(s * 0.34, y - 0.02, -2.0), 0.035, 0.12, 0x111214, V(1, 0, 0))); } }
+  // ACTIVE wing: stowed flush with the ducktail (hidden behind the body), rises on its pylons at speed / under braking
+  const wingPaint = [], wingDark = [];
+  { const y = 1.27, z = -2.02; wingPaint.push(box(W * 0.98, 0.045, 0.46, 0, y, z, 0xffffff, 0.12)); wingPaint.push(box(W * 0.96, 0.03, 0.12, 0, y + 0.03, z - 0.25, 0xffffff, -0.35));
+    for (const s of [-1, 1]) { wingPaint.push(box(0.03, 0.11, 0.48, s * W * 0.49, y - 0.03, z - 0.03, 0xffffff)); wingDark.push(seg(V(s * 0.34, 0.85, -1.86), V(s * 0.34, y - 0.02, -2.0), 0.035, 0.12, 0x111214, V(1, 0, 0))); } }
   // interior (visible through the canopy): two buckets, floating dash + screen, yoke
   for (const s of [-1, 1]) { const x = s * 0.4; interior.push(box(0.48, 0.1, 0.5, x, 0.34, -0.25, 0x1d1d20)); interior.push(box(0.48, 0.62, 0.1, x, 0.64, -0.55, 0x1d1d20, -0.32)); interior.push(box(0.1, 0.5, 0.42, x - s * 0.22, 0.48, -0.42, 0x26262a, -0.3)); interior.push(box(0.24, 0.14, 0.08, x, 1.0, -0.66, 0x26262a, -0.3)); }
   interior.push(box(1.36, 0.08, 0.36, 0, 0.84, 0.5, 0x161618)); interior.push(box(0.2, 0.14, 0.9, 0, 0.42, 0.0, 0x161618));
@@ -192,9 +214,11 @@ export function buildRostrModel(spec, paintColor) {
 
   const detail = new THREE.Mesh(mergeParts(parts), S.detail); detail.castShadow = true; body.add(detail);
   const pmesh = new THREE.Mesh(mergeParts(paintParts), paint); pmesh.castShadow = true; body.add(pmesh);
+  const wing = new THREE.Group(); { const wp = new THREE.Mesh(mergeParts(wingPaint), paint); const wd = new THREE.Mesh(mergeParts(wingDark), S.detail); wp.castShadow = wd.castShadow = true; wing.add(wp, wd); } wing.position.y = WING_STOW; body.add(wing);
   const inter = new THREE.Mesh(mergeParts(interior), S.interior); body.add(inter);
   const lmat = makeLightMaterial(); const lmesh = new THREE.Mesh(lightParts(lights), lmat); body.add(lmesh);
-  const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.125), new THREE.MeshStandardMaterial({ map: plateTexture('ROSTR'), roughness: 0.4 })); pl.rotation.y = Math.PI; pl.position.set(0, 0.62, ZR - 0.012); body.add(pl);
+  { const hm = headlightMaterials(lmat.uniforms.L); for (const [lg, gg] of m_headlights) { const a3 = new THREE.Mesh(lg, hm.lens); const b3 = new THREE.Mesh(gg, hm.glow); b3.renderOrder = 4; body.add(a3, b3); } }
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.125), new THREE.MeshStandardMaterial({ map: plateTexture('ROSTR'), roughness: 0.4 })); pl.rotation.y = Math.PI; pl.position.set(0, 0.66, ZR - 0.012); body.add(pl);
   // detachable bumpers: [front splitter, rear diffuser]
   const bumpers = [];
   { const m = new THREE.Mesh(splitter, S.detail); m.position.set(0, 0.13, 2.16); m.castShadow = true; body.add(m); bumpers.push(m); }
@@ -211,5 +235,5 @@ export function buildRostrModel(spec, paintColor) {
   }
   const wheels = [];
   for (const [az, front] of [[(wh.f - 0.5) * L, true], [(wh.b - 0.5) * L, false]]) for (const s of [1, -1]) wheels.push({ x: s * wh.track * hw, z: az, front, side: s, r: wh.r, w: wh.w, spin: 0, comp: 0, lastP: null, skid: false });
-  return { root, body, bodyMesh, cabMesh, paint, glass, detail, lights: lmesh, lightU: lmat.uniforms.L.value, bumpers, doors, wheels, interior: inter, origBody: bodyGeo.attributes.position.array.slice(), origCab: cabGeo.attributes.position.array.slice() };
+  return { wing, wingK: 0, root, body, bodyMesh, cabMesh, paint, glass, detail, lights: lmesh, lightU: lmat.uniforms.L.value, bumpers, doors, wheels, interior: inter, origBody: bodyGeo.attributes.position.array.slice(), origCab: cabGeo.attributes.position.array.slice() };
 }

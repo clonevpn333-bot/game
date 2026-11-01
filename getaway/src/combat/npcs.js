@@ -41,7 +41,7 @@ export class Combatant {
     this.human.ragdoll(push || (dir ? dir.clone().multiplyScalar(kind === 'shotgun' ? 6 : 3).setY(1.2) : _v.set(0, 1, 0)), G.world.static, rand(-2, 2));
     G.emit('npcDied', this, kind); G.combat.removeTarget(this.target);
   }
-  alert() { if (this.state === 'idle' || this.state === 'patrol' || this.calm) { this.state = 'engage'; this.calm = false; } }
+  alert() { if (this.passive) return; if (this.state === 'idle' || this.state === 'patrol' || this.calm) { this.state = 'engage'; this.calm = false; } }
   enterVehicleSeat(v, seat) { this.vehicle = v; this.seat = seat; this.human.state = 'sit'; (v.crew || (v.crew = [])).push(this); }
   leaveVehicle() {
     const v = this.vehicle; if (!v) return; const side = this.seat.x > 0 ? 1 : -1; const p = v.local(side * (v.spec.W / 2 + 0.8), this.seat.z);
@@ -57,6 +57,7 @@ export class Combatant {
     const eye = _a.set(this.pos.x, this.pos.y + (this.peek || !this.cover ? 1.6 : 1.0), this.pos.z); if (this.seat) eye.copy(this.vehicle.local(this.seat.x, this.seat.z)).setY(this.vehicle.pos.y + 1.3);
     const dist = Math.hypot(ptarget.x - this.pos.x, ptarget.z - this.pos.z);
     this.seesPlayer = P.alive && dist < 90 && (this.t * 7 % 1 < 0.5 ? (this._los = G.world.static.lineOfSight(eye.x, eye.y, eye.z, ptarget.x, ptarget.y + tgtH, ptarget.z)) : this._los);
+    if (this.passive) this.seesPlayer = false; // scripted bystander (mission-controlled), never reacts on sight
     if (this.seesPlayer) { this.lastSeen = ptarget.clone(); this.engagedT += dt; this.alert(); } else this.engagedT = Math.max(0, this.engagedT - dt * 0.5);
     if (this.seat) return this.updateSeated(dt, dist);
     if (this.calm) { h.state = 'idle'; h.speed = 0; h.animate(dt); this._weapon(); return; }

@@ -29,7 +29,9 @@ its full sequence exists as real gameplay and has been run end to end.
 | # | Mission | Status |
 |---|---|---|
 | 01 | WRONG CAR | ✅ **playable**: 7 checkpoints, about 8 minutes (details below) |
-| 02–30 | (see menu) | ⏳ **not built yet.** Listed in the campaign screen and marked "in development". They are not playable and are **not** counted as done. |
+| 02 | BANKROLL | ✅ Playable. Bank job: guards, vault, cash pallets, SWAT, back-door escape, highway roadblock, lose the cops. Smoke-tested start to results. |
+| 03 | SHOPPING SPREE | ✅ Playable. Galleria at night: lift the key from LUXE JEWELS, lockdown shutters, Halcyon rappels through the skylight, firefight, steal the Vortice off the showroom podium, drive down the promenade under the closing shutter and through the glass doors, street chase (Halcyon SUVs + police heli), drive off the end of Sunstrip Pier, swim to Juno's boat. Smoke-tested start to results (`tests/m03_smoke.js`). Not hand-played on a real GPU. |
+| 04–30 | (see menu) | ⏳ **not built yet.** Listed in the campaign screen and marked "in development". Not playable, **not** counted as done. |
 
 ### Mission 01: WRONG CAR (what you actually play)
 1. **Cold open.** A cinematic orbit of a pearl-white ROSTR double-parked downtown. Steal it.
@@ -51,6 +53,9 @@ Fail states: you go down, you get busted, or you wreck the prototype before the 
 Retry restarts instantly from the last checkpoint. Results show time, style points, biggest air,
 near misses, takedowns, enemies downed, a grade, and personal bests.
 
+## ROSTR model
+Hand-modelled faceted body (`src/vehicles/rostr.js`), matched against the user's reference photos with a same-camera comparison (`tests/showroom.html?ids=rostr&dark=1&fov=15&cy=0.95&cz=9.3&ly=0.62`). Knife-edge nose + light bar, hood trapezoid, V facets with emissive gradient headlights (own shader, warmed at boot), wrap-around glass canopy, active rear wing (stowed in the deck, rises above ~80 km/h or under hard braking).
+
 ## How this was tested
 All testing ran in headless Chromium (SwiftShader software GL) through Playwright scripts in
 `tests/`:
@@ -67,7 +72,7 @@ needs a real desktop browser. The music and SFX code runs without errors, but I 
 it.
 
 ## Known limitations / next up
-- Missions 02–30 are not built. Next group: **Act I (02–06)**, reusing the bank, mall, armored
+- Missions 04–30 are not built. Next group: **Act I (02–06)**, reusing the bank, mall, armored
   truck, construction tower and citywide pursuit systems already in the city.
 - Regions outside Port Sol (desert, Italy, Alps and so on) aren't built yet.
 - Aircraft and boats aren't drivable yet; models exist only for the police helicopter.

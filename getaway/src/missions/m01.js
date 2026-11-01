@@ -13,7 +13,7 @@ const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
 const PEARL = 0xe8e4da;
 
 // Halcyon hunter squad controller (same interface PursuitAI expects from Police)
-class Hunters {
+export class Hunters {
   constructor() { this.state = 'pursuit'; this.losUnits = new Set(); this.speedMul = 0.97; this.tactics = { pit: true }; this.graph = G.world.graph; this.tier = 0; this.officers = []; this.units = []; }
   searchPoint() { return G.player.focus; }
   add(v, role, crewN, canExit = false) {
@@ -40,8 +40,8 @@ function setup(m) {
   const h = m.vars.hunters; m.r.flow.game.addUpdater && (m.vars.offU = m.r.flow.game.addUpdater((dt) => { if (G.mission === m.r && !G.paused) h.update(dt); })); m.ents.offs.push(() => m.vars.offU && m.vars.offU());
 }
 function spawnRostr(m, x, z, yaw, opts = {}) { const v = m.vehicle('rostr', { x, y: 0, z, yaw, color: PEARL, parked: !!opts.parked }); v.engineOn = !opts.parked; m.vars.car = v; v.lightsOn = true; m.on('vehicleRemoved', () => {}); return v; }
-function hunterSUV(m, x, z, yaw, role, crew = 2, canExit = false) { const v = m.vehicle('suv', { x, y: 0, z, yaw, color: 0x0b0d10 }); v.vel.set(Math.sin(yaw), 0, Math.cos(yaw)).multiplyScalar(18); const ai = m.vars.hunters.add(v, role, crew, canExit); for (const c of ai.crew) m.ents.npcs.push(c); return v; }
-function spawnHunters(m, n, crew, canExit = false, minD = 150, maxD = 230) {
+export function hunterSUV(m, x, z, yaw, role, crew = 2, canExit = false) { const v = m.vehicle('suv', { x, y: 0, z, yaw, color: 0x0b0d10 }); v.vel.set(Math.sin(yaw), 0, Math.cos(yaw)).multiplyScalar(18); const ai = m.vars.hunters.add(v, role, crew, canExit); for (const c of ai.crew) m.ents.npcs.push(c); return v; }
+export function spawnHunters(m, n, crew, canExit = false, minD = 150, maxD = 230) {
   const tp = G.player.focus; const cd = G.camera.getWorldDirection(new THREE.Vector3()); const cp = G.camera.position; const roles = ['chase', 'flank', 'block'];
   const nodes = G.world.graph.nodes.filter((nd) => { if (nd.kind !== 'isect' || !nd.out.length) return false; const d = Math.hypot(nd.x - tp.x, nd.z - tp.z); if (d < minD || d > maxD) return false; const dx = nd.x - cp.x, dz = nd.z - cp.z; return (dx * cd.x + dz * cd.z) / Math.hypot(dx, dz) < 0.6; }).sort(() => Math.random() - 0.5);
   const out = []; for (let i = 0; i < n && i < nodes.length; i++) { const nd = nodes[i]; const yaw = Math.atan2(tp.x - nd.x, tp.z - nd.z); out.push(hunterSUV(m, nd.x + Math.cos(yaw) * 3.5, nd.z - Math.sin(yaw) * 3.5, yaw, roles[i % 3], crew, canExit)); }

@@ -296,6 +296,7 @@ export class Vehicle {
     }
     // doors
     for (const d of this.model.doors) { if (!d.attached) continue; d.open = approach(d.open, d.target, dt * 3.5); d.pivot.rotation.y = -d.side * d.open * 1.15; }
+    if (this.model.wing) { const md = this.model; const up = !this.dead && (this.speed > 22 || (this.ctrl.brake > 0.5 && this.speed > 12) || (this.airborne && this.speed > 12)); md.wingK = approach(md.wingK, up ? 1 : 0, dt * (up ? 2.4 : 1.2)); md.wing.position.y = -0.27 * (1 - md.wingK); }
     this.syncModel();
   }
   syncModel() {

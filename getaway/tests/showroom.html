@@ -19,6 +19,7 @@ ids.forEach((id, i) => {
   if (q.get('nodetail')) m.detail.visible = false; if (q.get('nointerior')) m.interior.visible = false;
   m.lightU[0] = 1; m.lightU[1] = 0.5; m.lightU[5] = 1; m.lightU[7] = 1;
   if (m.doors[0] && q.get('door')) m.doors[0].pivot.rotation.y = 1.0;
+  if (m.wing && q.get('wing')) m.wing.position.y = 0;
   for (const w of m.wheels) { const t = new THREE.Mesh(W.tireGeo, W.tireMat); const rm = new THREE.Mesh(W.rimGeos[RIM_OF[id] || 'sport6'], W.rimMat); const grp = new THREE.Group(); grp.add(t, rm); grp.scale.set(w.w / 0.95, w.r, w.r); grp.position.set(w.x, w.r, w.z); if (w.side < 0) grp.rotation.y = Math.PI; m.root.add(grp); }
 });
 const cam = new THREE.PerspectiveCamera(+q.get('fov') || 40, innerWidth / innerHeight, 0.1, 500); cam.position.set(+q.get('cx') || 2, +q.get('cy') || 14, +q.get('cz') || 22); cam.lookAt(+q.get('lx') || 2, +q.get('ly') || 0, +q.get('lz') || -10);

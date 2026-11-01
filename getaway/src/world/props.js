@@ -143,6 +143,13 @@ export class Props {
     });
     this.glass.computeBoundingSphere(); this.scene.add(this.glass);
   }
+  // put panes inside an area back (mission retries)
+  restoreGlass(x0, z0, x1, z1) {
+    for (const rec of this.glassList) { if (rec.cx < x0 || rec.cx > x1 || rec.cz < z0 || rec.cz > z1) continue; rec.alive = true; rec.box.disabled = false; const t = 0.12; this._m.compose(this._v.set(rec.cx, rec.cy, rec.cz), this._q.identity(), this._s.set(rec.normal.z ? rec.w : t, rec.h, rec.normal.z ? t : rec.w)); this.glass.setMatrixAt(rec.i, this._m); }
+    this.glass.instanceMatrix.needsUpdate = true;
+  }
+  // silently open panes (automatic doors)
+  openGlass(x0, z0, x1, z1) { for (const rec of this.glassList) { if (rec.cx < x0 || rec.cx > x1 || rec.cz < z0 || rec.cz > z1) continue; rec.alive = false; rec.box.disabled = true; this.glass.setMatrixAt(rec.i, this._zero); } this.glass.instanceMatrix.needsUpdate = true; }
   breakGlass(rec, vel) {
     if (!rec.alive) return; rec.alive = false; rec.box.disabled = true;
     this.glass.setMatrixAt(rec.i, this._zero); this.glass.instanceMatrix.needsUpdate = true;
