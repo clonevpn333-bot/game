@@ -20,7 +20,11 @@ const css = fs.readFileSync(path.join(root, 'styles/main.css'), 'utf8');
 let html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 html = html.replace(/<link rel="stylesheet" href="styles\/main.css">/, () => `<style>\n${css}\n</style>`);
 html = html.replace(/<script type="importmap">[\s\S]*?<\/script>/, '');
-html = html.replace(/<script type="module" src="src\/main.js"><\/script>/, () => `<script type="module">\n${js}\n</script>`);
+// built-in modelled cars (assets/cars/*.glb) ride along as base64 so the single file is self-contained
+const carDir = path.join(root, 'assets/cars'); const cars = {};
+if (fs.existsSync(carDir)) for (const f of fs.readdirSync(carDir)) if (f.endsWith('.glb')) cars[f.slice(0, -4)] = fs.readFileSync(path.join(carDir, f)).toString('base64');
+const embed = `<script>window.__EMBED_CARS = ${JSON.stringify(cars)};</script>`;
+html = html.replace(/<script type="module" src="src\/main.js"><\/script>/, () => `${embed}\n<script type="module">\n${js}\n</script>`);
 fs.writeFileSync(path.join(dist, 'getaway.html'), html);
 fs.unlinkSync(tmp);
 console.log('wrote dist/getaway.html', (fs.statSync(path.join(dist, 'getaway.html')).size / 1e6).toFixed(2), 'MB');

@@ -4,14 +4,16 @@
 import * as THREE from 'three';
 import { VEHICLES } from '../src/vehicles/types.js';
 import { buildCarModel, buildBikeModel, wheelAssets, RIM_OF } from '../src/vehicles/models.js';
+import { loadCustomCars } from '../src/vehicles/glbcars.js';
 const q = new URLSearchParams(location.search);
 const r = new THREE.WebGLRenderer({ antialias: true }); r.setSize(innerWidth, innerHeight); r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace; r.shadowMap.enabled = true; document.body.appendChild(r.domElement);
 const s = new THREE.Scene(); s.background = new THREE.Color(q.get('dark') ? 0x16161a : 0x9fb4c8);
-const pm = new THREE.PMREMGenerator(r); const env = new THREE.Scene(); env.add(new THREE.Mesh(new THREE.SphereGeometry(10), new THREE.MeshBasicMaterial({ color: 0xbbccdd, side: THREE.BackSide }))); s.environment = pm.fromScene(env).texture;
+const pm = new THREE.PMREMGenerator(r); const env = new THREE.Scene(); { const g = new THREE.SphereGeometry(10, 32, 16); const c = []; const pa = g.attributes.position; for (let i = 0; i < pa.count; i++) { const y = pa.getY(i) / 10; const k = Math.max(0, y); c.push(0.55 + 0.4 * k, 0.6 + 0.35 * k, 0.68 + 0.3 * k); if (y < 0) { c[c.length - 3] = 0.18; c[c.length - 2] = 0.18; c[c.length - 1] = 0.19; } } g.setAttribute('color', new THREE.Float32BufferAttribute(c, 3)); env.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide }))); const lb = new THREE.Mesh(new THREE.PlaneGeometry(8, 2), new THREE.MeshBasicMaterial({ color: 0xffffff })); lb.position.set(0, 7, 3); lb.lookAt(0, 0, 0); env.add(lb); } s.environment = pm.fromScene(env).texture;
 s.add(new THREE.HemisphereLight(0xddeeff, 0x554433, 1)); const d = new THREE.DirectionalLight(0xffffff, 2.5); d.position.set(10, 20, 15); d.castShadow = true; d.shadow.camera.left = -40; d.shadow.camera.right = 40; d.shadow.camera.top = 40; d.shadow.camera.bottom = -40; s.add(d);
 const g = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0x555555 })); g.rotation.x = -Math.PI / 2; g.receiveShadow = true; s.add(g);
 if (q.get('nosill')) globalThis.__noSill = true;
 const ids = (q.get('ids') || Object.keys(VEHICLES).join(',')).split(',');
+if (q.get('glb')) await loadCustomCars(ids);
 const W = wheelAssets(); let x = 0;
 ids.forEach((id, i) => {
   const spec = VEHICLES[id]; const m = spec.bike ? buildBikeModel(spec, spec.colors[0]) : buildCarModel(spec, spec.colors[0]);
@@ -20,7 +22,7 @@ ids.forEach((id, i) => {
   m.lightU[0] = 1; m.lightU[1] = 0.5; m.lightU[5] = 1; m.lightU[7] = 1;
   if (m.doors[0] && q.get('door')) m.doors[0].pivot.rotation.y = 1.0;
   if (m.wing && q.get('wing')) m.wing.position.y = 0;
-  for (const w of m.wheels) { const t = new THREE.Mesh(W.tireGeo, W.tireMat); const rm = new THREE.Mesh(W.rimGeos[RIM_OF[id] || 'sport6'], W.rimMat); const grp = new THREE.Group(); grp.add(t, rm); grp.scale.set(w.w / 0.95, w.r, w.r); grp.position.set(w.x, w.r, w.z); if (w.side < 0) grp.rotation.y = Math.PI; m.root.add(grp); }
+  if (!m.hideWheels) for (const w of m.wheels) { const t = new THREE.Mesh(W.tireGeo, W.tireMat); const rm = new THREE.Mesh(W.rimGeos[RIM_OF[id] || 'sport6'], W.rimMat); const grp = new THREE.Group(); grp.add(t, rm); grp.scale.set(w.w / 0.95, w.r, w.r); grp.position.set(w.x, w.r, w.z); if (w.side < 0) grp.rotation.y = Math.PI; m.root.add(grp); }
 });
 const cam = new THREE.PerspectiveCamera(+q.get('fov') || 40, innerWidth / innerHeight, 0.1, 500); cam.position.set(+q.get('cx') || 2, +q.get('cy') || 14, +q.get('cz') || 22); cam.lookAt(+q.get('lx') || 2, +q.get('ly') || 0, +q.get('lz') || -10);
 if (q.get('ortho')) { const hh = +q.get('ortho'), asp = innerWidth / innerHeight; const oc = new THREE.OrthographicCamera(-hh * asp, hh * asp, hh, -hh, 0.1, 500); oc.position.copy(cam.position); oc.lookAt(+q.get('lx') || 2, +q.get('ly') || 0, +q.get('lz') || -10); r.render(s, oc); } else r.render(s, cam); let fr = 0; const loop = () => { if (q.get('ortho')) { const hh = +q.get('ortho'), asp = innerWidth / innerHeight; const oc = new THREE.OrthographicCamera(-hh * asp, hh * asp, hh, -hh, 0.1, 500); oc.position.copy(cam.position); oc.lookAt(+q.get('lx') || 2, +q.get('ly') || 0, +q.get('lz') || -10); r.render(s, oc); } else r.render(s, cam); if (++fr < 40) requestAnimationFrame(loop); else { window.__ready = true; window.__frames = fr; } }; setTimeout(loop, 400);

@@ -20,7 +20,8 @@ function parse(buf) { return new Promise((res, rej) => loader.parse(buf, '', (g)
 
 export async function loadCustomCars(ids) {
   try { for (const key of await dbKeys()) { const rec = await dbGet(key); if (rec && rec.buf) { try { CUSTOM[key] = { scene: await parse(rec.buf), flip: !!rec.flip, name: rec.name || key }; } catch (e) { console.warn('custom car parse failed', key, e); } } } } catch (e) { /* no IndexedDB (private mode) */ }
-  if (location.protocol.startsWith('http')) for (const id of ids) { if (CUSTOM[id]) continue; try { const r = await fetch(`assets/cars/${id}.glb`); if (r.ok) CUSTOM[id] = { scene: await parse(await r.arrayBuffer()), flip: false, name: `${id}.glb` }; } catch (e) {} }
+  const EMB = window.__EMBED_CARS || {}; for (const id in EMB) { if (CUSTOM[id]) continue; try { const bin = atob(EMB[id]); const u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); CUSTOM[id] = { scene: await parse(u8.buffer), flip: false, name: `${id} (built-in model)`, builtin: true }; } catch (e) { console.warn('embedded car failed', id, e); } }
+  if (location.protocol.startsWith('http')) for (const id of ids) { if (CUSTOM[id]) continue; for (const pre of ['assets/cars/', '../assets/cars/']) { try { const r = await fetch(`${pre}${id}.glb`); if (r.ok) { CUSTOM[id] = { scene: await parse(await r.arrayBuffer()), flip: false, name: `${id}.glb` }; break; } } catch (e) {} } }
 }
 export async function importCar(id, file) { const buf = await file.arrayBuffer(); const scene = await parse(buf); await dbPut(id, { buf, flip: false, name: file.name }); CUSTOM[id] = { scene, flip: false, name: file.name }; }
 export async function flipCar(id) { const c = CUSTOM[id]; if (!c) return; c.flip = !c.flip; const rec = await dbGet(id); if (rec) { rec.flip = c.flip; await dbPut(id, rec); } }
@@ -69,6 +70,9 @@ export function buildCustomCar(spec, paintColor, id) {
   }
   // glTF lights stay as modelled; the light uniform array keeps brake/indicator logic happy
   const lmat = makeLightMaterial();
+  // modelled lights: emissive materials named light_* follow the game's light groups (head, brake, indicators, reverse)
+  const LG = { light_head: 0, light_tail: 1, light_ind_l: 2, light_ind_r: 3, light_rev: 4, light_drl: 7 }; const glow = [];
+  for (const m of mats.values()) { const k = Object.keys(LG).find((n) => (m.name || '').startsWith(n)); if (k && m.emissive) glow.push({ m, g: LG[k], base: m.emissiveIntensity || 1 }); }
   const dummy = () => { const m = new THREE.Object3D(); body.add(m); return m; };
-  return { root, body, bodyMesh: null, cabMesh: null, paint, glass, detail: null, lights: null, lightU: lmat.uniforms.L.value, bumpers: [dummy(), dummy()], doors: [], wheels, interior: null, custom: true, hideWheels: found };
+  return { root, body, bodyMesh: null, cabMesh: null, paint, glass, detail: null, lights: null, lightU: lmat.uniforms.L.value, bumpers: [dummy(), dummy()], doors: [], wheels, interior: null, custom: true, hideWheels: found, glow };
 }

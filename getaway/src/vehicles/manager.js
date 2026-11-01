@@ -186,6 +186,7 @@ export class VehicleManager {
     for (const v of this.list) {
       const dcam = v.pos.distanceToSquared(cam); const vis = dcam < 320 * 320;
       const ws = v.model.wheels; const sy = Math.sin(v.yaw), cy = Math.cos(v.yaw);
+      if (v.model.glow) { const L = v.model.lightU; for (const gl of v.model.glow) gl.m.emissiveIntensity = gl.base * (gl.g === 7 ? 1 : gl.g === 1 ? 0.35 + L[1] * 0.9 : 0.08 + L[gl.g] * 1.2); }
       for (let k = 0; k < ws.length; k++) {
         const w = ws[k];
         w.spin += (v.mode === 'rigid' ? v.speed * 0.3 : (v.spin > 0.3 && !w.front && v.spec.drive !== 'FWD' ? v.vF + 25 : v.vF)) / w.r * dt;
