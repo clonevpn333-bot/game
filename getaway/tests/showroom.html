@@ -6,7 +6,7 @@ import { VEHICLES } from '../src/vehicles/types.js';
 import { buildCarModel, buildBikeModel, wheelAssets, RIM_OF } from '../src/vehicles/models.js';
 const q = new URLSearchParams(location.search);
 const r = new THREE.WebGLRenderer({ antialias: true }); r.setSize(innerWidth, innerHeight); r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace; r.shadowMap.enabled = true; document.body.appendChild(r.domElement);
-const s = new THREE.Scene(); s.background = new THREE.Color(0x9fb4c8);
+const s = new THREE.Scene(); s.background = new THREE.Color(q.get('dark') ? 0x16161a : 0x9fb4c8);
 const pm = new THREE.PMREMGenerator(r); const env = new THREE.Scene(); env.add(new THREE.Mesh(new THREE.SphereGeometry(10), new THREE.MeshBasicMaterial({ color: 0xbbccdd, side: THREE.BackSide }))); s.environment = pm.fromScene(env).texture;
 s.add(new THREE.HemisphereLight(0xddeeff, 0x554433, 1)); const d = new THREE.DirectionalLight(0xffffff, 2.5); d.position.set(10, 20, 15); d.castShadow = true; d.shadow.camera.left = -40; d.shadow.camera.right = 40; d.shadow.camera.top = 40; d.shadow.camera.bottom = -40; s.add(d);
 const g = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0x555555 })); g.rotation.x = -Math.PI / 2; g.receiveShadow = true; s.add(g);
@@ -21,6 +21,6 @@ ids.forEach((id, i) => {
   if (m.doors[0] && q.get('door')) m.doors[0].pivot.rotation.y = 1.0;
   for (const w of m.wheels) { const t = new THREE.Mesh(W.tireGeo, W.tireMat); const rm = new THREE.Mesh(W.rimGeos[RIM_OF[id] || 'sport6'], W.rimMat); const grp = new THREE.Group(); grp.add(t, rm); grp.scale.set(w.w / 0.95, w.r, w.r); grp.position.set(w.x, w.r, w.z); if (w.side < 0) grp.rotation.y = Math.PI; m.root.add(grp); }
 });
-const cam = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 500); cam.position.set(+q.get('cx') || 2, +q.get('cy') || 14, +q.get('cz') || 22); cam.lookAt(+q.get('lx') || 2, 0, +q.get('lz') || -10);
+const cam = new THREE.PerspectiveCamera(+q.get('fov') || 40, innerWidth / innerHeight, 0.1, 500); cam.position.set(+q.get('cx') || 2, +q.get('cy') || 14, +q.get('cz') || 22); cam.lookAt(+q.get('lx') || 2, +q.get('ly') || 0, +q.get('lz') || -10);
 r.render(s, cam); window.__ready = true; window.__frames = 1;
 </script></body></html>

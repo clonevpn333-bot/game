@@ -139,21 +139,18 @@ export function buildRostrModel(spec, paintColor) {
   }
   // fascia: inner intake recess + slats, front splitter (detachable)
   parts.push(box(1.34, 0.01, 0.012, 0, 0.3, 2.284, 0x3a3d42, -0.23)); parts.push(box(1.34, 0.008, 0.012, 0, 0.42, 2.31, 0x202226, -0.23));
-  // headlights: one flat sliver of pure light lying flush on each fender facet, beside the hood crease (exact mirror pair)
+  // headlights: lower part of each V facet between fender and hood glows (exact mirror pair)
   {
     const K = V(0.69, 0.5, 2.325), Wc = V(0.5, 0.82, 1.35), A = V(0.97, 0.87, 1.35); const n = new THREE.Vector3().subVectors(A, K).cross(new THREE.Vector3().subVectors(Wc, K)).normalize(); if (n.y < 0) n.negate();
     const onFacet = (u, v) => K.clone().addScaledVector(new THREE.Vector3().subVectors(Wc, K), u).addScaledVector(new THREE.Vector3().subVectors(A, K), v).addScaledVector(n, 0.006);
-    const shape = [[0.2, 0.035], [0.46, 0.035], [0.43, 0.1], [0.27, 0.12]];
-    for (const s of [1, -1]) {
-      const pts = shape.map(([u, v]) => { const p = onFacet(u, v); return s > 0 ? p : mirror(p); }); const P = [];
-      for (const [a, b, c] of [[0, 1, 2], [0, 2, 3], [0, 2, 1], [0, 3, 2]]) P.push(pts[a].x, pts[a].y, pts[a].z, pts[b].x, pts[b].y, pts[b].z, pts[c].x, pts[c].y, pts[c].z);
-      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); geo.computeVertexNormals();
-      lights.push({ geo, c: 0xf6fbff, g: 0 });
-      { const cen = pts.reduce((acc, v) => acc.add(v), V(0, 0, 0)).multiplyScalar(1 / pts.length); const big = pts.map((v) => cen.clone().lerp(v, 1.45).addScaledVector(s > 0 ? n : V(-n.x, n.y, n.z), -0.003)); const Q = [];
-        for (const [a2, b2, c2] of [[0, 1, 2], [0, 2, 3], [0, 2, 1], [0, 3, 2]]) Q.push(big[a2].x, big[a2].y, big[a2].z, big[b2].x, big[b2].y, big[b2].z, big[c2].x, big[c2].y, big[c2].z);
-        const g3 = new THREE.BufferGeometry(); g3.setAttribute('position', new THREE.Float32BufferAttribute(Q, 3)); g3.computeVertexNormals(); parts.push({ geo: g3, c: 0x23272c }); }
-      const P2 = P.map((v, k) => (k % 3 === 1 ? v + 0.0015 : v)); const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(P2, 3)); g2.computeVertexNormals(); lights.push({ geo: g2, c: 0xdfefff, g: 7 });
-    }
+    // the headlight fills the lower part of the V facet: horizontal top edge (with a shadow lip above it), narrowing to the knife corner
+    // facet coords: (u, v) -> K + u*(W-K) + v*(A-K); a horizontal band at depth f is u+v = 1-f
+    const quad = (pts4, col, g, list) => { for (const s of [1, -1]) { const q = pts4.map(([u, v]) => { const p = onFacet(u, v); return s > 0 ? p : mirror(p); }); const P = [];
+      for (const [a, b, c] of [[0, 1, 2], [0, 2, 3], [0, 2, 1], [0, 3, 2]]) P.push(q[a].x, q[a].y, q[a].z, q[b].x, q[b].y, q[b].z, q[c].x, q[c].y, q[c].z);
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); geo.computeVertexNormals(); list.push(g === undefined ? { geo, c: col } : { geo, c: col, g }); } };
+    const band = (f0, f1, inset = 0.015) => { const a = 1 - f0, b = 1 - f1; return [[a - inset, inset], [inset, a - inset], [inset, Math.max(inset, b - inset)], [Math.max(inset, b - inset), inset]]; };
+    quad(band(0.53, 0.575), 0x1b1e22, undefined, parts); // shadow lip
+    quad(band(0.575, 0.84), 0xf2f8ff, 7, lights); // the light itself (always lit, like the photo)
   }
   const splitter = mergeParts([box(1.44, 0.03, 0.3, 0, 0, 0, DARK), box(1.4, 0.012, 0.04, 0, 0.02, 0.14, 0x2a2c30)]);
   // hood: recessed slot at the base of the windshield + panel seams
