@@ -139,13 +139,21 @@ export function buildRostrModel(spec, paintColor) {
   }
   // fascia: inner intake recess + slats, front splitter (detachable)
   parts.push(box(1.34, 0.01, 0.012, 0, 0.3, 2.284, 0x3a3d42, -0.23)); parts.push(box(1.34, 0.008, 0.012, 0, 0.42, 2.31, 0x202226, -0.23));
-  // LED headlight clusters tucked into the crease between hood and fender facet
-  for (const s of [-1, 1]) {
+  // headlights: one flat sliver of pure light lying flush on each fender facet, beside the hood crease (exact mirror pair)
+  {
     const K = V(0.69, 0.5, 2.325), Wc = V(0.5, 0.82, 1.35), A = V(0.97, 0.87, 1.35); const n = new THREE.Vector3().subVectors(A, K).cross(new THREE.Vector3().subVectors(Wc, K)).normalize(); if (n.y < 0) n.negate();
-    const c = K.clone().lerp(Wc.clone().add(A).multiplyScalar(0.5), 0.42); const q = new THREE.Quaternion().setFromUnitVectors(V(0, 1, 0), n);
-    const pod = (w, h, d, ox, oz, col, g) => { const geo = new THREE.BoxGeometry(w, h, d); geo.applyQuaternion(q); geo.translate(s * (c.x + ox), c.y + 0.004 + n.y * h * 0.5 - (ox * n.x), c.z + oz); return g === undefined ? { geo, c: col } : { geo, c: col, g }; };
-    parts.push(pod(0.17, 0.012, 0.1, 0, 0, 0x111214));
-    for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) lights.push(pod(0.028, 0.02, 0.022, -0.06 + i * 0.04, 0.03 - j * 0.04, 0xf6fbff, j ? 7 : 0));
+    const onFacet = (u, v) => K.clone().addScaledVector(new THREE.Vector3().subVectors(Wc, K), u).addScaledVector(new THREE.Vector3().subVectors(A, K), v).addScaledVector(n, 0.006);
+    const shape = [[0.2, 0.035], [0.46, 0.035], [0.43, 0.1], [0.27, 0.12]];
+    for (const s of [1, -1]) {
+      const pts = shape.map(([u, v]) => { const p = onFacet(u, v); return s > 0 ? p : mirror(p); }); const P = [];
+      for (const [a, b, c] of [[0, 1, 2], [0, 2, 3], [0, 2, 1], [0, 3, 2]]) P.push(pts[a].x, pts[a].y, pts[a].z, pts[b].x, pts[b].y, pts[b].z, pts[c].x, pts[c].y, pts[c].z);
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); geo.computeVertexNormals();
+      lights.push({ geo, c: 0xf6fbff, g: 0 });
+      { const cen = pts.reduce((acc, v) => acc.add(v), V(0, 0, 0)).multiplyScalar(1 / pts.length); const big = pts.map((v) => cen.clone().lerp(v, 1.45).addScaledVector(s > 0 ? n : V(-n.x, n.y, n.z), -0.003)); const Q = [];
+        for (const [a2, b2, c2] of [[0, 1, 2], [0, 2, 3], [0, 2, 1], [0, 3, 2]]) Q.push(big[a2].x, big[a2].y, big[a2].z, big[b2].x, big[b2].y, big[b2].z, big[c2].x, big[c2].y, big[c2].z);
+        const g3 = new THREE.BufferGeometry(); g3.setAttribute('position', new THREE.Float32BufferAttribute(Q, 3)); g3.computeVertexNormals(); parts.push({ geo: g3, c: 0x23272c }); }
+      const P2 = P.map((v, k) => (k % 3 === 1 ? v + 0.0015 : v)); const g2 = new THREE.BufferGeometry(); g2.setAttribute('position', new THREE.Float32BufferAttribute(P2, 3)); g2.computeVertexNormals(); lights.push({ geo: g2, c: 0xdfefff, g: 7 });
+    }
   }
   const splitter = mergeParts([box(1.44, 0.03, 0.3, 0, 0, 0, DARK), box(1.4, 0.012, 0.04, 0, 0.02, 0.14, 0x2a2c30)]);
   // hood: recessed slot at the base of the windshield + panel seams
