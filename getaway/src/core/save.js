@@ -4,7 +4,7 @@ const SKEY = 'getaway_settings_v1';
 
 const DEFAULT_SAVE = () => ({
   completed: {},             // missionId -> { bestTime, bestScore, grade, plays }
-  unlockedVehicles: ['saetta', 'sedan', 'hatch', 'muscle', 'moto'],
+  unlockedVehicles: ['rostr', 'saetta', 'sedan', 'hatch', 'muscle', 'moto'],
   vehicleMods: {},           // typeId -> { color, rims, boost }
   tracks: ['main', 'freeroam'],
   pursuit: {                 // campaign memory of how the player escapes

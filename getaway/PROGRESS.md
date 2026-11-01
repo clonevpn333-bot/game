@@ -11,7 +11,7 @@ its full sequence exists as real gameplay and has been run end to end.
 | Traffic | ✅ | Lane graph, signals, following distance, yielding, turn signals, panic, stuck recovery, highway, streaming spawn and parked cars |
 | Pedestrians | ✅ | Up to 170 instanced. Sidewalk loops, crosswalks that wait for walk signals, plaza wandering, flee/cower/hands-up/dive/phone-in, vehicle knockdowns with ragdoll and get-up |
 | Vehicles | ✅ 17 types | Procedural models, bicycle-model physics, gears, suspension, jumps, air control, rollovers, damage and deformation, glass, detachable parts, fire and explosions |
-| ROSTR hyper-EV | ✅ | Wedge body, full-width light bars, giant wing, cold-gas thrusters (boost works in the air), electric whine |
+| ROSTR hyper-EV | ✅ (available from the start) | Wedge body, full-width light bars, giant wing, cold-gas thrusters (boost works in the air), electric whine |
 | On-foot controller | ✅ | Jog, sprint, crouch, slide, jump, vault, mantle, swim, roof riding, hijack (also from a moving roof), bail out |
 | Combat | ✅ | Pistol, SMG, shotgun, rifle, grenade launcher, melee. Tracers, shells, headshots, explosive barrels, drive-bys |
 | Enemy AI | ✅ | Cover search, peek and shoot, flank roles, retreat, warm-up accuracy, window shooters, arrests |
@@ -58,7 +58,9 @@ All testing ran in headless Chromium (SwiftShader software GL) through Playwrigh
 - `tests/showroom.html`, `tests/humans.html`: visual checks of every vehicle model and character pose.
 - `tests/drive_test.js`, `tests/ramp_test.js`: physics scenarios. 0–85 km/h in 2 s (ROSTR), 203 km/h top run, cornering, handbrake drift, a head-on wall crash with deformation and glass, a 1.15 s ramp jump at 4.4 m, and a 20 s traffic soak with no NaN or lost vehicles.
 - `tests/profile.js`: CPU cost per frame in free roam with 35 cars and 170 pedestrians was **~7.6 ms** (without rendering).
-- `tests/m01_smoke.js`: drives the Mission 01 script through every checkpoint, using teleports to satisfy each objective, and checks objectives, spawns, twists and completion. See the latest results below.
+- `tests/m01_smoke.js` + `tests/m01_tail.js`: step the Mission 01 script through every checkpoint, using teleports to satisfy objectives. **Result:** all 7 checkpoints advance in order (steal → ambush with 3 armed SUVs → construction jump/crane → kill switch → case → fire escape → rooftops/skybridge → garage loaner → 3-star pursuit → escape → hideout → ending scene). The mission completes, the results screen shows grade A, records save and unlocks apply. Starting directly at any checkpoint (`?mission=m01&cp=N`) also works.
+- Bugs found and fixed by these tests: a camera scratch-vector clash, roads reported as off-road (lower grip), mission stats missing when starting at a checkpoint, and limb geometry rendering 3× too long.
+- These tests check that the script **runs**; they don't check that it's **fun**. I haven't played it with a real keyboard, so tuning (difficulty, enemy accuracy, timing) still needs hands-on play. Enemy fire can kill the player during the teleport-based test, so the tail test uses god mode.
 
 **Limitation:** the headless browser can't measure real GPU frame rate or audio output. That
 needs a real desktop browser. The music and SFX code runs without errors, but I have not heard
