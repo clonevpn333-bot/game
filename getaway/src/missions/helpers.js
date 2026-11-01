@@ -10,7 +10,8 @@ export const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
 export class RouteAI {
   constructor(v, pts, { speed = 24, loop = false, aggressive = true, onDone = null } = {}) { this.v = v; this.pts = pts; this.i = 0; this.speed = speed; this.loop = loop; this.aggr = aggressive; this.onDone = onDone; this.kind = 'route'; this.done = false; v.ai = this; v.keep = true; v.hasDriver = true; }
   update(dt) {
-    const v = this.v; if (v.dead || v.mode !== 'drive' || this.done) { v.ctrl.throttle = 0; v.ctrl.brake = 1; return; }
+    const v = this.v; if (v.ai !== this) return; // player (or someone else) took the wheel
+    if (v.dead || v.mode !== 'drive' || this.done) { v.ctrl.throttle = 0; v.ctrl.brake = 1; return; }
     let p = this.pts[this.i]; if (!p) return;
     if (Math.hypot(p.x - v.pos.x, p.z - v.pos.z) < (this.speed > 20 ? 12 : 7)) { this.i++; if (this.i >= this.pts.length) { if (this.loop) this.i = 0; else { this.done = true; if (this.onDone) this.onDone(); return; } } p = this.pts[this.i]; }
     driveTo(v, p.x, p.z, typeof this.speed === 'function' ? this.speed() : this.speed, { aggressive: this.aggr, reverseOk: true });

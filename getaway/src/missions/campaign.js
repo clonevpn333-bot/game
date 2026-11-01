@@ -2,6 +2,7 @@
 import { M01 } from './m01.js';
 import { M02 } from './m02.js';
 import { M03 } from './m03.js';
+import { M04 } from './m04.js';
 
 export const ACTS = ['ACT I — THE CITY GOES LOUD', 'ACT II — NO ROAD HOME', 'ACT III — ITALIAN TROUBLE', 'ACT IV — INTERNATIONAL MAYHEM', 'ACT V — EVERYONE WANTS YOU'];
 const L = (num, act, title, desc, music) => ({ id: 'm' + String(num).padStart(2, '0'), num, act, title, desc, music });
@@ -9,7 +10,7 @@ export const CAMPAIGN = [
   { ...L(1, 0, 'WRONG CAR', 'A simple vehicle pickup becomes a high-speed pursuit through downtown.', 'wrongcar'), impl: M01 },
   { ...L(2, 0, 'BANKROLL', 'Walk into First Meridian, crack the vault, and escape out the back as SWAT storms the front.', 'bankroll'), impl: M02 },
   { ...L(3, 0, 'SHOPPING SPREE', 'Lift a Halcyon key from the Galleria, fight through a lockdown, steal the grand-prize car and drive it into the sea.', 'mall'), impl: M03 },
-  L(4, 0, 'ARMORED DELIVERY', 'Board a moving armored transport while police and rivals fight over it.', 'armored'),
+  { ...L(4, 0, 'ARMORED DELIVERY', 'Tail an armored convoy in the rain, fend off a rival crew, leap onto the moving truck and drive it through a roadblock and the river tunnel.', 'armored'), impl: M04 },
   L(5, 0, 'THE SKYLINE JOB', 'A half-built high-rise becomes an action playground — and then it comes down.', 'skyline'),
   L(6, 0, 'FIVE-STAR CITY', 'An all-out citywide pursuit ending in the harbor.', 'fivestar'),
   L(7, 1, 'BRIDGE RUN', 'A damaged bridge, emergency machinery, and pursuers closing in.', 'fivestar'),
