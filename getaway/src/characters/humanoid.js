@@ -50,6 +50,7 @@ export const Poses = {
     o[P.hipH] -= 0.07 + Math.abs(c) * 0.06 * k; o[P.spP] = 0.22 * k; o[P.spY] = s * 0.22; o[P.hdP] = -0.12 * k; return o;
   },
   crouch(o, ph, moving) { zero(o); const s = Math.sin(ph) * (moving ? 1 : 0), c = Math.cos(ph) * (moving ? 1 : 0); o[P.hipH] = 0.62; o[P.lHP] = 0.95 + s * 0.3; o[P.rHP] = 0.95 - s * 0.3; o[P.lKn] = 1.7 - Math.max(0, c) * 0.4; o[P.rKn] = 1.7 - Math.max(0, -c) * 0.4; o[P.spP] = 0.45; o[P.lEl] = o[P.rEl] = 1.0; o[P.lSP] = o[P.rSP] = 0.4; o[P.hdP] = -0.35; return o; },
+  leap(o, vy) { zero(o); const t = clamp(vy / 7, -1, 1); o[P.lHP] = 1.25; o[P.lKn] = 0.35 + Math.max(0, -t) * 0.9; o[P.rHP] = -0.55; o[P.rKn] = 0.9; o[P.lSP] = 2.3 - t * 0.4; o[P.rSP] = -0.6 + t * 0.4; o[P.lSR] = 0.3; o[P.rSR] = 0.45; o[P.lEl] = 0.3; o[P.rEl] = 0.9; o[P.spP] = 0.35; o[P.hdP] = -0.3; o[P.hipH] -= 0.05; return o; },
   jump(o, vy) { zero(o); const t = clamp(vy / 6, -1, 1); o[P.lHP] = 0.7; o[P.rHP] = 0.2 - t * 0.2; o[P.lKn] = 1.2; o[P.rKn] = 0.5 + Math.max(0, -t) * 0.6; o[P.lSP] = 0.5 + t * 0.6; o[P.rSP] = -0.2 + t * 0.9; o[P.lSR] = o[P.rSR] = 0.5; o[P.lEl] = o[P.rEl] = 0.6; o[P.spP] = 0.15; return o; },
   fall(o, t) { zero(o); o[P.lHP] = 0.4 + Math.sin(t * 9) * 0.4; o[P.rHP] = 0.4 - Math.sin(t * 9) * 0.4; o[P.lKn] = o[P.rKn] = 0.7; o[P.lSP] = 1.6 + Math.sin(t * 11) * 0.5; o[P.rSP] = 1.6 - Math.sin(t * 11) * 0.5; o[P.lSR] = o[P.rSR] = 0.9; o[P.lEl] = o[P.rEl] = 0.5; o[P.spP] = -0.2; return o; },
   climb(o, t) { zero(o); const s = Math.sin(t * 7); o[P.hipH] = 0.9; o[P.lSP] = 2.6 + s * 0.3; o[P.rSP] = 2.6 - s * 0.3; o[P.lEl] = o[P.rEl] = 0.6 + Math.abs(s) * 0.5; o[P.lSR] = o[P.rSR] = 0.25; o[P.lHP] = 0.6 + s * 0.5; o[P.rHP] = 0.6 - s * 0.5; o[P.lKn] = 1.1 + s * 0.4; o[P.rKn] = 1.1 - s * 0.4; o[P.spP] = 0.1; o[P.hdP] = 0.4; return o; },
@@ -147,7 +148,7 @@ export class Human {
     this.t += dt; const p = this.pose; const sp = this.speed;
     if (this.mode === 'ragdoll') { this._ragdoll(dt); return; }
     const st = this.state;
-    if (st === 'jump') Poses.jump(p, this.vy);
+    if (st === 'jump') { if (this.leap) Poses.leap(p, this.vy); else Poses.jump(p, this.vy); }
     else if (st === 'fall') Poses.fall(p, this.t);
     else if (st === 'climb') Poses.climb(p, this.t);
     else if (st === 'mantle') Poses.mantle(p, this.stateT || 0);
@@ -190,6 +191,7 @@ export class Human {
   _blendIdx(a, b, idx, w) { w = clamp(w, 0, 1); for (const i of idx) a[i] = lerp(a[i], b[i], w); }
   _toWorld() {
     const c = Math.cos(this.yaw), s = Math.sin(this.yaw), L = this.local, W = this.joints, px = this.pos.x, py = this.pos.y, pz = this.pos.z;
+    if (this.tumble) { const ct = Math.cos(this.tumble), st = Math.sin(this.tumble), pv = 0.55; for (let j = 0; j < NJ; j++) { const y = L[j * 3 + 1] - pv, z = L[j * 3 + 2]; L[j * 3 + 1] = pv + y * ct - z * st; L[j * 3 + 2] = y * st + z * ct; } }
     for (let j = 0; j < NJ; j++) { const x = L[j * 3], y = L[j * 3 + 1], z = L[j * 3 + 2]; W[j * 3] = px + x * c + z * s; W[j * 3 + 1] = py + y; W[j * 3 + 2] = pz - x * s + z * c; }
   }
   joint(j, out = new THREE.Vector3()) { return out.set(this.joints[j * 3], this.joints[j * 3 + 1], this.joints[j * 3 + 2]); }

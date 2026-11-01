@@ -176,7 +176,7 @@ function rooftops(ctx) {
   ctx.vbox(metal, fx1 - 0.06, 5.1, zA, fx1, 5.16, zB); ctx.vbox(metal, fx1 - 0.06, 9.1, zA, fx1, 9.16, zB);
   // dumpster at alley mouth and crates to help the climbs
   ctx.prop('dumpster', -12, zB + 3, 0);
-  ctx.vbox(0x8a6440, -49.5 - 2.2, 10.15, zA + 6, -49.5 - 0.2, 11.9, zA + 9, true); // crate on R3 roof near R4 wall
+  ctx.vbox(0x8a6440, -49.5 - 2.6, 10.15, zA + 0.5, -49.5 - 0.6, 11.4, zA + 2.5, true); // crate on R3 roof near R4 wall
   ctx.vbox(0x8a6440, -64, 10.15, zA + 5, -62.2, 12.0, zA + 7.4, true); ctx.vbox(0x7a5636, -64.6, 12.0, zA + 5.4, -63.0, 13.75, zA + 7.0, true);
   // rooftop clutter
   ctx.vbox(0xb8bcc0, -26, 8.15, zA + 3, -22, 9.4, zA + 6, true, { metal: true }); ctx.vbox(0xb8bcc0, -42, 10.15, zA + 10, -38, 11.3, zA + 13, true, { metal: true });

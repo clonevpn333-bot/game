@@ -109,7 +109,7 @@ export class Combatant {
     if (this.mag <= 0) { this.reloadT = this.W.reload * 1.3; this.human.upper = { name: 'reload', dur: this.W.reload }; this.human.upperT = 0; if (G.audio) G.audio.reload(this.pos); return; }
     const W = this.W; this.fireT = 60 / W.rpm * (W.auto ? 1.15 : rand(1.6, 2.6)); this.mag--; this.burstLeft--;
     const P = G.player; const warm = clamp(this.engagedT / 1.8, 0.15, 1); const pmov = P.vehicle ? clamp(1 - P.vehicle.speed / 45, 0.3, 1) : clamp(1 - Math.hypot(P.vel.x, P.vel.z) / 14, 0.45, 1);
-    const acc = this.acc * accMul * warm * pmov * clamp(1.3 - dist / 70, 0.3, 1.2) * (P.crouching ? 0.7 : 1) * (G.police ? G.police.difficulty : 1);
+    const acc = this.acc * accMul * warm * pmov * clamp(1.3 - dist / 70, 0.3, 1.2) * (P.crouching ? 0.7 : 1) * (G.police ? G.police.difficulty : 1) * (G.enemyAcc ?? 1);
     this.mesh.updateMatrixWorld(); const mz = muzzlePoint(this.mesh, W.kind);
     const aim = _b.set(tp.x, tp.y + tgtH, tp.z); if (Math.random() > acc) { const off = rand(0.7, 1.8); aim.x += rand(-1, 1) * off; aim.y += rand(-0.3, 1.2) * off; aim.z += rand(-1, 1) * off; }
     const dir = aim.sub(mz).normalize();

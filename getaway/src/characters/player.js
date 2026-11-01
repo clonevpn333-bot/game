@@ -25,7 +25,7 @@ export class Player {
   setWeapon(id) { if (!this.inv[id]) return; this.weapon = id; this.reloading = 0; if (this.mesh) { this.mesh.parent && this.mesh.parent.remove(this.mesh); this.mesh = null; } if (id !== 'fists') { this.mesh = makeWeaponMesh(WEAPONS[id].kind); G.scene.add(this.mesh); } this.human.weapon = id === 'fists' ? null : WEAPONS[id].kind; G.emit('weaponSwitch', id); }
   teleport(x, y, z, yaw = 0) { if (this.vehicle) this.leaveVehicleInstant(); this.pos.set(x, y, z); this.vel.set(0, 0, 0); this.vy = 0; this.human.yaw = yaw; this.human.mode = 'anim'; this.human.state = 'idle'; if (G.cam) { G.cam.yaw = yaw; G.cam.pos.set(x - Math.sin(yaw) * 4, y + 2, z - Math.cos(yaw) * 4); } }
   hit(dmg, dir, point, head, source, kind, push) {
-    if (!this.alive || this.godMode) return; if (source && source.team === 'player') return;
+    if (!this.alive || this.godMode) return; if (source && source.team === 'player') return; dmg *= G.dmgScale ?? 1;
     if (this.vehicle) { this.vehicle.damage(dmg * 0.3, point, dir, source && source.human); dmg *= 0.25; if (this.vehicle.glassLevel < 2) dmg *= 0.5; }
     const a = Math.min(this.armor, dmg * 0.65); this.armor -= a; this.health -= dmg - a; this.lastHit = G.time;
     G.emit('playerDamaged', dmg, dir, source);
@@ -39,7 +39,7 @@ export class Player {
   update(dt, input) {
     const h = this.human; this.fireT -= dt;
     if (!this.alive) { h.animate(dt); this.syncWeapon(); return; }
-    if (this.health < 50 && G.time - this.lastHit > 6) this.health = Math.min(50, this.health + dt * 4);
+    if (this.health < 100 && G.time - this.lastHit > 4) this.health = Math.min(100, this.health + dt * 12);
     if (this.entering) return this.updateEntering(dt, input);
     if (this.vehicle) return this.updateDriving(dt, input);
     if (h.mode === 'ragdoll') { this.ragT = (this.ragT || 0) + dt; h.animate(dt); if (h.settled || this.ragT > 4) { h.getUp(G.world.static); } this.syncWeapon(); return; }
@@ -56,12 +56,12 @@ export class Player {
     const W = this.W; const act = this.action;
     this.aiming = !locked && input.aim() && W.kind !== 'fists' && !this.swimming && !act && !this.carrying?.heavy;
     let mx = locked ? 0 : input.moveX(), my = locked ? 0 : input.moveY(); const mag = Math.min(1, Math.hypot(mx, my));
-    if (input.pressed('crouch') && !locked) { if (this.sprinting && this.grounded && !act) this.startAction('slide', 0.75); else this.crouching = !this.crouching; }
+    if (input.pressed('crouch') && !locked) { if (this.sprinting && this.grounded && !act) this.startAction('slide', 0.9); else this.crouching = !this.crouching; }
     this.sprinting = !locked && input.down('sprint') && mag > 0.3 && !this.aiming && !this.crouching && !this.swimming && this.stamina > 0.05;
     if (this.sprinting) { this.crouching = false; this.stamina = Math.max(0, this.stamina - dt * 0.07); } else this.stamina = Math.min(1, this.stamina + dt * 0.2);
     const cy = cam.yaw; const fx = Math.sin(cy), fz = Math.cos(cy), rx = -Math.cos(cy), rz = Math.sin(cy);
     let wx = fx * my + rx * mx, wz = fz * my + rz * mx; const wl = Math.hypot(wx, wz); if (wl > 1) { wx /= wl; wz /= wl; }
-    let speed = this.swimming ? 2.6 : this.aiming ? 2.7 : this.crouching ? 1.9 : this.sprinting ? 8.3 : mag < 0.5 ? 2.0 : 5.2;
+    let speed = this.swimming ? 2.6 : this.aiming ? 2.7 : this.crouching ? 1.9 : this.sprinting ? 9.4 : mag < 0.5 ? 2.0 : 5.2;
     if (this.carrying && this.carrying.heavy) speed = Math.min(speed, 4.4);
     // platform (standing on vehicle roof) -> carry along
     if (this.platform && this.grounded) { const v = this.platform; this.pos.x += v.vel.x * dt; this.pos.z += v.vel.z * dt; const dy = v.yawRate * dt; if (dy) { const ox = this.pos.x - v.pos.x, oz = this.pos.z - v.pos.z; const c = Math.cos(dy), s = Math.sin(dy); this.pos.x = v.pos.x + ox * c + oz * s; this.pos.z = v.pos.z - ox * s + oz * c; h.yaw += dy; } }
@@ -73,7 +73,7 @@ export class Player {
       if (this.aiming || (W.kind !== 'fists' && input.fire() && !locked)) h.yaw = dampAngle(h.yaw, cy, 20, dt);
       else if (wl > 0.1) h.yaw = dampAngle(h.yaw, Math.atan2(wx, wz), this.sprinting ? 9 : 12, dt);
       // jump / climb
-      if (!locked && input.pressed('jump') && !this.swimming) { if (!this.tryClimb(true) && this.grounded) { this.vy = 6.3; this.grounded = false; h.state = 'jump'; if (G.audio) G.audio.whoosh(this.pos, 0.12, 0.3); this.platform = null; } }
+      if (!locked && input.pressed('jump') && !this.swimming) { if (!this.tryClimb(true) && this.grounded) { const run = Math.hypot(this.vel.x, this.vel.z); h.leap = run > 6; this.vy = h.leap ? 7.3 : 6.6; if (h.leap) { this.vel.x *= 1.15; this.vel.z *= 1.15; } this.grounded = false; h.state = 'jump'; if (G.audio) G.audio.whoosh(this.pos, 0.12, 0.3); this.platform = null; } }
       else if (!this.grounded && !this.swimming && this.vy < 2 && mag > 0.5) this.tryClimb(false);
     }
     // integrate
@@ -135,8 +135,10 @@ export class Player {
   }
   onLand(impact) {
     if (impact > 6 && G.audio) G.audio.footstep(this.pos, true);
+    const mv = Math.hypot(this.vel.x, this.vel.z);
+    this.human.leap = false;
+    if (impact > 8.5 && mv > 2.5 && impact < 24) { this.startAction('roll', 0.55, { dir: new THREE.Vector3(this.vel.x / mv, 0, this.vel.z / mv), sp: Math.max(5, mv) }); if (G.audio) G.audio.whoosh(this.pos, 0.2, 0.4); G.emit('parkour', 'roll'); return; }
     if (impact > 13.5) { this.hit((impact - 13.5) * 9, _v.set(0, -1, 0), this.pos, false, null, 'fall'); if (impact > 19 && this.alive) { this.human.ragdoll(_v.set(this.vel.x, 1, this.vel.z), G.world.static); this.ragT = 0; } }
-    else if (impact > 9 && this.sprinting) this.startAction('roll', 0.5);
   }
   // vault over low obstacles, mantle up ledges
   tryClimb(pressed) {
@@ -145,28 +147,28 @@ export class Player {
       const oy = this.pos.y + probeY; const hit = S.raycast(this.pos.x, oy, this.pos.z, fx, 0, fz, 0.95, { noGround: true });
       if (!hit || !hit.box || !hit.box.surface) continue; const b = hit.box; const top = b.maxY; const dh = top - this.pos.y;
       if (dh < 0.4) continue;
-      if (dh > (this.grounded ? 2.75 : 2.6) && !(b.climb && dh < 3.4)) return false;
+      if (dh > 3.1 && !(b.climb && dh < 3.6)) return false;
       // vault if thin and low
       const depth = Math.abs(fx) > Math.abs(fz) ? (b.maxX - b.minX) : (b.maxZ - b.minZ);
       const land = new THREE.Vector3(hit.x + fx * 0.45, top, hit.z + fz * 0.45);
       const clear = S.pushCircle(land.x, land.z, 0.28, top + 0.1, top + 1.6); if (clear.hit) return false;
-      if (dh < 1.35 && depth < 1.4 && this.sprinting) {
+      if (dh < 1.5 && depth < 1.7 && Math.hypot(this.vel.x, this.vel.z) > 4) {
         const beyond = new THREE.Vector3(hit.x + fx * (depth + 0.7), 0, hit.z + fz * (depth + 0.7)); beyond.y = S.groundAt(beyond.x, beyond.z, top + 0.2, 0).h;
         this.startAction('vault', 0.5, { from: this.pos.clone(), to: beyond, top }); return true;
       }
       if (!pressed && dh > 2.2) return false;
-      this.startAction('mantle', dh > 1.4 ? 0.75 : 0.45, { from: this.pos.clone(), to: land }); return true;
+      this.startAction('mantle', dh > 1.4 ? 0.5 : 0.32, { from: this.pos.clone(), to: land }); return true;
     }
     return false;
   }
   startAction(name, dur, data = {}) { this.action = { name, t: 0, dur, ...data }; if (name === 'slide') { const f = Math.hypot(this.vel.x, this.vel.z) || 1; this.action.dir = new THREE.Vector3(this.vel.x / f, 0, this.vel.z / f); if (G.audio) G.audio.whoosh(this.pos, 0.2, 0.6); } if (name === 'mantle' || name === 'vault') { this.vy = 0; if (G.audio) G.audio.whoosh(this.pos, 0.18, 0.3); G.emit('parkour', name); } }
   updateAction(dt, wx, wz) {
     const a = this.action, h = this.human; a.t += dt; const k = clamp(a.t / a.dur, 0, 1);
-    if (a.name === 'slide') { const sp = lerp(9.5, 3, k); this.vel.x = a.dir.x * sp; this.vel.z = a.dir.z * sp; h.state = 'slide'; this.crouching = false; }
-    else if (a.name === 'roll') { h.state = 'crouch'; }
+    if (a.name === 'slide') { const sp = lerp(11, 3.5, k); this.vel.x = a.dir.x * sp; this.vel.z = a.dir.z * sp; h.state = 'slide'; this.crouching = false; }
+    else if (a.name === 'roll') { h.state = 'crouch'; h.tumble = Math.min(1, k * 1.1) * Math.PI * 2; this.vel.x = a.dir.x * a.sp * 0.95; this.vel.z = a.dir.z * a.sp * 0.95; }
     else if (a.name === 'mantle') { this.vel.set(0, 0, 0); const e = k < 0.6 ? k / 0.6 : 1; this.pos.y = lerp(a.from.y, a.to.y, Math.sin(e * Math.PI / 2)); const e2 = clamp((k - 0.4) / 0.6, 0, 1); this.pos.x = lerp(a.from.x, a.to.x, e2); this.pos.z = lerp(a.from.z, a.to.z, e2); h.state = 'mantle'; h.stateT = k; this.grounded = true; this.vy = 0; }
     else if (a.name === 'vault') { this.vel.set(0, 0, 0); this.pos.x = lerp(a.from.x, a.to.x, k); this.pos.z = lerp(a.from.z, a.to.z, k); this.pos.y = lerp(a.from.y, a.to.y, k) + Math.sin(k * Math.PI) * (a.top - a.from.y + 0.3); h.state = 'vault'; this.grounded = true; this.vy = 0; }
-    if (a.t >= a.dur) { this.action = null; if (a.name === 'mantle' || a.name === 'vault') { this.pos.copy(a.to); this.grounded = true; } }
+    if (a.t >= a.dur) { this.action = null; h.tumble = 0; if (a.name === 'mantle' || a.name === 'vault') { this.pos.copy(a.to); this.grounded = true; } }
   }
   carryUpdate() { this.human.carryBag = !!(this.carrying && this.carrying.bag); }
   syncWeapon() {
