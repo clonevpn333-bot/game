@@ -7,11 +7,12 @@ import TIMING from "./timing.json";
 const FONT = "Luckiest";
 const C: Record<string, string> = { g: "#9BFF5A", o: "#FF9A1E", r: "#FF4A3A", w: "#FFFFFF" };
 const EM: Record<string, string> = {
-  "UPSIDE": "o", "DOWN.": "o", CEILING: "r", "UP?": "o", HALLOWEEN: "o", "NIGHT.": "o", "HOME?": "g", "NOPE!": "r", FLOOR: "o", CLAIMS: "o", ZERO: "g", SIXTY: "g", "SECOND.": "g",
-  THREE: "r", "G'S.": "r", GRIP: "o", "SPIN.": "r", THRUSTERS: "g", "ROCKET.": "g", PUSH: "g", "GRIP.": "o", GHOST: "g", GAINING: "r", "RAMP.": "o", "TRICK.": "o", "DOWNFORCE.": "g",
-  "ROAD.": "g", GRAVITY: "r", "GRAVITY.": "r", THEORY: "o", "CEILING.": "o", STICKS: "g", "FLY": "o", GRAVEYARD: "g", "HER.": "g", "CAR.": "g", "SEAT.": "r", "2028.": "o", "MISSED": "r", "BEFORE.": "r", SUBSCRIBE: "o", "IT?": "o",
+  "UPSIDE": "o", "DOWN.": "o", CRAZY: "r", "PART?": "r", BARELY: "g", SPEED: "g", HALLOWEEN: "o", "NIGHT.": "o", "HOME?": "g", "NOPE!": "r", FLOOR: "o", CLAIMS: "o", ZERO: "g", SIXTY: "g", "SECOND.": "g",
+  THREE: "r", "G'S.": "r", DOUBLE: "o", ASTRONAUTS: "g", "LIFTOFF.": "g", "GRIP": "o", "HARD.": "o", "CHEATS,": "r", "THRUSTERS.": "g", "THRUSTERS?": "g", COLD: "g", GAS: "g", "BALLOON.": "r",
+  GHOST: "g", "GAINING.": "r", "RAMP.": "o", "CURVE,": "o", STRAIGHT: "o", "STRAIGHT.": "o", PRESSES: "g", "TRACK.": "g", TWENTY: "g", "ENOUGH.": "g", "2012,": "o", TWO: "o", REAL: "o",
+  "LAUNCH.": "o", "FLIP.": "r", "FLY.": "g", "HER.": "g", "CAR.": "g", "SEAT.": "r", "2028.": "o", MISSED: "r", "BEFORE.": "r", "IT?": "o",
 };
-const SLAM = new Set(["UPSIDE", "NOPE!", "THREE", "SPIN.", "DOWNFORCE.", "CEILING.", "SEAT.", "MISSED"]);
+const SLAM = new Set(["UPSIDE", "BARELY", "NOPE!", "THREE", "CHEATS,", "BALLOON.", "TWENTY", "LAUNCH.", "FLIP.", "FLY.", "SEAT.", "MISSED"]);
 type Wd = { w: string; s: number; e: number };
 type Chunk = { words: Wd[]; a: number; b: number; who: string };
 const chunks: Chunk[] = [];
@@ -43,7 +44,7 @@ const Word: React.FC<{ x: Wd; size: number }> = ({ x, size }) => {
 const Captions: React.FC = () => {
   const frame = useCurrentFrame(); const { fps } = useVideoConfig(); const T = frame / fps;
   const c = chunks.find((k) => T >= k.a - 0.05 && T < k.b);
-  if (!c || T > 59.3) return null;
+  if (!c || T > 53.15) return null;
   const slamW = c.words.find((x) => SLAM.has(x.w));
   const sd = slamW ? frame - Math.round(slamW.s * fps) : 99;
   const shake = sd >= 0 && sd < 8 ? Math.sin(sd * 2.7) * (8 - sd) * 2.6 : 0;
@@ -58,14 +59,15 @@ const Captions: React.FC = () => {
 };
 
 // white flashes on the big hits (lightning at 2.3, the jump scare, the bolt-like snap of heads)
-const FLASH = [[0.0, 0.25, 0.7], [11.75, 0.2, 0.5], [45.8, 0.2, 0.4], [50.9, 0.15, 0.35]];
+const FLASH = [[0.0, 0.2, 0.75], [10.16, 0.15, 0.4], [41.76, 0.15, 0.55], [42.32, 0.12, 0.45], [42.87, 0.15, 0.4], [46.9, 0.12, 0.35]];
 const Fx: React.FC = () => {
   const frame = useCurrentFrame(); const { fps } = useVideoConfig(); const T = frame / fps;
   let fl = 0; FLASH.forEach(([a, d, k]) => { if (T >= a && T < a + d) fl = Math.max(fl, k * (1 - (T - a) / d)); });
   const live = false;
-  const badge = T >= 11.9 && T < 15.9 ? "TESLA'S CLAIM — NOT INDEPENDENTLY TESTED" : T >= 36.8 && T < 40.2 ? "IN THEORY · F1 CARS AT VERY HIGH SPEED" : T >= 52.7 && T < 56 ? "FIRST PROMISED FOR 2020" : "";
-  const end = T >= 59.35;
-  const ep = spring({ frame: frame - Math.round(59.35 * fps), fps, config: { damping: 10, stiffness: 260, mass: 0.5 } });
+  const badge = T >= 10.3 && T < 13.7 ? "TESLA'S CLAIM — NOT INDEPENDENTLY TESTED" : T >= 32.5 && T < 36.3 ? "AT THE TOP: v = √(g·r) ≈ 20 MPH FOR AN 8 M LOOP" : T >= 36.45 && T < 40.5 ? "2012 · TWO CARS · ONE 6-STORY DOUBLE LOOP" : T >= 48.0 && T < 51.6 ? "FIRST PROMISED FOR 2020" : "";
+  const gb = T >= 14.4 && T < 17.85 ? spring({ frame: frame - Math.round(14.4 * fps), fps, config: { damping: 14, stiffness: 120 } }) : 0;
+  const end = T >= 53.15;
+  const ep = spring({ frame: frame - Math.round(53.15 * fps), fps, config: { damping: 10, stiffness: 260, mass: 0.5 } });
   const grain = Array.from({ length: 50 }, (_, i) => ({ x: random(`gx${frame}${i}`) * 1080, y: random(`gy${frame}${i}`) * 1920, a: random(`ga${frame}${i}`) * 0.12 }));
   return (
     <AbsoluteFill style={{ pointerEvents: "none" }}>
@@ -81,6 +83,16 @@ const Fx: React.FC = () => {
         </>
       ) : null}
       {badge ? <div style={{ position: "absolute", top: 150, left: 0, right: 0, display: "flex", justifyContent: "center" }}><div style={{ background: "rgba(18,8,26,0.82)", color: "#F2C230", fontFamily: "Arial", fontWeight: 900, fontSize: 34, padding: "10px 24px", borderRadius: 14, border: "3px solid #F2C230" }}>{badge}</div></div> : null}
+      {gb > 0 ? (
+        <div style={{ position: "absolute", top: 260, left: 90, right: 90, fontFamily: FONT }}>
+          {[["ROCKET LIFTOFF", 1.3, "#9fe6ff"], ["ROADSTER (CLAIM)", 2.7, "#FF4A3A"]].map(([n, v, c], i) => (
+            <div key={i} style={{ marginBottom: 26 }}>
+              <div style={{ color: "#fff", fontSize: 44, WebkitTextStroke: "6px #12081a", paintOrder: "stroke fill" }}>{n as string} · {(v as number).toFixed(1)} G</div>
+              <div style={{ height: 46, width: `${(v as number) / 3 * 100 * Math.min(1, gb * (i ? 1 : 1.4))}%`, background: c as string, borderRadius: 12, border: "5px solid #12081a" }} />
+            </div>
+          ))}
+        </div>
+      ) : null}
       {fl > 0 ? <AbsoluteFill style={{ background: `rgba(235,240,255,${fl})` }} /> : null}
       {end ? (
         <AbsoluteFill style={{ background: `rgba(10,4,18,${0.55 * Math.min(1, ep)})`, alignItems: "center", justifyContent: "center", fontFamily: FONT }}>

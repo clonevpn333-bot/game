@@ -23,72 +23,56 @@ function loft(sections, m, cap = true) {
   const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals();
   const o = new THREE.Mesh(g, m); o.castShadow = true; o.receiveShadow = true; return o;
 }
-export function roadster(color = 0xdadad6) {
+export function roadster(color = 0xdcdcd8) {
   const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
-  const paint = new THREE.MeshStandardMaterial({ color, roughness: 0.32, metalness: 0.15, flatShading: true, side: THREE.DoubleSide });
-  const black = new THREE.MeshStandardMaterial({ color: 0x141418, roughness: 0.45, metalness: 0.1, flatShading: true, side: THREE.DoubleSide });
-  const glassM = new THREE.MeshStandardMaterial({ color: 0x1c1410, roughness: 0.06, metalness: 0.5, transparent: true, opacity: 0.88, flatShading: true });
-  // body shell: [x,y] half profile per station: bottom, lower crease, shoulder crease, fender top, hood/deck centre
-  const S = (z, w, yb, ys, yf, yc, wf = 0.9) => ({ z, pts: [[0, yb], [w * 0.93, yb], [w, ys], [w * wf, yf], [w * 0.62, yc + 0.02], [0, yc]] });
-  body.add(loft([
-    S(2.2, 0.62, 0.3, 0.42, 0.47, 0.47, 0.9), S(2.05, 0.9, 0.28, 0.46, 0.6, 0.55), S(1.6, 0.99, 0.28, 0.55, 0.78, 0.66), S(1.0, 1.0, 0.28, 0.6, 0.84, 0.72),
-    S(0.6, 1.0, 0.28, 0.62, 0.85, 0.8), S(-0.4, 0.98, 0.28, 0.63, 0.86, 0.84), S(-1.3, 1.04, 0.28, 0.66, 0.9, 0.88), S(-1.95, 1.0, 0.3, 0.7, 0.96, 0.95), S(-2.2, 0.9, 0.36, 0.72, 0.98, 0.98),
-  ], paint));
-  // black lower band (front fascia, sills, rear diffuser) + splitter
+  const paint = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0.2, flatShading: true, side: THREE.DoubleSide });
+  const black = new THREE.MeshStandardMaterial({ color: 0x131316, roughness: 0.45, metalness: 0.1, flatShading: true, side: THREE.DoubleSide });
+  const glassM = new THREE.MeshStandardMaterial({ color: 0x1e1612, roughness: 0.05, metalness: 0.55, transparent: true, opacity: 0.9, flatShading: true, depthWrite: false });
+  const inner = new THREE.MeshStandardMaterial({ color: 0x1c1c22, roughness: 0.6, flatShading: true, side: THREE.DoubleSide });
+  const cream = clay(0xece6da, { rough: 0.5 });
+  // ---- outer shell: nose/hood (ends in the firewall), cabin tub (open top), rear deck
+  const S = (z, ws, w, ysh, wf, yf, yc) => ({ z, pts: [[0, 0.3], [ws, 0.3], [w, ysh], [wf, yf], [wf * 0.62, yc + (yf - yc) * 0.25], [0, yc]] });
+  body.add(loft([S(2.24, 0.52, 0.58, 0.44, 0.5, 0.465, 0.455), S(2.06, 0.84, 0.9, 0.5, 0.82, 0.6, 0.55), S(1.7, 0.93, 0.99, 0.58, 0.91, 0.75, 0.64), S(1.36, 0.95, 1.01, 0.62, 0.93, 0.81, 0.7), S(1.0, 0.94, 0.99, 0.63, 0.91, 0.83, 0.75), S(0.76, 0.94, 0.98, 0.64, 0.91, 0.845, 0.8)], paint));
+  const U = (z, ws, w, ysh, wb, yb) => ({ z, pts: [[0, 0.3], [ws, 0.3], [w, ysh], [wb, yb], [wb - 0.07, yb - 0.01], [wb - 0.09, 0.34], [0, 0.34]] });
+  body.add(loft([U(0.77, 0.94, 0.98, 0.64, 0.91, 0.845), U(0.0, 0.93, 0.97, 0.64, 0.91, 0.86), U(-0.9, 0.97, 1.02, 0.66, 0.95, 0.88), U(-1.46, 1.0, 1.04, 0.67, 0.97, 0.9)], paint, false));
+  body.add(loft([S(-1.45, 1.0, 1.04, 0.67, 0.97, 0.9, 0.89), S(-1.85, 0.98, 1.03, 0.7, 0.95, 0.95, 0.94), S(-2.12, 0.92, 0.96, 0.72, 0.9, 0.98, 0.98), S(-2.26, 0.85, 0.88, 0.72, 0.83, 0.97, 0.97)], paint));
+  // door seam + sill crease lines (thin black inlays)
+  for (const s of [-1, 1]) { body.add(limb(black, [s * 0.985, 0.36, 0.55], [s * 0.985, 0.82, 0.62], 0.006)); body.add(limb(black, [s * 1.0, 0.36, -0.95], [s * 0.965, 0.86, -0.8], 0.006)); }
+  // ---- black lower band (tall nose fascia), sills, diffuser + splitter blade
   const B = (z, w, y0, y1) => ({ z, pts: [[0, y0], [w, y0], [w + 0.02, y1], [0, y1 + 0.001]] });
-  body.add(loft([B(2.22, 0.6, 0.14, 0.31), B(2.0, 0.9, 0.12, 0.3), B(1.0, 1.0, 0.12, 0.3), B(-1.3, 1.03, 0.12, 0.3), B(-2.2, 0.88, 0.16, 0.38)], black));
-  body.add(loft([{ z: 2.3, pts: [[0, 0.1], [0.62, 0.1], [0.62, 0.14], [0, 0.14]] }, { z: 1.9, pts: [[0, 0.1], [0.92, 0.1], [0.92, 0.14], [0, 0.14]] }], black));
-  // the greenhouse: one dark tinted canopy (windshield + roof + fastback), wraps to the side glass
-  const Gs = (z, wb, yb, wt, yt) => ({ z, pts: [[wb, yb], [wt, yt], [0, yt + 0.015]] });
-  const glass = loft([Gs(0.95, 0.66, 0.73, 0.5, 0.735), Gs(0.55, 0.86, 0.82, 0.6, 1.05), Gs(0.0, 0.9, 0.85, 0.63, 1.2), Gs(-0.6, 0.9, 0.86, 0.62, 1.2), Gs(-1.2, 0.92, 0.89, 0.6, 1.1), Gs(-1.85, 0.9, 0.95, 0.5, 0.99)], glassM);
-  body.add(glass);
-  // silver roof rails (the satin strips framing the canopy) + B-pillar
-  const rail = paint;
-  for (const s of [-1, 1]) { body.add(limb(rail, [s * 0.6, 1.05, 0.55], [s * 0.63, 1.2, 0.0], 0.018)); body.add(limb(rail, [s * 0.63, 1.2, 0.0], [s * 0.62, 1.2, -0.6], 0.018)); body.add(limb(rail, [s * 0.62, 1.2, -0.6], [s * 0.5, 0.99, -1.85], 0.018)); body.add(limb(rail, [s * 0.9, 0.86, -0.75], [s * 0.62, 1.19, -0.75], 0.02)); }
+  body.add(loft([B(2.25, 0.52, 0.15, 0.31), B(2.0, 0.88, 0.12, 0.3), B(1.0, 0.98, 0.12, 0.3), B(-1.3, 1.03, 0.12, 0.3), B(-2.25, 0.85, 0.16, 0.36)], black));
+  body.add(loft([{ z: 2.36, pts: [[0, 0.1], [0.55, 0.1], [0.55, 0.135], [0, 0.135]] }, { z: 1.9, pts: [[0, 0.1], [0.93, 0.1], [0.93, 0.135], [0, 0.135]] }], black));
+  // ---- the canopy: one dark glass greenhouse, long rake into the fastback
+  const Gs = (z, wb, yb, wt, yt) => ({ z, pts: [[wb, yb], [wt, yt], [0, yt + 0.012]] });
+  const glass = loft([Gs(0.8, 0.9, 0.845, 0.72, 0.85), Gs(0.35, 0.91, 0.855, 0.63, 1.06), Gs(-0.1, 0.91, 0.86, 0.6, 1.19), Gs(-0.85, 0.94, 0.88, 0.6, 1.19), Gs(-1.45, 0.97, 0.9, 0.55, 1.06), Gs(-1.98, 0.94, 0.95, 0.44, 0.985)], glassM, false);
+  glass.castShadow = false; body.add(glass);
+  for (const s of [-1, 1]) { body.add(limb(paint, [s * 0.72, 0.85, 0.8], [s * 0.63, 1.06, 0.35], 0.016)); body.add(limb(paint, [s * 0.63, 1.06, 0.35], [s * 0.6, 1.19, -0.1], 0.016)); body.add(limb(paint, [s * 0.6, 1.19, -0.1], [s * 0.6, 1.19, -0.85], 0.016)); body.add(limb(paint, [s * 0.6, 1.19, -0.85], [s * 0.44, 0.985, -1.98], 0.016)); body.add(limb(paint, [s * 0.94, 0.88, -0.85], [s * 0.6, 1.18, -0.85], 0.02)); }
   // ducktail lip
-  body.add(loft([{ z: -1.9, pts: [[0, 0.96], [0.98, 0.96], [0.98, 1.0], [0, 1.0]] }, { z: -2.28, pts: [[0, 1.02], [0.88, 1.02], [0.88, 1.05], [0, 1.05]] }], paint));
-  // lights: ONE thin bar across the nose crease; thin red tail bar
-  const head = glow(0xf2f6ff, 2.6), tail = glow(0xff2030, 2.4);
-  body.add(limb(head, [-0.6, 0.445, 2.205], [0.6, 0.445, 2.205], 0.012));
-  for (const s of [-1, 1]) body.add(limb(head, [s * 0.6, 0.445, 2.205], [s * 0.86, 0.5, 2.06], 0.012));
-  const hh = [-1, 1].map((s) => { const h = halo(0xd8e8ff, 1.1, 0.4); h.position.set(s * 0.45, 0.45, 2.3); body.add(h); return h; });
-  body.add(limb(tail, [-0.86, 0.73, -2.21], [0.86, 0.73, -2.21], 0.014));
-  const th = halo(0xff2030, 1.4, 0.35); th.position.set(0, 0.73, -2.3); body.add(th);
-  // amber side marker + door handle notch (detail from the reveal photos)
-  for (const s of [-1, 1]) { body.add(ball(glow(0xffa030, 1.6), s * 1.0, 0.62, 0.72, 0.012, 0.03, 0.06)); body.add(mesh(boxG(0.01, 0.03, 0.18, 0.005), black, s * 1.0, 0.6, 0.35)); }
-  // wheels: black angular 5-spoke
-  const wheels = [];
-  const tyreM = clay(0x0e0e10, { rough: 0.85 }), rimM = new THREE.MeshStandardMaterial({ color: 0x1a1a1e, roughness: 0.3, metalness: 0.6, flatShading: true }), hubM = new THREE.MeshStandardMaterial({ color: 0x5a5c62, roughness: 0.3, metalness: 0.7 });
-  for (const [x, z] of [[-0.9, 1.36], [0.9, 1.36], [-0.92, -1.38], [0.92, -1.38]]) {
-    const w = new THREE.Group(); w.position.set(x, 0.38, z); g.add(w);
-    const sp = new THREE.Group(); w.add(sp);
-    const tyre = mesh(cylG(0.38, 0.38, 0.3, 32), tyreM); tyre.rotation.z = Math.PI / 2; sp.add(tyre);
-    const disc = mesh(cylG(0.28, 0.28, 0.305, 30), hubM); disc.rotation.z = Math.PI / 2; sp.add(disc);
-    for (let k = 0; k < 5; k++) { const arm = new THREE.Group(); arm.rotation.x = (k / 5) * Math.PI * 2; const bl = mesh(boxG(0.32, 0.27, 0.07, 0.01), rimM, 0, 0.14, 0); bl.rotation.x = 0.35; arm.add(bl); sp.add(arm); }
-    sp.add(mesh(cylG(0.05, 0.05, 0.33, 12), rimM)); sp.children[sp.children.length - 1].rotation.z = Math.PI / 2;
-    w.userData.spin = sp; wheels.push(w);
-  }
-  // wheel arches: black inner liners so the wheels sit in shadow
-  for (const [x, z] of [[-0.9, 1.36], [0.9, 1.36], [-0.92, -1.38], [0.92, -1.38]]) { const a = mesh(cylG(0.44, 0.44, 0.24, 24, 1), black, x * 0.97, 0.38, z); a.rotation.z = Math.PI / 2; body.add(a); }
-  // cold-gas thrusters: small hidden nozzles; plumes only when firing
-  const plumes = [];
-  for (const [x, y, z, dir] of [[-0.45, 0.32, -2.2, -1], [0.45, 0.32, -2.2, -1], [-0.6, 0.12, 1.6, 0], [0.6, 0.12, 1.6, 0], [-0.6, 0.12, -1.0, 0], [0.6, 0.12, -1.0, 0]]) {
-    const pl = new THREE.Group(); pl.position.set(x, y, z); body.add(pl);
-    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.15, 1.6, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xcfe8ff, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-    cone.geometry.translate(0, -0.8, 0); cone.rotation.x = dir ? -Math.PI / 2 : 0; pl.add(cone);
-    const hl = halo(0xcfe8ff, 1.1, 0.8); pl.add(hl);
-    pl.visible = false; plumes.push({ pl, cone, hl });
-  }
-  // interior: seats (2+2), yoke-style wheel, centre screen (passenger count)
-  const seatM = clay(0x2a2a30);
-  for (const [x, z] of [[-0.34, -0.3], [0.34, -0.3], [-0.32, -1.05], [0.32, -1.05]]) { body.add(mesh(boxG(0.42, 0.12, 0.45, 0.06), seatM, x, 0.32, z)); body.add(mesh(boxG(0.42, 0.5, 0.12, 0.06), seatM, x, 0.6, z - 0.25)); }
-  const sw = new THREE.Group(); sw.position.set(-0.34, 0.74, 0.32); sw.rotation.x = -1.1; body.add(sw);
+  body.add(loft([{ z: -1.92, pts: [[0, 0.96], [0.97, 0.96], [0.97, 1.0], [0, 1.0]] }, { z: -2.3, pts: [[0, 1.03], [0.86, 1.03], [0.86, 1.06], [0, 1.06]] }], paint));
+  // ---- lights: one thin bar on the nose crease, wrapping slightly; thin red tail bar; amber side markers
+  const head = glow(0xf2f6ff, 2.8), tail = glow(0xff2030, 2.4);
+  body.add(limb(head, [-0.5, 0.443, 2.245], [0.5, 0.443, 2.245], 0.011));
+  for (const s of [-1, 1]) body.add(limb(head, [s * 0.5, 0.443, 2.245], [s * 0.86, 0.5, 2.06], 0.011));
+  const hh = [-1, 1].map((s) => { const h = halo(0xd8e8ff, 1.0, 0.35); h.position.set(s * 0.4, 0.45, 2.33); body.add(h); return h; });
+  body.add(limb(tail, [-0.84, 0.735, -2.265], [0.84, 0.735, -2.265], 0.013));
+  const th = halo(0xff2030, 1.3, 0.35); th.position.set(0, 0.73, -2.33); body.add(th);
+  for (const s of [-1, 1]) body.add(ball(glow(0xffa030, 1.6), s * 0.995, 0.63, 0.7, 0.01, 0.026, 0.05));
+  // ---- interior: tub floor, dashboard, screen, yoke, console, door cards, white 2+2 seats
+  body.add(mesh(boxG(1.7, 0.04, 2.2, 0.02), inner, 0, 0.35, -0.35));
+  body.add(mesh(boxG(1.72, 0.16, 0.24, 0.05), inner, 0, 0.7, 0.62));                     // dash
+  body.add(mesh(boxG(1.6, 0.03, 0.2, 0.01), cream, 0, 0.79, 0.6));                        // dash top trim
+  for (const s of [-1, 1]) body.add(mesh(boxG(0.04, 0.38, 2.1, 0.02), inner, s * 0.82, 0.6, -0.35));  // door cards
+  body.add(mesh(boxG(0.22, 0.2, 1.3, 0.05), inner, 0, 0.45, -0.25));                      // centre console
+  const seatAt = [[-0.42, -0.28], [0.42, -0.28], [-0.36, -1.08], [0.36, -1.08]];
+  for (const [x, z] of seatAt) { body.add(mesh(boxG(0.44, 0.1, 0.48, 0.05), cream, x, 0.42, z)); const bk = mesh(boxG(0.44, 0.52, 0.11, 0.06), cream, x, 0.7, z - 0.27); bk.rotation.x = -0.18; body.add(bk); body.add(mesh(boxG(0.2, 0.12, 0.08, 0.04), cream, x, 1.0, z - 0.32)); }
   const trim = clay(0x1a1a1e, { rough: 0.4 });
-  sw.add(mesh(new THREE.TorusGeometry(0.15, 0.022, 10, 30, Math.PI * 1.2), trim)); sw.children[0].rotation.z = -Math.PI * 0.1;
-  sw.add(limb(trim, [-0.15, 0, 0], [0.15, 0, 0], 0.02));
+  const yoke = new THREE.Group(); yoke.position.set(-0.42, 0.78, 0.38); yoke.rotation.x = -1.15; body.add(yoke);
+  yoke.add(limb(trim, [-0.16, 0, 0], [0.16, 0, 0], 0.024)); for (const s of [-1, 1]) yoke.add(limb(trim, [s * 0.16, 0, 0], [s * 0.15, -0.12, 0], 0.024));
+  yoke.add(limb(trim, [0, 0, 0], [0, 0, -0.2], 0.03));
   const scrTex = canvasTex(512, 320, () => {});
-  const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.25), new THREE.MeshBasicMaterial({ map: scrTex, toneMapped: false }));
-  scr.position.set(0.02, 0.8, 0.42); scr.rotation.x = -0.6; body.add(scr);
+  const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.26), new THREE.MeshBasicMaterial({ map: scrTex, toneMapped: false }));
+  scr.position.set(0.05, 0.92, 0.54); scr.rotation.set(0.35, Math.PI, 0); body.add(scr);
+  { const bk = mesh(boxG(0.45, 0.29, 0.02, 0.01), trim, 0.05, 0.92, 0.552); bk.rotation.set(0.35, Math.PI, 0); body.add(bk); }
   const drawScreen = (speed, pax, warn) => {
     const c = scrTex.userData.ctx; c.fillStyle = "#0a0e16"; c.fillRect(0, 0, 512, 320);
     c.fillStyle = "#fff"; c.textAlign = "center"; c.font = "900 120px Arial"; c.fillText(String(Math.round(speed)), 256, 150);
@@ -97,10 +81,34 @@ export function roadster(color = 0xdadad6) {
     scrTex.needsUpdate = true;
   };
   drawScreen(0, 1, false);
+  // ---- wheels: black flat twin-spoke, low-profile tyres, set in black arches
+  const wheels = [];
+  const tyreM = clay(0x0e0e10, { rough: 0.85 }), rimM = new THREE.MeshStandardMaterial({ color: 0x18181c, roughness: 0.28, metalness: 0.6 }), faceM = new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.35, metalness: 0.5 });
+  for (const [x, z] of [[-0.9, 1.36], [0.9, 1.36], [-0.93, -1.38], [0.93, -1.38]]) {
+    const w = new THREE.Group(); w.position.set(x, 0.38, z); g.add(w);
+    const sp = new THREE.Group(); w.add(sp); const sx = Math.sign(x);
+    const tyre = mesh(cylG(0.38, 0.38, 0.3, 36), tyreM); tyre.rotation.z = Math.PI / 2; sp.add(tyre);
+    const barrel = mesh(cylG(0.31, 0.31, 0.302, 36), faceM); barrel.rotation.z = Math.PI / 2; sp.add(barrel);
+    const lip = mesh(new THREE.TorusGeometry(0.31, 0.012, 8, 40), rimM, sx * 0.152, 0, 0); lip.rotation.y = Math.PI / 2; sp.add(lip);
+    for (let k = 0; k < 5; k++) for (const d of [-0.07, 0.07]) { const arm = new THREE.Group(); arm.rotation.x = (k / 5) * Math.PI * 2 + d; arm.add(mesh(boxG(0.04, 0.3, 0.028, 0.008), rimM, sx * 0.155, 0.155, 0)); sp.add(arm); }
+    const hub = mesh(cylG(0.055, 0.055, 0.04, 16), rimM, sx * 0.16, 0, 0); hub.rotation.z = Math.PI / 2; sp.add(hub);
+    w.userData.spin = sp; wheels.push(w);
+    const arch = mesh(cylG(0.43, 0.43, 0.26, 28, 1, true), black, x * 0.96, 0.38, z); arch.rotation.z = Math.PI / 2; body.add(arch);
+  }
+  // ---- cold-gas thrusters: hidden nozzles; plumes when firing
+  const plumes = [];
+  for (const [x, y, z, dir] of [[-0.45, 0.3, -2.26, -1], [0.45, 0.3, -2.26, -1], [-0.62, 0.11, 1.6, 0], [0.62, 0.11, 1.6, 0], [-0.62, 0.11, -1.0, 0], [0.62, 0.11, -1.0, 0]]) {
+    const pl = new THREE.Group(); pl.position.set(x, y, z); body.add(pl);
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(0.15, 1.6, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xcfe8ff, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    cone.geometry.translate(0, -0.8, 0); cone.rotation.x = dir ? -Math.PI / 2 : 0; pl.add(cone);
+    const hl = halo(0xcfe8ff, 1.1, 0.8); pl.add(hl);
+    pl.visible = false; plumes.push({ pl, cone, hl });
+  }
+  g.traverse((m) => { if (m.isMesh && m !== glass) { m.castShadow = true; m.receiveShadow = true; } });
   let last = "";
   return {
-    root: g, body, wheels, plumes, glass, seatsY: 0.32,
-    set({ roll = 0, thrust = 0, speed = 0, pax = 1, warn = false, tilt = 0, glassOp = 0.88 }) {
+    root: g, body, wheels, plumes, glass, seatAt,
+    set({ roll = 0, thrust = 0, speed = 0, pax = 1, warn = false, tilt = 0, glassOp = 0.9 }) {
       wheels.forEach((w) => (w.userData.spin.rotation.x = roll));
       plumes.forEach(({ pl, cone, hl }, i) => { pl.visible = thrust > 0.01; cone.scale.set(1, 0.6 + thrust * (0.8 + 0.3 * Math.sin(roll * 7 + i)), 1); cone.material.opacity = 0.55 * thrust; hl.material.opacity = 0.8 * thrust; });
       body.rotation.x = tilt;
@@ -111,10 +119,10 @@ export function roadster(color = 0xdadad6) {
 }
 
 // ------------------------------------------------------------------ the ghost (a clay girl, see-through and glowing)
-export function ghost() {
-  const c = makeChar({ seed: 31, outfit: "dress", shirt: 0xdfeaff, skin: 0xd8e6ff, hair: "long", hairColor: 0xb8c8e8, h: 0.9, girth: 0.88, eyeR: 0.064, pants: 0xdfeaff });
+export function ghost(h = 0.9) {
+  const c = makeChar({ seed: 31, outfit: "dress", shirt: 0xdfeaff, skin: 0xd8e6ff, hair: "long", hairColor: 0xb8c8e8, h, girth: 0.88, eyeR: 0.064, pants: 0xdfeaff });
   c.root.traverse((m) => { if (m.isMesh) { m.material = m.material.clone(); m.material.transparent = true; m.material.opacity = 0.62; if (m.material.isMeshStandardMaterial) { m.material.emissive.set(0x6a9aff); m.material.emissiveIntensity = 0.55; } m.material.depthWrite = false; m.castShadow = false; } });
-  const h = halo(0x9ac0ff, 3.2, 0.35); h.position.y = 1.0; c.root.add(h);
+  const hl = halo(0x9ac0ff, 3.2, 0.35); hl.position.y = 1.0; c.root.add(hl);
   c.setFade = (k) => c.root.traverse((m) => { if (m.isMesh) m.material.opacity = 0.62 * k; if (m.isSprite) m.material.opacity = 0.35 * k; });
   return c;
 }

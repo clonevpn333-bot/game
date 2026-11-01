@@ -4,7 +4,7 @@ import numpy as np, soundfile as sf
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(ROOT, '..', '_shared', 'tools'))
 from sfxlib import *  # noqa
-TOTAL = 61.0; N = int(TOTAL * SR)
+TOTAL = 55.0; N = int(TOTAL * SR)
 B = 60 / 110; BAR = 4 * B; S8 = B / 2
 # section edges (s)
 HIT0, GROOVE, SNEAK, JUMP, SCRATCH, TENSE, DOOR, DROP, SNIFF, RELIEF, MARCH, GROAN, FULL, MADE, RAIN, STING, CHASE, END = 0, 2.3, 8.75, 13.15, 14.55, 15.6, 27.55, 29.2, 31.45, 34.9, 36.2, 47.6, 48.75, 52.6, 53.95, 56.6, 57.95, 59.35
@@ -54,31 +54,25 @@ def music():
         for n, d in notes:
             if n: P(theremin(n, d * B * 0.95), t, g)
             t += d * B
-    P(organ([50, 62, 65, 69], 1.6), 0.0, 0.5); P(boom(), 0.0, 0.8); P(kick(0.6, 1.2), 0.0, 0.9)
-    groove(0.3, 2.45, 0.9, full=True)
-    P(organ([50, 56, 62], 1.2), 2.45, 0.4); P(boom(), 2.45, 0.6)                       # the question: hold
-    for i, n in enumerate([81, 80, 81, 77]): P(box(n, 0.7), 2.6 + i * 0.6, 0.15)
-    groove(6.15, 9.2, 0.8)
-    melody(6.15, [(74, 1.5), (73, 0.5), (74, 1), (77, 1), (76, 2)], 0.18)
-    d = 10.95 - 9.2; P(theremin(86, d) * 0.6, 9.2, 0.16)                                 # the ghost
-    for i, n in enumerate([74, 73, 74, 69]): P(box(n - 0.3, 0.8), 9.25 + i * 0.4, 0.13)
-    P(riser(0.8), 10.95, 0.3)
-    P(organ([50, 62, 65, 69], 1.2), 11.75, 0.5); P(boom(), 11.75, 1.0); P(kick(0.7, 1.4), 11.75, 1.0)   # FLOOR IT
-    groove(11.75, 15.95, 1.0, full=True)
-    groove(15.95, 26.0, 0.65, march=True)                                                  # explainer bed
-    groove(26.0, 29.1, 1.0, full=True, march=True); melody(26.0, [(74, 1), (77, 1), (81, 1), (80, 1), (81, 2)], 0.2)
-    groove(29.1, 40.25, 0.6)                                                               # downforce explainer
-    melody(34.15, [(62, 1), (65, 1), (69, 2), (70, 1), (69, 1), (65, 2)], 0.14)
-    d = 45.8 - 40.25; t = tt(d); P(lp(saw(mtof(38), d, (-8, 8), 600), 900) * np.linspace(0.2, 1, len(t)), 40.25, 0.3)
-    hb = 40.25
-    while hb < 45.8: P(kick(0.3, 0.9), hb, 0.55); hb += 0.6 - 0.35 * (hb - 40.25) / d
-    P(riser(2.0), 43.8, 0.45)
-    P(organ([50, 62, 66, 69, 74], 1.6), 45.8, 0.5); P(boom(), 45.8, 1.0)                 # FLY
-    groove(45.8, 49.3, 1.0, full=True); melody(45.8, [(74, 1), (78, 1), (81, 2), (86, 2)], 0.22)
-    for i, n in enumerate([74, 75, 74, 69]): P(box(n - 0.3, 0.9), 49.35 + i * 0.35, 0.14)  # "nice car"
-    P(organ([50, 51, 56, 62, 63], 1.4), 50.9, 0.6); P(boom(), 50.9, 1.0); P(kick(0.7, 1.4), 50.9, 1.0)
-    groove(52.6, 59.3, 0.75, march=True)
-    P(organ([50, 62, 65, 69], 1.8), 59.35, 0.45); P(boom(), 59.35, 0.8)
+    P(organ([50, 62, 65, 69], 1.6), 0.0, 0.5); P(boom(), 0.0, 0.9); P(kick(0.6, 1.3), 0.0, 1.0)
+    groove(0.0, 1.97, 1.0, full=True)
+    P(organ([50, 56, 62], 1.2), 1.97, 0.4); P(boom(), 1.97, 0.6)
+    for i, n in enumerate([81, 80, 81, 77, 76]): P(box(n, 0.6), 2.1 + i * 0.55, 0.15)
+    groove(5.31, 7.86, 0.8); melody(5.31, [(74, 1.5), (73, 0.5), (74, 1), (77, 1)], 0.18)
+    P(theremin(86, 1.6) * 0.6, 7.86, 0.16); [P(box(n - 0.3, 0.8), 7.9 + i * 0.4, 0.13) for i, n in enumerate([74, 73, 74, 69])]
+    P(riser(0.6), 9.5, 0.3)
+    P(organ([50, 62, 65, 69], 1.2), 10.16, 0.5); P(boom(), 10.16, 1.0); P(kick(0.7, 1.4), 10.16, 1.0)
+    groove(10.16, 13.77, 1.0, full=True)
+    groove(13.77, 24.86, 0.62, march=True)
+    groove(24.86, 27.59, 1.0, full=True, march=True); melody(24.86, [(74, 1), (77, 1), (81, 1), (80, 1)], 0.2)
+    groove(27.59, 40.57, 0.6); melody(31.46, [(62, 1), (65, 1), (69, 2), (70, 1), (69, 1), (65, 2)], 0.14)
+    P(riser(1.2), 40.57, 0.45)
+    for at in (41.76, 42.32, 42.87): P(boom(), at, 0.9); P(kick(0.6, 1.4), at, 1.0); P(organ([50, 62, 66, 69], 0.5), at, 0.4)
+    groove(42.87, 44.09, 1.0, full=True)
+    for i, n in enumerate([74, 75, 74, 69]): P(box(n - 0.3, 0.9), 44.2 + i * 0.35, 0.14)
+    P(organ([50, 51, 56, 62, 63], 1.3), 46.53, 0.6); P(boom(), 46.53, 1.0); P(kick(0.7, 1.4), 46.53, 1.0)
+    groove(47.89, 53.15, 0.75, march=True)
+    P(organ([50, 62, 65, 69], 1.8), 53.15, 0.45); P(boom(), 53.15, 0.8)
     return m[:N]
 def growl(d=0.8, f=70):
     t = tt(d); s = np.sin(2 * np.pi * f * t + 3 * np.sin(2 * np.pi * 9 * t)) + 0.5 * bp(noise(d), 200, 900)
@@ -88,26 +82,22 @@ def scream(d=0.7, f=900):
 def sniff(): return bp(noise(0.16), 1500, 5000) * adsr(int(0.16 * SR), 0.03, 0.1, 0.4, 0.05)
 def sfx():
     s = np.zeros(N + 3 * SR); P = lambda x, at, g=1.0: place(s, x, at, g)
-    P(whoosh(0.6, 300, 3000), 0.0, 0.5); P(hiss(1.6), 0.0, 0.25)                     # thrusters roaring at the top
-    for k in range(6): P(crackle(0.3), 0.2 + k * 0.3, 0.12)
-    P(whoosh(0.4, 3000, 400, up=False), 2.4, 0.3)
-    P(pop(700), 4.5, 0.3)                                                             # the ? pops in
-    P(lp(noise(3.0), 500) * 0.4, 6.15, 0.25)                                          # road hum
-    P(whoosh(0.8, 200, 1200), 9.2, 0.2)
-    P(hiss(1.2), 11.75, 0.5); P(whoosh(0.5, 200, 4000), 11.75, 0.6); P(lp(noise(4.0), 300) * np.linspace(1, 0.5, int(4 * SR)), 11.8, 0.4)
-    for k in range(8): P(tick(), 14.05 + k * 0.1, 0.15)                               # speedo
-    P(crunch(), 16.2, 0.2)
-    P(hp(noise(2.6), 800) * np.linspace(0.8, 0.2, int(2.6 * SR)), 18.0, 0.35)          # tyre screech/spin
-    P(hiss(2.0), 21.0, 0.5); P(hiss(2.0), 23.5, 0.4)
-    P(whoosh(0.6, 400, 3000), 26.0, 0.3); P(whoosh(0.6, 400, 3000), 26.8, 0.3)
-    P(lp(noise(5.0), 1200) * 0.3, 29.1, 0.25)                                         # wind over the car
-    P(lp(noise(3.5), 800) * 0.4, 36.8, 0.3)                                           # tunnel roar
-    P(hiss(4.0), 41.2, 0.4)
-    P(whoosh(1.0, 3000, 300, up=False), 45.8, 0.5); P(hiss(1.5), 45.8, 0.35)
-    P(sparkle(0.8, 8, 4), 49.3, 0.12)
-    P(ding(880, 0.8), 51.4, 0.3); P(ding(880, 0.8), 51.6, 0.3)                        # PASSENGERS: 2 chime
-    for k in range(4): P(stamp(), 52.9 + k * 0.35, 0.3)                              # years crossed out
-    P(lp(noise(3.0), 500) * 0.4, 56.0, 0.25)
+    P(hiss(1.0), 0.0, 0.5); P(whoosh(0.5, 300, 4000), 0.0, 0.6); [P(crackle(0.25), 0.1 + k * 0.2, 0.12) for k in range(4)]
+    P(whoosh(0.6, 3000, 300, up=False), 1.0, 0.45); P(thud(70), 1.85, 0.4)
+    P(lp(noise(2.5), 500) * 0.4, 5.31, 0.25); P(whoosh(0.8, 200, 1200), 7.86, 0.2)
+    P(hiss(1.2), 10.16, 0.55); P(whoosh(0.5, 200, 4000), 10.16, 0.6)
+    for k in range(8): P(tick(), 11.35 + k * 0.08, 0.15)
+    P(hiss(3.5), 13.8, 0.25); P(lp(noise(3.5), 200) * 0.6, 13.8, 0.35)          # rocket rumble
+    P(hp(noise(1.5), 800) * np.linspace(0.8, 0.2, int(1.5 * SR)), 17.9, 0.35)   # tyre spin screech
+    P(hiss(1.6), 19.95, 0.55)
+    P(hiss(1.4), 21.35, 0.4); P(bp(noise(1.6), 300, 2500) * np.linspace(1, 0.2, int(1.6 * SR)), 22.9, 0.4)   # balloon farting off
+    P(whoosh(0.6, 400, 3000), 24.9, 0.3); P(whoosh(0.6, 400, 3000), 26.1, 0.3)
+    P(lp(noise(3.0), 900) * 0.3, 27.6, 0.2); P(ding(1320, 0.6), 33.0, 0.15)
+    for k in range(3): P(whoosh(0.5, 300, 2500), 36.6 + k * 1.2, 0.2)
+    P(whoosh(0.4, 300, 4000), 41.76, 0.6); P(hiss(1.3), 41.76, 0.5); P(whoosh(0.3, 3000, 500, up=False), 42.32, 0.5); P(whoosh(0.6, 200, 3000), 42.87, 0.5)
+    P(sparkle(0.8, 8, 4), 45.2, 0.12); P(ding(880, 0.8), 46.95, 0.3); P(ding(880, 0.8), 47.15, 0.3)
+    for k in range(4): P(stamp(), 50.0 + k * 0.22, 0.3)
+    P(lp(noise(3.0), 500) * 0.4, 51.7, 0.25)
     return reverb(s[:N], 1.2, 0.18)
 if __name__ == '__main__':
     mus, fx = music(), sfx()

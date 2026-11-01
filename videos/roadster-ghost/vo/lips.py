@@ -2,7 +2,7 @@
 import soundfile as sf, numpy as np, json, os
 ROOT = os.path.dirname(os.path.abspath(__file__)); FPS = 30
 tm = json.load(open(f"{ROOT}/timing.json")); N = int(tm["total"] * FPS) + 1
-ALT = {4: "l04g", 14: "l14g"}
+ALT = {4: "l04g", 16: "l16g"}
 env = {}
 for L in tm["lines"]:
     a, sr = sf.read(f"{ROOT}/assets/vo/{ALT.get(L['i'], 'l%02d' % L['i'])}.wav")

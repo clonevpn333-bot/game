@@ -8,7 +8,7 @@ import { makeFilm } from "./three/film.js";
 const World: React.FC = () => <Stage make={makeFilm} />;
 export const RemotionRoot: React.FC = () => (
   <>
-    <Composition id="RoadsterGhost" component={Film} durationInFrames={30 * 61} fps={30} width={1080} height={1920} defaultProps={{ score: true }} />
-    <Composition id="World" component={World} durationInFrames={30 * 61} fps={30} width={1080} height={1920} />
+    <Composition id="RoadsterGhost" component={Film} durationInFrames={30 * 55} fps={30} width={1080} height={1920} defaultProps={{ score: true }} />
+    <Composition id="World" component={World} durationInFrames={30 * 55} fps={30} width={1080} height={1920} />
   </>
 );
