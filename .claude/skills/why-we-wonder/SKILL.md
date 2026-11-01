@@ -206,3 +206,13 @@ FILM.pb.jet DC-9 with breakup, pb.clouds, pb.alt altimeter, FILM.pbCert, FILM.pb
   ~2.3 s/frame at 4x on swangle → 61 s @30fps ≈ 70 min. Don't run stills during the render. `pkill -f` patterns must not match
   your own command line.
 - USER RULE: a story video must still TEACH (real mechanism, numbers, hedged claims) and must never read as a promo for a product.
+
+## SNAP RULE + DESIGN RULE (ep11 v3 "What 0–60 in 0.9 s does to your body"; user: "it should float, then snap")
+- Never animate on a constant slope. Every move is keyframed (`kit.js` K(t, [[t, v, ease]...])) with expoOut / anticip /
+  backOut / bounceOut / hold; overshoot with `spring()`, jolts with `kick()`. Float (held or slow) → SNAP (≤0.15 s) → settle.
+- "Bullet time" framing: freeze the real event and snap a clock forward beat by beat (HUD launch clock).
+- Don't replay news footage people already saw; find the angle the replay can't show (what it does to YOU, the inside view).
+- One complete, clean set beats five sloppy ones: night test track (wet reflective asphalt, edge-light rows, towers w/ cones,
+  hangar, skyline) + a cyclorama stage for x-ray beats. Dark PMREM env (`nightEnv`), low-key coloured spots, bloom
+  (`makeComposer`), vignette + grain.
+- Text is a LAYOUT, never stickers: fixed HUD (top), one stat-chip slot, one caption zone (y≈1270–1490), Anton + Space Grotesk.
