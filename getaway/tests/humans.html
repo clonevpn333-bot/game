@@ -1,0 +1,19 @@
+<!DOCTYPE html><html><head><style>body{margin:0}</style>
+<script type="importmap">{ "imports": { "three": "../vendor/three/three.module.min.js" } }</script></head>
+<body><script type="module">
+import * as THREE from 'three';
+import { Human, HumanRenderer, LOOKS, randomLook } from '../src/characters/humanoid.js';
+const r = new THREE.WebGLRenderer({ antialias: true }); r.setSize(innerWidth, innerHeight); r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace; r.shadowMap.enabled = true; document.body.appendChild(r.domElement);
+const s = new THREE.Scene(); s.background = new THREE.Color(0x9fb4c8);
+s.add(new THREE.HemisphereLight(0xddeeff, 0x554433, 1.2)); const d = new THREE.DirectionalLight(0xffffff, 2.5); d.position.set(5, 10, 8); d.castShadow = true; s.add(d);
+const g = new THREE.Mesh(new THREE.PlaneGeometry(50, 50), new THREE.MeshStandardMaterial({ color: 0x777777 })); g.rotation.x = -Math.PI / 2; g.receiveShadow = true; s.add(g);
+const R = new HumanRenderer(s, 40);
+const states = [['idle',0],['walk',1.4],['run',5.5],['sprint',8],['crouch',1],['jump',0],['aimP',0],['aimR',0],['sit',0],['cower',0],['handsUp',0],['flee',6],['climb',0],['slide',0],['ride',0],['phone',0]];
+const hs = states.map(([st, sp], i) => { const h = new Human(i === 0 ? LOOKS.kit : i % 3 === 0 ? LOOKS.police() : randomLook(), { x: (i % 8) * 2.2 - 7.7, y: (1 - Math.floor(i / 8)) * 2.4, z: 0, yaw: +(new URLSearchParams(location.search).get('yaw') || 1.2) });
+  h.state = st === 'aimP' || st === 'aimR' || st === 'sprint' ? 'run' : st; if (st === 'walk' || st === 'run' || st === 'sprint') h.state = 'idle'; h.speed = sp;
+  if (st === 'aimP') { h.speed = 0; h.state = 'idle'; h.aim = { kind: 'pistol', pitch: 0 }; } if (st === 'aimR') { h.speed = 0; h.state = 'idle'; h.aim = { kind: 'rifle', pitch: 0.1 }; } if (i === 2) h.carryBag = true; if (st === 'flee') h.state = 'flee'; return h; });
+for (let k = 0; k < 20; k++) hs.forEach((h) => h.animate(0.03));
+R.begin(); hs.forEach((h) => R.draw(h)); R.end();
+const cam = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.1, 100); cam.position.set(0, 2.2, 13); cam.lookAt(0, 2.1, 0); g.position.y = -5;
+r.render(s, cam); window.__ready = true; window.__frames = 1;
+</script></body></html>

@@ -1,0 +1,5 @@
+(() => { const G = __G, g = __game; const T = {}; const wrap = (name, obj, fn) => { const o = obj[fn].bind(obj); obj[fn] = (...a) => { const t = performance.now(); const r = o(...a); T[name] = (T[name] || 0) + performance.now() - t; return r; }; };
+  wrap('player', G.player, 'update'); wrap('traffic', G.traffic, 'update'); wrap('peds', G.peds, 'update'); wrap('vehicles', G.vehicles, 'update'); wrap('rigid', G.rigid, 'step'); wrap('props', G.props, 'update'); wrap('fx', G.fx, 'update'); wrap('sky', G.sky, 'update'); wrap('cam', G.cam, 'update'); wrap('police', G.police, 'update'); wrap('npcs', G.npcs, 'update'); wrap('hud', G.hud, 'update'); wrap('mission', G.mission || { update() {} }, 'update');
+  wrap('humansDraw', G.humans, 'end'); wrap('pedsDraw', G.peds, 'draw');
+  const t0 = performance.now(); g.simulate(1, 1 / 30); const tot = performance.now() - t0;
+  const out = { totalMsPerFrame: (tot / 30).toFixed(1) }; for (const k in T) out[k] = (T[k] / 30).toFixed(2); out.veh = G.vehicles.list.length; out.peds = G.peds.list.length; return JSON.stringify(out); })()
