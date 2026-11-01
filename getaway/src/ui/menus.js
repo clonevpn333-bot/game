@@ -1,3 +1,4 @@
+import { CUSTOM, importCar, flipCar, removeCar } from '../vehicles/glbcars.js';
 // GETAWAY! — menus: title, main, missions, garage, soundtrack, settings, controls, pause, results, fail, intro cards.
 import { G } from '../core/context.js';
 import { fmtTime, clamp } from '../core/utils.js';
@@ -57,7 +58,14 @@ export class Menus {
         <div class="garage"><div class="list">${GARAGE_ORDER.map((id) => { const v = VEHICLES[id]; const un = S.unlockedVehicles.includes(id); return `<div class="gi ${un ? '' : 'locked'} ${id === sel ? 'sel' : ''}" data-id="${id}">${un ? v.name : '???'}<small>${un ? v.cls : 'LOCKED'}</small></div>`; }).join('')}</div>
         <div class="stats"><h3>${spec.name}</h3>${st('TOP SPEED', spec.top / 100)}${st('ACCELERATION', spec.accel / 14)}${st('GRIP', (spec.grip - 0.7) / 0.65)}${st('TOUGHNESS', spec.hp * (spec.armor || 1) / 500)}${st('WEIGHT', spec.mass / 10000)}
         <h3>PAINT</h3><div class="swatches">${[...new Set([...spec.colors, 0xe8e4da, 0x111111, 0xc0392b, 0x1e3a8a, 0xf39c12, 0x2ecc71, 0x8e44ad, 0xff6bd5, 0x00b3b3])].map((c) => `<div class="swatch ${c === col ? 'sel' : ''}" data-c="${c}" style="background:#${c.toString(16).padStart(6, '0')}"></div>`).join('')}</div>
+        <h3>3D MODEL</h3><div class="sub" style="margin:4px 0 8px">${CUSTOM[sel] ? `Using <b>${CUSTOM[sel].name}</b>` : 'Built-in model. Import a .glb (glTF binary) of this car to replace it with a real, fully detailed model.'}</div>
+        <div class="btnrow"><button class="mbtn" data-a="import">IMPORT 3D MODEL (.glb)</button>${CUSTOM[sel] ? '<button class="mbtn" data-a="flip">FLIP FRONT / BACK</button><button class="mbtn" data-a="remove">REMOVE</button>' : ''}<input type="file" accept=".glb,model/gltf-binary" style="display:none"></div>
         <div class="btnrow"><button class="bigbtn" data-a="drive">TAKE IT FOR A SPIN</button></div></div></div></div></div>`));
+      const fi = n.querySelector('input[type=file]'); const busy = (t) => { const b = n.querySelector('[data-a=import]'); if (b) b.textContent = t; };
+      n.querySelector('[data-a=import]').onclick = () => { this.ui('click'); fi.click(); };
+      fi.onchange = async () => { const f = fi.files[0]; if (!f) return; busy('IMPORTING…'); try { await importCar(sel, f); this.flow.garagePreview(sel); render(); } catch (e) { console.error(e); busy('IMPORT FAILED — needs a .glb (no Draco)'); } };
+      const fb = n.querySelector('[data-a=flip]'); if (fb) fb.onclick = async () => { this.ui('click'); await flipCar(sel); this.flow.garagePreview(sel); render(); };
+      const rb = n.querySelector('[data-a=remove]'); if (rb) rb.onclick = async () => { this.ui('back'); await removeCar(sel); this.flow.garagePreview(sel); render(); };
       n.querySelectorAll('.gi').forEach((g) => g.onclick = () => { if (!S.unlockedVehicles.includes(g.dataset.id)) { this.ui('back'); return; } this.ui('click'); sel = g.dataset.id; this.flow.garagePreview(sel); render(); });
       n.querySelectorAll('.swatch').forEach((s) => s.onclick = () => { this.ui('click'); S.vehicleMods[sel] = { ...(S.vehicleMods[sel] || {}), color: +s.dataset.c }; G.game.saveNow(); this.flow.garagePreview(sel); render(); });
       n.querySelector('[data-a=drive]').onclick = () => { this.ui('click'); this.flow.startFreeRoam(sel); };

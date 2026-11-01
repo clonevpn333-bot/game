@@ -192,6 +192,8 @@ export class VehicleManager {
         // suspension: wheel follows its own ground height relative to chassis plane
         const plane = v.pos.y + (w.z * Math.tan(v.pitch)) + (w.x * Math.tan(v.roll));
         const comp = v.mode === 'drive' && !v.airborne ? clamp(v.ground[k] - plane, -0.18, 0.18) : (v.airborne ? -0.08 : 0); w.comp = lerp(w.comp, comp, 0.5);
+        if (w.pivot) { w.pivot.position.y = w.r + w.comp; w.pivot.rotation.set(0, w.front ? v.steerAngle : 0, 0); w.spinner.rotation.x = w.spin; }
+        if (v.model.hideWheels) continue;
         if (!vis || i >= this.tires.instanceMatrix.count) continue;
         _m.copy(v.root.matrixWorld);
         _q.setFromEuler(_e.set(0, w.front ? v.steerAngle : 0, 0)); _m2.compose(_p.set(w.x, w.r + w.comp, w.z), _q, _s.set(1, 1, 1)); _m.multiply(_m2);

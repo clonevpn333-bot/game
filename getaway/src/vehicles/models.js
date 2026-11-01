@@ -6,6 +6,7 @@ import { plateTexture } from '../world/textures.js';
 import { clamp, lerp, smoothstep } from '../core/utils.js';
 import { buildRostrModel } from './rostr.js';
 import { buildCrease } from './cars2.js';
+import { CUSTOM, buildCustomCar } from './glbcars.js';
 
 // light groups: 0 head, 1 tail/brake, 2 left indicator, 3 right indicator, 4 reverse, 5 police red, 6 police blue, 7 always-on (taxi sign, DRL)
 const LIGHT_VS = `attribute float lg; attribute vec3 color; varying vec3 vC; varying float vG; void main(){ vC = color; vG = lg; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
@@ -159,6 +160,7 @@ export function lightParts(list) { // [{geo, c, g}] -> geometry with color + lg 
 
 // ---------------- main car builder ----------------
 export function buildCarModel(spec, paintColor) {
+  if (spec._id && CUSTOM[spec._id]) return buildCustomCar(spec, paintColor, spec._id);
   if (spec.rostr) return buildRostrModel(spec, paintColor);
   if (spec.crease) return buildCrease(spec, paintColor);
   const S = shared(); const { L, W } = spec; const out = {};
@@ -395,3 +397,4 @@ function detailPass(spec, parts, lights, interior, col, k) {
   for (let i = 0; i < 3; i++) { const g = new THREE.BoxGeometry(0.02, 0.15, 0.02); g.translate(0, 0.075, 0); g.rotateZ(i * 2.1); g.rotateX(-0.5); g.translate(0.38 * W / 1.9, c.belt + 0.03, dz - 0.35); interior.push({ geo: g, c: 0x222222 }); }
   lights.push({ geo: new THREE.BoxGeometry(0.3, 0.12, 0.01).translate(0.05, c.belt + 0.06, dz - 0.21), c: 0x3aa0ff, g: 7 });
 }
+

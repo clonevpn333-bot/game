@@ -12,6 +12,7 @@ import { FreeRoam } from './missions/freeroam.js';
 import { headlightMaterials } from './vehicles/rostr.js';
 import { buildCarModel } from './vehicles/models.js';
 import { VEHICLES } from './vehicles/types.js';
+import { loadCustomCars } from './vehicles/glbcars.js';
 
 export async function setupFlow(game) {
   const flow = new Flow(game); G.flow = flow; G.game = game;
@@ -34,6 +35,7 @@ class Flow {
     G.renderer.domElement.addEventListener('click', () => { if (this.state === 'play') G.input.requestLock(); });
     document.addEventListener('pointerlockchange', () => { if (!document.pointerLockElement && this.state === 'play' && !this.noAutoPause) { /* keep playing; ESC handled above */ } });
     this.applySettings();
+    await loadCustomCars(Object.keys(VEHICLES)); // real 3D car models imported in the garage / assets/cars/*.glb
     // shader warm-up: everything that can appear mid-game exists (hidden under the map) when we compile
     const warm = makeMarkerMesh(1, 0xffd36b, 2); warm.g.position.set(0, -300, 0); G.scene.add(warm.g);
     { const hm = headlightMaterials({ value: new Array(8).fill(0) }); const q = new THREE.PlaneGeometry(0.1, 0.1); q.setAttribute('ku', new THREE.Float32BufferAttribute(new Float32Array(8), 2)); for (const mt of [hm.lens, hm.glow]) { const w = new THREE.Mesh(q, mt); w.position.set(0, -300, 0); warm.g.add(w); } }

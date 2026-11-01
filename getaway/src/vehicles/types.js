@@ -113,4 +113,5 @@ export const VEHICLES = {
 // resolve inheritance
 for (const [k, v] of Object.entries(VEHICLES)) { if (v.base) { const b = VEHICLES[v.base]; VEHICLES[k] = { ...b, ...v, id: k }; } else v.id = k; }
 export const TRAFFIC_MIX = { city: ['sedan', 'sedan', 'hatch', 'hatch', 'taxi', 'suv', 'van', 'pickup', 'muscle', 'sedan', 'truck', 'saetta', 'bus', 'moto'], res: ['sedan', 'hatch', 'pickup', 'suv', 'hatch', 'sedan', 'van', 'muscle'], hwy: ['sedan', 'truck', 'suv', 'saetta', 'van', 'truck', 'pickup', 'super', 'sedan'] };
+for (const k in VEHICLES) VEHICLES[k]._id = k;
 export const GARAGE_ORDER = ['rostr', 'rivolta', 'strada', 'saetta', 'sedan', 'hatch', 'muscle', 'moto', 'pickup', 'suv', 'van', 'taxi', 'super', 'truck', 'interceptor', 'police', 'bus', 'armored'];

@@ -1,0 +1,27 @@
+<!DOCTYPE html><html><head><style>body{margin:0;background:#888}</style>
+<script type="importmap">{ "imports": { "three": "../vendor/three/three.module.min.js", "three/addons/": "../vendor/three/addons/" } }</script></head>
+<body><script type="module">
+import * as THREE from 'three';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { VEHICLES } from '../src/vehicles/types.js';
+import { buildCarModel, wheelAssets, RIM_OF } from '../src/vehicles/models.js';
+import { CUSTOM, buildCustomCar } from '../src/vehicles/glbcars.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+// 1) make a stand-in "artist" glb: the built-in rivolta body + 4 named wheel meshes, rotated sideways and scaled x100 (like a cm-unit file)
+const spec = VEHICLES.rivolta; const src = buildCarModel(spec, 0xff8800); const W = wheelAssets(); const art = new THREE.Group(); art.add(src.root);
+for (const w of src.model ? src.model.wheels : src.wheels) { const g = new THREE.Mesh(new THREE.CylinderGeometry(w.r, w.r, w.w, 24).rotateZ(Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x111111, name: 'tire_rubber' })); g.name = 'Wheel_' + (w.front ? 'F' : 'R') + (w.side > 0 ? 'L' : 'R'); g.position.set(w.x, w.r, w.z); art.add(g); }
+art.rotation.y = Math.PI / 2; art.scale.setScalar(100); art.updateMatrixWorld(true);
+const glb = await new GLTFExporter().parseAsync(art, { binary: true });
+// 2) import through the pipeline
+const scene = await new Promise((res) => new GLTFLoader().parse(glb, '', (g) => res(g.scene)));
+CUSTOM.rivolta = { scene, flip: false, name: 'test.glb' };
+const m = buildCustomCar(spec, spec.colors[0], 'rivolta');
+const r = new THREE.WebGLRenderer({ antialias: true }); r.setSize(innerWidth, innerHeight); r.toneMapping = THREE.ACESFilmicToneMapping; r.outputColorSpace = THREE.SRGBColorSpace; document.body.appendChild(r.domElement);
+const s = new THREE.Scene(); s.background = new THREE.Color(0x9fb4c8); s.add(new THREE.HemisphereLight(0xddeeff, 0x554433, 1)); const d = new THREE.DirectionalLight(0xffffff, 2.5); d.position.set(10, 20, 15); s.add(d);
+const gnd = new THREE.Mesh(new THREE.PlaneGeometry(50, 50), new THREE.MeshStandardMaterial({ color: 0x555555 })); gnd.rotation.x = -Math.PI / 2; s.add(gnd);
+s.add(m.root); m.root.rotation.y = 0.7; m.root.updateMatrixWorld(true);
+const bb = new THREE.Box3().setFromObject(m.root); window.__info = { size: bb.getSize(new THREE.Vector3()).toArray().map((v) => +v.toFixed(2)), minY: +bb.min.y.toFixed(3), wheels: m.wheels.map((w) => [+w.x.toFixed(2), +w.z.toFixed(2), +w.r.toFixed(2), !!w.pivot]), hide: m.hideWheels, paint: !!m.paint };
+// spin/steer the wheels like the manager does
+for (const w of m.wheels) if (w.pivot) { w.pivot.rotation.set(0, w.front ? 0.4 : 0, 0); w.spinner.rotation.x = 1.2; }
+const cam = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 100); cam.position.set(5, 2.2, 6); cam.lookAt(0, 0.5, 0); r.render(s, cam); window.__ready = true;
+</script></body></html>
