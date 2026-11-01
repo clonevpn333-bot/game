@@ -4,7 +4,7 @@ const SKEY = 'getaway_settings_v1';
 
 const DEFAULT_SAVE = () => ({
   completed: {},             // missionId -> { bestTime, bestScore, grade, plays }
-  unlockedVehicles: ['rostr', 'saetta', 'sedan', 'hatch', 'muscle', 'moto'],
+  unlockedVehicles: ['rostr', 'rivolta', 'strada', 'saetta', 'sedan', 'hatch', 'muscle', 'moto'],
   vehicleMods: {},           // typeId -> { color, rims, boost }
   tracks: ['main', 'freeroam'],
   pursuit: {                 // campaign memory of how the player escapes
@@ -27,7 +27,7 @@ function writeJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } c
 
 export function loadSave() {
   const d = DEFAULT_SAVE(); const s = readJSON(KEY);
-  if (s) { Object.assign(d, s); d.pursuit = Object.assign(DEFAULT_SAVE().pursuit, s.pursuit || {}); d.stats = Object.assign(DEFAULT_SAVE().stats, s.stats || {}); }
+  if (s) { Object.assign(d, s); d.pursuit = Object.assign(DEFAULT_SAVE().pursuit, s.pursuit || {}); d.stats = Object.assign(DEFAULT_SAVE().stats, s.stats || {}); } for (const v of ['rivolta', 'strada']) if (!d.unlockedVehicles.includes(v)) d.unlockedVehicles.push(v);
   return d;
 }
 export function storeSave(s) { writeJSON(KEY, s); }

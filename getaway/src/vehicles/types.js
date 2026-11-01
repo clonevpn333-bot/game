@@ -16,6 +16,20 @@ export const VEHICLES = {
     cabin: { t0: 0.24, t1: 0.9, r0: 0.4, r1: 0.52, belt: 0.74, roof: 1.15, wb: 0.9, wr: 0.66 },
     wheels: { r: 0.37, w: 0.31, f: 0.8, b: 0.2, track: 0.86 }, spoiler: 'bigwing', grille: 'ev', lights: 'bar',
   },
+  rivolta: {
+    name: 'Toro Rivolta', cls: 'Hyper', engine: 'super', mass: 1770, L: 4.95, W: 2.03, H: 1.16, top: 97, accel: 15, grip: 1.36, steer: 0.6, drift: 0.85, cgH: 0.38, brake: 19, drive: 'AWD', hp: 120, gears: 8, crease: 'rivolta',
+    colors: [0x2aa7e6, 0xf2f2f2, 0x1a1a1a, 0xf6c200, 0x7bc043],
+    body: [[0, 0.3, 0.98, 0.94], [0.08, 0.24, 1.0, 1], [0.3, 0.24, 0.94, 1], [0.55, 0.24, 0.88, 0.98], [0.8, 0.25, 0.8, 0.96], [0.95, 0.2, 0.6, 0.9], [1, 0.17, 0.53, 0.8]],
+    cabin: { t0: 0.25, t1: 0.68, r0: 0.34, r1: 0.5, belt: 0.9, roof: 1.16, wb: 0.76, wr: 0.52 },
+    wheels: { r: 0.355, w: 0.31, f: 0.7626, b: 0.201, track: 0.86 }, grille: 'ev', lights: 'slim',
+  },
+  strada: {
+    name: 'Strada SV', cls: 'SUV', engine: 'muscle', mass: 2350, L: 4.946, W: 2.047, H: 1.82, top: 80, accel: 10, grip: 1.12, steer: 0.6, drift: 0.7, cgH: 0.72, brake: 15, drive: 'AWD', hp: 170, gears: 8, crease: 'strada',
+    colors: [0x23333d, 0x8c3a2e, 0x111214, 0xe6e6e6, 0x3b4a3a],
+    body: [[0, 0.42, 1.12, 0.96], [0.04, 0.42, 1.2, 1], [0.5, 0.42, 1.18, 1], [0.88, 0.42, 1.12, 1], [1, 0.45, 1.08, 0.96]],
+    cabin: { t0: 0.04, t1: 0.69, r0: 0.1, r1: 0.58, belt: 1.2, roof: 1.82, wb: 0.86, wr: 0.72 },
+    wheels: { r: 0.405, w: 0.31, f: 0.8033, b: 0.1967, track: 0.86 }, grille: 'chrome', lights: 'slim',
+  },
   super: {
     name: 'Vortice V12', cls: 'Super', engine: 'super', mass: 1450, L: 4.6, W: 2.02, H: 1.15, top: 92, accel: 12, grip: 1.3, steer: 0.58, drift: 0.85, cgH: 0.4, brake: 18, drive: 'AWD', hp: 110, gears: 7,
     colors: [0x2ecc71, 0xff6b00, 0x8e44ad, 0xecf0f1, 0x1a1a1a],
@@ -99,4 +113,4 @@ export const VEHICLES = {
 // resolve inheritance
 for (const [k, v] of Object.entries(VEHICLES)) { if (v.base) { const b = VEHICLES[v.base]; VEHICLES[k] = { ...b, ...v, id: k }; } else v.id = k; }
 export const TRAFFIC_MIX = { city: ['sedan', 'sedan', 'hatch', 'hatch', 'taxi', 'suv', 'van', 'pickup', 'muscle', 'sedan', 'truck', 'saetta', 'bus', 'moto'], res: ['sedan', 'hatch', 'pickup', 'suv', 'hatch', 'sedan', 'van', 'muscle'], hwy: ['sedan', 'truck', 'suv', 'saetta', 'van', 'truck', 'pickup', 'super', 'sedan'] };
-export const GARAGE_ORDER = ['rostr', 'saetta', 'sedan', 'hatch', 'muscle', 'moto', 'pickup', 'suv', 'van', 'taxi', 'super', 'truck', 'interceptor', 'police', 'bus', 'armored'];
+export const GARAGE_ORDER = ['rostr', 'rivolta', 'strada', 'saetta', 'sedan', 'hatch', 'muscle', 'moto', 'pickup', 'suv', 'van', 'taxi', 'super', 'truck', 'interceptor', 'police', 'bus', 'armored'];
